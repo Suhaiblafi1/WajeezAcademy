@@ -144,6 +144,10 @@ export const GUIDE_SHOTS: Record<string, { w: number; h: number }> = {
     "w": 2200,
     "h": 2678
   },
+  "ws-session-tips": {
+    "w": 2200,
+    "h": 821
+  },
   "ws-sources": {
     "w": 2200,
     "h": 688

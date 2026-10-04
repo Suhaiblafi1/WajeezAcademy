@@ -9,8 +9,9 @@
 
 import { describe, expect, it } from 'vitest'
 import {
-  appendToSlots, buildTimeline, canMerge, dayInSlot, defaultSlots, dropFromSlots, joinClosesAt, mergeSlots, minSlots,
-  reflowSlots, sessionProblems, slotProblems, splitSlot, workbookDone, workbookProblems, type PlanSlot,
+  addAxisToSlots, appendToSlots, axisTimeProblem, buildTimeline, canMerge, crowdedSlots, dayInSlot, defaultSlots,
+  dropFromSlots, joinClosesAt, mergeSlots, minSlots, reflowSlots, respreadSlots, sameSlots, sessionProblems,
+  slotProblems, slotSessionTips, splitSlot, workbookDone, workbookProblems, type PlanSlot,
 } from '@/application/trainer/axis-timeline'
 
 const EIGHT = ['m1', 'm2', 'm3', 'm4', 'm5', 'm6', 'm7', 'm8']
@@ -174,11 +175,16 @@ describe('اللقاءاتُ على المواعيد', () => {
     expect(r.blocking.join()).toContain('المحور 7، المحور 8')
   })
 
-  it('واللقاءُ لمحورٍ أو محورين — لا ثلاثة، ولا لمحورين من موعدين', () => {
-    const three = sessionProblems({ slots, moduleIds: EIGHT, sessions: [...full, at('2026-10-05', ['m1', 'm2', 'm3'], 'ثلاثي')] })
-    expect(three.blocking.join()).toContain('أكثرَ من محورين')
+  /* ═══ نُسخ السقف (٤ أكتوبر ٢٠٢٦): «يربطها بمحورٍ أو اثنين أو أكثر… لكن لا تدعه يضع
+     لقاءً لمحورٍ في غير وقته» — فالعددُ حرٌّ، والوقتُ حدٌّ ═══ */
+  it('⚠️ واللقاءُ لمحورٍ أو أكثر من موعده بلا سقف — ولا لمحاورَ من مواعيدَ مختلفة', () => {
+    /* الموعدان الأوّلان مجموعان: ١+٢+٣ في موعدٍ واحد، فلقاءٌ واحدٌ لها ثلاثتها */
+    const merged = mergeSlots(slots, 0)
+    const rest = full.filter((x) => !x.moduleIds.includes('m1') && !x.moduleIds.includes('m3'))
+    const three = sessionProblems({ slots: merged, moduleIds: EIGHT, sessions: [at('2026-10-05', ['m1', 'm2', 'm3'], 'ثلاثي'), ...rest] })
+    expect(three).toEqual({ blocking: [], warnings: [] })
     const across = sessionProblems({ slots, moduleIds: EIGHT, sessions: [...full, at('2026-10-05', ['m2', 'm3'], 'عابر')] })
-    expect(across.blocking.join()).toContain('من موعدين')
+    expect(across.blocking.join()).toContain('«عابر» يجمع محاورَ من مواعيدَ مختلفة')
   })
 
   it('واللقاءُ خارجَ موعد محوره مردود', () => {
@@ -221,6 +227,117 @@ describe('اللقاءاتُ على المواعيد', () => {
     })
     expect(r.blocking.join()).toContain('«يتيمة» بلا محور')
     expect(r.blocking.join()).toContain('«مبكّرة» تُفتح خارجَ موعد المحور 3')
+  })
+})
+
+/* ═══ اللقاءُ في وقت محاوره — القاعدةُ التي يردّ بها الخادمُ الإضافةَ والربط ═══ */
+describe('اللقاءُ في وقت محاوره (`axisTimeProblem`)', () => {
+  const slots = defaultSlots(EIGHT, PERIOD)
+  const pos = new Map(EIGHT.map((id, i) => [id, i + 1]))
+  const s = (day: string, moduleIds: string[]) => ({ startsAt: `${day}T17:00:00.000Z`, endsAt: `${day}T19:00:00.000Z`, moduleIds })
+
+  it('في وقته: لا شيء — محورا كان أو محاورَ موعده كلَّها', () => {
+    expect(axisTimeProblem(s('2026-10-05', ['m1']), slots, pos)).toBeNull()
+    expect(axisTimeProblem(s('2026-10-05', ['m1', 'm2']), slots, pos)).toBeNull()
+  })
+
+  it('⚠️ ومن مواعيدَ مختلفة: يُسمّى كلُّ محورٍ بموعده', () => {
+    expect(axisTimeProblem(s('2026-10-05', ['m2', 'm3', 'm4']), slots, pos)).toBe(
+      'اللقاء يجمع محاورَ من مواعيدَ مختلفة (المحور 2 في الموعد 1، والمحور 3 في الموعد 2، والمحور 4 في الموعد 3) — اللقاءُ في وقت محاوره: اربطه بمحاور موعدٍ واحد، أو اجمع مواعيدَها في «المحاور ومواعيدها»',
+    )
+  })
+
+  it('⚠️ وخارجَ موعدها: يُقال الموعدُ بحدّيه — ونهايتُه بعد آخره خروجٌ كذلك', () => {
+    expect(axisTimeProblem(s('2026-10-12', ['m1', 'm2']), slots, pos)).toBe('اللقاء خارجَ موعد المحوران 1+2 (4 أكتوبر – 10 أكتوبر)')
+    /* العاشرةُ ليلا بعمّان آخرَ يوم، ساعتان: ينتهي بعد منتصف الليل */
+    const late = { startsAt: '2026-10-10T19:00:00.000Z', endsAt: '2026-10-10T21:30:00.000Z', moduleIds: ['m1'] }
+    expect(axisTimeProblem(late, slots, pos)).toContain('خارجَ موعد')
+  })
+
+  it('ولا يُحكم بما لا يُعرف وقتُه: بلا محور، أو محورٌ ليس في الخطّة، أو محورٌ بلا موعد', () => {
+    expect(axisTimeProblem(s('2026-10-05', []), slots, pos)).toBeNull()
+    expect(axisTimeProblem(s('2026-10-05', ['zz']), slots, pos)).toBeNull()
+    expect(axisTimeProblem(s('2026-10-05', ['m1']), dropFromSlots(slots, 'm1'), pos)).toBeNull()
+  })
+})
+
+/* ═══ «+ محور» لا يكدّس في آخر موعد — العطبُ الذي رفعه صاحبُ المنصّة (٤ أكتوبر ٢٠٢٦) ═══ */
+describe('المحورُ الجديدُ لا يُكدَّس في آخر موعد', () => {
+  const FOUR = ['c1', 'c2', 'c3', 'c4']
+  const MONTH = { startsOn: '2026-10-18', endsOn: '2026-11-14' }
+
+  it('⚠️ الحالةُ المرفوعة: أربعةُ محاورِ الكتالوج ثمّ اثنا عشر — لا «4+5+…+16» في الموعد الرابع', () => {
+    let ids = [...FOUR]
+    let slots = defaultSlots(ids, MONTH)
+    for (let k = 5; k <= 16; k++) {
+      ids = [...ids, `t${k}`]
+      slots = addAxisToSlots(slots, ids, MONTH)
+    }
+    expect(slots.map((x) => x.moduleIds.length), 'كُدّست المحاورُ في موعدٍ واحد').toEqual([4, 4, 4, 4])
+    expect(sameSlots(slots, defaultSlots(ids, MONTH))).toBe(true)
+    expect(slotProblems(slots, ids, MONTH)).toEqual([])
+    /* وما كان يقع قبلُ: الإلحاقُ بآخر موعد — وهو ما يُقال عنه «مزدحم» */
+    let piled = defaultSlots(FOUR, MONTH)
+    for (let k = 5; k <= 16; k++) piled = appendToSlots(piled, `t${k}`)
+    expect(piled.at(-1)!.moduleIds).toHaveLength(13)
+    expect(crowdedSlots(piled)).toEqual([3])
+  })
+
+  it('⚠️ وما رتّبه المدرّبُ بيده لا يُمسّ — يلحق الجديدُ آخرَه كما كان', () => {
+    const custom = splitSlot(defaultSlots(EIGHT, PERIOD), 0, 1)
+    const next = addAxisToSlots(custom, [...EIGHT, 'm9'], PERIOD)
+    expect(next.slice(0, -1)).toEqual(custom.slice(0, -1))
+    expect(next.at(-1)!.moduleIds).toEqual(['m7', 'm8', 'm9'])
+  })
+
+  it('وبلا مدّةٍ أو بلا مواعيد: كما كان', () => {
+    const slots = defaultSlots(EIGHT, PERIOD)
+    expect(addAxisToSlots(slots, [...EIGHT, 'm9'], null).at(-1)!.moduleIds).toEqual(['m7', 'm8', 'm9'])
+    expect(addAxisToSlots([], [...EIGHT, 'm9'], PERIOD)).toEqual([])
+  })
+
+  it('والتوزيعُ من جديدٍ يحمل الكرّاسةَ القديمةَ مع أوّل محاور موعدها', () => {
+    const old = defaultSlots(EIGHT, PERIOD).map((x, i) => ({ ...x, workbook: { url: `https://x.org/${i}` } }))
+    const next = respreadSlots(old, [...EIGHT, 'm9'], PERIOD)
+    expect(next[0].workbook).toEqual({ url: 'https://x.org/0' })
+    expect(next.every((x) => x.moduleIds.length > 0)).toBe(true)
+  })
+
+  it('والمزدحمُ: ثلاثةٌ فأكثر، وضعفُ النصيب العادل فأكثر — والتوزيعُ الأوّلُ لا يزدحم', () => {
+    expect(crowdedSlots(defaultSlots(EIGHT, PERIOD))).toEqual([])
+    const ten = Array.from({ length: 10 }, (_, i) => `x${i + 1}`)
+    expect(crowdedSlots(defaultSlots(ten, { startsOn: '2026-10-04', endsOn: '2026-10-24' }))).toEqual([])
+    /* ١ · ٢ · ٣ · ٤+٥+٦+٧: النصيبُ اثنان، والرابعُ أربعة */
+    const seven = ['a', 'b', 'c', 'd', 'e', 'f', 'g']
+    let s = defaultSlots(seven.slice(0, 4), PERIOD)
+    for (const id of seven.slice(4)) s = appendToSlots(s, id)
+    expect(crowdedSlots(s)).toEqual([3])
+    expect(crowdedSlots([s[0]])).toEqual([])
+  })
+})
+
+/* ═══ نصائحُ لا موانع — «لا تُكثر من اللقاءات، أو اجمعها» (٤ أكتوبر ٢٠٢٦) ═══ */
+describe('نصائحُ الموعد', () => {
+  const at = (iso: string) => ({ startsAt: iso })
+
+  it('لقاءٌ لكلّ محور: لا نصيحة', () => {
+    expect(slotSessionTips({ axes: 2, sessions: [at('2026-10-04T17:00:00Z'), at('2026-10-05T17:00:00Z')] })).toEqual([])
+    expect(slotSessionTips({ axes: 1, sessions: [at('2026-10-04T17:00:00Z')] })).toEqual([])
+  })
+
+  it('⚠️ لقاءاتٌ أكثرُ من محاوره: تُقال بصيغة العدد، ولا تمنع', () => {
+    const tips = slotSessionTips({ axes: 1, sessions: [at('2026-10-04T17:00:00Z'), at('2026-10-06T17:00:00Z'), at('2026-10-08T17:00:00Z')] })
+    expect(tips.map((t) => t.kind)).toEqual(['many'])
+    expect(tips[0].textAr).toContain('3 لقاءات لمحورٍ واحد')
+    expect(slotSessionTips({ axes: 2, sessions: [1, 2, 3].map((d) => at(`2026-10-0${d}T17:00:00Z`)) })[0].textAr).toContain('3 لقاءات لمحورين')
+  })
+
+  it('⚠️ ولقاءان في يومٍ واحدٍ بعمّان: يُقترح جمعُهما', () => {
+    /* الحادية عشرة ليلا بغرينتش يومَ ٤ هي الثانيةُ فجرَ ٥ بعمّان — يومٌ آخر */
+    expect(slotSessionTips({ axes: 3, sessions: [at('2026-10-04T08:00:00Z'), at('2026-10-04T23:00:00Z')] })).toEqual([])
+    const same = slotSessionTips({ axes: 3, sessions: [at('2026-10-04T08:00:00Z'), at('2026-10-04T17:00:00Z')] })
+    expect(same.map((t) => t.kind)).toEqual(['same_day'])
+    expect(same[0].textAr).toContain('4 أكتوبر')
   })
 })
 

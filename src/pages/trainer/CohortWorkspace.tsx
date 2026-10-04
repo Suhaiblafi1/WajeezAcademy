@@ -61,7 +61,7 @@ import ConfirmAction from "@/components/ConfirmAction";
 import { nextTrainerModuleId, moveModule, isCatalogModule } from "@/application/trainer/plan-modules";
 import { RESOURCE_KINDS, RESOURCE_CATEGORIES, readTypedLinks, resourceKind, resourceCategory, kindForCategory } from "@/application/trainer/plan-overlay";
 import type { ResourceCategory } from "@/application/trainer/plan-overlay";
-import { X } from "lucide-react";
+import { Lightbulb, X } from "lucide-react";
 import { RESOURCE_META } from "@/components/resource-kind-meta";
 import BodyEditor from "@/components/BodyEditor";
 import TabBar from "@/components/ui/TabBar";
@@ -82,10 +82,11 @@ import { cohortDayAr } from "@/application/learning/cohort-gate";
 import { trainerOrdinalNoteAr } from "@/application/learning/cohort-title";
 import { asPeriod, periodDays, periodProblem, zonedDay, zonedInstant } from "@/application/trainer/cohort-period";
 import {
-  appendToSlots, axesLabelAr, canMerge, dayLabelAr, defaultSlots, dropFromSlots, joinClosesAt, mergeSlots, reflowSlots,
-  cohortWorkbookProblems, sessionProblems, slotIndexOf, slotProblems, splitSlot, workbookDone, workbookWhere,
-  WORKBOOK_WHERE_MAX, type CohortWorkbook, type PlanSlot,
+  EARLY_DAYS, addAxisToSlots, axesLabelAr, canMerge, crowdedSlots, dayLabelAr, defaultSlots, dropFromSlots, joinClosesAt,
+  mergeSlots, reflowSlots, respreadSlots, sameSlots, cohortWorkbookProblems, sessionEnd, sessionInsideSlot, sessionProblems, slotIndexOf,
+  slotProblems, splitSlot, workbookDone, workbookWhere, WORKBOOK_WHERE_MAX, type CohortWorkbook, type PlanSlot,
 } from "@/application/trainer/axis-timeline";
+import { START_ADVICE_AR, startAdvice } from "@/application/trainer/start-advice";
 import { countAr } from "@/application/text/count-ar";
 import CurriculumReview from "@/components/CurriculumReview";
 import { curriculumView } from "@/application/trainer/curriculum-view";
@@ -301,6 +302,9 @@ function savedTaskMsg(review: string | undefined, editing: boolean): string {
     : "أُنشئت المهمّة — تظهر للمسجّلين ويعود إليك تسليمُهم في طابور المراجعة";
 }
 const MODULE_FORMS = { one: "محور", two: "محوران", few: "محاور", many: "محورا" } as const;
+/** « في ٤ أيّام» بعد عدد المحاور — مجرورا بعد «في»، ولا شيءَ لموعدٍ تاريخُه معطوب */
+const daysInAr = (n: number) =>
+  !Number.isFinite(n) || n < 1 ? "" : n === 1 ? " في يومٍ واحد" : n === 2 ? " في يومين" : n <= 10 ? ` في ${n} أيّام` : ` في ${n} يوما`;
 
 /* ═══ الأصنافُ الثلاثةُ كما يقرؤها المدرّب ═══
 
@@ -362,7 +366,7 @@ const STAGE_INTRO: Record<Stage, { title: string; purpose: string; minutes: stri
   },
   sessions: {
     title: "اللقاءات المباشرة والمسجّلة",
-    purpose: "لكلّ محورٍ لقاءٌ مباشرٌ على الأقلّ داخلَ موعده، واللقاءُ لمحورٍ أو محورين. والجلساتُ المسجّلةُ اختياريّة، تُربط بمحورها وتُفتح في لحظةٍ تحدّدها داخلَ موعده. وبعد انتهاء أوّل لقاءٍ للمحور تُفتح مهامُّه ومصادرُه.",
+    purpose: "لكلّ محورٍ لقاءٌ مباشرٌ على الأقلّ داخلَ موعده، وأضِف بعد ذلك ما شئت: اللقاءُ الواحدُ لمحورٍ أو أكثر من الموعد نفسِه. والجلساتُ المسجّلةُ اختياريّة، تُربط بمحورها وتُفتح في لحظةٍ تحدّدها داخلَ موعده. وبعد انتهاء أوّل لقاءٍ للمحور تُفتح مهامُّه ومصادرُه.",
     minutes: "نحو ١٠ دقائق",
   },
   assignments: {
@@ -737,12 +741,13 @@ export default function CohortWorkspace() {
      ما كتبه. وصار زرُّ الشريط يحفظ ما في اليد كلَّه: الخطّةَ واسمَ الشعبة
      معا — وزرّان في خطوةٍ واحدةٍ يجعلان المدرّبَ يحفظ أحدَهما ويظنّ الآخرَ
      محفوظا. والمرسَلةُ للاعتماد لا تُحفظ، تُتصفَّح. */
-  const persist = async (): Promise<boolean> => {
+  /* و`over`: خطّةٌ غيرُ التي في اليد تُحفظ حالا — توزيعُ المحاور من «اللقاءات» (أدناه) */
+  const persist = async (over?: PlanContent): Promise<boolean> => {
     if (locked) return true;
-    if (!Object.values(dirty).some(Boolean)) return true;
+    if (!over && !Object.values(dirty).some(Boolean)) return true;
     const problems = saveProblems();
     if (problems.length) { setGaps(problems); return false; }
-    await apiPut(`/api/trainer/cohorts/${ws.cohort.id}/plan`, content);
+    await apiPut(`/api/trainer/cohorts/${ws.cohort.id}/plan`, over ?? content);
     if (identity.title.trim() !== ws.cohort.title) {
       await apiPatch(`/api/trainer/cohorts/${ws.cohort.id}`, { title: identity.title.trim() });
     }
@@ -751,6 +756,41 @@ export default function CohortWorkspace() {
     setOrphans([]);
     for (const k of keys) await dropFile(k);
     return true;
+  };
+  /* ═══ اللقاءُ يُضاف على المواعيد المحفوظة (٤ أكتوبر ٢٠٢٦) ═══
+
+     الخادمُ يحكم على وقت اللقاء بمواعيد الخطّة **المحفوظة** (`assertAxesInTime`)،
+     وبطاقاتُ «اللقاءات» ترسم ما في اليد. فمن عدّل المواعيدَ ولم يحفظها ثمّ أضاف
+     لقاءً على الجديد رُدّ بحدود القديم — فيُحفظ تعديلُه أوّلا، ويُقال له. */
+  const saveSlotsFirst = async (): Promise<boolean> => {
+    if (!dirty.modules) return true;
+    try {
+      if (!(await persist())) {
+        toastError("في الخطّة ما يمنع حفظَها — تجده في أعلى الصفحة");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return false;
+      }
+      await load();
+      toast("حُفظت مواعيدُ المحاور أوّلا");
+      return true;
+    } catch (e) {
+      toastError(e instanceof ApiError ? e.message : "تعذّر حفظُ المواعيد");
+      return false;
+    }
+  };
+  /* وتوزيعُ المحاور من «اللقاءات» يُحفظ حالا — فالبطاقاتُ واللقاءاتُ هناك على المحفوظ */
+  const respreadAndSave = async (next: PlanSlot[]) => {
+    setBusy(true);
+    setGaps(null);
+    try {
+      if (!(await persist({ ...content, slots: next }))) { window.scrollTo({ top: 0, behavior: "smooth" }); return; }
+      await load();
+      toast("وُزّعت المحاورُ على مدّة الشعبة وحُفظت — راجع لقاءاتِك على مواعيدها");
+    } catch (e) {
+      toastError(e instanceof ApiError ? e.message : "تعذّر الحفظ");
+    } finally {
+      setBusy(false);
+    }
   };
   /* ما ينقص خطوةً كي تتمّ — بلغة من يصحّحه. والحكمُ على المحفوظ: القائمةُ
      التي قالت «لم تتمّ» قرأت ما في الخادم، فالسببُ يُقرأ منه أيضا. */
@@ -960,6 +1000,23 @@ export default function CohortWorkspace() {
   const ownPeriod = asPeriod(content);
   const planPeriod = ownPeriod && periodProblem(ownPeriod) === null ? ownPeriod : ws.cohort.period;
   const setSlots = (next: PlanSlot[]) => setContent({ ...content, slots: next });
+  /* ═══ موعدٌ مزدحمٌ يُقال ومعه زرٌّ يوزّع — نصيحةٌ لا مانع (٤ أكتوبر ٢٠٢٦) ═══
+
+     في «المحاور ومواعيدها» وفي «اللقاءات» معا: هناك يُرتَّب، وهنا يُرى أثرُه حين
+     لا تتّسع أيّامُ الموعد للقاءات محاوره. ولا يُقال حين يكون التوزيعُ بالتساوي هو
+     ما في يده — فزرٌّ لا يغيّر شيئا وعدٌ كاذب. والزرُّ يمرّ بالاستئذان نفسِه. */
+  const crowded = crowdedSlots(slots);
+  const spreadable = slotsOn && planPeriod !== null && !sameSlots(slots, defaultSlots(moduleIds, planPeriod));
+  const crowdTip = crowded.length > 0 && spreadable && !locked ? (
+    <Inset tone="accent" className="flex flex-wrap items-center gap-3 text-read leading-6 text-foreground">
+      <Lightbulb className="h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" />
+      <span className="min-w-0 flex-1">
+        {crowded.map((i) => `الموعد ${i + 1} يحمل ${countAr(slots[i].moduleIds.length, MODULE_FORMS)}${daysInAr(periodDays(slots[i]))}`).join("، و")}
+        {" "}— وغيرُه أخفّ منه بكثير. وزّع المحاورَ على مدّة الشعبة بالتساوي، ثمّ عدّل ما شئت.
+      </span>
+      <Button tone="secondary" size="sm" disabled={busy} onClick={() => setPendingReflow(true)}>وزّع المحاورَ بالتساوي</Button>
+    </Inset>
+  ) : null;
   /* والمسجَّلُ صار في «اللقاءات» بمحوره — إلّا في شعبةٍ اعتُمدت قبل المواعيد */
   const resourceCats: readonly ResourceCategory[] = slotsOn ? RESOURCE_CATEGORIES.filter((c) => c !== "recorded") : RESOURCE_CATEGORIES;
   const moveAxis = (i: number, delta: -1 | 1) => {
@@ -1306,6 +1363,27 @@ export default function CohortWorkspace() {
                 </p>
               );
             })()}
+            {/* ═══ نصيحةُ البدء — ودودةٌ لا تمنع (٤ أكتوبر ٢٠٢٦) ═══
+
+                «انصح كلَّ مدرّبٍ أن يبدأ في ديسمبر أو أواخرَ نوفمبر على الأقلّ —
+                نصيحةً فقط — كي يتّسع لنا الوقتُ لتسويق دوراته… واجعلها ودودةً جدّا».
+                فلونُها لونُ ما يستحقّ نظرةً لا لونُ التحذير، والقرارُ له. ولا تُقال
+                لشعبةٍ اعتُمدت من قبل: تأخيرُ بدءٍ أُعلن ليس ما تنصح به. والنصُّ
+                والموسمُ في `start-advice.ts`. */}
+            {(() => {
+              const advice = !locked && !ws.approvedOnce ? startAdvice(content.startsOn, today) : null;
+              if (!advice) return null;
+              return advice === "thanks" ? (
+                <p className="flex items-start gap-2 text-read leading-6 text-teal-light-ink">
+                  <Check className="mt-1 h-4 w-4 shrink-0" aria-hidden="true" /> {START_ADVICE_AR.thanks}
+                </p>
+              ) : (
+                <Inset tone="accent" className="flex items-start gap-2 text-read leading-6 text-foreground">
+                  <Lightbulb className="mt-1 h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" />
+                  <span>{START_ADVICE_AR[advice]}</span>
+                </Inset>
+              );
+            })()}
             {/* والمعلَنُ للمسجَّلين الآن يُقال إن افترق عمّا يكتبه — فلا يظنّ
                 أنّ ما كتبه وصل الناسَ قبل أن يُعتمَد */}
             {ws.cohort.publicPeriod && (ws.cohort.publicPeriod.startsOn !== content.startsOn || ws.cohort.publicPeriod.endsOn !== content.endsOn) && (
@@ -1441,6 +1519,7 @@ export default function CohortWorkspace() {
               <ul className="list-inside list-disc space-y-0.5">{problems.map((x) => <li key={x}>{x}</li>)}</ul>
             </Inset>
           )}
+          {crowdTip && <div className="mt-3">{crowdTip}</div>}
           {!slotsOn && (
             <Inset className="mt-3 flex flex-wrap items-center gap-3 text-read leading-6 text-muted-foreground">
               <span className="min-w-0 flex-1">
@@ -1525,10 +1604,11 @@ export default function CohortWorkspace() {
           <div className="mt-4 flex flex-wrap gap-2">
             {/* المعرّفُ من أكبرِ ما أُعطي لا من الطول — فلا يرث محورٌ جديدٌ
                 معرّفَ محذوف. الشرحُ في `application/trainer/plan-modules`.
-                والجديدُ يلحق آخرَ موعد، وللمدرّب أن يفصله. */}
+                والجديدُ لا يُكدَّس في آخر موعد (٤ أكتوبر ٢٠٢٦): التوزيعُ الأوّلُ
+                يُعاد على المحاور كلِّها، وما رتّبه بيده يبقى (`addAxisToSlots`). */}
             <Button tone="secondary" disabled={locked} onClick={() => {
               const moduleId = nextTrainerModuleId(ws.course.id, content.modules);
-              setContent({ ...content, modules: [...content.modules, { moduleId, titleAr: "" }], slots: slotsOn ? appendToSlots(slots, moduleId) : content.slots });
+              setContent({ ...content, modules: [...content.modules, { moduleId, titleAr: "" }], slots: slotsOn ? addAxisToSlots(slots, [...moduleIds, moduleId], planPeriod) : content.slots });
               setOpenModule(moduleId);
             }}>+ محور</Button>
             {slotsOn && planPeriod && (
@@ -1659,6 +1739,30 @@ export default function CohortWorkspace() {
                 المثالُ كلُّه حين تعتمد الإدارةُ أوّلَها.
               </Inset>
             )}
+            {/* ═══ نصائحُ اللقاءات — بلطفٍ ولا تمنع (٤ أكتوبر ٢٠٢٦) ═══
+
+                «اجعلها مرنةً سهلة، يختارون ما شاؤوا، وقد تعطيهم نصائح: لا تُكثر
+                من اللقاءات، أو اجمعها — أو اترك ذلك لي حين أعتمد موادَّهم». فالحدُّ
+                الوحيدُ وقتُ اللقاء (يردّه الخادمُ إن خرج)، وما سواه نصيحةٌ هنا. */}
+            {slotsOn && (
+              <Inset className="mt-3 grid gap-1.5 text-read leading-6 text-muted-foreground">
+                <p className="flex items-center gap-2 font-black text-foreground">
+                  <Lightbulb className="h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" /> نصائحُ للقاءاتك
+                </p>
+                <ul className="list-inside list-disc space-y-0.5">
+                  <li>أضِف ما شئت من اللقاءات، واربط كلَّ لقاءٍ بمحورٍ واحدٍ أو أكثر من محاور موعده.</li>
+                  <li>اللقاءُ في وقت محاوره: يومُه داخلَ موعدها، وخيرُه في أوّل {EARLY_DAYS} أيّامٍ منه — فبعده تُفتح مهامُّها.</li>
+                  <li>لا تُكثر منها: لقاءٌ لكلّ محورٍ يكفي غالبا، ولقاءٌ واحدٌ قد يجمع محورين أو أكثر فيخفّ على المتعلّم.</li>
+                  <li>وتراجع الإدارةُ لقاءاتِك مع خطّتك قبل اعتمادها، وتقترح عليك ما تراه.</li>
+                </ul>
+              </Inset>
+            )}
+            {slotsOn && dirty.modules && (
+              <Inset tone="warn" className="mt-3 text-read leading-6 text-gold-ink">
+                في «المحاور ومواعيدها» تعديلٌ لم يُحفظ، والبطاقاتُ أدناه تعرضه — ويُحفظ أوّلا حين تضيف لقاءً أو تربطه.
+              </Inset>
+            )}
+            {crowdTip && <div className="mt-3">{crowdTip}</div>}
           </Panel>
 
           {/* ═══ بطاقةٌ لكلّ موعد — والمسجَّلُ مع المباشر (٢٧ سبتمبر ٢٠٢٦) ═══
@@ -1688,6 +1792,7 @@ export default function CohortWorkspace() {
                       locked={locked}
                       approvedOnce={ws.approvedOnce ?? false}
                       onDone={() => void load()}
+                      beforeWrite={saveSlotsFirst}
                       onAddRecorded={(row) => setContent({
                         ...content,
                         resources: [...content.resources, { ...row, title: row.title, category: "recorded", kind: kindForCategory("recorded", false) }],
@@ -1702,27 +1807,42 @@ export default function CohortWorkspace() {
                   <Card tone="accent" className="grid gap-3">
                     <p className="text-read font-black text-foreground">لم تُربط بمحورٍ بعد</p>
                     <p className="text-read leading-6 text-muted-foreground">
-                      كلُّ لقاءٍ لمحورٍ أو محورين، وكلُّ جلسةٍ مسجّلةٍ لمحورها — اختر لكلٍّ محورَه، فينتقل إلى بطاقة موعده.
+                      كلُّ لقاءٍ لمحورٍ أو أكثر في وقته، وكلُّ جلسةٍ مسجّلةٍ لمحورها — اختر لكلٍّ محورَه، فينتقل إلى بطاقة موعده.
                       وما انعقد منها لا يمنع الإرسال: ربطُه يحسبه لمحوره.
                     </p>
                     <ul className="grid gap-2">
-                      {loose.map((x) => (
-                        <Inset as="li" key={x.id} className="flex flex-wrap items-center gap-3">
-                          <span className="min-w-0 flex-1 text-read">
-                            <b className="text-foreground">{x.title}</b>
-                            <span className="text-muted-foreground"> · {fmtDateTimeAr(x.startsAt)}{new Date(x.endsAt ?? x.startsAt).getTime() < Date.now() ? " · انعقد" : ""}</span>
-                          </span>
-                          <select defaultValue="" disabled={locked || busy} aria-label={`محورُ «${x.title}»`}
-                            onChange={(e) => e.target.value && void act(
-                              () => apiPatch(`/api/trainer/sessions/${x.id}/axes`, { moduleIds: [e.target.value] }),
-                              `رُبط «${x.title}» بمحوره`,
+                      {loose.map((x) => {
+                        const held = sessionEnd(x).getTime() < Date.now();
+                        /* المحاورُ التي يقع اللقاءُ في وقتها وحدَها — وما انعقد يُربط بأيّها،
+                           كما يحكم الخادم (`assertAxesInTime`) */
+                        const fits = content.modules.map((m, k) => ({ m, k })).filter(({ m }) => {
+                          const si = slotIndexOf(slots, m.moduleId);
+                          return si !== -1 && (held || sessionInsideSlot(x, slots[si]));
+                        });
+                        return (
+                          <Inset as="li" key={x.id} className="flex flex-wrap items-center gap-3">
+                            <span className="min-w-0 flex-1 text-read">
+                              <b className="text-foreground">{x.title}</b>
+                              <span className="text-muted-foreground"> · {fmtDateTimeAr(x.startsAt)}{held ? " · انعقد" : ""}</span>
+                            </span>
+                            {fits.length > 0 ? (
+                              <select defaultValue="" disabled={locked || busy} aria-label={`محورُ «${x.title}»`}
+                                onChange={(e) => e.target.value && void act(
+                                  () => apiPatch(`/api/trainer/sessions/${x.id}/axes`, { moduleIds: [e.target.value] }),
+                                  `رُبط «${x.title}» بمحوره`,
+                                )}
+                                className={`${controlCls} w-auto [&>option]:bg-surface`}>
+                                <option value="">اختر محورا</option>
+                                {fits.map(({ m, k }) => <option key={m.moduleId} value={m.moduleId}>المحور {k + 1} — {m.titleAr || "بلا عنوان"}</option>)}
+                              </select>
+                            ) : (
+                              <span className="text-read font-bold text-gold-ink">
+                                يومُه خارجَ مواعيد المحاور كلِّها — انقله من «اللقاءاتُ المجدولة» أسفلَ الصفحة إلى موعد محوره، ثمّ اربطه هنا.
+                              </span>
                             )}
-                            className={`${controlCls} w-auto [&>option]:bg-surface`}>
-                            <option value="">اختر محورا</option>
-                            {content.modules.map((m, k) => <option key={m.moduleId} value={m.moduleId}>المحور {k + 1} — {m.titleAr || "بلا عنوان"}</option>)}
-                          </select>
-                        </Inset>
-                      ))}
+                          </Inset>
+                        );
+                      })}
                       {looseRecorded.map(({ r, i }) => (
                         <Inset as="li" key={`r${i}`} className="flex flex-wrap items-center gap-3">
                           <span className="min-w-0 flex-1 text-read">
@@ -2314,20 +2434,23 @@ export default function CohortWorkspace() {
       {pendingReflow && planPeriod && (
         <ConfirmAction
           titleAr="إعادةُ توزيع المواعيد"
-          confirmLabelAr="أعِد توزيعَها"
+          confirmLabelAr={stage === "sessions" ? "وزّعها واحفظ" : "أعِد توزيعَها"}
+          busy={busy}
           onCancel={() => setPendingReflow(false)}
           onConfirm={() => {
             /* والكرّاسةُ تتبع أوّلَ محاور موعدها — فلا يضيع ما رُفع لأجل ترتيبٍ جديد */
-            const next = defaultSlots(moduleIds, planPeriod).map((x) => ({
-              ...x, workbook: slots.find((o) => o.moduleIds[0] === x.moduleIds[0])?.workbook ?? null,
-            }));
-            setSlots(next);
+            const next = respreadSlots(slots, moduleIds, planPeriod);
             setPendingReflow(false);
+            /* ومن «اللقاءات» يُحفظ حالا: بطاقاتُها ولقاءاتُها على المحفوظ (`saveSlotsFirst`) */
+            if (stage === "sessions") void respreadAndSave(next);
+            else setSlots(next);
           }}
         >
           <p className="text-read leading-7">
-            تُرتَّب المواعيدُ من جديدٍ أسبوعيّةً من تاريخ البدء، وتذهب تواريخُك وما جمعتَ وفصلتَ منها.
-            ولا يقع شيءٌ حتّى تحفظ.
+            تُرتَّب المواعيدُ من جديدٍ أسبوعيّةً من تاريخ البدء، والمحاورُ عليها بالتساوي، وتذهب تواريخُك وما جمعتَ وفصلتَ منها.
+            {stage === "sessions"
+              ? " وتُحفظ حالا. وما جدولتَه من لقاءاتٍ يبقى في يومه — فإن خرج عن موعد محاوره الجديد قيل لك في بطاقته فانقله."
+              : " ولا يقع شيءٌ حتّى تحفظ."}
           </p>
         </ConfirmAction>
       )}

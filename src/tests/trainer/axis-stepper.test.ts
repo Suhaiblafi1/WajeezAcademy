@@ -44,6 +44,25 @@ describe('الدرجاتُ بترتيب المنهج', () => {
   })
 })
 
+/* ═══ نصيحةُ البدء — ديسمبر أو أواخرَ نوفمبر (٤ أكتوبر ٢٠٢٦) ═══
+   «نصيحةً فقط… واجعلها ودودةً جدّا». وقاعدتُها ونصُّها في `start-advice.ts`. */
+describe('① نصيحةُ البدء في المعلومات الأساسيّة', () => {
+  const block = stageBlock('identity', 'modules')
+  const ui = block.slice(block.indexOf('const advice ='), block.indexOf('})()}', block.indexOf('const advice =')))
+
+  it('⚠️ تُقال من القاعدة بتاريخ البدء الذي في يده — ولا تُقال لشعبةٍ اعتُمدت', () => {
+    expect(block).toMatch(/const advice = !locked && !ws\.approvedOnce \? startAdvice\(content\.startsOn, today\) : null;/)
+    expect(ui).toContain('START_ADVICE_AR[advice]')
+    expect(ui).toContain('START_ADVICE_AR.thanks')
+  })
+
+  it('⚠️ وودودةٌ لا تمنع: لا لونَ تحذير، ولا تمسّ زرَّ الحفظ', () => {
+    expect(ui, 'النصيحةُ بلون التحذير').not.toMatch(/tone="warn"|text-gold-ink|tone="danger"/)
+    expect(ui).toContain('tone="accent"')
+    expect(WS.slice(WS.indexOf('const saveProblems'), WS.indexOf('const persist')), 'صارت النصيحةُ مانعا للحفظ').not.toContain('startAdvice')
+  })
+})
+
 describe('② المحاورُ داخلَ مواعيدها', () => {
   const block = stageBlock('modules', 'workbooks')
 
@@ -60,7 +79,9 @@ describe('② المحاورُ داخلَ مواعيدها', () => {
   it('⚠️ والمحاورُ تتغيّر فتتبعها المواعيد — نقلا وإضافةً وحذفا', () => {
     const move = WS.slice(WS.indexOf('const moveAxis'), WS.indexOf('const moveAxis') + 400)
     expect(move).toContain('reflowSlots(')
-    expect(block, 'المحورُ الجديدُ لا يلحق موعدا').toContain('appendToSlots(slots, moduleId)')
+    /* والجديدُ لا يُكدَّس في آخر موعد (٤ أكتوبر ٢٠٢٦) — قاعدتُه في `addAxisToSlots` */
+    expect(block, 'المحورُ الجديدُ لا يلحق موعدا').toContain('addAxisToSlots(slots, [...moduleIds, moduleId], planPeriod)')
+    expect(WS, 'عاد الجديدُ يُكدَّس في آخر موعد').not.toContain('appendToSlots(')
     const del = WS.slice(WS.indexOf('titleAr="حذفُ المحور"'), WS.indexOf('titleAr="حذفُ المحور"') + 900)
     expect(del, 'المحذوفُ يبقى في موعده').toContain('dropFromSlots(slots, pendingModule.module.moduleId)')
   })
@@ -75,8 +96,22 @@ describe('② المحاورُ داخلَ مواعيدها', () => {
 
   it('وإعادةُ التوزيع تمرّ بالاستئذان — وتحمل الكرّاساتِ مع أوّل محاورها', () => {
     expect(WS).toContain('onClick={() => setPendingReflow(true)}')
-    const confirm = WS.slice(WS.indexOf('titleAr="إعادةُ توزيع المواعيد"'), WS.indexOf('titleAr="إعادةُ توزيع المواعيد"') + 700)
-    expect(confirm).toContain('o.moduleIds[0] === x.moduleIds[0]')
+    const confirm = WS.slice(WS.indexOf('titleAr="إعادةُ توزيع المواعيد"'), WS.indexOf('</ConfirmAction>', WS.indexOf('titleAr="إعادةُ توزيع المواعيد"')))
+    expect(confirm).toContain('respreadSlots(slots, moduleIds, planPeriod)')
+    /* ومن «اللقاءات» تُحفظ حالا — فبطاقاتُها على المحفوظ الذي يحكم به الخادم */
+    expect(confirm).toMatch(/if \(stage === "sessions"\) void respreadAndSave\(next\);\s*else setSlots\(next\);/)
+  })
+
+  /* ═══ والموعدُ المزدحمُ يُقال ومعه زرٌّ يوزّع — نصيحةٌ لا مانع (٤ أكتوبر ٢٠٢٦) ═══ */
+  it('⚠️ والمزدحمُ يُقال في الدرجتين — بالقاعدة، ولا يُقال حين لا يغيّر الزرُّ شيئا', () => {
+    expect(WS).toContain('const crowded = crowdedSlots(slots)')
+    expect(WS).toMatch(/const spreadable = slotsOn && planPeriod !== null && !sameSlots\(slots, defaultSlots\(moduleIds, planPeriod\)\)/)
+    expect(WS).toMatch(/const crowdTip = crowded\.length > 0 && spreadable && !locked \?/)
+    const tip = WS.slice(WS.indexOf('const crowdTip ='), WS.indexOf(') : null;', WS.indexOf('const crowdTip =')))
+    expect(tip).toContain('onClick={() => setPendingReflow(true)}')
+    expect(tip, 'النصيحةُ بلون التحذير').not.toMatch(/tone="warn"/)
+    expect(block).toContain('{crowdTip && <div className="mt-3">{crowdTip}</div>}')
+    expect(stageBlock('sessions', 'assignments')).toContain('{crowdTip && <div className="mt-3">{crowdTip}</div>}')
   })
 })
 
@@ -137,11 +172,34 @@ describe('④ اللقاءات — بطاقةٌ لكلّ موعد', () => {
     expect(SLOT).toContain('startsAt: at(form.date, form.from)')
   })
 
-  it('⚠️ واللقاءُ لمحورٍ أو محورين — والسقفُ من القاعدة لا رقمٌ مكتوب', () => {
-    expect(SLOT).toContain('next.length > MAX_AXES_PER_SESSION')
-    expect(SLOT).toContain('form.moduleIds.length >= MAX_AXES_PER_SESSION')
+  /* ═══ ونُسخ السقف (٤ أكتوبر ٢٠٢٦): «يربطها بمحورٍ أو اثنين أو أكثر… لكن لا تدعه
+     يضع لقاءً لمحورٍ في غير وقته» ═══ */
+  it('⚠️ واللقاءُ لمحورٍ أو أكثر بلا سقف — ووقتُه في وقت محاوره يُقال قبل الإرسال', () => {
+    expect(SLOT, 'عاد سقفٌ على محاور اللقاء').not.toMatch(/MAX_AXES|SESSION_AXES_MAX|moduleIds\.length >= \d|const full = /)
     expect(SLOT, 'يُرسَل لقاءٌ بلا محور').toContain('form.moduleIds.length === 0')
     expect(SLOT).toContain('moduleIds: form.moduleIds')
+    expect(SLOT, 'يُترك لقاءٌ قائمٌ بلا محور').toContain('if (next.length === 0) return;')
+    expect(SLOT).toMatch(/const outside = Boolean\(form\.date\) && !sessionInsideSlot\(/)
+    expect(SLOT, 'يُرسَل لقاءٌ في غير وقت محاوره').toMatch(/disabled=\{busy \|\| title\.length < 2 \|\| !form\.date \|\| outside \|\|/)
+  })
+
+  it('⚠️ والإضافةُ والربطُ يحفظان المواعيدَ أوّلا — فالخادمُ يحكم على المحفوظ', () => {
+    expect(block).toContain('beforeWrite={saveSlotsFirst}')
+    expect(WS).toMatch(/const saveSlotsFirst = async \(\): Promise<boolean> => \{\s*if \(!dirty\.modules\) return true;/)
+    for (const [fn, call] of [['const add = async', 'apiPost('], ['const relink = async', 'apiPatch(']] as const) {
+      const body = SLOT.slice(SLOT.indexOf(fn), SLOT.indexOf('finally', SLOT.indexOf(fn)))
+      const guard = body.indexOf('if (beforeWrite && !(await beforeWrite())) return;')
+      expect(guard, `${fn}: لا يحفظ المواعيدَ قبل النداء`).toBeGreaterThan(-1)
+      expect(guard, `${fn}: يحفظ بعد النداء`).toBeLessThan(body.indexOf(call))
+    }
+  })
+
+  it('⚠️ وما لم يُربط يُعرض له ما يقع في وقته من المحاور وحدَه — كما يحكم الخادم', () => {
+    const live = block.slice(block.indexOf('{loose.map((x) => {'), block.indexOf('{looseRecorded.map('))
+    expect(live).toMatch(/const held = sessionEnd\(x\)\.getTime\(\) < Date\.now\(\);/)
+    expect(live).toMatch(/return si !== -1 && \(held \|\| sessionInsideSlot\(x, slots\[si\]\)\);/)
+    expect(live).toContain('{fits.map(({ m, k }) =>')
+    expect(live, 'يُعرض كلُّ محورٍ ولو في غير وقته').not.toContain('content.modules.map((m, k) => <option')
   })
 
   it('⚠️ واللقاءُ والجلسةُ المسجّلةُ داخلَ موعدهما — والتنبيهُ بعد اليوم الثالث من القاعدة', () => {
@@ -175,8 +233,8 @@ describe('⑤ المهامُّ والمصادرُ بمحاورها', () => {
 })
 
 describe('المسالك', () => {
-  it('⚠️ محورا اللقاء: اثنان على الأكثر بلا تكرار — عند الإنشاء وعند الربط', () => {
-    expect(ROUTES).toMatch(/const axesArray = z\.array\([\s\S]{0,80}\.max\(MAX_AXES_PER_SESSION/)
+  it('⚠️ محاورُ اللقاء بلا تكرار — وحدُّها حجمُ المدخل لا «محوران» — عند الإنشاء وعند الربط', () => {
+    expect(ROUTES).toMatch(/const axesArray = z\.array\([\s\S]{0,80}\.max\(SESSION_AXES_MAX/)
     expect(ROUTES).toMatch(/const uniqueAxes = \(ids: string\[\]\) => new Set\(ids\)\.size === ids\.length/)
     expect(ROUTES).toMatch(/const sessionAxesSchema = axesArray\.refine\(uniqueAxes/)
     expect(ROUTES).toMatch(/const sessionAxesRequired = axesArray\s*\.min\(1,[\s\S]{0,120}\.refine\(uniqueAxes/)

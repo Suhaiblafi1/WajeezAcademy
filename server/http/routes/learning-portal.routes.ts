@@ -31,18 +31,21 @@ import { SHORT_SESSION_AR, sessionTooShort } from '../../../src/application/trai
 import { AuthError } from '../../services/auth.service'
 import { assertSafeKey, getObject, getObjectMeta } from '../../services/object-store'
 import { requireAuth, requirePermission } from '../auth-plugin'
-import { MAX_AXES_PER_SESSION, WORKBOOK_WHERE_MAX } from '../../../src/application/trainer/axis-timeline'
+import { SESSION_AXES_MAX, WORKBOOK_WHERE_MAX } from '../../../src/application/trainer/axis-timeline'
 
-/** محورا اللقاء: اثنان على الأكثر بلا تكرار — «ولكلّ لقاءٍ محورٌ أو محوران» */
+/** محاورُ اللقاء: محورٌ أو أكثر بلا تكرار — وسقفُ «محورٍ أو محورين» نُسخ (٤ أكتوبر
+    ٢٠٢٦). والحدُّ هنا حجمُ المدخل وحدَه (ما تحمله الخطّةُ من محاور)، أمّا الحدُّ
+    الذي سمّاه صاحبُ المنصّة — اللقاءُ في وقت محاوره — فيُفحص في الخدمة بخطّة الشعبة
+    (`assertAxesInTime`)، لأنّ الوقتَ في الخطّة لا في الطلب. */
 const axesArray = z.array(z.string().trim().min(1).max(64))
-  .max(MAX_AXES_PER_SESSION, 'اللقاءُ لمحورٍ أو محورين — لا أكثر')
+  .max(SESSION_AXES_MAX, `اللقاءُ يُربط بـ${SESSION_AXES_MAX} محورا على الأكثر`)
 const uniqueAxes = (ids: string[]) => new Set(ids).size === ids.length
 const sessionAxesSchema = axesArray.refine(uniqueAxes, 'محورٌ مكرّرٌ في اللقاء نفسِه')
 /* والربطُ بعد الإنشاء لا يترك اللقاءَ بلا محور: الإنشاءُ القديمُ يأتي بلا
    محاور (جدولةُ ما قبل المواعيد)، أمّا من ربط فقد اختار — ومحوُ الربط كلِّه
    يُعيد لقاءً لا يُعرف ما شرح. */
 const sessionAxesRequired = axesArray
-  .min(1, 'اختر محورا واحدا على الأقلّ — لكلّ لقاءٍ محورٌ أو محوران')
+  .min(1, 'اختر محورا واحدا على الأقلّ — لكلّ لقاءٍ محورُه أو محاورُه')
   .refine(uniqueAxes, 'محورٌ مكرّرٌ في اللقاء نفسِه')
 
 /* يحوّل محتوى شعبة خاما إلى نسخة آمنة للعرض: روابط موقعة بدل مفاتيح التخزين */
@@ -905,9 +908,9 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
       endsAt: z.coerce.date(),
       timezone: z.string().max(64).optional(),
       moduleId: z.string().max(64).optional(),
-      /* ومحورا اللقاء — «ولكلّ لقاءٍ محورٌ أو محوران» (٢٧ سبتمبر ٢٠٢٦).
-         والسقفُ اثنان هنا لا في الشاشة وحدَها: قاعدةٌ في الزرّ وحدَه لا
-         تمنع طلبا يُرسَل بيدٍ أخرى. */
+      /* ومحاورُ اللقاء — محورٌ أو أكثر (٤ أكتوبر ٢٠٢٦، وكانت «محورٌ أو محوران»).
+         ووقتُه في وقتها يُفحص في الخدمة لا في الشاشة وحدَها: قاعدةٌ في الزرّ
+         وحدَه لا تمنع طلبا يُرسَل بيدٍ أخرى. */
       moduleIds: sessionAxesSchema.optional(),
       /* نبذةُ اللقاء — صارت لكلّ لقاءٍ لا للشعبة كلِّها */
       noteAr: z.string().max(2000).nullish(),
@@ -956,11 +959,11 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
     return cohorts.trainerMoveSession(req.auth!.userId, sessionId, body)
   })
 
-  /* ═══ ربطُ لقاءٍ بمحوره أو محوريه — بلا نقلٍ ولا انتظار ═══
+  /* ═══ ربطُ لقاءٍ بمحوره أو محاوره — بلا نقلٍ ولا انتظار ═══
      والعلّةُ في رأس `trainerSetSessionAxes`. */
   app.patch('/api/trainer/sessions/:sessionId/axes', {
     preHandler: requirePermission('trainer.cohort.schedule'),
-    schema: { tags: ['trainer-ops'], summary: 'ربطُ لقاءٍ في شعبتي بمحوره أو محوريه' },
+    schema: { tags: ['trainer-ops'], summary: 'ربطُ لقاءٍ في شعبتي بمحوره أو محاوره — في وقتها' },
   }, async (req) => {
     const { sessionId } = z.object({ sessionId: z.string().uuid() }).parse(req.params)
     const { moduleIds } = z.object({ moduleIds: sessionAxesRequired }).strict().parse(req.body)

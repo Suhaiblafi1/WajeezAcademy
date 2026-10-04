@@ -157,7 +157,8 @@ describe('الحقلُ في الخطوة التي يخصّها', () => {
        ٢٠٢٦) — فيُفحص أنّه يحمل الاثنين. */
     const fn = ws.slice(ws.indexOf('const persist'), ws.indexOf('const gapsFor'))
     expect(fn, 'لا حفظَ واحدا يحفظ ما في اليد').toBeTruthy()
-    expect(fn, 'الخطّةُ لا تُحفظ مع بيانات الشعبة').toContain('/plan`, content)')
+    /* و`over ?? content`: الخطّةُ التي في اليد، أو ما يُحفظ حالا بدلا منها (٤ أكتوبر ٢٠٢٦) */
+    expect(fn, 'الخطّةُ لا تُحفظ مع بيانات الشعبة').toContain('/plan`, over ?? content)')
     expect(fn).toContain('apiPatch(')
   })
 
