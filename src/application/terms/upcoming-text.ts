@@ -6,6 +6,7 @@
 
 import type { UpcomingTerm } from '@/services/upcoming-term'
 import { fmtDateAr } from '@/utils/format'
+import { cohortDayAr } from '@/application/learning/cohort-gate'
 
 /* ─────────── عدُّ الأيّام — «خلال ٩ أيّام» أوقعُ من تاريخٍ يُطرَح ───────────
 
@@ -45,5 +46,5 @@ export function termUrgencyAr(term: UpcomingTerm, now = new Date()): string | nu
 
 /** «فصل الربيع (فبراير — أبريل)» — الاسمُ وأشهرُه */
 export function termMonthsAr(term: UpcomingTerm): string {
-  return `${fmtDateAr(term.startsOn)} — ${fmtDateAr(term.endsOn)}`
+  return `${cohortDayAr(term.startsOn)} — ${cohortDayAr(term.endsOn)}`
 }

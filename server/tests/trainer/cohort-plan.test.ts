@@ -21,6 +21,8 @@ import { CohortPlanService, staticModulesFor, type TrainerPlanContent } from '..
 import { CohortService } from '../../services/cohort.service'
 import { makeReadyForApproval } from '../helpers/trainer-ready'
 import { periodBounds } from '../../../src/application/trainer/cohort-period'
+import { sinceReturn } from '../../../src/application/trainer/plan-diff'
+import { fmtDateWith } from '../../../src/application/text/format-ar'
 
 let prisma: PrismaClient
 let plans: CohortPlanService
@@ -318,6 +320,11 @@ describe('ملكيّةُ الشعبة واعتمادُها', () => {
     const ws = await plans.workspace(trainerUserId, cohortId)
     expect(ws.plan?.status).toBe('changes_requested')
     expect(ws.plan?.reviewerNote).toContain('مثالا تطبيقيّا')
+    /* ⑦ والخطّةُ كما رُدّت تُحفظ لحظةَ الردّ — ليُقابَل بها ما يُعاد إرسالُه (٣ أكتوبر ٢٠٢٦) */
+    const returnedRow = await prisma.cohortDeliveryPlan.findUniqueOrThrow({ where: { id: latest.id } })
+    expect(returnedRow.returnedContent, 'لم تُحفظ الخطّةُ كما رُدّت').toEqual(latest.content)
+    /* ولا «ما تغيّر منذ ردّك» قبل أن يعيد إرسالها */
+    expect((await plans.latestForCohort(cohortId))?.returned).toBeNull()
   })
 
   it('يعدّل ويعيد الإرسال، والاعتمادُ يوفي شرطَ فتح الشعبة', async () => {
@@ -335,6 +342,14 @@ describe('ملكيّةُ الشعبة واعتمادُها', () => {
     const resent = await plans.latestForCohort(cohortId)
     expect(resent?.status).toBe('submitted')
     expect(resent?.reviewerNotes, 'مُحي ما طلبه المعتمِدُ قبل أن يقابله').toEqual({ general: 'أضف مثالا تطبيقيّا في المحور الأوّل' })
+    /* ⑦ ومعها الخطّةُ كما رُدّت ويومُ الردّ — لا المحتوى الجديد — فيُقرأ ما تغيّر في
+       خطوته بالقاعدة التي تقرؤها الشاشة (`sinceReturn`) */
+    expect(resent?.returned, 'لم تُعَد الخطّةُ كما رُدّت مع ما أُعيد إرسالُه').toBeTruthy()
+    expect(resent!.returned!.at).toEqual(resent!.reviewedAt)
+    expect(JSON.stringify(resent!.returned!.content), 'أُعيد المحتوى الجديدُ مكانَ ما رُدّ').not.toContain('أُضيف بعد ردِّ الإدارة')
+    const since = sinceReturn(resent!.returned!.content, resent!.content, resent!.reviewerNotes, { date: (d) => d })
+    expect(since.general).toBe('أضف مثالا تطبيقيّا في المحور الأوّل')
+    expect(since.rows.map((r) => r.section), 'ما عُدّل في المحور لم يُقرأ في خطوته').toEqual(['modules'])
     const latest = await prisma.cohortDeliveryPlan.findFirstOrThrow({ where: { cohortId }, orderBy: { createdAt: 'desc' } })
     /* ومتعلّمٌ التحق قبل الاعتماد — يُبلَّغ بأنّ حدودَ شعبته تحدّدت */
     const learner = await prisma.user.create({
@@ -346,6 +361,9 @@ describe('ملكيّةُ الشعبة واعتمادُها', () => {
     expect(r.status).toBe('approved')
     /* والاعتمادُ يرفعها: ما طُلب قد عُدّل واعتُمد */
     expect((await plans.latestForCohort(cohortId))?.reviewerNotes).toEqual({})
+    /* ⑦ ويرفع معها الخطّةَ كما رُدّت */
+    expect((await prisma.cohortDeliveryPlan.findUniqueOrThrow({ where: { id: latest.id } })).returnedContent,
+      'بقيت الخطّةُ كما رُدّت بعد الاعتماد').toBeNull()
     const ws = await plans.workspace(trainerUserId, cohortId)
     expect(ws.checklist.find((c) => c.key === 'approval')?.done).toBe(true)
     const check = await new CohortService(prisma).openChecklist(cohortId)
@@ -359,6 +377,14 @@ describe('ملكيّةُ الشعبة واعتمادُها', () => {
     expect(row.termId, 'لم يُشتقّ الفصلُ من تاريخ البدء').toBe(termId)
     const told = await prisma.notification.findFirst({ where: { userId: learner.id, templateKey: 'cohort.schedule_changed' } })
     expect(told, 'لم يُبلَّغ من التحق بأنّ حدودَ شعبته تحدّدت').toBeTruthy()
+    /* ⑪ واليومان يوما عمّان (٣ أكتوبر ٢٠٢٦): بدءُ المدّة منتصفُ ليل ١ فبراير هناك،
+       وهو بمنطقة الخادم (UTC) مساءُ ٣١ يناير — فكان يُخبَر «تبدأ الأحد، 31 يناير».
+       والمتوقَّعُ يُحسب من التاريخ نفسِه ظهرا بغرينتش، لا بالمساعد الذي يُختبَر */
+    const dayOf = (ymd: string, o: Intl.DateTimeFormatOptions) =>
+      fmtDateWith(`${ymd}T12:00:00Z`, { ...o, timeZone: 'UTC' })
+    expect(told!.body, 'يومُ البدء في الخبر ليس يومَ عمّان')
+      .toContain(`تبدأ ${dayOf(PERIOD.startsOn, { weekday: 'long', day: 'numeric', month: 'long' })}`)
+    expect(told!.body).toContain(`وتنتهي ${dayOf(PERIOD.endsOn, { day: 'numeric', month: 'long' })}`)
   })
 
   /* ═══ وسقطت «مرحلةُ التسجيلات» من القائمة (٢٧ سبتمبر ٢٠٢٦) ═══

@@ -20,7 +20,8 @@ import { Panel, Card } from "@/components/ui/Surface";
 import { apiGet } from "@/services/api";
 import { pathAnchorId } from "@/application/trainer/public-slug";
 import { REFERRAL_KEY } from "@/application/commerce/referral";
-import { fmtDate, fmtMoney, fmtNum } from "@/application/text/format-ar";
+import { fmtMoney, fmtNum } from "@/application/text/format-ar";
+import { cohortDayAr, DAY_NUMERIC } from "@/application/learning/cohort-gate";
 import { countAr } from "@/application/text/count-ar";
 
 interface PublicCohort {
@@ -183,7 +184,7 @@ export default function TrainerPublic() {
                   <h3 className="mt-1 text-lg font-black">{c.title}</h3>
                   <ul className="mt-3 space-y-1.5 text-read text-muted-foreground">
                     {c.startsAt && (
-                      <li className="flex items-center gap-1.5"><CalendarDays className="h-4 w-4 text-teal-light-ink" />تبدأ {fmtDate(c.startsAt)}</li>
+                      <li className="flex items-center gap-1.5"><CalendarDays className="h-4 w-4 text-teal-light-ink" />تبدأ {cohortDayAr(c.startsAt, DAY_NUMERIC)}</li>
                     )}
                     {c.seatsLeft != null && (
                       <li>{c.seatsLeft > 0 ? countAr(c.seatsLeft, { one: "مقعد متبقٍّ", two: "مقعدان متبقّيان", few: "مقاعد متبقّية", many: "مقعدا متبقّيا" }) : "اكتملت المقاعد"}</li>

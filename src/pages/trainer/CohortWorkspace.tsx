@@ -77,7 +77,8 @@ import { PREP_NOTICE_AR, usePrepCohorts } from "@/components/trainer/usePrepCoho
 import { ORIENTATION_BOOKING_URL, ORIENTATION_CTA_AR } from "@/application/trainer/orientation-session";
 import Button from "@/components/ui/Button";
 import { controlCls, areaCls, StaffField } from "@/components/FormKit";
-import { fmtDateAr, fmtDateTimeAr } from "@/utils/format";
+import { fmtDateTimeAr } from "@/utils/format";
+import { cohortDayAr } from "@/application/learning/cohort-gate";
 import { asPeriod, periodDays, periodProblem, zonedDay, zonedInstant } from "@/application/trainer/cohort-period";
 import {
   appendToSlots, axesLabelAr, canMerge, dayLabelAr, defaultSlots, dropFromSlots, joinClosesAt, mergeSlots, reflowSlots,
@@ -1283,8 +1284,8 @@ export default function CohortWorkspace() {
                 أنّ ما كتبه وصل الناسَ قبل أن يُعتمَد */}
             {ws.cohort.publicPeriod && (ws.cohort.publicPeriod.startsOn !== content.startsOn || ws.cohort.publicPeriod.endsOn !== content.endsOn) && (
               <Inset className="text-read leading-6 text-muted-foreground">
-                المعلَنُ للمسجَّلين الآن: من <b className="text-foreground">{fmtDateAr(ws.cohort.publicPeriod.startsOn)}</b> إلى{" "}
-                <b className="text-foreground">{fmtDateAr(ws.cohort.publicPeriod.endsOn)}</b> — ويتبدّل بمدّتك حين تعتمد الإدارةُ خطّتك.
+                المعلَنُ للمسجَّلين الآن: من <b className="text-foreground">{cohortDayAr(ws.cohort.publicPeriod.startsOn)}</b> إلى{" "}
+                <b className="text-foreground">{cohortDayAr(ws.cohort.publicPeriod.endsOn)}</b> — ويتبدّل بمدّتك حين تعتمد الإدارةُ خطّتك.
               </Inset>
             )}
           </div>
@@ -1618,8 +1619,8 @@ export default function CohortWorkspace() {
             {/* حدودُه تُقال حيث يجدول داخلها — لا في لافتةٍ فوق المتن كلِّه */}
             {ws.cohort.period && (
               <p className="mt-2 text-read leading-6 text-muted-foreground">
-                مدّةُ شعبتك: من <b className="text-foreground">{fmtDateAr(ws.cohort.period.startsOn)}</b> إلى{" "}
-                <b className="text-foreground">{fmtDateAr(ws.cohort.period.endsOn)}</b> — وتغييرُها من «المعلومات الأساسيّة».
+                مدّةُ شعبتك: من <b className="text-foreground">{cohortDayAr(ws.cohort.period.startsOn)}</b> إلى{" "}
+                <b className="text-foreground">{cohortDayAr(ws.cohort.period.endsOn)}</b> — وتغييرُها من «المعلومات الأساسيّة».
               </p>
             )}
             {/* ═══ والمبدئيُّ يُقال سطرا لا يُسرد لقاءات (٢٧ سبتمبر ٢٠٢٦) ═══
@@ -2401,7 +2402,7 @@ export default function CohortWorkspace() {
               <p className="text-read font-black text-foreground">ما غيّرتَه عن الخطّة المعتمَدة — وهو أوّلُ ما يقرؤه المعتمِد</p>
               <div className="mt-2">
                 <PlanDiffList
-                  sections={planDiff(ws.approvedPlan.content, content, { date: fmtDateAr })}
+                  sections={planDiff(ws.approvedPlan.content, content, { date: cohortDayAr })}
                   emptyText="لم تغيّر في الخطّة نفسِها شيئا بعد — ونقلُ اللقاءات وتعديلُ المهامّ يُعتمَد وحدَه، أمّا ربطُ لقاءٍ بمحاوره فيسري فورا بلا اعتماد."
                 />
               </div>

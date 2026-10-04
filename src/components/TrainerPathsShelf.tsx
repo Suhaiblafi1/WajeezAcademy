@@ -18,6 +18,7 @@ import { Route, UserRound } from "lucide-react";
 import { apiGet } from "@/services/api";
 import { Card, Inset } from "@/components/ui/Surface";
 import { fmtDateLong } from "@/application/text/format-ar";
+import { cohortDayAr } from "@/application/learning/cohort-gate";
 
 interface ShelfPath {
   id: string;
@@ -48,7 +49,7 @@ function seasonLineAr(term: ShelfPath["term"]): string | null {
     return `${term.titleAr} — يُفتح التسجيلُ ${fmtDateLong(term.registrationOpensAt ?? "")}`;
   }
   if (term.status === "open") return `${term.titleAr} — التسجيلُ مفتوحٌ الآن`;
-  return `${term.titleAr} — يبدأ ${fmtDateLong(term.startsOn)}`;
+  return `${term.titleAr} — يبدأ ${cohortDayAr(term.startsOn)}`;
 }
 
 export default function TrainerPathsShelf() {

@@ -20,7 +20,7 @@ import { Link } from "react-router";
 import { ArrowLeft, CalendarDays, ChevronLeft, Loader2, RefreshCw, ServerOff, Users } from "lucide-react";
 import { apiGet, ApiError } from "@/services/api";
 import TrainerLayout from "./TrainerLayout";
-import { fmtDateAr } from "@/utils/format";
+import { cohortDayAr } from "@/application/learning/cohort-gate";
 import { Panel, Card } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import ProgressRing from "@/components/ui/ProgressRing";
@@ -109,7 +109,7 @@ export default function CohortBoard() {
                     <p className="text-read text-muted-foreground">لقاء</p>
                   </Card>
                   <Card className="p-2.5">
-                    <p className="text-read font-black leading-6">{c.startsAt ? fmtDateAr(c.startsAt) : "—"}</p>
+                    <p className="text-read font-black leading-6">{c.startsAt ? cohortDayAr(c.startsAt) : "—"}</p>
                     <p className="text-read text-muted-foreground">تبدأ</p>
                   </Card>
                 </div>

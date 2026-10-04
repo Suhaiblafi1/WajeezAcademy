@@ -39,8 +39,7 @@ import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { CohortService } from './cohort.service'
 import { notifyRole, safeNotify, sendDirectEmail, publicSiteUrl } from './notification.service'
-import { fmtDateWith } from '../../src/application/text/format-ar'
-import { whenAr } from '../../src/application/learning/cohort-gate'
+import { cohortDayAr, whenAr } from '../../src/application/learning/cohort-gate'
 import { planApprovedTrainerMsg } from '../../src/application/trainer/plan-decision'
 import { renderMail } from './mail-template'
 import { readableModuleVersion } from '../catalog/module-version-visibility'
@@ -1035,6 +1034,12 @@ export class CohortPlanService {
       approvedOnce: cohort ? planApprovedOnce(cohort.plans) : false,
       /* والمعتمَدةُ التي تراجعها هذه إن كانت مراجعة — منها «ما تغيّر» (٣ج-٤) */
       approvedPlan,
+      /* ═══ والخطّةُ كما رُدّت — «ما تغيّر منذ ردّك» (٣ أكتوبر ٢٠٢٦، ⑦) ═══
+         حين أعاد المدرّبُ إرسالَ ما رُدّ: لقطتُها لحظةَ الردّ ويومُه — و`reviewedAt`
+         يبقى يومَ الردّ حتّى الاعتماد، فالإرسالُ لا يمسّه */
+      returned: plan.status === 'submitted' && plan.returnedContent
+        ? { content: plan.returnedContent, at: plan.reviewedAt }
+        : null,
       /* التسجيلُ كما يُحكَم لا كما يقول علمُه: شعبةٌ خطّتُها لم تُعتمَد لا تقبل
          أحدا وإن رُفع العلم، والالتحاقُ يُغلق ببدء الموعد الثاني (٣ج) */
       registration: {
@@ -1076,6 +1081,8 @@ export class CohortPlanService {
         data: {
           status: 'changes_requested', reviewedBy: actorId, reviewedAt: now,
           reviewerNote: composed, reviewerNotes: asked as Prisma.InputJsonValue,
+          /* والخطّةُ كما رُدّت — ليُقابَل بها ما يُعاد إرسالُه (⑦، `sinceReturn`) */
+          returnedContent: plan.content as Prisma.InputJsonValue,
         },
       })
       await recordAudit(this.prisma, {
@@ -1114,8 +1121,10 @@ export class CohortPlanService {
         where: { id: planId },
         data: {
           status: 'approved', reviewedBy: actorId, reviewedAt: now, reviewerNote: said,
-          /* ما طُلب قبلُ قد عُدّل واعتُمد — فلا يبقى في شاشةٍ «ملاحظةً» */
+          /* ما طُلب قبلُ قد عُدّل واعتُمد — فلا يبقى في شاشةٍ «ملاحظةً»، ولا تبقى
+             الخطّةُ كما رُدّت تُقابَل بها (⑦) */
           reviewerNotes: Prisma.DbNull,
+          returnedContent: Prisma.DbNull,
         },
       })
     })
@@ -1244,8 +1253,10 @@ export class CohortPlanService {
         where: { cohortId, status: { not: 'dropped' } },
         select: { userId: true },
       })
-      const when = fmtDateWith(from, { weekday: 'long', day: 'numeric', month: 'long' })
-      const until = fmtDateWith(to, { day: 'numeric', month: 'long' })
+      /* واليومان بتوقيت عمّان: بدءُ المدّة منتصفُ ليل يومها هناك، وهو بغرينتش — منطقةِ
+         الخادم — مساءُ اليوم السابق، فكان المتعلّمُ يُخبَر بيومٍ قبل يومها (⑪) */
+      const when = cohortDayAr(from, { weekday: 'long', day: 'numeric', month: 'long' })
+      const until = cohortDayAr(to, { day: 'numeric', month: 'long' })
       for (const l of learners) {
         await safeNotify(this.prisma, {
           userId: l.userId, channel: 'in_app', audience: 'learner',

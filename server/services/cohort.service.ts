@@ -16,12 +16,11 @@ import { EarningsService } from './earnings.service'
 import { newStorageKey, signKey, SIGNED_URL_TTL_MS, assertFileUploadsEnabled, MAX_COHORT_MEDIA_BYTES } from './storage.service'
 import { assertMeetingSdkEnabled, meetingSdkKey, signMeetingSdkJwt, type ZoomSdkRole } from './zoom/meeting-sdk'
 import { safeNotify, notifyRole } from './notification.service'
-import { fmtDateWith } from '../../src/application/text/format-ar'
 import { createZoomMeeting, deleteZoomMeeting, getZoomConfig, registerZoomParticipant, setZoomRegistrantStatus, updateZoomMeeting, zoomMissing, zoomReady, zoomStartUrl } from './zoom.service'
 import { LEDGER_CURRENCY } from '../../src/application/commerce/presentment'
 import { DAY_CODES } from '../../src/application/schedule/days'
 import { windowOpen, capReached, remainingSessions } from '../../src/application/trainer/schedule-window'
-import { meetingOver, whenAr } from '../../src/application/learning/cohort-gate'
+import { cohortDayAr, meetingOver, whenAr } from '../../src/application/learning/cohort-gate'
 import { keepsApprovalOnMove } from '../../src/application/trainer/postpone'
 import { slotIndexOf, type PlanSlot } from '../../src/application/trainer/axis-timeline'
 import { LEARNER_PLAN_QUERY } from './learner-gate'
@@ -213,7 +212,7 @@ export class CohortService {
         title: 'أُسنِدت إليك شعبة',
         body: `أُسنِدت إليك شعبةُ «${cohort.title}»`
           + (cohort.startsAt
-            ? ` — تبدأ ${fmtDateWith(cohort.startsAt, { day: 'numeric', month: 'long', year: 'numeric' })}.`
+            ? ` — تبدأ ${cohortDayAr(cohort.startsAt)}.`
             : '.')
           + ' تجد جلساتِها ومتعلّميها في بوّابتك.',
         data: { cohortId, role },
@@ -2023,9 +2022,9 @@ export class CohortService {
       },
     })
     if (!session) return
-    const when = fmtDateWith(session.startsAt, {
-      weekday: 'long', day: 'numeric', month: 'long', hour: 'numeric', minute: '2-digit',
-    })
+    /* بتوقيت عمّان كسائر رسائل المنصّة (`whenAr`) — لا بمنطقة الخادم (UTC) التي
+       كانت تكتب لقاءَ السادسة مساءً «٣:٠٠ م» (⑪) */
+    const when = whenAr(session.startsAt)
     const learners = await this.prisma.enrollment.findMany({
       where: { cohortId: session.cohortId, status: { not: 'dropped' } },
       select: { userId: true },
@@ -2086,9 +2085,9 @@ export class CohortService {
     })
     /* التنسيقُ من الطبقة المشتركة لا بلغةٍ تُسمّى هنا — وبوّابةُ `audit-locale`
        تمنع أن يعود الاختيارُ إلى الملفّات، وقد أمسكت هذا السطرَ بعينه. */
-    const when = fmtDateWith(session.startsAt, {
-      weekday: 'long', day: 'numeric', month: 'long', hour: 'numeric', minute: '2-digit',
-    })
+    /* بتوقيت عمّان كسائر رسائل المنصّة (`whenAr`) — لا بمنطقة الخادم (UTC) التي
+       كانت تكتب لقاءَ السادسة مساءً «٣:٠٠ م» (⑪) */
+    const when = whenAr(session.startsAt)
     for (const r of recipients) {
       await safeNotify(this.prisma, {
         userId: r.userId, channel: 'in_app', audience: 'learner',

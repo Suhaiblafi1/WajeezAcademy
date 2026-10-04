@@ -19,8 +19,8 @@ import CurriculumReview from "@/components/CurriculumReview";
 import { ReviewNotesForm, ReviewNotesList } from "@/components/ReviewNotes";
 import { PendingTasks } from "@/components/PendingTasks";
 import { awaitingTasks } from "@/application/trainer/task-approval";
-import { PlanDiffList } from "@/components/PlanDiff";
-import { planDiff } from "@/application/trainer/plan-diff";
+import { PlanDiffList, SinceReturnList } from "@/components/PlanDiff";
+import { planDiff, sinceReturn } from "@/application/trainer/plan-diff";
 import { hasReviewNotes, type ReviewNotes } from "@/application/trainer/review-notes";
 import { curriculumView, type CurriculumInput } from "@/application/trainer/curriculum-view";
 import { PLAN_AR, planApprovedMsg, taskDecisionMsg, type PlanDecision } from "@/application/trainer/plan-decision";
@@ -29,6 +29,7 @@ import TrainerNextSteps from "@/components/admin/TrainerNextSteps";
 import { signalPlansChanged } from "@/services/plans-signal";
 import { Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
+import { cohortDayAr } from "@/application/learning/cohort-gate";
 
 interface TrainerPlan {
   id: string; status: string; reviewerNote: string | null; trainerName: string | null;
@@ -47,6 +48,8 @@ interface TrainerPlan {
   approvedOnce?: boolean;
   /* والمعتمَدةُ التي تراجعها هذه إن كانت مراجعة — منها «ما تغيّر» (٣ج-٤) */
   approvedPlan?: { content: unknown; reviewedAt: string | null } | null;
+  /* والخطّةُ كما رُدّت إن أُعيد إرسالُها بعد ردّ — منها «ما تغيّر منذ ردّك» (⑦) */
+  returned?: { content: unknown; at: string | null } | null;
   content: {
     summaryAr?: string | null; modules?: { moduleId: string; titleAr: string }[]; resources?: { title: string; url: string }[];
     /* مدّةُ الشعبة كما حدّدها مدرّبُها — تُعتمَد مع الخطّة (٢٧ سبتمبر ٢٠٢٦) */
@@ -159,7 +162,7 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
               حدودَها المعلَنة ويُشتقّ فصلُها من تاريخ بدئها. */}
           {trainerPlan.content?.startsOn && trainerPlan.content?.endsOn && (
             <p className="mt-2 text-read leading-6 text-foreground">
-              المدّة: من <b>{fmtDateAr(trainerPlan.content.startsOn)}</b> إلى <b>{fmtDateAr(trainerPlan.content.endsOn)}</b>
+              المدّة: من <b>{cohortDayAr(trainerPlan.content.startsOn)}</b> إلى <b>{cohortDayAr(trainerPlan.content.endsOn)}</b>
               {" "}<span className="text-muted-foreground">— تصير حدودَ الشعبة المعلَنة باعتمادك.</span>
             </p>
           )}
@@ -179,12 +182,35 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
               </p>
               <div className="mt-2">
                 <PlanDiffList
-                  sections={planDiff(trainerPlan.approvedPlan.content, trainerPlan.content, { date: fmtDateAr })}
+                  sections={planDiff(trainerPlan.approvedPlan.content, trainerPlan.content, { date: cohortDayAr })}
                   emptyText="لم يتغيّر في الخطّة نفسِها شيء — وما يُعتمَد معها من لقاءاتٍ ومهامّ مذكورٌ أدناه."
                 />
               </div>
             </Inset>
           )}
+          {/* ═══ وما تغيّر منذ ردّك — إعادةُ مراجعةٍ بعد ردٍّ بملاحظات (٣ أكتوبر ٢٠٢٦، ⑦) ═══
+
+              كان يُرى «ما طلبتَه» أسفلَ المنهج ولا يُرى ما تغيّر — فيُقرأ المنهجُ كلُّه
+              ليُعرف أأُجيبت الملاحظة. فتُقابَل المرسَلةُ بالتي رُدّت، وكلُّ ملاحظةٍ
+              بجانب ما تغيّر في خطوتها (`sinceReturn`). */}
+          {trainerPlan.status === "submitted" && trainerPlan.returned && (() => {
+            const notes: ReviewNotes = trainerPlan.reviewerNotes ?? (trainerPlan.reviewerNote ? { general: trainerPlan.reviewerNote } : {});
+            const since = sinceReturn(trainerPlan.returned.content, trainerPlan.content, notes, { date: cohortDayAr });
+            return (
+              <Inset className="mt-3" role="region" aria-label="ما تغيّر منذ ردّك">
+                <p className="text-read font-black text-foreground">
+                  ما تغيّر منذ ردّك
+                  {trainerPlan.returned.at && <span className="font-normal text-muted-foreground"> — رُدّت {fmtDateAr(trainerPlan.returned.at)}</span>}
+                </p>
+                <p className="mt-1 text-read leading-6 text-muted-foreground">
+                  أعاد المدرّبُ إرسالَها بعد ردّك — هذا ما عدّله عن النسخة التي رددتَها، وملاحظتُك في كلّ خطوةٍ بجانبه.
+                </p>
+                <div className="mt-2">
+                  <SinceReturnList general={since.general} rows={since.rows} />
+                </div>
+              </Inset>
+            );
+          })()}
           {/* ═══ والمنهجُ كاملا — ما قرأه المدرّبُ قبل أن يرسل (المرحلة ٣) ═══
 
               «وهو ما سنقرؤه عند الموافقة» (صاحب المنصّة). وكانت البطاقةُ سطرا
@@ -213,6 +239,8 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
           {(() => {
             const notes: ReviewNotes = trainerPlan.reviewerNotes ?? (trainerPlan.reviewerNote ? { general: trainerPlan.reviewerNote } : {});
             if (!hasReviewNotes(notes)) return null;
+            /* وقيلت في «ما تغيّر منذ ردّك» أعلاه بجانب ما تغيّر — فلا تُكرَّر هنا (⑦) */
+            if (trainerPlan.status === "submitted" && trainerPlan.returned) return null;
             const heading = trainerPlan.status === "submitted"
               ? "ما طلبتَه في الردّ السابق — قابِله بما عُدّل"
               : trainerPlan.status === "changes_requested" ? "ما طُلب منه" : "ملاحظةُ القرار";

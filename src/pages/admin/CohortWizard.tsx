@@ -15,7 +15,8 @@ import {
 } from "lucide-react";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import DayOfWeekPicker from "@/components/DayOfWeekPicker";
-import { daysLabelAr, fmtDateAr, fmtDateTimeAr } from "@/utils/format";
+import { daysLabelAr, fmtDateTimeAr } from "@/utils/format";
+import { cohortDayAr } from "@/application/learning/cohort-gate";
 
 import { Panel, Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
@@ -468,7 +469,7 @@ export default function CohortWizard({
               ["الدورة", course?.title ?? "—"],
               ["العنوان", title.trim() || "—"],
               ["الجدول", `${daysLabelAr(days)} · ${startTime} · ${duration} دقيقة`],
-              ["المدى", `${weeks} أسبوعا من ${fmtDateAr(from)}`],
+              ["المدى", `${weeks} أسبوعا من ${cohortDayAr(from)}`],
               ["الجلسات", `${preview.length} جلسة تُولَّد الآن`],
               ["المقاعد", capacity],
               ["السعر", price

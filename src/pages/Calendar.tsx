@@ -28,6 +28,7 @@ import { apiGet } from "@/services/api";
 import { fmtDateAr, daysLabelAr } from "@/utils/format";
 import { courseTitleAr } from "@/application/catalog/course-title";
 import { Panel, Card } from "@/components/ui/Surface";
+import { cohortDayAr } from "@/application/learning/cohort-gate";
 
 interface Entry {
   cohortId: string; courseId: string; titleAr: string;
@@ -83,7 +84,7 @@ export default function CalendarPage() {
             </div>
             <h1 className="mt-5 text-3xl font-black md:text-4xl">{data.titleAr}</h1>
             <p className="mx-auto mt-3 max-w-xl leading-8 text-muted-foreground">
-              {fmtDateAr(data.startsOn)} — {fmtDateAr(data.endsOn)} · {data.total} دورة
+              {cohortDayAr(data.startsOn)} — {cohortDayAr(data.endsOn)} · {data.total} دورة
               {data.registrationOpen ? (
                 <span className="block text-teal-light-ink">التسجيل مفتوح الآن</span>
               ) : data.registrationOpensAt ? (
@@ -128,7 +129,7 @@ export default function CalendarPage() {
                             <p className="text-sm font-bold leading-6 text-foreground">{courseTitleAr(e.titleAr)}</p>
                           </Link>
                           <p className="mt-1 text-read leading-5 text-muted-foreground">
-                            {e.startsAt && <>تبدأ {fmtDateAr(e.startsAt)}</>}
+                            {e.startsAt && <>تبدأ {cohortDayAr(e.startsAt)}</>}
                             {e.daysOfWeek.length > 0 && <> · {daysLabelAr(e.daysOfWeek)}{e.startTime ? ` ${e.startTime}` : ""}</>}
                           </p>
                           <div className="mt-2 flex flex-wrap items-center gap-1.5">

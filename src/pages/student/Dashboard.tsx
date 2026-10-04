@@ -18,6 +18,7 @@ import MyDeadlines from "@/components/MyDeadlines";
 import { fmtDate, fmtSession } from "@/application/text/format-ar";
 
 import { Card, Inset, Panel } from "@/components/ui/Surface";
+import { cohortDayAr, DAY_NUMERIC } from "@/application/learning/cohort-gate";
 /* حُذفت خريطة ADVISORS هنا كما حُذفت في صفحة المسار: أسماءُ أشخاصٍ مكتوبةٌ في
    الكود تُعرض للطالب الدافع كأنها مستشارُه المعيَّن. والقاعدة أن لا اسم يُعرض
    كحقيقة قبل توثيقه واعتماده.
@@ -559,7 +560,7 @@ function EmptyRealDashboard({ name, signals }: { name: string; signals: EmptySig
             {held.slice(0, 4).map((h) => (
               <li key={h.requestId}>
                 <span className="font-bold text-foreground">{h.courseTitleAr}</span> — {h.cohortTitle}
-                {h.startsAt && ` · تبدأ ${fmtDate(h.startsAt)}`}
+                {h.startsAt && ` · تبدأ ${cohortDayAr(h.startsAt, DAY_NUMERIC)}`}
               </li>
             ))}
           </ul>

@@ -56,7 +56,7 @@ import {
   PRESENTMENT_CODES, PRESENTMENT_CURRENCIES, convertFromUsd, formatPresentment,
   type PresentmentCurrency,
 } from "@/application/commerce/presentment";
-import { fmtDateAr } from "@/utils/format";
+import { cohortDayAr } from "@/application/learning/cohort-gate";
 import { track } from "@/services/analytics";
 
 import { Card, Inset } from "@/components/ui/Surface";
@@ -321,7 +321,7 @@ export default function BuyPanel({
   );
   const listShown = listOpen || hasExcluded;
 
-  const startsLabel = (o: CohortOption) => (o.startsAt ? fmtDateAr(o.startsAt) : "يُعلن الموعد");
+  const startsLabel = (o: CohortOption) => (o.startsAt ? cohortDayAr(o.startsAt) : "يُعلن الموعد");
 
   /* اللوحُ أضيقُ وأقلُّ حشوا (`max-w-md` و`sm:p-5`): شاشةُ الدفع في صفحة
      الدورة كانت «كبيرةً» في عين صاحب المنصّة (٨ سبتمبر ٢٠٢٦)، وما فيها

@@ -14,7 +14,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { GraduationCap, Loader2, Pencil, Search, ShieldOff, Trash2, UserPlus, X } from "lucide-react";
 import { apiDelete, apiGet, apiPatch, apiPost, ApiError } from "@/services/api";
-import { fmtDate } from "@/application/text/format-ar";
+import { cohortDayAr, DAY_NUMERIC } from "@/application/learning/cohort-gate";
 import { toast, toastError } from './Toast';
 
 import { Panel, Card, Inset } from "@/components/ui/Surface";
@@ -156,7 +156,7 @@ export default function LearnersPanel() {
                       <span className="block text-xs font-bold text-foreground">{e.courseTitle}</span>
                       <span className="text-fine text-muted-foreground">
                         {e.cohortTitle} · {ENROLL_STATUS[e.status] ?? e.status} · {e.percent}٪
-                        {e.startsAt ? ` · ${fmtDate(new Date(e.startsAt))}` : ""}
+                        {e.startsAt ? ` · ${cohortDayAr(e.startsAt, DAY_NUMERIC)}` : ""}
                       </span>
                     </span>
                     {data.canWrite && (

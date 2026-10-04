@@ -14,7 +14,7 @@ import { useMemo, useState } from "react";
 import { CalendarClock, Loader2 } from "lucide-react";
 import { apiPost, ApiError } from "@/services/api";
 import { useCourseCohorts } from "@/services/cohort-prices";
-import { fmtDateAr } from "@/utils/format";
+import { cohortDayAr } from "@/application/learning/cohort-gate";
 
 import { Card } from "@/components/ui/Surface";
 export default function SwitchCohort({
@@ -88,7 +88,7 @@ export default function SwitchCohort({
                   className="flex w-full cursor-pointer items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2.5 text-right transition hover:border-teal/50 disabled:opacity-50"
                 >
                   <span className="min-w-0 text-xs font-bold text-foreground">
-                    {o.startsAt ? fmtDateAr(o.startsAt) : "بلا موعد"}
+                    {o.startsAt ? cohortDayAr(o.startsAt) : "بلا موعد"}
                     {o.title && <span className="text-muted-foreground"> — {o.title}</span>}
                   </span>
                   {busy ? (

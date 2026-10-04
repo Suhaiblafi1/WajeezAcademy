@@ -15,7 +15,7 @@ import { Link } from "react-router";
 import { CheckCircle2, ExternalLink } from "lucide-react";
 import { apiGet, apiPatch, apiPost, ApiError } from "@/services/api";
 import { useRealSession } from "@/services/session";
-import { fmtDateAr } from "@/utils/format";
+import { cohortDayAr } from "@/application/learning/cohort-gate";
 import { Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import { staffControlCls } from "@/components/FormKit";
@@ -107,7 +107,7 @@ export default function TrainerNextSteps({ cohortId }: { cohortId: string }) {
                 <Inset as="li" key={c.id}>
                   <p className="text-read font-bold text-foreground">{c.title}</p>
                   <p className="mt-0.5 text-read text-muted-foreground">
-                    {c.startsAt ? <>تبدأ {fmtDateAr(c.startsAt)}</> : "بلا تاريخ بدءٍ بعد"}
+                    {c.startsAt ? <>تبدأ {cohortDayAr(c.startsAt)}</> : "بلا تاريخ بدءٍ بعد"}
                     {c.price !== null && <> · {c.price} {c.currency}</>}
                   </p>
                   {done ? (
