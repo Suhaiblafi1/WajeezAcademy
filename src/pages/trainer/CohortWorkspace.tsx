@@ -603,6 +603,19 @@ export default function CohortWorkspace() {
     window.addEventListener("beforeunload", warn);
     return () => window.removeEventListener("beforeunload", warn);
   }, []);
+  /* ═══ والخروجُ إلى صفحةٍ أخرى في البوّابة يحفظ ما في اليد (٥ أكتوبر ٢٠٢٦) ═══
+
+     تحذيرُ `beforeunload` لا يقع إلّا على إغلاق النافذة وتحديثها: النقرُ على
+     «شعبي» في الشريط الجانبيّ تنقّلٌ داخلَ الصفحة نفسِها، فكان يُذهب ما كتبه
+     المدرّبُ بلا كلمة. والموجِّهُ هنا `BrowserRouter` لا يعرف حجزَ التنقّل
+     (`useBlocker` للموجِّهات ذوات البيانات وحدَها) — فيُحفظ عند الخروج نفسِه:
+     الصفحةُ باقيةٌ حيّةً بعد أن تُغادَر الشعبة، فيتمّ الطلبُ ويُقال أثرُه.
+     والحفظُ نفسُه يُكتب في كلّ رسمٍ أدناه (`leaveSave`) ليقرأ آخرَ ما في اليد. */
+  const leaveSave = useRef<(() => void) | null>(null);
+  useEffect(() => {
+    const onLeave = leaveSave;
+    return () => onLeave.current?.();
+  }, []);
 
   /* ═══ ثلاثةُ مخارجَ من المسوّدة — والملفُّ يُحذف مع إلغائها ═══
      المسوّدةُ لم تدخل الخطّةَ قطّ، فلا خطّةَ محفوظةً تشير إلى ملفّها —
@@ -717,7 +730,6 @@ export default function CohortWorkspace() {
   };
   dirtyRef.current = Object.values(dirty).some(Boolean);
 
-  const openStage = (s: Stage) => setStage(s);
   /** يحذف ملفًّا من التخزين — والسقوطُ يُبتلع: ملفٌّ يتيمٌ أهونُ من صفٍّ يبقى */
   const dropFile = async (key: string) => {
     try { await apiDelete(`/api/trainer/cohorts/${ws.cohort.id}/files/${encodeURIComponent(key)}`); }
@@ -918,6 +930,76 @@ export default function CohortWorkspace() {
       setBusy(false);
     }
   };
+  /* ═══ والحفظُ مسوّدةً — «احفظ — لم تكتمل بعد» (٥ أكتوبر ٢٠٢٦) ═══
+
+     قرارُ صاحب المنصّة: «إن تنقّلوا بين الخطوات قبل أن يُتمّوها فليكن كلُّ شيءٍ
+     في أمان، أو أعطِهم زرّا يحفظ ولا يُعدّ به تامّا». واختار الاثنين معا.
+
+     والحفظُ لا يُتمّ خطوةً أصلا: التمامُ يُحكم من محتواها في قائمة الخادم. لكنّ
+     الزرَّ الوحيدَ كان «احفظ وتابِع» — يَعِد بالمتابعة، فلا يعرف المدرّبُ أنّ
+     نصفَ محورٍ يُحفظ. فهذان: الحفظُ عند مغادرة الخطوة (`openStage`)، وزرٌّ
+     يحفظ ويبقى. وما يمنع الحفظَ يُقال في الحالين، ولا يُنقل المدرّبُ عنه. */
+  const stageLabel = (k: Stage) => STAGES.find((x) => x.key === k)?.label ?? "";
+  const saveDraft = async () => {
+    if (busy) return;
+    setBusy(true);
+    setGaps(null);
+    try {
+      if (!(await persist())) { window.scrollTo({ top: 0, behavior: "smooth" }); return; }
+      const fresh = await load();
+      const complete = Boolean(fresh) && STAGE_KEYS[stage].every((k) => fresh!.checklist.find((c) => c.key === k)?.done);
+      toast(complete ? `حُفظ ما كتبتَ في «${stageLabel(stage)}»` : `حُفظ ما كتبتَ — و«${stageLabel(stage)}» لم تكتمل بعد، تعود إليها متى شئت`);
+    } catch (e) {
+      toastError(e instanceof ApiError ? `لم يُحفظ — ${e.message}` : "تعذّر الحفظ — وما كتبتَه باقٍ في الشاشة");
+    } finally {
+      setBusy(false);
+    }
+  };
+  /* ونقرةُ خطوةٍ تفتحها بعد أن يُحفظ ما في اليد. والخطوةُ التي فيها ما يمنع
+     الحفظَ تُفتح بلا حفظ — فيها يُصلَح، وما كتبه باقٍ في الشاشة كما هو. */
+  const openStage = async (s: Stage) => {
+    if (s === stage || busy) return;
+    const unsaved = !locked && Object.values(dirty).some(Boolean);
+    if (unsaved && !saveProblems().some((p) => p.stage === s)) {
+      setBusy(true);
+      setGaps(null);
+      try {
+        if (!(await persist())) { window.scrollTo({ top: 0, behavior: "smooth" }); return; }
+        const fresh = await load();
+        const complete = Boolean(fresh) && STAGE_KEYS[stage].every((k) => fresh!.checklist.find((c) => c.key === k)?.done);
+        toast(complete ? `حُفظت «${stageLabel(stage)}»` : `حُفظت «${stageLabel(stage)}» كما هي — ولم تكتمل بعد`);
+      } catch (e) {
+        toastError(e instanceof ApiError ? `لم يُحفظ، فبقيتَ في خطوتك — ${e.message}` : "تعذّر الحفظ، فبقيتَ في خطوتك — وما كتبتَه باقٍ");
+        return;
+      } finally {
+        setBusy(false);
+      }
+    }
+    setStage(s);
+  };
+  /* والخروجُ من الشعبة يحفظ آخرَ ما في اليد (والعلّةُ عند `leaveSave` أعلاه). وما
+     يمنع الحفظَ لا يُرسَل ليُردّ — يُقال إنّه لم يُحفظ. */
+  leaveSave.current = locked || !Object.values(dirty).some(Boolean) ? null : () => {
+    if (saveProblems().length) {
+      toastError("خرجتَ من الشعبة ولم يُحفظ ما كتبتَه — كان فيه ما يمنع حفظَه");
+      return;
+    }
+    const cohortId = ws.cohort.id;
+    const title = identity.title.trim();
+    const retitle = title !== ws.cohort.title;
+    void apiPut(`/api/trainer/cohorts/${cohortId}/plan`, content)
+      .then(() => (retitle ? apiPatch(`/api/trainer/cohorts/${cohortId}`, { title }) : undefined))
+      .then(() => toast("حُفظ ما كتبتَه في الشعبة قبل خروجك — تجده حين تعود"))
+      .catch((e) => toastError(e instanceof ApiError ? `لم يُحفظ ما كتبتَه قبل خروجك — ${e.message}` : "لم يُحفظ ما كتبتَه قبل خروجك"));
+  };
+  /* ═══ زرُّ «احفظ — لم تكتمل بعد» — عائمٌ ما دام في اليد ما لم يُحفظ ═══
+
+     يحفظ ويبقى، ولا تُعدّ به الخطوةُ تامّة. وموضعُه زاويةُ الشاشة لا رأسُها (قِيس في
+     المتصفّح، ٥ أكتوبر ٢٠٢٦): صفُّ الرأس يسع زرّا واحدا — على ١٢٨٠ تُعرض أسماءُ
+     الخطوات الستّ فتملأه، وحين يضمر يأخذ مكانَها «الخطوة ١ من ٦» — فركب زرٌّ ثانٍ
+     على السلّم في الحالين وابتلع نقرتَه. وعائما يُبلَغ والمدرّبُ في وسط متنٍ طويل،
+     ويقول بظهوره إنّ في يده ما لم يُحفظ. والخطوةُ التامّةُ يُقال فيها «احفظ التعديل». */
+  const showDraftSave = !atApproval && !locked && Object.values(dirty).some(Boolean);
   /* والدرجةُ الأخيرة: الزرُّ نفسُه يُرسل. وما يمنع الإرسالَ يُقال بأسمائه
      قبل النداء — والخادمُ يردّ الشيءَ نفسَه إن وصل (`plan-gate`). */
   const submitNow = async () => {
@@ -1350,6 +1432,13 @@ export default function CohortWorkspace() {
           <span className="stage-fill block h-full bg-teal" style={{ width: `${ready}%` }} />
         </span>
       </Bar>
+      {showDraftSave && (
+        <div className="fixed bottom-4 end-4 z-40 sm:bottom-6 sm:end-6">
+          <Button tone="secondary" type="button" className="bg-surface shadow-lg" disabled={busy} onClick={() => void saveDraft()}>
+            {doneOf(stage) ? "احفظ التعديل" : "احفظ — لم تكتمل بعد"}
+          </Button>
+        </div>
+      )}
 
       {/* ═══ وذهب الطوران (٣٠ سبتمبر ٢٠٢٦) ═══
 

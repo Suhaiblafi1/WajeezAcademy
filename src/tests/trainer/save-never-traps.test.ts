@@ -95,3 +95,47 @@ describe('ما يمنع الحفظَ لا يحبس المدرّب', () => {
     expect(cont, 'ما حُفظ ولم تتمّ خطوتُه يُقال كأنّه لم يُحفظ').toMatch(/setGaps\(gapsFor\(stage, fresh\), \{ saved:/)
   })
 })
+
+/* ═══ ولا يضيع ما كُتب بالتنقّل (٥ أكتوبر ٢٠٢٦) ═══
+
+   قرارُ صاحب المنصّة: «إن تنقّلوا بين الخطوات قبل أن يُتمّوها فليكن كلُّ شيءٍ في
+   أمان، أو أعطِهم زرّا يحفظ ولا يُعدّ به تامّا» — واختار الاثنين معا. وكان
+   التنقّلُ بين الخطوات لا يحفظ شيئا، والنقرُ على صفحةٍ أخرى في البوّابة يُذهب ما
+   كُتب بلا تحذير (`beforeunload` لا يقع على تنقّلٍ داخلَ الصفحة). */
+describe('③ ولا يضيع ما كُتب بالتنقّل', () => {
+  const openStage = between(screen, 'const openStage = async (s: Stage) => {', '\n  };')
+
+  it('مغادرةُ الخطوة تحفظ ما في اليد قبل أن تفتح غيرَها', () => {
+    expect(openStage, 'لم يُعثر على فتح الخطوة').toBeTruthy()
+    expect(openStage, 'الانتقالُ لا يحفظ — فيضيع ما كُتب').toContain('await persist()')
+    expect(openStage.indexOf('await persist()'), 'الحفظُ بعد الانتقال لا قبله').toBeLessThan(openStage.lastIndexOf('setStage(s)'))
+    expect(openStage, 'حفظٌ رُدّ ينقل المدرّبَ عمّا يمنعه').toMatch(/if \(!\(await persist\(\)\)\) \{[^\n]*return; \}/)
+  })
+
+  it('والخطوةُ التي فيها ما يمنع الحفظَ تُفتح بلا حفظ — وإلّا عاد الحبس', () => {
+    expect(openStage).toContain('saveProblems().some((p) => p.stage === s)')
+  })
+
+  it('والخروجُ من الشعبة إلى صفحةٍ أخرى يحفظ — لا تحذيرَ الإغلاق وحدَه', () => {
+    expect(screen, 'لا شيءَ يقع عند الخروج من الشعبة').toMatch(/return \(\) => onLeave\.current\?\.\(\);/)
+    const leave = between(screen, 'leaveSave.current = ', '\n  };')
+    expect(leave, 'لم يُعثر على حفظ الخروج').toBeTruthy()
+    expect(leave, 'الخروجُ لا يرسل الخطّة').toContain('apiPut(`/api/trainer/cohorts/${cohortId}/plan`, content)')
+    expect(leave, 'ما يمنع الحفظَ عند الخروج لا يُقال').toContain('saveProblems().length')
+  })
+
+  it('و«احفظ — لم تكتمل بعد» عائمٌ ما دام في اليد ما لم يُحفظ: يحفظ ويبقى، ولا يُتمّ شيئا', () => {
+    /* وليس في صفّ الرأس: الصفُّ يسع زرّا واحدا (قِيس في المتصفّح) — فركب الثاني على السلّم */
+    const head = screen.slice(screen.indexOf('<Bar'), screen.indexOf('</Bar>'))
+    expect(head, 'زرٌّ ثانٍ في صفّ الرأس — يركب على أسماء الخطوات ويبتلع نقرتَه').not.toContain('saveDraft()')
+    expect(screen, 'لا شرطَ يُظهر الزرَّ العائم').toMatch(/const showDraftSave = !atApproval && !locked && Object\.values\(dirty\)\.some\(Boolean\);/)
+    const fab = between(screen, '{showDraftSave && (', '</Button>')
+    expect(fab, 'الزرُّ العائمُ لا يُرسم').toBeTruthy()
+    expect(fab, 'الزرُّ ليس عائما').toMatch(/className="fixed bottom-4 end-4/)
+    expect(fab).toContain('saveDraft()')
+    expect(fab).toContain('احفظ — لم تكتمل بعد')
+    const draft = between(screen, 'const saveDraft = async () => {', '\n  };')
+    expect(draft, 'زرُّ الحفظ مسوّدةً لا يحفظ').toContain('await persist()')
+    expect(draft, 'زرُّ الحفظ مسوّدةً ينقل المدرّب').not.toContain('setStage(')
+  })
+})
