@@ -26,7 +26,7 @@ import { startAdvice } from "@/application/trainer/start-advice";
 import { TRAINER_BRIEF_PATH, TRAINER_BRIEF_TITLE_AR } from "@/application/trainer/trainer-brief";
 import { hueOf, pad2 } from "@/components/guide/hues";
 import type { GuideBlock, GuideSection } from "@/data/trainer-guide/types";
-import { Blocks, GUIDE_KIT_CSS, PageHead, Pixels, Rich } from "./Guide";
+import { Blocks, GUIDE_KIT_CSS, PageHead, Pixels, Rich } from "@/components/guide/GuideKit";
 import {
   APPLY_PATH, BRIEF_FACTS, BRIEF_SECTIONS, BRIEF_START_ADVICE, BRIEF_STEPS, BRIEF_UPDATED_AR,
   PAY_EXAMPLE_AR, PAY_MODELS, PAY_SECTION, PAY_TERMS, STEPS_NOTE_AR, STEPS_SECTION,
@@ -83,10 +83,10 @@ function BriefSection({ s, n, extraFacts }: { s: GuideSection; n: number; extraF
     <section id={s.id} aria-labelledby={`${s.id}-h`} className="brief-section scroll-mt-24 pt-10">
       <BriefHead id={s.id} n={n} title={s.title} why={s.why} />
       {steps.length > 1
-        ? <div className="brief-grid-2 grid gap-x-8 md:grid-cols-2"><Blocks blocks={steps} onZoom={noZoom} /></div>
-        : <Blocks blocks={steps} onZoom={noZoom} />}
+        ? <div className="brief-grid-2 grid gap-x-8 md:grid-cols-2"><Blocks blocks={steps} /></div>
+        : <Blocks blocks={steps} />}
       {facts.map((t, i) => <Facts key={i} rows={[...t.rows, ...(extraFacts ?? [])]} label={t.head[0]} />)}
-      <Blocks blocks={rest} onZoom={noZoom} />
+      <Blocks blocks={rest} />
     </section>
   );
 }
@@ -105,9 +105,6 @@ function Facts({ rows, label }: { rows: string[][]; label: string }) {
     </dl>
   );
 }
-
-/** لا صورَ في هذه الصفحة — فلا تكبير */
-const noZoom = () => {};
 
 /** رأسُ القسم كالدليل — ولا يبدأ ورقتَه: صفحتان لا كتاب */
 function BriefHead({ id, n, title, why }: { id: string; n: number; title: string; why: string }) {
@@ -258,7 +255,9 @@ export default function TrainerBrief() {
           <p id="brief-end" className="text-3xl font-black leading-tight md:text-4xl">هل تناسبك؟</p>
           <p className="mt-3 text-lg leading-9 opacity-90">قدّم طلبك، وما بقي من أسئلتك نجيب عنه في الاجتماع التعريفيّ.</p>
           <div className="guide-noprint mt-6 flex flex-wrap items-center justify-center gap-3">
-            <Button as="a" href={APPLY_PATH} tone="primary" icon={Send}>قدّم طلبك</Button>
+            {/* ذهبيٌّ واحدٌ في الشاشة (`one-primary-per-screen.test.ts`) — وهو في الرأس؛
+                وهذا فعلُ قسمه، فنبرتُه المُثبِتة */}
+            <Button as="a" href={APPLY_PATH} tone="confirm" icon={Send}>قدّم طلبك</Button>
             {waLink && <Button as="a" href={waLink} target="_blank" rel="noreferrer noopener" icon={MessageCircle}>اسألنا على واتساب</Button>}
             <Button as="a" href={`mailto:${CONTACT.email}`} icon={Mail}>{CONTACT.email}</Button>
           </div>

@@ -51,7 +51,9 @@ const heavier = (a: number[], b: number[]) => {
   return false
 }
 
-const GUIDE = read('src/pages/trainer/Guide.tsx')
+/* والدليلُ ملفّان منذ ٥ أكتوبر ٢٠٢٦: صفحتُه بلقطاتها، وعُدّتُه (أنماطُه وطباعتُها)
+   في `components/guide/GuideKit.tsx` — يقرؤها معه «التدريبُ معنا». فيُقرآن معا */
+const GUIDE = read('src/pages/trainer/Guide.tsx') + '\n' + read('src/components/guide/GuideKit.tsx')
 const INDEX = read('src/index.css')
 const guidePrint = printBlocks(GUIDE).flatMap(rules)
 const sitePrint = printBlocks(INDEX).flatMap(rules)

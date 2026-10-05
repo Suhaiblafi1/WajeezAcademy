@@ -22,7 +22,9 @@ const code = (p: string) =>
     .replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '')
     .replace(/^\s*\/\/.*$/gm, '')
 
-const GUIDE = code('src/pages/trainer/Guide.tsx')
+/* والدليلُ ملفّان منذ ٥ أكتوبر ٢٠٢٦: صفحتُه، وعُدّتُه المشتركة مع «التدريبُ معنا»
+   (`components/guide/GuideKit.tsx` — ومنها `Rich` بروابطه). فيُقرآن معا */
+const GUIDE = code('src/pages/trainer/Guide.tsx') + '\n' + code('src/components/guide/GuideKit.tsx')
 const LAYOUT = code('src/pages/trainer/TrainerLayout.tsx')
 
 describe('① الدليلُ يقول إنّه ليس البوّابة', () => {
