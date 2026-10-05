@@ -50,9 +50,9 @@ import { useWhatsAppNumbers } from "@/services/whatsapp";
 import { ORIENTATION_BOOKING_URL, ORIENTATION_CTA_AR } from "@/application/trainer/orientation-session";
 import { TRAINER_GUIDE_PATH } from "@/application/trainer/trainer-guide";
 import {
-  CHECKLIST, FAQ, GUIDE_PARTS, GUIDE_READ_TIME_AR, GUIDE_SECTIONS, GUIDE_UPDATED_AR, JOURNEY, JOURNEY_START,
-  shortTitle,
+  CHECKLIST, FAQ, GUIDE_READ_TIME_AR, GUIDE_SECTIONS, GUIDE_UPDATED_AR, JOURNEY, JOURNEY_START,
 } from "@/data/trainer-guide/content";
+import { guideToc, isNewSince, type TocGroup } from "@/data/trainer-guide/toc";
 import { GUIDE_SHOTS } from "@/data/trainer-guide/shots";
 import type { GuideSection } from "@/data/trainer-guide/types";
 import { hueOf, pad2 } from "@/components/guide/hues";
@@ -114,13 +114,19 @@ function Shot({ shot, alt, caption, onZoom }: { shot: string; alt: string; capti
   );
 }
 
-function Section({ s, n, onZoom }: { s: GuideSection; n: number; onZoom: (shot: string, alt: string) => void }) {
+/** علامةُ ما أُضيف حديثا — في صفحة المحتويات والشريط الجانبيّ ورأس القسم (`data/trainer-guide/toc.ts`) */
+function NewTag() {
+  return <span className="guide-new" data-hue="coral">جديد</span>;
+}
+
+function Section({ s, n, isNew, onZoom }: { s: GuideSection; n: number; isNew: boolean; onZoom: (shot: string, alt: string) => void }) {
   const hue = hueOf(n - 1);
   return (
     <section id={s.id} aria-labelledby={`${s.id}-h`} className="guide-section guide-page scroll-mt-24 pt-16">
       <PageHead id={s.id} n={n} hue={hue} title={s.title}>
         <div className="mt-4 flex flex-wrap items-start gap-x-4 gap-y-2">
           <span className="guide-pill" data-hue={hue}>القسم {pad2(n)}</span>
+          {isNew && <span className="guide-pill" data-hue="coral">جديد</span>}
           {s.tab && s.path && (
             <a href={s.path} target="_blank" rel="noopener" className="guide-pill guide-card guide-noprint" style={{ color: "rgb(var(--g-ink))" }}>
               افتح «{s.tab}» في بوّابتك <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
@@ -275,9 +281,6 @@ function useActiveSection(ids: string[]) {
   return active;
 }
 
-type TocItem = { id: string; label: string; n?: number };
-type TocGroup = { title: string; items: TocItem[] };
-
 /** الفهرسُ أجزاءٌ بعناوين، وتحت كلٍّ أسماءُ أقسامه قصيرةً في سطرٍ واحد —
     لا تسعةَ عشرَ عنوانا طويلا يلتفّ كلٌّ منها على سطرين. */
 function Toc({ groups, active }: { groups: TocGroup[]; active: string }) {
@@ -303,6 +306,7 @@ function Toc({ groups, active }: { groups: TocGroup[]; active: string }) {
                   >
                     {it.n !== undefined && <span className="w-5 shrink-0 text-xs tabular-nums opacity-60">{pad2(it.n)}</span>}
                     <span className="truncate">{it.label}</span>
+                    {it.isNew && <span className="shrink-0"><NewTag /></span>}
                   </a>
                 </li>
               ))}
@@ -311,6 +315,59 @@ function Toc({ groups, active }: { groups: TocGroup[]; active: string }) {
         ))}
       </div>
     </nav>
+  );
+}
+
+/* ═══ صفحةُ المحتويات — بعد الغلاف، على كلّ شاشةٍ وفي المطبوع (٥ أكتوبر ٢٠٢٦) ═══
+
+   اختارها صاحبُ المنصّة من ثلاثة بدائل حين قال إنّه لا فهرسَ يدلّ على ما حُدّث:
+   كان الفهرسُ على الهاتف صندوقا مطويّا بعد شاشةٍ من الغلاف، فلا يراه أحد. وهي من
+   لغة الدليل نفسِها: بطاقةٌ لكلّ جزءٍ بلون مربّعه في الشريط الجانبيّ، ورقمُ القسم
+   كما في رأسه، وعلى ما أُضيف حديثا «جديد». والشريطُ الجانبيُّ باقٍ على الحاسوب يتبع
+   موضعَ القارئ. */
+function Contents({ groups }: { groups: TocGroup[] }) {
+  const parts = groups.filter((g) => g.kind === "part");
+  const count = parts.reduce((n, g) => n + g.items.length, 0);
+  const anyNew = parts.some((g) => g.items.some((it) => it.isNew));
+  /* التمهيدُ والخاتمةُ سطرٌ لكلٍّ لا بطاقة — بندان في كلٍّ منهما */
+  const line = (g: TocGroup) => (
+    <p key={g.title} className="mt-5 text-base leading-8">
+      <span className="font-black">{g.title}:</span>{" "}
+      {g.items.map((it, i) => (
+        <span key={it.id}>{i > 0 && " · "}<a href={`#${it.id}`} className={LINK}>{it.label}</a></span>
+      ))}
+    </p>
+  );
+  return (
+    <section id="contents" aria-labelledby="contents-h" className="guide-page scroll-mt-24 pt-14">
+      <PageHead id="contents" hue="sky" title="محتويات الدليل" />
+      <p className="mt-3 text-lg leading-9 text-muted-foreground">
+        {count} قسما في {parts.length} أجزاء. اضغط اسمَ القسم لتنتقل إليه{anyNew && <>، وما عليه <NewTag /> أُضيف حديثا</>}.
+      </p>
+      {groups.filter((g) => g.kind === "before").map(line)}
+      <div className="mt-5 grid gap-4 md:grid-cols-2">
+        {parts.map((g) => (
+          <div key={g.title} className="guide-card p-5">
+            <p className="guide-h flex items-center gap-2 text-lg">
+              <span className="inline-block h-3 w-3 shrink-0 rounded-[2px]" data-hue={hueOf(groups.indexOf(g))} aria-hidden="true" />
+              {g.title}
+            </p>
+            <ol className="mt-3">
+              {g.items.map((it) => (
+                <li key={it.id}>
+                  <a href={`#${it.id}`} className="flex items-baseline gap-3 py-1.5 leading-7 hover:underline hover:decoration-teal/40 hover:underline-offset-4">
+                    <span className="w-6 shrink-0 text-sm font-black tabular-nums text-muted-foreground">{it.n !== undefined && pad2(it.n)}</span>
+                    <span className="font-bold" style={{ color: "rgb(var(--g-ink))" }}>{it.label}</span>
+                    {it.isNew && <NewTag />}
+                  </a>
+                </li>
+              ))}
+            </ol>
+          </div>
+        ))}
+      </div>
+      {groups.filter((g) => g.kind === "after").map(line)}
+    </section>
   );
 }
 
@@ -335,14 +392,9 @@ export default function TrainerGuide() {
     return () => window.removeEventListener("beforeprint", open);
   }, []);
 
-  const tocGroups = useMemo<TocGroup[]>(() => {
-    const byId = new Map(GUIDE_SECTIONS.map((s, i) => [s.id, { id: s.id, label: shortTitle(s.title), n: i + 1 }]));
-    return [
-      { title: "قبل أن تبدأ", items: [{ id: "journey", label: "رحلتُك في المنصّة" }, { id: "first-week", label: "أسبوعُك الأوّل" }] },
-      ...GUIDE_PARTS.map((p) => ({ title: p.title, items: p.ids.map((id) => byId.get(id)!).filter(Boolean) })),
-      { title: "مساعدة", items: [{ id: "faq", label: "أسئلةٌ شائعة" }, { id: "help", label: "تحتاج مساعدة؟" }] },
-    ];
-  }, []);
+  /* «جديد» يُحسب بيومِ فتح الصفحة — فتسقط العلامةُ وحدَها بعد شهرٍ من إضافة القسم */
+  const now = useMemo(() => new Date(), []);
+  const tocGroups = useMemo(() => guideToc(now), [now]);
   const ids = useMemo(() => tocGroups.flatMap((g) => g.items.map((t) => t.id)), [tocGroups]);
   const active = useActiveSection(ids);
   /* رابطٌ إلى قسمٍ بعينه (`#standard`) يهبط عليه لا على أوّل الدليل — والعلّةُ
@@ -392,19 +444,13 @@ export default function TrainerGuide() {
           </aside>
 
           <article className="min-w-0 max-w-3xl">
-            {/* على الهاتف: فهرسٌ يُطوى في رأس المقال */}
-            <details className="guide-noprint guide-card mt-8 px-4 lg:hidden">
-              <summary className="guide-h flex cursor-pointer list-none items-center justify-between gap-2 py-3">
-                <span className="flex items-center gap-2"><BookOpen className="h-4 w-4" aria-hidden="true" /> محتويات الدليل</span>
-                <ChevronDown className="h-4 w-4" aria-hidden="true" />
-              </summary>
-              <div className="pb-3"><Toc groups={tocGroups} active={active} /></div>
-            </details>
+            {/* صفحةُ المحتويات أوّلا — وكانت هنا صندوقا مطويّا على الهاتف وحدَه */}
+            <Contents groups={tocGroups} />
 
             <Journey />
             <FirstWeek />
 
-            {GUIDE_SECTIONS.map((s, i) => <Section key={s.id} s={s} n={i + 1} onZoom={openZoom} />)}
+            {GUIDE_SECTIONS.map((s, i) => <Section key={s.id} s={s} n={i + 1} isNew={isNewSince(s.added, now)} onZoom={openZoom} />)}
 
             {/* ── أسئلةٌ شائعة ── */}
             <section id="faq" aria-labelledby="faq-h" className="guide-section guide-page scroll-mt-24 pt-16">

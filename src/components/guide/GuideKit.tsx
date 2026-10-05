@@ -53,6 +53,9 @@ html[data-theme="light"] .guide-root {
    يُكتب قبل هذه الورقة وبمثل وزنها، فيغلبه \`nowrap\` أعلاه. وهو ما كان يمدّ الدليلَ
    على الهاتف إلى 470 بكسلا فينزاح جانبا (٥ أكتوبر ٢٠٢٦) */
 .guide-pill-wrap { white-space: normal; }
+/* «جديد» — رقاقةٌ مرجانيّةٌ صغيرةٌ بجانب اسم القسم (٥ أكتوبر ٢٠٢٦) */
+.guide-new { display: inline-block; padding: 0 .45rem; border-radius: .3rem; font-size: .72rem; font-weight: 800;
+  line-height: 1.35rem; white-space: nowrap; vertical-align: middle; }
 [data-hue="amber"] { background: rgb(var(--g-amber)); color: rgb(var(--g-dark-ink)); }
 [data-hue="coral"] { background: rgb(var(--g-coral)); color: #fff; }
 [data-hue="sky"] { background: rgb(var(--g-sky)); color: rgb(var(--g-dark-ink)); }
