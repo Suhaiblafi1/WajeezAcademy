@@ -39,8 +39,17 @@ import {
   PAY_EXAMPLE_AR, PAY_MODELS, PAY_SECTION, PAY_TERMS, STEPS_NOTE_AR, STEPS_SECTION,
 } from "@/data/trainer-brief/content";
 
-/* ═══ ما يخصّ هذه الصفحة وحدَها — والباقي من الدليل ═══ */
+/* ═══ ما يخصّ هذه الصفحة وحدَها — والباقي من الدليل ═══
+
+   ═══ وورقُها غيرُ ورق الدليل (٥ أكتوبر ٢٠٢٦) ═══
+   كانت على ورق الدليل الكريميّ نفسِه، فمن ضغط فيها رابطا إلى الدليل انتقل إلى
+   صفحةٍ تشبهها ولم يعرف أنّه خرج — وقال صاحبُ المنصّة إنّ الناسَ يتبيّنون الصفحةَ
+   بشكلها لا بعنوانها. فلها ورقٌ سماويٌّ باهت (وفي الداكن كحليّ)، من سماويّ
+   الدليل نفسِه، وما سواه من لغته باقٍ: البطاقاتُ والمربّعاتُ والحبر. وفي الطباعة
+   كذلك. ويحرس الفرقَ `trainer-brief.test.ts` (⑦). */
 const BRIEF_CSS = `
+.guide-root.brief-root { --g-paper: 16 34 58; --g-card: 26 48 74; --g-line: 50 76 104; }
+html[data-theme="light"] .guide-root.brief-root { --g-paper: 221 239 241; --g-card: 255 255 255; --g-line: 196 222 226; }
 .brief-tile { background: rgb(255 255 255 / .88); border-radius: .75rem; color: rgb(var(--g-dark-ink)); }
 .brief-pick { border-color: rgb(var(--g-amber)); box-shadow: 0 0 0 1px rgb(var(--g-amber)); }
 .brief-printonly { display: none; }
@@ -49,7 +58,7 @@ const BRIEF_CSS = `
 @media (min-width: 768px) { .brief-section h2.guide-h { font-size: 2rem; } }
 
 @page {
-  size: A4; margin: 10mm 11mm 13mm; background: #F4F2E7;
+  size: A4; margin: 10mm 11mm 13mm; background: #DDEFF1;
   @bottom-left { content: "التدريبُ مع أكاديمية وجيز  |  " counter(page); font-size: 8pt; color: #5b6b68; }
 }
 @media print {
@@ -77,6 +86,10 @@ const BRIEF_CSS = `
   .brief-end > div { padding-top: 1.6rem !important; padding-bottom: 1.6rem !important; }
   .brief-printonly { display: block !important; }
   .guide-root .brief-tile { background-color: #fff !important; }
+  html, body { background-color: #DDEFF1 !important; }
+  html .guide-root.brief-root, html[data-theme="light"] .guide-root.brief-root {
+    --g-paper: 221 239 241; --g-card: 255 255 255; --g-line: 196 222 226;
+  }
   .guide-root .brief-pick { border-color: rgb(var(--g-amber)) !important; }
 }
 `;
@@ -146,7 +159,7 @@ function About() {
           </li>
         ))}
       </ul>
-      <h3 className="mt-8"><span className="guide-pill whitespace-normal" data-hue="sky">وما يجده متعلّموك عندنا</span></h3>
+      <h3 className="mt-8"><span className="guide-pill guide-pill-wrap" data-hue="sky">وما يجده متعلّموك عندنا</span></h3>
       <ol className="brief-journey brief-grid-5 mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         {ABOUT_JOURNEY.map((j, i) => (
           <li key={j.id} className={`guide-card p-4 ${j.id === "training" ? "brief-pick" : ""}`}>
@@ -174,7 +187,7 @@ export default function TrainerBrief() {
   const stepsSection = BRIEF_SECTIONS.length + 2;
 
   return (
-    <div dir="rtl" className="guide-root min-h-screen text-foreground">
+    <div dir="rtl" className="guide-root brief-root min-h-screen text-foreground">
       <SeoHead
         title={TRAINER_BRIEF_TITLE_AR}
         description="لمن تدرّس، وماذا، وكيف ومتى، وما تُعِدّه أنت، وكيف تُحاسَب ويجري التعاقد — لمن دعوناه إلى التدريب معنا."

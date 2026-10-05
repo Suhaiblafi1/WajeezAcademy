@@ -40,6 +40,7 @@ import { TRAINING_SEASONS } from '../../application/trainer/application-options'
 import { START_ADVICE } from '../../application/trainer/start-advice'
 import { fmtDayMonth } from '../../application/text/format-ar'
 import { TRAINER_GUIDE_PATH } from '../../application/trainer/trainer-guide'
+import { GUIDE_SECTIONS } from '../trainer-guide/content'
 import { FAMILY_INTRO, FEATURES, PRICE, type FeatureId } from '../about'
 
 export const BRIEF_UPDATED_AR = '5 أكتوبر 2026'
@@ -59,6 +60,18 @@ const extDays = EXTENSION_DAYS === 2 ? 'يومين' : `${EXTENSION_DAYS} أيّ�
 const sessionLen = MIN_SESSION_MINUTES === 120 ? 'ساعتان' : `${MIN_SESSION_MINUTES} دقيقة`
 const seasons = TRAINING_SEASONS.map((s) => `${s.label.replace(/^موسم /, '')} (${s.months})`).join('، ')
 const g = (anchor: string) => `${TRAINER_GUIDE_PATH}#${anchor}`
+
+/* ═══ رابطٌ إلى قسمٍ من الدليل يسمّي رقمَه (٥ أكتوبر ٢٠٢٦) ═══
+
+   طلب صاحبُ المنصّة أن تقود هذه الروابطُ إلى القسم بعينه، أو أن تذكر على الأقلّ
+   أين يقع. فالأمران معا: الرابطُ يهبط على قسمه (`components/guide/land-on-hash.ts`)،
+   ونصُّه يحمل رقمَه كما تكتبه شارةُ القسم في الدليل («القسم 08») — لمن قرأ الورقةَ
+   مطبوعة، ولمن يتبيّن الصفحةَ بشكلها. والرقمُ من ترتيب الأقسام لا مكتوبٌ باليد، فلا
+   يتخلّف إن أُضيف قسمٌ قبله. */
+const inGuide = (label: string, anchor: string) => {
+  const n = GUIDE_SECTIONS.findIndex((s) => s.id === anchor) + 1
+  return n ? `[${label} (القسم ${String(n).padStart(2, '0')})](${g(anchor)})` : `[${label}](${g(anchor)})`
+}
 
 /* ═══ من نحن — الصفحةُ الأولى ═══ */
 export const ABOUT_SECTION = {
@@ -121,7 +134,7 @@ export const BRIEF_SECTIONS: GuideSection[] = [
         kind: 'list',
         items: [
           'نختار لك دوراتٍ بعينها تطابق خبرتك، ولك في كلّ دورةٍ أن تقبلها أو تعتذر عنها — والاعتذارُ لا يُحسب عليك.',
-          `وإن كانت عندك دورةٌ تتقنها وليست عندنا فاقترحها، ونقرّر نحن أن نضيفها أو نجعلها نسختَك من دورةٍ قريبة. [كيف تقترح دورة](${g('proposals')})`,
+          `وإن كانت عندك دورةٌ تتقنها وليست عندنا فاقترحها، ونقرّر نحن أن نضيفها أو نجعلها نسختَك من دورةٍ قريبة. في الدليل: ${inGuide('كيف تقترح دورة', 'proposals')}`,
         ],
       },
     ],
@@ -168,7 +181,7 @@ export const BRIEF_SECTIONS: GuideSection[] = [
       },
       {
         kind: 'callout', tone: 'tip', title: `${MATERIALS_WINDOW_DAYS} أيّامٍ ومن يساعدك فيها`,
-        text: `بعد أن نعتمد توقيعك تُفتح بوّابتُك، ولك ${MATERIALS_WINDOW_DAYS} أيّامٍ لإعداد دوراتك — تُمدَّد ${twice}، ${extDays} كلَّ مرّة — ومعها جلسةُ تهيئةٍ تمشي معك في وضع محاورك. [مهلةُ الإعداد في الدليل](${g('materials')}) · [ما يجعل الموادَّ جيّدة](${g('standard')})`,
+        text: `بعد أن نعتمد توقيعك تُفتح بوّابتُك، ولك ${MATERIALS_WINDOW_DAYS} أيّامٍ لإعداد دوراتك — تُمدَّد ${twice}، ${extDays} كلَّ مرّة — ومعها جلسةُ تهيئةٍ تمشي معك في وضع محاورك. في الدليل: ${inGuide('مهلةُ الإعداد', 'materials')} · ${inGuide('ما يجعل الموادَّ جيّدة', 'standard')}`,
       },
       {
         kind: 'callout', tone: 'contract', label: 'من الاتفاقيّة', title: 'موادُّك ملكُك',
@@ -223,7 +236,7 @@ export const PAY_TERMS: string[] = [
   `لكلّ شعبةٍ كشفُها: يُعتمد خلال ${PAYOUT_APPROVAL_DAYS} يوما من انتهائها، ويُصرف خلال ${PAYOUT_TRANSFER_DAYS} يوما من اعتماده — ولا يتجاوز ${PAYOUT_OUTER_DAYS} يوما من انتهائها.`,
   `ويظهر لك الكشفُ ببنوده قبل اعتماده، ولك ${PAYOUT_OBJECTION_DAYS} أيّامٍ تعترض فيها.`,
   'وقبل كلّ موسمٍ تالٍ تصلك دعوةُ تجديد، وقد تُزاد فيها أتعابُك بحسب أدائك والدوراتِ التي تدرّسها.',
-  `[المستحقّاتُ في الدليل](${g('earnings')}) · [رابطُ الدعوة](${g('referral')})`,
+  `في الدليل: ${inGuide('المستحقّات', 'earnings')} · ${inGuide('رابطُ الدعوة', 'referral')}`,
 ]
 
 /* ═══ التعاقد — من الطلب إلى أوّل شعبة ═══ */

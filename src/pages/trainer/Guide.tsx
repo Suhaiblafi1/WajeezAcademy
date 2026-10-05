@@ -56,6 +56,7 @@ import {
 import { GUIDE_SHOTS } from "@/data/trainer-guide/shots";
 import type { GuideSection } from "@/data/trainer-guide/types";
 import { hueOf, pad2 } from "@/components/guide/hues";
+import { landOnHash } from "@/components/guide/land-on-hash";
 import { Blocks, GUIDE_KIT_CSS, LINK, PageHead, Pixels, Rich } from "@/components/guide/GuideKit";
 
 /** مكانُ الصور — تولّدها `scripts/trainer-guide/capture.ts` */
@@ -73,7 +74,9 @@ const PAGE_CSS = `
 
 /* ═══ صورةٌ مؤطَّرة تُكبَّر — والأبعادُ من بيان اللقطات فلا تقفز الصفحة ═══ */
 /** شرحُ الصورة: «١ كذا · ٢ كذا» — والرقمُ فيه دائرةٌ ذهبيّةٌ كالتي على الصورة
-    نفسِها، فتُطابَق بالعين. وما لا رقمَ في أوّله يُقرأ كما هو. */
+    نفسِها، فتُطابَق بالعين. وما لا رقمَ في أوّله يُقرأ كما هو.
+    وكلُّ بندٍ سطرٌ يلتفّ كالنصّ — لا صفٌّ مرن: الصفُّ لا يكسر رقاقةَ الزرّ ولا يلفّها،
+    فكان بندٌ فيه رقاقةٌ طويلةٌ أعرضَ من الهاتف (٥ أكتوبر ٢٠٢٦). */
 function Caption({ text }: { text: string }) {
   const parts = text.split(" · ");
   return (
@@ -81,8 +84,8 @@ function Caption({ text }: { text: string }) {
       {parts.map((part, i) => {
         const m = /^(\d{1,2}) (.+)$/s.exec(part);
         return (
-          <span key={i} className="me-3 inline-flex items-baseline gap-1.5">
-            {m ? <><span className="guide-mark" aria-label={`الرقم ${m[1]}`}>{m[1]}</span><Rich text={m[2]} /></> : <Rich text={part} />}
+          <span key={i} className="me-3">
+            {m ? <><span className="guide-mark me-1.5" aria-label={`الرقم ${m[1]}`}>{m[1]}</span><Rich text={m[2]} /></> : <Rich text={part} />}
           </span>
         );
       })}
@@ -342,6 +345,9 @@ export default function TrainerGuide() {
   }, []);
   const ids = useMemo(() => tocGroups.flatMap((g) => g.items.map((t) => t.id)), [tocGroups]);
   const active = useActiveSection(ids);
+  /* رابطٌ إلى قسمٍ بعينه (`#standard`) يهبط عليه لا على أوّل الدليل — والعلّةُ
+     في `land-on-hash.ts`: الدليلُ محمّلٌ كسولا، و`ScrollToTop` يرفع إلى الأعلى */
+  useEffect(() => landOnHash(window, document, ids), [ids]);
 
   const help = [
     { title: "جلسةُ تهيئة", text: "من يمشي معك في إعداد محاورك وموادّك، في موعدٍ تختاره.", action: <Button as="a" href={ORIENTATION_BOOKING_URL} target="_blank" rel="noreferrer noopener" icon={CalendarPlus}>{ORIENTATION_CTA_AR}</Button> },
