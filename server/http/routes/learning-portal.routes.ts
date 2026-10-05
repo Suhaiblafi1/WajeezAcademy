@@ -21,7 +21,7 @@ import { MAX_BODY_CHARS } from '../../services/module-authoring.service'
 import { DeadlinesService } from '../../services/deadlines.service'
 import { CohortMessageService } from '../../services/cohort-message.service'
 import { CohortPlanService, TRAINER_EDITABLE_COHORT_FIELDS } from '../../services/cohort-plan.service'
-import { resourceSourceBlockerAr } from '../../../src/application/trainer/module-body'
+import { PLAN_MAX, PLAN_TITLE_MIN } from '../../../src/application/trainer/plan-limits'
 import { ReferralService } from '../../services/referral.service'
 import { TrainerDiscountService } from '../../services/trainer-discount.service'
 import { TrainerCodeService } from '../../services/trainer-code.service'
@@ -507,7 +507,8 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
 
   const planContent = z.object({
     kind: z.literal('trainer'),
-    summaryAr: z.string().max(2000).nullish(),
+    /* والحدودُ من `plan-limits.ts` — تقرؤها الشاشةُ فتسمّي ما تجاوزها قبل أن يُرسَل */
+    summaryAr: z.string().max(PLAN_MAX.summaryAr).nullish(),
     /* المعرّفُ لا يتكرّر في خطّةٍ واحدة.
 
        كان المعرّفُ يُشتقُّ من الموضع في الواجهة (`T${length + 1}`)، فمع
@@ -515,8 +516,8 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
        يقبلهما. والواجهةُ صارت تشتقّه من أكبرِ ما أُعطي، لكنّ الحدَّ يُثبَّت
        هنا أيضا: عميلٌ قديمٌ أو طلبٌ يدويٌّ لا يكسر خطّةً بصمت. */
     modules: z.array(z.object({
-      moduleId: z.string().max(64), titleAr: z.string().min(2).max(200),
-      outcomeAr: z.string().max(1000).nullish(), activityAr: z.string().max(2000).nullish(),
+      moduleId: z.string().max(64), titleAr: z.string().min(PLAN_TITLE_MIN).max(PLAN_MAX.moduleTitle),
+      outcomeAr: z.string().max(PLAN_MAX.outcomeAr).nullish(), activityAr: z.string().max(PLAN_MAX.activityAr).nullish(),
       /* ═══ ولماذا سقفُ المتن هو سقفُ التأليف نفسُه ═══
 
          كان هنا ٦٠٠٠ وحدَه في المنصّة كلِّها: التأليفُ واستيرادُ الكتالوج على
@@ -531,7 +532,7 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
 
          والسقفُ يُستورَد ولا يُكتب رقما: رقمان يقولان الشيءَ نفسَه يفترقان،
          وهذا افتراقُهما. */
-      artifactAr: z.string().max(1000).nullish(), bodyAr: z.string().max(MAX_BODY_CHARS).nullish(),
+      artifactAr: z.string().max(PLAN_MAX.artifactAr).nullish(), bodyAr: z.string().max(MAX_BODY_CHARS).nullish(),
       /* ع-٢: مفتاحُ ملفِّ المحتوى النظريّ. والصفُّ يُنشأ قبل الرفع، فما
          يصل هنا إشارةٌ إليه لا ملفّ — ويُقابَل بالصفوف عند العرض، فمفتاحٌ
          لا صفَّ له لا يعرض شيئا. */
@@ -561,10 +562,23 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
        رابطا ويسمّيه ملفّا أو يدع النوعَ كذبا.
 
        فصار أحدُهما يكفي، ويُردّ ما ليس فيه شيءٌ يُفتح: مصدرٌ بلا رابطٍ ولا
-       ملفٍّ سطرٌ في شاشة المتعلّم لا يقود إلى شيء. */
+       ملفٍّ سطرٌ في شاشة المتعلّم لا يقود إلى شيء.
+
+       ═══ والردُّ صار عند الإرسال لا عند الحفظ (٥ أكتوبر ٢٠٢٦) ═══
+
+       كان هنا `superRefine` يردّ الحفظَ كلَّه بمصدرٍ واحدٍ بلا رابط. والحفظُ
+       يرسل الخطّةَ كاملة، فمصدرٌ ناقصٌ في الخطوة الخامسة يُسقط حفظَ الأولى —
+       والخطواتُ تُفتح بالترتيب، فلا يبلغ المدرّبُ الخامسةَ ليصلحه: **حُبس عن حفظ
+       كلّ شيء**. ووقع فعلا: ما كتبه في لوح «موادّ دوراتك» القديم يُنقل إلى شعبة
+       إعداده (`carryMaterials`)، وكلُّ سطرٍ في «المصادر» صار مصدرا — و«كتابُ فلان»
+       بلا رابطٍ هو أكثرُ ما يُكتب هناك.
+
+       فصار المصدرُ الناقصُ يُحفظ ويُسمّى في قائمة التجهيز، ويمنع الإرسالَ وحدَه
+       (`buildChecklist`، بالقاعدة نفسِها `resourceHasSource`) — كالمواعيد
+       والكرّاسات قبله. والمتعلّمُ لا يرى إلّا خطّةً اعتُمدت، ولا تُعتمد خطّةٌ لم تُرسَل. */
     resources: z.array(z.object({
-      title: z.string().min(2).max(200),
-      url: z.string().max(500).nullish(),
+      title: z.string().min(PLAN_TITLE_MIN).max(PLAN_MAX.resourceTitle),
+      url: z.string().max(PLAN_MAX.resourceUrl).nullish(),
       kind: z.enum(RESOURCE_KINDS).nullish(), noteAr: z.string().max(500).nullish(),
       /* الصنفُ الذي اختاره المدرّب — والقائمةُ بيضاءُ كالأنواع: صنفٌ
          مخترَعٌ يُقرأ «عامّا» عند العرض، ويُردّ هنا كي لا يُحفظ أصلا. */
@@ -581,12 +595,7 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
       bodyFileKey: z.string().trim().max(120).nullish(),
       bodyFileName: z.string().trim().max(200).nullish(),
       bodyFileMime: z.string().trim().max(120).nullish(),
-    }).superRefine((r, ctx) => {
-      const blocker = resourceSourceBlockerAr(r)
-      if (blocker) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: `«${r.title}» ${blocker}`, path: ['url'] })
-      }
-    })).max(60),
+    })).max(PLAN_MAX.resources),
     liveNoteAr: z.string().max(2000).nullish(),
     /* ═══ مدّةُ الشعبة — من متى إلى متى (٢٧ سبتمبر ٢٠٢٦) ═══
 

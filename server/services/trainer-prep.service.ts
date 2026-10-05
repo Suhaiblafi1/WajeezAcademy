@@ -31,6 +31,7 @@ import { CohortService } from './cohort.service'
 import { portalDoorProblemAr } from '../../src/application/trainer/portal-access'
 import { cleanCourseMaterials, type CourseMaterials } from '../../src/application/trainer/course-materials'
 import { readContractCourses } from '../../src/application/trainer/contract-body'
+import { PLAN_MAX, PLAN_TITLE_MIN } from '../../src/application/trainer/plan-limits'
 
 /** حالُ الدورة في طور الإعداد كما تُعرض للمدرّب وللإدارة */
 export type PrepState =
@@ -280,24 +281,45 @@ export class TrainerPrepService {
     return { declined: true }
   }
 
-  /** ما كتبه في «موادّ دوراتك» قبل هذا اليوم يُنقل إلى شعبته — لا يُعاد كتابتُه */
+  /** ما كتبه في «موادّ دوراتك» قبل هذا اليوم يُنقل إلى شعبته — لا يُعاد كتابتُه
+
+      ═══ ولا يُكتب ما يردّه الحفظ (٥ أكتوبر ٢٠٢٦) ═══
+
+      الخطّةُ هنا تُكتب بالخدمة مباشرةً لا بالمسلك، فلا يمرّ بها مخطّطُ الحفظ. وكان
+      اللوحُ القديمُ يقبل مخرَجا بألفين وسطرَ مصدرٍ بألفين، والخطّةُ بألفٍ ومئتين —
+      فتُنقل خطّةٌ **يردّ الخادمُ كلَّ حفظٍ بعدها**، ولا يعرف صاحبُها لماذا. فيُقصّ
+      ما يُنقل إلى حدود الخطّة نفسِها (`plan-limits.ts`)، ويُترك عنوانٌ أقصرُ من
+      حدّه لعنوان الكتالوج. والمصدرُ بلا رابطٍ يُنقل كما هو: يُحفظ، ويُسمّى في
+      قائمة التجهيز ليُكمَل — والعلّةُ عند مخطّط `resources`. */
   private async carryMaterials(userId: string, cohortId: string, courseId: string, m: CourseMaterials) {
     const { CohortPlanService, baseModulesFor } = await import('./cohort-plan.service')
     const base = await baseModulesFor(this.prisma, courseId)
+    const M = PLAN_MAX
     const written = m.modules.filter((x) => x.titleAr.trim())
     /* المحاورُ بترتيبها: كلُّ محورٍ كتبه يأخذ موضعَ محور الكتالوج المقابل له،
        وما زاد على الكتالوج لا موضعَ له في الخطّة فيُذكر في ملخّصها. */
-    const modules = base.map((b, i) => written[i]
-      ? { ...b, titleAr: written[i]!.titleAr.trim(), outcomeAr: written[i]!.outcomeAr.trim() || b.outcomeAr }
-      : b)
+    const modules = base.map((b, i) => {
+      const w = written[i]
+      if (!w) return b
+      const title = w.titleAr.trim().slice(0, M.moduleTitle)
+      return {
+        ...b,
+        titleAr: title.length >= PLAN_TITLE_MIN ? title : b.titleAr,
+        outcomeAr: w.outcomeAr.trim().slice(0, M.outcomeAr) || b.outcomeAr,
+      }
+    })
     const extra = written.slice(base.length).map((x) => `${x.titleAr}: ${x.outcomeAr}`)
     const resources = m.sourcesAr.split('\n').map((l) => l.trim()).filter(Boolean).map((line) => {
-      const url = /https?:\/\/\S+/.exec(line)?.[0] ?? null
-      return { title: line.replace(url ?? '', '').trim() || line, url, category: 'reading', kind: url ? 'link' : null }
-    })
+      const found = /https?:\/\/\S+/.exec(line)?.[0] ?? null
+      /* ورابطٌ أطولُ من حدّ الخطّة لا يُقصّ: المقصوصُ لا يُفتح — فيبقى في الاسم */
+      const url = found && found.length <= M.resourceUrl ? found : null
+      const title = (line.replace(url ?? '', '').trim() || line).slice(0, M.resourceTitle)
+      return { title, url, category: 'reading', kind: url ? 'link' : null }
+    }).filter((r) => r.title.length >= PLAN_TITLE_MIN).slice(0, M.resources)
+    const summary = extra.length ? `محاورُ كتبتَها زيادةً على محاور الدورة: ${extra.join(' · ')}` : null
     const content = {
       kind: 'trainer' as const,
-      summaryAr: extra.length ? `محاورُ كتبتَها زيادةً على محاور الدورة: ${extra.join(' · ')}` : null,
+      summaryAr: summary ? summary.slice(0, M.summaryAr) : null,
       modules,
       resources,
       ...(m.materialsUrl ? { workbook: { title: 'كرّاسةُ الدورة', url: m.materialsUrl, parts: [] } } : {}),

@@ -67,6 +67,7 @@ import BodyEditor from "@/components/BodyEditor";
 import TabBar from "@/components/ui/TabBar";
 import ModuleBodyUpload from "@/components/ModuleBodyUpload";
 import { moduleBodyDone, resourceHasSource } from "@/application/trainer/module-body";
+import { PLAN_TITLE_MIN, planTextProblemsAr, type PlanTextPlace } from "@/application/trainer/plan-limits";
 import { blockingBeforeSubmit, sendBlock, trainerOwned } from "@/application/trainer/plan-gate";
 import { notedSections, notesForTrainer, type ReviewNotes } from "@/application/trainer/review-notes";
 import { trainerRegistrationLine } from "@/application/learning/registration-state";
@@ -433,7 +434,17 @@ export default function CohortWorkspace() {
   /* ما ينقص الخطوةَ كي تتمّ — يُقال بعد «احفظ وتابِع» حين لا تتمّ، بأسمائه لا
      بعدد، ويُمحى بأوّل محاولةٍ تالية. «لا ينتقل للتالي إلّا بعد أن يتمّ
      النقطةَ السابقة» — والمنعُ بلا سببٍ يُقال عطبٌ لا قاعدة. */
-  const [gaps, setGaps] = useState<string[] | null>(null);
+  /* ═══ وثلاثةُ أحوالٍ لا حالٌ واحد (٥ أكتوبر ٢٠٢٦) ═══
+
+     كان رأسُ القائمة واحدا: «لم تتمّ الخطوةُ بعد — ينقصها». فيُقال للمدرّب
+     الكلامُ نفسُه حين حُفظ ما كتبه ولم تتمّ خطوتُه، وحين **لم يُحفظ شيءٌ أصلا**
+     لأنّ في الخطّة ما يمنع حفظَها — فيظنّ الأوّلَ ضياعا والثانيَ حفظا.
+     فـ`saved`: حُفظ ولم تتمّ. و`refused`: لم يُحفظ، ومواضعُ ما منعه — وكلُّ
+     موضعٍ منها يُفتح وإن كان مقفلا بالترتيب (`canOpen`)، وإلّا حُبس المدرّبُ
+     عن خطوةٍ فيها ما يمنع حفظَ ما قبلها. */
+  const [gaps, setGapsState] = useState<{ items: string[]; refused: Stage[]; saved: boolean } | null>(null);
+  const setGaps = (items: string[] | null, how: { refused?: Stage[]; saved?: boolean } = {}) =>
+    setGapsState(items ? { items, refused: how.refused ?? [], saved: how.saved ?? false } : null);
   /* «أرسِلها» وفي يده تعديلٌ لم يُحفظ — يُسأل قبل أن يُرسَل المحفوظُ وحدَه (٣ أكتوبر ٢٠٢٦) */
   const [unsavedAsk, setUnsavedAsk] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -681,7 +692,8 @@ export default function CohortWorkspace() {
      ما يُراجَع لا ما يُبنى. وما صار ناقصا بعد تمامه (مدّةٌ تغيّرت فخرج منها
      لقاء) يُقفل ما بعده ثانيةً حتّى يُصلَح: الترتيبُ قاعدةٌ لا ذكرى. */
   const doneOf = (k: Stage) => STAGE_KEYS[k].every((key) => byKey.get(key)?.done ?? false);
-  const canOpen = (i: number) => approved || locked || STAGES.slice(0, i).every((x) => doneOf(x.key));
+  const canOpen = (i: number) => approved || locked || STAGES.slice(0, i).every((x) => doneOf(x.key))
+    || (gaps?.refused.includes(STAGES[i].key) ?? false);
   /* اليومُ في عمّان — منه يُحكَم على «البدءُ مضى» كما يحكم الخادم */
   const today = zonedDay(new Date());
   /* والدرجةُ الأخيرةُ يُسمّى زرُّها «أرسِلها للاعتماد» — والاسمُ لا يُكتب
@@ -716,23 +728,35 @@ export default function CohortWorkspace() {
      الحفظُ يرسل الخطّةَ كاملةً (المدّةَ والمحاورَ والمصادر)، فمحورٌ بلا
      عنوانٍ تُرك في خطوةٍ أخرى يُسقط حفظَ الخطوة الأولى بخطإٍ لا يسمّيه. فيُفحص
      هنا بالقواعد نفسِها التي يردّ بها الخادم، ويُقال بأسمائه. */
-  const saveProblems = (): string[] => {
-    const out: string[] = [];
-    if (identity.title.trim().length < 3) out.push("اسمُ الشعبة ثلاثةُ أحرفٍ فأكثر");
+  /* ═══ والمصدرُ بلا رابطٍ لا يمنع الحفظ (٥ أكتوبر ٢٠٢٦) ═══
+
+     كان هنا: «مصدرٌ ناقص — له اسمٌ ورابطٌ أو ملفّ». فما نُقل من لوح «موادّ
+     دوراتك» القديم — «كتابُ فلان» بلا رابط — كان يمنع حفظَ «المعلومات
+     الأساسيّة» نفسِها، والمصادرُ في الخطوة الخامسة لا تُفتح قبل أن تتمّ الأولى:
+     فلا يُحفظ شيءٌ أبدا. فصار يُحفظ ويُسمّى في قائمة التجهيز ويمنع الإرسالَ
+     وحدَه — والعلّةُ كاملةً عند مخطّط `resources` في `learning-portal.routes.ts`.
+
+     وما بقي هنا يردّه الخادمُ حقّا، وكلٌّ بموضعه: الخطوةُ التي يُصلَح فيها. */
+  const PLACE_STAGE: Record<PlanTextPlace, Stage> = { identity: "identity", modules: "modules", recorded: "sessions", resources: "assignments" };
+  const saveProblems = (): { stage: Stage; text: string }[] => {
+    const out: { stage: Stage; text: string }[] = [];
+    if (identity.title.trim().length < 3) out.push({ stage: "identity", text: "اسمُ الشعبة ثلاثةُ أحرفٍ فأكثر" });
     if (content.startsOn || content.endsOn) {
       const p = periodProblem(content, { today, approvedStart: ws.cohort.publicPeriod?.startsOn ?? null });
-      if (p) out.push(p);
+      if (p) out.push({ stage: "identity", text: p });
     }
     content.modules.forEach((m, i) => {
-      if (m.titleAr.trim().length < 2) out.push(`المحور ${i + 1} بلا عنوان — اكتبه أو احذف المحور`);
+      if (m.titleAr.trim().length < PLAN_TITLE_MIN) out.push({ stage: "modules", text: `المحور ${i + 1} بلا عنوان — اكتبه أو احذف المحور` });
     });
     content.resources.forEach((r, i) => {
-      if (resourceCategory(r) === "recorded" && (!r.title.trim() || !resourceHasSource(r))) {
-        out.push(`جلسةٌ مسجّلةٌ ناقصة (${r.title.trim() || `رقم ${i + 1}`}) — لها اسمٌ ورابط، أو أزِلها من خطوة «اللقاءات»`);
-      } else if (!r.title.trim() || !resourceHasSource(r)) {
-        out.push(`مصدرٌ ناقص (${r.title.trim() || `رقم ${i + 1}`}) — له اسمٌ ورابطٌ أو ملفّ`);
+      if (r.title.trim().length >= PLAN_TITLE_MIN) return;
+      if (resourceCategory(r) === "recorded") {
+        out.push({ stage: "sessions", text: `جلسةٌ مسجّلةٌ بلا اسم (رقم ${i + 1}) — سمِّها، أو أزِلها من خطوة «اللقاءات»` });
+      } else {
+        out.push({ stage: "assignments", text: `مصدرٌ بلا اسم (رقم ${i + 1}) — سمِّه، أو أزِله من «المصادر»` });
       }
     });
+    for (const p of planTextProblemsAr(content)) out.push({ stage: PLACE_STAGE[p.place], text: p.text });
     return out;
   };
   /* ═══ الحفظُ واحدٌ لكلّ الخطوات ═══
@@ -747,7 +771,10 @@ export default function CohortWorkspace() {
     if (locked) return true;
     if (!over && !Object.values(dirty).some(Boolean)) return true;
     const problems = saveProblems();
-    if (problems.length) { setGaps(problems); return false; }
+    if (problems.length) {
+      setGaps(problems.map((p) => p.text), { refused: [...new Set(problems.map((p) => p.stage))] });
+      return false;
+    }
     await apiPut(`/api/trainer/cohorts/${ws.cohort.id}/plan`, over ?? content);
     if (identity.title.trim() !== ws.cohort.title) {
       await apiPatch(`/api/trainer/cohorts/${ws.cohort.id}`, { title: identity.title.trim() });
@@ -831,6 +858,8 @@ export default function CohortWorkspace() {
           .map((r) => ({ title: r.title, moduleId: r.moduleId ?? null, opensAt: r.opensAt ?? null })),
         now: new Date(),
       });
+      const looseRec = (saved?.resources ?? []).filter((r) => resourceCategory(r) === "recorded" && !resourceHasSource(r));
+      if (looseRec.length) out.push(`جلساتٌ مسجّلةٌ بلا رابط: ${looseRec.map((r) => `«${r.title}»`).join("، ")} — الصق رابطَ كلٍّ أو أزِلها`);
       return out.length ? out : [label];
     }
     if (k === "assignments") {
@@ -843,6 +872,9 @@ export default function CohortWorkspace() {
       if ((saved?.resources ?? []).length === 0) out.push("أضِف مصدرا واحدا على الأقلّ — كرّاسةً أو كتابا أو رابطا");
       const orphan = (saved?.resources ?? []).filter((r) => r.moduleId && !ids.includes(r.moduleId));
       if (orphan.length) out.push(`مصادرُ مربوطةٌ بمحورٍ حُذف: ${orphan.map((r) => `«${r.title}»`).join("، ")} — اختر لها محورا`);
+      /* وما حُفظ بلا رابطٍ ولا ملفّ — يُسمّى بعينه ليُكمَل (والعلّةُ عند `saveProblems`) */
+      const loose = (saved?.resources ?? []).filter((r) => resourceCategory(r) !== "recorded" && !resourceHasSource(r));
+      if (loose.length) out.push(`مصادرُ بلا رابطٍ ولا ملفّ: ${loose.map((r) => `«${r.title}»`).join("، ")} — الصق رابطَ كلٍّ، أو أزِله وأضِفه ملفّا من «أضف»`);
       return out.length ? out : [label];
     }
     return [label];
@@ -862,7 +894,15 @@ export default function CohortWorkspace() {
       const fresh = await load();
       if (!fresh) return;
       const at = STAGES.findIndex((x) => x.key === stage);
-      if (STAGE_KEYS[stage].every((k) => fresh.checklist.find((c) => c.key === k)?.done)) {
+      const doneIn = (k: Stage) => STAGE_KEYS[k].every((key) => fresh.checklist.find((c) => c.key === key)?.done);
+      /* فُتحت هذه الخطوةُ لإصلاح ما منع الحفظ وما قبلها لم يتمّ — فبعد الحفظ
+         يُعاد إلى أوّل ما لم يتمّ، لا يُدفع إلى خطوةٍ مقفلة */
+      const behind = locked || approved ? undefined : STAGES.slice(0, at).find((x) => !doneIn(x.key));
+      if (behind) {
+        setStage(behind.key);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        toast(`حُفظ — وتُكمل من «${behind.label}»`);
+      } else if (doneIn(stage)) {
         const next = STAGES[at + 1];
         if (next) {
           setStage(next.key);
@@ -870,7 +910,7 @@ export default function CohortWorkspace() {
           toast(locked ? `«${next.label}»` : `حُفظت «${STAGES[at].label}» — إلى «${next.label}»`);
         }
       } else {
-        setGaps(gapsFor(stage, fresh));
+        setGaps(gapsFor(stage, fresh), { saved: !locked });
       }
     } catch (e) {
       toastError(e instanceof ApiError ? e.message : "تعذّر الحفظ");
@@ -1253,12 +1293,28 @@ export default function CohortWorkspace() {
 
           {/* وما ينقص الخطوةَ كي تتمّ — بعد «احفظ وتابِع» التي لم تنقل. لاصقٌ
               كالملاحظة: يقرؤه وهو ينزل إلى الحقل الذي يصحّحه. */}
-          {gaps && gaps.length > 0 && (
+          {gaps && gaps.items.length > 0 && (
             <Inset tone="warn" className="mt-2" role="alert">
-              <p className="text-read font-black text-gold-ink">لم تتمّ «{here?.label}» بعد — ينقصها:</p>
+              <p className="text-read font-black text-gold-ink">
+                {gaps.refused.length > 0
+                  ? "لم يُحفظ شيءٌ بعد — في الخطّة ما يمنع حفظَها. أصلِحه ثمّ احفظ:"
+                  : gaps.saved
+                    ? `ما كتبتَه محفوظ — ولم تتمّ «${here?.label}» بعد، ينقصها:`
+                    : `لم تتمّ «${here?.label}» بعد — ينقصها:`}
+              </p>
               <ul className="mt-1 list-inside list-disc space-y-0.5 text-read leading-7 text-foreground">
-                {gaps.map((g) => <li key={g}>{g}</li>)}
+                {gaps.items.map((g) => <li key={g}>{g}</li>)}
               </ul>
+              {/* وما منع الحفظَ في خطوةٍ غيرِ هذه يُفتح موضعُه — ولو كانت مقفلةً بالترتيب */}
+              {gaps.refused.some((k) => k !== stage) && (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {STAGES.filter((x) => x.key !== stage && gaps.refused.includes(x.key)).map((x) => (
+                    <Button key={x.key} tone="secondary" size="sm" onClick={() => openStage(x.key)}>
+                      افتح «{x.label}»
+                    </Button>
+                  ))}
+                </div>
+              )}
             </Inset>
           )}
 
@@ -2279,6 +2335,12 @@ export default function CohortWorkspace() {
                                 setContent({ ...content, resources: content.resources.filter((_, j) => j !== i) });
                               }}>أزل</Button>
                           </div>
+                          {/* وما حُفظ بلا رابطٍ ولا ملفّ يُعلَّم في صفّه — يُحفظ هكذا، ويمنع الإرسالَ وحدَه */}
+                          {!resourceHasSource(r) && (
+                            <p className="text-read leading-6 text-gold-ink">
+                              ينقصه رابط — الصقه أعلاه، أو أزِله وأضِفه ملفّا من «أضف». يُحفظ كما هو، ولا تُرسَل الشعبةُ للاعتماد حتّى يُكمَل.
+                            </p>
+                          )}
                           <input
                             value={r.noteAr ?? ""}
                             onChange={(e) => patch({ noteAr: e.target.value })}
