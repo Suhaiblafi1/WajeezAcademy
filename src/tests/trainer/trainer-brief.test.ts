@@ -21,6 +21,7 @@ import { TRAINER_GUIDE_PATH } from '../../application/trainer/trainer-guide'
 import { PUBLIC_PAGES } from '../../application/site/public-pages'
 import { GUIDE_SECTIONS } from '../../data/trainer-guide/content'
 import * as BRIEF from '../../data/trainer-brief/content'
+import { FAMILY_INTRO, FEATURES } from '../../data/about'
 
 const root = process.cwd()
 const strip = (s: string) => s.replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '').replace(/^\s*\/\/.*$/gm, '')
@@ -100,8 +101,12 @@ describe('③ وكلُّ رابطٍ فيها يُفتح', () => {
     expect(broken, `مراسٍ لا قسمَ لها في الدليل: ${broken.join('، ')}`).toEqual([])
   })
 
+  /* والمسارُ بمتغيّرٍ (`/p/:slug`) يُطابَق بمقطعه — و«من نحن» على `/p/about` */
+  const served = (path: string) => [...routes].some((r) =>
+    r === path || new RegExp(`^${r.replace(/:[^/]+/g, '[^/]+')}$`).test(path))
+
   it('والمسارُ مسارٌ يُخدَم', () => {
-    const broken = links.filter((h) => h.startsWith('/')).map((h) => h.split('#')[0]).filter((p) => !routes.has(p))
+    const broken = links.filter((h) => h.startsWith('/')).map((h) => h.split('#')[0]).filter((p) => !served(p))
     expect(broken, `روابطُ إلى مساراتٍ لا تُخدَم: ${broken.join('، ')}`).toEqual([])
   })
 })
@@ -126,5 +131,47 @@ describe('④ وما تقوله يطابق مصدرَه', () => {
     }
     expect(Math.abs(catalog.courses.length - BRIEF.CATALOG_COURSES_ABOUT), '«نحو» تبعد عن العدد أكثرَ من عشر').toBeLessThanOrEqual(10)
     expect(catalog.launch_pathways.length).toBe(BRIEF.CATALOG_PATHWAYS)
+  })
+})
+
+/* ═══ ⑤ ولا «نؤهّلك» — قرارُ صاحب المنصّة (٥ أكتوبر ٢٠٢٦) ═══
+   «لا تقل نؤهّلك لأنّها قد تُقرأ ندرّبك» — ومدرّبٌ خبيرٌ يُدعى لا يُقال له إنّه سيُؤهَّل.
+   والفحصُ على نصوص الصفحة (بياناتِها وشيفرةِ عرضها بلا تعليقاتها) بعد نزع الحركات،
+   فلا تمرّ الكلمةُ بشدّةٍ أو بلاها. و«أهل» وحدَها لا تُطابَق: «أهلا» ليست منها. */
+describe('⑤ ولا «نؤهّلك» في نصٍّ يقرؤه المدعوّ', () => {
+  const bare = (t: string) => t.replace(/[\u064B-\u0652]/g, '')
+  const QUALIFY = /[نتيأ]ؤهل|تأهيل|مؤهل/
+
+  it('تُقرأ النصوصُ فعلا — وإلّا خضرّ ما بعده على فراغ', () => {
+    expect(bare('نؤهّلك'), 'نزعُ الحركات لا يعمل').toMatch(QUALIFY)
+    expect(bare('تؤهَّل لها')).toMatch(QUALIFY)
+    expect(bare('أهلا وسهلا')).not.toMatch(QUALIFY)
+  })
+
+  it('لا في بيانات الصفحة ولا في عرضها', () => {
+    const texts = [JSON.stringify(Object.values(BRIEF)), PAGE]
+    const hits = texts.flatMap((t) => [...bare(t).matchAll(new RegExp(QUALIFY, 'g'))].map((m) => m[0]))
+    expect(hits, `«نؤهّلك» وأخواتُها في الصفحة: ${hits.join('، ')} — قل «نختار لك»`).toEqual([])
+  })
+})
+
+/* ═══ ⑥ و«من نحن» في الورقة الأولى، والصفحةُ ثلاثُ ورقات (٥ أكتوبر ٢٠٢٦) ═══ */
+describe('⑥ «من نحن» أوّلا، وثلاثُ ورقات', () => {
+  it('نصُّ «من نحن» من `data/about.ts` نفسِه — لا نسخةٌ تفترق', () => {
+    expect(BRIEF.ABOUT_SECTION.body).toBe(FAMILY_INTRO.body)
+    expect(BRIEF.ABOUT_SECTION.products.map((p) => p.url)).toEqual(FAMILY_INTRO.products.map((p) => p.url))
+    expect(BRIEF.ABOUT_JOURNEY.map((j) => j.id), 'محطّاتُ «من نحن» لا تقابلها محطّاتُ الصفحة').toEqual(FEATURES.map((f) => f.id))
+  })
+
+  it('ثلاثُ ورقات، و«من نحن» في الأولى قبل الثانية', () => {
+    const sheets = [...PAGE.matchAll(/className="brief-sheet[\s"]/g)].map((m) => m.index!)
+    expect(sheets.length, 'الصفحةُ ليست ثلاثَ ورقات').toBe(3)
+    const about = PAGE.indexOf('<About />')
+    expect(about, '«من نحن» لا تُعرض').toBeGreaterThan(-1)
+    expect(about > sheets[0] && about < sheets[1], '«من نحن» خارجَ الورقة الأولى').toBe(true)
+  })
+
+  it('وكلُّ ورقةٍ تبدأ صفحتَها في الطباعة', () => {
+    expect(PAGE).toMatch(/\.brief-sheet \+ \.brief-sheet \{ break-before: page; \}/)
   })
 })

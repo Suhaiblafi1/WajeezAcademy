@@ -18,7 +18,17 @@
      المسارات لا تمسّ الأوليين لأنّهما على المقعد لا على ما دُفع (`earnings.service.ts`).
    · **والنطاقُ مثالٌ بأمر صاحب المنصّة**: «لا تعطِ أسعارا… قل مثلا من 20 إلى 40
      دولارا، للعامّ وللرابط». فيُقال مثالا، ويُقال إنّ الرقمَ في الاتفاقيّة.
-   · **ولا «عرضك»** — `offer-word.test.ts` يحرسها في كلّ نصّ. */
+   · **ولا «عرضك»** — `offer-word.test.ts` يحرسها في كلّ نصّ.
+   · **ولا «نؤهّلك»** — قرارُ صاحب المنصّة (٥ أكتوبر ٢٠٢٦): «لا تقل نؤهّلك لأنّها قد
+     تُقرأ ندرّبك». فمدرّبٌ خبيرٌ يُدعى لا يُقال له إنّه سيُؤهَّل: «نختار لك دوراتٍ
+     تطابق خبرتك». ويحرسها `trainer-brief.test.ts` في نصوص الصفحة كلِّها.
+
+   ═══ و«من نحن» في الصفحة الأولى (٥ أكتوبر ٢٠٢٦) ═══
+
+   «أعطه مجالا يقرأ من نحن في الصفحة الأولى». فالتعريفُ من `data/about.ts` نفسِه —
+   نصُّ «من نحن» وأخواها بموقعيهما — لا نسخةٌ تفترق عنه. وما يجده المتعلّمُ عندنا
+   محطّاتُ «من نحن» بترتيبها (`FEATURES`) بلسان المدرّب: سجلٌّ بمفاتيحها، فمحطّةٌ
+   تُضاف هناك ولا تُكتب هنا لا تُبنى. */
 
 import type { GuideSection } from '../trainer-guide/types'
 import { EXTENSION_DAYS, MATERIALS_WINDOW_DAYS, MAX_EXTENSIONS } from '../../application/trainer/conditional-offer'
@@ -30,6 +40,7 @@ import { TRAINING_SEASONS } from '../../application/trainer/application-options'
 import { START_ADVICE } from '../../application/trainer/start-advice'
 import { fmtDayMonth } from '../../application/text/format-ar'
 import { TRAINER_GUIDE_PATH } from '../../application/trainer/trainer-guide'
+import { FAMILY_INTRO, FEATURES, PRICE, type FeatureId } from '../about'
 
 export const BRIEF_UPDATED_AR = '5 أكتوبر 2026'
 
@@ -49,6 +60,28 @@ const sessionLen = MIN_SESSION_MINUTES === 120 ? 'ساعتان' : `${MIN_SESSION
 const seasons = TRAINING_SEASONS.map((s) => `${s.label.replace(/^موسم /, '')} (${s.months})`).join('، ')
 const g = (anchor: string) => `${TRAINER_GUIDE_PATH}#${anchor}`
 
+/* ═══ من نحن — الصفحةُ الأولى ═══ */
+export const ABOUT_SECTION = {
+  id: 'about',
+  title: 'من نحن',
+  why: 'قبل الأسئلة: من ندعوك إلى التدريب معه.',
+  /** نصُّ «من نحن» نفسُه — ويُعرض نصّا لا بلغة الدليل: «…» فيه اسمٌ لا زرّ */
+  body: FAMILY_INTRO.body,
+  products: FAMILY_INTRO.products,
+  price: `${PRICE.title}.`,
+  more: '[اقرأ «من نحن» كاملة](/p/about)',
+}
+
+/** ما يجده متعلّموك عندنا — محطّاتُ «من نحن» بترتيبها، بلسان المدرّب */
+const FOR_TRAINER: Record<FeatureId, { step: string; text: string }> = {
+  advisor: { step: 'قبل أن يبدأ', text: 'مستشارٌ يرافقه من تشخيصه المجّانيّ إلى مشروع تخرّجه.' },
+  sources: { step: 'يتعلّم', text: 'مصادرُ متنوّعةٌ يتعلّم منها بوتيرته — ومنها ما تختاره أنت لدورتك.' },
+  training: { step: 'يتدرّب', text: 'تدريبٌ عمليٌّ في ورشٍ مباشرة — وهنا دورُك.' },
+  experts: { step: 'يُقيَّم', text: 'تطبيقٌ عمليٌّ لكلّ دورةٍ يُقيَّم بمعاييرَ مكتوبةٍ يعرفها قبل أن يبدأ.' },
+  graduation: { step: 'يتخرّج', text: 'ومشروعُ تخرّجٍ يجمع ما تعلّمه في عملٍ واحدٍ يُريه لأيّ أحد.' },
+}
+export const ABOUT_JOURNEY = FEATURES.map((f) => ({ id: f.id, ...FOR_TRAINER[f.id] }))
+
 /** حقائقُ الغلاف — أربعٌ تُقرأ قبل كلّ شيء */
 export const BRIEF_FACTS: { value: string; label: string }[] = [
   { value: 'عن بُعد', label: 'لقاءاتٌ مباشرة على Zoom' },
@@ -57,11 +90,8 @@ export const BRIEF_FACTS: { value: string; label: string }[] = [
   { value: `${MATERIALS_WINDOW_DAYS} أيّام`, label: 'لإعداد دوراتك، ومعها جلسةُ تهيئة' },
 ]
 
-/** نصيحةُ البدء لموسم الشتاء — تُعرض حتّى يحلّ ديسمبر (`startAdvice`) */
-export const BRIEF_START_ADVICE = {
-  title: 'لموسم الشتاء هذا',
-  text: `نقترح أن تبدأ شعبتُك في ديسمبر، أو من ${fmtDayMonth(`${START_ADVICE.lateNovember}T12:00:00`)} على الأقلّ، ليتّسع الوقتُ للتعريف بدورتك قبل أن تبدأ. اقتراحٌ لا شرط، والقرارُ قرارُك.`,
-}
+/** نصيحةُ البدء لموسم الشتاء — تُلحق ببطاقة المواسم حتّى يحلّ ديسمبر (`startAdvice`) */
+export const BRIEF_START_ADVICE_AR = `ولموسم الشتاء هذا نقترح أن تبدأ شعبتُك في ديسمبر، أو من ${fmtDayMonth(`${START_ADVICE.lateNovember}T12:00:00`)} على الأقلّ، ليتّسع الوقتُ للتعريف بدورتك قبل أن تبدأ — اقتراحٌ لا شرط.`
 
 export const BRIEF_SECTIONS: GuideSection[] = [
   {
@@ -90,7 +120,7 @@ export const BRIEF_SECTIONS: GuideSection[] = [
       {
         kind: 'list',
         items: [
-          'نؤهّلك لدوراتٍ بعينها تطابق خبرتك، ولك في كلّ دورةٍ أن تقبلها أو تعتذر عنها — والاعتذارُ لا يُحسب عليك.',
+          'نختار لك دوراتٍ بعينها تطابق خبرتك، ولك في كلّ دورةٍ أن تقبلها أو تعتذر عنها — والاعتذارُ لا يُحسب عليك.',
           `وإن كانت عندك دورةٌ تتقنها وليست عندنا فاقترحها، ونقرّر نحن أن نضيفها أو نجعلها نسختَك من دورةٍ قريبة. [كيف تقترح دورة](${g('proposals')})`,
         ],
       },
@@ -192,7 +222,7 @@ export const PAY_EXAMPLE_AR = `مثالٌ لا وعد: يتراوح أجرُ ا�
 export const PAY_TERMS: string[] = [
   `لكلّ شعبةٍ كشفُها: يُعتمد خلال ${PAYOUT_APPROVAL_DAYS} يوما من انتهائها، ويُصرف خلال ${PAYOUT_TRANSFER_DAYS} يوما من اعتماده — ولا يتجاوز ${PAYOUT_OUTER_DAYS} يوما من انتهائها.`,
   `ويظهر لك الكشفُ ببنوده قبل اعتماده، ولك ${PAYOUT_OBJECTION_DAYS} أيّامٍ تعترض فيها.`,
-  'وقبل كلّ موسمٍ تالٍ تصلك دعوةُ تجديد، وقد تُزاد فيها أتعابُك بحسب أدائك والدوراتِ التي تؤهَّل لها.',
+  'وقبل كلّ موسمٍ تالٍ تصلك دعوةُ تجديد، وقد تُزاد فيها أتعابُك بحسب أدائك والدوراتِ التي تدرّسها.',
   `[المستحقّاتُ في الدليل](${g('earnings')}) · [رابطُ الدعوة](${g('referral')})`,
 ]
 
@@ -206,7 +236,7 @@ export const STEPS_SECTION = {
 export const BRIEF_STEPS: { title: string; detail: string }[] = [
   { title: 'تقدّم طلبك', detail: `نموذجٌ قصيرٌ في ثلاث خطوات: من أنت، وماذا تتقن، وكيف تدرّب. [نموذجُ الانضمام](${APPLY_PATH})` },
   { title: 'نلتقي', detail: 'اجتماعٌ تعريفيٌّ قصير تحجز موعدَه بنفسك.' },
-  { title: 'نؤهّلك ونرسل الاتفاقيّة', detail: 'للدورات التي تطابق خبرتك، فتقرؤها وتوقّعها من رابطها.' },
+  { title: 'نختار دوراتِك ونرسل الاتفاقيّة', detail: 'دوراتٌ تطابق خبرتك، واتفاقيّةٌ تقرؤها وتوقّعها من رابطها.' },
   { title: 'تُفتح بوّابتُك', detail: `باعتماد توقيعك، ومعها ${MATERIALS_WINDOW_DAYS} أيّامٍ لإعداد دوراتك.` },
   { title: 'نعتمد دوراتك', detail: 'فنوقّع الاتفاقيّةَ من جهتنا وتُفعَّل مدرّبا.' },
   { title: 'تدرّس وتُحاسَب', detail: 'تُفتح شعبُك للتسجيل، ويصلك كشفُ كلّ شعبةٍ بعد انتهائها.' },
