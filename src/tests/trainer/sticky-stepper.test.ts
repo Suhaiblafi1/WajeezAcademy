@@ -78,7 +78,7 @@ describe('① السلّمُ يبقى ظاهرا حتّى يخرج من الشع
      فالنقرةُ تفتح الخطوةَ وحدَها. */
   it('ونقرةُ خطوةٍ تفتحها — وإلّا فسلّمٌ يُرى ولا يُصعد', () => {
     /* ونقرتُها تحفظ ما في اليد قبل أن تفتحها (٥ أكتوبر ٢٠٢٦) — فالمحروسُ أنّها تنتهي بفتحها */
-    expect(WS).toMatch(/const openStage = async \(s: Stage\) => \{[\s\S]*?\n    setStage\(s\);\n  \};/)
+    expect(WS).toMatch(/const openStage = async \(s: Stage\) => \{[\s\S]*?\n {4}setStage\(s\);\n {2}\};/)
     expect(rail).toMatch(/onClick=\{\(\) => openStage\(s\.key\)\}/)
   })
 

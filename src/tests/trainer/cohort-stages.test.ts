@@ -181,7 +181,7 @@ describe('الطورُ قبل خطواته', () => {
     expect(before, 'عاد الخطُّ يختفي في «مركز التواصل»').not.toContain('phase === "prepare" &&')
     expect(ws, 'نقرةُ الخطوة لا تفتحها — فسلّمٌ يُرى ولا يُصعد')
       /* وتحفظ ما في اليد قبل أن تفتحها (٥ أكتوبر ٢٠٢٦) — فالمحروسُ أنّها تنتهي بفتحها */
-      .toMatch(/const openStage = async \(s: Stage\) => \{[\s\S]*?\n    setStage\(s\);\n  \};/)
+      .toMatch(/const openStage = async \(s: Stage\) => \{[\s\S]*?\n {4}setStage\(s\);\n {2}\};/)
   })
 
   /* ═══ حدُّ المحور المفتوح ═══
