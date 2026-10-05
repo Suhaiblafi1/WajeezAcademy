@@ -21,7 +21,7 @@ import { TRAINER_GUIDE_PATH } from '../../application/trainer/trainer-guide'
 import { PUBLIC_PAGES } from '../../application/site/public-pages'
 import { GUIDE_SECTIONS } from '../../data/trainer-guide/content'
 import * as BRIEF from '../../data/trainer-brief/content'
-import { FAMILY_INTRO, FEATURES } from '../../data/about'
+import { FAMILY_INTRO, FEATURE_HERO, FEATURES } from '../../data/about'
 
 const root = process.cwd()
 const strip = (s: string) => s.replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '').replace(/^\s*\/\/.*$/gm, '')
@@ -173,6 +173,29 @@ describe('⑥ «من نحن» أوّلا، وثلاثُ ورقات', () => {
 
   it('وكلُّ ورقةٍ تبدأ صفحتَها في الطباعة', () => {
     expect(PAGE).toMatch(/\.brief-sheet \+ \.brief-sheet \{ break-before: page; \}/)
+  })
+
+  /* ونقلةٌ من الأختين إلى المحطّات (٥ أكتوبر ٢٠٢٦): «لا يوجد نقلة» — فبينهما تعريفٌ
+     بالأكاديمية من «من نحن» نفسِه، وجملةٌ تعدّ المحطّاتِ وتسمّي محطّةَ المدرّب */
+  it('وبين الأختين والمحطّات تعريفٌ بالأكاديمية — من «من نحن» نفسِه', () => {
+    expect(BRIEF.ACADEMY_INTRO.name).toBe(FAMILY_INTRO.title)
+    expect(BRIEF.ACADEMY_INTRO.tagline).toBe(FEATURE_HERO.lines.join(' '))
+    expect(BRIEF.ACADEMY_INTRO.body.startsWith(FEATURE_HERO.lead.split(':')[0])).toBe(true)
+    const products = PAGE.indexOf('a.products.map')
+    const intro = PAGE.indexOf('{ACADEMY_INTRO.name}')
+    const journey = PAGE.indexOf('ABOUT_JOURNEY.map')
+    expect(products).toBeGreaterThan(-1)
+    expect(intro, 'التعريفُ بالأكاديمية لا يُعرض').toBeGreaterThan(-1)
+    expect(intro > products && intro < journey, 'التعريفُ ليس بين الأختين والمحطّات').toBe(true)
+  })
+
+  it('والجملةُ تعدّ المحطّاتِ وتسمّي محطّةَ المدرّب كما هي', () => {
+    const count: Record<number, string> = { 3: 'ثلاثُ', 4: 'أربعُ', 5: 'خمسُ', 6: 'ستُّ', 7: 'سبعُ' }
+    const ordinal = ['الأولى', 'الثانية', 'الثالثة', 'الرابعة', 'الخامسة', 'السادسة', 'السابعة']
+    const at = BRIEF.ABOUT_JOURNEY.findIndex((j) => j.id === 'training')
+    expect(at, 'لا محطّةَ تدريب').toBeGreaterThan(-1)
+    expect(BRIEF.ACADEMY_INTRO.body).toContain(`${count[BRIEF.ABOUT_JOURNEY.length]} محطّات`)
+    expect(BRIEF.ACADEMY_INTRO.body).toContain(`محطّتُها ${ordinal[at]}`)
   })
 })
 

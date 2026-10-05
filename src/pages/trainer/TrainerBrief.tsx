@@ -35,7 +35,7 @@ import { hueOf, pad2 } from "@/components/guide/hues";
 import type { GuideBlock, GuideSection } from "@/data/trainer-guide/types";
 import { Blocks, GUIDE_KIT_CSS, PageHead, Pixels, Rich } from "@/components/guide/GuideKit";
 import {
-  ABOUT_JOURNEY, ABOUT_SECTION, APPLY_PATH, BRIEF_FACTS, BRIEF_SECTIONS, BRIEF_START_ADVICE_AR, BRIEF_STEPS, BRIEF_UPDATED_AR,
+  ABOUT_JOURNEY, ABOUT_SECTION, ACADEMY_INTRO, APPLY_PATH, BRIEF_FACTS, BRIEF_SECTIONS, BRIEF_START_ADVICE_AR, BRIEF_STEPS, BRIEF_UPDATED_AR,
   PAY_EXAMPLE_AR, PAY_MODELS, PAY_SECTION, PAY_TERMS, STEPS_NOTE_AR, STEPS_SECTION,
 } from "@/data/trainer-brief/content";
 
@@ -159,7 +159,20 @@ function About() {
           </li>
         ))}
       </ul>
-      <h3 className="mt-8"><span className="guide-pill guide-pill-wrap" data-hue="sky">وما يجده متعلّموك عندنا</span></h3>
+      {/* والأكاديميةُ بعد أختيها — النقلةُ من العائلة إلى ما يجده متعلّموك (`ACADEMY_INTRO`) */}
+      <div className="mt-8 border-t border-[rgb(var(--g-line))] pt-7">
+        <div className="flex items-center gap-3">
+          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-white shadow-sm">
+            <img src="/logo-mark.png" alt="" className="h-9 w-9 object-contain" />
+          </span>
+          <div className="min-w-0">
+            <h3 className="guide-h text-2xl leading-9">{ACADEMY_INTRO.name}</h3>
+            <p className="text-base font-bold leading-7" style={{ color: "rgb(var(--g-ink) / .8)" }}>{ACADEMY_INTRO.tagline}</p>
+          </div>
+        </div>
+        <p className="mt-4 text-lg leading-9">{ACADEMY_INTRO.body}</p>
+      </div>
+      <h3 className="mt-6"><span className="guide-pill guide-pill-wrap" data-hue="sky">وما يجده متعلّموك عندنا</span></h3>
       <ol className="brief-journey brief-grid-5 mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         {ABOUT_JOURNEY.map((j, i) => (
           <li key={j.id} className={`guide-card p-4 ${j.id === "training" ? "brief-pick" : ""}`}>
