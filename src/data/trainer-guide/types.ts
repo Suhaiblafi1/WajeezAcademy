@@ -51,6 +51,8 @@ export interface GuideSection {
   tab?: string
   /** المسارُ الذي يفتحه زرُّ «افتحها في بوّابتك» */
   path?: string
+  /** يومُ إضافة القسم (YYYY-MM-DD) — يحمل به علامةَ «جديد» شهرا (`toc.ts`) */
+  added?: string
   blocks: GuideBlock[]
 }
 

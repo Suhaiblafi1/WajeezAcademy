@@ -16,6 +16,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { GUIDE_PARTS, GUIDE_SECTIONS, shortTitle } from '../../data/trainer-guide/content'
+import { guideToc } from '../../data/trainer-guide/toc'
 
 const code = (p: string) =>
   readFileSync(join(process.cwd(), p), 'utf8')
@@ -67,7 +68,10 @@ describe('④ الفهرسُ أجزاء', () => {
   it('والاسمُ في الفهرس قصير — ما قبل النقطتين', () => {
     expect(shortTitle('مؤهّلاتي: عروضُ الدورات وقرارُك فيها')).toBe('مؤهّلاتي')
     for (const s of GUIDE_SECTIONS) expect(shortTitle(s.title).length, s.title).toBeLessThanOrEqual(26)
-    expect(GUIDE).toMatch(/label: shortTitle\(s\.title\)/)
+    /* والفهرسُ يُبنى منذ ٥ أكتوبر ٢٠٢٦ في `data/trainer-guide/toc.ts` لا في الصفحة —
+       فيُسأل الفهرسُ المبنيُّ نفسُه عن أسمائه، لا الشيفرةُ عن نصّها */
+    const labels = guideToc(new Date()).filter((g) => g.kind === 'part').flatMap((g) => g.items.map((it) => it.label))
+    expect(labels).toEqual(GUIDE_SECTIONS.map((s) => shortTitle(s.title)))
   })
 })
 
