@@ -41,7 +41,7 @@ import { START_ADVICE } from '../../application/trainer/start-advice'
 import { fmtDayMonth } from '../../application/text/format-ar'
 import { TRAINER_GUIDE_PATH } from '../../application/trainer/trainer-guide'
 import { GUIDE_SECTIONS } from '../trainer-guide/content'
-import { FAMILY_INTRO, FEATURES, PRICE, type FeatureId } from '../about'
+import { FAMILY_INTRO, FEATURE_HERO, FEATURES, PRICE, type FeatureId } from '../about'
 
 export const BRIEF_UPDATED_AR = '5 أكتوبر 2026'
 
@@ -94,6 +94,22 @@ const FOR_TRAINER: Record<FeatureId, { step: string; text: string }> = {
   graduation: { step: 'يتخرّج', text: 'ومشروعُ تخرّجٍ يجمع ما تعلّمه في عملٍ واحدٍ يُريه لأيّ أحد.' },
 }
 export const ABOUT_JOURNEY = FEATURES.map((f) => ({ id: f.id, ...FOR_TRAINER[f.id] }))
+
+/* ═══ والأكاديميةُ نفسُها — بين أختيها وما يجده متعلّموك (٥ أكتوبر ٢٠٢٦) ═══
+
+   قال صاحبُ المنصّة إنّ الورقةَ تنتقل من «تطبيق وجيز» و«وجيز مهارات» إلى «ما يجده
+   متعلّموك» بلا نقلة: لا شيءَ يقول ما الأكاديميةُ قبل أن تُعدَّ محطّاتُها. فبينهما
+   تعريفٌ بها من «من نحن» نفسِه — اسمُها، وسطرا شعارها، وصدرُ تعريفها — ثمّ جملةٌ
+   تصل إلى المحطّات: كم هي، وأيُّها محطّةُ المدرّب. والعددُ والترتيبُ من المحطّات
+   نفسِها لا مكتوبان باليد. */
+const COUNT_AR: Record<number, string> = { 3: 'ثلاثُ', 4: 'أربعُ', 5: 'خمسُ', 6: 'ستُّ', 7: 'سبعُ' }
+const ORDINAL_AR = ['الأولى', 'الثانية', 'الثالثة', 'الرابعة', 'الخامسة', 'السادسة', 'السابعة']
+const trainingAt = ABOUT_JOURNEY.findIndex((j) => j.id === 'training')
+export const ACADEMY_INTRO = {
+  name: FAMILY_INTRO.title,
+  tagline: FEATURE_HERO.lines.join(' '),
+  body: `${FEATURE_HERO.lead.split(':')[0]}، وإليها ندعوك: يأتيها المتعلّمُ ليمارس مهارةً لا ليسمع عنها. ورحلتُه فيها ${COUNT_AR[ABOUT_JOURNEY.length] ?? ABOUT_JOURNEY.length} محطّات، والتدريبُ معك محطّتُها ${ORDINAL_AR[trainingAt]}.`,
+}
 
 /** حقائقُ الغلاف — أربعٌ تُقرأ قبل كلّ شيء */
 export const BRIEF_FACTS: { value: string; label: string }[] = [
