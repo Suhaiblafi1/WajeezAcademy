@@ -55,22 +55,23 @@ import {
 } from "@/data/trainer-guide/content";
 import { GUIDE_SHOTS } from "@/data/trainer-guide/shots";
 import type { CalloutTone, GuideBlock, GuideSection } from "@/data/trainer-guide/types";
+import { hueOf, pad2, type Hue } from "@/components/guide/hues";
 
 /** مكانُ الصور — تولّدها `scripts/trainer-guide/capture.ts` */
 const SHOT_DIR = "/guides/trainer";
 const CHECK_KEY = "wajeez.trainer-guide.checklist.v1";
 
-/** ألوانُ التمييز الأربعة بالتناوب — مربّعُ الرقم وشارةُ القسم بلونٍ واحد */
-const HUES = ["amber", "coral", "sky", "blush"] as const;
-type Hue = (typeof HUES)[number];
-const hueOf = (i: number): Hue => HUES[i % HUES.length];
-const pad2 = (n: number) => String(n).padStart(2, "0");
 
 /* ═══ الأنماطُ الخاصّة بالدليل ═══
 
    ألوانُ الدليل متغيّراتٌ على `.guide-root`: الداكنُ افتراضُ الموقع، والفاتحُ
-   تحت `html[data-theme="light"]` كسائر السمات — والطباعةُ فاتحةٌ دائما. */
-const CSS = `
+   تحت `html[data-theme="light"]` كسائر السمات — والطباعةُ فاتحةٌ دائما.
+
+   ═══ وتُصدَّر لصفحةٍ أختٍ (٥ أكتوبر ٢٠٢٦) ═══
+   «التدريبُ معنا» (`TrainerBrief.tsx`) على لغة الدليل نفسِها — ألوانِه وبطاقاتِه
+   ومربّعاتِه — فتقرأ هذه الأنماطَ ومكوّناتِها من هنا لا من نسخة. وقاعدةُ الصفحة
+   المطبوعة (`@page`) خارجَها: ذيلُها «دليلُ المدرّب»، ولكلّ صفحةٍ ذيلُها. */
+export const GUIDE_KIT_CSS = `
 .guide-root {
   --g-paper: 16 27 27; --g-card: 24 38 38; --g-line: 44 64 63;
   --g-ink: 226 238 235; --g-deep: 13 55 57; --g-on-deep: 240 247 245;
@@ -152,12 +153,14 @@ html[data-theme="light"] .guide-root {
 dialog.guide-zoom { max-width: min(96vw, 1400px); max-height: 92vh; padding: 0; border: 0; border-radius: 1rem; background: transparent; }
 dialog.guide-zoom::backdrop { background: rgb(10 18 18 / .78); }
 
-@page {
-  size: A4; margin: 14mm 12mm 16mm; background: #F4F2E7;
-  @bottom-left { content: "دليلُ المدرّب  |  " counter(page); font-size: 8pt; color: #5b6b68; }
-}
 @media print {
   .guide-noprint { display: none !important; }
+  /* ورابطُ «تجاوز إلى المحتوى» في رأس التطبيق (\`App.tsx\`) — للوحة المفاتيح لا للورق.
+     وكان يُطبع في ذيل كلّ صفحةٍ من الدليل (٥ أكتوبر ٢٠٢٦) */
+  .skip-link { display: none !important; }
+  /* وما تحت آخر المحتوى ورقٌ كريميٌّ كسائره — لا قماشُ المتصفّح الأبيض، وقد
+     أفرغه تسطيحُ \`index.css\` لكلّ خلفيّة (٥ أكتوبر ٢٠٢٦) */
+  html, body { background-color: #F4F2E7 !important; }
   body { zoom: 1 !important; }
   .guide-root, html[data-theme="light"] .guide-root {
     --g-paper: 244 242 231; --g-card: 255 255 255; --g-line: 226 222 207;
@@ -207,11 +210,19 @@ dialog.guide-zoom::backdrop { background: rgb(10 18 18 / .78); }
 }
 `;
 
+/** الصفحةُ المطبوعة للدليل وحدَه — وذيلُها اسمُه ورقمُ الصفحة */
+const PAGE_CSS = `
+@page {
+  size: A4; margin: 14mm 12mm 16mm; background: #F4F2E7;
+  @bottom-left { content: "دليلُ المدرّب  |  " counter(page); font-size: 8pt; color: #5b6b68; }
+}
+`;
+
 /* ═══ لغةُ النصّ الصغيرة: «زرّ» و[رابط](#قسم) ═══ */
 const TOKEN = /(«[^»]+»|\[[^\]]+\]\([^)\s]+\))/g;
 const LINK = "font-bold text-teal-light-ink underline decoration-teal/40 underline-offset-4 hover:decoration-teal";
 
-function Rich({ text }: { text: string }) {
+export function Rich({ text }: { text: string }) {
   const parts = text.split(TOKEN);
   return (
     <>
@@ -247,7 +258,7 @@ const PX_SHAPES = {
   stair: [2, 4, 6, 8],
 } as const;
 
-function Pixels({ shape, hue, size = "1.6rem", className = "" }: { shape: keyof typeof PX_SHAPES; hue: Hue; size?: string; className?: string }) {
+export function Pixels({ shape, hue, size = "1.6rem", className = "" }: { shape: keyof typeof PX_SHAPES; hue: Hue; size?: string; className?: string }) {
   const on = new Set<number>(PX_SHAPES[shape]);
   const cells = shape === "v" ? 6 : 9;
   return (
@@ -305,7 +316,7 @@ const CALLOUT: Record<CalloutTone, { label: string; hue: Hue | "ink"; icon: "!" 
   contract: { label: "من عقدك", hue: "sky", icon: FileSignature },
 };
 
-function Callout({ b }: { b: Extract<GuideBlock, { kind: "callout" }> }) {
+export function Callout({ b }: { b: Extract<GuideBlock, { kind: "callout" }> }) {
   const c = CALLOUT[b.tone];
   const Icon = c.icon;
   return (
@@ -320,7 +331,7 @@ function Callout({ b }: { b: Extract<GuideBlock, { kind: "callout" }> }) {
         {Icon === "!" ? "!" : <Icon className="h-4 w-4" strokeWidth={3} />}
       </span>
       <div className="min-w-0">
-        <p className="text-sm font-bold text-muted-foreground">{c.label}</p>
+        <p className="text-sm font-bold text-muted-foreground">{b.label ?? c.label}</p>
         <p className="guide-h mt-0.5 text-base leading-7">{b.title}</p>
         <p className="mt-1 text-base leading-8"><Rich text={b.text} /></p>
       </div>
@@ -382,7 +393,7 @@ function Block({ b, onZoom }: { b: GuideBlock; onZoom: (s: string, alt: string) 
 }
 
 /** كتلُ القسم بترتيبها — و«انتبه»/«نصيحة» المتتاليتان تتجاوران كالمثال */
-function Blocks({ blocks, onZoom }: { blocks: GuideBlock[]; onZoom: (s: string, alt: string) => void }) {
+export function Blocks({ blocks, onZoom }: { blocks: GuideBlock[]; onZoom: (s: string, alt: string) => void }) {
   const out: React.ReactNode[] = [];
   for (let i = 0; i < blocks.length; i++) {
     const b = blocks[i];
@@ -403,7 +414,7 @@ function Blocks({ blocks, onZoom }: { blocks: GuideBlock[]; onZoom: (s: string, 
 }
 
 /* ═══ رأسُ القسم كرأس صفحةٍ في المثال ═══ */
-function PageHead({ id, n, hue, title, children }: { id: string; n?: number; hue: Hue; title: string; children?: React.ReactNode }) {
+export function PageHead({ id, n, hue, title, children }: { id: string; n?: number; hue: Hue; title: string; children?: React.ReactNode }) {
   return (
     <div className="relative">
       <Pixels shape="v" hue="sky" size="1.1rem" className="absolute top-0 left-0" />
@@ -662,7 +673,7 @@ export default function TrainerGuide() {
         path={TRAINER_GUIDE_PATH}
         noindex
       />
-      <style>{CSS}</style>
+      <style>{GUIDE_KIT_CSS + PAGE_CSS}</style>
 
       <header className="guide-noprint sticky top-0 z-40 border-b border-[rgb(var(--g-line))] bg-[rgb(var(--g-paper)/.92)] backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-5 py-2.5">

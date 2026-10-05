@@ -83,6 +83,7 @@ const TrainerCourseProposals = lazy(() => import('./pages/trainer/MyCoursePropos
 const TrainerMyPaths = lazy(() => import('./pages/trainer/MyPaths'))
 const TrainerMarketing = lazy(() => import('./pages/trainer/Marketing'))
 const TrainerGuide = lazy(() => import('./pages/trainer/Guide'))
+const TrainerBrief = lazy(() => import('./pages/trainer/TrainerBrief'))
 const TrainerSchedule = lazy(() => import('./pages/trainer/Schedule'))
 const CohortBoard = lazy(() => import('./pages/trainer/CohortBoard'))
 const CohortWorkspace = lazy(() => import('./pages/trainer/CohortWorkspace'))
@@ -264,6 +265,9 @@ export default function App() {
           {/* ودليلُ المدرّب عامٌّ كذلك: يُفتح من رسالة اعتماد التوقيع على أيّ جهازٍ
               قبل أيّ جلسة. والعلّةُ في `application/trainer/trainer-guide.ts`. */}
           <Route path="/trainer/guide" element={<TrainerGuide />} />
+          {/* و«التدريبُ معنا» عامّةٌ بلا دخول — تُرسَل مع الدعوة لمن لا حسابَ له بعد —
+              ومخفيّةٌ: لا يقود إليها شريطٌ ولا خريطة. والعلّةُ في `application/trainer/trainer-brief.ts`. */}
+          <Route path="/trainer/teach-with-us" element={<TrainerBrief />} />
           {/* بوابات الفريق — حارس يتحقق من الجلسة والدور عند الخادم */}
           <Route element={<RequireRole allow={ADVISOR_ROLES} />}>
             {/* «حالاتي» هي بوابة المستشار الحقيقية (‏/api/advisor/cases وما

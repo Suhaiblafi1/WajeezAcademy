@@ -36,7 +36,8 @@ export type GuideBlock =
   | { kind: 'p'; text: GuideRich }
   | { kind: 'steps'; title?: string; items: GuideStep[] }
   | { kind: 'figure'; shot: string; alt: string; caption?: GuideRich }
-  | { kind: 'callout'; tone: CalloutTone; title: string; text: GuideRich }
+  /** و`label` يغلب اسمَ النوع فوق العنوان — «من الاتفاقيّة» لمن لم يوقّع بعد لا «من عقدك» */
+  | { kind: 'callout'; tone: CalloutTone; title: string; text: GuideRich; label?: string }
   | { kind: 'list'; items: GuideRich[] }
   | { kind: 'table'; head: string[]; rows: GuideRich[][] }
 

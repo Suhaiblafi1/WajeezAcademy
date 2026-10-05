@@ -20,6 +20,7 @@ import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { PUBLIC_PAGES } from '../../application/site/public-pages'
+import { TRAINER_BRIEF_PATH } from '../../application/trainer/trainer-brief'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '../../..')
 const ROBOTS = readFileSync(join(root, 'public/robots.txt'), 'utf8')
@@ -102,6 +103,12 @@ describe('robots.txt لا يمنع صفحةً عامّة', () => {
     ]) {
       expect(isCrawlable(path), `«${path}» مكشوفٌ للزاحف`).toBe(false)
     }
+  })
+
+  /* وصفحةُ الدعوة المخفيّة (٥ أكتوبر ٢٠٢٦) — عامّةٌ لمن معه رابطُها، ومحجوبةٌ عن
+     الزاحف بسطر البوّابة نفسِه. والقرارُ في `application/trainer/trainer-brief.ts`. */
+  it('و«التدريبُ معنا» محجوبةٌ — تُرسَل مع الدعوة ولا تُفهرَس', () => {
+    expect(isCrawlable(TRAINER_BRIEF_PATH), `«${TRAINER_BRIEF_PATH}» مكشوفٌ للزاحف`).toBe(false)
   })
 
   it('وخريطةُ الموقع مُعلَنةٌ بالعلامة لا بنطاقٍ مكتوبٍ حرفا', () => {
