@@ -10,8 +10,15 @@
    الأخضر، ومربّعاتُ الأرقام بألوانها الأربعة، والبطاقاتُ بأشرطتها — لا من نسخةٍ
    تفترق عنها عند أوّل تعديل.
 
-   وما يختلف عن الدليل فلأنّها **صفحتان لا كتاب**: لا فهرسَ جانبيّ ولا قسمَ يبدأ
-   ورقتَه، والمطبوعُ مضغوطٌ ليقع في صفحتين كما طُلب، وذيلُه اسمُها لا اسمُ الدليل. */
+   وما يختلف عن الدليل فلأنّها **ثلاثُ صفحاتٍ لا كتاب**: لا فهرسَ جانبيّ ولا قسمَ
+   يبدأ ورقتَه، وذيلُ المطبوع اسمُها لا اسمُ الدليل.
+
+   ═══ ثلاثُ صفحاتٍ لا صفحتان (٥ أكتوبر ٢٠٢٦) ═══
+
+   كانت صفحتين بحرفٍ مضغوط. وقال صاحبُ المنصّة: «أعطه مجالا يقرأ من نحن في الصفحة
+   الأولى… واجعلها ثلاثَ صفحاتٍ لتتمكّن من تصميمٍ أسهلَ للعين وأجمل». فالورقةُ الأولى
+   الغلافُ و«من نحن» وحدَهما، والثانيةُ ما يُدرَّس وكيف، والثالثةُ الأتعابُ والتعاقد —
+   وكلُّ ورقةٍ تبدأ صفحتَها (`brief-sheet`)، والحرفُ بحجمٍ يُقرأ. */
 
 import { useMemo } from "react";
 import { Link } from "react-router";
@@ -28,7 +35,7 @@ import { hueOf, pad2 } from "@/components/guide/hues";
 import type { GuideBlock, GuideSection } from "@/data/trainer-guide/types";
 import { Blocks, GUIDE_KIT_CSS, PageHead, Pixels, Rich } from "@/components/guide/GuideKit";
 import {
-  APPLY_PATH, BRIEF_FACTS, BRIEF_SECTIONS, BRIEF_START_ADVICE, BRIEF_STEPS, BRIEF_UPDATED_AR,
+  ABOUT_JOURNEY, ABOUT_SECTION, APPLY_PATH, BRIEF_FACTS, BRIEF_SECTIONS, BRIEF_START_ADVICE_AR, BRIEF_STEPS, BRIEF_UPDATED_AR,
   PAY_EXAMPLE_AR, PAY_MODELS, PAY_SECTION, PAY_TERMS, STEPS_NOTE_AR, STEPS_SECTION,
 } from "@/data/trainer-brief/content";
 
@@ -37,37 +44,38 @@ const BRIEF_CSS = `
 .brief-tile { background: rgb(255 255 255 / .88); border-radius: .75rem; color: rgb(var(--g-dark-ink)); }
 .brief-pick { border-color: rgb(var(--g-amber)); box-shadow: 0 0 0 1px rgb(var(--g-amber)); }
 .brief-printonly { display: none; }
-/* رؤوسٌ أصغرُ من الدليل: صفحتان لا كتاب */
+/* رؤوسٌ أصغرُ من الدليل: ثلاثُ صفحاتٍ لا كتاب */
 .brief-section h2.guide-h { font-size: 1.75rem; line-height: 1.35; }
 @media (min-width: 768px) { .brief-section h2.guide-h { font-size: 2rem; } }
 
 @page {
-  size: A4; margin: 8mm 9mm 11mm; background: #F4F2E7;
+  size: A4; margin: 10mm 11mm 13mm; background: #F4F2E7;
   @bottom-left { content: "التدريبُ مع أكاديمية وجيز  |  " counter(page); font-size: 8pt; color: #5b6b68; }
 }
 @media print {
-  /* صفحتان كما طُلب: الحرفُ أصغر، والعرضُ عرضُ الورقة، والشبكاتُ أعمدةٌ كالشاشة العريضة */
-  html { font-size: 9.2px !important; }
-  .brief-body { max-width: none !important; padding-inline: 0 !important; padding-bottom: 1rem !important; }
-  .brief-cover > div { max-width: none !important; padding: 1.4rem 1.6rem 1.2rem !important; }
-  .brief-section { padding-top: 1rem !important; }
+  /* ثلاثُ ورقات: كلُّ ورقةٍ تبدأ صفحتَها، والحرفُ بحجمٍ يُقرأ، والعرضُ عرضُ الورقة */
+  html { font-size: 9.8px !important; }
+  .brief-sheet + .brief-sheet { break-before: page; }
+  .brief-body { max-width: none !important; padding-inline: 0 !important; padding-bottom: 0 !important; }
+  .brief-cover > div { max-width: none !important; padding: 2.2rem 2rem 2rem !important; }
+  .brief-section { padding-top: 1.3rem !important; }
+  .brief-sheet .brief-section:first-child { padding-top: .4rem !important; }
   .brief-grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
   .brief-grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
   .brief-grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
-  .brief-pay-card, .brief-step, .brief-fact { break-inside: avoid; }
-  .brief-step, .brief-fact, .brief-pay-card { padding: .7rem .9rem !important; }
-  /* ولا يبقى رأسُ قسمٍ وحدَه في ذيل ورقة، ولا ينقسم قسمُ الخطوات */
+  .brief-grid-5 { grid-template-columns: repeat(5, minmax(0, 1fr)) !important; }
+  .brief-pay-card, .brief-step, .brief-fact, .brief-journey > li { break-inside: avoid; }
+  /* ولا يبقى رأسُ قسمٍ وحدَه في ذيل ورقة */
   .brief-section > .relative { break-inside: avoid; break-after: avoid; }
-  .brief-cover .brief-tile { padding-top: .5rem !important; padding-bottom: .5rem !important; }
   .brief-span { grid-column: 1 / -1 !important; }
-  .guide-root .leading-8 { line-height: 1.65rem !important; }
-  .guide-root .leading-9 { line-height: 1.8rem !important; }
-  .guide-root .leading-7 { line-height: 1.55rem !important; }
-  /* والختامُ أزرارٌ لا تُضغط على ورق — فيحلّ محلَّه سطرٌ بعنوان التقديم */
-  .brief-end { display: none !important; }
-  .brief-printonly { display: inline !important; }
-  .brief-cover h1 { font-size: 2.6rem !important; }
-  .brief-end > div { padding-top: 1.2rem !important; padding-bottom: 1.2rem !important; }
+  /* وفراغٌ أضيقُ قليلا بين الكتل — فلا تنقسم ورقةٌ على بطاقتين */
+  .brief-fact, .brief-step, .brief-pay-card { padding-top: .6rem !important; padding-bottom: .6rem !important; }
+  .brief-section .mt-7 { margin-top: 1.1rem !important; }
+  .brief-section .mt-6 { margin-top: 1rem !important; }
+  /* والختامُ بلا أزراره — لا تُضغط على ورق — وفيه عنوانُ التقديم */
+  .brief-end { margin-top: 1.4rem !important; border-radius: .5rem !important; }
+  .brief-end > div { padding-top: 1.6rem !important; padding-bottom: 1.6rem !important; }
+  .brief-printonly { display: block !important; }
   .guide-root .brief-tile { background-color: #fff !important; }
   .guide-root .brief-pick { border-color: rgb(var(--g-amber)) !important; }
 }
@@ -75,7 +83,7 @@ const BRIEF_CSS = `
 
 /** قسمٌ كقسم الدليل — ولا يبدأ ورقتَه. والقوائمُ المرقّمةُ المتتاليةُ («ما تجده» و«ما
     تضيفه») تتجاور في عمودين، كما تتجاور «نصيحة» و«انتبه» في الدليل */
-function BriefSection({ s, n, extraFacts }: { s: GuideSection; n: number; extraFacts?: string[][] }) {
+function BriefSection({ s, n, tail }: { s: GuideSection; n: number; tail?: string }) {
   const steps = s.blocks.filter((b) => b.kind === "steps");
   const facts = s.blocks.filter((b): b is Extract<GuideBlock, { kind: "table" }> => b.kind === "table" && b.head.length === 2);
   const rest = s.blocks.filter((b) => b.kind !== "steps" && !facts.includes(b as never));
@@ -85,11 +93,15 @@ function BriefSection({ s, n, extraFacts }: { s: GuideSection; n: number; extraF
       {steps.length > 1
         ? <div className="brief-grid-2 grid gap-x-8 md:grid-cols-2"><Blocks blocks={steps} /></div>
         : <Blocks blocks={steps} />}
-      {facts.map((t, i) => <Facts key={i} rows={[...t.rows, ...(extraFacts ?? [])]} label={t.head[0]} />)}
+      {facts.map((t, i) => <Facts key={i} rows={tail ? withTail(t.rows, tail) : t.rows} label={t.head[0]} />)}
       <Blocks blocks={rest} />
     </section>
   );
 }
+
+/** سطرٌ يُلحق بآخر بطاقة — نصيحةُ الموسم في بطاقة المواسم، لا بطاقةٌ تزيد صفّا */
+const withTail = (rows: string[][], tail: string) =>
+  rows.map((r, i) => (i === rows.length - 1 ? [r[0], `${r[1]} ${tail}`] : r));
 
 /** جدولُ عمودين — بندٌ وجوابُه — بطاقاتٌ في عمودين: نصفُ طوله، ولا فراغَ في عرضه.
     والفردُ الأخيرُ يأخذ العرضَ كلَّه فلا يبقى بجانبه فراغ */
@@ -115,11 +127,47 @@ function BriefHead({ id, n, title, why }: { id: string; n: number; title: string
   );
 }
 
+/** «من نحن» — الورقةُ الأولى: من ندعوك إلى التدريب معه، وما يجده متعلّموك عندنا */
+function About() {
+  const a = ABOUT_SECTION;
+  return (
+    <section id={a.id} aria-labelledby={`${a.id}-h`} className="brief-section scroll-mt-24 pt-12">
+      <PageHead id={a.id} hue="sky" title={a.title}>
+        <p className="mt-2 text-base leading-8 text-muted-foreground">{a.why}</p>
+      </PageHead>
+      <p className="mt-5 text-lg leading-9">{a.body}</p>
+      <ul className="brief-grid-2 mt-5 grid gap-3 sm:grid-cols-2">
+        {a.products.map((p, i) => (
+          <li key={p.id} className="guide-card guide-callout p-4" data-tone={i ? "public" : "tip"}>
+            <p className="guide-h text-lg leading-7">{p.name}</p>
+            <p className="text-sm leading-6 text-muted-foreground">{p.note}</p>
+            <p className="mt-2 text-base leading-7">{p.pitch}</p>
+            <a href={p.url} target="_blank" rel="noreferrer noopener" className="mt-1 inline-block text-sm font-bold text-teal-light-ink underline decoration-teal/40 underline-offset-4" dir="ltr">{p.host}</a>
+          </li>
+        ))}
+      </ul>
+      <h3 className="mt-8"><span className="guide-pill whitespace-normal" data-hue="sky">وما يجده متعلّموك عندنا</span></h3>
+      <ol className="brief-journey brief-grid-5 mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        {ABOUT_JOURNEY.map((j, i) => (
+          <li key={j.id} className={`guide-card p-4 ${j.id === "training" ? "brief-pick" : ""}`}>
+            <span className="guide-sq guide-sq-sm" data-hue={hueOf(i)} aria-hidden="true">{pad2(i + 1)}</span>
+            <p className="guide-h mt-2 text-base leading-7">{j.step}</p>
+            <p className="mt-1 text-sm leading-7">{j.text}</p>
+          </li>
+        ))}
+      </ol>
+      <p className="guide-deep mt-5 px-6 py-4 text-base font-bold leading-8">{a.price}</p>
+      <p className="mt-4 text-base leading-8"><Rich text={a.more} /></p>
+    </section>
+  );
+}
+
 export default function TrainerBrief() {
   const waLink = waHref(useWhatsAppNumbers(), "advisor", CONTACT.whatsapp, "مرحبا، قرأتُ صفحةَ «التدريب مع أكاديمية وجيز» وعندي سؤال:");
   /* نصيحةُ موسم الشتاء — تسكت من نفسها حين يحلّ ديسمبر */
   const advice = useMemo(() => startAdvice(null, new Date().toISOString().slice(0, 10)) !== null, []);
   const nav = [...BRIEF_SECTIONS, PAY_SECTION, STEPS_SECTION];
+  /* «من نحن» في رأس السطر — بلا رقم: تعريفٌ قبل الأسئلة لا سؤالٌ منها */
   /* عنوانُ التقديم كما يُكتب على ورق — من الموقع الذي طُبعت منه الصفحة */
   const applyUrl = `${typeof window === "undefined" ? "" : window.location.host}${APPLY_PATH}`;
   const paySection = BRIEF_SECTIONS.length + 1;
@@ -148,7 +196,8 @@ export default function TrainerBrief() {
         </div>
       </header>
 
-      {/* ── الغلاف ── */}
+      {/* ══ الورقةُ الأولى: الغلافُ و«من نحن» ══ */}
+      <div className="brief-sheet">
       <section className="brief-cover relative overflow-hidden" data-hue="sky" aria-labelledby="brief-title">
         <Pixels shape="v" hue="blush" size="2rem" className="absolute top-0 left-8 md:left-16" />
         <Pixels shape="stair" hue="amber" size="1.4rem" className="absolute bottom-0 right-0" />
@@ -158,7 +207,7 @@ export default function TrainerBrief() {
             {TRAINER_BRIEF_TITLE_AR}
           </h1>
           <p className="mt-4 max-w-2xl text-lg leading-9" style={{ color: "rgb(var(--g-dark-ink))" }}>
-            صفحتان تجيبان عمّا يُسأل قبل القرار: لمن تدرّس، وماذا، وكيف ومتى، وما تُعِدّه أنت، وكيف تُحاسَب ويجري التعاقد.
+            ثلاثُ صفحاتٍ تجيب عمّا يُسأل قبل القرار: من نحن، ولمن تدرّس، وماذا، وكيف ومتى، وما تُعِدّه أنت، وكيف تُحاسَب ويجري التعاقد.
           </p>
           <div className="mt-5 flex max-w-2xl items-start gap-3 rounded-xl bg-white/85 px-5 py-4 text-base leading-8" style={{ color: "rgb(var(--g-dark-ink))" }}>
             <Sparkles className="mt-1.5 h-5 w-5 shrink-0" aria-hidden="true" />
@@ -178,10 +227,18 @@ export default function TrainerBrief() {
           <p className="mt-4 text-sm leading-7" style={{ color: "rgb(var(--g-dark-ink) / .8)" }}>حُدِّث في {BRIEF_UPDATED_AR}</p>
         </div>
       </section>
+      <div className="brief-body mx-auto max-w-5xl px-5">
+        <About />
+      </div>
+      </div>
 
-      <div className="brief-body mx-auto max-w-5xl px-5 pb-14">
+      {/* ══ الورقةُ الثانية: لمن، وماذا، وكيف ومتى، وما تُعِدّه ══ */}
+      <div className="brief-sheet brief-body mx-auto max-w-5xl px-5">
         {/* ── أقسامُ الصفحة في سطر — للقفز على الهاتف ── */}
-        <nav aria-label="أقسام الصفحة" className="guide-noprint mt-7 flex flex-wrap gap-2">
+        <nav aria-label="أقسام الصفحة" className="guide-noprint mt-10 flex flex-wrap gap-2">
+          <a href={`#${ABOUT_SECTION.id}`} className="guide-card inline-flex items-center gap-2 px-3 py-1.5 text-sm font-bold hover:border-[rgb(var(--g-ink)/.4)]">
+            {ABOUT_SECTION.title}
+          </a>
           {nav.map((s, i) => (
             <a key={s.id} href={`#${s.id}`} className="guide-card inline-flex items-center gap-2 px-3 py-1.5 text-sm font-bold hover:border-[rgb(var(--g-ink)/.4)]">
               <span className="guide-sq guide-sq-sm" data-hue={hueOf(i)} aria-hidden="true">{pad2(i + 1)}</span>
@@ -195,10 +252,12 @@ export default function TrainerBrief() {
           {BRIEF_SECTIONS.slice(0, 2).map((s, i) => <BriefSection key={s.id} s={s} n={i + 1} />)}
         </div>
         {BRIEF_SECTIONS.slice(2).map((s, i) => (
-          <BriefSection key={s.id} s={s} n={i + 3}
-            extraFacts={s.id === "how" && advice ? [[BRIEF_START_ADVICE.title, BRIEF_START_ADVICE.text]] : undefined} />
+          <BriefSection key={s.id} s={s} n={i + 3} tail={s.id === "how" && advice ? BRIEF_START_ADVICE_AR : undefined} />
         ))}
+      </div>
 
+      {/* ══ الورقةُ الثالثة: الأتعابُ والتعاقد ══ */}
+      <div className="brief-sheet brief-body mx-auto max-w-5xl px-5">
         {/* ── الأتعاب ── */}
         <section id={PAY_SECTION.id} aria-labelledby={`${PAY_SECTION.id}-h`} className="brief-section scroll-mt-24 pt-10">
           <BriefHead id={PAY_SECTION.id} n={paySection} title={PAY_SECTION.title} why={PAY_SECTION.why} />
@@ -240,15 +299,11 @@ export default function TrainerBrief() {
               </li>
             ))}
           </ol>
-          <p className="guide-blush mt-5 px-6 py-4 text-base font-bold leading-8">
-            {STEPS_NOTE_AR}
-            <span className="brief-printonly"> وللتقديم: <span dir="ltr">{applyUrl}</span></span>
-          </p>
+          <p className="guide-blush mt-5 px-6 py-4 text-base font-bold leading-8">{STEPS_NOTE_AR}</p>
         </section>
-      </div>
 
-      {/* ── الختام ── */}
-      <section className="brief-end guide-deep relative overflow-hidden" style={{ borderRadius: 0 }} aria-labelledby="brief-end">
+      {/* ── الختام — آخرُ الورقة الثالثة ── */}
+      <section className="brief-end guide-deep relative mb-14 mt-10 overflow-hidden" aria-labelledby="brief-end">
         <Pixels shape="v" hue="sky" size="1.8rem" className="absolute top-0 left-8 md:left-16" />
         <Pixels shape="stair" hue="blush" size="1.4rem" className="absolute bottom-0 right-0" />
         <div className="relative mx-auto max-w-3xl px-5 py-12 text-center">
@@ -261,9 +316,11 @@ export default function TrainerBrief() {
             {waLink && <Button as="a" href={waLink} target="_blank" rel="noreferrer noopener" icon={MessageCircle}>اسألنا على واتساب</Button>}
             <Button as="a" href={`mailto:${CONTACT.email}`} icon={Mail}>{CONTACT.email}</Button>
           </div>
+          <p className="brief-printonly mt-3 text-lg font-bold">للتقديم: <span dir="ltr">{applyUrl}</span></p>
           <p className="mt-6 text-sm opacity-75">أكاديمية وجيز · {TRAINER_BRIEF_TITLE_AR}</p>
         </div>
       </section>
+      </div>
     </div>
   );
 }
