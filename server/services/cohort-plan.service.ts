@@ -29,7 +29,7 @@
    و`financialReady` — والشاشةُ تقول إنّه بيد الإدارة. */
 
 import { Prisma, type PrismaClient } from '@prisma/client'
-import { moduleBodyDone } from '../../src/application/trainer/module-body'
+import { moduleBodyDone, resourceHasSource } from '../../src/application/trainer/module-body'
 import { blockingBeforeSubmit, boardNextStep, trainerOwned } from '../../src/application/trainer/plan-gate'
 import {
   REVIEW_SECTIONS, composeReviewNote, hasReviewNotes, normalizeReviewNotes, notedSections, readReviewNotes,
@@ -306,7 +306,11 @@ export function buildChecklist(input: {
   const resources = input.content?.resources ?? []
   /* والمصدرُ المربوطُ بمحورٍ حُذف من الخطّة لا يُفتح أبدا — يُسمّى ليُصلَح */
   const orphanResources = legacy ? 0 : resources.filter((r) => r.moduleId && !moduleIds.includes(r.moduleId)).length
-  const resourcesDone = resources.length > 0 && orphanResources === 0
+  /* ═══ والمصدرُ بلا رابطٍ ولا ملفّ يُحفظ ويُسمّى هنا (٥ أكتوبر ٢٠٢٦) ═══
+     كان يُردّ عند الحفظ فيحبس الخطّةَ كلَّها — والعلّةُ عند مخطّط `resources`
+     في `learning-portal.routes.ts`. فصار يمنع الإرسالَ وحدَه، بالقاعدة نفسِها. */
+  const looseResources = resources.filter((r) => resourceCategory(r) !== 'recorded' && !resourceHasSource(r)).length
+  const resourcesDone = resources.length > 0 && orphanResources === 0 && looseResources === 0
   /* ═══ لقاءٌ لكلّ محورٍ على الأقلّ ═══
 
      «عددُ الجلسات يجب أن يكون بحدٍّ أدنى لا يقلّ عن عدد المحاور، ويحقّ له
@@ -344,9 +348,11 @@ export function buildChecklist(input: {
     now,
   })
   const coveredCount = moduleIds.filter((id) => input.sessions.some((x) => (x.moduleIds ?? []).includes(id))).length
-  const sessionsDone = linked
+  /* والجلسةُ المسجّلةُ بلا رابطٍ كالمصدر — تُحفظ، وتُسمّى في صفّ خطوتها */
+  const looseRecorded = recorded.filter((r) => !resourceHasSource(r)).length
+  const sessionsDone = looseRecorded === 0 && (linked
     ? input.sessions.length > 0 && outside === 0 && linked.blocking.length === 0
-    : input.sessions.length >= Math.max(1, sessionsNeeded) && outside === 0
+    : input.sessions.length >= Math.max(1, sessionsNeeded) && outside === 0)
   /* ومهمّةٌ بلا محورٍ لا يُعرف متى تُفتح ولا متى تُسلَّم — فتُربط كلُّها */
   const unlinkedTasks = legacy || !input.assessmentModuleIds
     ? 0
@@ -364,8 +370,9 @@ export function buildChecklist(input: {
   /* وما ينقص الصفَّين يُقال في سطرهما — بعددِه لا بإشارة */
   const tasksNote = unlinkedTasks > 0
     ? ` · ${unlinkedTasks === 1 ? 'مهمّةٌ غيرُ مربوطةٍ' : `${unlinkedTasks} مهامَّ غيرُ مربوطةٍ`} بمحور` : ''
-  const resourcesNote = orphanResources > 0
-    ? ` · ${orphanResources === 1 ? 'مصدرٌ مربوطٌ' : `${orphanResources} مصادرُ مربوطةٌ`} بمحورٍ حُذف` : ''
+  const resourcesNote = (orphanResources > 0
+    ? ` · ${orphanResources === 1 ? 'مصدرٌ مربوطٌ' : `${orphanResources} مصادرُ مربوطةٌ`} بمحورٍ حُذف` : '')
+    + (looseResources > 0 ? ` · ${looseResources === 1 ? 'مصدرٌ' : `${looseResources} مصادرُ`} بلا رابطٍ ولا ملفّ` : '')
   return [
     { key: 'identity', labelAr: 'سمِّ الشعبةَ وحدّد مدّتها — من متى إلى متى', done: identityDone, optional: false },
     {
@@ -380,6 +387,7 @@ export function buildChecklist(input: {
         ? `حدّد لقاءاتك المباشرة — لقاءٌ لكلّ محورٍ في موعده (${coveredCount}/${moduleIds.length})`
         : `حدّد مواعيدَ اللقاءات المباشرة — لقاءٌ لكلّ محورٍ على الأقلّ (${input.sessions.length}/${Math.max(1, sessionsNeeded)})`)
         + (outside > 0 ? ` · ${outside === 1 ? 'لقاءٌ خارجَ' : `${outside} لقاءاتٍ خارجَ`} مدّة الشعبة` : '')
+        + (looseRecorded > 0 ? ` · ${looseRecorded === 1 ? 'جلسةٌ مسجّلةٌ' : `${looseRecorded} جلساتٍ مسجّلةٍ`} بلا رابط` : '')
         /* ومحاورُ مغطّاةٌ كلُّها والخطوةُ لم تتمّ: يُسمّى أوّلُ ما يمنعها — وإلّا
            قيل للمدرّب «٤ من ٤» ورُدّ إرسالُه بلا سببٍ يراه */
         + (linked && coveredCount === moduleIds.length && linked.blocking.length > 0 ? ` · ${linked.blocking[0]}` : ''),

@@ -169,23 +169,41 @@ describe('د-٣ · المصدرُ ملفّا', () => {
      ومحصورٌ في **موضع المصادر** لا في الملفّ كلِّه: مرفقاتُ المهامّ فحصُها
      رابطٌ بيدها بحقّ — لا ملفَّ يُرفع فيها، فشرطُها ليس شرطَ المصادر.
      وحارسٌ يشمل الملفَّ كلَّه يحمرّ على ميزةٍ لا يحرسها. */
-  const near = (src: string, needle: string, span = 260) => {
-    const at = src.indexOf(needle)
-    return at < 0 ? '' : src.slice(at, at + span)
+
+  /* ═══ والشرطُ انتقل من الحفظ إلى الإرسال (٥ أكتوبر ٢٠٢٦) ═══
+
+     كان هذا الحارسُ يطلب الشرطَ في حاجزَي **الحفظ**: `saveProblems` في الشاشة
+     و`superRefine` في مخطّط الخادم. وذاك ما حبس المدرّبين عن حفظ أيّ شيء: مصدرٌ
+     بلا رابطٍ نُقل من اللوح القديم يردّ حفظَ الخطوة الأولى، والمصادرُ في الخامسة
+     لا تُفتح قبلها. فصار الشرطُ في قائمة التجهيز (`buildChecklist`) وفي ما
+     تقوله الشاشةُ عن الخطوة (`gapsFor`) — يمنع الإرسالَ لا الحفظ.
+
+     والحارسُ على البنية: حدودُ الدالّة بعينها لا ورودُ اسمٍ في الملفّ. */
+  const between = (src: string, start: string, end: string) => {
+    const at = src.indexOf(start)
+    if (at < 0) return ''
+    const stop = src.indexOf(end, at + start.length)
+    return stop < 0 ? '' : src.slice(at, stop)
   }
 
-  it('والطرفان يقرآن المالكَ نفسَه — لا شرطَ رابطٍ مكتوبٌ بيده', () => {
-    /* وشرطُ الحفظ صار في `saveProblems` (٢٧ سبتمبر ٢٠٢٦): الحفظُ واحدٌ لكلّ
-       الخطوات، وما يمنعه يُقال بأسمائه قبل النداء — والمصادرُ منه. */
-    const ws = near(code('src/pages/trainer/CohortWorkspace.tsx'), 'content.resources.forEach(')
-    expect(ws, 'لم يُعثر على شرط حفظ المصادر في الشاشة').toBeTruthy()
-    expect(ws, 'الشاشةُ تفحص صيغةَ الرابط بيدها فتُنكر المرفوع').not.toMatch(/\^https\?:/)
-    expect(ws).toContain('resourceHasSource')
+  it('والطرفان يقرآن المالكَ نفسَه عند الإرسال — ولا يردّان الحفظَ به', () => {
+    const screen = code('src/pages/trainer/CohortWorkspace.tsx')
+    const save = between(screen, 'const saveProblems = (', 'return out;')
+    expect(save, 'لم يُعثر على شرط الحفظ في الشاشة').toBeTruthy()
+    expect(save, 'الشاشةُ تردّ الحفظَ بمصدرٍ بلا رابط — فيُحبس المدرّبُ عن حفظ ما قبله').not.toContain('resourceHasSource')
+    expect(save, 'الشاشةُ تفحص صيغةَ الرابط بيدها').not.toMatch(/\^https\?:/)
+    const said = between(screen, 'const gapsFor = (', 'return [label];\n  };')
+    expect(said, 'لم يُعثر على ما تقوله الشاشةُ عن الخطوة').toBeTruthy()
+    expect(said, 'المصدرُ بلا رابطٍ لا يُسمّى في ما ينقص الخطوة').toContain('resourceHasSource')
 
-    const route = near(code('server/http/routes/learning-portal.routes.ts'), 'resources: z.array(', 900)
-    expect(route, 'لم يُعثر على حاجز المصادر في الخادم').toBeTruthy()
-    expect(route, 'الخادمُ يفحص صيغةَ الرابط بيده فيُنكر المرفوع').not.toMatch(/\^https\?:/)
-    expect(route).toContain('resourceSourceBlockerAr')
+    const route = between(code('server/http/routes/learning-portal.routes.ts'), 'resources: z.array(', 'liveNoteAr:')
+    expect(route, 'لم يُعثر على مخطّط المصادر في الخادم').toBeTruthy()
+    expect(route, 'الخادمُ يردّ الحفظَ كلَّه بمصدرٍ بلا رابط').not.toMatch(/resourceSourceBlockerAr|resourceHasSource|superRefine/)
+
+    const list = between(code('server/services/cohort-plan.service.ts'), 'export function buildChecklist(', '\n}\n')
+    expect(list, 'لم يُعثر على قائمة التجهيز').toBeTruthy()
+    expect(list, 'قائمةُ التجهيز لا تمنع إرسالَ مصدرٍ بلا رابط').toContain('resourceHasSource')
+    expect(list, 'القائمةُ تفحص صيغةَ الرابط بيدها').not.toMatch(/\^https\?:/)
   })
 
   it('والمتعلّمُ يفتح المرفوعَ من مسارٍ محروسٍ لا من رابطٍ خارجيّ', () => {

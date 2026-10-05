@@ -514,8 +514,10 @@ async function seedPrepPlan(ctx: Ctx, profileId: string) {
       title: 'كرّاسةُ الدورة', url: 'https://drive.google.com/file/d/guide-workbook',
       parts: mods.map((m, i) => ({ moduleId: m.id, whereAr: `ص ${i * 6 + 1}` })),
     },
+    /* ولكلّ مصدرٍ رابطُه: المصدرُ بلا رابطٍ يُحفظ ويمنع الإرسالَ (٥ أكتوبر ٢٠٢٦) — والدليلُ
+       يصوّر شعبةً تامّةً لا شعبةً تسمّي ما ينقصها */
     resources: [
-      { title: 'فصلُ «البساطة» من كتاب Made to Stick', kind: 'book', category: 'reading', moduleId: mods[1]?.id ?? null, preReading: true },
+      { title: 'فصلُ «البساطة» من كتاب Made to Stick', kind: 'book', category: 'reading', url: 'https://drive.google.com/file/d/guide-made-to-stick', moduleId: mods[1]?.id ?? null, preReading: true },
       { title: 'نموذجُ خريطة الرسالة — قالبٌ فارغ', kind: 'link', category: 'public', url: 'https://drive.google.com/file/d/guide-message-map', moduleId: mods[1]?.id ?? null },
     ],
   }
@@ -593,8 +595,10 @@ async function approvedNegotiationPlan(ctx: Ctx, profileId: string, title: strin
         title: 'كرّاسةُ التفاوض', url: 'https://drive.google.com/file/d/guide-negotiation',
         parts: mods.map((m, i) => ({ moduleId: m.id, whereAr: `ص ${i * 5 + 1}` })),
       },
+      /* والكتابُ برابطه — كان يُرسَل بلا رابطٍ لأنّ البذرَ يكتب بالخدمة لا بالمسلك، فلا
+         يمرّ بحاجز الحفظ. والحاجزُ اليومَ عند الإرسال (٥ أكتوبر ٢٠٢٦)، فيُكمَل هنا */
       resources: [
-        { title: 'فصلُ «افصل الناس عن المشكلة» من كتاب Getting to Yes', kind: 'book', category: 'reading', moduleId: mods[0]?.id ?? null, preReading: true },
+        { title: 'فصلُ «افصل الناس عن المشكلة» من كتاب Getting to Yes', kind: 'book', category: 'reading', url: 'https://drive.google.com/file/d/guide-getting-to-yes', moduleId: mods[0]?.id ?? null, preReading: true },
         { title: 'نموذجُ مذكّرة التحضير — صفحةٌ واحدة', kind: 'link', category: 'public', url: 'https://drive.google.com/file/d/guide-prep-memo', moduleId: mods[3]?.id ?? null },
       ],
     })
