@@ -175,3 +175,77 @@ describe('⑥ «من نحن» أوّلا، وثلاثُ ورقات', () => {
     expect(PAGE).toMatch(/\.brief-sheet \+ \.brief-sheet \{ break-before: page; \}/)
   })
 })
+
+/* ═══ ⑦ وورقُها غيرُ ورق الدليل (٥ أكتوبر ٢٠٢٦) ═══
+
+   قال صاحبُ المنصّة إنّ الناسَ يتبيّنون الصفحةَ بشكلها لا بعنوانها: من ضغط فيها
+   رابطا إلى الدليل يجب أن يرى أنّه انتقل. فلونُ الورق يُقرأ من الورقتين نفسَيهما —
+   أنماطِ الدليل (`GuideKit.tsx`) وأنماطِ الصفحة — في الداكن والفاتح والمطبوع، ويُقاس
+   البعدُ بينهما. والعلّةُ في رأس `BRIEF_CSS`. */
+describe('⑦ وورقُها غيرُ ورق الدليل', () => {
+  const KIT = code('src/components/guide/GuideKit.tsx')
+  const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  /** قيمةُ متغيّرٍ في كتلةٍ تبدأ سطرَها بمحدِّدٍ بعينه — لا في كتلةٍ تذكره بين غيره */
+  const varIn = (css: string, selector: string, name: string) => {
+    const block = new RegExp(`(?:^|\\n)\\s*${esc(selector)}\\s*\\{([^}]*)\\}`).exec(css)?.[1]
+    const v = block && new RegExp(`${esc(name)}:\\s*(\\d+)\\s+(\\d+)\\s+(\\d+)`).exec(block)
+    return v ? [Number(v[1]), Number(v[2]), Number(v[3])] : null
+  }
+  const hex = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16))
+  const apart = (a: number[], b: number[]) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2])
+  const LIGHT = 'html[data-theme="light"]'
+
+  const guide = { dark: varIn(KIT, '.guide-root', '--g-paper'), light: varIn(KIT, `${LIGHT} .guide-root`, '--g-paper') }
+  const brief = {
+    dark: varIn(PAGE, '.guide-root.brief-root', '--g-paper'),
+    light: varIn(PAGE, `${LIGHT} .guide-root.brief-root`, '--g-paper'),
+    print: varIn(PAGE, `html .guide-root.brief-root, ${LIGHT} .guide-root.brief-root`, '--g-paper'),
+  }
+
+  it('تُقرأ الألوانُ فعلا — وإلّا خضرّ ما بعده على فراغ', () => {
+    expect(guide.dark && guide.light, 'لا يُقرأ ورقُ الدليل من GuideKit.tsx').toBeTruthy()
+    expect(brief.dark && brief.light && brief.print, 'لا يُقرأ ورقُ الصفحة من TrainerBrief.tsx').toBeTruthy()
+  })
+
+  it('والصفحةُ تلبسه: صنفُ ورقها على جذرها', () => {
+    expect(PAGE).toMatch(/<div dir="rtl" className="guide-root brief-root[\s"]/)
+  })
+
+  /* ٢٤ على مكعّب الألوان: الكريميُّ والسماويُّ الباهت بينهما ٢٥، والكحليُّ وأخضرُ
+     الدليل الداكن ٣٢ — وما دون ذلك ورقٌ تخطئه العين */
+  it.each(['dark', 'light'] as const)('في %s: بعيدٌ عن ورق الدليل', (theme) => {
+    expect(apart(brief[theme]!, guide[theme]!), `ورقُ الصفحة في ${theme} يشبه ورقَ الدليل`).toBeGreaterThanOrEqual(24)
+  })
+
+  it('والمطبوعُ ورقُ الفاتح نفسُه — وقماشُ الورقة (`@page`) وما تحت المحتوى بلونه', () => {
+    expect(brief.print).toEqual(brief.light)
+    expect(apart(brief.print!, guide.light!)).toBeGreaterThanOrEqual(24)
+    const page = /@page\s*\{[^}]*?background:\s*(#[0-9A-Fa-f]{6})/.exec(PAGE)?.[1]
+    const under = /html, body \{ background-color: (#[0-9A-Fa-f]{6}) !important; \}/.exec(PAGE)?.[1]
+    expect(page && hex(page), 'قماشُ الورقة المطبوعة غيرُ ورقها').toEqual(brief.print)
+    expect(under && hex(under), 'ما تحت آخر المحتوى في الطباعة غيرُ ورقها').toEqual(brief.print)
+  })
+})
+
+/* ═══ ⑧ ورابطُ الدليل يسمّي قسمَه (٥ أكتوبر ٢٠٢٦) ═══
+
+   طلب صاحبُ المنصّة أن تقود الروابطُ إلى القسم بعينه، أو تذكر على الأقلّ أين يقع.
+   الهبوطُ يحرسه `guide-land-on-hash.test.ts`، وهنا الرقمُ: كلُّ رابطٍ إلى قسمٍ مرقّمٍ
+   يحمل «(القسم NN)» — رقمَه في الدليل نفسِه، كما تكتبه شارتُه. */
+describe('⑧ ورابطُ الدليل يسمّي قسمَه', () => {
+  const text = JSON.stringify(Object.values(BRIEF))
+  const toGuide = [...text.matchAll(new RegExp(`\\[([^\\[\\]"]+)\\]\\(${TRAINER_GUIDE_PATH}#([a-z-]+)\\)`, 'g'))]
+    .map((m) => ({ label: m[1], id: m[2], n: GUIDE_SECTIONS.findIndex((s) => s.id === m[2]) + 1 }))
+    .filter((l) => l.n > 0)
+
+  it('تُقرأ الروابطُ فعلا — وإلّا خضرّ ما بعده على فراغ', () => {
+    expect(toGuide.length).toBeGreaterThanOrEqual(4)
+  })
+
+  it('وكلٌّ يحمل رقمَ قسمه في الدليل — لا رقما غيرَه ولا بلا رقم', () => {
+    const wrong = toGuide
+      .filter((l) => !l.label.endsWith(`(القسم ${String(l.n).padStart(2, '0')})`))
+      .map((l) => `${l.label} ← #${l.id} هو القسم ${l.n}`)
+    expect(wrong, `روابطُ لا تسمّي قسمَها: ${wrong.join('، ')}`).toEqual([])
+  })
+})

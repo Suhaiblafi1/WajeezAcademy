@@ -49,6 +49,10 @@ html[data-theme="light"] .guide-root {
 .guide-sq-sm { min-width: 1.6rem; height: 1.6rem; font-size: .8rem; }
 .guide-pill { display: inline-flex; align-items: center; gap: .4rem; padding: .3rem .9rem; border-radius: .4rem;
   font-weight: 800; font-size: .88rem; white-space: nowrap; }
+/* والطويلةُ (عنوانُ خطوات) تلتفّ — بصنفٍ من هنا لا من Tailwind: \`whitespace-normal\`
+   يُكتب قبل هذه الورقة وبمثل وزنها، فيغلبه \`nowrap\` أعلاه. وهو ما كان يمدّ الدليلَ
+   على الهاتف إلى 470 بكسلا فينزاح جانبا (٥ أكتوبر ٢٠٢٦) */
+.guide-pill-wrap { white-space: normal; }
 [data-hue="amber"] { background: rgb(var(--g-amber)); color: rgb(var(--g-dark-ink)); }
 [data-hue="coral"] { background: rgb(var(--g-coral)); color: #fff; }
 [data-hue="sky"] { background: rgb(var(--g-sky)); color: rgb(var(--g-dark-ink)); }
@@ -260,7 +264,7 @@ function Block({ b, figure }: { b: GuideBlock; figure?: FigureRenderer }) {
     case "steps":
       return (
         <div className="mt-7">
-          {b.title && <h3 className="mb-4"><span className="guide-pill whitespace-normal" data-hue="sky">{b.title}</span></h3>}
+          {b.title && <h3 className="mb-4"><span className="guide-pill guide-pill-wrap" data-hue="sky">{b.title}</span></h3>}
           <ol className="space-y-4">
             {b.items.map((it, i) => (
               <li key={i} className="flex items-start gap-3">
@@ -280,7 +284,10 @@ function Block({ b, figure }: { b: GuideBlock; figure?: FigureRenderer }) {
       return <div className="mt-6"><Callout b={b} /></div>;
     case "table":
       return (
-        <div className="guide-card mt-6 overflow-x-auto p-0">
+        /* `relative` لأنّ نصَّ قارئ الشاشة في رقاقات الجدول (`sr-only`) مطلقُ الموضع: بلا
+           أصلٍ مُموضَعٍ يُقاس من خارج اللفّاف فلا يقصّه، ويمدّ الصفحةَ كلَّها على الهاتف
+           إلى حيث يقع في الجدول — وهو أكثرُ ما كان يزيحها جانبا (٥ أكتوبر ٢٠٢٦) */
+        <div className="guide-card relative mt-6 overflow-x-auto p-0">
           <table className="w-full min-w-[32rem] text-start text-sm leading-7">
             <thead>
               <tr className="guide-deep" style={{ borderRadius: 0 }}>
