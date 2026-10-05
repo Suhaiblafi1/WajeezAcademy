@@ -180,7 +180,8 @@ describe('الطورُ قبل خطواته', () => {
     const before = ws.slice(Math.max(0, steps - 400), steps)
     expect(before, 'عاد الخطُّ يختفي في «مركز التواصل»').not.toContain('phase === "prepare" &&')
     expect(ws, 'نقرةُ الخطوة لا تفتحها — فسلّمٌ يُرى ولا يُصعد')
-      .toMatch(/const openStage = \(s: Stage\) => setStage\(s\);/)
+      /* وتحفظ ما في اليد قبل أن تفتحها (٥ أكتوبر ٢٠٢٦) — فالمحروسُ أنّها تنتهي بفتحها */
+      .toMatch(/const openStage = async \(s: Stage\) => \{[\s\S]*?\n    setStage\(s\);\n  \};/)
   })
 
   /* ═══ حدُّ المحور المفتوح ═══
