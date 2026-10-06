@@ -14,6 +14,7 @@
 import { Check, FileSignature, Globe2 } from "lucide-react";
 import type { CalloutTone, GuideBlock } from "@/data/trainer-guide/types";
 import { pad2, type Hue } from "@/components/guide/hues";
+import { isNewSince } from "@/data/trainer-guide/new-since";
 
 /* ═══ الأنماطُ الخاصّة بالدليل ═══
 
@@ -243,7 +244,11 @@ export function Callout({ b }: { b: Extract<GuideBlock, { kind: "callout" }> }) 
         {Icon === "!" ? "!" : <Icon className="h-4 w-4" strokeWidth={3} />}
       </span>
       <div className="min-w-0">
-        <p className="text-sm font-bold text-muted-foreground">{b.label ?? c.label}</p>
+        <p className="text-sm font-bold text-muted-foreground">
+          {b.label ?? c.label}
+          {/* «جديد» على الملاحظة نفسِها — يُحسب بيوم فتح الصفحة كعلامة القسم (`toc.ts`) */}
+          {isNewSince(b.added, new Date()) && <>{" "}<span className="guide-new" data-hue="coral">جديد</span></>}
+        </p>
         <p className="guide-h mt-0.5 text-base leading-7">{b.title}</p>
         <p className="mt-1 text-base leading-8"><Rich text={b.text} /></p>
       </div>
