@@ -22,6 +22,7 @@ import AdminLayout from "./AdminLayout";
 import Modal from "@/components/Modal";
 import { Card, Inset, Panel } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
+import AnnouncementBody from "@/components/AnnouncementBody";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import { useRealSession } from "@/services/session";
 import { matchesQuery } from "@/application/text/search-ar";
@@ -79,17 +80,6 @@ const STATE_TONE = {
   seen: "text-gold-ink",
   unseen: "text-muted-foreground",
 } as const;
-
-/** نصُّ الإعلان كما تعرضه النافذة — فقراتٌ تفصلها سطورٌ فارغة */
-function Body({ text }: { text: string }) {
-  return (
-    <div className="space-y-3 text-read leading-7">
-      {text.split(/\n{2,}/).map((para, i) => (
-        <p key={i} className="whitespace-pre-line">{para}</p>
-      ))}
-    </div>
-  );
-}
 
 function SentRow({ a }: { a: SentAnnouncement }) {
   const [open, setOpen] = useState(false);
@@ -286,7 +276,7 @@ export default function TrainerAnnouncements() {
                   <Megaphone className="h-4 w-4 shrink-0" aria-hidden="true" /> من إدارة الأكاديمية
                 </p>
                 <p className="mt-2 text-lg font-black leading-8">{t || "—"}</p>
-                <div className="mt-4"><Body text={b} /></div>
+                <div className="mt-4"><AnnouncementBody text={b} /></div>
                 <p className="mt-6 text-read text-muted-foreground">وتحته زرّان: «قرأتُه» و«ذكّرني لاحقا».</p>
               </Inset>
             </div>
