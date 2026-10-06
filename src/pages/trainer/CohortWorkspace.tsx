@@ -95,6 +95,7 @@ import { curriculumView } from "@/application/trainer/curriculum-view";
 import { PlanDiffList } from "@/components/PlanDiff";
 import { planDiff } from "@/application/trainer/plan-diff";
 import Chip from "@/components/ui/Chip";
+import { COHORT_LEVELS, COHORT_LEVEL_AR, asLevelRange, levelProblem, levelRangeAr, levelRequired, levelsIn, toggleLevel, type LevelRange } from "@/application/trainer/cohort-level";
 import {
   TASK_REVIEW_TRAINER_AR, changeLines, proposedTask, readTaskChange, taskReview, taskValues, type TaskValueFormat,
 } from "@/application/trainer/task-approval";
@@ -131,6 +132,8 @@ interface PlanContent {
   slots?: PlanSlot[] | null;
   /* كرّاسةُ الشعبة — واحدةٌ للمحاور كلِّها، وأين يبدأ كلُّ محورٍ فيها (٣٠ سبتمبر ٢٠٢٦) */
   workbook?: CohortWorkbook | null;
+  /* مستوى الشعبة — مستوًى أو مدًى متّصلٌ من الثلاثة (٦ أكتوبر ٢٠٢٦) */
+  level?: LevelRange | null;
 }
 /** مدّةٌ كما يرسلها الخادم — تاريخان `YYYY-MM-DD` */
 interface Period { startsOn: string; endsOn: string }
@@ -204,13 +207,15 @@ type Stage = "identity" | "modules" | "workbooks" | "sessions" | "assignments" |
 /* والأسماءُ هي أسماءُ أقسام ملاحظات المعتمِد (`STAGE_LABELS` في `review-notes.ts`):
    يكتب ملاحظتَه تحت اسم الخطوة الذي يقرؤه المدرّبُ هنا — ويحرس تطابقَهما
    `review-notes.test.ts` (٣ب) */
-const STAGES: { key: Stage; label: string; icon: typeof BookOpen }[] = [
-  { key: "identity", label: "المعلومات الأساسيّة", icon: IdCard },
-  { key: "modules", label: "المحاور ومواعيدها", icon: BookOpen },
-  { key: "workbooks", label: "الكرّاسة", icon: BookMarked },
-  { key: "sessions", label: "اللقاءات", icon: CalendarDays },
-  { key: "assignments", label: "المهامّ والمصادر", icon: ClipboardCheck },
-  { key: "approval", label: "الاعتماد", icon: Send },
+/* و`short` كلمةٌ واحدةٌ تُكتب تحت دائرتها على الهاتف — ستُّ خاناتٍ في ٣٥٠ بكسلا
+   لا تسع «المعلومات الأساسيّة» فيركب الاسمُ على جاره (قِيس على ٣٩٠، ٥ أكتوبر ٢٠٢٦) */
+const STAGES: { key: Stage; label: string; icon: typeof BookOpen; short: string }[] = [
+  { key: "identity", label: "المعلومات الأساسيّة", icon: IdCard, short: "الأساس" },
+  { key: "modules", label: "المحاور ومواعيدها", icon: BookOpen, short: "المحاور" },
+  { key: "workbooks", label: "الكرّاسة", icon: BookMarked, short: "الكرّاسة" },
+  { key: "sessions", label: "اللقاءات", icon: CalendarDays, short: "اللقاءات" },
+  { key: "assignments", label: "المهامّ والمصادر", icon: ClipboardCheck, short: "المهامّ" },
+  { key: "approval", label: "الاعتماد", icon: Send, short: "الاعتماد" },
 ];
 /* والخطوةُ تتمّ بصفوفها في قائمة الخادم — و«المهامُّ والمصادر» صفّان في درجة */
 const STAGE_KEYS: Record<Stage, readonly string[]> = {
@@ -414,7 +419,7 @@ const resourcesKey = (c: PlanContent) => JSON.stringify(c.resources.filter((r) =
 /* والوصفُ صار مع الاسم والنبذة، والملاحظةُ صارت مع اللقاءات — فبصمةُ كلٍّ
    حيث صار الحقلُ لا حيث كان. ومعهما المدّةُ منذ صارت في الخطوة الأولى
    (٢٧ سبتمبر ٢٠٢٦): من غيّر تاريخا ولم يحفظ يُعلَّم كمن غيّر الاسم. */
-const basicsKey = (c: PlanContent) => `${c.summaryAr ?? ""}|${c.startsOn ?? ""}|${c.endsOn ?? ""}`;
+const basicsKey = (c: PlanContent) => `${c.summaryAr ?? ""}|${c.startsOn ?? ""}|${c.endsOn ?? ""}|${levelRangeAr(asLevelRange(c.level)) ?? ""}`;
 /* ═══ ولم تعد لخطوة «اللقاءات» مسودّةٌ تُحفظ ═══
 
    كانت تحمل حقلا واحدا (`liveNoteAr`) يُحفظ مع الخطّة، فتُعلَّم «لم يُحفَظ»
@@ -691,9 +696,8 @@ export default function CohortWorkspace() {
     .map((m, i) => ({ ...m, n: i + 1 }))
     .filter((m) => !moduleBodyDone(m));
   const ready = gated.length ? Math.round((doneCount / gated.length) * 100) : 0;
-  /* موضعُ الخطوة الحاليّة — يُقال بالضمور: المضمورُ يجيب «أين أنا» */
+  /* الخطوةُ الحاليّة — يُسمّى بها ما ينقصها حين لا تتمّ */
   const here = STAGES.find((s) => s.key === stage) ?? null;
-  const stepNo = STAGES.findIndex((s) => s.key === stage) + 1;
   /* «شعبتك الأولى» بجانب «شعبة ٤» — حين يخالف الرقمُ ترتيبَها بين شعبه (⑫، `cohort-title.ts`) */
   const ordinalNote = trainerOrdinalNoteAr(ws.cohort.title, ws.cohort.trainerOrdinal);
   /* مربّعُ الموافقة يُبرَز ما دام لم يُعلَّم بعد ضغطةِ إرسالٍ بلا موافقة (⑧) */
@@ -840,6 +844,9 @@ export default function CohortWorkspace() {
     if (k === "identity") {
       const out: string[] = [];
       if (w.cohort.title.trim().length < 3) out.push("اكتب اسمَ الشعبة — ثلاثةُ أحرفٍ فأكثر");
+      /* والمستوى بالقاعدة نفسِها التي يحكم بها الخادم — `cohort-level.ts` */
+      const lv = levelProblem(saved, w.plan?.status ?? "draft");
+      if (lv) out.push(lv);
       const p = periodProblem(w.cohort.period);
       if (p) out.push(p);
       return out.length ? out : [label];
@@ -1229,6 +1236,18 @@ export default function CohortWorkspace() {
           الثانويُّ صار **الذهبيَّ الوحيدَ في الشاشة**: «احفظ وتابِع».
           واسمُ الشعبة نزل إلى سطر الحقائق — والمضمورُ يُسقط ذلك السطر.
 
+          ═══ ثمّ صارت الأسماءُ كلُّها تُرى — والمقفلُ مقفلٌ (٦ أكتوبر ٢٠٢٦) ═══
+
+          طلبُ صاحب المنصّة: «أظهِر عناوينَ الخطوات التالية، واتركها مقفلةً حتّى
+          يُنهي السابقة — لكن أرِهم عناوينَها». وكانت الأسماءُ على الحاسوب المحمول
+          والهاتف تغيب إلّا اسمَ النشطة، فيرى المدرّبُ أقفالا لا يدري ما وراءها.
+
+          فصار الاسمُ **تحت دائرته دائما** على كلّ عرض: يأخذ عرضَ درجته فيلتفّ
+          سطرين إن طال بدلَ أن يُخفى. وعلى الهاتف كلمةٌ واحدة (`short`) — ستُّ
+          خاناتٍ في ثلاثمئةٍ وخمسين بكسلا لا تسع «المعلومات الأساسيّة». وسقط سطرُ
+          «الخطوة ن من ٦ · اسمُها» من الهاتف ومن المضمور: كان يقول أين هو لأنّ
+          الأسماءَ غائبة، والأسماءُ الآن حاضرةٌ والنشطةُ بحلقتها.
+
           ── وأربعةُ عهودٍ لا تُمَسّ (من وثيقة القرار) ──
 
           ① النقطةُ الذهبيّةُ «لم يُحفَظ» تبقى على علامتها مهما ضمر الشريط.
@@ -1244,15 +1263,8 @@ export default function CohortWorkspace() {
       >
         <div>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-            {/* المضمورُ يقول أين هو — والساكنُ يقوله بالسلّم وأسمائه */}
-            {compact && (
-              <p className="hidden shrink-0 text-read font-black text-foreground sm:block">
-                الخطوة {stepNo} من {STAGES.length}
-                <span className="font-bold text-muted-foreground"> · {here?.label}</span>
-              </p>
-            )}
 
-            <ol className="flex w-full min-w-0 items-center sm:w-auto sm:flex-1">
+            <ol className="flex w-full min-w-0 items-start max-[359px]:-mx-3 max-[359px]:w-[calc(100%+1.5rem)] sm:w-auto sm:flex-1">
               {STAGES.map((s, i) => {
                 /* تمامُ الدرجة بصفوفها كلِّها — «المهامُّ والمصادر» صفّان، ولا تُعلَّم
                    تامّةً بأحدهما (قِيس في المتصفّح: عُلّمت تامّةً والمصادرُ ناقصة) */
@@ -1265,9 +1277,12 @@ export default function CohortWorkspace() {
                 const stateAr = `${dirty[s.key] ? "فيها تعديلٌ لم يُحفَظ" : done ? "تمّت" : selected ? "الحاليّة" : !open ? "مقفلةٌ حتّى تُتمّ ما قبلها" : "لم تتمّ بعد"}${noted ? " · عليها ملاحظةٌ من الإدارة" : ""}`;
                 const blocker = STAGES.slice(0, i).find((x) => !doneOf(x.key));
                 return (
-                  /* بلا `min-w-0`: الدرجةُ لا تنضغط دون زرّها فيركب اسمُها على جارتها
-                     (قِيس على ٣٢٠ و٣٩٠) — والخطُّ الواصلُ هو ما يتّسع ويضيق */
-                  <li key={s.key} className={`flex items-center ${i < STAGES.length - 1 ? "flex-1" : ""}`}>
+                  <li key={s.key} className="relative flex min-w-0 flex-1 justify-center">
+                    {/* والخطُّ بين درجتين يمتلئ حين تتمّ التي قبله — من حافّة دائرتها
+                        إلى حافّة التالية، فلا يمرّ تحت دائرةٍ شفّافة */}
+                    {i < STAGES.length - 1 && (
+                      <span aria-hidden="true" className={`absolute start-[calc(50%+1.125rem)] top-[1.1875rem] h-0.5 w-[calc(100%-2.25rem)] rounded-full ${done ? "bg-teal" : "bg-white/10"}`} />
+                    )}
                     <button
                       type="button"
                       onClick={() => openStage(s.key)}
@@ -1275,61 +1290,44 @@ export default function CohortWorkspace() {
                       aria-current={selected ? "step" : undefined}
                       aria-label={`الخطوة ${i + 1} من ${STAGES.length}: ${s.label} — ${stateAr}`}
                       title={!open && blocker ? `أكمِل «${blocker.label}» أوّلا` : undefined}
-                      /* وعلى الهاتف مساحةُ لمسٍ ٣٦×٤٤ حول دائرةٍ من ٢٨: ستُّ درجاتٍ
-                         وخطوطُها تسع ٢٨٠ بكسلا (شاشةُ ٣٢٠) — وكانت تزيد ستّةَ عشرَ
-                         فتُقصّ الدرجةُ الأخيرة عند الحافّة. */
-                      className={`group flex min-h-11 min-w-9 shrink-0 items-center justify-center gap-1.5 rounded-full transition sm:min-w-0 sm:justify-start sm:px-1 ${
-                        !open ? "cursor-not-allowed opacity-50" : selected ? "bg-white/[0.05]" : "hover:bg-white/[0.03]"
+                      className={`group relative flex min-h-11 w-full flex-col items-center gap-1 rounded-xl px-0.5 py-1.5 transition ${
+                        !open ? "cursor-not-allowed" : selected ? "bg-white/[0.05]" : "hover:bg-white/[0.03]"
                       }`}
                     >
                       <span className={`relative grid h-7 w-7 shrink-0 place-items-center rounded-full border-2 text-fine font-black transition ${
                         done ? "border-teal bg-teal text-on-teal"
                           : selected ? "border-gold bg-gold/15 text-gold-ink shadow-[0_0_0_3px_rgba(250,188,5,0.15)]"
+                          : !open ? "border-white/10 bg-surface text-muted-foreground/70"
                           : "border-white/15 bg-surface text-muted-foreground"
                       }`}>
                         {done ? <Check className="h-3.5 w-3.5" aria-hidden="true" /> : !open ? <Lock className="h-3 w-3" aria-hidden="true" /> : i + 1}
-                        {/* ① تعديلٌ في اليد لا يُكتم لتوفير سطر — ولا لتوفير صفّ */}
                         {dirty[s.key] && (
                           <span className="absolute -end-0.5 -top-0.5 h-2.5 w-2.5 rounded-full border-2 border-surface bg-gold" aria-hidden="true" />
                         )}
-                        {/* ② وملاحظةُ الإدارة علامةٌ في الركن المقابل — فلا تختلط
-                            بعلامة «لم يُحفظ» الذهبيّة ولا تغطّيها */}
                         {noted && (
                           <span data-noted className="absolute -bottom-0.5 -end-0.5 h-2.5 w-2.5 rounded-full border-2 border-surface bg-red-400" aria-hidden="true" />
                         )}
                       </span>
-                      {/* والاسمُ للنشطة من عرض اللوح فما فوق، ولكلّها ساكنا من ١٢٨٠
-                          (قِيس: على ١٠٢٤ يكبّر الإطارُ المتنَ ١٫٣ فتفيض السادسة) — ولغيرها عند التحويم وعند تركيز لوحة
-                          المفاتيح، فمن يتنقّل بالمفتاح يقرأ ما يقرؤه صاحبُ الفأرة.
-                          وعلى الهاتف لا اسمَ في الصفّ: ستُّ دوائرَ متساويةٌ، والاسمُ
-                          في سطرٍ تحتها — فقد رُكّب على جارته حين وُضع بينها. */}
+                      {/* الاسمُ تحت دائرته دائما — للمقفلة كذلك: يرى ما ينتظره ولا يفتحه.
+                          ولا ينزل عن اثني عشر (أرضيّةُ شاشات الفريق): على أضيق هاتفٍ
+                          يأخذ السلّمُ حشوَ الشريط الجانبيَّ بدلَ أن يصغر الخطّ */}
                       <span
                         aria-hidden="true"
-                        className={`overflow-hidden whitespace-nowrap text-read font-bold transition-[max-width] duration-200 ${
-                          selected
-                            ? "max-w-0 text-foreground sm:max-w-[11rem]"
-                            : `max-w-0 text-muted-foreground sm:group-hover:max-w-[11rem] sm:group-focus-visible:max-w-[11rem] ${compact ? "" : "xl:max-w-[11rem]"}`
+                        className={`block whitespace-nowrap text-center text-fine leading-4 sm:whitespace-normal sm:text-read sm:leading-5 ${
+                          selected ? "font-black text-foreground"
+                            : done ? "font-bold text-foreground"
+                            : !open ? "font-bold text-muted-foreground/70"
+                            : "font-bold text-muted-foreground"
                         }`}
                       >
-                        {s.label}
+                        <span className="sm:hidden">{s.short}</span>
+                        <span className="hidden sm:inline">{s.label}</span>
                       </span>
                     </button>
-                    {/* والخطُّ بين درجتين يمتلئ حين تتمّ التي قبله — فيُقرأ
-                        السلّمُ طريقا يُقطع لا أزرارا متجاورة */}
-                    {i < STAGES.length - 1 && (
-                      <span aria-hidden="true" className={`mx-0.5 h-0.5 min-w-1 flex-1 rounded-full sm:mx-1 sm:min-w-2 ${done ? "bg-teal" : "bg-white/10"}`} />
-                    )}
                   </li>
                 );
               })}
             </ol>
-
-            {/* وعلى الهاتف يُقال موضعُ الخطوة سطرا تحت الدوائر — فالدائرةُ وحدَها
-                رقمٌ لا يقول أين هو */}
-            <p className="w-full text-read font-black text-foreground sm:hidden">
-              الخطوة {stepNo} من {STAGES.length}
-              <span className="font-bold text-muted-foreground"> · {here?.label}</span>
-            </p>
 
             {/* ═══ الذهبيُّ الوحيد — «احفظ وتابِع» ═══
 
@@ -1485,6 +1483,57 @@ export default function CohortWorkspace() {
             <StaffField wide label="نبذةٌ عن الشعبة" hint="سطران يقرؤهما المتعلّم قبل أن يدفع. قل ما سيخرج به، لا ما ستشرحه.">
               <textarea rows={2} value={content.summaryAr ?? ""} onChange={(e) => setContent({ ...content, summaryAr: e.target.value })} disabled={locked} className={areaCls} />
             </StaffField>
+
+            {/* ═══ مستوى الشعبة — من أين يبدأ متعلّمُها وإلى أين يصل (٦ أكتوبر ٢٠٢٦) ═══
+
+                «سؤالٌ لكلّ شعبةٍ يسأل عن مستوى هذه الدورة — من المبتدئين إلى
+                المتقدّمين». واختار صاحبُ المنصّة المدى لا المستوى الواحد: ثلاثُ
+                بطاقاتٍ تُنقر، والمختارُ منها متّصلٌ دائما — ونقرُ «مبتدئ» ثمّ «متقدّم»
+                يأخذ الثلاثة. والقاعدةُ في `application/trainer/cohort-level.ts`. */}
+            {(() => {
+              const range = asLevelRange(content.level);
+              const picked = levelsIn(range);
+              const said = levelRangeAr(range);
+              return (
+                <fieldset disabled={locked} className="min-w-0 sm:col-span-2">
+                  <legend className="text-read font-black text-foreground">مستوى هذه الشعبة</legend>
+                  <p className="mt-1 text-read leading-6 text-muted-foreground">
+                    لمن تُدرّس هذه الشعبة؟ اختر مستوًى واحدا، أو مستويين متجاورين إن كانت تبدأ من أحدهما وتصل إلى الآخر.
+                  </p>
+                  <div role="group" aria-label="مستوى هذه الشعبة" className="mt-2.5 grid gap-2 sm:grid-cols-3">
+                    {COHORT_LEVELS.map((lv) => {
+                      const on = picked.includes(lv);
+                      return (
+                        <Card
+                          as="button"
+                          interactive
+                          tone={on ? "accent" : "default"}
+                          key={lv}
+                          type="button"
+                          aria-pressed={on}
+                          onClick={() => setContent({ ...content, level: toggleLevel(range, lv) })}
+                          className="flex items-start gap-2.5"
+                        >
+                          <span className={`mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded border-2 ${on ? "border-teal bg-teal text-on-teal" : "border-white/25"}`} aria-hidden="true">
+                            {on && <Check className="h-3 w-3" />}
+                          </span>
+                          <span>
+                            <span className="block text-read font-black text-foreground">{COHORT_LEVEL_AR[lv].label}</span>
+                            <span className="mt-0.5 block text-read leading-6 text-muted-foreground">{COHORT_LEVEL_AR[lv].hint}</span>
+                          </span>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                  {/* ما يُحفظ يُقال بجملة — فيرى أنّ «مبتدئ» و«متقدّم» صارتا الثلاثة */}
+                  <p className="mt-2 text-read leading-6 text-muted-foreground" aria-live="polite">
+                    {said
+                      ? <>مستوى الشعبة: <b className="text-foreground">{said}</b></>
+                      : levelRequired(planStatus) ? "لم تختر المستوى بعد — ولا تتمّ هذه الخطوةُ بدونه." : "لم يُحدَّد مستوى لهذه الشعبة."}
+                  </p>
+                </fieldset>
+              );
+            })()}
 
             {/* ═══ المدّةُ — من متى إلى متى ═══
 

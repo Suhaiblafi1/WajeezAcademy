@@ -30,6 +30,7 @@
 
 import { Prisma, type PrismaClient } from '@prisma/client'
 import { moduleBodyDone, resourceHasSource } from '../../src/application/trainer/module-body'
+import { levelProblem, type LevelRange } from '../../src/application/trainer/cohort-level'
 import { blockingBeforeSubmit, boardNextStep, trainerOwned } from '../../src/application/trainer/plan-gate'
 import {
   REVIEW_SECTIONS, composeReviewNote, hasReviewNotes, normalizeReviewNotes, notedSections, readReviewNotes,
@@ -114,6 +115,11 @@ export interface TrainerPlanContent {
       محورٍ فيه — فيتبعها المتعلّمُ محورا محورا. والقاعدةُ في
       `src/application/trainer/axis-timeline.ts` (`cohortWorkbookProblems`). */
   workbook?: CohortWorkbook | null
+  /** ═══ مستوى الشعبة — من أين يبدأ متعلّمُها وإلى أين يصل (٦ أكتوبر ٢٠٢٦) ═══
+
+      مستوًى أو مدًى من مستويين متجاورين أو الثلاثة. يُطالَب به ما دامت الخطّةُ
+      في يد المدرّب، ويُعتمَد معها. والقاعدةُ في `src/application/trainer/cohort-level.ts`. */
+  level?: LevelRange | null
   /* ── وحُذف `proposals` من هنا (د-٦ · ١٤ سبتمبر ٢٠٢٦) ──
 
      كان حقلَين — اسمٌ مقترحٌ للدورة وآخرُ للمسار — يركبان مع الخطّة،
@@ -262,7 +268,14 @@ export function buildChecklist(input: {
 
      وسقط صفُّ `term` («تسمّي الإدارةُ فصلَ الشعبة فتُفتح لك الجدولة»):
      الجدولةُ تُفتح بمدّته، والفصلُ يُشتقّ من تاريخ البدء عند الاعتماد. */
+  /* ═══ وفيها مستوى الشعبة (٦ أكتوبر ٢٠٢٦) ═══
+
+     «سؤالٌ لكلّ شعبةٍ عن مستوى هذه الدورة — من المبتدئين إلى المتقدّمين».
+     ويُطالَب به ما دامت الخطّةُ في يد المدرّب: من أرسل موادَّه قبل القرار
+     يمضي، فإن رُدّت إليه صار شرطا («إن أرجعناها له فالتعديلُ واجب»). والقاعدةُ
+     نفسُها تقرؤها الشاشةُ فيما ينقص الخطوة (`levelProblem`). */
   const identityDone = c.title.trim().length >= 3 && periodProblem(input.period) === null
+    && levelProblem(input.content, input.planStatus) === null
   /* ═══ ولماذا صار المحتوى النظريُّ شرطا للاعتماد ═══
 
      طلب صاحبُ المنصّة (١٣ سبتمبر ٢٠٢٦) أن يصير «المحتوى النظريّ» إلزاميّا
@@ -374,7 +387,7 @@ export function buildChecklist(input: {
     ? ` · ${orphanResources === 1 ? 'مصدرٌ مربوطٌ' : `${orphanResources} مصادرُ مربوطةٌ`} بمحورٍ حُذف` : '')
     + (looseResources > 0 ? ` · ${looseResources === 1 ? 'مصدرٌ' : `${looseResources} مصادرُ`} بلا رابطٍ ولا ملفّ` : '')
   return [
-    { key: 'identity', labelAr: 'سمِّ الشعبةَ وحدّد مدّتها — من متى إلى متى', done: identityDone, optional: false },
+    { key: 'identity', labelAr: 'سمِّ الشعبةَ وحدّد مستواها ومدّتها — من متى إلى متى', done: identityDone, optional: false },
     {
       key: 'modules',
       labelAr: legacy ? 'اكتب المحتوى النظريَّ لكلّ محور' : 'وزّع المحاورَ على مواعيدها واكتب محتواها النظريّ',

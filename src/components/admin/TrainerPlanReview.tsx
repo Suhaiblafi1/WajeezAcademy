@@ -16,6 +16,7 @@ import { useRealSession } from "@/services/session";
 import { fmtDateAr, fmtDateTimeAr } from "@/utils/format";
 import type { PlanSlot } from "@/application/trainer/axis-timeline";
 import CurriculumReview from "@/components/CurriculumReview";
+import { asLevelRange, levelRangeAr } from "@/application/trainer/cohort-level";
 import { ReviewNotesForm, ReviewNotesList } from "@/components/ReviewNotes";
 import { PendingTasks } from "@/components/PendingTasks";
 import { awaitingTasks } from "@/application/trainer/task-approval";
@@ -54,6 +55,8 @@ interface TrainerPlan {
     summaryAr?: string | null; modules?: { moduleId: string; titleAr: string }[]; resources?: { title: string; url: string }[];
     /* مدّةُ الشعبة كما حدّدها مدرّبُها — تُعتمَد مع الخطّة (٢٧ سبتمبر ٢٠٢٦) */
     startsOn?: string | null; endsOn?: string | null;
+    /* مستوى الشعبة — مدًى من الثلاثة (٦ أكتوبر ٢٠٢٦)، ويُقرأ بـ`asLevelRange` */
+    level?: unknown;
     /* ومواعيدُ المحاور وكرّاساتُها — `application/trainer/axis-timeline.ts` */
     slots?: PlanSlot[] | null;
   } | null;
@@ -166,6 +169,17 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
               {" "}<span className="text-muted-foreground">— تصير حدودَ الشعبة المعلَنة باعتمادك.</span>
             </p>
           )}
+          {/* ═══ ومستواها — لمن تُدرَّس (٦ أكتوبر ٢٠٢٦) ═══
+              يختاره المدرّبُ في خطوته الأولى: مستوًى أو مدًى متّصل. والخطّةُ المرسَلةُ
+              قبل القرار تصل بلا مستوى — فيُقال ذلك ولا يُخفى السطر. */}
+          {(() => {
+            const lv = levelRangeAr(asLevelRange(trainerPlan.content?.level));
+            return (
+              <p className="mt-1 text-read leading-6 text-foreground">
+                المستوى: {lv ? <b>{lv}</b> : <span className="text-muted-foreground">لم يُحدَّد — أُرسلت قبل أن يُسأل عنه</span>}
+              </p>
+            );
+          })()}
           {/* ═══ وما تغيّر عن المعتمَد — مراجعةٌ لخطّةٍ معتمَدة (٣ج-٤) ═══
 
               المنهجُ أدناه كما سيكون، ولا يقول ما الذي تغيّر: فإمّا يقرأ المعتمِدُ

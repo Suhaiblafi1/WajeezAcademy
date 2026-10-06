@@ -45,10 +45,12 @@ const PERIOD = { startsOn: '2027-02-07', endsOn: '2027-03-14' }
 const inside = (i: number) => new Date(Date.UTC(2027, 1, 9 + i, 15))
 const sessions = (n: number) => Array.from({ length: n }, (_, i) => ({ startsAt: inside(i), recordings: [] as unknown[] }))
 
+/* ومستواها — شرطُ الخطوة الأولى ما دامت الخطّةُ في يده (٦ أكتوبر ٢٠٢٦) */
+const LEVEL = { from: 'beginner', to: 'intermediate' }
 const build = (over: Partial<Parameters<typeof buildChecklist>[0]> = {}) => buildChecklist({
   cohort: { title: 'الدفعة الأولى' },
   period: PERIOD,
-  content: { kind: 'trainer', modules: mods(1), resources: [{ title: 'ك', url: 'https://x.test/a' }] } as never,
+  content: { kind: 'trainer', modules: mods(1), resources: [{ title: 'ك', url: 'https://x.test/a' }], level: LEVEL } as never,
   sessions: sessions(1),
   assessmentsCount: 0,
   planStatus: 'draft',
@@ -69,8 +71,8 @@ const item = (key: string, over?: Partial<Parameters<typeof buildChecklist>[0]>)
    الاعتماد. والمحروسُ الأصليُّ باقٍ بنصّه: **لا يُكتب «لم يتمّ» على ما ليس
    بيده** — وما بقي في الصفّ كلُّه بيده. */
 describe('① الهُويّة: اسمٌ ومدّة — ولا صفَّ للفصل', () => {
-  it('⚠️ اسمٌ ومدّةٌ صالحةٌ تُتمّانها — ولا فصلَ يُنتظر', () => {
-    expect(item('identity').done, 'اسمٌ ومدّةٌ لم يكفيا').toBe(true)
+  it('⚠️ اسمٌ ومستوًى ومدّةٌ صالحةٌ تُتمّانها — ولا فصلَ يُنتظر', () => {
+    expect(item('identity').done, 'اسمٌ ومستوًى ومدّةٌ لم تكفِ').toBe(true)
     expect(build().map((c) => c.key), 'عاد صفُّ الفصل بيد الإدارة').not.toContain('term')
   })
 
@@ -86,8 +88,36 @@ describe('① الهُويّة: اسمٌ ومدّة — ولا صفَّ للفص
     expect(item('identity', { cohort: { title: 'أ' } }).done).toBe(false)
   })
 
-  it('واسمُ الصفّ يقول ما يُطلب — الاسمَ والمدّة', () => {
+  it('واسمُ الصفّ يقول ما يُطلب — الاسمَ والمستوى والمدّة', () => {
     expect(item('identity').labelAr).toContain('مدّتها')
+    expect(item('identity').labelAr, 'الصفُّ لا يسمّي المستوى — فيُحجب ولا يدري لماذا').toContain('مستواها')
+  })
+
+  /* ═══ ومستوى الشعبة (٦ أكتوبر ٢٠٢٦) ═══
+
+     «سؤالٌ لكلّ شعبةٍ عن مستوى هذه الدورة — من المبتدئين إلى المتقدّمين».
+     وقرارُ صاحب المنصّة في الإلزام: «تجاهَل من أرسل موادَّه، فإن أرجعناها له
+     فالتعديلُ واجب». فالحكمُ بحال الخطّة لا بتاريخها. */
+  const noLevel = (planStatus: Parameters<typeof buildChecklist>[0]['planStatus'], level: unknown = null) => item('identity', {
+    planStatus,
+    content: { kind: 'trainer', modules: mods(1), resources: [{ title: 'ك', url: 'https://x.test/a' }], level } as never,
+  })
+
+  it('⚠️ وبلا مستوًى لا تتمّ ما دامت الخطّةُ في يده — مسودّةً أو مردودةً بتعديلات', () => {
+    expect(noLevel('draft').done, 'تمّت الخطوةُ الأولى بلا مستوى').toBe(false)
+    expect(noLevel('changes_requested').done, 'رُدّت الخطّةُ فلم يُطالَب بالمستوى').toBe(false)
+  })
+
+  it('⚠️ ومن أرسل قبل القرار يمضي بلا مستوى — لا يُكتب «لم يتمّ» على ما اعتُمد', () => {
+    for (const st of ['submitted', 'approved', 'published'] as const) {
+      expect(noLevel(st).done, `خطّةٌ ${st} صارت ناقصةً بقرارٍ جاء بعدها`).toBe(true)
+    }
+  })
+
+  it('والمستوى المعطوبُ كالغائب — طرفٌ مخترَعٌ أو طرفٌ واحد', () => {
+    expect(noLevel('draft', { from: 'expert', to: 'advanced' }).done).toBe(false)
+    expect(noLevel('draft', { from: 'beginner' }).done).toBe(false)
+    expect(noLevel('draft', 'beginner').done, 'نصٌّ مكانَ المدى عُدّ مستوًى').toBe(false)
   })
 })
 

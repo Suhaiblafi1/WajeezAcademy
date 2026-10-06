@@ -106,7 +106,7 @@ async function carried(sourcesAr: string, outcomeAr = 'يستطيع كذا') {
 
 type Resource = { title: string; url: string | null }
 type Workspace = {
-  plan: { content: { modules: { outcomeAr: string | null }[]; resources: Resource[] } } | null
+  plan: { content: { modules: { outcomeAr: string | null }[]; resources: Resource[]; level?: unknown } } | null
   checklist: { key: string; labelAr: string; done: boolean }[]
 }
 
@@ -117,9 +117,10 @@ describe('ما نُقل من اللوح القديم', () => {
     const content = ws.plan!.content
     expect(content.resources).toEqual(expect.arrayContaining([expect.objectContaining({ title: NO_LINK, url: null })]))
 
-    /* كما يحفظ «احفظ وتابِع» في الخطوة الأولى: الخطّةُ كاملةً ومعها المدّة */
+    /* كما يحفظ «احفظ وتابِع» في الخطوة الأولى: الخطّةُ كاملةً ومعها المدّةُ والمستوى */
     const saved = await t.call('PUT', `/api/trainer/cohorts/${t.cohortId}/plan`, {
       ...content, summaryAr: 'نبذةٌ عن الشعبة', startsOn: '2027-03-07', endsOn: '2027-04-03',
+      level: { from: 'beginner', to: 'beginner' },
     })
     expect(saved.statusCode, `رُدّ الحفظُ بمصدرٍ بلا رابطٍ لم يلمسه المدرّب: ${saved.body}`).toBe(200)
     const renamed = await t.call('PATCH', `/api/trainer/cohorts/${t.cohortId}`, { title: 'شعبتي الأولى في النقل' })
@@ -128,6 +129,8 @@ describe('ما نُقل من اللوح القديم', () => {
     const after = (await t.call('GET', `/api/trainer/cohorts/${t.cohortId}/workspace`)).json() as Workspace
     expect(after.plan!.content.resources.map((r) => r.title), 'ضاع ما كتبه').toContain(NO_LINK)
     expect(after.checklist.find((c) => c.key === 'identity')?.done, 'لم تتمّ الخطوةُ الأولى وقد حُفظت').toBe(true)
+    /* والمستوى يعبر المخطّطَ إلى القاعدة — وكان المخطّطُ يُسقط ما لا يعرفه صامتا (٦ أكتوبر ٢٠٢٦) */
+    expect(after.plan!.content.level, 'اختار المدرّبُ المستوى ولم يُحفظ').toEqual({ from: 'beginner', to: 'beginner' })
   })
 
   it('② والمصدرُ بلا رابطٍ يمنع الإرسالَ وحدَه ويُسمّى — ثمّ يُكمَل فيرتفع', async () => {
