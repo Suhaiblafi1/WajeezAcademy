@@ -17,6 +17,7 @@ import { fmtDateAr, fmtDateTimeAr } from "@/utils/format";
 import type { PlanSlot } from "@/application/trainer/axis-timeline";
 import CurriculumReview from "@/components/CurriculumReview";
 import { asLevelRange, levelRangeAr } from "@/application/trainer/cohort-level";
+import { asAudience, goalsAr, stagesAr } from "@/application/trainer/cohort-audience";
 import { ReviewNotesForm, ReviewNotesList } from "@/components/ReviewNotes";
 import { PendingTasks } from "@/components/PendingTasks";
 import { awaitingTasks } from "@/application/trainer/task-approval";
@@ -57,6 +58,8 @@ interface TrainerPlan {
     startsOn?: string | null; endsOn?: string | null;
     /* مستوى الشعبة — مدًى من الثلاثة (٦ أكتوبر ٢٠٢٦)، ويُقرأ بـ`asLevelRange` */
     level?: unknown;
+    /* لمن هي وماذا يريد متعلّمُها (٦ أكتوبر ٢٠٢٦) — ويُقرأ بـ`asAudience` */
+    audience?: unknown;
     /* ومواعيدُ المحاور وكرّاساتُها — `application/trainer/axis-timeline.ts` */
     slots?: PlanSlot[] | null;
   } | null;
@@ -172,12 +175,27 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
           {/* ═══ ومستواها — لمن تُدرَّس (٦ أكتوبر ٢٠٢٦) ═══
               يختاره المدرّبُ في خطوته الأولى: مستوًى أو مدًى متّصل. والخطّةُ المرسَلةُ
               قبل القرار تصل بلا مستوى — فيُقال ذلك ولا يُخفى السطر. */}
+          {/* ═══ ولمن هي وماذا يريد متعلّمُها — بجانب المستوى (٦ أكتوبر ٢٠٢٦) ═══
+              طلبُ صاحب المنصّة: «أضِفهما إلى الرأس» — كانا في بطاقة المنهج وحدَها، فيقرأ
+              المعتمِدُ المستوى في سطر الحقائق ويبحث عن جمهوره في البطاقة تحته. */}
           {(() => {
             const lv = levelRangeAr(asLevelRange(trainerPlan.content?.level));
+            const aud = asAudience(trainerPlan.content?.audience);
+            const who = stagesAr(aud);
+            const goal = goalsAr(aud);
+            const unset = <span className="text-muted-foreground">لم يُحدَّد — أُرسلت قبل أن يُسأل عنه</span>;
             return (
-              <p className="mt-1 text-read leading-6 text-foreground">
-                المستوى: {lv ? <b>{lv}</b> : <span className="text-muted-foreground">لم يُحدَّد — أُرسلت قبل أن يُسأل عنه</span>}
-              </p>
+              <>
+                <p className="mt-1 text-read leading-6 text-foreground">
+                  المستوى: {lv ? <b>{lv}</b> : unset}
+                </p>
+                <p className="mt-1 text-read leading-6 text-foreground">
+                  لمن: {who ? <b>{who}</b> : unset}
+                </p>
+                <p className="mt-1 text-read leading-6 text-foreground">
+                  الهدف: {goal ? <b>{goal}</b> : unset}
+                </p>
+              </>
             );
           })()}
           {/* ═══ وما تغيّر عن المعتمَد — مراجعةٌ لخطّةٍ معتمَدة (٣ج-٤) ═══

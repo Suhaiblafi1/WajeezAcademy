@@ -130,6 +130,14 @@ describe('⑤ والمعتمِدُ يقرؤه', () => {
     expect(html, 'المنهجُ لا يقول الهدف').toContain('الحصول على أول وظيفة')
   })
 
+  /* وفي سطر الحقائق أعلى المراجعة بجانب المستوى — طلبُ صاحب المنصّة (٦ أكتوبر ٢٠٢٦) */
+  it('⚠️ وفي رأس مراجعة الإدارة بجانب المستوى — بالقاعدة نفسِها', () => {
+    const REVIEW = code('src/components/admin/TrainerPlanReview.tsx')
+    expect(REVIEW, 'رأسُ المراجعة لا يقرأ الجمهور').toMatch(/const aud = asAudience\(trainerPlan\.content\?\.audience\)/)
+    expect(REVIEW, 'رأسُ المراجعة لا يقول لمن هي').toMatch(/لمن: \{who \? <b>\{who\}<\/b> : unset\}/)
+    expect(REVIEW, 'رأسُ المراجعة لا يقول الهدف').toMatch(/الهدف: \{goal \? <b>\{goal\}<\/b> : unset\}/)
+  })
+
   it('⚠️ وفيما تغيّر عن المعتمَد — تحت «المعلومات الأساسيّة»', () => {
     const fmt = { date: (d: string) => d }
     const lines = planDiff({ ...content, audience: null }, content, fmt).find((s) => s.section === 'identity')?.lines ?? []
