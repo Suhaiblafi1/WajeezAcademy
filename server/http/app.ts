@@ -19,6 +19,7 @@ import { registerCatalogRoutes } from './routes/catalog.routes'
 import { registerPublishingRoutes } from './routes/publishing.routes'
 import { registerTrainerApplicationRoutes } from './routes/trainer-applications.routes'
 import { registerDossierLinkRoutes } from './routes/dossier-link.routes'
+import { registerDeferralInterestRoutes } from './routes/deferral-interest.routes'
 import { registerContractSignRoutes } from './routes/contract-sign.routes'
 import { registerAdminTrainerRoutes } from './routes/admin-trainer.routes'
 import { registerTrainerPortalRoutes } from './routes/trainer-portal.routes'
@@ -302,6 +303,7 @@ export async function buildApp(prisma: PrismaClient) {
   registerPublishingRoutes(app, prisma)
   registerTrainerApplicationRoutes(app, prisma)
   registerDossierLinkRoutes(app, prisma)
+  registerDeferralInterestRoutes(app, prisma)
   registerContractSignRoutes(app, prisma)
   registerAdminTrainerRoutes(app, prisma)
   registerTrainerPortalRoutes(app, prisma)

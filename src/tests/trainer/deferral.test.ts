@@ -12,18 +12,28 @@
    ⑤ **والتقييم** — «مؤجَّل» نتيجةٌ في المعجم الذي تقرؤه خانةُ المقابلات ورابطُ التقييم،
       ورابطُ التقييم يكتب معنى الحكم المختار.
    ⑥ **والحالة** — لفظٌ عند الإدارة، وشرحٌ عند صاحب الطلب، ويُعدَّل ويُسحب كالمنتظِر.
-   ⑦ **والشاشة** — البابُ في قائمة الصفّ وفي الملفّ، وحوارٌ ملاحظتُه لا تُشترط، وشارةُ الموعد. */
+   ⑦ **والشاشة** — البابُ في قائمة الصفّ وفي الملفّ، وحوارٌ ملاحظتُه لا تُشترط، وشارةُ الموعد.
+   ⑧ **والمتابعةُ حين يحلّ الموعد** — جوابان بوجهتين، ويُسأل من حلّ موعدُه ولم يُسأل.
+   ⑨ **وبريدُ السؤال** — الخياران بما يقع بكلٍّ، وزرٌّ يفتح الصفحةَ ولا يُجيب.
+   ⑩ **وصفحةُ الجواب** — عامّةٌ بلا جلسة، وفتحُها لا يُجيب، و«لم أعد» تُسأل مرّتين.
+   ⑪ **والعاملُ والفريق** — وظيفةٌ كلَّ ساعة، وإشعارٌ مصنَّفٌ له وجهة. */
 
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { DEFERRED, DEFER_FOLLOW_UP_MONTHS, deferredFollowUpAt, followUpDue } from '@/application/trainer/deferral'
+import {
+  DEFERRED, DEFER_FOLLOW_UP_MONTHS, INTEREST_ANSWERS, INTEREST_CHOICES, INTEREST_PAGE_PATH,
+  answerTarget, deferredFollowUpAt, dueForInterestAsk, followUpDue,
+} from '@/application/trainer/deferral'
+import ts from 'typescript'
+import { NOTIFICATION_CATEGORIES } from '@/application/notifications/categories'
+import { destinationFor } from '@/application/notifications/destinations'
 import { BULK_ACTIONS, DECISIONS, recommendedFor } from '@/application/trainer/decisions'
 import { REVIEW_OPEN_STATUSES } from '@/application/trainer/approval'
 import { INTERVIEW_OUTCOMES, INTERVIEW_OUTCOME_KEYS } from '@/application/trainer/interview-outcome'
 import { STATUS_LABELS } from '@/application/trainer/application-status'
 import { APPLICANT_STATUS, EDITABLE_STATUSES, WITHDRAWABLE_STATUSES } from '@/application/trainer/application-options'
-import { deferralMail } from '../../../server/services/trainer-decision-mail'
+import { deferralFollowUpMail, deferralMail } from '../../../server/services/trainer-decision-mail'
 import { renderMail } from '../../../server/services/mail-template'
 import { TRAINER_STATUSES } from '../../../server/services/trainer-application.service'
 
@@ -175,5 +185,110 @@ describe('⑦ والشاشة', () => {
 
   it('وشارةُ الموعد في الصفّ وفي الملفّ', () => {
     expect(screen.match(/<FollowUpBadge status=\{a\.status\} at=\{a\.deferredFollowUpAt\}/g)).toHaveLength(2)
+  })
+})
+
+describe('⑧ والمتابعةُ حين يحلّ الموعد', () => {
+  it('جوابان لا ثالثَ لهما — ولكلٍّ لفظٌ وما يقع به', () => {
+    expect([...INTEREST_ANSWERS]).toEqual(['interested', 'not_interested'])
+    expect(INTEREST_CHOICES.map((c) => c.answer)).toEqual([...INTEREST_ANSWERS])
+    for (const c of INTEREST_CHOICES) {
+      expect(c.labelAr.length).toBeGreaterThan(3)
+      expect(c.whatAr.length, `«${c.labelAr}» بلا ما يقع به`).toBeGreaterThan(20)
+    }
+  })
+  it('«ما زلتُ مهتمّا» إلى المراجعة، و«لم أعد» سحبٌ — حالتان في الخادم', () => {
+    expect(answerTarget('interested')).toBe('under_review')
+    expect(answerTarget('not_interested')).toBe('withdrawn')
+    for (const a of INTEREST_ANSWERS) expect(TRAINER_STATUSES).toContain(answerTarget(a))
+  })
+  it('يُسأل من حلّ موعدُه ولم يُسأل — لا من سُئل، ولا من لم يحلّ، ولا من خرج', () => {
+    const now = new Date('2026-12-07T00:00:00Z')
+    const at = '2026-12-06T10:30:00.000Z'
+    expect(dueForInterestAsk({ status: DEFERRED, deferredFollowUpAt: at, deferredInterestAskedAt: null }, now)).toBe(true)
+    expect(dueForInterestAsk({ status: DEFERRED, deferredFollowUpAt: at, deferredInterestAskedAt: at }, now)).toBe(false)
+    expect(dueForInterestAsk({ status: DEFERRED, deferredFollowUpAt: at, deferredInterestAskedAt: null }, new Date('2026-12-01T00:00:00Z'))).toBe(false)
+    expect(dueForInterestAsk({ status: 'under_review', deferredFollowUpAt: at, deferredInterestAskedAt: null }, now)).toBe(false)
+  })
+})
+
+describe('⑨ وبريدُ السؤال', () => {
+  const url = `https://www.wajeezacademy.com${INTEREST_PAGE_PATH}/abc`
+  const mail = deferralFollowUpMail({ fullName: 'ريم', reference: 'WJ-TR-2026-00042', answerUrl: url })
+  const text = renderMail(mail.doc).text
+
+  it('العنوانُ سؤالٌ ويحمل رقمَ الطلب', () => {
+    expect(mail.subject).toContain('مهتمّا')
+    expect(mail.subject).toContain('WJ-TR-2026-00042')
+  })
+  it('والخياران بما يقع بكلٍّ — من القائمة التي تعرضها الصفحة', () => {
+    for (const c of INTEREST_CHOICES) {
+      expect(text).toContain(c.labelAr)
+      expect(text).toContain(c.whatAr)
+    }
+  })
+  it('وزرٌّ واحدٌ يفتح الصفحة — ويقول تحته إنّ الفتحَ لا يُحسب', () => {
+    const ctas = mail.doc.blocks.filter((b) => b.kind === 'cta')
+    expect(ctas).toHaveLength(1)
+    expect(ctas[0]).toMatchObject({ href: url })
+    expect((ctas[0] as { caption?: string }).caption).toMatch(/لا يُحسب شيءٌ حتّى تضغط/)
+  })
+})
+
+describe('⑩ وصفحةُ الجواب', () => {
+  const page = code('src/pages/DeferralInterest.tsx')
+  const app = code('src/App.tsx')
+
+  it('مسارُها في الكتلة العامّة — قبل حارس الأدوار، فلا يُطلب دخول', () => {
+    const route = app.indexOf(`path="${INTEREST_PAGE_PATH}/:token"`)
+    expect(route, 'لا مسارَ للصفحة').toBeGreaterThan(-1)
+    expect(route, 'الصفحةُ خلف حارس الأدوار').toBeLessThan(app.indexOf('<Route element={<RequireRole'))
+  })
+
+  it('وفتحُها لا يُجيب — `apiPost` في دالّة الجواب وحدَها، لا في أثرٍ يجري عند الفتح', () => {
+    const rel = 'src/pages/DeferralInterest.tsx'
+    const sf = ts.createSourceFile(rel, readFileSync(join(process.cwd(), rel), 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
+    const posts: ts.Node[] = []
+    const visit = (n: ts.Node) => {
+      if (ts.isCallExpression(n) && ts.isIdentifier(n.expression) && n.expression.text === 'apiPost') posts.push(n)
+      ts.forEachChild(n, visit)
+    }
+    visit(sf)
+    expect(posts.length, 'لا جوابَ يُرسَل').toBeGreaterThan(0)
+    for (const p of posts) {
+      let up: ts.Node | undefined = p.parent
+      let inAnswer = false
+      let inEffect = false
+      while (up) {
+        if (ts.isVariableDeclaration(up) && ts.isIdentifier(up.name) && up.name.text === 'answer') inAnswer = true
+        if (ts.isCallExpression(up) && ts.isIdentifier(up.expression) && up.expression.text === 'useEffect') inEffect = true
+        up = up.parent
+      }
+      expect(inEffect, 'الجوابُ يُرسَل عند فتح الصفحة').toBe(false)
+      expect(inAnswer, 'الجوابُ يُرسَل من غير دالّته').toBe(true)
+    }
+  })
+
+  it('و«لم أعد مهتمّا» تُسأل مرّتين — والسحبُ في الثانية', () => {
+    expect(page).toMatch(/!confirmingNo \?[\s\S]*?setConfirmingNo\(true\)[\s\S]*?answer\('not_interested'\)/)
+  })
+
+  it('ولا تُفهرَس — فيها اسمُ إنسان', () => {
+    expect(page).toMatch(/<SeoHead[^>]*\bnoindex\b/)
+  })
+})
+
+describe('⑪ والعاملُ والفريق', () => {
+  it('وظيفةٌ كلَّ ساعةٍ في العامل', () => {
+    const jobs = code('server/worker/jobs.ts')
+    expect(jobs).toMatch(/\{ key: 'deferral_followups', everyMs: HOUR, run: runDeferralFollowups,/)
+  })
+  it('وإشعارُ الفريق مصنَّفٌ لا يُكتَم، وله وجهةٌ في الطابور', () => {
+    const KEY = 'admin.trainer_deferral'
+    expect(code('server/services/trainer-deferral.service.ts')).toContain(`export const DEFERRAL_STAFF_KEY = '${KEY}'`)
+    const cat = NOTIFICATION_CATEGORIES.find((c) => c.templateKeys.includes(KEY))
+    expect(cat, 'المفتاحُ بلا صنف').toBeTruthy()
+    expect(cat!.silenceable, 'وعدٌ يُكتَم').toBe(false)
+    expect(destinationFor(KEY, 'staff')?.path).toBe('/admin/trainers')
   })
 })

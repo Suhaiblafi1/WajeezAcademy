@@ -32,6 +32,7 @@ import { TermService } from '../services/term.service'
 import { TrainerChangeService } from '../services/trainer-change.service'
 import { TrainerOfferService } from '../services/trainer-offer.service'
 import { TrainerReviewService } from '../services/trainer-review.service'
+import { TrainerDeferralService } from '../services/trainer-deferral.service'
 import { recordAudit } from '../services/audit'
 import { releaseCouponUse } from '../services/commerce/coupon-ledger'
 import { ProgressService } from '../services/progress.service'
@@ -1302,6 +1303,23 @@ export async function runConditionDeadlines(prisma: PrismaClient, now = new Date
   }
 }
 
+/* ═══════════ متابعةُ المؤجَّلين إلى الفصول القادمة (٦ أكتوبر ٢٠٢٦) ═══════════
+
+   من حلّ موعدُ التواصل معه يُسأل بالبريد عن اهتمامه، ويُذكَّر الفريق — والعلّةُ في
+   `src/application/trainer/deferral.ts` والعملُ في `trainer-deferral.service.ts`.
+   ولا يُسأل أحدٌ مرّتين: «سُئل» يُكتب بكتابةٍ مشروطةٍ قبل البريد. */
+export async function runDeferralFollowups(prisma: PrismaClient, now = new Date()): Promise<JobResult> {
+  const started = Date.now()
+  const { asked, mailFailed } = await new TrainerDeferralService(prisma).askDue(now)
+  return {
+    job: 'deferral_followups',
+    summaryAr: asked === 0
+      ? 'لا مؤجَّلَ حلّ موعدُ التواصل معه'
+      : `سُئل ${asked} عن اهتمامه بالفصول القادمة` + (mailFailed > 0 ? `، ولم يخرج البريدُ إلى ${mailFailed} — وأُبلغ الفريقُ ليتواصل بنفسه` : ''),
+    done: asked - mailFailed, failed: mailFailed, ms: Date.now() - started,
+  }
+}
+
 export const JOBS = [
   { key: 'dispatch_notifications', everyMs: 60_000, run: dispatchQueuedNotifications, titleAr: 'إرسالُ ما في طابور الإشعارات' },
   { key: 'outbox_mail', everyMs: 60_000, run: dispatchOutboxMail, titleAr: 'إرسالُ ما في طابور البريد' },
@@ -1334,6 +1352,8 @@ export const JOBS = [
      كافيةٌ لا تُثقل. والوظيفةُ تسأل عن «بقي يومان أو أقلّ» فتصيبها في كلّ
      حال، ولا تذكّر مرّتين — `conditionRemindedAt` يمنع. */
   { key: 'condition_deadlines', everyMs: HOUR, run: runConditionDeadlines, titleAr: 'مهلةُ العرض المشروط' },
+  /* كلَّ ساعة: الموعدُ يومٌ بعد شهرين، فساعةٌ دقّةٌ كافيةٌ لا تُثقل */
+  { key: 'deferral_followups', everyMs: HOUR, run: runDeferralFollowups, titleAr: 'متابعةُ المؤجَّلين إلى الفصول القادمة' },
   { key: 'cleanup_expired', everyMs: 6 * HOUR, run: cleanupExpired, titleAr: 'تنظيفُ ما انتهى' },
   /* مرّةً في اليوم: التقليمُ ليس عاجلا، وتكرارُه بلا داعٍ يُقفل جداولَ السجلّ */
   { key: 'enforce_retention', everyMs: 24 * HOUR, run: enforceRetention, titleAr: 'تقليمُ جداول السجلّ بمدّة حفظها' },

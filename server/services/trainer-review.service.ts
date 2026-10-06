@@ -404,6 +404,8 @@ export class TrainerReviewService {
       waitingSince: a.statusHistory[0]?.createdAt ?? a.phase2CompletedAt ?? a.createdAt,
       /* وموعدُ التواصل مع المؤجَّل — يُقرأ في الصفّ فيُعرف من يُكلَّم ومتى (`deferral.ts`) */
       deferredFollowUpAt: a.deferredFollowUpAt,
+      /* ومتى سُئل بالبريد عن اهتمامه حين حلّ الموعد — `null` لمن لم يُسأل بعد */
+      deferredInterestAskedAt: a.deferredInterestAskedAt,
       emailVerified: !!a.emailVerifiedAt, phase2Done: !!a.phase2CompletedAt,
       documentsCount: a._count.documents, reviewsCount: a._count.reviews, interviewsCount: a._count.interviews,
       /* ويُقرأ به «طُلب منه درسٌ تجريبيّ» في `outreach.ts`: الطلبُ معلَّقٌ ما
@@ -553,6 +555,8 @@ export class TrainerReviewService {
         effectiveFrom: activeRule.effectiveFrom,
       },
       accessTokenHash: undefined, emailVerifyTokenHash: undefined,
+      /* وهاشُ رمزِ جواب المؤجَّل كذلك — لا يُقرأ في الشاشة ولا يلزمها (٦ أكتوبر ٢٠٢٦) */
+      deferredInterestTokenHash: undefined,
       priorApplications: prior.map((p) => ({
         reference: p.reference, status: p.status, createdAt: p.createdAt,
         decidedAt: p.statusHistory[0]?.createdAt ?? null,

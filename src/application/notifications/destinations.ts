@@ -141,6 +141,8 @@ const STAFF: Table = {
   /* وملخّصُ من لم يحجز — الشاشةُ نفسُها، وفيها مرشّحُ «لم يحجز موعدا» وزرُّ
      التذكير. فالزرُّ يضع قارئَه حيث يعمل لا حيث يقرأ الخبرَ ثانيةً. */
   'admin.trainer_unbooked': { path: '/admin/trainers', ctaAr: 'افتح طابورَ الطلبات' },
+  /* والمؤجَّلُ إلى الفصول القادمة — حلّ موعدُه أو أجاب: الطابورُ وفيه شارتُه */
+  'admin.trainer_deferral': { path: '/admin/trainers', ctaAr: 'افتح طابورَ الطلبات' },
   'admin.learner_request': { path: '/admin/learner-requests', ctaAr: 'افتح طلبَ المتعلّم' },
   'trainer.qualify.request': { path: '/admin/trainers', ctaAr: 'افتح طلبَ التأهيل' },
   /* والعقدُ وُقّع أو اعتُذر عنه — وكلاهما ينتظر عملا في شاشة العقود:
