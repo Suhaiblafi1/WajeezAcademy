@@ -148,6 +148,10 @@ export default function CurriculumReview({
         {view.summaryAr
           ? <p className="mt-2 whitespace-pre-line text-read leading-7 text-foreground">{view.summaryAr}</p>
           : <p className="mt-2 text-read text-gold-ink">بلا نبذة — هي أوّلُ ما يقرؤه المتعلّمُ عن الشعبة.</p>}
+        {/* مستوى الشعبة (٦ أكتوبر ٢٠٢٦) — يقرؤه المدرّبُ والمعتمِدُ هنا، ولا يصل المتعلّمَ بعد */}
+        <p className="mt-2 text-read leading-6 text-muted-foreground">
+          المستوى: {view.levelAr ? <b className="text-foreground">{view.levelAr}</b> : 'لم يُحدَّد'}
+        </p>
         {/* كرّاسةُ الدورة الواحدة (٣٠ سبتمبر ٢٠٢٦) — تُقرأ مرّةً هنا، وموضعُ كلّ محورٍ فيها في موعده */}
         {view.bySlot && (
           <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-white/[0.06] pt-3">

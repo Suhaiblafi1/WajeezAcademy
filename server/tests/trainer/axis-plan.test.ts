@@ -54,6 +54,8 @@ const content: TrainerPlanContent = {
   slots: SLOTS,
   /* وكرّاسةُ الدورة الواحدة، وموضعُ كلّ محورٍ فيها (٣٠ سبتمبر ٢٠٢٦) */
   workbook: { title: 'كرّاسةُ الدورة', url: 'https://x.test/wb.pdf', parts: IDS.map((moduleId, i) => ({ moduleId, whereAr: `ص ${i * 5 + 1}` })) },
+  /* ومستواها — شرطُ الخطوة الأولى ما دامت الخطّةُ في يده (٦ أكتوبر ٢٠٢٦) */
+  level: { from: 'intermediate', to: 'intermediate' },
 }
 /** اليومُ الثاني من الموعد، الثامنةَ مساءً بعمّان (الخامسة بغرينتش) — ساعتان */
 const when = (slot: number) => ({

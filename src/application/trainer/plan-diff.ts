@@ -15,6 +15,7 @@
 
 import { REVIEW_SECTIONS, STAGE_LABELS, type ReviewNotes, type ReviewSection } from './review-notes'
 import { resourceCategory } from './plan-overlay'
+import { asLevelRange, levelRangeAr } from './cohort-level'
 
 interface DiffModule {
   moduleId: string
@@ -44,6 +45,8 @@ interface DiffResource {
 }
 interface DiffPlan {
   summaryAr?: string | null
+  /** مستوى الشعبة (٦ أكتوبر ٢٠٢٦) — يُقرأ بـ`asLevelRange` */
+  level?: unknown
   startsOn?: string | null
   endsOn?: string | null
   modules?: DiffModule[] | null
@@ -82,6 +85,9 @@ function identityLines(a: DiffPlan, b: DiffPlan, fmt: PlanDiffFormat): string[] 
     out.push(`المدّة: ${range(a, fmt)} ← ${range(b, fmt)}`)
   }
   if (text(a.summaryAr) !== text(b.summaryAr)) out.push('تغيّر وصفُ الشعبة')
+  const la = levelRangeAr(asLevelRange(a.level))
+  const lb = levelRangeAr(asLevelRange(b.level))
+  if (la !== lb) out.push(`المستوى: ${la ?? 'لم يُحدَّد'} ← ${lb ?? 'لم يُحدَّد'}`)
   return out
 }
 
