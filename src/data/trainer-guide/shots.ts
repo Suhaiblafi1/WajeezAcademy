@@ -174,6 +174,6 @@ export const GUIDE_SHOTS: Record<string, { w: number; h: number }> = {
   },
   "ws-workbooks": {
     "w": 2200,
-    "h": 1661
+    "h": 2535
   }
 }
