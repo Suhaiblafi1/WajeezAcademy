@@ -79,6 +79,8 @@ const content: TrainerPlanContent = {
   workbook: { url: 'https://example.com/workbook.pdf', parts: [{ moduleId: 'C-BIZ-101-M1', whereAr: 'ص 1' }] },
   /* ومستواها — شرطُ الخطوة الأولى ما دامت الخطّةُ في يده (٦ أكتوبر ٢٠٢٦) */
   level: { from: 'beginner', to: 'intermediate' },
+  /* ولمن هي وماذا يريد متعلّمُها — شرطُها كذلك (٦ أكتوبر ٢٠٢٦) */
+  audience: { stages: ['early_career', 'experienced'], goals: ['practical_skills'] },
 }
 
 describe('ملكيّةُ الشعبة واعتمادُها', () => {

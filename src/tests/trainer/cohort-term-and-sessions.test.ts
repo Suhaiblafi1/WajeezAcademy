@@ -47,10 +47,12 @@ const sessions = (n: number) => Array.from({ length: n }, (_, i) => ({ startsAt:
 
 /* ومستواها — شرطُ الخطوة الأولى ما دامت الخطّةُ في يده (٦ أكتوبر ٢٠٢٦) */
 const LEVEL = { from: 'beginner', to: 'intermediate' }
+/* ولمن هي وماذا يريد متعلّمُها — شرطُها كذلك (٦ أكتوبر ٢٠٢٦) */
+const AUDIENCE = { stages: ['fresh_graduate'], goals: ['first_job'] }
 const build = (over: Partial<Parameters<typeof buildChecklist>[0]> = {}) => buildChecklist({
   cohort: { title: 'الدفعة الأولى' },
   period: PERIOD,
-  content: { kind: 'trainer', modules: mods(1), resources: [{ title: 'ك', url: 'https://x.test/a' }], level: LEVEL } as never,
+  content: { kind: 'trainer', modules: mods(1), resources: [{ title: 'ك', url: 'https://x.test/a' }], level: LEVEL, audience: AUDIENCE } as never,
   sessions: sessions(1),
   assessmentsCount: 0,
   planStatus: 'draft',
@@ -100,7 +102,7 @@ describe('① الهُويّة: اسمٌ ومدّة — ولا صفَّ للفص
      فالتعديلُ واجب». فالحكمُ بحال الخطّة لا بتاريخها. */
   const noLevel = (planStatus: Parameters<typeof buildChecklist>[0]['planStatus'], level: unknown = null) => item('identity', {
     planStatus,
-    content: { kind: 'trainer', modules: mods(1), resources: [{ title: 'ك', url: 'https://x.test/a' }], level } as never,
+    content: { kind: 'trainer', modules: mods(1), resources: [{ title: 'ك', url: 'https://x.test/a' }], level, audience: AUDIENCE } as never,
   })
 
   it('⚠️ وبلا مستوًى لا تتمّ ما دامت الخطّةُ في يده — مسودّةً أو مردودةً بتعديلات', () => {
@@ -112,6 +114,32 @@ describe('① الهُويّة: اسمٌ ومدّة — ولا صفَّ للفص
     for (const st of ['submitted', 'approved', 'published'] as const) {
       expect(noLevel(st).done, `خطّةٌ ${st} صارت ناقصةً بقرارٍ جاء بعدها`).toBe(true)
     }
+  })
+
+  /* ═══ ولمن هي وماذا يريد متعلّمُها (٦ أكتوبر ٢٠٢٦) ═══
+
+     سؤالان بمفردات التشخيص، اختار صاحبُ المنصّة أن يُلزما كالمستوى: في يد
+     المدرّب شرطٌ، ومن أرسل قبل القرار يمضي. */
+  const withAudience = (planStatus: Parameters<typeof buildChecklist>[0]['planStatus'], audience: unknown) => item('identity', {
+    planStatus,
+    content: { kind: 'trainer', modules: mods(1), resources: [{ title: 'ك', url: 'https://x.test/a' }], level: LEVEL, audience } as never,
+  })
+
+  it('⚠️ وبلا «لمن» أو بلا هدفٍ لا تتمّ ما دامت الخطّةُ في يده', () => {
+    expect(withAudience('draft', null).done, 'تمّت الخطوةُ الأولى بلا جمهور').toBe(false)
+    expect(withAudience('draft', { stages: ['fresh_graduate'], goals: [] }).done, 'تمّت بمرحلةٍ بلا هدف').toBe(false)
+    expect(withAudience('draft', { stages: [], goals: ['first_job'] }).done, 'تمّت بهدفٍ بلا مرحلة').toBe(false)
+    expect(withAudience('changes_requested', null).done, 'رُدّت فلم يُطالَب بالجمهور').toBe(false)
+  })
+
+  it('⚠️ ومن أرسل قبل القرار يمضي بلا جمهور', () => {
+    for (const st of ['submitted', 'approved', 'published'] as const) {
+      expect(withAudience(st, null).done, `خطّةٌ ${st} صارت ناقصةً بقرارٍ جاء بعدها`).toBe(true)
+    }
+  })
+
+  it('والرمزُ المخترَعُ كالغائب — لا يُتمّ الخطوة', () => {
+    expect(withAudience('draft', { stages: ['astronaut'], goals: ['first_job'] }).done).toBe(false)
   })
 
   it('والمستوى المعطوبُ كالغائب — طرفٌ مخترَعٌ أو طرفٌ واحد', () => {

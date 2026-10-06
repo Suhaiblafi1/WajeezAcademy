@@ -106,7 +106,7 @@ async function carried(sourcesAr: string, outcomeAr = 'يستطيع كذا') {
 
 type Resource = { title: string; url: string | null }
 type Workspace = {
-  plan: { content: { modules: { outcomeAr: string | null }[]; resources: Resource[]; level?: unknown } } | null
+  plan: { content: { modules: { outcomeAr: string | null }[]; resources: Resource[]; level?: unknown; audience?: unknown } } | null
   checklist: { key: string; labelAr: string; done: boolean }[]
 }
 
@@ -121,6 +121,7 @@ describe('ما نُقل من اللوح القديم', () => {
     const saved = await t.call('PUT', `/api/trainer/cohorts/${t.cohortId}/plan`, {
       ...content, summaryAr: 'نبذةٌ عن الشعبة', startsOn: '2027-03-07', endsOn: '2027-04-03',
       level: { from: 'beginner', to: 'beginner' },
+      audience: { stages: ['fresh_graduate'], goals: ['first_job'] },
     })
     expect(saved.statusCode, `رُدّ الحفظُ بمصدرٍ بلا رابطٍ لم يلمسه المدرّب: ${saved.body}`).toBe(200)
     const renamed = await t.call('PATCH', `/api/trainer/cohorts/${t.cohortId}`, { title: 'شعبتي الأولى في النقل' })
@@ -131,6 +132,7 @@ describe('ما نُقل من اللوح القديم', () => {
     expect(after.checklist.find((c) => c.key === 'identity')?.done, 'لم تتمّ الخطوةُ الأولى وقد حُفظت').toBe(true)
     /* والمستوى يعبر المخطّطَ إلى القاعدة — وكان المخطّطُ يُسقط ما لا يعرفه صامتا (٦ أكتوبر ٢٠٢٦) */
     expect(after.plan!.content.level, 'اختار المدرّبُ المستوى ولم يُحفظ').toEqual({ from: 'beginner', to: 'beginner' })
+    expect(after.plan!.content.audience, 'اختار لمن هي وهدفَها ولم يُحفظا').toEqual({ stages: ['fresh_graduate'], goals: ['first_job'] })
   })
 
   it('② والمصدرُ بلا رابطٍ يمنع الإرسالَ وحدَه ويُسمّى — ثمّ يُكمَل فيرتفع', async () => {

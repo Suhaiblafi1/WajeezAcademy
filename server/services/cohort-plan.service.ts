@@ -31,6 +31,7 @@
 import { Prisma, type PrismaClient } from '@prisma/client'
 import { moduleBodyDone, resourceHasSource } from '../../src/application/trainer/module-body'
 import { levelProblem, type LevelRange } from '../../src/application/trainer/cohort-level'
+import { audienceProblem } from '../../src/application/trainer/cohort-audience'
 import { blockingBeforeSubmit, boardNextStep, trainerOwned } from '../../src/application/trainer/plan-gate'
 import {
   REVIEW_SECTIONS, composeReviewNote, hasReviewNotes, normalizeReviewNotes, notedSections, readReviewNotes,
@@ -120,6 +121,11 @@ export interface TrainerPlanContent {
       مستوًى أو مدًى من مستويين متجاورين أو الثلاثة. يُطالَب به ما دامت الخطّةُ
       في يد المدرّب، ويُعتمَد معها. والقاعدةُ في `src/application/trainer/cohort-level.ts`. */
   level?: LevelRange | null
+  /** ═══ لمن هي وماذا يريد متعلّمُها — برموز التشخيص (٦ أكتوبر ٢٠٢٦) ═══
+
+      يُجمعان ويراهما المدرّبُ والمعتمِد، ولا يُوصَلان بالمطابقة بعد. والقاعدةُ في
+      `src/application/trainer/cohort-audience.ts`. */
+  audience?: { stages: string[]; goals: string[] } | null
   /* ── وحُذف `proposals` من هنا (د-٦ · ١٤ سبتمبر ٢٠٢٦) ──
 
      كان حقلَين — اسمٌ مقترحٌ للدورة وآخرُ للمسار — يركبان مع الخطّة،
@@ -276,6 +282,8 @@ export function buildChecklist(input: {
      نفسُها تقرؤها الشاشةُ فيما ينقص الخطوة (`levelProblem`). */
   const identityDone = c.title.trim().length >= 3 && periodProblem(input.period) === null
     && levelProblem(input.content, input.planStatus) === null
+    /* ولمن هي وماذا يريد متعلّمُها — بإلزام المستوى نفسِه (٦ أكتوبر ٢٠٢٦) */
+    && audienceProblem(input.content, input.planStatus) === null
   /* ═══ ولماذا صار المحتوى النظريُّ شرطا للاعتماد ═══
 
      طلب صاحبُ المنصّة (١٣ سبتمبر ٢٠٢٦) أن يصير «المحتوى النظريّ» إلزاميّا
@@ -387,7 +395,7 @@ export function buildChecklist(input: {
     ? ` · ${orphanResources === 1 ? 'مصدرٌ مربوطٌ' : `${orphanResources} مصادرُ مربوطةٌ`} بمحورٍ حُذف` : '')
     + (looseResources > 0 ? ` · ${looseResources === 1 ? 'مصدرٌ' : `${looseResources} مصادرُ`} بلا رابطٍ ولا ملفّ` : '')
   return [
-    { key: 'identity', labelAr: 'سمِّ الشعبةَ وحدّد مستواها ومدّتها — من متى إلى متى', done: identityDone, optional: false },
+    { key: 'identity', labelAr: 'سمِّ الشعبةَ وحدّد مستواها ولمن هي ومدّتها — من متى إلى متى', done: identityDone, optional: false },
     {
       key: 'modules',
       labelAr: legacy ? 'اكتب المحتوى النظريَّ لكلّ محور' : 'وزّع المحاورَ على مواعيدها واكتب محتواها النظريّ',

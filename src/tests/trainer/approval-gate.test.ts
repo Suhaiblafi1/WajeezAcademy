@@ -43,6 +43,8 @@ const complete = (over: Partial<Parameters<typeof buildChecklist>[0]> = {}) => b
     workbook: { url: 'https://x.test/wb', parts: [{ moduleId: 'M0', whereAr: 'ص 1' }] },
     /* ومستواها — شرطُ الخطوة الأولى ما دامت الخطّةُ في يده (٦ أكتوبر ٢٠٢٦) */
     level: { from: 'beginner', to: 'beginner' },
+    /* ولمن هي وماذا يريد متعلّمُها — شرطُ الخطوة الأولى كذلك (٦ أكتوبر ٢٠٢٦) */
+    audience: { stages: ['early_career'], goals: ['improve_performance'] },
   } as never,
   sessions: [{ startsAt: INSIDE, recordings: [], moduleIds: ['M0'] }],
   assessmentsCount: 1,

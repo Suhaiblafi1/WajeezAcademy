@@ -152,6 +152,13 @@ export default function CurriculumReview({
         <p className="mt-2 text-read leading-6 text-muted-foreground">
           المستوى: {view.levelAr ? <b className="text-foreground">{view.levelAr}</b> : 'لم يُحدَّد'}
         </p>
+        {/* لمن هي وماذا يريد متعلّمُها (٦ أكتوبر ٢٠٢٦) — يُجمعان ولا يصلان التشخيصَ بعد */}
+        <p className="mt-1 text-read leading-6 text-muted-foreground">
+          لمن: {view.audienceAr.stages ? <b className="text-foreground">{view.audienceAr.stages}</b> : 'لم يُحدَّد'}
+        </p>
+        <p className="mt-1 text-read leading-6 text-muted-foreground">
+          الهدف: {view.audienceAr.goals ? <b className="text-foreground">{view.audienceAr.goals}</b> : 'لم يُحدَّد'}
+        </p>
         {/* كرّاسةُ الدورة الواحدة (٣٠ سبتمبر ٢٠٢٦) — تُقرأ مرّةً هنا، وموضعُ كلّ محورٍ فيها في موعده */}
         {view.bySlot && (
           <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-white/[0.06] pt-3">

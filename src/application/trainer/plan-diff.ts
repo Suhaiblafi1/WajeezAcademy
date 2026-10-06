@@ -16,6 +16,7 @@
 import { REVIEW_SECTIONS, STAGE_LABELS, type ReviewNotes, type ReviewSection } from './review-notes'
 import { resourceCategory } from './plan-overlay'
 import { asLevelRange, levelRangeAr } from './cohort-level'
+import { asAudience, goalsAr, stagesAr } from './cohort-audience'
 
 interface DiffModule {
   moduleId: string
@@ -47,6 +48,8 @@ interface DiffPlan {
   summaryAr?: string | null
   /** مستوى الشعبة (٦ أكتوبر ٢٠٢٦) — يُقرأ بـ`asLevelRange` */
   level?: unknown
+  /** لمن هي وماذا يريد متعلّمُها (٦ أكتوبر ٢٠٢٦) — يُقرأ بـ`asAudience` */
+  audience?: unknown
   startsOn?: string | null
   endsOn?: string | null
   modules?: DiffModule[] | null
@@ -88,6 +91,10 @@ function identityLines(a: DiffPlan, b: DiffPlan, fmt: PlanDiffFormat): string[] 
   const la = levelRangeAr(asLevelRange(a.level))
   const lb = levelRangeAr(asLevelRange(b.level))
   if (la !== lb) out.push(`المستوى: ${la ?? 'لم يُحدَّد'} ← ${lb ?? 'لم يُحدَّد'}`)
+  const aa = asAudience(a.audience)
+  const ab = asAudience(b.audience)
+  if (stagesAr(aa) !== stagesAr(ab)) out.push(`لمن: ${stagesAr(aa) ?? 'لم يُحدَّد'} ← ${stagesAr(ab) ?? 'لم يُحدَّد'}`)
+  if (goalsAr(aa) !== goalsAr(ab)) out.push(`الهدف: ${goalsAr(aa) ?? 'لم يُحدَّد'} ← ${goalsAr(ab) ?? 'لم يُحدَّد'}`)
   return out
 }
 

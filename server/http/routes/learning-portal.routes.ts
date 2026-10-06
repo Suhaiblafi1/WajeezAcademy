@@ -33,6 +33,7 @@ import { assertSafeKey, getObject, getObjectMeta } from '../../services/object-s
 import { requireAuth, requirePermission } from '../auth-plugin'
 import { SESSION_AXES_MAX, WORKBOOK_WHERE_MAX } from '../../../src/application/trainer/axis-timeline'
 import { COHORT_LEVELS } from '../../../src/application/trainer/cohort-level'
+import { AUDIENCE_GOALS, AUDIENCE_STAGES, MAX_AUDIENCE_GOALS, MAX_AUDIENCE_STAGES } from '../../../src/application/trainer/cohort-audience'
 
 /** محاورُ اللقاء: محورٌ أو أكثر بلا تكرار — وسقفُ «محورٍ أو محورين» نُسخ (٤ أكتوبر
     ٢٠٢٦). والحدُّ هنا حجمُ المدخل وحدَه (ما تحمله الخطّةُ من محاور)، أمّا الحدُّ
@@ -648,6 +649,15 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
        قاعدةٌ في `application/trainer/cohort-level.ts` (`asLevelRange`) — وبلا هذا
        المفتاح كان المخطّطُ يُسقطه صامتا، فيختار المدرّبُ مستواه ولا يُحفظ. */
     level: z.object({ from: z.enum(COHORT_LEVELS), to: z.enum(COHORT_LEVELS) }).nullish(),
+    /* ═══ ولمن هي وماذا يريد متعلّمُها — برموز التشخيص (٦ أكتوبر ٢٠٢٦) ═══
+
+       رموزٌ من قوائم التشخيص وحدَها وفي حدّها — والرمزُ المخترَعُ يُردّ هنا كي لا
+       يُحفظ رمزٌ لا يقابله شيءٌ يوم تُوصَل بالمطابقة. والقاعدةُ في
+       `application/trainer/cohort-audience.ts`. */
+    audience: z.object({
+      stages: z.array(z.enum(AUDIENCE_STAGES as [string, ...string[]])).max(MAX_AUDIENCE_STAGES),
+      goals: z.array(z.enum(AUDIENCE_GOALS.map((g) => g.code) as [string, ...string[]])).max(MAX_AUDIENCE_GOALS),
+    }).nullish(),
     /* وسقط `proposals` من المخطّط (د-٦): كان اسمُ الدورة يُكتب على النسخة
        القائمة من داخل خطّة شعبة فيُعيد تسميةَ الشهادات الصادرة. ثمّ مرّ
        بقناته (ح-٣)، ثمّ أُغلق بابُه كلُّه (ق٥ · ١٧ سبتمبر ٢٠٢٦). والمحفوظُ
