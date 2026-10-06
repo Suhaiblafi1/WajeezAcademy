@@ -504,6 +504,8 @@ async function seedPrepPlan(ctx: Ctx, profileId: string) {
     summaryAr: 'أربعةُ أسابيعَ مسائيّة تبني فيها رسالةً واحدةً واضحة، وتسندها بالدليل، ثمّ تعرضها في عشر دقائق أمام من يملك القرار.',
     startsOn: day(0),
     endsOn: day(27),
+    /* ومستواها — شرطُ الخطوة الأولى ما دامت الخطّةُ في يده (٦ أكتوبر ٢٠٢٦) */
+    level: { from: 'beginner', to: 'intermediate' },
     modules: mods.map((m, i) => ({
       moduleId: m.id, titleAr: m.versions[0]?.titleAr ?? `المحور ${i + 1}`,
       outcomeAr: TEXT[i].outcome, activityAr: TEXT[i].activity, bodyAr: TEXT[i].body,
@@ -585,6 +587,8 @@ async function approvedNegotiationPlan(ctx: Ctx, profileId: string, title: strin
       kind: 'trainer',
       summaryAr: 'أربعةُ أسابيع تتعلّم فيها أن تدخل أيَّ تفاوضٍ ومعك بديلُك الأفضل وحدُّك الأدنى ومذكّرةُ تحضيرٍ مكتوبة.',
       startsOn: day(0), endsOn: day(27),
+      /* ومستواها — بدونه تُردّ الخطوةُ الأولى عند الإرسال (٦ أكتوبر ٢٠٢٦) */
+      level: { from: 'beginner', to: 'beginner' },
       modules: mods.map((m, i) => ({
         moduleId: m.id, titleAr: m.versions[0]?.titleAr ?? `المحور ${i + 1}`, outcomeAr: NEGOTIATION_OUTCOMES[i],
         activityAr: 'تمرينٌ ثنائيٌّ على موقفٍ من عمل المتعلّم.',
