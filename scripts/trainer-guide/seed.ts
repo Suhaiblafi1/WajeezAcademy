@@ -506,6 +506,8 @@ async function seedPrepPlan(ctx: Ctx, profileId: string) {
     endsOn: day(27),
     /* ومستواها — شرطُ الخطوة الأولى ما دامت الخطّةُ في يده (٦ أكتوبر ٢٠٢٦) */
     level: { from: 'beginner', to: 'intermediate' },
+    /* ولمن هي وماذا يريد متعلّمُها — شرطُها كذلك (٦ أكتوبر ٢٠٢٦) */
+    audience: { stages: ['early_career', 'experienced'], goals: ['improve_performance', 'promotion'] },
     modules: mods.map((m, i) => ({
       moduleId: m.id, titleAr: m.versions[0]?.titleAr ?? `المحور ${i + 1}`,
       outcomeAr: TEXT[i].outcome, activityAr: TEXT[i].activity, bodyAr: TEXT[i].body,
@@ -589,6 +591,7 @@ async function approvedNegotiationPlan(ctx: Ctx, profileId: string, title: strin
       startsOn: day(0), endsOn: day(27),
       /* ومستواها — بدونه تُردّ الخطوةُ الأولى عند الإرسال (٦ أكتوبر ٢٠٢٦) */
       level: { from: 'beginner', to: 'beginner' },
+      audience: { stages: ['fresh_graduate'], goals: ['first_job'] },
       modules: mods.map((m, i) => ({
         moduleId: m.id, titleAr: m.versions[0]?.titleAr ?? `المحور ${i + 1}`, outcomeAr: NEGOTIATION_OUTCOMES[i],
         activityAr: 'تمرينٌ ثنائيٌّ على موقفٍ من عمل المتعلّم.',

@@ -23,6 +23,7 @@ import { resourceCategory, displayKind } from './plan-overlay'
 import { workbookDone, workbookWhere, type CohortWorkbook, type PlanSlot } from './axis-timeline'
 import { proposedTask, readTaskChange, taskReview, taskValues } from './task-approval'
 import { asLevelRange, levelRangeAr } from './cohort-level'
+import { asAudience, goalsAr, stagesAr } from './cohort-audience'
 
 export interface CurriculumInput {
   title: string
@@ -130,6 +131,8 @@ export interface CurriculumView {
   summaryAr: string | null
   /** مستوى الشعبة بجملته — «من مبتدئ إلى متوسّط» — أو `null` لما لم يُحدَّد (٦ أكتوبر ٢٠٢٦) */
   levelAr: string | null
+  /** لمن هي وماذا يريد متعلّمُها — بأسماء التشخيص، أو `null` لما لم يُختر (٦ أكتوبر ٢٠٢٦) */
+  audienceAr: { stages: string | null; goals: string | null }
   period: CohortPeriod | null
   /** على خطّ المحاور — أم محورا محورا كما اعتُمد قبله */
   bySlot: boolean
@@ -185,6 +188,7 @@ export function curriculumView(input: CurriculumInput): CurriculumView {
   const c = (input.content ?? {}) as {
     summaryAr?: string | null; modules?: PlanModule[]; slots?: PlanSlot[]; resources?: PlanResource[]; workbook?: CohortWorkbook | null
     level?: unknown
+    audience?: unknown
   }
   const cw = c.workbook ?? null
   const modules = Array.isArray(c.modules) ? c.modules : []
@@ -308,6 +312,7 @@ export function curriculumView(input: CurriculumInput): CurriculumView {
     title: input.title,
     summaryAr: text(c.summaryAr),
     levelAr: levelRangeAr(asLevelRange(c.level)),
+    audienceAr: { stages: stagesAr(asAudience(c.audience)), goals: goalsAr(asAudience(c.audience)) },
     period: input.period,
     bySlot: slots.length > 0,
     workbook: workbookDone(cw)

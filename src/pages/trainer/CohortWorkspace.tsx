@@ -77,7 +77,7 @@ import { Panel, Bar, Card, Inset } from "@/components/ui/Surface";
 import { PREP_NOTICE_AR, usePrepCohorts } from "@/components/trainer/usePrepCohorts";
 import { ORIENTATION_BOOKING_URL, ORIENTATION_CTA_AR } from "@/application/trainer/orientation-session";
 import Button from "@/components/ui/Button";
-import { controlCls, areaCls, StaffField } from "@/components/FormKit";
+import { controlCls, areaCls, OptionGrid, StaffField } from "@/components/FormKit";
 import { fmtDateTimeAr } from "@/utils/format";
 import { cohortDayAr } from "@/application/learning/cohort-gate";
 import { trainerOrdinalNoteAr } from "@/application/learning/cohort-title";
@@ -95,6 +95,9 @@ import { curriculumView } from "@/application/trainer/curriculum-view";
 import { PlanDiffList } from "@/components/PlanDiff";
 import { planDiff } from "@/application/trainer/plan-diff";
 import Chip from "@/components/ui/Chip";
+import {
+  AUDIENCE_STAGES, MAX_AUDIENCE_GOALS, MAX_AUDIENCE_STAGES, asAudience, audienceProblem, goalsFor, goalsAr, stageLabelAr, stagesAr, toggleIn, withStages,
+} from "@/application/trainer/cohort-audience";
 import { COHORT_LEVELS, COHORT_LEVEL_AR, asLevelRange, levelProblem, levelRangeAr, levelRequired, levelsIn, toggleLevel, type LevelRange } from "@/application/trainer/cohort-level";
 import {
   TASK_REVIEW_TRAINER_AR, changeLines, proposedTask, readTaskChange, taskReview, taskValues, type TaskValueFormat,
@@ -134,6 +137,8 @@ interface PlanContent {
   workbook?: CohortWorkbook | null;
   /* مستوى الشعبة — مستوًى أو مدًى متّصلٌ من الثلاثة (٦ أكتوبر ٢٠٢٦) */
   level?: LevelRange | null;
+  /* لمن هي وماذا يريد متعلّمُها — برموز التشخيص (٦ أكتوبر ٢٠٢٦) */
+  audience?: { stages: string[]; goals: string[] } | null;
 }
 /** مدّةٌ كما يرسلها الخادم — تاريخان `YYYY-MM-DD` */
 interface Period { startsOn: string; endsOn: string }
@@ -419,7 +424,7 @@ const resourcesKey = (c: PlanContent) => JSON.stringify(c.resources.filter((r) =
 /* والوصفُ صار مع الاسم والنبذة، والملاحظةُ صارت مع اللقاءات — فبصمةُ كلٍّ
    حيث صار الحقلُ لا حيث كان. ومعهما المدّةُ منذ صارت في الخطوة الأولى
    (٢٧ سبتمبر ٢٠٢٦): من غيّر تاريخا ولم يحفظ يُعلَّم كمن غيّر الاسم. */
-const basicsKey = (c: PlanContent) => `${c.summaryAr ?? ""}|${c.startsOn ?? ""}|${c.endsOn ?? ""}|${levelRangeAr(asLevelRange(c.level)) ?? ""}`;
+const basicsKey = (c: PlanContent) => `${c.summaryAr ?? ""}|${c.startsOn ?? ""}|${c.endsOn ?? ""}|${levelRangeAr(asLevelRange(c.level)) ?? ""}|${stagesAr(asAudience(c.audience)) ?? ""}|${goalsAr(asAudience(c.audience)) ?? ""}`;
 /* ═══ ولم تعد لخطوة «اللقاءات» مسودّةٌ تُحفظ ═══
 
    كانت تحمل حقلا واحدا (`liveNoteAr`) يُحفظ مع الخطّة، فتُعلَّم «لم يُحفَظ»
@@ -847,6 +852,8 @@ export default function CohortWorkspace() {
       /* والمستوى بالقاعدة نفسِها التي يحكم بها الخادم — `cohort-level.ts` */
       const lv = levelProblem(saved, w.plan?.status ?? "draft");
       if (lv) out.push(lv);
+      const au = audienceProblem(saved, w.plan?.status ?? "draft");
+      if (au) out.push(au);
       const p = periodProblem(w.cohort.period);
       if (p) out.push(p);
       return out.length ? out : [label];
@@ -1532,6 +1539,58 @@ export default function CohortWorkspace() {
                       : levelRequired(planStatus) ? "لم تختر المستوى بعد — ولا تتمّ هذه الخطوةُ بدونه." : "لم يُحدَّد مستوى لهذه الشعبة."}
                   </p>
                 </fieldset>
+              );
+            })()}
+
+            {/* ═══ لمن هذه الشعبة، وماذا يريد متعلّمُها (٦ أكتوبر ٢٠٢٦) ═══
+
+                سؤالان بمفردات التشخيص نفسِها — المرحلةُ المهنيّةُ والهدف — يُجمعان
+                الآن ويراهما المدرّبُ والمعتمِدُ، ولا يُوصَلان بالمطابقة بعد (الخيار C).
+                والأهدافُ تُعرض بما يناسب المراحلَ المختارة. والقاعدةُ في
+                `application/trainer/cohort-audience.ts`. */}
+            {(() => {
+              const aud = asAudience(content.audience);
+              const goals = goalsFor(aud.stages);
+              const setAud = (next: { stages: string[]; goals: string[] }) => setContent({ ...content, audience: next });
+              return (
+                <>
+                  <fieldset disabled={locked} className="min-w-0 sm:col-span-2">
+                    <legend className="text-read font-black text-foreground">لمن هذه الشعبة؟</legend>
+                    <p className="mt-1 text-read leading-6 text-muted-foreground">
+                      من سيجلس أمامك غالبا؟ اختر واحدةً إلى ثلاث — بالكلمات التي يصف بها المتعلّمُ نفسَه في التشخيص.
+                    </p>
+                    <div className="mt-2.5">
+                      <OptionGrid
+                        name="لمن هذه الشعبة"
+                        items={AUDIENCE_STAGES.map((st) => ({ value: st, label: stageLabelAr(st) }))}
+                        isOn={(v) => aud.stages.includes(v as never)}
+                        onToggle={(v) => setAud(withStages(aud, toggleIn(aud.stages, v as never, MAX_AUDIENCE_STAGES)))}
+                      />
+                    </div>
+                    {aud.stages.length >= MAX_AUDIENCE_STAGES && (
+                      <p className="mt-2 text-read leading-6 text-muted-foreground">اخترتَ ثلاثا — انزع واحدةً لتختار غيرها.</p>
+                    )}
+                  </fieldset>
+
+                  <fieldset disabled={locked} className="min-w-0 sm:col-span-2">
+                    <legend className="text-read font-black text-foreground">ماذا يريد المتعلّمُ أن يحقّق بها؟</legend>
+                    <p className="mt-1 text-read leading-6 text-muted-foreground">
+                      اختر هدفا أو هدفين{aud.stages.length > 0 ? " — والمعروضُ ما يناسب من اخترتَهم أعلاه" : ""}.
+                    </p>
+                    <div className="mt-2.5">
+                      <OptionGrid
+                        cols={2}
+                        name="هدفُ المتعلّم"
+                        items={goals.map((g) => ({ value: g.code, label: g.label_ar }))}
+                        isOn={(v) => aud.goals.includes(v)}
+                        onToggle={(v) => setAud({ ...aud, goals: toggleIn(aud.goals, v, MAX_AUDIENCE_GOALS) })}
+                      />
+                    </div>
+                    {aud.goals.length >= MAX_AUDIENCE_GOALS && (
+                      <p className="mt-2 text-read leading-6 text-muted-foreground">اخترتَ هدفين — انزع واحدا لتختار غيره.</p>
+                    )}
+                  </fieldset>
+                </>
               );
             })()}
 
