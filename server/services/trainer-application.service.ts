@@ -15,6 +15,7 @@ import { LIVE_INTERVIEW } from './trainer-interview-state'
 import { notifyRole, sendDirectEmail, publicSiteUrl, type DirectMailStatus } from './notification.service'
 import { renderMail } from './mail-template'
 import { REVIEW_OPEN_STATUSES, type ReviewOpenStatus } from '../../src/application/trainer/approval'
+import { DEFERRED, deferredFollowUpAt } from '../../src/application/trainer/deferral'
 import { cleanProposals } from '../../src/application/trainer/teachable-proposals'
 import { newStorageKey, signKey, SIGNED_URL_TTL_MS, MAX_UPLOAD_BYTES } from './storage.service'
 import { deleteObject } from './object-store'
@@ -87,7 +88,9 @@ export const TRAINER_STATUSES = [
   'draft', 'submitted', 'under_review', 'information_requested',
   'interview_scheduled', 'academic_review',
   'conditionally_approved', 'contract_pending', 'onboarding', 'active',
-  'waitlisted', 'rejected', 'withdrawn', 'suspended',
+  /* و`deferred` (٦ أكتوبر ٢٠٢٦): مؤجَّلٌ إلى الفصول القادمة — غيرُ `waitlisted`،
+     وله موعدُ تواصلٍ وُعد به. والقولُ في `application/trainer/deferral.ts`. */
+  'waitlisted', 'deferred', 'rejected', 'withdrawn', 'suspended',
 ] as const
 export type TrainerStatus = (typeof TRAINER_STATUSES)[number]
 
@@ -261,7 +264,7 @@ export const APPROVABLE_BY_MAP: TrainerStatus[] = TRAINER_STATUSES.filter(
    ولا يُفتح بعد القرار: المقبولُ صار مدرّبا يعدّل ملفَّه لا طلبَه، والمردودُ
    والمسحوبُ بابُهما طلبٌ جديد لا تعديلُ قديم. */
 const PHASE2_OPEN_STATUSES: TrainerStatus[] = [
-  'draft', 'submitted', 'under_review', 'waitlisted',
+  'draft', 'submitted', 'under_review', 'waitlisted', 'deferred',
   'information_requested', 'interview_scheduled', 'academic_review',
 ]
 
@@ -1027,7 +1030,15 @@ export class TrainerApplicationService {
       if (from === to) return
       const problem = transitionProblemAr(from, to)
       if (problem) throw new AuthError('bad_transition', problem, 409)
-      await db.trainerApplication.update({ where: { id: applicationId }, data: { status: to } })
+      /* ═══ وموعدُ التواصل مع المؤجَّل يتبع الحالة هنا (٦ أكتوبر ٢٠٢٦) ═══
+
+         يُكتب حين يدخل الطلبُ التأجيلَ، ويُمحى حين يخرج منه — في القلب الذي تمرّ
+         منه التحوّلاتُ كلُّها، لا في قرارٍ واحد: من سحب طلبَه المؤجَّلَ بيده، أو
+         قُبل من بابٍ آخر، لا يبقى له في الطابور موعدٌ يَعِد بشيء. (`deferral.ts`) */
+      const followUp = to === DEFERRED
+        ? { deferredFollowUpAt: deferredFollowUpAt(new Date()) }
+        : app.deferredFollowUpAt ? { deferredFollowUpAt: null } : {}
+      await db.trainerApplication.update({ where: { id: applicationId }, data: { status: to, ...followUp } })
       await db.trainerStatusHistory.create({
         data: { applicationId, fromStatus: from, toStatus: to, actorId, note },
       })

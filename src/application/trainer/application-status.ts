@@ -41,7 +41,11 @@ export const STATUS_LABELS: Record<string, string> = {
   academic_review: "رأيٌ ثانٍ — قبل قرار المقابلة",
   conditionally_approved: "قبولٌ داخليّ — قيد التجهيز",
   contract_pending: "عقد قيد التوقيع", onboarding: "تهيئة", active: "نشط",
-  waitlisted: "انتظار", rejected: "مرفوض", withdrawn: "مسحوب", suspended: "موقوف",
+  waitlisted: "انتظار",
+  /* والمؤجَّلُ غيرُ المنتظِر: مناسبٌ، وينقصه طلبٌ على دوراته في الفصل القادم،
+     وله موعدُ تواصل (٦ أكتوبر ٢٠٢٦، `deferral.ts`) */
+  deferred: "مؤجَّل — للفصول القادمة",
+  rejected: "مرفوض", withdrawn: "مسحوب", suspended: "موقوف",
 }
 
 /* ═══ ولمَ لا قائمةَ شاراتٍ مكتوبةٌ هنا (٢١ سبتمبر ٢٠٢٦) ═══

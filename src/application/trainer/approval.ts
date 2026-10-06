@@ -62,6 +62,9 @@ export const REVIEW_OPEN_STATUSES = [
   'submitted', 'under_review', 'information_requested',
   'interview_scheduled', 'academic_review',
   'conditionally_approved', 'contract_pending', 'onboarding', 'waitlisted',
+  /* والمؤجَّلُ إلى الفصول القادمة حيٌّ كالمنتظِر: يُقبل أو يُردّ أو يعود متى شئنا
+     (٦ أكتوبر ٢٠٢٦، `deferral.ts`) */
+  'deferred',
 ] as const
 
 export type ReviewOpenStatus = (typeof REVIEW_OPEN_STATUSES)[number]

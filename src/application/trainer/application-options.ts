@@ -330,6 +330,14 @@ export const APPLICANT_STATUS: Record<string, { label: string; explain: string; 
     explain: 'طلبك مقبول للانتظار: نعود إليه حين تُفتح شعبة في تخصصك.',
     tone: 'neutral',
   },
+  /* ═══ المؤجَّلُ إلى الفصول القادمة (٦ أكتوبر ٢٠٢٦) ═══
+     ما يقرؤه هو في صفحة حالته — والسببُ بلفظه كما في بريده (`deferralMail`):
+     ليس حكما عليه، وإنّما طلبٌ لا يكفي على دوراته في الفصل القادم. */
+  deferred: {
+    label: 'مؤجَّلٌ إلى الفصول القادمة',
+    explain: 'راجعنا طلبك ولم نُغلقه: لا نتوقّع في الفصل القادم طلبا كافيا على دوراتك، فأجّلناه إلى الفصول القادمة. ونتواصل معك بعد نحو شهرين من قرارنا لنرى اهتمامَك بالانضمام.',
+    tone: 'neutral',
+  },
   rejected: {
     label: 'اعتذرنا هذه المرة',
     /* ═══ ولا مدّةَ انتظارٍ تُوعَد (١٩ سبتمبر ٢٠٢٦) ═══
@@ -449,7 +457,7 @@ export function recordingsSummaryAr(
 export const WITHDRAWABLE_STATUSES = [
   'draft', 'submitted', 'under_review', 'information_requested',
   'interview_scheduled', 'academic_review',
-  'conditionally_approved', 'contract_pending', 'waitlisted',
+  'conditionally_approved', 'contract_pending', 'waitlisted', 'deferred',
 ] as const
 
 /** الحالاتُ التي يُعرض فيها حجزُ المقابلة — والحدُّ من طرفَيه مقصود.
@@ -499,7 +507,7 @@ export function canRemindToBook(app: { status: string; liveInterviews: number })
     فترة انتظاره حتى تتم الموافقة». وهي مطابقةٌ لـ`PHASE2_OPEN_STATUSES` في
     الخادم — ولو افترقتا لَأظهرت الشاشةُ زرّا يردّه الخادمُ ٤٠٩. */
 export const EDITABLE_STATUSES: readonly string[] = [
-  'draft', 'submitted', 'under_review', 'waitlisted',
+  'draft', 'submitted', 'under_review', 'waitlisted', 'deferred',
   'information_requested', 'interview_scheduled', 'academic_review',
 ]
 

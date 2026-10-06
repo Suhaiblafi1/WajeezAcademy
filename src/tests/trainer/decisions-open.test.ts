@@ -29,7 +29,7 @@ import { ALLOWED_TRANSITIONS, transitionProblemAr } from '../../../server/servic
 const TARGET: Record<string, string> = {
   approve: 'active', move_to_review: 'under_review', request_info: 'information_requested',
   academic_review: 'academic_review',
-  conditionally_approve: 'conditionally_approved', waitlist: 'waitlisted', reject: 'rejected',
+  conditionally_approve: 'conditionally_approved', waitlist: 'waitlisted', defer: 'deferred', reject: 'rejected',
   undo_reject: 'under_review', undo_withdraw: 'under_review',
   start_onboarding: 'onboarding', activate: 'active', reinstate: 'active',
 }
@@ -81,7 +81,7 @@ describe('وكلُّ قرارٍ متاحٌ من كلّ حالةٍ حيّة', () 
       move_to_review: 'under_review', request_info: 'information_requested',
       academic_review: 'academic_review',
       conditionally_approve: 'conditionally_approved', start_onboarding: 'onboarding',
-      waitlist: 'waitlisted',
+      waitlist: 'waitlisted', defer: 'deferred',
     }
     /* والعكسان بابُهما حالتُهما: لا يُتراجَع عن ردٍّ لم يقع، ولا يُرفع إيقافٌ
        عمّن ليس موقوفا. وهما خارجُ هذا الفحص بقصد. */

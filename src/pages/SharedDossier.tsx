@@ -347,8 +347,13 @@ export default function SharedDossier() {
           {/* وما يقع حين يُحفَظ: القرارُ يُكتب في الموعد نفسِه، فلا يُسجَّل مرّتين */}
           {verdict && interviewId && (
             <p className="mt-2 text-read leading-6 text-muted-foreground">
-              يُسجَّل «{outcomeLabelAr(verdict)}» نتيجةً لهذا اللقاء. وإن حكم فيه قارئٌ آخرُ
+              {/* ومعنى الحكم مكتوبٌ لا في تلميحٍ وحده: التلميحُ لا يظهر على الهاتف،
+                  و«مؤجَّل» (٦ أكتوبر ٢٠٢٦) لا يُفهم من لفظه أنّه مناسبٌ ينقصه طلب. */}
+              <b className="text-foreground">«{outcomeLabelAr(verdict)}»:</b>{" "}
+              {INTERVIEW_OUTCOMES.find((o) => o.key === verdict)?.whatAr}.{" "}
+              يُسجَّل نتيجةً لهذا اللقاء. وإن حكم فيه قارئٌ آخرُ
               بغيره عُرض القولان معا بأسمائكما، ولم يُكتب في الموعد شيءٌ حتّى تتّفقا.
+              ولا يصل صاحبَ الطلب شيءٌ من حكمك — القرارُ وبريدُه في يد الإدارة.
             </p>
           )}
         </fieldset>

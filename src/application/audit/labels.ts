@@ -115,6 +115,7 @@ const PHRASES: Record<string, string> = {
   'trainer.condition.remind': 'تذكيرُ مدرّبٍ بقُرب انقضاء مهلة موادّه',
   'trainer.condition.lapsed': 'إبلاغُ مدرّبٍ بانقضاء مهلة موادّه',
   'trainer.info_requested.notify': 'إشعارُ متقدّمٍ بطلبِ معلوماتٍ إضافية',
+  'trainer.deferral.notify': 'إبلاغُ متقدّمٍ بتأجيل طلبه إلى الفصول القادمة وموعدِ التواصل معه',
   'trainer.interview.self_booked': 'حجزُ متقدّمٍ موعدَ مقابلته بنفسه',
   'trainer.interview.self_canceled': 'إلغاءُ متقدّمٍ موعدَ مقابلته',
   'trainer.interview.dossier_sent': 'إرسالُ ملفِّ المتقدّم إلى لجنة المراجعة',

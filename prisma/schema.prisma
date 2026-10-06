@@ -970,7 +970,7 @@ model TrainerApplication {
   // draft | submitted | under_review | information_requested
   // | interview_scheduled | academic_review
   // | conditionally_approved | contract_pending | onboarding | active
-  // | waitlisted | rejected | withdrawn | suspended
+  // | waitlisted | deferred | rejected | withdrawn | suspended
   //
   // ورُفعت ثلاثٌ في ٢٦ سبتمبر ٢٠٢٦ (email_verification_pending · shortlisted
   // · demo_requested) وصفوفُها في 20260926230000_trainer_statuses_prune،
@@ -987,6 +987,14 @@ model TrainerApplication {
    * بلا تأويل، ويُمحى حين يعود فلا يبقى وعدٌ منقضٍ.
    */
   infoRequestedFrom    String?
+  /// ═══ موعدُ التواصل مع المؤجَّل إلى الفصول القادمة (٦ أكتوبر ٢٠٢٦) ═══
+  ///
+  /// قرارُ صاحب المنصّة: خيارٌ ثالثٌ بجانب القبول والرفض — «يؤجَّل حسابُك إلى
+  /// الفصول القادمة، لأنّ الفصلَ القادمَ لن يحمل طلبا كافيا على دوراتك، ونتواصل
+  /// معك بعد شهرين لنرى اهتمامَك». فيُكتب هنا الموعدُ الذي وُعد به في بريده،
+  /// ويُقرأ في الطابور. ويُمحى حين يخرج الطلبُ من `deferred`: موعدٌ لم يعد
+  /// قائما لا يُترك يَعِد بشيء. والعلّةُ في `application/trainer/deferral.ts`.
+  deferredFollowUpAt   DateTime?
   email                String
   emailVerifiedAt      DateTime?
   emailVerifyTokenHash String?                       @unique // رمز تحقق البريد — هاش فقط
@@ -1119,7 +1127,7 @@ model TrainerApplicationReview {
   scores           Json // {domain_expertise, evidence, facilitation, demo_quality, activity_design, feedback_skill, digital_training, values_fit, availability} 1-5
   overallNote      String?
   /// بمفردات `TrainerInterview.outcome` نفسِها — لا معجمَ ثانيا لشيءٍ واحد
-  verdict          String? // passed | hold | failed
+  verdict          String? // passed | hold | deferred | failed
   /// ملاحظةٌ على دوراته لا تمسّ `teachableCourseIds`: يعدّلها هو في «المؤهّلات» عنده
   coursesNote      String?
   /// ═══ الاتفاقُ الماليُّ إن جرى ذكرُه — نصّا لا رقما ═══
@@ -1162,7 +1170,7 @@ model TrainerInterview {
   rescheduleUrl String?
   cancelUrl     String?
   interviewerId String?                    @db.Uuid
-  outcome       String? // passed | hold | failed | no_show — والغيابُ ليس حكما: لم يقع اللقاء، ويعود الطلبُ إلى ما قبل الحجز
+  outcome       String? // passed | hold | deferred | failed | no_show — والغيابُ ليس حكما: لم يقع اللقاء، ويعود الطلبُ إلى ما قبل الحجز
   notes         String?
   createdAt     DateTime                   @default(now())
   application   TrainerApplication         @relation(fields: [applicationId], references: [id], onDelete: Cascade)

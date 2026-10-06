@@ -11,6 +11,7 @@
    فهي هنا: تُستورَد وتُفحَص بنيتُها، والشاشةُ تصيّر ما تردّه. */
 
 import { openExcept, REVIEW_OPEN_STATUSES } from './approval'
+import { DEFERRED } from './deferral'
 
 /* ═══ ومن يُطلب منه المزيد: كلُّ حالةٍ حيّة (٢٢ سبتمبر ٢٠٢٦) ═══
 
@@ -28,7 +29,9 @@ import { openExcept, REVIEW_OPEN_STATUSES } from './approval'
 export const INFO_REQUESTABLE: readonly string[] = openExcept('information_requested')
 
 
-export const BULK_ACTIONS = ["move_to_review", "waitlist", "reject"];
+/* والتأجيلُ جماعيٌّ كالانتظار (٦ أكتوبر ٢٠٢٦): قلّةُ الطلب على دورةٍ تؤجّل كلَّ من
+   تقدّم لتدريسها معا، ولكلٍّ بريدُه باسمه */
+export const BULK_ACTIONS = ["move_to_review", "waitlist", "defer", "reject"];
 
 /* ═══ ما يسع الشريطَ اللاصق — عرضٌ لا أهمّيّة (٢١ سبتمبر ٢٠٢٦) ═══
 
@@ -136,6 +139,15 @@ export const DECISIONS: Decision[] = [
      تُخرج من طابور الحجز بلا حكمٍ على صاحبها، وعليها يقوم «اطمئنانٌ وشكرٌ
      ولا دعوة» في `no-show-followup.ts`. والقولُ في `TRAINER_STATUSES`. */
   { action: "waitlist", label: "قائمة الانتظار", from: openExcept("waitlisted"), tone: "warn" },
+  /* ═══ والتأجيلُ إلى الفصول القادمة (٦ أكتوبر ٢٠٢٦) ═══
+
+     قرارُ صاحب المنصّة: خيارٌ ثالثٌ بجانب القبول والرفض — مناسبٌ، والذي ينقصه
+     طلبٌ على دوراته في الفصل القادم. وما تحته يقول ما يصل صاحبَه قبل الضغط.
+     والعلّةُ كاملةً في `deferral.ts`. */
+  {
+    action: "defer", label: "أجِّلْه إلى الفصول القادمة", from: openExcept(DEFERRED), tone: "warn",
+    noteAr: "يصله بريدٌ بالتأجيل، وفيه أنّنا نتواصل معه بعد شهرين.",
+  },
 
   /* ─────────── ③ ما يُنهيه، وما يعكس الإنهاء ─────────── */
   { action: "reject", label: "رفض بلطف", from: [...REVIEW_OPEN_STATUSES], tone: "danger" },
@@ -170,7 +182,13 @@ export const DECISIONS: Decision[] = [
  * الراهنة هو الجواب. وهي غيرُ ترتيب `DECISIONS` بقصد — ذاك ترتيبُ القراءة
  * في العمود، وهذا ترتيبُ «ما الذي أفعله الآن؟».
  */
-export function recommendedFor(status: string): string | null {
+export function recommendedFor(status: string, interviewOutcome?: string | null): string | null {
   const available = DECISIONS.filter((d) => d.from.includes(status))
+  /* ═══ وحين يحكم اللقاءُ بالتأجيل يُوصى بالتأجيل (٦ أكتوبر ٢٠٢٦) ═══
+
+     التقييمُ — في خانة المقابلات أو رابط التقييم — يكتب حكما ولا ينفّذ قرارا
+     (`deferral.ts`). فإن حكم بـ«مؤجَّل» كان زرُّ التأجيل هو الذهبيَّ في بطاقة
+     الطلب: يصل الحكمُ إلى قراره بضغطةٍ تُرى، لا بزرٍّ يُبحث عنه بين أحد عشر. */
+  if (interviewOutcome === DEFERRED && available.some((d) => d.action === "defer")) return "defer"
   return RECOMMENDED_ACTIONS.find((act) => available.some((d) => d.action === act)) ?? null
 }
