@@ -260,6 +260,18 @@ export async function shoot(e: Engine, spec: ShotSpec) {
     await spec.clip.first().scrollIntoViewIfNeeded()
     await page.evaluate(() => window.scrollTo(0, 0))
     await page.waitForTimeout(350)
+    /* ═══ ويُنتظر سكونُ التخطيط لا مهلةٌ ثابتة (٦ أكتوبر ٢٠٢٦) ═══
+       المرقِّمُ يعود إلى سعته بانتقال — وصار أطولَ بأسماء خطواته. فكانت ٣٥٠ ملّيثانيةً
+       تقيس والصفحةُ تنزل بعدُ، فوقعت الحلقاتُ في «ws-workbooks» فوق أهدافها بخمسةٍ
+       وأربعين بكسلا. فيُقاس آخرُ الأهداف حتى يتطابق قياسان متتاليان. */
+    const probe = spec.marks?.length ? spec.marks[spec.marks.length - 1].target : spec.clip
+    let last = ''
+    for (let i = 0; i < 20; i++) {
+      const now = JSON.stringify(await measure(probe))
+      if (now === last) break
+      last = now
+      await page.waitForTimeout(150)
+    }
   }
   const marks = []
   for (const m of spec.marks ?? []) marks.push({ ...(await measure(m.target)), n: m.n, pad: m.pad ?? 6 })

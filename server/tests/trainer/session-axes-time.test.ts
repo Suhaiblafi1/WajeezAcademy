@@ -43,7 +43,8 @@ const content: TrainerPlanContent = {
   modules: IDS.map((moduleId, i) => ({ moduleId, titleAr: `المحور ${i + 1}`, bodyAr: body })),
   resources: [{ title: 'مرجع', url: 'https://x.test/ref', category: 'reading', moduleId: 'ST-M1' }],
   slots: SLOTS,
-  workbook: { title: 'كرّاسةُ الدورة', url: 'https://x.test/wb.pdf', parts: IDS.map((moduleId, i) => ({ moduleId, whereAr: `ص ${i + 1}` })) },
+  /* وإقرارُ قالب وجيز — المدرّبُ هنا جديد (٦ أكتوبر ٢٠٢٦) */
+  workbook: { title: 'كرّاسةُ الدورة', url: 'https://x.test/wb.pdf', parts: IDS.map((moduleId, i) => ({ moduleId, whereAr: `ص ${i + 1}` })), onTemplate: true },
 }
 /** الثامنةُ مساءً بعمّان (الخامسةُ بغرينتش) يومَ `day` — ساعتان */
 const on = (day: string) => ({ startsAt: `${day}T17:00:00.000Z`, endsAt: `${day}T19:00:00.000Z` })

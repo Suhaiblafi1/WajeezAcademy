@@ -1335,6 +1335,14 @@ model TrainerProfile {
   /// يقول «اسمي في هويّتي غيرُ هذا» قبل أن يوقّع. وبلا قيمةٍ يعود إلى
   /// `application.fullName` كما كان.
   legalNameAr           String?
+  /// ═══ رفع كرّاسةً قبل قالب وجيز (٦ أكتوبر ٢٠٢٦) ═══
+  ///
+  /// قرارُ صاحب المنصّة: قالبُ الكرّاسة «مستحسَنٌ لمن رفع كرّاسةً من قبل، وإلزاميٌّ
+  /// للجدد» — ثمّ اختار أن يُحكم **لكلّ مدرّبٍ لا لكلّ ملفّ**: من كان له ذلك اليومَ
+  /// يُستحسَن له في شعبه كلِّها، ما جاء منها وما يجيء. فيُكتب مرّةً في هجرة يوم
+  /// القرار لكلّ مدرّبٍ في إحدى خططه كرّاسةٌ — ملفٌّ أو رابط، للدورة أو لموعد —
+  /// ولا يكتبه شيءٌ بعدها. والقاعدةُ في `src/application/trainer/cohort-workbooks.ts`.
+  workbookBeforeTemplate Boolean                     @default(false)
   createdAt             DateTime                     @default(now())
   updatedAt             DateTime                     @updatedAt
   application           TrainerApplication           @relation(fields: [applicationId], references: [id])

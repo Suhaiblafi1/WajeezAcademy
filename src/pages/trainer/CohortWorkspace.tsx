@@ -49,7 +49,7 @@
 import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router";
 import {
-  ArrowLeft, ArrowRight, BookMarked, BookOpen, CalendarDays, CalendarPlus, Check, ChevronDown, ChevronUp, ClipboardCheck, FileText, GraduationCap, Film, IdCard, Link2, Loader2, Lock, Send, Sparkles,
+  ArrowLeft, ArrowRight, BookMarked, BookOpen, CalendarDays, CalendarPlus, Check, ChevronDown, ChevronUp, ClipboardCheck, Combine, FileDown, FileText, GraduationCap, Film, IdCard, Link2, Loader2, Lock, Send, Sparkles, Split,
 } from "lucide-react";
 import TrainerLayout from "./TrainerLayout";
 import TrainerSchedule from "./TrainerSchedule";
@@ -66,7 +66,11 @@ import { RESOURCE_META } from "@/components/resource-kind-meta";
 import BodyEditor from "@/components/BodyEditor";
 import TabBar from "@/components/ui/TabBar";
 import ModuleBodyUpload from "@/components/ModuleBodyUpload";
-import { moduleBodyDone, resourceHasSource } from "@/application/trainer/module-body";
+import { MAX_BODY_FILE_BYTES, moduleBodyDone, resourceHasSource } from "@/application/trainer/module-body";
+import {
+  WORKBOOK_TEMPLATES, groupLabelAr, mergeWithNext, splitGroup, templateRequired, workbookGroups, workbookModeOf, workbookOpensOn,
+  workbooksProblems, type ModuleWorkbook, type WorkbookMode,
+} from "@/application/trainer/cohort-workbooks";
 import { PLAN_TITLE_MIN, planTextProblemsAr, type PlanTextPlace } from "@/application/trainer/plan-limits";
 import { blockingBeforeSubmit, sendBlock, trainerOwned } from "@/application/trainer/plan-gate";
 import { notedSections, notesForTrainer, type ReviewNotes } from "@/application/trainer/review-notes";
@@ -84,9 +88,9 @@ import { trainerOrdinalNoteAr } from "@/application/learning/cohort-title";
 import { asPeriod, periodDays, periodProblem, zonedDay, zonedInstant } from "@/application/trainer/cohort-period";
 import {
   EARLY_DAYS, addAxisToSlots, axesLabelAr, canMerge, crowdedSlots, dayLabelAr, defaultSlots, dropFromSlots, followPeriod, joinClosesAt,
-  mergeSlots, reflowSlots, respreadSlots, sameSlots, cohortWorkbookProblems, sessionEnd, sessionInsideSlot, sessionProblems, slotIndexOf,
+  mergeSlots, reflowSlots, respreadSlots, sameSlots, sessionEnd, sessionInsideSlot, sessionProblems, slotIndexOf,
   slotsOutsidePeriod, slotsSpan,
-  slotProblems, splitSlot, workbookDone, workbookWhere, WORKBOOK_WHERE_MAX, type CohortWorkbook, type PlanSlot,
+  slotProblems, splitSlot, workbookDone, WORKBOOK_WHERE_MAX, type CohortWorkbook, type PlanSlot,
 } from "@/application/trainer/axis-timeline";
 import { START_ADVICE_AR, startAdvice } from "@/application/trainer/start-advice";
 import { countAr } from "@/application/text/count-ar";
@@ -135,6 +139,9 @@ interface PlanContent {
   slots?: PlanSlot[] | null;
   /* كرّاسةُ الشعبة — واحدةٌ للمحاور كلِّها، وأين يبدأ كلُّ محورٍ فيها (٣٠ سبتمبر ٢٠٢٦) */
   workbook?: CohortWorkbook | null;
+  /* أو لكلّ محورٍ كرّاستُه — والمدرّبُ يختار (٦ أكتوبر ٢٠٢٦) — `cohort-workbooks.ts` */
+  workbookMode?: WorkbookMode | null;
+  workbooks?: ModuleWorkbook[] | null;
   /* مستوى الشعبة — مستوًى أو مدًى متّصلٌ من الثلاثة (٦ أكتوبر ٢٠٢٦) */
   level?: LevelRange | null;
   /* لمن هي وماذا يريد متعلّمُها — برموز التشخيص (٦ أكتوبر ٢٠٢٦) */
@@ -172,6 +179,8 @@ interface Workspace {
   /* والمعتمَدةُ التي يراجعها إن كانت أحدثُ خطّته مراجعة — منها «ما غيّرتَه» (٣ج-٤) */
   approvedPlan?: { content: unknown; reviewedAt: string | null } | null;
   checklist: { key: string; labelAr: string; done: boolean; optional: boolean }[];
+  /* رفع كرّاسةً قبل قالب وجيز — فالقالبُ له مستحسَنٌ لا إلزاميّ (٦ أكتوبر ٢٠٢٦) */
+  workbookBeforeTemplate?: boolean;
 }
 
 const PLAN_STATUS_AR: Record<string, { label: string; tone: "default" | "accent" | "positive" | "warn" }> = {
@@ -373,7 +382,7 @@ const STAGE_INTRO: Record<Stage, { title: string; purpose: string; minutes: stri
   },
   workbooks: {
     title: "الكرّاسة",
-    purpose: "كرّاسةٌ واحدةٌ للدورة كلِّها — ملفٌّ ترفعه أو رابطٌ تلصقه — فيها المحاورُ كلُّها بترتيبها. واكتب لكلّ محورٍ أين يبدأ فيها، فيتبعها المتعلّمُ محورا محورا. وتُفتح له أوّلَ يومٍ في الشعبة.",
+    purpose: "ملفُّ PDF يقرؤه المتعلّمُ في الصفحة: كرّاسةٌ واحدةٌ للدورة كلِّها، أو لكلّ محورٍ كرّاستُه — تختار. وابدأها من قالب وجيز.",
     minutes: "نحو ٥ دقائق",
   },
   sessions: {
@@ -392,6 +401,66 @@ const STAGE_INTRO: Record<Stage, { title: string; purpose: string; minutes: stri
     minutes: "دقيقة",
   },
 };
+
+/* ═══ الكرّاسة: رابطٌ، أو ملفُّ PDF يُرفع (٦ أكتوبر ٢٠٢٦) ═══
+
+   الرفعُ PDF وحدَه — يقرؤه المتعلّمُ في الصفحة على أيّ جهاز. والرابطُ يبقى
+   بابا ثانيا بقرار صاحب المنصّة («Keep links allowed too»). وما رُفع Word قبل
+   القرار يبقى ويُعدّ: يُقال ما هو، وله أن يستبدل به PDF — ولا يُجبَر. */
+function WorkbookFile({ cohortId, refId, value, onChange, locked, label, name }: {
+  cohortId: string; refId: string; locked: boolean; label: string;
+  /** «كرّاسة الدورة» أو «كرّاسة المحور 2» — لقارئ الشاشة */
+  name: string;
+  value: { url?: string | null; bodyFileKey?: string | null; bodyFileName?: string | null; bodyFileMime?: string | null };
+  onChange: (next: { url?: string | null; bodyFileKey?: string | null; bodyFileName?: string | null; bodyFileMime?: string | null }) => void;
+}) {
+  const mb = Math.round(MAX_BODY_FILE_BYTES / (1024 * 1024));
+  if ((value.bodyFileKey ?? "").trim()) {
+    const notPdf = value.bodyFileMime && value.bodyFileMime !== "application/pdf";
+    return (
+      <ModuleBodyUpload cohortId={cohortId} purpose="workbook" refId={refId} value={value} disabled={locked} label={label}
+        onChange={(next) => onChange({ ...next, url: null })}
+        hint={notPdf
+          ? "رُفع قبل أن يصير الرفعُ PDF وحدَه — يبقى، ويُنزَّل للمتعلّم. ولك أن تحذفه وترفعها PDF فتُقرأ في الصفحة."
+          : "يقرؤه المتعلّمُ في الصفحة على أيّ جهاز."} />
+    );
+  }
+  return (
+    <div className="grid gap-2">
+      <StaffField label="رابطُ الكرّاسة" hint="رابطٌ يبدأ بـ https:// — أو ارفع ملفَّ PDF بدلا منه.">
+        <input dir="ltr" value={value.url ?? ""} disabled={locked} placeholder="https://…"
+          aria-label={`رابطُ ${name}`}
+          onChange={(e) => onChange({ url: e.target.value || null })}
+          className={`${controlCls} text-left`} />
+      </StaffField>
+      {!(value.url ?? "").trim() && (
+        <ModuleBodyUpload cohortId={cohortId} purpose="workbook" refId={refId} value={value} disabled={locked}
+          label={`أو ${label}`}
+          onChange={(next) => onChange({ ...next, url: null })}
+          hint={`ملفُّ PDF واحد، حتّى ${mb} ميغابايت — احفظ القالبَ PDF من Word («ملف» ثمّ «حفظ باسم») ثمّ ارفعه.`} />
+      )}
+    </div>
+  );
+}
+
+/* إقرارُ القالب — المنصّةُ لا تقرأ الملفَّ لتعرف أعلى القالب هو، فيُقَرّ به
+   ويراه المعتمِد. إلزاميٌّ للجدد، ومستحسَنٌ لمن رفع كرّاسةً قبله (٦ أكتوبر ٢٠٢٦). */
+function TemplateConfirm({ id, checked, required, disabled, onChange }: {
+  id: string; checked: boolean; required: boolean; disabled: boolean; onChange: (v: boolean) => void;
+}) {
+  return (
+    <label htmlFor={id} className="flex items-start gap-2.5 text-read leading-6">
+      <input id={id} type="checkbox" checked={checked} disabled={disabled} onChange={(e) => onChange(e.target.checked)}
+        className="mt-1 h-4 w-4 shrink-0 accent-teal" />
+      <span>
+        <b className="text-foreground">كتبتُها على قالب وجيز</b>
+        <span className={required && !checked ? "text-gold-ink" : "text-muted-foreground"}>
+          {required ? " — مطلوبٌ لتتمّ هذه الخطوة." : " — يُستحسن، وليس شرطا لك."}
+        </span>
+      </span>
+    </label>
+  );
+}
 
 function StageIntro({ stage }: { stage: Stage }) {
   const it = STAGE_INTRO[stage];
@@ -416,7 +485,8 @@ function StageIntro({ stage }: { stage: Stage }) {
    اللقاءات، والباقي مع المهامّ — كلٌّ حيث يُحرَّر (٢٧ سبتمبر ٢٠٢٦) */
 const modulesKey = (c: PlanContent) =>
   JSON.stringify({ modules: c.modules, slots: (c.slots ?? []).map((x) => ({ startsOn: x.startsOn, endsOn: x.endsOn, moduleIds: x.moduleIds })) });
-const workbooksKey = (c: PlanContent) => JSON.stringify([c.workbook ?? null, (c.slots ?? []).map((x) => x.workbook ?? null)]);
+const workbooksKey = (c: PlanContent) =>
+  JSON.stringify([c.workbookMode ?? null, c.workbook ?? null, c.workbooks ?? null, (c.slots ?? []).map((x) => x.workbook ?? null)]);
 const recordedKey = (c: PlanContent) => JSON.stringify(c.resources.filter((r) => resourceCategory(r) === "recorded"));
 const resourcesKey = (c: PlanContent) => JSON.stringify(c.resources.filter((r) => resourceCategory(r) !== "recorded"));
 
@@ -871,7 +941,9 @@ export default function CohortWorkspace() {
       return out.length ? out : [label];
     }
     if (k === "workbooks") {
-      const out = cohortWorkbookProblems(saved?.workbook, ids);
+      const out = workbooksProblems(saved, ids, {
+        templateRequired: templateRequired(w.plan?.status ?? "draft", Boolean(w.workbookBeforeTemplate)),
+      });
       return out.length ? out : [label];
     }
     if (k === "sessions") {
@@ -1195,6 +1267,12 @@ export default function CohortWorkspace() {
     });
   /* كرّاساتُ المواعيد القديمة — تُذكر ليجمعها في واحدة، ولا تُحذف من تحته */
   const slotWorkbooks = slots.filter((x) => workbookDone(x.workbook)).length;
+  /* أو لكلّ محورٍ كرّاستُه — مجموعاتٌ متجاورةٌ بترتيب المحاور (٦ أكتوبر ٢٠٢٦) */
+  const wbMode = workbookModeOf(content);
+  const wbGroups = workbookGroups(content.workbooks, moduleIds);
+  const setGroups = (workbooks: ModuleWorkbook[]) => setContent({ ...content, workbooks });
+  const patchGroup = (i: number, patch: Partial<ModuleWorkbook>) =>
+    setGroups(wbGroups.map((g, j) => (j === i ? { ...g, ...patch } : g)));
   /* المسجَّلُ من مصادر الخطّة — يُحرَّر في «اللقاءات» بموضعه في المصفوفة الواحدة */
   const patchResource = (i: number, patch: Partial<PlanResource>) =>
     setContent({ ...content, resources: content.resources.map((x, j) => (j === i ? { ...x, ...patch } : x)) });
@@ -1906,97 +1984,183 @@ export default function CohortWorkspace() {
 
       {/* ─────────── ③ الكرّاسة ───────────
 
-          كانت لكلّ موعدٍ كرّاسة (٢٧ سبتمبر ٢٠٢٦). ثمّ قرارُ صاحب المنصّة (٣٠
-          سبتمبر ٢٠٢٦): «اجعل الكرّاسةَ واحدةً فقط وليس لكلّ محور، على أن تكون
-          كاملةً لكلّ المحاور، وأن يتأكّد أن تكون سهلةً على الطالب يتبعها محورا
-          محورا». فصارت واحدةً — ملفٌّ يُرفع أو رابطٌ يُلصَق، ولا يجتمعان —
-          ومعها خريطتُها: لكلّ محورٍ أين يبدأ فيها. والخريطةُ إلزاميّة، وبها
-          يصير «يتبعها محورا محورا» شرطا يُفحص لا نصيحة. والحكمُ عليها
-          `cohortWorkbookProblems` نفسُها التي يحكم بها الخادم. */}
-      {stage === "workbooks" && (
-        <Panel as="section">
-          <StageIntro stage="workbooks" />
-          {slotWorkbooks > 0 && !workbookDone(wb) && (
-            <Inset tone="accent" className="mt-4 text-read leading-6">
-              كانت لمواعيدك {slotWorkbooks === 1 ? "كرّاسةٌ" : `${slotWorkbooks} كرّاسات`} منفصلة. اجمعها في كرّاسةٍ واحدةٍ بترتيب المحاور وضعها هنا — والمنفصلةُ لا تُعرض بعد إرسال خطّتك.
-            </Inset>
-          )}
-          <Card tone={workbookDone(wb) ? "default" : "accent"} className="mt-4 grid gap-3">
-            <StaffField label="اسمُ الكرّاسة (اختياريّ)" hint="ما يراه المتعلّم — «كرّاسةُ الدورة». وإن تركته سُمّيت «كرّاسةُ الدورة».">
-              <input value={wb?.title ?? ""} disabled={locked} maxLength={200}
-                aria-label="اسمُ الكرّاسة"
-                onChange={(e) => setWorkbook({ title: e.target.value || null })}
-                className={controlCls} />
-            </StaffField>
-            {(wb?.bodyFileKey ?? "").trim() ? (
-              <ModuleBodyUpload
-                cohortId={ws.cohort.id}
-                purpose="plan_resource"
-                refId="workbook-cohort"
-                value={wb ?? {}}
-                onChange={(next) => setWorkbook(next)}
-                disabled={locked}
-                label="ارفع الكرّاسة"
-                hint="ملفٌّ واحدٌ فيه المحاورُ كلُّها بترتيبها. PDF وصورةٌ يُقرآن في الصفحة، وWord وشرائحُ تُنزَّل."
-              />
-            ) : (
-              <div className="grid gap-2">
-                <StaffField label="رابطُ الكرّاسة" hint="رابطٌ يبدأ بـ https:// — أو ارفع ملفّا بدلا منه.">
-                  <input dir="ltr" value={wb?.url ?? ""} disabled={locked} placeholder="https://…"
-                    aria-label="رابطُ الكرّاسة"
-                    onChange={(e) => setWorkbook({ url: e.target.value || null })}
-                    className={`${controlCls} text-left`} />
-                </StaffField>
-                {!(wb?.url ?? "").trim() && (
-                  <ModuleBodyUpload
-                    cohortId={ws.cohort.id}
-                    purpose="plan_resource"
-                    refId="workbook-cohort"
-                    value={wb ?? {}}
-                    onChange={(next) => setWorkbook({ ...next, url: null })}
-                    disabled={locked}
-                    label="أو ارفع ملفّا"
-                    hint="ملفٌّ واحدٌ فيه المحاورُ كلُّها بترتيبها. PDF وصورةٌ يُقرآن في الصفحة، وWord وشرائحُ تُنزَّل."
-                  />
-                )}
-              </div>
+          كانت لكلّ موعدٍ كرّاسة (٢٧ سبتمبر ٢٠٢٦)، ثمّ واحدةً للدورة (٣٠ سبتمبر)
+          ومعها أين يبدأ كلُّ محورٍ فيها إلزاما. ثمّ قرارُ صاحب المنصّة (٦ أكتوبر
+          ٢٠٢٦): **خياران** — كرّاسةٌ للدورة أو لكلّ محور، وله أن يجمع محاورَ
+          متجاورة — وموضعُ المحور اختياريّ، والملفُّ PDF وحدَه، وقالبُ وجيز يُنزَّل
+          من هنا ويُقَرّ به. والحكمُ `workbooksProblems` نفسُها التي يحكم بها
+          الخادم (`application/trainer/cohort-workbooks.ts`). */}
+      {stage === "workbooks" && (() => {
+        const required = templateRequired(planStatus, Boolean(ws.workbookBeforeTemplate));
+        const tpl = WORKBOOK_TEMPLATES[wbMode];
+        const otherTpl = WORKBOOK_TEMPLATES[wbMode === "course" ? "modules" : "course"];
+        /* ما رُفع في الطريقة الأخرى يبقى محفوظا — ويُقال إنّه لا يصل المتعلّمين */
+        const otherKept = wbMode === "course" ? wbGroups.some((g) => workbookDone(g)) : workbookDone(wb);
+        const modes: { mode: WorkbookMode; label: string; hint: string }[] = [
+          { mode: "course", label: "كرّاسةٌ واحدةٌ للدورة", hint: "ملفٌّ واحدٌ فيه المحاورُ كلُّها بترتيبها، يُفتح للمتعلّم أوّلَ يومٍ في الشعبة." },
+          { mode: "modules", label: "كرّاسةٌ لكلّ محور", hint: "ملفٌّ لكلّ محور — أو لمحاورَ متجاورةٍ تجمعها — يُفتح أوّلَ يومٍ في موعد محوره." },
+        ];
+        const titleOf = (id: string) => content.modules.find((m) => m.moduleId === id)?.titleAr || "بلا عنوانٍ بعد";
+        return (
+          <Panel as="section">
+            <StageIntro stage="workbooks" />
+            {slotWorkbooks > 0 && !workbookDone(wb) && wbGroups.every((g) => !workbookDone(g)) && (
+              <Inset tone="accent" className="mt-4 text-read leading-6">
+                كانت لمواعيدك {slotWorkbooks === 1 ? "كرّاسةٌ" : `${slotWorkbooks} كرّاسات`} منفصلة، ولا تُعرض بعد إرسال خطّتك. ضعها هنا — كرّاسةً للدورة، أو لكلّ محورٍ كرّاستَه.
+              </Inset>
             )}
-            {!workbookDone(wb) && <p className="text-read font-bold text-gold-ink">بلا كرّاسةٍ بعد — ملفٌّ أو رابط.</p>}
-          </Card>
 
-          <div className="mt-5">
-            <p className="text-read font-black">أين يبدأ كلُّ محورٍ في الكرّاسة؟</p>
-            <p className="mt-0.5 text-read leading-6 text-muted-foreground">
-              يراه المتعلّمُ بجانب كلّ محورٍ في رحلته، فيفتح الكرّاسةَ على موضعه — «ص ٥» أو «ص ٥–١٢» أو «القسم الثاني».
-            </p>
-            {moduleIds.length === 0 ? (
-              <Inset className="mt-3 text-read leading-6 text-muted-foreground">
+            {/* القالب — يُنزَّل من هنا، والإلزامُ للجدد والاستحسانُ لمن رفع قبله */}
+            <Inset className="mt-4 grid gap-2.5">
+              <p className="flex items-center gap-2 text-read font-black text-foreground">
+                <FileDown className="h-4 w-4 text-teal-light-ink" aria-hidden="true" /> ابدأ من قالب وجيز
+              </p>
+              <p className="text-read leading-6 text-muted-foreground">
+                ملفُّ Word بشكل كرّاسات وجيز: الغلاف، ثمّ لكلّ محور — ما يخرج به المتعلّم، والأفكارُ الأساسيّة، ومثالٌ محلول، وتمرينٌ عمليّ، وأسئلةٌ للتأمّل، ومصادر. املأه، ثمّ احفظه PDF وارفعه هنا.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Button as="a" tone="confirm" icon={FileDown} href={tpl.href} download={tpl.download}>{tpl.labelAr} (Word)</Button>
+                <Button as="a" tone="secondary" icon={FileDown} href={otherTpl.href} download={otherTpl.download}>{otherTpl.labelAr}</Button>
+              </div>
+              <p className="text-read leading-6">
+                {required
+                  ? <b className="text-gold-ink">مطلوبٌ لكرّاستك: تُقرّ تحت كلّ ملفٍّ بأنّه على القالب.</b>
+                  : <span className="text-muted-foreground">يُستحسن — رفعتَ كرّاسةً قبل القالب، فلك أن تبقيها كما هي.</span>}
+              </p>
+            </Inset>
+
+            {/* الطريقتان — بفرقهما، والقرارُ له */}
+            <fieldset disabled={locked} className="mt-5 min-w-0">
+              <legend className="text-read font-black text-foreground">كيف تعطي المتعلّمين كرّاستك؟</legend>
+              <div role="group" aria-label="كيف تعطي المتعلّمين كرّاستك" className="mt-2.5 grid gap-2 sm:grid-cols-2">
+                {modes.map((m) => {
+                  const on = wbMode === m.mode;
+                  return (
+                    <Card as="button" interactive tone={on ? "accent" : "default"} key={m.mode} type="button" aria-pressed={on}
+                      onClick={() => setContent({ ...content, workbookMode: m.mode })}
+                      className="flex items-start gap-2.5">
+                      <span className={`mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full border-2 ${on ? "border-teal bg-teal text-on-teal" : "border-white/25"}`} aria-hidden="true">
+                        {on && <Check className="h-3 w-3" />}
+                      </span>
+                      <span>
+                        <span className="block text-read font-black text-foreground">{m.label}</span>
+                        <span className="mt-0.5 block text-read leading-6 text-muted-foreground">{m.hint}</span>
+                      </span>
+                    </Card>
+                  );
+                })}
+              </div>
+              {otherKept && (
+                <p className="mt-2 text-read leading-6 text-muted-foreground">
+                  ما رفعته في «{modes.find((m) => m.mode !== wbMode)?.label}» محفوظٌ كما هو — ولا يصل المتعلّمين ما دمتَ على هذه.
+                </p>
+              )}
+            </fieldset>
+
+            {wbMode === "course" ? (
+              <>
+                <Card tone={workbookDone(wb) ? "default" : "accent"} className="mt-4 grid gap-3">
+                  <StaffField label="اسمُ الكرّاسة (اختياريّ)" hint="ما يراه المتعلّم — «كرّاسةُ الدورة». وإن تركته سُمّيت «كرّاسةُ الدورة».">
+                    <input value={wb?.title ?? ""} disabled={locked} maxLength={200}
+                      aria-label="اسمُ الكرّاسة"
+                      onChange={(e) => setWorkbook({ title: e.target.value || null })}
+                      className={controlCls} />
+                  </StaffField>
+                  <WorkbookFile cohortId={ws.cohort.id} refId="workbook-cohort" value={wb ?? {}} locked={locked}
+                    onChange={(next) => setWorkbook(next)} label="ارفع كرّاسةَ الدورة (PDF)" name="كرّاسة الدورة" />
+                  {workbookDone(wb)
+                    ? <TemplateConfirm id="tpl-course" checked={wb?.onTemplate === true} required={required} disabled={locked}
+                        onChange={(v) => setWorkbook({ onTemplate: v })} />
+                    : <p className="text-read font-bold text-gold-ink">بلا كرّاسةٍ بعد.</p>}
+                </Card>
+
+                <div className="mt-5">
+                  <p className="text-read font-black">أين يبدأ كلُّ محورٍ في الكرّاسة؟ <span className="font-normal text-muted-foreground">(اختياريّ)</span></p>
+                  <p className="mt-0.5 text-read leading-6 text-muted-foreground">
+                    إن كتبته رآه المتعلّمُ بجانب كلّ محورٍ في رحلته، ففتح الكرّاسةَ على موضعه — «ص ٥» أو «ص ٥–١٢» أو «القسم الثاني».
+                  </p>
+                  {moduleIds.length === 0 ? (
+                    <Inset className="mt-3 text-read leading-6 text-muted-foreground">
+                      اكتب محاورك في «المحاور ومواعيدها» أوّلا — ثمّ ارجع إلى هنا.
+                    </Inset>
+                  ) : (
+                    <ol className="mt-3 grid gap-2">
+                      {content.modules.map((m, i) => {
+                        const current = (wb?.parts ?? []).find((x) => x.moduleId === m.moduleId)?.whereAr ?? "";
+                        return (
+                          <li key={m.moduleId} className="grid items-center gap-2 sm:grid-cols-[1fr_14rem]">
+                            <span className="text-read leading-6">
+                              <span className="font-black text-teal-light-ink tabular-nums">المحور {i + 1}</span>
+                              <span className="text-foreground"> · {m.titleAr || "بلا عنوانٍ بعد"}</span>
+                            </span>
+                            <input value={current} disabled={locked} maxLength={WORKBOOK_WHERE_MAX}
+                              aria-label={`أين يبدأ المحور ${i + 1} في الكرّاسة`}
+                              placeholder="ص ٥"
+                              onChange={(e) => setWhere(m.moduleId, e.target.value)}
+                              className={controlCls} />
+                          </li>
+                        );
+                      })}
+                    </ol>
+                  )}
+                </div>
+              </>
+            ) : moduleIds.length === 0 ? (
+              <Inset className="mt-4 text-read leading-6 text-muted-foreground">
                 اكتب محاورك في «المحاور ومواعيدها» أوّلا — ثمّ ارجع إلى هنا.
               </Inset>
             ) : (
-              <ol className="mt-3 grid gap-2">
-                {content.modules.map((m, i) => {
-                  const where = workbookWhere(wb, m.moduleId) ?? "";
-                  const current = (wb?.parts ?? []).find((x) => x.moduleId === m.moduleId)?.whereAr ?? "";
+              <ol className="mt-4 grid gap-2">
+                {wbGroups.map((g, i) => {
+                  const opens = workbookOpensOn(g, slots);
+                  const next = wbGroups[i + 1];
+                  const label = groupLabelAr(g, moduleIds);
                   return (
-                    <li key={m.moduleId} className="grid items-center gap-2 sm:grid-cols-[1fr_14rem]">
-                      <span className="text-read leading-6">
-                        <span className="font-black text-teal-light-ink tabular-nums">المحور {i + 1}</span>
-                        <span className="text-foreground"> · {m.titleAr || "بلا عنوانٍ بعد"}</span>
-                      </span>
-                      <input value={current} disabled={locked} maxLength={WORKBOOK_WHERE_MAX}
-                        aria-label={`أين يبدأ المحور ${i + 1} في الكرّاسة`}
-                        placeholder="ص ٥"
-                        onChange={(e) => setWhere(m.moduleId, e.target.value)}
-                        className={`${controlCls} ${where ? "" : "border-gold/50"}`} />
-                    </li>
+                    <Fragment key={g.moduleIds.join("+")}>
+                      <li>
+                        <Card tone={workbookDone(g) ? "default" : "accent"} className="grid gap-2">
+                          <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
+                            <p className="min-w-0 text-read leading-6">
+                              <span className="font-black text-teal-light-ink tabular-nums">كرّاسةُ {label}</span>
+                              <span className="text-foreground"> · {g.moduleIds.map(titleOf).join(" · ")}</span>
+                            </p>
+                            {g.moduleIds.length > 1 && !locked && (
+                              <Button tone="ghost" icon={Split} className="min-h-9" onClick={() => setGroups(splitGroup(wbGroups, i))}>
+                                افصلها: كرّاسةٌ لكلّ محور
+                              </Button>
+                            )}
+                          </div>
+                          <p className="text-read leading-6 text-muted-foreground">
+                            {opens
+                              ? <>تُفتح للمتعلّم <b className="text-foreground">{cohortDayAr(opens)}</b> — أوّلَ يومٍ في موعد {g.moduleIds.length > 1 ? "أسبق محاورها" : "محورها"}.</>
+                              : "تُفتح أوّلَ يومٍ في موعد محورها — وزّع المحاورَ على مواعيدها في الخطوة الثانية."}
+                          </p>
+                          <WorkbookFile cohortId={ws.cohort.id} refId={`workbook-${g.moduleIds[0]}`} value={g} locked={locked}
+                            onChange={(nextFile) => patchGroup(i, nextFile)} label={`ارفع كرّاسةَ ${label} (PDF)`} name={`كرّاسة ${label}`} />
+                          {workbookDone(g)
+                            ? <TemplateConfirm id={`tpl-${g.moduleIds[0]}`} checked={g.onTemplate === true} required={required} disabled={locked}
+                                onChange={(v) => patchGroup(i, { onTemplate: v })} />
+                            : <p className="text-read font-bold text-gold-ink">بلا كرّاسةٍ بعد.</p>}
+                        </Card>
+                      </li>
+                      {next && !locked && (
+                        <li className="flex flex-wrap items-center justify-center gap-x-2 text-center">
+                          <Button tone="ghost" icon={Combine} className="min-h-9" onClick={() => setGroups(mergeWithNext(wbGroups, i))}>
+                            اجمع {groupLabelAr({ moduleIds: [...g.moduleIds, ...next.moduleIds] }, moduleIds)} في كرّاسةٍ واحدة
+                          </Button>
+                          {workbookDone(g) && workbookDone(next) && (
+                            <span className="text-read leading-6 text-muted-foreground">— وتبقى كرّاسةُ {label} وحدَها</span>
+                          )}
+                        </li>
+                      )}
+                    </Fragment>
                   );
                 })}
               </ol>
             )}
-          </div>
-        </Panel>
-      )}
+          </Panel>
+        );
+      })()}
 
       {/* ─────────── ④ اللقاءات المباشرة ─────────── */}
       {stage === "sessions" && (

@@ -350,20 +350,22 @@ const ACTIVE: Shot[] = [
       await open(e, `/trainer/cohort/${await cohortId(e, 'الدفعةُ الأولى')}`)
       await step(e, 3)
       /* كرّاسةٌ واحدةٌ للدورة وخريطتُها (٣٠ سبتمبر ٢٠٢٦) — تُملأ في المحرّر
-         ولا تُحفظ، فالشعبةُ المزروعةُ قبل التحوّل تُصوَّر كما يراها صاحبُها */
-      const url = p.getByRole('textbox', { name: 'رابطُ الكرّاسة' })
+         ولا تُحفظ، فالشعبةُ المزروعةُ قبل التحوّل تُصوَّر كما يراها صاحبُها.
+         ومنذ ٦ أكتوبر ٢٠٢٦: القالبُ في أعلاها، والطريقتان — للدورة أو لكلّ محور */
+      const url = p.getByRole('textbox', { name: 'رابطُ كرّاسة الدورة' })
       if (!(await url.inputValue())) await url.fill('https://drive.google.com/file/d/guide-workbook')
       for (let i = 1; i <= 4; i++) {
         const where = p.getByRole('textbox', { name: `أين يبدأ المحور ${i} في الكرّاسة` })
         if (await where.count() && !(await where.inputValue())) await where.fill(`ص ${(i - 1) * 6 + 1}`)
       }
       await settle(e)
-      const section = p.locator('section').filter({ has: p.getByRole('textbox', { name: 'رابطُ الكرّاسة' }) }).first()
+      const section = p.locator('section').filter({ has: p.getByRole('textbox', { name: 'رابطُ كرّاسة الدورة' }) }).first()
       await shoot(e, {
         name: 'ws-workbooks', clip: section, clipPad: 14, maxHeight: 1500,
         marks: [
-          { target: p.getByRole('textbox', { name: 'رابطُ الكرّاسة' }), n: 1, pad: 5 },
-          { target: p.getByRole('textbox', { name: 'أين يبدأ المحور 1 في الكرّاسة' }), n: 2, pad: 5 },
+          { target: p.getByRole('link', { name: /قالبُ كرّاسة الدورة/ }), n: 1, pad: 5 },
+          { target: p.getByRole('group', { name: 'كيف تعطي المتعلّمين كرّاستك' }), n: 2, pad: 5 },
+          { target: p.getByRole('textbox', { name: 'رابطُ كرّاسة الدورة' }), n: 3, pad: 5 },
         ],
       })
     },

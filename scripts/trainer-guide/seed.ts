@@ -513,10 +513,12 @@ async function seedPrepPlan(ctx: Ctx, profileId: string) {
       outcomeAr: TEXT[i].outcome, activityAr: TEXT[i].activity, bodyAr: TEXT[i].body,
     })),
     slots: mods.map((m, i) => ({ startsOn: day(i * 7), endsOn: day(i * 7 + 6), moduleIds: [m.id] })),
-    /* كرّاسةٌ واحدةٌ للدورة، وموضعُ كلّ محورٍ فيها (٣٠ سبتمبر ٢٠٢٦) */
+    /* كرّاسةٌ واحدةٌ للدورة، وموضعُ كلّ محورٍ فيها (٣٠ سبتمبر ٢٠٢٦) — وإقرارُ قالب
+       وجيز (٦ أكتوبر ٢٠٢٦): مدرّبُ الدليل جديدٌ فالإقرارُ له شرط */
     workbook: {
       title: 'كرّاسةُ الدورة', url: 'https://drive.google.com/file/d/guide-workbook',
       parts: mods.map((m, i) => ({ moduleId: m.id, whereAr: `ص ${i * 6 + 1}` })),
+      onTemplate: true,
     },
     /* ولكلّ مصدرٍ رابطُه: المصدرُ بلا رابطٍ يُحفظ ويمنع الإرسالَ (٥ أكتوبر ٢٠٢٦) — والدليلُ
        يصوّر شعبةً تامّةً لا شعبةً تسمّي ما ينقصها */
@@ -601,6 +603,7 @@ async function approvedNegotiationPlan(ctx: Ctx, profileId: string, title: strin
       workbook: {
         title: 'كرّاسةُ التفاوض', url: 'https://drive.google.com/file/d/guide-negotiation',
         parts: mods.map((m, i) => ({ moduleId: m.id, whereAr: `ص ${i * 5 + 1}` })),
+        onTemplate: true,
       },
       /* والكتابُ برابطه — كان يُرسَل بلا رابطٍ لأنّ البذرَ يكتب بالخدمة لا بالمسلك، فلا
          يمرّ بحاجز الحفظ. والحاجزُ اليومَ عند الإرسال (٥ أكتوبر ٢٠٢٦)، فيُكمَل هنا */

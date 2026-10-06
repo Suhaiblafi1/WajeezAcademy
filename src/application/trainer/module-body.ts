@@ -99,8 +99,12 @@ export function moduleBodyBlockerAr(m: ModuleBodyLike): string | null {
 
    ويتّفقان في **من يقرأ**: من التحق بالشعبة، أو مدرّبُها، أو من يعتمد
    خطّتَها. وتلك قاعدةُ وصولٍ، ونسخُها في موضعَين أخطرُ من سطرٍ مكرَّر —
-   تُشدَّد في أحدهما وتُنسى في الآخر. فالحارسُ واحدٌ والمقبولُ يختلف. */
-export const FILE_PURPOSES = ['module_body', 'plan_resource'] as const
+   تُشدَّد في أحدهما وتُنسى في الآخر. فالحارسُ واحدٌ والمقبولُ يختلف.
+
+   وثالثُها الكرّاسة (٦ أكتوبر ٢٠٢٦): **PDF وحدَه** بقرار صاحب المنصّة — «PDF
+   only but the template is Word» — فيقرؤها المتعلّمُ في الصفحة على أيّ جهاز.
+   وكانت تُرفع مصدرا فتقبل Word والشرائحَ والصور؛ وما رُفع كذلك قبلها يبقى. */
+export const FILE_PURPOSES = ['module_body', 'plan_resource', 'workbook'] as const
 export type FilePurpose = (typeof FILE_PURPOSES)[number]
 
 /* ── وما يُقبل مصدرا ──
@@ -128,8 +132,12 @@ export const RESOURCE_FILE_TYPES = [
 
 export const RESOURCE_FILE_MIMES: readonly string[] = RESOURCE_FILE_TYPES.map((t) => t.mime)
 
+/** الكرّاسة: PDF وحدَه */
+export const WORKBOOK_FILE_MIMES: readonly string[] = ['application/pdf']
+
 /** ما يُقبل لكلّ غرض — مالكٌ واحدٌ يقرؤه الخادمُ والشاشة */
 export function acceptedMimes(purpose: FilePurpose): readonly string[] {
+  if (purpose === 'workbook') return WORKBOOK_FILE_MIMES
   return purpose === 'module_body' ? BODY_FILE_MIMES : RESOURCE_FILE_MIMES
 }
 
@@ -152,7 +160,9 @@ export function fileBlockerAr(
   if (!allowed.includes(mime)) {
     const names = purpose === 'module_body'
       ? BODY_FILE_TYPES.map((t) => t.labelAr)
-      : [...new Set(RESOURCE_FILE_TYPES.map((t) => t.labelAr))]
+      : purpose === 'workbook'
+        ? ['PDF — احفظ القالبَ PDF من Word ثمّ ارفعه']
+        : [...new Set(RESOURCE_FILE_TYPES.map((t) => t.labelAr))]
     return `لا يُقبل إلّا ${names.join(' أو ')}`
   }
   if (typeof sizeBytes === 'number' && sizeBytes > MAX_BODY_FILE_BYTES) {

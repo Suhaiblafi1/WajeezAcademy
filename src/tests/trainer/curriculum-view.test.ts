@@ -196,12 +196,14 @@ describe('كرّاسةُ الدورة في المنهج', () => {
     expect(one.groups[1].axes[0].workbookWhere).toBeNull()
   })
 
-  it('⚠️ والرسمُ يقول موضعَ كلّ محور، ويسمّي الغائب — ولا يعرض كرّاساتِ المواعيد معها', () => {
+  /* وكان يسمّي الغائبَ «بلا موضع» نقصا. ثمّ صار الموضعُ اختياريّا (٦ أكتوبر ٢٠٢٦) —
+     فيُذكر ما كُتب، ولا يُسمّى ما لم يُكتب نقصا */
+  it('⚠️ والرسمُ يقول موضعَ كلّ محورٍ كُتب، ولا يسمّي الغائبَ نقصا — ولا يعرض كرّاساتِ المواعيد معها', () => {
     const h = renderToStaticMarkup(createElement(CurriculumReview, { view: one }))
     expect(h).toContain('/api/v1/cohort-files/k-cwb')
     expect(h).toContain('في كرّاسة الدورة')
     expect(h).toContain('ص 9')
-    expect(h).toContain('بلا موضع')
+    expect(h, 'سُمّي الموضعُ الاختياريُّ نقصا').not.toContain('بلا موضع')
     expect(h, 'كرّاسةُ موعدٍ قديمةٌ عُرضت بجانب كرّاسة الدورة').not.toContain('/api/v1/cohort-files/k-wb4')
   })
 })

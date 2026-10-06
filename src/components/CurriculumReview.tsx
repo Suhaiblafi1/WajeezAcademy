@@ -41,6 +41,13 @@ const MEETING_STATE: Record<CurriculumMeeting['state'], { label: string; tone: '
 
 const fileHref = (key: string) => `/api/v1/cohort-files/${encodeURIComponent(key)}`
 
+/** إقرارُ المدرّب أنّ الكرّاسةَ على قالب وجيز (٦ أكتوبر ٢٠٢٦) — المنصّةُ لا تقرأ الملفَّ فتعرفه */
+function TemplateMark({ on }: { on: boolean }) {
+  return on
+    ? <span className="text-teal-light-ink">· على قالب وجيز</span>
+    : <span className="text-muted-foreground">· لم يُقرّ بقالب وجيز</span>
+}
+
 function EditLink({ stage, onEdit, label }: { stage: CurriculumEditStage; onEdit?: (s: CurriculumEditStage) => void; label: string }) {
   if (!onEdit) return null
   return (
@@ -159,25 +166,59 @@ export default function CurriculumReview({
         <p className="mt-1 text-read leading-6 text-muted-foreground">
           الهدف: {view.audienceAr.goals ? <b className="text-foreground">{view.audienceAr.goals}</b> : 'لم يُحدَّد'}
         </p>
-        {/* كرّاسةُ الدورة الواحدة (٣٠ سبتمبر ٢٠٢٦) — تُقرأ مرّةً هنا، وموضعُ كلّ محورٍ فيها في موعده */}
-        {view.bySlot && (
+        {/* كرّاسةُ الدورة الواحدة (٣٠ سبتمبر ٢٠٢٦) — تُقرأ مرّةً هنا، وموضعُ كلّ محورٍ فيها في موعده.
+            أو لكلّ محورٍ كرّاستُه (٦ أكتوبر ٢٠٢٦) — تُسرد هنا بترتيبها، والفارغةُ تُقال.
+            ومع كلٍّ إقرارُ المدرّب أنّها على قالب وجيز. */}
+        {view.workbookMode === 'course' && view.bySlot && (
           <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-white/[0.06] pt-3">
-            <p className="flex items-center gap-1.5 text-read">
+            <p className="flex flex-wrap items-center gap-1.5 text-read">
               <BookMarked className="h-3.5 w-3.5 text-teal-light-ink" aria-hidden="true" />
               <span className="font-bold">كرّاسةُ الدورة:</span>{' '}
               {view.workbook ? (
-                <a
-                  href={view.workbook.fileKey ? fileHref(view.workbook.fileKey) : view.workbook.url ?? '#'}
-                  target="_blank" rel="noreferrer"
-                  className="font-bold text-foreground hover:underline"
-                >
-                  {view.workbook.title ?? view.workbook.fileName ?? 'كرّاسةُ الدورة'}
-                </a>
+                <>
+                  <a
+                    href={view.workbook.fileKey ? fileHref(view.workbook.fileKey) : view.workbook.url ?? '#'}
+                    target="_blank" rel="noreferrer"
+                    className="font-bold text-foreground hover:underline"
+                  >
+                    {view.workbook.title ?? view.workbook.fileName ?? 'كرّاسةُ الدورة'}
+                  </a>
+                  <TemplateMark on={view.workbook.onTemplate} />
+                </>
               ) : (
                 <span className="text-gold-ink">لم تُوضع بعد.</span>
               )}
             </p>
             <EditLink stage="workbooks" onEdit={onEdit} label="كرّاسة الدورة" />
+          </div>
+        )}
+        {view.workbookMode === 'modules' && (
+          <div className="mt-3 border-t border-white/[0.06] pt-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="flex items-center gap-1.5 text-read">
+                <BookMarked className="h-3.5 w-3.5 text-teal-light-ink" aria-hidden="true" />
+                <span className="font-bold">الكرّاسة:</span> لكلّ محورٍ كرّاستُه
+              </p>
+              <EditLink stage="workbooks" onEdit={onEdit} label="كرّاسات المحاور" />
+            </div>
+            <ul className="mt-1.5 grid gap-1 text-read leading-6">
+              {view.moduleWorkbooks.map((w) => (
+                <li key={w.key} className="flex flex-wrap items-center gap-x-1.5">
+                  <span className="font-bold text-teal-light-ink tabular-nums">{w.label}:</span>
+                  {w.done ? (
+                    <>
+                      <a href={w.fileKey ? fileHref(w.fileKey) : w.url ?? '#'} target="_blank" rel="noreferrer"
+                        className="font-bold text-foreground hover:underline">
+                        {w.title ?? w.fileName ?? 'افتحها'}
+                      </a>
+                      <TemplateMark on={w.onTemplate} />
+                    </>
+                  ) : (
+                    <span className="text-gold-ink">لم تُوضع بعد.</span>
+                  )}
+                </li>
+              ))}
+            </ul>
           </div>
         )}
       </Card>
@@ -218,20 +259,21 @@ export default function CurriculumReview({
             </Inset>
           ))}
 
-          {view.bySlot && g.startsOn && view.workbook && (
+          {/* وموضعُ كلّ محورٍ فيها اختياريٌّ منذ ٦ أكتوبر ٢٠٢٦ — فيُذكر إن كُتب، ولا يُسمّى نقصا */}
+          {view.bySlot && g.startsOn && view.workbook && g.axes.some((a) => a.workbookWhere) && (
             <Section title="في كرّاسة الدورة" icon={BookMarked}>
               <p className="text-read leading-6">
                 {g.axes.map((a) => (
                   <span key={a.moduleId} className="me-3 inline-block">
                     <b>المحور {a.n}</b>{' '}
-                    {a.workbookWhere ?? <span className="text-gold-ink">بلا موضع</span>}
+                    {a.workbookWhere ?? <span className="text-muted-foreground">—</span>}
                   </span>
                 ))}
               </p>
             </Section>
           )}
           {/* وكرّاسةُ الموعد — لما اعتُمد قبل الكرّاسة الواحدة */}
-          {view.bySlot && g.startsOn && !view.workbook && g.workbook && (
+          {view.bySlot && g.startsOn && view.workbookMode === 'course' && !view.workbook && g.workbook && (
             <Section title="الكرّاسة" icon={BookMarked}>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 {g.workbook ? (

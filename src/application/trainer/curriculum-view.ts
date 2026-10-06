@@ -21,6 +21,7 @@
 import type { CohortPeriod } from './cohort-period'
 import { resourceCategory, displayKind } from './plan-overlay'
 import { workbookDone, workbookWhere, type CohortWorkbook, type PlanSlot } from './axis-timeline'
+import { groupLabelAr, workbookGroups, workbookModeOf, type ModuleWorkbook, type WorkbookMode } from './cohort-workbooks'
 import { proposedTask, readTaskChange, taskReview, taskValues } from './task-approval'
 import { asLevelRange, levelRangeAr } from './cohort-level'
 import { asAudience, goalsAr, stagesAr } from './cohort-audience'
@@ -136,8 +137,16 @@ export interface CurriculumView {
   period: CohortPeriod | null
   /** على خطّ المحاور — أم محورا محورا كما اعتُمد قبله */
   bySlot: boolean
-  /** كرّاسةُ الشعبة الواحدة — `null` لما قبلها (كرّاسةٌ لكلّ موعد) أو لما لم تُوضع بعد */
-  workbook: { title: string | null; url: string | null; fileKey: string | null; fileName: string | null } | null
+  /** أيُّ الطريقتين اختار المدرّب — كرّاسةٌ للدورة أو لكلّ محور (٦ أكتوبر ٢٠٢٦) */
+  workbookMode: WorkbookMode
+  /** كرّاسةُ الشعبة الواحدة — `null` لما قبلها (كرّاسةٌ لكلّ موعد)، أو لما لم تُوضع، أو
+      إن اختار لكلّ محورٍ كرّاستَه. ومعها إقرارُه أنّها على قالب وجيز */
+  workbook: { title: string | null; url: string | null; fileKey: string | null; fileName: string | null; onTemplate: boolean } | null
+  /** كرّاساتُ المحاور بترتيبها — والفارغةُ تُذكر ليُرى ما ينقص (فارغةٌ في «للدورة») */
+  moduleWorkbooks: {
+    key: string; label: string; done: boolean; onTemplate: boolean
+    title: string | null; url: string | null; fileKey: string | null; fileName: string | null
+  }[]
   groups: CurriculumGroup[]
   /** للشعبة كلِّها — ما لا محورَ له */
   general: { meetings: CurriculumMeeting[]; tasks: CurriculumTask[]; resources: CurriculumResource[] }
@@ -187,6 +196,7 @@ export function axesLabel(ns: readonly number[]): string {
 export function curriculumView(input: CurriculumInput): CurriculumView {
   const c = (input.content ?? {}) as {
     summaryAr?: string | null; modules?: PlanModule[]; slots?: PlanSlot[]; resources?: PlanResource[]; workbook?: CohortWorkbook | null
+    workbookMode?: string | null; workbooks?: ModuleWorkbook[] | null
     level?: unknown
     audience?: unknown
   }
@@ -315,9 +325,19 @@ export function curriculumView(input: CurriculumInput): CurriculumView {
     audienceAr: { stages: stagesAr(asAudience(c.audience)), goals: goalsAr(asAudience(c.audience)) },
     period: input.period,
     bySlot: slots.length > 0,
-    workbook: workbookDone(cw)
-      ? { title: text(cw?.title), url: text(cw?.url), fileKey: text(cw?.bodyFileKey), fileName: text(cw?.bodyFileName) }
+    workbookMode: workbookModeOf(c),
+    workbook: workbookModeOf(c) === 'course' && workbookDone(cw)
+      ? { title: text(cw?.title), url: text(cw?.url), fileKey: text(cw?.bodyFileKey), fileName: text(cw?.bodyFileName), onTemplate: cw?.onTemplate === true }
       : null,
+    moduleWorkbooks: workbookModeOf(c) === 'modules'
+      ? workbookGroups(c.workbooks, modules.map((m) => m.moduleId)).map((g) => ({
+          key: g.moduleIds.join('+'),
+          label: `كرّاسةُ ${groupLabelAr(g, modules.map((m) => m.moduleId))}`,
+          done: workbookDone(g),
+          onTemplate: g.onTemplate === true,
+          title: text(g.title), url: text(g.url), fileKey: text(g.bodyFileKey), fileName: text(g.bodyFileName),
+        }))
+      : [],
     groups,
     general,
     counts: {

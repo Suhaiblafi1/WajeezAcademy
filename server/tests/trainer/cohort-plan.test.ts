@@ -76,7 +76,8 @@ const content: TrainerPlanContent = {
      محورُها الواحدُ في موعدٍ يملأ المدّةَ، وله كرّاستُه */
   slots: [{ startsOn: PERIOD.startsOn, endsOn: PERIOD.endsOn, moduleIds: ['C-BIZ-101-M1'] }],
   /* وكرّاسةُ الدورة الواحدة وموضعُ محورها فيها (٣٠ سبتمبر ٢٠٢٦) */
-  workbook: { url: 'https://example.com/workbook.pdf', parts: [{ moduleId: 'C-BIZ-101-M1', whereAr: 'ص 1' }] },
+  /* وإقرارُ قالب وجيز — المدرّبُ هنا جديد (٦ أكتوبر ٢٠٢٦) */
+  workbook: { url: 'https://example.com/workbook.pdf', parts: [{ moduleId: 'C-BIZ-101-M1', whereAr: 'ص 1' }], onTemplate: true },
   /* ومستواها — شرطُ الخطوة الأولى ما دامت الخطّةُ في يده (٦ أكتوبر ٢٠٢٦) */
   level: { from: 'beginner', to: 'intermediate' },
   /* ولمن هي وماذا يريد متعلّمُها — شرطُها كذلك (٦ أكتوبر ٢٠٢٦) */

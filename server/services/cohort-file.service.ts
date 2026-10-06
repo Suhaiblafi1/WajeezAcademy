@@ -189,6 +189,8 @@ export class CohortFileService {
       ...(view.slots ?? []).map((s) => s.workbook?.bodyFileKey),
       /* وكرّاسةُ الشعبة الواحدة — ومفتاحُها لا يصل الإسقاطَ قبل أوّل يومٍ فيها */
       view.workbook?.file?.bodyFileKey,
+      /* وكرّاساتُ المحاور — كلٌّ بموعد أسبق محاورها (٦ أكتوبر ٢٠٢٦) */
+      ...(view.moduleWorkbooks ?? []).map((w) => w.file?.bodyFileKey),
       ...view.resources.map((r) => r.bodyFileKey),
     ]
     return keys.includes(storageKey)

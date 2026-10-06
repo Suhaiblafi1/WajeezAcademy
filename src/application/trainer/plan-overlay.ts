@@ -36,6 +36,7 @@
       يمسّ أرقاما رآها الناسُ فلا يُركَب هنا. */
 
 import { workbookDone, workbookWhere, type CohortWorkbook } from './axis-timeline'
+import { workbookGroups, workbookModeOf, type ModuleWorkbook } from './cohort-workbooks'
 import type { LearnerGate } from '../learning/cohort-gate'
 
 /** أنواعُ المصدر التي يعرفها المتعلّم — وما عداها يُعرض رابطا */
@@ -204,6 +205,19 @@ export interface LearnerPlanView {
   slots?: LearnerSlot[]
   /** كرّاسةُ الشعبة الواحدة وخريطتُها — `null` لما لا كرّاسةَ شعبةٍ فيه */
   workbook?: LearnerCohortWorkbook | null
+  /** أو كرّاساتُ المحاور — لمحورٍ أو لمحاورَ متجاورة (٦ أكتوبر ٢٠٢٦)؛ فارغةٌ في غير ذلك */
+  moduleWorkbooks?: LearnerModuleWorkbook[]
+}
+
+/** كرّاسةُ محورٍ أو محاورَ متجاورة كما تصل المتعلّم (٦ أكتوبر ٢٠٢٦) */
+export interface LearnerModuleWorkbook {
+  moduleIds: string[]
+  /** لم يحن أوّلُ يومٍ في موعد أسبق محاورها، أو انتهى الوصول */
+  locked: boolean
+  /** متى تُفتح — `null`: بلا بوّابة، أو انتهى الوصول */
+  opensAt: string | null
+  /** الملفُّ أو الرابط — `null` حتّى تُفتح */
+  file: LearnerWorkbook | null
 }
 
 /** كرّاسةُ الشعبة كما تصل المتعلّم (٣٠ سبتمبر ٢٠٢٦) */
@@ -422,6 +436,8 @@ export function projectPlanForLearner(
         resources?: (LearnerPlanResource & { preReading?: boolean | null })[]
         summaryAr?: string | null
         workbook?: CohortWorkbook | null
+        workbookMode?: string | null
+        workbooks?: ModuleWorkbook[] | null
       }
     | null
   if (!c || typeof c !== 'object') return null
@@ -437,7 +453,37 @@ export function projectPlanForLearner(
      محورُه الأوّلُ فُتحت له. وخريطتُها (أين يبدأ كلُّ محور) تصل قبل ذلك مع
      العناوين: موضعٌ لا متن. ومتى وُجدت سقطت كرّاساتُ المواعيد القديمة من
      العرض، فلا يرى المتعلّمُ كرّاستَين لشيءٍ واحد. */
-  const cohortWb = workbookDone(c.workbook) ? c.workbook! : null
+  /* ═══ أو لكلّ محورٍ كرّاستُه (٦ أكتوبر ٢٠٢٦) ═══
+
+     يصل ما في الطريقة التي اختارها المدرّبُ وحدَها — والأخرى محفوظةٌ لا تصل.
+     وكرّاسةُ المحاور تُفتح أوّلَ يومٍ في موعد أسبق محاورها، كمتن المحور نفسِه
+     (`theoryOpensAt`)؛ وقبله يُقال متى، ولا يصل رابطُها ولا مفتاحُ ملفّها. */
+  const byModule = workbookModeOf(c) === 'modules'
+  const cohortWb = !byModule && workbookDone(c.workbook) ? c.workbook! : null
+  const planModuleIds = (Array.isArray(c.modules) ? c.modules : []).map((m) => m.moduleId)
+  const moduleWorkbooks: LearnerModuleWorkbook[] = byModule
+    ? workbookGroups(c.workbooks, planModuleIds).filter((g) => workbookDone(g)).map((g) => {
+        const opens = g.moduleIds
+          .map((id) => timeline?.theoryOpensAt(id) ?? null)
+          .filter((d): d is Date => d !== null)
+          .sort((a, b) => a.getTime() - b.getTime())[0] ?? null
+        const locked = ended || notYet(opens)
+        return {
+          moduleIds: [...g.moduleIds],
+          locked,
+          opensAt: ended ? null : iso(opens),
+          file: locked
+            ? null
+            : {
+                title: written(g.title),
+                url: httpUrl(g.url),
+                bodyFileKey: written(g.bodyFileKey),
+                bodyFileName: written(g.bodyFileName),
+                bodyFileMime: written(g.bodyFileMime),
+              },
+        }
+      })
+    : []
   const wbOpensAt = timeline?.slots[0]?.opensAt ?? null
   const wbLocked = ended || notYet(wbOpensAt)
   const workbook: LearnerCohortWorkbook | null = cohortWb
@@ -460,6 +506,7 @@ export function projectPlanForLearner(
     : null
   return {
     workbook,
+    moduleWorkbooks,
     summaryAr: written(c.summaryAr),
     modules: Array.isArray(c.modules)
       ? c.modules.map((m) => {
@@ -492,7 +539,7 @@ export function projectPlanForLearner(
     slots: timeline
       ? timeline.slots.map((s) => {
           const open = !ended && !notYet(s.opensAt)
-          const hasWorkbook = !cohortWb && workbookDone(s.workbook)
+          const hasWorkbook = !cohortWb && !byModule && workbookDone(s.workbook)
           return {
             startsOn: s.startsOn,
             endsOn: s.endsOn,

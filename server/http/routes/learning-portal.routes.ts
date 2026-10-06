@@ -34,6 +34,7 @@ import { requireAuth, requirePermission } from '../auth-plugin'
 import { SESSION_AXES_MAX, WORKBOOK_WHERE_MAX } from '../../../src/application/trainer/axis-timeline'
 import { COHORT_LEVELS } from '../../../src/application/trainer/cohort-level'
 import { AUDIENCE_GOALS, AUDIENCE_STAGES, MAX_AUDIENCE_GOALS, MAX_AUDIENCE_STAGES } from '../../../src/application/trainer/cohort-audience'
+import { WORKBOOK_MODES } from '../../../src/application/trainer/cohort-workbooks'
 
 /** محاورُ اللقاء: محورٌ أو أكثر بلا تكرار — وسقفُ «محورٍ أو محورين» نُسخ (٤ أكتوبر
     ٢٠٢٦). والحدُّ هنا حجمُ المدخل وحدَه (ما تحمله الخطّةُ من محاور)، أمّا الحدُّ
@@ -642,7 +643,25 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
         moduleId: z.string().max(64),
         whereAr: z.string().max(WORKBOOK_WHERE_MAX),
       })).max(40).nullish(),
+      /* إقرارُ المدرّب أنّها على قالب وجيز (٦ أكتوبر ٢٠٢٦) */
+      onTemplate: z.boolean().nullish(),
     }).nullish(),
+    /* ═══ أو لكلّ محورٍ كرّاستُه — والمدرّبُ يختار (٦ أكتوبر ٢٠٢٦) ═══
+
+       `workbookMode` يقول أيُّ الطريقتين تصل المتعلّم، و`workbooks` كرّاساتُ المحاور:
+       لكلٍّ محورٌ أو محاورُ متجاورة. والتجاورُ والتغطيةُ قاعدةٌ في
+       `application/trainer/cohort-workbooks.ts` (`workbookGroups`) تُقرأ بها كما
+       هي الآن — فالشكلُ وحدَه هنا. وبلا هذين المفتاحين كان المخطّطُ يُسقطهما صامتا. */
+    workbookMode: z.enum(WORKBOOK_MODES).nullish(),
+    workbooks: z.array(z.object({
+      moduleIds: z.array(z.string().max(64)).min(1).max(40),
+      title: z.string().max(200).nullish(),
+      url: z.string().max(500).nullish(),
+      bodyFileKey: z.string().trim().max(120).nullish(),
+      bodyFileName: z.string().trim().max(200).nullish(),
+      bodyFileMime: z.string().trim().max(120).nullish(),
+      onTemplate: z.boolean().nullish(),
+    })).max(40).nullish(),
     /* ═══ مستوى الشعبة — مدًى من مستوًى إلى مستوى (٦ أكتوبر ٢٠٢٦) ═══
 
        الشكلُ وحدَه هنا، كالمدّة: طرفان من الثلاثة. وترتيبُهما واتّصالُ ما بينهما

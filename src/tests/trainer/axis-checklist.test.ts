@@ -17,8 +17,9 @@ const IDS = ['M1', 'M2', 'M3', 'M4', 'M5', 'M6', 'M7', 'M8']
 const mods = IDS.map((moduleId, i) => ({ moduleId, titleAr: `محور ${i + 1}`, bodyAr: body }))
 /* خمسةُ أسابيع: ١+٢ · ٣ · ٤+٥ · ٦ · ٧+٨ */
 const SLOTS = defaultSlots(IDS, PERIOD)
-/* وكرّاسةٌ واحدةٌ للدورة، وموضعُ كلّ محورٍ فيها (٣٠ سبتمبر ٢٠٢٦) */
-const WORKBOOK = { url: 'https://x.test/wb', parts: IDS.map((moduleId, i) => ({ moduleId, whereAr: `ص ${i * 4 + 1}` })) }
+/* وكرّاسةٌ واحدةٌ للدورة، وموضعُ كلّ محورٍ فيها (٣٠ سبتمبر ٢٠٢٦) — وإقرارُ قالب وجيز
+   (٦ أكتوبر ٢٠٢٦): المدرّبُ هنا لم يرفع كرّاسةً قبل القالب، فالإقرارُ له شرط */
+const WORKBOOK = { url: 'https://x.test/wb', parts: IDS.map((moduleId, i) => ({ moduleId, whereAr: `ص ${i * 4 + 1}` })), onTemplate: true }
 /** لقاءٌ في اليوم الثاني من الموعد، مربوطٌ بمحاوره */
 const meetings = SLOTS.map((s) => ({
   title: `لقاء ${s.moduleIds.join('+')}`,
@@ -87,15 +88,16 @@ describe('الكرّاسة — واحدةٌ للدورة، وموضعُ كلّ �
     expect(blockingBeforeSubmit(list).map((c) => c.key)).toEqual(['workbooks'])
   })
 
-  it('⚠️ ومحورٌ لا يُعرف موضعُه فيها يحجب — فلا يتبعها المتعلّمُ محورا محورا', () => {
+  /* وكان محورٌ بلا موضعٍ يحجب (٣٠ سبتمبر). ثمّ قرارُ صاحب المنصّة (٦ أكتوبر ٢٠٢٦):
+     موضعُ المحور «yes if he wants» — اختياريّ */
+  it('⚠️ وموضعُ المحور فيها اختياريٌّ — محورٌ بلا موضعٍ لا يحجب', () => {
     const parts = WORKBOOK.parts.map((p) => (p.moduleId === 'M5' ? { ...p, whereAr: '  ' } : p))
-    const list = complete({}, { workbook: { ...WORKBOOK, parts } })
-    expect(row(list, 'workbooks').done).toBe(false)
-    expect(blockingBeforeSubmit(list).map((c) => c.key)).toEqual(['workbooks'])
+    expect(row(complete({}, { workbook: { ...WORKBOOK, parts } }), 'workbooks').done).toBe(true)
+    expect(row(complete({}, { workbook: { ...WORKBOOK, parts: [] } }), 'workbooks').done).toBe(true)
   })
 
   it('والملفُّ المرفوعُ يكفي كالرابط', () => {
-    const file = { bodyFileKey: 'k-1', bodyFileName: 'wb.pdf', parts: WORKBOOK.parts }
+    const file = { bodyFileKey: 'k-1', bodyFileName: 'wb.pdf', parts: WORKBOOK.parts, onTemplate: true }
     expect(row(complete({}, { workbook: file }), 'workbooks').done).toBe(true)
   })
 
@@ -103,6 +105,31 @@ describe('الكرّاسة — واحدةٌ للدورة، وموضعُ كلّ �
     const perSlot = { workbook: null, slots: SLOTS.map((s) => ({ ...s, workbook: { url: 'https://x.test/old' } })) }
     expect(row(complete({}, perSlot), 'workbooks').done).toBe(false)
     expect(row(complete({ planStatus: 'approved' }, perSlot), 'workbooks').done).toBe(true)
+  })
+})
+
+/* ═══ وقالبُ وجيز، والكرّاسةُ لكلّ محور — على قائمة الخادم نفسِها (٦ أكتوبر ٢٠٢٦) ═══
+
+   القاعدةُ في `cohort-workbooks.ts` وحرّاسُها في `cohort-workbooks.test.ts`؛ وهنا أنّ
+   `buildChecklist` يحكم بها، ويقرأ علمَ «رفع قبل القالب» من مدخله. */
+describe('الكرّاسة — قالبُ وجيز ولكلّ محورٍ كرّاستُه، في قائمة الخادم', () => {
+  const noTemplate = { workbook: { ...WORKBOOK, onTemplate: false } }
+
+  it('⚠️ بلا إقرار القالب يحجب الجديد — ويمضي من رفع قبله', () => {
+    expect(row(complete({}, noTemplate), 'workbooks').done, 'مضى بلا إقرارٍ لمدرّبٍ جديد').toBe(false)
+    expect(row(complete({ workbookBeforeTemplate: true }, noTemplate), 'workbooks').done).toBe(true)
+  })
+
+  it('⚠️ ولا يُطلب ممّا أُرسل قبل القرار', () => {
+    expect(row(complete({ planStatus: 'submitted' }, noTemplate), 'workbooks').done).toBe(true)
+  })
+
+  it('⚠️ ولكلّ محورٍ كرّاستُه: تتمّ بكرّاسات المحاور كلِّها — وكرّاسةُ الدورة المحفوظةُ لا تُعدّ', () => {
+    const groups = [{ moduleIds: IDS.slice(0, 2) }, ...IDS.slice(2).map((id) => ({ moduleIds: [id] }))]
+    const all = groups.map((g, i) => ({ ...g, url: `https://x.test/m${i}`, onTemplate: true }))
+    expect(row(complete({}, { workbookMode: 'modules', workbooks: all }), 'workbooks').done).toBe(true)
+    const missing = all.map((g, i) => (i === 3 ? { moduleIds: g.moduleIds } : g))
+    expect(row(complete({}, { workbookMode: 'modules', workbooks: missing }), 'workbooks').done, 'محورٌ بلا كرّاسة').toBe(false)
   })
 })
 
