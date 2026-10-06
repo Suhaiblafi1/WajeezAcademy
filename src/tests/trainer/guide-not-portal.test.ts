@@ -66,7 +66,7 @@ describe('④ الفهرسُ أجزاء', () => {
   })
 
   it('والاسمُ في الفهرس قصير — ما قبل النقطتين', () => {
-    expect(shortTitle('مؤهّلاتي: عروضُ الدورات وقرارُك فيها')).toBe('مؤهّلاتي')
+    expect(shortTitle('دوراتي: عروضُ الدورات وقرارُك فيها')).toBe('دوراتي')
     for (const s of GUIDE_SECTIONS) expect(shortTitle(s.title).length, s.title).toBeLessThanOrEqual(26)
     /* والفهرسُ يُبنى منذ ٥ أكتوبر ٢٠٢٦ في `data/trainer-guide/toc.ts` لا في الصفحة —
        فيُسأل الفهرسُ المبنيُّ نفسُه عن أسمائه، لا الشيفرةُ عن نصّها */

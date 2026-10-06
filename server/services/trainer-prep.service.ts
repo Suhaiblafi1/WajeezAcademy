@@ -221,7 +221,7 @@ export class TrainerPrepService {
       const open = await this.prisma.trainerAssignmentOffer.count({
         where: { profileId: profile.id, courseId, status: 'offered' },
       })
-      if (open > 0) throw new AuthError('open_offer', 'لهذه الدورة عرضٌ ينتظر جوابَك في «مؤهّلاتي» — أجِبه بدلَ أن تُنشئ شعبةً ثانية', 409)
+      if (open > 0) throw new AuthError('open_offer', 'لهذه الدورة عرضٌ ينتظر جوابَك في «دوراتي» — أجِبه بدلَ أن تُنشئ شعبةً ثانية', 409)
       const live = await this.prisma.cohortTrainer.count({
         where: { profileId: profile.id, cohort: { courseId, status: { not: 'cancelled' } } },
       })

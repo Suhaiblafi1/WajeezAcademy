@@ -1536,7 +1536,7 @@ export function contractApprovedMail(input: ContractApprovedMailInput): Decision
           ? ([
               {
                 kind: 'p' as const,
-                text: 'وبذلك فُتحت لك بوّابتُك على المنصّة، وبدأت مهلتُك لإعداد دوراتك: تقبل كلَّ دورةٍ أو تعتذر عنها في «مؤهّلاتي»، وتُعِدّ ما قبِلتَه في شعبة إعدادٍ في «شعبي» — مرّةً واحدة.',
+                text: 'وبذلك فُتحت لك بوّابتُك على المنصّة، وبدأت مهلتُك لإعداد دوراتك: تقبل كلَّ دورةٍ أو تعتذر عنها في «دوراتي»، وتُعِدّ ما قبِلتَه في شعبة إعدادٍ في «شعبي» — مرّةً واحدة.',
               },
               { kind: 'h' as const, text: 'وماذا بعد' },
               {
@@ -1545,7 +1545,7 @@ export function contractApprovedMail(input: ContractApprovedMailInput): Decision
                   { textAr: 'قرأتَ الاتفاقيّةَ ووقّعتَها.', state: 'done' as const },
                   { textAr: 'راجعنا توقيعَك وطابقنا اسمَك القانونيَّ واعتمدناه.', state: 'done' as const },
                   /* ومنذ ٢ أكتوبر ٢٠٢٦ تُعَدّ الدوراتُ في «شعبي» (`trainer-prep.service.ts`) */
-                  { textAr: 'افتح «مؤهّلاتي» واقبل دوراتك أو اعتذر عنها، ثمّ عبّئ شعبةَ إعداد كلِّ دورةٍ في «شعبي» وأرسلها — والدورُ عليك الآن.', state: 'now' as const },
+                  { textAr: 'افتح «دوراتي» واقبل دوراتك أو اعتذر عنها، ثمّ عبّئ شعبةَ إعداد كلِّ دورةٍ في «شعبي» وأرسلها — والدورُ عليك الآن.', state: 'now' as const },
                   { textAr: 'نراجع كلَّ شعبة: ما اعتمدناه تدرّسه، وما أعدناه يصلك بملاحظاتنا لتعدّله.' },
                   {
                     textAr: sealedOffer
@@ -1557,7 +1557,7 @@ export function contractApprovedMail(input: ContractApprovedMailInput): Decision
               guideCallout,
               {
                 kind: 'cta' as const,
-                label: 'افتح «مؤهّلاتي» وابدأ',
+                label: 'افتح «دوراتي» وابدأ',
                 href: input.portalUrl,
               },
               /* ═══ ودعوةُ جلسة التهيئة — وفاءٌ بالبند 2-8 ═══

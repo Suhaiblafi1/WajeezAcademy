@@ -1,4 +1,11 @@
-/* «مؤهّلاتي» — كلُّ دورةٍ لي، وحالُها، وقراري فيها. صفحةٌ واحدةٌ لا ثلاث.
+/* «دوراتي» — كلُّ دورةٍ لي، وحالُها، وقراري فيها. صفحةٌ واحدةٌ لا ثلاث.
+
+   ═══ وكان اسمُها «مؤهّلاتي» حتّى ٦ أكتوبر ٢٠٢٦ ═══
+
+   «نؤهّلك» قد تُقرأ «ندرّبك» (`qualify-word.test.ts`)، فخرجت من كلّ ما يقرؤه
+   المدرّب — ثمّ عُرض اسمُ اللسان خيارا بثلاثة، فاختار صاحبُ المنصّة «دوراتي»
+   («B»). والمسارُ `/trainer/qualifications` باقٍ: روابطُ الرسائل التي خرجت
+   تفتحه، ومرساةُ الدليل `#qualifications` كذلك.
 
    ═══ ولمَ صارت «عروضي» فيها (٢٩ سبتمبر ٢٠٢٦) ═══
 
@@ -228,11 +235,11 @@ export default function TrainerQualifications() {
 
   if (down) {
     return (
-      <TrainerLayout title="مؤهّلاتي">
+      <TrainerLayout title="دوراتي">
         <EmptyState
           icon={ServerOff}
           titleAr="تعذّر الوصول إلى الخادم"
-          reasonAr="لم يُجب الخادمُ على طلب مؤهّلاتك. تحقّق من اتصالك ثمّ أعد التحميل."
+          reasonAr="لم يُجب الخادمُ على طلب دوراتك. تحقّق من اتصالك ثمّ أعد التحميل."
           actions={[{ labelAr: "أعد المحاولة", onClick: () => void load() }]}
         />
       </TrainerLayout>
@@ -241,7 +248,7 @@ export default function TrainerQualifications() {
 
   if (!quals) {
     return (
-      <TrainerLayout title="مؤهّلاتي">
+      <TrainerLayout title="دوراتي">
         <div className="grid place-items-center py-16">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground/50" aria-label="جارٍ التحميل" />
         </div>
@@ -250,7 +257,7 @@ export default function TrainerQualifications() {
   }
 
   return (
-    <TrainerLayout title="مؤهّلاتي">
+    <TrainerLayout title="دوراتي">
       <p className="mb-5 max-w-3xl text-sm leading-7 text-muted-foreground">
         دوراتُك التي تعبّئها في «شعبي»، وتحتها عروضُ الشعب إن عُرضت عليك: تقبلها أو تعتذر عنها بسببٍ
         تكتبه — والاعتذارُ جوابٌ مشروعٌ لا يُحسَب عليك.
@@ -289,7 +296,7 @@ export default function TrainerQualifications() {
             <Button as={Link} to="/trainer/board" size="sm" icon={Users}>افتح «شعبي»</Button>
           </Inset>
           <TabBar
-            ariaLabel="حالُ مؤهّلاتي"
+            ariaLabel="حالُ دوراتي"
             className="mb-4"
             value={filter}
             onChange={(f) => { setFilter(f); setPage(1); }}

@@ -12,9 +12,10 @@
  *   جديدةٌ للعقد — فبقي كما اتّفقنا. ورسالةُ البند الثاني تقوله بلغة ما يقع.
  * · **شاشاتُ الإدارة**: «أهِّله» و«طلبُ التأهيل» لغةُ الفريق في عمله، لا ما يقرؤه
  *   المدرّب.
- * · **اسمُ اللسان «مؤهّلاتي»** (ومعه «مؤهّلاتك» في الأزرار): اسمُ شاشةٍ لا فعلٌ
- *   يُقال للمدرّب، وتغييرُه يمسّ الدليلَ وصورَه ورسائلَ تشير إليه — فعُرض خيارا
- *   ولم يُقرَّر بعد. فيُستثنى بعينه، ولا يُستثنى غيرُه.
+ * · **واسمُ اللسان** كان «مؤهّلاتي» (ومعه «افتح مؤهّلاتك» في الأزرار) — فعُرض خيارا
+ *   بثلاثة، فاختار صاحبُ المنصّة «دوراتي» («B»، ٦ أكتوبر ٢٠٢٦). فلا استثناءَ له
+ *   بعد: «مؤهّلات» تُطابَق كأخواتها. والمسارُ `/trainer/qualifications` باقٍ —
+ *   ليس نصّا يُقرأ، وروابطُ الرسائل التي خرجت تفتحه.
  *
  * ── ويُقرأ على البنية لا على ورود حرفٍ في ملفّ ──
  *
@@ -34,14 +35,12 @@ import { planApprovedTrainerMsg } from '../../application/trainer/plan-decision'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '../../..')
 
-const bare = (t: string) => t.replace(/[ً-ْٰـ]/g, '')
-/** الفعلُ ومصدرُه واسمُ مفعوله — بعد نزع الحركات: «نؤهّلك» «تُؤهَّل» «أُهِّلتَ»
-    «تأهيلُك» «مؤهَّلا». ولا «أهلا»: «أهل» وحدَها لا تُطابَق */
-const QUALIFY = /[نتيأ]ؤهل|تأهيل|مؤهل|(?<![ء-ي])أهل(?:ت|نا)/g
-/** اسمُ اللسان — مستثنًى بعينه حتّى يُقرَّر فيه */
-const TAB = /مؤهلات[يك](?![ء-ي])/g
+const bare = (t: string) => t.replace(/[\u064B-\u0652\u0670\u0640]/g, '')
+/** الفعلُ ومصدرُه واسمُ مفعوله، واسمُ اللسان القديم — بعد نزع الحركات: «نؤهّلك»
+    «تُؤهَّل» «أُهِّلتَ» «تأهيلُك» «مؤهَّلا» «مؤهّلاتي». ولا «أهلا»: «أهل» وحدَها لا تُطابَق */
+const QUALIFY = /[نتيأ]ؤهل|تأهيل|مؤهل|(?<![\u0621-\u064A])أهل(?:ت|نا)/g
 
-const hitsOf = (text: string) => [...bare(text).replace(TAB, '').matchAll(QUALIFY)].map((m) => m[0])
+const hitsOf = (text: string) => [...bare(text).matchAll(QUALIFY)].map((m) => m[0])
 
 const parse = (file: string, src: string) => ts.createSourceFile(file, src, ts.ScriptTarget.Latest, true,
   file.endsWith('x') ? ts.ScriptKind.TSX : ts.ScriptKind.TS)
@@ -98,21 +97,22 @@ const TRAINER_FILES = [
 ]
 
 describe('ولا «نؤهّلك» في نصٍّ يقرؤه المدرّب', () => {
-  it('الماسحُ يقرأ النصوصَ ويتجاوز التعليقات، ويستثني اسمَ اللسان وحدَه — وإلّا فالحارسُ يقيس الفراغ', () => {
+  it('الماسحُ يقرأ النصوصَ ويتجاوز التعليقات، ويرى اسمَ اللسان القديم — وإلّا فالحارسُ يقيس الفراغ', () => {
     const sample = [
       '/* حين نؤهّلك في تعليقٍ يروي القرار */',
       "const a = 'وتظهر حين نؤهّلك لها'",
       'const b = `النسخة ${v} · أُهِّلت ${d}`',
       'const c = <p>لستَ مؤهَّلا لها</p>',
-      "const d = 'افتح «مؤهّلاتي» — أهلا بك'",
+      "const d = 'افتح «دوراتي» — أهلا بك'",
+      "const e = 'افتح مؤهّلاتك'",
       "notifyTrainerUser(id, { title: 'لم يُقبل تأهيلُك لدورة' })",
       "notifyStaff(id, { title: 'طلبُ تأهيل' })",
     ].join('\n')
     const sf = parse('sample.tsx', sample)
     const all = textsUnder(sf, sf).filter((t) => hitsOf(t.text).length > 0).map((t) => t.line)
-    expect(all, 'الماسحُ لا يرى النصَّ، أو يرى التعليق، أو لا يستثني اللسان').toEqual([2, 3, 4, 6, 7])
+    expect(all, 'الماسحُ لا يرى النصَّ، أو يرى التعليق، أو لا يرى اسمَ اللسان القديم').toEqual([2, 3, 4, 6, 7, 8])
     expect(trainerNotifyTexts(sf).filter((t) => hitsOf(t.text).length > 0).map((t) => t.line),
-      'لا يُفرَز جرسُ المدرّب من جرس الفريق').toEqual([6])
+      'لا يُفرَز جرسُ المدرّب من جرس الفريق').toEqual([7])
   })
 
   it('① لا في البوّابة ولا الدليل ولا رسائل القرار', () => {
@@ -141,6 +141,29 @@ describe('ولا «نؤهّلك» في نصٍّ يقرؤه المدرّب', () =
     }
     expect(calls, 'لم يُقرأ جرسٌ واحدٌ للمدرّب — فالحارسُ يقيس الفراغ').toBeGreaterThan(10)
     expect(hits, `«نؤهّلك» وأخواتُها في جرس المدرّب:\n${hits.join('\n')}`).toEqual([])
+  })
+
+  /* وأزرارُ البريد التي تفتح البوّابة — «افتح مؤهّلاتك» كانت أربعا. والجدولُ
+     يجمع وجهاتِ الجماهير الثلاثة، فيُقرأ منه ما وجهتُه `/trainer` وحدَه: زرُّ
+     «افتح طلبَ التأهيل» يفتح شاشةَ الإدارة، ولغتُها لغةُ الفريق. */
+  it('② ولا في زرّ بريدٍ يفتح بوّابةَ المدرّب', () => {
+    const file = join(root, 'src/application/notifications/destinations.ts')
+    const sf = parse(file, readFileSync(file, 'utf8'))
+    const ctas: { text: string; line: number }[] = []
+    const visit = (n: ts.Node) => {
+      if (ts.isObjectLiteralExpression(n)) {
+        const prop = (name: string) => n.properties.find(
+          (p): p is ts.PropertyAssignment => ts.isPropertyAssignment(p) && p.name.getText(sf) === name)
+        const path = prop('path')?.initializer
+        const cta = prop('ctaAr')
+        if (path && ts.isStringLiteralLike(path) && path.text.startsWith('/trainer') && cta) ctas.push(...textsUnder(sf, cta))
+      }
+      ts.forEachChild(n, visit)
+    }
+    visit(sf)
+    expect(ctas.length, 'لم يُقرأ زرٌّ واحدٌ يفتح البوّابة — فالحارسُ يقيس الفراغ').toBeGreaterThan(10)
+    const hits = ctas.flatMap((t) => hitsOf(t.text).map((h) => `destinations.ts:${t.line} «${h}»`))
+    expect(hits, `«نؤهّلك» وأخواتُها في زرّ بريد المدرّب:\n${hits.join('\n')}`).toEqual([])
   })
 
   it('③ وخبرُ اعتماد الشعبة يقول «أُضيفت إلى دوراتك» لا «صرتَ مؤهَّلا»', () => {

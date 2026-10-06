@@ -32,7 +32,7 @@ const SERVICE = code('server/services/trainer-materials.service.ts')
 
 describe('① «مؤهّلاتي» تدلّ على «شعبي»', () => {
   it('السطرُ في فرع القائمة، ومعه رابطُ «شعبي»', () => {
-    const list = QUALS.slice(QUALS.indexOf('ariaLabel="حالُ مؤهّلاتي"') - 1200, QUALS.indexOf('ariaLabel="حالُ مؤهّلاتي"'))
+    const list = QUALS.slice(QUALS.indexOf('ariaLabel="حالُ دوراتي"') - 1200, QUALS.indexOf('ariaLabel="حالُ دوراتي"'))
     expect(list, 'لا يقول أين يُعبَّأ محتوى الدورة').toMatch(/تعبّئه في «شعبي»/)
     expect(list, 'لا رابطَ إلى «شعبي»').toMatch(/<Button as=\{Link\} to="\/trainer\/board"/)
   })
