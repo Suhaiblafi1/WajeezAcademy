@@ -18,6 +18,7 @@ import { Megaphone } from "lucide-react";
 import Modal from "@/components/Modal";
 import { Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
+import AnnouncementBody from "@/components/AnnouncementBody";
 import { apiGet, apiPost } from "@/services/api";
 import { fmtDateAr, fmtDateTimeAr } from "@/utils/format";
 import { announcementToShow, laterKey } from "@/application/trainer/announcement";
@@ -108,11 +109,8 @@ export default function TrainerAnnouncement() {
           من إدارة الأكاديمية · {fmtDateAr(shown.sentAt)}
         </p>
         <h2 className="mt-2 text-lg font-black leading-8">{shown.titleAr}</h2>
-        <div className="mt-4 space-y-3 text-read leading-7">
-          {shown.bodyAr.split(/\n{2,}/).map((para, i) => (
-            <p key={i} className="whitespace-pre-line">{para}</p>
-          ))}
-        </div>
+        {/* وروابطُه تُضغط — ويُفتح كلٌّ في لسانٍ آخر، فتبقى النافذةُ حتّى «قرأتُه» */}
+        <AnnouncementBody text={shown.bodyAr} className="mt-4" />
         {error && <p role="alert" className="mt-4 text-read font-bold text-danger-ink">{error}</p>}
         {shown.readAt ? (
           <div className="mt-6 flex flex-wrap items-center gap-3">
