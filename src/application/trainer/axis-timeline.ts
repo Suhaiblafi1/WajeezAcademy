@@ -54,9 +54,11 @@ export interface WorkbookPart {
   whereAr: string
 }
 
-/** كرّاسةُ الشعبة — واحدةٌ للمحاور كلِّها، ومعها أين يبدأ كلُّ محورٍ فيها */
+/** كرّاسةُ الشعبة — واحدةٌ للمحاور كلِّها، ومعها أين يبدأ كلُّ محورٍ فيها (اختياريّا منذ
+    ٦ أكتوبر ٢٠٢٦)، وإقرارُ المدرّب أنّها على قالب وجيز — `cohort-workbooks.ts` */
 export interface CohortWorkbook extends SlotWorkbook {
   parts?: WorkbookPart[] | null
+  onTemplate?: boolean | null
 }
 
 /** أقصى طولٍ لموضع المحور — «ص ١٢–١٨» أو «القسم الثاني» لا فقرة */

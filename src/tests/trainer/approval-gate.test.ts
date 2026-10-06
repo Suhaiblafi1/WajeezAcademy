@@ -40,7 +40,8 @@ const complete = (over: Partial<Parameters<typeof buildChecklist>[0]> = {}) => b
     modules: [{ moduleId: 'M0', titleAr: 'محور', bodyAr: body }],
     resources: [{ title: 'كرّاسة', url: 'https://x.test/a' }],
     slots: [{ startsOn: PERIOD.startsOn, endsOn: PERIOD.endsOn, moduleIds: ['M0'] }],
-    workbook: { url: 'https://x.test/wb', parts: [{ moduleId: 'M0', whereAr: 'ص 1' }] },
+    /* وإقرارُ قالب وجيز — المدرّبُ هنا جديد (٦ أكتوبر ٢٠٢٦) */
+    workbook: { url: 'https://x.test/wb', parts: [{ moduleId: 'M0', whereAr: 'ص 1' }], onTemplate: true },
     /* ومستواها — شرطُ الخطوة الأولى ما دامت الخطّةُ في يده (٦ أكتوبر ٢٠٢٦) */
     level: { from: 'beginner', to: 'beginner' },
     /* ولمن هي وماذا يريد متعلّمُها — شرطُ الخطوة الأولى كذلك (٦ أكتوبر ٢٠٢٦) */

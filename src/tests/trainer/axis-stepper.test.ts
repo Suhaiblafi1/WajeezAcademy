@@ -131,24 +131,32 @@ describe('② المحاورُ داخلَ مواعيدها', () => {
 
 /* كانت لكلّ موعدٍ كرّاسة، وصارت واحدةً للدورة ومعها موضعُ كلّ محورٍ فيها
    (قرارُ صاحب المنصّة، ٣٠ سبتمبر ٢٠٢٦). */
-describe('③ الكرّاسة — واحدةٌ للدورة', () => {
+/* وصارت خيارين (٦ أكتوبر ٢٠٢٦): للدورة أو لكلّ محور — وحرّاسُ الخيارين ومجموعاتِ
+   المحاور وقالبِ وجيز في `cohort-workbooks.test.ts`. وهنا كرّاسةُ الدورة وملفُّها. */
+describe('③ الكرّاسة — كرّاسةُ الدورة وملفُّها', () => {
   const block = stageBlock('workbooks', 'sessions')
+  const FILE = WS.slice(WS.indexOf('function WorkbookFile('), WS.indexOf('function TemplateConfirm('))
 
-  it('⚠️ كرّاسةٌ واحدةٌ يُحكم عليها بقاعدة الخادم — لا بطاقةٌ لكلّ موعد', () => {
+  it('⚠️ كرّاسةُ الدورة يُحكم عليها بقاعدة الخادم — لا بطاقةٌ لكلّ موعد', () => {
     expect(block, 'عادت كرّاسةٌ لكلّ موعد').not.toContain('slots.map(')
     expect(block).toContain('workbookDone(wb)')
-    expect(block).toMatch(/purpose="plan_resource"/)
-    expect(block).toMatch(/refId="workbook-cohort"/)
-    expect(block).toContain('aria-label="رابطُ الكرّاسة"')
+    expect(block).toMatch(/<WorkbookFile cohortId=\{ws\.cohort\.id\} refId="workbook-cohort"/)
   })
 
   it('⚠️ ولكلّ محورٍ خانةُ موضعه فيها — فيتبعها المتعلّمُ محورا محورا', () => {
     expect(block).toMatch(/content\.modules\.map\(\(m, i\) =>[\s\S]*?aria-label=\{`أين يبدأ المحور \$\{i \+ 1\} في الكرّاسة`\}[\s\S]*?onChange=\{\(e\) => setWhere\(m\.moduleId, e\.target\.value\)\}/)
   })
 
+  /* «PDF only but the template is Word» — صاحبُ المنصّة (٦ أكتوبر ٢٠٢٦) */
+  it('⚠️ والرفعُ بغرض «workbook» — PDF وحدَه — لا «plan_resource»', () => {
+    expect(FILE, 'لا يُرفع بغرض الكرّاسة').toMatch(/purpose="workbook"/)
+    expect(FILE, 'عاد الرفعُ مصدرا يقبل Word والشرائح').not.toMatch(/purpose="plan_resource"/)
+  })
+
   it('⚠️ ولا يجتمع ملفٌّ ورابط — الرفعُ يمحو الرابط، والرابطُ يُخفي الرفع', () => {
-    expect(block).toContain('setWorkbook({ ...next, url: null })')
-    expect(block).toMatch(/!\(wb\?\.url \?\? ""\)\.trim\(\) && \(/)
+    expect(FILE).toContain('onChange({ ...next, url: null })')
+    expect(FILE).toMatch(/!\(value\.url \?\? ""\)\.trim\(\) && \(/)
+    expect(FILE).toContain('aria-label={`رابطُ ${name}`}')
   })
 })
 

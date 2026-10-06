@@ -106,7 +106,7 @@ async function carried(sourcesAr: string, outcomeAr = 'يستطيع كذا') {
 
 type Resource = { title: string; url: string | null }
 type Workspace = {
-  plan: { content: { modules: { outcomeAr: string | null }[]; resources: Resource[]; level?: unknown; audience?: unknown } } | null
+  plan: { content: { modules: { moduleId: string; outcomeAr: string | null }[]; resources: Resource[]; level?: unknown; audience?: unknown; workbookMode?: unknown; workbooks?: unknown; workbook?: unknown } } | null
   checklist: { key: string; labelAr: string; done: boolean }[]
 }
 
@@ -122,6 +122,10 @@ describe('ما نُقل من اللوح القديم', () => {
       ...content, summaryAr: 'نبذةٌ عن الشعبة', startsOn: '2027-03-07', endsOn: '2027-04-03',
       level: { from: 'beginner', to: 'beginner' },
       audience: { stages: ['fresh_graduate'], goals: ['first_job'] },
+      /* والكرّاسةُ لكلّ محور، وإقرارُ القالب (٦ أكتوبر ٢٠٢٦) */
+      workbookMode: 'modules',
+      workbooks: [{ moduleIds: [content.modules[0].moduleId], url: 'https://x.test/m1.pdf', onTemplate: true }],
+      workbook: { url: 'https://x.test/wb.pdf', onTemplate: true },
     })
     expect(saved.statusCode, `رُدّ الحفظُ بمصدرٍ بلا رابطٍ لم يلمسه المدرّب: ${saved.body}`).toBe(200)
     const renamed = await t.call('PATCH', `/api/trainer/cohorts/${t.cohortId}`, { title: 'شعبتي الأولى في النقل' })
@@ -133,6 +137,11 @@ describe('ما نُقل من اللوح القديم', () => {
     /* والمستوى يعبر المخطّطَ إلى القاعدة — وكان المخطّطُ يُسقط ما لا يعرفه صامتا (٦ أكتوبر ٢٠٢٦) */
     expect(after.plan!.content.level, 'اختار المدرّبُ المستوى ولم يُحفظ').toEqual({ from: 'beginner', to: 'beginner' })
     expect(after.plan!.content.audience, 'اختار لمن هي وهدفَها ولم يُحفظا').toEqual({ stages: ['fresh_graduate'], goals: ['first_job'] })
+    /* والطريقةُ وكرّاساتُ المحاور والإقرارُ تعبر كذلك */
+    expect(after.plan!.content.workbookMode, 'اختار لكلّ محورٍ كرّاستَه ولم يُحفظ').toBe('modules')
+    expect(after.plan!.content.workbooks, 'ضاعت كرّاساتُ المحاور')
+      .toEqual([{ moduleIds: [content.modules[0].moduleId], url: 'https://x.test/m1.pdf', onTemplate: true }])
+    expect(after.plan!.content.workbook, 'ضاع إقرارُ القالب').toMatchObject({ onTemplate: true })
   })
 
   it('② والمصدرُ بلا رابطٍ يمنع الإرسالَ وحدَه ويُسمّى — ثمّ يُكمَل فيرتفع', async () => {

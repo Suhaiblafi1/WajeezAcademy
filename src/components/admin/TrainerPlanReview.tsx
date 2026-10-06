@@ -35,6 +35,8 @@ import { cohortDayAr } from "@/application/learning/cohort-gate";
 
 interface TrainerPlan {
   id: string; status: string; reviewerNote: string | null; trainerName: string | null;
+  /* رفع مدرّبُها كرّاسةً قبل قالب وجيز — فالقالبُ له مستحسَنٌ لا إلزاميّ (٦ أكتوبر ٢٠٢٦) */
+  workbookBeforeTemplate?: boolean;
   /* ملاحظاتُ الردّ لكلّ خطوة — تبقى بعد إعادة الإرسال ليُقابَل بها ما عُدّل (٣ب) */
   reviewerNotes?: ReviewNotes;
   submittedAt: string | null; trainerConfirmedAt: string | null; reviewedAt: string | null;
@@ -194,6 +196,14 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
                 </p>
                 <p className="mt-1 text-read leading-6 text-foreground">
                   الهدف: {goal ? <b>{goal}</b> : unset}
+                </p>
+                {/* وقالبُ الكرّاسة: إلزاميٌّ للجدد، ومستحسَنٌ لمن رفع كرّاسةً قبله (٦ أكتوبر ٢٠٢٦) —
+                    وإقرارُه بجانب كلّ كرّاسةٍ في بطاقة المنهج تحت */}
+                <p className="mt-1 text-read leading-6 text-foreground">
+                  قالبُ الكرّاسة:{" "}
+                  {trainerPlan.workbookBeforeTemplate
+                    ? <><b>مستحسَنٌ لهذا المدرّب</b> <span className="text-muted-foreground">— رفع كرّاسةً قبل القالب</span></>
+                    : <b>إلزاميٌّ لهذا المدرّب</b>}
                 </p>
               </>
             );

@@ -17,6 +17,7 @@ import { REVIEW_SECTIONS, STAGE_LABELS, type ReviewNotes, type ReviewSection } f
 import { resourceCategory } from './plan-overlay'
 import { asLevelRange, levelRangeAr } from './cohort-level'
 import { asAudience, goalsAr, stagesAr } from './cohort-audience'
+import { groupLabelAr, workbookGroups, workbookModeOf, type ModuleWorkbook } from './cohort-workbooks'
 
 interface DiffModule {
   moduleId: string
@@ -55,8 +56,11 @@ interface DiffPlan {
   modules?: DiffModule[] | null
   slots?: DiffSlot[] | null
   resources?: DiffResource[] | null
-  /** كرّاسةُ الشعبة الواحدة وخريطتُها (٣٠ سبتمبر ٢٠٢٦) */
-  workbook?: (NonNullable<DiffSlot['workbook']> & { parts?: { moduleId: string; whereAr?: string | null }[] | null }) | null
+  /** كرّاسةُ الشعبة الواحدة وخريطتُها (٣٠ سبتمبر ٢٠٢٦)، وإقرارُ القالب (٦ أكتوبر ٢٠٢٦) */
+  workbook?: (NonNullable<DiffSlot['workbook']> & { parts?: { moduleId: string; whereAr?: string | null }[] | null; onTemplate?: boolean | null }) | null
+  /** أو لكلّ محورٍ كرّاستُه (٦ أكتوبر ٢٠٢٦) — `cohort-workbooks.ts` */
+  workbookMode?: string | null
+  workbooks?: ModuleWorkbook[] | null
 }
 
 export interface PlanDiffSection { section: ReviewSection; label: string; lines: string[] }
@@ -144,21 +148,55 @@ const workbookKey = (w: DiffSlot['workbook']) => {
   return source ? `${source}|${text(w.title) ?? ''}` : null
 }
 
+const MODE_AR = { course: 'واحدةٌ للدورة', modules: 'لكلّ محورٍ كرّاستُه' } as const
+
 function workbookLines(a: DiffPlan, b: DiffPlan): string[] {
   const out: string[] = []
-  /* كرّاسةُ الدورة الواحدة، ثمّ موضعُ كلّ محورٍ فيها */
-  const ca = workbookKey(a.workbook ?? null)
-  const cb = workbookKey(b.workbook ?? null)
-  if (ca !== cb) out.push(!ca ? 'أُضيفت كرّاسةُ الدورة' : !cb ? 'حُذفت كرّاسةُ الدورة' : 'تغيّرت كرّاسةُ الدورة')
-  const pos = new Map(list(b.modules).map((m, i) => [m.moduleId, i + 1]))
-  const whereOf = (p: DiffPlan) => new Map(list(p.workbook?.parts).map((x) => [x.moduleId, text(x.whereAr)]))
-  const wa = whereOf(a)
-  const wb = whereOf(b)
-  for (const m of list(b.modules)) {
-    const before = wa.get(m.moduleId) ?? null
-    const after = wb.get(m.moduleId) ?? null
-    if (before !== after && (before || after)) {
-      out.push(`موضعُ المحور ${pos.get(m.moduleId)} في الكرّاسة: ${before ?? '—'} ← ${after ?? '—'}`)
+  /* ═══ الطريقةُ أوّلا (٦ أكتوبر ٢٠٢٦) ═══
+     وتُقارَن كرّاساتُ الطريقة التي تصل المتعلّمَ الآن بما كان منها يصل قبلها —
+     فمن بدّل لا يُقال عنه «حُذفت كرّاسةُ الدورة» وهي محفوظةٌ لم تُمسّ. */
+  const ma = workbookModeOf(a)
+  const mb = workbookModeOf(b)
+  if (ma !== mb) out.push(`طريقةُ الكرّاسة: ${MODE_AR[ma]} ← ${MODE_AR[mb]}`)
+  const ids = list(b.modules).map((m) => m.moduleId)
+  if (mb === 'course') {
+    /* كرّاسةُ الدورة الواحدة، ثمّ موضعُ كلّ محورٍ فيها */
+    const before = ma === 'course' ? a.workbook ?? null : null
+    const ca = workbookKey(before)
+    const cb = workbookKey(b.workbook ?? null)
+    if (ca !== cb) out.push(!ca ? 'أُضيفت كرّاسةُ الدورة' : !cb ? 'حُذفت كرّاسةُ الدورة' : 'تغيّرت كرّاسةُ الدورة')
+    if (cb && (before?.onTemplate === true) !== (b.workbook?.onTemplate === true)) {
+      out.push(b.workbook?.onTemplate === true ? 'كرّاسةُ الدورة: أقرّ بأنّها على قالب وجيز' : 'كرّاسةُ الدورة: سُحب إقرارُ القالب')
+    }
+    const pos = new Map(ids.map((id, i) => [id, i + 1]))
+    const whereOf = (p: DiffPlan | null) => new Map(list(p?.workbook?.parts).map((x) => [x.moduleId, text(x.whereAr)]))
+    const wa = whereOf(ma === 'course' ? a : null)
+    const wb = whereOf(b)
+    for (const m of list(b.modules)) {
+      const was = wa.get(m.moduleId) ?? null
+      const is = wb.get(m.moduleId) ?? null
+      if (was !== is && (was || is)) {
+        out.push(`موضعُ المحور ${pos.get(m.moduleId)} في الكرّاسة: ${was ?? '—'} ← ${is ?? '—'}`)
+      }
+    }
+  } else {
+    /* كرّاساتُ المحاور — تُعرف المجموعةُ بمحاورها، فالجمعُ والفصلُ يُقالان إضافةً وحذفا */
+    const keyOf = (g: ModuleWorkbook) => g.moduleIds.join('+')
+    const old = new Map((ma === 'modules' ? workbookGroups(a.workbooks, ids) : []).map((g) => [keyOf(g), g]))
+    const now = workbookGroups(b.workbooks, ids)
+    for (const g of now) {
+      const label = `كرّاسةُ ${groupLabelAr(g, ids)}`
+      const was = old.get(keyOf(g))
+      const before = workbookKey(was ?? null)
+      const after = workbookKey(g)
+      if (before !== after) out.push(!before ? `أُضيفت ${label}` : !after ? `حُذفت ${label}` : `تغيّرت ${label}`)
+      if (after && (was?.onTemplate === true) !== (g.onTemplate === true)) {
+        out.push(g.onTemplate === true ? `${label}: أقرّ بأنّها على قالب وجيز` : `${label}: سُحب إقرارُ القالب`)
+      }
+    }
+    const kept = new Set(now.map(keyOf))
+    for (const [k, g] of old) {
+      if (!kept.has(k) && workbookKey(g)) out.push(`حُذفت كرّاسةُ ${groupLabelAr(g, ids)}`)
     }
   }
   const sa = list(a.slots)

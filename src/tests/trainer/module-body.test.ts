@@ -144,8 +144,17 @@ describe('د-٣ · المصدرُ ملفّا', () => {
     expect(fileBlockerAr('plan_resource', PPTX)).toBeNull()
   })
 
-  it('والغرضان هما ما في المخطَّط — لا ثالثَ يُخترع', () => {
-    expect([...FILE_PURPOSES].sort()).toEqual(['module_body', 'plan_resource'])
+  /* وثالثُها الكرّاسة (٦ أكتوبر ٢٠٢٦): «PDF only but the template is Word» */
+  it('والأغراضُ هي ما في المخطَّط — لا رابعَ يُخترع', () => {
+    expect([...FILE_PURPOSES].sort()).toEqual(['module_body', 'plan_resource', 'workbook'])
+  })
+
+  it('⚠️ والكرّاسةُ PDF وحدَه — لا Word ولا شرائح ولا صور', () => {
+    expect(acceptedMimes('workbook')).toEqual(['application/pdf'])
+    expect(fileBlockerAr('workbook', 'application/pdf')).toBeNull()
+    expect(fileBlockerAr('workbook', PPTX), 'شريحةٌ تمرّ كرّاسة').toBeTruthy()
+    expect(fileBlockerAr('workbook', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'), 'Word يمرّ كرّاسة')
+      .toContain('PDF')
   })
 
   it('وما يُعرض في الصفحة يختلف بالغرض', () => {

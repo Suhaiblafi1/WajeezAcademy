@@ -33,7 +33,8 @@ import { splitLessons } from "@/application/content/lesson-split";
 import { parseChecks } from "@/application/content/module-checks";
 import { fmtDate, fmtDateTime } from "@/application/text/format-ar";
 import { referencesByIds } from "@/data/methodology";
-import { overlayModules, readTypedLinks, resourceKind, type LearnerCohortWorkbook, type LearnerSlot, type LearnerWorkbook } from "@/application/trainer/plan-overlay";
+import { overlayModules, readTypedLinks, resourceKind, type LearnerCohortWorkbook, type LearnerModuleWorkbook, type LearnerSlot, type LearnerWorkbook } from "@/application/trainer/plan-overlay";
+import { groupLabelAr } from "@/application/trainer/cohort-workbooks";
 import { dayLabelAr } from "@/application/trainer/axis-timeline";
 import { whenAr } from "@/application/learning/cohort-gate";
 import { RESOURCE_META } from "@/components/resource-kind-meta";
@@ -115,6 +116,8 @@ export default function StageWork({
   const access = detail.access?.state ?? "open";
   const slots = detail.cohort.trainerPlan?.slots ?? [];
   const cohortWorkbook = detail.cohort.trainerPlan?.workbook ?? null;
+  /* أو كرّاساتُ المحاور — كلٌّ بموعد أسبق محاورها (٦ أكتوبر ٢٠٢٦) */
+  const moduleWorkbooks = detail.cohort.trainerPlan?.moduleWorkbooks ?? [];
   /* وما لا رابطَ له يسقط هنا: التسجيلُ يصل من بابَين — مرفوعٌ عندنا أو
      واصلٌ من Zoom — وقراءةُ أحدِهما وحدَها تُظهر سطرا يفتح على `#`. */
   const recordings = openableRecordings(detail.cohort.sessions.flatMap((s) => s.recordings));
@@ -199,9 +202,13 @@ export default function StageWork({
 
         <div className="mt-4">
           {tab === "lessons" && cohortWorkbook && <CohortWorkbookCard wb={cohortWorkbook} modules={modules} />}
+          {tab === "lessons" && slots.length === 0 && moduleWorkbooks.length > 0 && (
+            <ModuleWorkbooksCard list={moduleWorkbooks} modules={modules} />
+          )}
           {tab === "lessons" && (slots.length > 0 ? (
             <Timeline
               workbook={cohortWorkbook}
+              moduleWorkbooks={moduleWorkbooks}
               slots={slots}
               modules={modules}
               doneModules={doneModules}
@@ -600,8 +607,40 @@ function CohortWorkbookCard({ wb, modules }: { wb: LearnerCohortWorkbook; module
   );
 }
 
+/* ─────────── كرّاساتُ المحاور (٦ أكتوبر ٢٠٢٦) ───────────
+
+   لكلّ محورٍ كرّاستُه — أو لمحاورَ متجاورةٍ كرّاسةٌ واحدة — تُفتح أوّلَ يومٍ في
+   موعد أسبق محاورها. في كلّ موعدٍ تُذكر كرّاساتُ محاوره: رابطٌ إن فُتحت، ومتى
+   تُفتح إن لم تُفتح. وبلا مواعيدَ تُجمع في بطاقةٍ واحدةٍ أعلى الدروس. */
+function ModuleWorkbookLine({ w, ids }: { w: LearnerModuleWorkbook; ids: string[] }) {
+  const label = `كرّاسةُ ${groupLabelAr(w, ids)}`;
+  if (w.file) return <WorkbookLink wb={w.file} labelAr={label} />;
+  if (w.locked && w.opensAt) {
+    return (
+      <p className="mt-2 flex items-center gap-1.5 text-read text-muted-foreground">
+        <Lock className="h-3.5 w-3.5" aria-hidden="true" /> {label} تُفتح {whenAr(w.opensAt)}
+      </p>
+    );
+  }
+  return null;
+}
+
+function ModuleWorkbooksCard({ list, modules }: { list: LearnerModuleWorkbook[]; modules: LessonModule[] }) {
+  const ids = modules.map((m) => m.id);
+  return (
+    <Card tone="accent" className="mb-3 p-3">
+      <p className="flex items-center gap-1.5 text-read font-black text-foreground">
+        <BookMarked className="h-4 w-4 text-teal-light-ink" aria-hidden="true" /> كرّاساتُ المحاور
+      </p>
+      <p className="mt-0.5 text-read leading-6 text-muted-foreground">لكلّ محورٍ كرّاستُه — تُفتح أوّلَ يومٍ في موعده.</p>
+      {list.map((w) => <ModuleWorkbookLine key={w.moduleIds.join("+")} w={w} ids={ids} />)}
+    </Card>
+  );
+}
+
 function Timeline({
   workbook,
+  moduleWorkbooks,
   slots,
   modules,
   doneModules,
@@ -614,6 +653,7 @@ function Timeline({
   onOpenWork,
 }: {
   workbook: LearnerCohortWorkbook | null;
+  moduleWorkbooks: LearnerModuleWorkbook[];
   slots: LearnerSlot[];
   modules: LessonModule[];
   doneModules: Set<string>;
@@ -661,6 +701,10 @@ function Timeline({
                   <BookMarked className="h-3.5 w-3.5" aria-hidden="true" /> كرّاستُه تُفتح أوّلَ يومٍ في موعده
                 </p>
               ) : null}
+              {/* كرّاساتُ محاوره — والممتدّةُ على موعدين تُذكر في كليهما */}
+              {moduleWorkbooks
+                .filter((w) => w.moduleIds.some((id) => s.moduleIds.includes(id)))
+                .map((w) => <ModuleWorkbookLine key={w.moduleIds.join("+")} w={w} ids={modules.map((m) => m.id)} />)}
               <ul className="mt-2 space-y-2">{s.moduleIds.map(row)}</ul>
               {/* أين محاورُ هذا الموعد في كرّاسة الدورة — ويفتحها من هنا متى فُتحت */}
               {workbook && s.moduleIds.some((id) => workbook.parts.some((p) => p.moduleId === id)) && (

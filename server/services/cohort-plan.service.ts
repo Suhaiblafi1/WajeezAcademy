@@ -50,9 +50,10 @@ import {
   asPeriod, periodBounds, periodProblem, zonedDay, withinPeriod, type CohortPeriod,
 } from '../../src/application/trainer/cohort-period'
 import {
-  cohortWorkbookProblems, joinClosesAt, sessionEnd, sessionProblems, slotProblems, workbookProblems,
+  joinClosesAt, sessionEnd, sessionProblems, slotProblems, workbookProblems,
   type CohortWorkbook, type PlanSlot,
 } from '../../src/application/trainer/axis-timeline'
+import { templateRequired, workbooksProblems, type ModuleWorkbook, type WorkbookMode } from '../../src/application/trainer/cohort-workbooks'
 import { APPROVED_PLAN_STATUSES, PLAN_GATE_SELECT, awaitingTrainerPlan, planApprovedOnce } from './registration-window'
 import { AssessmentService } from './assessment.service'
 import { DEFAULT_CAPACITY } from './catalog-readiness.service'
@@ -116,6 +117,13 @@ export interface TrainerPlanContent {
       محورٍ فيه — فيتبعها المتعلّمُ محورا محورا. والقاعدةُ في
       `src/application/trainer/axis-timeline.ts` (`cohortWorkbookProblems`). */
   workbook?: CohortWorkbook | null
+  /** ═══ أو لكلّ محورٍ كرّاستُه — والمدرّبُ يختار (٦ أكتوبر ٢٠٢٦) ═══
+
+      `workbookMode` أيُّ الطريقتين تصل المتعلّم (وغيابُه «للدورة»)، و`workbooks`
+      كرّاساتُ المحاور — لكلٍّ محورٌ أو محاورُ متجاورة. والقاعدةُ في
+      `src/application/trainer/cohort-workbooks.ts`. */
+  workbookMode?: WorkbookMode | null
+  workbooks?: ModuleWorkbook[] | null
   /** ═══ مستوى الشعبة — من أين يبدأ متعلّمُها وإلى أين يصل (٦ أكتوبر ٢٠٢٦) ═══
 
       مستوًى أو مدًى من مستويين متجاورين أو الثلاثة. يُطالَب به ما دامت الخطّةُ
@@ -244,6 +252,9 @@ export function buildChecklist(input: {
   planStatus: PlanStatus
   /** اللحظةُ التي يُحكم بها — وما انعقد قبلها لا يُحاسَب (`sessionProblems`) */
   now?: Date
+  /** رفع المدرّبُ كرّاسةً قبل قالب وجيز (`TrainerProfile.workbookBeforeTemplate`) —
+      فالقالبُ له مستحسَنٌ لا إلزاميّ. وغيابُه «لم يرفع»: الإلزامُ هو الأصل */
+  workbookBeforeTemplate?: boolean
 }): ChecklistItem[] {
   const c = input.cohort
   /* ═══ الهُويّةُ صارت: اسمٌ وفصل ═══
@@ -319,10 +330,16 @@ export function buildChecklist(input: {
   const modulesDone = mods.length > 0 && mods.every(moduleBodyDone) && slotIssues.length === 0
   /* ⑦ كرّاسةٌ واحدةٌ للشعبة، وموضعُ كلّ محورٍ فيها (٣٠ سبتمبر ٢٠٢٦).
      وما أُرسل أو اعتُمد بكرّاسةٍ لكلّ موعدٍ قبل ذلك يمضي كما اعتُمد — ومتى
-     عُدّل صار مسودّةً فلزمته الكرّاسةُ الواحدة. */
+     عُدّل صار مسودّةً فلزمته الكرّاسةُ الواحدة.
+
+     ثمّ صارت خيارين (٦ أكتوبر ٢٠٢٦): للدورة أو لكلّ محور، وموضعُ المحور
+     اختياريّ، وإقرارُ قالب وجيز إلزاميٌّ ما دامت الخطّةُ في يده — إلّا لمن رفع
+     كرّاسةً قبل القالب. والحكمُ `workbooksProblems` نفسُها التي تقرؤها الشاشة. */
   const sentBefore = ['submitted', 'approved', 'published'].includes(input.planStatus)
   const workbooksDone = legacy
-    || cohortWorkbookProblems(input.content?.workbook, moduleIds).length === 0
+    || workbooksProblems(input.content, moduleIds, {
+      templateRequired: templateRequired(input.planStatus, input.workbookBeforeTemplate === true),
+    }).length === 0
     || (sentBefore && slots.length > 0 && workbookProblems(slots, moduleIds).length === 0)
   const resources = input.content?.resources ?? []
   /* والمصدرُ المربوطُ بمحورٍ حُذف من الخطّة لا يُفتح أبدا — يُسمّى ليُصلَح */
@@ -401,7 +418,7 @@ export function buildChecklist(input: {
       labelAr: legacy ? 'اكتب المحتوى النظريَّ لكلّ محور' : 'وزّع المحاورَ على مواعيدها واكتب محتواها النظريّ',
       done: modulesDone, optional: false,
     },
-    { key: 'workbooks', labelAr: 'ضع كرّاسةَ الدورة — واحدةً للمحاور كلِّها، وأين يبدأ كلُّ محورٍ فيها', done: workbooksDone, optional: false },
+    { key: 'workbooks', labelAr: 'ضع الكرّاسة — واحدةً للدورة أو لكلّ محورٍ كرّاستَه، على قالب وجيز', done: workbooksDone, optional: false },
     {
       key: 'sessions',
       labelAr: (linked
@@ -591,6 +608,7 @@ export class CohortPlanService {
       assessmentModuleIds: cohort.assessments.map((a) => a.moduleId),
       assessmentTypes: cohort.assessments.map((a) => a.type),
       planStatus: status,
+      workbookBeforeTemplate: profile.workbookBeforeTemplate,
     })
     /* الحدودُ المعلَنةُ للمسجَّلين الآن — تُقال بجانب مدّته إن افترقتا */
     const publicPeriod = cohort.startsAt && cohort.endsAt
@@ -663,6 +681,8 @@ export class CohortPlanService {
       /* والمعتمَدةُ التي يراجعها — ليقرأ ما غيّره عنها قبل أن يرسل (٣ج-٤) */
       approvedPlan,
       checklist,
+      /* رفع كرّاسةً قبل قالب وجيز — فالقالبُ له مستحسَنٌ لا إلزاميّ (٦ أكتوبر ٢٠٢٦) */
+      workbookBeforeTemplate: profile.workbookBeforeTemplate,
     }
   }
 
@@ -715,6 +735,7 @@ export class CohortPlanService {
         sessions: countableSessions(c.sessions), assessmentsCount: c._count.assessments,
         assessmentModuleIds: c.assessments.map((a) => a.moduleId),
         assessmentTypes: c.assessments.map((a) => a.type), planStatus,
+        workbookBeforeTemplate: profile.workbookBeforeTemplate,
       })
       /* والبطاقةُ تعدّ ما يملك المدرّبُ إنجازَه — لا «الاعتمادَ» ولا «الفصلَ»
          اللذين ليسا بيده. وكانت تعدّ الاعتمادَ، فبطاقةُ شعبةٍ تامّةٍ تقول
@@ -899,6 +920,7 @@ export class CohortPlanService {
       assessmentModuleIds: gateCohort.assessments.map((a) => a.moduleId),
       assessmentTypes: gateCohort.assessments.map((a) => a.type),
       planStatus: latest.status as PlanStatus,
+      workbookBeforeTemplate: profile.workbookBeforeTemplate,
     }))
     if (blocking.length) {
       throw new AuthError('stages_incomplete', `بقي قبل الإرسال: ${blocking.map((b) => b.labelAr).join(' · ')}`, 409)
@@ -1034,7 +1056,7 @@ export class CohortPlanService {
     if (!plan) return null
     const [trainer, cohort, approvedPlan] = await Promise.all([
       plan.trainerId
-        ? this.prisma.trainerProfile.findUnique({ where: { id: plan.trainerId }, select: { application: { select: { fullName: true } } } })
+        ? this.prisma.trainerProfile.findUnique({ where: { id: plan.trainerId }, select: { workbookBeforeTemplate: true, application: { select: { fullName: true } } } })
         : null,
       /* ═══ والمنهجُ كاملا للمعتمِد (المرحلة ٣) ═══
 
@@ -1072,6 +1094,8 @@ export class CohortPlanService {
       reviewerNotes: readReviewNotes(plan),
       submittedAt: plan.submittedAt, trainerConfirmedAt: plan.trainerConfirmedAt, reviewedAt: plan.reviewedAt,
       trainerName: trainer?.application.fullName ?? null,
+      /* ومن رفع كرّاسةً قبل القالب — فيُقال للمعتمِد إنّ القالبَ له مستحسَنٌ لا إلزاميّ */
+      workbookBeforeTemplate: trainer?.workbookBeforeTemplate ?? false,
       cohortTitle: cohort?.title ?? '',
       period: cohort ? resolvePeriod(content, cohort, plan.status as PlanStatus) : null,
       sessions: cohort?.sessions ?? [],

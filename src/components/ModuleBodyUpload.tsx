@@ -90,7 +90,8 @@ export default function ModuleBodyUpload({
         <Inset className="flex flex-wrap items-center gap-2.5">
           <FileText className="h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" />
           <span className="min-w-0 flex-1 break-words text-read leading-6">
-            {value.bodyFileName || "ملفّ"}
+            {/* <bdi>: اسمٌ عربيٌّ بامتدادٍ لاتينيّ — «المحور-١.pdf» — يتبعثر بلا عزل */}
+            <bdi>{value.bodyFileName || "ملفّ"}</bdi>
             <span className="text-muted-foreground">{" · "}{fileLabelAr(purpose, value.bodyFileMime)}</span>
           </span>
           <Button tone="ghost" icon={Trash2} onClick={remove} disabled={disabled || busy} className="min-h-9">

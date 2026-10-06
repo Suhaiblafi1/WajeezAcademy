@@ -53,7 +53,8 @@ const content: TrainerPlanContent = {
   ],
   slots: SLOTS,
   /* وكرّاسةُ الدورة الواحدة، وموضعُ كلّ محورٍ فيها (٣٠ سبتمبر ٢٠٢٦) */
-  workbook: { title: 'كرّاسةُ الدورة', url: 'https://x.test/wb.pdf', parts: IDS.map((moduleId, i) => ({ moduleId, whereAr: `ص ${i * 5 + 1}` })) },
+  /* وإقرارُ قالب وجيز — المدرّبُ هنا جديد (٦ أكتوبر ٢٠٢٦) */
+  workbook: { title: 'كرّاسةُ الدورة', url: 'https://x.test/wb.pdf', parts: IDS.map((moduleId, i) => ({ moduleId, whereAr: `ص ${i * 5 + 1}` })), onTemplate: true },
   /* ومستواها — شرطُ الخطوة الأولى ما دامت الخطّةُ في يده (٦ أكتوبر ٢٠٢٦) */
   level: { from: 'intermediate', to: 'intermediate' },
   /* ولمن هي وماذا يريد متعلّمُها — شرطُها كذلك (٦ أكتوبر ٢٠٢٦) */
