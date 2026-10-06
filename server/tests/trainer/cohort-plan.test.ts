@@ -77,6 +77,8 @@ const content: TrainerPlanContent = {
   slots: [{ startsOn: PERIOD.startsOn, endsOn: PERIOD.endsOn, moduleIds: ['C-BIZ-101-M1'] }],
   /* وكرّاسةُ الدورة الواحدة وموضعُ محورها فيها (٣٠ سبتمبر ٢٠٢٦) */
   workbook: { url: 'https://example.com/workbook.pdf', parts: [{ moduleId: 'C-BIZ-101-M1', whereAr: 'ص 1' }] },
+  /* ومستواها — شرطُ الخطوة الأولى ما دامت الخطّةُ في يده (٦ أكتوبر ٢٠٢٦) */
+  level: { from: 'beginner', to: 'intermediate' },
 }
 
 describe('ملكيّةُ الشعبة واعتمادُها', () => {

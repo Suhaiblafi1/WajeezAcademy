@@ -32,7 +32,8 @@ const meetings = SLOTS.map((s) => ({
 const complete = (over: Partial<Parameters<typeof buildChecklist>[0]> = {}, content: Record<string, unknown> = {}) => buildChecklist({
   cohort: { title: 'الدفعة الأولى' },
   period: PERIOD,
-  content: { kind: 'trainer', modules: mods, resources: [{ title: 'مرجع', url: 'https://x.test/a', moduleId: 'M3' }], slots: SLOTS, workbook: WORKBOOK, ...content } as never,
+  /* والمستوى شرطُ الخطوة الأولى ما دامت الخطّةُ في يده (٦ أكتوبر ٢٠٢٦) */
+  content: { kind: 'trainer', modules: mods, resources: [{ title: 'مرجع', url: 'https://x.test/a', moduleId: 'M3' }], slots: SLOTS, workbook: WORKBOOK, level: { from: 'intermediate', to: 'advanced' }, ...content } as never,
   sessions: meetings,
   assessmentsCount: 2,
   assessmentModuleIds: ['M1', 'M6'],

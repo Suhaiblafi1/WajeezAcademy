@@ -22,6 +22,7 @@ import type { CohortPeriod } from './cohort-period'
 import { resourceCategory, displayKind } from './plan-overlay'
 import { workbookDone, workbookWhere, type CohortWorkbook, type PlanSlot } from './axis-timeline'
 import { proposedTask, readTaskChange, taskReview, taskValues } from './task-approval'
+import { asLevelRange, levelRangeAr } from './cohort-level'
 
 export interface CurriculumInput {
   title: string
@@ -127,6 +128,8 @@ export interface CurriculumGroup {
 export interface CurriculumView {
   title: string
   summaryAr: string | null
+  /** مستوى الشعبة بجملته — «من مبتدئ إلى متوسّط» — أو `null` لما لم يُحدَّد (٦ أكتوبر ٢٠٢٦) */
+  levelAr: string | null
   period: CohortPeriod | null
   /** على خطّ المحاور — أم محورا محورا كما اعتُمد قبله */
   bySlot: boolean
@@ -181,6 +184,7 @@ export function axesLabel(ns: readonly number[]): string {
 export function curriculumView(input: CurriculumInput): CurriculumView {
   const c = (input.content ?? {}) as {
     summaryAr?: string | null; modules?: PlanModule[]; slots?: PlanSlot[]; resources?: PlanResource[]; workbook?: CohortWorkbook | null
+    level?: unknown
   }
   const cw = c.workbook ?? null
   const modules = Array.isArray(c.modules) ? c.modules : []
@@ -303,6 +307,7 @@ export function curriculumView(input: CurriculumInput): CurriculumView {
   return {
     title: input.title,
     summaryAr: text(c.summaryAr),
+    levelAr: levelRangeAr(asLevelRange(c.level)),
     period: input.period,
     bySlot: slots.length > 0,
     workbook: workbookDone(cw)
