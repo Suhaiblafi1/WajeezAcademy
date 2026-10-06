@@ -126,7 +126,7 @@ export class TrainerMarketingService {
 
   private assertTarget(targets: Target[], kind: string, id: string): Target {
     const t = targets.find((x) => x.kind === kind && x.id === id)
-    if (!t) throw new AuthError('unknown_target', 'ليست دورةً مؤهَّلا لها ولا مسارا لك', 404)
+    if (!t) throw new AuthError('unknown_target', 'ليست من دوراتك ولا مسارا لك', 404)
     return t
   }
 

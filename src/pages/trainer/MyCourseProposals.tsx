@@ -205,7 +205,7 @@ function stateOf(p: Proposal): { label: string; tone: "wait" | "good" | "bad"; s
       label: "نسختُك من دورةٍ قائمة",
       tone: "good",
       sayAr: `هذه عندنا دورةٌ قائمة${p.course?.titleAr ? ` — «${p.course.titleAr}»` : ""}. `
-        + "فاطلب من الإدارة تأهيلَك لها، ثمّ اقترِح اسمَك ومحاورَك عليها من ورشةِ شعبتك — "
+        + "فاطلب من الإدارة أن تضيفها إلى دوراتك، ثمّ اقترِح اسمَك ومحاورَك عليها من ورشةِ شعبتك — "
         + "فتصير نسختَك منها لا دورةً ثانية.",
     };
   }
@@ -228,7 +228,7 @@ function stateOf(p: Proposal): { label: string; tone: "wait" | "good" | "bad"; s
         + (p.course?.status === "published"
           ? " وهي منشورةٌ الآن"
           : " ولمّا تُنشر بعدُ")
-        + " — ويبقى تأهيلُك لها بيدِ الإدارة.",
+        + " — وإضافتُها إلى دوراتك بيدِ الإدارة.",
     };
   }
   if (p.status === "info_requested") {

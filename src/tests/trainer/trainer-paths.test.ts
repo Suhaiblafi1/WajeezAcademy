@@ -97,7 +97,7 @@ describe('ن · مسارُ المدرّب', () => {
 
   it('ون-١ · لا يُبنى إلّا من دوراته — وما خرج عنها يُقال قبل الإرسال', () => {
     const stray = pathBlockersAr({ ...OK, courseIds: ['C-AUT-101', 'C-XXX-999'] })
-    expect(stray.join(' '), 'مرّت دورةٌ لم يُؤهَّل لها').toMatch(/لستَ مؤهَّلا/)
+    expect(stray.join(' '), 'مرّت دورةٌ ليست من دوراته').toMatch(/ليست من دوراتك/)
     expect(stray.join(' '), 'لم يُسمَّ الرمزُ الذي منعه').toContain('C-XXX-999')
   })
 

@@ -3119,7 +3119,7 @@ export class TrainerReviewService {
         heading: 'هذا عقدُك للقراءة والتوقيع',
         blocks: [
           ...lead,
-          { kind: 'p', text: 'اقرأ الاتفاقية كاملة قبل التوقيع — وفيها ما يخصّ أتعابك والدورات التي أُهِّلتَ لها وحقوقَ الطرفين.' },
+          { kind: 'p', text: 'اقرأ الاتفاقية كاملة قبل التوقيع — وفيها ما يخصّ أتعابك والدوراتِ التي تدرّسها وحقوقَ الطرفين.' },
           /* والزرُّ يدلّ ولا يأمر — «اقرأ ووقّع» تُقرأ إلزاما بالتوقيع (#405) */
           { kind: 'cta', label: 'افتح الاتفاقيّة', href: args.url },
           { kind: 'callout', text: `الرابطُ صالحٌ حتّى ${fmtDateWith(args.expiresAt, { year: 'numeric', month: 'long', day: 'numeric' })}، ولك أن تعتذر عنه بلا حرج.` },
@@ -5587,8 +5587,8 @@ export class TrainerReviewService {
     if (!opts.quiet) {
       await this.notifyTrainerUser(profileId, {
         templateKey: 'trainer.qualified',
-        title: 'أُهِّلتَ لتدريس دورة',
-        body: `صرتَ مؤهَّلا لتدريس «${await this.courseTitleAr(courseId)}» — وتصلك شعبُها حين تُسنَد إليك.`,
+        title: 'أُضيفت دورةٌ إلى دوراتك',
+        body: `أُضيفت «${await this.courseTitleAr(courseId)}» إلى دوراتك — وتصلك شعبُها حين تُسنَد إليك.`,
         data: { courseId },
       })
     }
@@ -5782,8 +5782,8 @@ export class TrainerReviewService {
       /* والرفضُ خبرٌ أيضا: من طُلب تأهيلُه ولم يُقبل كان يبقى ينتظر بلا ردّ */
       await this.notifyTrainerUser(q.profileId, {
         templateKey: 'trainer.qualify.rejected',
-        title: 'لم يُقبل تأهيلُك لدورة',
-        body: `لم يُقبل تأهيلُك لتدريس «${await this.courseTitleAr(q.courseId)}» — والسبب: ${note}`,
+        title: 'لم نُضِف دورةً إلى دوراتك',
+        body: `لم نُضِف «${await this.courseTitleAr(q.courseId)}» إلى دوراتك — والسبب: ${note}`,
         data: { courseId: q.courseId },
       })
       return { qualification: row, assigned: false, assignNote: null as string | null }
@@ -5799,8 +5799,8 @@ export class TrainerReviewService {
     })
     await this.notifyTrainerUser(q.profileId, {
       templateKey: 'trainer.qualified',
-      title: 'أُهِّلتَ لتدريس دورة',
-      body: `صرتَ مؤهَّلا لتدريس «${await this.courseTitleAr(q.courseId)}» — وتصلك شعبُها حين تُسنَد إليك.`,
+      title: 'أُضيفت دورةٌ إلى دوراتك',
+      body: `أُضيفت «${await this.courseTitleAr(q.courseId)}» إلى دوراتك — وتصلك شعبُها حين تُسنَد إليك.`,
       data: { courseId: q.courseId },
     })
 
@@ -6077,7 +6077,7 @@ export class TrainerReviewService {
     await this.notifyTrainerUser(profile.id, {
       templateKey: 'trainer.publish.approved',
       title: 'اعتُمد ظهورُك للعامّة',
-      body: 'صار ملفُّك — اسمُك وسيرتُك وما أُهِّلتَ له — يظهر في صفحة مدرّبي الأكاديمية وفي صفحتك باسمك. راجِعه، فما فيه هو ما يقرؤه الناس.',
+      body: 'صار ملفُّك — اسمُك وسيرتُك ودوراتُك — يظهر في صفحة مدرّبي الأكاديمية وفي صفحتك باسمك. راجِعه، فما فيه هو ما يقرؤه الناس.',
     })
   }
 

@@ -153,11 +153,11 @@ export default function MyPaths() {
       <StaffField
         as="div"
         label={`دوراتُه (${draft.courseIds.length} من ${MAX_PATH_COURSES})`}
-        hint={`من دوراتك التي أُهِّلتَ لها — ${MIN_PATH_COURSES} فأكثر، والترتيبُ ترتيبُ اختيارك`}
+        hint={`من الدورات التي اخترناها لك — ${MIN_PATH_COURSES} فأكثر، والترتيبُ ترتيبُ اختيارك`}
       >
         {myCourses.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            لا دورةَ أُهِّلتَ لها بعد — والمسارُ يُبنى من دوراتك.
+            لم نخترْ لك دورةً بعد — والمسارُ يُبنى من دوراتك.
           </p>
         ) : (
           <div className="grid gap-1.5">
@@ -213,7 +213,7 @@ export default function MyPaths() {
       <Card className="mb-4">
         <h2 className="mb-1 text-read font-bold text-foreground">مسارٌ ترتّبه من دوراتك — باسمك</h2>
         <p className="text-sm leading-7 text-muted-foreground">
-          تختار دوراتٍ أُهِّلتَ لها، وترتّبها، وتسمّيها. وبعد اعتماد الإدارة يظهر على صفحة
+          تختار دوراتٍ من دوراتك، وترتّبها، وتسمّيها. وبعد اعتماد الإدارة يظهر على صفحة
           المسارات تحت <b>«مسارات أعدّها مدرّبونا المعتمدون»</b> باسمك وبالموسم الذي يعمل فيه.
           {" "}والسعرُ والسعةُ بيد الإدارة كما في شعبك.
         </p>

@@ -125,6 +125,14 @@ describe('④ وما تقوله يطابق مصدرَه', () => {
     expect(BRIEF.PAY_MODELS.filter((m) => m.recommended).map((m) => m.id)).toEqual(['per_seat'])
   })
 
+  /* «ضع هذا المثال عند الحدّ الأدنى» (٦ أكتوبر ٢٠٢٦): أرضيّةُ الشعبة التي قرّرها في
+     ١ أكتوبر خمسةَ عشرَ متعلّما بـ٢٢٥ دولارا (`seat-fee.ts`) — ١٥ للمقعد. ومثالٌ
+     يبدأ فوقها يَعِد المدعوَّ بأكثرَ ممّا يُتّفق عليه. */
+  it('ومثالُ الأجر يبدأ عند الحدّ الأدنى للمقعد — ١٥ دولارا', () => {
+    expect(BRIEF.PAY_EXAMPLE_USD.min, 'أدنى المثال فوق الحدّ الأدنى للمقعد (٢٢٥ ÷ ١٥)').toBe(225 / 15)
+    expect(BRIEF.PAY_EXAMPLE_AR).toContain(`بين ${225 / 15} و${BRIEF.PAY_EXAMPLE_USD.max} دولارا`)
+  })
+
   it('وحجمُ الكتالوج حجمُه', () => {
     const catalog = JSON.parse(readFileSync(join(root, 'src/data/catalog/core-catalog.v2.json'), 'utf8')) as {
       courses: unknown[]; launch_pathways: unknown[]
