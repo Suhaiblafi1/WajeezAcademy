@@ -292,8 +292,17 @@ type DetailTab = "dossier" | "courses" | "prep";
    وعدناه بيومٍ في بريده (`deferralMail`)، فيُقرأ في الصفّ وفي الملفّ: يومُه ما لم
    يحلّ، و«حلّ موعدُ التواصل» ذهبيّا حين يحلّ — فلا يمرّ الوعدُ ولا أحدَ يذكره.
    والعلّةُ في `application/trainer/deferral.ts`. */
-function FollowUpBadge({ status, at, now }: { status: string; at?: string | null; now: Date }) {
+function FollowUpBadge({ status, at, askedAt, now }: { status: string; at?: string | null; askedAt?: string | null; now: Date }) {
   if (status !== DEFERRED || !at) return null;
+  /* ومن سُئل بالبريد ولم يُجب يُقال عنه ذلك — فلا يُسأل ثانيةً بيدٍ لا تعلم */
+  if (askedAt) {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full border border-gold/50 px-3 py-1 text-fine font-bold text-gold-ink">
+        <CalendarClock className="h-3.5 w-3.5" aria-hidden="true" />
+        سُئل عن اهتمامه في {fmtDateLong(askedAt)} — ولم يُجب بعد
+      </span>
+    );
+  }
   const due = followUpDue({ status, deferredFollowUpAt: at }, now);
   return (
     <span className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-fine font-bold ${
@@ -325,6 +334,8 @@ interface AppRow {
   interviewOutcome: string | null;
   /** موعدُ التواصل مع المؤجَّل إلى الفصول القادمة — `null` لغيره (`deferral.ts`) */
   deferredFollowUpAt?: string | null;
+  /** ومتى سُئل آليّا عن اهتمامه حين حلّ موعدُه — `null` لمن لم يُسأل بعد */
+  deferredInterestAskedAt?: string | null;
   /** قراراتُ روابط التقييم بأسماء قائليها — أحدثُها أوّلا */
   reviewVerdicts: ReviewVerdict[];
   /** موعدُه المعلَّق — أقربُ قادمٍ بلا نتيجة، وإلّا فآخرُ ماضٍ ينتظر تسجيلَها */
@@ -341,6 +352,7 @@ interface AppDetail extends Record<string, unknown> {
   id: string; reference: string; status: string; fullName: string; email: string;
   /** موعدُ التواصل مع المؤجَّل — يُقرأ بجانب حالته في الملفّ كما في الصفّ */
   deferredFollowUpAt?: string | null;
+  deferredInterestAskedAt?: string | null;
   /** طلباتُ صاحبه السابقة — ومآلُ كلٍّ منها وملاحظتُه الداخليّة */
   priorApplications?: {
     reference: string; status: string; createdAt: string;
@@ -1357,7 +1369,7 @@ export default function TrainerApplications() {
                 <span className="rounded-full border border-teal/40 px-3 py-1 text-fine font-bold text-teal-light-ink">
                   {STATUS_LABELS[a.status] ?? a.status}
                 </span>
-                <FollowUpBadge status={a.status} at={a.deferredFollowUpAt} now={new Date()} />
+                <FollowUpBadge status={a.status} at={a.deferredFollowUpAt} askedAt={a.deferredInterestAskedAt} now={new Date()} />
               </div>
               {/* ═══ شريطُ الحقائق — خمسةُ أرقامٍ قبل أيّ نثر ═══
 
@@ -2280,7 +2292,7 @@ export default function TrainerApplications() {
 
                     وخافتةٌ لا ملوّنة: هي ما فعلناه نحن لا حالُ الطلب، فلا
                     تزاحم الحالةَ ونتيجةَ اللقاء في العين. */}
-                <FollowUpBadge status={a.status} at={a.deferredFollowUpAt} now={renderedAt} />
+                <FollowUpBadge status={a.status} at={a.deferredFollowUpAt} askedAt={a.deferredInterestAskedAt} now={renderedAt} />
                 <OutreachBadge app={a} now={renderedAt} />
               </span>
             </button>

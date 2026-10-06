@@ -995,6 +995,14 @@ model TrainerApplication {
   /// ويُقرأ في الطابور. ويُمحى حين يخرج الطلبُ من `deferred`: موعدٌ لم يعد
   /// قائما لا يُترك يَعِد بشيء. والعلّةُ في `application/trainer/deferral.ts`.
   deferredFollowUpAt   DateTime?
+  /// ═══ ومتابعتُه الآليّةُ حين يحلّ الموعد (٦ أكتوبر ٢٠٢٦) ═══
+  ///
+  /// اختار صاحبُ المنصّة من أربعة بدائل أن يقع الأمران معا: يُذكَّر الفريق، ويُسأل
+  /// المتقدّمُ بالبريد «أما زلتَ مهتمّا؟» بخيارين. فهذا متى سُئل — به لا يُسأل
+  /// مرّتين — وهاشُ رمزِ رابطِ جوابه (لا الرمزُ نفسُه، كـ`TrainerDossierLink`).
+  /// ويُمحيان مع الموعد حين يخرج الطلبُ من التأجيل: الرابطُ يُجاب مرّةً واحدة.
+  deferredInterestAskedAt   DateTime?
+  deferredInterestTokenHash String?  @unique
   email                String
   emailVerifiedAt      DateTime?
   emailVerifyTokenHash String?                       @unique // رمز تحقق البريد — هاش فقط
@@ -1083,6 +1091,8 @@ model TrainerApplication {
 
   @@index([status, createdAt])
   @@index([email])
+  /// المتابعةُ الآليّةُ تسأل عمّن حلّ موعدُه — كلَّ ساعة
+  @@index([deferredFollowUpAt])
 }
 
 model TrainerApplicationSpecialty {

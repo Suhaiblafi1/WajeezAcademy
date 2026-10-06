@@ -1035,9 +1035,12 @@ export class TrainerApplicationService {
          يُكتب حين يدخل الطلبُ التأجيلَ، ويُمحى حين يخرج منه — في القلب الذي تمرّ
          منه التحوّلاتُ كلُّها، لا في قرارٍ واحد: من سحب طلبَه المؤجَّلَ بيده، أو
          قُبل من بابٍ آخر، لا يبقى له في الطابور موعدٌ يَعِد بشيء. (`deferral.ts`) */
+      /* ومعه سؤالُ اهتمامه ورمزُ جوابه: يبدأان من جديدٍ مع كلّ تأجيل، ويُمحيان
+         بالخروج منه — فالرابطُ يُجاب مرّةً واحدةً ولا يعمل بعد أن تغيّر الطلب. */
+      const freshAsk = { deferredInterestAskedAt: null, deferredInterestTokenHash: null }
       const followUp = to === DEFERRED
-        ? { deferredFollowUpAt: deferredFollowUpAt(new Date()) }
-        : app.deferredFollowUpAt ? { deferredFollowUpAt: null } : {}
+        ? { deferredFollowUpAt: deferredFollowUpAt(new Date()), ...freshAsk }
+        : app.deferredFollowUpAt || app.deferredInterestTokenHash ? { deferredFollowUpAt: null, ...freshAsk } : {}
       await db.trainerApplication.update({ where: { id: applicationId }, data: { status: to, ...followUp } })
       await db.trainerStatusHistory.create({
         data: { applicationId, fromStatus: from, toStatus: to, actorId, note },

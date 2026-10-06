@@ -35,6 +35,7 @@ import type { ChangeGroup } from '../../src/application/trainer/contract-changel
 import { INTERVIEW_BOOKING_PAUSE, TRAINER_INTERVIEW } from '../../src/application/trainer/application-options'
 import { INTERVIEW_INVITATION, invitationAskAr } from '../../src/application/trainer/interview-invitation'
 import type { NoShowFollowup } from '../../src/application/trainer/no-show-followup'
+import { INTEREST_CHOICES } from '../../src/application/trainer/deferral'
 import { fmtDateWith } from '../../src/application/text/format-ar'
 import { MAX_EXTENSIONS } from '../../src/application/trainer/conditional-offer'
 import { ACADEMY_ZONE } from '../../src/application/trainer/cohort-period'
@@ -178,6 +179,41 @@ export function deferralMail(input: {
             { label: 'موعدُ تواصلنا', value: whenAr },
           ],
         },
+      ],
+    },
+  }
+}
+
+/* ═══ سؤالُ الاهتمام حين يحلّ موعدُ المؤجَّل (٦ أكتوبر ٢٠٢٦) ═══
+
+   الوعدُ في `deferralMail` كان: «نتواصل معك في يومِ كذا لنرى اهتمامَك». وهذه هي
+   الوفاءُ به — اختارها صاحبُ المنصّة مع تذكير الفريق معا (`deferral.ts`).
+
+   ومتنُها يقول الخيارين وما يقع بكلٍّ — من `INTEREST_CHOICES` نفسِها التي تعرضها
+   الصفحة، فلا تقول الرسالةُ شيئا وتفعل الصفحةُ غيرَه. والزرُّ يفتح الصفحةَ ولا يُجيب:
+   برامجُ البريد تفتح الروابطَ لتفحصها، والجوابُ ضغطةٌ هناك. */
+export function deferralFollowUpMail(input: {
+  fullName: string; reference: string; answerUrl: string
+}): DecisionMail {
+  return {
+    subject: `أما زلتَ مهتمّا بالتدريب معنا؟ (${input.reference})`,
+    doc: {
+      greetingName: input.fullName,
+      preheader: 'وعدناك أن نسألك اليوم عن اهتمامك بالفصول القادمة — والجوابُ بضغطةٍ واحدة.',
+      heading: 'أما زلتَ مهتمّا بالانضمام إلى الفصول القادمة؟',
+      blocks: [
+        {
+          kind: 'p',
+          text: 'قبل شهرين أجّلنا طلبك إلى الفصول القادمة، ووعدناك أن نتواصل معك اليومَ لنرى اهتمامَك. '
+            + 'فهل ما زلتَ مهتمّا بالتدريب معنا؟',
+        },
+        { kind: 'list', items: INTEREST_CHOICES.map((c) => `«${c.labelAr}»: ${c.whatAr}`) },
+        {
+          kind: 'cta', label: 'أجِبْ بضغطة', href: input.answerUrl,
+          caption: 'تُفتح صفحةٌ فيها الخياران — ولا يُحسب شيءٌ حتّى تضغط أحدَهما.',
+        },
+        { kind: 'p', text: 'ولك أن تردّ على هذه الرسالة بما شئت بدلَ الضغط — يقرؤها فريقُنا.' },
+        { kind: 'facts', rows: [{ label: 'رقم الطلب', value: input.reference }] },
       ],
     },
   }
