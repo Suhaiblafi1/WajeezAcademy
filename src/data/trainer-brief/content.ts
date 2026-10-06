@@ -18,6 +18,9 @@
      المسارات لا تمسّ الأوليين لأنّهما على المقعد لا على ما دُفع (`earnings.service.ts`).
    · **والنطاقُ مثالٌ بأمر صاحب المنصّة**: «لا تعطِ أسعارا… قل مثلا من 20 إلى 40
      دولارا، للعامّ وللرابط». فيُقال مثالا، ويُقال إنّ الرقمَ في الاتفاقيّة.
+     **وأدناه الحدُّ الأدنى لا ٢٠** (٦ أكتوبر ٢٠٢٦): أرضيّةُ الشعبة التي قرّرها في
+     ١ أكتوبر خمسةَ عشرَ متعلّما بـ٢٢٥ دولارا — أي ١٥ للمقعد. فمثالٌ يبدأ بعشرين
+     يَعِد بأكثرَ ممّا يُتّفق عليه، فقال: «ضع هذا المثال عند الحدّ الأدنى».
    · **ولا «عرضك»** — `offer-word.test.ts` يحرسها في كلّ نصّ.
    · **ولا «نؤهّلك»** — قرارُ صاحب المنصّة (٥ أكتوبر ٢٠٢٦): «لا تقل نؤهّلك لأنّها قد
      تُقرأ ندرّبك». فمدرّبٌ خبيرٌ يُدعى لا يُقال له إنّه سيُؤهَّل: «نختار لك دوراتٍ
@@ -43,14 +46,14 @@ import { TRAINER_GUIDE_PATH } from '../../application/trainer/trainer-guide'
 import { GUIDE_SECTIONS } from '../trainer-guide/content'
 import { FAMILY_INTRO, FEATURE_HERO, FEATURES, PRICE, type FeatureId } from '../about'
 
-export const BRIEF_UPDATED_AR = '5 أكتوبر 2026'
+export const BRIEF_UPDATED_AR = '6 أكتوبر 2026'
 
 /** حجمُ الكتالوج بالتقريب — ويقابله `trainer-brief.test.ts` بالكتالوج نفسِه */
 export const CATALOG_COURSES_ABOUT = 140
 export const CATALOG_PATHWAYS = 27
 
 /** مثالُ أجر المتعلّم الواحد بالدولار — نطاقٌ لا سعر */
-export const PAY_EXAMPLE_USD = { min: 20, max: 40 } as const
+export const PAY_EXAMPLE_USD = { min: 15, max: 40 } as const
 
 /** مسارُ التقديم — نموذجُ الانضمام العامّ */
 export const APPLY_PATH = '/join-trainer'

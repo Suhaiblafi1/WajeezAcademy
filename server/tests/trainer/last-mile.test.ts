@@ -154,7 +154,7 @@ describe('⑤ خبرٌ واحدٌ لكلّ قرار، وخبرٌ للتفعيل'
     expect(r1).toMatchObject({ status: 'approved', prep: { activated: false, waiting: 1 } })
     const b1 = await bellSince(t.userId, s1)
     expect(b1.map((n) => n.templateKey), 'وصله عن الاعتماد الواحد خبران').toEqual(['cohort.plan.decision'])
-    expect(b1[0]!.body).toContain('صرتَ مؤهَّلا لتدريس «دورةُ آخرِ المسار»')
+    expect(b1[0]!.body).toContain('أُضيفت «دورةُ آخرِ المسار» إلى دوراتك')
     /* ① والشعبةُ مسوّدةٌ علمُها منزول — لا «بمن التحق فيها» ولا «وصلت المسجَّلين» */
     expect(b1[0]!.body).toContain('لم تُفتح للتسجيل بعد')
     expect(b1[0]!.body).not.toMatch(/التحق|المسجَّلين/)

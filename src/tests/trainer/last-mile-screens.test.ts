@@ -235,7 +235,7 @@ describe('⑤أ خبرُ الاعتماد يقول ما وقع — والتفع�
 
   it('والتأهيلُ في الخبر نفسِه — وكلمةُ المعتمِد تُضاف ولا تمحو الخبر', () => {
     const m = planApprovedTrainerMsg({ ...base, registrationOpen: false, qualifiedCourseAr: 'دورةُ الإعداد', noteAr: 'أحسنت' })
-    expect(m.body.startsWith('صرتَ مؤهَّلا لتدريس «دورةُ الإعداد».')).toBe(true)
+    expect(m.body.startsWith('أُضيفت «دورةُ الإعداد» إلى دوراتك.')).toBe(true)
     expect(m.body).toContain('وكلمةُ الإدارة: أحسنت')
     expect(m.body).toContain('لم تُفتح للتسجيل بعد')
   })

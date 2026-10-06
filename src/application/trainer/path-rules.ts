@@ -62,7 +62,7 @@ export function pathBlockersAr(d: PathDraftLike): string[] {
      يُقال له قبل الإرسال. */
   const qualified = new Set(d.qualifiedCourseIds)
   const stray = [...unique].filter((c) => !qualified.has(c))
-  if (stray.length > 0) out.push(`لستَ مؤهَّلا لـ: ${stray.join(' · ')}`)
+  if (stray.length > 0) out.push(`ليست من دوراتك: ${stray.join(' · ')}`)
 
   /* ن-٣: موسمٌ من التقويم لا نصّ — والبطاقةُ تقول متى يُفتح التسجيلُ صدقا */
   if (!d.termId) out.push('اختر الموسمَ الذي يعمل فيه المسار')

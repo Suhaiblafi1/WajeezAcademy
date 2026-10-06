@@ -351,7 +351,7 @@ function CourseRow({
       </div>
 
       <p className="mt-1 text-read leading-6 text-muted-foreground">
-        {q ? <>النسخة {q.currentVersion} · أُهِّلت {fmtDate(q.qualifiedAt)}</> : "لا تأهيلَ قائمٌ لها الآن"}
+        {q ? <>النسخة {q.currentVersion} · من دوراتك منذ {fmtDate(q.qualifiedAt)}</> : "ليست من دوراتك الآن"}
         {lead?.cohort ? <> · شعبةُ «{lead.cohort.title}»{lead.cohort.startsAt ? ` تبدأ ${cohortDayAr(lead.cohort.startsAt, DAY_NUMERIC)}` : ""}</> : null}
       </p>
 

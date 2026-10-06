@@ -143,7 +143,7 @@ export interface TrainerApprovalFacts {
 
 export function planApprovedTrainerMsg(f: TrainerApprovalFacts): { title: string; heading: string; body: string } {
   const parts: string[] = []
-  if (f.qualifiedCourseAr) parts.push(`صرتَ مؤهَّلا لتدريس «${f.qualifiedCourseAr}».`)
+  if (f.qualifiedCourseAr) parts.push(`أُضيفت «${f.qualifiedCourseAr}» إلى دوراتك.`)
   parts.push(f.registrationOpen
     ? 'شعبتك جاهزة — تظهر لك من «شعبي» بمن التحق فيها.'
     : `${parts.length ? 'والشعبةُ' : 'الشعبةُ'} لم تُفتح للتسجيل بعد — تفتحها الأكاديمية، وتراها مفتوحةً في «شعبي» حين تُفتح.`)

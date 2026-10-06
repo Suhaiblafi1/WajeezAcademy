@@ -105,13 +105,13 @@ export default function Marketing() {
               دوراتي ومساراتي
             </h2>
             <p className="mb-4 text-sm leading-6 text-muted-foreground">
-              لكلّ دورةٍ أُهِّلتَ لها ولكلّ مسارٍ بنيتَه: فيديو يقنع بها، وملصقُها حين نصمّمه.
+              لكلّ دورةٍ اخترناها لك ولكلّ مسارٍ بنيتَه: فيديو يقنع بها، وملصقُها حين نصمّمه.
             </p>
             {data.targets.length === 0 ? (
               <EmptyState
                 icon={Megaphone}
                 titleAr="لا دورةَ ولا مسارَ بعد"
-                reasonAr="يظهر هنا ما أُهِّلتَ له من دورات وما بنيتَه من مسارات — ولكلٍّ فيديو وملصق."
+                reasonAr="يظهر هنا ما اخترناه لك من دورات وما بنيتَه من مسارات — ولكلٍّ فيديو وملصق."
                 actions={[{ to: "/trainer/qualifications", labelAr: "مؤهّلاتي" }]}
               />
             ) : (

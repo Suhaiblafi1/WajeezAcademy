@@ -104,7 +104,7 @@ export class TrainerChangeService {
     ])
     const qualified = qual?.status === 'qualified'
     if (!qualified && !assignment) {
-      throw new AuthError('not_qualified', 'لا يمكنك الاقتراح إلا على دورة مؤهل لها أو مسندة إليك', 403)
+      throw new AuthError('not_qualified', 'لا يمكنك الاقتراح إلا على دورةٍ من دوراتك أو مسندةٍ إليك', 403)
     }
   }
 
