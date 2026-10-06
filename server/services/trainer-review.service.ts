@@ -20,7 +20,7 @@ import {
   AMENDMENT_ACCEPT_REVOKE_REASON_AR, hasAmendmentPlaceholder, versionReadByRequester,
 } from '../../src/application/trainer/contract-resign'
 import {
-  bookingReminderMail, decisionMailFor, demoRequestMail, draftReminderMail, noShowFollowupMail, rejectionUndoneMail, withdrawalUndoneMail, conditionalOfferMail, finalApprovalMail, conditionReminderMail, conditionLapsedMail, signedCopyMail, amendmentAnsweredMail, contractApprovedMail,
+  bookingReminderMail, decisionMailFor, deferralMail, demoRequestMail, draftReminderMail, noShowFollowupMail, rejectionUndoneMail, withdrawalUndoneMail, conditionalOfferMail, finalApprovalMail, conditionReminderMail, conditionLapsedMail, signedCopyMail, amendmentAnsweredMail, contractApprovedMail,
   contractRevokedMail, contractUpdatedMail, contractResignMail, contractFinalReminderMail,
   contractLapsedMail, contractFactsRows, contractSealedLaterMail, finalApprovalBellAr, type FinalApprovalSeal } from './trainer-decision-mail'
 import {
@@ -29,6 +29,7 @@ import {
 import { MAIL_LINK_TTL_MS, MAIL_LINK_WINDOW_AR } from '../../src/application/links/mail-link-window'
 import { canRemindToBook, TRAINER_INTERVIEW, trainerInterviewUrl } from '../../src/application/trainer/application-options'
 import { REVIEW_OPEN_STATUSES } from '../../src/application/trainer/approval'
+import { deferredFollowUpAt } from '../../src/application/trainer/deferral'
 import { NO_SHOW } from '../../src/application/trainer/interview-outcome'
 import { OUTREACH_ACTIONS } from '../../src/application/trainer/outreach'
 import { INVITATION_ACTION } from '../../src/application/trainer/interview-invitation'
@@ -401,6 +402,8 @@ export class TrainerReviewService {
          أمسِ لا منذ شهر. فإن لم تكن له حركةٌ بعدُ فمنذ إتمامه، وإلّا فمنذ
          إنشائه — ومسوّدةٌ لم تُكمَل عمرُها من يوم فُتحت. */
       waitingSince: a.statusHistory[0]?.createdAt ?? a.phase2CompletedAt ?? a.createdAt,
+      /* وموعدُ التواصل مع المؤجَّل — يُقرأ في الصفّ فيُعرف من يُكلَّم ومتى (`deferral.ts`) */
+      deferredFollowUpAt: a.deferredFollowUpAt,
       emailVerified: !!a.emailVerifiedAt, phase2Done: !!a.phase2CompletedAt,
       documentsCount: a._count.documents, reviewsCount: a._count.reviews, interviewsCount: a._count.interviews,
       /* ويُقرأ به «طُلب منه درسٌ تجريبيّ» في `outreach.ts`: الطلبُ معلَّقٌ ما
@@ -874,7 +877,7 @@ export class TrainerReviewService {
   async decide(applicationId: string, actorId: string, action:
     | 'approve'
     | 'move_to_review' | 'request_info' | 'academic_review'
-    | 'conditionally_approve' | 'waitlist' | 'reject' | 'undo_reject' | 'undo_withdraw'
+    | 'conditionally_approve' | 'waitlist' | 'defer' | 'reject' | 'undo_reject' | 'undo_withdraw'
     | 'start_onboarding' | 'activate' | 'reinstate', note?: string,
     opts: DecideOptions = {}): Promise<{
     /* حالُ البريد حيث يكون للقرار بريدٌ يُقرأ خبرُه في الشاشة — و«تمّ» لا
@@ -909,6 +912,8 @@ export class TrainerReviewService {
       academic_review: 'academic_review',
       conditionally_approve: 'conditionally_approved',
       waitlist: 'waitlisted',
+      /* التأجيلُ إلى الفصول القادمة (٦ أكتوبر ٢٠٢٦) — وموعدُ التواصل يكتبه `transition` */
+      defer: 'deferred',
       reject: 'rejected',
       /* التراجعُ عن الردّ — يعود إلى الطابور من أوّله لا إلى ما رُدّ منه */
       undo_reject: 'under_review',
@@ -957,6 +962,15 @@ export class TrainerReviewService {
        نفسِها التي تمنع في `transition` — لا نسخةَ ثانية. */
     const transitionProblem = transitionProblemAr(app.status as TrainerStatus, targets[action])
     if (transitionProblem) throw new AuthError('bad_transition', transitionProblem, 409)
+    /* ═══ ولا يُؤجَّل المؤجَّلُ ثانيةً (٦ أكتوبر ٢٠٢٦) ═══
+
+       الخريطةُ تقبل الانتقالَ إلى الحالة نفسِها (لا أثرَ له)، والتأجيلُ له أثرٌ
+       خارجَ القاعدة: بريدٌ يقول «أجّلناك». فضغطةٌ ثانيةٌ — أو دفعةٌ جماعيّةٌ مرّت
+       على مؤجَّلٍ — كانت تُرسل إليه البريدَ مرّتين. والشاشةُ لا تعرض الزرَّ عليه
+       (`DECISIONS`)، وهذا لما يصل من غيرها. */
+    if (action === 'defer' && app.status === 'deferred') {
+      throw new AuthError('already_deferred', 'الطلبُ مؤجَّلٌ أصلا إلى الفصول القادمة — ولا يُرسَل إليه بريدُ التأجيل ثانيةً', 409)
+    }
 
     /* ═══ ولكلّ نهايةٍ بابُها — لا يُفتح بغيره (٢٩ سبتمبر ٢٠٢٦) ═══
 
@@ -1301,6 +1315,26 @@ export class TrainerReviewService {
        لبقي هو على خبره الأوّل: لا يتفقّد صفحةَ حالةٍ أغلقها، ولا يحجز موعدا
        لا يعلم أنّه فُتح له. والرسالةُ تحمل السببَ بنصّه بقرار صاحب المنصّة —
        وهي الموضعُ الوحيدُ الذي يسافر فيه ما يكتبه المراجعُ في هذا المسار. */
+    /* ═══ والمؤجَّلُ يصله خبرُه وموعدُه (٦ أكتوبر ٢٠٢٦) ═══
+
+       قرارُ صاحب المنصّة: «وابنِ له رسالةً خاصّةً تصله بالإيميل». واليومُ الذي
+       فيها هو الذي كتبه `transition` في الطلب نفسِه، لا يومٌ يُحسب ثانيةً فيفترقا.
+       والملاحظةُ تصله بنصّها إن كُتبت (`deferralMail`). وحالُ البريد يُعاد إلى
+       الشاشة ويُكتب في الأثر: من وُعد بموعدٍ ولم يبلغه الوعدُ يُبلَّغ بيد من قرّر. */
+    if (action === 'defer') {
+      const fresh = await this.prisma.trainerApplication.findUnique({
+        where: { id: applicationId }, select: { deferredFollowUpAt: true },
+      })
+      const followUpAt = fresh?.deferredFollowUpAt ?? deferredFollowUpAt(new Date())
+      const mail = deferralMail({ fullName: app.fullName, reference: app.reference, followUpAt, noteAr: note })
+      const sent = await sendDirectEmail(this.prisma, { to: app.email, subject: mail.subject, ...renderMail(mail.doc) })
+      await recordAudit(this.prisma, {
+        actorId, action: 'trainer.deferral.notify', entityType: 'trainer_application', entityId: applicationId,
+        meta: { followUpAt: followUpAt.toISOString(), emailDelivery: sent.status },
+      })
+      return { emailDelivery: sent.status }
+    }
+
     if (isUndo) {
       const mailInput = {
         fullName: app.fullName, reference: app.reference, noteAr: undoReason,

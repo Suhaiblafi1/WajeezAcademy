@@ -341,7 +341,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
            و`request_demo`). وطلبُ الدرس التجريبيّ صار مسارَه
            `/:id/demo-request` أسفلَه: مراسَلةٌ لا قرارٌ يقلب الحالة. */
         'move_to_review', 'request_info', 'academic_review',
-        'conditionally_approve', 'waitlist', 'reject',
+        'conditionally_approve', 'waitlist', 'defer', 'reject',
         /* والتراجعُ عن الردّ — يردّ الطلبَ إلى المراجعة، وسببُه إلزاميٌّ
            يصل المتقدّمَ بنصّه. تفصيلُه في `decide` وفي خريطة الانتقالات.
            وإعادةُ المسحوب بالباب نفسِه وشرطِه (٢٩ سبتمبر ٢٠٢٦). */

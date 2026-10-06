@@ -3,7 +3,7 @@ import type { ComponentType } from "react";
 import { toast, toastError } from "@/components/Toast";
 import {
   ArrowDownWideNarrow, ArrowUpNarrowWide,
-  CalendarCheck, CalendarPlus, CalendarX2, CheckCircle2, ChevronDown, ChevronLeft, ClipboardList, FileText, History,
+  CalendarCheck, CalendarClock, CalendarPlus, CalendarX2, CheckCircle2, ChevronDown, ChevronLeft, ClipboardList, FileText, History,
   KeyRound, Loader2, MailCheck, MoreVertical, RefreshCw, RotateCcw, Send, ServerOff,
   Star, Trash2, UserPlus, XCircle,
 } from "lucide-react";
@@ -38,7 +38,8 @@ import {
 } from "@/application/trainer/no-show-followup";
 import { mailBatchOutcomeAr, mailOutcomeAr } from "@/application/notifications/delivery";
 import { MAIL_LINK_WINDOW_AR } from "@/application/links/mail-link-window";
-import { fmtDateTime } from "@/application/text/format-ar";
+import { fmtDateLong, fmtDateTime } from "@/application/text/format-ar";
+import { DEFERRED, deferredFollowUpAt, followUpDue } from "@/application/trainer/deferral";
 import ConfirmAction from "@/components/ConfirmAction";
 import { BAR_ACTIONS, DECISIONS, recommendedFor, type Decision } from "@/application/trainer/decisions";
 import { REVIEW_OPEN_STATUSES } from "@/application/trainer/approval";
@@ -88,6 +89,8 @@ const OUTCOME_TONE: Record<string, string> = {
   passed: "border-emerald-400/40 text-emerald-300",
   failed: "border-red-400/40 text-red-300",
   hold: "border-gold/40 text-gold-ink",
+  /* والمؤجَّلُ إلى الفصول القادمة: لا حكمَ عليه ولا تردُّد — لونُ الخبر لا التحذير */
+  deferred: "border-teal/40 text-teal-light-ink",
   no_show: "border-white/20 text-muted-foreground",
 };
 
@@ -127,7 +130,7 @@ const RESULT_LABEL_AR: Record<string, string> = {
    كانت ثنائيّةً (`reject` أو غيرُه) مكتوبةً في خمسة مواضعَ من الحوار. فلمّا
    صار ثالثٌ لزم أن تُقرأ كلُّها معجما: خمسةُ ثلاثيّاتٍ متداخلةٍ في JSX تُقرأ
    ولا يُعرف أيُّها لأيّ فعل. */
-const ROW_DECISION_AR: Record<"reject" | "undo_reject" | "undo_withdraw" | "request_info", {
+const ROW_DECISION_AR: Record<"reject" | "defer" | "undo_reject" | "undo_withdraw" | "request_info", {
   titleAr: (name: string) => string;
   confirmAr: string;
   reason: { labelAr: string; minLength: number };
@@ -138,6 +141,17 @@ const ROW_DECISION_AR: Record<"reject" | "undo_reject" | "undo_withdraw" | "requ
     confirmAr: "ارفضه بلطف",
     reason: { labelAr: "السببُ — للأثر الداخليّ، ولا يصل المتقدّم", minLength: 5 },
     bodyAr: "يصله بريدُ اعتذارٍ من المنصّة، وسببُك يبقى في الأثر عندنا ولا يُرسَل — فاكتبه لمن يراجع الطلبَ بعدك.",
+  },
+  /* ═══ والتأجيلُ إلى الفصول القادمة (٦ أكتوبر ٢٠٢٦) ═══
+
+     الملاحظةُ هنا **لا تُشترط، وتسافر** — عكسُ سبب الرفض: ما يُكتب يصل صاحبَه
+     بنصّه في بريد التأجيل («نودّ أن تدرّس كذا في الربيع»). فتقول خانتُها ذلك
+     فوقها، وتُرسَل فارغةً بلا إطار. والعلّةُ في `application/trainer/deferral.ts`. */
+  defer: {
+    titleAr: (n) => `تأجيلُ طلب «${n}» إلى الفصول القادمة`,
+    confirmAr: "أجِّلْه وأبلِغه",
+    reason: { labelAr: "ملاحظةٌ له إن شئت — تصله بنصّها في بريده", minLength: 0 },
+    bodyAr: "يصير الطلبُ «مؤجَّلا — للفصول القادمة» ويبقى بملفّه ومستنداته ومقابلته. ويصله بريدٌ يقول إنّ الفصلَ القادمَ لا يحمل طلبا كافيا على دوراته، وإنّنا نتواصل معه بعد شهرين.",
   },
   undo_reject: {
     titleAr: (n) => `التراجعُ عن رفض «${n}»`,
@@ -160,6 +174,7 @@ const ROW_DECISION_AR: Record<"reject" | "undo_reject" | "undo_withdraw" | "requ
     bodyAr: "ينتقل الطلبُ إلى «بانتظار معلومات المرشّح»، ويصله بريدٌ فيه نصُّ ما طلبتَه — ويبقى طلبُه مفتوحا للتعديل.",
   },
 };
+type RowDecisionAction = keyof typeof ROW_DECISION_AR;
 
 const BOOKING_LEAD_AR: Record<string, string> = {
   upcoming: "موعدُه",
@@ -272,6 +287,24 @@ function RowActions({ items, label }: { items: RowAction[]; label: string }) {
    موضعٍ واحدٍ داخل ملفّ صاحبها — لا في ثلاث شاشاتٍ يُجمَع منها. */
 type DetailTab = "dossier" | "courses" | "prep";
 
+/* ═══ وموعدُ التواصل مع المؤجَّل — بجانب حالته (٦ أكتوبر ٢٠٢٦) ═══
+
+   وعدناه بيومٍ في بريده (`deferralMail`)، فيُقرأ في الصفّ وفي الملفّ: يومُه ما لم
+   يحلّ، و«حلّ موعدُ التواصل» ذهبيّا حين يحلّ — فلا يمرّ الوعدُ ولا أحدَ يذكره.
+   والعلّةُ في `application/trainer/deferral.ts`. */
+function FollowUpBadge({ status, at, now }: { status: string; at?: string | null; now: Date }) {
+  if (status !== DEFERRED || !at) return null;
+  const due = followUpDue({ status, deferredFollowUpAt: at }, now);
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-fine font-bold ${
+      due ? "border-gold/50 text-gold-ink" : "border-white/15 text-muted-foreground"
+    }`}>
+      <CalendarClock className="h-3.5 w-3.5" aria-hidden="true" />
+      {due ? `حلّ موعدُ التواصل معه — ${fmtDateLong(at)}` : `نتواصل معه في ${fmtDateLong(at)}`}
+    </span>
+  );
+}
+
 /** شارةُ آخر مراسَلة — ولا شارةَ لمن لم يُراسَل، ولا لمن فعل ما ذُكّر به */
 function OutreachBadge({ app, now }: { app: AppRow; now: Date }) {
   const ar = outreachAr(app.lastOutreach, app, now);
@@ -290,6 +323,8 @@ interface AppRow {
   demosCount: number;
   /** نتيجةُ آخر لقاءٍ غيرِ ملغى — `null` لمن لم يُقابَل أو لم تُسجَّل نتيجتُه */
   interviewOutcome: string | null;
+  /** موعدُ التواصل مع المؤجَّل إلى الفصول القادمة — `null` لغيره (`deferral.ts`) */
+  deferredFollowUpAt?: string | null;
   /** قراراتُ روابط التقييم بأسماء قائليها — أحدثُها أوّلا */
   reviewVerdicts: ReviewVerdict[];
   /** موعدُه المعلَّق — أقربُ قادمٍ بلا نتيجة، وإلّا فآخرُ ماضٍ ينتظر تسجيلَها */
@@ -304,6 +339,8 @@ interface AppRow {
 
 interface AppDetail extends Record<string, unknown> {
   id: string; reference: string; status: string; fullName: string; email: string;
+  /** موعدُ التواصل مع المؤجَّل — يُقرأ بجانب حالته في الملفّ كما في الصفّ */
+  deferredFollowUpAt?: string | null;
   /** طلباتُ صاحبه السابقة — ومآلُ كلٍّ منها وملاحظتُه الداخليّة */
   priorApplications?: {
     reference: string; status: string; createdAt: string;
@@ -470,7 +507,8 @@ export default function TrainerApplications() {
   const [bulkDecision, setBulkDecision] = useState<{ action: string; labelAr: string } | null>(null);
   /* قرارٌ على صفٍّ واحدٍ من قائمة أفعاله — والسببُ يُكتب في نافذته لا في
      خانةٍ عامّة، كما في نظيرَيه داخل الملفّ. */
-  const [rowDecision, setRowDecision] = useState<{ app: AppRow; action: "reject" | "undo_reject" | "undo_withdraw" | "request_info" } | null>(null);
+  /* والملفُّ المفتوحُ يفتحه كذلك (التأجيل) — فيكفيه من الطلب ما يُقرأ في الحوار */
+  const [rowDecision, setRowDecision] = useState<{ app: Pick<AppRow, "id" | "fullName" | "reference">; action: RowDecisionAction } | null>(null);
   /* ═══ مرشِّحُ «لم يحجز موعدا» ═══
 
      الطابورُ يعرض عددَ المقابلات في كلّ صفّ، ومن أراد من لم يحجز عدَّ الأصفارَ
@@ -917,6 +955,13 @@ export default function TrainerApplications() {
         run: () => setRowDecision({ app: a, action: "request_info" }),
       });
     }
+    /* والتأجيلُ قبل الرفض: هو البابُ الذي لا يُغلق — بحوارٍ يقول ما يصل صاحبَه */
+    if (allows("defer", a.status)) {
+      items.push({
+        key: "defer", label: "أجِّلْه إلى الفصول القادمة", icon: CalendarClock,
+        run: () => setRowDecision({ app: a, action: "defer" }),
+      });
+    }
     if (allows("reject", a.status)) {
       items.push({
         key: "reject", label: "رفض بلطف", icon: XCircle, tone: "danger",
@@ -964,14 +1009,22 @@ export default function TrainerApplications() {
   const bulkDecide = async (action: string, labelAr: string, decisionNote?: string) => {
     if (busy || sel.size === 0) return;
     setBusy(true); setBulkProgress("");
+    /* وحالُ بريد كلّ قرارٍ له بريدٌ يُقرأ خبرُه (التأجيل) — كما في التذكير الجماعيّ */
+    const deliveries: (string | null)[] = [];
     const outcome = await runBulk(
       [...sel],
-      (id) => apiPost(`/api/admin/trainer-applications/${id}/decision`, { action, note: decisionNote }),
+      async (id) => {
+        const r = await apiPost<{ emailDelivery?: string }>(`/api/admin/trainer-applications/${id}/decision`, { action, note: decisionNote || undefined });
+        if (r?.emailDelivery) deliveries.push(r.emailDelivery);
+      },
       (done, total) => setBulkProgress(`${done} من ${total}`),
     );
     setBulkProgress("");
     setSel(new Set(outcome.failed.map((f) => f.id)));
-    toast(bulkMessage(outcome, `نُفّذ «${labelAr}»`));
+    if (deliveries.length > 0) {
+      const said = mailBatchOutcomeAr(bulkMessage(outcome, `نُفّذ «${labelAr}»`), deliveries);
+      if (said.ok) toast(said.ar); else toastError(said.ar);
+    } else toast(bulkMessage(outcome, `نُفّذ «${labelAr}»`));
     setBusy(false);
     await load();
   };
@@ -998,7 +1051,11 @@ export default function TrainerApplications() {
        هنا: فرزٌ ثانٍ في الشاشة يجعل موضعَ الزرّ يُبدَّل في موضعَين. */
     const available = DECISIONS.filter((d) => d.from.includes(a.status));
     /* واحدٌ ذهبيٌّ لا ثلاثة — أوّلُ ما يُوجد من قائمة الأولويّة في هذه الحالة */
-    const recommended = recommendedFor(a.status);
+    /* ونتيجةُ آخر لقاءٍ قائم — إن حكم بـ«مؤجَّل» أُبرز زرُّ التأجيل (`recommendedFor`) */
+    const lastOutcome = [...a.interviews]
+      .filter((iv) => !iv.canceledAt && iv.outcome)
+      .sort((x, y) => y.scheduledAt.localeCompare(x.scheduledAt))[0]?.outcome ?? null;
+    const recommended = recommendedFor(a.status, lastOutcome);
     /* والشريطُ صفٌّ لا عمود، فيأخذ ما يسعه من المتاح بترتيبه نفسِه */
     const barActions = available.filter((d) => BAR_ACTIONS.includes(d.action));
     /* نبرةُ القرار تُترجَم إلى سلّم النظام: الرئيسُ ذهبيّ، والتحذيرُ بديلٌ
@@ -1015,7 +1072,9 @@ export default function TrainerApplications() {
     const gatedByPrep = (action: string) => (action === "approve" || action === "activate") && !ready;
 
     const decisionClick = (d: Decision, decisionNote?: string) =>
-      d.action === "undo_reject"
+      d.action === "defer"
+        ? setRowDecision({ app: a, action: "defer" })
+        : d.action === "undo_reject"
         ? setUndoOpen(true)
         : d.action === "undo_withdraw"
           ? setWithdrawUndoOpen(true)
@@ -1298,6 +1357,7 @@ export default function TrainerApplications() {
                 <span className="rounded-full border border-teal/40 px-3 py-1 text-fine font-bold text-teal-light-ink">
                   {STATUS_LABELS[a.status] ?? a.status}
                 </span>
+                <FollowUpBadge status={a.status} at={a.deferredFollowUpAt} now={new Date()} />
               </div>
               {/* ═══ شريطُ الحقائق — خمسةُ أرقامٍ قبل أيّ نثر ═══
 
@@ -2071,7 +2131,7 @@ export default function TrainerApplications() {
               /* فعلٌ جماعيٌّ في شريطِه لا فعلُ الصفحة — وكان ممتلئا بالذهبيّ
                  مكتوبا بيده، أي رئيسيٌّ ثانٍ إلى جانب زرِّ الرأس. */
               <Button key={d.action} size="sm" tone={d.tone === "danger" ? "danger" : "confirm"}
-                onClick={() => (d.action === "reject" || d.action === "waitlist"
+                onClick={() => (d.action === "reject" || d.action === "waitlist" || d.action === "defer"
                   ? setBulkDecision({ action: d.action, labelAr: d.label })
                   : void bulkDecide(d.action, d.label))}>
                 {d.label} — على {sel.size}
@@ -2220,6 +2280,7 @@ export default function TrainerApplications() {
 
                     وخافتةٌ لا ملوّنة: هي ما فعلناه نحن لا حالُ الطلب، فلا
                     تزاحم الحالةَ ونتيجةَ اللقاء في العين. */}
+                <FollowUpBadge status={a.status} at={a.deferredFollowUpAt} now={renderedAt} />
                 <OutreachBadge app={a} now={renderedAt} />
               </span>
             </button>
@@ -2243,13 +2304,14 @@ export default function TrainerApplications() {
           reason={ROW_DECISION_AR[rowDecision.action].reason}
           onCancel={() => setRowDecision(null)}
           onConfirm={(reason) => {
-            if (!reason) return;
+            /* والتأجيلُ وحدَه يمضي بلا نصّ: ملاحظتُه لا تُشترط */
+            if (!reason && rowDecision.action !== "defer") return;
             const target = rowDecision;
             setRowDecision(null);
             void act(
               () => apiPost<{ emailDelivery?: string }>(
                 `/api/admin/trainer-applications/${target.app.id}/decision`,
-                { action: target.action, note: reason },
+                { action: target.action, note: reason || undefined },
               ),
               target.action === "reject"
                 ? "رُدَّ الطلبُ — وأُعلم صاحبُه، وسببُك في الأثر"
@@ -2258,7 +2320,9 @@ export default function TrainerApplications() {
                   : (result) => mailOutcomeAr(
                     target.action === "undo_withdraw"
                       ? "أُعيد الطلبُ المسحوبُ إلى المراجعة، ووصل السببُ صاحبَه"
-                      : "رُفع الرفضُ — عاد الطلبُ إلى المراجعة، ووصل السببُ صاحبَه",
+                      : target.action === "defer"
+                        ? `أُجِّل الطلبُ إلى الفصول القادمة — ونتواصل معه في ${fmtDateLong(deferredFollowUpAt(new Date()))}`
+                        : "رُفع الرفضُ — عاد الطلبُ إلى المراجعة، ووصل السببُ صاحبَه",
                     (result as { emailDelivery?: string } | null)?.emailDelivery,
                   ),
             );
@@ -2270,6 +2334,12 @@ export default function TrainerApplications() {
           <p className="mt-2 text-read leading-6 text-muted-foreground">
             {ROW_DECISION_AR[rowDecision.action].bodyAr}
           </p>
+          {/* وموعدُ التواصل يومٌ يُسمّى قبل الضغط — وهو اليومُ الذي يُكتب في بريده */}
+          {rowDecision.action === "defer" && (
+            <p className="mt-2 text-read font-bold leading-6">
+              موعدُ التواصل معه: {fmtDateLong(deferredFollowUpAt(new Date()))}
+            </p>
+          )}
         </ConfirmAction>
       )}
 
@@ -2361,8 +2431,11 @@ export default function TrainerApplications() {
                أو يكتم ما كان سيكتبه للأثر. */
             labelAr: bulkDecision.action === "reject"
               ? "السببُ — للأثر الداخليّ، ولا يصل المتقدّم"
-              : "السببُ — يصل صاحبَ كلّ طلبٍ كما تكتبه، ويبقى في الأثر",
-            minLength: 5,
+              : bulkDecision.action === "defer"
+                ? "ملاحظةٌ لهم إن شئت — تصل كلَّ واحدٍ بنصّها في بريده"
+                : "السببُ — يصل صاحبَ كلّ طلبٍ كما تكتبه، ويبقى في الأثر",
+            /* ولا حدَّ أدنى للتأجيل: ملاحظتُه لا تُشترط (`ROW_DECISION_AR.defer`) */
+            minLength: bulkDecision.action === "defer" ? 0 : 5,
           }}
           onCancel={() => setBulkDecision(null)}
           onConfirm={(reason) => {
@@ -2375,7 +2448,9 @@ export default function TrainerApplications() {
             يُطبَّق القرارُ على المحدَّد كلِّه، ويُخبَر أصحابُه برسالةٍ من المنصّة.{" "}
             {bulkDecision.action === "reject"
               ? "وسببُك يبقى في الأثر عندنا ولا يُرسَل — فاكتبه لمن يراجع الطلبَ بعدك."
-              : "والسببُ واحدٌ للجميع ويصلهم بنصّه — فاكتبه عامّا يصلح لكلّ من يقرؤه."}
+              : bulkDecision.action === "defer"
+                ? `ويصل كلَّ واحدٍ بريدُ التأجيل باسمه، وفيه أنّنا نتواصل معه في ${fmtDateLong(deferredFollowUpAt(new Date()))}. والملاحظةُ — إن كتبتَها — واحدةٌ للجميع.`
+                : "والسببُ واحدٌ للجميع ويصلهم بنصّه — فاكتبه عامّا يصلح لكلّ من يقرؤه."}
           </p>
         </ConfirmAction>
       )}

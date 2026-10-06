@@ -48,6 +48,8 @@ const HIGH: readonly string[] = [
   'trainer.suspend', 'trainer.reinstate', 'trainer.publish_approve',
   'trainer.qualify', 'trainer.qualify.reject',
   'trainer.approved.notify', 'trainer.info_requested.notify',
+  /* ووعدٌ بموعدِ تواصلٍ مع المؤجَّل إلى الفصول القادمة (٦ أكتوبر ٢٠٢٦) */
+  'trainer.deferral.notify',
   /* ═══ ومهلتُه لا تُكتَم ولا تُجمَع في خبرٍ يوميّ ═══
 
      من يفقد طورَه بعد يومَين يُبلَّغ اليوم، ومن انقضت مهلتُه يعرف أنّ بابَه

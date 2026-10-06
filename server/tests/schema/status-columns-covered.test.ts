@@ -107,7 +107,8 @@ describe('② والثلاثةُ التي أفلتت — لا تُفلت ثان�
      لأنّها وقعت فعلا، ولأنّ إحداها (`TrainerApplication.status`) يقوم عليها
      طابورُ المدرّبين كلُّه — فسقوطُها صامتٌ يُكلِّف سنة. */
   const MUST: readonly [string, number][] = [
-    ['TrainerApplication.status', 14],
+    /* ١٥ منذ ٦ أكتوبر ٢٠٢٦: `deferred` — المؤجَّلُ إلى الفصول القادمة (`deferral.ts`) */
+    ['TrainerApplication.status', 15],
     ['TrainerChangeRequest.status', 10],
     ['AssignmentSubmission.status', 5],
   ]
