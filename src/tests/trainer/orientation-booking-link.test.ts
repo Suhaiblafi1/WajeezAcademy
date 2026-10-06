@@ -78,8 +78,8 @@ describe('رابطُ جلسة التهيئة في رسالة اعتماد الت
     expect(text).toContain(BASE.title)
     expect(text).toContain(BASE.approvedOnAr)
     expect(text, 'سقطت الإحالةُ إلى «عقدي»').toContain('عقدي')
-    expect(text, 'سقط تذكيرُ البند الثاني: التأهيلُ لا يُلزم بإسناد')
-      .toContain('التأهيلُ لدورةٍ لا يُلزم الأكاديميّةَ بإسنادها')
+    expect(text, 'سقط تذكيرُ البند الثاني: كونُ الدورة من دوراته لا يُلزم بإسناد')
+      .toContain('أن تكون الدورةُ من دوراتك لا يُلزم الأكاديميّةَ بإسنادها إليك')
     expect(text, 'سقط زرُّ البوّابة').toContain(BASE.portalUrl)
   })
 
