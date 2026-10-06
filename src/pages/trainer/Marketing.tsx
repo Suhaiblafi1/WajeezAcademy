@@ -112,7 +112,7 @@ export default function Marketing() {
                 icon={Megaphone}
                 titleAr="لا دورةَ ولا مسارَ بعد"
                 reasonAr="يظهر هنا ما اخترناه لك من دورات وما بنيتَه من مسارات — ولكلٍّ فيديو وملصق."
-                actions={[{ to: "/trainer/qualifications", labelAr: "مؤهّلاتي" }]}
+                actions={[{ to: "/trainer/qualifications", labelAr: "دوراتي" }]}
               />
             ) : (
               <ul className="grid gap-3">

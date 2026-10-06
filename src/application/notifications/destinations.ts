@@ -89,7 +89,7 @@ const LEARNER: Table = {
 
 const TRAINER: Table = {
   'trainer_payout': { path: '/trainer/earnings', ctaAr: 'افتح كشفَ مستحقّاتك' },
-  'trainer.qualified': { path: '/trainer/qualifications', ctaAr: 'افتح مؤهّلاتك' },
+  'trainer.qualified': { path: '/trainer/qualifications', ctaAr: 'افتح دوراتك' },
   /* وتفعيلُه — بوّابتُه كاملةً، ومنها «عقدي» و«مستحقّاتي» (٣ أكتوبر ٢٠٢٦) */
   'trainer.activated': { path: '/trainer', ctaAr: 'افتح بوّابتَك' },
   /* ي-٤: ملفُّه العامُّ يُحرَّر من صفحة حسابه — وهي ما يحمل الخبرَ نفسَه */
@@ -100,7 +100,7 @@ const TRAINER: Table = {
   /* وسؤالُ الإدارة عن اقتراحه: الاقتراحُ واقفٌ على جوابه، وموضعُ الجواب هو
      موضعُ الخبر نفسُه — فالزرُّ يضعه حيث يجيب لا حيث يقرأ فيبحث. */
   'trainer.course_proposal.question': { path: '/trainer/course-proposals', ctaAr: 'أجِبْ عن السؤال' },
-  'trainer.qualify.rejected': { path: '/trainer/qualifications', ctaAr: 'افتح مؤهّلاتك' },
+  'trainer.qualify.rejected': { path: '/trainer/qualifications', ctaAr: 'افتح دوراتك' },
   'trainer.assigned': { path: '/trainer/board', ctaAr: 'افتح شعبتك الجديدة' },
   'cohort.plan.submitted': { path: '/trainer/board', ctaAr: 'افتح خطّةَ شعبتك' },
   'cohort.plan.decision': { path: '/trainer/board', ctaAr: 'اقرأ قرارَ الخطّة' },
@@ -121,8 +121,8 @@ const TRAINER: Table = {
   'submission.queued': { path: '/trainer/grading', ctaAr: 'افتح طابورَ التصحيح' },
   /* عروضُ الإسناد — والوجهةُ حيث يُجاب لا حيث يُقرأ الخبر ثانيةً */
   'trainer.offer.received': { path: '/trainer/qualifications', ctaAr: 'اقرأ العرضَ وأجِبْ' },
-  'trainer.offer.withdrawn': { path: '/trainer/qualifications', ctaAr: 'افتح مؤهّلاتك' },
-  'trainer.offer.lapsed': { path: '/trainer/qualifications', ctaAr: 'افتح مؤهّلاتك' },
+  'trainer.offer.withdrawn': { path: '/trainer/qualifications', ctaAr: 'افتح دوراتك' },
+  'trainer.offer.lapsed': { path: '/trainer/qualifications', ctaAr: 'افتح دوراتك' },
   'trainer.prep.reminder': { path: '/trainer/qualifications', ctaAr: 'أقِرّ بجاهزيّتك' },
   /* والملصقُ يُوافَق عليه حيث يُرى — قسمُ التسويق */
   'trainer.poster.submitted': { path: '/trainer/marketing', ctaAr: 'راجِع الملصقَ ووافِق عليه' },

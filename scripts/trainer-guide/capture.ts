@@ -585,7 +585,7 @@ const ACTIVE: Shot[] = [
       await shoot(e, {
         name: 'qualifications', clip: pageBody(p), clipPad: 6, maxHeight: 1550,
         marks: [
-          { target: p.getByRole('tablist', { name: 'حالُ مؤهّلاتي' }), n: 1, pad: 4 },
+          { target: p.getByRole('tablist', { name: 'حالُ دوراتي' }), n: 1, pad: 4 },
           { target: card.getByText(/متاحةٌ لك — قرّر/).first(), n: 2, pad: 4 },
           { target: btn(card, 'أوافق على تقديمها'), n: 3, pad: 4 },
           { target: btn(card, 'أعتذر عنها'), n: 4, pad: 4 },

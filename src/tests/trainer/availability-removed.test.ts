@@ -103,7 +103,7 @@ describe('شاشةُ المؤهّلات — ما بقي منها', () => {
     expect(code('src/App.tsx')).toMatch(/path="\/trainer\/qualifications"/)
     const tab = code('src/pages/trainer/TrainerLayout.tsx').split('\n').find((l) => l.includes('"/trainer/qualifications"'))
     expect(tab, 'لا بندَ للشاشة في قائمة المدرّب').toBeTruthy()
-    expect(tab).toMatch(/label: "مؤهّلاتي"/)
+    expect(tab).toMatch(/label: "دوراتي"/)
   })
 
   /* باقٍ من الحارس الذي انقلب (٨ سبتمبر ٢٠٢٦)، وتبدّل نصُّه (٣٠ سبتمبر
