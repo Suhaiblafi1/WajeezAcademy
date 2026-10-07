@@ -47,7 +47,7 @@
      زرّان يتنازعان العين. */
 
 import { Fragment, useCallback, useEffect, useRef, useState } from "react";
-import { Link, useParams } from "react-router";
+import { Link, useParams, useSearchParams } from "react-router";
 import {
   ArrowLeft, ArrowRight, BookMarked, BookOpen, CalendarDays, CalendarPlus, Check, ChevronDown, ChevronUp, ClipboardCheck, Combine, FileDown, FileText, GraduationCap, Film, IdCard, Link2, Loader2, Lock, Send, Sparkles, Split,
 } from "lucide-react";
@@ -78,6 +78,7 @@ const API_BASE: string = import.meta.env.VITE_API_URL ?? "";
 import { PLAN_TITLE_MIN, planTextProblemsAr, type PlanTextPlace } from "@/application/trainer/plan-limits";
 import { blockingBeforeSubmit, sendBlock, trainerOwned } from "@/application/trainer/plan-gate";
 import { notedSections, notesForTrainer, type ReviewNotes } from "@/application/trainer/review-notes";
+import { firstStep, readWorkspaceStep, STEP_PARAM } from "@/application/trainer/workspace-step";
 import { trainerRegistrationLine } from "@/application/learning/registration-state";
 import { ReviewNotesBanner, StageReviewNote } from "@/components/ReviewNotes";
 import { toast, toastError } from "@/components/Toast";
@@ -525,6 +526,10 @@ const basicsKey = (c: PlanContent) => `${c.summaryAr ?? ""}|${c.startsOn ?? ""}|
 
 export default function CohortWorkspace() {
   const { id } = useParams();
+  /* والرابطُ قد يسمّي خطوةً يُفتح عليها (٧ أكتوبر ٢٠٢٦) — من تقرير المراجعة
+     («افتح خطوة الكرّاسة»). يُقرأ في أوّل فتحٍ وحدَه (`workspace-step.ts`) */
+  const [params] = useSearchParams();
+  const requestedStep = useRef(readWorkspaceStep(params.get(STEP_PARAM)));
   const [ws, setWs] = useState<Workspace | null>(null);
   const prepIds = usePrepCohorts();
   const [err, setErr] = useState("");
@@ -657,14 +662,23 @@ export default function CohortWorkspace() {
          التواصل» حتّى خرج إلى «طلبتي»)، وغيرُها على أوّل مرحلةٍ لم تتمّ —
          وهي أبعدُ ما يُفتح له، فكلُّ ما قبلها تامّ. */
       if (first) {
-        if (status === "approved" || status === "published") setStage("approval");
+        let fallback: Stage;
+        if (status === "approved" || status === "published") fallback = "approval";
         else {
           const next = STAGES.find((s) => STAGE_KEYS[s.key].some((k) => {
             const c = w.checklist.find((x) => x.key === k);
             return c && !c.done && !c.optional;
           }));
-          setStage(next?.key ?? "identity");
+          fallback = next?.key ?? "identity";
         }
+        /* وخطوةُ الرابط إن كانت تُفتح له — بقفل الشريط نفسِه (`canOpen`): في خطّةٍ في
+           يده لا تُفتح خطوةٌ لم يتمّ ما قبلها، والمرسَلةُ والمعتمَدةُ تُقرأ كلُّها */
+        const doneIn = (k: Stage) => STAGE_KEYS[k].every((key) => w.checklist.find((c) => c.key === key)?.done ?? false);
+        const openableAt = (s: Stage) => {
+          const i = STAGES.findIndex((x) => x.key === s);
+          return !editable || STAGES.slice(0, i).every((x) => doneIn(x.key));
+        };
+        setStage(firstStep(requestedStep.current, fallback, openableAt));
       }
       return w;
     } catch (e) { setErr(e instanceof ApiError ? e.message : "تعذّر فتح صفحة الشعبة"); return null; }

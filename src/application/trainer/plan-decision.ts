@@ -6,6 +6,7 @@
    وتُختبَر بمدخلاتها لا بقراءة شيفرتها. */
 
 import { countAr } from '../text/count-ar'
+import { REVIEW_NOTE_MAX } from './review-notes'
 
 /** ما يعود من اعتماد الخطّة — ولقاءاتُها التي اعتُمدت معها أو تعذّرت */
 export interface PlanDecision {
@@ -177,3 +178,16 @@ export const PLAN_AR: Record<string, string> = {
   draft: 'مسودّةٌ عند المدرّب', submitted: 'بانتظار اعتمادك', changes_requested: 'رُدّت إليه بتعديلات',
   approved: 'معتمَدة', published: 'منشورة', superseded: 'نسخةٌ قديمة',
 }
+
+/* ═══ الاعتمادُ بكلمة (٧ أكتوبر ٢٠٢٦) ═══
+
+   قرارُ صاحب المنصّة: الخطّةُ التي ليس عليها إلّا مقترحاتٌ تُعتمَد ولا تُردّ —
+   فالردُّ يُغلق التسجيلَ على مقترَحٍ لا يُلزم — وتصل المقترحاتُ معها. والخادمُ
+   كان يقبل الكلمةَ مع الاعتماد ويضيفها إلى خبره «وكلمةُ الإدارة: …»
+   (`planApprovedTrainerMsg`)، والزرُّ لا يرسلها. فهذا ما يرسله: الاعتمادُ وحدَه،
+   أو معه كلمتُه مشذَّبةً بحدّ الملاحظة نفسِه. */
+export function approvalBody(note: string): { approve: true; note?: string } {
+  const said = note.trim().slice(0, REVIEW_NOTE_MAX).trim()
+  return said ? { approve: true, note: said } : { approve: true }
+}
+
