@@ -30,6 +30,7 @@ import { PLAN_AR } from './plan-decision'
 import { REVIEW_SECTIONS, type ReviewNotes } from './review-notes'
 import { resourceKind, type ResourceKind } from './plan-overlay'
 import type { CohortWorkbook, PlanSlot } from './axis-timeline'
+import { groupLabelAr, workbookGroups, workbookModeOf, type ModuleWorkbook, type WorkbookMaterial } from './cohort-workbooks'
 
 export type ReviewSession = CurriculumInput['sessions'][number] & {
   noteAr?: string | null
@@ -68,6 +69,12 @@ const KIND_AR: Record<ResourceKind, string> = {
   link: 'رابط', video: 'فيديو', book: 'كتاب', audiobook: 'كتاب صوتيّ', social: 'منشور', file: 'ملفّ',
 }
 const TASK_TYPE_AR: Record<string, string> = { assignment: 'واجب', quiz: 'اختبار', project: 'مشروع' }
+/** ما قاله المدرّبُ في كرّاسته (`cohort-workbooks.ts`) — بكلمات «المراجعة» نفسِها */
+const MATERIAL_AR: Record<WorkbookMaterial, string> = {
+  template: 'على قالب وجيز',
+  own: 'مادّةُ المدرّب الجاهزة — ليست على القالب',
+}
+const materialAr = (m: WorkbookMaterial | null) => (m ? MATERIAL_AR[m] : 'لم يقل أعلى القالب هي')
 
 const text = (v: unknown): string | null => {
   const s = typeof v === 'string' ? v.trim() : ''
@@ -109,6 +116,8 @@ export function bundleFiles(input: ReviewBundleInput): BundleFile[] {
     modules?: { moduleId: string; titleAr?: string | null; bodyFileKey?: string | null; bodyFileName?: string | null }[]
     resources?: { title?: string | null; moduleId?: string | null; bodyFileKey?: string | null; bodyFileName?: string | null }[]
     workbook?: CohortWorkbook | null
+    workbookMode?: string | null
+    workbooks?: ModuleWorkbook[] | null
     slots?: PlanSlot[] | null
   }
   const modules = Array.isArray(c.modules) ? c.modules : []
@@ -132,7 +141,14 @@ export function bundleFiles(input: ReviewBundleInput): BundleFile[] {
     out.push({ key: k, path })
   }
 
-  add(c.workbook?.bodyFileKey, '', 'الكراسة', c.workbook?.bodyFileName)
+  /* الكرّاسةُ بالطريقة التي اختارها — واحدةٌ للدورة أو لكلّ محور (٦ أكتوبر ٢٠٢٦). وما في
+     الطريقة الأخرى محفوظٌ لا يصل المتعلّم ولا يُعتمَد، فلا يدخل الحزمة */
+  if (workbookModeOf(c) === 'modules') {
+    const ids = modules.map((m) => m.moduleId)
+    for (const g of workbookGroups(c.workbooks, ids)) add(g.bodyFileKey, 'كراسات', `كراسة ${groupLabelAr(g, ids)}`, g.bodyFileName)
+  } else {
+    add(c.workbook?.bodyFileKey, '', 'الكراسة', c.workbook?.bodyFileName)
+  }
   ;(Array.isArray(c.slots) ? c.slots : []).forEach((s, i) => add(s.workbook?.bodyFileKey, '', `كراسة الموعد ${i + 1}`, s.workbook?.bodyFileName))
   for (const m of modules) add(m.bodyFileKey, 'محاور', `المحور ${pos.get(m.moduleId)} — ${text(m.titleAr) ?? ''}`, m.bodyFileName)
   for (const r of Array.isArray(c.resources) ? c.resources : []) {
@@ -221,10 +237,20 @@ export function reviewMarkdown(input: ReviewBundleInput, files: readonly BundleF
   /* ═══ الكرّاسة ═══ */
   line('## الكراسة')
   line()
-  if (view.workbook) {
+  if (view.workbookMode === 'modules') {
+    line('- **الطريقة:** كرّاسةٌ لكلّ محورٍ أو لمحاورَ متجاورة')
+    for (const w of view.moduleWorkbooks) {
+      const parts = w.done
+        ? [w.title, w.fileKey ? fileRef(w.fileKey) : null, w.url, materialAr(w.material)].filter(Boolean)
+        : ['لم تُوضع بعد']
+      line(`- **${w.label}:** ${parts.join(' · ')}`)
+    }
+  } else if (view.workbook) {
+    line('- **الطريقة:** كرّاسةٌ واحدةٌ للدورة')
     if (view.workbook.title) line(`- **اسمها:** ${view.workbook.title}`)
     if (view.workbook.fileKey) line(`- ${fileRef(view.workbook.fileKey)}`)
     if (view.workbook.url) line(`- **رابطها:** ${view.workbook.url}`)
+    line(`- **شكلها:** ${materialAr(view.workbook.material)}`)
     const where = view.groups.flatMap((g) => g.axes).filter((a) => a.workbookWhere)
     if (where.length) line(`- **أين يبدأ كلُّ محور فيها:** ${where.map((a) => `المحور ${a.n}: ${a.workbookWhere}`).join(' · ')}`)
   } else if (view.groups.some((g) => g.workbook)) {
@@ -416,7 +442,17 @@ function facts(view: CurriculumView, input: ReviewBundleInput): string[] {
   out.push(`**المصادر:** ${resources.length}${unlinked ? ` — منها ${unlinked} للشعبة كلها بلا محور` : ''}`)
   const axesWithout = view.groups.flatMap((g) => (g.resources.length === 0 ? g.axes.map((a) => a.n) : []))
   if (resources.length && axesWithout.length) out.push(`**محاورُ بلا مصدر:** ${axesWithout.map((n) => `المحور ${n}`).join('، ')}`)
-  out.push(`**الكراسة:** ${view.workbook ? (view.workbook.fileKey ? 'ملفٌّ مرفوع' : 'رابط') : 'لم تُوضع'}`)
+  if (view.workbookMode === 'modules') {
+    const done = view.moduleWorkbooks.filter((w) => w.done)
+    const own = done.filter((w) => w.material === 'own').length
+    const unsaid = done.filter((w) => w.material === null).length
+    out.push(`**الكراسة:** لكلّ محور — ${done.length} من ${view.moduleWorkbooks.length} موضوعة`
+      + `${own ? ` · ${own} مادّةُ المدرّب الجاهزة لا على القالب` : ''}${unsaid ? ` · ${unsaid} لم يقل أعلى القالب هي` : ''}`)
+  } else {
+    out.push(`**الكراسة:** ${view.workbook
+      ? `واحدةٌ للدورة — ${view.workbook.fileKey ? 'ملفٌّ مرفوع' : 'رابط'} · ${materialAr(view.workbook.material)}`
+      : 'لم تُوضع'}`)
+  }
 
   const w = cohortWindow(p)
   if (w) out.push(`**يبقى للمتعلّم أن يقرأ موادَّها حتى:** ${cohortDayAr(w.accessEndsAt)} (ستة أشهر بعد انتهائها — ولا تسليمَ بعد انتهائها)`)
