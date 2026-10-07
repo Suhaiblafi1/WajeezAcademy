@@ -20,7 +20,7 @@ describe('القوالب المركبة', () => {
     expect(recommendation.primaryPathway).not.toBeNull()
   })
 
-  it('خطة القالب تحترم السقف: لا تتجاوز 80 ساعة دون مستشار', () => {
+  it('خطة القالب تحترم السقف: لا تتجاوز 128 ساعة دون مستشار', () => {
     const { recommendation } = runSession(FOUNDER_IDEA)
     const total = (recommendation.composite?.courses ?? []).reduce((s, c) => s + c.hours, 0)
     expect(total).toBeLessThanOrEqual(TEMPLATE_THRESHOLDS.max_plan_hours)

@@ -33,7 +33,9 @@ EDIT_MARK = "⟵"
 
 # حدودُ بوّابةِ المصدر (server/catalog/validate-source.ts) — تُفحص هنا مبكّرا
 HOURS_MIN, HOURS_MAX = 1, 40
-PRICE_MIN, PRICE_MAX = 100, 200
+PRICE_MIN, PRICE_MAX = 120, 225
+# استثناءاتُ السعر المسمّاة (src/application/catalog/course-pricing.ts · PRICE_EXCEPTIONS)
+PRICE_EXCEPTIONS = {"C-SCM-106": 300}
 
 LIST_FIELDS = {
     "skill_slugs", "skill_ids", "skill_names_ar", "learning_outcomes_ar",
@@ -109,7 +111,7 @@ def validate(field: str, value: str, idx: dict) -> str | None:
             return f"«{value}» ليس عددا صحيحا"
         if field == "total_hours" and not (HOURS_MIN <= n <= HOURS_MAX):
             return f"الساعات {n} خارج المدى [{HOURS_MIN}، {HOURS_MAX}] — ترفضه البوّابة"
-        if field == "list_price" and not (PRICE_MIN <= n <= PRICE_MAX):
+        if field == "list_price" and not (PRICE_MIN <= n <= PRICE_MAX) and n not in PRICE_EXCEPTIONS.values():
             return f"السعر {n} خارج المدى المعتمد [{PRICE_MIN}، {PRICE_MAX}] — ترفضه البوّابة"
     if field == "skill_slugs":
         unknown = [s.strip() for s in value.split("\n") if s.strip() and s.strip() not in idx["_known_slugs"]]

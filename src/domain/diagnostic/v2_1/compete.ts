@@ -44,9 +44,18 @@ const W = {
    دورة إضافية = التزام متابعة؛ ساعة إضافية فوق أول 24 = أسبوع عمل إضافي؛ مجال جوهري
    إضافي = تبديل سياق معرفي. عُايرت لتكون كلفة بساطة حقيقية لا مانعًا رياضيًا:
    مركب نموذجي (6 دورات، ~52 ساعة، 3 مجالات) يدفع ≈ 0.08 — يخسر عند التعادل،
-   ولا يستحيل فوزه عندما يغطي فعلًا مجالين مُثبتين من حاجة المستخدم. */
+   ولا يستحيل فوزه عندما يغطي فعلًا مجالين مُثبتين من حاجة المستخدم.
+
+   ثمّ صارت الدوراتُ كلُّها ستَّ عشرةَ ساعة (قرارُ صاحب المنصّة، ٧ أكتوبر ٢٠٢٦)
+   فتضاعفت ساعاتُ كلّ مركّبٍ بلا أن يكبر: الدوراتُ نفسُها والمجالاتُ نفسُها.
+   وبقاءُ العتبة ٢٤ والسعر ٠٫٠٠٠٦ كان يضاعف كلفةَ الساعات وحدَها، فيخسر المركّبُ
+   أمام القياسيّ بطول الدورة لا بتعقيده — وأظهره نموُّ المقاعد الميتة في
+   `ci:question-waste` (٣٨٩ ← ٤١٤). فالعيارُ بالمعنى نفسِه بعد التضاعف: أوّلُ
+   ٤٨ ساعةً بلا كلفة، ونصفُ السعر لكلّ ساعةٍ بعدها — فالمركّبُ النموذجيّ (٦
+   دوراتٍ الآن ~١٠٤ ساعات) يدفع ما كان يدفعه. */
 const BURDEN_PER_COURSE = 0.006
-const BURDEN_PER_HOUR_OVER_24 = 0.0006
+const BURDEN_FREE_HOURS = 48
+const BURDEN_PER_HOUR_OVER_FREE = 0.0003
 const BURDEN_PER_CORE_DOMAIN = 0.012
 
 /* عتبة القيمة الإضافية: ميزة الملاءمة الخام المطلوبة فوق أفضل قياسي بعد البوابات
@@ -458,7 +467,7 @@ export function compositeSignalEvidence(
 export function compositeBurden(entity: RecommendationEntity): number {
   if (entity.entity_type !== 'composite') return 0
   const coursesTerm = BURDEN_PER_COURSE * Math.max(0, entity.required_courses.length - 1)
-  const hoursTerm = BURDEN_PER_HOUR_OVER_24 * Math.max(0, entity.estimated_hours - 24)
+  const hoursTerm = BURDEN_PER_HOUR_OVER_FREE * Math.max(0, entity.estimated_hours - BURDEN_FREE_HOURS)
   const domainsTerm = BURDEN_PER_CORE_DOMAIN * Math.max(0, entity.domains.length - 1)
   return Math.round((coursesTerm + hoursTerm + domainsTerm) * 1000) / 1000
 }

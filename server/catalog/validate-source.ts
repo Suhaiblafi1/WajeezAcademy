@@ -21,10 +21,13 @@ import layersJson from '../../src/data/catalog/v2/skill-layers.v2.json'
 import { SUPPORT_PER_PATHWAY } from '../../src/data/courses'
 import { measurementDocDrift } from '../../src/application/catalog/skill-measurement'
 import { measurableSkills } from '../../src/domain/diagnostic/v2_1/universe'
+import { COURSE_PRICE_RANGE, isPriceAllowed } from '../../src/application/catalog/course-pricing'
 
 /** حدود ساعات الدورة — المنشور اليوم ٨–١٢، والمدى يترك مجالا للتأليف */
 export const COURSE_HOURS_MIN = 1
 export const COURSE_HOURS_MAX = 40
+/** ساعاتُ كلّ دورة — قرارُ صاحب المنصّة (٧ أكتوبر ٢٠٢٦): «كلُّ دورات الأكاديميّة ستَّ عشرةَ ساعة» */
+export const COURSE_STANDARD_HOURS = 16
 
 const F = {
   skills: 'src/data/catalog/skills.v1.ar.json',
@@ -78,6 +81,8 @@ export function validateCatalogSource(): ValidationResult {
     launch_pathways: SourcePathway[]
     skill_extensions?: { slug: string }[]
     library_resources?: SourceLibraryResource[]
+    modules: { module_id: string; course_id: string; expected_hours: number }[]
+    retired_modules?: { module_id: string; course_id: string; reason_ar: string }[]
   }
   const skills = (skillsJson as unknown as { skills: { slug: string }[] }).skills
   const templates = (templatesJson as unknown as {
@@ -161,8 +166,8 @@ export function validateCatalogSource(): ValidationResult {
      الرقم يُعرض للزائر على صفحة المسار («تبدأ الدورة من …») وترثه الشعبة عند
      فتحها فتُصدَر به الفاتورة. فدورةٌ بلا سعر تُسقط «تبدأ من» إلى فراغ،
      وسعرٌ خارج المدى يخالف ما اعتُمد، وعملتان تعنيان جمعَ ما لا يُجمع. */
-  const PRICE_MIN = 100
-  const PRICE_MAX = 200
+  /* والمدى من وحدة التسعير نفسِها — لا رقمان لشيءٍ واحد؛ وما خرج عنه استثناءٌ مسمّى هناك */
+  const { min: PRICE_MIN, max: PRICE_MAX } = COURSE_PRICE_RANGE
   const currencies = new Set<string>()
   for (const c of core.courses) {
     const price = c.list_price
@@ -170,7 +175,7 @@ export function validateCatalogSource(): ValidationResult {
       errorsAr.push(`${F.core} · الدورة ${c.course_id}: بلا سعر قائمة — «تبدأ من» تسقط إلى فراغ`)
       continue
     }
-    if (price < PRICE_MIN || price > PRICE_MAX) {
+    if (!isPriceAllowed(c.course_id, price)) {
       errorsAr.push(`${F.core} · الدورة ${c.course_id}: سعرها ${price} خارج المدى المعتمد ${PRICE_MIN}–${PRICE_MAX}`)
     }
     if (!Number.isInteger(price)) {
@@ -248,11 +253,39 @@ export function validateCatalogSource(): ValidationResult {
     errorsAr.push(`${F.templates}: معرّف قالب مكرَّر «${id}»`)
   }
 
-  /* ٦ — ساعات كل دورة في المدى المعقول */
+  for (const id of dup(core.modules.map((m) => m.module_id))) {
+    errorsAr.push(`${F.core}: معرّف وحدة مكرَّر «${id}»`)
+  }
+
+  /* ٥-أ — الوحدةُ المتقاعدة لا تعود من الباب الخلفيّ: ما سُمّي في
+     `retired_modules` يؤرشفه المستورد، فإن بقي في `modules` نُشر وأُرشف في
+     الاستيراد نفسِه — وأيُّهما يقع آخرا هو ما يراه المتعلّم. */
+  const moduleIds = new Set(core.modules.map((m) => m.module_id))
+  for (const r of core.retired_modules ?? []) {
+    if (moduleIds.has(r.module_id)) {
+      errorsAr.push(`${F.core}: الوحدة «${r.module_id}» متقاعدةٌ وما تزال في الوحدات — تُنشر وتُؤرشف معا`)
+    }
+    if (!r.reason_ar?.trim()) errorsAr.push(`${F.core}: الوحدة المتقاعدة «${r.module_id}» بلا سبب`)
+  }
+
+  /* ٦ — ساعات كل دورة في المدى المعقول، وهي ستَّ عشرةَ ساعة.
+
+     قرارُ صاحب المنصّة (٧ أكتوبر ٢٠٢٦): «كلُّ دورات الأكاديميّة ستَّ عشرةَ
+     ساعة». ومجموعُ ساعات وحداتها يُنبَّه إن خالف ساعاتِها — تنبيهٌ لا خطأ،
+     لأنّ دورةً مؤلَّفةً قائمةً (C-JOB-104) وحداتُها عشرون ساعةً بنصوصٍ مكتوبةٍ
+     على زمنها، وتصحيحُها تأليفٌ لا تعديلُ رقم. */
+  const moduleHours = new Map<string, number>()
+  for (const m of core.modules) moduleHours.set(m.course_id, (moduleHours.get(m.course_id) ?? 0) + m.expected_hours)
   for (const c of core.courses) {
     const h = c.total_hours
     if (!Number.isFinite(h) || !Number.isInteger(h) || h < COURSE_HOURS_MIN || h > COURSE_HOURS_MAX) {
       errorsAr.push(`${F.core} · الدورة ${c.course_id}: ساعات ${h} خارج المدى [${COURSE_HOURS_MIN}، ${COURSE_HOURS_MAX}]`)
+    } else if (h !== COURSE_STANDARD_HOURS) {
+      errorsAr.push(`${F.core} · الدورة ${c.course_id}: ${h} ساعة — والدوراتُ كلُّها ${COURSE_STANDARD_HOURS} بقرار صاحب المنصّة`)
+    }
+    const sum = moduleHours.get(c.course_id) ?? 0
+    if (sum !== h) {
+      warningsAr.push(`${F.core} · الدورة ${c.course_id}: ساعاتُها ${h} ومجموعُ ساعات وحداتها ${sum}`)
     }
   }
 
