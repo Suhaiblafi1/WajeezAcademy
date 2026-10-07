@@ -58,6 +58,14 @@ export const WORKBOOK_TEMPLATES = {
   modules: { href: '/templates/wajeez-workbook-module.docx', download: 'قالب كرّاسة المحور — وجيز.docx', labelAr: 'قالبُ كرّاسة المحور' },
 } as const
 
+/** قالبُ الكرّاسة مملوءا بخطّة الشعبة (٧ أكتوبر ٢٠٢٦) — للدورة، أو لمحاورَ بعينها.
+    يُنزَّل من الخادم بما حُفظ من الخطّة (`workbook-docx.ts`)، والفارغُ يبقى في
+    `WORKBOOK_TEMPLATES`. */
+export function workbookTemplateHref(cohortId: string, moduleIds?: readonly string[]): string {
+  const base = `/api/trainer/cohorts/${encodeURIComponent(cohortId)}/workbook-template`
+  return moduleIds?.length ? `${base}?modules=${moduleIds.map(encodeURIComponent).join(',')}` : base
+}
+
 /** يُلزَم بإقرار القالب؟ ما دامت الخطّةُ في يده — ومن رفع كرّاسةً قبل القرار يُستحسَن له */
 export const templateRequired = (planStatus: string, workbookBeforeTemplate: boolean): boolean =>
   levelRequired(planStatus) && !workbookBeforeTemplate

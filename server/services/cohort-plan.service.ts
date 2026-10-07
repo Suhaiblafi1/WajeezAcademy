@@ -54,6 +54,7 @@ import {
   type CohortWorkbook, type PlanSlot,
 } from '../../src/application/trainer/axis-timeline'
 import { templateRequired, workbooksProblems, type ModuleWorkbook, type WorkbookMode } from '../../src/application/trainer/cohort-workbooks'
+import { workbookDocx, workbookFileName, workbookFill } from './workbook-docx'
 import { APPROVED_PLAN_STATUSES, PLAN_GATE_SELECT, awaitingTrainerPlan, planApprovedOnce } from './registration-window'
 import { AssessmentService } from './assessment.service'
 import { DEFAULT_CAPACITY } from './catalog-readiness.service'
@@ -684,6 +685,23 @@ export class CohortPlanService {
       /* رفع كرّاسةً قبل قالب وجيز — فالقالبُ له مستحسَنٌ لا إلزاميّ (٦ أكتوبر ٢٠٢٦) */
       workbookBeforeTemplate: profile.workbookBeforeTemplate,
     }
+  }
+
+  /* ─────────── كرّاسةُ وجيز مملوءةً بخطّة الشعبة (٧ أكتوبر ٢٠٢٦) ───────────
+
+     اختار صاحبُ المنصّة أن يُنزَّل القالبُ وفيه ما كتبه المدرّبُ في خطواته قبله.
+     ويُبنى من الورشة نفسِها — فالمحاورُ والمواعيدُ واللقاءاتُ والمهامُّ كما يراها
+     في شاشته — والخطّةُ المحفوظةُ لا ما على الشاشة. والقالبُ والقراراتُ في
+     `workbook-docx.ts`. و`moduleIds` لكرّاسة محورٍ أو مجموعةٍ متجاورة. */
+  async workbookTemplate(userId: string, cohortId: string, moduleIds?: readonly string[]) {
+    const ws = await this.workspace(userId, cohortId)
+    const fill = workbookFill({
+      courseTitle: ws.course.titleAr, cohortTitle: ws.cohort.title, trainerName: ws.trainer.name,
+      period: ws.cohort.period, content: ws.plan?.content ?? null, baseModules: ws.course.baseModules,
+      sessions: ws.sessions, assessments: ws.assessments,
+    }, moduleIds)
+    if (!fill) throw new AuthError('unknown_modules', 'لا محورَ بهذا في خطّتك — احفظ محاورك ثمّ نزّل القالب', 400)
+    return { fileName: workbookFileName(fill), data: await workbookDocx(fill) }
   }
 
   /* ─────────── بطاقاتُ «شعبي» — كلُّ شعبةٍ بحلقة تقدّمها ─────────── */

@@ -692,6 +692,25 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
     return plans.workspace(req.auth!.userId, id)
   })
 
+  /* ═══ كرّاسةُ وجيز مملوءةً بخطّتي (٧ أكتوبر ٢٠٢٦) ═══
+
+     ملفُّ Word يُنزَّل من الخطوة الثالثة: للدورة كلِّها، أو بـ`?modules=a,b` لكرّاسة
+     محورٍ أو مجموعةٍ متجاورة. والمدرّبُ وحدَه وفي شعبته (`ownedCohort` في الخدمة). */
+  app.get('/api/trainer/cohorts/:id/workbook-template', {
+    preHandler: requirePermission('trainer.cohort.plan'),
+    schema: { tags: ['trainer-ops'], summary: 'قالبُ كرّاسة وجيز بصيغة Word مملوءا بخطّة الشعبة — للدورة أو لمحاورَ بعينها' },
+  }, async (req, reply) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const { modules } = z.object({ modules: z.string().max(2000).optional() }).parse(req.query)
+    const ids = modules ? modules.split(',').map((x) => x.trim()).filter(Boolean).slice(0, 40) : undefined
+    const { fileName, data } = await plans.workbookTemplate(req.auth!.userId, id, ids)
+    return reply
+      .header('content-type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+      .header('content-disposition', `attachment; filename="wajeez-workbook.docx"; filename*=UTF-8''${encodeURIComponent(fileName)}`)
+      .header('cache-control', 'no-store')
+      .send(data)
+  })
+
   app.put('/api/trainer/cohorts/:id/plan', {
     preHandler: requirePermission('trainer.cohort.plan'),
     schema: { tags: ['trainer-ops'], summary: 'حفظُ محتوى شعبتي مسودّةً: مدّتُها ومحاورُها وتطبيقُها ومصادرُها' },
