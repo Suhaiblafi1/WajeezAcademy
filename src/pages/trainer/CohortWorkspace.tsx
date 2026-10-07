@@ -68,8 +68,9 @@ import TabBar from "@/components/ui/TabBar";
 import ModuleBodyUpload from "@/components/ModuleBodyUpload";
 import { MAX_BODY_FILE_BYTES, moduleBodyDone, resourceHasSource } from "@/application/trainer/module-body";
 import {
-  WORKBOOK_TEMPLATES, groupLabelAr, mergeWithNext, splitGroup, templateRequired, workbookGroups, workbookModeOf, workbookOpensOn,
-  workbooksProblems, workbookTemplateHref, type ModuleWorkbook, type WorkbookMode,
+  MATERIAL_PATCH, WORKBOOK_RIGHTS_AR, WORKBOOK_TEMPLATES, groupLabelAr, mergeWithNext, splitGroup, templateRequired, workbookGroups,
+  workbookMaterialOf, workbookModeOf, workbookOpensOn, workbooksProblems, workbookTemplateHref,
+  type ModuleWorkbook, type WorkbookMaterial, type WorkbookMode,
 } from "@/application/trainer/cohort-workbooks";
 
 /* كما في بقيّة ما يُنزَّل من الخادم: الرابطُ إليه مباشرةً لا عبر `apiGet` */
@@ -446,22 +447,36 @@ function WorkbookFile({ cohortId, refId, value, onChange, locked, label, name }:
   );
 }
 
-/* إقرارُ القالب — المنصّةُ لا تقرأ الملفَّ لتعرف أعلى القالب هو، فيُقَرّ به
-   ويراه المعتمِد. إلزاميٌّ للجدد، ومستحسَنٌ لمن رفع كرّاسةً قبله (٦ أكتوبر ٢٠٢٦). */
-function TemplateConfirm({ id, checked, required, disabled, onChange }: {
-  id: string; checked: boolean; required: boolean; disabled: boolean; onChange: (v: boolean) => void;
+/* على قالب وجيز، أو مادّتُه الجاهزة — المنصّةُ لا تقرأ الملفَّ لتعرف أعلى القالب هو، فيقول
+   المدرّبُ أيّهما ويراه المعتمِد. كان صندوقا واحدا («كتبتُها على قالب وجيز»، ٦ أكتوبر ٢٠٢٦)،
+   فمن عنده مادّةٌ جاهزةٌ لم يجد ما يقوله؛ فصار اختيارا بفرق كلٍّ، وأيُّهما تتمّ به الخطوة
+   (٧ أكتوبر). ويُقال للجدد، ويُستحسن لمن رفع كرّاسةً قبل القالب. */
+const MATERIAL_OPTIONS: { value: WorkbookMaterial; label: string; hint: string }[] = [
+  { value: "template", label: "كتبتُها على قالب وجيز", hint: "بشكل كرّاسات وجيز كلِّها." },
+  { value: "own", label: "مادّتي الجاهزة", hint: "ملفّي كما أعددتُه. يراه المعتمِدُ ليس على القالب، فيقبله أو يعيده إليك بملاحظة." },
+];
+
+function MaterialChoice({ id, value, required, disabled, onChange }: {
+  id: string; value: WorkbookMaterial | null; required: boolean; disabled: boolean; onChange: (v: WorkbookMaterial) => void;
 }) {
   return (
-    <label htmlFor={id} className="flex items-start gap-2.5 text-read leading-6">
-      <input id={id} type="checkbox" checked={checked} disabled={disabled} onChange={(e) => onChange(e.target.checked)}
-        className="mt-1 h-4 w-4 shrink-0 accent-teal" />
-      <span>
-        <b className="text-foreground">كتبتُها على قالب وجيز</b>
-        <span className={required && !checked ? "text-gold-ink" : "text-muted-foreground"}>
-          {required ? " — مطلوبٌ لتتمّ هذه الخطوة." : " — يُستحسن، وليس شرطا لك."}
+    <fieldset disabled={disabled} className="min-w-0">
+      <legend className="text-read leading-6">
+        <b className="text-foreground">على أيّ شكلٍ هي؟</b>
+        <span className={required && !value ? "text-gold-ink" : "text-muted-foreground"}>
+          {required ? " — قل أيّهما لتتمّ هذه الخطوة." : " — يُستحسن أن تقول، وليس شرطا لك."}
         </span>
-      </span>
-    </label>
+      </legend>
+      <div className="mt-1.5 grid gap-1.5">
+        {MATERIAL_OPTIONS.map((o) => (
+          <label key={o.value} htmlFor={`${id}-${o.value}`} className="flex items-start gap-2.5 text-read leading-6">
+            <input id={`${id}-${o.value}`} type="radio" name={id} checked={value === o.value} onChange={() => onChange(o.value)}
+              className="mt-1 h-4 w-4 shrink-0 accent-teal" />
+            <span><b className="text-foreground">{o.label}</b> <span className="text-muted-foreground">— {o.hint}</span></span>
+          </label>
+        ))}
+      </div>
+    </fieldset>
   );
 }
 
@@ -2035,10 +2050,15 @@ export default function CohortWorkspace() {
               {Object.values(dirty).some(Boolean) && (
                 <p className="text-read leading-6 text-gold-ink">في خطّتك تعديلٌ لم يُحفَظ — احفظه أوّلا ليصل إلى القالب؛ فالقالبُ يُملأ بما حفظته.</p>
               )}
+              {/* أو مادّتُه الجاهزة (٧ أكتوبر ٢٠٢٦) — يقول تحت كلّ ملفٍّ أيّهما، بفرق كلٍّ */}
               <p className="text-read leading-6">
                 {required
-                  ? <b className="text-gold-ink">مطلوبٌ لكرّاستك: تُقرّ تحت كلّ ملفٍّ بأنّه على القالب.</b>
+                  ? <><b className="text-gold-ink">وعندك مادّةٌ جاهزة؟ ارفعها كما هي.</b> <span className="text-muted-foreground">تقول تحت كلّ ملفٍّ: على القالب، أم مادّتُك الجاهزة. القالبُ يجعل كرّاساتِ وجيز بشكلٍ واحدٍ للمتعلّم؛ ومادّتُك الجاهزةُ يراها المعتمِدُ فيقبلها أو يعيدها إليك بملاحظة.</span></>
                   : <span className="text-muted-foreground">يُستحسن — رفعتَ كرّاسةً قبل القالب، فلك أن تبقيها كما هي.</span>}
+              </p>
+              {/* وما يكتبه على القالب له (٧ أكتوبر ٢٠٢٦) — والنصُّ نفسُه في صفحة المدرّب داخلَ القالب */}
+              <p className="border-t border-white/[0.06] pt-2.5 text-read leading-6 text-muted-foreground">
+                <b className="text-foreground">{WORKBOOK_RIGHTS_AR.title}.</b> {WORKBOOK_RIGHTS_AR.body}
               </p>
             </Inset>
 
@@ -2082,8 +2102,8 @@ export default function CohortWorkspace() {
                   <WorkbookFile cohortId={ws.cohort.id} refId="workbook-cohort" value={wb ?? {}} locked={locked}
                     onChange={(next) => setWorkbook(next)} label="ارفع كرّاسةَ الدورة (PDF)" name="كرّاسة الدورة" />
                   {workbookDone(wb)
-                    ? <TemplateConfirm id="tpl-course" checked={wb?.onTemplate === true} required={required} disabled={locked}
-                        onChange={(v) => setWorkbook({ onTemplate: v })} />
+                    ? <MaterialChoice id="tpl-course" value={workbookMaterialOf(wb)} required={required} disabled={locked}
+                        onChange={(m) => setWorkbook(MATERIAL_PATCH[m])} />
                     : <p className="text-read font-bold text-gold-ink">بلا كرّاسةٍ بعد.</p>}
                 </Card>
 
@@ -2155,8 +2175,8 @@ export default function CohortWorkspace() {
                           <WorkbookFile cohortId={ws.cohort.id} refId={`workbook-${g.moduleIds[0]}`} value={g} locked={locked}
                             onChange={(nextFile) => patchGroup(i, nextFile)} label={`ارفع كرّاسةَ ${label} (PDF)`} name={`كرّاسة ${label}`} />
                           {workbookDone(g)
-                            ? <TemplateConfirm id={`tpl-${g.moduleIds[0]}`} checked={g.onTemplate === true} required={required} disabled={locked}
-                                onChange={(v) => patchGroup(i, { onTemplate: v })} />
+                            ? <MaterialChoice id={`tpl-${g.moduleIds[0]}`} value={workbookMaterialOf(g)} required={required} disabled={locked}
+                                onChange={(m) => patchGroup(i, MATERIAL_PATCH[m])} />
                             : <p className="text-read font-bold text-gold-ink">بلا كرّاسةٍ بعد.</p>}
                         </Card>
                       </li>

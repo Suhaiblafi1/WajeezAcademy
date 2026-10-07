@@ -166,7 +166,8 @@ describe('④ الشاشةُ تنادي القاعدة، والقالبان في
     expect(block, 'الجمعُ يُعاد كتابتُه').toContain('setGroups(mergeWithNext(wbGroups, i))')
     expect(block, 'الفصلُ يُعاد كتابتُه').toContain('setGroups(splitGroup(wbGroups, i))')
     expect(block, 'موعدُ الفتح يُحسب في الشاشة').toContain('workbookOpensOn(g, slots)')
-    expect(block.match(/<TemplateConfirm /g), 'كرّاسةٌ بلا إقرار').toHaveLength(2)
+    /* وصار الإقرارُ اختيارا: القالبُ أو مادّتُه الجاهزة (٧ أكتوبر ٢٠٢٦) — `workbook-own-material.test.ts` */
+    expect(block.match(/<MaterialChoice /g), 'كرّاسةٌ بلا إقرار').toHaveLength(2)
   })
 
   it('⚠️ والقالبان يُنزَّلان من الخطوة — وهما في `public/templates` ملفّا Word', () => {
@@ -231,13 +232,13 @@ describe('⑥ المعتمِدُ يرى الطريقةَ والإقرارَ وم
     expect(html).toContain('لكلّ محورٍ كرّاستُه')
     expect(html).toContain('كرّاسةُ المحورين 1 و2')
     expect(html).toContain('على قالب وجيز')
-    expect(html, 'لا يُقال إنّ الإقرارَ غائب').toContain('لم يُقرّ بقالب وجيز')
+    expect(html, 'لا يُقال إنّ الإقرارَ غائب').toContain('لم يقل أعلى القالب هي')
     expect(html).toContain('لم تُوضع بعد')
   })
 
   it('⚠️ وفي رأس المراجعة: أإلزاميٌّ القالبُ لهذا المدرّب أم مستحسَن', () => {
     const REVIEW = code('src/components/admin/TrainerPlanReview.tsx')
-    expect(REVIEW).toMatch(/trainerPlan\.workbookBeforeTemplate\s*\?[\s\S]{0,80}مستحسَنٌ لهذا المدرّب[\s\S]{0,160}إلزاميٌّ لهذا المدرّب/)
+    expect(REVIEW).toMatch(/trainerPlan\.workbookBeforeTemplate\s*\?[\s\S]{0,80}مستحسَنٌ لهذا المدرّب[\s\S]{0,160}القالبُ أو مادّتُه الجاهزة/)
     expect(code('server/services/cohort-plan.service.ts')).toMatch(/workbookBeforeTemplate: trainer\?\.workbookBeforeTemplate \?\? false/)
   })
 

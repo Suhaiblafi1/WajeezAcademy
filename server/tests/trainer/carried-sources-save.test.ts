@@ -122,10 +122,10 @@ describe('ما نُقل من اللوح القديم', () => {
       ...content, summaryAr: 'نبذةٌ عن الشعبة', startsOn: '2027-03-07', endsOn: '2027-04-03',
       level: { from: 'beginner', to: 'beginner' },
       audience: { stages: ['fresh_graduate'], goals: ['first_job'] },
-      /* والكرّاسةُ لكلّ محور، وإقرارُ القالب (٦ أكتوبر ٢٠٢٦) */
+      /* والكرّاسةُ لكلّ محور، وإقرارُ القالب (٦ أكتوبر ٢٠٢٦) — أو مادّتُه الجاهزة (٧ أكتوبر) */
       workbookMode: 'modules',
       workbooks: [{ moduleIds: [content.modules[0].moduleId], url: 'https://x.test/m1.pdf', onTemplate: true }],
-      workbook: { url: 'https://x.test/wb.pdf', onTemplate: true },
+      workbook: { url: 'https://x.test/wb.pdf', onTemplate: false, ownMaterial: true },
     })
     expect(saved.statusCode, `رُدّ الحفظُ بمصدرٍ بلا رابطٍ لم يلمسه المدرّب: ${saved.body}`).toBe(200)
     const renamed = await t.call('PATCH', `/api/trainer/cohorts/${t.cohortId}`, { title: 'شعبتي الأولى في النقل' })
@@ -141,7 +141,7 @@ describe('ما نُقل من اللوح القديم', () => {
     expect(after.plan!.content.workbookMode, 'اختار لكلّ محورٍ كرّاستَه ولم يُحفظ').toBe('modules')
     expect(after.plan!.content.workbooks, 'ضاعت كرّاساتُ المحاور')
       .toEqual([{ moduleIds: [content.modules[0].moduleId], url: 'https://x.test/m1.pdf', onTemplate: true }])
-    expect(after.plan!.content.workbook, 'ضاع إقرارُ القالب').toMatchObject({ onTemplate: true })
+    expect(after.plan!.content.workbook, 'ضاع قولُه إنّها مادّتُه الجاهزة').toMatchObject({ onTemplate: false, ownMaterial: true })
   })
 
   it('② والمصدرُ بلا رابطٍ يمنع الإرسالَ وحدَه ويُسمّى — ثمّ يُكمَل فيرتفع', async () => {

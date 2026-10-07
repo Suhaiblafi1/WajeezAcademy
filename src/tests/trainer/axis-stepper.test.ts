@@ -135,7 +135,7 @@ describe('② المحاورُ داخلَ مواعيدها', () => {
    المحاور وقالبِ وجيز في `cohort-workbooks.test.ts`. وهنا كرّاسةُ الدورة وملفُّها. */
 describe('③ الكرّاسة — كرّاسةُ الدورة وملفُّها', () => {
   const block = stageBlock('workbooks', 'sessions')
-  const FILE = WS.slice(WS.indexOf('function WorkbookFile('), WS.indexOf('function TemplateConfirm('))
+  const FILE = WS.slice(WS.indexOf('function WorkbookFile('), WS.indexOf('const MATERIAL_OPTIONS'))
 
   it('⚠️ كرّاسةُ الدورة يُحكم عليها بقاعدة الخادم — لا بطاقةٌ لكلّ موعد', () => {
     expect(block, 'عادت كرّاسةٌ لكلّ موعد').not.toContain('slots.map(')

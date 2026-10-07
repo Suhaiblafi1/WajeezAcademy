@@ -419,7 +419,7 @@ export function buildChecklist(input: {
       labelAr: legacy ? 'اكتب المحتوى النظريَّ لكلّ محور' : 'وزّع المحاورَ على مواعيدها واكتب محتواها النظريّ',
       done: modulesDone, optional: false,
     },
-    { key: 'workbooks', labelAr: 'ضع الكرّاسة — واحدةً للدورة أو لكلّ محورٍ كرّاستَه، على قالب وجيز', done: workbooksDone, optional: false },
+    { key: 'workbooks', labelAr: 'ضع الكرّاسة — واحدةً للدورة أو لكلّ محورٍ كرّاستَه، على قالب وجيز أو مادّتك الجاهزة', done: workbooksDone, optional: false },
     {
       key: 'sessions',
       labelAr: (linked

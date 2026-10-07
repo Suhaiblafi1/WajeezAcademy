@@ -32,6 +32,7 @@ import { signalPlansChanged } from "@/services/plans-signal";
 import { Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import { cohortDayAr } from "@/application/learning/cohort-gate";
+import { ownMaterialLabels, type WorkbookContent } from "@/application/trainer/cohort-workbooks";
 
 interface TrainerPlan {
   id: string; status: string; reviewerNote: string | null; trainerName: string | null;
@@ -54,7 +55,7 @@ interface TrainerPlan {
   approvedPlan?: { content: unknown; reviewedAt: string | null } | null;
   /* والخطّةُ كما رُدّت إن أُعيد إرسالُها بعد ردّ — منها «ما تغيّر منذ ردّك» (⑦) */
   returned?: { content: unknown; at: string | null } | null;
-  content: {
+  content: ({
     summaryAr?: string | null; modules?: { moduleId: string; titleAr: string }[]; resources?: { title: string; url: string }[];
     /* مدّةُ الشعبة كما حدّدها مدرّبُها — تُعتمَد مع الخطّة (٢٧ سبتمبر ٢٠٢٦) */
     startsOn?: string | null; endsOn?: string | null;
@@ -64,7 +65,8 @@ interface TrainerPlan {
     audience?: unknown;
     /* ومواعيدُ المحاور وكرّاساتُها — `application/trainer/axis-timeline.ts` */
     slots?: PlanSlot[] | null;
-  } | null;
+    /* والكرّاسةُ: للدورة أو لكلّ محور، وما قاله المدرّبُ في كلٍّ — `cohort-workbooks.ts` */
+  } & WorkbookContent) | null;
 }
 /** لقاءٌ مباشرٌ ينتظر قرارَ الإدارة — يجدوله المدرّبُ ولا يُعلَن حتّى يُعتمَد */
 interface PendingSession {
@@ -186,6 +188,7 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
             const who = stagesAr(aud);
             const goal = goalsAr(aud);
             const unset = <span className="text-muted-foreground">لم يُحدَّد — أُرسلت قبل أن يُسأل عنه</span>;
+            const own = ownMaterialLabels(trainerPlan.content, (trainerPlan.content?.modules ?? []).map((m) => m.moduleId));
             return (
               <>
                 <p className="mt-1 text-read leading-6 text-foreground">
@@ -198,13 +201,19 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
                   الهدف: {goal ? <b>{goal}</b> : unset}
                 </p>
                 {/* وقالبُ الكرّاسة: إلزاميٌّ للجدد، ومستحسَنٌ لمن رفع كرّاسةً قبله (٦ أكتوبر ٢٠٢٦) —
-                    وإقرارُه بجانب كلّ كرّاسةٍ في بطاقة المنهج تحت */}
+                    ثمّ صار للجديد أن يرفع مادّتَه الجاهزة بدلَه ويقولها، والمعتمِدُ يقرّر (٧ أكتوبر):
+                    فيُسمّى هنا ما رُفع بها، وما قاله في كلّ كرّاسةٍ بجانبها في بطاقة المنهج تحت */}
                 <p className="mt-1 text-read leading-6 text-foreground">
                   قالبُ الكرّاسة:{" "}
                   {trainerPlan.workbookBeforeTemplate
                     ? <><b>مستحسَنٌ لهذا المدرّب</b> <span className="text-muted-foreground">— رفع كرّاسةً قبل القالب</span></>
-                    : <b>إلزاميٌّ لهذا المدرّب</b>}
+                    : <><b>القالبُ أو مادّتُه الجاهزة</b> <span className="text-muted-foreground">— يقول أيّهما في كلّ كرّاسة</span></>}
                 </p>
+                {own.length > 0 && (
+                  <p className="mt-1 text-read leading-6 text-gold-ink">
+                    بمادّته الجاهزة لا على القالب: <b>{own.join("، و")}</b> — اقبلها، أو أعدها إليه بملاحظةٍ في «الكرّاسة».
+                  </p>
+                )}
               </>
             );
           })()}

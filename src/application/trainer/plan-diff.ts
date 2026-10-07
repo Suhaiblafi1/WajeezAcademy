@@ -17,7 +17,7 @@ import { REVIEW_SECTIONS, STAGE_LABELS, type ReviewNotes, type ReviewSection } f
 import { resourceCategory } from './plan-overlay'
 import { asLevelRange, levelRangeAr } from './cohort-level'
 import { asAudience, goalsAr, stagesAr } from './cohort-audience'
-import { groupLabelAr, workbookGroups, workbookModeOf, type ModuleWorkbook } from './cohort-workbooks'
+import { groupLabelAr, workbookGroups, workbookMaterialOf, workbookModeOf, type ModuleWorkbook, type WorkbookMaterial } from './cohort-workbooks'
 
 interface DiffModule {
   moduleId: string
@@ -57,7 +57,7 @@ interface DiffPlan {
   slots?: DiffSlot[] | null
   resources?: DiffResource[] | null
   /** كرّاسةُ الشعبة الواحدة وخريطتُها (٣٠ سبتمبر ٢٠٢٦)، وإقرارُ القالب (٦ أكتوبر ٢٠٢٦) */
-  workbook?: (NonNullable<DiffSlot['workbook']> & { parts?: { moduleId: string; whereAr?: string | null }[] | null; onTemplate?: boolean | null }) | null
+  workbook?: (NonNullable<DiffSlot['workbook']> & { parts?: { moduleId: string; whereAr?: string | null }[] | null; onTemplate?: boolean | null; ownMaterial?: boolean | null }) | null
   /** أو لكلّ محورٍ كرّاستُه (٦ أكتوبر ٢٠٢٦) — `cohort-workbooks.ts` */
   workbookMode?: string | null
   workbooks?: ModuleWorkbook[] | null
@@ -150,6 +150,16 @@ const workbookKey = (w: DiffSlot['workbook']) => {
 
 const MODE_AR = { course: 'واحدةٌ للدورة', modules: 'لكلّ محورٍ كرّاستُه' } as const
 
+/* ما قاله في الكرّاسة: على القالب، أو مادّتُه الجاهزة (٧ أكتوبر ٢٠٢٦) — والانتقالُ بينهما يُقال
+   بطرفيه، فالمعتمِدُ يقرّر في المادّة الجاهزة ولا يُفاجأ بها */
+const MATERIAL_AR: Record<WorkbookMaterial, string> = { template: 'على قالب وجيز', own: 'مادّتُه الجاهزة' }
+function materialChange(was: WorkbookMaterial | null, is: WorkbookMaterial | null): string | null {
+  if (was === is) return null
+  if (!is) return was === 'template' ? 'سُحب إقرارُ القالب' : 'سُحب قولُه إنّها مادّتُه الجاهزة'
+  if (!was) return is === 'template' ? 'أقرّ بأنّها على قالب وجيز' : 'قال إنّها مادّتُه الجاهزة لا على القالب'
+  return `${MATERIAL_AR[was]} ← ${MATERIAL_AR[is]}`
+}
+
 function workbookLines(a: DiffPlan, b: DiffPlan): string[] {
   const out: string[] = []
   /* ═══ الطريقةُ أوّلا (٦ أكتوبر ٢٠٢٦) ═══
@@ -165,9 +175,8 @@ function workbookLines(a: DiffPlan, b: DiffPlan): string[] {
     const ca = workbookKey(before)
     const cb = workbookKey(b.workbook ?? null)
     if (ca !== cb) out.push(!ca ? 'أُضيفت كرّاسةُ الدورة' : !cb ? 'حُذفت كرّاسةُ الدورة' : 'تغيّرت كرّاسةُ الدورة')
-    if (cb && (before?.onTemplate === true) !== (b.workbook?.onTemplate === true)) {
-      out.push(b.workbook?.onTemplate === true ? 'كرّاسةُ الدورة: أقرّ بأنّها على قالب وجيز' : 'كرّاسةُ الدورة: سُحب إقرارُ القالب')
-    }
+    const said = materialChange(workbookMaterialOf(before), workbookMaterialOf(b.workbook))
+    if (cb && said) out.push(`كرّاسةُ الدورة: ${said}`)
     const pos = new Map(ids.map((id, i) => [id, i + 1]))
     const whereOf = (p: DiffPlan | null) => new Map(list(p?.workbook?.parts).map((x) => [x.moduleId, text(x.whereAr)]))
     const wa = whereOf(ma === 'course' ? a : null)
@@ -190,9 +199,8 @@ function workbookLines(a: DiffPlan, b: DiffPlan): string[] {
       const before = workbookKey(was ?? null)
       const after = workbookKey(g)
       if (before !== after) out.push(!before ? `أُضيفت ${label}` : !after ? `حُذفت ${label}` : `تغيّرت ${label}`)
-      if (after && (was?.onTemplate === true) !== (g.onTemplate === true)) {
-        out.push(g.onTemplate === true ? `${label}: أقرّ بأنّها على قالب وجيز` : `${label}: سُحب إقرارُ القالب`)
-      }
+      const said = materialChange(workbookMaterialOf(was), workbookMaterialOf(g))
+      if (after && said) out.push(`${label}: ${said}`)
     }
     const kept = new Set(now.map(keyOf))
     for (const [k, g] of old) {
