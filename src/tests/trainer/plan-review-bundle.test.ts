@@ -141,7 +141,10 @@ describe('خطة-الشعبة.md', () => {
     expect(general).toContain('**[رابط] مرجعٌ للشعبة** · https://ref.test/')
   })
 
-  it('الكرّاسةُ وأين يبدأ فيها كلُّ محور', () => {
+  it('الكرّاسةُ وأين يبدأ فيها كلُّ محور — وما قاله المدرّبُ في شكلها', () => {
+    expect(md).toContain('- **الطريقة:** كرّاسةٌ واحدةٌ للدورة')
+    expect(md).toContain('- **شكلها:** لم يقل أعلى القالب هي')
+    expect(md).toContain('**الكراسة:** واحدةٌ للدورة — ملفٌّ مرفوع · لم يقل أعلى القالب هي')
     expect(md).toContain('- **اسمها:** كرّاسةُ الأتمتة')
     expect(md).toContain('- ملفٌّ مرفوع: `files/الكراسة — كراسة.pdf`')
     expect(md).toContain('- **أين يبدأ كلُّ محور فيها:** المحور 1: ص ٣ · المحور 3: ص ٢٠')
@@ -153,5 +156,38 @@ describe('خطة-الشعبة.md', () => {
     expect(again).toContain('## ملاحظات الإدارة في الرد السابق')
     expect(again).toContain('**الكرّاسة:**')
     expect(again).toContain('> أضف موضعَ المحور ٢')
+  })
+})
+
+/* ═══ وكرّاسةٌ لكلّ محور (٦ أكتوبر ٢٠٢٦) ═══
+   المدرّبُ يختار: واحدةٌ للدورة أو لكلّ محورٍ كرّاستُه (`cohort-workbooks.ts`). والطريقتان
+   تُحفظان معا — فالحزمةُ تحمل ملفّاتِ المختارة وحدَها، وتقول لكلّ كرّاسةٍ أعلى قالب وجيز هي. */
+describe('كرّاسةٌ لكلّ محور', () => {
+  const base = input()
+  const perModule = input({
+    content: {
+      ...(base.content as Record<string, unknown>),
+      workbookMode: 'modules',
+      workbooks: [
+        { moduleIds: ['M1', 'M2'], bodyFileKey: 'key-wb-m12-000000', bodyFileName: 'م12.pdf', onTemplate: true },
+        { moduleIds: ['M3'], url: 'https://drive.test/m3', ownMaterial: true },
+      ],
+    },
+  })
+  const files = bundleFiles(perModule)
+  const md = reviewMarkdown(perModule, files)
+
+  it('ملفُّ كلِّ كرّاسةٍ في الحزمة — وكرّاسةُ الدورة المحفوظةُ في الطريقة الأخرى لا', () => {
+    expect(files.map((f) => f.path)).toContain('files/كراسات/كراسة المحورين 1 و2 — م12.pdf')
+    expect(files.map((f) => f.key)).not.toContain('key-workbook-00000')
+  })
+
+  it('لكلّ كرّاسةٍ سطرُها: ملفُّها أو رابطُها وشكلُها — والناقصةُ تُسمّى', () => {
+    expect(md).toContain('- **الطريقة:** كرّاسةٌ لكلّ محورٍ أو لمحاورَ متجاورة')
+    expect(md).toContain('- **كرّاسةُ المحورين 1 و2:** ملفٌّ مرفوع: `files/كراسات/كراسة المحورين 1 و2 — م12.pdf` · على قالب وجيز')
+    expect(md).toContain('- **كرّاسةُ المحور 3:** https://drive.test/m3 · مادّةُ المدرّب الجاهزة — ليست على القالب')
+    expect(md).toContain('- **كرّاسةُ المحور 4:** لم تُوضع بعد')
+    expect(md).toContain('**الكراسة:** لكلّ محور — 2 من 3 موضوعة · 1 مادّةُ المدرّب الجاهزة لا على القالب')
+    expect(md).not.toContain('لم تُوضع بعد.')
   })
 })
