@@ -23,9 +23,10 @@ import { PendingTasks } from "@/components/PendingTasks";
 import { awaitingTasks } from "@/application/trainer/task-approval";
 import { PlanDiffList, SinceReturnList } from "@/components/PlanDiff";
 import { planDiff, sinceReturn } from "@/application/trainer/plan-diff";
-import { hasReviewNotes, type ReviewNotes } from "@/application/trainer/review-notes";
+import { REVIEW_NOTE_MAX, hasReviewNotes, type ReviewNotes } from "@/application/trainer/review-notes";
+import { StaffField, staffAreaCls } from "@/components/FormKit";
 import { curriculumView, type CurriculumInput } from "@/application/trainer/curriculum-view";
-import { PLAN_AR, planApprovedMsg, taskDecisionMsg, type PlanDecision } from "@/application/trainer/plan-decision";
+import { PLAN_AR, approvalBody, planApprovedMsg, taskDecisionMsg, type PlanDecision } from "@/application/trainer/plan-decision";
 import { adminRegistrationLine } from "@/application/learning/registration-state";
 import TrainerNextSteps from "@/components/admin/TrainerNextSteps";
 import { signalPlansChanged } from "@/services/plans-signal";
@@ -122,6 +123,8 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
   const waitingTasks = trainerPlan ? awaitingTasks(trainerPlan.assessments, trainerPlan.approvedOnce ?? false) : [];
   const axisNo = new Map((trainerPlan?.content?.modules ?? []).map((m, i) => [m.moduleId, i + 1] as const));
   const [asking, setAsking] = useState(false);
+  /* وكلمةٌ تصله مع الاعتماد — للمقترَح لا للمطلوب (`approvalBody`، ٧ أكتوبر ٢٠٢٦) */
+  const [approveNote, setApproveNote] = useState("");
   /* وفُعِّل مدرّبُها بهذا الاعتماد — فيظهر ما بقي عليك (`TrainerNextSteps`، «3a») */
   const [activated, setActivated] = useState(false);
   /* القضاءُ في الخطّة يُبلَّغ مرّتين: البابُ الذي فُتحت منه (الطابورُ يعلّمها)،
@@ -339,16 +342,39 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
             : `وباعتمادها تُعتمَد معها المهامُّ المنتظِرةُ (${waitingTasks.length}) أدناه — كما تقرؤها في المنهج أعلاه.`}
         </p>
       )}
+      {/* ═══ وكلمةٌ تصله مع الاعتماد (٧ أكتوبر ٢٠٢٦) ═══
+          الخطّةُ التي ليس عليها إلّا مقترحاتٌ تُعتمَد ولا تُردّ، وتصل مقترحاتُها في خبر
+          اعتمادها «وكلمةُ الإدارة: …». وما يُطلب قبل الاعتماد مكانُه «اطلب تعديلات». */}
+      {trainerPlan?.status === "submitted" && canApprovePlan && !asking && (
+        <details className="mt-3" open={approveNote.length > 0}>
+          <summary className="cursor-pointer text-read font-bold text-teal-light-ink">أضِف كلمةً تصله مع الاعتماد (اختياريّ)</summary>
+          <div className="mt-2">
+            <StaffField
+              label="كلمةُ الإدارة"
+              hint="تصل المدرّبَ مع خبر الاعتماد في الجرس والبريد. للمقترَح لا للمطلوب: ما يجب أن يُعدَّل قبل الاعتماد مكانُه «اطلب تعديلات»."
+            >
+              <textarea
+                rows={3}
+                maxLength={REVIEW_NOTE_MAX}
+                value={approveNote}
+                onChange={(e) => setApproveNote(e.target.value)}
+                placeholder="مثلا: اعتمدناها — ومعها في البريد مقترحاتٌ لمصادرَ عربيّةٍ لكلّ محور، تضيفها إن شئت."
+                className={staffAreaCls}
+              />
+            </StaffField>
+          </div>
+        </details>
+      )}
       <div className="mt-3 flex flex-wrap gap-2">
         {trainerPlan?.status === "submitted" && canApprovePlan && !asking && (
           <>
             <Button tone="confirm" size="sm" disabled={busy}
               onClick={() => act(
-                () => apiPost<PlanDecision>(`/api/admin/cohort-plans/${trainerPlan.id}/decide`, { approve: true })
-                  .then(async (r) => { await Promise.all([loadPlan(), loadPendingSessions()]); if (r.prep?.activated) setActivated(true); decided("approved"); return r; }),
+                () => apiPost<PlanDecision>(`/api/admin/cohort-plans/${trainerPlan.id}/decide`, approvalBody(approveNote))
+                  .then(async (r) => { setApproveNote(""); await Promise.all([loadPlan(), loadPendingSessions()]); if (r.prep?.activated) setActivated(true); decided("approved"); return r; }),
                 (r) => planApprovedMsg(r as PlanDecision),
               )}>
-              {riding.length > 0 ? `اعتمدها ولقاءاتِها (${riding.length})` : "اعتمدها"}
+              {riding.length > 0 ? `اعتمدها ولقاءاتِها (${riding.length})` : "اعتمدها"}{approveNote.trim() ? " مع كلمتك" : ""}
             </Button>
             <Button tone="danger" size="sm" disabled={busy} onClick={() => setAsking(true)}>
               اطلب تعديلات

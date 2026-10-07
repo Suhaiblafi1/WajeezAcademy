@@ -27,7 +27,8 @@ import { cohortDayAr, cohortWindow, whenAr } from '../learning/cohort-gate'
 import { sessionMinutes, slotLabelAr } from './session-length'
 import { proposedTask, readTaskChange, taskValues, type TaskAttachment } from './task-approval'
 import { PLAN_AR } from './plan-decision'
-import { REVIEW_SECTIONS, type ReviewNotes } from './review-notes'
+import { REVIEW_SECTIONS, STAGE_LABELS, type ReviewNotes } from './review-notes'
+import { WORKSPACE_STEPS, workspaceStepPath, type WorkspaceStep } from './workspace-step'
 import { resourceKind, type ResourceKind } from './plan-overlay'
 import type { CohortWorkbook, PlanSlot } from './axis-timeline'
 import { groupLabelAr, workbookGroups, workbookModeOf, type ModuleWorkbook, type WorkbookMaterial } from './cohort-workbooks'
@@ -52,6 +53,8 @@ export interface ReviewBundleInput {
   approvedOnce?: boolean
   /** ملاحظاتُ آخر ردٍّ إن كان — ليُقابَل بها ما عُدّل */
   reviewerNotes?: ReviewNotes
+  /** عنوانُ الموقع ومعرّفُ الشعبة — منهما روابطُ خطوات المدرّب (`workspace-step.ts`) */
+  links?: { siteUrl: string; cohortId: string }
   /** لحظةُ التنزيل — تُمرَّر فيُختبر بلا ساعة */
   now?: Date
 }
@@ -69,6 +72,8 @@ const KIND_AR: Record<ResourceKind, string> = {
   link: 'رابط', video: 'فيديو', book: 'كتاب', audiobook: 'كتاب صوتيّ', social: 'منشور', file: 'ملفّ',
 }
 const TASK_TYPE_AR: Record<string, string> = { assignment: 'واجب', quiz: 'اختبار', project: 'مشروع' }
+/** أسماءُ الخطوات كما يقرؤها المدرّبُ في شريطه — والأخيرةُ «الاعتماد» */
+const STEP_AR: Record<WorkspaceStep, string> = { ...STAGE_LABELS, approval: 'الاعتماد' }
 /** ما قاله المدرّبُ في كرّاسته (`cohort-workbooks.ts`) — بكلمات «المراجعة» نفسِها */
 const MATERIAL_AR: Record<WorkbookMaterial, string> = {
   template: 'على قالب وجيز',
@@ -312,6 +317,18 @@ export function reviewMarkdown(input: ReviewBundleInput, files: readonly BundleF
       line(quote(notes[s.key]!.trim()))
       line()
     }
+  }
+
+  /* ═══ وروابطُ خطوات المدرّب (٧ أكتوبر ٢٠٢٦) ═══
+     كلُّ تعديلٍ في تقرير المراجعة يحمل رابطَ خطوته — فتُكتب هنا جاهزةً لا تُركَّب بيد */
+  if (input.links) {
+    const site = input.links.siteUrl.replace(/\/+$/, '')
+    line('## روابط خطوات المدرّب')
+    line()
+    line('يفتح كلٌّ منها خطّةَ الشعبة على خطوته — حين تكون الخطّةُ في يد المدرّب (رُدّت إليه بتعديلات).')
+    line()
+    for (const step of WORKSPACE_STEPS) line(`- **${STEP_AR[step]}:** ${site}${workspaceStepPath(input.links.cohortId, step)}`)
+    line()
   }
 
   line('## ملفات هذه الحزمة')

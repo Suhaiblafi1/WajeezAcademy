@@ -150,6 +150,14 @@ describe('خطة-الشعبة.md', () => {
     expect(md).toContain('- **أين يبدأ كلُّ محور فيها:** المحور 1: ص ٣ · المحور 3: ص ٢٠')
   })
 
+  it('وروابطُ خطوات المدرّب — لكلّ خطوةٍ رابطُها، وبلا عنوانٍ لا قسم', () => {
+    expect(md).not.toContain('## روابط خطوات المدرّب')
+    const withLinks = reviewMarkdown(input({ links: { siteUrl: 'https://www.wajeezacademy.com/', cohortId: 'c-77' } }), files)
+    expect(withLinks).toContain('## روابط خطوات المدرّب')
+    expect(withLinks).toContain('- **الكرّاسة:** https://www.wajeezacademy.com/trainer/cohort/c-77?step=workbooks')
+    expect(withLinks).toContain('- **المهامّ والمصادر:** https://www.wajeezacademy.com/trainer/cohort/c-77?step=assignments')
+  })
+
   it('ملاحظاتُ الردّ السابق تُقال إن كانت', () => {
     expect(md).not.toContain('## ملاحظات الإدارة في الرد السابق')
     const again = reviewMarkdown(input({ reviewerNotes: { workbooks: 'أضف موضعَ المحور ٢' } }), files)

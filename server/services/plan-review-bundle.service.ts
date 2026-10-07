@@ -28,6 +28,7 @@ import type { PrismaClient } from '@prisma/client'
 import { CohortPlanService } from './cohort-plan.service'
 import { getObject, getObjectMeta } from './object-store'
 import { recordAudit } from './audit'
+import { publicSiteUrl } from './notification.service'
 import {
   bundleFiles, reviewMarkdown, safeName, type BundleFile, type ReviewBundleInput, type ReviewSession,
 } from '../../src/application/trainer/plan-review-bundle'
@@ -125,6 +126,7 @@ export class PlanReviewBundleService {
       assessments: plan.assessments,
       approvedOnce: plan.approvedOnce,
       reviewerNotes: plan.reviewerNotes,
+      links: { siteUrl: publicSiteUrl(), cohortId },
       now,
     }
 
