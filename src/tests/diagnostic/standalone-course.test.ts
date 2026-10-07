@@ -39,10 +39,21 @@ import type { Answer, CatalogCourse } from '@/domain/diagnostic/types'
 import { createEngineV21 } from '@/domain/diagnostic/v2_1'
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
+/* ═══ والكتالوجُ المضمَّن هنا بلا ترشيحٍ مُشعَل ═══
+
+   منذ ٧ أكتوبر ٢٠٢٦ يُشعل الكتالوجُ ٣١ دورةً بقرار صاحب المنصّة. وهذه
+   الحالاتُ تفحص قاعدةَ الدورة الواحدة — تدخل أم لا، وتغلب مسارا أم لا — فلو
+   بقيت الإحدى والثلاثون في الفضاء لصار الفحصُ عن غيرها. فتُطفأ هنا وحدَها،
+   ويقيس الحالةُ الأولى أدناه الكتالوجَ كما هو. */
+const dormant = () => {
+  const core = JSON.parse(JSON.stringify(coreCatalogJson)) as { courses: Record<string, unknown>[] }
+  for (const c of core.courses) delete c.recommendable_directly
+  return core
+}
 const basePayload = () => ({
   questions: questionsJson as any,
   skills: skillsJson as any,
-  coreCatalog: JSON.parse(JSON.stringify(coreCatalogJson)) as any,
+  coreCatalog: dormant() as any,
   templates: templatesJson as any,
   optionEffects: optionEffectsJson as any,
   pathwayProfiles: pathwayProfilesJson as any,
@@ -82,9 +93,17 @@ beforeEach(restore)
 afterEach(restore)
 
 describe('الفضاءُ لا يتغيّر حتّى يُؤذَن لدورة', () => {
-  it('ولا دورةَ مأذونٌ لها في الكتالوج المضمَّن — فالميزةُ خاملةٌ حتّى تُشعَل', () => {
+  it('ولا دورةَ مأذونٌ لها إلّا ما أشعله الكتالوج — والكتالوجُ المضمَّن يُشعل ما قرّره صاحبُ المنصّة', () => {
+    /* بلا إشعالٍ لا دورةَ في الفضاء */
     expect(standaloneCourses()).toEqual([])
     expect(recommendationUniverse().entities.some((e) => e.entity_type === 'course')).toBe(false)
+    /* والكتالوجُ كما هو (٧ أكتوبر ٢٠٢٦): ٣٢ قرارا، ٣١ مُشعَلة — C-FIN-101 مطفأةٌ
+       حتّى تُعتمد مهاراتُها أكاديميّا، فلا معتمدَ فيها تنافس به */
+    installCatalogSnapshot({ ...basePayload(), coreCatalog: JSON.parse(JSON.stringify(coreCatalogJson)) } as any, 'test-real')
+    const ids = standaloneCourses().map((c) => c.course_id)
+    expect(ids).toHaveLength(31)
+    expect(ids).not.toContain('C-FIN-101')
+    expect(ids).toEqual(expect.arrayContaining(['C-CYB-106', 'C-CYB-107', 'C-SAL-106', 'C-SCM-106', 'C-MGR-108', 'C-COMX-115', 'C-COMX-116']))
   })
 
   it('والرمزُ وحدَه لا يكفي — بلا مجالٍ لا يصلها هدفٌ ولا احتياج', () => {

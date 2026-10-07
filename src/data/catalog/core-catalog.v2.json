@@ -11351,7 +11351,17 @@
       "practical_project_ar": "ملفُّ اتّصالٍ مؤسّسيّ: خريطةُ جمهور + دليلُ رسائل + بيانٌ صحفيّ + حزمةُ قوالبَ رقميّةٍ وردودٍ علنيّة + قائمةٌ إعلاميّةٌ ومقترحاتُ قصص + خطّةُ أزمةٍ مجرَّبةٌ في مقابلةٍ مسجّلة وفي محاكاةِ أيّامها التالية + عرضُ الملفّ أمام لجنةٍ تحاكي الإدارة مع مؤشّراتِ متابعة.",
       "title_term_en": "Public Relations & Corporate Communication",
       "list_price": 150,
-      "list_currency": "USD"
+      "list_currency": "USD",
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "communication_influence",
+        "marketing_growth"
+      ],
+      "diagnostic_stages": [
+        "early_career",
+        "experienced",
+        "manager"
+      ]
     },
     {
       "course_id": "C-COMX-109",
@@ -11425,7 +11435,17 @@
       "practical_project_ar": "عرضٌ تنفيذيٌّ مسجّل من عشر دقائق أمام لجنةٍ تحاكي مجلسا: افتتاحيّةُ قرار + ردٌّ على ثلاثة اعتراضات + تكييفٌ لتغيّرٍ مفاجئٍ في شرط الغرفة + خلاصةٌ في ثلاث جمل، ومعه إحاطةُ خبرٍ سيّئٍ مسجّلة + عرضٌ في موقفٍ حقيقيّ مقارَنٌ بالتشخيص الأوّل مع خطّة تدرّبٍ شخصيّة.",
       "title_term_en": "Executive Presence",
       "list_price": 175,
-      "list_currency": "USD"
+      "list_currency": "USD",
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "communication_influence",
+        "people_leadership"
+      ],
+      "diagnostic_stages": [
+        "experienced",
+        "manager",
+        "senior_manager"
+      ]
     },
     {
       "course_id": "C-COMX-110",
@@ -11497,7 +11517,18 @@
       "practical_project_ar": "ملفُّ عضو الفريق: اتّفاقُ أدوارٍ مع فريقٍ حقيقيّ ومراجعتُه معه بعد أسبوعين + حوارُ إصغاءٍ مسجّل + ملاحظةٌ مستقبَلةٌ وتعديلُها + ملاحظةٌ مقدَّمةٌ لزميلٍ وأثرُها + قواعدُ تواصلٍ للفريق + خطّةُ حسمِ خلافٍ منفَّذة وخطّةُ تعاملٍ مع حالةٍ صعبة.",
       "title_term_en": "Effective Teamwork",
       "list_price": 120,
-      "list_currency": "USD"
+      "list_currency": "USD",
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "communication_influence",
+        "personal_development"
+      ],
+      "diagnostic_stages": [
+        "early_career",
+        "experienced",
+        "fresh_graduate",
+        "university_student"
+      ]
     },
     {
       "course_id": "C-BIZ-106",
@@ -11569,7 +11600,18 @@
       "practical_project_ar": "خطّةُ عملٍ في عشر صفحات: ملخّصٌ تنفيذيّ + نموذجُ عمل + سوقٌ ومنافسةٌ بمصادرهما + تشغيلٌ وفريقٌ بمعالمَ ربعيّة + افتراضاتٌ معلنة + توقّعاتُ سنةٍ نقديّة + سجلُّ مخاطرَ مربوطٌ بها + طلبٌ محدّد، تُعرض على لجنةٍ تحاكي مموّلا بعينه ويُسلَّم بعدها سجلُّ التعديلات.",
       "title_term_en": "Small Business Plan",
       "list_price": 200,
-      "list_currency": "USD"
+      "list_currency": "USD",
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "entrepreneurship",
+        "finance_mgmt"
+      ],
+      "diagnostic_stages": [
+        "founder",
+        "freelancer",
+        "fresh_graduate",
+        "university_student"
+      ]
     },
     {
       "course_id": "C-BIZ-107",
@@ -11640,7 +11682,17 @@
       "practical_project_ar": "ملفُّ استدامةِ مشروع: تقييمُ جاهزيّةٍ لمتطلّبات ESG بأدلّته + استبيانُ مورّدين معبّأٌ بسنده + خطُّ أساسٍ شهريٌّ للكهرباء والماء والهدر + خريطةُ تدفّق الموادّ + خطّةُ فرصةٍ دائريّةٍ محسوبةٍ لثلاثة أشهر بشريكٍ محدّد، يُعرض على لجنةٍ تحاكي عميلا كبيرا أو مموّلا.",
       "title_term_en": "Sustainability & Circular Economy for SMEs",
       "list_price": 175,
-      "list_currency": "USD"
+      "list_currency": "USD",
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "entrepreneurship",
+        "operations"
+      ],
+      "diagnostic_stages": [
+        "experienced",
+        "founder",
+        "manager"
+      ]
     },
     {
       "course_id": "C-BIZ-108",
@@ -11715,7 +11767,18 @@
       "practical_project_ar": "ملفُّ تمويل: حسابُ الاحتياج بسيناريوهاته + خريطةُ مصادرَ مختارة + عرضٌ تمويليٌّ من عشر شرائح + جدولُ ملكيّةٍ بعد الجولة + غرفةُ بياناتٍ للعناية الواجبة + مصفوفةُ بنود الشروط بحدود القبول + رسالةُ متابعةٍ وتحديثٌ للمموّل، يُعرض على لجنةٍ تحاكي مستثمرين ومقرِضين.",
       "title_term_en": "Startup Funding",
       "list_price": 200,
-      "list_currency": "USD"
+      "list_currency": "USD",
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "entrepreneurship",
+        "finance_mgmt"
+      ],
+      "diagnostic_stages": [
+        "founder",
+        "freelancer",
+        "fresh_graduate",
+        "university_student"
+      ]
     },
     {
       "course_id": "C-MGR-106",
@@ -11787,7 +11850,16 @@
       "practical_project_ar": "ملفُّ بناء فريق: ميثاقٌ متّفقٌ عليه + تشخيصُ ثقةٍ في بداية الخطّة ونهايتها + سجلُّ ملاحظاتٍ لأسبوعين + اجتماعٌ معادُ التصميم بسجلّ قراراته + سجلُّ تدخّلاتٍ في مواقفَ ضاغطة + خطّةُ استقبال عضوٍ جديد + خطّةُ ثلاثين يوما بنتائجها، يُدافَع عنه أمام أقران.",
       "title_term_en": "Building Effective Teams",
       "list_price": 200,
-      "list_currency": "USD"
+      "list_currency": "USD",
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "people_leadership"
+      ],
+      "diagnostic_stages": [
+        "experienced",
+        "manager",
+        "senior_manager"
+      ]
     },
     {
       "course_id": "C-MGR-107",
@@ -11862,7 +11934,18 @@
       "practical_project_ar": "خطّةٌ سنويّةٌ لجهة المتعلّم: تحليلُ واقع + ثلاثُ أولويّاتٍ وما تُرك + أهدافٌ ونتائجُ رئيسيّة + جدولُ مواردَ وطاقة + سجلُّ افتراضاتٍ ومخاطر + توزيعٌ ربعيٌّ بمالكين + إيقاعُ مراجعةٍ مجرَّبٌ في محاكاةٍ ربعيّة + صفحةٌ لكلّ فريق، يُدافَع عنها أمام لجنةٍ تمثّل الإدارة العليا.",
       "title_term_en": "Strategic & Operational Planning",
       "list_price": 200,
-      "list_currency": "USD"
+      "list_currency": "USD",
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "operations",
+        "people_leadership"
+      ],
+      "diagnostic_stages": [
+        "experienced",
+        "founder",
+        "manager",
+        "senior_manager"
+      ]
     },
     {
       "course_id": "C-PM-106",
@@ -11934,7 +12017,16 @@
       "practical_project_ar": "ملفُّ تشغيل منهجيّة: قرارُ اختيارٍ مبرَّر + قائمةُ أعمالٍ مرتّبة + لوحةُ Kanban أو سبرنتٌ لأسبوعين بسجلّه + محاضرُ المراجعة والاستعادة + نموذجٌ هجينٌ لمشروعٍ مقيَّدٍ بعقد + تنبّؤٌ بموعد التسليم + سجلُّ أعطالٍ وتعديلات + دفاعٌ أمام لجنةٍ بعد دورةٍ ثانية.",
       "title_term_en": "Project Management Methodologies",
       "list_price": 200,
-      "list_currency": "USD"
+      "list_currency": "USD",
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "project_management"
+      ],
+      "diagnostic_stages": [
+        "early_career",
+        "experienced",
+        "manager"
+      ]
     },
     {
       "course_id": "C-PM-107",
@@ -12006,7 +12098,19 @@
       "practical_project_ar": "مساحةُ عملٍ لمشروعٍ حقيقيّ: لوحةُ مهامّ مكتملةُ الجرد + قنواتُ نقاشٍ مربوطة + جدولُ صلاحيّاتٍ وملفّات + قواعدُ استعمالٍ في صفحة + قراءةُ التزامٍ بعد أسبوعين بالتعديلات وسجلّ الحالات الصعبة + دليلُ انضمامٍ مُختبَرٌ بعضوٍ جديدٍ وعرضٌ في عشر دقائق.",
       "title_term_en": "Project Management Tools",
       "list_price": 175,
-      "list_currency": "USD"
+      "list_currency": "USD",
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "ai_productivity",
+        "project_management"
+      ],
+      "diagnostic_stages": [
+        "early_career",
+        "experienced",
+        "freelancer",
+        "fresh_graduate",
+        "manager"
+      ]
     },
     {
       "course_id": "C-PM-108",
@@ -12081,7 +12185,18 @@
       "practical_project_ar": "ملفُّ مشروعٍ ممول: قراءةُ دعوة + إطارٌ منطقيٌّ بمؤشّراته + مقترحٌ كاملٌ بميزانيّة + خطّةُ متابعةٍ وتقييم + تقريرٌ دوريٌّ محاكًى، يُعرض على لجنةٍ تحاكي مانحا.",
       "title_term_en": "Grant-Funded Project Management",
       "list_price": 200,
-      "list_currency": "USD"
+      "list_currency": "USD",
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "finance_mgmt",
+        "project_management"
+      ],
+      "diagnostic_stages": [
+        "early_career",
+        "experienced",
+        "fresh_graduate",
+        "manager"
+      ]
     },
     {
       "course_id": "C-PSY-109",
@@ -12158,7 +12273,23 @@
       "practical_project_ar": "ملفُّ دليل الثقة: سجلُّ حوارٍ داخليٍّ لأسبوعين + إعادةُ تقديرٍ لموقفين + بطاقاتُ أسئلةٍ لثلاثِ لحظاتِ ضغطٍ بسجلِّ استعمالِها + ملاحظةٌ ناقدةٌ محوَّلةٌ إلى خطوةٍ منفَّذة + تجربتانِ متدرّجتانِ تختبران اعتقادا مقيِّدا بتوقّعِهما ونتيجتِهما وقراءتِهما + عرضٌ أمام مجموعةٍ صغيرةٍ وخطّةُ ممارسةٍ لشهرٍ تالٍ.",
       "title_term_en": "Growth Mindset & Self-Talk",
       "list_price": 120,
-      "list_currency": "USD"
+      "list_currency": "USD",
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "personal_development"
+      ],
+      "diagnostic_stages": [
+        "early_career",
+        "experienced",
+        "founder",
+        "freelancer",
+        "fresh_graduate",
+        "manager",
+        "other_unsure",
+        "senior_manager",
+        "trainer_ld",
+        "university_student"
+      ]
     },
     {
       "course_id": "C-JOB-106",
@@ -12233,7 +12364,17 @@
       "practical_project_ar": "ملفُّ الحضور المهنيّ: تقديمٌ ذاتيٌّ مسجّلٌ بثلاث صيغ + محاكاةُ اجتماعٍ مسجّلة + بريدان مهنيّان + محاكاةُ مناسبةٍ مهنيّة + ردودٌ مسجّلةٌ على ستّةِ مواقفَ محرجة + استقبالُ وفدٍ بالألقابِ وترتيبِ الجلوس + دليلٌ شخصيٌّ لقنواتِ العملِ الرقميّة، يُختَم بمحاكاةِ يومِ عملٍ متّصلٍ ونقاشٍ أمام لجنة.",
       "title_term_en": "Business Etiquette & Professional Protocol",
       "list_price": 120,
-      "list_currency": "USD"
+      "list_currency": "USD",
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "communication_influence",
+        "employment_readiness"
+      ],
+      "diagnostic_stages": [
+        "early_career",
+        "fresh_graduate",
+        "university_student"
+      ]
     },
     {
       "course_id": "C-WEL-101",
@@ -12308,7 +12449,18 @@
       "practical_project_ar": "ملفُّ الأسبوع المخطَّط: سجلُّ وقتٍ لأسبوعٍ فعليّ + منحنى طاقة + أسبوعٌ مخطَّطٌ بكتل تركيز + مقارنةُ الإنجاز بين الأسبوعين + قواعدُ للأسبوع المضطرب وصيغُ اتّفاقٍ على الوقت + مراجعتان أسبوعيّتان + تقديمٌ قصير (10 دقائق) وخطّةُ استمرارٍ لشهر.",
       "title_term_en": "Time, Focus & Energy Management",
       "list_price": 120,
-      "list_currency": "USD"
+      "list_currency": "USD",
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "ai_productivity",
+        "personal_development"
+      ],
+      "diagnostic_stages": [
+        "early_career",
+        "experienced",
+        "freelancer",
+        "university_student"
+      ]
     },
     {
       "course_id": "C-MKT-106",
@@ -12380,7 +12532,20 @@
       "practical_project_ar": "ملفُّ محتوى: تحليلُ جمهور + أربعُ ركائز + تقويمُ شهرٍ بأغراضه ومقاييسه + منشوراتٌ منشورة + قراءةُ أداء أسبوعين بقراراتها + دليلُ نبرة + بنكُ ردودٍ بقواعد التصعيد + سلسلةُ حملةٍ أو مناسبة + مراجعةُ أداء الشهر وخطّةُ الشهر التالي، يُدافَع عنه شفهيّا أمام لجنة.",
       "title_term_en": "Strategic Social Media Content Writing",
       "list_price": 200,
-      "list_currency": "USD"
+      "list_currency": "USD",
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "communication_influence",
+        "marketing_growth"
+      ],
+      "diagnostic_stages": [
+        "early_career",
+        "experienced",
+        "founder",
+        "freelancer",
+        "fresh_graduate",
+        "university_student"
+      ]
     },
     {
       "course_id": "C-FIN-101",
@@ -12455,7 +12620,18 @@
       "practical_project_ar": "ملفُّ المال الشخصيّ: تحليلُ مصروفاتِ شهرٍ فعليّ + ميزانيّةٌ شهريّةٌ مراجَعة + تقويمٌ ماليٌّ سنويٌّ باقتطاعٍ شهريٍّ للمواسم + خطّةُ سداد دَين + مقارنةُ طرقِ شراءٍ كبيرٍ بقرارٍ مكتوب + خطّةُ صندوق طوارئ + ميزانيّةُ طوارئَ لصدمةِ دخل + تقييمُ عرضٍ استثماريّ + خطّةُ سنةٍ ماليّةٌ متّفقٌ عليها مع الأسرةِ ومراجعةُ أوّلِ شهرٍ منها.",
       "title_term_en": "Personal & Family Money Management",
       "list_price": 120,
-      "list_currency": "USD"
+      "list_currency": "USD",
+      "recommendable_directly": false,
+      "diagnostic_domains": [
+        "finance_mgmt",
+        "personal_development"
+      ],
+      "diagnostic_stages": [
+        "early_career",
+        "experienced",
+        "fresh_graduate",
+        "other_unsure"
+      ]
     },
     {
       "course_id": "C-WEB-101",
@@ -12527,7 +12703,18 @@
       "practical_project_ar": "تطبيقُ ويبٍ منشورٌ برابطٍ عامّ: واجهةٌ متجاوبة + تفاعلٌ بـJavaScript + خادمٌ بقاعدة بيانات + مستودعُ Git بسجلّه + ملفُّ تشغيل، مع عرضٍ يشرح قرارا تقنيّا.",
       "title_term_en": "Web Application Development",
       "list_price": 200,
-      "list_currency": "USD"
+      "list_currency": "USD",
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "entrepreneurship",
+        "product_mgmt"
+      ],
+      "diagnostic_stages": [
+        "early_career",
+        "founder",
+        "fresh_graduate",
+        "university_student"
+      ]
     },
     {
       "course_id": "C-EDU-107",
@@ -12602,7 +12789,14 @@
       "practical_project_ar": "ملفُّ الحصّة المعادة: قياسُ حصّةٍ أصليّة + خطّةُ حصّةٍ بثلاث استراتيجيّات + ملاحظةُ زميل + مقارنةُ نواتج الطلبة بين الحصّتين + تسجيلُ نقاشٍ ميسَّر + سجلُّ تقويمٍ أثناء الحصّة + خطّةُ وحدةٍ بملاحظةِ زميلٍ ثانية.",
       "title_term_en": "Active Learning Strategies",
       "list_price": 175,
-      "list_currency": "USD"
+      "list_currency": "USD",
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "learning_design"
+      ],
+      "diagnostic_stages": [
+        "trainer_ld"
+      ]
     },
     {
       "course_id": "C-LND-106",
@@ -12677,7 +12871,17 @@
       "practical_project_ar": "ملفُّ أثرٍ لتدريبٍ حقيقيّ: سؤالُ تقييم + خطّةُ المستويات الأربعة بأدواتها + قياسُ انتقالٍ بعد شهر + مذكّرةُ عزلِ أثر + حسابُ كلفةٍ وعائدٍ بسيناريوهاتٍ محافظة + بيانُ حدودِ البيانات ومؤشّراتها البديلة + تقريرُ أثرٍ في صفحتين، يُدافَع عنه أمام صاحب قرارٍ في عشر دقائق بتوصيةٍ صريحة.",
       "title_term_en": "Training Impact Evaluation",
       "list_price": 200,
-      "list_currency": "USD"
+      "list_currency": "USD",
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "data_decision",
+        "learning_design"
+      ],
+      "diagnostic_stages": [
+        "experienced",
+        "manager",
+        "trainer_ld"
+      ]
     },
     {
       "course_id": "C-LND-107",
@@ -12755,7 +12959,14 @@
       "practical_project_ar": "حزمةُ لعبةٍ تدريبيّة: هدفُ تعلّمٍ وآليّتُه + نموذجٌ قابلٌ للّعب + سجلُّ تجريبٍ وتعديل + سجلُّ ثغراتٍ وتوازن + تسجيلُ نقاشِ ما بعد اللعب + نسختان مكيّفتان لقيدين + دليلُ ميسّرٍ مجرَّبٌ مع مدرّبٍ آخر، يُدافَع عنها أمام لجنة.",
       "title_term_en": "Training Game Design",
       "list_price": 200,
-      "list_currency": "USD"
+      "list_currency": "USD",
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "learning_design"
+      ],
+      "diagnostic_stages": [
+        "trainer_ld"
+      ]
     },
     {
       "course_id": "C-LND-108",
@@ -12830,7 +13041,15 @@
       "practical_project_ar": "حزمةُ مدرّبٍ بالذكاء الاصطناعيّ: مادّةٌ مولَّدةٌ ومراجَعةٌ بسجلّ تصحيحاتها + وحدةٌ تدريبيّةٌ كاملة بسير عملٍ موثّق + سجلُّ أخطاء الأداة وقواعدُ ما لا يُسند إليها + نشاطٌ صفّيّ + تقييمٌ معادُ التصميم مختبَرٌ بأداة AI ومطبَّقٌ على متعلّمين + سياسةُ استعمالٍ للمتعلّمين وإجراءُ معالجة الاشتباه، يُدافَع عنها أمام زملاء.",
       "title_term_en": "AI for Trainers & Educators",
       "list_price": 200,
-      "list_currency": "USD"
+      "list_currency": "USD",
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "ai_productivity",
+        "learning_design"
+      ],
+      "diagnostic_stages": [
+        "trainer_ld"
+      ]
     },
     {
       "course_id": "C-COMX-111",
@@ -12901,7 +13120,18 @@
       "practical_project_ar": "ملفّ المستوى الأوّل: تسجيلٌ من دقيقتين عن نفسك ويومِك وعطلةٍ ماضية + رسالتان قصيرتان + فهمُ حوارين مسموعين.",
       "title_term_en": "General English — Level 1 (A2)",
       "list_price": 120,
-      "list_currency": "USD"
+      "list_currency": "USD",
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "communication_influence",
+        "employment_readiness"
+      ],
+      "diagnostic_stages": [
+        "early_career",
+        "fresh_graduate",
+        "other_unsure",
+        "university_student"
+      ]
     },
     {
       "course_id": "C-COMX-112",
@@ -12972,7 +13202,18 @@
       "practical_project_ar": "ملفّ المستوى الثاني: عرضٌ شفهيٌّ من ثلاث دقائق عن تجربةٍ ورأيٍ فيها + بريدٌ شبهُ رسميّ + فقرةُ رأيٍ في 150 كلمة.",
       "title_term_en": "General English — Level 2 (B1)",
       "list_price": 150,
-      "list_currency": "USD"
+      "list_currency": "USD",
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "communication_influence",
+        "employment_readiness"
+      ],
+      "diagnostic_stages": [
+        "early_career",
+        "fresh_graduate",
+        "other_unsure",
+        "university_student"
+      ]
     },
     {
       "course_id": "C-COMX-113",
@@ -13044,7 +13285,18 @@
       "practical_project_ar": "ملفّ الاستعداد: اختبارٌ تجريبيٌّ كاملٌ مؤقَّت مع تصحيح الكتابة والمحادثة وخطّة تحسينٍ لأربعة أسابيع.",
       "title_term_en": "IELTS & TOEFL Preparation — Level 1",
       "list_price": 150,
-      "list_currency": "USD"
+      "list_currency": "USD",
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "career_direction",
+        "communication_influence"
+      ],
+      "diagnostic_stages": [
+        "early_career",
+        "experienced",
+        "fresh_graduate",
+        "university_student"
+      ]
     },
     {
       "course_id": "C-COMX-114",
@@ -13116,7 +13368,18 @@
       "practical_project_ar": "ملفّ الدرجة المستهدفة: اختبارٌ تجريبيٌّ كاملٌ مؤقَّت مع مقالٍ ووصفٍ منقّحين بالمعايير، ومهمّةٍ متكاملة، وخطّة الأسابيع الأخيرة.",
       "title_term_en": "IELTS & TOEFL Preparation — Level 2",
       "list_price": 175,
-      "list_currency": "USD"
+      "list_currency": "USD",
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "career_direction",
+        "communication_influence"
+      ],
+      "diagnostic_stages": [
+        "early_career",
+        "experienced",
+        "fresh_graduate",
+        "university_student"
+      ]
     },
     {
       "course_id": "C-MGR-108",
@@ -13194,7 +13457,16 @@
       "practical_project_ar": "ملفُّ أداء فريق: بطاقاتُ توقّعات + سجلُّ ملاحظةٍ لأسبوعين + محادثةُ توجيهٍ مسجَّلة + خطّةُ تطويرٍ فرديّة + خطّةُ تحسينٍ عادلة + خطّةُ احتفاظ، يُعرض على لجنةٍ من المديرين.",
       "title_term_en": "Performance Management & Development for Managers",
       "list_price": 200,
-      "list_currency": "USD"
+      "list_currency": "USD",
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "people_leadership"
+      ],
+      "diagnostic_stages": [
+        "experienced",
+        "manager",
+        "senior_manager"
+      ]
     },
     {
       "course_id": "C-SCM-106",
@@ -13272,7 +13544,15 @@
       "practical_project_ar": "ملفُّ تخطيطٍ متكاملٍ لشركةٍ محاكاة: تنبّؤ + S&OP + جدولٌ رئيسيٌّ بـATP + MRP وتقريرُ حِمل + سياسةُ مخزون + خطّةُ ضبطٍ لورشة، ومعه اختبارٌ تجريبيٌّ موقوتٌ بتحليل أخطائه.",
       "title_term_en": "CPIM Exam Preparation",
       "list_price": 300,
-      "list_currency": "USD"
+      "list_currency": "USD",
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "operations"
+      ],
+      "diagnostic_stages": [
+        "experienced",
+        "manager"
+      ]
     },
     {
       "course_id": "C-CYB-106",
@@ -13346,7 +13626,16 @@
       "practical_project_ar": "مشروعُ شبكةٍ محميّةٍ لمنشأةٍ صغيرةٍ في Packet Tracer: عنونة + شبكاتٌ افتراضيّةٌ وتوجيه + قوائمُ تحكّمٍ وتقوية + سجلُّ أعطال، يُختبر حيّا أثناء العرض.",
       "title_term_en": "Network Security & Hands-on Analysis",
       "list_price": 200,
-      "list_currency": "USD"
+      "list_currency": "USD",
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "cyber_risk"
+      ],
+      "diagnostic_stages": [
+        "early_career",
+        "fresh_graduate",
+        "university_student"
+      ]
     },
     {
       "course_id": "C-CYB-107",
@@ -13421,7 +13710,18 @@
       "practical_project_ar": "بيئةٌ سحابيّةٌ صغيرةٌ على AWS: حسابٌ محميّ + خادمٌ وتخزينٌ وقاعدةُ بياناتٍ في شبكةٍ افتراضيّة + مصفوفةُ مسؤوليّة + تقديرُ كلفةٍ وتنبيهُ ميزانيّة، تُعرض حيّةً ثمّ تُهدم.",
       "title_term_en": "Cloud Computing Fundamentals (AWS Labs)",
       "list_price": 200,
-      "list_currency": "USD"
+      "list_currency": "USD",
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "ai_productivity",
+        "cyber_risk"
+      ],
+      "diagnostic_stages": [
+        "early_career",
+        "founder",
+        "fresh_graduate",
+        "university_student"
+      ]
     },
     {
       "course_id": "C-SAL-106",
@@ -13502,7 +13802,17 @@
       "practical_project_ar": "ملفُّ بائع التجزئة: محاكاةُ بيعٍ كاملةٌ مسجَّلة + دليلُ منتجاتٍ بالفوائد + دليلُ ردودٍ على الاعتراضات + معالجةُ شكوى + سجلُّ هدفٍ يوميٍّ لأسبوع.",
       "title_term_en": "Retail Sales Essentials",
       "list_price": 150,
-      "list_currency": "USD"
+      "list_currency": "USD",
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "employment_readiness",
+        "sales"
+      ],
+      "diagnostic_stages": [
+        "early_career",
+        "fresh_graduate",
+        "other_unsure"
+      ]
     },
     {
       "course_id": "C-COMX-115",
@@ -13580,7 +13890,17 @@
       "practical_project_ar": "خطّةُ اتصالٍ استراتيجيّةٌ وخطّةُ عملٍ تنفيذيّةٌ لجهةٍ حقيقيّة: أهداف + جماهير + رسائل + قنوات + أنشطةٌ بمسؤولين وجدولٍ وميزانيّة + مؤشّرات + مخاطر، تُعرض على لجنةٍ تحاكي الإدارة العليا.",
       "title_term_en": "Strategic Communication Plan & Action Plan",
       "list_price": 175,
-      "list_currency": "USD"
+      "list_currency": "USD",
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "communication_influence",
+        "marketing_growth"
+      ],
+      "diagnostic_stages": [
+        "early_career",
+        "experienced",
+        "manager"
+      ]
     },
     {
       "course_id": "C-COMX-116",
@@ -13657,7 +13977,20 @@
       "practical_project_ar": "ملفُّ الهويّتين: بيانُ هويّةٍ مؤسّسيّةٍ بقيمها ونبرتها وتقريرُ اتساق + بيانُ هويّةٍ فرديّةٍ وملفٌّ رقميٌّ يطابقه + خطّةُ تسعين يوما، يُعرض على لجنة.",
       "title_term_en": "Corporate & Personal Identity Building",
       "list_price": 150,
-      "list_currency": "USD"
+      "list_currency": "USD",
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "communication_influence",
+        "employment_readiness",
+        "marketing_growth"
+      ],
+      "diagnostic_stages": [
+        "early_career",
+        "experienced",
+        "founder",
+        "freelancer",
+        "fresh_graduate"
+      ]
     }
   ],
   "modules": [

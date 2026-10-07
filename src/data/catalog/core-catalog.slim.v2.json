@@ -4021,6 +4021,16 @@
         "تصميم الرسالة",
         "إدارة الأزمات",
         "الكتابة العربية المهنية"
+      ],
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "communication_influence",
+        "marketing_growth"
+      ],
+      "diagnostic_stages": [
+        "early_career",
+        "experienced",
+        "manager"
       ]
     },
     {
@@ -4048,6 +4058,16 @@
         "التواصل القيادي الاستراتيجي",
         "القرار تحت الضغط",
         "الإقناع"
+      ],
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "communication_influence",
+        "people_leadership"
+      ],
+      "diagnostic_stages": [
+        "experienced",
+        "manager",
+        "senior_manager"
       ]
     },
     {
@@ -4072,6 +4092,17 @@
         "الإصغاء الفعال",
         "استقبال الملاحظات",
         "حل النزاعات"
+      ],
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "communication_influence",
+        "personal_development"
+      ],
+      "diagnostic_stages": [
+        "early_career",
+        "experienced",
+        "fresh_graduate",
+        "university_student"
       ]
     },
     {
@@ -4096,6 +4127,17 @@
         "نموذج العمل",
         "الموازنة والتنبؤ المالي",
         "كتابة الملخص التنفيذي"
+      ],
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "entrepreneurship",
+        "finance_mgmt"
+      ],
+      "diagnostic_stages": [
+        "founder",
+        "freelancer",
+        "fresh_graduate",
+        "university_student"
       ]
     },
     {
@@ -4120,6 +4162,16 @@
         "الامتثال والتنظيم",
         "الاستدامة ومعايير ESG",
         "الاقتصاد الدائري"
+      ],
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "entrepreneurship",
+        "operations"
+      ],
+      "diagnostic_stages": [
+        "experienced",
+        "founder",
+        "manager"
       ]
     },
     {
@@ -4147,6 +4199,17 @@
         "العلاقة بين المخاطر والعائد",
         "اقتصاديات الوحدة",
         "الإقناع"
+      ],
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "entrepreneurship",
+        "finance_mgmt"
+      ],
+      "diagnostic_stages": [
+        "founder",
+        "freelancer",
+        "fresh_graduate",
+        "university_student"
       ]
     },
     {
@@ -4171,6 +4234,15 @@
         "قيادة الفريق",
         "إعطاء الملاحظات",
         "تصميم الدافعية"
+      ],
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "people_leadership"
+      ],
+      "diagnostic_stages": [
+        "experienced",
+        "manager",
+        "senior_manager"
       ]
     },
     {
@@ -4198,6 +4270,17 @@
         "تحديد الأهداف وOKRs",
         "ترتيب الأولويات",
         "تصميم مؤشرات الأداء"
+      ],
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "operations",
+        "people_leadership"
+      ],
+      "diagnostic_stages": [
+        "experienced",
+        "founder",
+        "manager",
+        "senior_manager"
       ]
     },
     {
@@ -4222,6 +4305,15 @@
         "إدارة المشاريع",
         "ترتيب الأولويات",
         "إيقاع الاجتماعات والمتابعة"
+      ],
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "project_management"
+      ],
+      "diagnostic_stages": [
+        "early_career",
+        "experienced",
+        "manager"
       ]
     },
     {
@@ -4246,6 +4338,18 @@
         "التعاون السحابي",
         "أدوات العمل عن بعد",
         "إدارة المشاريع"
+      ],
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "ai_productivity",
+        "project_management"
+      ],
+      "diagnostic_stages": [
+        "early_career",
+        "experienced",
+        "freelancer",
+        "fresh_graduate",
+        "manager"
       ]
     },
     {
@@ -4276,6 +4380,17 @@
         "المتابعة والتقييم",
         "تقارير المانحين",
         "تصميم مؤشرات الأداء"
+      ],
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "finance_mgmt",
+        "project_management"
+      ],
+      "diagnostic_stages": [
+        "early_career",
+        "experienced",
+        "fresh_graduate",
+        "manager"
       ]
     },
     {
@@ -4306,6 +4421,22 @@
         "التأمل والمراجعة الذاتية",
         "المرونة تحت الضغط غير السريرية",
         "تنظيم الانفعال"
+      ],
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "personal_development"
+      ],
+      "diagnostic_stages": [
+        "early_career",
+        "experienced",
+        "founder",
+        "freelancer",
+        "fresh_graduate",
+        "manager",
+        "other_unsure",
+        "senior_manager",
+        "trainer_ld",
+        "university_student"
       ]
     },
     {
@@ -4333,6 +4464,16 @@
         "بناء العلاقات المهنية",
         "التواصل بين الثقافات",
         "الكتابة العربية المهنية"
+      ],
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "communication_influence",
+        "employment_readiness"
+      ],
+      "diagnostic_stages": [
+        "early_career",
+        "fresh_graduate",
+        "university_student"
       ]
     },
     {
@@ -4360,6 +4501,17 @@
         "إدارة التركيز",
         "إدارة الطاقة",
         "تقليل التشتت"
+      ],
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "ai_productivity",
+        "personal_development"
+      ],
+      "diagnostic_stages": [
+        "early_career",
+        "experienced",
+        "freelancer",
+        "university_student"
       ]
     },
     {
@@ -4384,6 +4536,19 @@
         "استراتيجية الشبكات الاجتماعية",
         "إنشاء المحتوى الرقمي",
         "تحليل الجمهور"
+      ],
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "communication_influence",
+        "marketing_growth"
+      ],
+      "diagnostic_stages": [
+        "early_career",
+        "experienced",
+        "founder",
+        "freelancer",
+        "fresh_graduate",
+        "university_student"
       ]
     },
     {
@@ -4411,6 +4576,17 @@
         "إدارة الديون",
         "عادات الادخار",
         "أساسيات الاستثمار"
+      ],
+      "recommendable_directly": false,
+      "diagnostic_domains": [
+        "finance_mgmt",
+        "personal_development"
+      ],
+      "diagnostic_stages": [
+        "early_career",
+        "experienced",
+        "fresh_graduate",
+        "other_unsure"
       ]
     },
     {
@@ -4438,6 +4614,17 @@
         "البرمجة بلغة JavaScript",
         "الخدمات الخلفية وقواعد البيانات",
         "نشر التطبيق وإدارة الشيفرة"
+      ],
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "entrepreneurship",
+        "product_mgmt"
+      ],
+      "diagnostic_stages": [
+        "early_career",
+        "founder",
+        "fresh_graduate",
+        "university_student"
       ]
     },
     {
@@ -4465,6 +4652,13 @@
         "التعلم مع الأقران",
         "الاسترجاع كأداة تعلم",
         "الترميز والاسترجاع"
+      ],
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "learning_design"
+      ],
+      "diagnostic_stages": [
+        "trainer_ld"
       ]
     },
     {
@@ -4492,6 +4686,16 @@
         "نقل التعلم إلى التطبيق",
         "تصميم التقييم",
         "تصميم مؤشرات الأداء"
+      ],
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "data_decision",
+        "learning_design"
+      ],
+      "diagnostic_stages": [
+        "experienced",
+        "manager",
+        "trainer_ld"
       ]
     },
     {
@@ -4522,6 +4726,13 @@
         "التفكير الإبداعي",
         "تصميم التعلم الرقمي",
         "التفكير التصميمي"
+      ],
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "learning_design"
+      ],
+      "diagnostic_stages": [
+        "trainer_ld"
       ]
     },
     {
@@ -4549,6 +4760,14 @@
         "تقييم مخرجات الذكاء الاصطناعي",
         "تصميم المواد التعليمية",
         "تصميم التقييم"
+      ],
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "ai_productivity",
+        "learning_design"
+      ],
+      "diagnostic_stages": [
+        "trainer_ld"
       ]
     },
     {
@@ -4576,6 +4795,17 @@
         "الإصغاء الفعال",
         "التعبير الواضح",
         "التعلم الذاتي"
+      ],
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "communication_influence",
+        "employment_readiness"
+      ],
+      "diagnostic_stages": [
+        "early_career",
+        "fresh_graduate",
+        "other_unsure",
+        "university_student"
       ]
     },
     {
@@ -4603,6 +4833,17 @@
         "التعبير الواضح",
         "الإصغاء الفعال",
         "استراتيجيات القراءة"
+      ],
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "communication_influence",
+        "employment_readiness"
+      ],
+      "diagnostic_stages": [
+        "early_career",
+        "fresh_graduate",
+        "other_unsure",
+        "university_student"
       ]
     },
     {
@@ -4630,6 +4871,17 @@
         "استراتيجيات القراءة",
         "تدوين الملاحظات",
         "إدارة الوقت"
+      ],
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "career_direction",
+        "communication_influence"
+      ],
+      "diagnostic_stages": [
+        "early_career",
+        "experienced",
+        "fresh_graduate",
+        "university_student"
       ]
     },
     {
@@ -4657,6 +4909,17 @@
         "التفكير النقدي",
         "تدوين الملاحظات",
         "بناء خطة تعلم"
+      ],
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "career_direction",
+        "communication_influence"
+      ],
+      "diagnostic_stages": [
+        "early_career",
+        "experienced",
+        "fresh_graduate",
+        "university_student"
       ]
     },
     {
@@ -4687,6 +4950,15 @@
         "إعطاء الملاحظات",
         "تطوير المواهب",
         "تحديد الأهداف وOKRs"
+      ],
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "people_leadership"
+      ],
+      "diagnostic_stages": [
+        "experienced",
+        "manager",
+        "senior_manager"
       ]
     },
     {
@@ -4717,6 +4989,14 @@
         "الجدولة الرئيسية وتخطيط الاحتياجات من المواد",
         "إدارة المخزون",
         "تخطيط التوريد"
+      ],
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "operations"
+      ],
+      "diagnostic_stages": [
+        "experienced",
+        "manager"
       ]
     },
     {
@@ -4744,6 +5024,15 @@
         "أمن الشبكات وتقوية الأجهزة",
         "تحليل حركة الشبكة واستكشاف أعطالها",
         "أساسيات الأمن السيبراني"
+      ],
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "cyber_risk"
+      ],
+      "diagnostic_stages": [
+        "early_career",
+        "fresh_graduate",
+        "university_student"
       ]
     },
     {
@@ -4771,6 +5060,17 @@
         "إدارة الهوية والوصول",
         "أساسيات أمن السحابة",
         "ضبط كلفة السحابة"
+      ],
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "ai_productivity",
+        "cyber_risk"
+      ],
+      "diagnostic_stages": [
+        "early_career",
+        "founder",
+        "fresh_graduate",
+        "university_student"
       ]
     },
     {
@@ -4804,6 +5104,16 @@
         "التواصل مع العملاء أو الجمهور",
         "البيع الإضافي دون إلحاح",
         "التعامل مع الشكاوى"
+      ],
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "employment_readiness",
+        "sales"
+      ],
+      "diagnostic_stages": [
+        "early_career",
+        "fresh_graduate",
+        "other_unsure"
       ]
     },
     {
@@ -4834,6 +5144,16 @@
         "تصميم الرسالة",
         "تصميم مؤشرات الأداء",
         "إدارة المشاريع"
+      ],
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "communication_influence",
+        "marketing_growth"
+      ],
+      "diagnostic_stages": [
+        "early_career",
+        "experienced",
+        "manager"
       ]
     },
     {
@@ -4864,6 +5184,19 @@
         "تحليل الجمهور",
         "العلامة المهنية الشخصية",
         "بناء ملف LinkedIn"
+      ],
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "communication_influence",
+        "employment_readiness",
+        "marketing_growth"
+      ],
+      "diagnostic_stages": [
+        "early_career",
+        "experienced",
+        "founder",
+        "freelancer",
+        "fresh_graduate"
       ]
     }
   ],
