@@ -84,6 +84,8 @@ const HIGH: readonly string[] = [
      نصُّ الجواب بحرفه منذ ٢٦ سبتمبر ٢٠٢٦. */
   'trainer.contract.amendment_replied',
   'trainer.contract.decline_replied', 'trainer.data_choice.keep',
+  /* والاعتذارُ النهائيُّ لمن انقضى رابطُه يُغلق عقدَه ويؤجّل طلبَه ويراسله (٧ أكتوبر ٢٠٢٦) */
+  'trainer.contract.expired_replied',
   /* ═══ وتحديثُ نصِّ عرضٍ مفتوحٍ في مكانه عالٍ (٣٠ سبتمبر ٢٠٢٦) ═══
 
      يُبدّل **حرفَ الوثيقة التي ستلزمه** وهي في يده بعدُ لم يوقّعها، ويضع في

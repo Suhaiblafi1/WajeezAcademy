@@ -11,7 +11,13 @@
 
    ولا يُحذف ما لا يملك أن يُحذف بقرار طرفٍ واحد: عقدٌ نافذٌ آخرُ له، أو شهادةٌ
    صادرةٌ بيد متعلّم. هناك يُقال له إنّ طلبَه وصلنا، ويصل الإدارةَ لتتولّاه —
-   فلا يُقال «حُذفت» عن شيءٍ لم يُحذف. */
+   فلا يُقال «حُذفت» عن شيءٍ لم يُحذف.
+
+   · `expiredReply` (٧ أكتوبر ٢٠٢٦) — الرسالةُ نفسُها لمن انقضى رابطُ توقيعه: يُغلَق
+     عقدُه، ويصير طلبُه «مؤجَّلا» فيُسأل عن اهتمامه بعد شهرين، ويصله النصُّ ورابطُ
+     خياره — في معاملةٍ واحدة، فلا يُرسَل ما لم يُكتب. والقرارُ وعلّتُه عند
+     `expiredReplyBlockAr` في `decline-reply.ts`. وصفحةُ الخيار هي هي: «أبقِ»
+     يُبقيه مؤجَّلا، و«احذف» يمحوه بالطريق نفسِه. */
 
 import { createHash, randomBytes } from 'node:crypto'
 import type { PrismaClient } from '@prisma/client'
@@ -25,8 +31,9 @@ import { TrainerApplicationService, PURGEABLE_STATUSES } from './trainer-applica
 import { fmtDateWith } from '../../src/application/text/format-ar'
 import {
   DATA_CHOICE_LINK_DAYS, DECLINE_REPLY_BODY_MAX, DECLINE_REPLY_BODY_MIN, DECLINE_REPLY_SUBJECT_MAX,
-  type DataChoice,
+  expiredReplyBlockAr, type DataChoice,
 } from '../../src/application/trainer/decline-reply'
+import { DEFERRED } from '../../src/application/trainer/deferral'
 
 const sha256 = (s: string) => createHash('sha256').update(s).digest('hex')
 
@@ -82,6 +89,60 @@ export class TrainerDeclineReplyService {
     return { ok: true, emailDelivery: mail.status, choiceUrl: this.choiceUrl(token) }
   }
 
+  /* ═══ اعتذارٌ نهائيٌّ لمن انقضى رابطُه — ويُؤجَّل طلبُه (٧ أكتوبر ٢٠٢٦) ═══ */
+  async expiredReply(contractId: string, actorId: string, input: { subjectAr: string; bodyAr: string }): Promise<{
+    ok: true; emailDelivery: DirectMailStatus; choiceUrl: string; followUpAt: Date | null
+  }> {
+    const subject = input.subjectAr.trim()
+    const body = input.bodyAr.trim()
+    if (subject.length < 3 || subject.length > DECLINE_REPLY_SUBJECT_MAX) {
+      throw new AuthError('bad_subject', 'اكتب عنوانَ الرسالة', 422)
+    }
+    if (body.length < DECLINE_REPLY_BODY_MIN || body.length > DECLINE_REPLY_BODY_MAX) {
+      throw new AuthError('bad_body', 'نصُّ الرسالة أقصرُ أو أطولُ ممّا يُرسَل', 422)
+    }
+    const c = await this.prisma.trainerContract.findUnique({
+      where: { id: contractId },
+      include: { profile: { include: { application: true } } },
+    })
+    if (!c) throw new AuthError('not_found', 'العقد غير موجود', 404)
+    const app = c.profile.application
+    const now = new Date()
+    const blocked = expiredReplyBlockAr({ status: c.status, tokenExpiresAt: c.tokenExpiresAt, applicationStatus: app.status, now })
+    if (blocked) throw new AuthError('bad_state', blocked, 409)
+
+    const token = randomBytes(32).toString('base64url')
+    const expiresAt = new Date(now.getTime() + DATA_CHOICE_LINK_DAYS * 86_400_000)
+    await this.prisma.$transaction(async (tx) => {
+      /* والشرطُ يُعاد في الكتابة: بين القراءة والكتابة قد يُجدَّد الرابطُ أو يُغلَق */
+      const done = await tx.trainerContract.updateMany({
+        where: { id: c.id, status: 'sent', tokenExpiresAt: { lt: now }, declineRepliedAt: null },
+        data: {
+          status: 'revoked', revokedAt: now, revokedBy: actorId,
+          revokeReasonAr: 'انقضت مهلةُ التوقيع — أُغلق برسالة شكرٍ وأُجّل طلبُه إلى الفصول القادمة',
+          declineReplyAr: body.slice(0, DECLINE_REPLY_BODY_MAX), declineRepliedAt: now, declineRepliedBy: actorId,
+          dataChoiceTokenHash: sha256(token), dataChoiceExpiresAt: expiresAt,
+        },
+      })
+      if (done.count === 0) throw new AuthError('bad_state', 'تغيّر العقدُ قبل الإرسال — حدّث الصفحة', 409)
+      await new TrainerApplicationService(this.prisma).transition(
+        app.id, DEFERRED, actorId, 'انقضى رابطُ عقده — أُغلق برسالة شكرٍ وأُجّل إلى الفصول القادمة', tx,
+      )
+    })
+    await recordAudit(this.prisma, {
+      actorId, action: 'trainer.contract.expired_replied', entityType: 'trainer_contract', entityId: c.id,
+      meta: { subjectAr: subject, applicationId: app.id },
+    })
+    const after = await this.prisma.trainerApplication.findUnique({ where: { id: app.id }, select: { deferredFollowUpAt: true } })
+    const doc = declineReplyMail({
+      fullName: app.fullName, reference: app.reference, contractNumber: c.number,
+      subjectAr: subject, bodyAr: body, choiceUrl: this.choiceUrl(token),
+      expiresOnAr: fmtDateWith(expiresAt, { year: 'numeric', month: 'long', day: 'numeric' }),
+    })
+    const mail = await sendDirectEmail(this.prisma, { to: c.signerEmail ?? app.email, subject: doc.subject, ...renderMail(doc.doc) })
+    return { ok: true, emailDelivery: mail.status, choiceUrl: this.choiceUrl(token), followUpAt: after?.deferredFollowUpAt ?? null }
+  }
+
   private async byToken(token: string) {
     const c = await this.prisma.trainerContract.findUnique({
       where: { dataChoiceTokenHash: sha256(token) },
@@ -126,7 +187,9 @@ export class TrainerDeclineReplyService {
        فيُنهى بطلبه هو (`withdrawn`) ثمّ يُمحى — وإن أبى المحوُ لعقدٍ نافذٍ أو
        شهادةٍ صادرة عادت حالُه كما كانت، ووصل طلبُه الإدارةَ. */
     const before = app.status
-    const reason = 'حذفُ بياناته بطلبه — من صفحة خياره بعد اعتذاره عن عقده'
+    const reason = c.status === 'revoked'
+      ? 'حذفُ بياناته بطلبه — من صفحة خياره بعد انقضاء رابط عقده'
+      : 'حذفُ بياناته بطلبه — من صفحة خياره بعد اعتذاره عن عقده'
     if (!(PURGEABLE_STATUSES as readonly string[]).includes(before)) {
       await this.prisma.trainerApplication.update({ where: { id: app.id }, data: { status: 'withdrawn' } })
     }

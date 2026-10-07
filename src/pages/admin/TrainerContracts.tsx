@@ -62,6 +62,7 @@ import {
 } from "@/application/trainer/contract-tabs";
 import MaterialsReview from "./TrainerMaterialsReview";
 import DeclineReply from "@/components/admin/DeclineReply";
+import { expiredReplyBlockAr } from "@/application/trainer/decline-reply";
 import AdminLayout from "./AdminLayout";
 import { parseContractDoc } from '@/application/trainer/contract-sections'
 import ContractDocument from '@/components/ContractDocument'
@@ -1444,6 +1445,14 @@ c.gatesActivation
                     {/* وردُّنا عليه وخيارُه في بياناته (٣ أكتوبر ٢٠٢٦) — `DeclineReply` */}
                     {c.status === "declined" && (
                       <DeclineReply c={{ ...c, fullName: c.profile?.application?.fullName ?? docNameOf(c) }} onDone={load} />
+                    )}
+                    {/* ═══ واعتذارٌ نهائيٌّ لمن انقضى رابطُه — ويُؤجَّل طلبُه (٧ أكتوبر ٢٠٢٦) ═══
+                        بابٌ ثالثٌ بجانب «جدِّدِ الرابط» و«ألغِ»، لا بديلٌ عنهما. ويظهر حيث
+                        يجوز وحدَه (`expiredReplyBlockAr`) — وبعد الإرسال يقول الصفُّ ما اختار. */}
+                    {(expiredReplyBlockAr({
+                      status: c.status, tokenExpiresAt: c.tokenExpiresAt, applicationStatus: c.profile?.application?.status,
+                    }) === null || (c.status === "revoked" && c.declineRepliedAt)) && (
+                      <DeclineReply kind="expired" c={{ ...c, fullName: c.profile?.application?.fullName ?? docNameOf(c) }} onDone={load} />
                     )}
 
                     {/* ═══ طلبُ التعديل — يُقرأ ويُجاب ═══
