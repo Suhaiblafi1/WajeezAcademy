@@ -363,7 +363,7 @@ const ACTIVE: Shot[] = [
       await shoot(e, {
         name: 'ws-workbooks', clip: section, clipPad: 14, maxHeight: 1500,
         marks: [
-          { target: p.getByRole('link', { name: /قالبُ كرّاسة الدورة/ }), n: 1, pad: 5 },
+          { target: p.getByRole('link', { name: /كرّاسةُ الدورة مملوءةً بخطّتك/ }), n: 1, pad: 5 },
           { target: p.getByRole('group', { name: 'كيف تعطي المتعلّمين كرّاستك' }), n: 2, pad: 5 },
           { target: p.getByRole('textbox', { name: 'رابطُ كرّاسة الدورة' }), n: 3, pad: 5 },
         ],

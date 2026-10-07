@@ -69,8 +69,11 @@ import ModuleBodyUpload from "@/components/ModuleBodyUpload";
 import { MAX_BODY_FILE_BYTES, moduleBodyDone, resourceHasSource } from "@/application/trainer/module-body";
 import {
   WORKBOOK_TEMPLATES, groupLabelAr, mergeWithNext, splitGroup, templateRequired, workbookGroups, workbookModeOf, workbookOpensOn,
-  workbooksProblems, type ModuleWorkbook, type WorkbookMode,
+  workbooksProblems, workbookTemplateHref, type ModuleWorkbook, type WorkbookMode,
 } from "@/application/trainer/cohort-workbooks";
+
+/* كما في بقيّة ما يُنزَّل من الخادم: الرابطُ إليه مباشرةً لا عبر `apiGet` */
+const API_BASE: string = import.meta.env.VITE_API_URL ?? "";
 import { PLAN_TITLE_MIN, planTextProblemsAr, type PlanTextPlace } from "@/application/trainer/plan-limits";
 import { blockingBeforeSubmit, sendBlock, trainerOwned } from "@/application/trainer/plan-gate";
 import { notedSections, notesForTrainer, type ReviewNotes } from "@/application/trainer/review-notes";
@@ -1993,7 +1996,6 @@ export default function CohortWorkspace() {
       {stage === "workbooks" && (() => {
         const required = templateRequired(planStatus, Boolean(ws.workbookBeforeTemplate));
         const tpl = WORKBOOK_TEMPLATES[wbMode];
-        const otherTpl = WORKBOOK_TEMPLATES[wbMode === "course" ? "modules" : "course"];
         /* ما رُفع في الطريقة الأخرى يبقى محفوظا — ويُقال إنّه لا يصل المتعلّمين */
         const otherKept = wbMode === "course" ? wbGroups.some((g) => workbookDone(g)) : workbookDone(wb);
         const modes: { mode: WorkbookMode; label: string; hint: string }[] = [
@@ -2010,18 +2012,29 @@ export default function CohortWorkspace() {
               </Inset>
             )}
 
-            {/* القالب — يُنزَّل من هنا، والإلزامُ للجدد والاستحسانُ لمن رفع قبله */}
+            {/* القالب — يُنزَّل من هنا مملوءا بما حُفظ من الخطّة (٧ أكتوبر ٢٠٢٦)، والفارغُ
+                بجانبه. والإلزامُ للجدد والاستحسانُ لمن رفع قبله */}
             <Inset className="mt-4 grid gap-2.5">
               <p className="flex items-center gap-2 text-read font-black text-foreground">
                 <FileDown className="h-4 w-4 text-teal-light-ink" aria-hidden="true" /> ابدأ من قالب وجيز
               </p>
               <p className="text-read leading-6 text-muted-foreground">
-                ملفُّ Word بشكل كرّاسات وجيز: الغلاف، ثمّ لكلّ محور — ما يخرج به المتعلّم، والأفكارُ الأساسيّة، ومثالٌ محلول، وتمرينٌ عمليّ، وأسئلةٌ للتأمّل، ومصادر. املأه، ثمّ احفظه PDF وارفعه هنا.
+                ملفُّ Word بشكل كرّاسات وجيز، <b className="text-foreground">مملوءٌ بما كتبته في خطّتك</b>: اسمُ الدورة ومدّتُها ومحاورُها ومواعيدُها، ولكلّ محورٍ ما يخرج به المتعلّمُ ومحتواه النظريُّ وتطبيقُه ومصادرُه. أكمِل ما بقي بين قوسين — المثالَ المحلول وأسئلةَ التأمّل — ثمّ احفظه PDF وارفعه هنا.
               </p>
               <div className="flex flex-wrap gap-2">
-                <Button as="a" tone="confirm" icon={FileDown} href={tpl.href} download={tpl.download}>{tpl.labelAr} (Word)</Button>
-                <Button as="a" tone="secondary" icon={FileDown} href={otherTpl.href} download={otherTpl.download}>{otherTpl.labelAr}</Button>
+                {wbMode === "course" && (
+                  <Button as="a" tone="confirm" icon={FileDown} href={`${API_BASE}${workbookTemplateHref(ws.cohort.id)}`} download>
+                    كرّاسةُ الدورة مملوءةً بخطّتك (Word)
+                  </Button>
+                )}
+                <Button as="a" tone="secondary" icon={FileDown} href={tpl.href} download={tpl.download}>{tpl.labelAr} فارغا</Button>
               </div>
+              {wbMode === "modules" && (
+                <p className="text-read leading-6 text-muted-foreground">ولكلّ كرّاسةٍ قالبُها مملوءا في بطاقتها تحت — بمحورها، أو بمحاورها إن جمعتها.</p>
+              )}
+              {Object.values(dirty).some(Boolean) && (
+                <p className="text-read leading-6 text-gold-ink">في خطّتك تعديلٌ لم يُحفَظ — احفظه أوّلا ليصل إلى القالب؛ فالقالبُ يُملأ بما حفظته.</p>
+              )}
               <p className="text-read leading-6">
                 {required
                   ? <b className="text-gold-ink">مطلوبٌ لكرّاستك: تُقرّ تحت كلّ ملفٍّ بأنّه على القالب.</b>
@@ -2135,6 +2148,10 @@ export default function CohortWorkspace() {
                               ? <>تُفتح للمتعلّم <b className="text-foreground">{cohortDayAr(opens)}</b> — أوّلَ يومٍ في موعد {g.moduleIds.length > 1 ? "أسبق محاورها" : "محورها"}.</>
                               : "تُفتح أوّلَ يومٍ في موعد محورها — وزّع المحاورَ على مواعيدها في الخطوة الثانية."}
                           </p>
+                          <Button as="a" tone="secondary" icon={FileDown} className="w-fit" download
+                            href={`${API_BASE}${workbookTemplateHref(ws.cohort.id, g.moduleIds)}`}>
+                            قالبُ كرّاسة {label} مملوءا (Word)
+                          </Button>
                           <WorkbookFile cohortId={ws.cohort.id} refId={`workbook-${g.moduleIds[0]}`} value={g} locked={locked}
                             onChange={(nextFile) => patchGroup(i, nextFile)} label={`ارفع كرّاسةَ ${label} (PDF)`} name={`كرّاسة ${label}`} />
                           {workbookDone(g)
