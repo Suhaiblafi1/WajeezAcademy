@@ -14,7 +14,7 @@ import { setupTestDb, testPrisma } from '../helpers/db'
 import { AuthService } from '../../services/auth.service'
 import { CohortFileService } from '../../services/cohort-file.service'
 import { resolveStorageOwner } from '../../services/storage.service'
-import { MAX_BODY_FILE_BYTES } from '../../../src/application/trainer/module-body'
+import { FILE_PURPOSES, MAX_BODY_FILE_BYTES } from '../../../src/application/trainer/module-body'
 
 const PDF = 'application/pdf'
 
@@ -200,5 +200,43 @@ describe('د-٣ · ملفُّ المصدر', () => {
         mime: PPTX, originalName: 'x.pptx',
       }),
     ).rejects.toMatchObject({ status: 403 })
+  })
+})
+
+/* ═══ والكرّاسةُ PDF — الغرضُ الثالث يقبله القيد (٧ أكتوبر ٢٠٢٦) ═══
+
+   زيد الغرضُ `workbook` في الشيفرة يومَ صار رفعُ الكرّاسة PDF وحدَه (٦ أكتوبر)، ولم يُزَد
+   في قيد العمود — فكان رفعُ كلّ كرّاسةٍ يُردّ بخطأ خادم، وبلّغ صاحبُ المنصّة «هناك خطأ عند
+   تحميل الملفات». ولم يمسكه شيء: اختباراتُ الكرّاسة تمرّ بالرابط أو تكتب المفتاحَ في الخطّة
+   مباشرة، وهذا الملفُّ كان يرفع بالغرضين الأوّلين وحدَهما. فهنا يُرفع بالغرض نفسِه على قاعدةٍ
+   مُرحَّلة — وكلُّ غرضٍ في `FILE_PURPOSES` يُنشئ صفَّه. */
+describe('الكرّاسة · الرفعُ PDF بغرضها', () => {
+  it('⚠️ مدرّبُ الشعبة يرفع كرّاستَه PDF — ويعرف المخزنُ مفتاحَها', async () => {
+    const r = await bodies.startUpload(trainerUserId, cohortId, 'workbook', 'workbook-cohort', {
+      mime: PDF, originalName: 'كرّاسةُ الدورة.pdf',
+    })
+    expect(r.uploadUrl).toContain('/api/v1/uploads/')
+    const owner = await resolveStorageOwner(prisma, r.storageKey)
+    expect(owner, 'المخزنُ لا يعرف مفتاحَ الكرّاسة — فيُردّ رفعُها').toBeTruthy()
+    expect(owner!.kind).toBe('cohort_file')
+  })
+
+  it('⚠️ وكلُّ غرضٍ تعرفه الشيفرةُ يقبله القيد — فلا يُردّ رفعٌ بخطأ خادم', async () => {
+    for (const purpose of FILE_PURPOSES) {
+      await expect(
+        prisma.cohortFile.create({
+          data: { cohortId, purpose, refId: `p-${purpose}`, storageKey: `wb-purpose-${purpose}-${Date.now()}`, originalName: 'x.pdf', mime: PDF, uploadedBy: trainerUserId },
+        }),
+        `القيدُ يردّ الغرضَ «${purpose}» — ولّد ترحيلَه: npx tsx scripts/status-checks.ts`,
+      ).resolves.toBeTruthy()
+    }
+  })
+
+  it('ولا تُقبل كرّاسةٌ Word — PDF وحدَه يُقرأ في الصفحة', async () => {
+    await expect(
+      bodies.startUpload(trainerUserId, cohortId, 'workbook', 'workbook-cohort', {
+        mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', originalName: 'k.docx',
+      }),
+    ).rejects.toMatchObject({ status: 422 })
   })
 })

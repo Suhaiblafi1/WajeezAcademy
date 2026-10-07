@@ -501,7 +501,12 @@ async function embedBold(buffer: Buffer, bold: Buffer): Promise<Buffer> {
   const rels = await zip.file(relsPath)!.async('string')
   zip.file(relsPath, rels.replace('</Relationships>',
     '<Relationship Id="rIdWzBold" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/font" Target="fonts/font-bold.odttf"/></Relationships>'))
-  const fontTable = await zip.file('word/fontTable.xml')!.async('string')
+  /* ومفتاحُ العاديّ يكتبه `docx` بحروفٍ صغيرة ({4f66…}) — والمخطّطُ (`ST_Guid`) لا يقبل إلّا
+     الكبيرة، وWord يقف عند الملفّ ولا يفتحه، وLibreOffice يتجاوز عنه فلم يُرَ في معاينتنا
+     (٧ أكتوبر ٢٠٢٦، بعد بلاغ صاحب المنصّة: «هناك خطأ عند تحميل الملفات»). والحالُ لا تمسّ
+     التعمية — الأرقامُ الستّةَ عشريّةُ هي هي — فيُكبَّر المفتاحُ ويبقى الخطُّ كما ضُمِّن. */
+  const fontTable = (await zip.file('word/fontTable.xml')!.async('string'))
+    .replace(/w:fontKey="(\{[0-9a-fA-F-]+\})"/g, (_, k: string) => `w:fontKey="${k.toUpperCase()}"`)
   const withBold = fontTable.replace(/(<w:font w:name="IBM Plex Sans Arabic">[\s\S]*?<w:embedRegular [^>]*\/>)/,
     `$1<w:embedBold r:id="rIdWzBold" w:fontKey="${key}"/>`)
   if (withBold === fontTable) throw new Error('لم يُعثر على الخطّ المضمَّن في fontTable.xml')
