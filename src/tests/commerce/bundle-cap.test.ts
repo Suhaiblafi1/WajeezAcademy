@@ -1,4 +1,5 @@
-/* سقفُ مبلغ الباقة — «إمّا ٣٠٪ أو ٦٠٠، أيّهما أقلّ».
+/* سقفُ مبلغ الباقة — «إمّا ٣٠٪ أو ٧٥٠، أيّهما أقلّ» (كان ٦٠٠ قبل أن تصير
+   الدوراتُ كلُّها ستَّ عشرةَ ساعةً بأسعار ١٢٠–٢٢٥ — قرارُ ٧ أكتوبر ٢٠٢٦).
 
    وأخطرُ ما فيه ليس الحسابَ بل **أين يُطبَّق**. فسقفٌ على المسارات الجاهزة
    وحدَها يقلب المعنى: خمسُ دوراتٍ غاليةٍ يبنيها المتعلّم بنفسه = ٦٣٠، ومسارٌ
@@ -45,10 +46,11 @@ describe('سقفُ مبلغ الباقة', () => {
 
   it('ولا يمسّ ما دونه — فالسلّمُ يبقى هو القاعدةَ لجمهور السلال', () => {
     const separate = CHEAPEST * 3
-    expect(bundlePayable(separate, 3)).toBe(Math.round(separate * (1 - buildDiscountPct(3) / 100)))
+    /* إلى القرش لا إلى الدولار: ثلاثُ دوراتٍ بمئةٍ وعشرين = ٣٦٠ ← ١٨٪ ← ٢٩٥٫٢٠ (`money`) */
+    expect(bundlePayable(separate, 3)).toBeCloseTo(separate * (1 - buildDiscountPct(3) / 100), 2)
   })
 
-  it('ولا يُطبَّق على عملةٍ غير عملته — «٦٠٠» في عملةٍ أخرى رقمٌ بلا معنى', () => {
+  it('ولا يُطبَّق على عملةٍ غير عملته — «٧٥٠» في عملةٍ أخرى رقمٌ بلا معنى', () => {
     const separate = DEAREST * 10
     expect(bundlePayable(separate, 10, MAX_BUNDLE_TOTAL_CURRENCY)).toBe(MAX_BUNDLE_TOTAL)
     expect(bundlePayable(separate, 10, 'SAR'), 'طُبِّق سقفُ دولارٍ على عملةٍ أخرى')
@@ -61,10 +63,16 @@ describe('سقفُ مبلغ الباقة', () => {
   })
 
   it('وإضافةُ دورةٍ لا تُخفض ما يُدفع — على مدى أسعار الكتالوج كلِّه', () => {
-    /* أسوأُ حالةٍ ممكنة: سلّةٌ كلُّها أغلى دورة، ثمّ تُضاف أرخصُ دورة */
+    /* أسوأُ حالةٍ ممكنة: سلّةٌ من أغلى n دوراتٍ في الكتالوج، ثمّ تُضاف أرخصُ دورة.
+       والدوراتُ لا السعرُ الأعلى مكرّرا: منذ ٧ أكتوبر ٢٠٢٦ في الكتالوج استثناءٌ
+       واحدٌ بثلاثمئة (CPIM)، ولا سلّةَ فيها ثلاثُ نسخٍ منه — فسلّةُ «ثلاثِمئةٍ ×
+       ثلاث» حالةٌ لا يبلغها مشترٍ، وأغلى ما يبلغه ٣٠٠ + ٢٢٥ + ٢٢٥. فإن كثرت
+       الدوراتُ بثلاثمئة سقط هذا الحارسُ كما ينبغي. */
+    const byCourse = CORE.courses.map((c) => c.list_price).sort((a, b) => b - a)
     for (let n = 1; n <= 8; n += 1) {
-      const before = bundlePayable(DEAREST * n, n)
-      const after = bundlePayable(DEAREST * n + CHEAPEST, n + 1)
+      const top = byCourse.slice(0, n).reduce((s, p) => s + p, 0)
+      const before = bundlePayable(top, n)
+      const after = bundlePayable(top + CHEAPEST, n + 1)
       expect(after, `${n} ← ${n + 1}: من زاد دورةً دفع أقلّ`).toBeGreaterThanOrEqual(before)
     }
   })

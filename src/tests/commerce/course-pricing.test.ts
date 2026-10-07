@@ -1,24 +1,24 @@
-/* سعرُ الدورة يطيع قاعدةَ العمق — وكلُّ دورةٍ في الكتالوج تُفحص.
+/* سعرُ الدورة يطيع قاعدةَ الصعوبة والندرة — وكلُّ دورةٍ في الكتالوج تُفحص.
 
-   الأسعارُ مكتوبةٌ رقما رقما في الكتالوج، وتُطيع قاعدةَ المستوى والساعات بلا
-   استثناء. لكنّ الطاعةَ بلا حارسٍ صدفةٌ تنتهي عند أوّل دورةٍ تُضاف: يكتب
-   المؤلّفُ رقما بيده، فيصيبه أو يخطئه، ولا شيءَ يقول أيّهما فعل.
+   الأسعارُ مكتوبةٌ رقما رقما في الكتالوج. لكنّ الطاعةَ بلا حارسٍ صدفةٌ تنتهي
+   عند أوّل دورةٍ تُضاف: يكتب المؤلّفُ رقما بيده، فيصيبه أو يخطئه، ولا شيءَ
+   يقول أيّهما فعل.
 
    وأخطرُ ما يمسكه هذا الفحصُ ليس خطأً في رقم، بل **قاعدةً تغيّرت ولم تُكتب**:
-   لو قرّر صاحبُ المنصّة سعرا جديدا لمستوى، فغيّره في الكتالوج وحدَه، لَبقيت
-   هذه الوحدةُ تعلن قاعدةً ماتت — وهو ما وقع في هذه المنصّة مرارا (رقمان
-   لشيءٍ واحد، أحدُهما وعدٌ على الشاشة والآخر ما يُحسب). فالفشلُ هنا يقول:
-   إمّا السعرُ خطأ، وإمّا القاعدةُ تغيّرت فاكتبها.
+   لو قرّر صاحبُ المنصّة سعرا جديدا فغيّره في الكتالوج وحدَه، لَبقيت وحدةُ
+   التسعير تعلن قاعدةً ماتت. فالفشلُ هنا يقول: إمّا السعرُ خطأ، وإمّا القاعدةُ
+   تغيّرت فاكتبها في `course-pricing.ts`.
 
-   والمقيسُ الخاصّيّةُ لا القيمة: أيَّ أساسٍ أُريد لأيّ مستوى، يكفي أن يتّفق
-   الإعلانُ مع الكتالوج، وأن يبقى المدى الذي أعلنه صاحبُ المنصّة محفوظا. */
+   والمقيسُ الخاصّيّةُ لا القيمة: أيَّ درجةٍ أُريدت لأيّ مستوًى أو مجال، يكفي
+   أن يتّفق الإعلانُ مع الكتالوج، وأن يبقى المدى الذي أعلنه صاحبُ المنصّة
+   (١٢٠–٢٢٥، قرارُ ٧ أكتوبر ٢٠٢٦) محفوظا، وأن يكون كلُّ خروجٍ عنه مسمّى بسببه. */
 
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import {
-  coursePriceFromDepth, LEVEL_BASE_PRICE, LONG_COURSE_HOURS,
-  LONG_COURSE_SURCHARGE, COURSE_PRICE_RANGE,
+  coursePrice, courseDomainCode, isPriceAllowed, LEVEL_DIFFICULTY, DOMAIN_RARITY,
+  PRICE_BY_SCORE, COURSE_PRICE_RANGE, PRICE_EXCEPTIONS,
 } from '../../application/catalog/course-pricing'
 
 interface RawCourse {
@@ -32,52 +32,58 @@ const CORE = JSON.parse(
   readFileSync(join(process.cwd(), 'src/data/catalog/core-catalog.v2.json'), 'utf8'),
 ) as { courses: RawCourse[] }
 
-describe('سعرُ الدورة من عمقها', () => {
+describe('سعرُ الدورة من صعوبتها وندرتها', () => {
   it('الكتالوجُ يُقرأ فعلا — الفحصُ ليس فارغا', () => {
     expect(CORE.courses.length).toBeGreaterThan(50)
   })
 
-  it('كلُّ دورةٍ في الكتالوج تطيع القاعدة — لا استثناءَ واحدا', () => {
+  it('كلُّ دورةٍ في الكتالوج تطيع القاعدة — لا استثناءَ غيرَ مسمّى', () => {
     const offenders: string[] = []
     for (const c of CORE.courses) {
-      const expected = coursePriceFromDepth(c.level_ar, c.total_hours)
+      const expected = coursePrice(c.course_id, c.level_ar)
       if (expected !== c.list_price) {
-        offenders.push(`${c.course_id}: «${c.level_ar}» ${c.total_hours}س ← ${c.list_price} والقاعدةُ تقول ${expected}`)
+        offenders.push(`${c.course_id}: «${c.level_ar}» ← ${c.list_price} والقاعدةُ تقول ${expected}`)
       }
     }
     expect(offenders, 'إمّا السعرُ خطأ، وإمّا القاعدةُ تغيّرت ولم تُكتب في course-pricing.ts').toEqual([])
   })
 
-  it('ولا مستوًى في الكتالوج بلا أساسٍ معلن — وإلّا فدورةٌ بلا سعرٍ محسوب', () => {
-    const known = new Set(Object.keys(LEVEL_BASE_PRICE))
-    const unknown = [...new Set(CORE.courses.map((c) => c.level_ar))].filter((l) => !known.has(l))
-    expect(unknown, 'مستوياتٌ في الكتالوج لا أساسَ لها').toEqual([])
+  it('ولا مستوًى ولا مجالَ في الكتالوج بلا درجةٍ معلنة — وإلّا فدورةٌ بلا سعرٍ محسوب', () => {
+    const levels = new Set(Object.keys(LEVEL_DIFFICULTY))
+    const domains = new Set(Object.keys(DOMAIN_RARITY))
+    expect([...new Set(CORE.courses.map((c) => c.level_ar))].filter((l) => !levels.has(l)), 'مستوياتٌ بلا درجة').toEqual([])
+    expect([...new Set(CORE.courses.map((c) => courseDomainCode(c.course_id)))].filter((d) => !domains.has(d)), 'مجالاتٌ بلا درجة').toEqual([])
   })
 
-  it('والمدى المعلَن محفوظ — بين ١٠٠ و٢٠٠ بقرار صاحب المنصّة', () => {
+  it('والمدى المعلَن محفوظ — بين ١٢٠ و٢٢٥، وما خرج عنه مسمّى بسببه', () => {
     for (const c of CORE.courses) {
-      expect(c.list_price, c.course_id).toBeGreaterThanOrEqual(COURSE_PRICE_RANGE.min)
-      expect(c.list_price, c.course_id).toBeLessThanOrEqual(COURSE_PRICE_RANGE.max)
+      expect(isPriceAllowed(c.course_id, c.list_price), `${c.course_id} ← ${c.list_price}`).toBe(true)
     }
-    /* والقاعدةُ نفسُها لا تُخرج رقما خارج المدى مهما كان المستوى والطول */
-    const maxBase = Math.max(...Object.values(LEVEL_BASE_PRICE))
-    const minBase = Math.min(...Object.values(LEVEL_BASE_PRICE))
-    expect(maxBase + LONG_COURSE_SURCHARGE).toBeLessThanOrEqual(COURSE_PRICE_RANGE.max)
-    expect(minBase).toBeGreaterThanOrEqual(COURSE_PRICE_RANGE.min)
+    /* والقاعدةُ نفسُها لا تُخرج رقما خارج المدى مهما كانت الدرجتان */
+    const maxScore = Math.max(...Object.values(LEVEL_DIFFICULTY)) + Math.max(...Object.values(DOMAIN_RARITY))
+    expect(PRICE_BY_SCORE.length).toBe(maxScore + 1)
+    expect(Math.min(...PRICE_BY_SCORE)).toBe(COURSE_PRICE_RANGE.min)
+    expect(Math.max(...PRICE_BY_SCORE)).toBe(COURSE_PRICE_RANGE.max)
+    for (const e of Object.values(PRICE_EXCEPTIONS)) expect(e.reasonAr.length).toBeGreaterThan(10)
   })
 
-  it('والطولُ المضاعف يزيد درجةً واحدة لا سلّما ثانيا', () => {
-    for (const level of Object.keys(LEVEL_BASE_PRICE)) {
-      const short = coursePriceFromDepth(level, 8)!
-      const long = coursePriceFromDepth(level, LONG_COURSE_HOURS)!
-      expect(long - short, level).toBe(LONG_COURSE_SURCHARGE)
-      /* وما بين الطولين لا يُعامَل معاملةَ المضاعف */
-      expect(coursePriceFromDepth(level, LONG_COURSE_HOURS - 1), level).toBe(short)
-    }
+  it('والسعرُ يصعد مع الدرجة ولا ينزل — الأصعبُ أو الأندرُ لا يكون أرخص', () => {
+    for (let i = 1; i < PRICE_BY_SCORE.length; i++) expect(PRICE_BY_SCORE[i]).toBeGreaterThan(PRICE_BY_SCORE[i - 1])
+    expect(coursePrice('C-COMX-199', 'تأسيسي')).toBe(120)
+    expect(coursePrice('C-CYB-199', 'ممارس')).toBe(225)
   })
 
-  it('ومستوًى مجهول: لا سعرَ محسوب — ولا صفرٌ يُقرأ «مجّانا»', () => {
-    expect(coursePriceFromDepth('مستوًى لا وجود له', 8)).toBeNull()
-    expect(coursePriceFromDepth('', 8)).toBeNull()
+  it('ومستوًى أو مجالٌ مجهول: لا سعرَ محسوب — ولا صفرٌ يُقرأ «مجّانا»', () => {
+    expect(coursePrice('C-COMX-101', 'مستوًى لا وجود له')).toBeNull()
+    expect(coursePrice('C-ZZZ-101', 'تأسيسي')).toBeNull()
+    expect(coursePrice('C-COMX-101', '')).toBeNull()
+  })
+
+  it('والاستثناءُ لا يُسعِّر غيرَه، ولا يقبل سعرا غيرَ سعره', () => {
+    for (const [id, e] of Object.entries(PRICE_EXCEPTIONS)) {
+      expect(coursePrice(id, 'تأسيسي')).toBe(e.price)
+      expect(isPriceAllowed(id, e.price - 1)).toBe(false)
+    }
+    expect(isPriceAllowed('C-COMX-101', 300)).toBe(false)
   })
 })

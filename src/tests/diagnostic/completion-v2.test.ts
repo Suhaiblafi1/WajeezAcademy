@@ -146,7 +146,7 @@ describe('المرشحات الصارمة للقوالب (hard_filters)', () => 
 })
 
 describe('بناء خطة الدورات', () => {
-  it('كل قالب وكل نسخة تحترم سقف 80 ساعة أو تُحال لمستشار', () => {
+  it('كل قالب وكل نسخة تحترم سقف 128 ساعة أو تُحال لمستشار', () => {
     for (const tpl of compositeTemplates) {
       for (const variant of ['starter', 'full', 'extended'] as PlanVariant[]) {
         const plan = buildCoursePlan(tpl, variant, [])

@@ -180,7 +180,8 @@ describe('ملكيّةُ الشعبة واعتمادُها', () => {
 
   it('ومحاورُ الكتالوج الثابت تسند الورشةَ حين تخلو القاعدة', async () => {
     const mods = await staticModulesFor('C-AI-103')
-    expect(mods.length).toBe(4)
+    /* ثمانيةٌ منذ صارت الدوراتُ كلُّها ستَّ عشرةَ ساعة (٧ أكتوبر ٢٠٢٦) — وكانت أربعا */
+    expect(mods.length).toBe(8)
     expect(mods[0].moduleId).toBe('C-AI-103-M1')
     expect(mods.every((m) => m.titleAr.length > 2)).toBe(true)
     expect(await staticModulesFor('C-NOPE-000')).toEqual([])

@@ -488,6 +488,23 @@ export async function importCatalog(prisma: PrismaClient): Promise<ImportStats> 
     })
   }
 
+  /* 4ب) الوحداتُ المتقاعدة — تُؤرشف بالاسم لا بالغياب.
+
+     الوحداتُ لا تُحذف (عليها تقدّمُ متعلّمين وجلساتُ شعبٍ ومواد)، وكانت
+     لا تُؤرشف أيضا: وحدةٌ زالت من الملفّ تبقى «منشورة» فتظهر في الكتالوج
+     تحت دورةٍ لم تعُد تعدّها. ولا يصلح «ما غاب عن الملفّ» شرطا للأرشفة:
+     المدرّبُ يضيف وحداتٍ من لوحته بالتسمية نفسِها (`C-…-M9`)، فتُطفأ
+     وحداتُه بلا سبب. فالملفُّ يسمّي ما يتقاعد في `retired_modules` —
+     ودمجُ الدورات الخمس من ٢٤ ساعةً إلى ١٦ (٧ أكتوبر ٢٠٢٦) أوّلُ من سمّى. */
+  const retiredModuleIds = ((core.retired_modules ?? []) as { module_id: string }[]).map((r) => r.module_id)
+  if (retiredModuleIds.length > 0) {
+    const archived = await prisma.courseModule.updateMany({
+      where: { id: { in: retiredModuleIds }, status: { not: 'archived' } },
+      data: { status: 'archived' },
+    })
+    if (archived.count > 0) console.log(`   أُرشفت ${archived.count} وحدة متقاعدة — لم تُحذف، وسجلّاتها باقية`)
+  }
+
   /* 5) القوالب المركبة + إصداراتها + روابط الدورات الأربع */
   for (const t of templates) {
     await prisma.compositeTemplate.upsert({
