@@ -2,7 +2,14 @@
 
    القرارُ في `src/application/trainer/decline-reply.ts`: الرسالةُ معبّأةٌ تُحرَّر
    ثمّ تُرسَل مرّةً، ويُلحَق بها زرٌّ إلى صفحةٍ يختار فيها إبقاءَ بياناته أو
-   حذفَها في الحال. وبعد الإرسال يقول الصفُّ ما اختار — أو أنّه لم يختر بعد. */
+   حذفَها في الحال. وبعد الإرسال يقول الصفُّ ما اختار — أو أنّه لم يختر بعد.
+
+   ═══ وصار لبابَين (٧ أكتوبر ٢٠٢٦) ═══
+
+   `kind="expired"`: اعتذارٌ نهائيٌّ لمن انقضى رابطُ توقيعه — الرسالةُ نفسُها
+   وخيارُها، ومعها يُغلَق عقدُه ويُؤجَّل طلبُه إلى الفصول القادمة. والفرقُ في
+   النصّ الأوّل وفي ما يُقال قبل الإرسال وبعده، لا في الآلة. والقرارُ عند
+   `expiredReplyBlockAr` في `decline-reply.ts`. */
 
 import { useState } from "react";
 import { MailCheck, Send, X } from "lucide-react";
@@ -11,11 +18,13 @@ import Button from "@/components/ui/Button";
 import { staffAreaCls, staffControlCls } from "@/components/FormKit";
 import { toast, toastError } from "@/components/Toast";
 import { apiPost, ApiError } from "@/services/api";
-import { fmtDateTime } from "@/application/text/format-ar";
+import { fmtDateTime, fmtDateWith } from "@/application/text/format-ar";
 import {
   DATA_CHOICE_LINK_DAYS, DECLINE_REPLY_BODY_MAX, DECLINE_REPLY_BODY_MIN,
-  DEFAULT_DECLINE_REPLY_SUBJECT_AR, defaultDeclineReplyAr,
+  DEFAULT_DECLINE_REPLY_SUBJECT_AR, EXPIRED_REPLY_SUBJECT_AR, defaultDeclineReplyAr, defaultExpiredReplyAr,
 } from "@/application/trainer/decline-reply";
+import { DEFER_FOLLOW_UP_MONTHS, deferredFollowUpAt } from "@/application/trainer/deferral";
+import { ACADEMY_ZONE } from "@/application/trainer/cohort-period";
 
 export interface DeclineReplyRow {
   id: string;
@@ -25,10 +34,16 @@ export interface DeclineReplyRow {
   dataChoiceAt?: string | null;
 }
 
-export default function DeclineReply({ c, onDone }: { c: DeclineReplyRow; onDone: () => Promise<void> | void }) {
+/** «declined»: من اعتذر هو عن عقده · «expired»: من انقضى رابطُ توقيعه فنعتذر نحن */
+export type ReplyKind = "declined" | "expired";
+
+export default function DeclineReply({ c, onDone, kind = "declined" }: {
+  c: DeclineReplyRow; onDone: () => Promise<void> | void; kind?: ReplyKind;
+}) {
+  const expired = kind === "expired";
   const [open, setOpen] = useState(false);
-  const [subject, setSubject] = useState(DEFAULT_DECLINE_REPLY_SUBJECT_AR);
-  const [body, setBody] = useState(() => defaultDeclineReplyAr(c.fullName));
+  const [subject, setSubject] = useState(expired ? EXPIRED_REPLY_SUBJECT_AR : DEFAULT_DECLINE_REPLY_SUBJECT_AR);
+  const [body, setBody] = useState(() => (expired ? defaultExpiredReplyAr() : defaultDeclineReplyAr(c.fullName)));
   const [busy, setBusy] = useState(false);
 
   if (c.declineRepliedAt) {
@@ -40,14 +55,20 @@ export default function DeclineReply({ c, onDone }: { c: DeclineReplyRow; onDone
     return (
       <Inset tone={c.dataChoice === "delete" ? "warn" : "default"} className="mt-2 flex items-start gap-2 p-3 text-read leading-7">
         <MailCheck className="mt-1.5 h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" />
-        <span>رددتَ على اعتذاره {fmtDateTime(c.declineRepliedAt)} — {choice}</span>
+        <span>
+          {expired
+            ? <>أغلقتَه برسالة شكرٍ {fmtDateTime(c.declineRepliedAt)} وأُجّل طلبُه إلى الفصول القادمة — {choice}</>
+            : <>رددتَ على اعتذاره {fmtDateTime(c.declineRepliedAt)} — {choice}</>}
+        </span>
       </Inset>
     );
   }
 
   if (!open) {
     return (
-      <Button size="sm" className="mt-2" icon={Send} onClick={() => setOpen(true)}>ردَّ على اعتذاره</Button>
+      <Button size="sm" className="mt-2" icon={Send} onClick={() => setOpen(true)}>
+        {expired ? "اعتذر له نهائيّا — وأجِّلْه للفصول القادمة" : "ردَّ على اعتذاره"}
+      </Button>
     );
   }
 
@@ -55,9 +76,12 @@ export default function DeclineReply({ c, onDone }: { c: DeclineReplyRow; onDone
   const send = async () => {
     setBusy(true);
     try {
-      const r = await apiPost<{ emailDelivery: string }>(`/api/admin/trainer-contracts/${c.id}/decline-reply`,
+      const r = await apiPost<{ emailDelivery: string }>(
+        `/api/admin/trainer-contracts/${c.id}/${expired ? "expired-reply" : "decline-reply"}`,
         { subjectAr: subject.trim(), bodyAr: body.trim() });
-      toast(r.emailDelivery === "sent" ? "أُرسل ردُّك — ومعه خيارُه في بياناته" : "حُفظ ردُّك — وتعذّر البريد، فأعِد إرساله يدويّا");
+      toast(r.emailDelivery === "sent"
+        ? expired ? "أُغلق العقدُ وأُجّل طلبُه — ووصلته رسالتُك ومعها خيارُه في بياناته" : "أُرسل ردُّك — ومعه خيارُه في بياناته"
+        : "حُفظ ردُّك — وتعذّر البريد، فأعِد إرساله يدويّا");
       setOpen(false);
       await onDone();
     } catch (e) {
@@ -76,14 +100,24 @@ export default function DeclineReply({ c, onDone }: { c: DeclineReplyRow; onDone
         <textarea className={staffAreaCls} rows={12} value={body} maxLength={DECLINE_REPLY_BODY_MAX}
           onChange={(e) => setBody(e.target.value)} />
       </label>
-      <p className="text-read leading-6 text-muted-foreground">
-        يُلحَق بالرسالة زرُّ «اختر ما نفعله ببياناتك»: صفحةٌ يختار فيها إبقاءَها للمواسم القادمة أو حذفَها،
-        ويقع الحذفُ في الحال حين يؤكّده — ويصلك خبرُ ما اختار. وتُرسَل الرسالةُ مرّةً واحدة.
-      </p>
+      {expired ? (
+        <p className="text-read leading-6 text-muted-foreground">
+          بالإرسال يُغلَق هذا العقد، ويصير طلبُه «مؤجَّلا — للفصول القادمة»: فيُسأل عن اهتمامه
+          في {fmtDateWith(deferredFollowUpAt(new Date()), { year: "numeric", month: "long", day: "numeric", timeZone: ACADEMY_ZONE })}
+          {" "}(بعد {DEFER_FOLLOW_UP_MONTHS === 2 ? "شهرين" : `${DEFER_FOLLOW_UP_MONTHS} أشهر`}) ويُذكَّر فريقُك. ويُلحَق
+          بالرسالة زرُّ «اختر ما نفعله ببياناتك»: إبقاؤها، أو حذفُها في الحال حين يؤكّده — ويصلك خبرُ ما اختار.
+          وتُرسَل مرّةً واحدة. ولمن أردتَ أن يوقّع بعدُ فـ«جدِّدِ الرابط» أعلاه.
+        </p>
+      ) : (
+        <p className="text-read leading-6 text-muted-foreground">
+          يُلحَق بالرسالة زرُّ «اختر ما نفعله ببياناتك»: صفحةٌ يختار فيها إبقاءَها للمواسم القادمة أو حذفَها،
+          ويقع الحذفُ في الحال حين يؤكّده — ويصلك خبرُ ما اختار. وتُرسَل الرسالةُ مرّةً واحدة.
+        </p>
+      )}
       <div className="flex flex-wrap gap-2">
         <Button tone="confirm" size="sm" icon={Send} loading={busy}
           disabled={len < DECLINE_REPLY_BODY_MIN || subject.trim().length < 3} onClick={() => void send()}>
-          أرسِلِ الردّ
+          {expired ? "أغلِقْه وأرسِلِ الرسالة" : "أرسِلِ الردّ"}
         </Button>
         <Button tone="ghost" size="sm" icon={X} disabled={busy} onClick={() => setOpen(false)}>تراجعْ</Button>
       </div>

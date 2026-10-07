@@ -705,6 +705,23 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     return declineReply.reply(contractId, req.auth!.userId, body)
   })
 
+  /* ═══ واعتذارٌ نهائيٌّ لمن انقضى رابطُه — ويُؤجَّل طلبُه (٧ أكتوبر ٢٠٢٦) ═══
+     يُغلق عقدا ويغيّر حالَ طلب، فإذنُه إذنُ القرار مع إذن العقود.
+     العلّةُ عند `expiredReplyBlockAr` في `decline-reply.ts`. */
+  app.post('/api/admin/trainer-contracts/:contractId/expired-reply', {
+    preHandler: requirePermission('trainer.contract.manage'),
+    schema: { tags: ['admin-trainers'], summary: 'اعتذارٌ نهائيٌّ لمن انقضى رابطُ توقيعه — يُغلق العقدَ ويؤجّل الطلبَ ويرسل خيارَ البيانات' },
+  }, async (req, reply) => {
+    if (!req.auth!.permissions.includes('trainer.applications.decide')) {
+      return reply.status(403).send({
+        error: { code: 'forbidden', message_ar: 'تأجيلُ الطلب قرارٌ في المدرّبين — يحتاج صلاحيةَ القرار مع صلاحية العقود' },
+      })
+    }
+    const { contractId } = z.object({ contractId: z.string().uuid() }).parse(req.params)
+    const body = z.object({ subjectAr: z.string().max(200), bodyAr: z.string().max(6000) }).parse(req.body ?? {})
+    return declineReply.expiredReply(contractId, req.auth!.userId, body)
+  })
+
   /* وبابٌ غيرُ الرفض لتوقيعٍ صحيحٍ تحتَه نصٌّ قديم — علّتُه في `requestResign` */
   app.post('/api/admin/trainer-contracts/:contractId/resign-request', {
     preHandler: requirePermission('trainer.contract.manage'),

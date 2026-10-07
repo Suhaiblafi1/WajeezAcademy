@@ -39,7 +39,7 @@ export function contractNextStep(f: NextStepFacts): NextStep {
       return { textAr: 'أرسِلْه للتوقيع', who: 'you' }
     case 'sent':
       return past(f.tokenExpiresAt, now)
-        ? { textAr: 'انقضى رابطُه — جدِّدْه أو ألغِه', who: 'you' }
+        ? { textAr: 'انقضى رابطُه — جدِّدْه، أو اعتذر له وأجِّلْه، أو ألغِه', who: 'you' }
         : { textAr: 'ينتظر توقيعَه', who: 'them' }
     case 'amendment_requested':
       return { textAr: 'طلب تعديلا — أجِبْه', who: 'you' }
