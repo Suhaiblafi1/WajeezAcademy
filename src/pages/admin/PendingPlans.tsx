@@ -26,9 +26,9 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router";
-import { BookOpen, ChevronUp, ClipboardCheck, ExternalLink, ServerOff } from "lucide-react";
+import { BookOpen, ChevronUp, ClipboardCheck, Download, ExternalLink, ServerOff } from "lucide-react";
 import AdminLayout from "./AdminLayout";
-import { apiGet, ApiError } from "@/services/api";
+import { apiDownload, apiGet, ApiError } from "@/services/api";
 import { fmtDateTimeAr } from "@/utils/format";
 import { countAr } from "@/application/text/count-ar";
 import { paginate } from "@/application/admin/paginate";
@@ -99,6 +99,21 @@ export default function PendingPlans() {
   const [page, setPage] = useState(1);
   const [open, setOpen] = useState<Set<string>>(() => new Set());
   const [decided, setDecided] = useState<Record<string, PlanOutcome>>({});
+  /* ═══ والطابورُ كلُّه حزمةً واحدة (٧ أكتوبر ٢٠٢٦) ═══
+     قرارُ صاحب المنصّة: زرُّ تنزيلٍ تُراجَع به الخططُ خارجَ المنصّة. لكلّ خطّةٍ
+     مجلّدُها في ZIP واحد بترتيب الطابور، وفي رأسه فهرس (`plan-review-bundle.service.ts`).
+     والزرُّ للطابور كلِّه وإن كان البحثُ أو المدرّبُ مصفّى — يُقال ذلك بجانبه. */
+  const [bundle, setBundle] = useState<{ busy: boolean; msg: string }>({ busy: false, msg: "" });
+  const downloadAll = async () => {
+    if (bundle.busy) return;
+    setBundle({ busy: true, msg: "" });
+    try {
+      const name = await apiDownload("/api/admin/cohort-plans/pending/review-bundle", "خطط-تنتظر-الاعتماد.zip");
+      setBundle({ busy: false, msg: `نُزِّلت «${name}» — ولم يتغيّر في أيّ خطّةٍ شيء.` });
+    } catch (e) {
+      setBundle({ busy: false, msg: e instanceof ApiError ? e.message : "تعذّر التنزيل" });
+    }
+  };
   /* الخطّةُ التي تُبلَغ بعد أن تُرسَم — مرجعٌ لا حال: بلوغُها أثرٌ في الصفحة
      لا شيءٌ يُرسَم، فلا يُحدث رسما ثانيا */
   const revealNext = useRef<string | null>(null);
@@ -175,6 +190,19 @@ export default function PendingPlans() {
         كلُّ خطّةِ شعبةٍ أرسلها مدرّبُها وأكّد موافقتَه على ما فيها — من المدرّبين كلِّهم، وخططُ كلِّ مدرّبٍ تحت اسمه.
         افتح أيَّها تقرأ منهجَها كاملا كما في بطاقة شعبتها، ثمّ «اعتمدها» أو «اطلب تعديلات». ولا يُفتح تسجيلُ شعبةٍ قبل اعتماد خطّتها.
       </p>
+
+      {rows !== null && rows.length > 0 && (
+        <Inset className="mb-4 flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+          <p className="max-w-2xl text-read leading-6 text-muted-foreground">
+            للمراجعة خارجَ المنصّة: ملفٌّ مضغوطٌ واحدٌ فيه الخططُ المنتظِرةُ كلُّها ({plansAr(rows.length)}) — لكلّ خطّةٍ منهجُها نصّا مقروءا وكلُّ ملفٍّ رفعه مدرّبُها.
+            {(trainerFilter || q) && " ويشمل ما لا يُعرض الآن بالتصفية."}
+          </p>
+          <Button size="sm" tone="secondary" icon={Download} disabled={bundle.busy} onClick={() => void downloadAll()}>
+            {bundle.busy ? "يُجهَّز التنزيل…" : "نزِّل الخططَ كلَّها للمراجعة"}
+          </Button>
+          {bundle.msg && <p className="w-full text-read font-bold text-teal-light-ink" role="status">{bundle.msg}</p>}
+        </Inset>
+      )}
 
       {trainerFilter && (
         <Inset className="mb-4 flex flex-wrap items-center justify-between gap-2 px-4 py-3">

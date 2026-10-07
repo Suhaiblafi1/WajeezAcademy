@@ -36,6 +36,33 @@ export const apiPut = <T>(path: string, body?: unknown) => request<T>("PUT", pat
 export const apiPatch = <T>(path: string, body?: unknown) => request<T>("PATCH", path, body);
 export const apiDelete = <T>(path: string, body?: unknown) => request<T>("DELETE", path, body);
 
+/* ═══ تنزيلُ ملفٍّ من الخادم بالجلسة نفسِها (٧ أكتوبر ٢٠٢٦) ═══
+
+   رابطٌ عاديٌّ (`<a href download>`) لا يقول شيئا إن ردّ الخادمُ بخطأ: يُنزَّل
+   ملفٌّ فيه JSON الخطأ باسم الحزمة، أو لا يقع شيء. فيُجلب هنا كما تُجلب البيانات،
+   والخطأُ `ApiError` برسالته العربيّة، والاسمُ ما سمّاه الخادم (`filename*`) —
+   «خطة شعبة ديسمبر.zip» لا «download». */
+export async function apiDownload(path: string, fallbackName: string): Promise<string> {
+  const res = await fetch(`${API_BASE}${path}`, { credentials: "include" });
+  if (!res.ok) {
+    const data = (await res.json().catch(() => null)) as { error?: { code: string; message_ar: string } } | null;
+    throw new ApiError(data?.error?.code ?? "http_error", data?.error?.message_ar ?? `خطأ ${res.status}`, res.status);
+  }
+  const disposition = res.headers.get("content-disposition") ?? "";
+  const encoded = /filename\*=UTF-8''([^;]+)/i.exec(disposition)?.[1];
+  let name = fallbackName;
+  if (encoded) {
+    try { name = decodeURIComponent(encoded); } catch { /* اسمٌ لا يُفكّ — يبقى البديل */ }
+  }
+  const url = URL.createObjectURL(await res.blob());
+  const a = document.createElement("a");
+  a.href = url; a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  /* يُحرَّر بعد أن يبدأ المتصفّحُ التنزيل — تحريرُه في اللحظة نفسِها يقطعه في بعضها */
+  setTimeout(() => URL.revokeObjectURL(url), 30_000);
+  return name;
+}
+
 /* رسالةُ رفض الصلاحية — من الخادم لا من هنا.
 
    كان هذا السطرُ يقول لكلّ شاشةٍ ممنوعةٍ «تتطلب صلاحية «مدير النظام»» ثمّ

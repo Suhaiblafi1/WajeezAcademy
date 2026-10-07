@@ -14,6 +14,8 @@ import { ProgressService } from '../../services/progress.service'
 import { CertificateService } from '../../services/certificate.service'
 import { LearnerRequestService } from '../../services/learner-request.service'
 import { CohortPlanService } from '../../services/cohort-plan.service'
+import { PlanReviewBundleService, type ReviewBundle } from '../../services/plan-review-bundle.service'
+import { AuthError } from '../../services/auth.service'
 import { requirePermission } from '../auth-plugin'
 
 /* الأيّامُ رموزٌ معروفةٌ لا نصٌّ حرّ.
@@ -95,6 +97,34 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
     const { cohortId } = z.object({ cohortId: z.string().uuid() }).parse(req.params)
     return plans.latestForCohort(cohortId)
   })
+
+  /* ═══ وحزمتُها للمراجعة خارجَ المنصّة (٧ أكتوبر ٢٠٢٦) ═══
+
+     قرارُ صاحب المنصّة: زرُّ تنزيلٍ في شاشة الإدارة. ZIP فيه الخطّةُ نصّا مقروءا
+     (`خطة-الشعبة.md`) وأصلُها (`plan.json`) وكلُّ ملفٍّ رفعه المدرّبُ فيها
+     (`plan-review-bundle.service.ts`). والصلاحيّةُ صلاحيّةُ قراءتها في الشاشة:
+     من يقرأ الخطّةَ في البطاقة يقرؤها في حزمة، ومن يقرأ الطابورَ ينزّله كلَّه. */
+  const bundles = new PlanReviewBundleService(prisma)
+  const sendZip = (reply: import('fastify').FastifyReply, b: ReviewBundle) => reply
+    .header('content-type', 'application/zip')
+    .header('content-disposition', `attachment; filename="plan-review.zip"; filename*=UTF-8''${encodeURIComponent(b.fileName)}`)
+    .header('cache-control', 'no-store')
+    .send(b.zip)
+
+  app.get('/api/admin/cohorts/:cohortId/trainer-plan/review-bundle', {
+    preHandler: requirePermission('cohort.manage'),
+    schema: { tags: ['admin-cohorts'], summary: 'خطّةُ مدرّب الشعبة حزمةً للمراجعة — نصُّها وأصلُها وملفّاتُها' },
+  }, async (req, reply) => {
+    const { cohortId } = z.object({ cohortId: z.string().uuid() }).parse(req.params)
+    const b = await bundles.forCohort(req.auth!.userId, cohortId)
+    if (!b) throw new AuthError('not_found', 'لم يبدأ المدرّبُ خطّةَ هذه الشعبة بعد — فلا شيءَ يُنزَّل', 404)
+    return sendZip(reply, b)
+  })
+
+  app.get('/api/admin/cohort-plans/pending/review-bundle', {
+    preHandler: requirePermission('cohort.plan.approve'),
+    schema: { tags: ['admin-cohorts'], summary: 'الخططُ المنتظِرةُ كلُّها حزمةً واحدةً للمراجعة' },
+  }, async (req, reply) => sendZip(reply, await bundles.allPending(req.auth!.userId)))
 
   /* ═══ وما بقي بعد الاعتماد الأخير (٣ أكتوبر ٢٠٢٦) ═══
      شعبُ مدرّب هذه الشعبة المعتمَدةُ التي لم تُفتح، ونواقصُ فتح كلٍّ، وظهورُه العامّ —

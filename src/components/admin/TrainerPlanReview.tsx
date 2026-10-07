@@ -11,7 +11,7 @@
    كاملا، وما تغيّر عن المعتمَد، وملاحظاتُ الردّ السابق، واللقاءاتُ والمهامُّ
    التي تُعتمَد معها. */
 import { useCallback, useEffect, useState } from "react";
-import { apiGet, apiPost, ApiError } from "@/services/api";
+import { apiDownload, apiGet, apiPost, ApiError } from "@/services/api";
 import { useRealSession } from "@/services/session";
 import { fmtDateAr, fmtDateTimeAr } from "@/utils/format";
 import type { PlanSlot } from "@/application/trainer/axis-timeline";
@@ -31,6 +31,7 @@ import TrainerNextSteps from "@/components/admin/TrainerNextSteps";
 import { signalPlansChanged } from "@/services/plans-signal";
 import { Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
+import { Download } from "lucide-react";
 import { cohortDayAr } from "@/application/learning/cohort-gate";
 
 interface TrainerPlan {
@@ -122,6 +123,21 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
   /* القضاءُ في الخطّة يُبلَّغ مرّتين: البابُ الذي فُتحت منه (الطابورُ يعلّمها)،
      والإطارُ الذي يعدّ ما ينتظر (`plans-signal.ts`) — فلا تبقى شارتُه على عددٍ مضى */
   const decided = (outcome: PlanOutcome) => { onPlanDecided?.(outcome); signalPlansChanged(); };
+
+  /* ═══ وتُنزَّل للمراجعة خارجَ المنصّة (٧ أكتوبر ٢٠٢٦) ═══
+     قرارُ صاحب المنصّة: زرُّ تنزيل. ZIP فيه المنهجُ نصّا مقروءا وكلُّ ملفٍّ رفعه
+     المدرّب (`plan-review-bundle.ts`). ليس قرارا في الخطّة — فلا يمرّ بـ`act` ولا
+     يُبلَّغ به البابُ الذي فُتحت منه، ولا يحبس أزرارَ القرار وهو يُنزَّل. */
+  const [downloading, setDownloading] = useState(false);
+  const downloadBundle = async () => {
+    if (downloading) return;
+    setDownloading(true); setMsg("");
+    try {
+      const name = await apiDownload(`/api/admin/cohorts/${cohortId}/trainer-plan/review-bundle`, "خطة-الشعبة.zip");
+      setMsg(`نُزِّلت «${name}» — فيها المنهجُ نصّا مقروءا وكلُّ ملفٍّ رفعه المدرّب. ولم يتغيّر في الخطّة شيء.`);
+    } catch (e) { setMsg(e instanceof ApiError ? e.message : "تعذّر التنزيل"); }
+    finally { setDownloading(false); }
+  };
 
   /* ويعود بنجاحه — فنموذجٌ كُتب فيه لا يُطوى على خطأ فيضيع ما كُتب. والرسالةُ
      قد تُبنى ممّا عاد (اعتمادُ الخطّة يقول لقاءاتِه) */
@@ -327,6 +343,11 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
               void act(() => apiPost(`/api/admin/cohorts/${cohortId}/remind-trainer`, { note: note.trim() || undefined }), "ذُكِّر المدرّب — جرسٌ وبريد");
             }}>
             ذكّر المدرّب بإكمال التجهيز
+          </Button>
+        )}
+        {trainerPlan && (
+          <Button tone="secondary" size="sm" icon={Download} disabled={downloading} onClick={() => void downloadBundle()}>
+            {downloading ? "يُجهَّز التنزيل…" : "نزِّل الخطّةَ للمراجعة"}
           </Button>
         )}
       </div>
