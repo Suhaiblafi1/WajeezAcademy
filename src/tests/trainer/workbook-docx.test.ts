@@ -146,6 +146,39 @@ describe('② الملفُّ يحمل ما مُلئ، وما لم يُكتب ي�
     expect(fonts, 'العريضُ يُرسم من العاديّ').toMatch(/<w:embedBold /)
     expect(await xmlOf(data, 'word/settings.xml'), 'يُسقطه Word عند الحفظ').toContain('<w:embedTrueTypeFonts/>')
   })
+
+  /* ═══ ويفتحه Word — لا LibreOffice وحدَه (٧ أكتوبر ٢٠٢٦) ═══
+     بلّغ صاحبُ المنصّة: «هناك خطأ عند تحميل الملفات». وكان مفتاحُ الخطّ العاديّ — يكتبه
+     `docx` — بحروفٍ صغيرة، والمخطّطُ (`ST_Guid`) لا يقبل إلّا الكبيرة: يقف Word عند الملفّ،
+     وLibreOffice الذي عاينّا به يتجاوز عنه. فيُحرس المفتاحُ بنمط المخطّط نفسِه، ويُحرس أنّ كلَّ
+     خطٍّ مضمَّنٍ يُفكّ بمفتاحه إلى ملفّه الأصليّ — فلا يُصلَح الحرفُ ويفسد الخطّ. */
+  it('⚠️ ومفتاحُ كلّ خطٍّ مضمَّنٍ بنمط المخطّط — ويُفكّ به إلى خطّه الأصليّ', async () => {
+    const ST_GUID = /^\{[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}\}$/
+    const original: Record<string, Buffer> = {
+      embedRegular: readFileSync(join(process.cwd(), 'server/assets/fonts/IBMPlexSansArabic-Regular.ttf')),
+      embedBold: readFileSync(join(process.cwd(), 'server/assets/fonts/IBMPlexSansArabic-Bold.ttf')),
+    }
+    const docs = {
+      'الفارغُ للدورة': await workbookDocx(blankFill('course')),
+      'الفارغُ للمحور': await workbookDocx(blankFill('module')),
+      'المملوء': await workbookDocx(workbookFill(input)!),
+    }
+    for (const [name, data] of Object.entries(docs)) {
+      const zip = await JSZip.loadAsync(data)
+      const table = await zip.file('word/fontTable.xml')!.async('string')
+      const rels = await zip.file('word/_rels/fontTable.xml.rels')!.async('string')
+      const embeds = [...table.matchAll(/<w:(embed\w+) r:id="([^"]+)" w:fontKey="([^"]+)"\/>/g)]
+      expect(embeds.map((m) => m[1]).sort(), name).toEqual(['embedBold', 'embedRegular'])
+      for (const [, kind, rid, key] of embeds) {
+        expect(key, `${name}: مفتاحُ ${kind} ليس بنمط المخطّط — Word لا يفتح الملفّ`).toMatch(ST_GUID)
+        const target = new RegExp(`Id="${rid}"[^>]*Target="([^"]+)"`).exec(rels)?.[1]
+        const font = Buffer.from(await zip.file(`word/${target}`)!.async('nodebuffer'))
+        const bytes = key.replace(/[{}-]/g, '').match(/../g)!.map((h) => parseInt(h, 16)).reverse()
+        for (let i = 0; i < 32; i++) font[i] ^= bytes[i % 16]
+        expect(font.equals(original[kind]), `${name}: ${kind} لا يُفكّ بمفتاحه إلى خطّه`).toBe(true)
+      }
+    }
+  })
 })
 
 describe('③ لا صفحةَ بيضاء', () => {
@@ -165,6 +198,11 @@ describe('④ القالبان الفارغان مبنيّان من المولّ
       const committed = await xmlOf(readFileSync(join(process.cwd(), 'public', tpl.href)))
       const now = await xmlOf(await workbookDocx(blankFill(kind)))
       expect(committed === now, `${tpl.href} قديم — شغّل npx tsx scripts/workbook-template/build.ts`).toBe(true)
+      /* ومفتاحا خطّيه بنمط المخطّط — فالملفُّ الملتزَمُ قبل الإصلاح يسقط هنا (٧ أكتوبر ٢٠٢٦) */
+      const fonts = await xmlOf(readFileSync(join(process.cwd(), 'public', tpl.href)), 'word/fontTable.xml')
+      for (const [, key] of fonts.matchAll(/w:fontKey="([^"]+)"/g)) {
+        expect(key, `${tpl.href}: مفتاحُ خطٍّ بحروفٍ صغيرة — أعد بناءه`).toMatch(/^\{[0-9A-F-]{36}\}$/)
+      }
     }
   })
 })
