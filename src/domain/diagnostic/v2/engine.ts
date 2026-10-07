@@ -10,7 +10,7 @@ import { applyDerivedRules, decisionCriticalMissing, reduceAnswer } from '../fac
 import { matchTrainer } from '../instructor-match'
 import { scoreTemplates, selectTemplate, templatesActive } from '../composite'
 import type { TriggerContext } from '../triggers'
-import { DISCLAIMER_AR } from '../config'
+import { DISCLAIMER_AR, TEMPLATE_THRESHOLDS } from '../config'
 import type {
   Answer,
   BankQuestion,
@@ -722,7 +722,7 @@ export class DiagnosticEngineV2 {
         ...explanation.understood_facts_ar.slice(0, 2),
         explanation.domain_reason_ar,
         ...explanation.pathway_reasons_ar.slice(0, 2),
-        ...(composite?.requiredHoursOverflow ? ['مجموع ساعات الخطة يتجاوز 80 ساعة — تُراجَع مع مستشار.'] : []),
+        ...(composite?.requiredHoursOverflow ? [`مجموع ساعات الخطة يتجاوز ${TEMPLATE_THRESHOLDS.max_plan_hours} ساعة — تُراجَع مع مستشار.`] : []),
         ...(composite?.advisorHandoff ? [composite.advisorHandoff.rationale_ar] : []),
       ],
       unavailable_skills: unavailable,

@@ -691,7 +691,7 @@ export class DiagnosticEngine {
       reasons_ar: [
         ...(primary ? buildReasons(primary, confidence, this.state.facts) : []),
         ...(composite?.requiredHoursOverflow
-          ? ['مجموع ساعات الدورات الأساسية في هذه الخطة يتجاوز 80 ساعة — تُراجَع مع مستشار قبل اعتمادها.']
+          ? [`مجموع ساعات الدورات الأساسية في هذه الخطة يتجاوز ${TEMPLATE_THRESHOLDS.max_plan_hours} ساعة — تُراجَع مع مستشار قبل اعتمادها.`]
           : []),
         ...(composite?.advisorHandoff ? [composite.advisorHandoff.rationale_ar] : []),
       ],
@@ -718,7 +718,7 @@ export class DiagnosticEngine {
         ? [
             ...(confidence.total < 0.5 ? ['قوة الأدلة دون 50٪'] : []),
             ...(this.state.contradictions.some((c) => !c.resolved && c.severity === 'high') ? ['تناقض عالي الخطورة غير محسوم'] : []),
-            ...(composite?.requiredHoursOverflow ? ['الدورات الأساسية تتجاوز 80 ساعة'] : []),
+            ...(composite?.requiredHoursOverflow ? [`الدورات الأساسية تتجاوز ${TEMPLATE_THRESHOLDS.max_plan_hours} ساعة`] : []),
             ...(composite?.advisorHandoff ? [`مرشح صارم ${composite.advisorHandoff.filterId}: ${composite.advisorHandoff.rationale_ar}`] : []),
           ]
         : [],
