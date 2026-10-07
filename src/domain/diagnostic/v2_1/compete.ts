@@ -803,13 +803,26 @@ export function competeEntities(facts: FactBag, ctx: DecisionContext): Competiti
   const universe = recommendationUniverse()
   const eligibility = universe.entities.map((e) => assessEntityEligibility(e, facts, ctx))
   const eligibleIds = new Set(eligibility.filter((e) => e.eligible).map((e) => e.entityId))
-  const candidates = universe.entities
+  const scored = universe.entities
     .filter((e) => eligibleIds.has(e.entity_id))
     .map((e) => scoreEntity(e, facts, ctx))
     .sort((a, b) => b.netFit - a.netFit || a.entity.entity_id.localeCompare(b.entity.entity_id))
 
+  /* ═══ والدورةُ القائمةُ بنفسها خارجَ السباق ما دام فيه غيرُها ═══
+
+     `candidates` هي السباق: منها يُختار ما يُسأل، ومتى يُتوقّف، وكم الثقة،
+     ومن المنافس. والدورةُ آخرُ الصفّ — لا تفوز ما دام مسارٌ أو مركّبٌ مؤهَّلا
+     (`effectiveTop` أدناه). فلمّا دخلت الفضاءَ ٣٢ دورةً بجمهورها (٧ أكتوبر
+     ٢٠٢٦) صارت تقف بين المتصدّرَين بملاءمةٍ قريبة، فيُسأل المتعلّمُ ليُفصل بين
+     مسارٍ ودورةٍ لا تستطيع أن تغلبه — ونمت المقاعدُ الميتة ٣٨٩ ← ٤٠٠. فلا تدخل
+     السباقَ إلّا حين لا يبقى فيه غيرُ الدورات، وهناك يكون الفصلُ بينها سؤالا له
+     جواب. و`bestCourse` يُقرأ من الترتيب كلِّه، فهي الفائزةُ حين لا مسار. */
+  const candidates = scored.some((c) => c.entity.entity_type !== 'course')
+    ? scored.filter((c) => c.entity.entity_type !== 'course')
+    : scored
+
   const bestStandard = candidates.find((c) => c.entity.entity_type === 'standard') ?? null
-  const bestCourse = candidates.find((c) => c.entity.entity_type === 'course') ?? null
+  const bestCourse = scored.find((c) => c.entity.entity_type === 'course') ?? null
   const compositeCandidates = candidates.filter((c) => c.entity.entity_type === 'composite')
   const topComposite = compositeCandidates[0] ?? null
 

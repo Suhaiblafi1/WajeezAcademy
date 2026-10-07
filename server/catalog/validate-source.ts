@@ -22,6 +22,8 @@ import { SUPPORT_PER_PATHWAY } from '../../src/data/courses'
 import { measurementDocDrift } from '../../src/application/catalog/skill-measurement'
 import { measurableSkills } from '../../src/domain/diagnostic/v2_1/universe'
 import { COURSE_PRICE_RANGE, isPriceAllowed } from '../../src/application/catalog/course-pricing'
+import { domainsV2 } from '../../src/domain/diagnostic/v2/data'
+import { CAREER_STAGE_LABELS_AR } from '../../src/domain/diagnostic/v2_1/maps'
 
 /** حدود ساعات الدورة — المنشور اليوم ٨–١٢، والمدى يترك مجالا للتأليف */
 export const COURSE_HOURS_MIN = 1
@@ -41,6 +43,7 @@ const F = {
 interface SourceCourse {
   course_id: string; title_ar: string; total_hours: number; skill_slugs: string[]
   list_price?: number; list_currency?: string
+  recommendable_directly?: boolean; diagnostic_domains?: string[]; diagnostic_stages?: string[]
 }
 interface SourcePathway {
   id: string
@@ -266,6 +269,23 @@ export function validateCatalogSource(): ValidationResult {
       errorsAr.push(`${F.core}: الوحدة «${r.module_id}» متقاعدةٌ وما تزال في الوحدات — تُنشر وتُؤرشف معا`)
     }
     if (!r.reason_ar?.trim()) errorsAr.push(`${F.core}: الوحدة المتقاعدة «${r.module_id}» بلا سبب`)
+  }
+
+  /* ٥-ب — الدورةُ المرشَّحةُ وحدَها: الشروطُ نفسُها التي تفرضها اللوحة
+     (catalog-admin.service · setStandaloneRecommendation) — مجالٌ يعرفه التشخيص،
+     وجمهورٌ مُعلَن، ومهارة. وبلا أحدها تدخل الفضاءَ ولا تفوز مرّةً أبدا. */
+  const knownDomains = new Set(domainsV2.map((d) => d.id as string))
+  const knownStages = new Set(Object.keys(CAREER_STAGE_LABELS_AR))
+  for (const c of core.courses) {
+    if (c.recommendable_directly === undefined) continue
+    const at = `${F.core} · الدورة ${c.course_id}`
+    for (const d of c.diagnostic_domains ?? []) if (!knownDomains.has(d)) errorsAr.push(`${at}: مجالٌ لا يعرفه التشخيص «${d}»`)
+    for (const x of c.diagnostic_stages ?? []) if (!knownStages.has(x)) errorsAr.push(`${at}: مرحلةٌ لا يعرفها التشخيص «${x}»`)
+    if (c.recommendable_directly) {
+      if (!(c.diagnostic_domains ?? []).length) errorsAr.push(`${at}: تُرشَّح وحدَها بلا مجال — لا يصلها احتياجٌ ولا هدف`)
+      if (!(c.diagnostic_stages ?? []).length) errorsAr.push(`${at}: تُرشَّح وحدَها بلا جمهورٍ مُعلَن — تخرج من المنافسة`)
+      if (!c.skill_slugs.length) errorsAr.push(`${at}: تُرشَّح وحدَها بلا مهارة — لا شيءَ تنافس به`)
+    }
   }
 
   /* ٦ — ساعات كل دورة في المدى المعقول، وهي ستَّ عشرةَ ساعة.

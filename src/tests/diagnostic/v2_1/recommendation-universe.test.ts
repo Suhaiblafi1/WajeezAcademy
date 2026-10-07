@@ -85,10 +85,13 @@ describe('فضاء التوصيات الموحد V2.1 — معايير القب�
      (GRPH · PSY×2 · EDU · INTR · ENGR). والمركّباتُ خمسَ عشرةَ كما هي:
      القوالبُ المركّبةُ مؤلَّفةٌ في composite-templates.v1.json ولا يولّدها
      مسارٌ جديد.
-     و٤١←٤٢ و٢٦←٢٧ قياسيّا (2026-09-22): PW-FAM-001 — مسارُ الأسرة والتربية. */
-  it('الفضاء النشط = 42 كيانًا (27 قياسيًا + 15 مركبًا) — TPL-SMART-OPS-001 موسوم needs_revision بقرار أكاديمي موثق (إغلاق منطق V2.1)', () => {
+     و٤١←٤٢ و٢٦←٢٧ قياسيّا (2026-09-22): PW-FAM-001 — مسارُ الأسرة والتربية.
+     و٤٢←٧٣ (2026-10-07): إحدى وثلاثون دورةً قائمةً بنفسها بجمهورها ومجالها
+     بقرار صاحب المنصّة دورةً دورة — والمساراتُ والمركّباتُ كما هي. */
+  it('الفضاء النشط = 73 كيانًا (27 قياسيًا + 15 مركبًا + 31 دورة) — TPL-SMART-OPS-001 موسوم needs_revision بقرار أكاديمي موثق (إغلاق منطق V2.1)', () => {
     const universe = recommendationUniverse()
-    expect(universe.active.length).toBe(42)
+    expect(universe.active.length).toBe(73)
+    expect(universe.active.filter((e) => e.entity_type === 'course').length).toBe(31)
     expect(universe.active.filter((e) => e.entity_type === 'standard').length).toBe(27)
     expect(universe.active.filter((e) => e.entity_type === 'composite').length).toBe(15)
     /* القرار الموثق: SMART-OPS لا يفوز من أي شخصية بشرية طبيعية (3520 توليفة +

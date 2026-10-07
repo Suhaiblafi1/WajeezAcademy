@@ -64,6 +64,9 @@ const SLIM_PATHWAY_KEYS = [
 const SLIM_COURSE_KEYS = [
   'course_id', 'pathway_id', 'sequence', 'title_ar', 'subtitle_ar', 'level_ar',
   'total_hours', 'skill_slugs', 'skill_ids', 'skill_names_ar',
+  /* الدورةُ القائمةُ بنفسها تُرشَّح وحدَها بها (universe.ts · standaloneCourses) —
+     والحزمةُ المضمنةُ تقرأ النحيفَ، فبلا هذه الثلاثة ترى الحزمةُ ما لا تراه اللقطة */
+  'recommendable_directly', 'diagnostic_domains', 'diagnostic_stages',
 ] as const
 const skillsFile = read('src/data/catalog/skills.v1.ar.json') as { version?: string; skills: Record<string, unknown>[] }
 const slimSkills = {

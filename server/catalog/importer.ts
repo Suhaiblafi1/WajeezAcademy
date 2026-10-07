@@ -84,6 +84,8 @@ interface RawCourse {
   summative_assessment_ar?: string
   /** سعر القائمة وعملته — يُعلَنان في الكتالوج ويرثهما إنشاء الشعبة */
   list_price?: number; list_currency?: string
+  /** الدورةُ القائمةُ بنفسها تُرشَّح وحدَها — بمجالها وجمهورها (universe.ts · standaloneCourses) */
+  recommendable_directly?: boolean; diagnostic_domains?: string[]; diagnostic_stages?: string[]
 }
 interface RawModule {
   module_id: string; course_id: string; sequence: number; title_ar: string
@@ -283,6 +285,24 @@ export async function importCatalog(prisma: PrismaClient): Promise<ImportStats> 
         listPrice: c.list_price ?? null, listCurrency: c.list_currency ?? 'USD', domainAr: domain,
       },
     })
+    /* ترشيحُها وحدَها: يُكتب حين يقوله الملفُّ، ويُترك حين يسكت عنه.
+
+       كان هذا بابا واحدا: صندوقٌ في لوحة الكتالوج يكتب في القاعدة وحدَها، فلم
+       يُعلَّم في الإنتاج لدورةٍ واحدة (٧ أكتوبر ٢٠٢٦: صفرٌ من ١٤٨) وبقيت
+       اثنتان وثلاثون دورةً قائمةً بنفسها لا يرشّحها التشخيص. فقرّر صاحبُ
+       المنصّة جمهورَ كلٍّ منها ومجالَها دورةً دورة، فصار يُكتب في الملفّ ويحمله
+       كلُّ نشر. والسكوتُ لا يُطفئ: دورةٌ لم يذكرها الملفُّ يبقى فيها ما علّمته
+       اللوحة. */
+    if (c.recommendable_directly !== undefined) {
+      await prisma.course.update({
+        where: { id: c.course_id },
+        data: {
+          recommendableDirectly: c.recommendable_directly,
+          diagnosticDomains: [...(c.diagnostic_domains ?? [])].sort(),
+          diagnosticStages: [...(c.diagnostic_stages ?? [])].sort(),
+        },
+      })
+    }
     const cv = await prisma.courseVersion.upsert({
       where: { courseId_version: { courseId: c.course_id, version: 1 } },
       update: {

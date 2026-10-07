@@ -646,7 +646,7 @@ export interface RecommendationUniverse {
    تحمل إلّا المنشور. وبوّابتُها الحقيقيّةُ في الكتالوج لا هنا. */
 function buildCourseEntity(c: CatalogCourse): RecommendationEntity {
   const domains = [...new Set((c.diagnostic_domains ?? []) as DomainId[])].sort()
-  const skills = [...new Set(c.skill_slugs)].sort()
+  const skills = activeSkillsOf(c)
   return {
     entity_id: c.course_id,
     entity_type: 'course',
@@ -692,7 +692,8 @@ function buildCourseEntity(c: CatalogCourse): RecommendationEntity {
     skill_slugs: skills,
     /* لا مسارَ تمثّله — وهو الحقلُ الذي لا يقرؤه أحدٌ أصلا، ويبقى صادقا */
     pathway_requirements: [],
-    learning_outcomes: skills,
+    /* ونواتجُها كلُّ ما تعلّمه، المحكومُ منها أيضا: الحوكمةُ تمنعه أن يرجّح، لا أن يُعلَّم */
+    learning_outcomes: [...new Set(c.skill_slugs)].sort(),
     minimum_evidence: { fact_coverage: 1, domain_confidence: 0.55 },
     minimum_skill_evidence: { measured_coverage_floor: 0 },
     feasibility: {
@@ -709,6 +710,19 @@ function buildCourseEntity(c: CatalogCourse): RecommendationEntity {
   }
 }
 
+/* ═══ وتنافس الدورةُ بمهاراتها المعتمدة وحدَها ═══
+
+   بوابةُ الحوكمة الأكاديميّة (قرار 2026-08-19 · audit-universe.ts §٩): مهارةٌ
+   محكومةٌ (future_catalog_skill وأخواتها) لا تظهر في أدوار كيانٍ نشط. ولمّا
+   دخلت ٣٢ دورةً الفضاءَ (٧ أكتوبر ٢٠٢٦) حملت أربعَ عشرةَ منها ١٨ مهارةً محكومة.
+   فخيّر صاحبُ المنصّة بين اعتمادها أكاديميّا وتنافسِ الدورة بالمعتمد منها،
+   فاختار الثاني: «Recommend on approved skills» — فالقاعدةُ الأكاديميّةُ كما هي،
+   والمحكومُ يبقى ناتجَ تعلّمٍ لا مرجِّحا. ودورةٌ لا معتمدَ في مهاراتها لا
+   تُرشَّح وحدَها حتّى تُعتمد. */
+function activeSkillsOf(c: CatalogCourse): string[] {
+  return [...new Set(c.skill_slugs)].filter((s) => isDiagnosticSkillActive(layersOfSkill(s))).sort()
+}
+
 /** الدوراتُ المأذونُ لها أن تُرشَّح وحدَها — ولا يدخل الفضاءَ ما نقص شرطُه */
 export function standaloneCourses(): CatalogCourse[] {
   return catalogCourses.filter((c) => (
@@ -720,7 +734,7 @@ export function standaloneCourses(): CatalogCourse[] {
     /* ولا جمهورَ = لا منافسة: `assessEntityEligibility` تُسقط الصامتَ عن
        جمهوره، فدخولُها الفضاءَ بلا جمهورٍ ضجيجٌ في التدقيق لا ميزة. */
     && (c.diagnostic_stages?.length ?? 0) > 0
-    && c.skill_slugs.length > 0
+    && activeSkillsOf(c).length > 0
   ))
 }
 
