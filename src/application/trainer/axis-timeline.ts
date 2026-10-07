@@ -59,6 +59,8 @@ export interface WorkbookPart {
 export interface CohortWorkbook extends SlotWorkbook {
   parts?: WorkbookPart[] | null
   onTemplate?: boolean | null
+  /* أو مادّتُه الجاهزة لا على القالب (٧ أكتوبر ٢٠٢٦) — `cohort-workbooks.ts` */
+  ownMaterial?: boolean | null
 }
 
 /** أقصى طولٍ لموضع المحور — «ص ١٢–١٨» أو «القسم الثاني» لا فقرة */

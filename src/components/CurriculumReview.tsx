@@ -22,6 +22,7 @@ import type {
   CurriculumMeeting, CurriculumResource, CurriculumTask, CurriculumView,
 } from '@/application/trainer/curriculum-view'
 import type { ReviewSection } from '@/application/trainer/review-notes'
+import type { WorkbookMaterial } from '@/application/trainer/cohort-workbooks'
 
 /** الخطوةُ التي يعود إليها المدرّبُ ليعدّل ما قرأه — وهي أقسامُ ملاحظات المعتمِد نفسُها */
 export type CurriculumEditStage = ReviewSection
@@ -41,11 +42,12 @@ const MEETING_STATE: Record<CurriculumMeeting['state'], { label: string; tone: '
 
 const fileHref = (key: string) => `/api/v1/cohort-files/${encodeURIComponent(key)}`
 
-/** إقرارُ المدرّب أنّ الكرّاسةَ على قالب وجيز (٦ أكتوبر ٢٠٢٦) — المنصّةُ لا تقرأ الملفَّ فتعرفه */
-function TemplateMark({ on }: { on: boolean }) {
-  return on
-    ? <span className="text-teal-light-ink">· على قالب وجيز</span>
-    : <span className="text-muted-foreground">· لم يُقرّ بقالب وجيز</span>
+/** ما قاله المدرّبُ في الكرّاسة — المنصّةُ لا تقرأ الملفَّ فتعرفه. على قالب وجيز (٦ أكتوبر ٢٠٢٦)، أو
+    مادّتُه الجاهزة (٧ أكتوبر): يراها المعتمِدُ فيقبلها أو يعيدها بملاحظة — فتُقال بلونٍ يُرى */
+function MaterialMark({ material }: { material: WorkbookMaterial | null }) {
+  if (material === 'template') return <span className="text-teal-light-ink">· على قالب وجيز</span>
+  if (material === 'own') return <span className="font-bold text-gold-ink">· مادّةُ المدرّب الجاهزة — ليست على القالب</span>
+  return <span className="text-muted-foreground">· لم يقل أعلى القالب هي</span>
 }
 
 function EditLink({ stage, onEdit, label }: { stage: CurriculumEditStage; onEdit?: (s: CurriculumEditStage) => void; label: string }) {
@@ -183,7 +185,7 @@ export default function CurriculumReview({
                   >
                     {view.workbook.title ?? view.workbook.fileName ?? 'كرّاسةُ الدورة'}
                   </a>
-                  <TemplateMark on={view.workbook.onTemplate} />
+                  <MaterialMark material={view.workbook.material} />
                 </>
               ) : (
                 <span className="text-gold-ink">لم تُوضع بعد.</span>
@@ -211,7 +213,7 @@ export default function CurriculumReview({
                         className="font-bold text-foreground hover:underline">
                         {w.title ?? w.fileName ?? 'افتحها'}
                       </a>
-                      <TemplateMark on={w.onTemplate} />
+                      <MaterialMark material={w.material} />
                     </>
                   ) : (
                     <span className="text-gold-ink">لم تُوضع بعد.</span>

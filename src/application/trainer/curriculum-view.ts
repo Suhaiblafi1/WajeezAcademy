@@ -21,7 +21,9 @@
 import type { CohortPeriod } from './cohort-period'
 import { resourceCategory, displayKind } from './plan-overlay'
 import { workbookDone, workbookWhere, type CohortWorkbook, type PlanSlot } from './axis-timeline'
-import { groupLabelAr, workbookGroups, workbookModeOf, type ModuleWorkbook, type WorkbookMode } from './cohort-workbooks'
+import {
+  groupLabelAr, workbookGroups, workbookMaterialOf, workbookModeOf, type ModuleWorkbook, type WorkbookMaterial, type WorkbookMode,
+} from './cohort-workbooks'
 import { proposedTask, readTaskChange, taskReview, taskValues } from './task-approval'
 import { asLevelRange, levelRangeAr } from './cohort-level'
 import { asAudience, goalsAr, stagesAr } from './cohort-audience'
@@ -140,11 +142,12 @@ export interface CurriculumView {
   /** أيُّ الطريقتين اختار المدرّب — كرّاسةٌ للدورة أو لكلّ محور (٦ أكتوبر ٢٠٢٦) */
   workbookMode: WorkbookMode
   /** كرّاسةُ الشعبة الواحدة — `null` لما قبلها (كرّاسةٌ لكلّ موعد)، أو لما لم تُوضع، أو
-      إن اختار لكلّ محورٍ كرّاستَه. ومعها إقرارُه أنّها على قالب وجيز */
-  workbook: { title: string | null; url: string | null; fileKey: string | null; fileName: string | null; onTemplate: boolean } | null
+      إن اختار لكلّ محورٍ كرّاستَه. ومعها ما قاله فيها: على قالب وجيز، أو مادّتُه الجاهزة
+      (٧ أكتوبر ٢٠٢٦)، أو `null` إن لم يقل */
+  workbook: { title: string | null; url: string | null; fileKey: string | null; fileName: string | null; material: WorkbookMaterial | null } | null
   /** كرّاساتُ المحاور بترتيبها — والفارغةُ تُذكر ليُرى ما ينقص (فارغةٌ في «للدورة») */
   moduleWorkbooks: {
-    key: string; label: string; done: boolean; onTemplate: boolean
+    key: string; label: string; done: boolean; material: WorkbookMaterial | null
     title: string | null; url: string | null; fileKey: string | null; fileName: string | null
   }[]
   groups: CurriculumGroup[]
@@ -327,14 +330,14 @@ export function curriculumView(input: CurriculumInput): CurriculumView {
     bySlot: slots.length > 0,
     workbookMode: workbookModeOf(c),
     workbook: workbookModeOf(c) === 'course' && workbookDone(cw)
-      ? { title: text(cw?.title), url: text(cw?.url), fileKey: text(cw?.bodyFileKey), fileName: text(cw?.bodyFileName), onTemplate: cw?.onTemplate === true }
+      ? { title: text(cw?.title), url: text(cw?.url), fileKey: text(cw?.bodyFileKey), fileName: text(cw?.bodyFileName), material: workbookMaterialOf(cw) }
       : null,
     moduleWorkbooks: workbookModeOf(c) === 'modules'
       ? workbookGroups(c.workbooks, modules.map((m) => m.moduleId)).map((g) => ({
           key: g.moduleIds.join('+'),
           label: `كرّاسةُ ${groupLabelAr(g, modules.map((m) => m.moduleId))}`,
           done: workbookDone(g),
-          onTemplate: g.onTemplate === true,
+          material: workbookMaterialOf(g),
           title: text(g.title), url: text(g.url), fileKey: text(g.bodyFileKey), fileName: text(g.bodyFileName),
         }))
       : [],

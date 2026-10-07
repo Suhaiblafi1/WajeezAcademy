@@ -643,8 +643,9 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
         moduleId: z.string().max(64),
         whereAr: z.string().max(WORKBOOK_WHERE_MAX),
       })).max(40).nullish(),
-      /* إقرارُ المدرّب أنّها على قالب وجيز (٦ أكتوبر ٢٠٢٦) */
+      /* إقرارُ المدرّب أنّها على قالب وجيز (٦ أكتوبر ٢٠٢٦) — أو مادّتُه الجاهزة (٧ أكتوبر) */
       onTemplate: z.boolean().nullish(),
+      ownMaterial: z.boolean().nullish(),
     }).nullish(),
     /* ═══ أو لكلّ محورٍ كرّاستُه — والمدرّبُ يختار (٦ أكتوبر ٢٠٢٦) ═══
 
@@ -661,6 +662,7 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
       bodyFileName: z.string().trim().max(200).nullish(),
       bodyFileMime: z.string().trim().max(120).nullish(),
       onTemplate: z.boolean().nullish(),
+      ownMaterial: z.boolean().nullish(),
     })).max(40).nullish(),
     /* ═══ مستوى الشعبة — مدًى من مستوًى إلى مستوى (٦ أكتوبر ٢٠٢٦) ═══
 

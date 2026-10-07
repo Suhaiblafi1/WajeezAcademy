@@ -21,11 +21,30 @@
          لكلّ كرّاسة (`onTemplate`) ويراه المعتمِد. ومن «رفع من قبل» يُعرف بالخادم
          (`TrainerProfile.workbookBeforeTemplate`) لا هنا.
 
+   ═══ ومادّتُه الجاهزة بابٌ ثانٍ (٧ أكتوبر ٢٠٢٦) ═══
+
+   سأل صاحبُ المنصّة: «ومن عنده PDF جاهز — أنُبقي له أن يرفعه بلا القالب؟». وكان
+   الإقرارُ صندوقا واحدا («كتبتُها على قالب وجيز»): فمن عنده مادّةٌ جاهزةٌ إمّا أعاد
+   صفَّها على القالب، وإمّا أقرّ بما لم يكن. فعُرضت أربعُ طرقٍ بفروقها، فاختار:
+   **«Allow it, reviewer decides»**.
+
+     فصار الإقرارُ **اختيارا** تحت كلّ كرّاسة: «على قالب وجيز» (`onTemplate`) أو
+     «مادّتي الجاهزة» (`ownMaterial`) — وأيُّهما تتمّ به الخطوة. والمعتمِدُ يرى
+     «مادّةُ المدرّب الجاهزة — ليست على القالب» فيقبلها أو يعيدها بملاحظة: التناسقُ
+     يُحكم في المراجعة، لا بسدّ الباب. والإلزامُ (`templateRequired`) صار إلزاما
+     **بأن يقول** أيّهما — لا بالقالب نفسِه. ويُقرأ الاختيارُ بـ`workbookMaterialOf`
+     ويُكتب بـ`MATERIAL_PATCH` وحدَهما، فلا يجتمع الاثنان في كرّاسة.
+
+     **ومعه قال: «اوضح للمدرب بانه اذا استخدم التمبلت لا يعني نقل الحقوق لنا».**
+     فيُقال بجانب القالب، وفي صفحة المدرّب داخلَه، وفي الدليل (`WORKBOOK_RIGHTS_AR`):
+     ما يكتبه ملكُه، والقالبُ شكلٌ للتناسق — ولا يُقال أكثرَ ممّا في الاتفاقيّة:
+     يبقى ترخيصُ البند 10-3 كما هو، وشكلُ القالب وشعارُه لوجيز (10-1).
+
    ═══ والشكلُ كما يُحفظ ═══
 
      `workbookMode`: `course` أو `modules` — وغيابُه `course`، فالخططُ القائمةُ
                      كما هي.
-     `workbook`:     كرّاسةُ الدورة كما كانت، وزيد فيها `onTemplate`.
+     `workbook`:     كرّاسةُ الدورة كما كانت، وزيد فيها `onTemplate` و`ownMaterial`.
      `workbooks`:    كرّاساتُ المحاور — لكلٍّ `moduleIds` متجاورة.
 
    والطريقتان تُحفظان معا: من بدّل لا يخسر ما رفعه في الأخرى، وإنّما يُعدّ
@@ -41,6 +60,7 @@ export type WorkbookMode = (typeof WORKBOOK_MODES)[number]
 export interface ModuleWorkbook extends SlotWorkbook {
   moduleIds: string[]
   onTemplate?: boolean | null
+  ownMaterial?: boolean | null
 }
 
 export interface WorkbookContent {
@@ -66,9 +86,33 @@ export function workbookTemplateHref(cohortId: string, moduleIds?: readonly stri
   return moduleIds?.length ? `${base}?modules=${moduleIds.map(encodeURIComponent).join(',')}` : base
 }
 
-/** يُلزَم بإقرار القالب؟ ما دامت الخطّةُ في يده — ومن رفع كرّاسةً قبل القرار يُستحسَن له */
+/** يُلزَم بأن يقول أعلى القالب كرّاستُه أم مادّتُه الجاهزة؟ ما دامت الخطّةُ في يده — ومن رفع
+    كرّاسةً قبل القرار يُستحسَن له (٦ أكتوبر ٢٠٢٦؛ والمادّةُ الجاهزةُ تكفي منذ ٧ أكتوبر) */
 export const templateRequired = (planStatus: string, workbookBeforeTemplate: boolean): boolean =>
   levelRequired(planStatus) && !workbookBeforeTemplate
+
+/* ═══ على القالب، أو مادّتُه الجاهزة (٧ أكتوبر ٢٠٢٦) ═══ */
+export const WORKBOOK_MATERIALS = ['template', 'own'] as const
+export type WorkbookMaterial = (typeof WORKBOOK_MATERIALS)[number]
+
+/** ما قاله المدرّبُ في الكرّاسة — أو `null` إن لم يقل. والقالبُ أوّلا إن اجتمعا في خطّةٍ قديمة */
+export const workbookMaterialOf = (w: { onTemplate?: boolean | null; ownMaterial?: boolean | null } | null | undefined): WorkbookMaterial | null =>
+  w?.onTemplate === true ? 'template' : w?.ownMaterial === true ? 'own' : null
+
+/** ما يُكتب في الكرّاسة حين يختار — كلٌّ يُطفئ الآخر */
+export const MATERIAL_PATCH: Record<WorkbookMaterial, { onTemplate: boolean; ownMaterial: boolean }> = {
+  template: { onTemplate: true, ownMaterial: false },
+  own: { onTemplate: false, ownMaterial: true },
+}
+
+/** ما يُقال للمدرّب عن حقّه فيما يكتبه على القالب — بجانب القالب، وفي صفحة المدرّب داخلَه، وفي
+    الدليل. ولا يزيد على الاتفاقيّة: الملكيّةُ له (10-2 و10-3)، وترخيصُ 10-3 كما هو، والقالبُ لوجيز (10-1) */
+export const WORKBOOK_RIGHTS_AR = {
+  title: 'كرّاستُك ملكُك',
+  body: 'ما تكتبه فيها لك، ولك أن تستعمله كما تشاء. واستعمالُ القالب لا ينقل ملكيّتَه إلى وجيز، ولا يغيّر شيئا في الاتفاقيّة: '
+    + 'ما فيها عن مادّتك (البند 10) يبقى كما هو — ومنه ترخيصٌ غيرُ حصريٍّ ودائمٌ لوجيز باستعمال ما تعدّه للشعبة وتعديلِه داخل المنصّة '
+    + 'لأغراضها التعليميّة (10-3). والقالبُ شكلٌ يجعل كرّاساتِ الدورات متّسقةً للمتعلّم؛ وشكلُه وشعارُه لوجيز.',
+} as const
 
 /* ═══ مجموعاتُ المحاور ═══
 
@@ -134,8 +178,20 @@ export function groupLabelAr(g: Pick<ModuleWorkbook, 'moduleIds'>, moduleIds: re
   return `المحاور ${nums[0]}–${nums[nums.length - 1]}`
 }
 
-/** أعلى قالب وجيز؟ — ويُعدّ لما رُفع، فلا إقرارَ على كرّاسةٍ لم تُرفع */
-const templateMissing = (w: { onTemplate?: boolean | null } | null | undefined) => w?.onTemplate !== true
+/** لم يقل أعلى القالب هي أم مادّتُه الجاهزة؟ — ويُعدّ لما رُفع، فلا يُسأل عن كرّاسةٍ لم تُرفع */
+const materialUnsaid = (w: { onTemplate?: boolean | null; ownMaterial?: boolean | null } | null | undefined) => workbookMaterialOf(w) === null
+
+/** كرّاساتُ الطريقة المختارة التي رُفعت بمادّة المدرّب الجاهزة — يُسمّيها رأسُ المراجعة للمعتمِد
+    ليقبلها أو يعيدها بملاحظة (٧ أكتوبر ٢٠٢٦). وما في الطريقة الأخرى محفوظٌ لا يصل، فلا يُسمّى */
+export function ownMaterialLabels(content: WorkbookContent | null | undefined, moduleIds: readonly string[]): string[] {
+  if (workbookModeOf(content) === 'course') {
+    const wb = content?.workbook ?? null
+    return workbookDone(wb) && workbookMaterialOf(wb) === 'own' ? ['كرّاسةُ الدورة'] : []
+  }
+  return workbookGroups(content?.workbooks, moduleIds)
+    .filter((g) => workbookDone(g) && workbookMaterialOf(g) === 'own')
+    .map((g) => `كرّاسةُ ${groupLabelAr(g, moduleIds)}`)
+}
 
 /* ═══ ما ينقص الخطوة — يقرؤه الخادمُ (قائمةُ التجهيز) والشاشةُ معا ═══ */
 export function workbooksProblems(
@@ -147,16 +203,16 @@ export function workbooksProblems(
   if (workbookModeOf(content) === 'course') {
     const wb = content?.workbook ?? null
     if (!workbookDone(wb)) out.push('ضع كرّاسةَ الدورة — ملفَّ PDF أو رابطا يضمّ المحاورَ كلَّها')
-    else if (opts.templateRequired && templateMissing(wb)) out.push('أقِرّ بأنّ كرّاسةَ الدورة على قالب وجيز')
+    else if (opts.templateRequired && materialUnsaid(wb)) out.push('قل في كرّاسة الدورة: على قالب وجيز، أم مادّتُك الجاهزة')
     return out
   }
   if (moduleIds.length === 0) return ['اكتب محاورك في «المحاور ومواعيدها» أوّلا — فلكلّ محورٍ كرّاستُه']
   const groups = workbookGroups(content?.workbooks, moduleIds)
   const empty = groups.filter((g) => !workbookDone(g))
   if (empty.length > 0) out.push(`ضع كرّاسةَ ${empty.map((g) => groupLabelAr(g, moduleIds)).join('، و')} — ملفَّ PDF أو رابطا`)
-  const unsure = groups.filter((g) => workbookDone(g) && templateMissing(g))
+  const unsure = groups.filter((g) => workbookDone(g) && materialUnsaid(g))
   if (opts.templateRequired && unsure.length > 0) {
-    out.push(`أقِرّ بأنّ كرّاسةَ ${unsure.map((g) => groupLabelAr(g, moduleIds)).join('، و')} على قالب وجيز`)
+    out.push(`قل في كرّاسة ${unsure.map((g) => groupLabelAr(g, moduleIds)).join('، و')}: على قالب وجيز، أم مادّتُك الجاهزة`)
   }
   return out
 }
