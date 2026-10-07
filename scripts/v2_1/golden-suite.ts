@@ -9,13 +9,12 @@
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { createEngineV21, type RecommendationV21 } from '../../src/domain/diagnostic/v2_1'
-import { GOALS_V21, NEEDS_V21, Q, type CareerStage } from '../../src/domain/diagnostic/v2_1/maps'
+import { GOALS_V21, NEEDS_V21, type CareerStage } from '../../src/domain/diagnostic/v2_1/maps'
 import type { DomainId } from '../../src/domain/diagnostic/v2/types'
 import { recommendationUniverse, type RecommendationEntity } from '../../src/domain/diagnostic/v2_1/universe'
-import type { CompetitionResult } from '../../src/domain/diagnostic/v2_1/compete'
 import { functionDomainsV2 } from '../../src/domain/diagnostic/v2/data'
 import { optionEffects, questionById } from '../../src/domain/diagnostic/catalog'
+import { runJourney, winnerOf, STAGE_LABEL, MASTERY_UNSURE, type Journey, type RunOutcome } from './golden-journey'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const outDir = join(root, 'docs', 'diagnostic-v2_1')
@@ -23,35 +22,10 @@ const outDir = join(root, 'docs', 'diagnostic-v2_1')
 /** حقائق آخر جلسة — للتفكيك فقط */
 let lastFacts: Record<string, unknown> = {}
 
-/* ─── جلسة حتمية بإجابات نصية ─── */
-interface Journey {
-  stage: CareerStage
-  employment?: string
-  goal?: string
-  need?: string
-  mastery?: string
-  interest?: string
-  answers?: Record<string, string>
-  skillLevel?: number
-}
-
-const STAGE_LABEL: Record<CareerStage, string> = {
-  university_student: 'طالب جامعي',
-  fresh_graduate: 'خريج حديث',
-  early_career: 'موظف في بداية مساري المهني',
-  experienced: 'موظف ذو خبرة',
-  manager: 'مدير / قائد فريق',
-  senior_manager: 'مدير أول / تنفيذي',
-  founder: 'مؤسس / صاحب عمل',
-  freelancer: 'مستقل — أعمل لحسابي',
-  trainer_ld: 'مدرب / معلم / مختص تعلم وتطوير',
-  other_unsure: 'غير ذلك / غير متأكد',
-}
 const ALL_STAGES = Object.keys(STAGE_LABEL) as CareerStage[]
 
 const MASTERY_ONE = 'أن أتقن مهارة أو تخصصًا واحدًا بعمق'
 const MASTERY_SET = 'أن أبني مجموعة مهارات مترابطة لتحقيق هدف'
-const MASTERY_UNSURE = 'غير متأكد'
 
 /** خيارات سؤال الميول QB-M3E-002 → مجالاتها (من option-effects الموثق) */
 const INTEREST_DOMAINS: Record<string, DomainId[]> = {
@@ -75,80 +49,6 @@ const FN_OPTIONS: { label: string; domains: DomainId[] }[] = (questionById.get(F
     return { label, domains: code ? (functionDomainsV2[code] ?? []) : [] }
   },
 )
-
-interface RunOutcome {
-  asked: string[]
-  rec: RecommendationV21
-  comp: CompetitionResult
-  trace?: { kind: string; summary_ar: string }[]
-}
-
-function runJourney(name: string, script: Journey): RunOutcome {
-  const engine = createEngineV21(`golden-${name}`)
-  const asked: string[] = []
-  for (let i = 0; i < 20; i++) {
-    const step = engine.nextQuestion()
-    if (step.stop.shouldStop || !step.question) break
-    const q = step.question
-    asked.push(q.question_id)
-    /* المطابقةُ الحرفيّةُ وحدَها كانت تكذب صامتةً.
-
-       `answers['QB-M3B-001'] = 'حكومي'` مكتوبٌ في البحث منذ البداية ليفتح
-       المسارات الحكوميّة، ونصُّ الخيار «حكومي — جهة حكومية أو قطاع عام».
-       فـ`indexOf` يردّ ‎-1، ويسقط السطرُ إلى `idx = 0` — أي **«خاص»**. فبقي
-       `PW-GOV-002` يُعدُّ «غيرَ قابلٍ للفوز» وهو قابلٌ له، والسببُ في أداة
-       القياس لا في المنتَج.
-
-       فصارت المطابقةُ: حرفيّةً، ثمّ ببادئةٍ، ثمّ **تصرخ**. والصمتُ هو ما
-       أطال عمرَ العطب — لا الخطأُ نفسُه. */
-    const byLabel = (l?: string): number => {
-      if (!l) return -1
-      const exact = q.options_ar.indexOf(l)
-      if (exact >= 0) return exact
-      const prefix = q.options_ar.findIndex((o) => o.startsWith(l) || l.startsWith(o))
-      return prefix
-    }
-    let idx = -1
-    const explicit = script.answers?.[q.question_id]
-    if (explicit !== undefined) {
-      idx = byLabel(explicit)
-      if (idx < 0) {
-        throw new Error(
-          `جوابٌ صريحٌ لا يطابق خيارا في ${q.question_id}: «${explicit}»\n`
-          + `  الخيارات: ${q.options_ar.map((o) => `«${o}»`).join(' · ')}`,
-        )
-      }
-    }
-    if (idx < 0) {
-      if (q.question_id === Q.STAGE) idx = byLabel(STAGE_LABEL[script.stage])
-      else if (q.question_id === Q.EMPLOYMENT) idx = byLabel(script.employment ?? 'أعمل لدى جهة')
-      else if (q.question_id === Q.GOAL) idx = byLabel(script.goal ?? '')
-      else if (q.question_id === Q.NEED) idx = byLabel(script.need ?? '')
-      else if (q.question_id === Q.MASTERY) idx = byLabel(script.mastery ?? MASTERY_UNSURE)
-      else if (q.question_id === 'QB-M3E-002') idx = byLabel(script.interest ?? 'لا أعرف')
-      else if (q.answer_type === 'skill_level_5' || q.answer_type === 'likert_5') idx = (script.skillLevel ?? 3) - 1
-      else idx = 0
-      if (idx < 0) idx = 0
-    }
-    const label = q.options_ar[idx]
-    const realId = q.active_option_ids?.[idx] ?? `o${idx + 1}`
-    engine.answer({ questionId: q.question_id, value: label, optionIds: [realId] })
-  }
-  const facts = engine.getState().facts
-  lastFacts = Object.fromEntries(
-    ['career_stage', 'primary_goal', 'goal_code_v21', 'need_id', 'interest_domains', 'function_specialization', 'weekly_load', 'mastery_portfolio_pref', 'sector']
-      .filter((k) => facts[k] !== undefined)
-      .map((k) => [k, facts[k].value]),
-  )
-  return { asked, rec: engine.recommend(), comp: engine.competeSnapshot(), trace: engine.getState().trace.map((t) => ({ kind: t.kind, summary_ar: t.summary_ar })) }
-}
-
-/** الفائز الفعلي — يُقرأ الكيان المرفق حتى لو وُسم التوصية بمراجعة مستشار */
-function winnerOf(rec: RecommendationV21): string | null {
-  if (rec.composite) return rec.composite.templateId
-  if (rec.primaryPathway) return rec.primaryPathway.pathwayId
-  return null
-}
 
 /* ─── توليد التوليفات canonical لكيان ─── */
 function* combosFor(e: RecommendationEntity): Generator<Journey> {
@@ -238,6 +138,8 @@ interface CaseResult {
   entityNetFit: number | null
   winnerNetFit: number | null
   recipe?: { stage: string; goal?: string; need?: string; fn?: string; mastery?: string }
+  /** الرحلةُ كاملةً — يعيدها `golden-replay.test.ts` فيحمرّ إن خسر الكيانُ رحلتَه */
+  journey?: Journey
 }
 
 function toCaseResult(e: RecommendationEntity, out: RunOutcome, j?: Journey): CaseResult {
@@ -258,6 +160,7 @@ function toCaseResult(e: RecommendationEntity, out: RunOutcome, j?: Journey): Ca
     recipe: j
       ? { stage: STAGE_LABEL[j.stage], goal: j.goal, need: j.need, fn: j.answers?.[FN_Q], mastery: j.mastery }
       : undefined,
+    journey: j,
   }
 }
 
@@ -319,6 +222,7 @@ if (debugArg) {
   console.log('فاز؟', found.won, '| محاولات:', found.tried)
   console.log('التوليفة:', JSON.stringify(found.result.recipe, null, 1))
   const out = runJourney(`${id}-debug`, found.journey)
+  lastFacts = out.facts
   console.log('الأسئلة:', out.asked.join(' '))
   console.log('حقائق:', JSON.stringify(lastFacts, null, 1))
   for (const c of out.comp.candidates.slice(0, 8)) {

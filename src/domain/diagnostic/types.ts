@@ -240,7 +240,7 @@ export interface CompositeSelection {
   courses: CoursePlanItem[]
   /** دورات أُزيلت بدليل إتقان موثق — مع سبب كل إزالة */
   removedCourses: { courseId: string; titleAr: string; reason_ar: string }[]
-  /** الدورات المطلوبة وحدها تتجاوز 80 ساعة — تُحال لمستشار ولا تُصدر آليا */
+  /** الدورات المطلوبة وحدها تتجاوز سقفَ الساعات (`max_plan_hours`) — تُحال لمستشار ولا تُصدر آليا */
   requiredHoursOverflow: boolean
   missingRequiredFacts: string[]
   rationale_ar: string[]
