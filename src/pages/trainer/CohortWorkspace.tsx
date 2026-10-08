@@ -101,6 +101,8 @@ import {
 import { START_ADVICE_AR, startAdvice } from "@/application/trainer/start-advice";
 import { countAr } from "@/application/text/count-ar";
 import CurriculumReview from "@/components/CurriculumReview";
+import PlanScorecard from "@/components/PlanScorecard";
+import { planScorecard } from "@/application/trainer/plan-scorecard";
 import { curriculumView } from "@/application/trainer/curriculum-view";
 import { PlanDiffList } from "@/components/PlanDiff";
 import { planDiff } from "@/application/trainer/plan-diff";
@@ -791,6 +793,12 @@ export default function CohortWorkspace() {
      ولا يُرسَل حتّى يتمّ — فالزرُّ مطفأٌ أبدا وإن أتمّ المدرّبُ كلَّ شيء. */
   const blocking = blockingBeforeSubmit(ws.checklist);
   const remaining = blocking.length;
+  /* ═══ وبطاقةُ المعايير — فحصٌ ذاتيٌّ قبل الإرسال (٨ أكتوبر ٢٠٢٦) ═══
+     «Yes, as a self-check»: البطاقةُ نفسُها التي يقرأ بها المعتمِد، على ما حُفظ —
+     فمطلوبُها هو ما يمنع الإرسالَ في القائمة أعلاه، ونصيحتُها قرارُه. */
+  const scorecard = planScorecard({
+    period: ws.cohort.period, content: ws.plan?.content ?? null, sessions: ws.sessions, assessments: ws.assessments,
+  });
   /* وأوّلُ ما يستطيع هو فتحَه من الباقي — لا كلُّ الباقي خطوةٌ في يده */
   const firstMine = blocking.find((b) => stageOfKey(b.key) !== null) ?? null;
   /* والخطُّ يمتلئ بقدر ما **يملك المدرّبُ** إنجازَه — فيبلغ تمامَه حين لا يبقى
@@ -3043,6 +3051,14 @@ export default function CohortWorkspace() {
                 افتح أوّلَها
               </Button>
             </Inset>
+          )}
+          {!approved && (
+            <PlanScorecard
+              items={scorecard}
+              heading="فحصٌ قبل الإرسال — المعاييرُ التي تُقرأ بها خطّتُك"
+              intro="هي البطاقةُ نفسُها التي يقرؤها المعتمِد. «مطلوب» يمنع الإرسالَ حتّى يتمّ، و«نصيحة» تُقال بسببها والقرارُ لك."
+              onStep={(step) => void openStage(step as Stage)}
+            />
           )}
           {/* ═══ المنهجُ كما سيُعتمَد (المرحلة ٣) ═══
 

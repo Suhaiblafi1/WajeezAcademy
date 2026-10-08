@@ -36,6 +36,8 @@ import Button from "@/components/ui/Button";
 import { Download } from "lucide-react";
 import { cohortDayAr } from "@/application/learning/cohort-gate";
 import { ownMaterialLabels, type WorkbookContent } from "@/application/trainer/cohort-workbooks";
+import PlanScorecard from "@/components/PlanScorecard";
+import { blockedItems, planScorecard, scorecardNotes } from "@/application/trainer/plan-scorecard";
 
 interface TrainerPlan {
   id: string; status: string; reviewerNote: string | null; trainerName: string | null;
@@ -125,7 +127,14 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
   /* ومهامُّ ما بعد الاعتماد المنتظِرة — بالقاعدة التي يحكم بها الخادم (٣ج-٣) */
   const waitingTasks = trainerPlan ? awaitingTasks(trainerPlan.assessments, trainerPlan.approvedOnce ?? false) : [];
   const axisNo = new Map((trainerPlan?.content?.modules ?? []).map((m, i) => [m.moduleId, i + 1] as const));
+  /* وبطاقةُ المعايير — الحسابُ نفسُه الذي رآه المدرّبُ قبل أن يرسل (٨ أكتوبر ٢٠٢٦) */
+  const scorecard = trainerPlan
+    ? planScorecard({ period: trainerPlan.period, content: trainerPlan.content, sessions: trainerPlan.sessions, assessments: trainerPlan.assessments })
+    : [];
+  const blocked = blockedItems(scorecard);
   const [asking, setAsking] = useState(false);
+  /* ما يُبدأ به صندوقُ الردّ — فارغا، أو ممّا سقط من بطاقة المعايير بنقرة (٨ أكتوبر ٢٠٢٦) */
+  const [askFrom, setAskFrom] = useState<ReviewNotes | undefined>(undefined);
   /* وكلمةٌ تصله مع الاعتماد — للمقترَح لا للمطلوب (`approvalBody`، ٧ أكتوبر ٢٠٢٦) */
   const [approveNote, setApproveNote] = useState("");
   /* وفُعِّل مدرّبُها بهذا الاعتماد — فيظهر ما بقي عليك (`TrainerNextSteps`، «3a») */
@@ -292,6 +301,15 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
               خطوته الأخيرة (`CurriculumReview`): لكلّ موعدٍ محاورُه ومتونُها
               وكرّاستُه ولقاءاتُه ومهامُّه ومصادرُه، بالترتيب. وتُفتح مطويّةً
               إلّا حين تنتظر قرارا. */}
+          {/* ═══ بطاقةُ المعايير (٨ أكتوبر ٢٠٢٦) ═══
+              «أضف معاييرَ أخرى لتقييم العمل… اقترح أخرى وأنا أوافقك». ما تحسبه المنصّةُ
+              من الخطّة — ساعاتُ اللقاء، والفاصلُ بينها وأوقاتُها، والتطبيقاتُ والمهامّ
+              والمصادر — يُقرأ هنا قبل المنهج، والمدرّبُ رأى البطاقةَ نفسَها قبل أن يرسل. */}
+          <PlanScorecard
+            items={scorecard}
+            heading="بطاقةُ المعايير"
+            intro="تحسبها المنصّةُ من الخطّة، ورآها المدرّبُ قبل أن يرسل. «مطلوب» يمنعه من الإرسال، و«نصيحة» قرارُه."
+          />
           <details className="mt-3" open={trainerPlan.status === "submitted"}>
             <summary className="cursor-pointer text-read font-bold text-teal-light-ink">المنهجُ كاملا — من الألف إلى الياء</summary>
             <div className="mt-3">
@@ -373,6 +391,21 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
           </div>
         </details>
       )}
+      {/* ═══ ومطلوبٌ لم يتحقّق: الخياران وفرقُهما، والقرارُ لك (٨ أكتوبر ٢٠٢٦) ═══
+          «لا إجبارَ على فعل» (٢ أكتوبر ٢٠٢٦): المطلوبُ يمنع المدرّبَ من الإرسال، ولا يُغلق
+          على المعتمِد بابَ الاعتماد. يُقال ما يقع بكلٍّ، ويختار. وخطّةٌ كهذه أُرسلت قبل
+          أن يصير المعيارُ مُلزِما — فالمرسَلةُ بعده لا تصل ناقصة. */}
+      {trainerPlan?.status === "submitted" && canApprovePlan && !asking && blocked.length > 0 && (
+        <Inset tone="warn" className="mt-3" role="group" aria-label="معاييرُ مُلزِمةٌ لم تتحقّق">
+          <p className="text-read font-black text-gold-ink">
+            {blocked.length === 1 ? "معيارٌ مُلزِمٌ لم يتحقّق" : `${blocked.length} معاييرَ مُلزِمةٍ لم تتحقّق`}: {blocked.map((b) => b.labelAr).join(" · ")}
+          </p>
+          <ul className="mt-2 list-disc space-y-1 ps-5 text-read leading-6 text-foreground">
+            <li><b>اطلب تعديلات بما في البطاقة</b> (المستحسَن): تُملأ صناديقُ الردّ ممّا سقط، كلٌّ في خطوته، فتعدّلها ثمّ ترسلها. ولا يُرسلها ثانيةً حتّى يتمّ المطلوب.</li>
+            <li><b>اعتمدها كما هي</b>: تُعتمَد بنقصها الآن، ويراها المتعلّمون كذلك — ولك أن تكتب ما يُستحسَن في كلمة الاعتماد أعلاه.</li>
+          </ul>
+        </Inset>
+      )}
       <div className="mt-3 flex flex-wrap gap-2">
         {trainerPlan?.status === "submitted" && canApprovePlan && !asking && (
           <>
@@ -382,10 +415,15 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
                   .then(async (r) => { setApproveNote(""); await Promise.all([loadPlan(), loadPendingSessions()]); if (r.prep?.activated) setActivated(true); decided("approved"); return r; }),
                 (r) => planApprovedMsg(r as PlanDecision),
               )}>
-              {riding.length > 0 ? `اعتمدها ولقاءاتِها (${riding.length})` : "اعتمدها"}{approveNote.trim() ? " مع كلمتك" : ""}
+              {riding.length > 0 ? `اعتمدها ولقاءاتِها (${riding.length})` : "اعتمدها"}{blocked.length > 0 ? " كما هي" : ""}{approveNote.trim() ? " مع كلمتك" : ""}
             </Button>
-            <Button tone="danger" size="sm" disabled={busy} onClick={() => setAsking(true)}>
-              اطلب تعديلات
+            {scorecard.some((i) => i.status !== "ok") && (
+              <Button tone="danger" size="sm" disabled={busy} onClick={() => { setAskFrom(scorecardNotes(scorecard)); setAsking(true); }}>
+                اطلب تعديلات بما في البطاقة
+              </Button>
+            )}
+            <Button tone={scorecard.some((i) => i.status !== "ok") ? "secondary" : "danger"} size="sm" disabled={busy} onClick={() => { setAskFrom(undefined); setAsking(true); }}>
+              {scorecard.some((i) => i.status !== "ok") ? "اطلب تعديلات بكلماتك" : "اطلب تعديلات"}
             </Button>
           </>
         )}
@@ -406,6 +444,8 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
       </div>
       {trainerPlan?.status === "submitted" && canApprovePlan && asking && (
         <ReviewNotesForm
+          key={askFrom ? "from-scorecard" : "blank"}
+          initial={askFrom}
           busy={busy}
           onCancel={() => setAsking(false)}
           onSend={(notes) => void act(

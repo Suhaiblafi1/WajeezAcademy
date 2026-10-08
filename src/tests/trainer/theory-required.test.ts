@@ -22,7 +22,8 @@ const body = (n: number) => 'ن'.repeat(n)
    معا — والمواعيدُ هنا سليمةٌ كي يُقاس المتنُ وحدَه: لكلّ محورٍ أسبوعُه. */
 const plan = (bodies: (string | null)[]) => ({
   kind: 'trainer' as const,
-  modules: bodies.map((b, i) => ({ moduleId: `M${i}`, titleAr: `محور ${i}`, bodyAr: b })),
+  /* والتطبيقُ والمُسلَّمُ تامّان كي يُقاس المتنُ وحدَه (بطاقةُ المعايير، ٨ أكتوبر ٢٠٢٦) */
+  modules: bodies.map((b, i) => ({ moduleId: `M${i}`, titleAr: `محور ${i}`, bodyAr: b, activityAr: 'تطبيقٌ عمليٌّ قصير', artifactAr: 'ورقةٌ تُسلَّم' })),
   resources: [{ title: 'مرجع', url: 'https://x.test/a' }],
   slots: bodies.map((_, i) => ({
     startsOn: `2027-02-${String(7 + i * 7).padStart(2, '0')}`,

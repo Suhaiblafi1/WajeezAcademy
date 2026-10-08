@@ -18,12 +18,14 @@ import {
   type ReviewNotes, type ReviewSection,
 } from '@/application/trainer/review-notes'
 
-export function ReviewNotesForm({ busy, onSend, onCancel }: {
+export function ReviewNotesForm({ busy, onSend, onCancel, initial }: {
   busy: boolean
   onSend: (notes: ReviewNotes) => void
   onCancel: () => void
+  /** ما يُبدأ به — ما سقط من بطاقة المعايير (`scorecardNotes`)، يُعدَّل قبل الإرسال */
+  initial?: ReviewNotes
 }) {
-  const [draft, setDraft] = useState<ReviewNotes>({})
+  const [draft, setDraft] = useState<ReviewNotes>(initial ?? {})
   const clean = normalizeReviewNotes(draft)
   const ready = hasReviewNotes(clean)
   const area = (key: keyof ReviewNotes, rows: number, placeholder: string) => (
