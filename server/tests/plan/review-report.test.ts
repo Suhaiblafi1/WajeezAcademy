@@ -119,7 +119,9 @@ describe('٣ — والمدرّبُ لا يرفع تقريرا', () => {
     const own = await call('POST', `/api/trainer/cohorts/${cohortId}/files`, 'owner', {
       purpose: 'review_report', refId: planId, mime: 'application/pdf', originalName: 'تقريري.pdf',
     })
-    expect(own.statusCode, 'صار المدرّبُ يرفع تقريرَ مراجعة خطّته').toBe(400)
+    /* والتحقّقُ يُردّ في هذه المنصّة بأربعمئةٍ واثنين وعشرين — والمهمُّ أنّه لم يُكتب صفّ */
+    expect(own.statusCode, 'صار المدرّبُ يرفع تقريرَ مراجعة خطّته').toBe(422)
+    expect(await prisma.cohortFile.count({ where: { purpose: 'review_report', uploadedBy: trainerUserId } })).toBe(0)
     expect((await call('POST', `/api/admin/cohort-plans/${planId}/review-report`, 'owner', { mime: 'application/pdf', originalName: 'x.pdf' })).statusCode).toBe(403)
   })
 })
