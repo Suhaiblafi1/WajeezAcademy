@@ -13,6 +13,8 @@ import bankJson from '../src/data/catalog/questions.v1.ar.json' with { type: 'js
 import pathwayDomainsJson from '../src/data/catalog/v2/pathway-domains.v2.json' with { type: 'json' }
 import templatesJson from '../src/data/catalog/composite-templates.v1.json' with { type: 'json' }
 import { GOALS_V21, NEEDS_V21, Q, type CareerStage } from '../src/domain/diagnostic/v2_1/maps'
+import { ENGLISH_LEVELS, ENGLISH_PURPOSES } from '../src/domain/diagnostic/v2_1/english'
+import { FIELD_LEVELS, SUB_FOCUS } from '../src/domain/diagnostic/v2_1/focus'
 import { buildQuestionPlan, keepSentence, type FinalStatus } from '../src/application/catalog/overlays/question-plan'
 import { sourceFromCatalogFiles } from '../src/application/catalog/overlays/from-files'
 
@@ -149,6 +151,41 @@ const newQuestions: BankQ[] = [
     measures: ['mastery_portfolio_pref'],
     decision_impact: 'يفصل بين مسار قياسي واحد وخطة مركبة — لا يُسأل إلا عند غموض فعلي بين الاثنين.',
   },
+  /* أسئلةُ ٨ أكتوبر ٢٠٢٦ — بقرار صاحب المنصّة سؤالا سؤالا. نصوصُها وخياراتُها
+     من مصدرها (`english.ts` و`focus.ts`) لا منسوخةً هنا، فلا يفترق جدولُ القرار
+     عن السؤال الذي يغذّيه. */
+  {
+    ...qcBase,
+    question_id: Q.ENGLISH_PURPOSE,
+    text_ar: 'لأيّ غرضٍ تريد الإنجليزيّة أوّلا؟',
+    options_ar: ENGLISH_PURPOSES.map((p) => p.label_ar),
+    measures: ['english_purpose'],
+    decision_impact: 'الغرضُ يحسم أيَّ دورات الإنجليزيّة تناسبك — الحديثُ اليوميّ غيرُ العمل غيرُ الاختبار.',
+  },
+  {
+    ...qcBase,
+    question_id: Q.ENGLISH_LEVEL,
+    text_ar: 'أيُّ وصفٍ يقترب من إنجليزيّتك الآن؟ لا تقلق من الدقّة — سنعطيك اختبارَ تحديد مستوى مجانيّا يحسمه.',
+    options_ar: ENGLISH_LEVELS.map((l) => l.label_ar),
+    measures: ['english_level'],
+    decision_impact: 'المستوى كما تصفه (A1 إلى C1) يحدّد المستوى الموصى به، واختبارُ التحديد المجانيّ يؤكّده.',
+  },
+  ...SUB_FOCUS.map((sub) => ({
+    ...qcBase,
+    question_id: sub.questionId,
+    text_ar: sub.text_ar,
+    options_ar: sub.options.map((o) => o.label_ar),
+    measures: [sub.factKey],
+    decision_impact: 'بعضُ الأجوبة لها دورتُها بعينها — تحسم النتيجة بدل سباقٍ بين مسارات.',
+  })),
+  {
+    ...qcBase,
+    question_id: Q.FIELD_LEVEL,
+    text_ar: 'وفي المجال الذي اخترته، أيُّ وصفٍ يقترب منك؟',
+    options_ar: FIELD_LEVELS.map((l) => l.label_ar),
+    measures: ['field_level'],
+    decision_impact: 'مستواك في مجالك — تُطابَق عليه دوراتُه، ويُقرَّب المسارُ الذي تقع دوراتُه عنده.',
+  },
 ]
 
 /* ═══ ٢) تأثيرات خيارات الأسئلة الجديدة ═══ */
@@ -198,6 +235,12 @@ const effects: Record<string, Record<string, Record<string, string | string[]>>>
     o2: { mastery_portfolio_pref: 'skill_set' },
     o3: { mastery_portfolio_pref: 'unsure' },
   },
+  [Q.ENGLISH_PURPOSE]: Object.fromEntries(ENGLISH_PURPOSES.map((p, i) => [`o${i + 1}`, { english_purpose: p.code }])),
+  [Q.ENGLISH_LEVEL]: Object.fromEntries(ENGLISH_LEVELS.map((l, i) => [`o${i + 1}`, { english_level: l.code }])),
+  ...Object.fromEntries(
+    SUB_FOCUS.map((sub) => [sub.questionId, Object.fromEntries(sub.options.map((o, i) => [`o${i + 1}`, { [sub.factKey]: o.value }]))]),
+  ),
+  [Q.FIELD_LEVEL]: Object.fromEntries(FIELD_LEVELS.map((l, i) => [`o${i + 1}`, { field_level: l.code }])),
 }
 
 /* ═══ ٣) إعادة صياغة أسئلة المهارات M4 بمقياس الدليل (§١١) ═══ */

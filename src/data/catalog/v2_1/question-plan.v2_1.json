@@ -3587,7 +3587,8 @@
         "spatial_design",
         "construction_engineering",
         "personal_development",
-        "family_parenting"
+        "family_parenting",
+        "product_mgmt"
       ],
       "impact_ar": "يكتشف المجال — محرك التمييز الرئيس بين المسارات والقوالب.",
       "why_ar": "الاحتياج الحقيقي لا اسم المسار.",
@@ -3623,6 +3624,80 @@
         "mastery_portfolio_pref"
       ],
       "final_status": "deep_only"
+    },
+    "QC-E1-001": {
+      "surface": "b2c",
+      "layer21": "goal_need",
+      "phase": "core",
+      "action": "keep",
+      "stages": "all",
+      "domains": [],
+      "impact_ar": "الحديثُ اليوميّ مقابل العمل مقابل الاختبار يغيّر دورةَ الإنجليزيّة الموصى بها.",
+      "why_ar": "لا دورةَ إنجليزيّةٍ واحدةٌ لكلّ غرض.",
+      "measures": [
+        "english_purpose"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QC-E2-001": {
+      "surface": "b2c",
+      "layer21": "evidence_skill",
+      "phase": "core",
+      "action": "keep",
+      "stages": "all",
+      "domains": [],
+      "impact_ar": "المستوى الموصوف (A1 إلى C1) يغيّر المستوى الموصى به، ويفتح خيارَي الطريق للمبتدئ.",
+      "why_ar": "نقطةُ بدايةٍ يؤكّدها اختبارُ التحديد المجانيّ.",
+      "measures": [
+        "english_level"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QC-D1-001": {
+      "surface": "b2c",
+      "layer21": "domain_differentiation",
+      "phase": "core",
+      "action": "keep",
+      "stages": "all",
+      "domains": [
+        "cyber_risk"
+      ],
+      "impact_ar": "الشبكات أو السحابة مقابل حماية البيانات يغيّر الدورةَ أو المسارَ الموصى به.",
+      "why_ar": "للشبكات وللسحابة دورتاهما — ولا جوابَ غيرُه يميّز جمهورَهما.",
+      "measures": [
+        "cyber_focus"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QC-D2-001": {
+      "surface": "b2c",
+      "layer21": "domain_differentiation",
+      "phase": "core",
+      "action": "keep",
+      "stages": "all",
+      "domains": [
+        "sales"
+      ],
+      "impact_ar": "المتجر أو الإنترنت مقابل البيع بين الشركات يغيّر الدورةَ أو المسارَ الموصى به.",
+      "why_ar": "لبيع التجزئة وللبيع عبر الإنترنت دورتاهما — ولا جوابَ غيرُه يميّز جمهورَهما.",
+      "measures": [
+        "sales_channel"
+      ],
+      "final_status": "active_b2c"
+    },
+    "QC-L1-001": {
+      "surface": "b2c",
+      "layer21": "evidence_skill",
+      "phase": "core",
+      "action": "keep",
+      "stages": "all",
+      "domains": [],
+      "impact_ar": "مبتدئٌ مقابل متقدّمٍ في المجال يقرّب الكيانَ الذي تقع دوراتُه عند مستواه، ويطابق دوراتِ مجاله عليه.",
+      "why_ar": "المستوى في المجال لا في المرحلة المهنيّة.",
+      "measures": [
+        "field_level"
+      ],
+      "final_status": "active_b2c"
     }
   }
 }

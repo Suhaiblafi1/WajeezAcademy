@@ -85,6 +85,12 @@ export const QC_STAGE: Record<string, number> = {
   [Q.NEED]: 1,        // هدفك
   [Q.TIME]: 4,        // ظروفك وخطتك
   [Q.MASTERY]: 4,     // ظروفك وخطتك
+  /* أسئلةُ ٨ أكتوبر ٢٠٢٦: الغرضُ والتخصّصُ من الهدف، والمستوى من المهارات */
+  [Q.ENGLISH_PURPOSE]: 1,
+  [Q.CYBER_FOCUS]: 1,
+  [Q.SALES_CHANNEL]: 1,
+  [Q.ENGLISH_LEVEL]: 3,
+  [Q.FIELD_LEVEL]: 3,
 }
 
 /** وحداتُ البنك وموضعُ كلٍّ منها من المراحل الخمس — يقرؤها الاختبارُ ليشترط

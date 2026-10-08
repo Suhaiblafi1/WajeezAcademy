@@ -5,7 +5,8 @@
 import type { DiagResult } from '../../data/diagnostic'
 import { pathways } from '../../data/pathways'
 import templatesJson from '../../data/catalog/composite-templates.v1.json'
-import { singleCourseOf } from './landing'
+import { englishChoiceOf, singleCourseOf } from './landing'
+import { courseById } from '../../data/courses'
 
 export const RESULT_SCHEMA_VERSION = 2
 
@@ -53,7 +54,12 @@ function referencesAlive(r: DiagResult): boolean {
   /* نتائج بلا مسار مفروض — المسار حينها غير إلزامي */
   if (kind === 'advisor_referral' || kind === 'guardrail_stop' || kind === 'exploratory_direction') return true
   /* ودورةٌ واحدة: مرجعُها دورةٌ في الكتالوج لا مسار — انظر `landing.ts` */
-  if (kind === 'single_course') return singleCourseOf(r.resultJson) !== null
+  if (kind === 'single_course') {
+    /* وخطّةُ الإنجليزيّة بخياريها: مراجعُها دوراتُ خياراتها كلُّها */
+    const choice = englishChoiceOf(r.resultJson)
+    if (choice) return choice.options.every((o) => o.course_ids.every((id) => courseById(id) !== undefined))
+    return singleCourseOf(r.resultJson) !== null
+  }
   return r.top !== null && validPathwayIds().has(r.top.id)
 }
 

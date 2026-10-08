@@ -21,6 +21,9 @@ import { measurableSkills } from './universe'
 import { layersOfSkill, isDiagnosticSkillActive, functionDomainsV2, domainLabelAr } from '../v2/data'
 import type { DecisionContext, DomainId, SkillState } from '../v2/types'
 import type { CareerStage } from './maps'
+import { courseById } from '../catalog'
+import { courseLevelOf, LEVEL_ORDINAL } from './course-fit'
+import { fieldDomainsOf, fieldLevelOf } from './focus'
 import {
   REACHABLE_LEGACY_GOALS,
   activeDomainsOf,
@@ -288,6 +291,8 @@ export interface EntityCandidate {
   skills: EntitySkillAssessment
   /** دليل إشارات القالب (مركب فقط) — موثق للتدقيق */
   signals?: SignalEvidence
+  /** قربُ مستوى دوراته من مستوى المتعلّم في مجاله (−١..١) — null حين لا يُقاس */
+  fieldLevelAlign: number | null
   reasons_ar: string[]
   breakdown: {
     persona: number
@@ -392,6 +397,26 @@ export const FUNCTION_ALIGN_WEIGHT = 0.03
 /* ٢ب) محاذاة السياق القيادي: بروفايل المسار يعلن leadership_fit (مثل «مدير جديد») —
    يفصل «مديرًا يقود فريقه أول مرة» عن «متخصص مواهب» عند تقاسم المجال نفسه. */
 export const LEADERSHIP_ALIGN_WEIGHT = 0.03
+
+/* ٢ج) المستوى في المجال (٨ أكتوبر ٢٠٢٦، انظر `focus.ts`) — **يُقاس ولا يُرجِّح**.
+   من قال مستواه في مجاله يُحسب لكلّ كيانٍ في ذلك المجال قربُ متوسّط درجات دوراته
+   منه (−١..١)، ويدخل **الثقةَ** لا الملاءمة (`v2/confidence.ts`)، ويختار دوراتِ
+   الخطّة داخل الفائز (`course-fit.ts`).
+
+   ولا يدخل السباق بقرار صاحب المنصّة: جُرِّب مُرجِّحا بوزن أخواته (٠٫٠٣) فنزل فوزُ
+   الخطط المركّبة في Monte Carlo من ٧٦٧ إلى ٦٥٨ من عشرة آلاف — المركّبةُ تجمع
+   مستوياتٍ بتصميمها فلا يقع متوسّطُها عند أيّ مستوى. فخُيّر بين «المستوى داخل
+   المسار» و«المستوى يختار المسار أيضا» فاختار الأوّل. */
+
+/** متوسّطُ درجات دورات الكيان على سلّم الكتالوج (٠..٣) — null بلا دورات معروفة */
+function meanCourseLevelOf(entity: RecommendationEntity): number | null {
+  const levels = entity.required_courses
+    .map((id) => courseById.get(id))
+    .filter((c): c is NonNullable<typeof c> => c !== undefined)
+    .map((c) => LEVEL_ORDINAL[courseLevelOf(c)])
+  if (levels.length === 0) return null
+  return levels.reduce((a, b) => a + b, 0) / levels.length
+}
 
 /* ٣) دليل إشارات القالب المركب: إشاراته الموجبة/السالبة المعلنة في الكتالوج (وضوح العرض،
    إشارة الإيراد، السياق القيادي…) بقيت بيانات ميتة لا تدخل التسجيل — فهيمن قالب على آخر
@@ -541,6 +566,17 @@ export function scoreEntity(entity: RecommendationEntity, facts: FactBag, ctx: D
     }
   }
 
+  /* المستوى في المجال: يُقاس قربُ دوراته منه للثقة — ولا يمسّ الملاءمة (انظر ٢ج) */
+  const fieldLevel = fieldLevelOf(facts)
+  let fieldLevelAlign: number | null = null
+  if (fieldLevel !== null && entity.domains.some((d) => fieldDomainsOf(facts).includes(d))) {
+    const mean = meanCourseLevelOf(entity)
+    if (mean !== null) {
+      fieldLevelAlign = Math.round(Math.max(-1, 1 - Math.abs(mean - fieldLevel)) * 1000) / 1000
+      if (fieldLevelAlign >= 0.5) reasons_ar.push('مستوى دوراته عند مستواك في مجالك كما وصفتَه.')
+    }
+  }
+
   /* مُفاضلة دليل الإشارات (مركب فقط): إشارات القالب الموجبة والسالبة تُوزن فتدخل الملاءمة */
   let signals: SignalEvidence | undefined
   if (entity.entity_type === 'composite') {
@@ -560,6 +596,7 @@ export function scoreEntity(entity: RecommendationEntity, facts: FactBag, ctx: D
     netFit: Math.round((fit - burden) * 1000) / 1000,
     skills,
     signals,
+    fieldLevelAlign,
     reasons_ar,
     breakdown: {
       persona: persona.score,

@@ -286,6 +286,13 @@ export function buildQuestionPlan(src: OverlaySource): { plan: Record<string, Pl
        له خطة أنسب — وذلك ليس قيمةً تُشترى بمقعد من وقت المتعلم. */
     [Q.TIME]: { surface: 'retired_b2c', layer21: null, phase: 'none', action: 'retire', stages: [], domains: [], impact_ar: 'كان يقلّص الخطة أو يستبعد كيانات بحدّ زمني — لا يحسّن المطابقة.', why_ar: 'قياسان: ناتج واحد لأربع إجابات، وقلبٌ مصدره الاستبعاد لا المطابقة.', measures: ['weekly_load'] },
     [Q.MASTERY]: { surface: 'b2c', layer21: 'confirmation_deep', phase: 'confirmation', action: 'keep', stages: 'all', domains: [], impact_ar: 'يفصل قياسيًا عن مركبًا عند الغموض.', why_ar: 'لا يُسأل إلا عند غموض فعلي.', measures: ['mastery_portfolio_pref'] },
+    /* أسئلةُ ٨ أكتوبر ٢٠٢٦ — بقرار صاحب المنصّة سؤالا سؤالا. كلُّها نواةٌ مشروطة:
+       يقرّر الاحتياجُ أيُّها يُسأل (`CORE_FLOW_V21`)، ولكلٍّ جوابٌ يقلب النتيجة. */
+    [Q.ENGLISH_PURPOSE]: { surface: 'b2c', layer21: 'goal_need', phase: 'core', action: 'keep', stages: 'all', domains: [], impact_ar: 'الحديثُ اليوميّ مقابل العمل مقابل الاختبار يغيّر دورةَ الإنجليزيّة الموصى بها.', why_ar: 'لا دورةَ إنجليزيّةٍ واحدةٌ لكلّ غرض.', measures: ['english_purpose'] },
+    [Q.ENGLISH_LEVEL]: { surface: 'b2c', layer21: 'evidence_skill', phase: 'core', action: 'keep', stages: 'all', domains: [], impact_ar: 'المستوى الموصوف (A1 إلى C1) يغيّر المستوى الموصى به، ويفتح خيارَي الطريق للمبتدئ.', why_ar: 'نقطةُ بدايةٍ يؤكّدها اختبارُ التحديد المجانيّ.', measures: ['english_level'] },
+    [Q.CYBER_FOCUS]: { surface: 'b2c', layer21: 'domain_differentiation', phase: 'core', action: 'keep', stages: 'all', domains: ['cyber_risk'], impact_ar: 'الشبكات أو السحابة مقابل حماية البيانات يغيّر الدورةَ أو المسارَ الموصى به.', why_ar: 'للشبكات وللسحابة دورتاهما — ولا جوابَ غيرُه يميّز جمهورَهما.', measures: ['cyber_focus'] },
+    [Q.SALES_CHANNEL]: { surface: 'b2c', layer21: 'domain_differentiation', phase: 'core', action: 'keep', stages: 'all', domains: ['sales'], impact_ar: 'المتجر أو الإنترنت مقابل البيع بين الشركات يغيّر الدورةَ أو المسارَ الموصى به.', why_ar: 'لبيع التجزئة وللبيع عبر الإنترنت دورتاهما — ولا جوابَ غيرُه يميّز جمهورَهما.', measures: ['sales_channel'] },
+    [Q.FIELD_LEVEL]: { surface: 'b2c', layer21: 'evidence_skill', phase: 'core', action: 'keep', stages: 'all', domains: [], impact_ar: 'مبتدئٌ مقابل متقدّمٍ في المجال يقرّب الكيانَ الذي تقع دوراتُه عند مستواه، ويطابق دوراتِ مجاله عليه.', why_ar: 'المستوى في المجال لا في المرحلة المهنيّة.', measures: ['field_level'] },
   }
   Object.assign(plan, newPlan)
 

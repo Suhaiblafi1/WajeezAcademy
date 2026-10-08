@@ -145,7 +145,9 @@
         "الهندسة وتنفيذ المشاريع الإنشائية",
         "فهم النفس والسلوك الإنساني",
         "تربية الأبناء والعلاقة في البيت",
-        "غير متأكد — أريد اقتراحًا مبنيًا على إجاباتي"
+        "غير متأكد — أريد اقتراحًا مبنيًا على إجاباتي",
+        "اللغة الإنجليزية",
+        "البرمجة وتطوير الويب"
       ],
       "measures": [
         "need_id"
@@ -204,6 +206,139 @@
         "mastery_portfolio_pref"
       ],
       "decision_impact": "يفصل بين مسار قياسي واحد وخطة مركبة — لا يُسأل إلا عند غموض فعلي بين الاثنين."
+    },
+    {
+      "module_id": "QC",
+      "module_name": "أسئلة القرار — V2.1",
+      "answer_type": "single_choice",
+      "options_key": null,
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.5,
+      "active": true,
+      "version": "2.1",
+      "question_id": "QC-E1-001",
+      "text_ar": "لأيّ غرضٍ تريد الإنجليزيّة أوّلا؟",
+      "options_ar": [
+        "المحادثة والتواصل اليوميّ",
+        "العمل — الاجتماعات والبريد المهنيّ",
+        "اختبار IELTS أو TOEFL"
+      ],
+      "measures": [
+        "english_purpose"
+      ],
+      "decision_impact": "الغرضُ يحسم أيَّ دورات الإنجليزيّة تناسبك — الحديثُ اليوميّ غيرُ العمل غيرُ الاختبار."
+    },
+    {
+      "module_id": "QC",
+      "module_name": "أسئلة القرار — V2.1",
+      "answer_type": "single_choice",
+      "options_key": null,
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.5,
+      "active": true,
+      "version": "2.1",
+      "question_id": "QC-E2-001",
+      "text_ar": "أيُّ وصفٍ يقترب من إنجليزيّتك الآن؟ لا تقلق من الدقّة — سنعطيك اختبارَ تحديد مستوى مجانيّا يحسمه.",
+      "options_ar": [
+        "أعرف كلماتٍ وجملا قليلة",
+        "أتدبّر حديثا يوميّا بسيطا",
+        "أفهم الاجتماعات والنصوص، وأتعثّر حين أتكلّم أو أكتب",
+        "أتكلّم وأكتب براحةٍ في أغلب المواقف",
+        "أتكلّم وأكتب بطلاقةٍ قريبةٍ من أهل اللغة"
+      ],
+      "measures": [
+        "english_level"
+      ],
+      "decision_impact": "المستوى كما تصفه (A1 إلى C1) يحدّد المستوى الموصى به، واختبارُ التحديد المجانيّ يؤكّده."
+    },
+    {
+      "module_id": "QC",
+      "module_name": "أسئلة القرار — V2.1",
+      "answer_type": "single_choice",
+      "options_key": null,
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.5,
+      "active": true,
+      "version": "2.1",
+      "question_id": "QC-D1-001",
+      "text_ar": "أيُّ جانبٍ من الأمن والتقنية تريده أوّلا؟",
+      "options_ar": [
+        "حمايةُ البيانات وأمنُ المؤسّسة",
+        "الشبكاتُ وأمنُها",
+        "الحوسبةُ السحابيّة"
+      ],
+      "measures": [
+        "cyber_focus"
+      ],
+      "decision_impact": "بعضُ الأجوبة لها دورتُها بعينها — تحسم النتيجة بدل سباقٍ بين مسارات."
+    },
+    {
+      "module_id": "QC",
+      "module_name": "أسئلة القرار — V2.1",
+      "answer_type": "single_choice",
+      "options_key": null,
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.5,
+      "active": true,
+      "version": "2.1",
+      "question_id": "QC-D2-001",
+      "text_ar": "أين تبيع، أو أين تريد أن تبيع؟",
+      "options_ar": [
+        "لشركاتٍ وحسابات — بيعٌ بين الشركات",
+        "في متجرٍ أو صالة عرض",
+        "عبر الإنترنت ووسائل التواصل"
+      ],
+      "measures": [
+        "sales_channel"
+      ],
+      "decision_impact": "بعضُ الأجوبة لها دورتُها بعينها — تحسم النتيجة بدل سباقٍ بين مسارات."
+    },
+    {
+      "module_id": "QC",
+      "module_name": "أسئلة القرار — V2.1",
+      "answer_type": "single_choice",
+      "options_key": null,
+      "persona_scope": [
+        "all"
+      ],
+      "trigger_condition": "always",
+      "sensitivity_level": "low",
+      "required_level": "core",
+      "weight": 1.5,
+      "active": true,
+      "version": "2.1",
+      "question_id": "QC-L1-001",
+      "text_ar": "وفي المجال الذي اخترته، أيُّ وصفٍ يقترب منك؟",
+      "options_ar": [
+        "لم أمارسه بعد",
+        "أعرف أساسيّاته وأحتاج من يوجّهني",
+        "أمارسه وحدي بانتظام",
+        "أقود غيري فيه أو أعلّمه"
+      ],
+      "measures": [
+        "field_level"
+      ],
+      "decision_impact": "مستواك في مجالك — تُطابَق عليه دوراتُه، ويُقرَّب المسارُ الذي تقع دوراتُه عنده."
     }
   ],
   "overrides": [

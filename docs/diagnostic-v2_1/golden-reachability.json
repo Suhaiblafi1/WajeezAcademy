@@ -1,7 +1,7 @@
 {
-  "generated_at": "2026-10-07T21:37:25.258Z",
+  "generated_at": "2026-10-08T08:27:30.538Z",
   "universe_active": 73,
-  "reachable": 47,
+  "reachable": 52,
   "golden": {
     "PW-STU-003": {
       "type": "standard",
@@ -9,9 +9,9 @@
       "positive": {
         "winner": "PW-STU-003",
         "kind": "single_pathway",
-        "confidence": 0.83,
+        "confidence": 0.87,
         "won": true,
-        "askedCount": 8,
+        "askedCount": 9,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.98,
@@ -27,16 +27,18 @@
           "goal": "تحديد المجال الأنسب لي",
           "need": "تحديد اتجاهي المهني أصلًا",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "لم أمارسه بعد"
+          },
           "skillLevel": 2
         }
       },
       "near_miss": {
         "winner": "PW-STU-003",
         "kind": "single_pathway",
-        "confidence": 0.83,
+        "confidence": 0.87,
         "won": true,
-        "askedCount": 8,
+        "askedCount": 9,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.98,
@@ -52,16 +54,18 @@
           "goal": "تحديد المجال الأنسب لي",
           "need": "تحديد اتجاهي المهني أصلًا",
           "mastery": "غير متأكد",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "لم أمارسه بعد"
+          },
           "skillLevel": 3
         }
       },
       "negative": {
         "winner": "PW-STU-002",
         "kind": "advisor_referral",
-        "confidence": 0.78,
+        "confidence": 0.82,
         "won": false,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": false,
         "excludedReasons_ar": [
           "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
@@ -91,9 +95,9 @@
       "positive": {
         "winner": "PW-STU-002",
         "kind": "single_pathway",
-        "confidence": 0.83,
+        "confidence": 0.87,
         "won": true,
-        "askedCount": 12,
+        "askedCount": 13,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.759,
@@ -109,16 +113,18 @@
           "goal": "الحصول على أول وظيفة",
           "need": "الجاهزية لسوق العمل — سيرة ومقابلات وملف أعمال",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "لم أمارسه بعد"
+          },
           "skillLevel": 2
         }
       },
       "near_miss": {
         "winner": "PW-STU-002",
         "kind": "single_pathway",
-        "confidence": 0.82,
+        "confidence": 0.86,
         "won": true,
-        "askedCount": 12,
+        "askedCount": 13,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.743,
@@ -134,16 +140,18 @@
           "goal": "الحصول على أول وظيفة",
           "need": "الجاهزية لسوق العمل — سيرة ومقابلات وملف أعمال",
           "mastery": "غير متأكد",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "لم أمارسه بعد"
+          },
           "skillLevel": 3
         }
       },
       "negative": {
         "winner": "PW-STU-003",
         "kind": "single_pathway",
-        "confidence": 0.83,
+        "confidence": 0.87,
         "won": false,
-        "askedCount": 8,
+        "askedCount": 9,
         "eligible": false,
         "excludedReasons_ar": [
           "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
@@ -173,9 +181,9 @@
       "positive": {
         "winner": "PW-FND-003",
         "kind": "single_pathway",
-        "confidence": 0.63,
+        "confidence": 0.65,
         "won": true,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.958,
@@ -191,16 +199,18 @@
           "goal": "استخدام الذكاء الاصطناعي بفعالية أكبر",
           "need": "الذكاء الاصطناعي وتطبيقاته العملية",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام"
+          },
           "skillLevel": 2
         }
       },
       "near_miss": {
         "winner": "PW-FND-003",
         "kind": "single_pathway",
-        "confidence": 0.63,
+        "confidence": 0.65,
         "won": true,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.947,
@@ -216,16 +226,18 @@
           "goal": "استخدام الذكاء الاصطناعي بفعالية أكبر",
           "need": "الذكاء الاصطناعي وتطبيقاته العملية",
           "mastery": "غير متأكد",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام"
+          },
           "skillLevel": 3
         }
       },
       "negative": {
         "winner": "C-COMX-111",
         "kind": "single_course",
-        "confidence": 0.84,
+        "confidence": 0.82,
         "won": false,
-        "askedCount": 10,
+        "askedCount": 11,
         "eligible": false,
         "excludedReasons_ar": [
           "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
@@ -255,9 +267,9 @@
       "positive": {
         "winner": "PW-EMP-004",
         "kind": "single_pathway",
-        "confidence": 0.66,
+        "confidence": 0.68,
         "won": true,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.871,
@@ -273,16 +285,18 @@
           "goal": "بناء مهارات عملية يطلبها سوق العمل",
           "need": "تحليل البيانات واتخاذ القرار",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام"
+          },
           "skillLevel": 2
         }
       },
       "near_miss": {
         "winner": "PW-EMP-004",
         "kind": "single_pathway",
-        "confidence": 0.65,
+        "confidence": 0.67,
         "won": true,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.855,
@@ -298,16 +312,18 @@
           "goal": "بناء مهارات عملية يطلبها سوق العمل",
           "need": "تحليل البيانات واتخاذ القرار",
           "mastery": "غير متأكد",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام"
+          },
           "skillLevel": 3
         }
       },
       "negative": {
         "winner": "C-COMX-111",
         "kind": "single_course",
-        "confidence": 0.84,
+        "confidence": 0.82,
         "won": false,
-        "askedCount": 10,
+        "askedCount": 11,
         "eligible": false,
         "excludedReasons_ar": [
           "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
@@ -337,9 +353,9 @@
       "positive": {
         "winner": "PW-EMP-003",
         "kind": "single_pathway",
-        "confidence": 0.66,
+        "confidence": 0.68,
         "won": true,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.874,
@@ -355,16 +371,18 @@
           "goal": "بناء مهارات عملية يطلبها سوق العمل",
           "need": "إدارة المشاريع",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام"
+          },
           "skillLevel": 2
         }
       },
       "near_miss": {
         "winner": "PW-EMP-003",
         "kind": "single_pathway",
-        "confidence": 0.66,
+        "confidence": 0.68,
         "won": true,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.86,
@@ -380,16 +398,18 @@
           "goal": "بناء مهارات عملية يطلبها سوق العمل",
           "need": "إدارة المشاريع",
           "mastery": "غير متأكد",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام"
+          },
           "skillLevel": 3
         }
       },
       "negative": {
         "winner": "C-COMX-111",
         "kind": "single_course",
-        "confidence": 0.84,
+        "confidence": 0.82,
         "won": false,
-        "askedCount": 10,
+        "askedCount": 11,
         "eligible": false,
         "excludedReasons_ar": [
           "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
@@ -419,9 +439,9 @@
       "positive": {
         "winner": "PW-EMP-005",
         "kind": "single_pathway",
-        "confidence": 0.64,
+        "confidence": 0.68,
         "won": true,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.958,
@@ -437,16 +457,18 @@
           "goal": "الاستعداد لدور قيادي",
           "need": "القيادة وإدارة الفرق",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أقود غيري فيه أو أعلّمه"
+          },
           "skillLevel": 2
         }
       },
       "near_miss": {
         "winner": "PW-EMP-005",
         "kind": "single_pathway",
-        "confidence": 0.63,
+        "confidence": 0.67,
         "won": true,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.947,
@@ -462,16 +484,18 @@
           "goal": "الاستعداد لدور قيادي",
           "need": "القيادة وإدارة الفرق",
           "mastery": "غير متأكد",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أقود غيري فيه أو أعلّمه"
+          },
           "skillLevel": 3
         }
       },
       "negative": {
         "winner": "PW-EMP-004",
         "kind": "single_pathway",
-        "confidence": 0.6,
+        "confidence": 0.56,
         "won": false,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": false,
         "excludedReasons_ar": [
           "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
@@ -501,9 +525,9 @@
       "positive": {
         "winner": "PW-GOV-002",
         "kind": "single_pathway",
-        "confidence": 0.6,
+        "confidence": 0.62,
         "won": true,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.884,
@@ -520,6 +544,7 @@
           "need": "تجربة العميل / المستفيد وجودة الخدمة",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق",
           "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام",
             "QB-M3B-001": "حكومي"
           },
           "skillLevel": 2
@@ -528,9 +553,9 @@
       "near_miss": {
         "winner": "PW-GOV-002",
         "kind": "single_pathway",
-        "confidence": 0.59,
+        "confidence": 0.61,
         "won": true,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.872,
@@ -547,6 +572,7 @@
           "need": "تجربة العميل / المستفيد وجودة الخدمة",
           "mastery": "غير متأكد",
           "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام",
             "QB-M3B-001": "حكومي"
           },
           "skillLevel": 3
@@ -555,9 +581,9 @@
       "negative": {
         "winner": "C-COMX-111",
         "kind": "single_course",
-        "confidence": 0.84,
+        "confidence": 0.82,
         "won": false,
-        "askedCount": 10,
+        "askedCount": 11,
         "eligible": false,
         "excludedReasons_ar": [
           "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك.",
@@ -588,9 +614,9 @@
       "positive": {
         "winner": "PW-BIZ-001",
         "kind": "single_pathway",
-        "confidence": 0.68,
+        "confidence": 0.69,
         "won": true,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.768,
@@ -606,7 +632,9 @@
           "goal": "تنمية مشروعي القائم وزيادة إيراداته",
           "need": "بناء مشروعي من الصفر",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام"
+          },
           "skillLevel": 2,
           "employment": "لدي مشروعي الخاص"
         }
@@ -614,9 +642,9 @@
       "near_miss": {
         "winner": "PW-BIZ-001",
         "kind": "single_pathway",
-        "confidence": 0.68,
+        "confidence": 0.69,
         "won": true,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.761,
@@ -632,7 +660,9 @@
           "goal": "تنمية مشروعي القائم وزيادة إيراداته",
           "need": "بناء مشروعي من الصفر",
           "mastery": "غير متأكد",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام"
+          },
           "skillLevel": 3,
           "employment": "لدي مشروعي الخاص"
         }
@@ -669,13 +699,13 @@
     },
     "PW-AUT-001": {
       "type": "standard",
-      "tried": 3,
+      "tried": 5,
       "positive": {
         "winner": "PW-AUT-001",
         "kind": "single_pathway",
-        "confidence": 0.63,
+        "confidence": 0.66,
         "won": true,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.961,
@@ -693,6 +723,7 @@
           "need": "الذكاء الاصطناعي وتطبيقاته العملية",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق",
           "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام",
             "QB-M3B-011": "تحول رقمي"
           },
           "skillLevel": 2
@@ -701,9 +732,9 @@
       "near_miss": {
         "winner": "PW-AUT-001",
         "kind": "single_pathway",
-        "confidence": 0.63,
+        "confidence": 0.66,
         "won": true,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.952,
@@ -721,6 +752,7 @@
           "need": "الذكاء الاصطناعي وتطبيقاته العملية",
           "mastery": "غير متأكد",
           "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام",
             "QB-M3B-011": "تحول رقمي"
           },
           "skillLevel": 3
@@ -729,9 +761,9 @@
       "negative": {
         "winner": "C-COMX-111",
         "kind": "single_course",
-        "confidence": 0.84,
+        "confidence": 0.82,
         "won": false,
-        "askedCount": 10,
+        "askedCount": 11,
         "eligible": false,
         "excludedReasons_ar": [
           "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
@@ -757,13 +789,13 @@
     },
     "PW-MKT-001": {
       "type": "standard",
-      "tried": 9,
+      "tried": 17,
       "positive": {
         "winner": "PW-MKT-001",
         "kind": "single_pathway",
-        "confidence": 0.77,
+        "confidence": 0.8,
         "won": true,
-        "askedCount": 8,
+        "askedCount": 9,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.902,
@@ -779,16 +811,18 @@
           "goal": "بدء مشروع أو مصدر دخل مستقل",
           "need": "التسويق والنمو",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام"
+          },
           "skillLevel": 2
         }
       },
       "near_miss": {
         "winner": "PW-MKT-001",
         "kind": "single_pathway",
-        "confidence": 0.77,
+        "confidence": 0.8,
         "won": true,
-        "askedCount": 8,
+        "askedCount": 9,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.902,
@@ -804,7 +838,9 @@
           "goal": "بدء مشروع أو مصدر دخل مستقل",
           "need": "التسويق والنمو",
           "mastery": "غير متأكد",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام"
+          },
           "skillLevel": 3
         }
       },
@@ -845,7 +881,7 @@
         "kind": "single_pathway",
         "confidence": 0.6,
         "won": true,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.717,
@@ -859,7 +895,9 @@
           "stage": "early_career",
           "need": "المبيعات والتعامل مع العملاء",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام"
+          },
           "skillLevel": 2
         }
       },
@@ -868,7 +906,7 @@
         "kind": "single_pathway",
         "confidence": 0.59,
         "won": true,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.707,
@@ -882,16 +920,18 @@
           "stage": "early_career",
           "need": "المبيعات والتعامل مع العملاء",
           "mastery": "غير متأكد",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام"
+          },
           "skillLevel": 3
         }
       },
       "negative": {
         "winner": "C-COMX-111",
         "kind": "single_course",
-        "confidence": 0.84,
+        "confidence": 0.82,
         "won": false,
-        "askedCount": 10,
+        "askedCount": 11,
         "eligible": false,
         "excludedReasons_ar": [
           "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
@@ -917,13 +957,13 @@
     },
     "PW-HR-001": {
       "type": "standard",
-      "tried": 9,
+      "tried": 17,
       "positive": {
         "winner": "PW-HR-001",
         "kind": "single_pathway",
-        "confidence": 0.61,
+        "confidence": 0.64,
         "won": true,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.999,
@@ -941,6 +981,7 @@
           "need": "القيادة وإدارة الفرق",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق",
           "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام",
             "QB-M3B-011": "موارد بشرية"
           },
           "skillLevel": 2
@@ -949,9 +990,9 @@
       "near_miss": {
         "winner": "PW-HR-001",
         "kind": "single_pathway",
-        "confidence": 0.61,
+        "confidence": 0.64,
         "won": true,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.993,
@@ -969,6 +1010,7 @@
           "need": "القيادة وإدارة الفرق",
           "mastery": "غير متأكد",
           "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام",
             "QB-M3B-011": "موارد بشرية"
           },
           "skillLevel": 3
@@ -1009,9 +1051,9 @@
       "positive": {
         "winner": "PW-FIN-001",
         "kind": "single_pathway",
-        "confidence": 0.62,
+        "confidence": 0.65,
         "won": true,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.685,
@@ -1025,16 +1067,18 @@
           "stage": "manager",
           "need": "المالية وفهم الأرقام",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام"
+          },
           "skillLevel": 2
         }
       },
       "near_miss": {
         "winner": "PW-FIN-001",
         "kind": "single_pathway",
-        "confidence": 0.61,
+        "confidence": 0.64,
         "won": true,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.672,
@@ -1048,16 +1092,18 @@
           "stage": "manager",
           "need": "المالية وفهم الأرقام",
           "mastery": "غير متأكد",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام"
+          },
           "skillLevel": 3
         }
       },
       "negative": {
         "winner": "PW-EMP-004",
         "kind": "single_pathway",
-        "confidence": 0.6,
+        "confidence": 0.56,
         "won": false,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": false,
         "excludedReasons_ar": [
           "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
@@ -1087,9 +1133,9 @@
       "positive": {
         "winner": "PW-PRD-001",
         "kind": "single_pathway",
-        "confidence": 0.58,
+        "confidence": 0.61,
         "won": true,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.877,
@@ -1105,7 +1151,9 @@
           "goal": "استخدام الذكاء الاصطناعي بفعالية أكبر",
           "need": "إدارة المنتج وتجربة المستخدم",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام"
+          },
           "skillLevel": 2
         }
       },
@@ -1114,7 +1162,7 @@
         "kind": "single_pathway",
         "confidence": 0.56,
         "won": false,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.865,
@@ -1130,16 +1178,18 @@
           "goal": "استخدام الذكاء الاصطناعي بفعالية أكبر",
           "need": "إدارة المنتج وتجربة المستخدم",
           "mastery": "غير متأكد",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام"
+          },
           "skillLevel": 3
         }
       },
       "negative": {
         "winner": "C-COMX-111",
         "kind": "single_course",
-        "confidence": 0.84,
+        "confidence": 0.82,
         "won": false,
-        "askedCount": 10,
+        "askedCount": 11,
         "eligible": false,
         "excludedReasons_ar": [
           "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
@@ -1185,7 +1235,9 @@
           "stage": "early_career",
           "need": "العمليات وتحسين الإجراءات",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام"
+          },
           "skillLevel": 2
         }
       },
@@ -1208,16 +1260,18 @@
           "stage": "early_career",
           "need": "العمليات وتحسين الإجراءات",
           "mastery": "غير متأكد",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام"
+          },
           "skillLevel": 3
         }
       },
       "negative": {
         "winner": "C-COMX-111",
         "kind": "single_course",
-        "confidence": 0.84,
+        "confidence": 0.82,
         "won": false,
-        "askedCount": 10,
+        "askedCount": 11,
         "eligible": false,
         "excludedReasons_ar": [
           "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
@@ -1247,9 +1301,9 @@
       "positive": {
         "winner": "PW-CYB-001",
         "kind": "single_pathway",
-        "confidence": 0.59,
+        "confidence": 0.62,
         "won": true,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.881,
@@ -1265,16 +1319,18 @@
           "goal": "استخدام الذكاء الاصطناعي بفعالية أكبر",
           "need": "الأمن السيبراني وحماية البيانات",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام"
+          },
           "skillLevel": 2
         }
       },
       "near_miss": {
         "winner": "PW-CYB-001",
         "kind": "single_pathway",
-        "confidence": 0.59,
+        "confidence": 0.62,
         "won": true,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.871,
@@ -1290,16 +1346,18 @@
           "goal": "استخدام الذكاء الاصطناعي بفعالية أكبر",
           "need": "الأمن السيبراني وحماية البيانات",
           "mastery": "غير متأكد",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام"
+          },
           "skillLevel": 3
         }
       },
       "negative": {
         "winner": "PW-EMP-004",
         "kind": "single_pathway",
-        "confidence": 0.6,
+        "confidence": 0.56,
         "won": false,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": false,
         "excludedReasons_ar": [
           "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
@@ -1325,7 +1383,7 @@
     },
     "PW-SCM-001": {
       "type": "standard",
-      "tried": 9,
+      "tried": 17,
       "positive": {
         "winner": "PW-SCM-001",
         "kind": "advisor_referral",
@@ -1347,6 +1405,7 @@
           "need": "سلسلة الإمداد والمشتريات",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق",
           "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام",
             "QB-M3B-011": "مشتريات/عطاءات"
           },
           "skillLevel": 2
@@ -1357,7 +1416,7 @@
         "kind": "single_pathway",
         "confidence": 0.58,
         "won": true,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.769,
@@ -1373,6 +1432,7 @@
           "need": "سلسلة الإمداد والمشتريات",
           "mastery": "غير متأكد",
           "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام",
             "QB-M3B-011": "مشتريات/عطاءات"
           },
           "skillLevel": 3
@@ -1413,9 +1473,9 @@
       "positive": {
         "winner": "PW-COM-001",
         "kind": "single_pathway",
-        "confidence": 0.66,
+        "confidence": 0.69,
         "won": true,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.924,
@@ -1431,16 +1491,18 @@
           "goal": "بناء ملف أعمال يثبت قدراتي",
           "need": "التواصل والعرض والتأثير",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام"
+          },
           "skillLevel": 2
         }
       },
       "near_miss": {
         "winner": "PW-COM-001",
         "kind": "single_pathway",
-        "confidence": 0.65,
+        "confidence": 0.68,
         "won": true,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.911,
@@ -1456,16 +1518,18 @@
           "goal": "بناء ملف أعمال يثبت قدراتي",
           "need": "التواصل والعرض والتأثير",
           "mastery": "غير متأكد",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام"
+          },
           "skillLevel": 3
         }
       },
       "negative": {
         "winner": "C-COMX-111",
         "kind": "single_course",
-        "confidence": 0.84,
+        "confidence": 0.82,
         "won": false,
-        "askedCount": 10,
+        "askedCount": 11,
         "eligible": false,
         "excludedReasons_ar": [
           "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
@@ -1495,9 +1559,9 @@
       "positive": {
         "winner": "PW-NEG-001",
         "kind": "single_pathway",
-        "confidence": 0.6,
+        "confidence": 0.63,
         "won": true,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.916,
@@ -1513,16 +1577,18 @@
           "goal": "الاستعداد لدور قيادي",
           "need": "التفاوض وإغلاق الصفقات",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام"
+          },
           "skillLevel": 2
         }
       },
       "near_miss": {
         "winner": "PW-NEG-001",
         "kind": "single_pathway",
-        "confidence": 0.6,
+        "confidence": 0.63,
         "won": true,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.906,
@@ -1538,16 +1604,18 @@
           "goal": "الاستعداد لدور قيادي",
           "need": "التفاوض وإغلاق الصفقات",
           "mastery": "غير متأكد",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام"
+          },
           "skillLevel": 3
         }
       },
       "negative": {
         "winner": "PW-EMP-004",
         "kind": "single_pathway",
-        "confidence": 0.6,
+        "confidence": 0.56,
         "won": false,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": false,
         "excludedReasons_ar": [
           "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
@@ -1577,9 +1645,9 @@
       "positive": {
         "winner": "PW-LND-001",
         "kind": "single_pathway",
-        "confidence": 0.63,
+        "confidence": 0.67,
         "won": true,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.938,
@@ -1595,16 +1663,18 @@
           "goal": "تصميم تدريب أو برامج تعليمية",
           "need": "تصميم التعلم والتدريب",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام"
+          },
           "skillLevel": 2
         }
       },
       "near_miss": {
         "winner": "PW-LND-001",
         "kind": "single_pathway",
-        "confidence": 0.63,
+        "confidence": 0.67,
         "won": true,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.931,
@@ -1620,7 +1690,9 @@
           "goal": "تصميم تدريب أو برامج تعليمية",
           "need": "تصميم التعلم والتدريب",
           "mastery": "غير متأكد",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام"
+          },
           "skillLevel": 3
         }
       },
@@ -1655,13 +1727,13 @@
     },
     "PW-GRPH-001": {
       "type": "standard",
-      "tried": 5,
+      "tried": 9,
       "positive": {
         "winner": "PW-GRPH-001",
         "kind": "single_pathway",
-        "confidence": 0.61,
+        "confidence": 0.65,
         "won": true,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.712,
@@ -1677,16 +1749,18 @@
           "goal": "بناء مهارات عملية يطلبها سوق العمل",
           "need": "التصميم البصري والهوية",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أعرف أساسيّاته وأحتاج من يوجّهني"
+          },
           "skillLevel": 2
         }
       },
       "near_miss": {
         "winner": "PW-GRPH-001",
         "kind": "single_pathway",
-        "confidence": 0.61,
+        "confidence": 0.65,
         "won": true,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.696,
@@ -1702,16 +1776,18 @@
           "goal": "بناء مهارات عملية يطلبها سوق العمل",
           "need": "التصميم البصري والهوية",
           "mastery": "غير متأكد",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أعرف أساسيّاته وأحتاج من يوجّهني"
+          },
           "skillLevel": 3
         }
       },
       "negative": {
         "winner": "PW-STU-002",
         "kind": "advisor_referral",
-        "confidence": 0.78,
+        "confidence": 0.82,
         "won": false,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": false,
         "excludedReasons_ar": [
           "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
@@ -1759,7 +1835,9 @@
           "goal": "بناء مهارات عملية يطلبها سوق العمل",
           "need": "فهم النفس والسلوك الإنساني",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "لم أمارسه بعد"
+          },
           "skillLevel": 2
         }
       },
@@ -1784,16 +1862,18 @@
           "goal": "بناء مهارات عملية يطلبها سوق العمل",
           "need": "فهم النفس والسلوك الإنساني",
           "mastery": "غير متأكد",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "لم أمارسه بعد"
+          },
           "skillLevel": 3
         }
       },
       "negative": {
         "winner": "C-COMX-111",
         "kind": "single_course",
-        "confidence": 0.84,
+        "confidence": 0.82,
         "won": false,
-        "askedCount": 10,
+        "askedCount": 11,
         "eligible": false,
         "excludedReasons_ar": [
           "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
@@ -1823,9 +1903,9 @@
       "positive": {
         "winner": "PW-PSY-002",
         "kind": "single_pathway",
-        "confidence": 0.84,
+        "confidence": 0.87,
         "won": true,
-        "askedCount": 8,
+        "askedCount": 9,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.98,
@@ -1841,16 +1921,18 @@
           "goal": "تطوير مهارة محددة أعرفها",
           "need": "فهم النفس والسلوك الإنساني",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "لم أمارسه بعد"
+          },
           "skillLevel": 2
         }
       },
       "near_miss": {
         "winner": "PW-PSY-002",
         "kind": "single_pathway",
-        "confidence": 0.84,
+        "confidence": 0.87,
         "won": true,
-        "askedCount": 8,
+        "askedCount": 9,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.98,
@@ -1866,7 +1948,9 @@
           "goal": "تطوير مهارة محددة أعرفها",
           "need": "فهم النفس والسلوك الإنساني",
           "mastery": "غير متأكد",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "لم أمارسه بعد"
+          },
           "skillLevel": 3
         }
       },
@@ -1901,13 +1985,13 @@
     },
     "PW-EDU-001": {
       "type": "standard",
-      "tried": 41,
+      "tried": 81,
       "positive": {
         "winner": "PW-EDU-001",
         "kind": "single_pathway",
-        "confidence": 0.82,
+        "confidence": 0.85,
         "won": true,
-        "askedCount": 8,
+        "askedCount": 9,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.95,
@@ -1923,16 +2007,18 @@
           "goal": "تطوير مهارة محددة أعرفها",
           "need": "تصميم التعلم والتدريب",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "لم أمارسه بعد"
+          },
           "skillLevel": 2
         }
       },
       "near_miss": {
         "winner": "PW-EDU-001",
         "kind": "single_pathway",
-        "confidence": 0.82,
+        "confidence": 0.85,
         "won": true,
-        "askedCount": 8,
+        "askedCount": 9,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.95,
@@ -1948,7 +2034,9 @@
           "goal": "تطوير مهارة محددة أعرفها",
           "need": "تصميم التعلم والتدريب",
           "mastery": "غير متأكد",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "لم أمارسه بعد"
+          },
           "skillLevel": 3
         }
       },
@@ -1987,9 +2075,9 @@
       "positive": {
         "winner": "PW-INTR-001",
         "kind": "single_pathway",
-        "confidence": 0.79,
+        "confidence": 0.81,
         "won": true,
-        "askedCount": 8,
+        "askedCount": 9,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.932,
@@ -2005,7 +2093,9 @@
           "goal": "بناء ملف أعمال يثبت قدراتي",
           "need": "التصميم الداخلي والديكور",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أعرف أساسيّاته وأحتاج من يوجّهني"
+          },
           "skillLevel": 2,
           "employment": "أعمل لحسابي (عمل حر)"
         }
@@ -2013,9 +2103,9 @@
       "near_miss": {
         "winner": "PW-INTR-001",
         "kind": "single_pathway",
-        "confidence": 0.79,
+        "confidence": 0.81,
         "won": true,
-        "askedCount": 8,
+        "askedCount": 9,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.932,
@@ -2031,7 +2121,9 @@
           "goal": "بناء ملف أعمال يثبت قدراتي",
           "need": "التصميم الداخلي والديكور",
           "mastery": "غير متأكد",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أعرف أساسيّاته وأحتاج من يوجّهني"
+          },
           "skillLevel": 3,
           "employment": "أعمل لحسابي (عمل حر)"
         }
@@ -2072,9 +2164,9 @@
       "positive": {
         "winner": "PW-ENGR-001",
         "kind": "single_pathway",
-        "confidence": 0.77,
+        "confidence": 0.8,
         "won": true,
-        "askedCount": 8,
+        "askedCount": 9,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.932,
@@ -2090,16 +2182,18 @@
           "goal": "بناء مهارات عملية يطلبها سوق العمل",
           "need": "الهندسة وتنفيذ المشاريع الإنشائية",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام"
+          },
           "skillLevel": 2
         }
       },
       "near_miss": {
         "winner": "PW-ENGR-001",
         "kind": "single_pathway",
-        "confidence": 0.77,
+        "confidence": 0.8,
         "won": true,
-        "askedCount": 8,
+        "askedCount": 9,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.932,
@@ -2115,16 +2209,18 @@
           "goal": "بناء مهارات عملية يطلبها سوق العمل",
           "need": "الهندسة وتنفيذ المشاريع الإنشائية",
           "mastery": "غير متأكد",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام"
+          },
           "skillLevel": 3
         }
       },
       "negative": {
         "winner": "C-COMX-111",
         "kind": "single_course",
-        "confidence": 0.84,
+        "confidence": 0.82,
         "won": false,
-        "askedCount": 10,
+        "askedCount": 11,
         "eligible": false,
         "excludedReasons_ar": [
           "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
@@ -2154,9 +2250,9 @@
       "positive": {
         "winner": "PW-FAM-001",
         "kind": "single_pathway",
-        "confidence": 0.84,
+        "confidence": 0.87,
         "won": true,
-        "askedCount": 8,
+        "askedCount": 9,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.98,
@@ -2172,16 +2268,18 @@
           "goal": "تربية أبنائي والعلاقة في البيت",
           "need": "تربية الأبناء والعلاقة في البيت",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "لم أمارسه بعد"
+          },
           "skillLevel": 2
         }
       },
       "near_miss": {
         "winner": "PW-FAM-001",
         "kind": "single_pathway",
-        "confidence": 0.84,
+        "confidence": 0.87,
         "won": true,
-        "askedCount": 8,
+        "askedCount": 9,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.98,
@@ -2197,16 +2295,18 @@
           "goal": "تربية أبنائي والعلاقة في البيت",
           "need": "تربية الأبناء والعلاقة في البيت",
           "mastery": "غير متأكد",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "لم أمارسه بعد"
+          },
           "skillLevel": 3
         }
       },
       "negative": {
         "winner": "C-COMX-111",
         "kind": "single_course",
-        "confidence": 0.84,
+        "confidence": 0.82,
         "won": false,
-        "askedCount": 10,
+        "askedCount": 11,
         "eligible": false,
         "excludedReasons_ar": [
           "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
@@ -2232,13 +2332,13 @@
     },
     "TPL-VENTURE-001": {
       "type": "composite",
-      "tried": 81,
+      "tried": 161,
       "positive": {
         "winner": "TPL-VENTURE-001",
         "kind": "composite_template",
-        "confidence": 0.62,
+        "confidence": 0.66,
         "won": true,
-        "askedCount": 14,
+        "askedCount": 16,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.935,
@@ -2255,6 +2355,7 @@
           "need": "المبيعات والتعامل مع العملاء",
           "mastery": "أن أبني مجموعة مهارات مترابطة لتحقيق هدف",
           "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام",
             "QB-M2-015": "عالية"
           },
           "skillLevel": 2,
@@ -2264,9 +2365,9 @@
       "near_miss": {
         "winner": "TPL-VENTURE-001",
         "kind": "composite_template",
-        "confidence": 0.62,
+        "confidence": 0.66,
         "won": true,
-        "askedCount": 14,
+        "askedCount": 16,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.924,
@@ -2283,6 +2384,7 @@
           "need": "المبيعات والتعامل مع العملاء",
           "mastery": "غير متأكد",
           "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام",
             "QB-M2-015": "عالية"
           },
           "skillLevel": 3,
@@ -2321,13 +2423,13 @@
     },
     "TPL-ECOM-001": {
       "type": "composite",
-      "tried": 433,
+      "tried": 865,
       "positive": {
         "winner": "TPL-ECOM-001",
         "kind": "composite_template",
-        "confidence": 0.62,
+        "confidence": 0.64,
         "won": true,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.871,
@@ -2344,6 +2446,7 @@
           "need": "تحليل البيانات واتخاذ القرار",
           "mastery": "أن أبني مجموعة مهارات مترابطة لتحقيق هدف",
           "answers": {
+            "QC-L1-001": "أعرف أساسيّاته وأحتاج من يوجّهني",
             "QB-M2-015": "عالية"
           },
           "skillLevel": 2,
@@ -2353,9 +2456,9 @@
       "near_miss": {
         "winner": "TPL-ECOM-001",
         "kind": "composite_template",
-        "confidence": 0.62,
+        "confidence": 0.64,
         "won": true,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.861,
@@ -2372,6 +2475,7 @@
           "need": "تحليل البيانات واتخاذ القرار",
           "mastery": "غير متأكد",
           "answers": {
+            "QC-L1-001": "أعرف أساسيّاته وأحتاج من يوجّهني",
             "QB-M2-015": "عالية"
           },
           "skillLevel": 3,
@@ -2414,9 +2518,9 @@
       "positive": {
         "winner": "TPL-FREELANCE-001",
         "kind": "composite_template",
-        "confidence": 0.57,
+        "confidence": 0.59,
         "won": true,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.853,
@@ -2433,6 +2537,7 @@
           "need": "التواصل والعرض والتأثير",
           "mastery": "أن أبني مجموعة مهارات مترابطة لتحقيق هدف",
           "answers": {
+            "QC-L1-001": "أعرف أساسيّاته وأحتاج من يوجّهني",
             "QB-M2-015": "عالية"
           },
           "skillLevel": 2,
@@ -2444,7 +2549,7 @@
         "kind": "composite_template",
         "confidence": 0.57,
         "won": true,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.844,
@@ -2461,6 +2566,7 @@
           "need": "التواصل والعرض والتأثير",
           "mastery": "غير متأكد",
           "answers": {
+            "QC-L1-001": "أعرف أساسيّاته وأحتاج من يوجّهني",
             "QB-M2-015": "عالية"
           },
           "skillLevel": 3,
@@ -2470,9 +2576,9 @@
       "negative": {
         "winner": null,
         "kind": "advisor_referral",
-        "confidence": 0.73,
+        "confidence": 0.71,
         "won": false,
-        "askedCount": 9,
+        "askedCount": 10,
         "eligible": false,
         "excludedReasons_ar": [
           "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
@@ -2503,9 +2609,9 @@
       "positive": {
         "winner": "TPL-PERSONAL-BRAND-001",
         "kind": "composite_template",
-        "confidence": 0.62,
+        "confidence": 0.64,
         "won": true,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.858,
@@ -2522,6 +2628,7 @@
           "need": "الجاهزية لسوق العمل — سيرة ومقابلات وملف أعمال",
           "mastery": "أن أبني مجموعة مهارات مترابطة لتحقيق هدف",
           "answers": {
+            "QC-L1-001": "أعرف أساسيّاته وأحتاج من يوجّهني",
             "QB-M2-015": "عالية"
           },
           "skillLevel": 2
@@ -2530,9 +2637,9 @@
       "near_miss": {
         "winner": "TPL-PERSONAL-BRAND-001",
         "kind": "composite_template",
-        "confidence": 0.62,
+        "confidence": 0.64,
         "won": true,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.846,
@@ -2549,6 +2656,7 @@
           "need": "الجاهزية لسوق العمل — سيرة ومقابلات وملف أعمال",
           "mastery": "غير متأكد",
           "answers": {
+            "QC-L1-001": "أعرف أساسيّاته وأحتاج من يوجّهني",
             "QB-M2-015": "عالية"
           },
           "skillLevel": 3
@@ -2585,13 +2693,13 @@
     },
     "TPL-FIRST-JOB-001": {
       "type": "composite",
-      "tried": 10,
+      "tried": 19,
       "positive": {
         "winner": "TPL-FIRST-JOB-001",
         "kind": "composite_template",
-        "confidence": 0.56,
+        "confidence": 0.6,
         "won": true,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.677,
@@ -2608,6 +2716,7 @@
           "need": "تحديد اتجاهي المهني أصلًا",
           "mastery": "أن أبني مجموعة مهارات مترابطة لتحقيق هدف",
           "answers": {
+            "QC-L1-001": "لم أمارسه بعد",
             "QB-M2-015": "عالية"
           },
           "skillLevel": 4
@@ -2616,9 +2725,9 @@
       "near_miss": {
         "winner": "PW-STU-003",
         "kind": "single_pathway",
-        "confidence": 0.58,
+        "confidence": 0.62,
         "won": false,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.688,
@@ -2635,6 +2744,7 @@
           "need": "تحديد اتجاهي المهني أصلًا",
           "mastery": "غير متأكد",
           "answers": {
+            "QC-L1-001": "لم أمارسه بعد",
             "QB-M2-015": "عالية"
           },
           "skillLevel": 3
@@ -2671,13 +2781,13 @@
     },
     "TPL-NEW-MANAGER-001": {
       "type": "composite",
-      "tried": 393,
+      "tried": 785,
       "positive": {
         "winner": "TPL-NEW-MANAGER-001",
         "kind": "composite_template",
-        "confidence": 0.62,
+        "confidence": 0.66,
         "won": true,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.979,
@@ -2695,6 +2805,7 @@
           "need": "القيادة وإدارة الفرق",
           "mastery": "أن أبني مجموعة مهارات مترابطة لتحقيق هدف",
           "answers": {
+            "QC-L1-001": "أقود غيري فيه أو أعلّمه",
             "QB-M3B-011": "موارد بشرية",
             "QB-M2-015": "عالية"
           },
@@ -2704,9 +2815,9 @@
       "near_miss": {
         "winner": "TPL-NEW-MANAGER-001",
         "kind": "composite_template",
-        "confidence": 0.62,
+        "confidence": 0.66,
         "won": true,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.969,
@@ -2724,6 +2835,7 @@
           "need": "القيادة وإدارة الفرق",
           "mastery": "غير متأكد",
           "answers": {
+            "QC-L1-001": "أقود غيري فيه أو أعلّمه",
             "QB-M3B-011": "موارد بشرية",
             "QB-M2-015": "عالية"
           },
@@ -2761,13 +2873,13 @@
     },
     "TPL-B2B-001": {
       "type": "composite",
-      "tried": 9,
+      "tried": 17,
       "positive": {
         "winner": "TPL-B2B-001",
         "kind": "composite_template",
-        "confidence": 0.63,
+        "confidence": 0.66,
         "won": true,
-        "askedCount": 14,
+        "askedCount": 16,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.78,
@@ -2785,6 +2897,7 @@
           "need": "المبيعات والتعامل مع العملاء",
           "mastery": "أن أبني مجموعة مهارات مترابطة لتحقيق هدف",
           "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام",
             "QB-M3B-011": "مبيعات",
             "QB-M2-015": "عالية"
           },
@@ -2794,9 +2907,9 @@
       "near_miss": {
         "winner": "TPL-B2B-001",
         "kind": "composite_template",
-        "confidence": 0.62,
+        "confidence": 0.66,
         "won": true,
-        "askedCount": 14,
+        "askedCount": 16,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.765,
@@ -2814,6 +2927,7 @@
           "need": "المبيعات والتعامل مع العملاء",
           "mastery": "غير متأكد",
           "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام",
             "QB-M3B-011": "مبيعات",
             "QB-M2-015": "عالية"
           },
@@ -2823,9 +2937,9 @@
       "negative": {
         "winner": "C-COMX-111",
         "kind": "single_course",
-        "confidence": 0.84,
+        "confidence": 0.82,
         "won": false,
-        "askedCount": 10,
+        "askedCount": 11,
         "eligible": false,
         "excludedReasons_ar": [
           "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
@@ -2855,9 +2969,9 @@
       "positive": {
         "winner": "TPL-CX-001",
         "kind": "composite_template",
-        "confidence": 0.6,
+        "confidence": 0.62,
         "won": true,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.773,
@@ -2874,6 +2988,7 @@
           "need": "العمليات وتحسين الإجراءات",
           "mastery": "أن أبني مجموعة مهارات مترابطة لتحقيق هدف",
           "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام",
             "QB-M3B-001": "حكومي",
             "QB-M2-015": "عالية"
           },
@@ -2883,9 +2998,9 @@
       "near_miss": {
         "winner": "TPL-CX-001",
         "kind": "composite_template",
-        "confidence": 0.6,
+        "confidence": 0.62,
         "won": true,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.764,
@@ -2902,6 +3017,7 @@
           "need": "العمليات وتحسين الإجراءات",
           "mastery": "غير متأكد",
           "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام",
             "QB-M3B-001": "حكومي",
             "QB-M2-015": "عالية"
           },
@@ -2911,9 +3027,9 @@
       "negative": {
         "winner": "C-COMX-111",
         "kind": "single_course",
-        "confidence": 0.84,
+        "confidence": 0.82,
         "won": false,
-        "askedCount": 10,
+        "askedCount": 11,
         "eligible": false,
         "excludedReasons_ar": [
           "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
@@ -2943,9 +3059,9 @@
       "positive": {
         "winner": "TPL-DIGITAL-TRANSFORM-001",
         "kind": "composite_template",
-        "confidence": 0.58,
+        "confidence": 0.62,
         "won": true,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.891,
@@ -2962,6 +3078,7 @@
           "need": "إدارة المشاريع",
           "mastery": "أن أبني مجموعة مهارات مترابطة لتحقيق هدف",
           "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام",
             "QB-M2-015": "عالية"
           },
           "skillLevel": 2
@@ -2970,9 +3087,9 @@
       "near_miss": {
         "winner": "TPL-DIGITAL-TRANSFORM-001",
         "kind": "composite_template",
-        "confidence": 0.58,
+        "confidence": 0.61,
         "won": true,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.881,
@@ -2989,6 +3106,7 @@
           "need": "إدارة المشاريع",
           "mastery": "غير متأكد",
           "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام",
             "QB-M2-015": "عالية"
           },
           "skillLevel": 3
@@ -2997,9 +3115,9 @@
       "negative": {
         "winner": "PW-EMP-004",
         "kind": "single_pathway",
-        "confidence": 0.6,
+        "confidence": 0.56,
         "won": false,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": false,
         "excludedReasons_ar": [
           "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
@@ -3025,13 +3143,13 @@
     },
     "TPL-PRODUCT-001": {
       "type": "composite",
-      "tried": 41,
+      "tried": 97,
       "positive": {
         "winner": "TPL-PRODUCT-001",
         "kind": "composite_template",
-        "confidence": 0.61,
+        "confidence": 0.63,
         "won": true,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.769,
@@ -3048,6 +3166,7 @@
           "need": "إدارة المنتج وتجربة المستخدم",
           "mastery": "أن أبني مجموعة مهارات مترابطة لتحقيق هدف",
           "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام",
             "QB-M2-015": "عالية"
           },
           "skillLevel": 2
@@ -3056,9 +3175,9 @@
       "near_miss": {
         "winner": "TPL-PRODUCT-001",
         "kind": "composite_template",
-        "confidence": 0.6,
+        "confidence": 0.63,
         "won": true,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.756,
@@ -3075,6 +3194,7 @@
           "need": "إدارة المنتج وتجربة المستخدم",
           "mastery": "غير متأكد",
           "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام",
             "QB-M2-015": "عالية"
           },
           "skillLevel": 3
@@ -3083,9 +3203,9 @@
       "negative": {
         "winner": "PW-EMP-004",
         "kind": "single_pathway",
-        "confidence": 0.57,
+        "confidence": 0.53,
         "won": false,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": false,
         "excludedReasons_ar": [
           "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
@@ -3111,13 +3231,13 @@
     },
     "TPL-FIN-DATA-001": {
       "type": "composite",
-      "tried": 10,
+      "tried": 19,
       "positive": {
         "winner": "TPL-FIN-DATA-001",
         "kind": "composite_template",
-        "confidence": 0.62,
+        "confidence": 0.64,
         "won": true,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.708,
@@ -3135,6 +3255,7 @@
           "need": "تحليل البيانات واتخاذ القرار",
           "mastery": "أن أبني مجموعة مهارات مترابطة لتحقيق هدف",
           "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام",
             "QB-M3B-011": "مالية/موازنة",
             "QB-M2-015": "عالية"
           },
@@ -3144,9 +3265,9 @@
       "near_miss": {
         "winner": "PW-EMP-004",
         "kind": "single_pathway",
-        "confidence": 0.63,
+        "confidence": 0.65,
         "won": false,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.737,
@@ -3164,6 +3285,7 @@
           "need": "تحليل البيانات واتخاذ القرار",
           "mastery": "غير متأكد",
           "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام",
             "QB-M3B-011": "مالية/موازنة",
             "QB-M2-015": "عالية"
           },
@@ -3173,9 +3295,9 @@
       "negative": {
         "winner": "PW-EMP-003",
         "kind": "single_pathway",
-        "confidence": 0.56,
+        "confidence": 0.52,
         "won": false,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": false,
         "excludedReasons_ar": [
           "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
@@ -3201,13 +3323,13 @@
     },
     "TPL-CYBER-MANAGER-001": {
       "type": "composite",
-      "tried": 177,
+      "tried": 385,
       "positive": {
         "winner": "TPL-CYBER-MANAGER-001",
         "kind": "composite_template",
-        "confidence": 0.64,
+        "confidence": 0.67,
         "won": true,
-        "askedCount": 13,
+        "askedCount": 14,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.771,
@@ -3224,6 +3346,7 @@
           "need": "الأمن السيبراني وحماية البيانات",
           "mastery": "أن أبني مجموعة مهارات مترابطة لتحقيق هدف",
           "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام",
             "QB-M2-015": "عالية"
           },
           "skillLevel": 2
@@ -3232,9 +3355,9 @@
       "near_miss": {
         "winner": "TPL-CYBER-MANAGER-001",
         "kind": "composite_template",
-        "confidence": 0.63,
+        "confidence": 0.67,
         "won": true,
-        "askedCount": 13,
+        "askedCount": 14,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.759,
@@ -3251,6 +3374,7 @@
           "need": "الأمن السيبراني وحماية البيانات",
           "mastery": "غير متأكد",
           "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام",
             "QB-M2-015": "عالية"
           },
           "skillLevel": 3
@@ -3287,13 +3411,13 @@
     },
     "TPL-SUPPLY-001": {
       "type": "composite",
-      "tried": 345,
+      "tried": 689,
       "positive": {
         "winner": "TPL-SUPPLY-001",
         "kind": "composite_template",
-        "confidence": 0.61,
+        "confidence": 0.63,
         "won": true,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.738,
@@ -3311,6 +3435,7 @@
           "need": "العمليات وتحسين الإجراءات",
           "mastery": "أن أبني مجموعة مهارات مترابطة لتحقيق هدف",
           "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام",
             "QB-M3B-011": "تحول رقمي",
             "QB-M2-015": "عالية"
           },
@@ -3320,9 +3445,9 @@
       "near_miss": {
         "winner": "TPL-SUPPLY-001",
         "kind": "composite_template",
-        "confidence": 0.6,
+        "confidence": 0.63,
         "won": true,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.733,
@@ -3340,6 +3465,7 @@
           "need": "العمليات وتحسين الإجراءات",
           "mastery": "غير متأكد",
           "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام",
             "QB-M3B-011": "تحول رقمي",
             "QB-M2-015": "عالية"
           },
@@ -3349,9 +3475,9 @@
       "negative": {
         "winner": "PW-EMP-003",
         "kind": "single_pathway",
-        "confidence": 0.56,
+        "confidence": 0.52,
         "won": false,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": false,
         "excludedReasons_ar": [
           "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
@@ -3381,9 +3507,9 @@
       "positive": {
         "winner": "TPL-DIGITAL-TRAINER-001",
         "kind": "composite_template",
-        "confidence": 0.65,
+        "confidence": 0.69,
         "won": true,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.954,
@@ -3400,6 +3526,7 @@
           "need": "الذكاء الاصطناعي وتطبيقاته العملية",
           "mastery": "أن أبني مجموعة مهارات مترابطة لتحقيق هدف",
           "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام",
             "QB-M2-015": "عالية"
           },
           "skillLevel": 2
@@ -3408,9 +3535,9 @@
       "near_miss": {
         "winner": "TPL-DIGITAL-TRAINER-001",
         "kind": "composite_template",
-        "confidence": 0.65,
+        "confidence": 0.69,
         "won": true,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.947,
@@ -3427,6 +3554,7 @@
           "need": "الذكاء الاصطناعي وتطبيقاته العملية",
           "mastery": "غير متأكد",
           "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام",
             "QB-M2-015": "عالية"
           },
           "skillLevel": 3
@@ -3463,13 +3591,13 @@
     },
     "TPL-STRATEGY-001": {
       "type": "composite",
-      "tried": 153,
+      "tried": 305,
       "positive": {
         "winner": "TPL-STRATEGY-001",
         "kind": "composite_template",
-        "confidence": 0.64,
+        "confidence": 0.66,
         "won": true,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.77,
@@ -3487,6 +3615,7 @@
           "need": "إدارة المشاريع",
           "mastery": "أن أبني مجموعة مهارات مترابطة لتحقيق هدف",
           "answers": {
+            "QC-L1-001": "أقود غيري فيه أو أعلّمه",
             "QB-M3B-011": "موارد بشرية",
             "QB-M2-015": "عالية"
           },
@@ -3496,9 +3625,9 @@
       "near_miss": {
         "winner": "TPL-STRATEGY-001",
         "kind": "composite_template",
-        "confidence": 0.64,
+        "confidence": 0.66,
         "won": true,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": 0.758,
@@ -3516,6 +3645,7 @@
           "need": "إدارة المشاريع",
           "mastery": "غير متأكد",
           "answers": {
+            "QC-L1-001": "أقود غيري فيه أو أعلّمه",
             "QB-M3B-011": "موارد بشرية",
             "QB-M2-015": "عالية"
           },
@@ -3525,9 +3655,9 @@
       "negative": {
         "winner": "C-COMX-111",
         "kind": "single_course",
-        "confidence": 0.84,
+        "confidence": 0.82,
         "won": false,
-        "askedCount": 10,
+        "askedCount": 11,
         "eligible": false,
         "excludedReasons_ar": [
           "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
@@ -3553,13 +3683,13 @@
     },
     "C-COMX-108": {
       "type": "course",
-      "tried": 49,
+      "tried": 97,
       "positive": {
         "winner": "C-COMX-108",
         "kind": "single_course",
-        "confidence": 0.58,
+        "confidence": 0.6,
         "won": true,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": null,
@@ -3573,16 +3703,18 @@
           "stage": "manager",
           "need": "التسويق والنمو",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أعرف أساسيّاته وأحتاج من يوجّهني"
+          },
           "skillLevel": 2
         }
       },
       "near_miss": {
         "winner": "C-COMX-115",
         "kind": "single_course",
-        "confidence": 0.57,
+        "confidence": 0.59,
         "won": false,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": null,
@@ -3596,16 +3728,18 @@
           "stage": "manager",
           "need": "التسويق والنمو",
           "mastery": "غير متأكد",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أعرف أساسيّاته وأحتاج من يوجّهني"
+          },
           "skillLevel": 3
         }
       },
       "negative": {
         "winner": "PW-EMP-004",
         "kind": "single_pathway",
-        "confidence": 0.6,
+        "confidence": 0.56,
         "won": false,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": false,
         "excludedReasons_ar": [
           "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
@@ -3631,13 +3765,13 @@
     },
     "C-COMX-109": {
       "type": "course",
-      "tried": 192,
+      "tried": 384,
       "positive": {
         "winner": "PW-EMP-005",
         "kind": "single_pathway",
-        "confidence": 0.65,
+        "confidence": 0.69,
         "won": false,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": null,
@@ -3653,16 +3787,18 @@
           "goal": "الاستعداد لدور قيادي",
           "need": "القيادة وإدارة الفرق",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أقود غيري فيه أو أعلّمه"
+          },
           "skillLevel": 2
         }
       },
       "near_miss": {
         "winner": "PW-EMP-005",
         "kind": "single_pathway",
-        "confidence": 0.65,
+        "confidence": 0.69,
         "won": false,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": null,
@@ -3678,7 +3814,9 @@
           "goal": "الاستعداد لدور قيادي",
           "need": "القيادة وإدارة الفرق",
           "mastery": "غير متأكد",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أقود غيري فيه أو أعلّمه"
+          },
           "skillLevel": 3
         }
       },
@@ -3713,13 +3851,13 @@
     },
     "C-COMX-110": {
       "type": "course",
-      "tried": 88,
+      "tried": 176,
       "positive": {
         "winner": "PW-COM-001",
         "kind": "single_pathway",
-        "confidence": 0.66,
+        "confidence": 0.63,
         "won": false,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": null,
@@ -3735,16 +3873,18 @@
           "goal": "بناء ملف أعمال يثبت قدراتي",
           "need": "التواصل والعرض والتأثير",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "لم أمارسه بعد"
+          },
           "skillLevel": 2
         }
       },
       "near_miss": {
         "winner": "PW-COM-001",
         "kind": "single_pathway",
-        "confidence": 0.65,
+        "confidence": 0.62,
         "won": false,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": null,
@@ -3760,16 +3900,18 @@
           "goal": "بناء ملف أعمال يثبت قدراتي",
           "need": "التواصل والعرض والتأثير",
           "mastery": "غير متأكد",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "لم أمارسه بعد"
+          },
           "skillLevel": 3
         }
       },
       "negative": {
         "winner": "C-COMX-111",
         "kind": "single_course",
-        "confidence": 0.84,
+        "confidence": 0.82,
         "won": false,
-        "askedCount": 10,
+        "askedCount": 11,
         "eligible": false,
         "excludedReasons_ar": [
           "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
@@ -3795,13 +3937,13 @@
     },
     "C-BIZ-106": {
       "type": "course",
-      "tried": 72,
+      "tried": 144,
       "positive": {
         "winner": "TPL-FREELANCE-001",
         "kind": "composite_template",
-        "confidence": 0.6,
+        "confidence": 0.63,
         "won": false,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": null,
@@ -3817,7 +3959,9 @@
           "goal": "تنمية مشروعي القائم وزيادة إيراداته",
           "need": "المالية وفهم الأرقام",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام"
+          },
           "skillLevel": 2,
           "employment": "لدي مشروعي الخاص"
         }
@@ -3825,9 +3969,9 @@
       "near_miss": {
         "winner": "TPL-FREELANCE-001",
         "kind": "composite_template",
-        "confidence": 0.59,
+        "confidence": 0.62,
         "won": false,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": null,
@@ -3843,7 +3987,9 @@
           "goal": "تنمية مشروعي القائم وزيادة إيراداته",
           "need": "المالية وفهم الأرقام",
           "mastery": "غير متأكد",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام"
+          },
           "skillLevel": 3,
           "employment": "لدي مشروعي الخاص"
         }
@@ -3880,13 +4026,13 @@
     },
     "C-BIZ-107": {
       "type": "course",
-      "tried": 13,
+      "tried": 25,
       "positive": {
         "winner": "C-BIZ-107",
         "kind": "single_course",
-        "confidence": 0.82,
+        "confidence": 0.85,
         "won": true,
-        "askedCount": 9,
+        "askedCount": 10,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": null,
@@ -3902,16 +4048,18 @@
           "goal": "بدء مشروع أو مصدر دخل مستقل",
           "need": "بناء مشروعي من الصفر",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أعرف أساسيّاته وأحتاج من يوجّهني"
+          },
           "skillLevel": 2
         }
       },
       "near_miss": {
         "winner": "C-BIZ-107",
         "kind": "single_course",
-        "confidence": 0.82,
+        "confidence": 0.85,
         "won": true,
-        "askedCount": 9,
+        "askedCount": 10,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": null,
@@ -3927,16 +4075,18 @@
           "goal": "بدء مشروع أو مصدر دخل مستقل",
           "need": "بناء مشروعي من الصفر",
           "mastery": "غير متأكد",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أعرف أساسيّاته وأحتاج من يوجّهني"
+          },
           "skillLevel": 3
         }
       },
       "negative": {
         "winner": "PW-EMP-004",
         "kind": "single_pathway",
-        "confidence": 0.56,
+        "confidence": 0.52,
         "won": false,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": false,
         "excludedReasons_ar": [
           "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
@@ -3962,13 +4112,13 @@
     },
     "C-BIZ-108": {
       "type": "course",
-      "tried": 72,
+      "tried": 144,
       "positive": {
         "winner": "TPL-FREELANCE-001",
         "kind": "composite_template",
-        "confidence": 0.6,
+        "confidence": 0.63,
         "won": false,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": null,
@@ -3984,7 +4134,9 @@
           "goal": "تنمية مشروعي القائم وزيادة إيراداته",
           "need": "المالية وفهم الأرقام",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام"
+          },
           "skillLevel": 2,
           "employment": "لدي مشروعي الخاص"
         }
@@ -3992,9 +4144,9 @@
       "near_miss": {
         "winner": "TPL-FREELANCE-001",
         "kind": "composite_template",
-        "confidence": 0.59,
+        "confidence": 0.62,
         "won": false,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": null,
@@ -4010,7 +4162,9 @@
           "goal": "تنمية مشروعي القائم وزيادة إيراداته",
           "need": "المالية وفهم الأرقام",
           "mastery": "غير متأكد",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام"
+          },
           "skillLevel": 3,
           "employment": "لدي مشروعي الخاص"
         }
@@ -4047,13 +4201,13 @@
     },
     "C-MGR-106": {
       "type": "course",
-      "tried": 72,
+      "tried": 144,
       "positive": {
         "winner": "PW-EMP-005",
         "kind": "single_pathway",
         "confidence": 0.65,
         "won": false,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": null,
@@ -4069,7 +4223,9 @@
           "goal": "الاستعداد لدور قيادي",
           "need": "القيادة وإدارة الفرق",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام"
+          },
           "skillLevel": 2
         }
       },
@@ -4078,7 +4234,7 @@
         "kind": "single_pathway",
         "confidence": 0.65,
         "won": false,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": null,
@@ -4094,7 +4250,9 @@
           "goal": "الاستعداد لدور قيادي",
           "need": "القيادة وإدارة الفرق",
           "mastery": "غير متأكد",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام"
+          },
           "skillLevel": 3
         }
       },
@@ -4129,13 +4287,13 @@
     },
     "C-MGR-107": {
       "type": "course",
-      "tried": 350,
+      "tried": 700,
       "positive": {
         "winner": "PW-EMP-005",
         "kind": "single_pathway",
         "confidence": 0.65,
         "won": false,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": null,
@@ -4151,7 +4309,9 @@
           "goal": "الاستعداد لدور قيادي",
           "need": "القيادة وإدارة الفرق",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام"
+          },
           "skillLevel": 2
         }
       },
@@ -4160,7 +4320,7 @@
         "kind": "single_pathway",
         "confidence": 0.65,
         "won": false,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": null,
@@ -4176,7 +4336,9 @@
           "goal": "الاستعداد لدور قيادي",
           "need": "القيادة وإدارة الفرق",
           "mastery": "غير متأكد",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام"
+          },
           "skillLevel": 3
         }
       },
@@ -4211,13 +4373,13 @@
     },
     "C-PM-106": {
       "type": "course",
-      "tried": 12,
+      "tried": 24,
       "positive": {
         "winner": "PW-EMP-003",
         "kind": "single_pathway",
-        "confidence": 0.66,
+        "confidence": 0.68,
         "won": false,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": null,
@@ -4231,16 +4393,18 @@
           "stage": "early_career",
           "need": "إدارة المشاريع",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام"
+          },
           "skillLevel": 2
         }
       },
       "near_miss": {
         "winner": "PW-EMP-003",
         "kind": "single_pathway",
-        "confidence": 0.66,
+        "confidence": 0.68,
         "won": false,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": null,
@@ -4254,16 +4418,18 @@
           "stage": "early_career",
           "need": "إدارة المشاريع",
           "mastery": "غير متأكد",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام"
+          },
           "skillLevel": 3
         }
       },
       "negative": {
         "winner": "C-COMX-111",
         "kind": "single_course",
-        "confidence": 0.84,
+        "confidence": 0.82,
         "won": false,
-        "askedCount": 10,
+        "askedCount": 11,
         "eligible": false,
         "excludedReasons_ar": [
           "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
@@ -4289,13 +4455,13 @@
     },
     "C-PM-107": {
       "type": "course",
-      "tried": 120,
+      "tried": 240,
       "positive": {
         "winner": "TPL-DIGITAL-TRANSFORM-001",
         "kind": "composite_template",
-        "confidence": 0.58,
+        "confidence": 0.59,
         "won": false,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": null,
@@ -4311,7 +4477,9 @@
           "goal": "استخدام الذكاء الاصطناعي بفعالية أكبر",
           "need": "إدارة المشاريع",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أعرف أساسيّاته وأحتاج من يوجّهني"
+          },
           "skillLevel": 2
         }
       },
@@ -4320,7 +4488,7 @@
         "kind": "composite_template",
         "confidence": 0.58,
         "won": false,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": null,
@@ -4336,16 +4504,18 @@
           "goal": "استخدام الذكاء الاصطناعي بفعالية أكبر",
           "need": "إدارة المشاريع",
           "mastery": "غير متأكد",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أعرف أساسيّاته وأحتاج من يوجّهني"
+          },
           "skillLevel": 3
         }
       },
       "negative": {
         "winner": "C-COMX-111",
         "kind": "single_course",
-        "confidence": 0.84,
+        "confidence": 0.82,
         "won": false,
-        "askedCount": 10,
+        "askedCount": 11,
         "eligible": false,
         "excludedReasons_ar": [
           "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
@@ -4371,13 +4541,13 @@
     },
     "C-PM-108": {
       "type": "course",
-      "tried": 44,
+      "tried": 88,
       "positive": {
         "winner": "PW-EMP-003",
         "kind": "single_pathway",
-        "confidence": 0.66,
+        "confidence": 0.68,
         "won": false,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": null,
@@ -4391,16 +4561,18 @@
           "stage": "early_career",
           "need": "إدارة المشاريع",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام"
+          },
           "skillLevel": 2
         }
       },
       "near_miss": {
         "winner": "PW-EMP-003",
         "kind": "single_pathway",
-        "confidence": 0.66,
+        "confidence": 0.68,
         "won": false,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": null,
@@ -4414,16 +4586,18 @@
           "stage": "early_career",
           "need": "إدارة المشاريع",
           "mastery": "غير متأكد",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام"
+          },
           "skillLevel": 3
         }
       },
       "negative": {
         "winner": "C-COMX-111",
         "kind": "single_course",
-        "confidence": 0.84,
+        "confidence": 0.82,
         "won": false,
-        "askedCount": 10,
+        "askedCount": 11,
         "eligible": false,
         "excludedReasons_ar": [
           "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
@@ -4449,7 +4623,7 @@
     },
     "C-PSY-109": {
       "type": "course",
-      "tried": 34,
+      "tried": 68,
       "positive": {
         "winner": "PW-PSY-001",
         "kind": "advisor_referral",
@@ -4469,7 +4643,9 @@
           "stage": "early_career",
           "need": "فهم النفس والسلوك الإنساني",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "لم أمارسه بعد"
+          },
           "skillLevel": 2
         }
       },
@@ -4492,16 +4668,18 @@
           "stage": "early_career",
           "need": "فهم النفس والسلوك الإنساني",
           "mastery": "غير متأكد",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "لم أمارسه بعد"
+          },
           "skillLevel": 3
         }
       },
       "negative": {
         "winner": "C-COMX-111",
         "kind": "single_course",
-        "confidence": 0.84,
+        "confidence": 0.82,
         "won": false,
-        "askedCount": 10,
+        "askedCount": 11,
         "eligible": false,
         "excludedReasons_ar": [
           "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
@@ -4527,13 +4705,13 @@
     },
     "C-JOB-106": {
       "type": "course",
-      "tried": 132,
+      "tried": 264,
       "positive": {
         "winner": "C-COMX-111",
         "kind": "single_course",
-        "confidence": 0.84,
+        "confidence": 0.82,
         "won": false,
-        "askedCount": 10,
+        "askedCount": 11,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": null,
@@ -4549,16 +4727,18 @@
           "goal": "بناء مهارات عملية يطلبها سوق العمل",
           "need": "الجاهزية لسوق العمل — سيرة ومقابلات وملف أعمال",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "لم أمارسه بعد"
+          },
           "skillLevel": 2
         }
       },
       "near_miss": {
         "winner": "C-COMX-111",
         "kind": "single_course",
-        "confidence": 0.84,
+        "confidence": 0.82,
         "won": false,
-        "askedCount": 10,
+        "askedCount": 11,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": null,
@@ -4574,7 +4754,9 @@
           "goal": "بناء مهارات عملية يطلبها سوق العمل",
           "need": "الجاهزية لسوق العمل — سيرة ومقابلات وملف أعمال",
           "mastery": "غير متأكد",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "لم أمارسه بعد"
+          },
           "skillLevel": 3
         }
       },
@@ -4609,13 +4791,13 @@
     },
     "C-WEL-101": {
       "type": "course",
-      "tried": 88,
+      "tried": 176,
       "positive": {
         "winner": "PW-FND-003",
         "kind": "single_pathway",
-        "confidence": 0.63,
+        "confidence": 0.59,
         "won": false,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": null,
@@ -4631,16 +4813,18 @@
           "goal": "استخدام الذكاء الاصطناعي بفعالية أكبر",
           "need": "الذكاء الاصطناعي وتطبيقاته العملية",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "لم أمارسه بعد"
+          },
           "skillLevel": 2
         }
       },
       "near_miss": {
         "winner": "PW-FND-003",
         "kind": "single_pathway",
-        "confidence": 0.63,
+        "confidence": 0.59,
         "won": false,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": null,
@@ -4656,16 +4840,18 @@
           "goal": "استخدام الذكاء الاصطناعي بفعالية أكبر",
           "need": "الذكاء الاصطناعي وتطبيقاته العملية",
           "mastery": "غير متأكد",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "لم أمارسه بعد"
+          },
           "skillLevel": 3
         }
       },
       "negative": {
         "winner": "C-COMX-111",
         "kind": "single_course",
-        "confidence": 0.84,
+        "confidence": 0.82,
         "won": false,
-        "askedCount": 10,
+        "askedCount": 11,
         "eligible": false,
         "excludedReasons_ar": [
           "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
@@ -4691,63 +4877,69 @@
     },
     "C-MKT-106": {
       "type": "course",
-      "tried": 204,
+      "tried": 25,
       "positive": {
-        "winner": "PW-COM-001",
-        "kind": "single_pathway",
-        "confidence": 0.66,
-        "won": false,
-        "askedCount": 14,
+        "winner": "C-MKT-106",
+        "kind": "single_course",
+        "confidence": 0.8,
+        "won": true,
+        "askedCount": 6,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": null,
-        "winnerNetFit": 0.924,
+        "winnerNetFit": null,
         "recipe": {
           "stage": "موظف في بداية مساري المهني",
           "goal": "بناء ملف أعمال يثبت قدراتي",
-          "need": "التواصل والعرض والتأثير",
+          "need": "المبيعات والتعامل مع العملاء",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق"
         },
         "journey": {
           "stage": "early_career",
           "goal": "بناء ملف أعمال يثبت قدراتي",
-          "need": "التواصل والعرض والتأثير",
+          "need": "المبيعات والتعامل مع العملاء",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام",
+            "QC-D2-001": "عبر الإنترنت ووسائل التواصل"
+          },
           "skillLevel": 2
         }
       },
       "near_miss": {
-        "winner": "PW-COM-001",
-        "kind": "single_pathway",
-        "confidence": 0.65,
-        "won": false,
-        "askedCount": 14,
+        "winner": "C-MKT-106",
+        "kind": "single_course",
+        "confidence": 0.8,
+        "won": true,
+        "askedCount": 6,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": null,
-        "winnerNetFit": 0.911,
+        "winnerNetFit": null,
         "recipe": {
           "stage": "موظف في بداية مساري المهني",
           "goal": "بناء ملف أعمال يثبت قدراتي",
-          "need": "التواصل والعرض والتأثير",
+          "need": "المبيعات والتعامل مع العملاء",
           "mastery": "غير متأكد"
         },
         "journey": {
           "stage": "early_career",
           "goal": "بناء ملف أعمال يثبت قدراتي",
-          "need": "التواصل والعرض والتأثير",
+          "need": "المبيعات والتعامل مع العملاء",
           "mastery": "غير متأكد",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام",
+            "QC-D2-001": "عبر الإنترنت ووسائل التواصل"
+          },
           "skillLevel": 3
         }
       },
       "negative": {
         "winner": "C-COMX-111",
         "kind": "single_course",
-        "confidence": 0.84,
+        "confidence": 0.82,
         "won": false,
-        "askedCount": 10,
+        "askedCount": 11,
         "eligible": false,
         "excludedReasons_ar": [
           "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
@@ -4769,67 +4961,71 @@
           "skillLevel": 4
         }
       },
-      "verdict": "needs_academic_review"
+      "verdict": "reachable"
     },
     "C-WEB-101": {
       "type": "course",
-      "tried": 26,
+      "tried": 5,
       "positive": {
-        "winner": "PW-PRD-001",
-        "kind": "single_pathway",
-        "confidence": 0.58,
-        "won": false,
-        "askedCount": 14,
+        "winner": "C-WEB-101",
+        "kind": "single_course",
+        "confidence": 0.83,
+        "won": true,
+        "askedCount": 5,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": null,
-        "winnerNetFit": 0.715,
+        "winnerNetFit": null,
         "recipe": {
           "stage": "موظف في بداية مساري المهني",
           "goal": "بدء مشروع أو مصدر دخل مستقل",
-          "need": "إدارة المنتج وتجربة المستخدم",
+          "need": "البرمجة وتطوير الويب",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق"
         },
         "journey": {
           "stage": "early_career",
           "goal": "بدء مشروع أو مصدر دخل مستقل",
-          "need": "إدارة المنتج وتجربة المستخدم",
+          "need": "البرمجة وتطوير الويب",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أعرف أساسيّاته وأحتاج من يوجّهني"
+          },
           "skillLevel": 2
         }
       },
       "near_miss": {
-        "winner": "PW-PRD-001",
-        "kind": "single_pathway",
-        "confidence": 0.57,
-        "won": false,
-        "askedCount": 14,
+        "winner": "C-WEB-101",
+        "kind": "single_course",
+        "confidence": 0.83,
+        "won": true,
+        "askedCount": 5,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": null,
-        "winnerNetFit": 0.702,
+        "winnerNetFit": null,
         "recipe": {
           "stage": "موظف في بداية مساري المهني",
           "goal": "بدء مشروع أو مصدر دخل مستقل",
-          "need": "إدارة المنتج وتجربة المستخدم",
+          "need": "البرمجة وتطوير الويب",
           "mastery": "غير متأكد"
         },
         "journey": {
           "stage": "early_career",
           "goal": "بدء مشروع أو مصدر دخل مستقل",
-          "need": "إدارة المنتج وتجربة المستخدم",
+          "need": "البرمجة وتطوير الويب",
           "mastery": "غير متأكد",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أعرف أساسيّاته وأحتاج من يوجّهني"
+          },
           "skillLevel": 3
         }
       },
       "negative": {
         "winner": "C-COMX-111",
         "kind": "single_course",
-        "confidence": 0.84,
+        "confidence": 0.82,
         "won": false,
-        "askedCount": 10,
+        "askedCount": 11,
         "eligible": false,
         "excludedReasons_ar": [
           "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
@@ -4851,17 +5047,17 @@
           "skillLevel": 4
         }
       },
-      "verdict": "needs_academic_review"
+      "verdict": "reachable"
     },
     "C-EDU-107": {
       "type": "course",
-      "tried": 16,
+      "tried": 32,
       "positive": {
         "winner": "PW-LND-001",
         "kind": "single_pathway",
-        "confidence": 0.63,
+        "confidence": 0.67,
         "won": false,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": null,
@@ -4877,16 +5073,18 @@
           "goal": "تصميم تدريب أو برامج تعليمية",
           "need": "تصميم التعلم والتدريب",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام"
+          },
           "skillLevel": 2
         }
       },
       "near_miss": {
         "winner": "PW-LND-001",
         "kind": "single_pathway",
-        "confidence": 0.63,
+        "confidence": 0.67,
         "won": false,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": null,
@@ -4902,7 +5100,9 @@
           "goal": "تصميم تدريب أو برامج تعليمية",
           "need": "تصميم التعلم والتدريب",
           "mastery": "غير متأكد",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام"
+          },
           "skillLevel": 3
         }
       },
@@ -4937,7 +5137,7 @@
     },
     "C-LND-106": {
       "type": "course",
-      "tried": 72,
+      "tried": 144,
       "positive": {
         "winner": "PW-EMP-004",
         "kind": "single_pathway",
@@ -4957,7 +5157,9 @@
           "stage": "experienced",
           "need": "تحليل البيانات واتخاذ القرار",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام"
+          },
           "skillLevel": 2
         }
       },
@@ -4980,7 +5182,9 @@
           "stage": "experienced",
           "need": "تحليل البيانات واتخاذ القرار",
           "mastery": "غير متأكد",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام"
+          },
           "skillLevel": 3
         }
       },
@@ -5015,13 +5219,13 @@
     },
     "C-LND-107": {
       "type": "course",
-      "tried": 16,
+      "tried": 32,
       "positive": {
         "winner": "PW-LND-001",
         "kind": "single_pathway",
-        "confidence": 0.63,
+        "confidence": 0.67,
         "won": false,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": null,
@@ -5037,16 +5241,18 @@
           "goal": "تصميم تدريب أو برامج تعليمية",
           "need": "تصميم التعلم والتدريب",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام"
+          },
           "skillLevel": 2
         }
       },
       "near_miss": {
         "winner": "PW-LND-001",
         "kind": "single_pathway",
-        "confidence": 0.63,
+        "confidence": 0.67,
         "won": false,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": null,
@@ -5062,7 +5268,9 @@
           "goal": "تصميم تدريب أو برامج تعليمية",
           "need": "تصميم التعلم والتدريب",
           "mastery": "غير متأكد",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام"
+          },
           "skillLevel": 3
         }
       },
@@ -5101,9 +5309,9 @@
       "positive": {
         "winner": "C-LND-108",
         "kind": "single_course",
-        "confidence": 0.81,
+        "confidence": 0.85,
         "won": true,
-        "askedCount": 10,
+        "askedCount": 11,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": null,
@@ -5119,16 +5327,18 @@
           "goal": "استخدام الذكاء الاصطناعي بفعالية أكبر",
           "need": "الذكاء الاصطناعي وتطبيقاته العملية",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام"
+          },
           "skillLevel": 2
         }
       },
       "near_miss": {
         "winner": "C-LND-108",
         "kind": "single_course",
-        "confidence": 0.81,
+        "confidence": 0.85,
         "won": true,
-        "askedCount": 10,
+        "askedCount": 11,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": null,
@@ -5144,7 +5354,9 @@
           "goal": "استخدام الذكاء الاصطناعي بفعالية أكبر",
           "need": "الذكاء الاصطناعي وتطبيقاته العملية",
           "mastery": "غير متأكد",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام"
+          },
           "skillLevel": 3
         }
       },
@@ -5183,9 +5395,9 @@
       "positive": {
         "winner": "C-COMX-111",
         "kind": "single_course",
-        "confidence": 0.84,
+        "confidence": 0.82,
         "won": true,
-        "askedCount": 10,
+        "askedCount": 11,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": null,
@@ -5201,16 +5413,18 @@
           "goal": "بناء مهارات عملية يطلبها سوق العمل",
           "need": "الجاهزية لسوق العمل — سيرة ومقابلات وملف أعمال",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "لم أمارسه بعد"
+          },
           "skillLevel": 2
         }
       },
       "near_miss": {
         "winner": "C-COMX-111",
         "kind": "single_course",
-        "confidence": 0.84,
+        "confidence": 0.82,
         "won": true,
-        "askedCount": 10,
+        "askedCount": 11,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": null,
@@ -5226,7 +5440,9 @@
           "goal": "بناء مهارات عملية يطلبها سوق العمل",
           "need": "الجاهزية لسوق العمل — سيرة ومقابلات وملف أعمال",
           "mastery": "غير متأكد",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "لم أمارسه بعد"
+          },
           "skillLevel": 3
         }
       },
@@ -5261,13 +5477,13 @@
     },
     "C-COMX-112": {
       "type": "course",
-      "tried": 140,
+      "tried": 280,
       "positive": {
         "winner": "C-COMX-111",
         "kind": "single_course",
-        "confidence": 0.84,
+        "confidence": 0.86,
         "won": false,
-        "askedCount": 10,
+        "askedCount": 11,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": null,
@@ -5283,16 +5499,18 @@
           "goal": "بناء مهارات عملية يطلبها سوق العمل",
           "need": "الجاهزية لسوق العمل — سيرة ومقابلات وملف أعمال",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أعرف أساسيّاته وأحتاج من يوجّهني"
+          },
           "skillLevel": 2
         }
       },
       "near_miss": {
         "winner": "C-COMX-111",
         "kind": "single_course",
-        "confidence": 0.84,
+        "confidence": 0.86,
         "won": false,
-        "askedCount": 10,
+        "askedCount": 11,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": null,
@@ -5308,7 +5526,9 @@
           "goal": "بناء مهارات عملية يطلبها سوق العمل",
           "need": "الجاهزية لسوق العمل — سيرة ومقابلات وملف أعمال",
           "mastery": "غير متأكد",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أعرف أساسيّاته وأحتاج من يوجّهني"
+          },
           "skillLevel": 3
         }
       },
@@ -5343,13 +5563,13 @@
     },
     "C-COMX-113": {
       "type": "course",
-      "tried": 49,
+      "tried": 97,
       "positive": {
         "winner": "C-COMX-113",
         "kind": "single_course",
         "confidence": 0.77,
         "won": true,
-        "askedCount": 10,
+        "askedCount": 11,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": null,
@@ -5365,7 +5585,9 @@
           "goal": "الانتقال إلى مجال جديد",
           "need": "تحديد اتجاهي المهني أصلًا",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أعرف أساسيّاته وأحتاج من يوجّهني"
+          },
           "skillLevel": 2
         }
       },
@@ -5374,7 +5596,7 @@
         "kind": "single_course",
         "confidence": 0.77,
         "won": true,
-        "askedCount": 10,
+        "askedCount": 11,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": null,
@@ -5390,16 +5612,18 @@
           "goal": "الانتقال إلى مجال جديد",
           "need": "تحديد اتجاهي المهني أصلًا",
           "mastery": "غير متأكد",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أعرف أساسيّاته وأحتاج من يوجّهني"
+          },
           "skillLevel": 3
         }
       },
       "negative": {
         "winner": "C-COMX-111",
         "kind": "single_course",
-        "confidence": 0.84,
+        "confidence": 0.82,
         "won": false,
-        "askedCount": 10,
+        "askedCount": 11,
         "eligible": false,
         "excludedReasons_ar": [
           "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
@@ -5425,7 +5649,7 @@
     },
     "C-COMX-114": {
       "type": "course",
-      "tried": 132,
+      "tried": 264,
       "positive": {
         "winner": "PW-COM-001",
         "kind": "single_pathway",
@@ -5447,7 +5671,9 @@
           "goal": "بناء ملف أعمال يثبت قدراتي",
           "need": "تحديد اتجاهي المهني أصلًا",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام"
+          },
           "skillLevel": 2
         }
       },
@@ -5472,16 +5698,18 @@
           "goal": "بناء ملف أعمال يثبت قدراتي",
           "need": "تحديد اتجاهي المهني أصلًا",
           "mastery": "غير متأكد",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام"
+          },
           "skillLevel": 3
         }
       },
       "negative": {
         "winner": "C-COMX-111",
         "kind": "single_course",
-        "confidence": 0.84,
+        "confidence": 0.82,
         "won": false,
-        "askedCount": 10,
+        "askedCount": 11,
         "eligible": false,
         "excludedReasons_ar": [
           "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
@@ -5507,13 +5735,13 @@
     },
     "C-MGR-108": {
       "type": "course",
-      "tried": 72,
+      "tried": 144,
       "positive": {
         "winner": "PW-EMP-005",
         "kind": "single_pathway",
         "confidence": 0.65,
         "won": false,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": null,
@@ -5529,7 +5757,9 @@
           "goal": "الاستعداد لدور قيادي",
           "need": "القيادة وإدارة الفرق",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام"
+          },
           "skillLevel": 2
         }
       },
@@ -5538,7 +5768,7 @@
         "kind": "single_pathway",
         "confidence": 0.65,
         "won": false,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": null,
@@ -5554,7 +5784,9 @@
           "goal": "الاستعداد لدور قيادي",
           "need": "القيادة وإدارة الفرق",
           "mastery": "غير متأكد",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام"
+          },
           "skillLevel": 3
         }
       },
@@ -5589,13 +5821,13 @@
     },
     "C-SCM-106": {
       "type": "course",
-      "tried": 48,
+      "tried": 96,
       "positive": {
         "winner": "PW-OPS-001",
         "kind": "single_pathway",
-        "confidence": 0.56,
+        "confidence": 0.55,
         "won": false,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": null,
@@ -5609,16 +5841,18 @@
           "stage": "experienced",
           "need": "العمليات وتحسين الإجراءات",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أقود غيري فيه أو أعلّمه"
+          },
           "skillLevel": 2
         }
       },
       "near_miss": {
         "winner": "PW-OPS-001",
         "kind": "single_pathway",
-        "confidence": 0.55,
+        "confidence": 0.57,
         "won": false,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": null,
@@ -5632,7 +5866,9 @@
           "stage": "experienced",
           "need": "العمليات وتحسين الإجراءات",
           "mastery": "غير متأكد",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أقود غيري فيه أو أعلّمه"
+          },
           "skillLevel": 3
         }
       },
@@ -5667,59 +5903,65 @@
     },
     "C-CYB-106": {
       "type": "course",
-      "tried": 6,
+      "tried": 1,
       "positive": {
-        "winner": "C-COMX-111",
+        "winner": "C-CYB-106",
         "kind": "single_course",
-        "confidence": 0.84,
-        "won": false,
-        "askedCount": 10,
-        "eligible": false,
-        "excludedReasons_ar": [
-          "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
-        ],
+        "confidence": 0.82,
+        "won": true,
+        "askedCount": 6,
+        "eligible": true,
+        "excludedReasons_ar": [],
         "entityNetFit": null,
         "winnerNetFit": null,
         "recipe": {
           "stage": "موظف في بداية مساري المهني",
+          "need": "الأمن السيبراني وحماية البيانات",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق"
         },
         "journey": {
           "stage": "early_career",
+          "need": "الأمن السيبراني وحماية البيانات",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أعرف أساسيّاته وأحتاج من يوجّهني",
+            "QC-D1-001": "الشبكاتُ وأمنُها"
+          },
           "skillLevel": 2
         }
       },
       "near_miss": {
-        "winner": "C-COMX-111",
+        "winner": "C-CYB-106",
         "kind": "single_course",
-        "confidence": 0.84,
-        "won": false,
-        "askedCount": 10,
-        "eligible": false,
-        "excludedReasons_ar": [
-          "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
-        ],
+        "confidence": 0.82,
+        "won": true,
+        "askedCount": 6,
+        "eligible": true,
+        "excludedReasons_ar": [],
         "entityNetFit": null,
         "winnerNetFit": null,
         "recipe": {
           "stage": "موظف في بداية مساري المهني",
+          "need": "الأمن السيبراني وحماية البيانات",
           "mastery": "غير متأكد"
         },
         "journey": {
           "stage": "early_career",
+          "need": "الأمن السيبراني وحماية البيانات",
           "mastery": "غير متأكد",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أعرف أساسيّاته وأحتاج من يوجّهني",
+            "QC-D1-001": "الشبكاتُ وأمنُها"
+          },
           "skillLevel": 3
         }
       },
       "negative": {
         "winner": "C-COMX-111",
         "kind": "single_course",
-        "confidence": 0.84,
+        "confidence": 0.82,
         "won": false,
-        "askedCount": 10,
+        "askedCount": 11,
         "eligible": false,
         "excludedReasons_ar": [
           "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
@@ -5741,67 +5983,73 @@
           "skillLevel": 4
         }
       },
-      "verdict": "needs_academic_review"
+      "verdict": "reachable"
     },
     "C-CYB-107": {
       "type": "course",
-      "tried": 72,
+      "tried": 9,
       "positive": {
-        "winner": "PW-FND-003",
-        "kind": "single_pathway",
-        "confidence": 0.63,
-        "won": false,
-        "askedCount": 14,
+        "winner": "C-CYB-107",
+        "kind": "single_course",
+        "confidence": 0.83,
+        "won": true,
+        "askedCount": 6,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": null,
-        "winnerNetFit": 0.958,
+        "winnerNetFit": null,
         "recipe": {
           "stage": "موظف في بداية مساري المهني",
           "goal": "استخدام الذكاء الاصطناعي بفعالية أكبر",
-          "need": "الذكاء الاصطناعي وتطبيقاته العملية",
+          "need": "الأمن السيبراني وحماية البيانات",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق"
         },
         "journey": {
           "stage": "early_career",
           "goal": "استخدام الذكاء الاصطناعي بفعالية أكبر",
-          "need": "الذكاء الاصطناعي وتطبيقاته العملية",
+          "need": "الأمن السيبراني وحماية البيانات",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أعرف أساسيّاته وأحتاج من يوجّهني",
+            "QC-D1-001": "الحوسبةُ السحابيّة"
+          },
           "skillLevel": 2
         }
       },
       "near_miss": {
-        "winner": "PW-FND-003",
-        "kind": "single_pathway",
-        "confidence": 0.63,
-        "won": false,
-        "askedCount": 14,
+        "winner": "C-CYB-107",
+        "kind": "single_course",
+        "confidence": 0.83,
+        "won": true,
+        "askedCount": 6,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": null,
-        "winnerNetFit": 0.947,
+        "winnerNetFit": null,
         "recipe": {
           "stage": "موظف في بداية مساري المهني",
           "goal": "استخدام الذكاء الاصطناعي بفعالية أكبر",
-          "need": "الذكاء الاصطناعي وتطبيقاته العملية",
+          "need": "الأمن السيبراني وحماية البيانات",
           "mastery": "غير متأكد"
         },
         "journey": {
           "stage": "early_career",
           "goal": "استخدام الذكاء الاصطناعي بفعالية أكبر",
-          "need": "الذكاء الاصطناعي وتطبيقاته العملية",
+          "need": "الأمن السيبراني وحماية البيانات",
           "mastery": "غير متأكد",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أعرف أساسيّاته وأحتاج من يوجّهني",
+            "QC-D1-001": "الحوسبةُ السحابيّة"
+          },
           "skillLevel": 3
         }
       },
       "negative": {
         "winner": "C-COMX-111",
         "kind": "single_course",
-        "confidence": 0.84,
+        "confidence": 0.82,
         "won": false,
-        "askedCount": 10,
+        "askedCount": 11,
         "eligible": false,
         "excludedReasons_ar": [
           "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
@@ -5823,17 +6071,17 @@
           "skillLevel": 4
         }
       },
-      "verdict": "needs_academic_review"
+      "verdict": "reachable"
     },
     "C-SAL-106": {
       "type": "course",
-      "tried": 72,
+      "tried": 9,
       "positive": {
-        "winner": "C-COMX-111",
+        "winner": "C-SAL-106",
         "kind": "single_course",
-        "confidence": 0.84,
-        "won": false,
-        "askedCount": 10,
+        "confidence": 0.83,
+        "won": true,
+        "askedCount": 6,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": null,
@@ -5841,24 +6089,27 @@
         "recipe": {
           "stage": "موظف في بداية مساري المهني",
           "goal": "بناء مهارات عملية يطلبها سوق العمل",
-          "need": "الجاهزية لسوق العمل — سيرة ومقابلات وملف أعمال",
+          "need": "المبيعات والتعامل مع العملاء",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق"
         },
         "journey": {
           "stage": "early_career",
           "goal": "بناء مهارات عملية يطلبها سوق العمل",
-          "need": "الجاهزية لسوق العمل — سيرة ومقابلات وملف أعمال",
+          "need": "المبيعات والتعامل مع العملاء",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "لم أمارسه بعد",
+            "QC-D2-001": "في متجرٍ أو صالة عرض"
+          },
           "skillLevel": 2
         }
       },
       "near_miss": {
-        "winner": "C-COMX-111",
+        "winner": "C-SAL-106",
         "kind": "single_course",
-        "confidence": 0.84,
-        "won": false,
-        "askedCount": 10,
+        "confidence": 0.83,
+        "won": true,
+        "askedCount": 6,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": null,
@@ -5866,15 +6117,18 @@
         "recipe": {
           "stage": "موظف في بداية مساري المهني",
           "goal": "بناء مهارات عملية يطلبها سوق العمل",
-          "need": "الجاهزية لسوق العمل — سيرة ومقابلات وملف أعمال",
+          "need": "المبيعات والتعامل مع العملاء",
           "mastery": "غير متأكد"
         },
         "journey": {
           "stage": "early_career",
           "goal": "بناء مهارات عملية يطلبها سوق العمل",
-          "need": "الجاهزية لسوق العمل — سيرة ومقابلات وملف أعمال",
+          "need": "المبيعات والتعامل مع العملاء",
           "mastery": "غير متأكد",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "لم أمارسه بعد",
+            "QC-D2-001": "في متجرٍ أو صالة عرض"
+          },
           "skillLevel": 3
         }
       },
@@ -5905,17 +6159,17 @@
           "skillLevel": 4
         }
       },
-      "verdict": "needs_academic_review"
+      "verdict": "reachable"
     },
     "C-COMX-115": {
       "type": "course",
-      "tried": 84,
+      "tried": 168,
       "positive": {
         "winner": "PW-COM-001",
         "kind": "single_pathway",
-        "confidence": 0.66,
+        "confidence": 0.69,
         "won": false,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": null,
@@ -5931,16 +6185,18 @@
           "goal": "بناء ملف أعمال يثبت قدراتي",
           "need": "التواصل والعرض والتأثير",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام"
+          },
           "skillLevel": 2
         }
       },
       "near_miss": {
         "winner": "PW-COM-001",
         "kind": "single_pathway",
-        "confidence": 0.65,
+        "confidence": 0.68,
         "won": false,
-        "askedCount": 14,
+        "askedCount": 15,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": null,
@@ -5956,16 +6212,18 @@
           "goal": "بناء ملف أعمال يثبت قدراتي",
           "need": "التواصل والعرض والتأثير",
           "mastery": "غير متأكد",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أمارسه وحدي بانتظام"
+          },
           "skillLevel": 3
         }
       },
       "negative": {
         "winner": "C-COMX-111",
         "kind": "single_course",
-        "confidence": 0.84,
+        "confidence": 0.82,
         "won": false,
-        "askedCount": 10,
+        "askedCount": 11,
         "eligible": false,
         "excludedReasons_ar": [
           "الكيان خارج مجال حاجتك التي ظهرت من إجاباتك."
@@ -5991,13 +6249,13 @@
     },
     "C-COMX-116": {
       "type": "course",
-      "tried": 264,
+      "tried": 528,
       "positive": {
         "winner": "C-COMX-111",
         "kind": "single_course",
-        "confidence": 0.84,
+        "confidence": 0.86,
         "won": false,
-        "askedCount": 10,
+        "askedCount": 11,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": null,
@@ -6013,16 +6271,18 @@
           "goal": "بناء مهارات عملية يطلبها سوق العمل",
           "need": "الجاهزية لسوق العمل — سيرة ومقابلات وملف أعمال",
           "mastery": "أن أتقن مهارة أو تخصصًا واحدًا بعمق",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أعرف أساسيّاته وأحتاج من يوجّهني"
+          },
           "skillLevel": 2
         }
       },
       "near_miss": {
         "winner": "C-COMX-111",
         "kind": "single_course",
-        "confidence": 0.84,
+        "confidence": 0.86,
         "won": false,
-        "askedCount": 10,
+        "askedCount": 11,
         "eligible": true,
         "excludedReasons_ar": [],
         "entityNetFit": null,
@@ -6038,7 +6298,9 @@
           "goal": "بناء مهارات عملية يطلبها سوق العمل",
           "need": "الجاهزية لسوق العمل — سيرة ومقابلات وملف أعمال",
           "mastery": "غير متأكد",
-          "answers": {},
+          "answers": {
+            "QC-L1-001": "أعرف أساسيّاته وأحتاج من يوجّهني"
+          },
           "skillLevel": 3
         }
       },
@@ -6074,21 +6336,21 @@
   },
   "variants": {
     "total": 730,
-    "invalid_kind": 100,
+    "invalid_kind": 0,
     "alien_winner": 0,
     "determinism_checked": 81,
     "determinism_failures": 0,
     "determinism_log": [],
     "kind_distribution": {
-      "single_pathway": 436,
+      "single_pathway": 446,
       "advisor_referral": 34,
       "composite_template": 160,
-      "single_course": 100
+      "single_course": 90
     },
     "winner_distribution": {
       "PW-STU-003": 16,
       "PW-STU-002": 10,
-      "PW-FND-003": 32,
+      "PW-FND-003": 22,
       "PW-EMP-004": 26,
       "PW-EMP-003": 30,
       "PW-EMP-005": 50,
@@ -6096,12 +6358,12 @@
       "PW-BIZ-001": 10,
       "PW-AUT-001": 10,
       "PW-MKT-001": 10,
-      "PW-SAL-001": 14,
+      "PW-SAL-001": 24,
       "PW-HR-001": 10,
       "PW-FIN-001": 10,
-      "PW-PRD-001": 18,
+      "PW-PRD-001": 8,
       "PW-OPS-001": 24,
-      "PW-CYB-001": 10,
+      "PW-CYB-001": 30,
       "PW-SCM-001": 10,
       "PW-COM-001": 50,
       "PW-NEG-001": 10,
@@ -6131,7 +6393,8 @@
       "C-COMX-108": 4,
       "C-COMX-115": 6,
       "C-BIZ-107": 10,
-      "C-COMX-111": 60,
+      "C-COMX-111": 40,
+      "C-WEB-101": 10,
       "C-LND-108": 10,
       "C-COMX-113": 10
     }

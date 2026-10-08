@@ -43,6 +43,9 @@ import Button from "@/components/ui/Button";
 import { Card, Inset, Panel } from "@/components/ui/Surface";
 import { UpcomingTermLine } from "@/components/UpcomingTermNote";
 import DiscountProofLink from '@/components/DiscountProofLink'
+import LevelLine from "@/components/LevelLine";
+import { levelSummaryForCourse } from "@/application/diagnostic/level-summary";
+import { loadLastResult } from "@/application/diagnostic/session-store";
 /* سعر الدورة الواحدة في القوائم: رقمٌ من شعبةٍ حقيقية، أو «مع الشعبة» —
    ولا تقدير بينهما. */
 /** ترتيبُ الدورة المضافة بالكلمة: «أضف دورة ثالثة» لا «أضف الدورة ٣» —
@@ -115,6 +118,8 @@ function CoursePathPage({ courseId }: { courseId: string }) {
     if (!ref) return;
     try { sessionStorage.setItem(REFERRAL_KEY, ref); } catch { /* تخزينٌ معطَّل — يمرّ الشراءُ عامّا */ }
   }, [searchParams]);
+  /* سطرُ المستوى — يُقرأ مرّةً من نتيجة التشخيص المحفوظة على الجهاز */
+  const [diagLevel] = useState(() => levelSummaryForCourse(courseId, loadLastResult<{ resultJson: Record<string, unknown> }>()?.resultJson));
   const [pending, setPending] = useState<Intent | null>(null);
   const [name, setName] = useState("");
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "failed">("idle");
@@ -313,6 +318,8 @@ function CoursePathPage({ courseId }: { courseId: string }) {
           <CourseTitle as="h1" name={anchor.name} termEn={anchor.termEn} className="mt-3 text-xl font-black leading-snug md:text-2xl" termClassName="text-xs text-muted-foreground" />
           <p className="mt-1.5 text-read text-muted-foreground">من مسار «{anchor.pathwayName}»</p>
           {full?.shortPromise && <p className="mt-3 text-sm leading-relaxed text-foreground">{full.shortPromise}</p>}
+          {/* مستواك كما فهمه التشخيص — حين قادك إلى هذه الدورة (٨ أكتوبر ٢٠٢٦) */}
+          {diagLevel && <LevelLine summary={diagLevel} className="mt-4" />}
 
           <div className="mt-4 flex flex-wrap items-center gap-2 text-xs">
             <span className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 font-bold text-foreground">
