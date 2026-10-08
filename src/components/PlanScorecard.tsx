@@ -23,7 +23,7 @@ const LOOK: Record<ScoreStatus, { icon: typeof CheckCircle2; word: string; cls: 
 const STEP_ORDER: WorkspaceStep[] = ["identity", "modules", "workbooks", "sessions", "assignments"];
 const stepLabel = (s: WorkspaceStep) => (s in STAGE_LABELS ? STAGE_LABELS[s as keyof typeof STAGE_LABELS] : s);
 
-export function scorecardCounts(items: readonly ScoreItem[]) {
+function scorecardCounts(items: readonly ScoreItem[]) {
   return {
     ok: items.filter((i) => i.status === "ok").length,
     advice: items.filter((i) => i.status === "advice").length,
