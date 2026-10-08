@@ -108,7 +108,7 @@ export const allSections: AdminNavSection[] = [
       { to: "/admin/quality", label: "جودة التشخيص", icon: FlaskConical, need: "diagnostic.simulate",
         descAr: "محاكاةُ المحرّك التشخيصيّ: أيُّ مسارٍ يُرشَّح لأيّ حال، ولمَ" },
       { to: "/admin/placement-review", label: "اختبار تحديد المستوى", icon: Languages, need: "placement.review",
-        descAr: "أسئلةُ اختبار الإنجليزيّة: تُراجَع وتُعتمَد قبل أن يُفتح للمتعلّمين" },
+        descAr: "أسئلةُ اختبار الإنجليزيّة وفحوصِ المهارة في المجالات: تُعدَّل وتُعتمَد أو تُسقَط" },
     ],
   },
   /* ═══ ولماذا انقسم «المدرّبون» مجموعتين ═══

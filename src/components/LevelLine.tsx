@@ -11,9 +11,19 @@ import { Gauge } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { Inset } from "@/components/ui/Surface";
 import { levelLineText, reviseLevelHref, type LevelSummary } from "@/application/diagnostic/level-summary";
+import { Q } from "@/domain/diagnostic/v2_1/maps";
+import { FIELD_LEVELS } from "@/domain/diagnostic/v2_1/focus";
+import { fieldCheckOfNeed } from "@/domain/placement/field-check";
+import { skillCheckHref } from "@/application/placement/links";
+import { usePlacementOpen } from "@/services/placement";
 
 export default function LevelLine({ summary, className = "" }: { summary: LevelSummary; className?: string }) {
   const [open, setOpen] = useState(false);
+  /* فحصُ المهارة في المجال — اختياريٌّ من هنا كاختبار الإنجليزيّة (٨ أكتوبر ٢٠٢٦).
+     يُعرض لمجالٍ له فحصٌ مفتوح، ولا يُعرض بعد أن قيس المستوى به. */
+  const check = summary.question_id === Q.FIELD_LEVEL ? fieldCheckOfNeed(summary.need_id) : null;
+  const checkOpen = usePlacementOpen(check?.subject ?? null);
+  const current = summary.options.find((o) => o.option_id === summary.current_option_id);
   const { level_ar, why_ar } = levelLineText(summary);
   const others = summary.options.filter((o) => o.option_id !== summary.current_option_id);
   return (
@@ -23,6 +33,12 @@ export default function LevelLine({ summary, className = "" }: { summary: LevelS
         {level_ar}
       </p>
       <p className="mt-1 text-read leading-5 text-muted-foreground">{why_ar}</p>
+      {check && checkOpen && !summary.measured && (
+        <Link to={skillCheckHref(check.subject, FIELD_LEVELS.find((l) => l.label_ar === current?.label_ar)?.code)}
+          className="mt-1 block text-read font-bold text-teal-light-ink underline-offset-4 hover:underline">
+          قِس مستواك بفحصٍ مجّانيٍّ في ثلاث دقائق
+        </Link>
+      )}
       <Button tone="ghost" size="sm" className="mt-1 -mr-4" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
         ليس دقيقا؟ غيّر مستواي
       </Button>

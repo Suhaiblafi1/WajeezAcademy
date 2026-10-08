@@ -17,11 +17,13 @@ import { Card, Inset, Panel } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import TabBar from "@/components/ui/TabBar";
 import { MIN_APPROVED_PER_LEVEL } from "@/domain/placement/english-placement";
+import { FIELD_CHECKS } from "@/domain/placement/field-check";
+import { FIELD_LEVELS } from "@/domain/diagnostic/v2_1/focus";
 
 interface ReviewItem {
   id: string;
   level: string;
-  skill: "grammar" | "vocabulary" | "reading";
+  skill: "grammar" | "vocabulary" | "reading" | "knowledge";
   passage: string | null;
   stem: string;
   options: string[];
@@ -37,8 +39,17 @@ interface ReviewList {
 }
 
 const SKILL_AR: Record<ReviewItem["skill"], string> = {
-  grammar: "قواعد", vocabulary: "مفردات", reading: "قراءة",
+  grammar: "قواعد", vocabulary: "مفردات", reading: "قراءة", knowledge: "معرفةٌ وتطبيق",
 };
+
+/* الموضوعات: الإنجليزيّةُ وفحوصُ المجالات الأربعة (٨ أكتوبر ٢٠٢٦). والإنجليزيّةُ تُراجَع
+   قبل أن تُفتح؛ والمجالاتُ مفتوحةٌ منذ استيرادها، تُراجَع بعدُ بقرار صاحب المنصّة. */
+const SUBJECTS = [
+  { id: "english", label: "الإنجليزيّة" },
+  ...FIELD_CHECKS.map((c) => ({ id: c.subject as string, label: c.title_ar })),
+];
+const levelLabel = (subject: string, level: string) =>
+  subject === "english" ? level : FIELD_LEVELS.find((l) => l.code === level)?.name_ar ?? level;
 
 const TABS = [
   { id: "draft", label: "تنتظر المراجعة" },
@@ -54,6 +65,7 @@ interface Draft {
 }
 
 export default function PlacementReviewBoard() {
+  const [subject, setSubject] = useState("english");
   const [data, setData] = useState<ReviewList | null>(null);
   const [offline, setOffline] = useState<string | null>(null);
   const [status, setStatus] = useState("draft");
@@ -65,11 +77,20 @@ export default function PlacementReviewBoard() {
   const load = useCallback(async () => {
     setOffline(null);
     try {
-      setData(await apiGet<ReviewList>("/api/placement/english/review"));
+      setData(await apiGet<ReviewList>(`/api/placement/${subject}/review`));
     } catch (e) {
       setOffline(e instanceof ApiError ? e.message : "الخادم غير متصل");
     }
-  }, []);
+  }, [subject]);
+
+  /* ما ينتظر في الإنجليزيّة مسوّدة، وفي المجالات معتمَدٌ يُقرأ — فيُفتح على ما فيه العمل */
+  const pickSubject = (id: string) => {
+    setSubject(id);
+    setStatus(id === "english" ? "draft" : "approved");
+    setEditing(null);
+    setDraft(null);
+    setData(null);
+  };
 
   useEffect(() => { void load(); }, [load]);
 
@@ -78,7 +99,7 @@ export default function PlacementReviewBoard() {
     setBusy(id);
     try {
       const note = notes[id]?.trim();
-      await apiPost(`/api/placement/english/review/${id}/decide`, { approve, ...(note ? { note } : {}) });
+      await apiPost(`/api/placement/${subject}/review/${id}/decide`, { approve, ...(note ? { note } : {}) });
       toast(approve ? "اعتُمد السؤال — صار في الاختبار" : "أُسقط السؤال — خرج من الاختبار ويُعاد متى شئت");
       await load();
     } catch (e) {
@@ -97,11 +118,11 @@ export default function PlacementReviewBoard() {
     if (!draft || busy) return;
     setBusy(i.id);
     try {
-      await apiPatch(`/api/placement/english/review/${i.id}`, {
-        stemEn: draft.stem,
+      await apiPatch(`/api/placement/${subject}/review/${i.id}`, {
+        stem: draft.stem,
         options: draft.options,
         answerIndex: draft.answer,
-        ...(i.skill === "reading" ? { passageEn: draft.passage } : {}),
+        ...(i.skill === "reading" ? { passage: draft.passage } : {}),
       });
       toast("حُفظ التعديل — وحالُ السؤال كما كانت");
       setEditing(null);
@@ -122,14 +143,20 @@ export default function PlacementReviewBoard() {
       </Panel>
     );
   }
+  const subjects = (
+    <TabBar className="mb-5" ariaLabel="الموضوع" value={subject} onChange={pickSubject}
+      items={SUBJECTS.map((t) => ({ id: t.id, label: t.label }))} />
+  );
   if (!data) {
-    return <div className="grid place-items-center py-16"><Loader2 className="h-8 w-8 animate-spin text-teal-light-ink" /></div>;
+    return <div>{subjects}<div className="grid place-items-center py-16"><Loader2 className="h-8 w-8 animate-spin text-teal-light-ink" /></div></div>;
   }
 
   const rows = data.items.filter((i) => i.status === status);
+  const dir = subject === "english" ? "ltr" : "rtl";
 
   return (
     <div>
+      {subjects}
       <Card tone={data.open ? "positive" : "accent"} className="mb-5">
         <p className="text-read leading-7 text-foreground">
           {data.open
@@ -140,7 +167,7 @@ export default function PlacementReviewBoard() {
           {data.per_level.map((l) => (
             <li key={l.level}>
               <Inset className={`px-3 py-1 text-fine font-bold ${l.approved >= MIN_APPROVED_PER_LEVEL ? "text-teal-light-ink" : "text-muted-foreground"}`}>
-                <span dir="ltr">{l.level}</span> · {l.approved} معتمَد من {l.total}
+                <span dir={dir}>{levelLabel(subject, l.level)}</span> · {l.approved} معتمَد من {l.total}
               </Inset>
             </li>
           ))}
@@ -160,13 +187,13 @@ export default function PlacementReviewBoard() {
           {rows.map((i) => (
             <Card as="li" key={i.id}>
               <div className="flex flex-wrap items-center gap-2 text-fine">
-                <span dir="ltr" className="rounded-full border border-white/10 px-2 py-0.5 font-black text-foreground">{i.level}</span>
+                <span dir={dir} className="rounded-full border border-white/10 px-2 py-0.5 font-black text-foreground">{levelLabel(subject, i.level)}</span>
                 <span className="rounded-full border border-white/10 px-2 py-0.5 font-bold text-muted-foreground">{SKILL_AR[i.skill]}</span>
                 <span dir="ltr" className="text-muted-foreground/60">{i.id}</span>
               </div>
 
               {editing === i.id && draft ? (
-                <div dir="ltr" className="mt-3 space-y-2 text-left">
+                <div dir={dir} className="mt-3 space-y-2 text-start">
                   {i.skill === "reading" && (
                     <Inset as="textarea" value={draft.passage} rows={3} aria-label="Passage"
                       onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setDraft({ ...draft, passage: e.target.value })}
@@ -190,7 +217,7 @@ export default function PlacementReviewBoard() {
                   </div>
                 </div>
               ) : (
-                <div dir="ltr" className="mt-3 text-left">
+                <div dir={dir} className="mt-3 text-start">
                   {i.passage && <Inset as="p" className="mb-2 p-3 text-sm leading-7 text-muted-foreground">{i.passage}</Inset>}
                   <p className="text-sm font-bold leading-7 text-foreground">{i.stem}</p>
                   <ol className="mt-2 space-y-1">

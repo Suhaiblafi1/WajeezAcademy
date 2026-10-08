@@ -27,8 +27,10 @@ export interface LevelSummary {
   answer_ar: string
   current_option_id: string
   options: LevelOption[]
-  /** قاسه اختبارُ تحديد المستوى — لا وصفه المتعلّم (الإصدارُ الثالث) */
+  /** قاسه اختبارُ تحديد المستوى أو فحصُ المهارة — لا وصفه المتعلّم (الإصدارُ الثالث) */
   measured?: boolean
+  /** الاحتياجُ الذي سُئل عنه — ليُعرف أيُّ فحصٍ يقيسه */
+  need_id?: string
 }
 
 /** الأسئلةُ التي يُعدَّل بها المستوى من النتيجة — لا غيرُها */
@@ -40,7 +42,12 @@ type Facts = Record<string, { value: unknown } | undefined>
 
 /** `measuredEnglish`: ما قاله اختبارُ تحديد المستوى على هذا الجهاز — إن طابق مستوى
     الخطّة فالسطرُ يقول «مقيس» لا «موصوف» (`src/application/placement/measured.ts`) */
-export function levelSummaryOf(facts: Facts, measuredEnglish: string | null = null): LevelSummary | null {
+export function levelSummaryOf(
+  facts: Facts,
+  measuredEnglish: string | null = null,
+  /** مستوى المجال المقيسُ بفحص المهارة لكلّ احتياج (`measuredFields`) */
+  measuredFields: Readonly<Record<string, string>> = {},
+): LevelSummary | null {
   const english = facts['english_level']?.value
   if (facts['need_id']?.value === 'need_english' && typeof english === 'string') {
     const i = ENGLISH_LEVELS.findIndex((l) => l.code === english)
@@ -62,6 +69,8 @@ export function levelSummaryOf(facts: Facts, measuredEnglish: string | null = nu
   const label = needByCode(need)?.label_ar
   if (i < 0 || !label) return null
   return {
+    ...(measuredFields[need] === field ? { measured: true } : {}),
+    need_id: need,
     question_id: Q.FIELD_LEVEL,
     field_ar: label,
     level_name_ar: FIELD_LEVELS[i].name_ar,
@@ -97,7 +106,9 @@ export function levelLabelOf(questionId: string, optionId: string): string | nul
 export function levelLineText(s: LevelSummary): { level_ar: string; why_ar: string } {
   return {
     level_ar: `مستواك في «${s.field_ar}»: ${s.level_name_ar}`,
-    why_ar: s.measured ? 'بناءً على اختبار تحديد المستوى المجانيّ' : `بناءً على جوابك: «${s.answer_ar}»`,
+    why_ar: !s.measured
+      ? `بناءً على جوابك: «${s.answer_ar}»`
+      : s.question_id === Q.FIELD_LEVEL ? 'بناءً على فحص المهارة المجانيّ' : 'بناءً على اختبار تحديد المستوى المجانيّ',
   }
 }
 

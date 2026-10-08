@@ -7,6 +7,9 @@
      ٣) المراجعةُ خلف `placement.review`: مدرّبٌ بلا منحٍ يُردّ، وبالمنح يراجع.
      ٤) بعد الاعتماد يُفتح — والجوابُ الصحيحُ لا يغادر الخادم، والتصحيحُ يحدّد المستوى.
 
+     ٥) وفحوصُ المجالات تُستورَد معتمَدةً فتُفتح فورا («تُفتح فورا وتُراجَع بعدُ»)،
+        وكلُّ موضوعٍ في بنكه لا يُخلَط بغيره.
+
    ⚠ أُثبت سقوطُه: (أ) حُدّث الصفُّ في الاستيراد (`update` بالنصّ) فسقط ١،
    (ب) أُرسل السؤالُ كاملا في المسار العامّ فسقط ٤، (ج) نُزع `preHandler` من
    مسار المراجعة فسقط ٣ — ثمّ أُعيد كلٌّ فخضرّ. */
@@ -21,6 +24,8 @@ import { SESSION_COOKIE } from '../../http/auth-plugin'
 import { importPlacementDraft } from '../../catalog/placement-importer'
 import draft from '../../../src/data/placement/english-placement.draft.v1.json'
 import type { PlacementItem } from '../../../src/domain/placement/english-placement'
+import fieldDraft from '../../../src/data/placement/field-checks.draft.v1.json'
+import type { FieldItem } from '../../../src/domain/placement/field-check'
 
 let prisma: PrismaClient
 let auth: AuthService
@@ -30,6 +35,8 @@ let reviewerCookie = ''
 let managerCookie = ''
 
 const items = (draft as { items: PlacementItem[] }).items
+const fieldItems = (fieldDraft as { items: FieldItem[] }).items
+const ALL = items.length + fieldItems.length
 
 async function cookieFor(email: string, password: string): Promise<string> {
   const { token } = await auth.login(email, password)
@@ -63,13 +70,15 @@ beforeAll(async () => {
 describe('١) الاستيرادُ يُنشئ ولا يُحدّث', () => {
   it('أوّلُ استيرادٍ يُنشئ الثلاثين مسوّدة، والثاني لا يمسّ تعديلَ المراجع', async () => {
     await prisma.placementQuestion.deleteMany({})
-    expect(await importPlacementDraft(prisma)).toEqual({ created: items.length, kept: 0 })
-    expect(await prisma.placementQuestion.count({ where: { status: 'draft' } })).toBe(items.length)
+    expect(await importPlacementDraft(prisma)).toEqual({ created: ALL, kept: 0 })
+    expect(await prisma.placementQuestion.count({ where: { subject: 'english', status: 'draft' } })).toBe(items.length)
+    /* وفحوصُ المجالات معتمَدةٌ من أوّل استيراد — «تُفتح فورا وتُراجَع بعدُ» */
+    expect(await prisma.placementQuestion.count({ where: { subject: { not: 'english' }, status: 'approved' } })).toBe(fieldItems.length)
 
-    await prisma.placementQuestion.update({ where: { id: items[0].id }, data: { stemEn: 'Edited by reviewer', status: 'approved' } })
-    expect(await importPlacementDraft(prisma)).toEqual({ created: 0, kept: items.length })
+    await prisma.placementQuestion.update({ where: { id: items[0].id }, data: { stem: 'Edited by reviewer', status: 'approved' } })
+    expect(await importPlacementDraft(prisma)).toEqual({ created: 0, kept: ALL })
     const row = await prisma.placementQuestion.findUniqueOrThrow({ where: { id: items[0].id } })
-    expect(row.stemEn).toBe('Edited by reviewer')
+    expect(row.stem).toBe('Edited by reviewer')
     expect(row.status).toBe('approved')
 
     /* ويُعاد إلى المسوّدة الأصليّة لما بعده */
@@ -109,7 +118,7 @@ describe('٣) المراجعةُ خلف `placement.review`', () => {
 
     const edit = await app.inject({
       method: 'PATCH', url: `/api/placement/english/review/${items[0].id}`,
-      headers: { cookie: reviewerCookie }, payload: { stemEn: 'She ___ a teacher.' },
+      headers: { cookie: reviewerCookie }, payload: { stem: 'She ___ a teacher.' },
     })
     expect(edit.statusCode).toBe(200)
     expect(edit.json().stem).toBe('She ___ a teacher.')
@@ -165,5 +174,36 @@ describe('٤) بعد الاعتماد يُفتح — والجوابُ لا يغ�
   it('والفخُّ المملوءُ يُردّ', async () => {
     const r = await app.inject({ method: 'POST', url: '/api/public/placement/english/score', payload: { answers: {}, website: 'x' } })
     expect(r.statusCode).toBe(400)
+  })
+})
+
+describe('٥) فحوصُ المجالات — مفتوحةٌ فورا، وكلُّ موضوعٍ في بنكه', () => {
+  const data = fieldItems.filter((i) => i.subject === 'data')
+
+  it('فحصُ تحليل البيانات مفتوحٌ بلا مراجعة، وأسئلتُه وحدَها بلا أجوبتها', async () => {
+    const bank = await app.inject({ method: 'GET', url: '/api/public/placement/data' })
+    expect(bank.statusCode).toBe(200)
+    expect(bank.json().open).toBe(true)
+    expect(bank.json().items.map((i: { id: string }) => i.id).sort()).toEqual(data.map((i) => i.id).sort())
+    for (const i of bank.json().items) expect(i).not.toHaveProperty('answer_index')
+  })
+
+  it('والتصحيحُ يصعد السلّم: من أصاب الأساسيَّ والمتوسّطَ كلَّه وأخطأ المتقدّمَ فهو «متوسّط»', async () => {
+    const answers: Record<string, number> = {}
+    for (const i of data) answers[i.id] = i.level === 'lead' ? (i.answer_index + 1) % 4 : i.answer_index
+    const r = await app.inject({ method: 'POST', url: '/api/public/placement/data/score', payload: { answers } })
+    expect(r.statusCode).toBe(200)
+    expect(r.json().level).toBe('independent')
+    const none = await app.inject({ method: 'POST', url: '/api/public/placement/data/score', payload: { answers: {} } })
+    expect(none.json().level).toBe('none')
+  })
+
+  it('وموضوعٌ لا اختبارَ له يُردّ، ولا يُعدَّل سؤالُ مجالٍ من رابط موضوعٍ آخر', async () => {
+    expect((await app.inject({ method: 'GET', url: '/api/public/placement/finance' })).statusCode).toBe(422)
+    const cross = await app.inject({
+      method: 'POST', url: `/api/placement/english/review/${data[0].id}/decide`,
+      headers: { cookie: reviewerCookie }, payload: { approve: false },
+    })
+    expect(cross.statusCode).toBe(404)
   })
 })
