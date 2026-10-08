@@ -54,7 +54,9 @@ import type {
 } from '../v2/types'
 import { planOf } from './data'
 import { recommendationUniverse, gateDomainsOf } from './universe'
-import { competeEntities, decisiveSkills, appliedHandoffFilter, type CompetitionResult, type EntityCandidate } from './compete'
+import { competeEntities, decisiveSkills, appliedHandoffFilter, scoreEntity, type CompetitionResult, type EntityCandidate } from './compete'
+import { englishDestinationOf, englishPlanFromFacts, ENGLISH_LEVELS, ENGLISH_PURPOSES, type EnglishPlan } from './english'
+import { focusCourseOf, fieldDomainsOf, fieldLevelAsks, fieldLevelText, subFocusAsks, subFocusById, subFocusOptionsFor, SUB_FOCUS } from './focus'
 import {
   goalByCode,
   needByCode,
@@ -213,6 +215,35 @@ interface CoreStepV21 {
 }
 const has = (facts: DiagnosticState['facts'], k: string) => facts[k] !== undefined
 
+/* ── نتيجةٌ حسمها المتعلّمُ بنفسه (٨ أكتوبر ٢٠٢٦) ──
+
+   من سمّى الإنجليزيّةَ وغرضَه ومستواه، أو تخصّصا له دورتُه (الشبكات، السحابة،
+   بيعُ التجزئة، البيعُ عبر الإنترنت، البرمجة) — فقد حسم نتيجتَه. وما بعدها من
+   أسئلةٍ تُغذّي سباقا لن يُقرَأ: وضوحُ الهدف، وقطاعُ العمل، ومرحلةُ المشروع،
+   ومهاراتُ مساراتٍ لن تُرشَّح. فلا تُسأل: كلُّ واحدٍ منها مقعدٌ ميّتٌ من وقته.
+   ويبقى سؤالُ المستوى في المجال لمن له مجال: نتيجتُه تُعرض له. */
+function isRouted(facts: DiagnosticState['facts']): boolean {
+  if (facts['need_id']?.value === 'need_english') return true
+  return focusCourseOf(facts) !== null
+}
+
+/* ── أسئلةٌ خارجَ ميزانيّة الأربعة عشر (٨ أكتوبر ٢٠٢٦) ──
+
+   قَبِل صاحبُ المنصّة سؤالا زائدا لأكثر المتعلّمين — المستوى في المجال — وسؤالا
+   فرعيّا لمن في الأمن أو المبيعات. فهي **زيادةٌ** على الرحلة لا اقتطاعٌ منها.
+   وحين حُسبت من الأربعة عشر نقصت الرحلةُ سؤالا تكيّفيّا، فخسرت الخططُ المركّبةُ
+   حقائقَها المطلوبة: أحدَ عشرَ كيانا ضاعت رحلتُها الفائزة في Golden Suite —
+   والمستوى نفسُه بريء، فلمّا أُسقط السؤالُ وحده عادت كلُّها تفوز. فالسقفُ
+   وعتباتُ التوقّف تُعدّ ما سواها، والرحلةُ تبلغ خمسةَ عشرَ حيث تُسأل. */
+export const OUTSIDE_BUDGET: ReadonlySet<string> = new Set([Q.FIELD_LEVEL, Q.CYBER_FOCUS, Q.SALES_CHANNEL])
+
+/** حُسمت النتيجةُ واكتمل ما يُعرض معها؟ — الإنجليزيّةُ بجوابيها، والتخصّصُ بمستواه */
+function routedComplete(facts: DiagnosticState['facts']): boolean {
+  if (facts['need_id']?.value === 'need_english') return englishPlanFromFacts(facts) !== null
+  if (focusCourseOf(facts) === null) return false
+  return !fieldLevelAsks(facts) || has(facts, 'field_level')
+}
+
 export const CORE_FLOW_V21: CoreStepV21[] = [
   {
     questionId: Q.STAGE,
@@ -253,9 +284,45 @@ export const CORE_FLOW_V21: CoreStepV21[] = [
     neededWhen: (f) => has(f, 'primary_goal') && !has(f, 'need_id'),
     reason_ar: 'أين المشكلة الفعلية؟ — الاحتياج يكتشف المجال قبل أي مسار.',
   },
+  /* ── أسئلةُ ٨ أكتوبر ٢٠٢٦ — بقرار صاحب المنصّة سؤالا سؤالا ──
+     الإنجليزيّةُ غرضا ثمّ مستوى (`english.ts`)، والتخصّصُ داخل الأمن والمبيعات
+     (`focus.ts`)، ثمّ المستوى في المجال. كلُّها بعد الاحتياج مباشرةً: هو الذي
+     يقرّر أيُّها يُسأل، وما يُحسم بها يُغني عمّا بعدها. */
+  {
+    questionId: Q.ENGLISH_PURPOSE,
+    neededWhen: (f) => f['need_id']?.value === 'need_english' && !has(f, 'english_purpose'),
+    reason_ar: 'لأيّ غرضٍ تريد الإنجليزيّة — يحسم أيّ دوراتها تناسبك.',
+  },
+  {
+    questionId: Q.ENGLISH_LEVEL,
+    neededWhen: (f) => f['need_id']?.value === 'need_english' && has(f, 'english_purpose') && !has(f, 'english_level'),
+    reason_ar: 'مستواك كما تصفه — نقطةُ بدايةٍ يؤكّدها اختبارُ تحديد المستوى المجانيّ.',
+  },
+  ...SUB_FOCUS.map((sub) => ({
+    questionId: sub.questionId,
+    neededWhen: (f: DiagnosticState['facts']) =>
+      f['need_id']?.value === sub.needCode &&
+      !has(f, sub.factKey) &&
+      subFocusAsks(sub, (f['career_stage']?.value as CareerStage | undefined) ?? null),
+    reason_ar: 'أيُّ جانبٍ من مجالك تريد — بعضُها له دورتُه بعينها.',
+  })),
+  {
+    questionId: Q.FIELD_LEVEL,
+    neededWhen: (f) =>
+      fieldLevelAsks(f) &&
+      !has(f, 'field_level') &&
+      /* بعد السؤال الفرعيّ إن كان له — لا قبله */
+      SUB_FOCUS.every(
+        (sub) =>
+          f['need_id']?.value !== sub.needCode ||
+          has(f, sub.factKey) ||
+          !subFocusAsks(sub, (f['career_stage']?.value as CareerStage | undefined) ?? null),
+      ),
+    reason_ar: 'مستواك في مجالك أنت — تُطابَق عليه دوراتُه لا على مرحلتك.',
+  },
   {
     questionId: 'QB-M2-005',
-    neededWhen: (f) => has(f, 'primary_goal') && f['primary_goal']?.value !== 'explore' && !has(f, 'goal_clarity'),
+    neededWhen: (f) => has(f, 'primary_goal') && f['primary_goal']?.value !== 'explore' && !has(f, 'goal_clarity') && !isRouted(f),
     reason_ar: 'وضوح هدفك يقرر: انتقال سريع للأدلة أم استكشاف أعمق.',
   },
   {
@@ -263,7 +330,7 @@ export const CORE_FLOW_V21: CoreStepV21[] = [
     neededWhen: (f) => {
       const goal = f['primary_goal']?.value
       const founder = f['career_stage']?.value === 'founder' || f['career_stage']?.value === 'freelancer'
-      return (founder || goal === 'business_launch' || goal === 'revenue_growth') && !has(f, 'business_stage')
+      return (founder || goal === 'business_launch' || goal === 'revenue_growth') && !has(f, 'business_stage') && !isRouted(f)
     },
     reason_ar: 'مرحلة مشروعك تحسم «إطلاق أم نمو» — جوهري للمسار.',
   },
@@ -272,7 +339,7 @@ export const CORE_FLOW_V21: CoreStepV21[] = [
     neededWhen: (f) => {
       const stage = f['career_stage']?.value as CareerStage | undefined
       const employed = stage && ['early_career', 'experienced', 'manager', 'senior_manager', 'trainer_ld'].includes(stage)
-      return Boolean(employed) && !has(f, 'sector')
+      return Boolean(employed) && !has(f, 'sector') && !isRouted(f)
     },
     reason_ar: 'القطاع (عام/خاص) يفلتر مسارات حكومية بأكملها.',
   },
@@ -557,6 +624,8 @@ export type RecommendationV21 = Recommendation & {
   composedPath?: ComposedPath
   /** بديل واحد متباين مع سبب تباينه — لا قائمة مرتّبة بلا معنى */
   alternativeContrast_ar?: string
+  /** خطّةُ الإنجليزيّة — حاضرةٌ حين حسم الغرضُ والمستوى الدورةَ (`english.ts`) */
+  english?: EnglishPlan
   v2?: {
     explanation: unknown
     confidence: ConfidenceV2
@@ -663,6 +732,8 @@ export class DiagnosticEngineV21 {
   /** العائلات التي تستحق أن يُسأل عنها هذا المتعلم — مقررات مرشحيه الأوائل وحدهم،
       لا العائلات الأربع والعشرون. بلا مرشحين بعد تعود فارغة. */
   familiesToRate(): { family: string; label_ar: string; skills: string[]; courseCount: number }[] {
+    /* نتيجةٌ حسمها المتعلّمُ بنفسه لا تُرتَّب بتقييم عائلات مسارٍ لن يُرشَّح */
+    if (isRouted(this.state.facts)) return []
     const ctx = this.decisionContext()
     const { candidates } = this.eligibilityAndCandidates(ctx)
     const top = candidates.slice(0, 2).map((c) => c.pathwayId)
@@ -704,6 +775,18 @@ export class DiagnosticEngineV21 {
     return { facts: this.state.facts, persona, domains, skillStates, familyRatings: this.familyRatings }
   }
 
+  /** في مجال الاحتياج كيانٌ يُرشَّح لهذا المتعلّم؟ — شرطُ سؤال المستوى */
+  private fieldHasCandidate(ctx: DecisionContext): boolean {
+    const domains = fieldDomainsOf(this.state.facts)
+    const top = competeEntities(this.state.facts, ctx).candidates[0]
+    return top !== undefined && top.entity.domains.some((d) => domains.includes(d))
+  }
+
+  /** الأسئلةُ المحسوبةُ من الميزانيّة — كلُّ ما طُرح عدا `OUTSIDE_BUDGET` */
+  private budgetCount(): number {
+    return this.state.askedQuestionIds.filter((id) => !OUTSIDE_BUDGET.has(id)).length
+  }
+
   private stage(): CareerStage | null {
     return (this.state.facts['career_stage']?.value as CareerStage | undefined) ?? null
   }
@@ -712,7 +795,7 @@ export class DiagnosticEngineV21 {
     return {
       facts: this.state.facts,
       confidenceTotal,
-      askedCount: this.state.askedQuestionIds.length,
+      askedCount: this.budgetCount(),
       topTwoMargin: null,
       recommendationGenerated: false,
       recommendationRejected: false,
@@ -837,7 +920,7 @@ export class DiagnosticEngineV21 {
 
   /* ─── السؤال التالي ─── */
   nextQuestion(): NextQuestionResult {
-    const askedCount = this.state.askedQuestionIds.length
+    const askedCount = this.budgetCount()
     if (this.state.guardrailStop) {
       return { question: null, utility: null, stop: { shouldStop: true, reason_ar: this.state.guardrailStop, askedCount } }
     }
@@ -863,6 +946,12 @@ export class DiagnosticEngineV21 {
     for (const step of CORE_FLOW_V21) {
       if (askedIds.has(step.questionId)) continue
       if (!step.neededWhen(this.state.facts)) continue
+      /* ولا يُسأل عن المستوى إلّا والمتصدّرُ في مجاله: حين يتصدّر ما خارجه — مسارُ
+         مرحلته لطالبٍ سأل عن البيانات، أو مسارُ هدفه لمؤسّسٍ هدفُه أسرته — لا
+         يغيّر جوابُه شيئا ممّا يُرى. قِيس على ٥٨٠ رحلة: كان ميّتا في ٢١٥ وكلُّها
+         فائزُها خارج المجال؛ وبهذا الشرط ميّتٌ في ٦ من ٣٥٧.
+         ومن سمّى تخصّصا له دورتُه يُسأل دائما: نتيجتُه تلك الدورةُ، وهي في مجاله. */
+      if (step.questionId === Q.FIELD_LEVEL && !isRouted(this.state.facts) && !this.fieldHasCandidate(ctx)) continue
       const q = questionById.get(step.questionId)
       if (!q) continue
       const eligible = isQuestionEligibleV21(q, {
@@ -874,8 +963,21 @@ export class DiagnosticEngineV21 {
       })
       if (!eligible) continue
       const question = this.withStageFilteredOptions(q, stage)
-      this.traceEntry('question_selected', `نواة — ${q.question_id}: ${q.text_ar}`, { core: true, winnerReason_ar: step.reason_ar })
+      this.traceEntry('question_selected', `نواة — ${q.question_id}: ${question.text_ar}`, { core: true, winnerReason_ar: step.reason_ar })
       return { question, utility: null, stop: { shouldStop: false, reason_ar: 'نبني صورتك الأساسية.', askedCount } }
+    }
+
+    /* ١ب) نتيجةٌ حسمها المتعلّمُ بنفسه — لا سباقَ يُغذّى بعدها (انظر `isRouted`) */
+    if (routedComplete(this.state.facts)) {
+      const stop = {
+        shouldStop: true,
+        reason_ar: this.state.facts['need_id']?.value === 'need_english'
+          ? 'غرضُك ومستواك يحسمان دورةَ الإنجليزيّة — واختبارُ التحديد المجانيّ يؤكّد المستوى.'
+          : 'سمّيتَ تخصّصا له دورتُه — لا نسألك عن مساراتٍ لن نرشّحها.',
+        askedCount,
+      }
+      this.traceEntry('stop_evaluated', stop.reason_ar, { askedCount, routed: true })
+      return { question: null, utility: null, stop }
     }
 
     /* ٢) التوجيه التكيفي */
@@ -1065,7 +1167,22 @@ export class DiagnosticEngineV21 {
     if (q.question_id === Q.NEED) {
       const allowed = new Set(needsForStage(stage).map((n) => n.label_ar))
       const keptIdx = q.options_ar.map((_, i) => i).filter((i) => allowed.has(q.options_ar[i]))
+      /* «غير متأكد» آخرا في العرض وحدَه — ما أُضيف بعده في البنك أُضيف هناك كي
+         لا تُزاح معرّفاتُ الخيارات (انظر `NEEDS_V21`)، والمعرّفُ يسافر مع خياره */
+      const unsure = needByCode('need_unsure')?.label_ar
+      const ordered = [...keptIdx.filter((i) => q.options_ar[i] !== unsure), ...keptIdx.filter((i) => q.options_ar[i] === unsure)]
+      return { ...q, options_ar: ordered.map((i) => q.options_ar[i]), active_option_ids: ordered.map((i) => optionIdAt(q, i)) } as BankQuestion
+    }
+    const sub = subFocusById(q.question_id)
+    if (sub) {
+      /* خيارٌ دورتُه لا تخدم هذه المرحلة لا يُعرض — قرارُ صاحب المنصّة في جمهورها */
+      const allowed = new Set(subFocusOptionsFor(sub, stage).map((o) => o.label_ar))
+      const keptIdx = q.options_ar.map((_, i) => i).filter((i) => allowed.has(q.options_ar[i]))
       return { ...q, options_ar: keptIdx.map((i) => q.options_ar[i]), active_option_ids: keptIdx.map((i) => optionIdAt(q, i)) } as BankQuestion
+    }
+    if (q.question_id === Q.FIELD_LEVEL) {
+      /* باسم المجال الذي اختاره — «في المجال الذي اخترته» مجرّدا يُقرأ ولا يُفهم */
+      return { ...q, text_ar: fieldLevelText(this.state.facts) }
     }
     return q
   }
@@ -1173,6 +1290,8 @@ export class DiagnosticEngineV21 {
 
   startDeepening(): { reason_ar: string; plan: DeepeningPlanItem[]; before: DeepeningSnapshot } | null {
     if (this.confirmation.started || this.state.guardrailStop) return null
+    /* ولا جولةَ تدقيقٍ لنتيجةٍ لم يحسمها السباق — أسئلتُها تفصل بين مساراتٍ لن تُرشَّح */
+    if (isRouted(this.state.facts)) return null
     const ctx = this.decisionContext()
     const { candidates, comp } = this.eligibilityAndCandidates(ctx)
     const top = candidates[0]
@@ -1330,6 +1449,99 @@ export class DiagnosticEngineV21 {
     return { recommendation, comparison }
   }
 
+  /* ─── نتيجةٌ حسمها المتعلّمُ بنفسه (٨ أكتوبر ٢٠٢٦) ───
+
+     لا سباقَ يُحسَم هنا: الإنجليزيّةُ يحسمها جدولُ `english.ts` من غرضها
+     ومستواها، والتخصّصُ يحسمه اسمُه (`focus.ts`). والسباقُ يبقى في موضعٍ واحد:
+     البديل — المسارُ الأوسعُ لمن أراد أكثر من دورة. ولا يُختلَق رقمُ ملاءمة:
+     الثقةُ تُحسب بالمكوّنات نفسِها، فتقول بصدقٍ أنّ ما قِيس قليل. */
+  private recommendRouted(ctx: DecisionContext, comp: CompetitionResult, eligibility: PathwayEligibility[]): RecommendationV21 | null {
+    const facts = this.state.facts
+    if (!routedComplete(facts)) return null
+    const english = englishPlanFromFacts(facts)
+    const focusId = english ? null : focusCourseOf(facts)
+
+    let primary: V2Candidate
+    let alternative: EntityCandidate | null = null
+    let reasons: string[]
+    if (english) {
+      const courseId = englishDestinationOf(english)
+      const purpose = ENGLISH_PURPOSES.find((p) => p.code === english.purpose)?.label_ar ?? ''
+      const level = ENGLISH_LEVELS.find((l) => l.code === english.level)
+      reasons = [
+        `غرضُك: ${purpose} — ومستواك كما وصفتَه: «${level?.label_ar ?? ''}» (${english.cefr}).`,
+        english.headline_ar,
+        english.placement_note_ar,
+      ]
+      /* لا كيانَ في الفضاء يُقاس عليه — الدورةُ يحسمها الجدول. فالمرشّحُ يُعلن
+         ما هو: ملاءمتُه ما قاله المتعلّم، ولا مهارةَ قِيست فيه. */
+      primary = {
+        pathwayId: courseId,
+        total: 1,
+        measuredSkillCoverage: 0,
+        measurableSkillCoverage: 0,
+        hasDirectSkillEvidence: false,
+        measurableRequiredCount: 0,
+        measurableMeasuredCount: 0,
+        gapSkillSlugs: [],
+        masteredSkillSlugs: [],
+        unknownSkillSlugs: [],
+        reasons_ar: reasons,
+        breakdown: { persona: 1, goal: 1, domain: 1, skillGap: null, feasibility: 1, motivation: 0.5 },
+      }
+    } else {
+      const ent = focusId ? recommendationUniverse().byId.get(focusId) : undefined
+      if (!ent) return null
+      const cand = scoreEntity(ent, facts, ctx)
+      primary = toV2Candidate(cand)
+      reasons = [`سمّيتَ تخصّصا له دورتُه بعينها: «${ent.title_ar}».`, ...cand.reasons_ar.slice(0, 2)]
+      primary.reasons_ar = reasons
+      /* البديل: المسارُ الذي يضمّ هذه الدورةَ إن نافس، وإلّا أقربُ مسارٍ أو خطّةٍ
+         **في مجال احتياجه**. ومن خارج مجاله لا بديل: «مسارٌ أوسع» في غير ما سأل
+         عنه ليس أوسعَ بل أبعد — رأيناه في أوّل تشغيل: طالبُ الشبكات عُرض عليه
+         مسارُ الجاهزيّة للتوظيف. */
+      const needDomains = fieldDomainsOf(facts)
+      const pool = comp.candidates.filter(
+        (c) => c.entity.entity_type !== 'course' && c.entity.entity_id !== ent.entity_id && c.entity.domains.some((d) => needDomains.includes(d)),
+      )
+      alternative = pool.find((c) => c.entity.required_courses.includes(ent.entity_id)) ?? pool[0] ?? null
+    }
+
+    const candidates = alternative ? [primary, toV2Candidate(alternative)] : [primary]
+    const confidence = computeConfidenceV2(facts, this.state.contradictions, ctx, candidates, null)
+    const needsAdvisor = this.state.contradictions.some((c) => !c.resolved && c.severity === 'high')
+    const explanation = buildExplanation(facts, ctx, candidates, eligibility, confidence, {
+      catalogGap_ar: null,
+      personalizationNotes_ar: [],
+    })
+    const partial = {
+      kind: needsAdvisor ? ('advisor_referral' as const) : ('single_course' as const),
+      primaryPathway: toLegacyCandidate(primary),
+      alternatives: alternative ? [toLegacyCandidate(toV2Candidate(alternative))] : [],
+      alternativeContrast_ar: alternative ? 'مسارٌ أوسع يضمّ أكثر من دورة — إن أردت أكثر من هذا التخصّص' : undefined,
+      composite: null,
+      confidence: toLegacyConfidence(confidence),
+      reasons_ar: reasons,
+      unavailable_skills: [],
+      trainer: matchTrainer(primary.pathwayId, facts, []),
+      disclaimer_ar: DISCLAIMER_AR,
+      trace: this.state.trace,
+      ...(english ? { english } : {}),
+    }
+    this.traceEntry('recommendation', english
+      ? `توصية V2.1: الإنجليزيّة — ${english.purpose}/${english.cefr} ← ${english.options.map((o) => o.course_ids.join('+')).join(' أو ')}`
+      : `توصية V2.1: تخصّصٌ سمّاه المتعلّم ← ${primary.pathwayId}`, {
+      top: primary.pathwayId,
+      routed: english ? 'english' : 'focus',
+      alternative: alternative?.entity.entity_id ?? null,
+    })
+    return {
+      ...partial,
+      change_makers_ar: buildChangeMakers(partial, confidence.evidenceBasis),
+      v2: { explanation, confidence, eligibility, versions: engineVersions() },
+    }
+  }
+
   /* ─── التوصية النهائية ─── */
   recommend(): RecommendationV21 {
     const ctx = this.decisionContext()
@@ -1351,6 +1563,10 @@ export class DiagnosticEngineV21 {
         trace: this.state.trace,
       }
     }
+
+    /* ٠) نتيجةٌ حسمها المتعلّمُ بنفسه — الإنجليزيّةُ بغرضها ومستواها، أو تخصّصٌ له دورتُه */
+    const routed = this.recommendRouted(ctx, comp, eligibility)
+    if (routed) return routed
 
     /* ١) الاستكشاف — مستكشف غير محسوم والأدلة دون حد الفرض: اتجاه استكشافي لا كيان مفروض (البند 10).
        لا PW-STU-003 ولا أي مسار افتراضي — مَن لا دليل لديه لا تُفرض عليه نتيجة. */
@@ -1705,6 +1921,7 @@ function toV2Candidate(c: EntityCandidate): V2Candidate {
     masteredSkillSlugs: c.skills.masteredSkillSlugs,
     unknownSkillSlugs: c.skills.unknownSkillSlugs,
     reasons_ar: c.reasons_ar,
+    fieldLevelAlign: c.fieldLevelAlign,
     breakdown: c.breakdown,
   }
 }

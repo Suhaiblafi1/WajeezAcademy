@@ -61,7 +61,9 @@ import {
   type SavedProgress,
 } from "@/application/diagnostic/plan-selection";
 import { foldComposedPlan } from "@/application/diagnostic/composed-fold";
-import { singleCourseOf } from "@/application/diagnostic/landing";
+import { englishChoiceOf, singleCourseOf } from "@/application/diagnostic/landing";
+import { levelLabelOf, parseReviseRequest, type LevelSummary } from "@/application/diagnostic/level-summary";
+import EnglishPlanCard from "@/components/EnglishPlanCard";
 import { saveAdoptedPlan, syncAdoptedPlan, PERSONAL_PLAN_NAME_AR } from "@/application/plan/adopted-plan";
 import { NEEDS_ADVISOR_KEY } from "@/application/plan/advisor-referral";
 import { whyPathwayFacts } from "@/application/plan/why-pathway";
@@ -378,6 +380,36 @@ export default function Diagnostic() {
        `start` تُعاد بناؤها كلَّ تصيير، وإدراجُها يُعيد البدءَ بلا نهاية. */
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stageParam]);
+
+  /* ── «ليس دقيقا؟ غيّر مستواي» (٨ أكتوبر ٢٠٢٦، `level-summary.ts`) ──
+
+     الرابطُ يحمل سؤالَ المستوى والخيارَ الجديد. فتُستأنف الجلسةُ من الجهاز،
+     ويُعدَّل الجوابُ وحدَه، ثمّ تُبنى النتيجةُ من جديد وتهبط حيث تهبط — بلا
+     إعادةِ الأسئلة وبلا شبكةِ العائلات ثانية. وإن سأل المحرّكُ سؤالا جديدا
+     بعد التعديل عُرض كما يُعرض أيُّ سؤال. وبلا جلسةٍ محفوظةٍ يُتجاهَل الطلب. */
+  const reviseRequest = parseReviseRequest(searchParams);
+  const reviseKey = reviseRequest ? `${reviseRequest.questionId}:${reviseRequest.optionId}` : null;
+  useEffect(() => {
+    if (!reviseRequest || sessionRef.current) return;
+    void (async () => {
+      await ensurePublishedSnapshot();
+      const session = AssessmentSession.resume();
+      if (!session) return;
+      const label = levelLabelOf(reviseRequest.questionId, reviseRequest.optionId);
+      if (label === null) return;
+      sessionRef.current = session;
+      const snapshot = session.answersSnapshot;
+      setHistory(snapshot.map((a) => diagQuestionById(a.questionId)).filter((x): x is DiagQuestion => Boolean(x)));
+      const step = session.revise(reviseRequest.questionId, label, [reviseRequest.optionId]);
+      if (step.question) {
+        applyStep(step);
+        return;
+      }
+      finish();
+    })();
+    /* مرّةً لكلّ طلب — `finish` و`applyStep` تُعاد بناؤهما كلَّ تصيير */
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reviseKey]);
 
   /* استئناف تشخيص غير مكتمل — المحرك حتمي فيعيد نفس الأسئلة لنفس الإجابات */
   const doResume = async () => {
@@ -1293,7 +1325,13 @@ export default function Diagnostic() {
             VITE_DIAGNOSTIC_ENGINE_VERSION=v1 فسيُعرض guardrail_stop حينها
             بواجهة الفرع أدناه (اتجاه استكشافي) لا بواجهته المخصَّصة له —
             قرارٌ واعٍ لا سهو. */}
-        {!topPathway ? (
+        {!topPathway && englishChoiceOf(result.resultJson) ? (
+          /* خطّةُ الإنجليزيّة بخياريها — الفرقُ والكلفةُ والاختيارُ له (٨ أكتوبر ٢٠٢٦) */
+          <EnglishPlanCard
+            plan={englishChoiceOf(result.resultJson)!}
+            level={(result.resultJson.level_summary as LevelSummary | null | undefined) ?? null}
+          />
+        ) : !topPathway ? (
           /* اتجاه استكشافي / إحالة مستشار بلا مسار مفروض — بطاقة هادئة موجِّهة، لا صفحة فارغة أبدًا */
           (() => {
             const exploration = (result.resultJson.exploration as {

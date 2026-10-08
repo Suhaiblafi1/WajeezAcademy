@@ -27,21 +27,30 @@ interface PersonaScript {
      ملاءمة المقرر) والخطّةُ المركّبةُ كانا **خارج خط الأساس كلَّه**: يخضرّ
      لأنّه لا يمرّ بهما لا لأنّه فحصهما. */
   rateFamiliesAt?: number
+  /* مستواه في مجاله (٠ «لم أمارسه بعد» … ٣ «أقود غيري فيه») — سؤالُ ٨ أكتوبر
+     ٢٠٢٦. بلا قيمةٍ معلنةٍ كان يُجاب بأوّل خيار، فيقول المديرُ عن القيادة
+     «لم أمارسها بعد» — جوابٌ لا يقوله مديرٌ فيُقاس عليه ما لا يقع. */
+  fieldLevel?: number
+  /* أجوبةٌ صريحةٌ لأسئلةٍ بعينها — نصٌّ جزئيٌّ من الخيار */
+  answers?: Record<string, string>
 }
 
 const PERSONAS: PersonaScript[] = [
-  { id: 'uni', label_ar: 'طالب جامعي', stage: 'university_student', employment: 'o1', goalMatch: 'أول وظيفة', needMatch: 'الجاهزية لسوق العمل', skillLevel: 2 },
-  { id: 'grad', label_ar: 'خريج حديث + باحث عن عمل', stage: 'fresh_graduate', employment: 'o2', goalMatch: 'أول وظيفة', needMatch: 'الجاهزية لسوق العمل', skillLevel: 2 },
-  { id: 'junior', label_ar: 'موظف مبتدئ', stage: 'early_career', employment: 'o3', goalMatch: 'تحسين أدائي', needMatch: 'الذكاء الاصطناعي', skillLevel: 3 },
-  { id: 'experienced', label_ar: 'موظف خبير', stage: 'experienced', employment: 'o3', goalMatch: 'الترقية', needMatch: 'إدارة المشاريع', skillLevel: 4 },
-  { id: 'manager', label_ar: 'مدير', stage: 'manager', employment: 'o3', goalMatch: 'قيادي', needMatch: 'القيادة', skillLevel: 4 },
-  { id: 'founder', label_ar: 'مؤسس', stage: 'founder', goalMatch: 'تنمية مشروعي', needMatch: 'التسويق', skillLevel: 3 },
-  { id: 'freelancer', label_ar: 'مستقل', stage: 'freelancer', goalMatch: 'العمل الحر', needMatch: 'المبيعات', skillLevel: 3 },
-  { id: 'trainer', label_ar: 'مدرب / مختص تعلم وتطوير', stage: 'trainer_ld', employment: 'o3', goalMatch: 'تصميم تدريب', needMatch: 'التعلم والتدريب', skillLevel: 4 },
+  { id: 'uni', label_ar: 'طالب جامعي', stage: 'university_student', employment: 'o1', goalMatch: 'أول وظيفة', needMatch: 'الجاهزية لسوق العمل', skillLevel: 2, fieldLevel: 0 },
+  { id: 'grad', label_ar: 'خريج حديث + باحث عن عمل', stage: 'fresh_graduate', employment: 'o2', goalMatch: 'أول وظيفة', needMatch: 'الجاهزية لسوق العمل', skillLevel: 2, fieldLevel: 1 },
+  { id: 'junior', label_ar: 'موظف مبتدئ', stage: 'early_career', employment: 'o3', goalMatch: 'تحسين أدائي', needMatch: 'الذكاء الاصطناعي', skillLevel: 3, fieldLevel: 1 },
+  { id: 'experienced', label_ar: 'موظف خبير', stage: 'experienced', employment: 'o3', goalMatch: 'الترقية', needMatch: 'إدارة المشاريع', skillLevel: 4, fieldLevel: 2 },
+  { id: 'manager', label_ar: 'مدير', stage: 'manager', employment: 'o3', goalMatch: 'قيادي', needMatch: 'القيادة', skillLevel: 4, fieldLevel: 2 },
+  { id: 'founder', label_ar: 'مؤسس', stage: 'founder', goalMatch: 'تنمية مشروعي', needMatch: 'التسويق', skillLevel: 3, fieldLevel: 1 },
+  { id: 'freelancer', label_ar: 'مستقل', stage: 'freelancer', goalMatch: 'العمل الحر', needMatch: 'المبيعات', skillLevel: 3, fieldLevel: 2 },
+  { id: 'trainer', label_ar: 'مدرب / مختص تعلم وتطوير', stage: 'trainer_ld', employment: 'o3', goalMatch: 'تصميم تدريب', needMatch: 'التعلم والتدريب', skillLevel: 4, fieldLevel: 3 },
   { id: 'unsure', label_ar: 'غير محسوم', stage: 'other_unsure', employment: 'o1', goalMatch: 'غير متأكد', needMatch: 'غير متأكد', skillLevel: 3 },
   /* نسخةُ «موظف خبير» نفسِها، وفارقُها الوحيد أنّه قيّم عائلاته. فالفرقُ بين
      الرحلتين في خط الأساس هو **أثرُ التقييم وحدَه** — تُقرأ إحداهما بالأخرى. */
-  { id: 'rated', label_ar: 'موظف خبير — قيّم عائلاته', stage: 'experienced', employment: 'o3', goalMatch: 'الترقية', needMatch: 'إدارة المشاريع', skillLevel: 4, rateFamiliesAt: 2 },
+  { id: 'rated', label_ar: 'موظف خبير — قيّم عائلاته', stage: 'experienced', employment: 'o3', goalMatch: 'الترقية', needMatch: 'إدارة المشاريع', skillLevel: 4, rateFamiliesAt: 2, fieldLevel: 2 },
+  /* بابا ٨ أكتوبر ٢٠٢٦ — كلٌّ برحلةٍ في خط الأساس، فلا يتغيّر سلوكُهما صامتا */
+  { id: 'english', label_ar: 'مبتدئ يريد الإنجليزيّة للعمل', stage: 'early_career', employment: 'o3', goalMatch: 'مهارة محددة', needMatch: 'اللغة الإنجليزية', answers: { 'QC-E1-001': 'العمل', 'QC-E2-001': 'كلماتٍ وجملا قليلة' } },
+  { id: 'networks', label_ar: 'خريج يريد الشبكات', stage: 'fresh_graduate', employment: 'o2', goalMatch: 'مهارات عملية', needMatch: 'الأمن السيبراني', answers: { 'QC-D1-001': 'الشبكات' }, fieldLevel: 0 },
 ]
 
 function pickOption(options: string[], activeIds: string[] | undefined, match: string | undefined, fallbackIdx: number): { idx: number; optionId: string } {
@@ -77,6 +86,11 @@ function runPersona(p: PersonaScript) {
       chosen = pickOption(q.options_ar, q.active_option_ids, p.goalMatch, q.options_ar.length - 1)
     } else if (q.question_id === Q.NEED) {
       chosen = pickOption(q.options_ar, q.active_option_ids, p.needMatch, q.options_ar.length - 1)
+    } else if (p.answers?.[q.question_id] !== undefined) {
+      chosen = pickOption(q.options_ar, q.active_option_ids, p.answers[q.question_id], 0)
+    } else if (q.question_id === Q.FIELD_LEVEL) {
+      const lvl = p.fieldLevel ?? 0
+      chosen = { idx: lvl, optionId: q.active_option_ids?.[lvl] ?? `o${lvl + 1}` }
     } else if (q.answer_type === 'skill_level_5' || q.answer_type === 'likert_5') {
       const lvl = p.skillLevel ?? 3
       chosen = { idx: lvl - 1, optionId: `o${lvl}` }

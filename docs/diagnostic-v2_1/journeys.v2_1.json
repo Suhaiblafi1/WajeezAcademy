@@ -4,7 +4,7 @@
     {
       "persona": "طالب جامعي",
       "stage": "university_student",
-      "questionsCount": 13,
+      "questionsCount": 14,
       "steps": [
         {
           "questionId": "QC-S1-001",
@@ -43,6 +43,15 @@
           "answer_ar": "الجاهزية لسوق العمل — سيرة ومقابلات وملف أعمال",
           "what_changed": [
             "+need_id"
+          ]
+        },
+        {
+          "questionId": "QC-L1-001",
+          "question_ar": "وفي «الجاهزية لسوق العمل — سيرة ومقابلات وملف أعمال»، أيُّ وصفٍ يقترب منك؟",
+          "why_now_ar": "مستواك في مجالك أنت — تُطابَق عليه دوراتُه لا على مرحلتك.",
+          "answer_ar": "لم أمارسه بعد",
+          "what_changed": [
+            "+field_level"
           ]
         },
         {
@@ -131,7 +140,7 @@
         "kind": "single_pathway",
         "topPathwayId": "PW-STU-002",
         "compositeTemplateId": null,
-        "confidence": 0.8382352940294117,
+        "confidence": 0.8782352940294117,
         "outputKind_ar": "أفضل تطابق حالي"
       },
       "deterministic": true
@@ -139,7 +148,7 @@
     {
       "persona": "خريج حديث + باحث عن عمل",
       "stage": "fresh_graduate",
-      "questionsCount": 12,
+      "questionsCount": 13,
       "steps": [
         {
           "questionId": "QC-S1-001",
@@ -178,6 +187,15 @@
           "answer_ar": "الجاهزية لسوق العمل — سيرة ومقابلات وملف أعمال",
           "what_changed": [
             "+need_id"
+          ]
+        },
+        {
+          "questionId": "QC-L1-001",
+          "question_ar": "وفي «الجاهزية لسوق العمل — سيرة ومقابلات وملف أعمال»، أيُّ وصفٍ يقترب منك؟",
+          "why_now_ar": "مستواك في مجالك أنت — تُطابَق عليه دوراتُه لا على مرحلتك.",
+          "answer_ar": "أعرف أساسيّاته وأحتاج من يوجّهني",
+          "what_changed": [
+            "+field_level"
           ]
         },
         {
@@ -265,7 +283,7 @@
     {
       "persona": "موظف مبتدئ",
       "stage": "early_career",
-      "questionsCount": 14,
+      "questionsCount": 15,
       "steps": [
         {
           "questionId": "QC-S1-001",
@@ -303,6 +321,15 @@
           "answer_ar": "الذكاء الاصطناعي وتطبيقاته العملية",
           "what_changed": [
             "+need_id"
+          ]
+        },
+        {
+          "questionId": "QC-L1-001",
+          "question_ar": "وفي «الذكاء الاصطناعي وتطبيقاته العملية»، أيُّ وصفٍ يقترب منك؟",
+          "why_now_ar": "مستواك في مجالك أنت — تُطابَق عليه دوراتُه لا على مرحلتك.",
+          "answer_ar": "أعرف أساسيّاته وأحتاج من يوجّهني",
+          "what_changed": [
+            "+field_level"
           ]
         },
         {
@@ -401,15 +428,15 @@
         "kind": "single_pathway",
         "topPathwayId": "PW-FND-003",
         "compositeTemplateId": null,
-        "confidence": 0.6116345810099627,
-        "outputKind_ar": "أفضل تطابق حالي"
+        "confidence": 0.5919550938304756,
+        "outputKind_ar": "اتجاه استكشافي"
       },
       "deterministic": true
     },
     {
       "persona": "موظف خبير",
       "stage": "experienced",
-      "questionsCount": 8,
+      "questionsCount": 9,
       "steps": [
         {
           "questionId": "QC-S1-001",
@@ -447,6 +474,15 @@
           "answer_ar": "إدارة المشاريع",
           "what_changed": [
             "+need_id"
+          ]
+        },
+        {
+          "questionId": "QC-L1-001",
+          "question_ar": "وفي «إدارة المشاريع»، أيُّ وصفٍ يقترب منك؟",
+          "why_now_ar": "مستواك في مجالك أنت — تُطابَق عليه دوراتُه لا على مرحلتك.",
+          "answer_ar": "أمارسه وحدي بانتظام",
+          "what_changed": [
+            "+field_level"
           ]
         },
         {
@@ -491,7 +527,7 @@
         "kind": "single_pathway",
         "topPathwayId": "PW-EMP-003",
         "compositeTemplateId": null,
-        "confidence": 0.815775400957511,
+        "confidence": 0.835775400957511,
         "outputKind_ar": "أفضل تطابق حالي"
       },
       "deterministic": true
@@ -499,7 +535,7 @@
     {
       "persona": "مدير",
       "stage": "manager",
-      "questionsCount": 14,
+      "questionsCount": 15,
       "steps": [
         {
           "questionId": "QC-S1-001",
@@ -537,6 +573,15 @@
           "answer_ar": "القيادة وإدارة الفرق",
           "what_changed": [
             "+need_id"
+          ]
+        },
+        {
+          "questionId": "QC-L1-001",
+          "question_ar": "وفي «القيادة وإدارة الفرق»، أيُّ وصفٍ يقترب منك؟",
+          "why_now_ar": "مستواك في مجالك أنت — تُطابَق عليه دوراتُه لا على مرحلتك.",
+          "answer_ar": "أمارسه وحدي بانتظام",
+          "what_changed": [
+            "+field_level"
           ]
         },
         {
@@ -635,7 +680,7 @@
         "kind": "single_pathway",
         "topPathwayId": "PW-EMP-005",
         "compositeTemplateId": null,
-        "confidence": 0.6283561681091816,
+        "confidence": 0.6287349559879695,
         "outputKind_ar": "أفضل تطابق حالي"
       },
       "deterministic": true
@@ -643,7 +688,7 @@
     {
       "persona": "مؤسس",
       "stage": "founder",
-      "questionsCount": 14,
+      "questionsCount": 15,
       "steps": [
         {
           "questionId": "QC-S1-001",
@@ -673,6 +718,15 @@
           "answer_ar": "التسويق والنمو",
           "what_changed": [
             "+need_id"
+          ]
+        },
+        {
+          "questionId": "QC-L1-001",
+          "question_ar": "وفي «التسويق والنمو»، أيُّ وصفٍ يقترب منك؟",
+          "why_now_ar": "مستواك في مجالك أنت — تُطابَق عليه دوراتُه لا على مرحلتك.",
+          "answer_ar": "أعرف أساسيّاته وأحتاج من يوجّهني",
+          "what_changed": [
+            "+field_level"
           ]
         },
         {
@@ -776,7 +830,7 @@
         "kind": "single_pathway",
         "topPathwayId": "PW-MKT-001",
         "compositeTemplateId": null,
-        "confidence": 0.6211666666216666,
+        "confidence": 0.6311666666216666,
         "outputKind_ar": "أفضل تطابق حالي"
       },
       "deterministic": true
@@ -784,7 +838,7 @@
     {
       "persona": "مستقل",
       "stage": "freelancer",
-      "questionsCount": 14,
+      "questionsCount": 16,
       "steps": [
         {
           "questionId": "QC-S1-001",
@@ -814,6 +868,24 @@
           "answer_ar": "المبيعات والتعامل مع العملاء",
           "what_changed": [
             "+need_id"
+          ]
+        },
+        {
+          "questionId": "QC-D2-001",
+          "question_ar": "أين تبيع، أو أين تريد أن تبيع؟",
+          "why_now_ar": "أيُّ جانبٍ من مجالك تريد — بعضُها له دورتُه بعينها.",
+          "answer_ar": "لشركاتٍ وحسابات — بيعٌ بين الشركات",
+          "what_changed": [
+            "+sales_channel"
+          ]
+        },
+        {
+          "questionId": "QC-L1-001",
+          "question_ar": "وفي «المبيعات والتعامل مع العملاء»، أيُّ وصفٍ يقترب منك؟",
+          "why_now_ar": "مستواك في مجالك أنت — تُطابَق عليه دوراتُه لا على مرحلتك.",
+          "answer_ar": "أمارسه وحدي بانتظام",
+          "what_changed": [
+            "+field_level"
           ]
         },
         {
@@ -920,7 +992,7 @@
         "kind": "single_pathway",
         "topPathwayId": "PW-SAL-001",
         "compositeTemplateId": null,
-        "confidence": 0.626594896261426,
+        "confidence": 0.6572941969607267,
         "outputKind_ar": "أفضل تطابق حالي"
       },
       "deterministic": true
@@ -928,7 +1000,7 @@
     {
       "persona": "مدرب / مختص تعلم وتطوير",
       "stage": "trainer_ld",
-      "questionsCount": 14,
+      "questionsCount": 15,
       "steps": [
         {
           "questionId": "QC-S1-001",
@@ -966,6 +1038,15 @@
           "answer_ar": "تصميم التعلم والتدريب",
           "what_changed": [
             "+need_id"
+          ]
+        },
+        {
+          "questionId": "QC-L1-001",
+          "question_ar": "وفي «تصميم التعلم والتدريب»، أيُّ وصفٍ يقترب منك؟",
+          "why_now_ar": "مستواك في مجالك أنت — تُطابَق عليه دوراتُه لا على مرحلتك.",
+          "answer_ar": "أقود غيري فيه أو أعلّمه",
+          "what_changed": [
+            "+field_level"
           ]
         },
         {
@@ -1064,7 +1145,7 @@
         "kind": "single_pathway",
         "topPathwayId": "PW-LND-001",
         "compositeTemplateId": null,
-        "confidence": 0.6400977010860087,
+        "confidence": 0.6300977010860087,
         "outputKind_ar": "أفضل تطابق حالي"
       },
       "deterministic": true
@@ -1168,7 +1249,7 @@
     {
       "persona": "موظف خبير — قيّم عائلاته",
       "stage": "experienced",
-      "questionsCount": 8,
+      "questionsCount": 9,
       "steps": [
         {
           "questionId": "QC-S1-001",
@@ -1206,6 +1287,15 @@
           "answer_ar": "إدارة المشاريع",
           "what_changed": [
             "+need_id"
+          ]
+        },
+        {
+          "questionId": "QC-L1-001",
+          "question_ar": "وفي «إدارة المشاريع»، أيُّ وصفٍ يقترب منك؟",
+          "why_now_ar": "مستواك في مجالك أنت — تُطابَق عليه دوراتُه لا على مرحلتك.",
+          "answer_ar": "أمارسه وحدي بانتظام",
+          "what_changed": [
+            "+field_level"
           ]
         },
         {
@@ -1250,7 +1340,7 @@
         "kind": "single_pathway",
         "topPathwayId": "PW-EMP-003",
         "compositeTemplateId": null,
-        "confidence": 0.815775400957511,
+        "confidence": 0.835775400957511,
         "outputKind_ar": "أفضل تطابق حالي",
         "composed": {
           "anchorDomain": "project_management",
@@ -1269,6 +1359,149 @@
           "relaxedForMinimum": false,
           "matchesPathwayId": null
         }
+      },
+      "deterministic": true
+    },
+    {
+      "persona": "مبتدئ يريد الإنجليزيّة للعمل",
+      "stage": "early_career",
+      "questionsCount": 6,
+      "steps": [
+        {
+          "questionId": "QC-S1-001",
+          "question_ar": "أي وصف يقترب أكثر من وضعك الحالي؟",
+          "why_now_ar": "المرحلة المهنية أول حقيقة — تفلتر الأهداف والاحتياجات والأسئلة كلها.",
+          "answer_ar": "موظف في بداية مساري المهني",
+          "what_changed": [
+            "+career_stage",
+            "+persona_type"
+          ]
+        },
+        {
+          "questionId": "QC-G2-001",
+          "question_ar": "ما الذي تريد تحقيقه؟",
+          "why_now_ar": "ماذا تريد؟ — الهدف يحدد فضاء المشكلة بخيارات تناسب مرحلتك.",
+          "answer_ar": "تطوير مهارة محددة أعرفها",
+          "what_changed": [
+            "+primary_goal",
+            "+goal_code_v21"
+          ]
+        },
+        {
+          "questionId": "QC-S1-002",
+          "question_ar": "وماذا عن وضعك العملي الآن؟",
+          "why_now_ar": "حالة العمل منفصلة عن المرحلة — تفصل «أول وظيفة» عن «ترقية».",
+          "answer_ar": "أعمل لدى جهة",
+          "what_changed": [
+            "+employment_state"
+          ]
+        },
+        {
+          "questionId": "QC-N3-001",
+          "question_ar": "أي جانب لو تحسّن لديك سيصنع أكبر فرق الآن؟",
+          "why_now_ar": "أين المشكلة الفعلية؟ — الاحتياج يكتشف المجال قبل أي مسار.",
+          "answer_ar": "اللغة الإنجليزية",
+          "what_changed": [
+            "+need_id"
+          ]
+        },
+        {
+          "questionId": "QC-E1-001",
+          "question_ar": "لأيّ غرضٍ تريد الإنجليزيّة أوّلا؟",
+          "why_now_ar": "لأيّ غرضٍ تريد الإنجليزيّة — يحسم أيّ دوراتها تناسبك.",
+          "answer_ar": "العمل — الاجتماعات والبريد المهنيّ",
+          "what_changed": [
+            "+english_purpose"
+          ]
+        },
+        {
+          "questionId": "QC-E2-001",
+          "question_ar": "أيُّ وصفٍ يقترب من إنجليزيّتك الآن؟ لا تقلق من الدقّة — سنعطيك اختبارَ تحديد مستوى مجانيّا يحسمه.",
+          "why_now_ar": "مستواك كما تصفه — نقطةُ بدايةٍ يؤكّدها اختبارُ تحديد المستوى المجانيّ.",
+          "answer_ar": "أعرف كلماتٍ وجملا قليلة",
+          "what_changed": [
+            "+english_level"
+          ]
+        }
+      ],
+      "result": {
+        "kind": "single_course",
+        "topPathwayId": "C-COMX-106",
+        "compositeTemplateId": null,
+        "confidence": 0.7147058823529411,
+        "outputKind_ar": "أفضل تطابق حالي"
+      },
+      "deterministic": true
+    },
+    {
+      "persona": "خريج يريد الشبكات",
+      "stage": "fresh_graduate",
+      "questionsCount": 6,
+      "steps": [
+        {
+          "questionId": "QC-S1-001",
+          "question_ar": "أي وصف يقترب أكثر من وضعك الحالي؟",
+          "why_now_ar": "المرحلة المهنية أول حقيقة — تفلتر الأهداف والاحتياجات والأسئلة كلها.",
+          "answer_ar": "خريج حديث",
+          "what_changed": [
+            "+career_stage",
+            "+persona_type",
+            "+education_state"
+          ]
+        },
+        {
+          "questionId": "QC-G2-001",
+          "question_ar": "ما الذي تريد تحقيقه؟",
+          "why_now_ar": "ماذا تريد؟ — الهدف يحدد فضاء المشكلة بخيارات تناسب مرحلتك.",
+          "answer_ar": "بناء مهارات عملية يطلبها سوق العمل",
+          "what_changed": [
+            "+primary_goal",
+            "+goal_code_v21"
+          ]
+        },
+        {
+          "questionId": "QC-S1-002",
+          "question_ar": "وماذا عن وضعك العملي الآن؟",
+          "why_now_ar": "حالة العمل منفصلة عن المرحلة — تفصل «أول وظيفة» عن «ترقية».",
+          "answer_ar": "أبحث عن عمل",
+          "what_changed": [
+            "+employment_state"
+          ]
+        },
+        {
+          "questionId": "QC-N3-001",
+          "question_ar": "أي جانب لو تحسّن لديك سيصنع أكبر فرق الآن؟",
+          "why_now_ar": "أين المشكلة الفعلية؟ — الاحتياج يكتشف المجال قبل أي مسار.",
+          "answer_ar": "الأمن السيبراني وحماية البيانات",
+          "what_changed": [
+            "+need_id"
+          ]
+        },
+        {
+          "questionId": "QC-D1-001",
+          "question_ar": "أيُّ جانبٍ من الأمن والتقنية تريده أوّلا؟",
+          "why_now_ar": "أيُّ جانبٍ من مجالك تريد — بعضُها له دورتُه بعينها.",
+          "answer_ar": "الشبكاتُ وأمنُها",
+          "what_changed": [
+            "+cyber_focus"
+          ]
+        },
+        {
+          "questionId": "QC-L1-001",
+          "question_ar": "وفي «الأمن السيبراني وحماية البيانات»، أيُّ وصفٍ يقترب منك؟",
+          "why_now_ar": "مستواك في مجالك أنت — تُطابَق عليه دوراتُه لا على مرحلتك.",
+          "answer_ar": "لم أمارسه بعد",
+          "what_changed": [
+            "+field_level"
+          ]
+        }
+      ],
+      "result": {
+        "kind": "single_course",
+        "topPathwayId": "C-CYB-106",
+        "compositeTemplateId": null,
+        "confidence": 0.7976816608467128,
+        "outputKind_ar": "أفضل تطابق حالي"
       },
       "deterministic": true
     }

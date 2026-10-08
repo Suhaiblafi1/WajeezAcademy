@@ -23,6 +23,30 @@ import { courseById } from '../../data/courses'
 /** معرّفُ الدورة إن كانت النتيجةُ دورةً واحدةً موجودةً في الكتالوج الحيّ، وإلّا null */
 export function singleCourseOf(resultJson: Record<string, unknown>): string | null {
   if (resultJson.kind !== 'single_course') return null
+  /* خطّةٌ بخيارين لا تختار عنه دورةً واحدة — انظر `englishChoiceOf` أدناه */
+  if (englishChoiceOf(resultJson)) return null
   const id = resultJson.pathway_id
   return typeof id === 'string' && courseById(id) !== undefined ? id : null
+}
+
+/* ── وخطّةُ الإنجليزيّة ذاتُ الخيارين تبقى في شاشة النتيجة (٨ أكتوبر ٢٠٢٦) ──
+
+   قرّر صاحبُ المنصّة للمبتدئ الذي يريد الإنجليزيّةَ للعمل أو للاختبار أن يُعرض
+   عليه **الخياران معا** ويختار هو — المستوى العامّ أوّلا ثمّ دورةُ غرضه، أو دورةُ
+   غرضه مباشرةً. والهبوطُ على صفحة دورةٍ واحدةٍ يختار عنه. فحين تحمل الخطّةُ أكثرَ
+   من خيارٍ أو خيارا من دورتين تبقى النتيجةُ شاشةً يُقرأ فيها الفرق. */
+export interface EnglishPlanView {
+  purpose: string
+  cefr: string
+  above_general: boolean
+  headline_ar: string
+  placement_note_ar: string
+  options: { course_ids: string[]; title_ar: string; difference_ar: string; suggested: boolean }[]
+}
+
+export function englishChoiceOf(resultJson: Record<string, unknown>): EnglishPlanView | null {
+  const plan = resultJson.english_plan as EnglishPlanView | null | undefined
+  if (!plan || !Array.isArray(plan.options) || plan.options.length === 0) return null
+  const choice = plan.options.length > 1 || plan.options.some((o) => o.course_ids.length > 1)
+  return choice ? plan : null
 }

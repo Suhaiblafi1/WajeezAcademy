@@ -4,7 +4,7 @@
    المهارة المجهولة لا تؤثر · كل خيار له consequence · حتمية كاملة. */
 
 import { describe, expect, it } from 'vitest'
-import { createEngineV21, type RecommendationV21 } from '../../../domain/diagnostic/v2_1'
+import { createEngineV21, OUTSIDE_BUDGET, type RecommendationV21 } from '../../../domain/diagnostic/v2_1'
 import {
   B2C_BANNED_FACTS,
   B2C_BANNED_QUESTION_PREFIXES,
@@ -108,7 +108,7 @@ describe('بنية أسئلة B2C — معايير النجاح', () => {
     expect(asked).not.toContain('QB-M1-010')
   })
 
-  it('التوفيق النهائي: كل سؤال له final_status واحدة والمجموع = 211', () => {
+  it('التوفيق النهائي: كل سؤال له final_status واحدة والمجموع = 248', () => {
     const counts: Record<string, number> = {}
     for (const [id, p] of Object.entries(questionPlanV21)) {
       expect(p.final_status, `سؤال بلا حالة نهائية: ${id}`).toBeDefined()
@@ -123,8 +123,8 @@ describe('بنية أسئلة B2C — معايير النجاح', () => {
     /* 205 ← 208: أُضيفت QB-M4-034/035/036 (kpi_design · risk_management ·
        change_management) لتُرى ٤١٪ من الدورات التي كان مطابق المهارات لا يراها.
        العدد مرجعيّ موثّق — أي تغيير يتطلب تحديثا مقصودا هنا. */
-    expect(Object.keys(questionPlanV21).length).toBe(243)
-    expect(Object.values(counts).reduce((a, b) => a + b, 0)).toBe(243)
+    expect(Object.keys(questionPlanV21).length).toBe(248)
+    expect(Object.values(counts).reduce((a, b) => a + b, 0)).toBe(248)
     /* الأرقام المرجعية الموثقة — أي تغيير يتطلب تحديثًا مقصودًا لهذا الاختبار.
        المرحلة 4: نُقلت أسئلة المهارات الأربع المقاسة غير المغطاة
        (QB-M4-002/005/023/025) إلى ما بعد التوصية بقرار أكاديمي موثق.
@@ -199,8 +199,14 @@ describe('بنية أسئلة B2C — معايير النجاح', () => {
        الدوراتِ التي لا يراها مطابقُ المهارات — فنزل العُميُ من ٣٣ إلى ٢٤
        (أقلُّ ممّا كان قبل هذا العمل كلِّه، وصفرٌ منها جديد). ولا اشتراكَ بين
        دورتين في مهارةٍ تُقاس، فالتغطيةُ تكلّف سؤالا لكلِّ دورةٍ لا أقلّ.
-       active_b2c 74→104، والمجموع 213→243. */
-    expect(counts).toEqual({ active_b2c: 104, deep_only: 10, post_recommendation: 36, institutional: 14, retired: 64, out_of_scope: 15 })
+       active_b2c 74→104، والمجموع 213→243.
+       أسئلةُ 2026-10-08 بقرار صاحب المنصّة سؤالا سؤالا: غرضُ الإنجليزيّة
+       ومستواها (QC-E1-001 · QC-E2-001)، والتخصّصُ داخل الأمن والمبيعات
+       (QC-D1-001 · QC-D2-001)، والمستوى في المجال (QC-L1-001). كلُّها نواةٌ
+       مشروطةٌ بالاحتياج، ولكلٍّ جوابٌ يقلب النتيجة (بوّابةُ الهدر: لا سؤالَ
+       منها ميّتٌ كلّيّا).
+       active_b2c 104→109، والمجموع 243→248. */
+    expect(counts).toEqual({ active_b2c: 109, deep_only: 10, post_recommendation: 36, institutional: 14, retired: 64, out_of_scope: 15 })
   })
 
   it('كل سؤال نشط في B2C له أثر قراري موثق في الخطة', () => {
@@ -282,11 +288,16 @@ describe('بنية أسئلة B2C — معايير النجاح', () => {
     for (const m of exp?.measured_skills ?? []) expect(m.slug).toBeTruthy()
   })
 
-  it('عدد الأسئلة بين 6 و14 في كل المراحل', () => {
+  /* والأربعة عشر سقفُ **الميزانيّة** لا الرحلة (٨ أكتوبر ٢٠٢٦): سؤالُ المستوى في
+     المجال والسؤالُ الفرعيُّ زيادةٌ قبلها صاحبُ المنصّة، لا اقتطاعٌ منها —
+     وحين اقتُطعت خسرت أحدَ عشرَ كيانا رحلتَها الفائزة (`OUTSIDE_BUDGET`). */
+  it('عدد الأسئلة بين 6 و14 في كل المراحل — وما زاد فخارجَ الميزانيّة بقصد', () => {
     for (const stage of ALL_STAGES) {
       const { asked } = runJourney({ stage })
+      const budgeted = asked.filter((id) => !OUTSIDE_BUDGET.has(id))
       expect(asked.length, `${stage}: ${asked.length} سؤالًا`).toBeGreaterThanOrEqual(6)
-      expect(asked.length, `${stage}: ${asked.length} سؤالًا`).toBeLessThanOrEqual(14)
+      expect(budgeted.length, `${stage}: ${budgeted.length} سؤالًا من الميزانيّة`).toBeLessThanOrEqual(14)
+      expect(asked.length - budgeted.length, `${stage}: أكثرُ من سؤالين خارج الميزانيّة`).toBeLessThanOrEqual(2)
     }
   })
 

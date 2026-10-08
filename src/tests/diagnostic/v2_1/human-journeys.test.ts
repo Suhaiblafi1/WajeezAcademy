@@ -6,7 +6,7 @@
    الحالات الحدية الأربع لها أقفال سلوكية إضافية موثقة عند كل اختبار */
 
 import { describe, expect, it } from 'vitest'
-import { createEngineV21, type RecommendationV21 } from '../../../domain/diagnostic/v2_1'
+import { createEngineV21, OUTSIDE_BUDGET, type RecommendationV21 } from '../../../domain/diagnostic/v2_1'
 import { Q, NEEDS_V21, type CareerStage } from '../../../domain/diagnostic/v2_1/maps'
 import { recommendationUniverse } from '../../../domain/diagnostic/v2_1/universe'
 
@@ -109,7 +109,11 @@ function expectHealthyJourney(name: string, a: { asked: string[]; rec: Recommend
     expect(ACTIVE_IDS.has(winner!), `${name}: فائز خارج الفضاء النشط: ${winner}`).toBe(true)
   }
   expect(a.asked.length, `${name}: ${a.asked.length} سؤالًا خارج 6–14`).toBeGreaterThanOrEqual(6)
-  expect(a.asked.length, `${name}: ${a.asked.length} سؤالًا — تجاوز السقف`).toBeLessThanOrEqual(14)
+  /* السقفُ أربعةَ عشرَ من الميزانيّة — وسؤالُ المستوى والسؤالُ الفرعيُّ زيادةٌ
+     قبلها صاحبُ المنصّة فوقها (٨ أكتوبر ٢٠٢٦، `OUTSIDE_BUDGET`) */
+  const budgeted = a.asked.filter((id) => !OUTSIDE_BUDGET.has(id))
+  expect(budgeted.length, `${name}: ${budgeted.length} سؤالًا من الميزانيّة — تجاوز السقف`).toBeLessThanOrEqual(14)
+  expect(a.asked.length - budgeted.length, `${name}: أكثرُ من سؤالين خارج الميزانيّة`).toBeLessThanOrEqual(2)
   /* الحتمية: نفس الإجابات مرتين = نفس الأسئلة والنتيجة والثقة */
   expect(b.asked, `${name}: الحتمية كسرت في الأسئلة`).toEqual(a.asked)
   expect(b.rec.kind, `${name}: الحتمية كسرت في النوع`).toBe(a.rec.kind)

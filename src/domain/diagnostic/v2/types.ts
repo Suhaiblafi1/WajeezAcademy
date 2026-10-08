@@ -133,6 +133,9 @@ export interface V2Candidate {
   /** مهارات متطلبة غير مقاسة — تُعرض كمجهولة صراحة */
   unknownSkillSlugs: string[]
   reasons_ar: string[]
+  /** قربُ مستوى دوراته من مستوى المتعلّم في مجاله (−١..١) — غائبٌ حين لم يُسأل
+      أو كان الكيانُ خارج ذلك المجال. انظر `v2_1/focus.ts` */
+  fieldLevelAlign?: number | null
   breakdown: {
     persona: number
     goal: number

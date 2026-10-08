@@ -13,7 +13,10 @@ import { GOALS_V21, NEEDS_V21, type CareerStage } from '../../src/domain/diagnos
 import type { DomainId } from '../../src/domain/diagnostic/v2/types'
 import { recommendationUniverse, type RecommendationEntity } from '../../src/domain/diagnostic/v2_1/universe'
 import { functionDomainsV2 } from '../../src/domain/diagnostic/v2/data'
-import { optionEffects, questionById } from '../../src/domain/diagnostic/catalog'
+import { courseById, optionEffects, questionById } from '../../src/domain/diagnostic/catalog'
+import { courseLevelOf, LEVEL_ORDINAL } from '../../src/domain/diagnostic/v2_1/course-fit'
+import { FIELD_LEVELS, SUB_FOCUS } from '../../src/domain/diagnostic/v2_1/focus'
+import { Q } from '../../src/domain/diagnostic/v2_1/maps'
 import { runJourney, winnerOf, STAGE_LABEL, MASTERY_UNSURE, type Journey, type RunOutcome } from './golden-journey'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
@@ -79,7 +82,10 @@ function* combosFor(e: RecommendationEntity): Generator<Journey> {
       ...neutralGoals.map((g) => g.label_ar),
       undefined,
     ]
-    const needs = NEEDS_V21.filter((n) => ok(n.stages) && e.needs.includes(n.code))
+    /* ودورةٌ يحسمها تخصّصٌ تُبلَغ من احتياجه وإن لم يكن من مجالها: البيعُ عبر
+       الإنترنت (C-MKT-106) بابُه «المبيعات» ومجالُها التسويقُ والتواصل */
+    const focusNeeds = SUB_FOCUS.filter((sub) => sub.options.some((o) => o.course_id === e.entity_id)).map((sub) => sub.needCode)
+    const needs = NEEDS_V21.filter((n) => ok(n.stages) && (e.needs.includes(n.code) || focusNeeds.includes(n.code)))
     /* احتياج subset من مجالات الكيان أولًا */
     const needList: (string | undefined)[] = [
       ...needs.filter((n) => n.domains.length > 0 && n.domains.every((d) => e.domains.includes(d))).map((n) => n.label_ar),
@@ -108,13 +114,29 @@ function* combosFor(e: RecommendationEntity): Generator<Journey> {
      فيُجرَّب المستخدم المتقدم (4) لا المتدني (2) فقط — قالب يفترض أهلية مكوّناته
      يفوز لمستخدم يتقن بعضها وينقصه التركيب، لا لمن ينقصه كل شيء */
   const skillLevels = e.entity_type === 'composite' ? [2, 4] : [2]
+  /* المستوى في المجال (٨ أكتوبر ٢٠٢٦): متعلّمٌ مستواه عند مستوى دورات الكيان
+     أوّلا، ثمّ الأقربُ إليه — فالكيانُ الممارسُ يُجرَّب لمن يقود غيرَه في مجاله،
+     لا لمن «لم يمارسه بعد». بلا هذا البُعد كان البحثُ يُجيب السؤالَ بأوّل خيار
+     دائما، فيحكم على الكيانات المتقدّمة بمتعلّمٍ لا يقصدها. */
+  const levels = e.required_courses
+    .map((id) => courseById.get(id))
+    .filter((c): c is NonNullable<typeof c> => c !== undefined)
+    .map((c) => LEVEL_ORDINAL[courseLevelOf(c)])
+  const meanLevel = levels.length > 0 ? levels.reduce((a, b) => a + b, 0) / levels.length : 1
+  const fieldLevels = [0, 1, 2, 3].sort((a, b) => Math.abs(a - meanLevel) - Math.abs(b - meanLevel) || a - b).slice(0, 2)
   for (const { stage, goal, needList } of stageGoalPairs)
     for (const need of needList)
       for (const fn of fnChoices)
         for (const mastery of masteries)
           for (const readiness of readinessChoices)
-            for (const skillLevel of skillLevels) {
-              const answers: Record<string, string> = {}
+            for (const skillLevel of skillLevels)
+            for (const fieldLevel of fieldLevels) {
+              const answers: Record<string, string> = { [Q.FIELD_LEVEL]: FIELD_LEVELS[fieldLevel].label_ar }
+              /* دورةٌ يحسمها تخصّصٌ (الشبكات، السحابة، التجزئة، الإنترنت) تُجرَّب بجوابه */
+              for (const sub of SUB_FOCUS) {
+                const opt = sub.options.find((o) => o.course_id === e.entity_id)
+                if (opt) answers[sub.questionId] = opt.label_ar
+              }
               /* كيان يضم مجال الخدمات الحكومية يُجرَّب بقطاع عام (CX يدخل من gov_services + operations) */
               if (e.entity_id === 'PW-GOV-002' || e.domains.includes('gov_services')) answers['QB-M3B-001'] = 'حكومي'
               if (fn) answers[FN_Q] = fn
@@ -273,7 +295,11 @@ for (const e of active) {
     goal: base?.goal,
     need: base?.need,
     mastery: base?.mastery,
-    answers: base?.fn ? { [FN_Q]: base.fn } : e.entity_id === 'PW-GOV-002' ? { 'QB-M3B-001': 'حكومي' } : {},
+    answers: {
+      ...(base?.fn ? { [FN_Q]: base.fn } : e.entity_id === 'PW-GOV-002' ? { 'QB-M3B-001': 'حكومي' } : {}),
+      /* والمستوى في المجال كما في الرحلة الفائزة — لا أوّلُ خيارٍ افتراضا */
+      ...(g.positive.journey?.answers?.[Q.FIELD_LEVEL] ? { [Q.FIELD_LEVEL]: g.positive.journey.answers[Q.FIELD_LEVEL] } : {}),
+    },
     skillLevel: 2,
   }
   const masteries = e.entity_type === 'composite' ? [MASTERY_SET, MASTERY_UNSURE] : [MASTERY_ONE, MASTERY_UNSURE]
@@ -302,7 +328,9 @@ for (const e of active) {
   }
 }
 
-const validKinds = new Set(['single_pathway', 'composite_template', 'exploratory_direction', 'advisor_referral'])
+/* و`single_course` نوعٌ صالحٌ منذ صارت الدورةُ تُرشَّح وحدَها (#466) — كان غائبا
+   هنا فحُسبت مئةُ رحلةٍ «غيرَ صالحة» وهي ما قُرِّر أن يقع. */
+const validKinds = new Set(['single_pathway', 'composite_template', 'exploratory_direction', 'advisor_referral', 'single_course'])
 const activeIds = new Set(active.map((e) => e.entity_id))
 const invalidVariant = variantRuns.filter((r) => !validKinds.has(r.kind))
 const alienWinner = variantRuns.filter((r) => r.winner !== null && !activeIds.has(r.winner))
@@ -398,6 +426,9 @@ function monteCarloRun(seed: number, sessions: number, offset = 0): { stats: McS
         skillLevel: 1 + Math.floor(rng() * 5),
         answers: rng() < 0.15 ? { 'QB-M3B-001': 'حكومي' } : undefined,
       }
+      /* المستوى في المجال موزّعٌ بالتساوي — يُسحب بعد سحوبات الجلسة القائمة
+         فلا يُزيح ما قبله: الجلسةُ نفسُها بأجوبتها السابقة، وزيادةُ جوابٍ واحد */
+      script.answers = { ...(script.answers ?? {}), [Q.FIELD_LEVEL]: FIELD_LEVELS[Math.floor(rng() * 4)].label_ar }
       const out = runJourney(`mc-${seed + offset}-${i}`, script)
       const winner = winnerOf(out.rec)
       stats.kind[out.rec.kind] = (stats.kind[out.rec.kind] ?? 0) + 1

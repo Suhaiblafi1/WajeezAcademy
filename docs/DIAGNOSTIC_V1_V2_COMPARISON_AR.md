@@ -7,12 +7,12 @@
 
 | المقياس | V1 | V2 |
 |---|---|---|
-| متوسط الأسئلة لكل جلسة | 13.63 | 11.44 |
+| متوسط الأسئلة لكل جلسة | 13.73 | 11.44 |
 | أسئلة غير مناسبة للمرحلة (طالب مدرسة يُسأل عن عمل/قيادة) | 0 | 0 |
 | مهارات غير مقيسة عوملت كفجوات (قاعدة 2.5) | 1226 | 0 |
 | مسارات متميزة ظهرت في المرتبة الأولى | 11 | 10 |
 | إحالات مستشار (صادقة عند غياب تغطية) | 0 | 13 |
-| توصيات بثقة «قوية» | 25 | 4 |
+| توصيات بثقة «قوية» | 29 | 4 |
 
 ## تفصيل مهم
 
@@ -29,13 +29,13 @@
 | طالب مدرسة — هدف explore | 10 | PW-STU-003 | strong | 10 | PW-STU-003 | best_current_match |
 | طالب مدرسة — هدف business_launch | 14 | PW-MKT-001 | good | 14 | advisor_referral | best_current_match |
 | طالب مدرسة — هدف career_direction | 10 | PW-STU-003 | strong | 10 | PW-STU-003 | best_current_match |
-| طالب جامعة — هدف employment_advancement | 14 | PW-ENGR-001 | good | 10 | PW-STU-002 | best_current_match |
+| طالب جامعة — هدف employment_advancement | 14 | PW-ENGR-001 | strong | 10 | PW-STU-002 | best_current_match |
 | طالب جامعة — هدف business_launch | 14 | PW-MKT-001 | good | 14 | advisor_referral | best_current_match |
 | طالب جامعة — هدف career_direction | 14 | PW-STU-003 | strong | 10 | PW-STU-003 | best_current_match |
-| طالب جامعة — هدف lead_team | 14 | PW-PSY-001 | good | 10 | PW-PSY-001 | best_current_match |
+| طالب جامعة — هدف lead_team | 14 | PW-PSY-001 | strong | 10 | PW-PSY-001 | best_current_match |
 | طالب جامعة — هدف explore | 10 | PW-STU-003 | strong | 10 | PW-STU-003 | best_current_match |
-| خريج — هدف employment_advancement | 14 | PW-ENGR-001 | good | 10 | PW-STU-002 | best_current_match |
-| خريج — هدف employment_advancement | 14 | PW-ENGR-001 | good | 10 | PW-ENGR-001 | best_current_match |
+| خريج — هدف employment_advancement | 14 | PW-ENGR-001 | strong | 10 | PW-STU-002 | best_current_match |
+| خريج — هدف employment_advancement | 14 | PW-ENGR-001 | strong | 10 | PW-ENGR-001 | best_current_match |
 | خريج — هدف career_direction | 10 | PW-STU-003 | strong | 10 | PW-STU-003 | best_current_match |
 | خريج — هدف business_launch | 14 | PW-MKT-001 | good | 10 | PW-BIZ-001 | best_current_match |
 | خريج — هدف personal_growth | 14 | PW-ENGR-001 | good | 14 | PW-ENGR-001 | exploratory_direction |
@@ -79,11 +79,11 @@
 | رائد/مستقل — personal_growth | 14 | PW-FND-003 | good | 14 | PW-INTR-001 | exploratory_direction |
 | رائد/مستقل — business_launch | 14 | PW-BIZ-001 | good | 10 | PW-BIZ-001 | best_current_match |
 | رائد/مستقل — explore | 14 | PW-STU-003 | strong | 8 | advisor_referral | best_current_match |
-| ولي أمر — 0 | 12 | PW-FAM-001 | strong | 10 | PW-FAM-001 | strong_match |
-| ولي أمر — 1 | 12 | PW-FAM-001 | strong | 10 | PW-FAM-001 | strong_match |
-| ولي أمر — 2 | 12 | PW-FAM-001 | strong | 10 | PW-FAM-001 | best_current_match |
+| ولي أمر — 0 | 14 | PW-FAM-001 | strong | 10 | PW-FAM-001 | strong_match |
+| ولي أمر — 1 | 14 | PW-FAM-001 | strong | 10 | PW-FAM-001 | strong_match |
+| ولي أمر — 2 | 14 | PW-FAM-001 | strong | 10 | PW-FAM-001 | best_current_match |
 | ولي أمر — 3 | 14 | PW-FAM-001 | strong | 10 | PW-FAM-001 | strong_match |
-| ولي أمر — 4 | 12 | PW-FAM-001 | strong | 10 | PW-FAM-001 | strong_match |
+| ولي أمر — 4 | 14 | PW-FAM-001 | strong | 10 | PW-FAM-001 | strong_match |
 | غير متأكد — 0 | 14 | PW-STU-003 | strong | 10 | PW-STU-003 | best_current_match |
 | غير متأكد — 1 | 14 | PW-STU-003 | strong | 10 | PW-STU-003 | best_current_match |
 | غير متأكد — 2 | 14 | PW-STU-003 | strong | 10 | PW-STU-003 | best_current_match |

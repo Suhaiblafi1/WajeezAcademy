@@ -19,6 +19,7 @@ import { courseById, catalogCourses, launchPathways } from '../catalog'
 import { TARGET_LEVEL } from '../v2/skills'
 import { pathwayDomainsV2 } from '../v2/data'
 import { resolveSkillLevels, INFERRED_EVIDENCE_WEIGHT } from './skill-families'
+import { fieldDomainsOf, fieldLevelOf } from './focus'
 import type { CatalogCourse } from '../types'
 import type { DecisionContext, DomainId, SkillState } from '../v2/types'
 
@@ -34,7 +35,7 @@ const LEVEL_FROM_AR: Record<string, CourseLevel> = {
   'تطبيقي': 'applied',
   'ممارس': 'practitioner',
 }
-const LEVEL_ORDINAL: Record<CourseLevel, number> = {
+export const LEVEL_ORDINAL: Record<CourseLevel, number> = {
   foundational: 0,
   foundational_applied: 1,
   applied: 2,
@@ -76,8 +77,19 @@ const STAGE_LEVEL: Record<string, number> = {
 }
 
 /** موضع المتعلم على سلّم المستوى — من المرحلة، ويعدّله الدليل المقيس صعودا فقط.
-    الرفع بالدليل ولا خفض به: مديرٌ لم تُقس مهاراته يبقى في موضع مرحلته. */
-export function learnerLevel(facts: DecisionContext['facts'], skillStates: Map<string, SkillState>): number {
+    الرفع بالدليل ولا خفض به: مديرٌ لم تُقس مهاراته يبقى في موضع مرحلته.
+
+    ومقرّرٌ في المجال الذي سُئل فيه عن مستواه يُطابَق على جوابه هناك لا على
+    مرحلته (٨ أكتوبر ٢٠٢٦، انظر `focus.ts`): مستواه في مجاله قاله هو، والمرحلةُ
+    تخمينٌ عنه. وما خارج ذلك المجال يبقى على مرحلته — فالمديرُ المتقدّمُ في
+    المبيعات لا يُحسب متقدّما في البيانات لأنّه قال ذلك عن المبيعات. */
+export function learnerLevel(
+  facts: DecisionContext['facts'],
+  skillStates: Map<string, SkillState>,
+  courseDomains?: readonly string[],
+): number {
+  const field = fieldLevelOf(facts)
+  if (field !== null && courseDomains && courseDomains.some((d) => fieldDomainsOf(facts).includes(d))) return field
   const stage = facts['career_stage']?.value as string | undefined
   const base = stage !== undefined ? (STAGE_LEVEL[stage] ?? 1) : 1
   const measured = [...skillStates.values()].filter((s) => s.state === 'measured' && s.level !== undefined)
@@ -167,7 +179,8 @@ export function assessCourseFit(course: CatalogCourse, ctx: DecisionContext, dom
   const domainMatch = ds.length === 0 ? 0 : Math.max(...ds.map((d) => scores.get(d) ?? 0))
 
   const level = courseLevelOf(course)
-  const distance = Math.abs(LEVEL_ORDINAL[level] - learnerLevel(ctx.facts, ctx.skillStates))
+  const learner = learnerLevel(ctx.facts, ctx.skillStates, ds)
+  const distance = Math.abs(LEVEL_ORDINAL[level] - learner)
   /* المسافة القصوى على السلّم ثلاث درجات — تطابق تام عند صفر، وانعدام عند ثلاث */
   const levelMatch = Math.max(0, 1 - distance / 3)
 
@@ -184,8 +197,8 @@ export function assessCourseFit(course: CatalogCourse, ctx: DecisionContext, dom
   if (domainMatch >= 0.8) bits.push('في صميم مجالك')
   else if (domainMatch <= 0.2) bits.push('خارج مجالك الأقرب')
   if (levelMatch >= 0.9) bits.push('بمستواك')
-  else if (LEVEL_ORDINAL[level] > learnerLevel(ctx.facts, ctx.skillStates)) bits.push('فوق مستواك الحالي')
-  else if (LEVEL_ORDINAL[level] < learnerLevel(ctx.facts, ctx.skillStates)) bits.push('دون مستواك الحالي')
+  else if (LEVEL_ORDINAL[level] > learner) bits.push('فوق مستواك الحالي')
+  else if (LEVEL_ORDINAL[level] < learner) bits.push('دون مستواك الحالي')
 
   return {
     courseId: course.course_id,

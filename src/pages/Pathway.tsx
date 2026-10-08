@@ -47,6 +47,8 @@ import { whyPathwayFacts, whyResultForPathway } from "@/application/plan/why-pat
 import { loadLastResult } from "@/application/diagnostic/session-store";
 import type { DiagResult } from "@/data/diagnostic";
 import { WhyThisPathway } from "@/pages/diagnostic/ResultPlanCards";
+import LevelLine from "@/components/LevelLine";
+import type { LevelSummary } from "@/application/diagnostic/level-summary";
 import { DISCOUNT_CATEGORIES, nextBuildStep } from "@/application/commerce/discount-policy";
 import { priceCart } from "@/application/commerce/cart-pricing";
 import { couponFieldCls } from "@/components/FormKit";
@@ -588,6 +590,10 @@ export default function PathwayPage() {
               ما المسار؟ ثمّ ماذا سأتعلّم؟ ثمّ لماذا هذا بالذات؟ ثمّ بكم؟
               وقبل إحالة المستشار أيضا: الأدلّةُ تُقرأ قبل الدعوة التي تبنى عليها. */}
           {whyResult && <WhyThisPathway {...whyPathwayFacts(whyResult)} headingLevel="h2" />}
+          {/* مستواك في مجالك كما فهمناه، وسببُه، وبابُ تعديله (٨ أكتوبر ٢٠٢٦) */}
+          {(whyResult?.resultJson.level_summary as LevelSummary | null | undefined) && (
+            <LevelLine summary={whyResult!.resultJson.level_summary as LevelSummary} className="mt-6" />
+          )}
 
           {/* إحالة المستشار — قبل بوّابة الشراء لا بعدها.
 

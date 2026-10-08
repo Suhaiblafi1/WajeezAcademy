@@ -222,11 +222,18 @@ export const NEEDS_V21: NeedDefV21[] = [
      وينقصه طريقٌ يصل إليه. ولا يُفتح لغير أهله: بوّابةُ `sector: public`
      تبقى كما هي، فلا يراه إلّا من قال إنّه في القطاع العامّ. */
   { code: 'need_customer_experience', label_ar: 'تجربة العميل / المستفيد وجودة الخدمة', stages: [...EMPLOYED_LIKE, 'founder'], domains: ['operations', 'gov_services'] },
-  { code: 'need_sales', label_ar: 'المبيعات والتعامل مع العملاء', stages: [...EMPLOYED_LIKE, 'founder', 'freelancer'], domains: ['sales'] },
+  /* والخرّيجُ ومن لم يحسم وضعَه أُضيفا (٨ أكتوبر ٢٠٢٦): بيعُ التجزئة أوّلُ عملٍ
+     لكثيرٍ منهم، ودورتُه (C-SAL-106) جمهورُها بقرار صاحب المنصّة هم أنفسُهم. */
+  { code: 'need_sales', label_ar: 'المبيعات والتعامل مع العملاء', stages: [...EMPLOYED_LIKE, 'founder', 'freelancer', 'fresh_graduate', 'other_unsure'], domains: ['sales'] },
   { code: 'need_marketing', label_ar: 'التسويق والنمو', stages: ['early_career', 'experienced', 'manager', 'founder', 'freelancer', 'other_unsure'], domains: ['marketing_growth'] },
   { code: 'need_negotiation', label_ar: 'التفاوض وإغلاق الصفقات', stages: ['experienced', 'manager', 'senior_manager', 'founder', 'freelancer'], domains: ['sales', 'communication_influence'] },
   { code: 'need_product', label_ar: 'إدارة المنتج وتجربة المستخدم', stages: ['early_career', 'experienced', 'manager', 'founder', 'freelancer'], domains: ['product_mgmt'] },
-  { code: 'need_cyber', label_ar: 'الأمن السيبراني وحماية البيانات', stages: ['experienced', 'manager', 'senior_manager', 'founder'], domains: ['cyber_risk'] },
+  /* ومراحلُه سبعٌ لا أربع (٨ أكتوبر ٢٠٢٦): كان لا يُعرض إلّا على ذي الخبرة
+     والمدير والمؤسّس — ودورتا الشبكات والسحابة (C-CYB-106 · C-CYB-107) جمهورُهما
+     بقرار صاحب المنصّة الطالبُ والخرّيجُ ومن بدأ مساره. فلم يكن بينهما وبين
+     جمهورهما بابٌ واحد، ولذلك ندر أن تُرشَّحا. والسؤالُ الفرعيُّ `cyber_focus`
+     أدناه يفصل الشبكاتِ والسحابةَ عن حماية البيانات. */
+  { code: 'need_cyber', label_ar: 'الأمن السيبراني وحماية البيانات', stages: ['university_student', 'fresh_graduate', 'early_career', 'experienced', 'manager', 'senior_manager', 'founder'], domains: ['cyber_risk'] },
   { code: 'need_supply', label_ar: 'سلسلة الإمداد والمشتريات', stages: ['experienced', 'manager', 'senior_manager', 'founder'], domains: ['operations'] },
   { code: 'need_finance', label_ar: 'المالية وفهم الأرقام', stages: [...EMPLOYED_LIKE, 'founder', 'freelancer'], domains: ['finance_mgmt'] },
   { code: 'need_learning_design', label_ar: 'تصميم التعلم والتدريب', stages: ['trainer_ld', 'manager', 'senior_manager'], domains: ['learning_design'] },
@@ -248,6 +255,20 @@ export const NEEDS_V21: NeedDefV21[] = [
      ومراحلُه مراحلُ `family_role` نفسُها، فلا يفترق البابان. */
   { code: 'need_family', label_ar: 'تربية الأبناء والعلاقة في البيت', stages: ['early_career', 'experienced', 'manager', 'senior_manager', 'founder', 'freelancer', 'trainer_ld', 'other_unsure'], domains: ['family_parenting'] },
   { code: 'need_unsure', label_ar: 'غير متأكد — أريد اقتراحًا مبنيًا على إجاباتي', stages: 'all', domains: [] },
+  /* ── ما أُضيف بعد «غير متأكد» لا قبله (٨ أكتوبر ٢٠٢٦) ──
+
+     معرّفُ الخيار موضعُه (`o1`، `o2`…) — فإدخالُ احتياجٍ في الوسط يزيح معرّفَ
+     كلِّ ما بعده، فتُقرأ إجاباتٌ محفوظةٌ في جلساتٍ قائمةٍ على غير ما قصده
+     أصحابُها. فالجديدُ يُلحق في الآخر، و«غير متأكد» يُعرض آخرا بإعادة ترتيب
+     العرض وحدَه في `withStageFilteredOptions` (المعرّفاتُ تسافر مع خياراتها).
+
+     · الإنجليزيّةُ بلا مجال: لا تُنافِس فيها المساراتُ أصلا. هي سؤالان —
+       غرضُها ومستواها — يحسمان الدورةَ بجدولٍ في `english.ts`، بقرار صاحب
+       المنصّة.
+     · والبرمجةُ وتطويرُ الويب بابُ دورتها (C-WEB-101) — كانت مرشَّحةً وحدَها
+       ولا احتياجَ يصل إليها. ومراحلُه مراحلُ جمهورها. */
+  { code: 'need_english', label_ar: 'اللغة الإنجليزية', stages: 'all', domains: [] },
+  { code: 'need_programming', label_ar: 'البرمجة وتطوير الويب', stages: ['university_student', 'fresh_graduate', 'early_career', 'founder'], domains: ['product_mgmt'] },
 ]
 
 export function needByCode(code: string): NeedDefV21 | undefined {
@@ -292,6 +313,12 @@ export const Q = {
   NEED: 'QC-N3-001',
   TIME: 'QC-F7-001',
   MASTERY: 'QC-C8-001',
+  /* أسئلةُ ٨ أكتوبر ٢٠٢٦ — بقرار صاحب المنصّة سؤالا سؤالا */
+  ENGLISH_PURPOSE: 'QC-E1-001',
+  ENGLISH_LEVEL: 'QC-E2-001',
+  CYBER_FOCUS: 'QC-D1-001',
+  SALES_CHANNEL: 'QC-D2-001',
+  FIELD_LEVEL: 'QC-L1-001',
 } as const
 
 /* أسئلة متقاعدة في الكود — تُرفض مهما قالت اللقطة المنشورة.

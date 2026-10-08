@@ -201,6 +201,12 @@
       },
       "o24": {
         "need_id": "need_unsure"
+      },
+      "o25": {
+        "need_id": "need_english"
+      },
+      "o26": {
+        "need_id": "need_programming"
       }
     },
     "QC-F7-001": {
@@ -226,6 +232,70 @@
       },
       "o3": {
         "mastery_portfolio_pref": "unsure"
+      }
+    },
+    "QC-E1-001": {
+      "o1": {
+        "english_purpose": "general"
+      },
+      "o2": {
+        "english_purpose": "work"
+      },
+      "o3": {
+        "english_purpose": "exam"
+      }
+    },
+    "QC-E2-001": {
+      "o1": {
+        "english_level": "a1"
+      },
+      "o2": {
+        "english_level": "a2"
+      },
+      "o3": {
+        "english_level": "b1"
+      },
+      "o4": {
+        "english_level": "b2"
+      },
+      "o5": {
+        "english_level": "c1"
+      }
+    },
+    "QC-D1-001": {
+      "o1": {
+        "cyber_focus": "data_protection"
+      },
+      "o2": {
+        "cyber_focus": "networks"
+      },
+      "o3": {
+        "cyber_focus": "cloud"
+      }
+    },
+    "QC-D2-001": {
+      "o1": {
+        "sales_channel": "b2b"
+      },
+      "o2": {
+        "sales_channel": "retail"
+      },
+      "o3": {
+        "sales_channel": "online"
+      }
+    },
+    "QC-L1-001": {
+      "o1": {
+        "field_level": "none"
+      },
+      "o2": {
+        "field_level": "basics"
+      },
+      "o3": {
+        "field_level": "independent"
+      },
+      "o4": {
+        "field_level": "lead"
       }
     },
     "QB-M3C-001": {

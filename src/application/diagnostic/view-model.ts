@@ -5,6 +5,7 @@ import type { Recommendation } from '../../domain/diagnostic/types'
 import type { DiagResult, GapDetail } from '../../data/diagnostic'
 import { pathwayById } from '../../data/pathways'
 import { courseById, pathwayCourses } from '../../data/courses'
+import { levelSummaryOf } from './level-summary'
 
 const LEGACY_PERSONA: Record<string, string> = {
   student: 'student',
@@ -182,6 +183,10 @@ export function recommendationToDiagResult(
       exploration: rec.exploration ?? null,
       /** مقارنة قبل/بعد جولة تدقيق الخطة إن أجريت */
       deepening: deepeningComparison ?? null,
+      /** مستواك كما فهمناه وسببُه وبابُ تعديله (٨ أكتوبر ٢٠٢٦) — null حين لم يُسأل */
+      level_summary: facts ? levelSummaryOf(facts) : null,
+      /** خطّةُ الإنجليزيّة بخياراتها — null لغيرها */
+      english_plan: (rec as { english?: unknown }).english ?? null,
     },
   }
 }

@@ -28,6 +28,9 @@ export const OUTPUT_THRESHOLDS = {
   exploratory: 0.4,
 } as const
 
+/** أثرُ قرب المستوى في الثقة — ±٠٫٠٤ عند التطابق التامّ أو البعد بدرجتين فأكثر */
+export const FIELD_LEVEL_CONFIDENCE_WEIGHT = 0.04
+
 const GOAL_CLARITY_SCORE: Record<string, number> = { high: 1, medium: 0.65, low: 0.25 }
 
 export function computeConfidenceV2(
@@ -82,7 +85,16 @@ export function computeConfidenceV2(
     consistency * WEIGHTS.consistency +
     evidenceQuality * WEIGHTS.evidenceQuality
   const weightSum = skillWeightApplicable ? 1 : 1 - WEIGHTS.skillEvidenceCoverage
-  const overall = raw / weightSum
+  /* ── والمستوى في المجال يدخل الثقة (٨ أكتوبر ٢٠٢٦) ──
+
+     من قال مستواه في مجاله ثمّ رُشّح له ما تقع دوراتُه عند ذلك المستوى، فثقتُنا
+     أنّه يناسبه أعلى ممّن رُشّح له ما يبعد عنه درجتين. والثقةُ كانت عمياءَ عن
+     المستوى كلّيّا: ملاءمةُ المتصدّر تدخلها مقصوصةً عند ٠٫٨٥، فمسارٌ مريحُ
+     الفوز يُعطى الرقمَ نفسَه لمبتدئٍ ولمن يقود غيرَه فيه. والجوابُ الذي لا
+     يغيّر شيئا ممّا يُرى مقعدٌ ميّتٌ من وقت المتعلّم (`audit-question-waste`).
+     إضافةٌ لا مكوّنٌ تاسع: من لم يُسأل عن مستواه لا يتغيّر رقمُه. */
+  const levelAlign = top?.fieldLevelAlign
+  const overall = Math.min(1, Math.max(0, raw / weightSum + (typeof levelAlign === 'number' ? FIELD_LEVEL_CONFIDENCE_WEIGHT * levelAlign : 0)))
 
   /* التوصية القوية مشروطة بكل مكون واضح — نسجل مانعاتها صراحة.
      معايرة إغلاق منطق V2.1: مانع الدليل المهاري كان يطلق في السباقات المريحة

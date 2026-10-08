@@ -11,6 +11,7 @@ export {
   CONFIRMATION_MIN_QUESTIONS,
   CONFIRMATION_MAX_QUESTIONS,
   engineVersions,
+  OUTSIDE_BUDGET,
 } from './engine'
 export type { RecommendationV21, AdaptiveScoreV21, QuestionEligibilityCtxV21 } from './engine'
 export { questionPlanV21, planOf, QUESTION_PLAN_VERSION } from './data'
