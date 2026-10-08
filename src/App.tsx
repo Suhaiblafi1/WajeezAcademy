@@ -19,6 +19,7 @@ import ToastHost from './components/Toast'
 /* محرك التشخيص وصفحة المسار ثقيلان — يُحمَّلان عند الطلب */
 const Methodology = lazy(() => import('./pages/Methodology'))
 const Diagnostic = lazy(() => import('./pages/Diagnostic'))
+const PlacementTest = lazy(() => import('./pages/PlacementTest'))
 const Mirror = lazy(() => import('./pages/Mirror'))
 const PathwayPage = lazy(() => import('./pages/Pathway'))
 const CoursePathPage = lazy(() => import('./pages/CoursePath'))
@@ -47,6 +48,8 @@ const RateMyLearning = lazy(() => import('./pages/student/RateMyLearning'))
 const TrainerMyRatings = lazy(() => import('./pages/trainer/MyRatings'))
 const TrainerReferral = lazy(() => import('./pages/trainer/Referral'))
 const AdminRatingModeration = lazy(() => import('./pages/admin/RatingModeration'))
+const TrainerPlacementReview = lazy(() => import('./pages/trainer/PlacementReview'))
+const AdminPlacementReview = lazy(() => import('./pages/admin/PlacementReview'))
 const VerifyEmail = lazy(() => import('./pages/VerifyEmail'))
 const ResetPassword = lazy(() => import('./pages/ResetPassword'))
 const ModuleStudy = lazy(() => import('./pages/student/ModuleStudy'))
@@ -185,6 +188,8 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/methodology" element={<Methodology />} />
           <Route path="/diagnostic" element={<Diagnostic />} />
+          {/* اختبارُ تحديد مستوى الإنجليزيّة — اختياريٌّ من خطّة الإنجليزيّة (٨ أكتوبر ٢٠٢٦) */}
+          <Route path="/placement/english" element={<PlacementTest />} />
           <Route path="/mirror" element={<Mirror />} />
           <Route path="/pathways" element={<Catalog kind="pathways" />} />
           <Route path="/courses" element={<Catalog kind="courses" />} />
@@ -316,11 +321,14 @@ export default function App() {
             <Route path="/trainer/board" element={<CohortBoard />} />
             <Route path="/trainer/ratings" element={<TrainerMyRatings />} />
             <Route path="/trainer/referral" element={<TrainerReferral />} />
+            {/* مراجعةُ اختبار تحديد المستوى — لمن مُنح `placement.review` (٨ أكتوبر ٢٠٢٦) */}
+            <Route path="/trainer/placement-review" element={<TrainerPlacementReview />} />
           </Route>
           <Route element={<RequireRole allow={ADMIN_ROLES} />}>
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/account" element={<AccountPage />} />
             <Route path="/admin/ratings" element={<AdminRatingModeration />} />
+            <Route path="/admin/placement-review" element={<AdminPlacementReview />} />
             <Route path="/admin/cohorts" element={<AdminCohorts />} />
             <Route path="/admin/terms" element={<AdminTerms />} />
             <Route path="/admin/exceptions" element={<Exceptions />} />

@@ -44,6 +44,9 @@ import { Card, Inset, Panel } from "@/components/ui/Surface";
 import { UpcomingTermLine } from "@/components/UpcomingTermNote";
 import DiscountProofLink from '@/components/DiscountProofLink'
 import LevelLine from "@/components/LevelLine";
+import { PlacementPanel } from "@/components/EnglishPlanCard";
+import { Q } from "@/domain/diagnostic/v2_1/maps";
+import { ENGLISH_LEVELS, PLACEMENT_TEST_NOTE_AR } from "@/domain/diagnostic/v2_1/english";
 import { levelSummaryForCourse } from "@/application/diagnostic/level-summary";
 import { loadLastResult } from "@/application/diagnostic/session-store";
 /* سعر الدورة الواحدة في القوائم: رقمٌ من شعبةٍ حقيقية، أو «مع الشعبة» —
@@ -320,6 +323,10 @@ function CoursePathPage({ courseId }: { courseId: string }) {
           {full?.shortPromise && <p className="mt-3 text-sm leading-relaxed text-foreground">{full.shortPromise}</p>}
           {/* مستواك كما فهمه التشخيص — حين قادك إلى هذه الدورة (٨ أكتوبر ٢٠٢٦) */}
           {diagLevel && <LevelLine summary={diagLevel} className="mt-4" />}
+          {/* ومن هبط هنا من خطّة إنجليزيّةٍ بدورةٍ واحدة يجد بابَ الاختبار كمن بقي في الخطّة */}
+          {diagLevel?.question_id === Q.ENGLISH_LEVEL && (
+            <PlacementPanel note={PLACEMENT_TEST_NOTE_AR} stated={ENGLISH_LEVELS[Number(diagLevel.current_option_id.slice(1)) - 1]?.code ?? null} className="mt-4" />
+          )}
 
           <div className="mt-4 flex flex-wrap items-center gap-2 text-xs">
             <span className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 font-bold text-foreground">

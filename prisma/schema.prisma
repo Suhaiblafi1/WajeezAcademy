@@ -4403,3 +4403,29 @@ model TrainerPoster {
   @@index([profileId, targetKind, targetId])
   @@index([status])
 }
+
+/// سؤالٌ في اختبار تحديد مستوى الإنجليزيّة (٨ أكتوبر ٢٠٢٦).
+/// يُستورَد مسوّدةً من `src/data/placement/english-placement.draft.v1.json` ولا يُعرض
+/// على متعلّمٍ حتّى يعتمده من يملك `placement.review` — مدرّبُ الإنجليزيّة أو الإدارة.
+/// والاستيرادُ يُنشئ ولا يُحدّث: ما عدّله المراجعُ لا يمحوه استيرادٌ تالٍ.
+model PlacementQuestion {
+  /// EN-A1-1 … — المعرّفُ نفسُه في ملفّ المسوّدة
+  id           String    @id
+  level        String // a1 | a2 | b1 | b2 | c1
+  skill        String // grammar | vocabulary | reading
+  passageEn    String?
+  stemEn       String
+  /// أربعةُ خياراتٍ نصّيّة بترتيبها
+  options      Json
+  answerIndex  Int
+  position     Int       @default(0)
+  status       String    @default("draft") // draft | approved | retired
+  /// ما يكتبه المراجعُ مع قراره — لا يصل المتعلّم
+  reviewNoteAr String?
+  reviewedBy   String?   @db.Uuid
+  reviewedAt   DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([status, level])
+}

@@ -5,6 +5,7 @@ import { getPrisma, disconnectPrisma } from '../server/db/client'
 import { stopEmbeddedPostgres } from '../server/db/embedded'
 import { importCatalog } from '../server/catalog/importer'
 import { seedRbac } from '../server/auth/rbac-seed'
+import { importPlacementDraft } from '../server/catalog/placement-importer'
 
 const prisma = await getPrisma()
 const url = process.env.DATABASE_URL!
@@ -32,6 +33,10 @@ console.log(`   ${s.skills} مهارة · ${s.questions} سؤالا (${s.options
 console.log(`   ${s.links} علاقة مرجعية · ${s.diagnosticProfiles} ملفا تشخيصيا · ${s.pathwayDomains} ربط مجال`)
 console.log(`   إصدار الكتالوج: ${s.catalogVersionId} ${s.catalogVersionCreated ? '(أُنشئ ونُشر الآن)' : '(موجود — لم يتكرر)'}`)
 console.log(`   بصمة اللقطة: ${s.snapshotHash.slice(0, 16)}…`)
+
+console.log('④ مسوّدةُ اختبار تحديد مستوى الإنجليزيّة…')
+const placement = await importPlacementDraft(prisma)
+console.log(`   ${placement.created} سؤالا أُنشئ · ${placement.kept} موجودٌ تُرك كما عدّله مراجعُه`)
 
 /* الاستيراد يحدّث الجداول، والمحرك يقرأ اللقطة المنشورة. حين يفترقان يظن
    المشغّل أن تغييره وصل المستخدم وهو لم يصل — فنقولها صراحة ونسمّي الخطوة

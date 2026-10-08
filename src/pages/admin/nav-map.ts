@@ -5,7 +5,7 @@
  * مكوّن — فتصديرُها من `AdminLayout.tsx` يكسر التحديثَ الساخن.
  */
 
-import { Activity, Award, BadgePercent, BarChart3, Bell, BookPlus, CalendarCog, CalendarRange, ClipboardCheck, ClipboardList, Coins, FileSignature, FlaskConical, GitBranch, GraduationCap, Handshake, HandCoins, History, Layers, LayoutDashboard, LifeBuoy, Megaphone, PenLine, PlugZap, Presentation, Route, School, Settings, ShieldAlert, Star, UserCheck, UserMinus, UserPlus, Users, Wallet } from "lucide-react";
+import { Activity, Award, BadgePercent, BarChart3, Bell, BookPlus, CalendarCog, CalendarRange, ClipboardCheck, ClipboardList, Coins, FileSignature, FlaskConical, GitBranch, GraduationCap, Handshake, HandCoins, History, Languages, Layers, LayoutDashboard, LifeBuoy, Megaphone, PenLine, PlugZap, Presentation, Route, School, Settings, ShieldAlert, Star, UserCheck, UserMinus, UserPlus, Users, Wallet } from "lucide-react";
 
 /* ═══ سبعُ مجموعاتٍ لا ثلاثةُ أبواب ═══
 
@@ -94,8 +94,21 @@ export const allSections: AdminNavSection[] = [
          هي بنصّها «مراجعة اقتراحات تعديل الدورات من المدربين»، وهذا منها. */
       { to: "/admin/course-proposals", label: "دوراتٌ مقترحة", icon: BookPlus, need: "trainer.change.review",
         descAr: "ما اقترحه المدرّبون من دورات — يُصنَّف قبل أن يدخل الكتالوج" },
+    ],
+  },
+  /* ═══ «التشخيص» مجموعةٌ وحدَها (٨ أكتوبر ٢٠٢٦) ═══
+
+     جاء اختبارُ تحديد المستوى سادسا في «الكتالوج والمحتوى»، والسقفُ خمس. وليس
+     الكتالوجَ أصلا: هو والمحاكي سؤالٌ واحد — **كيف نعرف أين يقف المتعلّم؟** —
+     فخرجت «جودةُ التشخيص» إليه وصارا مجموعة. */
+  {
+    title: "التشخيص",
+    icon: FlaskConical,
+    items: [
       { to: "/admin/quality", label: "جودة التشخيص", icon: FlaskConical, need: "diagnostic.simulate",
         descAr: "محاكاةُ المحرّك التشخيصيّ: أيُّ مسارٍ يُرشَّح لأيّ حال، ولمَ" },
+      { to: "/admin/placement-review", label: "اختبار تحديد المستوى", icon: Languages, need: "placement.review",
+        descAr: "أسئلةُ اختبار الإنجليزيّة: تُراجَع وتُعتمَد قبل أن يُفتح للمتعلّمين" },
     ],
   },
   /* ═══ ولماذا انقسم «المدرّبون» مجموعتين ═══
