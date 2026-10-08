@@ -37,6 +37,7 @@ import { Download } from "lucide-react";
 import { cohortDayAr } from "@/application/learning/cohort-gate";
 import { ownMaterialLabels, type WorkbookContent } from "@/application/trainer/cohort-workbooks";
 import PlanScorecard from "@/components/PlanScorecard";
+import { postponeChoices, postponedLineAr, seasonAr, seasonStart, type Season } from "@/application/trainer/plan-postpone";
 import { blockedItems, planScorecard, scorecardNotes } from "@/application/trainer/plan-scorecard";
 
 interface TrainerPlan {
@@ -62,6 +63,8 @@ interface TrainerPlan {
   returned?: { content: unknown; at: string | null } | null;
   /* وتقريرُ المراجعة المرفوعُ لهذه الخطّة — تذكره رسالةُ القرار (٨ أكتوبر ٢٠٢٦) */
   reviewReports?: ReviewReport[];
+  /* مؤجّلةٌ إلى موسمٍ قادم — أوّلُ يومٍ فيه (٨ أكتوبر ٢٠٢٦، `plan-postpone.ts`) */
+  postponedTo?: string | null;
   content: ({
     summaryAr?: string | null; modules?: { moduleId: string; titleAr: string }[]; resources?: { title: string; url: string }[];
     /* مدّةُ الشعبة كما حدّدها مدرّبُها — تُعتمَد مع الخطّة (٢٧ سبتمبر ٢٠٢٦) */
@@ -85,7 +88,7 @@ interface PendingSession {
 }
 
 /** القرارُ في الخطّة نفسِها — للطابور يعلّمها مقضيّةً ولا يُسقطها من تحت عين قارئها */
-export type PlanOutcome = "approved" | "changes_requested";
+export type PlanOutcome = "approved" | "changes_requested" | "postponed";
 
 export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPlanDecided }: {
   cohortId: string;
@@ -135,6 +138,12 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
   const [asking, setAsking] = useState(false);
   /* ما يُبدأ به صندوقُ الردّ — فارغا، أو ممّا سقط من بطاقة المعايير بنقرة (٨ أكتوبر ٢٠٢٦) */
   const [askFrom, setAskFrom] = useState<ReviewNotes | undefined>(undefined);
+  /* ═══ والتأجيلُ إلى موسمٍ قادم — قرارٌ ثالث (٨ أكتوبر ٢٠٢٦) ═══
+     «أختار أفضلَ اثنتين أو ثلاث… وأقول لهم أن يؤجّلوا الباقية — ويجب أن يعرفوا أنّي لا
+     أقبلها لهذا الفصل». يُختار الموسمُ (التالي مقترَحا)، وكلمةٌ اختياريّة. */
+  const [postponing, setPostponing] = useState(false);
+  const [postponeTo, setPostponeTo] = useState(0);
+  const [postponeNote, setPostponeNote] = useState("");
   /* وكلمةٌ تصله مع الاعتماد — للمقترَح لا للمطلوب (`approvalBody`، ٧ أكتوبر ٢٠٢٦) */
   const [approveNote, setApproveNote] = useState("");
   /* وفُعِّل مدرّبُها بهذا الاعتماد — فيظهر ما بقي عليك (`TrainerNextSteps`، «3a») */
@@ -305,6 +314,18 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
               «أضف معاييرَ أخرى لتقييم العمل… اقترح أخرى وأنا أوافقك». ما تحسبه المنصّةُ
               من الخطّة — ساعاتُ اللقاء، والفاصلُ بينها وأوقاتُها، والتطبيقاتُ والمهامّ
               والمصادر — يُقرأ هنا قبل المنهج، والمدرّبُ رأى البطاقةَ نفسَها قبل أن يرسل. */}
+          {trainerPlan.postponedTo && (
+            <Inset tone="warn" className="mt-3" role="status">
+              <p className="text-read font-black text-gold-ink">
+                {postponedLineAr(trainerPlan.postponedTo)} — لم تُقبل للفصل الذي أُرسلت له
+              </p>
+              <p className="mt-1 text-read leading-6 text-muted-foreground">
+                {trainerPlan.status === "submitted"
+                  ? `أعاد مدرّبُها إرسالَها لموسمها: لا تُرسَل إلّا وهي تبدأ في ${cohortDayAr(trainerPlan.postponedTo)} أو بعده.`
+                  : `هي في يد مدرّبها يعدّلها، ولا يرسلها إلّا وهي تبدأ في ${cohortDayAr(trainerPlan.postponedTo)} أو بعده.`}
+              </p>
+            </Inset>
+          )}
           <PlanScorecard
             items={scorecard}
             heading="بطاقةُ المعايير"
@@ -425,6 +446,12 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
             <Button tone={scorecard.some((i) => i.status !== "ok") ? "secondary" : "danger"} size="sm" disabled={busy} onClick={() => { setAskFrom(undefined); setAsking(true); }}>
               {scorecard.some((i) => i.status !== "ok") ? "اطلب تعديلات بكلماتك" : "اطلب تعديلات"}
             </Button>
+            {/* وشعبةٌ تعمل لا تُؤجَّل — مراجعتُها تُعتمَد أو تُردّ (`postpone` في الخادم) */}
+            {!trainerPlan.approvedOnce && (
+              <Button tone="secondary" size="sm" disabled={busy} aria-expanded={postponing} onClick={() => setPostponing((v) => !v)}>
+                أجّلها إلى الفصل القادم
+              </Button>
+            )}
           </>
         )}
         {trainerPlan?.status !== "submitted" && trainerPlan?.status !== "approved" && (
@@ -442,6 +469,46 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
           </Button>
         )}
       </div>
+      {trainerPlan?.status === "submitted" && canApprovePlan && !asking && postponing && !trainerPlan.approvedOnce && (() => {
+        const choices: Season[] = postponeChoices(trainerPlan.period, new Date().toISOString().slice(0, 10));
+        const to = choices[postponeTo] ?? choices[0]!;
+        return (
+          <Inset tone="warn" className="mt-3" role="group" aria-label="تأجيلُ الشعبة إلى موسمٍ قادم">
+            <p className="text-read font-black text-gold-ink">أجّلها إلى موسمٍ قادم — لم تُقبل لهذا الفصل</p>
+            <ul className="mt-2 list-disc space-y-1 ps-5 text-read leading-6 text-foreground">
+              <li>يصل المدرّبَ جرسٌ وبريدٌ يقولان صراحةً إنّها <b>لم تُقبل لهذا الفصل</b> وأُجّلت إلى {seasonAr(to)} — ومعهما تقريرُ المراجعة إن رفعته أعلاه.</li>
+              <li>تخرج من طابورك، ولا تُفتح للتسجيل هذا الفصل، وتنتقل الشعبةُ إلى فصل ذلك الموسم.</li>
+              <li>تبقى خطّتُه كما هي يعدّلها متى شاء — ولا يرسلها إلّا وهي تبدأ في {cohortDayAr(seasonStart(to))} أو بعده.</li>
+            </ul>
+            <fieldset className="mt-3">
+              <legend className="text-read font-bold text-foreground">إلى أيّ موسم؟</legend>
+              <div className="mt-1 flex flex-wrap gap-4">
+                {choices.map((c, i) => (
+                  <label key={`${c.year}-${c.season}`} className="flex items-center gap-2 text-read">
+                    <input type="radio" name="postpone-to" checked={postponeTo === i} onChange={() => setPostponeTo(i)} />
+                    {seasonAr(c)}{i === 0 ? " (التالي)" : ""}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+            <div className="mt-3">
+              <StaffField label="كلمةٌ تصله مع التأجيل (اختياريّة)" hint="مثلا لماذا أُجّلت: اخترنا من دوراتك أجهزَها لهذا الفصل. وما يُعدَّل مكانُه التقرير.">
+                <textarea rows={2} maxLength={REVIEW_NOTE_MAX} value={postponeNote} onChange={(e) => setPostponeNote(e.target.value)} className={staffAreaCls} />
+              </StaffField>
+            </div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Button tone="danger" size="sm" disabled={busy}
+                onClick={() => void act(
+                  () => apiPost(`/api/admin/cohort-plans/${trainerPlan.id}/postpone`, { year: to.year, season: to.season, note: postponeNote.trim() || undefined }).then(loadPlan),
+                  `أُجّلت إلى ${seasonAr(to)} — وصله جرسٌ وبريدٌ بأنّها لم تُقبل لهذا الفصل`,
+                ).then((ok) => { if (ok) { setPostponing(false); setPostponeNote(""); decided("postponed"); } })}>
+                أجّلها إلى {seasonAr(to)}
+              </Button>
+              <Button tone="ghost" size="sm" disabled={busy} onClick={() => setPostponing(false)}>تراجع</Button>
+            </div>
+          </Inset>
+        );
+      })()}
       {trainerPlan?.status === "submitted" && canApprovePlan && asking && (
         <ReviewNotesForm
           key={askFrom ? "from-scorecard" : "blank"}

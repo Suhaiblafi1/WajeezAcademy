@@ -16,6 +16,8 @@
    والصفُّ لا يُحذف ولا يصير اختياريّا: هو مرحلةٌ تُرى على الخطّ وتستقرّ
    «تمّ» حين يصل القرار. المستثنى موضعٌ واحد — الحاجزُ قبل الإرسال. */
 
+import { postponedLineAr } from './plan-postpone'
+
 /** ما يكفي من صفّ القائمة ليُحكَم عليه — لا شكلَ الخادم كلَّه */
 export interface GateItem {
   key: string
@@ -95,10 +97,16 @@ export function boardNextStep<T extends GateItem & { labelAr: string }>(input: {
   /** علمُ الشعبة — لا تقبل أحدا وهو منزول (`cohortAcceptsRegistration`) */
   registrationOpen: boolean
   checklist: readonly T[]
+  /** أوّلُ يومٍ في الموسم الذي أُجّلت إليه — للمردودة بالتأجيل وحدَها (٨ أكتوبر ٢٠٢٦) */
+  postponedTo?: string | null
 }): BoardNext | null {
   const { planStatus, registrationOpen, checklist } = input
   if (planStatus === 'submitted') {
     return { key: 'awaiting_decision', labelAr: 'أُرسلت — بانتظار قرار الإدارة، ويصلك هنا وبالبريد', waiting: true }
+  }
+  /* والمؤجّلةُ ليست ردّا بتعديلاتٍ لهذا الفصل — تُسمّى بموسمها (`plan-postpone.ts`) */
+  if (planStatus === 'changes_requested' && input.postponedTo) {
+    return { key: 'postponed', labelAr: `${postponedLineAr(input.postponedTo)} — لم تُقبل لهذا الفصل. عدّلها متى شئت، وأرسلها بمواعيدَ من موسمها` }
   }
   if (planStatus === 'changes_requested') {
     return { key: 'address_notes', labelAr: 'اقرأ ملاحظةَ الإدارة في رأس كلّ خطوة، وعدّل، ثمّ أعِد الإرسال' }

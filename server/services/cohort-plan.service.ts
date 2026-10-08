@@ -34,6 +34,7 @@ import { levelProblem, type LevelRange } from '../../src/application/trainer/coh
 import { audienceProblem } from '../../src/application/trainer/cohort-audience'
 import { blockingBeforeSubmit, boardNextStep, trainerOwned } from '../../src/application/trainer/plan-gate'
 import { practiceGaps, projectDeadlineProblem, seasonEndProblem, sourceGaps } from '../../src/application/trainer/plan-scorecard'
+import { plannedSeason, postponeMessageAr, postponeProblem, seasonStart, validPostponeTarget, type Season } from '../../src/application/trainer/plan-postpone'
 import {
   REVIEW_SECTIONS, composeReviewNote, hasReviewNotes, normalizeReviewNotes, notedSections, readReviewNotes,
   type ReviewNotes,
@@ -236,6 +237,9 @@ export async function baseModulesFor(prisma: PrismaClient, courseId: string): Pr
    تقرؤها الورشةُ وبطاقاتُ «شعبي» معا — فلا تفترق النسبةُ التي يراها المدرّب
    على البطاقة عن القائمة التي يراها داخل الشعبة. */
 export interface ChecklistItem { key: string; labelAr: string; done: boolean; optional: boolean }
+/** يومُ عمودٍ من نوع DATE — `YYYY-MM-DD` كما كُتب، لا بتوقيت الخادم */
+const dayOf = (d: Date | string | null | undefined): string | null =>
+  d ? (typeof d === 'string' ? d.slice(0, 10) : d.toISOString().slice(0, 10)) : null
 export function buildChecklist(input: {
   cohort: { title: string }
   /** مدّةُ الشعبة كما تُحكَم — من `resolvePeriod` لا من الخطّة خامًا */
@@ -255,6 +259,8 @@ export function buildChecklist(input: {
   /** آخرُ موعدٍ لكلّ مهمّة بترتيب `assessmentTypes` — ومنه «موعدُ المشروع داخلَ الشعبة»
       (٨ أكتوبر ٢٠٢٦). وغيابُه لا يحكم بشيء */
   assessmentDues?: readonly (Date | string | null)[]
+  /** أوّلُ يومٍ في الموسم الذي أُجّلت إليه الخطّة (`postponedTo`) — ولا تُرسَل قبله (٨ أكتوبر ٢٠٢٦) */
+  postponedTo?: Date | string | null
   planStatus: PlanStatus
   /** اللحظةُ التي يُحكم بها — وما انعقد قبلها لا يُحاسَب (`sessionProblems`) */
   now?: Date
@@ -423,6 +429,8 @@ export function buildChecklist(input: {
      فالتعديلُ واجب». */
   const inHand = !sentBefore
   const endProblem = inHand ? seasonEndProblem(input.period) : null
+  /* والمؤجّلةُ إلى موسمٍ قادمٍ لا تُرسَل حتّى تبدأ فيه (٨ أكتوبر ٢٠٢٦، `plan-postpone.ts`) */
+  const postponed = postponeProblem(dayOf(input.postponedTo), input.period)
   const practice = inHand ? practiceGaps(mods) : []
   const noSource = inHand ? sourceGaps(mods, resources) : []
   const projectDues = types && input.assessmentDues
@@ -439,8 +447,9 @@ export function buildChecklist(input: {
   return [
     {
       key: 'identity',
-      labelAr: 'سمِّ الشعبةَ وحدّد مستواها ولمن هي ومدّتها — من متى إلى متى' + (endProblem ? ` · ${endProblem}` : ''),
-      done: identityDone && endProblem === null, optional: false,
+      labelAr: 'سمِّ الشعبةَ وحدّد مستواها ولمن هي ومدّتها — من متى إلى متى'
+        + (endProblem ? ` · ${endProblem}` : '') + (postponed ? ` · ${postponed}` : ''),
+      done: identityDone && endProblem === null && postponed === null, optional: false,
     },
     {
       key: 'modules',
@@ -647,6 +656,7 @@ export class CohortPlanService {
       assessmentModuleIds: cohort.assessments.map((a) => a.moduleId),
       assessmentTypes: cohort.assessments.map((a) => a.type),
       assessmentDues: cohort.assessments.map((a) => a.dueAt),
+      postponedTo: plan?.postponedTo ?? null,
       planStatus: status,
       workbookBeforeTemplate: profile.workbookBeforeTemplate,
     })
@@ -687,6 +697,8 @@ export class CohortPlanService {
             /* لكلّ خطوةٍ ملاحظتُها — تُقرأ في رأس الخطوة نفسِها (٣ب) */
             reviewerNotes: readReviewNotes(plan),
             submittedAt: plan.submittedAt, trainerConfirmedAt: plan.trainerConfirmedAt, reviewedAt: plan.reviewedAt,
+            /* مؤجّلةٌ إلى موسمٍ قادم — أوّلُ يومٍ فيه (٨ أكتوبر ٢٠٢٦) */
+            postponedTo: dayOf(plan.postponedTo),
           }
         : null,
       /* وتقاريرُ المراجعة التي رفعها المعتمِدُ مع قراراته — أحدثُها أوّلا (٨ أكتوبر ٢٠٢٦) */
@@ -795,6 +807,7 @@ export class CohortPlanService {
         assessmentModuleIds: c.assessments.map((a) => a.moduleId),
         assessmentTypes: c.assessments.map((a) => a.type),
         assessmentDues: c.assessments.map((a) => a.dueAt), planStatus,
+        postponedTo: plan?.postponedTo ?? null,
         workbookBeforeTemplate: profile.workbookBeforeTemplate,
       })
       /* والبطاقةُ تعدّ ما يملك المدرّبُ إنجازَه — لا «الاعتمادَ» ولا «الفصلَ»
@@ -803,7 +816,7 @@ export class CohortPlanService {
       const required = trainerOwned(checklist).filter((i) => !i.optional)
       const done = required.filter((i) => i.done).length
       /* «التالي» بحال الخطّة والشعبة لا بالقائمة وحدَها — والعلّةُ في `plan-gate.ts` */
-      const next = boardNextStep({ planStatus, registrationOpen: c.registrationOpen, checklist })
+      const next = boardNextStep({ planStatus, registrationOpen: c.registrationOpen, checklist, postponedTo: dayOf(plan?.postponedTo) })
       return {
         id: c.id, title: c.title, courseTitle: c.course.versions[0]?.titleAr ?? c.course.id, role: l.role,
         status: c.status, startsAt: c.startsAt, endsAt: c.endsAt, proposedStartsOn,
@@ -980,6 +993,7 @@ export class CohortPlanService {
       assessmentModuleIds: gateCohort.assessments.map((a) => a.moduleId),
       assessmentTypes: gateCohort.assessments.map((a) => a.type),
       assessmentDues: gateCohort.assessments.map((a) => a.dueAt),
+      postponedTo: latest.postponedTo,
       planStatus: latest.status as PlanStatus,
       workbookBeforeTemplate: profile.workbookBeforeTemplate,
     }))
@@ -1155,6 +1169,8 @@ export class CohortPlanService {
       reviewerNotes: readReviewNotes(plan),
       submittedAt: plan.submittedAt, trainerConfirmedAt: plan.trainerConfirmedAt, reviewedAt: plan.reviewedAt,
       trainerName: trainer?.application.fullName ?? null,
+      /* مؤجّلةٌ إلى موسمٍ قادم — أوّلُ يومٍ فيه (٨ أكتوبر ٢٠٢٦) */
+      postponedTo: dayOf(plan.postponedTo),
       /* ومن رفع كرّاسةً قبل القالب — فيُقال للمعتمِد إنّ القالبَ له مستحسَنٌ لا إلزاميّ */
       workbookBeforeTemplate: trainer?.workbookBeforeTemplate ?? false,
       cohortTitle: cohort?.title ?? '',
@@ -1345,6 +1361,65 @@ export class CohortPlanService {
         .catch((e: unknown) => ({ activated: false, blockedAr: e instanceof AuthError ? e.message : 'تعذّر التفعيل' }))
     }
     return { status: 'approved' as const, meetings, tasks, prep }
+  }
+
+  /* ═══ التأجيلُ إلى موسمٍ قادم — قرارٌ ثالثٌ بجانب الاعتماد والردّ (٨ أكتوبر ٢٠٢٦) ═══
+
+     «أختار أفضلَ اثنتين أو ثلاثٍ… وأقول لهم أن يؤجّلوا الباقيةَ إلى الفصل الذي يليه —
+     ويجب أن يعرفوا أنّي لا أقبلها لهذا الفصل» (صاحب المنصّة). فالخطّةُ تعود إلى يد
+     مدرّبها ويُكتب عليها موسمُها الجديد، فلا تُرسَل لهذا الفصل ثانيةً (`buildChecklist`).
+     والشعبةُ تنتقل إلى فصل ذلك الموسم إن وُجد — وإلّا خرجت من فصلها — فلا تُعدّ في
+     شعب هذا الفصل. ويُقال له بالجرس والبريد إنّها لم تُقبل لهذا الفصل.
+
+     ولا تُؤجَّل شعبةٌ اعتُمدت من قبل: مراجعتُها مراجعةُ شعبةٍ تعمل، تُعتمَد أو تُردّ.
+     ولا تُستأنف مهلةُ شعبة الإعداد: التأجيلُ ليس ردّا بتعديلاتٍ لهذا الفصل. */
+  async postpone(actorId: string, planId: string, to: Season, note?: string | null) {
+    const plan = await this.prisma.cohortDeliveryPlan.findUnique({
+      where: { id: planId },
+      include: {
+        cohort: { select: { id: true, title: true, plans: { where: { trainerId: { not: null } }, select: { status: true } } } },
+        trainer: { include: { application: { select: { fullName: true, email: true } } } },
+      },
+    })
+    if (!plan) throw new AuthError('not_found', 'الخطّة غير موجودة', 404)
+    if (plan.status !== 'submitted') throw new AuthError('not_submitted', 'هذه الخطّة ليست بانتظار قرار', 409)
+    if (planApprovedOnce(plan.cohort.plans)) {
+      throw new AuthError('running_cohort', 'هذه شعبةٌ اعتُمدت من قبل وتعمل — مراجعتُها تُعتمَد أو تُردّ بتعديلات، ولا تُؤجَّل', 409)
+    }
+    const content = plan.content as unknown as TrainerPlanContent | null
+    const period = asPeriod(content)
+    const now = new Date()
+    const today = zonedDay(now)
+    if (!validPostponeTarget(to, period, today)) {
+      throw new AuthError('bad_season', 'اختر موسما بعد موسمها — التأجيلُ إلى ما بعده لا إليه', 400)
+    }
+    const from = plannedSeason(period, today)
+    const toDay = seasonStart(to)
+    const said = note?.trim() || null
+    const msg = postponeMessageAr({ cohortTitle: plan.cohort.title, from, to, note: said })
+    const reports = (await new CohortFileService(this.prisma).reviewReports(plan.cohort.id, plan.id)).map((r) => r.originalName)
+    const term = await this.prisma.term.findUnique({ where: { year_season: { year: to.year, season: to.season } }, select: { id: true } })
+
+    await this.prisma.$transaction([
+      this.prisma.cohortDeliveryPlan.update({
+        where: { id: planId },
+        data: {
+          status: 'changes_requested', reviewedBy: actorId, reviewedAt: now,
+          postponedTo: new Date(`${toDay}T00:00:00.000Z`),
+          reviewerNote: msg.body,
+          reviewerNotes: said ? ({ general: said } as Prisma.InputJsonValue) : Prisma.DbNull,
+          /* والخطّةُ كما أُجّلت — ليُقابَل بها ما يُعاد إرسالُه لموسمها (⑦) */
+          returnedContent: plan.content as Prisma.InputJsonValue,
+        },
+      }),
+      this.prisma.cohort.update({ where: { id: plan.cohort.id }, data: { termId: term?.id ?? null } }),
+    ])
+    await recordAudit(this.prisma, {
+      actorId, action: 'cohort.plan.postpone', entityType: 'cohort', entityId: plan.cohort.id,
+      meta: { planId, from, to, postponedTo: toDay, note: said },
+    })
+    await this.tellTrainer(plan.trainer, plan.cohort, msg, undefined, reports)
+    return { status: 'postponed' as const, postponedTo: toDay }
   }
 
   /* ═══ الاعتمادُ يكتب المدّة — والفصلُ يُشتقّ منها ═══
