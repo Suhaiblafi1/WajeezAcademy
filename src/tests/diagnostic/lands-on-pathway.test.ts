@@ -69,6 +69,16 @@ describe('التشخيص ينتهي على صفحة المسار', () => {
   it('٤) وجهة الانتقال هي صفحة المسار بهوية المضيف', () => {
     expect(diag).toContain('navigate(`/pathways/${hostId}`)')
   })
+
+  /* ونتيجةُ الدورة الواحدة بلا `top` بطبيعتها، فكانت تسقط في فرع «لا مسار»
+     فتُعرض لها شاشةُ «مراجعة مستشار» (٨ أكتوبر ٢٠٢٦). فتُفحص قبل ذلك الفرع
+     وتهبط على صفحة دورتها. ⚠ أُثبت سقوطُه: نُقل فحصُها بعد `!res.top` فسقط. */
+  it('٤ب) الدورةُ الواحدة تهبط على صفحتها — قبل أن يُحكم عليها بلا مسار', () => {
+    const land = diag.slice(diag.indexOf('const landOnPathway = '), diag.indexOf('\n  };', diag.indexOf('const landOnPathway = ')))
+    expect(land.indexOf('singleCourseOf(res.resultJson)')).toBeGreaterThan(-1)
+    expect(land.indexOf('singleCourseOf(res.resultJson)')).toBeLessThan(land.indexOf('!res.top'))
+    expect(diag).toContain('navigate(`/build/${courseId}`)')
+  })
 })
 
 describe('إحالة المستشار تسافر مع الخطّة', () => {
