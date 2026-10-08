@@ -27,6 +27,8 @@ export interface LevelSummary {
   answer_ar: string
   current_option_id: string
   options: LevelOption[]
+  /** قاسه اختبارُ تحديد المستوى — لا وصفه المتعلّم (الإصدارُ الثالث) */
+  measured?: boolean
 }
 
 /** الأسئلةُ التي يُعدَّل بها المستوى من النتيجة — لا غيرُها */
@@ -36,12 +38,15 @@ export const REVISE_TO_PARAM = 'to'
 
 type Facts = Record<string, { value: unknown } | undefined>
 
-export function levelSummaryOf(facts: Facts): LevelSummary | null {
+/** `measuredEnglish`: ما قاله اختبارُ تحديد المستوى على هذا الجهاز — إن طابق مستوى
+    الخطّة فالسطرُ يقول «مقيس» لا «موصوف» (`src/application/placement/measured.ts`) */
+export function levelSummaryOf(facts: Facts, measuredEnglish: string | null = null): LevelSummary | null {
   const english = facts['english_level']?.value
   if (facts['need_id']?.value === 'need_english' && typeof english === 'string') {
     const i = ENGLISH_LEVELS.findIndex((l) => l.code === english)
     if (i < 0) return null
     return {
+      ...(measuredEnglish === english ? { measured: true } : {}),
       question_id: Q.ENGLISH_LEVEL,
       field_ar: 'اللغة الإنجليزية',
       level_name_ar: ENGLISH_LEVELS[i].cefr,
@@ -92,7 +97,7 @@ export function levelLabelOf(questionId: string, optionId: string): string | nul
 export function levelLineText(s: LevelSummary): { level_ar: string; why_ar: string } {
   return {
     level_ar: `مستواك في «${s.field_ar}»: ${s.level_name_ar}`,
-    why_ar: `بناءً على جوابك: «${s.answer_ar}»`,
+    why_ar: s.measured ? 'بناءً على اختبار تحديد المستوى المجانيّ' : `بناءً على جوابك: «${s.answer_ar}»`,
   }
 }
 
