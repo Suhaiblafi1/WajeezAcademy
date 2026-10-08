@@ -10,6 +10,7 @@ import { loadMirrorAnswers, mirrorAnswersToFacts } from '../../domain/diagnostic
 import type { BankQuestion, Recommendation } from '../../domain/diagnostic/types'
 import type { DiagQuestion } from '../../data/diagnostic'
 import { factsToLegacyAnswers, recommendationToDiagResult } from './view-model'
+import { measuredEnglish } from '../placement/measured'
 import { clearSession, loadSession, saveResult, saveSession } from './session-store'
 import {
   createSessionRepository,
@@ -281,6 +282,8 @@ export class AssessmentSession {
       state.facts as unknown as Record<string, { value: unknown }>,
       state.factsRaw,
       state.interestVector,
+      undefined,
+      measuredEnglish(),
     )
     result.resultJson.session_id = state.sessionId
     const legacyAnswers = factsToLegacyAnswers(
@@ -311,6 +314,7 @@ export class AssessmentSession {
       state.factsRaw,
       state.interestVector,
       comparison,
+      measuredEnglish(),
     )
     result.resultJson.session_id = state.sessionId
     const legacyAnswers = factsToLegacyAnswers(

@@ -55,6 +55,8 @@ export function recommendationToDiagResult(
   factsRaw?: Record<string, string>,
   interestVector?: Record<string, number>,
   deepeningComparison?: unknown,
+  /** المستوى الذي قاسه اختبارُ تحديد المستوى على هذا الجهاز — انظر `levelSummaryOf` */
+  measuredEnglish: string | null = null,
 ): DiagResult {
   const topPathway = rec.primaryPathway ? pathwayById(rec.primaryPathway.pathwayId) : undefined
   /* لا اختلاق: بلا مسار أساسي (استكشاف/إحالة بلا مرشح) يبقى top = null —
@@ -184,7 +186,7 @@ export function recommendationToDiagResult(
       /** مقارنة قبل/بعد جولة تدقيق الخطة إن أجريت */
       deepening: deepeningComparison ?? null,
       /** مستواك كما فهمناه وسببُه وبابُ تعديله (٨ أكتوبر ٢٠٢٦) — null حين لم يُسأل */
-      level_summary: facts ? levelSummaryOf(facts) : null,
+      level_summary: facts ? levelSummaryOf(facts, measuredEnglish) : null,
       /** خطّةُ الإنجليزيّة بخياراتها — null لغيرها */
       english_plan: (rec as { english?: unknown }).english ?? null,
     },

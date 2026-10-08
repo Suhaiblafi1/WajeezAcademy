@@ -6,6 +6,7 @@
 
 import { useEffect, useState } from 'react'
 import { apiGet, apiPost } from './api'
+import { rememberMeasuredEnglish } from '@/application/placement/measured'
 import type { PlacementItem, PlacementResult } from '@/domain/placement/english-placement'
 
 export type PublicPlacementItem = Omit<PlacementItem, 'answer_index'>
@@ -36,6 +37,9 @@ export function usePlacementOpen(): boolean | null {
   return open
 }
 
-export function scorePlacement(answers: Record<string, number>): Promise<PlacementResult> {
-  return apiPost<PlacementResult>('/api/public/placement/english/score', { answers })
+/** يصحّح ويحفظ المستوى المقيسَ على الجهاز — ليقول سطرُ المستوى «مقيس» حين تُبنى الخطّةُ عليه */
+export async function scorePlacement(answers: Record<string, number>): Promise<PlacementResult> {
+  const result = await apiPost<PlacementResult>('/api/public/placement/english/score', { answers })
+  rememberMeasuredEnglish(result.level)
+  return result
 }

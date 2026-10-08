@@ -197,7 +197,9 @@ function PlacementOutcome({ result, stated }: { result: PlacementResult; stated:
               : "اختر «اللغة الإنجليزيّة» في التشخيص وصِف مستواك بما قاله الاختبار — فتُبنى خطّتك عليه."}
           </p>
           <div className="mt-4 flex flex-wrap gap-3">
-            <Button as={Link} to="/diagnostic" tone="secondary">{said ? "عُد إلى خطّتي" : "إلى التشخيص"}</Button>
+            {/* والمؤكَّدُ يعود عبر بابِ التعديل بالمستوى نفسِه: تُبنى الخطّةُ كما هي، ويقول
+                سطرُ مستواها «بناءً على اختبار تحديد المستوى» بدل جوابه */}
+            <Button as={Link} to={said ? applyPlacementHref(result.level) : "/diagnostic"} tone="secondary">{said ? "عُد إلى خطّتي" : "إلى التشخيص"}</Button>
           </div>
         </Panel>
       )}
