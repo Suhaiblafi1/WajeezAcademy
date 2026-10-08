@@ -4223,7 +4223,7 @@ model Favorite {
 model CohortFile {
   id           String   @id @default(uuid()) @db.Uuid
   cohortId     String   @db.Uuid
-  purpose      String // module_body | plan_resource | workbook
+  purpose      String // module_body | plan_resource | workbook | review_report
   refId        String
   storageKey   String   @unique // خاصّ — لا يُقدَّم إلّا بعد فحص الصلاحيّة
   originalName String

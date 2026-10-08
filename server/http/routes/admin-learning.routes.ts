@@ -16,6 +16,8 @@ import { LearnerRequestService } from '../../services/learner-request.service'
 import { CohortPlanService } from '../../services/cohort-plan.service'
 import { PlanReviewBundleService, type ReviewBundle } from '../../services/plan-review-bundle.service'
 import { AuthError } from '../../services/auth.service'
+import { CohortFileService } from '../../services/cohort-file.service'
+import { assertSafeKey } from '../../services/object-store'
 import { requirePermission } from '../auth-plugin'
 
 /* الأيّامُ رموزٌ معروفةٌ لا نصٌّ حرّ.
@@ -119,6 +121,33 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
     const b = await bundles.forCohort(req.auth!.userId, cohortId)
     if (!b) throw new AuthError('not_found', 'لم يبدأ المدرّبُ خطّةَ هذه الشعبة بعد — فلا شيءَ يُنزَّل', 404)
     return sendZip(reply, b)
+  })
+
+  /* ═══ وتقريرُ المراجعة — يُرفع مع القرار ويُحفظ مع الخطّة (٨ أكتوبر ٢٠٢٦) ═══
+
+     قرارُ صاحب المنصّة: التقريرُ يصل المدرّبَ من المنصّة لا من خارجها. يُطلب رابطُ رفعه
+     هنا، ويُرفع إلى المخزن مباشرةً كأيّ ملفّ شعبة (`/api/v1/uploads`)، وتذكره رسالةُ القرار.
+     والصلاحيّةُ صلاحيّةُ القرار نفسِه. */
+  const reportFiles = new CohortFileService(prisma)
+  app.post('/api/admin/cohort-plans/:id/review-report', {
+    preHandler: requirePermission('cohort.plan.approve'),
+    schema: { tags: ['admin-cohorts'], summary: 'رابطُ رفعِ تقرير مراجعةٍ لخطّةٍ بانتظار القرار (PDF أو Word)' },
+  }, async (req, reply) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const body = z.object({
+      mime: z.string().trim().min(3).max(120),
+      originalName: z.string().trim().min(1).max(200),
+    }).parse(req.body)
+    return reply.status(201).send(await reportFiles.startReviewReportUpload(req.auth!.userId, id, body))
+  })
+
+  app.delete('/api/admin/cohort-plans/:id/review-report/:storageKey', {
+    preHandler: requirePermission('cohort.plan.approve'),
+    schema: { tags: ['admin-cohorts'], summary: 'حذفُ تقرير مراجعةٍ قبل القرار' },
+  }, async (req) => {
+    const { id, storageKey } = z.object({ id: z.string().uuid(), storageKey: z.string().min(10) }).parse(req.params)
+    assertSafeKey(storageKey)
+    return reportFiles.removeReviewReport(req.auth!.userId, id, storageKey)
   })
 
   app.get('/api/admin/cohort-plans/pending/review-bundle', {

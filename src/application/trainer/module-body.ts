@@ -103,9 +103,18 @@ export function moduleBodyBlockerAr(m: ModuleBodyLike): string | null {
 
    وثالثُها الكرّاسة (٦ أكتوبر ٢٠٢٦): **PDF وحدَه** بقرار صاحب المنصّة — «PDF
    only but the template is Word» — فيقرؤها المتعلّمُ في الصفحة على أيّ جهاز.
-   وكانت تُرفع مصدرا فتقبل Word والشرائحَ والصور؛ وما رُفع كذلك قبلها يبقى. */
-export const FILE_PURPOSES = ['module_body', 'plan_resource', 'workbook'] as const
+   وكانت تُرفع مصدرا فتقبل Word والشرائحَ والصور؛ وما رُفع كذلك قبلها يبقى.
+
+   ورابعُها تقريرُ المراجعة (٨ أكتوبر ٢٠٢٦): **يرفعه المعتمِدُ لا المدرّب** — قرارُ صاحب
+   المنصّة أن يصل تقريرُ مراجعة الخطّة من المنصّة نفسِها، محفوظا مع الخطّة، لا بريدا من
+   خارجها. فهو غرضٌ في القيد ولا يُطلب من باب المدرّب (`TRAINER_FILE_PURPOSES`)، وصيغتاه
+   PDF وWord. ويقرؤه من يقرأ ملفّاتِ الشعبة (`assertCanRead`): مدرّبُها والإدارة — ولا يصل
+   المتعلّمَ، فليس في خطّةٍ تُسقَط له. */
+export const FILE_PURPOSES = ['module_body', 'plan_resource', 'workbook', 'review_report'] as const
 export type FilePurpose = (typeof FILE_PURPOSES)[number]
+
+/** ما يطلبه المدرّبُ من بابه — كلُّ غرضٍ إلّا تقريرَ المراجعة، فذاك للمعتمِد وحدَه */
+export const TRAINER_FILE_PURPOSES = ['module_body', 'plan_resource', 'workbook'] as const satisfies readonly FilePurpose[]
 
 /* ── وما يُقبل مصدرا ──
 
@@ -135,9 +144,16 @@ export const RESOURCE_FILE_MIMES: readonly string[] = RESOURCE_FILE_TYPES.map((t
 /** الكرّاسة: PDF وحدَه */
 export const WORKBOOK_FILE_MIMES: readonly string[] = ['application/pdf']
 
+/** تقريرُ المراجعة: PDF يُقرأ في الصفحة، أو Word يعدّله المعتمِدُ قبل رفعه */
+export const REVIEW_REPORT_MIMES: readonly string[] = [
+  'application/pdf',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+]
+
 /** ما يُقبل لكلّ غرض — مالكٌ واحدٌ يقرؤه الخادمُ والشاشة */
 export function acceptedMimes(purpose: FilePurpose): readonly string[] {
   if (purpose === 'workbook') return WORKBOOK_FILE_MIMES
+  if (purpose === 'review_report') return REVIEW_REPORT_MIMES
   return purpose === 'module_body' ? BODY_FILE_MIMES : RESOURCE_FILE_MIMES
 }
 
@@ -162,7 +178,9 @@ export function fileBlockerAr(
       ? BODY_FILE_TYPES.map((t) => t.labelAr)
       : purpose === 'workbook'
         ? ['PDF — احفظ القالبَ PDF من Word ثمّ ارفعه']
-        : [...new Set(RESOURCE_FILE_TYPES.map((t) => t.labelAr))]
+        : purpose === 'review_report'
+          ? ['PDF', 'Word']
+          : [...new Set(RESOURCE_FILE_TYPES.map((t) => t.labelAr))]
     return `لا يُقبل إلّا ${names.join(' أو ')}`
   }
   if (typeof sizeBytes === 'number' && sizeBytes > MAX_BODY_FILE_BYTES) {

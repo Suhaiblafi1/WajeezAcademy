@@ -17,7 +17,7 @@ import { recordAudit } from './audit'
 import {
   assertFileUploadsEnabled, newStorageKey, signKey, SIGNED_URL_TTL_MS,
 } from './storage.service'
-import { deleteObject } from './object-store'
+import { deleteObject, objectExists } from './object-store'
 import {
   fileBlockerAr, MAX_BODY_FILE_BYTES, type FilePurpose,
 } from '../../src/application/trainer/module-body'
@@ -60,6 +60,9 @@ export class CohortFileService {
     input: { mime: string; originalName: string },
   ) {
     assertFileUploadsEnabled('والبديلُ الآن: ألصِق رابطا، أو اكتب المحتوى في المحرّر.')
+    /* وتقريرُ المراجعة للمعتمِد وحدَه — بابُه `startReviewReportUpload`. والمسارُ يردّه قبل
+       هذا (`TRAINER_FILE_PURPOSES`)، وهذا السطرُ لمن نادى الخدمةَ من غير المسار */
+    if (purpose === 'review_report') throw new AuthError('forbidden', 'تقريرُ المراجعة يرفعه من يعتمد الخطّة', 403)
     await this.requireCohortTrainer(cohortId, userId)
 
     const blocker = fileBlockerAr(purpose, input.mime)
@@ -84,6 +87,84 @@ export class CohortFileService {
       originalName: name,
       mime: input.mime,
     }
+  }
+
+  /* ═══ تقريرُ المراجعة — يرفعه المعتمِدُ مع قراره (٨ أكتوبر ٢٠٢٦) ═══
+
+     قرارُ صاحب المنصّة: يصل تقريرُ مراجعة الخطّة المدرّبَ **من المنصّة نفسِها** — يُرفع
+     على بطاقة المراجعة، ويُحفظ مع الخطّة، وتذكره رسالةُ القرار، ويجده المدرّبُ في رأس صفحة
+     شعبته. لا بريدا يُرسَل من خارجها.
+
+     فهو ملفُّ شعبةٍ بغرضه (`review_report`) ورمزُه معرّفُ الخطّة — منه يُعرف أيُّ قرارٍ
+     حمله. ويُرفع والخطّةُ بانتظار القرار وحدَها: ما يُرفع بعده لا تذكره رسالةٌ ولا يدري به
+     أحد. ويقرؤه من يقرأ ملفّاتِ الشعبة (`assertCanRead`): مدرّبُها والإدارة، لا المتعلّم. */
+  private async submittedPlan(planId: string) {
+    const plan = await this.prisma.cohortDeliveryPlan.findUnique({
+      where: { id: planId }, select: { id: true, cohortId: true, status: true },
+    })
+    if (!plan) throw new AuthError('not_found', 'الخطّة غير موجودة', 404)
+    if (plan.status !== 'submitted') {
+      throw new AuthError('not_submitted', 'يُرفع التقريرُ والخطّةُ بانتظار قرارك — ثمّ تذكره رسالةُ القرار', 409)
+    }
+    return plan
+  }
+
+  async startReviewReportUpload(adminId: string, planId: string, input: { mime: string; originalName: string }) {
+    assertFileUploadsEnabled('والبديلُ الآن: اكتب ما في التقرير في ملاحظات «اطلب تعديلات» أو في كلمة الاعتماد.')
+    const plan = await this.submittedPlan(planId)
+    const blocker = fileBlockerAr('review_report', input.mime)
+    if (blocker) throw new AuthError('bad_mime', blocker, 422)
+
+    const name = input.originalName.trim().slice(0, 200) || 'تقرير المراجعة'
+    const storageKey = newStorageKey()
+    await this.prisma.cohortFile.create({
+      data: {
+        cohortId: plan.cohortId, purpose: 'review_report', refId: plan.id,
+        storageKey, originalName: name, mime: input.mime, uploadedBy: adminId,
+      },
+    })
+    const exp = Date.now() + SIGNED_URL_TTL_MS
+    const sig = signKey(storageKey, exp, 'write')
+    await recordAudit(this.prisma, {
+      actorId: adminId, action: 'cohort.file.upload',
+      entityType: 'cohort', entityId: plan.cohortId, meta: { purpose: 'review_report', refId: plan.id, mime: input.mime },
+    })
+    return {
+      storageKey,
+      uploadUrl: `/api/v1/uploads/${storageKey}?exp=${exp}&sig=${sig}`,
+      maxBytes: MAX_BODY_FILE_BYTES,
+      originalName: name,
+      mime: input.mime,
+    }
+  }
+
+  async removeReviewReport(adminId: string, planId: string, storageKey: string) {
+    const plan = await this.submittedPlan(planId)
+    const row = await this.prisma.cohortFile.findUnique({
+      where: { storageKey }, select: { id: true, cohortId: true, purpose: true, refId: true },
+    })
+    if (!row || row.purpose !== 'review_report' || row.refId !== plan.id) {
+      throw new AuthError('not_found', 'لا تقريرَ بهذا المفتاح لهذه الخطّة', 404)
+    }
+    await this.prisma.cohortFile.delete({ where: { id: row.id } })
+    try { await deleteObject(storageKey) } catch { /* غيابُها ليس عطبا */ }
+    await recordAudit(this.prisma, {
+      actorId: adminId, action: 'cohort.file.remove',
+      entityType: 'cohort', entityId: row.cohortId, meta: { purpose: row.purpose, refId: row.refId },
+    })
+    return { removed: true }
+  }
+
+  /** تقاريرُ مراجعة الشعبة — أحدثُها أوّلا، ولخطّةٍ بعينها إن سُمّيت. والرفعُ الذي لم
+      يكتمل (بلا بايتات) لا يُعدّ: صفُّه يُكتب قبل الرفع ليعرفه المخزن */
+  async reviewReports(cohortId: string, planId?: string) {
+    const rows = await this.prisma.cohortFile.findMany({
+      where: { cohortId, purpose: 'review_report', ...(planId ? { refId: planId } : {}) },
+      orderBy: { createdAt: 'desc' },
+      select: { storageKey: true, originalName: true, mime: true, sizeBytes: true, refId: true, createdAt: true },
+    })
+    const present = await Promise.all(rows.map((r) => objectExists(r.storageKey).catch(() => false)))
+    return rows.filter((_, i) => present[i])
   }
 
   /** ما عُرف عن ملفّاتِ هذه الشعبة — تقرؤه الشاشتان بمفاتيحها */
