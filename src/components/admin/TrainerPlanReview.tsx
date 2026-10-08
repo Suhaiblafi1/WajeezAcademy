@@ -25,6 +25,7 @@ import { PlanDiffList, SinceReturnList } from "@/components/PlanDiff";
 import { planDiff, sinceReturn } from "@/application/trainer/plan-diff";
 import { REVIEW_NOTE_MAX, hasReviewNotes, type ReviewNotes } from "@/application/trainer/review-notes";
 import { StaffField, staffAreaCls } from "@/components/FormKit";
+import { ReviewReportUploader, type ReviewReport } from "@/components/ReviewReports";
 import { curriculumView, type CurriculumInput } from "@/application/trainer/curriculum-view";
 import { PLAN_AR, approvalBody, planApprovedMsg, taskDecisionMsg, type PlanDecision } from "@/application/trainer/plan-decision";
 import { adminRegistrationLine } from "@/application/learning/registration-state";
@@ -57,6 +58,8 @@ interface TrainerPlan {
   approvedPlan?: { content: unknown; reviewedAt: string | null } | null;
   /* والخطّةُ كما رُدّت إن أُعيد إرسالُها بعد ردّ — منها «ما تغيّر منذ ردّك» (⑦) */
   returned?: { content: unknown; at: string | null } | null;
+  /* وتقريرُ المراجعة المرفوعُ لهذه الخطّة — تذكره رسالةُ القرار (٨ أكتوبر ٢٠٢٦) */
+  reviewReports?: ReviewReport[];
   content: ({
     summaryAr?: string | null; modules?: { moduleId: string; titleAr: string }[]; resources?: { title: string; url: string }[];
     /* مدّةُ الشعبة كما حدّدها مدرّبُها — تُعتمَد مع الخطّة (٢٧ سبتمبر ٢٠٢٦) */
@@ -345,6 +348,11 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
       {/* ═══ وكلمةٌ تصله مع الاعتماد (٧ أكتوبر ٢٠٢٦) ═══
           الخطّةُ التي ليس عليها إلّا مقترحاتٌ تُعتمَد ولا تُردّ، وتصل مقترحاتُها في خبر
           اعتمادها «وكلمةُ الإدارة: …». وما يُطلب قبل الاعتماد مكانُه «اطلب تعديلات». */}
+      {/* ═══ وتقريرُ المراجعة — يُرفع قبل القرار ويُحفظ مع الخطّة (٨ أكتوبر ٢٠٢٦) ═══
+          يُرى مع «اعتمدها» ومع «اطلب تعديلات» معا: التقريرُ يرافع القرارَ أيًّا كان */}
+      {trainerPlan?.status === "submitted" && canApprovePlan && (
+        <ReviewReportUploader planId={trainerPlan.id} reports={trainerPlan.reviewReports ?? []} onChange={loadPlan} />
+      )}
       {trainerPlan?.status === "submitted" && canApprovePlan && !asking && (
         <details className="mt-3" open={approveNote.length > 0}>
           <summary className="cursor-pointer text-read font-bold text-teal-light-ink">أضِف كلمةً تصله مع الاعتماد (اختياريّ)</summary>

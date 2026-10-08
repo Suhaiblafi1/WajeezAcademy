@@ -21,7 +21,7 @@ import type { PrismaClient } from '@prisma/client'
 import { requireAuth } from '../auth-plugin'
 import { CohortFileService } from '../../services/cohort-file.service'
 import { assertSafeKey, getObject, getObjectMeta } from '../../services/object-store'
-import { FILE_PURPOSES } from '../../../src/application/trainer/module-body'
+import { TRAINER_FILE_PURPOSES } from '../../../src/application/trainer/module-body'
 
 export function registerCohortFileRoutes(app: FastifyInstance, prisma: PrismaClient) {
   const files = new CohortFileService(prisma)
@@ -32,7 +32,8 @@ export function registerCohortFileRoutes(app: FastifyInstance, prisma: PrismaCli
   }, async (req, reply) => {
     const { cohortId } = z.object({ cohortId: z.string().uuid() }).parse(req.params)
     const body = z.object({
-      purpose: z.enum(FILE_PURPOSES),
+      /* وتقريرُ المراجعة ليس منها: يرفعه المعتمِدُ من بابه (`admin-learning.routes.ts`) */
+      purpose: z.enum(TRAINER_FILE_PURPOSES),
       refId: z.string().trim().min(1).max(120),
       mime: z.string().trim().min(3).max(120),
       originalName: z.string().trim().min(1).max(200),

@@ -39,11 +39,12 @@ import {
 } from '../../src/application/trainer/review-notes'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
+import { CohortFileService } from './cohort-file.service'
 import { CohortService } from './cohort.service'
 import { notifyRole, safeNotify, sendDirectEmail, publicSiteUrl } from './notification.service'
 import { cohortDayAr, whenAr } from '../../src/application/learning/cohort-gate'
 import { trainerOrdinals } from '../../src/application/learning/cohort-title'
-import { planApprovedTrainerMsg } from '../../src/application/trainer/plan-decision'
+import { planApprovedTrainerMsg, reviewReportLineAr } from '../../src/application/trainer/plan-decision'
 import { renderMail } from './mail-template'
 import { readableModuleVersion } from '../catalog/module-version-visibility'
 import {
@@ -650,6 +651,8 @@ export class CohortPlanService {
             submittedAt: plan.submittedAt, trainerConfirmedAt: plan.trainerConfirmedAt, reviewedAt: plan.reviewedAt,
           }
         : null,
+      /* وتقاريرُ المراجعة التي رفعها المعتمِدُ مع قراراته — أحدثُها أوّلا (٨ أكتوبر ٢٠٢٦) */
+      reviewReports: await new CohortFileService(this.prisma).reviewReports(cohortId),
       sessions: cohort.sessions.map((s) => ({
         id: s.id, title: s.title, startsAt: s.startsAt, endsAt: s.endsAt, status: s.status, moduleId: s.moduleId,
         moduleIds: s.moduleIds, approvalState: s.approvalState,
@@ -1125,6 +1128,8 @@ export class CohortPlanService {
       /* ═══ والخطّةُ كما رُدّت — «ما تغيّر منذ ردّك» (٣ أكتوبر ٢٠٢٦، ⑦) ═══
          حين أعاد المدرّبُ إرسالَ ما رُدّ: لقطتُها لحظةَ الردّ ويومُه — و`reviewedAt`
          يبقى يومَ الردّ حتّى الاعتماد، فالإرسالُ لا يمسّه */
+      /* وتقريرُ المراجعة الذي رُفع لهذه الخطّة — يُذكر في رسالة القرار ويجده المدرّب (٨ أكتوبر ٢٠٢٦) */
+      reviewReports: await new CohortFileService(this.prisma).reviewReports(cohortId, plan.id),
       returned: plan.status === 'submitted' && plan.returnedContent
         ? { content: plan.returnedContent, at: plan.reviewedAt }
         : null,
@@ -1157,6 +1162,8 @@ export class CohortPlanService {
     const now = new Date()
     /* وكلمةُ الاعتماد — إن كُتبت — نصٌّ واحد */
     const said = (typeof note === 'string' ? note : note?.general)?.trim() || null
+    /* وتقريرُ المراجعة إن رُفع لهذه الخطّة — تذكره رسالةُ القرار أيًّا كان (٨ أكتوبر ٢٠٢٦) */
+    const reports = (await new CohortFileService(this.prisma).reviewReports(plan.cohort.id, plan.id)).map((r) => r.originalName)
 
     if (!approve) {
       const asked = normalizeReviewNotes(typeof note === 'string' ? { general: note } : note)
@@ -1195,7 +1202,7 @@ export class CohortPlanService {
         heading: 'راجعنا خطّةَ شعبتك ونحتاج تعديلا قبل اعتمادها',
         cta: 'عدّل الخطّة وأعد إرسالها',
         sections: bySection,
-      }, `${composed}${resumed}`)
+      }, `${composed}${resumed}`, reports)
       return { status: 'changes_requested' as const }
     }
 
@@ -1289,7 +1296,7 @@ export class CohortPlanService {
       tasksApplied: tasks.applied,
       noteAr: said,
     })
-    await this.tellTrainer(plan.trainer, plan.cohort, { ...told, cta: 'افتح شعبتك' })
+    await this.tellTrainer(plan.trainer, plan.cohort, { ...told, cta: 'افتح شعبتك' }, undefined, reports)
 
     let prep: { activated: boolean; waiting?: number; blockedAr?: string } | null = null
     if (qual && 'failedAr' in qual) prep = { activated: false, blockedAr: qual.failedAr }
@@ -1397,13 +1404,17 @@ export class CohortPlanService {
     cohort: { id: string; title: string },
     msg: { title: string; body: string; heading: string; cta: string; sections?: readonly { label: string; text: string }[] },
     bellBody?: string,
+    /** أسماءُ تقارير المراجعة التي رُفعت مع هذا القرار — تُذكر ويُدلّ على موضعها */
+    reports: readonly string[] = [],
   ) {
     if (!trainer) return
     const url = `${publicSiteUrl()}/trainer/cohort/${cohort.id}`
+    const reportLine = reviewReportLineAr(reports)
     if (trainer.userId) {
       await safeNotify(this.prisma, {
         audience: 'trainer', userId: trainer.userId, channel: 'in_app',
-        title: msg.title, body: bellBody ?? msg.body, templateKey: 'cohort.plan.decision', data: { cohortId: cohort.id },
+        title: msg.title, body: `${bellBody ?? msg.body}${reportLine ? `\n\n${reportLine}` : ''}`,
+        templateKey: 'cohort.plan.decision', data: { cohortId: cohort.id },
       })
     }
     await sendDirectEmail(this.prisma, {
@@ -1418,6 +1429,7 @@ export class CohortPlanService {
           ...(msg.sections?.length
             ? [{ kind: 'list' as const, items: msg.sections.map((x) => `«${x.label}»: ${x.text}`) }]
             : []),
+          ...(reportLine ? [{ kind: 'p' as const, text: reportLine }] : []),
           { kind: 'cta', label: msg.cta, href: url },
         ],
       }),

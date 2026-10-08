@@ -81,6 +81,7 @@ import { notedSections, notesForTrainer, type ReviewNotes } from "@/application/
 import { firstStep, readWorkspaceStep, STEP_PARAM } from "@/application/trainer/workspace-step";
 import { trainerRegistrationLine } from "@/application/learning/registration-state";
 import { ReviewNotesBanner, StageReviewNote } from "@/components/ReviewNotes";
+import { ReviewReportList, type ReviewReport } from "@/components/ReviewReports";
 import { toast, toastError } from "@/components/Toast";
 import { Panel, Bar, Card, Inset } from "@/components/ui/Surface";
 import { PREP_NOTICE_AR, usePrepCohorts } from "@/components/trainer/usePrepCohorts";
@@ -186,6 +187,8 @@ interface Workspace {
   checklist: { key: string; labelAr: string; done: boolean; optional: boolean }[];
   /* رفع كرّاسةً قبل قالب وجيز — فالقالبُ له مستحسَنٌ لا إلزاميّ (٦ أكتوبر ٢٠٢٦) */
   workbookBeforeTemplate?: boolean;
+  /* تقاريرُ المراجعة التي رفعتها الإدارةُ مع قراراتها — أحدثُها أوّلا (٨ أكتوبر ٢٠٢٦) */
+  reviewReports?: ReviewReport[];
 }
 
 const PLAN_STATUS_AR: Record<string, { label: string; tone: "default" | "accent" | "positive" | "warn" }> = {
@@ -1487,6 +1490,9 @@ export default function CohortWorkspace() {
               والعامّةُ بنصّها، وملاحظاتُ الخطوات أسماءُ خطواتها — كلٌّ زرٌّ
               يفتح خطوتَه، ونصُّها في رأسها هناك (٣ب). */}
           <ReviewNotesBanner notes={reviewNotes} current={stage} onOpen={openStage} />
+          {/* وتقريرُ المراجعة مع الملاحظة — رسالةُ القرار تقول إنّه هنا (٨ أكتوبر ٢٠٢٦).
+              ويُطوى بالضمور كسطر الحقائق: الرأسُ اللاصقُ لا يبتلع الشاشة */}
+          {!compact && <ReviewReportList reports={ws.reviewReports ?? []} />}
 
           {/* وما ينقص الخطوةَ كي تتمّ — بعد «احفظ وتابِع» التي لم تنقل. لاصقٌ
               كالملاحظة: يقرؤه وهو ينزل إلى الحقل الذي يصحّحه. */}

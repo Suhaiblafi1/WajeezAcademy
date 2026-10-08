@@ -191,3 +191,14 @@ export function approvalBody(note: string): { approve: true; note?: string } {
   return said ? { approve: true, note: said } : { approve: true }
 }
 
+/* ═══ وتقريرُ المراجعة في رسالة القرار (٨ أكتوبر ٢٠٢٦) ═══
+
+   قرارُ صاحب المنصّة: التقريرُ يُرفع على بطاقة المراجعة ويُحفظ مع الخطّة، ورسالةُ القرار
+   — جرسا وبريدا — تقول إنّه هناك وأين يُقرأ. لا يُرفق بالبريد: يبقى في المنصّة يُفتح بعد
+   البريد، ولا يُحجب بحجمه عند مزوّدي البريد. */
+export function reviewReportLineAr(names: readonly string[]): string | null {
+  if (names.length === 0) return null
+  const which = names.length === 1 ? `«${names[0]}»` : names.map((n) => `«${n}»`).join(' و')
+  return `ومع هذا الردّ ${names.length === 1 ? 'تقريرُ مراجعةٍ مفصّل' : 'تقاريرُ مراجعةٍ مفصّلة'}: ${which} — `
+    + 'تجده في صفحة شعبتك تحت «تقرير المراجعة»، تقرؤه وتنزّله.'
+}

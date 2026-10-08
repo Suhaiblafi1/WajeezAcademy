@@ -16,7 +16,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
-  BODY_FILE_MIMES, FILE_PURPOSES, MAX_BODY_FILE_BYTES, MIN_MODULE_BODY, acceptedMimes,
+  BODY_FILE_MIMES, FILE_PURPOSES, TRAINER_FILE_PURPOSES, MAX_BODY_FILE_BYTES, MIN_MODULE_BODY, acceptedMimes,
   bodyFileBlockerAr, fileBlockerAr, fileReadsInline, moduleBodyBlockerAr, moduleBodyDone,
   readsInline, resourceHasSource, resourceSourceBlockerAr,
 } from '../../application/trainer/module-body'
@@ -145,8 +145,17 @@ describe('د-٣ · المصدرُ ملفّا', () => {
   })
 
   /* وثالثُها الكرّاسة (٦ أكتوبر ٢٠٢٦): «PDF only but the template is Word» */
-  it('والأغراضُ هي ما في المخطَّط — لا رابعَ يُخترع', () => {
-    expect([...FILE_PURPOSES].sort()).toEqual(['module_body', 'plan_resource', 'workbook'])
+  /* ورابعُها تقريرُ المراجعة (٨ أكتوبر ٢٠٢٦): يرفعه المعتمِدُ لا المدرّب */
+  it('والأغراضُ هي ما في المخطَّط — لا خامسَ يُخترع', () => {
+    expect([...FILE_PURPOSES].sort()).toEqual(['module_body', 'plan_resource', 'review_report', 'workbook'])
+  })
+
+  it('⚠️ وتقريرُ المراجعة لا يُطلب من باب المدرّب — PDF أو Word يرفعه المعتمِد', () => {
+    expect(TRAINER_FILE_PURPOSES as readonly string[], 'صار المدرّبُ يرفع تقريرَ مراجعة خطّته').not.toContain('review_report')
+    expect([...TRAINER_FILE_PURPOSES].sort()).toEqual(['module_body', 'plan_resource', 'workbook'])
+    expect(fileBlockerAr('review_report', 'application/pdf')).toBeNull()
+    expect(fileBlockerAr('review_report', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')).toBeNull()
+    expect(fileBlockerAr('review_report', PPTX)).toBe('لا يُقبل إلّا PDF أو Word')
   })
 
   it('⚠️ والكرّاسةُ PDF وحدَه — لا Word ولا شرائح ولا صور', () => {
