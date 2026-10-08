@@ -86,6 +86,7 @@ function byTrainer(rows: readonly PendingPlan[]): PendingPlan[] {
 const OUTCOME_AR: Record<PlanOutcome, { label: string; tone: "positive" | "warn" }> = {
   approved: { label: "اعتُمدت الآن", tone: "positive" },
   changes_requested: { label: "رُدّت بملاحظاتك", tone: "warn" },
+  postponed: { label: "أُجّلت إلى موسمٍ قادم", tone: "warn" },
 };
 
 export default function PendingPlans() {

@@ -103,6 +103,7 @@ import { countAr } from "@/application/text/count-ar";
 import CurriculumReview from "@/components/CurriculumReview";
 import PlanScorecard from "@/components/PlanScorecard";
 import { planScorecard } from "@/application/trainer/plan-scorecard";
+import { postponedLineAr } from "@/application/trainer/plan-postpone";
 import { curriculumView } from "@/application/trainer/curriculum-view";
 import { PlanDiffList } from "@/components/PlanDiff";
 import { planDiff } from "@/application/trainer/plan-diff";
@@ -177,6 +178,8 @@ interface Workspace {
     /* لكلّ خطوةٍ ملاحظتُها — والقديمُ نصٌّ واحدٌ يصل ملاحظةً عامّة (٣ب) */
     reviewerNotes?: ReviewNotes;
     submittedAt: string | null; trainerConfirmedAt: string | null; reviewedAt: string | null;
+    /* مؤجّلةٌ إلى موسمٍ قادم — أوّلُ يومٍ فيه (٨ أكتوبر ٢٠٢٦، `plan-postpone.ts`) */
+    postponedTo?: string | null;
   } | null;
   sessions: { id: string; title: string; startsAt: string; endsAt: string | null; status: string; approvalState?: string; moduleIds?: string[]; placeholder: boolean; joinUrl: string | null; recordings: { id: string; title: string; externalUrl: string | null; readUrl: string | null }[] }[];
   materials: { id: string; title: string; kind: string; externalUrl: string | null; readUrl: string | null }[];
@@ -778,7 +781,11 @@ export default function CohortWorkspace() {
   }
 
   const planStatus = ws.plan?.status ?? "draft";
-  const st = PLAN_STATUS_AR[planStatus] ?? PLAN_STATUS_AR.draft;
+  /* والمؤجّلةُ تُسمّى بموسمها لا «طُلبت تعديلات» — لم تُقبل لهذا الفصل (٨ أكتوبر ٢٠٢٦) */
+  const postponedTo = planStatus === "changes_requested" ? ws.plan?.postponedTo ?? null : null;
+  const st = postponedTo
+    ? { label: `${postponedLineAr(postponedTo)} — لم تُقبل لهذا الفصل`, tone: "warn" as const }
+    : PLAN_STATUS_AR[planStatus] ?? PLAN_STATUS_AR.draft;
   const locked = planStatus === "submitted";
   const approved = planStatus === "approved" || planStatus === "published";
   /* ═══ ملاحظاتُ الإدارة — كلٌّ في خطوته (٣ب) ═══
@@ -1497,6 +1504,16 @@ export default function CohortWorkspace() {
           {/* ② وملاحظةُ الإدارة تبقى لاصقةً: يقرؤها وهو ينزل ويصعد يصحّح.
               والعامّةُ بنصّها، وملاحظاتُ الخطوات أسماءُ خطواتها — كلٌّ زرٌّ
               يفتح خطوتَه، ونصُّها في رأسها هناك (٣ب). */}
+          {postponedTo && (
+            <Inset tone="warn" className="mt-2" role="status">
+              <p className="text-read font-black text-gold-ink">لم تُقبل هذه الشعبةُ لهذا الفصل — {postponedLineAr(postponedTo)}</p>
+              {!compact && (
+                <p className="mt-1 text-read leading-6 text-muted-foreground">
+                  ليس رفضا للدورة: خطّتُك كما هي، عدّلها متى شئت بما في تقرير المراجعة، واجعل بدايتَها في {cohortDayAr(postponedTo)} أو بعده ثمّ أرسلها.
+                </p>
+              )}
+            </Inset>
+          )}
           <ReviewNotesBanner notes={reviewNotes} current={stage} onOpen={openStage} />
           {/* وتقريرُ المراجعة مع الملاحظة — رسالةُ القرار تقول إنّه هنا (٨ أكتوبر ٢٠٢٦).
               ويُطوى بالضمور كسطر الحقائق: الرأسُ اللاصقُ لا يبتلع الشاشة */}

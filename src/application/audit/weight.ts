@@ -172,8 +172,8 @@ const HIGH: readonly string[] = [
   'trainer_payout.approve', 'trainer_payout.pay', 'trainer_payout.cancel',
   /* شهادتُه — دعوى مستقلّةٌ على صاحبها */
   'certificate.issue', 'certificate.revoke',
-  /* خطّةُ شعبته: اعتُمدت أو رُدّت */
-  'cohort.plan.approve', 'cohort.plan.changes_requested',
+  /* خطّةُ شعبته: اعتُمدت أو رُدّت أو أُجّلت إلى موسمٍ قادم */
+  'cohort.plan.approve', 'cohort.plan.changes_requested', 'cohort.plan.postpone',
   /* رابطُ اللقاء نُشر، والجلسةُ تحرّكت */
   'zoom.create_api', 'zoom.attach_manual',
   'session.reschedule.approve', 'session.reschedule.reject',

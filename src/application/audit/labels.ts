@@ -181,6 +181,7 @@ const PHRASES: Record<string, string> = {
   'cohort.plan.submit': 'إرسالُ مدرّبٍ خطّةَ شعبته للاعتماد',
   'cohort.plan.approve': 'اعتمادُ خطّة شعبة',
   'cohort.plan.changes_requested': 'ردُّ خطّة شعبةٍ بتعديلات',
+  'cohort.plan.postpone': 'تأجيلُ خطّة شعبةٍ إلى موسمٍ قادم',
   /* حزمةُ المراجعة (٧ أكتوبر ٢٠٢٦): موادُّ المدرّب غيرُ المنشورة تخرج من المنصّة —
      فيُعرف من نزّلها ومتى (`plan-review-bundle.service.ts`) */
   'cohort.plan.review_bundle': 'تنزيلُ خطّة شعبةٍ للمراجعة',

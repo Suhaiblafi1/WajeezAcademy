@@ -5,6 +5,7 @@ import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import { isDayCode } from '../../../src/application/schedule/days'
 import { REVIEW_NOTE_MAX } from '../../../src/application/trainer/review-notes'
+import { TRAINING_SEASONS, type TrainingSeason } from '../../../src/application/trainer/application-options'
 import type { PrismaClient } from '@prisma/client'
 import { CohortService } from '../../services/cohort.service'
 import { openAllCohorts, alignCohortPrices } from '../../services/catalog-readiness.service'
@@ -29,6 +30,10 @@ const dayCodes = z.array(z.string()).refine(
   (days) => days.every(isDayCode),
   { message: 'يومٌ غير معروف — الأيّام رموز: sun mon tue wed thu fri sat' },
 )
+
+
+/** رموزُ المواسم الأربعة — من `TRAINING_SEASONS` لا قائمةٌ ثانيةٌ تفترق عنها */
+const TRAINING_SEASON_VALUES = TRAINING_SEASONS.map((x) => x.value) as [TrainingSeason, ...TrainingSeason[]]
 
 export function registerAdminLearningRoutes(app: FastifyInstance, prisma: PrismaClient) {
   const cohorts = new CohortService(prisma)
@@ -185,6 +190,22 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
       ]).optional(),
     }).parse(req.body)
     return plans.decide(req.auth!.userId, id, body.approve, body.note)
+  })
+
+  /* ═══ التأجيلُ إلى موسمٍ قادم — قرارٌ ثالثٌ بجانب الاعتماد والردّ (٨ أكتوبر ٢٠٢٦) ═══
+     «لم تُقبل لهذا الفصل»: تعود الخطّةُ إلى مدرّبها بموسمها الجديد، ولا تُرسَل قبله.
+     والعلّةُ في `cohort-plan.service.ts` (`postpone`) و`plan-postpone.ts`. */
+  app.post('/api/admin/cohort-plans/:id/postpone', {
+    preHandler: requirePermission('cohort.plan.approve'),
+    schema: { tags: ['admin-cohorts'], summary: 'تأجيلُ خطّة مدرّبٍ إلى موسمٍ قادم — لم تُقبل لهذا الفصل' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const body = z.object({
+      year: z.number().int().min(2026).max(2100),
+      season: z.enum(TRAINING_SEASON_VALUES),
+      note: z.string().max(REVIEW_NOTE_MAX).optional(),
+    }).parse(req.body)
+    return plans.postpone(req.auth!.userId, id, { year: body.year, season: body.season }, body.note)
   })
 
   /* ═══ اللقاءاتُ المنتظِرةُ قرارا — في الطابور الذي تراجع فيه الإدارةُ خطّةَ

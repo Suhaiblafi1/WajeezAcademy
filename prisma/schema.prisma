@@ -2693,6 +2693,12 @@ model CohortDeliveryPlan {
   /// ليعرف أأُجيبت ملاحظتُه. فيُقابَل المرسَلُ بهذه خطوةً خطوة (`sinceReturn`).
   /// وتبقى عند إعادة الإرسال كالملاحظات، وتُرفع معها بالاعتماد.
   returnedContent       Json?
+  /// ═══ مؤجّلةٌ إلى موسمٍ قادم (٨ أكتوبر ٢٠٢٦) ═══
+  ///
+  /// أوّلُ يومٍ في الموسم الذي أجّلها إليه المعتمِد: «لم تُقبل لهذا الفصل». تعود الخطّةُ
+  /// إلى يد المدرّب (`changes_requested`) ولا تُرسَل حتّى تبدأ في ذلك الموسم أو بعده.
+  /// وفارغٌ لغير المؤجّلة. والقاعدةُ في `src/application/trainer/plan-postpone.ts`.
+  postponedTo           DateTime?       @db.Date
   sourceChangeRequestId String?         @db.Uuid // إن نُشرت من اقتراح مدرب بنطاق شعبة
   createdBy             String?         @db.Uuid
   createdAt             DateTime        @default(now())
