@@ -1,0 +1,426 @@
+{
+  "version": "1.0",
+  "doc_ar": "مسوّدةُ اختبار تحديد مستوى الإنجليزيّة — ستّةُ أسئلةٍ لكلّ مستوى من A1 إلى C1 (قواعد · مفردات · قراءة). كتبها Claude بقرار صاحب المنصّة (٨ أكتوبر ٢٠٢٦: «أنا أكتب ومدرّبُ الإنجليزيّة يراجع»). تُستورَد مسوّدةً ولا تُعرض على متعلّمٍ حتّى يعتمدها المدرّبُ في لوحة الإدارة.",
+  "items": [
+    {
+      "id": "EN-A1-1",
+      "level": "A1",
+      "skill": "grammar",
+      "passage": null,
+      "stem": "She ___ a teacher.",
+      "options": [
+        "is",
+        "are",
+        "am",
+        "be"
+      ],
+      "answer_index": 0
+    },
+    {
+      "id": "EN-A1-2",
+      "level": "A1",
+      "skill": "grammar",
+      "passage": null,
+      "stem": "I ___ coffee every morning.",
+      "options": [
+        "drinks",
+        "drink",
+        "drinking",
+        "to drink"
+      ],
+      "answer_index": 1
+    },
+    {
+      "id": "EN-A1-3",
+      "level": "A1",
+      "skill": "vocabulary",
+      "passage": null,
+      "stem": "The opposite of 'hot' is ___.",
+      "options": [
+        "warm",
+        "big",
+        "cold",
+        "fast"
+      ],
+      "answer_index": 2
+    },
+    {
+      "id": "EN-A1-4",
+      "level": "A1",
+      "skill": "vocabulary",
+      "passage": null,
+      "stem": "You use a ___ to unlock a door.",
+      "options": [
+        "cup",
+        "pen",
+        "chair",
+        "key"
+      ],
+      "answer_index": 3
+    },
+    {
+      "id": "EN-A1-5",
+      "level": "A1",
+      "skill": "reading",
+      "passage": "My name is Sara. I live in Amman with my parents. I work in a bank. On Fridays, I visit my grandmother.",
+      "stem": "Where does Sara work?",
+      "options": [
+        "In a bank",
+        "In a school",
+        "In a hospital",
+        "At home"
+      ],
+      "answer_index": 0
+    },
+    {
+      "id": "EN-A1-6",
+      "level": "A1",
+      "skill": "reading",
+      "passage": "My name is Sara. I live in Amman with my parents. I work in a bank. On Fridays, I visit my grandmother.",
+      "stem": "Who does Sara visit on Fridays?",
+      "options": [
+        "Her parents",
+        "Her grandmother",
+        "Her friend",
+        "Her teacher"
+      ],
+      "answer_index": 1
+    },
+    {
+      "id": "EN-A2-1",
+      "level": "A2",
+      "skill": "grammar",
+      "passage": null,
+      "stem": "Yesterday we ___ to the cinema.",
+      "options": [
+        "go",
+        "goes",
+        "went",
+        "going"
+      ],
+      "answer_index": 2
+    },
+    {
+      "id": "EN-A2-2",
+      "level": "A2",
+      "skill": "grammar",
+      "passage": null,
+      "stem": "This bag is ___ than that one.",
+      "options": [
+        "heavy",
+        "heaviest",
+        "more heavy",
+        "heavier"
+      ],
+      "answer_index": 3
+    },
+    {
+      "id": "EN-A2-3",
+      "level": "A2",
+      "skill": "vocabulary",
+      "passage": null,
+      "stem": "I'm ___; I need something to eat.",
+      "options": [
+        "hungry",
+        "thirsty",
+        "tired",
+        "angry"
+      ],
+      "answer_index": 0
+    },
+    {
+      "id": "EN-A2-4",
+      "level": "A2",
+      "skill": "vocabulary",
+      "passage": null,
+      "stem": "Please ___ the form and sign at the bottom.",
+      "options": [
+        "take off",
+        "fill in",
+        "give up",
+        "look after"
+      ],
+      "answer_index": 1
+    },
+    {
+      "id": "EN-A2-5",
+      "level": "A2",
+      "skill": "reading",
+      "passage": "Dear Omar, Thanks for your email. I can't come to the meeting on Monday because I have a doctor's appointment. Can we meet on Tuesday at 10 instead? Best, Lina",
+      "stem": "Why can't Lina come to the meeting on Monday?",
+      "options": [
+        "She is travelling",
+        "She has another meeting",
+        "She has a doctor's appointment",
+        "She did not get the email"
+      ],
+      "answer_index": 2
+    },
+    {
+      "id": "EN-A2-6",
+      "level": "A2",
+      "skill": "reading",
+      "passage": "Dear Omar, Thanks for your email. I can't come to the meeting on Monday because I have a doctor's appointment. Can we meet on Tuesday at 10 instead? Best, Lina",
+      "stem": "What does Lina suggest?",
+      "options": [
+        "Cancelling the meeting",
+        "Meeting on Monday afternoon",
+        "Talking by phone",
+        "Meeting on Tuesday at 10"
+      ],
+      "answer_index": 3
+    },
+    {
+      "id": "EN-B1-1",
+      "level": "B1",
+      "skill": "grammar",
+      "passage": null,
+      "stem": "If it rains tomorrow, we ___ the trip.",
+      "options": [
+        "will cancel",
+        "would cancel",
+        "cancelled",
+        "had cancelled"
+      ],
+      "answer_index": 0
+    },
+    {
+      "id": "EN-B1-2",
+      "level": "B1",
+      "skill": "grammar",
+      "passage": null,
+      "stem": "I have lived here ___ 2019.",
+      "options": [
+        "for",
+        "since",
+        "from",
+        "during"
+      ],
+      "answer_index": 1
+    },
+    {
+      "id": "EN-B1-3",
+      "level": "B1",
+      "skill": "vocabulary",
+      "passage": null,
+      "stem": "The meeting was ___ because the manager was ill.",
+      "options": [
+        "promoted",
+        "prevented",
+        "postponed",
+        "pretended"
+      ],
+      "answer_index": 2
+    },
+    {
+      "id": "EN-B1-4",
+      "level": "B1",
+      "skill": "vocabulary",
+      "passage": null,
+      "stem": "She is responsible ___ training new staff.",
+      "options": [
+        "of",
+        "to",
+        "with",
+        "for"
+      ],
+      "answer_index": 3
+    },
+    {
+      "id": "EN-B1-5",
+      "level": "B1",
+      "skill": "reading",
+      "passage": "Many companies now allow employees to work from home two days a week. Supporters say it saves travel time and improves concentration. However, some managers worry that teamwork suffers when people rarely meet in person.",
+      "stem": "What is one benefit of working from home mentioned in the text?",
+      "options": [
+        "It saves travel time",
+        "It reduces salaries",
+        "It improves teamwork",
+        "It increases meetings"
+      ],
+      "answer_index": 0
+    },
+    {
+      "id": "EN-B1-6",
+      "level": "B1",
+      "skill": "reading",
+      "passage": "Many companies now allow employees to work from home two days a week. Supporters say it saves travel time and improves concentration. However, some managers worry that teamwork suffers when people rarely meet in person.",
+      "stem": "What concern do some managers have?",
+      "options": [
+        "Employees work too much",
+        "Teamwork may suffer",
+        "Offices become crowded",
+        "Travel costs rise"
+      ],
+      "answer_index": 1
+    },
+    {
+      "id": "EN-B2-1",
+      "level": "B2",
+      "skill": "grammar",
+      "passage": null,
+      "stem": "By the time we arrived, the presentation ___.",
+      "options": [
+        "already started",
+        "has already started",
+        "had already started",
+        "was already start"
+      ],
+      "answer_index": 2
+    },
+    {
+      "id": "EN-B2-2",
+      "level": "B2",
+      "skill": "grammar",
+      "passage": null,
+      "stem": "The report, ___ was published last week, has caused debate.",
+      "options": [
+        "that",
+        "who",
+        "what",
+        "which"
+      ],
+      "answer_index": 3
+    },
+    {
+      "id": "EN-B2-3",
+      "level": "B2",
+      "skill": "vocabulary",
+      "passage": null,
+      "stem": "The new policy had a significant ___ on productivity.",
+      "options": [
+        "impact",
+        "effort",
+        "attempt",
+        "access"
+      ],
+      "answer_index": 0
+    },
+    {
+      "id": "EN-B2-4",
+      "level": "B2",
+      "skill": "vocabulary",
+      "passage": null,
+      "stem": "We need to ___ the problem before it gets worse.",
+      "options": [
+        "admit",
+        "address",
+        "adopt",
+        "admire"
+      ],
+      "answer_index": 1
+    },
+    {
+      "id": "EN-B2-5",
+      "level": "B2",
+      "skill": "reading",
+      "passage": "Although remote tools have made global collaboration easier, they have also blurred the line between work and personal time. Several firms have responded by introducing 'quiet hours', during which staff are not expected to answer messages.",
+      "stem": "According to the text, what problem have remote tools created?",
+      "options": [
+        "Global collaboration has become harder",
+        "Staff answer fewer messages",
+        "Work and personal time are less separate",
+        "Firms have fewer global teams"
+      ],
+      "answer_index": 2
+    },
+    {
+      "id": "EN-B2-6",
+      "level": "B2",
+      "skill": "reading",
+      "passage": "Although remote tools have made global collaboration easier, they have also blurred the line between work and personal time. Several firms have responded by introducing 'quiet hours', during which staff are not expected to answer messages.",
+      "stem": "What are 'quiet hours'?",
+      "options": [
+        "Periods when meetings are not allowed",
+        "Hours when offices are closed",
+        "Breaks set aside for exercise",
+        "Times when staff need not answer messages"
+      ],
+      "answer_index": 3
+    },
+    {
+      "id": "EN-C1-1",
+      "level": "C1",
+      "skill": "grammar",
+      "passage": null,
+      "stem": "___ had the plan been approved than problems began to appear.",
+      "options": [
+        "No sooner",
+        "Hardly",
+        "As soon as",
+        "Barely"
+      ],
+      "answer_index": 0
+    },
+    {
+      "id": "EN-C1-2",
+      "level": "C1",
+      "skill": "grammar",
+      "passage": null,
+      "stem": "Had I known about the delay, I ___ earlier.",
+      "options": [
+        "would leave",
+        "would have left",
+        "had left",
+        "will have left"
+      ],
+      "answer_index": 1
+    },
+    {
+      "id": "EN-C1-3",
+      "level": "C1",
+      "skill": "vocabulary",
+      "passage": null,
+      "stem": "Her argument was so ___ that nobody could find a flaw in it.",
+      "options": [
+        "compulsive",
+        "complacent",
+        "compelling",
+        "compliant"
+      ],
+      "answer_index": 2
+    },
+    {
+      "id": "EN-C1-4",
+      "level": "C1",
+      "skill": "vocabulary",
+      "passage": null,
+      "stem": "The negotiations reached an ___, with neither side willing to compromise.",
+      "options": [
+        "impulse",
+        "impact",
+        "impetus",
+        "impasse"
+      ],
+      "answer_index": 3
+    },
+    {
+      "id": "EN-C1-5",
+      "level": "C1",
+      "skill": "reading",
+      "passage": "Critics of performance metrics argue that once a measure becomes a target, people optimise for the number rather than the outcome it was meant to capture. A call centre rewarded for short calls, for instance, may simply end conversations sooner, leaving customers' problems unresolved.",
+      "stem": "What is the critics' main point?",
+      "options": [
+        "Targets can pull behaviour away from the real goal",
+        "Metrics are too expensive to collect",
+        "Organisations should measure nothing",
+        "Short calls always mean good service"
+      ],
+      "answer_index": 0
+    },
+    {
+      "id": "EN-C1-6",
+      "level": "C1",
+      "skill": "reading",
+      "passage": "Critics of performance metrics argue that once a measure becomes a target, people optimise for the number rather than the outcome it was meant to capture. A call centre rewarded for short calls, for instance, may simply end conversations sooner, leaving customers' problems unresolved.",
+      "stem": "In the example, why might customers' problems stay unresolved?",
+      "options": [
+        "Agents are not trained well enough",
+        "Agents end calls early to meet the target",
+        "Customers call too often",
+        "The metric measures customer satisfaction"
+      ],
+      "answer_index": 1
+    }
+  ]
+}
