@@ -20,6 +20,7 @@ import ToastHost from './components/Toast'
 const Methodology = lazy(() => import('./pages/Methodology'))
 const Diagnostic = lazy(() => import('./pages/Diagnostic'))
 const PlacementTest = lazy(() => import('./pages/PlacementTest'))
+const SkillCheck = lazy(() => import('./pages/SkillCheck'))
 const Mirror = lazy(() => import('./pages/Mirror'))
 const PathwayPage = lazy(() => import('./pages/Pathway'))
 const CoursePathPage = lazy(() => import('./pages/CoursePath'))
@@ -190,6 +191,8 @@ export default function App() {
           <Route path="/diagnostic" element={<Diagnostic />} />
           {/* اختبارُ تحديد مستوى الإنجليزيّة — اختياريٌّ من خطّة الإنجليزيّة (٨ أكتوبر ٢٠٢٦) */}
           <Route path="/placement/english" element={<PlacementTest />} />
+          {/* فحوصُ المهارة في المجالات — اختياريّةٌ من سطر المستوى في النتيجة (٨ أكتوبر ٢٠٢٦) */}
+          <Route path="/skill-check/:subject" element={<SkillCheck />} />
           <Route path="/mirror" element={<Mirror />} />
           <Route path="/pathways" element={<Catalog kind="pathways" />} />
           <Route path="/courses" element={<Catalog kind="courses" />} />

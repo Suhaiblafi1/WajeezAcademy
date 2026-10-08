@@ -27,3 +27,32 @@ export function measuredEnglish(): EnglishLevel | null {
     return null
   }
 }
+
+/* ── ومستوى المجال المقيس بفحص المهارة — لكلّ احتياجٍ مستواه ── */
+
+export const MEASURED_FIELDS_KEY = 'wajeez_placement_fields_v1'
+
+const FIELD_CODES = ['none', 'basics', 'independent', 'lead']
+
+export function measuredFields(): Record<string, string> {
+  try {
+    const raw = typeof localStorage === 'undefined' ? null : localStorage.getItem(MEASURED_FIELDS_KEY)
+    const all = raw ? (JSON.parse(raw) as Record<string, { level?: unknown }>) : {}
+    const out: Record<string, string> = {}
+    for (const [need, v] of Object.entries(all)) {
+      if (typeof v?.level === 'string' && FIELD_CODES.includes(v.level)) out[need] = v.level
+    }
+    return out
+  } catch {
+    return {}
+  }
+}
+
+export function rememberMeasuredField(need: string, level: string, at = new Date()): void {
+  try {
+    const raw = localStorage.getItem(MEASURED_FIELDS_KEY)
+    const all = raw ? (JSON.parse(raw) as Record<string, unknown>) : {}
+    all[need] = { level, at: at.toISOString() }
+    localStorage.setItem(MEASURED_FIELDS_KEY, JSON.stringify(all))
+  } catch { /* بلا تخزين يبقى السطرُ على الجواب */ }
+}

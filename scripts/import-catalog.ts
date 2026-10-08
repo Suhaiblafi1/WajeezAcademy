@@ -34,7 +34,7 @@ console.log(`   ${s.links} علاقة مرجعية · ${s.diagnosticProfiles} م
 console.log(`   إصدار الكتالوج: ${s.catalogVersionId} ${s.catalogVersionCreated ? '(أُنشئ ونُشر الآن)' : '(موجود — لم يتكرر)'}`)
 console.log(`   بصمة اللقطة: ${s.snapshotHash.slice(0, 16)}…`)
 
-console.log('④ مسوّدةُ اختبار تحديد مستوى الإنجليزيّة…')
+console.log('④ أسئلةُ اختبارات المستوى — الإنجليزيّةُ وفحوصُ المجالات…')
 const placement = await importPlacementDraft(prisma)
 console.log(`   ${placement.created} سؤالا أُنشئ · ${placement.kept} موجودٌ تُرك كما عدّله مراجعُه`)
 

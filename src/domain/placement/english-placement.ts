@@ -20,12 +20,12 @@
    يُجتاز ولا يُحكم به: الاختبارُ لا يُفتح حتّى يكون لكلّ مستوى أسئلتُه. */
 
 import type { EnglishLevel } from '../diagnostic/v2_1/english'
+import { climbLadder, type LevelScore as LadderLevelScore } from './ladder'
 
 export const PLACEMENT_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1'] as const
 export type PlacementCefr = (typeof PLACEMENT_LEVELS)[number]
 
-/** نسبةُ اجتياز المستوى — أربعةٌ من ستّة */
-export const PASS_RATIO = 2 / 3
+export { PASS_RATIO } from './ladder'
 /** أدنى عددٍ من الأسئلة المعتمدة لكلّ مستوى قبل أن يُفتح الاختبار */
 export const MIN_APPROVED_PER_LEVEL = 3
 
@@ -39,12 +39,7 @@ export interface PlacementItem {
   answer_index: number
 }
 
-export interface LevelScore {
-  level: PlacementCefr
-  correct: number
-  total: number
-  passed: boolean
-}
+export type LevelScore = LadderLevelScore<PlacementCefr>
 
 export interface PlacementResult {
   cefr: PlacementCefr
@@ -61,25 +56,11 @@ export function bankIsOpen(items: readonly Pick<PlacementItem, 'level'>[]): bool
   return PLACEMENT_LEVELS.every((l) => items.filter((i) => i.level === l).length >= MIN_APPROVED_PER_LEVEL)
 }
 
-/** يصحّح الأجوبة (معرّفُ السؤال ← رقمُ الخيار) ويحدّد المستوى. ما لم يُجب عنه خطأ. */
+/** يصحّح الأجوبة (معرّفُ السؤال ← رقمُ الخيار) ويحدّد المستوى. ما لم يُجب عنه خطأ.
+    والقاعدةُ في `ladder.ts` — واحدةٌ لهذا الاختبار ولفحوص المجالات. */
 export function scorePlacement(items: readonly PlacementItem[], answers: Readonly<Record<string, number>>): PlacementResult {
-  const per_level: LevelScore[] = PLACEMENT_LEVELS.map((level) => {
-    const mine = items.filter((i) => i.level === level)
-    const correct = mine.filter((i) => answers[i.id] === i.answer_index).length
-    return { level, correct, total: mine.length, passed: mine.length > 0 && correct / mine.length >= PASS_RATIO - 1e-9 }
-  })
-  let cefr: PlacementCefr = 'A1'
-  for (const s of per_level) {
-    if (!s.passed) break
-    cefr = s.level
-  }
-  return {
-    cefr,
-    level: CODE[cefr],
-    correct: per_level.reduce((a, s) => a + s.correct, 0),
-    total: per_level.reduce((a, s) => a + s.total, 0),
-    per_level,
-  }
+  const { level: cefr, correct, total, per_level } = climbLadder(PLACEMENT_LEVELS, 'A1' as const, items, answers)
+  return { cefr, level: CODE[cefr], correct, total, per_level }
 }
 
 /** ما يُرسَل إلى المتعلّم — بلا الجواب الصحيح */
