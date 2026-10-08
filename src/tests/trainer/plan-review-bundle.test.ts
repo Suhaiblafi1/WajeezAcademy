@@ -199,3 +199,22 @@ describe('كرّاسةٌ لكلّ محور', () => {
     expect(md).not.toContain('لم تُوضع بعد.')
   })
 })
+
+describe('بطاقةُ المعايير في ملفّ المراجعة (٨ أكتوبر ٢٠٢٦)', () => {
+  const md = reviewMarkdown(input(), bundleFiles(input()))
+
+  it('بعد حقائق المراجعة، بعددها وبخطواتها', () => {
+    expect(md.indexOf('## بطاقة المعايير')).toBeGreaterThan(md.indexOf('## حقائق المراجعة'))
+    expect(md.indexOf('## بطاقة المعايير')).toBeLessThan(md.indexOf('## الكراسة'))
+    expect(md).toMatch(/❌ مطلوبٌ يمنع الإرسال: \d+ · ⚠️ نصيحة: \d+ · ✅ تحقّق: \d+/)
+    expect(md).toContain('### المحاور ومواعيدها')
+  })
+
+  it('والمطلوبُ الساقطُ يُسمّى بموضعه — محاورُ بلا تطبيقٍ ولا مصدر', () => {
+    expect(md).toContain('- ❌ **التطبيقُ العمليّ والمُسلَّم** (مُلزِم)')
+    expect(md).toContain('  - المحور 2: بلا تطبيقٍ عمليّ ولا مُسلَّم')
+    expect(md).toContain('  - المحور 3: بلا مصدر')
+    /* وما تحقّق يُقال تحقّقا: الشعبةُ تنتهي في ٣٠ يناير */
+    expect(md).toContain('- ✅ **نهايةُ الشعبة** (مُلزِم)')
+  })
+})

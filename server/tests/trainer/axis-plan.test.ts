@@ -46,10 +46,15 @@ const SLOTS = [
 const body = 'الشرحُ المكتوب الذي يقرؤه المتعلّمُ قبل اللقاء، وفيه ما يكفيه ليبدأ عملَه في هذا المحور.'
 const content: TrainerPlanContent = {
   kind: 'trainer', summaryAr: 'شعبةٌ على خطّ المحاور', ...PERIOD,
-  modules: IDS.map((moduleId, i) => ({ moduleId, titleAr: `المحور ${i + 1}`, bodyAr: body })),
+  /* ولكلّ محورٍ تطبيقٌ عمليٌّ ومُسلَّمٌ ومصدر — مُلزِماتٌ من بطاقة المعايير (٨ أكتوبر ٢٠٢٦) */
+  modules: IDS.map((moduleId, i) => ({
+    moduleId, titleAr: `المحور ${i + 1}`, bodyAr: body, activityAr: 'تطبيقٌ عمليٌّ على حالة', artifactAr: 'ورقةٌ تُسلَّم',
+  })),
   resources: [
     { title: 'مرجعُ المحور الثالث', url: 'https://x.test/ref-3', category: 'reading', moduleId: 'AX-M3' },
     { title: 'قراءةٌ قبل لقاء الرابع', url: 'https://x.test/pre-4', category: 'reading', moduleId: 'AX-M4', preReading: true },
+    { title: 'محاضرةُ المحور الأوّل', url: 'https://x.test/talk-1', category: 'public', moduleId: 'AX-M1' },
+    { title: 'محاضرةُ المحور الثاني', url: 'https://x.test/talk-2', category: 'public', moduleId: 'AX-M2' },
   ],
   slots: SLOTS,
   /* وكرّاسةُ الدورة الواحدة، وموضعُ كلّ محورٍ فيها (٣٠ سبتمبر ٢٠٢٦) */
@@ -208,8 +213,13 @@ describe('⑤ الإرسالُ على خطّ المحاور', () => {
     expect(last.statusCode, last.body).toBe(201)
     /* ومشروعُ التخرّج صفٌّ إلزاميّ (٣٠ سبتمبر ٢٠٢٦) — يحجب حتّى يوضع */
     await expect(plans.submit(trainerUserId, cohortId, true)).rejects.toMatchObject({ code: 'stages_incomplete', message: expect.stringContaining('مشروعَ التخرّج') })
-    const project = await post(`/api/trainer/cohorts/${cohortId}/assessments`, { title: 'مشروعُ التخرّج', type: 'project', moduleId: 'AX-M4' })
+    /* ⚠️ وموعدُه بعد نهاية الشعبة يحجب — من القاعدة لا من الشاشة (بطاقةُ المعايير، ٨ أكتوبر ٢٠٢٦).
+       وبلا موعدٍ مكتوبٍ لا يقع هنا: يُفترض آخرُ موعد محوره (④)، وهو داخلَ المدّة */
+    const project = await post(`/api/trainer/cohorts/${cohortId}/assessments`, { title: 'مشروعُ التخرّج', type: 'project', moduleId: 'AX-M4', dueAt: '2027-04-20T18:00:00.000Z' })
     expect(project.statusCode, project.body).toBe(201)
+    await expect(plans.submit(trainerUserId, cohortId, true)).rejects.toMatchObject({ code: 'stages_incomplete', message: expect.stringContaining('بعد نهاية الشعبة') })
+    const dated = await patch(`/api/trainer/assessments/${(project.json() as { id: string }).id}`, { dueAt: '2027-04-02T18:00:00.000Z' })
+    expect(dated.statusCode, dated.body).toBe(200)
     const sent = await plans.submit(trainerUserId, cohortId, true)
     expect(sent.status).toBe('submitted')
   })

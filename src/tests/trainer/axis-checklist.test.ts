@@ -14,7 +14,11 @@ import { defaultSlots } from '@/application/trainer/axis-timeline'
 const body = 'ن'.repeat(MIN_MODULE_BODY)
 const PERIOD = { startsOn: '2027-02-07', endsOn: '2027-03-13' }
 const IDS = ['M1', 'M2', 'M3', 'M4', 'M5', 'M6', 'M7', 'M8']
-const mods = IDS.map((moduleId, i) => ({ moduleId, titleAr: `محور ${i + 1}`, bodyAr: body }))
+/* ولكلّ محورٍ تطبيقٌ عمليٌّ ومُسلَّم، ومصدرٌ — مُلزِمان من بطاقة المعايير (٨ أكتوبر ٢٠٢٦) */
+const mods = IDS.map((moduleId, i) => ({
+  moduleId, titleAr: `محور ${i + 1}`, bodyAr: body, activityAr: 'يحلّ المتعلّمُ حالةً عمليّة', artifactAr: 'ورقةُ تحليلٍ قصيرة',
+}))
+const SOURCES = IDS.map((moduleId) => ({ title: `مرجع ${moduleId}`, url: 'https://x.test/a', moduleId }))
 /* خمسةُ أسابيع: ١+٢ · ٣ · ٤+٥ · ٦ · ٧+٨ */
 const SLOTS = defaultSlots(IDS, PERIOD)
 /* وكرّاسةٌ واحدةٌ للدورة، وموضعُ كلّ محورٍ فيها (٣٠ سبتمبر ٢٠٢٦) — وإقرارُ قالب وجيز
@@ -34,7 +38,7 @@ const complete = (over: Partial<Parameters<typeof buildChecklist>[0]> = {}, cont
   cohort: { title: 'الدفعة الأولى' },
   period: PERIOD,
   /* والمستوى شرطُ الخطوة الأولى ما دامت الخطّةُ في يده (٦ أكتوبر ٢٠٢٦) */
-  content: { kind: 'trainer', modules: mods, resources: [{ title: 'مرجع', url: 'https://x.test/a', moduleId: 'M3' }], slots: SLOTS, workbook: WORKBOOK, level: { from: 'intermediate', to: 'advanced' }, audience: { stages: ['experienced'], goals: ['promotion'] }, ...content } as never,
+  content: { kind: 'trainer', modules: mods, resources: SOURCES, slots: SLOTS, workbook: WORKBOOK, level: { from: 'intermediate', to: 'advanced' }, audience: { stages: ['experienced'], goals: ['promotion'] }, ...content } as never,
   sessions: meetings,
   assessmentsCount: 2,
   assessmentModuleIds: ['M1', 'M6'],
@@ -200,7 +204,14 @@ describe('المهامُّ والمصادرُ بمحاورها', () => {
     const orphan = complete({}, { resources: [{ title: 'مرجع', url: 'https://x.test/a', moduleId: 'M99' }] })
     expect(row(orphan, 'resources').done).toBe(false)
     expect(row(orphan, 'resources').labelAr).toContain('بمحورٍ حُذف')
-    expect(row(complete({}, { resources: [{ title: 'مرجع', url: 'https://x.test/a' }] }), 'resources').done).toBe(true)
+    expect(row(complete({}, { resources: [...SOURCES, { title: 'مرجع', url: 'https://x.test/a' }] }), 'resources').done).toBe(true)
+  })
+
+  it('⚠️ ومصدرٌ لكلّ محور — والذي للشعبة كلِّها لا يسدّ محورا (٨ أكتوبر ٢٠٢٦)', () => {
+    const general = complete({}, { resources: [{ title: 'مرجع', url: 'https://x.test/a' }] })
+    expect(row(general, 'resources').done).toBe(false)
+    expect(row(general, 'resources').labelAr).toContain('المحور 1: بلا مصدر')
+    expect(blockingBeforeSubmit(general).map((c) => c.key)).toEqual(['resources'])
   })
 })
 
@@ -232,5 +243,52 @@ describe('ما سبق المواعيدَ لا يُحاسَب بها', () => {
        والمسودّةُ محجوبةٌ بالمحاور والمهامّ */
     expect(row(list, 'workbooks').done).toBe(true)
     expect(row(list, 'assignments').done).toBe(false)
+  })
+})
+
+/* ═══ المُلزِمُ من بطاقة المعايير يحجب الإرسال (٨ أكتوبر ٢٠٢٦) ═══
+   «Keep required minimal»: أربعةٌ تحجب في القائمة التي يحتجّ بها الإرسالُ نفسُه —
+   بالدوالّ نفسِها التي ترسم البطاقة (`plan-scorecard.ts`). */
+describe('المُلزِمُ الأربعة في قائمة الإرسال', () => {
+  const WINTER = { startsOn: '2026-12-06', endsOn: '2027-01-30' }
+  const winterSlots = defaultSlots(IDS, WINTER)
+  const winterMeetings = winterSlots.map((sl) => ({
+    title: 'لقاء', startsAt: new Date(`${sl.startsOn}T15:00:00.000Z`), endsAt: new Date(`${sl.startsOn}T17:00:00.000Z`),
+    recordings: [] as unknown[], moduleIds: sl.moduleIds,
+  }))
+  const winter = (period = WINTER, over: Partial<Parameters<typeof buildChecklist>[0]> = {}) =>
+    complete({ period, sessions: winterMeetings, ...over }, { slots: defaultSlots(IDS, period) })
+
+  it('شعبةُ الشتاء التامّةُ تُرسَل — والتي تنتهي بعد ٣٠ يناير تُحجب في خطوتها الأولى', () => {
+    expect(blockingBeforeSubmit(winter())).toEqual([])
+    const late = winter({ startsOn: '2026-12-06', endsOn: '2027-01-31' })
+    expect(blockingBeforeSubmit(late).map((c) => c.key)).toEqual(['identity'])
+    expect(row(late, 'identity').labelAr).toContain('تنتهي في')
+  })
+
+  it('⚠️ محورٌ بلا تطبيقٍ عمليٍّ أو مُسلَّمٍ يحجب المحاور', () => {
+    const bare = mods.map((m, i) => (i === 4 ? { ...m, activityAr: '', artifactAr: 'x' } : m))
+    const list = complete({}, { modules: bare })
+    expect(blockingBeforeSubmit(list).map((c) => c.key)).toEqual(['modules'])
+    expect(row(list, 'modules').labelAr).toContain('المحور 5: بلا تطبيقٍ عمليّ ولا مُسلَّم')
+  })
+
+  it('⚠️ مشروعُ التخرّج بلا موعدٍ أو بعد نهاية الشعبة يحجب', () => {
+    const types = ['assignment', 'project']
+    const none = complete({ assessmentTypes: types, assessmentDues: ['2027-02-20T20:00:00Z', null] })
+    expect(blockingBeforeSubmit(none).map((c) => c.key)).toEqual(['project'])
+    const after = complete({ assessmentTypes: types, assessmentDues: [null, '2027-03-20T20:00:00Z'] })
+    expect(row(after, 'project').labelAr).toContain('بعد نهاية الشعبة')
+    expect(row(complete({ assessmentTypes: types, assessmentDues: [null, '2027-03-10T20:00:00Z'] }), 'project').done).toBe(true)
+  })
+
+  it('وما أُرسل قبل القاعدة يمضي كما أُرسل — ويقرأ المعتمِدُ نقصَه في بطاقته', () => {
+    const bare = mods.map((m) => ({ ...m, activityAr: null }))
+    const sent = complete({ planStatus: 'submitted' }, { modules: bare, resources: [{ title: 'مرجع', url: 'https://x.test/a' }] })
+    expect(row(sent, 'modules').done).toBe(true)
+    expect(row(sent, 'resources').done).toBe(true)
+    expect(row(winter({ startsOn: '2026-12-06', endsOn: '2027-01-31' }, { planStatus: 'submitted' }), 'identity').done).toBe(true)
+    /* والمردودةُ إليه في يده — فتلزمه */
+    expect(row(complete({ planStatus: 'changes_requested' }, { modules: bare }), 'modules').done).toBe(false)
   })
 })

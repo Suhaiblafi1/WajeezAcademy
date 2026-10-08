@@ -69,9 +69,11 @@ const content: TrainerPlanContent = {
   modules: [{
     moduleId: 'C-BIZ-101-M1', titleAr: 'المحور الأوّل — كما يراه المدرّب',
     activityAr: 'تطبيقٌ عمليٌّ على بياناتٍ حقيقيّة',
+    /* ومُسلَّمُه ومصدرُه — مُلزِمان من بطاقة المعايير (٨ أكتوبر ٢٠٢٦) */
+    artifactAr: 'تقريرٌ من صفحتين بالنتائج',
     bodyAr: 'الشرحُ المكتوب الذي يقرؤه المتعلّمُ داخل المنصّة قبل اللقاء الأوّل، وفيه ما يكفي ليبدأ.',
   }],
-  resources: [{ title: 'كرّاسة الوحدة الأولى', url: 'https://example.com/unit-1.pdf' }],
+  resources: [{ title: 'كرّاسة الوحدة الأولى', url: 'https://example.com/unit-1.pdf', moduleId: 'C-BIZ-101-M1' }],
   /* ومنذ صار للمحاور مواعيدُ (٢٧ سبتمبر ٢٠٢٦) فالمسودّةُ المكتملةُ مكتملةٌ بها:
      محورُها الواحدُ في موعدٍ يملأ المدّةَ، وله كرّاستُه */
   slots: [{ startsOn: PERIOD.startsOn, endsOn: PERIOD.endsOn, moduleIds: ['C-BIZ-101-M1'] }],
@@ -302,7 +304,8 @@ describe('ملكيّةُ الشعبة واعتمادُها', () => {
     /* ومشروعُ التخرّج — صار صفّا إلزاميّا (٣٠ سبتمبر ٢٠٢٦) */
     if ((await prisma.cohortAssessment.count({ where: { cohortId, type: 'project' } })) === 0) {
       await prisma.cohortAssessment.create({
-        data: { cohortId, title: 'مشروعُ التخرّج', type: 'project', maxScore: 100, moduleId: first },
+        /* بموعدٍ داخلَ المدّة — مُلزِمٌ من بطاقة المعايير (٨ أكتوبر ٢٠٢٦) */
+        data: { cohortId, title: 'مشروعُ التخرّج', type: 'project', maxScore: 100, moduleId: first, dueAt: new Date('2027-04-25T18:00:00.000Z') },
       })
     }
   }

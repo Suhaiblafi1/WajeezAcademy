@@ -597,6 +597,8 @@ async function approvedNegotiationPlan(ctx: Ctx, profileId: string, title: strin
       modules: mods.map((m, i) => ({
         moduleId: m.id, titleAr: m.versions[0]?.titleAr ?? `المحور ${i + 1}`, outcomeAr: NEGOTIATION_OUTCOMES[i],
         activityAr: 'تمرينٌ ثنائيٌّ على موقفٍ من عمل المتعلّم.',
+        /* ومُسلَّمُه — مُلزِمٌ من بطاقة المعايير (٨ أكتوبر ٢٠٢٦)، وبدونه يُردّ الإرسال */
+        artifactAr: 'صفحةٌ واحدةٌ من مذكّرة التحضير للموقف الذي تمرّن عليه.',
         bodyAr: `${NEGOTIATION_OUTCOMES[i]} نشرح الفكرةَ بمثالٍ واحد، ثمّ يطبّقها كلُّ متعلّمٍ على موقفٍ يعيشه الآن ويعرضه في اللقاء.`,
       })),
       slots: mods.map((m, i) => ({ startsOn: day(i * 7), endsOn: day(i * 7 + 6), moduleIds: [m.id] })),
@@ -610,6 +612,9 @@ async function approvedNegotiationPlan(ctx: Ctx, profileId: string, title: strin
       resources: [
         { title: 'فصلُ «افصل الناس عن المشكلة» من كتاب Getting to Yes', kind: 'book', category: 'reading', url: 'https://drive.google.com/file/d/guide-getting-to-yes', moduleId: mods[0]?.id ?? null, preReading: true },
         { title: 'نموذجُ مذكّرة التحضير — صفحةٌ واحدة', kind: 'link', category: 'public', url: 'https://drive.google.com/file/d/guide-prep-memo', moduleId: mods[3]?.id ?? null },
+        /* ولكلّ محورٍ مصدر — مُلزِمٌ من بطاقة المعايير (٨ أكتوبر ٢٠٢٦) */
+        { title: 'محاضرةُ ويليام يوري «الطريقُ من لا إلى نعم» — TEDx', kind: 'link', category: 'public', url: 'https://www.ted.com/talks/william_ury_the_walk_from_no_to_yes', moduleId: mods[1]?.id ?? null },
+        { title: 'ملخّصُ كتاب «لا تقسم الفرق» — أسئلةُ المعايرة', kind: 'book', category: 'reading', url: 'https://drive.google.com/file/d/guide-never-split', moduleId: mods[2]?.id ?? null },
       ],
     })
     /* ═══ ومشروعُ التخرّج — لا تُرسَل خطّةٌ بلا مشروع (٤ أكتوبر ٢٠٢٦، ⑬) ═══

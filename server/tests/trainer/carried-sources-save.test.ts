@@ -156,8 +156,13 @@ describe('ما نُقل من اللوح القديم', () => {
     expect(sent.json().error.message_ar).toContain('بلا رابطٍ ولا ملفّ')
 
     const content = ws.plan!.content
+    /* ويُكمَل الرابط — ولكلّ محورٍ مصدرُه، مُلزِمٌ من بطاقة المعايير (٨ أكتوبر ٢٠٢٦) يُسمّى في الصفّ نفسِه */
     const fixed = await t.call('PUT', `/api/trainer/cohorts/${t.cohortId}/plan`, {
-      ...content, resources: content.resources.map((r) => ({ ...r, url: 'https://example.com/ilqaa' })),
+      ...content,
+      resources: [
+        ...content.resources.map((r) => ({ ...r, url: 'https://example.com/ilqaa' })),
+        ...content.modules.map((m, i) => ({ title: `مصدرُ المحور ${i + 1}`, url: 'https://example.com/m', category: 'public', moduleId: m.moduleId })),
+      ],
     })
     expect(fixed.statusCode, fixed.body).toBe(200)
     const after = (await t.call('GET', `/api/trainer/cohorts/${t.cohortId}/workspace`)).json() as Workspace

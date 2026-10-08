@@ -27,6 +27,7 @@ import { cohortDayAr, cohortWindow, whenAr } from '../learning/cohort-gate'
 import { sessionMinutes, slotLabelAr } from './session-length'
 import { proposedTask, readTaskChange, taskValues, type TaskAttachment } from './task-approval'
 import { PLAN_AR } from './plan-decision'
+import { STATUS_MARK, planScorecard, type ScoreItem } from './plan-scorecard'
 import { REVIEW_SECTIONS, STAGE_LABELS, type ReviewNotes } from './review-notes'
 import { WORKSPACE_STEPS, workspaceStepPath, type WorkspaceStep } from './workspace-step'
 import { resourceKind, type ResourceKind } from './plan-overlay'
@@ -230,6 +231,29 @@ export function reviewMarkdown(input: ReviewBundleInput, files: readonly BundleF
   line('## حقائق المراجعة')
   line()
   facts(view, input).forEach((f) => line(`- ${f}`))
+  line()
+
+  /* ═══ بطاقةُ المعايير (٨ أكتوبر ٢٠٢٦) ═══
+     ما تحسبه المنصّةُ من الخطّة ويراه المعتمِدُ في بطاقته والمدرّبُ قبل أن يرسل
+     (`plan-scorecard.ts`) — فيُقرأ هنا بالحساب نفسِه، ويُبنى عليه التقرير. */
+  const card = planScorecard({
+    period: input.period, content: input.content, sessions: input.sessions, assessments: input.assessments, now: input.now,
+  })
+  const count = (st: ScoreItem['status']) => card.filter((i) => i.status === st).length
+  line('## بطاقة المعايير')
+  line()
+  line(`${STATUS_MARK.blocked} مطلوبٌ يمنع الإرسال: ${count('blocked')} · ${STATUS_MARK.advice} نصيحة: ${count('advice')} · ${STATUS_MARK.ok} تحقّق: ${count('ok')}`)
+  for (const step of WORKSPACE_STEPS) {
+    const own = card.filter((i) => i.step === step)
+    if (own.length === 0) continue
+    line()
+    line(`### ${step in STAGE_LABELS ? STAGE_LABELS[step as keyof typeof STAGE_LABELS] : step}`)
+    line()
+    for (const i of own) {
+      line(`- ${STATUS_MARK[i.status]} **${i.labelAr}**${i.required ? ' (مُلزِم)' : ''}: ${i.measuredAr} — المعيار: ${i.standardAr}`)
+      for (const g of i.gaps) line(`  - ${g}`)
+    }
+  }
   line()
 
   if (view.summaryAr) {

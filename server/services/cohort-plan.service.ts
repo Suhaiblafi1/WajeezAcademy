@@ -33,6 +33,7 @@ import { moduleBodyDone, resourceHasSource } from '../../src/application/trainer
 import { levelProblem, type LevelRange } from '../../src/application/trainer/cohort-level'
 import { audienceProblem } from '../../src/application/trainer/cohort-audience'
 import { blockingBeforeSubmit, boardNextStep, trainerOwned } from '../../src/application/trainer/plan-gate'
+import { practiceGaps, projectDeadlineProblem, seasonEndProblem, sourceGaps } from '../../src/application/trainer/plan-scorecard'
 import {
   REVIEW_SECTIONS, composeReviewNote, hasReviewNotes, normalizeReviewNotes, notedSections, readReviewNotes,
   type ReviewNotes,
@@ -251,6 +252,9 @@ export function buildChecklist(input: {
   assessmentModuleIds?: readonly (string | null)[]
   /** نوعُ كلّ مهمّة — ومنه «مهامُّ عمليّةٌ ومشروعُ تخرّج» (٣٠ سبتمبر ٢٠٢٦). وغيابُه لا يحكم بشيء */
   assessmentTypes?: readonly string[]
+  /** آخرُ موعدٍ لكلّ مهمّة بترتيب `assessmentTypes` — ومنه «موعدُ المشروع داخلَ الشعبة»
+      (٨ أكتوبر ٢٠٢٦). وغيابُه لا يحكم بشيء */
+  assessmentDues?: readonly (Date | string | null)[]
   planStatus: PlanStatus
   /** اللحظةُ التي يُحكم بها — وما انعقد قبلها لا يُحاسَب (`sessionProblems`) */
   now?: Date
@@ -406,6 +410,25 @@ export function buildChecklist(input: {
   const types = input.assessmentTypes
   const practicalCount = types ? types.filter((t) => t !== 'project').length : input.assessmentsCount
   const projectDone = !types || sentBefore || legacy || types.includes('project')
+  /* ═══ والمُلزِمُ من بطاقة المعايير (٨ أكتوبر ٢٠٢٦) ═══
+
+     قرارُ صاحب المنصّة «Keep required minimal»: أربعةٌ تمنع الإرسالَ من معاييرَ
+     اثني عشر — الشعبةُ تنتهي في ٣٠ يناير، وموعدُ مشروع التخرّج داخلَها، ولكلّ
+     محورٍ تطبيقٌ عمليٌّ ومُسلَّم، ولكلّ محورٍ مصدر. والباقي نصيحةٌ في البطاقة
+     (`plan-scorecard.ts`) لا هنا. والدوالُّ نفسُها التي ترسم البطاقة، فلا يرى
+     المدرّبُ أخضرَ ويُردّ إرسالُه.
+
+     وتُطلب ما دامت الخطّةُ في يده — مسودّةً أو مردودة. وما أُرسل قبل القرار
+     يمضي كما أُرسل، ويرى المعتمِدُ نقصَه في بطاقته فيقرّر: «إن أرجعناها له
+     فالتعديلُ واجب». */
+  const inHand = !sentBefore
+  const endProblem = inHand ? seasonEndProblem(input.period) : null
+  const practice = inHand ? practiceGaps(mods) : []
+  const noSource = inHand ? sourceGaps(mods, resources) : []
+  const projectDues = types && input.assessmentDues
+    ? types.flatMap((t, i) => (t === 'project' ? [{ dueAt: input.assessmentDues![i] ?? null }] : []))
+    : []
+  const dueProblem = inHand ? projectDeadlineProblem(projectDues, input.period) : null
   const approvalDone = input.planStatus === 'approved' || input.planStatus === 'published'
   /* وما ينقص الصفَّين يُقال في سطرهما — بعددِه لا بإشارة */
   const tasksNote = unlinkedTasks > 0
@@ -414,11 +437,16 @@ export function buildChecklist(input: {
     ? ` · ${orphanResources === 1 ? 'مصدرٌ مربوطٌ' : `${orphanResources} مصادرُ مربوطةٌ`} بمحورٍ حُذف` : '')
     + (looseResources > 0 ? ` · ${looseResources === 1 ? 'مصدرٌ' : `${looseResources} مصادرُ`} بلا رابطٍ ولا ملفّ` : '')
   return [
-    { key: 'identity', labelAr: 'سمِّ الشعبةَ وحدّد مستواها ولمن هي ومدّتها — من متى إلى متى', done: identityDone, optional: false },
+    {
+      key: 'identity',
+      labelAr: 'سمِّ الشعبةَ وحدّد مستواها ولمن هي ومدّتها — من متى إلى متى' + (endProblem ? ` · ${endProblem}` : ''),
+      done: identityDone && endProblem === null, optional: false,
+    },
     {
       key: 'modules',
-      labelAr: legacy ? 'اكتب المحتوى النظريَّ لكلّ محور' : 'وزّع المحاورَ على مواعيدها واكتب محتواها النظريّ',
-      done: modulesDone, optional: false,
+      labelAr: (legacy ? 'اكتب المحتوى النظريَّ لكلّ محور' : 'وزّع المحاورَ على مواعيدها واكتب محتواها النظريّ')
+        + (practice.length ? ` · ${practice.join('، ')}` : ''),
+      done: modulesDone && practice.length === 0, optional: false,
     },
     { key: 'workbooks', labelAr: 'ضع الكرّاسة — واحدةً للدورة أو لكلّ محورٍ كرّاستَه، على قالب وجيز أو مادّتك الجاهزة', done: workbooksDone, optional: false },
     {
@@ -455,8 +483,17 @@ export function buildChecklist(input: {
     { key: 'assignments', labelAr: 'ألّف مهمّةً عمليّةً واحدةً على الأقلّ — واجبٌ أو اختبارٌ يُسلَّم ويُقيَّم' + tasksNote, done: practicalCount > 0 && unlinkedTasks === 0, optional: false },
     /* والمصادرُ في الخطوة نفسِها بعد المهامّ — «وبعدها المهامُّ والواجباتُ وغيرُها
        والتي تُربط بالمحاور» (٢٧ سبتمبر ٢٠٢٦) */
-    { key: 'resources', labelAr: 'أضف المصادرَ التي يحتاجها المتعلّم' + resourcesNote, done: resourcesDone, optional: false },
-    { key: 'project', labelAr: 'ضع مشروعَ التخرّج — عملٌ واحدٌ يجمع المحاورَ ويُقيَّم في آخر الشعبة', done: projectDone, optional: false },
+    {
+      key: 'resources',
+      labelAr: 'أضف المصادرَ التي يحتاجها المتعلّم — مصدرٌ لكلّ محورٍ على الأقلّ' + resourcesNote
+        + (noSource.length ? ` · ${noSource.join('، ')}` : ''),
+      done: resourcesDone && noSource.length === 0, optional: false,
+    },
+    {
+      key: 'project',
+      labelAr: 'ضع مشروعَ التخرّج — عملٌ واحدٌ يجمع المحاورَ ويُقيَّم في آخر الشعبة' + (dueProblem ? ` · ${dueProblem}` : ''),
+      done: projectDone && dueProblem === null, optional: false,
+    },
     { key: 'approval', labelAr: 'أكّد أنّك توافق على كلّ ما فيها وأرسلها للاعتماد', done: approvalDone, optional: false },
   ]
 }
@@ -609,6 +646,7 @@ export class CohortPlanService {
       assessmentsCount: cohort.assessments.length,
       assessmentModuleIds: cohort.assessments.map((a) => a.moduleId),
       assessmentTypes: cohort.assessments.map((a) => a.type),
+      assessmentDues: cohort.assessments.map((a) => a.dueAt),
       planStatus: status,
       workbookBeforeTemplate: profile.workbookBeforeTemplate,
     })
@@ -724,7 +762,7 @@ export class CohortPlanService {
                 recordings: { where: { status: 'active' }, select: { id: true } },
               },
             },
-            assessments: { where: { status: { not: 'closed' } }, select: { moduleId: true, type: true } },
+            assessments: { where: { status: { not: 'closed' } }, select: { moduleId: true, type: true, dueAt: true } },
             plans: { where: { trainerId: { not: null } }, orderBy: { createdAt: 'desc' }, take: 1 },
             _count: {
               select: {
@@ -755,7 +793,8 @@ export class CohortPlanService {
         cohort: c, period: resolvePeriod(planContent, c, planStatus), content: planContent,
         sessions: countableSessions(c.sessions), assessmentsCount: c._count.assessments,
         assessmentModuleIds: c.assessments.map((a) => a.moduleId),
-        assessmentTypes: c.assessments.map((a) => a.type), planStatus,
+        assessmentTypes: c.assessments.map((a) => a.type),
+        assessmentDues: c.assessments.map((a) => a.dueAt), planStatus,
         workbookBeforeTemplate: profile.workbookBeforeTemplate,
       })
       /* والبطاقةُ تعدّ ما يملك المدرّبُ إنجازَه — لا «الاعتمادَ» ولا «الفصلَ»
@@ -928,7 +967,7 @@ export class CohortPlanService {
             recordings: { select: { id: true } },
           },
         },
-        assessments: { where: { status: { not: 'closed' } }, select: { moduleId: true, type: true } },
+        assessments: { where: { status: { not: 'closed' } }, select: { moduleId: true, type: true, dueAt: true } },
         _count: { select: { assessments: true } },
       },
     })
@@ -940,6 +979,7 @@ export class CohortPlanService {
       assessmentsCount: gateCohort._count.assessments,
       assessmentModuleIds: gateCohort.assessments.map((a) => a.moduleId),
       assessmentTypes: gateCohort.assessments.map((a) => a.type),
+      assessmentDues: gateCohort.assessments.map((a) => a.dueAt),
       planStatus: latest.status as PlanStatus,
       workbookBeforeTemplate: profile.workbookBeforeTemplate,
     }))
