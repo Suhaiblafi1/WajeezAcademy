@@ -145,7 +145,7 @@ export default function PlacementReviewBoard() {
             </li>
           ))}
         </ul>
-        <p className="mt-3 text-fine leading-6 text-muted-foreground">
+        <p className="mt-3 text-read leading-6 text-muted-foreground">
           «اعتمده» يُدخله الاختبار · «عدّله» يغيّر نصَّه ويُبقي حالَه · «أسقطه» يُخرجه من الاختبار ويبقى هنا تعيده متى شئت.
         </p>
       </Card>
@@ -168,20 +168,20 @@ export default function PlacementReviewBoard() {
               {editing === i.id && draft ? (
                 <div dir="ltr" className="mt-3 space-y-2 text-left">
                   {i.skill === "reading" && (
-                    <textarea value={draft.passage} rows={3} aria-label="Passage"
-                      onChange={(e) => setDraft({ ...draft, passage: e.target.value })}
-                      className="w-full rounded-xl border border-white/10 bg-transparent p-2 text-sm text-foreground" />
+                    <Inset as="textarea" value={draft.passage} rows={3} aria-label="Passage"
+                      onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setDraft({ ...draft, passage: e.target.value })}
+                      className="w-full p-2 text-sm text-foreground" />
                   )}
-                  <input value={draft.stem} aria-label="Question"
-                    onChange={(e) => setDraft({ ...draft, stem: e.target.value })}
-                    className="w-full rounded-xl border border-white/10 bg-transparent p-2 text-sm font-bold text-foreground" />
+                  <Inset as="input" value={draft.stem} aria-label="Question"
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDraft({ ...draft, stem: e.target.value })}
+                    className="w-full p-2 text-sm font-bold text-foreground" />
                   {draft.options.map((o, k) => (
                     <label key={k} className="flex items-center gap-2">
                       <input type="radio" name={`answer-${i.id}`} checked={draft.answer === k}
                         onChange={() => setDraft({ ...draft, answer: k })} aria-label={`Correct answer ${k + 1}`} />
-                      <input value={o} aria-label={`Option ${k + 1}`}
-                        onChange={(e) => setDraft({ ...draft, options: draft.options.map((x, j) => (j === k ? e.target.value : x)) })}
-                        className="w-full rounded-xl border border-white/10 bg-transparent p-2 text-sm text-foreground" />
+                      <Inset as="input" value={o} aria-label={`Option ${k + 1}`}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDraft({ ...draft, options: draft.options.map((x, j) => (j === k ? e.target.value : x)) })}
+                        className="w-full p-2 text-sm text-foreground" />
                     </label>
                   ))}
                   <div dir="rtl" className="flex flex-wrap gap-2 pt-1">
@@ -207,9 +207,9 @@ export default function PlacementReviewBoard() {
 
               {editing !== i.id && (
                 <div className="mt-4 space-y-2">
-                  <input value={notes[i.id] ?? ""} placeholder="ملاحظةٌ مع القرار (اختياريّة)"
-                    onChange={(e) => setNotes({ ...notes, [i.id]: e.target.value })}
-                    className="w-full rounded-xl border border-white/10 bg-transparent p-2 text-fine text-foreground" />
+                  <Inset as="input" value={notes[i.id] ?? ""} placeholder="ملاحظةٌ مع القرار (اختياريّة)" aria-label="ملاحظةٌ مع القرار"
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNotes({ ...notes, [i.id]: e.target.value })}
+                    className="w-full p-2 text-read text-foreground" />
                   <div className="flex flex-wrap gap-2">
                     {i.status !== "approved" && (
                       <Button tone="confirm" size="sm" onClick={() => void decide(i.id, true)} disabled={busy === i.id}>

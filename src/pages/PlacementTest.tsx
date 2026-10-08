@@ -88,13 +88,13 @@ export default function PlacementTest() {
               <li>ما لا تعرفه اتركه — التخمينُ يُفسد القياس ولا يرفع مستواك.</li>
               <li>والنتيجةُ لك: تحدّث بها خطّتك أو تُبقي مستواك الموصوف.</li>
             </ul>
-            <Button tone="primary" className="mt-5" onClick={() => setPage(0)}>ابدأ الاختبار</Button>
+            <Button tone="confirm" className="mt-5" onClick={() => setPage(0)}>ابدأ الاختبار</Button>
           </Card>
         )}
 
         {bank?.open && !result && page >= 0 && pages[page] && (
           <div className="mt-6">
-            <p className="text-fine font-bold text-muted-foreground">
+            <p className="text-read font-bold text-muted-foreground">
               الجزء {page + 1} من {pages.length} · أجبتَ عن {answered} من {total}
             </p>
             <ol className="mt-4 flex flex-col gap-4">
@@ -105,11 +105,12 @@ export default function PlacementTest() {
                     <p className="text-sm font-bold leading-7 text-foreground">{n + 1}. {q.stem}</p>
                     <div role="radiogroup" aria-label={q.stem} className="mt-3 flex flex-col gap-2">
                       {q.options.map((o, k) => (
-                        <label key={k} className={`flex cursor-pointer items-center gap-3 rounded-xl border px-3 py-2 text-sm transition ${answers[q.id] === k ? "border-teal text-foreground" : "border-white/10 text-muted-foreground hover:border-white/30"}`}>
+                        <Inset as="label" key={k} tone={answers[q.id] === k ? "accent" : "default"}
+                          className={`flex cursor-pointer items-center gap-3 px-3 py-2 text-sm transition ${answers[q.id] === k ? "text-foreground" : "text-muted-foreground"}`}>
                           <input type="radio" name={q.id} checked={answers[q.id] === k}
                             onChange={() => setAnswers({ ...answers, [q.id]: k })} />
                           {o}
-                        </label>
+                        </Inset>
                       ))}
                     </div>
                   </div>
@@ -125,7 +126,7 @@ export default function PlacementTest() {
                   التالي <ArrowLeft className="h-4 w-4" />
                 </Button>
               ) : (
-                <Button tone="primary" onClick={() => void submit()} loading={sending}>
+                <Button tone="confirm" onClick={() => void submit()} loading={sending}>
                   صحّح الاختبار
                 </Button>
               )}
@@ -155,13 +156,13 @@ function PlacementOutcome({ result, stated }: { result: PlacementResult; stated:
         <ul className="mt-3 flex flex-wrap gap-2">
           {result.per_level.map((l) => (
             <li key={l.level}>
-              <Inset className={`px-3 py-1 text-fine font-bold ${l.passed ? "text-teal-light-ink" : "text-muted-foreground"}`}>
+              <Inset className={`px-3 py-1 text-read font-bold ${l.passed ? "text-teal-light-ink" : "text-muted-foreground"}`}>
                 <span dir="ltr">{l.level}</span> · {l.correct}/{l.total}
               </Inset>
             </li>
           ))}
         </ul>
-        <p className="mt-3 text-fine leading-6 text-muted-foreground">
+        <p className="mt-3 text-read leading-6 text-muted-foreground">
           يُحسب المستوى مجتازا بثلثي أسئلته، ومستواك أعلى ما اجتزتَه وكلُّ ما دونه مجتاز.
         </p>
       </Card>
@@ -176,13 +177,13 @@ function PlacementOutcome({ result, stated }: { result: PlacementResult; stated:
               <Button as={Link} to={applyPlacementHref(result.level)} tone="primary" className="w-full justify-start text-right">
                 <CheckCircle2 className="h-4 w-4" /> حدّث خطّتي بمستوى الاختبار (<span dir="ltr">{result.cefr}</span>)
               </Button>
-              <p className="mt-1 text-fine leading-6 text-muted-foreground">نعيد بناء خطّتك على هذا المستوى بلا إعادة الأسئلة — وتتغيّر الدوراتُ المقترحة إن لزم.</p>
+              <p className="mt-1 text-read leading-6 text-muted-foreground">نعيد بناء خطّتك على هذا المستوى بلا إعادة الأسئلة — وتتغيّر الدوراتُ المقترحة إن لزم.</p>
             </li>
             <li>
               <Button as={Link} to="/diagnostic" tone="secondary" className="w-full justify-start text-right">
                 أبقِ مستواي الموصوف (<span dir="ltr">{said.cefr}</span>)
               </Button>
-              <p className="mt-1 text-fine leading-6 text-muted-foreground">تبقى خطّتك كما هي — ويُراجَع مستواك مع مدرّبك في أوّل لقاء.</p>
+              <p className="mt-1 text-read leading-6 text-muted-foreground">تبقى خطّتك كما هي — ويُراجَع مستواك مع مدرّبك في أوّل لقاء.</p>
             </li>
           </ul>
         </Panel>

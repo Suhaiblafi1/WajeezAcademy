@@ -670,6 +670,25 @@ export const GUIDE_SECTIONS: GuideSection[] = [
     ],
   },
 
+  /* ═══ اختبارُ المستوى — لمن مُنح مراجعتَه وحدَه (٨ أكتوبر ٢٠٢٦) ═══ */
+  {
+    id: 'placement',
+    title: 'اختبار المستوى: مراجعةُ أسئلة الإنجليزيّة',
+    tab: 'اختبار المستوى',
+    path: '/trainer/placement-review',
+    why: 'تبويبٌ لا يراه إلّا من كلّفته الأكاديميّةُ بمراجعة اختبار تحديد مستوى الإنجليزيّة. والاختبارُ لا يُفتح للمتعلّمين حتّى يكون لكلّ مستوى ثلاثةُ أسئلةٍ تعتمدها.',
+    blocks: [
+      {
+        kind: 'list',
+        items: [
+          'لكلّ سؤالٍ ثلاثةُ أفعال: «اعتمده» فيدخل الاختبار، و«عدّله» فيتغيّر نصُّه أو خياراتُه أو جوابُه وتبقى حالُه، و«أسقطه» فيخرج من الاختبار ويبقى في «مُسقَطة» تعيده متى شئت.',
+          'فوق الأسئلة عددُ المعتمَد لكلّ مستوى من A1 إلى C1، وهل الاختبارُ مفتوحٌ للمتعلّمين أم لا.',
+          'والملاحظةُ مع القرار اختياريّة، ولا تصل المتعلّم.',
+        ],
+      },
+    ],
+  },
+
   /* ═══ الحساب والملفّ العامّ ═══ */
   {
     id: 'account',
@@ -727,7 +746,7 @@ export const GUIDE_PARTS: GuidePart[] = [
   { title: 'البداية', ids: ['first-login', 'materials', 'home'] },
   { title: 'دوراتُك', ids: ['qualifications', 'proposals'] },
   { title: 'شعبُك وتدريسُك', ids: ['cohorts', 'workspace', 'standard', 'teaching', 'learners', 'grading', 'schedule'] },
-  { title: 'حضورُك ومستحقّاتُك', ids: ['paths', 'marketing', 'earnings', 'contract', 'ratings', 'referral', 'account', 'notifications'] },
+  { title: 'حضورُك ومستحقّاتُك', ids: ['paths', 'marketing', 'earnings', 'contract', 'ratings', 'referral', 'placement', 'account', 'notifications'] },
 ]
 
 /** اسمُ القسم القصير في الفهرس: ما قبل النقطتين — «دوراتي» لا «دوراتي: عروضُ الدورات…» */
