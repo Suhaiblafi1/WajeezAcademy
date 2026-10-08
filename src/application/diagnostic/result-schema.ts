@@ -5,6 +5,7 @@
 import type { DiagResult } from '../../data/diagnostic'
 import { pathways } from '../../data/pathways'
 import templatesJson from '../../data/catalog/composite-templates.v1.json'
+import { singleCourseOf } from './landing'
 
 export const RESULT_SCHEMA_VERSION = 2
 
@@ -51,6 +52,8 @@ function referencesAlive(r: DiagResult): boolean {
   }
   /* نتائج بلا مسار مفروض — المسار حينها غير إلزامي */
   if (kind === 'advisor_referral' || kind === 'guardrail_stop' || kind === 'exploratory_direction') return true
+  /* ودورةٌ واحدة: مرجعُها دورةٌ في الكتالوج لا مسار — انظر `landing.ts` */
+  if (kind === 'single_course') return singleCourseOf(r.resultJson) !== null
   return r.top !== null && validPathwayIds().has(r.top.id)
 }
 

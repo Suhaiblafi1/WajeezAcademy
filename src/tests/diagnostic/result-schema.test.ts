@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { readStoredResult, wrapResultForStorage, RESULT_SCHEMA_VERSION } from '../../application/diagnostic/result-schema'
 import { pathways } from '../../data/pathways'
+import { courses } from '../../data/courses'
+import { singleCourseOf } from '../../application/diagnostic/landing'
 import templatesJson from '../../data/catalog/composite-templates.v1.json'
 import type { DiagResult } from '../../data/diagnostic'
 
@@ -121,5 +123,35 @@ describe('مخطط النتيجة المحفوظة وترحيلها', () => {
     referral.needsAdvisor = true
     referral.resultJson = { kind: 'advisor_referral', pathway_id: null }
     expect(readStoredResult(JSON.stringify(referral)).status).toBe('migrated')
+  })
+})
+
+/* ── دورةٌ واحدة: مرجعُها دورةٌ لا مسار (٨ أكتوبر ٢٠٢٦) ──
+
+   نتيجةُ `single_course` بلا `top` بطبيعتها — معرّفُها معرّفُ دورة. فكانت
+   `referencesAlive` تطلب مسارا لا يوجد فتحذف النتيجة، وصفحةُ التشخيص تعرض لها
+   شاشةَ «مراجعة مستشار». ⚠ أُثبت سقوطُه: نُزع فرعُ `single_course` من
+   `referencesAlive` فسقط الأوّل («discarded»)، ثمّ أُعيد فخضرّ. */
+describe('نتيجةُ الدورة الواحدة', () => {
+  const singleCourse = (courseId: string): DiagResult => ({
+    ...validResult(),
+    top: null,
+    resultJson: { kind: 'single_course', pathway_id: courseId },
+  })
+  const realCourseId = courses[0].id
+
+  it('تُقرأ محفوظةً إن كانت دورتُها في الكتالوج — لا تُحذف لأنّها بلا مسار', () => {
+    expect(readStoredResult(wrapResultForStorage(singleCourse(realCourseId))).status).toBe('ok')
+  })
+
+  it('وتُحذف بأمان إن لم تعد دورتُها في الكتالوج', () => {
+    expect(readStoredResult(wrapResultForStorage(singleCourse('C-OLD-999'))).status).toBe('discarded')
+  })
+
+  it('ووجهتُها صفحةُ دورتها — ولا وجهةَ لغير نوعها', () => {
+    expect(singleCourseOf({ kind: 'single_course', pathway_id: realCourseId })).toBe(realCourseId)
+    expect(singleCourseOf({ kind: 'single_course', pathway_id: 'C-OLD-999' })).toBeNull()
+    expect(singleCourseOf({ kind: 'single_pathway', pathway_id: realCourseId })).toBeNull()
+    expect(singleCourseOf({ kind: 'single_course', pathway_id: null })).toBeNull()
   })
 })

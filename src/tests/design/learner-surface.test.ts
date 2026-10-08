@@ -475,9 +475,19 @@ describe('٥٩ · لحظةُ النتيجة قائمةٌ — ولا تُتخطّ
 
   it('لا تنقّلَ خارجَ النتيجة إلّا بنقرةٍ من المتعلّم', () => {
     /* المخطَّطُ يقول «يُنقل الطالبُ مباشرةً إلى صفحة المسار». والقياس:
-       `navigate` مرّةً واحدةً في الملفّ كلِّه، داخلَ معالج «اعتمد الخطّة».
-       فلو أُضيف تنقّلٌ في `useEffect` يوما سقط هذا. */
-    expect((diag.match(/navigate\(/g) ?? []).length).toBe(1)
+       كلُّ `navigate` في الملفّ داخلَ أحد معالجَي الهبوط — اعتمادِ الخطّة،
+       وهبوطِ الدورة الواحدة (٨ أكتوبر ٢٠٢٦: نتيجةُ دورةٍ واحدة تهبط على
+       صفحتها). فلو أُضيف تنقّلٌ في `useEffect` يوما سقط هذا. */
+    const handlers = ['const adoptFromResult = ', 'const landOnCourse = '].map((h) => {
+      const at = diag.indexOf(h)
+      expect(at, `لم يُعثر على ${h}`).toBeGreaterThan(-1)
+      return [at, diag.indexOf('\n  };', at)] as const
+    })
+    const calls = [...diag.matchAll(/navigate\(/g)].map((m) => m.index!)
+    expect(calls.length).toBe(2)
+    for (const at of calls) {
+      expect(handlers.some(([from, to]) => at > from && at < to), `تنقّلٌ خارج معالجَي الهبوط عند ${at}`).toBe(true)
+    }
     expect(diag).toContain('stage === "result"')
   })
 })

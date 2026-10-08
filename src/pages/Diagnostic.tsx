@@ -61,6 +61,7 @@ import {
   type SavedProgress,
 } from "@/application/diagnostic/plan-selection";
 import { foldComposedPlan } from "@/application/diagnostic/composed-fold";
+import { singleCourseOf } from "@/application/diagnostic/landing";
 import { saveAdoptedPlan, syncAdoptedPlan, PERSONAL_PLAN_NAME_AR } from "@/application/plan/adopted-plan";
 import { NEEDS_ADVISOR_KEY } from "@/application/plan/advisor-referral";
 import { whyPathwayFacts } from "@/application/plan/why-pathway";
@@ -504,9 +505,26 @@ export default function Diagnostic() {
      `true` تعني: هبطنا، فلا تُعرض شاشة. و`false` للحالتين اللتين لا مسار
      فيهما — التوقّف الحوكميّ والاتّجاه الاستكشافيّ — وهما وحدهما شاشة. */
   const landOnPathway = (res: DiagResult): boolean => {
+    /* ودورةٌ واحدة تهبط على صفحتها — لا على شاشة «مراجعة مستشار» التي كانت
+       تقع فيها لأنّ `top` فارغٌ لها (٨ أكتوبر ٢٠٢٦). انظر `landing.ts`. */
+    const courseId = singleCourseOf(res.resultJson);
+    if (courseId) {
+      landOnCourse(res, courseId);
+      return true;
+    }
     if (res.resultJson.kind === "guardrail_stop" || !res.top) return false;
     adoptFromResult(res);
     return true;
+  };
+
+  /* هبوطُ الدورة الواحدة — والإحالةُ تسافر معها كما تسافر مع المسار */
+  const landOnCourse = (res: DiagResult, courseId: string) => {
+    try {
+      if (res.needsAdvisor) safeSet(NEEDS_ADVISOR_KEY, "1", 'session');
+      else safeRemove(NEEDS_ADVISOR_KEY, 'session');
+    } catch { /* بلا تخزين — لا يتعطّل شيء */ }
+    track("course_adopted", { course: courseId });
+    navigate(`/build/${courseId}`);
   };
 
   /* إرفاق النتيجة بحساب المستخدم أفضل جهد — ينشئ الخادم ملف متعلم وحالة مستشار دون حجب النتيجة */
