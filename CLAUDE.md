@@ -49,6 +49,12 @@
   as the whole history is. Two different things, and conflating them would
   rewrite the repo by accident.
 
+- **One question at a time, and short.** Decision of the platform owner
+  (8 October 2026): «Always, if you have a question or a decision I should
+  give, give me one by one. I cannot read everything». Each decision is its
+  own question with its options — never several in one message — and replies
+  stay brief: what happened, what is next, what is needed from him.
+
 ## أعرافٌ تقنيّةٌ يُبنى عليها
 
 - **الحارسُ يُثبَت سقوطُه.** كلُّ اختبارٍ جديدٍ يُنقض ما يحرسه مرّةً ليُرى
