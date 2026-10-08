@@ -197,6 +197,11 @@ export const PERMISSIONS = [
   { key: 'rating.submit', description: 'إرسال تقييم للمدرب أو المستشار أو الدورة' },
   { key: 'rating.view.subject', description: 'رؤية التقييمات الواردة عنك مجهولةَ المُقيِّم' },
   { key: 'rating.moderate', description: 'مراجعة تعليقات التقييم واعتماد نشرها' },
+  /* اختبارُ تحديد مستوى الإنجليزيّة (٨ أكتوبر ٢٠٢٦) — قرارُ صاحب المنصّة: «أكتبه
+     مسوّدةً ويراجعه مدرّبُ الإنجليزيّة في بوّابته». حبّةٌ لا دور: مدرّبُ الإنجليزيّة
+     مدرّبٌ كغيره، فلا تُعطى لكلّ مدرّب بل تُمنح لمن يراجع بعينه (التخصيصُ الفرديّ)،
+     ويملكها المديرُ الأكاديميُّ في حزمته فيراجع ويفوّض. */
+  { key: 'placement.review', description: 'مراجعةُ أسئلة اختبار تحديد المستوى: تعديلُها واعتمادُها وإسقاطُها' },
 ] as const
 
 export type PermissionKey = (typeof PERMISSIONS)[number]['key']
@@ -230,6 +235,7 @@ export const ROLE_PERMISSIONS: Record<string, PermissionKey[]> = {
     'reports.view', 'reports.export',
     'notifications.manage', 'support.operate', 'support.assign',
     'rating.moderate',
+    'placement.review',
     /* يرى مرؤوسيه ويفوّض لهم — ولا يعيّن الأدوار ولا يوقف الحسابات */
     'admin.users.view', 'admin.permissions.delegate',
     /* يملك إسناد المستشارين ومراجعة طلباتهم فعلا — فمن حقّه أن يرى أثر ما
@@ -361,6 +367,8 @@ export const DELEGATABLE_FAMILIES: Record<string, string[]> = {
   academic_manager: [
     'catalog', 'trainer', 'cohort', 'enrollment', 'material',
     'certificate', 'learner', 'rating', 'cv',
+    /* ويمنح مراجعةَ اختبار المستوى لمدرّب الإنجليزيّة — وهو مقصدُها */
+    'placement',
   ],
 }
 

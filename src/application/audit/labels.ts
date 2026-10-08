@@ -437,6 +437,10 @@ const PHRASES: Record<string, string> = {
   'worker.cleanup_expired': 'تنظيفُ ما انتهت صلاحيّتُه',
   'worker.close_ended_sessions': 'إغلاقُ اللقاءاتِ التي انتهت وإعادةُ حساب التقدّم',
   'worker.deferral_followups': 'سؤالُ المؤجَّلين عن اهتمامهم حين يحلّ موعدُ التواصل',
+  /* اختبارُ تحديد مستوى الإنجليزيّة — عملُ المراجع على البنك (٨ أكتوبر ٢٠٢٦) */
+  'placement.question.update': 'تعديلُ سؤالٍ في اختبار تحديد المستوى',
+  'placement.question.approve': 'اعتمادُ سؤالٍ في اختبار تحديد المستوى',
+  'placement.question.retire': 'إسقاطُ سؤالٍ من اختبار تحديد المستوى',
   'worker.cohort_status_sync': 'مزامنةُ حالاتِ الشعب',
   'worker.dispatch_notifications': 'إرسالُ الإشعاراتِ المنتظِرة',
   'worker.enforce_retention': 'تطبيقُ مددِ الحفظ',
@@ -469,6 +473,7 @@ const WORDS: Record<string, string> = {
   notification: 'إشعار', template: 'قالب', integration: 'تكامل', email: 'بريد', staff: 'موظّف',
   task: 'مهمّة', learner: 'متعلّم', cv: 'سيرةٌ ذاتيّة', zoom: 'اجتماع', message: 'رسالة',
   trainer_announcement: 'إعلانٌ إلى المدرّبين',
+  placement_question: 'سؤالُ اختبار المستوى',
   /* أفعال */
   create: 'إنشاء', update: 'تعديل', delete: 'حذف', remove: 'إزالة', replace: 'إبدال',
   add: 'إضافة', set: 'تعيين', save: 'حفظ', send: 'إرسال', submit: 'تقديم', decide: 'قرار',
