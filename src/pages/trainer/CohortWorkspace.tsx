@@ -82,6 +82,7 @@ import { firstStep, readWorkspaceStep, STEP_PARAM } from "@/application/trainer/
 import { trainerRegistrationLine } from "@/application/learning/registration-state";
 import { ReviewNotesBanner, StageReviewNote } from "@/components/ReviewNotes";
 import { ReviewReportList, type ReviewReport } from "@/components/ReviewReports";
+import { PlanEditsPanel } from "@/components/PlanEdits";
 import { toast, toastError } from "@/components/Toast";
 import { Panel, Bar, Card, Inset } from "@/components/ui/Surface";
 import { PREP_NOTICE_AR, usePrepCohorts } from "@/components/trainer/usePrepCohorts";
@@ -1598,6 +1599,18 @@ export default function CohortWorkspace() {
           كانت الملاحظةُ نصّا واحدا في رأس الشاشة، فينزل المدرّبُ إلى خطوةٍ وقد
           غاب عنه ما قيل فيها. فصار لكلّ خطوةٍ ملاحظتُها، تُقرأ حيث يُعدَّل. */}
       {stage !== "approval" && <StageReviewNote stage={stage} text={reviewNotes[stage]} />}
+
+      {/* ═══ وتعديلاتٌ اقترحتها الإدارة — يقبل كلًّا أو يرفضه (٨ أكتوبر ٢٠٢٦) ═══
+
+          «التعديلُ يطول على المدرّب — نكتبه نحن ويختار هو». في المتن لا في الرأس اللاصق:
+          قائمةٌ قد تطول. والقبولُ يكتب في الخطّة المحفوظة، فلا يُقبل وفي يده ما لم يُحفظ —
+          وإلّا محا التحميلُ بعده ما كتب. */}
+      <PlanEditsPanel
+        cohortId={ws.cohort.id}
+        inHand={planStatus === "draft" || planStatus === "changes_requested"}
+        unsaved={Object.values(dirty).some(Boolean)}
+        onApplied={() => load()}
+      />
 
       {locked && stage !== "approval" && (
         <Inset tone="accent" className="mb-4 flex items-start gap-2 text-read leading-6">

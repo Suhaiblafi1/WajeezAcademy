@@ -47,6 +47,7 @@ import { notifyRole, safeNotify, sendDirectEmail, publicSiteUrl } from './notifi
 import { cohortDayAr, whenAr } from '../../src/application/learning/cohort-gate'
 import { trainerOrdinals } from '../../src/application/learning/cohort-title'
 import { planApprovedTrainerMsg, reviewReportLineAr } from '../../src/application/trainer/plan-decision'
+import { suggestedEditsLineAr } from '../../src/application/trainer/plan-edits'
 import { renderMail } from './mail-template'
 import { readableModuleVersion } from '../catalog/module-version-visibility'
 import {
@@ -1220,9 +1221,15 @@ export class CohortPlanService {
     const said = (typeof note === 'string' ? note : note?.general)?.trim() || null
     /* وتقريرُ المراجعة إن رُفع لهذه الخطّة — تذكره رسالةُ القرار أيًّا كان (٨ أكتوبر ٢٠٢٦) */
     const reports = (await new CohortFileService(this.prisma).reviewReports(plan.cohort.id, plan.id)).map((r) => r.originalName)
+    /* والتعديلاتُ المقترحةُ عليها — يذكرها الردُّ والتأجيل، ويُسقطها الاعتماد (٨ أكتوبر ٢٠٢٦) */
+    const edits = await this.pendingEdits(planId)
 
     if (!approve) {
+      /* ═══ والتعديلاتُ المقترحةُ سببٌ يكفي ═══
+         ردٌّ بلا ملاحظةٍ كان يُمنع لأنّه يترك المدرّبَ يخمّن. وتعديلاتٌ مكتوبةٌ بندا بندا
+         بأسبابها لا تترك تخمينا — فيكفي سطرُها ملاحظةً عامّة. */
       const asked = normalizeReviewNotes(typeof note === 'string' ? { general: note } : note)
+      if (!hasReviewNotes(asked) && edits.line) asked.general = edits.line
       if (!hasReviewNotes(asked)) {
         throw new AuthError('reason_required', 'قل له ما الذي يُعدَّل — في خطوته أو عامّةً. الردُّ بلا سببٍ يترك المدرّبَ يخمّن', 400)
       }
@@ -1258,7 +1265,7 @@ export class CohortPlanService {
         heading: 'راجعنا خطّةَ شعبتك ونحتاج تعديلا قبل اعتمادها',
         cta: 'عدّل الخطّة وأعد إرسالها',
         sections: bySection,
-      }, `${composed}${resumed}`, reports)
+      }, `${composed}${resumed}`, reports, asked.general === edits.line ? null : edits.line)
       return { status: 'changes_requested' as const }
     }
 
@@ -1280,6 +1287,10 @@ export class CohortPlanService {
       })
     })
     const applied = await this.applyPeriod(plan.cohort.id, plan.content as unknown as TrainerPlanContent | null)
+    /* وما اقتُرح عليها ولم يُقرَّر فيه يسقط — اعتُمدت بما فيها */
+    if (edits.count) {
+      await this.prisma.planEditSuggestion.updateMany({ where: { planId, status: 'pending' }, data: { status: 'lapsed' } })
+    }
 
     /* ═══ والاعتمادُ واحدٌ: الخطّةُ ولقاءاتُها معا (٣ب) ═══
 
@@ -1418,7 +1429,7 @@ export class CohortPlanService {
       actorId, action: 'cohort.plan.postpone', entityType: 'cohort', entityId: plan.cohort.id,
       meta: { planId, from, to, postponedTo: toDay, note: said },
     })
-    await this.tellTrainer(plan.trainer, plan.cohort, msg, undefined, reports)
+    await this.tellTrainer(plan.trainer, plan.cohort, msg, undefined, reports, (await this.pendingEdits(planId)).line)
     return { status: 'postponed' as const, postponedTo: toDay }
   }
 
@@ -1514,6 +1525,12 @@ export class CohortPlanService {
 
   /* و`sections` ملاحظاتُ الخطوات بأسمائها — قائمةً في البريد تحت التنبيه،
      و`bellBody` نصُّ الجرس إن اختلف عن التنبيه (الردُّ بأقسامه نصٌّ واحد). */
+  /** ما ينتظر المدرّبَ من تعديلاتٍ مقترحةٍ على هذه الخطّة — وسطرُها في الرسالة */
+  private async pendingEdits(planId: string) {
+    const rows = await this.prisma.planEditSuggestion.findMany({ where: { planId, status: 'pending' }, select: { required: true } })
+    return { count: rows.length, line: suggestedEditsLineAr(rows.length, rows.filter((r) => r.required).length) }
+  }
+
   private async tellTrainer(
     trainer: { userId: string | null; application: { fullName: string; email: string } } | null,
     cohort: { id: string; title: string },
@@ -1521,14 +1538,17 @@ export class CohortPlanService {
     bellBody?: string,
     /** أسماءُ تقارير المراجعة التي رُفعت مع هذا القرار — تُذكر ويُدلّ على موضعها */
     reports: readonly string[] = [],
+    /** وسطرُ التعديلات المقترحة إن صحبته (`suggestedEditsLineAr`) */
+    editsLine: string | null = null,
   ) {
     if (!trainer) return
     const url = `${publicSiteUrl()}/trainer/cohort/${cohort.id}`
     const reportLine = reviewReportLineAr(reports)
+    const extra = [editsLine, reportLine].filter(Boolean).join('\n\n')
     if (trainer.userId) {
       await safeNotify(this.prisma, {
         audience: 'trainer', userId: trainer.userId, channel: 'in_app',
-        title: msg.title, body: `${bellBody ?? msg.body}${reportLine ? `\n\n${reportLine}` : ''}`,
+        title: msg.title, body: `${bellBody ?? msg.body}${extra ? `\n\n${extra}` : ''}`,
         templateKey: 'cohort.plan.decision', data: { cohortId: cohort.id },
       })
     }
@@ -1544,6 +1564,7 @@ export class CohortPlanService {
           ...(msg.sections?.length
             ? [{ kind: 'list' as const, items: msg.sections.map((x) => `«${x.label}»: ${x.text}`) }]
             : []),
+          ...(editsLine ? [{ kind: 'p' as const, text: editsLine }] : []),
           ...(reportLine ? [{ kind: 'p' as const, text: reportLine }] : []),
           { kind: 'cta', label: msg.cta, href: url },
         ],

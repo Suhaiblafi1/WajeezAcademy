@@ -2623,6 +2623,7 @@ model Cohort {
   course              Course                    @relation(fields: [courseId], references: [id])
   term                Term?                     @relation(fields: [termId], references: [id], onDelete: SetNull)
   plans               CohortDeliveryPlan[]
+  planEdits           PlanEditSuggestion[]
   assignments         TrainerCourseAssignment[]
   changeRequests      TrainerChangeRequest[]
   trainers            CohortTrainer[]
@@ -2706,6 +2707,41 @@ model CohortDeliveryPlan {
   trainer               TrainerProfile? @relation(fields: [trainerId], references: [id])
 
   @@index([cohortId, status])
+}
+
+/// ═══ تعديلٌ تقترحه الإدارةُ على خطّة المدرّب — يقبله أو يرفضه (٨ أكتوبر ٢٠٢٦) ═══
+///
+/// قرارُ صاحب المنصّة: التعديلُ يطول على المدرّب، فنكتبه نحن ويختار هو بندا بندا.
+/// يُرفع ملفًّا على بطاقة المراجعة، ويُفحص كلُّ بندٍ على الخطّة لحظتَها وتُحفظ معه
+/// لقطةُ ما كان في موضعه (`before`) — ومنها «قبل» و«بعد» في شاشته، ومنها يُعرف أنّ
+/// الموضعَ تغيّر بعدُ فلا يُكتب فوق ما كتبه بيده. والقبولُ حفظٌ منه بأبوابه هو.
+/// والقاعدةُ والشكلُ في `src/application/trainer/plan-edits.ts`.
+model PlanEditSuggestion {
+  id        String    @id @default(uuid()) @db.Uuid
+  cohortId  String    @db.Uuid
+  /// الخطّةُ التي اقتُرح عليها — وقد تصير خطّةً غيرها بعد الاعتماد، فالشعبةُ هي المرجع
+  planId    String    @db.Uuid
+  /// كلُّ ما رُفع في ملفٍّ واحد
+  batchId   String    @db.Uuid
+  seq       Int
+  kind      String // module | plan | resource_add | resource_change | resource_remove | task_add | task_change | session_move | session_remove
+  /// خطوةُ المدرّب التي يقع فيها — identity · modules · workbooks · sessions · assignments
+  step      String
+  required  Boolean   @default(false)
+  reasonAr  String
+  edit      Json
+  before    Json?
+  status    String    @default("pending") // pending | accepted | rejected | withdrawn | lapsed
+  decidedAt DateTime?
+  decidedBy String?   @db.Uuid
+  /// كلمةُ المدرّب حين يرفض — اختياريّة
+  noteAr    String?
+  createdBy String    @db.Uuid
+  createdAt DateTime  @default(now())
+  cohort    Cohort    @relation(fields: [cohortId], references: [id], onDelete: Cascade)
+
+  @@index([cohortId, status])
+  @@index([planId])
 }
 
 /**
