@@ -1,5 +1,5 @@
 import { Link } from "react-router";
-import { BookCheck, BookOpen, BookPlus, CalendarDays, ClipboardCheck, FileSignature, GraduationCap, LayoutDashboard, Link2, Megaphone, Route, Star, Users, Wallet } from "lucide-react";
+import { BookCheck, BookOpen, BookPlus, CalendarDays, ClipboardCheck, FileSignature, GraduationCap, Languages, LayoutDashboard, Link2, Megaphone, Route, Star, Users, Wallet } from "lucide-react";
 import { PortalTabs, type PortalTab } from "@/components/ui/PortalTabs";
 import NotificationBell from "@/components/NotificationBell";
 import SearchChip from "@/components/SearchChip";
@@ -162,6 +162,11 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
     { to: "/trainer/ratings", label: "ما قيل عنّي", icon: Star },
     /* ب-٥: بعد «ما قيل عنّي» مباشرةً — قرارُ صاحب المنصّة (١٣ سبتمبر ٢٠٢٦) */
     { to: "/trainer/referral", label: "دعوتي", icon: Link2 },
+    /* مراجعةُ اختبار تحديد المستوى (٨ أكتوبر ٢٠٢٦) — لا تُرى إلّا لمن مُنح
+       `placement.review`: مدرّبُ الإنجليزيّة بعينه، لا كلُّ مدرّب. */
+    ...(user?.permissions.includes("placement.review")
+      ? [{ to: "/trainer/placement-review", label: "اختبار المستوى", icon: Languages }]
+      : []),
   ];
 
   /* له الصلاحيّةُ ولا ملفَّ له: شاشةٌ واحدةٌ تشرح، بدل عشرِ شاشاتٍ تسقط */

@@ -16,6 +16,9 @@ import { courseById } from "@/data/courses";
 import { useCourseCohorts } from "@/services/cohort-prices";
 import type { EnglishPlanView } from "@/application/diagnostic/landing";
 import type { LevelSummary } from "@/application/diagnostic/level-summary";
+import { ENGLISH_LEVELS, type EnglishLevel } from "@/domain/diagnostic/v2_1/english";
+import { placementHref } from "@/application/placement/links";
+import { usePlacementOpen } from "@/services/placement";
 
 function costOf(courseIds: string[], cohorts: ReturnType<typeof useCourseCohorts>["cohorts"]): string {
   const firsts = courseIds.map((id) => cohorts.get(id)?.[0]);
@@ -26,8 +29,32 @@ function costOf(courseIds: string[], cohorts: ReturnType<typeof useCourseCohorts
   return `${total} ${currency}`;
 }
 
+/* بابُ الاختبار: «قريبا» ما دام قيد المراجعة، ورابطٌ إليه حين يُفتح. وهو خيارٌ لا
+   شرط — والتسجيلُ بالمستوى الموصوف قائمٌ بجانبه (قرارُ صاحب المنصّة: اختياريّ). */
+export function PlacementPanel({ note, stated, className = "mt-6" }: { note: string; stated: EnglishLevel | null; className?: string }) {
+  const open = usePlacementOpen();
+  return (
+    <Panel tone="accent" className={className}>
+      <p className="flex items-center gap-2 text-sm font-black text-foreground">
+        <ClipboardCheck className="h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" />
+        {open ? "اختبارُ تحديد المستوى المجانيّ" : "اختبارُ تحديد المستوى المجانيّ — قريبا"}
+      </p>
+      <p className="mt-2 text-read leading-relaxed text-muted-foreground">{note}</p>
+      {open && (
+        <>
+          <p className="mt-2 text-read leading-relaxed text-muted-foreground">
+            لك أن تختبر الآن (ربعُ ساعةٍ تقريبا) فنقابل ما وصفتَه بما يقيسه، أو أن تمضي بمستواك الموصوف — والقرارُ بعد النتيجة لك.
+          </p>
+          <Button as={Link} to={placementHref(stated)} tone="secondary" size="sm" className="mt-3">ابدأ الاختبار المجانيّ</Button>
+        </>
+      )}
+    </Panel>
+  );
+}
+
 export default function EnglishPlanCard({ plan, level }: { plan: EnglishPlanView; level: LevelSummary | null }) {
   const { cohorts, loaded } = useCourseCohorts();
+  const stated = (ENGLISH_LEVELS.find((l) => l.cefr === plan.cefr)?.code ?? null);
   return (
     <section className="story-fade mx-auto max-w-2xl px-5 py-12 md:py-16">
       <h2 className="text-2xl font-black leading-snug md:text-3xl">خطّتك في الإنجليزيّة</h2>
@@ -35,13 +62,7 @@ export default function EnglishPlanCard({ plan, level }: { plan: EnglishPlanView
 
       {level && <LevelLine summary={level} className="mt-6" />}
 
-      <Panel tone="accent" className="mt-6">
-        <p className="flex items-center gap-2 text-sm font-black text-foreground">
-          <ClipboardCheck className="h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" />
-          اختبارُ تحديد المستوى المجانيّ — قريبا
-        </p>
-        <p className="mt-2 text-read leading-relaxed text-muted-foreground">{plan.placement_note_ar}</p>
-      </Panel>
+      <PlacementPanel note={plan.placement_note_ar} stated={stated} />
 
       <ul className="mt-8 flex flex-col gap-4">
         {plan.options.map((o) => (
