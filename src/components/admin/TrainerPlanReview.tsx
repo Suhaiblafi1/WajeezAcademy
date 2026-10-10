@@ -105,6 +105,8 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
      والأعلى)، ويذكّره بها من يدير الشعبة. */
   const { user: viewer } = useRealSession();
   const canApprovePlan = viewer?.permissions.includes("cohort.plan.approve") ?? false;
+  /* ومراجعةُ التعديلات المقترحة قبل أن تصل المدرّب (١٠ أكتوبر ٢٠٢٦) */
+  const canReviewEdits = viewer?.permissions.includes("cohort.plan.edits.review") ?? false;
   const [trainerPlan, setTrainerPlan] = useState<TrainerPlan | null>(null);
   const loadPlan = useCallback(async () => {
     try { setTrainerPlan(await apiGet<TrainerPlan | null>(`/api/admin/cohorts/${cohortId}/trainer-plan`)); }
@@ -402,6 +404,7 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
           planId={trainerPlan.id}
           cohortId={cohortId}
           canUpload={canApprovePlan}
+          canReview={canReviewEdits}
           onPending={setEditsPending}
         />
       )}

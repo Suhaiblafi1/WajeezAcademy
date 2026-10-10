@@ -184,6 +184,33 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
     return reply.status(201).send(await planEdits.propose(req.auth!.userId, id, file.items))
   })
 
+  /* ═══ وكلُّ بندٍ يُعتمَد للمدرّب أو يُحذف قبل أن يصله (١٠ أكتوبر ٢٠٢٦) ═══
+     «كلُّ ما يُطلب من المدرّب قبولُه يقبله المديرُ أو المديرُ الأكاديميُّ أو مديرُ المحتوى
+     أوّلا» (صاحب المنصّة). وصلاحيّتُه مستقلّةٌ عن الرفع: `cohort.plan.edits.review`. */
+  app.post('/api/admin/plan-edits/:editId/approve', {
+    preHandler: requirePermission('cohort.plan.edits.review'),
+    schema: { tags: ['admin-cohorts'], summary: 'اعتمادُ تعديلٍ مقترحٍ للمدرّب — يصله بعدها ليقبله أو يرفضه' },
+  }, async (req) => {
+    const { editId } = z.object({ editId: z.string().uuid() }).parse(req.params)
+    return planEdits.review(req.auth!.userId, editId, true)
+  })
+
+  app.post('/api/admin/plan-edits/:editId/drop', {
+    preHandler: requirePermission('cohort.plan.edits.review'),
+    schema: { tags: ['admin-cohorts'], summary: 'حذفُ تعديلٍ مقترحٍ قبل أن يصل المدرّب' },
+  }, async (req) => {
+    const { editId } = z.object({ editId: z.string().uuid() }).parse(req.params)
+    return planEdits.review(req.auth!.userId, editId, false)
+  })
+
+  app.post('/api/admin/cohort-plans/:id/edits/approve-all', {
+    preHandler: requirePermission('cohort.plan.edits.review'),
+    schema: { tags: ['admin-cohorts'], summary: 'اعتمادُ كلِّ ما بقي من التعديلات المقترحة للمدرّب' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return planEdits.reviewAll(req.auth!.userId, id)
+  })
+
   app.delete('/api/admin/cohort-plans/:id/edits', {
     preHandler: requirePermission('cohort.plan.approve'),
     schema: { tags: ['admin-cohorts'], summary: 'سحبُ ما لم يُقرَّر فيه من التعديلات المقترحة' },

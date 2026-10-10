@@ -124,6 +124,9 @@ export const PERMISSIONS = [
   { key: 'cohort.manage', description: 'إنشاء الشعب وجدولتها وإدارة جلساتها وروابطها' },
   { key: 'cohort.open', description: 'فتح شعبة بعد تحقق شروط الفتح' },
   { key: 'cohort.plan.approve', description: 'اعتمادُ خطّة المدرّب لشعبته أو ردُّها بتعديلات' },
+  /* «كلُّ ما يُطلب من المدرّب قبولُه يقبله المديرُ أو المديرُ الأكاديميُّ أو مديرُ المحتوى
+     أوّلا» (صاحب المنصّة، ١٠ أكتوبر ٢٠٢٦) — `plan-edits.ts` */
+  { key: 'cohort.plan.edits.review', description: 'مراجعةُ التعديلات المقترحة على خطّة المدرّب واعتمادُها قبل أن تصله' },
   { key: 'cohort.override_capacity', description: 'تجاوز سعة شعبة بشكل موثق' },
   { key: 'enrollment.manage', description: 'تسجيل المتعلمين في الشعب وإدارة تسجيلهم' },
   { key: 'material.manage', description: 'إدارة المواد والتسجيلات الخاصة' },
@@ -227,6 +230,7 @@ export const ROLE_PERMISSIONS: Record<string, PermissionKey[]> = {
        و`trainer.compensation.manage` تبقى للماليّة: شاشةُ قواعد الأتعاب نفسُها. */
     'trainer.contract.manage',
     'cohort.manage', 'cohort.open', 'cohort.plan.approve', 'cohort.override_capacity', 'enrollment.manage',
+    'cohort.plan.edits.review',
     'material.manage', 'certificate.issue', 'certificate.revoke',
     'advisor.assign', 'advisor.request.review', 'advisor.learner.view', 'cv.manage', 'cv.view',
     'enrollment.request.review',

@@ -28,6 +28,24 @@ describe('بطاقةُ المراجعة', () => {
   })
 })
 
+describe('مراجعةُ الإدارة قبل المدرّب (١٠ أكتوبر ٢٠٢٦)', () => {
+  const card = code('src/components/admin/TrainerPlanReview.tsx')
+  const panel = code('src/components/PlanEdits.tsx')
+
+  it('⚠️ زرّا المراجعة لمن يملك صلاحيّتَها وحدَه', () => {
+    expect(card).toMatch(/const canReviewEdits = viewer\?\.permissions\.includes\("cohort\.plan\.edits\.review"\)/)
+    expect(card).toMatch(/<PlanEditsUploader[\s\S]{0,300}canReview=\{canReviewEdits\}/)
+    expect(panel).toMatch(/\{canReview && \(\s*<div[\s\S]{0,700}\/api\/admin\/plan-edits\/\$\{x\.id\}\/approve/)
+    expect(panel).toMatch(/\/api\/admin\/plan-edits\/\$\{x\.id\}\/drop/)
+  })
+
+  it('⚠️ والمسوّدةُ تُعرض كاملةً بما قبلها وما بعدها — يراجع ما سيراه المدرّب', () => {
+    const at = panel.indexOf('drafts.map((x) =>')
+    expect(at).toBeGreaterThan(0)
+    expect(panel.slice(at, at + 1200)).toContain('<Rows view={x.view} />')
+  })
+})
+
 describe('صفحةُ المدرّب', () => {
   const src = code('src/pages/trainer/CohortWorkspace.tsx')
   const panel = code('src/components/PlanEdits.tsx')

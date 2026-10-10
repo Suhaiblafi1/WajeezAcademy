@@ -13,6 +13,10 @@
       الرفع؛ فإن تغيّر قيل له، ويختار: يقبله فوقه أو يرفضه (قرارُ ٢ أكتوبر: لا إجبار).
    ③ **لا يُقبل نصفُ ملفّ.** يُفحص الملفُّ كلُّه لحظةَ الرفع، فإن سقط بندٌ رُدّ كلُّه
       ببنوده وأسبابها — لا يصل المدرّبَ تعديلٌ لا يقع.
+   ④ **ولا يصل المدرّبَ ما لم تعتمده الإدارة (١٠ أكتوبر ٢٠٢٦).** المرفوعُ مسوّدةٌ
+      (`proposed`) يراجعها من يملك `cohort.plan.edits.review` — المديرُ والمديرُ
+      الأكاديميّ — فيعتمد كلَّ بندٍ للمدرّب أو يحذفه. والمدرّبُ لا يرى المسوّدةَ ولا
+      يقرّر فيها، ولا تُعدّ في رسالة الردّ.
 
    والقاعدةُ والعرضُ في `src/application/trainer/plan-edits.ts`. */
 
@@ -26,7 +30,7 @@ import { CohortPlanService, type TrainerPlanContent } from './cohort-plan.servic
 import {
   applyContentEdit, contentBefore, editsContent, planEditStep, planEditView, rowEditProblem, sameSnapshot,
   sessionSnapshot, taskSnapshot, type Checked, type EditContext, type EditSnapshot, type EditView, type PlanEdit,
-  type PlanEditStatus, PLAN_EDITS_MAX,
+  type PlanEditStatus, PLAN_EDITS_MAX, TRAINER_VISIBLE_EDIT_STATUSES,
 } from '../../src/application/trainer/plan-edits'
 
 /** بندٌ في الملفّ المرفوع: التعديلُ نفسُه، ولماذا، وأمطلوبٌ هو */
@@ -41,9 +45,11 @@ export interface PlanEditItem {
   reasonAr: string
   status: PlanEditStatus
   decidedAt: Date | null
+  /** متى اعتمدته الإدارةُ للمدرّب أو حذفته */
+  reviewedAt: Date | null
   noteAr: string | null
   view: EditView
-  /** تغيّر موضعُه منذ الرفع — للمنتظِر وحدَه */
+  /** تغيّر موضعُه منذ الرفع — لما لم يُقرَّر فيه بعد */
   stale: boolean
   /** لم يبقَ موضعُه أصلا (مصدرٌ حُذف، مهمّةٌ حُذفت) — بلغة المدرّب */
   goneAr: string | null
@@ -167,6 +173,8 @@ export class PlanEditService {
           required: item.required === true, reasonAr: item.reasonAr.trim(),
           edit: edit as unknown as Prisma.InputJsonValue,
           before: (snaps[i] ?? undefined) as Prisma.InputJsonValue | undefined,
+          /* مسوّدةٌ لا يراها المدرّبُ حتّى تعتمدها الإدارة (④) */
+          status: 'proposed',
           createdBy: actorId,
         }
       }),
@@ -184,11 +192,44 @@ export class PlanEditService {
     const plan = await this.prisma.cohortDeliveryPlan.findUnique({ where: { id: planId }, select: { cohortId: true } })
     if (!plan) throw new AuthError('not_found', 'الخطّة غير موجودة', 404)
     const { count } = await this.prisma.planEditSuggestion.updateMany({
-      where: { planId, status: 'pending' }, data: { status: 'withdrawn', decidedAt: new Date(), decidedBy: actorId },
+      where: { planId, status: { in: ['proposed', 'pending'] } }, data: { status: 'withdrawn', decidedAt: new Date(), decidedBy: actorId },
     })
     if (count > 0) {
       await recordAudit(this.prisma, {
         actorId, action: 'cohort.plan.edits.withdraw', entityType: 'cohort', entityId: plan.cohortId, meta: { planId, count },
+      })
+    }
+    return this.forCohort(plan.cohortId)
+  }
+
+  /* ─────────── الإدارة: تعتمد كلَّ بندٍ للمدرّب أو تحذفه (④) ─────────── */
+
+  /** يعتمده للمدرّب (`pending`) أو يحذفه (`dropped`) — والمسوّدةُ وحدَها تُراجَع */
+  async review(actorId: string, id: string, approve: boolean) {
+    const row = await this.prisma.planEditSuggestion.findUnique({ where: { id }, select: { id: true, cohortId: true, planId: true, kind: true } })
+    if (!row) throw new AuthError('not_found', 'هذا التعديلُ غير موجود', 404)
+    const done = await this.prisma.planEditSuggestion.updateMany({
+      where: { id, status: 'proposed' },
+      data: { status: approve ? 'pending' : 'dropped', reviewedBy: actorId, reviewedAt: new Date() },
+    })
+    if (done.count !== 1) throw new AuthError('edit_reviewed', 'رُوجع هذا التعديلُ من قبل', 409)
+    await recordAudit(this.prisma, {
+      actorId, action: approve ? 'cohort.plan.edit.approve' : 'cohort.plan.edit.drop', entityType: 'cohort', entityId: row.cohortId,
+      meta: { planId: row.planId, suggestionId: id, kind: row.kind },
+    })
+    return this.forCohort(row.cohortId)
+  }
+
+  /** يعتمد كلَّ ما بقي مسوّدةً في الخطّة للمدرّب */
+  async reviewAll(actorId: string, planId: string) {
+    const plan = await this.prisma.cohortDeliveryPlan.findUnique({ where: { id: planId }, select: { cohortId: true } })
+    if (!plan) throw new AuthError('not_found', 'الخطّة غير موجودة', 404)
+    const { count } = await this.prisma.planEditSuggestion.updateMany({
+      where: { planId, status: 'proposed' }, data: { status: 'pending', reviewedBy: actorId, reviewedAt: new Date() },
+    })
+    if (count > 0) {
+      await recordAudit(this.prisma, {
+        actorId, action: 'cohort.plan.edits.approve_all', entityType: 'cohort', entityId: plan.cohortId, meta: { planId, count },
       })
     }
     return this.forCohort(plan.cohortId)
@@ -212,23 +253,23 @@ export class PlanEditService {
       const before = (row.before ?? null) as EditSnapshot
       let stale = false
       let goneAr: string | null = null
-      if (row.status === 'pending') {
+      if (row.status === 'pending' || row.status === 'proposed') {
         const now = this.snapshotNow(edit, r)
         if (!now.ok) goneAr = now.problemAr
         else stale = !sameSnapshot(before, now.value)
       }
       return {
         id: row.id, seq: row.seq, kind: row.kind, step: row.step, required: row.required, reasonAr: row.reasonAr,
-        status: row.status as PlanEditStatus, decidedAt: row.decidedAt, noteAr: row.noteAr,
+        status: row.status as PlanEditStatus, decidedAt: row.decidedAt, reviewedAt: row.reviewedAt, noteAr: row.noteAr,
         view: planEditView(edit, before, ctx), stale, goneAr,
       }
     })
   }
 
-  /** للمدرّب: ما اقتُرح على خطّة شعبته — وما سقط باعتمادها لا يُعرض */
+  /** للمدرّب: ما اعتمدته الإدارةُ له وما قرّر فيه — لا مسوّدةٌ ولا محذوفٌ ولا ساقط (④) */
   async forTrainer(userId: string, cohortId: string): Promise<PlanEditItem[]> {
     await this.assertTrainer(userId, cohortId)
-    return (await this.forCohort(cohortId)).filter((x) => x.status !== 'lapsed')
+    return (await this.forCohort(cohortId)).filter((x) => TRAINER_VISIBLE_EDIT_STATUSES.includes(x.status))
   }
 
   /* ─────────── المدرّب: يقبل أو يرفض ─────────── */
@@ -244,6 +285,10 @@ export class PlanEditService {
     const row = await this.prisma.planEditSuggestion.findUnique({ where: { id } })
     if (!row) throw new AuthError('not_found', 'هذا التعديلُ غير موجود', 404)
     await this.assertTrainer(userId, row.cohortId)
+    /* وما لم تعتمده الإدارةُ لا وجودَ له عنده — لا «قُرِّر فيه» ولا غيرُه (④) */
+    if (!TRAINER_VISIBLE_EDIT_STATUSES.includes(row.status as PlanEditStatus)) {
+      throw new AuthError('not_found', 'هذا التعديلُ غير موجود', 404)
+    }
     if (row.status !== 'pending') throw new AuthError('edit_decided', 'قُرِّر في هذا التعديل من قبل', 409)
     return row
   }

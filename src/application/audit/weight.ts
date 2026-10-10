@@ -304,6 +304,8 @@ const LOW: readonly string[] = [
      وقبولُه ورفضُه تحريرُه في خطّته كحفظها (`cohort.plan.save`). */
   'cohort.plan.edits.propose', 'cohort.plan.edits.withdraw',
   'cohort.plan.edit.accept', 'cohort.plan.edit.reject',
+  /* ومراجعةُ الإدارة للمسوّدة: عملُها في طابورها، لا يصل المدرّبَ إلّا مع القرار */
+  'cohort.plan.edit.approve', 'cohort.plan.edit.drop', 'cohort.plan.edits.approve_all',
   /* ═══ وتعديلُ المدرّب صفَّ شعبته نزل من العالي (٢٧ سبتمبر ٢٠٢٦) ═══
 
      كان عاليا لأنّه يحرّك **متى يحضر المتعلّمُ وأين** — البدءَ والأيّامَ

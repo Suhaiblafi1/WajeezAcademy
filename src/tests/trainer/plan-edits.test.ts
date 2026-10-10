@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest'
 import {
   applyContentEdit, contentBefore, planEditStep, planEditView, rowEditProblem, sameSnapshot,
   sessionSnapshot, suggestedEditsLineAr, taskSnapshot, type EditableContent, type PlanEdit,
+  PLAN_EDIT_STATUSES, TRAINER_VISIBLE_EDIT_STATUSES,
 } from '@/application/trainer/plan-edits'
 
 const plan = (): EditableContent => ({
@@ -179,6 +180,13 @@ describe('ما يراه المدرّب', () => {
   it('ومحورُ المصدر يُقرأ برقمه في «قبل» و«بعد»', () => {
     const v = planEditView({ kind: 'resource_change', match: { title: 'CIPR', url: 'https://cipr.co.uk/a' }, set: { moduleId: 'M2' } }, { moduleId: 'M1' }, ctx)
     expect(v.rows).toEqual([{ labelAr: 'المحور', beforeAr: 'المحور 1', afterAr: 'المحور 2' }])
+  })
+})
+
+describe('ما يراه المدرّبُ من حالاتها (١٠ أكتوبر ٢٠٢٦)', () => {
+  it('⚠️ لا مسوّدةً لم تعتمدها الإدارة، ولا ما حذفته، ولا ما سقط', () => {
+    expect([...TRAINER_VISIBLE_EDIT_STATUSES].sort()).toEqual(['accepted', 'pending', 'rejected'])
+    expect(PLAN_EDIT_STATUSES[0], 'المرفوعُ يولد مسوّدة').toBe('proposed')
   })
 })
 
