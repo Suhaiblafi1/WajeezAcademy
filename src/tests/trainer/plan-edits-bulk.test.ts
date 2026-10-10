@@ -2,7 +2,7 @@
    وكم بندا فيه. وما لا يُقرأ يعود بسببه لا يرمي — فلا يوقف ما بعده من الدفعة. */
 
 import { describe, expect, it } from 'vitest'
-import { bulkSummaryAr, readEditsFile, uploadedLineAr } from '@/application/trainer/plan-edits-bulk'
+import { bulkSummaryAr, readEditsFile, replacedLineAr, uploadedLineAr } from '@/application/trainer/plan-edits-bulk'
 
 const PLAN = '7c1a3a52-2a7e-4a36-9a43-0d1d2b6b8f10'
 const file = (over: Record<string, unknown> = {}) => JSON.stringify({
@@ -46,6 +46,12 @@ describe('ما يُقال بعد الرفع', () => {
     expect(uploadedLineAr(19, 3)).toBe('رُفع مسوّدةً: 19 بندا، 3 منها مطلوبة')
     expect(uploadedLineAr(5, 1)).toBe('رُفع مسوّدةً: 5 بنود، 1 منها مطلوب')
     expect(uploadedLineAr(13, 0)).toBe('رُفع مسوّدةً: 13 بندا')
+  })
+
+  it('وما استُبدل يُقال بعدده — ولا شيءَ إن لم يكن قبله شيء', () => {
+    expect(replacedLineAr(19)).toBe('، مكان 19 مسودة سابقة')
+    expect(replacedLineAr(3)).toBe('، مكان 3 مسودات سابقة')
+    expect(replacedLineAr(0)).toBe('')
   })
 
   it('⚠️ ولا يُقال «كلُّها» وفي الدفعة ما رُدّ', () => {
