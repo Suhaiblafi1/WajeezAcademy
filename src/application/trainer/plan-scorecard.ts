@@ -10,6 +10,10 @@
       ومُسلَّمٌ لكلّ محور، ومصدرٌ لكلّ محور. ومعها ما كان مُلزِما قبلها (لقاءٌ
       لكلّ محور). وما عداها **نصيحةٌ** تُقال بسببها، والمدرّبُ يختار — على قاعدة
       «لا إجبارَ على فعل» (٢ أكتوبر ٢٠٢٦).
+      ثمّ نُزع المُسلَّمُ من المُلزِم (١٠ أكتوبر ٢٠٢٦): كان حقلُه في شاشة المدرّب
+      «اختياريّا» والحاجزُ يطلبه، فردّ الإرسالَ عن مدرّبين ملؤوا ما رأوه مطلوبا.
+      وخيّر صاحبُ المنصّة بين تصحيح الشاشة وإرجاعه اختياريّا، فاختار الثاني —
+      فالمُسلَّمُ صفُّ نصيحةٍ (`artifact`)، والتطبيقُ العمليُّ وحده يمنع.
    ② **والمدرّبُ يراها فحصا ذاتيّا** قبل أن يرسل («Yes, as a self-check»): البطاقةُ
       نفسُها التي يراها المعتمِد، فلا يصل المعتمِدَ ما يُعاد لسببٍ كان يُرى.
 
@@ -167,17 +171,14 @@ const resourcesOf = (content: unknown): ScorecardResource[] => {
   return Array.isArray(r) ? (r as ScorecardResource[]) : []
 }
 
-/** محاورُ بلا تطبيقٍ عمليٍّ أو بلا مُسلَّم — بأرقامها وما ينقص كلًّا */
+/** محاورُ بلا تطبيقٍ عمليٍّ — بأرقامها. مُلزِم */
 export function practiceGaps(modules: readonly ScorecardModule[]): string[] {
-  const out: string[] = []
-  modules.forEach((m, i) => {
-    const missing = [
-      sentence(m.activityAr) ? null : 'تطبيقٍ عمليّ',
-      sentence(m.artifactAr) ? null : 'مُسلَّم',
-    ].filter(Boolean)
-    if (missing.length) out.push(`المحور ${i + 1}: بلا ${missing.join(' ولا ')}`)
-  })
-  return out
+  return modules.flatMap((m, i) => (sentence(m.activityAr) ? [] : [`المحور ${i + 1}: بلا تطبيقٍ عمليّ`]))
+}
+
+/** محاورُ بلا مُسلَّم — بأرقامها. نصيحةٌ لا تمنع الإرسال (١٠ أكتوبر ٢٠٢٦) */
+export function artifactGaps(modules: readonly ScorecardModule[]): string[] {
+  return modules.flatMap((m, i) => (sentence(m.artifactAr) ? [] : [`المحور ${i + 1}: بلا مُسلَّم`]))
 }
 
 /** مصادرُ المحور — ما له رابطٌ أو ملفّ، بلا الجلسات المسجّلة: تلك لقاءاتٌ لا مصادر */
@@ -287,10 +288,17 @@ export function planScorecard(input: ScorecardInput): ScoreItem[] {
   /* ═══ المحاور ═══ */
   const practice = practiceGaps(modules)
   out.push(item({
-    key: 'practice', labelAr: 'التطبيقُ العمليّ والمُسلَّم', required: true, step: 'modules',
-    standardAr: 'لكلّ محورٍ تطبيقٌ عمليٌّ ومُسلَّمٌ يقرؤه إنسان',
-    measuredAr: `${n - practice.length} من ${n} محاورَ تامّة`,
+    key: 'practice', labelAr: 'التطبيقُ العمليّ', required: true, step: 'modules',
+    standardAr: 'لكلّ محورٍ تطبيقٌ عمليٌّ يفعله المتعلّمُ بيده',
+    measuredAr: `${n - practice.length} من ${n} محاورَ لها تطبيق`,
     gaps: practice,
+  }))
+  const artifacts = artifactGaps(modules)
+  out.push(item({
+    key: 'artifact', labelAr: 'المُسلَّم', required: false, step: 'modules',
+    standardAr: 'لكلّ محورٍ مُسلَّمٌ يقرؤه إنسان — ومهمّةٌ يُسلَّم فيها',
+    measuredAr: `${n - artifacts.length} من ${n} محاورَ لها مُسلَّم`,
+    gaps: artifacts,
   }))
 
   /* ═══ اللقاءات ═══ */
