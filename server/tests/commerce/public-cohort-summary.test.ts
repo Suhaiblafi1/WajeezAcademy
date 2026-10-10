@@ -2,7 +2,8 @@
 
    تطلبها خطوةُ «المعلومات الأساسيّة» من المدرّب بهذا الوعد، ولم تكن تظهر في أيّ صفحة. والحارسُ
    هنا على **ما يُعلَن**: نبذةُ خطّة المدرّب المعتمَدة وحدَها — لا مسودّتُه ولا ما ينتظر الإدارة،
-   ولا خطّةُ الأكاديميّة التي لا مدرّبَ لها. */
+   ولا خطّةُ الأكاديميّة التي لا مدرّبَ لها. وشعبةٌ لم تُعتمد خطّةُ مدرّبها لا تُعلَن أصلا
+   (`openRegistrationWhere`)، فالمسودّةُ الأحدثُ بعد اعتمادٍ هي ما يُخشى أن يتسرّب. */
 
 import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
@@ -53,16 +54,23 @@ beforeAll(async () => {
 }, 180_000)
 
 describe('نبذةُ الشعبة قبل الدفع', () => {
-  it('⚠️ لا شيءَ قبل أن تُعتمد خطّةُ المدرّب — ولا من مسودّته ولا ممّا ينتظر الإدارة', async () => {
+  it('⚠️ شعبةٌ خطّةُ مدرّبها لم تُعتمد لا تُعلَن أصلا — فلا نبذةَ تخرج من مسودّتها', async () => {
     await plan('draft', 'مسودّةٌ لم تُرسل', 30)
     await plan('submitted', 'تنتظر الإدارة', 20)
-    await plan('approved', 'خطّةُ الأكاديميّة بلا مدرّب', 10, false)
-    expect((await listed()).summaryAr).toBeNull()
+    const rows = await publicCatalog.cohorts()
+    expect(rows.find((c) => c.id === cohortId), 'شعبةٌ بلا خطّةٍ معتمدة أُعلنت').toBeUndefined()
+    expect(JSON.stringify(rows)).not.toContain('مسودّةٌ لم تُرسل')
   })
 
-  it('⚠️ ونبذةُ خطّته المعتمَدة تُعلَن — أحدثُها', async () => {
-    await plan('approved', 'نبذةٌ قديمة', 15)
-    await plan('published', '  شعبةٌ عمليّةٌ في ستّة أسابيع.\n\nتخرج منها بخطّةٍ مكتوبة.  ', 5)
+  it('⚠️ وبعد الاعتماد نبذةُ الخطّة المعتمَدة — لا مسودّةٌ أحدثُ منها، ولا خطّةُ الأكاديميّة', async () => {
+    await plan('approved', 'نبذةٌ معتمدة', 15)
+    await plan('draft', 'مسودّةٌ أحدثُ لم تُعتمد', 3)
+    await plan('approved', 'خطّةُ الأكاديميّة بلا مدرّب', 2, false)
+    expect((await listed()).summaryAr).toBe('نبذةٌ معتمدة')
+  })
+
+  it('والأحدثُ من المعتمَد والمنشور — بلا فراغٍ زائد', async () => {
+    await plan('published', '  شعبةٌ عمليّةٌ في ستّة أسابيع.\n\nتخرج منها بخطّةٍ مكتوبة.  ', 1)
     expect((await listed()).summaryAr).toBe('شعبةٌ عمليّةٌ في ستّة أسابيع.\n\nتخرج منها بخطّةٍ مكتوبة.')
   })
 })
