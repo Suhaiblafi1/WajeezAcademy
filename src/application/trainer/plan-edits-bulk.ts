@@ -39,6 +39,12 @@ export function uploadedLineAr(count: number, required: number): string {
   return `رُفع مسوّدةً: ${countAr(count, ITEM_FORMS)}${required > 0 ? `، ${required} منها ${required === 1 ? 'مطلوب' : 'مطلوبة'}` : ''}`
 }
 
+/** «، مكان 19 مسودة سابقة» — حين يُستبدل الملفّ بمسوّداتٍ لم تُعتمد؛ ولا شيءَ إن لم يكن قبله شيء */
+export function replacedLineAr(replaced: number): string {
+  if (replaced <= 0) return ''
+  return `، مكان ${countAr(replaced, { one: 'مسودة سابقة', two: 'مسودتين سابقتين', few: 'مسودات سابقة', many: 'مسودة سابقة' })}`
+}
+
 /** خلاصةُ الدفعة — كم رُفع وكم رُدّ، ولا يُقال «تمّ» وفيها ما رُدّ */
 export function bulkSummaryAr(done: number, failed: number): string {
   const total = done + failed

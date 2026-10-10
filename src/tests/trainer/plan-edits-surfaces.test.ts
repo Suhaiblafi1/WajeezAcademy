@@ -67,6 +67,12 @@ describe('الرفعُ دفعةً واحدة — «خططٌ تنتظر اعتم�
     expect(loop.indexOf('try {'), 'الاعتراضُ داخل الحلقة لا حولها').toBeLessThan(loop.indexOf('setProgress(null)'))
   })
 
+  it('⚠️ والاستبدالُ يختاره المعتمِدُ ولا يُفترض — ويذهب إلى مسلك الاستبدال وحدَه', () => {
+    expect(bulk).toMatch(/const \[replace, setReplace\] = useState\(false\)/)
+    expect(bulk).toMatch(/<input type="checkbox"[^>]*checked=\{replace\}/)
+    expect(bulk).toMatch(/if \(replace\) \{\s*const r = await apiPost<\{ replacedDrafts: number \}>\(`\/api\/admin\/cohort-plans\/\$\{read\.planId\}\/edits\/replace-drafts`, read\.body\)/)
+  })
+
   it('وبطاقةُ الخطّة المفتوحة تُعاد بعد الرفع إليها — فتُرى بنودُها', () => {
     expect(page).toMatch(/onUploaded=\{\(id\) => setUploaded/)
     expect(page).toMatch(/<TrainerPlanReview\s+cohortId=\{r\.cohort\.id\}\s+key=\{`\$\{r\.id\}:\$\{uploaded\[r\.id\] \?\? 0\}`\}/)

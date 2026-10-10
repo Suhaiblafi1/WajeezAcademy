@@ -137,6 +137,21 @@ export class PlanEditService {
 
   /** يرفعه المعتمِد: يُفحص كلُّه، ويُحفظ كلُّه أو يُردّ كلُّه ببنوده */
   async propose(actorId: string, planId: string, items: readonly PlanEditInput[]) {
+    const { cohortId } = await this.upload(actorId, planId, items, false)
+    return this.forCohort(cohortId)
+  }
+
+  /* ═══ ويُرفع ملفٌّ جديدٌ مكانَ مسوّداتٍ لم تُعتمد (١٠ أكتوبر ٢٠٢٦) ═══
+     قرارُ صاحب المنصّة: صيغةٌ جديدةٌ لملفّات التعديلات تُرفع مرّةً واحدةً من صندوق الرفع دفعةً،
+     والقديمةُ ما زالت مسوّداتٍ عليها. فيُفحص الجديدُ كلُّه أوّلا، ثمّ تُسحب المسوّداتُ ويُحفظ الجديدُ في
+     معاملةٍ واحدة: إن رُدّ الملفُّ بقيت المسوّداتُ كما هي. وما اعتُمد للمدرّب (`pending`) لا يُمسّ —
+     وبندٌ جديدٌ على موضعه يُردّ كما يُردّ في كلّ رفع. */
+  async replaceDrafts(actorId: string, planId: string, items: readonly PlanEditInput[]) {
+    const { cohortId, replaced } = await this.upload(actorId, planId, items, true)
+    return { edits: await this.forCohort(cohortId), replacedDrafts: replaced }
+  }
+
+  private async upload(actorId: string, planId: string, items: readonly PlanEditInput[], replace: boolean) {
     const plan = await this.prisma.cohortDeliveryPlan.findUnique({
       where: { id: planId }, select: { id: true, cohortId: true, status: true, trainerId: true, content: true },
     })
@@ -153,12 +168,14 @@ export class PlanEditService {
        بنودُه على المعتمِد ثمّ على المدرّب. فما وقع على موضعِ بندٍ لم يُقرَّر فيه يُردّ،
        كما يُردّ بندان على موضعٍ واحدٍ في ملفٍّ واحد. */
     const open = await this.prisma.planEditSuggestion.findMany({
-      where: { planId, status: { in: ['proposed', 'pending'] } }, select: { edit: true },
+      where: { planId, status: { in: replace ? ['pending'] : ['proposed', 'pending'] } }, select: { edit: true },
     })
     const taken = new Set(open.flatMap((o) => openKeysOf(o.edit as unknown as PlanEdit)))
     /* والملفُّ كلُّه مرفوعٌ من قبل — سطرٌ واحدٌ يقول ذلك، لا سطرٌ لكلّ بند */
     if (taken.size > 0 && items.every((item) => openKeysOf(editOf(item)).some((k) => taken.has(k)))) {
-      throw new AuthError('edits_already_uploaded', 'رُفع هذا الملفُّ قبلُ ولم يُقرَّر في بنوده — فلا يُرفع مرّتين. وإن أردتَ رفعه من جديد فاسحب ما لم يُقرَّر في بطاقة خطّته أوّلا', 409)
+      throw new AuthError('edits_already_uploaded', replace
+        ? 'رُفع هذا الملفُّ قبلُ واعتُمدت بنودُه للمدرّب — فلا يُستبدل ما اعتُمد. اسحبه من بطاقة خطّته أوّلا إن أردت'
+        : 'رُفع هذا الملفُّ قبلُ ولم يُقرَّر في بنوده — فلا يُرفع مرّتين. وإن أردت رفعه من جديد فاختر استبدال المسوّدات عند الرفع، أو اسحبها من بطاقة خطّته أوّلا', 409)
     }
     const problems: string[] = []
     const seen = new Map<string, number>()
@@ -180,26 +197,40 @@ export class PlanEditService {
     if (problems.length) throw new AuthError('bad_edits', `لم يُرفع شيء — في الملفّ ما لا يقع:\n${problems.join('\n')}`, 422)
 
     const batchId = randomUUID()
-    await this.prisma.planEditSuggestion.createMany({
-      data: items.map((item, i) => {
-        const edit = editOf(item)
-        return {
-          cohortId: plan.cohortId, planId, batchId, seq: i + 1, kind: edit.kind, step: planEditStep(edit),
-          required: item.required === true, reasonAr: item.reasonAr.trim(),
-          edit: edit as unknown as Prisma.InputJsonValue,
-          before: (snaps[i] ?? undefined) as Prisma.InputJsonValue | undefined,
-          /* مسوّدةٌ لا يراها المدرّبُ حتّى تعتمدها الإدارة (④) */
-          status: 'proposed',
-          createdBy: actorId,
-        }
-      }),
+    const replaced = await this.prisma.$transaction(async (tx) => {
+      const gone = replace
+        ? (await tx.planEditSuggestion.updateMany({
+          where: { planId, status: 'proposed' }, data: { status: 'withdrawn', decidedAt: new Date(), decidedBy: actorId },
+        })).count
+        : 0
+      await tx.planEditSuggestion.createMany({
+        data: items.map((item, i) => {
+          const edit = editOf(item)
+          return {
+            cohortId: plan.cohortId, planId, batchId, seq: i + 1, kind: edit.kind, step: planEditStep(edit),
+            required: item.required === true, reasonAr: item.reasonAr.trim(),
+            edit: edit as unknown as Prisma.InputJsonValue,
+            before: (snaps[i] ?? undefined) as Prisma.InputJsonValue | undefined,
+            /* مسوّدةٌ لا يراها المدرّبُ حتّى تعتمدها الإدارة (④) */
+            status: 'proposed',
+            createdBy: actorId,
+          }
+        }),
+      })
+      return gone
     })
+    if (replaced > 0) {
+      await recordAudit(this.prisma, {
+        actorId, action: 'cohort.plan.edits.withdraw', entityType: 'cohort', entityId: plan.cohortId,
+        meta: { planId, count: replaced, replacedBy: batchId },
+      })
+    }
     const required = items.filter((x) => x.required === true).length
     await recordAudit(this.prisma, {
       actorId, action: 'cohort.plan.edits.propose', entityType: 'cohort', entityId: plan.cohortId,
       meta: { planId, batchId, count: items.length, required },
     })
-    return this.forCohort(plan.cohortId)
+    return { cohortId: plan.cohortId, replaced }
   }
 
   /** يسحب المعتمِدُ ما لم يُقرَّر بعد — ملفٌّ رُفع خطأً لا يبقى ينتظر المدرّب */

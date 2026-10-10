@@ -14,7 +14,7 @@ import { Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import Chip from "@/components/ui/Chip";
 import type { EditView, PlanEditStatus } from "@/application/trainer/plan-edits";
-import { bulkSummaryAr, readEditsFile, uploadedLineAr } from "@/application/trainer/plan-edits-bulk";
+import { bulkSummaryAr, readEditsFile, replacedLineAr, uploadedLineAr } from "@/application/trainer/plan-edits-bulk";
 
 export interface PlanEditItem {
   id: string;
@@ -277,6 +277,8 @@ export function PlanEditsBulkUpload({ plans, onUploaded, onOpen }: {
   const [results, setResults] = useState<BulkResult[]>([]);
   const [summary, setSummary] = useState("");
   const [over, setOver] = useState(false);
+  /* ويُرفع الملفُّ مكانَ مسوّداتٍ قديمةٍ لم تُعتمد — يختاره المعتمِد، ولا يُفترض (١٠ أكتوبر ٢٠٢٦) */
+  const [replace, setReplace] = useState(false);
 
   const run = async (files: readonly File[]) => {
     if (progress || files.length === 0) return;
@@ -290,8 +292,14 @@ export function PlanEditsBulkUpload({ plans, onUploaded, onOpen }: {
       } else {
         const labelAr = plans.find((p) => p.id === read.planId)?.labelAr ?? read.titleAr;
         try {
-          await apiPost<PlanEditItem[]>(`/api/admin/cohort-plans/${read.planId}/edits`, read.body);
-          out.push({ name: file.name, planId: read.planId, labelAr, okAr: uploadedLineAr(read.count, read.required), problemAr: null });
+          let okAr = uploadedLineAr(read.count, read.required);
+          if (replace) {
+            const r = await apiPost<{ replacedDrafts: number }>(`/api/admin/cohort-plans/${read.planId}/edits/replace-drafts`, read.body);
+            okAr += replacedLineAr(r.replacedDrafts);
+          } else {
+            await apiPost<PlanEditItem[]>(`/api/admin/cohort-plans/${read.planId}/edits`, read.body);
+          }
+          out.push({ name: file.name, planId: read.planId, labelAr, okAr, problemAr: null });
           onUploaded(read.planId);
         } catch (e) {
           out.push({ name: file.name, planId: read.planId, labelAr, okAr: null, problemAr: errText(e, "تعذّر الرفع") });
@@ -331,6 +339,15 @@ export function PlanEditsBulkUpload({ plans, onUploaded, onOpen }: {
         </Button>
         <span className="text-read text-muted-foreground">أو اسحبها كلَّها إلى هنا وأفلتها.</span>
       </div>
+      <label className="mt-3 flex items-start gap-2 text-read leading-6">
+        <input type="checkbox" className="mt-1.5" checked={replace} disabled={progress !== null} onChange={(e) => setReplace(e.target.checked)} />
+        <span>
+          <span className="font-bold text-foreground">استبدل المسودات التي لم تعتمدها بعد</span>
+          <span className="block text-muted-foreground">
+            لكل خطة: تسحب المسودات القديمة وترفع الملف الجديد مكانها. لا تسحب شيئا إن رد الملف، وما اعتمدته للمدرب يبقى كما هو.
+          </span>
+        </span>
+      </label>
       {summary && <p className="mt-3 text-read font-bold text-teal-light-ink" role="status">{summary}</p>}
       {results.length > 0 && (
         <ol className="mt-2 space-y-2">
