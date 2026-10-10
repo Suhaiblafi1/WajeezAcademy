@@ -2,17 +2,19 @@
 
    قرارُ صاحب المنصّة: «التعديلُ يطول على المدرّب — نكتبه نحن ويختار هو». والوجهان هنا:
    `PlanEditsUploader` لبطاقة المراجعة (يُرفع الملفّ، ويُرى حالُ كلّ بند، ويُسحب ما لم
-   يُقرَّر)، و`PlanEditsPanel` لصفحة المدرّب (يقرأ كلَّ تعديلٍ بما قبله وما بعده، ويقبله
+   يُقرَّر)، و`PlanEditsBulkUpload` لـ«خططٌ تنتظر اعتمادك» (ملفّاتٌ كثيرةٌ دفعةً واحدة، كلٌّ
+   إلى خطّته)، و`PlanEditsPanel` لصفحة المدرّب (يقرأ كلَّ تعديلٍ بما قبله وما بعده، ويقبله
    أو يرفضه). والقاعدةُ والعرضُ في `application/trainer/plan-edits.ts` — والشاشتان
    تعرضان ما يحسبه الخادمُ منها، لا تحسبان. */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Check, FileJson, X } from "lucide-react";
+import { Check, ExternalLink, FileJson, Files, X } from "lucide-react";
 import { apiDelete, apiGet, apiPost, ApiError } from "@/services/api";
 import { Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import Chip from "@/components/ui/Chip";
 import type { EditView, PlanEditStatus } from "@/application/trainer/plan-edits";
+import { bulkSummaryAr, readEditsFile, uploadedLineAr } from "@/application/trainer/plan-edits-bulk";
 
 export interface PlanEditItem {
   id: string;
@@ -246,6 +248,113 @@ export function PlanEditsUploader({ planId, cohortId, canUpload, canReview, onPe
         </div>
       )}
       {msg && <p className="mt-2 whitespace-pre-wrap text-read font-bold text-teal-light-ink" role="status">{msg}</p>}
+    </Inset>
+  );
+}
+
+/* ═══════════ دفعةً واحدة — «خططٌ تنتظر اعتمادك» (١٠ أكتوبر ٢٠٢٦) ═══════════
+   «I need one place to upload all of them same time!» (صاحب المنصّة). كلُّ ملفٍّ يحمل خطّتَه
+   فيُرفع إليها بالمسلك الذي في البطاقة نفسِه — واحدا بعد واحد، وما رُدّ منها لا يوقف ما بعده. */
+
+interface BulkResult {
+  name: string;
+  planId: string | null;
+  labelAr: string | null;
+  okAr: string | null;
+  problemAr: string | null;
+}
+
+/** `plans` الخططُ المنتظِرة — لتُسمّى كلُّ نتيجةٍ بشعبتها ومدرّبها، ويُفتح ما فيها.
+    `onUploaded` يُقال لكلّ خطّةٍ رُفع إليها — فتُعاد بطاقتُها إن كانت مفتوحة.
+    `onOpen` يفتح بطاقتَها في الصفحة نفسِها لتُراجَع بنودُها. */
+export function PlanEditsBulkUpload({ plans, onUploaded, onOpen }: {
+  plans: readonly { id: string; labelAr: string }[];
+  onUploaded: (planId: string) => void;
+  onOpen: (planId: string) => void;
+}) {
+  const input = useRef<HTMLInputElement>(null);
+  const [progress, setProgress] = useState<string | null>(null);
+  const [results, setResults] = useState<BulkResult[]>([]);
+  const [summary, setSummary] = useState("");
+  const [over, setOver] = useState(false);
+
+  const run = async (files: readonly File[]) => {
+    if (progress || files.length === 0) return;
+    setResults([]); setSummary("");
+    const out: BulkResult[] = [];
+    for (const [i, file] of files.entries()) {
+      setProgress(`${i + 1} من ${files.length}`);
+      const read = readEditsFile(file.name, await file.text());
+      if (!read.ok) {
+        out.push({ name: file.name, planId: null, labelAr: null, okAr: null, problemAr: read.problemAr });
+      } else {
+        const labelAr = plans.find((p) => p.id === read.planId)?.labelAr ?? read.titleAr;
+        try {
+          await apiPost<PlanEditItem[]>(`/api/admin/cohort-plans/${read.planId}/edits`, read.body);
+          out.push({ name: file.name, planId: read.planId, labelAr, okAr: uploadedLineAr(read.count, read.required), problemAr: null });
+          onUploaded(read.planId);
+        } catch (e) {
+          out.push({ name: file.name, planId: read.planId, labelAr, okAr: null, problemAr: errText(e, "تعذّر الرفع") });
+        }
+      }
+      setResults([...out]);
+    }
+    setProgress(null);
+    setSummary(bulkSummaryAr(out.filter((r) => r.okAr).length, out.filter((r) => !r.okAr).length));
+    if (input.current) input.current.value = "";
+  };
+
+  return (
+    <Inset className="mb-4 px-4 py-3" role="region" aria-label="ملفّاتُ التعديلات دفعةً واحدة">
+      <p className="text-read font-black text-foreground">ارفع ملفّاتِ التعديلات المقترحة كلَّها دفعةً واحدة</p>
+      <p className="mt-1 max-w-3xl text-read leading-6 text-muted-foreground">
+        كلُّ ملفٍّ يعرف خطّتَه فيُرفع إليها وحدَه، ويُفحص كما يُفحص في بطاقتها: يُرفع كلُّه أو يُردّ كلُّه بسببه. وتُرفع
+        مسوّداتٍ لا يراها المدرّبون — تراجع بنودَ كلِّ خطّةٍ في بطاقتها فتعتمدها أو تحذفها.
+      </p>
+      <div
+        className={`mt-3 flex flex-wrap items-center gap-3 rounded-lg border-2 border-dashed p-4 ${over ? "border-teal-light-ink bg-teal-light-ink/5" : "border-border"}`}
+        onDragOver={(e) => { e.preventDefault(); setOver(true); }}
+        onDragLeave={() => setOver(false)}
+        onDrop={(e) => { e.preventDefault(); setOver(false); void run(Array.from(e.dataTransfer.files)); }}
+      >
+        <input
+          ref={input}
+          type="file"
+          multiple
+          className="sr-only"
+          aria-label="ملفّاتُ التعديلات المقترحة"
+          accept="application/json,.json"
+          onChange={(e) => void run(Array.from(e.target.files ?? []))}
+        />
+        <Button tone="secondary" size="sm" icon={Files} disabled={progress !== null} onClick={() => input.current?.click()}>
+          {progress ? `يُرفع ${progress}…` : "اختر الملفّات"}
+        </Button>
+        <span className="text-read text-muted-foreground">أو اسحبها كلَّها إلى هنا وأفلتها.</span>
+      </div>
+      {summary && <p className="mt-3 text-read font-bold text-teal-light-ink" role="status">{summary}</p>}
+      {results.length > 0 && (
+        <ol className="mt-2 space-y-2">
+          {results.map((r, i) => {
+            const here = r.okAr && r.planId && plans.some((p) => p.id === r.planId);
+            return (
+              <li key={`${i}-${r.name}`} className="rounded-lg border border-border/60 p-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Chip tone={r.okAr ? "positive" : "danger"}>{r.okAr ? "رُفع" : "رُدّ"}</Chip>
+                  <span className="text-read font-bold text-foreground" dir="auto">{r.labelAr ?? r.name}</span>
+                </div>
+                {r.labelAr && <p className="mt-1 text-read text-muted-foreground" dir="auto">{r.name}</p>}
+                {r.okAr && <p className="mt-1 text-read text-foreground">{r.okAr}</p>}
+                {r.problemAr && <p className="mt-1 whitespace-pre-wrap text-read leading-6 text-danger-ink">{r.problemAr}</p>}
+                {here && (
+                  <Button className="mt-2" tone="ghost" size="sm" icon={ExternalLink} onClick={() => onOpen(r.planId!)}>
+                    افتح خطّتَه وراجع بنودَها
+                  </Button>
+                )}
+              </li>
+            );
+          })}
+        </ol>
+      )}
     </Inset>
   );
 }
