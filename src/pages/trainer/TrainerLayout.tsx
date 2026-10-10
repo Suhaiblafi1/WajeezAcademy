@@ -74,13 +74,20 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
      (لم يُفحَص بعد · لا ملفَّ مدرّبٍ له · لا صلاحيّةَ)، فخطّافٌ بعدها
      يُنادى في تصييرٍ ولا يُنادى في آخر — وذاك ما ردّه `rules-of-hooks`.
 
-     و`headerRef` فارغٌ في تلك العودات، فالخطّافُ يخرج بلا عمل. */
+     و`headerRef` فارغٌ في تلك العودات، فالخطّافُ يخرج بلا عمل.
+
+     ويُقاس بـ`offsetHeight` لا `getBoundingClientRect` (١٠ أكتوبر ٢٠٢٦):
+     الثاني يعيد الطولَ **بعد** `zoom` الذي على `body`، والمتغيّرُ يُقرأ في
+     `top` داخل `body` نفسِه فيُضرَب في المعامل ثانيةً. فعلى الحاسوب (١٫٣)
+     كان شريطُ مراحل الشعبة يلتصق أسفلَ الرأس بنحو ثلثِ طوله فراغا يمرّ
+     تحته المحتوى (قِيس: رأسٌ ١٠٠ ← ١٣٠ ← ١٦٩ على الشاشة). و`offsetHeight`
+     بمقاسات التخطيط قبل المعامل — وهي ما يفهمه `top`. */
   const headerRef = useRef<HTMLElement | null>(null);
   useEffect(() => {
     const el = headerRef.current;
     if (!el) return;
     const publish = () => {
-      document.documentElement.style.setProperty("--staff-sticky-top", `${Math.round(el.getBoundingClientRect().height)}px`);
+      document.documentElement.style.setProperty("--staff-sticky-top", `${el.offsetHeight}px`);
     };
     publish();
     const ro = new ResizeObserver(publish);
