@@ -29,8 +29,10 @@ export interface PlanEditItem {
   goneAr: string | null;
 }
 
-const STATUS_AR: Record<PlanEditStatus, { label: string; tone: "warn" | "positive" | "neutral" | "danger" }> = {
-  pending: { label: "ينتظر قرارَ المدرّب", tone: "warn" },
+const STATUS_AR: Record<PlanEditStatus, { label: string; tone: "warn" | "positive" | "neutral" | "danger" | "info" }> = {
+  proposed: { label: "ينتظر مراجعتك", tone: "warn" },
+  dropped: { label: "حذفتَه — لم يصل المدرّب", tone: "neutral" },
+  pending: { label: "اعتمدتَه — عند المدرّب", tone: "info" },
   accepted: { label: "قُبل", tone: "positive" },
   rejected: { label: "رُفض", tone: "danger" },
   withdrawn: { label: "سُحب", tone: "neutral" },
@@ -76,10 +78,12 @@ function Cell({ label, text, href, long, muted }: { label: string; text: string 
 /* ═══════════ بطاقةُ المراجعة ═══════════ */
 
 /** لبطاقة المراجعة — يُرفع الملفّ والخطّةُ بانتظار القرار أو في يد مدرّبها */
-export function PlanEditsUploader({ planId, cohortId, canUpload, onPending }: {
+export function PlanEditsUploader({ planId, cohortId, canUpload, canReview, onPending }: {
   planId: string;
   cohortId: string;
   canUpload: boolean;
+  /** يعتمد كلَّ بندٍ للمدرّب أو يحذفه — `cohort.plan.edits.review` (١٠ أكتوبر ٢٠٢٦) */
+  canReview: boolean;
   /** كم ينتظر المدرّبَ — تقرؤه البطاقةُ فيكفي سببا لـ«اطلب تعديلات» */
   onPending?: (n: number) => void;
 }) {
@@ -87,6 +91,7 @@ export function PlanEditsUploader({ planId, cohortId, canUpload, onPending }: {
   const [items, setItems] = useState<PlanEditItem[]>([]);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
+  const [reviewing, setReviewing] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try { setItems(await apiGet<PlanEditItem[]>(`/api/admin/cohorts/${cohortId}/plan-edits`)); }
@@ -101,7 +106,7 @@ export function PlanEditsUploader({ planId, cohortId, canUpload, onPending }: {
       try { body = JSON.parse(await file.text()); }
       catch { throw new Error(`«${file.name}» ليس ملفَّ JSON مقروءا`); }
       setItems(await apiPost<PlanEditItem[]>(`/api/admin/cohort-plans/${planId}/edits`, body));
-      setMsg(`رُفع «${file.name}». يراها المدرّبُ في صفحة شعبته حين تردّ الخطّةَ إليه — وتذكرها رسالةُ القرار.`);
+      setMsg(`رُفع «${file.name}» مسوّدةً — لا يراه المدرّبُ حتّى تعتمد كلَّ بندٍ أدناه أو تحذفه.`);
     } catch (e) {
       setMsg(errText(e, "تعذّر الرفع"));
     } finally {
@@ -122,9 +127,27 @@ export function PlanEditsUploader({ planId, cohortId, canUpload, onPending }: {
     }
   };
 
+  /* ═══ ولا يصل المدرّبَ ما لم تعتمده الإدارة (١٠ أكتوبر ٢٠٢٦) ═══
+     «كلُّ ما يُطلب من المدرّب قبولُه يقبله المديرُ أو المديرُ الأكاديميُّ أو مديرُ المحتوى
+     أوّلا» (صاحب المنصّة). فالمسوّدةُ تُعرض هنا كاملةً بما قبلها وما بعدها، ولكلٍّ زرّان. */
+  const review = async (key: string, run: () => Promise<PlanEditItem[]>, done: string) => {
+    setBusy(true); setMsg(""); setReviewing(key);
+    try {
+      setItems(await run());
+      setMsg(done);
+    } catch (e) {
+      setMsg(errText(e, "تعذّر"));
+      await load();
+    } finally {
+      setBusy(false); setReviewing(null);
+    }
+  };
+
+  const drafts = items.filter((x) => x.status === "proposed");
   const pending = items.filter((x) => x.status === "pending").length;
+  const open = drafts.length + pending;
   useEffect(() => { onPending?.(pending); }, [pending, onPending]);
-  const counts = (["accepted", "rejected", "pending"] as const)
+  const counts = (["proposed", "pending", "accepted", "rejected", "dropped"] as const)
     .map((s) => [s, items.filter((x) => x.status === s).length] as const)
     .filter(([, n]) => n > 0);
 
@@ -133,18 +156,64 @@ export function PlanEditsUploader({ planId, cohortId, canUpload, onPending }: {
       <p className="text-read font-black text-foreground">تعديلاتٌ مقترحةٌ على الخطّة (اختياريّ)</p>
       <p className="mt-1 text-read leading-6 text-muted-foreground">
         ملفٌّ (JSON) بالتعديلات بندا بندا: يُفحص كلُّه على الخطّة الآن، ويُرفع كلُّه أو يُردّ كلُّه بما لا يقع فيه.
-        ثمّ «اطلب تعديلات» — ويكفي الملفُّ سببا — فيراها المدرّبُ بما قبلها وما بعدها، ويقبل كلًّا أو يرفضه.
+        ويُرفع مسوّدةً لا يراها المدرّب: تراجع كلَّ بندٍ هنا فتعتمده له أو تحذفه. ثمّ «اطلب تعديلات» — ويكفي
+        ما اعتمدتَه سببا — فيراه المدرّبُ بما قبله وما بعده، ويقبل كلًّا أو يرفضه.
       </p>
       {counts.length > 0 && (
         <div className="mt-2 flex flex-wrap gap-2">
           {counts.map(([s, n]) => <Chip key={s} tone={STATUS_AR[s].tone}>{STATUS_AR[s].label}: {n}</Chip>)}
         </div>
       )}
-      {items.length > 0 && (
+      {drafts.length > 0 && (
+        <div className="mt-3 space-y-3" role="group" aria-label="مسوّداتٌ تنتظر مراجعتك">
+          <p className="text-read font-bold text-gold-ink">
+            {drafts.length} {drafts.length === 1 ? "بندٌ ينتظر" : "بنودٍ تنتظر"} مراجعتك — لا يصل المدرّبَ منها شيءٌ حتّى تعتمده.
+          </p>
+          {canReview && drafts.length > 1 && (
+            <Button
+              tone="confirm" size="sm" icon={Check} disabled={busy}
+              onClick={() => void review("all", () => apiPost<PlanEditItem[]>(`/api/admin/cohort-plans/${planId}/edits/approve-all`, {}), "اعتُمدت كلُّها للمدرّب.")}
+            >
+              اعتمِدها كلَّها للمدرّب ({drafts.length})
+            </Button>
+          )}
+          <ol className="space-y-3">
+            {drafts.map((x) => (
+              <li key={x.id} className="rounded-lg border border-border/60 p-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-read font-black text-foreground">{x.view.titleAr}</span>
+                  <Chip tone={x.required ? "danger" : "info"}>{x.required ? "مطلوب" : "مقترح"}</Chip>
+                  <span className="text-fine text-muted-foreground">{x.view.stepAr}</span>
+                </div>
+                <p className="mt-1 text-read leading-6 text-muted-foreground">لماذا: {x.reasonAr}</p>
+                <Rows view={x.view} />
+                {x.goneAr && <p className="mt-2 text-read font-bold text-gold-ink">لا يقع الآن: {x.goneAr}</p>}
+                {canReview && (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <Button
+                      tone="confirm" size="sm" icon={Check} disabled={busy}
+                      onClick={() => void review(x.id, () => apiPost<PlanEditItem[]>(`/api/admin/plan-edits/${x.id}/approve`, {}), `اعتُمد «${x.view.titleAr}» للمدرّب.`)}
+                    >
+                      {reviewing === x.id ? "…" : "اعتمِدْه للمدرّب"}
+                    </Button>
+                    <Button
+                      tone="ghost" size="sm" icon={X} disabled={busy}
+                      onClick={() => void review(x.id, () => apiPost<PlanEditItem[]>(`/api/admin/plan-edits/${x.id}/drop`, {}), `حُذف «${x.view.titleAr}» — لن يصل المدرّب.`)}
+                    >
+                      احذفه
+                    </Button>
+                  </div>
+                )}
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
+      {items.length > drafts.length && (
         <details className="mt-2">
-          <summary className="cursor-pointer text-read font-bold text-teal-light-ink">ما رُفع ({items.length})</summary>
+          <summary className="cursor-pointer text-read font-bold text-teal-light-ink">ما رُوجع ({items.length - drafts.length})</summary>
           <ol className="mt-2 space-y-2">
-            {items.map((x) => (
+            {items.filter((x) => x.status !== "proposed").map((x) => (
               <li key={x.id} className="text-read leading-6">
                 <span className="font-bold text-foreground">{x.view.titleAr}</span>
                 {" "}· <span className="text-muted-foreground">{x.view.stepAr}</span>
@@ -169,9 +238,9 @@ export function PlanEditsUploader({ planId, cohortId, canUpload, onPending }: {
           <Button tone="secondary" size="sm" icon={FileJson} disabled={busy} onClick={() => input.current?.click()}>
             {busy ? "يُفحص…" : "ارفع ملفَّ التعديلات"}
           </Button>
-          {pending > 0 && (
+          {open > 0 && (
             <Button tone="ghost" size="sm" disabled={busy} onClick={() => void withdraw()}>
-              اسحب ما لم يُقرَّر ({pending})
+              اسحب ما لم يُقرَّر ({open})
             </Button>
           )}
         </div>

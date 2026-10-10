@@ -187,6 +187,10 @@ const PHRASES: Record<string, string> = {
   'cohort.plan.edits.withdraw': 'سحبُ تعديلاتٍ مقترحةٍ لم يُقرَّر فيها',
   'cohort.plan.edit.accept': 'قبولُ مدرّبٍ تعديلا مقترحا على خطّته',
   'cohort.plan.edit.reject': 'رفضُ مدرّبٍ تعديلا مقترحا على خطّته',
+  /* ومراجعةُ الإدارة قبل أن تصل المدرّب (١٠ أكتوبر ٢٠٢٦) */
+  'cohort.plan.edit.approve': 'اعتمادُ تعديلٍ مقترحٍ للمدرّب',
+  'cohort.plan.edit.drop': 'حذفُ تعديلٍ مقترحٍ قبل أن يصل المدرّب',
+  'cohort.plan.edits.approve_all': 'اعتمادُ التعديلات المقترحة كلِّها للمدرّب',
   /* حزمةُ المراجعة (٧ أكتوبر ٢٠٢٦): موادُّ المدرّب غيرُ المنشورة تخرج من المنصّة —
      فيُعرف من نزّلها ومتى (`plan-review-bundle.service.ts`) */
   'cohort.plan.review_bundle': 'تنزيلُ خطّة شعبةٍ للمراجعة',

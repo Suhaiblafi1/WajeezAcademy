@@ -8,7 +8,9 @@
    ٣) **القبولُ حفظٌ منه بأبوابه**: يُكتب في الخطّة والمهمّة واللقاء — ولا يُقبل وهي بانتظار القرار.
    ٤) **لا يُكتب فوق ما كتبه بيده بلا علمه** — يختار أن يُكتب فوقه، أو يرفض.
    ٥) **الرفضُ لا يمسّ شيئا**، ولا يُقرَّر في بندٍ مرّتين، ولا يقرّر فيه غيرُ مدرّب الشعبة.
-   ٦) **السحبُ والاعتماد** يُسقطان ما لم يُقرَّر فيه. */
+   ٦) **السحبُ والاعتماد** يُسقطان ما لم يُقرَّر فيه.
+   ٧) **ولا يصل المدرّبَ ما لم تعتمده الإدارة** (١٠ أكتوبر ٢٠٢٦): المرفوعُ مسوّدةٌ لا يراها
+      ولا يقرّر فيها، تعتمدها الإدارةُ بندا بندا أو تحذفها — ولا تُعدّ سببا للردّ. */
 
 import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
@@ -30,6 +32,7 @@ let trainerUserId = ''
 let profileId = ''
 let taskId = ''
 let sessionId = ''
+let adminUserId = ''
 
 const login = async (email: string) => `${SESSION_COOKIE}=${(await auth.login(email, PASS)).token}`
 const call = (method: 'GET' | 'POST' | 'DELETE', url: string, who: string, payload?: unknown) =>
@@ -83,6 +86,8 @@ const goodFile = () => ({
     { kind: 'resource_add', required: true, reasonAr: 'المحور 2 بلا مصدر', resource: { title: 'الرسالة الإعلانية', url: 'https://hbrarabic.com/x', moduleId: 'M2' } },
     { kind: 'task_change', assessmentId: taskId, reasonAr: 'الواجبُ قبل لقائه', set: { dueAt: '2026-12-12T20:59:00.000Z' } },
     { kind: 'session_move', sessionId, reasonAr: 'بعد الدوام', startsAt: '2026-12-07T16:00:00.000Z', endsAt: '2026-12-07T18:00:00.000Z' },
+    /* وبندٌ تحذفه الإدارةُ قبل أن يصل المدرّب (٧) */
+    { kind: 'resource_add', reasonAr: 'مصدرٌ ثانٍ للمحور 1', resource: { title: 'مقالٌ لا يناسب', url: 'https://example.com/x', moduleId: 'M1' } },
   ],
 })
 
@@ -100,6 +105,11 @@ beforeAll(async () => {
   const admin = await auth.register(`pe-admin-${STAMP}@test.local`, PASS, 'المعتمِد')
   await auth.setRoles(admin.userId, ['academic_manager'])
   cookies.admin = await login(`pe-admin-${STAMP}@test.local`)
+  adminUserId = admin.userId
+  /* مديرُ العمليّات يدير الشعبَ ولا يراجع التعديلات (٧) */
+  const ops = await auth.register(`pe-ops-${STAMP}@test.local`, PASS, 'مدير العمليّات')
+  await auth.setRoles(ops.userId, ['operations_manager'])
+  cookies.ops = await login(`pe-ops-${STAMP}@test.local`)
 
   ;({ userId: trainerUserId, profileId } = await register('a'))
   await register('b')
@@ -122,7 +132,7 @@ describe('١ — الرفعُ للمعتمِد، ويُقبل كلُّه أو ي
     f.items.push({ kind: 'module', moduleId: 'M9', reasonAr: 'محورٌ مجهول', set: { artifactAr: 'x' } } as never)
     const r = await call('POST', `/api/admin/cohort-plans/${planId}/edits`, 'admin', f)
     expect(r.statusCode).toBe(422)
-    expect(r.json().error.message_ar).toMatch(/البند 5: لا محورَ «M9»/)
+    expect(r.json().error.message_ar).toMatch(/البند 6: لا محورَ «M9»/)
     expect(await prisma.planEditSuggestion.count({ where: { planId } })).toBe(0)
   })
 
@@ -131,7 +141,7 @@ describe('١ — الرفعُ للمعتمِد، ويُقبل كلُّه أو ي
     f.items.push({ kind: 'module', moduleId: 'M2', reasonAr: 'مرّةً ثانية', set: { artifactAr: 'غيرُه' } } as never)
     const r = await call('POST', `/api/admin/cohort-plans/${planId}/edits`, 'admin', f)
     expect(r.statusCode).toBe(422)
-    expect(r.json().error.message_ar).toMatch(/البند 5: يقع على ما يقع عليه البند 1/)
+    expect(r.json().error.message_ar).toMatch(/البند 6: يقع على ما يقع عليه البند 1/)
   })
 
   it('⚠️ وملفٌّ كُتب لخطّةٍ أخرى يُردّ', async () => {
@@ -145,11 +155,53 @@ describe('١ — الرفعُ للمعتمِد، ويُقبل كلُّه أو ي
     const rows = await prisma.planEditSuggestion.findMany({ where: { planId }, orderBy: { seq: 'asc' } })
     expect(rows.map((x) => [x.kind, x.step, x.required])).toEqual([
       ['module', 'modules', true], ['resource_add', 'assignments', true],
-      ['task_change', 'assignments', false], ['session_move', 'sessions', false],
+      ['task_change', 'assignments', false], ['session_move', 'sessions', false], ['resource_add', 'assignments', false],
     ])
     expect(rows[0].before).toEqual({ artifactAr: null })
     expect(rows[2].before).toEqual({ dueAt: '2026-12-07T20:59:00.000Z' })
     expect(await prisma.auditEvent.count({ where: { action: 'cohort.plan.edits.propose', entityId: cohortId } })).toBe(1)
+  })
+})
+
+describe('٧ — ولا يصل المدرّبَ ما لم تعتمده الإدارة', () => {
+  it('⚠️ المرفوعُ مسوّدةٌ: لا يراها المدرّبُ ولا يقرّر فيها', async () => {
+    const rows = await prisma.planEditSuggestion.findMany({ where: { planId }, select: { id: true, status: true } })
+    expect(new Set(rows.map((x) => x.status))).toEqual(new Set(['proposed']))
+    expect(await editsOf()).toEqual([])
+    const r = await call('POST', `/api/trainer/plan-edits/${rows[0].id}/accept`, 'a', {})
+    expect(r.statusCode, 'لا وجودَ له عنده').toBe(404)
+  })
+
+  it('⚠️ والمراجعةُ لمن يملك صلاحيّتَها — لا المدرّب ولا مديرُ العمليّات', async () => {
+    const id = (await prisma.planEditSuggestion.findFirstOrThrow({ where: { planId, kind: 'module' } })).id
+    expect((await call('POST', `/api/admin/plan-edits/${id}/approve`, 'a', {})).statusCode).toBe(403)
+    expect((await call('POST', `/api/admin/plan-edits/${id}/approve`, 'ops', {})).statusCode).toBe(403)
+    expect((await call('POST', `/api/admin/cohort-plans/${planId}/edits/approve-all`, 'ops', {})).statusCode).toBe(403)
+    expect((await prisma.planEditSuggestion.findUniqueOrThrow({ where: { id } })).status).toBe('proposed')
+  })
+
+  it('⚠️ والمسوّدةُ لا تكفي سببا للردّ — ما لم يُعتمَد لا يصل', async () => {
+    const r = await call('POST', `/api/admin/cohort-plans/${planId}/decide`, 'admin', { approve: false })
+    expect(r.statusCode).toBe(400)
+    expect(r.json().error.code).toBe('reason_required')
+  })
+
+  it('تحذف الإدارةُ بندا فلا يصله أبدا — ويُكتب من حذفه', async () => {
+    const id = (await prisma.planEditSuggestion.findFirstOrThrow({ where: { planId, kind: 'resource_add', seq: 5 } })).id
+    const r = await call('POST', `/api/admin/plan-edits/${id}/drop`, 'admin', {})
+    expect(r.statusCode, r.body).toBe(200)
+    const row = await prisma.planEditSuggestion.findUniqueOrThrow({ where: { id } })
+    expect([row.status, row.reviewedBy]).toEqual(['dropped', adminUserId])
+    expect((await call('POST', `/api/admin/plan-edits/${id}/approve`, 'admin', {})).statusCode, 'رُوجع من قبل').toBe(409)
+  })
+
+  it('وتعتمد الباقيَ كلَّه — فيصله', async () => {
+    const r = await call('POST', `/api/admin/cohort-plans/${planId}/edits/approve-all`, 'admin', {})
+    expect(r.statusCode, r.body).toBe(200)
+    const rows = await prisma.planEditSuggestion.findMany({ where: { planId }, orderBy: { seq: 'asc' }, select: { status: true } })
+    expect(rows.map((x) => x.status)).toEqual(['pending', 'pending', 'pending', 'pending', 'dropped'])
+    expect(await prisma.auditEvent.count({ where: { action: 'cohort.plan.edits.approve_all', entityId: cohortId } })).toBe(1)
+    expect(await prisma.auditEvent.count({ where: { action: 'cohort.plan.edit.drop', entityId: cohortId } })).toBe(1)
   })
 })
 

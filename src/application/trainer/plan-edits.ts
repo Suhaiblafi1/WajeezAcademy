@@ -51,10 +51,20 @@ export const PLAN_EDIT_KINDS = [
 ] as const
 export type PlanEditKind = (typeof PLAN_EDIT_KINDS)[number]
 
-/** `pending` ينتظر المدرّب · `accepted` قبله فكُتب · `rejected` رفضه ·
+/** ═══ وكلُّ تعديلٍ يمرّ بالإدارة قبل المدرّب (١٠ أكتوبر ٢٠٢٦) ═══
+
+    قرارُ صاحب المنصّة: «كلُّ ما يُطلب من المدرّب قبولُه يقبله المديرُ أو المديرُ
+    الأكاديميُّ أو مديرُ المحتوى أوّلا». فالمرفوعُ يولد `proposed` — مسوّدةً لا يراها
+    المدرّب — حتّى يعتمده من يملك `cohort.plan.edits.review` بندا بندا.
+
+    `proposed` ينتظر مراجعةَ الإدارة · `dropped` حذفته الإدارةُ فلم يصل المدرّب ·
+    `pending` اعتمدته الإدارةُ فينتظر المدرّب · `accepted` قبله فكُتب · `rejected` رفضه ·
     `withdrawn` سحبه المعتمِدُ قبل قراره · `lapsed` اعتُمدت الخطّةُ وهو لم يُقرَّر */
-export const PLAN_EDIT_STATUSES = ['pending', 'accepted', 'rejected', 'withdrawn', 'lapsed'] as const
+export const PLAN_EDIT_STATUSES = ['proposed', 'dropped', 'pending', 'accepted', 'rejected', 'withdrawn', 'lapsed'] as const
 export type PlanEditStatus = (typeof PLAN_EDIT_STATUSES)[number]
+
+/** ما يراه المدرّبُ منها — ولا يرى مسوّدةً لم تعتمدها الإدارةُ ولا ما حذفته */
+export const TRAINER_VISIBLE_EDIT_STATUSES: readonly PlanEditStatus[] = ['pending', 'accepted', 'rejected']
 
 /** أكثرُ ما يُرفع في ملفٍّ واحد — تقريرٌ أطولُ من هذا يُقسَم، لا يُغرَق به المدرّب */
 export const PLAN_EDITS_MAX = 80

@@ -1289,9 +1289,7 @@ export class CohortPlanService {
     })
     const applied = await this.applyPeriod(plan.cohort.id, plan.content as unknown as TrainerPlanContent | null)
     /* وما اقتُرح عليها ولم يُقرَّر فيه يسقط — اعتُمدت بما فيها */
-    if (edits.count) {
-      await this.prisma.planEditSuggestion.updateMany({ where: { planId, status: 'pending' }, data: { status: 'lapsed' } })
-    }
+    await this.prisma.planEditSuggestion.updateMany({ where: { planId, status: { in: ['proposed', 'pending'] } }, data: { status: 'lapsed' } })
 
     /* ═══ والاعتمادُ واحدٌ: الخطّةُ ولقاءاتُها معا (٣ب) ═══
 

@@ -2731,7 +2731,11 @@ model PlanEditSuggestion {
   reasonAr  String
   edit      Json
   before    Json?
-  status    String    @default("pending") // pending | accepted | rejected | withdrawn | lapsed
+  /// ويولد مسوّدةً (`proposed`) لا يراها المدرّبُ حتّى تعتمدها الإدارة (١٠ أكتوبر ٢٠٢٦)
+  status    String    @default("proposed") // proposed | dropped | pending | accepted | rejected | withdrawn | lapsed
+  /// من اعتمده للمدرّب أو حذفه — ومتى
+  reviewedBy String?  @db.Uuid
+  reviewedAt DateTime?
   decidedAt DateTime?
   decidedBy String?   @db.Uuid
   /// كلمةُ المدرّب حين يرفض — اختياريّة
