@@ -46,6 +46,33 @@ describe('مراجعةُ الإدارة قبل المدرّب (١٠ أكتوبر
   })
 })
 
+describe('الرفعُ دفعةً واحدة — «خططٌ تنتظر اعتمادك» (١٠ أكتوبر ٢٠٢٦)', () => {
+  const page = code('src/pages/admin/PendingPlans.tsx')
+  const panel = code('src/components/PlanEdits.tsx')
+  const bulk = panel.slice(panel.indexOf('export function PlanEditsBulkUpload'), panel.indexOf('export function PlanEditsPanel'))
+
+  it('⚠️ لمن يعتمد وحدَه — كالرفع في البطاقة', () => {
+    expect(page).toMatch(/const canUploadEdits = viewer\?\.permissions\.includes\("cohort\.plan\.approve"\)/)
+    expect(page).toMatch(/\{rows !== null && canUploadEdits && \(\s*<PlanEditsBulkUpload/)
+  })
+
+  it('⚠️ كلُّ ملفٍّ إلى خطّته بمسلك البطاقة نفسِه — فيُفحص كما يُفحص هناك', () => {
+    expect(bulk).toMatch(/apiPost<PlanEditItem\[\]>\(`\/api\/admin\/cohort-plans\/\$\{read\.planId\}\/edits`, read\.body\)/)
+    expect(bulk).toMatch(/<input[\s\S]{0,80}type="file"\s*multiple/)
+  })
+
+  it('⚠️ وما رُدّ منها لا يوقف ما بعده', () => {
+    const loop = bulk.slice(bulk.indexOf('for (const [i, file] of files.entries())'))
+    expect(loop.indexOf('try {')).toBeGreaterThan(0)
+    expect(loop.indexOf('try {'), 'الاعتراضُ داخل الحلقة لا حولها').toBeLessThan(loop.indexOf('setProgress(null)'))
+  })
+
+  it('وبطاقةُ الخطّة المفتوحة تُعاد بعد الرفع إليها — فتُرى بنودُها', () => {
+    expect(page).toMatch(/onUploaded=\{\(id\) => setUploaded/)
+    expect(page).toMatch(/<TrainerPlanReview\s+cohortId=\{r\.cohort\.id\}\s+key=\{`\$\{r\.id\}:\$\{uploaded\[r\.id\] \?\? 0\}`\}/)
+  })
+})
+
 describe('صفحةُ المدرّب', () => {
   const src = code('src/pages/trainer/CohortWorkspace.tsx')
   const panel = code('src/components/PlanEdits.tsx')

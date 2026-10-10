@@ -161,6 +161,27 @@ describe('١ — الرفعُ للمعتمِد، ويُقبل كلُّه أو ي
     expect(rows[2].before).toEqual({ dueAt: '2026-12-07T20:59:00.000Z' })
     expect(await prisma.auditEvent.count({ where: { action: 'cohort.plan.edits.propose', entityId: cohortId } })).toBe(1)
   })
+
+  /* الرفعُ دفعةً واحدةً (١٠ أكتوبر ٢٠٢٦) يجعل إعادةَ الملفّ نفسِه أيسر */
+  it('⚠️ وإعادةُ رفعه وبنودُه لم يُقرَّر فيها تُردّ بسطرٍ واحد — فلا تتكرّر على المعتمِد ولا على المدرّب', async () => {
+    const r = await call('POST', `/api/admin/cohort-plans/${planId}/edits`, 'admin', goodFile())
+    expect(r.statusCode).toBe(409)
+    expect(r.json().error.message_ar).toMatch(/^رُفع هذا الملفُّ قبلُ ولم يُقرَّر في بنوده/)
+    expect(await prisma.planEditSuggestion.count({ where: { planId } })).toBe(5)
+  })
+
+  it('⚠️ وما وقع منه على ما رُفع يُسمّى ببنده — والمهمّةُ الجديدةُ (ولا موضعَ لها قبل أن تُقبل) باسمها', async () => {
+    const task = { kind: 'task_add', reasonAr: 'مهمّةٌ للمحور 2', task: { title: 'رسالةٌ في صفحة', type: 'assignment', moduleId: 'M2' } }
+    expect((await call('POST', `/api/admin/cohort-plans/${planId}/edits`, 'admin', { items: [task] })).statusCode).toBe(201)
+    const mixed = { items: [task, { kind: 'plan', reasonAr: 'نبذةٌ أوضح', set: { summaryAr: 'نبذةٌ جديدة' } }] }
+    const again = await call('POST', `/api/admin/cohort-plans/${planId}/edits`, 'admin', mixed)
+    expect(again.statusCode).toBe(422)
+    expect(again.json().error.message_ar).toMatch(/البند 1: على موضعه تعديلٌ رُفع قبلُ/)
+    expect(again.json().error.message_ar).not.toMatch(/البند 2/)
+    expect(await prisma.planEditSuggestion.count({ where: { planId, kind: 'plan' } }), 'ولا يُحفظ منه شيء').toBe(0)
+    /* ولا تبقى لما بعدها — الأقسامُ التالية تعدّ بنودَ الملفّ السليم */
+    await prisma.planEditSuggestion.deleteMany({ where: { planId, kind: 'task_add' } })
+  })
 })
 
 describe('٧ — ولا يصل المدرّبَ ما لم تعتمده الإدارة', () => {

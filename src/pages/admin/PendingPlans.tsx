@@ -40,6 +40,8 @@ import ListToolbar from "@/components/admin/ListToolbar";
 import WorkHeader from "@/components/admin/WorkHeader";
 import { revealRow } from "@/components/admin/reveal";
 import TrainerPlanReview, { type PlanOutcome } from "@/components/admin/TrainerPlanReview";
+import { PlanEditsBulkUpload } from "@/components/PlanEdits";
+import { useRealSession } from "@/services/session";
 import { courseLineNeeded, prepNoteAr, sharedPrepNote, type PrepFlags } from "@/application/trainer/plan-decision";
 
 /** خطّةٌ تنتظر — كما يردّها `CohortPlanService.pending` */
@@ -100,6 +102,12 @@ export default function PendingPlans() {
   const [page, setPage] = useState(1);
   const [open, setOpen] = useState<Set<string>>(() => new Set());
   const [decided, setDecided] = useState<Record<string, PlanOutcome>>({});
+  /* ═══ وملفّاتُ التعديلات كلُّها دفعةً واحدة (١٠ أكتوبر ٢٠٢٦) ═══
+     «I need one place to upload all of them same time!» (صاحب المنصّة). والرفعُ لمن يعتمد
+     وحدَه كما في البطاقة، وكلُّ خطّةٍ رُفع إليها تُعاد بطاقتُها إن كانت مفتوحة — فتُرى بنودُها. */
+  const { user: viewer } = useRealSession();
+  const canUploadEdits = viewer?.permissions.includes("cohort.plan.approve") ?? false;
+  const [uploaded, setUploaded] = useState<Record<string, number>>({});
   /* ═══ والطابورُ كلُّه حزمةً واحدة (٧ أكتوبر ٢٠٢٦) ═══
      قرارُ صاحب المنصّة: زرُّ تنزيلٍ تُراجَع به الخططُ خارجَ المنصّة. لكلّ خطّةٍ
      مجلّدُها في ZIP واحد بترتيب الطابور، وفي رأسه فهرس (`plan-review-bundle.service.ts`).
@@ -203,6 +211,14 @@ export default function PendingPlans() {
           </Button>
           {bundle.msg && <p className="w-full text-read font-bold text-teal-light-ink" role="status">{bundle.msg}</p>}
         </Inset>
+      )}
+
+      {rows !== null && canUploadEdits && (
+        <PlanEditsBulkUpload
+          plans={scoped.map((r) => ({ id: r.id, labelAr: `${r.cohort.title} — ${r.trainerName}` }))}
+          onUploaded={(id) => setUploaded((u) => ({ ...u, [id]: (u[id] ?? 0) + 1 }))}
+          onOpen={(id) => { setQ(""); goTo(byTrainer(scoped), id); }}
+        />
       )}
 
       {trainerFilter && (
@@ -312,6 +328,7 @@ export default function PendingPlans() {
                               <div className="mt-4 border-t border-white/10 pt-4">
                                 <TrainerPlanReview
                                   cohortId={r.cohort.id}
+                                  key={`${r.id}:${uploaded[r.id] ?? 0}`}
                                   cohortTitle={r.cohort.title}
                                   onPlanDecided={(outcome) => setDecided((d) => ({ ...d, [r.id]: outcome }))}
                                 />

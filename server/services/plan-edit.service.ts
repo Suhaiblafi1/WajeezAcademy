@@ -148,6 +148,18 @@ export class PlanEditService {
     if (items.length > PLAN_EDITS_MAX) throw new AuthError('bad_edits', `في الملفّ ${items.length} تعديلا — الحدُّ ${PLAN_EDITS_MAX}. قسّمه ملفّين`, 422)
 
     const r = await this.rows(plan.cohortId, plan.content)
+    /* ═══ ولا يُرفع ما رُفع ولم يُقرَّر فيه (١٠ أكتوبر ٢٠٢٦) ═══
+       الرفعُ دفعةً واحدةً من «خططٌ تنتظر اعتمادك» يجعل إعادةَ الملفّ نفسِه أيسرَ — فتتكرّر
+       بنودُه على المعتمِد ثمّ على المدرّب. فما وقع على موضعِ بندٍ لم يُقرَّر فيه يُردّ،
+       كما يُردّ بندان على موضعٍ واحدٍ في ملفٍّ واحد. */
+    const open = await this.prisma.planEditSuggestion.findMany({
+      where: { planId, status: { in: ['proposed', 'pending'] } }, select: { edit: true },
+    })
+    const taken = new Set(open.flatMap((o) => openKeysOf(o.edit as unknown as PlanEdit)))
+    /* والملفُّ كلُّه مرفوعٌ من قبل — سطرٌ واحدٌ يقول ذلك، لا سطرٌ لكلّ بند */
+    if (taken.size > 0 && items.every((item) => openKeysOf(editOf(item)).some((k) => taken.has(k)))) {
+      throw new AuthError('edits_already_uploaded', 'رُفع هذا الملفُّ قبلُ ولم يُقرَّر في بنوده — فلا يُرفع مرّتين. وإن أردتَ رفعه من جديد فاسحب ما لم يُقرَّر في بطاقة خطّته أوّلا', 409)
+    }
     const problems: string[] = []
     const seen = new Map<string, number>()
     const snaps = items.map((item, i) => {
@@ -159,6 +171,9 @@ export class PlanEditService {
         const prior = seen.get(key)
         if (prior !== undefined) problems.push(`البند ${i + 1}: يقع على ما يقع عليه البند ${prior + 1} — اجمعهما بندا واحدا`)
         else seen.set(key, i)
+      }
+      if (openKeysOf(edit).some((k) => taken.has(k))) {
+        problems.push(`البند ${i + 1}: على موضعه تعديلٌ رُفع قبلُ ولم يُقرَّر فيه — إن أردتَ رفعَه من جديد فاسحب ما لم يُقرَّر أوّلا`)
       }
       return snap.value
     })
@@ -400,6 +415,11 @@ function editOf(item: PlanEditInput): PlanEdit {
   delete edit.required
   delete edit.reasonAr
   return edit as unknown as PlanEdit
+}
+
+/** ما يقع عليه البندُ ممّا رُفع قبلُ — مواضعُه، والمهمّةُ الجديدةُ باسمها (فلا موضعَ لها قبل أن تُقبل) */
+function openKeysOf(edit: PlanEdit): string[] {
+  return edit.kind === 'task_add' ? [`task_new:${edit.task.title.trim()}`] : targetsOf(edit)
 }
 
 /** المواضعُ التي يقع عليها تعديل — بندان على موضعٍ واحدٍ لا يُرفعان معا */
