@@ -54,6 +54,11 @@ describe('صفحةُ المدرّب', () => {
     expect(src).toMatch(/<PlanEditsPanel[\s\S]{0,300}onApplied=\{\(\) => load\(\)\}/)
   })
 
+  it('والرابطُ في «قبل» و«بعد» يُفتح في لسانٍ جديد ليتحقّق منه', () => {
+    expect(panel).toMatch(/<Cell label="بعد" text=\{r\.afterAr\} href=\{r\.afterHref\}/)
+    expect(panel).toMatch(/: href\s*\?\s*<a href=\{href\} target="_blank" rel="noreferrer"/)
+  })
+
   it('والزرُّ يدلّ ولا يأمر — ويقول إنّ الرفضَ لا يمسّ شيئا', () => {
     expect(panel).toContain('وما ترفضه لا يمسّ شيئا')
     expect(panel).not.toMatch(/وقّع|عرضك/)

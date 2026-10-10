@@ -167,6 +167,15 @@ describe('ما يراه المدرّب', () => {
     expect(v.rows[0].beforeAr).toBe('الثلاثاء، 1 ديسمبر في 4:00 م حتّى 6:00 م')
   })
 
+  it('⚠️ والرابطُ العربيُّ يُقرأ بحروفه لا مرمَّزا — ويُفتح بأصله', () => {
+    const url = 'https://hbrarabic.com/%D8%A7%D9%84%D8%AA%D9%88%D8%A7%D8%B5%D9%84/'
+    const v = planEditView({ kind: 'resource_add', resource: { title: 'مقال', url, moduleId: 'M1' } }, null, ctx)
+    const row = v.rows.find((r) => r.labelAr === 'الرابط')!
+    expect(row.afterAr).toBe('https://hbrarabic.com/التواصل/')
+    expect(row.afterHref).toBe(url)
+    expect(row.beforeHref).toBeUndefined()
+  })
+
   it('ومحورُ المصدر يُقرأ برقمه في «قبل» و«بعد»', () => {
     const v = planEditView({ kind: 'resource_change', match: { title: 'CIPR', url: 'https://cipr.co.uk/a' }, set: { moduleId: 'M2' } }, { moduleId: 'M1' }, ctx)
     expect(v.rows).toEqual([{ labelAr: 'المحور', beforeAr: 'المحور 1', afterAr: 'المحور 2' }])
