@@ -32,6 +32,8 @@ import { paginate } from "@/application/admin/paginate";
 import { matchesQuery } from "@/application/text/search-ar";
 import Button from "@/components/ui/Button";
 import { areaCls, controlCls } from "@/components/FormKit";
+import LinkedText from "@/components/LinkedText";
+import { fileSizeAr } from "@/application/learning/submission-file";
 
 /* أزرارُ الإجراء الخمسة تشترك في هيئةٍ واحدة، ويفترق لونُها وحدَه */
 
@@ -50,6 +52,10 @@ interface QueueItem {
   late?: boolean;
   /** بابُ ملفِّ التسليم — محروسٌ بالجلسة، ولا يخرج مفتاحُ التخزين */
   fileUrl: string | null;
+  /** اسمُ الملفّ كما رفعه المتعلّم وحجمُه — وهل انقطع رفعُه فلم يصل (١٠ أكتوبر ٢٠٢٦) */
+  fileName?: string | null;
+  fileSize?: number | null;
+  fileWaiting?: boolean;
   assessment: {
     title: string; maxScore: number; cohort: { title: string };
     /* المسطرةُ إن كانت — وأكثرُ التكاليف بلا مسطرة، فالحقلُ فارغٌ لا ناقص */
@@ -168,7 +174,7 @@ export default function GradingQueue() {
      التسليمات في الأسبوع، ولم يكن فيه ما يُبلَغ به تسليمٌ بعينه — من أراد
      تسليمَ متعلّمٍ سأل عنه مرّره بعينه. */
   const matched = (queue ?? []).filter((s2) => matchesQuery(query, [
-    s2.assessment.title, s2.assessment.cohort.title, s2.textAnswer,
+    s2.assessment.title, s2.assessment.cohort.title, s2.textAnswer, s2.fileName,
   ]));
   const view = paginate(matched, page, 20);
 
@@ -244,17 +250,30 @@ export default function GradingQueue() {
                   </span>
                 )}
               </div>
+              {/* ═══ ونصُّه يُقرأ بروابطه ═══
+                  رابطٌ يُلصقه المتعلّمُ لعمله كان يصل حرفا يُنسخ باليد، وبـ«%D8%A7…» بدل
+                  حروفه — فصار يُضغط ويُقرأ (`LinkedText`). والصندوقُ يطول بطول النصّ إلى
+                  حدٍّ ثمّ يُمرَّر: إجابةٌ طويلةٌ لا تدفع أزرارَ الحكم خارج الشاشة. */}
               {q.textAnswer && (
-                <p className="mt-3 max-h-32 overflow-y-auto rounded-2xl bg-paper/30 p-4 text-sm leading-7 text-foreground">{q.textAnswer}</p>
+                <LinkedText text={q.textAnswer}
+                  className="mt-3 max-h-80 overflow-y-auto rounded-2xl bg-paper/30 p-4 text-sm leading-7 text-foreground" />
               )}
               {/* ═══ ومُخرَجُه يُفتَح ═══
                   كان مفتاحُ التخزين يصل الشاشةَ خاما ولا مسارَ يفتحه: مفتاحُ
                   ملفِّ متعلّمٍ في متنٍ يُقرأ من أدوات المتصفّح، ومُخرَجٌ لا
                   سبيلَ إلى رؤيته. فصار له بابٌ محروسٌ بالجلسة. */}
-              {q.fileUrl && (
+              {q.fileUrl && q.fileWaiting && (
+                <p className="mt-3 flex items-center gap-2 text-read text-gold-ink">
+                  <Paperclip className="h-4 w-4 shrink-0" aria-hidden="true" />
+                  أرفق المتعلّمُ ملفّا ولم يكتمل رفعُه بعد{q.fileName ? ` («${q.fileName}»)` : ""} — يستطيع رفعَه من جديد.
+                </p>
+              )}
+              {q.fileUrl && !q.fileWaiting && (
                 <a href={q.fileUrl} target="_blank" rel="noreferrer"
                   className="mt-3 inline-flex min-h-11 items-center gap-2 text-read font-bold text-teal-light-ink hover:text-foreground">
-                  <Paperclip className="h-4 w-4 shrink-0" aria-hidden="true" /> افتح ملفَّ التسليم
+                  <Paperclip className="h-4 w-4 shrink-0" aria-hidden="true" />
+                  <span className="[overflow-wrap:anywhere]">افتح الملف: {q.fileName ?? "ملف التسليم"}</span>
+                  {q.fileSize ? <span className="font-normal text-muted-foreground">({fileSizeAr(q.fileSize)})</span> : null}
                 </a>
               )}
               {!q.fileUrl && !q.textAnswer && (

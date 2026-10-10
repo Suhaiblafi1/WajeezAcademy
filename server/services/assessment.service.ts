@@ -14,11 +14,31 @@ import { periodBounds, realDate } from '../../src/application/trainer/cohort-per
 import { assessmentOpensAt, submitVerdict } from '../../src/application/learning/cohort-gate'
 import { loadLearnerGate } from './learner-gate'
 import {
+  cleanFileName, SUBMISSION_FILE_MAX_BYTES, submissionFileProblemAr, submissionFileType, withSubmissionFileView,
+} from '../../src/application/learning/submission-file'
+import {
   awaitsDecision, nextEditChange, planApprovalApplies, proposedTask, readTaskChange, taskReview, taskValues, toTaskPatch,
   type TaskChange, type TaskPatch, type TaskReview, type TaskValues,
 } from '../../src/application/trainer/task-approval'
 
-const MAX_SUBMISSION_BYTES = 100 * 1024 * 1024 // 100MB
+/** ما يطلبه المتعلّمُ قبل رفع ملفّ تسليمه — والنوعُ الذي يقوله متصفّحُه لا يُؤخذ به */
+export interface SubmissionFileInput { originalName: string; mime?: string; sizeBytes: number }
+
+/* ملفُّ التسليم يُفحص قبل أن يُصدَر رابطُه: النوعُ من الامتداد (`submission-file.ts`)، والسقفُ
+   سقفُ التسليم، والسببُ يُقال بكلامٍ يفهمه المتعلّم. والرفعُ إلى مسار البثّ: الملفُّ الكبيرُ لا
+   يُقرأ في الذاكرة. */
+function checkSubmissionFile(input: SubmissionFileInput): { name: string; mime: string; sizeBytes: number } {
+  assertFileUploadsEnabled('اكتب إجابتك نصّا.')
+  const name = cleanFileName(input.originalName)
+  const problem = submissionFileProblemAr(name, input.sizeBytes)
+  if (problem) throw new AuthError(input.sizeBytes > SUBMISSION_FILE_MAX_BYTES ? 'too_large' : 'bad_file', problem, input.sizeBytes > SUBMISSION_FILE_MAX_BYTES ? 413 : 422)
+  return { name, mime: submissionFileType(name)!.mime, sizeBytes: input.sizeBytes }
+}
+
+function submissionUploadUrl(storageKey: string): string {
+  const exp = Date.now() + SIGNED_URL_TTL_MS
+  return `/api/v1/uploads/${storageKey}/stream?exp=${exp}&sig=${signKey(storageKey, exp, 'write')}`
+}
 
 export class AssessmentService {
   private prisma: PrismaClient
@@ -463,12 +483,13 @@ export class AssessmentService {
 
   /** تسليم واجب — نص أو ملف خاص؛ المتعلم المسجل فقط */
   async submitAssignment(userId: string, assessmentId: string, input: {
-    textAnswer?: string; file?: { originalName: string; mime: string; sizeBytes: number }
+    textAnswer?: string; file?: SubmissionFileInput
   }) {
     const assessment = await this.prisma.cohortAssessment.findUnique({ where: { id: assessmentId } })
     if (!assessment || assessment.status !== 'published') throw new AuthError('not_open', 'هذا التكليف غير متاح للتسليم', 404)
     const enrollment = await this.enrollments.assertEnrolled(userId, assessment.cohortId)
-    if (!input.textAnswer && !input.file) throw new AuthError('empty_submission', 'التسليم فارغ — نص أو ملف مطلوب')
+    const textAnswer = input.textAnswer?.trim() || undefined
+    if (!textAnswer && !input.file) throw new AuthError('empty_submission', 'التسليم فارغ — اكتب إجابتك أو أرفق ملفّا')
     /* إعادةٌ طلبها المدرّبُ تُقبل بعد انتهاء الشعبة ولا تُعلَّم متأخّرة — تُعرف
        بآخر تسليمٍ له على المهمّة، أيّا كان البابُ الذي جاء منه */
     const last = await this.prisma.assignmentSubmission.findFirst({
@@ -476,25 +497,46 @@ export class AssessmentService {
     })
     const { late } = await this.submitGate(assessment, last?.status === 'resubmit_requested')
 
-    let storageKey: string | undefined
-    let uploadUrl: string | undefined
-    if (input.file) {
-      assertFileUploadsEnabled('سلّم نصّا، أو ضع رابطَ ملفّك داخل النصّ.')
-      if (input.file.sizeBytes <= 0 || input.file.sizeBytes > MAX_SUBMISSION_BYTES) throw new AuthError('too_large', 'ملف التسليم يتجاوز الحد', 413)
-      storageKey = newStorageKey()
-      const exp = Date.now() + SIGNED_URL_TTL_MS
-      uploadUrl = `/api/v1/uploads/${storageKey}?exp=${exp}&sig=${signKey(storageKey, exp, 'write')}`
-    }
+    const file = input.file ? checkSubmissionFile(input.file) : null
+    const storageKey = file ? newStorageKey() : undefined
+    const uploadUrl = storageKey ? submissionUploadUrl(storageKey) : undefined
     /* الطابورُ قبل الإضافة — الخبرُ عند انتقاله من فارغٍ إلى غيرِ فارغ */
     const pendingBefore = await this.prisma.assignmentSubmission.count({
       where: { assessmentId, status: { in: ['submitted', 'under_review'] } },
     })
     const submission = await this.prisma.assignmentSubmission.create({
-      data: { assessmentId, enrollmentId: enrollment.id, textAnswer: input.textAnswer, storageKey, late },
+      data: {
+        assessmentId, enrollmentId: enrollment.id, textAnswer, storageKey, late,
+        ...(file && { fileName: file.name, fileMime: file.mime, fileSize: file.sizeBytes }),
+      },
     })
     await recordAudit(this.prisma, { actorId: userId, action: 'submission.create', entityType: 'assignment_submission', entityId: submission.id, meta: { assessmentId, late } })
     if (pendingBefore === 0) await this.notifyTrainersOfQueue(assessment)
-    return { submission, uploadUrl }
+    /* والمفتاحُ لا يخرج في الردّ — الرفعُ برابطه الموقَّع، والقراءةُ من بابه المحروس */
+    const shown: Partial<typeof submission> = { ...submission }
+    delete shown.storageKey
+    return { submission: shown as Omit<typeof submission, 'storageKey'>, uploadUrl }
+  }
+
+  /* ═══ رفعٌ انقطع — يُعاد على التسليم نفسِه (١٠ أكتوبر ٢٠٢٦) ═══
+
+     التسليمُ يُحفظ ثمّ يُرفع ملفُّه. فإن انقطع الرفعُ (شبكةٌ ضعيفة، أو صفحةٌ أُغلقت) بقي تسليمٌ
+     بلا ملفّ، ولا تسليمَ ثانيا بلا طلبٍ من المدرّب. فلصاحبه أن يرفع ملفَّه من جديد ما دام لم
+     يصل ولم يبدأ مدرّبُه مراجعتَه — بالمفتاح نفسِه، وبفحص الملفّ نفسِه. */
+  async renewSubmissionUpload(userId: string, submissionId: string, input: SubmissionFileInput) {
+    const row = await this.prisma.assignmentSubmission.findUnique({
+      where: { id: submissionId },
+      select: { storageKey: true, fileUploadedAt: true, status: true, enrollment: { select: { userId: true } } },
+    })
+    if (!row || row.enrollment.userId !== userId) throw new AuthError('not_found', 'التسليم غير موجود', 404)
+    if (!row.storageKey) throw new AuthError('no_file', 'لم يُرفق بهذا التسليم ملفّ', 409)
+    if (row.fileUploadedAt) throw new AuthError('file_arrived', 'وصل الملفُّ كاملا — لا حاجة لرفعه ثانية', 409)
+    if (row.status !== 'submitted') throw new AuthError('under_review', 'بدأ مدرّبك مراجعةَ التسليم', 409)
+    const file = checkSubmissionFile(input)
+    await this.prisma.assignmentSubmission.update({
+      where: { id: submissionId }, data: { fileName: file.name, fileMime: file.mime, fileSize: file.sizeBytes },
+    })
+    return { uploadUrl: submissionUploadUrl(row.storageKey) }
   }
 
   /* ═══ التسليمُ يصل، والمدرّبُ لا يعلم ═══
@@ -530,7 +572,7 @@ export class AssessmentService {
   }
 
   /** إعادة التسليم بعد طلب المراجعة — محاولة جديدة والقديمة تبقى في الأثر */
-  async resubmit(userId: string, assessmentId: string, input: { textAnswer?: string; file?: { originalName: string; mime: string; sizeBytes: number } }) {
+  async resubmit(userId: string, assessmentId: string, input: { textAnswer?: string; file?: SubmissionFileInput }) {
     const assessment = await this.prisma.cohortAssessment.findUnique({ where: { id: assessmentId } })
     if (!assessment) throw new AuthError('not_found', 'التكليف غير موجود', 404)
     const enrollment = await this.enrollments.assertEnrolled(userId, assessment.cohortId)
@@ -775,10 +817,7 @@ export class AssessmentService {
       },
       orderBy: { submittedAt: 'asc' },
     })
-    return rows.map(({ storageKey, ...s }) => ({
-      ...s,
-      fileUrl: storageKey ? `/api/v1/submission-files/${encodeURIComponent(storageKey)}` : null,
-    }))
+    return rows.map(withSubmissionFileView)
   }
 
   /* ═══ من يقرأ ملفَّ تسليم ═══

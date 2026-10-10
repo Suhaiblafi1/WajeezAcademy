@@ -31,6 +31,7 @@ import { RESOURCE_KINDS, RESOURCE_CATEGORIES } from '../../../src/application/tr
 import { SHORT_SESSION_AR, sessionTooShort } from '../../../src/application/trainer/session-length'
 import { AuthError } from '../../services/auth.service'
 import { assertSafeKey, getObject, getObjectMeta } from '../../services/object-store'
+import { submissionFileInline } from '../../../src/application/learning/submission-file'
 import { requireAuth, requirePermission } from '../auth-plugin'
 import { SESSION_AXES_MAX, WORKBOOK_WHERE_MAX } from '../../../src/application/trainer/axis-timeline'
 import { COHORT_LEVELS } from '../../../src/application/trainer/cohort-level'
@@ -44,6 +45,10 @@ import { WORKBOOK_MODES } from '../../../src/application/trainer/cohort-workbook
 const axesArray = z.array(z.string().trim().min(1).max(64))
   .max(SESSION_AXES_MAX, `اللقاءُ يُربط بـ${SESSION_AXES_MAX} محورا على الأكثر`)
 const uniqueAxes = (ids: string[]) => new Set(ids).size === ids.length
+/* ملفُّ التسليم كما يصفه المتعلّم قبل رفعه — والنوعُ يُقرَّر في الخادم من الامتداد */
+const SUBMISSION_FILE_BODY = z.object({
+  originalName: z.string().trim().min(1).max(400), mime: z.string().max(200).optional(), sizeBytes: z.number().int().positive(),
+})
 const sessionAxesSchema = axesArray.refine(uniqueAxes, 'محورٌ مكرّرٌ في اللقاء نفسِه')
 /* والربطُ بعد الإنشاء لا يترك اللقاءَ بلا محور: الإنشاءُ القديمُ يأتي بلا
    محاور (جدولةُ ما قبل المواعيد)، أمّا من ربط فقد اختار — ومحوُ الربط كلِّه
@@ -231,7 +236,7 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const body = z.object({
       textAnswer: z.string().max(20000).optional(),
-      file: z.object({ originalName: z.string(), mime: z.string(), sizeBytes: z.number().int().positive() }).optional(),
+      file: SUBMISSION_FILE_BODY.optional(),
     }).parse(req.body)
     return reply.status(201).send(await assessments.submitAssignment(req.auth!.userId, id, body))
   })
@@ -243,9 +248,18 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const body = z.object({
       textAnswer: z.string().max(20000).optional(),
-      file: z.object({ originalName: z.string(), mime: z.string(), sizeBytes: z.number().int().positive() }).optional(),
+      file: SUBMISSION_FILE_BODY.optional(),
     }).parse(req.body)
     return reply.status(201).send(await assessments.resubmit(req.auth!.userId, id, body))
+  })
+
+  /* رفعٌ انقطع — يُطلب له رابطٌ جديدٌ على التسليم نفسِه، لصاحبه وحدَه */
+  app.post('/api/learner/submissions/:id/file', {
+    preHandler: requirePermission('learner.submit'),
+    schema: { tags: ['learner-portal'], summary: 'رابطُ رفعٍ جديدٌ لملفّ تسليمٍ لم يصل كاملا' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return assessments.renewSubmissionUpload(req.auth!.userId, id, SUBMISSION_FILE_BODY.parse(req.body))
   })
 
   app.post('/api/learner/assessments/:id/attempts', {
@@ -1174,9 +1188,14 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
     if (!content) {
       return reply.status(404).send({ error: { code: 'not_uploaded', message_ar: 'الملف لم يرفع بعد' } })
     }
+    /* ما يُفتح في المتصفّح (PDF وصورةٌ وصوتٌ وفيديو ونصّ) يُفتح، وما سواه يُنزَّل باسمه: ملفٌّ
+       رفعه متعلّمٌ لا يُعرض صفحةً من نطاق المنصّة. والنوعُ ممّا خُزّن لا من الطلب، ولا يُخمَّن
+       (`nosniff` على كلّ ردٍّ من `app.ts`). */
     const meta = await getObjectMeta(storageKey)
-    reply.header('content-type', meta?.mime || 'application/octet-stream')
-    reply.header('content-disposition', `inline; filename*=UTF-8''${encodeURIComponent(meta?.originalName || storageKey)}`)
+    const mime = meta?.mime || 'application/octet-stream'
+    const disposition = submissionFileInline(mime) ? 'inline' : 'attachment'
+    reply.header('content-type', mime)
+    reply.header('content-disposition', `${disposition}; filename*=UTF-8''${encodeURIComponent(meta?.originalName || storageKey)}`)
     return reply.send(content)
   })
 

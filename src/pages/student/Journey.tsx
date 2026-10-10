@@ -25,7 +25,9 @@ import StageOffer from "@/components/journey/StageOffer";
 import CapstonePanel from "@/components/journey/CapstonePanel";
 import HeldSeatNotice, { type HeldSeat } from "@/components/HeldSeatNotice";
 import AdvisorContact from "@/components/AdvisorContact";
-import { apiGet, apiPost, ApiError } from "@/services/api";
+import { apiGet, apiPost, apiUpload, ApiError } from "@/services/api";
+import { readyToSubmit, submissionFileProblemAr } from "@/application/learning/submission-file";
+import { usePlatformConfig } from "@/hooks/usePlatformConfig";
 import { useCourseCohorts } from "@/services/cohort-prices";
 import { usePublishedContent } from "@/services/public-content";
 import { fetchEnrollmentDetail, type EnrollmentDetail } from "@/services/enrollment-detail";
@@ -69,6 +71,10 @@ export default function Journey() {
   const [detail, setDetail] = useState<EnrollmentDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  /* ملفُّ التسليم لكلّ واجب، ونسبةُ رفعه — والملفُّ يبقى إن انقطع رفعُه فيُعاد بنقرة */
+  const { fileUploads } = usePlatformConfig();
+  const [files, setFiles] = useState<Record<string, File | null>>({});
+  const [progress, setProgress] = useState<Record<string, number>>({});
   const [busy, setBusy] = useState<string | null>(null);
   const [pickedCohort, setPickedCohort] = useState<Record<string, string>>({});
 
@@ -199,13 +205,42 @@ export default function Journey() {
     }
   }, [load, stage?.enrollmentId]);
 
+  /* ═══ الرفعُ بعد التسليم — والنسبةُ تُرى ═══
+     التسليمُ يُحفظ أوّلا (نصُّه واسمُ ملفّه)، ثمّ يُرفع الملفُّ إلى رابطه. فإن انقطع الرفعُ بقي
+     التسليمُ وقيل للمتعلّم إنّ ملفَّه لم يصل، وبقي الملفُّ في يد الصفحة ليُعاد بنقرة. */
+  const uploadTo = async (assessmentId: string, uploadUrl: string, file: File) => {
+    setProgress((prev) => ({ ...prev, [assessmentId]: 0 }));
+    try {
+      await apiUpload(uploadUrl, file, (pct) => setProgress((prev) => ({ ...prev, [assessmentId]: pct })));
+    } finally {
+      setProgress((prev) => { const next = { ...prev }; delete next[assessmentId]; return next; });
+    }
+  };
+
   const submit = async (assessmentId: string, isResubmit: boolean) => {
     const text = (answers[assessmentId] ?? "").trim();
-    if (busy || !text) return;
+    const file = fileUploads ? files[assessmentId] ?? null : null;
+    if (busy || !readyToSubmit(text, file)) return;
     setBusy(assessmentId);
     try {
-      await apiPost(`/api/learner/assessments/${assessmentId}/${isResubmit ? "resubmit" : "submissions"}`, { textAnswer: text });
+      const res = await apiPost<{ uploadUrl?: string }>(
+        `/api/learner/assessments/${assessmentId}/${isResubmit ? "resubmit" : "submissions"}`,
+        {
+          ...(text && { textAnswer: text }),
+          ...(file && { file: { originalName: file.name, mime: file.type || undefined, sizeBytes: file.size } }),
+        },
+      );
       setAnswers((prev) => ({ ...prev, [assessmentId]: "" }));
+      if (file && res.uploadUrl) {
+        try {
+          await uploadTo(assessmentId, res.uploadUrl, file);
+        } catch (err) {
+          toastError(`سُلّم الواجب، ولم يكتمل رفع الملف${err instanceof ApiError ? `: ${err.message}` : ""}. ارفعه مرة أخرى من بطاقة الواجب.`);
+          await reloadDetail();
+          return;
+        }
+      }
+      setFiles((prev) => ({ ...prev, [assessmentId]: null }));
       toast(isResubmit ? "أُعيد التسليم — سيراجعه مدرّبك" : "سُلّم الواجب — سيراجعه مدرّبك");
       await reloadDetail();
     } catch (err) {
@@ -214,6 +249,37 @@ export default function Journey() {
       setBusy(null);
     }
   };
+
+  /* رفعٌ انقطع يُعاد على التسليم نفسِه — برابطٍ جديد، وبالملفّ نفسِه أو بغيره */
+  const retryFile = async (assessmentId: string, submissionId: string, file: File) => {
+    if (busy) return;
+    const problem = submissionFileProblemAr(file.name, file.size);
+    if (problem) { toastError(problem); return; }
+    setBusy(assessmentId);
+    try {
+      const { uploadUrl } = await apiPost<{ uploadUrl: string }>(`/api/learner/submissions/${submissionId}/file`, {
+        originalName: file.name, mime: file.type || undefined, sizeBytes: file.size,
+      });
+      await uploadTo(assessmentId, uploadUrl, file);
+      setFiles((prev) => ({ ...prev, [assessmentId]: null }));
+      toast("وصل الملف — سيراه مدرّبك مع تسليمك");
+      await reloadDetail();
+    } catch (err) {
+      setFiles((prev) => ({ ...prev, [assessmentId]: file }));
+      toastError(err instanceof ApiError ? err.message : "تعذّر رفع الملف");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  /* ومن أغلق الصفحةَ والملفُّ يُرفع يُسأل قبل أن يخرج — الرفعُ يقف بإغلاقها */
+  const uploading = Object.keys(progress).length > 0;
+  useEffect(() => {
+    if (!uploading) return;
+    const warn = (e: BeforeUnloadEvent) => { e.preventDefault(); };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [uploading]);
 
   const submitQuiz = async (assessmentId: string, responses: { itemId: string; answer: string }[]) => {
     if (busy || responses.length === 0) return;
@@ -231,6 +297,8 @@ export default function Journey() {
 
   const handlers: StageWorkHandlers = {
     answers, setAnswers, busy,
+    files, setFiles, progress,
+    onRetryFile: (assessmentId, submissionId, file) => { void retryFile(assessmentId, submissionId, file); },
     onSubmit: submit,
     onSubmitQuiz: submitQuiz,
     onChanged: () => { void reloadDetail(); },

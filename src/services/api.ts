@@ -77,3 +77,28 @@ export function permissionMessage(e: unknown, fallback: string): string {
     : "";
   return `${e.message}${hint}`;
 }
+
+/* ═══ رفعُ ملفٍّ إلى رابطه الموقَّع، بنسبةٍ تُرى (١٠ أكتوبر ٢٠٢٦) ═══
+
+   ملفُّ التسليم قد يكون تسجيلا بمئة ميغابايت، ورفعُه على شبكة هاتفٍ دقائق. و`fetch` لا يقول كم
+   رُفع، فيبقى المتعلّمُ أمام زرٍّ يدور لا يعرف أيعمل أم توقّف — فيغلق الصفحة. فالرفعُ هنا
+   بـ`XMLHttpRequest`، والنسبةُ تصل الشاشةَ. والخطأُ `ApiError` برسالة الخادم كبقيّة الطلبات. */
+export function apiUpload(url: string, file: File, onProgress?: (pct: number) => void): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("PUT", `${API_BASE}${url}`);
+    xhr.withCredentials = true;
+    xhr.setRequestHeader("content-type", "application/octet-stream");
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable && onProgress) onProgress(Math.min(100, Math.round((e.loaded / e.total) * 100)));
+    };
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) { resolve(); return; }
+      let data: { error?: { code: string; message_ar: string } } | null = null;
+      try { data = JSON.parse(xhr.responseText); } catch { /* ردٌّ بلا JSON */ }
+      reject(new ApiError(data?.error?.code ?? "upload_failed", data?.error?.message_ar ?? "تعذّر رفع الملف", xhr.status));
+    };
+    xhr.onerror = () => reject(new ApiError("network", "انقطع الاتصال أثناء رفع الملف", 0));
+    xhr.send(file);
+  });
+}

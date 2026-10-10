@@ -10,6 +10,8 @@ import { openRegistrationWhere } from './registration-window'
 import { PUBLIC_TRAINER_WHERE, TRAINER_VISIBILITY_SELECT, trainerPubliclyVisible } from './trainer-visibility'
 import { photoPublicUrl } from './storage.service'
 import { LEARNER_SESSION_WHERE } from './session-visibility'
+import { cohortSummaryAr } from '../../src/application/learning/cohort-summary'
+import { PLAN_VISIBLE_STATUSES } from '../../src/application/trainer/plan-overlay'
 
 /** سقفُ ما يُعلَن من لقاءات الشعبة الواحدة — شعبةٌ تُجاوزه فصلٌ لا دورة */
 const PUBLIC_SESSIONS_CAP = 60
@@ -124,6 +126,16 @@ export class PublicCatalogService {
           take: PUBLIC_SESSIONS_CAP,
           select: { startsAt: true, endsAt: true, title: true },
         },
+        /* ═══ ونبذةُ مدرّبها من خطّتها المعتمَدة (١٠ أكتوبر ٢٠٢٦) ═══
+           «سطران يقرؤهما المتعلّم قبل أن يدفع» — وعدُ خطوة «المعلومات الأساسيّة» للمدرّب، ولم
+           يكن يُوفى. وما لم تعتمده الإدارةُ لا يُعلَن: الحالاتُ نفسُها التي تصل بها الخطّةُ
+           المتعلّمَ المسجَّل (`PLAN_VISIBLE_STATUSES`). */
+        plans: {
+          where: { trainerId: { not: null }, status: { in: [...PLAN_VISIBLE_STATUSES] } },
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          select: { content: true },
+        },
         /* المقعدُ المحجوز مقعدٌ مشغول.
 
            كان العدُّ على `enrolled` وحدَه، و`checkout` يمنع على
@@ -154,6 +166,7 @@ export class PublicCatalogService {
         .filter((t) => trainerPubliclyVisible(t.profile))
         .map((t) => t.profile.application.fullName),
       sessions: c.sessions,
+      summaryAr: cohortSummaryAr(c.plans[0]?.content),
       /* والتالي تالٍ لا أوّل: شعبةٌ جاريةٌ أوّلُ لقاءاتها مضى */
       nextSession: c.sessions.find((s) => s.startsAt.getTime() >= now.getTime()) ?? null,
     }))

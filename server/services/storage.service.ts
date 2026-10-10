@@ -23,6 +23,7 @@ import type { PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { getObject } from './object-store'
 import { MAX_BODY_FILE_BYTES } from '../../src/application/trainer/module-body'
+import { SUBMISSION_FILE_MAX_BYTES } from '../../src/application/learning/submission-file'
 
 /* التطوير وحده يبلغ هذا المسار. وcwd لا import.meta.url: الأخير يصير
    `/var/task/api` في الحزمة فيصعد فوق النشر. */
@@ -290,8 +291,20 @@ export async function resolveStorageOwner(
   })
   if (mat) return { kind: 'material', maxBytes: MAX_UPLOAD_ANY, originalName: mat.title }
 
-  const sub = await prisma.assignmentSubmission.findFirst({ where: { storageKey }, select: { id: true } })
-  if (sub) return { kind: 'submission', maxBytes: MAX_UPLOAD_ANY }
+  /* ═══ وملفُّ التسليم يُرفع بثّا كالتسجيل (١٠ أكتوبر ٢٠٢٦) ═══
+
+     كان سقفُه أربعةَ ميغابايت من مسار الذاكرة، والوعدُ في وصف المسار «حتى 100MB» — فتسجيلُ
+     دقيقتين يُردّ. وصار له سقفُ بثٍّ هو سقفُ التسليم نفسُه، ونوعُه واسمُه من سجلّه: النوعُ
+     قُرّر من الامتداد عند الطلب (`submission-file.ts`)، فلا تُكتب ترويسةُ العميل في المخزن. */
+  const sub = await prisma.assignmentSubmission.findFirst({
+    where: { storageKey }, select: { fileMime: true, fileName: true },
+  })
+  if (sub) {
+    return {
+      kind: 'submission', maxBytes: MAX_UPLOAD_ANY, streamMaxBytes: SUBMISSION_FILE_MAX_BYTES,
+      mime: sub.fileMime ?? undefined, originalName: sub.fileName ?? undefined,
+    }
+  }
 
   const res = await prisma.assessmentResponse.findFirst({ where: { storageKey }, select: { id: true } })
   if (res) return { kind: 'assessment_response', maxBytes: MAX_UPLOAD_ANY }
@@ -391,6 +404,15 @@ export function kindRequiresImage(kind: StorageOwnerKind): boolean {
 
 /* الحجمُ يبقى في سجلّ وثيقة المتقدّم — تقرؤه شاشةُ المراجعة. والبايتاتُ
    لم تعد معه: صارت على القرص (`object-store.ts`)، والعمودُ يخلو بالهجرة. */
+/** وصل ملفُّ التسليم كاملا — يُكتب حجمُه الفعليّ ووقتُ وصوله، فيُعرف الرفعُ الذي انقطع */
+export async function recordSubmissionUpload(
+  prisma: PrismaClient, storageKey: string, sizeBytes: number,
+): Promise<void> {
+  await prisma.assignmentSubmission.updateMany({
+    where: { storageKey }, data: { fileSize: sizeBytes, fileUploadedAt: new Date() },
+  })
+}
+
 export async function recordDocumentSize(
   prisma: PrismaClient, storageKey: string, sizeBytes: number,
 ): Promise<void> {

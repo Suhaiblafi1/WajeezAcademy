@@ -24,6 +24,9 @@ import {
   FileText, Library, Loader2, Lock, PenLine, Play, PlayCircle, Ruler, Send, Video,
 } from "lucide-react";
 import SubmissionFeedback from "@/components/SubmissionFeedback";
+import { SubmissionFilePick, SubmittedWork, UploadProgress } from "@/components/journey/SubmissionFile";
+import { usePlatformConfig } from "@/hooks/usePlatformConfig";
+import { readyToSubmit } from "@/application/learning/submission-file";
 import SwitchCohort from "@/components/SwitchCohort";
 import CourseCertificate from "@/components/journey/CourseCertificate";
 import SessionEmbed from "@/components/journey/SessionEmbed";
@@ -67,6 +70,11 @@ export interface StageWorkHandlers {
   onSubmit: (assessmentId: string, isResubmit: boolean) => void;
   onSubmitQuiz: (assessmentId: string, responses: { itemId: string; answer: string }[]) => void;
   onChanged: () => void;
+  /* ملفُّ التسليم (١٠ أكتوبر ٢٠٢٦) — ما اختاره لكلّ واجب، ونسبةُ رفعه، وإعادةُ رفعٍ انقطع */
+  files?: Record<string, File | null>;
+  setFiles?: React.Dispatch<React.SetStateAction<Record<string, File | null>>>;
+  progress?: Record<string, number>;
+  onRetryFile?: (assessmentId: string, submissionId: string, file: File) => void;
 }
 
 export default function StageWork({
@@ -152,6 +160,11 @@ export default function StageWork({
             <p className="mt-1 text-read text-muted-foreground">{percent}٪ من دروسها مكتملة</p>
           </div>
         </div>
+
+        {/* ونبذةُ المدرّب عن شعبته — كما قرأها المتعلّمُ قبل أن يدفع (١٠ أكتوبر ٢٠٢٦) */}
+        {detail.cohort.trainerPlan?.summaryAr && (
+          <p className="mt-3 whitespace-pre-line text-read leading-6 text-foreground">{detail.cohort.trainerPlan.summaryAr}</p>
+        )}
 
         {/* تبديلُ الموعد قبل أن تبدأ الشعبة — قيودُه في الخادم، وهذه الشاشةُ
             لا تعرض إلّا ما يقبله. */}
@@ -852,7 +865,8 @@ function Sessions({ detail }: { detail: EnrollmentDetail }) {
 /* ─────────── الواجبات ─────────── */
 
 function Assessments({ detail, handlers, now }: { detail: EnrollmentDetail; handlers: StageWorkHandlers; now: number }) {
-  const { answers, setAnswers, busy, onSubmit, onSubmitQuiz } = handlers;
+  const { answers, setAnswers, busy, onSubmit, onSubmitQuiz, files = {}, setFiles, progress = {}, onRetryFile } = handlers;
+  const { fileUploads } = usePlatformConfig();
   if (detail.cohort.assessments.length === 0) {
     return <p className="text-read leading-6 text-muted-foreground">لا واجبات على هذه الشعبة بعد — ما يُسنده مدرّبك يظهر هنا بموعد استحقاقه.</p>;
   }
@@ -941,6 +955,11 @@ function Assessments({ detail, handlers, now }: { detail: EnrollmentDetail; hand
                 })}
               </ul>
             )}
+            {mine && (
+              <SubmittedWork submission={mine} kept={files[a.id] ?? null} busy={busy === a.id}
+                onRetry={onRetryFile ? (f) => onRetryFile(a.id, mine.id, f) : undefined} />
+            )}
+            {busy === a.id && progress[a.id] !== undefined && <UploadProgress pct={progress[a.id]} />}
             {mine && <SubmissionFeedback submission={mine} criteria={a.rubric?.criteria} className="mt-3" />}
             {closed && (
               <p className="mt-3 text-read leading-6 text-muted-foreground">انتهت الشعبة — والتسليمُ يتوقّف بانتهائها.</p>
@@ -960,7 +979,12 @@ function Assessments({ detail, handlers, now }: { detail: EnrollmentDetail; hand
                   rows={3}
                   className="w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none"
                 />
-                <Button tone="confirm" disabled={busy === a.id || !(answers[a.id] ?? "").trim()}
+                {/* والملفُّ مع النصّ أو وحدَه — لا يُطلب من المتعلّم رابطٌ مكانَ ملفّه */}
+                {fileUploads && setFiles && (
+                  <SubmissionFilePick file={files[a.id] ?? null} disabled={busy === a.id}
+                    onPick={(f) => setFiles((prev) => ({ ...prev, [a.id]: f }))} />
+                )}
+                <Button tone="confirm" disabled={busy === a.id || !readyToSubmit(answers[a.id], fileUploads ? files[a.id] : null)}
                   onClick={() => onSubmit(a.id, mine?.status === "resubmit_requested")} className="mt-2">
                   {busy === a.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
                   {mine?.status === "resubmit_requested" ? "أعد التسليم" : "سلّم الواجب"}
