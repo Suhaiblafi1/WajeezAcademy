@@ -1035,7 +1035,19 @@ export default function CohortWorkspace() {
       /* وما حُفظ بلا رابطٍ ولا ملفّ — يُسمّى بعينه ليُكمَل (والعلّةُ عند `saveProblems`) */
       const loose = (saved?.resources ?? []).filter((r) => resourceCategory(r) !== "recorded" && !resourceHasSource(r));
       if (loose.length) out.push(`مصادرُ بلا رابطٍ ولا ملفّ: ${loose.map((r) => `«${r.title}»`).join("، ")} — الصق رابطَ كلٍّ، أو أزِله وأضِفه ملفّا من «أضف»`);
-      return out.length ? out : [label];
+      if (out.length) return out;
+      /* ═══ وما لم يُسمَّ هنا يُقال بصفّه الناقص (١٠ أكتوبر ٢٠٢٦) ═══
+
+         الدرجةُ ثلاثةُ صفوفٍ في قائمة الخادم (المهامُّ · المصادر · المشروع)، و
+         `label` صفُّ المهامّ وحدَه. فكان ما لا تفحصه الشاشةُ هنا — محورٌ بلا
+         مصدر، أو مشروعٌ بلا موعد — يُقال «ألّف مهمّةً عمليّة» ولسانُ المهامّ
+         عليه ✓. شكاه صاحبُ المنصّة: «ملأتُ كلَّ شيءٍ وما زالت ناقصة». فيُسمّى
+         الصفُّ الذي لم يتمّ بنصّه من الخادم، وفيه ما ينقصه بعينه. */
+      const left = STAGE_KEYS.assignments.flatMap((key) => {
+        const row = w.checklist.find((c) => c.key === key);
+        return row && !row.done ? [row.labelAr] : [];
+      });
+      return left.length ? left : [label];
     }
     return [label];
   };
