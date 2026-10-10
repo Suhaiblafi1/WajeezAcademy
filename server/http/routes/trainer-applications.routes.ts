@@ -11,7 +11,7 @@ import type { PrismaClient } from '@prisma/client'
 import { TrainerApplicationService } from '../../services/trainer-application.service'
 import { TrainerReviewService } from '../../services/trainer-review.service'
 import {
-  verifySignature, recordDocumentSize, readDocumentContent, resolveStorageOwner,
+  verifySignature, recordDocumentSize, recordSubmissionUpload, readDocumentContent, resolveStorageOwner,
   MAX_UPLOAD_ANY, UPLOADABLE_KINDS, PHOTO_KEY_PREFIX, sniffImageMime, kindRequiresImage,
 } from '../../services/storage.service'
 import { assertSafeKey } from '../../services/object-store'
@@ -321,6 +321,7 @@ export function registerTrainerApplicationRoutes(app: FastifyInstance, prisma: P
     })
     /* ووثيقةُ المتقدّم تحفظ حجمَها في سجلّها كما كانت — تقرؤه شاشاتُ المراجعة */
     if (owner.kind === 'trainer_document') await recordDocumentSize(prisma, storageKey, buffer.length)
+    if (owner.kind === 'submission') await recordSubmissionUpload(prisma, storageKey, buffer.length)
     return { ok: true, storageKey, sizeBytes: buffer.length }
   })
 
@@ -358,6 +359,8 @@ export function registerTrainerApplicationRoutes(app: FastifyInstance, prisma: P
         mime: owner.mime || String(req.headers['content-type'] ?? '').split(';')[0].trim() || 'application/octet-stream',
         originalName: owner.originalName || storageKey,
       }, owner.streamMaxBytes)
+      /* وملفُّ التسليم يُعلَم وصولُه — فرفعٌ انقطع يُقال للمتعلّم ومدرّبه لا يُحسب تسليما بملفّ */
+      if (owner.kind === 'submission') await recordSubmissionUpload(prisma, storageKey, size)
       return { ok: true, storageKey, sizeBytes: size }
     })
   })

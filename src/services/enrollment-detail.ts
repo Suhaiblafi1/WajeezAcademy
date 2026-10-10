@@ -61,6 +61,13 @@ export interface MySubmission {
   submittedAt: string
   /** سُلّم بعد آخر موعده — «المتأخّرُ يُقبل ويُعلَّم» */
   late?: boolean
+  /** ما كتبه في تسليمه — يُعرض له بروابطه */
+  textAnswer?: string | null
+  /** ملفُّه: بابٌ محروسٌ واسمٌ وحجم، و`fileWaiting` لرفعٍ انقطع (١٠ أكتوبر ٢٠٢٦) */
+  fileUrl?: string | null
+  fileName?: string | null
+  fileSize?: number | null
+  fileWaiting?: boolean
   grades: {
     score: string
     maxScore: string

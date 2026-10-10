@@ -11,6 +11,7 @@ import { CohortService } from './cohort.service'
 import { SEATED, SessionInviteService } from './session-invite.service'
 import { LEARNER_SESSION_WHERE } from './session-visibility'
 import { assessmentOpensAt, cohortDayAr, gateAssessment, learnerGate, meetingOver } from '../../src/application/learning/cohort-gate'
+import { submissionFileView, withSubmissionFileView } from '../../src/application/learning/submission-file'
 
 /* ═══ مدرّبُ الشعبة كما يراه متعلّمُها: اسمُه، لا ملفُّه ═══
 
@@ -552,6 +553,8 @@ export class EnrollmentService {
     const ended = gate.access === 'ended'
     return {
       ...e,
+      /* وتسليماتُه تخرج بباب ملفّها لا بمفتاحه — كما تخرج للمدرّب في طابوره */
+      submissions: e.submissions.map(withSubmissionFileView),
       cohort: {
         ...cohort,
         /* ولقاءٌ انتهى لا يُدخَل: يسقط رابطُه ورمزُه، ويبقى موعدُه وحضورُه
@@ -598,6 +601,7 @@ export class EnrollmentService {
       submittedAt: r.submittedAt,
       reviewedAt: r.reviewedAt,
       hasFile: !!r.storageKey,
+      ...submissionFileView(r),
       textAnswer: r.textAnswer,
       reviewNote: r.reviewNote,
       moduleId: r.assessment.moduleId,

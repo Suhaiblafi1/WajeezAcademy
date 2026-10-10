@@ -3177,6 +3177,12 @@ model AssignmentSubmission {
   assessmentId String            @db.Uuid
   enrollmentId String            @db.Uuid
   storageKey   String? // ملف التسليم — تخزين خاص
+  /// اسمُ ملفّ التسليم كما رفعه المتعلّم، ونوعُه من امتداده لا ممّا يقوله المتصفّح
+  /// (`submission-file.ts`)، وحجمُه، ومتى وصل كاملا — وفراغُ الأخير رفعٌ لم يكتمل (١٠ أكتوبر ٢٠٢٦)
+  fileName     String?
+  fileMime     String?
+  fileSize     Int?
+  fileUploadedAt DateTime?
   textAnswer   String?
   status       String            @default("submitted")
   // submitted | under_review | resubmit_requested | accepted | rejected

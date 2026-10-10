@@ -45,6 +45,8 @@ interface PublicCohort {
   trainers?: string[] | null
   /** لقاءاتُها المعتمَدةُ غيرُ المبدئيّة — الخادمُ يرشّحها ويرتّبها */
   sessions?: { startsAt?: unknown; endsAt?: unknown; title?: unknown }[] | null
+  /** نبذةُ مدرّبها من خطّتها المعتمَدة — `cohort-summary.ts` */
+  summaryAr?: string | null
 }
 
 /** شعبةٌ يستطيع المتعلّم أن يختارها — بموعدها وسعرها ومقاعدها */
@@ -63,6 +65,8 @@ export interface CohortOption {
   trainers: string[]
   /** مواعيدُ لقاءاتها المباشرة — فارغةٌ حتّى يُعتمَد جدولُ مدرّبها */
   sessions: LiveSessionDate[]
+  /** «سطران يقرؤهما المتعلّم قبل أن يدفع» — نبذةُ مدرّبها، و`null` إن لم يكتبها */
+  summaryAr: string | null
 }
 
 /* الحالات التي يستطيع المتعلّم أن يلتحق بها — وهي عينها التي تعدّها
@@ -135,6 +139,7 @@ export function cohortOptionsFrom(rows: unknown): Map<string, CohortOption[]> {
       /* الاسمُ كان يصل ولا يُقرأ — فشعبتان لمدرّبَين تختلفان بموعدهما وحدَه */
       trainers: Array.isArray(c.trainers) ? c.trainers : [],
       sessions: sessionDatesOf(c.sessions),
+      summaryAr: typeof c.summaryAr === 'string' && c.summaryAr.trim() ? c.summaryAr.trim() : null,
     })
     map.set(c.courseId, list)
   }
