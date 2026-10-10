@@ -122,7 +122,7 @@ describe('③ والشاشاتُ تعرضها منها', () => {
     expect(src).toMatch(/<LinkedText text=\{q\.textAnswer\}/)
     expect(src, 'النصُّ ما زال حرفا ميّتا').not.toMatch(/>\{q\.textAnswer\}</)
     expect(src).toMatch(/\{q\.fileUrl && q\.fileWaiting && \(/)
-    expect(src).toMatch(/\{q\.fileUrl && !q\.fileWaiting && \([\s\S]{0,400}\{q\.fileName \?\? "ملف التسليم"\}/)
+    expect(src).toMatch(/\{q\.fileUrl && !q\.fileWaiting && \([\s\S]{0,400}افتح ملفَّ التسليم\{q\.fileName \? `: \$\{q\.fileName\}` : ""\}/)
   })
 
   it('⚠️ بطاقةُ الواجب: يُرفق ملفّا حيث يقبل الخادمُ الملفّات — ويُسلَّم به وحدَه', () => {

@@ -272,7 +272,7 @@ export default function GradingQueue() {
                 <a href={q.fileUrl} target="_blank" rel="noreferrer"
                   className="mt-3 inline-flex min-h-11 items-center gap-2 text-read font-bold text-teal-light-ink hover:text-foreground">
                   <Paperclip className="h-4 w-4 shrink-0" aria-hidden="true" />
-                  <span className="[overflow-wrap:anywhere]">افتح الملف: {q.fileName ?? "ملف التسليم"}</span>
+                  <span className="[overflow-wrap:anywhere]">افتح ملفَّ التسليم{q.fileName ? `: ${q.fileName}` : ""}</span>
                   {q.fileSize ? <span className="font-normal text-muted-foreground">({fileSizeAr(q.fileSize)})</span> : null}
                 </a>
               )}

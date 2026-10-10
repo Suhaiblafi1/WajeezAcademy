@@ -69,8 +69,14 @@ describe('③ مفتاحُ التخزين لا يخرج — وله بابٌ مح
   it('⚠️ الخدمةُ تُسقط المفتاحَ وتضع مسارَه', () => {
     const at = SVC.indexOf('async trainerQueue')
     const body = SVC.slice(at, SVC.indexOf('async assertCanReadSubmissionFile'))
-    expect(body, 'المفتاحُ ما زال يخرج').toContain('rows.map(({ storageKey, ...s })')
-    expect(body, 'لا بابَ للملفّ').toContain('/api/v1/submission-files/')
+    /* والإسقاطُ والبابُ في `withSubmissionFileView` (١٠ أكتوبر ٢٠٢٦) — يمرّ به صفُّ الطابور
+       وتسليماتُ صفحة الشعبة معا، فلا يفترق ما يُسقَط هنا عمّا يُسقَط هناك */
+    expect(body, 'المفتاحُ ما زال يخرج').toContain('rows.map(withSubmissionFileView)')
+    const view = code('src/application/learning/submission-file.ts')
+    const fn = view.slice(view.indexOf('export function withSubmissionFileView'))
+    expect(fn, 'المفتاحُ لا يُسقَط').toContain('delete out.storageKey')
+    expect(fn, 'لا بابَ للملفّ').toContain('...submissionFileView(row)')
+    expect(view, 'لا بابَ للملفّ').toContain('fileUrl: `/api/v1/submission-files/${encodeURIComponent(r.storageKey)}`')
   })
 
   it('⚠️ والمسارُ يمرّ بالحارس قبل أن يقرأ', () => {

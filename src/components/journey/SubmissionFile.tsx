@@ -13,6 +13,7 @@ import { useRef } from "react";
 import { Paperclip, RefreshCw, X } from "lucide-react";
 import Button from "@/components/ui/Button";
 import LinkedText from "@/components/LinkedText";
+import { Inset } from "@/components/ui/Surface";
 import {
   SUBMISSION_FILE_ACCEPT, SUBMISSION_FILE_KINDS_AR, SUBMISSION_FILE_MAX_BYTES, fileSizeAr, submissionFileProblemAr,
 } from "@/application/learning/submission-file";
@@ -85,7 +86,7 @@ export function SubmittedWork({
   return (
     <div className="mt-3 space-y-2">
       {submission.fileUrl && submission.fileWaiting && (
-        <div className="rounded-xl border border-gold/40 p-3">
+        <Inset tone="warn" className="p-3">
           <p className="text-read leading-6 text-gold-ink">
             لم يكتمل رفع الملف{submission.fileName ? ` «${submission.fileName}»` : ""}، ولن يراه مدرّبك حتى يصل.
           </p>
@@ -105,7 +106,7 @@ export function SubmittedWork({
               </Button>
             </div>
           )}
-        </div>
+        </Inset>
       )}
       {submission.fileUrl && !submission.fileWaiting && (
         <a href={submission.fileUrl} target="_blank" rel="noreferrer"
