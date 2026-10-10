@@ -176,7 +176,7 @@ describe('١ — الرفعُ للمعتمِد، ويُقبل كلُّه أو ي
     const mixed = { items: [task, { kind: 'plan', reasonAr: 'نبذةٌ أوضح', set: { summaryAr: 'نبذةٌ جديدة' } }] }
     const again = await call('POST', `/api/admin/cohort-plans/${planId}/edits`, 'admin', mixed)
     expect(again.statusCode).toBe(422)
-    expect(again.json().error.message_ar).toMatch(/البند 1: على موضعه تعديلٌ رُفع قبلُ/)
+    expect(again.json().error.message_ar, 'ولا يُقال ما يُصنع').toMatch(/البند 1: نسختُها السابقة مسوّدةٌ لم تعتمدها بعد — اختر «استبدل المسودات التي لم تعتمدها بعد»/)
     expect(again.json().error.message_ar).not.toMatch(/البند 2/)
     expect(await prisma.planEditSuggestion.count({ where: { planId, kind: 'plan' } }), 'ولا يُحفظ منه شيء').toBe(0)
     /* ولا تبقى لما بعدها — الأقسامُ التالية تعدّ بنودَ الملفّ السليم */
@@ -380,6 +380,32 @@ describe('٨ — الاستبدالُ يسحب المسوّداتِ وحدَها
     expect(r.statusCode).toBe(409)
     expect(r.json().error.message_ar).toMatch(/واعتُمدت بنودُه للمدرّب/)
     expect(await statuses()).toEqual(['plan:summaryAr:proposed', 'module:activityAr:pending'])
+  })
+
+  it('⚠️ وما وصل المدرّبَ يُقال بسببه وعلاجِه — والبنودُ على سببٍ واحدٍ في سطرٍ واحد', async () => {
+    const r = await call('POST', url(), 'admin', { items: [
+      { kind: 'module', moduleId: 'M1', reasonAr: 'مرّةً ثانية', set: { activityAr: 'غيرُه' } },
+      { kind: 'module', moduleId: 'M2', reasonAr: 'جديد', set: { artifactAr: 'رسالةٌ في صفحة' } },
+    ] })
+    expect(r.statusCode).toBe(422)
+    const msg: string = r.json().error.message_ar
+    expect(msg).toMatch(/البند 1: نسختُها السابقة اعتمدتَها فوصلت المدرّبَ ولم يقرّر فيها بعد — فلا تُستبدل\. إن أردتَ الجديدةَ فاسحب القديمة بـ«اسحب ما لم يُقرَّر»/)
+    expect(msg, 'البندُ الجديدُ لا يُردّ بسبب غيره').not.toMatch(/البند 2|البنود/)
+    expect(await statuses()).toEqual(['plan:summaryAr:proposed', 'module:activityAr:pending'])
+  })
+
+  it('⚠️ وبلا استبدالٍ: المسوّداتُ بسطرٍ واحدٍ يدلّ على الاستبدال، وما وصل المدرّبَ بسطره', async () => {
+    const r = await call('POST', `/api/admin/cohort-plans/${p}/edits`, 'admin', { items: [
+      { kind: 'plan', reasonAr: 'نبذةٌ أوضح', set: { summaryAr: 'نبذةٌ ثالثة' } },
+      { kind: 'module', moduleId: 'M1', reasonAr: 'مرّةً ثانية', set: { activityAr: 'غيرُه' } },
+      { kind: 'module', moduleId: 'M2', reasonAr: 'جديد', set: { artifactAr: 'رسالةٌ في صفحة' } },
+    ] })
+    expect(r.statusCode).toBe(422)
+    const lines = (r.json().error.message_ar as string).split('\n').slice(1)
+    expect(lines).toEqual([
+      'البند 1: نسختُها السابقة مسوّدةٌ لم تعتمدها بعد — اختر «استبدل المسودات التي لم تعتمدها بعد» وارفع الملفَّ من جديد',
+      'البند 2: نسختُها السابقة اعتمدتَها فوصلت المدرّبَ ولم يقرّر فيها بعد — فلا تُستبدل. إن أردتَ الجديدةَ فاسحب القديمة بـ«اسحب ما لم يُقرَّر» في بطاقة الخطّة ثمّ ارفع الملفّ',
+    ])
   })
 
   it('يسحب المسوّدةَ ويرفع الجديدَ مكانها — ويبقى المعتمَد، ويُكتب الأثر', async () => {

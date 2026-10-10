@@ -168,9 +168,14 @@ export class PlanEditService {
        بنودُه على المعتمِد ثمّ على المدرّب. فما وقع على موضعِ بندٍ لم يُقرَّر فيه يُردّ،
        كما يُردّ بندان على موضعٍ واحدٍ في ملفٍّ واحد. */
     const open = await this.prisma.planEditSuggestion.findMany({
-      where: { planId, status: { in: replace ? ['pending'] : ['proposed', 'pending'] } }, select: { edit: true },
+      where: { planId, status: { in: replace ? ['pending'] : ['proposed', 'pending'] } }, select: { edit: true, status: true },
     })
-    const taken = new Set(open.flatMap((o) => openKeysOf(o.edit as unknown as PlanEdit)))
+    /* ولكلّ موضعٍ حالُ ما عليه: مسوّدةٌ لم تُعتمد، أو بندٌ وصل المدرّب — والعلاجُ غيرُ العلاج */
+    const takenBy = new Map<string, string>()
+    for (const o of open) {
+      for (const k of openKeysOf(o.edit as unknown as PlanEdit)) if (takenBy.get(k) !== 'pending') takenBy.set(k, o.status)
+    }
+    const taken = new Set(takenBy.keys())
     /* والملفُّ كلُّه مرفوعٌ من قبل — سطرٌ واحدٌ يقول ذلك، لا سطرٌ لكلّ بند */
     if (taken.size > 0 && items.every((item) => openKeysOf(editOf(item)).some((k) => taken.has(k)))) {
       throw new AuthError('edits_already_uploaded', replace
@@ -178,6 +183,8 @@ export class PlanEditService {
         : 'رُفع هذا الملفُّ قبلُ ولم يُقرَّر في بنوده — فلا يُرفع مرّتين. وإن أردت رفعه من جديد فاختر استبدال المسوّدات عند الرفع، أو اسحبها من بطاقة خطّته أوّلا', 409)
     }
     const problems: string[] = []
+    const onDraft: number[] = []
+    const onTrainer: number[] = []
     const seen = new Map<string, number>()
     const snaps = items.map((item, i) => {
       const edit = editOf(item)
@@ -189,11 +196,16 @@ export class PlanEditService {
         if (prior !== undefined) problems.push(`البند ${i + 1}: يقع على ما يقع عليه البند ${prior + 1} — اجمعهما بندا واحدا`)
         else seen.set(key, i)
       }
-      if (openKeysOf(edit).some((k) => taken.has(k))) {
-        problems.push(`البند ${i + 1}: على موضعه تعديلٌ رُفع قبلُ ولم يُقرَّر فيه — إن أردتَ رفعَه من جديد فاسحب ما لم يُقرَّر أوّلا`)
-      }
+      const hits = openKeysOf(edit).map((k) => takenBy.get(k)).filter((x): x is string => x !== undefined)
+      if (hits.includes('pending')) onTrainer.push(i + 1)
+      else if (hits.length) onDraft.push(i + 1)
       return snap.value
     })
+    /* ═══ وما وقع على نسخةٍ سابقةٍ يُقال بسببه — لا سطرٌ واحدٌ يتكرّر لكلّ بند (١٠ أكتوبر ٢٠٢٦) ═══
+       رُدّت ملفّاتُ صاحب المنصّة الثمانية بثلاثة عشر سطرا متطابقا لكلّ ملفّ، ولا يُعرف منها
+       أهي مسوّداتٌ لم يعتمدها (فيكفي الاستبدال) أم بنودٌ وصلت المدرّبين (فتُسحب أوّلا). */
+    if (onDraft.length) problems.push(`${itemsAr(onDraft)}: نسختُها السابقة مسوّدةٌ لم تعتمدها بعد — اختر «استبدل المسودات التي لم تعتمدها بعد» وارفع الملفَّ من جديد`)
+    if (onTrainer.length) problems.push(`${itemsAr(onTrainer)}: نسختُها السابقة اعتمدتَها فوصلت المدرّبَ ولم يقرّر فيها بعد — فلا تُستبدل. إن أردتَ الجديدةَ فاسحب القديمة بـ«اسحب ما لم يُقرَّر» في بطاقة الخطّة ثمّ ارفع الملفّ`)
     if (problems.length) throw new AuthError('bad_edits', `لم يُرفع شيء — في الملفّ ما لا يقع:\n${problems.join('\n')}`, 422)
 
     const batchId = randomUUID()
@@ -449,6 +461,11 @@ function editOf(item: PlanEditInput): PlanEdit {
 }
 
 /** ما يقع عليه البندُ ممّا رُفع قبلُ — مواضعُه، والمهمّةُ الجديدةُ باسمها (فلا موضعَ لها قبل أن تُقبل) */
+/** «البند 3» أو «البنود 1، 2، 5» — أرقامُ الملفّ كما يراها رافعُه */
+function itemsAr(nums: readonly number[]): string {
+  return nums.length === 1 ? `البند ${nums[0]}` : `البنود ${nums.join('، ')}`
+}
+
 function openKeysOf(edit: PlanEdit): string[] {
   return edit.kind === 'task_add' ? [`task_new:${edit.task.title.trim()}`] : targetsOf(edit)
 }
