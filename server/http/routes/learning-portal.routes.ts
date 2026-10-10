@@ -18,6 +18,7 @@ import { SkillGrowthService } from '../../services/skill-growth.service'
 import { RetrievalService } from '../../services/retrieval.service'
 import { ScenarioService } from '../../services/scenario.service'
 import { MAX_BODY_CHARS } from '../../services/module-authoring.service'
+import { PlanEditService } from '../../services/plan-edit.service'
 import { DeadlinesService } from '../../services/deadlines.service'
 import { CohortMessageService } from '../../services/cohort-message.service'
 import { CohortPlanService, TRAINER_EDITABLE_COHORT_FIELDS } from '../../services/cohort-plan.service'
@@ -719,6 +720,46 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     return plans.savePlan(req.auth!.userId, id, planContent.parse(req.body))
+  })
+
+  /* ═══ وتعديلاتٌ اقترحتها الإدارةُ على خطّتي — أقبل كلًّا أو أرفضه (٨ أكتوبر ٢٠٢٦) ═══
+
+     القبولُ حفظٌ منه بأبوابه هو (`plan-edit.service.ts`): ما يردّه حفظُه يردّه، وما
+     تغيّر موضعُه بعد الاقتراح لا يُكتب فوقه إلّا إن اختار ذلك (`force`). */
+  const planEdits = new PlanEditService(prisma)
+
+  app.get('/api/trainer/cohorts/:id/plan-edits', {
+    preHandler: requirePermission('trainer.cohort.plan'),
+    schema: { tags: ['trainer-ops'], summary: 'التعديلاتُ التي اقترحتها الإدارةُ على خطّة شعبتي — قبلها وبعدها' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return planEdits.forTrainer(req.auth!.userId, id)
+  })
+
+  app.post('/api/trainer/plan-edits/:editId/accept', {
+    preHandler: requirePermission('trainer.cohort.plan'),
+    schema: { tags: ['trainer-ops'], summary: 'أقبلُ تعديلا مقترحا — يُكتب في خطّتي' },
+  }, async (req) => {
+    const { editId } = z.object({ editId: z.string().uuid() }).parse(req.params)
+    const { force } = z.object({ force: z.boolean().optional() }).parse(req.body ?? {})
+    return planEdits.accept(req.auth!.userId, editId, { force })
+  })
+
+  app.post('/api/trainer/plan-edits/:editId/reject', {
+    preHandler: requirePermission('trainer.cohort.plan'),
+    schema: { tags: ['trainer-ops'], summary: 'أرفضُ تعديلا مقترحا — ولي أن أقول لماذا' },
+  }, async (req) => {
+    const { editId } = z.object({ editId: z.string().uuid() }).parse(req.params)
+    const { noteAr } = z.object({ noteAr: z.string().max(1000).optional() }).parse(req.body ?? {})
+    return planEdits.reject(req.auth!.userId, editId, noteAr)
+  })
+
+  app.post('/api/trainer/cohorts/:id/plan-edits/accept-all', {
+    preHandler: requirePermission('trainer.cohort.plan'),
+    schema: { tags: ['trainer-ops'], summary: 'أقبلُ كلَّ ما ينتظر — وما تغيّر موضعُه يبقى منتظِرا ويُسمّى' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return planEdits.acceptAll(req.auth!.userId, id)
   })
 
   app.patch('/api/trainer/cohorts/:id', {

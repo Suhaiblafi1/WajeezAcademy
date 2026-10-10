@@ -18,16 +18,18 @@ import {
   type ReviewNotes, type ReviewSection,
 } from '@/application/trainer/review-notes'
 
-export function ReviewNotesForm({ busy, onSend, onCancel, initial }: {
+export function ReviewNotesForm({ busy, onSend, onCancel, initial, editsPending = 0 }: {
   busy: boolean
   onSend: (notes: ReviewNotes) => void
   onCancel: () => void
   /** ما يُبدأ به — ما سقط من بطاقة المعايير (`scorecardNotes`)، يُعدَّل قبل الإرسال */
   initial?: ReviewNotes
+  /** تعديلاتٌ مقترحةٌ رُفعت تنتظره — تكفي سببا للردّ بلا ملاحظة (٨ أكتوبر ٢٠٢٦) */
+  editsPending?: number
 }) {
   const [draft, setDraft] = useState<ReviewNotes>(initial ?? {})
   const clean = normalizeReviewNotes(draft)
-  const ready = hasReviewNotes(clean)
+  const ready = hasReviewNotes(clean) || editsPending > 0
   const area = (key: keyof ReviewNotes, rows: number, placeholder: string) => (
     <textarea
       rows={rows}
@@ -63,6 +65,9 @@ export function ReviewNotesForm({ busy, onSend, onCancel, initial }: {
           تراجَع
         </Button>
         {!ready && <span className="text-read text-muted-foreground">اكتب ملاحظةً واحدةً على الأقلّ.</span>}
+        {ready && !hasReviewNotes(clean) && (
+          <span className="text-read text-muted-foreground">بلا ملاحظة: تكفي التعديلاتُ المقترحة ({editsPending}) سببا، ويقرأ سطرَها في رأس شاشته.</span>
+        )}
       </div>
     </Inset>
   )

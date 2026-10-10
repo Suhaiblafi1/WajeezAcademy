@@ -18,6 +18,8 @@ import { CohortPlanService } from '../../services/cohort-plan.service'
 import { PlanReviewBundleService, type ReviewBundle } from '../../services/plan-review-bundle.service'
 import { AuthError } from '../../services/auth.service'
 import { CohortFileService } from '../../services/cohort-file.service'
+import { PlanEditService } from '../../services/plan-edit.service'
+import { planEditsFile } from '../plan-edits-schema'
 import { assertSafeKey } from '../../services/object-store'
 import { requirePermission } from '../auth-plugin'
 
@@ -153,6 +155,41 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
     const { id, storageKey } = z.object({ id: z.string().uuid(), storageKey: z.string().min(10) }).parse(req.params)
     assertSafeKey(storageKey)
     return reportFiles.removeReviewReport(req.auth!.userId, id, storageKey)
+  })
+
+  /* ═══ وتعديلاتٌ مقترحةٌ على الخطّة — يقبل المدرّبُ كلًّا أو يرفضه (٨ أكتوبر ٢٠٢٦) ═══
+
+     قرارُ صاحب المنصّة: «التعديلُ يطول على المدرّب — نكتبه نحن ويختار هو». يُرفع ملفًّا
+     (JSON) على بطاقة المراجعة، ويُفحص كلُّه أو يُردّ كلُّه ببنوده (`plan-edit.service.ts`).
+     والصلاحيّةُ صلاحيّةُ القرار نفسِه: من يردّ الخطّةَ يقترح عليها. */
+  const planEdits = new PlanEditService(prisma)
+
+  app.get('/api/admin/cohorts/:cohortId/plan-edits', {
+    preHandler: requirePermission('cohort.manage'),
+    schema: { tags: ['admin-cohorts'], summary: 'التعديلاتُ المقترحةُ على آخر خطّةٍ للشعبة — وحالُ كلٍّ منها' },
+  }, async (req) => {
+    const { cohortId } = z.object({ cohortId: z.string().uuid() }).parse(req.params)
+    return planEdits.forCohort(cohortId)
+  })
+
+  app.post('/api/admin/cohort-plans/:id/edits', {
+    preHandler: requirePermission('cohort.plan.approve'),
+    schema: { tags: ['admin-cohorts'], summary: 'رفعُ تعديلاتٍ مقترحةٍ على خطّة مدرّب — ملفٌّ يُفحص كلُّه أو يُردّ كلُّه' },
+  }, async (req, reply) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const file = planEditsFile.parse(req.body)
+    if (file.planId && file.planId !== id) {
+      throw new AuthError('wrong_plan', 'هذا الملفُّ كُتب لخطّةٍ أخرى — افتح بطاقةَ خطّته وارفعه هناك', 422)
+    }
+    return reply.status(201).send(await planEdits.propose(req.auth!.userId, id, file.items))
+  })
+
+  app.delete('/api/admin/cohort-plans/:id/edits', {
+    preHandler: requirePermission('cohort.plan.approve'),
+    schema: { tags: ['admin-cohorts'], summary: 'سحبُ ما لم يُقرَّر فيه من التعديلات المقترحة' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return planEdits.withdraw(req.auth!.userId, id)
   })
 
   app.get('/api/admin/cohort-plans/pending/review-bundle', {

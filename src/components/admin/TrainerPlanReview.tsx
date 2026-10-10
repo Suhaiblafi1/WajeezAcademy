@@ -26,6 +26,7 @@ import { planDiff, sinceReturn } from "@/application/trainer/plan-diff";
 import { REVIEW_NOTE_MAX, hasReviewNotes, type ReviewNotes } from "@/application/trainer/review-notes";
 import { StaffField, staffAreaCls } from "@/components/FormKit";
 import { ReviewReportUploader, type ReviewReport } from "@/components/ReviewReports";
+import { PlanEditsUploader } from "@/components/PlanEdits";
 import { curriculumView, type CurriculumInput } from "@/application/trainer/curriculum-view";
 import { PLAN_AR, approvalBody, planApprovedMsg, taskDecisionMsg, type PlanDecision } from "@/application/trainer/plan-decision";
 import { adminRegistrationLine } from "@/application/learning/registration-state";
@@ -136,6 +137,8 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
     : [];
   const blocked = blockedItems(scorecard);
   const [asking, setAsking] = useState(false);
+  /* ما ينتظر المدرّبَ من التعديلات المقترحة — يكفي سببا لـ«اطلب تعديلات» */
+  const [editsPending, setEditsPending] = useState(0);
   /* ما يُبدأ به صندوقُ الردّ — فارغا، أو ممّا سقط من بطاقة المعايير بنقرة (٨ أكتوبر ٢٠٢٦) */
   const [askFrom, setAskFrom] = useState<ReviewNotes | undefined>(undefined);
   /* ═══ والتأجيلُ إلى موسمٍ قادم — قرارٌ ثالث (٨ أكتوبر ٢٠٢٦) ═══
@@ -392,6 +395,16 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
       {trainerPlan?.status === "submitted" && canApprovePlan && (
         <ReviewReportUploader planId={trainerPlan.id} reports={trainerPlan.reviewReports ?? []} onChange={loadPlan} />
       )}
+      {/* ═══ وتعديلاتٌ مقترحةٌ يقبل المدرّبُ كلًّا أو يرفضه (٨ أكتوبر ٢٠٢٦) ═══
+          تُرفع والخطّةُ بانتظار القرار أو في يده، ويُرى حالُ كلّ بندٍ بعدها حتّى تُعتمَد */}
+      {trainerPlan && trainerPlan.status !== "approved" && trainerPlan.status !== "published" && (
+        <PlanEditsUploader
+          planId={trainerPlan.id}
+          cohortId={cohortId}
+          canUpload={canApprovePlan}
+          onPending={setEditsPending}
+        />
+      )}
       {trainerPlan?.status === "submitted" && canApprovePlan && !asking && (
         <details className="mt-3" open={approveNote.length > 0}>
           <summary className="cursor-pointer text-read font-bold text-teal-light-ink">أضِف كلمةً تصله مع الاعتماد (اختياريّ)</summary>
@@ -513,6 +526,7 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
         <ReviewNotesForm
           key={askFrom ? "from-scorecard" : "blank"}
           initial={askFrom}
+          editsPending={editsPending}
           busy={busy}
           onCancel={() => setAsking(false)}
           onSend={(notes) => void act(
