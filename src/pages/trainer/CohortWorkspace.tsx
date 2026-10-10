@@ -49,7 +49,7 @@
 import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router";
 import {
-  ArrowLeft, ArrowRight, BookMarked, BookOpen, CalendarDays, CalendarPlus, Check, ChevronDown, ChevronUp, ClipboardCheck, Combine, FileDown, FileText, GraduationCap, Film, IdCard, Link2, Loader2, Lock, Send, Sparkles, Split,
+  ArrowLeft, ArrowRight, BookMarked, BookOpen, CalendarDays, CalendarPlus, Check, ChevronDown, ChevronUp, ClipboardCheck, Combine, Eye, FileDown, FileText, GraduationCap, Film, IdCard, Link2, Loader2, Lock, Send, Sparkles, Split,
 } from "lucide-react";
 import TrainerLayout from "./TrainerLayout";
 import TrainerSchedule from "./TrainerSchedule";
@@ -787,7 +787,8 @@ export default function CohortWorkspace() {
   const st = postponedTo
     ? { label: `${postponedLineAr(postponedTo)} — لم تُقبل لهذا الفصل`, tone: "warn" as const }
     : PLAN_STATUS_AR[planStatus] ?? PLAN_STATUS_AR.draft;
-  const locked = planStatus === "submitted";
+  /* المرسَلةُ للاعتماد — لا تُعدَّل حتّى يصل القرار. و`locked` أدناه: هي أو خطوةٌ تُعايَن */
+  const planLocked = planStatus === "submitted";
   const approved = planStatus === "approved" || planStatus === "published";
   /* ═══ ملاحظاتُ الإدارة — كلٌّ في خطوته (٣ب) ═══
 
@@ -835,8 +836,18 @@ export default function CohortWorkspace() {
      ما يُراجَع لا ما يُبنى. وما صار ناقصا بعد تمامه (مدّةٌ تغيّرت فخرج منها
      لقاء) يُقفل ما بعده ثانيةً حتّى يُصلَح: الترتيبُ قاعدةٌ لا ذكرى. */
   const doneOf = (k: Stage) => STAGE_KEYS[k].every((key) => byKey.get(key)?.done ?? false);
-  const canOpen = (i: number) => approved || locked || STAGES.slice(0, i).every((x) => doneOf(x.key))
+  const canOpen = (i: number) => approved || planLocked || STAGES.slice(0, i).every((x) => doneOf(x.key))
     || (gaps?.refused.includes(STAGES[i].key) ?? false);
+  /* ═══ وما بعدها يُعايَن ولا يُملأ (١٠ أكتوبر ٢٠٢٦) ═══
+
+     قرارُ صاحب المنصّة: «افتح الألسنةَ كلَّها للمدرّب ليرى ما ينتظره… ويملؤها
+     واحدةً بعد أخرى كما هي». فالدرجةُ التي لم يتمّ ما قبلها تُفتح **معاينةً**:
+     يرى حقولَها وما فيها، وحقولُها مطفأةٌ كالمرسَلة (`locked`) — فالترتيبُ في
+     الملء باقٍ كما كان، وما تغيّر أنّ النظرَ لا ينتظره. */
+  const stageAt = STAGES.findIndex((x) => x.key === stage);
+  const previewing = stageAt >= 0 && !canOpen(stageAt);
+  const previewBlocker = previewing ? STAGES.slice(0, stageAt).find((x) => !doneOf(x.key)) : undefined;
+  const locked = planLocked || previewing;
   /* اليومُ في عمّان — منه يُحكَم على «البدءُ مضى» كما يحكم الخادم */
   const today = zonedDay(new Date());
   /* والدرجةُ الأخيرةُ يُسمّى زرُّها «أرسِلها للاعتماد» — والاسمُ لا يُكتب
@@ -910,7 +921,7 @@ export default function CohortWorkspace() {
      محفوظا. والمرسَلةُ للاعتماد لا تُحفظ، تُتصفَّح. */
   /* و`over`: خطّةٌ غيرُ التي في اليد تُحفظ حالا — توزيعُ المحاور من «اللقاءات» (أدناه) */
   const persist = async (over?: PlanContent): Promise<boolean> => {
-    if (locked) return true;
+    if (planLocked) return true;
     if (!over && !Object.values(dirty).some(Boolean)) return true;
     const problems = saveProblems();
     if (problems.length) {
@@ -1046,7 +1057,7 @@ export default function CohortWorkspace() {
       const doneIn = (k: Stage) => STAGE_KEYS[k].every((key) => fresh.checklist.find((c) => c.key === key)?.done);
       /* فُتحت هذه الخطوةُ لإصلاح ما منع الحفظ وما قبلها لم يتمّ — فبعد الحفظ
          يُعاد إلى أوّل ما لم يتمّ، لا يُدفع إلى خطوةٍ مقفلة */
-      const behind = locked || approved ? undefined : STAGES.slice(0, at).find((x) => !doneIn(x.key));
+      const behind = planLocked || approved ? undefined : STAGES.slice(0, at).find((x) => !doneIn(x.key));
       if (behind) {
         setStage(behind.key);
         window.scrollTo({ top: 0, behavior: "smooth" });
@@ -1056,10 +1067,10 @@ export default function CohortWorkspace() {
         if (next) {
           setStage(next.key);
           window.scrollTo({ top: 0, behavior: "smooth" });
-          toast(locked ? `«${next.label}»` : `حُفظت «${STAGES[at].label}» — إلى «${next.label}»`);
+          toast(planLocked ? `«${next.label}»` : `حُفظت «${STAGES[at].label}» — إلى «${next.label}»`);
         }
       } else {
-        setGaps(gapsFor(stage, fresh), { saved: !locked });
+        setGaps(gapsFor(stage, fresh), { saved: !planLocked });
       }
     } catch (e) {
       toastError(e instanceof ApiError ? e.message : "تعذّر الحفظ");
@@ -1096,7 +1107,7 @@ export default function CohortWorkspace() {
      الحفظَ تُفتح بلا حفظ — فيها يُصلَح، وما كتبه باقٍ في الشاشة كما هو. */
   const openStage = async (s: Stage) => {
     if (s === stage || busy) return;
-    const unsaved = !locked && Object.values(dirty).some(Boolean);
+    const unsaved = !planLocked && Object.values(dirty).some(Boolean);
     if (unsaved && !saveProblems().some((p) => p.stage === s)) {
       setBusy(true);
       setGaps(null);
@@ -1116,7 +1127,7 @@ export default function CohortWorkspace() {
   };
   /* والخروجُ من الشعبة يحفظ آخرَ ما في اليد (والعلّةُ عند `leaveSave` أعلاه). وما
      يمنع الحفظَ لا يُرسَل ليُردّ — يُقال إنّه لم يُحفظ. */
-  leaveSave.current = locked || !Object.values(dirty).some(Boolean) ? null : () => {
+  leaveSave.current = planLocked || !Object.values(dirty).some(Boolean) ? null : () => {
     if (saveProblems().length) {
       toastError("خرجتَ من الشعبة ولم يُحفظ ما كتبتَه — كان فيه ما يمنع حفظَه");
       return;
@@ -1410,7 +1421,7 @@ export default function CohortWorkspace() {
                 /* الحالُ يُقال في الاسم المسموع كذلك: من لا يرى اللونَ يقرؤه */
                 /* وعليها ملاحظةٌ من الإدارة — تُقال في الاسم المسموع وتُرى علامةً (٣ب) */
                 const noted = (notedStages as readonly string[]).includes(s.key);
-                const stateAr = `${dirty[s.key] ? "فيها تعديلٌ لم يُحفَظ" : done ? "تمّت" : selected ? "الحاليّة" : !open ? "مقفلةٌ حتّى تُتمّ ما قبلها" : "لم تتمّ بعد"}${noted ? " · عليها ملاحظةٌ من الإدارة" : ""}`;
+                const stateAr = `${dirty[s.key] ? "فيها تعديلٌ لم يُحفَظ" : done ? "تمّت" : selected ? "الحاليّة" : !open ? "للمعاينة — تُملأ بعد أن تُتمّ ما قبلها" : "لم تتمّ بعد"}${noted ? " · عليها ملاحظةٌ من الإدارة" : ""}`;
                 const blocker = STAGES.slice(0, i).find((x) => !doneOf(x.key));
                 return (
                   <li key={s.key} className="relative flex min-w-0 flex-1 justify-center">
@@ -1422,12 +1433,11 @@ export default function CohortWorkspace() {
                     <button
                       type="button"
                       onClick={() => openStage(s.key)}
-                      disabled={!open}
                       aria-current={selected ? "step" : undefined}
                       aria-label={`الخطوة ${i + 1} من ${STAGES.length}: ${s.label} — ${stateAr}`}
-                      title={!open && blocker ? `أكمِل «${blocker.label}» أوّلا` : undefined}
+                      title={!open && blocker ? `معاينة — تملؤها بعد أن تُتمّ «${blocker.label}»` : undefined}
                       className={`group relative flex min-h-11 w-full flex-col items-center gap-1 rounded-xl px-0.5 py-1.5 transition ${
-                        !open ? "cursor-not-allowed" : selected ? "bg-white/[0.05]" : "hover:bg-white/[0.03]"
+                        selected ? "bg-white/[0.05]" : "hover:bg-white/[0.03]"
                       }`}
                     >
                       <span className={`relative grid h-7 w-7 shrink-0 place-items-center rounded-full border-2 text-fine font-black transition ${
@@ -1480,12 +1490,14 @@ export default function CohortWorkspace() {
                 type="button"
                 className="w-full shrink-0 sm:w-auto"
                 loading={busy}
-                disabled={busy || (atApproval && (locked || approved))}
-                onClick={() => void (atApproval ? submitNow() : saveAndContinue())}
+                disabled={busy || (atApproval && !previewing && (planLocked || approved))}
+                onClick={() => void (previewBlocker ? openStage(previewBlocker.key) : atApproval ? submitNow() : saveAndContinue())}
               >
-                {atApproval
-                  ? <><Send className="h-4 w-4" aria-hidden="true" /> {locked ? "بانتظار قرار الإدارة" : "أرسِلها للاعتماد"}</>
-                  : <>{locked ? "التالي" : "احفظ وتابِع"} <ArrowLeft className="h-4 w-4" aria-hidden="true" /></>}
+                {previewBlocker
+                  ? <><ArrowRight className="h-4 w-4" aria-hidden="true" /> املأ «{previewBlocker.label}»</>
+                  : atApproval
+                  ? <><Send className="h-4 w-4" aria-hidden="true" /> {planLocked ? "بانتظار قرار الإدارة" : "أرسِلها للاعتماد"}</>
+                  : <>{planLocked ? "التالي" : "احفظ وتابِع"} <ArrowLeft className="h-4 w-4" aria-hidden="true" /></>}
               </Button>
             )}
           </div>
@@ -1612,10 +1624,21 @@ export default function CohortWorkspace() {
         onApplied={() => load()}
       />
 
-      {locked && stage !== "approval" && (
+      {planLocked && stage !== "approval" && (
         <Inset tone="accent" className="mb-4 flex items-start gap-2 text-read leading-6">
           <Lock className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
           خطّتك بانتظار الاعتماد — لا تُعدَّل حتّى يصل القرار. ولو أردت تعديلها الآن، اطلب من الإدارة ردَّها إليك.
+        </Inset>
+      )}
+      {previewBlocker && (
+        <Inset tone="accent" data-preview className="mb-4 flex flex-wrap items-start gap-2 text-read leading-6">
+          <Eye className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+          <span className="min-w-0 flex-1">
+            <b className="font-black text-foreground">معاينة</b> — تراها الآن لتعرف ما ينتظرك، وتملؤها بعد أن تُتمّ «{previewBlocker.label}».
+          </span>
+          <Button tone="secondary" size="sm" onClick={() => void openStage(previewBlocker.key)}>
+            إلى «{previewBlocker.label}»
+          </Button>
         </Inset>
       )}
 
