@@ -266,11 +266,16 @@ describe('المُلزِمُ الأربعة في قائمة الإرسال', () 
     expect(row(late, 'identity').labelAr).toContain('تنتهي في')
   })
 
-  it('⚠️ محورٌ بلا تطبيقٍ عمليٍّ أو مُسلَّمٍ يحجب المحاور', () => {
+  it('⚠️ محورٌ بلا تطبيقٍ عمليٍّ يحجب المحاور — وبلا مُسلَّمٍ لا يحجب (١٠ أكتوبر ٢٠٢٦)', () => {
     const bare = mods.map((m, i) => (i === 4 ? { ...m, activityAr: '', artifactAr: 'x' } : m))
     const list = complete({}, { modules: bare })
     expect(blockingBeforeSubmit(list).map((c) => c.key)).toEqual(['modules'])
-    expect(row(list, 'modules').labelAr).toContain('المحور 5: بلا تطبيقٍ عمليّ ولا مُسلَّم')
+    expect(row(list, 'modules').labelAr).toContain('المحور 5: بلا تطبيقٍ عمليّ')
+    expect(row(list, 'modules').labelAr).not.toContain('مُسلَّم')
+
+    /* وحقلُ المُسلَّم «اختياريّ» في شاشة المدرّب — فخلوُّه في المحاور كلّها لا يردّ الإرسال */
+    const noArtifact = complete({}, { modules: mods.map((m) => ({ ...m, artifactAr: '' })) })
+    expect(blockingBeforeSubmit(noArtifact)).toEqual([])
   })
 
   it('⚠️ مشروعُ التخرّج بلا موعدٍ أو بعد نهاية الشعبة يحجب', () => {

@@ -6,7 +6,7 @@
 
 import { describe, expect, it } from 'vitest'
 import {
-  blockedItems, daysAr, hoursAr, planScorecard, practiceGaps, projectDeadlineProblem, scorecardNotes, seasonEndProblem,
+  artifactGaps, blockedItems, daysAr, hoursAr, planScorecard, practiceGaps, projectDeadlineProblem, scorecardNotes, seasonEndProblem,
   seasonLastDay, sourceGaps, type ScorecardInput, type ScorecardSession, type ScorecardTask,
 } from '@/application/trainer/plan-scorecard'
 import { REVIEW_NOTE_MAX } from '@/application/trainer/review-notes'
@@ -87,13 +87,23 @@ describe('المُلزِمُ الأربعة — تسقط `blocked`', () => {
     expect(failing(missing)).toEqual(['project:blocked'])
   })
 
-  it('③ لكلّ محورٍ تطبيقٌ عمليٌّ ومُسلَّم — جملةٌ لا حرف', () => {
+  it('③ لكلّ محورٍ تطبيقٌ عمليّ — جملةٌ لا حرف', () => {
     const i = good()
     const mods = (i.content as { modules: { activityAr: string; artifactAr: string }[] }).modules
     mods[1]!.activityAr = 'x'
-    mods[2]!.artifactAr = ''
     expect(failing(i)).toEqual(['practice:blocked'])
-    expect(practiceGaps(mods as never)).toEqual(['المحور 2: بلا تطبيقٍ عمليّ', 'المحور 3: بلا مُسلَّم'])
+    expect(practiceGaps(mods as never)).toEqual(['المحور 2: بلا تطبيقٍ عمليّ'])
+  })
+
+  it('③ب والمُسلَّمُ نصيحةٌ لا تمنع (١٠ أكتوبر ٢٠٢٦) — حقلُه «اختياريّ» في الشاشة', () => {
+    const i = good()
+    const mods = (i.content as { modules: { activityAr: string; artifactAr: string }[] }).modules
+    mods[2]!.artifactAr = ''
+    mods[3]!.artifactAr = 'تقرير'
+    expect(failing(i)).toEqual(['artifact:advice'])
+    expect(blockedItems(planScorecard(i))).toEqual([])
+    expect(artifactGaps(mods as never)).toEqual(['المحور 3: بلا مُسلَّم', 'المحور 4: بلا مُسلَّم'])
+    expect(practiceGaps(mods as never)).toEqual([])
   })
 
   it('④ لكلّ محورٍ مصدر — والمسجَّلُ والمصدرُ بلا رابطٍ لا يُحسبان', () => {
