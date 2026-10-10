@@ -367,7 +367,11 @@ export interface EditContext {
   sessionTitle?: (id: string) => string | null
 }
 
-export interface EditRow { labelAr: string; beforeAr: string | null; afterAr: string | null; long?: boolean }
+/** صفُّ «قبل» و«بعد». والرابطُ يُقرأ مفكوكا ويُفتح (`beforeHref`/`afterHref`) — ليتحقّق منه قبل أن يقبله */
+export interface EditRow {
+  labelAr: string; beforeAr: string | null; afterAr: string | null; long?: boolean
+  beforeHref?: string; afterHref?: string
+}
 export interface EditView { titleAr: string; stepAr: string; rows: EditRow[] }
 
 function valueAr(field: string, v: unknown, ctx: EditContext): string | null {
@@ -382,16 +386,22 @@ function valueAr(field: string, v: unknown, ctx: EditContext): string | null {
   if (field === 'type') return TASK_TYPE_AR[String(x)] ?? String(x)
   if (field === 'preReading') return x ? 'نعم' : 'لا'
   if (field === 'dueAt') return whenAr(String(x))
+  /* الرابطُ العربيُّ يُخزَّن مرمَّزا (%D8%A7…) — ويُقرأ بحروفه */
+  if (field === 'url') { try { return decodeURI(String(x)) } catch { return String(x) } }
   return String(x)
 }
 
 const LONG = new Set(['bodyAr', 'activityAr', 'briefAr', 'summaryAr', 'noteAr', 'outcomeAr', 'artifactAr'])
+
+const isHttp = (v: unknown) => typeof v === 'string' && /^https?:\/\//i.test(v.trim())
 
 function rowsFor(fields: readonly string[], before: Record<string, unknown> | null, after: Record<string, unknown> | null, ctx: EditContext): EditRow[] {
   return fields.map((f) => ({
     labelAr: FIELD_AR[f] ?? f,
     beforeAr: before ? valueAr(f, before[f], ctx) : null,
     afterAr: after ? valueAr(f, after[f], ctx) : null,
+    ...(f === 'url' && before && isHttp(before[f]) ? { beforeHref: String(before[f]).trim() } : {}),
+    ...(f === 'url' && after && isHttp(after[f]) ? { afterHref: String(after[f]).trim() } : {}),
     ...(LONG.has(f) ? { long: true } : {}),
   }))
 }

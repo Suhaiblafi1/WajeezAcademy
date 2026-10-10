@@ -47,8 +47,8 @@ function Rows({ view }: { view: EditView }) {
         <div key={i} className="grid gap-1 sm:grid-cols-[8rem_1fr]">
           <dt className="text-read font-bold text-muted-foreground">{r.labelAr}</dt>
           <dd className="grid gap-1 sm:grid-cols-2">
-            <Cell label="قبل" text={r.beforeAr} long={r.long} muted />
-            <Cell label="بعد" text={r.afterAr} long={r.long} />
+            <Cell label="قبل" text={r.beforeAr} href={r.beforeHref} long={r.long} muted />
+            <Cell label="بعد" text={r.afterAr} href={r.afterHref} long={r.long} />
           </dd>
         </div>
       ))}
@@ -56,10 +56,13 @@ function Rows({ view }: { view: EditView }) {
   );
 }
 
-function Cell({ label, text, long, muted }: { label: string; text: string | null; long?: boolean; muted?: boolean }) {
+function Cell({ label, text, href, long, muted }: { label: string; text: string | null; href?: string; long?: boolean; muted?: boolean }) {
+  /* والرابطُ يُفتح في لسانٍ جديد — يتحقّق منه قبل أن يقبله */
   const body = text === null
     ? <span className="text-muted-foreground">— فارغ</span>
-    : <span className={`whitespace-pre-wrap break-words ${muted ? "text-muted-foreground" : "text-foreground"}`}>{text}</span>;
+    : href
+      ? <a href={href} target="_blank" rel="noreferrer" dir="ltr" className="break-all font-bold text-teal-light-ink underline">{text}</a>
+      : <span className={`whitespace-pre-wrap break-words ${muted ? "text-muted-foreground" : "text-foreground"}`}>{text}</span>;
   return (
     <div className="rounded-md border border-border/60 px-2 py-1.5 text-read leading-6">
       <span className="me-1 text-fine font-black text-muted-foreground">{label}:</span>
