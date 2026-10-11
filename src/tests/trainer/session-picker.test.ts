@@ -9,8 +9,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
-  dayNoteAr, firstWeekdayIn, fromClockNote, holidayOn, isWorkday, lateInSlot, suggestedSessionTitle, toClockNote, weeklyProposals,
-} from '@/application/trainer/session-picker'
+  dayNoteAr, firstWeekdayIn, fromClockNote, holidayOn, isWorkday, lateInSlot, suggestedSessionTitle, toClockNote, weeklyProposals, slotDayOptionAr, slotDays } from '@/application/trainer/session-picker'
 
 const code = (p: string) =>
   readFileSync(join(process.cwd(), p), 'utf8').replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '').replace(/^\s*\/\/.*$/gm, '')
@@ -133,5 +132,28 @@ describe('التكرارُ في الشاشة — خيارٌ لا طريقة', ()
     expect(guard).toBeGreaterThan(-1)
     expect(guard).toBeLessThan(body.indexOf('apiPost(`/api/trainer/cohorts/${cohortId}/sessions`'))
     expect(WEEKLY, 'بابٌ ثانٍ يفترق عن الأوّل').not.toMatch(/sessions\/bulk|sessions\/weekly/)
+  })
+})
+
+/* ═══ أيّامُ الموعد وحدَها — «اعرض لي الوقتَ المسموحَ به وحدَه» (صاحب المنصّة، ١١ أكتوبر ٢٠٢٦) ═══ */
+describe('قائمةُ أيّام الموعد', () => {
+  it('⚠️ من أوّل الموعد إلى آخره وحدَه — كلُّ يومٍ باسمه وتاريخه', () => {
+    const days = slotDays({ startsOn: '2026-12-23', endsOn: '2026-12-27' })
+    expect(days.map((d) => d.date)).toEqual(['2026-12-23', '2026-12-24', '2026-12-25', '2026-12-26', '2026-12-27'])
+    expect(days[0]!.labelAr).toBe('الأربعاء 23 ديسمبر')
+  })
+
+  it('⚠️ وأوّلُ ثلاثة أيّامٍ «الأنسب» — والعطلةُ معلَّمةٌ باسمها ولا تُحذف', () => {
+    const days = slotDays({ startsOn: '2026-12-23', endsOn: '2026-12-27' })
+    expect(days.map((d) => d.early)).toEqual([true, true, true, false, false])
+    expect(days.map(slotDayOptionAr)).toEqual([
+      'الأربعاء 23 ديسمبر · الأنسب', 'الخميس 24 ديسمبر · الأنسب', 'الجمعة 25 ديسمبر · عطلة: عيد الميلاد',
+      'السبت 26 ديسمبر', 'الأحد 27 ديسمبر',
+    ])
+  })
+
+  it('وموعدٌ مقلوبٌ أو غيرُ مقروءٍ لا أيّامَ له', () => {
+    expect(slotDays({ startsOn: '2026-12-27', endsOn: '2026-12-23' })).toEqual([])
+    expect(slotDays({ startsOn: '', endsOn: '2026-12-23' })).toEqual([])
   })
 })
