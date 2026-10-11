@@ -79,10 +79,10 @@ import {
 const API_BASE: string = import.meta.env.VITE_API_URL ?? "";
 import { PLAN_TITLE_MIN, planTextProblemsAr, type PlanTextPlace } from "@/application/trainer/plan-limits";
 import { blockingBeforeSubmit, sendBlock, trainerOwned } from "@/application/trainer/plan-gate";
-import { notedSections, notesForTrainer, type ReviewNotes } from "@/application/trainer/review-notes";
+import { notesForTrainer, type ReviewNotes } from "@/application/trainer/review-notes";
 import { firstStep, readWorkspaceStep, STEP_PARAM } from "@/application/trainer/workspace-step";
 import { trainerRegistrationLine } from "@/application/learning/registration-state";
-import { ReviewNotesBanner, StageReviewNote } from "@/components/ReviewNotes";
+import { StageReviewNote } from "@/components/ReviewNotes";
 import { ReviewReportList, type ReviewReport } from "@/components/ReviewReports";
 import { PlanEditsPanel } from "@/components/PlanEdits";
 import { toast, toastError } from "@/components/Toast";
@@ -873,7 +873,6 @@ export default function CohortWorkspace() {
 
      تُقرأ ما دامت الخطّةُ مردودةً إليه وحدَه (`notesForTrainer`). */
   const reviewNotes: ReviewNotes = notesForTrainer(ws.plan);
-  const notedStages = notedSections(reviewNotes);
   /* حالةُ كلّ مرحلةٍ من قائمة الخادم — والمفتاحُ واحدٌ هنا وهناك */
   const byKey = new Map(ws.checklist.map((c) => [c.key, c]));
   /* ما يحجب الإرسال — من `plan-gate`، القاعدةِ نفسِها التي يحتجّ بها الخادم.
@@ -1578,10 +1577,8 @@ export default function CohortWorkspace() {
                 const selected = stage === s.key;
                 const open = canOpen(i);
                 /* الحالُ يُقال في الاسم المسموع كذلك: من لا يرى اللونَ يقرؤه */
-                /* وعليها ملاحظةٌ من الإدارة — تُقال في الاسم المسموع وتُرى علامةً (٣ب) */
-                const noted = (notedStages as readonly string[]).includes(s.key);
                 const lack = missing.get(s.key)?.length ?? 0;
-                const stateAr = `${dirty[s.key] ? "فيها تعديلٌ لم يُحفَظ" : done ? "تمّت" : selected ? "الحاليّة" : !open ? "للمعاينة — تُملأ بعد أن تُتمّ ما قبلها" : "لم تتمّ بعد"}${lack ? ` · ينقصها ${lack}` : ""}${noted ? " · عليها ملاحظةٌ من الإدارة" : ""}`;
+                const stateAr = `${dirty[s.key] ? "فيها تعديلٌ لم يُحفَظ" : done ? "تمّت" : selected ? "الحاليّة" : !open ? "للمعاينة — تُملأ بعد أن تُتمّ ما قبلها" : "لم تتمّ بعد"}${lack ? ` · ينقصها ${lack}` : ""}`;
                 const blocker = STAGES.slice(0, i).find((x) => !doneOf(x.key));
                 return (
                   <li key={s.key} className="relative flex min-w-0 flex-1 justify-center">
@@ -1609,9 +1606,6 @@ export default function CohortWorkspace() {
                         {done ? <Check className="h-3.5 w-3.5" aria-hidden="true" /> : !open ? <Lock className="h-3 w-3" aria-hidden="true" /> : i + 1}
                         {dirty[s.key] && (
                           <span className="absolute -end-0.5 -top-0.5 h-2.5 w-2.5 rounded-full border-2 border-surface bg-gold" aria-hidden="true" />
-                        )}
-                        {noted && (
-                          <span data-noted className="absolute -bottom-0.5 -end-0.5 h-2.5 w-2.5 rounded-full border-2 border-surface bg-red-400" aria-hidden="true" />
                         )}
                       </span>
                       {/* الاسمُ تحت دائرته دائما — للمقفلة كذلك: يرى ما ينتظره ولا يفتحه.
@@ -1740,7 +1734,9 @@ export default function CohortWorkspace() {
               )}
             </Inset>
           )}
-          <ReviewNotesBanner notes={reviewNotes} current={stage} onOpen={openStage} />
+          {/* وكان هنا صندوقُ «ملاحظةُ الإدارة — على خطوات: …» ونقاطٌ حمراءُ على دوائرها. فسأل صاحبُ
+              المنصّة: «لماذا هذا القسم؟» وقرّر (١١ أكتوبر ٢٠٢٦): الملاحظاتُ بنودٌ في «المراجعة» يوافق
+              عليها، نقاطا في أُطرٍ مرتّبة (`note` في `plan-edits.ts`). فلا صندوقَ هنا ولا نقاط */}
           {/* وتقريرُ المراجعة صار في «المراجعة» (١١ أكتوبر ٢٠٢٦) — كان هنا مع الملاحظة */}
 
           {/* وما ينقص الخطوةَ كي تتمّ — بعد «احفظ وتابِع» التي لم تنقل. لاصقٌ
@@ -1848,6 +1844,7 @@ export default function CohortWorkspace() {
             unsaved={Object.values(dirty).some(Boolean)}
             onApplied={() => load()}
             onCounts={setRevision}
+            onOpenStep={(s) => { if (STAGES.some((x) => x.key === s)) void openStage(s as Stage); }}
           />
           {/* وحين يقرّر في كلّها: يؤكّد ويرسل من هنا — «أُرسلت مراجعتُك» وتعود إلى الإدارة */}
           {revision.total > 0 && revision.pending === 0 && inHand && (

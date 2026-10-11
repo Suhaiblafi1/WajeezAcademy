@@ -138,14 +138,15 @@ describe('وفي ورشة المدرّب', () => {
   /* و«المراجعة» (١١ أكتوبر ٢٠٢٦) درجةٌ بلا ملاحظة: بنودُها هي ما قالته الإدارة */
   it('⚠️ وملاحظةُ الخطوة في رأسها — لكلّ خطوةٍ إلّا الاعتماد والمراجعة', () => {
     expect(WORKSPACE).toMatch(/\{stage !== "approval" && stage !== "review" && <StageReviewNote stage=\{stage\} text=\{reviewNotes\[stage\]\} \/>\}/)
-    expect(WORKSPACE).toMatch(/<ReviewNotesBanner notes=\{reviewNotes\} /)
   })
 
-  it('⚠️ والشريطُ يعلّم الخطوةَ التي عليها ملاحظة — بالعين وبالاسم المسموع', () => {
-    expect(WORKSPACE).toMatch(/const noted = \(notedStages as readonly string\[\]\)\.includes\(s\.key\);/)
-    expect(WORKSPACE).toMatch(/\{noted && \(\s*<span data-noted /)
-    /* والحالُ المسموعُ يحملها — `stateAr` هو ما يُقرأ في اسم الدرجة */
-    expect(WORKSPACE).toMatch(/const stateAr = `\$\{dirty\[s\.key\][^\n]*\}\$\{noted \? " · عليها ملاحظةٌ من الإدارة" : ""\}`;/)
+  /* وكان صندوقُ «ملاحظةُ الإدارة — على خطوات: …» فوق كلّ خطوة، ونقطةٌ حمراءُ على كلّ دائرةٍ عليها
+     ملاحظة. فسأل صاحبُ المنصّة: «لماذا هذا القسم؟ أهناك تعديلاتٌ غيرُ موجودةٍ في قسم التعديلات؟»،
+     وقرّر (١١ أكتوبر ٢٠٢٦): الملاحظاتُ بنودٌ في «المراجعة» يوافق عليها — `note-items.test.ts` */
+  it('⚠️ ولا صندوقَ فوق الخطوات ولا نقطةَ حمراءَ على دوائرها — الملاحظاتُ بنودٌ في «المراجعة»', () => {
+    expect(WORKSPACE).not.toMatch(/<ReviewNotesBanner\b/)
+    expect(WORKSPACE).not.toMatch(/data-noted|notedStages/)
+    expect(WORKSPACE).not.toMatch(/عليها ملاحظةٌ من الإدارة/)
   })
 })
 
