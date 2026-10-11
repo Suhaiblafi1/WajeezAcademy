@@ -85,7 +85,7 @@ describe('② المخطّطُ يحملها، والشاشةُ تكتبها با
     expect(WS).toContain('onChange={(m) => patchGroup(i, MATERIAL_PATCH[m])}')
     const options = WS.slice(WS.indexOf('const MATERIAL_OPTIONS'), WS.indexOf('function MaterialChoice('))
     expect(options).toMatch(/value: "template", label: "كتبتُها على قالب وجيز"/)
-    expect(options).toMatch(/value: "own", label: "مادّتي الجاهزة", hint: "[^"]*يراه المعتمِدُ[^"]*"/)
+    expect(options).toMatch(/value: "own", label: "مادّتي الجاهزة", hint: "[^"]*المعتمِدُ[^"]*"/)
     const choice = WS.slice(WS.indexOf('function MaterialChoice('), WS.indexOf('function StageIntro('))
     expect(choice, 'صار اختيارا بلا زرّين').toMatch(/type="radio" name=\{id\}/)
     expect(choice).toContain('MATERIAL_OPTIONS.map(')
