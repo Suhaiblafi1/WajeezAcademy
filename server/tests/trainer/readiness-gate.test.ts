@@ -17,7 +17,10 @@
    إلّا بقاعدة: أنّ المنعَ **يقع فعلا** في `decide`، وأنّ التجاوزَ يُكتب
    أثرا وسجلَّ حالة، وأنّ القبولَ الداخليَّ لا يفتح لصاحبه بوّابةً بعد. */
 
-import { beforeAll, describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect as vexpect, it } from 'vitest'
+import { plainExpect } from '../helpers/plain-expect'
+/* يُقارَن بلا تشكيلٍ إعرابيّ — العلّةُ في `helpers/plain-expect.ts` */
+const expect = plainExpect(vexpect)
 import type { PrismaClient } from '@prisma/client'
 import { setupTestDb, testPrisma } from '../helpers/db'
 import { AuthService } from '../../services/auth.service'

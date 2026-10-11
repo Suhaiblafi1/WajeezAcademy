@@ -9,7 +9,10 @@
    ٣) **وقبولُه ينقل الكلَّ**: اللقاءاتِ ومواعيدَ المهامّ التي تتبعها، معا.
    ٤) **أو لا شيء**: إن سقط نقلٌ في وسطه أُعيد ما نُقل قبله — فلا يبقى نصفُ جدول. */
 
-import { beforeAll, describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect as vexpect, it } from 'vitest'
+import { plainExpect } from '../helpers/plain-expect'
+/* يُقارَن بلا تشكيلٍ إعرابيّ — العلّةُ في `helpers/plain-expect.ts` */
+const expect = plainExpect(vexpect)
 import type { PrismaClient } from '@prisma/client'
 import type { FastifyInstance } from 'fastify'
 import { setupTestDb, testPrisma } from '../helpers/db'

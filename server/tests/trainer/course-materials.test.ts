@@ -10,7 +10,10 @@
       الإعداد ناقصة، ويُسمّيها — ويُقبل حين تكتمل.
    ④ **وما عند التقييم لا يُعدَّل**، ولا يكتب أحدٌ موادَّ دورةٍ ليست له. */
 
-import { beforeAll, describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect as vexpect, it } from 'vitest'
+import { plainExpect } from '../helpers/plain-expect'
+/* يُقارَن بلا تشكيلٍ إعرابيّ — العلّةُ في `helpers/plain-expect.ts` */
+const expect = plainExpect(vexpect)
 import { createHash } from 'node:crypto'
 import type { PrismaClient } from '@prisma/client'
 import { setupTestDb, testPrisma } from '../helpers/db'

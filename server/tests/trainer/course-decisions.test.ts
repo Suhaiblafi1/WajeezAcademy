@@ -8,7 +8,11 @@
    والمدرّبون يُقبَلون بالمسار الحقيقيّ (`review.decide`)، فالاقتراحاتُ مبذورةٌ
    والمؤهّلاتُ المعلَّقةُ مزروعةٌ كما تزرعها المنصّة. */
 
-import { beforeAll, describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect as vexpect, it } from 'vitest'
+import { plainExpect } from '../helpers/plain-expect'
+import { plainAr } from '../../../src/application/text/plain-ar'
+/* يُقارَن بلا تشكيلٍ إعرابيّ — العلّةُ في `helpers/plain-expect.ts` */
+const expect = plainExpect(vexpect)
 import type { PrismaClient } from '@prisma/client'
 import { setupTestDb, testPrisma } from '../helpers/db'
 import { AuthService } from '../../services/auth.service'
@@ -195,7 +199,7 @@ describe('ملفُّ القرارات — يُعاين ثمّ يُطبَّق م�
     expect(out.applied, 'يُطبَّق المدرّبُ السليمُ وحدَه — خطوتُه الواحدة، لا أقلّ ولا أكثر').toHaveLength(1)
     const blocked = out.plan!.steps.filter((s) => s.state === 'blocked')
     expect(blocked.map((s) => s.reference)).toEqual([e.reference, e.reference])
-    expect(blocked.some((s) => s.reasonAr?.includes('رُفض'))).toBe(true)
+    expect(blocked.some((s) => plainAr(s.reasonAr ?? '').includes('رفض'))).toBe(true)
     expect((await prisma.trainerCourseProposal.findUniqueOrThrow({ where: { id: e.idOf('الأوّل') } })).status,
       'طُبّق نصفُ قراراتِ مدرّبٍ فيه خطوةٌ ممتنعة').toBe('submitted')
     expect((await prisma.trainerCourseQualification.findUniqueOrThrow({
