@@ -95,7 +95,7 @@ export default function TrainerAnnouncement() {
       setItems((prev) => prev?.map((a) => (a.id === shown.id ? { ...a, readAt: r.readAt } : a)) ?? null);
       close();
     } catch {
-      setError("لم يُحفظ «قرأتُه» — تحقّق من اتّصالك وأعِد المحاولة، أو اختر «ذكّرني لاحقا» فتعود لك.");
+      setError("لم يُحفظ «قرأتُه». أعِد المحاولة، أو اختر «ذكّرني لاحقا».");
     } finally {
       setBusy(false);
     }
@@ -124,8 +124,7 @@ export default function TrainerAnnouncement() {
               <Button tone="secondary" disabled={busy} onClick={later}>ذكّرني لاحقا</Button>
             </div>
             <p className="text-read leading-6 text-muted-foreground">
-              «قرأتُه» يُعلم الإدارةَ أنّه وصلك فلا يعود. و«ذكّرني لاحقا» يغلقه الآن ويعود في زيارتك التالية —
-              ولا يتوقّف شيءٌ في عملك بأيٍّ منهما.
+              «قرأتُه» يُعلم الإدارةَ فلا يعود. و«ذكّرني لاحقا» يغلقه الآن ويعود في زيارتك التالية.
             </p>
           </div>
         )}

@@ -203,7 +203,7 @@ export default function TrainerBrief() {
     <div dir="rtl" className="guide-root brief-root min-h-screen text-foreground">
       <SeoHead
         title={TRAINER_BRIEF_TITLE_AR}
-        description="لمن تدرّس، وماذا، وكيف ومتى، وما تُعِدّه أنت، وكيف تُحاسَب ويجري التعاقد — لمن دعوناه إلى التدريب معنا."
+        description="لمن تدرّس وماذا، ومتى وكيف، وما تُعِدّه، وكيف تُحاسَب ونتعاقد."
         path={TRAINER_BRIEF_PATH}
         noindex
       />
@@ -233,11 +233,11 @@ export default function TrainerBrief() {
             {TRAINER_BRIEF_TITLE_AR}
           </h1>
           <p className="mt-4 max-w-2xl text-lg leading-9" style={{ color: "rgb(var(--g-dark-ink))" }}>
-            ثلاثُ صفحاتٍ تجيب عمّا يُسأل قبل القرار: من نحن، ولمن تدرّس، وماذا، وكيف ومتى، وما تُعِدّه أنت، وكيف تُحاسَب ويجري التعاقد.
+            ثلاثُ صفحاتٍ: من نحن، ولمن تدرّس وماذا، ومتى وكيف، وما تُعِدّه، وكيف تُحاسَب ونتعاقد.
           </p>
           <div className="mt-5 flex max-w-2xl items-start gap-3 rounded-xl bg-white/85 px-5 py-4 text-base leading-8" style={{ color: "rgb(var(--g-dark-ink))" }}>
             <Sparkles className="mt-1.5 h-5 w-5 shrink-0" aria-hidden="true" />
-            <p>وعدُنا لمن يتعلّم معنا: لا نقيس تعلّمك بما شاهدت، بل بما أنجزت وأثبتّ. والمدرّبُ من يقوده إلى ذلك — ولهذا لا يبدأ عندنا من صفحةٍ بيضاء.</p>
+            <p>وعدُنا للمتعلّم: نقيس تعلّمه بما أنجز وأثبت، لا بما شاهد. والمدرّبُ يقوده إليه، ولا يبدأ من صفحةٍ بيضاء.</p>
           </div>
           <ul className="brief-grid-4 mt-6 grid grid-cols-2 gap-3 md:grid-cols-4">
             {BRIEF_FACTS.map((f) => (

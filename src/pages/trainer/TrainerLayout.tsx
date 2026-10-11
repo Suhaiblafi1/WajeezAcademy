@@ -113,8 +113,7 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
         <GraduationCap className="h-12 w-12 text-[#6EC7D1]" />
         <h1 className="mt-5 text-2xl font-black">بوابة المدرب</h1>
         <p className="mt-2 max-w-md text-center text-sm leading-7 text-muted-foreground">
-          تُفتح هذه البوابة بحساب مدرّب معتمد. إن كنت مدرّبا فسجّل الدخول،
-          وإن أردت الانضمام إلى فريق التدريب فابدأ بطلب العضوية.
+          للمدرّبين المعتمدين. سجّل الدخول، أو اطلب الانضمام.
         </p>
         <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
           <Link to="/auth" className="rounded-full bg-teal px-6 py-3 font-black text-on-teal transition hover:bg-teal-light">
@@ -183,10 +182,10 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
         <GraduationCap className="h-12 w-12 text-[#6EC7D1]" />
         <h1 className="mt-5 text-2xl font-black">بوّابة المدرّب</h1>
         <p className="mt-2 max-w-md text-center text-sm leading-7 text-muted-foreground">
-          حسابُك يملك صلاحيّاتِ المدرّب، لكن لا ملفَّ مدرّبٍ مرتبطا به — والشعبُ والتقييماتُ والمستحقّاتُ كلُّها تُقرأ من ذلك الملفّ. فلا شيءَ هنا لنعرضه لك.
+          لا ملفَّ مدرّبٍ مرتبطا بحسابك، فلا شيءَ هنا لعرضه.
         </p>
         <p className="mt-3 max-w-md text-center text-read leading-6 text-muted-foreground">
-          وهذا متوقَّعٌ لمدير النظام: بوّابةُ المدرّب لمن يُدرِّس فعلا. لمعاينتها، ادخل بحساب مدرّب.
+          لمعاينتها، ادخل بحساب مدرّب.
         </p>
         <Link to="/admin" className="mt-7 rounded-full border border-white/15 px-6 py-3 font-bold text-foreground transition hover:border-white/40">
           عُد إلى لوحة الإدارة

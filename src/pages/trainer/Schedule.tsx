@@ -114,7 +114,7 @@ export default function TrainerSchedule() {
         <EmptyState
           icon={ServerOff}
           titleAr="تعذّر تحميلُ جدولك"
-          reasonAr="لم يُجب الخادم. أعد تحميلَ الصفحة، وإن تكرّر فأبلغ الإدارة."
+          reasonAr="أعد تحميلَ الصفحة، وإن تكرّر فأبلغ الإدارة."
         />
       </TrainerLayout>
     );
@@ -156,10 +156,9 @@ export default function TrainerSchedule() {
           <Card as="p" tone="danger" className="mt-3 flex items-start gap-2 text-read leading-6 text-danger-ink">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
             <span>
-              جلساتٌ من شعبَتين تتزاحم في وقتٍ واحد. حارسُ الإسناد يمنع الشعبةَ المتعارضةَ عند إسنادها،
-              ولا يمنع جلسةً تُضاف بعده — فهذه تُراجَع مع الإدارة، ويمكنك اقتراحُ تأجيلٍ من{" "}
+              جلساتٌ من شعبتَين في وقتٍ واحد — حارسُ الإسناد لا يمنع جلسةً تُضاف بعده. راجِعها مع الإدارة، أو اقترح تأجيلا من{" "}
               <Link to="/trainer/board" className="font-bold underline">لوح شعبي</Link>.
-              {" "}وجلسةٌ بلا وقتِ نهايةٍ تُحسب ساعةً واحدة.
+              {" "}وجلسةٌ بلا نهايةٍ تُحسب ساعةً واحدة.
             </span>
           </Card>
         )}
@@ -205,7 +204,7 @@ export default function TrainerSchedule() {
           className="mt-5"
           icon={CalendarDays}
           titleAr="لا جلسةَ في الأفق"
-          reasonAr={`لا جلسةَ مجدولةً لك في ${data.days} يوما القادمة — وما إن تُسنَد إليك شعبةٌ بجلسات حتّى تظهر هنا مرتّبةً باليوم.`}
+          reasonAr={`لا جلسةَ مجدولةً لك في ${data.days} يوما القادمة. تظهر هنا حين تُسنَد إليك شعبة.`}
         />
       ) : (
         <div className="mt-5 space-y-5">
@@ -233,7 +232,7 @@ export default function TrainerSchedule() {
                               <span className="me-1.5 inline-flex items-center rounded-full border border-gold/40 bg-gold/10 px-2.5 py-0.5 text-fine font-black text-gold-ink">
                                 بانتظار اعتماد الإدارة
                               </span>
-                              غيرُ ظاهرةٍ للمتعلّمين بعد — وهي في جدولك.
+                              لا يراها المتعلّمون بعد.
                             </p>
                           )}
                         </div>

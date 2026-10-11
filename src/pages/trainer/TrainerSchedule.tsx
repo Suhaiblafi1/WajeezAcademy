@@ -138,8 +138,7 @@ export default function TrainerSchedule({
   if (!win.open) {
     return (
       <Inset as="p" className="text-read leading-6 text-muted-foreground">
-        حدّد مدّةَ شعبتك في خطوتها الأولى («المعلومات الأساسيّة») — من متى إلى متى — فتُفتح لك
-        جدولةُ اللقاءات داخلها.
+        حدّد مدّةَ شعبتك في خطوة «المعلومات الأساسيّة» لتُفتح جدولةُ اللقاءات.
       </Inset>
     );
   }
@@ -172,10 +171,10 @@ export default function TrainerSchedule({
         <CalendarPlus className="h-4 w-4 shrink-0 text-teal-light-ink" /> لقاءاتُ الشعبة
       </p>
       <p className="mt-1 text-read leading-6 text-muted-foreground">
-        تجدولها داخلَ مدّة شعبتك: من <b className="text-foreground">{day(win.start)}</b> إلى{" "}
+        داخلَ مدّة شعبتك: من <b className="text-foreground">{day(win.start)}</b> إلى{" "}
         <b className="text-foreground">{day(win.end)}</b>
 .
-        {" "}وبعد إنشائها <b className="text-foreground">تعتمدها الإدارة</b>، فتُنشَر للمسجَّلين بتواريخها ويصلهم رابطُها بالبريد.
+        {" "}ثمّ <b className="text-foreground">تعتمدها الإدارة</b> فتُنشَر للمسجَّلين ويصلهم رابطُها.
       </p>
 
       {/* ═══ لقاءٌ لكلّ محورٍ على الأقلّ — يُقال هنا لا عند ردّ الاعتماد ═══
@@ -183,8 +182,7 @@ export default function TrainerSchedule({
           له الزيادةُ كما يشاء موزّعةً على الفصل كاملا» (١٥ سبتمبر ٢٠٢٦). */}
       {short > 0 && (
         <Inset tone="warn" className="mt-3 text-read leading-6 text-gold-ink">
-          بقي عليك {short === 1 ? "لقاءٌ واحد" : `${short} لقاءات`} — لكلّ محورٍ لقاءٌ على الأقلّ ({haveSessions}/{minSessions}).
-          ولك أن تزيد عليها ما شئت موزّعا على مدّة الشعبة.
+          بقي عليك {short === 1 ? "لقاءٌ واحد" : `${short} لقاءات`} — لكلّ محورٍ لقاءٌ على الأقلّ ({haveSessions}/{minSessions}). ولك أن تزيد.
         </Inset>
       )}
 
@@ -193,7 +191,7 @@ export default function TrainerSchedule({
       <div className="mt-4 grid gap-4">
         {/* ═══ المتكرّرُ أوّلا والمتفرّقُ مخرج ═══
             والقسمةُ صفٌّ من زرَّين لا قائمةٌ منسدلة: خياران يُرى كلاهما. */}
-        <StaffField as="div" wide label="كيف تجدولها؟" hint="شعبةٌ في فصلٍ ثابتٍ تجتمع سلسلةً — والمتفرّقةُ لمن يحتاجها.">
+        <StaffField as="div" wide label="كيف تجدولها؟" hint="السلسلةُ هي الأصل، والمتفرّقُ عند الحاجة.">
           <div className="flex flex-wrap gap-2">
             {([
               ["series", "جدولٌ متكرّر", "يوم أو أيّامٌ في الأسبوع، وعددُ اللقاءات"],
@@ -217,8 +215,8 @@ export default function TrainerSchedule({
 
         <StaffField wide label={mode === "series" ? "عنوانُ السلسلة" : "عنوانُ اللقاء"}
           hint={mode === "series"
-            ? "يُرقَّم تلقائيّا: «التحليل العمليّ — اللقاء ١». ولك تعديلُ كلِّ عنوانٍ في المعاينة."
-            : "ما يراه المتعلّم في تقويمه — «اللقاء الثاني · التحليل العمليّ»."}>
+            ? "يُرقَّم تلقائيّا، وتعدّله في المعاينة."
+            : "ما يراه المتعلّم في تقويمه."}>
           <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })}
             aria-label="عنوانُ اللقاء" placeholder="عنوانُ اللقاء" className={staffControlCls} />
         </StaffField>
@@ -252,7 +250,7 @@ export default function TrainerSchedule({
               {FROM.map((c) => <option key={c} value={c}>{slotLabelAr(c)}</option>)}
             </select>
           </StaffField>
-          <StaffField label="إلى الساعة" hint="ساعتان على الأقلّ — فالسلّمُ يبدأ منها.">
+          <StaffField label="إلى الساعة" hint="ساعتان على الأقلّ.">
             <select value={form.to} aria-label="ساعةُ انتهاء اللقاء"
               onChange={(e) => setForm({ ...form, to: e.target.value })}
               className={staffControlCls}>
@@ -263,7 +261,7 @@ export default function TrainerSchedule({
 
         {mode === "series" && (
           <>
-            <StaffField as="div" wide label="أيّامُ الأسبوع" hint="اللقاءُ يتكرّر في هذه الأيّام حتّى يكتمل عددُه.">
+            <StaffField as="div" wide label="أيّامُ الأسبوع" hint="يتكرّر فيها حتّى يكتمل العدد.">
               <div className="flex flex-wrap gap-2">
                 {WEEKDAYS_AR.map((name, i) => (
                   <label key={name}
@@ -285,7 +283,7 @@ export default function TrainerSchedule({
             </StaffField>
 
             <div className="grid gap-4 sm:grid-cols-3">
-              <StaffField label="عددُ اللقاءات" hint={`لكلّ محورٍ لقاءٌ على الأقلّ — وأكثرُها ${MAX_SERIES}.`}>
+              <StaffField label="عددُ اللقاءات" hint={`لقاءٌ لكلّ محورٍ على الأقلّ، وأكثرُها ${MAX_SERIES}.`}>
                 <input type="number" dir="ltr" min={1} max={MAX_SERIES} value={rule.count}
                   aria-label="عددُ اللقاءات"
                   onChange={(e) => setRule({ ...rule, count: Number(e.target.value) || 0 })}
@@ -317,7 +315,7 @@ export default function TrainerSchedule({
                 <p className="text-read leading-6 text-muted-foreground">
                   <b className="text-foreground">{keep.length} لقاءً ستُرسَل للاعتماد</b>
                   {rows.length > keep.length && <> · و{rows.length - keep.length} خارجَ مدّة الشعبة لا تُرسَل</>}.
-                  {" "}كلُّ تاريخٍ هنا يصير اجتماعَ زووم — فاقرأها قبل الإرسال. وإعادةُ العرض تُلغي تعديلاتِك.
+                  {" "}كلُّ تاريخٍ يصير اجتماعَ زووم، فراجِعها. وإعادةُ العرض تُلغي تعديلاتِك.
                 </p>
 
                 {/* ═══ نصيحةُ التباعد — تُقال ولا تُفرَض ═══
@@ -365,7 +363,7 @@ export default function TrainerSchedule({
 
         {/* ملاحظاتُ هذا اللقاء — كانت واحدةً للشعبة كلِّها، فتُكتب عامّةً فلا تُقرأ */}
         <StaffField wide label={mode === "series" ? "ملاحظاتٌ تلحق كلَّ لقاءٍ في السلسلة (اختياريّ)" : "ملاحظاتٌ عن اللقاء (اختياريّ)"}
-          hint="ما تودّ أن يعرفه المتعلّم قبله: أيُسجَّل؟ أيلزمه شيءٌ يحضّره؟ أتُطلب الكاميرا؟">
+          hint="ما يلزم المتعلّمَ قبله: تحضيرٌ، كاميرا، تسجيل.">
           <textarea rows={2} value={form.noteAr} aria-label="ملاحظاتٌ عن اللقاء"
             onChange={(e) => setForm({ ...form, noteAr: e.target.value })} className={staffControlCls} />
         </StaffField>
@@ -375,7 +373,7 @@ export default function TrainerSchedule({
             متطابقةً في تقويم المتعلّم — وموضعُ ملفِّ كلِّ لقاءٍ صفحتُه بعد
             إنشائه، حيث يُقرأ مع سياقه. */}
         {mode === "single" && (
-          <StaffField as="div" wide label="ملفٌّ يُرفق باللقاء (اختياريّ)" hint="شرائحُ أو كرّاسةٌ يفتحها المتعلّم مع موعده.">
+          <StaffField as="div" wide label="ملفٌّ يُرفق باللقاء (اختياريّ)" hint="شرائحُ أو كرّاسة.">
             <ModuleBodyUpload
               cohortId={cohortId}
               purpose="plan_resource"
@@ -383,7 +381,7 @@ export default function TrainerSchedule({
               value={attachment}
               onChange={(next) => setAttachment({ ...attachment, ...next })}
               label="ارفع ملفّا"
-              hint="PDF وصورةٌ يُقرآن في الصفحة، وWord وشرائحُ وجداولُ تُنزَّل."
+              hint="PDF وصور تُقرأ في الصفحة، وغيرها يُنزَّل."
             />
           </StaffField>
         )}
@@ -402,8 +400,7 @@ export default function TrainerSchedule({
         <Inset className="flex items-start gap-2 text-read leading-6 text-muted-foreground">
           <Video className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
           <span>
-            يُنشأ اجتماعُ Zoom على حساب الأكاديميّة لحظةَ اعتماد الإدارة، ويصل رابطُه كلَّ مسجَّلٍ
-            في الشعبة. <b className="text-foreground">لا حسابَ تملكه ولا رابطَ تلصقه.</b>
+            يُنشأ اجتماعُ Zoom من حساب الأكاديميّة عند الاعتماد ويصل المسجَّلين. <b className="text-foreground">لا حسابَ تملكه ولا رابطَ تلصقه.</b>
           </span>
         </Inset>
 
@@ -421,7 +418,7 @@ export default function TrainerSchedule({
                   setAttachment({});
                   /* ولا يُقال «بُلِّغ ٠ متعلّما»: لم يُبلَّغ أحدٌ بعد، والصدقُ
                      أن يُقال إلى أين ذهب — لا رقمٌ يُقرأ عطبا. */
-                  toast("أُرسل اللقاءُ للاعتماد — يصل المسجَّلين حين تعتمده الإدارة");
+                  toast("أُرسل اللقاءُ للاعتماد");
                 } else {
                   /* ═══ تتابعٌ يقف عند أوّل رفض ═══
                      ما أُنشئ قبله لقاءاتٌ حقيقيّةٌ تُرى في القائمة وتُحذف،
@@ -438,7 +435,7 @@ export default function TrainerSchedule({
                   if (stopped) {
                     toastError(`أُنشئ ${made} من ${keep.length} ثمّ توقّف: ${stopped}`);
                   } else {
-                    toast(`أُرسلت ${made} لقاءاتٍ للاعتماد — تصل المسجَّلين حين تعتمدها الإدارة`);
+                    toast(`أُرسلت ${made} لقاءاتٍ للاعتماد`);
                     setForm({ ...BLANK, from: form.from, to: form.to });
                     setRule({ ...BLANK_RULE, startDate: rule.startDate });
                   }
@@ -454,7 +451,7 @@ export default function TrainerSchedule({
           {/* والشرطُ يُقال قبل النقر لا بعد الرفض */}
           {tooShort && <p className="mt-2 text-read font-bold text-gold-ink">{SHORT_SESSION_AR}.</p>}
           {mode === "series" && rows.length === 0 && (
-            <p className="mt-2 text-read text-muted-foreground">اعرِضِ المواعيدَ أوّلا — لا يُرسَل ما لم يُقرَأ.</p>
+            <p className="mt-2 text-read text-muted-foreground">اعرِضِ المواعيدَ أوّلا.</p>
           )}
         </div>
       </div>

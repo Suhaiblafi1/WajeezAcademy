@@ -154,7 +154,7 @@ function Cover() {
           دليلُ المدرّب
         </h1>
         <p className="mt-4 max-w-2xl text-lg leading-9" style={{ color: "rgb(var(--g-dark-ink))" }}>
-          دليلٌ يرشدك كيف تهيّئ بوّابتك وتعمل فيها — من اعتماد عقدك إلى أوّل كشفِ مستحقّاتك، خطوةً خطوة.
+          كيف تعمل في بوّابتك، من اعتماد عقدك إلى أوّل مستحقّاتك، خطوةً خطوة.
         </p>
         {/* ═══ الدليلُ ليس البوّابة (٣٠ سبتمبر ٢٠٢٦) ═══
             صاحبُ المنصّة: «أخشى أن يعتقد أنّ هذا هو المنصّةُ نفسُها». فالصفحةُ
@@ -164,8 +164,8 @@ function Cover() {
         <div className="mt-6 flex max-w-2xl items-start gap-3 rounded-xl bg-white/85 px-5 py-4 text-base leading-8" style={{ color: "rgb(var(--g-dark-ink))" }}>
           <Info className="mt-1.5 h-5 w-5 shrink-0" aria-hidden="true" />
           <p>
-            هذه صفحةُ شرحٍ، لا بوّابتُك. الصورُ فيها للتوضيح ولا تعمل أزرارُها — والعملُ نفسُه في
-            بوّابتك: افتحها في لسانٍ بجانب هذا الدليل، واتبع الخطواتِ فيها.
+            هذه صفحةُ شرحٍ، لا بوّابتُك، وأزرارُ صورها لا تعمل.
+            افتح بوّابتك في لسانٍ بجانبها واتبع الخطوات.
           </p>
         </div>
         <div className="guide-noprint mt-7 flex flex-wrap items-center gap-3">
@@ -186,7 +186,7 @@ function Journey() {
     <section id="journey" aria-labelledby="journey-h" className="guide-page scroll-mt-24 pt-14">
       <PageHead id="journey" hue="sky" title="رحلتُك في المنصّة" />
       <p className="guide-deep mt-6 px-6 py-5 text-lg leading-9">
-        ثماني محطّاتٍ من توقيع عقدك إلى أوّل مستحقّاتك. أنجزتَ اثنتين، ومن الثالثة تبدأ — وكلُّ محطّةٍ مشروحةٌ في أقسام الدليل.
+        ثماني محطّاتٍ من توقيع عقدك إلى أوّل مستحقّاتك. أنجزتَ اثنتين، ومن الثالثة تبدأ.
       </p>
       <ol className="mt-6 grid gap-4 sm:grid-cols-2">
         {JOURNEY.map((stop, i) => {
@@ -213,7 +213,7 @@ function Journey() {
         })}
       </ol>
       <p className="guide-blush mt-6 px-6 py-4 text-center text-base font-bold leading-8">
-        مهلتُك لإعداد موادّ دوراتك خمسةُ أيّامٍ تبدأ من اعتماد توقيعك — فابدأ بها قبل كلّ شيء.
+        مهلتُك لإعداد موادّ دوراتك خمسةُ أيّامٍ من اعتماد توقيعك، فابدأ بها أوّلا.
       </p>
     </section>
   );
@@ -237,7 +237,7 @@ function FirstWeek() {
     <section id="first-week" aria-labelledby="first-week-h" className="guide-page scroll-mt-24 pt-16">
       <PageHead id="first-week" hue="coral" title="أسبوعُك الأوّل" />
       <div className="guide-deep mt-6 flex flex-wrap items-center justify-between gap-3 px-6 py-5">
-        <p className="text-lg leading-9">ما تفعله بعد اعتماد عقدك، بالترتيب. علِّمْ ما أنجزتَه — تبقى علاماتُك في هذا المتصفّح.</p>
+        <p className="text-lg leading-9">ما تفعله بعد اعتماد عقدك، بالترتيب. علاماتُك تُحفظ في هذا المتصفّح.</p>
         <p className="guide-noprint shrink-0 text-base font-black tabular-nums" aria-live="polite">أنجزتَ {doneCount} من {required.length}</p>
       </div>
       <ul className="guide-card mt-6 px-5 py-1">
@@ -402,16 +402,16 @@ export default function TrainerGuide() {
   useEffect(() => landOnHash(window, document, ids), [ids]);
 
   const help = [
-    { title: "جلسةُ تهيئة", text: "من يمشي معك في إعداد محاورك وموادّك، في موعدٍ تختاره.", action: <Button as="a" href={ORIENTATION_BOOKING_URL} target="_blank" rel="noreferrer noopener" icon={CalendarPlus}>{ORIENTATION_CTA_AR}</Button> },
-    ...(waLink ? [{ title: "واتساب", text: "سؤالٌ سريعٌ عن خطوةٍ وقفتَ عندها.", action: <Button as="a" href={waLink} target="_blank" rel="noreferrer noopener" icon={MessageCircle}>راسِلنا على واتساب</Button> }] : []),
-    { title: "البريد", text: "ما يحتاج شرحا أطول أو مرفقا.", action: <Button as="a" href={`mailto:${CONTACT.email}`} icon={Mail}>{CONTACT.email}</Button> },
+    { title: "جلسةُ تهيئة", text: "نرافقك في إعداد محاورك وموادّك، في موعدٍ تختاره.", action: <Button as="a" href={ORIENTATION_BOOKING_URL} target="_blank" rel="noreferrer noopener" icon={CalendarPlus}>{ORIENTATION_CTA_AR}</Button> },
+    ...(waLink ? [{ title: "واتساب", text: "لسؤالٍ سريع.", action: <Button as="a" href={waLink} target="_blank" rel="noreferrer noopener" icon={MessageCircle}>راسِلنا على واتساب</Button> }] : []),
+    { title: "البريد", text: "لشرحٍ أطول أو مرفق.", action: <Button as="a" href={`mailto:${CONTACT.email}`} icon={Mail}>{CONTACT.email}</Button> },
   ];
 
   return (
     <div dir="rtl" className="guide-root min-h-screen text-foreground">
       <SeoHead
         title="دليلُ المدرّب"
-        description="كلُّ ما يفعله مدرّبُ أكاديمية وجيز في بوّابته بعد اعتماد عقده — خطوةً خطوة، بصورٍ من المنصّة."
+        description="ما يفعله مدرّبُ وجيز في بوّابته بعد اعتماد عقده، خطوةً خطوة."
         path={TRAINER_GUIDE_PATH}
         noindex
       />
@@ -473,7 +473,7 @@ export default function TrainerGuide() {
               <PageHead id="help" hue="sky" title="تحتاج مساعدة؟" />
               <p className="guide-deep mt-6 flex items-start gap-3 px-6 py-5 text-lg leading-9">
                 <LifeBuoy className="mt-1.5 h-5 w-5 shrink-0" aria-hidden="true" />
-                إن وقفتَ عند خطوةٍ لم يشرحها هذا الدليل، أو أردتَ من يمشي معك في إعداد موادّك، فنحن هنا.
+                وقفتَ عند خطوةٍ أو تريد من يرافقك في إعداد موادّك؟ نحن هنا.
               </p>
               <div className="mt-6 space-y-4">
                 {help.map((h) => (

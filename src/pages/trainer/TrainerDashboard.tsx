@@ -90,7 +90,7 @@ function RealTrainerHome({ name, email }: { name: string; email: string }) {
   if (failed)
     return (
       <Card className="flex items-center justify-center gap-2 py-16 text-muted-foreground">
-        <ServerOff className="h-5 w-5" /> تعذر جلب شعبك — تأكد أن الخادم يعمل ثم حدّث الصفحة.
+        <ServerOff className="h-5 w-5" /> تعذّر جلبُ شعبك — حدّث الصفحة.
       </Card>
     );
   if (!cohorts || !queue)
@@ -184,7 +184,7 @@ function RealTrainerHome({ name, email }: { name: string; email: string }) {
       <BookAdminMeeting name={name} email={email} />
 
       <p className="mt-6 text-center text-read text-muted-foreground">
-        كل بند أعلاه يقودك إلى مكان تنفيذه — وصفحةُ كلّ شعبةٍ تحمل تجهيزَها وتشغيلَها معا.
+        كلُّ بندٍ يقودك إلى مكان تنفيذه.
       </p>
     </div>
   );
