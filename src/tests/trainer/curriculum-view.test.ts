@@ -169,7 +169,12 @@ describe('المدرّبُ يقرأ منهجَه قبل أن يُقرّ', () => 
     /* الوسمُ بعينه لا اسمٌ يبدأ به — `<CurriculumReviewX` ليس الصفحة */
     const review = approval.search(/<CurriculumReview\s/)
     expect(review, 'لا منهجَ في درجة الإرسال').toBeGreaterThan(-1)
-    expect(review, 'المنهجُ بعد الإقرار لا قبله').toBeLessThan(approval.indexOf('id="plan-confirm"'))
+    /* والمربّعُ صار مكتوبا مرّةً (`consentBox`) يُعرض هنا وفي «المراجعة» (١١ أكتوبر ٢٠٢٦) —
+       فموضعُه في هذه الدرجة هو موضعُ عرضه، وفيه المربّعُ بعينه */
+    const box = approval.indexOf('{consentBox}')
+    expect(box, 'لا مربّعَ موافقةٍ في درجة الإرسال').toBeGreaterThan(-1)
+    expect(review, 'المنهجُ بعد الإقرار لا قبله').toBeLessThan(box)
+    expect(ws.slice(ws.indexOf('const consentBox = ('), ws.indexOf('const consentBox = (') + 900)).toContain('id="plan-confirm"')
     expect(approval).toMatch(/onEdit=\{\(s\) => openStage\(s\)\}/)
     expect(approval).toMatch(/sessions: ws\.sessions,\s*assessments: ws\.assessments/)
   })

@@ -154,7 +154,7 @@ describe('٤ — رسالةُ القرار تذكره، وصفحةُ المدر�
       where: { userId: trainerUserId, templateKey: 'cohort.plan.decision' }, orderBy: { queuedAt: 'desc' },
     })
     expect(bell?.body).toContain('«تقرير مراجعة الخطة.pdf»')
-    expect(bell?.body).toContain('تجده في صفحة شعبتك تحت «تقرير المراجعة»')
+    expect(bell?.body).toContain('تجده في خطوة «المراجعة» من صفحة شعبتك')
   })
 
   it('وصفحةُ المدرّب تحمل التقرير', async () => {

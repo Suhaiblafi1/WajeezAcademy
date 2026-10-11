@@ -1592,7 +1592,8 @@ export class CohortPlanService {
       await sendDirectEmail(this.prisma, {
         to: trainer.application.email,
         subject: `${msg.mail.subject} — أكاديمية وجيز`,
-        ...renderMail(returnMailDoc(msg.mail, trainer.application.fullName, url)),
+        /* والزرُّ يفتح «المراجعة» نفسَها — بنودَها مرقّمةً يقبل ويرفض (١١ أكتوبر ٢٠٢٦) */
+        ...renderMail(returnMailDoc(msg.mail, trainer.application.fullName, `${url}?step=review`)),
       })
       return
     }

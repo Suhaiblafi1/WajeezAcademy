@@ -135,8 +135,9 @@ describe('وفي ورشة المدرّب', () => {
     expect(WORKSPACE, 'بقي عرضٌ للنصّ المجموع خارجَ القاعدة').not.toMatch(/\{ws\.plan\.reviewerNote\}/)
   })
 
-  it('⚠️ وملاحظةُ الخطوة في رأسها — لكلّ خطوةٍ إلّا الاعتماد', () => {
-    expect(WORKSPACE).toMatch(/\{stage !== "approval" && <StageReviewNote stage=\{stage\} text=\{reviewNotes\[stage\]\} \/>\}/)
+  /* و«المراجعة» (١١ أكتوبر ٢٠٢٦) درجةٌ بلا ملاحظة: بنودُها هي ما قالته الإدارة */
+  it('⚠️ وملاحظةُ الخطوة في رأسها — لكلّ خطوةٍ إلّا الاعتماد والمراجعة', () => {
+    expect(WORKSPACE).toMatch(/\{stage !== "approval" && stage !== "review" && <StageReviewNote stage=\{stage\} text=\{reviewNotes\[stage\]\} \/>\}/)
     expect(WORKSPACE).toMatch(/<ReviewNotesBanner notes=\{reviewNotes\} /)
   })
 
