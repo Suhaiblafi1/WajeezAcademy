@@ -31,14 +31,19 @@ function scorecardCounts(items: readonly ScoreItem[]) {
   };
 }
 
-export default function PlanScorecard({ items, heading, intro, onStep }: {
+export default function PlanScorecard({ items: all, heading, intro, onStep, openOnly = false }: {
   items: readonly ScoreItem[];
   heading: string;
   intro?: string;
   /** يفتح الخطوةَ التي يُصلَح فيها المعيار — للمدرّب. وبلا هذا تُقرأ البطاقةُ ولا تُنقل */
   onStep?: (step: WorkspaceStep) => void;
+  /* ═══ وللمدرّب ما يحتاج نظرةً وحدَه (١١ أكتوبر ٢٠٢٦) ═══
+     «النصوصُ كثيرة» — صاحب المنصّة بلقطة هذه البطاقة. فالمتحقّقُ يُعدّ ولا يُسرد عند
+     المدرّب، ويُسرد كاملا عند المعتمِد كما كان. */
+  openOnly?: boolean;
 }) {
-  const n = scorecardCounts(items);
+  const n = scorecardCounts(all);
+  const items = openOnly ? all.filter((i) => i.status !== "ok") : all;
   return (
     <Inset className="mt-3" role="region" aria-label={heading}>
       <p className="text-read font-black text-foreground">{heading}</p>
@@ -48,6 +53,7 @@ export default function PlanScorecard({ items, heading, intro, onStep }: {
         {" · "}<span className="font-bold text-gold-ink">{n.advice} نصيحة</span>
         {" · "}<span className="font-bold text-danger-ink">{n.blocked} مطلوب</span>
       </p>
+      {openOnly && items.length === 0 && <p className="mt-2 text-read text-teal-light-ink">كلُّ المعايير متحقّقة.</p>}
       {STEP_ORDER.filter((s) => items.some((i) => i.step === s)).map((step) => (
         <div key={step} className="mt-3">
           <div className="flex flex-wrap items-center gap-2">

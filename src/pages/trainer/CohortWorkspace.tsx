@@ -894,8 +894,6 @@ export default function CohortWorkspace() {
   const scorecard = planScorecard({
     period: ws.cohort.period, content: ws.plan?.content ?? null, sessions: ws.sessions, assessments: ws.assessments,
   });
-  /* وأوّلُ ما يستطيع هو فتحَه من الباقي — لا كلُّ الباقي خطوةٌ في يده */
-  const firstMine = blocking.find((b) => stageOfKey(b.key) !== null) ?? null;
   /* والخطُّ يمتلئ بقدر ما **يملك المدرّبُ** إنجازَه — فيبلغ تمامَه حين لا يبقى
      إلّا قرارُ الإدارة، لا يقف دون التمام ينتظر قرارا ليس بيده. وصفُّ الفصل
      مثلُ صفِّ الاعتماد في هذا: تسمّيه الإدارةُ عند الإسناد، فلا يُعدُّ عليه. */
@@ -1537,7 +1535,7 @@ export default function CohortWorkspace() {
         <label className="relative flex cursor-pointer items-start gap-3 text-read leading-6">
           <input id="plan-confirm" type="checkbox" checked={confirm} disabled={locked || approved} className="mt-1 h-4 w-4 accent-teal"
             onChange={(e) => { setConfirm(e.target.checked); if (e.target.checked) setConfirmNudge(0); }} />
-          <span>أوافق على كلّ ما في هذه الشعبة — مواعيدَها ومحاورَها وكرّاساتِها ولقاءاتِها وتسجيلاتِها ومهامَّها ومصادرَها — وأتحمّل تقديمَها كما هي.</span>
+          <span>أوافق على كلّ ما في هذه الشعبة، وأتحمّل تقديمَها كما هي.</span>
         </label>
       </div>
     </>
@@ -3296,7 +3294,7 @@ export default function CohortWorkspace() {
         <Panel as="section" tone={st.tone}>
           <StageIntro stage="approval" />
           <p className="mt-2 text-read leading-7 text-foreground">
-            بإرسالك تقرّ أنّك راجعتَ كلَّ ما في الشعبة ووافقتَ عليه: اسمَها ومدّتَها، ومحاورَها ومواعيدَها وتطبيقَها العمليّ، وكرّاساتِها، ولقاءاتِها المباشرة وجلساتِها المسجّلة، ومهامَّها ومصادرَها. ثمّ يعتمدها المديرُ الأكاديميُّ أو المديرُ الأعلى — ويصلك القرارُ هنا وبالبريد.
+            بإرسالك تقرّ أنّك راجعتَ الشعبةَ كلَّها. يصلك قرارُ الإدارة هنا وبالبريد.
           </p>
           {ws.plan?.submittedAt && <p className="mt-2 text-read text-muted-foreground">آخرُ إرسال: {fmtDateTimeAr(ws.plan.submittedAt)}{ws.plan.reviewedAt ? ` · آخرُ قرار: ${fmtDateTimeAr(ws.plan.reviewedAt)}` : ""}</p>}
           {/* ═══ ومتى يدخلها متعلّموه — يُقال قبل الإرسال (٣ج) ═══
@@ -3326,14 +3324,20 @@ export default function CohortWorkspace() {
               المرحلةَ نفسَها فلا يجده أبدا. */}
           {remaining > 0 && !approved && (
             <Inset tone="warn" className="mt-3 text-read leading-6 text-gold-ink">
-              بقي قبل الإرسال: {blocking.map((b) => b.labelAr).join(" · ")}
-              {/* والزرُّ يفتح أوّلَ ما **هو** فاعلُه: في الباقي صفوفٌ بيدِ
-                  الإدارة (تسميةُ الفصل)، وزرٌّ يقود إلى خطوةٍ لا وجودَ لها
-                  يترك الشاشةَ بيضاءَ ويبدو عطبا. */}
-              {firstMine && (
-                <Button tone="ghost" size="sm" className="mt-2" onClick={() => openStage(firstMine.key as Stage)}>
-                  افتح أوّلَها
-                </Button>
+              {/* ═══ أسماءُ الخطوات لا جُملُ القائمة (١١ أكتوبر ٢٠٢٦) ═══
+                  «النصوصُ كثيرة» — صاحب المنصّة بلقطة هذا الصندوق: فقرةٌ من جُمل القائمة
+                  كلِّها. فصار سطرا بأسماء الخطوات، كلٌّ زرٌّ يفتحها، وما ينقصها يُعلَّم فيها
+                  بالأحمر. وما ليس بيده (بيد الإدارة) يُقال بنصّه. */}
+              <p className="font-bold">بقي قبل الإرسال:</p>
+              <div className="mt-1.5 flex flex-wrap gap-1.5">
+                {STAGES.filter((x) => x.key !== "approval" && blocking.some((b) => stageOfKey(b.key) === x.key)).map((x) => (
+                  <Button key={x.key} tone="secondary" size="sm" onClick={() => void openStage(x.key)}>{x.label}</Button>
+                ))}
+              </div>
+              {blocking.some((b) => stageOfKey(b.key) === null) && (
+                <p className="mt-1.5 text-muted-foreground">
+                  {blocking.filter((b) => stageOfKey(b.key) === null).map((b) => b.labelAr).join(" · ")}
+                </p>
               )}
             </Inset>
           )}
@@ -3359,7 +3363,8 @@ export default function CohortWorkspace() {
           {!approved && (
             <PlanScorecard
               items={scorecard}
-              heading="فحصٌ قبل الإرسال — المعاييرُ التي تُقرأ بها خطّتُك"
+              heading="فحصٌ قبل الإرسال"
+              openOnly
               intro="«مطلوب» يمنع الإرسال، و«نصيحة» القرارُ فيها لك."
               onStep={(step) => void openStage(step as Stage)}
             />
