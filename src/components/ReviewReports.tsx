@@ -9,11 +9,13 @@
    الشعبة (`/api/v1/cohort-files/…`): مدرّبُها والإدارةُ وحدَهم. */
 
 import { useRef, useState } from "react";
-import { FileText, Upload } from "lucide-react";
+import { ExternalLink, FileText, Files, Upload } from "lucide-react";
 import { apiDelete, apiPost, ApiError } from "@/services/api";
 import { putSigned } from "@/services/signed-upload";
 import { Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
+import Chip from "@/components/ui/Chip";
+import { matchReportFile, reportsSummaryAr } from "@/application/trainer/review-reports-bulk";
 import { fmtDateTimeAr } from "@/utils/format";
 import { REVIEW_REPORT_MIMES } from "@/application/trainer/module-body";
 
@@ -112,6 +114,110 @@ export function ReviewReportUploader({ planId, reports, onChange }: {
         </Button>
       </div>
       {msg && <p className="mt-2 text-read font-bold text-teal-light-ink" role="status">{msg}</p>}
+    </Inset>
+  );
+}
+
+/* ═══ التقاريرُ كلُّها دفعةً واحدة — «خططٌ تنتظر اعتمادك» (١١ أكتوبر ٢٠٢٦) ═══
+
+   قرارُ صاحب المنصّة: «اريد ان ارفع كل شي مره واحده!». كلُّ ملفٍّ يحمل في اسمه معرّفَ خطّته
+   (`review-reports-bulk.ts`) فيُرفع إليها بمسلك البطاقة نفسِه، وما رُفع قبلُ لا يتكرّر (٤٠٩ من
+   الخادم يُقال «كان مرفوعا»). ويُقال قبل الرفع ما يقع به: يراه المدرّبُ من الآن. */
+type ReportResult = { name: string; planId: string | null; labelAr: string | null; state: "done" | "already" | "failed"; noteAr: string };
+
+export function ReviewReportsBulkUpload({ plans, onUploaded, onOpen }: {
+  plans: readonly { id: string; labelAr: string }[];
+  onUploaded: (planId: string) => void;
+  onOpen: (planId: string) => void;
+}) {
+  const input = useRef<HTMLInputElement>(null);
+  const [progress, setProgress] = useState<string | null>(null);
+  const [results, setResults] = useState<ReportResult[]>([]);
+  const [summary, setSummary] = useState("");
+  const [over, setOver] = useState(false);
+
+  const run = async (files: readonly File[]) => {
+    if (progress || files.length === 0) return;
+    setResults([]); setSummary("");
+    const out: ReportResult[] = [];
+    for (const [i, file] of files.entries()) {
+      setProgress(`${i + 1} من ${files.length}`);
+      const m = matchReportFile(file.name, file.type, plans);
+      if (!m.ok) {
+        out.push({ name: file.name, planId: null, labelAr: null, state: "failed", noteAr: m.problemAr });
+      } else {
+        try {
+          const r = await apiPost<{ uploadUrl: string; maxBytes: number }>(
+            `/api/admin/cohort-plans/${m.planId}/review-report`, { mime: m.mime, originalName: file.name },
+          );
+          await putSigned(r.uploadUrl, file, r.maxBytes);
+          out.push({ name: file.name, planId: m.planId, labelAr: m.labelAr, state: "done", noteAr: "رُفع إلى خطّته" });
+          onUploaded(m.planId);
+        } catch (e) {
+          const already = e instanceof ApiError && e.code === "report_exists";
+          out.push({
+            name: file.name, planId: m.planId, labelAr: m.labelAr, state: already ? "already" : "failed",
+            noteAr: already ? "كان مرفوعا من قبل — لم يُكرَّر" : e instanceof ApiError || e instanceof Error ? e.message : "تعذّر الرفع",
+          });
+        }
+      }
+      setResults([...out]);
+    }
+    setProgress(null);
+    setSummary(reportsSummaryAr(
+      out.filter((r) => r.state === "done").length, out.filter((r) => r.state === "already").length,
+      out.filter((r) => r.state === "failed").length,
+    ));
+    if (input.current) input.current.value = "";
+  };
+
+  return (
+    <Inset className="mb-4 px-4 py-3" role="region" aria-label="تقاريرُ المراجعة دفعةً واحدة">
+      <p className="text-read font-black text-foreground">ارفع تقاريرَ المراجعة وملاحقَها كلَّها دفعةً واحدة</p>
+      <p className="mt-1 max-w-3xl text-read leading-6 text-muted-foreground">
+        كلُّ ملفٍّ يذكر خطّتَه في اسمه فيُرفع إلى بطاقتها وحدَها، وما رُفع من قبل لا يتكرّر. ويراه المدرّبُ في صفحة
+        شعبته من لحظة رفعه، وتذكره رسالةُ قرارك حين تقرّر. PDF أو Word.
+      </p>
+      <div
+        className={`mt-3 flex flex-wrap items-center gap-3 rounded-lg border-2 border-dashed p-4 ${over ? "border-teal-light-ink bg-teal-light-ink/5" : "border-border"}`}
+        onDragOver={(e) => { e.preventDefault(); setOver(true); }}
+        onDragLeave={() => setOver(false)}
+        onDrop={(e) => { e.preventDefault(); setOver(false); void run(Array.from(e.dataTransfer.files)); }}
+      >
+        <input
+          ref={input}
+          type="file"
+          multiple
+          className="sr-only"
+          aria-label="ملفّاتُ تقارير المراجعة"
+          accept={[...REVIEW_REPORT_MIMES, ".pdf", ".docx"].join(",")}
+          onChange={(e) => void run(Array.from(e.target.files ?? []))}
+        />
+        <Button tone="secondary" size="sm" icon={Files} disabled={progress !== null} onClick={() => input.current?.click()}>
+          {progress ? `يُرفع ${progress}…` : "اختر الملفّات"}
+        </Button>
+        <span className="text-read text-muted-foreground">أو اسحبها كلَّها إلى هنا وأفلتها.</span>
+      </div>
+      {summary && <p className="mt-3 text-read font-bold text-teal-light-ink" role="status">{summary}</p>}
+      {results.length > 0 && (
+        <ol className="mt-2 space-y-2">
+          {results.map((r, i) => (
+            <li key={`${i}-${r.name}`} className="rounded-lg border border-border/60 p-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <Chip tone={r.state === "failed" ? "danger" : "positive"}>{r.state === "done" ? "رُفع" : r.state === "already" ? "مرفوع" : "رُدّ"}</Chip>
+                <span className="text-read font-bold text-foreground" dir="auto">{r.labelAr ?? r.name}</span>
+              </div>
+              {r.labelAr && <p className="mt-1 text-read text-muted-foreground" dir="auto">{r.name}</p>}
+              <p className={`mt-1 text-read leading-6 ${r.state === "failed" ? "text-danger-ink" : "text-foreground"}`}>{r.noteAr}</p>
+              {r.planId && r.state !== "failed" && (
+                <Button className="mt-2" tone="ghost" size="sm" icon={ExternalLink} onClick={() => onOpen(r.planId!)}>
+                  افتح خطّتَه
+                </Button>
+              )}
+            </li>
+          ))}
+        </ol>
+      )}
     </Inset>
   );
 }

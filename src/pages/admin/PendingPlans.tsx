@@ -41,6 +41,7 @@ import WorkHeader from "@/components/admin/WorkHeader";
 import { revealRow } from "@/components/admin/reveal";
 import TrainerPlanReview, { type PlanOutcome } from "@/components/admin/TrainerPlanReview";
 import { PlanEditsBulkUpload } from "@/components/PlanEdits";
+import { ReviewReportsBulkUpload } from "@/components/ReviewReports";
 import { useRealSession } from "@/services/session";
 import { courseLineNeeded, prepNoteAr, sharedPrepNote, type PrepFlags } from "@/application/trainer/plan-decision";
 
@@ -215,6 +216,14 @@ export default function PendingPlans() {
 
       {rows !== null && canUploadEdits && (
         <PlanEditsBulkUpload
+          plans={scoped.map((r) => ({ id: r.id, labelAr: `${r.cohort.title} — ${r.trainerName}` }))}
+          onUploaded={(id) => setUploaded((u) => ({ ...u, [id]: (u[id] ?? 0) + 1 }))}
+          onOpen={(id) => { setQ(""); goTo(byTrainer(scoped), id); }}
+        />
+      )}
+      {/* وتقاريرُ المراجعة وملاحقُها كذلك — دفعةً واحدة، لمن يعتمد (١١ أكتوبر ٢٠٢٦) */}
+      {rows !== null && canUploadEdits && (
+        <ReviewReportsBulkUpload
           plans={scoped.map((r) => ({ id: r.id, labelAr: `${r.cohort.title} — ${r.trainerName}` }))}
           onUploaded={(id) => setUploaded((u) => ({ ...u, [id]: (u[id] ?? 0) + 1 }))}
           onOpen={(id) => { setQ(""); goTo(byTrainer(scoped), id); }}
