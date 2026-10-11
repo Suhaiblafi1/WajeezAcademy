@@ -740,7 +740,7 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
   /* ═══ «انسخ من شعبةٍ أخرى» — المحاورُ والمهامُّ والمصادرُ بتواريخَ تبدأ من يومٍ يختاره (١١ أكتوبر ٢٠٢٦) ═══
      والأحكامُ في رأس `cohort-copy.service.ts`. */
   const copies = new CohortCopyService(prisma)
-  app.post('/api/trainer/cohorts/:id/plan/copy-from', {
+  app.post('/api/trainer/cohorts/:id/plan/copy', {
     preHandler: requirePermission('trainer.cohort.plan'),
     schema: { tags: ['trainer-ops'], summary: 'نسخُ خطّة شعبةٍ أخرى لي لنفس الدورة إلى هذه — بتواريخَ مُزاحة' },
   }, async (req) => {

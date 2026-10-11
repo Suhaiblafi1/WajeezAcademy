@@ -89,7 +89,7 @@ afterAll(async () => { await app.close() })
 describe('① النسخ', () => {
   it('⚠️ الخطّةُ بتواريخَ مُزاحة، والملفُّ بمفتاحٍ جديدٍ لشعبته، والمهمّةُ بموعدها مُزاحا', async () => {
     const targetId = await newCohort('الشعبةُ الثانية')
-    const res = await post(`/api/trainer/cohorts/${targetId}/plan/copy-from`, { sourceCohortId: sourceId, startsOn: '2027-04-04' })
+    const res = await post(`/api/trainer/cohorts/${targetId}/plan/copy`, { sourceCohortId: sourceId, startsOn: '2027-04-04' })
     expect(res.statusCode, res.body).toBe(200)
     expect(res.json()).toMatchObject({ days: 28, copiedTasks: 1, files: 1 })
 
@@ -107,7 +107,7 @@ describe('① النسخ', () => {
     expect(ws.assessments.map((a) => [a.title, new Date(a.dueAt!).toISOString()])).toEqual([['مهمّةُ المحور الأوّل', '2027-04-10T20:59:59.000Z']])
 
     /* ونسخٌ ثانٍ لا يضاعف المهامّ */
-    const again = await post(`/api/trainer/cohorts/${targetId}/plan/copy-from`, { sourceCohortId: sourceId, startsOn: '2027-04-04' })
+    const again = await post(`/api/trainer/cohorts/${targetId}/plan/copy`, { sourceCohortId: sourceId, startsOn: '2027-04-04' })
     expect(again.json().copiedTasks).toBe(0)
     expect(await prisma.cohortAssessment.count({ where: { cohortId: targetId } })).toBe(1)
   })
@@ -117,21 +117,21 @@ describe('② ما لا يُنسخ', () => {
   it('⚠️ من شعبةٍ لدورةٍ أخرى', async () => {
     const other = await prisma.course.findFirst({ where: { id: { not: courseId } }, select: { id: true } })
     const foreign = await newCohort('دورةٌ أخرى', other!.id)
-    const res = await post(`/api/trainer/cohorts/${foreign}/plan/copy-from`, { sourceCohortId: sourceId, startsOn: '2027-04-04' })
+    const res = await post(`/api/trainer/cohorts/${foreign}/plan/copy`, { sourceCohortId: sourceId, startsOn: '2027-04-04' })
     expect(res.statusCode).toBe(400)
   })
 
   it('⚠️ ولا إلى شعبةٍ اعتُمدت لها خطّة — النسخُ يمحو', async () => {
     const targetId = await newCohort('الشعبةُ الثالثة')
     await prisma.cohortDeliveryPlan.create({ data: { cohortId: targetId, trainerId: profileId, status: 'approved', content: { kind: 'trainer', modules: [], resources: [] } } })
-    const res = await post(`/api/trainer/cohorts/${targetId}/plan/copy-from`, { sourceCohortId: sourceId, startsOn: '2027-04-04' })
+    const res = await post(`/api/trainer/cohorts/${targetId}/plan/copy`, { sourceCohortId: sourceId, startsOn: '2027-04-04' })
     expect(res.statusCode).toBe(409)
   })
 
   it('ولا من شعبةٍ ليست له', async () => {
     const stranger = await prisma.cohort.create({ data: { courseId, title: 'لغيره', status: 'draft' } })
     const targetId = await newCohort('الشعبةُ الرابعة')
-    const res = await post(`/api/trainer/cohorts/${targetId}/plan/copy-from`, { sourceCohortId: stranger.id, startsOn: '2027-04-04' })
+    const res = await post(`/api/trainer/cohorts/${targetId}/plan/copy`, { sourceCohortId: stranger.id, startsOn: '2027-04-04' })
     expect(res.statusCode).toBe(403)
   })
 })

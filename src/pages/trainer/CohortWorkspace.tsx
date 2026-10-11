@@ -3049,7 +3049,7 @@ export default function CohortWorkspace() {
           onConfirm={() => {
             setCopyAsk(false);
             void act(
-              () => apiPost(`/api/trainer/cohorts/${ws.cohort.id}/plan/copy-from`, { sourceCohortId: copyForm.sourceId, startsOn: copyForm.startsOn }),
+              () => apiPost(`/api/trainer/cohorts/${ws.cohort.id}/plan/copy`, { sourceCohortId: copyForm.sourceId, startsOn: copyForm.startsOn }),
               (r) => {
                 const out = r as { copiedTasks?: number } | null;
                 return `نُسخت الخطّة${out?.copiedTasks ? ` ومعها ${countAr(out.copiedTasks, { one: "مهمّة", two: "مهمّتان", few: "مهامّ", many: "مهمّة" })}` : ""} — راجع التواريخ، ثمّ أضِف لقاءاتِك`;
