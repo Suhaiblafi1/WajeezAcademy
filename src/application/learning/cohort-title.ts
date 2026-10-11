@@ -32,6 +32,16 @@ export function cohortNumberOf(title: string): number | null {
   return Number(western)
 }
 
+/** أهو الاسمُ الذي وضعته المنصّة — «اسمُ الدورة — شعبة N» — لم يُغيَّر؟
+
+    يُعرض للمدرّب مثالا باهتا في حقلٍ فارغ لا قيمةً يمسحها أوّلا (١١ أكتوبر ٢٠٢٦،
+    ملفُّ صاحب المنصّة «تحسينات بوابة مدرّب وجيز»): «يبقى اسمُ الدورة ورقمُ
+    الشعبة اقتراحا ظاهرا، لا قيمةً مثبتةً يجب تعديلُها». */
+export function isDefaultCohortTitle(title: string, courseTitleAr: string): boolean {
+  const n = cohortNumberOf(title)
+  return n !== null && title.trim() === cohortTitleAr(courseTitleAr, n)
+}
+
 /** رقمُ الشعبة التالية من أسماء شعب الدورة كلِّها — الملغاةُ منها والمنتهية */
 export function nextCohortNumber(existingTitles: string[]): number {
   const highest = existingTitles.reduce((m, t) => Math.max(m, cohortNumberOf(t) ?? 0), 0)

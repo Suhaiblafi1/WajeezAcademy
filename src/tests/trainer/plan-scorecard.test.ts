@@ -95,12 +95,13 @@ describe('المُلزِمُ الأربعة — تسقط `blocked`', () => {
     expect(practiceGaps(mods as never)).toEqual(['المحور 2: بلا تطبيقٍ عمليّ'])
   })
 
-  it('③ب والمُسلَّمُ نصيحةٌ لا تمنع (١٠ أكتوبر ٢٠٢٦) — حقلُه «اختياريّ» في الشاشة', () => {
+  it('③ب والمُسلَّمُ لا يُقاس في البطاقة (١١ أكتوبر ٢٠٢٦) — يكرّر المهامّ، وسقط حقلُه', () => {
     const i = good()
     const mods = (i.content as { modules: { activityAr: string; artifactAr: string }[] }).modules
     mods[2]!.artifactAr = ''
     mods[3]!.artifactAr = 'تقرير'
-    expect(failing(i)).toEqual(['artifact:advice'])
+    expect(failing(i), 'عاد صفُّ «المُسلَّم» يكرّر المهامّ').toEqual([])
+    expect(planScorecard(i).some((x) => x.key === 'artifact')).toBe(false)
     expect(blockedItems(planScorecard(i))).toEqual([])
     expect(artifactGaps(mods as never)).toEqual(['المحور 3: بلا مُسلَّم', 'المحور 4: بلا مُسلَّم'])
     expect(practiceGaps(mods as never)).toEqual([])

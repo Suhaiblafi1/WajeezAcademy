@@ -291,6 +291,8 @@ const LOW: readonly string[] = [
   'cohort.create', 'cohort.update', 'cohort.duplicate', 'cohort.publish',
   'cohort.status', 'cohort.status.sync', 'cohort.delivery_plan.set',
   'cohort.plan.save', 'cohort.plan.submit', 'cohort.message.send',
+  /* ونسخُ خطّةٍ من شعبةٍ أخرى له حفظٌ لخطّته كـ`cohort.plan.save` (١١ أكتوبر ٢٠٢٦) */
+  'cohort.plan.copy',
   /* وربطُ لقاءٍ بمحوره تحريرٌ في الخطّة كحفظها: لا موعدَ يتحرّك ولا مالَ
      ولا وصول (٢٧ سبتمبر ٢٠٢٦) — والمسجَّلُ بوزنه: موضعُه بلا اعتماد، وهو في
      الخطّة لا على صفّ (٢٨ سبتمبر ٢٠٢٦). و`recorded_axes` سلفُه الذي لم يعد يُكتب */

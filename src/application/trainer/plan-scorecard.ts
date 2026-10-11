@@ -59,7 +59,7 @@ export const MAX_GAP_DAYS = 21
 /** أربعُ ساعاتٍ مباشرةٌ في أيّ سبعة أيّام — أكثرُ المتعلّمين يعملون أو يدرسون */
 export const MAX_WEEKLY_MINUTES = 240
 /** أيّامُ العمل في الأردن الأحدُ إلى الخميس (`getUTCDay`: ٠ = الأحد) */
-const WORKDAYS = [0, 1, 2, 3, 4]
+export const WORKDAYS: readonly number[] = [0, 1, 2, 3, 4]
 /** لا لقاءَ يبدأ قبل الخامسة مساءً في يوم عمل */
 export const WORKDAY_EARLIEST = '17:00'
 /** ولا لقاءَ ينتهي بعد العاشرة والنصف ليلا */
@@ -216,8 +216,8 @@ export function projectDeadlineProblem(
 /* ─────────── البطاقة ─────────── */
 
 const dayIndex = (day: string) => Math.round(Date.parse(`${day}T00:00:00Z`) / DAY_MS)
-const weekdayOf = (day: string) => new Date(`${day}T00:00:00Z`).getUTCDay()
-const WEEKDAY_AR = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت']
+export const weekdayOf = (day: string): number => new Date(`${day}T00:00:00Z`).getUTCDay()
+export const WEEKDAY_AR: readonly string[] = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت']
 
 /** «ساعتان» و«٤ ساعات» و«٢٫٥ ساعة» — بعدد العربيّة لا برقمٍ وكلمةٍ متنافرين */
 export function hoursAr(minutes: number): string {
@@ -297,13 +297,10 @@ export function planScorecard(input: ScorecardInput): ScoreItem[] {
     measuredAr: `${n - practice.length} من ${n} محاورَ لها تطبيق`,
     gaps: practice,
   }))
-  const artifacts = artifactGaps(modules)
-  out.push(item({
-    key: 'artifact', labelAr: 'المُسلَّم', required: false, step: 'modules',
-    standardAr: 'لكلّ محورٍ مُسلَّمٌ يقرؤه إنسان — ومهمّةٌ يُسلَّم فيها',
-    measuredAr: `${n - artifacts.length} من ${n} محاورَ لها مُسلَّم`,
-    gaps: artifacts,
-  }))
+  /* ═══ وسقط صفُّ «المُسلَّم» (١١ أكتوبر ٢٠٢٦) ═══
+     كان يكرّر المهامَّ في خطوتها: الفحصُ قال «٠ من ٨ محاور لها مُسلَّم» ولكلّ محورٍ
+     مهمّةٌ فيها مُسلَّمها — فسقط حقلُه من الشاشة وصفُّه من هنا (ملفُّ صاحب المنصّة
+     «تحسينات بوابة مدرّب وجيز»). وما يُسلَّم يُقاس بالمهامّ (`graded_tasks`). */
 
   /* ═══ اللقاءات ═══ */
   const totalMinutes = sessions.reduce((s, x) => s + x.mins, 0)

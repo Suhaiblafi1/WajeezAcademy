@@ -73,7 +73,10 @@ interface OpsRow {
   };
 }
 
-export default function SessionsAndAttendance({ cohortId }: { cohortId: string }) {
+/* و`refresh`: بصمةُ لقاءات الشعبة كما تعرفها الصفحةُ الأمّ (١١ أكتوبر ٢٠٢٦) — لقاءٌ أُضيف من
+   بطاقة موعده فوقها كان لا يظهر هنا حتّى يُعاد تحميلُ الصفحة («حالةُ اللقاء لا تتحدّث بعد
+   الإرسال»). فتتبدّل البصمةُ فتُقرأ القائمةُ ثانيةً. */
+export default function SessionsAndAttendance({ cohortId, refresh = "" }: { cohortId: string; refresh?: string }) {
   const [row, setRow] = useState<OpsRow | null>(null);
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
@@ -85,7 +88,7 @@ export default function SessionsAndAttendance({ cohortId }: { cohortId: string }
     try { setRow(await apiGet<OpsRow>(`/api/trainer/cohorts/${cohortId}/ops`)); setErr(""); }
     catch (e) { setErr(e instanceof ApiError ? e.message : "تعذّر قراءة لقاءات الشعبة"); }
   }, [cohortId]);
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => { void load(); }, [load, refresh]);
 
   /* والرسالةُ قد تُبنى ممّا عاد — النقلُ يقول أبقي معتمَدا أم عاد للانتظار (٣ج) */
   const act = async (fn: () => Promise<unknown>, doneMsg: string | ((r: unknown) => string)) => {

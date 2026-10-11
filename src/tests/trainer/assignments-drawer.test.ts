@@ -59,6 +59,6 @@ describe('المهامُّ: لائحةٌ ثمّ انسدال', () => {
 
   it('والتأكيدُ في الانسدال — «يقوم بتعديل المطلوب فيها ويؤكّد»', () => {
     expect(stage).toMatch(/onClick=\{saveAssessment\}/)
-    expect(stage).toContain('أكِّدِ المهمّة')
+    expect(stage).toContain('أكّد المهمّة')
   })
 })

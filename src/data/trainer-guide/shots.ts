@@ -133,47 +133,47 @@ export const GUIDE_SHOTS: Record<string, { w: number; h: number }> = {
     "h": 1684
   },
   "ws-live-form": {
-    "w": 2200,
-    "h": 1085
+    "w": 1644,
+    "h": 1374
   },
   "ws-meetings": {
-    "w": 2200,
-    "h": 876
+    "w": 1752,
+    "h": 1000
   },
   "ws-modules": {
-    "w": 2200,
-    "h": 2678
+    "w": 1624,
+    "h": 2900
   },
   "ws-session-tips": {
-    "w": 2200,
-    "h": 821
+    "w": 1752,
+    "h": 1012
   },
   "ws-sources": {
-    "w": 2200,
-    "h": 688
+    "w": 1744,
+    "h": 1690
   },
   "ws-submit": {
     "w": 2200,
     "h": 1478
   },
   "ws-tab-project": {
-    "w": 2200,
-    "h": 3372
+    "w": 1736,
+    "h": 3528
   },
   "ws-tab-resources": {
-    "w": 2200,
-    "h": 3096
+    "w": 1736,
+    "h": 2432
   },
   "ws-tab-tasks": {
-    "w": 2200,
-    "h": 4099
+    "w": 1736,
+    "h": 4416
   },
   "ws-tasks": {
-    "w": 2200,
-    "h": 654
+    "w": 1744,
+    "h": 806
   },
   "ws-workbooks": {
-    "w": 2200,
-    "h": 2627
+    "w": 1752,
+    "h": 3000
   }
 }

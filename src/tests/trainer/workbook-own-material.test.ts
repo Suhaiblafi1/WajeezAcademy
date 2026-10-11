@@ -147,11 +147,22 @@ describe('④ الكرّاسةُ ملكُه — بنصٍّ واحدٍ في مو�
     expect(BODY).toContain('يمنح للأكاديمية بشأنه ترخيصا غير حصري ودائما وغير قابل للنقض، يخولها استخدامه وتعديله داخل المنصة لأغراضها التعليمية. ويبقى المدرب مالكا له وله استخدامه كما يشاء.')
   })
 
-  it('⚠️ بجانب القالب في الخطوة الثالثة', () => {
+  /* ١١ أكتوبر ٢٠٢٦: الفقرةُ كاملةً في «عقدي»، وبجانب القالب رابطٌ واحدٌ إليها */
+  it('⚠️ بجانب القالب في الخطوة الثالثة — رابطٌ واحدٌ «حقوق مادّتك» إلى «عقدي»', () => {
     const WS = code('src/pages/trainer/CohortWorkspace.tsx')
     const block = WS.slice(WS.indexOf('stage === "workbooks" &&'), WS.indexOf('stage === "sessions" &&'))
     const card = block.slice(block.indexOf('ابدأ من قالب وجيز'), block.indexOf('كيف تعطي المتعلّمين كرّاستك؟'))
-    expect(card, 'غاب النصُّ عن بطاقة القالب').toContain('<b className="text-foreground">{WORKBOOK_RIGHTS_AR.title}.</b> {WORKBOOK_RIGHTS_AR.body}')
+    expect(card, 'غاب الرابطُ عن بطاقة القالب').toContain('to={`/trainer/contract#${MATERIAL_RIGHTS_ANCHOR}`}')
+    expect(card).toContain('حقوق مادّتك')
+    expect(card, 'عادت الفقرةُ كاملةً في الخطوة').not.toContain('WORKBOOK_RIGHTS_AR.body')
+  })
+
+  it('⚠️ وفي «عقدي» الفقرةُ كاملةً في موضع الرابط', () => {
+    const C = code('src/pages/trainer/MyContract.tsx')
+    const at = C.indexOf('id={MATERIAL_RIGHTS_ANCHOR}')
+    expect(at, 'لا موضعَ للرابط في «عقدي»').toBeGreaterThan(-1)
+    expect(C.slice(at, C.indexOf('</Inset>', at))).toContain('{WORKBOOK_RIGHTS_AR.title}.</b> {WORKBOOK_RIGHTS_AR.body}')
+    expect((C.match(/<MaterialRights \/>/g) ?? []).length, 'تُرى الفقرةُ لمن وقّع ولمن لم يوقّع بعد').toBe(2)
   })
 
   it('⚠️ وفي صفحة المدرّب داخلَ القالب — الفارغِ والمملوء', async () => {

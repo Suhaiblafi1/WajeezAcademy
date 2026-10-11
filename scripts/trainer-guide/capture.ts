@@ -318,7 +318,7 @@ const ACTIVE: Shot[] = [
           { target: p.getByRole('textbox', { name: /^اسم الشعبة/ }), n: 2, pad: 6 },
           { target: p.getByRole('textbox', { name: /^نبذةٌ عن الشعبة/ }), n: 3, pad: 6 },
           { target: p.getByRole('textbox', { name: 'تاريخُ بدء الشعبة' }).locator('xpath=../..'), n: 4, pad: 4 },
-          { target: btn(p, 'احفظ وتابِع'), n: 5, pad: 4 },
+          { target: btn(p, 'التالي'), n: 5, pad: 4 },
         ],
       })
     },
@@ -410,7 +410,7 @@ const ACTIVE: Shot[] = [
       const slot = p.getByRole('listitem').filter({ has: p.getByText('الموعد 2 · المحور 2', { exact: true }) }).first()
       await btn(slot, /لقاءٌ مباشر/).click()
       await settle(e)
-      const send = btn(slot, /أرسِلْه للاعتماد/)
+      const send = btn(slot, /احفظ اللقاء/)
       await shoot(e, {
         name: 'ws-live-form', clip: await panel(send, 500), clipPad: 14,
         marks: [{ target: send, n: 1, pad: 5 }],
@@ -442,13 +442,14 @@ const ACTIVE: Shot[] = [
       /* والمصادرُ صارت لسانا ثانيا (٣٠ سبتمبر ٢٠٢٦) */
       await p.getByRole('tablist', { name: 'أقسامُ المهامّ والمصادر' }).getByRole('tab', { name: /المصادر/ }).click()
       await settle(e)
-      const first = p.getByRole('textbox', { name: 'اسم المصدر 1' })
+      /* قائمةٌ مضغوطةٌ وخانةُ رفعٍ واحدة (١١ أكتوبر ٢٠٢٦) */
+      const drop = p.locator('[data-dropzone]').first()
       await shoot(e, {
-        name: 'ws-sources', clip: await panel(first, 600), clipPad: 12, maxHeight: 1000,
+        name: 'ws-sources', clip: await panel(drop, 600), clipPad: 12, maxHeight: 1000,
         marks: [
-          { target: first, n: 1, pad: 5 },
-          { target: p.getByRole('combobox', { name: 'محورُ المصدر 1' }), n: 2, pad: 5 },
-          { target: p.getByRole('checkbox', { name: /^قراءةٌ مسبقة/ }).first().locator('xpath=..'), n: 3, pad: 5 },
+          { target: drop, n: 1, pad: 5 },
+          { target: p.getByRole('combobox', { name: /^محورُ «/ }).first(), n: 2, pad: 5 },
+          { target: p.locator('section[aria-label] li button[aria-expanded]').first(), n: 3, pad: 5 },
         ],
       })
     },
@@ -479,7 +480,7 @@ const ACTIVE: Shot[] = [
         name: `ws-tab-${tab}`, clip: stage, clipPad: 10, maxHeight: 3600,
         marks: [
           { target: bar.getByRole('tab', { name: new RegExp(label) }), n: 1, pad: 4 },
-          { target: p.locator('p', { hasText: 'تعليماتٌ وتوصيات' }).first().locator('xpath=..'), n: 2, pad: 4 },
+          { target: p.locator('summary', { hasText: 'كيف أملأ' }).first(), n: 2, pad: 4 },
           ...(tab === 'tasks' ? [{ target: p.getByRole('combobox', { name: 'نوع المرفق 1' }), n: 3, pad: 4 }] : []),
         ],
       })

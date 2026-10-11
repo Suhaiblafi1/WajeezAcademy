@@ -1,4 +1,4 @@
-/* ملاحظةُ «ما تكتبه يُحفظ وأنت تتنقّل» في الدليل (٥ أكتوبر ٢٠٢٦).
+/* ملاحظةُ «ما تكتبه يُحفظ وحدَه» في الدليل (٥ أكتوبر ٢٠٢٦، وصار الحفظُ تلقائيّا ١١ أكتوبر).
 
    طلبُ صاحب المنصّة: أن يقول الدليلُ إنّ التنقّلَ بين الخطوات والخروجَ من الشعبة
    يحفظان، وإنّ «احفظ — لم تكتمل بعد» يحفظ ولا يُتمّ — بعلامة «جديد». والعلامةُ
@@ -20,7 +20,7 @@ import { GUIDE_SECTIONS } from '@/data/trainer-guide/content'
 import { guideToc } from '@/data/trainer-guide/toc'
 import type { GuideBlock } from '@/data/trainer-guide/types'
 
-const TITLE = 'ما تكتبه يُحفظ وأنت تتنقّل'
+const TITLE = 'ما تكتبه يُحفظ وحدَه'
 const NEW = /data-hue="coral">جديد</
 const section = GUIDE_SECTIONS.find((s) => s.id === 'workspace')!
 const note = section?.blocks.find((b): b is Extract<GuideBlock, { kind: 'callout' }> => b.kind === 'callout' && b.title === TITLE)
@@ -48,25 +48,25 @@ const card = (html: string) => {
 describe('① الملاحظةُ «جديد» شهرا — وحدَها', () => {
   it('في «مساحة الشعبة»، بيومها', () => {
     expect(note, 'لا ملاحظةَ عن الحفظ في «مساحة الشعبة»').toBeTruthy()
-    expect(note!.added).toBe('2026-10-05')
+    expect(note!.added).toBe('2026-10-11')
   })
 
   it('في أوّل شهرها تحمل «جديد» — والقسمُ في الفهرس ورأسه لا', () => {
-    const html = page('2026-10-06T09:00:00Z')
+    const html = page('2026-10-12T09:00:00Z')
     expect(card(html), 'الملاحظةُ بلا «جديد» في شهرها').toMatch(NEW)
     const head = slice(html, 'workspace').split('</h2>')[1]?.split('</p>')[0] ?? ''
     expect(head, 'عُلّم القسمُ كلُّه جديدا لملاحظةٍ فيه').not.toMatch(NEW)
-    const item = guideToc(new Date('2026-10-06T09:00:00Z')).flatMap((g) => g.items).find((t) => t.id === 'workspace')
+    const item = guideToc(new Date('2026-10-12T09:00:00Z')).flatMap((g) => g.items).find((t) => t.id === 'workspace')
     expect(item?.isNew, 'عُلّم القسمُ في الفهرس لملاحظةٍ فيه').toBeFalsy()
   })
 
   it('وبعد الشهر تبقى بلا علامة — وقبل يومها لا علامة', () => {
-    expect(card(page('2026-11-10T09:00:00Z')), 'بقيت «جديد» بعد الشهر').not.toMatch(NEW)
-    expect(card(page('2026-10-04T09:00:00Z')), '«جديد» قبل يوم الإضافة').not.toMatch(NEW)
+    expect(card(page('2026-11-16T09:00:00Z')), 'بقيت «جديد» بعد الشهر').not.toMatch(NEW)
+    expect(card(page('2026-10-10T09:00:00Z')), '«جديد» قبل يوم الإضافة').not.toMatch(NEW)
   })
 
   it('والملاحظةُ بلا يومٍ لا تحمل علامة', () => {
-    const html = page('2026-10-06T09:00:00Z')
+    const html = page('2026-10-12T09:00:00Z')
     const plain = html.indexOf('قبل أن تبدأ', html.indexOf('id="workspace"'))
     expect(plain, 'لم يُعثر على «قبل أن تبدأ» في القسم').toBeGreaterThan(-1)
     const open = html.lastIndexOf('guide-callout', plain)
@@ -80,8 +80,13 @@ describe('② وما تقوله قائمٌ في الشاشة', () => {
 
   it('كلُّ زرٍّ تسمّيه «…» مكتوبٌ في الشاشة حرفا', () => {
     const names = [...(note?.text ?? '').matchAll(/«([^»]+)»/g)].map((m) => m[1])
-    expect(names, 'الملاحظةُ لا تسمّي الزرّ').toContain('احفظ — لم تكتمل بعد')
+    expect(names, 'الملاحظةُ لا تسمّي الزرّ').toContain('التالي')
+    expect(names, 'عاد الزرُّ العائمُ في الدليل وقد ذهب من الشاشة').not.toContain('احفظ — لم تكتمل بعد')
     for (const n of names) expect(screen, `«${n}» ليس في الشاشة`).toContain(`"${n}"`)
+  })
+
+  it('والحفظُ تلقائيّ — كما تقول', () => {
+    expect(screen).toMatch(/window\.setTimeout\(\(\) => autoSave\.current\?\.\(\), AUTOSAVE_DELAY_MS\)/)
   })
 
   it('والتنقّلُ يحفظ، والخروجُ يحفظ — كما تقول', () => {

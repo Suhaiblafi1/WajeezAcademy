@@ -38,12 +38,12 @@ describe('① زرٌّ مضاءٌ واحدٌ في الشريط', () => {
     const btn = head.slice(head.indexOf('tone="primary"'), head.indexOf('</Button>', head.indexOf('tone="primary"')))
     expect(btn, 'الزرُّ لا يحفظ ولا يتقدّم').toContain('saveAndContinue()')
     expect(btn, 'الزرُّ لا يُرسل في الدرجة الأخيرة').toContain('submitNow()')
-    expect(btn, 'اسمُ الزرّ لا يقول إنّه يحفظ').toContain('احفظ وتابِع')
+    expect(btn, 'اسمُ الزرّ «التالي» — والحفظُ تلقائيّ (١١ أكتوبر ٢٠٢٦)').toContain('"التالي"')
   })
 
   it('ولا يبقى في الدرجات زرُّ حفظٍ يُنازعه — «احفظ المحاور» وأخواتُه ذهبت', () => {
     for (const old of ['احفظ المحاور', 'احفظ المصادر', 'احفظ البيانات']) {
-      expect(WS, `عاد زرُّ «${old}» بجانب «احفظ وتابِع»`).not.toContain(old)
+      expect(WS, `عاد زرُّ «${old}» بجانب «التالي»`).not.toContain(old)
     }
   })
 })
@@ -76,7 +76,7 @@ describe('② الانتقالُ ثمرةُ التمام لا نقرةٌ تسب�
   it('وما ينقص يُعرض لاصقا في الشريط — يقرؤه وهو ينزل إلى الحقل', () => {
     /* والشرطُ يبدأ بما ينقص نفسِه — لا يُسبَق بشرطٍ يُطفئه (`{false && gaps…`).
        وما ينقص صار في `items` (٥ أكتوبر ٢٠٢٦): بجانبه «لم يُحفظ» ومواضعُه — `save-never-traps.test.ts` */
-    expect(head, 'ما ينقص لا يُعرض في الشريط').toMatch(/\{gaps && gaps\.items\.length > 0 && \(/)
+    expect(head, 'ما ينقص لا يُعرض في الشريط').toMatch(/\{shownGaps\.length > 0 && gaps && \(/)
     expect(head, 'ما ينقص لا يُعلَن لقارئ الشاشة').toMatch(/role="alert"/)
   })
 })

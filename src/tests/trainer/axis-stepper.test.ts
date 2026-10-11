@@ -202,7 +202,7 @@ describe('④ اللقاءات — بطاقةٌ لكلّ موعد', () => {
     expect(SLOT).toContain('moduleIds: form.moduleIds')
     expect(SLOT, 'يُترك لقاءٌ قائمٌ بلا محور').toContain('if (next.length === 0) return;')
     expect(SLOT).toMatch(/const outside = Boolean\(form\.date\) && !sessionInsideSlot\(/)
-    expect(SLOT, 'يُرسَل لقاءٌ في غير وقت محاوره').toMatch(/disabled=\{busy \|\| title\.length < 2 \|\| !form\.date \|\| outside \|\|/)
+    expect(SLOT, 'يُرسَل لقاءٌ في غير وقت محاوره').toMatch(/disabled=\{busy \|\| title\.length < 2 \|\| !timed \|\| outside \|\|/)
   })
 
   /* ═══ «يضيفون ما شاؤوا — ساعاتٌ أكثرُ جودةٌ أعلى» (٤ أكتوبر ٢٠٢٦) ═══ */
@@ -217,7 +217,7 @@ describe('④ اللقاءات — بطاقةٌ لكلّ موعد', () => {
     expect(SLOT).toContain('!outside && sessionDayAdvice(form.date, zonedDay(new Date()))')
     expect(tip).toContain('SESSION_DAY_ADVICE_AR')
     expect(tip, 'النصيحةُ بلون التحذير').not.toMatch(/gold|warn/)
-    const send = SLOT.slice(SLOT.indexOf('<Button tone="confirm"'), SLOT.indexOf('أرسِلْه للاعتماد'))
+    const send = SLOT.slice(SLOT.indexOf('<Button tone="confirm"'), SLOT.indexOf('احفظ اللقاء', SLOT.indexOf('<Button tone="confirm"')))
     expect(send, 'صارت النصيحةُ مانعا للإرسال').not.toContain('sessionDayAdvice')
   })
 
@@ -263,10 +263,12 @@ describe('⑤ المهامُّ والمصادرُ بمحاورها', () => {
   })
 
   it('⚠️ والمصدرُ يُربط بمحوره أو يُجعل قراءةً مسبقة — والمسجَّلُ ليس هنا', () => {
-    expect(block).toMatch(/slotsOn && cat !== "recorded" && \(/)
-    expect(block).toContain('aria-label={`محورُ المصدر ${i + 1}`}')
-    expect(block).toContain('patch({ preReading: e.target.checked || null })')
-    expect(WS).toMatch(/const resourceCats[^\n]*slotsOn \? RESOURCE_CATEGORIES\.filter\(\(c\) => c !== "recorded"\)/)
+    /* قائمةٌ مضغوطة (١١ أكتوبر ٢٠٢٦): المحورُ شارةٌ في الصفّ، والقراءةُ المسبقةُ في تعديله */
+    const LIST = code('src/pages/trainer/PlanResources.tsx')
+    expect(block).toContain('<PlanResources')
+    expect(LIST).toContain('aria-label={`محورُ «${name}»`}')
+    expect(LIST).toContain('onPatch(i, { preReading: e.target.checked || null })')
+    expect(code('src/application/trainer/resource-list.ts'), 'المسجَّلُ في قائمة المصادر').toContain("filter(({ r }) => resourceCategory(r) !== 'recorded')")
   })
 })
 

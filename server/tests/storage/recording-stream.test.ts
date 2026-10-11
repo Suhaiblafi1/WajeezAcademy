@@ -87,3 +87,51 @@ describe('تسجيلُ اللقاء بثّا', () => {
     expect(body, 'رابطُ رفع التسجيل يشير إلى مسار الذاكرة ذي الأربعة ميغابايت').toMatch(/uploads\/\$\{storageKey\}\/stream\?/)
   })
 })
+
+/* ═══ وملفُّ الشعبة كذلك — حتّى ٢٥ ميغابايت (١١ أكتوبر ٢٠٢٦) ═══
+   كرّاساتُ المدرّب من ١٣ و٣٨ ميغابايت كانت تُضغط خارجَ المنصّة: مسارُ الذاكرة يقف
+   عند أربعة. فصار ملفُّ الشعبة يُرفع بالبثّ وسقفُه `MAX_BODY_FILE_BYTES`. */
+describe('ملفُّ الشعبة بثّا', () => {
+  const fileRow = async () => {
+    const key = newStorageKey()
+    await prisma.cohortFile.create({
+      data: { cohortId, purpose: 'plan_resource', refId: 'r1', storageKey: key, originalName: 'كرّاسة.pdf', mime: 'application/pdf' },
+    })
+    return key
+  }
+
+  it('ستّةُ ميغابايت تُكتب كاملةً — وكانت تُردّ', async () => {
+    const key = await fileRow()
+    const res = await app.inject({
+      method: 'PUT', url: signed(key, '/stream'),
+      headers: { 'content-type': 'application/octet-stream' }, payload: SIX_MB,
+    })
+    expect(res.statusCode, res.body).toBe(200)
+    expect((await getObject(key))?.length).toBe(SIX_MB.length)
+  })
+
+  it('وما فوق السقف يُردّ باسمه', async () => {
+    const key = await fileRow()
+    const res = await app.inject({
+      method: 'PUT', url: signed(key, '/stream'),
+      headers: { 'content-type': 'application/octet-stream', 'content-length': String(26 * 1024 * 1024) },
+      payload: Buffer.alloc(16),
+    })
+    expect(res.statusCode).toBe(413)
+  })
+})
+
+describe('والجسمُ الفارغُ يُردّ في البثّ كما في الذاكرة (١١ أكتوبر ٢٠٢٦)', () => {
+  it('لا ملفٌّ من صفر بايت يُعدّ مرفوعا — ولا يبقى في المخزن', async () => {
+    const key = newStorageKey()
+    await prisma.cohortFile.create({
+      data: { cohortId, purpose: 'plan_resource', refId: 'r0', storageKey: key, originalName: 'فارغ.pdf', mime: 'application/pdf' },
+    })
+    const res = await app.inject({
+      method: 'PUT', url: signed(key, '/stream'),
+      headers: { 'content-type': 'application/octet-stream' }, payload: Buffer.alloc(0),
+    })
+    expect(res.statusCode).toBe(400)
+    expect(await getObject(key)).toBeNull()
+  })
+})
