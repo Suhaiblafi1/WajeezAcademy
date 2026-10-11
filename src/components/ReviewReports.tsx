@@ -16,6 +16,7 @@ import { Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import Chip from "@/components/ui/Chip";
 import { matchReportFile, reportsSummaryAr } from "@/application/trainer/review-reports-bulk";
+import { expandReportFiles, skippedLineAr } from "@/application/trainer/review-reports-zip";
 import { fmtDateTimeAr } from "@/utils/format";
 import { REVIEW_REPORT_MIMES } from "@/application/trainer/module-body";
 
@@ -122,7 +123,9 @@ export function ReviewReportUploader({ planId, reports, onChange }: {
 
    قرارُ صاحب المنصّة: «اريد ان ارفع كل شي مره واحده!». كلُّ ملفٍّ يحمل في اسمه معرّفَ خطّته
    (`review-reports-bulk.ts`) فيُرفع إليها بمسلك البطاقة نفسِه، وما رُفع قبلُ لا يتكرّر (٤٠٩ من
-   الخادم يُقال «كان مرفوعا»). ويُقال قبل الرفع ما يقع به: يراه المدرّبُ من الآن. */
+   الخادم يُقال «كان مرفوعا»). ويُقال قبل الرفع ما يقع به: يراه المدرّبُ من الآن.
+   والملفُّ المضغوطُ يُسقط فيه كما هو ويُفتح هنا (`review-reports-zip.ts`) — ردّت أداةُ الفكّ
+   في جهاز صاحب المنصّة حزمتَه بأسمائها العربيّة. */
 type ReportResult = { name: string; planId: string | null; labelAr: string | null; state: "done" | "already" | "failed"; noteAr: string };
 
 export function ReviewReportsBulkUpload({ plans, onUploaded, onOpen }: {
@@ -134,14 +137,19 @@ export function ReviewReportsBulkUpload({ plans, onUploaded, onOpen }: {
   const [progress, setProgress] = useState<string | null>(null);
   const [results, setResults] = useState<ReportResult[]>([]);
   const [summary, setSummary] = useState("");
+  const [skippedAr, setSkippedAr] = useState("");
   const [over, setOver] = useState(false);
 
-  const run = async (files: readonly File[]) => {
-    if (progress || files.length === 0) return;
-    setResults([]); setSummary("");
-    const out: ReportResult[] = [];
+  const run = async (picked: readonly File[]) => {
+    if (progress || picked.length === 0) return;
+    setResults([]); setSummary(""); setSkippedAr("");
+    setProgress("يُفتح ما اخترت");
+    const expanded = await expandReportFiles(picked);
+    const files = expanded.files;
+    setSkippedAr(skippedLineAr(expanded.skipped));
+    const out: ReportResult[] = expanded.problems.map((p) => ({ name: p.name, planId: null, labelAr: null, state: "failed", noteAr: p.problemAr }));
     for (const [i, file] of files.entries()) {
-      setProgress(`${i + 1} من ${files.length}`);
+      setProgress(`يُرفع ${i + 1} من ${files.length}`);
       const m = matchReportFile(file.name, file.type, plans);
       if (!m.ok) {
         out.push({ name: file.name, planId: null, labelAr: null, state: "failed", noteAr: m.problemAr });
@@ -176,7 +184,8 @@ export function ReviewReportsBulkUpload({ plans, onUploaded, onOpen }: {
       <p className="text-read font-black text-foreground">ارفع تقاريرَ المراجعة وملاحقَها كلَّها دفعةً واحدة</p>
       <p className="mt-1 max-w-3xl text-read leading-6 text-muted-foreground">
         كلُّ ملفٍّ يذكر خطّتَه في اسمه فيُرفع إلى بطاقتها وحدَها، وما رُفع من قبل لا يتكرّر. ويراه المدرّبُ في صفحة
-        شعبته من لحظة رفعه — باسمه بلا معرّف الخطّة — وتذكره رسالةُ قرارك حين تقرّر. PDF أو Word.
+        شعبته من لحظة رفعه — باسمه بلا معرّف الخطّة — وتذكره رسالةُ قرارك حين تقرّر. PDF أو Word، أو الملفُّ
+        المضغوطُ (zip) كما هو بلا أن تفتحه.
       </p>
       <div
         className={`mt-3 flex flex-wrap items-center gap-3 rounded-lg border-2 border-dashed p-4 ${over ? "border-teal-light-ink bg-teal-light-ink/5" : "border-border"}`}
@@ -190,15 +199,16 @@ export function ReviewReportsBulkUpload({ plans, onUploaded, onOpen }: {
           multiple
           className="sr-only"
           aria-label="ملفّاتُ تقارير المراجعة"
-          accept={[...REVIEW_REPORT_MIMES, ".pdf", ".docx"].join(",")}
+          accept={[...REVIEW_REPORT_MIMES, ".pdf", ".docx", ".zip", "application/zip"].join(",")}
           onChange={(e) => void run(Array.from(e.target.files ?? []))}
         />
         <Button tone="secondary" size="sm" icon={Files} disabled={progress !== null} onClick={() => input.current?.click()}>
-          {progress ? `يُرفع ${progress}…` : "اختر الملفّات"}
+          {progress ? `${progress}…` : "اختر الملفّات"}
         </Button>
         <span className="text-read text-muted-foreground">أو اسحبها كلَّها إلى هنا وأفلتها.</span>
       </div>
       {summary && <p className="mt-3 text-read font-bold text-teal-light-ink" role="status">{summary}</p>}
+      {skippedAr && <p className="mt-1 text-read text-muted-foreground">{skippedAr}</p>}
       {results.length > 0 && (
         <ol className="mt-2 space-y-2">
           {results.map((r, i) => (
