@@ -108,7 +108,7 @@ export default function WeeklySessions({
   return (
     <div className="grid gap-3">
       <p className="text-read leading-6 text-muted-foreground">
-        اختر يوما وساعةً مرّةً واحدة، فيُقترح لقاءٌ في كلّ موعدٍ لمحاوره التي لا لقاءَ لها بعد. لا يُحفظ شيءٌ حتّى تراجعها وتحفظها، ولك أن تعدّل أيَّها.
+        اختر يوما وساعة، فيُقترح لقاءٌ لكلّ موعد. عدّل ما شئت ثمّ احفظ.
       </p>
       <fieldset disabled={locked || busy} className="grid min-w-0 gap-3 sm:grid-cols-3">
         <StaffField label="اليوم من كلّ أسبوع" hint="الجمعةُ والسبت، أو مساءَ يوم عمل.">

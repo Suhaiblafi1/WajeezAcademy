@@ -218,7 +218,7 @@ export default function SlotSessions({
                     {fmtDateTimeAr(s.startsAt)} · {pending ? "بانتظار اعتماد الإدارة" : "معتمَد"}
                   </p>
                   {outside
-                    ? <p className="text-read font-bold text-gold-ink">خارجَ هذا الموعد — انقله إلى داخله من «اللقاءاتُ المجدولة» أسفلَ الصفحة.</p>
+                    ? <p className="text-read font-bold text-gold-ink">خارجَ هذا الموعد — انقله إلى داخله.</p>
                     : day > EARLY_DAYS && <p className="text-read text-gold-ink">في اليوم {day} من موعده — والأصلُ في أوّل {EARLY_DAYS} أيّام.</p>}
                 </div>
                 {/* محاورُ اللقاء — يُضاف ما شاء من محاور موعده أو يُرفع، ولا يُترك بلا محور */}
@@ -292,7 +292,7 @@ export default function SlotSessions({
             </StaffField>
           </div>
           {axes.length > 1 && (
-            <StaffField as="div" wide label="لأيّ المحاور؟" hint="محورٌ أو أكثر من هذا الموعد، ما شئت — وبعد انتهاء اللقاء تُفتح مهامُّها.">
+            <StaffField as="div" wide label="لأيّ المحاور؟" hint="محورٌ أو أكثر — تُفتح مهامُّها بعد اللقاء.">
               <div className="flex flex-wrap gap-2">
                 {axes.map((id) => {
                   const on = form.moduleIds.includes(id);
@@ -356,8 +356,7 @@ export default function SlotSessions({
             (`recorded-links.ts`) */}
         {approvedOnce && (
           <p className="text-read leading-6 text-muted-foreground">
-            خطّتُك معتمَدة — فمحورُ الجلسة المسجّلة ويومُ فتحها يسريان لمتعلّميك متى حفظت، بلا اعتماد. أمّا اسمُها
-            ورابطُها، وما تضيفه منها أو تزيله، فيصل الإدارةَ أوّلا مع الخطّة.
+            خطّتُك معتمَدة — المحورُ ويومُ الفتح يسريان فورا، وغيرُهما تعتمده الإدارة.
           </p>
         )}
         {recorded.map(({ row, i }) => {

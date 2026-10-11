@@ -181,7 +181,7 @@ export default function PlanResources({
                     </span>
                   </div>
                   {!resourceHasSource(r) && (
-                    <p className="text-read leading-6 text-gold-ink">ينقصه رابط — افتحه والصق رابطَه، أو احذفه وأفلِته ملفّا. يُحفظ كما هو، ولا تُرسَل الشعبةُ حتّى يُكمَل.</p>
+                    <p className="text-read leading-6 text-gold-ink">ينقصه رابطٌ أو ملفّ.</p>
                   )}
                   {editing && (
                     <div className="grid gap-2 border-t border-white/[0.06] pt-2">
@@ -203,7 +203,7 @@ export default function PlanResources({
                           <input type="checkbox" checked={Boolean(r.preReading)} disabled={locked}
                             onChange={(e) => onPatch(i, { preReading: e.target.checked || null })}
                             className="h-4 w-4 shrink-0 accent-teal" />
-                          قراءةٌ مسبقة — يُفتح مع كرّاسة الموعد، قبل اللقاء
+                          قراءةٌ مسبقة — قبل اللقاء
                         </label>
                       )}
                       <div><Button tone="secondary" size="sm" onClick={() => setOpen(null)}>تمّ</Button></div>
@@ -215,7 +215,7 @@ export default function PlanResources({
           </ul>
         </section>
       ))}
-      {groups.length > 0 && <p className="text-read leading-6 text-muted-foreground">الضغطُ على اسم المصدر يفتح تعديلَ اسمه ووصفه في مكانه. والمربوطُ بمحورٍ يُفتح للمتعلّم بعد أوّل لقاءٍ لمحوره.</p>}
+      {groups.length > 0 && <p className="text-read leading-6 text-muted-foreground">اضغط الاسمَ لتعدّله.</p>}
     </div>
   );
 }

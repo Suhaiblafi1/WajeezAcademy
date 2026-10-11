@@ -99,7 +99,7 @@ export default function ModuleBodyUpload({
           </Button>
         </Inset>
         <p className="mt-1.5 text-read leading-6 text-muted-foreground">
-          {hint ?? "يقرؤه المتعلّمُ في وحدته. ويكفي وحدَه لاعتماد المحور — وإن كتبتَ فوقه فله الاثنان."}
+          {hint ?? "يكفي وحدَه لاعتماد المحور."}
         </p>
         {err && <p role="status" className="mt-1.5 text-read leading-6 text-gold">{err}</p>}
       </div>

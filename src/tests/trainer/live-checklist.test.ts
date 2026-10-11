@@ -3,7 +3,8 @@
 
    مؤشّرُ الحفظ محضٌ يُفحص بقيمه. والشاشةُ تُفحص على بنيتها (التعليقاتُ تُنزع قبل
    الفحص): النواقصُ هي ما يقوله «التالي» حين لا ينقل (`gapsFor`) لا عدٌّ ثانٍ
-   يفترق عنه، واللوحةُ تُرسم على الشاشة العريضة وفوق المتن على الهاتف. */
+   يفترق عنه. وذهبت اللوحةُ الجانبيّة بقرار صاحب المنصّة — وصار الناقصُ يُعلَّم
+   في موضعه بإطارٍ أحمر بعد الخروج من الخانة أو «التالي» (الوصفُ الأخير أدناه). */
 
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -41,7 +42,7 @@ describe('مؤشّرُ الحفظ — يقول حالَه بكلمات', () => {
   })
 })
 
-describe('النواقصُ على الخطوات وفي القائمة الحيّة', () => {
+describe('النواقصُ على الخطوات', () => {
   it('النواقصُ هي ما يقوله «التالي» — لا عدٌّ ثانٍ يفترق عنه', () => {
     expect(WS).toMatch(/const missingOf = \(k: Stage\): string\[\] => \(k === "approval" \|\| doneOf\(k\) \? \[\] : gapsFor\(k, ws\)\);/)
     /* و`gapsFor` يُعرَّف قبل أن يُنادى في الرسم — وإلّا سقطت الصفحةُ بخطإ «قبل التعريف» */
@@ -53,13 +54,6 @@ describe('النواقصُ على الخطوات وفي القائمة الحي�
     expect(rail).toContain('const lack = missing.get(s.key)?.length ?? 0;')
     expect(rail).toMatch(/\{lack\} ناقص/)
     expect(rail).toContain('${lack ? ` · ينقصها ${lack}` : ""}')
-  })
-
-  it('واللوحةُ الجانبيّةُ على الشاشة العريضة، وسطرٌ يُفتح على الهاتف — ما دامت الخطّةُ بيده', () => {
-    expect(WS).toMatch(/<aside aria-label="ما بقي قبل الإرسال" className="sticky hidden lg:block"/)
-    expect(WS).toMatch(/\{inHand && missingTotal > 0 && \(\s*<Inset as="details" className="mb-4 px-3 py-2 lg:hidden">/)
-    expect((WS.match(/<LiveChecklist /g) ?? []).length).toBe(2)
-    expect(WS).toContain('const inHand = planStatus === "draft" || planStatus === "changes_requested";')
   })
 })
 
@@ -101,5 +95,70 @@ describe('الحفظُ التلقائيُّ لا يتسابق مع غيره', ()
   it('وانقطاعُ الشبكة يُعاد وحدَه — وما ردّه الخادمُ بسببٍ لا يُعاد بعينه', () => {
     expect(WS).toContain('if (!(e instanceof ApiError) || e.status >= 500) {')
     expect(WS).toContain('}, [editKey, autoSaving, busy, autoMeta.failedKey]);')
+  })
+})
+
+/* ═══ الناقصُ في موضعه لا في لوحة — ولا من البداية (١١ أكتوبر ٢٠٢٦) ═══
+   «لم يعجبني الشريطُ الجانبيّ.. اجعل تنبيهاتِ النواقص بإشارةٍ حمراءَ حول كلّ شيءٍ
+   ناقص مع توضيح ما هو ناقصٌ ببوب أب! وليس من البداية.. فقط إذا دخل الخانةَ وخرج
+   منها أو نقر على متابعة» — صاحب المنصّة. */
+describe('الإطارُ الأحمرُ على الناقص', () => {
+  const FF = code('src/pages/trainer/FieldFlag.tsx')
+
+  it('ذهبت اللوحةُ الجانبيّةُ وسطرُ الهاتف — لا عمودَ يأخذ من المتن', () => {
+    expect(WS).not.toMatch(/<aside\b/)
+    expect(WS).not.toMatch(/LiveChecklist/)
+    expect(WS).not.toContain('lg:grid-cols-[minmax(0,1fr)_17rem]')
+  })
+
+  it('⚠️ لا يُرسم من البداية: بعد الخروج من الخانة، أو بعد «التالي» في خطوتها', () => {
+    expect(FF).toContain('const on = Boolean(problem) && shown;')
+    expect(FF).toContain('onBlurCapture={() => onLeave(id)}')
+    expect(WS).toContain('shown: flagAll === stage || (!whole && touched.has(id)), onLeave: touch,')
+    expect(WS).toMatch(/useState<ReadonlySet<string>>\(\(\) => new Set\(\)\)/)
+    expect(WS).toContain('useState<Stage | null>(null);')
+    /* و«التالي» الذي لم ينقل هو ما يُعلّم الخطوةَ كلَّها — وما منع الحفظَ كذلك */
+    const next = WS.slice(WS.indexOf('const saveAndContinue = async'), WS.indexOf('const stageLabel = '))
+    expect(next).toMatch(/setGaps\(gapsFor\(stage, fresh\), \{ saved: !planLocked \}\);\s*setFlagAll\(stage\);/)
+    const persist = WS.slice(WS.indexOf('const persist = async'), WS.indexOf('await apiPut(`/api/trainer/cohorts/${ws.cohort.id}/plan`'))
+    expect(persist).toContain('setFlagAll(stage);')
+  })
+
+  it('والإطارُ حول كلّ خانةٍ تنقص — بالقاعدة التي يحكم بها «التالي»', () => {
+    expect(WS).toContain(`<FieldFlag {...flagProps("title", titleProblem())} className="sm:col-span-2">`)
+    expect(WS).toContain(`<FieldFlag {...flagProps("level", levelProblem(content, planStatus))} className="sm:col-span-2">`)
+    expect(WS).toMatch(/<FieldFlag \{\.\.\.flagProps\("audience", audienceProblem\(content, planStatus\)\)\}/)
+    expect(WS).toMatch(/<FieldFlag \{\.\.\.flagProps\("period", periodProblem\(content, /)
+    expect(WS).toContain('<FieldFlag as="li" key={m.moduleId} {...flagProps(`module:${m.moduleId}`, moduleProblem(m))}>')
+    expect(WS).toContain('if (practiceGaps([m]).length) out.push(')
+    for (const whole of ['"workbooks", serverProblem("workbooks"), true', '"sessions", serverProblem("sessions"), true', '`tab:${taskTab}`, rowProblem(TASK_TABS[taskTab].key), true', '"tab:resources", rowProblem("resources"), true']) {
+      expect(WS).toContain(`<FieldFlag {...flagProps(${whole})}>`)
+    }
+  })
+
+  it('والإطارُ لا يزيح ما حوله، والنافذةُ تُفتح من علامتها لا وهو يكتب', () => {
+    expect(FF).toMatch(/on \? "rounded-lg outline outline-2 outline-offset-4 outline-red-500"/)
+    expect(FF).toMatch(/className="peer absolute /)
+    expect(FF).toMatch(/role="tooltip"[\s\S]*?hidden[^"]*peer-hover:block peer-focus:block/)
+    expect(FF, 'النافذةُ تُفتح وهو يكتب في الخانة').not.toMatch(/group-(focus-within|hover):block/)
+  })
+})
+
+/* ═══ «لمن» و«الهدف» قائمتان منسدلتان لا شبكتا بطاقات (١١ أكتوبر ٢٠٢٦) ═══
+   «اجعلها اختيارا من متعدّدٍ من انسدال، لكي لا تأخذ مساحةً كبيرة» — صاحب المنصّة. */
+describe('الاختيارُ من متعدّدٍ في سطرٍ واحد', () => {
+  const MP = code('src/components/MultiPick.tsx')
+
+  it('السؤالان كلاهما `MultiPick` — ولا شبكةَ بطاقاتٍ في الشاشة', () => {
+    expect((WS.match(/<MultiPick\b/g) ?? []).length).toBe(2)
+    expect(WS).toMatch(/<MultiPick\s+name="لمن هذه الشعبة"/)
+    expect(WS).toMatch(/<MultiPick\s+name="هدفُ المتعلّم"/)
+    expect(WS).not.toMatch(/<OptionGrid\b/)
+  })
+
+  it('والقائمةُ تطفو بأرضيّةٍ صلبة، وتُغلق بنقرةٍ خارجها من `document`', () => {
+    expect(MP).toMatch(/<Inset tone="solid" role="listbox"/)
+    expect(MP).toContain("document.addEventListener('mousedown', away)")
+    expect(MP).not.toMatch(/fixed inset-0/)
   })
 })

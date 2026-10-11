@@ -57,6 +57,8 @@ import SessionsAndAttendance from "./SessionsAndAttendance";
 import SlotSessions from "./SlotSessions";
 import WeeklySessions from "./WeeklySessions";
 import PlanResources from "./PlanResources";
+import MultiPick from "@/components/MultiPick";
+import FieldFlag from "./FieldFlag";
 import CohortSubmissions from "./CohortSubmissions";
 import { apiGet, apiPatch, apiPost, apiPut, apiDelete, ApiError } from "@/services/api";
 import ConfirmAction from "@/components/ConfirmAction";
@@ -90,7 +92,7 @@ import { Panel, Bar, Card, Inset } from "@/components/ui/Surface";
 import { PREP_NOTICE_AR, usePrepCohorts } from "@/components/trainer/usePrepCohorts";
 import { ORIENTATION_BOOKING_URL, ORIENTATION_CTA_AR } from "@/application/trainer/orientation-session";
 import Button from "@/components/ui/Button";
-import { controlCls, areaCls, OptionGrid, StaffField } from "@/components/FormKit";
+import { controlCls, areaCls, StaffField } from "@/components/FormKit";
 import { fmtDateTimeAr } from "@/utils/format";
 import { cohortDayAr } from "@/application/learning/cohort-gate";
 import { isDefaultCohortTitle, trainerOrdinalNoteAr } from "@/application/learning/cohort-title";
@@ -106,7 +108,7 @@ import { AUTOSAVE_DELAY_MS, AUTOSAVE_RETRY_MS, autosaveLineAr, autosaveView } fr
 import { countAr } from "@/application/text/count-ar";
 import CurriculumReview from "@/components/CurriculumReview";
 import PlanScorecard from "@/components/PlanScorecard";
-import { planScorecard } from "@/application/trainer/plan-scorecard";
+import { planScorecard, practiceGaps } from "@/application/trainer/plan-scorecard";
 import { postponedLineAr } from "@/application/trainer/plan-postpone";
 import { curriculumView } from "@/application/trainer/curriculum-view";
 import { PlanDiffList } from "@/components/PlanDiff";
@@ -292,30 +294,30 @@ const TASK_TABS: Record<TaskTab, { label: string; key: string; tips: readonly st
     label: "المهامّ العمليّة",
     key: "assignments",
     tips: [
-      "مهمّةٌ لكلّ محورٍ على الأقلّ، مربوطةٌ به — تُفتح للمتعلّم بعد أوّل لقاءٍ لمحورها.",
-      "اكتب في التعليمات ما يفعله بالضبط، ومقدارَه، وما يسلّمه — العنوانُ وحدَه لا يكفي للعمل.",
-      "أرفِق نموذجا يملؤه أو مثالا محلولا: ملفّا ترفعه، أو رابطا لفيديو يشرح الطريقة.",
-      "آخرُ موعدها آخرُ يومٍ في موعد محورها ما لم تحدّد غيرَه — واجعله قبل لقاء المحور التالي.",
+      "مهمّةٌ لكلّ محورٍ على الأقلّ، تُفتح بعد أوّل لقاءٍ له.",
+      "في التعليمات: ماذا يفعل، وكم، وماذا يسلّم.",
+      "أرفِق نموذجا أو مثالا محلولا.",
+      "موعدُ تسليمها آخرُ يومٍ في موعد محورها، ما لم تحدّد غيرَه.",
     ],
   },
   resources: {
     label: "المصادر",
     key: "resources",
     tips: [
-      "مصادرُ قليلةٌ للدورة كلِّها تكفي، وربطُ مصدرٍ بمحورٍ بعينه اختياريّ — الانتقاءُ أنفعُ للمتعلّم من القائمة الطويلة.",
-      "اكتب تحت كلّ مصدرٍ سطرا يقول لماذا يقرؤه، وما الذي يبحث عنه فيه.",
-      "اجعل ما يلزم قبل اللقاء «قراءةً مسبقة» — تُفتح مع أوّل يومٍ في موعد محوره.",
-      "الكتابُ ملفٌّ يُرفع أو رابط، والفيديو رابطٌ (يوتيوب أو فيميو أو Drive) بمشاركةٍ مفتوحة.",
+      "مصادرُ قليلةٌ منتقاةٌ أنفعُ من قائمةٍ طويلة. وربطُها بمحورٍ اختياريّ.",
+      "اكتب تحت كلّ مصدرٍ لماذا يقرؤه.",
+      "ما يلزم قبل اللقاء اجعله «قراءةً مسبقة».",
+      "الكتابُ ملفٌّ أو رابط، والفيديو رابطٌ بمشاركةٍ مفتوحة.",
     ],
   },
   project: {
     label: "مشروع التخرّج",
     key: "project",
     tips: [
-      "مشروعٌ واحدٌ يجمع محاورَ الدورة كلَّها في عملٍ حقيقيّ — لا اختبارٌ ولا تلخيص.",
-      "اكتب المطلوبَ خطوةً خطوة، وما يُسلَّم في آخره (ملفٌّ أو عرضٌ أو رابط)، وكيف تقيّمه.",
-      "اربطه بالمحور الأخير، واجعل موعدَه آخرَ يومٍ في الشعبة — فيبني عليه المتعلّمُ طوالَها.",
-      "أرفِق نموذجا للتسليم أو مثالا مكتملا يرى منه المتعلّمُ ما يُنتظر منه.",
+      "مشروعٌ واحدٌ يجمع الدورةَ في عملٍ حقيقيّ.",
+      "اكتب خطواتِه، وما يُسلَّم، وكيف تقيّمه.",
+      "اربطه بالمحور الأخير، وموعدُه آخرُ يومٍ في الشعبة.",
+      "أرفِق نموذجا أو مثالا مكتملا.",
     ],
   },
 };
@@ -414,37 +416,37 @@ const STAGE_INTRO: Record<Stage, { title: string; purpose: string; minutes: stri
     /* وعادت تَعِد بالمدّة لأنّها فيها (٢٧ سبتمبر ٢٠٢٦): كانت قد سقطت يومَ
        صار البدءُ والانتهاءُ حدودَ فصلٍ تسمّيه الإدارة — ومقدّمةٌ تَعِد بحقلٍ
        لا وجودَ له تجعل المدرّبَ يبحث عمّا ليس هنا. واليومَ الحقلُ هنا. */
-    purpose: "تعريفُ الدفعة كما يراها المتعلّمُ قبل أن يسجّل — اسمُها ونبذتُها — ومدّتُها كاملةً: من متى إلى متى. فيها تُعقد لقاءاتُك، وفيها يرى المتعلّمون موارده.",
+    purpose: "اسمُ الشعبة ونبذتُها ومستواها ومدّتُها — كما يراها المتعلّمُ قبل أن يسجّل.",
     minutes: "نحو ثلاث دقائق",
   },
   modules: {
     title: "المحاور ومواعيدها",
-    purpose: "خارطةُ ما ستدرّسه وموعدُ كلّ محورٍ داخلَ مدّة الشعبة: أوّلَ يومِ الموعد تُفتح للمتعلّم كرّاستُه ومادّتُه النظريّة. ولك أن تجمع محورين متجاورين في موعدٍ واحد ما بقيت المواعيدُ أربعةً فأكثر.",
+    purpose: "محاورُك وموعدُ كلٍّ منها داخلَ مدّة الشعبة.",
     minutes: "نحو ١٥ دقيقة",
   },
   workbooks: {
     title: "الكرّاسة",
-    purpose: "ملفُّ PDF يقرؤه المتعلّمُ في الصفحة: كرّاسةٌ واحدةٌ للدورة كلِّها، أو لكلّ محورٍ كرّاستُه — تختار. وابدأها من قالب وجيز.",
+    purpose: "ملفُّ PDF للدورة كلِّها أو لكلّ محور. ابدأ من قالب وجيز.",
     minutes: "نحو ٥ دقائق",
   },
   sessions: {
     title: "اللقاءات المباشرة والمسجّلة",
-    purpose: "لكلّ محورٍ لقاءٌ مباشرٌ على الأقلّ داخلَ موعده، وأضِف بعد ذلك ما شئت: اللقاءُ الواحدُ لمحورٍ أو أكثر من الموعد نفسِه. والجلساتُ المسجّلةُ اختياريّة، تُربط بمحورها وتُفتح في لحظةٍ تحدّدها داخلَ موعده. وبعد انتهاء أوّل لقاءٍ للمحور تُفتح مهامُّه ومصادرُه.",
+    purpose: "لقاءٌ مباشرٌ على الأقلّ لكلّ محورٍ داخلَ موعده. والمسجّلةُ اختياريّة.",
     minutes: "نحو ١٠ دقائق",
   },
   assignments: {
     title: "المهامّ والمصادر",
-    purpose: "ثلاثةُ ألسنةٍ كلُّها إلزاميّة: المهامُّ العمليّة التي يسلّمها المتعلّمُ في كلّ محور، والمصادرُ التي يقرؤها خارجَ اللقاء، ومشروعُ التخرّج الذي يجمع الدورةَ في آخرها. لا تكون المحاضرةُ إلزاميّةً والمُخرَجُ اختياريّا.",
+    purpose: "ثلاثتُها إلزاميّة: المهامُّ العمليّة، والمصادر، ومشروعُ التخرّج.",
     minutes: "نحو ١٠ دقائق",
   },
   approval: {
     title: "الموافقة والإرسال للاعتماد",
-    purpose: "مراجعةٌ أخيرةٌ ثمّ إرسال. بعد الإرسال تُقفل الشعبةُ للتعديل حتّى يصل قرارُ الإدارة.",
+    purpose: "راجِع ثمّ أرسِل. تُقفل الشعبةُ حتّى يصل القرار.",
     minutes: "دقيقة",
   },
   review: {
     title: "المراجعة",
-    purpose: "تعديلاتٌ اقترحناها على خطّتك — اقبل ما يناسبك أو ارفضه، ثمّ أرسل مراجعتك.",
+    purpose: "تعديلاتٌ مقترحة — اقبل أو ارفض، ثمّ أرسِل.",
     minutes: "دقائق",
   },
 };
@@ -468,7 +470,7 @@ function WorkbookFile({ cohortId, refId, value, onChange, locked, label, name }:
       <ModuleBodyUpload cohortId={cohortId} purpose="workbook" refId={refId} value={value} disabled={locked} label={label}
         onChange={(next) => onChange({ ...next, url: null })}
         hint={notPdf
-          ? "رُفع قبل أن يصير الرفعُ PDF وحدَه — يبقى، ويُنزَّل للمتعلّم. ولك أن تحذفه وترفعها PDF فتُقرأ في الصفحة."
+          ? "ليس PDF — يُنزَّل للمتعلّم. ارفعه PDF ليُقرأ في الصفحة."
           : "يقرؤه المتعلّمُ في الصفحة على أيّ جهاز."} />
     );
   }
@@ -496,7 +498,7 @@ function WorkbookFile({ cohortId, refId, value, onChange, locked, label, name }:
    (٧ أكتوبر). ويُقال للجدد، ويُستحسن لمن رفع كرّاسةً قبل القالب. */
 const MATERIAL_OPTIONS: { value: WorkbookMaterial; label: string; hint: string }[] = [
   { value: "template", label: "كتبتُها على قالب وجيز", hint: "بشكل كرّاسات وجيز كلِّها." },
-  { value: "own", label: "مادّتي الجاهزة", hint: "ملفّي كما أعددتُه. يراه المعتمِدُ ليس على القالب، فيقبله أو يعيده إليك بملاحظة." },
+  { value: "own", label: "مادّتي الجاهزة", hint: "ملفّي كما هو — يقرّه المعتمِدُ أو يعيده بملاحظة." },
 ];
 
 function MaterialChoice({ id, value, required, disabled, onChange }: {
@@ -598,6 +600,12 @@ export default function CohortWorkspace() {
   const [gaps, setGapsState] = useState<{ items: string[]; refused: Stage[]; saved: boolean } | null>(null);
   const setGaps = (items: string[] | null, how: { refused?: Stage[]; saved?: boolean } = {}) =>
     setGapsState(items ? { items, refused: how.refused ?? [], saved: how.saved ?? false } : null);
+  /* ═══ الناقصُ يُعلَّم في موضعه — لا من البداية (١١ أكتوبر ٢٠٢٦) ═══
+     الخاناتُ التي خرج منها المدرّب، والخطوةُ التي نقر فيها «التالي» فلم تنقل:
+     فيهما وحدَهما يُرسم الإطارُ الأحمر (`FieldFlag.tsx`). */
+  const [touched, setTouched] = useState<ReadonlySet<string>>(() => new Set());
+  const [flagAll, setFlagAll] = useState<Stage | null>(null);
+  const touch = (id: string) => setTouched((t) => (t.has(id) ? t : new Set(t).add(id)));
   /* «أرسِلها» وفي يده تعديلٌ لم يُحفظ — يُسأل قبل أن يُرسَل المحفوظُ وحدَه (٣ أكتوبر ٢٠٢٦) */
   const [unsavedAsk, setUnsavedAsk] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -1009,6 +1017,7 @@ export default function CohortWorkspace() {
     const problems = saveProblems();
     if (problems.length) {
       setGaps(problems.map((p) => p.text), { refused: [...new Set(problems.map((p) => p.stage))] });
+      setFlagAll(stage);
       return false;
     }
     await apiPut(`/api/trainer/cohorts/${ws.cohort.id}/plan`, over ?? content);
@@ -1143,8 +1152,33 @@ export default function CohortWorkspace() {
      و`inHand` معرَّفٌ أعلاه مع «المراجعة». */
   const missingOf = (k: Stage): string[] => (k === "approval" || doneOf(k) ? [] : gapsFor(k, ws));
   const missing = new Map(STAGES.map((x) => [x.key, inHand ? missingOf(x.key) : []]));
-  const missingTotal = [...missing.values()].reduce((n, g) => n + g.length, 0);
-  const adviceCount = scorecard.filter((x) => x.status === "advice").length;
+  /* ═══ وما ينقص كلَّ خانةٍ بعينها — ممّا في اليد لا من المحفوظ (١١ أكتوبر ٢٠٢٦) ═══
+     بالقواعد نفسِها التي يحكم بها «التالي» (`gapsFor`)، لكن على ما يكتبه الآن: الإطارُ
+     يذهب حين يُصلَح، لا بعد أن يُحفظ. وما لا يُكتب في الشاشة (اللقاءاتُ والمهامّ) من
+     الخادم كما هو. */
+  /* و`whole`: قسمٌ كاملٌ لا خانة (الكرّاسة · اللقاءات · المهامّ) — يُعلَّم بعد «التالي» وحدَه،
+     فنقرةٌ فيه وهو يبنيه لا تحمّره كلَّه */
+  const flagProps = (id: string, problem: string | null, whole = false) => ({
+    id, problem: inHand && !locked ? problem : null, shown: flagAll === stage || (!whole && touched.has(id)), onLeave: touch,
+  });
+  const titleProblem = (): string | null => {
+    const t = identity.title.trim();
+    if (!t && suggestedTitle) return null;
+    return t.length < 3 ? "اكتب اسمَ الشعبة — ثلاثةُ أحرفٍ فأكثر" : null;
+  };
+  const moduleProblem = (m: PlanModule): string | null => {
+    const out: string[] = [];
+    if (!m.titleAr.trim()) out.push("اكتب عنوانَ المحور");
+    if (!moduleBodyDone(m)) out.push("ينقصه المحتوى النظريّ — اكتبه، أو استورده من Word، أو أرفِق ملفّا");
+    /* والتطبيقُ العمليُّ بقاعدة الخادم نفسِها — جملةٌ لا كلمة (`practiceGaps`) */
+    if (practiceGaps([m]).length) out.push("ينقصه التطبيقُ العمليّ — جملةٌ تقول ما يفعله المتعلّمُ بيده");
+    return out.length ? out.join(" · ") : null;
+  };
+  const serverProblem = (k: Stage): string | null => (doneOf(k) ? null : gapsFor(k, ws).join(" · ") || null);
+  const rowProblem = (key: string): string | null => {
+    const row = ws.checklist.find((c) => c.key === key);
+    return row && !row.done ? row.labelAr : null;
+  };
   /* ═══ وما يقوله «التالي» حين لا ينقل يتحدّث بما يُحفظ بعده (١١ أكتوبر ٢٠٢٦) ═══
      كان يُكتب مرّةً ويبقى: من أضاف اللقاءَ الناقص بقي يقرأ «محورٌ بلا لقاءٍ مباشر» حتّى
      يُعيد تحميلَ الصفحة — فيظنّ أنّ اللقاءَ لم يُحفظ ويرسله ثانية. فما لم يُردّ حفظُه
@@ -1184,6 +1218,16 @@ export default function CohortWorkspace() {
         }
       } else {
         setGaps(gapsFor(stage, fresh), { saved: !planLocked });
+        /* ويُعلَّم كلُّ ناقصٍ في الخطوة بالأحمر، ويُنزَل إلى أوّله وتُفتح نافذتُه */
+        setFlagAll(stage);
+        window.requestAnimationFrame(() => {
+          const first = document.querySelector<HTMLElement>("[data-flagged]");
+          if (!first) return;
+          /* تحت الشريط اللاصق لا خلفَه — فهو يطول بما يقوله */
+          const bar = document.querySelector<HTMLElement>("[data-stepper]")?.getBoundingClientRect().bottom ?? 0;
+          window.scrollTo({ top: first.getBoundingClientRect().top + window.scrollY - bar - 32, behavior: "smooth" });
+          first.querySelector<HTMLElement>("[data-flag-badge]")?.focus({ preventScroll: true });
+        });
       }
     } catch (e) {
       toastError(e instanceof ApiError ? e.message : "تعذّر الحفظ");
@@ -1565,6 +1609,7 @@ export default function CohortWorkspace() {
         tone="solid"
         className="relative sticky z-30 -mx-5 mb-5 px-5"
         style={{ top: "var(--staff-sticky-top, 0px)" }}
+        data-stepper
       >
         <div>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
@@ -1752,9 +1797,24 @@ export default function CohortWorkspace() {
                       ? "لا تُرسَل مراجعتُك بعد — ينقص خطّتَك:"
                       : `لم تتمّ «${here?.label}» بعد — ينقصها:`}
               </p>
-              <ul className="mt-1 list-inside list-disc space-y-0.5 text-read leading-7 text-foreground">
-                {shownGaps.map((g) => <li key={g}>{g}</li>)}
-              </ul>
+              {/* وفي الخطوات التي تُعلَّم خاناتُها بالأحمر تُطوى القائمةُ سطرا: الشريطُ لاصق،
+                  وقائمةٌ طويلةٌ فيه تغطّي الخانةَ الحمراءَ التي يُنزَل إليها (١١ أكتوبر ٢٠٢٦) */}
+              {(() => {
+                const list = (
+                  <ul className="mt-1 list-inside list-disc space-y-0.5 text-read leading-7 text-foreground">
+                    {shownGaps.map((g) => <li key={g}>{g}</li>)}
+                  </ul>
+                );
+                if (gaps.refused.length > 0 || stage === "approval" || stage === "review") return list;
+                return (
+                  <details className="mt-1">
+                    <summary className="cursor-pointer text-read leading-6 text-muted-foreground">
+                      عُلّم كلُّ ناقصٍ في الصفحة بإطارٍ أحمر — انقر علامتَه «!» لترى ما ينقصه. <span className="font-bold text-foreground">أو اعرضها هنا</span>
+                    </summary>
+                    {list}
+                  </details>
+                );
+              })()}
               {/* وما منع الحفظَ في خطوةٍ غيرِ هذه يُفتح موضعُه — ولو كانت مقفلةً بالترتيب */}
               {gaps.refused.some((k) => k !== stage) && (
                 <div className="mt-2 flex flex-wrap gap-2">
@@ -1801,20 +1861,6 @@ export default function CohortWorkspace() {
         </span>
       </Bar>
 
-      {/* ═══ قائمةُ الفحص حيّةً من البداية — لوحةٌ جانبيّة (١١ أكتوبر ٢٠٢٦) ═══
-          «تظهر كلوحةٍ جانبيّةٍ تتحدّث مع كلّ حفظ، بدلَ اكتشاف النواقص عند الضغط على
-          "التالي"». على الشاشة العريضة بجانب المتن، وعلى الهاتف سطرٌ يُفتح فوقه. */}
-      {inHand && missingTotal > 0 && (
-        <Inset as="details" className="mb-4 px-3 py-2 lg:hidden">
-          <summary className="flex min-h-9 cursor-pointer list-none items-center gap-2 text-read font-black text-gold-ink [&::-webkit-details-marker]:hidden">
-            <ClipboardCheck className="h-4 w-4 shrink-0" aria-hidden="true" /> ما بقي قبل الإرسال · {missingTotal}
-            <ChevronDown className="h-4 w-4 shrink-0" aria-hidden="true" />
-          </summary>
-          <LiveChecklist missing={missing} adviceCount={adviceCount} current={stage} onOpen={(k) => void openStage(k)} />
-        </Inset>
-      )}
-      <div className={inHand ? "lg:grid lg:grid-cols-[minmax(0,1fr)_17rem] lg:items-start lg:gap-5" : undefined}>
-      <div className="min-w-0">
 
       {/* ═══ وذهب الطوران (٣٠ سبتمبر ٢٠٢٦) ═══
 
@@ -1890,7 +1936,7 @@ export default function CohortWorkspace() {
       {planLocked && stage !== "approval" && stage !== "review" && (
         <Inset tone="accent" className="mb-4 flex items-start gap-2 text-read leading-6">
           <Lock className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-          خطّتك بانتظار الاعتماد — لا تُعدَّل حتّى يصل القرار. ولو أردت تعديلها الآن، اطلب من الإدارة ردَّها إليك.
+          خطّتك بانتظار الاعتماد. للتعديل الآن اطلب من الإدارة ردَّها.
         </Inset>
       )}
       {previewBlocker && (
@@ -1927,7 +1973,7 @@ export default function CohortWorkspace() {
               `cohort-copy.service.ts`: شعبةٌ لم تُعتمَد لها خطّةٌ قطّ، والخطّةُ في يده. */}
           {(ws.copySources?.length ?? 0) > 0 && inHand && !ws.approvedOnce && (
             <HowToFill className="mt-4" title="انسخ من شعبةٍ أخرى لك لهذه الدورة">
-              <p>تُنسخ المحاورُ ومتونُها ومواعيدُها والكرّاساتُ والمصادرُ والمهامّ، وتُزاح التواريخُ كلُّها لتبدأ من اليوم الذي تختاره — والإيقاعُ أسبوعا بأسبوع كما هو. ولا تُنسخ اللقاءاتُ المباشرة: تضيفها من «اللقاءات».</p>
+              <p>يُنسخ كلُّ شيءٍ إلّا اللقاءاتِ المباشرة، وتُزاح التواريخُ لتبدأ من اليوم الذي تختاره.</p>
               <div className="mt-2 grid gap-3 sm:grid-cols-2">
                 <StaffField label="انسخ من" hint="شعبةٌ لك لهذه الدورة نفسِها.">
                   <select value={copyForm.sourceId} disabled={locked} aria-label="الشعبةُ المنسوخُ منها"
@@ -1950,12 +1996,14 @@ export default function CohortWorkspace() {
             </HowToFill>
           )}
           <div className="mt-5 grid gap-5">
-            <StaffField wide label="اسم الشعبة" hint={suggestedTitle ? "ما يراه المتعلّم في الكتالوج وفي شهادته. اكتب اسما يميّزها — «… · مساء الأحد» — أو اتركه فارغا فتُسمّى بالمثال الظاهر فيه." : "ما يراه المتعلّم في الكتالوج وفي شهادته — ولك أن تزيد عليه ما يميّزها: «… · مساء الأحد»."}>
+            <FieldFlag {...flagProps("title", titleProblem())} className="sm:col-span-2">
+            <StaffField wide label="اسم الشعبة" hint={suggestedTitle ? "يظهر في الكتالوج والشهادة. اتركه فارغا فتُسمّى بالمثال." : "يظهر في الكتالوج والشهادة."}>
               <input value={identity.title} placeholder={suggestedTitle ? `مثال: ${suggestedTitle}` : undefined} aria-label="اسم الشعبة" onChange={(e) => setIdentity({ title: e.target.value })} disabled={locked} className={controlCls} />
             </StaffField>
+            </FieldFlag>
             {/* وصفُ الشعبة موضعُه هنا لا في «المحاور»: هو تعريفُ الشعبة
                 نفسِها، وكان في خطوةٍ اسمُها «المحاور» فلا يجده من يبحث عنه. */}
-            <StaffField wide label="نبذةٌ عن الشعبة" hint="سطران يقرؤهما المتعلّم قبل أن يدفع. قل ما سيخرج به، لا ما ستشرحه.">
+            <StaffField wide label="نبذةٌ عن الشعبة" hint="سطران: ما سيخرج به المتعلّم.">
               <textarea rows={2} value={content.summaryAr ?? ""} onChange={(e) => setContent({ ...content, summaryAr: e.target.value })} disabled={locked} className={areaCls} />
             </StaffField>
 
@@ -1970,10 +2018,11 @@ export default function CohortWorkspace() {
               const picked = levelsIn(range);
               const said = levelRangeAr(range);
               return (
+                <FieldFlag {...flagProps("level", levelProblem(content, planStatus))} className="sm:col-span-2">
                 <fieldset disabled={locked} className="min-w-0 sm:col-span-2">
                   <legend className="text-read font-black text-foreground">مستوى هذه الشعبة</legend>
                   <p className="mt-1 text-read leading-6 text-muted-foreground">
-                    لمن تُدرّس هذه الشعبة؟ اختر مستوًى واحدا، أو مستويين متجاورين إن كانت تبدأ من أحدهما وتصل إلى الآخر.
+                    مستوًى واحدٌ أو مستويان متجاوران.
                   </p>
                   <div role="group" aria-label="مستوى هذه الشعبة" className="mt-2.5 grid gap-2 sm:grid-cols-3">
                     {COHORT_LEVELS.map((lv) => {
@@ -2007,6 +2056,7 @@ export default function CohortWorkspace() {
                       : levelRequired(planStatus) ? "لم تختر المستوى بعد — ولا تتمّ هذه الخطوةُ بدونه." : "لم يُحدَّد مستوى لهذه الشعبة."}
                   </p>
                 </fieldset>
+                </FieldFlag>
               );
             })()}
 
@@ -2021,44 +2071,35 @@ export default function CohortWorkspace() {
               const goals = goalsFor(aud.stages);
               const setAud = (next: { stages: string[]; goals: string[] }) => setContent({ ...content, audience: next });
               return (
-                <>
-                  <fieldset disabled={locked} className="min-w-0 sm:col-span-2">
+                <FieldFlag {...flagProps("audience", audienceProblem(content, planStatus))} className="grid gap-5 sm:col-span-2 sm:grid-cols-2">
+                  <fieldset disabled={locked} className="min-w-0">
                     <legend className="text-read font-black text-foreground">لمن هذه الشعبة؟</legend>
-                    <p className="mt-1 text-read leading-6 text-muted-foreground">
-                      من سيجلس أمامك غالبا؟ اختر واحدةً إلى ثلاث — بالكلمات التي يصف بها المتعلّمُ نفسَه في التشخيص.
-                    </p>
-                    <div className="mt-2.5">
-                      <OptionGrid
+                    <div className="mt-2">
+                      <MultiPick
                         name="لمن هذه الشعبة"
+                        placeholder="اختر حتّى ثلاث"
+                        disabled={locked}
                         items={AUDIENCE_STAGES.map((st) => ({ value: st, label: stageLabelAr(st) }))}
                         isOn={(v) => aud.stages.includes(v as never)}
                         onToggle={(v) => setAud(withStages(aud, toggleIn(aud.stages, v as never, MAX_AUDIENCE_STAGES)))}
                       />
                     </div>
-                    {aud.stages.length >= MAX_AUDIENCE_STAGES && (
-                      <p className="mt-2 text-read leading-6 text-muted-foreground">اخترتَ ثلاثا — انزع واحدةً لتختار غيرها.</p>
-                    )}
                   </fieldset>
 
-                  <fieldset disabled={locked} className="min-w-0 sm:col-span-2">
+                  <fieldset disabled={locked} className="min-w-0">
                     <legend className="text-read font-black text-foreground">ماذا يريد المتعلّمُ أن يحقّق بها؟</legend>
-                    <p className="mt-1 text-read leading-6 text-muted-foreground">
-                      اختر هدفا أو هدفين{aud.stages.length > 0 ? " — والمعروضُ ما يناسب من اخترتَهم أعلاه" : ""}.
-                    </p>
-                    <div className="mt-2.5">
-                      <OptionGrid
-                        cols={2}
+                    <div className="mt-2">
+                      <MultiPick
                         name="هدفُ المتعلّم"
+                        placeholder="اختر هدفا أو هدفين"
+                        disabled={locked}
                         items={goals.map((g) => ({ value: g.code, label: g.label_ar }))}
                         isOn={(v) => aud.goals.includes(v)}
                         onToggle={(v) => setAud({ ...aud, goals: toggleIn(aud.goals, v, MAX_AUDIENCE_GOALS) })}
                       />
                     </div>
-                    {aud.goals.length >= MAX_AUDIENCE_GOALS && (
-                      <p className="mt-2 text-read leading-6 text-muted-foreground">اخترتَ هدفين — انزع واحدا لتختار غيره.</p>
-                    )}
                   </fieldset>
-                </>
+                </FieldFlag>
               );
             })()}
 
@@ -2067,8 +2108,9 @@ export default function CohortWorkspace() {
                 «لأنّها هي الفترةُ المخصّصة للّقاءات المباشرة ومدّةُ رؤية
                 المتعلّمين موارده». ولقاءاتُه كلُّها داخلها، والقاعدةُ في
                 `application/trainer/cohort-period.ts` يقرؤها الخادمُ معها. */}
-            <div className="grid gap-5 sm:grid-cols-2">
-              <StaffField label="تبدأ الشعبة" hint="أوّلُ يومٍ فيها: تُفتح فيه موارده للمتعلّمين، ولقاءاتُك من يومه فما بعده.">
+            <FieldFlag {...flagProps("period", periodProblem(content, { today, approvedStart: ws.cohort.publicPeriod?.startsOn ?? null }))}
+              className="grid gap-5 sm:col-span-2 sm:grid-cols-2">
+              <StaffField label="تبدأ الشعبة" hint="فيه تُفتح الموارد.">
                 <input
                   type="date" dir="ltr"
                   value={content.startsOn ?? ""}
@@ -2079,7 +2121,7 @@ export default function CohortWorkspace() {
                   className={`${controlCls} text-left`}
                 />
               </StaffField>
-              <StaffField label="وتنتهي" hint="آخرُ يومٍ فيها: آخرُ لقاءاتك فيه أو قبله.">
+              <StaffField label="وتنتهي" hint="آخرُ لقاءٍ فيه أو قبله.">
                 <input
                   type="date" dir="ltr"
                   value={content.endsOn ?? ""}
@@ -2090,7 +2132,7 @@ export default function CohortWorkspace() {
                   className={`${controlCls} text-left`}
                 />
               </StaffField>
-            </div>
+            </FieldFlag>
             {(() => {
               /* ما يقوله التاريخان — مدّتُهما، أو ما يمنعهما — قبل أن يُحفظا */
               if (!content.startsOn && !content.endsOn) {
@@ -2167,7 +2209,8 @@ export default function CohortWorkspace() {
                  المفتوحُ `accent` والمطويُّ `default`. فحدُّه ظاهرٌ من طرفَيه،
                  ويعرف الناظرُ أين هو من القائمة بلا أن يعدّ. */
               return (
-              <Card as="li" key={m.moduleId} tone={open ? "accent" : "default"}>
+              <FieldFlag as="li" key={m.moduleId} {...flagProps(`module:${m.moduleId}`, moduleProblem(m))}>
+              <Card tone={open ? "accent" : "default"}>
                 <div className="flex flex-wrap items-center gap-2">
                   {/* العنوانُ زرٌّ يطوي البطاقةَ ويفتحها — فستّةُ محاورَ في خمسةِ
                       حقولٍ جدارٌ لا يُقرأ، والمطويُّ منها يُرى سطرا واحدا. */}
@@ -2209,18 +2252,18 @@ export default function CohortWorkspace() {
                 {open && (
                 <div className="mt-4 grid gap-5">
                   <p className="text-read text-muted-foreground">المعرّف <span className="font-mono">{m.moduleId}</span></p>
-                  <StaffField label="عنوان المحور" hint="اسمٌ قصيرٌ يظهر في قائمة المتعلّم. ابدأه باسمٍ لا بفعل: «بنية المقال» لا «نتعلّم بنية المقال».">
+                  <StaffField label="عنوان المحور" hint="اسمٌ قصير: «بنية المقال».">
                     <input value={m.titleAr} onChange={(e) => setModule(i, { titleAr: e.target.value })} disabled={locked} aria-label={`عنوان المحور ${i + 1}`} className={controlCls} />
                   </StaffField>
-                  <StaffField label="مخرَج المحور" hint="ما يستطيع المتعلّمُ فعلَه بعده ولم يكن يستطيعه قبله. ابدأه بفعلٍ يُقاس: «يميّز»، «يكتب»، «يحلّل».">
+                  <StaffField label="مخرَج المحور" hint="ما يقدر عليه بعده — بفعلٍ يُقاس: «يكتب»، «يحلّل».">
                     <textarea rows={2} value={m.outcomeAr ?? ""} onChange={(e) => setModule(i, { outcomeAr: e.target.value })} disabled={locked} aria-label={`مخرج المحور ${i + 1}`} className={areaCls} />
                   </StaffField>
-                  <StaffField label="التطبيق العمليّ" hint="ما يفعله بيده في هذا المحور. إن لم يكن فيه شيءٌ يفعله فهو محاضرةٌ لا محور.">
+                  <StaffField label="التطبيق العمليّ" hint="ما يفعله المتعلّمُ بيده.">
                     <textarea rows={2} value={m.activityAr ?? ""} onChange={(e) => setModule(i, { activityAr: e.target.value })} disabled={locked} aria-label={`تطبيق المحور ${i + 1}`} className={areaCls} />
                   </StaffField>
                   {/* وسقط «ما يُسلّمه المتعلّم» (١١ أكتوبر ٢٠٢٦): يكرّر المهامَّ في خطوتها —
                       وما كُتب فيه قبلُ يبقى في الخطّة كما هو، لا يُمحى ولا يُعرض */}
-                  <StaffField label="المحتوى النظريّ" hint="الشرحُ المكتوب الذي يقرؤه المتعلّم داخل المنصّة — ابدأ كلَّ درسٍ بعنوانٍ من الشريط، فالمحتوى يُقسَّم عنده دروسا. و«عايِنْ» تريكه كما يراه هو. والروابطُ والملفّاتُ موضعُها «المصادر». ويلزم لاعتماد الشعبة — لا لحفظها.">
+                  <StaffField label="المحتوى النظريّ" hint="الشرحُ المكتوب. كلُّ عنوانٍ يبدأ درسا. يلزم للاعتماد لا للحفظ.">
                     <BodyEditor
                       value={m.bodyAr ?? ""}
                       onChange={(next) => setModule(i, { bodyAr: next })}
@@ -2249,6 +2292,7 @@ export default function CohortWorkspace() {
                 </div>
                 )}
               </Card>
+              </FieldFlag>
               );
         };
         const problems = slotProblems(slots, moduleIds, planPeriod);
@@ -2276,7 +2320,7 @@ export default function CohortWorkspace() {
             <Inset className="mt-3 flex flex-wrap items-center gap-3 text-read leading-6 text-muted-foreground">
               <span className="min-w-0 flex-1">
                 {planPeriod
-                  ? "لم تُوزَّع المحاورُ على مواعيدها بعد — رتّبها أسبوعيّةً من تاريخ البدء، ثمّ عدّلها كما تشاء."
+                  ? "لم تُوزَّع المحاورُ على مواعيدها بعد."
                   : "حدّد مدّةَ الشعبة في «المعلومات الأساسيّة» أوّلا — فالمواعيدُ داخلها."}
               </span>
               {planPeriod && (
@@ -2398,6 +2442,7 @@ export default function CohortWorkspace() {
         ];
         const titleOf = (id: string) => content.modules.find((m) => m.moduleId === id)?.titleAr || "بلا عنوانٍ بعد";
         return (
+          <FieldFlag {...flagProps("workbooks", serverProblem("workbooks"), true)}>
           <Panel as="section">
             <StageIntro stage="workbooks" />
             {slotWorkbooks > 0 && !workbookDone(wb) && wbGroups.every((g) => !workbookDone(g)) && (
@@ -2413,7 +2458,7 @@ export default function CohortWorkspace() {
                 <FileDown className="h-4 w-4 text-teal-light-ink" aria-hidden="true" /> ابدأ من قالب وجيز
               </p>
               <p className="text-read leading-6 text-muted-foreground">
-                ملفُّ Word بشكل كرّاسات وجيز، <b className="text-foreground">مملوءٌ بما كتبته في خطّتك</b>: اسمُ الدورة ومدّتُها ومحاورُها ومواعيدُها، ولكلّ محورٍ ما يخرج به المتعلّمُ ومحتواه النظريُّ وتطبيقُه ومصادرُه. أكمِل ما بقي بين قوسين — المثالَ المحلول وأسئلةَ التأمّل — ثمّ احفظه PDF وارفعه هنا.
+                ملفُّ Word <b className="text-foreground">مملوءٌ بخطّتك</b>. أكمِل ما بين القوسين، ثمّ احفظه PDF وارفعه.
               </p>
               <div className="flex flex-wrap gap-2">
                 {wbMode === "course" && (
@@ -2424,15 +2469,15 @@ export default function CohortWorkspace() {
                 <Button as="a" tone="secondary" icon={FileDown} href={tpl.href} download={tpl.download}>{tpl.labelAr} فارغا</Button>
               </div>
               {wbMode === "modules" && (
-                <p className="text-read leading-6 text-muted-foreground">ولكلّ كرّاسةٍ قالبُها مملوءا في بطاقتها تحت — بمحورها، أو بمحاورها إن جمعتها.</p>
+                <p className="text-read leading-6 text-muted-foreground">ولكلّ كرّاسةٍ قالبُها في بطاقتها أدناه.</p>
               )}
               {Object.values(dirty).some(Boolean) && (
-                <p className="text-read leading-6 text-gold-ink">في خطّتك تعديلٌ لم يُحفَظ — احفظه أوّلا ليصل إلى القالب؛ فالقالبُ يُملأ بما حفظته.</p>
+                <p className="text-read leading-6 text-gold-ink">احفظ تعديلك أوّلا ليصل إلى القالب.</p>
               )}
               {/* أو مادّتُه الجاهزة (٧ أكتوبر ٢٠٢٦) — يقول تحت كلّ ملفٍّ أيّهما، بفرق كلٍّ */}
               <p className="text-read leading-6">
                 {required
-                  ? <><b className="text-gold-ink">وعندك مادّةٌ جاهزة؟ ارفعها كما هي.</b> <span className="text-muted-foreground">تقول تحت كلّ ملفٍّ: على القالب، أم مادّتُك الجاهزة. القالبُ يجعل كرّاساتِ وجيز بشكلٍ واحدٍ للمتعلّم؛ ومادّتُك الجاهزةُ يراها المعتمِدُ فيقبلها أو يعيدها إليك بملاحظة.</span></>
+                  ? <><b className="text-gold-ink">وعندك مادّةٌ جاهزة؟ ارفعها كما هي.</b> <span className="text-muted-foreground">ويقرّها المعتمِد.</span></>
                   : <span className="text-muted-foreground">يُستحسن — رفعتَ كرّاسةً قبل القالب، فلك أن تبقيها كما هي.</span>}
               </p>
               {/* وما يكتبه على القالب له (٧ أكتوبر ٢٠٢٦) — والنصُّ نفسُه في صفحة المدرّب داخلَ القالب */}
@@ -2475,7 +2520,7 @@ export default function CohortWorkspace() {
             {wbMode === "course" ? (
               <>
                 <Card tone={workbookDone(wb) ? "default" : "accent"} className="mt-4 grid gap-3">
-                  <StaffField label="اسمُ الكرّاسة (اختياريّ)" hint="ما يراه المتعلّم — «كرّاسةُ الدورة». وإن تركته سُمّيت «كرّاسةُ الدورة».">
+                  <StaffField label="اسمُ الكرّاسة (اختياريّ)" hint="اتركه فارغا فتُسمّى «كرّاسةُ الدورة».">
                     <input value={wb?.title ?? ""} disabled={locked} maxLength={200}
                       aria-label="اسمُ الكرّاسة"
                       onChange={(e) => setWorkbook({ title: e.target.value || null })}
@@ -2492,7 +2537,7 @@ export default function CohortWorkspace() {
                 <div className="mt-5">
                   <p className="text-read font-black">أين يبدأ كلُّ محورٍ في الكرّاسة؟ <span className="font-normal text-muted-foreground">(اختياريّ)</span></p>
                   <p className="mt-0.5 text-read leading-6 text-muted-foreground">
-                    إن كتبته رآه المتعلّمُ بجانب كلّ محورٍ في رحلته، ففتح الكرّاسةَ على موضعه — «ص ٥» أو «ص ٥–١٢» أو «القسم الثاني».
+                    اختياريّ: «ص ٥» أو «ص ٥–١٢».
                   </p>
                   {moduleIds.length === 0 ? (
                     <Inset className="mt-3 text-read leading-6 text-muted-foreground">
@@ -2578,6 +2623,7 @@ export default function CohortWorkspace() {
               </ol>
             )}
           </Panel>
+          </FieldFlag>
         );
       })()}
 
@@ -2611,7 +2657,7 @@ export default function CohortWorkspace() {
             {slotsOn && (
               <HowToFill className="mt-3" title="نصائحُ للقاءاتك">
                 <ul className="list-inside list-disc space-y-0.5">
-                  <li>أضِف ما شئت من اللقاءات، واربط كلَّ لقاءٍ بمحورٍ واحدٍ أو أكثر من محاور موعده.</li>
+                  <li>اربط كلَّ لقاءٍ بمحورٍ أو أكثر من موعده.</li>
                   <li>اللقاءُ في وقت محاوره: يومُه داخلَ موعدها، وخيرُه في أوّل {EARLY_DAYS} أيّامٍ منه — فبعده تُفتح مهامُّها.</li>
                   <li>ولا حدَّ لعددها: ساعاتٌ أكثرُ جودةٌ أعلى — فأضِف ما استطعت.</li>
                   <li>وتراجع الإدارةُ لقاءاتِك مع خطّتك قبل اعتمادها، وتقترح عليك ما تراه.</li>
@@ -2620,7 +2666,7 @@ export default function CohortWorkspace() {
             )}
             {slotsOn && dirty.modules && (
               <Inset tone="warn" className="mt-3 text-read leading-6 text-gold-ink">
-                في «المحاور ومواعيدها» تعديلٌ لم يُحفظ، والبطاقاتُ أدناه تعرضه — ويُحفظ أوّلا حين تضيف لقاءً أو تربطه.
+                في «المحاور ومواعيدها» تعديلٌ لم يُحفظ — يُحفظ حين تضيف لقاءً.
               </Inset>
             )}
             {crowdTip && <div className="mt-3">{crowdTip}</div>}
@@ -2640,7 +2686,7 @@ export default function CohortWorkspace() {
                   </div>
                   {scheduleMode === "manual" ? (
                     <p className="text-read leading-6 text-muted-foreground">
-                      تختار يومَ كلّ لقاءٍ وساعتَه بحرّيّة داخلَ موعد محوره، من بطاقة الموعد أدناه. لا شيءَ يُملأ عنك.
+                      اختر يومَ كلّ لقاءٍ وساعتَه من بطاقة موعده.
                     </p>
                   ) : (
                     <WeeklySessions
@@ -2674,6 +2720,7 @@ export default function CohortWorkspace() {
             const looseRecorded = recordedRows.filter(({ r }) => slotIndexOf(slots, r.moduleId ?? "") === -1);
             return (
               <>
+                <FieldFlag {...flagProps("sessions", serverProblem("sessions"), true)}>
                 <ol className="space-y-4">
                   {slots.map((slot, si) => (
                     <SlotSessions
@@ -2698,6 +2745,7 @@ export default function CohortWorkspace() {
                     />
                   ))}
                 </ol>
+                </FieldFlag>
                 {/* ما جُدول قبل المحاور أو رُبط بمحورٍ حُذف — يُربط هنا ولا يضيع */}
                 {(loose.length > 0 || looseRecorded.length > 0) && (
                   <Card tone="accent" className="grid gap-3">
@@ -2733,7 +2781,7 @@ export default function CohortWorkspace() {
                               </select>
                             ) : (
                               <span className="text-read font-bold text-gold-ink">
-                                يومُه خارجَ مواعيد المحاور كلِّها — انقله من «اللقاءاتُ المجدولة» أسفلَ الصفحة إلى موعد محوره، ثمّ اربطه هنا.
+                                يومُه خارجَ المواعيد — انقله إلى موعد محوره ثمّ اربطه.
                               </span>
                             )}
                           </Inset>
@@ -2820,6 +2868,7 @@ export default function CohortWorkspace() {
         </Panel>
 
         {taskTab !== "resources" && (
+        <FieldFlag {...flagProps(`tab:${taskTab}`, rowProblem(TASK_TABS[taskTab].key), true)}>
         <Panel as="section">
           <h3 className="flex items-center gap-2 text-sm font-black">
             {isProject ? <GraduationCap className="h-4 w-4 text-teal-light-ink" aria-hidden="true" /> : <ClipboardCheck className="h-4 w-4 text-teal-light-ink" aria-hidden="true" />}
@@ -2906,7 +2955,7 @@ export default function CohortWorkspace() {
                 تعتمده الإدارة (٣ج-٣) */}
             {ws.approvedOnce && (
               <p className="mb-3 text-read leading-6 text-muted-foreground">
-                خطّتُك معتمَدة — فما تضيفه هنا أو تعدّله أو تحذفه يصل الإدارةَ أوّلا، ويبقى المسجّلون على المعتمَد حتّى تعتمده.
+                خطّتُك معتمَدة — أيُّ تغييرٍ هنا تعتمده الإدارةُ أوّلا.
               </p>
             )}
             {!taskFormOpen ? (
@@ -2944,7 +2993,7 @@ export default function CohortWorkspace() {
               {/* مرفقاتُ التكليف — نموذجٌ يُملأ أو مرجعٌ يُقرأ قبل التسليم */}
               <div className="block">
                 <span className="block text-read font-bold text-foreground">المرفقات</span>
-                <span className="mt-0.5 mb-2 block text-read leading-6 text-muted-foreground">نموذجٌ يملؤه، أو مرجعٌ يقرؤه قبل التسليم. اختر نوعَه أوّلا — فيظهر ما يوازيه: رفعُ الملفّ، أو خانةُ الرابط.</span>
+                <span className="mt-0.5 mb-2 block text-read leading-6 text-muted-foreground">نموذجٌ أو مرجع. اختر نوعَه: ملفٌّ أو رابط.</span>
                 {/* ═══ النوعُ أوّلا، ثمّ ما يوازيه (٣٠ سبتمبر ٢٠٢٦) ═══
 
                     شكوى صاحب المنصّة: «عندما يختار ملفّا لا تظهر خانةُ رفع الملف…
@@ -3003,7 +3052,7 @@ export default function CohortWorkspace() {
               {slotsOn && (
                 <label className="block">
                   <span className="block text-read font-bold text-foreground">المحور</span>
-                  <span className="mt-0.5 mb-2 block text-read leading-6 text-muted-foreground">تُفتح للمتعلّم بعد انتهاء أوّل لقاءٍ لمحورها، وآخرُ موعدها آخرُ يومٍ في موعده ما لم تحدّد غيرَه.</span>
+                  <span className="mt-0.5 mb-2 block text-read leading-6 text-muted-foreground">تُفتح بعد أوّل لقاءٍ لمحورها.</span>
                   <select aria-label="محور المهمّة" value={taskForm.moduleId}
                     onChange={(e) => {
                       const mid = e.target.value;
@@ -3045,7 +3094,7 @@ export default function CohortWorkspace() {
                 </label>
                 <label className="block">
                   <span className="block text-read font-bold text-foreground">آخر موعد</span>
-                    <span className="mt-0.5 mb-2 block text-read leading-6 text-muted-foreground">حتّى آخر ذلك اليوم بتوقيت الشعبة. وبعده يُقبل المتأخّرُ ويُعلَّم، ويظهر في «من يحتاج تدخّلك» إن لم يسلّم.</span>
+                    <span className="mt-0.5 mb-2 block text-read leading-6 text-muted-foreground">حتّى آخر اليوم. والمتأخّرُ يُقبل ويُعلَّم.</span>
                   <input type="date" dir="ltr" aria-label="آخر موعد للتسليم" value={taskForm.dueAt}
                     onChange={(e) => setTaskForm({ ...taskForm, dueAt: e.target.value })} className={`${controlCls} text-left`} />
                 </label>
@@ -3064,6 +3113,7 @@ export default function CohortWorkspace() {
             )}
           </div>
         </Panel>
+        </FieldFlag>
         )}
 
         {/* ═══ والمصادرُ هنا مع المهامّ (٢٧ سبتمبر ٢٠٢٦) ═══
@@ -3074,6 +3124,7 @@ export default function CohortWorkspace() {
             المواعيد تبقى أصنافُها الثلاثةُ هنا كما كانت. وصارت لسانا ثانيا
             (٣٠ سبتمبر ٢٠٢٦). */}
         {taskTab === "resources" && (
+        <FieldFlag {...flagProps("tab:resources", rowProblem("resources"), true)}>
         <Panel as="section">
           <h3 className="flex items-center gap-2 text-sm font-black">
             <FileText className="h-4 w-4 text-teal-light-ink" aria-hidden="true" /> المصادر
@@ -3137,6 +3188,7 @@ export default function CohortWorkspace() {
               يُشترط له رابط: شرطُ `https://` كان يمنع حفظَ مصدرٍ ملفُّه في
               المخزن — فيُرفع ثمّ لا يُحفظ (`resourceHasSource` في `saveProblems`). */}
         </Panel>
+        </FieldFlag>
         )}
 
         {/* ما سُلّم وما ينتظر — انتقلت من «التشغيل» (ع-١). من كتب المهمّةَ
@@ -3168,7 +3220,7 @@ export default function CohortWorkspace() {
           {/* محورُ الكتالوج يبقى في الدورة — والفرقُ يُقال كي لا يُظنَّ محوَه منها */}
           {isCatalogModule(pendingModule.module.moduleId, ws.course.baseModules) && (
             <Inset tone="warn" className="mt-3 text-read leading-6 text-gold-ink">
-              هذا محورٌ من الكتالوج — حذفُه من خطّتك لا يحذفه من الدورة نفسِها، ويظلّ محسوبا في تقدّم المتعلّم.
+              محورٌ من الكتالوج — يُحذف من خطّتك لا من الدورة.
             </Inset>
           )}
         </ConfirmAction>
@@ -3308,7 +3360,7 @@ export default function CohortWorkspace() {
             <PlanScorecard
               items={scorecard}
               heading="فحصٌ قبل الإرسال — المعاييرُ التي تُقرأ بها خطّتُك"
-              intro="هي البطاقةُ نفسُها التي يقرؤها المعتمِد. «مطلوب» يمنع الإرسالَ حتّى يتمّ، و«نصيحة» تُقال بسببها والقرارُ لك."
+              intro="«مطلوب» يمنع الإرسال، و«نصيحة» القرارُ فيها لك."
               onStep={(step) => void openStage(step as Stage)}
             />
           )}
@@ -3360,49 +3412,7 @@ export default function CohortWorkspace() {
         </Panel>
       )}
 
-      </div>
-      {inHand && (
-        <aside aria-label="ما بقي قبل الإرسال" className="sticky hidden lg:block" style={{ top: "calc(var(--staff-sticky-top, 0px) + 6rem)" }}>
-          <Card tone="solid" className="grid gap-2">
-            <p className="flex items-center gap-2 text-read font-black text-foreground">
-              <ClipboardCheck className="h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" />
-              {missingTotal > 0 ? <>ما بقي قبل الإرسال · <span className="text-gold-ink">{missingTotal}</span></> : "لا ناقصَ — أرسِلها من خطوة الاعتماد"}
-            </p>
-            <LiveChecklist missing={missing} adviceCount={adviceCount} current={stage} onOpen={(k) => void openStage(k)} />
-          </Card>
-        </aside>
-      )}
-      </div>
     </TrainerLayout>
   );
 }
 
-/** ما ينقص كلَّ خطوةٍ بأسمائه، وزرٌّ يفتحها — يتحدّث مع كلّ حفظ (١١ أكتوبر ٢٠٢٦) */
-function LiveChecklist({ missing, adviceCount, current, onOpen }: {
-  missing: ReadonlyMap<Stage, string[]>; adviceCount: number; current: Stage; onOpen: (k: Stage) => void;
-}) {
-  const rows = STAGES.filter((x) => (missing.get(x.key)?.length ?? 0) > 0);
-  return (
-    <div className="grid gap-2 text-read leading-6">
-      {rows.length === 0 && <p className="text-muted-foreground">كلُّ الخطوات تامّة.</p>}
-      {rows.map((x) => (
-        <div key={x.key} data-live-step={x.key}>
-          <button type="button" onClick={() => onOpen(x.key)}
-            className="flex w-full items-center justify-between gap-2 text-start font-bold text-foreground hover:text-teal-light-ink">
-            <span className={current === x.key ? "underline underline-offset-4" : undefined}>{x.label}</span>
-            <span className="shrink-0 text-fine font-black text-gold-ink">{missing.get(x.key)!.length} ناقص</span>
-          </button>
-          <ul className="mt-0.5 list-inside list-disc text-muted-foreground">
-            {missing.get(x.key)!.slice(0, 3).map((g) => <li key={g} className="line-clamp-2">{g}</li>)}
-            {missing.get(x.key)!.length > 3 && <li className="list-none">و{missing.get(x.key)!.length - 3} غيرُها</li>}
-          </ul>
-        </div>
-      ))}
-      {adviceCount > 0 && (
-        <p className="border-t border-white/[0.06] pt-2 text-muted-foreground">
-          و{adviceCount} {adviceCount === 1 ? "نصيحةٌ" : "نصائح"} في «فحص قبل الإرسال» بخطوة الاعتماد — لا تمنع الإرسال.
-        </p>
-      )}
-    </div>
-  );
-}
