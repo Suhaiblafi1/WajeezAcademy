@@ -121,6 +121,7 @@ import { COHORT_LEVELS, COHORT_LEVEL_AR, asLevelRange, levelProblem, levelRangeA
 import {
   TASK_REVIEW_TRAINER_AR, changeLines, proposedTask, readTaskChange, taskReview, taskValues, type TaskValueFormat,
 } from "@/application/trainer/task-approval";
+import { BriefView } from "@/components/LongText";
 
 /* ─────────── ما يصل من الخادم ─────────── */
 
@@ -2938,12 +2939,13 @@ export default function CohortWorkspace() {
                 return (
                 <Inset as="li" key={a.id} className={editingId === a.id ? "ring-1 ring-teal/50" : undefined}>
                   <div className="flex flex-wrap items-start gap-2">
-                    <div className="min-w-0 flex-1">
+                    {/* `basis-72`: على الهاتف ينزل «عدّل/احذف» تحت النصّ ولا يعصره عمودا ضيّقا (١١ أكتوبر ٢٠٢٦) */}
+                    <div className="min-w-0 flex-1 basis-72">
                       <p className={`text-read font-bold text-foreground${review === "remove" ? " line-through" : ""}`}>{a.title}</p>
                       {/* التعليماتُ تُرى في القائمة: من يراجع تكاليفَه قبل الإرسال
                           يقرأ ما سيقرؤه المتعلّم، لا عنوانا وحدَه. */}
                       {a.briefAr
-                        ? <p className="mt-1 whitespace-pre-line text-read leading-6 text-muted-foreground">{a.briefAr}</p>
+                        ? <BriefView text={a.briefAr} muted className="mt-2" />
                         : <p className="mt-1 text-read text-gold-ink">بلا تعليمات — المتعلّم يرى العنوانَ وحدَه</p>}
                       <p className="mt-1 text-read text-muted-foreground">
                         {a.moduleId && axisNo.has(a.moduleId) && <>المحور {axisNo.get(a.moduleId)} · </>}

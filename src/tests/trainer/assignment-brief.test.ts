@@ -41,7 +41,12 @@ describe('① التعليماتُ تصل المتعلّم', () => {
        شاشته — فلا يَعِد أحدُهما بصيغةٍ لا يفي بها الآخر. */
     const sw = code('src/components/journey/StageWork.tsx')
     expect(sw).not.toContain('<LessonBody')
-    expect(sw, 'الأسطرُ تُطوى فتضيع فقراتُ التعليمات').toMatch(/a\.briefAr &&[\s\S]{0,120}whitespace-pre-line/)
+    /* ومنذ ١١ أكتوبر ٢٠٢٦ تُرتَّب (`BriefView`): خطواتٌ وحقولٌ وجدولُ مستويات — والفقرةُ بأسطرها كما
+       كُتبت، ولا يضيع منها حرف (`text-layout.test.ts`) */
+    expect(sw).toMatch(/\{a\.briefAr && <BriefView text=\{a\.briefAr\}/)
+    const view = code('src/components/LongText.tsx')
+    expect(view, 'الأسطرُ تُطوى فتضيع فقراتُ التعليمات').toMatch(/if \(!briefHasLayout\(blocks\)\) \{\s*return <p className=\{`whitespace-pre-line /)
+    expect(view, 'الفقرةُ داخلَ المرتَّب تفقد أسطرَها').toMatch(/return <p key=\{k\} className="whitespace-pre-line">\{b\.textAr\}<\/p>;/)
   })
 })
 
