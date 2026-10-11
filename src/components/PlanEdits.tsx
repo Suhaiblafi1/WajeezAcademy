@@ -233,7 +233,7 @@ export function PlanEditsUploader({ planId, cohortId, canUpload, canReview, onPe
               <li key={x.id} className="text-read leading-6">
                 <span className="font-bold text-foreground">{x.view.titleAr}</span>
                 {" "}· <span className="text-muted-foreground">{x.view.stepAr}</span>
-                {" "}· <Chip tone={STATUS_AR[x.status].tone}>{STATUS_AR[x.status].label}</Chip>
+                {" "}· <Chip tone={STATUS_AR[x.status].tone}>{isNote(x) ? NOTE_STATUS_AR[x.status] ?? STATUS_AR[x.status].label : STATUS_AR[x.status].label}</Chip>
                 {x.required && <> · <Chip tone="danger">مطلوب</Chip></>}
                 {x.status === "rejected" && x.noteAr && <p className="text-muted-foreground">كلمتُه: {x.noteAr}</p>}
               </li>
@@ -396,11 +396,13 @@ export function PlanEditsBulkUpload({ plans, onUploaded, onOpen }: {
     `inHand` الخطّةُ في يده (مسودّةٌ أو مردودة) — وإلّا تُقرأ ولا يُقرَّر فيها.
     `unsaved` في يده تعديلٌ لم يُحفظ — فلا يُكتب فوقه بإعادة التحميل.
     `onApplied` يعيد تحميل الصفحة بعد ما يُكتب في الخطّة. */
-export function PlanEditsPanel({ cohortId, inHand, unsaved, onApplied, onCounts }: {
+export function PlanEditsPanel({ cohortId, inHand, unsaved, onApplied, onCounts, onOpenStep }: {
   cohortId: string;
   inHand: boolean;
   unsaved: boolean;
   onApplied: () => void | Promise<unknown>;
+  /** «افتح الخطوة» في بند الملاحظة — يعدّل فيها ما تطلبه */
+  onOpenStep?: (step: string) => void;
   /** عددُ البنود وما ينتظر منها بعد كلّ قراءة — فالرفضُ لا يُعيد الصفحة، وزرُّ الإرسال ينتظر آخرَ قرار */
   onCounts?: (c: { total: number; pending: number }) => void;
 }) {
@@ -444,9 +446,128 @@ export function PlanEditsPanel({ cohortId, inHand, unsaved, onApplied, onCounts 
      واحدة: واحد — نقترح هذا بدلَ هذا — اقبل أو ارفض. صندوقٌ، ثمّ الثاني، ثمّ الثالث». فالرأسُ
      عدٌّ وشريطُ تقدّمٍ و«اقبلها كلَّها»، ثمّ ما ينتظر قرارَه بطاقاتٍ مرقّمة، وما قرّر فيه سطرٌ
      واحدٌ لكلٍّ مطويٌّ تحتها. والمنطقُ كما كان: القبولُ يكتب في المحفوظ، والمعدَّلُ بيده بزرّه. */
-  const decided = items.filter((x) => x.status !== "pending");
-  const numberOf = (x: PlanEditItem) => items.indexOf(x) + 1;
+  /* والملاحظاتُ أوّلا ثمّ التعديلات — «ما لم يُذكر في التعديلات أدناه» (صاحب المنصّة، ١١ أكتوبر ٢٠٢٦) */
+  const ordered = [...items.filter(isNote), ...items.filter((x) => !isNote(x))];
+  const decided = ordered.filter((x) => x.status !== "pending");
+  const numberOf = (x: PlanEditItem) => ordered.indexOf(x) + 1;
+  const pendingNotes = pending.filter(isNote);
+  const pendingEdits = pending.filter((x) => !isNote(x));
   const pct = Math.round((decided.length / items.length) * 100);
+
+  /* «لماذا؟» حين يرفض أو لا يوافق — اختياريّةٌ يقرؤها المعتمِد */
+  const whyBox = (x: PlanEditItem, confirmAr: string, doneAr: string) => rejecting === x.id && (
+    <div className="mt-2 space-y-2">
+      <label className="block text-read text-muted-foreground">
+        لماذا؟ (اختياريّ — يقرؤه المعتمِد)
+        <textarea
+          rows={2} maxLength={1000} value={note} onChange={(e) => setNote(e.target.value)}
+          className="mt-1 w-full rounded-md border border-border bg-background p-2 text-read text-foreground"
+        />
+      </label>
+      <Button
+        tone="secondary" size="sm" disabled={busy !== null}
+        onClick={() => void act(x.id, async () => { await apiPost(`/api/trainer/plan-edits/${x.id}/reject`, note.trim() ? { noteAr: note.trim() } : {}); setRejecting(null); }, doneAr, false)}
+      >
+        {confirmAr}
+      </Button>
+    </div>
+  );
+
+  /* ═══ بندُ الملاحظة: نقاطُها، ثمّ «موافق» أو «لا أوافق» — وزرٌّ إلى خطوتها يعدّل فيها ═══ */
+  const noteCard = (x: PlanEditItem) => (
+    <Card as="li" key={x.id} className="p-4">
+      <div className="flex items-start gap-3">
+        <span className="w-7 shrink-0 text-center text-xl font-black leading-8 text-teal-light-ink" aria-hidden="true">
+          {numberOf(x)}
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-read font-black text-foreground">{x.view.titleAr}</span>
+            <Chip tone={x.required ? "danger" : "info"}>{x.required ? "فيها مطلوب" : "ملاحظة"}</Chip>
+          </div>
+          <NotePoints view={x.view} />
+          {!blocked && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Button
+                tone="confirm" size="sm" icon={Check} disabled={busy !== null}
+                onClick={() => void act(x.id, () => apiPost(`/api/trainer/plan-edits/${x.id}/accept`, {}), `وافقتَ على «${x.view.titleAr}».`, false)}
+              >
+                موافق
+              </Button>
+              <Button tone="ghost" size="sm" icon={X} disabled={busy !== null} onClick={() => { setRejecting(rejecting === x.id ? null : x.id); setNote(""); }}>
+                لا أوافق
+              </Button>
+              {onOpenStep && x.step !== "general" && (
+                <Button tone="secondary" size="sm" disabled={busy !== null} onClick={() => onOpenStep(x.step)}>
+                  افتح «{x.view.stepAr}»
+                </Button>
+              )}
+            </div>
+          )}
+          {whyBox(x, "أكّد أنّك لا توافق", `لم توافق على «${x.view.titleAr}» — وصلت كلمتُك الإدارة.`)}
+        </div>
+      </div>
+    </Card>
+  );
+
+  const editCard = (x: PlanEditItem) => (
+      <Card as="li" key={x.id} className="p-4">
+        <div className="flex items-start gap-3">
+          <span className="w-7 shrink-0 text-center text-xl font-black leading-8 text-teal-light-ink" aria-hidden="true">
+            {numberOf(x)}
+          </span>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-read font-black text-foreground">{x.view.titleAr}</span>
+              <Chip tone={x.required ? "danger" : "info"}>{x.required ? "مطلوب" : "مقترح"}</Chip>
+              <span className="text-fine text-muted-foreground">{x.view.stepAr}</span>
+            </div>
+            <p className="mt-1 text-read leading-6 text-muted-foreground">{x.reasonAr}</p>
+            <SuggestRows view={x.view} />
+            {x.goneAr && (
+              <p className="mt-2 text-read font-bold text-gold-ink">لا يقع الآن: {x.goneAr}. لك أن ترفضه.</p>
+            )}
+            {x.stale && !x.goneAr && (
+              <p className="mt-2 text-read font-bold text-gold-ink">
+                عدّلتَ هذا الموضعَ بعد أن اقترحناه — «بدلَ» ما كان فيه يومَها، لا ما فيه الآن. لك أن تقبله فوق ما كتبتَ، أو ترفضه.
+              </p>
+            )}
+            {x.status === "pending" && !blocked && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {!x.goneAr && (
+                  <Button
+                    tone="confirm" size="sm" icon={Check} disabled={busy !== null}
+                    onClick={() => void act(x.id, () => apiPost(`/api/trainer/plan-edits/${x.id}/accept`, x.stale ? { force: true } : {}), `قُبل «${x.view.titleAr}» وكُتب في خطّتك.`, true)}
+                  >
+                    {x.stale ? "اقبله فوق ما كتبتُ" : "اقبله"}
+                  </Button>
+                )}
+                <Button tone="ghost" size="sm" icon={X} disabled={busy !== null} onClick={() => { setRejecting(rejecting === x.id ? null : x.id); setNote(""); }}>
+                  ارفضه
+                </Button>
+              </div>
+            )}
+            {rejecting === x.id && (
+              <div className="mt-2 space-y-2">
+                <label className="block text-read text-muted-foreground">
+                  لماذا؟ (اختياريّ — يقرؤه المعتمِد)
+                  <textarea
+                    rows={2} maxLength={1000} value={note} onChange={(e) => setNote(e.target.value)}
+                    className="mt-1 w-full rounded-md border border-border bg-background p-2 text-read text-foreground"
+                  />
+                </label>
+                <Button
+                  tone="secondary" size="sm" disabled={busy !== null}
+                  onClick={() => void act(x.id, async () => { await apiPost(`/api/trainer/plan-edits/${x.id}/reject`, note.trim() ? { noteAr: note.trim() } : {}); setRejecting(null); }, `رُفض «${x.view.titleAr}» — لم يُمسّ شيء.`, false)}
+                >
+                  أكّد الرفض
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      </Card>
+  );
 
   return (
     <section className="mt-2 space-y-3" role="region" aria-label="تعديلاتٌ اقترحتها الإدارة">
@@ -478,66 +599,22 @@ export function PlanEditsPanel({ cohortId, inHand, unsaved, onApplied, onCounts 
       {blocked && pending.length > 0 && <p className="text-read font-bold text-gold-ink">{blocked}</p>}
       {msg && <p className="whitespace-pre-wrap text-read font-bold text-teal-light-ink" role="status">{msg}</p>}
 
-      <ol className="space-y-3">
-        {pending.map((x) => (
-          <Card as="li" key={x.id} className="p-4">
-            <div className="flex items-start gap-3">
-              <span className="w-7 shrink-0 text-center text-xl font-black leading-8 text-teal-light-ink" aria-hidden="true">
-                {numberOf(x)}
-              </span>
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-read font-black text-foreground">{x.view.titleAr}</span>
-                  <Chip tone={x.required ? "danger" : "info"}>{x.required ? "مطلوب" : "مقترح"}</Chip>
-                  <span className="text-fine text-muted-foreground">{x.view.stepAr}</span>
-                </div>
-                <p className="mt-1 text-read leading-6 text-muted-foreground">{x.reasonAr}</p>
-                <SuggestRows view={x.view} />
-                {x.goneAr && (
-                  <p className="mt-2 text-read font-bold text-gold-ink">لا يقع الآن: {x.goneAr}. لك أن ترفضه.</p>
-                )}
-                {x.stale && !x.goneAr && (
-                  <p className="mt-2 text-read font-bold text-gold-ink">
-                    عدّلتَ هذا الموضعَ بعد أن اقترحناه — «بدلَ» ما كان فيه يومَها، لا ما فيه الآن. لك أن تقبله فوق ما كتبتَ، أو ترفضه.
-                  </p>
-                )}
-                {x.status === "pending" && !blocked && (
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {!x.goneAr && (
-                      <Button
-                        tone="confirm" size="sm" icon={Check} disabled={busy !== null}
-                        onClick={() => void act(x.id, () => apiPost(`/api/trainer/plan-edits/${x.id}/accept`, x.stale ? { force: true } : {}), `قُبل «${x.view.titleAr}» وكُتب في خطّتك.`, true)}
-                      >
-                        {x.stale ? "اقبله فوق ما كتبتُ" : "اقبله"}
-                      </Button>
-                    )}
-                    <Button tone="ghost" size="sm" icon={X} disabled={busy !== null} onClick={() => { setRejecting(rejecting === x.id ? null : x.id); setNote(""); }}>
-                      ارفضه
-                    </Button>
-                  </div>
-                )}
-                {rejecting === x.id && (
-                  <div className="mt-2 space-y-2">
-                    <label className="block text-read text-muted-foreground">
-                      لماذا؟ (اختياريّ — يقرؤه المعتمِد)
-                      <textarea
-                        rows={2} maxLength={1000} value={note} onChange={(e) => setNote(e.target.value)}
-                        className="mt-1 w-full rounded-md border border-border bg-background p-2 text-read text-foreground"
-                      />
-                    </label>
-                    <Button
-                      tone="secondary" size="sm" disabled={busy !== null}
-                      onClick={() => void act(x.id, async () => { await apiPost(`/api/trainer/plan-edits/${x.id}/reject`, note.trim() ? { noteAr: note.trim() } : {}); setRejecting(null); }, `رُفض «${x.view.titleAr}» — لم يُمسّ شيء.`, false)}
-                    >
-                      أكّد الرفض
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </Card>
-        ))}
-      </ol>
+      {pendingNotes.length > 0 && (
+        <>
+          <h3 className="pt-1 text-read font-black text-foreground">ملاحظاتُنا — ما لم تذكره التعديلات</h3>
+          <ol className="space-y-3">
+            {pendingNotes.map((x) => noteCard(x))}
+          </ol>
+        </>
+      )}
+      {pendingEdits.length > 0 && (
+        <>
+          {pendingNotes.length > 0 && <h3 className="pt-1 text-read font-black text-foreground">التعديلاتُ المقترحة</h3>}
+          <ol className="space-y-3">
+            {pendingEdits.map((x) => editCard(x))}
+          </ol>
+        </>
+      )}
 
       {decided.length > 0 && (
         <Inset as="details" className="p-3">
@@ -547,7 +624,7 @@ export function PlanEditsPanel({ cohortId, inHand, unsaved, onApplied, onCounts 
               <li key={x.id} className="flex flex-wrap items-center gap-2 text-read leading-6">
                 <span className="w-6 shrink-0 text-center font-black text-muted-foreground">{numberOf(x)}</span>
                 <span className="font-bold text-foreground">{x.view.titleAr}</span>
-                <Chip tone={STATUS_AR[x.status].tone}>{x.status === "accepted" ? "قبلتَه" : x.status === "rejected" ? "رفضتَه" : STATUS_AR[x.status].label}</Chip>
+                <Chip tone={STATUS_AR[x.status].tone}>{x.status === "accepted" ? (isNote(x) ? "وافقتَ" : "قبلتَه") : x.status === "rejected" ? (isNote(x) ? "لم توافق" : "رفضتَه") : STATUS_AR[x.status].label}</Chip>
                 {x.status === "rejected" && x.noteAr && <span className="text-muted-foreground">— كلمتُك: {x.noteAr}</span>}
               </li>
             ))}
@@ -555,6 +632,27 @@ export function PlanEditsPanel({ cohortId, inHand, unsaved, onApplied, onCounts 
         </Inset>
       )}
     </section>
+  );
+}
+
+const isNote = (x: PlanEditItem) => x.kind === "note";
+/** والملاحظةُ يوافق عليها أو لا — لا «قُبل» و«رُفض» كالتعديل */
+const NOTE_STATUS_AR: Partial<Record<PlanEditStatus, string>> = { pending: "عند المدرّب", accepted: "وافق", rejected: "لم يوافق" };
+
+/** نقاطُ الملاحظة — سطرٌ لكلّ نقطة، و«مطلوب»/«مقترَح» وسمُها إن كان (`notePoints` في `plan-edits.ts`) */
+export function NotePoints({ view }: { view: EditView }) {
+  return (
+    <ul className="mt-3 space-y-2">
+      {view.rows.map((r, i) => (
+        <li key={i} className="flex items-start gap-2 text-read leading-7">
+          <span className="mt-3 h-1.5 w-1.5 shrink-0 rounded-full bg-teal" aria-hidden="true" />
+          <span className="min-w-0 flex-1">
+            {r.labelAr && <Chip tone={r.labelAr === "مطلوب" ? "danger" : "info"} className="me-2">{r.labelAr}</Chip>}
+            <span className="whitespace-pre-wrap break-words text-foreground">{r.afterAr}</span>
+          </span>
+        </li>
+      ))}
+    </ul>
   );
 }
 

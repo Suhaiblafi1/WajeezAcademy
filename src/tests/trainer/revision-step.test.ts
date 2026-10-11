@@ -54,7 +54,8 @@ describe('② البنودُ وحدَها، والتقريرُ للقراءة', 
   })
 
   it('⚠️ كلُّ بندٍ ينتظر بطاقةٌ مرقّمة: «نقترح» ثمّ «بدلَ»، واقبل أو ارفض', () => {
-    expect(TRAINER_PANEL).toMatch(/\{pending\.map\(\(x\) => \(\s*<Card as="li" key=\{x\.id\}[\s\S]{0,300}\{numberOf\(x\)\}/)
+    expect(TRAINER_PANEL).toMatch(/const editCard = \(x: PlanEditItem\) => \(\s*<Card as="li" key=\{x\.id\}[\s\S]{0,300}\{numberOf\(x\)\}/)
+    expect(TRAINER_PANEL).toMatch(/\{pendingEdits\.map\(\(x\) => editCard\(x\)\)\}/)
     expect(TRAINER_PANEL).toMatch(/<SuggestRows view=\{x\.view\} \/>/)
     expect(PANEL).toMatch(/<Cell label=\{r\.beforeAr === null \? "نضيف" : "نقترح"\} text=\{r\.afterAr\}/)
     expect(PANEL).toMatch(/\{r\.beforeAr !== null && <Cell label="بدلَ" text=\{r\.beforeAr\}/)

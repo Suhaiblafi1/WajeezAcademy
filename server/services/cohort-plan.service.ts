@@ -1267,6 +1267,9 @@ export class CohortPlanService {
         actorId, action: 'cohort.plan.changes_requested', entityType: 'cohort', entityId: plan.cohort.id,
         meta: { planId, note: composed, sections: notedSections(asked) },
       })
+      /* وملاحظاتُه بنودٌ في «المراجعة» يوافق عليها المدرّب (١١ أكتوبر ٢٠٢٦، `note`) */
+      const { PlanEditService } = await import('./plan-edit.service')
+      await new PlanEditService(this.prisma).ensureNoteItems(planId)
       /* ═══ وشعبةُ الإعداد: الردُّ يُعيد موادَّه وتُستأنف مهلتُه — في خبرٍ واحد ═══
 
          كان يصله عن الردّ الواحد خبران: «طُلبت تعديلاتٌ على…» و«أُعيدت موادُّك
@@ -1291,7 +1294,7 @@ export class CohortPlanService {
       })
       await this.tellTrainer(plan.trainer, plan.cohort, {
         title: `طُلبت تعديلاتٌ على «${plan.cohort.title}»`,
-        body: `${asked.general ?? 'كتبنا ملاحظاتِنا في الخطوات التي تحتاج تعديلا — تجد كلَّ ملاحظةٍ في رأس خطوتها.'}${resumed}`,
+        body: `${asked.general ?? 'كتبنا ملاحظاتِنا على خطواتها — تجدها نقاطا في «المراجعة»، توافق عليها أو تقول لماذا لا.'}${resumed}`,
         heading: mail.heading,
         cta: mail.cta,
         sections: bySection,
@@ -1556,7 +1559,8 @@ export class CohortPlanService {
      و`bellBody` نصُّ الجرس إن اختلف عن التنبيه (الردُّ بأقسامه نصٌّ واحد). */
   /** ما ينتظر المدرّبَ من تعديلاتٍ مقترحةٍ على هذه الخطّة — وسطرُها في الرسالة */
   private async pendingEdits(planId: string) {
-    const rows = await this.prisma.planEditSuggestion.findMany({ where: { planId, status: 'pending' }, select: { required: true, step: true } })
+    /* والملاحظاتُ بنودا (`note`) ليست تعديلات — تُعدّ ملاحظاتٍ في البريد لا «تعديلاتٍ جاهزة» */
+    const rows = await this.prisma.planEditSuggestion.findMany({ where: { planId, status: 'pending', kind: { not: 'note' } }, select: { required: true, step: true } })
     /* وبخطواتها بترتيب خطوات المدرّب — لملخّص بريد الردّ (١١ أكتوبر ٢٠٢٦) */
     const bySteps = REVIEW_SECTIONS.map((s) => ({ label: s.label, n: rows.filter((r) => r.step === s.key).length })).filter((x) => x.n > 0)
     const required = rows.filter((r) => r.required).length

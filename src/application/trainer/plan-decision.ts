@@ -256,7 +256,7 @@ export function returnMailAr(i: ReturnMailInput): ReturnMail {
     summary.push(`${countAr(count, EDITS_AR)} ${ready}${req}${where ? `. في: ${where}` : ''}.`)
   }
   if (i.notedSteps.length > 0) {
-    summary.push(`ملاحظاتٌ في ${i.notedSteps.map((s) => `«${s}»`).join(' و')} — كلٌّ في رأس خطوتها.`)
+    summary.push(`ملاحظاتٌ على ${i.notedSteps.map((s) => `«${s}»`).join(' و')} — نقاطٌ في «المراجعة» توافق عليها.`)
   }
   if (i.reports > 0) {
     const files = i.reports === 1 ? 'ملفٌّ واحد' : i.reports === 2 ? 'ملفّان' : countAr(i.reports, REPORT_FILES_AR)
@@ -265,14 +265,17 @@ export function returnMailAr(i: ReturnMailInput): ReturnMail {
 
   /* والتعديلاتُ في خطوتها السابعة «المراجعة» (١١ أكتوبر ٢٠٢٦): بنودٌ مرقّمة، ومنها يُرسَل —
      فالخطواتُ تدلّ عليها بالاسم الذي يراه في شريط الخطوات */
-  const steps = [count > 0 || i.reports > 0 ? 'افتح صفحةَ شعبتك من الزرّ أدناه — تُفتح على «المراجعة».' : 'افتح صفحةَ شعبتك من الزرّ أدناه.']
+  /* والملاحظاتُ بنودٌ في «المراجعة» قبل التعديلات (١١ أكتوبر ٢٠٢٦، `note`) — فالخطواتُ بترتيبها هناك */
+  const noted = i.notedSteps.length > 0 || Boolean(i.generalNote?.trim())
+  const inReview = count > 0 || noted
+  const steps = [inReview || i.reports > 0 ? 'افتح صفحةَ شعبتك من الزرّ أدناه — تُفتح على «المراجعة».' : 'افتح صفحةَ شعبتك من الزرّ أدناه.']
+  if (noted) steps.push('في أوّلها ملاحظاتُنا نقاطا: وافق عليها أو قل لماذا لا — وما تطلبه تعدّله في خطوته.')
   if (count > 0) {
     steps.push(required > 0
       ? 'اضغط «اقبلها كلَّها» — أو قرّر في كلّ بندٍ وحده: نقترح هذا بدلَ هذا، اقبله أو ارفضه. والمطلوبُ منها شرطُ الاعتماد: إن لم تقبله فعدّل موضعَه بطريقتك.'
       : 'اضغط «اقبلها كلَّها» — أو قرّر في كلّ بندٍ وحده: نقترح هذا بدلَ هذا، اقبل ما يناسبك.')
   }
-  if (i.notedSteps.length > 0) steps.push('مرّ على ملاحظاتنا في رأس كلّ خطوة.')
-  steps.push(count > 0
+  steps.push(inReview
     ? 'ثمّ أرسل مراجعتَك من «المراجعة» نفسِها — ونراجعها حين تصلنا.'
     : 'أرسل الخطّةَ من خطوة «الاعتماد» — ونراجعها حين تصلنا.')
 

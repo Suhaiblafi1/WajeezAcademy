@@ -21,14 +21,15 @@
    والقاعدةُ والعرضُ في `src/application/trainer/plan-edits.ts`. */
 
 import { randomUUID } from 'node:crypto'
-import type { Prisma, PrismaClient } from '@prisma/client'
+import { Prisma, type PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
+import { readReviewNotes } from '../../src/application/trainer/review-notes'
 import { recordAudit } from './audit'
 import { AssessmentService } from './assessment.service'
 import { CohortService } from './cohort.service'
 import { CohortPlanService, type TrainerPlanContent } from './cohort-plan.service'
 import {
-  applyContentEdit, contentBefore, editsContent, planEditStep, planEditView, rowEditProblem, sameSnapshot,
+  applyContentEdit, contentBefore, editsContent, noteItemsFrom, planEditStep, planEditView, rowEditProblem, sameSnapshot,
   sessionSnapshot, taskSnapshot, type Checked, type EditContext, type EditSnapshot, type EditView, type PlanEdit,
   type PlanEditStatus, PLAN_EDITS_MAX, TRAINER_VISIBLE_EDIT_STATUSES,
 } from '../../src/application/trainer/plan-edits'
@@ -109,7 +110,7 @@ export class PlanEditService {
     const p = rowEditProblem(edit, r.content)
     if (p) return { ok: false, problemAr: p }
     switch (edit.kind) {
-      case 'task_add': return { ok: true, value: null }
+      case 'task_add': case 'note': return { ok: true, value: null }
       case 'task_change': {
         const t = r.tasks.find((x) => x.id === edit.assessmentId)
         if (!t) return { ok: false, problemAr: 'لا مهمّةَ بهذا المعرّف في هذه الشعبة — لعلّها حُذفت' }
@@ -293,12 +294,46 @@ export class PlanEditService {
     return this.forCohort(plan.cohortId)
   }
 
+  /* ─────────── ملاحظاتُ الردّ بنودا (١١ أكتوبر ٢٠٢٦، `note` في `plan-edits.ts`) ─────────── */
+
+  /** ملاحظاتُ الردّ الأخير بنودٌ في «المراجعة» — تولد مرّةً لكلّ ردّ، معتمَدةً (`pending`) فهي من
+      الإدارة أصلا. ويُنادى من الردّ نفسِه، ومن القراءة لخطّةٍ رُدّت قبل هذا. والقفلُ يمنع قراءتين معا
+      من أن تولّدها مرّتين. */
+  async ensureNoteItems(planId: string): Promise<number> {
+    const plan = await this.prisma.cohortDeliveryPlan.findUnique({
+      where: { id: planId },
+      select: { id: true, cohortId: true, status: true, reviewedAt: true, reviewedBy: true, reviewerNotes: true, reviewerNote: true },
+    })
+    if (!plan || plan.status !== 'changes_requested' || !plan.reviewedAt || !plan.reviewedBy) return 0
+    const items = noteItemsFrom(readReviewNotes(plan))
+    if (items.length === 0) return 0
+    const { reviewedAt, reviewedBy } = plan
+    return this.prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${planId}))`
+      const had = await tx.planEditSuggestion.count({ where: { planId, kind: 'note', createdAt: { gte: reviewedAt } } })
+      if (had > 0) return 0
+      const batchId = randomUUID()
+      const at = new Date()
+      await tx.planEditSuggestion.createMany({
+        data: items.map((x, i) => ({
+          cohortId: plan.cohortId, planId, batchId, seq: i + 1, kind: 'note', step: x.edit.step, required: x.required,
+          reasonAr: '', edit: x.edit as unknown as Prisma.InputJsonValue, before: Prisma.DbNull,
+          status: 'pending', reviewedBy, reviewedAt, createdBy: reviewedBy, createdAt: at,
+        })),
+      })
+      return items.length
+    })
+  }
+
   /* ─────────── القراءة — للبطاقة ولصفحة المدرّب ─────────── */
 
   /** ما اقتُرح على آخر خطّةٍ للشعبة — بعرضه، وبحال كلّ منتظِرٍ الآن */
   async forCohort(cohortId: string): Promise<PlanEditItem[]> {
     const latest = await this.latestTrainerPlan(cohortId)
     if (!latest) return []
+    /* وخطّةٌ رُدّت قبل أن تصير الملاحظاتُ بنودا تُستدرَك بنودُها هنا — مرّةً (`ensureNoteItems`).
+       والقراءةُ لا تسقط إن تعذّر: تُعرض بلا البنود الجديدة */
+    if (latest.status === 'changes_requested') await this.ensureNoteItems(latest.id).catch(() => undefined)
     const rows = await this.prisma.planEditSuggestion.findMany({
       where: { planId: latest.id, status: { not: 'withdrawn' } },
       orderBy: [{ createdAt: 'asc' }, { seq: 'asc' }],
@@ -416,6 +451,9 @@ export class PlanEditService {
       case 'session_remove':
         await this.cohorts.trainerDeleteSession(userId, edit.sessionId)
         return
+      /* والملاحظةُ لا تكتب شيئا — موافقتُه قرارُه، وما تطلبه يعدّله هو في خطوتها */
+      case 'note':
+        return
     }
   }
 
@@ -480,5 +518,6 @@ function targetsOf(edit: PlanEdit): string[] {
     case 'task_add': return []
     case 'task_change': return Object.keys(edit.set).map((f) => `task:${edit.assessmentId}:${f}`)
     case 'session_move': case 'session_remove': return [`session:${edit.sessionId}`]
+    case 'note': return [`note:${edit.step}`]
   }
 }

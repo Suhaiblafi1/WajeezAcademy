@@ -47,8 +47,21 @@ export type TaskEditField = (typeof TASK_EDIT_FIELDS)[number]
 
 export const PLAN_EDIT_KINDS = [
   'module', 'plan', 'resource_add', 'resource_change', 'resource_remove',
-  'task_add', 'task_change', 'session_move', 'session_remove',
+  'task_add', 'task_change', 'session_move', 'session_remove', 'note',
 ] as const
+
+/* ═══ و«ملاحظةُ الإدارة» بندٌ يوافق عليه — `note` (١١ أكتوبر ٢٠٢٦) ═══
+
+   كانت ملاحظاتُ الردّ صندوقا «ملاحظةُ الإدارة — على خطوات: …» فوق كلّ خطوة، ونقاطا حمراءَ على
+   دوائرها. فسأل صاحبُ المنصّة: «لماذا هذا القسم؟ … أهناك تعديلاتٌ غيرُ موجودةٍ في قسم التعديلات؟».
+   ثمّ قرّر: «دعها في قسم التعديلات بشكلٍ واضح — كأنّك تقول له قمنا بتعديل كذا وكذا، على شكل نقاط
+   (ما لم يُذكر في التعديلات أدناه) — ليوافق عليها أيضا، بشكل أُطرٍ منظّمةٍ مرتّبة».
+
+   فملاحظةُ كلّ خطوةٍ بندٌ في «المراجعة» قبل التعديلات: نقاطُها سطرا سطرا، ويوافق عليه أو لا يوافق
+   ويقول لماذا — بمسلك القبول والرفض نفسِه، فيُحفظ قرارُه ويراه المعتمِد. ولا يكتب في الخطّة شيئا:
+   ما تطلبه الملاحظةُ يعدّله هو في خطوتها. ولا يُرفع في ملفّ — يولد من الردّ وحدَه. */
+export const NOTE_STEPS = ['general', 'identity', 'modules', 'workbooks', 'sessions', 'assignments'] as const
+export type NoteStep = (typeof NOTE_STEPS)[number]
 export type PlanEditKind = (typeof PLAN_EDIT_KINDS)[number]
 
 /** ═══ وكلُّ تعديلٍ يمرّ بالإدارة قبل المدرّب (١٠ أكتوبر ٢٠٢٦) ═══
@@ -102,6 +115,7 @@ export type PlanEdit =
   | { kind: 'task_change'; assessmentId: string; set: Partial<Omit<TaskFields, 'type'>> }
   | { kind: 'session_move'; sessionId: string; startsAt: string; endsAt: string }
   | { kind: 'session_remove'; sessionId: string }
+  | { kind: 'note'; step: NoteStep; textAr: string }
 
 /** لقطةُ ما كان في الموضع لحظةَ الاقتراح — ومنها «قبل» */
 export type EditSnapshot = Record<string, unknown> | null
@@ -116,6 +130,7 @@ export function planEditStep(edit: PlanEdit): ReviewSection {
     case 'module': return 'modules'
     case 'plan': return edit.set.liveNoteAr !== undefined && edit.set.summaryAr === undefined ? 'sessions' : 'identity'
     case 'session_move': case 'session_remove': return 'sessions'
+    case 'note': return edit.step === 'general' ? 'identity' : edit.step
     default: return 'assignments'
   }
 }
@@ -263,7 +278,7 @@ export function rowEditProblem(edit: PlanEdit, c: EditableContent): string | nul
       if (!isInstant(edit.startsAt) || !isInstant(edit.endsAt)) return 'موعدُ اللقاء ليس لحظةً مقروءة'
       if (Date.parse(edit.endsAt) <= Date.parse(edit.startsAt)) return 'نهايةُ اللقاء قبل بدايته'
       return null
-    case 'session_remove':
+    case 'session_remove': case 'note':
       return null
     default:
       return 'هذا التعديلُ يقع في محتوى الخطّة لا في صفّ'
@@ -475,7 +490,44 @@ export function planEditView(edit: PlanEdit, before: EditSnapshot, ctx: EditCont
       const name = ctx.sessionTitle?.(edit.sessionId) ?? 'لقاء'
       return view(`حذفُ لقاء: «${name}»`, [{ labelAr: FIELD_AR.when, beforeAr: sessionWhenAr(before), afterAr: null }])
     }
+    case 'note': {
+      /* نقاطٌ سطرا سطرا — و«مطلوب»/«مقترَح» في أوّل السطر (من بطاقة المعايير) يصير وسمَه */
+      const where = edit.step === 'general' ? 'ملاحظةٌ عامّة' : `ملاحظةٌ على «${STAGE_LABELS[edit.step]}»`
+      const stepAr = edit.step === 'general' ? 'عامّة' : STAGE_LABELS[edit.step]
+      return { titleAr: where, stepAr, rows: notePoints(edit.textAr).map((p) => ({ labelAr: p.tagAr ?? '', beforeAr: null, afterAr: p.textAr })) }
+    }
   }
+}
+
+/* ─────────── ملاحظاتُ الردّ بنودا (١١ أكتوبر ٢٠٢٦) ─────────── */
+
+const TAG_AT_START = /^(مطلوب|مقترَح|مقترح)\s*[—–-]\s*/
+
+/** نقاطُ الملاحظة: سطرٌ لكلّ نقطة، بلا علامة تعداد، و«مطلوب»/«مقترَح» وسمٌ إن بدأ به السطر */
+export function notePoints(text: string): { textAr: string; tagAr: string | null }[] {
+  return text.split('\n')
+    .map((l) => l.trim().replace(/^[-•·*]\s+/, '').replace(/^\d+[.)]\s+/, ''))
+    .filter(Boolean)
+    .map((l) => {
+      const m = TAG_AT_START.exec(l)
+      return m ? { textAr: l.slice(m[0].length), tagAr: m[1] === 'مطلوب' ? 'مطلوب' : 'مقترَح' } : { textAr: l, tagAr: null }
+    })
+}
+
+/** أهذا سطرُ «واقترحنا على خطّتك…» الذي تكتبه المنصّةُ ملاحظةً عامّةً حين يُردّ بالتعديلات وحدَها؟ */
+export const isEditsLineAr = (text: string): boolean => /^واقترحنا على خطّتك .+، جاهزةً في صفحة الشعبة/.test(text.trim())
+
+/** بنودُ الملاحظات من ملاحظات الردّ — العامّةُ أوّلا ثمّ بترتيب الخطوات. والعامّةُ التي كتبتها المنصّةُ
+    من عدّ التعديلات (`isEditsLineAr`) لا بندَ لها: تذكر ما في البطاقات نفسِها */
+export function noteItemsFrom(
+  notes: Partial<Record<NoteStep, string>>,
+): { edit: Extract<PlanEdit, { kind: 'note' }>; required: boolean }[] {
+  return NOTE_STEPS.flatMap((step) => {
+    const text = notes[step]?.trim()
+    if (!text || (step === 'general' && isEditsLineAr(text))) return []
+    const required = notePoints(text).some((p) => p.tagAr === 'مطلوب')
+    return [{ edit: { kind: 'note' as const, step, textAr: text }, required }]
+  })
 }
 
 /* ─────────── وما يُقال في رسالة القرار ─────────── */
