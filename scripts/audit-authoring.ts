@@ -34,6 +34,7 @@ import { validateScenario } from '../src/application/content/scenario'
 import { parsePractice, validatePractice } from '../src/application/content/practice'
 import { validateRubric } from '../src/application/content/rubric'
 import { checkLibraryRefs, type LibraryIndex } from '../src/application/content/library'
+import { FOREIGN_NAMES, RED_PHRASES, proseOf } from '../src/application/content/red-rules'
 
 const CATALOG = join(process.cwd(), 'src/data/catalog/core-catalog.v2.json')
 const LIBRARY = join(process.cwd(), 'src/data/library/wajeez-library.json')
@@ -66,25 +67,6 @@ const MIN_WORDS = 450
 const MAX_WORDS = 650
 /* هامشٌ يمنع الردَّ على كلمةٍ واحدة — والسياسة نطاقٌ لا رقمٌ حدّيّ */
 const SLACK = 50
-
-/** القواعدُ الحمراء — كلُّ عبارةٍ منها تُبطل المتن */
-const RED_PHRASES = [
-  'يُعرَّف',
-  'يعرف بأنه',
-  'تجدر الإشارة',
-  'من المهم أن نعلم',
-  'في هذا الدرس سوف',
-  'كما ذكرنا سابقا',
-  'في الختام',
-  'مما لا شك فيه',
-  'يُعدّ من أهمّ',
-  'عزيزي المتعلم',
-  'عزيزي المتعلّم',
-  'أخي الكريم',
-]
-
-/** أسماءٌ أجنبيّة شائعة في الأمثلة — السياسة تُلزم سياقا عربيّا */
-const FOREIGN_NAMES = ['John', 'Acme', 'Jane', 'Bob', 'Alice', 'Foo Corp']
 
 interface Violation { moduleId: string; rule: string; detail: string }
 
@@ -206,9 +188,7 @@ export function auditModule(m: Module, courseSkills: Map<string, string[]>, libr
      درسٌ يعلّم المتعلّم أن يمنع «تجدر الإشارة» في طلبه يحتاج أن يكتبها
      ليمنعها. فتُستثنى الكتلُ والمقاطعُ المحصورة بعلامة الشيفرة `…`: هي
      اقتباسٌ يُرى اقتباسا، لا عبارةٌ يقرؤها المتعلّم نصيحةً. */
-  const prose = body
-    .replace(/```[\s\S]*?```/g, ' ')
-    .replace(/`[^`\n]*`/g, ' ')
+  const prose = proseOf(body)
   for (const p of RED_PHRASES) {
     if (prose.includes(p)) add('قاعدة حمراء', `العبارة الممنوعة «${p}»`)
   }

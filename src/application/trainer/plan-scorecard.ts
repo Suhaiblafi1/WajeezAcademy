@@ -41,6 +41,7 @@ import { resourceHasSource } from './module-body'
 import { startAdvice } from './start-advice'
 import type { WorkspaceStep } from './workspace-step'
 import { REVIEW_NOTE_MAX, type ReviewNotes } from './review-notes'
+import { MIN_THEORY_WORDS, contentQuality } from './content-quality'
 
 /* ─────────── العتبات ─────────── */
 
@@ -87,6 +88,10 @@ export interface ScorecardModule {
   titleAr?: string | null
   activityAr?: string | null
   artifactAr?: string | null
+  /** المتنُ النظريّ — يُقرأ لجودة المحتوى (`content-quality.ts`) */
+  bodyAr?: string | null
+  bodyFileKey?: string | null
+  outcomeAr?: string | null
 }
 export interface ScorecardResource {
   title?: string | null
@@ -297,6 +302,30 @@ export function planScorecard(input: ScorecardInput): ScoreItem[] {
     measuredAr: `${n - practice.length} من ${n} محاورَ لها تطبيق`,
     gaps: practice,
   }))
+  /* ═══ جودةُ المحتوى النظريّ (١١ أكتوبر ٢٠٢٦) ═══
+     ثلاثةُ صفوفٍ نصيحةً لا حاجزا، تُقرأ من المتن المكتوب وحدَه — والقاعدةُ وسببُها
+     في `content-quality.ts`. وخطّةٌ لم يُكتب فيها متنٌ بعد لا تُقاس هنا: ما ينقصها
+     يقوله حاجزُ «المحتوى النظريّ» في قائمة الإرسال. */
+  const quality = contentQuality(modules)
+  if (quality.read > 0) {
+    const measured = `قُرئ متنُ ${quality.read} من ${n} محاور` + (quality.files ? ` — و${quality.files} مرفوعةٌ ملفّا يقرؤها المعتمِد` : '')
+    out.push(item({
+      key: 'content_depth', labelAr: 'عمقُ المحتوى النظريّ', required: false, step: 'modules',
+      standardAr: `فكرةٌ تُشرح في ${MIN_THEORY_WORDS} كلمةً على الأقلّ، ومثالٌ محلول، وخطأٌ شائعٌ يُنبَّه عليه`,
+      measuredAr: measured, gaps: quality.depth,
+    }))
+    out.push(item({
+      key: 'content_style', labelAr: 'لغةُ المحتوى', required: false, step: 'modules',
+      standardAr: 'بلا حشوٍ ولا تعريفٍ معجميٍّ في رأس الفقرة ولا «عزيزي المتعلّم» — خطابٌ مباشرٌ بفاعله',
+      measuredAr: measured, gaps: quality.style,
+    }))
+    out.push(item({
+      key: 'content_claims', labelAr: 'الأرقامُ والوعود', required: false, step: 'modules',
+      standardAr: 'كلُّ نسبةٍ بمصدرها وسنتها في جملتها، ولا وعدَ بوظيفةٍ أو دخلٍ خارجَ المنصّة',
+      measuredAr: measured, gaps: quality.claims,
+    }))
+  }
+
   /* ═══ وسقط صفُّ «المُسلَّم» (١١ أكتوبر ٢٠٢٦) ═══
      كان يكرّر المهامَّ في خطوتها: الفحصُ قال «٠ من ٨ محاور لها مُسلَّم» ولكلّ محورٍ
      مهمّةٌ فيها مُسلَّمها — فسقط حقلُه من الشاشة وصفُّه من هنا (ملفُّ صاحب المنصّة
