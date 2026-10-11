@@ -86,7 +86,7 @@ describe('③ ويرسل مراجعتَه من موضعها', () => {
     const at = REVIEW.indexOf('{revision.total > 0 && revision.pending === 0 && inHand && (')
     expect(at, 'لا موضعَ للإرسال').toBeGreaterThan(-1)
     const send = REVIEW.slice(at)
-    expect(send).toMatch(/^[\s\S]{0,1600}\{consentBox\}[\s\S]{0,200}<Button[^>]*tone="confirm"[^>]*\s+onClick=\{\(\) => void submitNow\("أُرسلت مراجعتُك — عادت الخطّةُ إلى الإدارة، ويصلك القرارُ هنا وبالبريد"\)\}>\s*أرسل المراجعة\s*<\/Button>/)
+    expect(send).toMatch(/^[\s\S]{0,1600}\{consentBox\}[\s\S]{0,200}<Button[^>]*tone="confirm"[^>]*\s+onClick=\{\(\) => void submitNow\("أُرسلت مراجعتُك — يصلك القرارُ هنا وبالبريد"\)\}>\s*أرسل المراجعة\s*<\/Button>/)
   })
 
   it('⚠️ وما ينقص الخطّةَ قبل الإرسال يُقال قبل المربّع — بزرٍّ إلى كلّ خطوةٍ فيها ما ينقص', () => {

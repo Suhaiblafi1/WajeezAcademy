@@ -102,7 +102,7 @@ export default function WeeklySessions({
   };
 
   if (slots.every((s) => s.moduleIds.every((id) => covered.has(id)))) {
-    return <p className="text-read leading-6 text-muted-foreground">لكلّ محورٍ لقاءٌ مباشرٌ الآن — وما تضيفه بعدُ من بطاقة موعده.</p>;
+    return <p className="text-read leading-6 text-muted-foreground">لكلّ محورٍ لقاءٌ مباشر — وأضِف المزيد من بطاقة موعده.</p>;
   }
 
   return (
@@ -182,7 +182,7 @@ export default function WeeklySessions({
         </ol>
       )}
       {rows && rows.length === 0 && (
-        <p className="text-read leading-6 text-muted-foreground">لا اقتراحَ بقي — اختر يوما آخر، أو أضِف لقاءاتِك من بطاقات المواعيد.</p>
+        <p className="text-read leading-6 text-muted-foreground">لا اقتراحَ بقي — اختر يوما آخر، أو أضِف من بطاقات المواعيد.</p>
       )}
       {rows && rows.length > 0 && (
         <div className="flex flex-wrap items-center gap-2">
@@ -191,7 +191,7 @@ export default function WeeklySessions({
           </Button>
           {!ready && <span className="text-read text-muted-foreground">{!from || !to ? "اختر الساعتين أوّلا." : "أصلِح ما عُلّم أعلاه."}</span>}
           {/* عنوانٌ فارغٌ يُسمّى بعناوين محاوره — يُقال قبل الحفظ */}
-          <span className="text-read text-muted-foreground">والعنوانُ الفارغ يُسمّى بالمثال الباهت فيه.</span>
+          <span className="text-read text-muted-foreground">والعنوانُ الفارغ يُسمّى بالمثال.</span>
         </div>
       )}
     </div>

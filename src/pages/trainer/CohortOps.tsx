@@ -140,8 +140,7 @@ export default function CohortOps({ cohortId, initialTo = "" }: {
           <MessageSquarePlus className="h-4 w-4 text-teal-light-ink" /> مخاطبة الشعبة
         </h3>
         <p className="mt-1 text-read leading-relaxed text-muted-foreground">
-          إعلانٌ يبلغ كلّ مسجَّل، أو رسالةٌ إلى متعلّم بعينه، أو إلى المستشارين الذين يتابعون متعلّميك.
-          وكلُّها تبقى في السجلّ أدناه.
+          إعلانٌ للشعبة، أو رسالةٌ لمتعلّمٍ أو لمستشاري متعلّميك. وتبقى في السجلّ أدناه.
         </p>
         <div className="mt-3 space-y-2.5">
           <select aria-label="إلى من" value={msgForm.enrollmentId}

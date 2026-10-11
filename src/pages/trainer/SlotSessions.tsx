@@ -185,7 +185,7 @@ export default function SlotSessions({
           الموعد {index + 1} <span className="font-bold text-foreground">· {label}</span>
         </p>
         <p className="mt-0.5 text-read text-muted-foreground">
-          من {dayLabelAr(slot.startsOn)} إلى {dayLabelAr(slot.endsOn)} — والأصلُ أن يكون اللقاءُ في أوّل {EARLY_DAYS} أيّامٍ منه، فبعده تُفتح المهامّ.
+          من {dayLabelAr(slot.startsOn)} إلى {dayLabelAr(slot.endsOn)} — ويُفضَّل اللقاءُ في أوّل {EARLY_DAYS} أيّام، فبعدها تُفتح المهامّ.
         </p>
       </div>
 
@@ -254,7 +254,7 @@ export default function SlotSessions({
         </div>
       ) : (
         <Inset tone="accent" className="grid gap-3">
-          <StaffField wide label="عنوانُ اللقاء" hint={`ما يراه المتعلّم في تقويمه. وإن تركته فارغا سُمّي «${suggested}».`}>
+          <StaffField wide label="عنوانُ اللقاء" hint={`يظهر في تقويم المتعلّم. فارغا يُسمّى «${suggested}».`}>
             <input value={form.title} placeholder={`مثال: ${suggested}`} aria-label={`عنوانُ اللقاء في الموعد ${index + 1}`}
               onChange={(e) => setForm({ ...form, title: e.target.value })} className={staffControlCls} />
           </StaffField>
@@ -314,10 +314,10 @@ export default function SlotSessions({
           </StaffField>
           {outside ? (
             <p className="text-read font-bold text-gold-ink">
-              هذا اليومُ خارجَ موعد {label} ({dayLabelAr(slot.startsOn)} – {dayLabelAr(slot.endsOn)}) — اللقاءُ في وقت محاوره، فاختر يوما داخله.
+              هذا اليومُ خارجَ موعد {label} ({dayLabelAr(slot.startsOn)} – {dayLabelAr(slot.endsOn)}) — اختر يوما داخله.
             </p>
           ) : formDay > EARLY_DAYS && (
-            <p className="text-read text-gold-ink">هذا اليومُ {formDay} من الموعد — والأصلُ أن يكون اللقاءُ في أوّل {EARLY_DAYS} أيّام، فبعده تُفتح المهامّ. ولك أن تُبقيه.</p>
+            <p className="text-read text-gold-ink">اليومُ {formDay} من الموعد — يُفضَّل أوّلُ {EARLY_DAYS} أيّام، فبعدها تُفتح المهامّ. ولك أن تُبقيه.</p>
           )}
           {!outside && dayNote && (
             <p className="flex items-start gap-2 text-read leading-6 text-gold-ink">

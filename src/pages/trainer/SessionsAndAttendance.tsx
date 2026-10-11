@@ -183,7 +183,7 @@ export default function SessionsAndAttendance({ cohortId, refresh = "" }: { coho
     <Panel as="section">
       <h3 className="flex items-center gap-2 text-sm font-black text-foreground"><CalendarDays className="h-4 w-4 text-teal-light-ink" /> اللقاءات والحضور</h3>
       {sessions.length === 0 ? (
-        <p className="mt-2 text-read text-muted-foreground">لا لقاءَ من جدولك بعد — أضِف لقاءاتِك من النموذج أعلاه.</p>
+        <p className="mt-2 text-read text-muted-foreground">لا لقاءاتٍ بعد — أضِفها من النموذج أعلاه.</p>
       ) : (
         <div className="mt-3 space-y-3">
           {sessions.map((s) => (
@@ -296,10 +296,8 @@ export default function SessionsAndAttendance({ cohortId, refresh = "" }: { coho
               {moveFor === s.id && (
                 <Inset tone="accent" className="mt-3 space-y-2.5">
                   <p className="text-read leading-relaxed text-foreground">
-                    الموعدُ لك داخلَ أشهر فصلك. وما تنقله <b>داخلَ موعد محوره</b> يبقى معتمَدا —
-                    قدّمته أو أخّرته — ويصل متعلّميك موعدُه الجديد بالرابط نفسِه.
-                    {" "}وما تنقله خارجَه <b>يعود لانتظار الإدارة</b> — فيغيب عن شاشات متعلّميك حتّى
-                    تعتمده، ويصلهم خبرُ التغيير.
+                    وما تنقله <b>داخلَ موعد محوره</b> يبقى معتمَدا ويصل متعلّميك موعدُه الجديد.
+                    {" "}وما تنقله خارجَه <b>يعود لانتظار الإدارة</b> ويغيب عن شاشات متعلّميك حتّى تعتمده، ويصلهم خبرُ التغيير.
                   </p>
                   <div className="grid gap-2.5 sm:grid-cols-3">
                     <div>
@@ -351,7 +349,7 @@ export default function SessionsAndAttendance({ cohortId, refresh = "" }: { coho
               {/* ═══ حالُ التسجيل بعد انتهاء اللقاء — وقبله لا شيء ═══ */}
               {(s.status === "done" || sessionEndMs(s) < Date.now()) && openableRecordings(s.recordings).length === 0 && (
                 <p className="mt-3 border-t border-white/8 pt-3 text-read leading-6 text-muted-foreground">
-                  بانتظار تسجيل Zoom — يصل وحدَه بعد انتهاء اللقاء (قد يستغرق ساعة)، فيراه متعلّموك وتعيد أنت مشاهدتَه.
+                  بانتظار تسجيل Zoom — يصل وحدَه خلال ساعةٍ تقريبا.
                 </p>
               )}
               {openableRecordings(s.recordings).length > 0 && (
@@ -412,7 +410,7 @@ export default function SessionsAndAttendance({ cohortId, refresh = "" }: { coho
           <p className="text-read leading-7">
             يُحذف «{pendingDelete.title}» من شعبتك، ويُلغى اجتماعُ Zoom معه.
             وإن كان معتمَدا وصل مسجَّليك خبرُ إلغائه.
-            {" "}ولا يُحذف لقاءٌ سُجّل فيه حضورٌ أو انعقد اجتماعُه — تلك واقعةٌ لا مسوّدة.
+            {" "}ولا يُحذف لقاءٌ سُجّل فيه حضورٌ أو انعقد.
           </p>
         </ConfirmAction>
       )}

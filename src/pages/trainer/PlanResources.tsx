@@ -31,7 +31,7 @@ const API_BASE: string = import.meta.env.VITE_API_URL ?? "";
 
 /** ما يُقال مرّةً فوق الخانة — كان يُكرَّر تحت كلّ ملفّ */
 export const RESOURCE_DROP_HINT_AR =
-  `يمكن رفعُ عدّة ملفّاتٍ معا · PDF وصورةٌ تُقرآن في الصفحة، وWord وشرائحُ وجداولُ تُنزَّل · حتّى ${Math.round(MAX_BODY_FILE_BYTES / (1024 * 1024))} ميغابايت للملفّ`;
+  `عدّةُ ملفّاتٍ معا · PDF والصورُ تُقرأ في الصفحة، وغيرُها يُنزَّل · حتّى ${Math.round(MAX_BODY_FILE_BYTES / (1024 * 1024))} ميغابايت للملفّ`;
 
 interface Pending { id: number; name: string; error: string | null }
 
@@ -147,7 +147,7 @@ export default function PlanResources({
       )}
 
       {groups.length === 0 ? (
-        <p className="text-read leading-6 text-muted-foreground">لا مصادرَ بعد — مصدرٌ واحدٌ للدورة يكفي، وربطُه بمحورٍ اختيار.</p>
+        <p className="text-read leading-6 text-muted-foreground">لا مصادرَ بعد — يكفي مصدرٌ واحد، وربطُه بمحورٍ اختياريّ.</p>
       ) : groups.map((g) => (
         <section key={g.key} aria-label={g.labelAr} className="grid gap-1">
           <h4 className={`px-1 text-read font-black ${g.moduleId === "orphan" ? "text-gold-ink" : "text-muted-foreground"}`}>{g.labelAr}</h4>
@@ -186,10 +186,10 @@ export default function PlanResources({
                   {editing && (
                     <div className="grid gap-2 border-t border-white/[0.06] pt-2">
                       <input value={r.title} disabled={locked} maxLength={200} aria-label={`اسمُ المصدر «${name}»`}
-                        placeholder="سمِّ المحتوى لا المنصّة — «كرّاسة التحرير» لا «ملفّ PDF»"
+                        placeholder="اسمُ المحتوى — «كرّاسة التحرير»"
                         onChange={(e) => onPatch(i, { title: e.target.value })} className={controlCls} />
                       <input value={r.noteAr ?? ""} disabled={locked} maxLength={500} aria-label={`وصفُ المصدر «${name}»`}
-                        placeholder="لماذا يقرؤه المتعلّم؟ ما فيه، ومتى يقرؤه"
+                        placeholder="ما فيه، ومتى يقرؤه"
                         onChange={(e) => onPatch(i, { noteAr: e.target.value })} className={controlCls} />
                       {!(r.bodyFileKey ?? "").trim() && (
                         <input dir="ltr" value={r.url ?? ""} disabled={locked} placeholder="https://…" aria-label={`رابطُ المصدر «${name}»`}
