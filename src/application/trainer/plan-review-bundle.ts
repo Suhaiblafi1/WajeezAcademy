@@ -481,8 +481,6 @@ function facts(view: CurriculumView, input: ReviewBundleInput): string[] {
   const resources = [...view.groups.flatMap((g) => g.resources), ...view.general.resources]
   const unlinked = view.general.resources.length
   out.push(`**المصادر:** ${resources.length}${unlinked ? ` — منها ${unlinked} للشعبة كلها بلا محور` : ''}`)
-  const axesWithout = view.groups.flatMap((g) => (g.resources.length === 0 ? g.axes.map((a) => a.n) : []))
-  if (resources.length && axesWithout.length) out.push(`**محاورُ بلا مصدر:** ${axesWithout.map((n) => `المحور ${n}`).join('، ')}`)
   if (view.workbookMode === 'modules') {
     const done = view.moduleWorkbooks.filter((w) => w.done)
     const own = done.filter((w) => w.material === 'own').length

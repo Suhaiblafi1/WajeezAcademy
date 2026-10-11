@@ -51,9 +51,9 @@ describe('وحاجزُ الإرسال في الخادم يقرأ المُلزِ�
   const body = svc.slice(svc.indexOf('export function buildChecklist('), svc.indexOf('\n}\n', svc.indexOf('export function buildChecklist(')))
 
   it('الأربعةُ داخلَ القائمة لا بجانبها', () => {
-    for (const fn of ['seasonEndProblem(', 'practiceGaps(', 'sourceGaps(', 'projectDeadlineProblem(']) expect(body).toContain(fn)
+    for (const fn of ['seasonEndProblem(', 'practiceGaps(', 'courseSourceProblem(', 'projectDeadlineProblem(']) expect(body).toContain(fn)
     expect(body).toMatch(/done: identityDone && endProblem === null/)
-    expect(body).toMatch(/done: resourcesDone && noSource\.length === 0/)
+    expect(body).toMatch(/done: resourcesDone && noSource === null/)
   })
 
   it('⚠️ والإرسالُ يمرّر مواعيدَ المهامّ — وإلّا لم يُحكم على موعد المشروع', () => {

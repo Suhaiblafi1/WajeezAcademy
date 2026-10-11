@@ -14,6 +14,9 @@
       «اختياريّا» والحاجزُ يطلبه، فردّ الإرسالَ عن مدرّبين ملؤوا ما رأوه مطلوبا.
       وخيّر صاحبُ المنصّة بين تصحيح الشاشة وإرجاعه اختياريّا، فاختار الثاني —
       فالمُسلَّمُ صفُّ نصيحةٍ (`artifact`)، والتطبيقُ العمليُّ وحده يمنع.
+      ثمّ صار المصدرُ للدورة لا لكلّ محور (١١ أكتوبر ٢٠٢٦): «الغِ موضوعَ مصدرٍ
+      لكلّ محور.. المصادرُ تكون لكلّ الدورة بشكلٍ عامّ، واختياريٌّ يختار لأيّ
+      محورٍ يريد». فالمُلزِمُ مصدرٌ واحدٌ للشعبة كلِّها، وربطُه بمحورٍ اختيار.
    ② **والمدرّبُ يراها فحصا ذاتيّا** قبل أن يرسل («Yes, as a self-check»): البطاقةُ
       نفسُها التي يراها المعتمِد، فلا يصل المعتمِدَ ما يُعاد لسببٍ كان يُرى.
 
@@ -72,8 +75,8 @@ export const HOLIDAYS: readonly { day: string; nameAr: string }[] = [
 export const PROJECT_AFTER_SESSIONS_DAYS = 7
 /** ثلاثةُ أيّامٍ بين أوّل لقاءِ المحور وموعد مهمّته — لا تُطلب قبل أن تُشرح */
 export const TASK_AFTER_SESSION_DAYS = 3
-/** مصدران لكلّ محورٍ نصيحةً، والمُلزِمُ واحد */
-export const ADVISED_SOURCES_PER_MODULE = 2
+/** مصدران للدورة نصيحةً، والمُلزِمُ واحد */
+export const ADVISED_SOURCES = 2
 
 const DAY_MS = 86_400_000
 
@@ -181,14 +184,15 @@ export function artifactGaps(modules: readonly ScorecardModule[]): string[] {
   return modules.flatMap((m, i) => (sentence(m.artifactAr) ? [] : [`المحور ${i + 1}: بلا مُسلَّم`]))
 }
 
-/** مصادرُ المحور — ما له رابطٌ أو ملفّ، بلا الجلسات المسجّلة: تلك لقاءاتٌ لا مصادر */
-function moduleSources(resources: readonly ScorecardResource[], moduleId: string): ScorecardResource[] {
-  return resources.filter((r) => r.moduleId === moduleId && resourceCategory(r) !== 'recorded' && resourceHasSource(r))
+/** مصادرُ الشعبة — ما له رابطٌ أو ملفّ، للشعبة كلِّها أو لمحور، بلا الجلسات
+    المسجّلة: تلك لقاءاتٌ لا مصادر */
+function courseSources(resources: readonly ScorecardResource[]): ScorecardResource[] {
+  return resources.filter((r) => resourceCategory(r) !== 'recorded' && resourceHasSource(r))
 }
 
-/** محاورُ بلا مصدرٍ واحد — بأرقامها */
-export function sourceGaps(modules: readonly ScorecardModule[], resources: readonly ScorecardResource[]): string[] {
-  return modules.flatMap((m, i) => (moduleSources(resources, m.moduleId).length === 0 ? [`المحور ${i + 1}: بلا مصدر`] : []))
+/** لا مصدرَ للدورة — والمُلزِمُ واحدٌ أينما رُبط (١١ أكتوبر ٢٠٢٦) */
+export function courseSourceProblem(resources: readonly ScorecardResource[]): string | null {
+  return courseSources(resources).length === 0 ? 'لا مصدرَ للدورة بعد' : null
 }
 
 const live = (t: { status?: string | null }) => t.status !== 'closed'
@@ -432,26 +436,24 @@ export function planScorecard(input: ScorecardInput): ScoreItem[] {
     measuredAr: `${graded.length} ${graded.length === 1 ? 'مهمّة' : 'مهامّ'}`,
     gaps: taskRows,
   }))
-  const noSource = sourceGaps(modules, resources)
+  const sources = courseSources(resources)
+  const noSource = courseSourceProblem(resources)
   out.push(item({
-    key: 'sources', labelAr: 'مصدرٌ لكلّ محور', required: true, step: 'assignments',
-    standardAr: 'لكلّ محورٍ مصدرٌ واحدٌ على الأقلّ برابطٍ أو ملفّ',
-    measuredAr: `${n - noSource.length} من ${n} محاورَ لها مصدر`,
-    gaps: noSource,
+    key: 'sources', labelAr: 'مصدرٌ للدورة', required: true, step: 'assignments',
+    standardAr: 'مصدرٌ واحدٌ على الأقلّ برابطٍ أو ملفّ — للشعبة كلِّها، وربطُه بمحورٍ بعينه اختياريّ',
+    measuredAr: `مصادرُ الشعبة: ${sources.length}`,
+    gaps: noSource ? [noSource] : [],
   }))
-  const mixRows = modules.flatMap((m, i) => {
-    if (noSource.includes(`المحور ${i + 1}: بلا مصدر`)) return []
-    const own = moduleSources(resources, m.moduleId)
-    const cats = new Set(own.map((r) => resourceCategory(r)))
-    const rows: string[] = []
-    if (own.length < ADVISED_SOURCES_PER_MODULE) rows.push(`المحور ${i + 1}: مصدرٌ واحد`)
-    else if (cats.size < 2) rows.push(`المحور ${i + 1}: ${cats.has('reading') ? 'كلُّها مقروء — أضف فيديو أو بودكاست' : 'كلُّها روابطُ عامّة — أضف كتابا أو ملخّصَ كتاب'}`)
-    return rows
-  })
+  const cats = new Set(sources.map((r) => resourceCategory(r)))
+  const mixRows = noSource ? [] : sources.length < ADVISED_SOURCES
+    ? ['مصدرٌ واحدٌ للدورة كلِّها']
+    : cats.size < 2
+      ? [cats.has('reading') ? 'كلُّها مقروء — أضف فيديو أو بودكاست' : 'كلُّها روابطُ عامّة — أضف كتابا أو ملخّصَ كتاب']
+      : []
   out.push(item({
     key: 'sources_mix', labelAr: 'تنوّعُ المصادر', required: false, step: 'assignments',
-    standardAr: 'مصدران لكلّ محورٍ على الأقلّ: مقروءٌ (كتابٌ أو ملخّصُه) ومسموعٌ أو مرئيّ (فيديو، TEDx، بودكاست) — والعربيّةُ أو المترجَمةُ يفحصها المراجِع',
-    measuredAr: `مصادرُ الشعبة: ${resources.filter((r) => resourceCategory(r) !== 'recorded' && resourceHasSource(r)).length}`,
+    standardAr: 'مصدران للدورة على الأقلّ: مقروءٌ (كتابٌ أو ملخّصُه) ومسموعٌ أو مرئيّ (فيديو، TEDx، بودكاست) — والعربيّةُ أو المترجَمةُ يفحصها المراجِع',
+    measuredAr: `مصادرُ الشعبة: ${sources.length}`,
     gaps: mixRows,
   }))
   return out

@@ -156,7 +156,7 @@ describe('ما نُقل من اللوح القديم', () => {
     expect(sent.json().error.message_ar).toContain('بلا رابطٍ ولا ملفّ')
 
     const content = ws.plan!.content
-    /* ويُكمَل الرابط — ولكلّ محورٍ مصدرُه، مُلزِمٌ من بطاقة المعايير (٨ أكتوبر ٢٠٢٦) يُسمّى في الصفّ نفسِه */
+    /* ويُكمَل الرابط — وللمحاور مصادرُها، والربطُ بمحورٍ اختيارٌ منذ ١١ أكتوبر ٢٠٢٦ */
     const fixed = await t.call('PUT', `/api/trainer/cohorts/${t.cohortId}/plan`, {
       ...content,
       resources: [
