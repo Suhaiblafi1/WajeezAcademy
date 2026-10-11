@@ -137,20 +137,20 @@ export const GUIDE_SHOTS: Record<string, { w: number; h: number }> = {
     "h": 1374
   },
   "ws-meetings": {
-    "w": 1752,
-    "h": 1000
+    "w": 2200,
+    "h": 876
   },
   "ws-modules": {
-    "w": 1624,
-    "h": 2900
+    "w": 2200,
+    "h": 2678
   },
   "ws-session-tips": {
     "w": 1752,
     "h": 1012
   },
   "ws-sources": {
-    "w": 1744,
-    "h": 1690
+    "w": 2200,
+    "h": 1246
   },
   "ws-submit": {
     "w": 2200,
@@ -169,11 +169,11 @@ export const GUIDE_SHOTS: Record<string, { w: number; h: number }> = {
     "h": 4416
   },
   "ws-tasks": {
-    "w": 1744,
-    "h": 806
+    "w": 2200,
+    "h": 654
   },
   "ws-workbooks": {
-    "w": 1752,
-    "h": 3000
+    "w": 2200,
+    "h": 2627
   }
 }
