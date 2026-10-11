@@ -46,8 +46,8 @@ import { CohortService } from './cohort.service'
 import { notifyRole, safeNotify, sendDirectEmail, publicSiteUrl } from './notification.service'
 import { cohortDayAr, whenAr } from '../../src/application/learning/cohort-gate'
 import { trainerOrdinals } from '../../src/application/learning/cohort-title'
-import { planApprovedTrainerMsg, returnMailAr, reviewReportLineAr } from '../../src/application/trainer/plan-decision'
-import { suggestedEditsLineAr } from '../../src/application/trainer/plan-edits'
+import { decisionBellTailAr, planApprovedTrainerMsg, returnBellAr, returnMailAr, reviewReportLineAr } from '../../src/application/trainer/plan-decision'
+import { noteItemsFrom, suggestedEditsLineAr } from '../../src/application/trainer/plan-edits'
 import { renderMail } from './mail-template'
 import { readableModuleVersion } from '../catalog/module-version-visibility'
 import {
@@ -1315,14 +1315,19 @@ export class CohortPlanService {
         reports: reports.length,
         resumedAr: resumed,
       })
+      /* والجرسُ سطرٌ بعدد ما ينتظره في «المراجعة» ويفتحها — لا الملاحظاتُ بنصوصها (`returnBellAr`) */
+      const bell = returnBellAr({
+        notes: noteItemsFrom(asked).length, edits: edits.count, required: edits.required, reports: reports.length, resumedAr: resumed,
+      })
       await this.tellTrainer(plan.trainer, plan.cohort, {
         title: `طُلبت تعديلاتٌ على «${plan.cohort.title}»`,
-        body: `${asked.general ?? 'كتبنا ملاحظاتِنا على خطواتها — تجدها نقاطا في «المراجعة»، توافق عليها أو تقول لماذا لا.'}${resumed}`,
+        body: bell,
         heading: mail.heading,
         cta: mail.cta,
         sections: bySection,
         mail,
-      }, `${composed}${resumed}`, reports, asked.general === edits.line ? null : edits.line)
+        step: 'review',
+      }, { bell })
       return { status: 'changes_requested' as const }
     }
 
@@ -1418,7 +1423,7 @@ export class CohortPlanService {
       tasksApplied: tasks.applied,
       noteAr: said,
     })
-    await this.tellTrainer(plan.trainer, plan.cohort, { ...told, cta: 'افتح شعبتك' }, undefined, reports)
+    await this.tellTrainer(plan.trainer, plan.cohort, { ...told, cta: 'افتح شعبتك' }, { reports })
 
     let prep: { activated: boolean; waiting?: number; blockedAr?: string } | null = null
     if (qual && 'failedAr' in qual) prep = { activated: false, blockedAr: qual.failedAr }
@@ -1484,7 +1489,9 @@ export class CohortPlanService {
       actorId, action: 'cohort.plan.postpone', entityType: 'cohort', entityId: plan.cohort.id,
       meta: { planId, from, to, postponedTo: toDay, note: said },
     })
-    await this.tellTrainer(plan.trainer, plan.cohort, msg, undefined, reports, (await this.pendingEdits(planId)).line)
+    const waiting = await this.pendingEdits(planId)
+    await this.tellTrainer(plan.trainer, plan.cohort, { ...msg, ...(waiting.count > 0 ? { step: 'review' as const } : {}) },
+      { reports, edits: { count: waiting.count, required: waiting.required } })
     return { status: 'postponed' as const, postponedTo: toDay }
   }
 
@@ -1597,22 +1604,30 @@ export class CohortPlanService {
       title: string; body: string; heading: string; cta: string; sections?: readonly { label: string; text: string }[]
       /** بريدٌ مبنيٌّ بنفسه — بريدُ الردّ (`returnMailAr`): شكرٌ وملخّصٌ وخطوات، لا الملاحظاتُ بنصوصها */
       mail?: ReturnType<typeof returnMailAr>
+      /** الخطوةُ التي يفتحها الجرس (`?step=`) — «المراجعة» حين ينتظره فيها شيء */
+      step?: 'review'
     },
-    bellBody?: string,
-    /** أسماءُ تقارير المراجعة التي رُفعت مع هذا القرار — تُذكر ويُدلّ على موضعها */
-    reports: readonly string[] = [],
-    /** وسطرُ التعديلات المقترحة إن صحبته (`suggestedEditsLineAr`) */
-    editsLine: string | null = null,
+    opts: {
+      /** نصُّ الجرس تامًّا — فلا يُذيَّل */
+      bell?: string
+      /** أسماءُ تقارير المراجعة التي رُفعت مع هذا القرار — تُذكر ويُدلّ على موضعها */
+      reports?: readonly string[]
+      /** والتعديلاتُ المقترحةُ التي تنتظره إن صحبته */
+      edits?: { count: number; required: number } | null
+    } = {},
   ) {
     if (!trainer) return
     const url = `${publicSiteUrl()}/trainer/cohort/${cohort.id}`
+    const reports = opts.reports ?? []
     const reportLine = reviewReportLineAr(reports)
-    const extra = [editsLine, reportLine].filter(Boolean).join('\n\n')
+    const editsLine = opts.edits ? suggestedEditsLineAr(opts.edits.count, opts.edits.required) : null
     if (trainer.userId) {
+      /* والجرسُ قصير — جملةٌ لكلّ ما صحبه لا فقرة (`decisionBellTailAr`)، ويفتح صفحةَ الشعبة نفسَها */
+      const tail = decisionBellTailAr({ edits: opts.edits, reports: reports.length })
       await safeNotify(this.prisma, {
         audience: 'trainer', userId: trainer.userId, channel: 'in_app',
-        title: msg.title, body: `${bellBody ?? msg.body}${extra ? `\n\n${extra}` : ''}`,
-        templateKey: 'cohort.plan.decision', data: { cohortId: cohort.id },
+        title: msg.title, body: opts.bell ?? (tail ? `${msg.body} ${tail}` : msg.body),
+        templateKey: 'cohort.plan.decision', data: { cohortId: cohort.id, ...(msg.step ? { step: msg.step } : {}) },
       })
     }
     if (msg.mail) {

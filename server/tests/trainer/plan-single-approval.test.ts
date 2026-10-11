@@ -180,7 +180,9 @@ describe('② الردُّ: لكلّ خطوةٍ ملاحظتُها', () => {
     const bell = await prisma.notification.findFirstOrThrow({
       where: { userId: trainerUserId, templateKey: 'cohort.plan.decision' }, orderBy: { queuedAt: 'desc' },
     })
-    expect(bell.body).toContain('«اللقاءات»: لقاءُ الموعد الثاني خارجه')
+    /* والجرسُ سطرٌ بعدد ما ينتظره في «المراجعة» لا الملاحظاتُ بنصوصها (١١ أكتوبر ٢٠٢٦، «فيها كلامٌ كثير»،
+       `returnBellAr`) — والنصوصُ بنودٌ هناك */
+    expect(bell.body).toBe('تنتظرك في «المراجعة» ملاحظتان — قرّر فيها ثمّ أرسل مراجعتك.')
 
     const audit = await prisma.auditEvent.findFirstOrThrow({
       where: { action: 'cohort.plan.changes_requested', entityId: A.cohortId }, orderBy: { createdAt: 'desc' },

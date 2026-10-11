@@ -241,8 +241,9 @@ describe('٢ — الردُّ بالتعديلات وحدَها', () => {
     const bell = await prisma.notification.findFirst({
       where: { userId: trainerUserId, templateKey: 'cohort.plan.decision' }, orderBy: { queuedAt: 'desc' },
     })
-    expect(bell?.body).toContain('واقترحنا على خطّتك 4 تعديلات (منها اثنان مطلوبان)')
-    expect(bell?.body.match(/واقترحنا على خطّتك/g)?.length, 'السطرُ مرّةً واحدة').toBe(1)
+    /* والجرسُ سطرٌ بعدد ما ينتظره في «المراجعة» لا الملاحظاتُ بنصوصها (١١ أكتوبر ٢٠٢٦، «فيها كلامٌ كثير»،
+       `returnBellAr`) — والنصوصُ بنودٌ هناك */
+    expect(bell?.body).toBe('تنتظرك في «المراجعة» 4 تعديلات مقترحة (منها اثنان مطلوبان) — قرّر فيها ثمّ أرسل مراجعتك.')
   })
 
   it('ويراها مدرّبُها بما قبلها وما بعدها — وغيرُه لا يراها', async () => {
