@@ -148,7 +148,7 @@ export function ReviewReportsBulkUpload({ plans, onUploaded, onOpen }: {
       } else {
         try {
           const r = await apiPost<{ uploadUrl: string; maxBytes: number }>(
-            `/api/admin/cohort-plans/${m.planId}/review-report`, { mime: m.mime, originalName: file.name },
+            `/api/admin/cohort-plans/${m.planId}/review-report`, { mime: m.mime, originalName: m.storedName },
           );
           await putSigned(r.uploadUrl, file, r.maxBytes);
           out.push({ name: file.name, planId: m.planId, labelAr: m.labelAr, state: "done", noteAr: "رُفع إلى خطّته" });
@@ -176,7 +176,7 @@ export function ReviewReportsBulkUpload({ plans, onUploaded, onOpen }: {
       <p className="text-read font-black text-foreground">ارفع تقاريرَ المراجعة وملاحقَها كلَّها دفعةً واحدة</p>
       <p className="mt-1 max-w-3xl text-read leading-6 text-muted-foreground">
         كلُّ ملفٍّ يذكر خطّتَه في اسمه فيُرفع إلى بطاقتها وحدَها، وما رُفع من قبل لا يتكرّر. ويراه المدرّبُ في صفحة
-        شعبته من لحظة رفعه، وتذكره رسالةُ قرارك حين تقرّر. PDF أو Word.
+        شعبته من لحظة رفعه — باسمه بلا معرّف الخطّة — وتذكره رسالةُ قرارك حين تقرّر. PDF أو Word.
       </p>
       <div
         className={`mt-3 flex flex-wrap items-center gap-3 rounded-lg border-2 border-dashed p-4 ${over ? "border-teal-light-ink bg-teal-light-ink/5" : "border-border"}`}
@@ -229,7 +229,7 @@ export function ReviewReportList({ reports }: { reports: readonly ReviewReport[]
     <Inset className="mt-2" role="region" aria-label="تقرير المراجعة">
       <p className="text-read font-black text-foreground">تقريرُ المراجعة</p>
       <p className="mt-1 text-read leading-6 text-muted-foreground">
-        رفعته الإدارةُ مع ردّها على خطّتك — فيه ما يُعدَّل وما يُقترح، وكيف تعدّله في خطواتك.
+        رفعته الإدارةُ بعد قراءة خطّتك — فيه ما يُعدَّل وما يُقترح، وكيف تعدّله في خطواتك.
       </p>
       <ul className="mt-2 space-y-1.5">
         {reports.map((r) => (
