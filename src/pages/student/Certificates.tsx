@@ -27,7 +27,7 @@ function GrowthStrip({ growth, enrollmentId }: { growth: CourseGrowth | null; en
     return (
       <Card as={Link} tone="accent" interactive to={`/student/remeasure/${enrollmentId}`} className="mt-3 flex items-center gap-2 bg-teal-ink/[0.06] px-3 py-2 text-fine font-bold text-teal-light-ink transition hover:border-teal/50">
         <Ruler className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-        قِس نموك في مهارات هذه الدورة ليصير مع الشهادة دليل مقيس
+        قِس نموك في هذه الدورة ليُرفق بالشهادة
       </Card>
     );
   }
@@ -87,7 +87,7 @@ export default function Certificates() {
         <EmptyState
           icon={Award}
           titleAr="لا شهادات بعد"
-          reasonAr="تُصدر الشهادة بعد تحقق قواعد الإكمال على شعبتك — حضورا وتسليمات — وتظهر هنا فور إصدارها برقم تحقق عام. ما يُقرّبها:"
+          reasonAr="تُصدر بعد إكمال حضور شعبتك وتسليماتها، وتظهر هنا برقم تحقق عام. ما يُقرّبها:"
           actions={[
             { to: "/student/learning", labelAr: "أكمل وحدات شعبتك", hintAr: "الحضور والتسليمات" },
             { to: "/student/learning", labelAr: "اعرف موضعك من المسار", hintAr: "ما بقي وما تمّ" },

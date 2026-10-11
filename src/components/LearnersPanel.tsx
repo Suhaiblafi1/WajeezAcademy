@@ -42,8 +42,8 @@ interface LearnersResponse {
 
 const SCOPE_NOTE: Record<LearnersResponse["scope"], string> = {
   all: "كلّ الطلبة المسجَّلين في الأكاديمية.",
-  trainer: "طلبةُ شعبك أنت — لا طلبةَ غيرك.",
-  advisor: "عملاءُ الحالات المسندة إليك وحدَهم.",
+  trainer: "طلبةُ شعبك فقط.",
+  advisor: "عملاءُ حالاتك المسندة فقط.",
 };
 
 const ENROLL_STATUS: Record<string, string> = {
@@ -120,9 +120,9 @@ export default function LearnersPanel() {
           <p className="mt-3 text-sm font-black">لا طلبة في نطاقك بعد</p>
           <p className="mt-1 max-w-sm text-read leading-6 text-muted-foreground">
             {data.scope === "trainer"
-              ? "حين تُسنَد إليك شعبةٌ ويُسجَّل فيها متعلّمون، يظهرون هنا."
+              ? "يظهر هنا من يُسجَّل في شعبك."
               : data.scope === "advisor"
-                ? "حين تُسنَد إليك حالةٌ لعميلٍ سجّل في شعبة، يظهر هنا."
+                ? "يظهر هنا عملاءُ حالاتك المسجَّلون في شعب."
                 : "لا تسجيلات بعد."}
           </p>
         </Panel>
@@ -238,7 +238,7 @@ function EditLearner({ row, busy, onClose, onSave, onEnroll }: {
               والشهادةُ موقوفان على التوثيق. */}
           {email !== row.user.email && (
             <span className="mt-1 block text-fine font-normal leading-5 text-gold-ink">
-              تبديلُ البريد يُسقط توثيقَه — سيحتاج أن يوثّق العنوان الجديد قبل الشراء والشهادة.
+              تبديلُ البريد يُسقط توثيقَه؛ ويلزم توثيقُ الجديد قبل الشراء والشهادة.
             </span>
           )}
         </label>
@@ -277,7 +277,7 @@ function EditLearner({ row, busy, onClose, onSave, onEnroll }: {
             </Button>
           </div>
           <p className="mt-2 text-read leading-5 text-muted-foreground">
-            تسجيلٌ إداريّ بلا فاتورة — يمرّ بحارس السعة نفسِه، والفائضُ يذهب لقائمة الانتظار.
+            تسجيلٌ بلا فاتورة، يخضع للسعة، والفائضُ لقائمة الانتظار.
           </p>
         </div>
       </Inset>

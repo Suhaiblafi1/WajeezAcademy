@@ -41,14 +41,14 @@ export default function Library() {
   return (
     <PortalLayout title="المكتبة">
       <p className="mb-6 max-w-2xl text-sm leading-7 text-muted-foreground">
-        موادّ مختارة خارج الدورات — تُفتح في تبويب جديد على مصدرها الأصلي.
+        موادّ مختارة خارج الدورات، تُفتح في تبويب جديد.
       </p>
 
       {rows.length === 0 ? (
         <EmptyState
           icon={LibraryIcon}
           titleAr="المكتبة لم تُفتح بعد"
-          reasonAr="لم تُنشر موادّ في المكتبة حتى الآن. حين تُضاف ستظهر هنا بعنوانها ومصدرها ورابطها."
+          reasonAr="لم تُنشر موادّ بعد، وستظهر هنا حين تُضاف."
           tone="start"
         />
       ) : (

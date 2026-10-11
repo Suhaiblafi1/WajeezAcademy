@@ -14,7 +14,7 @@ const PALETTES = {
   trainer: {
     endpoint: "/api/trainer/search",
     placeholder: "ابحث في شعبك وطلابك…",
-    emptyHint: "اكتب اسم شعبة أو طالب من إسناداتك —",
+    emptyHint: "اكتب اسم شعبة أو طالب —",
     groups: [
       { key: "cohorts", label: "شعبي", icon: CalendarCog },
       { key: "students", label: "طلابي", icon: Users },
@@ -23,7 +23,7 @@ const PALETTES = {
   advisor: {
     endpoint: "/api/advisor/search",
     placeholder: "ابحث في حالاتك…",
-    emptyHint: "اكتب اسم عميل من حالاتك المسندة —",
+    emptyHint: "اكتب اسم عميل —",
     groups: [
       { key: "cases", label: "حالاتي", icon: UserRound },
     ],

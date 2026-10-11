@@ -72,7 +72,7 @@ export default function MyCv() {
     try {
       await apiPost(`/api/cv/${delId}/delete`, { reason: delReason });
       setErr(null);
-      toast("حُذفت السيرة حذفا منطقيا بسبب موثق — لم تعد تظهر لمستشارك ولا في ملفك.");
+      toast("حُذفت السيرة — لم تعد تظهر لمستشارك ولا في ملفك.");
       setDelId(null); setDelReason("");
       load();
     } catch (e) {
@@ -85,8 +85,8 @@ export default function MyCv() {
       {/* شرحُ الرفع لا يُقال حيث لا رفع — وإلّا نقض القسمَ الذي تحته */}
       {fileUploads && (
         <Card as="p" className="mb-5 max-w-2xl px-4 py-3 text-read leading-6 text-muted-foreground">
-          تُرفع السيرة بموافقة صريحة منك فقط، وبصيغة PDF أو Word حتى {CV_MAX_LABEL}.
-          مستشارك المسند يفتحها برابط قراءة موقع وتُسجل كل مشاهدة — والحذف بسبب موثق لا يمحو الأثر.
+          تُرفع بموافقتك، PDF أو Word حتى {CV_MAX_LABEL}.
+          يفتحها مستشارك المسند وتُسجل كل مشاهدة، والحذف بسبب موثق لا يمحو الأثر.
         </Card>
       )}
 
@@ -99,8 +99,7 @@ export default function MyCv() {
         <Panel as="section" tone="warn">
           <h2 className="flex items-center gap-2 text-sm font-black text-gold-ink"><ShieldCheck className="h-4 w-4" /> رفعُ السيرة غيرُ مفعّلٍ بعد</h2>
           <p className="mt-3 text-read leading-7 text-foreground">
-            المنصّةُ لا تحفظ الملفّاتَ في هذه المرحلة، فلن نطلب منك ملفًّا لا يصل. أعطِ سيرتك لمستشارك في جلستكم الأولى،
-            أو تواصل مع الأكاديمية — ويظهر هذا القسمُ تلقائيّا يومَ يُفعَّل الرفع.
+            أعطِ سيرتك لمستشارك في جلستكم الأولى، أو تواصل مع الأكاديمية.
           </p>
         </Panel>
       )}
@@ -136,7 +135,7 @@ export default function MyCv() {
           </span>
         </Card>
         {!consent && (
-          <p className="mt-2 text-read text-muted-foreground">لن يُقبل أي ملف قبل تفعيل الموافقة — كما يفرض الخادم.</p>
+          <p className="mt-2 text-read text-muted-foreground">لن يُقبل أي ملف قبل الموافقة.</p>
         )}
       </Panel>
       )}
@@ -149,7 +148,7 @@ export default function MyCv() {
             <FileText className="mx-auto h-8 w-8 text-muted-foreground" />
             <p className="mt-3 text-sm font-bold text-muted-foreground">لا سير فعالة بعد</p>
             <p className="mx-auto mt-1 max-w-sm text-read leading-6 text-muted-foreground">
-              سيرتك تساعد مستشارك على فهم خلفيتك المهنية قبل أول جلسة — وتُسجل كل مشاهدة لها في السجل.
+              تساعد مستشارك على فهم خلفيتك قبل أول جلسة، وتُسجل كل مشاهدة لها.
             </p>
             {fileUploads && (
               <Button tone="confirm" onClick={() => fileRef.current?.click()} className="mt-4">
@@ -191,7 +190,7 @@ export default function MyCv() {
               <button onClick={() => setDelId(null)} className="cursor-pointer text-muted-foreground hover:text-foreground" aria-label="إغلاق"><X className="h-5 w-5" /></button>
             </div>
             <p className="mt-2 text-read leading-6 text-muted-foreground">
-              وفق السياسة: الحذف منطقي لا فيزيائي، وسببك يُحفظ في السجل. بعدها لا يراها مستشارك ولا تظهر في ملفك.
+              يُحفظ سببك في السجل، ثم لا يراها مستشارك ولا تظهر في ملفك.
             </p>
             <label className="mt-4 block text-xs font-bold text-muted-foreground">سبب الحذف *</label>
             <textarea

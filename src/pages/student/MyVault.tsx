@@ -76,7 +76,7 @@ export default function MyVault() {
           <Sparkles className="h-5 w-5" /> ما صنعتَه حتى الآن
         </h2>
         <p className="mt-2 max-w-2xl text-sm leading-7 text-muted-foreground">
-          كلُّ محطة في وجيز تُنتج شيئا تملكه — لا درسا تشاهده. وهذه أعمالك:
+          أعمالك من محطّات دوراتك —
           {list.length > 0
             ? ` ${list.length} عملا سلّمتَه، منها ${accepted} معتمدا من مدرّبك.`
             : " تمتلئ مع أوّل تسليم."}
@@ -88,8 +88,7 @@ export default function MyVault() {
           <FileText className="h-10 w-10 text-muted-foreground/50" />
           <p className="mt-4 font-black">لا أعمال بعد</p>
           <p className="mx-auto mt-2 max-w-sm text-read leading-6 text-muted-foreground">
-            أوّلُ عملٍ لك يظهر هنا فور تسليمه. افتح محطات دورتك وابدأ بالتطبيق
-            العملي — فهو ما يُراجعه مدرّبك ويبقى في سيرتك.
+            يظهر عملك هنا فور تسليمه. ابدأ بالتطبيق العملي في محطات دورتك.
           </p>
           <Link to="/student/learning" className="mt-5 rounded-full bg-teal px-6 py-2.5 text-sm font-black text-on-teal transition hover:bg-teal-light">
             دوراتي

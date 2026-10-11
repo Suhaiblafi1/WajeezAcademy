@@ -113,8 +113,7 @@ function Result({ summary, courseTitle }: { summary: GrowthSummary; courseTitle:
       </ul>
       {c.firstMeasured > 0 && (
         <p className="mt-4 text-read leading-relaxed text-muted-foreground">
-          {c.firstMeasured} مهارة قِيست هنا أول مرة — لا مرجع قبليّ لها، فلا تدخل حساب الفرق.
-          لو أكملت جولة التعمق في المؤشر قبل دورتك القادمة، صار لها فرق يُقاس.
+          {c.firstMeasured} مهارة قِيست هنا أول مرة، فلا تدخل حساب الفرق. أكمل جولة التعمق في المؤشر قبل دورتك القادمة ليُقاس فرقها.
         </p>
       )}
       <Link
@@ -227,21 +226,20 @@ export default function Remeasure() {
               أعد قياس مهاراتك بعد «{courseTitle}»
             </h1>
             <p className="mt-3 text-sm leading-7 text-foreground">
-              قِيست مهاراتك قبل الدورة بمؤشر وجيز، والآن نقيسها بعدها بالسلّم نفسه — فيظهر الفرق مقيسا
-              لا موصوفا. الإجابة تقديرك أنت لمستواك الآن: لا صحيح ولا خطأ هنا، والرقم يُحفظ
+              قدّر مستواك الآن بالسلّم الذي قِيس به قبل الدورة. لا صحيح ولا خطأ، ويُحفظ
               <span className="font-bold text-foreground"> مرة واحدة </span>
               فاختر بصدق.
             </p>
             {!data.gate.open && (
               <Card as="p" tone="warn" className="mt-4 flex items-start gap-2 px-4 py-3 text-read leading-6 text-foreground">
                 <Lock className="mt-0.5 h-4 w-4 shrink-0 text-gold-ink" aria-hidden="true" />
-                <span>{data.gate.reasonAr} — لأن فرقا بلا إتمام لا يدل على شيء.</span>
+                <span>{data.gate.reasonAr}</span>
               </Card>
             )}
             {!data.form.measurable && (
               <Card as="p" className="mt-4 flex items-start gap-2 px-4 py-3 text-read leading-6 text-foreground">
                 <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-gold-ink" aria-hidden="true" />
-                لا مهارات مصنّفة مرتبطة بهذه الدورة بعد — فلا قياس بعديّ لها.
+                لا مهارات مصنّفة لهذه الدورة بعد، فلا قياس بعديّ لها.
               </Card>
             )}
           </Panel>

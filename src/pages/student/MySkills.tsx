@@ -146,8 +146,7 @@ function Unmeasured({ rows }: { rows: UnmeasuredSkill[] }) {
         <span className="rounded-full bg-gold/15 px-2 py-0.5 text-fine tabular-nums text-gold-ink">{rows.length}</span>
       </h2>
       <p className="mt-2 text-read leading-6 text-foreground">
-        هذه مهارات يتطلبها مسارك ولم يسألك المؤشر عنها. لا نفترض لك فيها مستوى — لا مرتفعا ولا منخفضا.
-        وكلما قِيس أكثر، ارتفعت ثقة التوصية.
+        يتطلبها مسارك ولم يقسها المؤشر، فلا نفترض لك فيها مستوى. قياسها يرفع دقّة التوصية.
       </p>
       <ul className="mt-3 flex flex-wrap gap-2">
         {rows.map((s) => (
@@ -183,7 +182,7 @@ function GrowthPanel({ summary }: { summary: GrowthSummary }) {
           <Ruler className="h-4 w-4 text-teal-light-ink" aria-hidden="true" />
           نموك المقيس بعد الدورات
         </h2>
-        <p className="text-read text-muted-foreground">قياس بالسلّم نفسه قبل الدورة وبعدها — لا وصف</p>
+        <p className="text-read text-muted-foreground">بالسلّم نفسه قبل الدورة وبعدها</p>
       </div>
 
       <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -218,7 +217,7 @@ function GrowthPanel({ summary }: { summary: GrowthSummary }) {
 
       {summary.firstMeasured > 0 && (
         <p className="mt-4 text-read leading-relaxed text-muted-foreground">
-          {summary.firstMeasured} مهارة قِيست أول مرة بعد الدورة — بلا مرجع قبليّ، فلا تدخل حساب الفرق.
+          {summary.firstMeasured} مهارة قِيست أول مرة بعد الدورة، فلا تدخل حساب الفرق.
         </p>
       )}
     </Panel>
@@ -255,7 +254,7 @@ function GrowthInvites({ invites }: { invites: GrowthPayload["invites"] }) {
         <span className="rounded-full bg-gold/15 px-2 py-0.5 text-fine tabular-nums text-gold-ink">{invites.length}</span>
       </h2>
       <p className="mt-2 text-read leading-6 text-foreground">
-        قِيست مهاراتك قبل الدورة. أعد القياس الآن بالسلّم نفسه ليُحفظ الفرق — مرة واحدة لكل دورة.
+        أعد القياس بالسلّم نفسه ليُحفظ الفرق — مرة واحدة لكل دورة.
       </p>
       <ul className="mt-3 flex flex-col gap-2">
         {invites.map((i) => (
@@ -352,8 +351,7 @@ export default function MySkills() {
           <Sparkles className="h-12 w-12 text-muted-foreground/50" aria-hidden="true" />
           <h2 className="mt-4 text-xl font-black">لا قياس بعد</h2>
           <p className="mt-2 max-w-md text-sm leading-7 text-muted-foreground">
-            يُبنى ملف مهاراتك من مؤشر وجيز — أسئلة قصيرة تقيس مستواك الحالي في مهارات مسارك.
-            لا نعرض هنا رقما لم نقسه.
+            أجب أسئلة مؤشر وجيز القصيرة ليُبنى ملف مهاراتك.
           </p>
           <Link
             to="/diagnostic"
@@ -398,7 +396,7 @@ export default function MySkills() {
         icon={CheckCircle2}
         title="تُتقنها أصلا"
         count={profile.mastered.length}
-        note="لن نعيد تعليمك إياها — تُحسب لك في اختيار الدورات"
+        note="تُحسب لك في اختيار الدورات"
       >
         {profile.mastered.map((s) => (
           <MeasuredRow key={s.slug} s={s} showDelta={false} />
@@ -411,7 +409,7 @@ export default function MySkills() {
         icon={Sparkles}
         title="رصيد خارج مسارك"
         count={profile.outsidePathway.length}
-        note="قِيست لك ولا يتطلبها هذا المسار — لا تُحسب في التغطية"
+        note="لا يتطلبها مسارك — لا تُحسب في التغطية"
       >
         {profile.outsidePathway.map((s) => (
           <MeasuredRow key={s.slug} s={s} showDelta={false} />
@@ -420,8 +418,7 @@ export default function MySkills() {
 
       <Card as="p" className="mt-6 px-5 py-4 text-read leading-relaxed text-muted-foreground">
         سلّم القياس خمس درجات: لا يعرفها · مبتدئ · يستخدمها أحيانا · جيد عمليا · متقدم.
-        وتُصنَّف المهارة فجوةً دون «يستخدمها أحيانا»، ومتقنةً من «جيد عمليا» — وهو الحدّ نفسه
-        الذي يستعمله المؤشر في حساب الترشيح، فلا يختلف ما تراه عما احتُسب لك.
+        فجوةٌ دون «يستخدمها أحيانا»، ومتقنةٌ من «جيد عمليا» — كما يحتسبها المؤشر في الترشيح.
       </Card>
     </PortalLayout>
   );

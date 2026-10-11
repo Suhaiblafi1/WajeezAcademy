@@ -93,7 +93,7 @@ function RatingCard({ item, onSaved }: { item: Rateable; onSaved: () => void }) 
         <Stars value={score} onPick={(v) => { setScore(v); setNeedsScore(false); }} disabled={busy} />
         {needsScore && score < 1 && (
           <p role="alert" className="mt-2 text-read font-bold leading-5 text-red-300">
-            اختر عددَ النجوم أوّلا — التعليقُ وحدَه لا يُرسَل تقييما.
+            اختر عددَ النجوم أوّلا — التعليقُ وحدَه لا يُرسَل.
           </p>
         )}
       </div>
@@ -151,9 +151,8 @@ export default function RateMyLearning() {
         <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-teal-light-ink" />
         <p className="text-read leading-6 text-foreground">
           <span className="font-black text-foreground">اسمك لا يصل المدرّب ولا المستشار.</span>{" "}
-          ولا يرى أيٌّ منهما تقييما حتى تبلغ التقييمات الواردة عنه ثلاثة — في العدد
-          القليل يُستدلّ على أصحاب الآراء مهما حُذفت الأسماء. والإدارة ترى التعليقات
-          فور وصولها، مجهولةَ صاحبها كذلك، لأن عليها أن تتصرّف إن كان في الأمر ما يستدعي.
+          ولا يرى أيٌّ منهما تقييما حتى تبلغ التقييمات عنه ثلاثة.
+          والإدارة ترى التعليقات فور وصولها، بلا اسمك كذلك.
         </p>
       </Card>
 
@@ -174,7 +173,7 @@ export default function RateMyLearning() {
         <EmptyState
           icon={Star}
           titleAr="لا شيء تقيّمه بعد"
-          reasonAr="التقييم يُفتح بعد أن تبدأ شعبتك فعلا — لا رأي فيما لم يُجرَّب. حين تبدأ، ستجد هنا دورتك ومدرّبها."
+          reasonAr="يُفتح التقييم حين تبدأ شعبتك، وستجد هنا دورتك ومدرّبها."
           tone="start"
           actions={[{ to: "/student/learning", labelAr: "افتح مسارك", hintAr: "اختر موعد دورتك القادمة" }]}
         />

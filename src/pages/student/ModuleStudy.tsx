@@ -178,8 +178,8 @@ export default function ModuleStudy() {
           </p>
           <p className="mx-auto mt-2 max-w-md text-read leading-6 text-muted-foreground">
             {mod.opensAt
-              ? "محتواه يُفتح أوّلَ يومٍ في موعده، قبل لقائه المباشر، وموضعُه في كرّاسة الدورة — ومهامُّه ومصادرُه بعد اللقاء."
-              : "تبقى درجاتُك وتسليماتُك وشهادتُك في رحلتك، وتُطوى موادُّ الشعبة بعد ستّة أشهرٍ من انتهائها."}
+              ? "يُفتح محتواه قبل لقائه المباشر، ومهامُّه ومصادرُه بعده."
+              : "درجاتُك وتسليماتُك وشهادتُك باقية، وتُطوى موادُّ الشعبة بعد ستّة أشهرٍ من انتهائها."}
           </p>
           {mod.outcome && (
             <Card as="p" className="mx-auto mt-4 max-w-md px-4 py-3 text-read leading-6 text-muted-foreground">
@@ -238,7 +238,7 @@ export default function ModuleStudy() {
           <PenLine className="mx-auto h-10 w-10 text-gold-ink" />
           <p className="mt-5 text-sm font-black text-foreground">هذه الوحدة قيد التأليف</p>
           <p className="mx-auto mt-2 max-w-md text-read leading-6 text-muted-foreground">
-            متنُها يُكتب الآن، ويظهر هنا قبل موعد جلستها في جدولك. وما عداها من وحدات الدورة مفتوحٌ لك.
+            تظهر هنا قبل موعد جلستها، وباقي الوحدات مفتوحة.
           </p>
           {mod.outcome && (
             <Card as="p" className="mx-auto mt-4 max-w-md px-4 py-3 text-read leading-6 text-muted-foreground">
@@ -314,8 +314,7 @@ export default function ModuleStudy() {
         <Card as="p" tone="warn" className="mb-6 flex items-start gap-2 p-4 text-read leading-7 text-gold-ink">
           <BookOpen className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
           <span>
-            متنُ هذه الوحدة المكتوب <b>قيد التأليف</b> — وهي تُدرَّس مع مدرّبك في جلستها.
-            ومخرَجُ الوحدة ونشاطُها والمخرَجُ المطلوبُ منك أدناه كما هي.
+            متنُ هذه الوحدة <b>قيد التأليف</b>، وتُدرَّس مع مدرّبك في جلستها. نشاطُها ومخرَجُها أدناه.
           </span>
         </Card>
       )}
@@ -351,7 +350,7 @@ export default function ModuleStudy() {
                 <Sparkles className="h-3.5 w-3.5" /> استرجعْ قبل أن تمضي
               </p>
               <p className="mt-1 text-read leading-6 text-muted-foreground">
-                لا درجةَ لهذا ولا وزن — الغرضُ أن تُخرِج الفكرة من رأسك لا أن تعيد قراءتها.
+                بلا درجة — أجب من ذاكرتك قبل أن تعيد القراءة.
               </p>
               <div className="mt-4 space-y-5">
                 {step.checks.map((c, i) => {
@@ -383,7 +382,7 @@ export default function ModuleStudy() {
             <span className="rounded-full bg-teal/15 px-2.5 py-1">سيناريو قرار</span>
           </p>
           <p className="mt-3 text-sm leading-7 text-muted-foreground">
-            لا إجابةَ واحدة هنا. اختر ما كنت ستفعله فعلا، واقرأ ما يترتّب عليه.
+            لا إجابة واحدة صحيحة. اختر ما كنت ستفعله، واقرأ أثره.
           </p>
           <DecisionScenario raw={step.raw} moduleId={mod.id} className="mt-5" />
         </Panel>
@@ -426,8 +425,7 @@ export default function ModuleStudy() {
             <CheckCircle2 className="mx-auto h-8 w-8 text-teal-light-ink" />
             <p className="mt-3 text-sm font-black">انتهت قراءةُ هذه الوحدة</p>
             <p className="mx-auto mt-2 max-w-md text-read leading-6 text-muted-foreground">
-              وإكمالُها يحتاج دليلا: تسليمٌ مقبول، أو تقييمٌ مجتاز، أو حضورُ جلستها.
-              فلا زرَّ «أنهيتُها» تضغطه على نفسك.
+              تكتمل بتسليمٍ مقبول، أو تقييمٍ مجتاز، أو حضورِ جلستها.
             </p>
             {next && (
               <Link
