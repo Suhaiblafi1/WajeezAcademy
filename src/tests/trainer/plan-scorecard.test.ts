@@ -7,7 +7,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   artifactGaps, blockedItems, daysAr, hoursAr, planScorecard, practiceGaps, projectDeadlineProblem, scorecardNotes, seasonEndProblem,
-  seasonLastDay, sourceGaps, type ScorecardInput, type ScorecardSession, type ScorecardTask,
+  seasonLastDay, courseSourceProblem, type ScorecardInput, type ScorecardSession, type ScorecardTask,
 } from '@/application/trainer/plan-scorecard'
 import { REVIEW_NOTE_MAX } from '@/application/trainer/review-notes'
 
@@ -106,14 +106,25 @@ describe('المُلزِمُ الأربعة — تسقط `blocked`', () => {
     expect(practiceGaps(mods as never)).toEqual([])
   })
 
-  it('④ لكلّ محورٍ مصدر — والمسجَّلُ والمصدرُ بلا رابطٍ لا يُحسبان', () => {
+  it('④ مصدرٌ للدورة — والمسجَّلُ والمصدرُ بلا رابطٍ لا يُحسبان', () => {
     const i = good()
-    const c = i.content as { modules: { moduleId: string }[]; resources: Record<string, unknown>[] }
-    c.resources = c.resources.filter((r) => r.moduleId !== 'M3')
-    c.resources.push({ title: 'جلسةٌ مسجّلة', url: 'https://v', category: 'recorded', moduleId: 'M3' })
-    c.resources.push({ title: 'بلا رابط', url: '', category: 'reading', moduleId: 'M3' })
+    const c = i.content as { resources: Record<string, unknown>[] }
+    c.resources = [
+      { title: 'جلسةٌ مسجّلة', url: 'https://v', category: 'recorded', moduleId: 'M3' },
+      { title: 'بلا رابط', url: '', category: 'reading', moduleId: 'M3' },
+    ]
     expect(failing(i)).toEqual(['sources:blocked'])
-    expect(sourceGaps(c.modules, c.resources)).toEqual(['المحور 3: بلا مصدر'])
+    expect(courseSourceProblem(c.resources)).toBe('لا مصدرَ للدورة بعد')
+  })
+
+  it('④ ومحورٌ بلا مصدرٍ لا يمنع ولا يُنصَح فيه — الربطُ بمحورٍ اختيار (١١ أكتوبر ٢٠٢٦)', () => {
+    const i = good()
+    const c = i.content as { resources: Record<string, unknown>[] }
+    c.resources = c.resources.filter((r) => r.moduleId !== 'M3')
+    expect(failing(i)).toEqual([])
+    /* ومصدرٌ للشعبة كلِّها بلا محورٍ يكفي وحدَه المُلزِم */
+    c.resources = [{ title: 'كتابُ الدورة', url: 'https://b', category: 'reading' }]
+    expect(blockedItems(planScorecard(i))).toEqual([])
   })
 
   it('وما كان مُلزِما قبلها: لقاءٌ لكلّ محور', () => {
@@ -204,12 +215,14 @@ describe('النصيحة — تسقط `advice` ولا تمنع', () => {
     ])
   })
 
-  it('مصدرٌ واحدٌ للمحور، أو كلُّها من صنفٍ واحد', () => {
+  it('مصدرٌ واحدٌ للدورة، أو كلُّها من صنفٍ واحد', () => {
     const one = good()
     const c = one.content as { resources: Record<string, unknown>[] }
-    c.resources = c.resources.filter((r) => !(r.moduleId === 'M1' && r.category === 'public'))
+    c.resources = [{ title: 'كتابُ الدورة', url: 'https://b', category: 'reading' }]
     expect(failing(one)).toEqual(['sources_mix:advice'])
-    expect(card(one).get('sources_mix')!.gaps).toEqual(['المحور 1: مصدرٌ واحد'])
+    expect(card(one).get('sources_mix')!.gaps).toEqual(['مصدرٌ واحدٌ للدورة كلِّها'])
+    c.resources.push({ title: 'كتابٌ ثانٍ', url: 'https://c', category: 'reading' })
+    expect(card(one).get('sources_mix')!.gaps).toEqual(['كلُّها مقروء — أضف فيديو أو بودكاست'])
   })
 
   it('ونصيحةُ البدء الموسميّة: قبل أواخر نوفمبر', () => {

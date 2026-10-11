@@ -33,7 +33,7 @@ import { moduleBodyDone, resourceHasSource } from '../../src/application/trainer
 import { levelProblem, type LevelRange } from '../../src/application/trainer/cohort-level'
 import { audienceProblem } from '../../src/application/trainer/cohort-audience'
 import { blockingBeforeSubmit, boardNextStep, trainerOwned } from '../../src/application/trainer/plan-gate'
-import { practiceGaps, projectDeadlineProblem, seasonEndProblem, sourceGaps } from '../../src/application/trainer/plan-scorecard'
+import { courseSourceProblem, practiceGaps, projectDeadlineProblem, seasonEndProblem } from '../../src/application/trainer/plan-scorecard'
 import { plannedSeason, postponeMessageAr, postponeProblem, seasonStart, validPostponeTarget, type Season } from '../../src/application/trainer/plan-postpone'
 import {
   REVIEW_SECTIONS, composeReviewNote, hasReviewNotes, normalizeReviewNotes, notedSections, readReviewNotes,
@@ -422,7 +422,8 @@ export function buildChecklist(input: {
      قرارُ صاحب المنصّة «Keep required minimal»: أربعةٌ تمنع الإرسالَ من معاييرَ
      اثني عشر — الشعبةُ تنتهي في ٣٠ يناير، وموعدُ مشروع التخرّج داخلَها، ولكلّ
      محورٍ تطبيقٌ عمليّ، ولكلّ محورٍ مصدر. والمُسلَّمُ نُزع منها (١٠ أكتوبر ٢٠٢٦،
-     حقلُه «اختياريّ» في الشاشة). والباقي نصيحةٌ في البطاقة
+     حقلُه «اختياريّ» في الشاشة). والمصدرُ صار للدورة لا لكلّ محور (١١ أكتوبر
+     ٢٠٢٦): واحدٌ للشعبة كلِّها يكفي، وربطُه بمحورٍ اختيار. والباقي نصيحةٌ في البطاقة
      (`plan-scorecard.ts`) لا هنا. والدوالُّ نفسُها التي ترسم البطاقة، فلا يرى
      المدرّبُ أخضرَ ويُردّ إرسالُه.
 
@@ -434,7 +435,7 @@ export function buildChecklist(input: {
   /* والمؤجّلةُ إلى موسمٍ قادمٍ لا تُرسَل حتّى تبدأ فيه (٨ أكتوبر ٢٠٢٦، `plan-postpone.ts`) */
   const postponed = postponeProblem(dayOf(input.postponedTo), input.period)
   const practice = inHand ? practiceGaps(mods) : []
-  const noSource = inHand ? sourceGaps(mods, resources) : []
+  const noSource = inHand ? courseSourceProblem(resources) : null
   const projectDues = types && input.assessmentDues
     ? types.flatMap((t, i) => (t === 'project' ? [{ dueAt: input.assessmentDues![i] ?? null }] : []))
     : []
@@ -496,9 +497,9 @@ export function buildChecklist(input: {
        والتي تُربط بالمحاور» (٢٧ سبتمبر ٢٠٢٦) */
     {
       key: 'resources',
-      labelAr: 'أضف المصادرَ التي يحتاجها المتعلّم — مصدرٌ لكلّ محورٍ على الأقلّ' + resourcesNote
-        + (noSource.length ? ` · ${noSource.join('، ')}` : ''),
-      done: resourcesDone && noSource.length === 0, optional: false,
+      labelAr: 'أضف المصادرَ التي يحتاجها المتعلّم — للدورة كلِّها، ولأيّ محورٍ شئت' + resourcesNote
+        + (noSource ? ` · ${noSource}` : ''),
+      done: resourcesDone && noSource === null, optional: false,
     },
     {
       key: 'project',

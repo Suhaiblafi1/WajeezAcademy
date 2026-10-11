@@ -207,11 +207,15 @@ describe('المهامُّ والمصادرُ بمحاورها', () => {
     expect(row(complete({}, { resources: [...SOURCES, { title: 'مرجع', url: 'https://x.test/a' }] }), 'resources').done).toBe(true)
   })
 
-  it('⚠️ ومصدرٌ لكلّ محور — والذي للشعبة كلِّها لا يسدّ محورا (٨ أكتوبر ٢٠٢٦)', () => {
+  it('⚠️ والمصدرُ للدورة لا لكلّ محور — واحدٌ للشعبة كلِّها يكفي (١١ أكتوبر ٢٠٢٦)', () => {
     const general = complete({}, { resources: [{ title: 'مرجع', url: 'https://x.test/a' }] })
-    expect(row(general, 'resources').done).toBe(false)
-    expect(row(general, 'resources').labelAr).toContain('المحور 1: بلا مصدر')
-    expect(blockingBeforeSubmit(general).map((c) => c.key)).toEqual(['resources'])
+    expect(row(general, 'resources').done).toBe(true)
+    expect(blockingBeforeSubmit(general)).toEqual([])
+    /* ولا مصدرَ بعد — ما لا رابطَ له ولا ملفَّ لا يُعدّ — يمنع، ويُسمّى في الصفّ */
+    const none = complete({}, { resources: [{ title: 'مرجع', url: '' }] })
+    expect(row(none, 'resources').done).toBe(false)
+    expect(row(none, 'resources').labelAr).toContain('لا مصدرَ للدورة بعد')
+    expect(blockingBeforeSubmit(none).map((c) => c.key)).toEqual(['resources'])
   })
 })
 
