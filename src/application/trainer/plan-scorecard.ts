@@ -41,6 +41,7 @@ import { resourceHasSource } from './module-body'
 import { startAdvice } from './start-advice'
 import type { WorkspaceStep } from './workspace-step'
 import { REVIEW_NOTE_MAX, type ReviewNotes } from './review-notes'
+import { MIN_THEORY_WORDS, contentQuality } from './content-quality'
 
 /* ─────────── العتبات ─────────── */
 
@@ -87,6 +88,10 @@ export interface ScorecardModule {
   titleAr?: string | null
   activityAr?: string | null
   artifactAr?: string | null
+  /** المتنُ النظريّ — يُقرأ لجودة المحتوى (`content-quality.ts`) */
+  bodyAr?: string | null
+  bodyFileKey?: string | null
+  outcomeAr?: string | null
 }
 export interface ScorecardResource {
   title?: string | null
@@ -297,6 +302,30 @@ export function planScorecard(input: ScorecardInput): ScoreItem[] {
     measuredAr: `${n - practice.length} من ${n} محاورَ لها تطبيق`,
     gaps: practice,
   }))
+  /* ═══ جودةُ المحتوى النظريّ (١١ أكتوبر ٢٠٢٦) ═══
+     ثلاثةُ صفوفٍ نصيحةً لا حاجزا، تُقرأ من المتن المكتوب وحدَه — والقاعدةُ وسببُها
+     في `content-quality.ts`. وخطّةٌ لم يُكتب فيها متنٌ بعد لا تُقاس هنا: ما ينقصها
+     يقوله حاجزُ «المحتوى النظريّ» في قائمة الإرسال. */
+  const quality = contentQuality(modules)
+  if (quality.read > 0) {
+    const measured = `قُرئ متنُ ${quality.read} من ${n} محاور` + (quality.files ? ` — و${quality.files} مرفوعةٌ ملفّا يقرؤها المعتمِد` : '')
+    out.push(item({
+      key: 'content_depth', labelAr: 'عمقُ المحتوى النظريّ', required: false, step: 'modules',
+      standardAr: `فكرةٌ تُشرح في ${MIN_THEORY_WORDS} كلمةً على الأقلّ، ومثالٌ محلول، وخطأٌ شائعٌ يُنبَّه عليه`,
+      measuredAr: measured, gaps: quality.depth,
+    }))
+    out.push(item({
+      key: 'content_style', labelAr: 'لغةُ المحتوى', required: false, step: 'modules',
+      standardAr: 'بلا حشوٍ ولا تعريفٍ معجميٍّ في رأس الفقرة ولا «عزيزي المتعلّم» — خطابٌ مباشرٌ بفاعله',
+      measuredAr: measured, gaps: quality.style,
+    }))
+    out.push(item({
+      key: 'content_claims', labelAr: 'الأرقامُ والوعود', required: false, step: 'modules',
+      standardAr: 'كلُّ نسبةٍ بمصدرها وسنتها في جملتها، ولا وعدَ بوظيفةٍ أو دخلٍ خارجَ المنصّة',
+      measuredAr: measured, gaps: quality.claims,
+    }))
+  }
+
   /* ═══ وسقط صفُّ «المُسلَّم» (١١ أكتوبر ٢٠٢٦) ═══
      كان يكرّر المهامَّ في خطوتها: الفحصُ قال «٠ من ٨ محاور لها مُسلَّم» ولكلّ محورٍ
      مهمّةٌ فيها مُسلَّمها — فسقط حقلُه من الشاشة وصفُّه من هنا (ملفُّ صاحب المنصّة
@@ -471,12 +500,64 @@ export const STATUS_MARK: Record<ScoreStatus, string> = { ok: '✅', advice: '�
    في خطوته. ولا تُرسَل وحدَها — يقرؤها المعتمِدُ ويحذف ويضيف ثمّ يرسل. */
 const NOTE_STEPS = ['identity', 'modules', 'workbooks', 'sessions', 'assignments'] as const
 
+/* ═══ والسطرُ «الآن ← نقترح» (١١ أكتوبر ٢٠٢٦) ═══
+
+   كان السطرُ «المُسلَّم: المحور 1: بلا مُسلَّم؛ المحور 2: بلا مُسلَّم؛ …» — ما ينقص بلا ما يُقترح. فقال
+   صاحبُ المنصّة: «الاقتراحاتُ غيرُ مفهومة.. يجب أن تكون ماذا كان وماذا نقترح». فكلُّ سطرٍ: ما هو الآن
+   مجموعا («المحاور 1–8: بلا مُسلَّم»)، ثمّ ما نقترحه — المعيارُ بجملته. والعرضُ يقرأ السطرَ القديمَ كذلك:
+   اسمُ المعيار يدلّ على اقتراحه (`NOTE_SUGGESTION_AR`). */
+export const NOW_SUGGEST_SEP = ' ← نقترح: '
+
+/** المعيارُ بجملةٍ عامّةٍ لكلّ اسم — يُقرأ به سطرٌ كُتب قبل «الآن ← نقترح»، ومنه «المُسلَّم» الذي سقط */
+export const NOTE_SUGGESTION_AR: Readonly<Record<string, string>> = {
+  'نهايةُ الشعبة': 'أن تنتهي الشعبةُ ومشروعُ تخرّجها داخلَ موسمها',
+  'بدايةُ الشعبة': 'من أواخر نوفمبر فما بعد — يتّسع وقتُ التسويق لها',
+  'التطبيقُ العمليّ': 'لكلّ محورٍ تطبيقٌ عمليٌّ يفعله المتعلّمُ بيده',
+  'المُسلَّم': 'لكلّ محورٍ ما يسلّمه المتعلّمُ في آخره — نصٌّ أو ملفٌّ أو تسجيل',
+  'ساعاتُ اللقاء المباشر': 'ساعتان من اللقاء المباشر لكلّ محورٍ على الأقلّ',
+  'لقاءٌ لكلّ محور': 'لكلّ محورٍ لقاءٌ مباشرٌ واحدٌ على الأقلّ',
+  'طولُ اللقاء': 'بين ساعتين وثلاث — وما زاد يُقسَم أو تُخطَّط فيه استراحة',
+  'الفاصلُ بين اللقاءات': `أسبوعٌ إلى أسبوعين — ولا أقلَّ من ${MIN_GAP_DAYS} أيّام ولا أكثرَ من ${MAX_GAP_DAYS} يوما`,
+  'العبءُ الأسبوعيّ': `${MAX_WEEKLY_MINUTES / 60} ساعاتٍ مباشرةٌ في الأسبوع على الأكثر`,
+  'أوقاتُ اللقاءات': 'الأحدُ إلى الخميس بعد الخامسة مساءً، أو الجمعةُ والسبت — ولا ينتهي لقاءٌ بعد العاشرة والنصف ليلا (بتوقيت عمّان)',
+  'إيقاعٌ ثابتٌ وبلا عطل': 'اليومُ والساعةُ أنفسُهما كلَّ أسبوع — ولا لقاءَ في ٢٥ ديسمبر ولا في ١ يناير',
+  'مشروعُ التخرّج': 'مشروعٌ واحدٌ بآخر موعدٍ يحدّده المدرّب داخلَ مدّة الشعبة',
+  'وقتٌ لبناء المشروع': 'أسبوعٌ على الأقلّ بين آخر لقاءٍ وموعد المشروع',
+  'التطبيقاتُ العمليّة': 'مهمّةٌ مقيَّمةٌ لكلّ محور (واجبٌ أو اختبار) — غيرَ مشروع التخرّج',
+  'توقيتُ المهامّ ووضوحُها': `كلُّ مهمّةٍ بوصفٍ ودرجة، وموعدُها بعد ${TASK_AFTER_SESSION_DAYS} أيّامٍ من لقاء محورها، ولا موعدين في أسبوع`,
+  'مصدرٌ للدورة': 'مصدرٌ واحدٌ على الأقلّ برابطٍ أو ملفّ — للشعبة كلِّها',
+  'تنوّعُ المصادر': 'مصدران على الأقلّ: مقروءٌ (كتابٌ أو ملخّصُه) ومسموعٌ أو مرئيّ (فيديو، TEDx، بودكاست)',
+}
+
+/** «1–4، 6» — أرقامٌ متتاليةٌ مدى، وما سواها مفرد */
+function rangesAr(nums: readonly number[]): string {
+  const xs = [...new Set(nums)].sort((a, b) => a - b)
+  const out: string[] = []
+  for (let i = 0; i < xs.length; i++) {
+    let j = i
+    while (j + 1 < xs.length && xs[j + 1] === xs[j] + 1) j++
+    out.push(j - i >= 2 ? `${xs[i]}–${xs[j]}` : j === i ? `${xs[i]}` : `${xs[i]}، ${xs[j]}`)
+    i = j
+  }
+  return out.join('، ')
+}
+
+/** ما ينقص مجموعا: «المحور 1: بلا مُسلَّم؛ المحور 2: بلا مُسلَّم» ← «المحاور 1، 2: بلا مُسلَّم» */
+export function compactGapsAr(gaps: readonly string[]): string {
+  const m = gaps.map((g) => /^المحور (\d+): (.+)$/.exec(g.trim()))
+  if (gaps.length > 1 && m.every(Boolean) && new Set(m.map((x) => x![2])).size === 1) {
+    return `المحاور ${rangesAr(m.map((x) => Number(x![1])))}: ${m[0]![2]}`
+  }
+  return gaps.map((g) => g.trim()).join('؛ ')
+}
+
 export function scorecardNotes(items: readonly ScoreItem[]): ReviewNotes {
   const out: ReviewNotes = {}
   for (const step of NOTE_STEPS) {
     const own = items.filter((i) => i.step === step && i.status !== 'ok')
     if (own.length === 0) continue
-    const line = (word: string) => (i: ScoreItem) => `${word} — ${i.labelAr}: ${i.gaps.join('؛ ')}`
+    const line = (word: string) => (i: ScoreItem) =>
+      `${word} — ${i.labelAr}: الآن ${compactGapsAr(i.gaps) || i.measuredAr}${NOW_SUGGEST_SEP}${i.standardAr}`
     const text = [
       ...own.filter((i) => i.status === 'blocked').map(line('مطلوب')),
       ...own.filter((i) => i.status === 'advice').map(line('مقترَح')),
