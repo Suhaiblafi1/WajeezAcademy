@@ -179,6 +179,8 @@ const PHRASES: Record<string, string> = {
   'trainer.qualify.auto': 'تأهيلُ مدرّبٍ تلقائيّا لما ذكره في طلبه',
   'cohort.plan.save': 'حفظُ مدرّبٍ خطّةَ شعبته',
   'cohort.plan.submit': 'إرسالُ مدرّبٍ خطّةَ شعبته للاعتماد',
+  /* ١١ أكتوبر ٢٠٢٦: «انسخ من شعبةٍ أخرى» — `cohort-copy.service.ts` */
+  'cohort.plan.copy': 'نسخُ مدرّبٍ خطّةَ شعبةٍ من شعبةٍ أخرى له',
   'cohort.plan.approve': 'اعتمادُ خطّة شعبة',
   'cohort.plan.changes_requested': 'ردُّ خطّة شعبةٍ بتعديلات',
   'cohort.plan.postpone': 'تأجيلُ خطّة شعبةٍ إلى موسمٍ قادم',

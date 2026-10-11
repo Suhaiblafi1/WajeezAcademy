@@ -122,9 +122,16 @@ describe('② ويضمر بالتمرير — مقاسان لا مقاسٌ وا�
     expect(WS).toMatch(/const \[compact, setCompact\] = useState\(false\)/)
     expect(WS, 'لا مستمعَ تمريرٍ — فالضمورُ لا يقع').toMatch(/window\.addEventListener\("scroll", onScroll/)
     /* وعتبةٌ فوق الصفر: عند الصفر تبدّل ارتعاشةُ إصبعٍ الحالةَ فيهتزّ الرأس */
-    const threshold = /setCompact\(window\.scrollY > (\d+)\)/.exec(WS)
-    expect(threshold, 'لا عتبةَ للضمور').toBeTruthy()
-    expect(Number(threshold![1]), 'العتبةُ صفرٌ — فالرأسُ يهتزّ').toBeGreaterThan(0)
+    /* وعتبتان لا واحدة (١١ أكتوبر ٢٠٢٦): بعتبةٍ واحدةٍ يضمر الرأسُ فتصعد الصفحةُ
+       تحت العتبة فينبسط فتنزل — ويتبدّل ما تحت الإصبع («تغيّر اختيارُ المستوى») */
+    const at = /const COMPACT_AT = (\d+);/.exec(WS)
+    const back = /const EXPAND_AT = (\d+);/.exec(WS)
+    expect(at && back, 'لا عتبتين للضمور والانبساط').toBeTruthy()
+    expect(Number(back![1]), 'عتبةُ الانبساط صفرٌ — فالرأسُ يهتزّ').toBeGreaterThan(0)
+    /* والفرقُ بينهما أوسعُ من فرق طولَي الرأس (سطرُ الحقائق وتقريرُ المراجعة ≈ ١٠٠ بكسل) */
+    expect(Number(at![1]) - Number(back![1]), 'العتبتان متقاربتان — فيتأرجح الرأس').toBeGreaterThanOrEqual(120)
+    expect(WS).toMatch(/if \(!was\) return y > COMPACT_AT;/)
+    expect(WS, 'ينبسط الرأسُ والمدرّبُ يكتب في حقل').toMatch(/return !\(y < EXPAND_AT && !typing\(\)\);/)
   })
 
   it('⚠️ والضمورُ يُسقط سطرَ الحقائق — والأسماءُ باقيةٌ تحت دوائرها', () => {

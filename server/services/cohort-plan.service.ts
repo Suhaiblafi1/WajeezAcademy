@@ -626,7 +626,12 @@ export class CohortPlanService {
 
   async workspace(userId: string, cohortId: string) {
     const { profile, link } = await this.ownedCohort(userId, cohortId)
-    const cohort = await this.prisma.cohort.findUniqueOrThrow({
+    /* ═══ وما لا يتوقّف بعضُه على بعضٍ يُسأل معا (١١ أكتوبر ٢٠٢٦) ═══
+       «الهيكلُ الرماديُّ يبقى قرابة ١٠ ثوانٍ» (ملفُّ صاحب المنصّة). كانت الأسئلةُ
+       تتتابع واحدا بعد واحد: الشعبةُ، ثمّ الخطّة، ثمّ ترتيبُها بين شعبه، ثمّ تقاريرُ
+       المراجعة — وكلٌّ ينتظر ما قبله ولا يحتاجه. فتُسأل معا، وينتظر الجوابُ أبطأَها
+       لا مجموعَها. */
+    const [cohort, plan, mine, reviewReports] = await Promise.all([this.prisma.cohort.findUniqueOrThrow({
       where: { id: cohortId },
       include: {
         course: {
@@ -653,8 +658,15 @@ export class CohortPlanService {
         /* أاعتُمدت له خطّةٌ قطّ — منه ينتظر ما يضيفه ويعدّله في مهامّه قرارَ الإدارة (٣ج-٣) */
         plans: PLAN_GATE_SELECT,
       },
-    })
-    const plan = await this.latestTrainerPlan(cohortId)
+    }),
+    this.latestTrainerPlan(cohortId),
+    /* وترتيبُها بين شعبه في دورتها — «شعبتك الأولى» في رأس الصفحة (⑫) */
+    this.prisma.cohortTrainer.findMany({
+      where: { profileId: profile.id, cohort: { course: { cohorts: { some: { id: cohortId } } } } },
+      select: { cohort: { select: { id: true, courseId: true, createdAt: true, title: true } } },
+    }),
+    new CohortFileService(this.prisma).reviewReports(cohortId),
+    ])
     const content = (plan?.content ?? null) as TrainerPlanContent | null
     const approvedPlan = plan ? await this.approvedBehind(cohortId, plan) : null
 
@@ -685,12 +697,22 @@ export class CohortPlanService {
     const publicPeriod = cohort.startsAt && cohort.endsAt
       ? { startsOn: zonedDay(cohort.startsAt), endsOn: zonedDay(cohort.endsAt) }
       : null
-    /* وترتيبُها بين شعبه في دورتها — «شعبتك الأولى» في رأس الصفحة (⑫) */
-    const mine = await this.prisma.cohortTrainer.findMany({
-      where: { profileId: profile.id, cohort: { courseId: cohort.courseId } },
-      select: { cohort: { select: { id: true, courseId: true, createdAt: true } } },
-    })
     const trainerOrdinal = trainerOrdinals(mine.map((m) => m.cohort)).get(cohort.id) ?? null
+    /* وشعبُه الأخرى لهذه الدورة وفي خطّتها ما يُنسخ — لـ«انسخ من شعبةٍ أخرى» (١١ أكتوبر ٢٠٢٦) */
+    const others = mine.map((m) => m.cohort).filter((c) => c.id !== cohort.id)
+    const otherPlans = others.length
+      ? await this.prisma.cohortDeliveryPlan.findMany({
+          where: { cohortId: { in: others.map((c) => c.id) }, trainerId: { not: null } },
+          /* أحدثُ خطّةٍ لكلّ شعبةٍ وحدَها — لا مراجعاتُها كلُّها بمتونها: الورشةُ تُفتح كثيرا */
+          orderBy: [{ cohortId: 'asc' }, { createdAt: 'desc' }], distinct: ['cohortId'],
+          select: { cohortId: true, content: true },
+        })
+      : []
+    const copySources = others.flatMap((c) => {
+      const latest = otherPlans.find((p) => p.cohortId === c.id)?.content as TrainerPlanContent | null | undefined
+      if (!latest || !Array.isArray(latest.modules) || !latest.startsOn) return []
+      return [{ id: c.id, title: c.title, startsOn: latest.startsOn, modules: latest.modules.length }]
+    })
 
     return {
       role: link.role,
@@ -723,7 +745,7 @@ export class CohortPlanService {
           }
         : null,
       /* وتقاريرُ المراجعة التي رفعها المعتمِدُ مع قراراته — أحدثُها أوّلا (٨ أكتوبر ٢٠٢٦) */
-      reviewReports: await new CohortFileService(this.prisma).reviewReports(cohortId),
+      reviewReports,
       sessions: cohort.sessions.map((s) => ({
         id: s.id, title: s.title, startsAt: s.startsAt, endsAt: s.endsAt, status: s.status, moduleId: s.moduleId,
         moduleIds: s.moduleIds, approvalState: s.approvalState,
@@ -753,6 +775,7 @@ export class CohortPlanService {
         pendingChange: a.pendingChange, reviewerNote: a.reviewerNote,
       })),
       approvedOnce: planApprovedOnce(cohort.plans),
+      copySources,
       /* والمعتمَدةُ التي يراجعها — ليقرأ ما غيّره عنها قبل أن يرسل (٣ج-٤) */
       approvedPlan,
       checklist,

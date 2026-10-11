@@ -14,7 +14,15 @@
    ── والثالثُ يُشفى في الإسقاط لا في الشاشة وحدَها ──
 
    صفوفٌ حُفظت بالنوع الخاطئ قبل الإصلاح باقيةٌ في القاعدة. فإصلاحُ الكتابة
-   يمنع الجديدَ ولا يشفي القديم — والاشتقاقُ في الإسقاط يشفيهما معا. */
+   يمنع الجديدَ ولا يشفي القديم — والاشتقاقُ في الإسقاط يشفيهما معا.
+
+   ── ثمّ صارت المصادرُ قائمةً مضغوطةً بخانة رفعٍ واحدة (١١ أكتوبر ٢٠٢٦) ──
+
+   «احذفوا اختيارَ "ارفع ملفّا / أضف رابطا" قبل الرفع: خانةٌ واحدةٌ تقبل الإفلاتَ أو
+   لصقَ رابط، وتعرف النوعَ وحدَها» (ملفُّ صاحب المنصّة). فذهبت المسوّدة: الصفُّ لا
+   يُكتب إلّا كاملا — بعد أن يُرفع ملفُّه أو يُلصق رابطُه، باسمٍ أوّلَ يعدّله. والحكمُ
+   الأوّلُ والثاني باقيان بغير صورتهما: لا صفَّ فارغا يقفل الحفظ، ولا ملفٌّ ورابطٌ
+   في صفٍّ واحد. والثالثُ والرابعُ كما هما. */
 
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -32,8 +40,11 @@ const WS = code('src/pages/trainer/CohortWorkspace.tsx')
     تُقرأ من `resourceCats` — الثلاثةُ لشعبةٍ اعتُمدت قبل المواعيد، واثنان
     بعدها (المسجَّلُ صار في «اللقاءات»). والمقتطَعُ من أصنافها إلى لوحة
     التسليمات تحتها. */
+const LIST = code('src/pages/trainer/PlanResources.tsx')
+const RL = code('src/application/trainer/resource-list.ts')
+/** كتلةُ المصادر في الدرجة — من القائمة إلى لوحة التسليمات تحتها */
 const RES = (() => {
-  const from = WS.indexOf('resourceCats.map((cat)')
+  const from = WS.indexOf('<PlanResources')
   const to = WS.indexOf('<CohortSubmissions', from)
   expect(from, 'لا كتلةَ مصادر').toBeGreaterThan(-1)
   expect(to, 'الكتلةُ بلا نهاية').toBeGreaterThan(from)
@@ -78,61 +89,46 @@ describe('③ ملفٌّ في خانة الكتب لا يبقى «كتابا»',
   })
 })
 
-describe('① «أضف» تفتح مسوّدةً لا صفًّا حقيقيّا', () => {
-  it('⚠️ لا يُدفَع صفٌّ فارغٌ إلى الخطّة — فلا يُقفَل الحفظُ على اللوحة', () => {
-    /* كانت `resources: [...content.resources, { title: "", url: "", … }]`،
-       وشرطُ زرِّ الحفظ يقرؤه ناقصا فيُقفِل الحفظَ على المصادر كلِّها. */
-    expect(RES, 'ما زال «أضف» يدفع صفًّا فارغا').not.toMatch(/resources: \[\.\.\.content\.resources, \{ title: "", url: ""/)
-    expect(RES, 'لا مسوّدةَ تُفتح').toContain('setDraft({')
-    expect(WS, 'لا حالةَ للمسوّدة').toMatch(/const \[draft, setDraft\] = useState</)
+describe('① لا يدخل الخطّةَ صفٌّ ناقص — فلا يُقفَل الحفظُ على اللوحة', () => {
+  it('⚠️ الصفُّ يُكتب بعد أن يُرفع ملفُّه أو يُلصق رابطُه — كاملا', () => {
+    expect(RES, 'ما زال صفٌّ فارغٌ يُدفع إلى الخطّة').not.toMatch(/resources: \[\.\.\.(?:content|c)\.resources, \{ title: "", url: ""/)
+    expect(LIST, 'صفٌّ فارغٌ يُضاف').not.toMatch(/onAdd\(\{ title: ""/)
+    const one = LIST.slice(LIST.indexOf('const uploadOne'), LIST.indexOf('const uploadAll'))
+    expect(one.indexOf('if (!put.ok)'), 'يُضاف الصفُّ قبل أن يكتمل رفعُه').toBeLessThan(one.indexOf('onAdd(rowFromFile('))
+    expect(LIST, 'يُضاف رابطٌ ليس رابطا').toMatch(/if \(!isResourceUrl\(link\)\) return;\s*onAdd\(rowFromUrl\(link\)\);/)
   })
 
-  it('⚠️ وثلاثةُ مخارج: × وزرُّ إلغاءٍ وEsc', () => {
-    expect(RES, 'لا زرَّ إغلاقٍ (×)').toContain('aria-label="أغلِق المسوّدة"')
-    expect(RES, 'لا زرَّ إلغاء').toMatch(/onClick=\{cancelDraft\}>ألغِ</)
-    expect(WS, 'لا يُغلقها Escape').toMatch(/if \(e\.key === "Escape"\) cancelDraft\(\)/)
+  it('⚠️ والصفُّ الجديدُ باسمٍ أوّلَ لا يقصر عن حدّ الخطّة — فلا يمنع الحفظ', () => {
+    expect(RL).toContain('const padTitle = (t: string) => (t.length >= PLAN_TITLE_MIN ?')
+    expect(RL).toMatch(/title: titleFromFileName\(file\.name\)/)
+    expect(RL).toMatch(/title: titleFromUrl\(url\)/)
   })
 
-  it('⚠️ وإلغاؤها يحذف ملفَّها فورا — لم تدخل الخطّةَ قطّ', () => {
-    const at = WS.indexOf('const cancelDraft')
-    expect(at, 'لا دالّةَ إلغاء').toBeGreaterThan(0)
-    expect(WS.slice(at, at + 500), 'الإلغاءُ يترك ملفّا يتيما').toContain('apiDelete(`/api/trainer/cohorts/${id}/files/')
-  })
-
-  it('ولا تُفتح مسوّدتان معا — زرُّ الإضافة يُقفَل ما دامت واحدةٌ مفتوحة', () => {
-    expect(RES).toMatch(/disabled=\{locked \|\| draft !== null\}/)
+  it('ولا مسوّدةَ بقيت — ولا ما يُغلقها', () => {
+    expect(WS).not.toMatch(/const \[draft, setDraft\] = useState</)
+    expect(WS).not.toContain('cancelDraft')
   })
 })
 
-describe('② مصدرٌ واحدٌ يُختار قبل ظهور أيّ حقل', () => {
-  it('⚠️ حقلُ الرابط الثاني تحت الرفع زال', () => {
-    /* كان في خانة الكتب حقلُ رفعٍ وحقلُ رابطٍ تحته، فيملؤهما مدرّبٌ معا
-       ولا شيءَ يقول أيُّهما يصل المتعلّم. */
-    expect(RES, 'عاد حقلُ الرابط الثاني').not.toContain('أو رابطٌ إليه — https://…')
-    expect(RES, 'حقلُ الرابط ما زال يُعرض مع الرفع في صفٍّ واحد')
-      .toMatch(/cat === "reading" && hasFile \? \(/)
+describe('② مصدرٌ واحدٌ في الصفّ — والخانةُ تعرف نوعه وحدَها', () => {
+  it('⚠️ لا «ارفع ملفّا / أضِف رابطا» يُختار قبل الرفع', () => {
+    expect(LIST).not.toContain('أضِف رابطَ كتاب')
+    expect(LIST).not.toContain('draft.source')
+    expect(LIST).toContain('أفلِت الملفّاتِ هنا، أو الصق رابطا')
   })
 
-  it('⚠️ وللكتب زرّان يُختار أحدُهما قبل أيّ حقل', () => {
-    const at = RES.indexOf('draft.source === null')
-    expect(at, 'لا اختيارَ مصدرٍ قبل الحقول').toBeGreaterThan(-1)
-    const choose = RES.slice(at, RES.indexOf('draft.row.title', at))
-    expect(choose, 'لا زرَّ رفع').toContain('ارفع ملفّا')
-    expect(choose, 'لا زرَّ رابط').toContain('أضِف رابطَ كتاب')
-    expect(choose, 'الحقولُ تظهر قبل الاختيار').not.toContain('ModuleBodyUpload')
-  })
-
-  it('والخانتان الأخريان رابطٌ وحدَه — فلا يُسأل عمّا لا خيارَ فيه', () => {
-    expect(RES).toMatch(/source: cat === "reading" \? null : "url"/)
+  it('⚠️ والصفُّ بملفٍّ لا يُعرض فيه حقلُ رابط — فلا يجتمعان', () => {
+    expect(LIST).toMatch(/\{!\(r\.bodyFileKey \?\? ""\)\.trim\(\) && \(\s*<input dir="ltr" value=\{r\.url/)
   })
 })
 
-describe('④ «أزِل» تحذف الملفَّ — بعد الحفظ لا قبله', () => {
+describe('④ الحذفُ يحذف الملفَّ — بعد الحفظ لا قبله', () => {
   it('⚠️ الإزالةُ تُقيّد المفتاحَ ليُحذف', () => {
-    const at = RES.indexOf('>أزل<')
+    const at = RES.indexOf('onRemove={(i) => {')
     expect(at, 'لا زرَّ إزالة').toBeGreaterThan(-1)
-    const btn = RES.slice(Math.max(0, at - 500), at)
-    expect(btn, 'الإزالةُ تترك الملفَّ في التخزين مدى الحياة').toContain('setOrphans((o) => [...o, key])')
+    expect(RES.slice(at, at + 400), 'الإزالةُ تترك الملفَّ في التخزين مدى الحياة').toContain('setOrphans((o) => [...o, key])')
+    /* وزرٌّ واحدٌ بأيقونة — كانا «احذفه» و«أزل» بمعنيين متقاربين في الصفّ نفسِه */
+    expect(LIST).toMatch(/icon=\{Trash2\}[\s\S]{0,300}onClick=\{\(\) => \{ if \(open === i\) setOpen\(null\); onRemove\(i\); \}\}/)
   })
 
   it('⚠️ والحذفُ بعد نجاح الحفظ — لا لحظةَ الإزالة', () => {

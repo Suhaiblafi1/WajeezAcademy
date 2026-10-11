@@ -346,7 +346,9 @@ export async function resolveStorageOwner(
   if (body) {
     return {
       kind: 'cohort_file',
-      maxBytes: MAX_BODY_FILE_BYTES,
+      /* والرفعُ بالبثّ (١١ أكتوبر ٢٠٢٦): مسارُ الذاكرة يبقى بسقفه لمن ناداه، والبثُّ بسقف الملفّ */
+      maxBytes: MAX_UPLOAD_ANY,
+      streamMaxBytes: MAX_BODY_FILE_BYTES,
       mime: body.mime,
       originalName: body.originalName,
     }

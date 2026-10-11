@@ -24,6 +24,7 @@
    التنفيذ **بجانبها** لا فيها: المتنُ مهشَّشٌ، ومن ألحق به سجلَّ التوقيع نقض
    بصمتَه. */
 
+import { MATERIAL_RIGHTS_ANCHOR, WORKBOOK_RIGHTS_AR } from '@/application/trainer/cohort-workbooks'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { FileSignature, Loader2, Printer, Wallet } from 'lucide-react'
@@ -76,6 +77,22 @@ const KIND_AR: Record<string, string> = {
   replacement: 'عقدٌ بديلٌ يحلّ محلَّ ما قبله',
 }
 
+/* ═══ حقوقُ مادّتك — هنا لا في خطوة الكرّاسة (١١ أكتوبر ٢٠٢٦) ═══
+   «مكانُها العقدُ وصفحةُ "عقدي"» (ملفُّ صاحب المنصّة «تحسينات بوابة مدرّب وجيز»).
+   وخطوةُ الكرّاسة تشير إليها برابطٍ واحد إلى هذا الموضع — ويُنزَل إليه حين يُفتح به. */
+function MaterialRights() {
+  useEffect(() => {
+    if (window.location.hash === `#${MATERIAL_RIGHTS_ANCHOR}`) {
+      document.getElementById(MATERIAL_RIGHTS_ANCHOR)?.scrollIntoView({ block: 'center' })
+    }
+  }, [])
+  return (
+    <Inset id={MATERIAL_RIGHTS_ANCHOR} className="mt-3 scroll-mt-24 px-4 py-3 text-read leading-7 text-muted-foreground">
+      <b className="text-foreground">{WORKBOOK_RIGHTS_AR.title}.</b> {WORKBOOK_RIGHTS_AR.body}
+    </Inset>
+  )
+}
+
 export default function MyContract() {
   const [data, setData] = useState<MyContract | null>(null)
   const [err, setErr] = useState('')
@@ -113,6 +130,7 @@ export default function MyContract() {
             <Wallet className="h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" />
             <span>وكشفُ مستحقّاتك في <b>«مستحقاتي»</b>.</span>
           </Inset>
+          <MaterialRights />
         </Panel>
       </TrainerLayout>
     )
@@ -202,6 +220,7 @@ export default function MyContract() {
           <Wallet className="h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" />
           <span>وكشفُ ما تستحقّه على أساس هذا العقد في <b>«مستحقاتي»</b>.</span>
         </Inset>
+        <MaterialRights />
       </Panel>
 
       {/* والوثيقةُ ثمّ سجلُّ تنفيذها — أختان في الصفحة لا أمٌّ وابنة */}

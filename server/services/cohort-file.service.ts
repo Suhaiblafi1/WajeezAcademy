@@ -82,7 +82,7 @@ export class CohortFileService {
     })
     return {
       storageKey,
-      uploadUrl: `/api/v1/uploads/${storageKey}?exp=${exp}&sig=${sig}`,
+      uploadUrl: `/api/v1/uploads/${storageKey}/stream?exp=${exp}&sig=${sig}`,
       maxBytes: MAX_BODY_FILE_BYTES,
       originalName: name,
       mime: input.mime,
@@ -144,7 +144,7 @@ export class CohortFileService {
     })
     return {
       storageKey,
-      uploadUrl: `/api/v1/uploads/${storageKey}?exp=${exp}&sig=${sig}`,
+      uploadUrl: `/api/v1/uploads/${storageKey}/stream?exp=${exp}&sig=${sig}`,
       maxBytes: MAX_BODY_FILE_BYTES,
       originalName: name,
       mime: input.mime,
