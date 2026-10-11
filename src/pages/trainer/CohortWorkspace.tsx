@@ -49,7 +49,7 @@
 import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router";
 import {
-  ArrowLeft, ArrowRight, BookMarked, BookOpen, CalendarDays, CalendarPlus, Check, ChevronDown, ChevronUp, ClipboardCheck, Combine, Eye, FileDown, FileText, GraduationCap, Film, IdCard, Link2, Loader2, Lock, Send, Sparkles, Split,
+  ArrowLeft, ArrowRight, BookMarked, BookOpen, CalendarDays, CalendarPlus, Check, ChevronDown, ChevronUp, ClipboardCheck, Combine, Eye, FileDown, FileText, GraduationCap, Film, IdCard, Link2, ListChecks, Loader2, Lock, Send, Sparkles, Split,
 } from "lucide-react";
 import TrainerLayout from "./TrainerLayout";
 import TrainerSchedule from "./TrainerSchedule";
@@ -231,13 +231,13 @@ const PLAN_STATUS_AR: Record<string, { label: string; tone: "default" | "accent"
 
    فذهبت «المصادر» خطوةً على حدة: المسجَّلُ منها صار جلساتٍ في «اللقاءات»
    بمحاورها، والباقي صار مع المهامّ مربوطا بمحوره. وحلّت محلَّها «الكرّاسات». */
-type Stage = "identity" | "modules" | "workbooks" | "sessions" | "assignments" | "approval";
+type Stage = "identity" | "modules" | "workbooks" | "sessions" | "assignments" | "approval" | "review";
 /* والأسماءُ هي أسماءُ أقسام ملاحظات المعتمِد (`STAGE_LABELS` في `review-notes.ts`):
    يكتب ملاحظتَه تحت اسم الخطوة الذي يقرؤه المدرّبُ هنا — ويحرس تطابقَهما
    `review-notes.test.ts` (٣ب) */
 /* و`short` كلمةٌ واحدةٌ تُكتب تحت دائرتها على الهاتف — ستُّ خاناتٍ في ٣٥٠ بكسلا
    لا تسع «المعلومات الأساسيّة» فيركب الاسمُ على جاره (قِيس على ٣٩٠، ٥ أكتوبر ٢٠٢٦) */
-const STAGES: { key: Stage; label: string; icon: typeof BookOpen; short: string }[] = [
+const STAGES: { key: Exclude<Stage, "review">; label: string; icon: typeof BookOpen; short: string }[] = [
   { key: "identity", label: "المعلومات الأساسيّة", icon: IdCard, short: "الأساس" },
   { key: "modules", label: "المحاور ومواعيدها", icon: BookOpen, short: "المحاور" },
   { key: "workbooks", label: "الكرّاسة", icon: BookMarked, short: "الكرّاسة" },
@@ -253,7 +253,16 @@ const STAGE_KEYS: Record<Stage, readonly string[]> = {
   sessions: ["sessions"],
   assignments: ["assignments", "resources", "project"],
   approval: ["approval"],
+  /* و«المراجعة» لا صفَّ لها في قائمة الخادم: تمامُها أن يقرّر في كلّ بند (١١ أكتوبر ٢٠٢٦) */
+  review: [],
 };
+/* ═══ «المراجعة» — الدرجةُ السابعة بعد «الاعتماد» (١١ أكتوبر ٢٠٢٦) ═══
+
+   قرارُ صاحب المنصّة: «عنوانٌ سابعٌ بعد الأخير اسمُه المراجعة، لا يرى فيه إلّا ما أريده أن يقبله أو
+   يرفضه، مرقّما سهلَ القراءة… صندوقٌ ثمّ الثاني ثمّ الثالث». وليست في `STAGES`: تلك الستُّ
+   تتمّ بقائمة الخادم ويُفتح ما بعدها بتمام ما قبلها، وهذه تُفتح متى وُجد فيها شيء — تعديلاتٌ
+   اقترحتها الإدارة أو تقريرُ مراجعة — وتمامُها أن يقرّر في كلّ بند. فتُرسم دائرةً سابعةً بعدها. */
+const REVIEW_STAGE = { key: "review" as const, label: "المراجعة", icon: ListChecks, short: "المراجعة" };
 /** الدرجةُ التي فيها صفُّ القائمة — أو `null` لصفٍّ لا درجةَ له */
 const stageOfKey = (key: string): Stage | null =>
   (STAGES.find((s) => STAGE_KEYS[s.key].includes(key))?.key ?? null);
@@ -414,6 +423,11 @@ const STAGE_INTRO: Record<Stage, { title: string; purpose: string; minutes: stri
     purpose: "مراجعةٌ أخيرةٌ ثمّ إرسال. بعد الإرسال تُقفل الشعبةُ للتعديل حتّى يصل قرارُ الإدارة.",
     minutes: "دقيقة",
   },
+  review: {
+    title: "المراجعة",
+    purpose: "تعديلاتٌ اقترحناها على خطّتك — اقبل ما يناسبك أو ارفضه، ثمّ أرسل مراجعتك.",
+    minutes: "دقائق",
+  },
 };
 
 /* ═══ الكرّاسة: رابطٌ، أو ملفُّ PDF يُرفع (٦ أكتوبر ٢٠٢٦) ═══
@@ -492,7 +506,7 @@ function MaterialChoice({ id, value, required, disabled, onChange }: {
 
 function StageIntro({ stage }: { stage: Stage }) {
   const it = STAGE_INTRO[stage];
-  const Icon = STAGES.find((s) => s.key === stage)?.icon ?? BookOpen;
+  const Icon = (stage === "review" ? REVIEW_STAGE : STAGES.find((s) => s.key === stage))?.icon ?? BookOpen;
   return (
     <div>
       <h3 className="flex items-center gap-2 text-sm font-black">
@@ -539,10 +553,14 @@ export default function CohortWorkspace() {
      («افتح خطوة الكرّاسة»). يُقرأ في أوّل فتحٍ وحدَه (`workspace-step.ts`) */
   const [params] = useSearchParams();
   const requestedStep = useRef(readWorkspaceStep(params.get(STEP_PARAM)));
+  /* و«المراجعة» تُطلب بالرابط كذلك — زرُّ بريد الردّ يفتحها (١١ أكتوبر ٢٠٢٦) */
+  const requestedReview = useRef(params.get(STEP_PARAM) === "review");
   const [ws, setWs] = useState<Workspace | null>(null);
   const prepIds = usePrepCohorts();
   const [err, setErr] = useState("");
   const [stage, setStage] = useState<Stage>("identity");
+  /* ما في «المراجعة»: كم بندا اقترحته الإدارة، وكم منها ينتظر قرارَه */
+  const [revision, setRevision] = useState({ total: 0, pending: 0 });
   /* ما ينقص الخطوةَ كي تتمّ — يُقال بعد «احفظ وتابِع» حين لا تتمّ، بأسمائه لا
      بعدد، ويُمحى بأوّل محاولةٍ تالية. «لا ينتقل للتالي إلّا بعد أن يتمّ
      النقطةَ السابقة» — والمنعُ بلا سببٍ يُقال عطبٌ لا قاعدة. */
@@ -643,6 +661,9 @@ export default function CohortWorkspace() {
     try {
       const w = await apiGet<Workspace>(`/api/trainer/cohorts/${id}/workspace`);
       setWs(w);
+      /* وبنودُ «المراجعة» — عددُها وما ينتظر منها، للدائرة السابعة وللفتح عليها */
+      const revItems = await apiGet<{ status: string }[]>(`/api/trainer/cohorts/${id}/plan-edits`).catch(() => [] as { status: string }[]);
+      setRevision({ total: revItems.length, pending: revItems.filter((x) => x.status === "pending").length });
       const saved: PlanContent = w.plan?.content ?? { kind: "trainer", summaryAr: "", modules: w.course.baseModules, resources: [], liveNoteAr: "" };
       /* ═══ المواعيدُ الأولى تُرتَّب له — ولا تُحفظ حتّى يحفظها ═══
 
@@ -671,7 +692,7 @@ export default function CohortWorkspace() {
          التواصل» حتّى خرج إلى «طلبتي»)، وغيرُها على أوّل مرحلةٍ لم تتمّ —
          وهي أبعدُ ما يُفتح له، فكلُّ ما قبلها تامّ. */
       if (first) {
-        let fallback: Stage;
+        let fallback: Exclude<Stage, "review">;
         if (status === "approved" || status === "published") fallback = "approval";
         else {
           const next = STAGES.find((s) => STAGE_KEYS[s.key].some((k) => {
@@ -687,7 +708,12 @@ export default function CohortWorkspace() {
           const i = STAGES.findIndex((x) => x.key === s);
           return !editable || STAGES.slice(0, i).every((x) => doneIn(x.key));
         };
-        setStage(firstStep(requestedStep.current, fallback, openableAt));
+        /* وتُفتح على «المراجعة» إن طلبها الرابط وفيها شيء، أو كانت خطّتُه في يده وفيها ما ينتظره —
+           ما لم يطلب الرابطُ خطوةً غيرَها */
+        const reviewHas = revItems.length > 0 || (w.reviewReports?.length ?? 0) > 0;
+        const reviewWaits = editable && revItems.some((x) => x.status === "pending");
+        if (reviewHas && (requestedReview.current || (!requestedStep.current && reviewWaits))) setStage("review");
+        else setStage(firstStep(requestedStep.current, fallback, openableAt));
       }
       return w;
     } catch (e) { setErr(e instanceof ApiError ? e.message : "تعذّر فتح صفحة الشعبة"); return null; }
@@ -790,6 +816,10 @@ export default function CohortWorkspace() {
   /* المرسَلةُ للاعتماد — لا تُعدَّل حتّى يصل القرار. و`locked` أدناه: هي أو خطوةٌ تُعايَن */
   const planLocked = planStatus === "submitted";
   const approved = planStatus === "approved" || planStatus === "published";
+  /* «المراجعة» تُرى متى كان فيها شيء: تعديلاتٌ اقترحتها الإدارة أو تقريرُ مراجعة */
+  const hasReview = revision.total > 0 || (ws.reviewReports?.length ?? 0) > 0;
+  const stepsTotal = STAGES.length + (hasReview ? 1 : 0);
+  const inHand = planStatus === "draft" || planStatus === "changes_requested";
   /* ═══ ملاحظاتُ الإدارة — كلٌّ في خطوته (٣ب) ═══
 
      تُقرأ ما دامت الخطّةُ مردودةً إليه وحدَه (`notesForTrainer`). */
@@ -1099,7 +1129,7 @@ export default function CohortWorkspace() {
      الزرَّ الوحيدَ كان «احفظ وتابِع» — يَعِد بالمتابعة، فلا يعرف المدرّبُ أنّ
      نصفَ محورٍ يُحفظ. فهذان: الحفظُ عند مغادرة الخطوة (`openStage`)، وزرٌّ
      يحفظ ويبقى. وما يمنع الحفظَ يُقال في الحالين، ولا يُنقل المدرّبُ عنه. */
-  const stageLabel = (k: Stage) => STAGES.find((x) => x.key === k)?.label ?? "";
+  const stageLabel = (k: Stage) => (k === "review" ? REVIEW_STAGE.label : STAGES.find((x) => x.key === k)?.label ?? "");
   const saveDraft = async () => {
     if (busy) return;
     setBusy(true);
@@ -1162,7 +1192,7 @@ export default function CohortWorkspace() {
   const showDraftSave = !atApproval && !locked && Object.values(dirty).some(Boolean);
   /* والدرجةُ الأخيرة: الزرُّ نفسُه يُرسل. وما يمنع الإرسالَ يُقال بأسمائه
      قبل النداء — والخادمُ يردّ الشيءَ نفسَه إن وصل (`plan-gate`). */
-  const submitNow = async () => {
+  const submitNow = async (doneAr = "أُرسلت للاعتماد — يصلك القرار هنا وبالبريد") => {
     setGaps(null);
     setUnsavedAsk(false);
     /* ═══ وتعديلٌ لم يُحفظ لا يُطرح صامتا (٣ أكتوبر ٢٠٢٦) ═══
@@ -1177,7 +1207,7 @@ export default function CohortWorkspace() {
     }
     if (stop === "unsaved") { setUnsavedAsk(true); return; }
     if (stop === "blocking") { setGaps(blocking.map((b) => b.labelAr)); return; }
-    await act(() => apiPost(`/api/trainer/cohorts/${ws.cohort.id}/plan/submit`, { confirm }), "أُرسلت للاعتماد — يصلك القرار هنا وبالبريد");
+    await act(() => apiPost(`/api/trainer/cohorts/${ws.cohort.id}/plan/submit`, { confirm }), doneAr);
   };
   /** ① يحفظ ثمّ يرسل — وحفظٌ يردّه الخادمُ يُقال، ولا يُرسَل بعده شيء */
   const saveThenSend = async () => {
@@ -1352,6 +1382,23 @@ export default function CohortWorkspace() {
     setContent({ ...content, resources: content.resources.map((x, j) => (j === i ? { ...x, ...patch } : x)) });
 
 
+  /* ═══ مربّعُ الموافقة — واحدٌ في الصفحة، يُعرض في «الاعتماد» وفي «المراجعة» (١١ أكتوبر ٢٠٢٦) ═══
+     الإرسالُ من «المراجعة» يحتاج الموافقةَ نفسَها، والإنزالُ إليه بمرجعٍ واحد (`confirmBoxRef`) —
+     فلا نسختان: يُكتب مرّةً ويُعرض حيث تكون الدرجة. */
+  const consentBox = (
+    <>
+      {/* والإبرازُ سطحٌ من نظام الأسطح خلف المربّع لا صيغةٌ مكتوبةٌ في وسمه —
+          والوسمُ نفسُه لا يتبدّل فلا يُعاد بناءُ المربّع ويضيع التركيزُ منه */}
+      <div ref={confirmBoxRef} data-nudge={consentNudged ? "" : undefined} className="relative mt-4">
+        {consentNudged && <Card as="span" tone="warn" aria-hidden="true" className="pointer-events-none absolute -inset-x-3 -inset-y-2.5" />}
+        <label className="relative flex cursor-pointer items-start gap-3 text-read leading-6">
+          <input id="plan-confirm" type="checkbox" checked={confirm} disabled={locked || approved} className="mt-1 h-4 w-4 accent-teal"
+            onChange={(e) => { setConfirm(e.target.checked); if (e.target.checked) setConfirmNudge(0); }} />
+          <span>أوافق على كلّ ما في هذه الشعبة — مواعيدَها ومحاورَها وكرّاساتِها ولقاءاتِها وتسجيلاتِها ومهامَّها ومصادرَها — وأتحمّل تقديمَها كما هي.</span>
+        </label>
+      </div>
+    </>
+  );
   return (
     <TrainerLayout title={`شعبة «${ws.cohort.title}»`}>
       <style>{`
@@ -1439,14 +1486,14 @@ export default function CohortWorkspace() {
                   <li key={s.key} className="relative flex min-w-0 flex-1 justify-center">
                     {/* والخطُّ بين درجتين يمتلئ حين تتمّ التي قبله — من حافّة دائرتها
                         إلى حافّة التالية، فلا يمرّ تحت دائرةٍ شفّافة */}
-                    {i < STAGES.length - 1 && (
+                    {(i < STAGES.length - 1 || hasReview) && (
                       <span aria-hidden="true" className={`absolute start-[calc(50%+1.125rem)] top-[1.1875rem] h-0.5 w-[calc(100%-2.25rem)] rounded-full ${done ? "bg-teal" : "bg-white/10"}`} />
                     )}
                     <button
                       type="button"
                       onClick={() => openStage(s.key)}
                       aria-current={selected ? "step" : undefined}
-                      aria-label={`الخطوة ${i + 1} من ${STAGES.length}: ${s.label} — ${stateAr}`}
+                      aria-label={`الخطوة ${i + 1} من ${stepsTotal}: ${s.label} — ${stateAr}`}
                       title={!open && blocker ? `معاينة — تملؤها بعد أن تُتمّ «${blocker.label}»` : undefined}
                       className={`group relative flex min-h-11 w-full flex-col items-center gap-1 rounded-xl px-0.5 py-1.5 transition ${
                         selected ? "bg-white/[0.05]" : "hover:bg-white/[0.03]"
@@ -1485,6 +1532,46 @@ export default function CohortWorkspace() {
                   </li>
                 );
               })}
+              {hasReview && (() => {
+                const selected = stage === "review";
+                const reviewDone = revision.total > 0 && revision.pending === 0;
+                const stateAr = revision.pending > 0 ? `${revision.pending} ${revision.pending === 1 ? "بندٌ ينتظر" : "بنودٍ تنتظر"} قرارك` : reviewDone ? "قرّرتَ فيها كلِّها" : "للقراءة";
+                return (
+                  <li key="review" className="relative flex min-w-0 flex-1 justify-center">
+                    <button
+                      type="button"
+                      onClick={() => openStage("review")}
+                      aria-current={selected ? "step" : undefined}
+                      aria-label={`الخطوة ${stepsTotal} من ${stepsTotal}: ${REVIEW_STAGE.label} — ${stateAr}`}
+                      className={`group relative flex min-h-11 w-full flex-col items-center gap-1 rounded-xl px-0.5 py-1.5 transition ${
+                        selected ? "bg-white/[0.05]" : "hover:bg-white/[0.03]"
+                      }`}
+                    >
+                      <span className={`relative grid h-7 w-7 shrink-0 place-items-center rounded-full border-2 text-fine font-black transition ${
+                        reviewDone ? "border-teal bg-teal text-on-teal"
+                          : selected ? "border-gold bg-gold/15 text-gold-ink shadow-[0_0_0_3px_rgba(250,188,5,0.15)]"
+                          : "border-white/15 bg-surface text-muted-foreground"
+                      }`}>
+                        {reviewDone ? <Check className="h-3.5 w-3.5" aria-hidden="true" /> : stepsTotal}
+                        {revision.pending > 0 && (
+                          <span className="absolute -end-2.5 -top-2.5 grid h-5 min-w-5 place-items-center rounded-full bg-red-400 px-1 text-fine font-black leading-none text-white" aria-hidden="true">
+                            {revision.pending}
+                          </span>
+                        )}
+                      </span>
+                      <span
+                        aria-hidden="true"
+                        className={`block whitespace-nowrap text-center text-fine leading-4 sm:whitespace-normal sm:text-read sm:leading-5 ${
+                          selected ? "font-black text-foreground" : "font-bold text-foreground"
+                        }`}
+                      >
+                        <span className="sm:hidden">{REVIEW_STAGE.short}</span>
+                        <span className="hidden sm:inline">{REVIEW_STAGE.label}</span>
+                      </span>
+                    </button>
+                  </li>
+                );
+              })()}
             </ol>
 
             {/* ═══ الذهبيُّ الوحيد — «احفظ وتابِع» ═══
@@ -1492,7 +1579,7 @@ export default function CohortWorkspace() {
                 يحفظ الخطوةَ ثمّ ينتقل إن تمّت، ويقول ما ينقص إن لم تتمّ.
                 وفي الدرجة الأخيرة يصير «أرسِلها للاعتماد». والمعتمَدةُ تحمل
                 شارتَها مكانَه — ما لم يتغيّر فيها شيءٌ يُحفظ. */}
-            {approved && !Object.values(dirty).some(Boolean) && atApproval ? (
+            {stage === "review" ? null : approved && !Object.values(dirty).some(Boolean) && atApproval ? (
               <span className="stage-seal inline-flex shrink-0 items-center gap-1.5 rounded-full border border-emerald-400/40 bg-emerald-400/10 px-2.5 py-0.5 text-read font-black text-emerald-300">
                 <Sparkles className="h-3.5 w-3.5" aria-hidden="true" /> معتمَدة
               </span>
@@ -1540,9 +1627,7 @@ export default function CohortWorkspace() {
             </Inset>
           )}
           <ReviewNotesBanner notes={reviewNotes} current={stage} onOpen={openStage} />
-          {/* وتقريرُ المراجعة مع الملاحظة — رسالةُ القرار تقول إنّه هنا (٨ أكتوبر ٢٠٢٦).
-              ويُطوى بالضمور كسطر الحقائق: الرأسُ اللاصقُ لا يبتلع الشاشة */}
-          {!compact && <ReviewReportList reports={ws.reviewReports ?? []} />}
+          {/* وتقريرُ المراجعة صار في «المراجعة» (١١ أكتوبر ٢٠٢٦) — كان هنا مع الملاحظة */}
 
           {/* وما ينقص الخطوةَ كي تتمّ — بعد «احفظ وتابِع» التي لم تنقل. لاصقٌ
               كالملاحظة: يقرؤه وهو ينزل إلى الحقل الذي يصحّحه. */}
@@ -1553,7 +1638,9 @@ export default function CohortWorkspace() {
                   ? "لم يُحفظ شيءٌ بعد — في الخطّة ما يمنع حفظَها. أصلِحه ثمّ احفظ:"
                   : gaps.saved
                     ? `ما كتبتَه محفوظ — ولم تتمّ «${here?.label}» بعد، ينقصها:`
-                    : `لم تتمّ «${here?.label}» بعد — ينقصها:`}
+                    : stage === "review"
+                      ? "لا تُرسَل مراجعتُك بعد — ينقص خطّتَك:"
+                      : `لم تتمّ «${here?.label}» بعد — ينقصها:`}
               </p>
               <ul className="mt-1 list-inside list-disc space-y-0.5 text-read leading-7 text-foreground">
                 {gaps.items.map((g) => <li key={g}>{g}</li>)}
@@ -1622,21 +1709,66 @@ export default function CohortWorkspace() {
 
           كانت الملاحظةُ نصّا واحدا في رأس الشاشة، فينزل المدرّبُ إلى خطوةٍ وقد
           غاب عنه ما قيل فيها. فصار لكلّ خطوةٍ ملاحظتُها، تُقرأ حيث يُعدَّل. */}
-      {stage !== "approval" && <StageReviewNote stage={stage} text={reviewNotes[stage]} />}
+      {stage !== "approval" && stage !== "review" && <StageReviewNote stage={stage} text={reviewNotes[stage]} />}
 
-      {/* ═══ وتعديلاتٌ اقترحتها الإدارة — يقبل كلًّا أو يرفضه (٨ أكتوبر ٢٠٢٦) ═══
+      {/* ═══ «المراجعة» — ما اقترحته الإدارةُ بنودا مرقّمة، والتقريرُ للقراءة، ثمّ الإرسال (١١ أكتوبر ٢٠٢٦) ═══
 
-          «التعديلُ يطول على المدرّب — نكتبه نحن ويختار هو». في المتن لا في الرأس اللاصق:
-          قائمةٌ قد تطول. والقبولُ يكتب في الخطّة المحفوظة، فلا يُقبل وفي يده ما لم يُحفظ —
-          وإلّا محا التحميلُ بعده ما كتب. */}
-      <PlanEditsPanel
-        cohortId={ws.cohort.id}
-        inHand={planStatus === "draft" || planStatus === "changes_requested"}
-        unsaved={Object.values(dirty).some(Boolean)}
-        onApplied={() => load()}
-      />
+          كانت التعديلاتُ قائمةً فوق كلّ خطوة، والتقريرُ في الرأس، و«قبل/بعد» بنصوصٍ طويلة — «كثيرُ
+          الكلام» (صاحب المنصّة). فصار لها درجتُها: بطاقةٌ لكلّ بندٍ «نقترح هذا بدلَ هذا — اقبل أو
+          ارفض»، والتقريرُ تحتها للقراءة إن شاء، وحين يقرّر في كلّها يرسل مراجعتَه من موضعها.
+          والقبولُ يكتب في الخطّة المحفوظة — فلا يُقبل وفي يده ما لم يُحفظ. */}
+      {stage === "review" ? (
+        <section aria-label="المراجعة" className="space-y-3">
+          <StageIntro stage="review" />
+          <PlanEditsPanel
+            cohortId={ws.cohort.id}
+            inHand={planStatus === "draft" || planStatus === "changes_requested"}
+            unsaved={Object.values(dirty).some(Boolean)}
+            onApplied={() => load()}
+            onCounts={setRevision}
+          />
+          {/* وحين يقرّر في كلّها: يؤكّد ويرسل من هنا — «أُرسلت مراجعتُك» وتعود إلى الإدارة */}
+          {revision.total > 0 && revision.pending === 0 && inHand && (
+            <Inset tone="positive" className="p-4">
+              <p className="text-read font-black text-foreground">قرّرتَ في كلّ البنود — أرسل مراجعتك</p>
+              {/* وما ينقص الخطّةَ قبل أن تُرسَل يُقال هنا لا بعد النقر — وبزرٍّ إلى خطوته */}
+              {blocking.length > 0 && (
+                <div className="mt-2">
+                  <p className="text-read font-bold text-gold-ink">وقبل الإرسال ينقص خطّتَك:</p>
+                  <ul className="mt-1 list-inside list-disc space-y-0.5 text-read leading-7 text-foreground">
+                    {blocking.map((b) => <li key={b.key}>{b.labelAr}</li>)}
+                  </ul>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {STAGES.filter((s) => STAGE_KEYS[s.key].some((k) => blocking.some((b) => b.key === k))).map((s) => (
+                      <Button key={s.key} tone="secondary" size="sm" onClick={() => void openStage(s.key)}>افتح «{s.label}»</Button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {consentBox}
+              <Button className="mt-3" tone="confirm" icon={Send} loading={busy} disabled={busy}
+                onClick={() => void submitNow("أُرسلت مراجعتُك — عادت الخطّةُ إلى الإدارة، ويصلك القرارُ هنا وبالبريد")}>
+                أرسل المراجعة
+              </Button>
+            </Inset>
+          )}
+          {revision.total > 0 && planLocked && (
+            <Inset tone="accent" className="p-4 text-read leading-6">
+              <b className="font-black text-foreground">أُرسلت مراجعتُك</b> — هي الآن عند الإدارة، ويصلك القرارُ هنا وبالبريد.
+            </Inset>
+          )}
+          <ReviewReportList reports={ws.reviewReports ?? []} />
+        </section>
+      ) : revision.pending > 0 && inHand ? (
+        /* وفي الخطوات الأخرى سطرٌ يدلّ عليها — لا القائمةُ نفسُها */
+        <Inset tone="accent" className="mb-4 flex flex-wrap items-center gap-2 text-read leading-6">
+          <ListChecks className="h-4 w-4 shrink-0" aria-hidden="true" />
+          <span className="min-w-0 flex-1">في «المراجعة» {revision.pending} {revision.pending === 1 ? "بندٌ ينتظر" : "بنودٍ تنتظر"} قرارك.</span>
+          <Button tone="secondary" size="sm" onClick={() => void openStage("review")}>افتح «المراجعة»</Button>
+        </Inset>
+      ) : null}
 
-      {planLocked && stage !== "approval" && (
+      {planLocked && stage !== "approval" && stage !== "review" && (
         <Inset tone="accent" className="mb-4 flex items-start gap-2 text-read leading-6">
           <Lock className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
           خطّتك بانتظار الاعتماد — لا تُعدَّل حتّى يصل القرار. ولو أردت تعديلها الآن، اطلب من الإدارة ردَّها إليك.
@@ -3162,16 +3294,7 @@ export default function CohortWorkspace() {
               />
             </div>
           </div>
-          {/* والإبرازُ سطحٌ من نظام الأسطح خلف المربّع لا صيغةٌ مكتوبةٌ في وسمه —
-              والوسمُ نفسُه لا يتبدّل فلا يُعاد بناءُ المربّع ويضيع التركيزُ منه */}
-          <div ref={confirmBoxRef} data-nudge={consentNudged ? "" : undefined} className="relative mt-4">
-            {consentNudged && <Card as="span" tone="warn" aria-hidden="true" className="pointer-events-none absolute -inset-x-3 -inset-y-2.5" />}
-            <label className="relative flex cursor-pointer items-start gap-3 text-read leading-6">
-              <input id="plan-confirm" type="checkbox" checked={confirm} disabled={locked || approved} className="mt-1 h-4 w-4 accent-teal"
-                onChange={(e) => { setConfirm(e.target.checked); if (e.target.checked) setConfirmNudge(0); }} />
-              <span>أوافق على كلّ ما في هذه الشعبة — مواعيدَها ومحاورَها وكرّاساتِها ولقاءاتِها وتسجيلاتِها ومهامَّها ومصادرَها — وأتحمّل تقديمَها كما هي.</span>
-            </label>
-          </div>
+          {consentBox}
           {/* والإرسالُ بزرّ الشريط نفسِه — «أرسِلها للاعتماد» في هذه الدرجة: ذهبيٌّ
               واحدٌ يتبدّل اسمُه، لا ذهبيّان يتنازعان العين. */}
           {!approved && !locked && (

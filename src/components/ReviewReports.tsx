@@ -15,7 +15,7 @@ import { putSigned } from "@/services/signed-upload";
 import { Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import Chip from "@/components/ui/Chip";
-import { matchReportFile, reportsSummaryAr, type ReportPlan } from "@/application/trainer/review-reports-bulk";
+import { matchReportFile, reportTitleAr, reportsSummaryAr, type ReportPlan } from "@/application/trainer/review-reports-bulk";
 import { expandReportFiles, skippedLineAr } from "@/application/trainer/review-reports-zip";
 import { fmtDateTimeAr } from "@/utils/format";
 import { REVIEW_REPORT_MIMES } from "@/application/trainer/module-body";
@@ -237,16 +237,17 @@ export function ReviewReportList({ reports }: { reports: readonly ReviewReport[]
   if (reports.length === 0) return null;
   return (
     <Inset className="mt-2" role="region" aria-label="تقرير المراجعة">
-      <p className="text-read font-black text-foreground">تقريرُ المراجعة</p>
+      <p className="text-read font-black text-foreground">تقريرُ المراجعة — للقراءة إن شئت</p>
+      {/* وكلُّ ما فيه بنودٌ في «المراجعة» يقبلها أو يرفضها — فلا يلزمه أن يقرأه ليقرّر (١١ أكتوبر ٢٠٢٦) */}
       <p className="mt-1 text-read leading-6 text-muted-foreground">
-        رفعته الإدارةُ بعد قراءة خطّتك — فيه ما يُعدَّل وما يُقترح، وكيف تعدّله في خطواتك.
+        رفعته الإدارةُ بعد قراءة خطّتك. وكلُّ ما فيه مكتوبٌ بنودا أعلاه، فلا يلزمك قراءتُه لتقرّر.
       </p>
       <ul className="mt-2 space-y-1.5">
         {reports.map((r) => (
           <li key={r.storageKey} className="flex flex-wrap items-center gap-x-2 text-read">
             <FileText className="h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" />
             <a href={fileHref(r.storageKey)} target="_blank" rel="noreferrer" className="font-bold text-teal-light-ink underline">
-              {r.originalName}
+              {reportTitleAr(r.originalName)}
             </a>
             <span className="text-muted-foreground">· {fmtDateTimeAr(r.createdAt)}</span>
           </li>

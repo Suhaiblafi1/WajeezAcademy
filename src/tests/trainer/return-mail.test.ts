@@ -31,11 +31,12 @@ describe('① الشكرُ أوّلا، ثمّ الملخّص، ثمّ الخط�
     expect(`${m.subject}${m.heading}${m.praise}`).not.toMatch(/نحتاج تعديلا|طُلبت تعديلاتٌ/)
   })
 
-  it('⚠️ وأوّلُ ما يفعله بعد فتح الصفحة: «اقبلها كلَّها» — وآخرُه: يرسلها', () => {
+  /* والتعديلاتُ في خطوتها السابعة «المراجعة» ومنها يُرسَل (١١ أكتوبر ٢٠٢٦) — والبريدُ يسمّيها */
+  it('⚠️ وأوّلُ ما يفعله بعد فتح الصفحة على «المراجعة»: «اقبلها كلَّها» — وآخرُه: يرسل مراجعتَه منها', () => {
     const m = returnMailAr(base)
-    expect(m.steps[0]).toMatch(/^افتح صفحةَ شعبتك/)
-    expect(m.steps[1]).toMatch(/اضغط «اقبلها كلَّها»/)
-    expect(m.steps.at(-1)).toMatch(/^أرسل الخطّةَ من خطوة «الاعتماد»/)
+    expect(m.steps[0]).toBe('افتح صفحةَ شعبتك من الزرّ أدناه — تُفتح على «المراجعة».')
+    expect(m.steps[1]).toMatch(/^اضغط «اقبلها كلَّها» — أو قرّر في كلّ بندٍ وحده: نقترح هذا بدلَ هذا/)
+    expect(m.steps.at(-1)).toBe('ثمّ أرسل مراجعتَك من «المراجعة» نفسِها — ونراجعها حين تصلنا.')
     expect(m.cta).toBe('افتح صفحةَ شعبتك وراجع التعديلات')
   })
 })
@@ -45,13 +46,15 @@ describe('② ملخّصٌ لا نصوص', () => {
     const [edits, notes, report] = returnMailAr(base).summary
     expect(edits).toBe('56 تعديلًا جاهزًا — كلُّها اختياريّة. في: «المحاور ومواعيدها» (26)، «المهامّ والمصادر» (30).')
     expect(notes).toBe('ملاحظاتٌ في «المحاور ومواعيدها» و«اللقاءات» — كلٌّ في رأس خطوتها.')
-    expect(report).toBe('تقريرُ المراجعة (ملفّان) — في صفحة شعبتك تحت «تقرير المراجعة».')
+    expect(report).toBe('تقريرُ المراجعة (ملفّان) — في خطوة «المراجعة»، للقراءة إن شئت.')
   })
 
   it('وما لم يكن لا يُذكر — بلا تعديلاتٍ لا «اقبلها كلَّها»، وبلا تقريرٍ لا سطرَ له', () => {
     const m = returnMailAr({ ...base, edits: { count: 0, required: 0, bySteps: [] }, reports: 0 })
     expect(m.summary).toEqual(['ملاحظاتٌ في «المحاور ومواعيدها» و«اللقاءات» — كلٌّ في رأس خطوتها.'])
     expect(m.steps.join(' ')).not.toContain('اقبلها كلَّها')
+    expect(m.steps[0], 'لا «المراجعة» وليس فيها شيء').toBe('افتح صفحةَ شعبتك من الزرّ أدناه.')
+    expect(m.steps.at(-1)).toBe('أرسل الخطّةَ من خطوة «الاعتماد» — ونراجعها حين تصلنا.')
     expect(m.cta).toBe('افتح صفحةَ شعبتك')
   })
 })
@@ -74,7 +77,7 @@ describe('④ والخدمةُ تبني البريدَ منه', () => {
   it('⚠️ ردُّ الخطّة يمرّر `returnMailAr` بكلمة الإدارة وحدَها — ويُرسَل البريدُ من `returnMailDoc`', () => {
     expect(src).toMatch(/generalNote: asked\.general && asked\.general !== edits\.line \? asked\.general : null,/)
     expect(src).toMatch(/notedSteps: bySection\.map\(\(x\) => x\.label\),/)
-    expect(src).toMatch(/if \(msg\.mail\) \{[\s\S]{0,300}renderMail\(returnMailDoc\(msg\.mail, trainer\.application\.fullName, url\)\)/)
+    expect(src).toMatch(/if \(msg\.mail\) \{[\s\S]{0,300}renderMail\(returnMailDoc\(msg\.mail, trainer\.application\.fullName, `\$\{url\}\?step=review`\)\)/)
     expect(src).not.toContain('راجعنا خطّةَ شعبتك ونحتاج تعديلا قبل اعتمادها')
   })
 
