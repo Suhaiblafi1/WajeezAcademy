@@ -15,7 +15,7 @@ import { putSigned } from "@/services/signed-upload";
 import { Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import Chip from "@/components/ui/Chip";
-import { matchReportFile, reportsSummaryAr } from "@/application/trainer/review-reports-bulk";
+import { matchReportFile, reportsSummaryAr, type ReportPlan } from "@/application/trainer/review-reports-bulk";
 import { expandReportFiles, skippedLineAr } from "@/application/trainer/review-reports-zip";
 import { fmtDateTimeAr } from "@/utils/format";
 import { REVIEW_REPORT_MIMES } from "@/application/trainer/module-body";
@@ -129,7 +129,7 @@ export function ReviewReportUploader({ planId, reports, onChange }: {
 type ReportResult = { name: string; planId: string | null; labelAr: string | null; state: "done" | "already" | "failed"; noteAr: string };
 
 export function ReviewReportsBulkUpload({ plans, onUploaded, onOpen }: {
-  plans: readonly { id: string; labelAr: string }[];
+  plans: readonly ReportPlan[];
   onUploaded: (planId: string) => void;
   onOpen: (planId: string) => void;
 }) {
@@ -183,7 +183,7 @@ export function ReviewReportsBulkUpload({ plans, onUploaded, onOpen }: {
     <Inset className="mb-4 px-4 py-3" role="region" aria-label="تقاريرُ المراجعة دفعةً واحدة">
       <p className="text-read font-black text-foreground">ارفع تقاريرَ المراجعة وملاحقَها كلَّها دفعةً واحدة</p>
       <p className="mt-1 max-w-3xl text-read leading-6 text-muted-foreground">
-        كلُّ ملفٍّ يذكر خطّتَه في اسمه فيُرفع إلى بطاقتها وحدَها، وما رُفع من قبل لا يتكرّر. ويراه المدرّبُ في صفحة
+        كلُّ ملفٍّ يذكر خطّتَه في اسمه (اسمَ المدرّب واسمَ الشعبة) فيُرفع إلى بطاقتها وحدَها، وما رُفع من قبل لا يتكرّر. ويراه المدرّبُ في صفحة
         شعبته من لحظة رفعه — باسمه بلا معرّف الخطّة — وتذكره رسالةُ قرارك حين تقرّر. PDF أو Word، أو الملفُّ
         المضغوطُ (zip) كما هو بلا أن تفتحه.
       </p>
