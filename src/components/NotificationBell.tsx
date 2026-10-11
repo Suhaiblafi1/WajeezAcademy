@@ -4,7 +4,7 @@ import { Bell, CheckCheck } from "lucide-react";
 import { apiGet, apiPost } from "@/services/api";
 import { useRealSession } from "@/services/session";
 import { fmtDateTime } from "@/application/text/format-ar";
-import { destinationFor, notificationHref } from "@/application/notifications/destinations";
+import { notificationCtaAr, notificationHref } from "@/application/notifications/destinations";
 
 import { Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
@@ -138,12 +138,13 @@ export default function NotificationBell({ audience }: { audience: BellAudience 
                   {n.status === "sent" && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-gold" />}
                   {n.title}
                 </p>
-                <p className="mt-1 text-read leading-5 text-muted-foreground">{n.body}</p>
+                {/* ثلاثةُ أسطرٍ على الأكثر — والخبرُ كلُّه في صفحته (١١ أكتوبر ٢٠٢٦، «فيها كلامٌ كثير») */}
+                <p className="mt-1 line-clamp-3 whitespace-pre-line text-read leading-5 text-muted-foreground">{n.body}</p>
                 <p className="mt-1 text-read text-muted-foreground">
                   {fmtDateTime(new Date(n.sentAt ?? n.createdAt))}
                   {/* واسمُ الباب فعلٌ يقول ما سيجد — كزرّ البريد */}
-                  {destinationFor(n.templateKey, audience) && (
-                    <span className="mr-2 font-bold text-teal-light-ink">· {destinationFor(n.templateKey, audience)!.ctaAr} ←</span>
+                  {notificationCtaAr(n.templateKey, audience, n.data) && (
+                    <span className="mr-2 font-bold text-teal-light-ink">· {notificationCtaAr(n.templateKey, audience, n.data)} ←</span>
                   )}
                 </p>
               </button>

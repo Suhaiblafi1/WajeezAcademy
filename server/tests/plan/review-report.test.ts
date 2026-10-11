@@ -147,14 +147,16 @@ describe('٣ — والمدرّبُ لا يرفع تقريرا', () => {
 })
 
 describe('٤ — رسالةُ القرار تذكره، وصفحةُ المدرّب تحمله', () => {
-  it('الردُّ بتعديلاتٍ يقول في الجرس إنّ التقريرَ في صفحة الشعبة', async () => {
+  it('الردُّ يقول في الجرس إنّ التقريرَ في «المراجعة» — ويفتحها', async () => {
     const r = await call('POST', `/api/admin/cohort-plans/${planId}/decide`, 'admin', { approve: false, note: { workbooks: 'ضع كرّاسةَ المحور الأوّل.' } })
     expect(r.statusCode, r.body).toBe(200)
     const bell = await prisma.notification.findFirst({
       where: { userId: trainerUserId, templateKey: 'cohort.plan.decision' }, orderBy: { queuedAt: 'desc' },
     })
-    expect(bell?.body).toContain('«تقرير مراجعة الخطة.pdf»')
-    expect(bell?.body).toContain('تجده في خطوة «المراجعة» من صفحة شعبتك')
+    /* والجرسُ سطرٌ بعدد ما ينتظره في «المراجعة» لا الملاحظاتُ بنصوصها (١١ أكتوبر ٢٠٢٦، «فيها كلامٌ كثير»،
+       `returnBellAr`) — والنصوصُ بنودٌ هناك */
+    expect(bell?.body).toBe('تنتظرك في «المراجعة» ملاحظةٌ واحدة وتقريرُ المراجعة — قرّر فيها ثمّ أرسل مراجعتك.')
+    expect(bell?.data).toMatchObject({ cohortId, step: 'review' })
   })
 
   it('وصفحةُ المدرّب تحمل التقرير', async () => {

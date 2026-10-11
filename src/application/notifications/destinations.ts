@@ -186,9 +186,30 @@ const BY_AUDIENCE: Record<MailAudience, Table> = {
   staff: STAFF,
 }
 
+/* ═══ وقرارُ الخطّة يفتح شعبتَها نفسَها (١١ أكتوبر ٢٠٢٦) ═══
+
+   كان جرسُ القرار يفتح «شعبي» فيبحث المدرّبُ عن شعبته بيده — وقال صاحبُ المنصّة: «اجعلها…
+   تقود للصفحة المسؤولة». فالجرسُ يفتح صفحةَ الشعبة (`/trainer/cohort/:id` بمعرّفها من بيانات
+   الإشعار)، وعلى خطوتها إن حملت البياناتُ خطوة (`step`: الردُّ على «المراجعة»). والجدولُ أعلاه
+   باقٍ وجهةً للبريد ولما لا معرّفَ فيه. */
+const ROUTE_FROM_DATA: Partial<Record<MailAudience, Record<string, { route: string; field: string; ctaAr: string }>>> = {
+  trainer: { 'cohort.plan.decision': { route: '/trainer/cohort/:id', field: 'cohortId', ctaAr: 'افتح شعبتك' } },
+}
+/** اسمُ الزرّ حين يفتح خطوةً بعينها — يقول ما سيجد */
+const STEP_CTA_AR: Record<string, string> = { review: 'افتح «المراجعة»' }
+const STEP_RE = /^[a-z]+$/
+
+const field = (data: unknown, key: string): string | null => {
+  const v = data && typeof data === 'object' ? (data as Record<string, unknown>)[key] : null
+  return typeof v === 'string' && v ? v : null
+}
+
 /** كلُّ ما تحمله الجداولُ من مسارات — يقابلها الحارسُ بمسارات `App.tsx` */
 export function allDestinationPaths(): string[] {
-  return [...new Set(Object.values(BY_AUDIENCE).flatMap((t) => Object.values(t).map((d) => d.path)))]
+  return [...new Set([
+    ...Object.values(BY_AUDIENCE).flatMap((t) => Object.values(t).map((d) => d.path)),
+    ...Object.values(ROUTE_FROM_DATA).flatMap((t) => Object.values(t ?? {}).map((d) => d.route)),
+  ])]
 }
 
 /* ═══ والجرسُ يفتح الخبرَ نفسَه لا قائمتَه (٣ أكتوبر ٢٠٢٦) ═══
@@ -212,9 +233,25 @@ export function notificationHref(
 ): string | null {
   const dest = destinationFor(templateKey, audience)
   if (!dest) return null
+  const r = ROUTE_FROM_DATA[audience]?.[templateKey ?? '']
+  const id = r ? field(data, r.field) : null
+  if (r && id) {
+    const step = field(data, 'step')
+    return `${r.route.replace(':id', encodeURIComponent(id))}${step && STEP_RE.test(step) ? `?step=${step}` : ''}`
+  }
   const q = QUERY_FROM_DATA[audience]?.[templateKey ?? '']
   const v = q && data && typeof data === 'object' ? (data as Record<string, unknown>)[q.field] : null
   return q && typeof v === 'string' && v ? `${dest.path}?${q.param}=${encodeURIComponent(v)}` : dest.path
+}
+
+/** اسمُ باب البند في الجرس — كاسم زرّ البريد، إلّا أن يفتح شعبةً بعينها أو خطوةً منها */
+export function notificationCtaAr(templateKey: string | null | undefined, audience: MailAudience, data: unknown): string | null {
+  const dest = destinationFor(templateKey, audience)
+  if (!dest) return null
+  const r = ROUTE_FROM_DATA[audience]?.[templateKey ?? '']
+  if (!r || !field(data, r.field)) return dest.ctaAr
+  const step = field(data, 'step')
+  return (step && STEP_CTA_AR[step]) || r.ctaAr
 }
 
 /** وجهةُ هذا الإشعار لهذا الجمهور — أو `null` فتخرج الرسالةُ بلا زرّ.

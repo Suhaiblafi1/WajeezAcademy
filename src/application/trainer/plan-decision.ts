@@ -206,6 +206,49 @@ export function reviewReportLineAr(raw: readonly string[]): string | null {
     + 'تجده في خطوة «المراجعة» من صفحة شعبتك، للقراءة إن شئت.'
 }
 
+/* ═══ الجرسُ: عددٌ وموضع، لا نصوص (١١ أكتوبر ٢٠٢٦) ═══
+
+   كان جرسُ الردّ يحمل ملاحظاتِ الخطوات بنصوصها، ثمّ سطرَ التعديلات، ثمّ سطرَ التقرير — فقرةٌ لا
+   تنتهي في نافذةٍ صغيرة. وقال صاحبُ المنصّة: «الإشعاراتُ فيها كلامٌ كثيرٌ وغيرُ احترافيّة.. اجعلها
+   أكثرَ احترافيّةً وواضحةً، وتقود للصفحة المسؤولة». فالنصوصُ بنودٌ في «المراجعة»، والجرسُ يقول كم
+   ينتظره هناك في سطر، وزرُّه يفتحها (`notificationHref`). والبريدُ كما هو: له مساحتُه. */
+
+const NOTES_AR = { one: 'ملاحظة', two: 'ملاحظتان', few: 'ملاحظات', many: 'ملاحظةً' }
+const EDITS_ADJ = { one: 'مقترح', two: 'مقترحان', few: 'مقترحة', many: 'مقترحًا' }
+
+/** «56 تعديلًا مقترحًا (منها اثنان مطلوبان)» — عددُ التعديلات وما يُطلب منها، للجرس */
+export function editsCountAr(count: number, required: number): string {
+  const form = count === 1 ? 'one' : count === 2 ? 'two' : count <= 10 ? 'few' : 'many'
+  const head = count === 1 ? 'تعديلٌ مقترح' : count === 2 ? 'تعديلان مقترحان' : `${count} ${EDITS_AR[form]} ${EDITS_ADJ[form]}`
+  const req = required <= 0 ? ''
+    : required >= count ? (count === 1 ? ' (مطلوب)' : count === 2 ? ' (كلاهما مطلوب)' : ' (كلُّها مطلوبة)')
+    : required === 1 ? ' (منها واحدٌ مطلوب)'
+    : required === 2 ? ' (منها اثنان مطلوبان)'
+    : ` (منها ${required} مطلوبة)`
+  return head + req
+}
+
+/** جرسُ الردّ: ما ينتظره في «المراجعة» بعدده — سطرٌ واحد، ومهلتُه إن عادت تعدّ */
+export function returnBellAr(i: { notes: number; edits: number; required: number; reports: number; resumedAr?: string }): string {
+  const parts = [
+    i.notes > 0 ? (i.notes === 1 ? 'ملاحظةٌ واحدة' : i.notes === 2 ? 'ملاحظتان' : countAr(i.notes, NOTES_AR)) : null,
+    i.edits > 0 ? editsCountAr(i.edits, i.required) : null,
+    i.reports > 0 ? 'تقريرُ المراجعة' : null,
+  ].filter((x): x is string => x !== null)
+  const what = parts.length
+    ? `تنتظرك في «المراجعة» ${parts.join(' و')} — قرّر فيها ثمّ أرسل مراجعتك.`
+    : 'افتح «المراجعة» لترى ما طُلب، ثمّ أرسلها من جديد.'
+  return `${what}${i.resumedAr ?? ''}`
+}
+
+/** وذيلُ جرس الاعتماد والتأجيل — ما صحبه من تعديلاتٍ وتقرير، بجملةٍ قصيرةٍ لكلّ */
+export function decisionBellTailAr(i: { edits?: { count: number; required: number } | null; reports: number }): string {
+  return [
+    i.edits && i.edits.count > 0 ? `وتنتظرك في «المراجعة» ${editsCountAr(i.edits.count, i.edits.required)}.` : null,
+    i.reports > 0 ? 'وتقريرُ المراجعة في «المراجعة» للقراءة.' : null,
+  ].filter(Boolean).join(' ')
+}
+
 /* ═══ بريدُ «اطلب تعديلات» — لطيفٌ عمليّ (١١ أكتوبر ٢٠٢٦) ═══
 
    قرارُ صاحب المنصّة، لمّا رأى البريدَ الذي يصل المدرّب: «مخيفٌ وغيرُ مرتّب.. يجب أن يكون ملخّصا

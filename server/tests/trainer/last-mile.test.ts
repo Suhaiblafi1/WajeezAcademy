@@ -138,7 +138,10 @@ describe('⑤ خبرٌ واحدٌ لكلّ قرار، وخبرٌ للتفعيل'
     await plans.decide(adminId, plan.id, false, 'المحورُ الثاني بلا مخرجٍ يُقاس')
     const bell = await bellSince(t.userId, since)
     expect(bell.map((n) => n.templateKey), 'وصله عن الردّ الواحد غيرُ خبرٍ واحد').toEqual(['cohort.plan.decision'])
-    expect(bell[0]!.body).toContain('المحورُ الثاني بلا مخرجٍ يُقاس')
+    /* والجرسُ سطرٌ بعدد ما ينتظره في «المراجعة» لا الملاحظاتُ بنصوصها (١١ أكتوبر ٢٠٢٦، «فيها كلامٌ كثير»،
+       `returnBellAr`) — والنصوصُ بنودٌ هناك */
+    expect(bell[0]!.body).toMatch(/^تنتظرك في «المراجعة» ملاحظةٌ واحدة — قرّر فيها ثمّ أرسل مراجعتك\./)
+    expect(bell[0]!.body).not.toContain('المحورُ الثاني بلا مخرجٍ يُقاس')
     expect(bell[0]!.body).toContain('وعادت مهلتُك تعدّ')
     /* والمهلةُ عادت فعلا — الخبرُ يقول ما وقع */
     expect((await prisma.trainerContract.findUniqueOrThrow({ where: { id: t.contractId } })).conditionPausedAt).toBeNull()
