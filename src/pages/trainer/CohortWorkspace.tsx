@@ -605,6 +605,9 @@ export default function CohortWorkspace() {
      فيهما وحدَهما يُرسم الإطارُ الأحمر (`FieldFlag.tsx`). */
   const [touched, setTouched] = useState<ReadonlySet<string>>(() => new Set());
   const [flagAll, setFlagAll] = useState<Stage | null>(null);
+  /* اقتراحُ صفحات المحاور من ملفّ الكرّاسة — العلّةُ عند `suggestPages` */
+  const [pagesBusy, setPagesBusy] = useState(false);
+  const [pageAsk, setPageAsk] = useState<Map<string, string> | null>(null);
   const touch = (id: string) => setTouched((t) => (t.has(id) ? t : new Set(t).add(id)));
   /* «أرسِلها» وفي يده تعديلٌ لم يُحفظ — يُسأل قبل أن يُرسَل المحفوظُ وحدَه (٣ أكتوبر ٢٠٢٦) */
   const [unsavedAsk, setUnsavedAsk] = useState(false);
@@ -894,8 +897,6 @@ export default function CohortWorkspace() {
   const scorecard = planScorecard({
     period: ws.cohort.period, content: ws.plan?.content ?? null, sessions: ws.sessions, assessments: ws.assessments,
   });
-  /* وأوّلُ ما يستطيع هو فتحَه من الباقي — لا كلُّ الباقي خطوةٌ في يده */
-  const firstMine = blocking.find((b) => stageOfKey(b.key) !== null) ?? null;
   /* والخطُّ يمتلئ بقدر ما **يملك المدرّبُ** إنجازَه — فيبلغ تمامَه حين لا يبقى
      إلّا قرارُ الإدارة، لا يقف دون التمام ينتظر قرارا ليس بيده. وصفُّ الفصل
      مثلُ صفِّ الاعتماد في هذا: تسمّيه الإدارةُ عند الإسناد، فلا يُعدُّ عليه. */
@@ -1512,6 +1513,36 @@ export default function CohortWorkspace() {
         .filter((x) => moduleIds.includes(x.moduleId))
         .sort((a, b) => moduleIds.indexOf(a.moduleId) - moduleIds.indexOf(b.moduleId)),
     });
+  /* ═══ وصفحاتُ المحاور تُقترح من فهرس ملفّ الكرّاسة (١١ أكتوبر ٢٠٢٦) ═══
+     الاقتراحُ يُكتب في الخانات ويُعدَّل. وما كتبه بيده لا يُستبدل إلّا باختياره: إن خالف
+     الاقتراحُ شيئا كتبه سُئل — «في الفارغة وحدَها» أو «استبدل الكلّ» أو «ألغِ». */
+  const whereOf = (id: string) => (wb?.parts ?? []).find((x) => x.moduleId === id)?.whereAr;
+  const applyPages = (found: ReadonlyMap<string, string>, how: "empty" | "all") => {
+    const keep = (wb?.parts ?? []).filter((x) => moduleIds.includes(x.moduleId) && !(found.has(x.moduleId) && (how === "all" || !x.whereAr.trim())));
+    const add = [...found.entries()].filter(([id]) => how === "all" || !(whereOf(id) ?? "").trim()).map(([moduleId, whereAr]) => ({ moduleId, whereAr }));
+    setWorkbook({ parts: [...keep, ...add].sort((a, b) => moduleIds.indexOf(a.moduleId) - moduleIds.indexOf(b.moduleId)) });
+    setPageAsk(null);
+    toast(add.length ? `اقتُرحت ${add.length === 1 ? "صفحةُ محورٍ واحد" : `صفحاتُ ${add.length} محاور`} — عدّلها كما تشاء` : "لم يتغيّر شيء");
+  };
+  const suggestPages = async () => {
+    const key = (wb?.bodyFileKey ?? "").trim();
+    if (!key) return;
+    setPagesBusy(true);
+    try {
+      /* ملفٌّ رُفع للتوّ لا يقرؤه الخادمُ حتّى تُحفظ الخطّةُ به — فيُحفظ ما في اليد أوّلا */
+      if (!(await persist())) return;
+      const { suggestWorkbookPages } = await import("@/application/trainer/workbook-pdf");
+      const found = await suggestWorkbookPages(key, content.modules.map((m) => ({ moduleId: m.moduleId, titleAr: m.titleAr })));
+      if (found.size === 0) { toastError("لم تُعرف المحاورُ في الملفّ — ليس له فهرس، ولم تُوجد عناوينُها فيه. اكتبها بيدك."); return; }
+      const clash = [...found.entries()].filter(([id, w]) => (whereOf(id) ?? "").trim() && whereOf(id) !== w);
+      if (clash.length === 0) applyPages(found, "all");
+      else setPageAsk(found);
+    } catch {
+      toastError("تعذّرت قراءةُ الملفّ — اكتب الصفحاتِ بيدك.");
+    } finally {
+      setPagesBusy(false);
+    }
+  };
   /* كرّاساتُ المواعيد القديمة — تُذكر ليجمعها في واحدة، ولا تُحذف من تحته */
   const slotWorkbooks = slots.filter((x) => workbookDone(x.workbook)).length;
   /* أو لكلّ محورٍ كرّاستُه — مجموعاتٌ متجاورةٌ بترتيب المحاور (٦ أكتوبر ٢٠٢٦) */
@@ -1537,7 +1568,7 @@ export default function CohortWorkspace() {
         <label className="relative flex cursor-pointer items-start gap-3 text-read leading-6">
           <input id="plan-confirm" type="checkbox" checked={confirm} disabled={locked || approved} className="mt-1 h-4 w-4 accent-teal"
             onChange={(e) => { setConfirm(e.target.checked); if (e.target.checked) setConfirmNudge(0); }} />
-          <span>أوافق على كلّ ما في هذه الشعبة — مواعيدَها ومحاورَها وكرّاساتِها ولقاءاتِها وتسجيلاتِها ومهامَّها ومصادرَها — وأتحمّل تقديمَها كما هي.</span>
+          <span>أوافق على كلّ ما في هذه الشعبة، وأتحمّل تقديمَها كما هي.</span>
         </label>
       </div>
     </>
@@ -2539,6 +2570,26 @@ export default function CohortWorkspace() {
                   <p className="mt-0.5 text-read leading-6 text-muted-foreground">
                     اختياريّ: «ص ٥» أو «ص ٥–١٢».
                   </p>
+                  {(wb?.bodyFileKey ?? "").trim() && (wb?.bodyFileMime ?? "application/pdf") === "application/pdf" && moduleIds.length > 0 && (
+                    <Button tone="secondary" size="sm" icon={Sparkles} className="mt-2" loading={pagesBusy} disabled={locked || pagesBusy}
+                      onClick={() => void suggestPages()}>
+                      اقترحها من فهرس الملفّ
+                    </Button>
+                  )}
+                  {pageAsk && (
+                    <Inset tone="warn" role="alertdialog" aria-label="صفحاتٌ كتبتَها تخالف الاقتراح" className="mt-2 grid gap-2 text-read leading-6">
+                      <p className="font-bold text-foreground">في بعض الخانات صفحاتٌ كتبتَها تخالف الاقتراح. اختر:</p>
+                      <ul className="list-inside list-disc text-muted-foreground">
+                        <li><b className="text-foreground">في الفارغة وحدَها</b> — يبقى ما كتبتَه.</li>
+                        <li><b className="text-foreground">استبدل الكلّ</b> — يحلّ الاقتراحُ محلَّه.</li>
+                      </ul>
+                      <div className="flex flex-wrap gap-2">
+                        <Button tone="confirm" size="sm" onClick={() => applyPages(pageAsk, "empty")}>في الفارغة وحدَها</Button>
+                        <Button tone="secondary" size="sm" onClick={() => applyPages(pageAsk, "all")}>استبدل الكلّ</Button>
+                        <Button tone="ghost" size="sm" onClick={() => setPageAsk(null)}>ألغِ</Button>
+                      </div>
+                    </Inset>
+                  )}
                   {moduleIds.length === 0 ? (
                     <Inset className="mt-3 text-read leading-6 text-muted-foreground">
                       اكتب محاورك في «المحاور ومواعيدها» أوّلا — ثمّ ارجع إلى هنا.
@@ -3296,7 +3347,7 @@ export default function CohortWorkspace() {
         <Panel as="section" tone={st.tone}>
           <StageIntro stage="approval" />
           <p className="mt-2 text-read leading-7 text-foreground">
-            بإرسالك تقرّ أنّك راجعتَ كلَّ ما في الشعبة ووافقتَ عليه: اسمَها ومدّتَها، ومحاورَها ومواعيدَها وتطبيقَها العمليّ، وكرّاساتِها، ولقاءاتِها المباشرة وجلساتِها المسجّلة، ومهامَّها ومصادرَها. ثمّ يعتمدها المديرُ الأكاديميُّ أو المديرُ الأعلى — ويصلك القرارُ هنا وبالبريد.
+            بإرسالك تقرّ أنّك راجعتَ الشعبةَ كلَّها. يصلك قرارُ الإدارة هنا وبالبريد.
           </p>
           {ws.plan?.submittedAt && <p className="mt-2 text-read text-muted-foreground">آخرُ إرسال: {fmtDateTimeAr(ws.plan.submittedAt)}{ws.plan.reviewedAt ? ` · آخرُ قرار: ${fmtDateTimeAr(ws.plan.reviewedAt)}` : ""}</p>}
           {/* ═══ ومتى يدخلها متعلّموه — يُقال قبل الإرسال (٣ج) ═══
@@ -3326,14 +3377,20 @@ export default function CohortWorkspace() {
               المرحلةَ نفسَها فلا يجده أبدا. */}
           {remaining > 0 && !approved && (
             <Inset tone="warn" className="mt-3 text-read leading-6 text-gold-ink">
-              بقي قبل الإرسال: {blocking.map((b) => b.labelAr).join(" · ")}
-              {/* والزرُّ يفتح أوّلَ ما **هو** فاعلُه: في الباقي صفوفٌ بيدِ
-                  الإدارة (تسميةُ الفصل)، وزرٌّ يقود إلى خطوةٍ لا وجودَ لها
-                  يترك الشاشةَ بيضاءَ ويبدو عطبا. */}
-              {firstMine && (
-                <Button tone="ghost" size="sm" className="mt-2" onClick={() => openStage(firstMine.key as Stage)}>
-                  افتح أوّلَها
-                </Button>
+              {/* ═══ أسماءُ الخطوات لا جُملُ القائمة (١١ أكتوبر ٢٠٢٦) ═══
+                  «النصوصُ كثيرة» — صاحب المنصّة بلقطة هذا الصندوق: فقرةٌ من جُمل القائمة
+                  كلِّها. فصار سطرا بأسماء الخطوات، كلٌّ زرٌّ يفتحها، وما ينقصها يُعلَّم فيها
+                  بالأحمر. وما ليس بيده (بيد الإدارة) يُقال بنصّه. */}
+              <p className="font-bold">بقي قبل الإرسال:</p>
+              <div className="mt-1.5 flex flex-wrap gap-1.5">
+                {STAGES.filter((x) => x.key !== "approval" && blocking.some((b) => stageOfKey(b.key) === x.key)).map((x) => (
+                  <Button key={x.key} tone="secondary" size="sm" onClick={() => void openStage(x.key)}>{x.label}</Button>
+                ))}
+              </div>
+              {blocking.some((b) => stageOfKey(b.key) === null) && (
+                <p className="mt-1.5 text-muted-foreground">
+                  {blocking.filter((b) => stageOfKey(b.key) === null).map((b) => b.labelAr).join(" · ")}
+                </p>
               )}
             </Inset>
           )}
@@ -3359,7 +3416,8 @@ export default function CohortWorkspace() {
           {!approved && (
             <PlanScorecard
               items={scorecard}
-              heading="فحصٌ قبل الإرسال — المعاييرُ التي تُقرأ بها خطّتُك"
+              heading="فحصٌ قبل الإرسال"
+              openOnly
               intro="«مطلوب» يمنع الإرسال، و«نصيحة» القرارُ فيها لك."
               onStep={(step) => void openStage(step as Stage)}
             />

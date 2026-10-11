@@ -162,3 +162,23 @@ describe('الاختيارُ من متعدّدٍ في سطرٍ واحد', () => 
     expect(MP).not.toMatch(/fixed inset-0/)
   })
 })
+
+/* ═══ «بقي قبل الإرسال» أسماءُ خطواتٍ تُفتح لا فقرةُ جُمل (١١ أكتوبر ٢٠٢٦) ═══ */
+describe('ما بقي قبل الإرسال — سطرٌ بأسماء الخطوات', () => {
+  it('كلُّ خطوةٍ فيها ناقصٌ زرٌّ يفتحها — ولا تُسرد جُملُ القائمة كلُّها', () => {
+    const box = WS.slice(WS.indexOf('<p className="font-bold">بقي قبل الإرسال:</p>'), WS.indexOf('</Inset>', WS.indexOf('<p className="font-bold">بقي قبل الإرسال:</p>')))
+    expect(box).toContain('blocking.some((b) => stageOfKey(b.key) === x.key)')
+    expect(box).toContain('onClick={() => void openStage(x.key)}>{x.label}</Button>')
+    expect(WS, 'عادت الفقرة').not.toContain('بقي قبل الإرسال: {blocking.map((b) => b.labelAr).join(" · ")}')
+  })
+})
+
+describe('فحصُ ما قبل الإرسال عند المدرّب — ما يحتاج نظرةً وحدَه', () => {
+  it('المتحقّقُ يُعدّ ولا يُسرد عند المدرّب، ويُسرد كاملا عند المعتمِد', () => {
+    const SC = code('src/components/PlanScorecard.tsx')
+    expect(SC).toContain('const items = openOnly ? all.filter((i) => i.status !== "ok") : all;')
+    expect(SC).toContain('const n = scorecardCounts(all);')
+    expect(WS).toMatch(/heading="فحصٌ قبل الإرسال"\s+openOnly/)
+    expect(code('src/components/admin/TrainerPlanReview.tsx')).not.toMatch(/<PlanScorecard[^>]*openOnly/)
+  })
+})
