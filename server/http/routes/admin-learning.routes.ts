@@ -184,6 +184,15 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
     return reply.status(201).send(await planEdits.propose(req.auth!.userId, id, file.items))
   })
 
+  /* ═══ جدولٌ ثابتٌ مقترحٌ بسلسلته — تبنيه المنصّة مسوّدةً تعتمدها الإدارة (١١ أكتوبر ٢٠٢٦) ═══ */
+  app.post('/api/admin/cohort-plans/:id/edits/schedule', {
+    preHandler: requirePermission('cohort.plan.approve'),
+    schema: { tags: ['admin-cohorts'], summary: 'جدولٌ ثابتٌ مقترحٌ للقاءات الخطّة ومهامّها معا — مسوّدةً تُراجَع قبل المدرّب' },
+  }, async (req, reply) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return reply.status(201).send(await planEdits.proposeSchedule(req.auth!.userId, id))
+  })
+
   /* ═══ والملفُّ الجديدُ مكانَ المسوّدات التي لم تُعتمد (١٠ أكتوبر ٢٠٢٦) ═══
      من صندوق الرفع دفعةً: يُفحص الجديدُ كلُّه، ثمّ تُسحب المسوّداتُ ويُحفظ هو في معاملةٍ واحدة. */
   app.post('/api/admin/cohort-plans/:id/edits/replace-drafts', {

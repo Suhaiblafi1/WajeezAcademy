@@ -98,6 +98,14 @@ export const planEditItem = z.discriminatedUnion('kind', [
   }).strict(),
   z.object({ kind: z.literal('session_move'), sessionId: z.string().uuid(), startsAt: instant, endsAt: instant, ...meta }).strict(),
   z.object({ kind: z.literal('session_remove'), sessionId: z.string().uuid(), ...meta }).strict(),
+  /* وجدولٌ كاملٌ بسلسلته (١١ أكتوبر ٢٠٢٦): لقاءاتٌ تُنقل معا ومواعيدُ المهامّ التي تتبعها — يُقبل كلُّه أو يُرفض */
+  z.object({
+    kind: z.literal('schedule'), ...meta,
+    weekday: z.number().int().min(0).max(6),
+    clock: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+    moves: z.array(z.object({ sessionId: z.string().uuid(), startsAt: instant, endsAt: instant }).strict()).min(1).max(40),
+    tasks: z.array(z.object({ assessmentId: z.string().uuid(), dueAt: instant }).strict()).max(40),
+  }).strict(),
 ])
 
 export const planEditsFile = z.object({
