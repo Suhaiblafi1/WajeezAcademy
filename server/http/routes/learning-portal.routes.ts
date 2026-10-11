@@ -9,6 +9,7 @@ import { LEARNER_CHOICES } from '../../../src/application/trainer/departure-rule
 import { z } from 'zod'
 import type { PrismaClient } from '@prisma/client'
 import { CohortService } from '../../services/cohort.service'
+import { CohortCopyService } from '../../services/cohort-copy.service'
 import { EnrollmentService } from '../../services/enrollment.service'
 import { AssessmentService } from '../../services/assessment.service'
 import { ProgressService } from '../../services/progress.service'
@@ -734,6 +735,21 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     return plans.savePlan(req.auth!.userId, id, planContent.parse(req.body))
+  })
+
+  /* ═══ «انسخ من شعبةٍ أخرى» — المحاورُ والمهامُّ والمصادرُ بتواريخَ تبدأ من يومٍ يختاره (١١ أكتوبر ٢٠٢٦) ═══
+     والأحكامُ في رأس `cohort-copy.service.ts`. */
+  const copies = new CohortCopyService(prisma)
+  app.post('/api/trainer/cohorts/:id/plan/copy-from', {
+    preHandler: requirePermission('trainer.cohort.plan'),
+    schema: { tags: ['trainer-ops'], summary: 'نسخُ خطّة شعبةٍ أخرى لي لنفس الدورة إلى هذه — بتواريخَ مُزاحة' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const body = z.object({
+      sourceCohortId: z.string().uuid(),
+      startsOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    }).strict().parse(req.body)
+    return copies.copyFrom(req.auth!.userId, id, body)
   })
 
   /* ═══ وتعديلاتٌ اقترحتها الإدارةُ على خطّتي — أقبل كلًّا أو أرفضه (٨ أكتوبر ٢٠٢٦) ═══

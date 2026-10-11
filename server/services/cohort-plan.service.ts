@@ -645,7 +645,7 @@ export class CohortPlanService {
     /* وترتيبُها بين شعبه في دورتها — «شعبتك الأولى» في رأس الصفحة (⑫) */
     this.prisma.cohortTrainer.findMany({
       where: { profileId: profile.id, cohort: { course: { cohorts: { some: { id: cohortId } } } } },
-      select: { cohort: { select: { id: true, courseId: true, createdAt: true } } },
+      select: { cohort: { select: { id: true, courseId: true, createdAt: true, title: true } } },
     }),
     new CohortFileService(this.prisma).reviewReports(cohortId),
     ])
@@ -680,6 +680,19 @@ export class CohortPlanService {
       ? { startsOn: zonedDay(cohort.startsAt), endsOn: zonedDay(cohort.endsAt) }
       : null
     const trainerOrdinal = trainerOrdinals(mine.map((m) => m.cohort)).get(cohort.id) ?? null
+    /* وشعبُه الأخرى لهذه الدورة وفي خطّتها ما يُنسخ — لـ«انسخ من شعبةٍ أخرى» (١١ أكتوبر ٢٠٢٦) */
+    const others = mine.map((m) => m.cohort).filter((c) => c.id !== cohort.id)
+    const otherPlans = others.length
+      ? await this.prisma.cohortDeliveryPlan.findMany({
+          where: { cohortId: { in: others.map((c) => c.id) }, trainerId: { not: null } },
+          orderBy: { createdAt: 'desc' }, select: { cohortId: true, content: true },
+        })
+      : []
+    const copySources = others.flatMap((c) => {
+      const latest = otherPlans.find((p) => p.cohortId === c.id)?.content as TrainerPlanContent | null | undefined
+      if (!latest || !Array.isArray(latest.modules) || !latest.startsOn) return []
+      return [{ id: c.id, title: c.title, startsOn: latest.startsOn, modules: latest.modules.length }]
+    })
 
     return {
       role: link.role,
@@ -742,6 +755,7 @@ export class CohortPlanService {
         pendingChange: a.pendingChange, reviewerNote: a.reviewerNote,
       })),
       approvedOnce: planApprovedOnce(cohort.plans),
+      copySources,
       /* والمعتمَدةُ التي يراجعها — ليقرأ ما غيّره عنها قبل أن يرسل (٣ج-٤) */
       approvedPlan,
       checklist,

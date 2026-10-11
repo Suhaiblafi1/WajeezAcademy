@@ -67,6 +67,7 @@ import { RESOURCE_META } from "@/components/resource-kind-meta";
 import BodyEditor from "@/components/BodyEditor";
 import TabBar from "@/components/ui/TabBar";
 import ModuleBodyUpload from "@/components/ModuleBodyUpload";
+import WordImport from "@/components/WordImport";
 import { MAX_BODY_FILE_BYTES, moduleBodyDone, resourceHasSource } from "@/application/trainer/module-body";
 import {
   MATERIAL_PATCH, MATERIAL_RIGHTS_ANCHOR, WORKBOOK_TEMPLATES, groupLabelAr, mergeWithNext, splitGroup, templateRequired, workbookGroups,
@@ -197,6 +198,8 @@ interface Workspace {
   workbookBeforeTemplate?: boolean;
   /* تقاريرُ المراجعة التي رفعتها الإدارةُ مع قراراتها — أحدثُها أوّلا (٨ أكتوبر ٢٠٢٦) */
   reviewReports?: ReviewReport[];
+  /* شعبُه الأخرى لهذه الدورة وفي خطّتها ما يُنسخ (١١ أكتوبر ٢٠٢٦، `cohort-copy.service.ts`) */
+  copySources?: { id: string; title: string; startsOn: string; modules: number }[];
 }
 
 const PLAN_STATUS_AR: Record<string, { label: string; tone: "default" | "accent" | "positive" | "warn" }> = {
@@ -632,6 +635,9 @@ export default function CohortWorkspace() {
      «يبقى الإدخالُ اليدويُّ هو الأساس… ويُضاف خيارٌ جانبيٌّ اختياريّ». والعلّةُ
      في رأس `WeeklySessions.tsx`. */
   const [scheduleMode, setScheduleMode] = useState<"manual" | "weekly">("manual");
+  /* «انسخ من شعبةٍ أخرى» — المنسوخُ منها وبدءُ هذه، ثمّ تأكيدٌ يقول ما يقع */
+  const [copyForm, setCopyForm] = useState({ sourceId: "", startsOn: "" });
+  const [copyAsk, setCopyAsk] = useState(false);
   /* التكليفُ المطلوبُ حذفُه — الحذفُ لا يقع بنقرةٍ واحدة */
   const [pendingDelete, setPendingDelete] = useState<Workspace["assessments"][number] | null>(null);
   /* والمحورُ المطلوبُ حذفُه — ومعه موضعُه، فالعناوينُ تتكرّر */
@@ -1768,6 +1774,34 @@ export default function CohortWorkspace() {
       {stage === "identity" && (
         <Panel as="section">
           <StageIntro stage="identity" />
+          {/* ═══ «انسخ من شعبةٍ أخرى» (١١ أكتوبر ٢٠٢٦) ═══
+              «المدرّبُ صاحبُ عدّة شعبٍ لنفس الدورة يعيد المحاورَ والمهامَّ والمصادرَ
+              يدويّا. النسخُ مع تعديل التواريخ فقط يوفّر ساعات». والأحكامُ في
+              `cohort-copy.service.ts`: شعبةٌ لم تُعتمَد لها خطّةٌ قطّ، والخطّةُ في يده. */}
+          {(ws.copySources?.length ?? 0) > 0 && inHand && !ws.approvedOnce && (
+            <HowToFill className="mt-4" title="انسخ من شعبةٍ أخرى لك لهذه الدورة">
+              <p>تُنسخ المحاورُ ومتونُها ومواعيدُها والكرّاساتُ والمصادرُ والمهامّ، وتُزاح التواريخُ كلُّها لتبدأ من اليوم الذي تختاره — والإيقاعُ أسبوعا بأسبوع كما هو. ولا تُنسخ اللقاءاتُ المباشرة: تضيفها من «اللقاءات».</p>
+              <div className="mt-2 grid gap-3 sm:grid-cols-2">
+                <StaffField label="انسخ من" hint="شعبةٌ لك لهذه الدورة نفسِها.">
+                  <select value={copyForm.sourceId} disabled={locked} aria-label="الشعبةُ المنسوخُ منها"
+                    onChange={(e) => setCopyForm({ ...copyForm, sourceId: e.target.value })} className={`${controlCls} [&>option]:bg-surface`}>
+                    <option value="">اختر شعبة</option>
+                    {ws.copySources!.map((c) => (
+                      <option key={c.id} value={c.id}>{c.title} — {countAr(c.modules, MODULE_FORMS)}، تبدأ {cohortDayAr(c.startsOn)}</option>
+                    ))}
+                  </select>
+                </StaffField>
+                <StaffField label="وتبدأ هذه الشعبة" hint="منه تُزاح المواعيدُ كلُّها بالفرق نفسِه.">
+                  <input type="date" dir="ltr" min={today} value={copyForm.startsOn} disabled={locked} aria-label="بدءُ هذه الشعبة بعد النسخ"
+                    onChange={(e) => setCopyForm({ ...copyForm, startsOn: e.target.value })} className={`${controlCls} text-left`} />
+                </StaffField>
+              </div>
+              <Button tone="secondary" size="sm" className="mt-3" disabled={locked || busy || !copyForm.sourceId || !copyForm.startsOn}
+                onClick={() => setCopyAsk(true)}>
+                انسخها إلى هذه الشعبة
+              </Button>
+            </HowToFill>
+          )}
           <div className="mt-5 grid gap-5">
             <StaffField wide label="اسم الشعبة" hint={suggestedTitle ? "ما يراه المتعلّم في الكتالوج وفي شهادته. اكتب اسما يميّزها — «… · مساء الأحد» — أو اتركه فارغا فتُسمّى بالمثال الظاهر فيه." : "ما يراه المتعلّم في الكتالوج وفي شهادته — ولك أن تزيد عليه ما يميّزها: «… · مساء الأحد»."}>
               <input value={identity.title} placeholder={suggestedTitle ? `مثال: ${suggestedTitle}` : undefined} aria-label="اسم الشعبة" onChange={(e) => setIdentity({ title: e.target.value })} disabled={locked} className={controlCls} />
@@ -2052,6 +2086,9 @@ export default function CohortWorkspace() {
                          ما قبله ولا ما بعده وهو يكتب. */
                       rows={20}
                     />
+                    {/* واستيرادُه من Word دروسا بعناوينها (١١ أكتوبر ٢٠٢٦) — `WordImport.tsx` */}
+                    <WordImport current={m.bodyAr ?? ""} disabled={locked} label={`المحور ${i + 1}`}
+                      onImport={(next) => setModule(i, { bodyAr: next })} />
                     <ModuleBodyUpload
                       cohortId={ws.cohort.id}
                       refId={m.moduleId}
@@ -2982,6 +3019,31 @@ export default function CohortWorkspace() {
               هذا محورٌ من الكتالوج — حذفُه من خطّتك لا يحذفه من الدورة نفسِها، ويظلّ محسوبا في تقدّم المتعلّم.
             </Inset>
           )}
+        </ConfirmAction>
+      )}
+
+      {copyAsk && (
+        <ConfirmAction
+          titleAr="نسخُ خطّة شعبةٍ أخرى"
+          confirmLabelAr="انسخها"
+          busy={busy}
+          onCancel={() => setCopyAsk(false)}
+          onConfirm={() => {
+            setCopyAsk(false);
+            void act(
+              () => apiPost(`/api/trainer/cohorts/${ws.cohort.id}/plan/copy-from`, { sourceCohortId: copyForm.sourceId, startsOn: copyForm.startsOn }),
+              (r) => {
+                const out = r as { copiedTasks?: number } | null;
+                return `نُسخت الخطّة${out?.copiedTasks ? ` ومعها ${countAr(out.copiedTasks, { one: "مهمّة", two: "مهمّتان", few: "مهامّ", many: "مهمّة" })}` : ""} — راجع التواريخ، ثمّ أضِف لقاءاتِك`;
+              },
+            );
+          }}
+        >
+          <p className="text-read leading-7">الفرقُ قبل أن تختار:</p>
+          <ul className="mt-1 list-inside list-disc text-read leading-7">
+            <li><b>انسخها</b> — تحلّ خطّةُ «{ws.copySources?.find((c) => c.id === copyForm.sourceId)?.title}» محلَّ ما في خطّة هذه الشعبة الآن (المدّةُ والمحاورُ والكرّاسةُ والمصادر)، وتُضاف مهامُّها إلى مهامّ هذه — وما كان بعنوانه هنا لا يُكرَّر.</li>
+            <li><b>ألغِ</b> — لا يتغيّر شيء، وتملأ هذه الشعبةَ بيدك كما هي.</li>
+          </ul>
         </ConfirmAction>
       )}
 
