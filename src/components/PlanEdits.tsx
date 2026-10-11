@@ -8,7 +8,7 @@
    تعرضان ما يحسبه الخادمُ منها، لا تحسبان. */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Check, ExternalLink, FileJson, Files, X } from "lucide-react";
+import { CalendarClock, Check, ExternalLink, FileJson, Files, X } from "lucide-react";
 import { apiDelete, apiGet, apiPost, ApiError } from "@/services/api";
 import { Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
@@ -85,10 +85,12 @@ function Value({ text, href, long, muted }: { text: string | null; href?: string
 /* ═══════════ بطاقةُ المراجعة ═══════════ */
 
 /** لبطاقة المراجعة — يُرفع الملفّ والخطّةُ بانتظار القرار أو في يد مدرّبها */
-export function PlanEditsUploader({ planId, cohortId, canUpload, canReview, onPending }: {
+export function PlanEditsUploader({ planId, cohortId, canUpload, canReview, onPending, offerSchedule = false }: {
   planId: string;
   cohortId: string;
   canUpload: boolean;
+  /** في بطاقة المعايير نصيحةٌ في الإيقاع أو أوقات اللقاءات — فتبني المنصّةُ جدولا ثابتا بسلسلته (١١ أكتوبر ٢٠٢٦) */
+  offerSchedule?: boolean;
   /** يعتمد كلَّ بندٍ للمدرّب أو يحذفه — `cohort.plan.edits.review` (١٠ أكتوبر ٢٠٢٦) */
   canReview: boolean;
   /** كم ينتظر المدرّبَ — تقرؤه البطاقةُ فيكفي سببا لـ«اطلب تعديلات» */
@@ -119,6 +121,21 @@ export function PlanEditsUploader({ planId, cohortId, canUpload, canReview, onPe
     } finally {
       setBusy(false);
       if (input.current) input.current.value = "";
+    }
+  };
+
+  /* ═══ جدولٌ ثابتٌ بسلسلته تبنيه المنصّة (١١ أكتوبر ٢٠٢٦) ═══
+     «في حال قمنا بتعديل شيءٍ قد يؤثّر على توقيتاتٍ أخرى يجب أن يكون التعديلُ كاملا بسلسلة» (صاحب
+     المنصّة). فبندٌ واحدٌ باللقاءات ومواعيد المهامّ التي تتبعها — مسوّدةً تراجعها قبل المدرّب. */
+  const schedule = async () => {
+    setBusy(true); setMsg("");
+    try {
+      setItems(await apiPost<PlanEditItem[]>(`/api/admin/cohort-plans/${planId}/edits/schedule`, {}));
+      setMsg("جُهّز الجدولُ مسوّدةً — راجعه أدناه: كلُّ لقاءٍ بموعده قبلُ وبعدُ، ومعه مواعيدُ المهامّ التي تتبعه.");
+    } catch (e) {
+      setMsg(errText(e, "تعذّر تجهيزُ الجدول"));
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -213,11 +230,12 @@ export function PlanEditsUploader({ planId, cohortId, canUpload, canReview, onPe
               اعتمِدها كلَّها للمدرّب ({drafts.length})
             </Button>
           )}
-          {/* في مجموعتين تُفتحان بنقرة — المطلوبُ مفتوحٌ والمقترحُ مطويّ («كثيرُ الكلام»، ١١ أكتوبر ٢٠٢٦) */}
+          {/* في مجموعتين تُفتحان بنقرة — المطلوبُ مفتوحٌ والمقترحُ مطويّ («كثيرُ الكلام»، ١١ أكتوبر ٢٠٢٦)،
+              إلّا أن يكون فيه جدولٌ ثابت: جهّزه المعتمِدُ بزرّه الآن، فيراه بلا نقرةٍ ثانية */}
           {([["required", "المطلوب"], ["suggested", "المقترح"]] as const).map(([kind, label]) => {
             const list = drafts.filter((x) => x.required === (kind === "required"));
             return list.length > 0 && (
-              <details key={kind} className="rounded-lg border border-border/60 p-3" open={kind === "required"}>
+              <details key={kind} className="rounded-lg border border-border/60 p-3" open={kind === "required" || list.some((x) => x.kind === "schedule")}>
                 <summary className="cursor-pointer text-read font-bold text-teal-light-ink">{label} ({list.length})</summary>
                 <ol className="mt-3 space-y-3">{list.map((x) => draftItem(x))}</ol>
               </details>
@@ -254,6 +272,11 @@ export function PlanEditsUploader({ planId, cohortId, canUpload, canReview, onPe
           <Button tone="secondary" size="sm" icon={FileJson} disabled={busy} onClick={() => input.current?.click()}>
             {busy ? "يُفحص…" : "ارفع ملفَّ التعديلات"}
           </Button>
+          {offerSchedule && (
+            <Button tone="secondary" size="sm" icon={CalendarClock} disabled={busy} onClick={() => void schedule()}>
+              جهّز جدولًا ثابتًا مقترحًا
+            </Button>
+          )}
           {open > 0 && (
             <Button tone="ghost" size="sm" disabled={busy} onClick={() => void withdraw()}>
               اسحب ما لم يُقرَّر ({open})

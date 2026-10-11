@@ -12,7 +12,7 @@
    `server/tests/plan/note-items.test.ts`. */
 
 import { describe, expect, it } from 'vitest'
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import {
   isEditsLineAr, noteItemsFrom, notePoints, PLAN_EDIT_KINDS, planEditView, suggestedEditsLineAr,
@@ -113,7 +113,11 @@ describe('④ ولا تُعدّ تعديلات، والقاعدةُ تتّسع �
   })
 
   it('⚠️ وقيدُ نوع البند في القاعدة يحمل الأنواعَ كلَّها — ومنها `note`', () => {
-    const sql = readFileSync(join(process.cwd(), 'prisma/migrations/20261011200000_plan_edit_note_kind/migration.sql'), 'utf8')
+    /* آخرُ هجرةٍ تضع القيد — فالنوعُ الذي يأتي بعد `note` (`schedule`، ١١ أكتوبر ٢٠٢٦) يُقرأ معه */
+    const dir = join(process.cwd(), 'prisma/migrations')
+    const sql = readdirSync(dir).sort().reverse()
+      .map((d) => { try { return readFileSync(join(dir, d, 'migration.sql'), 'utf8') } catch { return '' } })
+      .find((x) => /ADD CONSTRAINT "PlanEditSuggestion_kind_allowed"/.test(x)) ?? ''
     const allowed = /CHECK \("kind" IN \(([^)]+)\)\)/.exec(sql)?.[1].split(',').map((s) => s.trim().replace(/'/g, ''))
     expect(allowed).toEqual([...PLAN_EDIT_KINDS])
     expect(PLAN_EDIT_KINDS).toContain('note')

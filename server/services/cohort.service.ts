@@ -960,8 +960,10 @@ export class CohortService {
     return this.addSession(userId, cohortId, { ...input, approvalState: 'pending', wantsZoom: false })
   }
 
-  /** المدرّبُ ينقل لقاءَه — لا يقترح نقله */
-  async trainerMoveSession(userId: string, sessionId: string, input: { startsAt: Date; endsAt?: Date }) {
+  /* ═══ أيصحّ النقلُ؟ — يُفحص ولا يُكتب (١١ أكتوبر ٢٠٢٦) ═══
+     بابُ النقل نفسُه يبدأ به، والجدولُ الثابتُ يفحص به كلَّ لقاءٍ فيه **قبل** أن ينقل أوّلَها
+     (`plan-edit.service.ts`): «كاملا بسلسلة، لكي لا نخرّب بدلَ ما نُصلح» (صاحب المنصّة). */
+  async assertTrainerMove(userId: string, sessionId: string, input: { startsAt: Date; endsAt?: Date }) {
     const session = await this.prisma.cohortSession.findUnique({
       where: { id: sessionId },
       select: {
@@ -992,6 +994,12 @@ export class CohortService {
         session.cohortId,
       )
     }
+    return session
+  }
+
+  /** المدرّبُ ينقل لقاءَه — لا يقترح نقله */
+  async trainerMoveSession(userId: string, sessionId: string, input: { startsAt: Date; endsAt?: Date }) {
+    const session = await this.assertTrainerMove(userId, sessionId, input)
     /* ═══ والمنقولُ داخلَ موعد محوره يبقى معتمَدا (٢٩ سبتمبر ٢٠٢٦) ═══
 
        كان قرارُ ١٧ سبتمبر: «يغيّرُه فيرجع لانتظار الإدارة» — يسقط إلى `pending`

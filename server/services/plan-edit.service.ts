@@ -27,9 +27,11 @@ import { readReviewNotes } from '../../src/application/trainer/review-notes'
 import { recordAudit } from './audit'
 import { AssessmentService } from './assessment.service'
 import { CohortService } from './cohort.service'
-import { CohortPlanService, type TrainerPlanContent } from './cohort-plan.service'
+import { CohortPlanService, resolvePeriod, type PlanStatus, type TrainerPlanContent } from './cohort-plan.service'
+import { proposeSchedule } from '../../src/application/trainer/schedule-proposal'
 import {
-  applyContentEdit, contentBefore, editsContent, noteItemsFrom, planEditStep, planEditView, rowEditProblem, sameSnapshot,
+  applyContentEdit, contentBefore, editsContent, noteItemsFrom, planEditStep, planEditView, rowEditProblem, sameSnapshot, scheduleChainProblem, scheduleSnapshot,
+  sessionMoveChainProblem,
   sessionSnapshot, taskSnapshot, type Checked, type EditContext, type EditSnapshot, type EditView, type PlanEdit,
   type PlanEditStatus, PLAN_EDITS_MAX, TRAINER_VISIBLE_EDIT_STATUSES,
 } from '../../src/application/trainer/plan-edits'
@@ -63,8 +65,8 @@ const OPEN = ['draft', 'submitted', 'changes_requested'] as const
 
 interface Rows {
   content: TrainerPlanContent
-  tasks: { id: string; title: string; briefAr: string | null; dueAt: Date | null; moduleId: string | null; maxScore: number }[]
-  sessions: { id: string; title: string; startsAt: Date; endsAt: Date | null; placeholder: boolean }[]
+  tasks: { id: string; title: string; type: string; briefAr: string | null; dueAt: Date | null; moduleId: string | null; maxScore: number }[]
+  sessions: { id: string; title: string; startsAt: Date; endsAt: Date | null; placeholder: boolean; moduleIds: string[] }[]
 }
 
 export class PlanEditService {
@@ -93,11 +95,11 @@ export class PlanEditService {
     const [tasks, sessions] = await Promise.all([
       this.prisma.cohortAssessment.findMany({
         where: { cohortId },
-        select: { id: true, title: true, briefAr: true, dueAt: true, moduleId: true, maxScore: true },
+        select: { id: true, title: true, type: true, briefAr: true, dueAt: true, moduleId: true, maxScore: true },
       }),
       this.prisma.cohortSession.findMany({
         where: { cohortId, status: { not: 'cancelled' } },
-        select: { id: true, title: true, startsAt: true, endsAt: true, placeholder: true },
+        select: { id: true, title: true, startsAt: true, endsAt: true, placeholder: true, moduleIds: true },
       }),
     ])
     const c = (content ?? {}) as TrainerPlanContent
@@ -111,6 +113,7 @@ export class PlanEditService {
     if (p) return { ok: false, problemAr: p }
     switch (edit.kind) {
       case 'task_add': case 'note': return { ok: true, value: null }
+      case 'schedule': return scheduleSnapshot(edit, r.sessions, r.tasks)
       case 'task_change': {
         const t = r.tasks.find((x) => x.id === edit.assessmentId)
         if (!t) return { ok: false, problemAr: 'لا مهمّةَ بهذا المعرّف في هذه الشعبة — لعلّها حُذفت' }
@@ -135,6 +138,46 @@ export class PlanEditService {
   }
 
   /* ─────────── الإدارة: رفعٌ وسحب ─────────── */
+
+  /* ═══ جدولٌ ثابتٌ مقترحٌ بسلسلته — تبنيه المنصّة (١١ أكتوبر ٢٠٢٦، `schedule-proposal.ts`) ═══
+     من لقاءات الشعبة ومهامّها كما هي الآن، فيولد مسوّدةً (`proposed`) تراها الإدارةُ في بطاقتها وتعتمدها قبل
+     أن تصل المدرّب — كأيّ بندٍ مرفوع. وما لا يُقترح يُقال لماذا ولا يُحفظ شيء. */
+  async proposeSchedule(actorId: string, planId: string) {
+    const plan = await this.prisma.cohortDeliveryPlan.findUnique({
+      where: { id: planId },
+      select: { id: true, cohortId: true, status: true, trainerId: true, content: true, cohort: { select: { startsAt: true, endsAt: true } } },
+    })
+    if (!plan || !plan.trainerId) throw new AuthError('not_found', 'الخطّة غير موجودة', 404)
+    const [sessions, tasks] = await Promise.all([
+      this.prisma.cohortSession.findMany({
+        where: { cohortId: plan.cohortId },
+        select: { id: true, startsAt: true, endsAt: true, moduleIds: true, status: true, placeholder: true },
+      }),
+      this.prisma.cohortAssessment.findMany({
+        where: { cohortId: plan.cohortId },
+        select: { id: true, title: true, type: true, dueAt: true, moduleId: true, briefAr: true, maxScore: true, status: true },
+      }),
+    ])
+    const r = proposeSchedule({
+      period: resolvePeriod(plan.content as TrainerPlanContent | null, plan.cohort, plan.status as PlanStatus),
+      content: plan.content,
+      sessions: sessions.map((s) => ({ ...s, startsAt: s.startsAt.toISOString(), endsAt: s.endsAt?.toISOString() ?? null })),
+      tasks: tasks.map((t) => ({ ...t, dueAt: t.dueAt?.toISOString() ?? null })),
+    })
+    if (!r.ok) throw new AuthError('no_schedule', r.reasonAr, 422)
+    /* ولا جدولان معا، ولا جدولٌ فوق بندٍ لم يُقرَّر فيه على لقاءاته أو مهامّه — يُقال بلغة الزرّ لا الملفّ */
+    const open = (await this.prisma.planEditSuggestion.findMany({
+      where: { planId, status: { in: ['proposed', 'pending'] } }, select: { edit: true },
+    })).map((o) => o.edit as unknown as PlanEdit)
+    if (open.some((o) => o.kind === 'schedule')) {
+      throw new AuthError('schedule_open', 'في البطاقة جدولٌ مقترحٌ لم يُقرَّر فيه — راجعه أو احذفه قبل أن يُجهَّز غيرُه', 409)
+    }
+    const taken = new Set(open.flatMap(openKeysOf))
+    if (openKeysOf(r.edit).some((k) => taken.has(k))) {
+      throw new AuthError('schedule_overlaps', 'على بعض هذه اللقاءات أو المهامّ بندٌ مقترحٌ لم يُقرَّر فيه — قرّر فيه أو احذفه أوّلا، ثمّ جهّز الجدول', 409)
+    }
+    return this.propose(actorId, planId, [{ ...r.edit, required: false, reasonAr: r.reasonAr }])
+  }
 
   /** يرفعه المعتمِد: يُفحص كلُّه، ويُحفظ كلُّه أو يُردّ كلُّه ببنوده */
   async propose(actorId: string, planId: string, items: readonly PlanEditInput[]) {
@@ -191,6 +234,15 @@ export class PlanEditService {
       const edit = editOf(item)
       const snap = this.snapshotNow(edit, r)
       if (!snap.ok) { problems.push(`البند ${i + 1}: ${snap.problemAr}`); return null }
+      /* ونقلُ لقاءٍ وحدَه لا يكسر ما حوله — وإلّا كُتب جدولا واحدا بسلسلته (`sessionMoveChainProblem`) */
+      if (edit.kind === 'session_move') {
+        const chain = sessionMoveChainProblem(edit, r.sessions.filter((x) => !x.placeholder), r.tasks)
+        if (chain) problems.push(`البند ${i + 1}: نقلُ هذا اللقاء وحدَه يمسّ توقيتاتٍ أخرى — ${chain}. اكتبه وما يمسّه جدولا واحدا (schedule)`)
+      }
+      if (edit.kind === 'schedule') {
+        const chain = scheduleChainProblem(edit, r.sessions.filter((x) => !x.placeholder), r.tasks)
+        if (chain) problems.push(`البند ${i + 1}: الجدولُ لا يكتمل بسلسلته — ${chain}`)
+      }
       /* وبندان على موضعٍ واحدٍ لا يُرفعان معا: قبولُ أحدهما يجعل «قبل» الآخر غيرَ ما فيه */
       for (const key of targetsOf(edit)) {
         const prior = seen.get(key)
@@ -454,6 +506,40 @@ export class PlanEditService {
       /* والملاحظةُ لا تكتب شيئا — موافقتُه قرارُه، وما تطلبه يعدّله هو في خطوتها */
       case 'note':
         return
+      case 'schedule':
+        await this.applySchedule(userId, edit, r)
+        return
+    }
+  }
+
+  /* ═══ الجدولُ كلُّه أو لا شيء (١١ أكتوبر ٢٠٢٦) ═══
+     «يجب أن يكون التعديلُ كاملا بسلسلة، لكي لا نخرّب بدلَ ما نُصلح» (صاحب المنصّة). فكلُّ لقاءٍ فيه يُفحص
+     أوّلا بفحص باب النقل نفسِه (`assertTrainerMove`: موعدُ الشعبة، وتعارضُه مع شعبه الأخرى) — فإن لم يصحّ
+     واحدٌ لم يُنقل شيء. ثمّ تُنقل بالباب (واجتماعُها معها)، ثمّ مواعيدُ المهامّ ببابها. وإن سقط شيءٌ بعد
+     ذلك لعطبٍ لا يُفحص قبله أُعيد ما نُقل قبله إلى ما كان — فلا يبقى نصفُ جدول. */
+  private async applySchedule(userId: string, edit: Extract<PlanEdit, { kind: 'schedule' }>, r: Rows) {
+    const done: (() => Promise<unknown>)[] = []
+    try {
+      for (const m of edit.moves) {
+        await this.cohorts.assertTrainerMove(userId, m.sessionId, { startsAt: new Date(m.startsAt), endsAt: new Date(m.endsAt) })
+      }
+      for (const m of edit.moves) {
+        const was = r.sessions.find((x) => x.id === m.sessionId)!
+        await this.cohorts.trainerMoveSession(userId, m.sessionId, { startsAt: new Date(m.startsAt), endsAt: new Date(m.endsAt) })
+        done.push(() => this.cohorts.trainerMoveSession(userId, m.sessionId, {
+          startsAt: new Date(was.startsAt), ...(was.endsAt ? { endsAt: new Date(was.endsAt) } : {}),
+        }))
+      }
+      for (const t of edit.tasks) {
+        const was = r.tasks.find((x) => x.id === t.assessmentId)!
+        await this.assessments.updateAssessment(userId, t.assessmentId, { dueAt: new Date(t.dueAt) } as Parameters<AssessmentService['updateAssessment']>[2])
+        done.push(() => this.assessments.updateAssessment(userId, t.assessmentId, { dueAt: was.dueAt } as Parameters<AssessmentService['updateAssessment']>[2]))
+      }
+    } catch (e) {
+      for (const undo of done.reverse()) await undo().catch(() => undefined)
+      throw e instanceof AuthError
+        ? new AuthError(e.code, `لم يُنقل شيءٌ من الجدول — ${e.message}`, e.status)
+        : e
     }
   }
 
@@ -519,5 +605,9 @@ function targetsOf(edit: PlanEdit): string[] {
     case 'task_change': return Object.keys(edit.set).map((f) => `task:${edit.assessmentId}:${f}`)
     case 'session_move': case 'session_remove': return [`session:${edit.sessionId}`]
     case 'note': return [`note:${edit.step}`]
+    case 'schedule': return [
+      ...edit.moves.map((m) => `session:${m.sessionId}`),
+      ...edit.tasks.map((t) => `task:${t.assessmentId}:dueAt`),
+    ]
   }
 }

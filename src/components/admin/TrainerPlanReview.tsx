@@ -377,6 +377,7 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
               canUpload={canApprovePlan}
               canReview={canReviewEdits}
               onPending={setEditsPending}
+              offerSchedule={scorecard.some((i) => (i.key === "rhythm" || i.key === "session_times") && i.status !== "ok")}
             />
           )}
           {trainerPlan?.status === "submitted" && canApprovePlan && !asking && (

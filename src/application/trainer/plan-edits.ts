@@ -23,7 +23,8 @@
    وهذا الملفُّ محضٌ لا يعرف قاعدةً ولا شبكة. */
 
 import { STAGE_LABELS, type ReviewSection } from './review-notes'
-import { compactGapsAr, NOTE_SUGGESTION_AR, NOW_SUGGEST_SEP } from './plan-scorecard'
+import type { ScheduleEdit } from './schedule-proposal'
+import { compactGapsAr, NOTE_SUGGESTION_AR, NOW_SUGGEST_SEP, WEEKDAY_AR } from './plan-scorecard'
 import { PLAN_MAX } from './plan-limits'
 import { kindForCategory, RESOURCE_CATEGORIES, RESOURCE_KINDS, type ResourceCategory } from './plan-overlay'
 import { whenAr } from '../learning/cohort-gate'
@@ -48,7 +49,7 @@ export type TaskEditField = (typeof TASK_EDIT_FIELDS)[number]
 
 export const PLAN_EDIT_KINDS = [
   'module', 'plan', 'resource_add', 'resource_change', 'resource_remove',
-  'task_add', 'task_change', 'session_move', 'session_remove', 'note',
+  'task_add', 'task_change', 'session_move', 'session_remove', 'note', 'schedule',
 ] as const
 
 /* ═══ و«ملاحظةُ الإدارة» بندٌ يوافق عليه — `note` (١١ أكتوبر ٢٠٢٦) ═══
@@ -117,6 +118,10 @@ export type PlanEdit =
   | { kind: 'session_move'; sessionId: string; startsAt: string; endsAt: string }
   | { kind: 'session_remove'; sessionId: string }
   | { kind: 'note'; step: NoteStep; textAr: string }
+  /* ═══ وجدولٌ كاملٌ بسلسلته — `schedule` (١١ أكتوبر ٢٠٢٦، `schedule-proposal.ts`) ═══
+     «في حال قمنا بتعديل شيءٍ قد يؤثّر على توقيتاتٍ أخرى يجب أن يكون التعديلُ كاملا بسلسلة» (صاحب
+     المنصّة). فاللقاءاتُ المنقولةُ ومواعيدُ المهامّ التي تتبعها بندٌ واحد: يُقبل كلُّه أو يُرفض كلُّه */
+  | ScheduleEdit
 
 /** لقطةُ ما كان في الموضع لحظةَ الاقتراح — ومنها «قبل» */
 export type EditSnapshot = Record<string, unknown> | null
@@ -132,6 +137,7 @@ export function planEditStep(edit: PlanEdit): ReviewSection {
     case 'plan': return edit.set.liveNoteAr !== undefined && edit.set.summaryAr === undefined ? 'sessions' : 'identity'
     case 'session_move': case 'session_remove': return 'sessions'
     case 'note': return edit.step === 'general' ? 'identity' : edit.step
+    case 'schedule': return 'sessions'
     default: return 'assignments'
   }
 }
@@ -281,6 +287,16 @@ export function rowEditProblem(edit: PlanEdit, c: EditableContent): string | nul
       return null
     case 'session_remove': case 'note':
       return null
+    case 'schedule': {
+      if (edit.moves.length === 0) return 'جدولٌ بلا لقاءٍ يُنقل'
+      if (new Set(edit.moves.map((m) => m.sessionId)).size !== edit.moves.length) return 'لقاءٌ منقولٌ مرّتين في الجدول نفسِه'
+      for (const m of edit.moves) {
+        if (!isInstant(m.startsAt) || !isInstant(m.endsAt)) return 'موعدُ لقاءٍ في الجدول ليس لحظةً مقروءة'
+        if (Date.parse(m.endsAt) <= Date.parse(m.startsAt)) return 'نهايةُ لقاءٍ في الجدول قبل بدايته'
+      }
+      if (edit.tasks.some((t) => !isInstant(t.dueAt))) return 'موعدُ مهمّةٍ في الجدول ليس لحظةً مقروءة'
+      return null
+    }
     default:
       return 'هذا التعديلُ يقع في محتوى الخطّة لا في صفّ'
   }
@@ -300,6 +316,76 @@ export function taskSnapshot(row: Record<string, unknown>, fields: readonly stri
 export function sessionSnapshot(row: { startsAt: Date | string; endsAt?: Date | string | null }): Record<string, unknown> {
   const iso = (v: Date | string | null | undefined) => (v == null ? null : new Date(v).toISOString())
   return { startsAt: iso(row.startsAt), endsAt: iso(row.endsAt) }
+}
+
+/* ═══ ونقلُ لقاءٍ وحدَه لا يكسر ما حوله (١١ أكتوبر ٢٠٢٦) ═══
+   «في حال قمنا بتعديل شيءٍ قد يؤثّر على توقيتاتٍ أخرى يجب أن يكون التعديلُ كاملا بسلسلة» (صاحب المنصّة).
+   فبندُ `session_move` الذي يقع على لقاءٍ آخر، أو يجعل مهمّةَ محوره قبل لقائها، يُردّ عند الرفع — ويُكتب
+   جدولا واحدا (`schedule`) ينقل معه ما يمسّه. */
+export function sessionMoveChainProblem(
+  edit: Extract<PlanEdit, { kind: 'session_move' }>,
+  sessions: readonly { id: string; title?: string | null; startsAt: Date | string; endsAt?: Date | string | null; moduleIds?: readonly string[] | null }[],
+  tasks: readonly { id: string; title?: string | null; type?: string | null; dueAt?: Date | string | null; moduleId?: string | null }[],
+): string | null {
+  const s = sessions.find((x) => x.id === edit.sessionId)
+  if (!s) return null
+  const start = Date.parse(edit.startsAt)
+  const end = Date.parse(edit.endsAt)
+  const t0 = (v: Date | string) => new Date(v).getTime()
+  const clash = sessions.find((x) => x.id !== s.id
+    && t0(x.startsAt) < end && (x.endsAt ? t0(x.endsAt) : t0(x.startsAt) + 2 * 3_600_000) > start)
+  if (clash) return `يقع على لقاء «${clash.title ?? ''}» في الوقت نفسِه`
+  const was = t0(s.startsAt)
+  const mods = s.moduleIds ?? []
+  const before = tasks.find((t) => t.dueAt && t.moduleId && mods.includes(t.moduleId)
+    && t0(t.dueAt) > was && t0(t.dueAt) <= start)
+  if (before) return `موعدُ مهمّة «${before.title ?? ''}» يصير قبل اللقاء الذي تُشرح فيه`
+  return null
+}
+
+/** والجدولُ كلُّه بالقاعدة نفسِها: كلُّ لقاءٍ ينقله يُقرأ على ما حوله **بعد** الجدول — اللقاءاتُ الأخرى في
+    مواضعها الجديدة، والمهامُّ بمواعيدها الجديدة. فما نقله الجدولُ معه لا يُعدّ كسرا، وما نسيه يُعدّ */
+export function scheduleChainProblem(
+  edit: ScheduleEdit,
+  sessions: Parameters<typeof sessionMoveChainProblem>[1],
+  tasks: Parameters<typeof sessionMoveChainProblem>[2],
+): string | null {
+  const moveOf = (id: string) => edit.moves.find((m) => m.sessionId === id)
+  const after = sessions.map((s) => { const m = moveOf(s.id); return m ? { ...s, startsAt: m.startsAt, endsAt: m.endsAt } : s })
+  const tasksAfter = tasks.map((t) => { const m = edit.tasks.find((x) => x.assessmentId === t.id); return m ? { ...t, dueAt: m.dueAt } : t })
+  for (const m of edit.moves) {
+    const was = sessions.find((x) => x.id === m.sessionId)
+    if (!was) continue
+    const p = sessionMoveChainProblem(
+      { kind: 'session_move', sessionId: m.sessionId, startsAt: m.startsAt, endsAt: m.endsAt },
+      after.map((x) => (x.id === was.id ? was : x)),
+      tasksAfter,
+    )
+    if (p) return `«${was.title ?? ''}»: ${p}`
+  }
+  return null
+}
+
+/** لقطةُ الجدول: موعدُ كلّ لقاءٍ ينقله، وموعدُ كلّ مهمّةٍ تتبعه — مسطّحةً فتُقارَن بـ`sameSnapshot` */
+export function scheduleSnapshot(
+  edit: ScheduleEdit,
+  sessions: readonly { id: string; startsAt: Date | string; endsAt?: Date | string | null }[],
+  tasks: readonly { id: string; dueAt?: Date | string | null }[],
+): Checked<EditSnapshot> {
+  const iso = (v: Date | string | null | undefined) => (v == null ? null : new Date(v).toISOString())
+  const out: Record<string, unknown> = {}
+  for (const m of edit.moves) {
+    const s = sessions.find((x) => x.id === m.sessionId)
+    if (!s) return { ok: false, problemAr: 'في الجدول لقاءٌ لا وجودَ له في الشعبة — لعلّه حُذف' }
+    out[`s:${s.id}:startsAt`] = iso(s.startsAt)
+    out[`s:${s.id}:endsAt`] = iso(s.endsAt)
+  }
+  for (const t of edit.tasks) {
+    const row = tasks.find((x) => x.id === t.assessmentId)
+    if (!row) return { ok: false, problemAr: 'في الجدول مهمّةٌ لا وجودَ لها في الشعبة — لعلّها حُذفت' }
+    out[`t:${row.id}:dueAt`] = iso(row.dueAt)
+  }
+  return { ok: true, value: out }
 }
 
 /** أتغيّر الموضعُ منذ الاقتراح؟ — والمقارنةُ على القيم لا على ترتيب المفاتيح */
@@ -492,6 +578,24 @@ export function planEditView(edit: PlanEdit, before: EditSnapshot, ctx: EditCont
     case 'session_remove': {
       const name = ctx.sessionTitle?.(edit.sessionId) ?? 'لقاء'
       return view(`حذفُ لقاء: «${name}»`, [{ labelAr: FIELD_AR.when, beforeAr: sessionWhenAr(before), afterAr: null }])
+    }
+    case 'schedule': {
+      /* صفٌّ لكلّ لقاءٍ منقول: ما كان وما نقترح — ثمّ مواعيدُ المهامّ التي تتبعها. واللقطةُ مسطّحة
+         (`scheduleSnapshot`): `s:<لقاء>:startsAt` و`t:<مهمّة>:dueAt` */
+      const b = before ?? {}
+      const rows: EditRow[] = edit.moves.map((m, i) => ({
+        labelAr: ctx.sessionTitle?.(m.sessionId) ?? `اللقاء ${i + 1}`,
+        beforeAr: sessionWhenAr({ startsAt: b[`s:${m.sessionId}:startsAt`], endsAt: b[`s:${m.sessionId}:endsAt`] }),
+        afterAr: sessionWhenAr({ startsAt: m.startsAt, endsAt: m.endsAt }),
+      }))
+      for (const t of edit.tasks) {
+        rows.push({
+          labelAr: `موعدُ «${ctx.taskTitle?.(t.assessmentId) ?? 'مهمّة'}»`,
+          beforeAr: valueAr('dueAt', b[`t:${t.assessmentId}:dueAt`], ctx),
+          afterAr: valueAr('dueAt', t.dueAt, ctx),
+        })
+      }
+      return view(`جدولٌ ثابت: ${WEEKDAY_AR[edit.weekday] ?? ''} ${edit.clock} كلَّ أسبوع`, rows)
     }
     case 'note': {
       /* نقاطٌ سطرا سطرا — و«مطلوب»/«مقترَح» في أوّل السطر (من بطاقة المعايير) يصير وسمَه */
