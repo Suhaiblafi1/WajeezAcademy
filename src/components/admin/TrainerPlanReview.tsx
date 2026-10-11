@@ -495,11 +495,11 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
             <ReviewNotesForm
               key={askFrom ? "from-scorecard" : "blank"}
               initial={askFrom}
+              editsPending={editsPending}
               onSend={(notes) => void act(
                 () => apiPost(`/api/admin/cohort-plans/${trainerPlan.id}/decide`, { approve: false, note: notes }).then(loadPlan),
                 "رُدّت إليه — وكلُّ ملاحظةٍ في رأس خطوتها عنده",
               ).then((ok) => { if (ok) { setAsking(false); decided("changes_requested"); } })}
-              editsPending={editsPending}
               busy={busy}
               onCancel={() => setAsking(false)}
             />
