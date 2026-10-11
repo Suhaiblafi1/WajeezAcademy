@@ -12,6 +12,9 @@
 /** سكونٌ بعد آخر تعديلٍ ثمّ يُحفظ — بالمللي ثانية */
 export const AUTOSAVE_DELAY_MS = 1500
 
+/** وحفظٌ سقط بانقطاع الشبكة أو عطبِ الخادم يُعاد بعد هذا — بلا انتظار حرفٍ جديد */
+export const AUTOSAVE_RETRY_MS = 15_000
+
 /** «قبل ثوانٍ» · «قبل دقيقة» · «قبل ٥ دقائق» — منذ آخر حفظ */
 export function savedAgoAr(elapsedMs: number): string {
   const s = Math.max(0, Math.floor(elapsedMs / 1000))

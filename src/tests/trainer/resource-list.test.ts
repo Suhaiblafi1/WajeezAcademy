@@ -89,3 +89,12 @@ describe('الشاشة', () => {
     expect(LIST, 'عادت جملةُ الأنواع تحت كلّ ملفّ').not.toContain('ModuleBodyUpload')
   })
 })
+
+describe('ولا يُحال المدرّبُ إلى زرٍّ ذهب', () => {
+  it('⚠️ «أضف» و«أزل» ذهبا من المصادر — فلا يسمّيهما ما يقال له', () => {
+    const WS = code('src/pages/trainer/CohortWorkspace.tsx')
+    expect(WS).not.toContain('من «أضف»')
+    expect(WS).not.toMatch(/أزِله (?:من|وأضِفه)/)
+    expect(LIST).toContain('أفلِت الملفّاتِ هنا، أو الصق رابطا')
+  })
+})

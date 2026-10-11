@@ -102,7 +102,7 @@ import {
   slotProblems, splitSlot, workbookDone, WORKBOOK_WHERE_MAX, type CohortWorkbook, type PlanSlot,
 } from "@/application/trainer/axis-timeline";
 import { START_ADVICE_AR, startAdvice } from "@/application/trainer/start-advice";
-import { AUTOSAVE_DELAY_MS, autosaveLineAr, autosaveView } from "@/application/trainer/autosave";
+import { AUTOSAVE_DELAY_MS, AUTOSAVE_RETRY_MS, autosaveLineAr, autosaveView } from "@/application/trainer/autosave";
 import { countAr } from "@/application/text/count-ar";
 import CurriculumReview from "@/components/CurriculumReview";
 import PlanScorecard from "@/components/PlanScorecard";
@@ -660,8 +660,15 @@ export default function CohortWorkspace() {
      يتيما — وهو أهونُ من صفٍّ يقود إلى لا شيء. */
   const [orphans, setOrphans] = useState<string[]>([]);
 
+  /* ═══ حفظٌ تلقائيٌّ في الطريق — ينتظره كلُّ ما يقرأ من الخادم أو يكتب فيه (١١ أكتوبر ٢٠٢٦) ═══
+
+     بلا هذا يتسابقان: حفظٌ يدويٌّ («التالي»، أو الانتقالُ إلى خطوة، أو الخروج) يُرسل الأحدثَ
+     والتلقائيُّ ما زال يُرسل الأقدم — فيصل الأقدمُ أخيرا ويُكتب فوق الأحدث، أو يُحمَّل ما في
+     الخادم قبل أن يبلغه التلقائيُّ فيُستبدل به ما كتبه المدرّبُ للتوّ. فيُنتظر أوّلا. */
+  const autoFlight = useRef<Promise<void> | null>(null);
   const load = useCallback(async (first = false): Promise<Workspace | null> => {
     if (!id) return null;
+    if (autoFlight.current) await autoFlight.current.catch(() => {});
     try {
       const w = await apiGet<Workspace>(`/api/trainer/cohorts/${id}/workspace`);
       setWs(w);
@@ -789,7 +796,7 @@ export default function CohortWorkspace() {
     if (!editKey || autoSaving) return;
     const t = window.setTimeout(() => autoSave.current?.(), AUTOSAVE_DELAY_MS);
     return () => window.clearTimeout(t);
-  }, [editKey, autoSaving, busy]);
+  }, [editKey, autoSaving, busy, autoMeta.failedKey]);
   /* و«حُفظ قبل ثوانٍ» يتقادم — يُعاد رسمُه كلَّ عشرين ثانية */
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
@@ -951,7 +958,7 @@ export default function CohortWorkspace() {
       if (resourceCategory(r) === "recorded") {
         out.push({ stage: "sessions", text: `جلسةٌ مسجّلةٌ بلا اسم (رقم ${i + 1}) — سمِّها، أو أزِلها من خطوة «اللقاءات»` });
       } else {
-        out.push({ stage: "assignments", text: `مصدرٌ بلا اسم (رقم ${i + 1}) — سمِّه، أو أزِله من «المصادر»` });
+        out.push({ stage: "assignments", text: `مصدرٌ بلا اسم (رقم ${i + 1}) — سمِّه، أو احذفه من «المصادر»` });
       }
     });
     for (const p of planTextProblemsAr(content)) out.push({ stage: PLACE_STAGE[p.place], text: p.text });
@@ -965,8 +972,10 @@ export default function CohortWorkspace() {
      معا — وزرّان في خطوةٍ واحدةٍ يجعلان المدرّبَ يحفظ أحدَهما ويظنّ الآخرَ
      محفوظا. والمرسَلةُ للاعتماد لا تُحفظ، تُتصفَّح. */
   /* و`over`: خطّةٌ غيرُ التي في اليد تُحفظ حالا — توزيعُ المحاور من «اللقاءات» (أدناه) */
-  const persist = async (over?: PlanContent): Promise<boolean> => {
+  const persist = async (over?: PlanContent, fromAuto = false): Promise<boolean> => {
     if (planLocked) return true;
+    /* ولا يتسابق مع حفظٍ تلقائيٍّ في الطريق — العلّةُ عند `autoFlight` */
+    if (!fromAuto && autoFlight.current) await autoFlight.current.catch(() => {});
     if (!over && !Object.values(dirty).some(Boolean)) return true;
     const problems = saveProblems();
     if (problems.length) {
@@ -1079,7 +1088,7 @@ export default function CohortWorkspace() {
       if (orphan.length) out.push(`مصادرُ مربوطةٌ بمحورٍ حُذف: ${orphan.map((r) => `«${r.title}»`).join("، ")} — اختر لها محورا`);
       /* وما حُفظ بلا رابطٍ ولا ملفّ — يُسمّى بعينه ليُكمَل (والعلّةُ عند `saveProblems`) */
       const loose = (saved?.resources ?? []).filter((r) => resourceCategory(r) !== "recorded" && !resourceHasSource(r));
-      if (loose.length) out.push(`مصادرُ بلا رابطٍ ولا ملفّ: ${loose.map((r) => `«${r.title}»`).join("، ")} — الصق رابطَ كلٍّ، أو أزِله وأضِفه ملفّا من «أضف»`);
+      if (loose.length) out.push(`مصادرُ بلا رابطٍ ولا ملفّ: ${loose.map((r) => `«${r.title}»`).join("، ")} — افتح كلًّا من «المصادر» والصق رابطَه، أو احذفه وأفلِته ملفّا في خانة الرفع`);
       if (out.length) return out;
       /* ═══ وما لم يُسمَّ هنا يُقال بصفّه الناقص (١٠ أكتوبر ٢٠٢٦) ═══
 
@@ -1195,7 +1204,9 @@ export default function CohortWorkspace() {
     const cohortId = ws.cohort.id;
     const title = cohortTitle;
     const retitle = title !== ws.cohort.title;
-    void apiPut(`/api/trainer/cohorts/${cohortId}/plan`, content)
+    /* بعد أيّ حفظٍ تلقائيٍّ في الطريق — فلا يصل الأقدمُ بعد هذا (`autoFlight`) */
+    void (autoFlight.current ?? Promise.resolve()).catch(() => {})
+      .then(() => apiPut(`/api/trainer/cohorts/${cohortId}/plan`, content))
       .then(() => (retitle ? apiPatch(`/api/trainer/cohorts/${cohortId}`, { title }) : undefined))
       .then(() => toast("حُفظ ما كتبتَه في الشعبة قبل خروجك — تجده حين تعود"))
       .catch((e) => toastError(e instanceof ApiError ? `لم يُحفظ ما كتبتَه قبل خروجك — ${e.message}` : "لم يُحفظ ما كتبتَه قبل خروجك"));
@@ -1216,9 +1227,9 @@ export default function CohortWorkspace() {
     const snapId = identity;
     const key = editKey;
     setAutoSaving(true);
-    void (async () => {
+    const flight = (async () => {
       try {
-        if (!(await persist(snap))) return;
+        if (!(await persist(snap, true))) return;
         const w = await apiGet<Workspace>(`/api/trainer/cohorts/${ws.cohort.id}/workspace`);
         setWs(w);
         setBaseline({
@@ -1232,10 +1243,17 @@ export default function CohortWorkspace() {
         setNow(Date.now());
       } catch (e) {
         setAutoMeta((m) => ({ ...m, failed: e instanceof ApiError ? e.message : "تعذّر الاتّصال", failedKey: key }));
+        /* وانقطاعُ الشبكة أو عطبُ الخادم يُعاد بعد لحظات — لا ينتظر حرفا جديدا. وما ردّه
+           الخادمُ بسببٍ (٤xx) لا يُعاد بعينه: يُقال، ويُصلحه المدرّب */
+        if (!(e instanceof ApiError) || e.status >= 500) {
+          window.setTimeout(() => setAutoMeta((m) => (m.failedKey === key ? { ...m, failedKey: null } : m)), AUTOSAVE_RETRY_MS);
+        }
       } finally {
         setAutoSaving(false);
+        autoFlight.current = null;
       }
     })();
+    autoFlight.current = flight;
   };
   const autoLine = planLocked || (approved && !anyDirty) ? null : autosaveLineAr(autosaveView({
     saving: autoSaving, dirty: anyDirty, problem: firstProblem,
@@ -3244,9 +3262,9 @@ function LiveChecklist({ missing, adviceCount, current, onOpen }: {
       {rows.length === 0 && <p className="text-muted-foreground">كلُّ الخطوات تامّة.</p>}
       {rows.map((x) => (
         <div key={x.key} data-live-step={x.key}>
-          <button type="button" onClick={() => onOpen(x.key)} aria-current={current === x.key ? "step" : undefined}
+          <button type="button" onClick={() => onOpen(x.key)}
             className="flex w-full items-center justify-between gap-2 text-start font-bold text-foreground hover:text-teal-light-ink">
-            <span>{x.label}</span>
+            <span className={current === x.key ? "underline underline-offset-4" : undefined}>{x.label}</span>
             <span className="shrink-0 text-fine font-black text-gold-ink">{missing.get(x.key)!.length} ناقص</span>
           </button>
           <ul className="mt-0.5 list-inside list-disc text-muted-foreground">

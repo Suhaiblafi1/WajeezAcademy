@@ -120,3 +120,18 @@ describe('ملفُّ الشعبة بثّا', () => {
     expect(res.statusCode).toBe(413)
   })
 })
+
+describe('والجسمُ الفارغُ يُردّ في البثّ كما في الذاكرة (١١ أكتوبر ٢٠٢٦)', () => {
+  it('لا ملفٌّ من صفر بايت يُعدّ مرفوعا — ولا يبقى في المخزن', async () => {
+    const key = newStorageKey()
+    await prisma.cohortFile.create({
+      data: { cohortId, purpose: 'plan_resource', refId: 'r0', storageKey: key, originalName: 'فارغ.pdf', mime: 'application/pdf' },
+    })
+    const res = await app.inject({
+      method: 'PUT', url: signed(key, '/stream'),
+      headers: { 'content-type': 'application/octet-stream' }, payload: Buffer.alloc(0),
+    })
+    expect(res.statusCode).toBe(400)
+    expect(await getObject(key)).toBeNull()
+  })
+})

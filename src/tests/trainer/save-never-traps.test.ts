@@ -133,7 +133,7 @@ describe('③ ولا يضيع ما كُتب بالتنقّل', () => {
     const auto = between(screen, 'autoSave.current = () => {', '\n  };')
     expect(auto, 'لم يُعثر على الحفظ التلقائيّ').toBeTruthy()
     expect(auto, 'يُرسَل ما يمنع الحفظُ ليُردّ').toContain('if (autoMeta.failedKey === editKey || firstProblem) return;')
-    expect(auto, 'لا يحفظ').toContain('await persist(snap)')
+    expect(auto, 'لا يحفظ').toContain('await persist(snap, true)')
     expect(auto, 'يُستبدل ما في اليد بما عاد — فيُمحى حرفٌ كُتب أثناء الحفظ').not.toMatch(/setContent\(|await load\(/)
     expect(auto, 'البصمةُ ممّا في اليد لا ممّا أُرسل').toContain('modules: modulesKey(snap)')
     const head = screen.slice(screen.indexOf('<Bar'), screen.indexOf('</Bar>'))

@@ -77,3 +77,29 @@ describe('حالةُ اللقاء تتحدّث بعد حفظه — لا بعد �
     expect(SA).toContain('useEffect(() => { void load(); }, [load, refresh]);')
   })
 })
+
+/* ═══ ولا يشعر المدرّبُ بالتحديث — لا يُكتب الأقدمُ فوق الأحدث (١١ أكتوبر ٢٠٢٦) ═══
+   حفظٌ تلقائيٌّ في الطريق ينتظره كلُّ حفظٍ يدويّ، وكلُّ تحميلٍ من الخادم، وحفظُ الخروج. */
+describe('الحفظُ التلقائيُّ لا يتسابق مع غيره', () => {
+  it('⚠️ التحميلُ ينتظره — فلا يُستبدل بما في الخادم ما كتبه للتوّ', () => {
+    const load = WS.slice(WS.indexOf('const load = useCallback('), WS.indexOf('try {', WS.indexOf('const load = useCallback(')))
+    expect(load).toContain('if (autoFlight.current) await autoFlight.current.catch(() => {});')
+  })
+
+  it('⚠️ والحفظُ اليدويُّ ينتظره — إلّا التلقائيُّ نفسُه', () => {
+    expect(WS).toMatch(/const persist = async \(over\?: PlanContent, fromAuto = false\): Promise<boolean> => \{\s*if \(planLocked\) return true;\s*if \(!fromAuto && autoFlight\.current\) await autoFlight\.current\.catch\(\(\) => \{\}\);/)
+    expect(WS).toContain('if (!(await persist(snap, true))) return;')
+    expect(WS).toContain('autoFlight.current = flight;')
+  })
+
+  it('⚠️ وحفظُ الخروج بعده لا معه', () => {
+    const leave = WS.slice(WS.indexOf('leaveSave.current = '), WS.indexOf('\n  };', WS.indexOf('leaveSave.current = ')))
+    expect(leave.indexOf('(autoFlight.current ?? Promise.resolve())')).toBeGreaterThan(-1)
+    expect(leave.indexOf('(autoFlight.current ?? Promise.resolve())')).toBeLessThan(leave.indexOf('apiPut('))
+  })
+
+  it('وانقطاعُ الشبكة يُعاد وحدَه — وما ردّه الخادمُ بسببٍ لا يُعاد بعينه', () => {
+    expect(WS).toContain('if (!(e instanceof ApiError) || e.status >= 500) {')
+    expect(WS).toContain('}, [editKey, autoSaving, busy, autoMeta.failedKey]);')
+  })
+})

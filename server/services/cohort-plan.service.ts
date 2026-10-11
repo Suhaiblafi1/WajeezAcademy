@@ -685,7 +685,9 @@ export class CohortPlanService {
     const otherPlans = others.length
       ? await this.prisma.cohortDeliveryPlan.findMany({
           where: { cohortId: { in: others.map((c) => c.id) }, trainerId: { not: null } },
-          orderBy: { createdAt: 'desc' }, select: { cohortId: true, content: true },
+          /* أحدثُ خطّةٍ لكلّ شعبةٍ وحدَها — لا مراجعاتُها كلُّها بمتونها: الورشةُ تُفتح كثيرا */
+          orderBy: [{ cohortId: 'asc' }, { createdAt: 'desc' }], distinct: ['cohortId'],
+          select: { cohortId: true, content: true },
         })
       : []
     const copySources = others.flatMap((c) => {

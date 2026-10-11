@@ -3,7 +3,7 @@
    وما يخصّ صاحبَ الحساب: طلبه، واستئنافه، وسحبه. */
 
 import type { FastifyInstance } from 'fastify'
-import { getObject, getObjectMeta, putObject, putObjectStream } from '../../services/object-store'
+import { getObject, getObjectMeta, putObject, putObjectStream, deleteObject } from '../../services/object-store'
 import type { Readable } from 'node:stream'
 import { z } from 'zod'
 import { normalizeApplicantLink } from '../../../src/application/trainer/applicant-link'
@@ -359,6 +359,12 @@ export function registerTrainerApplicationRoutes(app: FastifyInstance, prisma: P
         mime: owner.mime || String(req.headers['content-type'] ?? '').split(';')[0].trim() || 'application/octet-stream',
         originalName: owner.originalName || storageKey,
       }, owner.streamMaxBytes)
+      /* وجسمٌ فارغٌ يُردّ كما يردّه مسارُ الذاكرة — لا ملفٌّ من صفر بايت يُعدّ مرفوعا (١١ أكتوبر ٢٠٢٦:
+         صار ملفُّ الشعبة يُرفع من هنا) */
+      if (size === 0) {
+        await deleteObject(storageKey).catch(() => {})
+        return reply.status(400).send({ error: { code: 'empty', message_ar: 'الملف فارغ' } })
+      }
       /* وملفُّ التسليم يُعلَم وصولُه — فرفعٌ انقطع يُقال للمتعلّم ومدرّبه لا يُحسب تسليما بملفّ */
       if (owner.kind === 'submission') await recordSubmissionUpload(prisma, storageKey, size)
       return { ok: true, storageKey, sizeBytes: size }
