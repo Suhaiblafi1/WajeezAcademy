@@ -9,7 +9,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { matchReportFile, reportDisplayName, reportMime, reportsSummaryAr } from '@/application/trainer/review-reports-bulk'
+import { matchReportFile, nameTokens, reportDisplayName, reportMime, reportsSummaryAr } from '@/application/trainer/review-reports-bulk'
 
 const code = (p: string) => readFileSync(join(process.cwd(), p), 'utf8')
   .replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '').replace(/^\s*\/\/.*$/gm, '')
@@ -30,7 +30,7 @@ describe('① أيُّ خطّةٍ هذا الملفّ', () => {
 
   it('⚠️ وما لا يذكر خطّتَه، أو يذكر خطّتين، أو خطّةً ليست في القائمة — يُردّ بسببه', () => {
     expect(matchReportFile('تقرير مراجعة.pdf', 'application/pdf', plans))
-      .toMatchObject({ ok: false, problemAr: 'لا يذكر اسمُ الملفّ خطّتَه — ارفعه من بطاقة خطّته' })
+      .toMatchObject({ ok: false, problemAr: expect.stringMatching(/^لا يذكر اسمُ الملفّ خطّةً في القائمة — سمِّه باسم المدرّب واسم الشعبة/) })
     expect(matchReportFile(`${A} ${B}.pdf`, 'application/pdf', plans)).toMatchObject({ ok: false })
     expect(matchReportFile('x [11111111-2222-3333-4444-555555555555].pdf', 'application/pdf', plans))
       .toMatchObject({ ok: false, problemAr: expect.stringMatching(/^خطّتُه ليست في القائمة المعروضة الآن/) })
@@ -56,6 +56,53 @@ describe('① أيُّ خطّةٍ هذا الملفّ', () => {
   })
 })
 
+describe('①ب وبلا معرّف: باسم المدرّب واسم الشعبة (١١ أكتوبر ٢٠٢٦)', () => {
+  /* «سمي الملفات باسماء المدربين واسم الشعبه فقط لاغير، وان كان اكثر من ملف اترك رقم لكل ملف» */
+  const course = 'دورة التفاوض متعدّد الأطراف: صياغة التزاماتٍ قابلةٍ للتنفيذ والمتابعة'
+  const named = [
+    { id: 'p-enas-2', labelAr: 'أ', trainerName: 'ايناس عاهد ذيب', cohortTitle: `${course} — شعبة ٢` },
+    { id: 'p-enas-3', labelAr: 'ب', trainerName: 'ايناس عاهد ذيب', cohortTitle: `${course} — شعبة ٣` },
+    { id: 'p-nawwar-3', labelAr: 'ج', trainerName: 'Nawwar Abdelhadi', cohortTitle: `${course} — شعبة ٣` },
+  ]
+  const match = (n: string) => matchReportFile(n, 'application/pdf', named)
+
+  it('⚠️ «المدرّب — الشعبة (1).pdf» يُرفع إلى خطّته، ويُحفظ باسمه كما هو', () => {
+    const n = 'ايناس عاهد ذيب — دورة التفاوض متعدّد الأطراف صياغة التزاماتٍ قابلةٍ للتنفيذ والمتابعة — شعبة ٢ (1).pdf'
+    expect(match(n)).toMatchObject({ ok: true, planId: 'p-enas-2', storedName: n })
+    expect(match('Nawwar Abdelhadi — دورة التفاوض متعدّد الأطراف صياغة التزاماتٍ قابلةٍ للتنفيذ والمتابعة — شعبة ٣ (2).pdf'))
+      .toMatchObject({ ok: true, planId: 'p-nawwar-3' })
+  })
+
+  it('⚠️ ولو كُتب بلا تشكيل، وبأرقامٍ لاتينيّة، وبألفٍ بلا همزة', () => {
+    expect(match('ايناس عاهد ذيب - دورة التفاوض متعدد الاطراف صياغة التزامات قابلة للتنفيذ والمتابعة - شعبة 3 (2).pdf'))
+      .toMatchObject({ ok: true, planId: 'p-enas-3' })
+    expect(nameTokens('شعبةُ ٢ — الأطراف ـ متعدّد')).toEqual(['شعبة', '2', 'الاطراف', 'متعدد'])
+  })
+
+  it('⚠️ وما يصدق على خطّتين يُردّ ولا يُخمَّن — رقمُ الشعبة يفصل', () => {
+    expect(match('ايناس عاهد ذيب — دورة التفاوض متعدّد الأطراف (1).pdf'))
+      .toMatchObject({ ok: false, problemAr: expect.stringMatching(/^يصدق اسمُه على 2 خطط — زِد فيه رقمَ الشعبة/) })
+  })
+
+  it('⚠️ ولا بدّ من اسم المدرّب كاملا، ومن شيءٍ من شعبته، وألّا يزيد عليهما', () => {
+    const refused = (n: string) => expect(match(n), n).toMatchObject({ ok: false })
+    refused('دورة التفاوض متعدّد الأطراف صياغة التزاماتٍ قابلةٍ للتنفيذ والمتابعة — شعبة ٢ (1).pdf')
+    refused('ايناس — دورة التفاوض متعدّد الأطراف — شعبة ٢ (1).pdf')
+    refused('ايناس عاهد ذيب (1).pdf')
+    refused('Nawwar Abdelhadi (1).pdf')
+    refused('ايناس عاهد ذيب — ملاحظات شخصية (1).pdf')
+  })
+
+  it('والمعرّفُ إن وُجد يقدَّم — وقائمةٌ بلا أسماءٍ لا تُطابَق بالاسم', () => {
+    expect(matchReportFile(`ايناس عاهد ذيب — ${course} — شعبة ٢ [${A}].pdf`, 'application/pdf', [...named, ...plans]))
+      .toMatchObject({ ok: true, planId: A })
+    expect(matchReportFile('ايناس عاهد ذيب — دورة التفاوض — شعبة ٢ (1).pdf', 'application/pdf', named.map(({ id, labelAr }) => ({ id, labelAr }))))
+      .toMatchObject({ ok: false })
+    expect(matchReportFile('Nawwar Abdelhadi — شعبة ٣ (1).pdf', 'application/pdf', [{ id: 'x', labelAr: 'x', trainerName: 'Nawwar Abdelhadi' }]))
+      .toMatchObject({ ok: false })
+  })
+})
+
 describe('② الصندوقُ في «خططٌ تنتظر اعتمادك»', () => {
   const page = code('src/pages/admin/PendingPlans.tsx')
   const comp = code('src/components/ReviewReports.tsx')
@@ -63,6 +110,13 @@ describe('② الصندوقُ في «خططٌ تنتظر اعتمادك»', () 
 
   it('⚠️ لمن يعتمد وحدَه — كالرفع في البطاقة', () => {
     expect(page).toMatch(/\{rows !== null && canUploadEdits && \(\s*<ReviewReportsBulkUpload/)
+  })
+
+  it('⚠️ والقائمةُ تحمل اسمَ المدرّب وعنوانَ الشعبة — بهما يُطابَق الاسمُ بلا معرّف', () => {
+    const box = page.slice(page.indexOf('<ReviewReportsBulkUpload'))
+    const prop = box.slice(box.indexOf('plans={'), box.indexOf('onUploaded='))
+    expect(prop).toMatch(/^plans=\{scoped\.map\(\(r\) => \(\{ id: r\.id, /)
+    expect(prop).toMatch(/, trainerName: r\.trainerName, cohortTitle: r\.cohort\.title \}\)\)\}\s*$/)
   })
 
   it('⚠️ يرفع إلى خطّة الملفّ بمسلك البطاقة نفسِه — ويقول قبل الرفع إنّ المدرّبَ يراه من الآن', () => {
