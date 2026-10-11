@@ -46,7 +46,7 @@ import { CohortService } from './cohort.service'
 import { notifyRole, safeNotify, sendDirectEmail, publicSiteUrl } from './notification.service'
 import { cohortDayAr, whenAr } from '../../src/application/learning/cohort-gate'
 import { trainerOrdinals } from '../../src/application/learning/cohort-title'
-import { planApprovedTrainerMsg, reviewReportLineAr } from '../../src/application/trainer/plan-decision'
+import { planApprovedTrainerMsg, returnMailAr, reviewReportLineAr } from '../../src/application/trainer/plan-decision'
 import { suggestedEditsLineAr } from '../../src/application/trainer/plan-edits'
 import { renderMail } from './mail-template'
 import { readableModuleVersion } from '../catalog/module-version-visibility'
@@ -67,6 +67,24 @@ import { PLAN_VISIBLE_STATUSES, resourceCategory } from '../../src/application/t
 import { applyRecordedPlacements, recordedPlacements, samePlanContent } from '../../src/application/trainer/recorded-links'
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
+
+/** بريدُ «اطلب تعديلات» كما يُرسَل — شكرٌ، فكلمةُ الإدارة إن كتبتها، فما جهّزناه، فالخطوات
+    (`returnMailAr`، ١١ أكتوبر ٢٠٢٦). يُصدَّر لتُعايَن الرسالةُ نفسُها قبل أن تصل أحدا. */
+export function returnMailDoc(m: ReturnType<typeof returnMailAr>, name: string, url: string): Parameters<typeof renderMail>[0] {
+  return {
+    greetingName: name,
+    preheader: m.preheader,
+    heading: m.heading,
+    blocks: [
+      { kind: 'p', text: m.praise },
+      ...(m.note ? [{ kind: 'callout' as const, text: m.note }] : []),
+      ...(m.summary.length ? [{ kind: 'h' as const, text: 'ما جهّزناه لك' }, { kind: 'list' as const, items: m.summary }] : []),
+      { kind: 'h', text: 'خطواتُك' },
+      { kind: 'steps', items: m.steps.map((textAr) => ({ textAr })) },
+      { kind: 'cta', label: m.cta, href: url },
+    ],
+  }
+}
 
 /* ─────────── ما يعدّله المدرّب في محتوى الشعبة ─────────── */
 
@@ -1261,12 +1279,23 @@ export class CohortPlanService {
       const resumed = back?.deadlineAt ? ` وعادت مهلتُك تعدّ — تنتهي ${whenAr(back.deadlineAt)}.` : ''
       /* والبريدُ يقول الخطواتِ بأسمائها — ما يبحث عنه في شريطه */
       const bySection = REVIEW_SECTIONS.filter((s) => asked[s.key]).map((s) => ({ label: s.label, text: asked[s.key]! }))
+      /* والبريدُ لطيفٌ عمليّ: شكرٌ، فملخّصُ ما جهّزناه، فخطواتٌ أوّلُها «اقبلها كلَّها» (`returnMailAr`،
+         ١١ أكتوبر ٢٠٢٦). والجرسُ كما كان: بملاحظات خطواته بنصوصها */
+      const mail = returnMailAr({
+        cohortTitle: plan.cohort.title,
+        generalNote: asked.general && asked.general !== edits.line ? asked.general : null,
+        notedSteps: bySection.map((x) => x.label),
+        edits: { count: edits.count, required: edits.required, bySteps: edits.bySteps },
+        reports: reports.length,
+        resumedAr: resumed,
+      })
       await this.tellTrainer(plan.trainer, plan.cohort, {
         title: `طُلبت تعديلاتٌ على «${plan.cohort.title}»`,
         body: `${asked.general ?? 'كتبنا ملاحظاتِنا في الخطوات التي تحتاج تعديلا — تجد كلَّ ملاحظةٍ في رأس خطوتها.'}${resumed}`,
-        heading: 'راجعنا خطّةَ شعبتك ونحتاج تعديلا قبل اعتمادها',
-        cta: 'عدّل الخطّة وأعد إرسالها',
+        heading: mail.heading,
+        cta: mail.cta,
         sections: bySection,
+        mail,
       }, `${composed}${resumed}`, reports, asked.general === edits.line ? null : edits.line)
       return { status: 'changes_requested' as const }
     }
@@ -1527,14 +1556,21 @@ export class CohortPlanService {
      و`bellBody` نصُّ الجرس إن اختلف عن التنبيه (الردُّ بأقسامه نصٌّ واحد). */
   /** ما ينتظر المدرّبَ من تعديلاتٍ مقترحةٍ على هذه الخطّة — وسطرُها في الرسالة */
   private async pendingEdits(planId: string) {
-    const rows = await this.prisma.planEditSuggestion.findMany({ where: { planId, status: 'pending' }, select: { required: true } })
-    return { count: rows.length, line: suggestedEditsLineAr(rows.length, rows.filter((r) => r.required).length) }
+    const rows = await this.prisma.planEditSuggestion.findMany({ where: { planId, status: 'pending' }, select: { required: true, step: true } })
+    /* وبخطواتها بترتيب خطوات المدرّب — لملخّص بريد الردّ (١١ أكتوبر ٢٠٢٦) */
+    const bySteps = REVIEW_SECTIONS.map((s) => ({ label: s.label, n: rows.filter((r) => r.step === s.key).length })).filter((x) => x.n > 0)
+    const required = rows.filter((r) => r.required).length
+    return { count: rows.length, required, bySteps, line: suggestedEditsLineAr(rows.length, required) }
   }
 
   private async tellTrainer(
     trainer: { userId: string | null; application: { fullName: string; email: string } } | null,
     cohort: { id: string; title: string },
-    msg: { title: string; body: string; heading: string; cta: string; sections?: readonly { label: string; text: string }[] },
+    msg: {
+      title: string; body: string; heading: string; cta: string; sections?: readonly { label: string; text: string }[]
+      /** بريدٌ مبنيٌّ بنفسه — بريدُ الردّ (`returnMailAr`): شكرٌ وملخّصٌ وخطوات، لا الملاحظاتُ بنصوصها */
+      mail?: ReturnType<typeof returnMailAr>
+    },
     bellBody?: string,
     /** أسماءُ تقارير المراجعة التي رُفعت مع هذا القرار — تُذكر ويُدلّ على موضعها */
     reports: readonly string[] = [],
@@ -1551,6 +1587,14 @@ export class CohortPlanService {
         title: msg.title, body: `${bellBody ?? msg.body}${extra ? `\n\n${extra}` : ''}`,
         templateKey: 'cohort.plan.decision', data: { cohortId: cohort.id },
       })
+    }
+    if (msg.mail) {
+      await sendDirectEmail(this.prisma, {
+        to: trainer.application.email,
+        subject: `${msg.mail.subject} — أكاديمية وجيز`,
+        ...renderMail(returnMailDoc(msg.mail, trainer.application.fullName, url)),
+      })
+      return
     }
     await sendDirectEmail(this.prisma, {
       to: trainer.application.email,

@@ -202,3 +202,82 @@ export function reviewReportLineAr(names: readonly string[]): string | null {
   return `ومع هذا الردّ ${names.length === 1 ? 'تقريرُ مراجعةٍ مفصّل' : 'تقاريرُ مراجعةٍ مفصّلة'}: ${which} — `
     + 'تجده في صفحة شعبتك تحت «تقرير المراجعة»، تقرؤه وتنزّله.'
 }
+
+/* ═══ بريدُ «اطلب تعديلات» — لطيفٌ عمليّ (١١ أكتوبر ٢٠٢٦) ═══
+
+   قرارُ صاحب المنصّة، لمّا رأى البريدَ الذي يصل المدرّب: «مخيفٌ وغيرُ مرتّب.. يجب أن يكون ملخّصا
+   للتعديلات ومديحا له في البداية على إنجازه، وإبلاغَه بالخطوات وآليّةَ قبول التعديلات بسهولة.. كن
+   لطيفا إيجابيّا وعمليّا». وكان: «راجعنا خطّةَ شعبتك ونحتاج تعديلا قبل اعتمادها»، ثمّ ملاحظاتُ
+   الخطوات بنصوصها، ثمّ أسماءُ ملفّات التقرير كاملةً.
+
+   فصار: شكرٌ أوّلا، ثمّ ما جهّزناه (عددُ التعديلات وخطواتُها، وأسماءُ الخطوات التي فيها ملاحظة،
+   والتقرير)، ثمّ ثلاثُ خطواتٍ يفعلها — وأوّلُها «اقبلها كلَّها». ونصوصُ الملاحظات في رأس خطواتها
+   عنده، والجرسُ يحملها كما كان. ولا جنسَ في الأفعال: المدرّبُ رجلٌ أو امرأة. */
+export interface ReturnMailInput {
+  cohortTitle: string
+  /** كلمةُ الإدارة العامّة إن كتبتها هي — لا السطرُ الذي يُملأ به الردُّ تلقائيّا */
+  generalNote: string | null
+  /** أسماءُ الخطوات التي فيها ملاحظة */
+  notedSteps: readonly string[]
+  /** التعديلاتُ التي اعتُمدت له — كم، وكم منها مطلوب، وفي أيّ خطوة */
+  edits: { count: number; required: number; bySteps: readonly { label: string; n: number }[] }
+  /** كم ملفَّ تقريرٍ رُفع مع الخطّة */
+  reports: number
+  /** سطرُ المهلة إن عادت تعدّ (شعبةُ الإعداد) — أو فارغ */
+  resumedAr?: string
+}
+
+export interface ReturnMail {
+  subject: string
+  heading: string
+  preheader: string
+  praise: string
+  note: string | null
+  summary: string[]
+  steps: string[]
+  cta: string
+}
+
+const EDITS_AR = { one: 'تعديلٌ', two: 'تعديلان', few: 'تعديلات', many: 'تعديلًا' }
+const REPORT_FILES_AR = { one: 'ملفّ', two: 'ملفّان', few: 'ملفّات', many: 'ملفًّا' }
+
+export function returnMailAr(i: ReturnMailInput): ReturnMail {
+  const { count, required, bySteps } = i.edits
+  const summary: string[] = []
+  if (count > 0) {
+    const where = bySteps.filter((s) => s.n > 0).map((s) => `«${s.label}» (${s.n})`).join('، ')
+    const ready = count === 1 ? 'جاهز' : count === 2 ? 'جاهزان' : count <= 10 ? 'جاهزة' : 'جاهزًا'
+    const req = required <= 0 ? (count === 1 ? ' — اختياريّ' : ' — كلُّها اختياريّة')
+      : required === count ? (count === 1 ? ' — مطلوب' : ' — كلُّها مطلوبة')
+      : ` — منها ${required === 1 ? 'واحدٌ مطلوب' : required === 2 ? 'اثنان مطلوبان' : required <= 10 ? `${required} مطلوبة` : `${required} مطلوبًا`}، والباقي اختياريّ`
+    summary.push(`${countAr(count, EDITS_AR)} ${ready}${req}${where ? `. في: ${where}` : ''}.`)
+  }
+  if (i.notedSteps.length > 0) {
+    summary.push(`ملاحظاتٌ في ${i.notedSteps.map((s) => `«${s}»`).join(' و')} — كلٌّ في رأس خطوتها.`)
+  }
+  if (i.reports > 0) {
+    const files = i.reports === 1 ? 'ملفٌّ واحد' : i.reports === 2 ? 'ملفّان' : countAr(i.reports, REPORT_FILES_AR)
+    summary.push(`تقريرُ المراجعة (${files}) — في صفحة شعبتك تحت «تقرير المراجعة».`)
+  }
+
+  const steps = ['افتح صفحةَ شعبتك من الزرّ أدناه.']
+  if (count > 0) {
+    steps.push(required > 0
+      ? 'في «تعديلاتٌ اقترحتها الإدارة» اضغط «اقبلها كلَّها» — أو راجع كلًّا وحده بما قبله وما بعده. والمطلوبُ منها شرطُ الاعتماد: إن لم تقبله فعدّل موضعَه بطريقتك.'
+      : 'في «تعديلاتٌ اقترحتها الإدارة» اضغط «اقبلها كلَّها» — أو راجع كلًّا وحده بما قبله وما بعده، واقبل ما يناسبك.')
+  }
+  if (i.notedSteps.length > 0) steps.push('مرّ على ملاحظاتنا في رأس كلّ خطوة.')
+  steps.push('أرسل الخطّةَ من خطوة «الاعتماد» — ونراجعها حين تصلنا.')
+
+  const ready = count > 0 ? 'وجهّزنا لك تعديلاتٍ تقبلها بنقرة' : 'وكتبنا لك ملاحظاتٍ في خطواتها'
+  return {
+    subject: `شكرا على خطّتك — «${i.cohortTitle}»`,
+    heading: 'شكرا على خطّتك — وهذه خطوتُها التالية',
+    preheader: `${ready}، ثمّ ترسلها من جديد.`,
+    praise: `وصلتنا خطّتُك لـ«${i.cohortTitle}» كاملةً — شكرا على جهدك فيها. راجعناها، ${ready} لتصير جاهزةً للاعتماد.${i.resumedAr ?? ''}`,
+    note: i.generalNote?.trim() ? i.generalNote.trim() : null,
+    summary,
+    steps,
+    cta: count > 0 ? 'افتح صفحةَ شعبتك وراجع التعديلات' : 'افتح صفحةَ شعبتك',
+  }
+}
