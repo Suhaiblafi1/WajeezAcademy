@@ -72,6 +72,7 @@ const AdminTrainerCompensation = lazy(() => import('./pages/admin/TrainerCompens
 const AdminTrainerRun = lazy(() => import('./pages/admin/TrainerRun'))
 const AdminTrainerContracts = lazy(() => import('./pages/admin/TrainerContracts'))
 const AdminPendingPlans = lazy(() => import('./pages/admin/PendingPlans'))
+const AdminPlanCurriculum = lazy(() => import('./pages/admin/PlanCurriculumPage'))
 const AdminTrainerAnnouncements = lazy(() => import('./pages/admin/TrainerAnnouncements'))
 const JoinTrainer = lazy(() => import('./pages/JoinTrainer'))
 const JoinTrainerComplete = lazy(() => import('./pages/JoinTrainerComplete'))
@@ -362,6 +363,8 @@ export default function App() {
             <Route path="/admin/trainer-contracts" element={<AdminTrainerContracts />} />
             {/* «خططٌ تنتظر اعتمادك» — كلُّ خطّةٍ أرسلها مدرّبٌ في موضعٍ واحد (٣ أكتوبر ٢٠٢٦) */}
             <Route path="/admin/pending-plans" element={<AdminPendingPlans />} />
+            {/* ومنهاجُ الشعبة في صفحته — يُفتح من لسان «المنهاج» ويُنزَّل (١١ أكتوبر ٢٠٢٦) */}
+            <Route path="/admin/plans/:cohortId" element={<AdminPlanCurriculum />} />
             {/* «إعلاناتٌ للمدرّبين» — نافذةٌ في بوّابتهم، ومن قرأها (٤ أكتوبر ٢٠٢٦) */}
             <Route path="/admin/trainer-announcements" element={<AdminTrainerAnnouncements />} />
             <Route path="/admin/catalog" element={<CatalogAdmin />} />

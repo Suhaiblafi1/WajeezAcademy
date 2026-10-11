@@ -40,9 +40,16 @@ describe('مراجعةُ الإدارة قبل المدرّب (١٠ أكتوبر
   })
 
   it('⚠️ والمسوّدةُ تُعرض كاملةً بما قبلها وما بعدها — يراجع ما سيراه المدرّب', () => {
-    const at = panel.indexOf('drafts.map((x) =>')
+    const at = panel.indexOf('const draftItem = (x: PlanEditItem) =>')
     expect(at).toBeGreaterThan(0)
     expect(panel.slice(at, at + 1200)).toContain('<Rows view={x.view} />')
+  })
+
+  it('⚠️ وكلُّ مسوّدةٍ في مجموعتها — المطلوبُ مفتوحٌ والمقترحُ مطويّ، ولا تسقط واحدة (١١ أكتوبر ٢٠٢٦)', () => {
+    expect(panel).toMatch(/\(\[\["required", "المطلوب"\], \["suggested", "المقترح"\]\] as const\)\.map\(\(\[kind, label\]\) => \{/)
+    expect(panel).toMatch(/const list = drafts\.filter\(\(x\) => x\.required === \(kind === "required"\)\);/)
+    expect(panel).toMatch(/open=\{kind === "required"\}/)
+    expect(panel).toMatch(/\{list\.map\(\(x\) => draftItem\(x\)\)\}/)
   })
 })
 

@@ -65,6 +65,27 @@ describe('تصنيفُ اللوحة · لكلّ شاشةٍ مجموعةٌ واح
     expect(GROUPS.length, 'لا مجموعاتِ في الكتلة').toBeGreaterThan(3)
   })
 
+  /* ═══ وصفحةُ تفصيلٍ تُفتح من شاشةٍ في مجموعة — لا تُصنَّف وحدَها (١١ أكتوبر ٢٠٢٦) ═══
+     منهاجُ الشعبة في صفحته (`/admin/plans/:cohortId`) يُفتح من لسان «المنهاج» في بطاقة
+     الخطّة، ولا معنى له بندا في القائمة بلا شعبة. فيُستثنى بشرطٍ يُفحص: أن يربط إليه ملفٌّ
+     تعرضه شاشةٌ في مجموعة — وإلّا عاد «لا يبلغها إلّا من يعرف عنوانها». */
+  const DETAIL: Record<string, { from: string; link: RegExp; shownOn: string }> = {
+    '/admin/plans/:cohortId': {
+      from: 'src/components/admin/TrainerPlanReview.tsx',
+      link: /to=\{`\/admin\/plans\/\$\{cohortId\}`\}/,
+      shownOn: '/admin/pending-plans',
+    },
+  }
+
+  it('وصفحةُ التفصيل يربط إليها ملفٌّ تعرضه شاشةٌ في مجموعة', () => {
+    const placed = GROUPS.flatMap((g) => g.routes)
+    for (const [path, d] of Object.entries(DETAIL)) {
+      expect(APP, `${path} ليس في App.tsx`).toContain(`<Route path="${path}"`)
+      expect(read(d.from), `لا يربط ${d.from} إلى ${path}`).toMatch(d.link)
+      expect(placed, `${d.shownOn} ليست في مجموعة`).toContain(d.shownOn)
+    }
+  })
+
   it('كلُّ مسارِ إدارةٍ في `App.tsx` له مجموعةٌ — إلّا تحويلا أو شاشةَ حساب', () => {
     /* التحويلُ يُعرف بشكله: `element={<Navigate` — فلا يُنتظر له تبويب.
        و«حسابي» تُفتح من قائمة الحساب في الترويسة لا من تصنيفِ عمل. */
@@ -73,6 +94,7 @@ describe('تصنيفُ اللوحة · لكلّ شاشةٍ مجموعةٌ واح
       .filter(([, , el]) => !el.includes('<Navigate'))
       .map(([, path]) => path)
       .filter((p) => p !== ACCOUNT)
+      .filter((p) => !(p in DETAIL))
 
     expect(routes.length, 'لم تُقرأ مساراتُ الإدارة من App.tsx').toBeGreaterThan(20)
 
