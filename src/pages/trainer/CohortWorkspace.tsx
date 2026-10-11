@@ -57,6 +57,8 @@ import SessionsAndAttendance from "./SessionsAndAttendance";
 import SlotSessions from "./SlotSessions";
 import WeeklySessions from "./WeeklySessions";
 import PlanResources from "./PlanResources";
+import MultiPick from "@/components/MultiPick";
+import FieldFlag from "./FieldFlag";
 import CohortSubmissions from "./CohortSubmissions";
 import { apiGet, apiPatch, apiPost, apiPut, apiDelete, ApiError } from "@/services/api";
 import ConfirmAction from "@/components/ConfirmAction";
@@ -90,7 +92,7 @@ import { Panel, Bar, Card, Inset } from "@/components/ui/Surface";
 import { PREP_NOTICE_AR, usePrepCohorts } from "@/components/trainer/usePrepCohorts";
 import { ORIENTATION_BOOKING_URL, ORIENTATION_CTA_AR } from "@/application/trainer/orientation-session";
 import Button from "@/components/ui/Button";
-import { controlCls, areaCls, OptionGrid, StaffField } from "@/components/FormKit";
+import { controlCls, areaCls, StaffField } from "@/components/FormKit";
 import { fmtDateTimeAr } from "@/utils/format";
 import { cohortDayAr } from "@/application/learning/cohort-gate";
 import { isDefaultCohortTitle, trainerOrdinalNoteAr } from "@/application/learning/cohort-title";
@@ -106,7 +108,7 @@ import { AUTOSAVE_DELAY_MS, AUTOSAVE_RETRY_MS, autosaveLineAr, autosaveView } fr
 import { countAr } from "@/application/text/count-ar";
 import CurriculumReview from "@/components/CurriculumReview";
 import PlanScorecard from "@/components/PlanScorecard";
-import { planScorecard } from "@/application/trainer/plan-scorecard";
+import { planScorecard, practiceGaps } from "@/application/trainer/plan-scorecard";
 import { postponedLineAr } from "@/application/trainer/plan-postpone";
 import { curriculumView } from "@/application/trainer/curriculum-view";
 import { PlanDiffList } from "@/components/PlanDiff";
@@ -598,6 +600,12 @@ export default function CohortWorkspace() {
   const [gaps, setGapsState] = useState<{ items: string[]; refused: Stage[]; saved: boolean } | null>(null);
   const setGaps = (items: string[] | null, how: { refused?: Stage[]; saved?: boolean } = {}) =>
     setGapsState(items ? { items, refused: how.refused ?? [], saved: how.saved ?? false } : null);
+  /* ═══ الناقصُ يُعلَّم في موضعه — لا من البداية (١١ أكتوبر ٢٠٢٦) ═══
+     الخاناتُ التي خرج منها المدرّب، والخطوةُ التي نقر فيها «التالي» فلم تنقل:
+     فيهما وحدَهما يُرسم الإطارُ الأحمر (`FieldFlag.tsx`). */
+  const [touched, setTouched] = useState<ReadonlySet<string>>(() => new Set());
+  const [flagAll, setFlagAll] = useState<Stage | null>(null);
+  const touch = (id: string) => setTouched((t) => (t.has(id) ? t : new Set(t).add(id)));
   /* «أرسِلها» وفي يده تعديلٌ لم يُحفظ — يُسأل قبل أن يُرسَل المحفوظُ وحدَه (٣ أكتوبر ٢٠٢٦) */
   const [unsavedAsk, setUnsavedAsk] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -1009,6 +1017,7 @@ export default function CohortWorkspace() {
     const problems = saveProblems();
     if (problems.length) {
       setGaps(problems.map((p) => p.text), { refused: [...new Set(problems.map((p) => p.stage))] });
+      setFlagAll(stage);
       return false;
     }
     await apiPut(`/api/trainer/cohorts/${ws.cohort.id}/plan`, over ?? content);
@@ -1143,8 +1152,33 @@ export default function CohortWorkspace() {
      و`inHand` معرَّفٌ أعلاه مع «المراجعة». */
   const missingOf = (k: Stage): string[] => (k === "approval" || doneOf(k) ? [] : gapsFor(k, ws));
   const missing = new Map(STAGES.map((x) => [x.key, inHand ? missingOf(x.key) : []]));
-  const missingTotal = [...missing.values()].reduce((n, g) => n + g.length, 0);
-  const adviceCount = scorecard.filter((x) => x.status === "advice").length;
+  /* ═══ وما ينقص كلَّ خانةٍ بعينها — ممّا في اليد لا من المحفوظ (١١ أكتوبر ٢٠٢٦) ═══
+     بالقواعد نفسِها التي يحكم بها «التالي» (`gapsFor`)، لكن على ما يكتبه الآن: الإطارُ
+     يذهب حين يُصلَح، لا بعد أن يُحفظ. وما لا يُكتب في الشاشة (اللقاءاتُ والمهامّ) من
+     الخادم كما هو. */
+  /* و`whole`: قسمٌ كاملٌ لا خانة (الكرّاسة · اللقاءات · المهامّ) — يُعلَّم بعد «التالي» وحدَه،
+     فنقرةٌ فيه وهو يبنيه لا تحمّره كلَّه */
+  const flagProps = (id: string, problem: string | null, whole = false) => ({
+    id, problem: inHand && !locked ? problem : null, shown: flagAll === stage || (!whole && touched.has(id)), onLeave: touch,
+  });
+  const titleProblem = (): string | null => {
+    const t = identity.title.trim();
+    if (!t && suggestedTitle) return null;
+    return t.length < 3 ? "اكتب اسمَ الشعبة — ثلاثةُ أحرفٍ فأكثر" : null;
+  };
+  const moduleProblem = (m: PlanModule): string | null => {
+    const out: string[] = [];
+    if (!m.titleAr.trim()) out.push("اكتب عنوانَ المحور");
+    if (!moduleBodyDone(m)) out.push("ينقصه المحتوى النظريّ — اكتبه، أو استورده من Word، أو أرفِق ملفّا");
+    /* والتطبيقُ العمليُّ بقاعدة الخادم نفسِها — جملةٌ لا كلمة (`practiceGaps`) */
+    if (practiceGaps([m]).length) out.push("ينقصه التطبيقُ العمليّ — جملةٌ تقول ما يفعله المتعلّمُ بيده");
+    return out.length ? out.join(" · ") : null;
+  };
+  const serverProblem = (k: Stage): string | null => (doneOf(k) ? null : gapsFor(k, ws).join(" · ") || null);
+  const rowProblem = (key: string): string | null => {
+    const row = ws.checklist.find((c) => c.key === key);
+    return row && !row.done ? row.labelAr : null;
+  };
   /* ═══ وما يقوله «التالي» حين لا ينقل يتحدّث بما يُحفظ بعده (١١ أكتوبر ٢٠٢٦) ═══
      كان يُكتب مرّةً ويبقى: من أضاف اللقاءَ الناقص بقي يقرأ «محورٌ بلا لقاءٍ مباشر» حتّى
      يُعيد تحميلَ الصفحة — فيظنّ أنّ اللقاءَ لم يُحفظ ويرسله ثانية. فما لم يُردّ حفظُه
@@ -1184,6 +1218,16 @@ export default function CohortWorkspace() {
         }
       } else {
         setGaps(gapsFor(stage, fresh), { saved: !planLocked });
+        /* ويُعلَّم كلُّ ناقصٍ في الخطوة بالأحمر، ويُنزَل إلى أوّله وتُفتح نافذتُه */
+        setFlagAll(stage);
+        window.requestAnimationFrame(() => {
+          const first = document.querySelector<HTMLElement>("[data-flagged]");
+          if (!first) return;
+          /* تحت الشريط اللاصق لا خلفَه — فهو يطول بما يقوله */
+          const bar = document.querySelector<HTMLElement>("[data-stepper]")?.getBoundingClientRect().bottom ?? 0;
+          window.scrollTo({ top: first.getBoundingClientRect().top + window.scrollY - bar - 32, behavior: "smooth" });
+          first.querySelector<HTMLElement>("[data-flag-badge]")?.focus({ preventScroll: true });
+        });
       }
     } catch (e) {
       toastError(e instanceof ApiError ? e.message : "تعذّر الحفظ");
@@ -1565,6 +1609,7 @@ export default function CohortWorkspace() {
         tone="solid"
         className="relative sticky z-30 -mx-5 mb-5 px-5"
         style={{ top: "var(--staff-sticky-top, 0px)" }}
+        data-stepper
       >
         <div>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
@@ -1752,9 +1797,24 @@ export default function CohortWorkspace() {
                       ? "لا تُرسَل مراجعتُك بعد — ينقص خطّتَك:"
                       : `لم تتمّ «${here?.label}» بعد — ينقصها:`}
               </p>
-              <ul className="mt-1 list-inside list-disc space-y-0.5 text-read leading-7 text-foreground">
-                {shownGaps.map((g) => <li key={g}>{g}</li>)}
-              </ul>
+              {/* وفي الخطوات التي تُعلَّم خاناتُها بالأحمر تُطوى القائمةُ سطرا: الشريطُ لاصق،
+                  وقائمةٌ طويلةٌ فيه تغطّي الخانةَ الحمراءَ التي يُنزَل إليها (١١ أكتوبر ٢٠٢٦) */}
+              {(() => {
+                const list = (
+                  <ul className="mt-1 list-inside list-disc space-y-0.5 text-read leading-7 text-foreground">
+                    {shownGaps.map((g) => <li key={g}>{g}</li>)}
+                  </ul>
+                );
+                if (gaps.refused.length > 0 || stage === "approval" || stage === "review") return list;
+                return (
+                  <details className="mt-1">
+                    <summary className="cursor-pointer text-read leading-6 text-muted-foreground">
+                      عُلّم كلُّ ناقصٍ في الصفحة بإطارٍ أحمر — انقر علامتَه «!» لترى ما ينقصه. <span className="font-bold text-foreground">أو اعرضها هنا</span>
+                    </summary>
+                    {list}
+                  </details>
+                );
+              })()}
               {/* وما منع الحفظَ في خطوةٍ غيرِ هذه يُفتح موضعُه — ولو كانت مقفلةً بالترتيب */}
               {gaps.refused.some((k) => k !== stage) && (
                 <div className="mt-2 flex flex-wrap gap-2">
@@ -1801,20 +1861,6 @@ export default function CohortWorkspace() {
         </span>
       </Bar>
 
-      {/* ═══ قائمةُ الفحص حيّةً من البداية — لوحةٌ جانبيّة (١١ أكتوبر ٢٠٢٦) ═══
-          «تظهر كلوحةٍ جانبيّةٍ تتحدّث مع كلّ حفظ، بدلَ اكتشاف النواقص عند الضغط على
-          "التالي"». على الشاشة العريضة بجانب المتن، وعلى الهاتف سطرٌ يُفتح فوقه. */}
-      {inHand && missingTotal > 0 && (
-        <Inset as="details" className="mb-4 px-3 py-2 lg:hidden">
-          <summary className="flex min-h-9 cursor-pointer list-none items-center gap-2 text-read font-black text-gold-ink [&::-webkit-details-marker]:hidden">
-            <ClipboardCheck className="h-4 w-4 shrink-0" aria-hidden="true" /> ما بقي قبل الإرسال · {missingTotal}
-            <ChevronDown className="h-4 w-4 shrink-0" aria-hidden="true" />
-          </summary>
-          <LiveChecklist missing={missing} adviceCount={adviceCount} current={stage} onOpen={(k) => void openStage(k)} />
-        </Inset>
-      )}
-      <div className={inHand ? "lg:grid lg:grid-cols-[minmax(0,1fr)_17rem] lg:items-start lg:gap-5" : undefined}>
-      <div className="min-w-0">
 
       {/* ═══ وذهب الطوران (٣٠ سبتمبر ٢٠٢٦) ═══
 
@@ -1950,9 +1996,11 @@ export default function CohortWorkspace() {
             </HowToFill>
           )}
           <div className="mt-5 grid gap-5">
+            <FieldFlag {...flagProps("title", titleProblem())} className="sm:col-span-2">
             <StaffField wide label="اسم الشعبة" hint={suggestedTitle ? "ما يراه المتعلّم في الكتالوج وفي شهادته. اكتب اسما يميّزها — «… · مساء الأحد» — أو اتركه فارغا فتُسمّى بالمثال الظاهر فيه." : "ما يراه المتعلّم في الكتالوج وفي شهادته — ولك أن تزيد عليه ما يميّزها: «… · مساء الأحد»."}>
               <input value={identity.title} placeholder={suggestedTitle ? `مثال: ${suggestedTitle}` : undefined} aria-label="اسم الشعبة" onChange={(e) => setIdentity({ title: e.target.value })} disabled={locked} className={controlCls} />
             </StaffField>
+            </FieldFlag>
             {/* وصفُ الشعبة موضعُه هنا لا في «المحاور»: هو تعريفُ الشعبة
                 نفسِها، وكان في خطوةٍ اسمُها «المحاور» فلا يجده من يبحث عنه. */}
             <StaffField wide label="نبذةٌ عن الشعبة" hint="سطران يقرؤهما المتعلّم قبل أن يدفع. قل ما سيخرج به، لا ما ستشرحه.">
@@ -1970,6 +2018,7 @@ export default function CohortWorkspace() {
               const picked = levelsIn(range);
               const said = levelRangeAr(range);
               return (
+                <FieldFlag {...flagProps("level", levelProblem(content, planStatus))} className="sm:col-span-2">
                 <fieldset disabled={locked} className="min-w-0 sm:col-span-2">
                   <legend className="text-read font-black text-foreground">مستوى هذه الشعبة</legend>
                   <p className="mt-1 text-read leading-6 text-muted-foreground">
@@ -2007,6 +2056,7 @@ export default function CohortWorkspace() {
                       : levelRequired(planStatus) ? "لم تختر المستوى بعد — ولا تتمّ هذه الخطوةُ بدونه." : "لم يُحدَّد مستوى لهذه الشعبة."}
                   </p>
                 </fieldset>
+                </FieldFlag>
               );
             })()}
 
@@ -2021,44 +2071,35 @@ export default function CohortWorkspace() {
               const goals = goalsFor(aud.stages);
               const setAud = (next: { stages: string[]; goals: string[] }) => setContent({ ...content, audience: next });
               return (
-                <>
-                  <fieldset disabled={locked} className="min-w-0 sm:col-span-2">
+                <FieldFlag {...flagProps("audience", audienceProblem(content, planStatus))} className="grid gap-5 sm:col-span-2 sm:grid-cols-2">
+                  <fieldset disabled={locked} className="min-w-0">
                     <legend className="text-read font-black text-foreground">لمن هذه الشعبة؟</legend>
-                    <p className="mt-1 text-read leading-6 text-muted-foreground">
-                      من سيجلس أمامك غالبا؟ اختر واحدةً إلى ثلاث — بالكلمات التي يصف بها المتعلّمُ نفسَه في التشخيص.
-                    </p>
-                    <div className="mt-2.5">
-                      <OptionGrid
+                    <div className="mt-2">
+                      <MultiPick
                         name="لمن هذه الشعبة"
+                        placeholder="اختر حتّى ثلاث"
+                        disabled={locked}
                         items={AUDIENCE_STAGES.map((st) => ({ value: st, label: stageLabelAr(st) }))}
                         isOn={(v) => aud.stages.includes(v as never)}
                         onToggle={(v) => setAud(withStages(aud, toggleIn(aud.stages, v as never, MAX_AUDIENCE_STAGES)))}
                       />
                     </div>
-                    {aud.stages.length >= MAX_AUDIENCE_STAGES && (
-                      <p className="mt-2 text-read leading-6 text-muted-foreground">اخترتَ ثلاثا — انزع واحدةً لتختار غيرها.</p>
-                    )}
                   </fieldset>
 
-                  <fieldset disabled={locked} className="min-w-0 sm:col-span-2">
+                  <fieldset disabled={locked} className="min-w-0">
                     <legend className="text-read font-black text-foreground">ماذا يريد المتعلّمُ أن يحقّق بها؟</legend>
-                    <p className="mt-1 text-read leading-6 text-muted-foreground">
-                      اختر هدفا أو هدفين{aud.stages.length > 0 ? " — والمعروضُ ما يناسب من اخترتَهم أعلاه" : ""}.
-                    </p>
-                    <div className="mt-2.5">
-                      <OptionGrid
-                        cols={2}
+                    <div className="mt-2">
+                      <MultiPick
                         name="هدفُ المتعلّم"
+                        placeholder="اختر هدفا أو هدفين"
+                        disabled={locked}
                         items={goals.map((g) => ({ value: g.code, label: g.label_ar }))}
                         isOn={(v) => aud.goals.includes(v)}
                         onToggle={(v) => setAud({ ...aud, goals: toggleIn(aud.goals, v, MAX_AUDIENCE_GOALS) })}
                       />
                     </div>
-                    {aud.goals.length >= MAX_AUDIENCE_GOALS && (
-                      <p className="mt-2 text-read leading-6 text-muted-foreground">اخترتَ هدفين — انزع واحدا لتختار غيره.</p>
-                    )}
                   </fieldset>
-                </>
+                </FieldFlag>
               );
             })()}
 
@@ -2067,7 +2108,8 @@ export default function CohortWorkspace() {
                 «لأنّها هي الفترةُ المخصّصة للّقاءات المباشرة ومدّةُ رؤية
                 المتعلّمين موارده». ولقاءاتُه كلُّها داخلها، والقاعدةُ في
                 `application/trainer/cohort-period.ts` يقرؤها الخادمُ معها. */}
-            <div className="grid gap-5 sm:grid-cols-2">
+            <FieldFlag {...flagProps("period", periodProblem(content, { today, approvedStart: ws.cohort.publicPeriod?.startsOn ?? null }))}
+              className="grid gap-5 sm:col-span-2 sm:grid-cols-2">
               <StaffField label="تبدأ الشعبة" hint="أوّلُ يومٍ فيها: تُفتح فيه موارده للمتعلّمين، ولقاءاتُك من يومه فما بعده.">
                 <input
                   type="date" dir="ltr"
@@ -2090,7 +2132,7 @@ export default function CohortWorkspace() {
                   className={`${controlCls} text-left`}
                 />
               </StaffField>
-            </div>
+            </FieldFlag>
             {(() => {
               /* ما يقوله التاريخان — مدّتُهما، أو ما يمنعهما — قبل أن يُحفظا */
               if (!content.startsOn && !content.endsOn) {
@@ -2167,7 +2209,8 @@ export default function CohortWorkspace() {
                  المفتوحُ `accent` والمطويُّ `default`. فحدُّه ظاهرٌ من طرفَيه،
                  ويعرف الناظرُ أين هو من القائمة بلا أن يعدّ. */
               return (
-              <Card as="li" key={m.moduleId} tone={open ? "accent" : "default"}>
+              <FieldFlag as="li" key={m.moduleId} {...flagProps(`module:${m.moduleId}`, moduleProblem(m))}>
+              <Card tone={open ? "accent" : "default"}>
                 <div className="flex flex-wrap items-center gap-2">
                   {/* العنوانُ زرٌّ يطوي البطاقةَ ويفتحها — فستّةُ محاورَ في خمسةِ
                       حقولٍ جدارٌ لا يُقرأ، والمطويُّ منها يُرى سطرا واحدا. */}
@@ -2249,6 +2292,7 @@ export default function CohortWorkspace() {
                 </div>
                 )}
               </Card>
+              </FieldFlag>
               );
         };
         const problems = slotProblems(slots, moduleIds, planPeriod);
@@ -2398,6 +2442,7 @@ export default function CohortWorkspace() {
         ];
         const titleOf = (id: string) => content.modules.find((m) => m.moduleId === id)?.titleAr || "بلا عنوانٍ بعد";
         return (
+          <FieldFlag {...flagProps("workbooks", serverProblem("workbooks"), true)}>
           <Panel as="section">
             <StageIntro stage="workbooks" />
             {slotWorkbooks > 0 && !workbookDone(wb) && wbGroups.every((g) => !workbookDone(g)) && (
@@ -2578,6 +2623,7 @@ export default function CohortWorkspace() {
               </ol>
             )}
           </Panel>
+          </FieldFlag>
         );
       })()}
 
@@ -2674,6 +2720,7 @@ export default function CohortWorkspace() {
             const looseRecorded = recordedRows.filter(({ r }) => slotIndexOf(slots, r.moduleId ?? "") === -1);
             return (
               <>
+                <FieldFlag {...flagProps("sessions", serverProblem("sessions"), true)}>
                 <ol className="space-y-4">
                   {slots.map((slot, si) => (
                     <SlotSessions
@@ -2698,6 +2745,7 @@ export default function CohortWorkspace() {
                     />
                   ))}
                 </ol>
+                </FieldFlag>
                 {/* ما جُدول قبل المحاور أو رُبط بمحورٍ حُذف — يُربط هنا ولا يضيع */}
                 {(loose.length > 0 || looseRecorded.length > 0) && (
                   <Card tone="accent" className="grid gap-3">
@@ -2820,6 +2868,7 @@ export default function CohortWorkspace() {
         </Panel>
 
         {taskTab !== "resources" && (
+        <FieldFlag {...flagProps(`tab:${taskTab}`, rowProblem(TASK_TABS[taskTab].key), true)}>
         <Panel as="section">
           <h3 className="flex items-center gap-2 text-sm font-black">
             {isProject ? <GraduationCap className="h-4 w-4 text-teal-light-ink" aria-hidden="true" /> : <ClipboardCheck className="h-4 w-4 text-teal-light-ink" aria-hidden="true" />}
@@ -3064,6 +3113,7 @@ export default function CohortWorkspace() {
             )}
           </div>
         </Panel>
+        </FieldFlag>
         )}
 
         {/* ═══ والمصادرُ هنا مع المهامّ (٢٧ سبتمبر ٢٠٢٦) ═══
@@ -3074,6 +3124,7 @@ export default function CohortWorkspace() {
             المواعيد تبقى أصنافُها الثلاثةُ هنا كما كانت. وصارت لسانا ثانيا
             (٣٠ سبتمبر ٢٠٢٦). */}
         {taskTab === "resources" && (
+        <FieldFlag {...flagProps("tab:resources", rowProblem("resources"), true)}>
         <Panel as="section">
           <h3 className="flex items-center gap-2 text-sm font-black">
             <FileText className="h-4 w-4 text-teal-light-ink" aria-hidden="true" /> المصادر
@@ -3137,6 +3188,7 @@ export default function CohortWorkspace() {
               يُشترط له رابط: شرطُ `https://` كان يمنع حفظَ مصدرٍ ملفُّه في
               المخزن — فيُرفع ثمّ لا يُحفظ (`resourceHasSource` في `saveProblems`). */}
         </Panel>
+        </FieldFlag>
         )}
 
         {/* ما سُلّم وما ينتظر — انتقلت من «التشغيل» (ع-١). من كتب المهمّةَ
@@ -3360,49 +3412,7 @@ export default function CohortWorkspace() {
         </Panel>
       )}
 
-      </div>
-      {inHand && (
-        <aside aria-label="ما بقي قبل الإرسال" className="sticky hidden lg:block" style={{ top: "calc(var(--staff-sticky-top, 0px) + 6rem)" }}>
-          <Card tone="solid" className="grid gap-2">
-            <p className="flex items-center gap-2 text-read font-black text-foreground">
-              <ClipboardCheck className="h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" />
-              {missingTotal > 0 ? <>ما بقي قبل الإرسال · <span className="text-gold-ink">{missingTotal}</span></> : "لا ناقصَ — أرسِلها من خطوة الاعتماد"}
-            </p>
-            <LiveChecklist missing={missing} adviceCount={adviceCount} current={stage} onOpen={(k) => void openStage(k)} />
-          </Card>
-        </aside>
-      )}
-      </div>
     </TrainerLayout>
   );
 }
 
-/** ما ينقص كلَّ خطوةٍ بأسمائه، وزرٌّ يفتحها — يتحدّث مع كلّ حفظ (١١ أكتوبر ٢٠٢٦) */
-function LiveChecklist({ missing, adviceCount, current, onOpen }: {
-  missing: ReadonlyMap<Stage, string[]>; adviceCount: number; current: Stage; onOpen: (k: Stage) => void;
-}) {
-  const rows = STAGES.filter((x) => (missing.get(x.key)?.length ?? 0) > 0);
-  return (
-    <div className="grid gap-2 text-read leading-6">
-      {rows.length === 0 && <p className="text-muted-foreground">كلُّ الخطوات تامّة.</p>}
-      {rows.map((x) => (
-        <div key={x.key} data-live-step={x.key}>
-          <button type="button" onClick={() => onOpen(x.key)}
-            className="flex w-full items-center justify-between gap-2 text-start font-bold text-foreground hover:text-teal-light-ink">
-            <span className={current === x.key ? "underline underline-offset-4" : undefined}>{x.label}</span>
-            <span className="shrink-0 text-fine font-black text-gold-ink">{missing.get(x.key)!.length} ناقص</span>
-          </button>
-          <ul className="mt-0.5 list-inside list-disc text-muted-foreground">
-            {missing.get(x.key)!.slice(0, 3).map((g) => <li key={g} className="line-clamp-2">{g}</li>)}
-            {missing.get(x.key)!.length > 3 && <li className="list-none">و{missing.get(x.key)!.length - 3} غيرُها</li>}
-          </ul>
-        </div>
-      ))}
-      {adviceCount > 0 && (
-        <p className="border-t border-white/[0.06] pt-2 text-muted-foreground">
-          و{adviceCount} {adviceCount === 1 ? "نصيحةٌ" : "نصائح"} في «فحص قبل الإرسال» بخطوة الاعتماد — لا تمنع الإرسال.
-        </p>
-      )}
-    </div>
-  );
-}
