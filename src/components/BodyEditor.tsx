@@ -80,7 +80,7 @@ export default function BodyEditor({
           aria-pressed={preview}
           className="btn-outline-brand mr-auto flex h-9 items-center gap-1.5 px-3 text-read"
         >
-          {preview ? <><Pencil className="h-3.5 w-3.5" aria-hidden="true" /> عُد للكتابة</> : <><Eye className="h-3.5 w-3.5" aria-hidden="true" /> عايِنْ كما يراه المتعلّم</>}
+          {preview ? <><Pencil className="h-3.5 w-3.5" aria-hidden="true" /> عد للكتابة</> : <><Eye className="h-3.5 w-3.5" aria-hidden="true" /> عاين كما يراه المتعلّم</>}
         </button>
       </div>
 
@@ -90,7 +90,7 @@ export default function BodyEditor({
           <Inset className="px-4 py-3"><LessonBody body={value} /></Inset>
         ) : (
           <Inset as="p" className="px-4 py-6 text-center text-read text-muted-foreground">
-            لا متنَ بعد — اكتب شيئا لتراه كما يراه متعلّمك.
+            لا متن بعد — اكتب شيئا لتراه كما يراه متعلّمك.
           </Inset>
         )
       ) : (
@@ -102,7 +102,7 @@ export default function BodyEditor({
           disabled={disabled}
           aria-label={ariaLabel}
           className={`${staffControlCls} leading-7`}
-          placeholder="اكتب الشرحَ الذي يقرؤه متعلّمك. ابدأ كلَّ درسٍ بعنوانٍ من الشريط أعلاه."
+          placeholder="اكتب الشرح الذي يقرؤه متعلّمك. ابدأ كلّ درس بعنوان من الشريط أعلاه."
         />
       )}
     </div>

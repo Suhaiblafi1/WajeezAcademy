@@ -50,50 +50,50 @@ const SITES: readonly { file: string; mutation: RegExp; whatAr: string }[] = [
   {
     file: 'server/http/routes/admin-users.routes.ts',
     mutation: /await purgeAccountWithHistory\(prisma, id\)/,
-    whatAr: 'محوُ حسابٍ من شاشة المستخدمين',
+    whatAr: 'محو حساب من شاشة المستخدمين',
   },
   {
     file: 'server/services/bulk-purge.service.ts',
     mutation: /await this\.prisma\.user\.delete\(/,
-    whatAr: 'المحوُ جملةً',
+    whatAr: 'المحو جملة',
   },
   {
     file: 'server/services/account-reset.service.ts',
     mutation: /await purgeAccountWithHistory\(this\.prisma, t\.id\)/,
-    whatAr: 'محوُ الحسابات في إعادة الضبط',
+    whatAr: 'محو الحسابات في إعادة الضبط',
   },
   {
     file: 'server/services/account-reset.service.ts',
     mutation: /await this\.prisma\.\$transaction\(async \(tx\) => \{\n\s*await tx\.session\.deleteMany/,
-    whatAr: 'تعميةُ الهويّة في إعادة الضبط',
+    whatAr: 'تعمية الهويّة في إعادة الضبط',
   },
 ]
 
-describe('رسالةُ آخرِ العهد', () => {
-  it('تسبق الفعلَ في كلِّ موضعٍ يمحو أو يُعمّي', () => {
+describe('رسالة آخر العهد', () => {
+  it('تسبق الفعل في كلّ موضع يمحو أو يعمّي', () => {
     for (const site of SITES) {
       const src = read(site.file)
       const at = src.search(site.mutation)
-      expect(at, `لم يُعثر على ${site.whatAr} في ${site.file}`).toBeGreaterThan(-1)
+      expect(at, `لم يعثر على ${site.whatAr} في ${site.file}`).toBeGreaterThan(-1)
       const handler = handlerAround(src, at)
       const sent = tellsAt(handler)
-      expect(sent, `${site.whatAr}: يقع بلا رسالةٍ أخيرة`).toBeGreaterThan(-1)
+      expect(sent, `${site.whatAr}: يقع بلا رسالة أخيرة`).toBeGreaterThan(-1)
       const mutated = handler.search(site.mutation)
-      expect(sent, `${site.whatAr}: الرسالةُ بعد الفعل لا قبله`).toBeLessThan(mutated)
+      expect(sent, `${site.whatAr}: الرسالة بعد الفعل لا قبله`).toBeLessThan(mutated)
     }
   })
 
-  it('ولا جرسَ يُضاف إليها — صفٌّ يُحذف مع صاحبه ليس إخبارا', () => {
+  it('ولا جرس يضاف إليها — صفّ يحذف مع صاحبه ليس إخبارا', () => {
     for (const site of SITES) {
       const handler = handlerAround(read(site.file), read(site.file).search(site.mutation))
       expect(
         handler,
-        `${site.whatAr}: أُضيف جرسٌ في بابٍ لا يُقرأ فيه جرس — يُحذف مع صاحبه أو يُمنع صاحبُه من الدخول`,
+        `${site.whatAr}: أضيف جرس في باب لا يقرأ فيه جرس — يحذف مع صاحبه أو يمنع صاحبه من الدخول`,
       ).not.toMatch(/\bsafeNotify\(|\.notify\(/)
     }
   })
 
-  it('والسببُ المكتوب يصل صاحبَ الشأن حيث يُلزَم به الموظّف', () => {
+  it('والسبب المكتوب يصل صاحب الشأن حيث يلزم به الموظّف', () => {
     /* المحوُ بالسجلّ يُلزم سببا (`reason_required`)، وإعادةُ الضبط كذلك.
        وإلزامٌ بسببٍ ثمّ إخفاؤه عمّن يمسّه إلزامٌ بلا فائدةٍ لصاحب الشأن. */
     for (const file of ['server/http/routes/admin-users.routes.ts', 'server/services/account-reset.service.ts']) {
@@ -101,7 +101,7 @@ describe('رسالةُ آخرِ العهد', () => {
       /* و`accountErasedMail(` هي الصياغةُ التي يأخذها البابان معا — فهي
          الموضعُ الذي يُمرَّر فيه السببُ أو يُنسى، أيًّا كان البابُ بعدها. */
       for (const m of src.matchAll(/(?:sendAccountErasedEmail|accountErasedMail)\([\s\S]{0,320}?\}\)/g)) {
-        expect(m[0], `${file}: رسالةٌ تخرج بلا السبب المكتوب`).toMatch(/reasonAr/)
+        expect(m[0], `${file}: رسالة تخرج بلا السبب المكتوب`).toMatch(/reasonAr/)
       }
     }
   })

@@ -38,7 +38,7 @@ const WIZARD = 'src/pages/admin/CohortWizard.tsx'
 const KIT = 'src/components/FormKit.tsx'
 
 describe('التحقّق الفوريّ في النماذج', () => {
-  it('لبِنةُ الحقل تحمل رسالةَ خطئها وتصلها بالحقل', () => {
+  it('لبنة الحقل تحمل رسالة خطئها وتصلها بالحقل', () => {
     const kit = read(KIT)
     /* `Field` و`FieldSet` كلاهما يأخذ `error` ويعرضه بـ`FieldError` */
     expect(kit).toContain('error?: string | null')
@@ -50,27 +50,27 @@ describe('التحقّق الفوريّ في النماذج', () => {
     expect(invalid).toContain("'aria-describedby': errorId")
   })
 
-  it('طلبُ الانضمام: كلُّ حقلٍ له رسالةٌ موصولةٌ به، تُفتح عند الخروج منه', () => {
+  it('طلب الانضمام: كلّ حقل له رسالة موصولة به، تفتح عند الخروج منه', () => {
     const src = read(JOIN)
     /* الحقولُ التي يردّها الخادمُ أو تردّها القاعدة — لكلٍّ رسالةٌ ووصلٌ ولمس */
     for (const id of ['jt-name', 'jt-email', 'jt-password', 'jt-password2', 'jt-alt-email']) {
-      expect(src, `${id}: لا وصلَ لرسالته`).toContain(`invalidProps("${id}-error"`)
+      expect(src, `${id}: لا وصل لرسالته`).toContain(`invalidProps("${id}-error"`)
     }
     for (const key of ['name', 'email', 'password', 'password2', 'altEmail', 'accredBody', 'accredOther']) {
-      expect(src, `${key}: لا رسالةَ عند حقله`).toContain(`errOf("${key}")`)
-      expect(src, `${key}: رسالتُه تظهر قبل أن يُلمس`).toContain(`touch("${key}")`)
+      expect(src, `${key}: لا رسالة عند حقله`).toContain(`errOf("${key}")`)
+      expect(src, `${key}: رسالته تظهر قبل أن يلمس`).toContain(`touch("${key}")`)
     }
     /* ومكتومةٌ حتى اللمس — لا شرطَ آخر */
     expect(src).toMatch(/const errOf = \(k: string\) => \(touched\[k\] \? fieldErrors\[k\] \?\? null : null\)/)
   })
 
-  it('حسابُ الطالب: حدودُ الخادم تُقاس هنا، والزرُّ يُضغط ليقول لا ليصمت', () => {
+  it('حساب الطالب: حدود الخادم تقاس هنا، والزرّ يضغط ليقول لا ليصمت', () => {
     const src = read(ACCOUNT)
     /* حدودُ `patchSchema` كلُّها مقيسةٌ قبل النداء — لا الاسمُ وحدَه */
     for (const key of ['displayName', 'avatarUrl', 'phone', 'birthDate', 'careerGoal', 'goalAr']) {
-      expect(src, `${key}: لا يُقاس قبل الإرسال`).toContain(`${key}:`)
-      expect(src, `${key}: لا رسالةَ عند حقله`).toContain(`errOf("${key}")`)
-      expect(src, `${key}: لا وصلَ لرسالته`).toContain(`bad("${key}"`)
+      expect(src, `${key}: لا يقاس قبل الإرسال`).toContain(`${key}:`)
+      expect(src, `${key}: لا رسالة عند حقله`).toContain(`errOf("${key}")`)
+      expect(src, `${key}: لا وصل لرسالته`).toContain(`bad("${key}"`)
     }
     /* «احفظ» لا يُطفأ على حقلٍ مرفوض: يُضغط، ويكشف الرفضَ عند حقله */
     expect(src).toContain('onClick={save} disabled={busy}')
@@ -80,18 +80,18 @@ describe('التحقّق الفوريّ في النماذج', () => {
     expect(save.slice(0, 400)).toContain('if (!canSave)')
     expect(save.slice(0, 400)).toContain('setTouched(')
     /* والاهتمامُ المرفوضُ يقول سببَه — كان يُرفض بصمتٍ في ثلاث حالات */
-    expect(src).toContain('مضافٌ عندك بالفعل')
+    expect(src).toContain('مضاف عندك بالفعل')
     expect(src).toContain('الحدّ ١٢ اهتماما')
   })
 
-  it('معالجُ الشعبة: كلُّ شرطٍ يُطفئ «التالي» له اسمٌ يُقرأ بجانبه', () => {
+  it('معالج الشعبة: كلّ شرط يطفئ «التالي» له اسم يقرأ بجانبه', () => {
     const src = read(WIZARD)
     /* لا تعبيرَ منطقيّا يطفئ الزرَّ بلا اسم: الشرطُ يدخل قائمةَ نقصٍ */
     expect(src).toContain('const canNext = stepMissing.length === 0')
     const memo = src.slice(src.indexOf('const stepMissing'), src.indexOf('const canNext'))
     /* كلُّ خطوةٍ لها شروط — والثلاثُ الأولى مذكورةٌ بالاسم */
     for (const step of ['step === 0', 'step === 1', 'step === 2']) {
-      expect(memo, `${step}: بلا شروطٍ مسمّاة`).toContain(step)
+      expect(memo, `${step}: بلا شروط مسمّاة`).toContain(step)
     }
     /* وعددُ الرسائل بعددِ الشروط — لا شرطَ صامت */
     const pushes = memo.match(/m\.push\(/g) ?? []

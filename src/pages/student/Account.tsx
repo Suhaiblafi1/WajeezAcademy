@@ -35,7 +35,7 @@ const API_BASE: string = import.meta.env.VITE_API_URL ?? "";
 const BIRTH_YEAR_FLOOR = 1930;
 
 const ARAB_COUNTRIES = [
-  "الأردن", "السعودية", "الإمارات", "مصر", "الكويت", "قطر", "عُمان", "البحرين",
+  "الأردن", "السعودية", "الإمارات", "مصر", "الكويت", "قطر", "عمان", "البحرين",
   "العراق", "فلسطين", "لبنان", "سوريا", "ليبيا", "تونس", "الجزائر", "المغرب", "السودان", "اليمن", "موريتانيا", "أخرى",
 ];
 const EDUCATION_LEVELS = ["ثانوي", "دبلوم", "بكالوريوس", "ماجستير", "دكتوراه", "أخرى"];
@@ -211,8 +211,8 @@ export default function StudentAccount() {
   const addInterest = () => {
     const v = interestDraft.trim();
     if (!v) { setInterestMsg("اكتب اهتماما أوّلا"); return; }
-    if (v.length > 40) { setInterestMsg("٤٠ حرفا حدُّ الاهتمام الواحد"); return; }
-    if (form.interests.includes(v)) { setInterestMsg(`«${v}» مضافٌ عندك بالفعل`); return; }
+    if (v.length > 40) { setInterestMsg("٤٠ حرفا حدّ الاهتمام الواحد"); return; }
+    if (form.interests.includes(v)) { setInterestMsg(`«${v}» مضاف عندك بالفعل`); return; }
     if (form.interests.length >= 12) { setInterestMsg("الحدّ ١٢ اهتماما — احذف واحدا أوّلا"); return; }
     set("interests", [...form.interests, v]);
     setInterestDraft("");
@@ -241,7 +241,7 @@ export default function StudentAccount() {
         uploadUrl: string; maxBytes: number; avatarUrl: string; awaitingApproval: boolean;
       }>("/api/learner/avatar-upload", { mime: PHOTO_OUT_MIME });
       if (blob.size > r.maxBytes) {
-        setPhotoMsg({ bad: true, text: `الصورةُ أكبرُ من الحدّ (${Math.round(r.maxBytes / 1024)} ك.ب)` });
+        setPhotoMsg({ bad: true, text: `الصورة أكبر من الحدّ (${Math.round(r.maxBytes / 1024)} ك.ب)` });
         return;
       }
       const res = await fetch(`${API_BASE}${r.uploadUrl}`, {
@@ -249,18 +249,18 @@ export default function StudentAccount() {
       });
       if (!res.ok) {
         /* الحالةُ تُقال: ٥٠١ إشعالٌ مطفأ، و٤١٥ نوعٌ مرفوض، و٤٠٣ رابطٌ منتهٍ */
-        setPhotoMsg({ bad: true, text: `تعذّر رفعُ الصورة (${res.status})` });
+        setPhotoMsg({ bad: true, text: `تعذّر رفع الصورة (${res.status})` });
         return;
       }
       setStoredAvatar(r.avatarUrl);
       setFraming(null);
       setForm((f) => ({ ...f, avatarUrl: "" }));
       setPhotoMsg({ bad: false, text: r.awaitingApproval
-        ? "رُفعت صورتُك — وتظهر للعامّة بعد اعتماد الإدارة."
-        : "رُفعت صورتُك." });
+        ? "رفعت صورتك — وتظهر للعامّة بعد اعتماد الإدارة."
+        : "رفعت صورتك." });
     } catch (e) {
       setPhotoMsg({ bad: true, text: e instanceof ImageConditionError ? e.message
-        : e instanceof ApiError ? e.message : "تعذّر رفعُ الصورة" });
+        : e instanceof ApiError ? e.message : "تعذّر رفع الصورة" });
     } finally {
       setPhotoBusy(false);
       if (fileRef.current) fileRef.current.value = "";
@@ -271,19 +271,19 @@ export default function StudentAccount() {
     const name = form.displayName.trim();
     const url = form.avatarUrl.trim();
     return {
-      displayName: name.length < 2 ? "اسمُك حرفان على الأقلّ" : name.length > 80 ? "الاسمُ أطولُ من ٨٠ حرفا" : null,
+      displayName: name.length < 2 ? "اسمك حرفان على الأقلّ" : name.length > 80 ? "الاسم أطول من ٨٠ حرفا" : null,
       /* الرابطُ يُعرض صورةً في حسابه وشهادته — فرابطٌ بلا بروتوكولٍ صورةٌ مكسورة */
       avatarUrl: !url ? null
-        : url.length > 500 ? "الرابطُ أطولُ من ٥٠٠ حرف"
+        : url.length > 500 ? "الرابط أطول من ٥٠٠ حرف"
         : /^https?:\/\/\S+$/.test(url) ? null
-        : "رابطٌ مباشرٌ للصورة يبدأ بـ https://",
-      phone: form.phone.trim().length > 24 ? "الرقمُ أطولُ من ٢٤ خانة" : null,
+        : "رابط مباشر للصورة يبدأ بـ https://",
+      phone: form.phone.trim().length > 24 ? "الرقم أطول من ٢٤ خانة" : null,
       /* تاريخُ ميلادٍ في المستقبل يُقبله الخادم ويكسر حسابَ العمر في الشهادة */
       birthDate: form.birthDate && form.birthDate > new Date().toISOString().slice(0, 10)
-        ? "تاريخٌ في المستقبل — راجع ما كتبت"
+        ? "تاريخ في المستقبل — راجع ما كتبت"
         : null,
-      careerGoal: form.careerGoal.trim().length > 300 ? "٣٠٠ حرفٍ حدُّ هذا الحقل" : null,
-      goalAr: form.goalAr.trim().length > 300 ? "٣٠٠ حرفٍ حدُّ هذا الحقل" : null,
+      careerGoal: form.careerGoal.trim().length > 300 ? "٣٠٠ حرف حدّ هذا الحقل" : null,
+      goalAr: form.goalAr.trim().length > 300 ? "٣٠٠ حرف حدّ هذا الحقل" : null,
     };
   }, [form.displayName, form.avatarUrl, form.phone, form.birthDate, form.careerGoal, form.goalAr]);
 
@@ -324,10 +324,10 @@ export default function StudentAccount() {
     try {
       if (mode === "server") {
         await apiPatch("/api/learner/profile", payload);
-        setSavedMsg("حُفظت بياناتك");
+        setSavedMsg("حفظت بياناتك");
       } else {
         localStorage.setItem(LOCAL_KEY, JSON.stringify(form));
-        setSavedMsg("حُفظت محليا — تُنقل لحسابك عند الربط");
+        setSavedMsg("حفظت محليا — تنقل لحسابك عند الربط");
       }
     } catch (e) {
       setErr(e instanceof ApiError ? e.message : "تعذر الحفظ — حاول مجددا");
@@ -348,7 +348,7 @@ export default function StudentAccount() {
     try {
       const { revoked } = await apiPost<{ ok: boolean; revoked: number }>("/api/auth/logout-all");
       clearLocalSession();
-      setSecMsg(`أُنهيت ${revoked} جلسة — نحوّلك لتسجيل الدخول من جديد`);
+      setSecMsg(`أنهيت ${revoked} جلسة — نحوّلك لتسجيل الدخول من جديد`);
       window.setTimeout(() => window.location.assign("/auth"), 1600);
     } catch (e) {
       setSecErr(e instanceof ApiError ? e.message : "تعذر إنهاء الجلسات — حاول مجددا");
@@ -362,7 +362,7 @@ export default function StudentAccount() {
     try {
       await apiPost("/api/auth/deactivate");
       clearLocalSession();
-      setSecMsg("عُطّل حسابك — بياناتك محفوظة، وإعادة التفعيل عبر التواصل معنا");
+      setSecMsg("عطّل حسابك — بياناتك محفوظة، وإعادة التفعيل عبر التواصل معنا");
       window.setTimeout(() => window.location.assign("/"), 2000);
     } catch (e) {
       setSecErr(e instanceof ApiError ? e.message : "تعذر تعطيل الحساب — حاول مجددا");
@@ -438,7 +438,7 @@ export default function StudentAccount() {
             <input value={form.displayName} onChange={(e) => set("displayName", e.target.value)} onBlur={touch("displayName")} {...bad("displayName", errOf("displayName"))} className={inputCls} autoComplete="name" />
           </Field>
           <Field label="رابط الصورة الشخصية" hint="اختياري — يظهر في حسابك وشهاداتك" name="avatarUrl" error={errOf("avatarUrl")}>
-            <input dir="ltr" value={form.avatarUrl} onChange={(e) => set("avatarUrl", e.target.value)} onBlur={touch("avatarUrl")} {...bad("avatarUrl", errOf("avatarUrl"))} placeholder={storedAvatar ? "صورةٌ مرفوعةٌ عندنا" : "https://…"} className={`${inputCls} text-left`} />
+            <input dir="ltr" value={form.avatarUrl} onChange={(e) => set("avatarUrl", e.target.value)} onBlur={touch("avatarUrl")} {...bad("avatarUrl", errOf("avatarUrl"))} placeholder={storedAvatar ? "صورة مرفوعة عندنا" : "https://…"} className={`${inputCls} text-left`} />
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <input
                 ref={fileRef}
@@ -449,10 +449,10 @@ export default function StudentAccount() {
               />
               <Button tone="secondary" size="sm" disabled={photoBusy} onClick={() => fileRef.current?.click()}>
                 {photoBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ImagePlus className="h-3.5 w-3.5" />}
-                {photoBusy ? "جارٍ الرفع…" : "ارفع صورة من جهازك"}
+                {photoBusy ? "جار الرفع…" : "ارفع صورة من جهازك"}
               </Button>
               <span className="text-fine leading-5 text-muted-foreground">
-                تُقتطع مربّعةً · أقلُّ ضلعٍ ٤٠٠ بكسل · JPEG أو PNG أو WebP
+                تقتطع مربّعة · أقلّ ضلع ٤٠٠ بكسل · JPEG أو PNG أو WebP
               </span>
             </div>
             {photoMsg && (
@@ -675,7 +675,7 @@ export default function StudentAccount() {
             <div className="min-w-0 flex-1">
               <p className="text-sm font-bold">الخروج من كل الأجهزة</p>
               <p className="mt-1 text-read leading-6 text-muted-foreground">
-                يُنهي كل جلساتك — وتدخل من جديد هنا أيضا.
+                ينهي كل جلساتك — وتدخل من جديد هنا أيضا.
               </p>
             </div>
             <Button tone="secondary" type="button" onClick={logoutAll} disabled={!!secBusy} className="shrink-0 disabled:cursor-not-allowed">
@@ -692,7 +692,7 @@ export default function StudentAccount() {
             <div className="min-w-0 flex-1">
               <p className="text-sm font-bold">كلمة المرور</p>
               <p className="mt-1 text-read leading-6 text-muted-foreground">
-                نرسل إلى بريدك رابطا تختار منه كلمةً جديدة.
+                نرسل إلى بريدك رابطا تختار منه كلمة جديدة.
               </p>
             </div>
             <Button tone="secondary" type="button" disabled={!!secBusy || !email} className="shrink-0 disabled:cursor-not-allowed"
@@ -700,13 +700,13 @@ export default function StudentAccount() {
                 setSecErr(""); setSecMsg("");
                 try {
                   await apiPost("/api/auth/password/forgot", { email });
-                  setSecMsg(`أرسلنا رابطَ تغيير كلمة المرور إلى ${email}`);
+                  setSecMsg(`أرسلنا رابط تغيير كلمة المرور إلى ${email}`);
                 } catch (e) {
                   setSecErr(e instanceof ApiError ? e.message : "تعذّر الإرسال — حاول بعد قليل");
                 }
               }}>
               <KeyRound className="h-3.5 w-3.5" />
-              أرسِل رابطَ تغييرها
+              أرسل رابط تغييرها
             </Button>
           </div>
 
@@ -715,7 +715,7 @@ export default function StudentAccount() {
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-bold text-red-300">تعطيل الحساب</p>
                 <p className="mt-1 text-read leading-6 text-muted-foreground">
-                  يوقف حسابك وجلساتك فورا. بياناتك وتقدمك محفوظة، ويُعاد التفعيل بالتواصل معنا.
+                  يوقف حسابك وجلساتك فورا. بياناتك وتقدمك محفوظة، ويعاد التفعيل بالتواصل معنا.
                 </p>
               </div>
               {!confirmingDeactivate ? (

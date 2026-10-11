@@ -108,9 +108,9 @@ export default function ModuleCheck({
           {sched === "done" ? (
             <Card as="p" tone="accent" className="mt-3 flex flex-wrap items-center gap-2 bg-teal-ink/[0.07] px-4 py-3 text-fine leading-6 text-foreground">
               <CalendarClock className="h-3.5 w-3.5 shrink-0 text-teal-light-ink" aria-hidden="true" />
-              جُدولت عودة هذه الأسئلة: بعد {spacingLabelAr(0)}، ثم يتباعد الموعد كلما استرجعتها.
+              جدولت عودة هذه الأسئلة: بعد {spacingLabelAr(0)}، ثم يتباعد الموعد كلما استرجعتها.
               <Link to="/student/review" className="font-bold text-teal-light-ink underline underline-offset-4">
-                صفحة «تثبيتُ ما تعلّمت»
+                صفحة «تثبيت ما تعلّمت»
               </Link>
             </Card>
           ) : sched === "unavailable" ? null : (

@@ -34,7 +34,7 @@ const draft = () => ({
 describe('مسودّة طلب الانضمام', () => {
   beforeEach(() => store.clear())
 
-  it('تعود كما تُركت — الخطوة والإجابات والمرجع', () => {
+  it('تعود كما تركت — الخطوة والإجابات والمرجع', () => {
     saveDraft(draft(), 1_000)
     const back = loadDraft(2_000)
     expect(back?.step).toBe(2)
@@ -44,13 +44,13 @@ describe('مسودّة طلب الانضمام', () => {
     expect(back?.candidateToken).toBe('cand-abcdefghij')
   })
 
-  it('لا سرَّ عابرا في تخزينٍ يبقى', () => {
+  it('لا سرّ عابرا في تخزين يبقى', () => {
     const raw = serializeDraft(draft(), 1_000)
     for (const secret of ['Secret#12345', 'tok-abcdefghij']) {
-      expect(raw, `${secret} كُتب في المسودّة`).not.toContain(secret)
+      expect(raw, `${secret} كتب في المسودّة`).not.toContain(secret)
     }
     for (const key of NEVER_PERSISTED) {
-      expect(raw, `${key} كُتب في المسودّة`).not.toContain(key)
+      expect(raw, `${key} كتب في المسودّة`).not.toContain(key)
     }
     /* وما يُعاد يبقى — الاستثناء مقصورٌ على السرّ */
     expect(raw).toContain('سهيل')
@@ -60,17 +60,17 @@ describe('مسودّة طلب الانضمام', () => {
     saveDraft(draft(), 1_000)
     expect(loadDraft(1_000 + DRAFT_TTL_MS - 1), 'انتهت قبل مدّتها').not.toBeNull()
     expect(loadDraft(1_000 + DRAFT_TTL_MS + 1), 'بقيت بعد مدّتها').toBeNull()
-    expect(store.get(DRAFT_KEY), 'المنتهية لم تُمسح من التخزين').toBeUndefined()
+    expect(store.get(DRAFT_KEY), 'المنتهية لم تمسح من التخزين').toBeUndefined()
   })
 
-  it('نموذجٌ لم يُمسّ لا يُعرض له إشعار استئناف', () => {
+  it('نموذج لم يمسّ لا يعرض له إشعار استئناف', () => {
     const empty = { ...draft(), form: { phoneCountryCode: '+962' }, specialties: [], teachable: [], teachableOther: '' }
     expect(draftHasContent({ ...empty, savedAt: 0 })).toBe(false)
     expect(draftHasContent({ ...empty, savedAt: 0, specialties: ['x'] })).toBe(true)
     expect(draftHasContent({ ...empty, savedAt: 0, form: { fullName: 'سهيل' } })).toBe(true)
   })
 
-  it('تخزينٌ يرفض لا يُسقط النموذج', () => {
+  it('تخزين يرفض لا يسقط النموذج', () => {
     vi.stubGlobal('localStorage', {
       getItem: () => { throw new Error('denied') },
       setItem: () => { throw new Error('denied') },
@@ -86,7 +86,7 @@ describe('مسودّة طلب الانضمام', () => {
     })
   })
 
-  it('مسودّة تالفة تُتجاهَل ولا تُسقط الصفحة', () => {
+  it('مسودّة تالفة تتجاهل ولا تسقط الصفحة', () => {
     store.set(DRAFT_KEY, '{ليست JSON')
     expect(loadDraft()).toBeNull()
   })

@@ -34,7 +34,7 @@ const FE_MAP = read('src/data/courses.ts')
 /** مصدرُ الحقيقة: أجزاءُ المتن كما تعرفها حاكميّةُ الإصدارات */
 function contentFields(): string[] {
   const m = AUTHORING.match(/const CONTENT_FIELDS = \[([^\]]+)\]/)
-  if (!m) throw new Error('لم يُعثر على CONTENT_FIELDS في خدمة التأليف')
+  if (!m) throw new Error('لم يعثر على CONTENT_FIELDS في خدمة التأليف')
   return m[1].split(',').map((s) => s.trim().replace(/^'|'$/g, '')).filter(Boolean)
 }
 
@@ -44,30 +44,30 @@ const jsonKeyOf = (field: string) => `module_${field.replace(/Ar$/, '')}_ar`
 /** جسمُ إسقاطِ الوحدات وحدَه — فلا يُقبل ذكرُ الحقل في موضعٍ آخر من الملفّ */
 function moduleProjection(src: string, startMarker: string): string {
   const at = src.indexOf(startMarker)
-  expect(at, `لم يُعثر على «${startMarker}»`).toBeGreaterThan(-1)
+  expect(at, `لم يعثر على «${startMarker}»`).toBeGreaterThan(-1)
   return src.slice(at, at + 2500)
 }
 
 const FIELDS = contentFields()
 
-describe('أجزاءُ متنِ الوحدة — تكافؤُ السلسلة', () => {
-  it('مصدرُ الحقيقة يحمل الأجزاءَ الستّة المعروفة', () => {
+describe('أجزاء متن الوحدة — تكافؤ السلسلة', () => {
+  it('مصدر الحقيقة يحمل الأجزاء الستّة المعروفة', () => {
     expect(FIELDS).toEqual(['bodyAr', 'checksAr', 'videoAr', 'scenarioAr', 'practiceAr', 'rubricAr'])
   })
 
-  it('لكلِّ جزءٍ عمودٌ في المخطَّط', () => {
+  it('لكلّ جزء عمود في المخطّط', () => {
     for (const f of FIELDS) {
       expect(SCHEMA, `عمود ${f} مفقود في CourseModuleVersion`).toMatch(new RegExp(`\\n\\s+${f}\\s+String\\?`))
     }
   })
 
-  it('المستورِدُ يقرأ كلَّ جزءٍ من ملفّ الكتالوج', () => {
+  it('المستورد يقرأ كلّ جزء من ملفّ الكتالوج', () => {
     for (const f of FIELDS) {
-      expect(IMPORTER, `${jsonKeyOf(f)} لا يُستورد`).toContain(`${f}: m.${jsonKeyOf(f)}`)
+      expect(IMPORTER, `${jsonKeyOf(f)} لا يستورد`).toContain(`${f}: m.${jsonKeyOf(f)}`)
     }
   })
 
-  it('اللقطةُ المنشورة تُخرج كلَّ جزء', () => {
+  it('اللقطة المنشورة تخرج كلّ جزء', () => {
     const body = moduleProjection(SNAPSHOT, 'const moduleRows =')
     for (const f of FIELDS) {
       expect(body, `${jsonKeyOf(f)} غائب عن اللقطة`).toContain(`{ ${jsonKeyOf(f)}: v.${f} }`)
@@ -75,7 +75,7 @@ describe('أجزاءُ متنِ الوحدة — تكافؤُ السلسلة', (
   })
 
   /* الحلقةُ التي انكسرت فعلا */
-  it('الواجهةُ العامّة — مصدرُ المتعلّم — تُخرج كلَّ جزء', () => {
+  it('الواجهة العامّة — مصدر المتعلّم — تخرج كلّ جزء', () => {
     const body = moduleProjection(PUBLIC_API, 'modules: courses.flatMap(')
     for (const f of FIELDS) {
       expect(body, `${jsonKeyOf(f)} غائب عن /api/public/core-catalog — لن يصل المتعلّم`)
@@ -83,10 +83,10 @@ describe('أجزاءُ متنِ الوحدة — تكافؤُ السلسلة', (
     }
   })
 
-  it('نوعُ الواجهة ومُحوِّلُها يقرآن كلَّ جزء', () => {
+  it('نوع الواجهة ومحوّلها يقرآن كلّ جزء', () => {
     for (const f of FIELDS) {
-      expect(FE_TYPE, `${jsonKeyOf(f)} غير معلَنٍ في نوع الكتالوج`).toContain(`${jsonKeyOf(f)}?:`)
-      expect(FE_MAP, `${jsonKeyOf(f)} لا يُقرأ في data/courses.ts`).toContain(`m.${jsonKeyOf(f)}`)
+      expect(FE_TYPE, `${jsonKeyOf(f)} غير معلن في نوع الكتالوج`).toContain(`${jsonKeyOf(f)}?:`)
+      expect(FE_MAP, `${jsonKeyOf(f)} لا يقرأ في data/courses.ts`).toContain(`m.${jsonKeyOf(f)}`)
     }
   })
 })

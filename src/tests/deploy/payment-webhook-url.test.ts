@@ -35,18 +35,18 @@ const DOCS = ['deploy/README.md', 'docs/DEPLOYMENT.md', 'docs/CONNECT_AR.md']
 function registeredWebhookPath(): string {
   const src = read('server/http/routes/commerce.routes.ts')
   const m = src.match(/app\.post\(\s*'([^']*webhook[^']*)'/i)
-  expect(m, 'لا مسارَ خطّافٍ مسجَّلٌ في commerce.routes.ts — تغيّرت بنيتُها').toBeTruthy()
+  expect(m, 'لا مسار خطّاف مسجّل في commerce.routes.ts — تغيّرت بنيتها').toBeTruthy()
   return m![1]
 }
 
-describe('عنوانُ خطّاف الدفع — الوثيقةُ تطابق الشيفرة', () => {
-  it('المسارُ مسجَّلٌ في الشيفرة ويُقرأ منها', () => {
+describe('عنوان خطّاف الدفع — الوثيقة تطابق الشيفرة', () => {
+  it('المسار مسجّل في الشيفرة ويقرأ منها', () => {
     const path = registeredWebhookPath()
-    expect(path.startsWith('/api/'), `مسارٌ غيرُ متوقَّع: ${path}`).toBe(true)
-    expect(path, 'المسارُ بلا مُعامل مزوّدٍ — تغيّر التصميم').toMatch(/:\w+/)
+    expect(path.startsWith('/api/'), `مسار غير متوقّع: ${path}`).toBe(true)
+    expect(path, 'المسار بلا معامل مزوّد — تغيّر التصميم').toMatch(/:\w+/)
   })
 
-  it('وكلُّ عنوانِ خطّافٍ تكتبه الوثائقُ يبدأ بالمسار المسجَّل', () => {
+  it('وكلّ عنوان خطّاف تكتبه الوثائق يبدأ بالمسار المسجّل', () => {
     /* البادئةُ ما قبل مُعامل المزوّد: `‎/api/webhooks/payments/`.
        فيُقبل `‎…/stripe` و`‎…/moyasar` و`‎…/:provider` سواءً. */
     const prefix = registeredWebhookPath().replace(/:\w+.*$/, '')
@@ -64,20 +64,20 @@ describe('عنوانُ خطّاف الدفع — الوثيقةُ تطابق ا�
       for (const p of [...new Set(mentioned)]) {
         expect(
           p.startsWith(prefix),
-          `${doc} يأمر بتسجيل «${p}» — والمسجَّلُ «${prefix}<المزوّد>». ` +
-            'من تبع الوثيقةَ ردّ عليه ٤٠٤: المالُ مقبوضٌ ولا تسجيلَ يُنشأ.',
+          `${doc} يأمر بتسجيل «${p}» — والمسجّل «${prefix}<المزوّد>». ` +
+            'من تبع الوثيقة ردّ عليه ٤٠٤: المال مقبوض ولا تسجيل ينشأ.',
         ).toBe(true)
       }
     }
   })
 
-  it('ولا تخلو الوثائقُ من العنوان بتاتا — فالصمتُ لا يُنقذ أحدا', () => {
+  it('ولا تخلو الوثائق من العنوان بتاتا — فالصمت لا ينقذ أحدا', () => {
     /* حارسٌ ضدّ «الإصلاح» بالحذف: من حذف العنوانَ من الوثائق أمرّ الحارسَ
        أعلاه وترك من يسجّل بلا مرجع. */
     const prefix = registeredWebhookPath().replace(/:\w+.*$/, '')
     const anyDocNamesIt = DOCS.some(
       (d) => existsSync(join(root, d)) && read(d).includes(prefix),
     )
-    expect(anyDocNamesIt, 'لا وثيقةَ تذكر عنوانَ الخطّاف — ومن يسجّله يخمّن').toBe(true)
+    expect(anyDocNamesIt, 'لا وثيقة تذكر عنوان الخطّاف — ومن يسجّله يخمّن').toBe(true)
   })
 })

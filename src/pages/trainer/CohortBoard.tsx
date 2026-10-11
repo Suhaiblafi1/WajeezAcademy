@@ -45,10 +45,10 @@ interface CohortSummary {
 const PLAN_AR: Record<string, { label: string; tone: "default" | "accent" | "positive" | "warn" }> = {
   draft: { label: "في التجهيز", tone: "default" },
   submitted: { label: "بانتظار الاعتماد", tone: "accent" },
-  changes_requested: { label: "طُلبت تعديلات", tone: "warn" },
-  approved: { label: "معتمَدة", tone: "positive" },
+  changes_requested: { label: "طلبت تعديلات", tone: "warn" },
+  approved: { label: "معتمدة", tone: "positive" },
   published: { label: "منشورة", tone: "positive" },
-  superseded: { label: "نسخةٌ قديمة", tone: "default" },
+  superseded: { label: "نسخة قديمة", tone: "default" },
 };
 
 export default function CohortBoard() {
@@ -78,10 +78,10 @@ export default function CohortBoard() {
           </Button>
         </Panel>
       ) : loading ? (
-        <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-teal-ink" aria-label="جارٍ التحميل" /></div>
+        <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-teal-ink" aria-label="جار التحميل" /></div>
       ) : rows.length === 0 ? (
         <Panel as="p" className="py-12 text-center text-sm text-muted-foreground">
-          لا شعبَ مسندةً إليك بعد.
+          لا شعب مسندة إليك بعد.
         </Panel>
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
@@ -104,7 +104,7 @@ export default function CohortBoard() {
                       <span className="rounded-full border border-white/10 px-2 py-0.5 font-bold text-foreground">{st.label}</span>
                       <span>دورك: {c.role === "lead" ? "مدرب رئيس" : "مساعد"}</span>
                       {prepIds.has(c.id) && (
-                        <span className="rounded-full border border-gold/40 px-2 py-0.5 font-bold text-foreground">شعبةُ إعداد — بلا متعلّمين</span>
+                        <span className="rounded-full border border-gold/40 px-2 py-0.5 font-bold text-foreground">شعبة إعداد — بلا متعلّمين</span>
                       )}
                     </p>
                   </div>
@@ -134,7 +134,7 @@ export default function CohortBoard() {
                     ? c.next.waiting
                       ? <span className="text-muted-foreground">{c.next.labelAr}</span>
                       : <span><span className="font-bold text-foreground">التالي:</span> {c.next.labelAr}</span>
-                    : <span className="font-bold text-teal-light-ink">التجهيزُ مكتمل — الشعبة في التشغيل.</span>}
+                    : <span className="font-bold text-teal-light-ink">التجهيز مكتمل — الشعبة في التشغيل.</span>}
                 </p>
 
                 <Link to={`/trainer/cohort/${c.id}`} className="mt-4 inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-teal-deep px-5 text-sm font-black text-white transition hover:bg-teal-darker">
@@ -150,9 +150,9 @@ export default function CohortBoard() {
       {/* اقتراحاتُ التأجيل تُقترح من صفحة الشعبة، ومآلُها وسحبُها في «جدولي» */}
       <p className="mt-6 flex items-center gap-2 text-read text-muted-foreground">
         <CalendarDays className="h-4 w-4 text-teal-ink" aria-hidden="true" />
-        اقتراحاتُ تأجيل اللقاءات ومآلُها في <Link to="/trainer/schedule" className="font-bold text-teal-light-ink underline decoration-dotted underline-offset-4">جدولي</Link>.
+        اقتراحات تأجيل اللقاءات ومآلها في <Link to="/trainer/schedule" className="font-bold text-teal-light-ink underline decoration-dotted underline-offset-4">جدولي</Link>.
         <Users className="ms-3 h-4 w-4 text-teal-ink" aria-hidden="true" />
-        ومتعلّموك كلُّهم في <Link to="/trainer/learners" className="font-bold text-teal-light-ink underline decoration-dotted underline-offset-4">طلبتي</Link>.
+        ومتعلّموك كلّهم في <Link to="/trainer/learners" className="font-bold text-teal-light-ink underline decoration-dotted underline-offset-4">طلبتي</Link>.
       </p>
     </TrainerLayout>
   );

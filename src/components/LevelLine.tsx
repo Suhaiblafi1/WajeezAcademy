@@ -36,7 +36,7 @@ export default function LevelLine({ summary, className = "" }: { summary: LevelS
       {check && checkOpen && !summary.measured && (
         <Link to={skillCheckHref(check.subject, FIELD_LEVELS.find((l) => l.label_ar === current?.label_ar)?.code)}
           className="mt-1 block text-read font-bold text-teal-light-ink underline-offset-4 hover:underline">
-          قِس مستواك بفحصٍ مجّانيٍّ في ثلاث دقائق
+          قس مستواك بفحص مجّانيّ في ثلاث دقائق
         </Link>
       )}
       <Button tone="ghost" size="sm" className="mt-1 -mr-4" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
@@ -45,7 +45,7 @@ export default function LevelLine({ summary, className = "" }: { summary: LevelS
       {open && (
         <div className="mt-2">
           <p className="text-read leading-5 text-muted-foreground">
-            اختر الوصفَ الأقرب إليك — نعيد بناء خطّتك به، بلا إعادة الأسئلة.
+            اختر الوصف الأقرب إليك — نعيد بناء خطّتك به، بلا إعادة الأسئلة.
           </p>
           <ul className="mt-2 flex flex-col gap-2">
             {others.map((o) => (

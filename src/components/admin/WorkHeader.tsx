@@ -76,7 +76,7 @@ export default function WorkHeader({
           <div className="h-4 w-44 max-w-full animate-pulse rounded bg-white/[0.06]" />
         </div>
         <div className="h-11 w-full animate-pulse rounded-full bg-white/[0.06] sm:w-32" />
-        <span className="sr-only">يُقرأ ما ينتظر…</span>
+        <span className="sr-only">يقرأ ما ينتظر…</span>
       </Card>
     )
   }

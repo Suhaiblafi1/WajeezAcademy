@@ -63,7 +63,7 @@ export function sessionTooShort(startsAt: DateLike, endsAt: DateLike): boolean {
 
 /** ما يُقال لمن قصّر — العلّةُ والحدُّ في جملةٍ واحدة */
 export const SHORT_SESSION_AR =
-  'اللقاءُ ساعتان على الأقلّ — لكلّ محورٍ لقاء، ولكلّ لقاءٍ ساعتان'
+  'اللقاء ساعتان على الأقلّ — لكلّ محور لقاء، ولكلّ لقاء ساعتان'
 
 /* ─────────── سلالمُ الساعات ─────────── */
 
@@ -92,7 +92,7 @@ export function slotLabelAr(clock: string): string {
   const mm = String(total % 60).padStart(2, '0')
   const h12 = h % 12 === 0 ? 12 : h % 12
   /* والظهرُ ساعتُه: «١٢ مساءً» تُقرأ خطأً، و«١٢ صباحا» أشدّ */
-  const period = h < 12 ? 'صباحا' : h < 13 ? 'ظهرا' : 'مساءً'
+  const period = h < 12 ? 'صباحا' : h < 13 ? 'ظهرا' : 'مساء'
   return `${h12}:${mm} ${period}`
 }
 

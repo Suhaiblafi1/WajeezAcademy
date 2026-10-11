@@ -84,14 +84,14 @@ function workingStorage() {
 
 const bundleScript = { tagName: 'SCRIPT', src: 'https://x.test/assets/index-DHWQAcgR.js' }
 
-describe('التعافي من حزمةٍ محذوفة بعد نشرٍ جديد', () => {
-  it('١) فشلُ حزمةٍ من /assets يُعيد التحميل', () => {
+describe('التعافي من حزمة محذوفة بعد نشر جديد', () => {
+  it('١) فشل حزمة من /assets يعيد التحميل', () => {
     const g = bootGuard(workingStorage())
     g.fail(bundleScript)
     expect(g.reloads()).toBe(1)
   })
 
-  it('٢) لا يُعيد التحميل مرّتين — التبويب لا يدور بلا نهاية', () => {
+  it('٢) لا يعيد التحميل مرّتين — التبويب لا يدور بلا نهاية', () => {
     const g = bootGuard(workingStorage())
     g.fail(bundleScript)
     g.fail(bundleScript)
@@ -99,14 +99,14 @@ describe('التعافي من حزمةٍ محذوفة بعد نشرٍ جديد',
     expect(g.reloads()).toBe(1)
   })
 
-  it('٣) موردٌ خارج /assets لا يُعيد التحميل — خطّ الخطوط ليس عطبنا', () => {
+  it('٣) مورد خارج /assets لا يعيد التحميل — خطّ الخطوط ليس عطبنا', () => {
     const g = bootGuard(workingStorage())
     g.fail({ tagName: 'LINK', href: 'https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic' })
     g.fail({ tagName: 'SCRIPT', src: 'https://analytics.test/tag.js' })
     expect(g.reloads()).toBe(0)
   })
 
-  it('٤) خطأ شيفرةٍ عاديّ لا يُعيد التحميل', () => {
+  it('٤) خطأ شيفرة عاديّ لا يعيد التحميل', () => {
     const g = bootGuard(workingStorage())
     g.fail(null)
     g.fail({ tagName: 'DIV' })
@@ -124,7 +124,7 @@ describe('التعافي من حزمةٍ محذوفة بعد نشرٍ جديد',
     set: () => { throw new Error('تصفّح خفيّ صارم') },
   }
 
-  it('٥) بلا تخزينٍ متاح يُعيد التحميل مرّةً واحدة بعلامةٍ في العنوان', () => {
+  it('٥) بلا تخزين متاح يعيد التحميل مرّة واحدة بعلامة في العنوان', () => {
     const g = bootGuard(noStorage)
     g.fail(bundleScript)
     expect(g.reloads()).toBe(1)
@@ -132,7 +132,7 @@ describe('التعافي من حزمةٍ محذوفة بعد نشرٍ جديد',
     expect(g.url()).toContain('_wr=1')
   })
 
-  it('٥ب) ولا يُعيدها ثانية — العلامةُ تمنع الحلقة بلا تخزين', () => {
+  it('٥ب) ولا يعيدها ثانية — العلامة تمنع الحلقة بلا تخزين', () => {
     /* إقلاعٌ جديد على العنوان المعلَّم: هذا ما يراه المتصفّح بعد الإعادة */
     const g = bootGuard(noStorage, () => Date.now(), 'https://academy.example/pathways?_wr=1')
     g.fail(bundleScript)
@@ -145,7 +145,7 @@ describe('التعافي من حزمةٍ محذوفة بعد نشرٍ جديد',
      إقلاعٍ ناجح للحزمة الرئيسة. فإن أقلعت الرئيسة وفشلت قطعةٌ مؤجَّلة صار
      إقلاعٌ ← مسحٌ ← فشلٌ ← إعادةُ تحميل ← إقلاع… تبويبٌ يدور بلا نهاية.
      ووقع فعلا في الإنتاج على متصفّح صاحب المنصّة. */
-  it('٦) إقلاعٌ جديد لا يفتح الباب لإعادةٍ ثانية داخل النافذة', () => {
+  it('٦) إقلاع جديد لا يفتح الباب لإعادة ثانية داخل النافذة', () => {
     const store = workingStorage()
     let clock = 1_000_000
     for (let cycle = 0; cycle < 5; cycle++) {
@@ -158,7 +158,7 @@ describe('التعافي من حزمةٍ محذوفة بعد نشرٍ جديد',
     expect(store.peek()).not.toBeNull()
   })
 
-  it('٧) دورةٌ واحدة كلّ دقيقة على الأكثر — عبر إقلاعاتٍ متتالية', () => {
+  it('٧) دورة واحدة كلّ دقيقة على الأكثر — عبر إقلاعات متتالية', () => {
     const store = workingStorage()
     let clock = 2_000_000
     let total = 0
@@ -172,7 +172,7 @@ describe('التعافي من حزمةٍ محذوفة بعد نشرٍ جديد',
     expect(total).toBeLessThanOrEqual(2)
   })
 
-  it('٨) بعد انقضاء النافذة يُسمح بإعادةٍ جديدة — النقص العابر يُشفى', () => {
+  it('٨) بعد انقضاء النافذة يسمح بإعادة جديدة — النقص العابر يشفى', () => {
     const store = workingStorage()
     let clock = 3_000_000
     const first = bootGuard(store, () => clock)
@@ -198,27 +198,27 @@ describe('التعافي من حزمةٍ محذوفة بعد نشرٍ جديد',
     expect(g.types().sort()).toEqual(['error', 'unhandledrejection', 'vite:preloadError'])
   })
 
-  it('١٠) إخفاق قطعةٍ مؤجَّلة يُعيد التحميل — ويمنع الانفجار', () => {
+  it('١٠) إخفاق قطعة مؤجّلة يعيد التحميل — ويمنع الانفجار', () => {
     const g = bootGuard(workingStorage())
     const prevented = g.chunkFail()
     expect(g.reloads()).toBe(1)
-    expect(prevented, 'لم يُمنع افتراض الحدث فينفجر رغم الإعادة').toBe(true)
+    expect(prevented, 'لم يمنع افتراض الحدث فينفجر رغم الإعادة').toBe(true)
   })
 
-  it('١١) رفضٌ نصُّه يدلّ على قطعةٍ زائلة يُعيد التحميل', () => {
+  it('١١) رفض نصّه يدلّ على قطعة زائلة يعيد التحميل', () => {
     const g = bootGuard(workingStorage())
     g.reject('Failed to fetch dynamically imported module: /assets/Diagnostic-x.js')
     expect(g.reloads()).toBe(1)
   })
 
-  it('١٢) ورفضٌ عاديّ لا يُعيد — خطأُ شبكةٍ في نداء API ليس نشرا', () => {
+  it('١٢) ورفض عاديّ لا يعيد — خطأ شبكة في نداء API ليس نشرا', () => {
     const g = bootGuard(workingStorage())
     g.reject('Network request failed')
     g.reject('Unexpected token < in JSON')
     expect(g.reloads()).toBe(0)
   })
 
-  it('١٣) النافذة الواحدة تحكم المصادر الثلاثة معا — لا نافذةً لكلٍّ', () => {
+  it('١٣) النافذة الواحدة تحكم المصادر الثلاثة معا — لا نافذة لكلّ', () => {
     const g = bootGuard(workingStorage())
     g.fail(bundleScript)
     g.chunkFail()

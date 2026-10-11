@@ -68,7 +68,7 @@ const CHECK_KEY = "wajeez.trainer-guide.checklist.v1";
 const PAGE_CSS = `
 @page {
   size: A4; margin: 14mm 12mm 16mm; background: #F4F2E7;
-  @bottom-left { content: "دليلُ المدرّب  |  " counter(page); font-size: 8pt; color: #5b6b68; }
+  @bottom-left { content: "دليل المدرّب  |  " counter(page); font-size: 8pt; color: #5b6b68; }
 }
 `;
 
@@ -98,8 +98,8 @@ function Shot({ shot, alt, caption, onZoom }: { shot: string; alt: string; capti
   return (
     <figure className="guide-figure mt-6">
       <div className="guide-card relative p-2">
-        <span className="guide-shot-tag" aria-hidden="true">صورةٌ للتوضيح</span>
-        <button type="button" className="guide-shot" onClick={() => onZoom(shot, alt)} aria-label={`كبّرِ الصورة: ${alt}`}>
+        <span className="guide-shot-tag" aria-hidden="true">صورة للتوضيح</span>
+        <button type="button" className="guide-shot" onClick={() => onZoom(shot, alt)} aria-label={`كبّر الصورة: ${alt}`}>
           <img
             src={`${SHOT_DIR}/${shot}.webp`} alt={alt} loading="lazy" decoding="async"
             width={dims?.w} height={dims?.h} className="block h-auto w-full"
@@ -108,7 +108,7 @@ function Shot({ shot, alt, caption, onZoom }: { shot: string; alt: string; capti
       </div>
       <figcaption className="mt-2 flex flex-wrap items-center justify-between gap-2 text-sm leading-6 text-muted-foreground">
         <span>{caption ? <Caption text={caption} /> : alt}</span>
-        <span className="guide-noprint inline-flex items-center gap-1"><Maximize2 className="h-3.5 w-3.5" aria-hidden="true" /> اضغط الصورةَ لتكبيرها</span>
+        <span className="guide-noprint inline-flex items-center gap-1"><Maximize2 className="h-3.5 w-3.5" aria-hidden="true" /> اضغط الصورة لتكبيرها</span>
       </figcaption>
     </figure>
   );
@@ -151,10 +151,10 @@ function Cover() {
           <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="h-14 w-14 object-contain" />
         </span>
         <h1 id="guide-title" className="mt-8 text-5xl font-black leading-tight md:text-6xl" style={{ color: "rgb(var(--g-dark-ink))" }}>
-          دليلُ المدرّب
+          دليل المدرّب
         </h1>
         <p className="mt-4 max-w-2xl text-lg leading-9" style={{ color: "rgb(var(--g-dark-ink))" }}>
-          كيف تعمل في بوّابتك، من اعتماد عقدك إلى أوّل مستحقّاتك، خطوةً خطوة.
+          كيف تعمل في بوّابتك، من اعتماد عقدك إلى أوّل مستحقّاتك، خطوة خطوة.
         </p>
         {/* ═══ الدليلُ ليس البوّابة (٣٠ سبتمبر ٢٠٢٦) ═══
             صاحبُ المنصّة: «أخشى أن يعتقد أنّ هذا هو المنصّةُ نفسُها». فالصفحةُ
@@ -164,8 +164,8 @@ function Cover() {
         <div className="mt-6 flex max-w-2xl items-start gap-3 rounded-xl bg-white/85 px-5 py-4 text-base leading-8" style={{ color: "rgb(var(--g-dark-ink))" }}>
           <Info className="mt-1.5 h-5 w-5 shrink-0" aria-hidden="true" />
           <p>
-            هذه صفحةُ شرحٍ، لا بوّابتُك، وأزرارُ صورها لا تعمل.
-            افتح بوّابتك في لسانٍ بجانبها واتبع الخطوات.
+            هذه صفحة شرح، لا بوّابتك، وأزرار صورها لا تعمل.
+            افتح بوّابتك في لسان بجانبها واتبع الخطوات.
           </p>
         </div>
         <div className="guide-noprint mt-7 flex flex-wrap items-center gap-3">
@@ -173,7 +173,7 @@ function Cover() {
           <Button icon={Printer} onClick={() => window.print()}>اطبعه أو احفظه PDF</Button>
         </div>
         <p className="mt-5 text-sm leading-7" style={{ color: "rgb(var(--g-dark-ink) / .8)" }}>
-          حُدِّث في {GUIDE_UPDATED_AR} · {GUIDE_READ_TIME_AR}
+          حدّث في {GUIDE_UPDATED_AR} · {GUIDE_READ_TIME_AR}
         </p>
       </div>
     </section>
@@ -184,9 +184,9 @@ function Cover() {
 function Journey() {
   return (
     <section id="journey" aria-labelledby="journey-h" className="guide-page scroll-mt-24 pt-14">
-      <PageHead id="journey" hue="sky" title="رحلتُك في المنصّة" />
+      <PageHead id="journey" hue="sky" title="رحلتك في المنصّة" />
       <p className="guide-deep mt-6 px-6 py-5 text-lg leading-9">
-        ثماني محطّاتٍ من توقيع عقدك إلى أوّل مستحقّاتك. أنجزتَ اثنتين، ومن الثالثة تبدأ.
+        ثماني محطّات من توقيع عقدك إلى أوّل مستحقّاتك. أنجزت اثنتين، ومن الثالثة تبدأ.
       </p>
       <ol className="mt-6 grid gap-4 sm:grid-cols-2">
         {JOURNEY.map((stop, i) => {
@@ -213,7 +213,7 @@ function Journey() {
         })}
       </ol>
       <p className="guide-blush mt-6 px-6 py-4 text-center text-base font-bold leading-8">
-        مهلتُك لإعداد موادّ دوراتك خمسةُ أيّامٍ من اعتماد توقيعك، فابدأ بها أوّلا.
+        مهلتك لإعداد موادّ دوراتك خمسة أيّام من اعتماد توقيعك، فابدأ بها أوّلا.
       </p>
     </section>
   );
@@ -235,10 +235,10 @@ function FirstWeek() {
 
   return (
     <section id="first-week" aria-labelledby="first-week-h" className="guide-page scroll-mt-24 pt-16">
-      <PageHead id="first-week" hue="coral" title="أسبوعُك الأوّل" />
+      <PageHead id="first-week" hue="coral" title="أسبوعك الأوّل" />
       <div className="guide-deep mt-6 flex flex-wrap items-center justify-between gap-3 px-6 py-5">
-        <p className="text-lg leading-9">ما تفعله بعد اعتماد عقدك، بالترتيب. علاماتُك تُحفظ في هذا المتصفّح.</p>
-        <p className="guide-noprint shrink-0 text-base font-black tabular-nums" aria-live="polite">أنجزتَ {doneCount} من {required.length}</p>
+        <p className="text-lg leading-9">ما تفعله بعد اعتماد عقدك، بالترتيب. علاماتك تحفظ في هذا المتصفّح.</p>
+        <p className="guide-noprint shrink-0 text-base font-black tabular-nums" aria-live="polite">أنجزت {doneCount} من {required.length}</p>
       </div>
       <ul className="guide-card mt-6 px-5 py-1">
         {CHECKLIST.map((c, i) => {
@@ -342,7 +342,7 @@ function Contents({ groups }: { groups: TocGroup[] }) {
     <section id="contents" aria-labelledby="contents-h" className="guide-page scroll-mt-24 pt-14">
       <PageHead id="contents" hue="sky" title="محتويات الدليل" />
       <p className="mt-3 text-lg leading-9 text-muted-foreground">
-        {count} قسما في {parts.length} أجزاء. اضغط اسمَ القسم لتنتقل إليه{anyNew && <>، وما عليه <NewTag /> أُضيف حديثا</>}.
+        {count} قسما في {parts.length} أجزاء. اضغط اسم القسم لتنتقل إليه{anyNew && <>، وما عليه <NewTag /> أضيف حديثا</>}.
       </p>
       {groups.filter((g) => g.kind === "before").map(line)}
       <div className="mt-5 grid gap-4 md:grid-cols-2">
@@ -376,7 +376,7 @@ export default function TrainerGuide() {
   const dialogRef = useRef<HTMLDialogElement | null>(null);
   const openZoom = useCallback((shot: string, alt: string) => setZoom({ shot, alt }), []);
   /* رقمُ الإدارة من إعداداتها لا مكتوبٌ هنا — والمدمجُ رجوعٌ وحدَه */
-  const waLink = waHref(useWhatsAppNumbers(), 'advisor', CONTACT.whatsapp, 'مرحبا، أنا مدرّبٌ في وجيز وأقرأ دليلَ المدرّب، وعندي سؤال:');
+  const waLink = waHref(useWhatsAppNumbers(), 'advisor', CONTACT.whatsapp, 'مرحبا، أنا مدرّب في وجيز وأقرأ دليل المدرّب، وعندي سؤال:');
 
   useEffect(() => {
     const d = dialogRef.current;
@@ -402,16 +402,16 @@ export default function TrainerGuide() {
   useEffect(() => landOnHash(window, document, ids), [ids]);
 
   const help = [
-    { title: "جلسةُ تهيئة", text: "نرافقك في إعداد محاورك وموادّك، في موعدٍ تختاره.", action: <Button as="a" href={ORIENTATION_BOOKING_URL} target="_blank" rel="noreferrer noopener" icon={CalendarPlus}>{ORIENTATION_CTA_AR}</Button> },
-    ...(waLink ? [{ title: "واتساب", text: "لسؤالٍ سريع.", action: <Button as="a" href={waLink} target="_blank" rel="noreferrer noopener" icon={MessageCircle}>راسِلنا على واتساب</Button> }] : []),
-    { title: "البريد", text: "لشرحٍ أطول أو مرفق.", action: <Button as="a" href={`mailto:${CONTACT.email}`} icon={Mail}>{CONTACT.email}</Button> },
+    { title: "جلسة تهيئة", text: "نرافقك في إعداد محاورك وموادّك، في موعد تختاره.", action: <Button as="a" href={ORIENTATION_BOOKING_URL} target="_blank" rel="noreferrer noopener" icon={CalendarPlus}>{ORIENTATION_CTA_AR}</Button> },
+    ...(waLink ? [{ title: "واتساب", text: "لسؤال سريع.", action: <Button as="a" href={waLink} target="_blank" rel="noreferrer noopener" icon={MessageCircle}>راسلنا على واتساب</Button> }] : []),
+    { title: "البريد", text: "لشرح أطول أو مرفق.", action: <Button as="a" href={`mailto:${CONTACT.email}`} icon={Mail}>{CONTACT.email}</Button> },
   ];
 
   return (
     <div dir="rtl" className="guide-root min-h-screen text-foreground">
       <SeoHead
-        title="دليلُ المدرّب"
-        description="ما يفعله مدرّبُ وجيز في بوّابته بعد اعتماد عقده، خطوةً خطوة."
+        title="دليل المدرّب"
+        description="ما يفعله مدرّب وجيز في بوّابته بعد اعتماد عقده، خطوة خطوة."
         path={TRAINER_GUIDE_PATH}
         noindex
       />
@@ -422,8 +422,8 @@ export default function TrainerGuide() {
           <Link to="/" className="flex min-w-0 items-center gap-2">
             <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="h-9 w-9 shrink-0 object-contain" />
             <span className="min-w-0">
-              <span className="guide-h block truncate leading-6"><span className="hidden sm:inline">وجيز | </span>دليلُ المدرّب</span>
-              <span className="hidden truncate text-xs leading-5 text-muted-foreground sm:block">صفحةُ شرح — العملُ في بوّابتك</span>
+              <span className="guide-h block truncate leading-6"><span className="hidden sm:inline">وجيز | </span>دليل المدرّب</span>
+              <span className="hidden truncate text-xs leading-5 text-muted-foreground sm:block">صفحة شرح — العمل في بوّابتك</span>
             </span>
           </Link>
           <div className="flex shrink-0 items-center gap-2">
@@ -454,7 +454,7 @@ export default function TrainerGuide() {
 
             {/* ── أسئلةٌ شائعة ── */}
             <section id="faq" aria-labelledby="faq-h" className="guide-section guide-page scroll-mt-24 pt-16">
-              <PageHead id="faq" hue="amber" title="أسئلةٌ شائعة" />
+              <PageHead id="faq" hue="amber" title="أسئلة شائعة" />
               <div className="mt-6 space-y-3">
                 {FAQ.map((f) => (
                   <details key={f.q} className="guide-card group">
@@ -473,7 +473,7 @@ export default function TrainerGuide() {
               <PageHead id="help" hue="sky" title="تحتاج مساعدة؟" />
               <p className="guide-deep mt-6 flex items-start gap-3 px-6 py-5 text-lg leading-9">
                 <LifeBuoy className="mt-1.5 h-5 w-5 shrink-0" aria-hidden="true" />
-                وقفتَ عند خطوةٍ أو تريد من يرافقك في إعداد موادّك؟ نحن هنا.
+                وقفت عند خطوة أو تريد من يرافقك في إعداد موادّك؟ نحن هنا.
               </p>
               <div className="mt-6 space-y-4">
                 {help.map((h) => (
@@ -498,7 +498,7 @@ export default function TrainerGuide() {
         <div className="relative mx-auto max-w-6xl px-5 py-24 text-center">
           <p className="text-4xl font-black leading-tight md:text-5xl">بالتوفيق في دوراتك</p>
           <p className="mt-4 text-lg leading-9 opacity-90">متعلّموك ينتظرون ما عندك — ونحن معك في كلّ خطوة.</p>
-          <p className="mt-8 text-sm opacity-75">أكاديمية وجيز · دليلُ المدرّب</p>
+          <p className="mt-8 text-sm opacity-75">أكاديمية وجيز · دليل المدرّب</p>
         </div>
       </section>
 

@@ -25,40 +25,40 @@ const code = (p: string) =>
 const MINE = code('src/pages/trainer/MyCourseProposals.tsx')
 const QUEUE = code('src/pages/trainer/GradingQueue.tsx')
 
-describe('① الدمجُ قرارُنا', () => {
-  it('فورمُ المدرّب لا يسأل عن الدمج ولا عن أقرب دورة', () => {
-    expect(MINE, 'عاد سؤالُ الدمج إلى فورم المدرّب').not.toMatch(/PROPOSAL_MERGE|onToggle=\{one\("merge"\)\}/)
-    expect(MINE, 'عاد سؤالُ «أقربُ دورةٍ» إلى فورم المدرّب').not.toMatch(/closestCourseAr/)
+describe('① الدمج قرارنا', () => {
+  it('فورم المدرّب لا يسأل عن الدمج ولا عن أقرب دورة', () => {
+    expect(MINE, 'عاد سؤال الدمج إلى فورم المدرّب').not.toMatch(/PROPOSAL_MERGE|onToggle=\{one\("merge"\)\}/)
+    expect(MINE, 'عاد سؤال «أقرب دورة» إلى فورم المدرّب').not.toMatch(/closestCourseAr/)
   })
 
-  it('ولا يرى المدرّبُ جوابَه القديم — والإدارةُ تراه', () => {
+  it('ولا يرى المدرّب جوابه القديم — والإدارة تراه', () => {
     const d = { level: 'beginner' as const, merge: 'yes' as const, closestCourseAr: 'تحليل البيانات' }
     const trainer = proposalDetailRows(d, 'trainer').map((r) => r.labelAr)
     expect(trainer).toEqual(['المستوى'])
     const admin = proposalDetailRows(d).map((r) => r.labelAr)
-    expect(admin).toEqual(expect.arrayContaining(['الدمج', 'أقربُ دورةٍ في الكتالوج بقوله']))
+    expect(admin).toEqual(expect.arrayContaining(['الدمج', 'أقرب دورة في الكتالوج بقوله']))
     expect(
       [...MINE.matchAll(/proposalDetailRows\(([^)]*)\)/g)].map((m) => m[1]),
-      'شاشةُ المدرّب تعرض الأسطرَ بعين الإدارة',
+      'شاشة المدرّب تعرض الأسطر بعين الإدارة',
     ).toEqual(['p.details, "trainer"', 'p.details, "trainer"'])
   })
 })
 
-describe('② ما بُتّ فيه قسمٌ بعنوانه', () => {
-  it('قسمان معنونان، وكلٌّ يعرض نصيبَه', () => {
+describe('② ما بتّ فيه قسم بعنوانه', () => {
+  it('قسمان معنونان، وكلّ يعرض نصيبه', () => {
     expect(MINE).toMatch(/<section aria-labelledby="proposals-open-h"[\s\S]*?\{pending\.map\(card\)\}/)
-    expect(MINE).toMatch(/<section aria-labelledby="proposals-decided-h"[\s\S]*?ما بُتّ فيه من اقتراحاتك[\s\S]*?\{decided\.map\(card\)\}/)
-    expect(MINE, 'قائمةٌ واحدةٌ تخلط الحالين').not.toMatch(/rows\.map\(/)
+    expect(MINE).toMatch(/<section aria-labelledby="proposals-decided-h"[\s\S]*?ما بتّ فيه من اقتراحاتك[\s\S]*?\{decided\.map\(card\)\}/)
+    expect(MINE, 'قائمة واحدة تخلط الحالين').not.toMatch(/rows\.map\(/)
   })
 })
 
-describe('③ فراغُ طابور التصحيح', () => {
-  it('لا وجهتان إلى بابٍ واحد', () => {
-    const at = QUEUE.indexOf('وهذه وجهاتٌ تنفع الآن')
+describe('③ فراغ طابور التصحيح', () => {
+  it('لا وجهتان إلى باب واحد', () => {
+    const at = QUEUE.indexOf('وهذه وجهات تنفع الآن')
     expect(at).toBeGreaterThan(0)
     const block = QUEUE.slice(at, QUEUE.indexOf('</Panel>', at))
     const targets = [...block.matchAll(/<Link to="([^"]+)"/g)].map((m) => m[1])
     expect(targets.length).toBeGreaterThan(0)
-    expect(new Set(targets).size, `وجهتان إلى بابٍ واحد: ${targets.join('، ')}`).toBe(targets.length)
+    expect(new Set(targets).size, `وجهتان إلى باب واحد: ${targets.join('، ')}`).toBe(targets.length)
   })
 })

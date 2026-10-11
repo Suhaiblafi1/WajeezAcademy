@@ -61,7 +61,7 @@ export default function VideoPlayer({
           {playing ? <Pause className="h-7 w-7" /> : <Play className="h-7 w-7 -translate-x-0.5" />}
         </Button>
         <span className="absolute bottom-3 right-4 rounded-full bg-paper/60 px-2.5 py-1 text-fine text-foreground">
-          معاينة تجريبية — يُعرض الفيديو الحقيقي هنا عند الربط
+          معاينة تجريبية — يعرض الفيديو الحقيقي هنا عند الربط
         </span>
         {pct >= 90 && (
           <span className="absolute left-3 top-3 rounded-full bg-teal px-3 py-1 text-xs font-black text-on-teal">مكتمل ✓</span>

@@ -27,16 +27,16 @@ const IBAN_COUNTRIES = new Set([
 
 /** اسمُ رمز التوجيه المحلّيّ ومثالُه — حيث يطلبه المصرف */
 const ROUTING: Record<string, { labelAr: string; example: string }> = {
-  US: { labelAr: 'رقمُ التوجيه ABA', example: '021000021' },
-  CA: { labelAr: 'رقمُ الفرع والمؤسّسة (Transit)', example: '00012-003' },
-  IN: { labelAr: 'رمزُ IFSC', example: 'SBIN0000300' },
-  AU: { labelAr: 'رمزُ BSB', example: '062-000' },
-  NZ: { labelAr: 'رمزُ البنك والفرع', example: '01-0102' },
-  MY: { labelAr: 'رمزُ البنك', example: 'MBBEMYKL' },
-  SG: { labelAr: 'رمزُ البنك والفرع', example: '7171-001' },
-  ZA: { labelAr: 'رمزُ الفرع', example: '250655' },
-  MA: { labelAr: 'رمزُ البنك والمدينة (RIB)', example: '011780' },
-  DZ: { labelAr: 'رمزُ البنك والوكالة (RIB)', example: '00100' },
+  US: { labelAr: 'رقم التوجيه ABA', example: '021000021' },
+  CA: { labelAr: 'رقم الفرع والمؤسّسة (Transit)', example: '00012-003' },
+  IN: { labelAr: 'رمز IFSC', example: 'SBIN0000300' },
+  AU: { labelAr: 'رمز BSB', example: '062-000' },
+  NZ: { labelAr: 'رمز البنك والفرع', example: '01-0102' },
+  MY: { labelAr: 'رمز البنك', example: 'MBBEMYKL' },
+  SG: { labelAr: 'رمز البنك والفرع', example: '7171-001' },
+  ZA: { labelAr: 'رمز الفرع', example: '250655' },
+  MA: { labelAr: 'رمز البنك والمدينة (RIB)', example: '011780' },
+  DZ: { labelAr: 'رمز البنك والوكالة (RIB)', example: '00100' },
 }
 
 export function isIbanCountry(iso2: string): boolean {
@@ -44,7 +44,7 @@ export function isIbanCountry(iso2: string): boolean {
 }
 
 export function routingOf(iso2: string): { labelAr: string; example: string } {
-  return ROUTING[iso2] ?? { labelAr: 'رمزُ التوجيه أو الفرع', example: '' }
+  return ROUTING[iso2] ?? { labelAr: 'رمز التوجيه أو الفرع', example: '' }
 }
 
 /** يُطبَّع كما يحفظه الخادم: بلا مسافاتٍ ولا شَرطات، بحروفٍ كبيرة */

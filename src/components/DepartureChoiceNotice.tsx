@@ -63,7 +63,7 @@ export default function DepartureChoiceNotice({ className = "" }: { className?: 
       await apiPost(`/api/learner/departure-choices/${caseId}`, { choice });
       await load();
     } catch (e) {
-      setError(permissionMessage(e, "تعذّر تسجيلُ اختيارك الآن — أعد المحاولة بعد قليل."));
+      setError(permissionMessage(e, "تعذّر تسجيل اختيارك الآن — أعد المحاولة بعد قليل."));
     } finally {
       setBusy(null);
     }
@@ -80,12 +80,12 @@ export default function DepartureChoiceNotice({ className = "" }: { className?: 
               <AlertTriangle className="h-4 w-4" />
             </span>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-black">القرارُ لك في «{r.cohortTitle}»</p>
+              <p className="text-sm font-black">القرار لك في «{r.cohortTitle}»</p>
               <p className="mt-1 text-read leading-6 text-muted-foreground">
-                رحل مدرّبُ شعبتك في
+                رحل مدرّب شعبتك في
                 <span className="font-bold text-foreground"> {r.courseTitleAr}</span>،
-                ولم نجد له بديلا ولا شعبةً نظيرةً تصلح لك. فالقرارُ لك وحدك، ولا يُحسم
-                شيءٌ قبل أن تختار.
+                ولم نجد له بديلا ولا شعبة نظيرة تصلح لك. فالقرار لك وحدك، ولا يحسم
+                شيء قبل أن تختار.
               </p>
               {r.noteAr && (
                 <p className="mt-2 text-fine leading-6 text-muted-foreground">{r.noteAr}</p>
@@ -116,10 +116,10 @@ export default function DepartureChoiceNotice({ className = "" }: { className?: 
                   disabled={!picked[r.caseId] || busy === r.caseId}
                   className="min-h-9 bg-gold text-on-gold hover:bg-gold/90 hover:text-on-gold disabled:opacity-60">
                   <Check className="h-3.5 w-3.5" />
-                  {busy === r.caseId ? "يُسجَّل…" : "أكّد اختياري"}
+                  {busy === r.caseId ? "يسجّل…" : "أكّد اختياري"}
                 </Button>
                 <span className="text-fine text-muted-foreground">
-                  {picked[r.caseId] ? "يُنفَّذ بعد التأكيد، ولا يُعدَّل بعده — فراجِعه." : "اختر أوّلا ثمّ أكّد."}
+                  {picked[r.caseId] ? "ينفّذ بعد التأكيد، ولا يعدّل بعده — فراجعه." : "اختر أوّلا ثمّ أكّد."}
                 </span>
               </div>
               {error && (

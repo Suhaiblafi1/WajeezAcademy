@@ -41,7 +41,7 @@ describe('الأصل القانوني للموقع', () => {
      في canonical وog:url وخريطة الموقع وrobots، وكلُّ الاختبارات خضراء.
 
      فالمقيسُ هنا التطابقُ لا القيمة: أيُّ نطاقٍ أرادوه، يكفي أن يكون واحدا. */
-  it('ونسخةُ ملفّ البناء تطابق المصدر — فلا يفترقان ثانية', () => {
+  it('ونسخة ملفّ البناء تطابق المصدر — فلا يفترقان ثانية', () => {
     const vite = read('vite.config.ts')
     const m = vite.match(/const CANONICAL_ORIGIN = "([^"]+)"/)
     expect(m, 'vite.config.ts يعلن CANONICAL_ORIGIN').not.toBeNull()
@@ -72,14 +72,14 @@ describe('الأصل القانوني للموقع', () => {
 
      والحارسُ السابق يقرأ `src/` و`public/` فلم يره. فالمقيسُ هنا الملفُّ
      الذي يُنسَخ، لا الشيفرةُ وحدَها. */
-  it('ومثالُ بيئة الإنتاج لا يحمل نطاقا مهجورا — فهو يُنسَخ حرفا', () => {
+  it('ومثال بيئة الإنتاج لا يحمل نطاقا مهجورا — فهو ينسخ حرفا', () => {
     const env = read('deploy/.env.production.example')
     const live = env.split('\n').filter((l) => !l.trim().startsWith('#')).join('\n')
-    expect(live, 'نطاقٌ حُجز ولم يُوجَّه قطّ').not.toContain('academy.wajeez.com')
-    expect(live, 'SITE_DOMAIN منه تُطلب الشهادة').toMatch(/^SITE_DOMAIN=\S+/m)
+    expect(live, 'نطاق حجز ولم يوجّه قطّ').not.toContain('academy.wajeez.com')
+    expect(live, 'SITE_DOMAIN منه تطلب الشهادة').toMatch(/^SITE_DOMAIN=\S+/m)
     for (const key of ['SITE_DOMAIN', 'APP_URL', 'WEB_ORIGIN']) {
       const m = live.match(new RegExp(`^${key}=(\\S+)`, 'm'))
-      expect(m, `${key} غائبٌ عن المثال`).not.toBeNull()
+      expect(m, `${key} غائب عن المثال`).not.toBeNull()
       expect(m![1], `${key} لا يحمل النطاق الحيّ`).toContain('www.wajeezacademy.com')
     }
   })
@@ -108,27 +108,27 @@ describe('الأصل القانوني للموقع', () => {
 
    وهو الخطأُ نفسُه الذي كان في `SITE_DOMAIN` في هذا الملفّ بعينه: قيمةٌ من
    عهدٍ مضى في قالبٍ يُنسَخ حرفا. */
-describe('نطاقُ المُرسِل في قالب الإنتاج', () => {
+describe('نطاق المرسل في قالب الإنتاج', () => {
   const read2 = (p: string) => readFileSync(join(root, p), 'utf8')
   const live = read2('deploy/.env.production.example')
     .split('\n').filter((l) => !l.trim().startsWith('#')).join('\n')
 
-  it('«RESEND_FROM_EMAIL» على نطاق الموقع لا على نطاقٍ آخر', () => {
+  it('«RESEND_FROM_EMAIL» على نطاق الموقع لا على نطاق آخر', () => {
     const m = live.match(/^RESEND_FROM_EMAIL=(\S+)/m)
-    expect(m, 'RESEND_FROM_EMAIL غائبٌ عن القالب').not.toBeNull()
-    expect(m![1], 'نطاقٌ غيرُ موثَّقٍ في Resend يُسقط كلَّ رسالة، ورفضُه لا يظهر في شاشة')
+    expect(m, 'RESEND_FROM_EMAIL غائب عن القالب').not.toBeNull()
+    expect(m![1], 'نطاق غير موثّق في Resend يسقط كلّ رسالة، ورفضه لا يظهر في شاشة')
       .toContain('@' + new URL(CANONICAL_ORIGIN).hostname.replace(/^www\./, ''))
   })
 
   /* وReply-To لا يحتاج توثيقا — فهو العنوانُ الواحدُ الظاهر (قرارُ ٢٣ سبتمبر ٢٠٢٦) */
-  it('«RESEND_REPLY_TO» هو العنوانُ الواحدُ الظاهر للمستخدم', () => {
+  it('«RESEND_REPLY_TO» هو العنوان الواحد الظاهر للمستخدم', () => {
     const m = live.match(/^RESEND_REPLY_TO=(\S+)/m)
-    expect(m, 'RESEND_REPLY_TO غائبٌ عن القالب').not.toBeNull()
+    expect(m, 'RESEND_REPLY_TO غائب عن القالب').not.toBeNull()
     expect(m![1]).toBe(ACADEMY_CONTACT_EMAIL)
   })
 
-  it('ولا يُترك المفتاحُ مملوءا في قالبٍ يُرفع إلى Git', () => {
-    expect(live, 'سرٌّ في المستودَع').toMatch(/^RESEND_API_KEY=\s*$/m)
+  it('ولا يترك المفتاح مملوءا في قالب يرفع إلى Git', () => {
+    expect(live, 'سرّ في المستودع').toMatch(/^RESEND_API_KEY=\s*$/m)
   })
 })
 
@@ -138,22 +138,22 @@ describe('نطاقُ المُرسِل في قالب الإنتاج', () => {
    و`wajeez.co` في قالب الإنتاج، و`wajeez.sa` في اقتراحِ خانةِ الشاشة. وواحدٌ
    منها فقط هو الموثَّق في Resend — والباقي يُرفض، والرفضُ يُكتب في صفّ
    الإشعار لا في شاشة. */
-describe('بريدُ المُرسِل الافتراضيّ', () => {
-  it('يُشتقّ من النطاق الحيّ ولا يُكتب حرفا', () => {
+describe('بريد المرسل الافتراضيّ', () => {
+  it('يشتقّ من النطاق الحيّ ولا يكتب حرفا', () => {
     expect(EMAIL_DOMAIN).toBe('wajeezacademy.com')
     expect(DEFAULT_SENDER_EMAIL).toBe('no-reply@wajeezacademy.com')
   })
 
-  it('ويطابق افتراضَ الخادم — فلا يفترق ما تقترحه الشاشةُ عمّا يرسله الخادم', () => {
+  it('ويطابق افتراض الخادم — فلا يفترق ما تقترحه الشاشة عمّا يرسله الخادم', () => {
     const src = readFileSync(join(root, 'server/services/integrations.service.ts'), 'utf8')
     const m = src.match(/ACADEMY_EMAIL_DOMAIN = '([^']+)'/)
-    expect(m, 'الخادمُ يعلن نطاقَ البريد').not.toBeNull()
+    expect(m, 'الخادم يعلن نطاق البريد').not.toBeNull()
     expect(m![1]).toBe(EMAIL_DOMAIN)
   })
 
-  it('ولا تقترح الشاشةُ نطاقا مكتوبا حرفا', () => {
+  it('ولا تقترح الشاشة نطاقا مكتوبا حرفا', () => {
     const src = readFileSync(join(root, 'src/pages/admin/Integrations.tsx'), 'utf8')
-    expect(src, 'اقتراحٌ يُتَّبع فيُضبط مُرسِلٌ يرفضه المزوّد').not.toMatch(/placeholder="no-reply@/)
+    expect(src, 'اقتراح يتّبع فيضبط مرسل يرفضه المزوّد').not.toMatch(/placeholder="no-reply@/)
     expect(src).toMatch(/DEFAULT_SENDER_EMAIL/)
   })
 })

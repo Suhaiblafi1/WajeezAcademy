@@ -8,7 +8,7 @@ import LearnersPanel from "@/components/LearnersPanel";
 
 export default function AdminLearners() {
   return (
-    <AdminLayout title="الطلبة المسجَّلون">
+    <AdminLayout title="الطلبة المسجّلون">
       <div className="mx-auto max-w-4xl">
         <LearnersPanel />
       </div>

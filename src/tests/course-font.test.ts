@@ -60,7 +60,7 @@ const FAMILY = '"Avenir Arabic"'
 const FALLBACK = '"IBM Plex Sans Arabic"'
 
 describe('خطّ متن الدورة', () => {
-  it('الصنف معرَّف مرّةً واحدة، وأوّلُه الخطّ وبعده ارتدادٌ عربيّ', () => {
+  it('الصنف معرّف مرّة واحدة، وأوّله الخطّ وبعده ارتداد عربيّ', () => {
     const css = read('src/index.css')
     const rules = css.match(/\.course-prose\s*\{[^}]*\}/g) ?? []
     expect(rules, 'قاعدة .course-prose مفقودة أو مكرّرة').toHaveLength(1)
@@ -105,7 +105,7 @@ describe('خطّ متن الدورة', () => {
     expect(carriers.sort()).toEqual(['src/components/LessonBody.tsx', 'src/index.css'])
   })
 
-  it('لا ملفّ خطٍّ بصيغة سطح المكتب في المستودع', () => {
+  it('لا ملفّ خطّ بصيغة سطح المكتب في المستودع', () => {
     const tracked = execFileSync('git', ['ls-files'], { cwd: root, encoding: 'utf8' })
       .trim()
       .split('\n')
@@ -114,8 +114,8 @@ describe('خطّ متن الدورة', () => {
        مجلّد الخادم، يقول كلٌّ منهما ترخيصَه بنفسه، والرخصةُ بجانبهما */
     const desktop = tracked.filter((f) => /\.(otf|ttf|ttc|eot|woff)$/i.test(f))
     const ofl = desktop.filter((f) => f.startsWith(OFL_DIR) && /\.(otf|ttf)$/i.test(f) && isOfl(f))
-    expect(desktop.filter((f) => !ofl.includes(f)), 'ملفّ خطٍّ لا يُخدَم من الويب دخل المستودع').toEqual([])
-    if (ofl.length > 0) expect(tracked, 'خطُّ OFL بلا نصّ رخصته بجانبه').toContain(`${OFL_DIR}OFL.txt`)
+    expect(desktop.filter((f) => !ofl.includes(f)), 'ملفّ خطّ لا يخدم من الويب دخل المستودع').toEqual([])
+    if (ofl.length > 0) expect(tracked, 'خطّ OFL بلا نصّ رخصته بجانبه').toContain(`${OFL_DIR}OFL.txt`)
 
     const stray = tracked.filter((f) => /\.woff2$/i.test(f) && !f.startsWith('public/fonts/'))
     expect(stray, 'woff2 خارج public/fonts').toEqual([])

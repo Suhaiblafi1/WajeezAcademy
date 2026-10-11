@@ -34,26 +34,26 @@ describe('① «جديد» شهرا من يوم الإضافة', () => {
     expect(isNewSince(added, new Date(start + NEW_FOR_DAYS * 86_400_000 - 1))).toBe(true)
     expect(isNewSince(added, new Date(start + NEW_FOR_DAYS * 86_400_000))).toBe(false)
   })
-  it('ولا «جديد» لقسمٍ بلا يوم، ولا ليومٍ لا يُقرأ', () => {
+  it('ولا «جديد» لقسم بلا يوم، ولا ليوم لا يقرأ', () => {
     expect(isNewSince(undefined, at('2026-10-05T09:00:00Z'))).toBe(false)
     expect(isNewSince('4 أكتوبر', at('2026-10-05T09:00:00Z'))).toBe(false)
     expect(isNewSince('2026-13-45', at('2026-10-05T09:00:00Z'))).toBe(false)
   })
 })
 
-describe('② والفهرسُ يجمع أقسامَ الدليل كلَّها', () => {
+describe('② والفهرس يجمع أقسام الدليل كلّها', () => {
   const toc = guideToc(at('2026-10-05T09:00:00Z'))
   const parts = toc.filter((g) => g.kind === 'part')
 
-  it('أجزاؤه أجزاءُ الدليل، وبينها التمهيدُ والخاتمة', () => {
+  it('أجزاؤه أجزاء الدليل، وبينها التمهيد والخاتمة', () => {
     expect(parts.map((g) => g.title)).toEqual(GUIDE_PARTS.map((p) => p.title))
     expect(toc[0].kind).toBe('before')
     expect(toc[toc.length - 1].kind).toBe('after')
   })
 
-  it('كلُّ قسمٍ مرّةً، بترتيبه في الدليل، ورقمُه ترتيبُه', () => {
+  it('كلّ قسم مرّة، بترتيبه في الدليل، ورقمه ترتيبه', () => {
     const items = parts.flatMap((g) => g.items)
-    expect(items.map((it) => it.id), 'قسمٌ ناقصٌ أو مكرَّرٌ أو في غير موضعه').toEqual(GUIDE_SECTIONS.map((s) => s.id))
+    expect(items.map((it) => it.id), 'قسم ناقص أو مكرّر أو في غير موضعه').toEqual(GUIDE_SECTIONS.map((s) => s.id))
     expect(items.map((it) => it.n)).toEqual(GUIDE_SECTIONS.map((_, i) => i + 1))
     expect(items.map((it) => it.label)).toEqual(GUIDE_SECTIONS.map((s) => shortTitle(s.title)))
   })
@@ -80,47 +80,47 @@ const anchors = (html: string) =>
   [...html.matchAll(/<a\b[^>]*\bhref="#([a-z-]+)"[^>]*>([\s\S]*?)<\/a>/g)].map((m) => ({ id: m[1], inner: m[2] }))
 const NEW = /data-hue="coral">جديد</
 
-describe('③ والصفحةُ تعرضه بعد الغلاف وقبل «رحلتك»', () => {
+describe('③ والصفحة تعرضه بعد الغلاف وقبل «رحلتك»', () => {
   const html = page('2026-10-05T09:00:00Z')
   const contents = slice(html, 'contents')
 
-  it('تُعرض فعلا — وإلّا خضرّ ما بعده على فراغ', () => {
-    expect(contents.length, 'لا صفحةَ محتويات').toBeGreaterThan(500)
+  it('تعرض فعلا — وإلّا خضرّ ما بعده على فراغ', () => {
+    expect(contents.length, 'لا صفحة محتويات').toBeGreaterThan(500)
   })
 
-  it('بعد الغلاف وقبل «رحلتُك في المنصّة»', () => {
+  it('بعد الغلاف وقبل «رحلتك في المنصّة»', () => {
     const cover = html.indexOf('id="guide-title"')
     const at = html.indexOf('id="contents"')
     expect(cover).toBeGreaterThan(-1)
-    expect(at, 'المحتوياتُ قبل الغلاف').toBeGreaterThan(cover)
-    expect(at, 'المحتوياتُ بعد «رحلتك»').toBeLessThan(html.indexOf('id="journey"'))
+    expect(at, 'المحتويات قبل الغلاف').toBeGreaterThan(cover)
+    expect(at, 'المحتويات بعد «رحلتك»').toBeLessThan(html.indexOf('id="journey"'))
   })
 
-  it('وتُطبع — صفحةٌ من صفحات الدليل لا شيءٌ يُخفى على الورق', () => {
+  it('وتطبع — صفحة من صفحات الدليل لا شيء يخفى على الورق', () => {
     const open = /<section\b[^>]*\bid="contents"[^>]*>/.exec(html)?.[0] ?? ''
     expect(open).toMatch(/\bguide-page\b/)
     expect(open).not.toMatch(/guide-noprint/)
   })
 
-  it('كلُّ قسمٍ رابطٌ إلى مرساته باسمه ورقمه، بترتيب الدليل', () => {
+  it('كلّ قسم رابط إلى مرساته باسمه ورقمه، بترتيب الدليل', () => {
     const links = anchors(contents)
     expect(links.map((l) => l.id)).toEqual(['journey', 'first-week', ...GUIDE_SECTIONS.map((s) => s.id), 'faq', 'help'])
     for (const [i, s] of GUIDE_SECTIONS.entries()) {
       const l = links.find((x) => x.id === s.id)!
-      expect(l.inner, `رابطُ ${s.id} بلا رقمه`).toContain(`>${pad2(i + 1)}<`)
-      expect(l.inner, `رابطُ ${s.id} بلا اسمه`).toContain(shortTitle(s.title))
+      expect(l.inner, `رابط ${s.id} بلا رقمه`).toContain(`>${pad2(i + 1)}<`)
+      expect(l.inner, `رابط ${s.id} بلا اسمه`).toContain(shortTitle(s.title))
     }
   })
 
-  it('ولم يبقَ الصندوقُ المطويّ', () => {
+  it('ولم يبق الصندوق المطويّ', () => {
     expect(html).not.toMatch(/<details[^>]*>\s*<summary[^>]*>(?:(?!<\/summary>)[\s\S])*محتويات الدليل/)
   })
 })
 
-describe('④ و«جديد» على القسم الجديد وحدَه', () => {
+describe('④ و«جديد» على القسم الجديد وحده', () => {
   const fresh = GUIDE_SECTIONS.filter((s) => s.added && isNewSince(s.added, at('2026-10-05T09:00:00Z'))).map((s) => s.id)
 
-  it('في الدليل اليومَ قسمٌ جديد — «معيارُ الموادّ» — وإلّا خضرّ ما بعده على فراغ', () => {
+  it('في الدليل اليوم قسم جديد — «معيار الموادّ» — وإلّا خضرّ ما بعده على فراغ', () => {
     expect(fresh).toEqual(['standard'])
   })
 

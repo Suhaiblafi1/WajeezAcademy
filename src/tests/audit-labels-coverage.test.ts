@@ -30,7 +30,7 @@ import { auditWindows, DYNAMIC, serverFiles, WRAPPED } from './helpers/audit-sit
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '../..')
 
-describe('معجمُ الأثر يغطّي ما تكتبه الخدمات', () => {
+describe('معجم الأثر يغطّي ما تكتبه الخدمات', () => {
   /** كلُّ فعلٍ يُكتب في الأثر فعلا — حرفا كان أو قالبا أو شرطا */
   const collect = () => {
     const actions = new Set<string>()
@@ -52,37 +52,37 @@ describe('معجمُ الأثر يغطّي ما تكتبه الخدمات', () =
     return { actions, templates }
   }
 
-  it('المسحُ يقرأ فعلا — وإلّا كان الحارسُ يخضرّ على فراغ', () => {
+  it('المسح يقرأ فعلا — وإلّا كان الحارس يخضرّ على فراغ', () => {
     const { actions } = collect()
-    expect(actions.size, 'لم يُقرأ أيُّ فعلٍ من الشيفرة — تعطّل المسحُ نفسُه').toBeGreaterThan(100)
+    expect(actions.size, 'لم يقرأ أيّ فعل من الشيفرة — تعطّل المسح نفسه').toBeGreaterThan(100)
   })
 
-  it('وكلُّ قالبٍ مبنيٍّ تُسمَّى توسّعاتُه — فلا يمرّ فعلٌ بلا اسم', () => {
+  it('وكلّ قالب مبنيّ تسمّى توسّعاته — فلا يمرّ فعل بلا اسم', () => {
     const { templates } = collect()
     const unnamed = [...templates].filter((t) => !DYNAMIC[t])
     expect(
       unnamed,
-      `قوالبُ أفعالٍ بلا توسّعاتٍ مسمّاة: ${unnamed.join('، ')} — اكتبها في \`DYNAMIC\``,
+      `قوالب أفعال بلا توسّعات مسمّاة: ${unnamed.join('، ')} — اكتبها في \`DYNAMIC\``,
     ).toEqual([])
     /* ولا اسمَ ميّتٍ يوسّع الثغرة: قالبٌ زال وبقي في القائمة */
     const stale = Object.keys(DYNAMIC).filter((t) => !templates.has(t))
-    expect(stale, `قوالبُ في \`DYNAMIC\` لا وجودَ لها في الشيفرة: ${stale.join('، ')}`).toEqual([])
+    expect(stale, `قوالب في \`DYNAMIC\` لا وجود لها في الشيفرة: ${stale.join('، ')}`).toEqual([])
   })
 
-  it('والغلافُ الذي يمرّر الفعلَ متغيّرا ما زال قائما', () => {
+  it('والغلاف الذي يمرّر الفعل متغيّرا ما زال قائما', () => {
     for (const f of Object.keys(WRAPPED)) {
       const src = readFileSync(join(root, f), 'utf8')
-      expect(src, `${f} لم يعد يمرّر فعلا متغيّرا — راجِع \`WRAPPED\``).toMatch(/recordAudit\([\s\S]{0,200}?\baction,/)
+      expect(src, `${f} لم يعد يمرّر فعلا متغيّرا — راجع \`WRAPPED\``).toMatch(/recordAudit\([\s\S]{0,200}?\baction,/)
     }
   })
 
-  it('كلُّ فعلٍ في شيفرة الخادم له اسمٌ عربيّ', () => {
+  it('كلّ فعل في شيفرة الخادم له اسم عربيّ', () => {
     /* سجلُّ الأثر يُعرض لصاحب المنصّة في `/admin/audit`. ومفتاحٌ لاتينيٌّ فيه
        يجعله سجلَّ مبرمجٍ لا سجلَّ عمل — وهو عطبٌ لا يُحمّر شيئا: الصفحةُ
        تعمل، والفعلُ يُكتب، ولا يفهمه قارئُه. */
     const { actions } = collect()
     const untranslated = [...actions].filter((a) => auditActionAr(a) === a)
-    expect(untranslated, `أفعالٌ بلا اسمٍ عربيّ: ${untranslated.join(', ')}`).toEqual([])
+    expect(untranslated, `أفعال بلا اسم عربيّ: ${untranslated.join(', ')}`).toEqual([])
   })
 
   /* ═══ ولكلِّ فعلٍ وزنُه — ي-١ ═══
@@ -91,14 +91,14 @@ describe('معجمُ الأثر يغطّي ما تكتبه الخدمات', () =
      المئتين **فلا يُرسل لأحد**، ولا شيءَ يُنبّه. فالوزنُ صفةٌ في الفعل،
      وهذا الحارسُ يقرأ الأفعالَ من الشيفرة نفسِها — **بالمِسحة نفسِها التي
      يقرأ بها الأسماء**، فلا يكون لـ«ما الأفعالُ القائمة؟» صاحبان. */
-  it('ولكلِّ فعلٍ وزنٌ مُعلَن — فلا يُضاف فعلٌ لا يعرف أحدٌ أيصل صاحبَه أم لا', () => {
+  it('ولكلّ فعل وزن معلن — فلا يضاف فعل لا يعرف أحد أيصل صاحبه أم لا', () => {
     const { actions } = collect()
     const unweighted = [...actions].filter((a) => auditWeightOf(a) === null)
     expect(
       unweighted,
-      `أفعالٌ بلا وزن: ${unweighted.join('، ')} — صنِّفها في `
-      + '`src/application/audit/weight.ts`: `high` لما يمسّ وصولَه أو مالَه أو سجلَّه، '
-      + '`medium` لما يُرسَل ويحترم تفضيلاتِه، و`low` لما يغيّر النظامَ لا الإنسان.',
+      `أفعال بلا وزن: ${unweighted.join('، ')} — صنّفها في `
+      + '`src/application/audit/weight.ts`: `high` لما يمسّ وصوله أو ماله أو سجلّه، '
+      + '`medium` لما يرسل ويحترم تفضيلاته، و`low` لما يغيّر النظام لا الإنسان.',
     ).toEqual([])
   })
 
@@ -110,7 +110,7 @@ describe('معجمُ الأثر يغطّي ما تكتبه الخدمات', () =
      فلو وُزن فعلٌ من صنفٍ لا يُكتم بـ`medium` لَشُحن تناقض: طبقةٌ تقول
      «اكتمه إن شئت» وأخرى تقول «لا تملك ذلك». وقد وقع فعلا في أوّل صياغةِ
      الأوزان — صُنّف التصحيحُ وعملُ الموظّف متوسّطَين، وكلاهما لا يُكتم. */
-  it('وما لا يملك صاحبُه كتمَه لا يُوزن متوسّطا', () => {
+  it('وما لا يملك صاحبه كتمه لا يوزن متوسّطا', () => {
     const { actions } = collect()
     const locked = new Set(
       NOTIFICATION_CATEGORIES.filter((c) => !c.silenceable).flatMap((c) => c.templateKeys),
@@ -118,11 +118,11 @@ describe('معجمُ الأثر يغطّي ما تكتبه الخدمات', () =
     const clash = [...actions].filter((a) => locked.has(a) && auditWeightOf(a) === 'medium')
     expect(
       clash,
-      `أفعالٌ صنفُها لا يُكتم ووزنُها متوسّط: ${clash.join('، ')} — ارفعها إلى \`high\``,
+      `أفعال صنفها لا يكتم ووزنها متوسّط: ${clash.join('، ')} — ارفعها إلى \`high\``,
     ).toEqual([])
   })
 
-  it('وكلُّ نوعِ كيانٍ كذلك', () => {
+  it('وكلّ نوع كيان كذلك', () => {
     for (const t of ['user', 'cohort', 'enrollment', 'refund', 'trainer_application', 'support_ticket']) {
       expect(entityTypeAr(t), t).not.toBe(t)
     }

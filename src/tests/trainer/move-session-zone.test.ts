@@ -10,19 +10,19 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { zonedAt, zonedClock, zonedDay } from '../../application/trainer/cohort-period'
 
-describe('ساعةُ الشعبة ولحظتُها', () => {
-  it('لقاءُ ١٥:٠٠ غرينتش هو السادسةُ مساءً بعمّان', () => {
+describe('ساعة الشعبة ولحظتها', () => {
+  it('لقاء ١٥:٠٠ غرينتش هو السادسة مساء بعمّان', () => {
     expect(zonedClock('2026-11-03T15:00:00.000Z')).toBe('18:00')
     expect(zonedDay('2026-11-03T22:30:00.000Z')).toBe('2026-11-04')
   })
 
-  it('والعكسُ: السادسةُ بعمّان لحظةُ ١٥:٠٠ غرينتش', () => {
+  it('والعكس: السادسة بعمّان لحظة ١٥:٠٠ غرينتش', () => {
     expect(zonedAt('2026-11-03', '18:00').toISOString()).toBe('2026-11-03T15:00:00.000Z')
   })
 
-  it('ويُهيَّأ النموذجُ ويُرسَل بهما — لا اقتطاعَ من نصّ ISO', () => {
+  it('ويهيّأ النموذج ويرسل بهما — لا اقتطاع من نصّ ISO', () => {
     const src = readFileSync(join(process.cwd(), 'src/pages/trainer/SessionsAndAttendance.tsx'), 'utf8')
-    expect(src, 'النموذجُ يقتطع ساعةَ غرينتش من نصّ ISO').not.toMatch(/startsAt\.slice\(11,\s*16\)/)
+    expect(src, 'النموذج يقتطع ساعة غرينتش من نصّ ISO').not.toMatch(/startsAt\.slice\(11,\s*16\)/)
     expect(src).toMatch(/from: zonedClock\(s\.startsAt\)/)
     expect(src).toMatch(/startsAt: zonedAt\(moveForm\.date, moveForm\.from\)/)
   })

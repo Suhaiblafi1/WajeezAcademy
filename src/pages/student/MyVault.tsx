@@ -37,9 +37,9 @@ interface Artifact {
 
 /* حالات التسليم كما يكتبها الخادم — لا نخترع حالة رابعة */
 const STATUS: Record<string, { label: string; cls: string; icon: typeof Clock3 }> = {
-  submitted: { label: "سُلِّم — بانتظار مدرّبك", cls: "border-white/20 text-muted-foreground", icon: Clock3 },
+  submitted: { label: "سلّم — بانتظار مدرّبك", cls: "border-white/20 text-muted-foreground", icon: Clock3 },
   under_review: { label: "قيد المراجعة", cls: "border-gold/40 text-gold-ink", icon: Clock3 },
-  resubmit_requested: { label: "طُلب تعديله", cls: "border-gold/50 text-gold-ink", icon: RotateCcw },
+  resubmit_requested: { label: "طلب تعديله", cls: "border-gold/50 text-gold-ink", icon: RotateCcw },
   accepted: { label: "معتمد", cls: "border-teal/50 text-teal-ink", icon: CheckCircle2 },
   rejected: { label: "غير مقبول", cls: "border-red-400/40 text-red-300", icon: RotateCcw },
 };
@@ -61,7 +61,7 @@ export default function MyVault() {
   if (!checked || (sessionUser && rows === null)) {
     return (
       <PortalLayout title="أعمالي">
-        <div className="grid place-items-center py-24"><Loader2 className="h-8 w-8 animate-spin text-teal-ink" aria-label="يُحمَّل" /></div>
+        <div className="grid place-items-center py-24"><Loader2 className="h-8 w-8 animate-spin text-teal-ink" aria-label="يحمّل" /></div>
       </PortalLayout>
     );
   }
@@ -73,12 +73,12 @@ export default function MyVault() {
     <PortalLayout title="أعمالي">
       <Panel as="section" tone="warn" className="bg-gradient-to-b from-warmglow/30 to-transparent">
         <h2 className="flex items-center gap-2 text-lg font-black text-gold-ink">
-          <Sparkles className="h-5 w-5" /> ما صنعتَه حتى الآن
+          <Sparkles className="h-5 w-5" /> ما صنعته حتى الآن
         </h2>
         <p className="mt-2 max-w-2xl text-sm leading-7 text-muted-foreground">
           أعمالك من محطّات دوراتك —
           {list.length > 0
-            ? ` ${list.length} عملا سلّمتَه، منها ${accepted} معتمدا من مدرّبك.`
+            ? ` ${list.length} عملا سلّمته، منها ${accepted} معتمدا من مدرّبك.`
             : " تمتلئ مع أوّل تسليم."}
         </p>
       </Panel>
@@ -120,7 +120,7 @@ function ArtifactCard({ a, catalogVersion }: { a: Artifact; catalogVersion: numb
         <div className="min-w-0 flex-1">
           <p className="font-black leading-snug">{mod?.artifact ?? a.assessmentTitle}</p>
           <p className="mt-1 text-read text-muted-foreground">
-            {mod ? `${mod.title} · ` : ""}دورة {a.courseTitleAr} · سُلِّم {fmtWhen(a.submittedAt)}
+            {mod ? `${mod.title} · ` : ""}دورة {a.courseTitleAr} · سلّم {fmtWhen(a.submittedAt)}
           </p>
         </div>
         <span className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1 text-fine font-bold ${meta.cls}`}>

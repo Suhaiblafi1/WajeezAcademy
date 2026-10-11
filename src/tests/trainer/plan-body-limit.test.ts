@@ -28,26 +28,26 @@ const code = (p: string) => read(p).replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\
 function planSchema(): string {
   const src = code('server/http/routes/learning-portal.routes.ts')
   const from = src.indexOf('const planContent = z.object({')
-  expect(from, 'مخطّطُ الخطّة غيرُ موجود — تغيّرت بنيةُ الطريق').toBeGreaterThan(-1)
+  expect(from, 'مخطّط الخطّة غير موجود — تغيّرت بنية الطريق').toBeGreaterThan(-1)
   return src.slice(from, src.indexOf("app.get('/api/trainer/cohorts/:id/workspace'"))
 }
 
-describe('سقفُ المتن واحدٌ في المنصّة كلِّها', () => {
-  it('⚠️ خطّةُ المدرّب تستورد السقفَ ولا تكتبه رقما', () => {
+describe('سقف المتن واحد في المنصّة كلّها', () => {
+  it('⚠️ خطّة المدرّب تستورد السقف ولا تكتبه رقما', () => {
     const schema = planSchema()
-    expect(schema, 'السقفُ كُتب رقما في المخطّط — وهذا بابُ الافتراق').toMatch(/bodyAr: z\.string\(\)\.max\(MAX_BODY_CHARS\)/)
-    expect(schema, 'رقمٌ مكتوبٌ باليد عاد إلى سقف المتن').not.toMatch(/bodyAr: z\.string\(\)\.max\(\d/)
+    expect(schema, 'السقف كتب رقما في المخطّط — وهذا باب الافتراق').toMatch(/bodyAr: z\.string\(\)\.max\(MAX_BODY_CHARS\)/)
+    expect(schema, 'رقم مكتوب باليد عاد إلى سقف المتن').not.toMatch(/bodyAr: z\.string\(\)\.max\(\d/)
   })
 
-  it('⚠️ والسقفُ يتّسع لأطول متنٍ يقبله التأليفُ — وإلّا لم يُحفظ ما أُلّف', () => {
+  it('⚠️ والسقف يتّسع لأطول متن يقبله التأليف — وإلّا لم يحفظ ما ألّف', () => {
     /* السقفان يجب أن يكونا واحدا: ما قبِله التأليفُ يجب أن تقبله الخطّةُ
        التي تحمله، وإلّا وُلد متنٌ لا يستطيع مدرّبُه حفظَ شعبته معه. */
     const catalogCap = code('server/http/routes/catalog.routes.ts').match(/bodyAr: z\.string\(\)\.max\((\d+(?:_\d+)*)\)/)
-    expect(catalogCap, 'سقفُ استيراد الكتالوج غيرُ موجود').toBeTruthy()
-    expect(Number(catalogCap![1].replace(/_/g, '')), 'افترق سقفُ الكتالوج عن سقف التأليف').toBe(MAX_BODY_CHARS)
+    expect(catalogCap, 'سقف استيراد الكتالوج غير موجود').toBeTruthy()
+    expect(Number(catalogCap![1].replace(/_/g, '')), 'افترق سقف الكتالوج عن سقف التأليف').toBe(MAX_BODY_CHARS)
   })
 
-  it('⚠️ والسقفُ فوقَ أطولِ متنٍ قِيس في الكتالوج يومَ الاكتشاف (٣٥٣١٧)', () => {
+  it('⚠️ والسقف فوق أطول متن قيس في الكتالوج يوم الاكتشاف (٣٥٣١٧)', () => {
     /* لو خُفض دون ذلك عادت الشكوى نفسُها بصمت: حفظٌ يسقط بمتنٍ لم يُمسّ. */
     expect(MAX_BODY_CHARS).toBeGreaterThan(35_317)
   })

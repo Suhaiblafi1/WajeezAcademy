@@ -35,8 +35,8 @@ export function WhoAreYou() {
         <SectionLabel icon={Compass}>ابدأ من نفسك</SectionLabel>
         <h2 className="mt-4 text-2xl font-black md:text-3xl">أين أنت الآن؟</h2>
         <p className="mx-auto mt-3 max-w-xl text-sm leading-8 text-muted-foreground">
-          اختر ما يقترب من وضعك — وهو أوّلُ سؤالٍ يسأله مؤشّر وجيز.
-          <span className="block text-teal-light-ink">فتدخله وقد أجبتَ عنه، ولا يُسألك مرّتين.</span>
+          اختر ما يقترب من وضعك — وهو أوّل سؤال يسأله مؤشّر وجيز.
+          <span className="block text-teal-light-ink">فتدخله وقد أجبت عنه، ولا يسألك مرّتين.</span>
         </p>
       </div>
 

@@ -40,37 +40,37 @@ type Table = Record<string, MailDestination>
 
 const LEARNER: Table = {
   /* رحلتي — جدولُ شعبه ووحداتُه وتسليماتُه وطلباتُه، كلُّها في شاشةٍ واحدة */
-  'cohort.session.scheduled': { path: '/student/learning', ctaAr: 'افتح جدولَ شعبتك' },
+  'cohort.session.scheduled': { path: '/student/learning', ctaAr: 'افتح جدول شعبتك' },
   /* ي-٤: والرابطُ يُقرأ من الصفحة نفسِها التي فيها الموعد */
-  'cohort.meeting.linked': { path: '/student/learning', ctaAr: 'افتح جدولَ شعبتك' },
-  'cohort.schedule_changed': { path: '/student/learning', ctaAr: 'راجِع مواعيدَك' },
-  'session.reminder': { path: '/student/learning', ctaAr: 'افتح جدولَ شعبتك' },
-  'session.reminder.24h': { path: '/student/learning', ctaAr: 'افتح جدولَ شعبتك' },
-  'session.reminder.1h': { path: '/student/learning', ctaAr: 'افتح جدولَ شعبتك' },
+  'cohort.meeting.linked': { path: '/student/learning', ctaAr: 'افتح جدول شعبتك' },
+  'cohort.schedule_changed': { path: '/student/learning', ctaAr: 'راجع مواعيدك' },
+  'session.reminder': { path: '/student/learning', ctaAr: 'افتح جدول شعبتك' },
+  'session.reminder.24h': { path: '/student/learning', ctaAr: 'افتح جدول شعبتك' },
+  'session.reminder.1h': { path: '/student/learning', ctaAr: 'افتح جدول شعبتك' },
   /* ٢(ب-٣): ما يُفتح على خطّ المحاور — والخطُّ نفسُه في «الدروس» من رحلتي */
-  'timeline.slot_opened': { path: '/student/learning', ctaAr: 'افتح موعدَك' },
+  'timeline.slot_opened': { path: '/student/learning', ctaAr: 'افتح موعدك' },
   'timeline.tasks_opened': { path: '/student/learning', ctaAr: 'افتح الواجبات' },
   'timeline.due_soon': { path: '/student/learning', ctaAr: 'سلّم قبل موعده' },
   'enrollment.approved': { path: '/student/learning', ctaAr: 'افتح رحلتك' },
   'enrollment.confirmed': { path: '/student/learning', ctaAr: 'افتح رحلتك' },
   'enrollment.rejected': { path: '/student/learning', ctaAr: 'افتح رحلتك' },
   'enrollment.waitlisted': { path: '/student/learning', ctaAr: 'افتح رحلتك' },
-  'enrollment.switched': { path: '/student/learning', ctaAr: 'افتح جدولَ شعبتك الجديدة' },
+  'enrollment.switched': { path: '/student/learning', ctaAr: 'افتح جدول شعبتك الجديدة' },
   'enrollment.waitlist.promoted': { path: '/student/learning', ctaAr: 'افتح رحلتك' },
-  'learner.request_decided': { path: '/student/learning', ctaAr: 'اقرأ قرارَ طلبك' },
-  'plan.requested': { path: '/student/billing', ctaAr: 'افتح طلبَك' },
-  'plan.seats_held': { path: '/student/billing', ctaAr: 'أكمِل حجزَ مقعدك' },
+  'learner.request_decided': { path: '/student/learning', ctaAr: 'اقرأ قرار طلبك' },
+  'plan.requested': { path: '/student/billing', ctaAr: 'افتح طلبك' },
+  'plan.seats_held': { path: '/student/billing', ctaAr: 'أكمل حجز مقعدك' },
   /* التصحيحُ والدرجات — في «رحلتي» مع التسليم الذي صُحِّح */
   'submission.start_review': { path: '/student/learning', ctaAr: 'افتح تسليمك' },
-  'submission.request_resubmit': { path: '/student/learning', ctaAr: 'أعِد تسليمك' },
+  'submission.request_resubmit': { path: '/student/learning', ctaAr: 'أعد تسليمك' },
   'submission.accept': { path: '/student/learning', ctaAr: 'افتح تسليمك' },
   'submission.reject': { path: '/student/learning', ctaAr: 'افتح تسليمك' },
-  'grade.create': { path: '/student/learning', ctaAr: 'اقرأ درجتَك وملحوظاتِ مدرّبك' },
-  'grade.update': { path: '/student/learning', ctaAr: 'اقرأ درجتَك المعدَّلة' },
+  'grade.create': { path: '/student/learning', ctaAr: 'اقرأ درجتك وملحوظات مدرّبك' },
+  'grade.update': { path: '/student/learning', ctaAr: 'اقرأ درجتك المعدّلة' },
   'payment.succeeded': { path: '/student/billing', ctaAr: 'افتح فاتورتك' },
   /* ي-٤: الردُّ وردُّ طلبِه كلاهما في «الفواتير» — الصفُّ نفسُه يحمل الخبر */
   'order.seats_held': { path: '/student/billing', ctaAr: 'أتمم الدفع' },
-  'payment.refunded': { path: '/student/billing', ctaAr: 'افتح كشفَ فواتيرك' },
+  'payment.refunded': { path: '/student/billing', ctaAr: 'افتح كشف فواتيرك' },
   'payment.refund_rejected': { path: '/student/billing', ctaAr: 'افتح فاتورتك' },
   'certificate.issued': { path: '/student/certificates', ctaAr: 'افتح شهادتك' },
   /* والملغاةُ تبقى معروضةً هناك بحالتها — فالوجهةُ تحمل الخبرَ لا تخفيه */
@@ -88,29 +88,29 @@ const LEARNER: Table = {
 }
 
 const TRAINER: Table = {
-  'trainer_payout': { path: '/trainer/earnings', ctaAr: 'افتح كشفَ مستحقّاتك' },
+  'trainer_payout': { path: '/trainer/earnings', ctaAr: 'افتح كشف مستحقّاتك' },
   'trainer.qualified': { path: '/trainer/qualifications', ctaAr: 'افتح دوراتك' },
   /* وتفعيلُه — بوّابتُه كاملةً، ومنها «عقدي» و«مستحقّاتي» (٣ أكتوبر ٢٠٢٦) */
-  'trainer.activated': { path: '/trainer', ctaAr: 'افتح بوّابتَك' },
+  'trainer.activated': { path: '/trainer', ctaAr: 'افتح بوّابتك' },
   /* ي-٤: ملفُّه العامُّ يُحرَّر من صفحة حسابه — وهي ما يحمل الخبرَ نفسَه */
-  'trainer.publish.approved': { path: '/trainer/account', ctaAr: 'راجِع ملفَّك العامّ' },
+  'trainer.publish.approved': { path: '/trainer/account', ctaAr: 'راجع ملفّك العامّ' },
   /* والنطاقُ يُقرأ أثرُه في اقتراحاته: ما يجوز أن يمسَّه الاقتراح */
   'trainer.scope.granted': { path: '/trainer/course-proposals', ctaAr: 'افتح اقتراحاتك' },
   'trainer.scope.revoked': { path: '/trainer/course-proposals', ctaAr: 'افتح اقتراحاتك' },
   /* وسؤالُ الإدارة عن اقتراحه: الاقتراحُ واقفٌ على جوابه، وموضعُ الجواب هو
      موضعُ الخبر نفسُه — فالزرُّ يضعه حيث يجيب لا حيث يقرأ فيبحث. */
-  'trainer.course_proposal.question': { path: '/trainer/course-proposals', ctaAr: 'أجِبْ عن السؤال' },
+  'trainer.course_proposal.question': { path: '/trainer/course-proposals', ctaAr: 'أجب عن السؤال' },
   'trainer.qualify.rejected': { path: '/trainer/qualifications', ctaAr: 'افتح دوراتك' },
   'trainer.assigned': { path: '/trainer/board', ctaAr: 'افتح شعبتك الجديدة' },
-  'cohort.plan.submitted': { path: '/trainer/board', ctaAr: 'افتح خطّةَ شعبتك' },
-  'cohort.plan.decision': { path: '/trainer/board', ctaAr: 'اقرأ قرارَ الخطّة' },
+  'cohort.plan.submitted': { path: '/trainer/board', ctaAr: 'افتح خطّة شعبتك' },
+  'cohort.plan.decision': { path: '/trainer/board', ctaAr: 'اقرأ قرار الخطّة' },
   /* ولقاءاتُ المدرّب المنتظِرةُ وقرارُها — وجهتُها لوحُه لا لوحُ الإدارة:
      `cohort.session.pending` يصل الإدارةَ، وشاشتُها شعبةُ اللقاء نفسِها. */
-  'cohort.session.pending': { path: '/admin/cohorts', ctaAr: 'راجِع اللقاءَ واعتمِده' },
-  'cohort.session.approved': { path: '/trainer/board', ctaAr: 'افتح لقاءاتِ شعبتك' },
-  'cohort.session.rejected': { path: '/trainer/board', ctaAr: 'اقرأ الملاحظةَ وأعِد جدولتَه' },
+  'cohort.session.pending': { path: '/admin/cohorts', ctaAr: 'راجع اللقاء واعتمده' },
+  'cohort.session.approved': { path: '/trainer/board', ctaAr: 'افتح لقاءات شعبتك' },
+  'cohort.session.rejected': { path: '/trainer/board', ctaAr: 'اقرأ الملاحظة وأعد جدولته' },
   /* وقرارُ الإدارة في مهمّته بعد الاعتماد (٣ج-٣) — مهامُّه في شعبته من لوحه */
-  'cohort.assessment.decision': { path: '/trainer/board', ctaAr: 'افتح مهامَّ شعبتك' },
+  'cohort.assessment.decision': { path: '/trainer/board', ctaAr: 'افتح مهامّ شعبتك' },
   /* ومفاتيحُ تذكيرِ المدرّب غيرُ مفاتيحِ المتعلّم — `session.reminder.trainer.*`
      في `worker/jobs.ts`. وكنتُ كتبتُ هنا مفاتيحَ المتعلّم للمدرّب، فكانت
      أسطرا ميّتةً: لا يصل المدرّبَ `session.reminder.24h` أبدا، ولا وجهةَ
@@ -118,14 +118,14 @@ const TRAINER: Table = {
   'cohort.meeting.linked.trainer': { path: '/trainer/schedule', ctaAr: 'افتح جدولك' },
   'session.reminder.trainer.24h': { path: '/trainer/schedule', ctaAr: 'افتح جدولك' },
   'session.reminder.trainer.1h': { path: '/trainer/schedule', ctaAr: 'افتح جدولك' },
-  'submission.queued': { path: '/trainer/grading', ctaAr: 'افتح طابورَ التصحيح' },
+  'submission.queued': { path: '/trainer/grading', ctaAr: 'افتح طابور التصحيح' },
   /* عروضُ الإسناد — والوجهةُ حيث يُجاب لا حيث يُقرأ الخبر ثانيةً */
-  'trainer.offer.received': { path: '/trainer/qualifications', ctaAr: 'اقرأ العرضَ وأجِبْ' },
+  'trainer.offer.received': { path: '/trainer/qualifications', ctaAr: 'اقرأ العرض وأجب' },
   'trainer.offer.withdrawn': { path: '/trainer/qualifications', ctaAr: 'افتح دوراتك' },
   'trainer.offer.lapsed': { path: '/trainer/qualifications', ctaAr: 'افتح دوراتك' },
-  'trainer.prep.reminder': { path: '/trainer/qualifications', ctaAr: 'أقِرّ بجاهزيّتك' },
+  'trainer.prep.reminder': { path: '/trainer/qualifications', ctaAr: 'أقرّ بجاهزيّتك' },
   /* والملصقُ يُوافَق عليه حيث يُرى — قسمُ التسويق */
-  'trainer.poster.submitted': { path: '/trainer/marketing', ctaAr: 'راجِع الملصقَ ووافِق عليه' },
+  'trainer.poster.submitted': { path: '/trainer/marketing', ctaAr: 'راجع الملصق ووافق عليه' },
   /* وإعلانُ الإدارة (٤ أكتوبر ٢٠٢٦) — يُفتح في نافذته فوق بوّابته، ولو قرأه من قبل
      (`?announcement=` أدناه، و`TrainerAnnouncement.tsx`) */
   'trainer.announcement': { path: '/trainer', ctaAr: 'اقرأ الإعلان' },
@@ -133,51 +133,51 @@ const TRAINER: Table = {
 
 const STAFF: Table = {
   'staff.task.assigned': { path: '/admin/tasks', ctaAr: 'افتح مهمّتك' },
-  'trainer.poster.decided': { path: '/admin/trainer-marketing', ctaAr: 'افتح ملصقاتِ المدرّب' },
+  'trainer.poster.decided': { path: '/admin/trainer-marketing', ctaAr: 'افتح ملصقات المدرّب' },
   'staff.task.done': { path: '/admin/tasks', ctaAr: 'افتح المهامّ' },
   'admin.support.ticket': { path: '/admin/support', ctaAr: 'افتح التذكرة' },
   'admin.support_ticket': { path: '/admin/support', ctaAr: 'افتح التذكرة' },
-  'admin.trainer_application': { path: '/admin/trainers', ctaAr: 'افتح طلبَ الانضمام' },
+  'admin.trainer_application': { path: '/admin/trainers', ctaAr: 'افتح طلب الانضمام' },
   /* وملخّصُ من لم يحجز — الشاشةُ نفسُها، وفيها مرشّحُ «لم يحجز موعدا» وزرُّ
      التذكير. فالزرُّ يضع قارئَه حيث يعمل لا حيث يقرأ الخبرَ ثانيةً. */
-  'admin.trainer_unbooked': { path: '/admin/trainers', ctaAr: 'افتح طابورَ الطلبات' },
+  'admin.trainer_unbooked': { path: '/admin/trainers', ctaAr: 'افتح طابور الطلبات' },
   /* والمؤجَّلُ إلى الفصول القادمة — حلّ موعدُه أو أجاب: الطابورُ وفيه شارتُه */
-  'admin.trainer_deferral': { path: '/admin/trainers', ctaAr: 'افتح طابورَ الطلبات' },
-  'admin.learner_request': { path: '/admin/learner-requests', ctaAr: 'افتح طلبَ المتعلّم' },
-  'trainer.qualify.request': { path: '/admin/trainers', ctaAr: 'افتح طلبَ التأهيل' },
+  'admin.trainer_deferral': { path: '/admin/trainers', ctaAr: 'افتح طابور الطلبات' },
+  'admin.learner_request': { path: '/admin/learner-requests', ctaAr: 'افتح طلب المتعلّم' },
+  'trainer.qualify.request': { path: '/admin/trainers', ctaAr: 'افتح طلب التأهيل' },
   /* والعقدُ وُقّع أو اعتُذر عنه — وكلاهما ينتظر عملا في شاشة العقود:
      الموقَّعُ يُراجَع توقيعُه ويُفعَّل حسابُه، والمعتذَرُ عنه يُبحَث سببُه. */
-  'trainer.contract.signed': { path: '/admin/trainer-contracts', ctaAr: 'راجِع التوقيعَ وفعّلْ حسابَه' },
-  'trainer.contract.declined': { path: '/admin/trainer-contracts', ctaAr: 'اقرأ سببَ الاعتذار' },
-  'trainer.contract.materials_declared': { path: '/admin/trainer-contracts', ctaAr: 'قيّمْ موادَّه' },
-  'trainer.prep.declined': { path: '/admin/trainer-contracts', ctaAr: 'افتح عقودَ المدرّبين' },
-  'trainer.prep.nothing_pending': { path: '/admin/trainer-contracts', ctaAr: 'افتح عقودَ المدرّبين' },
-  'trainer.prep.activation_blocked': { path: '/admin/trainer-contracts', ctaAr: 'افتح عقودَ المدرّبين' },
-  'trainer.public_text.submitted': { path: '/admin/trainer-run', ctaAr: 'اقرأ النبذةَ واعتمِدْها' },
-  'trainer.public_text.approved': { path: '/trainer/account', ctaAr: 'افتح إعداداتِ الحساب' },
-  'trainer.public_text.rejected': { path: '/trainer/account', ctaAr: 'عدّلْ نبذتَك' },
-  'trainer.data_choice.made': { path: '/admin/trainer-contracts', ctaAr: 'افتح عقودَ المدرّبين' },
-  'trainer.contract.materials_returned': { path: '/trainer', ctaAr: 'اقرأ الملاحظاتِ وعدّلْ' },
+  'trainer.contract.signed': { path: '/admin/trainer-contracts', ctaAr: 'راجع التوقيع وفعّل حسابه' },
+  'trainer.contract.declined': { path: '/admin/trainer-contracts', ctaAr: 'اقرأ سبب الاعتذار' },
+  'trainer.contract.materials_declared': { path: '/admin/trainer-contracts', ctaAr: 'قيّم موادّه' },
+  'trainer.prep.declined': { path: '/admin/trainer-contracts', ctaAr: 'افتح عقود المدرّبين' },
+  'trainer.prep.nothing_pending': { path: '/admin/trainer-contracts', ctaAr: 'افتح عقود المدرّبين' },
+  'trainer.prep.activation_blocked': { path: '/admin/trainer-contracts', ctaAr: 'افتح عقود المدرّبين' },
+  'trainer.public_text.submitted': { path: '/admin/trainer-run', ctaAr: 'اقرأ النبذة واعتمدها' },
+  'trainer.public_text.approved': { path: '/trainer/account', ctaAr: 'افتح إعدادات الحساب' },
+  'trainer.public_text.rejected': { path: '/trainer/account', ctaAr: 'عدّل نبذتك' },
+  'trainer.data_choice.made': { path: '/admin/trainer-contracts', ctaAr: 'افتح عقود المدرّبين' },
+  'trainer.contract.materials_returned': { path: '/trainer', ctaAr: 'اقرأ الملاحظات وعدّل' },
   'trainer.contract.condition_extended': { path: '/trainer', ctaAr: 'افتح بوّابتك' },
-  'trainer.contract.amendment_requested': { path: '/admin/trainer-contracts', ctaAr: 'اقرأ ما طلب تعديلَه' },
-  'trainer.contract.name_correction_requested': { path: '/admin/trainer-contracts', ctaAr: 'طابِقْ هويّتَه وأعِدْه مصحَّحا' },
+  'trainer.contract.amendment_requested': { path: '/admin/trainer-contracts', ctaAr: 'اقرأ ما طلب تعديله' },
+  'trainer.contract.name_correction_requested': { path: '/admin/trainer-contracts', ctaAr: 'طابق هويّته وأعده مصحّحا' },
   /* والمحذوفُ لا صفَّ له يُفتح — فالوجهةُ القائمةُ نفسُها */
   'trainer.contract.deleted': { path: '/admin/trainer-contracts', ctaAr: 'افتح العقود' },
   /* والعروضُ في شاشة العقود نفسِها: العرضُ فرعٌ عن عقدٍ نافذ، ومن يتابع
      الواحدَ يتابع الآخر — فلا تُفرَّق شاشتان لمسارٍ واحد. */
   'trainer.offer.accepted': { path: '/admin/trainer-contracts', ctaAr: 'افتح العروض' },
-  'trainer.offer.declined': { path: '/admin/trainer-contracts', ctaAr: 'اقرأ سببَ الاعتذار' },
-  'trainer.prep.lapsed': { path: '/admin/trainer-contracts', ctaAr: 'انظرْ وقرّر' },
+  'trainer.offer.declined': { path: '/admin/trainer-contracts', ctaAr: 'اقرأ سبب الاعتذار' },
+  'trainer.prep.lapsed': { path: '/admin/trainer-contracts', ctaAr: 'انظر وقرّر' },
   'advisor.case.assigned': { path: '/advisor/cases', ctaAr: 'افتح الحالة' },
   /* ي-٤: وشاشةُ الرحيل فيها زرُّ «نفِّذ ما اختاره» — الوجهةُ تحمل الفعلَ لا الخبرَ وحدَه */
-  'departure.chosen': { path: '/admin/trainer-departures', ctaAr: 'نفِّذ ما اختاره' },
+  'departure.chosen': { path: '/admin/trainer-departures', ctaAr: 'نفّذ ما اختاره' },
   'staff.announce': { path: '/admin/notifications', ctaAr: 'اقرأ الإعلان' },
   /* وخطّةٌ أُرسلت — في «خططٌ تنتظر اعتمادك» حيث تُقرأ كاملةً ويُقرَّر فيها، لا في
      قائمة الشعب يُبحث فيها عن بطاقتها (٣ أكتوبر ٢٠٢٦). والجرسُ يفتحها مبسوطةً
      بشعبتها (`notificationHref`) */
-  'cohort.plan.submitted': { path: '/admin/pending-plans', ctaAr: 'اقرأ الخطّةَ وقرّر' },
+  'cohort.plan.submitted': { path: '/admin/pending-plans', ctaAr: 'اقرأ الخطّة وقرّر' },
   /* ومهامُّ ما بعد الاعتماد تنتظر في بطاقة الشعبة نفسِها (٣ج-٣) */
-  'cohort.assessment.pending': { path: '/admin/cohorts', ctaAr: 'راجِع المهامَّ واعتمِدها' },
+  'cohort.assessment.pending': { path: '/admin/cohorts', ctaAr: 'راجع المهامّ واعتمدها' },
 }
 
 const BY_AUDIENCE: Record<MailAudience, Table> = {

@@ -32,7 +32,7 @@ const answersFor = (pass: Record<string, number>) => {
 }
 
 describe('١) المسوّدة', () => {
-  it('ستّةُ أسئلةٍ لكلّ مستوى، وأربعةُ خياراتٍ مختلفة، والمعرّفاتُ فريدة', () => {
+  it('ستّة أسئلة لكلّ مستوى، وأربعة خيارات مختلفة، والمعرّفات فريدة', () => {
     for (const l of PLACEMENT_LEVELS) expect(items.filter((i) => i.level === l)).toHaveLength(6)
     expect(new Set(items.map((i) => i.id)).size).toBe(items.length)
     for (const i of items) {
@@ -45,32 +45,32 @@ describe('١) المسوّدة', () => {
     expect(bankIsOpen(items)).toBe(true)
   })
 
-  it('والجوابُ الصحيحُ موزّعٌ على المواضع الأربعة', () => {
+  it('والجواب الصحيح موزّع على المواضع الأربعة', () => {
     const counts = [0, 1, 2, 3].map((k) => items.filter((i) => i.answer_index === k).length)
     for (const c of counts) expect(c).toBeGreaterThanOrEqual(5)
   })
 })
 
 describe('٢) المستوى', () => {
-  it('أعلى مستوى اجتيز بأربعةٍ من ستّة وكلُّ ما دونه مجتاز', () => {
+  it('أعلى مستوى اجتيز بأربعة من ستّة وكلّ ما دونه مجتاز', () => {
     expect(scorePlacement(items, answersFor({ A1: 6, A2: 5, B1: 4, B2: 2, C1: 1 })).cefr).toBe('B1')
     expect(scorePlacement(items, answersFor({ A1: 6, A2: 6, B1: 6, B2: 6, C1: 6 })).cefr).toBe('C1')
     expect(scorePlacement(items, answersFor({ A1: 3 })).cefr).toBe('A1')
   })
 
-  it('والقفزةُ صدفة: من أخفق في A2 لا يُحسب في C1 مهما أصاب فيها', () => {
+  it('والقفزة صدفة: من أخفق في A2 لا يحسب في C1 مهما أصاب فيها', () => {
     const r = scorePlacement(items, answersFor({ A1: 6, A2: 2, B1: 6, B2: 6, C1: 6 }))
     expect(r.cefr).toBe('A1')
     expect(r.level).toBe('a1')
   })
 
-  it('وما لم يُجب عنه خطأ — لا يُحسب لصالحه', () => {
+  it('وما لم يجب عنه خطأ — لا يحسب لصالحه', () => {
     expect(scorePlacement(items, {}).correct).toBe(0)
   })
 })
 
 describe('٣) ما يصل المتعلّم', () => {
-  it('السؤالُ بلا جوابه الصحيح', () => {
+  it('السؤال بلا جوابه الصحيح', () => {
     for (const i of items) expect('answer_index' in publicItem(i)).toBe(false)
   })
 })

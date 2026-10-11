@@ -87,13 +87,13 @@ export default function RegistrationClosedNotice({
         <p className="mt-3 flex items-start gap-2 text-read leading-6 text-teal-light-ink">
           <Check className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
           {done.alreadyWaiting
-            ? "بريدُك مسجَّلٌ عندنا من قبل — تصلك رسالةٌ واحدةٌ فور فتح الباب."
-            : "حُفظ بريدُك — تصلك رسالةٌ واحدةٌ فور فتح الباب، ولا شيءَ غيرها."}
+            ? "بريدك مسجّل عندنا من قبل — تصلك رسالة واحدة فور فتح الباب."
+            : "حفظ بريدك — تصلك رسالة واحدة فور فتح الباب، ولا شيء غيرها."}
         </p>
       ) : (
         <>
           <p className="mt-2 text-read leading-6 text-muted-foreground">
-            اترك بريدك ونُعلمك يوم يُفتح — رسالةٌ واحدة، ولا شيءَ غيرها.
+            اترك بريدك ونعلمك يوم يفتح — رسالة واحدة، ولا شيء غيرها.
           </p>
           <div className="mt-3 flex flex-col gap-2 sm:flex-row">
             <label className="min-w-0 flex-1">

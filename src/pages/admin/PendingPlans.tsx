@@ -59,20 +59,20 @@ interface PendingPlan {
   prep: PrepFlags | null;
 }
 
-const PLAN_FORMS = { one: "خطّةٌ", two: "خطّتان", few: "خطط", many: "خطّةً" };
+const PLAN_FORMS = { one: "خطّة", two: "خطّتان", few: "خطط", many: "خطّة" };
 const PAGE = 20;
 
 /** «خطّتان» لا «2 خطّتان»: المفردُ والمثنّى يُقرآن بلا رقمهما */
 function plansAr(n: number): string {
-  if (n === 1) return "خطّةٌ واحدة";
+  if (n === 1) return "خطّة واحدة";
   if (n === 2) return "خطّتان";
   return countAr(n, PLAN_FORMS);
 }
 
 /** «من مدرّبٍ واحد» لا «من 1 مدرّب» — والعددُ يُقرأ لا يُحسب */
 function fromTrainersAr(n: number): string {
-  if (n === 1) return "من مدرّبٍ واحد";
-  if (n === 2) return "من مدرّبَين";
+  if (n === 1) return "من مدرّب واحد";
+  if (n === 2) return "من مدرّبين";
   return `من ${countAr(n, { one: "مدرّب", two: "مدرّبين", few: "مدرّبين", many: "مدرّبا" })}`;
 }
 
@@ -87,9 +87,9 @@ function byTrainer(rows: readonly PendingPlan[]): PendingPlan[] {
 }
 
 const OUTCOME_AR: Record<PlanOutcome, { label: string; tone: "positive" | "warn" }> = {
-  approved: { label: "اعتُمدت الآن", tone: "positive" },
-  changes_requested: { label: "رُدّت بملاحظاتك", tone: "warn" },
-  postponed: { label: "أُجّلت إلى موسمٍ قادم", tone: "warn" },
+  approved: { label: "اعتمدت الآن", tone: "positive" },
+  changes_requested: { label: "ردّت بملاحظاتك", tone: "warn" },
+  postponed: { label: "أجّلت إلى موسم قادم", tone: "warn" },
 };
 
 export default function PendingPlans() {
@@ -119,7 +119,7 @@ export default function PendingPlans() {
     setBundle({ busy: true, msg: "" });
     try {
       const name = await apiDownload("/api/admin/cohort-plans/pending/review-bundle", "خطط-تنتظر-الاعتماد.zip");
-      setBundle({ busy: false, msg: `نُزِّلت «${name}» — ولم يتغيّر في أيّ خطّةٍ شيء.` });
+      setBundle({ busy: false, msg: `نزّلت «${name}» — ولم يتغيّر في أيّ خطّة شيء.` });
     } catch (e) {
       setBundle({ busy: false, msg: e instanceof ApiError ? e.message : "تعذّر التنزيل" });
     }
@@ -174,7 +174,7 @@ export default function PendingPlans() {
 
   if (offline) {
     return (
-      <AdminLayout title="خططٌ تنتظر اعتمادك">
+      <AdminLayout title="خطط تنتظر اعتمادك">
         <Panel className="grid place-items-center py-20 text-center">
           <ServerOff className="h-12 w-12 text-muted-foreground/50" />
           <h2 className="mt-4 text-xl font-black">لا يمكن الوصول للبيانات</h2>
@@ -195,20 +195,20 @@ export default function PendingPlans() {
   const inPrep = waiting.filter((r) => r.prep?.onboarding).length;
 
   return (
-    <AdminLayout title="خططٌ تنتظر اعتمادك">
+    <AdminLayout title="خطط تنتظر اعتمادك">
       <p className="mb-4 max-w-3xl text-read leading-7 text-muted-foreground">
-        كلُّ خطّةِ شعبةٍ أرسلها مدرّبُها وأكّد موافقتَه على ما فيها — من المدرّبين كلِّهم، وخططُ كلِّ مدرّبٍ تحت اسمه.
-        افتح أيَّها تقرأ منهجَها كاملا كما في بطاقة شعبتها، ثمّ «اعتمدها» أو «اطلب تعديلات». ولا يُفتح تسجيلُ شعبةٍ قبل اعتماد خطّتها.
+        كلّ خطّة شعبة أرسلها مدرّبها وأكّد موافقته على ما فيها — من المدرّبين كلّهم، وخطط كلّ مدرّب تحت اسمه.
+        افتح أيّها تقرأ منهجها كاملا كما في بطاقة شعبتها، ثمّ «اعتمدها» أو «اطلب تعديلات». ولا يفتح تسجيل شعبة قبل اعتماد خطّتها.
       </p>
 
       {rows !== null && rows.length > 0 && (
         <Inset className="mb-4 flex flex-wrap items-center justify-between gap-3 px-4 py-3">
           <p className="max-w-2xl text-read leading-6 text-muted-foreground">
-            للمراجعة خارجَ المنصّة: ملفٌّ مضغوطٌ واحدٌ فيه الخططُ المنتظِرةُ كلُّها ({plansAr(rows.length)}) — لكلّ خطّةٍ منهجُها نصّا مقروءا وكلُّ ملفٍّ رفعه مدرّبُها.
-            {(trainerFilter || q) && " ويشمل ما لا يُعرض الآن بالتصفية."}
+            للمراجعة خارج المنصّة: ملفّ مضغوط واحد فيه الخطط المنتظرة كلّها ({plansAr(rows.length)}) — لكلّ خطّة منهجها نصّا مقروءا وكلّ ملفّ رفعه مدرّبها.
+            {(trainerFilter || q) && " ويشمل ما لا يعرض الآن بالتصفية."}
           </p>
           <Button size="sm" tone="secondary" icon={Download} disabled={bundle.busy} onClick={() => void downloadAll()}>
-            {bundle.busy ? "يُجهَّز التنزيل…" : "نزِّل الخططَ كلَّها للمراجعة"}
+            {bundle.busy ? "يجهّز التنزيل…" : "نزّل الخطط كلّها للمراجعة"}
           </Button>
           {bundle.msg && <p className="w-full text-read font-bold text-teal-light-ink" role="status">{bundle.msg}</p>}
         </Inset>
@@ -233,13 +233,13 @@ export default function PendingPlans() {
       {trainerFilter && (
         <Inset className="mb-4 flex flex-wrap items-center justify-between gap-2 px-4 py-3">
           <p className="text-read text-foreground">
-            {filteredName ? <>تُعرض خططُ <b>{filteredName}</b> وحدها.</> : "لا خطّةَ تنتظر اعتمادك لهذا المدرّب الآن."}
+            {filteredName ? <>تعرض خطط <b>{filteredName}</b> وحدها.</> : "لا خطّة تنتظر اعتمادك لهذا المدرّب الآن."}
           </p>
           <Button size="sm" tone="ghost" onClick={() => {
             setParams((p) => { const n = new URLSearchParams(p); n.delete("trainer"); n.delete("cohort"); return n; });
             setPage(1);
           }}>
-            اعرض خططَ المدرّبين كلِّهم
+            اعرض خطط المدرّبين كلّهم
           </Button>
         </Inset>
       )}
@@ -257,13 +257,13 @@ export default function PendingPlans() {
         actionAr="ابدأ بأقدمها"
         /* الأقدمُ أوّلُ ما لم يُقضَ فيه في الترتيب المعروض — والبحثُ قد يُخفيه */
         disabledReasonAr={waiting.length > 0 && !ordered.some((r) => !decided[r.id])
-          ? "البحثُ الحاليُّ لا يُظهر منها ما ينتظر — امسحه لتبدأ."
+          ? "البحث الحاليّ لا يظهر منها ما ينتظر — امسحه لتبدأ."
           : undefined}
         onAction={() => {
           const first = ordered.find((r) => !decided[r.id]);
           if (first) goTo(ordered, first.id);
         }}
-        doneAr="لا خطّةَ تنتظر اعتمادك — وحين يرسل مدرّبٌ خطّةَ شعبته ويؤكّد موافقتَه عليها تظهر هنا، ويظهر عددُها إلى جانب اسم هذه الشاشة."
+        doneAr="لا خطّة تنتظر اعتمادك — وحين يرسل مدرّب خطّة شعبته ويؤكّد موافقته عليها تظهر هنا، ويظهر عددها إلى جانب اسم هذه الشاشة."
       />
 
       {rows !== null && scoped.length > 0 && (
@@ -273,7 +273,7 @@ export default function PendingPlans() {
           {view.rows.length === 0 ? (
             /* «لا نتائج» غيرُ «لا خطط»: الأولى تُمسح كلمتُها، والثانية تُنتظر */
             <Panel as="p" className="py-12 text-center text-read text-muted-foreground">
-              لا خطّةَ تطابق بحثَك — امسح الكلمة أو جرّب غيرها.
+              لا خطّة تطابق بحثك — امسح الكلمة أو جرّب غيرها.
             </Panel>
           ) : (
             <div className="space-y-6">
@@ -284,16 +284,16 @@ export default function PendingPlans() {
                 /* جملةُ شعبة الإعداد مرّةً في رأسه إن صدقت على بطاقاته كلِّها (⑨) */
                 const shared = sharedPrepNote(g.rows.map((r) => ({ prep: r.prep, decided: Boolean(decided[r.id]) })));
                 return (
-                  <section key={g.key} aria-label={`خططُ ${g.name}`}>
+                  <section key={g.key} aria-label={`خطط ${g.name}`}>
                     <h2 className="flex flex-wrap items-baseline gap-x-2 text-read font-black text-foreground">
                       {g.name}
                       <span className="font-normal text-muted-foreground">
-                        {left > 0 ? `— ${plansAr(left)} ${left === 2 ? "تنتظران" : "تنتظر"}` : "— قُضي فيها كلِّها"}
+                        {left > 0 ? `— ${plansAr(left)} ${left === 2 ? "تنتظران" : "تنتظر"}` : "— قضي فيها كلّها"}
                       </span>
                     </h2>
                     {onboarding && (
                       <p className="mt-1 text-read leading-6 text-muted-foreground">
-                        في طور الإعداد — التفعيلُ حين تُعتمَد دوراتُ الإعداد كلُّها، ويقول لك الاعتمادُ عند كلّ خطّةٍ كم بقي منها.
+                        في طور الإعداد — التفعيل حين تعتمد دورات الإعداد كلّها، ويقول لك الاعتماد عند كلّ خطّة كم بقي منها.
                       </p>
                     )}
                     {shared && <p className="mt-1 text-read leading-6 text-muted-foreground">{shared}</p>}
@@ -303,9 +303,9 @@ export default function PendingPlans() {
                         const done = decided[r.id];
                         /* اسمُ الدورة حين لا يحمله اسمُ الشعبة وحدَه (⑨) */
                         const sent = r.submittedAt ? `أرسلها ${fmtDateTimeAr(r.submittedAt)}` : "";
-                        const facts = [courseLineNeeded(r.cohort.title, r.courseTitle) ? `دورةُ «${r.courseTitle}»` : "", sent]
+                        const facts = [courseLineNeeded(r.cohort.title, r.courseTitle) ? `دورة «${r.courseTitle}»` : "", sent]
                           .filter(Boolean).join(" · ")
-                          + (r.trainerConfirmedAt ? `${sent ? " و" : ""}أكّد موافقتَه على كلّ ما فيها` : "");
+                          + (r.trainerConfirmedAt ? `${sent ? " و" : ""}أكّد موافقته على كلّ ما فيها` : "");
                         return (
                           /* هدفُ زرِّ الرأس — يقبل التركيزَ ليُقرأ حين يُبلَغ بلوحة المفاتيح */
                           <Panel as="li" key={r.id} id={`plan-${r.id}`} tabIndex={-1} className="outline-none">
@@ -315,7 +315,7 @@ export default function PendingPlans() {
                                 {facts && <p className="mt-1 text-read leading-6 text-muted-foreground">{facts}</p>}
                               </div>
                               <div className="flex flex-wrap items-center gap-2">
-                                {r.prep && <Chip tone="accent" srPrefixAr="نوعُها">شعبةُ إعداد</Chip>}
+                                {r.prep && <Chip tone="accent" srPrefixAr="نوعها">شعبة إعداد</Chip>}
                                 {done && <Chip tone={OUTCOME_AR[done].tone} srPrefixAr="القرار">{OUTCOME_AR[done].label}</Chip>}
                               </div>
                             </div>
@@ -325,10 +325,10 @@ export default function PendingPlans() {
                             <div className="mt-3 flex flex-wrap items-center gap-2">
                               <Button size="sm" tone={isOpen ? "ghost" : "primary"} icon={isOpen ? ChevronUp : BookOpen}
                                 aria-expanded={isOpen} onClick={() => toggle(r.id)}>
-                                {isOpen ? "اطوِها" : done ? "اعرضها" : "اقرأها وقرّر"}
+                                {isOpen ? "اطوها" : done ? "اعرضها" : "اقرأها وقرّر"}
                               </Button>
                               <Button as={Link} to={`/admin/cohorts?cohort=${r.cohort.id}`} size="sm" tone="ghost" icon={ExternalLink}>
-                                افتح بطاقةَ الشعبة
+                                افتح بطاقة الشعبة
                               </Button>
                             </div>
                             {/* تُجلب حين تُفتح لا قبلها: عشرون خطّةً لا تُجلب مناهجُها

@@ -34,7 +34,7 @@ export const PROPOSAL_LEVELS = {
 } as const
 
 export const PROPOSAL_FORMATS = {
-  live_online: 'مباشرة عن بُعد',
+  live_online: 'مباشرة عن بعد',
   in_person: 'حضوريّة',
   blended: 'مدمجة',
   recorded: 'مسجّلة',
@@ -42,22 +42,22 @@ export const PROPOSAL_FORMATS = {
 
 export const PROPOSAL_EXPERIENCE = {
   never: 'لم أدرّسها بعد',
-  once: 'درّستها مرّةً أو مرّتين',
+  once: 'درّستها مرّة أو مرّتين',
   often: 'درّستها مرارا',
 } as const
 
 export const PROPOSAL_MATERIALS = {
-  slides: 'عروضٌ تقديميّة',
-  exercises: 'تمارينُ وأنشطة',
-  cases: 'دراساتُ حالة',
-  assessments: 'اختباراتٌ وتقييمات',
-  recordings: 'تسجيلاتٌ مصوّرة',
-  handbook: 'دليلُ متدرّب',
+  slides: 'عروض تقديميّة',
+  exercises: 'تمارين وأنشطة',
+  cases: 'دراسات حالة',
+  assessments: 'اختبارات وتقييمات',
+  recordings: 'تسجيلات مصوّرة',
+  handbook: 'دليل متدرّب',
 } as const
 
 export const PROPOSAL_MERGE = {
-  yes: 'نعم — أقبل دمجَها بدورةٍ قائمة',
-  prefer_new: 'أفضّلها دورةً مستقلّة',
+  yes: 'نعم — أقبل دمجها بدورة قائمة',
+  prefer_new: 'أفضّلها دورة مستقلّة',
   discuss: 'نتناقش فيها',
 } as const
 
@@ -131,10 +131,10 @@ export function proposalDetailRows(
   add('الصيغة', d.format && PROPOSAL_FORMATS[d.format])
   add('المحاور', d.topicsAr)
   add('ما يخرج به المتدرّب', d.outcomesAr)
-  add('خبرتُه فيها', d.experience && PROPOSAL_EXPERIENCE[d.experience])
+  add('خبرته فيها', d.experience && PROPOSAL_EXPERIENCE[d.experience])
   add('الجاهز لديه', d.materials?.map((m) => PROPOSAL_MATERIALS[m]).join('، '))
   if (reader === 'trainer') return rows
-  add('أقربُ دورةٍ في الكتالوج بقوله', d.closestCourseAr)
+  add('أقرب دورة في الكتالوج بقوله', d.closestCourseAr)
   add('الدمج', d.merge && PROPOSAL_MERGE[d.merge])
   return rows
 }

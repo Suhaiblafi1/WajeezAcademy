@@ -42,7 +42,7 @@ const PAY_LABEL: Record<string, string> = {
   test: "ادفع الآن (مزود اختباري — لا مال حقيقي)",
   moyasar: "ادفع الآن — صفحة دفع آمنة (مدى/البطاقات)",
   stripe: "ادفع الآن — صفحة دفع آمنة (Stripe)",
-  manual: "الدفع يدوي — حوّل بنكياً ثم أكّد مع المالية",
+  manual: "الدفع يدوي — حوّل بنكيا ثم أكّد مع المالية",
 };
 
 export default function Billing() {
@@ -83,7 +83,7 @@ export default function Billing() {
       });
       /* مزود مستضاف: نحوّل المتعلم لصفحة الدفع عند المزود — التسوية تصل بـ webhook */
       if (res.redirectUrl) { window.location.assign(res.redirectUrl); return; }
-      toast(provider.driver === "test" ? "تم الدفع الاختباري — فُتح وصولك" : "سُجل الدفع — فُتح وصولك");
+      toast(provider.driver === "test" ? "تم الدفع الاختباري — فتح وصولك" : "سجل الدفع — فتح وصولك");
       await load();
     } catch (e) { toastError(e instanceof ApiError ? e.message : "فشل الدفع"); }
     finally { setBusy(null); }
@@ -99,7 +99,7 @@ export default function Billing() {
     setBusy(order.id);
     try {
       await apiPost(`/api/learner/orders/${order.id}/cancel`, {});
-      toast("أُلغي طلبك وفُكّ حجزُ مقعدك");
+      toast("ألغي طلبك وفكّ حجز مقعدك");
       await load();
     } catch (e) { toastError(e instanceof ApiError ? e.message : "تعذّر إلغاء الطلب"); }
     finally { setBusy(null); }
@@ -116,7 +116,7 @@ export default function Billing() {
           <ReceiptText className="h-12 w-12 text-muted-foreground/50" />
           <h2 className="mt-4 text-xl font-black">لا طلبات بعد</h2>
           <p className="mt-2 max-w-md text-sm leading-7 text-muted-foreground">
-            تظهر فاتورتك هنا عند اعتماد طلبك، ودفعُها يفتح وصولك تلقائيا.
+            تظهر فاتورتك هنا عند اعتماد طلبك، ودفعها يفتح وصولك تلقائيا.
           </p>
         </Panel>
       ) : (
@@ -145,14 +145,14 @@ export default function Billing() {
                   {provider.driver !== "test" && (
                     <p className="mt-2 flex items-center gap-1.5 text-read text-muted-foreground">
                       <ShieldCheck className="h-3 w-3 text-teal-ink" />
-                      تدفع في صفحة المزود — بطاقتك لا تمر بخوادمنا، ويُفتح وصولك فور تأكيده.
+                      تدفع في صفحة المزود — بطاقتك لا تمر بخوادمنا، ويفتح وصولك فور تأكيده.
                     </p>
                   )}
                 </div>
               )}
               {isUnpaid(o.status) && (
                 <Button tone="secondary" size="sm" disabled={busy === o.id} onClick={() => void cancel(o)} className="mt-3">
-                  <CircleSlash className="h-3 w-3" /> ألغِ الطلب وافكّ حجز مقعدي
+                  <CircleSlash className="h-3 w-3" /> ألغ الطلب وافكّ حجز مقعدي
                 </Button>
               )}
               {isUnpaid(o.status) && provider.driver === "manual" && (

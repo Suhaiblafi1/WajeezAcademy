@@ -21,8 +21,20 @@
  *    الأكاديميّةُ»، وملحقُ الدورات يقول ما يقوله البندُ 2-12 — «غيرُ مشروط».
  */
 
-import { describe, expect, it } from 'vitest'
-import { readFileSync } from 'node:fs'
+import { describe, expect as vexpect, it } from 'vitest'
+/* ما يُفحص بلا تشكيلٍ إعرابيّ — بعضُ ما يُقرأ هنا بعد «اللغة البيضاء» وبعضُه (الخادمُ والعقودُ والتشخيص) قبلها */
+const plainDeep = (v: unknown): unknown =>
+  typeof v === 'string' ? plainAr(v) : Array.isArray(v) ? v.map(plainDeep)
+    : v && typeof v === 'object' && Object.getPrototypeOf(v) === Object.prototype ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, plainDeep(x)])) : v
+const expect = Object.assign((v: unknown, m?: string) => vexpect(plainDeep(v), m), vexpect) as typeof vexpect
+import { readFileSync as readRaw } from 'node:fs'
+import { plainAr } from '@/application/text/plain-ar'
+/* ما يُقرأ من الملفّات بلا تشكيلٍ إعرابيّ — بعضُها بعد «اللغة البيضاء» وبعضُها (العقود والخادم) قبلها */
+function readFileSync(p: Parameters<typeof readRaw>[0]): Buffer
+function readFileSync(p: Parameters<typeof readRaw>[0], e: BufferEncoding | { encoding: BufferEncoding }): string
+function readFileSync(p: Parameters<typeof readRaw>[0], e?: BufferEncoding | { encoding: BufferEncoding }): string | Buffer {
+  return e === undefined ? readRaw(p) : plainAr(String(readRaw(p, e)))
+}
 import {
   APPROVAL_SEALED_BODIES, EXTENSION_DAYS, MATERIALS_WINDOW_DAYS, SEALED_BY_TEXT_AR, signatureApprovalOf,
 } from '@/application/trainer/conditional-offer'
@@ -38,7 +50,7 @@ import { DEFAULT_REQUIRED_DOCUMENTS } from '@/application/trainer/contract-docum
 const base: ContractBodyInput = {
   academyPartyLineAr: 'أكاديمية وجيز للتدريب', academyLegalNameAr: 'أكاديمية وجيز للتدريب',
   academyTradingNameAr: 'أكاديمية وجيز', governingLawAr: 'القانون الأردني', disputeVenueAr: 'محاكم عمّان',
-  trainerFullName: 'سعادُ المدرّبة', trainerEmail: 't@example.com',
+  trainerFullName: 'سعاد المدرّبة', trainerEmail: 't@example.com',
   applicationReference: 'WJ-TR-2026-00042', issuedOnAr: '1 أكتوبر 2026',
   courses: [{ courseId: 'C-ACC-101', titleAr: 'أساسيات المحاسبة' }],
   compensation: { type: 'per_seat', rate: '15', referralRate: '25', minSeats: 5, currency: 'USD' },
@@ -56,28 +68,28 @@ const APPROVAL_SEALS = [
   /يصير العقد نافذا باعتماد الأكاديمية لتوقيعي/,
 ]
 
-describe('① ما يفعله «اعتمِدِ التوقيع» بحسب ما وقّعه صاحبُه', () => {
+describe('① ما يفعله «اعتمد التوقيع» بحسب ما وقّعه صاحبه', () => {
   const conditional = (bodyVersion: string | null) => signatureApprovalOf({ gatesActivation: true, bodyVersion })
 
-  it('⚠️ العرضُ المشروطُ على الإصدار الحاضر يُعتمَد ولا يُختَم', () => {
-    expect(conditional(CONTRACT_BODY_VERSION), 'الإصدارُ الحاضرُ يختم باعتماد التوقيع').toBe('approve_only')
+  it('⚠️ العرض المشروط على الإصدار الحاضر يعتمد ولا يختم', () => {
+    expect(conditional(CONTRACT_BODY_VERSION), 'الإصدار الحاضر يختم باعتماد التوقيع').toBe('approve_only')
   })
 
-  it('⚠️ وما وُقّع على v12–v23 لا يُعتمَد إلّا خاتما — متنُه يجعل الاعتمادَ توقيعا', () => {
+  it('⚠️ وما وقّع على v12–v23 لا يعتمد إلّا خاتما — متنه يجعل الاعتماد توقيعا', () => {
     for (let g = APPROVAL_SEALED_BODIES.from; g < APPROVAL_SEALED_BODIES.before; g += 1) {
       expect(conditional(`v${g}-2026-09-30`), `v${g}`).toBe('sealed_by_text')
     }
-    expect(APPROVAL_SEALED_BODIES, 'تبدّل مدى الأجيال التي قال متنُها إنّ الاعتمادَ توقيع')
+    expect(APPROVAL_SEALED_BODIES, 'تبدّل مدى الأجيال التي قال متنها إنّ الاعتماد توقيع')
       .toEqual({ from: 12, before: 24 })
   })
 
-  it('ومتنُ v4–v11 يقول قولَ اليوم — وما لا جيلَ له لا يُخمَّن له نصّ', () => {
+  it('ومتن v4–v11 يقول قول اليوم — وما لا جيل له لا يخمّن له نصّ', () => {
     expect(conditional('v4-2026-09-23')).toBe('approve_only')
     expect(conditional('v11-2026-09-27')).toBe('approve_only')
     expect(conditional(null)).toBe('approve_only')
   })
 
-  it('والعقدُ غيرُ المشروط يُختَم باعتماد توقيعه — أيًّا كان جيلُه', () => {
+  it('والعقد غير المشروط يختم باعتماد توقيعه — أيّا كان جيله', () => {
     for (const v of ['v11-2026-09-27', 'v20-2026-10-01', CONTRACT_BODY_VERSION, null]) {
       expect(signatureApprovalOf({ gatesActivation: false, bodyVersion: v }), String(v)).toBe('seal')
     }
@@ -88,61 +100,61 @@ describe('① ما يفعله «اعتمِدِ التوقيع» بحسب ما و
      للتوقيع… ثمّ اعتمِدْ توقيعَه الجديد» — بابا واحدا. */
   /* ومن الثاني من أكتوبر ثلاثةٌ لا اثنان: «كالعقود الجديدة» أوّلُها — اختارها صاحبُ
      المنصّة («Option 4») — ثمّ «كما وقّعه»، ثمّ الإعادة. */
-  it('⚠️ وردُّ الخادم يعرض الخياراتِ الثلاثةَ بأثرها ولا يُلزم بأحدها — وبلا رقم إصدار', () => {
+  it('⚠️ وردّ الخادم يعرض الخيارات الثلاثة بأثرها ولا يلزم بأحدها — وبلا رقم إصدار', () => {
     expect(SEALED_BY_TEXT_AR).not.toMatch(/v\d+/)
-    expect(SEALED_BY_TEXT_AR, 'لم يُعرض الاعتمادُ كالعقود الجديدة').toContain('أن تعتمده كالعقود الجديدة')
-    expect(SEALED_BY_TEXT_AR, 'لم يُقل أثرُ «كالعقود الجديدة»').toContain('ولا نوقّعه إلّا يومَ نعتمد دوراتِه')
-    expect(SEALED_BY_TEXT_AR, 'لم يُعرض الاعتمادُ كما وقّعه').toContain('أو كما وقّعه')
-    expect(SEALED_BY_TEXT_AR, 'لم يُقل أثرُه').toContain('فيصير نافذا الآن قبل اعتماد دوراته')
-    expect(SEALED_BY_TEXT_AR, 'لم تُعرض الإعادةُ').toContain('أن تعيده للتوقيع على النصّ الحاضر')
-    expect(SEALED_BY_TEXT_AR, 'عاد الأمرُ بالإعادة بابا وحيدا').not.toMatch(/فأعِدْه|ثمّ اعتمِدْ توقيعَه الجديد/)
+    expect(SEALED_BY_TEXT_AR, 'لم يعرض الاعتماد كالعقود الجديدة').toContain('أن تعتمده كالعقود الجديدة')
+    expect(SEALED_BY_TEXT_AR, 'لم يقل أثر «كالعقود الجديدة»').toContain('ولا نوقّعه إلّا يوم نعتمد دوراته')
+    expect(SEALED_BY_TEXT_AR, 'لم يعرض الاعتماد كما وقّعه').toContain('أو كما وقّعه')
+    expect(SEALED_BY_TEXT_AR, 'لم يقل أثره').toContain('فيصير نافذا الآن قبل اعتماد دوراته')
+    expect(SEALED_BY_TEXT_AR, 'لم تعرض الإعادة').toContain('أن تعيده للتوقيع على النصّ الحاضر')
+    expect(SEALED_BY_TEXT_AR, 'عاد الأمر بالإعادة بابا وحيدا').not.toMatch(/فأعده|ثمّ اعتمد توقيعه الجديد/)
   })
 })
 
-describe('② والمتنُ الحاضرُ لا يُنفذ العرضَ باعتماد التوقيع في موضعٍ منه', () => {
-  it('⚠️ لا جملةَ من جمل v12–v23 في عرضٍ مشروط — بندا ولا ديباجةً ولا خلاصة', () => {
+describe('② والمتن الحاضر لا ينفذ العرض باعتماد التوقيع في موضع منه', () => {
+  it('⚠️ لا جملة من جمل v12–v23 في عرض مشروط — بندا ولا ديباجة ولا خلاصة', () => {
     for (const re of APPROVAL_SEALS) expect(offer, `عاد في المتن: ${re}`).not.toMatch(re)
   })
 
-  it('⚠️ والملحقُ (د) يقول متى يوقّع المفوَّضُ عنّا — يومَ نقبل الدورات', () => {
+  it('⚠️ والملحق (د) يقول متى يوقّع المفوّض عنّا — يوم نقبل الدورات', () => {
     const annex = offer.slice(offer.indexOf('الملحق (د) — التوقيع'))
-    expect(annex, 'لا ملحقَ (د)').toContain('الطرف الأول')
-    expect(annex, 'لا يُقال متى نوقّع').toContain('يوقع عنها المفوض بالتوقيع يوم تقبل دورات المدرب')
-    expect(annex, 'لا يُقال إنّ الاعتمادَ قبلها ليس توقيعا').toContain('واعتمادها توقيع المدرب قبل ذلك لا يكون توقيعا منها')
+    expect(annex, 'لا ملحق (د)').toContain('الطرف الأول')
+    expect(annex, 'لا يقال متى نوقّع').toContain('يوقع عنها المفوض بالتوقيع يوم تقبل دورات المدرب')
+    expect(annex, 'لا يقال إنّ الاعتماد قبلها ليس توقيعا').toContain('واعتمادها توقيع المدرب قبل ذلك لا يكون توقيعا منها')
     /* والعقدُ غيرُ المشروط يُوقَّع عند اعتماده — فملحقُه كما كان */
     const plainAnnex = plain.slice(plain.indexOf('الملحق (د) — التوقيع'))
     expect(plainAnnex).toContain('ويثبت اسمه وصفته وتاريخ اعتماده للتوقيع عند الاعتماد')
-    expect(plainAnnex, 'قيل في عقدٍ غيرِ مشروطٍ إنّا نوقّع يومَ نقبل دوراته').not.toContain('يوم تقبل دورات المدرب')
+    expect(plainAnnex, 'قيل في عقد غير مشروط إنّا نوقّع يوم نقبل دوراته').not.toContain('يوم تقبل دورات المدرب')
   })
 })
 
-describe('③ والإقرارُ يتبع المتنَ الذي يُعرَض فوقه', () => {
+describe('③ والإقرار يتبع المتن الذي يعرض فوقه', () => {
   const ack = (v: string | null) => contractAcks(true, v).find((a) => a.key === 'offer_is_conditional')!.textAr
 
-  it('⚠️ من يوقّع متنا من v12–v23 يُقرّ بما فيه — لا بنقيضه', () => {
-    expect(ack('v20-2026-10-01'), 'أقرّ بأنّ الاعتمادَ ليس توقيعا ومتنُه يقول إنّه هو')
+  it('⚠️ من يوقّع متنا من v12–v23 يقرّ بما فيه — لا بنقيضه', () => {
+    expect(ack('v20-2026-10-01'), 'أقرّ بأنّ الاعتماد ليس توقيعا ومتنه يقول إنّه هو')
       .toMatch(/يصير العقد نافذا باعتماد الأكاديمية لتوقيعي/)
   })
 
-  it('⚠️ ومن يوقّع الحاضرَ يُقرّ بأنّا نوقّع حين نقبل دوراته', () => {
+  it('⚠️ ومن يوقّع الحاضر يقرّ بأنّا نوقّع حين نقبل دوراته', () => {
     for (const v of [CONTRACT_BODY_VERSION, null]) {
       expect(ack(v), String(v)).not.toMatch(/يصير العقد نافذا باعتماد/)
       expect(ack(v), String(v)).toContain('ولا يكون توقيعا منها عليه')
     }
   })
 
-  it('والمفتاحُ واحدٌ في الصيغتين — فما عُرض هو ما يُفحَص هو ما يُحفَظ', () => {
+  it('والمفتاح واحد في الصيغتين — فما عرض هو ما يفحص هو ما يحفظ', () => {
     expect(contractAcks(true, 'v20-2026-10-01').map((a) => a.key))
       .toEqual(contractAcks(true, CONTRACT_BODY_VERSION).map((a) => a.key))
   })
 })
 
-describe('④ ونقطةُ v24 لا تُقال لمن عقدُه غيرُ مشروط', () => {
-  it('⚠️ «لا نوقّع الاتفاقيّة إلّا يومَ نعتمد دوراتك» للعرض المشروط وحدَه', () => {
+describe('④ ونقطة v24 لا تقال لمن عقده غير مشروط', () => {
+  it('⚠️ «لا نوقّع الاتفاقيّة إلّا يوم نعتمد دوراتك» للعرض المشروط وحده', () => {
     const titlesFor = (conditional: boolean) =>
       changeGroupsBetween('v23-2026-10-01', CONTRACT_BODY_VERSION, { conditional }).map((g) => g.titleAr)
-    expect(titlesFor(true), 'لا نقطةَ لمن عرضُه مشروط').toContain('الاتفاقيّة المشروطة وتوقيعنا — البند 2')
-    expect(titlesFor(false), 'قيل لمن عقدُه غيرُ مشروطٍ إنّا لا نوقّعه حتّى نعتمد دوراته')
+    expect(titlesFor(true), 'لا نقطة لمن عرضه مشروط').toContain('الاتفاقيّة المشروطة وتوقيعنا — البند 2')
+    expect(titlesFor(false), 'قيل لمن عقده غير مشروط إنّا لا نوقّعه حتّى نعتمد دوراته')
       .not.toContain('الاتفاقيّة المشروطة وتوقيعنا — البند 2')
     /* ومن لا يُعرف أيَّ العقدين يقرأ لا يُحجَب عنه شيء */
     expect(changeGroupsBetween('v23-2026-10-01', CONTRACT_BODY_VERSION).map((g) => g.titleAr))
@@ -150,8 +162,8 @@ describe('④ ونقطةُ v24 لا تُقال لمن عقدُه غيرُ مشر
   })
 })
 
-describe('⑤ و«عقدي» يعرف الطورَ بين «وقّع» و«نافذ»', () => {
-  it('⚠️ اعتُمد توقيعُه ولم نوقّع — طورٌ مسمّى لا «نافذ»', () => {
+describe('⑤ و«عقدي» يعرف الطور بين «وقّع» و«نافذ»', () => {
+  it('⚠️ اعتمد توقيعه ولم نوقّع — طور مسمّى لا «نافذ»', () => {
     const at = '2026-10-01T10:00:00Z'
     expect(executionStage({ signedAt: at, signatureApprovedAt: at })).toBe('approved')
     expect(executionStage({ signedAt: at })).toBe('signed')
@@ -160,36 +172,36 @@ describe('⑤ و«عقدي» يعرف الطورَ بين «وقّع» و«نا�
   })
 })
 
-describe('⑥ وبريدُ اعتماد التوقيع يقول ما وقع — لا «نافذ»', () => {
+describe('⑥ وبريد اعتماد التوقيع يقول ما وقع — لا «نافذ»', () => {
   const input = {
-    legalName: 'سعادُ المدرّبة', title: 'عرضُ تدريبٍ مشروط', approvedOnAr: '1 أكتوبر 2026',
+    legalName: 'سعاد المدرّبة', title: 'عرض تدريب مشروط', approvedOnAr: '1 أكتوبر 2026',
     portalUrl: 'https://x.test/trainer', guideUrl: 'https://x.test/guide', contractNumber: 'WJ-CT-2026-00042',
   }
   /* والنصُّ كما يُصيَّر للبريد — ما يقرؤه المدرّبُ لا بنيةُ الكتل */
   const textOf = (gatesActivation: boolean) => renderMail(contractApprovedMail({ ...input, gatesActivation }).doc).text
 
-  it('⚠️ العرضُ المشروط: اعتمدنا توقيعَك، ونوقّع حين نعتمد دوراتك، وبوّابتُك مفتوحة', () => {
+  it('⚠️ العرض المشروط: اعتمدنا توقيعك، ونوقّع حين نعتمد دوراتك، وبوّابتك مفتوحة', () => {
     const t = textOf(true)
-    expect(t, 'قيل له إنّ العقدَ نفذ ولم نوقّعه').not.toContain('نافذا بين الطرفين')
-    expect(t, 'وُعد بنسخةٍ بتوقيع الطرفين قبل أن نوقّع').not.toContain('ونسختُك بتوقيع الطرفين')
-    expect(t, 'لم يُقل متى نوقّع').toContain('وسنوقّع العقدَ من جهتنا ونحوّله إلى عقدٍ غيرِ مشروطٍ حين نعتمد دوراتك')
-    expect(t, 'لم يُقل إنّ بوّابتَه مفتوحة').toContain('ولك الآن بوّابتُك مفتوحةً')
+    expect(t, 'قيل له إنّ العقد نفذ ولم نوقّعه').not.toContain('نافذا بين الطرفين')
+    expect(t, 'وعد بنسخة بتوقيع الطرفين قبل أن نوقّع').not.toContain('ونسختك بتوقيع الطرفين')
+    expect(t, 'لم يقل متى نوقّع').toContain('وسنوقّع العقد من جهتنا ونحوّله إلى عقد غير مشروط حين نعتمد دوراتك')
+    expect(t, 'لم يقل إنّ بوّابته مفتوحة').toContain('ولك الآن بوّابتك مفتوحة')
   })
 
-  it('والعقدُ غيرُ المشروط يُختَم بهذا الاعتماد — فرسالتُه تقول إنّه نفذ', () => {
-    expect(textOf(false)).toContain('فصار العقدُ نافذا بين الطرفين')
+  it('والعقد غير المشروط يختم بهذا الاعتماد — فرسالته تقول إنّه نفذ', () => {
+    expect(textOf(false)).toContain('فصار العقد نافذا بين الطرفين')
   })
 
   /* وعرضٌ مشروطٌ اعتُمد كما وقّعه على نصٍّ يجعل الاعتمادَ توقيعا (٢ أكتوبر ٢٠٢٦):
      خُتم الآن. فلو قالت رسالتُه «نوقّعه حين نعتمد دوراتك» لَوعدته بتوقيعٍ وقع. */
-  it('⚠️ وعرضٌ اعتُمد كما وقّعه: وقّعناه الآن ونفذ — لا «نوقّعه حين نعتمد دوراتك»', () => {
+  it('⚠️ وعرض اعتمد كما وقّعه: وقّعناه الآن ونفذ — لا «نوقّعه حين نعتمد دوراتك»', () => {
     const mail = contractApprovedMail({ ...input, gatesActivation: true, sealedNow: true })
     const t = renderMail(mail.doc).text
-    expect(t, 'لم يُقل له إنّا وقّعناه').toContain('ووقّعنا العقدَ من جهتنا بالنصّ الذي وقّعتَه — فصار نافذا بين الطرفين')
-    expect(t, 'وُعد بتوقيعٍ وقع').not.toContain('وسنوقّع العقدَ من جهتنا')
-    expect(t, 'قيل إنّ نسختَه تصير بتوقيع الطرفين لاحقا').not.toContain('وتصير بتوقيع الطرفين حين نوقّعها')
-    expect(t, 'ضاع البابُ المفتوح').toContain('ولك الآن بوّابتُك مفتوحةً')
-    expect(mail.subject).toContain('ووقّعنا العقدَ من جهتنا')
+    expect(t, 'لم يقل له إنّا وقّعناه').toContain('ووقّعنا العقد من جهتنا بالنصّ الذي وقّعته — فصار نافذا بين الطرفين')
+    expect(t, 'وعد بتوقيع وقع').not.toContain('وسنوقّع العقد من جهتنا')
+    expect(t, 'قيل إنّ نسخته تصير بتوقيع الطرفين لاحقا').not.toContain('وتصير بتوقيع الطرفين حين نوقّعها')
+    expect(t, 'ضاع الباب المفتوح').toContain('ولك الآن بوّابتك مفتوحة')
+    expect(mail.subject).toContain('ووقّعنا العقد من جهتنا')
     /* ولا «عرضك» في ما يصله — الكلمةُ غيرُ مناسبةٍ في الثقافة الأردنيّة (أمرُ
        صاحب المنصّة، ٢ أكتوبر ٢٠٢٦، #405). يُقرأ العنوانُ والرأسُ والمتنُ معا. */
     const all = [mail.subject, mail.doc.heading, t].join('\n')
@@ -204,52 +216,52 @@ describe('⑥ وبريدُ اعتماد التوقيع يقول ما وقع — 
    «بوّابتُك مفتوحةٌ لموادّك» (مفتوحةٌ أصلا) ولا «غيرَ مشروط» (نصُّه كذلك من أوّله) — ويَعِد
    بخبر التوقيع. وبريدُ التوقيع اللاحق هو ذلك الخبر: يقول متى وقّعنا ومتى اعتمدنا توقيعَه.
    ونداءٌ لا يمرّر `sealedNow` يبقى على «نفذ» كما كان. */
-describe('⑥ب وغيرُ المشروط المعتمَدُ كالعقود الجديدة — ثمّ خبرُ توقيعنا', () => {
+describe('⑥ب وغير المشروط المعتمد كالعقود الجديدة — ثمّ خبر توقيعنا', () => {
   const input = {
-    legalName: 'مدرّبٌ عائد', title: 'عقدُ تدريب', approvedOnAr: '2 أكتوبر 2026',
+    legalName: 'مدرّب عائد', title: 'عقد تدريب', approvedOnAr: '2 أكتوبر 2026',
     portalUrl: 'https://x.test/trainer', guideUrl: 'https://x.test/guide', contractNumber: 'WJ-CT-2026-00077',
   }
 
-  it('⚠️ بريدُ الاعتماد: اعتمدنا توقيعَك، ونوقّع حين نعتمد دوراتك — لا «فصار نافذا»', () => {
+  it('⚠️ بريد الاعتماد: اعتمدنا توقيعك، ونوقّع حين نعتمد دوراتك — لا «فصار نافذا»', () => {
     const mail = contractApprovedMail({ ...input, gatesActivation: false, sealedNow: false })
     const t = renderMail(mail.doc).text
-    expect(t, 'قيل له إنّه نفذ ولم نوقّعه').not.toContain('فصار العقدُ نافذا')
-    expect(t, 'لم يُقل متى نوقّع').toContain('وسنوقّع العقدَ من جهتنا حين نعتمد دوراتك')
-    expect(t, 'وُعد بنسخةٍ بتوقيع الطرفين قبل أن نوقّع').not.toContain('ونسختُك بتوقيع الطرفين')
-    expect(t, 'لم يُقل متى تصير بتوقيع الطرفين').toContain('وتصير بتوقيع الطرفين حين نوقّعها')
-    expect(t, 'قيل له «غيرُ مشروط» عن نصٍّ غيرِ مشروطٍ من أوّله').not.toContain('غيرِ مشروط')
-    expect(t, 'قيل له إنّ بوّابتَه فُتحت لموادّه — وهي مفتوحةٌ أصلا').not.toContain('لتضع فيها موادَّك')
-    expect(mail.subject, 'العنوانُ يقول «اعتُمد عقدُك» — كأنّه نفذ').toContain('ونوقّع العقدَ حين نعتمد دوراتك')
-    expect(mail.doc.heading).toContain('ونوقّع العقدَ حين نعتمد دوراتك')
+    expect(t, 'قيل له إنّه نفذ ولم نوقّعه').not.toContain('فصار العقد نافذا')
+    expect(t, 'لم يقل متى نوقّع').toContain('وسنوقّع العقد من جهتنا حين نعتمد دوراتك')
+    expect(t, 'وعد بنسخة بتوقيع الطرفين قبل أن نوقّع').not.toContain('ونسختك بتوقيع الطرفين')
+    expect(t, 'لم يقل متى تصير بتوقيع الطرفين').toContain('وتصير بتوقيع الطرفين حين نوقّعها')
+    expect(t, 'قيل له «غير مشروط» عن نصّ غير مشروط من أوّله').not.toContain('غير مشروط')
+    expect(t, 'قيل له إنّ بوّابته فتحت لموادّه — وهي مفتوحة أصلا').not.toContain('لتضع فيها موادّك')
+    expect(mail.subject, 'العنوان يقول «اعتمد عقدك» — كأنّه نفذ').toContain('ونوقّع العقد حين نعتمد دوراتك')
+    expect(mail.doc.heading).toContain('ونوقّع العقد حين نعتمد دوراتك')
   })
 
-  it('ونداءٌ لا يمرّر `sealedNow` يبقى على «نفذ» — كما كان قبل اليوم', () => {
+  it('ونداء لا يمرّر `sealedNow` يبقى على «نفذ» — كما كان قبل اليوم', () => {
     const t = renderMail(contractApprovedMail({ ...input, gatesActivation: false }).doc).text
-    expect(t).toContain('فصار العقدُ نافذا بين الطرفين')
+    expect(t).toContain('فصار العقد نافذا بين الطرفين')
   })
 
-  it('⚠️ وبريدُ التوقيع اللاحق: وقّعنا ومتى، ومتى اعتمدنا توقيعَه — فنفذ، ونسختُه بتوقيعَيها', () => {
+  it('⚠️ وبريد التوقيع اللاحق: وقّعنا ومتى، ومتى اعتمدنا توقيعه — فنفذ، ونسخته بتوقيعيها', () => {
     const mail = contractSealedLaterMail({
       legalName: input.legalName, title: input.title, sealedOnAr: '9 أكتوبر 2026', approvedOnAr: '2 أكتوبر 2026',
       contractNumber: input.contractNumber, contractUrl: 'https://x.test/trainer/contract',
     })
     const t = renderMail(mail.doc).text
-    expect(t, 'لم يُقل متى وقّعنا').toContain('وقّعنا «عقدُ تدريب» من جهتنا بتاريخ 9 أكتوبر 2026')
-    expect(t, 'لم يُقل متى اعتمدنا توقيعَه — فيُقرأ اعتمادا اليوم').toContain('بعد أن اعتمدنا توقيعَك بتاريخ 2 أكتوبر 2026')
-    expect(t, 'لم يُقل إنّه نفذ').toContain('فصار نافذا بين الطرفين')
-    expect(t, 'لا رقمَ للعقد').toContain('WJ-CT-2026-00077')
-    expect(t, 'لا يُدلّ على نسخته بتوقيعَيها').toContain('ونسختُك بتوقيع الطرفين')
+    expect(t, 'لم يقل متى وقّعنا').toContain('وقّعنا «عقد تدريب» من جهتنا بتاريخ 9 أكتوبر 2026')
+    expect(t, 'لم يقل متى اعتمدنا توقيعه — فيقرأ اعتمادا اليوم').toContain('بعد أن اعتمدنا توقيعك بتاريخ 2 أكتوبر 2026')
+    expect(t, 'لم يقل إنّه نفذ').toContain('فصار نافذا بين الطرفين')
+    expect(t, 'لا رقم للعقد').toContain('WJ-CT-2026-00077')
+    expect(t, 'لا يدلّ على نسخته بتوقيعيها').toContain('ونسختك بتوقيع الطرفين')
     const cta = mail.doc.blocks.find((b) => b.kind === 'cta') as { label?: string; href?: string } | undefined
-    expect(cta?.href, 'الزرُّ لا يفتح «عقدي»').toBe('https://x.test/trainer/contract')
+    expect(cta?.href, 'الزرّ لا يفتح «عقدي»').toBe('https://x.test/trainer/contract')
     const all = [mail.subject, mail.doc.heading, t].join('\n')
     expect(all, 'قيل له «عرضك»').not.toMatch(/عرض[َُِ]?ك/)
   })
 
-  it('وبلا تاريخِ اعتمادٍ مكتوبٍ لا يُكتب «بتاريخ —»', () => {
+  it('وبلا تاريخ اعتماد مكتوب لا يكتب «بتاريخ —»', () => {
     const t = renderMail(contractSealedLaterMail({
       legalName: 'م', title: 'ع', sealedOnAr: '9 أكتوبر 2026', approvedOnAr: null, contractUrl: 'https://x.test/c',
     }).doc).text
-    expect(t).not.toContain('بعد أن اعتمدنا توقيعَك')
+    expect(t).not.toContain('بعد أن اعتمدنا توقيعك')
     expect(t).toContain('فصار نافذا بين الطرفين')
   })
 })
@@ -265,20 +277,20 @@ const between = (src: string, from: string, to: string) => {
   return at < 0 ? '' : src.slice(at, src.indexOf(to, at + from.length))
 }
 
-describe('⑦ وتوقيعُنا لا يُسمّى «اعتمادا» في ما يقرؤه المدرّب', () => {
-  it('⚠️ الرابطُ المقفلُ على عقدٍ نافذ: «ووقّعته الأكاديميّةُ من جهتها» يومَ توقيعها', () => {
+describe('⑦ وتوقيعنا لا يسمّى «اعتمادا» في ما يقرؤه المدرّب', () => {
+  it('⚠️ الرابط المقفل على عقد نافذ: «ووقّعته الأكاديميّة من جهتها» يوم توقيعها', () => {
     const LINES = between(bare('src/pages/ContractSign.tsx'), 'function closedLinesAr(', '\nfunction ')
     const sealed = between(LINES, "case 'countersigned':", 'case ')
-    expect(sealed, 'لم تُقرأ جملةُ العقد النافذ — فالحارسُ يقيس الفراغ').toContain('countersignedAt')
-    expect(sealed, 'سُمّي توقيعُنا اعتمادا — والاعتمادُ صار اسما لغيره').not.toMatch(/اعتمدته|اعتمدناه/)
-    expect(sealed, 'لم يُقل إنّا وقّعناه من جهتنا').toContain('ووقّعته الأكاديميّةُ من جهتها')
+    expect(sealed, 'لم تقرأ جملة العقد النافذ — فالحارس يقيس الفراغ').toContain('countersignedAt')
+    expect(sealed, 'سمّي توقيعنا اعتمادا — والاعتماد صار اسما لغيره').not.toMatch(/اعتمدته|اعتمدناه/)
+    expect(sealed, 'لم يقل إنّا وقّعناه من جهتنا').toContain('ووقّعته الأكاديميّة من جهتها')
   })
 
-  it('وملحقُ الدورات المعتمدة يقول ما يقوله البندُ 2-12: صار عقدا نهائيّا غيرَ مشروط', () => {
+  it('وملحق الدورات المعتمدة يقول ما يقوله البند 2-12: صار عقدا نهائيّا غير مشروط', () => {
     const lede = between(bare('src/components/ContractApproval.tsx'), 'className="ca-lede"', '</p>')
-    expect(lede, 'لم تُقرأ فقرةُ الملحق').toContain('فتحقّق شرطُ الاتفاقيّة')
-    expect(lede, 'قيل «صار نافذا» عن عقدٍ خُتم قبلها').not.toMatch(/نافذ/)
-    expect(lede).toContain('غيرَ مشروط')
+    expect(lede, 'لم تقرأ فقرة الملحق').toContain('فتحقّق شرط الاتفاقيّة')
+    expect(lede, 'قيل «صار نافذا» عن عقد ختم قبلها').not.toMatch(/نافذ/)
+    expect(lede).toContain('غير مشروط')
   })
 })
 
@@ -286,23 +298,23 @@ describe('⑦ وتوقيعُنا لا يُسمّى «اعتمادا» في ما 
    الرابطُ المقفلُ و«عقدي» كانا يقولان لكلّ `signature_approved`: «وبوّابتُك مفتوحةٌ لتضع
    موادَّك… فيصير عقدا نهائيّا غيرَ مشروط» — وهو قولُ العرض المشروط. وغيرُ المشروط المعتمَدُ
    كالعقود الجديدة لا موادَّ يضعها في طور، ونصُّه غيرُ مشروطٍ من أوّله: يصير «نافذا». */
-describe('⑧ وصفحتا المدرّب لا تقولان لغير المشروط قولَ العرض المشروط', () => {
-  it('⚠️ الرابطُ المقفل: فرعٌ لغير المشروط بلا «موادّك» ولا «غيرَ مشروط»', () => {
+describe('⑧ وصفحتا المدرّب لا تقولان لغير المشروط قول العرض المشروط', () => {
+  it('⚠️ الرابط المقفل: فرع لغير المشروط بلا «موادّك» ولا «غير مشروط»', () => {
     const LINES = between(bare('src/pages/ContractSign.tsx'), 'function closedLinesAr(', '\nfunction ')
     const approved = between(LINES, "case 'signature_approved':", 'case ')
-    expect(approved, 'لم تُقرأ جملةُ المعتمَد توقيعُه — فالحارسُ يقيس الفراغ').toContain('signatureApprovedAt')
+    expect(approved, 'لم تقرأ جملة المعتمد توقيعه — فالحارس يقيس الفراغ').toContain('signatureApprovedAt')
     const plain = between(approved, 'if (!v.conditional)', '\n      }')
-    expect(plain, 'لا فرعَ لغير المشروط').not.toBe('')
-    expect(plain, 'قيل لغير المشروط إنّ بوّابتَه فُتحت لموادّه').not.toContain('موادَّك')
-    expect(plain, 'قيل لغير المشروط إنّه يصير «غيرَ مشروط»').not.toContain('غيرَ مشروط')
-    expect(plain, 'لم يُقل متى ينفذ').toContain('ونوقّعه من جهتنا حين نعتمد دوراتك، فيصير نافذا بين الطرفين')
+    expect(plain, 'لا فرع لغير المشروط').not.toBe('')
+    expect(plain, 'قيل لغير المشروط إنّ بوّابته فتحت لموادّه').not.toContain('موادّك')
+    expect(plain, 'قيل لغير المشروط إنّه يصير «غير مشروط»').not.toContain('غير مشروط')
+    expect(plain, 'لم يقل متى ينفذ').toContain('ونوقّعه من جهتنا حين نعتمد دوراتك، فيصير نافذا بين الطرفين')
   })
 
-  it('⚠️ و«عقدي»: يصير «نافذةً» لغير المشروط و«غيرَ مشروط» للعرض المشروط', () => {
+  it('⚠️ و«عقدي»: يصير «نافذة» لغير المشروط و«غير مشروط» للعرض المشروط', () => {
     const PAGE = bare('src/pages/trainer/MyContract.tsx')
     const at = PAGE.indexOf("stage === 'approved'")
-    expect(at, 'لم يُقرأ سطرُ المعتمَد توقيعُه').toBeGreaterThan(0)
+    expect(at, 'لم يقرأ سطر المعتمد توقيعه').toBeGreaterThan(0)
     const line = PAGE.slice(at, PAGE.indexOf('\n', PAGE.indexOf('?', at) + 2))
-    expect(line, 'السطرُ لا يُسأل عن الاشتراط').toMatch(/data\.gatesActivation \? 'فتصير عقدا نهائيّا غيرَ مشروط\.' : 'فتصير نافذةً بين الطرفين\.'/)
+    expect(line, 'السطر لا يسأل عن الاشتراط').toMatch(/data\.gatesActivation \? 'فتصير عقدا نهائيّا غير مشروط\.' : 'فتصير نافذة بين الطرفين\.'/)
   })
 })

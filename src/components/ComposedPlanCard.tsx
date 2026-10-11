@@ -38,7 +38,7 @@ export interface ComposedPathView {
    هذا لهدفك، وهذا لفجوة قِسناها، وهذا يدعم الخطة. */
 const ROLE_AR: Record<NonNullable<ComposedCourseView["role"]>, { label: string; cls: string }> = {
   goal: { label: "لهدفك", cls: "bg-teal/20 text-teal-light-ink" },
-  gap: { label: "لفجوة قِسناها", cls: "bg-gold/15 text-gold-ink" },
+  gap: { label: "لفجوة قسناها", cls: "bg-gold/15 text-gold-ink" },
   support: { label: "يدعم خطتك", cls: "bg-white/[0.06] text-muted-foreground" },
 };
 
@@ -67,7 +67,7 @@ function PlanPrice({ courseIds }: { courseIds: string[] }) {
   if (!cheapest) {
     return (
       <p className="mt-2 text-read leading-6 text-muted-foreground">
-        {loaded ? "يُعلن سعر دورات هذه الخطة مع فتح شعبها. والدفع لا يُطلب الآن." : "يُقرأ السعر…"}
+        {loaded ? "يعلن سعر دورات هذه الخطة مع فتح شعبها. والدفع لا يطلب الآن." : "يقرأ السعر…"}
       </p>
     );
   }
@@ -76,9 +76,9 @@ function PlanPrice({ courseIds }: { courseIds: string[] }) {
       <span className="font-bold text-foreground">
         تبدأ من <span dir="ltr">{formatCohortPrice(cheapest)}</span> للدورة
       </span>
-      {" — وخصمٌ كبير على الخطة كاملة مقابل شرائها دورةً دورة."}
-      {known < courseIds.length && " وبعض دوراتها لم تُفتح لها شعبة بعد."}
-      {" والدفع لا يُطلب الآن."}
+      {" — وخصم كبير على الخطة كاملة مقابل شرائها دورة دورة."}
+      {known < courseIds.length && " وبعض دوراتها لم تفتح لها شعبة بعد."}
+      {" والدفع لا يطلب الآن."}
     </p>
   );
 }
@@ -99,7 +99,7 @@ export default function ComposedPlanCard({ plan, courseList = true }: { plan: Co
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 id="cpc-title" className="flex items-center gap-2 text-lg font-black md:text-xl">
           <RouteIcon className="h-5 w-5 text-teal-light-ink" />
-          خطتك مرتَّبة على مقاسك
+          خطتك مرتّبة على مقاسك
         </h2>
         <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-fine font-bold text-muted-foreground" dir="ltr">
           {plan.courses.length} دورات · {plan.totalHours} ساعة
@@ -114,7 +114,7 @@ export default function ComposedPlanCard({ plan, courseList = true }: { plan: Co
 
       <p className="mt-2.5 text-sm leading-relaxed text-muted-foreground">
         {plan.matchesPathwayId
-          ? "هذه الدورات تُشكّل مسارا كاملا في الأكاديمية، فتأخذ شهادته كما هي."
+          ? "هذه الدورات تشكّل مسارا كاملا في الأكاديمية، فتأخذ شهادته كما هي."
           : "رتّبناها لك من أكثر من مسار — لأن فجواتك لا يغطيها مسار واحد جاهز."}
         {covered > 0 && <> وتغطي <b className="text-teal-light-ink">{covered}</b> من الجوانب التي قلت إنك دونها.</>}
       </p>
@@ -213,7 +213,7 @@ export default function ComposedPlanCard({ plan, courseList = true }: { plan: Co
           <ArrowUpRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
           <span>
             وتبقى <b className="text-foreground">{plan.uncoveredGaps.length}</b> جوانب خارج هذه الخطة — لا نخفيها عنك:
-            تُعالَج في مرحلة تالية أو مع مستشارك، فحشرها هنا يطيل الخطة ويشتّتها.
+            تعالج في مرحلة تالية أو مع مستشارك، فحشرها هنا يطيل الخطة ويشتّتها.
           </span>
         </Inset>
       )}

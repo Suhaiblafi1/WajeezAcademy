@@ -197,7 +197,7 @@ export default function AdvisorCases() {
                     </li>
                   ))}
                 </ul>
-                <p className="mt-1.5 text-read leading-5 text-muted-foreground">كلُّ فتحةٍ تُسجَّل في سجلّ الأثر باسمك.</p>
+                <p className="mt-1.5 text-read leading-5 text-muted-foreground">كلّ فتحة تسجّل في سجلّ الأثر باسمك.</p>
               </div>
             )}
           </Card>
@@ -219,21 +219,21 @@ export default function AdvisorCases() {
             <NextActionForm caseId={detail.id} current={detail.nextAction} currentAt={detail.nextFollowUpAt}
               onSubmit={(nextAction, nextFollowUpAt) => void act(
                 () => apiPost(`/api/advisor/cases/${detail.id}/next-action`, { nextAction, ...(nextFollowUpAt ? { nextFollowUpAt } : {}) }),
-                "حُفظ الإجراء التالي"
+                "حفظ الإجراء التالي"
               )} />
           </Card>
 
           {/* الوجه الأكاديميّ — أين وصل عميلي */}
           <Card as="section">
-            <h2 className="mb-3 flex items-center gap-2 text-sm font-black text-teal-light-ink"><GraduationCap className="h-4 w-4" /> أين وصل — قراءةٌ لا تعديل</h2>
+            <h2 className="mb-3 flex items-center gap-2 text-sm font-black text-teal-light-ink"><GraduationCap className="h-4 w-4" /> أين وصل — قراءة لا تعديل</h2>
             <LearnerPanel key={detail.id} caseId={detail.id} />
           </Card>
 
           {/* ما لا يملكه المستشار وحده */}
           <Card as="section" className="lg:col-span-2">
-            <h2 className="mb-1 flex items-center gap-2 text-sm font-black text-teal-light-ink"><BadgePercent className="h-4 w-4" /> طلباتٌ تبتّ فيها الإدارة</h2>
+            <h2 className="mb-1 flex items-center gap-2 text-sm font-black text-teal-light-ink"><BadgePercent className="h-4 w-4" /> طلبات تبتّ فيها الإدارة</h2>
             <p className="mb-3 text-read leading-6 text-muted-foreground">
-              خصمٌ على فاتورته، أو تعديلٌ على خطّته. لا يُنفَّذ بطلبك وحده — ويبقى أثرُه مكتوبا.
+              خصم على فاتورته، أو تعديل على خطّته. لا ينفّذ بطلبك وحده — ويبقى أثره مكتوبا.
             </p>
             <RequestsPanel key={detail.id} caseId={detail.id} />
           </Card>
@@ -243,7 +243,7 @@ export default function AdvisorCases() {
             <h2 className="mb-3 flex items-center gap-2 text-sm font-black text-teal-light-ink"><PhoneCall className="h-4 w-4" /> سجل التواصل</h2>
             <ContactForm onSubmit={(channel, summary) => void act(
               () => apiPost(`/api/advisor/cases/${detail.id}/contact`, { channel, summary }),
-              "سُجل التواصل"
+              "سجل التواصل"
             )} />
             <ul className="mt-3 max-h-48 space-y-2 overflow-auto">
               {detail.contactEvents.map((c) => (
@@ -262,7 +262,7 @@ export default function AdvisorCases() {
             <h2 className="mb-3 flex items-center gap-2 text-sm font-black text-teal-light-ink"><CalendarClock className="h-4 w-4" /> المتابعات</h2>
             <FollowUpForm onSubmit={(scheduledAt, channel, note) => void act(
               () => apiPost(`/api/advisor/cases/${detail.id}/follow-ups`, { scheduledAt, channel, ...(note ? { note } : {}) }),
-              "جُدولت المتابعة"
+              "جدولت المتابعة"
             )} />
             <ul className="mt-3 max-h-48 space-y-2 overflow-auto">
               {detail.followUps.map((f) => (
@@ -270,7 +270,7 @@ export default function AdvisorCases() {
                   <span className="leading-5 text-foreground">
                     {CHANNEL_LABELS[f.channel] ?? f.channel} — {fmt(f.scheduledAt)}
                     {f.note ? ` — ${f.note}` : ""}
-                    {f.doneAt && <span className="block text-fine text-[#34A853]">أُنجزت: {f.outcome}</span>}
+                    {f.doneAt && <span className="block text-fine text-[#34A853]">أنجزت: {f.outcome}</span>}
                   </span>
                   {!f.doneAt && (
                     <Button tone="secondary" onClick={() => setClosingFollowUp({ id: f.id, whenAr: fmt(f.scheduledAt) })} className="p-1.5 hover:border-[#34A853]/50 hover:text-[#34A853]" title="إنجاز المتابعة">
@@ -288,7 +288,7 @@ export default function AdvisorCases() {
             <h2 className="mb-3 flex items-center gap-2 text-sm font-black text-teal-light-ink"><ClipboardList className="h-4 w-4" /> المهام</h2>
             <TaskForm onSubmit={(title, dueAt) => void act(
               () => apiPost(`/api/advisor/cases/${detail.id}/tasks`, { title, ...(dueAt ? { dueAt } : {}) }),
-              "أُضيفت المهمة"
+              "أضيفت المهمة"
             )} />
             <ul className="mt-3 max-h-48 space-y-2 overflow-auto">
               {detail.tasks.map((t) => (
@@ -298,7 +298,7 @@ export default function AdvisorCases() {
                     {t.dueAt && <span className="block text-fine text-muted-foreground">تستحق: {fmt(t.dueAt)}</span>}
                   </span>
                   {t.status !== "done" && (
-                    <Button tone="secondary" onClick={() => void act(() => apiPost(`/api/advisor/tasks/${t.id}/complete`, {}), "أُنجزت المهمة")} className="p-1.5 hover:border-[#34A853]/50 hover:text-[#34A853]" title="إنجاز المهمة">
+                    <Button tone="secondary" onClick={() => void act(() => apiPost(`/api/advisor/tasks/${t.id}/complete`, {}), "أنجزت المهمة")} className="p-1.5 hover:border-[#34A853]/50 hover:text-[#34A853]" title="إنجاز المهمة">
                       <CheckCircle2 className="h-3.5 w-3.5" />
                     </Button>
                   )}
@@ -311,7 +311,7 @@ export default function AdvisorCases() {
           {/* الملاحظات الداخلية */}
           <Card as="section">
             <h2 className="mb-3 flex items-center gap-2 text-sm font-black text-teal-light-ink"><StickyNote className="h-4 w-4" /> ملاحظات داخلية — لا يراها العميل</h2>
-            <NoteForm onSubmit={(body) => void act(() => apiPost(`/api/advisor/cases/${detail.id}/notes`, { body }), "حُفظت الملاحظة")} />
+            <NoteForm onSubmit={(body) => void act(() => apiPost(`/api/advisor/cases/${detail.id}/notes`, { body }), "حفظت الملاحظة")} />
             <ul className="mt-3 max-h-48 space-y-2 overflow-auto">
               {detail.notes.map((n) => (
                 <li key={n.id} className="rounded-xl bg-white/[0.04] p-2.5 text-read leading-5 text-foreground">
@@ -351,7 +351,7 @@ export default function AdvisorCases() {
           </button>
         ))}
         <Button onClick={() => setNewOpen((v) => !v)} icon={Plus} className="me-auto text-teal-light-ink">
-          {newOpen ? "أغلق" : "أدخِل عميلا"}
+          {newOpen ? "أغلق" : "أدخل عميلا"}
         </Button>
       </div>
 
@@ -379,12 +379,12 @@ export default function AdvisorCases() {
               });
               setNewForm({ fullName: "", email: "", phone: "", note: "" });
               setNewOpen(false);
-            }, "فُتحت الحالة وأُسندت إليك");
+            }, "فتحت الحالة وأسندت إليك");
           }}
         >
           <p className="text-read leading-6 text-muted-foreground">
-            بريدٌ أو هاتفٌ على الأقلّ — <b className="text-foreground">حالةٌ بلا سبيلٍ إلى صاحبها لا تُفتح</b>.
-            ولا تشخيصَ يُنسب إليه قبل أن يُقاس.
+            بريد أو هاتف على الأقلّ — <b className="text-foreground">حالة بلا سبيل إلى صاحبها لا تفتح</b>.
+            ولا تشخيص ينسب إليه قبل أن يقاس.
           </p>
           <div className="mt-3 grid gap-3 sm:grid-cols-3">
             <label className="block">
@@ -404,7 +404,7 @@ export default function AdvisorCases() {
             </label>
           </div>
           <label className="mt-3 block">
-            <span className={LBL}>ملاحظةُ أوّلِ لقاء (اختياريّة) — تُحفظ ملاحظةً داخليّة</span>
+            <span className={LBL}>ملاحظة أوّل لقاء (اختياريّة) — تحفظ ملاحظة داخليّة</span>
             <textarea rows={2} maxLength={2000} className={INPUT}
               value={newForm.note} onChange={(e) => setNewForm((f) => ({ ...f, note: e.target.value }))} />
           </label>
@@ -422,7 +422,7 @@ export default function AdvisorCases() {
         <Panel className="grid place-items-center py-16 text-center">
           <ClipboardList className="h-12 w-12 text-muted-foreground/50" />
           <h2 className="mt-4 text-xl font-black">لا حالات مسندة هنا</h2>
-          <p className="mt-2 max-w-md text-sm leading-7 text-muted-foreground">حين تُسنَد إليك حالةٌ من لوحة الإدارة تظهر هنا فورا — ويصلك جرسُها. أو <b className="text-foreground">أدخِل عميلا قابلتَه</b> بنفسك من الزرّ أعلاه.</p>
+          <p className="mt-2 max-w-md text-sm leading-7 text-muted-foreground">حين تسند إليك حالة من لوحة الإدارة تظهر هنا فورا — ويصلك جرسها. أو <b className="text-foreground">أدخل عميلا قابلته</b> بنفسك من الزرّ أعلاه.</p>
         </Panel>
       ) : flat ? (
         /* تصفيةٌ صريحةٌ أو بحث: قائمةٌ مسطّحة أنفعُ من قِمعٍ بعمودٍ واحد */
@@ -431,7 +431,7 @@ export default function AdvisorCases() {
             placeholder="ابحث باسم العميل أو بريده أو الإجراء التالي…" />
           {view.total === 0 && (
             <Panel as="p" className="py-12 text-center text-sm text-muted-foreground">
-              لا حالةَ تطابق «{q.trim()}» — امسح الكلمة أو جرّب غيرها.
+              لا حالة تطابق «{q.trim()}» — امسح الكلمة أو جرّب غيرها.
             </Panel>
           )}
           {view.rows.map((c) => (
@@ -478,17 +478,17 @@ export default function AdvisorCases() {
       {closingFollowUp && (
         <ConfirmAction
           tone="default"
-          titleAr={`إنجازُ متابعةِ ${closingFollowUp.whenAr}`}
+          titleAr={`إنجاز متابعة ${closingFollowUp.whenAr}`}
           confirmLabelAr="سجّل الإنجاز"
-          reason={{ labelAr: "ماذا كانت النتيجة؟ — تُقرأ في سجلّ الحالة", minLength: 2 }}
+          reason={{ labelAr: "ماذا كانت النتيجة؟ — تقرأ في سجلّ الحالة", minLength: 2 }}
           onCancel={() => setClosingFollowUp(null)}
           onConfirm={(outcome) => {
             const target = closingFollowUp;
             setClosingFollowUp(null);
-            void act(() => apiPost(`/api/advisor/follow-ups/${target.id}/complete`, { outcome }), "أُنجزت المتابعة");
+            void act(() => apiPost(`/api/advisor/follow-ups/${target.id}/complete`, { outcome }), "أنجزت المتابعة");
           }}
         >
-          <p>تُغلَق المتابعةُ وتبقى نتيجتُها في سجلّ الحالة — يقرؤها من يتابع بعدك.</p>
+          <p>تغلق المتابعة وتبقى نتيجتها في سجلّ الحالة — يقرؤها من يتابع بعدك.</p>
         </ConfirmAction>
       )}
     </AdvisorLayout>

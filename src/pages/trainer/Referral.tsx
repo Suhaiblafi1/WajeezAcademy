@@ -68,14 +68,14 @@ type CodeMode = "percent" | "amount";
 const EMPTY_CODE_FORM = { mode: "percent" as CodeMode, percentOff: "", amountOff: "", labelAr: "", maxUses: "", expiresAt: "" };
 /** دورةٌ بمئةٍ للمثال — حين لا دورةَ مفتوحةً له بعدُ يُقرأ جدولُها */
 const EXAMPLE_PRICE = 100;
-const PURCHASE_FORMS = { one: "شراءٍ مدفوع", two: "شراءين مدفوعين", few: "مشترياتٍ مدفوعة", many: "شراءً مدفوعا" } as const;
+const PURCHASE_FORMS = { one: "شراء مدفوع", two: "شراءين مدفوعين", few: "مشتريات مدفوعة", many: "شراء مدفوعا" } as const;
 const USE_FORMS = { one: "استعمال", two: "استعمالين", few: "استعمالات", many: "استعمالا" } as const;
 /** رابطُ شعبةٍ بعينها — يُنشَر وحدَه لمن يدعو إلى دفعةٍ لا إلى كلّ ما يدرّب */
 interface CohortLink {
   cohortId: string; title: string; termTitleAr: string | null; status: string
   registrationOpen: boolean; learners: number; code: string; url: string
 }
-const REGISTERED_FORMS = { one: "متعلّمٌ واحد", two: "متعلّمان", few: "متعلّمين", many: "متعلّما" } as const;
+const REGISTERED_FORMS = { one: "متعلّم واحد", two: "متعلّمان", few: "متعلّمين", many: "متعلّما" } as const;
 
 
 /* ═══ أكوادُ خصمي — نسبةٌ على دوراتي، من مستحقّاتي ═══
@@ -105,7 +105,7 @@ function MyCodes() {
   const load = useCallback(() => {
     apiGet<CodesState>("/api/trainer/me/codes")
       .then((d) => { setState(d); setErr(""); })
-      .catch((e) => setErr(permissionMessage(e, "تعذّر تحميلُ أكوادك")));
+      .catch((e) => setErr(permissionMessage(e, "تعذّر تحميل أكوادك")));
   }, []);
   useEffect(() => { load(); }, [load]);
 
@@ -145,7 +145,7 @@ function MyCodes() {
       labelAr: input.labelAr.trim(),
       ...(input.maxUses != null ? { maxUses: input.maxUses } : {}),
       ...(input.expiresAt ? { expiresAt: input.expiresAt.toISOString() } : {}),
-    }), "تعذّر إصدارُ الكود");
+    }), "تعذّر إصدار الكود");
     if (ok) { setForm(EMPTY_CODE_FORM); setOpen(false); }
   };
 
@@ -159,17 +159,17 @@ function MyCodes() {
   return (
     <Panel as="section" className="mb-6">
       <p className="flex items-center gap-2 text-sm font-black">
-        <TicketPercent className="h-4 w-4 text-gold-ink" aria-hidden="true" /> أكوادُ خصمٍ أصدرها بنفسي
+        <TicketPercent className="h-4 w-4 text-gold-ink" aria-hidden="true" /> أكواد خصم أصدرها بنفسي
       </p>
 
       <p className="mt-2 text-read leading-7 text-muted-foreground">
-        كودُ خصمٍ <b className="text-foreground">بنسبةٍ أو بمبلغٍ تحدّده</b> تنشره لمن تشاء. يقع على
-        <b className="text-foreground"> دوراتك وحدَها</b> بعد خصوم الأكاديميّة، مرّةً لكلّ متعلّم، ولا يتجاوز
-        <b className="text-foreground"> {MAX_TRAINER_CODE_PERCENT}٪ من سعر الدورة</b>. وترى قيمتَه بالدولار قبل إصداره.
+        كود خصم <b className="text-foreground">بنسبة أو بمبلغ تحدّده</b> تنشره لمن تشاء. يقع على
+        <b className="text-foreground"> دوراتك وحدها</b> بعد خصوم الأكاديميّة، مرّة لكلّ متعلّم، ولا يتجاوز
+        <b className="text-foreground"> {MAX_TRAINER_CODE_PERCENT}٪ من سعر الدورة</b>. وترى قيمته بالدولار قبل إصداره.
       </p>
       <p className="mt-2 text-read leading-7 text-muted-foreground">
-        ما يمنحه فعلا في كلّ شراءٍ مدفوع يُحسم <b className="text-foreground">من مستحقّاتك</b> في أوّل كشفٍ لك، وينقص
-        الحسمُ بقدر ما رُدّ من ثمن (البند 4-10). وخصومُ الأكاديميّة لا تُنقص أتعابَك (البند 4-9).
+        ما يمنحه فعلا في كلّ شراء مدفوع يحسم <b className="text-foreground">من مستحقّاتك</b> في أوّل كشف لك، وينقص
+        الحسم بقدر ما ردّ من ثمن (البند 4-10). وخصوم الأكاديميّة لا تنقص أتعابك (البند 4-9).
       </p>
 
       {/* ═══ ورصيدُه — يُسقَف بما له عندنا (٢٨ سبتمبر ٢٠٢٦) ═══
@@ -179,9 +179,9 @@ function MyCodes() {
           يزيده بأجر مقعده؛ فهو أدنى ما يسعه كودُه لا أقصاه. */}
       {terms.accepted && (
         <Inset as="p" className="mt-3 px-4 py-3 text-read leading-7 text-muted-foreground">
-          رصيدُ أكوادك الآن: <b dir="ltr" className="font-mono text-foreground">{budget.remaining} {budget.currency}</b> —
-          كشوفُك غيرُ المصروفة وما يُتوقَّع من شعبك المفتوحة، ناقصا ما منحته أكوادُك ولم يُحسم.
-          يقع الكودُ ما وسع هذا الرصيدُ (مع أجر مقعد الشراء نفسِه) خصمَه؛ وإلّا أكمل المشتري بدونه ولا يُحسم منك شيء.
+          رصيد أكوادك الآن: <b dir="ltr" className="font-mono text-foreground">{budget.remaining} {budget.currency}</b> —
+          كشوفك غير المصروفة وما يتوقّع من شعبك المفتوحة، ناقصا ما منحته أكوادك ولم يحسم.
+          يقع الكود ما وسع هذا الرصيد (مع أجر مقعد الشراء نفسه) خصمه؛ وإلّا أكمل المشتري بدونه ولا يحسم منك شيء.
         </Inset>
       )}
 
@@ -193,41 +193,41 @@ function MyCodes() {
           يُطبع في المتن. فلا يقرأ هنا غيرَ ما يُحسم به منه. */}
       {!terms.accepted ? (
         <Inset className="mt-4 px-4 py-4">
-          <p className="text-read font-black text-foreground">البندُ 4-10 بصيغته الجديدة — اقبله مرّةً واحدة</p>
+          <p className="text-read font-black text-foreground">البند 4-10 بصيغته الجديدة — اقبله مرّة واحدة</p>
           {/* ═══ ولا يُفترض ما وقّع عليه (١ أكتوبر ٢٠٢٦) ═══
               كانت الجملةُ «وقّعتَ عقدك على خصمٍ بمبلغٍ معلوم» — صادقةً حين كان
               السائلُ من وقّع قبل الجيل الثالث عشر. وصار يُسأل كذلك من قبل
               الصيغةَ الأولى للكود، وتلك ليست ما وقّع عليه. فتُقال الصيغةُ الجديدةُ
               بما صار فيها، لا بما ظُنّ أنّه كان عنده. */}
           <p className="mt-1 text-read leading-7 text-muted-foreground">
-            تغيّرت صيغةُ البند: <b className="text-foreground">صار الكودُ نسبةً أو مبلغا</b>، ولا يتجاوز
-            {" "}{MAX_TRAINER_CODE_PERCENT}٪ من سعر الدورة. لا يُصدَر كودٌ قبل قبولها. نصُّها كما في العقد:
+            تغيّرت صيغة البند: <b className="text-foreground">صار الكود نسبة أو مبلغا</b>، ولا يتجاوز
+            {" "}{MAX_TRAINER_CODE_PERCENT}٪ من سعر الدورة. لا يصدر كود قبل قبولها. نصّها كما في العقد:
           </p>
           <blockquote className="mt-3 border-s-2 border-gold/50 ps-3 text-read leading-7 text-foreground">{terms.clauseAr}</blockquote>
           <label className="mt-3 flex cursor-pointer items-start gap-2 text-read leading-6 text-foreground">
             <input type="checkbox" checked={agree} disabled={busy} onChange={(e) => setAgree(e.target.checked)} className="mt-1" />
-            قرأتُ البندَ 4-10 بصيغته هذه، وأقبل أن يُحسم من مستحقّاتي ما تمنحه أكوادي على هذا النحو.
+            قرأت البند 4-10 بصيغته هذه، وأقبل أن يحسم من مستحقّاتي ما تمنحه أكوادي على هذا النحو.
           </label>
           <Button tone="confirm" size="sm" className="mt-3" loading={busy} disabled={!agree}
-            onClick={() => void act(() => apiPost("/api/trainer/me/codes/terms/accept"), "تعذّر حفظُ قبولك")}>
-            أقبل البندَ بصيغته الجديدة
+            onClick={() => void act(() => apiPost("/api/trainer/me/codes/terms/accept"), "تعذّر حفظ قبولك")}>
+            أقبل البند بصيغته الجديدة
           </Button>
         </Inset>
       ) : !open ? (
-        <Button tone="secondary" size="sm" className="mt-3" onClick={() => setOpen(true)}>أصدِرْ كودا</Button>
+        <Button tone="secondary" size="sm" className="mt-3" onClick={() => setOpen(true)}>أصدر كودا</Button>
       ) : (
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           {/* ═══ نسبةٌ أو مبلغ (١ أكتوبر ٢٠٢٦) ═══
               قرارُ صاحب المنصّة: «يحقّ للمدرّب أن يختار إمّا نسبةً أو رقما».
               والمبلغُ رقمٌ يقابله المدرّبُ برقم أتعابه، والنسبةُ تتبدّل بسعر كلّ دورة. */}
-          <div className="flex flex-wrap gap-2 sm:col-span-2" role="group" aria-label="وجهُ الكود">
+          <div className="flex flex-wrap gap-2 sm:col-span-2" role="group" aria-label="وجه الكود">
             <Button tone={byPercent ? "secondary" : "ghost"} size="sm" disabled={busy} aria-pressed={byPercent}
               onClick={() => setForm({ ...form, mode: "percent" })}>بنسبة</Button>
             <Button tone={byPercent ? "ghost" : "secondary"} size="sm" disabled={busy} aria-pressed={!byPercent}
               onClick={() => setForm({ ...form, mode: "amount" })}>بمبلغ</Button>
           </div>
           {byPercent ? (
-            <StaffField label="النسبة" hint={`عددٌ صحيحٌ بين ${MIN_TRAINER_CODE_PERCENT} و${MAX_TRAINER_CODE_PERCENT}.`}>
+            <StaffField label="النسبة" hint={`عدد صحيح بين ${MIN_TRAINER_CODE_PERCENT} و${MAX_TRAINER_CODE_PERCENT}.`}>
               <input
                 type="number" inputMode="numeric" dir="ltr" min={MIN_TRAINER_CODE_PERCENT} max={MAX_TRAINER_CODE_PERCENT} step="1"
                 value={form.percentOff} disabled={busy}
@@ -237,7 +237,7 @@ function MyCodes() {
             </StaffField>
           ) : (
             <StaffField label="المبلغ بالدولار"
-              hint={`حتّى ${MAX_TRAINER_CODE_AMOUNT} — وما يُمنح فعلا لا يتجاوز ${MAX_TRAINER_CODE_PERCENT}٪ من سعر الدورة.`}>
+              hint={`حتّى ${MAX_TRAINER_CODE_AMOUNT} — وما يمنح فعلا لا يتجاوز ${MAX_TRAINER_CODE_PERCENT}٪ من سعر الدورة.`}>
               <input
                 type="number" inputMode="decimal" dir="ltr" min={1} max={MAX_TRAINER_CODE_AMOUNT} step="0.01"
                 value={form.amountOff} disabled={busy}
@@ -246,14 +246,14 @@ function MyCodes() {
               />
             </StaffField>
           )}
-          <StaffField label="لمن أو أين تنشره؟" hint="اسمٌ تعرفه به، يُطبع في كشفك.">
+          <StaffField label="لمن أو أين تنشره؟" hint="اسم تعرفه به، يطبع في كشفك.">
             <input
               value={form.labelAr} disabled={busy} maxLength={100}
               onChange={(e) => setForm({ ...form, labelAr: e.target.value })}
               className={staffControlCls}
             />
           </StaffField>
-          <StaffField label="أقصى عددٍ من الاستعمالات (اختياري)" hint="فارغٌ = بلا حدّ.">
+          <StaffField label="أقصى عدد من الاستعمالات (اختياري)" hint="فارغ = بلا حدّ.">
             <input
               type="number" inputMode="numeric" dir="ltr" min={1} step="1"
               value={form.maxUses} disabled={busy}
@@ -277,31 +277,31 @@ function MyCodes() {
               تحسب بها السلّةُ نفسُها، على شراء الدورة وحدَها بلا خصمٍ آخر. */}
           {rows.length > 0 && (
             <Inset className="px-4 py-3 text-read leading-6 text-muted-foreground sm:col-span-2">
-              <p className="font-bold text-foreground">ما يمنحه كودُك على كلّ دورة — إن اشتُريت وحدَها</p>
+              <p className="font-bold text-foreground">ما يمنحه كودك على كلّ دورة — إن اشتريت وحدها</p>
               <ul className="mt-2 space-y-2">
                 {rows.map((r) => (
                   <li key={r.cohortId}>
                     <span className="text-foreground">{r.titleAr}</span> — بسعر{" "}
                     <span dir="ltr" className="font-mono">{r.price} {r.currency}</span>: يدفع المتعلّم{" "}
-                    <span dir="ltr" className="font-mono text-foreground">{r.pays} {r.currency}</span>، ويُحسم منك{" "}
+                    <span dir="ltr" className="font-mono text-foreground">{r.pays} {r.currency}</span>، ويحسم منك{" "}
                     <b dir="ltr" className="font-mono text-gold-ink">{r.value} {r.currency}</b>
-                    {r.capped && <> — سقفُه {MAX_TRAINER_CODE_PERCENT}٪ من سعرها</>}
+                    {r.capped && <> — سقفه {MAX_TRAINER_CODE_PERCENT}٪ من سعرها</>}
                     {r.exceedsSeatFee && r.seatFee !== null && (
                       <p className="mt-1 font-bold text-danger-ink">
-                        انتبه: هذا أكثرُ من أجر المقعد العامّ هنا (<span dir="ltr" className="font-mono">{r.seatFee} {r.currency}</span>)
-                        — من استعمله ولم يأتِ من رابطك يُنقص كشفَك بالفرق.
+                        انتبه: هذا أكثر من أجر المقعد العامّ هنا (<span dir="ltr" className="font-mono">{r.seatFee} {r.currency}</span>)
+                        — من استعمله ولم يأت من رابطك ينقص كشفك بالفرق.
                       </p>
                     )}
                   </li>
                 ))}
               </ul>
-              <p className="mt-2">ومع خصم باقةٍ من الأكاديميّة يقع الكودُ على ما بقي، فيقلّ ما يُحسم منك.</p>
+              <p className="mt-2">ومع خصم باقة من الأكاديميّة يقع الكود على ما بقي، فيقلّ ما يحسم منك.</p>
             </Inset>
           )}
           {rows.length === 0 && example !== null && example.value > 0 && (
             <Inset as="p" className="px-4 py-3 text-read leading-6 text-muted-foreground sm:col-span-2">
-              مثال: دورةٌ بمئة، بلا خصمٍ آخر — يدفع المتعلّم <b className="text-foreground">{example.pays}</b>،
-              ويُحسم منك <b className="text-gold-ink">{example.value}</b>. وجدولُ دوراتك يظهر حين تُفتح لك شعبة.
+              مثال: دورة بمئة، بلا خصم آخر — يدفع المتعلّم <b className="text-foreground">{example.pays}</b>،
+              ويحسم منك <b className="text-gold-ink">{example.value}</b>. وجدول دوراتك يظهر حين تفتح لك شعبة.
             </Inset>
           )}
           {blocker && (
@@ -309,10 +309,10 @@ function MyCodes() {
           )}
           <div className="flex flex-wrap gap-2 sm:col-span-2">
             <Button tone="confirm" size="sm" loading={busy} disabled={!ready} onClick={() => void create()}>
-              أصدِرْ ويُحسم منّي
+              أصدر ويحسم منّي
             </Button>
             <Button tone="ghost" size="sm" disabled={busy} onClick={() => { setOpen(false); setForm(EMPTY_CODE_FORM); }}>
-              تراجعْ
+              تراجع
             </Button>
           </div>
         </div>
@@ -332,35 +332,35 @@ function MyCodes() {
                 </div>
                 <div className="mt-2 flex flex-wrap items-center gap-2">
                   <input
-                    readOnly dir="ltr" value={c.code} aria-label={`كودُ ${c.labelAr}`}
+                    readOnly dir="ltr" value={c.code} aria-label={`كود ${c.labelAr}`}
                     onFocus={(e) => e.currentTarget.select()}
                     className={`${staffControlCls} min-w-0 flex-1 text-left font-mono`}
                   />
                   <Button tone="secondary" size="sm" onClick={() => copy(c.code)}>
-                    {copied === c.code ? "نُسخ" : "انسخ الكود"}
+                    {copied === c.code ? "نسخ" : "انسخ الكود"}
                   </Button>
                   {c.status === "live" && (
                     <Button tone="ghost" size="sm" disabled={busy}
-                      onClick={() => void act(() => apiPost(`/api/trainer/me/codes/${c.id}/pause`), "تعذّر إيقافُ الكود")}>أوقِفْه</Button>
+                      onClick={() => void act(() => apiPost(`/api/trainer/me/codes/${c.id}/pause`), "تعذّر إيقاف الكود")}>أوقفه</Button>
                   )}
                   {c.status === "paused" && (
                     <Button tone="secondary" size="sm" disabled={busy}
-                      onClick={() => void act(() => apiPost(`/api/trainer/me/codes/${c.id}/resume`), "تعذّر استئنافُ الكود")}>استأنِفْه</Button>
+                      onClick={() => void act(() => apiPost(`/api/trainer/me/codes/${c.id}/resume`), "تعذّر استئناف الكود")}>استأنفه</Button>
                   )}
                   {c.status !== "revoked" && (
                     <Button tone="danger" size="sm" disabled={busy}
-                      onClick={() => void act(() => apiPost(`/api/trainer/me/codes/${c.id}/revoke`), "تعذّر إلغاءُ الكود")}>ألغِه</Button>
+                      onClick={() => void act(() => apiPost(`/api/trainer/me/codes/${c.id}/revoke`), "تعذّر إلغاء الكود")}>ألغه</Button>
                   )}
                 </div>
                 <p className="mt-2 text-read leading-6 text-muted-foreground">
                   {c.uses.paid === 0
-                    ? "لم يُستعمل في شراءٍ مدفوعٍ بعد"
-                    : <>استُعمل في {countAr(c.uses.paid, PURCHASE_FORMS)}</>}
-                  {c.maxUses != null && <> · حدُّه {countAr(c.maxUses, USE_FORMS)}</>}
+                    ? "لم يستعمل في شراء مدفوع بعد"
+                    : <>استعمل في {countAr(c.uses.paid, PURCHASE_FORMS)}</>}
+                  {c.maxUses != null && <> · حدّه {countAr(c.maxUses, USE_FORMS)}</>}
                   {c.expiresAt && <> · ينتهي {fmtDateAr(c.expiresAt)}</>}
-                  {deducted > 0 && <> · حُسم منك <span dir="ltr" className="font-mono">{deducted} {c.currency}</span></>}
-                  {c.pending > 0 && <> · ينتظر الحسمَ <span dir="ltr" className="font-mono">{c.pending} {c.currency}</span></>}
-                  {c.pending < 0 && <> · يُعاد إليك <span dir="ltr" className="font-mono">{-c.pending} {c.currency}</span></>}
+                  {deducted > 0 && <> · حسم منك <span dir="ltr" className="font-mono">{deducted} {c.currency}</span></>}
+                  {c.pending > 0 && <> · ينتظر الحسم <span dir="ltr" className="font-mono">{c.pending} {c.currency}</span></>}
+                  {c.pending < 0 && <> · يعاد إليك <span dir="ltr" className="font-mono">{-c.pending} {c.currency}</span></>}
                 </p>
               </Inset>
             );
@@ -386,7 +386,7 @@ function LegacyDiscounts() {
   const load = useCallback(() => {
     apiGet<DiscountsState>("/api/trainer/me/discounts")
       .then((d) => { setDiscounts(d.discounts); setErr(""); })
-      .catch((e) => setErr(permissionMessage(e, "تعذّر تحميلُ خصومك القديمة")));
+      .catch((e) => setErr(permissionMessage(e, "تعذّر تحميل خصومك القديمة")));
   }, []);
   useEffect(() => { load(); }, [load]);
 
@@ -398,7 +398,7 @@ function LegacyDiscounts() {
       await apiPost(`/api/trainer/me/discounts/${id}/revoke`);
       load();
     } catch (e) {
-      setErr(e instanceof ApiError ? e.message : "تعذّر إلغاءُ الخصم");
+      setErr(e instanceof ApiError ? e.message : "تعذّر إلغاء الخصم");
     } finally { setBusy(false); }
   };
 
@@ -411,9 +411,9 @@ function LegacyDiscounts() {
 
   return (
     <Panel as="section" className="mb-6">
-      <p className="text-sm font-black">خصومٌ أصدرتَها بالمبلغ قبل الأكواد</p>
+      <p className="text-sm font-black">خصوم أصدرتها بالمبلغ قبل الأكواد</p>
       <p className="mt-2 text-read leading-7 text-muted-foreground">
-        تبقى على شروطها حتّى تُستعمل أو تنتهي أو تُلغيها، ولا يُصدَر جديدٌ منها.
+        تبقى على شروطها حتّى تستعمل أو تنتهي أو تلغيها، ولا يصدر جديد منها.
       </p>
       {err && <Inset as="p" tone="danger" className="mt-3 px-4 py-3 text-read leading-6 text-red-200">{err}</Inset>}
       <ul className="mt-4 space-y-3">
@@ -428,22 +428,22 @@ function LegacyDiscounts() {
             {d.noteAr && <p className="mt-1 text-read leading-6 text-muted-foreground">{d.noteAr}</p>}
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <input
-                readOnly dir="ltr" value={d.code} aria-label={`رمزُ خصمِ ${d.forWhomAr}`}
+                readOnly dir="ltr" value={d.code} aria-label={`رمز خصم ${d.forWhomAr}`}
                 onFocus={(e) => e.currentTarget.select()}
                 className={`${staffControlCls} min-w-0 flex-1 text-left font-mono`}
               />
               <Button tone="secondary" size="sm" onClick={() => copy(d.code)}>
-                {copied === d.code ? "نُسخ" : "انسخ الرمز"}
+                {copied === d.code ? "نسخ" : "انسخ الرمز"}
               </Button>
               {d.status === "live" && (
-                <Button tone="danger" size="sm" disabled={busy} onClick={() => void revoke(d.id)}>ألغِه</Button>
+                <Button tone="danger" size="sm" disabled={busy} onClick={() => void revoke(d.id)}>ألغه</Button>
               )}
             </div>
             {/* والتواريخُ تُقال حين تقع: «استُعمل» بلا متى خبرٌ ناقص */}
             {(d.usedAt || d.settledAt) && (
               <p className="mt-2 text-read leading-6 text-muted-foreground">
-                {d.usedAt && <>استُعمل {fmtDateAr(d.usedAt)}</>}
-                {d.settledAt && <> · حُسم من كشفك {fmtDateAr(d.settledAt)}</>}
+                {d.usedAt && <>استعمل {fmtDateAr(d.usedAt)}</>}
+                {d.settledAt && <> · حسم من كشفك {fmtDateAr(d.settledAt)}</>}
               </p>
             )}
           </Inset>
@@ -487,7 +487,7 @@ export default function Referral() {
       <Panel as="section" className="mb-6">
         <h2 className="text-lg font-black">ما الذي توصي به من يتابعك؟</h2>
         <p className="mt-2 text-read leading-7 text-muted-foreground">
-          رابطٌ لصفحتك بكلّ شعبك المفتوحة، ورابطٌ لكلّ شعبة. من سجّل من أيّهما تراه بعلامة «عبر رابطك»
+          رابط لصفحتك بكلّ شعبك المفتوحة، ورابط لكلّ شعبة. من سجّل من أيّهما تراه بعلامة «عبر رابطك»
           في طلبتك، وبأجر الإحالة في «مستحقاتي».
         </p>
       </Panel>
@@ -506,7 +506,7 @@ export default function Referral() {
           (ن-٨)، وذاك لا يتوقّف على عرضها هنا. */}
       {!referral && !error && (
         <div className="grid place-items-center py-16">
-          <Loader2 className="h-7 w-7 animate-spin text-muted-foreground/50" aria-label="جارٍ التحميل" />
+          <Loader2 className="h-7 w-7 animate-spin text-muted-foreground/50" aria-label="جار التحميل" />
         </div>
       )}
 
@@ -519,7 +519,7 @@ export default function Referral() {
               </p>
               <span className="flex items-center gap-1.5 text-read font-bold text-teal-light-ink">
                 <UserPlus className="h-4 w-4" aria-hidden="true" />
-                {referral.registered > 0 ? `سجّل عبره ${countAr(referral.registered, REGISTERED_FORMS)}` : "لم يسجّل أحدٌ عبره بعد"}
+                {referral.registered > 0 ? `سجّل عبره ${countAr(referral.registered, REGISTERED_FORMS)}` : "لم يسجّل أحد عبره بعد"}
               </span>
             </div>
             {/* الرابطُ يُعرض كما يُقرأ: `referral.service` لا يرمّز المسارَ،
@@ -531,15 +531,15 @@ export default function Referral() {
                 className={`${staffControlCls} min-w-0 flex-1 text-left`}
               />
               <Button tone="secondary" onClick={() => copy("wide", referral.url)}>
-                {copied === "wide" ? "نُسخ" : "انسخ الرابط"}
+                {copied === "wide" ? "نسخ" : "انسخ الرابط"}
               </Button>
-              <a href={referral.url} target="_blank" rel="noreferrer" className="text-read font-bold text-teal-light-ink hover:text-foreground">عايِنْها</a>
+              <a href={referral.url} target="_blank" rel="noreferrer" className="text-read font-bold text-teal-light-ink hover:text-foreground">عاينها</a>
             </div>
             {/* البوّابةُ تُقال لا تُخفى: من لم يُعتمد نشرُ ملفّه رابطُه لا يفتح
                 بعد — فيُقال له لمَ ومَن يرفعه، لا يُعطى رابطا يردّ ٤٠٤. */}
             {!referral.publicReady && (
               <Inset as="p" className="mt-3 px-4 py-3 text-read leading-6 text-muted-foreground">
-                صفحتُك لا تفتح للعامّة قبل اعتماد الإدارة نشرَ ملفّك. راجِعها، ثمّ يعمل الرابطُ نفسُه.
+                صفحتك لا تفتح للعامّة قبل اعتماد الإدارة نشر ملفّك. راجعها، ثمّ يعمل الرابط نفسه.
               </Inset>
             )}
           </Panel>
@@ -560,16 +560,16 @@ export default function Referral() {
           {cohortLinks !== null && (
             <Panel as="section" className="mb-6">
               <p className="flex items-center gap-2 text-sm font-black">
-                <Link2 className="h-4 w-4 text-teal-light-ink" aria-hidden="true" /> رابطٌ لكلّ شعبة
+                <Link2 className="h-4 w-4 text-teal-light-ink" aria-hidden="true" /> رابط لكلّ شعبة
               </p>
               {cohortLinks.length === 0 ? (
                 <p className="mt-2 text-read leading-7 text-muted-foreground">
-                  لا شعبةَ مفتوحةً لك الآن. يظهر رابطُها هنا حين تُفتح، ورابطُك العامُّ يبلغها تلقائيّا.
+                  لا شعبة مفتوحة لك الآن. يظهر رابطها هنا حين تفتح، ورابطك العامّ يبلغها تلقائيّا.
                 </p>
               ) : (
                 <>
                   <p className="mt-2 text-read leading-7 text-muted-foreground">
-                    كلُّ رابطٍ لشعبته وحدَها، ومن سجّل منه يُحسب لك بأجر الإحالة.
+                    كلّ رابط لشعبته وحدها، ومن سجّل منه يحسب لك بأجر الإحالة.
                   </p>
                   <ul className="mt-3 space-y-3">
                     {cohortLinks.map((c) => (
@@ -578,14 +578,14 @@ export default function Referral() {
                           <span className="text-read font-bold text-foreground">{c.title}</span>
                           <span className="text-read text-muted-foreground">
                             {c.termTitleAr ? `${c.termTitleAr} · ` : ""}
-                            {c.learners > 0 ? countAr(c.learners, REGISTERED_FORMS) : "لم يسجّل أحدٌ بعد"}
+                            {c.learners > 0 ? countAr(c.learners, REGISTERED_FORMS) : "لم يسجّل أحد بعد"}
                           </span>
                         </div>
                         {/* وحالةُ التسجيل تُقال: رابطٌ إلى شعبةٍ أُغلق تسجيلُها
                             يعمل ولا يُسجَّل منه أحد، فيُظنُّ الرابطُ عاطلا. */}
                         {!c.registrationOpen && (
                           <p className="mt-1 text-read leading-6 text-gold-ink">
-                            التسجيلُ مغلقٌ حتّى تفتحه الإدارة — الرابطُ يعمل.
+                            التسجيل مغلق حتّى تفتحه الإدارة — الرابط يعمل.
                           </p>
                         )}
                         <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -595,7 +595,7 @@ export default function Referral() {
                             className={`${staffControlCls} min-w-0 flex-1 text-left`}
                           />
                           <Button tone="secondary" size="sm" onClick={() => copy(c.cohortId, c.url)}>
-                            {copied === c.cohortId ? "نُسخ" : "انسخ الرابط"}
+                            {copied === c.cohortId ? "نسخ" : "انسخ الرابط"}
                           </Button>
                         </div>
                       </Inset>
@@ -614,10 +614,10 @@ export default function Referral() {
               منسوخٌ في صفحتين يفترق عن أصله يوما، ويُقرأ وعدا لا يُوفى. */}
           <Panel as="section">
             <h2 className="flex items-center gap-2 text-sm font-black">
-              <Wallet className="h-4 w-4 text-gold-ink" aria-hidden="true" /> ولمَ يعنيك أن يسجّلوا من رابطك
+              <Wallet className="h-4 w-4 text-gold-ink" aria-hidden="true" /> ولم يعنيك أن يسجّلوا من رابطك
             </h2>
             <p className="mt-2 text-read leading-7 text-muted-foreground">
-              أجرُك عمّن جاء عبر رابطك أعلى ممّن سجّل عامّا — ورقمُه لكلّ شعبةٍ في «مستحقاتي».
+              أجرك عمّن جاء عبر رابطك أعلى ممّن سجّل عامّا — ورقمه لكلّ شعبة في «مستحقاتي».
             </p>
             <Button as={Link} to="/trainer/earnings" tone="secondary" size="sm" className="mt-3">
               افتح مستحقاتي

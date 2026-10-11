@@ -177,38 +177,38 @@ function countAll() {
   return { files: files.length, counts, worst }
 }
 
-describe('سقفُ الصيغ المكتوبة بيدها', () => {
+describe('سقف الصيغ المكتوبة بيدها', () => {
   const { files, counts, worst } = countAll()
 
-  it('المسحُ يقرأ الشجرةَ فعلا — فلا يمرّ السقفُ بصفرٍ كاذب', () => {
+  it('المسح يقرأ الشجرة فعلا — فلا يمرّ السقف بصفر كاذب', () => {
     /* حارسُ الحارس: خطأٌ في المسار يجعل العددَ صفرا فيمرّ كلُّ شيء */
-    expect(files, 'لم يُقرأ أيُّ ملفّ — تعطّل المسحُ نفسُه').toBeGreaterThan(100)
+    expect(files, 'لم يقرأ أيّ ملفّ — تعطّل المسح نفسه').toBeGreaterThan(100)
   })
 
   it.each(Object.keys(CEILING) as (keyof typeof CEILING)[])(
-    '«%s» لا يتجاوز سقفَه',
+    '«%s» لا يتجاوز سقفه',
     (key) => {
       const top = Object.entries(worst).sort((a, b) => b[1] - a[1]).slice(0, 3)
         .map(([f, n]) => `${f} (${n})`).join(' · ')
       expect(
         counts[key],
-        `صيغٌ مكتوبةٌ بيدها زادت: ${counts[key]} > ${CEILING[key]}.\n`
+        `صيغ مكتوبة بيدها زادت: ${counts[key]} > ${CEILING[key]}.\n`
         + `استعمل Panel/Card/Inset من «@/components/ui/Surface» بدلها.\n`
-        + `وإن كان ترحيلا يُنقص العدد، اخفض السقفَ في هذا الملفّ.\n`
-        + `أكثرُ الملفّات: ${top}`,
+        + `وإن كان ترحيلا ينقص العدد، اخفض السقف في هذا الملفّ.\n`
+        + `أكثر الملفّات: ${top}`,
       ).toBeLessThanOrEqual(CEILING[key])
     },
   )
 
-  it('والسقفُ لا يُرفَع — يُخفَض مع كلّ ترحيل', () => {
+  it('والسقف لا يرفع — يخفض مع كلّ ترحيل', () => {
     /* لو نُقل ملفٌّ إلى السلّم ولم يُخفَض السقفُ، بقي فراغٌ يملؤه انحرافٌ
        جديدٌ بلا أن يحمرّ شيء. فيُشترط أن يبقى السقفُ ملتصقا بالواقع. */
     for (const key of Object.keys(CEILING) as (keyof typeof CEILING)[]) {
       const slack = CEILING[key] - counts[key]
       expect(
         slack,
-        `سقفُ «${key}» أعلى من الواقع بـ${slack}. اخفضه إلى ${counts[key]} — `
-        + 'وإلّا صار فراغا يملؤه انحرافٌ جديدٌ صامتا.',
+        `سقف «${key}» أعلى من الواقع بـ${slack}. اخفضه إلى ${counts[key]} — `
+        + 'وإلّا صار فراغا يملؤه انحراف جديد صامتا.',
       ).toBeLessThanOrEqual(0)
     }
   })

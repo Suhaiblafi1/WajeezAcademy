@@ -42,7 +42,7 @@ html[data-theme="light"] .guide-root {
 .guide-deep { background: rgb(var(--g-deep)); color: rgb(var(--g-on-deep)); border-radius: .5rem; }
 .guide-blush { background: rgb(var(--g-blush)); color: rgb(var(--g-dark-ink)); border-radius: .5rem; }
 
-/* مربّعُ الرقم وشارتُه — بلون القسم، والحبرُ عليه بما يُقرأ */
+/* مربّع الرقم وشارته — بلون القسم، والحبر عليه بما يقرأ */
 .guide-sq {
   flex: none; display: inline-grid; place-items: center; min-width: 2.25rem; height: 2.25rem; padding: 0 .35rem;
   font-weight: 800; font-size: .95rem; font-variant-numeric: tabular-nums; border-radius: .2rem;
@@ -50,11 +50,11 @@ html[data-theme="light"] .guide-root {
 .guide-sq-sm { min-width: 1.6rem; height: 1.6rem; font-size: .8rem; }
 .guide-pill { display: inline-flex; align-items: center; gap: .4rem; padding: .3rem .9rem; border-radius: .4rem;
   font-weight: 800; font-size: .88rem; white-space: nowrap; }
-/* والطويلةُ (عنوانُ خطوات) تلتفّ — بصنفٍ من هنا لا من Tailwind: \`whitespace-normal\`
-   يُكتب قبل هذه الورقة وبمثل وزنها، فيغلبه \`nowrap\` أعلاه. وهو ما كان يمدّ الدليلَ
+/* والطويلة (عنوان خطوات) تلتفّ — بصنف من هنا لا من Tailwind: \`whitespace-normal\`
+   يكتب قبل هذه الورقة وبمثل وزنها، فيغلبه \`nowrap\` أعلاه. وهو ما كان يمدّ الدليل
    على الهاتف إلى 470 بكسلا فينزاح جانبا (٥ أكتوبر ٢٠٢٦) */
 .guide-pill-wrap { white-space: normal; }
-/* «جديد» — رقاقةٌ مرجانيّةٌ صغيرةٌ بجانب اسم القسم (٥ أكتوبر ٢٠٢٦) */
+/* «جديد» — رقاقة مرجانيّة صغيرة بجانب اسم القسم (٥ أكتوبر ٢٠٢٦) */
 .guide-new { display: inline-block; padding: 0 .45rem; border-radius: .3rem; font-size: .72rem; font-weight: 800;
   line-height: 1.35rem; white-space: nowrap; vertical-align: middle; }
 [data-hue="amber"] { background: rgb(var(--g-amber)); color: rgb(var(--g-dark-ink)); }
@@ -62,19 +62,19 @@ html[data-theme="light"] .guide-root {
 [data-hue="sky"] { background: rgb(var(--g-sky)); color: rgb(var(--g-dark-ink)); }
 [data-hue="blush"] { background: rgb(var(--g-blush)); color: rgb(var(--g-dark-ink)); }
 
-/* المربّعاتُ الزخرفيّة — شكلان من المثال: «V» في أعلى اليسار، ودرجٌ في أسفل اليمين.
-   وجهتاهما مادّيّتان (left/right) لا منطقيّتان: الشبكةُ ltr لتثبت صورتُها،
-   فـ\`end\` فيها يمينٌ — وبه وقعت المربّعاتُ فوق العنوان أوّلَ مرّة. */
+/* المربّعات الزخرفيّة — شكلان من المثال: «V» في أعلى اليسار، ودرج في أسفل اليمين.
+   وجهتاهما مادّيّتان (left/right) لا منطقيّتان: الشبكة ltr لتثبت صورتها،
+   فـ\`end\` فيها يمين — وبه وقعت المربّعات فوق العنوان أوّل مرّة. */
 .guide-px { display: grid; grid-template-columns: repeat(3, var(--px)); grid-auto-rows: var(--px); pointer-events: none; }
 .guide-px > i { display: block; }
 
-/* رقاقةُ اسم الزرّ — كما في البوّابة */
+/* رقاقة اسم الزرّ — كما في البوّابة */
 .guide-ui {
   display: inline-block; padding: 0 .45em; margin: 0 .1em; border-radius: .4em;
   border: 1px solid rgb(var(--g-line)); background: rgb(var(--g-card));
   font-weight: 700; font-size: .92em; line-height: 1.7; white-space: nowrap;
 }
-/* دائرةُ المؤشّر الذهبيّة — على الصورة وفي شرحها وحدَهما */
+/* دائرة المؤشّر الذهبيّة — على الصورة وفي شرحها وحدهما */
 .guide-mark {
   flex: none; display: inline-grid; place-items: center; width: 1.35rem; height: 1.35rem;
   border-radius: 999px; background: rgb(var(--g-amber)); color: #162220;
@@ -85,13 +85,13 @@ html[data-theme="light"] .guide-root {
   width: .42rem; height: .42rem; border-radius: 999px; background: rgb(var(--g-coral)); }
 
 .guide-shot { display: block; width: 100%; cursor: zoom-in; border-radius: .5rem; overflow: hidden; }
-/* وسمُ الصورة شريطٌ فوقها لا لصيقةٌ عليها — كانت تغطّي الرقمَ «١» ونصَّ الشاشة */
+/* وسم الصورة شريط فوقها لا لصيقة عليها — كانت تغطّي الرقم «١» ونصّ الشاشة */
 .guide-shot-tag { display: flex; align-items: center; gap: .4rem; margin: 0 .25rem .45rem;
   font-size: .78rem; font-weight: 800; color: rgb(var(--g-ink) / .75); }
 .guide-shot-tag::before { content: ""; width: .5rem; height: .5rem; border-radius: 2px; background: rgb(var(--g-sky)); }
 .guide-shot:focus-visible { outline: 2px solid rgb(var(--g-sky)); outline-offset: 3px; }
 
-/* «انتبه» و«نصيحة»: بطاقةٌ بشريطٍ جانبيٍّ لونُه معناه */
+/* «انتبه» و«نصيحة»: بطاقة بشريط جانبيّ لونه معناه */
 .guide-callout { border-inline-end-width: 6px; }
 .guide-callout[data-tone="important"] { border-inline-end-color: rgb(var(--g-coral)); }
 .guide-callout[data-tone="tip"] { border-inline-end-color: rgb(var(--g-sky)); }
@@ -99,7 +99,7 @@ html[data-theme="light"] .guide-root {
 .guide-callout[data-tone="contract"] { border-inline-end-color: rgb(var(--g-ink)); }
 .guide-dot { flex: none; display: inline-grid; place-items: center; width: 1.75rem; height: 1.75rem; border-radius: 999px; }
 
-/* مربّعُ التعليم في القائمة — مربّعٌ كالمثال لا مربّعُ المتصفّح */
+/* مربّع التعليم في القائمة — مربّع كالمثال لا مربّع المتصفّح */
 .guide-check {
   appearance: none; flex: none; width: 1.6rem; height: 1.6rem; margin: .2rem 0 0; cursor: pointer;
   border: 2px solid rgb(var(--g-ink)); border-radius: .4rem; background: transparent;
@@ -116,11 +116,11 @@ dialog.guide-zoom::backdrop { background: rgb(10 18 18 / .78); }
 
 @media print {
   .guide-noprint { display: none !important; }
-  /* ورابطُ «تجاوز إلى المحتوى» في رأس التطبيق (\`App.tsx\`) — للوحة المفاتيح لا للورق.
-     وكان يُطبع في ذيل كلّ صفحةٍ من الدليل (٥ أكتوبر ٢٠٢٦) */
+  /* ورابط «تجاوز إلى المحتوى» في رأس التطبيق (\`App.tsx\`) — للوحة المفاتيح لا للورق.
+     وكان يطبع في ذيل كلّ صفحة من الدليل (٥ أكتوبر ٢٠٢٦) */
   .skip-link { display: none !important; }
-  /* وما تحت آخر المحتوى ورقٌ كريميٌّ كسائره — لا قماشُ المتصفّح الأبيض، وقد
-     أفرغه تسطيحُ \`index.css\` لكلّ خلفيّة (٥ أكتوبر ٢٠٢٦) */
+  /* وما تحت آخر المحتوى ورق كريميّ كسائره — لا قماش المتصفّح الأبيض، وقد
+     أفرغه تسطيح \`index.css\` لكلّ خلفيّة (٥ أكتوبر ٢٠٢٦) */
   html, body { background-color: #F4F2E7 !important; }
   body { zoom: 1 !important; }
   .guide-root, html[data-theme="light"] .guide-root {
@@ -129,24 +129,24 @@ dialog.guide-zoom::backdrop { background: rgb(10 18 18 / .78); }
     -webkit-print-color-adjust: exact; print-color-adjust: exact;
     background: rgb(var(--g-paper)) !important; color: #16211f !important;
   }
-  /* كلُّ قسمٍ يبدأ صفحتَه كالمثال — ولا يُمنع من الانقسام، فالقسمُ بصوره
-     أطولُ من ورقة، ومنعُه كان يدفعه كلَّه ويترك خلفه صفحةً بيضاء */
+  /* كلّ قسم يبدأ صفحته كالمثال — ولا يمنع من الانقسام، فالقسم بصوره
+     أطول من ورقة، ومنعه كان يدفعه كلّه ويترك خلفه صفحة بيضاء */
   .guide-page { break-before: page; }
   .guide-cover { min-height: 262mm; }
   .guide-end { min-height: 262mm; display: grid; place-items: center; }
   .guide-figure, .guide-callout { break-inside: avoid; }
   .guide-figure img { max-height: 225mm; width: auto; max-width: 100%; margin-inline: auto; }
-  /* الصورةُ داخلَ زرِّ التكبير، وفي \`index.css\` قاعدةٌ تُخفي كلَّ زرٍّ في الطباعة —
-     فخرج الدليلُ المطبوعُ نصّا بلا صورة واحدة (٣٠ سبتمبر ٢٠٢٦). والمحدِّدُ
-     أثقلُ من \`button:not([aria-expanded])\` ليغلبه أينما وقع. */
+  /* الصورة داخل زرّ التكبير، وفي \`index.css\` قاعدة تخفي كلّ زرّ في الطباعة —
+     فخرج الدليل المطبوع نصّا بلا صورة واحدة (٣٠ سبتمبر ٢٠٢٦). والمحدّد
+     أثقل من \`button:not([aria-expanded])\` ليغلبه أينما وقع. */
   .guide-figure button.guide-shot { display: block !important; }
-  /* ومربّعاتُ القائمة تُطبع فارغةً تُعلَّم بالقلم — والقاعدةُ نفسُها تُخفي كلَّ حقل */
+  /* ومربّعات القائمة تطبع فارغة تعلّم بالقلم — والقاعدة نفسها تخفي كلّ حقل */
   .guide-root input.guide-check { display: inline-grid !important; }
-  /* ═══ وألوانُ الدليل تُعاد بعد تسطيح الموقع ═══
-     \`index.css\` يُسطِّح في الطباعة كلَّ سطحٍ (\`* { background-color: transparent
-     !important; color: #111 !important }\`) — وهو صوابٌ لشاشات الإدارة الداكنة،
-     وخطأٌ هنا: الدليلُ المطبوعُ على مثال صاحب المنصّة ورقٌ ملوّن. فخرج الغلافُ
-     والمربّعاتُ والأشرطةُ بيضاءَ كلُّها. والقاعدةُ هناك بلا خصوصيّة، فأيُّ صنفٍ
+  /* ═══ وألوان الدليل تعاد بعد تسطيح الموقع ═══
+     \`index.css\` يسطّح في الطباعة كلّ سطح (\`* { background-color: transparent
+     !important; color: #111 !important }\`) — وهو صواب لشاشات الإدارة الداكنة،
+     وخطأ هنا: الدليل المطبوع على مثال صاحب المنصّة ورق ملوّن. فخرج الغلاف
+     والمربّعات والأشرطة بيضاء كلّها. والقاعدة هناك بلا خصوصيّة، فأيّ صنف
      هنا مع \`!important\` يغلبها. */
   .guide-root [data-hue="amber"] { background-color: rgb(var(--g-amber)) !important; }
   .guide-root [data-hue="coral"] { background-color: rgb(var(--g-coral)) !important; }

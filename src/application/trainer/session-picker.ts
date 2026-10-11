@@ -39,7 +39,7 @@ export function weekdayAr(day: string): string {
 
 /** ما يُعلَّم به خيارُ «من الساعة» في يومٍ بعينه — أو `null` لخيارٍ مناسب */
 export function fromClockNote(day: string, clock: string): string | null {
-  return isWorkday(day) && clock < WORKDAY_EARLIEST ? 'وقتُ عمل' : null
+  return isWorkday(day) && clock < WORKDAY_EARLIEST ? 'وقت عمل' : null
 }
 
 /** ما يُعلَّم به خيارُ «إلى الساعة» — أو `null` */
@@ -50,14 +50,14 @@ export function toClockNote(clock: string): string | null {
 /** ما يُقال تحت اليوم حين يُختار — عطلةٌ أو يومُ عمل؛ نصيحةٌ لا تمنع */
 export function dayNoteAr(day: string): string | null {
   const h = holidayOn(day)
-  if (h) return `${weekdayAr(day)} ${day.slice(8)}/${day.slice(5, 7)} ${h} — عطلةٌ رسميّة، والأفضلُ يومٌ غيرُه.`
-  if (isWorkday(day)) return `${weekdayAr(day)} يومُ عمل — فاجعل اللقاءَ بعد الخامسة مساءً.`
+  if (h) return `${weekdayAr(day)} ${day.slice(8)}/${day.slice(5, 7)} ${h} — عطلة رسميّة، والأفضل يوم غيره.`
+  if (isWorkday(day)) return `${weekdayAr(day)} يوم عمل — فاجعل اللقاء بعد الخامسة مساء.`
   return null
 }
 
 /** لماذا يبدأ سلّمُ «إلى الساعة» بعد ساعتين — كان يُخفي الأقصرَ بلا كلمة فيُظنّ عطبا */
 export const TO_LADDER_WHY_AR =
-  `تبدأ القائمةُ بعد ${MIN_SESSION_MINUTES === 120 ? 'ساعتين' : `${MIN_SESSION_MINUTES} دقيقة`} من البدء، لأنّ اللقاءَ لا يقلّ عنهما. وما ينتهي بعد العاشرة والنصف ليلا يُعلَّم «متأخّر».`
+  `تبدأ القائمة بعد ${MIN_SESSION_MINUTES === 120 ? 'ساعتين' : `${MIN_SESSION_MINUTES} دقيقة`} من البدء، لأنّ اللقاء لا يقلّ عنهما. وما ينتهي بعد العاشرة والنصف ليلا يعلّم «متأخّر».`
 
 /* ─────────── التكرارُ الأسبوعيّ ─────────── */
 

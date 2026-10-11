@@ -162,7 +162,7 @@ export function seasonEndProblem(period: CohortPeriod | null): string | null {
   if (!period?.startsOn || !period.endsOn) return null
   const last = seasonLastDay(period.startsOn)
   if (!last || period.endsOn <= last) return null
-  return `تنتهي الشعبةُ في ${cohortDayAr(period.endsOn)} — وشعبُ موسم الشتاء تنتهي في ${cohortDayAr(last)} على الأكثر، ومعها مشروعُ التخرّج`
+  return `تنتهي الشعبة في ${cohortDayAr(period.endsOn)} — وشعب موسم الشتاء تنتهي في ${cohortDayAr(last)} على الأكثر، ومعها مشروع التخرّج`
 }
 
 /** جملةٌ لا حرف — كلمتان على الأقلّ. «x» و«-» ليسا تطبيقا عمليّا */
@@ -181,12 +181,12 @@ const resourcesOf = (content: unknown): ScorecardResource[] => {
 
 /** محاورُ بلا تطبيقٍ عمليٍّ — بأرقامها. مُلزِم */
 export function practiceGaps(modules: readonly ScorecardModule[]): string[] {
-  return modules.flatMap((m, i) => (sentence(m.activityAr) ? [] : [`المحور ${i + 1}: بلا تطبيقٍ عمليّ`]))
+  return modules.flatMap((m, i) => (sentence(m.activityAr) ? [] : [`المحور ${i + 1}: بلا تطبيق عمليّ`]))
 }
 
 /** محاورُ بلا مُسلَّم — بأرقامها. نصيحةٌ لا تمنع الإرسال (١٠ أكتوبر ٢٠٢٦) */
 export function artifactGaps(modules: readonly ScorecardModule[]): string[] {
-  return modules.flatMap((m, i) => (sentence(m.artifactAr) ? [] : [`المحور ${i + 1}: بلا مُسلَّم`]))
+  return modules.flatMap((m, i) => (sentence(m.artifactAr) ? [] : [`المحور ${i + 1}: بلا مسلّم`]))
 }
 
 /** مصادرُ الشعبة — ما له رابطٌ أو ملفّ، للشعبة كلِّها أو لمحور، بلا الجلسات
@@ -197,7 +197,7 @@ function courseSources(resources: readonly ScorecardResource[]): ScorecardResour
 
 /** لا مصدرَ للدورة — والمُلزِمُ واحدٌ أينما رُبط (١١ أكتوبر ٢٠٢٦) */
 export function courseSourceProblem(resources: readonly ScorecardResource[]): string | null {
-  return courseSources(resources).length === 0 ? 'لا مصدرَ للدورة بعد' : null
+  return courseSources(resources).length === 0 ? 'لا مصدر للدورة بعد' : null
 }
 
 const live = (t: { status?: string | null }) => t.status !== 'closed'
@@ -210,11 +210,11 @@ export function projectDeadlineProblem(
   period: CohortPeriod | null,
 ): string | null {
   if (projects.length === 0) return null
-  if (projects.some((p) => !p.dueAt)) return 'مشروعُ التخرّج بلا آخر موعدٍ للتسليم — حدّده أنت، داخلَ مدّة الشعبة'
+  if (projects.some((p) => !p.dueAt)) return 'مشروع التخرّج بلا آخر موعد للتسليم — حدّده أنت، داخل مدّة الشعبة'
   if (!period?.endsOn) return null
   const late = projects.find((p) => zonedDay(p.dueAt!) > period.endsOn)
   return late
-    ? `موعدُ مشروع التخرّج ${whenAr(late.dueAt!)} — بعد نهاية الشعبة في ${cohortDayAr(period.endsOn)}`
+    ? `موعد مشروع التخرّج ${whenAr(late.dueAt!)} — بعد نهاية الشعبة في ${cohortDayAr(period.endsOn)}`
     : null
 }
 
@@ -279,27 +279,27 @@ export function planScorecard(input: ScorecardInput): ScoreItem[] {
   const endProblem = seasonEndProblem(period)
   const lastDay = period?.startsOn ? seasonLastDay(period.startsOn) : null
   out.push(item({
-    key: 'end_date', labelAr: 'نهايةُ الشعبة', required: true, step: 'identity',
-    standardAr: lastDay ? `تنتهي في ${cohortDayAr(lastDay)} على الأكثر` : 'داخلَ موسمها',
-    measuredAr: period?.endsOn ? `تنتهي في ${cohortDayAr(period.endsOn)}` : 'لم تُحدَّد مدّتُها بعد',
+    key: 'end_date', labelAr: 'نهاية الشعبة', required: true, step: 'identity',
+    standardAr: lastDay ? `تنتهي في ${cohortDayAr(lastDay)} على الأكثر` : 'داخل موسمها',
+    measuredAr: period?.endsOn ? `تنتهي في ${cohortDayAr(period.endsOn)}` : 'لم تحدّد مدّتها بعد',
     gaps: endProblem ? [endProblem] : [],
   }))
   const start = startAdvice(period?.startsOn, zonedDay(now))
   if (start === 'early' || start === 'thanks') {
     out.push(item({
-      key: 'start_date', labelAr: 'بدايةُ الشعبة', required: false, step: 'identity',
-      standardAr: 'من أواخر نوفمبر فما بعد — يتّسع وقتُ التسويق لها',
+      key: 'start_date', labelAr: 'بداية الشعبة', required: false, step: 'identity',
+      standardAr: 'من أواخر نوفمبر فما بعد — يتّسع وقت التسويق لها',
       measuredAr: `تبدأ في ${cohortDayAr(period!.startsOn)}`,
-      gaps: start === 'early' ? ['تبدأ قبل أواخر نوفمبر — والقرارُ لك'] : [],
+      gaps: start === 'early' ? ['تبدأ قبل أواخر نوفمبر — والقرار لك'] : [],
     }))
   }
 
   /* ═══ المحاور ═══ */
   const practice = practiceGaps(modules)
   out.push(item({
-    key: 'practice', labelAr: 'التطبيقُ العمليّ', required: true, step: 'modules',
-    standardAr: 'لكلّ محورٍ تطبيقٌ عمليٌّ يفعله المتعلّمُ بيده',
-    measuredAr: `${n - practice.length} من ${n} محاورَ لها تطبيق`,
+    key: 'practice', labelAr: 'التطبيق العمليّ', required: true, step: 'modules',
+    standardAr: 'لكلّ محور تطبيق عمليّ يفعله المتعلّم بيده',
+    measuredAr: `${n - practice.length} من ${n} محاور لها تطبيق`,
     gaps: practice,
   }))
   /* ═══ جودةُ المحتوى النظريّ (١١ أكتوبر ٢٠٢٦) ═══
@@ -308,20 +308,20 @@ export function planScorecard(input: ScorecardInput): ScoreItem[] {
      يقوله حاجزُ «المحتوى النظريّ» في قائمة الإرسال. */
   const quality = contentQuality(modules)
   if (quality.read > 0) {
-    const measured = `قُرئ متنُ ${quality.read} من ${n} محاور` + (quality.files ? ` — و${quality.files} مرفوعةٌ ملفّا يقرؤها المعتمِد` : '')
+    const measured = `قرئ متن ${quality.read} من ${n} محاور` + (quality.files ? ` — و${quality.files} مرفوعة ملفّا يقرؤها المعتمد` : '')
     out.push(item({
-      key: 'content_depth', labelAr: 'عمقُ المحتوى النظريّ', required: false, step: 'modules',
-      standardAr: `فكرةٌ تُشرح في ${MIN_THEORY_WORDS} كلمةً على الأقلّ، ومثالٌ محلول، وخطأٌ شائعٌ يُنبَّه عليه`,
+      key: 'content_depth', labelAr: 'عمق المحتوى النظريّ', required: false, step: 'modules',
+      standardAr: `فكرة تشرح في ${MIN_THEORY_WORDS} كلمة على الأقلّ، ومثال محلول، وخطأ شائع ينبّه عليه`,
       measuredAr: measured, gaps: quality.depth,
     }))
     out.push(item({
-      key: 'content_style', labelAr: 'لغةُ المحتوى', required: false, step: 'modules',
-      standardAr: 'بلا حشوٍ ولا تعريفٍ معجميٍّ في رأس الفقرة ولا «عزيزي المتعلّم» — خطابٌ مباشرٌ بفاعله',
+      key: 'content_style', labelAr: 'لغة المحتوى', required: false, step: 'modules',
+      standardAr: 'بلا حشو ولا تعريف معجميّ في رأس الفقرة ولا «عزيزي المتعلّم» — خطاب مباشر بفاعله',
       measuredAr: measured, gaps: quality.style,
     }))
     out.push(item({
-      key: 'content_claims', labelAr: 'الأرقامُ والوعود', required: false, step: 'modules',
-      standardAr: 'كلُّ نسبةٍ بمصدرها وسنتها في جملتها، ولا وعدَ بوظيفةٍ أو دخلٍ خارجَ المنصّة',
+      key: 'content_claims', labelAr: 'الأرقام والوعود', required: false, step: 'modules',
+      standardAr: 'كلّ نسبة بمصدرها وسنتها في جملتها، ولا وعد بوظيفة أو دخل خارج المنصّة',
       measuredAr: measured, gaps: quality.claims,
     }))
   }
@@ -335,23 +335,23 @@ export function planScorecard(input: ScorecardInput): ScoreItem[] {
   const totalMinutes = sessions.reduce((s, x) => s + x.mins, 0)
   const neededMinutes = n * LIVE_MINUTES_PER_MODULE
   out.push(item({
-    key: 'live_hours', labelAr: 'ساعاتُ اللقاء المباشر', required: false, step: 'sessions',
-    standardAr: `ساعتان لكلّ محورٍ على الأقلّ — ${hoursAr(neededMinutes)} لهذه الشعبة`,
+    key: 'live_hours', labelAr: 'ساعات اللقاء المباشر', required: false, step: 'sessions',
+    standardAr: `ساعتان لكلّ محور على الأقلّ — ${hoursAr(neededMinutes)} لهذه الشعبة`,
     measuredAr: `${sessions.length} ${sessions.length === 1 ? 'لقاء' : 'لقاءات'} — ${hoursAr(totalMinutes)}`,
     gaps: totalMinutes < neededMinutes ? [`ينقصها ${hoursAr(neededMinutes - totalMinutes)}`] : [],
   }))
-  const uncovered = modules.flatMap((m, i) => (sessions.some((s) => s.moduleIds.includes(m.moduleId)) ? [] : [`المحور ${i + 1}: بلا لقاءٍ مباشر`]))
+  const uncovered = modules.flatMap((m, i) => (sessions.some((s) => s.moduleIds.includes(m.moduleId)) ? [] : [`المحور ${i + 1}: بلا لقاء مباشر`]))
   out.push(item({
-    key: 'live_per_module', labelAr: 'لقاءٌ لكلّ محور', required: true, step: 'sessions',
-    standardAr: 'لكلّ محورٍ لقاءٌ مباشرٌ واحدٌ على الأقلّ',
-    measuredAr: `${n - uncovered.length} من ${n} محاورَ لها لقاء`,
+    key: 'live_per_module', labelAr: 'لقاء لكلّ محور', required: true, step: 'sessions',
+    standardAr: 'لكلّ محور لقاء مباشر واحد على الأقلّ',
+    measuredAr: `${n - uncovered.length} من ${n} محاور لها لقاء`,
     gaps: uncovered,
   }))
   const long = sessions.filter((s) => s.mins > LONG_SESSION_MINUTES)
   out.push(item({
-    key: 'session_length', labelAr: 'طولُ اللقاء', required: false, step: 'sessions',
-    standardAr: 'بين ساعتين وثلاث — وما زاد يُقسَم أو تُخطَّط فيه استراحة',
-    measuredAr: sessions.length ? `أطولُها ${hoursAr(Math.max(...sessions.map((s) => s.mins)))}` : 'لا لقاءَ بعد',
+    key: 'session_length', labelAr: 'طول اللقاء', required: false, step: 'sessions',
+    standardAr: 'بين ساعتين وثلاث — وما زاد يقسم أو تخطّط فيه استراحة',
+    measuredAr: sessions.length ? `أطولها ${hoursAr(Math.max(...sessions.map((s) => s.mins)))}` : 'لا لقاء بعد',
     gaps: long.map((s) => `${s.whenAr}: ${hoursAr(s.mins)}`),
   }))
   const gapRows: string[] = []
@@ -361,13 +361,13 @@ export function planScorecard(input: ScorecardInput): ScoreItem[] {
     const d = dayIndex(sessions[i]!.day) - dayIndex(sessions[i - 1]!.day)
     shortest = shortest === null ? d : Math.min(shortest, d)
     longest = longest === null ? d : Math.max(longest, d)
-    if (d < MIN_GAP_DAYS) gapRows.push(`${sessions[i]!.whenAr}: ${d === 0 ? 'في يوم اللقاء السابق نفسِه' : `بعد ${daysAr(d)} من سابقه`}`)
+    if (d < MIN_GAP_DAYS) gapRows.push(`${sessions[i]!.whenAr}: ${d === 0 ? 'في يوم اللقاء السابق نفسه' : `بعد ${daysAr(d)} من سابقه`}`)
     else if (d > MAX_GAP_DAYS) gapRows.push(`${sessions[i]!.whenAr}: بعد ${daysAr(d)} من سابقه`)
   }
   out.push(item({
-    key: 'session_gaps', labelAr: 'الفاصلُ بين اللقاءات', required: false, step: 'sessions',
-    standardAr: `أسبوعٌ إلى أسبوعين — ولا أقلَّ من ${MIN_GAP_DAYS} أيّام ولا أكثرَ من ${MAX_GAP_DAYS} يوما`,
-    measuredAr: shortest === null ? 'أقلُّ من لقاءين' : `من ${shortest} إلى ${longest} يوما`,
+    key: 'session_gaps', labelAr: 'الفاصل بين اللقاءات', required: false, step: 'sessions',
+    standardAr: `أسبوع إلى أسبوعين — ولا أقلّ من ${MIN_GAP_DAYS} أيّام ولا أكثر من ${MAX_GAP_DAYS} يوما`,
+    measuredAr: shortest === null ? 'أقلّ من لقاءين' : `من ${shortest} إلى ${longest} يوما`,
     gaps: gapRows,
   }))
   let heaviest = 0
@@ -377,10 +377,10 @@ export function planScorecard(input: ScorecardInput): ScoreItem[] {
     if (sum > heaviest) { heaviest = sum; heaviestAt = s.whenAr }
   }
   out.push(item({
-    key: 'weekly_load', labelAr: 'العبءُ الأسبوعيّ', required: false, step: 'sessions',
-    standardAr: `${hoursAr(MAX_WEEKLY_MINUTES)} مباشرةٌ في الأسبوع على الأكثر`,
-    measuredAr: sessions.length ? `أثقلُ أسبوعٍ ${hoursAr(heaviest)}` : 'لا لقاءَ بعد',
-    gaps: heaviest > MAX_WEEKLY_MINUTES ? [`سبعةُ أيّامٍ من ${heaviestAt}: ${hoursAr(heaviest)}`] : [],
+    key: 'weekly_load', labelAr: 'العبء الأسبوعيّ', required: false, step: 'sessions',
+    standardAr: `${hoursAr(MAX_WEEKLY_MINUTES)} مباشرة في الأسبوع على الأكثر`,
+    measuredAr: sessions.length ? `أثقل أسبوع ${hoursAr(heaviest)}` : 'لا لقاء بعد',
+    gaps: heaviest > MAX_WEEKLY_MINUTES ? [`سبعة أيّام من ${heaviestAt}: ${hoursAr(heaviest)}`] : [],
   }))
   let badTimes = 0
   const timeRows = sessions.flatMap((s) => {
@@ -391,35 +391,35 @@ export function planScorecard(input: ScorecardInput): ScoreItem[] {
     return rows
   })
   out.push(item({
-    key: 'session_times', labelAr: 'أوقاتُ اللقاءات', required: false, step: 'sessions',
-    standardAr: 'الأحدُ إلى الخميس بعد الخامسة مساءً، أو الجمعةُ والسبت — ولا ينتهي لقاءٌ بعد العاشرة والنصف ليلا (بتوقيت عمّان)',
-    measuredAr: sessions.length ? `${sessions.length - badTimes} من ${sessions.length} في وقتٍ مناسب` : 'لا لقاءَ بعد',
+    key: 'session_times', labelAr: 'أوقات اللقاءات', required: false, step: 'sessions',
+    standardAr: 'الأحد إلى الخميس بعد الخامسة مساء، أو الجمعة والسبت — ولا ينتهي لقاء بعد العاشرة والنصف ليلا (بتوقيت عمّان)',
+    measuredAr: sessions.length ? `${sessions.length - badTimes} من ${sessions.length} في وقت مناسب` : 'لا لقاء بعد',
     gaps: timeRows,
   }))
   const slots = new Set(sessions.map((s) => `${weekdayOf(s.day)}|${s.clock}`))
   const rhythmRows: string[] = []
   if (slots.size > MAX_DISTINCT_SLOTS) {
     const named = [...slots].map((k) => { const [d, c] = k.split('|'); return `${WEEKDAY_AR[Number(d)]} ${c}` })
-    rhythmRows.push(`${slots.size} مواعيدَ مختلفة: ${named.join(' · ')}`)
+    rhythmRows.push(`${slots.size} مواعيد مختلفة: ${named.join(' · ')}`)
   }
   for (const s of sessions) {
     const h = HOLIDAYS.find((x) => s.day.slice(5) === x.day)
-    if (h) rhythmRows.push(`${s.whenAr}: ${h.nameAr} — عطلةٌ رسميّة`)
+    if (h) rhythmRows.push(`${s.whenAr}: ${h.nameAr} — عطلة رسميّة`)
   }
   out.push(item({
-    key: 'rhythm', labelAr: 'إيقاعٌ ثابتٌ وبلا عطل', required: false, step: 'sessions',
-    standardAr: 'اليومُ والساعةُ أنفسُهما كلَّ أسبوع — ولا لقاءَ في ٢٥ ديسمبر ولا في ١ يناير',
-    measuredAr: sessions.length ? `${slots.size} ${slots.size === 1 ? 'موعدٌ أسبوعيّ' : 'مواعيدُ أسبوعيّة'}` : 'لا لقاءَ بعد',
+    key: 'rhythm', labelAr: 'إيقاع ثابت وبلا عطل', required: false, step: 'sessions',
+    standardAr: 'اليوم والساعة أنفسهما كلّ أسبوع — ولا لقاء في ٢٥ ديسمبر ولا في ١ يناير',
+    measuredAr: sessions.length ? `${slots.size} ${slots.size === 1 ? 'موعد أسبوعيّ' : 'مواعيد أسبوعيّة'}` : 'لا لقاء بعد',
     gaps: rhythmRows,
   }))
 
   /* ═══ المهامّ والمصادر ═══ */
   const dueProblem = projectDeadlineProblem(projects, period)
   out.push(item({
-    key: 'project', labelAr: 'مشروعُ التخرّج', required: true, step: 'assignments',
-    standardAr: 'مشروعٌ واحدٌ بآخر موعدٍ يحدّده المدرّب داخلَ مدّة الشعبة',
-    measuredAr: projects.length === 0 ? 'لا مشروع' : projects.every((p) => p.dueAt) ? `موعدُه ${whenAr(projects[0]!.dueAt!)}` : 'بلا موعد',
-    gaps: projects.length === 0 ? ['لا مشروعَ تخرّجٍ في الشعبة'] : dueProblem ? [dueProblem] : [],
+    key: 'project', labelAr: 'مشروع التخرّج', required: true, step: 'assignments',
+    standardAr: 'مشروع واحد بآخر موعد يحدّده المدرّب داخل مدّة الشعبة',
+    measuredAr: projects.length === 0 ? 'لا مشروع' : projects.every((p) => p.dueAt) ? `موعده ${whenAr(projects[0]!.dueAt!)}` : 'بلا موعد',
+    gaps: projects.length === 0 ? ['لا مشروع تخرّج في الشعبة'] : dueProblem ? [dueProblem] : [],
   }))
   const lastSession = sessions[sessions.length - 1]
   const tight = lastSession
@@ -427,59 +427,59 @@ export function planScorecard(input: ScorecardInput): ScoreItem[] {
     : []
   if (projects.length && lastSession) {
     out.push(item({
-      key: 'project_time', labelAr: 'وقتٌ لبناء المشروع', required: false, step: 'assignments',
-      standardAr: `أسبوعٌ على الأقلّ بين آخر لقاءٍ وموعد المشروع`,
-      measuredAr: `آخرُ لقاءٍ ${lastSession.whenAr}`,
-      gaps: tight.map((p) => `موعدُ «${p.title ?? 'المشروع'}» ${whenAr(p.dueAt!)} — أقربُ من أسبوعٍ بعد آخر لقاء`),
+      key: 'project_time', labelAr: 'وقت لبناء المشروع', required: false, step: 'assignments',
+      standardAr: `أسبوع على الأقلّ بين آخر لقاء وموعد المشروع`,
+      measuredAr: `آخر لقاء ${lastSession.whenAr}`,
+      gaps: tight.map((p) => `موعد «${p.title ?? 'المشروع'}» ${whenAr(p.dueAt!)} — أقرب من أسبوع بعد آخر لقاء`),
     }))
   }
-  const ungraded = modules.flatMap((m, i) => (graded.some((t) => t.moduleId === m.moduleId) ? [] : [`المحور ${i + 1}: بلا مهمّةٍ مقيَّمة`]))
+  const ungraded = modules.flatMap((m, i) => (graded.some((t) => t.moduleId === m.moduleId) ? [] : [`المحور ${i + 1}: بلا مهمّة مقيّمة`]))
   const activities = modules.filter((m) => sentence(m.activityAr)).length
   out.push(item({
-    key: 'graded_tasks', labelAr: 'التطبيقاتُ العمليّة', required: false, step: 'assignments',
-    standardAr: 'مهمّةٌ مقيَّمةٌ لكلّ محور (واجبٌ أو اختبار) — غيرَ مشروع التخرّج',
-    measuredAr: `${activities} ${activities === 1 ? 'تطبيقٌ عمليّ' : 'تطبيقاتٍ عمليّة'} في المحاور · ${graded.length} ${graded.length === 1 ? 'مهمّةٌ مقيَّمة' : 'مهامَّ مقيَّمة'}`,
+    key: 'graded_tasks', labelAr: 'التطبيقات العمليّة', required: false, step: 'assignments',
+    standardAr: 'مهمّة مقيّمة لكلّ محور (واجب أو اختبار) — غير مشروع التخرّج',
+    measuredAr: `${activities} ${activities === 1 ? 'تطبيق عمليّ' : 'تطبيقات عمليّة'} في المحاور · ${graded.length} ${graded.length === 1 ? 'مهمّة مقيّمة' : 'مهامّ مقيّمة'}`,
     gaps: ungraded,
   }))
   const firstSessionOf = (moduleId: string) => sessions.find((s) => s.moduleIds.includes(moduleId))
   const taskRows: string[] = []
   for (const t of graded) {
     const name = `«${t.title ?? 'مهمّة'}»`
-    if ((t.briefAr ?? '').trim().length < 20) taskRows.push(`${name}: بلا وصفٍ يكفي ليُنجَز`)
+    if ((t.briefAr ?? '').trim().length < 20) taskRows.push(`${name}: بلا وصف يكفي لينجز`)
     if (!t.maxScore || t.maxScore <= 0) taskRows.push(`${name}: بلا درجة`)
     const first = t.moduleId ? firstSessionOf(t.moduleId) : undefined
     if (t.dueAt && first && dayIndex(zonedDay(t.dueAt)) - dayIndex(first.day) < TASK_AFTER_SESSION_DAYS) {
-      taskRows.push(`${name}: موعدُها ${whenAr(t.dueAt)} — قبل أن يمضي ${TASK_AFTER_SESSION_DAYS} أيّامٍ على لقاء محورها`)
+      taskRows.push(`${name}: موعدها ${whenAr(t.dueAt)} — قبل أن يمضي ${TASK_AFTER_SESSION_DAYS} أيّام على لقاء محورها`)
     }
   }
   const dues = graded.filter((t) => t.dueAt).map((t) => ({ t, d: dayIndex(zonedDay(t.dueAt!)) })).sort((a, b) => a.d - b.d)
   for (let i = 1; i < dues.length; i++) {
-    if (dues[i]!.d - dues[i - 1]!.d < 7) taskRows.push(`«${dues[i]!.t.title ?? 'مهمّة'}» و«${dues[i - 1]!.t.title ?? 'مهمّة'}»: موعدان في أسبوعٍ واحد`)
+    if (dues[i]!.d - dues[i - 1]!.d < 7) taskRows.push(`«${dues[i]!.t.title ?? 'مهمّة'}» و«${dues[i - 1]!.t.title ?? 'مهمّة'}»: موعدان في أسبوع واحد`)
   }
   out.push(item({
-    key: 'task_timing', labelAr: 'توقيتُ المهامّ ووضوحُها', required: false, step: 'assignments',
-    standardAr: `كلُّ مهمّةٍ بوصفٍ ودرجة، وموعدُها بعد ${TASK_AFTER_SESSION_DAYS} أيّامٍ من لقاء محورها، ولا موعدين في أسبوع`,
+    key: 'task_timing', labelAr: 'توقيت المهامّ ووضوحها', required: false, step: 'assignments',
+    standardAr: `كلّ مهمّة بوصف ودرجة، وموعدها بعد ${TASK_AFTER_SESSION_DAYS} أيّام من لقاء محورها، ولا موعدين في أسبوع`,
     measuredAr: `${graded.length} ${graded.length === 1 ? 'مهمّة' : 'مهامّ'}`,
     gaps: taskRows,
   }))
   const sources = courseSources(resources)
   const noSource = courseSourceProblem(resources)
   out.push(item({
-    key: 'sources', labelAr: 'مصدرٌ للدورة', required: true, step: 'assignments',
-    standardAr: 'مصدرٌ واحدٌ على الأقلّ برابطٍ أو ملفّ — للشعبة كلِّها، وربطُه بمحورٍ بعينه اختياريّ',
-    measuredAr: `مصادرُ الشعبة: ${sources.length}`,
+    key: 'sources', labelAr: 'مصدر للدورة', required: true, step: 'assignments',
+    standardAr: 'مصدر واحد على الأقلّ برابط أو ملفّ — للشعبة كلّها، وربطه بمحور بعينه اختياريّ',
+    measuredAr: `مصادر الشعبة: ${sources.length}`,
     gaps: noSource ? [noSource] : [],
   }))
   const cats = new Set(sources.map((r) => resourceCategory(r)))
   const mixRows = noSource ? [] : sources.length < ADVISED_SOURCES
-    ? ['مصدرٌ واحدٌ للدورة كلِّها']
+    ? ['مصدر واحد للدورة كلّها']
     : cats.size < 2
-      ? [cats.has('reading') ? 'كلُّها مقروء — أضف فيديو أو بودكاست' : 'كلُّها روابطُ عامّة — أضف كتابا أو ملخّصَ كتاب']
+      ? [cats.has('reading') ? 'كلّها مقروء — أضف فيديو أو بودكاست' : 'كلّها روابط عامّة — أضف كتابا أو ملخّص كتاب']
       : []
   out.push(item({
-    key: 'sources_mix', labelAr: 'تنوّعُ المصادر', required: false, step: 'assignments',
-    standardAr: 'مصدران للدورة على الأقلّ: مقروءٌ (كتابٌ أو ملخّصُه) ومسموعٌ أو مرئيّ (فيديو، TEDx، بودكاست) — والعربيّةُ أو المترجَمةُ يفحصها المراجِع',
-    measuredAr: `مصادرُ الشعبة: ${sources.length}`,
+    key: 'sources_mix', labelAr: 'تنوّع المصادر', required: false, step: 'assignments',
+    standardAr: 'مصدران للدورة على الأقلّ: مقروء (كتاب أو ملخّصه) ومسموع أو مرئيّ (فيديو، TEDx، بودكاست) — والعربيّة أو المترجمة يفحصها المراجع',
+    measuredAr: `مصادر الشعبة: ${sources.length}`,
     gaps: mixRows,
   }))
   return out
@@ -510,26 +510,26 @@ export const NOW_SUGGEST_SEP = ' ← نقترح: '
 
 /** المعيارُ بجملةٍ عامّةٍ لكلّ اسم — يُقرأ به سطرٌ كُتب قبل «الآن ← نقترح»، ومنه «المُسلَّم» الذي سقط */
 export const NOTE_SUGGESTION_AR: Readonly<Record<string, string>> = {
-  'نهايةُ الشعبة': 'أن تنتهي الشعبةُ ومشروعُ تخرّجها داخلَ موسمها',
-  'بدايةُ الشعبة': 'من أواخر نوفمبر فما بعد — يتّسع وقتُ التسويق لها',
-  'التطبيقُ العمليّ': 'لكلّ محورٍ تطبيقٌ عمليٌّ يفعله المتعلّمُ بيده',
-  'عمقُ المحتوى النظريّ': `فكرةٌ تُشرح في ${MIN_THEORY_WORDS} كلمةً على الأقلّ، ومثالٌ محلول، وخطأٌ شائعٌ يُنبَّه عليه`,
-  'لغةُ المحتوى': 'بلا حشوٍ ولا تعريفٍ معجميٍّ في رأس الفقرة ولا «عزيزي المتعلّم» — خطابٌ مباشرٌ بفاعله',
-  'الأرقامُ والوعود': 'كلُّ نسبةٍ بمصدرها وسنتها في جملتها، ولا وعدَ بوظيفةٍ أو دخلٍ خارجَ المنصّة',
-  'المُسلَّم': 'لكلّ محورٍ ما يسلّمه المتعلّمُ في آخره — نصٌّ أو ملفٌّ أو تسجيل',
-  'ساعاتُ اللقاء المباشر': 'ساعتان من اللقاء المباشر لكلّ محورٍ على الأقلّ',
-  'لقاءٌ لكلّ محور': 'لكلّ محورٍ لقاءٌ مباشرٌ واحدٌ على الأقلّ',
-  'طولُ اللقاء': 'بين ساعتين وثلاث — وما زاد يُقسَم أو تُخطَّط فيه استراحة',
-  'الفاصلُ بين اللقاءات': `أسبوعٌ إلى أسبوعين — ولا أقلَّ من ${MIN_GAP_DAYS} أيّام ولا أكثرَ من ${MAX_GAP_DAYS} يوما`,
-  'العبءُ الأسبوعيّ': `${MAX_WEEKLY_MINUTES / 60} ساعاتٍ مباشرةٌ في الأسبوع على الأكثر`,
-  'أوقاتُ اللقاءات': 'الأحدُ إلى الخميس بعد الخامسة مساءً، أو الجمعةُ والسبت — ولا ينتهي لقاءٌ بعد العاشرة والنصف ليلا (بتوقيت عمّان)',
-  'إيقاعٌ ثابتٌ وبلا عطل': 'اليومُ والساعةُ أنفسُهما كلَّ أسبوع — ولا لقاءَ في ٢٥ ديسمبر ولا في ١ يناير',
-  'مشروعُ التخرّج': 'مشروعٌ واحدٌ بآخر موعدٍ يحدّده المدرّب داخلَ مدّة الشعبة',
-  'وقتٌ لبناء المشروع': 'أسبوعٌ على الأقلّ بين آخر لقاءٍ وموعد المشروع',
-  'التطبيقاتُ العمليّة': 'مهمّةٌ مقيَّمةٌ لكلّ محور (واجبٌ أو اختبار) — غيرَ مشروع التخرّج',
-  'توقيتُ المهامّ ووضوحُها': `كلُّ مهمّةٍ بوصفٍ ودرجة، وموعدُها بعد ${TASK_AFTER_SESSION_DAYS} أيّامٍ من لقاء محورها، ولا موعدين في أسبوع`,
-  'مصدرٌ للدورة': 'مصدرٌ واحدٌ على الأقلّ برابطٍ أو ملفّ — للشعبة كلِّها',
-  'تنوّعُ المصادر': 'مصدران على الأقلّ: مقروءٌ (كتابٌ أو ملخّصُه) ومسموعٌ أو مرئيّ (فيديو، TEDx، بودكاست)',
+  'نهاية الشعبة': 'أن تنتهي الشعبة ومشروع تخرّجها داخل موسمها',
+  'بداية الشعبة': 'من أواخر نوفمبر فما بعد — يتّسع وقت التسويق لها',
+  'التطبيق العمليّ': 'لكلّ محور تطبيق عمليّ يفعله المتعلّم بيده',
+  'عمق المحتوى النظريّ': `فكرة تشرح في ${MIN_THEORY_WORDS} كلمة على الأقلّ، ومثال محلول، وخطأ شائع ينبّه عليه`,
+  'لغة المحتوى': 'بلا حشو ولا تعريف معجميّ في رأس الفقرة ولا «عزيزي المتعلّم» — خطاب مباشر بفاعله',
+  'الأرقام والوعود': 'كلّ نسبة بمصدرها وسنتها في جملتها، ولا وعد بوظيفة أو دخل خارج المنصّة',
+  'المسلّم': 'لكلّ محور ما يسلّمه المتعلّم في آخره — نصّ أو ملفّ أو تسجيل',
+  'ساعات اللقاء المباشر': 'ساعتان من اللقاء المباشر لكلّ محور على الأقلّ',
+  'لقاء لكلّ محور': 'لكلّ محور لقاء مباشر واحد على الأقلّ',
+  'طول اللقاء': 'بين ساعتين وثلاث — وما زاد يقسم أو تخطّط فيه استراحة',
+  'الفاصل بين اللقاءات': `أسبوع إلى أسبوعين — ولا أقلّ من ${MIN_GAP_DAYS} أيّام ولا أكثر من ${MAX_GAP_DAYS} يوما`,
+  'العبء الأسبوعيّ': `${MAX_WEEKLY_MINUTES / 60} ساعات مباشرة في الأسبوع على الأكثر`,
+  'أوقات اللقاءات': 'الأحد إلى الخميس بعد الخامسة مساء، أو الجمعة والسبت — ولا ينتهي لقاء بعد العاشرة والنصف ليلا (بتوقيت عمّان)',
+  'إيقاع ثابت وبلا عطل': 'اليوم والساعة أنفسهما كلّ أسبوع — ولا لقاء في ٢٥ ديسمبر ولا في ١ يناير',
+  'مشروع التخرّج': 'مشروع واحد بآخر موعد يحدّده المدرّب داخل مدّة الشعبة',
+  'وقت لبناء المشروع': 'أسبوع على الأقلّ بين آخر لقاء وموعد المشروع',
+  'التطبيقات العمليّة': 'مهمّة مقيّمة لكلّ محور (واجب أو اختبار) — غير مشروع التخرّج',
+  'توقيت المهامّ ووضوحها': `كلّ مهمّة بوصف ودرجة، وموعدها بعد ${TASK_AFTER_SESSION_DAYS} أيّام من لقاء محورها، ولا موعدين في أسبوع`,
+  'مصدر للدورة': 'مصدر واحد على الأقلّ برابط أو ملفّ — للشعبة كلّها',
+  'تنوّع المصادر': 'مصدران على الأقلّ: مقروء (كتاب أو ملخّصه) ومسموع أو مرئيّ (فيديو، TEDx، بودكاست)',
 }
 
 /** «1–4، 6» — أرقامٌ متتاليةٌ مدى، وما سواها مفرد */
@@ -563,7 +563,7 @@ export function scorecardNotes(items: readonly ScoreItem[]): ReviewNotes {
       `${word} — ${i.labelAr}: الآن ${compactGapsAr(i.gaps) || i.measuredAr}${NOW_SUGGEST_SEP}${i.standardAr}`
     const text = [
       ...own.filter((i) => i.status === 'blocked').map(line('مطلوب')),
-      ...own.filter((i) => i.status === 'advice').map(line('مقترَح')),
+      ...own.filter((i) => i.status === 'advice').map(line('مقترح')),
     ].join('\n')
     out[step] = text.length > REVIEW_NOTE_MAX ? `${text.slice(0, REVIEW_NOTE_MAX - 1)}…` : text
   }

@@ -41,14 +41,14 @@ export default function Library() {
   return (
     <PortalLayout title="المكتبة">
       <p className="mb-6 max-w-2xl text-sm leading-7 text-muted-foreground">
-        موادّ مختارة خارج الدورات، تُفتح في تبويب جديد.
+        موادّ مختارة خارج الدورات، تفتح في تبويب جديد.
       </p>
 
       {rows.length === 0 ? (
         <EmptyState
           icon={LibraryIcon}
-          titleAr="المكتبة لم تُفتح بعد"
-          reasonAr="لم تُنشر موادّ بعد، وستظهر هنا حين تُضاف."
+          titleAr="المكتبة لم تفتح بعد"
+          reasonAr="لم تنشر موادّ بعد، وستظهر هنا حين تضاف."
           tone="start"
         />
       ) : (
@@ -79,7 +79,7 @@ export default function Library() {
                       {host && <span dir="ltr">{host}</span>}
                     </span>
                   </span>
-                  <ExternalLink className="mt-1 h-4 w-4 shrink-0 text-muted-foreground/50 sm:mt-0" aria-label="يُفتح في تبويب جديد" />
+                  <ExternalLink className="mt-1 h-4 w-4 shrink-0 text-muted-foreground/50 sm:mt-0" aria-label="يفتح في تبويب جديد" />
                 </a>
               </li>
             );

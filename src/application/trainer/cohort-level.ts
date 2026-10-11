@@ -26,9 +26,9 @@ export type CohortLevel = (typeof COHORT_LEVELS)[number]
 export interface LevelRange { from: CohortLevel; to: CohortLevel }
 
 export const COHORT_LEVEL_AR: Record<CohortLevel, { label: string; hint: string }> = {
-  beginner: { label: 'مبتدئ', hint: 'يبدأ من الصفر — لا يُفترض أنّه يعرف شيئا عن الموضوع.' },
-  intermediate: { label: 'متوسّط', hint: 'عرف الأساسيّات أو مارسها قليلا، ويريد أن يُتقنها.' },
-  advanced: { label: 'متقدّم', hint: 'يمارسها في عمله، ويريد عمقا وحالاتٍ صعبة.' },
+  beginner: { label: 'مبتدئ', hint: 'يبدأ من الصفر — لا يفترض أنّه يعرف شيئا عن الموضوع.' },
+  intermediate: { label: 'متوسّط', hint: 'عرف الأساسيّات أو مارسها قليلا، ويريد أن يتقنها.' },
+  advanced: { label: 'متقدّم', hint: 'يمارسها في عمله، ويريد عمقا وحالات صعبة.' },
 }
 
 const rank = (lv: CohortLevel) => COHORT_LEVELS.indexOf(lv)
@@ -85,5 +85,5 @@ export const levelRequired = (planStatus: string): boolean =>
 /** ما ينقص الخطوةَ الأولى من جهة المستوى — بلغة من يصحّحه، أو `null` */
 export function levelProblem(content: { level?: unknown } | null | undefined, planStatus: string): string | null {
   if (!levelRequired(planStatus)) return null
-  return asLevelRange(content?.level) ? null : 'اختر مستوى الشعبة — مستوًى واحدا، أو مستويين متجاورين'
+  return asLevelRange(content?.level) ? null : 'اختر مستوى الشعبة — مستوى واحدا، أو مستويين متجاورين'
 }

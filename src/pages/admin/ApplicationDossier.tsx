@@ -72,7 +72,7 @@ const EMPLOYMENT_AR: Record<string, string> = {
   full_time_training: 'متفرّغ للتدريب',
 }
 const DELIVERY_AR: Record<string, string> = {
-  remote: 'عن بُعد',
+  remote: 'عن بعد',
   in_person: 'حضوريّ',
   both: 'كلاهما',
 }
@@ -153,9 +153,9 @@ export default function ApplicationDossier({ a, showContact = true }: { a: Dossi
             <Row label="البريد">
               <span dir="ltr" className="block text-right">{a.email}</span>
               {a.emailVerifiedAt ? (
-                <span className="text-fine text-teal-light-ink">متحقَّق ✓</span>
+                <span className="text-fine text-teal-light-ink">متحقّق ✓</span>
               ) : (
-                <span className="text-fine text-gold-ink">غير متحقَّق</span>
+                <span className="text-fine text-gold-ink">غير متحقّق</span>
               )}
             </Row>
             <Row label="الجوال (واتساب)">
@@ -173,7 +173,7 @@ export default function ApplicationDossier({ a, showContact = true }: { a: Dossi
                     <span dir="ltr" className="block text-right text-muted-foreground">{phone}</span>
                   )}
                 </>
-              ) : '— لم يختر (طلبٌ قديم)'}
+              ) : '— لم يختر (طلب قديم)'}
             </Row>
             <Row label="حسابه على المنصّة">
               {a.userId ? <span className="text-teal-light-ink">له حساب — يتابع حالته بنفسه</span> : 'بلا حساب'}
@@ -182,10 +182,10 @@ export default function ApplicationDossier({ a, showContact = true }: { a: Dossi
         ) : (
           <Row label="التواصل معه">
             <span className="text-muted-foreground">
-              محجوبٌ عن الرابط المشترك — بريدُه وهاتفُه في ملفّه داخل الإدارة.
+              محجوب عن الرابط المشترك — بريده وهاتفه في ملفّه داخل الإدارة.
             </span>
             {a.emailVerifiedAt && (
-              <span className="block text-fine text-teal-light-ink">بريدُه متحقَّق ✓</span>
+              <span className="block text-fine text-teal-light-ink">بريده متحقّق ✓</span>
             )}
           </Row>
         )}
@@ -218,7 +218,7 @@ export default function ApplicationDossier({ a, showContact = true }: { a: Dossi
       </Block>
 
       {/* أهمُّ ما في الطلب: على هذا يُسنَد إلى شعبة بعد الاعتماد */}
-      <Block title="ما يستطيع تدريسه — وعليه يُسنَد بعد الاعتماد">
+      <Block title="ما يستطيع تدريسه — وعليه يسند بعد الاعتماد">
         {teachable.length === 0 && !a.teachableOther && proposals.length === 0 ? (
           <p className="text-read text-muted-foreground">لم يختر شيئا من الكتالوج ولم يكتب بديلا.</p>
         ) : (
@@ -240,7 +240,7 @@ export default function ApplicationDossier({ a, showContact = true }: { a: Dossi
                 كتبها صاحبُها بلا أن تُقسَّم أسطرا تخمينا: التخمينُ يبتر
                 جملةً كتبها إنسانٌ عن نفسه. والطلبُ الواحد لا يحمل الاثنين. */}
             {proposals.length > 0 && (
-              <Row label="ودوراتٌ ليست في كتالوجنا">
+              <Row label="ودورات ليست في كتالوجنا">
                 <ul className="space-y-1">
                   {proposals.map((c, i) => (
                     <li key={i} className="text-read leading-6">
@@ -254,7 +254,7 @@ export default function ApplicationDossier({ a, showContact = true }: { a: Dossi
               </Row>
             )}
             {proposals.length === 0 && a.teachableOther && (
-              <Row label="ودوراتٌ ليست في كتالوجنا">
+              <Row label="ودورات ليست في كتالوجنا">
                 <span className="whitespace-pre-line">{a.teachableOther}</span>
               </Row>
             )}
@@ -265,12 +265,12 @@ export default function ApplicationDossier({ a, showContact = true }: { a: Dossi
             `null` تعني «لم يُسأل» لا «قال لا»: السؤالُ أُضيف في ٢٠ سبتمبر
             ٢٠٢٦، وما قبله من طلباتٍ لم يمرّ به. فلو قُرئ النفيُ من غياب
             القيمة لَنُسب إلى مئةِ متقدّمٍ جوابٌ لم يقولوه. */}
-        <Row label="تسجيلاتٌ جاهزة لدوراته">
+        <Row label="تسجيلات جاهزة لدوراته">
           {recordingsSummaryAr(a.hasCourseRecordings, a.wantsToRecordCourses)}
         </Row>
       </Block>
 
-      <Block title="متى وكيف يُدرّب">
+      <Block title="متى وكيف يدرّب">
         <Row label="لغات التدريب">
           {has(a.trainingLanguages) ? a.trainingLanguages!.join(' · ') : '—'}
         </Row>
@@ -297,7 +297,7 @@ export default function ApplicationDossier({ a, showContact = true }: { a: Dossi
         <Row label="الدرس التجريبيّ والمقابلة">
           {a.demoConsent
             ? <span className="text-teal-light-ink">وافق عليهما</span>
-            : <span className="text-gold-ink">لم يوافق — وهو شرطُ الاعتماد</span>}
+            : <span className="text-gold-ink">لم يوافق — وهو شرط الاعتماد</span>}
         </Row>
       </Block>
 

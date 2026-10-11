@@ -107,7 +107,7 @@ export default function SearchPalette() {
               اكتب للبحث الفوري عبر كل كيانات الإدارة —<br />الأسهم ↑↓ للتنقل و Enter للقفز
             </p>
           )}
-          {searching && <p className="px-4 py-6 text-center text-read text-muted-foreground">يُبحث…</p>}
+          {searching && <p className="px-4 py-6 text-center text-read text-muted-foreground">يبحث…</p>}
           {!searching && groups && flat.length === 0 && (
             <p className="px-4 py-8 text-center text-read text-muted-foreground">لا نتائج لـ «{q}» فيما تملك صلاحيته</p>
           )}

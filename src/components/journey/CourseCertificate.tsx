@@ -82,7 +82,7 @@ export default function CourseCertificate({
         <p className="mt-1.5 text-read leading-5 text-muted-foreground">
           {request?.decisionAr
             ? request.decisionAr
-            : "نراجع قواعد الإكمال ثم تُصدَر الشهادة برقم تحقّق، وتصلك في «شهاداتي»."}
+            : "نراجع قواعد الإكمال ثم تصدر الشهادة برقم تحقّق، وتصلك في «شهاداتي»."}
         </p>
       </Card>
     );
@@ -100,7 +100,7 @@ export default function CourseCertificate({
       ) : eligibility.eligible ? (
         <>
           <p className="mt-1.5 text-read leading-5 text-muted-foreground">
-            استوفيت قواعد إكمال الدورة. اطلبها الآن، وتُصدَر برقم تحقّقٍ باسمك.
+            استوفيت قواعد إكمال الدورة. اطلبها الآن، وتصدر برقم تحقّق باسمك.
           </p>
           <Button tone="primary" onClick={async () => {
               setBusy(true);

@@ -77,7 +77,7 @@ export default function SwitchCohort({
       {open && (
         <>
           <p className="mt-2 text-read leading-5 text-muted-foreground">
-            مواعيد الدورة نفسها. مقعدك ينتقل معك بلا دفعٍ جديد.
+            مواعيد الدورة نفسها. مقعدك ينتقل معك بلا دفع جديد.
           </p>
           <ul className="mt-3 space-y-1.5">
             {options.map((o) => (

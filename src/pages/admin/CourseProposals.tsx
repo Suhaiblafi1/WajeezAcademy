@@ -101,9 +101,9 @@ const OPEN = ["draft", "submitted", "info_requested"];
 
 
 const SAID: Record<string, string> = {
-  linked: "نسخةٌ من رمزٍ قائم",
-  became_course: "صارت دورةً في الكتالوج",
-  rejected: "لم تُقبل",
+  linked: "نسخة من رمز قائم",
+  became_course: "صارت دورة في الكتالوج",
+  rejected: "لم تقبل",
 };
 
 /* ═══ تقريرُ التجميع — أتتجمّع الاقتراحاتُ في مسارات؟ ═══
@@ -156,20 +156,20 @@ function ClusterPanel({ scope }: { scope: "open" | "all" }) {
     if (!open) return;
     apiGet<ClusterReport>(`/api/admin/course-proposals/clusters?scope=${scope}`)
       .then((r) => { setData(r); setErr(null); })
-      .catch((e) => setErr(e instanceof ApiError ? e.message : "تعذّر بناءُ التقرير"));
+      .catch((e) => setErr(e instanceof ApiError ? e.message : "تعذّر بناء التقرير"));
   }, [open, scope]);
 
   return (
     <Card className="mb-4">
       <Button tone="ghost" icon={Layers} onClick={() => setOpen(!open)} aria-expanded={open}>
-        {open ? "أخفِ تقريرَ التجميع" : "أتتجمّع هذه في مسارات؟ — اعرض التقرير"}
+        {open ? "أخف تقرير التجميع" : "أتتجمّع هذه في مسارات؟ — اعرض التقرير"}
       </Button>
 
       {open ? (
         <div className="mt-3">
           {loading ? (
             <div className="grid place-items-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground/50" aria-label="جارٍ الحساب" />
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground/50" aria-label="جار الحساب" />
             </div>
           ) : err ? (
             <p role="alert" className="text-read font-bold text-red-300">{err}</p>
@@ -191,7 +191,7 @@ function ClusterPanel({ scope }: { scope: "open" | "all" }) {
                         </span>
                         {!c.domainReachable ? (
                           <span className="rounded-full bg-amber-500/15 px-2.5 py-0.5 text-xs font-bold text-amber-300">
-                            لا يصله هدفٌ اليوم
+                            لا يصله هدف اليوم
                           </span>
                         ) : null}
                       </div>
@@ -199,8 +199,8 @@ function ClusterPanel({ scope }: { scope: "open" | "all" }) {
                       <p className="mt-1 text-sm leading-7 text-muted-foreground">{c.verdictAr}</p>
 
                       <div className="mt-1 text-xs text-muted-foreground/70">
-                        الجمهورُ المشترَك:{" "}
-                        {c.commonStagesAr.length > 0 ? c.commonStagesAr.join(" · ") : "— لا جمهورَ يجمعها —"}
+                        الجمهور المشترك:{" "}
+                        {c.commonStagesAr.length > 0 ? c.commonStagesAr.join(" · ") : "— لا جمهور يجمعها —"}
                       </div>
 
                       <ul className="mt-2 grid gap-1.5">
@@ -209,7 +209,7 @@ function ClusterPanel({ scope }: { scope: "open" | "all" }) {
                             «<b className="text-foreground">{p.titleAr}</b>»
                             {p.trainerName ? <span className="text-muted-foreground/70"> — {p.trainerName}</span> : null}
                             <div className="text-xs text-muted-foreground/70">
-                              أقربُ رمز: {p.nearestCourseId} «{p.nearestTitleAr}»
+                              أقرب رمز: {p.nearestCourseId} «{p.nearestTitleAr}»
                               {p.sharedAr.length > 0 ? ` · تشترك في: ${p.sharedAr.join("، ")}` : null}
                             </div>
                           </li>
@@ -227,8 +227,8 @@ function ClusterPanel({ scope }: { scope: "open" | "all" }) {
                     بلا مرساة ({data.unanchored.length})
                   </b>
                   <p className="mt-1 text-sm leading-7 text-muted-foreground">
-                    لا تشترك كلمةٌ من عناوينها مع الكتالوج، فلا تُوضَع في مجال. وهي إمّا
-                    <b> بابٌ جديدٌ فعلا</b>، وإمّا عنوانٌ غامضٌ يُسأل صاحبُه عنه.
+                    لا تشترك كلمة من عناوينها مع الكتالوج، فلا توضع في مجال. وهي إمّا
+                    <b> باب جديد فعلا</b>، وإمّا عنوان غامض يسأل صاحبه عنه.
                   </p>
                   <ul className="mt-2 grid gap-1.5">
                     {data.unanchored.map((p) => (
@@ -242,11 +242,11 @@ function ClusterPanel({ scope }: { scope: "open" | "all" }) {
               ) : null}
 
               <p className="mt-3 text-sm leading-7 text-muted-foreground/70">
-                <b>◆ مرشَّحُ مسار</b> — {data.pathCourseCount} فأكثرُ بجمهورٍ واحد. يُقرأ ولا يُنفَّذ:
-                المسارُ وعدٌ ومخرَجٌ ختاميٌّ وشهادة، ولا يُولَد من عناوينَ اجتمعت في عمود.
-                {" · "}<b>◇ يُقسَم بالجمهور</b> — عددُه يكفي ولا جمهورَ يجمعه.
-                {" · "}<b>· دورةٌ قائمةٌ بنفسها</b> — ما دون ذلك.
-                {" "}ومجالٌ لا يصله هدفٌ: العلاجُ بنكُ الأسئلة لا مسارٌ جديد.
+                <b>◆ مرشّح مسار</b> — {data.pathCourseCount} فأكثر بجمهور واحد. يقرأ ولا ينفّذ:
+                المسار وعد ومخرج ختاميّ وشهادة، ولا يولد من عناوين اجتمعت في عمود.
+                {" · "}<b>◇ يقسم بالجمهور</b> — عدده يكفي ولا جمهور يجمعه.
+                {" · "}<b>· دورة قائمة بنفسها</b> — ما دون ذلك.
+                {" "}ومجال لا يصله هدف: العلاج بنك الأسئلة لا مسار جديد.
               </p>
             </>
           ) : null}
@@ -316,14 +316,14 @@ export default function CourseProposals() {
   const view = paginate(shown, page, 8);
 
   return (
-    <AdminLayout title="دوراتٌ اقترحها المدرّبون">
+    <AdminLayout title="دورات اقترحها المدرّبون">
       <Card className="mb-4">
         <p className="text-sm leading-7 text-muted-foreground">
-          كلُّ اقتراحٍ هنا <b>ليس دورةً بعد</b>: لا يظهر في الكتالوج ولا يُحسب في التشخيص حتّى يُصنَّف.
-          وبابان للتصنيف — <b>نسخةٌ من رمزٍ قائم</b> إن كانت قريبةً منه فتُربط به ويقترح المدرّبُ
-          نسختَه بنفسه، أو <b>دورةٌ جديدة</b> تُنشأ في نموذج الكتالوج بمهاراتها ثمّ تُربط هنا.
-          {" "}وقبلهما <b>اسأل المدرّب</b> إن نقصك ما تقرّر به — فيعود الاقتراحُ إليك بجوابه.
-          {" "}وكلُّ تصنيفٍ يفتح لك <b>مهمّةً قائمةً بتأهيله</b> للدورة، فلا يُصنَّف اقتراحٌ ويبقى صاحبُه لا يدرّسه.
+          كلّ اقتراح هنا <b>ليس دورة بعد</b>: لا يظهر في الكتالوج ولا يحسب في التشخيص حتّى يصنّف.
+          وبابان للتصنيف — <b>نسخة من رمز قائم</b> إن كانت قريبة منه فتربط به ويقترح المدرّب
+          نسخته بنفسه، أو <b>دورة جديدة</b> تنشأ في نموذج الكتالوج بمهاراتها ثمّ تربط هنا.
+          {" "}وقبلهما <b>اسأل المدرّب</b> إن نقصك ما تقرّر به — فيعود الاقتراح إليك بجوابه.
+          {" "}وكلّ تصنيف يفتح لك <b>مهمّة قائمة بتأهيله</b> للدورة، فلا يصنّف اقتراح ويبقى صاحبه لا يدرّسه.
         </p>
       </Card>
 
@@ -331,7 +331,7 @@ export default function CourseProposals() {
         <Card tone="danger" role="alert" className="text-center text-read font-bold text-red-300">{err}</Card>
       ) : !rows ? (
         <div className="grid place-items-center py-16">
-          <Loader2 className="h-7 w-7 animate-spin text-muted-foreground/50" aria-label="جارٍ التحميل" />
+          <Loader2 className="h-7 w-7 animate-spin text-muted-foreground/50" aria-label="جار التحميل" />
         </div>
       ) : (
         <>
@@ -339,19 +339,19 @@ export default function CourseProposals() {
           <CourseDecisionsUpload onApplied={load} />
 
           <ListToolbar q={q} onQ={setQ} onPage={setPage} view={view} unit="اقتراحا"
-            placeholder="ابحث بعنوانِ الدورة أو باسم المدرّب…" />
+            placeholder="ابحث بعنوان الدورة أو باسم المدرّب…" />
 
           <div className="mb-3 mt-2">
             <Button tone="ghost" onClick={() => setShowDecided(!showDecided)}>
-              {showDecided ? "أخفِ ما انتهى أمرُه" : "أظهِر ما انتهى أمرُه — الدوراتِ والمردودَ"}
+              {showDecided ? "أخف ما انتهى أمره" : "أظهر ما انتهى أمره — الدورات والمردود"}
             </Button>
           </div>
 
           {view.total === 0 ? (
             <EmptyState
               icon={BookPlus}
-              titleAr={showDecided ? "لا اقتراحَ يطابق بحثَك" : "لا اقتراحَ ينتظر التصنيفَ ولا مربوطَ يُراجَع"}
-              reasonAr="تصل هنا الدوراتُ التي يقولها المدرّبون في طلبِ انضمامهم أو من بوّابتهم — ولا تدخل الكتالوجَ حتّى تُصنَّف."
+              titleAr={showDecided ? "لا اقتراح يطابق بحثك" : "لا اقتراح ينتظر التصنيف ولا مربوط يراجع"}
+              reasonAr="تصل هنا الدورات التي يقولها المدرّبون في طلب انضمامهم أو من بوّابتهم — ولا تدخل الكتالوج حتّى تصنّف."
             />
           ) : (
             <div className="grid gap-3">
@@ -385,12 +385,12 @@ export default function CourseProposals() {
                           <span className="text-muted-foreground/70"> · {r.trainerEmail}</span>
                         </div>
                         <div className="mt-1 text-xs text-muted-foreground/70">
-                          {r.decidedAt ? `صُنِّفت ${fmtDateLong(r.decidedAt)}` : `وصلت ${fmtDateLong(r.createdAt)}`}
+                          {r.decidedAt ? `صنّفت ${fmtDateLong(r.decidedAt)}` : `وصلت ${fmtDateLong(r.createdAt)}`}
                         </div>
                         {/* واقفٌ على جوابه هو — فلا يُقرأ الطابورُ كأنّه كلُّه ينتظرنا */}
                         {r.status === "info_requested" ? (
                           <span className="mt-2 inline-block rounded-full bg-amber-500/15 px-2.5 py-0.5 text-xs font-bold text-amber-300">
-                            سُئل — ننتظر جوابَه
+                            سئل — ننتظر جوابه
                           </span>
                         ) : null}
                       </div>
@@ -401,7 +401,7 @@ export default function CourseProposals() {
                             tone="secondary" icon={Link2} disabled={busy}
                             onClick={() => { setLinkFor(linkFor === r.id ? null : r.id); setRejectFor(null); setAskFor(null); }}
                           >
-                            نسخةٌ من رمزٍ قائم
+                            نسخة من رمز قائم
                           </Button>
                           {/* الإنشاءُ في نموذج الكتالوج نفسِه — مع عنوان الاقتراح ومعرّفه،
                               فيعود النموذجُ ويربط ما أُنشئ بصاحبه بلا نسخٍ يدويّ. */}
@@ -412,7 +412,7 @@ export default function CourseProposals() {
                               + `&titleAr=${encodeURIComponent(r.titleAr)}#course`,
                             )}
                           >
-                            دورةٌ جديدة
+                            دورة جديدة
                           </Button>
                           {/* بابٌ قبل القرار: اسأل. ومن صنّف ما لا يفهم خمّن أو رفض. */}
                           <Button
@@ -425,7 +425,7 @@ export default function CourseProposals() {
                             tone="danger" icon={X} disabled={busy}
                             onClick={() => { setRejectFor(rejectFor === r.id ? null : r.id); setLinkFor(null); setAskFor(null); }}
                           >
-                            لا تُقبل
+                            لا تقبل
                           </Button>
                         </div>
                       ) : linked ? (
@@ -434,16 +434,16 @@ export default function CourseProposals() {
                             tone="secondary" icon={Link2} disabled={busy}
                             onClick={() => { setLinkFor(linkFor === r.id ? null : r.id); setLinkCourse(r.courseId ?? ""); setRejectFor(null); setAskFor(null); setEditFor(null); }}
                           >
-                            اربِطْها بغيره
+                            اربطها بغيره
                           </Button>
                           <Button
                             tone="ghost" icon={Link2Off} disabled={busy}
                             onClick={() => void run(
                               () => apiPost(`/api/admin/course-proposals/${r.id}/unlink`, {}),
-                              "نُقض الربطُ — عادت إلى الطابور",
+                              "نقض الربط — عادت إلى الطابور",
                             )}
                           >
-                            انقُضِ الربط
+                            انقض الربط
                           </Button>
                           <Button
                             tone="ghost" icon={Pencil} disabled={busy}
@@ -453,7 +453,7 @@ export default function CourseProposals() {
                               setLinkFor(null); setRejectFor(null); setAskFor(null);
                             }}
                           >
-                            صحِّحْ نصَّها
+                            صحّح نصّها
                           </Button>
                         </div>
                       ) : (
@@ -468,27 +468,27 @@ export default function CourseProposals() {
                       <Inset className="mt-3 text-sm leading-7 text-muted-foreground">
                         {linked ? (
                           <>
-                            <b className="text-teal-light-ink">رُبطت بـ «{r.courseTitleAr ?? r.courseId}»</b>
-                            <span className="text-muted-foreground"> — تبقى هنا لتُراجَع، ولا تدخل الكتالوجَ باسمها.</span>
+                            <b className="text-teal-light-ink">ربطت بـ «{r.courseTitleAr ?? r.courseId}»</b>
+                            <span className="text-muted-foreground"> — تبقى هنا لتراجع، ولا تدخل الكتالوج باسمها.</span>
                             {" "}
                           </>
                         ) : r.courseId ? (
                           <>الرمز: <b className="text-foreground">{r.courseId}</b>{r.courseTitleAr ? ` — ${r.courseTitleAr}` : ""}. </>
                         ) : null}
-                        {r.decisionNoteAr || (r.status === "rejected" ? "بلا سببٍ مكتوب." : "")}
+                        {r.decisionNoteAr || (r.status === "rejected" ? "بلا سبب مكتوب." : "")}
                       </Inset>
                     ) : null}
 
                     {/* ── تصحيحُ نصٍّ كتبه صاحبُه ── */}
                     {editFor === r.id ? (
                       <Inset className="mt-3 grid gap-3">
-                        <StaffField label="عنوانُ الدورة" hint="وهي كلماتُ صاحبها — فما كان يُكتب في سجلّ الأثر كاملا">
+                        <StaffField label="عنوان الدورة" hint="وهي كلمات صاحبها — فما كان يكتب في سجلّ الأثر كاملا">
                           <input
                             className={staffControlCls} value={editTitle} maxLength={200}
                             onChange={(e) => setEditTitle(e.target.value)}
                           />
                         </StaffField>
-                        <StaffField label="نبذتُها">
+                        <StaffField label="نبذتها">
                           <textarea
                             className={staffAreaCls} rows={3} maxLength={2000} value={editSummary}
                             onChange={(e) => setEditSummary(e.target.value)}
@@ -501,12 +501,12 @@ export default function CourseProposals() {
                               () => apiPatch(`/api/admin/course-proposals/${r.id}`, {
                                 titleAr: editTitle.trim(), summaryAr: editSummary.trim() || null,
                               }),
-                              "صُحِّح نصُّ الاقتراح — وما كان في الأثر",
+                              "صحّح نصّ الاقتراح — وما كان في الأثر",
                             )}
                           >
-                            احفظْ
+                            احفظ
                           </Button>
-                          <Button tone="ghost" disabled={busy} onClick={() => setEditFor(null)}>تراجعْ</Button>
+                          <Button tone="ghost" disabled={busy} onClick={() => setEditFor(null)}>تراجع</Button>
                         </div>
                       </Inset>
                     ) : null}
@@ -524,7 +524,7 @@ export default function CourseProposals() {
                           <div>
                             <div className="mb-2 flex items-center gap-1.5 text-sm font-bold text-foreground">
                               <Sparkles className="h-4 w-4 text-teal" aria-hidden />
-                              أقربُ ما عندنا إليها
+                              أقرب ما عندنا إليها
                             </div>
                             <div className="grid gap-2">
                               {r.suggestedCourses.map((sug) => (
@@ -552,16 +552,16 @@ export default function CourseProposals() {
                           </div>
                         ) : (
                           <p className="text-read leading-6 text-muted-foreground">
-                            لم يجد النظامُ رمزا قريبا — اخترْ من القائمة، أو أنشئها دورةً جديدة.
+                            لم يجد النظام رمزا قريبا — اختر من القائمة، أو أنشئها دورة جديدة.
                           </p>
                         )}
                         <StaffField
-                          label="أيُّ رمزٍ هي نسخةٌ منه؟"
-                          hint="يُربط الاقتراحُ به، ويقترح المدرّبُ اسمَه ومحاورَه بنفسه"
+                          label="أيّ رمز هي نسخة منه؟"
+                          hint="يربط الاقتراح به، ويقترح المدرّب اسمه ومحاوره بنفسه"
                         >
                           <CoursePicker
                             courses={courses} value={linkCourse}
-                            onChange={setLinkCourse} labelAr="أيُّ رمزٍ هي نسخةٌ منه؟"
+                            onChange={setLinkCourse} labelAr="أيّ رمز هي نسخة منه؟"
                           />
                         </StaffField>
                         <div className="flex gap-2">
@@ -569,12 +569,12 @@ export default function CourseProposals() {
                             tone="confirm" icon={Check} loading={busy} disabled={!linkCourse}
                             onClick={() => run(
                               () => apiPost(`/api/admin/course-proposals/${r.id}/link`, { courseId: linkCourse }),
-                              "رُبط الاقتراحُ بالرمز",
+                              "ربط الاقتراح بالرمز",
                             )}
                           >
-                            اربِطها
+                            اربطها
                           </Button>
-                          <Button tone="ghost" icon={X} onClick={() => setLinkFor(null)}>تراجَع</Button>
+                          <Button tone="ghost" icon={X} onClick={() => setLinkFor(null)}>تراجع</Button>
                         </div>
                       </Inset>
                     ) : null}
@@ -584,11 +584,11 @@ export default function CourseProposals() {
                       <Inset className="mt-3 grid gap-3">
                         <StaffField
                           label="ما الذي تريد أن تعرفه عنها؟"
-                          hint="يصل المدرّبَ في «دوراتي المقترحة» ويُشعَر به — ويعود الاقتراحُ إليك بجوابه"
+                          hint="يصل المدرّب في «دوراتي المقترحة» ويشعر به — ويعود الاقتراح إليك بجوابه"
                         >
                           <textarea
                             className={staffControlCls} value={askText} maxLength={2000} rows={3}
-                            placeholder="مثلا: كم ساعةً تراها؟ وما الفرق بينها وبين C-BIZ-104؟"
+                            placeholder="مثلا: كم ساعة تراها؟ وما الفرق بينها وبين C-BIZ-104؟"
                             onChange={(e) => setAskText(e.target.value)}
                           />
                         </StaffField>
@@ -597,12 +597,12 @@ export default function CourseProposals() {
                             tone="confirm" icon={Check} loading={busy} disabled={askText.trim().length < 5}
                             onClick={() => run(
                               () => apiPost(`/api/admin/course-proposals/${r.id}/ask`, { questionAr: askText.trim() }),
-                              "وصل السؤالُ صاحبَها",
+                              "وصل السؤال صاحبها",
                             )}
                           >
-                            أرسِل السؤال
+                            أرسل السؤال
                           </Button>
-                          <Button tone="ghost" icon={X} onClick={() => setAskFor(null)}>تراجَع</Button>
+                          <Button tone="ghost" icon={X} onClick={() => setAskFor(null)}>تراجع</Button>
                         </div>
                       </Inset>
                     ) : null}
@@ -627,7 +627,7 @@ export default function CourseProposals() {
                             <p className="mt-0.5 whitespace-pre-wrap text-muted-foreground">{r.answerAr}</p>
                           </div>
                         ) : (
-                          <p className="text-read text-muted-foreground">ولم يُجب بعد.</p>
+                          <p className="text-read text-muted-foreground">ولم يجب بعد.</p>
                         )}
                       </Inset>
                     ) : null}
@@ -635,10 +635,10 @@ export default function CourseProposals() {
                     {/* ── الرفضُ بسبب ── */}
                     {rejectFor === r.id ? (
                       <Inset className="mt-3 grid gap-3">
-                        <StaffField label="لماذا لا تُقبل؟" hint="يقرؤه المدرّبُ في بوّابته — وبلا سببٍ يُعيدها كما هي">
+                        <StaffField label="لماذا لا تقبل؟" hint="يقرؤه المدرّب في بوّابته — وبلا سبب يعيدها كما هي">
                           <input
                             className={staffControlCls} value={rejectNote} maxLength={2000}
-                            placeholder="مثلا: مغطّاةٌ في C-AUT-103، ولا تضيف مهارةً جديدة"
+                            placeholder="مثلا: مغطّاة في C-AUT-103، ولا تضيف مهارة جديدة"
                             onChange={(e) => setRejectNote(e.target.value)}
                           />
                         </StaffField>
@@ -647,12 +647,12 @@ export default function CourseProposals() {
                             tone="danger" icon={Check} loading={busy} disabled={rejectNote.trim().length < 5}
                             onClick={() => run(
                               () => apiPost(`/api/admin/course-proposals/${r.id}/reject`, { noteAr: rejectNote.trim() }),
-                              "سُجّل الرفضُ بسببه",
+                              "سجّل الرفض بسببه",
                             )}
                           >
-                            ارفِضها
+                            ارفضها
                           </Button>
-                          <Button tone="ghost" icon={X} onClick={() => setRejectFor(null)}>تراجَع</Button>
+                          <Button tone="ghost" icon={X} onClick={() => setRejectFor(null)}>تراجع</Button>
                         </div>
                       </Inset>
                     ) : null}

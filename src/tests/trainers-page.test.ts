@@ -19,40 +19,40 @@ import { describe, expect, it } from 'vitest'
 
 const read = (p: string) => readFileSync(join(process.cwd(), p), 'utf8')
 
-describe('صفحةُ المدرّبين — نبذةٌ منسدلة ودوراتٌ تُشترى', () => {
+describe('صفحة المدرّبين — نبذة منسدلة ودورات تشترى', () => {
   const page = read('src/pages/Trainers.tsx')
 
-  it('الدوراتُ المسنَدة تُفكّ من الكتالوج وتُربط بصفحة الشراء', () => {
-    expect(page, 'المعرّفاتُ تصل ولا تُفكّ').toMatch(/assignedCourseIds[\s\S]*courseById\(/)
-    expect(page, 'لا رابطَ إلى صفحة الدورة').toContain('to={`/build/${')
+  it('الدورات المسندة تفكّ من الكتالوج وتربط بصفحة الشراء', () => {
+    expect(page, 'المعرّفات تصل ولا تفكّ').toMatch(/assignedCourseIds[\s\S]*courseById\(/)
+    expect(page, 'لا رابط إلى صفحة الدورة').toContain('to={`/build/${')
   })
 
-  it('والمسارُ يُشتقّ من دوراته لا يُكتب بيد — وله رابطُه', () => {
+  it('والمسار يشتقّ من دوراته لا يكتب بيد — وله رابطه', () => {
     expect(page).toMatch(/pathwayById\(/)
     expect(page).toContain('to={`/pathways/${')
   })
 
-  it('والطيُّ معلَنٌ: زرٌّ بـaria-expanded يفتح نبذةً لها معرّفُها', () => {
+  it('والطيّ معلن: زرّ بـaria-expanded يفتح نبذة لها معرّفها', () => {
     expect(page).toMatch(/aria-expanded=\{/)
     expect(page).toMatch(/aria-controls=\{/)
   })
 })
 
-describe('اسمُ المدرّب في اختيار الشعبة', () => {
-  it('المصدرُ يحمل أسماءَ المدرّبين من الخادم', () => {
+describe('اسم المدرّب في اختيار الشعبة', () => {
+  it('المصدر يحمل أسماء المدرّبين من الخادم', () => {
     const src = read('src/services/cohort-prices.ts')
-    expect(src, 'الحقلُ يصل ولا يُقرأ').toMatch(/trainers:\s*Array\.isArray\(c\.trainers\)/)
+    expect(src, 'الحقل يصل ولا يقرأ').toMatch(/trainers:\s*Array\.isArray\(c\.trainers\)/)
     expect(src).toMatch(/interface CohortOption[\s\S]*trainers: string\[\]/)
   })
 
-  it('والمنتقي ولوحُ الشراء يعرضانه', () => {
+  it('والمنتقي ولوح الشراء يعرضانه', () => {
     expect(read('src/components/CohortPicker.tsx')).toMatch(/c\.trainers/)
     expect(read('src/components/BuyPanel.tsx')).toMatch(/o\.trainers/)
   })
 })
 
-describe('بوّابةُ الظهور العامّ واحدةٌ في الخادم', () => {
-  it('بطاقةُ الدورة والشعبُ العامّة تقرآن البوّابةَ نفسَها — لا نسخةً لكلٍّ', () => {
+describe('بوّابة الظهور العامّ واحدة في الخادم', () => {
+  it('بطاقة الدورة والشعب العامّة تقرآن البوّابة نفسها — لا نسخة لكلّ', () => {
     const gate = read('server/services/trainer-visibility.ts')
     expect(gate).toMatch(/publishApprovedAt !== null/)
     expect(gate).toMatch(/suspendedAt === null/)
@@ -60,9 +60,9 @@ describe('بوّابةُ الظهور العامّ واحدةٌ في الخاد�
     expect(read('server/services/public-catalog.service.ts')).toMatch(/trainerPubliclyVisible\(/)
   })
 
-  it('ورفعُ الإيقاف يعيد الظهورَ لمن كان نشرُه معتمَدا', () => {
+  it('ورفع الإيقاف يعيد الظهور لمن كان نشره معتمدا', () => {
     const review = read('server/services/trainer-review.service.ts')
     const block = review.slice(review.indexOf("action === 'reinstate'"), review.indexOf("action === 'conditionally_approve'"))
-    expect(block, 'رفعُ الإيقاف لا يعيد publicVisibility').toMatch(/publicVisibility:\s*profile\.publishApprovedAt !== null/)
+    expect(block, 'رفع الإيقاف لا يعيد publicVisibility').toMatch(/publicVisibility:\s*profile\.publishApprovedAt !== null/)
   })
 })

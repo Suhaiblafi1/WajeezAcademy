@@ -80,7 +80,7 @@ interface CourseOpt { id: string; titleAr?: string; title?: string }
 interface CohortOpt { id: string; title: string; courseId: string; status: string }
 
 const QUAL_LABEL: Record<string, string> = {
-  qualified: "مؤهَّل", pending: "طلبٌ معلَّق", rejected: "مرفوض", retired: "متقاعد",
+  qualified: "مؤهّل", pending: "طلب معلّق", rejected: "مرفوض", retired: "متقاعد",
 };
 
 /* ملفُّ المدرّب العامّ — ما تعرضه صفحةُ الفريق، يُحرَّر حيث يُقرَّر نشرُه.
@@ -127,7 +127,7 @@ function PublicProfileEditor({
           ? { photoUrl: form.photoUrl.trim() || null }
           : {}),
       });
-      toast("حُفظ الملفُّ العامّ");
+      toast("حفظ الملفّ العامّ");
       await onSaved();
     } catch (e) {
       toastError(e instanceof ApiError ? e.message : "تعذّر الحفظ");
@@ -139,10 +139,10 @@ function PublicProfileEditor({
     setBusy(true);
     try {
       await apiPost(`/api/admin/trainers/${trainer.profileId}/photo/${approve ? "approve" : "reject"}`, {});
-      toast(approve ? "اعتُمدت الصورة" : "رُدّت الصورة");
+      toast(approve ? "اعتمدت الصورة" : "ردّت الصورة");
       await onSaved();
     } catch (e) {
-      toastError(e instanceof ApiError ? e.message : "تعذّر تنفيذُ القرار");
+      toastError(e instanceof ApiError ? e.message : "تعذّر تنفيذ القرار");
     } finally { setBusy(false); }
   };
 
@@ -155,19 +155,19 @@ function PublicProfileEditor({
         `/api/admin/trainers/${trainer.profileId}/photo-upload`, { mime: PHOTO_OUT_MIME },
       );
       if (blob.size > r.maxBytes) {
-        toastError(`الصورةُ أكبرُ من الحدّ (${Math.round(r.maxBytes / 1024)} ك.ب)`);
+        toastError(`الصورة أكبر من الحدّ (${Math.round(r.maxBytes / 1024)} ك.ب)`);
         return;
       }
       const res = await fetch(`${API_BASE}${r.uploadUrl}`, {
         method: "PUT", headers: { "content-type": PHOTO_OUT_MIME }, body: blob,
       });
-      if (!res.ok) { toastError(`تعذّر رفعُ الصورة (${res.status})`); return; }
-      toast("رُفعت الصورة");
+      if (!res.ok) { toastError(`تعذّر رفع الصورة (${res.status})`); return; }
+      toast("رفعت الصورة");
       setFraming(null);
       setForm((f) => ({ ...f, photoUrl: "" }));
       await onSaved();
     } catch (e) {
-      toastError(e instanceof ApiError ? e.message : "تعذّر رفعُ الصورة");
+      toastError(e instanceof ApiError ? e.message : "تعذّر رفع الصورة");
     } finally {
       setBusy(false);
       if (fileRef.current) fileRef.current.value = "";
@@ -176,37 +176,37 @@ function PublicProfileEditor({
 
   return (
     <div className="mt-3 border-t border-white/10 pt-3">
-      <p className="text-read font-black text-muted-foreground">ملفُّه العامّ — ما تعرضه صفحةُ الفريق</p>
+      <p className="text-read font-black text-muted-foreground">ملفّه العامّ — ما تعرضه صفحة الفريق</p>
       <div className="mt-2 grid gap-2.5 md:grid-cols-2">
         <div>
           <label className="block text-fine font-bold text-muted-foreground" htmlFor={`hl-${trainer.profileId}`}>
-            العنوانُ المهنيّ
+            العنوان المهنيّ
           </label>
           <input
             id={`hl-${trainer.profileId}`}
             value={form.headline}
             onChange={(e) => setForm({ ...form, headline: e.target.value })}
-            placeholder="مثال: مهندسُ بياناتٍ ومدرّبُ تحليلٍ تطبيقيّ"
+            placeholder="مثال: مهندس بيانات ومدرّب تحليل تطبيقيّ"
             className={`${controlCls} mt-1 w-full`}
           />
         </div>
         <div>
           <label className="block text-fine font-bold text-muted-foreground" htmlFor={`ph-${trainer.profileId}`}>
-            رابطُ الصورة — أو ارفعها أدناه
+            رابط الصورة — أو ارفعها أدناه
           </label>
           <input
             id={`ph-${trainer.profileId}`}
             dir="ltr"
             value={form.photoUrl}
             onChange={(e) => setForm({ ...form, photoUrl: e.target.value })}
-            placeholder={shown?.startsWith("/api/") ? "صورةٌ مرفوعةٌ عندنا" : "https://…"}
+            placeholder={shown?.startsWith("/api/") ? "صورة مرفوعة عندنا" : "https://…"}
             className={`${controlCls} mt-1 w-full font-mono`}
           />
         </div>
       </div>
       <div className="mt-2.5">
         <label className="block text-fine font-bold text-muted-foreground" htmlFor={`bio-${trainer.profileId}`}>
-          نبذتُه — تُقرأ في صفحة الفريق كما تُكتب هنا
+          نبذته — تقرأ في صفحة الفريق كما تكتب هنا
         </label>
         <textarea
           id={`bio-${trainer.profileId}`}
@@ -221,13 +221,13 @@ function PublicProfileEditor({
         <Inset className="mt-2.5 flex flex-wrap items-center gap-3">
           <img
             src={trainer.pendingPhotoUrl}
-            alt="صورةٌ تنتظر الاعتماد"
+            alt="صورة تنتظر الاعتماد"
             className="h-14 w-14 shrink-0 rounded-full object-cover ring-2 ring-amber-400/60"
           />
           <div className="min-w-40 flex-1">
-            <p className="text-read font-black">صورةٌ رفعها بنفسه — تنتظر اعتمادَك</p>
+            <p className="text-read font-black">صورة رفعها بنفسه — تنتظر اعتمادك</p>
             <p className="text-read leading-5 text-muted-foreground">
-              لا تراها صفحةُ الفريق حتّى تعتمدها. والردُّ لا يحذفها من حسابه — يمنع عرضَها عامّةً فقط.
+              لا تراها صفحة الفريق حتّى تعتمدها. والردّ لا يحذفها من حسابه — يمنع عرضها عامّة فقط.
             </p>
           </div>
           <Button
@@ -236,10 +236,10 @@ function PublicProfileEditor({
             disabled={busy}
             onClick={() => void decidePhoto(true)}
           >
-            اعتمِدها للصفحة العامّة
+            اعتمدها للصفحة العامّة
           </Button>
           <Button tone="ghost" size="sm" disabled={busy} onClick={() => void decidePhoto(false)}>
-            ردُّها
+            ردّها
           </Button>
         </Inset>
       )}
@@ -247,7 +247,7 @@ function PublicProfileEditor({
         {shown && (
           <img src={shown} alt="" className="h-12 w-12 shrink-0 rounded-full object-cover ring-1 ring-white/15" />
         )}
-        <Button tone="confirm" size="sm" disabled={busy} onClick={() => void save()}>حفظُ الملفّ العامّ</Button>
+        <Button tone="confirm" size="sm" disabled={busy} onClick={() => void save()}>حفظ الملفّ العامّ</Button>
         <input
           ref={fileRef}
           type="file"
@@ -259,7 +259,7 @@ function PublicProfileEditor({
           <ImagePlus className="h-3.5 w-3.5" /> ارفع صورة
         </Button>
         <span className="text-fine leading-5 text-muted-foreground">
-          حتّى ميغابايت · JPEG أو PNG أو WebP — والرفعُ يحتاج تفعيلَ التخزين على الخادم.
+          حتّى ميغابايت · JPEG أو PNG أو WebP — والرفع يحتاج تفعيل التخزين على الخادم.
         </span>
       </div>
       {framing && (
@@ -303,27 +303,27 @@ function PendingTextReview({
       if (approve) {
         await apiPost(`/api/admin/trainers/${trainer.profileId}/public-text/approve`,
           { headline: headline.trim(), bioPublic: bio.trim() });
-        toast(edited ? "اعتُمدت بتعديلك — ووصله خبرُها" : "اعتُمدت كما كتبها — ووصله خبرُها");
+        toast(edited ? "اعتمدت بتعديلك — ووصله خبرها" : "اعتمدت كما كتبها — ووصله خبرها");
       } else {
         await apiPost(`/api/admin/trainers/${trainer.profileId}/public-text/reject`, { reasonAr: reason.trim() });
-        toast("رُدّت — ويقرأ سببَك في حسابه");
+        toast("ردّت — ويقرأ سببك في حسابه");
       }
       await onSaved();
     } catch (e) {
-      toastError(e instanceof ApiError ? e.message : "تعذّر تنفيذُ القرار");
+      toastError(e instanceof ApiError ? e.message : "تعذّر تنفيذ القرار");
     } finally { setBusy(false); }
   };
 
   return (
     <Inset tone="warn" className="mt-2.5 p-3">
       <p className="text-read font-black">
-        أرسل عنوانَه ونبذتَه {fmtDateTime(p.at)} — تنتظر اعتمادَك
+        أرسل عنوانه ونبذته {fmtDateTime(p.at)} — تنتظر اعتمادك
       </p>
       <p className="mt-0.5 text-read leading-6 text-muted-foreground">
-        عدّلْ ما شئتَ في الحقلين، ثمّ اعتمِدْ: يُكتب ما فيهما في صفحة «المدربون». وما هو معتمَدٌ الآن يبقى معروضا حتّى تقرّر.
+        عدّل ما شئت في الحقلين، ثمّ اعتمد: يكتب ما فيهما في صفحة «المدربون». وما هو معتمد الآن يبقى معروضا حتّى تقرّر.
       </p>
       <label className="mt-2.5 block text-fine font-bold text-muted-foreground" htmlFor={`phl-${trainer.profileId}`}>
-        العنوانُ المهنيّ
+        العنوان المهنيّ
       </label>
       <input id={`phl-${trainer.profileId}`} value={headline} maxLength={160}
         onChange={(e) => setHeadline(e.target.value)} className={`${controlCls} mt-1 w-full`} />
@@ -333,26 +333,26 @@ function PendingTextReview({
       <textarea id={`pbio-${trainer.profileId}`} rows={4} value={bio} maxLength={1200}
         onChange={(e) => setBio(e.target.value)} className={`${staffAreaCls} mt-1 w-full`} />
       <p className={`mt-1 text-read ${words > BIO_MAX_WORDS ? "text-gold-ink" : "text-muted-foreground"}`}>
-        {words} / {BIO_MAX_WORDS} كلمة{edited ? " · عدّلتَها — يُعتمَد تعديلُك" : ""}
+        {words} / {BIO_MAX_WORDS} كلمة{edited ? " · عدّلتها — يعتمد تعديلك" : ""}
       </p>
       {rejecting ? (
         <div className="mt-2.5 grid gap-2">
           <textarea rows={2} maxLength={500} value={reason} onChange={(e) => setReason(e.target.value)}
-            placeholder="سببُ الردّ — يقرؤه المدرّبُ في حسابه بحرفه"
+            placeholder="سبب الردّ — يقرؤه المدرّب في حسابه بحرفه"
             className={`${controlCls} w-full`} />
           <div className="flex flex-wrap gap-2">
             <Button size="sm" tone="danger" disabled={busy || reason.trim().length < 3}
-              onClick={() => void decide(false)}>أرسِلِ الردّ</Button>
-            <Button size="sm" tone="ghost" disabled={busy} onClick={() => setRejecting(false)}>تراجعْ</Button>
+              onClick={() => void decide(false)}>أرسل الردّ</Button>
+            <Button size="sm" tone="ghost" disabled={busy} onClick={() => setRejecting(false)}>تراجع</Button>
           </div>
         </div>
       ) : (
         <div className="mt-2.5 flex flex-wrap gap-2">
           <Button size="sm" tone="confirm" icon={CheckCircle2} disabled={busy || headline.trim().length < 3 || bio.trim().length < 3}
             onClick={() => void decide(true)}>
-            {edited ? "اعتمِدْها بتعديلك" : "اعتمِدْها كما كتبها"}
+            {edited ? "اعتمدها بتعديلك" : "اعتمدها كما كتبها"}
           </Button>
-          <Button size="sm" tone="ghost" disabled={busy} onClick={() => setRejecting(true)}>ردَّها بسبب</Button>
+          <Button size="sm" tone="ghost" disabled={busy} onClick={() => setRejecting(true)}>ردّها بسبب</Button>
         </div>
       )}
     </Inset>
@@ -444,20 +444,20 @@ export default function TrainerRunOps() {
       <section>
         <h3 className="flex items-center gap-2 text-sm font-black">
           <Clock className="h-4 w-4 text-gold-ink" />
-          طلباتُ التأهيل المعلّقة
+          طلبات التأهيل المعلّقة
           {requests.length > 0 && (
             <span className="rounded-full bg-gold/20 px-2 py-0.5 text-fine font-black text-gold-ink">{requests.length}</span>
           )}
         </h3>
         <p className="mt-1 text-read leading-6 text-muted-foreground">
-          يُقدَّمها من يجدول الشعبة، ويبتّ فيها من يملك التأهيل — <b>فمن يطلب ليس من يقرّر</b>.
-          والموافقةُ <b>تؤهّل وتُسند إلى الشعبة المطلوبة في فعلٍ واحد</b>.
+          يقدّمها من يجدول الشعبة، ويبتّ فيها من يملك التأهيل — <b>فمن يطلب ليس من يقرّر</b>.
+          والموافقة <b>تؤهّل وتسند إلى الشعبة المطلوبة في فعل واحد</b>.
         </p>
 
         {requests.length === 0 ? (
           <Card className="mt-3 text-center">
             <CheckCircle2 className="mx-auto h-8 w-8 text-teal-light-ink/50" />
-            <p className="mt-2 text-read text-muted-foreground">لا طلبَ ينتظر قرارك.</p>
+            <p className="mt-2 text-read text-muted-foreground">لا طلب ينتظر قرارك.</p>
           </Card>
         ) : (
           <ul className="mt-3 space-y-3">
@@ -471,27 +471,27 @@ export default function TrainerRunOps() {
                       {r.requestedCohort.startsAt && <> — تبدأ {fmtDateTime(new Date(r.requestedCohort.startsAt))}</>}
                     </>
                   )}
-                  {r.requestedAt && <> · طُلب {fmtDateTime(new Date(r.requestedAt))}</>}
+                  {r.requestedAt && <> · طلب {fmtDateTime(new Date(r.requestedAt))}</>}
                 </p>
                 {r.note && <p className="mt-2 rounded-xl bg-paper/30 p-2.5 text-read leading-6">{r.note}</p>}
                 <div className="mt-3 flex flex-wrap items-center gap-2">
                   <input
                     value={note[r.id] ?? ""}
                     onChange={(e) => setNote((n) => ({ ...n, [r.id]: e.target.value }))}
-                    placeholder="ملاحظة تُسجَّل مع القرار (اختيارية)"
+                    placeholder="ملاحظة تسجّل مع القرار (اختيارية)"
                     aria-label="ملاحظة القرار"
                     className={`${controlCls} min-w-[16rem] flex-1`}
                   />
                   <Button tone="confirm" type="button" disabled={busy === r.id}
                     onClick={() => void act(r.id,
                       () => apiPost(`/api/admin/qualification-requests/${r.id}/decide`, { approve: true, note: note[r.id]?.trim() || undefined }),
-                      "أُهِّل وأُسنِد إلى الشعبة")}>
-                    <CheckCircle2 className="h-3.5 w-3.5" /> أهِّله وأسنِده
+                      "أهّل وأسند إلى الشعبة")}>
+                    <CheckCircle2 className="h-3.5 w-3.5" /> أهّله وأسنده
                   </Button>
                   <Button tone="danger" type="button" disabled={busy === r.id}
                     onClick={() => void act(r.id,
                       () => apiPost(`/api/admin/qualification-requests/${r.id}/decide`, { approve: false, note: note[r.id]?.trim() || undefined }),
-                      "رُفض الطلب")}>
+                      "رفض الطلب")}>
                     <XCircle className="h-3.5 w-3.5" /> ارفض
                   </Button>
                 </div>
@@ -516,7 +516,7 @@ export default function TrainerRunOps() {
             <label className="relative">
               <Search className="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
               <input
-                value={q} onChange={(e) => setQ(e.target.value)} placeholder="ابحث باسمٍ أو بريد"
+                value={q} onChange={(e) => setQ(e.target.value)} placeholder="ابحث باسم أو بريد"
                 aria-label="ابحث في المدرّبين"
                 className={`${controlCls} w-64 pr-9`}
               />
@@ -559,8 +559,8 @@ export default function TrainerRunOps() {
             }}
           >
             <p className="text-read leading-6 text-muted-foreground">
-              يُنشأ في خطوةٍ واحدة: <b className="text-foreground">حسابُه</b> و<b className="text-foreground">ملفُّ مدرّبٍ نشط</b> و<b className="text-foreground">دورُه</b> —
-              فيُؤهَّل ويُسنَد من هذه الشاشة مباشرة. ولا يظهر للعامّة حتّى تُعتمد صورتُه ونبذتُه.
+              ينشأ في خطوة واحدة: <b className="text-foreground">حسابه</b> و<b className="text-foreground">ملفّ مدرّب نشط</b> و<b className="text-foreground">دوره</b> —
+              فيؤهّل ويسند من هذه الشاشة مباشرة. ولا يظهر للعامّة حتّى تعتمد صورته ونبذته.
             </p>
             <div className="mt-3 grid gap-3 sm:grid-cols-3">
               <label className="block">
@@ -604,9 +604,9 @@ export default function TrainerRunOps() {
         {shown.length === 0 ? (
           <Card className="mt-3 p-8 text-center">
             <GraduationCap className="mx-auto h-10 w-10 text-muted-foreground/50" />
-            <p className="mt-3 text-sm font-black">لا مدرّبَ بعد</p>
+            <p className="mt-3 text-sm font-black">لا مدرّب بعد</p>
             <p className="mt-1 text-read leading-6 text-muted-foreground">
-              يظهر هنا كلُّ من أُنشئ له ملفُّ مدرّب — أي من اعتُمد من تبويب «الطلبات».
+              يظهر هنا كلّ من أنشئ له ملفّ مدرّب — أي من اعتمد من تبويب «الطلبات».
             </p>
           </Card>
         ) : (
@@ -626,14 +626,14 @@ export default function TrainerRunOps() {
                         {t.name}
                         {t.suspended && <span className="rounded-full bg-red-500/15 px-2 py-0.5 text-fine font-black text-red-300">موقوف</span>}
                         {(t.pendingText || t.pendingPhotoUrl) && (
-                          <Chip tone="warn" srPrefixAr="ملفُّه العامّ">
-                            {t.pendingText && t.pendingPhotoUrl ? "نبذةٌ وصورةٌ تنتظرانك"
-                              : t.pendingText ? "نبذةٌ تنتظرك" : "صورةٌ تنتظرك"}
+                          <Chip tone="warn" srPrefixAr="ملفّه العامّ">
+                            {t.pendingText && t.pendingPhotoUrl ? "نبذة وصورة تنتظرانك"
+                              : t.pendingText ? "نبذة تنتظرك" : "صورة تنتظرك"}
                           </Chip>
                         )}
                         {t.publiclyVisible && (
                           <span className="flex items-center gap-1 rounded-full bg-teal/15 px-2 py-0.5 text-fine font-black text-teal-light-ink">
-                            <BadgeCheck className="h-3 w-3" /> ظاهرٌ للعامّة
+                            <BadgeCheck className="h-3 w-3" /> ظاهر للعامّة
                           </span>
                         )}
                       </p>
@@ -645,15 +645,15 @@ export default function TrainerRunOps() {
                   {!t.hasAccount && (
                     <Inset as="p" tone="warn" className="mt-2.5 flex items-start gap-1.5 p-2.5 text-read leading-6 text-gold-ink">
                       <ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                      لا حسابَ مربوطٌ بهذا الملفّ — فلا تُفتح له بوّابتُه ولو أُسنِد. اعتمِدْه من تبويب «الطلبات».
+                      لا حساب مربوط بهذا الملفّ — فلا تفتح له بوّابته ولو أسند. اعتمده من تبويب «الطلبات».
                     </Inset>
                   )}
 
                   <div className="mt-2.5 grid gap-3 md:grid-cols-2">
                     <div>
-                      <p className="text-read font-black text-muted-foreground">مؤهَّلٌ لـ</p>
+                      <p className="text-read font-black text-muted-foreground">مؤهّل لـ</p>
                       {t.qualifications.length === 0 ? (
-                        <p className="mt-1 text-read text-muted-foreground">لا تأهيلَ بعد — وبلا تأهيلٍ لا يُسنَد إلى شعبة.</p>
+                        <p className="mt-1 text-read text-muted-foreground">لا تأهيل بعد — وبلا تأهيل لا يسند إلى شعبة.</p>
                       ) : (
                         <ul className="mt-1 space-y-0.5 text-fine leading-6">
                           {t.qualifications.map((x) => (
@@ -666,9 +666,9 @@ export default function TrainerRunOps() {
                       )}
                     </div>
                     <div>
-                      <p className="text-read font-black text-muted-foreground">مُسنَدٌ إلى</p>
+                      <p className="text-read font-black text-muted-foreground">مسند إلى</p>
                       {t.assignments.length === 0 ? (
-                        <p className="mt-1 text-read text-muted-foreground">لا إسنادَ نشط.</p>
+                        <p className="mt-1 text-read text-muted-foreground">لا إسناد نشط.</p>
                       ) : (
                         <ul className="mt-1 space-y-0.5 text-fine leading-6">
                           {t.assignments.map((a, i) => (
@@ -696,8 +696,8 @@ export default function TrainerRunOps() {
                     <Button tone="confirm" type="button" disabled={!sel.courseId || busy === k("qual")}
                       onClick={() => void act(k("qual"),
                         () => apiPost(`/api/admin/trainers/${t.profileId}/qualifications`, { courseId: sel.courseId }),
-                        "أُهِّل للدورة")} className="px-3.5 text-gold-ink">
-                      <GraduationCap className="h-3.5 w-3.5" /> أهِّله مباشرة
+                        "أهّل للدورة")} className="px-3.5 text-gold-ink">
+                      <GraduationCap className="h-3.5 w-3.5" /> أهّله مباشرة
                     </Button>
 
                     <select
@@ -706,7 +706,7 @@ export default function TrainerRunOps() {
                       className={`${controlCls} w-56 [&>option]:bg-surface`}
                     >
                       <option value="">
-                        {eligibleCohorts.length === 0 ? "لا شعبةَ في دوراته المؤهَّلة" : "أسنِده إلى شعبة…"}
+                        {eligibleCohorts.length === 0 ? "لا شعبة في دوراته المؤهّلة" : "أسنده إلى شعبة…"}
                       </option>
                       {eligibleCohorts.map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}
                     </select>
@@ -716,24 +716,24 @@ export default function TrainerRunOps() {
                         if (!cohort) return;
                         void act(k("assign"),
                           () => apiPost(`/api/admin/trainers/${t.profileId}/assignments`, { courseId: cohort.courseId, cohortId: cohort.id }),
-                          "أُسنِد إلى الشعبة");
+                          "أسند إلى الشعبة");
                       }} className="px-3.5 text-teal-light-ink">
-                      <UserCheck className="h-3.5 w-3.5" /> أسنِده
+                      <UserCheck className="h-3.5 w-3.5" /> أسنده
                     </Button>
 
                     {!t.publiclyVisible && (
                       <Button tone="secondary" type="button" disabled={busy === k("publish")}
                         onClick={() => void act(k("publish"),
                           () => apiPost(`/api/admin/trainers/${t.profileId}/publish-approval`),
-                          "اعتُمد ظهورُه العامّ")} className="px-3.5">
-                        <BadgeCheck className="h-3.5 w-3.5" /> اعتمِد ظهورَه العامّ
+                          "اعتمد ظهوره العامّ")} className="px-3.5">
+                        <BadgeCheck className="h-3.5 w-3.5" /> اعتمد ظهوره العامّ
                       </Button>
                     )}
 
                     {!t.suspended && (
                       <Button tone="danger" type="button" disabled={busy === k("suspend")}
                         onClick={() => setSuspendTarget(t)} className="px-3.5">
-                        <XCircle className="h-3.5 w-3.5" /> أوقِفه
+                        <XCircle className="h-3.5 w-3.5" /> أوقفه
                       </Button>
                     )}
                   </div>
@@ -747,22 +747,22 @@ export default function TrainerRunOps() {
       {/* الإيقافُ فعلٌ يمسّ حسابا وجلساتٍ مجدولة — فسببُه يُكتب ولا يُفترض */}
       {suspendTarget && (
         <ConfirmAction
-          titleAr={`إيقافُ ${suspendTarget.name}`}
-          confirmLabelAr="أوقِفه"
+          titleAr={`إيقاف ${suspendTarget.name}`}
+          confirmLabelAr="أوقفه"
           tone="danger"
           busy={busy === `${suspendTarget.profileId}:suspend`}
-          reason={{ labelAr: "السببُ — يبقى في سجلّ الأثر", minLength: 5 }}
+          reason={{ labelAr: "السبب — يبقى في سجلّ الأثر", minLength: 5 }}
           onCancel={() => setSuspendTarget(null)}
           onConfirm={(reason) => {
             const target = suspendTarget;
             setSuspendTarget(null);
             void act(`${target.profileId}:suspend`,
               () => apiPost(`/api/admin/trainers/${target.profileId}/suspend`, { note: reason?.trim() || undefined }),
-              "أُوقِف المدرّب");
+              "أوقف المدرّب");
           }}
         >
-          يُخفى فورا من الصفحات العامّة، وتُلغى جلساتُه القادمة، ويُوقَف حسابُه.
-          ويُرفع الإيقافُ من تبويب «الطلبات» بزرّ «ارفع الإيقاف».
+          يخفى فورا من الصفحات العامّة، وتلغى جلساته القادمة، ويوقف حسابه.
+          ويرفع الإيقاف من تبويب «الطلبات» بزرّ «ارفع الإيقاف».
         </ConfirmAction>
       )}
     </div>

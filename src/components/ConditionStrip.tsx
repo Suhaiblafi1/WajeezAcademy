@@ -105,11 +105,11 @@ export default function ConditionStrip({
     setBusy("extend");
     try {
       await apiPost("/api/trainer/condition/extend");
-      toast("مُنحتَ التمديد — والمهلةُ الجديدةُ في الشريط");
+      toast("منحت التمديد — والمهلة الجديدة في الشريط");
       onDone();
     } catch (e) {
       /* و«مُنح التمديدَ مرّةً ولا يُمنح ثانية» نصٌّ كُتب ليُقرأ لا ليُبتلع */
-      toastError(permissionMessage(e, "تعذّر طلبُ التمديد — أعِد المحاولة"));
+      toastError(permissionMessage(e, "تعذّر طلب التمديد — أعد المحاولة"));
     } finally {
       setBusy(null);
     }
@@ -123,7 +123,7 @@ export default function ConditionStrip({
         {/* وما ينقصه يُقرأ من مهامّه لا من ظنٍّ — والمنجَزةُ لا تُعاد عليه */}
         {phase === "running" && (
           <p className="mt-1 text-read leading-6 text-muted-foreground">
-            تُرسَل كلُّ شعبةٍ من خطوتها الأخيرة في «شعبي» — وحين تُرسَل آخرُها تتجمّد مهلتُك بنفسها.
+            ترسل كلّ شعبة من خطوتها الأخيرة في «شعبي» — وحين ترسل آخرها تتجمّد مهلتك بنفسها.
           </p>
         )}
         {missing.length > 0 && (

@@ -29,11 +29,11 @@ const ADMIN = 'src/pages/admin/AdminCohorts.tsx'
 const ROUTES = 'server/http/routes/learning-portal.routes.ts'
 
 describe('مخاطبة الشعبة', () => {
-  it('الشاشة تُرسل وتعرض السجلّ — لا إرسالٌ بلا أثرٍ يُقرأ', () => {
+  it('الشاشة ترسل وتعرض السجلّ — لا إرسال بلا أثر يقرأ', () => {
     const src = read(BOARD)
     expect(src, 'لا إرسال').toContain('/api/trainer/cohorts/${cohortId}/messages')
-    expect(src, 'السجلّ لا يُقرأ من الخادم').toContain('/api/trainer/cohorts/${cohortId}/messages`)')
-    expect(src, 'السجلّ لا يُعرض').toMatch(/msgLog\[c\.id\]\.map/)
+    expect(src, 'السجلّ لا يقرأ من الخادم').toContain('/api/trainer/cohorts/${cohortId}/messages`)')
+    expect(src, 'السجلّ لا يعرض').toMatch(/msgLog\[c\.id\]\.map/)
     /* والإرسال يُتبعه تحديثُ السجلّ — وإلّا رأى المرسِل شاشةً لا تتغيّر */
     expect(src).toMatch(/await loadMessages\(cohortId\);/)
   })
@@ -47,8 +47,8 @@ describe('مخاطبة الشعبة', () => {
   })
 })
 
-describe('نقلُ موعدِ لقاء', () => {
-  it('⚠️ الشاشةُ تنقل ولا تقترح — والأثرُ مكتوبٌ قبل الضغط', () => {
+describe('نقل موعد لقاء', () => {
+  it('⚠️ الشاشة تنقل ولا تقترح — والأثر مكتوب قبل الضغط', () => {
     /* ═══ انعكاسُ قرارٍ، لا تحسينُ نصّ ═══
 
        كان هنا «تقترح ولا تغيّر»: المدرّبُ يرفع طلبا وينتظر. وسأل صاحبُ
@@ -58,15 +58,15 @@ describe('نقلُ موعدِ لقاء', () => {
        والمسلكُ الصحيحُ كان مكتوبا في الخادم منذ ١٣ سبتمبر ولا تناديه شاشةٌ
        واحدة — فبقيت اللوحةُ تنادي بابَ الاستثناء وتترك بابَ الروتين. */
     const src = read(SESSIONS)
-    expect(src, 'الشاشةُ ما زالت تنادي بابَ الاقتراح').not.toMatch(/\/reschedule/)
-    expect(src, 'لا تنادي مسلكَ النقل الصحيح').toMatch(/apiPatch\(`\/api\/trainer\/sessions\/\$\{sessionId\}`/)
+    expect(src, 'الشاشة ما زالت تنادي باب الاقتراح').not.toMatch(/\/reschedule/)
+    expect(src, 'لا تنادي مسلك النقل الصحيح').toMatch(/apiPatch\(`\/api\/trainer\/sessions\/\$\{sessionId\}`/)
 
     const form = /moveFor === s\.id && \([\s\S]*?\n {14}\)\}/.exec(src)?.[0] ?? ''
-    expect(form, 'لم يُعثَر على لوحة النقل').not.toBe('')
+    expect(form, 'لم يعثر على لوحة النقل').not.toBe('')
     /* والأثرُ يُقال قبل الضغط لا بعده: الرجوعُ للانتظار، والغيابُ عن
        شاشات المتعلّمين، وأنّهم يُبلَّغون. ثلاثتُها ممّا يفاجئ لو كُتم. */
-    expect(form, 'لا يُقال إنّ اللقاء يعود لانتظار الإدارة').toMatch(/يعود لانتظار الإدارة/)
-    expect(form, 'لا يُقال إنّه يغيب عن المتعلّمين').toMatch(/يغيب عن شاشات متعلّميك/)
+    expect(form, 'لا يقال إنّ اللقاء يعود لانتظار الإدارة').toMatch(/يعود لانتظار الإدارة/)
+    expect(form, 'لا يقال إنّه يغيب عن المتعلّمين').toMatch(/يغيب عن شاشات متعلّميك/)
   })
 
   it('القرار في شاشة الإدارة لا في شاشة المدرب', () => {

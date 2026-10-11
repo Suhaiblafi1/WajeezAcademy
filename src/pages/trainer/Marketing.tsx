@@ -46,7 +46,7 @@ export default function Marketing() {
   const load = useCallback(() => {
     apiGet<MarketingState>("/api/trainer/marketing")
       .then((d) => { setData(d); setErr(null); })
-      .catch((e) => setErr(e instanceof ApiError ? e.message : "تعذّر تحميلُ قسم التسويق"));
+      .catch((e) => setErr(e instanceof ApiError ? e.message : "تعذّر تحميل قسم التسويق"));
   }, []);
   useEffect(() => { load(); }, [load]);
 
@@ -55,7 +55,7 @@ export default function Marketing() {
   return (
     <TrainerLayout title="التسويق">
       <p className="mb-5 max-w-3xl text-sm leading-7 text-muted-foreground">
-        فيديو عنك، وفيديو لكلّ دورةٍ أو مسار، وصورٌ نصمّم منها ملصقاتِك —
+        فيديو عنك، وفيديو لكلّ دورة أو مسار، وصور نصمّم منها ملصقاتك —
         <b className="text-foreground"> ولا ننشر ملصقا قبل موافقتك.</b>
       </p>
 
@@ -63,7 +63,7 @@ export default function Marketing() {
         <Card tone="danger" role="alert" className="text-center text-read font-bold text-red-300">{err}</Card>
       ) : !data ? (
         <div className="grid place-items-center py-16">
-          <Loader2 className="h-7 w-7 animate-spin text-muted-foreground/50" aria-label="جارٍ التحميل" />
+          <Loader2 className="h-7 w-7 animate-spin text-muted-foreground/50" aria-label="جار التحميل" />
         </div>
       ) : (
         <div className="grid gap-6">
@@ -72,7 +72,7 @@ export default function Marketing() {
             <Panel as="section" tone="warn">
               <h2 className="flex items-center gap-2 text-base font-black text-gold-ink">
                 <Megaphone className="h-5 w-5" aria-hidden="true" />
-                ملصقاتٌ تنتظر موافقتك ({awaiting.length})
+                ملصقات تنتظر موافقتك ({awaiting.length})
               </h2>
               <div className="mt-4 grid gap-4 md:grid-cols-2">
                 {awaiting.map(({ p, t }) => (
@@ -86,10 +86,10 @@ export default function Marketing() {
           <Panel as="section">
             <h2 className="flex items-center gap-2 text-base font-black">
               <UserRound className="h-5 w-5 text-teal" aria-hidden="true" />
-              فيديو تعريفيٌّ بك
+              فيديو تعريفيّ بك
             </h2>
             <p className="mt-1 text-sm leading-6 text-muted-foreground">
-              دقيقةٌ أو اثنتان عنك وعن خبرتك. ألصِقْ رابطَه من يوتيوب أو Drive.
+              دقيقة أو اثنتان عنك وعن خبرتك. ألصق رابطه من يوتيوب أو Drive.
             </p>
             <VideoEditor targetKind="bio" targetId="" value={data.bioVideo} onSaved={load} />
           </Panel>
@@ -104,13 +104,13 @@ export default function Marketing() {
               دوراتي ومساراتي
             </h2>
             <p className="mb-4 text-sm leading-6 text-muted-foreground">
-              لكلّ دورةٍ ومسار: فيديو، وملصقُها حين نصمّمه.
+              لكلّ دورة ومسار: فيديو، وملصقها حين نصمّمه.
             </p>
             {data.targets.length === 0 ? (
               <EmptyState
                 icon={Megaphone}
-                titleAr="لا دورةَ ولا مسارَ بعد"
-                reasonAr="تظهر هنا دوراتُك ومساراتُك."
+                titleAr="لا دورة ولا مسار بعد"
+                reasonAr="تظهر هنا دوراتك ومساراتك."
                 actions={[{ to: "/trainer/qualifications", labelAr: "دوراتي" }]}
               />
             ) : (
@@ -139,7 +139,7 @@ function VideoEditor({
     setBusy(true);
     try {
       await apiPut("/api/trainer/marketing/videos", { targetKind, targetId, url: next, noteAr: noteAr.trim() || null });
-      toast(next ? "حُفظ الرابط" : "حُذف الفيديو");
+      toast(next ? "حفظ الرابط" : "حذف الفيديو");
       if (!next) { setUrl(""); setNoteAr(""); }
       setEditing(!next);
       onSaved();
@@ -158,11 +158,11 @@ function VideoEditor({
             <span className="truncate">{value.url}</span>
           </a>
           {value.noteAr && <p className="mt-1 text-sm text-muted-foreground">{value.noteAr}</p>}
-          <p className="mt-0.5 text-sm text-muted-foreground/80">حُدِّث {fmtDateLong(value.updatedAt)}</p>
+          <p className="mt-0.5 text-sm text-muted-foreground/80">حدّث {fmtDateLong(value.updatedAt)}</p>
         </div>
         <div className="flex gap-2">
-          <Button size="sm" tone="secondary" icon={PenLine} onClick={() => setEditing(true)}>بدّلْه</Button>
-          <Button size="sm" tone="ghost" icon={Trash2} disabled={busy} onClick={() => void save(null)}>احذفْه</Button>
+          <Button size="sm" tone="secondary" icon={PenLine} onClick={() => setEditing(true)}>بدّله</Button>
+          <Button size="sm" tone="ghost" icon={Trash2} disabled={busy} onClick={() => void save(null)}>احذفه</Button>
         </div>
       </div>
     );
@@ -170,7 +170,7 @@ function VideoEditor({
 
   return (
     <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_16rem] sm:items-end">
-      <StaffField label="رابطُ الفيديو" hint="يوتيوب أو Vimeo أو Drive بمشاركةٍ مفتوحة">
+      <StaffField label="رابط الفيديو" hint="يوتيوب أو Vimeo أو Drive بمشاركة مفتوحة">
         <input dir="ltr" className={staffControlCls} value={url} maxLength={500} inputMode="url"
           placeholder="https://youtu.be/…" onChange={(e) => setUrl(e.target.value)} />
       </StaffField>
@@ -182,8 +182,8 @@ function VideoEditor({
         <Button size="sm" tone="confirm" icon={Check} loading={busy} disabled={!valid} onClick={() => void save(url.trim())}>
           احفظ الرابط
         </Button>
-        {value && <Button size="sm" tone="ghost" icon={X} onClick={() => { setEditing(false); setUrl(value.url); setNoteAr(value.noteAr ?? ""); }}>تراجعْ</Button>}
-        {url.trim() && !valid && <span className="text-sm font-bold text-red-300">الرابطُ يبدأ بـhttps:// بلا مسافات</span>}
+        {value && <Button size="sm" tone="ghost" icon={X} onClick={() => { setEditing(false); setUrl(value.url); setNoteAr(value.noteAr ?? ""); }}>تراجع</Button>}
+        {url.trim() && !valid && <span className="text-sm font-bold text-red-300">الرابط يبدأ بـhttps:// بلا مسافات</span>}
       </div>
     </div>
   );
@@ -207,10 +207,10 @@ function PhotosPanel({ photos, uploadsEnabled, onChanged }: { photos: Photo[]; u
         await apiDelete(`/api/trainer/marketing/photos/${r.id}`).catch(() => undefined);
         throw e;
       }
-      toast("رُفعت الصورة");
+      toast("رفعت الصورة");
       onChanged();
     } catch (e) {
-      toastError(e instanceof Error ? e.message : "تعذّر رفعُ الصورة");
+      toastError(e instanceof Error ? e.message : "تعذّر رفع الصورة");
     } finally {
       setBusy(false);
       if (fileRef.current) fileRef.current.value = "";
@@ -222,7 +222,7 @@ function PhotosPanel({ photos, uploadsEnabled, onChanged }: { photos: Photo[]; u
     try {
       await apiPost("/api/trainer/marketing/photos", { url: link.trim() });
       setLink("");
-      toast("أُضيفت الصورة");
+      toast("أضيفت الصورة");
       onChanged();
     } catch (e) {
       toastError(e instanceof ApiError ? e.message : "تعذّرت الإضافة");
@@ -248,7 +248,7 @@ function PhotosPanel({ photos, uploadsEnabled, onChanged }: { photos: Photo[]; u
             صوري للملصقات <span className="text-sm font-bold text-muted-foreground">({photos.length}/{MAX_MARKETING_PHOTOS})</span>
           </h2>
           <p className="mt-1 text-sm leading-6 text-muted-foreground">
-            واضحةٌ بخلفيّةٍ هادئة. JPEG أو PNG أو WebP حتّى ٤ ميغابايت.
+            واضحة بخلفيّة هادئة. JPEG أو PNG أو WebP حتّى ٤ ميغابايت.
           </p>
         </div>
         {uploadsEnabled && (
@@ -256,7 +256,7 @@ function PhotosPanel({ photos, uploadsEnabled, onChanged }: { photos: Photo[]; u
             <input ref={fileRef} type="file" accept={PHOTO_ACCEPT} className="sr-only" aria-label="اختر صورة"
               onChange={(e) => { const f = e.target.files?.[0]; if (f) void upload(f); }} />
             <Button size="sm" icon={ImagePlus} loading={busy} disabled={full} onClick={() => fileRef.current?.click()}>
-              ارفعْ صورة
+              ارفع صورة
             </Button>
           </>
         )}
@@ -264,12 +264,12 @@ function PhotosPanel({ photos, uploadsEnabled, onChanged }: { photos: Photo[]; u
 
       {!uploadsEnabled && (
         <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_auto] sm:items-end">
-          <StaffField label="رابطُ صورتك" hint="الرفعُ غيرُ مفعّل — ألصِقْ رابطا بمشاركةٍ مفتوحة">
+          <StaffField label="رابط صورتك" hint="الرفع غير مفعّل — ألصق رابطا بمشاركة مفتوحة">
             <input dir="ltr" className={staffControlCls} value={link} maxLength={500} placeholder="https://…"
               onChange={(e) => setLink(e.target.value)} />
           </StaffField>
           <Button size="sm" icon={ImagePlus} loading={busy} disabled={full || cleanMarketingUrl(link) === null} onClick={() => void addLink()}>
-            أضِفْها
+            أضفها
           </Button>
         </div>
       )}
@@ -279,14 +279,14 @@ function PhotosPanel({ photos, uploadsEnabled, onChanged }: { photos: Photo[]; u
           {photos.map((p) => (
             <li key={p.id} className="group relative">
               <Inset className="aspect-square overflow-hidden p-0">
-                {p.imageUrl && <img src={mediaSrc(p.imageUrl)} alt={p.captionAr ?? "صورةٌ للملصقات"} className="h-full w-full object-cover" loading="lazy" />}
+                {p.imageUrl && <img src={mediaSrc(p.imageUrl)} alt={p.captionAr ?? "صورة للملصقات"} className="h-full w-full object-cover" loading="lazy" />}
               </Inset>
               <Button
                 size="sm" tone="ghost" icon={Trash2} disabled={busy}
                 className="absolute top-1.5 left-1.5 bg-paper/80"
                 aria-label="احذف الصورة" onClick={() => void remove(p.id)}
               >
-                احذفْ
+                احذف
               </Button>
             </li>
           ))}
@@ -305,10 +305,10 @@ function TargetRow({ target: t, onChanged }: { target: Target; onChanged: () => 
   return (
     <Card as="li" className="p-4">
       <div className="flex flex-wrap items-start justify-between gap-2">
-        <h3 className="min-w-0 flex-1 text-read font-bold leading-6">{t.titleAr || "دورةٌ بلا اسمٍ في الكتالوج"}</h3>
+        <h3 className="min-w-0 flex-1 text-read font-bold leading-6">{t.titleAr || "دورة بلا اسم في الكتالوج"}</h3>
         <div className="flex flex-wrap gap-1.5">
           <Chip tone="neutral">{t.kind === "course" ? "دورة" : "مسار"}</Chip>
-          {approved && <Chip tone="positive">ملصقٌ معتمَد</Chip>}
+          {approved && <Chip tone="positive">ملصق معتمد</Chip>}
         </div>
       </div>
 
@@ -318,16 +318,16 @@ function TargetRow({ target: t, onChanged }: { target: Target; onChanged: () => 
         <p className="text-sm font-bold text-muted-foreground">الملصق</p>
         {latest ? (
           latest.status === "pending"
-            ? <p className="mt-1 text-sm text-gold-ink">نسخةٌ جديدةٌ تنتظر موافقتك أعلى الصفحة.</p>
+            ? <p className="mt-1 text-sm text-gold-ink">نسخة جديدة تنتظر موافقتك أعلى الصفحة.</p>
             : <div className="mt-2 max-w-sm"><PosterCard poster={latest} onDone={onChanged} /></div>
         ) : (
-          <p className="mt-1 text-sm text-muted-foreground">لم نصمّم ملصقَها بعد — نُخبرك حين يصل.</p>
+          <p className="mt-1 text-sm text-muted-foreground">لم نصمّم ملصقها بعد — نخبرك حين يصل.</p>
         )}
         {history.length > 0 && (
           <details className="group mt-2">
             <summary className="flex cursor-pointer list-none items-center gap-1 text-sm font-bold text-muted-foreground hover:text-foreground">
               <ChevronDown className="h-3.5 w-3.5 transition-transform group-open:rotate-180" aria-hidden="true" />
-              نسخٌ سابقة ({history.length})
+              نسخ سابقة ({history.length})
             </summary>
             <ul className="mt-2 grid gap-1 border-s border-white/10 ps-3 text-sm text-muted-foreground">
               {history.map((p) => (
@@ -356,11 +356,11 @@ function PosterCard({ poster: p, titleAr, onDone }: { poster: Poster; titleAr?: 
     setBusy(true);
     try {
       await apiPost(`/api/trainer/marketing/posters/${p.id}/decision`, { decision, noteAr: note.trim() || null });
-      toast(decision === "approve" ? "وافقتَ على الملصق" : "وصل طلبُ التعديل");
+      toast(decision === "approve" ? "وافقت على الملصق" : "وصل طلب التعديل");
       setAsking(false); setNote("");
       onDone();
     } catch (e) {
-      toastError(e instanceof ApiError ? e.message : "تعذّر إرسالُ قرارك");
+      toastError(e instanceof ApiError ? e.message : "تعذّر إرسال قرارك");
     } finally { setBusy(false); }
   };
 
@@ -370,16 +370,16 @@ function PosterCard({ poster: p, titleAr, onDone }: { poster: Poster; titleAr?: 
       {p.imageUrl ? (
         <a href={mediaSrc(p.imageUrl)} target="_blank" rel="noreferrer noopener" className="block">
           <Inset className="overflow-hidden p-0">
-            <img src={mediaSrc(p.imageUrl)} alt={`ملصقُ ${titleAr ?? "الدورة"} — النسخة ${p.version}`} className="max-h-[28rem] w-full object-contain" loading="lazy" />
+            <img src={mediaSrc(p.imageUrl)} alt={`ملصق ${titleAr ?? "الدورة"} — النسخة ${p.version}`} className="max-h-[28rem] w-full object-contain" loading="lazy" />
           </Inset>
         </a>
       ) : null}
       <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-        <Chip tone={st.tone} srPrefixAr="حالُ الملصق">{st.trainerAr}</Chip>
+        <Chip tone={st.tone} srPrefixAr="حال الملصق">{st.trainerAr}</Chip>
         <span className="text-sm text-muted-foreground">النسخة {p.version}{p.submittedAt ? ` · ${fmtDateLong(p.submittedAt)}` : ""}</span>
       </div>
       {p.staffNoteAr && <p className="mt-2 text-sm leading-6 text-muted-foreground">من الإدارة: {p.staffNoteAr}</p>}
-      {p.trainerNoteAr && <p className="mt-1 text-sm leading-6 text-muted-foreground">ما طلبتَه: {p.trainerNoteAr}</p>}
+      {p.trainerNoteAr && <p className="mt-1 text-sm leading-6 text-muted-foreground">ما طلبته: {p.trainerNoteAr}</p>}
 
       {p.status === "pending" && !asking && (
         <div className="mt-3 flex flex-wrap gap-2">
@@ -389,15 +389,15 @@ function PosterCard({ poster: p, titleAr, onDone }: { poster: Poster; titleAr?: 
       )}
       {p.status === "pending" && asking && (
         <Inset className="mt-3 grid gap-2 p-3">
-          <StaffField label="ما الذي تريد تعديلَه؟" hint="سطرٌ يكفي">
+          <StaffField label="ما الذي تريد تعديله؟" hint="سطر يكفي">
             <textarea className={staffControlCls} rows={2} value={note} maxLength={MAX_MARKETING_NOTE}
-              placeholder="مثلا: استعملوا صورتي الثانية، وصحّحوا اسمَ الدورة" onChange={(e) => setNote(e.target.value)} />
+              placeholder="مثلا: استعملوا صورتي الثانية، وصحّحوا اسم الدورة" onChange={(e) => setNote(e.target.value)} />
           </StaffField>
           <div className="flex flex-wrap gap-2">
             <Button size="sm" tone="confirm" icon={PenLine} loading={busy} disabled={note.trim().length < 5} onClick={() => void decide("changes")}>
-              أرسِلْ طلبَ التعديل
+              أرسل طلب التعديل
             </Button>
-            <Button size="sm" tone="ghost" disabled={busy} onClick={() => setAsking(false)}>تراجعْ</Button>
+            <Button size="sm" tone="ghost" disabled={busy} onClick={() => setAsking(false)}>تراجع</Button>
           </div>
         </Inset>
       )}

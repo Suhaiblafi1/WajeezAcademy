@@ -11,17 +11,17 @@ import {
 
 const TODAY = '2026-10-04'
 
-describe('نصيحةُ البدء تقول ما يناسب ما اختاره', () => {
+describe('نصيحة البدء تقول ما يناسب ما اختاره', () => {
   it('قبل أن يختار: تقترح', () => {
     expect(startAdvice(null, TODAY)).toBe('ask')
     expect(startAdvice('', TODAY)).toBe('ask')
   })
 
-  it('⚠️ وأبكرُ من أواخر نوفمبر: تذكّر بلطف — والحدُّ التاسعُ والعشرون كما قاله صاحبُ المنصّة', () => {
+  it('⚠️ وأبكر من أواخر نوفمبر: تذكّر بلطف — والحدّ التاسع والعشرون كما قاله صاحب المنصّة', () => {
     expect(START_ADVICE.lateNovember).toBe('2026-11-29')
     expect(startAdvice('2026-10-18', TODAY)).toBe('early')
     expect(startAdvice('2026-11-22', TODAY)).toBe('early')
-    expect(startAdvice('2026-11-28', TODAY), 'اليومُ الذي قبل الحدّ').toBe('early')
+    expect(startAdvice('2026-11-28', TODAY), 'اليوم الذي قبل الحدّ').toBe('early')
   })
 
   it('⚠️ ومن أواخر نوفمبر فما بعد: تشكر', () => {
@@ -29,15 +29,15 @@ describe('نصيحةُ البدء تقول ما يناسب ما اختاره', (
     expect(startAdvice('2026-12-06', TODAY)).toBe('thanks')
   })
 
-  it('⚠️ ولهذا الموسم وحدَه: إذا حلّ ديسمبر سكتت', () => {
+  it('⚠️ ولهذا الموسم وحده: إذا حلّ ديسمبر سكتت', () => {
     expect(startAdvice(null, '2026-11-30')).toBe('ask')
     expect(startAdvice(null, START_ADVICE.december)).toBeNull()
     expect(startAdvice('2026-12-10', '2026-12-05')).toBeNull()
   })
 })
 
-describe('ونموذجُ اللقاء يقولها حين يُختار يومٌ قبل الحدّ', () => {
-  it('⚠️ قبل التاسع والعشرين: يُنصَح — ومنه فما بعد: لا', () => {
+describe('ونموذج اللقاء يقولها حين يختار يوم قبل الحدّ', () => {
+  it('⚠️ قبل التاسع والعشرين: ينصح — ومنه فما بعد: لا', () => {
     expect(sessionDayAdvice('2026-11-08', TODAY)).toBe(true)
     expect(sessionDayAdvice('2026-11-28', TODAY)).toBe(true)
     expect(sessionDayAdvice(START_ADVICE.lateNovember, TODAY)).toBe(false)
@@ -51,20 +51,20 @@ describe('ونموذجُ اللقاء يقولها حين يُختار يومٌ 
   })
 })
 
-describe('ونصُّها ودود', () => {
-  it('⚠️ يسمّي ديسمبر وأواخرَ نوفمبر، ويقول لماذا — والقرارُ للمدرّب', () => {
+describe('ونصّها ودود', () => {
+  it('⚠️ يسمّي ديسمبر وأواخر نوفمبر، ويقول لماذا — والقرار للمدرّب', () => {
     for (const k of ['ask', 'early'] as const) {
       expect(START_ADVICE_AR[k], k).toContain('ديسمبر')
       expect(START_ADVICE_AR[k], k).toContain('أواخر نوفمبر')
       expect(START_ADVICE_AR[k], k).toMatch(/نسوّق/)
     }
     expect(START_ADVICE_AR.early).toContain('ولك ذلك')
-    expect(START_ADVICE_AR.early).toContain('والقرارُ قرارُك')
+    expect(START_ADVICE_AR.early).toContain('والقرار قرارك')
   })
 
-  it('ولا أمرَ فيها ولا منع', () => {
+  it('ولا أمر فيها ولا منع', () => {
     for (const text of [...Object.values(START_ADVICE_AR), SESSION_DAY_ADVICE_AR]) {
-      expect(text).not.toMatch(/يجب|لا يُسمح|ممنوع|إلزاميّ|لا يمكن/)
+      expect(text).not.toMatch(/يجب|لا يسمح|ممنوع|إلزاميّ|لا يمكن/)
     }
   })
 })

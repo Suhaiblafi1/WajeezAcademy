@@ -113,7 +113,7 @@ export default function Inbox() {
       {error && <Inset as="p" tone="danger" className="mb-4 px-4 py-3 text-sm text-red-200">{error}</Inset>}
 
       {items === null ? (
-        <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-teal-ink" aria-label="جارٍ التحميل" /></div>
+        <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-teal-ink" aria-label="جار التحميل" /></div>
       ) : shown.length === 0 ? (
         /* ط-٤ · فراغُ مرشّح ليس فراغَ صندوق: الأول يُحلّ بإزالة المرشّح لا ببداية
            جديدة. وحين يكون الصندوق نفسه فارغا فالتوجيه إلى ما يُنشئ الرسائل. */

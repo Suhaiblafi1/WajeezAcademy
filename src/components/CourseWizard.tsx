@@ -93,8 +93,8 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill,
       /* والمعرّفُ من ردّ الخادم لا من المسوّدة: هو الذي ولّده، ومن ربط
          اقتراحَ مدرّبٍ بمعرّفٍ خمّنه المتصفّحُ ربطه بدورةٍ لا وجودَ لها. */
       toast(d.pathwayId
-        ? `أُنشئت الدورة ${created.id} كمسودة مرتبطة بالمسار والمهارات — أكمل سير الاعتماد ثم النشر`
-        : `أُنشئت الدورة ${created.id} كمسودة قائمةٍ بنفسها — أكمل سير الاعتماد ثم النشر`);
+        ? `أنشئت الدورة ${created.id} كمسودة مرتبطة بالمسار والمهارات — أكمل سير الاعتماد ثم النشر`
+        : `أنشئت الدورة ${created.id} كمسودة قائمة بنفسها — أكمل سير الاعتماد ثم النشر`);
       onDone(created.id);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "فشل إنشاء الدورة");
@@ -143,7 +143,7 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill,
             onChange={(e) => setD({ ...d, pathwayId: e.target.value, familyCode: e.target.value ? "" : d.familyCode })}
             className={selectCls}
           >
-            <option value="">بلا مسارٍ أمّ — دورةٌ قائمةٌ بنفسها</option>
+            <option value="">بلا مسار أمّ — دورة قائمة بنفسها</option>
             {pathways.map((p) => <option key={p.id} value={p.id}>{p.title} ({p.id})</option>)}
           </select>
           {d.pathwayId ? (
@@ -152,7 +152,7 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill,
             /* ولا تُترك بلا عائلة: منها يُشتقّ المعرّفُ ومجالُ الدورة في
                مخطِّط الفصل، و`C-GEN-101` بلا مجالٍ لا يمنع تزاحما. */
             <select value={d.familyCode} onChange={(e) => setD({ ...d, familyCode: e.target.value })} className={selectCls}>
-              <option value="">عائلةُ الدورة…</option>
+              <option value="">عائلة الدورة…</option>
               {COURSE_DOMAIN_FAMILIES.map((f) => (
                 <option key={f} value={f}>{courseDomainByFamily(f)} ({f})</option>
               ))}
@@ -168,7 +168,7 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill,
 
               وفراغُه يعني «كلُّها مباشرة»، فلا يُكتب صفرٌ في وثيقة. */}
           <input value={d.recordedHours} onChange={(e) => setD({ ...d, recordedHours: e.target.value })}
-            type="number" min={0} placeholder="منها مسجَّلة (اختياري)" className={inputCls} />
+            type="number" min={0} placeholder="منها مسجّلة (اختياري)" className={inputCls} />
           <input value={d.shortPromiseAr} onChange={(e) => setD({ ...d, shortPromiseAr: e.target.value })} placeholder="الوعد المختصر (اختياري)" className={`${inputCls} sm:col-span-2`} />
           <input value={d.levelAr} onChange={(e) => setD({ ...d, levelAr: e.target.value })} placeholder="المستوى (اختياري)" className={inputCls} />
 
@@ -180,11 +180,11 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill,
                 <>
                   <span dir="ltr" className="font-mono text-sm font-black text-teal-light-ink">{nextId}</span>
                   <span className="text-fine text-muted-foreground">
-                    — يولّده النظام من {d.pathwayId ? "المسار الأمّ" : "عائلة الدورة"}، ولا يُكتب بيد
+                    — يولّده النظام من {d.pathwayId ? "المسار الأمّ" : "عائلة الدورة"}، ولا يكتب بيد
                   </span>
                 </>
               ) : (
-                <span className="text-fine text-muted-foreground">يُحسب…</span>
+                <span className="text-fine text-muted-foreground">يحسب…</span>
               )
             ) : (
               <span className="text-fine text-muted-foreground">يظهر بعد اختيار المسار الأمّ أو عائلة الدورة</span>
@@ -221,7 +221,7 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill,
                 className={`${inputCls} mt-2 w-full font-mono leading-7`}
               />
               <p className="mt-1 text-read leading-5 text-muted-foreground">
-                ما يُكتب هنا يظهر للمتعلم درسا داخل الدورة. يمرّ بنفس حاكمية النسخ والاعتماد والنشر — ولا يُعدَّل على إصدار منشور بأثر رجعي.
+                ما يكتب هنا يظهر للمتعلم درسا داخل الدورة. يمرّ بنفس حاكمية النسخ والاعتماد والنشر — ولا يعدّل على إصدار منشور بأثر رجعي.
               </p>
               <textarea
                 value={m.checksAr}
@@ -231,7 +231,7 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill,
                 className={`${inputCls} mt-2 w-full font-mono leading-7`}
               />
               <p className="mt-1 text-read leading-5 text-muted-foreground">
-                ثلاثة أسئلة كافية. علامة <span dir="ltr" className="font-mono">+</span> قبل الجواب الصحيح — واحد فقط لكل سؤال، والصيغة تُتحقَّق عند الحفظ.
+                ثلاثة أسئلة كافية. علامة <span dir="ltr" className="font-mono">+</span> قبل الجواب الصحيح — واحد فقط لكل سؤال، والصيغة تتحقّق عند الحفظ.
                 ولربط سؤال بفصل فيديو أضف سطر <span dir="ltr" className="font-mono">ف: 2</span> داخله فيصير نقطة تفتيش بعد الفصل الثاني.
               </p>
               <textarea
@@ -254,8 +254,8 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill,
               />
               <p className="mt-1 text-read leading-5 text-muted-foreground">
                 كل عقدة غير نهائية تحتاج خيارين على الأقل، و«إلى:» لا تشير إلا إلى عقدة موجودة،
-                والعقدة النهائية (بلا خيارات) تحتاج «تأمل:». يُتحقَّق المسار كاملا عند الحفظ:
-                عقدة لا تُبلَغ أو مسار يدور بلا نهاية يُرفض.
+                والعقدة النهائية (بلا خيارات) تحتاج «تأمل:». يتحقّق المسار كاملا عند الحفظ:
+                عقدة لا تبلغ أو مسار يدور بلا نهاية يرفض.
               </p>
             </Inset>
           ))}
@@ -278,11 +278,11 @@ export default function CourseWizard({ pathways, skills, onDone, onRequestSkill,
             <p className="mt-1 text-read text-muted-foreground">
               {d.pathwayId
                 ? `المسار: ${pathways.find((p) => p.id === d.pathwayId)?.title ?? "—"}`
-                : `قائمةٌ بنفسها · عائلة ${courseDomainByFamily(d.familyCode) || d.familyCode || "—"}`} · {d.totalHours || 0} ساعة · {d.modules.length} وحدة · {d.skillIds.length} مهارة
+                : `قائمة بنفسها · عائلة ${courseDomainByFamily(d.familyCode) || d.familyCode || "—"}`} · {d.totalHours || 0} ساعة · {d.modules.length} وحدة · {d.skillIds.length} مهارة
             </p>
           </Card>
           <Inset as="p" className="px-4 py-3 text-read leading-6 text-foreground">
-            تُنشأ الدورة مسودة، ثم تمرّ بسير الاعتماد المعتاد (مراجعة فاعتماد فنشر) من «النشر والإصدارات» — لا تُنشر من هنا.
+            تنشأ الدورة مسودة، ثم تمرّ بسير الاعتماد المعتاد (مراجعة فاعتماد فنشر) من «النشر والإصدارات» — لا تنشر من هنا.
           </Inset>
         </div>
       )}

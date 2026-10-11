@@ -154,34 +154,34 @@ export default function AssignByTrainer() {
     return [...seen].map(([courseId, title]) => ({ courseId, title }));
   }, [picked, cohorts]);
 
-  if (err) return <AdminLayout title="إسنادٌ يبدأ من المدرّب"><Card tone="danger" role="alert" className="text-center text-read font-bold text-red-300">{err}</Card></AdminLayout>;
+  if (err) return <AdminLayout title="إسناد يبدأ من المدرّب"><Card tone="danger" role="alert" className="text-center text-read font-bold text-red-300">{err}</Card></AdminLayout>;
   if (!trainers) {
     return (
-      <AdminLayout title="إسنادٌ يبدأ من المدرّب">
-        <div className="grid place-items-center py-16"><Loader2 className="h-7 w-7 animate-spin text-muted-foreground/50" aria-label="جارٍ التحميل" /></div>
+      <AdminLayout title="إسناد يبدأ من المدرّب">
+        <div className="grid place-items-center py-16"><Loader2 className="h-7 w-7 animate-spin text-muted-foreground/50" aria-label="جار التحميل" /></div>
       </AdminLayout>
     );
   }
 
   return (
-    <AdminLayout title="إسنادٌ يبدأ من المدرّب">
+    <AdminLayout title="إسناد يبدأ من المدرّب">
       <Panel as="section">
         <h2 className="flex items-center gap-2 text-sm font-black text-foreground">
           <Users className="h-4 w-4 text-teal-light-ink" aria-hidden="true" /> ① اختر المدرّب
         </h2>
         <p className="mt-1 text-read leading-6 text-muted-foreground">
-          ابدأ من الإنسان لا من الدورة: اختر مدرّبا فتظهر لك الشعبُ التي يصلح لها وحدَها.
-          وإسنادُ شعبةٍ بعينها بابُه في <Link to="/admin/cohorts" className="font-bold text-teal-light-ink underline decoration-dotted underline-offset-4">الشعب</Link>.
+          ابدأ من الإنسان لا من الدورة: اختر مدرّبا فتظهر لك الشعب التي يصلح لها وحدها.
+          وإسناد شعبة بعينها بابه في <Link to="/admin/cohorts" className="font-bold text-teal-light-ink underline decoration-dotted underline-offset-4">الشعب</Link>.
         </p>
 
         <div className="mt-4">
           <ListToolbar q={q} onQ={setQ} onPage={setPage} view={view} unit="مدرّبا"
-            placeholder="ابحث باسمٍ أو بريدٍ أو دورةٍ يؤهَّل لها…" />
+            placeholder="ابحث باسم أو بريد أو دورة يؤهّل لها…" />
           {view.total === 0 ? (
             <Inset as="p" className="py-10 text-center text-read leading-6 text-muted-foreground">
               {q.trim()
-                ? `لا مدرّبَ يطابق «${q.trim()}».`
-                : "لا مدرّبَ نشطا بحسابٍ مربوط — والموقوفُ ومن بلا حسابٍ لا يُسنَد إليهما."}
+                ? `لا مدرّب يطابق «${q.trim()}».`
+                : "لا مدرّب نشطا بحساب مربوط — والموقوف ومن بلا حساب لا يسند إليهما."}
             </Inset>
           ) : (
             <ul className="space-y-2">
@@ -197,7 +197,7 @@ export default function AssignByTrainer() {
                       </div>
                       <div className="flex items-center gap-3">
                         <span className="text-read text-muted-foreground">
-                          {count === 0 ? "بلا تأهيل" : `مؤهَّلٌ لـ${count}`}
+                          {count === 0 ? "بلا تأهيل" : `مؤهّل لـ${count}`}
                         </span>
                         <Button tone={isPicked ? "confirm" : "secondary"} size="sm"
                           onClick={() => { setPickedId(isPicked ? null : t.profileId); setQualifyFor(""); }}>
@@ -222,11 +222,11 @@ export default function AssignByTrainer() {
 
           {/* ═══ يُقال لماذا القائمةُ قصيرة ═══ */}
           <Inset className="mt-3 text-read leading-6 text-muted-foreground">
-            تظهر هنا الشعبُ المفتوحةُ على الدورات التي أُهِّل لها هذا المدرّبُ وحدَها
+            تظهر هنا الشعب المفتوحة على الدورات التي أهّل لها هذا المدرّب وحدها
             {qualified.length > 0 && (
               <> — وهي <b className="text-foreground">{qualified.map((x) => x.courseTitle).join(" · ")}</b></>
             )}
-            . ولتأهيله لغيرها بابٌ أسفله.
+            . ولتأهيله لغيرها باب أسفله.
           </Inset>
 
           {/* حالاتُ تأهيلٍ ليست «مؤهَّلا» تُقال ولا تُخفى */}
@@ -242,11 +242,11 @@ export default function AssignByTrainer() {
 
           {qualified.length === 0 ? (
             <Inset tone="warn" as="p" className="mt-3 text-read leading-6 text-gold-ink">
-              لا تأهيلَ قائما لهذا المدرّب — فلا شعبةَ تُسنَد إليه بعد. أهّله أدناه وتظهر شعبُها فورا.
+              لا تأهيل قائما لهذا المدرّب — فلا شعبة تسند إليه بعد. أهّله أدناه وتظهر شعبها فورا.
             </Inset>
           ) : his.length === 0 ? (
             <Inset as="p" className="mt-3 text-read leading-6 text-muted-foreground">
-              لا شعبةَ مفتوحةً على دوراته الآن — أهّله لدورةٍ لها شعبة، أو افتح شعبةً على إحدى دوراته من «الشعب».
+              لا شعبة مفتوحة على دوراته الآن — أهّله لدورة لها شعبة، أو افتح شعبة على إحدى دوراته من «الشعب».
             </Inset>
           ) : (
             <ul className="mt-4 space-y-2">
@@ -267,13 +267,13 @@ export default function AssignByTrainer() {
                       </div>
                       {already ? (
                         <span className="flex items-center gap-1.5 text-read font-bold text-teal-light-ink">
-                          <BadgeCheck className="h-3.5 w-3.5" aria-hidden="true" /> مُسنَدٌ إليها
+                          <BadgeCheck className="h-3.5 w-3.5" aria-hidden="true" /> مسند إليها
                         </span>
                       ) : (
                         <Button tone="confirm" size="sm" disabled={busy}
                           onClick={() => act(
                             () => apiPost(`/api/admin/trainers/${picked.profileId}/assignments`, { courseId: c.courseId, cohortId: c.id }),
-                            `أُسنِد ${picked.name} إلى «${c.title}»`,
+                            `أسند ${picked.name} إلى «${c.title}»`,
                           )}>
                           أسنده إليها
                         </Button>
@@ -288,16 +288,16 @@ export default function AssignByTrainer() {
           {/* ═══ التأهيلُ في مكانه — لا مغادرةَ للبحث (قرارُك ١٤ سبتمبر) ═══ */}
           <div className="mt-5 border-t border-white/8 pt-4">
             <p className="flex items-center gap-2 text-read font-black text-foreground">
-              <UserPlus className="h-4 w-4 text-teal-light-ink" aria-hidden="true" /> أهّله لدورةٍ أخرى
+              <UserPlus className="h-4 w-4 text-teal-light-ink" aria-hidden="true" /> أهّله لدورة أخرى
             </p>
             <p className="mt-1 text-read leading-6 text-muted-foreground">
-              تُعرض الدوراتُ التي لها شعبٌ مفتوحةٌ ولم يُؤهَّل لها — فالتأهيلُ هنا يُتبَع بإسنادٍ لا يُترك معلّقا.
+              تعرض الدورات التي لها شعب مفتوحة ولم يؤهّل لها — فالتأهيل هنا يتبع بإسناد لا يترك معلّقا.
             </p>
             {qualifiable.length === 0 ? (
-              <p className="mt-2 text-read text-muted-foreground">لا دورةَ أخرى لها شعبةٌ مفتوحةٌ يصلح أن يُؤهَّل لها الآن.</p>
+              <p className="mt-2 text-read text-muted-foreground">لا دورة أخرى لها شعبة مفتوحة يصلح أن يؤهّل لها الآن.</p>
             ) : (
               <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_auto]">
-                <select aria-label="الدورة التي يُؤهَّل لها" value={qualifyFor}
+                <select aria-label="الدورة التي يؤهّل لها" value={qualifyFor}
                   onChange={(e) => setQualifyFor(e.target.value)}
                   className={`${controlCls} [&>option]:bg-surface`}>
                   <option value="">اختر دورة…</option>
@@ -306,7 +306,7 @@ export default function AssignByTrainer() {
                 <Button tone="secondary" size="sm" disabled={busy || !qualifyFor}
                   onClick={() => act(
                     () => apiPost(`/api/admin/trainers/${picked.profileId}/qualifications`, { courseId: qualifyFor }),
-                    "أُهِّل — وشعبُ الدورة تظهر أعلاه الآن",
+                    "أهّل — وشعب الدورة تظهر أعلاه الآن",
                   ).then(() => setQualifyFor(""))}>
                   أهّله
                 </Button>

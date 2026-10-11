@@ -176,17 +176,17 @@ export default function CohortWizard({
   const stepMissing = useMemo<string[]>(() => {
     const m: string[] = [];
     if (step === 0) {
-      if (!courseId) m.push("اختر الدورةَ من القائمة");
-      if (title.trim().length < 3) m.push("اكتب عنوانا للشعبة — ثلاثةُ أحرفٍ على الأقلّ");
+      if (!courseId) m.push("اختر الدورة من القائمة");
+      if (title.trim().length < 3) m.push("اكتب عنوانا للشعبة — ثلاثة أحرف على الأقلّ");
     } else if (step === 1) {
       if (days.length === 0) m.push("اختر يوما واحدا على الأقلّ");
-      if (!/^\d{2}:\d{2}$/.test(startTime)) m.push("حدّد وقتَ البدء");
-      if (!(Number(weeks) >= 1 && Number(weeks) <= 52)) m.push("عددُ الأسابيع بين واحدٍ واثنين وخمسين");
-      if (!(Number(duration) >= 15)) m.push("مدّةُ الجلسة خمسَ عشرةَ دقيقةً على الأقلّ");
-      if (preview.length === 0) m.push("جدولٌ يُنتج جلسةً واحدةً على الأقلّ — راجع أوّلَ أسبوع");
+      if (!/^\d{2}:\d{2}$/.test(startTime)) m.push("حدّد وقت البدء");
+      if (!(Number(weeks) >= 1 && Number(weeks) <= 52)) m.push("عدد الأسابيع بين واحد واثنين وخمسين");
+      if (!(Number(duration) >= 15)) m.push("مدّة الجلسة خمس عشرة دقيقة على الأقلّ");
+      if (preview.length === 0) m.push("جدول ينتج جلسة واحدة على الأقلّ — راجع أوّل أسبوع");
     } else if (step === 2) {
-      if (!(Number(capacity) >= 1)) m.push("سعةُ الشعبة مقعدٌ واحدٌ على الأقلّ");
-      if (price !== "" && Number(price) < 0) m.push("السعرُ صفرٌ أو أكثر");
+      if (!(Number(capacity) >= 1)) m.push("سعة الشعبة مقعد واحد على الأقلّ");
+      if (price !== "" && Number(price) < 0) m.push("السعر صفر أو أكثر");
     }
     return m;
   }, [step, courseId, title, days, startTime, weeks, duration, preview.length, capacity, price]);
@@ -222,7 +222,7 @@ export default function CohortWizard({
         try {
           await apiPost(`/api/admin/cohorts/${cohort.id}/term`, { termId });
         } catch (e) {
-          notes.push(`حدودُ الفصل لم تُشتقّ (${e instanceof ApiError ? e.message : "خطأ"}) — سمِّ الفصلَ من «المواسم»`);
+          notes.push(`حدود الفصل لم تشتقّ (${e instanceof ApiError ? e.message : "خطأ"}) — سمّ الفصل من «المواسم»`);
         }
       }
 
@@ -236,15 +236,15 @@ export default function CohortWizard({
         });
         notes.push(`${gen.created} جلسة`);
       } catch (e) {
-        notes.push(`الجلسات لم تُولَّد (${e instanceof ApiError ? e.message : "خطأ"}) — ولّدها من بطاقة الشعبة`);
+        notes.push(`الجلسات لم تولّد (${e instanceof ApiError ? e.message : "خطأ"}) — ولّدها من بطاقة الشعبة`);
       }
 
       if (trainerId) {
         try {
           await apiPost(`/api/admin/cohorts/${cohort.id}/trainers`, { profileId: trainerId, role: "lead" });
-          notes.push("ومدرّبٌ مسنَد");
+          notes.push("ومدرّب مسند");
         } catch (e) {
-          notes.push(`المدرّبُ لم يُسنَد (${e instanceof ApiError ? e.message : "خطأ"})`);
+          notes.push(`المدرّب لم يسند (${e instanceof ApiError ? e.message : "خطأ"})`);
         }
       }
 
@@ -253,19 +253,19 @@ export default function CohortWizard({
           const check = await apiGet<Checklist>(`/api/admin/cohorts/${cohort.id}/open-checklist`);
           if (check.ready) {
             await apiPost(`/api/admin/cohorts/${cohort.id}/open`, {});
-            notes.push("وفُتحت للتسجيل");
+            notes.push("وفتحت للتسجيل");
           } else {
-            notes.push(`بقيت مسودّةً — ينقصها: ${check.missing.join(" · ")}`);
+            notes.push(`بقيت مسودّة — ينقصها: ${check.missing.join(" · ")}`);
           }
         } catch {
-          notes.push("تعذّر فحصُ شروط الفتح — راجع بطاقةَ الشعبة");
+          notes.push("تعذّر فحص شروط الفتح — راجع بطاقة الشعبة");
         }
       }
 
-      onDone(`أُنشئت «${title.trim()}» — ${notes.join(" · ")}`);
+      onDone(`أنشئت «${title.trim()}» — ${notes.join(" · ")}`);
       reset();
     } catch (e) {
-      onError(e instanceof ApiError ? e.message : "تعذّر إنشاءُ الشعبة");
+      onError(e instanceof ApiError ? e.message : "تعذّر إنشاء الشعبة");
     } finally {
       setBusy(false);
     }
@@ -305,7 +305,7 @@ export default function CohortWizard({
             <input id="wiz-course-filter" value={courseFilter} onChange={(e) => setCourseFilter(e.target.value)}
               placeholder="ابحث بعنوان الدورة أو رمزها" className={inputCls} />
             <Inset className="mt-2 max-h-64 overflow-y-auto">
-              {shown.length === 0 && <p className="px-3 py-3 text-read text-muted-foreground">لا دورةَ بهذا الاسم.</p>}
+              {shown.length === 0 && <p className="px-3 py-3 text-read text-muted-foreground">لا دورة بهذا الاسم.</p>}
               {shown.map((c) => (
                 <button key={c.id} type="button" onClick={() => setCourseId(c.id)}
                   className={`flex w-full items-center justify-between gap-3 border-b border-white/5 px-3 py-2.5 text-right transition last:border-b-0 ${
@@ -322,11 +322,11 @@ export default function CohortWizard({
             <input id="wiz-title" value={title} onChange={(e) => setTitle(e.target.value)}
               placeholder="شعبة أكتوبر 2026 — مسائية" className={inputCls} />
             <p className="mt-2 text-read leading-6 text-muted-foreground">
-              يُقترَح من الدورة والشهر، وهو ما يراه المتعلّمُ في فاتورته وشهادته — فاجعله يفرّق هذه الشعبةَ عن أختها.
+              يقترح من الدورة والشهر، وهو ما يراه المتعلّم في فاتورته وشهادته — فاجعله يفرّق هذه الشعبة عن أختها.
             </p>
             {course && (
               <Inset as="p" className="mt-3 px-3 py-2.5 text-read text-muted-foreground">
-                سعرُ قائمة الدورة: {course.listPrice ?? "—"} {currency}
+                سعر قائمة الدورة: {course.listPrice ?? "—"} {currency}
               </Inset>
             )}
 
@@ -337,18 +337,18 @@ export default function CohortWizard({
                 الحين — ولا يُمنع الإنشاءُ بدونه. */}
             <label className="mt-3 block text-xs text-muted-foreground" htmlFor="wiz-term">الفصل (اختياريّ)</label>
             <select id="wiz-term" value={termId} onChange={(e) => setTermId(e.target.value)} className={inputCls}>
-              <option value="">بلا فصل — يُشتقّ من تاريخ البدء</option>
+              <option value="">بلا فصل — يشتقّ من تاريخ البدء</option>
               {terms
                 .filter((t) => !["closed", "cancelled"].includes(t.status))
                 .map((t) => <option key={t.id} value={t.id}>{t.titleAr}</option>)}
             </select>
             <p className="mt-2 text-read leading-6 text-muted-foreground">
               {term ? (
-                <>حدودٌ مبدئيّةٌ حتّى يحدّد مدرّبُها مدّتَه: يبدأ {term.startsOn.slice(0, 10)} وينتهي {term.endsOn.slice(0, 10)}.</>
+                <>حدود مبدئيّة حتّى يحدّد مدرّبها مدّته: يبدأ {term.startsOn.slice(0, 10)} وينتهي {term.endsOn.slice(0, 10)}.</>
               ) : (
                 <>
-                  يحدّد مدرّبُها متى تبدأ ومتى تنتهي في خطّته، ويُشتقّ فصلُها من تاريخ بدئها حين تُعتمَد.
-                  {terms.length === 0 && " ولا موسمَ مفتوحٌ بعد — فلا فصلَ يُسمّى هنا الآن."}
+                  يحدّد مدرّبها متى تبدأ ومتى تنتهي في خطّته، ويشتقّ فصلها من تاريخ بدئها حين تعتمد.
+                  {terms.length === 0 && " ولا موسم مفتوح بعد — فلا فصل يسمّى هنا الآن."}
                 </>
               )}
             </p>
@@ -370,22 +370,22 @@ export default function CohortWizard({
               <input type="number" min={15} step={15} value={duration} onChange={(e) => setDuration(e.target.value)} className={inputCls} />
             </label>
             <label className="text-xs text-muted-foreground">
-              أوّلُ أسبوع
+              أوّل أسبوع
               <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className={inputCls} />
             </label>
             <label className="text-xs text-muted-foreground">
-              عددُ الأسابيع
+              عدد الأسابيع
               <input type="number" min={1} max={52} value={weeks} onChange={(e) => setWeeks(e.target.value)} className={inputCls} />
             </label>
           </div>
           <Card tone="accent">
             <p className="flex items-center gap-2 text-read font-black text-teal-light-ink">
               <CalendarDays className="h-3.5 w-3.5" aria-hidden="true" />
-              {`${preview.length} جلسة ستُنشأ`}
+              {`${preview.length} جلسة ستنشأ`}
             </p>
-            <p className="mt-1 text-read text-muted-foreground">تُولَّد مع الشعبة، ولك تعديلُ أيٍّ منها بعدها.</p>
+            <p className="mt-1 text-read text-muted-foreground">تولّد مع الشعبة، ولك تعديل أيّ منها بعدها.</p>
             {Number(duration) < 15 && (
-              <p role="alert" className="mt-2 text-read font-bold text-red-300">مدّةُ الجلسة خمسَ عشرةَ دقيقةً على الأقلّ.</p>
+              <p role="alert" className="mt-2 text-read font-bold text-red-300">مدّة الجلسة خمس عشرة دقيقة على الأقلّ.</p>
             )}
             {days.length === 0 && (
               <p role="alert" className="mt-2 text-read font-bold text-red-300">اختر يوما واحدا على الأقلّ.</p>
@@ -397,10 +397,10 @@ export default function CohortWizard({
                   <span className="text-muted-foreground">{fmtDateTimeAr(s.startsAt)}</span>
                 </li>
               ))}
-              {preview.length === 0 && <li className="text-muted-foreground">لا جلسة — راجع الأيّامَ وأوّلَ أسبوع.</li>}
+              {preview.length === 0 && <li className="text-muted-foreground">لا جلسة — راجع الأيّام وأوّل أسبوع.</li>}
             </ul>
             {preview.length > 40 && (
-              <p className="mt-2 text-read text-muted-foreground">…و{preview.length - 40} جلسةً أخرى</p>
+              <p className="mt-2 text-read text-muted-foreground">…و{preview.length - 40} جلسة أخرى</p>
             )}
           </Card>
         </div>
@@ -412,14 +412,14 @@ export default function CohortWizard({
           <label className="text-xs text-muted-foreground">
             <span className="flex items-center gap-1.5"><Users className="h-3.5 w-3.5" aria-hidden="true" /> السعة</span>
             <input type="number" min={1} value={capacity} onChange={(e) => setCapacity(e.target.value)} className={inputCls} />
-            <span className="mt-1 block text-fine text-muted-foreground">الفائضُ يتحوّل إلى قائمة انتظار آليّا.</span>
+            <span className="mt-1 block text-fine text-muted-foreground">الفائض يتحوّل إلى قائمة انتظار آليّا.</span>
           </label>
           <label className="text-xs text-muted-foreground">
             <span className="flex items-center gap-1.5"><Wallet className="h-3.5 w-3.5" aria-hidden="true" /> السعر ({currency})</span>
             <input type="number" min={0} value={price} onChange={(e) => setPrice(e.target.value)}
               placeholder={course?.listPrice != null ? String(course.listPrice) : undefined} className={inputCls} />
             <span className="mt-1 block text-fine text-muted-foreground">
-              يُورَث من سعر قائمة الدورة إن تُرك فارغا — والعملةُ عملةُ الدورة لا افتراضا.
+              يورث من سعر قائمة الدورة إن ترك فارغا — والعملة عملة الدورة لا افتراضا.
             </span>
           </label>
         </div>
@@ -428,11 +428,11 @@ export default function CohortWizard({
       {/* ٤ · المدرّب */}
       {step === 3 && (
         <div>
-          {trainers === null && <p className="text-read text-muted-foreground"><Loader2 className="mr-1 inline h-3.5 w-3.5 animate-spin" aria-hidden="true" /> تُقرأ قائمةُ المدرّبين…</p>}
+          {trainers === null && <p className="text-read text-muted-foreground"><Loader2 className="mr-1 inline h-3.5 w-3.5 animate-spin" aria-hidden="true" /> تقرأ قائمة المدرّبين…</p>}
           {trainers !== null && trainers.length === 0 && (
             <Inset as="p" className="px-4 py-3 text-read leading-6 text-muted-foreground">
-              لا مدرّبَ مؤهَّلا لهذه الدورة بعد — تُنشأ الشعبةُ مسودّةً، ويُسنَد المدرّبُ من بطاقتها متى تأهّل.
-              وشرطُ الفتح يبقى قائما: لا شعبةَ تُفتح بلا مدرّب.
+              لا مدرّب مؤهّلا لهذه الدورة بعد — تنشأ الشعبة مسودّة، ويسند المدرّب من بطاقتها متى تأهّل.
+              وشرط الفتح يبقى قائما: لا شعبة تفتح بلا مدرّب.
             </Inset>
           )}
           {trainers !== null && trainers.length > 0 && (
@@ -442,7 +442,7 @@ export default function CohortWizard({
                   className={`w-full rounded-xl border px-4 py-3 text-right text-xs font-bold transition ${
                     trainerId === "" ? "border-teal bg-teal/10 text-foreground" : "border-white/12 text-muted-foreground hover:border-white/30"
                   }`}>
-                  أُسنده لاحقا
+                  أسنده لاحقا
                 </button>
               </li>
               {trainers.map((t) => (
@@ -452,7 +452,7 @@ export default function CohortWizard({
                       trainerId === t.profileId ? "border-teal bg-teal/10 text-foreground" : "border-white/12 text-foreground hover:border-white/30"
                     }`}>
                     <span className="flex items-center gap-1.5"><UserCheck className="h-3.5 w-3.5" aria-hidden="true" /> {t.name}</span>
-                    {t.qualification !== "qualified" && <span className="text-fine text-muted-foreground">غيرُ مؤهَّلٍ لهذه الدورة</span>}
+                    {t.qualification !== "qualified" && <span className="text-fine text-muted-foreground">غير مؤهّل لهذه الدورة</span>}
                   </button>
                 </li>
               ))}
@@ -470,14 +470,14 @@ export default function CohortWizard({
               ["العنوان", title.trim() || "—"],
               ["الجدول", `${daysLabelAr(days)} · ${startTime} · ${duration} دقيقة`],
               ["المدى", `${weeks} أسبوعا من ${cohortDayAr(from)}`],
-              ["الجلسات", `${preview.length} جلسة تُولَّد الآن`],
+              ["الجلسات", `${preview.length} جلسة تولّد الآن`],
               ["المقاعد", capacity],
               ["السعر", price
                 ? `${price} ${currency}`
                 : course?.listPrice != null
-                  ? `${course.listPrice} ${currency} — موروثٌ من سعر قائمة الدورة`
-                  : `بلا سعر — وشرطُ الفتح يمنع شعبةً بلا سعر`],
-              ["المدرّب", trainerId ? (trainers?.find((t) => t.profileId === trainerId)?.name ?? "مسنَد") : "لاحقا"],
+                  ? `${course.listPrice} ${currency} — موروث من سعر قائمة الدورة`
+                  : `بلا سعر — وشرط الفتح يمنع شعبة بلا سعر`],
+              ["المدرّب", trainerId ? (trainers?.find((t) => t.profileId === trainerId)?.name ?? "مسند") : "لاحقا"],
             ].map(([k, v]) => (
               <div key={k} className="flex items-start justify-between gap-3 border-b border-white/5 py-1.5 last:border-b-0">
                 <dt className="text-muted-foreground">{k}</dt>
@@ -488,9 +488,9 @@ export default function CohortWizard({
           <Card tone="warn" className="text-fine leading-6 text-foreground">
             <p className="font-black text-gold-ink">قبل الفتح للتسجيل</p>
             <p className="mt-1">
-              الشعبةُ تُنشأ مسودّةً. و«أنشئ وافتح» يفحص شروطَ الفتح الستّة أوّلا: خطّةُ تقديمٍ معتمدة، مدرّبٌ
-              مؤهَّلٌ مسنَد، جدولٌ وجلسات، سعةٌ وسعرٌ، وإعدادٌ ماليّ. فإن نقص شيءٌ بقيت مسودّةً وقيل لك ما ينقص —
-              ولا تُفتح شعبةٌ ناقصةٌ للمتعلّمين.
+              الشعبة تنشأ مسودّة. و«أنشئ وافتح» يفحص شروط الفتح الستّة أوّلا: خطّة تقديم معتمدة، مدرّب
+              مؤهّل مسند، جدول وجلسات، سعة وسعر، وإعداد ماليّ. فإن نقص شيء بقيت مسودّة وقيل لك ما ينقص —
+              ولا تفتح شعبة ناقصة للمتعلّمين.
             </p>
           </Card>
         </div>

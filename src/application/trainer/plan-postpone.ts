@@ -71,11 +71,11 @@ export function validPostponeTarget(target: Season, period: { startsOn?: string 
 export function postponeProblem(postponedTo: string | null | undefined, period: CohortPeriod | null): string | null {
   if (!postponedTo || !period?.startsOn) return null
   if (period.startsOn >= postponedTo) return null
-  return `مؤجّلةٌ إلى ${seasonAr(seasonOfDay(postponedTo))} — اجعل بدايتَها في ${cohortDayAr(postponedTo)} أو بعده ثمّ أرسلها`
+  return `مؤجّلة إلى ${seasonAr(seasonOfDay(postponedTo))} — اجعل بدايتها في ${cohortDayAr(postponedTo)} أو بعده ثمّ أرسلها`
 }
 
 /** سطرُ الحال: «مؤجّلةٌ إلى موسم الربيع 2027» */
-export const postponedLineAr = (postponedTo: string): string => `مؤجّلةٌ إلى ${seasonAr(seasonOfDay(postponedTo))}`
+export const postponedLineAr = (postponedTo: string): string => `مؤجّلة إلى ${seasonAr(seasonOfDay(postponedTo))}`
 
 /** ما يُقال للمدرّب بالجرس والبريد — صريحا: لم تُقبل لهذا الفصل، وإلى أيّ موسمٍ أُجّلت */
 export function postponeMessageAr(input: {
@@ -90,11 +90,11 @@ export function postponeMessageAr(input: {
   const day = cohortDayAr(seasonStart(input.to))
   const note = input.note?.trim()
   return {
-    title: `«${input.cohortTitle}» مؤجّلةٌ إلى ${toAr}`,
-    heading: `لم تُقبل هذه الشعبةُ ل${fromAr} — وأُجّلت إلى ${toAr}`,
-    body: `لم تُقبل «${input.cohortTitle}» ل${fromAr}، وأُجّلت إلى ${toAr}. وليس هذا رفضا للدورة: `
-      + `تبقى خطّتُك في صفحة شعبتك كما هي، تعدّلها متى شئت، وترسلها حين تجعل بدايتَها في ${day} أو بعده.`
-      + (note ? ` وكلمةُ الإدارة: ${note}` : ''),
+    title: `«${input.cohortTitle}» مؤجّلة إلى ${toAr}`,
+    heading: `لم تقبل هذه الشعبة ل${fromAr} — وأجّلت إلى ${toAr}`,
+    body: `لم تقبل «${input.cohortTitle}» ل${fromAr}، وأجّلت إلى ${toAr}. وليس هذا رفضا للدورة: `
+      + `تبقى خطّتك في صفحة شعبتك كما هي، تعدّلها متى شئت، وترسلها حين تجعل بدايتها في ${day} أو بعده.`
+      + (note ? ` وكلمة الإدارة: ${note}` : ''),
     cta: 'افتح الشعبة',
   }
 }

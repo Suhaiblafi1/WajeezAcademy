@@ -98,23 +98,23 @@ function sources(dir: string, acc: string[] = []): string[] {
   return acc
 }
 
-describe('لا «عرضك» في نصٍّ يصل إنسانا', () => {
-  it('الماسحُ يقرأ النصوصَ ويتجاوز التعليقات — وإلّا فالحارسُ يقيس الفراغ', () => {
+describe('لا «عرضك» في نصّ يصل إنسانا', () => {
+  it('الماسح يقرأ النصوص ويتجاوز التعليقات — وإلّا فالحارس يقيس الفراغ', () => {
     const sample = [
-      '/* عرضُك في تعليقٍ يروي القرار */',
-      "const a = 'هذا عرضُك'",
-      'const b = `حُدّث نصُّ عرضك — ${x}`',
-      'const c = <h1>فقدتَ رابط عرضك؟</h1>',
+      '/* عرضك في تعليق يروي القرار */',
+      "const a = 'هذا عرضك'",
+      'const b = `حدّث نصّ عرضك — ${x}`',
+      'const c = <h1>فقدت رابط عرضك؟</h1>',
       "const d = 'عرضكم وعرضكما'",
-      '// عرضك في سطرٍ مُعلَّق',
+      '// عرضك في سطر معلّق',
     ].join('\n')
     const hits = textsOf('sample.tsx', sample).filter((t) => WORD.test(t.text)).map((t) => t.line)
-    expect(hits, 'الماسحُ لا يرى النصَّ أو يرى التعليق').toEqual([2, 3, 4])
+    expect(hits, 'الماسح لا يرى النصّ أو يرى التعليق').toEqual([2, 3, 4])
   })
 
-  it('⚠️ ولا نصَّ في src ولا server يقول «عرضك»', () => {
+  it('⚠️ ولا نصّ في src ولا server يقول «عرضك»', () => {
     const files = [...sources(join(root, 'src')), ...sources(join(root, 'server'))]
-    expect(files.length, 'لم تُقرأ ملفّاتُ الشيفرة — فالحارسُ يقيس الفراغ').toBeGreaterThan(200)
+    expect(files.length, 'لم تقرأ ملفّات الشيفرة — فالحارس يقيس الفراغ').toBeGreaterThan(200)
     const hits: string[] = []
     for (const file of files) {
       const src = readFileSync(file, 'utf8')
@@ -123,23 +123,23 @@ describe('لا «عرضك» في نصٍّ يصل إنسانا', () => {
         if (WORD.test(t.text)) hits.push(`${relative(root, file)}:${t.line} — ${t.text.trim().slice(0, 80)}`)
       }
     }
-    expect(hits, 'عادت «عرضك» إلى نصٍّ يصل إنسانا — والبديلُ «الاتفاقيّة»').toEqual([])
+    expect(hits, 'عادت «عرضك» إلى نصّ يصل إنسانا — والبديل «الاتفاقيّة»').toEqual([])
   })
 
-  it('ماسحُ الأزرار يقرأ أزرارَ الرسائل وحدَها — ويفرّق الأمرَ من الخبر', () => {
+  it('ماسح الأزرار يقرأ أزرار الرسائل وحدها — ويفرّق الأمر من الخبر', () => {
     const sample = [
       "const a = { kind: 'cta', label: 'اقرأ ووقّع', href: u }",
-      "const b = { kind: 'cta' as const, label: x ? 'اقرأ عقدك المحدَّث ووقّعه' : 'افتح الاتفاقيّة', href: u }",
+      "const b = { kind: 'cta' as const, label: x ? 'اقرأ عقدك المحدّث ووقّعه' : 'افتح الاتفاقيّة', href: u }",
       "const c = { kind: 'p', text: 'اقرأ ووقّع' }",
-      "const d = { kind: 'cta', label: 'اقرأ العقدَ الذي وقّعتَه', href: u }",
-      "const e = { kind: 'cta', label: 'افتح عقدك الموقَّع', href: u }",
-      "const f = { kind: 'cta', label: 'وقِّعْ الآن', href: u }",
+      "const d = { kind: 'cta', label: 'اقرأ العقد الذي وقّعته', href: u }",
+      "const e = { kind: 'cta', label: 'افتح عقدك الموقّع', href: u }",
+      "const f = { kind: 'cta', label: 'وقّع الآن', href: u }",
     ].join('\n')
     const hits = ctaLabelsOf('sample.ts', sample).filter((t) => SIGN_VERB.test(t.text)).map((t) => t.line)
-    expect(hits, 'الماسحُ لا يرى الزرَّ، أو يرى غيرَه، أو لا يفرّق الأمرَ من الخبر').toEqual([1, 2, 6])
+    expect(hits, 'الماسح لا يرى الزرّ، أو يرى غيره، أو لا يفرّق الأمر من الخبر').toEqual([1, 2, 6])
   })
 
-  it('⚠️ ولا زرَّ في رسالةٍ يأمر بالتوقيع — «افتح الاتفاقيّة» لا «اقرأ ووقّع»', () => {
+  it('⚠️ ولا زرّ في رسالة يأمر بالتوقيع — «افتح الاتفاقيّة» لا «اقرأ ووقّع»', () => {
     const files = [...sources(join(root, 'src')), ...sources(join(root, 'server'))]
     let seen = 0
     const hits: string[] = []
@@ -151,8 +151,8 @@ describe('لا «عرضك» في نصٍّ يصل إنسانا', () => {
         if (SIGN_VERB.test(t.text)) hits.push(`${relative(root, file)}:${t.line} — ${t.text}`)
       }
     }
-    expect(seen, 'لم يُقرأ زرٌّ — فالحارسُ يقيس الفراغ').toBeGreaterThan(10)
-    expect(hits, 'زرٌّ يأمر بالتوقيع — والبديلُ «افتح الاتفاقيّة»').toEqual([])
+    expect(seen, 'لم يقرأ زرّ — فالحارس يقيس الفراغ').toBeGreaterThan(10)
+    expect(hits, 'زرّ يأمر بالتوقيع — والبديل «افتح الاتفاقيّة»').toEqual([])
   })
 
   /* ═══ ولا «العرض» في ما يقرؤه المدرّبُ عن اتفاقيّته (٢ أكتوبر ٢٠٢٦) ═══
@@ -173,16 +173,16 @@ describe('لا «عرضك» في نصٍّ يصل إنسانا', () => {
   /** «العرض» اسما: «العرضُ» و«عرضٌ» و«عرضا» و«عرضه» و«بالعرض» — لا «يُعرض» ولا «تعرض» */
   const OFFER_NOUN = /(?<![\u0621-\u0652])[وفبل]?(?:ال|لل)?عرض[\u064B-\u0652]*(?:ا|ه|ها)?(?![\u0621-\u064A])/
 
-  it('ماسحُ «العرض» يرى الاسمَ ولا يرى الفعل', () => {
+  it('ماسح «العرض» يرى الاسم ولا يرى الفعل', () => {
     const sample = [
-      "const a = 'قرأتَ العرضَ ووقّعتَه'",
-      "const b = 'إن كان لديك عرضٌ مفتوح'",
-      "const c = 'لا يُعرض رقمُك لأحد'",
+      "const a = 'قرأت العرض ووقّعته'",
+      "const b = 'إن كان لديك عرض مفتوح'",
+      "const c = 'لا يعرض رقمك لأحد'",
       "const d = 'وتعرض الأكاديمية الإسناد'",
-      "const e = 'رابطا أحدثَ لهذا العرض'",
+      "const e = 'رابطا أحدث لهذا العرض'",
     ].join('\n')
     const hits = textsOf('sample.ts', sample).filter((t) => OFFER_NOUN.test(t.text)).map((t) => t.line)
-    expect(hits, 'الماسحُ لا يرى الاسمَ أو يرى الفعل').toEqual([1, 2, 5])
+    expect(hits, 'الماسح لا يرى الاسم أو يرى الفعل').toEqual([1, 2, 5])
   })
 
   it('⚠️ ولا «العرض» في رسائل الاتفاقيّة وصفحاتها — «الاتفاقيّة»', () => {
@@ -193,14 +193,14 @@ describe('لا «عرضك» في نصٍّ يصل إنسانا', () => {
         if (OFFER_NOUN.test(t.text)) hits.push(`${rel}:${t.line} — ${t.text.trim().slice(0, 80)}`)
       }
     }
-    expect(hits, 'عادت «العرض» إلى ما يقرؤه المدرّبُ عن اتفاقيّته').toEqual([])
+    expect(hits, 'عادت «العرض» إلى ما يقرؤه المدرّب عن اتفاقيّته').toEqual([])
   })
 
   /* وما يصل المدرّبَ فعلا يُقرأ كما يقرؤه هو: أوّلُ رسالةٍ تصله — عنوانُها ورأسُها
      وزرُّها ومتنُها مُخرَجا */
-  it('⚠️ وأوّلُ رسالةٍ تصله «الاتفاقيّة التدريبيّة» — وزرُّها «افتح الاتفاقيّة» لا «اقرأ ووقّع»', () => {
+  it('⚠️ وأوّل رسالة تصله «الاتفاقيّة التدريبيّة» — وزرّها «افتح الاتفاقيّة» لا «اقرأ ووقّع»', () => {
     const mail = conditionalOfferMail({
-      fullName: 'مدرّبٌ للاختبار', reference: 'TR-WORD-1', url: 'https://example.test/c/t',
+      fullName: 'مدرّب للاختبار', reference: 'TR-WORD-1', url: 'https://example.test/c/t',
       expiresAt: new Date('2026-10-12T09:00:00Z'), orientationOnAr: null, orientationUrl: null,
       deadlineOnAr: null, windowDays: 5, extensionDays: 2, requiredDocumentsAr: [],
       portalUrl: 'https://example.test/trainer',
@@ -209,6 +209,6 @@ describe('لا «عرضك» في نصٍّ يصل إنسانا', () => {
     expect(all, 'قيل له «عرضك»').not.toMatch(WORD)
     expect(mail.subject).toContain('الاتفاقيّة التدريبيّة')
     const cta = mail.doc.blocks.find((b) => b.kind === 'cta') as { label?: string } | undefined
-    expect(cta?.label, 'الزرُّ يأمر بالتوقيع').toBe('افتح الاتفاقيّة')
+    expect(cta?.label, 'الزرّ يأمر بالتوقيع').toBe('افتح الاتفاقيّة')
   })
 })

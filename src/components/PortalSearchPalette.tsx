@@ -116,7 +116,7 @@ export default function PortalSearchPalette({ kind }: { kind: keyof typeof PALET
               {conf.emptyHint}<br />الأسهم ↑↓ للتنقل و Enter للقفز
             </p>
           )}
-          {searching && <p className="px-4 py-6 text-center text-read text-muted-foreground">يُبحث…</p>}
+          {searching && <p className="px-4 py-6 text-center text-read text-muted-foreground">يبحث…</p>}
           {!searching && groups && flat.length === 0 && (
             <p className="px-4 py-8 text-center text-read text-muted-foreground">لا نتائج لـ «{q}» ضمن نطاقك</p>
           )}

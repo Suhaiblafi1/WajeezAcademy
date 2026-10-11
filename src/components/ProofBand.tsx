@@ -79,7 +79,7 @@ export default function ProofBand() {
     <section className="relative overflow-hidden border-y border-white/[0.06] bg-surface">
       <style>{`
         .proof-hand { font-family: "Aref Ruqaa", serif; }
-        /* الميلُ: الجملةُ ترتفع نحو اليسار، ولكلّ مقطعٍ انحرافُه الثابت */
+        /* الميل: الجملة ترتفع نحو اليسار، ولكلّ مقطع انحرافه الثابت */
         .proof-slant { transform: rotate(-3.5deg); transform-origin: right center; }
         .proof-word { display: inline-block; transform: rotate(var(--tilt, 0deg)) translateY(var(--lift, 0px)); }
 

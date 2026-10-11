@@ -34,20 +34,20 @@ export type TermStatus = (typeof TERM_STATUSES)[number]
 export const LIVE_TERM_STATUSES: readonly TermStatus[] = ['planned', 'open', 'active']
 
 export const TERM_STATUS_AR: Record<TermStatus, string> = {
-  planned: 'مخطَّط',
-  open: 'مفتوحٌ للتسجيل',
-  active: 'جارٍ',
-  closed: 'منتهٍ',
-  cancelled: 'ملغًى',
+  planned: 'مخطّط',
+  open: 'مفتوح للتسجيل',
+  active: 'جار',
+  closed: 'منته',
+  cancelled: 'ملغى',
 }
 
 /** ماذا يقع إن اختير — كي يُقال للإداريّ قبل أن ينقر لا بعدَه */
 export const TERM_STATUS_EFFECT_AR: Record<TermStatus, string> = {
-  planned: 'يرجع خطّةً لم تُعلَن',
-  open: 'يقبل الشعبَ الجديدة، ويُقرأ للمتعلّم «التسجيلُ مفتوحٌ الآن»',
+  planned: 'يرجع خطّة لم تعلن',
+  open: 'يقبل الشعب الجديدة، ويقرأ للمتعلّم «التسجيل مفتوح الآن»',
   active: 'يصير جاريا — ويقع بنفسه ببلوغ أوّل أشهره',
-  closed: 'لا تُفتح فيه شعبةٌ جديدةٌ ولا يُسمَّى فصلا لشعبةٍ قائمة',
-  cancelled: 'يسقط من الحسبان كلِّه — ولا يُلغى فصلٌ فيه شعب',
+  closed: 'لا تفتح فيه شعبة جديدة ولا يسمّى فصلا لشعبة قائمة',
+  cancelled: 'يسقط من الحسبان كلّه — ولا يلغى فصل فيه شعب',
 }
 
 /* ═══ ما تملك الإدارةُ اختيارَه من كلّ حال ═══

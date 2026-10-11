@@ -77,10 +77,10 @@ export const ENDED_TRAINER_STATUSES = ['rejected', 'withdrawn', 'suspended'] as 
 export function trainerStatusCell(t: Pick<AcceptedTrainerIn, 'status' | 'infoRequestedFrom' | 'profile'>): string {
   const label = STATUS_LABELS[t.status] ?? t.status
   if (t.status === 'information_requested' && t.infoRequestedFrom) {
-    return `${label} — طُلبت منه في «${STATUS_LABELS[t.infoRequestedFrom] ?? t.infoRequestedFrom}»، ويعود إليها حين يجيب`
+    return `${label} — طلبت منه في «${STATUS_LABELS[t.infoRequestedFrom] ?? t.infoRequestedFrom}»، ويعود إليها حين يجيب`
   }
   if (t.profile && !(ACCEPTED_TRAINER_STATUSES as readonly string[]).includes(t.status)) {
-    return `${label} — وله ملفُّ مدرّبٍ من قبولٍ سابق`
+    return `${label} — وله ملفّ مدرّب من قبول سابق`
   }
   return label
 }
@@ -93,20 +93,20 @@ export const OPEN_PROPOSAL_STATUSES: readonly string[] = ['draft', 'submitted', 
 export const PROPOSAL_STATUS_LABELS: Record<string, string> = {
   draft: 'مسوّدة',
   submitted: 'ينتظر التصنيف',
-  info_requested: 'سُئل صاحبُه — ينتظر جوابَه',
-  linked: 'نسخةٌ من رمزٍ قائم',
-  became_course: 'صارت دورةً في الكتالوج',
-  rejected: 'لم تُقبل',
+  info_requested: 'سئل صاحبه — ينتظر جوابه',
+  linked: 'نسخة من رمز قائم',
+  became_course: 'صارت دورة في الكتالوج',
+  rejected: 'لم تقبل',
 }
 
 /** من أين جاء البند — وهو أوّلُ ما يُقرأ في الصفّ */
 export const SOURCE_LABELS = {
-  queue: 'اقتراحٌ في طابور التصنيف',
-  application: 'اقتراحٌ في طلبه لم يدخل الطابور',
-  freeText: 'فقرةٌ حرّةٌ في طلبه — لم تدخل الطابور',
+  queue: 'اقتراح في طابور التصنيف',
+  application: 'اقتراح في طلبه لم يدخل الطابور',
+  freeText: 'فقرة حرّة في طلبه — لم تدخل الطابور',
   ticked: 'اختارها من الكتالوج في طلبه',
-  qualification: 'تأهيلٌ قائم',
-  nothing: 'لا دورةَ في ملفّه',
+  qualification: 'تأهيل قائم',
+  nothing: 'لا دورة في ملفّه',
 } as const
 
 /** اقتراحٌ في الطابور كما يُقرأ من القاعدة */
@@ -201,9 +201,9 @@ type Body = Partial<Omit<AcceptedCourseRow, 'trainer' | 'reference' | 'trainerSt
 /** سؤالُ الإدارة وجوابُه وملحوظةُ القرار — ما يُقرأ قبل أن يُقرَّر ثانية */
 function proposalNote(p: QueueProposalIn): string {
   const parts: string[] = []
-  if (p.questionAr?.trim()) parts.push(`سُئل: ${p.questionAr.trim()}`)
+  if (p.questionAr?.trim()) parts.push(`سئل: ${p.questionAr.trim()}`)
   if (p.answerAr?.trim()) parts.push(`أجاب: ${p.answerAr.trim()}`)
-  if (p.decisionNoteAr?.trim()) parts.push(`ملحوظةُ القرار: ${p.decisionNoteAr.trim()}`)
+  if (p.decisionNoteAr?.trim()) parts.push(`ملحوظة القرار: ${p.decisionNoteAr.trim()}`)
   return parts.join(' · ')
 }
 
@@ -235,10 +235,10 @@ export function acceptedCourseRows(
     })
 
     const quals = new Map((t.profile?.qualifications ?? []).map((q) => [q.courseId, q.status]))
-    const courseCell = (id: string) => `${id} — ${lens.titleOf(id) ?? 'لا دورةَ بهذا الرمز في الكتالوج'}`
+    const courseCell = (id: string) => `${id} — ${lens.titleOf(id) ?? 'لا دورة بهذا الرمز في الكتالوج'}`
     const qualCell = (id: string) => {
       const s = quals.get(id)
-      return s ? (QUALIFICATION_LABELS[s] ?? s) : 'غيرُ مؤهَّلٍ بعد'
+      return s ? (QUALIFICATION_LABELS[s] ?? s) : 'غير مؤهّل بعد'
     }
     const nearestCell = (p: { titleAr: string; summaryAr: string | null }) => {
       const n = lens.nearest(p)
@@ -277,11 +277,11 @@ export function acceptedCourseRows(
         source: SOURCE_LABELS.application,
         title: p.titleAr,
         summary: p.summaryAr,
-        itemStatus: 'خارجَ الطابور — لم يُصنَّف',
+        itemStatus: 'خارج الطابور — لم يصنّف',
         nearest: nearestCell({ titleAr: p.titleAr, summaryAr: p.summaryAr || null }),
         note: t.profile
-          ? 'لم يُبذَر في الطابور: أُضيف إلى طلبه بعد إنشاء ملفّه'
-          : 'لا ملفَّ مدرّبٍ له بعد — يُبذَر في الطابور حين يُنشأ',
+          ? 'لم يبذر في الطابور: أضيف إلى طلبه بعد إنشاء ملفّه'
+          : 'لا ملفّ مدرّب له بعد — يبذر في الطابور حين ينشأ',
       })
     }
 
@@ -291,8 +291,8 @@ export function acceptedCourseRows(
       push({
         source: SOURCE_LABELS.freeText,
         title: free,
-        itemStatus: 'خارجَ الطابور — تُقرأ بعين',
-        note: 'من نموذج التقديم القديم كما كتبها — وما سُمّي منها في محرّر الطلب يظهر في صفوفٍ مستقلّة',
+        itemStatus: 'خارج الطابور — تقرأ بعين',
+        note: 'من نموذج التقديم القديم كما كتبها — وما سمّي منها في محرّر الطلب يظهر في صفوف مستقلّة',
       })
     }
 
@@ -321,8 +321,8 @@ export function acceptedCourseRows(
     if (rows.length === 0) {
       push({
         source: SOURCE_LABELS.nothing,
-        title: 'لم يقترح دورةً ولم يختر من الكتالوج، ولا تأهيلَ له',
-        note: t.profile ? '' : 'ولا ملفَّ مدرّبٍ له بعد',
+        title: 'لم يقترح دورة ولم يختر من الكتالوج، ولا تأهيل له',
+        note: t.profile ? '' : 'ولا ملفّ مدرّب له بعد',
       })
     }
     out.push(...rows)

@@ -69,7 +69,7 @@ export default function FavoriteButton({
       {showAuth && (
         <Modal onClose={() => setShowAuth(false)} label={`سجّل لحفظ ال${word} في مفضلتك`} panelClassName="w-full max-w-md">
           <AuthGate
-            message={`سجّل دخولك أو أنشئ حسابك ليُحفظ «${title}» في مفضلتك ويعود إليك متى شئت.`}
+            message={`سجّل دخولك أو أنشئ حسابك ليحفظ «${title}» في مفضلتك ويعود إليك متى شئت.`}
             source="favorite_gate"
             onDone={() => {
               setShowAuth(false);

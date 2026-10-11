@@ -188,28 +188,28 @@ export function codeBlockerAr(
 ): string | null {
   const hasP = input.percentOff != null
   const hasA = input.amountOff != null
-  if (hasP === hasA) return 'اختر للكود نسبةً أو مبلغا — أحدَهما.'
+  if (hasP === hasA) return 'اختر للكود نسبة أو مبلغا — أحدهما.'
   if (hasP) {
     const p = input.percentOff!
-    if (!Number.isInteger(p)) return 'النسبةُ عددٌ صحيحٌ بلا كسور.'
+    if (!Number.isInteger(p)) return 'النسبة عدد صحيح بلا كسور.'
     if (p < MIN_TRAINER_CODE_PERCENT || p > MAX_TRAINER_CODE_PERCENT) {
-      return `النسبةُ بين ${MIN_TRAINER_CODE_PERCENT} و${MAX_TRAINER_CODE_PERCENT} بالمئة — والسقفُ في البند 4-10 من عقدك.`
+      return `النسبة بين ${MIN_TRAINER_CODE_PERCENT} و${MAX_TRAINER_CODE_PERCENT} بالمئة — والسقف في البند 4-10 من عقدك.`
     }
   } else {
     const a = input.amountOff!
     if (!Number.isFinite(a) || a < 1 || a > MAX_TRAINER_CODE_AMOUNT) {
-      return `المبلغُ بين ١ و${MAX_TRAINER_CODE_AMOUNT} دولار.`
+      return `المبلغ بين ١ و${MAX_TRAINER_CODE_AMOUNT} دولار.`
     }
     /* وبسماحةٍ لا بمساواة: `19.99 × 100` في الحساب العائم ١٩٩٨٫٩٩٩٩٩٩٩٩٩٩٩٩٩٨،
        فكانت المساواةُ تردّ مبلغا صحيحا — وجده فحصٌ لا مستعمِل. */
-    if (Math.abs(a * 100 - Math.round(a * 100)) > 1e-6) return 'المبلغُ بمنزلتين عشريّتين على الأكثر.'
+    if (Math.abs(a * 100 - Math.round(a * 100)) > 1e-6) return 'المبلغ بمنزلتين عشريّتين على الأكثر.'
   }
-  if (input.labelAr.trim().length < 2) return 'اكتب لمن تنشره أو أين — يُطبع في كشفك لتعرف بعد شهرين عمّ حُسم.'
+  if (input.labelAr.trim().length < 2) return 'اكتب لمن تنشره أو أين — يطبع في كشفك لتعرف بعد شهرين عمّ حسم.'
   const u = input.maxUses
   if (u != null && (!Number.isInteger(u) || u < 1 || u > MAX_TRAINER_CODE_USES)) {
-    return `عددُ الاستعمالات بين ١ و${MAX_TRAINER_CODE_USES} — أو اتركه فارغا بلا حدّ.`
+    return `عدد الاستعمالات بين ١ و${MAX_TRAINER_CODE_USES} — أو اتركه فارغا بلا حدّ.`
   }
-  if (input.expiresAt && input.expiresAt.getTime() <= now.getTime()) return 'تاريخُ الانتهاء في الماضي.'
+  if (input.expiresAt && input.expiresAt.getTime() <= now.getTime()) return 'تاريخ الانتهاء في الماضي.'
   return null
 }
 
@@ -218,10 +218,10 @@ export function codeStateAr(
   c: { status: string; expiresAt: Date | string | null; maxUses: number | null; usedCount: number },
   now = new Date(),
 ): { key: 'live' | 'paused' | 'revoked' | 'expired' | 'exhausted'; labelAr: string } {
-  if (c.status === 'revoked') return { key: 'revoked', labelAr: 'ألغيتَه — لا يُستعمل بعد' }
-  if (c.expiresAt && new Date(c.expiresAt).getTime() <= now.getTime()) return { key: 'expired', labelAr: 'انتهت مدّتُه' }
-  if (c.maxUses != null && c.usedCount >= c.maxUses) return { key: 'exhausted', labelAr: 'استُنفدت استعمالاتُه' }
-  if (c.status === 'paused') return { key: 'paused', labelAr: 'موقوفٌ — تستأنفه متى شئت' }
+  if (c.status === 'revoked') return { key: 'revoked', labelAr: 'ألغيته — لا يستعمل بعد' }
+  if (c.expiresAt && new Date(c.expiresAt).getTime() <= now.getTime()) return { key: 'expired', labelAr: 'انتهت مدّته' }
+  if (c.maxUses != null && c.usedCount >= c.maxUses) return { key: 'exhausted', labelAr: 'استنفدت استعمالاته' }
+  if (c.status === 'paused') return { key: 'paused', labelAr: 'موقوف — تستأنفه متى شئت' }
   return { key: 'live', labelAr: 'يعمل' }
 }
 
@@ -299,4 +299,4 @@ export function budgetCovers(budget: CodeBudget, discount: number): boolean {
 }
 
 /** ما يُقال للمشتري حين لا يسع الرصيدُ خصمَه — ولا تُكشف له مستحقّاتُ أحد */
-export const CODE_UNAVAILABLE_AR = 'بلغ هذا الكودُ حدَّه الآن — أكمل الشراءَ بدونه أو جرّبه لاحقا'
+export const CODE_UNAVAILABLE_AR = 'بلغ هذا الكود حدّه الآن — أكمل الشراء بدونه أو جرّبه لاحقا'

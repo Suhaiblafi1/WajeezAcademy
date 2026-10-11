@@ -49,7 +49,7 @@ export default function PublicTextCard({ inputCls }: { inputCls: string }) {
     setBusy(true); setMsg(null);
     try {
       fill(await apiPut<MyPublicText>("/api/trainer/public-text", { headline, bio }));
-      setMsg({ bad: false, text: "أُرسلت — تظهر حين نعتمدها، ويصلك خبر." });
+      setMsg({ bad: false, text: "أرسلت — تظهر حين نعتمدها، ويصلك خبر." });
     } catch (e) {
       setMsg({ bad: true, text: e instanceof ApiError ? e.message : "تعذّر الإرسال" });
     } finally { setBusy(false); }
@@ -60,25 +60,25 @@ export default function PublicTextCard({ inputCls }: { inputCls: string }) {
       <h2 id="public-text-h" className="text-base font-black">ما يراه الناس عنك في «المدربون»</h2>
       <p className="mt-2 max-w-3xl text-read leading-7 text-muted-foreground">
         يظهران مع صورتك في «المدربون» وصفحتك العامّة. اكتب ما تدرّبه وخبرتك وما يخرج به متعلّمك. نراجعهما قبل النشر وقد نحرّرهما يسيرا.
-        {!data.published && " ولا يظهر اسمُك للعامّة حتّى نعتمد نشرَ ملفّك."}
+        {!data.published && " ولا يظهر اسمك للعامّة حتّى نعتمد نشر ملفّك."}
       </p>
 
       {data.pendingAt && (
         <Inset tone="accent" className="mt-3 p-3 text-read leading-6">
-          أرسلتَهما {fmtDateTime(data.pendingAt)} — بانتظار اعتمادنا، والمعتمَدُ قبلهما يبقى معروضا.
+          أرسلتهما {fmtDateTime(data.pendingAt)} — بانتظار اعتمادنا، والمعتمد قبلهما يبقى معروضا.
         </Inset>
       )}
       {data.rejectNoteAr && !data.pendingAt && (
         <Inset tone="warn" className="mt-3 p-3 text-read leading-6">
-          لم نعتمد آخرَ ما أرسلت — السبب: {data.rejectNoteAr}
+          لم نعتمد آخر ما أرسلت — السبب: {data.rejectNoteAr}
         </Inset>
       )}
 
       <div className="mt-4 grid gap-3">
         <label className="block">
-          <span className="mb-1.5 block text-fine font-bold text-muted-foreground">العنوانُ المهنيّ</span>
+          <span className="mb-1.5 block text-fine font-bold text-muted-foreground">العنوان المهنيّ</span>
           <input value={headline} maxLength={HEADLINE_MAX_CHARS} onChange={(e) => setHeadline(e.target.value)}
-            placeholder="مثال: مدرّبُ تحليل بياناتٍ تطبيقيّ" className={inputCls} />
+            placeholder="مثال: مدرّب تحليل بيانات تطبيقيّ" className={inputCls} />
         </label>
         <label className="block">
           <span className="mb-1.5 block text-fine font-bold text-muted-foreground">النبذة</span>
@@ -91,7 +91,7 @@ export default function PublicTextCard({ inputCls }: { inputCls: string }) {
 
       <div className="mt-3 flex flex-wrap items-center gap-3">
         <Button tone="confirm" icon={Send} loading={busy} disabled={Boolean(problem)} onClick={() => void submit()}>
-          {data.pendingAt ? "أرسِلِ التعديلَ للاعتماد" : "أرسِلْهما للاعتماد"}
+          {data.pendingAt ? "أرسل التعديل للاعتماد" : "أرسلهما للاعتماد"}
         </Button>
         {problem && <span className="text-read text-muted-foreground">{problem}</span>}
       </div>

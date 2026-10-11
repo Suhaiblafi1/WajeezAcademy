@@ -85,7 +85,7 @@ export default function RubricSelfReview({
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h3 id={`rubric-${moduleId}`} className="flex items-center gap-2 text-sm font-black">
           <ClipboardCheck className="h-4 w-4 text-teal-light-ink" aria-hidden="true" />
-          راجع مخرَجك قبل أن تُسلّمه
+          راجع مخرجك قبل أن تسلّمه
         </h3>
         <span className="rounded-full bg-teal-ink/15 px-2 py-0.5 text-fine tabular-nums text-teal-light-ink">
           {fmtNum(rubric.criteria.length)} معايير
@@ -93,8 +93,8 @@ export default function RubricSelfReview({
       </div>
 
       <p className="mt-2 text-xs leading-6 text-muted-foreground">
-        حكمُك هنا لك وحدَك — لا يُرفع ولا يُحتسب. والمحتسَبُ تقييمُ المدرّب على
-        ما ترفعه، وبهذه المعايير نفسِها.
+        حكمك هنا لك وحدك — لا يرفع ولا يحتسب. والمحتسب تقييم المدرّب على
+        ما ترفعه، وبهذه المعايير نفسها.
       </p>
 
       <div className="mt-4 space-y-4">
@@ -134,7 +134,7 @@ export default function RubricSelfReview({
 
       {answered === rubric.criteria.length && lowest !== undefined && lowest < 3 && (
         <Card as="p" tone="warn" className="mt-3 text-xs leading-6 text-amber-100">
-          أدنى ما حكمتَ به على نفسك {fmtNum(lowest)} — وهذا موضعُ عملك قبل التسليم،
+          أدنى ما حكمت به على نفسك {fmtNum(lowest)} — وهذا موضع عملك قبل التسليم،
           لا بعد التقييم.
         </Card>
       )}

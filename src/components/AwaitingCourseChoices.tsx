@@ -83,7 +83,7 @@ export default function AwaitingCourseChoices({
   return (
     <div className="w-full border-t border-white/8 pt-3">
       <p className="text-read leading-5 text-muted-foreground">
-        لا شعبةَ لها بعد. تستطيع أن تنتظرها، أو تستبدلها بما يخدم المهارات نفسَها الآن، أو تحذفها من خطّتك.
+        لا شعبة لها بعد. تستطيع أن تنتظرها، أو تستبدلها بما يخدم المهارات نفسها الآن، أو تحذفها من خطّتك.
       </p>
 
       {error && (
@@ -116,7 +116,7 @@ export default function AwaitingCourseChoices({
         >
           {busy === "notify" ? <Loader2 className="h-3 w-3 animate-spin" />
             : notifyOnCohort ? <Bell className="h-3 w-3" /> : <BellOff className="h-3 w-3" />}
-          {notifyOnCohort ? "سنُعلمك عند فتحها" : "بلا إشعار"}
+          {notifyOnCohort ? "سنعلمك عند فتحها" : "بلا إشعار"}
         </button>
       </div>
 
@@ -124,7 +124,7 @@ export default function AwaitingCourseChoices({
       {mode === "remove" && (
         <Inset tone="danger" className="mt-3">
           <p className="text-read leading-6 text-foreground">
-            تُحذف «{courseTitle}» من خطّتك. تستطيع إضافتها لاحقا من الكتالوج.
+            تحذف «{courseTitle}» من خطّتك. تستطيع إضافتها لاحقا من الكتالوج.
           </p>
           <div className="mt-2.5 flex items-center gap-2">
             <button
@@ -147,7 +147,7 @@ export default function AwaitingCourseChoices({
       {mode === "replace" && (
         <Inset className="mt-3">
           <div className="flex items-center justify-between">
-            <p className="text-read font-black text-foreground">بدائلُ لها شعبةٌ الآن</p>
+            <p className="text-read font-black text-foreground">بدائل لها شعبة الآن</p>
             <button type="button" onClick={() => setMode(null)} aria-label="إغلاق البدائل" className="text-muted-foreground hover:text-foreground">
               <X className="h-3.5 w-3.5" />
             </button>
@@ -157,7 +157,7 @@ export default function AwaitingCourseChoices({
             <div className="grid place-items-center py-6"><Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /></div>
           ) : !alts || alts.length === 0 ? (
             <p className="py-4 text-read leading-6 text-muted-foreground">
-              لا بديلَ الآن يخدم مهاراتها وله شعبةٌ مفتوحة. أبقِها منتظرةً ونُعلمك عند فتحها.
+              لا بديل الآن يخدم مهاراتها وله شعبة مفتوحة. أبقها منتظرة ونعلمك عند فتحها.
             </p>
           ) : (
             <ul className="mt-2 space-y-1.5">

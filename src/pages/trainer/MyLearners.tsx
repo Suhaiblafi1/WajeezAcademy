@@ -83,7 +83,7 @@ interface Row {
 }
 
 const ENROLLMENT_AR: Record<string, string> = {
-  active: "مسجَّل", completed: "أتمّها", withdrawn: "انسحب", cancelled: "أُلغي", waitlisted: "قائمةُ انتظار",
+  active: "مسجّل", completed: "أتمّها", withdrawn: "انسحب", cancelled: "ألغي", waitlisted: "قائمة انتظار",
 };
 
 const ABSENT = new Set(["absent", "excused"]);
@@ -107,7 +107,7 @@ function buildRows(cohorts: TrainerCohort[]): Row[] {
       /* تعثّرٌ ظاهر: مضى نصفُ جلسات الشعبة وتقدّمُه دون الثلث */
       if (past.size > 0 && past.size * 2 >= cohort.sessions.length && progress < 34) {
         concern += 2;
-        concernsAr.push("تقدّمُه متأخّرٌ عن سير الشعبة");
+        concernsAr.push("تقدّمه متأخّر عن سير الشعبة");
       }
       if (countable >= 2 && attended * 2 < countable) {
         concern += 2;
@@ -206,8 +206,8 @@ export default function TrainerMyLearners() {
       {rows.length === 0 ? (
         <EmptyState
           icon={GraduationCap}
-          titleAr="لا متعلّمَ في شعبك بعد"
-          reasonAr="يظهر هنا كلُّ من يُسجَّل في شعبك."
+          titleAr="لا متعلّم في شعبك بعد"
+          reasonAr="يظهر هنا كلّ من يسجّل في شعبك."
         />
       ) : (
         <>
@@ -217,13 +217,13 @@ export default function TrainerMyLearners() {
             </h2>
             <p className="mt-1 text-sm leading-7 text-muted-foreground">
               {needing === 0
-                ? "لا أحدَ متعثّرٌ اليوم."
-                : `${needing} ${needing === 1 ? "متعلّمٌ يحتاج" : "متعلّمين يحتاجون"} التفاتَك — في أوّل القائمة.`}
+                ? "لا أحد متعثّر اليوم."
+                : `${needing} ${needing === 1 ? "متعلّم يحتاج" : "متعلّمين يحتاجون"} التفاتك — في أوّل القائمة.`}
             </p>
             <label className="relative mt-3 block max-w-sm">
               <span className="sr-only">ابحث في متعلّميك</span>
               <input
-                value={q} onChange={(e) => setQ(e.target.value)} placeholder="ابحث باسمٍ أو شعبة"
+                value={q} onChange={(e) => setQ(e.target.value)} placeholder="ابحث باسم أو شعبة"
                 className={controlCls}
               />
             </label>
@@ -231,7 +231,7 @@ export default function TrainerMyLearners() {
 
           {shown.length === 0 ? (
             <Panel as="p" className="mt-5 py-12 text-center text-sm text-muted-foreground">
-              لا متعلّمَ يطابق بحثك.
+              لا متعلّم يطابق بحثك.
             </Panel>
           ) : (
             <ul className="mt-5 space-y-3">
@@ -253,13 +253,13 @@ export default function TrainerMyLearners() {
                         </p>
                       </div>
                       <div className="flex shrink-0 flex-wrap items-center gap-2 text-fine font-black">
-                        <span className="rounded-full bg-teal/15 px-3 py-1 text-teal-light-ink">تقدّمُه {r.progress}٪</span>
+                        <span className="rounded-full bg-teal/15 px-3 py-1 text-teal-light-ink">تقدّمه {r.progress}٪</span>
                         {/* من أين جاء — «ليتأكّد أنّنا لم نغشّ» */}
                         {r.referredByMe && <span className="rounded-full bg-gold/15 px-3 py-1 font-bold text-gold-ink">عبر رابطك</span>}
                         <span className="rounded-full border border-white/15 px-3 py-1 text-muted-foreground">
                           {r.attendedOf
                             ? `حضر ${r.attendedOf.attended} من ${r.attendedOf.countable}`
-                            : "لا جلسةَ مضت بعد"}
+                            : "لا جلسة مضت بعد"}
                         </span>
                         {waiting > 0 && (
                           <span className="rounded-full bg-gold/20 px-3 py-1 text-gold-ink">
@@ -277,7 +277,7 @@ export default function TrainerMyLearners() {
                     <div className="mt-2.5 flex flex-wrap gap-2 text-fine font-bold">
                       <button type="button" onClick={() => talkTo(r.cohortId, r.enrollmentId)}
                         className="rounded-full border border-white/15 px-3 py-1 text-muted-foreground transition hover:border-teal/50 hover:text-foreground">
-                        خاطِبه
+                        خاطبه
                       </button>
                       {waiting > 0 && (
                         <Link to="/trainer/grading" className="rounded-full border border-gold/35 px-3 py-1 text-gold-ink transition hover:border-gold">

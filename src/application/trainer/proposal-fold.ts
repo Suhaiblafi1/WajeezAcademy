@@ -25,9 +25,9 @@ export const DECIDED_PROPOSAL_STATUSES = ['linked', 'became_course', 'rejected']
 
 /** لفظُ كلِّ قرارٍ في السطر المطويّ — بألفاظ البطاقة نفسِها */
 const DECIDED_WORDS: Record<(typeof DECIDED_PROPOSAL_STATUSES)[number], string> = {
-  linked: 'رُبطت برمزٍ قائم',
-  became_course: 'صارت دورةً',
-  rejected: 'رُدّت',
+  linked: 'ربطت برمز قائم',
+  became_course: 'صارت دورة',
+  rejected: 'ردّت',
 }
 
 const isDecided = (status: string) => (DECIDED_PROPOSAL_STATUSES as readonly string[]).includes(status)

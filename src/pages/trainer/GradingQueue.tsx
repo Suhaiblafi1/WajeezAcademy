@@ -38,11 +38,11 @@ import { fileSizeAr } from "@/application/learning/submission-file";
 /* أزرارُ الإجراء الخمسة تشترك في هيئةٍ واحدة، ويفترق لونُها وحدَه */
 
 /* «١ تسليمٌ» و«٢ تسليمان» و«٣ تسليمات» و«١١ تسليما» — والعددُ يُقرأ لا يُحسب */
-const SUBMISSION_FORMS = { one: "تسليمٌ", two: "تسليمان", few: "تسليمات", many: "تسليما" };
+const SUBMISSION_FORMS = { one: "تسليم", two: "تسليمان", few: "تسليمات", many: "تسليما" };
 
 const SUBMISSION_STATUS: Record<string, string> = {
   submitted: "بانتظار المراجعة", under_review: "قيد المراجعة",
-  resubmit_requested: "طُلبت إعادته", accepted: "مقبول", rejected: "مرفوض",
+  resubmit_requested: "طلبت إعادته", accepted: "مقبول", rejected: "مرفوض",
 };
 
 interface RubricCriterion { id: string; title: string; maxScore: number }
@@ -119,7 +119,7 @@ export default function GradingQueue() {
 
   const reviewAction = (submissionId: string, action: string) =>
     act(() => apiPost(`/api/trainer/submissions/${submissionId}/review`, { action, note: reviewNote[submissionId] || undefined }),
-      action === "accept" ? "قُبل التسليم" : action === "reject" ? "رُفض التسليم مع السبب" : action === "request_resubmit" ? "طُلبت إعادة التسليم" : "بدأت المراجعة");
+      action === "accept" ? "قبل التسليم" : action === "reject" ? "رفض التسليم مع السبب" : action === "request_resubmit" ? "طلبت إعادة التسليم" : "بدأت المراجعة");
 
   /** درجاتُ معايير تسليمٍ كما هي في النموذج الآن — والفارغُ صفرٌ صريح */
   const rubricOf = (q: QueueItem) =>
@@ -149,13 +149,13 @@ export default function GradingQueue() {
         for (const c of q.assessment.rubric?.criteria ?? []) delete next[`${q.id}:${c.id}`];
         return next;
       });
-    }, "سُجّلت الدرجة");
+    }, "سجّلت الدرجة");
 
   const sendFeedback = (submissionId: string) =>
     act(async () => {
       await apiPost(`/api/trainer/submissions/${submissionId}/feedback`, { body: feedbackForm[submissionId] });
       setFeedbackForm((prev) => ({ ...prev, [submissionId]: "" }));
-    }, "أُرسلت التغذية الراجعة للمتعلم");
+    }, "أرسلت التغذية الراجعة للمتعلم");
 
   if (offline) {
     return (
@@ -193,20 +193,20 @@ export default function GradingQueue() {
         icon={ClipboardCheck}
         count={queue?.length ?? 0}
         forms={SUBMISSION_FORMS}
-        waitingAr="تنتظر تصحيحَك"
-        stats={queue ? [`${queue.filter((q) => q.status === "under_review").length} بدأتَ مراجعتَها`] : []}
+        waitingAr="تنتظر تصحيحك"
+        stats={queue ? [`${queue.filter((q) => q.status === "under_review").length} بدأت مراجعتها`] : []}
         actionAr="ابدأ بأوّلها"
         disabledReasonAr={queue && queue.length > 0 && view.total === 0
-          ? "لا نتيجةَ لبحثك — امسحه."
+          ? "لا نتيجة لبحثك — امسحه."
           : undefined}
         onAction={() => { if (view.rows[0]) revealRow(`submission-${view.rows[0].id}`); }}
-        doneAr="قيّمتَ كلَّ ما وصلك. أحسنت."
+        doneAr="قيّمت كلّ ما وصلك. أحسنت."
       />
 
       {queue !== null && queue.length === 0 ? (
         <Panel className="p-10 text-center">
           {/* الفراغ فرصة توجيه لا مساحة ميتة — خطوات تالية نافعة بدل صفحة خالية */}
-          <p className="text-sm text-muted-foreground">وهذه وجهاتٌ تنفع الآن:</p>
+          <p className="text-sm text-muted-foreground">وهذه وجهات تنفع الآن:</p>
           <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
             {/* وكان أوّلُها «افتح شعبي وسجّل الحضور» إلى الموضع نفسِه الذي يذهب
                 إليه «جهّز شعبتك» — وجهتان باسمين لبابٍ واحد، فحُذف (٣٠ سبتمبر ٢٠٢٦). */}
@@ -226,7 +226,7 @@ export default function GradingQueue() {
             placeholder="ابحث بعنوان التقييم أو الشعبة أو نصّ الإجابة…" />
           {view.total === 0 && (
             <Panel as="p" className="py-12 text-center text-sm text-muted-foreground">
-              لا تسليمَ يطابق «{query.trim()}».
+              لا تسليم يطابق «{query.trim()}».
             </Panel>
           )}
           {view.rows.map((q) => (
@@ -237,11 +237,11 @@ export default function GradingQueue() {
                   {/* ═══ الاسمُ أوّلا — والحكمُ على إنسانٍ لا على صفّ ═══
                       كان يصل `userId` ويُهمَل، فيصحّح المدرّبُ عملا لا يعرف
                       صاحبَه. والفارغُ يُقال فراغا لا يُختلق له اسم. */}
-                  <p className="font-black">{q.enrollment.user?.displayName ?? "متعلّمٌ بلا اسمٍ مسجَّل"}</p>
+                  <p className="font-black">{q.enrollment.user?.displayName ?? "متعلّم بلا اسم مسجّل"}</p>
                   <p className="mt-0.5 text-read text-muted-foreground">
                     {q.assessment.title} · {q.assessment.cohort.title} · {SUBMISSION_STATUS[q.status] ?? q.status} · {fmtDateTimeAr(q.submittedAt)}
                     {/* والمتأخّرُ يُقال لمن يصحّحه — قُبل، والحكمُ فيه لمدرّبه */}
-                    {q.late && <span className="font-bold text-gold-ink"> · سُلّم بعد موعده</span>}
+                    {q.late && <span className="font-bold text-gold-ink"> · سلّم بعد موعده</span>}
                   </p>
                 </div>
                 {q.grades[0] && (
@@ -265,19 +265,19 @@ export default function GradingQueue() {
               {q.fileUrl && q.fileWaiting && (
                 <p className="mt-3 flex items-center gap-2 text-read text-gold-ink">
                   <Paperclip className="h-4 w-4 shrink-0" aria-hidden="true" />
-                  لم يكتمل رفعُ ملفّ المتعلّم{q.fileName ? ` («${q.fileName}»)` : ""} — يستطيع إعادتَه.
+                  لم يكتمل رفع ملفّ المتعلّم{q.fileName ? ` («${q.fileName}»)` : ""} — يستطيع إعادته.
                 </p>
               )}
               {q.fileUrl && !q.fileWaiting && (
                 <a href={q.fileUrl} target="_blank" rel="noreferrer"
                   className="mt-3 inline-flex min-h-11 items-center gap-2 text-read font-bold text-teal-light-ink hover:text-foreground">
                   <Paperclip className="h-4 w-4 shrink-0" aria-hidden="true" />
-                  <span className="[overflow-wrap:anywhere]">افتح ملفَّ التسليم{q.fileName ? `: ${q.fileName}` : ""}</span>
+                  <span className="[overflow-wrap:anywhere]">افتح ملفّ التسليم{q.fileName ? `: ${q.fileName}` : ""}</span>
                   {q.fileSize ? <span className="font-normal text-muted-foreground">({fileSizeAr(q.fileSize)})</span> : null}
                 </a>
               )}
               {!q.fileUrl && !q.textAnswer && (
-                <p className="mt-3 text-read text-muted-foreground">لا نصَّ ولا ملفَّ في هذا التسليم.</p>
+                <p className="mt-3 text-read text-muted-foreground">لا نصّ ولا ملفّ في هذا التسليم.</p>
               )}
               <textarea
                 value={reviewNote[q.id] ?? ""}
@@ -301,12 +301,12 @@ export default function GradingQueue() {
                         فمن قبِل ثمّ أراد أن يضع درجته لم يجد أين. فيُطفأ «قبول»
                         حتّى تُسجَّل درجة، ويُقال السببُ بجانبه لا يُخمَّن. */}
                     <Button tone="confirm" size="sm" disabled={busy || !q.grades[0]}
-                      title={q.grades[0] ? undefined : "سجّل الدرجةَ أوّلا — فالمقبولُ يخرج من الطابور"}
+                      title={q.grades[0] ? undefined : "سجّل الدرجة أوّلا — فالمقبول يخرج من الطابور"}
                       onClick={() => void reviewAction(q.id, "accept")}>
                       قبول
                     </Button>
                     {!q.grades[0] && (
-                      <span className="text-fine text-muted-foreground">سجّل الدرجةَ أوّلا، ثمّ اقبل</span>
+                      <span className="text-fine text-muted-foreground">سجّل الدرجة أوّلا، ثمّ اقبل</span>
                     )}
                     <Button size="sm" disabled={busy} onClick={() => void reviewAction(q.id, "request_resubmit")}>
                       اطلب إعادة التسليم
@@ -330,7 +330,7 @@ export default function GradingQueue() {
                       disabled={q.status !== "under_review"}
                       onChange={(e) => setGradeForm((prev) => ({ ...prev, [q.id]: e.target.value }))}
                       placeholder={`من ${q.assessment.maxScore}`}
-                      aria-label={`درجةُ «${q.assessment.title}» من ${q.assessment.maxScore}`}
+                      aria-label={`درجة «${q.assessment.title}» من ${q.assessment.maxScore}`}
                       className="w-20 rounded-lg border border-white/15 bg-paper/30 px-2 py-1.5 text-xs text-foreground focus:border-teal focus:outline-none disabled:cursor-not-allowed disabled:opacity-45" />
                     <Button size="sm" disabled={busy || q.status !== "under_review" || !(gradeForm[q.id] ?? "").trim()}
                       onClick={() => void grade(q)}>
@@ -363,7 +363,7 @@ export default function GradingQueue() {
                           disabled={q.status !== "under_review"}
                           onChange={(e) => setRubricForm((prev) => ({ ...prev, [`${q.id}:${c.id}`]: e.target.value }))}
                           placeholder={`من ${c.maxScore}`}
-                          aria-label={`درجةُ «${c.title}» من ${c.maxScore}`}
+                          aria-label={`درجة «${c.title}» من ${c.maxScore}`}
                           className="w-20 shrink-0 rounded-lg border border-white/15 bg-paper/30 px-2 py-1.5 text-xs text-foreground focus:border-teal focus:outline-none disabled:cursor-not-allowed disabled:opacity-45" />
                       </li>
                     ))}
@@ -387,7 +387,7 @@ export default function GradingQueue() {
                 <input value={feedbackForm[q.id] ?? ""}
                   onChange={(e) => setFeedbackForm((prev) => ({ ...prev, [q.id]: e.target.value }))}
                   placeholder="تغذية راجعة إضافية للمتعلم…"
-                  aria-label={`تغذيةٌ راجعةٌ على «${q.assessment.title}»`}
+                  aria-label={`تغذية راجعة على «${q.assessment.title}»`}
                   className={`flex-1 ${controlCls}`} />
                 <Button size="sm" icon={MessageSquarePlus} className="shrink-0"
                   disabled={busy || (feedbackForm[q.id] ?? "").trim().length < 3}

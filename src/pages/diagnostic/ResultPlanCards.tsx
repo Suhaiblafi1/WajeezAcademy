@@ -203,7 +203,7 @@ export function PlanCourses({
           <span className="text-foreground">
             {chosen.length} دورات{gift ? " + هدية مجانية" : ""}
           </span>
-          <span className="text-muted-foreground"> · ~{totalWeeks} أسبوعا · يُحفظ تخصيصك تلقائيا ويظهر في صفحة مسارك بعد الاعتماد</span>
+          <span className="text-muted-foreground"> · ~{totalWeeks} أسبوعا · يحفظ تخصيصك تلقائيا ويظهر في صفحة مسارك بعد الاعتماد</span>
         </p>
         <div className="mt-2.5 flex flex-wrap gap-1.5">
           {skills.map((s) => (
@@ -271,12 +271,12 @@ export function ResultPriceCard({ courseIds }: { courseIds: readonly string[] })
             <span className="text-sm text-muted-foreground">للدورة</span>
           </div>
           <p className="mt-1.5 text-read leading-5 text-teal-light-ink">
-            وخصمٌ كبير على خطتك كاملة ({courseIds.length} دورات) مقابل شرائها دورةً دورة
+            وخصم كبير على خطتك كاملة ({courseIds.length} دورات) مقابل شرائها دورة دورة
           </p>
         </>
       ) : (
         <p className="mt-2 text-2xl font-black text-foreground md:text-3xl">
-          {loaded ? "يُعلن السعر مع فتح الشعبة" : "يُقرأ السعر…"}
+          {loaded ? "يعلن السعر مع فتح الشعبة" : "يقرأ السعر…"}
         </p>
       )}
       {/* وكان هنا صندوقٌ يطلب بريدا مقابل الكود. وقرارُ صاحب المنصّة: لا داعي
@@ -287,11 +287,11 @@ export function ResultPriceCard({ courseIds }: { courseIds: readonly string[] })
         <code dir="ltr" className="rounded-md border border-gold/40 bg-gold/10 px-1.5 py-0.5 font-mono text-fine font-black text-gold-ink">
           {FIRST_TIME_PROMO.code}
         </code>
-        <span className="text-muted-foreground">— يُكتب في صفحة الدفع.</span>
+        <span className="text-muted-foreground">— يكتب في صفحة الدفع.</span>
       </Inset>
       <p className="mt-3 text-read leading-5 text-muted-foreground">
-        سعر خطتك يُحدَّد بعد أن تعتمدها — أنت من يقرّر دوراتها.
-        {cheapest && known < courseIds.length && " وبعض دوراتها لم تُفتح لها شعبة بعد."} ولا يُطلب دفعٌ الآن.
+        سعر خطتك يحدّد بعد أن تعتمدها — أنت من يقرّر دوراتها.
+        {cheapest && known < courseIds.length && " وبعض دوراتها لم تفتح لها شعبة بعد."} ولا يطلب دفع الآن.
       </p>
     </Panel>
   );
@@ -349,7 +349,7 @@ export function WhyThisPathway({
            والرقمُ باقٍ كما قرّره المحرّك؛ الاسمُ وحدَه يتغيّر. ونتيجةُ V1 — بلا
            أساسٍ (`basis`) — رقمُها ثباتُها هي، عددُ الإجابات على ١٢، فيبقى لها
            اسمُها. يحرسه `why-card-skills.test.ts`. */
-        { label: basis ? "ما قِسناه من مهارات المسار" : "ثبات النتيجة", value: confidence.stability },
+        { label: basis ? "ما قسناه من مهارات المسار" : "ثبات النتيجة", value: confidence.stability },
       ]
     : [];
   const total = Math.floor((confidence?.total ?? 0) * 100);
@@ -364,7 +364,7 @@ export function WhyThisPathway({
       {evidence.length > 0 && (
         <>
           <p className="mt-2 text-read leading-relaxed text-muted-foreground">
-            لم نخمّن — هذه هي إجاباتك التي بُنيت عليها التوصية:
+            لم نخمّن — هذه هي إجاباتك التي بنيت عليها التوصية:
           </p>
           <ul className="mt-4 space-y-2.5">
             {evidence.map((r) => (
@@ -398,7 +398,7 @@ export function WhyThisPathway({
           {bandAr && (
             <Inset className="mt-2 px-3 py-2">
               <p className="text-read leading-5 font-bold text-foreground">
-                صنفُ النتيجة: <span className="text-teal-light-ink">{bandAr}</span>
+                صنف النتيجة: <span className="text-teal-light-ink">{bandAr}</span>
               </p>
               {blockers.length > 0 ? (
                 <ul className="mt-1.5 space-y-1">
@@ -411,7 +411,7 @@ export function WhyThisPathway({
                 </ul>
               ) : (
                 <p className="mt-1 text-read leading-5 text-muted-foreground">
-                  لا مانعَ قائم — قِسنا ما تسمح المنصّة بقياسه، والباقي يبقى مجهولا لا مفترَضا.
+                  لا مانع قائم — قسنا ما تسمح المنصّة بقياسه، والباقي يبقى مجهولا لا مفترضا.
                 </p>
               )}
               {/* ── الأساسُ رقما لا عبارة ──
@@ -421,10 +421,10 @@ export function WhyThisPathway({
                   مجهولا. فيقرأ المتعلّمُ **حدَّ ما نعرفه عنه** لا وصفَه. */}
               {basis && basis.measurable > 0 && (
                 <p className="mt-2 border-t border-white/8 pt-2 text-read leading-5 text-muted-foreground">
-                  قِسنا <b className="text-foreground">{basis.measured}</b> من{" "}
-                  <b className="text-foreground">{basis.measurable}</b> مهارةٍ تسمح المنصّةُ بقياسها في هذا المسار
+                  قسنا <b className="text-foreground">{basis.measured}</b> من{" "}
+                  <b className="text-foreground">{basis.measurable}</b> مهارة تسمح المنصّة بقياسها في هذا المسار
                   {basis.unknown > 0 && (
-                    <> — و<b className="text-foreground">{basis.unknown}</b> من مهاراته تبقى مجهولةً عندنا</>
+                    <> — و<b className="text-foreground">{basis.unknown}</b> من مهاراته تبقى مجهولة عندنا</>
                   )}.
                 </p>
               )}
@@ -493,7 +493,7 @@ export function CompositePlan({ composite }: { composite: CompositeView }) {
         {/* المسارات التي استُمدت منها الخطة */}
         {represented.length > 0 && (
           <p className="mt-3 text-read leading-relaxed text-muted-foreground">
-            رُكّبت من: {represented.map((p) => p.name).join(" + ")}
+            ركّبت من: {represented.map((p) => p.name).join(" + ")}
           </p>
         )}
 

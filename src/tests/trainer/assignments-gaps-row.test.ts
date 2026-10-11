@@ -18,13 +18,13 @@ const fn = WS.slice(WS.indexOf('const gapsFor = ('), WS.indexOf('const saveAndCo
 const branch = fn.slice(fn.indexOf('if (k === "assignments")'), fn.indexOf('return [label];\n  };'))
 
 describe('ما ينقص «المهامّ والمصادر» بصفّه', () => {
-  it('⚠️ لا يقع على صفّ المهامّ وحدَه حين لا يُسمّى شيءٌ بعينه', () => {
-    expect(branch, 'لم يُعثر على فرع الدرجة').toContain('if (k === "assignments")')
-    expect(branch, 'الناقصُ يُقال بصفّ المهامّ ولسانُه تامّ').not.toMatch(/return out\.length \? out : \[label\];/)
+  it('⚠️ لا يقع على صفّ المهامّ وحده حين لا يسمّى شيء بعينه', () => {
+    expect(branch, 'لم يعثر على فرع الدرجة').toContain('if (k === "assignments")')
+    expect(branch, 'الناقص يقال بصفّ المهامّ ولسانه تامّ').not.toMatch(/return out\.length \? out : \[label\];/)
   })
 
-  it('⚠️ ويقرأ صفوفَ الدرجة كلَّها من قائمة الخادم — ما لم يتمّ منها بنصّه', () => {
-    expect(branch, 'لا يقرأ صفوفَ الدرجة').toContain('STAGE_KEYS.assignments')
-    expect(branch, 'لا يقرأ تمامَ الصفّ').toMatch(/row && !row\.done \? \[row\.labelAr\]/)
+  it('⚠️ ويقرأ صفوف الدرجة كلّها من قائمة الخادم — ما لم يتمّ منها بنصّه', () => {
+    expect(branch, 'لا يقرأ صفوف الدرجة').toContain('STAGE_KEYS.assignments')
+    expect(branch, 'لا يقرأ تمام الصفّ').toMatch(/row && !row\.done \? \[row\.labelAr\]/)
   })
 })

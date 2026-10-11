@@ -23,7 +23,14 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { readFileSync } from 'node:fs'
+import { readFileSync as readRaw } from 'node:fs'
+import { plainAr } from '@/application/text/plain-ar'
+/* ما يُقرأ من الملفّات بلا تشكيلٍ إعرابيّ — بعضُها بعد «اللغة البيضاء» وبعضُها (العقود والخادم) قبلها */
+function readFileSync(p: Parameters<typeof readRaw>[0]): Buffer
+function readFileSync(p: Parameters<typeof readRaw>[0], e: BufferEncoding | { encoding: BufferEncoding }): string
+function readFileSync(p: Parameters<typeof readRaw>[0], e?: BufferEncoding | { encoding: BufferEncoding }): string | Buffer {
+  return e === undefined ? readRaw(p) : plainAr(String(readRaw(p, e)))
+}
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
@@ -44,44 +51,44 @@ const running = {
   now: NOW,
 }
 
-describe('الموادُّ تُعرَض قبل الاعتماد لا بعده', () => {
-  it('والطورُ يُقرأ كما تقرؤه بقيّةُ المنصّة — وإلّا فالحارسُ يقيس شيئا آخر', () => {
+describe('الموادّ تعرض قبل الاعتماد لا بعده', () => {
+  it('والطور يقرأ كما تقرؤه بقيّة المنصّة — وإلّا فالحارس يقيس شيئا آخر', () => {
     expect(conditionPhase(running)).toBe('running')
     expect(conditionPhase({ ...running, conditionPausedAt: at(-1) })).toBe('under_review')
     expect(conditionPhase({ ...running, conditionDeadlineAt: at(-1) })).toBe('lapsed')
     expect(conditionPhase({ ...running, conditionDeadlineAt: null })).toBe('none')
   })
 
-  it('يعمل ولم يُعلنْ: يُمنَع — وهي الحالةُ التي وُلد منها البلاغ', () => {
+  it('يعمل ولم يعلن: يمنع — وهي الحالة التي ولد منها البلاغ', () => {
     const problem = materialsGateProblemAr(running)
-    expect(problem, 'اعتُمد مَن لم يعرض موادَّه').not.toBeNull()
-    expect(problem, 'لا يُقال لماذا').toMatch(/لم يُعلنْ اكتمالَ موادّه/)
+    expect(problem, 'اعتمد من لم يعرض موادّه').not.toBeNull()
+    expect(problem, 'لا يقال لماذا').toMatch(/لم يعلن اكتمال موادّه/)
     expect(materialsAreInHand(running)).toBe(false)
   })
 
-  it('وتُقال مدّتُه الباقيةُ في الرسالة — فيعرف أينتظر أم يتجاوز', () => {
+  it('وتقال مدّته الباقية في الرسالة — فيعرف أينتظر أم يتجاوز', () => {
     expect(materialsGateProblemAr({ ...running, conditionDeadlineAt: at(5) })).toMatch(/5 أيّام/)
-    expect(materialsGateProblemAr({ ...running, conditionDeadlineAt: at(1) })).toMatch(/يومٌ واحد/)
+    expect(materialsGateProblemAr({ ...running, conditionDeadlineAt: at(1) })).toMatch(/يوم واحد/)
     expect(materialsGateProblemAr({ ...running, conditionDeadlineAt: at(2) })).toMatch(/يومان/)
   })
 
-  it('أعلن اكتمالَها: تُجاز — وهي وحدَها', () => {
+  it('أعلن اكتمالها: تجاز — وهي وحدها', () => {
     /* ═══ ومِحَكُّ الحارس هنا ═══
        `running` و`under_review` أقربُ طورَين: مهلةٌ قائمةٌ على عقدٍ موقَّع
        في كلتيهما، والفرقُ إعلانُ المدرّب وحدَه. */
     const declared = { ...running, conditionPausedAt: at(-1) }
-    expect(materialsGateProblemAr(declared), 'مُنع اعتمادُ من صارت موادُّه بين يديك').toBeNull()
+    expect(materialsGateProblemAr(declared), 'منع اعتماد من صارت موادّه بين يديك').toBeNull()
     expect(materialsAreInHand(declared)).toBe(true)
   })
 
-  it('انقضت مهلتُه ولم يُعلنْ: يُمنَع، ويُقال المخرجُ', () => {
+  it('انقضت مهلته ولم يعلن: يمنع، ويقال المخرج', () => {
     const lapsed = { ...running, conditionDeadlineAt: at(-1) }
-    expect(materialsGateProblemAr(lapsed)).toMatch(/انقضت مهلتُه/)
+    expect(materialsGateProblemAr(lapsed)).toMatch(/انقضت مهلته/)
     /* ولا يُترك بلا باب: التمديدُ قائم، والإعلانُ يُقبل ولو متأخّرا */
-    expect(materialsGateProblemAr(lapsed)).toMatch(/مدِّدْ|اطلبْ/)
+    expect(materialsGateProblemAr(lapsed)).toMatch(/مدّد|اطلب/)
   })
 
-  it('وانقضاءٌ مع إعلانٍ متأخّر: يُجاز — فالإعلانُ يُقبل بعد المهلة', () => {
+  it('وانقضاء مع إعلان متأخّر: يجاز — فالإعلان يقبل بعد المهلة', () => {
     /* `declareMaterialsComplete` تقبل الإعلانَ ولو انقضت المهلة («من تأخّر
        يوما ثمّ أتمّ موادَّه أولى به أن تُقرأ»). فلو منع الحارسُ هنا لَحُبس
        من أعلن فعلا خلفَ بابٍ لا يفتحه شيء. */
@@ -90,7 +97,7 @@ describe('الموادُّ تُعرَض قبل الاعتماد لا بعده', 
     expect(materialsGateProblemAr(lateDeclared)).toBeNull()
   })
 
-  it('وعرضٌ مشروطٌ بلا مهلة: يُجاز — ولا يُحبَس من لا يملك أن يُعلن', () => {
+  it('وعرض مشروط بلا مهلة: يجاز — ولا يحبس من لا يملك أن يعلن', () => {
     /* ═══ وهذا ما أوشك أن يُشحَن خطأً ═══
 
        أوّلُ صياغةٍ منعت هذه الحالةَ فأسقطت ١٢٦ فحصا: المهلةُ تُحسَب من جلسة
@@ -99,11 +106,11 @@ describe('الموادُّ تُعرَض قبل الاعتماد لا بعده', 
        قائمة) — فمنعُه حبسٌ أبديٌّ خلف بابٍ لا مفتاحَ له. */
     const none = { ...running, conditionDeadlineAt: null, orientationAt: null }
     expect(conditionPhase(none)).toBe('none')
-    expect(materialsGateProblemAr(none), 'حُبس من لا مهلةَ له ولا سبيلَ له إلى الإعلان')
+    expect(materialsGateProblemAr(none), 'حبس من لا مهلة له ولا سبيل له إلى الإعلان')
       .toBeNull()
   })
 
-  it('وما اكتمل شرطُه لا يُمنَع — فالحكمُ لا يرتدّ على من مضى', () => {
+  it('وما اكتمل شرطه لا يمنع — فالحكم لا يرتدّ على من مضى', () => {
     const met = { ...running, conditionMetAt: at(-2) }
     expect(materialsGateProblemAr(met)).toBeNull()
   })
@@ -114,16 +121,16 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '../../..')
 const bare = (p: string) => readFileSync(join(root, p), 'utf8')
   .replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
 
-describe('ولا يُعرَض زرٌّ يردّه الخادم', () => {
+describe('ولا يعرض زرّ يردّه الخادم', () => {
   const SCREEN = bare('src/pages/admin/TrainerContracts.tsx')
   const SERVICE = bare('server/services/trainer-review.service.ts')
 
-  it('الخادمُ يمنع في `decide` — لا في زرٍّ واحدٍ من بابَيه', () => {
+  it('الخادم يمنع في `decide` — لا في زرّ واحد من بابيه', () => {
     /* بابا الاعتماد اثنان: شاشةُ العقود وشاشةُ الطلبات، وكلاهما يمرّ من
        `decide`. فحارسٌ في `countersignContract` وحدَها يترك الثانيَ مفتوحا. */
     const at = SERVICE.indexOf('async decide(')
     const body = SERVICE.slice(at, SERVICE.indexOf('\n  async ', at + 1))
-    expect(body, 'بوّابةُ الموادّ ليست في `decide` — فبابُ شاشة الطلبات مفتوح')
+    expect(body, 'بوّابة الموادّ ليست في `decide` — فباب شاشة الطلبات مفتوح')
       .toMatch(/materialsGateProblemAr\(/)
     /* ═══ ويُقاس الشرطُ بأجزائه لا بسطرٍ يُطابَق حرفا (٢٧ سبتمبر ٢٠٢٦) ═══
 
@@ -137,32 +144,32 @@ describe('ولا يُعرَض زرٌّ يردّه الخادم', () => {
        الموقَّعَ والمعتمَدَ كلاهما داخلٌ فيه، وأنّ ما تحقّق شرطُه خارجٌ منه. */
     const scope = body.slice(body.indexOf('gatesActivation'))
       .slice(0, 260)
-    expect(scope, 'البوّابةُ تُقرأ على غير العرض المشروط').toMatch(/gatesActivation:\s*true/)
-    expect(scope, 'الموقَّعُ الذي لم يُعتمَد خارجٌ من البوّابة').toContain("'signed'")
-    expect(scope, 'المعتمَدُ في طور موادّه خارجٌ من البوّابة — وهي حالُه اليومَ')
+    expect(scope, 'البوّابة تقرأ على غير العرض المشروط').toMatch(/gatesActivation:\s*true/)
+    expect(scope, 'الموقّع الذي لم يعتمد خارج من البوّابة').toContain("'signed'")
+    expect(scope, 'المعتمد في طور موادّه خارج من البوّابة — وهي حاله اليوم')
       .toContain("'countersigned'")
-    expect(scope, 'تُقرأ البوّابةُ على عرضٍ تحقّق شرطُه').toMatch(/conditionMetAt:\s*null/)
+    expect(scope, 'تقرأ البوّابة على عرض تحقّق شرطه').toMatch(/conditionMetAt:\s*null/)
   })
 
-  it('والردُّ برمزٍ يُقرأ لا برسالةٍ تُطابَق نصّا', () => {
+  it('والردّ برمز يقرأ لا برسالة تطابق نصّا', () => {
     const at = SERVICE.indexOf('materialsGateProblemAr(')
     expect(SERVICE.slice(at, at + 900)).toMatch(/'materials_pending'/)
   })
 
-  it('والشاشةُ تنادي الحكمَ نفسَه بدل أن تكتب شرطا ثانيا', () => {
-    expect(SCREEN, 'الشاشةُ لا تقرأ بوّابةَ الموادّ — فتعرض زرّا يُردّ')
+  it('والشاشة تنادي الحكم نفسه بدل أن تكتب شرطا ثانيا', () => {
+    expect(SCREEN, 'الشاشة لا تقرأ بوّابة الموادّ — فتعرض زرّا يردّ')
       .toMatch(/materialsGateProblemAr\(conditionFactsOf\(c\)\)/)
-    expect(SCREEN, 'بقي شرطُ الطور منسوخا في الشاشة بدل استدعاء الحكم')
+    expect(SCREEN, 'بقي شرط الطور منسوخا في الشاشة بدل استدعاء الحكم')
       .not.toMatch(/conditionPhase\(conditionFactsOf\(c\)\) === "under_review"/)
   })
 
-  it('وزرُّ الختم لا يُعرَض على عرضٍ مشروطٍ لم تُعرَض موادُّه', () => {
+  it('وزرّ الختم لا يعرض على عرض مشروط لم تعرض موادّه', () => {
     const at = SCREEN.indexOf('c.gatesActivation && materialsGateProblemAr')
-    expect(at, 'زرُّ الختم بلا شرطِ موادّ').toBeGreaterThan(0)
+    expect(at, 'زرّ الختم بلا شرط موادّ').toBeGreaterThan(0)
     const block = SCREEN.slice(at, at + 1400)
     /* والسببُ يُقال مكانَه: زرٌّ غائبٌ بلا تفسيرٍ يُقرأ عطبا في النظام */
-    expect(block, 'يُمنع الزرُّ صامتا').toMatch(/لا يُختَم بعد/)
+    expect(block, 'يمنع الزرّ صامتا').toMatch(/لا يختم بعد/)
     /* وهو معروضٌ على غير المشروط كما كان */
-    expect(block, 'حُجب الزرُّ عن العقد غير المشروط').toMatch(/طابقتُ الاسمَ/)
+    expect(block, 'حجب الزرّ عن العقد غير المشروط').toMatch(/طابقت الاسم/)
   })
 })

@@ -44,18 +44,18 @@ function routeKeys(): string[] {
   return [...src.slice(at, end).matchAll(/^ {4}(\w+):/gm)].map((m) => m[1])
 }
 
-describe('ما يرسله المركِّبُ يصل الخادم', () => {
+describe('ما يرسله المركّب يصل الخادم', () => {
   const sent = screenKeys()
   const known = routeKeys()
 
-  it('القائمتان مقروءتان — وإلّا فالحارسُ يقيس الفراغ', () => {
-    expect(sent.length, 'لم تُقرأ مفاتيحُ الشاشة').toBeGreaterThan(5)
-    expect(known.length, 'لم تُقرأ مفاتيحُ المسار').toBeGreaterThan(5)
-    expect(sent, 'المقروءُ من الشاشة ليس كائنَ التركيب').toContain('title')
+  it('القائمتان مقروءتان — وإلّا فالحارس يقيس الفراغ', () => {
+    expect(sent.length, 'لم تقرأ مفاتيح الشاشة').toBeGreaterThan(5)
+    expect(known.length, 'لم تقرأ مفاتيح المسار').toBeGreaterThan(5)
+    expect(sent, 'المقروء من الشاشة ليس كائن التركيب').toContain('title')
   })
 
-  it('كلُّ خانةٍ ترسلها الشاشةُ يعرفها المسار — فلا يُسقَط شيءٌ صامتا', () => {
+  it('كلّ خانة ترسلها الشاشة يعرفها المسار — فلا يسقط شيء صامتا', () => {
     const dropped = sent.filter((k) => !known.includes(k))
-    expect(dropped, `يُسقطها المسارُ بلا خطأ — أضِفها إلى composeBody: ${dropped.join('، ')}`).toEqual([])
+    expect(dropped, `يسقطها المسار بلا خطأ — أضفها إلى composeBody: ${dropped.join('، ')}`).toEqual([])
   })
 })

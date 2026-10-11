@@ -47,19 +47,19 @@ const mailBetween = (from: string, to: string): string => {
   const start = src.indexOf(from)
   const end = src.indexOf(to)
   expect(start, `${from} غابت عن ملفّ رسائل الحساب`).toBeGreaterThan(-1)
-  expect(end, `${to} غابت — فلا حدَّ يُقطع عنده`).toBeGreaterThan(start)
+  expect(end, `${to} غابت — فلا حدّ يقطع عنده`).toBeGreaterThan(start)
   return src.slice(start, end)
 }
 
 const HOUR = 3_600_000
 
-describe('سقفُ الرابط المرسَل بالبريد', () => {
+describe('سقف الرابط المرسل بالبريد', () => {
   it('لا يتجاوز أربعا وعشرين ساعة', () => {
-    expect(MAIL_LINK_TTL_HOURS, 'رُفع السقفُ فوق يوم').toBeLessThanOrEqual(24)
-    expect(MAIL_LINK_TTL_MS, 'الميلّي ثانيةُ لا تطابق الساعات').toBe(MAIL_LINK_TTL_HOURS * HOUR)
+    expect(MAIL_LINK_TTL_HOURS, 'رفع السقف فوق يوم').toBeLessThanOrEqual(24)
+    expect(MAIL_LINK_TTL_MS, 'الميلّي ثانية لا تطابق الساعات').toBe(MAIL_LINK_TTL_HOURS * HOUR)
   })
 
-  it('ولحظةُ انتهاء رابط التوثيق تُحسب منه — لا من رقمٍ آخر', async () => {
+  it('ولحظة انتهاء رابط التوثيق تحسب منه — لا من رقم آخر', async () => {
     /* قاعدةٌ صوريّة: تردّ حسابا غيرَ موثَّقٍ وتلتقط ما يُكتب فيه. فالمفحوصُ
        ما كتبته الخدمةُ فعلا، لا سطرٌ يُقرأ في ملفّها. */
     let written: { emailVerifyExpiresAt?: Date } | null = null
@@ -77,13 +77,13 @@ describe('سقفُ الرابط المرسَل بالبريد', () => {
 
     const before = Date.now()
     const issued = await new AuthService(prisma).issueEmailVerification('u-1')
-    expect(issued, 'لم يُصدَر رمزٌ أصلا').not.toBeNull()
+    expect(issued, 'لم يصدر رمز أصلا').not.toBeNull()
     const life = written!.emailVerifyExpiresAt!.getTime() - before
-    expect(life, 'رابطُ التوثيق يعيش أكثرَ من السقف').toBeLessThanOrEqual(MAIL_LINK_TTL_MS + 1_000)
-    expect(life, 'رابطُ التوثيق يموت قبل ساعةٍ من إصداره').toBeGreaterThan(HOUR)
+    expect(life, 'رابط التوثيق يعيش أكثر من السقف').toBeLessThanOrEqual(MAIL_LINK_TTL_MS + 1_000)
+    expect(life, 'رابط التوثيق يموت قبل ساعة من إصداره').toBeGreaterThan(HOUR)
   })
 
-  it('ودعوةُ الموظّف مثلُه — دخلت السقفَ بقرار ٢٠ سبتمبر ٢٠٢٦', async () => {
+  it('ودعوة الموظّف مثله — دخلت السقف بقرار ٢٠ سبتمبر ٢٠٢٦', async () => {
     /* كانت سبعةَ أيّام، وحجّتُها أنّ الموظّفَ الجديد لا يفتح بريدَه ساعتَه —
        وهي تُوفى بيومٍ كامل. والفحصُ على ما تردّه الخدمةُ لا على ثابتٍ يُقرأ. */
     const prisma = {
@@ -98,11 +98,11 @@ describe('سقفُ الرابط المرسَل بالبريد', () => {
     const before = Date.now()
     const { expiresAt } = await new AuthService(prisma).issueInvite('u-1')
     const life = expiresAt.getTime() - before
-    expect(life, 'دعوةُ الموظّف تعيش أكثرَ من السقف').toBeLessThanOrEqual(MAIL_LINK_TTL_MS + 1_000)
-    expect(life, 'الدعوةُ تموت قبل ساعةٍ من إصدارها').toBeGreaterThan(HOUR)
+    expect(life, 'دعوة الموظّف تعيش أكثر من السقف').toBeLessThanOrEqual(MAIL_LINK_TTL_MS + 1_000)
+    expect(life, 'الدعوة تموت قبل ساعة من إصدارها').toBeGreaterThan(HOUR)
   })
 
-  it('ودعوةُ حساب المدرّب المعتمَد مثلُهما — وكانت اثنتَين وسبعين ساعة', async () => {
+  it('ودعوة حساب المدرّب المعتمد مثلهما — وكانت اثنتين وسبعين ساعة', async () => {
     /* قاعدةٌ صوريّة: طلبٌ معتمَدٌ بلا حساب، وقناةُ بريدٍ غيرُ مهيّأة فلا يخرج
        شيءٌ إلى الشبكة. والمفحوصُ ما كُتب في صفّ الدعوة لا ما رُدّ وحدَه. */
     let written: { expiresAt?: Date } | null = null
@@ -110,7 +110,7 @@ describe('سقفُ الرابط المرسَل بالبريد', () => {
       trainerApplication: {
         findUnique: async () => ({
           id: 'app-1', reference: 'WJ-TR-2026-00099', status: 'onboarding',
-          email: 'trainer@test.local', fullName: 'مدرّبٌ معتمَد', userId: null,
+          email: 'trainer@test.local', fullName: 'مدرّب معتمد', userId: null,
           profile: { id: 'p-1', userId: null },
         }),
       },
@@ -127,25 +127,25 @@ describe('سقفُ الرابط المرسَل بالبريد', () => {
 
     const before = Date.now()
     const out = await new TrainerReviewService(prisma).createInvitation('app-1', 'admin-1')
-    expect(written, 'لم يُكتب صفُّ دعوةٍ أصلا').not.toBeNull()
-    for (const [what, at] of [['المكتوبة', written!.expiresAt!], ['المُعادة', out.expiresAt]] as const) {
+    expect(written, 'لم يكتب صفّ دعوة أصلا').not.toBeNull()
+    for (const [what, at] of [['المكتوبة', written!.expiresAt!], ['المعادة', out.expiresAt]] as const) {
       const life = at.getTime() - before
-      expect(life, `دعوةُ المدرّب ${what} تعيش أكثرَ من السقف`).toBeLessThanOrEqual(MAIL_LINK_TTL_MS + 1_000)
-      expect(life, `دعوةُ المدرّب ${what} تموت قبل ساعةٍ من إصدارها`).toBeGreaterThan(HOUR)
+      expect(life, `دعوة المدرّب ${what} تعيش أكثر من السقف`).toBeLessThanOrEqual(MAIL_LINK_TTL_MS + 1_000)
+      expect(life, `دعوة المدرّب ${what} تموت قبل ساعة من إصدارها`).toBeGreaterThan(HOUR)
     }
   })
 })
 
-describe('نافذةُ الاستعادة أضيقُ — ولا تُرفع', () => {
-  it('ثلاثون دقيقةً لا أكثر، ودونَ سقف الروابط بفارقٍ حقيقيّ', () => {
-    expect(RESET_LINK_TTL_MINUTES, 'رُفعت نافذةُ الاستعادة فوق نصف ساعة').toBeLessThanOrEqual(30)
-    expect(RESET_LINK_TTL_MS, 'الميلّي ثانيةُ لا تطابق الدقائق').toBe(RESET_LINK_TTL_MINUTES * 60_000)
+describe('نافذة الاستعادة أضيق — ولا ترفع', () => {
+  it('ثلاثون دقيقة لا أكثر، ودون سقف الروابط بفارق حقيقيّ', () => {
+    expect(RESET_LINK_TTL_MINUTES, 'رفعت نافذة الاستعادة فوق نصف ساعة').toBeLessThanOrEqual(30)
+    expect(RESET_LINK_TTL_MS, 'الميلّي ثانية لا تطابق الدقائق').toBe(RESET_LINK_TTL_MINUTES * 60_000)
     /* وأضيقُ من السقف بقصد: لو سُوّيت به يوما سقط هذا السطر قبل أن يُنشر */
-    expect(RESET_LINK_TTL_MS, 'سُوّيت نافذةُ الاستعادة بسقف الروابط')
+    expect(RESET_LINK_TTL_MS, 'سوّيت نافذة الاستعادة بسقف الروابط')
       .toBeLessThan(MAIL_LINK_TTL_MS)
   })
 
-  it('ولحظةُ انتهاء رمز الاستعادة تُحسب منها — لا من السقف ولا من رقمٍ خامّ', async () => {
+  it('ولحظة انتهاء رمز الاستعادة تحسب منها — لا من السقف ولا من رقم خامّ', async () => {
     /* قاعدةٌ صوريّة: حسابٌ قائم، ويُلتقط ما كُتب في صفّ الرمز. و`$transaction`
        تُنادى بمصفوفةِ عملياتٍ بُنيت قبلها — فالكتابةُ تقع وهي تُبنى. */
     let written: { expiresAt?: Date } | null = null
@@ -163,15 +163,15 @@ describe('نافذةُ الاستعادة أضيقُ — ولا تُرفع', () 
 
     const before = Date.now()
     const { tokenForDelivery } = await new AuthService(prisma).requestPasswordReset('x@test.local')
-    expect(tokenForDelivery, 'لم يُصدَر رمزُ استعادةٍ أصلا').toBeTruthy()
+    expect(tokenForDelivery, 'لم يصدر رمز استعادة أصلا').toBeTruthy()
     const life = written!.expiresAt!.getTime() - before
-    expect(life, 'رمزُ الاستعادة يعيش أكثرَ من نافذته').toBeLessThanOrEqual(RESET_LINK_TTL_MS + 1_000)
+    expect(life, 'رمز الاستعادة يعيش أكثر من نافذته').toBeLessThanOrEqual(RESET_LINK_TTL_MS + 1_000)
     /* ولا يموت قبل أن يُقرأ: من يفتح بريدَه بعد دقائقَ يجده حيّا */
-    expect(life, 'رمزُ الاستعادة يموت قبل خمس دقائق').toBeGreaterThan(5 * 60_000)
+    expect(life, 'رمز الاستعادة يموت قبل خمس دقائق').toBeGreaterThan(5 * 60_000)
   })
 })
 
-describe('والجملةُ تتبع الرقم', () => {
+describe('والجملة تتبع الرقم', () => {
   /* الخدمتان تحسبان من الثابت، والمواضعُ التي تُقال فيها المدّةُ تقول جملتَه */
   const SITES: { what: string; symbol: string; src: () => string }[] = [
     {
@@ -179,7 +179,7 @@ describe('والجملةُ تتبع الرقم', () => {
       src: () => code('server/services/auth.service.ts'),
     },
     {
-      what: 'مهلةُ رابط طلب الانضمام', symbol: 'MAIL_LINK_TTL_MS',
+      what: 'مهلة رابط طلب الانضمام', symbol: 'MAIL_LINK_TTL_MS',
       src: () => code('server/services/trainer-application.service.ts'),
     },
     {
@@ -187,58 +187,58 @@ describe('والجملةُ تتبع الرقم', () => {
       src: () => mailBetween('export async function sendVerifyEmail', 'export async function sendPasswordResetEmail'),
     },
     {
-      what: 'رسالةُ دعوة الموظّف', symbol: 'MAIL_LINK_WINDOW_AR',
+      what: 'رسالة دعوة الموظّف', symbol: 'MAIL_LINK_WINDOW_AR',
       src: () => mailBetween('export async function sendStaffInviteEmail', 'export function accountErasedMail'),
     },
     {
-      what: 'خبرُ إعادة إرسال الدعوة', symbol: 'MAIL_LINK_WINDOW_AR',
+      what: 'خبر إعادة إرسال الدعوة', symbol: 'MAIL_LINK_WINDOW_AR',
       src: () => code('server/http/routes/admin-users.routes.ts'),
     },
     {
-      what: 'شاشةُ إنشاء حساب الموظّف', symbol: 'MAIL_LINK_WINDOW_AR',
+      what: 'شاشة إنشاء حساب الموظّف', symbol: 'MAIL_LINK_WINDOW_AR',
       src: () => code('src/pages/admin/Users.tsx'),
     },
     {
-      what: 'شاشةُ الرابط المنتهي', symbol: 'MAIL_LINK_WINDOW_AR',
+      what: 'شاشة الرابط المنتهي', symbol: 'MAIL_LINK_WINDOW_AR',
       src: () => code('src/pages/JoinTrainerVerify.tsx'),
     },
     {
-      what: 'مهلةُ دعوة المدرّب ورسالتُها', symbol: 'MAIL_LINK_TTL_MS',
+      what: 'مهلة دعوة المدرّب ورسالتها', symbol: 'MAIL_LINK_TTL_MS',
       src: () => code('server/services/trainer-review.service.ts'),
     },
     {
-      what: 'شاشةُ قبول دعوة المدرّب', symbol: 'MAIL_LINK_WINDOW_AR',
+      what: 'شاشة قبول دعوة المدرّب', symbol: 'MAIL_LINK_WINDOW_AR',
       src: () => code('src/pages/TrainerAcceptInvite.tsx'),
     },
     {
-      what: 'نسخةُ رابط الدعوة في شاشة الطلبات', symbol: 'MAIL_LINK_WINDOW_AR',
+      what: 'نسخة رابط الدعوة في شاشة الطلبات', symbol: 'MAIL_LINK_WINDOW_AR',
       src: () => code('src/pages/admin/TrainerApplications.tsx'),
     },
     {
-      what: 'رسالةُ استعادة كلمة المرور', symbol: 'RESET_LINK_WINDOW_AR',
+      what: 'رسالة استعادة كلمة المرور', symbol: 'RESET_LINK_WINDOW_AR',
       src: () => mailBetween('export async function sendPasswordResetEmail', 'export async function sendStaffInviteEmail'),
     },
   ]
 
   for (const site of SITES) {
-    it(`${site.what} تقرأ المدّةَ من الثابت`, () => {
-      expect(site.src(), `${site.what}: كُتبت المدّةُ بيدٍ بدل ${site.symbol}`).toContain(site.symbol)
+    it(`${site.what} تقرأ المدّة من الثابت`, () => {
+      expect(site.src(), `${site.what}: كتبت المدّة بيد بدل ${site.symbol}`).toContain(site.symbol)
     })
   }
 
-  it('ولا مدّةٌ قديمةٌ باقيةٌ في نصٍّ يقرؤه صاحبُ الرابط', () => {
+  it('ولا مدّة قديمة باقية في نصّ يقرؤه صاحب الرابط', () => {
     /* المدّتان اللتان نُقضتا — تُفتَّش في الشيفرة العاملة لا في الشرح */
     for (const site of SITES) {
-      expect(site.src(), `${site.what}: ما زالت تَعِد بسبعة أيّام`).not.toContain('سبعةَ أيّام')
-      expect(site.src(), `${site.what}: ما زالت تَعِد بثمانٍ وأربعين ساعة`).not.toContain('ثمانيَ وأربعين')
-      expect(site.src(), `${site.what}: ما زالت تَعِد باثنتَين وسبعين ساعة`).not.toContain('وسبعين ساعة')
-      expect(site.src(), `${site.what}: ما زال الرقمُ ٧٢ مكتوبا بيده`).not.toContain('٧٢ ساعة')
+      expect(site.src(), `${site.what}: ما زالت تعد بسبعة أيّام`).not.toContain('سبعة أيّام')
+      expect(site.src(), `${site.what}: ما زالت تعد بثمان وأربعين ساعة`).not.toContain('ثماني وأربعين')
+      expect(site.src(), `${site.what}: ما زالت تعد باثنتين وسبعين ساعة`).not.toContain('وسبعين ساعة')
+      expect(site.src(), `${site.what}: ما زال الرقم ٧٢ مكتوبا بيده`).not.toContain('٧٢ ساعة')
     }
     /* وجملةُ الاستعادة لا تَعِد بساعةٍ بعد أن صارت نصفَها */
     expect(
       mailBetween('export async function sendPasswordResetEmail', 'export async function sendStaffInviteEmail'),
-      'رسالةُ الاستعادة ما زالت تَعِد بساعة',
-    ).not.toContain('ساعةً واحدة')
+      'رسالة الاستعادة ما زالت تعد بساعة',
+    ).not.toContain('ساعة واحدة')
     /* والجملتان تقولان ما يقوله الرقم */
     expect(MAIL_LINK_WINDOW_AR).toContain('عشرين ساعة')
     expect(RESET_LINK_WINDOW_AR).toContain('ثلاثين دقيقة')

@@ -15,45 +15,45 @@ import { fileURLToPath } from 'node:url'
 import { splitLessons, readingMinutes } from '@/application/content/lesson-split'
 
 describe('تقسيم المتن إلى دروس', () => {
-  it('١) كل `## ` درسٌ بعنوانه', () => {
-    const ls = splitLessons('## الأول\nنصّ أوّل\n\n## الثاني\nنصّ ثانٍ')
+  it('١) كل `## ` درس بعنوانه', () => {
+    const ls = splitLessons('## الأول\nنصّ أوّل\n\n## الثاني\nنصّ ثان')
     expect(ls.map((l) => l.title)).toEqual(['الأول', 'الثاني'])
     expect(ls[0].body).toContain('نصّ أوّل')
-    expect(ls[0].body).not.toContain('نصّ ثانٍ')
+    expect(ls[0].body).not.toContain('نصّ ثان')
   })
 
-  it('٢) `### ` لا يقسّم — فهي أقسامٌ داخل الدرس لا دروس', () => {
+  it('٢) `### ` لا يقسّم — فهي أقسام داخل الدرس لا دروس', () => {
     const ls = splitLessons('## الدرس\nتمهيد\n### جزء\nتفصيل\n### جزء آخر\nتفصيل')
     expect(ls).toHaveLength(1)
     expect(ls[0].body).toContain('### جزء آخر')
   })
 
-  it('٣) ما قبل أوّل عنوانٍ درسٌ تمهيديّ لا يُفقَد', () => {
-    const ls = splitLessons('سطرٌ قبل كل شيء\n\n## الدرس الأول\nمتن')
+  it('٣) ما قبل أوّل عنوان درس تمهيديّ لا يفقد', () => {
+    const ls = splitLessons('سطر قبل كل شيء\n\n## الدرس الأول\nمتن')
     expect(ls).toHaveLength(2)
-    expect(ls[0].body).toContain('سطرٌ قبل كل شيء')
+    expect(ls[0].body).toContain('سطر قبل كل شيء')
     expect(ls[1].title).toBe('الدرس الأول')
   })
 
-  it('٤) متنٌ بلا عناوين درسٌ واحد — لا صفرَ دروس', () => {
-    const ls = splitLessons('فقرةٌ وحيدة بلا عنوان')
+  it('٤) متن بلا عناوين درس واحد — لا صفر دروس', () => {
+    const ls = splitLessons('فقرة وحيدة بلا عنوان')
     expect(ls).toHaveLength(1)
-    expect(ls[0].body).toContain('فقرةٌ وحيدة')
+    expect(ls[0].body).toContain('فقرة وحيدة')
   })
 
-  it('٥) الفراغُ لا يُنتج درسا', () => {
+  it('٥) الفراغ لا ينتج درسا', () => {
     expect(splitLessons('')).toHaveLength(0)
     expect(splitLessons('   \n\n  ')).toHaveLength(0)
     expect(splitLessons(null)).toHaveLength(0)
   })
 
   it('٦) `## ` داخل كتلة كود لا يقسّم — وإلّا انشقّ الدرس عند تعليقة', () => {
-    const ls = splitLessons('## الدرس\n```\n## هذا تعليقٌ في كود\n```\nبقيّة')
+    const ls = splitLessons('## الدرس\n```\n## هذا تعليق في كود\n```\nبقيّة')
     expect(ls).toHaveLength(1)
-    expect(ls[0].body).toContain('## هذا تعليقٌ في كود')
+    expect(ls[0].body).toContain('## هذا تعليق في كود')
   })
 
-  it('٧) لكل درسٍ ترتيبٌ يبدأ من واحد', () => {
+  it('٧) لكل درس ترتيب يبدأ من واحد', () => {
     const ls = splitLessons('## أ\nنص\n## ب\nنص\n## ج\nنص')
     expect(ls.map((l) => l.index)).toEqual([1, 2, 3])
   })
@@ -77,27 +77,27 @@ describe('تقسيم المتن إلى دروس', () => {
    العقدُ الذي يُحرَس: صفحةُ الدورة تعرض المحطّات وعناوين دروسها ولا تفرّغ
    المتن فيها، والدراسةُ في شاشةٍ لها. فلو عاد المتنُ إلى الأكورديون عاد
    الجدارُ الذي شُكي منه. */
-describe('أين يُقرأ المتن', () => {
+describe('أين يقرأ المتن', () => {
   const read = (p: string) =>
     readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..', p), 'utf8')
 
   /* صارت «صفحةُ الدورة» مرحلةً في شريط الرحلة (`StageWork`)، والحكمُ نفسُه:
      خريطةٌ تُقرأ في نصف دقيقة، والمتنُ في مشغّله. */
-  it('١٠) مرحلةُ الدورة خريطةٌ لا متن', () => {
+  it('١٠) مرحلة الدورة خريطة لا متن', () => {
     const src = read('src/components/journey/StageWork.tsx')
-    expect(src, 'المتن عاد يُفرَّغ في صفحة الدورة').not.toContain('<LessonBody')
+    expect(src, 'المتن عاد يفرّغ في صفحة الدورة').not.toContain('<LessonBody')
     expect(src, 'التمارين عادت إلى صفحة الدورة').not.toContain('<ModuleCheck')
-    expect(src, 'لا رابطَ إلى مشغّل الوحدة').toContain('/module/${m.id}')
-    expect(src, 'عناوين الدروس لا تُعرض في الخريطة').toContain('splitLessons')
+    expect(src, 'لا رابط إلى مشغّل الوحدة').toContain('/module/${m.id}')
+    expect(src, 'عناوين الدروس لا تعرض في الخريطة').toContain('splitLessons')
   })
 
-  it('١١) المشغّل يعرض خطوةً واحدة ويحفظ الموضع', () => {
+  it('١١) المشغّل يعرض خطوة واحدة ويحفظ الموضع', () => {
     const src = read('src/pages/student/ModuleStudy.tsx')
-    expect(src, 'لا خطوةَ واحدة معروضة').toContain('const step = steps[pos]')
-    expect(src, 'الموضع لا يُحفظ فلا يُستأنف').toContain('safeSet(POS_KEY(moduleId)')
+    expect(src, 'لا خطوة واحدة معروضة').toContain('const step = steps[pos]')
+    expect(src, 'الموضع لا يحفظ فلا يستأنف').toContain('safeSet(POS_KEY(moduleId)')
     /* الاسترجاع بعد كل درس لا في آخر الوحدة وحدها — نصُّ السياسة */
-    expect(src, 'الأسئلة لا تُوزَّع على الدروس').toContain('all.slice(from, to)')
+    expect(src, 'الأسئلة لا توزّع على الدروس').toContain('all.slice(from, to)')
     /* ولا يُكتب إتمامٌ من هنا: الإكمال بدليل لا بزرّ */
-    expect(src, 'ظهر زرُّ إتمامٍ يضغطه المتعلّم على نفسه').not.toContain('markComplete')
+    expect(src, 'ظهر زرّ إتمام يضغطه المتعلّم على نفسه').not.toContain('markComplete')
   })
 })

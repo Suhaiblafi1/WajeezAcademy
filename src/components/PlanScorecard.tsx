@@ -48,12 +48,12 @@ export default function PlanScorecard({ items: all, heading, intro, onStep, open
     <Inset className="mt-3" role="region" aria-label={heading}>
       <p className="text-read font-black text-foreground">{heading}</p>
       <p className="mt-1 text-read leading-6 text-muted-foreground">
-        {intro ?? "تحسبها المنصّةُ من الخطّة نفسِها."}{" "}
+        {intro ?? "تحسبها المنصّة من الخطّة نفسها."}{" "}
         <span className="font-bold text-teal-light-ink">{n.ok} تحقّق</span>
         {" · "}<span className="font-bold text-gold-ink">{n.advice} نصيحة</span>
         {" · "}<span className="font-bold text-danger-ink">{n.blocked} مطلوب</span>
       </p>
-      {openOnly && items.length === 0 && <p className="mt-2 text-read text-teal-light-ink">كلُّ المعايير متحقّقة.</p>}
+      {openOnly && items.length === 0 && <p className="mt-2 text-read text-teal-light-ink">كلّ المعايير متحقّقة.</p>}
       {STEP_ORDER.filter((s) => items.some((i) => i.step === s)).map((step) => (
         <div key={step} className="mt-3">
           <div className="flex flex-wrap items-center gap-2">
@@ -74,7 +74,7 @@ export default function PlanScorecard({ items: all, heading, intro, onStep, open
                       <p>
                         <span className={`font-bold ${look.cls}`}>{look.word}</span>
                         {" — "}<span className="font-bold text-foreground">{i.labelAr}</span>
-                        {i.required && i.status === "ok" && <span className="text-muted-foreground"> (مُلزِم)</span>}
+                        {i.required && i.status === "ok" && <span className="text-muted-foreground"> (ملزم)</span>}
                         {": "}<span className="text-muted-foreground">{i.measuredAr}</span>
                       </p>
                       <p className="text-muted-foreground">المعيار: {i.standardAr}</p>

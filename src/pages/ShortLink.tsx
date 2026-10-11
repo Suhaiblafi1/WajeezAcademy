@@ -44,10 +44,10 @@ export default function ShortLink() {
   if (current) {
     return (
       <SiteShell>
-        <SeoHead title="رابطٌ لا يفتح" description="الرابطُ غيرُ صحيحٍ أو أُبطل." path={`/s/${code}`} noindex />
+        <SeoHead title="رابط لا يفتح" description="الرابط غير صحيح أو أبطل." path={`/s/${code}`} noindex />
         <div className="mx-auto max-w-3xl px-5 py-16">
           <Panel className="p-8 text-center">
-            <h1 className="text-2xl font-black">رابطٌ لا يفتح</h1>
+            <h1 className="text-2xl font-black">رابط لا يفتح</h1>
             <p className="mt-3 text-read leading-7 text-muted-foreground">
               تأكّد من نسخه كاملا، أو ابدأ من <Link to="/" className="font-bold underline">صفحة الأكاديمية</Link>.
             </p>
@@ -59,8 +59,8 @@ export default function ShortLink() {
 
   return (
     <SiteShell>
-      <SeoHead title="جارٍ فتحُ الرابط" description="تحويلٌ إلى وجهة الرابط." path={`/s/${code}`} noindex />
-      <div className="mx-auto max-w-3xl px-5 py-16 text-center text-read text-muted-foreground">جارٍ فتحُ الرابط…</div>
+      <SeoHead title="جار فتح الرابط" description="تحويل إلى وجهة الرابط." path={`/s/${code}`} noindex />
+      <div className="mx-auto max-w-3xl px-5 py-16 text-center text-read text-muted-foreground">جار فتح الرابط…</div>
     </SiteShell>
   );
 }

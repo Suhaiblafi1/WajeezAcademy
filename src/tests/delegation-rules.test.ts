@@ -19,14 +19,14 @@ import {
 const actorOf = (role: string) => ({ roles: [role], permissions: ROLE_PERMISSIONS[role] ?? [] })
 const targetOf = (role: string) => ({ roles: [role] })
 
-describe('رتبةُ الدور', () => {
-  it('مديرُ النظام أعلاها، والمتعلّم أدناها', () => {
+describe('رتبة الدور', () => {
+  it('مدير النظام أعلاها، والمتعلّم أدناها', () => {
     expect(ROLE_RANK.super_admin).toBeGreaterThan(ROLE_RANK.academic_manager)
     expect(ROLE_RANK.academic_manager).toBeGreaterThan(ROLE_RANK.trainer)
     expect(ROLE_RANK.trainer).toBeGreaterThan(ROLE_RANK.learner)
   })
 
-  it('المديرُ الأكاديميّ فوق مديري النطاقات — فهو من يدير دونه', () => {
+  it('المدير الأكاديميّ فوق مديري النطاقات — فهو من يدير دونه', () => {
     /* القرار: «يدير من هو أقلّ منه». وترتيبُه فوقهم هو ما يجعل الجملة نافذة —
        ولولاه لصار زميلا لهم لا مديرا فوقهم. */
     for (const peer of ['operations_manager', 'diagnostic_manager', 'finance', 'support']) {
@@ -36,10 +36,10 @@ describe('رتبةُ الدور', () => {
     expect(ROLE_RANK.trainer).toBeGreaterThan(ROLE_RANK.trainer_applicant)
   })
 
-  it('من له أدوارٌ عدّة فرتبتُه أعلاها', () => {
+  it('من له أدوار عدّة فرتبته أعلاها', () => {
     expect(rankOf(['learner', 'trainer'])).toBe(ROLE_RANK.trainer)
     expect(rankOf([])).toBe(0)
-    expect(rankOf(['دورٌ لا وجود له'])).toBe(0)
+    expect(rankOf(['دور لا وجود له'])).toBe(0)
   })
 })
 
@@ -53,7 +53,7 @@ describe('المدير الأكاديميّ يدير من هو أقلّ منه',
     expect(refuseDelegation(academic, targetOf('learner'), 'enrollment.manage')).toBeNull()
   })
 
-  it('ولا يفوّض صلاحيةَ بوابةٍ لا يملكها هو — والدورُ بابُها لا الاستثناء', () => {
+  it('ولا يفوّض صلاحية بوابة لا يملكها هو — والدور بابها لا الاستثناء', () => {
     /* `learner.submit` صلاحيةُ المتعلّم بحكم دوره، والمديرُ لا يملكها. ومن
        أراد أن يجعل حسابا متعلّما فبابُه تعيينُ الدور لا استثناءُ صلاحية. */
     expect(ROLE_PERMISSIONS.academic_manager).not.toContain('learner.submit')
@@ -83,7 +83,7 @@ describe('المدير الأكاديميّ يدير من هو أقلّ منه',
      كانت حزمتُه تجمع تسجيلَ التسجيل وتسجيلَ دفعته واعتمادَ استردادها
      وتبديلَ مفاتيح مزوّد الدفع — أربعةَ أعمالٍ في يد. والفحصُ يحرس الفصلَ
      كي لا يعود بحبّةٍ تُضاف سهوا. */
-  it('ولا يحرّك مالا: لا دفعةً يسجّلها ولا استردادا يعتمده ولا مزوّدَ دفعٍ يبدّله', () => {
+  it('ولا يحرّك مالا: لا دفعة يسجّلها ولا استردادا يعتمده ولا مزوّد دفع يبدّله', () => {
     for (const key of ['finance.payment.record', 'finance.refund.process', 'commerce.manage', 'settings.manage'] as const) {
       expect(ROLE_PERMISSIONS.academic_manager, `${key} عادت إلى المدير الأكاديميّ`).not.toContain(key)
     }
@@ -104,7 +104,7 @@ describe('المدير الأكاديميّ يدير من هو أقلّ منه',
   })
 })
 
-describe('مديرُ النظام', () => {
+describe('مدير النظام', () => {
   const superAdmin = actorOf('super_admin')
 
   it('يفوّض كلّ شيء لمن دونه', () => {
@@ -113,7 +113,7 @@ describe('مديرُ النظام', () => {
     }
   })
 
-  it('ولا يمسّ مدير نظامٍ مثله — فلا تنازعَ في القمّة', () => {
+  it('ولا يمسّ مدير نظام مثله — فلا تنازع في القمّة', () => {
     expect(refuseDelegation(superAdmin, targetOf('super_admin'), 'catalog.view'))
       .toMatchObject({ code: 'rank_too_low' })
   })
@@ -125,7 +125,7 @@ describe('مديرُ النظام', () => {
      يملكهما **بدوره** حيث يراه Git ويراجعه، لا بمنحةٍ في شاشةٍ من غيره.
 
      والفحصُ على أعلى الرتب بقصد: لو مرّت عليه مرّت على كلّ من دونه. */
-  it('وحبّتا المحو لا تُفوَّضان — ولا يُستثنى منهما أحد', () => {
+  it('وحبّتا المحو لا تفوّضان — ولا يستثنى منهما أحد', () => {
     for (const key of ['admin.accounts.reset', 'admin.users.purge_bulk']) {
       expect(refuseDelegation(superAdmin, targetOf('academic_manager'), key), key)
         .toMatchObject({ code: 'never_delegatable' })
@@ -136,7 +136,7 @@ describe('مديرُ النظام', () => {
 describe('من لا يفوّض', () => {
   it('المالية والدعم والعمليات والتنسيق لا يفوّضون شيئا', () => {
     for (const role of ['finance', 'support', 'operations_manager', 'diagnostic_manager', 'academic_coordinator', 'trainer', 'learner']) {
-      expect(DELEGATABLE_FAMILIES[role], `${role} صار مفوِّضا بلا قرار`).toBeUndefined()
+      expect(DELEGATABLE_FAMILIES[role], `${role} صار مفوّضا بلا قرار`).toBeUndefined()
       expect(refuseDelegation(actorOf(role), targetOf('learner'), 'learner.submit'), role)
         .toMatchObject({ code: 'not_delegator' })
     }

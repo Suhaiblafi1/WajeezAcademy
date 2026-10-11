@@ -41,13 +41,13 @@ interface LearnersResponse {
 }
 
 const SCOPE_NOTE: Record<LearnersResponse["scope"], string> = {
-  all: "كلّ الطلبة المسجَّلين في الأكاديمية.",
-  trainer: "طلبةُ شعبك فقط.",
-  advisor: "عملاءُ حالاتك المسندة فقط.",
+  all: "كلّ الطلبة المسجّلين في الأكاديمية.",
+  trainer: "طلبة شعبك فقط.",
+  advisor: "عملاء حالاتك المسندة فقط.",
 };
 
 const ENROLL_STATUS: Record<string, string> = {
-  enrolled: "مسجَّل", waitlisted: "قائمة انتظار", completed: "مكتمل", dropped: "منسحب",
+  enrolled: "مسجّل", waitlisted: "قائمة انتظار", completed: "مكتمل", dropped: "منسحب",
 };
 
 export default function LearnersPanel() {
@@ -120,9 +120,9 @@ export default function LearnersPanel() {
           <p className="mt-3 text-sm font-black">لا طلبة في نطاقك بعد</p>
           <p className="mt-1 max-w-sm text-read leading-6 text-muted-foreground">
             {data.scope === "trainer"
-              ? "يظهر هنا من يُسجَّل في شعبك."
+              ? "يظهر هنا من يسجّل في شعبك."
               : data.scope === "advisor"
-                ? "يظهر هنا عملاءُ حالاتك المسجَّلون في شعب."
+                ? "يظهر هنا عملاء حالاتك المسجّلون في شعب."
                 : "لا تسجيلات بعد."}
           </p>
         </Panel>
@@ -161,8 +161,8 @@ export default function LearnersPanel() {
                     </span>
                     {data.canWrite && (
                       <Button tone="danger" size="sm" onClick={() => void act(
-                          () => apiDelete(`/api/staff/learners/enrollments/${e.id}`, { note: "إخراجٌ من شاشة الطلبة" }),
-                          `أُخرج «${l.user.displayName}» من «${e.cohortTitle}» — والسجلّ باقٍ`,
+                          () => apiDelete(`/api/staff/learners/enrollments/${e.id}`, { note: "إخراج من شاشة الطلبة" }),
+                          `أخرج «${l.user.displayName}» من «${e.cohortTitle}» — والسجلّ باق`,
                         )}
                         disabled={busy} className="shrink-0 px-2.5 text-fine">
                         <Trash2 className="h-3 w-3" /> أخرجه
@@ -183,11 +183,11 @@ export default function LearnersPanel() {
           onClose={() => setEditing(null)}
           onSave={(patch) => void act(
             () => apiPatch(`/api/staff/learners/${editing.user.id}`, patch).then(() => setEditing(null)),
-            "حُفظ التعديل — والأثرُ مسجَّل",
+            "حفظ التعديل — والأثر مسجّل",
           )}
           onEnroll={(cohortId) => void act(
             () => apiPost(`/api/staff/learners/${editing.user.id}/enrollments`, { cohortId }).then(() => setEditing(null)),
-            "سُجّل في الشعبة",
+            "سجّل في الشعبة",
           )}
         />
       )}
@@ -238,7 +238,7 @@ function EditLearner({ row, busy, onClose, onSave, onEnroll }: {
               والشهادةُ موقوفان على التوثيق. */}
           {email !== row.user.email && (
             <span className="mt-1 block text-fine font-normal leading-5 text-gold-ink">
-              تبديلُ البريد يُسقط توثيقَه؛ ويلزم توثيقُ الجديد قبل الشراء والشهادة.
+              تبديل البريد يسقط توثيقه؛ ويلزم توثيق الجديد قبل الشراء والشهادة.
             </span>
           )}
         </label>
@@ -277,7 +277,7 @@ function EditLearner({ row, busy, onClose, onSave, onEnroll }: {
             </Button>
           </div>
           <p className="mt-2 text-read leading-5 text-muted-foreground">
-            تسجيلٌ بلا فاتورة، يخضع للسعة، والفائضُ لقائمة الانتظار.
+            تسجيل بلا فاتورة، يخضع للسعة، والفائض لقائمة الانتظار.
           </p>
         </div>
       </Inset>

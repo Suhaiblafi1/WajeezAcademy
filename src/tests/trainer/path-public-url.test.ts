@@ -37,27 +37,27 @@ function pageBehind(routePath: string): string | null {
   return APP.match(lazyDecl)?.[1] ?? null
 }
 
-describe('رابطُ المسار باسمه', () => {
-  it('‏/path/:slug مسجَّلٌ ويقف خلفه المحوِّل', () => {
+describe('رابط المسار باسمه', () => {
+  it('‏/path/:slug مسجّل ويقف خلفه المحوّل', () => {
     expect(pageBehind('/path/:slug')).toBe('./pages/PathRedirect')
   })
 
-  it('ووجهتُه — صفحةُ المدرّب — مسجَّلةٌ هي أيضا', () => {
+  it('ووجهته — صفحة المدرّب — مسجّلة هي أيضا', () => {
     expect(pageBehind('/t/:slug')).toBe('./pages/TrainerPublic')
   })
 
-  it('المرساةُ تُنادى من مالكها في الموضعَين', () => {
+  it('المرساة تنادى من مالكها في الموضعين', () => {
     const renderer = read('src/pages/TrainerPublic.tsx')
     const redirector = read('src/pages/PathRedirect.tsx')
-    for (const [name, src] of [['العارض', renderer], ['المحوِّل', redirector]] as const) {
+    for (const [name, src] of [['العارض', renderer], ['المحوّل', redirector]] as const) {
       expect(src, `${name} لا ينادي pathAnchorId`).toMatch(/pathAnchorId\(/)
-      expect(src, `${name} يكتب المرساةَ نصّا بيده`).not.toMatch(/`?#?path-\$\{/)
+      expect(src, `${name} يكتب المرساة نصّا بيده`).not.toMatch(/`?#?path-\$\{/)
     }
-    /* والدالّةُ نفسُها تُنتج ما يقابل ما يكتبه العارضُ في `id` */
+    /* والدالّة نفسها تنتج ما يقابل ما يكتبه العارض في `id` */
     expect(pathAnchorId('abu-bakr-data')).toBe('path-abu-bakr-data')
   })
 
-  it('والتحويلُ يستبدل العنوانَ ولا يكدّسه', () => {
+  it('والتحويل يستبدل العنوان ولا يكدّسه', () => {
     expect(read('src/pages/PathRedirect.tsx')).toMatch(/<Navigate\s+replace\s+to=/)
   })
 })

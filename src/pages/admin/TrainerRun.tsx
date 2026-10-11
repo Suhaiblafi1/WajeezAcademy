@@ -32,7 +32,7 @@ import TrainerRunOps from "./TrainerRunOps";
 
 export default function TrainerRun() {
   return (
-    <AdminLayout title="التأهيلُ والإسناد">
+    <AdminLayout title="التأهيل والإسناد">
       <TrainerRunOps />
     </AdminLayout>
   );

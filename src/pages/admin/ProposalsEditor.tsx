@@ -63,7 +63,7 @@ export default function ProposalsEditor({
       await apiPut(`/api/admin/trainer-applications/${applicationId}/teachable-proposals`, {
         proposals: rows.map((r) => ({ titleAr: r.titleAr, summaryAr: r.summaryAr })),
       });
-      toast("حُفظت الاقتراحات");
+      toast("حفظت الاقتراحات");
       await onSaved();
     } catch (e) {
       toastError(e instanceof ApiError ? e.message : "تعذّر الحفظ");
@@ -73,14 +73,14 @@ export default function ProposalsEditor({
   return (
     <div className="mt-3 border-t border-white/10 pt-3">
       <p className="text-read font-black text-muted-foreground">
-        دوراتٌ اقترحها وليست في كتالوجنا — سمِّ كلَّ واحدةٍ كما تريدها
+        دورات اقترحها وليست في كتالوجنا — سمّ كلّ واحدة كما تريدها
       </p>
       <p className="mt-1 text-read leading-5 text-muted-foreground">
-        اكتبها كما تريدها أن تُقرأ: لك أن تصحّح إملاءها أو تغيّر اسمها. والفقرةُ التي كتبها هو تبقى أدناه كما هي.
+        اكتبها كما تريدها أن تقرأ: لك أن تصحّح إملاءها أو تغيّر اسمها. والفقرة التي كتبها هو تبقى أدناه كما هي.
       </p>
 
       {rows.length === 0 ? (
-        <p className="mt-2 text-read leading-6 text-muted-foreground">لا صفوفَ بعد — أضِف واحدا.</p>
+        <p className="mt-2 text-read leading-6 text-muted-foreground">لا صفوف بعد — أضف واحدا.</p>
       ) : (
         <ul className="mt-2 space-y-2">
           {rows.map((r, i) => {
@@ -89,14 +89,14 @@ export default function ProposalsEditor({
                 <BookOpen className="mt-2.5 h-3.5 w-3.5 shrink-0 text-teal-ink" />
                 <input
                   value={r.titleAr} onChange={(e) => set(i, { titleAr: e.target.value })}
-                  placeholder="اسمُ الدورة كما تريده"
-                  aria-label={`اسمُ الاقتراح ${i + 1}`}
+                  placeholder="اسم الدورة كما تريده"
+                  aria-label={`اسم الاقتراح ${i + 1}`}
                   className={`${controlCls} min-w-0 flex-[2]`}
                 />
                 <textarea
                   value={r.summaryAr} onChange={(e) => set(i, { summaryAr: e.target.value })}
-                  placeholder="نبذةٌ عن الدورة — اختياريّة"
-                  aria-label={`نبذةُ الاقتراح ${i + 1}`}
+                  placeholder="نبذة عن الدورة — اختياريّة"
+                  aria-label={`نبذة الاقتراح ${i + 1}`}
                   rows={2}
                   className={`${controlCls} min-w-0 flex-1`}
                 />
@@ -111,7 +111,7 @@ export default function ProposalsEditor({
       <div className="mt-2.5 flex flex-wrap items-center gap-2">
         <Button tone="secondary" size="sm" icon={Plus} disabled={rows.length >= MAX_PROPOSALS}
           onClick={() => setRows((cur) => [...cur, emptyProposal()])}>
-          أضِف دورة
+          أضف دورة
         </Button>
         {dirty && (
           <Button tone="confirm" size="sm" disabled={busy} onClick={() => void save()}>
@@ -119,7 +119,7 @@ export default function ProposalsEditor({
           </Button>
         )}
         {dirty && (
-          <span className="text-read leading-5 text-gold-ink">تغييراتٌ لم تُحفظ.</span>
+          <span className="text-read leading-5 text-gold-ink">تغييرات لم تحفظ.</span>
         )}
       </div>
 
@@ -133,7 +133,7 @@ export default function ProposalsEditor({
       {/* والتصنيفُ موضعُه «دوراتٌ مقترحة» لا هنا: هذه الشاشةُ تُصحّح ما كتبه
           المتقدّمُ في طلبه، وذاك الطابورُ يقرّر مصيرَ كلِّ اقتراح. */}
       <p className="mt-2 text-read leading-5 text-muted-foreground">
-        وما يُحفَظ هنا يصل طابورَ «دوراتٌ مقترحة» — وهناك تُربط بدورةٍ قائمة أو تصير دورةً جديدة.
+        وما يحفظ هنا يصل طابور «دورات مقترحة» — وهناك تربط بدورة قائمة أو تصير دورة جديدة.
       </p>
     </div>
   );

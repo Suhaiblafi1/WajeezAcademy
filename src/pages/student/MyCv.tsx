@@ -56,9 +56,9 @@ export default function MyCv() {
           headers: { "content-type": "application/octet-stream" },
           body: f,
         });
-        if (!put.ok) throw new ApiError("upload_failed", "سُجّل طلبُك ولم يصل الملفّ — أبلغ الأكاديمية", put.status);
+        if (!put.ok) throw new ApiError("upload_failed", "سجّل طلبك ولم يصل الملفّ — أبلغ الأكاديمية", put.status);
       }
-      toast(`رُفعت «${f.name}» — يراها مستشارك المسند فقط، وتُسجل كل مشاهدة.`);
+      toast(`رفعت «${f.name}» — يراها مستشارك المسند فقط، وتسجل كل مشاهدة.`);
       setConsent(false);
       load();
     } catch (e) {
@@ -72,7 +72,7 @@ export default function MyCv() {
     try {
       await apiPost(`/api/cv/${delId}/delete`, { reason: delReason });
       setErr(null);
-      toast("حُذفت السيرة — لم تعد تظهر لمستشارك ولا في ملفك.");
+      toast("حذفت السيرة — لم تعد تظهر لمستشارك ولا في ملفك.");
       setDelId(null); setDelReason("");
       load();
     } catch (e) {
@@ -85,8 +85,8 @@ export default function MyCv() {
       {/* شرحُ الرفع لا يُقال حيث لا رفع — وإلّا نقض القسمَ الذي تحته */}
       {fileUploads && (
         <Card as="p" className="mb-5 max-w-2xl px-4 py-3 text-read leading-6 text-muted-foreground">
-          تُرفع بموافقتك، PDF أو Word حتى {CV_MAX_LABEL}.
-          يفتحها مستشارك المسند وتُسجل كل مشاهدة، والحذف بسبب موثق لا يمحو الأثر.
+          ترفع بموافقتك، PDF أو Word حتى {CV_MAX_LABEL}.
+          يفتحها مستشارك المسند وتسجل كل مشاهدة، والحذف بسبب موثق لا يمحو الأثر.
         </Card>
       )}
 
@@ -97,9 +97,9 @@ export default function MyCv() {
       {/* رفع جديد — لا يُعرض إلّا حين يستطيع الخادمُ حفظَ الملفّ */}
       {!fileUploads && (
         <Panel as="section" tone="warn">
-          <h2 className="flex items-center gap-2 text-sm font-black text-gold-ink"><ShieldCheck className="h-4 w-4" /> رفعُ السيرة غيرُ مفعّلٍ بعد</h2>
+          <h2 className="flex items-center gap-2 text-sm font-black text-gold-ink"><ShieldCheck className="h-4 w-4" /> رفع السيرة غير مفعّل بعد</h2>
           <p className="mt-3 text-read leading-7 text-foreground">
-            أعطِ سيرتك لمستشارك في جلستكم الأولى، أو تواصل مع الأكاديمية.
+            أعط سيرتك لمستشارك في جلستكم الأولى، أو تواصل مع الأكاديمية.
           </p>
         </Panel>
       )}
@@ -131,24 +131,24 @@ export default function MyCv() {
             className="mt-1 h-4 w-4 shrink-0 cursor-pointer accent-gold"
           />
           <span className="text-xs leading-6 text-foreground">
-            <span className="font-black text-gold-ink">موافقة صريحة (إلزامية):</span> أوافق على أن يرى مستشاري المسند وإدارة العمليات سيرتي الذاتية لغرض الإرشاد المهني فقط، وأعلم أن كل مشاهدة تُسجل وأنني أستطيع حذفها في أي وقت.
+            <span className="font-black text-gold-ink">موافقة صريحة (إلزامية):</span> أوافق على أن يرى مستشاري المسند وإدارة العمليات سيرتي الذاتية لغرض الإرشاد المهني فقط، وأعلم أن كل مشاهدة تسجل وأنني أستطيع حذفها في أي وقت.
           </span>
         </Card>
         {!consent && (
-          <p className="mt-2 text-read text-muted-foreground">لن يُقبل أي ملف قبل الموافقة.</p>
+          <p className="mt-2 text-read text-muted-foreground">لن يقبل أي ملف قبل الموافقة.</p>
         )}
       </Panel>
       )}
 
       {/* سيري الفعالة */}
       <section className="mt-6 space-y-3">
-        {cvs === null && <div className="grid place-items-center py-10"><Loader2 className="h-7 w-7 animate-spin text-teal-ink" aria-label="يُحمَّل" /></div>}
+        {cvs === null && <div className="grid place-items-center py-10"><Loader2 className="h-7 w-7 animate-spin text-teal-ink" aria-label="يحمّل" /></div>}
         {cvs?.length === 0 && (
           <Panel className="border-dashed py-10 text-center">
             <FileText className="mx-auto h-8 w-8 text-muted-foreground" />
             <p className="mt-3 text-sm font-bold text-muted-foreground">لا سير فعالة بعد</p>
             <p className="mx-auto mt-1 max-w-sm text-read leading-6 text-muted-foreground">
-              تساعد مستشارك على فهم خلفيتك قبل أول جلسة، وتُسجل كل مشاهدة لها.
+              تساعد مستشارك على فهم خلفيتك قبل أول جلسة، وتسجل كل مشاهدة لها.
             </p>
             {fileUploads && (
               <Button tone="confirm" onClick={() => fileRef.current?.click()} className="mt-4">
@@ -165,7 +165,7 @@ export default function MyCv() {
             <div className="min-w-0 flex-1">
               <p className="truncate font-black">{c.originalName}</p>
               <p className="mt-0.5 text-read text-muted-foreground">
-                {cvKindLabel(c.mime)} · {Math.ceil(c.sizeBytes / 1024)} كيلوبايت · رُفعت {fmtWhen(c.createdAt)}
+                {cvKindLabel(c.mime)} · {Math.ceil(c.sizeBytes / 1024)} كيلوبايت · رفعت {fmtWhen(c.createdAt)}
               </p>
             </div>
             <span className="flex items-center gap-1.5 rounded-full bg-teal/15 px-3 py-1 text-fine font-black text-teal-light-ink">
@@ -190,7 +190,7 @@ export default function MyCv() {
               <button onClick={() => setDelId(null)} className="cursor-pointer text-muted-foreground hover:text-foreground" aria-label="إغلاق"><X className="h-5 w-5" /></button>
             </div>
             <p className="mt-2 text-read leading-6 text-muted-foreground">
-              يُحفظ سببك في السجل، ثم لا يراها مستشارك ولا تظهر في ملفك.
+              يحفظ سببك في السجل، ثم لا يراها مستشارك ولا تظهر في ملفك.
             </p>
             <label className="mt-4 block text-xs font-bold text-muted-foreground">سبب الحذف *</label>
             <textarea

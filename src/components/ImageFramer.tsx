@@ -56,7 +56,7 @@ export default function ImageFramer({
         opened = d
         setImg(d)
       } catch (e) {
-        setErr(e instanceof ImageConditionError ? e.message : 'تعذّر فكُّ الصورة')
+        setErr(e instanceof ImageConditionError ? e.message : 'تعذّر فكّ الصورة')
       }
     })()
     return () => { live = false; opened?.release() }
@@ -93,7 +93,7 @@ export default function ImageFramer({
     try {
       await onDone(await renderFraming(img, framing))
     } catch (e) {
-      setErr(e instanceof ImageConditionError ? e.message : 'تعذّر تجهيزُ الصورة')
+      setErr(e instanceof ImageConditionError ? e.message : 'تعذّر تجهيز الصورة')
     } finally { setBusy(false) }
   }
 
@@ -110,7 +110,7 @@ export default function ImageFramer({
               ref={canvasRef}
               width={VIEW}
               height={VIEW}
-              aria-label="معاينةُ الإطار"
+              aria-label="معاينة الإطار"
               className="h-[260px] w-[260px] max-w-full shrink-0 cursor-move touch-none rounded-2xl bg-black/30 ring-1 ring-white/15"
               onPointerDown={(e) => {
                 drag.current = { x: e.clientX, y: e.clientY }
@@ -147,11 +147,11 @@ export default function ImageFramer({
                 className="mt-1 w-full accent-teal"
               />
               <p className="mt-1 text-fine leading-5 text-muted-foreground">
-                اسحب الصورةَ بإصبعك أو بالفأرة · ودولابُ الفأرة يقرّب ويبعّد
+                اسحب الصورة بإصبعك أو بالفأرة · ودولاب الفأرة يقرّب ويبعّد
               </p>
               {soft && (
                 <p className="mt-2 text-read leading-5 font-semibold text-gold-ink">
-                  ستبدو أقلَّ حدّةً — المأخوذُ دون {PHOTO_MIN_SIDE} بكسل. بعّد قليلا لجودةٍ أفضل.
+                  ستبدو أقلّ حدّة — المأخوذ دون {PHOTO_MIN_SIDE} بكسل. بعّد قليلا لجودة أفضل.
                 </p>
               )}
             </div>
@@ -159,7 +159,7 @@ export default function ImageFramer({
 
           <div className="mt-3 flex flex-wrap gap-2">
             <Button tone="confirm" size="sm" disabled={busy || !img} onClick={() => void confirm()}>
-              <Check className="h-3.5 w-3.5" /> {busy ? 'جارٍ الرفع…' : 'استعمِل هذا الإطار'}
+              <Check className="h-3.5 w-3.5" /> {busy ? 'جار الرفع…' : 'استعمل هذا الإطار'}
             </Button>
             <Button tone="ghost" size="sm" disabled={busy} onClick={onCancel}>
               <X className="h-3.5 w-3.5" /> إلغاء

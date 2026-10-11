@@ -51,12 +51,12 @@ export interface PathDraftLike {
 export function pathBlockersAr(d: PathDraftLike): string[] {
   const out: string[] = []
   const title = d.titleAr.trim()
-  if (title.length < MIN_PATH_TITLE) out.push(`اسمُ المسار ${MIN_PATH_TITLE} أحرفٍ فأكثر`)
-  if (title.length > MAX_PATH_TITLE) out.push(`اسمُ المسار ${MAX_PATH_TITLE} حرفا على الأكثر`)
+  if (title.length < MIN_PATH_TITLE) out.push(`اسم المسار ${MIN_PATH_TITLE} أحرف فأكثر`)
+  if (title.length > MAX_PATH_TITLE) out.push(`اسم المسار ${MAX_PATH_TITLE} حرفا على الأكثر`)
 
   const unique = new Set(d.courseIds)
-  if (unique.size < MIN_PATH_COURSES) out.push(`المسارُ ${MIN_PATH_COURSES} دورتَين فأكثر`)
-  if (unique.size > MAX_PATH_COURSES) out.push(`المسارُ ${MAX_PATH_COURSES} دوراتٍ على الأكثر`)
+  if (unique.size < MIN_PATH_COURSES) out.push(`المسار ${MIN_PATH_COURSES} دورتين فأكثر`)
+  if (unique.size > MAX_PATH_COURSES) out.push(`المسار ${MAX_PATH_COURSES} دورات على الأكثر`)
 
   /* ن-١: «من دوراته». وما لم يُؤهَّل له ليس منها — ولا يُرسَل ليُردّ، بل
      يُقال له قبل الإرسال. */
@@ -65,11 +65,11 @@ export function pathBlockersAr(d: PathDraftLike): string[] {
   if (stray.length > 0) out.push(`ليست من دوراتك: ${stray.join(' · ')}`)
 
   /* ن-٣: موسمٌ من التقويم لا نصّ — والبطاقةُ تقول متى يُفتح التسجيلُ صدقا */
-  if (!d.termId) out.push('اختر الموسمَ الذي يعمل فيه المسار')
+  if (!d.termId) out.push('اختر الموسم الذي يعمل فيه المسار')
 
   /* ن-٢ — وهذه ليست بيده، فتُقال بوصفها حالا لا خطأ */
   if (!d.trainerPubliclyVisible) {
-    out.push('لم يُعتمد ظهورُ اسمك للعامّة بعد — والمسارُ يحمل اسمَك، فلا يُنشر قبله')
+    out.push('لم يعتمد ظهور اسمك للعامّة بعد — والمسار يحمل اسمك، فلا ينشر قبله')
   }
   return out
 }

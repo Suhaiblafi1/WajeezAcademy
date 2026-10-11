@@ -132,7 +132,7 @@ export default function JoinTrainerComplete() {
           <ShieldCheck className="mx-auto h-12 w-12 text-teal-light-ink" />
           <h1 className="mt-5 text-2xl font-black">هذه الصفحة للمرشحين فقط</h1>
           <p className="mt-3 text-sm leading-8 text-muted-foreground">
-            تُفتح المرحلة الثانية برابط خاص يصلك بعد اختصار طلبك. لم يصلك؟ راجع حالة طلبك من{" "}
+            تفتح المرحلة الثانية برابط خاص يصلك بعد اختصار طلبك. لم يصلك؟ راجع حالة طلبك من{" "}
             <Link to="/join-trainer" className="text-teal-light-ink underline">صفحة الانضمام</Link>.
           </p>
         </div>
@@ -151,7 +151,7 @@ export default function JoinTrainerComplete() {
           <h1 className="mt-6 text-2xl font-black">ملفك المهني اكتمل</h1>
           <p className="mt-3 text-sm leading-8 text-muted-foreground">
             عاد طلبك <b className="font-mono" dir="ltr">{reference}</b> إلى المراجعة الأكاديمية بكل ما أرسلت.
-            ولم يبقَ إلّا أن تحجز موعدَ لقاء التعارف من صفحة طلبك — ونقرأ ملفك قبله.
+            ولم يبق إلّا أن تحجز موعد لقاء التعارف من صفحة طلبك — ونقرأ ملفك قبله.
           </p>
         </div>
       </SiteShell>
@@ -165,7 +165,7 @@ export default function JoinTrainerComplete() {
         <span className="kicker">المرحلة الثانية — الاستكمال المهني</span>
         <h1 className="h-section mt-4">أثبت خبرتك — بالأدلة لا بالألقاب</h1>
         <p className="mt-3 text-sm leading-8 text-muted-foreground">
-          طلبك <b className="font-mono" dir="ltr">{reference}</b> مُختار أوليًا. أكمل ملفك: سيرة، أدلة،
+          طلبك <b className="font-mono" dir="ltr">{reference}</b> مختار أوليا. أكمل ملفك: سيرة، أدلة،
           والدورات التي تستطيع تدريسها فعلا من كتالوجنا.
         </p>
 
@@ -242,8 +242,8 @@ export default function JoinTrainerComplete() {
               الفصول التي تستطيع التدريس فيها <span className="text-gold-ink">*</span>
             </legend>
             <p className="mt-1 text-read leading-6 text-muted-foreground">
-              الشعبُ تُفتح في فصولٍ لها مواعيد — واختيارُك هنا هو ما يضعك في قائمة
-              «المدرّبون المتاحون» لكلّ فصلٍ تختاره.
+              الشعب تفتح في فصول لها مواعيد — واختيارك هنا هو ما يضعك في قائمة
+              «المدرّبون المتاحون» لكلّ فصل تختاره.
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
               {TRAINING_SEASONS.map((s) => (

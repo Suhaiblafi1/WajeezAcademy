@@ -49,19 +49,19 @@ function inboxStatuses(): string[] {
   return m ? [...m[1].matchAll(/'([a-z_]+)'/g)].map((x) => x[1]) : []
 }
 
-describe('ما تعدّه بطاقةُ طلبات الانضمام', () => {
-  it('القائمةُ مقروءةٌ ومُنَمَّطة — وإلّا فالحارسُ يقيس الفراغ', () => {
-    expect(INBOX, 'القائمةُ غيرُ منمَّطة — فاسمٌ مخترَعٌ لا يسقط في المصرِّف')
+describe('ما تعدّه بطاقة طلبات الانضمام', () => {
+  it('القائمة مقروءة ومنمّطة — وإلّا فالحارس يقيس الفراغ', () => {
+    expect(INBOX, 'القائمة غير منمّطة — فاسم مخترع لا يسقط في المصرّف')
       .toMatch(/const TRAINER_INBOX_STATUSES: TrainerStatus\[\]/)
-    expect(inboxStatuses().length, 'لم تُقرأ القائمة').toBeGreaterThan(0)
+    expect(inboxStatuses().length, 'لم تقرأ القائمة').toBeGreaterThan(0)
   })
 
-  it('وكلُّ اسمٍ فيها حالةٌ موجودةٌ في معجم طلب المدرّب', () => {
+  it('وكلّ اسم فيها حالة موجودة في معجم طلب المدرّب', () => {
     const wrong = inboxStatuses().filter((v) => !(TRAINER_STATUSES as readonly string[]).includes(v))
-    expect(wrong, `أسماءٌ لا وجودَ لها: ${wrong.join('، ')}`).toEqual([])
+    expect(wrong, `أسماء لا وجود لها: ${wrong.join('، ')}`).toEqual([])
   })
 
-  it('ولا اسمَ من معجمِ نموذجٍ آخرَ يشبهه', () => {
+  it('ولا اسم من معجم نموذج آخر يشبهه', () => {
     /* `in_review` و`demo_scheduled` بعينهما: صحيحتان في مواضعَ أخرى من هذا
        الملفّ، ومخترَعتان هنا. وهذا الفحصُ يمنع عودةَ النسخ من الجار. */
     for (const alien of ['in_review', 'demo_scheduled']) {
@@ -69,7 +69,7 @@ describe('ما تعدّه بطاقةُ طلبات الانضمام', () => {
     }
   })
 
-  it('وتعدّ ما ينتظرك أنت — قرارُ ٢٦ سبتمبر ٢٠٢٦', () => {
+  it('وتعدّ ما ينتظرك أنت — قرار ٢٦ سبتمبر ٢٠٢٦', () => {
     /* خرجت `demo_requested`: تنتظر المتقدّمَ أن يقدّم ديمو لا تنتظرك.
        ودخلت `conditionally_approved`: عندك فعلا — أتعابُه ودوراتُه وعقدُه.
        ثمّ خرجت `shortlisted` بحذف الحالة نفسِها (٢٦ سبتمبر ٢٠٢٦). */
@@ -78,8 +78,8 @@ describe('ما تعدّه بطاقةُ طلبات الانضمام', () => {
     )
   })
 
-  it('والعدُّ يقرأ القائمةَ لا مصفوفةً حرّةً كُتبت في موضعها', () => {
-    expect(INBOX, 'عادت المصفوفةُ الحرّةُ إلى موضع العدّ')
+  it('والعدّ يقرأ القائمة لا مصفوفة حرّة كتبت في موضعها', () => {
+    expect(INBOX, 'عادت المصفوفة الحرّة إلى موضع العدّ')
       .toMatch(/trainerApplication\.count\(\{\s*\n\s*where: \{ status: \{ in: TRAINER_INBOX_STATUSES \} \}/)
   })
 })

@@ -113,7 +113,7 @@ function Result({ summary, courseTitle }: { summary: GrowthSummary; courseTitle:
       </ul>
       {c.firstMeasured > 0 && (
         <p className="mt-4 text-read leading-relaxed text-muted-foreground">
-          {c.firstMeasured} مهارة قِيست هنا أول مرة، فلا تدخل حساب الفرق. أكمل جولة التعمق في المؤشر قبل دورتك القادمة ليُقاس فرقها.
+          {c.firstMeasured} مهارة قيست هنا أول مرة، فلا تدخل حساب الفرق. أكمل جولة التعمق في المؤشر قبل دورتك القادمة ليقاس فرقها.
         </p>
       )}
       <Link
@@ -201,7 +201,7 @@ export default function Remeasure() {
     return (
       <PortalLayout title="قياس نموي">
         <div className="grid place-items-center py-20">
-          <Loader2 className="h-8 w-8 animate-spin text-teal-ink" aria-label="جارٍ التحميل" />
+          <Loader2 className="h-8 w-8 animate-spin text-teal-ink" aria-label="جار التحميل" />
         </div>
       </PortalLayout>
     );
@@ -215,7 +215,7 @@ export default function Remeasure() {
         <>
           <Result summary={summary} courseTitle={courseTitle} />
           {data.measuredAt && !saved && (
-            <p className="mt-4 text-read text-muted-foreground">قِيس هذا النمو في {fmtWhen(data.measuredAt)} — ويُقاس مرة واحدة لكل دورة.</p>
+            <p className="mt-4 text-read text-muted-foreground">قيس هذا النمو في {fmtWhen(data.measuredAt)} — ويقاس مرة واحدة لكل دورة.</p>
           )}
         </>
       ) : (
@@ -226,7 +226,7 @@ export default function Remeasure() {
               أعد قياس مهاراتك بعد «{courseTitle}»
             </h1>
             <p className="mt-3 text-sm leading-7 text-foreground">
-              قدّر مستواك الآن بالسلّم الذي قِيس به قبل الدورة. لا صحيح ولا خطأ، ويُحفظ
+              قدّر مستواك الآن بالسلّم الذي قيس به قبل الدورة. لا صحيح ولا خطأ، ويحفظ
               <span className="font-bold text-foreground"> مرة واحدة </span>
               فاختر بصدق.
             </p>

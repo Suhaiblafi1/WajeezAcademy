@@ -15,7 +15,7 @@ export default function NotFound() {
         </span>
         <h1 className="mt-6 text-3xl font-black">هذه الصفحة غير موجودة</h1>
         <p className="mt-3 max-w-md leading-8 text-muted-foreground">
-          ربما تغيّر العنوان أو نُقلت الصفحة. أصدق طريق للعودة: التشخيص — يعرف دائما أين تبدأ.
+          ربما تغيّر العنوان أو نقلت الصفحة. أصدق طريق للعودة: التشخيص — يعرف دائما أين تبدأ.
         </p>
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
           <Link to="/diagnostic" className="rounded-2xl bg-teal-deep px-7 py-3.5 font-bold text-white transition hover:bg-teal-darker">

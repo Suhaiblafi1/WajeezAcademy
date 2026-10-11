@@ -55,15 +55,15 @@ function TrainerSuggestion({ payload }: { payload: Record<string, unknown> | nul
   return (
     <div className="mt-1.5 text-read leading-6">
       <p className="font-bold text-teal-light-ink">
-        {kind === 'trainer_new_course' ? `دورةٌ مقترحة: ${titleAr ?? '—'}` : 'نسخةٌ مقترحةٌ من هذه الدورة'}
+        {kind === 'trainer_new_course' ? `دورة مقترحة: ${titleAr ?? '—'}` : 'نسخة مقترحة من هذه الدورة'}
         {from?.fullName ? ` · اقترحها ${from.fullName}` : ''}
         {from?.reference ? ` (${from.reference})` : ''}
       </p>
       {skillIds.length > 0 && (
-        <p className="text-muted-foreground">مهاراتُها: <span dir="ltr" className="font-mono text-fine">{skillIds.join(' · ')}</span></p>
+        <p className="text-muted-foreground">مهاراتها: <span dir="ltr" className="font-mono text-fine">{skillIds.join(' · ')}</span></p>
       )}
       {words && <p className="whitespace-pre-line text-muted-foreground"><span className="font-bold">بقلمه: </span>{words}</p>}
-      {note && <p className="text-muted-foreground"><span className="font-bold">ملاحظةُ المراجع: </span>{note}</p>}
+      {note && <p className="text-muted-foreground"><span className="font-bold">ملاحظة المراجع: </span>{note}</p>}
     </div>
   );
 }
@@ -83,7 +83,7 @@ type QuestionRow = { id: string; status: string; active: boolean; module: string
 type TemplateRow = { id: string; status: string; name: string; courseCount: number };
 
 /* «١ طلبٌ» و«٢ طلبان» و«٣ طلبات» و«١١ طلبا» — والعددُ يُقرأ لا يُحسب */
-const CR_FORMS = { one: "طلبُ تغييرٍ", two: "طلبا تغييرٍ", few: "طلباتِ تغييرٍ", many: "طلبَ تغييرٍ" };
+const CR_FORMS = { one: "طلب تغيير", two: "طلبا تغيير", few: "طلبات تغيير", many: "طلب تغيير" };
 
 const STATUS_AR: Record<string, string> = {
   draft: "مسودة", approved: "معتمد", published: "منشور", in_review: "قيد المراجعة",
@@ -189,7 +189,7 @@ export default function CatalogAdmin() {
       entityId: input.slug,
       payload: { kind: "skill_request", slug: input.slug, nameAr: input.nameAr, reasonAr: input.reasonAr },
     });
-    toast("قُدّم طلب المهارة للمراجعة");
+    toast("قدّم طلب المهارة للمراجعة");
   };
 
   const submitChangeRequest = () => act(async () => {
@@ -201,7 +201,7 @@ export default function CatalogAdmin() {
     });
     setCrForm({ ...crForm, entityId: "" });
     setOpenForm(null);
-  }, "قُدم طلب التغيير — ينتظر اعتماد مراجع آخر (maker-checker)");
+  }, "قدم طلب التغيير — ينتظر اعتماد مراجع آخر (maker-checker)");
 
   /* لا يُطلب معرّفٌ يُنسخ من قائمةٍ أعلاه — يُختار بالاسم من هنا مباشرة */
   const entityOptionsFor = (t: string): { id: string; label: string }[] => {
@@ -251,11 +251,11 @@ export default function CatalogAdmin() {
 
   /* مسارٌ واحدٌ لكلّ مرشِّحٍ يُعرض — فلا يُنسى ترشيحٌ ظاهرٌ على قائمةٍ لا تعنيه */
   const browseUi = browse === null ? null
-    : browse === "pathways" ? { view: pathwayView, rows: pathways, unit: "مسارا", ph: "ابحث بمعرّفٍ أو عنوان…" }
-    : browse === "courses" ? { view: courseView, rows: courses, unit: "دورة", ph: "ابحث بمعرّفٍ أو عنوانٍ أو مسار…" }
-    : browse === "skills" ? { view: skillView, rows: skills, unit: "مهارة", ph: "ابحث بمعرّفٍ أو اسمٍ أو عائلة…" }
+    : browse === "pathways" ? { view: pathwayView, rows: pathways, unit: "مسارا", ph: "ابحث بمعرّف أو عنوان…" }
+    : browse === "courses" ? { view: courseView, rows: courses, unit: "دورة", ph: "ابحث بمعرّف أو عنوان أو مسار…" }
+    : browse === "skills" ? { view: skillView, rows: skills, unit: "مهارة", ph: "ابحث بمعرّف أو اسم أو عائلة…" }
     : browse === "questions" ? { view: questionView, rows: questions, unit: "سؤالا", ph: "ابحث بنصّ السؤال أو الوحدة…" }
-    : { view: templateView, rows: templates, unit: "قالبا", ph: "ابحث بمعرّفٍ أو اسم…" };
+    : { view: templateView, rows: templates, unit: "قالبا", ph: "ابحث بمعرّف أو اسم…" };
 
   return (
     <AdminLayout title="إدارة الكتالوج الأكاديمي">
@@ -274,14 +274,14 @@ export default function CatalogAdmin() {
         icon={GitPullRequest}
         count={pendingCrs}
         forms={CR_FORMS}
-        waitingAr="تنتظر قرارَك"
+        waitingAr="تنتظر قرارك"
         stats={[
           `${pathways.length} مسارا`, `${courses.length} دورة`, `${skills.length} مهارة`,
           `${questions.length} سؤالا`, `${templates.length} قالبا`,
         ]}
-        actionAr="راجِعها"
+        actionAr="راجعها"
         onAction={() => revealRow("change-requests")}
-        doneAr="لا طلبَ تغييرٍ ينتظر قرارَك — وما يُقدَّم منها يصل هذه الشاشةَ فورا."
+        doneAr="لا طلب تغيير ينتظر قرارك — وما يقدّم منها يصل هذه الشاشة فورا."
       />
 
       {overview && (
@@ -317,14 +317,14 @@ export default function CatalogAdmin() {
           <div className="mt-4">
             <div className="mb-3 flex flex-wrap gap-2">
               <select value={statusPick} onChange={(e) => { setStatusPick(e.target.value); setPage(1); }}
-                aria-label="رشِّح بالحالة"
+                aria-label="رشّح بالحالة"
                 className="rounded-xl border border-white/12 bg-paper/30 px-3 py-2 text-xs text-foreground focus:border-gold focus:outline-none [&>option]:bg-surface">
                 <option value="">كلّ الحالات</option>
                 {statusesOf(browseUi.rows).map((st) => <option key={st} value={st}>{STATUS_AR[st] ?? st}</option>)}
               </select>
               {browse === "courses" && (
                 <select value={pathPick} onChange={(e) => { setPathPick(e.target.value); setPage(1); }}
-                  aria-label="رشِّح بالمسار"
+                  aria-label="رشّح بالمسار"
                   className="rounded-xl border border-white/12 bg-paper/30 px-3 py-2 text-xs text-foreground focus:border-gold focus:outline-none [&>option]:bg-surface">
                   <option value="">كلّ المسارات</option>
                   {[...new Set(courses.flatMap((c) => c.pathways))].sort().map((pw) => <option key={pw} value={pw}>{pw}</option>)}
@@ -364,15 +364,15 @@ export default function CatalogAdmin() {
                   {/* ك-٣: «بلا مهارات» تُقال هنا لا عند النشر — فمن يقرأ الصفَّ
                       يعرف لماذا لن تُنشر، ولا يكتشفه بعد أسبوعٍ عند الحاجز. */}
                   {c.skillCount === 0 && (
-                    <Chip tone="danger">بلا مهارات — لن تُنشر ولن يرشّحها التشخيص</Chip>
+                    <Chip tone="danger">بلا مهارات — لن تنشر ولن يرشّحها التشخيص</Chip>
                   )}
                   {/* ك-٥: ودورةٌ بلا مسارٍ تُقال حالُها صراحةً — فالتي لا
                       تُرشَّح وحدَها لا يراها التشخيصُ إطلاقا، وذلك يُعرَف من
                       الصفّ لا بعد شهرٍ من تساؤلٍ عن دورةٍ لا تظهر. */}
                   {c.pathways.length === 0 && (
                     c.recommendableDirectly
-                      ? <Chip tone="positive">تُرشَّح وحدَها · {(c.diagnosticDomains ?? []).length} مجال</Chip>
-                      : <Chip tone="warn">بلا مسارٍ ولا ترشيحٍ مستقلّ — لا يراها التشخيص</Chip>
+                      ? <Chip tone="positive">ترشّح وحدها · {(c.diagnosticDomains ?? []).length} مجال</Chip>
+                      : <Chip tone="warn">بلا مسار ولا ترشيح مستقلّ — لا يراها التشخيص</Chip>
                   )}
                   <span className="mr-auto flex items-center gap-2">
                     <Pill v={c.status} />
@@ -399,7 +399,7 @@ export default function CatalogAdmin() {
                           setSoloStages(c.diagnosticStages ?? []);
                         }}
                       >
-                        ترشيحُها وحدَها
+                        ترشيحها وحدها
                       </Button>
                     )}
                   </span>
@@ -407,13 +407,13 @@ export default function CatalogAdmin() {
                 {soloFor === c.id && (
                   <Inset className="mt-3 grid gap-3">
                     <p className="text-read leading-7 text-muted-foreground">
-                      دورةٌ قائمةٌ بنفسها تدخل فضاءَ التوصية بمهاراتها ومجالها — بلا أن تُلحَق بمسار.
-                      <b className="text-foreground"> ولا تُزاحم مسارا</b>: تقف حيث كان التشخيصُ يقول
-                      «لا شيءَ لك» فيُحيل إلى مستشار.
+                      دورة قائمة بنفسها تدخل فضاء التوصية بمهاراتها ومجالها — بلا أن تلحق بمسار.
+                      <b className="text-foreground"> ولا تزاحم مسارا</b>: تقف حيث كان التشخيص يقول
+                      «لا شيء لك» فيحيل إلى مستشار.
                     </p>
                     <fieldset className="grid gap-1.5">
                       <legend className="text-read font-bold text-muted-foreground">
-                        مجالُ التشخيص الذي تخدمه — ولا تُرشَّح بلا واحد
+                        مجال التشخيص الذي تخدمه — ولا ترشّح بلا واحد
                       </legend>
                       <div className="flex flex-wrap gap-x-4 gap-y-1.5">
                         {DIAGNOSTIC_DOMAINS.map((d) => (
@@ -432,7 +432,7 @@ export default function CatalogAdmin() {
                     </fieldset>
                     <fieldset className="grid gap-1.5">
                       <legend className="text-read font-bold text-muted-foreground">
-                        جمهورُها — ولا تنافس مرّةً بلا جمهورٍ مُعلَن
+                        جمهورها — ولا تنافس مرّة بلا جمهور معلن
                       </legend>
                       <div className="flex flex-wrap gap-x-4 gap-y-1.5">
                         {Object.entries(CAREER_STAGE_LABELS_AR).map(([id, label]) => (
@@ -457,10 +457,10 @@ export default function CatalogAdmin() {
                           () => apiPut(`/api/admin/catalog/courses/${c.id}/standalone`, {
                             recommendable: true, domains: soloDomains, stages: soloStages,
                           }),
-                          "صارت تُرشَّح وحدَها — تدخل فضاءَ التوصية عند النشر",
+                          "صارت ترشّح وحدها — تدخل فضاء التوصية عند النشر",
                         ).then(() => setSoloFor(null))}
                       >
-                        اجعلها تُرشَّح وحدَها
+                        اجعلها ترشّح وحدها
                       </Button>
                       {c.recommendableDirectly && (
                         <Button
@@ -469,16 +469,16 @@ export default function CatalogAdmin() {
                             () => apiPut(`/api/admin/catalog/courses/${c.id}/standalone`, {
                               recommendable: false, domains: soloDomains, stages: soloStages,
                             }),
-                            "أُطفئ ترشيحُها المستقلّ — ومجالُها يبقى مكتوبا",
+                            "أطفئ ترشيحها المستقلّ — ومجالها يبقى مكتوبا",
                           ).then(() => setSoloFor(null))}
                         >
-                          أطفِئْ ترشيحَها
+                          أطفئ ترشيحها
                         </Button>
                       )}
-                      <Button tone="ghost" size="sm" onClick={() => setSoloFor(null)}>أغلِق</Button>
+                      <Button tone="ghost" size="sm" onClick={() => setSoloFor(null)}>أغلق</Button>
                       {c.skillCount === 0 && (
                         <span className="text-read text-amber-300">
-                          اربطْ مهاراتِها أوّلا — تنافس بمهاراتها، وبلا مهارةٍ لا شيءَ يُقاس.
+                          اربط مهاراتها أوّلا — تنافس بمهاراتها، وبلا مهارة لا شيء يقاس.
                         </span>
                       )}
                     </div>
@@ -498,16 +498,16 @@ export default function CatalogAdmin() {
                         onClick={() => void act(
                           () => apiPut(`/api/admin/catalog/courses/${c.id}/skills`, { skillIds: skillDraft }),
                           skillDraft.length === 0
-                            ? "فُكّت مهاراتُ الدورة — ولن تُنشر حتّى تُربط بواحدةٍ على الأقلّ"
-                            : `رُبطت ${skillDraft.length} مهارة بالدورة`,
+                            ? "فكّت مهارات الدورة — ولن تنشر حتّى تربط بواحدة على الأقلّ"
+                            : `ربطت ${skillDraft.length} مهارة بالدورة`,
                         ).then(() => setSkillsFor(null))}
                       >
                         احفظ المهارات
                       </Button>
-                      <Button tone="ghost" size="sm" onClick={() => setSkillsFor(null)}>أغلِق</Button>
+                      <Button tone="ghost" size="sm" onClick={() => setSkillsFor(null)}>أغلق</Button>
                       {/* الاستبدالُ يُقال صراحةً: من ظنّها إضافةً فكَّ ما لم يقصد */}
                       <span className="text-fine text-muted-foreground">
-                        المحفوظُ يُستبدَل بما تختاره هنا — لا يُضاف إليه.
+                        المحفوظ يستبدل بما تختاره هنا — لا يضاف إليه.
                       </span>
                     </div>
                   </Inset>
@@ -522,9 +522,9 @@ export default function CatalogAdmin() {
             {/* ب-٤: الحصيلة أولا — «كم مهارة تُقاس فعلا» هو السؤال الذي يخفيه جدول من ٣٠٥ صفوف */}
             <Card as="p" className="mt-3 px-4 py-3 text-read leading-6 text-foreground">
               {skills.filter((s) => s.measureState === "measured").length} مقيسة ·{" "}
-              {skills.filter((s) => s.measureState === "registered_unmeasured").length} مسجَّلة بلا سؤال ·{" "}
+              {skills.filter((s) => s.measureState === "registered_unmeasured").length} مسجّلة بلا سؤال ·{" "}
               {skills.filter((s) => s.measureState === "inactive").length} موقوفة تشخيصيا · من {skills.length}
-              <span className="text-muted-foreground"> — غير المقيسة تدخل مقام تغطية القياس ولا تُقاس أبدا.</span>
+              <span className="text-muted-foreground"> — غير المقيسة تدخل مقام تغطية القياس ولا تقاس أبدا.</span>
             </Card>
             <ul className="mt-2 grid gap-2 sm:grid-cols-2">
               {skillView.rows.map((s) => (
@@ -590,8 +590,8 @@ export default function CatalogAdmin() {
                  يترك المدرّبَ يقرأ «صارت دورةً» ولا دورةَ هناك. */
               if (fromProposal && courseId) {
                 void apiPost(`/api/admin/course-proposals/${fromProposal}/became-course`, { courseId })
-                  .then(() => toast("رُبط اقتراحُ المدرّب بالدورة الجديدة"))
-                  .catch(() => toast("أُنشئت الدورةُ ولم يُربط الاقتراحُ بها — اربِطه من طابور الاقتراحات"))
+                  .then(() => toast("ربط اقتراح المدرّب بالدورة الجديدة"))
+                  .catch(() => toast("أنشئت الدورة ولم يربط الاقتراح بها — اربطه من طابور الاقتراحات"))
                   .finally(() => { params.delete("proposalId"); params.delete("titleAr"); setParams(params, { replace: true }); });
               }
               void refresh();
@@ -622,7 +622,7 @@ export default function CatalogAdmin() {
               onClick={() => act(async () => {
                 await apiPost("/api/admin/catalog/skills", { ...skillForm, familyId: skillForm.familyId || undefined });
                 setSkillForm({ id: "", slug: "", nameAr: "", familyId: "" });
-              }, "أُنشئت المهارة كمسودة")} className="mt-4">
+              }, "أنشئت المهارة كمسودة")} className="mt-4">
               إنشاء المسودة
             </Button>
           </Card>
@@ -643,7 +643,7 @@ export default function CatalogAdmin() {
             <textarea value={crForm.payload} onChange={(e) => setCrForm({ ...crForm, payload: e.target.value })} rows={5}
               dir="ltr" className={`${inputCls} mt-3 font-mono text-xs`} />
             <p className="mt-2 text-read text-muted-foreground">
-              أمثلة حقول: titleAr للاسم، objectives للأهداف، skillIds لربط المهارات — تُدمج في إصدار جديد بعد الاعتماد والنشر.
+              أمثلة حقول: titleAr للاسم، objectives للأهداف، skillIds لربط المهارات — تدمج في إصدار جديد بعد الاعتماد والنشر.
             </p>
             {/* `confirm` لا `primary`: هذا الزرُّ حفظُ **قسمٍ** في صفحةٍ فيها
                 ثلاثةُ أقسامِ إنشاءٍ متوازية (دورة · مسار · طلبُ تعديل) — فليس
@@ -672,10 +672,10 @@ export default function CatalogAdmin() {
                 <Pill v={cr.status} />
                 {cr.status === "in_review" && (
                   <>
-                    <Button tone="secondary" size="sm" disabled={busy} onClick={() => act(() => apiPost(`/api/admin/catalog/change-requests/${cr.id}/decision`, { decision: "approve" }), "اعتُمد الطلب")}>
+                    <Button tone="secondary" size="sm" disabled={busy} onClick={() => act(() => apiPost(`/api/admin/catalog/change-requests/${cr.id}/decision`, { decision: "approve" }), "اعتمد الطلب")}>
                       <CheckCircle2 className="h-3.5 w-3.5" /> اعتماد
                     </Button>
-                    <Button tone="secondary" size="sm" disabled={busy} onClick={() => act(() => apiPost(`/api/admin/catalog/change-requests/${cr.id}/decision`, { decision: "request_changes", noteAr: "راجع التفاصيل" }), "طُلب تعديل")}>
+                    <Button tone="secondary" size="sm" disabled={busy} onClick={() => act(() => apiPost(`/api/admin/catalog/change-requests/${cr.id}/decision`, { decision: "request_changes", noteAr: "راجع التفاصيل" }), "طلب تعديل")}>
                       <XCircle className="h-3.5 w-3.5" /> طلب تعديل
                     </Button>
                   </>
@@ -687,7 +687,7 @@ export default function CatalogAdmin() {
         <p className="mt-3 flex items-center gap-1.5 text-read text-muted-foreground">
           <BookMarked className="h-3.5 w-3.5" />
           {canSelfApprove
-            ? "maker-checker: صانعُ الطلب لا يعتمده بنفسه — وحسابُك مستثنى، فما قدّمتَه تعتمده وحدَك ويُكتب في سجلّ الأثر باسمه."
+            ? "maker-checker: صانع الطلب لا يعتمده بنفسه — وحسابك مستثنى، فما قدّمته تعتمده وحدك ويكتب في سجلّ الأثر باسمه."
             : "maker-checker: لا يستطيع صانع الطلب اعتماده بنفسه — الخادم يرفض ذلك."}
         </p>
       </section>

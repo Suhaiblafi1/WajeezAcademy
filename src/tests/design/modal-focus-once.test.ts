@@ -69,35 +69,35 @@ const effects = modal
 const setup = effects.filter((e) => methodCalls(e.arguments[0], 'setAttribute')
   .some((c) => ts.isStringLiteral(c.arguments[0]) && c.arguments[0].text === 'inert'))
 
-describe('النافذةُ تُهيَّأ مرّةً عند فتحها', () => {
-  it('الدالّةُ ومفعولُ تهيئتها مقروءان — وإلّا فالحارسُ يقيس الفراغ', () => {
-    expect(modal, 'لا دالّةَ Modal في الملفّ').toBeDefined()
-    expect(setup.length, 'لا مفعولَ يضع inert — أو اثنان').toBe(1)
-    expect(methodCalls(setup[0].arguments[0], 'focus').length, 'مفعولُ التهيئة لا ينقل التركيز').toBeGreaterThan(0)
+describe('النافذة تهيّأ مرّة عند فتحها', () => {
+  it('الدالّة ومفعول تهيئتها مقروءان — وإلّا فالحارس يقيس الفراغ', () => {
+    expect(modal, 'لا دالّة Modal في الملفّ').toBeDefined()
+    expect(setup.length, 'لا مفعول يضع inert — أو اثنان').toBe(1)
+    expect(methodCalls(setup[0].arguments[0], 'focus').length, 'مفعول التهيئة لا ينقل التركيز').toBeGreaterThan(0)
   })
 
-  it('⚠️ ① قائمةُ اعتماده فارغة — يجري عند الفتح لا مع كلّ رسم', () => {
+  it('⚠️ ① قائمة اعتماده فارغة — يجري عند الفتح لا مع كلّ رسم', () => {
     const deps = setup[0]?.arguments[1]
-    expect(deps && ts.isArrayLiteralExpression(deps), 'بلا قائمة اعتمادٍ يجري مع كلّ رسم').toBe(true)
+    expect(deps && ts.isArrayLiteralExpression(deps), 'بلا قائمة اعتماد يجري مع كلّ رسم').toBe(true)
     expect((deps as ts.ArrayLiteralExpression).elements.map((e) => e.getText(source)),
-      'في قائمته ما يتغيّر مع الرسم — فيعود التركيزُ إلى أوّل خانةٍ مع كلّ حرف').toEqual([])
+      'في قائمته ما يتغيّر مع الرسم — فيعود التركيز إلى أوّل خانة مع كلّ حرف').toEqual([])
   })
 
   it('⚠️ ② ولا يقرأ `onClose` بنفسه — بل من مرجع', () => {
     expect(reads(setup[0].arguments[0], 'onClose'),
-      'مفعولُ التهيئة يقرأ onClose — فإمّا قديمةٌ أُمسكت أو عاد العطبُ بإضافتها إلى قائمته').toBe(false)
+      'مفعول التهيئة يقرأ onClose — فإمّا قديمة أمسكت أو عاد العطب بإضافتها إلى قائمته').toBe(false)
     expect(reads(setup[0].arguments[0], 'onCloseRef'), 'Escape لا يبلغ onClose من مرجعها').toBe(true)
   })
 
-  it('⚠️ ③ والمرجعُ يُحدَّث كلّما تغيّرت `onClose`', () => {
+  it('⚠️ ③ والمرجع يحدّث كلّما تغيّرت `onClose`', () => {
     const updater = effects.find((e) => all(e.arguments[0], (n) => ts.isBinaryExpression(n)
       && n.operatorToken.kind === ts.SyntaxKind.EqualsToken
       && n.left.getText(source) === 'onCloseRef.current'
       && n.right.getText(source) === 'onClose').length > 0)
-    expect(updater, 'لا مفعولَ يكتب أحدثَ onClose في مرجعها').toBeDefined()
+    expect(updater, 'لا مفعول يكتب أحدث onClose في مرجعها').toBeDefined()
     const deps = updater!.arguments[1]
     expect(deps && ts.isArrayLiteralExpression(deps)
       && deps.elements.some((e) => e.getText(source) === 'onClose'),
-    'المرجعُ لا يُحدَّث حين تتغيّر onClose').toBe(true)
+    'المرجع لا يحدّث حين تتغيّر onClose').toBe(true)
   })
 })

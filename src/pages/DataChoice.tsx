@@ -27,7 +27,7 @@ export default function DataChoice() {
   useEffect(() => {
     apiGet<ChoiceState>(`/api/data-choice/${encodeURIComponent(token)}`)
       .then(setState)
-      .catch((e) => setErr(e instanceof ApiError ? e.message : 'تعذّر فتحُ الصفحة'))
+      .catch((e) => setErr(e instanceof ApiError ? e.message : 'تعذّر فتح الصفحة'))
   }, [token])
 
   const choose = async (choice: Choice) => {
@@ -36,23 +36,23 @@ export default function DataChoice() {
       const r = await apiPost<{ noteAr: string }>(`/api/data-choice/${encodeURIComponent(token)}`, { choice })
       setDone(r.noteAr)
     } catch (e) {
-      setErr(e instanceof ApiError ? e.message : 'تعذّر تنفيذُ اختيارك')
+      setErr(e instanceof ApiError ? e.message : 'تعذّر تنفيذ اختيارك')
     } finally { setBusy(false) }
   }
 
   return (
     <main dir="rtl" className="mx-auto w-full max-w-2xl px-4 py-12">
       <Panel className="p-6 md:p-8">
-        <h1 className="text-xl font-black">بياناتُك عندنا — والقرارُ لك</h1>
+        <h1 className="text-xl font-black">بياناتك عندنا — والقرار لك</h1>
         {done ? (
           <p role="status" className="mt-4 text-read leading-8">{done}</p>
         ) : err ? (
           <p role="alert" className="mt-4 text-read leading-8">{err}</p>
         ) : !state ? (
-          <p className="mt-4 text-read text-muted-foreground">جارٍ التحميل…</p>
+          <p className="mt-4 text-read text-muted-foreground">جار التحميل…</p>
         ) : state.choice === 'keep' ? (
           <p className="mt-4 text-read leading-8">
-            اخترتَ أن نُبقي بياناتك للمواسم القادمة. وإن غيّرتَ رأيك فاختر الحذفَ أدناه.
+            اخترت أن نبقي بياناتك للمواسم القادمة. وإن غيّرت رأيك فاختر الحذف أدناه.
           </p>
         ) : null}
 
@@ -60,8 +60,8 @@ export default function DataChoice() {
           <>
             {state.choice !== 'keep' && (
               <p className="mt-4 text-read leading-8">
-                أهلا {state.fullName.split(/\s+/)[0]}. شكرا لك على وقتك معنا. اختر ما نفعله ببياناتك — ملفُّ
-                طلبك ووثائقُه وعقودُه:
+                أهلا {state.fullName.split(/\s+/)[0]}. شكرا لك على وقتك معنا. اختر ما نفعله ببياناتك — ملفّ
+                طلبك ووثائقه وعقوده:
               </p>
             )}
             <div className="mt-5 grid gap-3">
@@ -77,11 +77,11 @@ export default function DataChoice() {
               ) : (
                 <Inset tone="warn" className="grid gap-3 p-4">
                   <p className="text-read leading-7">
-                    يُحذف ملفُّ طلبك ووثائقُه وعقودُه الآن، ولا رجعةَ فيه. وإن أردت العودةَ يوما تقدّمتَ من جديد.
+                    يحذف ملفّ طلبك ووثائقه وعقوده الآن، ولا رجعة فيه. وإن أردت العودة يوما تقدّمت من جديد.
                   </p>
                   <div className="flex flex-wrap gap-2">
                     <Button tone="danger" loading={busy} onClick={() => void choose('delete')}>نعم، احذفها الآن</Button>
-                    <Button tone="ghost" disabled={busy} onClick={() => setConfirming(false)}>تراجعْ</Button>
+                    <Button tone="ghost" disabled={busy} onClick={() => setConfirming(false)}>تراجع</Button>
                   </div>
                 </Inset>
               )}
@@ -90,7 +90,7 @@ export default function DataChoice() {
         )}
         {state?.expired && !done && (
           <p className="mt-4 text-read leading-8">
-            انتهت صلاحيةُ هذا الرابط، وبياناتُك باقيةٌ كما هي. وإن أردت حذفَها فردَّ على رسالتنا وننفّذ طلبَك.
+            انتهت صلاحية هذا الرابط، وبياناتك باقية كما هي. وإن أردت حذفها فردّ على رسالتنا وننفّذ طلبك.
           </p>
         )}
       </Panel>

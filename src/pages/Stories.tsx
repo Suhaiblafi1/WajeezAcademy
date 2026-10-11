@@ -34,7 +34,7 @@ export default function StoriesPage() {
         </p>
         <p className="mx-auto mt-3 max-w-lg text-read leading-5 text-muted-foreground">
           نماذج توضيحية مركبة من أنماط شائعة بين المتعلمين — ليست شهادات لأشخاص حقيقيين.
-          قصص المتعلمين الموثقة بموافقة أصحابها تُنشر هنا بعد اعتمادها.
+          قصص المتعلمين الموثقة بموافقة أصحابها تنشر هنا بعد اعتمادها.
         </p>
       </div>
 

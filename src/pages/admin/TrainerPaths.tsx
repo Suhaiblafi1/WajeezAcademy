@@ -52,8 +52,8 @@ const SAID: Record<string, string> = {
   draft: "مسودّة عند صاحبه",
   submitted: "ينتظر المراجعة",
   published: "على الرفّ العامّ",
-  rejected: "رُدَّ إلى صاحبه",
-  retired: "سُحب من الرفّ",
+  rejected: "ردّ إلى صاحبه",
+  retired: "سحب من الرفّ",
 };
 
 export default function TrainerPaths() {
@@ -98,12 +98,12 @@ export default function TrainerPaths() {
   const view = paginate(shown, page, 8);
 
   return (
-    <AdminLayout title="مساراتُ المدرّبين">
+    <AdminLayout title="مسارات المدرّبين">
       <Card className="mb-4">
         <p className="text-sm leading-7 text-muted-foreground">
-          مسارٌ يرتّبه مدرّبٌ من دوراته ويُعرض على صفحة المسارات تحت
-          {" "}<b>«مسارات أعدّها مدرّبونا المعتمدون»</b> باسمه. والاسمُ يُعتمد مع المسار هنا —
-          فهو نصٌّ عامٌّ يحمل مصداقيّةَ الأكاديميّة. ولا يزاحم هذا الرفُّ مساراتِ التشخيص.
+          مسار يرتّبه مدرّب من دوراته ويعرض على صفحة المسارات تحت
+          {" "}<b>«مسارات أعدّها مدرّبونا المعتمدون»</b> باسمه. والاسم يعتمد مع المسار هنا —
+          فهو نصّ عامّ يحمل مصداقيّة الأكاديميّة. ولا يزاحم هذا الرفّ مسارات التشخيص.
         </p>
       </Card>
 
@@ -111,7 +111,7 @@ export default function TrainerPaths() {
         <Card tone="danger" role="alert" className="text-center text-read font-bold text-red-300">{err}</Card>
       ) : !rows ? (
         <div className="grid place-items-center py-16">
-          <Loader2 className="h-7 w-7 animate-spin text-muted-foreground/50" aria-label="جارٍ التحميل" />
+          <Loader2 className="h-7 w-7 animate-spin text-muted-foreground/50" aria-label="جار التحميل" />
         </div>
       ) : (
         <>
@@ -120,15 +120,15 @@ export default function TrainerPaths() {
 
           <div className="mb-3 mt-2">
             <Button tone="ghost" onClick={() => setShowAll(!showAll)}>
-              {showAll ? "أظهِر ما ينتظر المراجعةَ وحدَه" : "أظهِر كلَّ المسارات"}
+              {showAll ? "أظهر ما ينتظر المراجعة وحده" : "أظهر كلّ المسارات"}
             </Button>
           </div>
 
           {view.total === 0 ? (
             <EmptyState
               icon={Route}
-              titleAr={showAll ? "لا مسارَ يطابق بحثَك" : "لا مسارَ ينتظر المراجعة"}
-              reasonAr="حين يرتّب مدرّبٌ مسارا من دوراته ويرسله، يصل هنا قبل أن يظهر على الرفّ العامّ."
+              titleAr={showAll ? "لا مسار يطابق بحثك" : "لا مسار ينتظر المراجعة"}
+              reasonAr="حين يرتّب مدرّب مسارا من دوراته ويرسله، يصل هنا قبل أن يظهر على الرفّ العامّ."
             />
           ) : (
             <div className="grid gap-3">
@@ -150,8 +150,8 @@ export default function TrainerPaths() {
                         <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground/70">
                           <span className="rounded-full bg-white/10 px-2 py-0.5 font-bold">{SAID[r.status] ?? r.status}</span>
                           {r.termTitleAr ? <span>{r.termTitleAr}</span> : <span>بلا موسم</span>}
-                          <span>{r.courses.length} دوراتٍ</span>
-                          <span>{r.publishedAt ? `نُشر ${fmtDateLong(r.publishedAt)}` : `وصل ${fmtDateLong(r.createdAt)}`}</span>
+                          <span>{r.courses.length} دورات</span>
+                          <span>{r.publishedAt ? `نشر ${fmtDateLong(r.publishedAt)}` : `وصل ${fmtDateLong(r.createdAt)}`}</span>
                         </div>
                       </div>
 
@@ -162,16 +162,16 @@ export default function TrainerPaths() {
                               tone="confirm" icon={Check} disabled={busy || !r.trainerPubliclyVisible}
                               onClick={() => run(
                                 () => apiPost(`/api/admin/trainer-paths/${r.id}/approve`),
-                                "نُشر المسارُ على الرفّ",
+                                "نشر المسار على الرفّ",
                               )}
                             >
-                              انشُره
+                              انشره
                             </Button>
                             <Button
                               tone="danger" icon={X} disabled={busy}
                               onClick={() => { setNoteFor(noteFor === r.id ? null : r.id); setNoteKind("reject"); }}
                             >
-                              ردَّه
+                              ردّه
                             </Button>
                           </>
                         ) : null}
@@ -191,8 +191,8 @@ export default function TrainerPaths() {
                       <Inset tone="danger" className="mt-3 flex items-start gap-2 text-sm leading-7 text-red-300">
                         <ShieldAlert className="mt-1 h-4 w-4 shrink-0" aria-hidden />
                         <span>
-                          لم يُعتمد ظهورُ <b>{r.trainerName}</b> للعامّة — والمسارُ يحمل اسمَه، فلا يُنشر قبله.
-                          اعتمِد ظهورَه من «طلبات المدربين» ثمّ عُد.
+                          لم يعتمد ظهور <b>{r.trainerName}</b> للعامّة — والمسار يحمل اسمه، فلا ينشر قبله.
+                          اعتمد ظهوره من «طلبات المدربين» ثمّ عد.
                         </span>
                       </Inset>
                     ) : null}
@@ -215,16 +215,16 @@ export default function TrainerPaths() {
                     {noteFor === r.id ? (
                       <Inset className="mt-3 grid gap-3">
                         <StaffField
-                          label={noteKind === "reject" ? "لماذا يُردّ؟" : "لماذا يُسحب؟"}
+                          label={noteKind === "reject" ? "لماذا يردّ؟" : "لماذا يسحب؟"}
                           hint={noteKind === "reject"
-                            ? "يقرؤه المدرّبُ في بوّابته — وبلا سببٍ يُعيده كما هو"
-                            : "السحبُ يُخرجه من الرفّ ولا يمسّ من التحق ولا يلغي موسما"}
+                            ? "يقرؤه المدرّب في بوّابته — وبلا سبب يعيده كما هو"
+                            : "السحب يخرجه من الرفّ ولا يمسّ من التحق ولا يلغي موسما"}
                         >
                           <input
                             className={staffControlCls} value={note} maxLength={2000}
                             placeholder={noteKind === "reject"
-                              ? "مثلا: الاسمُ يَعِد بما لا تغطّيه دوراتُه الثلاث"
-                              : "مثلا: انتهى تعاقدُنا معه"}
+                              ? "مثلا: الاسم يعد بما لا تغطّيه دوراته الثلاث"
+                              : "مثلا: انتهى تعاقدنا معه"}
                             onChange={(e) => setNote(e.target.value)}
                           />
                         </StaffField>
@@ -236,12 +236,12 @@ export default function TrainerPaths() {
                               () => noteKind === "reject"
                                 ? apiPost(`/api/admin/trainer-paths/${r.id}/reject`, { noteAr: note.trim() })
                                 : apiPost(`/api/admin/trainer-paths/${r.id}/retire`, { noteAr: note.trim() || null }),
-                              noteKind === "reject" ? "رُدَّ إلى صاحبه" : "سُحب من الرفّ",
+                              noteKind === "reject" ? "ردّ إلى صاحبه" : "سحب من الرفّ",
                             )}
                           >
-                            {noteKind === "reject" ? "ردَّه" : "اسحبه"}
+                            {noteKind === "reject" ? "ردّه" : "اسحبه"}
                           </Button>
-                          <Button tone="ghost" icon={X} onClick={() => setNoteFor(null)}>تراجَع</Button>
+                          <Button tone="ghost" icon={X} onClick={() => setNoteFor(null)}>تراجع</Button>
                         </div>
                       </Inset>
                     ) : null}

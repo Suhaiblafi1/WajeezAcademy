@@ -100,11 +100,11 @@ const fmtDate = fmtDateLong;
 type StateKey = "open" | "added" | "withdrawn" | "declined" | "lapsed";
 
 const STATE: Record<StateKey, { label: string; tone: ChipTone }> = {
-  open: { label: "متاحةٌ لك — قرّر", tone: "warn" },
-  added: { label: "أُضيفت إلى دوراتك", tone: "positive" },
-  withdrawn: { label: "سُحبت", tone: "danger" },
-  declined: { label: "اعتذرتَ عنها", tone: "neutral" },
-  lapsed: { label: "انقضت مهلتُها", tone: "neutral" },
+  open: { label: "متاحة لك — قرّر", tone: "warn" },
+  added: { label: "أضيفت إلى دوراتك", tone: "positive" },
+  withdrawn: { label: "سحبت", tone: "danger" },
+  declined: { label: "اعتذرت عنها", tone: "neutral" },
+  lapsed: { label: "انقضت مهلتها", tone: "neutral" },
 };
 
 type Filter = "all" | "open" | "added" | "withdrawn";
@@ -114,8 +114,8 @@ const FILTERS: { id: Filter; label: string; keys: StateKey[] }[] = [
   /* ولا «دُمجت» ولا «أُضيفت إلى الكتالوج» (٣ أكتوبر ٢٠٢٦): قولُ صاحب المنصّة
      «لا تُرِ المدرّبَ ما لا يحتاج قراءتَه». فأصلُ الدورة — اقتراحُه أم اختيارُنا —
      لا يغيّر ما يفعله بها. */
-  { id: "added", label: "قبِلتَها", keys: ["added"] },
-  { id: "withdrawn", label: "سُحبت أو اعتذرتَ", keys: ["withdrawn", "declined", "lapsed"] },
+  { id: "added", label: "قبلتها", keys: ["added"] },
+  { id: "withdrawn", label: "سحبت أو اعتذرت", keys: ["withdrawn", "declined", "lapsed"] },
 ];
 
 interface Row {
@@ -250,7 +250,7 @@ export default function TrainerQualifications() {
     return (
       <TrainerLayout title="دوراتي">
         <div className="grid place-items-center py-16">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground/50" aria-label="جارٍ التحميل" />
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground/50" aria-label="جار التحميل" />
         </div>
       </TrainerLayout>
     );
@@ -259,7 +259,7 @@ export default function TrainerQualifications() {
   return (
     <TrainerLayout title="دوراتي">
       <p className="mb-5 max-w-3xl text-sm leading-7 text-muted-foreground">
-        دوراتُك والشعبُ المتاحةُ لك: اقبلها أو اعتذر بسبب — والاعتذارُ لا يُحسَب عليك.
+        دوراتك والشعب المتاحة لك: اقبلها أو اعتذر بسبب — والاعتذار لا يحسب عليك.
       </p>
 
       <CourseMaterialsPanel rows={prep} onChanged={() => void load()} />
@@ -270,9 +270,9 @@ export default function TrainerQualifications() {
         prep.length > 0 ? null : (
           <EmptyState
             icon={Award}
-            titleAr="لا دورةَ بعد"
-            reasonAr="تظهر هنا دوراتُك والشعبُ المتاحةُ لك. ولك أن تقترح دورةً ليست في كتالوجنا."
-            actions={[{ to: "/trainer/course-proposals", labelAr: "دوراتي المقترحة", hintAr: "اقترح دورةً تقدر عليها" }]}
+            titleAr="لا دورة بعد"
+            reasonAr="تظهر هنا دوراتك والشعب المتاحة لك. ولك أن تقترح دورة ليست في كتالوجنا."
+            actions={[{ to: "/trainer/course-proposals", labelAr: "دوراتي المقترحة", hintAr: "اقترح دورة تقدر عليها" }]}
           />
         )
       ) : (
@@ -295,7 +295,7 @@ export default function TrainerQualifications() {
             <Button as={Link} to="/trainer/board" size="sm" icon={Users}>افتح «شعبي»</Button>
           </Inset>
           <TabBar
-            ariaLabel="حالُ دوراتي"
+            ariaLabel="حال دوراتي"
             className="mb-4"
             value={filter}
             onChange={(f) => { setFilter(f); setPage(1); }}
@@ -308,7 +308,7 @@ export default function TrainerQualifications() {
             placeholder="ابحث باسم الدورة أو شعبتها…" />
 
           {view.rows.length === 0 ? (
-            <p className="py-6 text-center text-sm text-muted-foreground">لا دورةَ في هذا الباب.</p>
+            <p className="py-6 text-center text-sm text-muted-foreground">لا دورة في هذا الباب.</p>
           ) : (
             <ul className="grid gap-2.5">
               {view.rows.map((r) => (
@@ -351,14 +351,14 @@ function CourseRow({
     <Card as="li" className={`p-4 ${open ? "border-gold/40" : ""}`}>
       <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1.5">
         <h2 className="min-w-0 flex-1 text-read font-bold leading-6 text-foreground">
-          {r.title || "دورةٌ بلا اسمٍ في الكتالوج"}
+          {r.title || "دورة بلا اسم في الكتالوج"}
         </h2>
         <Chip tone={st.tone} srPrefixAr="الحال">{st.label}</Chip>
       </div>
 
       <p className="mt-1 text-read leading-6 text-muted-foreground">
         {q ? <>النسخة {q.currentVersion} · من دوراتك منذ {fmtDate(q.qualifiedAt)}</> : "ليست من دوراتك الآن"}
-        {lead?.cohort ? <> · شعبةُ «{lead.cohort.title}»{lead.cohort.startsAt ? ` تبدأ ${cohortDayAr(lead.cohort.startsAt, DAY_NUMERIC)}` : ""}</> : null}
+        {lead?.cohort ? <> · شعبة «{lead.cohort.title}»{lead.cohort.startsAt ? ` تبدأ ${cohortDayAr(lead.cohort.startsAt, DAY_NUMERIC)}` : ""}</> : null}
       </p>
 
 
@@ -373,16 +373,16 @@ function CourseRow({
           <p className="text-sm leading-6">
             <CalendarClock className="ms-0 me-1.5 inline h-4 w-4 align-[-2px]" aria-hidden="true" />
             {lead.prepConfirmedAt
-              ? `أقررتَ بجاهزيّتك ${fmtDate(lead.prepConfirmedAt)}.`
-              : `أجلُ إعدادك ${lead.prepDays} أيّام، وينتهي ${fmtDate(lead.prepDueAt)}.`}
-            {!lead.prepConfirmedAt && lead.prepLapsedAt && " وقد انقضى — والإسنادُ قائم، وتنظر فيه الإدارة."}
+              ? `أقررت بجاهزيّتك ${fmtDate(lead.prepConfirmedAt)}.`
+              : `أجل إعدادك ${lead.prepDays} أيّام، وينتهي ${fmtDate(lead.prepDueAt)}.`}
+            {!lead.prepConfirmedAt && lead.prepLapsedAt && " وقد انقضى — والإسناد قائم، وتنظر فيه الإدارة."}
           </p>
           {!lead.prepConfirmedAt && (
             <Button
               tone="confirm" size="sm" icon={ClipboardCheck} disabled={busy}
-              onClick={() => run(() => apiPost(`/api/trainer/offers/${lead.id}/prep-confirm`, {}), "سُجّل إقرارُك بالجاهزيّة")}
+              onClick={() => run(() => apiPost(`/api/trainer/offers/${lead.id}/prep-confirm`, {}), "سجّل إقرارك بالجاهزيّة")}
             >
-              أقِرّ بجاهزيّتي
+              أقرّ بجاهزيّتي
             </Button>
           )}
         </Inset>
@@ -393,7 +393,7 @@ function CourseRow({
         <div className="mt-3 flex flex-wrap gap-2">
           <Button
             tone="confirm" size="sm" icon={Check} disabled={busy}
-            onClick={() => run(() => apiPost(`/api/trainer/offers/${open.id}/accept`, {}), "قبِلتَها — وأُسنِدت إليك")}
+            onClick={() => run(() => apiPost(`/api/trainer/offers/${open.id}/accept`, {}), "قبلتها — وأسندت إليك")}
           >
             أوافق على تقديمها
           </Button>
@@ -405,10 +405,10 @@ function CourseRow({
 
       {open && declining === open.id && (
         <Inset className="mt-3 grid gap-3 p-3">
-          <StaffField label="سببُ اعتذارك" hint="سطرٌ يكفي، ولا يُحسَب عليك">
+          <StaffField label="سبب اعتذارك" hint="سطر يكفي، ولا يحسب عليك">
             <input
               value={reason} maxLength={500} className={staffControlCls} autoFocus
-              placeholder="مثلا: دمجتُها مع دورةٍ أخرى أدرّسها"
+              placeholder="مثلا: دمجتها مع دورة أخرى أدرّسها"
               onChange={(e) => onReason(e.target.value)}
             />
           </StaffField>
@@ -417,12 +417,12 @@ function CourseRow({
               tone="danger" size="sm" icon={X} disabled={busy || reason.trim().length < 5}
               onClick={() => run(
                 () => apiPost(`/api/trainer/offers/${open.id}/decline`, { reasonAr: reason.trim() }),
-                "وصل اعتذارُك",
+                "وصل اعتذارك",
               )}
             >
-              أرسِل اعتذاري
+              أرسل اعتذاري
             </Button>
-            <Button tone="ghost" size="sm" disabled={busy} onClick={onDeclineCancel}>تراجعْ</Button>
+            <Button tone="ghost" size="sm" disabled={busy} onClick={onDeclineCancel}>تراجع</Button>
           </div>
         </Inset>
       )}
@@ -432,7 +432,7 @@ function CourseRow({
         <details className="group mt-3">
           <summary className="flex cursor-pointer list-none items-center gap-1 text-fine font-bold text-muted-foreground hover:text-foreground">
             <ChevronDown className="h-3.5 w-3.5 transition-transform group-open:rotate-180" aria-hidden="true" />
-            عروضٌ سابقةٌ عليها ({earlier.length})
+            عروض سابقة عليها ({earlier.length})
           </summary>
           <ul className="mt-2 grid gap-1.5 border-s border-white/10 ps-3">
             {earlier.map((o) => (
@@ -449,10 +449,10 @@ function CourseRow({
 
 /** حالُ عرضٍ بجملةٍ واحدة — للسجلّ السابق */
 function offerSaidAr(o: Offer): string {
-  if (o.status === "accepted") return "قبِلتَه";
-  if (o.status === "declined") return `اعتذرتَ${o.declineReasonAr ? ` — ${o.declineReasonAr}` : ""}`;
+  if (o.status === "accepted") return "قبلته";
+  if (o.status === "declined") return `اعتذرت${o.declineReasonAr ? ` — ${o.declineReasonAr}` : ""}`;
   if (o.status === "withdrawn") return `سحبته الإدارة${o.withdrawReasonAr ? ` — ${o.withdrawReasonAr}` : ""}`;
-  if (o.status === "lapsed") return "انقضت مهلتُه";
+  if (o.status === "lapsed") return "انقضت مهلته";
   return "ينتظر جوابك";
 }
 
@@ -480,12 +480,12 @@ function OfferBody({ offer: o, now }: { offer: Offer; now: number }) {
       {o.noteAr && <Inset className="mt-2 p-2.5 text-sm leading-6">{o.noteAr}</Inset>}
       {open && !expired && (
         <p className="mt-2 text-sm font-bold text-gold-ink">
-          مهلةُ الردّ تنتهي {fmtDate(o.expiresAt)} — {remainingAr(o.expiresAt, now)}.
+          مهلة الردّ تنتهي {fmtDate(o.expiresAt)} — {remainingAr(o.expiresAt, now)}.
         </p>
       )}
       {(o.status === "lapsed" || expired) && (
         <p className="mt-2 text-sm leading-6 text-muted-foreground">
-          انقضت مهلةُ الردّ، ولا يُحسَب عليك. راسِلِ الإدارةَ إن كنت ما زلت ترغب فيها.
+          انقضت مهلة الردّ، ولا يحسب عليك. راسل الإدارة إن كنت ما زلت ترغب فيها.
         </p>
       )}
       {o.status === "withdrawn" && (
@@ -494,7 +494,7 @@ function OfferBody({ offer: o, now }: { offer: Offer; now: number }) {
         </p>
       )}
       {o.status === "declined" && o.declineReasonAr && (
-        <p className="mt-2 text-sm leading-6 text-muted-foreground">سببُ اعتذارك: {o.declineReasonAr}</p>
+        <p className="mt-2 text-sm leading-6 text-muted-foreground">سبب اعتذارك: {o.declineReasonAr}</p>
       )}
     </>
   );

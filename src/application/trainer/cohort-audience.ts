@@ -86,8 +86,8 @@ export const goalsAr = (a: CohortAudience) => (a.goals.length ? a.goals.map(goal
 export function audienceProblem(content: { audience?: unknown } | null | undefined, planStatus: string): string | null {
   if (!levelRequired(planStatus)) return null
   const a = asAudience(content?.audience)
-  if (a.stages.length === 0 && a.goals.length === 0) return 'اختر لمن هذه الشعبة، وماذا يريد متعلّمُها أن يحقّق بها'
-  if (a.stages.length === 0) return 'اختر لمن هذه الشعبة — مرحلةً واحدةً على الأقلّ'
-  if (a.goals.length === 0) return 'اختر ماذا يريد متعلّمُها أن يحقّق بها — هدفا واحدا على الأقلّ'
+  if (a.stages.length === 0 && a.goals.length === 0) return 'اختر لمن هذه الشعبة، وماذا يريد متعلّمها أن يحقّق بها'
+  if (a.stages.length === 0) return 'اختر لمن هذه الشعبة — مرحلة واحدة على الأقلّ'
+  if (a.goals.length === 0) return 'اختر ماذا يريد متعلّمها أن يحقّق بها — هدفا واحدا على الأقلّ'
   return null
 }

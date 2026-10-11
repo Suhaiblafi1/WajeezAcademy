@@ -151,7 +151,7 @@ function CountryCombobox({ id, placeholder, ariaLabel, button, buttonCls, select
             />
           </div>
           <div ref={listRef} id={`${id}-list`} role="listbox" aria-label={ariaLabel} className="max-h-60 overflow-y-auto">
-            {count === 0 && <p className="px-3 py-4 text-center text-read leading-6 text-muted-foreground">لا دولةَ بهذا الاسم — جرّب اسمها بالإنجليزية</p>}
+            {count === 0 && <p className="px-3 py-4 text-center text-read leading-6 text-muted-foreground">لا دولة بهذا الاسم — جرّب اسمها بالإنجليزية</p>}
             {matches.map((c, i) => option(c.iso2, i, c.iso2 === selectedKey, (
               <>
                 <span aria-hidden="true" className="shrink-0 text-base leading-none">{flagOf(c.iso2)}</span>

@@ -38,8 +38,8 @@ const NOW = new Date('2026-10-08T09:00:00Z')
 const running = { conditionDeadlineAt: new Date(NOW.getTime() + 3 * DAY), now: NOW }
 const lapsed = { conditionDeadlineAt: new Date(NOW.getTime() - 3 * DAY), now: NOW }
 
-describe('أله شرطٌ قائمٌ أصلا — سؤالٌ قبل الطور', () => {
-  it('الأطوارُ الثلاثةُ الحيّةُ تُظهر الشريط', () => {
+describe('أله شرط قائم أصلا — سؤال قبل الطور', () => {
+  it('الأطوار الثلاثة الحيّة تظهر الشريط', () => {
     expect(hasOpenCondition(running)).toBe(true)
     expect(hasOpenCondition({ ...running, conditionPausedAt: NOW })).toBe(true)
     expect(hasOpenCondition(lapsed)).toBe(true)
@@ -47,31 +47,31 @@ describe('أله شرطٌ قائمٌ أصلا — سؤالٌ قبل الطور',
 
   /* الحارسُ الذي وُلد منه هذا الملفّ: مدرّبٌ نشطٌ منذ سنةٍ عقدُه بلا أعمدةِ
      شرط. طورُه `none` — فلو عُلّق الشريطُ على الطورِ وحدَه لقرأه هو أيضا. */
-  it('ومن لا عمودَ شرطٍ في عقده لا شريطَ له — وهم مدرّبو المنصّة كلُّهم', () => {
+  it('ومن لا عمود شرط في عقده لا شريط له — وهم مدرّبو المنصّة كلّهم', () => {
     const veteran = { now: NOW }
     expect(conditionPhase(veteran)).toBe('none')
     expect(hasOpenCondition(veteran)).toBe(false)
   })
 
-  it('ومن اعتُمدت موادُّه انتهى شرطُه فلا شريط', () => {
+  it('ومن اعتمدت موادّه انتهى شرطه فلا شريط', () => {
     expect(hasOpenCondition({ ...running, conditionMetAt: NOW })).toBe(false)
   })
 
   /* وشرطُ الظهور هو بعينه شرطُ الخادم — ولو افترقا لظهر زرٌّ يُردّ بـ«لا
      مهلةَ قائمةً على حسابك»، أو اختفى زرٌّ يقبله الخادم. */
-  it('ويطابق شرطَ `openConditionContract` في الخادم حرفا بحرف', () => {
+  it('ويطابق شرط `openConditionContract` في الخادم حرفا بحرف', () => {
     expect(service).toMatch(/conditionDeadlineAt: \{ not: null \}, conditionMetAt: null/)
   })
 })
 
-describe('زرُّ التمديد أضيقُ من قبول الخادم بقصد', () => {
-  it('يُعرض لمن مهلتُه تسير ولم يُمدَّد له', () => {
+describe('زرّ التمديد أضيق من قبول الخادم بقصد', () => {
+  it('يعرض لمن مهلته تسير ولم يمدّد له', () => {
     expect(canAskExtension(running)).toBe(true)
   })
 
   /* والضيقُ حقيقيٌّ لا مصادفة: الخادمُ يقبل تمديدَ المنقضية (لا مانعَ في
      `extendProblemAr`)، لكنّه يزيدها على تاريخها هي فتبقى منقضية. */
-  it('ولا يُعرض للمنقضية — والخادمُ يقبلها، فالضيقُ منّا لا منه', () => {
+  it('ولا يعرض للمنقضية — والخادم يقبلها، فالضيق منّا لا منه', () => {
     expect(extendProblemAr(lapsed)).toBeNull()
     expect(canAskExtension(lapsed)).toBe(false)
   })
@@ -84,33 +84,33 @@ describe('زرُّ التمديد أضيقُ من قبول الخادم بقصد
 
      والمِحَكُّ العدّادُ لا التاريخُ: من مُدّد مرّةً تاريخُه مكتوبٌ وله
      ثانيةٌ بعدُ — فقياسٌ على التاريخ يغلق بابا مفتوحا. */
-  it('وتُعرض ثانيةً لمن مُدّد مرّةً، وتُغلق بعد مرّتين', () => {
+  it('وتعرض ثانية لمن مدّد مرّة، وتغلق بعد مرّتين', () => {
     const after = (used: number) => ({
       ...running, conditionExtendedAt: new Date(NOW.getTime() - DAY),
       conditionExtensionsUsed: used,
     })
-    expect(canAskExtension(after(1)), 'أُغلق بابٌ مفتوح — وله تمديدٌ ثانٍ').toBe(true)
-    expect(canAskExtension(after(2)), 'فُتح بابٌ أُنفقت مرّاتُه').toBe(false)
+    expect(canAskExtension(after(1)), 'أغلق باب مفتوح — وله تمديد ثان').toBe(true)
+    expect(canAskExtension(after(2)), 'فتح باب أنفقت مرّاته').toBe(false)
   })
 
-  it('ولا للمجمَّدة — موادُّه عندنا، والمهلةُ واقفةٌ أصلا', () => {
+  it('ولا للمجمّدة — موادّه عندنا، والمهلة واقفة أصلا', () => {
     expect(canAskExtension({ ...running, conditionPausedAt: NOW })).toBe(false)
   })
 })
 
-describe('زرُّ «أعلنتُ اكتمالها» يطابق ما يقبله الخادم', () => {
-  it('يُعرَض لمن مهلتُه تسير', () => {
+describe('زرّ «أعلنت اكتمالها» يطابق ما يقبله الخادم', () => {
+  it('يعرض لمن مهلته تسير', () => {
     expect(canDeclareMaterials(running)).toBe(true)
   })
 
   /* والمنقضيةُ منها بقصد: الخادمُ يقبلها متأخّرةً بنصّه — وزرٌّ
      يختفي عن من تأخّر يوما يغلق بابا فتحه الخادمُ بيده. */
-  it('وللمنقضية أيضا — فالخادمُ يقبلها متأخّرة', () => {
+  it('وللمنقضية أيضا — فالخادم يقبلها متأخّرة', () => {
     expect(canDeclareMaterials(lapsed)).toBe(true)
     expect(service).toMatch(/phase !== 'running' && phase !== 'lapsed'/)
   })
 
-  it('ولا يُعرَض لمن أعلن أصلا — والخادمُ يردّه بـ`already_declared`', () => {
+  it('ولا يعرض لمن أعلن أصلا — والخادم يردّه بـ`already_declared`', () => {
     expect(canDeclareMaterials({ ...running, conditionPausedAt: NOW })).toBe(false)
     expect(service).toMatch(/already_declared/)
   })
@@ -119,37 +119,37 @@ describe('زرُّ «أعلنتُ اكتمالها» يطابق ما يقبله 
      الإعلانُ يقع بإرسال آخرِ شعبة إعدادٍ في «شعبي» (`TrainerPrepService.afterSubmit`)،
      وقرارُ صاحب المنصّة أن لا يُطلَب منه فعلٌ مكرّر. فالحارسُ صار: لا يُنادى
      الإعلانُ من الشريط، ويُقال له متى يقع. والخادمُ يبقى يقبله لمن ناداه. */
-  it('والشريطُ لا يطلب إعلانا ثانيا — ويقول متى يقع', () => {
-    expect(strip, 'عاد زرُّ الإعلان إلى الشريط').not.toMatch(/condition\/declare-complete/)
-    expect(strip).toMatch(/حين تُرسَل آخرُها تتجمّد مهلتُك بنفسها/)
+  it('والشريط لا يطلب إعلانا ثانيا — ويقول متى يقع', () => {
+    expect(strip, 'عاد زرّ الإعلان إلى الشريط').not.toMatch(/condition\/declare-complete/)
+    expect(strip).toMatch(/حين ترسل آخرها تتجمّد مهلتك بنفسها/)
   })
 })
 
-describe('الشريطُ يقرأ ولا يكتب حسابا', () => {
-  it('سطرُه من `conditionLineAr` لا من نصٍّ مكتوبٍ فيه', () => {
+describe('الشريط يقرأ ولا يكتب حسابا', () => {
+  it('سطره من `conditionLineAr` لا من نصّ مكتوب فيه', () => {
     /* نسختان لسطرٍ واحدٍ تفترقان: تُصلَح الأيّامُ في وحدةٍ ويبقى الشريطُ
        يقول «سبعة» لمن أمامه يومان. */
     expect(strip).toMatch(/conditionLineAr\(/)
     expect(strip).not.toMatch(/أمامك .* لرفع موادّك/)
   })
 
-  it('وظهورُه معلَّقٌ على `hasOpenCondition` لا على الطور', () => {
+  it('وظهوره معلّق على `hasOpenCondition` لا على الطور', () => {
     expect(strip).toMatch(/hasOpenCondition\(/)
   })
 
-  it('وزرُّ التمديد على `canAskExtension`', () => {
+  it('وزرّ التمديد على `canAskExtension`', () => {
     expect(strip).toMatch(/canAskExtension\(/)
   })
 
-  it('ولا يحسب الأيّامَ بيده', () => {
+  it('ولا يحسب الأيّام بيده', () => {
     expect(strip).not.toMatch(/86_?400_?000|24 \* 60 \* 60/)
   })
 })
 
-describe('زرُّ التمديد يبلغ الخادمَ الذي يقبله', () => {
+describe('زرّ التمديد يبلغ الخادم الذي يقبله', () => {
   /* والإعلانُ باقٍ مسارا في الخادم وإن غاب زرُّه (٢ أكتوبر ٢٠٢٦): يناديه
      إرسالُ آخر شعبة إعداد، ومن ناداه بيده قُبل منه. */
-  it('ومسارُ الإعلان باقٍ في الخادم', () => {
+  it('ومسار الإعلان باق في الخادم', () => {
     expect(route).toMatch(/'\/api\/trainer\/condition\/declare-complete'/)
   })
 
@@ -159,54 +159,54 @@ describe('زرُّ التمديد يبلغ الخادمَ الذي يقبله', 
   })
 
   /* وردُّ الخادم يُقرأ لا يُبتلع: «مُنح التمديدَ مرّةً» نصٌّ كُتب ليُقرأ. */
-  it('وكلُّ ردٍّ من الخادم يُقرأ بنصّه — لا واحدٌ يُقرأ وآخرُ يُبتلع', () => {
+  it('وكلّ ردّ من الخادم يقرأ بنصّه — لا واحد يقرأ وآخر يبتلع', () => {
     /* «مُنح التمديدَ مرّةً ولا يُمنح ثانية» نصٌّ كُتب ليُقرأ. وعدٌّ لا
        ورودٌ: موضعٌ واحدٌ يقرأ والثاني يبتلع يُمرّر فحصَ الورود. */
     const caught = (strip.match(/catch \(e\) \{/g) ?? []).length
     const read = (strip.match(/permissionMessage\(e, /g) ?? []).length
     expect(caught).toBeGreaterThan(0)
-    expect(read, 'ردٌّ من الخادم يُلتقط ولا يُعرَض نصُّه').toBe(caught)
+    expect(read, 'ردّ من الخادم يلتقط ولا يعرض نصّه').toBe(caught)
   })
 })
 
-describe('وما ينقصه يُقرأ من مهامّه لا من ظنٍّ', () => {
-  it('المهامُّ غيرُ المنجَزةِ وحدَها — والمنجَزةُ لا تُعاد عليه', () => {
+describe('وما ينقصه يقرأ من مهامّه لا من ظنّ', () => {
+  it('المهامّ غير المنجزة وحدها — والمنجزة لا تعاد عليه', () => {
     expect(strip).toMatch(/\.filter\(\(t\) => !t\.doneAt\)/)
   })
 
-  it('ومصدرُها مهامُّ ملفّه من الخادم لا قائمةٌ مكتوبةٌ في الواجهة', () => {
+  it('ومصدرها مهامّ ملفّه من الخادم لا قائمة مكتوبة في الواجهة', () => {
     expect(layout).toMatch(/tasks=\{me\?\.onboardingTasks\}/)
     expect(route).toMatch(/onboardingTasks: true/)
   })
 })
 
-describe('الطريقُ من الخادم إلى الشريط', () => {
-  it('أعمدةُ الشرط تخرج في `/api/trainer/me` — وبلا ذلك لا يقرأ الشريطُ شيئا', () => {
+describe('الطريق من الخادم إلى الشريط', () => {
+  it('أعمدة الشرط تخرج في `/api/trainer/me` — وبلا ذلك لا يقرأ الشريط شيئا', () => {
     const select = route.slice(route.indexOf('contracts: {'), route.indexOf('pendingGrading'))
     for (const col of ['conditionDeadlineAt', 'conditionPausedAt', 'conditionExtendedAt', 'conditionMetAt']) {
-      expect(select, `عمودُ ${col} لا يخرج من انتقاء العقد`).toMatch(new RegExp(`${col}: true`))
+      expect(select, `عمود ${col} لا يخرج من انتقاء العقد`).toMatch(new RegExp(`${col}: true`))
     }
   })
 
-  it('والإطارُ يمرّر العقدَ إلى الشريط', () => {
+  it('والإطار يمرّر العقد إلى الشريط', () => {
     expect(layout).toMatch(/<ConditionStrip/)
     expect(layout).toMatch(/contracts\?/)
   })
 
   /* والشريطُ في الإطار لا في صفحةٍ واحدة: المهلةُ تسير على المدرّب في كلّ
      شاشةٍ يفتحها، لا في «الرئيسية» وحدَها. */
-  it('وموضعُه الإطارُ فيُرى في كلّ شاشة', () => {
+  it('وموضعه الإطار فيرى في كلّ شاشة', () => {
     expect(layout).toMatch(/^import ConditionStrip[,ز ]/m)
   })
 
-  it('ولا طلبَ ثانٍ له — العقدُ في النداء الذي يجلب عدّادَ التصحيح', () => {
+  it('ولا طلب ثان له — العقد في النداء الذي يجلب عدّاد التصحيح', () => {
     const calls = layout.match(/apiGet</g) ?? []
-    expect(calls.length, 'نداءٌ ثانٍ لـ`/api/trainer/me` في الإطار نفسِه').toBe(1)
+    expect(calls.length, 'نداء ثان لـ`/api/trainer/me` في الإطار نفسه').toBe(1)
   })
 })
 
-describe('الثوابتُ تُقرأ من موضعها', () => {
-  it('لا يُكتب «٥» ولا «يومان» رقما في الشريط', () => {
+describe('الثوابت تقرأ من موضعها', () => {
+  it('لا يكتب «٥» ولا «يومان» رقما في الشريط', () => {
     /* وصارت خمسةً في ٢٧ سبتمبر ٢٠٢٦ — والمحروسُ أنّ الشريطَ يقرؤها من
        موضعها لا يكتبها حرفا، فيتبعُها إذا تبدّلت. */
     expect(MATERIALS_WINDOW_DAYS).toBe(5)

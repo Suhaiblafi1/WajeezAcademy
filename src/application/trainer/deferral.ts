@@ -73,13 +73,13 @@ export type InterestAnswer = (typeof INTEREST_ANSWERS)[number]
 export const INTEREST_CHOICES: readonly { answer: InterestAnswer; labelAr: string; whatAr: string }[] = [
   {
     answer: 'interested',
-    labelAr: 'نعم، ما زلتُ مهتمّا',
-    whatAr: 'يعود طلبُك إلى المراجعة بملفّه ومستنداته ومقابلته، ونتواصل معك لنرى أنسبَ فصلٍ لدوراتك. ولا يلزمك أن تتقدّم من جديد.',
+    labelAr: 'نعم، ما زلت مهتمّا',
+    whatAr: 'يعود طلبك إلى المراجعة بملفّه ومستنداته ومقابلته، ونتواصل معك لنرى أنسب فصل لدوراتك. ولا يلزمك أن تتقدّم من جديد.',
   },
   {
     answer: 'not_interested',
     labelAr: 'لم أعد مهتمّا',
-    whatAr: 'نسحب طلبَك بطلبك، ولا نراسلك بعدها بشأنه. ولك أن تتقدّم من جديد متى شئت.',
+    whatAr: 'نسحب طلبك بطلبك، ولا نراسلك بعدها بشأنه. ولك أن تتقدّم من جديد متى شئت.',
   },
 ]
 

@@ -42,9 +42,9 @@ const KIND_AR: Record<string, string> = {
 }
 const STATUS_AR: Record<string, string> = {
   pending: 'بانتظار قرار الإدارة',
-  approved: 'اعتُمد',
-  rejected: 'رُفض',
-  cancelled: 'سحبتَه',
+  approved: 'اعتمد',
+  rejected: 'رفض',
+  cancelled: 'سحبته',
 }
 
 export default function RequestsPanel({ caseId }: { caseId: string }) {
@@ -83,7 +83,7 @@ export default function RequestsPanel({ caseId }: { caseId: string }) {
         courseId: kind === 'discount' ? undefined : courseId,
         reasonAr: reason.trim(),
       })
-      toast('رُفع الطلب — تراه الإدارة في طابورها')
+      toast('رفع الطلب — تراه الإدارة في طابورها')
       setOpen(false); setReason(''); setCourseId('')
       await load()
     } catch (e) {
@@ -130,7 +130,7 @@ export default function RequestsPanel({ caseId }: { caseId: string }) {
 
             {kind === 'discount' ? (
               <>
-                <Field label="الخصم" htmlFor="req-mode" required hint={`النسبة بين ١ و${MAX_PERCENT} — ما فوقها قرارُ إدارةٍ لا طلبُ مستشار`}>
+                <Field label="الخصم" htmlFor="req-mode" required hint={`النسبة بين ١ و${MAX_PERCENT} — ما فوقها قرار إدارة لا طلب مستشار`}>
                   <div className="flex gap-2">
                     <select
                       id="req-mode" value={mode} onChange={(e) => setMode(e.target.value as typeof mode)}

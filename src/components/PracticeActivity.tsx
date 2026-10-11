@@ -116,7 +116,7 @@ export default function PracticeActivity({
         <Card>
           <dt className="flex items-center gap-1.5 text-fine font-black text-teal-light-ink">
             <FileUp className="h-3.5 w-3.5" aria-hidden="true" />
-            المخرَج — وهو ما يُرفع
+            المخرج — وهو ما يرفع
           </dt>
           <dd className="mt-1">{practice.artifactAr}</dd>
         </Card>

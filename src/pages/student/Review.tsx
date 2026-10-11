@@ -135,9 +135,9 @@ export default function Review() {
 
   if (snap === null) {
     return (
-      <PortalLayout title="تثبيتُ ما تعلّمت">
+      <PortalLayout title="تثبيت ما تعلّمت">
         <div className="grid place-items-center py-20">
-          <Loader2 className="h-8 w-8 animate-spin text-teal-ink" aria-label="جارٍ التحميل" />
+          <Loader2 className="h-8 w-8 animate-spin text-teal-ink" aria-label="جار التحميل" />
         </div>
       </PortalLayout>
     );
@@ -146,7 +146,7 @@ export default function Review() {
   const answeredAll = queue.length > 0 && queue.every((i) => picked[`${i.moduleId}#${i.checkIndex}`] !== undefined);
 
   return (
-    <PortalLayout title="تثبيتُ ما تعلّمت">
+    <PortalLayout title="تثبيت ما تعلّمت">
       {error && (
         <Card as="p" tone="danger" className="mb-4 px-5 py-4 text-sm text-red-200">{error}</Card>
       )}
@@ -185,9 +185,9 @@ export default function Review() {
             className="mt-6"
             icon={Layers}
             titleAr="لا بطاقات بعد"
-            reasonAr="تُفتح من تمرين الاسترجاع في آخر كل وحدة — أنهِ وحدة واطلب جدولة عودتها."
+            reasonAr="تفتح من تمرين الاسترجاع في آخر كل وحدة — أنه وحدة واطلب جدولة عودتها."
             actions={[
-              { to: "/student/learning", labelAr: "أنهِ وحدة من دوراتي", hintAr: "أول بطاقة تُفتح بعدها" },
+              { to: "/student/learning", labelAr: "أنه وحدة من دوراتي", hintAr: "أول بطاقة تفتح بعدها" },
               { to: "/student/learning", labelAr: "اعرف الوحدة التالية", hintAr: "موضعك من المسار" },
             ]}
           />
@@ -197,7 +197,7 @@ export default function Review() {
             icon={Layers}
             tone="done"
             titleAr="لا شيء مستحق الآن"
-            reasonAr="راجعتَ كل ما حلّ موعده. عد في الموعد المذكور أعلاه."
+            reasonAr="راجعت كل ما حلّ موعده. عد في الموعد المذكور أعلاه."
             actions={[{ to: "/student/learning", labelAr: "تابع دوراتي", hintAr: "وحدة جديدة تفتح بطاقات جديدة" }]}
           />
         )

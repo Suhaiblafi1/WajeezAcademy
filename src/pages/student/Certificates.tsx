@@ -27,7 +27,7 @@ function GrowthStrip({ growth, enrollmentId }: { growth: CourseGrowth | null; en
     return (
       <Card as={Link} tone="accent" interactive to={`/student/remeasure/${enrollmentId}`} className="mt-3 flex items-center gap-2 bg-teal-ink/[0.06] px-3 py-2 text-fine font-bold text-teal-light-ink transition hover:border-teal/50">
         <Ruler className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-        قِس نموك في هذه الدورة ليُرفق بالشهادة
+        قس نموك في هذه الدورة ليرفق بالشهادة
       </Card>
     );
   }
@@ -87,7 +87,7 @@ export default function Certificates() {
         <EmptyState
           icon={Award}
           titleAr="لا شهادات بعد"
-          reasonAr="تُصدر بعد إكمال حضور شعبتك وتسليماتها، وتظهر هنا برقم تحقق عام. ما يُقرّبها:"
+          reasonAr="تصدر بعد إكمال حضور شعبتك وتسليماتها، وتظهر هنا برقم تحقق عام. ما يقرّبها:"
           actions={[
             { to: "/student/learning", labelAr: "أكمل وحدات شعبتك", hintAr: "الحضور والتسليمات" },
             { to: "/student/learning", labelAr: "اعرف موضعك من المسار", hintAr: "ما بقي وما تمّ" },
@@ -109,7 +109,7 @@ export default function Certificates() {
                   والقفزُ من h1 إلى h3 يوهم قارئَ الشاشة بقسمٍ غائب. */}
               <h2 className="mt-4 font-black">{c.courseTitle}</h2>
               <p className="mt-1 text-read leading-5 text-muted-foreground">باسم: {c.learnerName}</p>
-              <p className="mt-1 text-read leading-5 text-muted-foreground">أُصدرت في {fmtDate(new Date(c.issuedAt))}</p>
+              <p className="mt-1 text-read leading-5 text-muted-foreground">أصدرت في {fmtDate(new Date(c.issuedAt))}</p>
               {c.revocation && <Inset as="p" tone="danger" className="mt-2 p-2 text-read text-red-300">سبب الإلغاء: {c.revocation.reason}</Inset>}
               <div className="mt-4 flex items-center justify-between gap-2 border-t border-white/8 pt-3">
                 <span className="font-mono text-fine text-muted-foreground" dir="ltr">{c.number}</span>

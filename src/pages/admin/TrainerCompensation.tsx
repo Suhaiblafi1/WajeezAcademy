@@ -32,7 +32,7 @@ import { TrainerPayouts } from "./TrainerOps";
 
 export default function TrainerCompensation() {
   return (
-    <AdminLayout title="أتعابُ المدرّبين ومستحقّاتُهم">
+    <AdminLayout title="أتعاب المدرّبين ومستحقّاتهم">
       <TrainerPayouts />
     </AdminLayout>
   );

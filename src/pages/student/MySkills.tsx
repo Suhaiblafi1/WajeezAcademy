@@ -44,7 +44,7 @@ function MeasuredRow({ s, showDelta }: { s: MeasuredSkill; showDelta: boolean })
         {s.coveredBy.length > 0 && (
           <p className="mt-0.5 flex items-start gap-1.5 truncate text-read text-muted-foreground">
             <BookOpen className="mt-0.5 h-3 w-3 shrink-0" aria-hidden="true" />
-            <span className="truncate">تُدرّسها: {s.coveredBy.map((c) => c.titleAr).join(" · ")}</span>
+            <span className="truncate">تدرّسها: {s.coveredBy.map((c) => c.titleAr).join(" · ")}</span>
           </p>
         )}
       </div>
@@ -100,13 +100,13 @@ function Hero({ p }: { p: SkillsProfile }) {
     <Panel as="section" tone="accent" className="bg-teal-ink/[0.07]">
       <div className="flex flex-wrap items-end justify-between gap-6">
         <div>
-          <p className="text-read leading-5 text-muted-foreground">{pct === null ? "مهارات قِيست لك" : "تغطية القياس على متطلبات مسارك"}</p>
+          <p className="text-read leading-5 text-muted-foreground">{pct === null ? "مهارات قيست لك" : "تغطية القياس على متطلبات مسارك"}</p>
           <p className="mt-1 text-5xl font-black leading-none text-teal-light-ink">
             {pct === null ? p.measuredCount : `${pct}٪`}
           </p>
           {pct !== null && (
             <p className="mt-2 text-read leading-5 tabular-nums text-muted-foreground">
-              قِيست {p.requiredCount - p.unmeasured.length} من {p.requiredCount} مهارة يتطلبها المسار
+              قيست {p.requiredCount - p.unmeasured.length} من {p.requiredCount} مهارة يتطلبها المسار
             </p>
           )}
         </div>
@@ -142,7 +142,7 @@ function Unmeasured({ rows }: { rows: UnmeasuredSkill[] }) {
     <Panel as="section" tone="warn" className="mt-6 sm:p-6">
       <h2 className="flex items-center gap-2 text-sm font-black">
         <HelpCircle className="h-4 w-4 text-gold-ink" aria-hidden="true" />
-        لم تُقس بعد
+        لم تقس بعد
         <span className="rounded-full bg-gold/15 px-2 py-0.5 text-fine tabular-nums text-gold-ink">{rows.length}</span>
       </h2>
       <p className="mt-2 text-read leading-6 text-foreground">
@@ -205,7 +205,7 @@ function GrowthPanel({ summary }: { summary: GrowthSummary }) {
           <p className="flex flex-wrap items-baseline justify-between gap-2 text-read leading-5">
             <span className="font-bold text-foreground">{c.courseTitleAr ?? c.courseId}</span>
             {/* ‎/55 لا ‎/45: الأخيرة تقيس 4.45:1 على سطح البطاقة فتسقط دون 4.5 */}
-            <span className="text-muted-foreground">قِيس في {fmtWhen(c.measuredAt)}</span>
+            <span className="text-muted-foreground">قيس في {fmtWhen(c.measuredAt)}</span>
           </p>
           <ul className="mt-2">
             {c.skills.map((g) => (
@@ -217,7 +217,7 @@ function GrowthPanel({ summary }: { summary: GrowthSummary }) {
 
       {summary.firstMeasured > 0 && (
         <p className="mt-4 text-read leading-relaxed text-muted-foreground">
-          {summary.firstMeasured} مهارة قِيست أول مرة بعد الدورة، فلا تدخل حساب الفرق.
+          {summary.firstMeasured} مهارة قيست أول مرة بعد الدورة، فلا تدخل حساب الفرق.
         </p>
       )}
     </Panel>
@@ -236,7 +236,7 @@ function DueReviewStrip({ due }: { due: number }) {
         بطاقة استرجاع استحقّت اليوم
       </span>
       <span className="flex items-center gap-1.5 text-xs font-bold text-teal-light-ink">
-        اذهب إلى «تثبيتُ ما تعلّمت»
+        اذهب إلى «تثبيت ما تعلّمت»
         <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
       </span>
     </Card>
@@ -250,11 +250,11 @@ function GrowthInvites({ invites }: { invites: GrowthPayload["invites"] }) {
     <Panel as="section" tone="warn" className="mt-6 sm:p-6">
       <h2 className="flex items-center gap-2 text-sm font-black">
         <Ruler className="h-4 w-4 text-gold-ink" aria-hidden="true" />
-        أتممت دورة — قِس نموك فيها
+        أتممت دورة — قس نموك فيها
         <span className="rounded-full bg-gold/15 px-2 py-0.5 text-fine tabular-nums text-gold-ink">{invites.length}</span>
       </h2>
       <p className="mt-2 text-read leading-6 text-foreground">
-        أعد القياس بالسلّم نفسه ليُحفظ الفرق — مرة واحدة لكل دورة.
+        أعد القياس بالسلّم نفسه ليحفظ الفرق — مرة واحدة لكل دورة.
       </p>
       <ul className="mt-3 flex flex-col gap-2">
         {invites.map((i) => (
@@ -338,7 +338,7 @@ export default function MySkills() {
     return (
       <PortalLayout title="ملف مهاراتي">
         <div className="grid place-items-center py-20">
-          <Loader2 className="h-8 w-8 animate-spin text-teal-ink" aria-label="جارٍ التحميل" />
+          <Loader2 className="h-8 w-8 animate-spin text-teal-ink" aria-label="جار التحميل" />
         </div>
       </PortalLayout>
     );
@@ -351,7 +351,7 @@ export default function MySkills() {
           <Sparkles className="h-12 w-12 text-muted-foreground/50" aria-hidden="true" />
           <h2 className="mt-4 text-xl font-black">لا قياس بعد</h2>
           <p className="mt-2 max-w-md text-sm leading-7 text-muted-foreground">
-            أجب أسئلة مؤشر وجيز القصيرة ليُبنى ملف مهاراتك.
+            أجب أسئلة مؤشر وجيز القصيرة ليبنى ملف مهاراتك.
           </p>
           <Link
             to="/diagnostic"
@@ -394,9 +394,9 @@ export default function MySkills() {
 
       <Section
         icon={CheckCircle2}
-        title="تُتقنها أصلا"
+        title="تتقنها أصلا"
         count={profile.mastered.length}
-        note="تُحسب لك في اختيار الدورات"
+        note="تحسب لك في اختيار الدورات"
       >
         {profile.mastered.map((s) => (
           <MeasuredRow key={s.slug} s={s} showDelta={false} />
@@ -409,7 +409,7 @@ export default function MySkills() {
         icon={Sparkles}
         title="رصيد خارج مسارك"
         count={profile.outsidePathway.length}
-        note="لا يتطلبها مسارك — لا تُحسب في التغطية"
+        note="لا يتطلبها مسارك — لا تحسب في التغطية"
       >
         {profile.outsidePathway.map((s) => (
           <MeasuredRow key={s.slug} s={s} showDelta={false} />
@@ -418,7 +418,7 @@ export default function MySkills() {
 
       <Card as="p" className="mt-6 px-5 py-4 text-read leading-relaxed text-muted-foreground">
         سلّم القياس خمس درجات: لا يعرفها · مبتدئ · يستخدمها أحيانا · جيد عمليا · متقدم.
-        فجوةٌ دون «يستخدمها أحيانا»، ومتقنةٌ من «جيد عمليا» — كما يحتسبها المؤشر في الترشيح.
+        فجوة دون «يستخدمها أحيانا»، ومتقنة من «جيد عمليا» — كما يحتسبها المؤشر في الترشيح.
       </Card>
     </PortalLayout>
   );

@@ -73,8 +73,8 @@ export default function CalendarPage() {
       ) : data === null ? (
         <EmptyState
           icon={CalendarDays}
-          titleAr="لا تقويمَ منشورٌ بعد"
-          reasonAr="حين يُنشر تقويمُ الفصل القادم تظهر هنا دوراتُه بأشهرها الثلاثة ومواعيد بدايتها. والفصلُ المخطَّطُ لا يُعرض قبل نشره — لا نَعِد بما لم يُقرَّر."
+          titleAr="لا تقويم منشور بعد"
+          reasonAr="حين ينشر تقويم الفصل القادم تظهر هنا دوراته بأشهرها الثلاثة ومواعيد بدايتها. والفصل المخطّط لا يعرض قبل نشره — لا نعد بما لم يقرّر."
         />
       ) : (
         <>
@@ -119,7 +119,7 @@ export default function CalendarPage() {
                   </h2>
                   {shown.length === 0 ? (
                     <Card as="p" className="mt-4 py-8 text-center text-read leading-5 text-muted-foreground">
-                      لا دورةَ في هذا الشهر ضمن ما اخترت.
+                      لا دورة في هذا الشهر ضمن ما اخترت.
                     </Card>
                   ) : (
                     <ul className="mt-3 space-y-2.5">
@@ -146,7 +146,7 @@ export default function CalendarPage() {
                               </span>
                             )}
                             {e.enrolled && (
-                              <span className="rounded-full bg-teal/20 px-2 py-0.5 text-fine font-black text-teal-light-ink">مسجَّلٌ فيها</span>
+                              <span className="rounded-full bg-teal/20 px-2 py-0.5 text-fine font-black text-teal-light-ink">مسجّل فيها</span>
                             )}
                           </div>
                         </Card>

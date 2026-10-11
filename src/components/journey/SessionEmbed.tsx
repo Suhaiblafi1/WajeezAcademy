@@ -128,7 +128,7 @@ export default function SessionEmbed({
         /* `ApiError` يضع عربيّةَ الخادم في `message` نفسِها — فتُقال كما قالها
            الخادم (٥٠١ «غير مفعّل»، ٤٠٩ «بلا رقم اجتماع»، ٤٠٣ «ليست من شعبك»).
            وسقوطُ تحميلِ السكربت ليس `ApiError` فله نصُّنا العامّ. */
-        const ar = err instanceof ApiError ? err.message : "تعذّر فتحُ الجلسة داخل الموقع.";
+        const ar = err instanceof ApiError ? err.message : "تعذّر فتح الجلسة داخل الموقع.";
         setReasonAr(ar);
         setPhase("failed");
       }
@@ -149,17 +149,17 @@ export default function SessionEmbed({
         <p className="text-read font-bold">
           {phase === "loading" && "نفتح الجلسة…"}
           {phase === "joined" && "الجلسة مفتوحة هنا"}
-          {phase === "failed" && "لم تُفتح هنا"}
+          {phase === "failed" && "لم تفتح هنا"}
         </p>
         <Button tone="secondary" size="sm" icon={X} onClick={onClose} className="min-h-9 shrink-0">
-          أغلِق
+          أغلق
         </Button>
       </div>
 
       {phase === "loading" && (
         <p className="mt-2 flex items-center gap-2 text-read text-muted-foreground">
           <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
-          أوّلُ فتحٍ يأخذ لحظةً — تُحمَّل أدواتُ الاجتماع مرّةً واحدة.
+          أوّل فتح يأخذ لحظة — تحمّل أدوات الاجتماع مرّة واحدة.
         </p>
       )}
 

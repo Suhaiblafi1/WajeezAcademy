@@ -47,7 +47,7 @@ interface ApplyResult {
 }
 
 const PROPOSAL_FORMS = { one: "اقتراح", two: "اقتراحان", few: "اقتراحات", many: "اقتراحا" };
-const TRAINER_FORMS = { one: "مدرّب", two: "مدرّبَين", few: "مدرّبين", many: "مدرّبا" };
+const TRAINER_FORMS = { one: "مدرّب", two: "مدرّبين", few: "مدرّبين", many: "مدرّبا" };
 /* «طُبّقت ٣ خطوة» كانت تُقرأ في كلّ تطبيق. والمثنّى يتبع موقعَه: فاعلٌ بعد «طُبّقت»،
    ومفعولٌ بعد «طبّق» — والجمعُ والمفردُ المنصوبُ واحدٌ في الحالين. */
 const STEPS_DONE = { one: "خطوة", two: "خطوتان", few: "خطوات", many: "خطوة" };
@@ -92,7 +92,7 @@ export default function CourseDecisionsUpload({ onApplied }: { onApplied: () => 
     setCopyFailed(false);
     apiGet<Worksheet>("/api/admin/course-proposals/worksheet")
       .then((data) => setSheet({ data, text: JSON.stringify(data, null, 2) }))
-      .catch((e) => setSheetErr(e instanceof ApiError ? e.message : "تعذّر تحميلُ ورقة القرارات"));
+      .catch((e) => setSheetErr(e instanceof ApiError ? e.message : "تعذّر تحميل ورقة القرارات"));
   }, []);
 
   useEffect(() => { if (open) loadSheet(); }, [open, loadSheet]);
@@ -102,7 +102,7 @@ export default function CourseDecisionsUpload({ onApplied }: { onApplied: () => 
     /* وإن رُفض النسخُ — متصفّحٌ بلا حافظةٍ أو إذنٌ لم يُعطَ — عُرض النصُّ ليُنسخ باليد */
     if (!navigator.clipboard) { setCopyFailed(true); return; }
     navigator.clipboard.writeText(sheet.text)
-      .then(() => toast("نُسخت ورقةُ القرارات — أرسلها لمن يقرّر فيها"))
+      .then(() => toast("نسخت ورقة القرارات — أرسلها لمن يقرّر فيها"))
       .catch(() => setCopyFailed(true));
   };
 
@@ -126,7 +126,7 @@ export default function CourseDecisionsUpload({ onApplied }: { onApplied: () => 
     try {
       parsed = JSON.parse(text);
     } catch {
-      setErr("ليس نصَّ JSON يُقرأ — أهو الملفُّ الذي أُعدّ للقرارات كاملا؟");
+      setErr("ليس نصّ JSON يقرأ — أهو الملفّ الذي أعدّ للقرارات كاملا؟");
       return;
     }
     setRaw(parsed);
@@ -154,7 +154,7 @@ export default function CourseDecisionsUpload({ onApplied }: { onApplied: () => 
       const r = await apiPost<ApplyResult>("/api/admin/course-decisions/apply", raw);
       setOutcome(r);
       if (r.applied.length > 0) {
-        toast(`طُبّقت ${countAr(r.applied.length, STEPS_DONE)}${r.failed ? " — ووقف التطبيقُ عند خطوةٍ تعذّرت" : ""}`);
+        toast(`طبّقت ${countAr(r.applied.length, STEPS_DONE)}${r.failed ? " — ووقف التطبيق عند خطوة تعذّرت" : ""}`);
         onApplied();
         loadSheet();
       }
@@ -172,36 +172,36 @@ export default function CourseDecisionsUpload({ onApplied }: { onApplied: () => 
   return (
     <Card className="mb-4">
       <Button tone="ghost" icon={ListChecks} onClick={() => setOpen(!open)} aria-expanded={open}>
-        {open ? "أخفِ ملفَّ القرارات" : "طبّق قراراتٍ من ملفّ — ربطٌ وتأهيلٌ وأسئلةٌ دفعةً واحدة"}
+        {open ? "أخف ملفّ القرارات" : "طبّق قرارات من ملفّ — ربط وتأهيل وأسئلة دفعة واحدة"}
       </Button>
 
       {open ? (
         <div className="mt-3">
           <p className="text-sm leading-7 text-muted-foreground">
-            ملفٌّ أُعدّ لمراجعة اقتراحات المدرّبين: <b>ربطٌ برمزٍ قائم</b>، أو <b>دورةٌ جديدة</b>،
-            أو <b>سؤالٌ لصاحبه</b> — ومعها <b>تأهيلُهم</b> لما يدرّسون. يُعرض كلُّ ما سيفعله قبل أن يفعله،
-            وكلُّ خطوةٍ تقع من باب زرّها في هذه الشاشة أو في شاشة الإسناد، فيُكتب أثرُها ويصل صاحبَها خبرُها.
-            {" "}<b>وقراراتُ المدرّب الواحد تُطبَّق معا أو تُترك معا</b>: خطوةٌ لا تُطبَّق تُبقي صاحبَها
-            كما هو حتّى تُصلَح، ويُطبَّق غيرُه. وما طُبّق من قبل لا يُعاد.
+            ملفّ أعدّ لمراجعة اقتراحات المدرّبين: <b>ربط برمز قائم</b>، أو <b>دورة جديدة</b>،
+            أو <b>سؤال لصاحبه</b> — ومعها <b>تأهيلهم</b> لما يدرّسون. يعرض كلّ ما سيفعله قبل أن يفعله،
+            وكلّ خطوة تقع من باب زرّها في هذه الشاشة أو في شاشة الإسناد، فيكتب أثرها ويصل صاحبها خبرها.
+            {" "}<b>وقرارات المدرّب الواحد تطبّق معا أو تترك معا</b>: خطوة لا تطبّق تبقي صاحبها
+            كما هو حتّى تصلح، ويطبّق غيره. وما طبّق من قبل لا يعاد.
           </p>
 
           <Inset className="mt-3">
-            <b className="text-read text-foreground">١) ورقةُ القرارات</b>
+            <b className="text-read text-foreground">١) ورقة القرارات</b>
             <p className="mt-1 text-sm leading-7 text-muted-foreground">
-              الطابورُ المفتوحُ كلُّه بصيغة هذا الملفّ: لكلّ اقتراحٍ معرّفُه ومرجعُ صاحبه وخاناتُ قراره
-              فارغة، ومعه نصُّه وأقربُ رموزنا إليه للقراءة. انسخها أو نزّلها لمن يقرّر فيها — ثمّ ارفع
+              الطابور المفتوح كلّه بصيغة هذا الملفّ: لكلّ اقتراح معرّفه ومرجع صاحبه وخانات قراره
+              فارغة، ومعه نصّه وأقرب رموزنا إليه للقراءة. انسخها أو نزّلها لمن يقرّر فيها — ثمّ ارفع
               ما يعود منها في الخطوة الثانية.
             </p>
             {sheetErr ? (
               <p role="alert" className="mt-2 text-sm font-bold text-red-300">{sheetErr}</p>
             ) : !sheet ? (
-              <p className="mt-2 text-sm text-muted-foreground">تُحمَّل الورقة…</p>
+              <p className="mt-2 text-sm text-muted-foreground">تحمّل الورقة…</p>
             ) : sheet.data.context.openProposals === 0 ? (
-              <p className="mt-2 text-sm text-muted-foreground">لا اقتراحَ ينتظر قرارا — الطابورُ المفتوحُ فارغ.</p>
+              <p className="mt-2 text-sm text-muted-foreground">لا اقتراح ينتظر قرارا — الطابور المفتوح فارغ.</p>
             ) : (
               <>
                 <p className="mt-2 text-sm text-foreground">
-                  ينتظر القرارَ <b>{countAr(sheet.data.context.openProposals, PROPOSAL_FORMS)}</b>،
+                  ينتظر القرار <b>{countAr(sheet.data.context.openProposals, PROPOSAL_FORMS)}</b>،
                   لدى <b>{countAr(sheet.data.context.trainers, TRAINER_FORMS)}</b>.
                 </p>
                 <div className="mt-2 flex flex-wrap items-center gap-2.5">
@@ -211,7 +211,7 @@ export default function CourseDecisionsUpload({ onApplied }: { onApplied: () => 
                 {copyFailed ? (
                   <div className="mt-2">
                     <label htmlFor="decisions-sheet" className="text-sm font-bold text-foreground">
-                      لم يقبل المتصفّحُ النسخ — حدِّد النصَّ كلَّه وانسخه بيدك:
+                      لم يقبل المتصفّح النسخ — حدّد النصّ كلّه وانسخه بيدك:
                     </label>
                     <textarea
                       id="decisions-sheet" readOnly dir="ltr" rows={6} value={sheet.text}
@@ -224,23 +224,23 @@ export default function CourseDecisionsUpload({ onApplied }: { onApplied: () => 
             )}
           </Inset>
 
-          <b className="mt-4 block text-read text-foreground">٢) الملفُّ بعد القرار</b>
+          <b className="mt-4 block text-read text-foreground">٢) الملفّ بعد القرار</b>
           <input
             ref={pick}
             type="file"
             accept=".json,application/json"
             className="sr-only"
-            aria-label="اختر ملفَّ القرارات"
+            aria-label="اختر ملفّ القرارات"
             onChange={(e) => { const f = e.target.files?.[0]; if (f) void read(f); }}
           />
           <div className="mt-3 flex flex-wrap items-center gap-2.5">
             <Button tone="secondary" icon={busy && !plan ? Loader2 : FileUp} onClick={() => pick.current?.click()} disabled={busy}>
-              {fileName ? "اختر ملفّا آخر" : "اختر ملفَّ القرارات"}
+              {fileName ? "اختر ملفّا آخر" : "اختر ملفّ القرارات"}
             </Button>
             {fileName ? <span className="text-sm text-muted-foreground">{fileName}</span> : null}
           </div>
           <label htmlFor="decisions-paste" className="mt-3 block text-sm font-bold text-foreground">
-            أو الصق نصَّ الملفّ هنا
+            أو الصق نصّ الملفّ هنا
           </label>
           <textarea
             id="decisions-paste" dir="ltr" rows={4} value={pasted} onChange={(e) => setPasted(e.target.value)}
@@ -250,9 +250,9 @@ export default function CourseDecisionsUpload({ onApplied }: { onApplied: () => 
           <div className="mt-2">
             <Button
               tone="secondary" icon={busy && !plan ? Loader2 : ClipboardPaste}
-              onClick={() => void take(pasted, "نصٌّ ملصوق")} disabled={busy || pasted.trim().length === 0}
+              onClick={() => void take(pasted, "نصّ ملصوق")} disabled={busy || pasted.trim().length === 0}
             >
-              عاين ما لُصق
+              عاين ما لصق
             </Button>
           </div>
 
@@ -260,7 +260,7 @@ export default function CourseDecisionsUpload({ onApplied }: { onApplied: () => 
 
           {preview && preview.errorsAr.length > 0 ? (
             <Inset className="mt-3" role="alert">
-              <b className="text-read text-red-300">الملفُّ لا يُقرأ — {preview.errorsAr.length} خطأ:</b>
+              <b className="text-read text-red-300">الملفّ لا يقرأ — {preview.errorsAr.length} خطأ:</b>
               <ul className="mt-2 grid gap-1 text-sm leading-7 text-muted-foreground">
                 {preview.errorsAr.map((e) => <li key={e}>· {e}</li>)}
               </ul>
@@ -273,11 +273,11 @@ export default function CourseDecisionsUpload({ onApplied }: { onApplied: () => 
                 <p className="text-read font-bold text-amber-300">{outcome.refusedAr}</p>
               ) : (
                 <p className="text-read text-foreground">
-                  طُبّقت <b>{countAr(outcome.applied.length, STEPS_DONE)}</b>.
+                  طبّقت <b>{countAr(outcome.applied.length, STEPS_DONE)}</b>.
                   {outcome.failed ? (
                     <span className="text-red-300">
-                      {" "}ووقف التطبيقُ عند الخطوة {outcome.failed.n}: {outcome.failed.errorAr} — أصلِح سببَها ثمّ
-                      ارفع الملفَّ ثانيةً فيُكمل من حيث وقف.
+                      {" "}ووقف التطبيق عند الخطوة {outcome.failed.n}: {outcome.failed.errorAr} — أصلح سببها ثمّ
+                      ارفع الملفّ ثانية فيكمل من حيث وقف.
                     </span>
                   ) : null}
                 </p>
@@ -319,10 +319,10 @@ export default function CourseDecisionsUpload({ onApplied }: { onApplied: () => 
               <div className="mt-3">
                 <Button tone="confirm" icon={busy ? Loader2 : PlayCircle} onClick={apply} disabled={busy || !plan.applicable}>
                   {plan.applicable
-                    ? `طبّق ${countAr(plan.counts.todo, STEPS_TO_DO)}${plan.counts.blocked > 0 ? ` — وتُترك ${plan.counts.blocked}` : ""}`
+                    ? `طبّق ${countAr(plan.counts.todo, STEPS_TO_DO)}${plan.counts.blocked > 0 ? ` — وتترك ${plan.counts.blocked}` : ""}`
                     : plan.counts.blocked > 0
-                      ? "لا شيءَ يُطبَّق — كلُّ ما بقي ممتنع"
-                      : "لا جديدَ يُطبَّق"}
+                      ? "لا شيء يطبّق — كلّ ما بقي ممتنع"
+                      : "لا جديد يطبّق"}
                 </Button>
               </div>
             </div>

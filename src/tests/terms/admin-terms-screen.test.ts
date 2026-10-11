@@ -13,17 +13,17 @@ const root = process.cwd()
 const code = (p: string) =>
   readFileSync(join(root, p), 'utf8').replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '').replace(/^\s*\/\/.*$/gm, '')
 
-describe('شاشةُ المواسم', () => {
+describe('شاشة المواسم', () => {
   const screen = code('src/pages/admin/Terms.tsx')
 
-  it('لها مسارٌ وبندٌ في القائمة محروسٌ بصلاحيّة الشعب', () => {
+  it('لها مسار وبند في القائمة محروس بصلاحيّة الشعب', () => {
     expect(code('src/App.tsx')).toMatch(/path="\/admin\/terms" element=\{<AdminTerms \/>\}/)
     const row = code('src/pages/admin/nav-map.ts').split('\n').find((l) => l.includes('/admin/terms'))
-    expect(row, 'لا بندَ في القائمة').toBeTruthy()
+    expect(row, 'لا بند في القائمة').toBeTruthy()
     expect(row).toContain('cohort.manage')
   })
 
-  it('تنادي الخطواتِ الأربع من مسارات الخادم القائمة — لا مسارَ جديد', () => {
+  it('تنادي الخطوات الأربع من مسارات الخادم القائمة — لا مسار جديد', () => {
     for (const path of [
       '/api/admin/terms?all=true', '"/api/admin/terms"',
       '/api/admin/terms/${t.id}/registration-window',
@@ -33,14 +33,14 @@ describe('شاشةُ المواسم', () => {
     expect(screen).not.toContain('/available-trainers')
   })
 
-  it('والتوزيعُ معاينةٌ أوّلا وتطبيقٌ بطلبٍ صريح — والتواريخُ لا تُكتب باليد', () => {
+  it('والتوزيع معاينة أوّلا وتطبيق بطلب صريح — والتواريخ لا تكتب باليد', () => {
     expect(screen).toContain('{ apply: false }')
     expect(screen).toContain('{ apply: true }')
-    expect(screen, 'حقلُ تاريخٍ للموسم — الحدودُ تُحسب من الموسم').not.toMatch(/<input[^>]*(startsOn|endsOn)/)
+    expect(screen, 'حقل تاريخ للموسم — الحدود تحسب من الموسم').not.toMatch(/<input[^>]*(startsOn|endsOn)/)
     expect(screen).toMatch(/season: form\.season/)
   })
 
-  it('والحذفُ لموسمٍ لم يُنشر ولا شعبَ فيه — بتأكيدٍ ثانٍ لا بضغطةٍ واحدة', () => {
+  it('والحذف لموسم لم ينشر ولا شعب فيه — بتأكيد ثان لا بضغطة واحدة', () => {
     expect(screen).toContain('apiDelete(`/api/admin/terms/${t.id}`)')
     const at = screen.indexOf('apiDelete(`/api/admin/terms/${t.id}`)')
     expect(at).toBeGreaterThan(0)
@@ -49,17 +49,17 @@ describe('شاشةُ المواسم', () => {
     expect(screen).toMatch(/confirmDelete === t\.id/)
   })
 
-  it('والذهبيُّ الواحدُ للنشر', () => {
+  it('والذهبيّ الواحد للنشر', () => {
     const golds = screen.match(/tone="primary"/g) ?? []
     expect(golds).toHaveLength(1)
     expect(screen.slice(screen.indexOf('tone="primary"'), screen.indexOf('tone="primary"') + 200)).toContain('انشر التقويم')
   })
 })
 
-describe('بطاقةُ الدورة تقول متى تبدأ', () => {
-  it('الكتالوجُ يقرأ الشعبَ المفتوحة ويعرض أقربَها على البطاقة', () => {
+describe('بطاقة الدورة تقول متى تبدأ', () => {
+  it('الكتالوج يقرأ الشعب المفتوحة ويعرض أقربها على البطاقة', () => {
     const catalog = code('src/pages/Catalog.tsx')
     expect(catalog).toMatch(/useCourseCohorts\(\)/)
-    expect(catalog).toContain('شعبةٌ مفتوحة · تبدأ')
+    expect(catalog).toContain('شعبة مفتوحة · تبدأ')
   })
 })

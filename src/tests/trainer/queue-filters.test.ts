@@ -35,13 +35,13 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..')
 const code = (p: string) => readFileSync(join(root, p), 'utf8').replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '')
 const SCREEN = 'src/pages/admin/TrainerApplications.tsx'
 
-describe('① ولا قائمةَ شاراتٍ مكتوبةٌ بيدها', () => {
-  it('`QUICK_STATUSES` ذهبت — والشاراتُ تُحسب لا تُكتب', () => {
-    expect(Object.keys(statusModule), 'عادت قائمةُ الشارات المكتوبة')
+describe('① ولا قائمة شارات مكتوبة بيدها', () => {
+  it('`QUICK_STATUSES` ذهبت — والشارات تحسب لا تكتب', () => {
+    expect(Object.keys(statusModule), 'عادت قائمة الشارات المكتوبة')
       .not.toContain('QUICK_STATUSES')
   })
 
-  it('ومعجمُ الحالات باقٍ — هو عنوانُها وترتيبُها معا', () => {
+  it('ومعجم الحالات باق — هو عنوانها وترتيبها معا', () => {
     expect(STATUS_LABELS.active).toBe('نشط')
     expect(STATUS_LABELS.suspended, '«موقوف» ليست في المعجم — وهي في الطابور').toBe('موقوف')
   })
@@ -58,7 +58,7 @@ describe('① ولا قائمةَ شاراتٍ مكتوبةٌ بيدها', () =>
    فخرج الحسابُ إلى `facetsOf`، وصار المحروسُ سلوكَها: العدُّ، وإسقاطُ
    الخالي، وترتيبُ المفاتيح كما أُعطيت. ويبقى على الشاشة شيءٌ واحدٌ لا
    يُفحَص إلّا فيها: أنّ صفَّيها كليهما يُبنيان بها لا بيدٍ ثالثة. */
-describe('② والشاشةُ تحسبها من الطابور', () => {
+describe('② والشاشة تحسبها من الطابور', () => {
   /* والطابورُ المصطنَعُ هنا مقصودُ الشكل: «قيد المراجعة» أقدمُ في دورة
      الحياة وأقلُّ عددا من «نشط». فلو رُتّبت الشاراتُ بالعدد لَسبق «نشطٌ»
      «قيدَ المراجعة» — وبهذا يُنقَض ترتيبٌ بالعدد ويُرى ساقطا. */
@@ -67,89 +67,89 @@ describe('② والشاشةُ تحسبها من الطابور', () => {
     { status: 'rejected' }, { status: 'suspended' },
   ]
 
-  it('تُعَدّ من الصفوف — لا رقمٌ مكتوبٌ ولا رقمٌ ناقص', () => {
+  it('تعدّ من الصفوف — لا رقم مكتوب ولا رقم ناقص', () => {
     const facets = facetsOf(['active', 'rejected', 'suspended'], rows, (r) => r.status)
-    expect(facets.map((f) => f.n), 'العدُّ لا يطابق الصفوف').toEqual([2, 1, 1])
+    expect(facets.map((f) => f.n), 'العدّ لا يطابق الصفوف').toEqual([2, 1, 1])
   })
 
-  it('وما خلا من الصفوف لا يُعرض — فلا شارةٌ تُنقَر وتُخرج لا شيء', () => {
+  it('وما خلا من الصفوف لا يعرض — فلا شارة تنقر وتخرج لا شيء', () => {
     const facets = facetsOf(Object.keys(STATUS_LABELS), rows, (r) => r.status)
-    expect(facets.map((f) => f.key), 'عُرضت شارةٌ لحالةٍ لا أحدَ فيها')
+    expect(facets.map((f) => f.key), 'عرضت شارة لحالة لا أحد فيها')
       .toEqual(['under_review', 'active', 'rejected', 'suspended'])
   })
 
-  it('و«موقوف» تُعرض وإن لم تكن في الأربع المكتوبة قبلُ', () => {
+  it('و«موقوف» تعرض وإن لم تكن في الأربع المكتوبة قبل', () => {
     const facets = facetsOf(Object.keys(STATUS_LABELS), rows, (r) => r.status)
-    expect(facets.find((f) => f.key === 'suspended'), 'حالةٌ في الطابور بلا شارة').toBeTruthy()
+    expect(facets.find((f) => f.key === 'suspended'), 'حالة في الطابور بلا شارة').toBeTruthy()
   })
 
-  it('وترتيبُها ترتيبُ المفاتيح المعطاة لا الأكثرَ عددا — فلا تقفز تحت اليد', () => {
+  it('وترتيبها ترتيب المفاتيح المعطاة لا الأكثر عددا — فلا تقفز تحت اليد', () => {
     const order = Object.keys(STATUS_LABELS)
     const facets = facetsOf(order, rows, (r) => r.status)
     const asGiven = facets.map((f) => order.indexOf(f.key))
-    expect(asGiven, 'الشاراتُ تُرتَّب بغير ترتيب المفاتيح')
+    expect(asGiven, 'الشارات ترتّب بغير ترتيب المفاتيح')
       .toEqual([...asGiven].sort((a, b) => a - b))
     /* وشرطُ صحّةِ النقض: الأقدمُ في الدورة أقلُّ عددا من التالي له. فلو
        اختلّ هذا في المعجم يوما لَخضرّ الفحصُ بلا أن يفحص شيئا. */
-    expect(order.indexOf('under_review'), 'المعجمُ نفسُه تبدّل فبطل الفحص')
+    expect(order.indexOf('under_review'), 'المعجم نفسه تبدّل فبطل الفحص')
       .toBeLessThan(order.indexOf('active'))
-    expect(facets.find((f) => f.key === 'under_review')!.n, 'الطابورُ المصطنَعُ تبدّل فبطل الفحص')
+    expect(facets.find((f) => f.key === 'under_review')!.n, 'الطابور المصطنع تبدّل فبطل الفحص')
       .toBeLessThan(facets.find((f) => f.key === 'active')!.n)
   })
 
-  it('وصفّا الشاشة كلاهما يُبنيان بها — فلا حسابٌ ثالثٌ ينحرف', () => {
+  it('وصفّا الشاشة كلاهما يبنيان بها — فلا حساب ثالث ينحرف', () => {
     const screen = code(SCREEN)
-    expect(screen.match(/facetsOf\(/g) ?? [], 'صفٌّ يحسب شاراتِه بيده').toHaveLength(2)
-    expect(screen, 'شاراتُ الحالة لا تُحسب من الصفوف')
+    expect(screen.match(/facetsOf\(/g) ?? [], 'صفّ يحسب شاراته بيده').toHaveLength(2)
+    expect(screen, 'شارات الحالة لا تحسب من الصفوف')
       .toMatch(/statusFacets = facetsOf\(Object\.keys\(STATUS_LABELS\), apps,/)
-    expect(screen, 'شاراتُ النتيجة لا تُحسب من الصفوف')
+    expect(screen, 'شارات النتيجة لا تحسب من الصفوف')
       .toMatch(/resultFacets = facetsOf\(/)
   })
 
-  it('وعددُ كلٍّ مكتوبٌ عليها — فيُعرف ما تُخرجه قبل نقرها', () => {
+  it('وعدد كلّ مكتوب عليها — فيعرف ما تخرجه قبل نقرها', () => {
     const screen = code(SCREEN)
-    expect(screen, 'شارةُ حالةٍ بلا عدد').toMatch(/statusFacets\.map\(\(f\) =>[\s\S]{0,600}?\{f\.n\}/)
-    expect(screen, 'شارةُ نتيجةٍ بلا عدد').toMatch(/resultFacets\.map\(\(f\) =>[\s\S]{0,600}?\{f\.n\}/)
+    expect(screen, 'شارة حالة بلا عدد').toMatch(/statusFacets\.map\(\(f\) =>[\s\S]{0,600}?\{f\.n\}/)
+    expect(screen, 'شارة نتيجة بلا عدد').toMatch(/resultFacets\.map\(\(f\) =>[\s\S]{0,600}?\{f\.n\}/)
   })
 })
 
-describe('③ وبُعدان يجتمعان بالواو', () => {
+describe('③ وبعدان يجتمعان بالواو', () => {
   const screen = code(SCREEN)
 
-  it('لكلٍّ حالتُه — ولا يُكتبان في واحدة', () => {
-    expect(screen, 'مرشِّحُ النتيجة مفقود').toContain('const [resultFilter, setResultFilter]')
-    expect(screen, 'مرشِّحُ الحالة مفقود').toContain('const [filter, setFilter]')
+  it('لكلّ حالته — ولا يكتبان في واحدة', () => {
+    expect(screen, 'مرشّح النتيجة مفقود').toContain('const [resultFilter, setResultFilter]')
+    expect(screen, 'مرشّح الحالة مفقود').toContain('const [filter, setFilter]')
   })
 
-  it('ويُرشَّحان معا لا بدلا — «نشطٌ» و«غير مناسب» نقرتان لسؤالٍ واحد', () => {
-    expect(screen, 'الحالةُ لا تُرشِّح الصفوف').toContain('!filter || a.status === filter')
-    expect(screen, 'النتيجةُ لا تُرشِّح الصفوف').toContain('!resultFilter || resultKey(a) === resultFilter')
+  it('ويرشّحان معا لا بدلا — «نشط» و«غير مناسب» نقرتان لسؤال واحد', () => {
+    expect(screen, 'الحالة لا ترشّح الصفوف').toContain('!filter || a.status === filter')
+    expect(screen, 'النتيجة لا ترشّح الصفوف').toContain('!resultFilter || resultKey(a) === resultFilter')
   })
 
-  it('وكلٌّ منهما يُنقَر ثانيةً فيُفرَج عنه', () => {
+  it('وكلّ منهما ينقر ثانية فيفرج عنه', () => {
     expect(screen).toContain('setFilter(filter === f.key ? "" : f.key)')
     expect(screen).toContain('setResultFilter(resultFilter === f.key ? "" : f.key)')
   })
 })
 
-describe('④ والطابورُ يُجلَب كلُّه', () => {
-  it('لا حالةَ في النداء — وإلّا عُدّ ما وصل لا ما في الطابور', () => {
+describe('④ والطابور يجلب كلّه', () => {
+  it('لا حالة في النداء — وإلّا عدّ ما وصل لا ما في الطابور', () => {
     const screen = code(SCREEN)
-    expect(screen, 'النداءُ ما زال يُرشَّح بالحالة في الخادم')
+    expect(screen, 'النداء ما زال يرشّح بالحالة في الخادم')
       .not.toMatch(/trainer-applications\$\{filter/)
-    expect(screen, 'الطابورُ لا يُجلَب كلُّه')
+    expect(screen, 'الطابور لا يجلب كلّه')
       .toContain('apiGet<AppRow[]>("/api/admin/trainer-applications")')
   })
 })
 
-describe('⑤ ومفتاحُ النتيجة من الشارات نفسِها', () => {
-  it('لكلّ نتيجةٍ يقبلها الخادمُ مفتاحٌ يُرشَّح به', () => {
+describe('⑤ ومفتاح النتيجة من الشارات نفسها', () => {
+  it('لكلّ نتيجة يقبلها الخادم مفتاح يرشّح به', () => {
     for (const o of INTERVIEW_OUTCOMES) {
       expect(resultKey({ interviewOutcome: o.key, reviewVerdicts: [] }), o.key).toBe(o.key)
     }
   })
 
-  it('ومعهما حالتان محسوبتان: بلا نتيجة، ومختلَفٌ عليه', () => {
+  it('ومعهما حالتان محسوبتان: بلا نتيجة، ومختلف عليه', () => {
     expect(resultKey({ interviewOutcome: null, reviewVerdicts: [] })).toBe(RESULT_NONE)
     expect(resultKey({
       interviewOutcome: null,
@@ -157,14 +157,14 @@ describe('⑤ ومفتاحُ النتيجة من الشارات نفسِها', (
     })).toBe(RESULT_CONTESTED)
   })
 
-  it('ولكلّ مفتاحٍ لفظٌ في الشاشة — فلا يُقرأ `contested` حرفا لاتينيّا', () => {
+  it('ولكلّ مفتاح لفظ في الشاشة — فلا يقرأ `contested` حرفا لاتينيّا', () => {
     const screen = code(SCREEN)
     const labels = /const RESULT_LABEL_AR: Record<string, string> = \{([\s\S]*?)\n\};/.exec(screen)?.[1] ?? ''
-    expect(labels, 'معجمُ المحسوبتين مفقود').toBeTruthy()
+    expect(labels, 'معجم المحسوبتين مفقود').toBeTruthy()
     expect(labels, '«بلا نتيجة» بلا لفظ').toContain('RESULT_NONE')
-    expect(labels, '«مختلَفٌ عليه» بلا لفظ').toContain('RESULT_CONTESTED')
+    expect(labels, '«مختلف عليه» بلا لفظ').toContain('RESULT_CONTESTED')
     /* وما عداهما من المعجم — لا يُكتب هنا ثانيةً */
-    expect(screen, 'ألفاظُ النتائج تُكتب بيد الشاشة').toContain('outcomeLabelAr(f.key)')
+    expect(screen, 'ألفاظ النتائج تكتب بيد الشاشة').toContain('outcomeLabelAr(f.key)')
   })
 })
 
@@ -176,42 +176,42 @@ describe('⑤ ومفتاحُ النتيجة من الشارات نفسِها', (
 
    وكان سؤالُ «من لم يحجز» وحدَه تحت مطويّةٍ اسمُها «مرشّحاتٌ أخرى» — ومطويّةٌ
    لواحدٍ بابٌ لا غرفةَ خلفه. */
-describe('⑥ الموعدُ في الأعلى، والاتّجاهُ أيقونة', () => {
+describe('⑥ الموعد في الأعلى، والاتّجاه أيقونة', () => {
   const screen = code(SCREEN)
 
-  it('ذهبت المطويّةُ ولم يبقَ تحتها شيء', () => {
-    expect(screen, 'عادت «مرشّحاتٌ أخرى»').not.toContain('مرشّحاتٌ أخرى')
-    expect(screen, 'بقيت مطويّةٌ في الشريط').not.toMatch(/<details/)
+  it('ذهبت المطويّة ولم يبق تحتها شيء', () => {
+    expect(screen, 'عادت «مرشّحات أخرى»').not.toContain('مرشّحات أخرى')
+    expect(screen, 'بقيت مطويّة في الشريط').not.toMatch(/<details/)
   })
 
   it('و«لم يحجز موعدا بعد» في صفوف الشارات لا تحت مطويّة', () => {
-    expect(screen, 'سؤالُ الموعد ليس في الأعلى').toContain('لم يحجز موعدا بعد')
+    expect(screen, 'سؤال الموعد ليس في الأعلى').toContain('لم يحجز موعدا بعد')
     /* والمِحَكُّ موضعُه: قبل قائمة الحالات المنسدلة — أي في صفوف الشارات */
     const chips = screen.indexOf('لم يحجز موعدا بعد')
     const dropdown = screen.indexOf('كل الحالات')
-    expect(chips, 'لم يُعثر على الشارة').toBeGreaterThan(-1)
-    expect(chips, 'الشارةُ أسفلَ القوائم لا في صفوف الفرز').toBeLessThan(dropdown)
+    expect(chips, 'لم يعثر على الشارة').toBeGreaterThan(-1)
+    expect(chips, 'الشارة أسفل القوائم لا في صفوف الفرز').toBeLessThan(dropdown)
   })
 
-  it('ويُرشَّح به كما يُرشَّح بأخوَيه — بالواو', () => {
-    expect(screen, 'سؤالُ الموعد لا يُرشِّح الصفوف').toContain('!onlyUnbooked || canRemind(a)')
+  it('ويرشّح به كما يرشّح بأخويه — بالواو', () => {
+    expect(screen, 'سؤال الموعد لا يرشّح الصفوف').toContain('!onlyUnbooked || canRemind(a)')
   })
 
-  it('وعددُه لا يدّعي يقينا حين تسقط المزامنة', () => {
-    expect(screen, 'عُرض رقمٌ واثقٌ ولو سقطت المزامنة')
+  it('وعدده لا يدّعي يقينا حين تسقط المزامنة', () => {
+    expect(screen, 'عرض رقم واثق ولو سقطت المزامنة')
       .toMatch(/syncTrust && !syncTrust\.trusted \? "؟" :/)
   })
 
-  it('والاتّجاهُ سهمٌ بلا لفظٍ في الزرّ — فلا يقفز الشريطُ عند كلّ نقرة', () => {
+  it('والاتّجاه سهم بلا لفظ في الزرّ — فلا يقفز الشريط عند كلّ نقرة', () => {
     const btn = /aria-label=\{sortDir === "asc"[\s\S]*?<\/Button>/.exec(screen)?.[0] ?? ''
-    expect(btn, 'لم يُعثر على زرّ الاتّجاه').toBeTruthy()
-    expect(btn, 'اللفظُ عاد إلى الزرّ').not.toContain('تصاعديّا</')
-    expect(btn, 'اللفظُ عاد إلى الزرّ').not.toContain('تنازليّا</')
-    expect(btn, 'سهمُ الصعود غاب').toContain('ArrowUpNarrowWide')
-    expect(btn, 'سهمُ النزول غاب').toContain('ArrowDownWideNarrow')
+    expect(btn, 'لم يعثر على زرّ الاتّجاه').toBeTruthy()
+    expect(btn, 'اللفظ عاد إلى الزرّ').not.toContain('تصاعديّا</')
+    expect(btn, 'اللفظ عاد إلى الزرّ').not.toContain('تنازليّا</')
+    expect(btn, 'سهم الصعود غاب').toContain('ArrowUpNarrowWide')
+    expect(btn, 'سهم النزول غاب').toContain('ArrowDownWideNarrow')
   })
 
-  it('ولا يُترك أخرسَ — له اسمٌ يُقرأ بصوت', () => {
-    expect(screen, 'أيقونةٌ بلا اسم').toMatch(/aria-label=\{sortDir === "asc" \? "الترتيبُ صاعد/)
+  it('ولا يترك أخرس — له اسم يقرأ بصوت', () => {
+    expect(screen, 'أيقونة بلا اسم').toMatch(/aria-label=\{sortDir === "asc" \? "الترتيب صاعد/)
   })
 })

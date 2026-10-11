@@ -63,7 +63,7 @@ beforeEach(() => {
 })
 
 describe('الحفظ والقراءة', () => {
-  it('ما يُحفظ هو ما يُقرأ — بست دورات لا خمس', () => {
+  it('ما يحفظ هو ما يقرأ — بست دورات لا خمس', () => {
     saveAdoptedPlan(PLAN)
     const back = readAdoptedPlan('PW-A')
     expect(back?.courseIds).toEqual(PLAN.courseIds)
@@ -79,7 +79,7 @@ describe('الحفظ والقراءة', () => {
     expect(raw.v).toBe(1)
   })
 
-  it('لا تُعاد خطّةُ مضيفٍ آخر', () => {
+  it('لا تعاد خطّة مضيف آخر', () => {
     saveAdoptedPlan(PLAN)
     expect(readAdoptedPlan('PW-B')).toBeNull()
     expect(readAdoptedPlan(undefined)).toBeNull()
@@ -90,14 +90,14 @@ describe('الحفظ والقراءة', () => {
   })
 })
 
-describe('السجلّات المعطوبة تُرفض ولا تُقرأ نصف قراءة', () => {
-  it('الشكل القديم — بلا hostPathwayId — يُرفض', () => {
+describe('السجلّات المعطوبة ترفض ولا تقرأ نصف قراءة', () => {
+  it('الشكل القديم — بلا hostPathwayId — يرفض', () => {
     /* هذا حرفيا ما كان يكتبه التبديل: بلا هوية مضيف */
     localStorage.setItem(ADOPTED_PLAN_KEY, JSON.stringify({ composite: true, chosenIds: ['C-1'], giftId: null }))
     expect(readAdoptedPlan('PW-A')).toBeNull()
   })
 
-  it('نسخة غير معروفة تُرفض', () => {
+  it('نسخة غير معروفة ترفض', () => {
     localStorage.setItem(ADOPTED_PLAN_KEY, JSON.stringify({ ...PLAN, v: 2 }))
     expect(readAdoptedPlan('PW-A')).toBeNull()
   })
@@ -108,7 +108,7 @@ describe('السجلّات المعطوبة تُرفض ولا تُقرأ نصف 
     expect(readAdoptedPlan('PW-A')).toBeNull()
   })
 
-  it('اسم فارغ أو دورات ليست نصوصا تُرفض', () => {
+  it('اسم فارغ أو دورات ليست نصوصا ترفض', () => {
     localStorage.setItem(ADOPTED_PLAN_KEY, JSON.stringify({ ...PLAN, v: 1, nameAr: '' }))
     expect(readAdoptedPlan('PW-A')).toBeNull()
     localStorage.setItem(ADOPTED_PLAN_KEY, JSON.stringify({ ...PLAN, v: 1, courseIds: [1, 2] }))
@@ -127,7 +127,7 @@ describe('التعديل', () => {
     expect(back?.hostPathwayId).toBe('PW-A')
   })
 
-  it('تعديل خطّة غير معتمَدة لا يُنشئ خطّة من عدم', () => {
+  it('تعديل خطّة غير معتمدة لا ينشئ خطّة من عدم', () => {
     expect(updateAdoptedCourses('PW-A', ['C-1'])).toBeNull()
     expect(readAdoptedPlan('PW-A')).toBeNull()
   })
@@ -149,33 +149,33 @@ describe('المسار الجاهز', () => {
    رسالةَ خطأ حين تموت: تسقط الصفحةُ إلى شكلها الأصلع بلا شارةِ تخصيصٍ ولا
    استبدالِ دورات، فيقرؤها صاحبُها «صفحةً قديمة» لا «خطّةً ضاعت». */
 describe('الخطّة تبقى بعد إغلاق التبويب', () => {
-  it('تُكتب في الدائم لا في الجلسة', () => {
+  it('تكتب في الدائم لا في الجلسة', () => {
     saveAdoptedPlan(PLAN)
     expect(localStorage.getItem(ADOPTED_PLAN_KEY)).toBeTruthy()
     expect(sessionStorage.getItem(ADOPTED_PLAN_KEY)).toBeNull()
   })
 
-  it('ومسحُ الجلسة — وهو ما يفعله إغلاق التبويب — لا يُضيعها', () => {
+  it('ومسح الجلسة — وهو ما يفعله إغلاق التبويب — لا يضيعها', () => {
     saveAdoptedPlan(PLAN)
     sessionStorage.clear()
     expect(readAdoptedPlan('PW-A')?.courseIds).toEqual(PLAN.courseIds)
   })
 
-  it('وخطّةٌ كُتبت قبل النقل تُهاجَر عند أوّل قراءة — فلا يخسرها تبويبٌ مفتوح', () => {
+  it('وخطّة كتبت قبل النقل تهاجر عند أوّل قراءة — فلا يخسرها تبويب مفتوح', () => {
     localStorage.clear()
     sessionStorage.setItem(ADOPTED_PLAN_KEY, JSON.stringify({ v: 1, adoptedAt: 'x', ...PLAN }))
     expect(readAdoptedPlan('PW-A')?.nameAr).toBe(PERSONAL_PLAN_NAME_AR)
-    expect(localStorage.getItem(ADOPTED_PLAN_KEY), 'لم تُرقَّ إلى الدائم').toBeTruthy()
+    expect(localStorage.getItem(ADOPTED_PLAN_KEY), 'لم ترقّ إلى الدائم').toBeTruthy()
   })
 
-  it('والنسيانُ يمسح المخزنين — وإلّا عادت من القديم بعد مسح الجديد', () => {
+  it('والنسيان يمسح المخزنين — وإلّا عادت من القديم بعد مسح الجديد', () => {
     saveAdoptedPlan(PLAN)
     sessionStorage.setItem(ADOPTED_PLAN_KEY, JSON.stringify({ v: 1, adoptedAt: 'x', ...PLAN }))
     clearAdoptedPlan()
     expect(readAdoptedPlan('PW-A')).toBeNull()
   })
 
-  it('وحين يُمنع الدائم (تصفّحٌ خاصّ) تبقى خطّةُ الجلسة — أقلُّ من الدائم وأفضلُ من لا شيء', () => {
+  it('وحين يمنع الدائم (تصفّح خاصّ) تبقى خطّة الجلسة — أقلّ من الدائم وأفضل من لا شيء', () => {
     denyLocalStorage()
     try {
       expect(saveAdoptedPlan(PLAN)?.courseIds).toEqual(PLAN.courseIds)

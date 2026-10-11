@@ -64,7 +64,7 @@ export default function DecisionScenario({
       <section className={`rounded-3xl border border-gold/30 bg-gold/[0.06] p-5 ${className}`.trim()}>
         <p className="flex items-start gap-2 text-xs leading-6 text-foreground">
           <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-gold-ink" aria-hidden="true" />
-          سيناريو هذه الوحدة غير مكتمل، فلا يُعرض نصفه — نصف سيناريو يحبس من يمشي فيه.
+          سيناريو هذه الوحدة غير مكتمل، فلا يعرض نصفه — نصف سيناريو يحبس من يمشي فيه.
           {parsed.errorsAr.length > 0 && <span className="text-muted-foreground"> ({parsed.errorsAr[0]})</span>}
         </p>
       </section>
@@ -180,11 +180,11 @@ export default function DecisionScenario({
             {save === "done" ? (
               <p className="flex items-center gap-2 text-xs font-bold text-teal-light-ink">
                 <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
-                حُفظت جولتك وتأملك — تعود إليهما متى شئت.
+                حفظت جولتك وتأملك — تعود إليهما متى شئت.
               </p>
             ) : save === "unavailable" ? (
               <p className="text-xs text-muted-foreground">
-                تُحفَظ الجولة لمن سُجّل في الدورة — تابع بلا حفظ، والسيناريو نفسه هو الفائدة.
+                تحفظ الجولة لمن سجّل في الدورة — تابع بلا حفظ، والسيناريو نفسه هو الفائدة.
               </p>
             ) : (
               /* حفظٌ داخل قسمٍ لا فعلَ صفحة — وهو العطبُ الذي سمّاه

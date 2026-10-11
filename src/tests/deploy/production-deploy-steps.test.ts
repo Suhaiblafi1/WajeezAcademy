@@ -31,36 +31,36 @@ const code = (s: string) => s.split('\n').filter((l) => !l.trim().startsWith('#'
 const commands = (s: string) =>
   code(s).split('\n').filter((l) => !/^\s*(echo|printf)\b/.test(l)).join('\n')
 
-describe('سكربتُ النشر الحقيقيّ — deploy/deploy.sh', () => {
-  it('يتوقّف عند أوّل فشل — لا يمضي على خطوةٍ سقطت', () => {
+describe('سكربت النشر الحقيقيّ — deploy/deploy.sh', () => {
+  it('يتوقّف عند أوّل فشل — لا يمضي على خطوة سقطت', () => {
     expect(sh).toMatch(/set -euo pipefail/)
   })
 
   /* ── الخطواتُ التي يكسر نسيانُها شيئا صامتا ── */
 
-  it('ينشر ترحيلاتِ القاعدة — وبدونها تسقط مساراتُ الخادم بـ٥٠٠ على أعمدةٍ غيرِ موجودة', () => {
+  it('ينشر ترحيلات القاعدة — وبدونها تسقط مسارات الخادم بـ٥٠٠ على أعمدة غير موجودة', () => {
     expect(code(sh)).toMatch(/prisma migrate deploy/)
   })
 
-  it('⚠️ يستورد الكتالوج — وبدونه يصل كودٌ جديدٌ فوق محتوًى قديمٍ لا يتغيّر', () => {
+  it('⚠️ يستورد الكتالوج — وبدونه يصل كود جديد فوق محتوى قديم لا يتغيّر', () => {
     /* `‎/api/public/core-catalog` يقرأ الجداولَ الحيّة لا ملفّات المستودَع.
        وهذا أحدُ وجهَي شكوى «الموقعُ القديمُ يتصدّر». */
     expect(code(sh)).toMatch(/catalog:import/)
   })
 
-  it('⚠️ ينشر لقطةَ التشخيص — وبدونها يتجمّد المحرّك على لقطته القديمة', () => {
+  it('⚠️ ينشر لقطة التشخيص — وبدونها يتجمّد المحرّك على لقطته القديمة', () => {
     expect(code(sh)).toMatch(/catalog:publish/)
   })
 
-  it('يبني الصورةَ قبل لمس ما يعمل — ففشلُ البناء لا يُسقط الموقعَ القائم', () => {
+  it('يبني الصورة قبل لمس ما يعمل — ففشل البناء لا يسقط الموقع القائم', () => {
     const build = code(sh).indexOf('build app')
     const up = code(sh).indexOf('up -d --remove-orphans')
-    expect(build, 'أمرُ البناء غائب').toBeGreaterThan(-1)
-    expect(up, 'أمرُ التبديل غائب').toBeGreaterThan(-1)
-    expect(build, 'البناءُ يجب أن يسبق تبديلَ الحاويات').toBeLessThan(up)
+    expect(build, 'أمر البناء غائب').toBeGreaterThan(-1)
+    expect(up, 'أمر التبديل غائب').toBeGreaterThan(-1)
+    expect(build, 'البناء يجب أن يسبق تبديل الحاويات').toBeLessThan(up)
   })
 
-  it('يبدّل الحاويات فعلا — فالصورةُ المبنيّةُ بلا تبديلٍ لا تخدم أحدا', () => {
+  it('يبدّل الحاويات فعلا — فالصورة المبنيّة بلا تبديل لا تخدم أحدا', () => {
     expect(code(sh)).toMatch(/up -d --remove-orphans/)
   })
 
@@ -68,7 +68,7 @@ describe('سكربتُ النشر الحقيقيّ — deploy/deploy.sh', () => 
     expect(code(sh)).toMatch(/api\/version/)
   })
 
-  it('يقرأ إعدادَه من deploy/ لا من مسارٍ خارج المستودَع', () => {
+  it('يقرأ إعداده من deploy/ لا من مسار خارج المستودع', () => {
     expect(code(sh)).toMatch(/deploy\/compose\.prod\.yml/)
     expect(code(sh)).toMatch(/deploy\/\.env\.production/)
   })
@@ -83,18 +83,18 @@ describe('سكربتُ النشر الحقيقيّ — deploy/deploy.sh', () => 
      الترويسة، وبقي إطارُ الحجز مستطيلا أبيضَ للمتقدّمين. ولم يكشفه حارسٌ:
      الحارسُ القائم يقرأ `deploy/Caddyfile` — أي النيّةَ لا ما أُرسل. */
 
-  it('⚠️ يعيد تحميلَ Caddy بعد التبديل — فالملفُّ المربوطُ لا يُقرأ بنفسه', () => {
+  it('⚠️ يعيد تحميل Caddy بعد التبديل — فالملفّ المربوط لا يقرأ بنفسه', () => {
     /* على ما يُنفَّذ لا على ما يُطبَع: النصيحةُ في رسالة خطأٍ ليست إعادةَ تحميل */
     const c = commands(sh)
-    expect(c, 'لا إعادةَ إنشاءٍ ولا تحميلٍ ولا تشغيل — تعديلُ السياسة يبقى على القرص بلا أثر')
+    expect(c, 'لا إعادة إنشاء ولا تحميل ولا تشغيل — تعديل السياسة يبقى على القرص بلا أثر')
       .toMatch(/force-recreate caddy|caddy reload|restart caddy/)
     /* وبعد التبديل لا قبلَه: إعادةٌ ثمّ `up -d` تُلغيها الحاويةُ الجديدة */
     const up = c.indexOf('up -d --remove-orphans')
     const reload = Math.max(
       c.indexOf('force-recreate caddy'), c.indexOf('caddy reload'), c.indexOf('restart caddy'),
     )
-    expect(up, 'أمرُ التبديل غائب').toBeGreaterThan(-1)
-    expect(reload, 'إعادةُ التحميل يجب أن تلي تبديلَ الحاويات').toBeGreaterThan(up)
+    expect(up, 'أمر التبديل غائب').toBeGreaterThan(-1)
+    expect(reload, 'إعادة التحميل يجب أن تلي تبديل الحاويات').toBeGreaterThan(up)
   })
 
   /* ═══ ولماذا يُستأنف السكربتُ نفسَه بعد السحب ═══
@@ -109,36 +109,36 @@ describe('سكربتُ النشر الحقيقيّ — deploy/deploy.sh', () => 
      تنجح في الحالتين، والترويسةُ وحدَها لا تتغيّر. وأُثبت العطبُ بمحاكاةٍ
      صغيرة: سكربتٌ يُعاد كتابتُه أثناء تنفيذه نفّذ بايتاتٍ مبتورةً
      (`command not found`) ثمّ خرج بصفر. */
-  it('⚠️ يستأنف نفسَه بعد السحب — وإلّا لم يُنفَّذ ما أُضيف في وسطه', () => {
+  it('⚠️ يستأنف نفسه بعد السحب — وإلّا لم ينفّذ ما أضيف في وسطه', () => {
     const c = commands(sh)
     /* والسحبُ صار تقدّما إلى ما اجتاز CI (٣٠ سبتمبر ٢٠٢٦) — `git merge --ff-only`
        إلى ما يسمّيه `deploy/target.sh`، لا `git pull` لرأس main */
     const pull = c.indexOf('git merge --ff-only')
     const reexec = c.indexOf('exec bash')
-    expect(pull, 'لا سحبَ في السكربت').toBeGreaterThan(-1)
-    expect(reexec, 'لا استئنافَ بعد السحب — والتعديلُ في وسط الملفّ لا يُقرأ').toBeGreaterThan(-1)
-    expect(reexec, 'الاستئنافُ يجب أن يلي السحبَ لا يسبقه').toBeGreaterThan(pull)
+    expect(pull, 'لا سحب في السكربت').toBeGreaterThan(-1)
+    expect(reexec, 'لا استئناف بعد السحب — والتعديل في وسط الملفّ لا يقرأ').toBeGreaterThan(-1)
+    expect(reexec, 'الاستئناف يجب أن يلي السحب لا يسبقه').toBeGreaterThan(pull)
     /* وحارسٌ يمنع الدوران: بلا شرطٍ يستأنف أبدا */
-    expect(c, 'الاستئنافُ بلا حارسٍ — دورانٌ لا ينتهي').toMatch(/DEPLOY_REEXEC/)
+    expect(c, 'الاستئناف بلا حارس — دوران لا ينتهي').toMatch(/DEPLOY_REEXEC/)
   })
 
-  it('⚠️ ولا ينشر إلّا ما اجتاز CI — ويستأنف على الالتزام نفسِه', () => {
+  it('⚠️ ولا ينشر إلّا ما اجتاز CI — ويستأنف على الالتزام نفسه', () => {
     /* ما يقرّره `deploy/target.sh` مقيسٌ بتشغيله في `ci-green-gate.test.ts`؛ وهنا
        أنّ الناشرَ يسأله ولا يعود إلى رأس main، وأنّ نسختَه الجديدة تُسلَّم الهدفَ
        نفسَه فلا تتقدّم إلى غيره في الثواني بين الجلب والاستئناف. */
     const c = commands(sh)
-    expect(c, 'لا يُسأل عمّا اجتاز CI').toMatch(/bash deploy\/target\.sh/)
-    expect(c, 'عاد الناشرُ إلى رأس main').not.toMatch(/git pull/)
-    expect(c.indexOf('export DEPLOY_TARGET="$TARGET"'), 'الاستئنافُ بلا هدفه — فيسأل من جديد')
+    expect(c, 'لا يسأل عمّا اجتاز CI').toMatch(/bash deploy\/target\.sh/)
+    expect(c, 'عاد الناشر إلى رأس main').not.toMatch(/git pull/)
+    expect(c.indexOf('export DEPLOY_TARGET="$TARGET"'), 'الاستئناف بلا هدفه — فيسأل من جديد')
       .toBeGreaterThan(-1)
     expect(c.indexOf('export DEPLOY_TARGET="$TARGET"')).toBeLessThan(c.indexOf('exec bash'))
   })
 
-  it('⚠️ يفحص الترويسةَ كما أُرسلت لا كما كُتبت — وإلّا اختبأ الفرقُ بينهما', () => {
+  it('⚠️ يفحص الترويسة كما أرسلت لا كما كتبت — وإلّا اختبأ الفرق بينهما', () => {
     const c = code(sh)
     /* الفحصُ على الخادم الحيّ: `-I` يقرأ الترويسةَ وحدَها، والبحثُ فيها عن
        `frame-src` لـCalendly. وهذا ما كان غائبا فمرّ العطبُ صامتا. */
-    expect(c, 'لا يُقرأ ترويسةَ الخادم الحيّ').toMatch(/curl[^\n]*-[a-zA-Z]*I[^\n]*SITE_DOMAIN/)
-    expect(c, 'لا يفحص frame-src في المُرسَل').toMatch(/frame-src\*calendly\.com|frame-src[^\n]*calendly\.com/)
+    expect(c, 'لا يقرأ ترويسة الخادم الحيّ').toMatch(/curl[^\n]*-[a-zA-Z]*I[^\n]*SITE_DOMAIN/)
+    expect(c, 'لا يفحص frame-src في المرسل').toMatch(/frame-src\*calendly\.com|frame-src[^\n]*calendly\.com/)
   })
 })

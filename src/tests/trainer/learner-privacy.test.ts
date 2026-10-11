@@ -18,13 +18,13 @@ const root = process.cwd()
 const code = (p: string) =>
   readFileSync(join(root, p), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
 
-describe('خصوصيّةُ المتعلّم عند المدرّب', () => {
-  it('«شعبي» لا تحمل بريدَ المتعلّم — الاسمُ وحدَه', () => {
+describe('خصوصيّة المتعلّم عند المدرّب', () => {
+  it('«شعبي» لا تحمل بريد المتعلّم — الاسم وحده', () => {
     const src = code('server/services/enrollment.service.ts')
     const block = /async trainerCohorts\([\s\S]*?\n {2}\}\n/.exec(src)?.[0] ?? ''
-    expect(block, 'كتلةُ trainerCohorts مفقودة').toBeTruthy()
-    expect(block, 'بريدُ المتعلّم يخرج إلى المدرّب').not.toMatch(/email:\s*true/)
-    expect(block, 'رقمُ المتعلّم يخرج إلى المدرّب').not.toMatch(/phone:\s*true/)
+    expect(block, 'كتلة trainerCohorts مفقودة').toBeTruthy()
+    expect(block, 'بريد المتعلّم يخرج إلى المدرّب').not.toMatch(/email:\s*true/)
+    expect(block, 'رقم المتعلّم يخرج إلى المدرّب').not.toMatch(/phone:\s*true/)
   })
 
   it('«متعلّموني» لا تقرأ بريدا ولا تبحث فيه', () => {
@@ -32,11 +32,11 @@ describe('خصوصيّةُ المتعلّم عند المدرّب', () => {
     expect(src).not.toMatch(/\.email\b/)
   })
 
-  it('والمتعثّرون يُراسَلون من الشعبة لا من بريدهم', () => {
+  it('والمتعثّرون يراسلون من الشعبة لا من بريدهم', () => {
     const list = code('src/components/AtRiskList.tsx')
     expect(list, 'عاد `mailto:` إلى المدرّب').not.toMatch(/mailto:/)
-    expect(list, 'لا طريقَ إلى رسائل الشعبة').toMatch(/to="\/trainer\/board"/)
+    expect(list, 'لا طريق إلى رسائل الشعبة').toMatch(/to="\/trainer\/board"/)
     const model = code('src/application/trainer/at-risk.ts')
-    expect(model, 'نموذجُ المتعثّر ما زال يحمل بريدا').not.toMatch(/\bemail\b/)
+    expect(model, 'نموذج المتعثّر ما زال يحمل بريدا').not.toMatch(/\bemail\b/)
   })
 })

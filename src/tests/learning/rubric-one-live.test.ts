@@ -48,15 +48,15 @@ function walk(dir: string): string[] {
    يأتي اسمُه كاملا لا `rubric`. */
 const WRITE = /\b(?:prisma|tx)\s*\.\s*rubric\s*\.\s*(create|createMany|update|updateMany|upsert|delete|deleteMany)\b/
 
-describe('روبركٌ واحدٌ حيّ — والآخرُ لا يُكتب فيه', () => {
+describe('روبرك واحد حيّ — والآخر لا يكتب فيه', () => {
   const files = [...walk('server'), ...walk('scripts')]
 
-  it('المسحُ يجد ملفّاتِ الخادم فعلا — فلا يمرّ بصفرٍ كاذب', () => {
-    expect(files.length, 'تعطّل المسحُ نفسُه').toBeGreaterThan(50)
+  it('المسح يجد ملفّات الخادم فعلا — فلا يمرّ بصفر كاذب', () => {
+    expect(files.length, 'تعطّل المسح نفسه').toBeGreaterThan(50)
     expect(files).toContain('server/services/assessment.service.ts')
   })
 
-  it('ولا سطرَ يكتب في `Rubric` الميّت', () => {
+  it('ولا سطر يكتب في `Rubric` الميّت', () => {
     const offenders = files.filter((f) => {
       const src = readFileSync(join(root, f), 'utf8')
         .replace(/\/\*[\s\S]*?\*\//g, '')
@@ -65,20 +65,20 @@ describe('روبركٌ واحدٌ حيّ — والآخرُ لا يُكتب في
     })
     expect(
       offenders,
-      'كُتب في `Rubric` وهو الجدولُ الميّت. الحيُّ `GradingRubric` — معاييرُ صفوفا '
-      + `على تكليفِ الشعبة، تكتبه assessment.service:\n${offenders.join('\n')}`,
+      'كتب في `Rubric` وهو الجدول الميّت. الحيّ `GradingRubric` — معايير صفوفا '
+      + `على تكليف الشعبة، تكتبه assessment.service:\n${offenders.join('\n')}`,
     ).toEqual([])
   })
 
-  it('و`GradingRubric` الحيُّ ما زال مكتوبا فيه — وإلّا فالميّتُ هو الآخر', () => {
+  it('و`GradingRubric` الحيّ ما زال مكتوبا فيه — وإلّا فالميّت هو الآخر', () => {
     const svc = readFileSync(join(root, 'server/services/assessment.service.ts'), 'utf8')
-    expect(svc, 'الروبرك الحيُّ لم يعد يُكتب — فأيُّهما الحيّ؟').toMatch(/gradingRubric\s*\.\s*create/)
+    expect(svc, 'الروبرك الحيّ لم يعد يكتب — فأيّهما الحيّ؟').toMatch(/gradingRubric\s*\.\s*create/)
   })
 
   /* والعلّةُ مكتوبةٌ حيث يقع عليها من يفتح المخطّط — لا في اختبارٍ وحدَه */
-  it('والمخطّطُ يقول أيُّهما الحيُّ عند النموذج نفسِه', () => {
+  it('والمخطّط يقول أيّهما الحيّ عند النموذج نفسه', () => {
     const schema = readFileSync(join(root, 'prisma/schema.prisma'), 'utf8')
     const block = schema.slice(schema.indexOf('model Rubric {') - 1400, schema.indexOf('model Rubric {'))
-    expect(block, 'النموذجُ الميّتُ بلا تحذيرٍ فوقه').toContain('GradingRubric')
+    expect(block, 'النموذج الميّت بلا تحذير فوقه').toContain('GradingRubric')
   })
 })

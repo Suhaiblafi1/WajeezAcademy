@@ -58,27 +58,27 @@ const INDEX = read('src/index.css')
 const guidePrint = printBlocks(GUIDE).flatMap(rules)
 const sitePrint = printBlocks(INDEX).flatMap(rules)
 
-describe('الدليلُ المطبوعُ بصوره', () => {
-  it('اللقطةُ داخلَ زرٍّ — وهو سببُ الحاجة', () => {
+describe('الدليل المطبوع بصوره', () => {
+  it('اللقطة داخل زرّ — وهو سبب الحاجة', () => {
     expect(GUIDE).toMatch(/<button[^>]*className="guide-shot"[\s\S]{0,300}?<img/)
   })
 
-  it('وقاعدةُ الموقع التي تُخفي الأزرارَ في الطباعة قائمة — وإلّا فالحارسُ بلا موضوع', () => {
+  it('وقاعدة الموقع التي تخفي الأزرار في الطباعة قائمة — وإلّا فالحارس بلا موضوع', () => {
     const hide = sitePrint.find(([s, d]) => /^button/.test(s) && /display:\s*none\s*!important/.test(d))
-    expect(hide, 'تغيّرت قاعدةُ إخفاء الأزرار في index.css — راجع هذا الحارس').toBeDefined()
+    expect(hide, 'تغيّرت قاعدة إخفاء الأزرار في index.css — راجع هذا الحارس').toBeDefined()
   })
 
-  it('والدليلُ يعيد اللقطةَ بمحدِّدٍ أثقلَ منها', () => {
+  it('والدليل يعيد اللقطة بمحدّد أثقل منها', () => {
     const hide = sitePrint.find(([s, d]) => /^button/.test(s) && /display:\s*none\s*!important/.test(d))!
     const show = guidePrint.filter(([s, d]) => /button\.guide-shot$/.test(s) && /display:\s*block\s*!important/.test(d))
-    expect(show.length, 'لا قاعدةَ في طباعة الدليل تُظهر زرَّ اللقطة — فيُطبع بلا صور').toBeGreaterThan(0)
+    expect(show.length, 'لا قاعدة في طباعة الدليل تظهر زرّ اللقطة — فيطبع بلا صور').toBeGreaterThan(0)
     expect(
       show.some(([s]) => heavier(specificity(s), specificity(hide[0]))),
-      `«${show.map(([s]) => s).join('، ')}» ليس أثقلَ من «${hide[0]}»`,
+      `«${show.map(([s]) => s).join('، ')}» ليس أثقل من «${hide[0]}»`,
     ).toBe(true)
   })
 
-  it('ولا يُمنع قسمٌ كاملٌ من الانقسام — فيدفع نفسَه ويترك صفحةً بيضاء', () => {
+  it('ولا يمنع قسم كامل من الانقسام — فيدفع نفسه ويترك صفحة بيضاء', () => {
     const avoid = guidePrint.filter(([, d]) => /break-inside:\s*avoid/.test(d)).map(([s]) => s)
     expect(avoid).not.toContain('.guide-section')
     expect(avoid).toContain('.guide-figure')
@@ -92,23 +92,23 @@ describe('الدليلُ المطبوعُ بصوره', () => {
    بقاعدة `*` — فخرج المطبوعُ الأوّلُ أبيضَ كلُّه، الغلافُ والأشرطةُ والمربّعات.
    فكلُّ سطحٍ ملوّنٍ في الدليل تعيده قاعدةٌ في طباعته، بـ`!important` وخصوصيّةٍ
    تغلب `*`. */
-describe('والمطبوعُ بألوانه', () => {
+describe('والمطبوع بألوانه', () => {
   const flatten = sitePrint.find(([s, d]) => s === '*' && /background-color:\s*transparent\s*!important/.test(d))
 
-  it('قاعدةُ التسطيح قائمة — وإلّا فالحارسُ بلا موضوع', () => {
-    expect(flatten, 'تغيّرت قاعدةُ تسطيح الطباعة في index.css — راجع هذا الحارس').toBeDefined()
+  it('قاعدة التسطيح قائمة — وإلّا فالحارس بلا موضوع', () => {
+    expect(flatten, 'تغيّرت قاعدة تسطيح الطباعة في index.css — راجع هذا الحارس').toBeDefined()
   })
 
   it.each(['[data-hue="amber"]', '[data-hue="coral"]', '[data-hue="sky"]', '[data-hue="blush"]', '.guide-deep', '.guide-blush'])(
-    '«%s» يُطبع بلونه',
+    '«%s» يطبع بلونه',
     (surface) => {
       const restore = guidePrint.filter(([s, d]) => s.endsWith(surface) && /background-color:[^;]*!important/.test(d))
-      expect(restore.length, `لا قاعدةَ تعيد خلفيّةَ ${surface} في الطباعة — فيخرج أبيض`).toBeGreaterThan(0)
+      expect(restore.length, `لا قاعدة تعيد خلفيّة ${surface} في الطباعة — فيخرج أبيض`).toBeGreaterThan(0)
       expect(restore.some(([s]) => heavier(specificity(s), specificity(flatten![0])))).toBe(true)
     },
   )
 
-  it('وكلُّ قسمٍ يبدأ صفحتَه', () => {
+  it('وكلّ قسم يبدأ صفحته', () => {
     const page = guidePrint.find(([s]) => s === '.guide-page')
     expect(page?.[1]).toMatch(/break-before:\s*page/)
     expect(GUIDE).toMatch(/<section id=\{s\.id\}[^>]*className="[^"]*\bguide-page\b/)

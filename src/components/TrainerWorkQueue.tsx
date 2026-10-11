@@ -41,7 +41,7 @@ const TONE: Record<QueueKind, string> = {
 
 /* «١ بندٌ» و«٢ بندان» و«٣ بنود» و«١١ بندا» — والبنودُ مختلفةُ الأجناس
    (جلسةٌ وحضورٌ وتقييم)، فالجامعُ بينها «بند» لا اسمُ أحدها. */
-const ITEM_FORMS = { one: "بندٌ", two: "بندان", few: "بنود", many: "بندا" };
+const ITEM_FORMS = { one: "بند", two: "بندان", few: "بنود", many: "بندا" };
 
 export default function TrainerWorkQueue({ items, className = "" }: { items: QueueItem[]; className?: string }) {
   /* أعجلُها أوّلا — والقائمةُ تصل مرتَّبةً بالإلحاح، فأوّلُها هو المقصود */
@@ -67,12 +67,12 @@ export default function TrainerWorkQueue({ items, className = "" }: { items: Que
         count={items.length}
         forms={ITEM_FORMS}
         waitingAr="تنتظرك الآن"
-        stats={first ? [`أعجلُها: ${first.titleAr}`] : []}
+        stats={first ? [`أعجلها: ${first.titleAr}`] : []}
         actionAr={first?.actionAr ?? "ابدأ"}
         {...(first && !first.external
           ? { to: first.href }
           : { onAction: () => { if (first) window.open(first.href, "_blank", "noreferrer") } })}
-        doneAr="لا شيءَ ينتظرك الآن — الحضورُ مسجَّلٌ والتسليماتُ مقيَّمةٌ ولا جلسةَ قريبة. ويظهر هنا كلُّ ما يحتاج إجراءً منك فورَ حدوثه."
+        doneAr="لا شيء ينتظرك الآن — الحضور مسجّل والتسليمات مقيّمة ولا جلسة قريبة. ويظهر هنا كلّ ما يحتاج إجراء منك فور حدوثه."
       />
 
       {items.length === 0 ? null : (

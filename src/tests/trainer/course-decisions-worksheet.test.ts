@@ -41,7 +41,7 @@ const ROWS: WorksheetRow[] = [
     proposalId: 'p-amal-2', trainer: amal, createdAt: '2026-10-01T12:00:00.000Z', status: 'info_requested',
     titleAr: 'إدارة الفعاليات', questionAr: 'لمن هي؟', answerAr: 'لمنسّقي الفعاليات المبتدئين',
   }),
-  row({ proposalId: 'p-amal-linked', trainer: amal, status: 'linked', titleAr: 'مربوطةٌ من قبل' }),
+  row({ proposalId: 'p-amal-linked', trainer: amal, status: 'linked', titleAr: 'مربوطة من قبل' }),
   row({
     proposalId: 'p-amal-1', trainer: amal, createdAt: '2026-10-01T10:00:00.000Z',
     titleAr: 'دوره الخطابه', summaryAr: 'الإلقاء أمام الجمهور',
@@ -49,7 +49,7 @@ const ROWS: WorksheetRow[] = [
     suggested: [{ courseId: 'C-COM-101', titleAr: 'الخطابة', sharedAr: ['الخطابة'] }],
   }),
   row({ proposalId: 'p-basem-rejected', trainer: basem, status: 'rejected', titleAr: 'مردودة' }),
-  row({ proposalId: 'p-basem-1', trainer: basem, createdAt: '2026-09-30T08:00:00.000Z', status: 'draft', titleAr: 'فكرةٌ تُرفض' }),
+  row({ proposalId: 'p-basem-1', trainer: basem, createdAt: '2026-09-30T08:00:00.000Z', status: 'draft', titleAr: 'فكرة ترفض' }),
 ]
 
 const sheet = () => buildDecisionsWorksheet(ROWS, NOW)
@@ -82,25 +82,25 @@ function worldOf(rows: readonly WorksheetRow[]): DecisionsWorld {
   }
 }
 
-describe('① الورقةُ ملفُّ قراراتٍ بصيغته', () => {
-  it('النوعُ والإصدارُ نفسُهما — والمدرّبون بترتيب أقدمِ ما ينتظر منهم', () => {
+describe('① الورقة ملفّ قرارات بصيغته', () => {
+  it('النوع والإصدار نفسهما — والمدرّبون بترتيب أقدم ما ينتظر منهم', () => {
     const s = sheet()
     expect(s.kind).toBe(DECISIONS_KIND)
     expect(s.version).toBe(DECISIONS_VERSION)
     expect(s.trainers.map((t) => t.reference)).toEqual([basem.reference, amal.reference])
     expect(s.trainers.map((t) => t.fullName)).toEqual([basem.fullName, amal.fullName])
-    expect(s.trainers[1].proposals.map((p) => p.proposalId), 'اقتراحاتُ المدرّب بترتيب وصولها').toEqual(['p-amal-1', 'p-amal-2'])
+    expect(s.trainers[1].proposals.map((p) => p.proposalId), 'اقتراحات المدرّب بترتيب وصولها').toEqual(['p-amal-1', 'p-amal-2'])
     expect(s.context).toMatchObject({ openProposals: 3, trainers: 2, exportedAt: NOW.toISOString() })
   })
 
-  it('⚠️ ومن ملأها رفعها كما هي — فوقع كلُّ قرارٍ على اقتراحه، ولا «تصحيحَ» لم يُطلب', () => {
+  it('⚠️ ومن ملأها رفعها كما هي — فوقع كلّ قرار على اقتراحه، ولا «تصحيح» لم يطلب', () => {
     const filled = structuredClone(sheet()) as unknown as {
       trainers: { proposals: Record<string, unknown>[]; qualify: string[] }[]
     }
     const [b, a] = filled.trainers
     Object.assign(b.proposals[0], { verdict: 'reject', noteAr: 'ليست في مجال الأكاديمية' })
     Object.assign(a.proposals[0], { verdict: 'link', courseId: 'C-COM-101' })
-    Object.assign(a.proposals[1], { verdict: 'ask', questionAr: 'كم ساعةً تقترح لها؟' })
+    Object.assign(a.proposals[1], { verdict: 'ask', questionAr: 'كم ساعة تقترح لها؟' })
     a.qualify.push('C-COM-101')
 
     const parsed = parseDecisionsFile(filled)
@@ -111,7 +111,7 @@ describe('① الورقةُ ملفُّ قراراتٍ بصيغته', () => {
     expect(plan.steps.filter((s) => s.state !== 'todo').map((s) => `${s.n} ${s.reasonAr}`)).toEqual([])
     expect(
       plan.steps.map((s) => [s.kind, s.proposalId ?? s.courseId]),
-      'خطوةٌ لم يطلبها أحد — «context» دخل خاناتِ القرار؟',
+      'خطوة لم يطلبها أحد — «context» دخل خانات القرار؟',
     ).toEqual([
       ['reject', 'p-basem-1'],
       ['qualify', 'C-COM-101'],
@@ -120,11 +120,11 @@ describe('① الورقةُ ملفُّ قراراتٍ بصيغته', () => {
     ])
   })
 
-  it('وما يُفتح في الورقة يُقرَّر فيه — لا حالَ مفتوحةً يراها المنفِّذُ مبتوتة', () => {
+  it('وما يفتح في الورقة يقرّر فيه — لا حال مفتوحة يراها المنفّذ مبتوتة', () => {
     /* قائمتان في طبقتَين: ما تُخرجه الورقة، وما يقبل المنفِّذُ القرارَ فيه. فإن
        افترقتا خرج في الورقة بندٌ يُردّ عند الرفع «قُرّر فيه غيرُ ما في الملفّ» */
     for (const status of OPEN_PROPOSAL_STATUSES) {
-      const rows = [row({ proposalId: 'p-x', trainer: basem, status, titleAr: 'بندٌ مفتوح' })]
+      const rows = [row({ proposalId: 'p-x', trainer: basem, status, titleAr: 'بند مفتوح' })]
       const s = structuredClone(buildDecisionsWorksheet(rows, NOW)) as unknown as { trainers: { proposals: Record<string, unknown>[] }[] }
       expect(s.trainers[0]?.proposals, `«${status}» لم يخرج في الورقة`).toHaveLength(1)
       Object.assign(s.trainers[0].proposals[0], { verdict: 'link', courseId: 'C-COM-101' })
@@ -132,23 +132,23 @@ describe('① الورقةُ ملفُّ قراراتٍ بصيغته', () => {
       expect(parsed.ok).toBe(true)
       if (!parsed.ok) continue
       const step = planDecisions(parsed.file, worldOf(rows)).steps.find((x) => x.kind === 'link')
-      expect(step?.state, `«${status}» يخرج في الورقة ويراه المنفِّذُ مبتوتا: ${step?.reasonAr}`).toBe('todo')
+      expect(step?.state, `«${status}» يخرج في الورقة ويراه المنفّذ مبتوتا: ${step?.reasonAr}`).toBe('todo')
     }
   })
 })
 
-describe('② ولا تُطبَّق قبل أن تُملأ', () => {
-  it('⚠️ الورقةُ كما خرجت يردّها المنفِّذ — كلُّ بندٍ فيها لا يطلب شيئا بعد', () => {
+describe('② ولا تطبّق قبل أن تملأ', () => {
+  it('⚠️ الورقة كما خرجت يردّها المنفّذ — كلّ بند فيها لا يطلب شيئا بعد', () => {
     const r = parseDecisionsFile(structuredClone(sheet()))
     expect(r.ok).toBe(false)
     if (r.ok) return
     /* بندٌ لكلّ اقتراحٍ مفتوح — فيُعرف أنّها الورقةُ قبل القرار لا ملفٌّ معطوب */
-    expect(r.errorsAr.filter((e) => e.includes('بندٌ لا يطلب شيئا'))).toHaveLength(3)
+    expect(r.errorsAr.filter((e) => e.includes('بند لا يطلب شيئا'))).toHaveLength(3)
   })
 })
 
-describe('③ المبتوتُ لا يخرج، وما يُقرأ لا يدخل خاناتِ القرار', () => {
-  it('⚠️ المربوطُ والمردودُ ليسا في الورقة — ومن لم يبقَ له مفتوحٌ لا يخرج', () => {
+describe('③ المبتوت لا يخرج، وما يقرأ لا يدخل خانات القرار', () => {
+  it('⚠️ المربوط والمردود ليسا في الورقة — ومن لم يبق له مفتوح لا يخرج', () => {
     const ids = sheet().trainers.flatMap((t) => t.proposals.map((p) => p.proposalId))
     expect(ids).not.toContain('p-amal-linked')
     expect(ids).not.toContain('p-basem-rejected')
@@ -157,10 +157,10 @@ describe('③ المبتوتُ لا يخرج، وما يُقرأ لا يدخل �
     expect(onlyDecided.context.openProposals).toBe(0)
   })
 
-  it('⚠️ خاناتُ القرار فارغة — والنصُّ وأجوبتُه وأقربُ الرموز تحت «context» وحدَه', () => {
+  it('⚠️ خانات القرار فارغة — والنصّ وأجوبته وأقرب الرموز تحت «context» وحده', () => {
     const p = sheet().trainers[1].proposals[0] as Record<string, unknown>
     for (const key of ['verdict', 'courseId', 'questionAr', 'noteAr']) expect(p[key], key).toBeNull()
-    expect('titleAr' in p, 'العنوانُ في خانة التصحيح — يُقرأ تصحيحا عند الرفع').toBe(false)
+    expect('titleAr' in p, 'العنوان في خانة التصحيح — يقرأ تصحيحا عند الرفع').toBe(false)
     expect('summaryAr' in p).toBe(false)
     expect(p.context).toMatchObject({
       titleAr: 'دوره الخطابه', summaryAr: 'الإلقاء أمام الجمهور', details: [{ labelAr: 'الساعات', valueAr: '8 ساعة' }],
@@ -170,7 +170,7 @@ describe('③ المبتوتُ لا يخرج، وما يُقرأ لا يدخل �
     expect(asked.context).toMatchObject({ askedAr: 'لمن هي؟', answerAr: 'لمنسّقي الفعاليات المبتدئين' })
   })
 
-  it('وحالُ المدرّب للقراءة — وما أُهِّل له لا يُكتب في «qualify» سلفا', () => {
+  it('وحال المدرّب للقراءة — وما أهّل له لا يكتب في «qualify» سلفا', () => {
     const a = sheet().trainers[1]
     expect(a.qualify).toEqual([])
     expect(a.status).toBeNull()
@@ -178,23 +178,23 @@ describe('③ المبتوتُ لا يخرج، وما يُقرأ لا يدخل �
   })
 })
 
-describe('④ والشاشةُ تُخرجها وتقبل الملفَّ ملصوقا — إلى المعاينة لا إلى التطبيق', () => {
+describe('④ والشاشة تخرجها وتقبل الملفّ ملصوقا — إلى المعاينة لا إلى التطبيق', () => {
   const ui = readFileSync(join(process.cwd(), 'src/components/admin/CourseDecisionsUpload.tsx'), 'utf8')
     .replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '').replace(/^\s*\/\/.*$/gm, '')
 
-  it('⚠️ تُحمَّل الورقةُ من نقطتها حين يُفتح الباب — فالنسخُ يقع في النقرة نفسِها', () => {
+  it('⚠️ تحمّل الورقة من نقطتها حين يفتح الباب — فالنسخ يقع في النقرة نفسها', () => {
     expect(ui).toContain('"/api/admin/course-proposals/worksheet"')
-    expect(ui, 'لا تُحمَّل حين يُفتح الباب').toMatch(/useEffect\(\(\) => \{ if \(open\) loadSheet\(\); \}/)
+    expect(ui, 'لا تحمّل حين يفتح الباب').toMatch(/useEffect\(\(\) => \{ if \(open\) loadSheet\(\); \}/)
     const copy = /const copySheet = \(\) => \{[\s\S]*?\n {2}\};/.exec(ui)?.[0] ?? ''
-    expect(copy, 'لا نسخَ إلى الحافظة').toContain('navigator.clipboard.writeText(sheet.text)')
-    expect(copy, 'النسخُ ينتظر الشبكةَ قبل الحافظة — يسقط في Safari').not.toMatch(/await|apiGet|fetch\(/)
+    expect(copy, 'لا نسخ إلى الحافظة').toContain('navigator.clipboard.writeText(sheet.text)')
+    expect(copy, 'النسخ ينتظر الشبكة قبل الحافظة — يسقط في Safari').not.toMatch(/await|apiGet|fetch\(/)
   })
 
-  it('⚠️ والملصوقُ يمرّ من باب الملفّ نفسِه إلى المعاينة — لا يُطبَّق ملصوقٌ لم يُرَ', () => {
+  it('⚠️ والملصوق يمرّ من باب الملفّ نفسه إلى المعاينة — لا يطبّق ملصوق لم ير', () => {
     const take = /const take = async \(text: string, name: string\) => \{[\s\S]*?\n {2}\};/.exec(ui)?.[0] ?? ''
-    expect(take, 'لا بابَ واحدٌ للملفّ والملصوق').toContain('await show(parsed)')
+    expect(take, 'لا باب واحد للملفّ والملصوق').toContain('await show(parsed)')
     expect(take).not.toContain('course-decisions/apply')
-    expect(ui, 'الملفُّ لا يمرّ من الباب نفسِه').toMatch(/const read = async \(file: File\) => take\(await file\.text\(\), file\.name\)/)
-    expect(ui, 'زرُّ اللصق لا يمرّ من الباب').toMatch(/onClick=\{\(\) => void take\(pasted, /)
+    expect(ui, 'الملفّ لا يمرّ من الباب نفسه').toMatch(/const read = async \(file: File\) => take\(await file\.text\(\), file\.name\)/)
+    expect(ui, 'زرّ اللصق لا يمرّ من الباب').toMatch(/onClick=\{\(\) => void take\(pasted, /)
   })
 })

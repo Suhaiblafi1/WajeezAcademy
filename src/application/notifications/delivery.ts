@@ -36,14 +36,14 @@ export interface MailOutcome {
 export function mailOutcomeAr(doneAr: string, status: string | null | undefined): MailOutcome {
   if (status === 'sent') return { ok: true, ar: doneAr }
   if (status === 'not_configured') {
-    return { ok: false, ar: 'سُجّل الفعل ولم يخرج البريد — قناةُ البريد غير مفعّلة، فعّلها من شاشة التكاملات' }
+    return { ok: false, ar: 'سجّل الفعل ولم يخرج البريد — قناة البريد غير مفعّلة، فعّلها من شاشة التكاملات' }
   }
   if (status === 'failed') {
-    return { ok: false, ar: 'سُجّل الفعل وتعذّر خروجُ البريد — راجع شاشة التكاملات ثمّ أعد المحاولة' }
+    return { ok: false, ar: 'سجّل الفعل وتعذّر خروج البريد — راجع شاشة التكاملات ثمّ أعد المحاولة' }
   }
   /* لا حالَ في الجواب: لا يُقال «أُرسل» على ظنّ. وهذا يقع حين يُنادى مسارٌ
      لا يردّ حالَ بريده، فيُقرأ الغيابُ غيابا لا نجاحا. */
-  return { ok: false, ar: `${doneAr} — وحالُ البريد غيرُ معروف، تحقّق قبل أن تعدّه مُبلَّغا` }
+  return { ok: false, ar: `${doneAr} — وحال البريد غير معروف، تحقّق قبل أن تعدّه مبلّغا` }
 }
 
 /** خبرُ دفعةٍ — يقول كم خرج بريدُه وكم لم يخرج، ولا يبتلع الثاني في الأوّل */
@@ -51,7 +51,7 @@ export function mailBatchOutcomeAr(baseAr: string, statuses: (string | null | un
   const undelivered = statuses.filter((s) => s !== 'sent').length
   if (undelivered === 0) return { ok: true, ar: baseAr }
   const why = statuses.some((s) => s === 'not_configured')
-    ? 'قناةُ البريد غير مفعّلة'
+    ? 'قناة البريد غير مفعّلة'
     : 'تعذّر الإرسال'
-  return { ok: false, ar: `${baseAr} — ولم يخرج البريدُ في ${undelivered} منها (${why})` }
+  return { ok: false, ar: `${baseAr} — ولم يخرج البريد في ${undelivered} منها (${why})` }
 }

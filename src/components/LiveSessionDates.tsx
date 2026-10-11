@@ -24,7 +24,7 @@ import { whenAr } from "@/application/learning/cohort-gate";
 import { countAr } from "@/application/text/count-ar";
 
 export const LIVE_SESSION_FORMS = {
-  one: "لقاءٌ مباشر", two: "لقاءان مباشران", few: "لقاءاتٍ مباشرة", many: "لقاءً مباشرا",
+  one: "لقاء مباشر", two: "لقاءان مباشران", few: "لقاءات مباشرة", many: "لقاء مباشرا",
 } as const;
 
 export default function LiveSessionDates({
@@ -50,7 +50,7 @@ export default function LiveSessionDates({
         <Video className="h-3.5 w-3.5 shrink-0 text-teal-light-ink" />
         <span className="min-w-0 flex-1">
           <span className="font-bold text-foreground">{countAr(sessions.length, LIVE_SESSION_FORMS)}</span>
-          {" · "}أوّلُها {whenAr(first.startsAt)}
+          {" · "}أوّلها {whenAr(first.startsAt)}
         </span>
         <ChevronDown className={`h-3 w-3 shrink-0 transition ${open ? "rotate-180" : ""}`} />
       </button>

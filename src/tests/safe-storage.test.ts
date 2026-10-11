@@ -24,7 +24,7 @@ afterEach(() => {
 });
 
 describe("غلاف التخزين", () => {
-  it("لا يرمي حين يرمي التخزين — بل يُعيد لا شيء", () => {
+  it("لا يرمي حين يرمي التخزين — بل يعيد لا شيء", () => {
     vi.stubGlobal("window", { localStorage: THROWING, sessionStorage: THROWING });
     resetStorageProbeForTests();
     expect(() => safeGet("k")).not.toThrow();
@@ -80,7 +80,7 @@ describe("الصفحات لا تمسّ التخزين مباشرة", () => {
     "src/pages/Pathway.tsx",
   ];
 
-  it("ولا واحدةٌ منها تستدعي localStorage أو sessionStorage", () => {
+  it("ولا واحدة منها تستدعي localStorage أو sessionStorage", () => {
     const offenders: string[] = [];
     for (const f of GUARDED) {
       const src = readFileSync(join(process.cwd(), f), "utf8")
@@ -91,7 +91,7 @@ describe("الصفحات لا تمسّ التخزين مباشرة", () => {
     expect(offenders).toEqual([]);
   });
 
-  it("وحارسُ القطع الزائلة يُعيد التحميل بلا تخزين — بعلامةٍ في العنوان", () => {
+  it("وحارس القطع الزائلة يعيد التحميل بلا تخزين — بعلامة في العنوان", () => {
     /* كان يمتنع كليّا بلا تخزين، فيبقى صاحبُ الإعداد الصارم على شاشةٍ بيضاء.
        والعلامةُ تبقى بعد الإعادة فتمنع الحلقة، ولا تحتاج تخزينا. */
     const html = readFileSync(join(process.cwd(), "index.html"), "utf8");

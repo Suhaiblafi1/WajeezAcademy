@@ -122,8 +122,8 @@ export default function PublicSearch() {
               else if (e.key === 'ArrowUp') { e.preventDefault(); setCursor((c) => Math.max(c - 1, 0)) }
               else if (e.key === 'Enter' && hits[cursor]) { e.preventDefault(); go(hits[cursor].to) }
             }}
-            placeholder="ابحث عن مسارٍ أو دورة…"
-            aria-label="ابحث عن مسارٍ أو دورة"
+            placeholder="ابحث عن مسار أو دورة…"
+            aria-label="ابحث عن مسار أو دورة"
             className="min-w-0 flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground/70 focus:outline-none"
           />
           <button onClick={close} aria-label="أغلق البحث" className="shrink-0 cursor-pointer text-muted-foreground hover:text-foreground">
@@ -134,13 +134,13 @@ export default function PublicSearch() {
         <div className="max-h-[52vh] overflow-y-auto p-2">
           {!q.trim() ? (
             <p className="px-3 py-8 text-center text-read leading-6 text-muted-foreground">
-              اكتب ما تريد تعلّمَه — أو ما تريد تغييرَه في عملك.
+              اكتب ما تريد تعلّمه — أو ما تريد تغييره في عملك.
               <br />
               ونفهم «اكسل» و«موارد بشرية» و«ai» كما تكتبها.
             </p>
           ) : hits.length === 0 ? (
             <div className="px-3 py-8 text-center">
-              <p className="text-read leading-6 text-muted-foreground">لا نتيجةَ لـ«{q}».</p>
+              <p className="text-read leading-6 text-muted-foreground">لا نتيجة لـ«{q}».</p>
               <Link
                 to="/#diagnostic" onClick={close}
                 className="mt-3 inline-flex rounded-full border border-teal/40 px-4 py-2 text-fine font-bold text-teal-light-ink hover:bg-teal/10"

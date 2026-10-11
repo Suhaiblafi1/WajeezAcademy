@@ -64,9 +64,9 @@ const SCENARIO = [
 /** ووصفُ كلِّ صفٍّ بمصدره — والأعلى أوّلا في داخل الصفّ لا في ترتيبها،
     فالترتيبُ هنا تصاعديٌّ ليُرى أثرُ الرابط وهو يرتفع. */
 const SOURCE_LABELS_AR = [
-  'كلُّهم من الأكاديميّة',
-  'نصفُهم عبر رابط إحالتك',
-  'كلُّهم عبر رابط إحالتك',
+  'كلّهم من الأكاديميّة',
+  'نصفهم عبر رابط إحالتك',
+  'كلّهم عبر رابط إحالتك',
 ] as const
 
 /* ═══ والثابتُ لكلّ شعبةٍ يبقى على الشعب ═══
@@ -118,9 +118,9 @@ export function buildFeeExampleAr(c: ContractCompensation | null): FeeExample | 
       rows,
       total: rate * rows.length,
       currency: c.currency,
-      noteAr: 'أتعابُك مبلغٌ ثابتٌ عن الشعبة، فلا يتغيّر بعدد المسجّلين. وعددُ الشعب أعلاه '
-        + 'مفترضٌ للإيضاح وحدَه: لا تعِد هذه الصفحةُ بإسناد دورة ولا بفتح شعبة، '
-        + 'والذي يلزم الطرفين هو الاتفاقيةُ وملاحقُها.',
+      noteAr: 'أتعابك مبلغ ثابت عن الشعبة، فلا يتغيّر بعدد المسجّلين. وعدد الشعب أعلاه '
+        + 'مفترض للإيضاح وحده: لا تعد هذه الصفحة بإسناد دورة ولا بفتح شعبة، '
+        + 'والذي يلزم الطرفين هو الاتفاقية وملاحقها.',
     }
   }
 
@@ -154,7 +154,7 @@ export function buildFeeExampleAr(c: ContractCompensation | null): FeeExample | 
     if (referred > 0) parts.push(`${referred} عبر رابط إحالتك`)
     /* ولا يُقال «احتُسبت على الحدّ الأدنى N مقعدا» بعد ١ أكتوبر ٢٠٢٦: الأرضيّةُ
        أرضيّةُ مالٍ لا مقاعد، فلا مقعدَ يُحتسب لا مسجَّلَ له. */
-    parts.push(`${b.generalSeats} مقعدا عامّا${b.floorApplied ? ' ثمّ كُمّلت إلى الحدّ الأدنى المضمون' : ''}`)
+    parts.push(`${b.generalSeats} مقعدا عامّا${b.floorApplied ? ' ثمّ كمّلت إلى الحدّ الأدنى المضمون' : ''}`)
     const sourceAr = referralRate === null ? '' : `، ${SOURCE_LABELS_AR[i]}`
     rows.push({
       labelAr: `${s.seats} مسجّلا${sourceAr}: ${parts.join('، و')}`,
@@ -166,19 +166,19 @@ export function buildFeeExampleAr(c: ContractCompensation | null): FeeExample | 
     })
   }
 
-  const referralNote = referralRate === null ? '' : ' والمقعدُ العامُّ هو كلُّ مقعدٍ لم يسجّل عبر رابطك.'
+  const referralNote = referralRate === null ? '' : ' والمقعد العامّ هو كلّ مقعد لم يسجّل عبر رابطك.'
   return {
     rows,
     total: rows.reduce((t, r) => t + r.amount, 0),
     currency: c.currency,
     /* والأعلى يُذكَر أوّلا — قرارُ ٢١ سبتمبر ٢٠٢٦. وكان العامُّ يتقدّم فيقرأ
        المدرّبُ الأصغرَ أوّلا ويثبت في ذهنه، ويأتيه سعرُ رابطه ذيلا. */
-    noteAr: `الأسعارُ أعلاه هي المثبتةُ في قاعدة أتعابك (`
+    noteAr: `الأسعار أعلاه هي المثبتة في قاعدة أتعابك (`
       + `${referralRate === null ? '' : `${withCurrencyAr(num(referralRate), c.currency)} للمقعد عبر رابطك، و`}`
       + `${referralRate === null ? withCurrencyAr(num(rate), c.currency) : num(rate)} للمقعد العامّ`
-      + `${minSeats > 0 ? `، وحدٌّ أدنى ${minSeats} مقعدا` : ''}).${referralNote}`
-      + ' وأعدادُ المسجّلين مفترضةٌ للإيضاح وحدَها: لا تعِد هذه الصفحةُ بعددِ مسجّلين،'
-      + ' ولا بإسناد دورة، ولا بفتح شعبة. والذي يلزم الطرفين هو الاتفاقيةُ وملاحقُها.',
+      + `${minSeats > 0 ? `، وحدّ أدنى ${minSeats} مقعدا` : ''}).${referralNote}`
+      + ' وأعداد المسجّلين مفترضة للإيضاح وحدها: لا تعد هذه الصفحة بعدد مسجّلين،'
+      + ' ولا بإسناد دورة، ولا بفتح شعبة. والذي يلزم الطرفين هو الاتفاقية وملاحقها.',
   }
 }
 
