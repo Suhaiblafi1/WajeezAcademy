@@ -17,7 +17,7 @@ import { join } from 'node:path'
 import {
   isEditsLineAr, noteItemsFrom, notePoints, PLAN_EDIT_KINDS, planEditView, suggestedEditsLineAr,
 } from '@/application/trainer/plan-edits'
-import { scorecardNotes } from '@/application/trainer/plan-scorecard'
+import { compactGapsAr, NOTE_SUGGESTION_AR, scorecardNotes } from '@/application/trainer/plan-scorecard'
 
 const code = (p: string) => readFileSync(join(process.cwd(), p), 'utf8')
   .replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '').replace(/^\s*\/\/.*$/gm, '')
@@ -61,7 +61,7 @@ describe('② بندٌ لكلّ خطوة', () => {
   it('وعنوانُها باسم خطوتها، ونقاطُها صفوفُها', () => {
     const v = planEditView({ kind: 'note', step: 'modules', textAr: 'مطلوب — مصدر\nأوضح' }, null, { moduleIds: [] })
     expect(v.titleAr).toBe('ملاحظةٌ على «المحاور ومواعيدها»')
-    expect(v.rows.map((r) => [r.labelAr, r.beforeAr, r.afterAr])).toEqual([['مطلوب', null, 'مصدر'], ['', null, 'أوضح']])
+    expect(v.rows.map((r) => [r.tagAr ?? null, r.labelAr, r.beforeAr, r.afterAr])).toEqual([['مطلوب', '', null, 'مصدر'], [null, '', null, 'أوضح']])
     expect(planEditView({ kind: 'note', step: 'general', textAr: 'شكرا' }, null, { moduleIds: [] }).titleAr).toBe('ملاحظةٌ عامّة')
   })
 })
@@ -91,6 +91,11 @@ describe('③ وفي «المراجعة» قبل التعديلات', () => {
     expect(code('src/components/PlanEdits.tsx')).toMatch(/const whyBox = [\s\S]{0,700}\/api\/trainer\/plan-edits\/\$\{x\.id\}\/reject`, note\.trim\(\) \? \{ noteAr: note\.trim\(\) \} : \{\}/)
   })
 
+  it('⚠️ ونقطةُ «الآن ← نقترح» خانتان — «الآن» ثمّ «نقترح»، كخانتي التعديل', () => {
+    const points = panel.slice(panel.indexOf('export function NotePoints'), panel.indexOf('export function NotePoints') + 1600)
+    expect(points).toMatch(/\{r\.beforeAr !== null \? \([\s\S]{0,500}<Cell label="الآن" text=\{r\.beforeAr\} muted \/>\s*<Cell label="نقترح" text=\{r\.afterAr\} \/>/)
+  })
+
   it('⚠️ والصفحةُ تفتح خطوتَها — ما كانت من خطواتها', () => {
     expect(ws).toMatch(/onOpenStep=\{\(s\) => \{ if \(STAGES\.some\(\(x\) => x\.key === s\)\) void openStage\(s as Stage\); \}\}/)
   })
@@ -112,5 +117,45 @@ describe('④ ولا تُعدّ تعديلات، والقاعدةُ تتّسع �
     const allowed = /CHECK \("kind" IN \(([^)]+)\)\)/.exec(sql)?.[1].split(',').map((s) => s.trim().replace(/'/g, ''))
     expect(allowed).toEqual([...PLAN_EDIT_KINDS])
     expect(PLAN_EDIT_KINDS).toContain('note')
+  })
+})
+
+/* ═══ «ماذا كان وماذا نقترح» (١١ أكتوبر ٢٠٢٦) ═══
+   قال صاحبُ المنصّة لمّا رأى «المُسلَّم: المحور 1: بلا مُسلَّم؛ المحور 2: …»: «الاقتراحاتُ غيرُ مفهومة.. يجب أن
+   تكون ماذا كان وماذا نقترح». فالنقطةُ من بطاقة المعايير خانتان: «الآن» مجموعا، و«نقترح» المعيارُ بجملته. */
+describe('⑤ «الآن ← نقترح»', () => {
+  it('⚠️ السطرُ القديمُ كما وصل — «الآن» مجموعا، و«نقترح» من اسم معياره', () => {
+    const old = 'مقترَح — المُسلَّم: ' + Array.from({ length: 8 }, (_, k) => `المحور ${k + 1}: بلا مُسلَّم`).join('؛ ')
+    const [p] = notePoints(old)
+    expect([p.tagAr, p.labelAr, p.nowAr]).toEqual(['مقترَح', 'المُسلَّم', 'المحاور 1–8: بلا مُسلَّم'])
+    expect(p.suggestAr).toBe(NOTE_SUGGESTION_AR['المُسلَّم'])
+    const [r] = notePoints('مقترَح — إيقاعٌ ثابتٌ وبلا عطل: 7 مواعيدَ مختلفة: الأربعاء 19:00 · الجمعة 19:00')
+    expect([r.labelAr, r.nowAr]).toEqual(['إيقاعٌ ثابتٌ وبلا عطل', '7 مواعيدَ مختلفة: الأربعاء 19:00 · الجمعة 19:00'])
+    expect(r.suggestAr).toMatch(/^اليومُ والساعةُ أنفسُهما كلَّ أسبوع/)
+  })
+
+  it('⚠️ والسطرُ الجديدُ يحمل خانتيه — ويُعرض صفّا بهما', () => {
+    const notes = scorecardNotes([
+      { key: 'rhythm', step: 'sessions', status: 'advice', labelAr: 'إيقاعٌ ثابتٌ وبلا عطل', gaps: ['3 مواعيد أسبوعيّة'], measuredAr: 'x', standardAr: 'اليومُ والساعةُ أنفسُهما' },
+    ] as never)
+    const v = planEditView({ kind: 'note', step: 'sessions', textAr: notes.sessions! }, null, { moduleIds: [] })
+    expect(v.rows).toEqual([{ labelAr: 'إيقاعٌ ثابتٌ وبلا عطل', beforeAr: '3 مواعيد أسبوعيّة', afterAr: 'اليومُ والساعةُ أنفسُهما', tagAr: 'مقترَح' }])
+  })
+
+  it('وكلامُ المعتمِد الحرُّ نقطةٌ كما كتبها — لا يُشقّ عند نقطتين', () => {
+    const [p] = notePoints('ملاحظة: راجع المحور الثاني')
+    expect([p.labelAr, p.nowAr, p.suggestAr, p.textAr]).toEqual([undefined, undefined, undefined, 'ملاحظة: راجع المحور الثاني'])
+  })
+
+  it('والمجموعُ يقول المدى — والمختلفُ يبقى كما هو', () => {
+    expect(compactGapsAr(['المحور 1: بلا لقاء', 'المحور 2: بلا لقاء', 'المحور 3: بلا لقاء', 'المحور 5: بلا لقاء'])).toBe('المحاور 1–3، 5: بلا لقاء')
+    expect(compactGapsAr(['المحور 1: بلا لقاء', 'المحور 2: بلا مصدر'])).toBe('المحور 1: بلا لقاء؛ المحور 2: بلا مصدر')
+  })
+
+  it('⚠️ ولكلّ معيارٍ في البطاقة اقتراحُه — فلا سطرَ قديمٌ بلا «نقترح»', () => {
+    const src = readFileSync(join(process.cwd(), 'src/application/trainer/plan-scorecard.ts'), 'utf8')
+    const labels = [...src.matchAll(/key: '[a-z_]+', labelAr: '([^']+)'/g)].map((m) => m[1])
+    expect(labels.length, 'تعطّلت قراءةُ المعايير').toBeGreaterThan(12)
+    expect(labels.filter((l) => !NOTE_SUGGESTION_AR[l])).toEqual([])
   })
 })

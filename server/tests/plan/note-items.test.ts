@@ -38,7 +38,7 @@ const content = {
   startsOn: '2026-12-06', endsOn: '2027-01-30',
 }
 
-type Item = { id: string; kind: string; step: string; status: string; required: boolean; noteAr: string | null; view: { titleAr: string; rows: { labelAr: string; afterAr: string | null }[] } }
+type Item = { id: string; kind: string; step: string; status: string; required: boolean; noteAr: string | null; view: { titleAr: string; rows: { labelAr: string; tagAr?: string; afterAr: string | null }[] } }
 const notesOf = async (cohortId: string, who = 'a') =>
   ((await call('GET', `/api/trainer/cohorts/${cohortId}/plan-edits`, who)).json() as Item[]).filter((x) => x.kind === 'note')
 
@@ -108,7 +108,7 @@ describe('ملاحظاتُ الردّ بنودٌ يوافق عليها', () => {
     expect(notes.map((x) => x.required)).toEqual([false, true, false])
     const mods = notes.find((x) => x.step === 'modules')!
     expect(mods.view.titleAr).toBe('ملاحظةٌ على «المحاور ومواعيدها»')
-    expect(mods.view.rows.map((x) => [x.labelAr, x.afterAr])).toEqual([
+    expect(mods.view.rows.map((x) => [x.tagAr, x.afterAr])).toEqual([
       ['مطلوب', 'مصدرٌ لكلّ محور: المحور 1 بلا مصدر'],
       ['مقترَح', 'المخرَج أوضح بفعلٍ يُرى'],
     ])

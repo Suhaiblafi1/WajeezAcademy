@@ -251,10 +251,11 @@ describe('ملاحظاتُ الردّ من البطاقة', () => {
     i.sessions[1] = { ...i.sessions[1]!, moduleIds: ['M1'] }
     const notes = scorecardNotes(planScorecard(i))
     expect(Object.keys(notes).sort()).toEqual(['identity', 'sessions'])
-    expect(notes.identity).toMatch(/^مطلوب — نهايةُ الشعبة: /)
+    expect(notes.identity).toMatch(/^مطلوب — نهايةُ الشعبة: الآن /)
     const lines = notes.sessions!.split('\n')
-    expect(lines[0]).toMatch(/^مطلوب — لقاءٌ لكلّ محور: المحور 2: بلا لقاءٍ مباشر$/)
-    expect(lines[1]).toMatch(/^مقترَح — طولُ اللقاء: /)
+    /* «الآن ← نقترح» (١١ أكتوبر ٢٠٢٦): ما هو الآن، ثمّ المعيارُ بجملته */
+    expect(lines[0]).toBe('مطلوب — لقاءٌ لكلّ محور: الآن المحور 2: بلا لقاءٍ مباشر ← نقترح: لكلّ محورٍ لقاءٌ مباشرٌ واحدٌ على الأقلّ')
+    expect(lines[1]).toMatch(/^مقترَح — طولُ اللقاء: الآن .+ ← نقترح: بين ساعتين وثلاث/)
   })
 
   it('ولا تتجاوز حدَّ الصندوق', () => {
