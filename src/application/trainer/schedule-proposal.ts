@@ -20,7 +20,7 @@ import { MIN_SESSION_MINUTES } from './session-length'
 import { zonedAt, zonedClock, zonedDay, type CohortPeriod } from './cohort-period'
 import type { PlanSlot } from './axis-timeline'
 import {
-  HOLIDAYS, LATEST_END, planScorecard, PROJECT_AFTER_SESSIONS_DAYS, WEEKDAY_AR, WORKDAY_EARLIEST, WORKDAYS,
+  HOLIDAYS, LATEST_END, MAX_DISTINCT_SLOTS, planScorecard, PROJECT_AFTER_SESSIONS_DAYS, WEEKDAY_AR, WORKDAY_EARLIEST, WORKDAYS,
   type ScorecardSession, type ScorecardTask, type ScoreItem,
 } from './plan-scorecard'
 
@@ -194,10 +194,16 @@ export function proposeSchedule(input: ScheduleInput): ScheduleProposal {
     return { ok: false, reasonAr: 'لا جدولَ ثابتٌ يُحسّن الإيقاعَ داخلَ مواعيد المحاور — رتّبها أوّلا' }
   }
 
-  const tasksAr = taskMoves.length ? ` ومعها ${taskMoves.length === 1 ? 'موعدُ مهمّة' : `مواعيدُ ${taskMoves.length} مهامّ`} تتبعها` : ''
+  /* والسببُ «ما هو الآن ← ما نقترح» (صاحب المنصّة، ١١ أكتوبر ٢٠٢٦): ما في لقاءاته اليومَ أوّلا، ثمّ الجدول */
+  const nowAr = tally.size > MAX_DISTINCT_SLOTS ? `لقاءاتُك اليومَ على ${tally.size} مواعيدَ مختلفة`
+    : live.some((s) => holiday(s.day)) ? 'من لقاءاتك اليومَ ما يقع في عطلةٍ رسميّة'
+    : 'من لقاءاتك اليومَ ما يقع في وقتٍ غيرِ مناسب'
+  const n = taskMoves.length
+  const tasksAr = n === 0 ? '' : ` ومعها ${n === 1 ? 'موعدُ مهمّة' : n === 2 ? 'موعدا مهمّتين' : n <= 10 ? `مواعيدُ ${n} مهامّ` : `مواعيدُ ${n} مهمّةً`} تتبعها`
+  const movedAr = moves.length === 1 ? 'لقاءٌ واحد' : moves.length === 2 ? 'لقاءان' : moves.length <= 10 ? `${moves.length} لقاءات` : `${moves.length} لقاءً`
   return {
     ok: true,
     edit: { kind: 'schedule', weekday: target.weekday, clock: target.clock, moves, tasks: taskMoves },
-    reasonAr: `لقاءاتُك ${WEEKDAY_AR[target.weekday]} ${target.clock} كلَّ أسبوع — ينتقل ${moves.length} من ${live.length}${tasksAr}، داخلَ مواعيد محاورها وبلا عطل.`,
+    reasonAr: `${nowAr} — نقترح ${WEEKDAY_AR[target.weekday]} ${target.clock} كلَّ أسبوع: ينتقل ${movedAr} من ${live.length}${tasksAr}، داخلَ مواعيد محاورها وبلا عطل.`,
   }
 }

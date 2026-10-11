@@ -45,10 +45,10 @@ describe('مراجعةُ الإدارة قبل المدرّب (١٠ أكتوبر
     expect(panel.slice(at, at + 1200)).toContain('<Rows view={x.view} />')
   })
 
-  it('⚠️ وكلُّ مسوّدةٍ في مجموعتها — المطلوبُ مفتوحٌ والمقترحُ مطويّ، ولا تسقط واحدة (١١ أكتوبر ٢٠٢٦)', () => {
+  it('⚠️ وكلُّ مسوّدةٍ في مجموعتها — المطلوبُ مفتوحٌ والمقترحُ مطويّ إلّا وفيه جدولٌ جهّزه المعتمِد الآن، ولا تسقط واحدة (١١ أكتوبر ٢٠٢٦)', () => {
     expect(panel).toMatch(/\(\[\["required", "المطلوب"\], \["suggested", "المقترح"\]\] as const\)\.map\(\(\[kind, label\]\) => \{/)
     expect(panel).toMatch(/const list = drafts\.filter\(\(x\) => x\.required === \(kind === "required"\)\);/)
-    expect(panel).toMatch(/open=\{kind === "required"\}/)
+    expect(panel).toMatch(/open=\{kind === "required" \|\| list\.some\(\(x\) => x\.kind === "schedule"\)\}/)
     expect(panel).toMatch(/\{list\.map\(\(x\) => draftItem\(x\)\)\}/)
   })
 })

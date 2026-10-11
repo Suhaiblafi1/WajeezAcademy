@@ -230,11 +230,12 @@ export function PlanEditsUploader({ planId, cohortId, canUpload, canReview, onPe
               اعتمِدها كلَّها للمدرّب ({drafts.length})
             </Button>
           )}
-          {/* في مجموعتين تُفتحان بنقرة — المطلوبُ مفتوحٌ والمقترحُ مطويّ («كثيرُ الكلام»، ١١ أكتوبر ٢٠٢٦) */}
+          {/* في مجموعتين تُفتحان بنقرة — المطلوبُ مفتوحٌ والمقترحُ مطويّ («كثيرُ الكلام»، ١١ أكتوبر ٢٠٢٦)،
+              إلّا أن يكون فيه جدولٌ ثابت: جهّزه المعتمِدُ بزرّه الآن، فيراه بلا نقرةٍ ثانية */}
           {([["required", "المطلوب"], ["suggested", "المقترح"]] as const).map(([kind, label]) => {
             const list = drafts.filter((x) => x.required === (kind === "required"));
             return list.length > 0 && (
-              <details key={kind} className="rounded-lg border border-border/60 p-3" open={kind === "required"}>
+              <details key={kind} className="rounded-lg border border-border/60 p-3" open={kind === "required" || list.some((x) => x.kind === "schedule")}>
                 <summary className="cursor-pointer text-read font-bold text-teal-light-ink">{label} ({list.length})</summary>
                 <ol className="mt-3 space-y-3">{list.map((x) => draftItem(x))}</ol>
               </details>

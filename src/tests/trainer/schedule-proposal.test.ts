@@ -53,6 +53,8 @@ describe('① يومٌ وساعةٌ ثابتان — وكلُّ لقاءٍ في 
     expect(r.ok, r.ok ? '' : r.reasonAr).toBe(true)
     if (!r.ok) return
     expect([r.edit.weekday, r.edit.clock]).toEqual([6, '18:00'])
+    /* والسببُ ما هو الآن ثمّ ما نقترح — بعدده ولغته */
+    expect(r.reasonAr).toBe('لقاءاتُك اليومَ على 4 مواعيدَ مختلفة — نقترح السبت 18:00 كلَّ أسبوع: ينتقل 3 لقاءات من 4 ومعها مواعيدُ 3 مهامّ تتبعها، داخلَ مواعيد محاورها وبلا عطل.')
     const after = applied(input, r.edit)
     const days = after.sessions.map((s) => zonedDay(s.startsAt))
     expect(days).toEqual(['2026-12-05', '2026-12-12', '2026-12-19', '2027-01-02'])
@@ -93,6 +95,7 @@ describe('①ب الأكثرُ تكرارا لا الأوّل — والأقرب
     /* محورُ الرابع إلى ١٥ يناير: فيه ٢٦ ديسمبر و٢ و٩ يناير — والأقربُ من ٢٧ ديسمبر أوّلُها */
     expect(applied(input, r.edit).sessions.map((s) => zonedDay(s.startsAt))).toEqual(['2026-12-05', '2026-12-12', '2026-12-19', '2026-12-26'])
     expect(r.edit.moves.map((m) => m.sessionId)).toEqual(['s1', 's4'])
+    expect(r.reasonAr).toBe('لقاءاتُك اليومَ على 3 مواعيدَ مختلفة — نقترح السبت 18:00 كلَّ أسبوع: ينتقل لقاءان من 4، داخلَ مواعيد محاورها وبلا عطل.')
   })
 
   it('⚠️ الجمعةُ موعدا: ٢٥ ديسمبر و١ يناير جمعتان وعطلتان — فلا يقع عليهما لقاء', () => {
