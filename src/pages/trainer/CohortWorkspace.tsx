@@ -2178,7 +2178,8 @@ export default function CohortWorkspace() {
                     type="button"
                     onClick={() => setOpenModule(open ? null : m.moduleId)}
                     aria-expanded={open}
-                    className="flex min-w-0 flex-1 items-center gap-2 text-start"
+                    /* وأساسُه ١٤rem: في الهاتف ينزل «انقل/احذف» سطرا ولا يُعصر العنوانُ كلمةً في كلّ سطر */
+                    className="flex min-w-0 flex-1 basis-56 items-center gap-2 text-start"
                   >
                     <ChevronDown className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${open ? "" : "-rotate-90"}`} aria-hidden="true" />
                     <span className="min-w-0">
@@ -2293,8 +2294,12 @@ export default function CohortWorkspace() {
           {slotsOn ? (
             <ol className="mt-3 space-y-3">
               {slots.map((slot, si) => (
-                <li key={`${si}-${slot.moduleIds[0] ?? "empty"}`} className="grid gap-2">
-                  <Card tone="default" className="grid gap-3">
+                /* ═══ ولماذا `grid-cols-1` في الموعد وبطاقته (١١ أكتوبر ٢٠٢٦) ═══
+                   عمودُ الشبكة الضمنيُّ بعرض أعرض ما فيه — وسطرُ المخرَج في المحور المطويّ سطرٌ واحدٌ
+                   مقصوص، فعرضُه الأدنى طولُه كلُّه. فكان مخرَجٌ طويلٌ يمدّ الموعدَ كلَّه خارج الصفحة
+                   («التصميمُ خربان» — صاحب المنصّة). وعمودٌ واحدٌ بأدنى صفرٍ يُبقيه في عرضه ويقصّ السطر. */
+                <li key={`${si}-${slot.moduleIds[0] ?? "empty"}`} className="grid grid-cols-1 gap-2">
+                  <Card tone="default" className="grid grid-cols-1 gap-3">
                     <p className="text-read font-black text-teal-light-ink">
                       الموعد {si + 1} <span className="font-bold text-foreground">· {axesLabelAr(slot.moduleIds, axisNo)}</span>
                     </p>
