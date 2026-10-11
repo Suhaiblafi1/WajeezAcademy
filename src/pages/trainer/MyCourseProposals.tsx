@@ -123,7 +123,7 @@ function ProposalForm({
             />
           </StaffField>
         </div>
-        <StaffField label="نبذةٌ عن الدورة" hint="فقرةٌ تُقرأ قبل أن تُصنَّف">
+        <StaffField label="نبذةٌ عن الدورة" hint="فقرةٌ قصيرة">
           <textarea
             value={value.summaryAr} maxLength={MAX_SUMMARY} rows={3} className={staffAreaCls}
             placeholder="ماذا فيها، ولماذا يحتاجها من تستهدفه"
@@ -150,7 +150,7 @@ function ProposalForm({
         </div>
       </Section>
 
-      <Section n={3} title="محتواها" hint="بالمحاور والمخرجات نقارنها بكتالوجنا — فنعرف أهي جديدةٌ أم قريبةٌ من دورةٍ قائمة.">
+      <Section n={3} title="محتواها" hint="بها نقارنها بكتالوجنا.">
         <div className="grid gap-3 sm:grid-cols-2">
           <StaffField label="المحاورُ الرئيسة" hint="محورٌ في كلّ سطر">
             <textarea
@@ -159,7 +159,7 @@ function ProposalForm({
               onChange={(e) => set({ topicsAr: e.target.value })}
             />
           </StaffField>
-          <StaffField label="ما الذي يخرج به المتدرّب؟" hint="ما يقدر عليه بعدها ولم يكن يقدر">
+          <StaffField label="ما الذي يخرج به المتدرّب؟" hint="ما يقدر عليه بعدها">
             <textarea
               value={d.outcomesAr ?? ""} maxLength={MAX_DETAIL_TEXT} rows={4} className={staffAreaCls}
               placeholder="مثلا: يبني تقريرا شهريّا يتحدّث وحدَه"
@@ -173,7 +173,7 @@ function ProposalForm({
           وهل يقبل الدمج. حُذف بقرار صاحب المنصّة (٣٠ سبتمبر ٢٠٢٦): «هذا
           نحن نقرّره لا هو». فالدمجُ حكمُ الإدارة من المحاور والمخرجات، ولا
           يُسأل عنه صاحبُ الاقتراح. والإجاباتُ القديمة تبقى تُقرأ حيث حُفظت. */}
-      <Section n={4} title="جاهزيّتُك" hint="بها نقدّر متى يمكن أن تنطلق.">
+      <Section n={4} title="جاهزيّتُك" hint="لنقدّر متى تنطلق.">
         <StaffField as="div" label="هل درّستها من قبل؟">
           <OptionGrid cols={3} name="الخبرة" items={opts(PROPOSAL_EXPERIENCE)} isOn={(v) => d.experience === v} onToggle={one("experience")} />
         </StaffField>
@@ -205,8 +205,7 @@ function stateOf(p: Proposal): { label: string; tone: "wait" | "good" | "bad"; s
       label: "نسختُك من دورةٍ قائمة",
       tone: "good",
       sayAr: `هذه عندنا دورةٌ قائمة${p.course?.titleAr ? ` — «${p.course.titleAr}»` : ""}. `
-        + "فاطلب من الإدارة أن تضيفها إلى دوراتك، ثمّ اقترِح اسمَك ومحاورَك عليها من ورشةِ شعبتك — "
-        + "فتصير نسختَك منها لا دورةً ثانية.",
+        + "اطلب من الإدارة إضافتَها إلى دوراتك، ثمّ اقترِح اسمَك ومحاورَك عليها من ورشةِ شعبتك.",
     };
   }
   if (p.status === "became_course") {
@@ -235,7 +234,7 @@ function stateOf(p: Proposal): { label: string; tone: "wait" | "good" | "bad"; s
     return {
       label: "الإدارةُ تسألك",
       tone: "wait",
-      sayAr: "سؤالٌ واحدٌ يقف عليه قرارُها — أجِبْ عنه أدناه، ولك أن تعدّل العنوانَ والنبذةَ معه.",
+      sayAr: "أجِبْ عن سؤالها أدناه، ولك تعديلُ العنوان والنبذة.",
     };
   }
   if (p.status === "rejected") {
@@ -244,7 +243,7 @@ function stateOf(p: Proposal): { label: string; tone: "wait" | "good" | "bad"; s
   return {
     label: "عند الإدارة",
     tone: "wait",
-    sayAr: "وصلت الإدارةَ ولم تُصنَّف بعد. ولك أن تعدّلها أو تحذفها ما دامت كذلك.",
+    sayAr: "لم تُصنَّف بعد — لك تعديلُها أو حذفُها.",
   };
 }
 
@@ -425,7 +424,7 @@ export default function MyCourseProposals() {
                     <textarea
                       value={answerText} maxLength={MAX_ANSWER} rows={4}
                       className={staffControlCls}
-                      placeholder="أجِبْ بما يكفي لتُصنَّف دورتُك — وعدّل عنوانَها ونبذتَها إن لزم"
+                      placeholder="جوابُك"
                       onChange={(e) => setAnswerText(e.target.value)}
                     />
                   </StaffField>
@@ -467,10 +466,8 @@ export default function MyCourseProposals() {
     <TrainerLayout title="دوراتي المقترحة">
       {/* ما هذه الشاشة — تُقال مرّةً في رأسها لا في رسالةِ خطأٍ بعد الإرسال */}
       <p className="mb-5 max-w-3xl text-sm leading-7 text-muted-foreground">
-        دوراتٌ تقدر عليها وليست في كتالوجنا. ما تكتبه هنا <b className="text-foreground">اقتراحٌ لا دورة</b>:
-        لا يظهر في «الدورات» ولا يُحسب في التشخيص المهنيّ حتّى تصنّفه الإدارة — فتجعله
-        <b className="text-foreground"> نسختَك من دورةٍ قائمة</b> إن كانت قريبةً منها، أو
-        <b className="text-foreground"> دورةً جديدةً</b> تدخل الكتالوجَ بمهاراتها. وما كتبتَه في طلبِ انضمامك موجودٌ أدناه.
+        ما تكتبه <b className="text-foreground">اقتراحٌ لا دورة</b>: لا يظهر في «الدورات» ولا يُحسب في التشخيص المهنيّ
+        حتّى تصنّفه الإدارة <b className="text-foreground">نسختَك من دورةٍ قائمة</b> أو <b className="text-foreground">دورةً جديدة</b>.
       </p>
 
       {err ? (
@@ -488,7 +485,7 @@ export default function MyCourseProposals() {
                 <BookPlus className="h-5 w-5 text-teal" aria-hidden />
                 أضِف دورةً تقترحها
               </h2>
-              <p className="text-sm text-muted-foreground">العنوانُ وحدَه يلزم — وكلُّ جوابٍ يوفّر سؤالا تنتظره.</p>
+              <p className="text-sm text-muted-foreground">العنوانُ وحدَه يلزم.</p>
             </div>
             <ProposalForm value={draft} onChange={setDraft} />
             <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-white/10 pt-4">
@@ -510,7 +507,7 @@ export default function MyCourseProposals() {
             <EmptyState
               icon={BookPlus}
               titleAr="لا اقتراحَ بعد"
-              reasonAr="اكتب أوّلَ دورةٍ تقدر عليها ولا تجدها في كتالوجنا — تصل الإدارةَ فتُصنَّف."
+              reasonAr="اقترِح دورةً تقدر عليها وليست في كتالوجنا."
             />
           ) : (
             <>
@@ -535,7 +532,7 @@ export default function MyCourseProposals() {
                     ما بُتّ فيه من اقتراحاتك
                   </h2>
                   <p className="mb-3 mt-1 text-sm leading-7 text-muted-foreground">
-                    ما صار دورةً في الكتالوج، أو نسختَك من دورةٍ قائمة، أو لم يُقبل — مع ما قالته الإدارة.
+                    ما قُبل أو لم يُقبل، مع ملحوظة الإدارة.
                   </p>
                   <div className="grid gap-3">{decided.map(card)}</div>
                 </section>

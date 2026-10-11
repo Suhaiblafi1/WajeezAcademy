@@ -101,7 +101,7 @@ function BankAccountPanel() {
       <Panel as="section" className="mb-6">
         <p className="text-sm font-black">حسابي البنكيّ</p>
         <p className="mt-2 text-read leading-6 text-muted-foreground">
-          خانةُ الحسابات البنكيّة غيرُ مهيّأةٍ على الخادم بعد — راسِلِ الإدارةَ لتسليم حسابك.
+          حفظُ الحسابات البنكيّة غيرُ مهيّأٍ بعد — راسِلِ الإدارة.
         </p>
       </Panel>
     );
@@ -177,7 +177,7 @@ function BankAccountPanel() {
           <p className="text-sm font-black">حسابي البنكيّ — إليه تُحوَّل مستحقّاتُك</p>
           <p className="mt-1 flex items-center gap-1.5 text-read text-muted-foreground">
             <Lock className="h-3.5 w-3.5 shrink-0 text-teal-light-ink" aria-hidden="true" />
-            سرّيٌّ: يُحفظ معمّى، ولا يُنشر ولا يُعرض لأحد — لا في عقدٍ ولا في رسالة.
+            سرّيٌّ ومعمّى، لا يُعرض لأحد.
           </p>
         </div>
         {!open && (
@@ -197,8 +197,7 @@ function BankAccountPanel() {
       {a && !open && confirmRemove && (
         <Inset tone="warn" className="mt-3 grid gap-3 p-3">
           <p className="text-read leading-6">
-            يُلغى الحسابُ المنتهي بـ<span dir="ltr" className="font-mono">{a.tail4}</span>، ولا يُصرَف لك مستحقٌّ حتّى تُدخل حسابا غيرَه.
-            ويصلك بريدٌ بالإلغاء.
+            يُلغى الحسابُ المنتهي بـ<span dir="ltr" className="font-mono">{a.tail4}</span>، ولا يُصرَف لك مستحقٌّ حتّى تُدخل غيرَه.
           </p>
           <div className="flex flex-wrap gap-2">
             <Button size="sm" tone="danger" icon={Trash2} loading={busy} onClick={() => void remove()}>نعم، ألغِ الحساب</Button>
@@ -236,7 +235,7 @@ function BankAccountPanel() {
           </div>
           {a.outcome === "differs" && (
             <p className="mt-2 text-read leading-6 text-gold-ink sm:col-span-2">
-              ⚠️ {a.outcomeSaidAr} — والحسابُ يُشترط باسمك الشخصيّ، فالماليّةُ تسأل عنه قبل أوّل حوالة.
+              ⚠️ {a.outcomeSaidAr} — ويُشترط أن يكون الحسابُ باسمك الشخصيّ.
             </p>
           )}
         </dl>
@@ -244,7 +243,7 @@ function BankAccountPanel() {
 
       {!a && !open && (
         <p className="mt-3 text-read leading-6 text-muted-foreground">
-          لم تُدخِلْ حسابَك بعد — ولا يُصرَف مستحقٌّ قبله. يُكتب مرّةً ويبقى، وتبدّله أو تلغيه متى شئت.
+          لم تُدخِلْ حسابَك بعد، ولا يُصرَف مستحقٌّ قبله.
         </p>
       )}
 
@@ -300,7 +299,7 @@ function BankAccountPanel() {
               aria-invalid={ibanBad || ibanCountryBad || undefined}
               onChange={(e) => setForm({ ...form, iban: e.target.value })} />
             {ibanCountryBad && <span className="mt-1.5 block text-fine font-bold text-red-300">الـIBAN يبدأ بـ{form.countryCode} لحسابٍ في {country?.ar} — تحقّق من الدولة أو الرقم.</span>}
-            {!ibanCountryBad && ibanBad && <span className="mt-1.5 block text-fine font-bold text-red-300">هذا الرقمُ لا يطابق صيغةَ IBAN — راجِعْ خانةً خانة.</span>}
+            {!ibanCountryBad && ibanBad && <span className="mt-1.5 block text-fine font-bold text-red-300">الرقمُ لا يطابق صيغةَ IBAN.</span>}
           </StaffField>
 
           <div className="grid gap-3 sm:grid-cols-2">
@@ -325,8 +324,7 @@ function BankAccountPanel() {
 
           <p className="flex items-start gap-2 text-read leading-6 text-muted-foreground">
             <ShieldCheck className="mt-1 h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" />
-            يُحفظ رقمُك معمّى، ولا يُعرض عليك بعدها إلّا بطرفه الأخير، ولا يراه أحدٌ ولا يظهر في عقدٍ ولا رسالة.
-            ولا يُفتح إلّا لحظةَ تحويلِ مستحقٍّ معتمَد، ويُسجَّل كلُّ فتح. ويصلك بريدٌ عند كلّ تبديلٍ أو إلغاء.
+            يُحفظ معمّى ويظهر بطرفه الأخير فقط، ولا يُفتح إلّا عند تحويل مستحقٍّ معتمَد.
           </p>
 
           <div className="flex flex-wrap gap-2">
@@ -407,7 +405,7 @@ function RealEarningsView() {
             </p>
             <p className="mt-1 text-read leading-6 text-muted-foreground">
               {agreement.minSeats > 0 && <>يُحسب لك {agreement.minSeats} مقاعدَ على الأقلّ ولو سجّل أقلّ. </>}
-              ساريةٌ منذ {fmtDateAr(agreement.effectiveFrom)}. وكلُّ كشفٍ أدناه يُحسب على هذا الأساس — فإن رأيت غيرَه فقل لنا.
+              ساريةٌ منذ {fmtDateAr(agreement.effectiveFrom)}، وعليها تُحسب كشوفُك.
             </p>
             {scoped.length > 0 && (
               <ul className="mt-3 space-y-1 text-read text-muted-foreground">
@@ -419,7 +417,7 @@ function RealEarningsView() {
           </>
         ) : (
           <p className="mt-2 text-read leading-6 text-muted-foreground">
-            لم تُسجَّل قاعدةُ أتعابٍ لك بعد — تحدّدها الإدارةُ قبل أوّل شعبة، وتظهر هنا فورَ حفظها. ولا يُحسب لك كشفٌ قبلها.
+            لم تُحدِّد الإدارةُ أتعابَك بعد، ولا يُحسب كشفٌ قبلها.
           </p>
         )}
       </Panel>
@@ -473,8 +471,8 @@ function RealEarningsView() {
         <Panel as="section" tone="warn" className="mb-6">
           <p className="text-sm font-black text-gold-ink">أكوادٌ وخصومٌ أصدرتَها بنفسك — تُحسم من كشفك القادم</p>
           <p className="mt-2 text-read leading-7 text-muted-foreground">
-            هذا ما منحته أكوادُك (وخصومُك القديمةُ بالمبلغ) في مشترياتٍ دُفعت. يُدرج بندا باسمه في أوّل كشفٍ يُحرَّر لك
-            ويُحسم منه، ولا يتجاوز ما يُحسم في كشفٍ واحدٍ قيمتَه — وما زاد يُؤجَّل إلى الذي يليه (البند 4-10 من عقدك).
+            ما منحته أكوادُك وخصومُك في مشترياتٍ مدفوعة، يُحسم من أوّل كشفٍ لك. ولا يتجاوز الحسمُ قيمةَ
+            الكشف، وما زاد يُؤجَّل إلى الذي يليه (البند 4-10).
           </p>
           <ul className="mt-3 space-y-1.5">
             {awaitingDiscounts.rows.map((d) => (
@@ -499,7 +497,7 @@ function RealEarningsView() {
         <Panel as="section" tone="accent" className="mb-6">
           <p className="text-sm font-black text-teal-light-ink">يُعاد إليك في كشفك القادم</p>
           <p className="mt-2 text-read leading-7 text-muted-foreground">
-            رُدّ ثمنُ مشترياتٍ بأكوادك بعد أن حُسم ما منحته، فيُعاد إليك ما حُسم زيادةً بندا موجبا (البند 4-10 من عقدك).
+            رُدّ ثمنُ مشترياتٍ بأكوادك بعد الحسم، فيُعاد إليك ما حُسم زيادةً (البند 4-10).
           </p>
           <ul className="mt-3 space-y-1.5">
             {(awaitingDiscounts?.credits ?? []).map((d) => (
@@ -534,7 +532,7 @@ function RealEarningsView() {
       >
         <TicketPercent className="h-4 w-4 shrink-0 text-gold-ink" aria-hidden="true" />
         <span>
-          أكوادُ الخصم التي تُصدرها بنفسك تُدار في <b className="text-foreground">«دعوتي»</b> — وخصوماتُها تُحسم من كشفك هنا (البند 4-10).
+          أكوادُك تُدار في <b className="text-foreground">«دعوتي»</b>، وخصوماتُها تُحسم من كشفك هنا (البند 4-10).
         </span>
       </Inset>
 
@@ -558,7 +556,7 @@ function RealEarningsView() {
           <Panel className="grid place-items-center py-16 text-center">
             <Banknote className="h-10 w-10 text-muted-foreground/50" />
             <p className="mt-3 max-w-sm text-sm leading-7 text-muted-foreground">
-              لا كشوف بعد — عند اعتماد أول مستحقات لك من الإدارة المالية تظهر هنا تلقائياً ببنودها وحالتها.
+              لا كشوف بعد — تظهر هنا حين تُعتمد أوّلُ مستحقّاتك.
             </p>
           </Panel>
         )}
@@ -596,9 +594,9 @@ function RealEarningsView() {
       </div>
 
       <Card as="p" className="mt-8 px-5 py-4 text-center text-read leading-6 text-muted-foreground">
-        الكشف يمر بثلاث مراحل: إنشاء من الإدارة المالية ← اعتماد ← صرف. كل بند مرتبط بمصدره لمنع الازدواج.
+        مراحلُ الكشف: إنشاء ← اعتماد ← صرف.
         {' '}{payoutTimingNoteAr()}{' '}
-        ولأي استفسار عن بند تواصل مع منسقك قبل موعد الصرف.
+        ولأيّ استفسارٍ راسِلْ منسّقك قبل موعد الصرف.
       </Card>
     </TrainerLayout>
   );

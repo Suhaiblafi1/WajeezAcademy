@@ -123,7 +123,7 @@ export default function MyPaths() {
 
   const editor = (
     <Inset className="mt-3 grid gap-3">
-      <StaffField label="اسمُ المسار" hint="يظهر على الرفّ العامّ ويُعتمد مع المسار">
+      <StaffField label="اسمُ المسار" hint="يظهر للعامّة بعد الاعتماد">
         <input
           value={draft.titleAr} maxLength={MAX_PATH_TITLE} className={staffControlCls}
           placeholder="مثلا: من الفكرة إلى أوّل عمليّة مؤتمتة"
@@ -140,7 +140,7 @@ export default function MyPaths() {
       </StaffField>
 
       {/* ن-٣: موسمٌ من التقويم لا نصّ — فالبطاقةُ تقول متى يُفتح التسجيلُ صدقا */}
-      <StaffField label="الموسمُ الذي يعمل فيه" hint="من تقويم الأكاديميّة — لا نصّ يبلى">
+      <StaffField label="الموسمُ الذي يعمل فيه" hint="من تقويم الأكاديميّة">
         <select
           className={staffControlCls} value={draft.termId}
           onChange={(e) => setDraft({ ...draft, termId: e.target.value })}
@@ -153,11 +153,11 @@ export default function MyPaths() {
       <StaffField
         as="div"
         label={`دوراتُه (${draft.courseIds.length} من ${MAX_PATH_COURSES})`}
-        hint={`من الدورات التي اخترناها لك — ${MIN_PATH_COURSES} فأكثر، والترتيبُ ترتيبُ اختيارك`}
+        hint={`${MIN_PATH_COURSES} فأكثر، بترتيب اختيارك`}
       >
         {myCourses.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            لم نخترْ لك دورةً بعد — والمسارُ يُبنى من دوراتك.
+            لا دوراتَ لك بعد لتبني منها مسارا.
           </p>
         ) : (
           <div className="grid gap-1.5">
@@ -213,9 +213,8 @@ export default function MyPaths() {
       <Card className="mb-4">
         <h2 className="mb-1 text-read font-bold text-foreground">مسارٌ ترتّبه من دوراتك — باسمك</h2>
         <p className="text-sm leading-7 text-muted-foreground">
-          تختار دوراتٍ من دوراتك، وترتّبها، وتسمّيها. وبعد اعتماد الإدارة يظهر على صفحة
-          المسارات تحت <b>«مسارات أعدّها مدرّبونا المعتمدون»</b> باسمك وبالموسم الذي يعمل فيه.
-          {" "}والسعرُ والسعةُ بيد الإدارة كما في شعبك.
+          اختر دوراتك ورتّبها وسمِّها. بعد الاعتماد يظهر باسمك تحت <b>«مسارات أعدّها مدرّبونا المعتمدون»</b>.
+          {" "}والسعرُ والسعةُ بيد الإدارة.
         </p>
       </Card>
 
@@ -242,7 +241,7 @@ export default function MyPaths() {
             <EmptyState
               icon={Route}
               titleAr="لا مسارَ بعد"
-              reasonAr="رتّب دوراتك في مسارٍ يحمل اسمَك — يراه الزائرُ على صفحة المسارات بعد اعتماد الإدارة."
+              reasonAr="رتّب دوراتك في مسارٍ باسمك."
             />
           ) : (
             <div className="grid gap-3">
@@ -318,7 +317,7 @@ export default function MyPaths() {
 
                     {p.status === "published" ? (
                       <Inset className="mt-3 text-sm text-muted-foreground">
-                        على الرفّ منذ {fmtDateLong(p.publishedAt ?? "")} — يظهر في صفحة المسارات باسمك.
+                        منشورٌ منذ {fmtDateLong(p.publishedAt ?? "")}.
                       </Inset>
                     ) : null}
 

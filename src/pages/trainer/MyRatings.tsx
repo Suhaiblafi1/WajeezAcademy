@@ -33,9 +33,8 @@ export default function MyRatings() {
   return (
     <TrainerLayout title="ما قيل عنّي">
       <p className="mb-6 max-w-2xl text-read leading-6 text-muted-foreground">
-        التقييمات تصلك <span className="font-bold text-foreground">مجمّعة وبلا أسماء</span>، ولا يُعرض
-        منها شيء حتى تبلغ ثلاثة عن الهدف الواحد — في العدد القليل يُستدلّ على أصحاب
-        الآراء مهما حُذفت الأسماء، وحمايتُهم شرطُ صدقهم معك.
+        التقييمات تصلك <span className="font-bold text-foreground">مجمّعة وبلا أسماء</span>، ولا تظهر قبل
+        أن تبلغ ثلاثةً عن الهدف الواحد حمايةً لأصحابها.
       </p>
 
       {offline && (

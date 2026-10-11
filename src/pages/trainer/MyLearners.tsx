@@ -161,7 +161,7 @@ export default function TrainerMyLearners() {
       for (const item of queue) byUser[item.enrollment.userId] = (byUser[item.enrollment.userId] ?? 0) + 1;
       setPending(byUser);
     } catch (err) {
-      setOffline(err instanceof ApiError ? err.message : "الخادم غير متصل — هذه الصفحة تتطلب جلسة مدرب حقيقية");
+      setOffline(err instanceof ApiError ? err.message : "الخادم غير متصل");
     }
   }, []);
 
@@ -207,7 +207,7 @@ export default function TrainerMyLearners() {
         <EmptyState
           icon={GraduationCap}
           titleAr="لا متعلّمَ في شعبك بعد"
-          reasonAr="ما إن يُسجَّل أحدٌ في شعبةٍ من شعبك حتّى يظهر هنا بتقدّمه وحضوره."
+          reasonAr="يظهر هنا كلُّ من يُسجَّل في شعبك."
         />
       ) : (
         <>
@@ -217,8 +217,8 @@ export default function TrainerMyLearners() {
             </h2>
             <p className="mt-1 text-sm leading-7 text-muted-foreground">
               {needing === 0
-                ? "لا أحدَ متعثّرٌ اليوم — التقدّمُ والحضورُ في مسارهما."
-                : `${needing} ${needing === 1 ? "متعلّمٌ يحتاج" : "متعلّمين يحتاجون"} التفاتَك — وهم في أوّل القائمة.`}
+                ? "لا أحدَ متعثّرٌ اليوم."
+                : `${needing} ${needing === 1 ? "متعلّمٌ يحتاج" : "متعلّمين يحتاجون"} التفاتَك — في أوّل القائمة.`}
             </p>
             <label className="relative mt-3 block max-w-sm">
               <span className="sr-only">ابحث في متعلّميك</span>

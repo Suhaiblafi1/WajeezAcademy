@@ -163,15 +163,13 @@ function MyCodes() {
       </p>
 
       <p className="mt-2 text-read leading-7 text-muted-foreground">
-        لك أن تُصدر كودَ خصمٍ <b className="text-foreground">بنسبةٍ أو بمبلغٍ تحدّده أنت</b> وتنشره
-        لمن تشاء، فيكتبه المتعلّمُ في خانة الكود حين يشتري. ويقع على <b className="text-foreground">دوراتك أنت وحدَها</b> —
-        لا على ما يشتريه معها من دوراتِ غيرك — بعد خصوم الأكاديميّة، ومرّةً واحدةً لكلّ متعلّم. ولا يتجاوز ما يمنحه
-        بأيّ الوجهين <b className="text-foreground">{MAX_TRAINER_CODE_PERCENT}٪ من سعر الدورة</b>، وترى قيمتَه بالدولار قبل أن تُصدره.
+        كودُ خصمٍ <b className="text-foreground">بنسبةٍ أو بمبلغٍ تحدّده</b> تنشره لمن تشاء. يقع على
+        <b className="text-foreground"> دوراتك وحدَها</b> بعد خصوم الأكاديميّة، مرّةً لكلّ متعلّم، ولا يتجاوز
+        <b className="text-foreground"> {MAX_TRAINER_CODE_PERCENT}٪ من سعر الدورة</b>. وترى قيمتَه بالدولار قبل إصداره.
       </p>
       <p className="mt-2 text-read leading-7 text-muted-foreground">
-        وما يمنحه الكودُ <b className="text-foreground">من مستحقّاتك أنت</b>: في كلّ شراءٍ دُفع يُدرج ما مُنح فعلا بندا في أوّل
-        كشفٍ يُحرَّر لك ثمّ يُحسم منه، وإن رُدّ الثمنُ نقص الحسمُ بقدره (البند 4-10 من عقدك). وما تطرحه الأكاديميّةُ من
-        خصومها هي لا يُنقص أتعابَك بشيء (البند 4-9).
+        ما يمنحه فعلا في كلّ شراءٍ مدفوع يُحسم <b className="text-foreground">من مستحقّاتك</b> في أوّل كشفٍ لك، وينقص
+        الحسمُ بقدر ما رُدّ من ثمن (البند 4-10). وخصومُ الأكاديميّة لا تُنقص أتعابَك (البند 4-9).
       </p>
 
       {/* ═══ ورصيدُه — يُسقَف بما له عندنا (٢٨ سبتمبر ٢٠٢٦) ═══
@@ -182,9 +180,8 @@ function MyCodes() {
       {terms.accepted && (
         <Inset as="p" className="mt-3 px-4 py-3 text-read leading-7 text-muted-foreground">
           رصيدُ أكوادك الآن: <b dir="ltr" className="font-mono text-foreground">{budget.remaining} {budget.currency}</b> —
-          ما لك عندنا (كشوفٌ لم تُصرف، وما يُتوقَّع لك من شعبك المفتوحة) ناقصا ما منحته أكوادُك ولم يُحسم بعد.
-          ويقع الكودُ على شراءٍ ما وسع هذا الرصيدُ خصمَه، ومعه أجرُ المقعد الذي يأتي به الشراءُ نفسُه؛ وإلّا قيل للمشتري
-          إنّ الكودَ بلغ حدَّه الآن، فأكمل بدونه — ولا يُحسم منك شيء.
+          كشوفُك غيرُ المصروفة وما يُتوقَّع من شعبك المفتوحة، ناقصا ما منحته أكوادُك ولم يُحسم.
+          يقع الكودُ ما وسع هذا الرصيدُ (مع أجر مقعد الشراء نفسِه) خصمَه؛ وإلّا أكمل المشتري بدونه ولا يُحسم منك شيء.
         </Inset>
       )}
 
@@ -203,9 +200,8 @@ function MyCodes() {
               الصيغةَ الأولى للكود، وتلك ليست ما وقّع عليه. فتُقال الصيغةُ الجديدةُ
               بما صار فيها، لا بما ظُنّ أنّه كان عنده. */}
           <p className="mt-1 text-read leading-7 text-muted-foreground">
-            تغيّرت صيغةُ البند الذي يُحسم به من مستحقّاتك ما تمنحه أكوادُك: <b className="text-foreground">صار الكودُ نسبةً أو
-            مبلغا</b>، ولا يتجاوز ما يمنحه {MAX_TRAINER_CODE_PERCENT}٪ من سعر الدورة، وترى قيمتَه قبل إصداره. فلا يُصدَر كودٌ
-            حتّى تقبلها. هذا نصُّها كما في العقد:
+            تغيّرت صيغةُ البند: <b className="text-foreground">صار الكودُ نسبةً أو مبلغا</b>، ولا يتجاوز
+            {" "}{MAX_TRAINER_CODE_PERCENT}٪ من سعر الدورة. لا يُصدَر كودٌ قبل قبولها. نصُّها كما في العقد:
           </p>
           <blockquote className="mt-3 border-s-2 border-gold/50 ps-3 text-read leading-7 text-foreground">{terms.clauseAr}</blockquote>
           <label className="mt-3 flex cursor-pointer items-start gap-2 text-read leading-6 text-foreground">
@@ -250,14 +246,14 @@ function MyCodes() {
               />
             </StaffField>
           )}
-          <StaffField label="لمن أو أين تنشره؟" hint="اسمٌ تعرفه به — يُطبع في كشفك لتعرف بعد شهرين عمّ حُسم.">
+          <StaffField label="لمن أو أين تنشره؟" hint="اسمٌ تعرفه به، يُطبع في كشفك.">
             <input
               value={form.labelAr} disabled={busy} maxLength={100}
               onChange={(e) => setForm({ ...form, labelAr: e.target.value })}
               className={staffControlCls}
             />
           </StaffField>
-          <StaffField label="أقصى عددٍ من الاستعمالات (اختياري)" hint="فارغٌ يعني بلا حدّ — ولك إيقافُه متى شئت.">
+          <StaffField label="أقصى عددٍ من الاستعمالات (اختياري)" hint="فارغٌ = بلا حدّ.">
             <input
               type="number" inputMode="numeric" dir="ltr" min={1} step="1"
               value={form.maxUses} disabled={busy}
@@ -293,19 +289,19 @@ function MyCodes() {
                     {r.exceedsSeatFee && r.seatFee !== null && (
                       <p className="mt-1 font-bold text-danger-ink">
                         انتبه: هذا أكثرُ من أجر المقعد العامّ هنا (<span dir="ltr" className="font-mono">{r.seatFee} {r.currency}</span>)
-                        — فكلُّ من يستعمله ولم يأتِ من رابط دعوتك يُنقص كشفَك بالفرق.
+                        — من استعمله ولم يأتِ من رابطك يُنقص كشفَك بالفرق.
                       </p>
                     )}
                   </li>
                 ))}
               </ul>
-              <p className="mt-2">وإن كان في الطلب خصمُ باقةٍ من الأكاديميّة وقع الكودُ على ما بقي بعده، فيقلّ ما يُحسم منك.</p>
+              <p className="mt-2">ومع خصم باقةٍ من الأكاديميّة يقع الكودُ على ما بقي، فيقلّ ما يُحسم منك.</p>
             </Inset>
           )}
           {rows.length === 0 && example !== null && example.value > 0 && (
             <Inset as="p" className="px-4 py-3 text-read leading-6 text-muted-foreground sm:col-span-2">
               مثال: دورةٌ بمئة، بلا خصمٍ آخر — يدفع المتعلّم <b className="text-foreground">{example.pays}</b>،
-              ويُحسم منك <b className="text-gold-ink">{example.value}</b>. ويظهر هنا جدولُ دوراتك حين تُفتح لك شعبة.
+              ويُحسم منك <b className="text-gold-ink">{example.value}</b>. وجدولُ دوراتك يظهر حين تُفتح لك شعبة.
             </Inset>
           )}
           {blocker && (
@@ -417,7 +413,7 @@ function LegacyDiscounts() {
     <Panel as="section" className="mb-6">
       <p className="text-sm font-black">خصومٌ أصدرتَها بالمبلغ قبل الأكواد</p>
       <p className="mt-2 text-read leading-7 text-muted-foreground">
-        تبقى على شروطها التي صدرت بها حتّى تُستعمل أو تنتهي أو تُلغيها — ولا يُصدَر جديدٌ منها؛ فالخصمُ اليومَ كودٌ بالنسبة أعلاه.
+        تبقى على شروطها حتّى تُستعمل أو تنتهي أو تُلغيها، ولا يُصدَر جديدٌ منها.
       </p>
       {err && <Inset as="p" tone="danger" className="mt-3 px-4 py-3 text-read leading-6 text-red-200">{err}</Inset>}
       <ul className="mt-4 space-y-3">
@@ -491,9 +487,8 @@ export default function Referral() {
       <Panel as="section" className="mb-6">
         <h2 className="text-lg font-black">ما الذي توصي به من يتابعك؟</h2>
         <p className="mt-2 text-read leading-7 text-muted-foreground">
-          لك صفحةٌ باسمك تعرض كلَّ شعبك المفتوحة — رابطٌ واحدٌ لها جميعا. ولكلّ شعبةٍ مفتوحةٍ رابطٌ منفصلٌ
-          يقود إليها وحدَها، أدناه. انشر أيَّهما شئت حيث تكتب وحيث يسمعك الناس، فمن سجّل من أيٍّ منهما
-          يصلك باسمك لا رقما: تراه بعلامة «عبر رابطك» عند اسمه في طلبتك، وبأجر الإحالة في «مستحقاتي».
+          رابطٌ لصفحتك بكلّ شعبك المفتوحة، ورابطٌ لكلّ شعبة. من سجّل من أيّهما تراه بعلامة «عبر رابطك»
+          في طلبتك، وبأجر الإحالة في «مستحقاتي».
         </p>
       </Panel>
 
@@ -544,7 +539,7 @@ export default function Referral() {
                 بعد — فيُقال له لمَ ومَن يرفعه، لا يُعطى رابطا يردّ ٤٠٤. */}
             {!referral.publicReady && (
               <Inset as="p" className="mt-3 px-4 py-3 text-read leading-6 text-muted-foreground">
-                صفحتُك لا تفتح للعامّة بعد: لا يُعرض اسمُ مدرّبٍ قبل اعتماد الإدارة نشرَ ملفّه. راجِع الإدارة لاعتماده، ثمّ يعمل الرابطُ نفسُه بلا تغيير.
+                صفحتُك لا تفتح للعامّة قبل اعتماد الإدارة نشرَ ملفّك. راجِعها، ثمّ يعمل الرابطُ نفسُه.
               </Inset>
             )}
           </Panel>
@@ -569,14 +564,12 @@ export default function Referral() {
               </p>
               {cohortLinks.length === 0 ? (
                 <p className="mt-2 text-read leading-7 text-muted-foreground">
-                  لا شعبةَ مفتوحةً لك الآن. وحين تُفتح لك شعبةٌ يظهر رابطُها هنا — ورابطُك العامُّ أعلاه
-                  يبلغها من يومها بلا أن تنشر شيئا جديدا.
+                  لا شعبةَ مفتوحةً لك الآن. يظهر رابطُها هنا حين تُفتح، ورابطُك العامُّ يبلغها تلقائيّا.
                 </p>
               ) : (
                 <>
                   <p className="mt-2 text-read leading-7 text-muted-foreground">
-                    كلُّ رابطٍ يقود إلى شعبته وحدَها — انشره لمن تدعوه إلى هذه الدفعة بعينها. وحسابُ من سجّل
-                    منه حسابُ رابطك العامّ نفسُه: يُحسب لك بأجر الإحالة.
+                    كلُّ رابطٍ لشعبته وحدَها، ومن سجّل منه يُحسب لك بأجر الإحالة.
                   </p>
                   <ul className="mt-3 space-y-3">
                     {cohortLinks.map((c) => (
@@ -592,7 +585,7 @@ export default function Referral() {
                             يعمل ولا يُسجَّل منه أحد، فيُظنُّ الرابطُ عاطلا. */}
                         {!c.registrationOpen && (
                           <p className="mt-1 text-read leading-6 text-gold-ink">
-                            تسجيلُ هذه الشعبة مغلقٌ الآن — الرابطُ يعمل، ولا يُسجَّل منه حتّى تفتحه الإدارة.
+                            التسجيلُ مغلقٌ حتّى تفتحه الإدارة — الرابطُ يعمل.
                           </p>
                         )}
                         <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -624,8 +617,7 @@ export default function Referral() {
               <Wallet className="h-4 w-4 text-gold-ink" aria-hidden="true" /> ولمَ يعنيك أن يسجّلوا من رابطك
             </h2>
             <p className="mt-2 text-read leading-7 text-muted-foreground">
-              أجرُك عن متعلّمٍ جاء عبر رابطك أعلى من أجرك عن متعلّمٍ سجّل عامّا — وهو مكتوبٌ لكلّ شعبةٍ بعينها في
-              «مستحقاتي»، فانظره هناك بالرقم لا بالوعد.
+              أجرُك عمّن جاء عبر رابطك أعلى ممّن سجّل عامّا — ورقمُه لكلّ شعبةٍ في «مستحقاتي».
             </p>
             <Button as={Link} to="/trainer/earnings" tone="secondary" size="sm" className="mt-3">
               افتح مستحقاتي

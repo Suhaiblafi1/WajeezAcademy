@@ -93,7 +93,7 @@ export default function GradingQueue() {
     try {
       setQueue(await apiGet<QueueItem[]>("/api/trainer/grading-queue"));
     } catch (err) {
-      setOffline(err instanceof ApiError ? err.message : "الخادم غير متصل — هذه الصفحة تتطلب جلسة مدرب حقيقية");
+      setOffline(err instanceof ApiError ? err.message : "الخادم غير متصل");
     }
   }, []);
 
@@ -149,7 +149,7 @@ export default function GradingQueue() {
         for (const c of q.assessment.rubric?.criteria ?? []) delete next[`${q.id}:${c.id}`];
         return next;
       });
-    }, "سُجلت الدرجة — وأي تعديل لاحق سيوثق في السجل");
+    }, "سُجّلت الدرجة");
 
   const sendFeedback = (submissionId: string) =>
     act(async () => {
@@ -197,10 +197,10 @@ export default function GradingQueue() {
         stats={queue ? [`${queue.filter((q) => q.status === "under_review").length} بدأتَ مراجعتَها`] : []}
         actionAr="ابدأ بأوّلها"
         disabledReasonAr={queue && queue.length > 0 && view.total === 0
-          ? "البحثُ الحاليُّ لا يُظهر منها شيئا — امسحه لتبدأ."
+          ? "لا نتيجةَ لبحثك — امسحه."
           : undefined}
         onAction={() => { if (view.rows[0]) revealRow(`submission-${view.rows[0].id}`); }}
-        doneAr="الطابورُ نظيف — كلُّ ما وصلك قيّمتَه. أحسنت."
+        doneAr="قيّمتَ كلَّ ما وصلك. أحسنت."
       />
 
       {queue !== null && queue.length === 0 ? (
@@ -226,7 +226,7 @@ export default function GradingQueue() {
             placeholder="ابحث بعنوان التقييم أو الشعبة أو نصّ الإجابة…" />
           {view.total === 0 && (
             <Panel as="p" className="py-12 text-center text-sm text-muted-foreground">
-              لا تسليمَ يطابق «{query.trim()}» — امسح الكلمة أو جرّب غيرها.
+              لا تسليمَ يطابق «{query.trim()}».
             </Panel>
           )}
           {view.rows.map((q) => (
@@ -265,7 +265,7 @@ export default function GradingQueue() {
               {q.fileUrl && q.fileWaiting && (
                 <p className="mt-3 flex items-center gap-2 text-read text-gold-ink">
                   <Paperclip className="h-4 w-4 shrink-0" aria-hidden="true" />
-                  أرفق المتعلّمُ ملفّا ولم يكتمل رفعُه بعد{q.fileName ? ` («${q.fileName}»)` : ""} — يستطيع رفعَه من جديد.
+                  لم يكتمل رفعُ ملفّ المتعلّم{q.fileName ? ` («${q.fileName}»)` : ""} — يستطيع إعادتَه.
                 </p>
               )}
               {q.fileUrl && !q.fileWaiting && (
@@ -282,7 +282,7 @@ export default function GradingQueue() {
               <textarea
                 value={reviewNote[q.id] ?? ""}
                 onChange={(e) => setReviewNote((prev) => ({ ...prev, [q.id]: e.target.value }))}
-                placeholder="ملاحظة للمتعلم — إلزامية عند الرفض أو طلب الإعادة"
+                placeholder="ملاحظة للمتعلّم — تلزم عند الرفض أو طلب الإعادة"
                 rows={2}
                 className={`mt-3 ${areaCls}`}
               />

@@ -34,7 +34,7 @@ export interface CohortAssessment {
 }
 
 export default function CohortAssignments({
-  items, learners, titleAr = "مهامُّ هذه الشعبة", emptyAr = "لا مهمّةَ في هذه الشعبة بعد — وما تؤلّفه أدناه يظهر هنا.",
+  items, learners, titleAr = "مهامُّ هذه الشعبة", emptyAr = "لا مهمّةَ في هذه الشعبة بعد.",
 }: {
   items: CohortAssessment[];
   /** المسجَّلون فعلا — مقامُ «سلّم ٣ من ١٢»، فقائمةُ الانتظار لا تُسلّم */

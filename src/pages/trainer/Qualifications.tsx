@@ -239,7 +239,7 @@ export default function TrainerQualifications() {
         <EmptyState
           icon={ServerOff}
           titleAr="تعذّر الوصول إلى الخادم"
-          reasonAr="لم يُجب الخادمُ على طلب دوراتك. تحقّق من اتصالك ثمّ أعد التحميل."
+          reasonAr="تحقّق من اتصالك ثمّ أعد المحاولة."
           actions={[{ labelAr: "أعد المحاولة", onClick: () => void load() }]}
         />
       </TrainerLayout>
@@ -259,8 +259,7 @@ export default function TrainerQualifications() {
   return (
     <TrainerLayout title="دوراتي">
       <p className="mb-5 max-w-3xl text-sm leading-7 text-muted-foreground">
-        دوراتُك التي تعبّئها في «شعبي»، وتحتها عروضُ الشعب إن عُرضت عليك: تقبلها أو تعتذر عنها بسببٍ
-        تكتبه — والاعتذارُ جوابٌ مشروعٌ لا يُحسَب عليك.
+        دوراتُك والشعبُ المتاحةُ لك: اقبلها أو اعتذر بسبب — والاعتذارُ لا يُحسَب عليك.
       </p>
 
       <CourseMaterialsPanel rows={prep} onChanged={() => void load()} />
@@ -272,7 +271,7 @@ export default function TrainerQualifications() {
           <EmptyState
             icon={Award}
             titleAr="لا دورةَ بعد"
-            reasonAr="تظهر هنا كلُّ دورةٍ تعبّئها، وكلُّ شعبةٍ نعرضها عليك. فإن كانت عندك دورةٌ تتقنها ولا تجدها في كتالوجنا، فاقترحها."
+            reasonAr="تظهر هنا دوراتُك والشعبُ المتاحةُ لك. ولك أن تقترح دورةً ليست في كتالوجنا."
             actions={[{ to: "/trainer/course-proposals", labelAr: "دوراتي المقترحة", hintAr: "اقترح دورةً تقدر عليها" }]}
           />
         )
@@ -291,7 +290,7 @@ export default function TrainerQualifications() {
           <Inset tone="accent" className="mb-4 flex flex-wrap items-center justify-between gap-3 p-3.5">
             <p className="flex min-w-0 flex-1 items-start gap-2 text-read leading-7">
               <PencilLine className="mt-1.5 h-4 w-4 shrink-0" aria-hidden="true" />
-              <span>عروضُ الشعب للقرار وحدَه — ومحتوى كلِّ شعبةٍ تعبّئه في «شعبي».</span>
+              <span>هنا تقرّر فقط — والمحتوى تعبّئه في «شعبي».</span>
             </p>
             <Button as={Link} to="/trainer/board" size="sm" icon={Users}>افتح «شعبي»</Button>
           </Inset>
@@ -376,7 +375,7 @@ function CourseRow({
             {lead.prepConfirmedAt
               ? `أقررتَ بجاهزيّتك ${fmtDate(lead.prepConfirmedAt)}.`
               : `أجلُ إعدادك ${lead.prepDays} أيّام، وينتهي ${fmtDate(lead.prepDueAt)}.`}
-            {!lead.prepConfirmedAt && lead.prepLapsedAt && " وقد انقضى — والإسنادُ قائمٌ كما هو، وتنظر فيه الإدارة."}
+            {!lead.prepConfirmedAt && lead.prepLapsedAt && " وقد انقضى — والإسنادُ قائم، وتنظر فيه الإدارة."}
           </p>
           {!lead.prepConfirmedAt && (
             <Button
@@ -406,7 +405,7 @@ function CourseRow({
 
       {open && declining === open.id && (
         <Inset className="mt-3 grid gap-3 p-3">
-          <StaffField label="سببُ اعتذارك" hint="سطرٌ واحدٌ يكفي — يساعدنا أن نرتّب، ولا يُحسَب عليك">
+          <StaffField label="سببُ اعتذارك" hint="سطرٌ يكفي، ولا يُحسَب عليك">
             <input
               value={reason} maxLength={500} className={staffControlCls} autoFocus
               placeholder="مثلا: دمجتُها مع دورةٍ أخرى أدرّسها"
@@ -486,7 +485,7 @@ function OfferBody({ offer: o, now }: { offer: Offer; now: number }) {
       )}
       {(o.status === "lapsed" || expired) && (
         <p className="mt-2 text-sm leading-6 text-muted-foreground">
-          انقضت مهلةُ الردّ فأُغلق العرض. وهو ليس مأخذا عليك — راسِلِ الإدارةَ إن كنت ما زلت ترغب فيه.
+          انقضت مهلةُ الردّ، ولا يُحسَب عليك. راسِلِ الإدارةَ إن كنت ما زلت ترغب فيها.
         </p>
       )}
       {o.status === "withdrawn" && (

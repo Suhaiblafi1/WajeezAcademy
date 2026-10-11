@@ -55,9 +55,8 @@ export default function Marketing() {
   return (
     <TrainerLayout title="التسويق">
       <p className="mb-5 max-w-3xl text-sm leading-7 text-muted-foreground">
-        عرِّفْ الناسَ بك وبدوراتك: فيديو قصيرٌ تتحدّث فيه عن نفسك، وفيديو لكلّ دورةٍ أو مسارٍ يقنع من يتردّد،
-        وصورٌ لك نصنع منها ملصقاتِك. ونحن نصمّم لكلّ دورةٍ أو مسارٍ ملصقا —
-        <b className="text-foreground"> ولا نستعمله علنا حتّى توافق عليه.</b>
+        فيديو عنك، وفيديو لكلّ دورةٍ أو مسار، وصورٌ نصمّم منها ملصقاتِك —
+        <b className="text-foreground"> ولا ننشر ملصقا قبل موافقتك.</b>
       </p>
 
       {err ? (
@@ -90,7 +89,7 @@ export default function Marketing() {
               فيديو تعريفيٌّ بك
             </h2>
             <p className="mt-1 text-sm leading-6 text-muted-foreground">
-              دقيقةٌ أو اثنتان: من أنت، وما خبرتُك، ولماذا يتعلّم الناسُ معك. ارفعه على يوتيوب أو Drive وألصِقْ رابطَه.
+              دقيقةٌ أو اثنتان عنك وعن خبرتك. ألصِقْ رابطَه من يوتيوب أو Drive.
             </p>
             <VideoEditor targetKind="bio" targetId="" value={data.bioVideo} onSaved={load} />
           </Panel>
@@ -105,13 +104,13 @@ export default function Marketing() {
               دوراتي ومساراتي
             </h2>
             <p className="mb-4 text-sm leading-6 text-muted-foreground">
-              لكلّ دورةٍ اخترناها لك ولكلّ مسارٍ بنيتَه: فيديو يقنع بها، وملصقُها حين نصمّمه.
+              لكلّ دورةٍ ومسار: فيديو، وملصقُها حين نصمّمه.
             </p>
             {data.targets.length === 0 ? (
               <EmptyState
                 icon={Megaphone}
                 titleAr="لا دورةَ ولا مسارَ بعد"
-                reasonAr="يظهر هنا ما اخترناه لك من دورات وما بنيتَه من مسارات — ولكلٍّ فيديو وملصق."
+                reasonAr="تظهر هنا دوراتُك ومساراتُك."
                 actions={[{ to: "/trainer/qualifications", labelAr: "دوراتي" }]}
               />
             ) : (
@@ -171,7 +170,7 @@ function VideoEditor({
 
   return (
     <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_16rem] sm:items-end">
-      <StaffField label="رابطُ الفيديو" hint="يبدأ بـhttps:// — يوتيوب أو Vimeo أو Drive بمشاركةٍ مفتوحة">
+      <StaffField label="رابطُ الفيديو" hint="يوتيوب أو Vimeo أو Drive بمشاركةٍ مفتوحة">
         <input dir="ltr" className={staffControlCls} value={url} maxLength={500} inputMode="url"
           placeholder="https://youtu.be/…" onChange={(e) => setUrl(e.target.value)} />
       </StaffField>
@@ -249,7 +248,7 @@ function PhotosPanel({ photos, uploadsEnabled, onChanged }: { photos: Photo[]; u
             صوري للملصقات <span className="text-sm font-bold text-muted-foreground">({photos.length}/{MAX_MARKETING_PHOTOS})</span>
           </h2>
           <p className="mt-1 text-sm leading-6 text-muted-foreground">
-            صورٌ واضحةٌ بخلفيّةٍ هادئة ودقّةٍ عالية — نختار منها ما يناسب كلَّ ملصق. JPEG أو PNG أو WebP حتّى ٤ ميغابايت.
+            واضحةٌ بخلفيّةٍ هادئة. JPEG أو PNG أو WebP حتّى ٤ ميغابايت.
           </p>
         </div>
         {uploadsEnabled && (
@@ -265,7 +264,7 @@ function PhotosPanel({ photos, uploadsEnabled, onChanged }: { photos: Photo[]; u
 
       {!uploadsEnabled && (
         <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_auto] sm:items-end">
-          <StaffField label="رابطُ صورتك" hint="رفعُ الملفّات غيرُ مفعّلٍ بعد — ألصِقْ رابطَ الصورة من Drive أو غيره بمشاركةٍ مفتوحة">
+          <StaffField label="رابطُ صورتك" hint="الرفعُ غيرُ مفعّل — ألصِقْ رابطا بمشاركةٍ مفتوحة">
             <input dir="ltr" className={staffControlCls} value={link} maxLength={500} placeholder="https://…"
               onChange={(e) => setLink(e.target.value)} />
           </StaffField>
@@ -319,7 +318,7 @@ function TargetRow({ target: t, onChanged }: { target: Target; onChanged: () => 
         <p className="text-sm font-bold text-muted-foreground">الملصق</p>
         {latest ? (
           latest.status === "pending"
-            ? <p className="mt-1 text-sm text-gold-ink">نسخةٌ جديدةٌ تنتظر موافقتك — في أعلى الصفحة.</p>
+            ? <p className="mt-1 text-sm text-gold-ink">نسخةٌ جديدةٌ تنتظر موافقتك أعلى الصفحة.</p>
             : <div className="mt-2 max-w-sm"><PosterCard poster={latest} onDone={onChanged} /></div>
         ) : (
           <p className="mt-1 text-sm text-muted-foreground">لم نصمّم ملصقَها بعد — نُخبرك حين يصل.</p>
@@ -390,7 +389,7 @@ function PosterCard({ poster: p, titleAr, onDone }: { poster: Poster; titleAr?: 
       )}
       {p.status === "pending" && asking && (
         <Inset className="mt-3 grid gap-2 p-3">
-          <StaffField label="ما الذي تريد تعديلَه؟" hint="الصورة، أو النصّ، أو الألوان — سطرٌ يكفي">
+          <StaffField label="ما الذي تريد تعديلَه؟" hint="سطرٌ يكفي">
             <textarea className={staffControlCls} rows={2} value={note} maxLength={MAX_MARKETING_NOTE}
               placeholder="مثلا: استعملوا صورتي الثانية، وصحّحوا اسمَ الدورة" onChange={(e) => setNote(e.target.value)} />
           </StaffField>

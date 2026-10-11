@@ -61,7 +61,7 @@ export default function CohortBoard() {
   const load = useCallback(async () => {
     setLoading(true); setOffline(null);
     try { setRows(await apiGet<CohortSummary[]>("/api/trainer/cohorts/summary")); }
-    catch (err) { setOffline(err instanceof ApiError ? err.message : "الخادم غير متصل — هذه الصفحة تتطلب جلسة مدرب حقيقية"); }
+    catch (err) { setOffline(err instanceof ApiError ? err.message : "الخادم غير متصل"); }
     finally { setLoading(false); }
   }, []);
   useEffect(() => { void load(); }, [load]);
@@ -81,7 +81,7 @@ export default function CohortBoard() {
         <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-teal-ink" aria-label="جارٍ التحميل" /></div>
       ) : rows.length === 0 ? (
         <Panel as="p" className="py-12 text-center text-sm text-muted-foreground">
-          لا شعب مسندة إليك بعد — ستظهر هنا فور إسناد الإدارة لك.
+          لا شعبَ مسندةً إليك بعد.
         </Panel>
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
