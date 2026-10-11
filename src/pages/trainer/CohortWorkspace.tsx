@@ -605,6 +605,9 @@ export default function CohortWorkspace() {
      فيهما وحدَهما يُرسم الإطارُ الأحمر (`FieldFlag.tsx`). */
   const [touched, setTouched] = useState<ReadonlySet<string>>(() => new Set());
   const [flagAll, setFlagAll] = useState<Stage | null>(null);
+  /* اقتراحُ صفحات المحاور من ملفّ الكرّاسة — العلّةُ عند `suggestPages` */
+  const [pagesBusy, setPagesBusy] = useState(false);
+  const [pageAsk, setPageAsk] = useState<Map<string, string> | null>(null);
   const touch = (id: string) => setTouched((t) => (t.has(id) ? t : new Set(t).add(id)));
   /* «أرسِلها» وفي يده تعديلٌ لم يُحفظ — يُسأل قبل أن يُرسَل المحفوظُ وحدَه (٣ أكتوبر ٢٠٢٦) */
   const [unsavedAsk, setUnsavedAsk] = useState(false);
@@ -1510,6 +1513,36 @@ export default function CohortWorkspace() {
         .filter((x) => moduleIds.includes(x.moduleId))
         .sort((a, b) => moduleIds.indexOf(a.moduleId) - moduleIds.indexOf(b.moduleId)),
     });
+  /* ═══ وصفحاتُ المحاور تُقترح من فهرس ملفّ الكرّاسة (١١ أكتوبر ٢٠٢٦) ═══
+     الاقتراحُ يُكتب في الخانات ويُعدَّل. وما كتبه بيده لا يُستبدل إلّا باختياره: إن خالف
+     الاقتراحُ شيئا كتبه سُئل — «في الفارغة وحدَها» أو «استبدل الكلّ» أو «ألغِ». */
+  const whereOf = (id: string) => (wb?.parts ?? []).find((x) => x.moduleId === id)?.whereAr;
+  const applyPages = (found: ReadonlyMap<string, string>, how: "empty" | "all") => {
+    const keep = (wb?.parts ?? []).filter((x) => moduleIds.includes(x.moduleId) && !(found.has(x.moduleId) && (how === "all" || !x.whereAr.trim())));
+    const add = [...found.entries()].filter(([id]) => how === "all" || !(whereOf(id) ?? "").trim()).map(([moduleId, whereAr]) => ({ moduleId, whereAr }));
+    setWorkbook({ parts: [...keep, ...add].sort((a, b) => moduleIds.indexOf(a.moduleId) - moduleIds.indexOf(b.moduleId)) });
+    setPageAsk(null);
+    toast(add.length ? `اقتُرحت ${add.length === 1 ? "صفحةُ محورٍ واحد" : `صفحاتُ ${add.length} محاور`} — عدّلها كما تشاء` : "لم يتغيّر شيء");
+  };
+  const suggestPages = async () => {
+    const key = (wb?.bodyFileKey ?? "").trim();
+    if (!key) return;
+    setPagesBusy(true);
+    try {
+      /* ملفٌّ رُفع للتوّ لا يقرؤه الخادمُ حتّى تُحفظ الخطّةُ به — فيُحفظ ما في اليد أوّلا */
+      if (!(await persist())) return;
+      const { suggestWorkbookPages } = await import("@/application/trainer/workbook-pdf");
+      const found = await suggestWorkbookPages(key, content.modules.map((m) => ({ moduleId: m.moduleId, titleAr: m.titleAr })));
+      if (found.size === 0) { toastError("لم تُعرف المحاورُ في الملفّ — ليس له فهرس، ولم تُوجد عناوينُها فيه. اكتبها بيدك."); return; }
+      const clash = [...found.entries()].filter(([id, w]) => (whereOf(id) ?? "").trim() && whereOf(id) !== w);
+      if (clash.length === 0) applyPages(found, "all");
+      else setPageAsk(found);
+    } catch {
+      toastError("تعذّرت قراءةُ الملفّ — اكتب الصفحاتِ بيدك.");
+    } finally {
+      setPagesBusy(false);
+    }
+  };
   /* كرّاساتُ المواعيد القديمة — تُذكر ليجمعها في واحدة، ولا تُحذف من تحته */
   const slotWorkbooks = slots.filter((x) => workbookDone(x.workbook)).length;
   /* أو لكلّ محورٍ كرّاستُه — مجموعاتٌ متجاورةٌ بترتيب المحاور (٦ أكتوبر ٢٠٢٦) */
@@ -2537,6 +2570,26 @@ export default function CohortWorkspace() {
                   <p className="mt-0.5 text-read leading-6 text-muted-foreground">
                     اختياريّ: «ص ٥» أو «ص ٥–١٢».
                   </p>
+                  {(wb?.bodyFileKey ?? "").trim() && (wb?.bodyFileMime ?? "application/pdf") === "application/pdf" && moduleIds.length > 0 && (
+                    <Button tone="secondary" size="sm" icon={Sparkles} className="mt-2" loading={pagesBusy} disabled={locked || pagesBusy}
+                      onClick={() => void suggestPages()}>
+                      اقترحها من فهرس الملفّ
+                    </Button>
+                  )}
+                  {pageAsk && (
+                    <Inset tone="warn" role="alertdialog" aria-label="صفحاتٌ كتبتَها تخالف الاقتراح" className="mt-2 grid gap-2 text-read leading-6">
+                      <p className="font-bold text-foreground">في بعض الخانات صفحاتٌ كتبتَها تخالف الاقتراح. اختر:</p>
+                      <ul className="list-inside list-disc text-muted-foreground">
+                        <li><b className="text-foreground">في الفارغة وحدَها</b> — يبقى ما كتبتَه.</li>
+                        <li><b className="text-foreground">استبدل الكلّ</b> — يحلّ الاقتراحُ محلَّه.</li>
+                      </ul>
+                      <div className="flex flex-wrap gap-2">
+                        <Button tone="confirm" size="sm" onClick={() => applyPages(pageAsk, "empty")}>في الفارغة وحدَها</Button>
+                        <Button tone="secondary" size="sm" onClick={() => applyPages(pageAsk, "all")}>استبدل الكلّ</Button>
+                        <Button tone="ghost" size="sm" onClick={() => setPageAsk(null)}>ألغِ</Button>
+                      </div>
+                    </Inset>
+                  )}
                   {moduleIds.length === 0 ? (
                     <Inset className="mt-3 text-read leading-6 text-muted-foreground">
                       اكتب محاورك في «المحاور ومواعيدها» أوّلا — ثمّ ارجع إلى هنا.
