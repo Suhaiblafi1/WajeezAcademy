@@ -661,17 +661,33 @@ const isNote = (x: PlanEditItem) => x.kind === "note";
 /** والملاحظةُ يوافق عليها أو لا — لا «قُبل» و«رُفض» كالتعديل */
 const NOTE_STATUS_AR: Partial<Record<PlanEditStatus, string>> = { pending: "عند المدرّب", accepted: "وافق", rejected: "لم يوافق" };
 
-/** نقاطُ الملاحظة — سطرٌ لكلّ نقطة، و«مطلوب»/«مقترَح» وسمُها إن كان (`notePoints` في `plan-edits.ts`) */
+/** نقاطُ الملاحظة — سطرٌ لكلّ نقطة، و«مطلوب»/«مقترَح» وسمُها إن كان (`notePoints` في `plan-edits.ts`).
+    والنقطةُ من بطاقة المعايير خانتان: «الآن» و«نقترح» — «ماذا كان وماذا نقترح» (صاحب المنصّة، ١١ أكتوبر ٢٠٢٦) */
 export function NotePoints({ view }: { view: EditView }) {
   return (
-    <ul className="mt-3 space-y-2">
+    <ul className="mt-3 space-y-3">
       {view.rows.map((r, i) => (
-        <li key={i} className="flex items-start gap-2 text-read leading-7">
-          <span className="mt-3 h-1.5 w-1.5 shrink-0 rounded-full bg-teal" aria-hidden="true" />
-          <span className="min-w-0 flex-1">
-            {r.labelAr && <Chip tone={r.labelAr === "مطلوب" ? "danger" : "info"} className="me-2">{r.labelAr}</Chip>}
-            <span className="whitespace-pre-wrap break-words text-foreground">{r.afterAr}</span>
-          </span>
+        <li key={i} className="min-w-0">
+          {r.beforeAr !== null ? (
+            <>
+              <div className="flex flex-wrap items-center gap-2">
+                {r.tagAr && <Chip tone={r.tagAr === "مطلوب" ? "danger" : "info"}>{r.tagAr}</Chip>}
+                <span className="text-read font-bold text-foreground">{r.labelAr}</span>
+              </div>
+              <div className="mt-1.5 grid gap-2 sm:grid-cols-2">
+                <Cell label="الآن" text={r.beforeAr} muted />
+                <Cell label="نقترح" text={r.afterAr} />
+              </div>
+            </>
+          ) : (
+            <div className="flex items-start gap-2 text-read leading-7">
+              <span className="mt-3 h-1.5 w-1.5 shrink-0 rounded-full bg-teal" aria-hidden="true" />
+              <span className="min-w-0 flex-1">
+                {r.tagAr && <Chip tone={r.tagAr === "مطلوب" ? "danger" : "info"} className="me-2">{r.tagAr}</Chip>}
+                <span className="whitespace-pre-wrap break-words text-foreground">{r.afterAr}</span>
+              </span>
+            </div>
+          )}
         </li>
       ))}
     </ul>

@@ -65,6 +65,49 @@ describe('① يومٌ وساعةٌ ثابتان — وكلُّ لقاءٍ في 
   })
 })
 
+/** شعبةٌ بمواعيدِ محاورَ ولقاءاتٍ تُكتب بأيّامها وساعاتها (بتوقيت عمّان) — بلا مهامّ */
+function shaped(slots: [string, string][], starts: [string, string][]): ReturnType<typeof messy> {
+  const base = messy()
+  const mods = slots.map((_, i) => `M${i + 1}`)
+  const utc = (day: string, clock: string) => {
+    const [h, m] = clock.split(':').map(Number)
+    return new Date(Date.parse(`${day}T00:00:00.000Z`) + ((h! - 3) * 60 + m!) * 60_000).toISOString()
+  }
+  return {
+    ...base,
+    content: { ...(base.content as object), slots: slots.map(([a, b], i) => ({ moduleIds: [mods[i]!], startsOn: a, endsOn: b })) },
+    sessions: starts.map(([d, c], i) => ({ id: `s${i + 1}`, startsAt: utc(d, c), endsAt: plus(utc(d, c), 2), moduleIds: [mods[i]!] })),
+    tasks: [],
+  }
+}
+
+describe('①ب الأكثرُ تكرارا لا الأوّل — والأقربُ لا الأبعد — وبلا عطلة', () => {
+  it('⚠️ السبتُ ١٨:٠٠ مرّتين بعد أربعاءَ أوّل — فهو الموعد؛ وكلُّ لقاءٍ إلى أقرب سبتٍ في موعد محوره', () => {
+    const input = shaped(
+      [['2026-12-01', '2026-12-07'], ['2026-12-08', '2026-12-14'], ['2026-12-15', '2026-12-21'], ['2026-12-22', '2027-01-15']],
+      [['2026-12-02', '19:00'], ['2026-12-12', '18:00'], ['2026-12-19', '18:00'], ['2026-12-27', '19:00']],
+    )
+    const r = proposeSchedule(input)
+    if (!r.ok) throw new Error(r.reasonAr)
+    expect([r.edit.weekday, r.edit.clock]).toEqual([6, '18:00'])
+    /* محورُ الرابع إلى ١٥ يناير: فيه ٢٦ ديسمبر و٢ و٩ يناير — والأقربُ من ٢٧ ديسمبر أوّلُها */
+    expect(applied(input, r.edit).sessions.map((s) => zonedDay(s.startsAt))).toEqual(['2026-12-05', '2026-12-12', '2026-12-19', '2026-12-26'])
+    expect(r.edit.moves.map((m) => m.sessionId)).toEqual(['s1', 's4'])
+  })
+
+  it('⚠️ الجمعةُ موعدا: ٢٥ ديسمبر و١ يناير جمعتان وعطلتان — فلا يقع عليهما لقاء', () => {
+    const input = shaped(
+      [['2026-12-01', '2026-12-07'], ['2026-12-08', '2026-12-14'], ['2026-12-15', '2026-12-31'], ['2027-01-01', '2027-01-15']],
+      [['2026-12-04', '18:00'], ['2026-12-11', '18:00'], ['2026-12-24', '19:00'], ['2027-01-04', '19:00']],
+    )
+    const r = proposeSchedule(input)
+    if (!r.ok) throw new Error(r.reasonAr)
+    expect([r.edit.weekday, r.edit.clock]).toEqual([5, '18:00'])
+    /* أقربُ جمعةٍ إلى ٢٤ ديسمبر ٢٥ منه — عطلة؛ فالتي قبلها. وأقربُ جمعةٍ في المحور الرابع ١ يناير — عطلة؛ فالتي بعدها */
+    expect(applied(input, r.edit).sessions.map((s) => zonedDay(s.startsAt))).toEqual(['2026-12-04', '2026-12-11', '2026-12-18', '2027-01-08'])
+  })
+})
+
 describe('② والسلسلة', () => {
   it('⚠️ مهمّةُ كلّ محورٍ تنتقل بقدر ما انتقل لقاؤه — فتبقى بعده بأيّامها', () => {
     const input = messy()
@@ -121,9 +164,21 @@ describe('③ ولا يُقترح ما يُفسد ولا ما لا حاجةَ إ
     if (!r.ok) expect(r.reasonAr).toMatch(/رتّب مواعيدَ المحاور أوّلا/)
   })
 
-  it('ولقاءٌ واحدٌ لا جدولَ له', () => {
-    const input = messy()
-    input.sessions = input.sessions.slice(0, 1)
-    expect(proposeSchedule(input).ok).toBe(false)
+  it('⚠️ ولا يُقترح جدولٌ يُسيء معيارَ توقيتٍ آخر — ولو أصلح الإيقاع: فاصلٌ يتجاوز ٢١ يوما', () => {
+    const input = shaped(
+      [['2026-12-01', '2026-12-07'], ['2026-12-08', '2026-12-14'], ['2026-12-15', '2026-12-31'], ['2027-01-09', '2027-01-15']],
+      [['2026-12-04', '18:00'], ['2026-12-11', '18:00'], ['2026-12-24', '19:00'], ['2027-01-11', '19:00']],
+    )
+    /* الجمعةُ ١٨ ديسمبر ثمّ الجمعةُ ١٥ يناير: ٢٨ يوما — وكانت ١٨ */
+    const r = proposeSchedule(input)
+    expect(r.ok).toBe(false)
+    if (!r.ok) expect(r.reasonAr).toMatch(/يُسيء «الفاصلُ بين اللقاءات»/)
+  })
+
+  it('ولقاءٌ واحدٌ لا جدولَ له — ولو في وقتٍ غيرِ مناسب: نقلُه بندٌ واحدٌ لا جدول', () => {
+    const input = shaped([['2026-12-01', '2026-12-31']], [['2026-12-07', '15:00']])
+    const r = proposeSchedule(input)
+    expect(r.ok).toBe(false)
+    if (!r.ok) expect(r.reasonAr).toMatch(/أقلُّ من لقاءين/)
   })
 })

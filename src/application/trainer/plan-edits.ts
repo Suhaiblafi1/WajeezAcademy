@@ -24,7 +24,7 @@
 
 import { STAGE_LABELS, type ReviewSection } from './review-notes'
 import type { ScheduleEdit } from './schedule-proposal'
-import { WEEKDAY_AR } from './plan-scorecard'
+import { compactGapsAr, NOTE_SUGGESTION_AR, NOW_SUGGEST_SEP, WEEKDAY_AR } from './plan-scorecard'
 import { PLAN_MAX } from './plan-limits'
 import { kindForCategory, RESOURCE_CATEGORIES, RESOURCE_KINDS, type ResourceCategory } from './plan-overlay'
 import { whenAr } from '../learning/cohort-gate'
@@ -337,9 +337,32 @@ export function sessionMoveChainProblem(
   if (clash) return `يقع على لقاء «${clash.title ?? ''}» في الوقت نفسِه`
   const was = t0(s.startsAt)
   const mods = s.moduleIds ?? []
-  const before = tasks.find((t) => t.type !== 'project' && t.dueAt && t.moduleId && mods.includes(t.moduleId)
+  const before = tasks.find((t) => t.dueAt && t.moduleId && mods.includes(t.moduleId)
     && t0(t.dueAt) > was && t0(t.dueAt) <= start)
   if (before) return `موعدُ مهمّة «${before.title ?? ''}» يصير قبل اللقاء الذي تُشرح فيه`
+  return null
+}
+
+/** والجدولُ كلُّه بالقاعدة نفسِها: كلُّ لقاءٍ ينقله يُقرأ على ما حوله **بعد** الجدول — اللقاءاتُ الأخرى في
+    مواضعها الجديدة، والمهامُّ بمواعيدها الجديدة. فما نقله الجدولُ معه لا يُعدّ كسرا، وما نسيه يُعدّ */
+export function scheduleChainProblem(
+  edit: ScheduleEdit,
+  sessions: Parameters<typeof sessionMoveChainProblem>[1],
+  tasks: Parameters<typeof sessionMoveChainProblem>[2],
+): string | null {
+  const moveOf = (id: string) => edit.moves.find((m) => m.sessionId === id)
+  const after = sessions.map((s) => { const m = moveOf(s.id); return m ? { ...s, startsAt: m.startsAt, endsAt: m.endsAt } : s })
+  const tasksAfter = tasks.map((t) => { const m = edit.tasks.find((x) => x.assessmentId === t.id); return m ? { ...t, dueAt: m.dueAt } : t })
+  for (const m of edit.moves) {
+    const was = sessions.find((x) => x.id === m.sessionId)
+    if (!was) continue
+    const p = sessionMoveChainProblem(
+      { kind: 'session_move', sessionId: m.sessionId, startsAt: m.startsAt, endsAt: m.endsAt },
+      after.map((x) => (x.id === was.id ? was : x)),
+      tasksAfter,
+    )
+    if (p) return `«${was.title ?? ''}»: ${p}`
+  }
   return null
 }
 
@@ -460,6 +483,8 @@ export interface EditContext {
 export interface EditRow {
   labelAr: string; beforeAr: string | null; afterAr: string | null; long?: boolean
   beforeHref?: string; afterHref?: string
+  /** وسمُ نقطة الملاحظة — «مطلوب» أو «مقترَح» */
+  tagAr?: string
 }
 export interface EditView { titleAr: string; stepAr: string; rows: EditRow[] }
 
@@ -576,7 +601,14 @@ export function planEditView(edit: PlanEdit, before: EditSnapshot, ctx: EditCont
       /* نقاطٌ سطرا سطرا — و«مطلوب»/«مقترَح» في أوّل السطر (من بطاقة المعايير) يصير وسمَه */
       const where = edit.step === 'general' ? 'ملاحظةٌ عامّة' : `ملاحظةٌ على «${STAGE_LABELS[edit.step]}»`
       const stepAr = edit.step === 'general' ? 'عامّة' : STAGE_LABELS[edit.step]
-      return { titleAr: where, stepAr, rows: notePoints(edit.textAr).map((p) => ({ labelAr: p.tagAr ?? '', beforeAr: null, afterAr: p.textAr })) }
+      /* والنقطةُ ذاتُ «الآن ← نقترح» صفٌّ بخانتيه كالتعديل: ما هو الآن، وما نقترحه */
+      return {
+        titleAr: where, stepAr,
+        rows: notePoints(edit.textAr).map((p) => ({
+          labelAr: p.labelAr ?? '', beforeAr: p.nowAr ?? null, afterAr: p.suggestAr ?? p.textAr,
+          ...(p.tagAr ? { tagAr: p.tagAr } : {}),
+        })),
+      }
     }
   }
 }
@@ -585,15 +617,41 @@ export function planEditView(edit: PlanEdit, before: EditSnapshot, ctx: EditCont
 
 const TAG_AT_START = /^(مطلوب|مقترَح|مقترح)\s*[—–-]\s*/
 
-/** نقاطُ الملاحظة: سطرٌ لكلّ نقطة، بلا علامة تعداد، و«مطلوب»/«مقترَح» وسمٌ إن بدأ به السطر */
-export function notePoints(text: string): { textAr: string; tagAr: string | null }[] {
+export interface NotePoint {
+  textAr: string
+  tagAr: string | null
+  /** اسمُ المعيار — إن كانت النقطةُ من بطاقة المعايير */
+  labelAr?: string
+  /** ما هو الآن، وما نقترحه — «ماذا كان وماذا نقترح» (صاحب المنصّة، ١١ أكتوبر ٢٠٢٦) */
+  nowAr?: string
+  suggestAr?: string
+}
+
+/** نقاطُ الملاحظة: سطرٌ لكلّ نقطة، بلا علامة تعداد، و«مطلوب»/«مقترَح» وسمٌ إن بدأ به السطر. وسطرُ بطاقة
+    المعايير «الاسم: الآن … ← نقترح: …» يُقرأ بخانتيه — والقديمُ بلا «نقترح» يُستدلّ على اقتراحه باسم معياره */
+export function notePoints(text: string): NotePoint[] {
   return text.split('\n')
     .map((l) => l.trim().replace(/^[-•·*]\s+/, '').replace(/^\d+[.)]\s+/, ''))
     .filter(Boolean)
     .map((l) => {
       const m = TAG_AT_START.exec(l)
-      return m ? { textAr: l.slice(m[0].length), tagAr: m[1] === 'مطلوب' ? 'مطلوب' : 'مقترَح' } : { textAr: l, tagAr: null }
+      const tagAr = m ? (m[1] === 'مطلوب' ? 'مطلوب' : 'مقترَح') : null
+      const body = m ? l.slice(m[0].length) : l
+      return { textAr: body, tagAr, ...nowAndSuggest(body) }
     })
+}
+
+function nowAndSuggest(body: string): Pick<NotePoint, 'labelAr' | 'nowAr' | 'suggestAr'> {
+  const at = body.indexOf(': ')
+  if (at <= 0) return {}
+  const labelAr = body.slice(0, at).trim()
+  const rest = body.slice(at + 2)
+  const sep = rest.indexOf(NOW_SUGGEST_SEP)
+  const known = NOTE_SUGGESTION_AR[labelAr]
+  if (sep < 0 && !known) return {}
+  const rawNow = (sep < 0 ? rest : rest.slice(0, sep)).replace(/^الآن\s+/, '').trim()
+  const suggestAr = sep < 0 ? known! : rest.slice(sep + NOW_SUGGEST_SEP.length).trim()
+  return { labelAr, nowAr: compactGapsAr(rawNow.split('؛ ')), suggestAr }
 }
 
 /** أهذا سطرُ «واقترحنا على خطّتك…» الذي تكتبه المنصّةُ ملاحظةً عامّةً حين يُردّ بالتعديلات وحدَها؟ */

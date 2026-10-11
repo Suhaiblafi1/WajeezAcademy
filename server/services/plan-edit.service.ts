@@ -30,7 +30,7 @@ import { CohortService } from './cohort.service'
 import { CohortPlanService, resolvePeriod, type PlanStatus, type TrainerPlanContent } from './cohort-plan.service'
 import { proposeSchedule } from '../../src/application/trainer/schedule-proposal'
 import {
-  applyContentEdit, contentBefore, editsContent, noteItemsFrom, planEditStep, planEditView, rowEditProblem, sameSnapshot, scheduleSnapshot,
+  applyContentEdit, contentBefore, editsContent, noteItemsFrom, planEditStep, planEditView, rowEditProblem, sameSnapshot, scheduleChainProblem, scheduleSnapshot,
   sessionMoveChainProblem,
   sessionSnapshot, taskSnapshot, type Checked, type EditContext, type EditSnapshot, type EditView, type PlanEdit,
   type PlanEditStatus, PLAN_EDITS_MAX, TRAINER_VISIBLE_EDIT_STATUSES,
@@ -165,6 +165,17 @@ export class PlanEditService {
       tasks: tasks.map((t) => ({ ...t, dueAt: t.dueAt?.toISOString() ?? null })),
     })
     if (!r.ok) throw new AuthError('no_schedule', r.reasonAr, 422)
+    /* ولا جدولان معا، ولا جدولٌ فوق بندٍ لم يُقرَّر فيه على لقاءاته أو مهامّه — يُقال بلغة الزرّ لا الملفّ */
+    const open = (await this.prisma.planEditSuggestion.findMany({
+      where: { planId, status: { in: ['proposed', 'pending'] } }, select: { edit: true },
+    })).map((o) => o.edit as unknown as PlanEdit)
+    if (open.some((o) => o.kind === 'schedule')) {
+      throw new AuthError('schedule_open', 'في البطاقة جدولٌ مقترحٌ لم يُقرَّر فيه — راجعه أو احذفه قبل أن يُجهَّز غيرُه', 409)
+    }
+    const taken = new Set(open.flatMap(openKeysOf))
+    if (openKeysOf(r.edit).some((k) => taken.has(k))) {
+      throw new AuthError('schedule_overlaps', 'على بعض هذه اللقاءات أو المهامّ بندٌ مقترحٌ لم يُقرَّر فيه — قرّر فيه أو احذفه أوّلا، ثمّ جهّز الجدول', 409)
+    }
     return this.propose(actorId, planId, [{ ...r.edit, required: false, reasonAr: r.reasonAr }])
   }
 
@@ -227,6 +238,10 @@ export class PlanEditService {
       if (edit.kind === 'session_move') {
         const chain = sessionMoveChainProblem(edit, r.sessions.filter((x) => !x.placeholder), r.tasks)
         if (chain) problems.push(`البند ${i + 1}: نقلُ هذا اللقاء وحدَه يمسّ توقيتاتٍ أخرى — ${chain}. اكتبه وما يمسّه جدولا واحدا (schedule)`)
+      }
+      if (edit.kind === 'schedule') {
+        const chain = scheduleChainProblem(edit, r.sessions.filter((x) => !x.placeholder), r.tasks)
+        if (chain) problems.push(`البند ${i + 1}: الجدولُ لا يكتمل بسلسلته — ${chain}`)
       }
       /* وبندان على موضعٍ واحدٍ لا يُرفعان معا: قبولُ أحدهما يجعل «قبل» الآخر غيرَ ما فيه */
       for (const key of targetsOf(edit)) {
@@ -498,12 +513,16 @@ export class PlanEditService {
   }
 
   /* ═══ الجدولُ كلُّه أو لا شيء (١١ أكتوبر ٢٠٢٦) ═══
-     «يجب أن يكون التعديلُ كاملا بسلسلة، لكي لا نخرّب بدلَ ما نُصلح» (صاحب المنصّة). فاللقاءاتُ تُنقل
-     بباب المدرّب نفسِه (`trainerMoveSession`: موعدُ الشعبة، وتعارضُه مع شعبه الأخرى، واجتماعُه)، ثمّ
-     مواعيدُ المهامّ ببابها — وإن سقط واحدٌ أُعيد ما نُقل قبله إلى ما كان، فلا يبقى نصفُ جدول. */
+     «يجب أن يكون التعديلُ كاملا بسلسلة، لكي لا نخرّب بدلَ ما نُصلح» (صاحب المنصّة). فكلُّ لقاءٍ فيه يُفحص
+     أوّلا بفحص باب النقل نفسِه (`assertTrainerMove`: موعدُ الشعبة، وتعارضُه مع شعبه الأخرى) — فإن لم يصحّ
+     واحدٌ لم يُنقل شيء. ثمّ تُنقل بالباب (واجتماعُها معها)، ثمّ مواعيدُ المهامّ ببابها. وإن سقط شيءٌ بعد
+     ذلك لعطبٍ لا يُفحص قبله أُعيد ما نُقل قبله إلى ما كان — فلا يبقى نصفُ جدول. */
   private async applySchedule(userId: string, edit: Extract<PlanEdit, { kind: 'schedule' }>, r: Rows) {
     const done: (() => Promise<unknown>)[] = []
     try {
+      for (const m of edit.moves) {
+        await this.cohorts.assertTrainerMove(userId, m.sessionId, { startsAt: new Date(m.startsAt), endsAt: new Date(m.endsAt) })
+      }
       for (const m of edit.moves) {
         const was = r.sessions.find((x) => x.id === m.sessionId)!
         await this.cohorts.trainerMoveSession(userId, m.sessionId, { startsAt: new Date(m.startsAt), endsAt: new Date(m.endsAt) })
