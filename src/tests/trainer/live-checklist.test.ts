@@ -62,3 +62,18 @@ describe('النواقصُ على الخطوات وفي القائمة الحي�
     expect(WS).toContain('const inHand = planStatus === "draft" || planStatus === "changes_requested";')
   })
 })
+
+describe('حالةُ اللقاء تتحدّث بعد حفظه — لا بعد إعادة تحميل الصفحة', () => {
+  it('ما يقوله «التالي» حين لا ينقل يُقرأ من المحفوظ الآن — إلّا ما منع الحفظَ وخطوةَ الإرسال', () => {
+    expect(WS).toContain('const shownGaps: string[] = !gaps ? [] : gaps.refused.length > 0 || stage === "approval" ? gaps.items : doneOf(stage) ? [] : gapsFor(stage, ws);')
+    expect(WS).toContain('{shownGaps.map((g) => <li key={g}>{g}</li>)}')
+    expect(WS, 'عاد الصندوقُ يقرأ ما كُتب مرّةً').not.toContain('{gaps.items.map(')
+  })
+
+  it('وقائمةُ «اللقاءات المجدولة» تُقرأ ثانيةً حين يتبدّل ما في الشعبة من لقاءات', () => {
+    expect(WS).toContain('<SessionsAndAttendance cohortId={ws.cohort.id} refresh={sessionsKey} />')
+    expect(WS).toMatch(/const sessionsKey = ws\.sessions\.map\(/)
+    const SA = code('src/pages/trainer/SessionsAndAttendance.tsx')
+    expect(SA).toContain('useEffect(() => { void load(); }, [load, refresh]);')
+  })
+})

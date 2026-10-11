@@ -62,9 +62,9 @@ describe('ع-٢ · ما يُقبل من الملفّات', () => {
   it('والسقفُ يُفرَض — وهو سقفُ الرفع نفسُه لا رقمٌ ثانٍ', () => {
     expect(bodyFileBlockerAr('application/pdf', MAX_BODY_FILE_BYTES)).toBeNull()
     expect(bodyFileBlockerAr('application/pdf', MAX_BODY_FILE_BYTES + 1), 'بلا سقف').toBeTruthy()
-    /* و`bodyLimit` على مسار الرفع أربعةُ ميغابايت: سقفٌ أعلى منه يعني رفضا
-       من Fastify قبل أن يبلغ الفحصَ، ورسالةً لا يفهمها من رفع. */
-    expect(MAX_BODY_FILE_BYTES).toBe(4 * 1024 * 1024)
+    /* كان أربعةً — سقفَ مسار الذاكرة. وصار ملفُّ الشعبة يُرفع بالبثّ، فالسقفُ ٢٥
+       (١١ أكتوبر ٢٠٢٦): كرّاساتٌ من ١٣ و٣٨ ميغابايت كانت تُضغط خارجَ المنصّة */
+    expect(MAX_BODY_FILE_BYTES).toBe(25 * 1024 * 1024)
   })
 
   it('وPDF يُقرأ في مكانه وWord يُنزَّل — فلا زرٌّ يبدو قارئا ثمّ يحفظ', () => {

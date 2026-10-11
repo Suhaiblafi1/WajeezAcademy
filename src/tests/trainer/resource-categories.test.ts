@@ -100,27 +100,30 @@ describe('بوّابةُ «متى تُفتح للطالب»', () => {
 
 describe('الشاشةُ: خانةٌ لكلّ صنف، ولا «موادُّ شعبة»', () => {
   const WS = code('src/pages/trainer/CohortWorkspace.tsx')
-  /* وانتقلت خاناتُ المصادر إلى درجة «المهامّ والمصادر» (٢٧ سبتمبر ٢٠٢٦):
-     المقتطَعُ من أصنافها إلى لوحة التسليمات تحتها. */
-  const stage = WS.slice(WS.indexOf('resourceCats.map((cat)'), WS.indexOf('<CohortSubmissions', WS.indexOf('resourceCats.map((cat)')))
+  /* وصارت المصادرُ قائمةً مضغوطةً بمنطقة رفعٍ واحدة (١١ أكتوبر ٢٠٢٦، `PlanResources.tsx`):
+     الملفُّ «كتبٌ وملفّات» والرابطُ «عامّ»، والنوعُ يُشتقّ منهما (`resource-list.ts`). */
+  const LIST = code('src/pages/trainer/PlanResources.tsx')
+  const stage = WS.slice(WS.indexOf('stage === "assignments" &&'), WS.indexOf('<CohortSubmissions', WS.indexOf('stage === "assignments" &&')))
 
   it('⚠️ لا قائمةَ أنواعٍ في صفّ المصدر — كان يختارها لكلّ ملفّ', () => {
-    expect(stage.length, 'لا كتلةَ مصادر').toBeGreaterThan(200)
-    expect(stage, 'ما زال يختار النوعَ بنفسه').not.toMatch(/aria-label=\{`نوع المصدر/)
-    /* والخاناتُ من قائمة الأصناف — والمسجَّلُ منها في «اللقاءات» ما دامت للشعبة مواعيد */
-    expect(stage, 'الخاناتُ لا تُبنى من قائمة الأصناف').toContain('resourceCats.map')
-    expect(WS, 'الأصنافُ ليست من قائمتها').toMatch(/const resourceCats[^\n]*RESOURCE_CATEGORIES/)
+    expect(stage, 'لا قائمةَ مصادر').toContain('<PlanResources')
+    expect(LIST, 'ما زال يختار النوعَ بنفسه').not.toMatch(/aria-label=\{`نوع المصدر/)
   })
 
   it('والنوعُ يُكتب مشتقًّا عند الإضافة — لا يُترك فارغا فيُقرأ رابطا', () => {
-    expect(stage).toMatch(/kind: kindForCategory\(cat, false\)/)
-    expect(stage).toMatch(/category: cat/)
+    expect(LIST).toContain('onAdd(rowFromFile(')
+    expect(LIST).toContain('onAdd(rowFromUrl(')
+    const RL = code('src/application/trainer/resource-list.ts')
+    expect(RL).toMatch(/category, kind: kindForCategory\(category, true\)/)
+    expect(RL).toMatch(/category, kind: kindForCategory\(category, false\)/)
   })
 
   it('وتاريخُ الفتح يُعرض للمسجَّل وحدَه، محدودا بأشهر الفصل', () => {
-    expect(stage).toMatch(/cat === "recorded" && \(/)
-    expect(stage, 'التاريخُ غيرُ محدودٍ بالفصل').toMatch(/min=\{ws\.cohort\.term \? ws\.cohort\.term\.startsOn/)
-    expect(stage).toMatch(/max=\{ws\.cohort\.term \? ws\.cohort\.term\.endsOn/)
+    const rec = stage.slice(stage.indexOf('resourceCategory(r) === "recorded")'))
+    expect(stage).toMatch(/!slotsOn && content\.resources\.some\(\(r\) => resourceCategory\(r\) === "recorded"\)/)
+    expect(rec, 'التاريخُ غيرُ محدودٍ بالفصل').toMatch(/min=\{ws\.cohort\.term \? ws\.cohort\.term\.startsOn/)
+    expect(rec).toMatch(/max=\{ws\.cohort\.term \? ws\.cohort\.term\.endsOn/)
+    expect(LIST, 'تاريخُ فتحٍ في صفّ مصدرٍ غيرِ مسجَّل').not.toContain('opensAt')
   })
 
   it('⚠️ و«موادُّ الشعبة» أُغلقت — لوحةً ومسلكا، لا لوحةً وحدَها', () => {

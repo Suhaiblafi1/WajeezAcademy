@@ -83,13 +83,15 @@ describe('ع-٢ · من يرفع', () => {
       mime: PDF, originalName: 'النظريّة.pdf',
     })
     expect(r.uploadUrl).toContain('/api/v1/uploads/')
+    /* بالبثّ إلى القرص — مسارُ الذاكرة يقف عند أربعة (١١ أكتوبر ٢٠٢٦) */
+    expect(r.uploadUrl).toMatch(/\/stream\?exp=/)
     expect(r.maxBytes).toBe(MAX_BODY_FILE_BYTES)
 
     /* ولولا الصفُّ لَرُدّ الرفعُ: مفتاحٌ لا يعرفه أحدٌ لا سقفَ له */
     const owner = await resolveStorageOwner(prisma, r.storageKey)
     expect(owner, 'المخزنُ لا يعرف مفتاحَ ملفِّ المتن — فيُردّ رفعُه').toBeTruthy()
     expect(owner!.kind).toBe('cohort_file')
-    expect(owner!.maxBytes).toBe(MAX_BODY_FILE_BYTES)
+    expect(owner!.streamMaxBytes).toBe(MAX_BODY_FILE_BYTES)
   })
 
   it('ولا يرفع من ليس مدرّبَها', async () => {

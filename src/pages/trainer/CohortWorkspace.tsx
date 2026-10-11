@@ -49,20 +49,20 @@
 import { Fragment, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, useParams, useSearchParams } from "react-router";
 import {
-  ArrowLeft, ArrowRight, BookMarked, BookOpen, CalendarDays, CalendarPlus, Check, ChevronDown, ChevronUp, ClipboardCheck, Combine, Eye, FileDown, FileText, GraduationCap, Film, IdCard, Link2, Loader2, Lock, Send, Sparkles, Split,
+  ArrowLeft, ArrowRight, BookMarked, BookOpen, CalendarDays, CalendarPlus, Check, ChevronDown, ChevronUp, ClipboardCheck, Combine, Eye, FileDown, FileText, GraduationCap, Film, IdCard, Link2, Loader2, Lock, Send, Sparkles, Split, Trash2,
 } from "lucide-react";
 import TrainerLayout from "./TrainerLayout";
 import TrainerSchedule from "./TrainerSchedule";
 import SessionsAndAttendance from "./SessionsAndAttendance";
 import SlotSessions from "./SlotSessions";
 import WeeklySessions from "./WeeklySessions";
+import PlanResources from "./PlanResources";
 import CohortSubmissions from "./CohortSubmissions";
 import { apiGet, apiPatch, apiPost, apiPut, apiDelete, ApiError } from "@/services/api";
 import ConfirmAction from "@/components/ConfirmAction";
 import { nextTrainerModuleId, moveModule, isCatalogModule } from "@/application/trainer/plan-modules";
-import { RESOURCE_KINDS, RESOURCE_CATEGORIES, readTypedLinks, resourceKind, resourceCategory, kindForCategory } from "@/application/trainer/plan-overlay";
-import type { ResourceCategory } from "@/application/trainer/plan-overlay";
-import { Lightbulb, X } from "lucide-react";
+import { RESOURCE_KINDS, readTypedLinks, resourceKind, resourceCategory, kindForCategory } from "@/application/trainer/plan-overlay";
+import { Lightbulb } from "lucide-react";
 import { RESOURCE_META } from "@/components/resource-kind-meta";
 import BodyEditor from "@/components/BodyEditor";
 import TabBar from "@/components/ui/TabBar";
@@ -644,14 +644,6 @@ export default function CohortWorkspace() {
   const [baseline, setBaseline] = useState({ identity: "", modules: "", workbooks: "", recorded: "", resources: "" });
   /* طلبُ إعادة توزيع المواعيد — يمحو ترتيبَ المدرّب فلا يقع بنقرةٍ واحدة */
   const [pendingReflow, setPendingReflow] = useState(false);
-  /* ═══ «أضف» تفتح مسوّدةً لا صفًّا حقيقيّا ═══
-
-     كانت تدفع صفًّا فارغا إلى `content.resources` فورا. وشرطُ زرِّ الحفظ
-     «لا صفَّ بلا عنوانٍ ولا مصدر» يقرؤه ناقصا، **فيُقفَل الحفظُ على اللوحة
-     كلِّها** — ومن ضغط «أضف» استطلاعا لا يجد ما يُخرجه منه إلّا «أزل»،
-     وقد لا يربط بينهما. فالمسوّدةُ خارجَ الخطّة حتّى تكتمل، ولها ثلاثةُ
-     مخارج: × وزرُّ إلغاءٍ وEsc. */
-  const [draft, setDraft] = useState<{ category: ResourceCategory; source: "file" | "url" | null; row: PlanResource } | null>(null);
   /* ═══ ومفاتيحُ ملفّاتٍ سقطت صفوفُها — تُحذف بعد الحفظ لا قبله ═══
 
      «أزِل» كانت تُسقط الصفَّ وتترك الملفَّ في التخزين مدى الحياة. وحذفُه
@@ -799,23 +791,6 @@ export default function CohortWorkspace() {
     return () => window.clearInterval(t);
   }, []);
 
-  /* ═══ ثلاثةُ مخارجَ من المسوّدة — والملفُّ يُحذف مع إلغائها ═══
-     المسوّدةُ لم تدخل الخطّةَ قطّ، فلا خطّةَ محفوظةً تشير إلى ملفّها —
-     وحذفُه هنا فوريٌّ لا مؤجَّل. */
-  const cancelDraft = useCallback(() => {
-    setDraft((d) => {
-      const key = (d?.row.bodyFileKey ?? "").trim();
-      if (key) void apiDelete(`/api/trainer/cohorts/${id}/files/${encodeURIComponent(key)}`).catch(() => {});
-      return null;
-    });
-  }, [id]);
-
-  useEffect(() => {
-    if (!draft) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") cancelDraft(); };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [draft, cancelDraft]);
 
   /* والرسالةُ قد تُقرأ ممّا عاد — «أُرسل إلى الإدارة» غيرُ «حُفظ» (٣ج-٣) */
   const act = async (fn: () => Promise<unknown>, done: string | ((r: unknown) => string)) => {
@@ -1126,6 +1101,13 @@ export default function CohortWorkspace() {
   const missing = new Map(STAGES.map((x) => [x.key, inHand ? missingOf(x.key) : []]));
   const missingTotal = [...missing.values()].reduce((n, g) => n + g.length, 0);
   const adviceCount = scorecard.filter((x) => x.status === "advice").length;
+  /* ═══ وما يقوله «التالي» حين لا ينقل يتحدّث بما يُحفظ بعده (١١ أكتوبر ٢٠٢٦) ═══
+     كان يُكتب مرّةً ويبقى: من أضاف اللقاءَ الناقص بقي يقرأ «محورٌ بلا لقاءٍ مباشر» حتّى
+     يُعيد تحميلَ الصفحة — فيظنّ أنّ اللقاءَ لم يُحفظ ويرسله ثانية. فما لم يُردّ حفظُه
+     يُقرأ من المحفوظ الآن، ويذهب حين تتمّ الخطوة. وما منع الحفظَ يبقى كما قيل. */
+  /* بصمةُ لقاءات الشعبة — تتبدّل فتُقرأ «اللقاءاتُ المجدولة» ثانيةً (`SessionsAndAttendance`) */
+  const sessionsKey = ws.sessions.map((x) => `${x.id}:${x.startsAt}:${x.status}:${x.approvalState ?? ""}`).join("|");
+  const shownGaps: string[] = !gaps ? [] : gaps.refused.length > 0 || stage === "approval" ? gaps.items : doneOf(stage) ? [] : gapsFor(stage, ws);
   /* ═══ «احفظ وتابِع» — الزرُّ المضاء ═══
 
      يحفظ، ثمّ يسأل الخادمَ: أتمّت هذه الخطوة؟ فإن تمّت انتقل إلى التي
@@ -1419,8 +1401,6 @@ export default function CohortWorkspace() {
       <Button tone="secondary" size="sm" disabled={busy} onClick={() => setPendingReflow(true)}>وزّع المحاورَ بالتساوي</Button>
     </Inset>
   ) : null;
-  /* والمسجَّلُ صار في «اللقاءات» بمحوره — إلّا في شعبةٍ اعتُمدت قبل المواعيد */
-  const resourceCats: readonly ResourceCategory[] = slotsOn ? RESOURCE_CATEGORIES.filter((c) => c !== "recorded") : RESOURCE_CATEGORIES;
   const moveAxis = (i: number, delta: -1 | 1) => {
     const modules = moveModule(content.modules, i, delta);
     setContent({ ...content, modules, slots: slotsOn ? reflowSlots(slots, modules.map((m) => m.moduleId)) : content.slots });
@@ -1656,7 +1636,7 @@ export default function CohortWorkspace() {
 
           {/* وما ينقص الخطوةَ كي تتمّ — بعد «احفظ وتابِع» التي لم تنقل. لاصقٌ
               كالملاحظة: يقرؤه وهو ينزل إلى الحقل الذي يصحّحه. */}
-          {gaps && gaps.items.length > 0 && (
+          {shownGaps.length > 0 && gaps && (
             <Inset tone="warn" className="mt-2" role="alert">
               <p className="text-read font-black text-gold-ink">
                 {gaps.refused.length > 0
@@ -1666,7 +1646,7 @@ export default function CohortWorkspace() {
                     : `لم تتمّ «${here?.label}» بعد — ينقصها:`}
               </p>
               <ul className="mt-1 list-inside list-disc space-y-0.5 text-read leading-7 text-foreground">
-                {gaps.items.map((g) => <li key={g}>{g}</li>)}
+                {shownGaps.map((g) => <li key={g}>{g}</li>)}
               </ul>
               {/* وما منع الحفظَ في خطوةٍ غيرِ هذه يُفتح موضعُه — ولو كانت مقفلةً بالترتيب */}
               {gaps.refused.some((k) => k !== stage) && (
@@ -2608,7 +2588,7 @@ export default function CohortWorkspace() {
 
           {/* واللقاءاتُ المجدولةُ وحضورُها — انتقلت من «التشغيل» (د-٤). من
               جدول لقاءه يرى في الموضع نفسِه ما جدوله ومن حضره. */}
-          <SessionsAndAttendance cohortId={ws.cohort.id} />
+          <SessionsAndAttendance cohortId={ws.cohort.id} refresh={sessionsKey} />
 
           {/* ═══ وسقطت «ملاحظاتٌ عن اللقاءات المباشرة» من هنا (١٥ سبتمبر ٢٠٢٦) ═══
 
@@ -2913,216 +2893,57 @@ export default function CohortWorkspace() {
             ما يحتاجه المتعلّمُ خارجَ اللقاء: كرّاسةٌ أو مقالٌ أو فيديو.
             {slotsOn ? " واجعله للشعبة كلِّها، أو اربطه بمحورٍ بعينه إن شئت فيُفتح بعد لقائه — أو اجعله قراءةً مسبقةً تُفتح مع الكرّاسة." : " تُفتح له مع أوّل يوم."}
           </p>
-          <div className="mt-4 space-y-5">
-            {resourceCats.map((cat) => {
-              const meta = RESOURCE_CATEGORY_META[cat];
-              /* الموضعُ الأصليُّ يُحمل مع الصفّ: التعديلُ والحذفُ يقعان على
-                 المصفوفة الواحدة، والترشيحُ يعيد ترقيما لا يطابقها. */
-              const rows = content.resources
-                .map((r, i) => ({ r, i }))
-                .filter(({ r }) => resourceCategory(r) === cat);
-              return (
-                <section key={cat}>
-                  <h4 className="flex items-center gap-2 text-read font-black text-foreground">
-                    <meta.icon className="h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" /> {meta.label}
-                  </h4>
-                  <p className="mt-1 text-read leading-6 text-muted-foreground">{meta.hint}</p>
-                  <ul className="mt-3 space-y-3">
-                    {rows.map(({ r, i }) => {
-                      /* ═══ والنوعُ يُعاد اشتقاقُه مع كلّ تعديل ═══
-
-                         كان يُكتب مرّةً عند إنشاء الصفّ (`kindForCategory(cat,
-                         false)` أي «كتاب») ولا يُعاد. فمن رفع ملفًّا في خانة
-                         الكتب بقي نوعُه «كتابا» مدى الحياة — يراه المتعلّمُ
-                         كتابا وهو مستند. وعطبٌ **صامت**: لا يسقط شيء، بل
-                         يُعرض اسمٌ خاطئٌ لا يُكذّبه شيء. */
-                      const patch = (next: Partial<PlanResource>) =>
-                        setContent({
-                          ...content,
-                          resources: content.resources.map((x, j) => {
-                            if (j !== i) return x;
-                            const merged = { ...x, ...next };
-                            return { ...merged, kind: kindForCategory(resourceCategory(merged), Boolean((merged.bodyFileKey ?? "").trim())) };
-                          }),
-                        });
-                      const hasFile = Boolean((r.bodyFileKey ?? "").trim());
-                      return (
-                        <Card as="li" key={i} className="grid gap-3">
-                          <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
-                            <input value={r.title} onChange={(e) => patch({ title: e.target.value })} disabled={locked} placeholder={meta.titlePlaceholder} aria-label={`اسم المصدر ${i + 1}`} className={controlCls} />
-                            {/* ═══ مصدرٌ واحدٌ لا حقلان ═══
-
-                                كان لخانة الكتب حقلُ رفعٍ **وحقلُ رابطٍ تحته**،
-                                فيملؤهما مدرّبٌ معا ولا شيءَ يقول أيُّهما يصل
-                                المتعلّم. فصار المعروضُ ما اختاره عند الإضافة:
-                                المرفوعُ حيث رُفع، والمُلصَقُ حيث لُصق. */}
-                            {cat === "reading" && hasFile ? (
-                              <ModuleBodyUpload
-                                cohortId={ws.cohort.id}
-                                purpose="plan_resource"
-                                refId={`r${i}`}
-                                value={r}
-                                onChange={(next) => patch(next)}
-                                disabled={locked}
-                                label="ارفع الملفّ"
-                                hint="PDF وصورةٌ يُقرآن في الصفحة، وWord وشرائحُ وجداولُ تُنزَّل."
-                              />
-                            ) : (
-                              <input dir="ltr" value={r.url ?? ""} onChange={(e) => patch({ url: e.target.value })} disabled={locked} placeholder="https://…" aria-label={`رابط المصدر ${i + 1}`} className={`${controlCls} text-left`} />
-                            )}
-                            {/* والإزالةُ تُقيّد ملفَّها ليُحذف بعد الحفظ */}
-                            <Button tone="ghost" size="sm" disabled={locked}
-                              onClick={() => {
-                                const key = (r.bodyFileKey ?? "").trim();
-                                if (key) setOrphans((o) => [...o, key]);
-                                setContent({ ...content, resources: content.resources.filter((_, j) => j !== i) });
-                              }}>أزل</Button>
-                          </div>
-                          {/* وما حُفظ بلا رابطٍ ولا ملفّ يُعلَّم في صفّه — يُحفظ هكذا، ويمنع الإرسالَ وحدَه */}
-                          {!resourceHasSource(r) && (
-                            <p className="text-read leading-6 text-gold-ink">
-                              ينقصه رابط — الصقه أعلاه، أو أزِله وأضِفه ملفّا من «أضف». يُحفظ كما هو، ولا تُرسَل الشعبةُ للاعتماد حتّى يُكمَل.
-                            </p>
-                          )}
-                          <input
-                            value={r.noteAr ?? ""}
-                            onChange={(e) => patch({ noteAr: e.target.value })}
-                            disabled={locked}
-                            maxLength={500}
-                            placeholder={meta.notePlaceholder}
-                            aria-label={`وصف المصدر ${i + 1}`}
-                            className={controlCls}
-                          />
-                          {/* ═══ «ويحدّد متى تفتح للطالب طيلةَ الفصل» ═══
-
-                              للمسجَّل وحدَه: جلسةٌ تدريبيّةٌ تُفتح في أسبوعها
-                              لا مع أوّل يوم. والفارغُ يعني «مفتوحةٌ من البداية»
-                              — لا «مغلقةٌ أبدا». */}
-                          {cat === "recorded" && (
-                            <StaffField label="متى تُفتح للمتعلّم" hint="اتركه فارغا لتُفتح مع أوّل يومٍ في الفصل. وقبل موعده لا تصل المتعلّمَ أصلا.">
-                              <input
-                                type="date" dir="ltr"
-                                value={r.opensAt ? r.opensAt.slice(0, 10) : ""}
-                                min={ws.cohort.term ? ws.cohort.term.startsOn.slice(0, 10) : undefined}
-                                max={ws.cohort.term ? ws.cohort.term.endsOn.slice(0, 10) : undefined}
-                                onChange={(e) => patch({ opensAt: e.target.value ? new Date(`${e.target.value}T00:00:00`).toISOString() : null })}
-                                disabled={locked}
-                                aria-label={`متى يُفتح المصدر ${i + 1}`}
-                                className={`${controlCls} text-left`}
-                              />
-                            </StaffField>
-                          )}
-                          {/* ═══ ومحورُه ومتى يُفتح (٢٧ سبتمبر ٢٠٢٦) ═══
-
-                              «وبعدها المهامُّ والواجباتُ وغيرُها، والتي تُربط
-                              بالمحاور لتظهر للمتعلّم بعد انتهاء كلّ جلسة». فالمصدرُ
-                              المربوطُ يُفتح بعد أوّل لقاءٍ لمحوره، والمسبقُ منه مع
-                              كرّاسة موعده، والذي بلا محورٍ للشعبة كلِّها مع أوّل يوم. */}
-                          {slotsOn && cat !== "recorded" && (
-                            <div className="grid gap-3 sm:grid-cols-2">
-                              <StaffField label="محورُه" hint="يُفتح للمتعلّم بعد انتهاء أوّل لقاءٍ لمحوره. و«للشعبة كلّها» يُفتح مع أوّل يومٍ فيها.">
-                                <select value={r.moduleId ?? ""} onChange={(e) => patch({ moduleId: e.target.value || null, ...(e.target.value ? {} : { preReading: null }) })}
-                                  disabled={locked} aria-label={`محورُ المصدر ${i + 1}`} className={`${controlCls} [&>option]:bg-surface`}>
-                                  <option value="">للشعبة كلّها</option>
-                                  {content.modules.map((m, k) => <option key={m.moduleId} value={m.moduleId}>المحور {k + 1} — {m.titleAr || "بلا عنوان"}</option>)}
-                                </select>
-                              </StaffField>
-                              {r.moduleId && (
-                                <label className="flex min-h-11 cursor-pointer items-center gap-2.5 self-end text-read leading-6">
-                                  <input type="checkbox" checked={Boolean(r.preReading)} disabled={locked}
-                                    onChange={(e) => patch({ preReading: e.target.checked || null })}
-                                    className="h-4 w-4 shrink-0 accent-teal" />
-                                  قراءةٌ مسبقة — يُفتح مع كرّاسة الموعد، قبل اللقاء
-                                </label>
-                              )}
-                            </div>
-                          )}
-                        </Card>
-                      );
-                    })}
-                  </ul>
-
-                  {/* ═══ المسوّدة — خارجَ الخطّة حتّى تكتمل ═══
-
-                      ومصدرُها يُختار **قبل ظهور أيّ حقل**: في «كتبٌ وملفّات»
-                      زرّان، وفي غيرها الرابطُ وحدَه فلا سؤال. فالحالةُ
-                      الخاطئةُ (ملفٌّ ورابطٌ معا) لا يمكن التعبيرُ عنها بدل
-                      أن تُشرَح بجملةٍ تحت الحقلَين. */}
-                  {draft?.category === cat && (
-                    <Card tone="accent" className="mt-3 grid gap-3">
-                      <div className="flex items-start justify-between gap-2">
-                        <p className="text-read font-black text-foreground">{meta.addLabel.replace("+ ", "")} — جديد</p>
-                        <Button tone="ghost" size="sm" icon={X} aria-label="أغلِق المسوّدة" onClick={cancelDraft}>أغلِق</Button>
-                      </div>
-
-                      {draft.source === null ? (
-                        <>
-                          <p className="text-read leading-6 text-muted-foreground">من أين يأتي هذا المصدر؟ اختر واحدا — ولا يجتمع ملفٌّ ورابطٌ في صفٍّ واحد.</p>
-                          <div className="flex flex-wrap gap-2">
-                            <Button tone="secondary" size="sm" onClick={() => setDraft({ ...draft, source: "file" })}>ارفع ملفّا</Button>
-                            <Button tone="secondary" size="sm" onClick={() => setDraft({ ...draft, source: "url" })}>أضِف رابطَ كتاب</Button>
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          <input value={draft.row.title}
-                            onChange={(e) => setDraft({ ...draft, row: { ...draft.row, title: e.target.value } })}
-                            placeholder={meta.titlePlaceholder} aria-label="اسمُ المصدر الجديد" className={controlCls} />
-                          {draft.source === "file" ? (
-                            <ModuleBodyUpload
-                              cohortId={ws.cohort.id}
-                              purpose="plan_resource"
-                              refId={`draft-${cat}`}
-                              value={draft.row}
-                              onChange={(next) => setDraft({ ...draft, row: { ...draft.row, ...next } })}
-                              label="ارفع الملفّ"
-                              hint="PDF وصورةٌ يُقرآن في الصفحة، وWord وشرائحُ وجداولُ تُنزَّل."
-                            />
-                          ) : (
-                            <input dir="ltr" value={draft.row.url ?? ""}
-                              onChange={(e) => setDraft({ ...draft, row: { ...draft.row, url: e.target.value } })}
-                              placeholder="https://…" aria-label="رابطُ المصدر الجديد" className={`${controlCls} text-left`} />
-                          )}
-                          <input value={draft.row.noteAr ?? ""} maxLength={500}
-                            onChange={(e) => setDraft({ ...draft, row: { ...draft.row, noteAr: e.target.value } })}
-                            placeholder={meta.notePlaceholder} aria-label="وصفُ المصدر الجديد" className={controlCls} />
-                          <div className="flex flex-wrap gap-2">
-                            <Button tone="confirm" size="sm"
-                              disabled={!draft.row.title.trim() || !resourceHasSource(draft.row)}
-                              onClick={() => {
-                                const row = draft.row;
-                                setContent({
-                                  ...content,
-                                  resources: [...content.resources, {
-                                    ...row,
-                                    category: cat,
-                                    kind: kindForCategory(cat, Boolean((row.bodyFileKey ?? "").trim())),
-                                  }],
-                                });
-                                setDraft(null);
-                              }}>أضفه</Button>
-                            <Button tone="ghost" size="sm" onClick={cancelDraft}>ألغِ</Button>
-                          </div>
-                        </>
-                      )}
-                    </Card>
-                  )}
-
-                  <Button
-                    tone="secondary" size="sm" className="mt-3" disabled={locked || draft !== null}
-                    onClick={() => setDraft({
-                      category: cat,
-                      /* والخانتان الأخريان رابطٌ وحدَه — فلا يُسأل عمّا لا خيارَ فيه */
-                      source: cat === "reading" ? null : "url",
-                      row: { title: "", url: "", category: cat, kind: kindForCategory(cat, false) },
-                    })}
-                  >
-                    {meta.addLabel}
-                  </Button>
-                </section>
-              );
-            })}
+          {/* ═══ قائمةٌ مضغوطةٌ ومنطقةُ رفعٍ واحدة (١١ أكتوبر ٢٠٢٦) — العلّةُ في رأس `PlanResources.tsx` ═══
+              والمسجَّلُ لشعبةٍ اعتُمدت قبل المواعيد يبقى في صنفه كما كان (أدناه). */}
+          <div className="mt-4">
+            <PlanResources
+              cohortId={ws.cohort.id}
+              resources={content.resources}
+              modules={content.modules}
+              locked={locked}
+              onAdd={(row) => setContent((c) => (c ? { ...c, resources: [...c.resources, row] } : c))}
+              onPatch={(i, next) => setContent((c) => (c ? {
+                ...c,
+                resources: c.resources.map((x, j) => {
+                  if (j !== i) return x;
+                  const merged = { ...x, ...next };
+                  return { ...merged, kind: kindForCategory(resourceCategory(merged), Boolean((merged.bodyFileKey ?? "").trim())) };
+                }),
+              } : c))}
+              onRemove={(i) => {
+                /* والإزالةُ تُقيّد ملفَّها ليُحذف بعد الحفظ لا قبله */
+                const key = (content.resources[i]?.bodyFileKey ?? "").trim();
+                if (key) setOrphans((o) => [...o, key]);
+                setContent((c) => (c ? { ...c, resources: c.resources.filter((_, j) => j !== i) } : c));
+              }}
+            />
           </div>
+          {!slotsOn && content.resources.some((r) => resourceCategory(r) === "recorded") && (
+            <div className="mt-5">
+              <h4 className="flex items-center gap-2 text-read font-black text-foreground">
+                <Film className="h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" /> {RESOURCE_CATEGORY_META.recorded.label}
+              </h4>
+              <ul className="mt-2 grid gap-2">
+                {content.resources.map((r, i) => ({ r, i })).filter(({ r }) => resourceCategory(r) === "recorded").map(({ r, i }) => (
+                  <Card as="li" key={i} className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
+                    <input value={r.title} disabled={locked} aria-label={`اسم الجلسة المسجّلة ${i + 1}`}
+                      onChange={(e) => patchResource(i, { title: e.target.value })} className={controlCls} />
+                    <input dir="ltr" value={r.url ?? ""} disabled={locked} placeholder="https://…" aria-label={`رابط الجلسة المسجّلة ${i + 1}`}
+                      onChange={(e) => patchResource(i, { url: e.target.value })} className={`${controlCls} text-left`} />
+                    {/* ومتى تُفتح — داخلَ أشهر الفصل، والفارغُ مع أوّل يوم */}
+                    <input type="date" dir="ltr" value={r.opensAt ? r.opensAt.slice(0, 10) : ""} disabled={locked}
+                      min={ws.cohort.term ? ws.cohort.term.startsOn.slice(0, 10) : undefined}
+                      max={ws.cohort.term ? ws.cohort.term.endsOn.slice(0, 10) : undefined}
+                      aria-label={`متى تُفتح الجلسة المسجّلة ${i + 1}`}
+                      onChange={(e) => patchResource(i, { opensAt: e.target.value ? new Date(`${e.target.value}T00:00:00`).toISOString() : null })}
+                      className={`${controlCls} text-left sm:col-span-2`} />
+                    <Button tone="ghost" size="sm" icon={Trash2} disabled={locked} aria-label={`احذف الجلسة المسجّلة ${i + 1}`}
+                      onClick={() => setContent({ ...content, resources: content.resources.filter((_, j) => j !== i) })} />
+                  </Card>
+                ))}
+              </ul>
+            </div>
+          )}
           {/* وحفظُها بزرّ الشريط «احفظ وتابِع» (٢٧ سبتمبر ٢٠٢٦). والمرفوعُ لا
               يُشترط له رابط: شرطُ `https://` كان يمنع حفظَ مصدرٍ ملفُّه في
               المخزن — فيُرفع ثمّ لا يُحفظ (`resourceHasSource` في `saveProblems`). */}

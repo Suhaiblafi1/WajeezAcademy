@@ -84,7 +84,7 @@ describe('ما يمنع الحفظَ لا يحبس المدرّب', () => {
   })
 
   it('و«لم يُحفظ» غيرُ «حُفظ ولم تتمّ» — ولكلٍّ رأسُه', () => {
-    const banner = between(screen, '{gaps && gaps.items.length > 0 && (', '</Inset>')
+    const banner = between(screen, '{shownGaps.length > 0 && gaps && (', '</Inset>')
     expect(banner, 'لم يُعثر على قائمة ما ينقص').toBeTruthy()
     expect(banner).toContain('gaps.refused.length > 0')
     expect(banner).toContain('لم يُحفظ شيءٌ بعد')
