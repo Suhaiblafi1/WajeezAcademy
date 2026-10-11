@@ -146,6 +146,35 @@ export function PlanEditsUploader({ planId, cohortId, canUpload, canReview, onPe
   };
 
   const drafts = items.filter((x) => x.status === "proposed");
+  /* البندُ كما سيراه المدرّب — بما قبله وما بعده، وزرّا المراجعة */
+  const draftItem = (x: PlanEditItem) => (
+    <li key={x.id} className="rounded-lg border border-border/60 p-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-read font-black text-foreground">{x.view.titleAr}</span>
+        <Chip tone={x.required ? "danger" : "info"}>{x.required ? "مطلوب" : "مقترح"}</Chip>
+        <span className="text-fine text-muted-foreground">{x.view.stepAr}</span>
+      </div>
+      <p className="mt-1 text-read leading-6 text-muted-foreground">لماذا: {x.reasonAr}</p>
+      <Rows view={x.view} />
+      {x.goneAr && <p className="mt-2 text-read font-bold text-gold-ink">لا يقع الآن: {x.goneAr}</p>}
+      {canReview && (
+        <div className="mt-2 flex flex-wrap gap-2">
+          <Button
+            tone="confirm" size="sm" icon={Check} disabled={busy}
+            onClick={() => void review(x.id, () => apiPost<PlanEditItem[]>(`/api/admin/plan-edits/${x.id}/approve`, {}), `اعتُمد «${x.view.titleAr}» للمدرّب.`)}
+          >
+            {reviewing === x.id ? "…" : "اعتمِدْه للمدرّب"}
+          </Button>
+          <Button
+            tone="ghost" size="sm" icon={X} disabled={busy}
+            onClick={() => void review(x.id, () => apiPost<PlanEditItem[]>(`/api/admin/plan-edits/${x.id}/drop`, {}), `حُذف «${x.view.titleAr}» — لن يصل المدرّب.`)}
+          >
+            احذفه
+          </Button>
+        </div>
+      )}
+    </li>
+  );
   const pending = items.filter((x) => x.status === "pending").length;
   const open = drafts.length + pending;
   useEffect(() => { onPending?.(pending); }, [pending, onPending]);
@@ -156,10 +185,9 @@ export function PlanEditsUploader({ planId, cohortId, canUpload, canReview, onPe
   return (
     <Inset className="mt-3" role="region" aria-label="تعديلاتٌ مقترحة">
       <p className="text-read font-black text-foreground">تعديلاتٌ مقترحةٌ على الخطّة (اختياريّ)</p>
+      {/* سطرٌ واحد — «كثيرُ الكلام» (صاحب المنصّة، ١١ أكتوبر ٢٠٢٦) */}
       <p className="mt-1 text-read leading-6 text-muted-foreground">
-        ملفٌّ (JSON) بالتعديلات بندا بندا: يُفحص كلُّه على الخطّة الآن، ويُرفع كلُّه أو يُردّ كلُّه بما لا يقع فيه.
-        ويُرفع مسوّدةً لا يراها المدرّب: تراجع كلَّ بندٍ هنا فتعتمده له أو تحذفه. ثمّ «اطلب تعديلات» — ويكفي
-        ما اعتمدتَه سببا — فيراه المدرّبُ بما قبله وما بعده، ويقبل كلًّا أو يرفضه.
+        تُرفع مسوّدةً لا يراها المدرّب حتّى تعتمد بنودَها، ثمّ «اطلب تعديلات» فيقبل كلًّا أو يرفضه.
       </p>
       {counts.length > 0 && (
         <div className="mt-2 flex flex-wrap gap-2">
@@ -169,7 +197,8 @@ export function PlanEditsUploader({ planId, cohortId, canUpload, canReview, onPe
       {drafts.length > 0 && (
         <div className="mt-3 space-y-3" role="group" aria-label="مسوّداتٌ تنتظر مراجعتك">
           <p className="text-read font-bold text-gold-ink">
-            {drafts.length} {drafts.length === 1 ? "بندٌ ينتظر" : "بنودٍ تنتظر"} مراجعتك — لا يصل المدرّبَ منها شيءٌ حتّى تعتمده.
+            {drafts.length} {drafts.length === 1 ? "بندٌ ينتظر" : "بنودٍ تنتظر"} مراجعتك
+            {" "}<span className="font-normal text-muted-foreground">— مطلوب {drafts.filter((x) => x.required).length} · مقترح {drafts.filter((x) => !x.required).length}</span>
           </p>
           {canReview && drafts.length > 1 && (
             <Button
@@ -179,36 +208,16 @@ export function PlanEditsUploader({ planId, cohortId, canUpload, canReview, onPe
               اعتمِدها كلَّها للمدرّب ({drafts.length})
             </Button>
           )}
-          <ol className="space-y-3">
-            {drafts.map((x) => (
-              <li key={x.id} className="rounded-lg border border-border/60 p-3">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-read font-black text-foreground">{x.view.titleAr}</span>
-                  <Chip tone={x.required ? "danger" : "info"}>{x.required ? "مطلوب" : "مقترح"}</Chip>
-                  <span className="text-fine text-muted-foreground">{x.view.stepAr}</span>
-                </div>
-                <p className="mt-1 text-read leading-6 text-muted-foreground">لماذا: {x.reasonAr}</p>
-                <Rows view={x.view} />
-                {x.goneAr && <p className="mt-2 text-read font-bold text-gold-ink">لا يقع الآن: {x.goneAr}</p>}
-                {canReview && (
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    <Button
-                      tone="confirm" size="sm" icon={Check} disabled={busy}
-                      onClick={() => void review(x.id, () => apiPost<PlanEditItem[]>(`/api/admin/plan-edits/${x.id}/approve`, {}), `اعتُمد «${x.view.titleAr}» للمدرّب.`)}
-                    >
-                      {reviewing === x.id ? "…" : "اعتمِدْه للمدرّب"}
-                    </Button>
-                    <Button
-                      tone="ghost" size="sm" icon={X} disabled={busy}
-                      onClick={() => void review(x.id, () => apiPost<PlanEditItem[]>(`/api/admin/plan-edits/${x.id}/drop`, {}), `حُذف «${x.view.titleAr}» — لن يصل المدرّب.`)}
-                    >
-                      احذفه
-                    </Button>
-                  </div>
-                )}
-              </li>
-            ))}
-          </ol>
+          {/* في مجموعتين تُفتحان بنقرة — المطلوبُ مفتوحٌ والمقترحُ مطويّ («كثيرُ الكلام»، ١١ أكتوبر ٢٠٢٦) */}
+          {([["required", "المطلوب"], ["suggested", "المقترح"]] as const).map(([kind, label]) => {
+            const list = drafts.filter((x) => x.required === (kind === "required"));
+            return list.length > 0 && (
+              <details key={kind} className="rounded-lg border border-border/60 p-3" open={kind === "required"}>
+                <summary className="cursor-pointer text-read font-bold text-teal-light-ink">{label} ({list.length})</summary>
+                <ol className="mt-3 space-y-3">{list.map((x) => draftItem(x))}</ol>
+              </details>
+            );
+          })}
         </div>
       )}
       {items.length > drafts.length && (
