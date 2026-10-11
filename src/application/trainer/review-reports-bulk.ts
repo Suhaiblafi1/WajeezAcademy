@@ -13,7 +13,7 @@ const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi
 const DOCX = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
 
 export type ReportMatch =
-  | { name: string; ok: true; planId: string; labelAr: string; mime: string }
+  | { name: string; ok: true; planId: string; labelAr: string; mime: string; storedName: string }
   | { name: string; ok: false; problemAr: string }
 
 /** نوعُ الملفّ — من المتصفّح، وإلّا من امتداده (Word قد يصل بلا نوع) */
@@ -39,7 +39,20 @@ export function matchReportFile(
   if (!plan) {
     return { name, ok: false, problemAr: 'خطّتُه ليست في القائمة المعروضة الآن (قرّرتَ فيها، أو القائمةُ مصفّاةٌ بمدرّب) — ارفعه من بطاقة خطّته' }
   }
-  return { name, ok: true, planId: plan.id, labelAr: plan.labelAr, mime }
+  return { name, ok: true, planId: plan.id, labelAr: plan.labelAr, mime, storedName: reportDisplayName(name) }
+}
+
+/** الاسمُ الذي يُحفظ ويراه المدرّب — بلا معرّف الخطّة (وُضع للمطابقة وحدَها) وبلا رقمِ ترتيبه
+    في الحزمة. رآهما المدرّبُ في صفحة شعبته في تجربة الرفع (١١ أكتوبر ٢٠٢٦): «06 — تقرير…
+    [0c4b8529-…].pdf» */
+export function reportDisplayName(name: string): string {
+  const dot = name.lastIndexOf('.')
+  const ext = dot > 0 ? name.slice(dot) : ''
+  const stem = (dot > 0 ? name.slice(0, dot) : name)
+    .replace(new RegExp(`[[(]?\\s*${UUID.source}\\s*[\\])]?`, 'gi'), ' ')
+    .replace(/^\s*\d{1,2}\s*[—–-]\s+/, '')
+    .replace(/\s+/g, ' ').trim()
+  return (stem || 'تقرير المراجعة') + ext
 }
 
 /** خلاصةُ الدفعة — كم رُفع، وكم كان مرفوعا من قبل، وكم رُدّ */
