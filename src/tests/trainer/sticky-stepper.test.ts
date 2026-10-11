@@ -157,7 +157,7 @@ describe('② ويضمر بالتمرير — مقاسان لا مقاسٌ وا�
     expect(rail, 'النقطةُ صارت مشروطةً بالضمور').not.toMatch(/!compact[^\n]*dirty\[s\.key\]/)
     expect(rail, 'حالُ الخطوة لا يُقال إلّا بلون').toMatch(/dirty\[s\.key\] \? "فيها تعديلٌ لم يُحفَظ"/)
     expect(rail, 'الاسمُ المسموعُ لا يحمل موضعَ الخطوة ولا حالَها')
-      .toMatch(/aria-label=\{`الخطوة \$\{i \+ 1\} من \$\{STAGES\.length\}: \$\{s\.label\} — \$\{stateAr\}`\}/)
+      .toMatch(/aria-label=\{`الخطوة \$\{i \+ 1\} من \$\{stepsTotal\}: \$\{s\.label\} — \$\{stateAr\}`\}/)
   })
 })
 

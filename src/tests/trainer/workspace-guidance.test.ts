@@ -40,23 +40,24 @@ function stageBlock(src: string, stage: string, nextStage: string): string {
 describe('لكلّ خطوةٍ رأسٌ يقول ما هي وكم تأخذ', () => {
   const ws = code(WS)
 
-  it('الخطواتُ الستُّ كلُّها في معجم الرؤوس — بغرضٍ ووقت', () => {
+  /* و«المراجعة» سابعةٌ بعد «الاعتماد» (١١ أكتوبر ٢٠٢٦) — برأسها كالستّ */
+  it('الخطواتُ السبعُ كلُّها في معجم الرؤوس — بغرضٍ ووقت', () => {
     const block = ws.slice(ws.indexOf('const STAGE_INTRO'), ws.indexOf('function StageIntro'))
     /* و«الكرّاسات» حلّت محلَّ «المصادر» (٢٧ سبتمبر ٢٠٢٦) — والمصادرُ صارت مع المهامّ */
-    for (const key of ['identity', 'modules', 'workbooks', 'sessions', 'assignments', 'approval']) {
+    for (const key of ['identity', 'modules', 'workbooks', 'sessions', 'assignments', 'approval', 'review']) {
       expect(block, `لا رأسَ للخطوة ${key}`).toMatch(new RegExp(`${key}:\\s*\\{`))
     }
     /* الغرضُ والوقتُ كلاهما — ورأسٌ بلا وقتٍ لا يجيب «أأبدأ الآن؟».
        والعدُّ على القيمةِ المكتوبة (`purpose: "…"`) لا على المفتاح، وإلّا
        عُدّ سطرُ النوع فوقها معها. */
-    expect((block.match(/purpose: "/g) ?? []).length).toBe(6)
-    expect((block.match(/minutes: "/g) ?? []).length).toBe(6)
+    expect((block.match(/purpose: "/g) ?? []).length).toBe(7)
+    expect((block.match(/minutes: "/g) ?? []).length).toBe(7)
   })
 
   it('وكلُّ خطوةٍ تُصيّر رأسَها لا عنوانا مكتوبا بيدها', () => {
     /* وبابُ الهُويّة يحمل رأسَه كذلك وإن لم يكن درجةً — فالمُقتطَعُ من
        السلّم لا يُقتطَع من الشرح. */
-    for (const s of ['identity', 'modules', 'workbooks', 'sessions', 'assignments', 'approval']) {
+    for (const s of ['identity', 'modules', 'workbooks', 'sessions', 'assignments', 'approval', 'review']) {
       expect(ws, `الخطوة ${s} بلا رأس`).toContain(`<StageIntro stage="${s}" />`)
     }
   })

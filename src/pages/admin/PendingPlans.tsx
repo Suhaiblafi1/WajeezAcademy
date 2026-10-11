@@ -224,7 +224,7 @@ export default function PendingPlans() {
       {/* وتقاريرُ المراجعة وملاحقُها كذلك — دفعةً واحدة، لمن يعتمد (١١ أكتوبر ٢٠٢٦) */}
       {rows !== null && canUploadEdits && (
         <ReviewReportsBulkUpload
-          plans={scoped.map((r) => ({ id: r.id, labelAr: `${r.cohort.title} — ${r.trainerName}` }))}
+          plans={scoped.map((r) => ({ id: r.id, labelAr: `${r.cohort.title} — ${r.trainerName}`, trainerName: r.trainerName, cohortTitle: r.cohort.title }))}
           onUploaded={(id) => setUploaded((u) => ({ ...u, [id]: (u[id] ?? 0) + 1 }))}
           onOpen={(id) => { setQ(""); goTo(byTrainer(scoped), id); }}
         />
