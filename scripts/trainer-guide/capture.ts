@@ -380,7 +380,7 @@ const ACTIVE: Shot[] = [
       await shoot(e, {
         name: 'ws-meetings', clip: slot, clipPad: 14,
         marks: [
-          { target: slot.getByText(/بانتظار اعتماد الإدارة/).first(), n: 1, pad: 5 },
+          { target: slot.getByText(/ينتظر اعتمادَ الإدارة/).first(), n: 1, pad: 5 },
           { target: btn(slot, /لقاءٌ مباشر/), n: 2, pad: 5 },
           { target: btn(slot, /جلسةٌ مسجّلة/), n: 3, pad: 5 },
         ],
