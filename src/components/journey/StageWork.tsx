@@ -50,6 +50,7 @@ import {
   canSubmitNow, latestSubmission, pendingAssessmentCount,
   type CohortAssessment, type EnrollmentDetail,
 } from "@/services/enrollment-detail";
+import { BriefView } from '@/components/LongText'
 
 const SUBMISSION_STATUS: Record<string, { label: string; cls: string }> = {
   submitted: { label: "بانتظار المراجعة", cls: "border-white/20 text-muted-foreground" },
@@ -933,7 +934,7 @@ function Assessments({ detail, handlers, now }: { detail: EnrollmentDetail; hand
                 خريطةٌ لا مشغّل، وحارسُ `lesson-split.test.ts` يمنع تفريغَ
                 المتن فيها — وهو محقّ، فالجدارُ الذي شُكي منه عاد منه. وهي
                 تُعرض كما يراها مدرّبُها في شاشته حرفا بحرف. */}
-            {a.briefAr && <p className="mt-3 whitespace-pre-line text-read leading-6 text-foreground">{a.briefAr}</p>}
+            {a.briefAr && <BriefView text={a.briefAr} className="mt-3" />}
             {readTypedLinks(a.attachments).length > 0 && (
               <ul className="mt-3 flex flex-wrap gap-2">
                 {readTypedLinks(a.attachments).map((att, i) => {

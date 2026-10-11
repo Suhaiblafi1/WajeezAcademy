@@ -17,6 +17,7 @@ import {
   REVIEW_NOTE_MAX, REVIEW_SECTIONS, STAGE_LABELS, hasReviewNotes, normalizeReviewNotes, notedSections,
   type ReviewNotes, type ReviewSection,
 } from '@/application/trainer/review-notes'
+import { NoteBody } from './LongText'
 
 export function ReviewNotesForm({ busy, onSend, onCancel, initial, editsPending = 0 }: {
   busy: boolean
@@ -131,7 +132,8 @@ export function StageReviewNote({ stage, text }: { stage: ReviewSection; text: s
   return (
     <Inset tone="warn" className="mb-4" role="note" aria-label={`ملاحظةُ الإدارة على «${STAGE_LABELS[stage]}»`}>
       <p className="text-read font-black text-gold-ink">ملاحظةُ الإدارة على هذه الخطوة</p>
-      <p className="mt-1 whitespace-pre-line text-read leading-7 text-foreground">{text}</p>
+      {/* نقطةً نقطة، والنواقصُ محورا محورا — لا سطرا واحدا مكتظّا (١١ أكتوبر ٢٠٢٦، `LongText.tsx`) */}
+      <div className="mt-2"><NoteBody text={text} /></div>
     </Inset>
   )
 }

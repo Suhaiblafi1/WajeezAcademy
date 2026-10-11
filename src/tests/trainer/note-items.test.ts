@@ -92,8 +92,10 @@ describe('③ وفي «المراجعة» قبل التعديلات', () => {
   })
 
   it('⚠️ ونقطةُ «الآن ← نقترح» خانتان — «الآن» ثمّ «نقترح»، كخانتي التعديل', () => {
-    const points = panel.slice(panel.indexOf('export function NotePoints'), panel.indexOf('export function NotePoints') + 1600)
-    expect(points).toMatch(/\{r\.beforeAr !== null \? \([\s\S]{0,500}<Cell label="الآن" text=\{r\.beforeAr\} muted \/>\s*<Cell label="نقترح" text=\{r\.afterAr\} \/>/)
+    const points = panel.slice(panel.indexOf('export function NotePoints'), panel.indexOf('export function NotePoints') + 2400)
+    expect(points).toMatch(/\{r\.beforeAr !== null \? \([\s\S]{0,1200}<Cell label="الآن" text=\{r\.beforeAr\} muted \/>\s*<Cell label="نقترح" text=\{r\.afterAr\} \/>/)
+    /* وقائمةُ النواقص محورا محورا ثمّ «كيف تُصلحه» — لا سطرا مكتظّا في خانة (١١ أكتوبر ٢٠٢٦) */
+    expect(points).toMatch(/\{gapLayout\(r\.beforeAr\) \? \([\s\S]{0,200}<GapList layout=\{gapLayout\(r\.beforeAr\)!\} \/>[\s\S]{0,200}نقترح:<\/b> \{r\.afterAr\}/)
   })
 
   it('⚠️ والصفحةُ تفتح خطوتَها — ما كانت من خطواتها', () => {
