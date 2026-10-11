@@ -100,6 +100,26 @@ describe('١ — المعتمِدُ يرفعه، والبايتاتُ تصل، �
   })
 })
 
+describe('١ب — ولا يُرفع الملفُّ نفسُه مرّتين (١١ أكتوبر ٢٠٢٦)', () => {
+  const start = (originalName: string) =>
+    call('POST', `/api/admin/cohort-plans/${planId}/review-report`, 'admin', { mime: 'application/pdf', originalName })
+
+  it('⚠️ ما رُفع باسمه لهذه الخطّة يُردّ — فلا يرى المدرّبُ التقريرَ نفسَه مرّتين', async () => {
+    const again = await start('تقرير مراجعة الخطة.pdf')
+    expect(again.statusCode).toBe(409)
+    expect(again.json().error.code).toBe('report_exists')
+    expect(again.json().error.message_ar).toMatch(/^رُفع «تقرير مراجعة الخطة\.pdf» لهذه الخطّة من قبل/)
+  })
+
+  it('⚠️ ورفعٌ سابقٌ لم يكتمل لا يمنع — يُخلى صفُّه ويُرفع من جديد', async () => {
+    expect((await start('رفعٌ انقطع.pdf')).statusCode).toBe(201)
+    const retry = await start('رفعٌ انقطع.pdf')
+    expect(retry.statusCode, retry.body).toBe(201)
+    const rows = await prisma.cohortFile.count({ where: { purpose: 'review_report', refId: planId, originalName: 'رفعٌ انقطع.pdf' } })
+    expect(rows, 'بقي الصفُّ الذي لم يكتمل').toBe(1)
+  })
+})
+
 describe('٢ — من يقرؤه', () => {
   it('مدرّبُ الشعبة يقرؤه ببايتاته، والإدارةُ كذلك', async () => {
     const t = await call('GET', `/api/v1/cohort-files/${reportKey}`, 'owner')

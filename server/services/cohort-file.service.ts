@@ -116,6 +116,19 @@ export class CohortFileService {
     if (blocker) throw new AuthError('bad_mime', blocker, 422)
 
     const name = input.originalName.trim().slice(0, 200) || 'تقرير المراجعة'
+    /* ═══ ولا يُرفع الملفُّ نفسُه مرّتين (١١ أكتوبر ٢٠٢٦) ═══
+       الرفعُ دفعةً واحدةً من «خططٌ تنتظر اعتمادك» يجعل إعادةَ الدفعة كلِّها أيسرَ من تتبّع ما
+       رُدّ منها — فيرى المدرّبُ التقريرَ نفسَه مرّتين. فما رُفع باسمه لهذه الخطّة وبقيت بايتاتُه
+       يُردّ، ورفعٌ سابقٌ لم يكتمل (صفٌّ بلا بايتات) يُخلى ولا يمنع. */
+    const same = await this.prisma.cohortFile.findMany({
+      where: { purpose: 'review_report', refId: plan.id, originalName: name }, select: { id: true, storageKey: true },
+    })
+    for (const s of same) {
+      if (await objectExists(s.storageKey).catch(() => false)) {
+        throw new AuthError('report_exists', `رُفع «${name}» لهذه الخطّة من قبل — فلا يُرفع مرّتين. وإن أردت نسخةً أحدث فاحذف القديمة من بطاقة الخطّة أوّلا`, 409)
+      }
+      await this.prisma.cohortFile.delete({ where: { id: s.id } })
+    }
     const storageKey = newStorageKey()
     await this.prisma.cohortFile.create({
       data: {
