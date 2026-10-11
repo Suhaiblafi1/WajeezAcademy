@@ -156,7 +156,7 @@ function MomentumCard({ m, className = "" }: { m: Momentum; className?: string }
         </ul>
       ) : (
         <Card as="p" className="mt-4 px-4 py-3 text-read leading-6 text-muted-foreground">
-          لا أثر مسجَّل في آخر {m.windowDays} يوما. وهذا ما تقوله السجلات — لا حكم فيه ولا عدّاد ينكسر.
+          لا أثر مسجَّل في آخر {m.windowDays} يوما.
         </Card>
       )}
 
@@ -165,7 +165,7 @@ function MomentumCard({ m, className = "" }: { m: Momentum; className?: string }
           إيقاع شعبتك: انتهت{" "}
           <span className="font-bold tabular-nums text-foreground">{m.cohortPace.done}</span> من{" "}
           <span className="tabular-nums">{m.cohortPace.total}</span> جلسة
-          <span className="text-muted-foreground"> — جدول وضعته الشعبة، لا هدفا وضعناه لك.</span>
+          <span className="text-muted-foreground"> — جدولُ الشعبة لا هدفٌ منّا.</span>
         </p>
       )}
 
@@ -392,7 +392,7 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
               <EmptyState
                 icon={CalendarDays}
                 titleAr="لا جلسات مجدولة قادمة"
-                reasonAr="عند جدولة شعبتك تظهر الجلسة هنا مع رابط الانضمام. وحتى ذلك الحين وقتك ليس فراغا:"
+                reasonAr="تظهر جلستك هنا برابطها فور جدولتها. وحتى ذلك الحين:"
                 actions={[
                   ...(pendingAssessments[0]
                     ? [{ to: "/student/learning", labelAr: `سلّم «${pendingAssessments[0].title}»`, hintAr: pendingAssessments[0].dueAt ? `يستحق ${fmtDate(new Date(pendingAssessments[0].dueAt))}` : "بانتظار تسليمك" }]
@@ -401,7 +401,7 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
                     ? [{ to: "/student/learning", labelAr: `تابع «${rows[0].cohort.course.versions[0]?.titleAr ?? rows[0].cohort.title}»`, hintAr: "الوحدات والمواد" }]
                     : []),
                   { to: "/student/review", labelAr: "ثبّت ما تعلّمته", hintAr: "بطاقاتُ تذكّرٍ تعود في موعدها" },
-                  { to: "/student/learning", labelAr: "افتح مسارك", hintAr: "مواعيد دوراتك القادمة ووحداتها" },
+                  { to: "/student/learning", labelAr: "افتح مسارك", hintAr: "مواعيدك ووحداتك" },
                 ]}
               />
             ) : (
@@ -487,32 +487,32 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
           <div className="flex items-center gap-2 text-sm font-bold text-teal-light-ink">
             <TrendingUp className="h-4 w-4" /> ملف مهاراتي
           </div>
-          <p className="mt-2 text-read leading-6 text-muted-foreground">ما قِيس لك فعلا: فجواتك وما تُتقنه وما لم يُقس بعد</p>
+          <p className="mt-2 text-read leading-6 text-muted-foreground">فجواتك وما تتقنه، كما قِيس فعلا</p>
         </Panel>
         <Panel as={Link} tone="accent" interactive to="/student/learning" className="block transition hover:border-teal/60">
           <div className="flex items-center gap-2 text-sm font-bold text-teal-light-ink">
             <CalendarDays className="h-4 w-4" /> مسارُ تعلّمي
           </div>
-          <p className="mt-2 text-read leading-6 text-muted-foreground">تصفح الشعب القادمة واطلب التسجيل فيما يناسبك</p>
+          <p className="mt-2 text-read leading-6 text-muted-foreground">تصفّح الشعب القادمة وسجّل</p>
         </Panel>
         <Panel as={Link} interactive to="/student/certificates" className="block transition hover:border-white/30">
           <div className="flex items-center gap-2 text-sm font-bold text-foreground">
             <Award className="h-4 w-4 text-gold-ink" /> شهاداتي {certCount > 0 && <span className="rounded-full bg-gold/15 px-2 py-0.5 text-fine text-gold-ink">{certCount}</span>}
           </div>
-          <p className="mt-2 text-read leading-6 text-muted-foreground">أرقام تحقق عامة تُشاركها مع أي جهة</p>
+          <p className="mt-2 text-read leading-6 text-muted-foreground">بأرقام تحقق تشاركها مع أي جهة</p>
         </Panel>
         <Panel as={Link} interactive to="/student/support" className="block transition hover:border-white/30">
           <div className="flex items-center gap-2 text-sm font-bold text-foreground">
             <LifeBuoy className="h-4 w-4" /> الدعم
           </div>
-          <p className="mt-2 text-read leading-6 text-muted-foreground">تذكرة دعم تصل لفريق العمليات مباشرة</p>
+          <p className="mt-2 text-read leading-6 text-muted-foreground">تذكرة تصل فريقنا مباشرة</p>
         </Panel>
       </div>
 
       <p className="mt-8 flex items-center justify-center gap-2 text-center text-read text-muted-foreground">
         <Sparkles className="h-3.5 w-3.5" />
         <Clock3 className="h-3.5 w-3.5" />
-        تقدمك يُحفظ في الخادم تلقائيا — أكمل من أي جهاز
+        تقدمك محفوظ — أكمل من أي جهاز
         <CheckCircle2 className="h-3.5 w-3.5 text-teal-ink" />
       </p>
     </PortalLayout>
@@ -565,7 +565,7 @@ function EmptyRealDashboard({ name, signals }: { name: string; signals: EmptySig
             ))}
           </ul>
           <p className="mt-3 max-w-md text-read leading-7 text-muted-foreground">
-            يتحوّل الحجزُ إلى تسجيلٍ فور تأكيد الدفعة، وتفتح شعبتُك هنا تلقائيّا.
+            تُفتح شعبتُك هنا فور تأكيد الدفعة.
           </p>
           <Link to="/student/learning" className="mt-6 rounded-full bg-teal px-6 py-3 font-black text-on-teal transition hover:bg-teal-light">
             تابع في رحلتي
@@ -584,7 +584,7 @@ function EmptyRealDashboard({ name, signals }: { name: string; signals: EmptySig
             {unpaid.length === 1 ? "طلبُك لم يكتمل دفعُه" : `${unpaid.length} طلباتٍ لم يكتمل دفعُها`}
           </h2>
           <p className="mt-3 max-w-md text-sm leading-7 text-muted-foreground">
-            أتمم الدفعَ فتُفتح شعبتُك هنا مباشرة — أو ألغِ الطلبَ فيعود مقعدُك إلى غيرك.
+            أتمم الدفعَ لتُفتح شعبتُك، أو ألغِ الطلبَ فيتحرّر مقعدُك.
           </p>
           <Link to="/student/billing" className="mt-6 rounded-full bg-gold px-6 py-3 font-black text-on-gold transition hover:bg-gold/90">
             افتح فواتيري
@@ -603,7 +603,7 @@ function EmptyRealDashboard({ name, signals }: { name: string; signals: EmptySig
           <p className="mt-2 text-base font-bold text-teal-light-ink">{plan.nameAr}</p>
           <p className="mt-2 max-w-md text-sm leading-7 text-muted-foreground">
             {plan.items.length === 1 ? "دورةٌ واحدة" : `${plan.items.length} دورات`} في مسارك.
-            اختر شعبةَ أولاها وموعدَها — والدفعُ فوريٌّ ويُسجّلك مباشرة.
+            اختر شعبةَ أولاها، والدفعُ يُسجّلك فورا.
           </p>
           <Link to="/student/learning" className="mt-6 rounded-full bg-teal px-6 py-3 font-black text-on-teal transition hover:bg-teal-light">
             اختر شعبتَك الأولى
@@ -619,8 +619,7 @@ function EmptyRealDashboard({ name, signals }: { name: string; signals: EmptySig
         <BookOpen className="h-12 w-12 text-teal-light-ink" />
         <h2 className="mt-5 text-2xl font-black">حسابك جاهز — بقيت أوّل شعبة</h2>
         <p className="mt-3 max-w-md text-sm leading-7 text-muted-foreground">
-          الأسعارُ معلَنةٌ والدفعُ مباشر: اختر دورةً وشعبتَها، وتُفتح هنا فورَ الدفع.
-          أو ابدأ بالتشخيص فنقترح عليك مسارا كاملا.
+          اختر دورةً وشعبتَها، وتُفتح هنا فورَ الدفع. أو ابدأ بالتشخيص لنقترح مسارك.
         </p>
         <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
           <Link to="/diagnostic" className="rounded-full bg-teal px-6 py-3 font-black text-on-teal transition hover:bg-teal-light">

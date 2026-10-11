@@ -44,10 +44,10 @@ export default function StudentSupport() {
   const errors = {
     subject: form.subject.trim().length === 0
       ? "اكتب موضوعا يُعرَف به طلبُك"
-      : form.subject.trim().length < 3 ? "الموضوعُ قصيرٌ — ثلاثةُ أحرفٍ فأكثر" : null,
+      : form.subject.trim().length < 3 ? "الموضوع ٣ أحرف على الأقل" : null,
     body: form.body.trim().length === 0
       ? "اشرح المشكلة كي يفهمها من يقرؤها"
-      : form.body.trim().length < 3 ? "الشرحُ قصيرٌ جدّا — أضف تفصيلا يُعين على الفهم" : null,
+      : form.body.trim().length < 3 ? "الشرحُ قصير — أضف تفصيلا" : null,
   };
   const showError = (k: keyof typeof errors) => (touched[k] ? errors[k] : null);
   const formReady = !errors.subject && !errors.body;
@@ -142,7 +142,7 @@ export default function StudentSupport() {
       ) : rows.length === 0 ? (
         <Panel className="grid place-items-center py-16 text-center">
           <LifeBuoy className="h-12 w-12 text-muted-foreground/50" />
-          <p className="mt-4 text-sm text-muted-foreground">لا تذاكر — افتح أول تذكرة من الأعلى وسنرد عليك في نفس الخيط.</p>
+          <p className="mt-4 text-sm text-muted-foreground">لا تذاكر بعد — افتح تذكرة من الأعلى.</p>
         </Panel>
       ) : (
         <div className="space-y-3">

@@ -195,7 +195,7 @@ export default function StudentAccount() {
           setForm((f) => ({ ...f, displayName: f.displayName || localSession.name }));
         }
         setMode("local");
-        if (!(e instanceof ApiError && e.status === 401)) setErr("تعذر الوصول للخادم — سنعمل محليا مؤقتا");
+        if (!(e instanceof ApiError && e.status === 401)) setErr("تعذّر الوصول للخادم — الحفظ محلي مؤقتا");
       }
     })();
     return () => { alive = false; };
@@ -213,7 +213,7 @@ export default function StudentAccount() {
     if (!v) { setInterestMsg("اكتب اهتماما أوّلا"); return; }
     if (v.length > 40) { setInterestMsg("٤٠ حرفا حدُّ الاهتمام الواحد"); return; }
     if (form.interests.includes(v)) { setInterestMsg(`«${v}» مضافٌ عندك بالفعل`); return; }
-    if (form.interests.length >= 12) { setInterestMsg("اثنا عشر اهتماما هي الحدّ — احذف واحدا لتضيف غيره"); return; }
+    if (form.interests.length >= 12) { setInterestMsg("الحدّ ١٢ اهتماما — احذف واحدا أوّلا"); return; }
     set("interests", [...form.interests, v]);
     setInterestDraft("");
     setInterestMsg("");
@@ -256,7 +256,7 @@ export default function StudentAccount() {
       setFraming(null);
       setForm((f) => ({ ...f, avatarUrl: "" }));
       setPhotoMsg({ bad: false, text: r.awaitingApproval
-        ? "رُفعت صورتُك. وتظهر في حسابك الآن — أمّا «المدربون» وصفحتُك العامّة فتنتظر اعتمادَ الإدارة."
+        ? "رُفعت صورتُك — وتظهر للعامّة بعد اعتماد الإدارة."
         : "رُفعت صورتُك." });
     } catch (e) {
       setPhotoMsg({ bad: true, text: e instanceof ImageConditionError ? e.message
@@ -324,10 +324,10 @@ export default function StudentAccount() {
     try {
       if (mode === "server") {
         await apiPatch("/api/learner/profile", payload);
-        setSavedMsg("حُفظت بياناتك في حسابك — تبقى معك على أي جهاز");
+        setSavedMsg("حُفظت بياناتك");
       } else {
         localStorage.setItem(LOCAL_KEY, JSON.stringify(form));
-        setSavedMsg("حُفظت محليا في هذه المعاينة — ستُنقل لحسابك الحقيقي عند الربط");
+        setSavedMsg("حُفظت محليا — تُنقل لحسابك عند الربط");
       }
     } catch (e) {
       setErr(e instanceof ApiError ? e.message : "تعذر الحفظ — حاول مجددا");
@@ -437,7 +437,7 @@ export default function StudentAccount() {
           <Field label="الاسم الكامل *" name="displayName" error={errOf("displayName")}>
             <input value={form.displayName} onChange={(e) => set("displayName", e.target.value)} onBlur={touch("displayName")} {...bad("displayName", errOf("displayName"))} className={inputCls} autoComplete="name" />
           </Field>
-          <Field label="رابط الصورة الشخصية" hint="اختياري — رابط صورة مباشر يظهر في حسابك وشهاداتك" name="avatarUrl" error={errOf("avatarUrl")}>
+          <Field label="رابط الصورة الشخصية" hint="اختياري — يظهر في حسابك وشهاداتك" name="avatarUrl" error={errOf("avatarUrl")}>
             <input dir="ltr" value={form.avatarUrl} onChange={(e) => set("avatarUrl", e.target.value)} onBlur={touch("avatarUrl")} {...bad("avatarUrl", errOf("avatarUrl"))} placeholder={storedAvatar ? "صورةٌ مرفوعةٌ عندنا" : "https://…"} className={`${inputCls} text-left`} />
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <input
@@ -502,14 +502,14 @@ export default function StudentAccount() {
           {/* حقلا قياسٍ لا حقلا حساب: يقرؤهما مؤشّرُ وجيز، فمن ليس
               متعلّما لا يُسأل عنهما (ج-٢). والإخفاءُ لا يمسّ المخزون. */}
           {learnerFields && (<>
-          <Field label="تاريخ الميلاد" hint="اختياري — يستخدم لشهاداتك والفرص العمرية فقط" name="birthDate" error={errOf("birthDate")}>
+          <Field label="تاريخ الميلاد" hint="اختياري — للشهادات والفرص العمرية فقط" name="birthDate" error={errOf("birthDate")}>
             <DateField
               value={form.birthDate} onChange={(v) => set("birthDate", v)} onBlur={touch("birthDate")}
               fromYear={BIRTH_YEAR_FLOOR} toYear={new Date().getFullYear()} yearOrder="desc"
               selectClassName={inputCls} {...bad("birthDate", errOf("birthDate"))}
             />
           </Field>
-          <Field label="الجنس" hint="اختياري تماما">
+          <Field label="الجنس" hint="اختياري">
             <select value={form.gender} onChange={(e) => set("gender", e.target.value as ProfileForm["gender"])} className={`${inputCls} [&>option]:bg-surface`}>
               <option value="">أفضّل عدم الذكر</option>
               <option value="male">ذكر</option>
@@ -577,7 +577,7 @@ export default function StudentAccount() {
           <Field label="هدفك المهني" name="careerGoal" error={errOf("careerGoal")}>
             <textarea rows={2} maxLength={300} value={form.careerGoal} onChange={(e) => set("careerGoal", e.target.value)} onBlur={touch("careerGoal")} {...bad("careerGoal", errOf("careerGoal"))} placeholder="مثال: أن أقود فريق تسويق خلال سنتين" className={`${inputCls} resize-none`} />
           </Field>
-          <Field label="هدفك التعلمي" hint="ما الذي تريد أن تتقنه في هذه المرحلة؟" name="goalAr" error={errOf("goalAr")}>
+          <Field label="هدفك التعلمي" hint="ما تريد إتقانه الآن" name="goalAr" error={errOf("goalAr")}>
             <textarea rows={2} maxLength={300} value={form.goalAr} onChange={(e) => set("goalAr", e.target.value)} onBlur={touch("goalAr")} {...bad("goalAr", errOf("goalAr"))} className={`${inputCls} resize-none`} />
           </Field>
         </div>
@@ -617,15 +617,15 @@ export default function StudentAccount() {
 
       {/* روابط بقية أقسام الملف */}
       <Panel as="section" className="mt-8 md:p-8">
-        <h2 className="flex items-center gap-2 text-base font-black"><FileText className="h-4 w-4 text-teal-light-ink" /> بقية ملفك — في مكانها الطبيعي</h2>
+        <h2 className="flex items-center gap-2 text-base font-black"><FileText className="h-4 w-4 text-teal-light-ink" /> بقية ملفك</h2>
         <div className="mt-5 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
           {[
             { to: "/student", icon: RouteIcon, t: "مساراتي وتقدمي", d: "مسارك النشط ونسبة إنجازه" },
             { to: "/student/learning", icon: BookOpen, t: "دوراتي وجلساتي", d: "الدورات المسجلة ومواعيدها" },
-            { to: "/student/certificates", icon: Award, t: "شهاداتي", d: "شهادات الإتمام الموثقة وروابط التحقق" },
-            { to: "/student/billing", icon: FileText, t: "فواتيري وطلباتي", d: "أرقام مرجعية وسجل دفعات ودفع اختباري" },
+            { to: "/student/certificates", icon: Award, t: "شهاداتي", d: "شهاداتك وروابط التحقق" },
+            { to: "/student/billing", icon: FileText, t: "فواتيري وطلباتي", d: "فواتيرك ودفعاتك" },
             { to: "/student/cv", icon: FileText, t: "سيرتي الذاتية", d: "رفع بموافقة صريحة وحذف موثق" },
-            { to: "/diagnostic", icon: MessageCircle, t: "نتائج تشخيصي", d: "آخر نتيجة محفوظة وتقريرك الشخصي" },
+            { to: "/diagnostic", icon: MessageCircle, t: "نتائج تشخيصي", d: "آخر نتيجة وتقريرك" },
           ].map((x) => (
             <Card as={Link} tone="accent" interactive key={x.t} to={x.to} className="transition hover:border-teal/50">
               <x.icon className="h-4 w-4 text-teal-light-ink" />
@@ -640,9 +640,9 @@ export default function StudentAccount() {
       <Panel as="section" className="mt-6 md:p-8">
         <h2 className="flex items-center gap-2 text-base font-black"><Lock className="h-4 w-4 text-teal-light-ink" /> الفوترة والطلبات</h2>
         <p className="mt-2 text-sm leading-7 text-muted-foreground">
-          فواتيرك وطلباتك ودفعاتك — بأرقامها المرجعية وسجل مدفوعاتها — في صفحة{" "}
+          فواتيرك ودفعاتك في{" "}
           <Link to="/student/billing" className="font-bold text-teal-light-ink underline-offset-4 hover:underline">فواتيري</Link>.
-          لأي طلب استرداد أو مراجعة فاتورة: <Link to="/contact" className="font-bold text-teal-light-ink underline-offset-4 hover:underline">صفحة التواصل</Link> — اختر «طلب استرداد».
+          وللاسترداد أو مراجعة فاتورة: <Link to="/contact" className="font-bold text-teal-light-ink underline-offset-4 hover:underline">صفحة التواصل</Link> — اختر «طلب استرداد».
         </p>
       </Panel>
 
@@ -675,7 +675,7 @@ export default function StudentAccount() {
             <div className="min-w-0 flex-1">
               <p className="text-sm font-bold">الخروج من كل الأجهزة</p>
               <p className="mt-1 text-read leading-6 text-muted-foreground">
-                سجّلت دخولك على جهاز آخر؟ أنهِ كل الجلسات دفعة واحدة — ستحتاج الدخول من جديد على هذا الجهاز أيضا.
+                يُنهي كل جلساتك — وتدخل من جديد هنا أيضا.
               </p>
             </div>
             <Button tone="secondary" type="button" onClick={logoutAll} disabled={!!secBusy} className="shrink-0 disabled:cursor-not-allowed">
@@ -715,7 +715,7 @@ export default function StudentAccount() {
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-bold text-red-300">تعطيل الحساب</p>
                 <p className="mt-1 text-read leading-6 text-muted-foreground">
-                  يوقف حسابك فورا ويبطل جلساتك — بياناتك وتقدمك محفوظة، وإعادة التفعيل عبر التواصل معنا.
+                  يوقف حسابك وجلساتك فورا. بياناتك وتقدمك محفوظة، ويُعاد التفعيل بالتواصل معنا.
                 </p>
               </div>
               {!confirmingDeactivate ? (

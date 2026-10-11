@@ -188,8 +188,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
         <p className="mt-3 max-w-md text-center text-sm leading-7 text-muted-foreground">
           حسابك <span className="font-bold text-foreground">{sessionUser.email}</span> يحمل
           {" "}{sessionUser.roles.length === 1 ? "دورا وظيفيّا" : "أدوارا وظيفيّة"} بلا دور «متعلّم»،
-          وبوابة التعلّم تُفتح بذلك الدور. أضِفه للحساب من إدارة المستخدمين إن أردتَ أن
-          تتعلّم به أيضا — أو ادخل ببوابتك الوظيفيّة.
+          لتتعلّم به أضِف الدور من إدارة المستخدمين، أو ادخل ببوابتك الوظيفيّة.
         </p>
         <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
           <Link to="/admin" className="rounded-full bg-teal px-6 py-3 font-black text-on-teal hover:bg-teal-light">
@@ -209,8 +208,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
         <Lock className="h-12 w-12 text-[#FABC05]" />
         <h1 className="mt-5 text-2xl font-black">منصتك تُفتح بحسابك</h1>
         <p className="mt-3 max-w-md text-center text-sm leading-7 text-muted-foreground">
-          سجّل دخولك إن كان لك حساب. وإن لم تكن سجّلت في شعبة بعد، فابدأ بالتشخيص
-          ليُقترح عليك مسار، أو تصفّح الشعب المفتوحة واطلب التسجيل.
+          سجّل دخولك، أو ابدأ بالتشخيص لنقترح مسارك.
         </p>
         <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
           <Link to="/auth" className="rounded-full bg-teal px-6 py-3 font-black text-on-teal hover:bg-teal-light">

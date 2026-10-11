@@ -121,7 +121,7 @@ export default function Inbox() {
           <EmptyState
             icon={InboxIcon}
             titleAr="صندوقك فارغ"
-            reasonAr="قرارات التسجيل والجلسات وتعليقات مدربك وردود الدعم تصل هنا كلها في مكان واحد — ولم يصل شيء بعد."
+            reasonAr="لم يصل شيء بعد — قرارات التسجيل وتعليقات مدربك وردود الدعم تصل هنا."
             actions={[
               { to: "/student/learning", labelAr: "افتح مسارك", hintAr: "أول قرار تسجيل يصلك هنا" },
               { to: "/student/support", labelAr: "افتح تذكرة دعم", hintAr: "إن كان لديك سؤال" },
@@ -132,7 +132,7 @@ export default function Inbox() {
             icon={InboxIcon}
             tone="filter"
             titleAr="لا شيء في هذا التصنيف"
-            reasonAr={`صندوقك ليس فارغا — فيه ${countAr(items.length, MSG_FORMS)}، لكن لا شيء منها في هذا التصنيف.`}
+            reasonAr={`لا شيء في هذا التصنيف — وفي صندوقك ${countAr(items.length, MSG_FORMS)}.`}
             actions={[{ onClick: () => setFilter("all"), labelAr: "اعرض كل الرسائل", hintAr: "إزالة المرشّح" }]}
           />
         )

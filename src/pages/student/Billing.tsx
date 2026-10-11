@@ -83,7 +83,7 @@ export default function Billing() {
       });
       /* مزود مستضاف: نحوّل المتعلم لصفحة الدفع عند المزود — التسوية تصل بـ webhook */
       if (res.redirectUrl) { window.location.assign(res.redirectUrl); return; }
-      toast(provider.driver === "test" ? "تم الدفع الاختباري — فُتح وصولك وتحدثت الفاتورة" : "سُجل الدفع — فُتح وصولك");
+      toast(provider.driver === "test" ? "تم الدفع الاختباري — فُتح وصولك" : "سُجل الدفع — فُتح وصولك");
       await load();
     } catch (e) { toastError(e instanceof ApiError ? e.message : "فشل الدفع"); }
     finally { setBusy(null); }
@@ -99,7 +99,7 @@ export default function Billing() {
     setBusy(order.id);
     try {
       await apiPost(`/api/learner/orders/${order.id}/cancel`, {});
-      toast("أُلغي طلبك وفُكّ حجزُ مقعدك — يمكنك الشراء من جديد متى شئت");
+      toast("أُلغي طلبك وفُكّ حجزُ مقعدك");
       await load();
     } catch (e) { toastError(e instanceof ApiError ? e.message : "تعذّر إلغاء الطلب"); }
     finally { setBusy(null); }
@@ -116,7 +116,7 @@ export default function Billing() {
           <ReceiptText className="h-12 w-12 text-muted-foreground/50" />
           <h2 className="mt-4 text-xl font-black">لا طلبات بعد</h2>
           <p className="mt-2 max-w-md text-sm leading-7 text-muted-foreground">
-            عند موافقة العمليات على طلب تسجيلك تُنشأ فاتورة هنا — والدفع يفتح وصولك للمنصة تلقائيا.
+            تظهر فاتورتك هنا عند اعتماد طلبك، ودفعُها يفتح وصولك تلقائيا.
           </p>
         </Panel>
       ) : (
@@ -145,7 +145,7 @@ export default function Billing() {
                   {provider.driver !== "test" && (
                     <p className="mt-2 flex items-center gap-1.5 text-read text-muted-foreground">
                       <ShieldCheck className="h-3 w-3 text-teal-ink" />
-                      تُحوَّل لصفحة دفع مستضافة عند المزود — لا تمر بيانات بطاقتك بخوادمنا، ويُفتح وصولك فور تأكيد المزود.
+                      تدفع في صفحة المزود — بطاقتك لا تمر بخوادمنا، ويُفتح وصولك فور تأكيده.
                     </p>
                   )}
                 </div>
