@@ -202,7 +202,7 @@ describe('④ اللقاءات — بطاقةٌ لكلّ موعد', () => {
     expect(SLOT).toContain('moduleIds: form.moduleIds')
     expect(SLOT, 'يُترك لقاءٌ قائمٌ بلا محور').toContain('if (next.length === 0) return;')
     expect(SLOT).toMatch(/const outside = Boolean\(form\.date\) && !sessionInsideSlot\(/)
-    expect(SLOT, 'يُرسَل لقاءٌ في غير وقت محاوره').toMatch(/disabled=\{busy \|\| title\.length < 2 \|\| !form\.date \|\| outside \|\|/)
+    expect(SLOT, 'يُرسَل لقاءٌ في غير وقت محاوره').toMatch(/disabled=\{busy \|\| title\.length < 2 \|\| !timed \|\| outside \|\|/)
   })
 
   /* ═══ «يضيفون ما شاؤوا — ساعاتٌ أكثرُ جودةٌ أعلى» (٤ أكتوبر ٢٠٢٦) ═══ */
@@ -217,7 +217,7 @@ describe('④ اللقاءات — بطاقةٌ لكلّ موعد', () => {
     expect(SLOT).toContain('!outside && sessionDayAdvice(form.date, zonedDay(new Date()))')
     expect(tip).toContain('SESSION_DAY_ADVICE_AR')
     expect(tip, 'النصيحةُ بلون التحذير').not.toMatch(/gold|warn/)
-    const send = SLOT.slice(SLOT.indexOf('<Button tone="confirm"'), SLOT.indexOf('أرسِلْه للاعتماد'))
+    const send = SLOT.slice(SLOT.indexOf('<Button tone="confirm"'), SLOT.indexOf('احفظ اللقاء', SLOT.indexOf('<Button tone="confirm"')))
     expect(send, 'صارت النصيحةُ مانعا للإرسال').not.toContain('sessionDayAdvice')
   })
 

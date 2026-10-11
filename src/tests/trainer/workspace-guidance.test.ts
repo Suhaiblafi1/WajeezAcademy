@@ -69,7 +69,8 @@ describe('الحقلُ يُشرَح لا يُترك لنصِّه البديل', 
      كـ«خمسةٌ فأكثر» تمرّ وإن نُزع شرحُ حقلٍ ما دام السادسُ قائما. */
   const everyFieldHinted = (block: string) => {
     const all = (block.match(/<StaffField\b/g) ?? []).length
-    const hinted = (block.match(/<StaffField[^>]*\shint="/g) ?? []).length
+    /* والتلميحُ نصّا أو عبارةً تختار نصّا (١١ أكتوبر ٢٠٢٦: تلميحُ الاسم يتبع المثالَ الباهت) */
+    const hinted = (block.match(/<StaffField[^>]*\shint=(?:"|\{)/g) ?? []).length
     return { all, hinted }
   }
 

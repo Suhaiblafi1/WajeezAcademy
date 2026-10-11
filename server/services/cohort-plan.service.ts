@@ -608,7 +608,12 @@ export class CohortPlanService {
 
   async workspace(userId: string, cohortId: string) {
     const { profile, link } = await this.ownedCohort(userId, cohortId)
-    const cohort = await this.prisma.cohort.findUniqueOrThrow({
+    /* ═══ وما لا يتوقّف بعضُه على بعضٍ يُسأل معا (١١ أكتوبر ٢٠٢٦) ═══
+       «الهيكلُ الرماديُّ يبقى قرابة ١٠ ثوانٍ» (ملفُّ صاحب المنصّة). كانت الأسئلةُ
+       تتتابع واحدا بعد واحد: الشعبةُ، ثمّ الخطّة، ثمّ ترتيبُها بين شعبه، ثمّ تقاريرُ
+       المراجعة — وكلٌّ ينتظر ما قبله ولا يحتاجه. فتُسأل معا، وينتظر الجوابُ أبطأَها
+       لا مجموعَها. */
+    const [cohort, plan, mine, reviewReports] = await Promise.all([this.prisma.cohort.findUniqueOrThrow({
       where: { id: cohortId },
       include: {
         course: {
@@ -635,8 +640,15 @@ export class CohortPlanService {
         /* أاعتُمدت له خطّةٌ قطّ — منه ينتظر ما يضيفه ويعدّله في مهامّه قرارَ الإدارة (٣ج-٣) */
         plans: PLAN_GATE_SELECT,
       },
-    })
-    const plan = await this.latestTrainerPlan(cohortId)
+    }),
+    this.latestTrainerPlan(cohortId),
+    /* وترتيبُها بين شعبه في دورتها — «شعبتك الأولى» في رأس الصفحة (⑫) */
+    this.prisma.cohortTrainer.findMany({
+      where: { profileId: profile.id, cohort: { course: { cohorts: { some: { id: cohortId } } } } },
+      select: { cohort: { select: { id: true, courseId: true, createdAt: true } } },
+    }),
+    new CohortFileService(this.prisma).reviewReports(cohortId),
+    ])
     const content = (plan?.content ?? null) as TrainerPlanContent | null
     const approvedPlan = plan ? await this.approvedBehind(cohortId, plan) : null
 
@@ -667,11 +679,6 @@ export class CohortPlanService {
     const publicPeriod = cohort.startsAt && cohort.endsAt
       ? { startsOn: zonedDay(cohort.startsAt), endsOn: zonedDay(cohort.endsAt) }
       : null
-    /* وترتيبُها بين شعبه في دورتها — «شعبتك الأولى» في رأس الصفحة (⑫) */
-    const mine = await this.prisma.cohortTrainer.findMany({
-      where: { profileId: profile.id, cohort: { courseId: cohort.courseId } },
-      select: { cohort: { select: { id: true, courseId: true, createdAt: true } } },
-    })
     const trainerOrdinal = trainerOrdinals(mine.map((m) => m.cohort)).get(cohort.id) ?? null
 
     return {
@@ -705,7 +712,7 @@ export class CohortPlanService {
           }
         : null,
       /* وتقاريرُ المراجعة التي رفعها المعتمِدُ مع قراراته — أحدثُها أوّلا (٨ أكتوبر ٢٠٢٦) */
-      reviewReports: await new CohortFileService(this.prisma).reviewReports(cohortId),
+      reviewReports,
       sessions: cohort.sessions.map((s) => ({
         id: s.id, title: s.title, startsAt: s.startsAt, endsAt: s.endsAt, status: s.status, moduleId: s.moduleId,
         moduleIds: s.moduleIds, approvalState: s.approvalState,

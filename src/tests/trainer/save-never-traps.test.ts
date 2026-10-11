@@ -124,18 +124,19 @@ describe('③ ولا يضيع ما كُتب بالتنقّل', () => {
     expect(leave, 'ما يمنع الحفظَ عند الخروج لا يُقال').toContain('saveProblems().length')
   })
 
-  it('و«احفظ — لم تكتمل بعد» عائمٌ ما دام في اليد ما لم يُحفظ: يحفظ ويبقى، ولا يُتمّ شيئا', () => {
-    /* وليس في صفّ الرأس: الصفُّ يسع زرّا واحدا (قِيس في المتصفّح) — فركب الثاني على السلّم */
+  /* ═══ وذهب الزرُّ العائمُ إلى حفظٍ تلقائيّ (١١ أكتوبر ٢٠٢٦) ═══
+     «احذفوا زرَّ "احفظ — لم تكتمل بعد": حفظٌ تلقائيٌّ مع مؤشّرٍ صغير، وزرٌّ واحد:
+     "التالي"» — ملفُّ صاحب المنصّة «تحسينات بوابة مدرّب وجيز». */
+  it('وما في اليد يُحفظ وحدَه بعد سكونه — لا زرَّ عائما، ولا يُمحى ما كُتب أثناء الحفظ', () => {
+    expect(screen, 'عاد الزرُّ العائم').not.toMatch(/showDraftSave|saveDraft|احفظ — لم تكتمل بعد/)
+    expect(screen, 'لا مؤقّتَ يحفظ').toMatch(/window\.setTimeout\(\(\) => autoSave\.current\?\.\(\), AUTOSAVE_DELAY_MS\)/)
+    const auto = between(screen, 'autoSave.current = () => {', '\n  };')
+    expect(auto, 'لم يُعثر على الحفظ التلقائيّ').toBeTruthy()
+    expect(auto, 'يُرسَل ما يمنع الحفظُ ليُردّ').toContain('if (autoMeta.failedKey === editKey || firstProblem) return;')
+    expect(auto, 'لا يحفظ').toContain('await persist(snap)')
+    expect(auto, 'يُستبدل ما في اليد بما عاد — فيُمحى حرفٌ كُتب أثناء الحفظ').not.toMatch(/setContent\(|await load\(/)
+    expect(auto, 'البصمةُ ممّا في اليد لا ممّا أُرسل').toContain('modules: modulesKey(snap)')
     const head = screen.slice(screen.indexOf('<Bar'), screen.indexOf('</Bar>'))
-    expect(head, 'زرٌّ ثانٍ في صفّ الرأس — يركب على أسماء الخطوات ويبتلع نقرتَه').not.toContain('saveDraft()')
-    expect(screen, 'لا شرطَ يُظهر الزرَّ العائم').toMatch(/const showDraftSave = !atApproval && !locked && Object\.values\(dirty\)\.some\(Boolean\);/)
-    const fab = between(screen, '{showDraftSave && (', '</Button>')
-    expect(fab, 'الزرُّ العائمُ لا يُرسم').toBeTruthy()
-    expect(fab, 'الزرُّ ليس عائما').toMatch(/className="fixed bottom-4 end-4/)
-    expect(fab).toContain('saveDraft()')
-    expect(fab).toContain('احفظ — لم تكتمل بعد')
-    const draft = between(screen, 'const saveDraft = async () => {', '\n  };')
-    expect(draft, 'زرُّ الحفظ مسوّدةً لا يحفظ').toContain('await persist()')
-    expect(draft, 'زرُّ الحفظ مسوّدةً ينقل المدرّب').not.toContain('setStage(')
+    expect(head, 'لا مؤشّرَ للحفظ بجانب «التالي»').toContain('{autoLine}')
   })
 })

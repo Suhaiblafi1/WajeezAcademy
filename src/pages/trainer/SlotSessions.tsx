@@ -43,8 +43,11 @@ import {
   EARLY_DAYS, axesLabelAr, dayInSlot, dayLabelAr, sessionInsideSlot, type PlanSlot,
 } from "@/application/trainer/axis-timeline";
 import {
-  SHORT_SESSION_AR, firstToFor, fromSlots, sessionTooShort, slotLabelAr, toMinutes, toSlotsFor,
+  SHORT_SESSION_AR, fromSlots, sessionTooShort, slotLabelAr, toMinutes, toSlotsFor,
 } from "@/application/trainer/session-length";
+import {
+  TO_LADDER_WHY_AR, dayNoteAr, fromClockNote, suggestedSessionTitle, toClockNote,
+} from "@/application/trainer/session-picker";
 
 /** لقاءٌ كما تعرضه الورشة */
 export interface SlotSession {
@@ -69,7 +72,7 @@ const clockOf = (iso: string) => {
 };
 
 export default function SlotSessions({
-  cohortId, slot, index, axisNo, sessions, recorded, locked, approvedOnce, onDone, beforeWrite,
+  cohortId, slot, index, axisNo, titles, sessions, recorded, locked, approvedOnce, onDone, beforeWrite,
   onAddRecorded, onPatchRecorded, onRemoveRecorded,
 }: {
   cohortId: string;
@@ -77,6 +80,8 @@ export default function SlotSessions({
   index: number;
   /** رقمُ كلّ محورٍ في الخطّة — «المحور ٣» */
   axisNo: ReadonlyMap<string, number>;
+  /** عنوانُ كلّ محور — منه يُقترح عنوانُ اللقاء مثالا باهتا لا قيمةً مكتوبة */
+  titles: ReadonlyMap<string, string>;
   /** لقاءاتُ المدرّب التي أوّلُ محاورها في هذا الموعد */
   sessions: SlotSession[];
   /** جلساتُه المسجّلة — بموضعها في مصادر الخطّة */
@@ -96,10 +101,16 @@ export default function SlotSessions({
   const covered = new Set(sessions.flatMap((s) => s.moduleIds ?? []));
   /* اللقاءُ الجديدُ لما لم يُغطَّ من محاور الموعد — كلِّها إن غُطّيت — وللمدرّب أن يغيّر */
   const uncovered = axes.filter((id) => !covered.has(id));
+  /* ═══ نموذجٌ فارغٌ — المدرّبُ يكتب، والمنصّةُ تقترح (١١ أكتوبر ٢٠٢٦) ═══
+
+     كان يُفتح على «اللقاء المباشر · المحور ٣» مكتوبا، ويومِ بدء الموعد، ومن
+     السادسة إلى الثامنة مساءً — قيمٌ يمسحها المدرّبُ أوّلا، أو تُرسَل كما هي
+     بموعدٍ لم يقصده (ملفُّ صاحب المنصّة «تحسينات بوابة مدرّب وجيز»). فصار كلُّ
+     حقلٍ فارغا: العنوانُ مثالٌ باهتٌ من عناوين محاوره — وإن تُرك فارغا سُمّي به —
+     واليومُ والساعتان لا يُحفظ اللقاءُ حتّى يُختارا. */
   const blank = () => ({
-    /* `null`: العنوانُ يتبع المحاورَ المختارة ما لم يكتب غيرَه */
-    title: null as string | null,
-    date: slot.startsOn, from: "18:00", to: "20:00", noteAr: "",
+    title: "",
+    date: "", from: "", to: "", noteAr: "",
     moduleIds: uncovered.length > 0 ? uncovered : [...axes],
   });
   const [open, setOpen] = useState(false);
@@ -108,14 +119,16 @@ export default function SlotSessions({
   const FROM = useMemo(() => fromSlots(), []);
   const TO = useMemo(() => toSlotsFor(form.from), [form.from]);
 
-  const autoTitle = `اللقاء المباشر · ${axesLabelAr(form.moduleIds.length ? form.moduleIds : axes, axisNo)}`;
-  const title = (form.title ?? autoTitle).trim();
-  const formDay = form.date ? dayInSlot(at(form.date, form.from), slot) : 1;
-  const tooShort = sessionTooShort(at(form.date || slot.startsOn, form.from), at(form.date || slot.startsOn, form.to));
+  const suggested = suggestedSessionTitle(form.moduleIds.length ? form.moduleIds : axes, titles, axisNo);
+  const title = form.title.trim() || suggested;
+  const timed = Boolean(form.date && form.from && form.to);
+  const formDay = form.date ? dayInSlot(at(form.date, form.from || "00:00"), slot) : 1;
+  const tooShort = timed && sessionTooShort(at(form.date, form.from), at(form.date, form.to));
+  const dayNote = form.date ? dayNoteAr(form.date) : null;
   /* ═══ واللقاءُ في وقت محاوره — يُقال قبل الإرسال لا بعد ردّه (٤ أكتوبر ٢٠٢٦) ═══
      حدودُ الحقل (`min`/`max`) تُرشد ولا تمنع: اليومُ يُكتب باليد. فيُحكم بالقاعدة
      التي يحجب بها الإرسالُ ويردّ بها الخادم (`sessionInsideSlot`). */
-  const outside = Boolean(form.date) && !sessionInsideSlot({ startsAt: at(form.date, form.from), endsAt: at(form.date, form.to) }, slot);
+  const outside = Boolean(form.date) && !sessionInsideSlot({ startsAt: at(form.date, form.from || "00:00"), endsAt: at(form.date, form.to || form.from || "00:00") }, slot);
 
   /* ── ربطُ لقاءٍ قائمٍ بمحاوره ── محورٌ أو أكثر من موعده، ولا يُترك بلا محور */
   const relink = async (s: SlotSession, id: string, on: boolean) => {
@@ -150,7 +163,11 @@ export default function SlotSessions({
         moduleIds: form.moduleIds,
         noteAr: form.noteAr.trim() || null,
       });
-      toast("أُرسل اللقاءُ للاعتماد — يصل المسجَّلين حين تعتمده الإدارة");
+      /* «احفظ اللقاء» لا «أرسِله للاعتماد»: الاعتمادُ يقع مع الخطّة كلِّها في خطوتها
+         الأخيرة — والزرُّ في كلّ لقاءٍ كان يوحي بأنّ كلَّ لقاءٍ إرسالٌ نهائيّ */
+      toast(approvedOnce
+        ? "حُفظ اللقاء — وينتظر اعتمادَ الإدارة قبل أن يراه المسجّلون"
+        : "حُفظ اللقاء — ويُعتمَد مع خطّتك حين ترسلها");
       setForm(blank());
       setOpen(false);
       onDone();
@@ -237,12 +254,12 @@ export default function SlotSessions({
         </div>
       ) : (
         <Inset tone="accent" className="grid gap-3">
-          <StaffField wide label="عنوانُ اللقاء" hint="ما يراه المتعلّم في تقويمه — ويتبع المحاورَ التي تختارها ما لم تكتب غيرَه.">
-            <input value={form.title ?? autoTitle} aria-label={`عنوانُ اللقاء في الموعد ${index + 1}`}
-              onChange={(e) => setForm({ ...form, title: e.target.value || null })} className={staffControlCls} />
+          <StaffField wide label="عنوانُ اللقاء" hint={`ما يراه المتعلّم في تقويمه. وإن تركته فارغا سُمّي «${suggested}».`}>
+            <input value={form.title} placeholder={`مثال: ${suggested}`} aria-label={`عنوانُ اللقاء في الموعد ${index + 1}`}
+              onChange={(e) => setForm({ ...form, title: e.target.value })} className={staffControlCls} />
           </StaffField>
           <div className="grid gap-3 sm:grid-cols-3">
-            <StaffField label="اليوم" hint="داخلَ هذا الموعد.">
+            <StaffField label="اليوم" hint={`داخلَ هذا الموعد: من ${dayLabelAr(slot.startsOn)} إلى ${dayLabelAr(slot.endsOn)}.`}>
               <input type="date" dir="ltr" value={form.date} min={slot.startsOn} max={slot.endsOn}
                 aria-label={`يومُ اللقاء في الموعد ${index + 1}`}
                 onChange={(e) => setForm({ ...form, date: e.target.value })}
@@ -252,16 +269,25 @@ export default function SlotSessions({
               <select value={form.from} aria-label={`ساعةُ بدء اللقاء في الموعد ${index + 1}`}
                 onChange={(e) => {
                   const from = e.target.value;
-                  setForm({ ...form, from, to: toSlotsFor(from).includes(form.to) ? form.to : firstToFor(from) });
+                  /* وما اختاره في «إلى» يبقى إن صلح — ولا يُملأ عنه إن لم يصلح */
+                  setForm({ ...form, from, to: toSlotsFor(from).includes(form.to) ? form.to : "" });
                 }}
                 className={staffControlCls}>
-                {FROM.map((c) => <option key={c} value={c}>{slotLabelAr(c)}</option>)}
+                <option value="">اختر الساعة</option>
+                {FROM.map((c) => {
+                  const note = form.date ? fromClockNote(form.date, c) : null;
+                  return <option key={c} value={c}>{slotLabelAr(c)}{note ? ` · ${note}` : ""}</option>;
+                })}
               </select>
             </StaffField>
-            <StaffField label="إلى الساعة" hint="ساعتان على الأقلّ.">
-              <select value={form.to} aria-label={`ساعةُ انتهاء اللقاء في الموعد ${index + 1}`}
+            <StaffField label="إلى الساعة" hint={TO_LADDER_WHY_AR}>
+              <select value={form.to} disabled={!form.from} aria-label={`ساعةُ انتهاء اللقاء في الموعد ${index + 1}`}
                 onChange={(e) => setForm({ ...form, to: e.target.value })} className={staffControlCls}>
-                {TO.map((c) => <option key={c} value={c}>{slotLabelAr(c)}</option>)}
+                <option value="">{form.from ? "اختر الساعة" : "اختر البدء أوّلا"}</option>
+                {TO.map((c) => {
+                  const note = toClockNote(c);
+                  return <option key={c} value={c}>{slotLabelAr(c)}{note ? ` · ${note}` : ""}</option>;
+                })}
               </select>
             </StaffField>
           </div>
@@ -293,6 +319,12 @@ export default function SlotSessions({
           ) : formDay > EARLY_DAYS && (
             <p className="text-read text-gold-ink">هذا اليومُ {formDay} من الموعد — والأصلُ أن يكون اللقاءُ في أوّل {EARLY_DAYS} أيّام، فبعده تُفتح المهامّ. ولك أن تُبقيه.</p>
           )}
+          {!outside && dayNote && (
+            <p className="flex items-start gap-2 text-read leading-6 text-gold-ink">
+              <Lightbulb className="mt-1 h-4 w-4 shrink-0" aria-hidden="true" />
+              <span>{dayNote}</span>
+            </p>
+          )}
           {tooShort && <p className="text-read font-bold text-gold-ink">{SHORT_SESSION_AR}.</p>}
           {/* ونصيحةُ البدء حين يُختار يومٌ قبل أواخر نوفمبر — ودودةٌ لا تمنع (`start-advice.ts`) */}
           {!outside && sessionDayAdvice(form.date, zonedDay(new Date())) && (
@@ -303,9 +335,9 @@ export default function SlotSessions({
           )}
           <div className="flex flex-wrap gap-2">
             <Button tone="confirm" size="sm" loading={busy}
-              disabled={busy || title.length < 2 || !form.date || outside || tooShort || form.moduleIds.length === 0}
+              disabled={busy || title.length < 2 || !timed || outside || tooShort || form.moduleIds.length === 0}
               onClick={() => void add()}>
-              أرسِلْه للاعتماد
+              احفظ اللقاء
             </Button>
             <Button tone="ghost" size="sm" disabled={busy} onClick={() => setOpen(false)}>أغلِق</Button>
           </div>
