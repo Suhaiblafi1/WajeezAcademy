@@ -34,7 +34,10 @@
    للفصل — والشرحُ عند وصف ① أدناه. و② باقٍ، وزاد عليه: اللقاءُ داخلَ المدّة. */
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { describe, expect, it } from 'vitest'
+import { describe, expect as vexpect, it } from 'vitest'
+import { plainExpect } from '../../../server/tests/helpers/plain-expect'
+/* نصوصُ الخادم بلا تشكيلٍ إعرابيّ بعد «اللغة البيضاء» — والمنتظَرُ هنا قبلها: يُقارَن الطرفان بلا تشكيل */
+const expect = plainExpect(vexpect)
 import { buildChecklist } from '../../../server/services/cohort-plan.service'
 import { MIN_MODULE_BODY } from '@/application/trainer/plan-overlay'
 

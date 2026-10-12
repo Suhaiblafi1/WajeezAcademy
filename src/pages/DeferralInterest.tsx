@@ -71,7 +71,7 @@ export default function DeferralInterest() {
         ) : (
           <>
             <p className="mt-4 text-read leading-8">
-              أهلا {view.firstName}. قبل شهرين أجّلنا طلبك (<span dir="ltr">{view.reference}</span>) إلى الفصول
+              أهلا {view.firstName}. أجّلنا طلبك (<span dir="ltr">{view.reference}</span>) إلى الفصول
               القادمة، ووعدنا أن نسألك. اختر ما يناسبك، وتحت كل خيار ما يحدث بعده:
             </p>
             <div className="mt-5 grid gap-3">

@@ -63,7 +63,7 @@ export function registerCatalogRoutes(app: FastifyInstance, prisma: PrismaClient
      وُلدت بلا مهارة، وبه يُفتح حاجزُ النشر الذي يمنعها. */
   app.put('/api/admin/catalog/courses/:courseId/skills', {
     preHandler: requirePermission('catalog.course.edit'),
-    schema: { tags: ['admin-catalog'], summary: 'ربطُ مهارات الدورة — يستبدل الربطَ كلَّه بما أُرسل' },
+    schema: { tags: ['admin-catalog'], summary: 'ربط مهارات الدورة — يستبدل الربط كلّه بما أرسل' },
   }, async (req) => {
     const { courseId } = z.object({ courseId: z.string() }).parse(req.params)
     const { skillIds } = z.object({ skillIds: z.array(z.string()).max(12) }).parse(req.body)
@@ -74,7 +74,7 @@ export function registerCatalogRoutes(app: FastifyInstance, prisma: PrismaClient
      وخلف `catalog.course.edit` كالمهارات: من يملك تعديلَ الدورة يملك هذا. */
   app.put('/api/admin/catalog/courses/:courseId/standalone', {
     preHandler: requirePermission('catalog.course.edit'),
-    schema: { tags: ['admin-catalog'], summary: 'إذنُ ترشيحِ دورةٍ وحدَها ومجالاتُها التشخيصيّة' },
+    schema: { tags: ['admin-catalog'], summary: 'إذن ترشيح دورة وحدها ومجالاتها التشخيصيّة' },
   }, async (req) => {
     const { courseId } = z.object({ courseId: z.string() }).parse(req.params)
     const body = z.object({
@@ -93,7 +93,7 @@ export function registerCatalogRoutes(app: FastifyInstance, prisma: PrismaClient
      الترقيم كلّما أغلق أحدٌ المعالجَ في منتصفه. */
   app.get('/api/admin/catalog/courses/next-id', {
     preHandler: requirePermission('catalog.course.create'),
-    schema: { tags: ['admin-catalog'], summary: 'معرّفُ الدورة القادم في مسارٍ — عرضٌ لا حجز' },
+    schema: { tags: ['admin-catalog'], summary: 'معرّف الدورة القادم في مسار — عرض لا حجز' },
   }, async (req, reply) => {
     /* والعائلةُ بديلٌ عن المسار منذ ٢٠ سبتمبر ٢٠٢٦: دورةٌ قائمةٌ بنفسها
        يُشتقّ معرّفُها من عائلةٍ تُسمّى، لا من مسارٍ يُخترع لها. */
@@ -107,7 +107,7 @@ export function registerCatalogRoutes(app: FastifyInstance, prisma: PrismaClient
       return reply.status(422).send({
         error: {
           code: 'unknown_family',
-          message_ar: 'اذكر مسارا أمّا أو عائلةً مسمّاةً — منهما يُشتقّ معرّفُ الدورة',
+          message_ar: 'اذكر مسارا أمّا أو عائلة مسمّاة — منهما يشتقّ معرّف الدورة',
         },
       })
     }
@@ -116,7 +116,7 @@ export function registerCatalogRoutes(app: FastifyInstance, prisma: PrismaClient
 
   app.post('/api/admin/catalog/courses', {
     preHandler: requirePermission('catalog.course.create'),
-    schema: { tags: ['admin-catalog'], summary: 'إنشاء دورة كمسودة مع وحداتها ومهاراتها — ومعرّفُها مولَّد' },
+    schema: { tags: ['admin-catalog'], summary: 'إنشاء دورة كمسودة مع وحداتها ومهاراتها — ومعرّفها مولّد' },
   }, async (req, reply) => {
     /* ولا `id` في الحمولة: ما يرسله المتصفّحُ لا يُقرأ أصلا، فلا سبيلَ
        إلى فرض معرّفٍ من الخارج ولو عُدّل النداء بيد. */
@@ -211,7 +211,7 @@ export function registerCatalogRoutes(app: FastifyInstance, prisma: PrismaClient
 
   app.post('/api/admin/catalog/measurement-questions/:id/retire', {
     preHandler: requirePermission('diagnostic.question.edit'),
-    schema: { tags: ['admin-catalog'], summary: 'إيقاف سؤال قياس معلَّق — يتوقف إهدار وقت المتعلم (موجة ٦ · أ-٣)' },
+    schema: { tags: ['admin-catalog'], summary: 'إيقاف سؤال قياس معلّق — يتوقف إهدار وقت المتعلم (موجة ٦ · أ-٣)' },
   }, async (req) => {
     const { id } = z.object({ id: z.string() }).parse(req.params)
     const { reasonAr } = z.object({ reasonAr: z.string().min(10).max(400) }).parse(req.body)
@@ -291,7 +291,7 @@ export function registerCatalogRoutes(app: FastifyInstance, prisma: PrismaClient
 
   app.post('/api/admin/catalog/change-requests/:id/decision', {
     preHandler: requirePermission('catalog.pathway.review'),
-    schema: { tags: ['admin-catalog'], summary: 'قرار مراجعة (checker) — ولا يعتمد الذاتَ إلّا حاملُ catalog.self_approve' },
+    schema: { tags: ['admin-catalog'], summary: 'قرار مراجعة (checker) — ولا يعتمد الذات إلّا حامل catalog.self_approve' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const body = z.object({

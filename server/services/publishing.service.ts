@@ -47,10 +47,10 @@ export class PublishingService {
     })
     if (!v) throw new AuthError('not_found', 'الإصدار غير موجود', 404)
     if (v.status !== 'draft') {
-      throw new AuthError('not_draft', `لا يُحذف إلا إصدار مسودة — حالة «${v.label}»: ${v.status}`, 409)
+      throw new AuthError('not_draft', `لا يحذف إلا إصدار مسودة — حالة «${v.label}»: ${v.status}`, 409)
     }
     if (v.snapshots.length > 0) {
-      throw new AuthError('has_snapshot', `الإصدار «${v.label}» يحمل لقطة — قد يكون هدف رجوع، فلا يُحذف`, 409)
+      throw new AuthError('has_snapshot', `الإصدار «${v.label}» يحمل لقطة — قد يكون هدف رجوع، فلا يحذف`, 409)
     }
     await recordAudit(this.prisma, {
       actorId, action: 'catalog.version.delete_draft', entityType: 'CatalogVersion', entityId: v.id,

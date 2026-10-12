@@ -187,7 +187,7 @@ export class LearnersService {
 
   private assertWritable(scope: LearnerScope) {
     if (!canWrite(scope)) {
-      throw new AuthError('read_only', 'نطاقُك للاطّلاع لا للتعديل — التسجيلُ والحذفُ بصلاحية إدارة التسجيل', 403)
+      throw new AuthError('read_only', 'نطاقك للاطّلاع لا للتعديل — التسجيل والحذف بصلاحية إدارة التسجيل', 403)
     }
   }
 
@@ -198,7 +198,7 @@ export class LearnersService {
     await recordAudit(this.prisma, {
       actorId, action: 'learner.enroll.manual', entityType: 'enrollment', entityId: enrollment.id,
       meta: { userId, cohortId, status: enrollment.status },
-      reason: 'تسجيلٌ إداريّ من شاشة الطلبة',
+      reason: 'تسجيل إداريّ من شاشة الطلبة',
     })
     return enrollment
   }
@@ -224,7 +224,7 @@ export class LearnersService {
 
     if (patch.email && patch.email !== before.email) {
       const taken = await this.prisma.user.findUnique({ where: { email: patch.email } })
-      if (taken) throw new AuthError('email_taken', 'هذا البريد مستعمَل لحسابٍ آخر', 409)
+      if (taken) throw new AuthError('email_taken', 'هذا البريد مستعمل لحساب آخر', 409)
     }
 
     const updated = await this.prisma.$transaction(async (tx) => {

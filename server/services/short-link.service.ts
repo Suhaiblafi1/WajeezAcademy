@@ -33,7 +33,7 @@ export class ShortLinkService {
   /** رابطٌ قصيرٌ جديدٌ لوجهةٍ داخليّة */
   async mint(target: string, actorId: string | null, purpose?: string): Promise<MintedLink> {
     if (!isSafeTarget(target)) {
-      throw new AuthError('bad_target', 'الوجهةُ مسارٌ داخليٌّ يبدأ بشرطةٍ واحدة — ولا يُحوَّل إلى عنوانٍ خارجيّ', 400)
+      throw new AuthError('bad_target', 'الوجهة مسار داخليّ يبدأ بشرطة واحدة — ولا يحوّل إلى عنوان خارجيّ', 400)
     }
     /* تصادمُ رمزٍ من نحو مليارٍ نادر، والنادرُ يقع: يُعاد السكُّ لا يُرمى الطلب. */
     for (let attempt = 0; attempt < 5; attempt += 1) {
@@ -47,7 +47,7 @@ export class ShortLinkService {
       })
       return { code, path: shortLinkPath(code), url: `${publicSiteUrl()}${shortLinkPath(code)}` }
     }
-    throw new AuthError('code_exhausted', 'تعذّر سكُّ رمزٍ فريدٍ للرابط', 500)
+    throw new AuthError('code_exhausted', 'تعذّر سكّ رمز فريد للرابط', 500)
   }
 
   /** وجهةُ رمزٍ — أو ٤٠٤
@@ -56,17 +56,17 @@ export class ShortLinkService {
       لمن يجرّب الرموزَ أيُّها كان موجودا، وهو ما لا يُعطى مجّانا. */
   async resolve(code: string): Promise<{ target: string }> {
     const row = await this.prisma.shortLink.findUnique({ where: { code } })
-    if (!row || row.revokedAt) throw new AuthError('not_found', 'لا وجهةَ لهذا الرابط', 404)
+    if (!row || row.revokedAt) throw new AuthError('not_found', 'لا وجهة لهذا الرابط', 404)
     /* وما كُتب قبل أن يُحرَس البابُ لا يُحوَّل إليه: الشرطُ يُقرأ عند الخروج
        أيضا، فصفٌّ قديمٌ أو مُعدَّلٌ بيدٍ في القاعدة لا يصير تحويلا مفتوحا. */
-    if (!isSafeTarget(row.target)) throw new AuthError('not_found', 'لا وجهةَ لهذا الرابط', 404)
+    if (!isSafeTarget(row.target)) throw new AuthError('not_found', 'لا وجهة لهذا الرابط', 404)
     return { target: row.target }
   }
 
   /** إبطالُ رابطٍ — ولا يُحذف صفُّه */
   async revoke(code: string, actorId: string | null): Promise<void> {
     const row = await this.prisma.shortLink.findUnique({ where: { code } })
-    if (!row) throw new AuthError('not_found', 'لا رابطَ بهذا الرمز', 404)
+    if (!row) throw new AuthError('not_found', 'لا رابط بهذا الرمز', 404)
     if (row.revokedAt) return
     await this.prisma.shortLink.update({ where: { code }, data: { revokedAt: new Date() } })
     await recordAudit(this.prisma, {
@@ -78,7 +78,7 @@ export class ShortLinkService {
 /** سكٌّ في معاملةٍ قائمة — لمن يسكّ رابطا مع الصفّ الذي يشير إليه */
 export async function mintShortLink(db: Db, target: string, actorId: string | null, purpose?: string): Promise<string> {
   if (!isSafeTarget(target)) {
-    throw new AuthError('bad_target', 'الوجهةُ مسارٌ داخليٌّ يبدأ بشرطةٍ واحدة — ولا يُحوَّل إلى عنوانٍ خارجيّ', 400)
+    throw new AuthError('bad_target', 'الوجهة مسار داخليّ يبدأ بشرطة واحدة — ولا يحوّل إلى عنوان خارجيّ', 400)
   }
   const code = newShortCode()
   await db.shortLink.create({ data: { code, target, purpose: purpose ?? null, createdBy: actorId } })

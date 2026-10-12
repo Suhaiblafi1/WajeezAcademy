@@ -17,7 +17,9 @@
 
    ولا شبكةَ هنا: `fetch` مُلتقَط، وتسجيلاتُ Zoom تُعدّ. */
 
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect as vexpect, it } from 'vitest'
+import { plainExpect } from '../helpers/plain-expect'
+const expect = plainExpect(vexpect)
 import type { PrismaClient } from '@prisma/client'
 import { setupTestDb, testPrisma } from '../helpers/db'
 import { CohortService } from '../../services/cohort.service'

@@ -13,7 +13,10 @@
    إلى `localhost`، والمالُ مقبوضٌ والتسجيلُ مسوًّى لأنّ الـwebhook مستقلٌّ عن
    المتصفّح. عطبٌ صامتٌ حيث نقرأ، صاخبٌ حيث لا نرى — وهو أسوأُ ترتيب. */
 
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect as vexpect, it } from 'vitest'
+import { plainExpect } from '../helpers/plain-expect'
+const expect = plainExpect(vexpect)
+import { plainAr } from '../../../src/application/text/plain-ar'
 import type { PrismaClient } from '@prisma/client'
 import { setupTestDb, testPrisma } from '../helpers/db'
 import { SystemHealthService } from '../../services/system-health.service'
@@ -51,7 +54,7 @@ afterAll(() => {
 describe('البنودُ الأربعةُ تصل الشاشةَ فعلا', () => {
   it('مجموعةُ «النسخةُ العاملةُ والبيئة» موجودةٌ في اللقطة', async () => {
     const s = (await health.snapshot()) as unknown as Snapshot
-    const g = s.groups.find((x) => x.titleAr.includes('النسخةُ العاملة'))
+    const g = s.groups.find((x) => plainAr(x.titleAr).includes(plainAr('النسخةُ العاملة')))
     expect(g, 'بلا المجموعةِ يبقى الجوابُ في curl').toBeTruthy()
     expect(g!.items.map((i) => i.key)).toEqual(
       expect.arrayContaining(['running_build', 'snapshot_sync', 'site_url', 'built_site_origin', 'deploy_alerting']),

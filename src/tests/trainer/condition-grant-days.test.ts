@@ -10,7 +10,10 @@
    ④ والشاشةُ تحسب بالدالّة نفسِها وتنادي المسارَ الذي يحرسه إذنُ العقود.
    والسلوكُ على قاعدةٍ حقيقيّة في `server/tests/trainer/condition-grant-days.test.ts`. */
 
-import { describe, expect, it } from 'vitest'
+import { describe, expect as vexpect, it } from 'vitest'
+import { plainExpect } from '../../../server/tests/helpers/plain-expect'
+/* نصوصُ الخادم بلا تشكيلٍ إعرابيّ بعد «اللغة البيضاء» — يُقارَن الطرفان بلا تشكيل */
+const expect = plainExpect(vexpect)
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import {

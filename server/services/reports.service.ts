@@ -48,11 +48,11 @@ const COLUMN_AR: Record<string, string> = {
   priority: 'الأولوية', category: 'التصنيف',
   stage: 'المرحلة', users: 'أجهزة فريدة', events: 'الأحداث',
   pct: 'النسبة ٪', base: 'الأساس', medianDays: 'وسيط الأيام',
-  reference: 'المرجع', email: 'البريد', state: 'الحال', activeSince: 'نشطٌ منذ',
-  lastContract: 'آخرُ عقد', nextStepAr: 'الخطوةُ التالية',
-  trainerStatus: 'حالُ المدرّب', source: 'المصدر', title: 'العنوان', summary: 'النبذة',
-  itemStatus: 'حالُ البند', qualification: 'التأهيل', nearest: 'أقربُ دورةٍ في الكتالوج',
-  note: 'ملحوظة', proposalId: 'معرّفُ الاقتراح',
+  reference: 'المرجع', email: 'البريد', state: 'الحال', activeSince: 'نشط منذ',
+  lastContract: 'آخر عقد', nextStepAr: 'الخطوة التالية',
+  trainerStatus: 'حال المدرّب', source: 'المصدر', title: 'العنوان', summary: 'النبذة',
+  itemStatus: 'حال البند', qualification: 'التأهيل', nearest: 'أقرب دورة في الكتالوج',
+  note: 'ملحوظة', proposalId: 'معرّف الاقتراح',
 }
 const colAr = (k: string) => COLUMN_AR[k] ?? k
 
@@ -360,8 +360,8 @@ export class ReportsService {
          ولا تاريخَ قطعٍ مكتوبٌ بيد: «من قبل المرحلة» تُعرف بأنّه لا صفَّ عقدٍ
          له إطلاقا، لا برقمٍ يُخمَّن ويبلى. */
       {
-        key: 'trainers-without-contract', titleAr: 'مدرّبون نشطون بلا عقدٍ نافذ',
-        methodAr: 'كلُّ طلبٍ حالتُه active وله ملفُّ مدرّب، وليس له عقدٌ حالتُه countersigned. ولكلٍّ حالُه: لا عقدَ قطّ (سبق المرحلة) · مسوّدةٌ لم تُرسَل · أُرسل ينتظر توقيعَه · وُقّع ينتظر اعتمادَك · اعتُمد توقيعُه ولم نوقّعه · اعتُذر عنه · أُلغي · فُسخ. والمدى — إن ضُبط — يُقاس على تاريخ صيرورته نشطا.',
+        key: 'trainers-without-contract', titleAr: 'مدرّبون نشطون بلا عقد نافذ',
+        methodAr: 'كلّ طلب حالته active وله ملفّ مدرّب، وليس له عقد حالته countersigned. ولكلّ حاله: لا عقد قطّ (سبق المرحلة) · مسوّدة لم ترسل · أرسل ينتظر توقيعه · وقّع ينتظر اعتمادك · اعتمد توقيعه ولم نوقّعه · اعتذر عنه · ألغي · فسخ. والمدى — إن ضبط — يقاس على تاريخ صيرورته نشطا.',
         run: async (f) => {
           const rows = await p.trainerApplication.findMany({
             where: {
@@ -393,15 +393,15 @@ export class ReportsService {
 
           /* الحالُ والخطوةُ معا: من يقرأ يعرف ماذا يفعل الآن */
           const SAID: Record<string, { state: string; next: string }> = {
-            none: { state: 'لا عقدَ قطّ — سبق مراحلَ التعاقد', next: 'أنشئ له عقدا من شاشة العقود' },
-            draft: { state: 'مسوّدةٌ مجمَّدةٌ لم تُرسَل', next: 'أرسِلْها للتوقيع' },
-            sent: { state: 'أُرسل وينتظر توقيعَه', next: 'ذكّرْه أو جدّدْ رابطَه' },
-            signed: { state: 'وقّعه وينتظر اعتمادَك', next: 'طابِقِ الاسمَ بوثيقته ثمّ اعتمِدْ' },
+            none: { state: 'لا عقد قطّ — سبق مراحل التعاقد', next: 'أنشئ له عقدا من شاشة العقود' },
+            draft: { state: 'مسوّدة مجمّدة لم ترسل', next: 'أرسلها للتوقيع' },
+            sent: { state: 'أرسل وينتظر توقيعه', next: 'ذكّره أو جدّد رابطه' },
+            signed: { state: 'وقّعه وينتظر اعتمادك', next: 'طابق الاسم بوثيقته ثمّ اعتمد' },
             /* عرضٌ مشروطٌ اعتُمد توقيعُه ولم نوقّعه — نوقّعه باعتماد دوراته (١ أكتوبر ٢٠٢٦) */
-            signature_approved: { state: 'اعتمدتَ توقيعَه ولم نوقّعه بعد', next: 'اعتمِدْ دوراتِه — فيُوقَّع العقدُ معها' },
-            declined: { state: 'اعتذر عنه', next: 'اقرأ سببَه ثمّ قرّرْ' },
-            revoked: { state: 'أُلغي', next: 'أنشئ عقدا جديدا إن أردتَ بقاءَه' },
-            terminated: { state: 'فُسخ', next: 'أوقِفْ ملفَّه أو أنشئ عقدا جديدا' },
+            signature_approved: { state: 'اعتمدت توقيعه ولم نوقّعه بعد', next: 'اعتمد دوراته — فيوقّع العقد معها' },
+            declined: { state: 'اعتذر عنه', next: 'اقرأ سببه ثمّ قرّر' },
+            revoked: { state: 'ألغي', next: 'أنشئ عقدا جديدا إن أردت بقاءه' },
+            terminated: { state: 'فسخ', next: 'أوقف ملفّه أو أنشئ عقدا جديدا' },
             expired: { state: 'انتهى', next: 'أنشئ عقدا جديدا' },
           }
 
@@ -435,8 +435,8 @@ export class ReportsService {
         },
       },
       {
-        key: 'trainer-funnel', titleAr: 'قمعُ توظيف المدرّبين',
-        methodAr: 'الطلباتُ المكتملة في المدى (phase2CompletedAt): كم حجز لقاءَ تعارف، وكم جرى لقاؤه، وكم اعتُمد — ومعها أثرُ التذكير اليدويّ: كم ذُكّر وكم حجز بعده. ووسيطُ الأيّام بين المرحلة وسابقتها.',
+        key: 'trainer-funnel', titleAr: 'قمع توظيف المدرّبين',
+        methodAr: 'الطلبات المكتملة في المدى (phase2CompletedAt): كم حجز لقاء تعارف، وكم جرى لقاؤه، وكم اعتمد — ومعها أثر التذكير اليدويّ: كم ذكّر وكم حجز بعده. ووسيط الأيّام بين المرحلة وسابقتها.',
         run: async (f) => {
           const apps = await p.trainerApplication.findMany({
             where: hasRange(f) ? { phase2CompletedAt: dayRange(f) } : { phase2CompletedAt: { not: null } },
@@ -500,11 +500,11 @@ export class ReportsService {
           const pct = (n: number, of: number) => (of === 0 ? 0 : Math.round((n / of) * 1000) / 10)
           return [
             {
-              stage: 'طلبٌ مكتمل', count: submitted, pct: 100, base: 'نفسُه',
+              stage: 'طلب مكتمل', count: submitted, pct: 100, base: 'نفسه',
               medianDays: null,
             },
             {
-              stage: 'حجز لقاءَ التعارف', count: booked.length, pct: pct(booked.length, submitted),
+              stage: 'حجز لقاء التعارف', count: booked.length, pct: pct(booked.length, submitted),
               base: 'من المكتمل',
               medianDays: median(booked.flatMap((a) => {
                 const b = firstBooking(a)
@@ -531,7 +531,7 @@ export class ReportsService {
               medianDays: null,
             },
             {
-              stage: 'اعتُمد مدرّبا', count: approved.length, pct: pct(approved.length, submitted),
+              stage: 'اعتمد مدرّبا', count: approved.length, pct: pct(approved.length, submitted),
               base: 'من المكتمل',
               medianDays: median(approved.flatMap((a) => {
                 const at = firstApproval.get(a.id)
@@ -539,13 +539,13 @@ export class ReportsService {
               })),
             },
             {
-              stage: 'ذُكّر بالحجز', count: reminded.length, pct: pct(reminded.length, submitted),
+              stage: 'ذكّر بالحجز', count: reminded.length, pct: pct(reminded.length, submitted),
               base: 'من المكتمل', medianDays: null,
             },
             {
               stage: 'حجز بعد التذكير', count: bookedAfterReminder.length,
               pct: pct(bookedAfterReminder.length, reminded.length),
-              base: 'من المذكَّرين',
+              base: 'من المذكّرين',
               medianDays: median(bookedAfterReminder.flatMap((a) => {
                 const b = firstBooking(a)
                 const r = firstReminder.get(a.id)
@@ -566,8 +566,8 @@ export class ReportsService {
          ولمَ تقريرٌ لا شاشة: الجدولُ يُقرأ ويُصدَّر ويُرسَل، والقرارُ فيه يقع
          في شاشتَي التصنيف والإسناد القائمتَين — ولا يُبنى لعرضه بابٌ ثالث. */
       {
-        key: 'accepted-trainer-courses', titleAr: 'دوراتُ المدرّبين المقبولين',
-        methodAr: 'كلُّ طلبٍ حالتُه قبولٌ داخليٌّ فما بعده (قبولٌ داخليّ · عقدٌ قيد التوقيع · تهيئة · نشط) — وكلُّ من له ملفُّ مدرّبٍ وإن تغيّرت حالُه بعد قبوله، كمن طُلبت منه معلوماتٌ بعد القبول الداخليّ، وتقول خانةُ حاله أين كان ويعود. والمردودُ والمسحوبُ والموقوفُ خارجُه. صفٌّ لكلّ دورةٍ تتّصل بالمدرّب: اقتراحُه في طابور التصنيف بحالته وما رُبط به، وأقربُ رمزٍ إليه ما لم يُبتّ فيه · واقتراحٌ في طلبه لا مقابلَ له في الطابور (لا ملفَّ له، أو أُضيف بعد إنشاء ملفّه) · والفقرةُ الحرّةُ من نموذج التقديم القديم كما كُتبت · ودوراتُ الكتالوج التي اختارها في طلبه وحالُ تأهيله لها · وكلُّ تأهيلٍ قائمٍ لم يُذكر قبله. ومن لا بندَ له صفٌّ يقول ذلك. لا بريدَ ولا هاتف، والمدى لا ينطبق: هذا جردٌ لا سلسلةٌ زمنيّة.',
+        key: 'accepted-trainer-courses', titleAr: 'دورات المدرّبين المقبولين',
+        methodAr: 'كلّ طلب حالته قبول داخليّ فما بعده (قبول داخليّ · عقد قيد التوقيع · تهيئة · نشط) — وكلّ من له ملفّ مدرّب وإن تغيّرت حاله بعد قبوله، كمن طلبت منه معلومات بعد القبول الداخليّ، وتقول خانة حاله أين كان ويعود. والمردود والمسحوب والموقوف خارجه. صفّ لكلّ دورة تتّصل بالمدرّب: اقتراحه في طابور التصنيف بحالته وما ربط به، وأقرب رمز إليه ما لم يبتّ فيه · واقتراح في طلبه لا مقابل له في الطابور (لا ملفّ له، أو أضيف بعد إنشاء ملفّه) · والفقرة الحرّة من نموذج التقديم القديم كما كتبت · ودورات الكتالوج التي اختارها في طلبه وحال تأهيله لها · وكلّ تأهيل قائم لم يذكر قبله. ومن لا بند له صفّ يقول ذلك. لا بريد ولا هاتف، والمدى لا ينطبق: هذا جرد لا سلسلة زمنيّة.',
         run: async () => {
           /* والحدُّ ملفُّ المدرّب لا اسمُ الحالة — والقولُ في
              `ENDED_TRAINER_STATUSES` */
@@ -682,8 +682,8 @@ export class ReportsService {
          ومنفعتُهما تشغيليّةٌ قبل ذلك: كم اقتراحا ينتظر مراجعةً، وكم تسليما
          ينتظر تصحيحا — سؤالان يُسألان بلا أن يُسأل عن قيد. */
       {
-        key: 'trainer-change-requests', titleAr: 'اقتراحاتُ تعديل الدورات',
-        methodAr: 'اقتراحاتُ المدرّبين على دوراتهم بحالتها — من `TrainerChangeRequest` بتاريخ إنشائها',
+        key: 'trainer-change-requests', titleAr: 'اقتراحات تعديل الدورات',
+        methodAr: 'اقتراحات المدرّبين على دوراتهم بحالتها — من `TrainerChangeRequest` بتاريخ إنشائها',
         run: async (f) => {
           const rows = await p.trainerChangeRequest.groupBy({
             by: ['status'], _count: true,
@@ -693,8 +693,8 @@ export class ReportsService {
         },
       },
       {
-        key: 'assignment-submissions', titleAr: 'تسليماتُ المهامّ',
-        methodAr: 'تسليماتُ المتعلّمين للمهامّ بحالتها — والنطاقُ على `submittedAt` لا `createdAt`، فلا عمودَ إنشاءٍ في هذا الجدول',
+        key: 'assignment-submissions', titleAr: 'تسليمات المهامّ',
+        methodAr: 'تسليمات المتعلّمين للمهامّ بحالتها — والنطاق على `submittedAt` لا `createdAt`، فلا عمود إنشاء في هذا الجدول',
         run: async (f) => {
           const rows = await p.assignmentSubmission.groupBy({
             by: ['status'], _count: true,

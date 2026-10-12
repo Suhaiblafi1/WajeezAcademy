@@ -22,7 +22,10 @@
       عنه في الإقلاع يجيب «غيرُ مضبوط» **في كلّ مرّة** — وحارسٌ يكذب دائما
       يُعلّم قارئَه تجاهلَه، فيصير أسوأَ من لا حارس. */
 
-import { describe, expect, it } from 'vitest'
+import { describe, expect as vexpect, it } from 'vitest'
+import { plainExpect } from '../../../server/tests/helpers/plain-expect'
+/* نصوصُ الخادم بلا تشكيلٍ إعرابيّ بعد «اللغة البيضاء» — والمنتظَرُ هنا قبلها: يُقارَن الطرفان بلا تشكيل */
+const expect = plainExpect(vexpect)
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -152,7 +155,7 @@ describe('٤ · والنشرُ الآليُّ يسجّل تحقّقَه — في
   })
 
   it('ويسجّل بعد النشر كذلك — فلا يبقى الصفُّ على التزامٍ سابق', () => {
-    const afterPublish = svc().split('نُشرت').slice(1).join('نُشرت')
+    const afterPublish = svc().split('نشرت').slice(1).join('نشرت')
     expect(afterPublish, 'لا تسجيلَ بعد النشر').toMatch(/recordSnapshotVerified/)
   })
 

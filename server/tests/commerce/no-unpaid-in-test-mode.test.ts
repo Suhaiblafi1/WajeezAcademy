@@ -19,7 +19,9 @@
    يُضبط مزوّدٌ حقيقيٌّ بلا مفتاحٍ سرّيّ**. والحكمُ على `driver` وحدَه يُخطئ
    الثانية — وهي التي تعرض للطالب «صفحةُ دفعٍ آمنة» فوق مزوّدٍ وهميّ. */
 
-import { beforeAll, describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect as vexpect, it } from 'vitest'
+import { plainExpect } from '../helpers/plain-expect'
+const expect = plainExpect(vexpect)
 import type { PrismaClient } from '@prisma/client'
 import { setupTestDb, testPrisma } from '../helpers/db'
 import { AuthService } from '../../services/auth.service'

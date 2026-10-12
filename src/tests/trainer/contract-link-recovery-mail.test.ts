@@ -13,7 +13,10 @@
  * على تعليقٍ فيها، وقد وقع ذلك في هذه المنصّة ثلاثَ مرّات.
  */
 
-import { describe, expect, it } from 'vitest'
+import { describe, expect as vexpect, it } from 'vitest'
+import { plainExpect } from '../../../server/tests/helpers/plain-expect'
+/* نصوصُ الخادم بلا تشكيلٍ إعرابيّ بعد «اللغة البيضاء» — والمنتظَرُ هنا قبلها: يُقارَن الطرفان بلا تشكيل */
+const expect = plainExpect(vexpect)
 import { contractUpdatedMail } from '../../../server/services/trainer-decision-mail'
 
 const MAIL = (over: Partial<Parameters<typeof contractUpdatedMail>[0]> = {}) =>

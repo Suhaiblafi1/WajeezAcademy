@@ -70,7 +70,7 @@ export class TrainerOfferService {
     const profile = await this.prisma.trainerProfile.findFirst({
       where: { userId }, include: { application: true },
     })
-    if (!profile) throw new AuthError('no_profile', 'لا ملفَّ مدرّبٍ لحسابك', 404)
+    if (!profile) throw new AuthError('no_profile', 'لا ملفّ مدرّب لحسابك', 404)
     return profile
   }
 
@@ -86,15 +86,15 @@ export class TrainerOfferService {
     const profile = await this.prisma.trainerProfile.findUnique({
       where: { id: input.profileId }, include: { application: true },
     })
-    if (!profile) throw new AuthError('not_found', 'ملفُّ المدرّب غير موجود', 404)
+    if (!profile) throw new AuthError('not_found', 'ملفّ المدرّب غير موجود', 404)
     if (profile.suspendedAt || profile.application.status !== 'active') {
-      throw new AuthError('not_active', 'لا يُعرَض على مدرّبٍ غيرِ نشط — فهو لا يفتح بوّابتَه ليرى العرض', 409)
+      throw new AuthError('not_active', 'لا يعرض على مدرّب غير نشط — فهو لا يفتح بوّابته ليرى العرض', 409)
     }
     const qual = await this.prisma.trainerCourseQualification.findUnique({
       where: { profileId_courseId: { profileId: input.profileId, courseId: input.courseId } },
     })
     if (!qual || qual.status !== 'qualified') {
-      throw new AuthError('not_qualified', 'المدرّب غير مؤهَّل لهذه الدورة — أهّله أوّلا', 409)
+      throw new AuthError('not_qualified', 'المدرّب غير مؤهّل لهذه الدورة — أهّله أوّلا', 409)
     }
 
     let cohortStartsAt: Date | null = null
@@ -104,7 +104,7 @@ export class TrainerOfferService {
       })
       if (!cohort) throw new AuthError('unknown_cohort', 'الشعبة غير موجودة', 404)
       if (cohort.courseId !== input.courseId) {
-        throw new AuthError('cohort_mismatch', 'الشعبةُ ليست من هذه الدورة', 409)
+        throw new AuthError('cohort_mismatch', 'الشعبة ليست من هذه الدورة', 409)
       }
       cohortStartsAt = cohort.startsAt
       /* تعارضُ الجدول يُقرأ **قبل** العرض لا بعد القبول: من يُعرض عليه ما لا
@@ -154,8 +154,8 @@ export class TrainerOfferService {
       await safeNotify(this.prisma, {
         userId: profile.userId, channel: 'in_app', audience: 'trainer',
         templateKey: 'trainer.offer.received',
-        title: 'عُرضت عليك دورة',
-        body: `عُرضت عليك «${titleAr}» — تقبلها أو تعتذر عنها قبل `
+        title: 'عرضت عليك دورة',
+        body: `عرضت عليك «${titleAr}» — تقبلها أو تعتذر عنها قبل `
           + `${fmtDateWith(expiresAt, { day: 'numeric', month: 'long', year: 'numeric' })}.`,
         data: { offerId: offer.id, courseId: input.courseId, cohortId: input.cohortId ?? null },
       })
@@ -173,7 +173,7 @@ export class TrainerOfferService {
     })
     if (!offer) throw new AuthError('not_found', 'العرض غير موجود', 404)
     if (offer.status !== 'offered') {
-      throw new AuthError('bad_state', 'هذا العرضُ لم يعد مفتوحا', 409)
+      throw new AuthError('bad_state', 'هذا العرض لم يعد مفتوحا', 409)
     }
     const now = new Date()
     if (offer.expiresAt <= now) {
@@ -183,7 +183,7 @@ export class TrainerOfferService {
         where: { id: offer.id, status: 'offered' },
         data: { status: 'lapsed', respondedAt: now },
       })
-      throw new AuthError('offer_expired', 'انقضت مهلةُ هذا العرض — راسِل الإدارةَ إن كنت ما زلت ترغب فيه', 409)
+      throw new AuthError('offer_expired', 'انقضت مهلة هذا العرض — راسل الإدارة إن كنت ما زلت ترغب فيه', 409)
     }
 
     /* قارنْ واضبطْ أوّلا: نقرتان متزامنتان تمرّان معا فيُكتب إسنادان.
@@ -195,7 +195,7 @@ export class TrainerOfferService {
       where: { id: offer.id, status: 'offered' },
       data: { status: 'accepted', respondedAt: now, prepDueAt },
     })
-    if (claimed.count === 0) throw new AuthError('bad_state', 'هذا العرضُ لم يعد مفتوحا', 409)
+    if (claimed.count === 0) throw new AuthError('bad_state', 'هذا العرض لم يعد مفتوحا', 409)
 
     try {
       /* و`assignedBy` هو من عرض لا من قبل: الإسنادُ قرارُ الأكاديميّة،
@@ -220,8 +220,8 @@ export class TrainerOfferService {
     await notifyRole(this.prisma, ['academic_manager', 'super_admin'], {
       channel: 'in_app',
       templateKey: 'trainer.offer.accepted',
-      title: 'قبِل مدرّبٌ عرضا',
-      body: `قبِل ${profile.application.fullName} «${titleAr}» — وأجلُ إعداده `
+      title: 'قبل مدرّب عرضا',
+      body: `قبل ${profile.application.fullName} «${titleAr}» — وأجل إعداده `
         + `${fmtDateWith(prepDueAt, { day: 'numeric', month: 'long', year: 'numeric' })}.`,
       data: { offerId: offer.id, profileId: profile.id, courseId: offer.courseId },
     })
@@ -233,13 +233,13 @@ export class TrainerOfferService {
     const profile = await this.profileForUser(userId)
     const reason = (reasonAr ?? '').trim()
     if (reason.length < 5) {
-      throw new AuthError('no_reason', 'اكتب سببَ اعتذارك — سطرٌ واحدٌ يكفي، ويساعدنا أن نرتّب', 422)
+      throw new AuthError('no_reason', 'اكتب سبب اعتذارك — سطر واحد يكفي، ويساعدنا أن نرتّب', 422)
     }
     const done = await this.prisma.trainerAssignmentOffer.updateMany({
       where: { id: offerId, profileId: profile.id, status: 'offered' },
       data: { status: 'declined', respondedAt: new Date(), declineReasonAr: reason.slice(0, 500) },
     })
-    if (done.count === 0) throw new AuthError('bad_state', 'هذا العرضُ لم يعد مفتوحا', 409)
+    if (done.count === 0) throw new AuthError('bad_state', 'هذا العرض لم يعد مفتوحا', 409)
     const offer = await this.prisma.trainerAssignmentOffer.findUniqueOrThrow({ where: { id: offerId } })
     await recordAudit(this.prisma, {
       actorId: userId, action: 'trainer.offer.decline',
@@ -250,8 +250,8 @@ export class TrainerOfferService {
     await notifyRole(this.prisma, ['academic_manager', 'super_admin'], {
       channel: 'in_app',
       templateKey: 'trainer.offer.declined',
-      title: 'اعتذر مدرّبٌ عن عرض',
-      body: `اعتذر ${profile.application.fullName} عن «${titleAr}» — وسببُه: ${reason.slice(0, 200)}`,
+      title: 'اعتذر مدرّب عن عرض',
+      body: `اعتذر ${profile.application.fullName} عن «${titleAr}» — وسببه: ${reason.slice(0, 200)}`,
       data: { offerId, profileId: profile.id, courseId: offer.courseId },
     })
     return { ok: true }
@@ -261,7 +261,7 @@ export class TrainerOfferService {
   async withdraw(offerId: string, actorId: string, reasonAr: string) {
     const reason = (reasonAr ?? '').trim()
     if (reason.length < 5) {
-      throw new AuthError('no_reason', 'سببُ السحب يُكتب — يصل صاحبَه ويُقرأ بعد شهرٍ حين يُسأل عنه', 422)
+      throw new AuthError('no_reason', 'سبب السحب يكتب — يصل صاحبه ويقرأ بعد شهر حين يسأل عنه', 422)
     }
     const offer = await this.prisma.trainerAssignmentOffer.findUnique({
       where: { id: offerId }, include: { profile: { include: { application: true } } },
@@ -275,7 +275,7 @@ export class TrainerOfferService {
       },
     })
     if (done.count === 0) {
-      throw new AuthError('bad_state', 'لا يُسحَب إلّا عرضٌ مفتوح — وما قُبِل يُنهى بمسار الانسحاب لا بالسحب', 409)
+      throw new AuthError('bad_state', 'لا يسحب إلّا عرض مفتوح — وما قبل ينهى بمسار الانسحاب لا بالسحب', 409)
     }
     await recordAudit(this.prisma, {
       actorId, action: 'trainer.offer.withdraw',
@@ -287,8 +287,8 @@ export class TrainerOfferService {
       await safeNotify(this.prisma, {
         userId: offer.profile.userId, channel: 'in_app', audience: 'trainer',
         templateKey: 'trainer.offer.withdrawn',
-        title: 'سُحب عرضٌ عُرض عليك',
-        body: `سُحب عرضُ «${titleAr}» قبل قبولك إيّاه — وسببُه: ${reason.slice(0, 200)}`,
+        title: 'سحب عرض عرض عليك',
+        body: `سحب عرض «${titleAr}» قبل قبولك إيّاه — وسببه: ${reason.slice(0, 200)}`,
         data: { offerId, courseId: offer.courseId },
       })
     }
@@ -309,7 +309,7 @@ export class TrainerOfferService {
       data: { prepConfirmedAt: now },
     })
     if (done.count === 0) {
-      throw new AuthError('bad_state', 'لا إقرارَ إلّا على عرضٍ قبِلتَه ولم تقرّ بجاهزيّته بعد', 409)
+      throw new AuthError('bad_state', 'لا إقرار إلّا على عرض قبلته ولم تقرّ بجاهزيّته بعد', 409)
     }
     await recordAudit(this.prisma, {
       actorId: userId, action: 'trainer.offer.prep_confirm',
@@ -345,9 +345,9 @@ export class TrainerOfferService {
         await safeNotify(this.prisma, {
           userId: offer.profile.userId, channel: 'in_app', audience: 'trainer',
           templateKey: 'trainer.offer.lapsed',
-          title: 'انقضت مهلةُ عرض',
-          body: `انقضت مهلةُ الردّ على «${titleAr}» فأُغلِق العرض — وهو ليس مأخذا عليك، `
-            + 'وراسِل الإدارةَ إن كنت ما زلت ترغب فيه.',
+          title: 'انقضت مهلة عرض',
+          body: `انقضت مهلة الردّ على «${titleAr}» فأغلق العرض — وهو ليس مأخذا عليك، `
+            + 'وراسل الإدارة إن كنت ما زلت ترغب فيه.',
           data: { offerId: offer.id, courseId: offer.courseId },
         })
       }
@@ -378,8 +378,8 @@ export class TrainerOfferService {
       await safeNotify(this.prisma, {
         userId: offer.profile.userId, channel: 'in_app', audience: 'trainer',
         templateKey: 'trainer.prep.reminder',
-        title: 'يقترب أجلُ إعدادك',
-        body: `أجلُ إعداد «${titleAr}» ينتهي `
+        title: 'يقترب أجل إعدادك',
+        body: `أجل إعداد «${titleAr}» ينتهي `
           + `${fmtDateWith(offer.prepDueAt, { day: 'numeric', month: 'long', year: 'numeric' })} — `
           + 'أقرّ بجاهزيّتك من بوّابتك، أو أخبرنا بما تحتاجه.',
         data: { offerId: offer.id, courseId: offer.courseId },
@@ -418,9 +418,9 @@ export class TrainerOfferService {
       await notifyRole(this.prisma, ['academic_manager', 'super_admin'], {
         channel: 'in_app',
         templateKey: 'trainer.prep.lapsed',
-        title: 'انقضى أجلُ إعدادٍ بلا إقرار',
+        title: 'انقضى أجل إعداد بلا إقرار',
         body: `لم يقرّ ${offer.profile.application.fullName} بجاهزيّته لـ«${titleAr}» حتّى انقضاء أجله — `
-          + 'والإسنادُ قائمٌ كما هو، فانظرْ وقرّر.',
+          + 'والإسناد قائم كما هو، فانظر وقرّر.',
         data: { offerId: offer.id, profileId: offer.profileId, courseId: offer.courseId },
       })
     }
@@ -545,7 +545,7 @@ export class TrainerOfferService {
       if (seen.has(key)) continue
       seen.add(key)
       if (!eligible.has(key)) {
-        results.push({ ...it, ok: false, errorAr: 'لم يعد مرشَّحا — عنده عرضٌ مفتوحٌ أو شعبةٌ لهذه الدورة، أو لم يعد مؤهَّلا' })
+        results.push({ ...it, ok: false, errorAr: 'لم يعد مرشّحا — عنده عرض مفتوح أو شعبة لهذه الدورة، أو لم يعد مؤهّلا' })
         continue
       }
       let cohortId: string | null = null
@@ -560,7 +560,7 @@ export class TrainerOfferService {
       } catch (e) {
         /* شعبةٌ قامت ولم يقم عرضُها لا صاحبَ لها — تُحذَف ولا تبقى في القائمة */
         if (cohortId) await this.prisma.cohort.delete({ where: { id: cohortId } }).catch(() => undefined)
-        results.push({ ...it, ok: false, errorAr: e instanceof AuthError ? e.message : 'تعذّر إنشاءُ الشعبة أو عرضُها' })
+        results.push({ ...it, ok: false, errorAr: e instanceof AuthError ? e.message : 'تعذّر إنشاء الشعبة أو عرضها' })
       }
     }
     return { done: results.filter((r) => r.ok).length, failed: results.filter((r) => !r.ok).length, results }

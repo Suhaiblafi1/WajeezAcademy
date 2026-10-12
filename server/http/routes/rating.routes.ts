@@ -54,7 +54,7 @@ export function registerRatingRoutes(app: FastifyInstance, prisma: PrismaClient)
 
   app.get('/api/me/ratings', {
     preHandler: requirePermission('rating.view.subject'),
-    schema: { tags: ['rating'], summary: 'التقييمات الواردة عنّي — مجمّعة ومجهولة المُقيِّم' },
+    schema: { tags: ['rating'], summary: 'التقييمات الواردة عنّي — مجمّعة ومجهولة المقيّم' },
   }, async (req) => {
     const userId = req.auth!.userId
     /* المدرّب يُقيَّم بمعرّف ملفّه، والمستشار بمعرّف مستخدمه. ومن كان الاثنين
@@ -75,7 +75,7 @@ export function registerRatingRoutes(app: FastifyInstance, prisma: PrismaClient)
   app.get('/api/admin/ratings/queue', {
     preHandler: requirePermission('rating.moderate'),
     schema: {
-      tags: ['rating'], summary: 'تعليقات التقييم بانتظار المراجعة — مجهولة المُقيِّم',
+      tags: ['rating'], summary: 'تعليقات التقييم بانتظار المراجعة — مجهولة المقيّم',
       querystring: { type: 'object', properties: { status: { type: 'string' } } },
     },
   }, async (req) => {

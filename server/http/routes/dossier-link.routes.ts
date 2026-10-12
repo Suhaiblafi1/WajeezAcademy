@@ -23,7 +23,7 @@ export function registerDossierLinkRoutes(app: FastifyInstance, prisma: PrismaCl
   const svc = new TrainerDossierLinkService(prisma)
 
   app.get('/api/r/:token', {
-    schema: { tags: ['trainer-applications'], summary: 'سجلُّ المتقدّم كما يراه صاحبُ الرابط' },
+    schema: { tags: ['trainer-applications'], summary: 'سجلّ المتقدّم كما يراه صاحب الرابط' },
   }, async (req, reply) => {
     const { token } = z.object({ token: z.string() }).parse(req.params)
     reply.header('X-Robots-Tag', 'noindex, nofollow')
@@ -31,7 +31,7 @@ export function registerDossierLinkRoutes(app: FastifyInstance, prisma: PrismaCl
   })
 
   app.put('/api/r/:token/review', {
-    schema: { tags: ['trainer-applications'], summary: 'حفظُ تقييم صاحب الرابط' },
+    schema: { tags: ['trainer-applications'], summary: 'حفظ تقييم صاحب الرابط' },
   }, async (req, reply) => {
     const { token } = z.object({ token: z.string() }).parse(req.params)
     const body = z.object({

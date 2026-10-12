@@ -54,7 +54,7 @@ const task = z.object({
 }).strict()
 
 const nonEmpty = <T extends z.ZodRawShape>(shape: T) =>
-  z.object(shape).strict().refine((o) => Object.keys(o).length > 0, { message: 'لا حقلَ يُعدَّل' })
+  z.object(shape).strict().refine((o) => Object.keys(o).length > 0, { message: 'لا حقل يعدّل' })
 
 export const planEditItem = z.discriminatedUnion('kind', [
   z.object({

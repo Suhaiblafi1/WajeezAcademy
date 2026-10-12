@@ -30,7 +30,7 @@ export function registerNotificationRoutes(app: FastifyInstance, prisma: PrismaC
 
   app.get('/api/learner/notifications/unread-count', {
     preHandler: requireAuth,
-    schema: { tags: ['notifications'], summary: 'عدد غير المقروء — لشارة بوابةٍ بعينها' },
+    schema: { tags: ['notifications'], summary: 'عدد غير المقروء — لشارة بوابة بعينها' },
   }, async (req) => {
     const { audience } = audienceQuery.parse(req.query)
     return { unread: await notifications.unreadCount(req.auth!.userId, audience as 'learner' | 'trainer' | 'staff') }
@@ -54,7 +54,7 @@ export function registerNotificationRoutes(app: FastifyInstance, prisma: PrismaC
      هو نفسُه العطبُ الذي عالجته المرحلةُ ١ — زرٌّ يَعِد بما لا يفعل. */
   app.get('/api/me/notification-preferences', {
     preHandler: requireAuth,
-    schema: { tags: ['notifications'], summary: 'أصنافُ الإشعارات وتفضيلي في كلٍّ منها' },
+    schema: { tags: ['notifications'], summary: 'أصناف الإشعارات وتفضيلي في كلّ منها' },
   }, async (req) => {
     const rows = await prisma.notificationPreference.findMany({
       where: { userId: req.auth!.userId, channel: 'in_app' },
@@ -68,18 +68,18 @@ export function registerNotificationRoutes(app: FastifyInstance, prisma: PrismaC
         /* الغيابُ يعني «مُفعَّل» */
         enabled: byCategory.get(c.key) ?? true,
       })),
-      emailNoteAr: 'تفضيلاتُ البريد تظهر هنا يومَ يُوصَل مزوّدُ بريد — ولا يُعرض اليوم مفتاحٌ لا يفعل شيئا.',
+      emailNoteAr: 'تفضيلات البريد تظهر هنا يوم يوصل مزوّد بريد — ولا يعرض اليوم مفتاح لا يفعل شيئا.',
     }
   })
 
   app.put('/api/me/notification-preferences', {
     preHandler: requireAuth,
-    schema: { tags: ['notifications'], summary: 'كتمُ صنفٍ أو إعادتُه — وما لا يُكتَم يُردّ صريحا' },
+    schema: { tags: ['notifications'], summary: 'كتم صنف أو إعادته — وما لا يكتم يردّ صريحا' },
   }, async (req) => {
     const body = z.object({ category: z.string(), enabled: z.boolean() }).parse(req.body)
     const category = NOTIFICATION_CATEGORIES.find((c) => c.key === body.category)
     if (!category) {
-      return { error: { code: 'unknown_category', message_ar: 'صنفٌ غيرُ معروف' } }
+      return { error: { code: 'unknown_category', message_ar: 'صنف غير معروف' } }
     }
     /* الحدُّ يُقال صريحا لا يُتجاهَل صامتا: من طلب كتمَ إيصالِ دفعٍ يستحقّ
        جوابا يفهمه، لا مفتاحا يرتدّ بلا كلمة. */
@@ -87,7 +87,7 @@ export function registerNotificationRoutes(app: FastifyInstance, prisma: PrismaC
       return {
         error: {
           code: 'not_silenceable',
-          message_ar: category.lockedWhyAr ?? 'هذا الصنفُ لا يُكتَم',
+          message_ar: category.lockedWhyAr ?? 'هذا الصنف لا يكتم',
         },
       }
     }

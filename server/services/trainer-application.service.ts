@@ -379,7 +379,7 @@ export class TrainerApplicationService {
       if (!ok) {
         throw new AuthError(
           'email_taken',
-          'لهذا البريد حساب على المنصة — أدخل كلمة مروره الحالية ليُربط طلبك به، أو استعدها من «نسيت كلمة المرور»',
+          'لهذا البريد حساب على المنصة — أدخل كلمة مروره الحالية ليربط طلبك به، أو استعدها من «نسيت كلمة المرور»',
           409,
         )
       }
@@ -527,7 +527,7 @@ export class TrainerApplicationService {
     const link = `${site}/join-trainer/verify?ref=${encodeURIComponent(app.reference)}&token=${encodeURIComponent(verifyToken)}`
     const channel = app.contactChannel ? contactChannelLabel(app.contactChannel) : 'البريد الإلكتروني'
     const channelValue = this.contactValue(app)
-    const delivery = app.deliveryMode === 'remote' ? 'عن بُعد' : app.deliveryMode === 'in_person' ? 'حضوري' : 'حضوري وعن بُعد'
+    const delivery = app.deliveryMode === 'remote' ? 'عن بعد' : app.deliveryMode === 'in_person' ? 'حضوري' : 'حضوري وعن بعد'
     const mail = await sendDirectEmail(this.prisma, {
       to: app.email,
       subject: `وصل طلب انضمامك — ${app.reference}`,
@@ -537,11 +537,11 @@ export class TrainerApplicationService {
         greetingName: app.fullName,
         heading: 'وصلنا طلبك للانضمام إلى مدربي أكاديمية وجيز',
         blocks: [
-          { kind: 'p', text: 'وقبل أن نبدأ مراجعته، نحتاج أن نتأكّد أنّ هذا البريد يصلك — فعليه وحدَه نتواصل معك.' },
+          { kind: 'p', text: 'وقبل أن نبدأ مراجعته، نحتاج أن نتأكّد أنّ هذا البريد يصلك — فعليه وحده نتواصل معك.' },
           { kind: 'cta', label: 'وثّق بريدك', href: link },
           /* والمدّةُ من الثابت لا بيدٍ هنا: رقمٌ في الخدمة وجملةٌ في الرسالة
              يفترقان عند أوّل تعديل — فيَعِد النصُّ بما لا يفي به الرمز. */
-          { kind: 'callout', text: `الرابط صالحٌ ${MAIL_LINK_WINDOW_AR}، ويُفتح مرّةً واحدة.` },
+          { kind: 'callout', text: `الرابط صالح ${MAIL_LINK_WINDOW_AR}، ويفتح مرّة واحدة.` },
           { kind: 'h', text: 'تفاصيل طلبك' },
           { kind: 'facts', rows: [
             { label: 'رقم الطلب', value: app.reference },
@@ -551,14 +551,14 @@ export class TrainerApplicationService {
             { label: 'وسيلة التواصل', value: `${channel}${channelValue ? ` — ${channelValue}` : ''}` },
           ] },
           { kind: 'h', text: 'ما التالي' },
-          { kind: 'p', text: `سيقرأ فريقنا الأكاديمي طلبك ومستنداتك، ثمّ نتواصل معك عبر ${channel} لتحديد موعد اجتماعٍ تعريفيٍّ قصير نعرّفك فيه بمنهجية الأكاديمية ونسمع منك.` },
+          { kind: 'p', text: `سيقرأ فريقنا الأكاديمي طلبك ومستنداتك، ثمّ نتواصل معك عبر ${channel} لتحديد موعد اجتماع تعريفيّ قصير نعرّفك فيه بمنهجية الأكاديمية ونسمع منك.` },
           { kind: 'h', text: 'تابع حالة طلبك في أيّ وقت' },
           /* الرابطُ على كلمةٍ لا عنوانا خامّا في وسط الجملة (١٧ سبتمبر ٢٠٢٦).
              والنصُّ الخامُّ يحمل العنوانَ بين قوسين — يبنيه `mail-template`. */
           { kind: 'list', items: [
             [
               'بالدخول إلى ', { text: 'صفحة الدخول', href: `${site}/auth` },
-              ' ببريدك هذا وكلمة المرور التي اختَرتها عند التقديم.',
+              ' ببريدك هذا وكلمة المرور التي اخترتها عند التقديم.',
             ],
             [
               'أو من ', { text: 'صفحة الانضمام', href: `${site}/join-trainer` },
@@ -867,7 +867,7 @@ export class TrainerApplicationService {
       const def = CONTACT_CHANNELS.find((c) => c.value === contact.channel)
       if (!def) throw new AuthError('bad_contact', 'وسيلة تواصل غير معروفة')
       if (def.needsPhone && !phone) {
-        throw new AuthError('phone_required', 'اختَرت الهاتف أو واتساب ولم تذكر رقمك في القسم الأول — عد وأضفه أو اختر البريد')
+        throw new AuthError('phone_required', 'اخترت الهاتف أو واتساب ولم تذكر رقمك في القسم الأول — عد وأضفه أو اختر البريد')
       }
       if (def.needsAltEmail) {
         const alt = contact.altEmail?.trim().toLowerCase() ?? ''
@@ -1109,7 +1109,7 @@ export class TrainerApplicationService {
   }> {
     const reason = (reasonAr ?? '').trim()
     if (reason.length < 5) {
-      throw new AuthError('reason_required', 'اكتب سبب الحذف — الحذف النهائيّ لا يُترك بلا أثر', 422)
+      throw new AuthError('reason_required', 'اكتب سبب الحذف — الحذف النهائيّ لا يترك بلا أثر', 422)
     }
 
     const app = await this.prisma.trainerApplication.findUnique({
@@ -1156,8 +1156,8 @@ export class TrainerApplicationService {
       if (live > 0) {
         throw new AuthError(
           'issued_certificates',
-          `لهذا المدرّب ${live} شهادةً صادرةً بيد متعلّمين — أرقامُها معلَنةٌ ويُتحقَّق منها برابط. `
-          + 'أوقِف ملفَّه بدل حذفه، أو اسحب الشهاداتِ أوّلا إن كانت خطأً.',
+          `لهذا المدرّب ${live} شهادة صادرة بيد متعلّمين — أرقامها معلنة ويتحقّق منها برابط. `
+          + 'أوقف ملفّه بدل حذفه، أو اسحب الشهادات أوّلا إن كانت خطأ.',
           409,
         )
       }
@@ -1165,7 +1165,7 @@ export class TrainerApplicationService {
     if (!PURGEABLE_STATUSES.includes(app.status as TrainerStatus)) {
       throw new AuthError(
         'not_terminal',
-        'لا يُحذف إلّا الطلبُ المنتهي: مسحوبٌ أو مرفوضٌ أو مسوّدةٌ لم تُرسَل',
+        'لا يحذف إلّا الطلب المنتهي: مسحوب أو مرفوض أو مسوّدة لم ترسل',
         409,
       )
     }
@@ -1196,9 +1196,9 @@ export class TrainerApplicationService {
       if (live > 0) {
         throw new AuthError(
           'effective_contract',
-          `لهذا المدرّب ${live} ${live === 1 ? 'عقدٌ نافذٌ موقَّعٌ ومعتمَد' : 'عقودٍ نافذةٍ موقَّعةٍ ومعتمَدة'} — `
-          + 'وفيها توقيعُه ودليلُه لا سجلُّنا وحدَه، فلا تُمحى بقرارٍ من طرفٍ واحد. '
-          + 'أوقِف ملفَّه، أو افسخِ العقدَ بمسار الرحيل ثمّ احذفه.',
+          `لهذا المدرّب ${live} ${live === 1 ? 'عقد نافذ موقّع ومعتمد' : 'عقود نافذة موقّعة ومعتمدة'} — `
+          + 'وفيها توقيعه ودليله لا سجلّنا وحده، فلا تمحى بقرار من طرف واحد. '
+          + 'أوقف ملفّه، أو افسخ العقد بمسار الرحيل ثمّ احذفه.',
           409,
         )
       }
@@ -1298,9 +1298,9 @@ export class TrainerApplicationService {
            ذاك إنسانٌ له على المنصّة شأنٌ غيرُ هذا الطلب. */
         const TRAINER_ROLES = ['trainer_applicant', 'trainer']
         const onlyTrainer = user.roles.every((r) => TRAINER_ROLES.includes(r.roleId))
-        if (!onlyTrainer) keptAccountReason = 'له أدوارٌ أخرى على المنصّة'
-        else if (user._count.enrollments > 0) keptAccountReason = 'له تسجيلاتٌ في شعب'
-        else if (user._count.orders > 0) keptAccountReason = 'له طلباتُ شراء'
+        if (!onlyTrainer) keptAccountReason = 'له أدوار أخرى على المنصّة'
+        else if (user._count.enrollments > 0) keptAccountReason = 'له تسجيلات في شعب'
+        else if (user._count.orders > 0) keptAccountReason = 'له طلبات شراء'
         if (!keptAccountReason) {
           await this.prisma.user.delete({ where: { id: app.userId } })
           deletedAccount = true

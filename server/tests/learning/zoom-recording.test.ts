@@ -15,7 +15,9 @@
    الخدمةَ وحدَها لم يختبر أنّ `recording_files` تصلها أصلا — وهو حقلٌ لم
    يكن في شكل الجسم المُعلَن في المسلك قبل هذا. */
 
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect as vexpect, it } from 'vitest'
+import { plainExpect } from '../helpers/plain-expect'
+const expect = plainExpect(vexpect)
 import type { PrismaClient } from '@prisma/client'
 import type { FastifyInstance } from 'fastify'
 import { createHmac } from 'node:crypto'

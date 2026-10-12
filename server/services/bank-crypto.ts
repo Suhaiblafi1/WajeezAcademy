@@ -75,8 +75,8 @@ export function assertBankVaultEnabled(): void {
   if (bankVaultEnabled()) return
   throw new AuthError(
     'bank_vault_unavailable',
-    'خزانةُ الحسابات البنكيّة غيرُ مهيّأةٍ على هذا الخادم — ولا يُحفَظ رقمُ حسابٍ بلا تعمية. '
-    + `اضبطْ ${BANK_KEY_ENV} ثمّ أعِدْ المحاولة.`,
+    'خزانة الحسابات البنكيّة غير مهيّأة على هذا الخادم — ولا يحفظ رقم حساب بلا تعمية. '
+    + `اضبط ${BANK_KEY_ENV} ثمّ أعد المحاولة.`,
     501,
   )
 }
@@ -86,10 +86,10 @@ export function sealBankValue(plain: string, aad: string): string {
   const key = readKey()
   if (!key) {
     /* حارسُ العمق: من نادى بلا فحصٍ يُردّ ولا يُكتب نصٌّ صريحٌ في عمود */
-    throw new AuthError('bank_vault_unavailable', 'لا مفتاحَ للتعمية — ولا يُحفَظ رقمُ حسابٍ صريحا', 501)
+    throw new AuthError('bank_vault_unavailable', 'لا مفتاح للتعمية — ولا يحفظ رقم حساب صريحا', 501)
   }
   const value = plain.trim()
-  if (!value) throw new AuthError('empty_value', 'لا قيمةَ لتُعمّى', 422)
+  if (!value) throw new AuthError('empty_value', 'لا قيمة لتعمّى', 422)
   const iv = randomBytes(IV_BYTES)
   const cipher = createCipheriv(ALGO, key, iv)
   cipher.setAAD(Buffer.from(aad, 'utf8'))
@@ -109,13 +109,13 @@ export function openBankValue(sealed: string, aad: string): string {
   if (!key) {
     throw new AuthError(
       'bank_vault_unavailable',
-      `خزانةُ الحسابات البنكيّة غيرُ مهيّأةٍ على هذا الخادم — اضبطْ ${BANK_KEY_ENV}`,
+      `خزانة الحسابات البنكيّة غير مهيّأة على هذا الخادم — اضبط ${BANK_KEY_ENV}`,
       501,
     )
   }
   const parts = String(sealed ?? '').split('.')
   if (parts.length !== 4 || parts[0] !== ENVELOPE_VERSION) {
-    throw new AuthError('bad_envelope', 'ظرفُ التعمية غيرُ مفهوم — لا يُقرأ هذا الصفّ', 500)
+    throw new AuthError('bad_envelope', 'ظرف التعمية غير مفهوم — لا يقرأ هذا الصفّ', 500)
   }
   try {
     const decipher = createDecipheriv(ALGO, key, Buffer.from(parts[1], 'base64url'))
@@ -130,7 +130,7 @@ export function openBankValue(sealed: string, aad: string): string {
        ولا يُفرَّق بينها في الرسالة — من يجرّب لا يُعان على التمييز. */
     throw new AuthError(
       'bank_open_failed',
-      'تعذّر فكُّ رقم الحساب — إمّا أنّ المفتاح تبدّل أو أنّ الصفَّ مسّه شيء. لا يُصرَف على هذا قبل مراجعته.',
+      'تعذّر فكّ رقم الحساب — إمّا أنّ المفتاح تبدّل أو أنّ الصفّ مسّه شيء. لا يصرف على هذا قبل مراجعته.',
       500,
     )
   }

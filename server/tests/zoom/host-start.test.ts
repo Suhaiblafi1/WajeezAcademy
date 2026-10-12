@@ -14,7 +14,9 @@
 
    ولا شبكةَ هنا: `fetch` مُلتقَط، وطلباتُ Zoom تُعدّ. */
 
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect as vexpect, it } from 'vitest'
+import { plainExpect } from '../helpers/plain-expect'
+const expect = plainExpect(vexpect)
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { PrismaClient } from '@prisma/client'

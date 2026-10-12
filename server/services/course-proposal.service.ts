@@ -226,21 +226,21 @@ export class CourseProposalService {
   private async mineOrThrow(profileId: string, id: string) {
     const row = await this.prisma.trainerCourseProposal.findUnique({ where: { id } })
     if (!row || row.profileId !== profileId) {
-      throw new AuthError('unknown_proposal', 'لا اقتراحَ بهذا المعرّف', 404)
+      throw new AuthError('unknown_proposal', 'لا اقتراح بهذا المعرّف', 404)
     }
     return row
   }
 
   private assertOpen(status: string) {
     if (!(OPEN_PROPOSAL as readonly string[]).includes(status)) {
-      throw new AuthError('decided', 'بُتّ في هذا الاقتراح — لم يعد يُعدَّل', 409)
+      throw new AuthError('decided', 'بتّ في هذا الاقتراح — لم يعد يعدّل', 409)
     }
   }
 
   private clean(input: ProposalInput) {
     const titleAr = input.titleAr.trim()
     if (titleAr.length < MIN_PROPOSAL_TITLE) {
-      throw new AuthError('short_title', `عنوانُ الدورة ${MIN_PROPOSAL_TITLE} أحرفٍ فأكثر`, 400)
+      throw new AuthError('short_title', `عنوان الدورة ${MIN_PROPOSAL_TITLE} أحرف فأكثر`, 400)
     }
     const summaryAr = (input.summaryAr ?? '').trim()
     const details = input.details === undefined ? undefined : cleanProposalDetails(input.details)
@@ -315,10 +315,10 @@ export class CourseProposalService {
     const profile = await this.profileForUser(userId)
     const before = await this.mineOrThrow(profile.id, id)
     if (before.status !== 'info_requested') {
-      throw new AuthError('no_question', 'لا سؤالَ مفتوحا على هذا الاقتراح', 409)
+      throw new AuthError('no_question', 'لا سؤال مفتوحا على هذا الاقتراح', 409)
     }
     const text = answerAr.trim()
-    if (text.length < 2) throw new AuthError('empty_answer', 'اكتب جوابَك — الفراغُ لا يُجيب سؤالا', 400)
+    if (text.length < 2) throw new AuthError('empty_answer', 'اكتب جوابك — الفراغ لا يجيب سؤالا', 400)
 
     const row = await this.prisma.trainerCourseProposal.update({
       where: { id },
@@ -514,13 +514,13 @@ export class CourseProposalService {
   async askTrainer(actorId: string, id: string, questionAr: string) {
     const text = questionAr.trim()
     if (text.length < 5) {
-      throw new AuthError('short_question', 'اكتب سؤالَك — سطرٌ غامضٌ يُعيد الاقتراحَ كما هو', 400)
+      throw new AuthError('short_question', 'اكتب سؤالك — سطر غامض يعيد الاقتراح كما هو', 400)
     }
     const row = await this.prisma.trainerCourseProposal.findUnique({
       where: { id },
       include: { profile: { select: { userId: true, application: { select: { fullName: true } } } } },
     })
-    if (!row) throw new AuthError('unknown_proposal', 'لا اقتراحَ بهذا المعرّف', 404)
+    if (!row) throw new AuthError('unknown_proposal', 'لا اقتراح بهذا المعرّف', 404)
     this.assertOpen(row.status)
 
     const out = await this.prisma.trainerCourseProposal.update({
@@ -545,8 +545,8 @@ export class CourseProposalService {
     if (row.profile.userId) {
       await safeNotify(this.prisma, {
         userId: row.profile.userId, audience: 'trainer', channel: 'in_app',
-        title: `سؤالٌ عن دورتك المقترحة: ${row.titleAr}`,
-        body: `${text}\n\nافتح «دوراتي المقترحة» لتجيب — ولك أن تعدّل عنوانَها ونبذتَها معه.`,
+        title: `سؤال عن دورتك المقترحة: ${row.titleAr}`,
+        body: `${text}\n\nافتح «دوراتي المقترحة» لتجيب — ولك أن تعدّل عنوانها ونبذتها معه.`,
         templateKey: 'trainer.course_proposal.question',
         data: { proposalId: id },
       })
@@ -596,13 +596,13 @@ export class CourseProposalService {
     await tasks.assign(actor, {
       assigneeId: actor.userId,
       priority: 'high',
-      title: `أهِّل ${input.trainerName} للدورة ${input.courseId}`,
+      title: `أهّل ${input.trainerName} للدورة ${input.courseId}`,
       bodyAr: [
         input.wasLinked
-          ? `اقتراحُه «${input.titleAr}» صُنِّف نسخةً من ${input.courseId}.`
-          : `اقتراحُه «${input.titleAr}» صار الدورةَ ${input.courseId} في الكتالوج.`,
-        'ويبقى تأهيلُه لها — وبلا تأهيلٍ لا يُسنَد إلى شعبةٍ منها، فيبقى القرارُ بلا أثر.',
-        'التأهيلُ من: /admin/assign-by-trainer',
+          ? `اقتراحه «${input.titleAr}» صنّف نسخة من ${input.courseId}.`
+          : `اقتراحه «${input.titleAr}» صار الدورة ${input.courseId} في الكتالوج.`,
+        'ويبقى تأهيله لها — وبلا تأهيل لا يسند إلى شعبة منها، فيبقى القرار بلا أثر.',
+        'التأهيل من: /admin/assign-by-trainer',
       ].join('\n'),
     })
   }
@@ -617,7 +617,7 @@ export class CourseProposalService {
       where: { id },
       include: { profile: { select: { application: { select: { fullName: true } } } } },
     })
-    if (!row) throw new AuthError('unknown_proposal', 'لا اقتراحَ بهذا المعرّف', 404)
+    if (!row) throw new AuthError('unknown_proposal', 'لا اقتراح بهذا المعرّف', 404)
     const course = await this.prisma.course.findUnique({ where: { id: courseId } })
     if (!course) throw new AuthError('unknown_course', 'الدورة غير موجودة', 404)
 
@@ -649,7 +649,7 @@ export class CourseProposalService {
       where: { id },
       include: { profile: { select: { application: { select: { fullName: true } } } } },
     })
-    if (!row) throw new AuthError('unknown_proposal', 'لا اقتراحَ بهذا المعرّف', 404)
+    if (!row) throw new AuthError('unknown_proposal', 'لا اقتراح بهذا المعرّف', 404)
     const course = await this.prisma.course.findUnique({ where: { id: courseId } })
     if (!course) throw new AuthError('unknown_course', 'الدورة غير موجودة', 404)
 
@@ -675,9 +675,9 @@ export class CourseProposalService {
   /** الرفضُ بسببٍ يُقرأ — ومن رُفض اقتراحُه بلا سببٍ يخمّن ثمّ يُعيده كما هو */
   async reject(actorId: string, id: string, noteAr: string) {
     const reason = noteAr.trim()
-    if (reason.length < 5) throw new AuthError('no_reason', 'اكتب سببَ الرفض — بلا سببٍ يُعاد الاقتراحُ كما هو', 400)
+    if (reason.length < 5) throw new AuthError('no_reason', 'اكتب سبب الرفض — بلا سبب يعاد الاقتراح كما هو', 400)
     const row = await this.prisma.trainerCourseProposal.findUnique({ where: { id } })
-    if (!row) throw new AuthError('unknown_proposal', 'لا اقتراحَ بهذا المعرّف', 404)
+    if (!row) throw new AuthError('unknown_proposal', 'لا اقتراح بهذا المعرّف', 404)
 
     const out = await this.prisma.trainerCourseProposal.update({
       where: { id },
@@ -701,9 +701,9 @@ export class CourseProposalService {
       قرارٌ نُقض على أنّه قائم. */
   async unlink(actorId: string, id: string, noteAr?: string | null) {
     const row = await this.prisma.trainerCourseProposal.findUnique({ where: { id } })
-    if (!row) throw new AuthError('unknown_proposal', 'لا اقتراحَ بهذا المعرّف', 404)
+    if (!row) throw new AuthError('unknown_proposal', 'لا اقتراح بهذا المعرّف', 404)
     if (row.status !== 'linked') {
-      throw new AuthError('not_linked', 'لا يُنقض إلّا ربطٌ قائم — وهذا الاقتراحُ ليس مربوطا برمز', 409)
+      throw new AuthError('not_linked', 'لا ينقض إلّا ربط قائم — وهذا الاقتراح ليس مربوطا برمز', 409)
     }
     const out = await this.prisma.trainerCourseProposal.update({
       where: { id },
@@ -734,15 +734,15 @@ export class CourseProposalService {
     input: { titleAr?: string; summaryAr?: string | null },
   ) {
     const row = await this.prisma.trainerCourseProposal.findUnique({ where: { id } })
-    if (!row) throw new AuthError('unknown_proposal', 'لا اقتراحَ بهذا المعرّف', 404)
+    if (!row) throw new AuthError('unknown_proposal', 'لا اقتراح بهذا المعرّف', 404)
 
     const titleAr = input.titleAr?.trim()
     if (titleAr !== undefined && titleAr.length < 3) {
-      throw new AuthError('bad_title', 'العنوان ثلاثةُ أحرفٍ فأكثر', 422)
+      throw new AuthError('bad_title', 'العنوان ثلاثة أحرف فأكثر', 422)
     }
     const summaryAr = input.summaryAr === undefined ? undefined : (input.summaryAr?.trim() || null)
     if (titleAr === undefined && summaryAr === undefined) {
-      throw new AuthError('nothing_to_change', 'لا تغييرَ في الطلب', 422)
+      throw new AuthError('nothing_to_change', 'لا تغيير في الطلب', 422)
     }
 
     const out = await this.prisma.trainerCourseProposal.update({
@@ -775,7 +775,7 @@ export class CourseProposalService {
       نصُّها قابلا للتصحيح من بوّابته كأيّ اقتراحٍ مقدَّم. */
   async addByStaff(actorId: string, profileId: string, input: ProposalInput) {
     const profile = await this.prisma.trainerProfile.findUnique({ where: { id: profileId }, select: { id: true } })
-    if (!profile) throw new AuthError('no_profile', 'ملفُّ المدرّب غير موجود', 404)
+    if (!profile) throw new AuthError('no_profile', 'ملفّ المدرّب غير موجود', 404)
     const data = this.clean(input)
     const row = await this.prisma.trainerCourseProposal.create({
       data: { ...data, profileId, status: 'submitted' },

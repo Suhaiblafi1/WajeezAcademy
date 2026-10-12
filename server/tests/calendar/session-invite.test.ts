@@ -3,7 +3,9 @@
    محضةٌ بلا قاعدةٍ ولا شبكة. ومن يُدعى ومتى في `learning/session-invites.test.ts`؛
    وهنا ما تقوله الدعوةُ نفسُها، وما يجعل التقويمَ يحدّثها لا يكرّرها. */
 
-import { describe, expect, it } from 'vitest'
+import { describe, expect as vexpect, it } from 'vitest'
+import { plainExpect } from '../helpers/plain-expect'
+const expect = plainExpect(vexpect)
 import { inviteSequence, sessionInviteMail, sessionInviteUid, sessionScheduleMail } from '../../services/calendar/session-invite'
 import { attachmentsOf } from '../../services/mail'
 import { whenAr } from '../../../src/application/learning/cohort-gate'

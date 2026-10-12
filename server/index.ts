@@ -33,18 +33,18 @@ const main = async () => {
 async function announceFounders(prisma: Awaited<ReturnType<typeof getPrisma>>): Promise<void> {
   try {
     const r = await ensureFoundersPromoted(prisma)
-    for (const e of r.promoted) console.log(`⬆️  رُقّي إلى مدير النظام: ${e}`)
+    for (const e of r.promoted) console.log(`⬆️  رقّي إلى مدير النظام: ${e}`)
     /* ورفعُ الإيقاف يُقال كالترقية: دخولٌ عاد بلا قرارِ إنسان، ومن يقرأ سجلَّ
        الإقلاع يجب أن يرى ذلك فيه لا أن يكتشفه من الأثر بعد أسبوع. */
-    for (const e of r.reinstated) console.log(`🔓 رُفع الإيقافُ عن حسابِ مؤسِّس: ${e}`)
+    for (const e of r.reinstated) console.log(`🔓 رفع الإيقاف عن حساب مؤسّس: ${e}`)
     for (const e of r.archived) {
-      console.log(`⚠️  مؤسِّسٌ حسابُه مؤرشَف: ${e} — الأرشفةُ لا تُنقض في الإقلاع، تُفكّ من /admin/users`)
+      console.log(`⚠️  مؤسّس حسابه مؤرشف: ${e} — الأرشفة لا تنقض في الإقلاع، تفكّ من /admin/users`)
     }
     for (const e of r.missing) {
-      console.log(`ℹ️  مؤسِّسٌ بلا حساب: ${e} — يسجّل من /auth ثمّ يُرقّى في الإقلاع التالي`)
+      console.log(`ℹ️  مؤسّس بلا حساب: ${e} — يسجّل من /auth ثمّ يرقّى في الإقلاع التالي`)
     }
   } catch (e) {
-    console.error(`⚠️  تعذّرت ترقيةُ المؤسِّسين: ${e instanceof Error ? e.message : String(e)}`)
+    console.error(`⚠️  تعذّرت ترقية المؤسّسين: ${e instanceof Error ? e.message : String(e)}`)
   }
 }
 
@@ -57,8 +57,8 @@ function warnOnDerivedStorageSecret(app: { log: { warn: (msg: string) => void } 
   if (process.env.STORAGE_SECRET) return
   if (process.env.NODE_ENV !== 'production') return
   app.log.warn(
-    'STORAGE_SECRET غير مضبوط — مفتاحُ توقيع الروابط مشتقٌّ من DATABASE_URL. ' +
-    'اضبطه بقيمةٍ ثابتةٍ قبل أيّ تغييرٍ لعنوان القاعدة (نقلُ الاستضافة)، وإلّا صارت الوثائقُ المخزَّنةُ غيرَ قابلةٍ للفتح.',
+    'STORAGE_SECRET غير مضبوط — مفتاح توقيع الروابط مشتقّ من DATABASE_URL. ' +
+    'اضبطه بقيمة ثابتة قبل أيّ تغيير لعنوان القاعدة (نقل الاستضافة)، وإلّا صارت الوثائق المخزّنة غير قابلة للفتح.',
   )
 }
 
@@ -73,9 +73,9 @@ function announceRunningBuild(): void {
   const stamp = buildStamp()
   const who = stamp.commit
     ? `${stamp.commit.slice(0, 7)}${stamp.ref ? ` · ${stamp.ref}` : ''}`
-    : 'التزامٌ مجهول'
-  const when = stamp.builtAt ? ` · بُني ${stamp.builtAt}` : ''
-  console.log(`🏷️  النسخة: ${who}${when} · البيئة: ${runtimeEnvLabel()} · مصدرُ البصمة: ${stamp.source}`)
+    : 'التزام مجهول'
+  const when = stamp.builtAt ? ` · بني ${stamp.builtAt}` : ''
+  console.log(`🏷️  النسخة: ${who}${when} · البيئة: ${runtimeEnvLabel()} · مصدر البصمة: ${stamp.source}`)
 }
 
 /* عنوانُ الموقع غيرُ مضبوطٍ في الإنتاج — عطبٌ صامتٌ في السجلّ صاخبٌ عند المشتري.
@@ -97,7 +97,7 @@ function warnOnMissingSiteUrl(app: { log: { warn: (msg: string) => void } }): vo
   if (process.env.APP_URL?.trim()) return
   if (process.env.NODE_ENV !== 'production') return
   app.log.warn(
-    'APP_URL غير مضبوط — روابطُ الرسائل وعنوانُ العودة بعد الدفع تُبنى على http://localhost:7100. ' +
+    'APP_URL غير مضبوط — روابط الرسائل وعنوان العودة بعد الدفع تبنى على http://localhost:7100. ' +
     'اضبطه في deploy/.env.production بعنوان الموقع وأعد النشر.',
   )
 }

@@ -58,7 +58,7 @@ export class TestPaymentProvider implements PaymentProvider {
 export class ManualPaymentProvider implements PaymentProvider {
   readonly name = 'manual'
   async createCharge(): Promise<ChargeResult> {
-    throw new Error('manual_provider_offline: الدفع اليدوي يُسجل عبر مسار المالية لا عبر المزود')
+    throw new Error('manual_provider_offline: الدفع اليدوي يسجل عبر مسار المالية لا عبر المزود')
   }
   /* الردّ اليدوي تحويلٌ بنكيّ تجريه المالية خارج المنصّة، والقيد هنا توثيقه */
   async refund(): Promise<{ providerRefundRef: string }> {

@@ -122,7 +122,7 @@ export function forgetZoomToken(): void {
 
 export async function zoomToken(c: ZoomConfig, now = Date.now()): Promise<string> {
   if (!zoomReady(c)) {
-    throw new AuthError('zoom_not_configured', `تكاملُ Zoom غير مكتمل — ينقصه: ${zoomMissing(c).join(' · ')}`, 409)
+    throw new AuthError('zoom_not_configured', `تكامل Zoom غير مكتمل — ينقصه: ${zoomMissing(c).join(' · ')}`, 409)
   }
   const key = cacheKey(c)
   if (cached && cached.key === key && cached.expiresAt - RENEW_MARGIN_MS > now) return cached.token
@@ -246,8 +246,8 @@ export async function createZoomMeeting(c: ZoomConfig, input: CreateMeetingInput
     const detail = res.status === 401 || res.status === 403
       ? 'رفض Zoom الطلب — تأكّد أنّ التطبيق يملك صلاحيّة `meeting:write:admin`'
       : res.status === 404
-        ? `لا مستخدمَ في Zoom بالبريد «${c.hostEmail}» — صحّح بريدَ المضيف`
-        : `ردُّ Zoom غير متوقّع (HTTP ${res.status})`
+        ? `لا مستخدم في Zoom بالبريد «${c.hostEmail}» — صحّح بريد المضيف`
+        : `ردّ Zoom غير متوقّع (HTTP ${res.status})`
     throw new AuthError('zoom_create_failed', detail, 502)
   }
   const j = (await res.json()) as {
@@ -289,7 +289,7 @@ export async function updateZoomMeeting(
   })
   /* ٢٠٤ نُقل · وما سواه لم يُنقل — ويُقال برقمه */
   if (res.status === 204) return { ok: true }
-  return { ok: false, reason: `ردُّ Zoom عند النقل (HTTP ${res.status})` }
+  return { ok: false, reason: `ردّ Zoom عند النقل (HTTP ${res.status})` }
 }
 
 /* ═══ التسجيلُ يُشاهَد ولا يُنزَّل (٣٠ سبتمبر ٢٠٢٦) ═══
@@ -313,7 +313,7 @@ export async function lockZoomRecordingDownload(
   })
   /* ٢٠٤ أُطفئ · وما سواه لم يُطفأ — ويُقال برقمه */
   if (res.status === 204) return { ok: true }
-  return { ok: false, reason: `ردُّ Zoom عند إطفاء تنزيل التسجيل (HTTP ${res.status})` }
+  return { ok: false, reason: `ردّ Zoom عند إطفاء تنزيل التسجيل (HTTP ${res.status})` }
 }
 
 /* ── رابطُ المضيف ساعةَ يُطلب — ولا يُحفظ ──
@@ -336,14 +336,14 @@ export async function zoomStartUrl(
   if (!res.ok) {
     /* Zoom يردّ ٤٠٠ لرمزٍ تنقصه صلاحيّة (الرمز ٤٧١١)، و٤٠١/٤٠٣ لما سواه من الرفض */
     const reason = res.status === 404
-      ? 'لا اجتماعَ بهذا الرقم عند Zoom — رُبّما حُذف من لوحته'
+      ? 'لا اجتماع بهذا الرقم عند Zoom — ربّما حذف من لوحته'
       : res.status === 400 || res.status === 401 || res.status === 403
         ? 'رفض Zoom الطلب — تأكّد أنّ التطبيق يملك صلاحيّة `meeting:read:admin`'
-        : `ردُّ Zoom غير متوقّع (HTTP ${res.status})`
+        : `ردّ Zoom غير متوقّع (HTTP ${res.status})`
     return { ok: false, reason }
   }
   const j = (await res.json()) as { start_url?: string }
-  if (!j.start_url) return { ok: false, reason: 'ردّ Zoom بلا رابطِ مضيف' }
+  if (!j.start_url) return { ok: false, reason: 'ردّ Zoom بلا رابط مضيف' }
   return { ok: true, startUrl: j.start_url }
 }
 
@@ -366,7 +366,7 @@ export async function deleteZoomMeeting(c: ZoomConfig, meetingId: string): Promi
   })
   /* ٢٠٤ حذفٌ تمّ · ٤٠٤ لا اجتماعَ بهذا المعرّف — وكلاهما «لم يعد قائما» */
   if (res.status === 204 || res.status === 404) return { ok: true }
-  return { ok: false, reason: `ردُّ Zoom عند الإلغاء (HTTP ${res.status})` }
+  return { ok: false, reason: `ردّ Zoom عند الإلغاء (HTTP ${res.status})` }
 }
 
 /** فحصٌ حيٌّ للمفاتيح — يطلب رمزا فعلا ولا يكتفي بوجود القيم */
@@ -410,17 +410,17 @@ export async function registerZoomParticipant(
   })
   if (!res.ok) {
     const reason = res.status === 400
-      ? 'لا يقبل هذا الاجتماعُ تسجيلا مسبقا — أُنشئ قبل تفعيله أو لا يتيحه نوعُه'
+      ? 'لا يقبل هذا الاجتماع تسجيلا مسبقا — أنشئ قبل تفعيله أو لا يتيحه نوعه'
       : res.status === 401 || res.status === 403
         ? 'رفض Zoom التسجيل — تأكّد من صلاحيّة `meeting:write:admin`'
         : res.status === 404
-          ? 'لا اجتماعَ بهذا الرقم عند Zoom — رُبّما حُذف من لوحته'
-          : `ردُّ Zoom غير متوقّع عند التسجيل (HTTP ${res.status})`
+          ? 'لا اجتماع بهذا الرقم عند Zoom — ربّما حذف من لوحته'
+          : `ردّ Zoom غير متوقّع عند التسجيل (HTTP ${res.status})`
     return { ok: false, reason }
   }
   const j = (await res.json()) as { registrant_id?: string; join_url?: string }
   if (!j.join_url || !j.registrant_id) {
-    return { ok: false, reason: 'سجّل Zoom المتعلّمَ بلا رابطٍ خاصٍّ به' }
+    return { ok: false, reason: 'سجّل Zoom المتعلّم بلا رابط خاصّ به' }
   }
   return { ok: true, registrant: { registrantId: j.registrant_id, joinUrl: j.join_url } }
 }
@@ -449,10 +449,10 @@ export async function setZoomRegistrantStatus(
   })
   if (res.ok) return { ok: true }
   const reason = res.status === 404
-    ? 'لا اجتماعَ بهذا الرقم عند Zoom أو لا مسجَّلَ بهذا المعرّف'
+    ? 'لا اجتماع بهذا الرقم عند Zoom أو لا مسجّل بهذا المعرّف'
     : res.status === 401 || res.status === 403
-      ? 'رفض Zoom تغييرَ حالة المسجَّل — تأكّد من صلاحيّة `meeting:write:admin`'
-      : `ردُّ Zoom غير متوقّع عند تغيير حالة المسجَّل (HTTP ${res.status})`
+      ? 'رفض Zoom تغيير حالة المسجّل — تأكّد من صلاحيّة `meeting:write:admin`'
+      : `ردّ Zoom غير متوقّع عند تغيير حالة المسجّل (HTTP ${res.status})`
   return { ok: false, notFound: res.status === 404, reason }
 }
 
@@ -539,8 +539,8 @@ export async function fetchZoomParticipants(c: ZoomConfig, meetingUuid: string):
       throw new AuthError(
         'zoom_report_failed',
         res.status === 404
-          ? 'لا تقريرَ لهذا اللقاء عند Zoom — قد يكون انتهى قبل أن يدخله أحد'
-          : `تعذّرت قراءةُ تقرير الحضور من Zoom (HTTP ${res.status})`,
+          ? 'لا تقرير لهذا اللقاء عند Zoom — قد يكون انتهى قبل أن يدخله أحد'
+          : `تعذّرت قراءة تقرير الحضور من Zoom (HTTP ${res.status})`,
         502,
       )
     }
@@ -553,7 +553,7 @@ export async function fetchZoomParticipants(c: ZoomConfig, meetingUuid: string):
       if (!joinedAt || Number.isNaN(joinedAt.getTime())) continue
       const leftAt = p.leave_time ? new Date(p.leave_time) : null
       out.push({
-        name: p.name?.trim() || 'مشارِكٌ بلا اسم',
+        name: p.name?.trim() || 'مشارك بلا اسم',
         email: p.user_email?.trim().toLowerCase() || null,
         joinedAt,
         leftAt: leftAt && !Number.isNaN(leftAt.getTime()) ? leftAt : null,
@@ -568,18 +568,18 @@ export async function fetchZoomParticipants(c: ZoomConfig, meetingUuid: string):
 }
 
 export async function zoomProbe(c: ZoomConfig): Promise<{ ok: boolean; message: string }> {
-  if (!c.enabled) return { ok: false, message: 'تكاملُ Zoom غير مفعّل — فعّله واحفظ أوّلا' }
+  if (!c.enabled) return { ok: false, message: 'تكامل Zoom غير مفعّل — فعّله واحفظ أوّلا' }
   const missing = zoomMissing(c)
-  if (missing.length) return { ok: false, message: `ينقص الإعدادَ: ${missing.join(' · ')}` }
+  if (missing.length) return { ok: false, message: `ينقص الإعداد: ${missing.join(' · ')}` }
   try {
     forgetZoomToken()
     await zoomToken(c)
     /* والمفاتيحُ السليمةُ لا تعني أنّ أحداثَه تصل: بلا رمزِها يرفض Zoom العنوانَ
        ويُرفض كلُّ حدث — فيُقال هنا، لا يُكتشف بعد لقاءٍ لم يُسجَّل حضورُه */
     const events = c.webhookSecret
-      ? 'وأحداثُه تُقبل برمزها المحفوظ'
-      : 'ولا رمزَ لأحداثه بعد — فالحضورُ ودخولُ المضيف والتسجيلاتُ لا تصل حتّى يُحفظ'
-    return { ok: true, message: `اتّصالُ Zoom ناجح — والاجتماعاتُ تُنشأ باسم «${c.hostEmail}» · ${events}` }
+      ? 'وأحداثه تقبل برمزها المحفوظ'
+      : 'ولا رمز لأحداثه بعد — فالحضور ودخول المضيف والتسجيلات لا تصل حتّى يحفظ'
+    return { ok: true, message: `اتّصال Zoom ناجح — والاجتماعات تنشأ باسم «${c.hostEmail}» · ${events}` }
   } catch (e) {
     return { ok: false, message: e instanceof AuthError ? e.message : 'تعذّر الوصول إلى Zoom — تحقّق من الشبكة' }
   }

@@ -81,12 +81,12 @@ export async function publishSnapshotIfChanged(
   const pub = new PublishingService(prisma)
   let label = autoLabel(opts.commit, candidate.hash)
   for (let n = 2; await prisma.catalogVersion.findUnique({ where: { label } }); n++) {
-    if (n > 9) throw new Error(`تعذّر إيجاد تسمية حرة للقطة — آخر ما جُرّب: ${label}`)
+    if (n > 9) throw new Error(`تعذّر إيجاد تسمية حرة للقطة — آخر ما جرّب: ${label}`)
     label = `${autoLabel(opts.commit, candidate.hash)}-${n}`
   }
   const version = await pub.createDraftVersion(label, undefined)
   await pub.publish(version.id, null) // فعل نظامي — لا مشغّل بشري خلفه
-  log(`✅ نُشرت «${label}»`)
+  log(`✅ نشرت «${label}»`)
   log('   والتراجع متاح من /admin/publishing إن ساء شيء.')
 
   /* ويُسجَّل بعد النشر كذلك لا عند التخطّي وحدَه: فالتسمية هنا تحمل بصمة هذا

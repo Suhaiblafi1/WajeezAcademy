@@ -30,7 +30,7 @@ export function registerTermRoutes(app: FastifyInstance, prisma: PrismaClient) {
      كان الجوابُ الصادقُ الوحيدُ «يُعلَن الموعدُ مع فتح الشعبة». وهذا يقول
      اسمَ الفصل وأشهرَه ونافذةَ تسجيله — بلا مصادقة، فالزائرُ هو المقصود. */
   app.get('/api/public/upcoming-term', {
-    schema: { tags: ['public'], summary: 'الفصلُ القادم وأشهرُه ونافذةُ تسجيله' },
+    schema: { tags: ['public'], summary: 'الفصل القادم وأشهره ونافذة تسجيله' },
   }, async () => ({ term: await terms.publicUpcoming() }))
 
   /* ─── تقويمُ الفصل: عامٌّ للزائر، ومُشخصَنٌ لصاحب الجلسة (البند ٥٠) ───
@@ -38,7 +38,7 @@ export function registerTermRoutes(app: FastifyInstance, prisma: PrismaClient) {
      المكوّنُ واحدٌ والنطاقُ واحد — والفرقُ أنّ المسجَّلَ ترى شعبُه موسومةً.
      ولا جلساتٍ في الاثنين: مواعيدُ الجلسات تفصيلُ من اشترى. */
   app.get('/api/public/term-calendar', {
-    schema: { tags: ['public'], summary: 'تقويمُ الفصل المنشور — أشهرُه الثلاثةُ وشعبُها' },
+    schema: { tags: ['public'], summary: 'تقويم الفصل المنشور — أشهره الثلاثة وشعبها' },
   }, async (req) => {
     const { termId } = z.object({ termId: z.string().uuid().optional() }).parse(req.query)
     return { calendar: await calendar.calendar({ termId }) }
@@ -46,7 +46,7 @@ export function registerTermRoutes(app: FastifyInstance, prisma: PrismaClient) {
 
   app.get('/api/learner/term-calendar', {
     preHandler: requireAuth,
-    schema: { tags: ['learner'], summary: 'التقويمُ نفسُه، وشعبُه موسومةٌ بما سُجِّل فيه' },
+    schema: { tags: ['learner'], summary: 'التقويم نفسه، وشعبه موسومة بما سجّل فيه' },
   }, async (req) => {
     const { termId } = z.object({ termId: z.string().uuid().optional() }).parse(req.query)
     return { calendar: await calendar.calendar({ termId, userId: req.auth!.userId }) }
@@ -55,7 +55,7 @@ export function registerTermRoutes(app: FastifyInstance, prisma: PrismaClient) {
   /* نشرُ التقويم — قبله الفصلُ خطّةٌ لا وعد، ولا تُعرض شعبُه للزائر */
   app.post('/api/admin/terms/:id/publish-calendar', {
     preHandler: requirePermission('cohort.open'),
-    schema: { tags: ['admin-terms'], summary: 'نشرُ تقويم الفصل — يصير مرئيّا للزائر' },
+    schema: { tags: ['admin-terms'], summary: 'نشر تقويم الفصل — يصير مرئيّا للزائر' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const term = await prisma.term.update({
@@ -76,7 +76,7 @@ export function registerTermRoutes(app: FastifyInstance, prisma: PrismaClient) {
      وصلاحيّتُه `cohort.open`: من يملك فتحَ شعبةٍ يملك فتحَ الباب عليها. */
   app.get('/api/admin/registration-season', {
     preHandler: requirePermission('cohort.open'),
-    schema: { tags: ['admin-terms'], summary: 'حالةُ باب التسجيل ومن ينتظر فتحَه' },
+    schema: { tags: ['admin-terms'], summary: 'حالة باب التسجيل ومن ينتظر فتحه' },
   }, async () => {
     const gate = await readSeasonGate(prisma)
     return { gate, waiting: await interest.waiting(gate.seasonKey || 'unset') }
@@ -84,7 +84,7 @@ export function registerTermRoutes(app: FastifyInstance, prisma: PrismaClient) {
 
   app.post('/api/admin/registration-season', {
     preHandler: requirePermission('cohort.open'),
-    schema: { tags: ['admin-terms'], summary: 'إغلاقُ باب التسجيل أو فتحُه — ولا يُلمس علمُ شعبةٍ واحدة' },
+    schema: { tags: ['admin-terms'], summary: 'إغلاق باب التسجيل أو فتحه — ولا يلمس علم شعبة واحدة' },
   }, async (req) => {
     const body = z.object({
       open: z.boolean(),
@@ -123,7 +123,7 @@ export function registerTermRoutes(app: FastifyInstance, prisma: PrismaClient) {
   app.post('/api/admin/registration-season/notify', {
     preHandler: requirePermission('cohort.open'),
     config: { rateLimit: { max: 3, timeWindow: '10 minutes' } },
-    schema: { tags: ['admin-terms'], summary: 'إبلاغُ من ترك بريدَه أنّ باب التسجيل فُتح' },
+    schema: { tags: ['admin-terms'], summary: 'إبلاغ من ترك بريده أنّ باب التسجيل فتح' },
   }, async (req) => {
     const { season } = z.object({ season: z.enum(SEASON_VALUES).optional() }).parse(req.body ?? {})
     const gate = await readSeasonGate(prisma)
@@ -139,7 +139,7 @@ export function registerTermRoutes(app: FastifyInstance, prisma: PrismaClient) {
 
   app.get('/api/admin/terms', {
     preHandler: requirePermission('cohort.manage'),
-    schema: { tags: ['admin-terms'], summary: 'الفصولُ مرتَّبةً بالبداية' },
+    schema: { tags: ['admin-terms'], summary: 'الفصول مرتّبة بالبداية' },
   }, async (req) => {
     const { all } = z.object({ all: z.coerce.boolean().optional() }).parse(req.query)
     return terms.list({ includeClosed: all })
@@ -147,7 +147,7 @@ export function registerTermRoutes(app: FastifyInstance, prisma: PrismaClient) {
 
   app.post('/api/admin/terms', {
     preHandler: requirePermission('cohort.manage'),
-    schema: { tags: ['admin-terms'], summary: 'إنشاءُ فصلٍ — حدودُه تُحسب من موسمه لا تُكتب باليد' },
+    schema: { tags: ['admin-terms'], summary: 'إنشاء فصل — حدوده تحسب من موسمه لا تكتب باليد' },
   }, async (req, reply) => {
     const body = z.object({
       year: z.number().int().min(2020).max(2100),
@@ -161,7 +161,7 @@ export function registerTermRoutes(app: FastifyInstance, prisma: PrismaClient) {
      كاتبَ واحد، فكلُّ فصلٍ `planned` إلى الأبد. */
   app.post('/api/admin/terms/:id/status', {
     preHandler: requirePermission('cohort.manage'),
-    schema: { tags: ['admin-terms'], summary: 'نقلُ حالة الفصل — فتحُه أو إنهاؤه أو إلغاؤه' },
+    schema: { tags: ['admin-terms'], summary: 'نقل حالة الفصل — فتحه أو إنهاؤه أو إلغاؤه' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const { status } = z.object({ status: z.enum(TERM_STATUSES) }).parse(req.body)
@@ -170,7 +170,7 @@ export function registerTermRoutes(app: FastifyInstance, prisma: PrismaClient) {
 
   app.delete('/api/admin/terms/:id', {
     preHandler: requirePermission('cohort.manage'),
-    schema: { tags: ['admin-terms'], summary: 'حذفُ فصلٍ لم يُنشر ولا شعبَ فيه — والمنشورُ وذو الشعب يُردّان' },
+    schema: { tags: ['admin-terms'], summary: 'حذف فصل لم ينشر ولا شعب فيه — والمنشور وذو الشعب يردّان' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     return terms.delete(req.auth!.userId, id)
@@ -179,7 +179,7 @@ export function registerTermRoutes(app: FastifyInstance, prisma: PrismaClient) {
   /* نافذةُ التسجيل — بديلُ الدعوة الدائمة (البند ٥١) */
   app.post('/api/admin/terms/:id/registration-window', {
     preHandler: requirePermission('cohort.open'),
-    schema: { tags: ['admin-terms'], summary: 'نافذةُ التسجيل — للفصل موعدٌ يُعلَن لا دعوةٌ دائمة' },
+    schema: { tags: ['admin-terms'], summary: 'نافذة التسجيل — للفصل موعد يعلن لا دعوة دائمة' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const body = z.object({
@@ -198,7 +198,7 @@ export function registerTermRoutes(app: FastifyInstance, prisma: PrismaClient) {
      عقدُ المنصّة في كلّ إجراءٍ جماعيّ — لا زرَّ ينفّذ قبل أن تُعرض النتيجة. */
   app.post('/api/admin/terms/:id/plan', {
     preHandler: requirePermission('cohort.open'),
-    schema: { tags: ['admin-terms'], summary: 'توزيعُ شعب الفصل — معاينةٌ افتراضا، وتطبيقٌ بطلبٍ صريح' },
+    schema: { tags: ['admin-terms'], summary: 'توزيع شعب الفصل — معاينة افتراضا، وتطبيق بطلب صريح' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const body = z.object({

@@ -81,8 +81,8 @@ function sessionEvent(
     startsAt: session.startsAt,
     durationMinutes: Math.max(15, Math.round((end.getTime() - session.startsAt.getTime()) / 60_000)),
     description: [
-      `لقاءٌ مباشرٌ في «${cohortTitle}» — أكاديمية وجيز.`,
-      join ? `رابطُ الدخول: ${join.url}` : `رابطُ الدخول في صفحة رحلتك: ${pageUrl}`,
+      `لقاء مباشر في «${cohortTitle}» — أكاديمية وجيز.`,
+      join ? `رابط الدخول: ${join.url}` : `رابط الدخول في صفحة رحلتك: ${pageUrl}`,
     ].join('\n'),
     ...(join ? { location: join.url } : {}),
     url: join?.url ?? pageUrl,
@@ -101,13 +101,13 @@ export function sessionInviteMail(input: SessionInviteInput): SessionInviteMail 
     ? `دعوة: ${session.title} — ${when}`
     : input.kind === 'update'
       ? `تغيّر موعد: ${session.title} — ${when}`
-      : `أُلغي من تقويمك: ${session.title}`
+      : `ألغي من تقويمك: ${session.title}`
 
   const blocks: MailBlock[] = []
   if (input.kind === 'cancel') {
     blocks.push({ kind: 'p', text: `«${session.title}» في «${input.cohortTitle}» — كان ${when} بتوقيت عمّان.` })
-    blocks.push({ kind: 'p', text: input.cancelWhyAr ?? 'رُفع هذا اللقاءُ من الجدول.' })
-    blocks.push({ kind: 'note', text: 'أُرفق بهذه الرسالة ما يرفعه من تقويمك.' })
+    blocks.push({ kind: 'p', text: input.cancelWhyAr ?? 'رفع هذا اللقاء من الجدول.' })
+    blocks.push({ kind: 'note', text: 'أرفق بهذه الرسالة ما يرفعه من تقويمك.' })
   } else {
     blocks.push({
       kind: 'facts',
@@ -118,33 +118,33 @@ export function sessionInviteMail(input: SessionInviteInput): SessionInviteMail 
       ],
     })
     if (input.kind === 'update') {
-      blocks.push({ kind: 'p', text: 'تغيّر الموعدُ وبقي رابطُ الدخول نفسُه.' })
+      blocks.push({ kind: 'p', text: 'تغيّر الموعد وبقي رابط الدخول نفسه.' })
     }
     if (join) {
       blocks.push({ kind: 'cta', label: 'ادخل اللقاء', href: join.url })
       /* فقرةٌ لا تعليقٌ تحت الزرّ: التعليقُ لا يُكتب في النصّ الخالص (`mail-template`)،
          ومن قرأ الرسالةَ بلا HTML يجب أن يعرف ألّا يشارك رابطَه */
-      if (join.personal) blocks.push({ kind: 'p', text: 'الرابطُ لك وحدَك — دخولُك به يُسجِّل حضورَك، فلا تشاركه.' })
+      if (join.personal) blocks.push({ kind: 'p', text: 'الرابط لك وحدك — دخولك به يسجّل حضورك، فلا تشاركه.' })
     } else {
-      blocks.push({ kind: 'p', text: ['رابطُ الدخول يظهر في ', { text: 'صفحة رحلتك', href: input.pageUrl }, ' قبل موعده.'] })
+      blocks.push({ kind: 'p', text: ['رابط الدخول يظهر في ', { text: 'صفحة رحلتك', href: input.pageUrl }, ' قبل موعده.'] })
     }
-    blocks.push({ kind: 'note', text: 'أُرفقت دعوةُ التقويم: افتحها يُضَف الموعدُ إلى تقويمك، ويتحدّث وحدَه إن تغيّر.' })
+    blocks.push({ kind: 'note', text: 'أرفقت دعوة التقويم: افتحها يضف الموعد إلى تقويمك، ويتحدّث وحده إن تغيّر.' })
   }
 
   const { text, html } = renderMail({
     ...(input.to.name ? { greetingName: input.to.name } : {}),
     heading: input.kind === 'new'
-      ? `لقاءٌ مباشرٌ في «${input.cohortTitle}»`
+      ? `لقاء مباشر في «${input.cohortTitle}»`
       : input.kind === 'update'
-        ? `تغيّر موعدُ «${session.title}»`
-        : `أُلغي «${session.title}» من تقويمك`,
-    preheader: input.kind === 'cancel' ? (input.cancelWhyAr ?? 'رُفع هذا اللقاءُ من الجدول.') : `${when} بتوقيت عمّان`,
+        ? `تغيّر موعد «${session.title}»`
+        : `ألغي «${session.title}» من تقويمك`,
+    preheader: input.kind === 'cancel' ? (input.cancelWhyAr ?? 'رفع هذا اللقاء من الجدول.') : `${when} بتوقيت عمّان`,
     blocks,
   })
 
   const ics = buildIcs({
     ...sessionEvent(session, input.cohortTitle, join, input.pageUrl, now),
-    ...(input.kind === 'cancel' ? { description: input.cancelWhyAr ?? 'رُفع هذا اللقاءُ من الجدول.' } : {}),
+    ...(input.kind === 'cancel' ? { description: input.cancelWhyAr ?? 'رفع هذا اللقاء من الجدول.' } : {}),
     attendee: { name: input.to.name ?? undefined, email: input.to.email, rsvp: false },
     cancelled: input.kind === 'cancel',
   })
@@ -193,7 +193,7 @@ export interface SessionScheduleMail {
   icsFilename: string
 }
 
-const LIVE_FORMS = { one: 'لقاءٌ مباشر', two: 'لقاءان مباشران', few: 'لقاءاتٍ مباشرة', many: 'لقاءً مباشرا' } as const
+const LIVE_FORMS = { one: 'لقاء مباشر', two: 'لقاءان مباشران', few: 'لقاءات مباشرة', many: 'لقاء مباشرا' } as const
 
 export function sessionScheduleMail(input: SessionScheduleInput): SessionScheduleMail {
   const now = input.now ?? new Date()
@@ -202,28 +202,28 @@ export function sessionScheduleMail(input: SessionScheduleInput): SessionSchedul
   const first = sessions[0]
 
   const blocks: MailBlock[] = [
-    { kind: 'p', text: `مواعيدُ ما بقي من لقاءات «${input.cohortTitle}» المباشرة — بتوقيت عمّان:` },
+    { kind: 'p', text: `مواعيد ما بقي من لقاءات «${input.cohortTitle}» المباشرة — بتوقيت عمّان:` },
     {
       kind: 'list',
       items: sessions.map((s): MailRich => (s.join
         ? [`${whenAr(s.startsAt)} — ${s.title} · `, { text: 'ادخل اللقاء', href: s.join.url }]
-        : [`${whenAr(s.startsAt)} — ${s.title} · رابطُه في `, { text: 'صفحة رحلتك', href: input.pageUrl }, ' قبل موعده'])),
+        : [`${whenAr(s.startsAt)} — ${s.title} · رابطه في `, { text: 'صفحة رحلتك', href: input.pageUrl }, ' قبل موعده'])),
     },
   ]
   if (sessions.some((s) => s.join?.personal)) {
-    blocks.push({ kind: 'p', text: 'الروابطُ لك وحدَك — دخولُك بها يُسجِّل حضورَك، فلا تشاركها.' })
+    blocks.push({ kind: 'p', text: 'الروابط لك وحدك — دخولك بها يسجّل حضورك، فلا تشاركها.' })
   }
-  blocks.push({ kind: 'note', text: 'أُرفق ملفُّ تقويمٍ فيه اللقاءاتُ كلُّها: افتحه تُضَف إلى تقويمك. وما تغيّر منها بعدُ تصلك دعوتُه وحدَه.' })
+  blocks.push({ kind: 'note', text: 'أرفق ملفّ تقويم فيه اللقاءات كلّها: افتحه تضف إلى تقويمك. وما تغيّر منها بعد تصلك دعوته وحده.' })
 
   const { text, html } = renderMail({
     ...(input.to.name ? { greetingName: input.to.name } : {}),
-    heading: `لقاءاتُك المباشرة في «${input.cohortTitle}»`,
-    preheader: first ? `${count} — أوّلُها ${whenAr(first.startsAt)} بتوقيت عمّان` : count,
+    heading: `لقاءاتك المباشرة في «${input.cohortTitle}»`,
+    preheader: first ? `${count} — أوّلها ${whenAr(first.startsAt)} بتوقيت عمّان` : count,
     blocks,
   })
 
   return {
-    subject: `مواعيدُ لقاءاتك في «${input.cohortTitle}» — ${count}`,
+    subject: `مواعيد لقاءاتك في «${input.cohortTitle}» — ${count}`,
     text, html,
     ics: buildIcsBundle(sessions.map((s) => sessionEvent(s, input.cohortTitle, s.join, input.pageUrl, now)), now),
     icsMethod: 'PUBLISH',

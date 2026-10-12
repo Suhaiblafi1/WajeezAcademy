@@ -83,8 +83,8 @@ export class StaffInboxService {
     const myTaskCount = await this.prisma.staffTask.count({ where: { assigneeId: userId, status: 'open' } })
     push({
       key: 'my_tasks',
-      titleAr: 'مهامٌّ أُسندت إليك',
-      whyAr: 'أسندها إليك زميلٌ باسمك',
+      titleAr: 'مهامّ أسندت إليك',
+      whyAr: 'أسندها إليك زميل باسمك',
       count: myTaskCount,
       href: '/admin/tasks',
       severity: myTasks.some((t) => t.dueAt && t.dueAt < now) ? 'urgent' : 'attention',
@@ -102,8 +102,8 @@ export class StaffInboxService {
       })
       push({
         key: 'reschedules',
-        titleAr: 'اقتراحاتُ تأجيلٍ تنتظر قرارك',
-        whyAr: 'الموعدُ لا يتغيّر عند المتعلّمين حتّى تعتمده',
+        titleAr: 'اقتراحات تأجيل تنتظر قرارك',
+        whyAr: 'الموعد لا يتغيّر عند المتعلّمين حتّى تعتمده',
         count: await this.prisma.sessionRescheduleRequest.count({ where: { status: 'pending' } }),
         href: '/admin/cohorts',
         severity: 'urgent',
@@ -127,8 +127,8 @@ export class StaffInboxService {
       const blocked = soon.filter((s) => s.zoom === null || s.cohort.trainers.length === 0)
       push({
         key: 'sessions_at_risk',
-        titleAr: 'جلساتٌ هذا الأسبوع بلا مدرّبٍ أو بلا رابط',
-        whyAr: 'المتعلّمُ يفتح الجلسةَ في وقتها فلا يجد شيئا',
+        titleAr: 'جلسات هذا الأسبوع بلا مدرّب أو بلا رابط',
+        whyAr: 'المتعلّم يفتح الجلسة في وقتها فلا يجد شيئا',
         count: blocked.length,
         href: '/admin/cohorts',
         severity: 'urgent',
@@ -145,8 +145,8 @@ export class StaffInboxService {
       })
       push({
         key: 'cohorts_unpriced',
-        titleAr: 'شعبٌ مفتوحةٌ بلا سعر',
-        whyAr: 'تُعرض للتسجيل ولا يمكن إصدارُ فاتورتها',
+        titleAr: 'شعب مفتوحة بلا سعر',
+        whyAr: 'تعرض للتسجيل ولا يمكن إصدار فاتورتها',
         count: unpriced,
         href: '/admin/cohorts',
         severity: 'attention',
@@ -166,8 +166,8 @@ export class StaffInboxService {
       const pending = await this.prisma.enrollmentRequest.count({ where: { status: 'pending' } })
       push({
         key: 'enrollment_requests',
-        titleAr: 'طلباتُ تسجيلٍ تنتظر مراجعة',
-        whyAr: 'مقعدٌ محجوزٌ لا يُثبَّت حتّى تُراجَع',
+        titleAr: 'طلبات تسجيل تنتظر مراجعة',
+        whyAr: 'مقعد محجوز لا يثبّت حتّى تراجع',
         count: pending,
         href: '/admin/exceptions',
         severity: 'attention',
@@ -184,14 +184,14 @@ export class StaffInboxService {
         select: { kind: true, user: { select: { displayName: true } } },
       })
       const KIND_AR: Record<string, string> = {
-        course_certificate: 'شهادةُ دورة',
-        pathway_certificate: 'شهادةُ مسار',
+        course_certificate: 'شهادة دورة',
+        pathway_certificate: 'شهادة مسار',
         recommendation: 'توصية',
       }
       push({
         key: 'learner_requests',
-        titleAr: 'طلباتُ متعلّمين: شهادةٌ أو توصية',
-        whyAr: 'المتعلّمُ أنهى ويطلب ما يُثبته',
+        titleAr: 'طلبات متعلّمين: شهادة أو توصية',
+        whyAr: 'المتعلّم أنهى ويطلب ما يثبته',
         count: await this.prisma.learnerRequest.count({ where: { status: { in: ['pending', 'in_review'] } } }),
         href: '/admin/learner-requests',
         severity: 'attention',
@@ -206,8 +206,8 @@ export class StaffInboxService {
       })
       push({
         key: 'trainer_applications',
-        titleAr: 'طلباتُ انضمامٍ في مرحلةٍ تنتظرك',
-        whyAr: 'كلُّ يومٍ انتظارٍ يخسّرنا مدرّبا جيّدا',
+        titleAr: 'طلبات انضمام في مرحلة تنتظرك',
+        whyAr: 'كلّ يوم انتظار يخسّرنا مدرّبا جيّدا',
         count: waiting,
         href: '/admin/trainers',
         severity: 'info',
@@ -233,8 +233,8 @@ export class StaffInboxService {
       })
       push({
         key: 'cohort_plans',
-        titleAr: 'خططُ شعبٍ تنتظر اعتمادك',
-        whyAr: 'لا يُفتح تسجيلُ الشعبة قبلها — ومدرّبُ الإعداد لا يُفعَّل حتّى تُعتمَد خططُه',
+        titleAr: 'خطط شعب تنتظر اعتمادك',
+        whyAr: 'لا يفتح تسجيل الشعبة قبلها — ومدرّب الإعداد لا يفعّل حتّى تعتمد خططه',
         count: await this.prisma.cohortDeliveryPlan.count({ where: PENDING_PLAN_WHERE }),
         href: '/admin/pending-plans',
         severity: 'attention',
@@ -247,8 +247,8 @@ export class StaffInboxService {
       const pending = await this.prisma.advisorRequest.count({ where: { status: 'pending' } })
       push({
         key: 'advisor_requests',
-        titleAr: 'طلباتُ مستشارين: خصمٌ أو تعديلُ خطّة',
-        whyAr: 'المستشارُ وعد المتعلّمَ بجوابٍ منك',
+        titleAr: 'طلبات مستشارين: خصم أو تعديل خطّة',
+        whyAr: 'المستشار وعد المتعلّم بجواب منك',
         count: pending,
         href: '/admin/advisor-requests',
         severity: 'attention',
@@ -261,8 +261,8 @@ export class StaffInboxService {
       const pending = await this.prisma.rating.count({ where: { publishStatus: 'pending', commentAr: { not: null } } })
       push({
         key: 'ratings',
-        titleAr: 'تعليقاتُ تقييمٍ تنتظر مراجعة',
-        whyAr: 'لا يُنشر تعليقٌ قبل قراءته',
+        titleAr: 'تعليقات تقييم تنتظر مراجعة',
+        whyAr: 'لا ينشر تعليق قبل قراءته',
         count: pending,
         href: '/admin/ratings',
         severity: 'info',
@@ -281,8 +281,8 @@ export class StaffInboxService {
       })
       push({
         key: 'support',
-        titleAr: 'تذاكرُ دعمٍ مفتوحة',
-        whyAr: 'سؤالٌ بلا جوابٍ يصير شكوى',
+        titleAr: 'تذاكر دعم مفتوحة',
+        whyAr: 'سؤال بلا جواب يصير شكوى',
         count: open,
         href: '/admin/support',
         severity: rows.some((t) => t.priority === 'urgent') ? 'urgent' : 'attention',
@@ -296,8 +296,8 @@ export class StaffInboxService {
       const failed = await this.prisma.notification.count({ where: { status: 'failed' } })
       push({
         key: 'failed_notifications',
-        titleAr: 'إشعاراتٌ فشل إرسالها',
-        whyAr: 'المنصّةُ وعدت بإعلامٍ لم يصل',
+        titleAr: 'إشعارات فشل إرسالها',
+        whyAr: 'المنصّة وعدت بإعلام لم يصل',
         count: failed,
         href: '/admin/notifications',
         severity: 'attention',
@@ -310,8 +310,8 @@ export class StaffInboxService {
       const inReview = await this.prisma.contentChangeRequest.count({ where: { status: 'in_review' } })
       push({
         key: 'content_review',
-        titleAr: 'تغييراتُ محتوًى تنتظر مراجعة',
-        whyAr: 'كاتبٌ ينتظر مراجعا — والنشرُ محكوم',
+        titleAr: 'تغييرات محتوى تنتظر مراجعة',
+        whyAr: 'كاتب ينتظر مراجعا — والنشر محكوم',
         count: inReview,
         href: '/admin/publishing',
         severity: 'info',

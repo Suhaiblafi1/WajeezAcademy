@@ -68,7 +68,7 @@ export function registerTrainerApplicationRoutes(app: FastifyInstance, prisma: P
   app.post('/api/v1/trainer-applications', {
     /* الكلمةُ هنا تُقارَن بكلمة حسابٍ قائم إن وُجد — فالحدُّ حدُّ الدخول */
     config: { rateLimit: { max: 10, timeWindow: '15 minutes' } },
-    schema: { tags: ['trainer-applications'], summary: 'القسم الأوّل — ينشئ الطلبَ مسودّةً وحسابَ المتقدّم' },
+    schema: { tags: ['trainer-applications'], summary: 'القسم الأوّل — ينشئ الطلب مسودّة وحساب المتقدّم' },
   }, async (req, reply) => {
     assertNotBot(req.body)
     const body = z.object({
@@ -175,12 +175,12 @@ export function registerTrainerApplicationRoutes(app: FastifyInstance, prisma: P
 
   app.post('/api/v1/trainer-applications/mine/resume', {
     preHandler: requirePermission('trainer.application.own'),
-    schema: { tags: ['trainer-applications'], summary: 'مفتاح استئناف الطلب لصاحب الحساب — يُبدَّل رمز المتابعة' },
+    schema: { tags: ['trainer-applications'], summary: 'مفتاح استئناف الطلب لصاحب الحساب — يبدّل رمز المتابعة' },
   }, async (req) => svc.resumeAccess(req.auth!.userId))
 
   app.post('/api/v1/trainer-applications/mine/withdraw', {
     preHandler: requirePermission('trainer.application.own'),
-    schema: { tags: ['trainer-applications'], summary: 'سحب صاحب الحساب طلبَه' },
+    schema: { tags: ['trainer-applications'], summary: 'سحب صاحب الحساب طلبه' },
   }, async (req) => {
     const body = z.object({ reason: z.string().max(500).optional() }).parse(req.body ?? {})
     await svc.withdrawMine(req.auth!.userId, body.reason)
@@ -188,7 +188,7 @@ export function registerTrainerApplicationRoutes(app: FastifyInstance, prisma: P
   })
 
   app.post('/api/v1/trainer-applications/:reference/phase-2', {
-    schema: { tags: ['trainer-applications'], summary: 'القسم الأخير — يُكمل الطلب ويُرسل بريد التأكيد' },
+    schema: { tags: ['trainer-applications'], summary: 'القسم الأخير — يكمل الطلب ويرسل بريد التأكيد' },
   }, async (req) => {
     const { reference } = z.object({ reference: z.string().min(5) }).parse(req.params)
     const body = z.object({
@@ -306,7 +306,7 @@ export function registerTrainerApplicationRoutes(app: FastifyInstance, prisma: P
       const sniffed = sniffImageMime(buffer)
       if (!sniffed) {
         return reply.status(415).send({
-          error: { code: 'not_an_image', message_ar: 'الملفُّ ليس صورةً — JPEG أو PNG أو WebP' },
+          error: { code: 'not_an_image', message_ar: 'الملفّ ليس صورة — JPEG أو PNG أو WebP' },
         })
       }
       /* والنوعُ المخزَّنُ ما ثبت من البايتات، لا ما قيل عنها */
@@ -338,7 +338,7 @@ export function registerTrainerApplicationRoutes(app: FastifyInstance, prisma: P
     sub.removeAllContentTypeParsers()
     sub.addContentTypeParser('*', (_req, payload, done) => done(null, payload))
     sub.put('/api/v1/uploads/:storageKey/stream', {
-      schema: { tags: ['trainer-applications'], summary: 'رفعُ تسجيلٍ كبيرٍ بثّا إلى القرص عبر رابطٍ موقَّع — داخلي' },
+      schema: { tags: ['trainer-applications'], summary: 'رفع تسجيل كبير بثّا إلى القرص عبر رابط موقّع — داخلي' },
     }, async (req, reply) => {
       const { storageKey } = z.object({ storageKey: z.string().min(10) }).parse(req.params)
       const { exp, sig } = z.object({ exp: z.coerce.number(), sig: z.string() }).parse(req.query)
@@ -348,7 +348,7 @@ export function registerTrainerApplicationRoutes(app: FastifyInstance, prisma: P
       const owner = await resolveStorageOwner(prisma, storageKey)
       if (!owner) return reply.status(404).send({ error: { code: 'not_found', message_ar: 'الملف غير مسجل' } })
       if (!owner.streamMaxBytes) {
-        return reply.status(415).send({ error: { code: 'not_streamable', message_ar: 'هذا الملفُّ يُرفع من مساره العاديّ' } })
+        return reply.status(415).send({ error: { code: 'not_streamable', message_ar: 'هذا الملفّ يرفع من مساره العاديّ' } })
       }
       const declared = Number(req.headers['content-length'] ?? 0)
       if (declared > owner.streamMaxBytes) {
@@ -407,7 +407,7 @@ export function registerTrainerApplicationRoutes(app: FastifyInstance, prisma: P
      فمدرّبٌ لم يُعتمد نشرُه، أو أُوقف، تختفي صورتُه في اللحظة نفسِها التي
      يختفي فيها اسمُه. ومفتاحُ المخزن عشوائيٌّ بـ٢٤ بايتا، فلا يُخمَّن. */
   app.get('/api/v1/trainer-photos/:storageKey', {
-    schema: { tags: ['public'], summary: 'صورةُ مدرّبٍ معتمَدِ النشر — بلا توقيع، وتختفي بإخفائه' },
+    schema: { tags: ['public'], summary: 'صورة مدرّب معتمد النشر — بلا توقيع، وتختفي بإخفائه' },
   }, async (req, reply) => {
     const { storageKey } = z.object({ storageKey: z.string().min(10) }).parse(req.params)
     assertSafeKey(storageKey)

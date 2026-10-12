@@ -34,13 +34,13 @@ export class TermService {
   /** إنشاءُ فصلٍ بحدوده المحسوبة — لا تُكتب التواريخُ باليد فتفترق عن الموسم */
   async create(actorId: string, input: { year: number; season: string }) {
     if (!(TRAINING_SEASON_VALUES as readonly string[]).includes(input.season)) {
-      throw new AuthError('bad_season', 'موسمٌ غير معروف — المواسمُ أربعة', 400)
+      throw new AuthError('bad_season', 'موسم غير معروف — المواسم أربعة', 400)
     }
     const season = input.season as TrainingSeason
     const existing = await this.prisma.term.findUnique({
       where: { year_season: { year: input.year, season } },
     })
-    if (existing) throw new AuthError('term_exists', 'هذا الفصلُ موجودٌ بالفعل', 409)
+    if (existing) throw new AuthError('term_exists', 'هذا الفصل موجود بالفعل', 409)
 
     const { startsOn, endsOn } = termBounds(input.year, season)
     const term = await this.prisma.term.create({
@@ -63,9 +63,9 @@ export class TermService {
     const term = await this.prisma.term.findUnique({
       where: { id }, include: { _count: { select: { cohorts: true } } },
     })
-    if (!term) throw new AuthError('term_not_found', 'الفصلُ غيرُ موجود', 404)
-    if (term.calendarPublishedAt) throw new AuthError('term_published', 'فصلٌ نُشر تقويمُه لا يُحذف — رآه الزائر', 409)
-    if (term._count.cohorts > 0) throw new AuthError('term_has_cohorts', `في الفصل ${term._count.cohorts} شعبة — انقلها أو ألغِها أوّلا`, 409)
+    if (!term) throw new AuthError('term_not_found', 'الفصل غير موجود', 404)
+    if (term.calendarPublishedAt) throw new AuthError('term_published', 'فصل نشر تقويمه لا يحذف — رآه الزائر', 409)
+    if (term._count.cohorts > 0) throw new AuthError('term_has_cohorts', `في الفصل ${term._count.cohorts} شعبة — انقلها أو ألغها أوّلا`, 409)
     await this.prisma.term.delete({ where: { id } })
     await recordAudit(this.prisma, {
       actorId, action: 'term.delete', entityType: 'term', entityId: id,
@@ -87,17 +87,17 @@ export class TermService {
     const term = await this.prisma.term.findUnique({
       where: { id }, include: { _count: { select: { cohorts: true } } },
     })
-    if (!term) throw new AuthError('term_not_found', 'الفصلُ غيرُ موجود', 404)
+    if (!term) throw new AuthError('term_not_found', 'الفصل غير موجود', 404)
     if (term.status === to) return term
     if (!canMove(term.status, to)) {
       const fromAr = TERM_STATUS_AR[term.status as TermStatus] ?? term.status
       const toAr = TERM_STATUS_AR[to as TermStatus] ?? to
-      throw new AuthError('bad_transition', `لا يُنقل فصلٌ «${fromAr}» إلى «${toAr}»`, 409)
+      throw new AuthError('bad_transition', `لا ينقل فصل «${fromAr}» إلى «${toAr}»`, 409)
     }
     if (to === 'cancelled' && term._count.cohorts > 0) {
       throw new AuthError(
         'term_has_cohorts',
-        `في الفصل ${term._count.cohorts} شعبة — انقلها إلى فصلٍ آخرَ أو ألغِها أوّلا`,
+        `في الفصل ${term._count.cohorts} شعبة — انقلها إلى فصل آخر أو ألغها أوّلا`,
         409,
       )
     }
@@ -133,7 +133,7 @@ export class TermService {
       .filter((x): x is { term: (typeof live)[number]; to: TermStatus } => x.to !== null)
       .map(({ term, to }) => ({
         termId: term.id, titleAr: term.titleAr, from: term.status, to,
-        reason: to === 'closed' ? 'مضت أشهرُه' : 'بلغ أوّلَ أشهره',
+        reason: to === 'closed' ? 'مضت أشهره' : 'بلغ أوّل أشهره',
       }))
     if (options.apply !== true) return { applied: false, changed: 0, changes }
 
@@ -157,7 +157,7 @@ export class TermService {
     termId: string, actorId: string, input: { opensAt: Date | null; closesAt: Date | null },
   ) {
     if (input.opensAt && input.closesAt && input.closesAt <= input.opensAt) {
-      throw new AuthError('bad_window', 'إغلاقُ التسجيل قبل فتحه — راجع التاريخين', 400)
+      throw new AuthError('bad_window', 'إغلاق التسجيل قبل فتحه — راجع التاريخين', 400)
     }
     const term = await this.prisma.term.update({
       where: { id: termId },

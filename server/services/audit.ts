@@ -16,7 +16,7 @@ function sanitize(value: unknown, depth = 0): unknown {
   if (typeof value === 'object') {
     const out: Record<string, unknown> = {}
     for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
-      out[k] = FORBIDDEN_KEYS.test(k) ? '[محذوف — بيانات حساسة لا تُسجل]' : sanitize(v, depth + 1)
+      out[k] = FORBIDDEN_KEYS.test(k) ? '[محذوف — بيانات حساسة لا تسجل]' : sanitize(v, depth + 1)
     }
     return out
   }

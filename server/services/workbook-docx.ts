@@ -287,7 +287,7 @@ function cover(logo: Buffer, { kind, title, sub, facts }: { kind: string; title:
     table(facts.map(factRow), [2400, W - 2400]),
     gap(560),
     table([new TableRow({ children: [
-      cell([P([run('هذه الكرّاسةُ لـ', { bold: true, color: C.ink })], { spacing: { after: 0 } })], 2400),
+      cell([P([run('هذه الكرّاسة لـ', { bold: true, color: C.ink })], { spacing: { after: 0 } })], 2400),
       cell([P('', { spacing: { after: 0 } })], W - 2400, { borders: { top: NONE, left: NONE, right: NONE, bottom: nameB } }),
     ] })], [2400, W - 2400]),
   ]
@@ -300,19 +300,19 @@ function trainerPage(extra: [string, string], filled: boolean): FileChild[] {
   return [
     box([
       P([run('قبل أن تكتب — للمدرّب', { bold: true, size: 34, color: C.goldInk })], { spacing: { after: 80 } }),
-      P([run('هذه الصفحةُ لك وحدَك: اقرأها ثمّ احذفها، واحذف الصناديقَ الصفراءَ كلَّها، قبل أن تحفظ الكرّاسةَ PDF.', { color: C.goldInk })],
+      P([run('هذه الصفحة لك وحدك: اقرأها ثمّ احذفها، واحذف الصناديق الصفراء كلّها، قبل أن تحفظ الكرّاسة PDF.', { color: C.goldInk })],
         { spacing: { after: 240 } }),
       ...numberedList([
-        ...(filled ? [pt('ملأناها لك من خطّتك.', 'اسمُ الدورة ومدّتُها ومحاورُها ومواعيدُها، وما يخرج به المتعلّمُ من كلّ محور، ومحتواه النظريُّ وتطبيقُه ومصادرُه — كما حفظتها في المنصّة لحظةَ التنزيل. راجِعها، وأكمِل ما بقي بين قوسين.')] : []),
-        pt('ما بين قوسين اكتب مكانَه.', 'كلُّ نصٍّ [ هكذا ] مكانٌ لكلامك: ظلِّله من القوس إلى القوس واكتب فوقه، فيأخذ كلامُك شكلَه.'),
-        pt('الشكلُ واحدٌ في كرّاسات وجيز كلِّها.', 'لا تغيّر الخطَّ ولا الألوانَ ولا ترتيبَ الأقسام — بها يعرف المتعلّمُ طريقَه في كلّ دورة. وزِد ما شئت داخلَ الأقسام: صورا وجداولَ ونماذج.'),
+        ...(filled ? [pt('ملأناها لك من خطّتك.', 'اسم الدورة ومدّتها ومحاورها ومواعيدها، وما يخرج به المتعلّم من كلّ محور، ومحتواه النظريّ وتطبيقه ومصادره — كما حفظتها في المنصّة لحظة التنزيل. راجعها، وأكمل ما بقي بين قوسين.')] : []),
+        pt('ما بين قوسين اكتب مكانه.', 'كلّ نصّ [ هكذا ] مكان لكلامك: ظلّله من القوس إلى القوس واكتب فوقه، فيأخذ كلامك شكله.'),
+        pt('الشكل واحد في كرّاسات وجيز كلّها.', 'لا تغيّر الخطّ ولا الألوان ولا ترتيب الأقسام — بها يعرف المتعلّم طريقه في كلّ دورة. وزد ما شئت داخل الأقسام: صورا وجداول ونماذج.'),
         /* وما يكتبه على القالب له (٧ أكتوبر ٢٠٢٦) — النصُّ نفسُه الذي بجانب القالب في المنصّة */
         pt(`${WORKBOOK_RIGHTS_AR.title}.`, WORKBOOK_RIGHTS_AR.body),
-        pt('اكتب لمن يقرأ وحدَه.', 'جملٌ قصيرة، ومثالٌ من عمل المتعلّم لا من كتاب، والمصطلحُ الإنجليزيُّ بين قوسين أوّلَ مرّةٍ فقط.'),
-        pt('الكرّاسةُ للعمل لا للقراءة وحدَها.', 'في كلّ محورٍ ما يملؤه المتعلّم: جدولٌ يعمل عليه، ومساحةٌ يكتب فيها، فيفتحها في اللقاء وبعده.'),
+        pt('اكتب لمن يقرأ وحده.', 'جمل قصيرة، ومثال من عمل المتعلّم لا من كتاب، والمصطلح الإنجليزيّ بين قوسين أوّل مرّة فقط.'),
+        pt('الكرّاسة للعمل لا للقراءة وحدها.', 'في كلّ محور ما يملؤه المتعلّم: جدول يعمل عليه، ومساحة يكتب فيها، فيفتحها في اللقاء وبعده.'),
         pt(extra[0], extra[1]),
-        pt('احفظها PDF وارفعها.', 'من «ملف» اختر «حفظ باسم» ثمّ PDF، وارفعها في الخطوة الثالثة «الكرّاسة» في مساحة شعبتك. والمنصّةُ تقبل PDF وحدَه: يُفتح في الصفحة على أيّ جهاز، ولا يتغيّر شكلُه.'),
-        pt('الخطّ.', 'الكرّاسةُ بخطّ IBM Plex Sans Arabic، وهو مضمَّنٌ فيها. فإن ظهر لك خطٌّ غيرُه فثبّته مجّانا من fonts.google.com ثمّ أعد فتحها.'),
+        pt('احفظها PDF وارفعها.', 'من «ملف» اختر «حفظ باسم» ثمّ PDF، وارفعها في الخطوة الثالثة «الكرّاسة» في مساحة شعبتك. والمنصّة تقبل PDF وحده: يفتح في الصفحة على أيّ جهاز، ولا يتغيّر شكله.'),
+        pt('الخطّ.', 'الكرّاسة بخطّ IBM Plex Sans Arabic، وهو مضمّن فيها. فإن ظهر لك خطّ غيره فثبّته مجّانا من fonts.google.com ثمّ أعد فتحها.'),
       ]),
     ], { fill: C.goldTint, border: C.gold }),
   ]
@@ -324,9 +324,9 @@ const howTo = (): FileChild[] => [
   box([
     P([run('كيف تستعمل هذه الكرّاسة', { bold: true, size: 24, color: C.ink })], { spacing: { after: 100 } }),
     ...numberedList([
-      'اقرأ «الأفكارَ الأساسيّة» قبل اللقاء المباشر.',
-      'احملها إلى اللقاء: فيه نحلّ المثالَ معا ونبدأ التمرين.',
-      'أكمل التمرينَ وأسئلةَ التأمّل بعد اللقاء — وعليها تبني مهمّةَ المحور.',
+      'اقرأ «الأفكار الأساسيّة» قبل اللقاء المباشر.',
+      'احملها إلى اللقاء: فيه نحلّ المثال معا ونبدأ التمرين.',
+      'أكمل التمرين وأسئلة التأمّل بعد اللقاء — وعليها تبني مهمّة المحور.',
     ]),
   ], { fill: C.tealTint, border: C.tealTint }),
 ]
@@ -352,9 +352,9 @@ function grid(cols: string[], rows: (string | Paragraph[])[][], { keepWithNext =
 
 function moduleBlock(m: WorkbookModuleFill, { breakBefore = false }: { breakBefore?: boolean } = {}): FileChild[] {
   const idea = (k: string): FileChild[] => [
-    P([run(`${k} · `, { bold: true, color: C.deep }), run('[عنوانُ الفكرة في سطرٍ واحد]', { bold: true })], { spacing: { before: 160, after: 60 }, keepNext: true }),
-    P('[اشرحها في ثلاثة أسطرٍ أو أربعة، بلغةِ من يقرأ وحدَه.]'),
-    P([run('في عملك: ', { bold: true, color: C.ink }), run('[أين يلقاها المتعلّمُ في يومه.]')]),
+    P([run(`${k} · `, { bold: true, color: C.deep }), run('[عنوان الفكرة في سطر واحد]', { bold: true })], { spacing: { before: 160, after: 60 }, keepNext: true }),
+    P('[اشرحها في ثلاثة أسطر أو أربعة، بلغة من يقرأ وحده.]'),
+    P([run('في عملك: ', { bold: true, color: C.ink }), run('[أين يلقاها المتعلّم في يومه.]')]),
   ]
   const exRow = (k: string, children: Paragraph[]) =>
     new TableRow({ cantSplit: true, children: [
@@ -372,40 +372,40 @@ function moduleBlock(m: WorkbookModuleFill, { breakBefore = false }: { breakBefo
     ? m.resources.map((r) => [
         [P(r.title, { spacing: { after: r.url ? 40 : 0 }, keepNext: true }),
           ...(r.url ? [new Paragraph({ alignment: AlignmentType.LEFT, spacing: { after: 0 }, children: [new TextRun({ text: r.url, font: FONT, size: 16, color: C.muted })] })] : [])],
-        r.kindAr, '[سطرٌ واحد]',
+        r.kindAr, '[سطر واحد]',
       ])
-    : [['[اسمُ المصدر ورابطُه]', '[قراءة / فيديو / أداة]', '[سطرٌ واحد]'], ['[…]', '[…]', '[…]'], ['[…]', '[…]', '[…]']]
+    : [['[اسم المصدر ورابطه]', '[قراءة / فيديو / أداة]', '[سطر واحد]'], ['[…]', '[…]', '[…]'], ['[…]', '[…]', '[…]']]
   return [
     label(`المحور ${AR(m.n)}`, { pageBreakBefore: breakBefore }),
-    h1(v(m.title, '[اسمُ المحور]')),
+    h1(v(m.title, '[اسم المحور]')),
     P([run('الموعد: ', { bold: true, color: C.ink }), run(v(rangeAr(m), '[من … إلى …]')), run('   ·   ', { color: C.muted }),
-      run('اللقاءُ المباشر: ', { bold: true, color: C.ink }), run(v(m.liveAr, '[اليومُ والساعة]'))], { spacing: { after: 200 } }),
+      run('اللقاء المباشر: ', { bold: true, color: C.ink }), run(v(m.liveAr, '[اليوم والساعة]'))], { spacing: { after: 200 } }),
 
     h2('١', 'ما ستخرج به'),
     box([
       P([run('في آخر هذا المحور تستطيع أن:', { bold: true, color: C.ink })], { spacing: { after: 80 } }),
       ...(m.outcome?.trim()
-        ? [bullet(m.outcome.trim()), bullet('[فعلٌ آخرُ — إن كان]', { spacing: { after: 0 } })]
-        : [bullet('[فعلٌ يُرى ويُقاس — مثلا: تكتب مذكّرةَ تحضيرٍ لتفاوضٍ قادم]'), bullet('[الفعلُ الثاني]'),
-            bullet('[الفعلُ الثالث — إن كان]', { spacing: { after: 0 } })]),
+        ? [bullet(m.outcome.trim()), bullet('[فعل آخر — إن كان]', { spacing: { after: 0 } })]
+        : [bullet('[فعل يرى ويقاس — مثلا: تكتب مذكّرة تحضير لتفاوض قادم]'), bullet('[الفعل الثاني]'),
+            bullet('[الفعل الثالث — إن كان]', { spacing: { after: 0 } })]),
     ], { fill: C.tealTint, border: C.tealTint }),
-    ...note('اكتب ما يستطيع المتعلّمُ أن يفعله، لا ما سيعرفه: «تكتب مذكّرةَ تحضير» لا «يفهم التفاوض». وأوّلُها جملةُ «ما يخرج به» التي كتبتها لهذا المحور في المنصّة.'),
+    ...note('اكتب ما يستطيع المتعلّم أن يفعله، لا ما سيعرفه: «تكتب مذكّرة تحضير» لا «يفهم التفاوض». وأوّلها جملة «ما يخرج به» التي كتبتها لهذا المحور في المنصّة.'),
 
-    h2('٢', 'الأفكارُ الأساسيّة'),
+    h2('٢', 'الأفكار الأساسيّة'),
     ...(body.length > 0
-      ? [...note('هذا محتواك النظريُّ كما كتبته في المنصّة. قسّمه إلى ثلاث أفكارٍ إلى خمس، لكلٍّ عنوانُها وسطرُ «في عملك»، واحذف ما لا يستعمله التمرين.'), ...body]
-      : [...note('من ثلاث أفكارٍ إلى خمس، لكلٍّ عنوانُها. والفكرةُ التي لا يستعملها التمرينُ لا مكانَ لها هنا.'), ...idea('١'), ...idea('٢'), ...idea('٣')]),
+      ? [...note('هذا محتواك النظريّ كما كتبته في المنصّة. قسّمه إلى ثلاث أفكار إلى خمس، لكلّ عنوانها وسطر «في عملك»، واحذف ما لا يستعمله التمرين.'), ...body]
+      : [...note('من ثلاث أفكار إلى خمس، لكلّ عنوانها. والفكرة التي لا يستعملها التمرين لا مكان لها هنا.'), ...idea('١'), ...idea('٢'), ...idea('٣')]),
 
-    h2('٣', 'مثالٌ محلول'),
+    h2('٣', 'مثال محلول'),
     table([
-      exRow('الموقف', [P('[صِف الموقفَ في سطرين: من، وماذا يريد، وما الذي يعيقه.]', { spacing: { after: 0 } })]),
-      exRow('الحلُّ خطوةً خطوة', numberedList(['[الخطوةُ الأولى]', '[الثانية]', '[الثالثة]'])),
-      exRow('النتيجة', [P('[ما الذي تحقّق — برقمٍ إن أمكن.]', { spacing: { after: 0 } })]),
-      exRow('لماذا نجح', [P('[الفكرةُ من «الأفكار الأساسيّة» التي صنعت الفرق.]', { spacing: { after: 0 } })]),
+      exRow('الموقف', [P('[صف الموقف في سطرين: من، وماذا يريد، وما الذي يعيقه.]', { spacing: { after: 0 } })]),
+      exRow('الحلّ خطوة خطوة', numberedList(['[الخطوة الأولى]', '[الثانية]', '[الثالثة]'])),
+      exRow('النتيجة', [P('[ما الذي تحقّق — برقم إن أمكن.]', { spacing: { after: 0 } })]),
+      exRow('لماذا نجح', [P('[الفكرة من «الأفكار الأساسيّة» التي صنعت الفرق.]', { spacing: { after: 0 } })]),
     ], [2200, W - 2200]),
-    ...note('موقفٌ واقعيٌّ من سوق المتعلّم وبيئة عمله، محلولٌ خطوةً خطوة — وهو ما تحلّونه معا في اللقاء.'),
+    ...note('موقف واقعيّ من سوق المتعلّم وبيئة عمله، محلول خطوة خطوة — وهو ما تحلّونه معا في اللقاء.'),
 
-    h2('٤', 'تمرينٌ عمليّ'),
+    h2('٤', 'تمرين عمليّ'),
     P([run('المدّة: ', { bold: true, color: C.ink }), run('[٢٠ دقيقة]'), run('   ·   ', { color: C.muted }), run('[فرديّ / في مجموعة]')]),
     P([run('المطلوب:', { bold: true, color: C.ink })], { spacing: { after: 60 }, keepNext: true }),
     ...(m.activity?.trim()
@@ -413,18 +413,18 @@ function moduleBlock(m: WorkbookModuleFill, { breakBefore = false }: { breakBefo
       : numberedList(['[اختر موقفا من عملك …]', '[طبّق عليه …]', '[اكتب ما خرجت به في الجدول.]'])),
     ...(m.artifact?.trim() ? [P([run('ما تسلّمه: ', { bold: true, color: C.ink }), ...inlineRuns(m.artifact.trim())])] : []),
     gap(80),
-    grid(['[العمودُ الأوّل]', '[الثاني]', '[الثالث]'], [[], [], [], []]),
-    ...note('التمرينُ على موقفٍ من عمل المتعلّم نفسِه، وما يكتبه هنا يبني عليه مهمّةَ المحور في المنصّة. وغيّر أعمدةَ الجدول بما يحتاجه تمرينُك.'),
+    grid(['[العمود الأوّل]', '[الثاني]', '[الثالث]'], [[], [], [], []]),
+    ...note('التمرين على موقف من عمل المتعلّم نفسه، وما يكتبه هنا يبني عليه مهمّة المحور في المنصّة. وغيّر أعمدة الجدول بما يحتاجه تمرينك.'),
 
-    h2('٥', 'أسئلةٌ للتأمّل'),
-    ...question('١', '[سؤالٌ يربط الفكرةَ بعمله: أين …؟]'),
-    ...question('٢', '[سؤالٌ عمّا سيفعله بعد اللقاء: ما أوّلُ …؟]'),
-    ...question('٣', '[سؤالٌ عمّا يقيس به تقدّمَه: كيف ستعرف …؟]'),
-    ...note('أسئلةٌ لا جوابَ صحيحا لها — يكتب المتعلّمُ فيها عن نفسه.'),
+    h2('٥', 'أسئلة للتأمّل'),
+    ...question('١', '[سؤال يربط الفكرة بعمله: أين …؟]'),
+    ...question('٢', '[سؤال عمّا سيفعله بعد اللقاء: ما أوّل …؟]'),
+    ...question('٣', '[سؤال عمّا يقيس به تقدّمه: كيف ستعرف …؟]'),
+    ...note('أسئلة لا جواب صحيحا لها — يكتب المتعلّم فيها عن نفسه.'),
 
-    h2('٦', 'مصادرُ للاستزادة'),
-    grid(['المصدر', 'نوعُه', 'لماذا يستحقّ وقتَك'], resources, { keepWithNext: true }),
-    ...note('هي المصادرُ نفسُها التي تضيفها لهذا المحور في «المهامّ والمصادر» — اذكرها هنا ليجدها من يطبع الكرّاسة.', { tail: false }),
+    h2('٦', 'مصادر للاستزادة'),
+    grid(['المصدر', 'نوعه', 'لماذا يستحقّ وقتك'], resources, { keepWithNext: true }),
+    ...note('هي المصادر نفسها التي تضيفها لهذا المحور في «المهامّ والمصادر» — اذكرها هنا ليجدها من يطبع الكرّاسة.', { tail: false }),
   ]
 }
 
@@ -455,7 +455,7 @@ function document({ title, kind, regular, children }: { title: string; kind: str
   return new Document({
     creator: 'أكاديمية وجيز',
     title,
-    description: 'كرّاسة أكاديمية وجيز — تُملأ ثمّ تُحفظ PDF وتُرفع في مساحة الشعبة.',
+    description: 'كرّاسة أكاديمية وجيز — تملأ ثمّ تحفظ PDF وترفع في مساحة الشعبة.',
     fonts: [{ name: FONT, data: regular, characterSet: CharacterSet.ARABIC }],
     styles: {
       default: {
@@ -509,7 +509,7 @@ async function embedBold(buffer: Buffer, bold: Buffer): Promise<Buffer> {
     .replace(/w:fontKey="(\{[0-9a-fA-F-]+\})"/g, (_, k: string) => `w:fontKey="${k.toUpperCase()}"`)
   const withBold = fontTable.replace(/(<w:font w:name="IBM Plex Sans Arabic">[\s\S]*?<w:embedRegular [^>]*\/>)/,
     `$1<w:embedBold r:id="rIdWzBold" w:fontKey="${key}"/>`)
-  if (withBold === fontTable) throw new Error('لم يُعثر على الخطّ المضمَّن في fontTable.xml')
+  if (withBold === fontTable) throw new Error('لم يعثر على الخطّ المضمّن في fontTable.xml')
   zip.file('word/fontTable.xml', withBold)
   /* وبلا `embedTrueTypeFonts` يُسقط Word الخطَّ أوّلَ ما يحفظ المدرّبُ الملفّ.
      وموضعُه في المخطّط بعد `displayBackgroundShape` — وهو أوّلُ ما يكتبه `docx` */
@@ -553,84 +553,84 @@ export async function workbookDocx(fill: WorkbookFill, assets: WorkbookAssets = 
   let title: string
   let kind: string
   if (fill.kind === 'course') {
-    kind = 'كرّاسةُ الدورة'
-    title = filled ? `كرّاسةُ ${v(fill.courseTitle, 'الدورة')} — أكاديمية وجيز` : 'قالبُ كرّاسة الدورة — أكاديمية وجيز'
+    kind = 'كرّاسة الدورة'
+    title = filled ? `كرّاسة ${v(fill.courseTitle, 'الدورة')} — أكاديمية وجيز` : 'قالب كرّاسة الدورة — أكاديمية وجيز'
     const mapWidths = [1000, 4438, 2600, 1600]
     const headRow = new TableRow({ tableHeader: true, children: ['المحور', 'العنوان', 'الموعد', 'يبدأ في'].map((t, i) => cell(
       [P([run(t, { bold: true, color: C.white })], { alignment: AlignmentType.CENTER, spacing: { after: 0 } })], mapWidths[i],
       { borders: boxed, shading: { type: ShadingType.CLEAR, fill: C.deep, color: 'auto' } })) })
     const mapRow = (m: WorkbookModuleFill) => new TableRow({ children: [
       cell([P([run(AR(m.n), { bold: true, color: C.deep })], { alignment: AlignmentType.CENTER, spacing: { after: 0 } })], mapWidths[0], { borders: boxed }),
-      cell([P(v(m.title, '[اسمُ المحور]'), { spacing: { after: 0 } })], mapWidths[1], { borders: boxed }),
+      cell([P(v(m.title, '[اسم المحور]'), { spacing: { after: 0 } })], mapWidths[1], { borders: boxed }),
       cell([P(v(rangeAr(m), '[من … إلى …]'), { spacing: { after: 0 } })], mapWidths[2], { borders: boxed }),
       cell([P('[ص …]', { alignment: AlignmentType.CENTER, spacing: { after: 0 } })], mapWidths[3], { borders: boxed }),
     ] })
     const outcomes = fill.modules.map((m) => m.outcome?.trim()).filter((x): x is string => Boolean(x))
     children = [
-      ...cover(assets.logo, { kind, title: v(fill.courseTitle, '[اسمُ الدورة]'), sub: v(fill.cohortTitle, '[اسمُ الشعبة]'), facts: [
-        ['المدرّب', v(fill.trainerName, '[اسمُك كما يراه المتعلّم]')],
+      ...cover(assets.logo, { kind, title: v(fill.courseTitle, '[اسم الدورة]'), sub: v(fill.cohortTitle, '[اسم الشعبة]'), facts: [
+        ['المدرّب', v(fill.trainerName, '[اسمك كما يراه المتعلّم]')],
         ['المدّة', v(fill.periodAr, '[من … إلى …]')],
         ['المستوى', v(fill.levelAr, '[مبتدئ — متوسّط]')],
-        ['المحاور', filled ? AR(fill.modules.length) : '[عددُها]'],
+        ['المحاور', filled ? AR(fill.modules.length) : '[عددها]'],
       ] }),
       pageBreak(),
       ...trainerPage(filled
-        ? ['محورٌ في كلّ صفحةٍ جديدة.', `فيها محاورُك كلُّها (${AR(fill.modules.length)}) بترتيبها في خطّتك. ثمّ اكتب في «خريطة المحاور» صفحةَ بداية كلّ محور.`]
-        : ['محورٌ في كلّ صفحةٍ جديدة.', 'في القالب ثلاثةُ محاور. لمحورٍ زائدٍ انسخ قسمَ محورٍ كاملا — من «المحور» إلى «مصادرُ للاستزادة» — والصقه بعده، ولمحورٍ ناقصٍ احذف قسمَه. ثمّ اكتب في «خريطة المحاور» صفحةَ بداية كلّ محور.'],
+        ? ['محور في كلّ صفحة جديدة.', `فيها محاورك كلّها (${AR(fill.modules.length)}) بترتيبها في خطّتك. ثمّ اكتب في «خريطة المحاور» صفحة بداية كلّ محور.`]
+        : ['محور في كلّ صفحة جديدة.', 'في القالب ثلاثة محاور. لمحور زائد انسخ قسم محور كاملا — من «المحور» إلى «مصادر للاستزادة» — والصقه بعده، ولمحور ناقص احذف قسمه. ثمّ اكتب في «خريطة المحاور» صفحة بداية كلّ محور.'],
       filled),
       h1('قبل أن تبدأ', { pageBreakBefore: true }),
       label('عن الدورة', { spacing: { before: 200, after: 40 } }),
-      ...(fill.summaryAr?.trim() ? markdownParagraphs(fill.summaryAr) : [P('[نبذةُ الدورة في ثلاثة أسطر: لمن هي، وما المشكلةُ التي تحلّها.]')]),
+      ...(fill.summaryAr?.trim() ? markdownParagraphs(fill.summaryAr) : [P('[نبذة الدورة في ثلاثة أسطر: لمن هي، وما المشكلة التي تحلّها.]')]),
       label('ما ستخرج به من الدورة', { spacing: { before: 200, after: 80 } }),
       box(outcomes.length > 0
         ? [P([run('في آخر الدورة تستطيع أن:', { bold: true, color: C.ink })], { spacing: { after: 80 } }),
             ...outcomes.map((o, i) => bullet([run(o, { bold: true, color: C.ink })], i === outcomes.length - 1 ? { spacing: { after: 0 } } : {}))]
-        : [P([run('[جملةُ «ما يخرج به المتعلّم» التي كتبتها في المنصّة — مثلا: تخرج بخطّة تفاوضٍ مكتوبةٍ لموقفٍ حقيقيٍّ من عملك.]', { bold: true, color: C.ink })], { spacing: { after: 0 } })],
+        : [P([run('[جملة «ما يخرج به المتعلّم» التي كتبتها في المنصّة — مثلا: تخرج بخطّة تفاوض مكتوبة لموقف حقيقيّ من عملك.]', { bold: true, color: C.ink })], { spacing: { after: 0 } })],
       { fill: C.tealTint, border: C.tealTint }),
       gap(200),
       ...howTo(),
-      label('خريطةُ المحاور', { spacing: { before: 280, after: 80 } }),
+      label('خريطة المحاور', { spacing: { before: 280, after: 80 } }),
       table([headRow, ...fill.modules.map(mapRow)], mapWidths),
-      ...note('صفحةُ بداية كلّ محورٍ هي ما تكتبه — إن شئت — في المنصّة في «أين يبدأ كلُّ محور»، فيفتح المتعلّمُ الكرّاسةَ على محوره.', { tail: false }),
+      ...note('صفحة بداية كلّ محور هي ما تكتبه — إن شئت — في المنصّة في «أين يبدأ كلّ محور»، فيفتح المتعلّم الكرّاسة على محوره.', { tail: false }),
       ...fill.modules.flatMap((m) => moduleBlock(m, { breakBefore: true })),
-      h1('مشروعُ التخرّج', { pageBreakBefore: true }),
+      h1('مشروع التخرّج', { pageBreakBefore: true }),
       label('ما تسلّمه في آخر الدورة', { spacing: { before: 200, after: 80 } }),
       box(fill.project
         ? [P([run(fill.project.title, { bold: true, color: C.ink })], { spacing: { after: fill.project.brief ? 80 : 0 } }),
             ...(fill.project.brief?.trim() ? markdownParagraphs(fill.project.brief) : [])]
-        : [P([run('[وصفُ المشروع في ثلاثة أسطر: ماذا يسلّم المتعلّم، وبأيّ شكل، ومتى.]', { bold: true, color: C.ink })], { spacing: { after: 0 } })],
+        : [P([run('[وصف المشروع في ثلاثة أسطر: ماذا يسلّم المتعلّم، وبأيّ شكل، ومتى.]', { bold: true, color: C.ink })], { spacing: { after: 0 } })],
       { fill: C.tealTint, border: C.tealTint }),
-      label('كيف يُقيَّم', { spacing: { before: 240, after: 60 } }),
-      bullet('[المعيارُ الأوّل]'), bullet('[الثاني]'), bullet('[الثالث]'),
-      ...note('هو مشروعُ التخرّج نفسُه الذي تكتبه في «المهامّ والمصادر» — بوصفه ومعاييره.'),
+      label('كيف يقيّم', { spacing: { before: 240, after: 60 } }),
+      bullet('[المعيار الأوّل]'), bullet('[الثاني]'), bullet('[الثالث]'),
+      ...note('هو مشروع التخرّج نفسه الذي تكتبه في «المهامّ والمصادر» — بوصفه ومعاييره.'),
       label('خطّتي للمشروع', { spacing: { before: 200, after: 60 } }),
       lines(8),
       ...notesPage(),
     ]
   } else {
-    kind = 'كرّاسةُ المحور'
+    kind = 'كرّاسة المحور'
     const mods = fill.modules
     const one = mods.length === 1
     const titles = mods.map((m) => m.title?.trim()).filter(Boolean) as string[]
-    title = filled ? `كرّاسةُ ${axesAr(mods)} — ${v(fill.courseTitle, 'الدورة')}` : 'قالبُ كرّاسة المحور — أكاديمية وجيز'
+    title = filled ? `كرّاسة ${axesAr(mods)} — ${v(fill.courseTitle, 'الدورة')}` : 'قالب كرّاسة المحور — أكاديمية وجيز'
     children = [
       ...cover(assets.logo, {
         kind,
-        title: filled && titles.length > 0 ? titles.join(' · ') : '[اسمُ المحور]',
-        sub: filled ? `${axesAr(mods)} من دورة ${v(fill.courseTitle, '[اسمُ الدورة]')}` : 'المحور [رقمُه] من دورة [اسمُ الدورة]',
+        title: filled && titles.length > 0 ? titles.join(' · ') : '[اسم المحور]',
+        sub: filled ? `${axesAr(mods)} من دورة ${v(fill.courseTitle, '[اسم الدورة]')}` : 'المحور [رقمه] من دورة [اسم الدورة]',
         facts: [
-          ['الدورة', v(fill.courseTitle, '[اسمُ الدورة]')],
-          ['الشعبة', v(fill.cohortTitle, '[اسمُ الشعبة]')],
-          ['المدرّب', v(fill.trainerName, '[اسمُك كما يراه المتعلّم]')],
+          ['الدورة', v(fill.courseTitle, '[اسم الدورة]')],
+          ['الشعبة', v(fill.cohortTitle, '[اسم الشعبة]')],
+          ['المدرّب', v(fill.trainerName, '[اسمك كما يراه المتعلّم]')],
           ['الموعد', v(rangeAr(mods[0], mods[mods.length - 1]), '[من … إلى …]')],
         ],
       }),
       pageBreak(),
       ...trainerPage(one && filled
-        ? ['محورٌ أو أكثر.', 'هذه كرّاستُه وحدَه. وإن جمعته في المنصّة مع محورٍ مجاور فنزّل قالبَ الكرّاسة المجموعة من بطاقتها هناك — تأتي بالمحورين معا.']
+        ? ['محور أو أكثر.', 'هذه كرّاسته وحده. وإن جمعته في المنصّة مع محور مجاور فنزّل قالب الكرّاسة المجموعة من بطاقتها هناك — تأتي بالمحورين معا.']
         : one
-          ? ['محورٌ أو أكثر.', 'إن جمعت في هذه الكرّاسة محورين متجاورين فانسخ أقسامَ المحور كاملةً — من «المحور» إلى «مصادرُ للاستزادة» — والصقها بعدها للمحور الثاني، واكتب على الغلاف «المحوران [١ و٢]».']
-          : ['محاورُ مجموعة.', `فيها ${axesAr(mods)} كما جمعتها في المنصّة — كلُّ محورٍ بأقسامه الستّة، يبدأ بصفحةٍ جديدة.`],
+          ? ['محور أو أكثر.', 'إن جمعت في هذه الكرّاسة محورين متجاورين فانسخ أقسام المحور كاملة — من «المحور» إلى «مصادر للاستزادة» — والصقها بعدها للمحور الثاني، واكتب على الغلاف «المحوران [١ و٢]».']
+          : ['محاور مجموعة.', `فيها ${axesAr(mods)} كما جمعتها في المنصّة — كلّ محور بأقسامه الستّة، يبدأ بصفحة جديدة.`],
       filled),
       pageBreak(),
       ...howTo(),

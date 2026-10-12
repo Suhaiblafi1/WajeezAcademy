@@ -10,7 +10,9 @@
    يرفض الإصدار**. فالأهليّةُ تُحسب بالقواعد نفسِها التي يفحصها الإصدار، لا
    بقاعدةٍ ثانية تُشبهها — وقائمةٌ تكذب أسوأ من لا قائمة. */
 
-import { beforeAll, describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect as vexpect, it } from 'vitest'
+import { plainExpect } from '../helpers/plain-expect'
+const expect = plainExpect(vexpect)
 import type { PrismaClient } from '@prisma/client'
 import { setupTestDb, testPrisma } from '../helpers/db'
 import { AuthService } from '../../services/auth.service'

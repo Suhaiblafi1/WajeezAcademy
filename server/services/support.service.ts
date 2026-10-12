@@ -39,7 +39,7 @@ export class SupportService {
     await notifyRole(this.prisma, ['super_admin', 'support'], {
       channel: 'in_app',
       title: 'تذكرة دعم جديدة',
-      body: `فُتحت تذكرة «${input.subject}» (${input.category ?? 'other'}) — بانتظار من يلتقطها في «تذاكر الدعم».`,
+      body: `فتحت تذكرة «${input.subject}» (${input.category ?? 'other'}) — بانتظار من يلتقطها في «تذاكر الدعم».`,
       templateKey: 'admin.support_ticket',
       data: { ticketId: ticket.id },
     })

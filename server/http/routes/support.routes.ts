@@ -69,7 +69,7 @@ export function registerSupportRoutes(app: FastifyInstance, prisma: PrismaClient
      معرّفا ويعود فيلصقه. فصارت القائمةُ هنا، بحارسِ الإسناد نفسِه. */
   app.get('/api/admin/support/agents', {
     preHandler: requirePermission('support.assign'),
-    schema: { tags: ['support-admin'], summary: 'وكلاءُ الدعم النشطون — بديلُ لصق معرّف الوكيل' },
+    schema: { tags: ['support-admin'], summary: 'وكلاء الدعم النشطون — بديل لصق معرّف الوكيل' },
   }, async () => {
     const rows = await prisma.user.findMany({
       where: { status: 'active', roles: { some: { roleId: 'support' } } },

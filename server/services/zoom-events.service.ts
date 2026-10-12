@@ -93,7 +93,7 @@ export class ZoomEventService {
           await this.syncAttendance(meeting.sessionId, uuid).catch(async (e: unknown) => {
             await this.prisma.zoomMeeting.update({
               where: { sessionId: meeting.sessionId },
-              data: { syncState: 'failed', syncError: e instanceof Error ? e.message : 'تعذّرت مزامنةُ الحضور' },
+              data: { syncState: 'failed', syncError: e instanceof Error ? e.message : 'تعذّرت مزامنة الحضور' },
             })
           })
         }
@@ -170,7 +170,7 @@ export class ZoomEventService {
     const config = await getZoomConfig(this.prisma)
     if (!zoomReady(config)) return
     const out = await lockZoomRecordingDownload(config, meetingId)
-      .catch((e: unknown) => ({ ok: false, reason: e instanceof Error ? e.message : 'تعذّر الاتّصالُ بـZoom' }))
+      .catch((e: unknown) => ({ ok: false, reason: e instanceof Error ? e.message : 'تعذّر الاتّصال بـZoom' }))
     if (!out.ok) {
       await recordAudit(this.prisma, {
         actorId: null, action: 'zoom.recording_download_lock_failed', entityType: 'cohort_session', entityId: sessionId,
@@ -200,7 +200,7 @@ export class ZoomEventService {
       data: {
         sessionId,
         moduleId: session.moduleId,
-        title: `تسجيلُ «${session.title}»`,
+        title: `تسجيل «${session.title}»`,
         externalUrl: picked.url,
         mime: 'video/mp4',
         durationSec: picked.durationSec,

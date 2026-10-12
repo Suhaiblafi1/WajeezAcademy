@@ -41,5 +41,5 @@ export async function nextInvoiceNumber(tx: Prisma.TransactionClient, now = new 
     const taken = await tx.invoice.findUnique({ where: { number }, select: { id: true } })
     if (!taken) return number
   }
-  throw new Error(`تعذّر حجزُ رقم فاتورة — ${MAX_SKIP} رقمٍ متتالٍ محجوزةٌ بعد العدد`)
+  throw new Error(`تعذّر حجز رقم فاتورة — ${MAX_SKIP} رقم متتال محجوزة بعد العدد`)
 }

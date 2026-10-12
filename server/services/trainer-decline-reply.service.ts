@@ -51,17 +51,17 @@ export class TrainerDeclineReplyService {
     const subject = input.subjectAr.trim()
     const body = input.bodyAr.trim()
     if (subject.length < 3 || subject.length > DECLINE_REPLY_SUBJECT_MAX) {
-      throw new AuthError('bad_subject', 'اكتب عنوانَ الرسالة', 422)
+      throw new AuthError('bad_subject', 'اكتب عنوان الرسالة', 422)
     }
     if (body.length < DECLINE_REPLY_BODY_MIN || body.length > DECLINE_REPLY_BODY_MAX) {
-      throw new AuthError('bad_body', 'نصُّ الرسالة أقصرُ أو أطولُ ممّا يُرسَل', 422)
+      throw new AuthError('bad_body', 'نصّ الرسالة أقصر أو أطول ممّا يرسل', 422)
     }
     const c = await this.prisma.trainerContract.findUnique({
       where: { id: contractId },
       include: { profile: { include: { application: true } } },
     })
     if (!c) throw new AuthError('not_found', 'العقد غير موجود', 404)
-    if (c.status !== 'declined') throw new AuthError('bad_state', 'لا يُردّ هنا إلّا على عقدٍ اعتذر عنه صاحبُه', 409)
+    if (c.status !== 'declined') throw new AuthError('bad_state', 'لا يردّ هنا إلّا على عقد اعتذر عنه صاحبه', 409)
 
     const token = randomBytes(32).toString('base64url')
     const expiresAt = new Date(Date.now() + DATA_CHOICE_LINK_DAYS * 86_400_000)
@@ -73,7 +73,7 @@ export class TrainerDeclineReplyService {
         dataChoiceTokenHash: sha256(token), dataChoiceExpiresAt: expiresAt,
       },
     })
-    if (done.count === 0) throw new AuthError('already_replied', 'رُدّ على هذا الاعتذار من قبل', 409)
+    if (done.count === 0) throw new AuthError('already_replied', 'ردّ على هذا الاعتذار من قبل', 409)
 
     await recordAudit(this.prisma, {
       actorId, action: 'trainer.contract.decline_replied', entityType: 'trainer_contract', entityId: c.id,
@@ -96,10 +96,10 @@ export class TrainerDeclineReplyService {
     const subject = input.subjectAr.trim()
     const body = input.bodyAr.trim()
     if (subject.length < 3 || subject.length > DECLINE_REPLY_SUBJECT_MAX) {
-      throw new AuthError('bad_subject', 'اكتب عنوانَ الرسالة', 422)
+      throw new AuthError('bad_subject', 'اكتب عنوان الرسالة', 422)
     }
     if (body.length < DECLINE_REPLY_BODY_MIN || body.length > DECLINE_REPLY_BODY_MAX) {
-      throw new AuthError('bad_body', 'نصُّ الرسالة أقصرُ أو أطولُ ممّا يُرسَل', 422)
+      throw new AuthError('bad_body', 'نصّ الرسالة أقصر أو أطول ممّا يرسل', 422)
     }
     const c = await this.prisma.trainerContract.findUnique({
       where: { id: contractId },
@@ -119,14 +119,14 @@ export class TrainerDeclineReplyService {
         where: { id: c.id, status: 'sent', tokenExpiresAt: { lt: now }, declineRepliedAt: null },
         data: {
           status: 'revoked', revokedAt: now, revokedBy: actorId,
-          revokeReasonAr: 'انقضت مهلةُ التوقيع — أُغلق برسالة شكرٍ وأُجّل طلبُه إلى الفصول القادمة',
+          revokeReasonAr: 'انقضت مهلة التوقيع — أغلق برسالة شكر وأجّل طلبه إلى الفصول القادمة',
           declineReplyAr: body.slice(0, DECLINE_REPLY_BODY_MAX), declineRepliedAt: now, declineRepliedBy: actorId,
           dataChoiceTokenHash: sha256(token), dataChoiceExpiresAt: expiresAt,
         },
       })
-      if (done.count === 0) throw new AuthError('bad_state', 'تغيّر العقدُ قبل الإرسال — حدّث الصفحة', 409)
+      if (done.count === 0) throw new AuthError('bad_state', 'تغيّر العقد قبل الإرسال — حدّث الصفحة', 409)
       await new TrainerApplicationService(this.prisma).transition(
-        app.id, DEFERRED, actorId, 'انقضى رابطُ عقده — أُغلق برسالة شكرٍ وأُجّل إلى الفصول القادمة', tx,
+        app.id, DEFERRED, actorId, 'انقضى رابط عقده — أغلق برسالة شكر وأجّل إلى الفصول القادمة', tx,
       )
     })
     await recordAudit(this.prisma, {
@@ -148,7 +148,7 @@ export class TrainerDeclineReplyService {
       where: { dataChoiceTokenHash: sha256(token) },
       include: { profile: { include: { application: true } } },
     })
-    if (!c) throw new AuthError('invalid_token', 'هذا الرابطُ غيرُ صالح — أو حُذفت البياناتُ التي يشير إليها', 404)
+    if (!c) throw new AuthError('invalid_token', 'هذا الرابط غير صالح — أو حذفت البيانات التي يشير إليها', 404)
     return c
   }
 
@@ -165,7 +165,7 @@ export class TrainerDeclineReplyService {
   async chooseByToken(token: string, choice: DataChoice): Promise<{ choice: DataChoice; done: boolean; noteAr: string }> {
     const c = await this.byToken(token)
     if (!c.dataChoiceExpiresAt || c.dataChoiceExpiresAt < new Date()) {
-      throw new AuthError('expired', 'انتهت صلاحيةُ هذا الرابط — ردَّ على رسالتنا وننفّذ ما تريد', 410)
+      throw new AuthError('expired', 'انتهت صلاحية هذا الرابط — ردّ على رسالتنا وننفّذ ما تريد', 410)
     }
     const app = c.profile.application
     if (choice === 'keep') {
@@ -175,11 +175,11 @@ export class TrainerDeclineReplyService {
       })
       await notifyRole(this.prisma, ['academic_manager', 'super_admin'], {
         channel: 'in_app', templateKey: 'trainer.data_choice.made',
-        title: 'اختار مدرّبٌ إبقاءَ بياناته',
-        body: `اختار ${app.fullName} أن نُبقي بياناته للمواسم القادمة.`,
+        title: 'اختار مدرّب إبقاء بياناته',
+        body: `اختار ${app.fullName} أن نبقي بياناته للمواسم القادمة.`,
         data: { applicationId: app.id },
       }).catch(() => undefined)
-      return { choice, done: true, noteAr: 'أبقينا بياناتك — ونتواصل معك في المواسم القادمة. ولك أن تطلب حذفَها متى شئت بالردّ على رسالتنا.' }
+      return { choice, done: true, noteAr: 'أبقينا بياناتك — ونتواصل معك في المواسم القادمة. ولك أن تطلب حذفها متى شئت بالردّ على رسالتنا.' }
     }
 
     /* ═══ الحذفُ في الحال — بالطريق المحروس ═══
@@ -188,8 +188,8 @@ export class TrainerDeclineReplyService {
        شهادةٍ صادرة عادت حالُه كما كانت، ووصل طلبُه الإدارةَ. */
     const before = app.status
     const reason = c.status === 'revoked'
-      ? 'حذفُ بياناته بطلبه — من صفحة خياره بعد انقضاء رابط عقده'
-      : 'حذفُ بياناته بطلبه — من صفحة خياره بعد اعتذاره عن عقده'
+      ? 'حذف بياناته بطلبه — من صفحة خياره بعد انقضاء رابط عقده'
+      : 'حذف بياناته بطلبه — من صفحة خياره بعد اعتذاره عن عقده'
     if (!(PURGEABLE_STATUSES as readonly string[]).includes(before)) {
       await this.prisma.trainerApplication.update({ where: { id: app.id }, data: { status: 'withdrawn' } })
     }
@@ -202,18 +202,18 @@ export class TrainerDeclineReplyService {
       await this.prisma.trainerContract.update({ where: { id: c.id }, data: { dataChoice: 'delete', dataChoiceAt: new Date() } })
       await notifyRole(this.prisma, ['academic_manager', 'super_admin'], {
         channel: 'in_app', templateKey: 'trainer.data_choice.made',
-        title: 'طلب مدرّبٌ حذفَ بياناته — ولم يُحذف آليّا',
-        body: `طلب ${app.fullName} حذفَ بياناته، وتعذّر الحذفُ الآليّ: ${e instanceof AuthError ? e.message : 'خطأ'} — تولَّه بيدك.`,
+        title: 'طلب مدرّب حذف بياناته — ولم يحذف آليّا',
+        body: `طلب ${app.fullName} حذف بياناته، وتعذّر الحذف الآليّ: ${e instanceof AuthError ? e.message : 'خطأ'} — تولّه بيدك.`,
         data: { applicationId: app.id },
       }).catch(() => undefined)
-      return { choice, done: false, noteAr: 'وصلنا طلبُك حذفَ بياناتك، ويتولّاه فريقُنا بنفسه لأنّ في سجلّك ما لا يُحذف آليّا — ونبلغك حين يتمّ.' }
+      return { choice, done: false, noteAr: 'وصلنا طلبك حذف بياناتك، ويتولّاه فريقنا بنفسه لأنّ في سجلّك ما لا يحذف آليّا — ونبلغك حين يتمّ.' }
     }
     await notifyRole(this.prisma, ['academic_manager', 'super_admin'], {
       channel: 'in_app', templateKey: 'trainer.data_choice.made',
-      title: 'حُذفت بياناتُ مدرّبٍ بطلبه',
-      body: `اختار ${app.fullName} حذفَ بياناته، فحُذف طلبُه وملفُّه بعقوده ووثائقه.`,
+      title: 'حذفت بيانات مدرّب بطلبه',
+      body: `اختار ${app.fullName} حذف بياناته، فحذف طلبه وملفّه بعقوده ووثائقه.`,
       data: {},
     }).catch(() => undefined)
-    return { choice, done: true, noteAr: 'حذفنا بياناتك نهائيّا. شكرا لك، ونتمنّى لك كلَّ التوفيق — وبابُنا مفتوحٌ إن أردت العودةَ يوما.' }
+    return { choice, done: true, noteAr: 'حذفنا بياناتك نهائيّا. شكرا لك، ونتمنّى لك كلّ التوفيق — وبابنا مفتوح إن أردت العودة يوما.' }
   }
 }

@@ -24,7 +24,7 @@ export function registerPublicCatalogRoutes(app: FastifyInstance, prisma: Prisma
      فتفشل الأولى بعد الضغط وتكذب الثانيةُ فلا تُرسل الملفَّ أصلا. فبدل
      تكرار المعرفة في الواجهة، يقولها الخادمُ مرّةً واحدة. */
   app.get('/api/config', {
-    schema: { tags: ['public-catalog'], summary: 'قدراتُ المنصّة المفعّلة — تقرؤها الواجهة لتخفي ما لا يعمل' },
+    schema: { tags: ['public-catalog'], summary: 'قدرات المنصّة المفعّلة — تقرؤها الواجهة لتخفي ما لا يعمل' },
   }, async () => ({
     fileUploads: fileUploadsEnabled(),
     demoMode: process.env.DEMO_MODE === 'true',
@@ -59,7 +59,7 @@ export function registerPublicCatalogRoutes(app: FastifyInstance, prisma: Prisma
      `honeypot.ts`). */
   app.post('/api/public/registration-interest', {
     config: { rateLimit: { max: 5, timeWindow: '10 minutes' } },
-    schema: { tags: ['public'], summary: 'أبلغوني حين يُفتح باب التسجيل — بريدٌ ينتظر الموسم' },
+    schema: { tags: ['public'], summary: 'أبلغوني حين يفتح باب التسجيل — بريد ينتظر الموسم' },
   }, async (req, reply) => {
     assertNotBot(req.body)
     const body = z.object({
@@ -80,7 +80,7 @@ export function registerPublicCatalogRoutes(app: FastifyInstance, prisma: Prisma
      والترشيحُ وقتَ القراءة هو ما يجعل ن-٤ آليّا: الموقوفُ يسقط من الرفّ في
      اللحظة، ولا يُمسّ من التحق. */
   app.get('/api/public/trainer-paths', {
-    schema: { tags: ['public-catalog'], summary: 'مساراتٌ أعدّها مدرّبونا المعتمدون (ن-١)' },
+    schema: { tags: ['public-catalog'], summary: 'مسارات أعدّها مدرّبونا المعتمدون (ن-١)' },
   }, async () => trainerPaths.shelf())
 
   app.get('/api/public/pathways/:id', {
@@ -111,7 +111,7 @@ export function registerPublicCatalogRoutes(app: FastifyInstance, prisma: Prisma
 
   /* صفحةُ المدرّب باسمه — بابٌ عامٌّ على شعبه المفتوحة (المرحلة «أ») */
   app.get('/api/public/trainers/:slug', {
-    schema: { tags: ['public-catalog'], summary: 'صفحةُ مدرّبٍ منشورٍ باسمه — تعريفُه وشعبُه المفتوحةُ ورمزُ دعوته' },
+    schema: { tags: ['public-catalog'], summary: 'صفحة مدرّب منشور باسمه — تعريفه وشعبه المفتوحة ورمز دعوته' },
   }, async (req) => {
     const { slug } = z.object({ slug: z.string().min(1).max(80) }).parse(req.params)
     return catalog.trainerPublicPage(slug)
@@ -119,7 +119,7 @@ export function registerPublicCatalogRoutes(app: FastifyInstance, prisma: Prisma
 
   /* رابطُ مسارٍ باسمه — يردّ وجهتَه لا صفحتَه (ن-٩) */
   app.get('/api/public/paths/:slug', {
-    schema: { tags: ['public-catalog'], summary: 'وجهةُ رابطِ مسارٍ منشورٍ باسم مدرّبه — عنوانُ صفحته ومرساها' },
+    schema: { tags: ['public-catalog'], summary: 'وجهة رابط مسار منشور باسم مدرّبه — عنوان صفحته ومرساها' },
   }, async (req) => {
     const { slug } = z.object({ slug: z.string().min(1).max(120) }).parse(req.params)
     return catalog.pathPublicTarget(slug)
@@ -130,7 +130,7 @@ export function registerPublicCatalogRoutes(app: FastifyInstance, prisma: Prisma
      وهو عامٌّ بلا جلسةٍ بقصد: الرابطُ يُفتح من بريدٍ قبل الدخول، ومن جهازٍ
      ليس فيه حسابٌ أصلا. والسرُّ في الرمز لا في الجلسة. */
   app.get('/api/public/links/:code', {
-    schema: { tags: ['public-catalog'], summary: 'وجهةُ رابطٍ قصير — مسارٌ داخليٌّ يُحوَّل إليه' },
+    schema: { tags: ['public-catalog'], summary: 'وجهة رابط قصير — مسار داخليّ يحوّل إليه' },
   }, async (req) => {
     const { code } = z.object({ code: z.string().min(1).max(32) }).parse(req.params)
     return shortLinks.resolve(code)

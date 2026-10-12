@@ -19,7 +19,7 @@ export function registerDeferralInterestRoutes(app: FastifyInstance, prisma: Pri
 
   app.get('/api/trainer-interest/:token', {
     config: { rateLimit: { max: 30, timeWindow: '10 minutes' } },
-    schema: { tags: ['trainer-applications'], summary: 'سؤالُ اهتمام المؤجَّل كما يراه صاحبُه' },
+    schema: { tags: ['trainer-applications'], summary: 'سؤال اهتمام المؤجّل كما يراه صاحبه' },
   }, async (req, reply) => {
     const { token } = z.object({ token: z.string().min(20).max(100) }).parse(req.params)
     reply.header('X-Robots-Tag', 'noindex, nofollow')
@@ -28,7 +28,7 @@ export function registerDeferralInterestRoutes(app: FastifyInstance, prisma: Pri
 
   app.post('/api/trainer-interest/:token', {
     config: { rateLimit: { max: 10, timeWindow: '10 minutes' } },
-    schema: { tags: ['trainer-applications'], summary: 'جوابُ المؤجَّل: ما زال مهتمّا أو لم يعد' },
+    schema: { tags: ['trainer-applications'], summary: 'جواب المؤجّل: ما زال مهتمّا أو لم يعد' },
   }, async (req, reply) => {
     const { token } = z.object({ token: z.string().min(20).max(100) }).parse(req.params)
     const { answer } = z.object({ answer: z.enum(INTEREST_ANSWERS) }).parse(req.body)

@@ -57,19 +57,19 @@ export function creditCouponCode(caseId: string): string {
 }
 
 const RESOLVED_MESSAGE: Record<ResolvedOutcome, (cohortTitle: string, caseId: string) => string> = {
-  substituted: (t) => `تغيّر مدرّبُ «${t}». مقعدُك وجدولُك ومدفوعاتُك كما هي — ولم يتغيّر إلّا الاسم.`,
-  moved: (t) => `نُقلت إلى شعبةٍ أخرى من الدورة نفسِها بعد تغيّرٍ في «${t}». جدولُك الجديدُ في «رحلتي».`,
-  refund_requested: (t) => `بناءً على اختيارك، رُفع طلبُ ردِّ ما تبقّى من قيمة «${t}» إلى الماليّة.`,
-  credited: (_t, caseId) => `بناءً على اختيارك، صُرف لك رصيدٌ باسمك يُخصَم من أيّ مسارٍ تختاره — ومعه زيادةٌ لأجلِ ما سبّبناه. ورمزُه: ${creditCouponCode(caseId)}`,
+  substituted: (t) => `تغيّر مدرّب «${t}». مقعدك وجدولك ومدفوعاتك كما هي — ولم يتغيّر إلّا الاسم.`,
+  moved: (t) => `نقلت إلى شعبة أخرى من الدورة نفسها بعد تغيّر في «${t}». جدولك الجديد في «رحلتي».`,
+  refund_requested: (t) => `بناء على اختيارك، رفع طلب ردّ ما تبقّى من قيمة «${t}» إلى الماليّة.`,
+  credited: (_t, caseId) => `بناء على اختيارك، صرف لك رصيد باسمك يخصم من أيّ مسار تختاره — ومعه زيادة لأجل ما سبّبناه. ورمزه: ${creditCouponCode(caseId)}`,
 }
 
 /** نصُّ عرضِ الاختيار — يُبنى من `LEARNER_CHOICES` فلا يبقى خيارٌ بلا ذكرٍ فيه */
 function offerMessage(cohortTitle: string, noteAr: string | null): string {
   const options = LEARNER_CHOICES.map((c) => `• ${CHOICE_LABEL_AR[c]}`).join('\n')
   const why = noteAr?.trim() ? `\n\n${noteAr.trim()}` : ''
-  return `رحل مدرّبُ «${cohortTitle}»، ولم نجد له بديلا ولا شعبةً نظيرةً تصلح لك.`
-    + ` فالقرارُ لك وحدك، بين:\n${options}`
-    + `\n\nاختر من «رحلتي» في بوّابتك — ولا يُحسم شيءٌ قبل أن تختار.${why}`
+  return `رحل مدرّب «${cohortTitle}»، ولم نجد له بديلا ولا شعبة نظيرة تصلح لك.`
+    + ` فالقرار لك وحدك، بين:\n${options}`
+    + `\n\nاختر من «رحلتي» في بوّابتك — ولا يحسم شيء قبل أن تختار.${why}`
 }
 
 const COURSE_TITLE = {
@@ -90,13 +90,13 @@ export class TrainerDepartureService {
    *  فالقائمةُ هي الذاكرةُ ولا ذاكرةَ سواها. */
   async open(actorId: string, profileId: string, reasonAr: string) {
     const reason = reasonAr.trim()
-    if (reason.length < 5) throw new AuthError('no_reason', 'اكتب سببَ الرحيل — يُقرأ بعد سنةٍ حين يُسأل', 400)
+    if (reason.length < 5) throw new AuthError('no_reason', 'اكتب سبب الرحيل — يقرأ بعد سنة حين يسأل', 400)
 
     const profile = await this.prisma.trainerProfile.findUnique({
       where: { id: profileId },
       select: { id: true, userId: true, application: { select: { fullName: true, email: true } } },
     })
-    if (!profile) throw new AuthError('no_profile', 'لا مدرّبَ بهذا المعرّف', 404)
+    if (!profile) throw new AuthError('no_profile', 'لا مدرّب بهذا المعرّف', 404)
 
     const live = await this.prisma.cohortTrainer.findMany({
       where: { profileId, cohort: { status: { in: ['draft', 'open', 'full', 'active'] } } },
@@ -149,7 +149,7 @@ export class TrainerDepartureService {
         where: { profileId, status: { in: ['signed', 'signature_approved', 'countersigned'] } },
         data: {
           status: 'terminated', terminatedAt, terminatedBy: actorId,
-          terminateReasonAr: `فُسخ برحيل المدرّب: ${reason}`.slice(0, 500),
+          terminateReasonAr: `فسخ برحيل المدرّب: ${reason}`.slice(0, 500),
         },
       })
       /* وتُقرأ معرّفاتُها قبل المسح: `updateMany` تعيد عددا لا صفوفا،
@@ -164,7 +164,7 @@ export class TrainerDepartureService {
         where: { profileId, status: 'offered' },
         data: {
           status: 'withdrawn', respondedAt: terminatedAt, withdrawnBy: actorId,
-          withdrawReasonAr: `سُحب برحيل المدرّب: ${reason}`.slice(0, 500),
+          withdrawReasonAr: `سحب برحيل المدرّب: ${reason}`.slice(0, 500),
         },
       })
       return { departure: d, terminated: t.count, terminatedLive: live, withdrawn: w.count, openOffers }
@@ -187,7 +187,7 @@ export class TrainerDepartureService {
         entityType: 'trainer_profile', entityId: profileId,
         meta: {
           offerId: o.id, courseId: o.courseId, cohortId: o.cohortId,
-          reasonAr: `سُحب برحيل المدرّب: ${reason}`.slice(0, 500),
+          reasonAr: `سحب برحيل المدرّب: ${reason}`.slice(0, 500),
           departureId: departure.id,
         },
       })
@@ -213,37 +213,37 @@ export class TrainerDepartureService {
       try {
         await sendDirectEmail(this.prisma, {
           to: profile.application.email,
-          subject: 'انتهاءُ التعاقد — أكاديمية وجيز',
+          subject: 'انتهاء التعاقد — أكاديمية وجيز',
           ...renderMail({
             greetingName: profile.application.fullName,
             heading: terminatedLive > 0
-              ? 'سُجّل رحيلُك، وانتهى التعاقد'
-              : terminated > 0 ? 'سُجّل رحيلُك، وانتهت الاتفاقيّة' : 'سُجّل رحيلُك',
+              ? 'سجّل رحيلك، وانتهى التعاقد'
+              : terminated > 0 ? 'سجّل رحيلك، وانتهت الاتفاقيّة' : 'سجّل رحيلك',
             blocks: [
               {
                 kind: 'p',
-                text: `سُجّل رحيلُك عن الأكاديميّة بتاريخ ${
+                text: `سجّل رحيلك عن الأكاديميّة بتاريخ ${
                   fmtDateWith(terminatedAt, { year: 'numeric', month: 'long', day: 'numeric' })
                 }.`,
               },
               ...(terminatedLive > 0
                 ? [
-                  { kind: 'p' as const, text: 'وبه انتهى العقدُ بيننا للمستقبل.' },
+                  { kind: 'p' as const, text: 'وبه انتهى العقد بيننا للمستقبل.' },
                   {
                     kind: 'note' as const,
-                    text: 'ولا يمحو هذا ما كان: نسختُك من العقد ودليلُ توقيعك محفوظان، '
-                      + 'وما استحققتَه عن عملٍ أدّيتَه يبقى مستحقّا لك.',
+                    text: 'ولا يمحو هذا ما كان: نسختك من العقد ودليل توقيعك محفوظان، '
+                      + 'وما استحققته عن عمل أدّيته يبقى مستحقّا لك.',
                   },
                 ]
                 : terminated > 0
                   ? [{
                     kind: 'p' as const,
-                    text: 'وبه انتهت الاتفاقيّةُ التي وقّعتَها — ولم نكن وقّعناها من جهتنا بعد، فلم تصر عقدا '
-                      + 'نافذا بيننا، ولا تُلزم أحدا. ونسختُك منها ودليلُ توقيعك محفوظان.',
+                    text: 'وبه انتهت الاتفاقيّة التي وقّعتها — ولم نكن وقّعناها من جهتنا بعد، فلم تصر عقدا '
+                      + 'نافذا بيننا، ولا تلزم أحدا. ونسختك منها ودليل توقيعك محفوظان.',
                   }]
                   : []),
               ...(withdrawn > 0
-                ? [{ kind: 'note' as const, text: 'وسُحبت العروضُ التي كانت تنتظر جوابَك.' }]
+                ? [{ kind: 'note' as const, text: 'وسحبت العروض التي كانت تنتظر جوابك.' }]
                 : []),
             ],
           }),
@@ -272,7 +272,7 @@ export class TrainerDepartureService {
         },
       },
     })
-    if (!d) throw new AuthError('not_found', 'لا ملفَّ رحيلٍ بهذا المعرّف', 404)
+    if (!d) throw new AuthError('not_found', 'لا ملفّ رحيل بهذا المعرّف', 404)
 
     return {
       id: d.id,
@@ -331,7 +331,7 @@ export class TrainerDepartureService {
     const cohort = await this.prisma.cohort.findUnique({
       where: { id: cohortId }, select: { id: true, courseId: true },
     })
-    if (!cohort) throw new AuthError('not_found', 'لا شعبةَ بهذا المعرّف', 404)
+    if (!cohort) throw new AuthError('not_found', 'لا شعبة بهذا المعرّف', 404)
 
     const rows = await this.prisma.trainerCourseQualification.findMany({
       where: {
@@ -380,20 +380,20 @@ export class TrainerDepartureService {
     const cohort = await this.prisma.cohort.findUnique({
       where: { id: cohortId }, select: { id: true, courseId: true, title: true },
     })
-    if (!cohort) throw new AuthError('not_found', 'لا شعبةَ بهذا المعرّف', 404)
+    if (!cohort) throw new AuthError('not_found', 'لا شعبة بهذا المعرّف', 404)
 
     const qualified = await this.prisma.trainerCourseQualification.findFirst({
       where: { profileId: newProfileId, courseId: cohort.courseId },
     })
     if (!qualified) {
-      throw new AuthError('not_qualified', 'هذا المدرّبُ غيرُ مؤهَّلٍ لدورة هذه الشعبة — أهّله أوّلا', 409)
+      throw new AuthError('not_qualified', 'هذا المدرّب غير مؤهّل لدورة هذه الشعبة — أهّله أوّلا', 409)
     }
 
     const departed = await this.prisma.trainerDeparture.findUnique({
       where: { id: departureId }, select: { profileId: true, closedAt: true },
     })
-    if (!departed) throw new AuthError('not_found', 'لا ملفَّ رحيلٍ بهذا المعرّف', 404)
-    if (departed.closedAt) throw new AuthError('closed', 'أُغلق ملفُّ الرحيل', 409)
+    if (!departed) throw new AuthError('not_found', 'لا ملفّ رحيل بهذا المعرّف', 404)
+    if (departed.closedAt) throw new AuthError('closed', 'أغلق ملفّ الرحيل', 409)
 
     /* معرّفاتُ الصفوف تُقرأ **قبل** حلّها: `updateMany` يردّ عددا لا
        معرّفات، ومن حُلَّ أمرُه بلا معرّفٍ لا يُبلَّغ. */
@@ -433,7 +433,7 @@ export class TrainerDepartureService {
     const c = await this.prisma.departureCase.findUnique({
       where: { id: caseId }, include: { cohort: { select: { id: true, courseId: true } } },
     })
-    if (!c) throw new AuthError('not_found', 'لا صفَّ بهذا المعرّف', 404)
+    if (!c) throw new AuthError('not_found', 'لا صفّ بهذا المعرّف', 404)
 
     const rows = await this.prisma.cohort.findMany({
       where: {
@@ -464,21 +464,21 @@ export class TrainerDepartureService {
       where: { id: caseId },
       include: { cohort: { select: { courseId: true } }, departure: { select: { closedAt: true } } },
     })
-    if (!c) throw new AuthError('not_found', 'لا صفَّ بهذا المعرّف', 404)
-    if (c.departure.closedAt) throw new AuthError('closed', 'أُغلق ملفُّ الرحيل', 409)
-    if (isResolved(c.outcome)) throw new AuthError('resolved', 'حُلَّ أمرُ هذا المتعلّم من قبل', 409)
+    if (!c) throw new AuthError('not_found', 'لا صفّ بهذا المعرّف', 404)
+    if (c.departure.closedAt) throw new AuthError('closed', 'أغلق ملفّ الرحيل', 409)
+    if (isResolved(c.outcome)) throw new AuthError('resolved', 'حلّ أمر هذا المتعلّم من قبل', 409)
 
     const to = await this.prisma.cohort.findUnique({
       where: { id: toCohortId }, select: { id: true, courseId: true, title: true },
     })
-    if (!to) throw new AuthError('not_found', 'لا شعبةَ بهذا المعرّف', 404)
+    if (!to) throw new AuthError('not_found', 'لا شعبة بهذا المعرّف', 404)
 
     /* ح-٣ بنصّه: النظيرُ إصدارٌ من الرمز نفسِه. وشعبةٌ على رمزٍ آخرَ ليست
        نظيرا — هي مسارٌ آخرُ لم يشترِه، ونقلُه إليه تغييرٌ لما دفع لأجله. */
     if (to.courseId !== c.cohort.courseId) {
       throw new AuthError(
         'not_equivalent',
-        'النظيرُ شعبةٌ على الرمز نفسِه — وهذه دورةٌ أخرى، ونقلُه إليها تغييرٌ لما دفع لأجله',
+        'النظير شعبة على الرمز نفسه — وهذه دورة أخرى، ونقله إليها تغيير لما دفع لأجله',
         409,
       )
     }
@@ -515,9 +515,9 @@ export class TrainerDepartureService {
         departure: { select: { closedAt: true } },
       },
     })
-    if (!c) throw new AuthError('not_found', 'لا صفَّ بهذا المعرّف', 404)
-    if (c.departure.closedAt) throw new AuthError('closed', 'أُغلق ملفُّ الرحيل', 409)
-    if (isResolved(c.outcome)) throw new AuthError('resolved', 'حُلَّ أمرُ هذا المتعلّم من قبل', 409)
+    if (!c) throw new AuthError('not_found', 'لا صفّ بهذا المعرّف', 404)
+    if (c.departure.closedAt) throw new AuthError('closed', 'أغلق ملفّ الرحيل', 409)
+    if (isResolved(c.outcome)) throw new AuthError('resolved', 'حلّ أمر هذا المتعلّم من قبل', 409)
 
     const note = noteAr?.trim() || c.noteAr
     const out = await this.prisma.departureCase.update({
@@ -538,7 +538,7 @@ export class TrainerDepartureService {
     await notifications.notify({
       userId: c.enrollment.userId, channel: 'in_app',
       templateKey: 'departure.choice',
-      title: `القرارُ لك في «${c.cohort.title}»`,
+      title: `القرار لك في «${c.cohort.title}»`,
       body: offerMessage(c.cohort.title, note),
       data: { caseId },
       audience: 'learner',
@@ -563,7 +563,7 @@ export class TrainerDepartureService {
       where: { id: caseId },
       select: { cohortId: true, enrollment: { select: { userId: true } } },
     })
-    if (!c) throw new AuthError('not_found', 'لا صفَّ بهذا المعرّف', 404)
+    if (!c) throw new AuthError('not_found', 'لا صفّ بهذا المعرّف', 404)
 
     const orders = await this.prisma.order.findMany({
       where: {
@@ -631,10 +631,10 @@ export class TrainerDepartureService {
       where: { id: caseId },
       include: { enrollment: { select: { userId: true } }, departure: { select: { closedAt: true } } },
     })
-    if (!c || c.enrollment.userId !== userId) throw new AuthError('not_found', 'لا خيارَ بهذا المعرّف', 404)
-    if (c.departure.closedAt) throw new AuthError('closed', 'أُغلق هذا الملفّ — راسِل الدعم', 409)
-    if (!c.choiceOfferedAt) throw new AuthError('not_offered', 'لم يُعرض عليك اختيارٌ بعد', 409)
-    if (c.learnerChoice) throw new AuthError('already_chosen', 'اخترتَ من قبل', 409)
+    if (!c || c.enrollment.userId !== userId) throw new AuthError('not_found', 'لا خيار بهذا المعرّف', 404)
+    if (c.departure.closedAt) throw new AuthError('closed', 'أغلق هذا الملفّ — راسل الدعم', 409)
+    if (!c.choiceOfferedAt) throw new AuthError('not_offered', 'لم يعرض عليك اختيار بعد', 409)
+    if (c.learnerChoice) throw new AuthError('already_chosen', 'اخترت من قبل', 409)
 
     const out = await this.prisma.departureCase.update({
       where: { id: caseId }, data: { learnerChoice: choice, chosenAt: new Date() },
@@ -658,8 +658,8 @@ export class TrainerDepartureService {
     await notifyRole(this.prisma, ['super_admin', 'academic_manager'], {
       channel: 'in_app',
       templateKey: 'departure.chosen',
-      title: 'اختار صاحبُ المقعد — ولم يُنفَّذ بعد',
-      body: `اختار صاحبُ المقعد في «${cohort?.cohort.title ?? 'شعبته'}»: ${CHOICE_LABEL_AR[choice]}. ولا يقع شيءٌ حتّى يُنفَّذ — افتح ملفَّ الرحيل ونفِّذ ما اختاره.`,
+      title: 'اختار صاحب المقعد — ولم ينفّذ بعد',
+      body: `اختار صاحب المقعد في «${cohort?.cohort.title ?? 'شعبته'}»: ${CHOICE_LABEL_AR[choice]}. ولا يقع شيء حتّى ينفّذ — افتح ملفّ الرحيل ونفّذ ما اختاره.`,
       data: { caseId, choice },
     })
     return out
@@ -681,9 +681,9 @@ export class TrainerDepartureService {
         departure: { select: { closedAt: true } },
       },
     })
-    if (!c) throw new AuthError('not_found', 'لا صفَّ بهذا المعرّف', 404)
-    if (c.departure.closedAt) throw new AuthError('closed', 'أُغلق ملفُّ الرحيل', 409)
-    if (isResolved(c.outcome)) throw new AuthError('resolved', 'حُلَّ أمرُ هذا المتعلّم من قبل', 409)
+    if (!c) throw new AuthError('not_found', 'لا صفّ بهذا المعرّف', 404)
+    if (c.departure.closedAt) throw new AuthError('closed', 'أغلق ملفّ الرحيل', 409)
+    if (isResolved(c.outcome)) throw new AuthError('resolved', 'حلّ أمر هذا المتعلّم من قبل', 409)
 
     /* والقاعدةُ في موضعٍ واحد (ن-١٠): `settleBlockerAr` تملكها وحدَها، فلا
        شرطَ هنا يسبقها فيجعلها لا تُبلَغ ثمّ يُظنّ أنّها تحرس. */
@@ -694,7 +694,7 @@ export class TrainerDepartureService {
 
     if (choice === 'credit') {
       const total = input.amount + (input.bonus ?? 0)
-      if (total <= 0) throw new AuthError('bad_amount', 'مبلغُ الرصيد أكبرُ من صفر', 400)
+      if (total <= 0) throw new AuthError('bad_amount', 'مبلغ الرصيد أكبر من صفر', 400)
       const code = creditCouponCode(caseId)
       await this.prisma.coupon.create({
         data: {
@@ -722,12 +722,12 @@ export class TrainerDepartureService {
          هنا، ويُقرّه من يملك إقرارَه. فلا يُصرف مالٌ من هذه الشاشة. */
       if (!input.paymentId) {
         throw new AuthError('no_payment',
-          'اختر الدفعةَ التي يُردّ منها — ولا يُرفع طلبٌ بلا دفعةٍ خلفَه', 400)
+          'اختر الدفعة التي يردّ منها — ولا يرفع طلب بلا دفعة خلفه', 400)
       }
       const commerce = new CommerceService(this.prisma)
       const refund = await commerce.requestRefund(input.paymentId, actorId, {
         amount: input.amount,
-        reason: `رحيلُ مدرّبٍ — اختار صاحبُ المقعد الردَّ (حالة ${caseId.slice(0, 8)})`,
+        reason: `رحيل مدرّب — اختار صاحب المقعد الردّ (حالة ${caseId.slice(0, 8)})`,
       })
       await recordAudit(this.prisma, {
         actorId, action: 'trainer.departure.refund_requested',
@@ -758,14 +758,14 @@ export class TrainerDepartureService {
         departure: { select: { profile: { select: { application: { select: { fullName: true } } } } } },
       },
     })
-    if (!c) throw new AuthError('not_found', 'لا صفَّ بهذا المعرّف', 404)
+    if (!c) throw new AuthError('not_found', 'لا صفّ بهذا المعرّف', 404)
 
     /* ═══ قاعدةُ السمعة ═══
        «لا ينبغي أن يقرأ متعلّمٌ «رحل مدرّبُك» بلا أن يكون البديلُ في الجملة
        نفسِها». فالرسالةُ لا تخرج على صفٍّ لم يُقرَّر. */
     const blocker = notifyBlockerAr(c)
     if (blocker) throw new AuthError('undecided', blocker, 409)
-    if (c.notifiedAt) throw new AuthError('already', 'أُبلغ من قبل', 409)
+    if (c.notifiedAt) throw new AuthError('already', 'أبلغ من قبل', 409)
 
     await this.tellResolved(actorId, caseId)
     return this.prisma.departureCase.findUniqueOrThrow({ where: { id: caseId } })
@@ -800,7 +800,7 @@ export class TrainerDepartureService {
       await new NotificationService(this.prisma).notify({
         userId: c.enrollment.userId, channel: 'in_app',
         templateKey: 'departure.resolved',
-        title: `تغييرٌ في «${c.cohort.title}»`,
+        title: `تغيير في «${c.cohort.title}»`,
         body: this.messageFor(c.outcome, c.cohort.title, caseId),
         data: { caseId, outcome: c.outcome },
         audience: 'learner',
@@ -823,8 +823,8 @@ export class TrainerDepartureService {
     const d = await this.prisma.trainerDeparture.findUnique({
       where: { id: departureId }, include: { cases: { select: { outcome: true, notifiedAt: true } } },
     })
-    if (!d) throw new AuthError('not_found', 'لا ملفَّ رحيلٍ بهذا المعرّف', 404)
-    if (d.closedAt) throw new AuthError('closed', 'أُغلق من قبل', 409)
+    if (!d) throw new AuthError('not_found', 'لا ملفّ رحيل بهذا المعرّف', 404)
+    if (d.closedAt) throw new AuthError('closed', 'أغلق من قبل', 409)
 
     const blockers = closeBlockersAr({ cases: d.cases })
     if (blockers.length > 0) throw new AuthError('incomplete', blockers.join(' · '), 409)

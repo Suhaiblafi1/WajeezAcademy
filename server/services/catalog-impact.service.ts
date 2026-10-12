@@ -123,7 +123,7 @@ export { countAr } from '../../src/application/text/count-ar'
 const PATHWAY_FORMS = { one: 'مسار', two: 'مساران', few: 'مسارات', many: 'مسارا' }
 const TEMPLATE_FORMS = { one: 'قالب مركّب', two: 'قالبان مركّبان', few: 'قوالب مركّبة', many: 'قالبا مركّبا' }
 const COHORT_FORMS = { one: 'شعبة حيّة', two: 'شعبتان حيّتان', few: 'شعب حيّة', many: 'شعبة حيّة' }
-const LEARNER_FORMS = { one: 'متعلم مسجَّل', two: 'متعلمان مسجَّلان', few: 'متعلمين مسجَّلين', many: 'متعلما مسجَّلا' }
+const LEARNER_FORMS = { one: 'متعلم مسجّل', two: 'متعلمان مسجّلان', few: 'متعلمين مسجّلين', many: 'متعلما مسجّلا' }
 
 /** جملة عربية تصف الدائرة — تُعرض فوق الاقتراح، ومصدرها الأرقام نفسها */
 export function blastRadiusSentenceAr(r: CourseBlastRadius): string {

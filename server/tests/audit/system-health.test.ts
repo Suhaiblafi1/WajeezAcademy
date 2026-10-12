@@ -4,7 +4,9 @@
    سجلٌّ أصلا قبل هذا الفرع. وأخطرُ ما تكشفه هذه الصفحة أنّ المنصّةَ تكتب
    وعودا لا يُنفّذها أحد: إشعارٌ في الطابور ينتظر عاملا خلفيّا لا وجودَ له. */
 
-import { beforeAll, describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect as vexpect, it } from 'vitest'
+import { plainExpect } from '../helpers/plain-expect'
+const expect = plainExpect(vexpect)
 import type { PrismaClient } from '@prisma/client'
 import type { FastifyInstance } from 'fastify'
 import { setupTestDb, testPrisma } from '../helpers/db'

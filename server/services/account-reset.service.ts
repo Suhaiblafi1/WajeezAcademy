@@ -113,7 +113,7 @@ export class AccountResetService {
         .filter((u) => keep.has(u.email.trim().toLowerCase()))
         .map((u) => ({
           email: u.email,
-          reasonAr: u.id === actorId ? 'أنت — من ينفّذ لا يمحو نفسَه' : 'مؤسِّسٌ في FOUNDER_EMAILS',
+          reasonAr: u.id === actorId ? 'أنت — من ينفّذ لا يمحو نفسه' : 'مؤسّس في FOUNDER_EMAILS',
         })),
       counts: {
         الحسابات: targets.length,
@@ -127,17 +127,17 @@ export class AccountResetService {
       },
       backup: await attestationState(this.prisma, now),
       keepsAr: [
-        'الكتالوج كلُّه — المسارات والدورات والوحدات والمهارات والمشاريع',
-        'محرّك التشخيص كلُّه — الأسئلة والخيارات والملفّات',
-        'بنية الشعب وجدولتها — تبقى، وتُعاد مزامنةُ حالاتها بعد المحو',
+        'الكتالوج كلّه — المسارات والدورات والوحدات والمهارات والمشاريع',
+        'محرّك التشخيص كلّه — الأسئلة والخيارات والملفّات',
+        'بنية الشعب وجدولتها — تبقى، وتعاد مزامنة حالاتها بعد المحو',
         'الأدوار والصلاحيّات وإعدادات التكامل',
-        'سجلّ الأثر — لا يُحذف أبدا، وهو مصمَّمٌ ليبقى بلا مفتاحٍ يربطه بالمستخدم',
+        'سجلّ الأثر — لا يحذف أبدا، وهو مصمّم ليبقى بلا مفتاح يربطه بالمستخدم',
       ],
       notesAr: [
-        'تسعون عمودا في المخطَّط تحمل معرّفَ فاعلٍ بلا مفتاحٍ خارجيّ («أنشأه» · «نشره» · «اعتمده») — فبعد المحو تُعرض معرّفاتٌ خامٌّ أو فراغ. مقبولٌ ومقصود.',
+        'تسعون عمودا في المخطّط تحمل معرّف فاعل بلا مفتاح خارجيّ («أنشأه» · «نشره» · «اعتمده») — فبعد المحو تعرض معرّفات خامّ أو فراغ. مقبول ومقصود.',
         mode === 'archive'
-          ? 'الأرشفة: يبقى الصفُّ وتسقط إمكانيّةُ الدخول ويُعمّى البريدُ والاسم — للمُحاسَبة بعد الإطلاق.'
-          : 'المحو: لا رجعةَ فيه. وما يذهب يذهب بمعاملةٍ لكلّ حساب — إمّا كلٌّ أو لا شيء.',
+          ? 'الأرشفة: يبقى الصفّ وتسقط إمكانيّة الدخول ويعمّى البريد والاسم — للمحاسبة بعد الإطلاق.'
+          : 'المحو: لا رجعة فيه. وما يذهب يذهب بمعاملة لكلّ حساب — إمّا كلّ أو لا شيء.',
       ],
     }
   }
@@ -152,7 +152,7 @@ export class AccountResetService {
     if (reason.length < MIN_REASON_LENGTH) {
       throw new AuthError(
         'reason_required',
-        `اكتب سببَ إعادة الضبط — ${MIN_REASON_LENGTH} حرفا على الأقلّ. يبقى في الأثر بعد أن تذهب الحسابات.`,
+        `اكتب سبب إعادة الضبط — ${MIN_REASON_LENGTH} حرفا على الأقلّ. يبقى في الأثر بعد أن تذهب الحسابات.`,
         400,
       )
     }
@@ -161,7 +161,7 @@ export class AccountResetService {
 
     /* ١) إثباتُ الاسترجاع — قبل كلّ شيء، فبدونه لا معنى لبقيّة الحرّاس */
     if (!preview.backup.ok) {
-      throw new AuthError('backup_unverified', preview.backup.reasonAr ?? 'لا نسخةَ مُثبَتة', 409)
+      throw new AuthError('backup_unverified', preview.backup.reasonAr ?? 'لا نسخة مثبتة', 409)
     }
 
     /* ٢) العددُ يُكتب كما عُرض — فمن لم يقرأ المعاينةَ لا يعرفه.
@@ -169,13 +169,13 @@ export class AccountResetService {
     if (input.expectedCount !== preview.targets) {
       throw new AuthError(
         'count_mismatch',
-        `العددُ المكتوب ${input.expectedCount} والمعروضُ ${preview.targets}. راجع المعاينةَ — وقد تكون تغيّرت بين قراءتك وتنفيذك.`,
+        `العدد المكتوب ${input.expectedCount} والمعروض ${preview.targets}. راجع المعاينة — وقد تكون تغيّرت بين قراءتك وتنفيذك.`,
         409,
       )
     }
 
     if (preview.targets === 0) {
-      throw new AuthError('nothing_to_do', 'لا حساباتٍ تُمسّ — كلُّها محميّة', 409)
+      throw new AuthError('nothing_to_do', 'لا حسابات تمسّ — كلّها محميّة', 409)
     }
 
     /* ٣) الأثرُ قبل المحو: بعده لا يبقى ما يُشار إليه */
@@ -235,7 +235,7 @@ export class AccountResetService {
         /* حسابٌ يتعثّر لا يوقف البقيّة: كلُّ حسابٍ معاملتُه وحدَه، فالمتعثّرُ
            يبقى كما كان ويُسمّى في الجواب. والبديلُ — إسقاطُ الكلّ لواحد — هو
            عينُ العطب الذي أُصلح في البند ٦٤. */
-        failed.push({ email: t.email, errorAr: e instanceof Error ? e.message : 'خطأٌ غيرُ معروف' })
+        failed.push({ email: t.email, errorAr: e instanceof Error ? e.message : 'خطأ غير معروف' })
       }
     }
 
@@ -285,7 +285,7 @@ export class AccountResetService {
           status: 'archived',
           /* البريدُ يُعمّى ويبقى فريدا — ولا يُترك كما هو فيُراسَل بعد الأرشفة */
           email: `archived+${userId}@wajeez.invalid`,
-          displayName: 'حسابٌ مؤرشَف',
+          displayName: 'حساب مؤرشف',
           passwordHash: 'x'.repeat(60),
           emailVerifiedAt: null,
         },

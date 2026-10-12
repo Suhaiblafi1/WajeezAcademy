@@ -16,7 +16,7 @@ export function registerAdminAdvisorRoutes(app: FastifyInstance, prisma: PrismaC
 
   app.get('/api/admin/advisors', {
     preHandler: canManage,
-    schema: { tags: ['admin-advisors'], summary: 'المستشارون: عمولةُ كلٍّ وحالاتُه المسندة' },
+    schema: { tags: ['admin-advisors'], summary: 'المستشارون: عمولة كلّ وحالاته المسندة' },
   }, async () => {
     const users = await prisma.user.findMany({
       where: { roles: { some: { roleId: 'advisor' } } },
@@ -50,12 +50,12 @@ export function registerAdminAdvisorRoutes(app: FastifyInstance, prisma: PrismaC
      الملفّ هو ما يستحقّ استعلاماتِه الإضافية. */
   app.get('/api/admin/advisors/:userId', {
     preHandler: canManage,
-    schema: { tags: ['admin-advisors'], summary: 'ملفّ مستشار: عمولتُه المستحقّة من عملائه الدافعين، تقييمُه، وطلباتُه' },
+    schema: { tags: ['admin-advisors'], summary: 'ملفّ مستشار: عمولته المستحقّة من عملائه الدافعين، تقييمه، وطلباته' },
   }, async (req, reply) => {
     const { userId } = z.object({ userId: z.string().uuid() }).parse(req.params)
     const user = await prisma.user.findUnique({ where: { id: userId }, include: { roles: true, advisorProfile: true } })
     if (!user || !user.roles.some((r) => r.roleId === 'advisor')) {
-      return reply.status(404).send({ error: { code: 'not_advisor', message_ar: 'لا مستشارَ بهذا المعرّف' } })
+      return reply.status(404).send({ error: { code: 'not_advisor', message_ar: 'لا مستشار بهذا المعرّف' } })
     }
 
     const assignments = await prisma.advisorAssignment.findMany({
@@ -108,7 +108,7 @@ export function registerAdminAdvisorRoutes(app: FastifyInstance, prisma: PrismaC
 
   app.patch('/api/admin/advisors/:userId', {
     preHandler: canManage,
-    schema: { tags: ['admin-advisors'], summary: 'تعيينُ نسبة عمولة المستشار وملاحظاتِه' },
+    schema: { tags: ['admin-advisors'], summary: 'تعيين نسبة عمولة المستشار وملاحظاته' },
   }, async (req) => {
     const { userId } = z.object({ userId: z.string().uuid() }).parse(req.params)
     const body = z.object({
@@ -117,9 +117,9 @@ export function registerAdminAdvisorRoutes(app: FastifyInstance, prisma: PrismaC
     }).parse(req.body)
 
     const user = await prisma.user.findUnique({ where: { id: userId }, include: { roles: true, advisorProfile: true } })
-    if (!user) return { error: { code: 'not_found', message_ar: 'لا حسابَ بهذا المعرّف' } }
+    if (!user) return { error: { code: 'not_found', message_ar: 'لا حساب بهذا المعرّف' } }
     if (!user.roles.some((r) => r.roleId === 'advisor')) {
-      return { error: { code: 'not_advisor', message_ar: 'هذا الحساب ليس مستشارا — أسند الدورَ أوّلا من شاشة المستخدمين' } }
+      return { error: { code: 'not_advisor', message_ar: 'هذا الحساب ليس مستشارا — أسند الدور أوّلا من شاشة المستخدمين' } }
     }
 
     const before = user.advisorProfile ? Number(user.advisorProfile.commissionPct) : null
@@ -142,7 +142,7 @@ export function registerAdminAdvisorRoutes(app: FastifyInstance, prisma: PrismaC
      يقع على المنصّة — فلا يُنقل كاملا لتُرشَّح صفوفُه في الصفحة. */
   app.get('/api/admin/audit', {
     preHandler: requirePermission('audit.view'),
-    schema: { tags: ['admin-audit'], summary: 'سجلُّ الأثر — من فعل ماذا ومتى، مرشَّحا ومرقَّما' },
+    schema: { tags: ['admin-audit'], summary: 'سجلّ الأثر — من فعل ماذا ومتى، مرشّحا ومرقّما' },
   }, async (req) => {
     const qs = z.object({
       action: z.string().optional(),
@@ -193,7 +193,7 @@ export function registerAdminAdvisorRoutes(app: FastifyInstance, prisma: PrismaC
         id: r.id, action: r.action, actionAr: auditActionAr(r.action),
         entityType: r.entityType, entityTypeAr: entityTypeAr(r.entityType), entityId: r.entityId,
         createdAt: r.createdAt, reason: r.reason, ip: r.ip,
-        actor: r.actorId ? (byId.get(r.actorId) ?? { id: r.actorId, displayName: 'حسابٌ محذوف', email: '' }) : null,
+        actor: r.actorId ? (byId.get(r.actorId) ?? { id: r.actorId, displayName: 'حساب محذوف', email: '' }) : null,
         meta: r.meta, before: r.before, after: r.after,
       })),
       facets: {
@@ -213,7 +213,7 @@ export function registerAdminAdvisorRoutes(app: FastifyInstance, prisma: PrismaC
      أصلا (المتصفّحُ يُسقطه بصمتٍ على ٤٠٣) — لا لافتةَ منعٍ في وسط بطاقة. */
   app.get('/api/admin/audit/entity/:entityType/:entityId', {
     preHandler: requirePermission('audit.view'),
-    schema: { tags: ['admin-audit'], summary: 'ما وقع على كيانٍ واحد — الأحدثُ أوّلا' },
+    schema: { tags: ['admin-audit'], summary: 'ما وقع على كيان واحد — الأحدث أوّلا' },
   }, async (req) => {
     const { entityType, entityId } = z.object({
       entityType: z.string().min(2).max(60),
@@ -251,7 +251,7 @@ export function registerAdminAdvisorRoutes(app: FastifyInstance, prisma: PrismaC
         actionAr: auditActionAr(r.action),
         /* «النظام» فاعلٌ حقيقيّ: المواءمةُ بالتواريخ وتوليدُ المستحقّات
            تكتبان بلا فاعلٍ بشريّ، فلا يُترك الحقلُ فارغا فيُظنّ عطبا. */
-        actorAr: r.actorId ? (byId.get(r.actorId) ?? 'حسابٌ محذوف') : 'النظام',
+        actorAr: r.actorId ? (byId.get(r.actorId) ?? 'حساب محذوف') : 'النظام',
         reason: r.reason,
         changed: changedKeys(r.before, r.after),
         createdAt: r.createdAt,

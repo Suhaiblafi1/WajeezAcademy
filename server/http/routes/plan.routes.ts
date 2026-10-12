@@ -23,7 +23,7 @@ export function registerPlanRoutes(app: FastifyInstance, prisma: PrismaClient) {
     preHandler: requirePermission('learner.portal'),
     config: { rateLimit: { max: 20, timeWindow: '10 minutes' } },
     schema: {
-      tags: ['plan'], summary: 'اعتماد خطّة — تُؤرشَف السابقة',
+      tags: ['plan'], summary: 'اعتماد خطّة — تؤرشف السابقة',
       body: {
         type: 'object', required: ['nameAr', 'courseIds'],
         properties: {
@@ -59,7 +59,7 @@ export function registerPlanRoutes(app: FastifyInstance, prisma: PrismaClient) {
 
   app.get('/api/learner/plan/items/:courseId/alternatives', {
     preHandler: requirePermission('learner.portal'),
-    schema: { tags: ['plan'], summary: 'بدائلُ دورةٍ لا شعبةَ لها — بما تشاركه من مهارات' },
+    schema: { tags: ['plan'], summary: 'بدائل دورة لا شعبة لها — بما تشاركه من مهارات' },
   }, async (req) => {
     const { courseId } = req.params as { courseId: string }
     return { alternatives: await plans.alternativesFor(req.auth!.userId, courseId) }
@@ -68,7 +68,7 @@ export function registerPlanRoutes(app: FastifyInstance, prisma: PrismaClient) {
   app.put('/api/learner/plan/items/:courseId/replace', {
     preHandler: requirePermission('learner.portal'),
     config: { rateLimit: { max: 30, timeWindow: '10 minutes' } },
-    schema: { tags: ['plan'], summary: 'يستبدل دورةً بأخرى في موضعها نفسِه' },
+    schema: { tags: ['plan'], summary: 'يستبدل دورة بأخرى في موضعها نفسه' },
   }, async (req) => {
     const { courseId } = req.params as { courseId: string }
     const body = z.object({ withCourseId: z.string().trim().min(1).max(60) }).parse(req.body)
@@ -78,7 +78,7 @@ export function registerPlanRoutes(app: FastifyInstance, prisma: PrismaClient) {
   app.delete('/api/learner/plan/items/:courseId', {
     preHandler: requirePermission('learner.portal'),
     config: { rateLimit: { max: 30, timeWindow: '10 minutes' } },
-    schema: { tags: ['plan'], summary: 'يحذف دورةً من الخطّة — ولا تبقى فارغة' },
+    schema: { tags: ['plan'], summary: 'يحذف دورة من الخطّة — ولا تبقى فارغة' },
   }, async (req) => {
     const { courseId } = req.params as { courseId: string }
     return { plan: await plans.removeItem(req.auth!.userId, courseId) }
@@ -87,7 +87,7 @@ export function registerPlanRoutes(app: FastifyInstance, prisma: PrismaClient) {
   app.put('/api/learner/plan/items/:courseId/notify', {
     preHandler: requirePermission('learner.portal'),
     config: { rateLimit: { max: 60, timeWindow: '10 minutes' } },
-    schema: { tags: ['plan'], summary: 'يُبقيها منتظرةً — بإشعارٍ عند الفتح أو بلا' },
+    schema: { tags: ['plan'], summary: 'يبقيها منتظرة — بإشعار عند الفتح أو بلا' },
   }, async (req) => {
     const { courseId } = req.params as { courseId: string }
     const body = z.object({ on: z.boolean() }).parse(req.body)

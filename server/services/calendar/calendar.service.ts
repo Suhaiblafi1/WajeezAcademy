@@ -85,7 +85,7 @@ export class CalendarService {
         title: `${s.title} — ${s.cohort.title}`,
         startsAt: s.startsAt,
         durationMinutes: minutes,
-        description: 'جلسةٌ من شعبتك في أكاديمية وجيز. رابط الحضور في بوّابتك.',
+        description: 'جلسة من شعبتك في أكاديمية وجيز. رابط الحضور في بوّابتك.',
         url: `${this.siteUrl}/student/learning`,
         organizer: ORGANIZER,
         cancelled: s.status === 'cancelled',
@@ -113,8 +113,8 @@ export class CalendarService {
         title: 'مقابلة انضمام إلى نخبة مدرّبي وجيز',
         startsAt: iv.scheduledAt,
         durationMinutes: TRAINER_INTERVIEW.minutes,
-        description: `مقابلةٌ بشأن طلبك رقم ${iv.application.reference}. ${
-          iv.mode === 'in_person' ? 'حضوريّة.' : 'عن بُعد — يصلك الرابط قبل الموعد.'
+        description: `مقابلة بشأن طلبك رقم ${iv.application.reference}. ${
+          iv.mode === 'in_person' ? 'حضوريّة.' : 'عن بعد — يصلك الرابط قبل الموعد.'
         }`,
         url: `${this.siteUrl}/join-trainer`,
         organizer: ORGANIZER,

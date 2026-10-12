@@ -45,12 +45,12 @@ export class CohortFileService {
       where: { userId }, select: { id: true, suspendedAt: true },
     })
     if (!profile || profile.suspendedAt) {
-      throw new AuthError('not_trainer', 'لا ملفَّ مدرّبٍ نشطا لهذا الحساب', 403)
+      throw new AuthError('not_trainer', 'لا ملفّ مدرّب نشطا لهذا الحساب', 403)
     }
     const link = await this.prisma.cohortTrainer.findFirst({
       where: { cohortId, profileId: profile.id }, select: { id: true },
     })
-    if (!link) throw new AuthError('not_trainer', 'هذه الشعبة ليست مُسنَدةً إليك', 403)
+    if (!link) throw new AuthError('not_trainer', 'هذه الشعبة ليست مسندة إليك', 403)
     return profile
   }
 
@@ -59,10 +59,10 @@ export class CohortFileService {
     userId: string, cohortId: string, purpose: FilePurpose, refId: string,
     input: { mime: string; originalName: string },
   ) {
-    assertFileUploadsEnabled('والبديلُ الآن: ألصِق رابطا، أو اكتب المحتوى في المحرّر.')
+    assertFileUploadsEnabled('والبديل الآن: ألصق رابطا، أو اكتب المحتوى في المحرّر.')
     /* وتقريرُ المراجعة للمعتمِد وحدَه — بابُه `startReviewReportUpload`. والمسارُ يردّه قبل
        هذا (`TRAINER_FILE_PURPOSES`)، وهذا السطرُ لمن نادى الخدمةَ من غير المسار */
-    if (purpose === 'review_report') throw new AuthError('forbidden', 'تقريرُ المراجعة يرفعه من يعتمد الخطّة', 403)
+    if (purpose === 'review_report') throw new AuthError('forbidden', 'تقرير المراجعة يرفعه من يعتمد الخطّة', 403)
     await this.requireCohortTrainer(cohortId, userId)
 
     const blocker = fileBlockerAr(purpose, input.mime)
@@ -104,13 +104,13 @@ export class CohortFileService {
     })
     if (!plan) throw new AuthError('not_found', 'الخطّة غير موجودة', 404)
     if (plan.status !== 'submitted') {
-      throw new AuthError('not_submitted', 'يُرفع التقريرُ والخطّةُ بانتظار قرارك — ثمّ تذكره رسالةُ القرار', 409)
+      throw new AuthError('not_submitted', 'يرفع التقرير والخطّة بانتظار قرارك — ثمّ تذكره رسالة القرار', 409)
     }
     return plan
   }
 
   async startReviewReportUpload(adminId: string, planId: string, input: { mime: string; originalName: string }) {
-    assertFileUploadsEnabled('والبديلُ الآن: اكتب ما في التقرير في ملاحظات «اطلب تعديلات» أو في كلمة الاعتماد.')
+    assertFileUploadsEnabled('والبديل الآن: اكتب ما في التقرير في ملاحظات «اطلب تعديلات» أو في كلمة الاعتماد.')
     const plan = await this.submittedPlan(planId)
     const blocker = fileBlockerAr('review_report', input.mime)
     if (blocker) throw new AuthError('bad_mime', blocker, 422)
@@ -125,7 +125,7 @@ export class CohortFileService {
     })
     for (const s of same) {
       if (await objectExists(s.storageKey).catch(() => false)) {
-        throw new AuthError('report_exists', `رُفع «${name}» لهذه الخطّة من قبل — فلا يُرفع مرّتين. وإن أردت نسخةً أحدث فاحذف القديمة من بطاقة الخطّة أوّلا`, 409)
+        throw new AuthError('report_exists', `رفع «${name}» لهذه الخطّة من قبل — فلا يرفع مرّتين. وإن أردت نسخة أحدث فاحذف القديمة من بطاقة الخطّة أوّلا`, 409)
       }
       await this.prisma.cohortFile.delete({ where: { id: s.id } })
     }
@@ -157,7 +157,7 @@ export class CohortFileService {
       where: { storageKey }, select: { id: true, cohortId: true, purpose: true, refId: true },
     })
     if (!row || row.purpose !== 'review_report' || row.refId !== plan.id) {
-      throw new AuthError('not_found', 'لا تقريرَ بهذا المفتاح لهذه الخطّة', 404)
+      throw new AuthError('not_found', 'لا تقرير بهذا المفتاح لهذه الخطّة', 404)
     }
     await this.prisma.cohortFile.delete({ where: { id: row.id } })
     try { await deleteObject(storageKey) } catch { /* غيابُها ليس عطبا */ }
@@ -198,7 +198,7 @@ export class CohortFileService {
     const row = await this.prisma.cohortFile.findUnique({
       where: { storageKey }, select: { id: true, cohortId: true, purpose: true, refId: true },
     })
-    if (!row || row.cohortId !== cohortId) throw new AuthError('not_found', 'لا ملفَّ بهذا المفتاح', 404)
+    if (!row || row.cohortId !== cohortId) throw new AuthError('not_found', 'لا ملفّ بهذا المفتاح', 404)
 
     await this.prisma.cohortFile.delete({ where: { id: row.id } })
     try { await deleteObject(storageKey) } catch { /* غيابُها ليس عطبا */ }
@@ -219,7 +219,7 @@ export class CohortFileService {
       where: { storageKey },
       select: { cohortId: true, originalName: true, mime: true, purpose: true },
     })
-    if (!row) throw new AuthError('not_found', 'لا ملفَّ بهذا المفتاح', 404)
+    if (!row) throw new AuthError('not_found', 'لا ملفّ بهذا المفتاح', 404)
 
     /* والمعتمِدُ يقرأ قبل أن يعتمد: `cohort.plan.approve` هي صلاحيّةُ من
        يقرّر في الخطّة، و`cohort.manage` من يدير الشعب. ولولاهما لاعتُمدت
@@ -256,7 +256,7 @@ export class CohortFileService {
     })
     if (enrolled && (await this.openToLearner(row.cohortId, storageKey))) return row
 
-    throw new AuthError('not_found', 'لا ملفَّ بهذا المفتاح', 404)
+    throw new AuthError('not_found', 'لا ملفّ بهذا المفتاح', 404)
   }
 
   /** أيصل هذا المفتاحُ المتعلّمَ الآن — متنُ محورٍ فُتح، أو كرّاسةُ الشعبة أو موعدٍ فُتح، أو مصدرٌ أو مرفقُ مهمّةٍ فُتح */

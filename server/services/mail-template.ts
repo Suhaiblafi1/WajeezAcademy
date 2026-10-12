@@ -331,7 +331,7 @@ function htmlOf(doc: MailDoc): string {
              والعنوانُ كاملا في النصّ الخامّ، وهو موضعُه. */
           `<p style="margin:0 0 14px;font-size:12px;line-height:1.8;color:${BRAND.muted};">`
           + `${b.caption ? esc(b.caption) + ' ' : ''}`
-          + `لم يعمل الزرّ؟ ${anchor(b.href, 'افتح الرابط مباشرةً', `color:${BRAND.teal};text-decoration:underline;`)}.`
+          + `لم يعمل الزرّ؟ ${anchor(b.href, 'افتح الرابط مباشرة', `color:${BRAND.teal};text-decoration:underline;`)}.`
           + `</p>`,
         )
         break
@@ -388,20 +388,20 @@ function htmlOf(doc: MailDoc): string {
 <title>${esc(doc.heading)}</title>
 </head>
 <body style="margin:0;padding:0;background:${BRAND.paper};">
-<!-- سطرُ المعاينة: يقرؤه صندوقُ الوارد ولا يظهر في الرسالة. والمسافاتُ
-     الصفريّةُ بعده تمنع العميلَ من ضمّ ما بعده إلى المعاينة. -->
+<!-- سطر المعاينة: يقرؤه صندوق الوارد ولا يظهر في الرسالة. والمسافات
+     الصفريّة بعده تمنع العميل من ضمّ ما بعده إلى المعاينة. -->
 <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;font-size:1px;line-height:1px;color:${BRAND.paper};opacity:0;">${esc(preheader)}${'&#8203;&nbsp;'.repeat(30)}</div>
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:${BRAND.paper};">
 <tr><td align="center" style="padding:28px 12px;">
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="width:100%;max-width:600px;background:${BRAND.surface};border-radius:16px;overflow:hidden;border:1px solid ${BRAND.hairline};font-family:${FONT};" dir="rtl">
 
-<!-- شريطُ العلامة: لونٌ يُرى قبل أن تُحمَّل صورةٌ أصلا. وحجمُ الخطّ صفرا
-     مع ارتفاعِ سطرٍ معلَن لازمان، وإلّا فرض Outlook ارتفاعَ سطرٍ كاملا. -->
+<!-- شريط العلامة: لون يرى قبل أن تحمّل صورة أصلا. وحجم الخطّ صفرا
+     مع ارتفاع سطر معلن لازمان، وإلّا فرض Outlook ارتفاع سطر كاملا. -->
 <tr><td bgcolor="${BRAND.deep}" style="height:4px;line-height:4px;font-size:0;">&#8203;</td></tr>
 
-<!-- الترويسة: العلامةُ صورةً، والاسمُ نصّا بجانبها.
-     وبياضُها لأنّ العلامةَ شكلٌ فيروزيٌّ على شفافيّة — على الداكن تذوب.
-     ونصُّ alt يحمل الاسمَ: من حجب الصورَ يقرؤه مكانَها. -->
+<!-- الترويسة: العلامة صورة، والاسم نصّا بجانبها.
+     وبياضها لأنّ العلامة شكل فيروزيّ على شفافيّة — على الداكن تذوب.
+     ونصّ alt يحمل الاسم: من حجب الصور يقرؤه مكانها. -->
 <tr><td style="padding:22px 28px 18px;border-bottom:1px solid ${BRAND.hairline};">
 <table role="presentation" cellpadding="0" cellspacing="0" border="0">
 <tr>
@@ -423,7 +423,7 @@ ${parts.join('\n')}
 <tr><td bgcolor="${BRAND.footer}" style="padding:16px 28px 20px;border-top:1px solid ${BRAND.hairline};">
 <div style="font-size:12px;line-height:1.9;color:${BRAND.muted};">
 ${anchor(site, 'أكاديمية وجيز', `color:${BRAND.teal};font-weight:700;text-decoration:none;`)} — من ${anchor(GROUP_URL, 'مجموعة وجيز', `color:${BRAND.teal};text-decoration:none;`)}<br>
-هذه رسالةٌ آليّة؛ وردُّك عليها يصل فريقَ الدعم.<br>
+هذه رسالة آليّة؛ وردّك عليها يصل فريق الدعم.<br>
 للدعم: <span dir="ltr">${anchor(`mailto:${ACADEMY_EMAILS.support}`, ACADEMY_EMAILS.support, `color:${BRAND.teal};font-weight:700;text-decoration:none;`)}</span>
 </div>
 </td></tr>

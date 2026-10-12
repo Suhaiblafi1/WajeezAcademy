@@ -37,7 +37,7 @@ export const EMAIL_DOMAIN = CANONICAL_ORIGIN.replace(/^https?:\/\/(www\.)?/, '')
     تقترح `no-reply@wajeez.sa` — نطاقا ثالثا لا هو نطاقُ الموقع ولا النطاقُ
     الموثَّق. ومن يتبع الاقتراحَ يضبط مُرسِلا يرفضه Resend، والرفضُ يُكتب في
     صفّ الإشعار لا في شاشة: رسائلُ لا تصل وقناةٌ تبدو مفعَّلة. */
-export const DEFAULT_SENDER_EMAIL = `no-reply@${EMAIL_DOMAIN}`
+export const DEFAULT_SENDER_EMAIL = `academy@${EMAIL_DOMAIN}`
 
 const isLocal = (host: string) =>
   host === 'localhost' || host === '127.0.0.1' || host.endsWith('.local')

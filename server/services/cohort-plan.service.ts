@@ -79,7 +79,7 @@ export function returnMailDoc(m: ReturnType<typeof returnMailAr>, name: string, 
       { kind: 'p', text: m.praise },
       ...(m.note ? [{ kind: 'callout' as const, text: m.note }] : []),
       ...(m.summary.length ? [{ kind: 'h' as const, text: 'ما جهّزناه لك' }, { kind: 'list' as const, items: m.summary }] : []),
-      { kind: 'h', text: 'خطواتُك' },
+      { kind: 'h', text: 'خطواتك' },
       { kind: 'steps', items: m.steps.map((textAr) => ({ textAr })) },
       { kind: 'cta', label: m.cta, href: url },
     ],
@@ -461,31 +461,31 @@ export function buildChecklist(input: {
   const approvalDone = input.planStatus === 'approved' || input.planStatus === 'published'
   /* وما ينقص الصفَّين يُقال في سطرهما — بعددِه لا بإشارة */
   const tasksNote = unlinkedTasks > 0
-    ? ` · ${unlinkedTasks === 1 ? 'مهمّةٌ غيرُ مربوطةٍ' : `${unlinkedTasks} مهامَّ غيرُ مربوطةٍ`} بمحور` : ''
+    ? ` · ${unlinkedTasks === 1 ? 'مهمّة غير مربوطة' : `${unlinkedTasks} مهامّ غير مربوطة`} بمحور` : ''
   const resourcesNote = (orphanResources > 0
-    ? ` · ${orphanResources === 1 ? 'مصدرٌ مربوطٌ' : `${orphanResources} مصادرُ مربوطةٌ`} بمحورٍ حُذف` : '')
-    + (looseResources > 0 ? ` · ${looseResources === 1 ? 'مصدرٌ' : `${looseResources} مصادرُ`} بلا رابطٍ ولا ملفّ` : '')
+    ? ` · ${orphanResources === 1 ? 'مصدر مربوط' : `${orphanResources} مصادر مربوطة`} بمحور حذف` : '')
+    + (looseResources > 0 ? ` · ${looseResources === 1 ? 'مصدر' : `${looseResources} مصادر`} بلا رابط ولا ملفّ` : '')
   return [
     {
       key: 'identity',
-      labelAr: 'سمِّ الشعبةَ وحدّد مستواها ولمن هي ومدّتها — من متى إلى متى'
+      labelAr: 'سمّ الشعبة وحدّد مستواها ولمن هي ومدّتها — من متى إلى متى'
         + (endProblem ? ` · ${endProblem}` : '') + (postponed ? ` · ${postponed}` : ''),
       done: identityDone && endProblem === null && postponed === null, optional: false,
     },
     {
       key: 'modules',
-      labelAr: (legacy ? 'اكتب المحتوى النظريَّ لكلّ محور' : 'وزّع المحاورَ على مواعيدها واكتب محتواها النظريّ')
+      labelAr: (legacy ? 'اكتب المحتوى النظريّ لكلّ محور' : 'وزّع المحاور على مواعيدها واكتب محتواها النظريّ')
         + (practice.length ? ` · ${practice.join('، ')}` : ''),
       done: modulesDone && practice.length === 0, optional: false,
     },
-    { key: 'workbooks', labelAr: 'ضع الكرّاسة — واحدةً للدورة أو لكلّ محورٍ كرّاستَه، على قالب وجيز أو مادّتك الجاهزة', done: workbooksDone, optional: false },
+    { key: 'workbooks', labelAr: 'ضع الكرّاسة — واحدة للدورة أو لكلّ محور كرّاسته، على قالب وجيز أو مادّتك الجاهزة', done: workbooksDone, optional: false },
     {
       key: 'sessions',
       labelAr: (linked
-        ? `حدّد لقاءاتك المباشرة — لقاءٌ لكلّ محورٍ في موعده (${coveredCount}/${moduleIds.length})`
-        : `حدّد مواعيدَ اللقاءات المباشرة — لقاءٌ لكلّ محورٍ على الأقلّ (${input.sessions.length}/${Math.max(1, sessionsNeeded)})`)
-        + (outside > 0 ? ` · ${outside === 1 ? 'لقاءٌ خارجَ' : `${outside} لقاءاتٍ خارجَ`} مدّة الشعبة` : '')
-        + (looseRecorded > 0 ? ` · ${looseRecorded === 1 ? 'جلسةٌ مسجّلةٌ' : `${looseRecorded} جلساتٍ مسجّلةٍ`} بلا رابط` : '')
+        ? `حدّد لقاءاتك المباشرة — لقاء لكلّ محور في موعده (${coveredCount}/${moduleIds.length})`
+        : `حدّد مواعيد اللقاءات المباشرة — لقاء لكلّ محور على الأقلّ (${input.sessions.length}/${Math.max(1, sessionsNeeded)})`)
+        + (outside > 0 ? ` · ${outside === 1 ? 'لقاء خارج' : `${outside} لقاءات خارج`} مدّة الشعبة` : '')
+        + (looseRecorded > 0 ? ` · ${looseRecorded === 1 ? 'جلسة مسجّلة' : `${looseRecorded} جلسات مسجّلة`} بلا رابط` : '')
         /* ومحاورُ مغطّاةٌ كلُّها والخطوةُ لم تتمّ: يُسمّى أوّلُ ما يمنعها — وإلّا
            قيل للمدرّب «٤ من ٤» ورُدّ إرسالُه بلا سببٍ يراه */
         + (linked && coveredCount === moduleIds.length && linked.blocking.length > 0 ? ` · ${linked.blocking[0]}` : ''),
@@ -510,18 +510,18 @@ export function buildChecklist(input: {
        ومقابلَه في القرار نفسِه: **المحورُ تامٌّ بمتنٍ من الأكاديميّة أو
        منه** — وهو قائمٌ في `moduleBodyDone`، إذ يُحمَل متنُ الكتالوج في
        `baseModules` فيُقرأ تماما بلا أن يُعيد المدرّبُ كتابتَه. */
-    { key: 'assignments', labelAr: 'ألّف مهمّةً عمليّةً واحدةً على الأقلّ — واجبٌ أو اختبارٌ يُسلَّم ويُقيَّم' + tasksNote, done: practicalCount > 0 && unlinkedTasks === 0, optional: false },
+    { key: 'assignments', labelAr: 'ألّف مهمّة عمليّة واحدة على الأقلّ — واجب أو اختبار يسلّم ويقيّم' + tasksNote, done: practicalCount > 0 && unlinkedTasks === 0, optional: false },
     /* والمصادرُ في الخطوة نفسِها بعد المهامّ — «وبعدها المهامُّ والواجباتُ وغيرُها
        والتي تُربط بالمحاور» (٢٧ سبتمبر ٢٠٢٦) */
     {
       key: 'resources',
-      labelAr: 'أضف المصادرَ التي يحتاجها المتعلّم — للدورة كلِّها، ولأيّ محورٍ شئت' + resourcesNote
+      labelAr: 'أضف المصادر التي يحتاجها المتعلّم — للدورة كلّها، ولأيّ محور شئت' + resourcesNote
         + (noSource ? ` · ${noSource}` : ''),
       done: resourcesDone && noSource === null, optional: false,
     },
     {
       key: 'project',
-      labelAr: 'ضع مشروعَ التخرّج — عملٌ واحدٌ يجمع المحاورَ ويُقيَّم في آخر الشعبة' + (dueProblem ? ` · ${dueProblem}` : ''),
+      labelAr: 'ضع مشروع التخرّج — عمل واحد يجمع المحاور ويقيّم في آخر الشعبة' + (dueProblem ? ` · ${dueProblem}` : ''),
       done: projectDone && dueProblem === null, optional: false,
     },
     { key: 'approval', labelAr: 'أكّد أنّك توافق على كلّ ما فيها وأرسلها للاعتماد', done: approvalDone, optional: false },
@@ -595,7 +595,7 @@ export class CohortPlanService {
   private async ownedCohort(userId: string, cohortId: string) {
     const profile = await this.profileOf(userId)
     const link = await this.prisma.cohortTrainer.findFirst({ where: { cohortId, profileId: profile.id } })
-    if (!link) throw new AuthError('not_your_cohort', 'هذه الشعبة ليست مُسنَدةً إليك', 403)
+    if (!link) throw new AuthError('not_your_cohort', 'هذه الشعبة ليست مسندة إليك', 403)
     return { profile, link }
   }
 
@@ -797,7 +797,7 @@ export class CohortPlanService {
       period: ws.cohort.period, content: ws.plan?.content ?? null, baseModules: ws.course.baseModules,
       sessions: ws.sessions, assessments: ws.assessments,
     }, moduleIds)
-    if (!fill) throw new AuthError('unknown_modules', 'لا محورَ بهذا في خطّتك — احفظ محاورك ثمّ نزّل القالب', 400)
+    if (!fill) throw new AuthError('unknown_modules', 'لا محور بهذا في خطّتك — احفظ محاورك ثمّ نزّل القالب', 400)
     return { fileName: workbookFileName(fill), data: await workbookDocx(fill) }
   }
 
@@ -879,7 +879,7 @@ export class CohortPlanService {
     const { profile } = await this.ownedCohort(userId, cohortId)
     const latest = await this.latestTrainerPlan(cohortId)
     if (latest?.status === 'submitted') {
-      throw new AuthError('plan_submitted', 'خطّتك بانتظار الاعتماد — انتظر القرار، أو اطلب من الإدارة ردَّها إليك لتعديلها', 409)
+      throw new AuthError('plan_submitted', 'خطّتك بانتظار الاعتماد — انتظر القرار، أو اطلب من الإدارة ردّها إليك لتعديلها', 409)
     }
     /* ═══ المدّةُ تُفحص عند الحفظ — والناقصُ لا يُحفظ نصفا ═══
 
@@ -967,20 +967,20 @@ export class CohortPlanService {
     await this.ownedCohort(userId, cohortId)
     const forbidden = Object.keys(patch).filter((k) => (ADMIN_ONLY_FIELDS as readonly string[]).includes(k))
     if (forbidden.length) {
-      throw new AuthError('admin_only_field', `السعرُ والسعةُ والإعدادُ الماليُّ بيد الإدارة — لا يعدّلها المدرّب (${forbidden.join('، ')})`, 403)
+      throw new AuthError('admin_only_field', `السعر والسعة والإعداد الماليّ بيد الإدارة — لا يعدّلها المدرّب (${forbidden.join('، ')})`, 403)
     }
     /* والمواعيدُ تمرّ بالخطّة لا من هنا — والعلّةُ عند `SCHEDULE_FIELDS` */
     const scheduled = Object.keys(patch).filter((k) => (SCHEDULE_FIELDS as readonly string[]).includes(k))
     if (scheduled.length) {
       throw new AuthError(
         'period_in_plan',
-        'مدّةُ الشعبة تُحفظ مع خطّتها وتُعتمَد معها — من خطوة «المعلومات الأساسيّة». ومواعيدُ اللقاءات لقاءً لقاءً في خطوتها.',
+        'مدّة الشعبة تحفظ مع خطّتها وتعتمد معها — من خطوة «المعلومات الأساسيّة». ومواعيد اللقاءات لقاء لقاء في خطوتها.',
         409,
       )
     }
     const allowed: Record<string, unknown> = {}
     for (const k of TRAINER_EDITABLE_COHORT_FIELDS) if (k in patch) allowed[k] = patch[k]
-    if (Object.keys(allowed).length === 0) throw new AuthError('nothing_to_update', 'لا حقلَ يُعدَّل', 400)
+    if (Object.keys(allowed).length === 0) throw new AuthError('nothing_to_update', 'لا حقل يعدّل', 400)
     const row = await this.cohorts.update(userId, cohortId, allowed as TrainerCohortPatch)
     await recordAudit(this.prisma, {
       actorId: userId, action: 'cohort.trainer_update', entityType: 'cohort', entityId: cohortId,
@@ -1003,13 +1003,13 @@ export class CohortPlanService {
     const { profile } = await this.ownedCohort(userId, cohortId)
     if (!confirm) throw new AuthError('confirm_required', 'أكّد أنّك توافق على كلّ ما في الشعبة قبل إرسالها', 400)
     const latest = await this.latestTrainerPlan(cohortId)
-    if (!latest) throw new AuthError('no_plan', 'لا محتوى بعد — رتّب المحاورَ والمصادرَ أوّلا', 409)
-    if (latest.status === 'submitted') throw new AuthError('already_submitted', 'أُرسلت من قبل وهي بانتظار الاعتماد', 409)
+    if (!latest) throw new AuthError('no_plan', 'لا محتوى بعد — رتّب المحاور والمصادر أوّلا', 409)
+    if (latest.status === 'submitted') throw new AuthError('already_submitted', 'أرسلت من قبل وهي بانتظار الاعتماد', 409)
     if (latest.status === 'approved' || latest.status === 'published') {
-      throw new AuthError('already_approved', 'هذه الخطّة معتمَدة — عدّلها لتُنشأ نسخةٌ جديدة ثمّ أرسلها', 409)
+      throw new AuthError('already_approved', 'هذه الخطّة معتمدة — عدّلها لتنشأ نسخة جديدة ثمّ أرسلها', 409)
     }
     const content = latest.content as unknown as TrainerPlanContent
-    if (!content?.modules?.length) throw new AuthError('no_modules', 'لا محاورَ في الخطّة — رتّبها أوّلا', 409)
+    if (!content?.modules?.length) throw new AuthError('no_modules', 'لا محاور في الخطّة — رتّبها أوّلا', 409)
 
     /* الحاجزُ هنا لا في الزرّ وحدَه: زرٌّ مطفأٌ لا يمنع طلبا يُرسَل بيدٍ
        أخرى. والقاعدةُ من `plan-gate` نفسِها التي تُطفئ الزرَّ — فلا يفترق
@@ -1063,8 +1063,8 @@ export class CohortPlanService {
     /* من يملك الاعتمادَ يُخبَر — الأكاديميُّ والأعلى معا، وأيُّهما سبق قرّر */
     await notifyRole(this.prisma, ['academic_manager', 'super_admin'], {
       channel: 'in_app',
-      title: 'خطّةُ شعبةٍ بانتظار اعتمادك',
-      body: `${profile.application.fullName} أرسل خطّةَ «${cohort.title}» وأكّد موافقتَه على كلّ ما فيها — اقرأها وقرّر في «خططٌ تنتظر اعتمادك».`,
+      title: 'خطّة شعبة بانتظار اعتمادك',
+      body: `${profile.application.fullName} أرسل خطّة «${cohort.title}» وأكّد موافقته على كلّ ما فيها — اقرأها وقرّر في «خطط تنتظر اعتمادك».`,
       templateKey: 'cohort.plan.submitted',
       data: { cohortId, planId: plan.id },
     })
@@ -1276,7 +1276,7 @@ export class CohortPlanService {
       const asked = normalizeReviewNotes(typeof note === 'string' ? { general: note } : note)
       if (!hasReviewNotes(asked) && edits.line) asked.general = edits.line
       if (!hasReviewNotes(asked)) {
-        throw new AuthError('reason_required', 'قل له ما الذي يُعدَّل — في خطوته أو عامّةً. الردُّ بلا سببٍ يترك المدرّبَ يخمّن', 400)
+        throw new AuthError('reason_required', 'قل له ما الذي يعدّل — في خطوته أو عامّة. الردّ بلا سبب يترك المدرّب يخمّن', 400)
       }
       const composed = composeReviewNote(asked)!
       await this.prisma.cohortDeliveryPlan.update({
@@ -1304,7 +1304,7 @@ export class CohortPlanService {
       const { TrainerPrepService } = await import('./trainer-prep.service')
       const back = await new TrainerPrepService(this.prisma)
         .returnOnChanges(plan.cohort.id, actorId, composed, { quiet: true }).catch(() => null)
-      const resumed = back?.deadlineAt ? ` وعادت مهلتُك تعدّ — تنتهي ${whenAr(back.deadlineAt)}.` : ''
+      const resumed = back?.deadlineAt ? ` وعادت مهلتك تعدّ — تنتهي ${whenAr(back.deadlineAt)}.` : ''
       /* والبريدُ يقول الخطواتِ بأسمائها — ما يبحث عنه في شريطه */
       const bySection = REVIEW_SECTIONS.filter((s) => asked[s.key]).map((s) => ({ label: s.label, text: asked[s.key]! }))
       /* والبريدُ لطيفٌ عمليّ: شكرٌ، فملخّصُ ما جهّزناه، فخطواتٌ أوّلُها «اقبلها كلَّها» (`returnMailAr`،
@@ -1322,7 +1322,7 @@ export class CohortPlanService {
         notes: noteItemsFrom(asked).length, edits: edits.count, required: edits.required, reports: reports.length, resumedAr: resumed,
       })
       await this.tellTrainer(plan.trainer, plan.cohort, {
-        title: `طُلبت تعديلاتٌ على «${plan.cohort.title}»`,
+        title: `طلبت تعديلات على «${plan.cohort.title}»`,
         body: bell,
         heading: mail.heading,
         cta: mail.cta,
@@ -1407,7 +1407,7 @@ export class CohortPlanService {
     const { TrainerPrepService } = await import('./trainer-prep.service')
     const prepSvc = new TrainerPrepService(this.prisma)
     const qual = await prepSvc.qualifyOnApproval(plan.cohort.id, actorId, { quiet: true })
-      .catch((e: unknown) => ({ failedAr: e instanceof AuthError ? e.message : 'تعذّر اعتمادُ الدورة' }))
+      .catch((e: unknown) => ({ failedAr: e instanceof AuthError ? e.message : 'تعذّر اعتماد الدورة' }))
     const qualifiedCourseAr = qual && 'qualified' in qual && qual.qualified
       ? await this.courseTitleAr(qual.ctx.courseId)
       : null
@@ -1461,14 +1461,14 @@ export class CohortPlanService {
     if (!plan) throw new AuthError('not_found', 'الخطّة غير موجودة', 404)
     if (plan.status !== 'submitted') throw new AuthError('not_submitted', 'هذه الخطّة ليست بانتظار قرار', 409)
     if (planApprovedOnce(plan.cohort.plans)) {
-      throw new AuthError('running_cohort', 'هذه شعبةٌ اعتُمدت من قبل وتعمل — مراجعتُها تُعتمَد أو تُردّ بتعديلات، ولا تُؤجَّل', 409)
+      throw new AuthError('running_cohort', 'هذه شعبة اعتمدت من قبل وتعمل — مراجعتها تعتمد أو تردّ بتعديلات، ولا تؤجّل', 409)
     }
     const content = plan.content as unknown as TrainerPlanContent | null
     const period = asPeriod(content)
     const now = new Date()
     const today = zonedDay(now)
     if (!validPostponeTarget(to, period, today)) {
-      throw new AuthError('bad_season', 'اختر موسما بعد موسمها — التأجيلُ إلى ما بعده لا إليه', 400)
+      throw new AuthError('bad_season', 'اختر موسما بعد موسمها — التأجيل إلى ما بعده لا إليه', 400)
     }
     const from = plannedSeason(period, today)
     const toDay = seasonStart(to)
@@ -1550,8 +1550,8 @@ export class CohortPlanService {
         await safeNotify(this.prisma, {
           userId: l.userId, channel: 'in_app', audience: 'learner',
           templateKey: 'cohort.schedule_changed',
-          title: `تحدّدت مدّةُ «${before.title}»`,
-          body: `تبدأ ${when} وتنتهي ${until}. راجِع مواعيدَ لقاءاتها في صفحة رحلتك.`,
+          title: `تحدّدت مدّة «${before.title}»`,
+          body: `تبدأ ${when} وتنتهي ${until}. راجع مواعيد لقاءاتها في صفحة رحلتك.`,
           data: { cohortId, fields: ['startsAt', 'endsAt'] },
         })
       }
@@ -1575,11 +1575,11 @@ export class CohortPlanService {
     })
     if (!cohort) throw new AuthError('not_found', 'الشعبة غير موجودة', 404)
     const lead = cohort.trainers[0]?.profile
-    if (!lead) throw new AuthError('no_trainer', 'لا مدرّبَ رئيسا لهذه الشعبة بعد', 409)
+    if (!lead) throw new AuthError('no_trainer', 'لا مدرّب رئيسا لهذه الشعبة بعد', 409)
     await this.tellTrainer(lead, cohort, {
-      title: `تذكير: أكمل تجهيزَ «${cohort.title}»`,
-      body: note?.trim() || 'رتّب المحاورَ والمصادرَ ومواعيدَ اللقاءات، ثمّ أكّد موافقتَك وأرسلها للاعتماد.',
-      heading: 'شعبتك تنتظر تجهيزَك',
+      title: `تذكير: أكمل تجهيز «${cohort.title}»`,
+      body: note?.trim() || 'رتّب المحاور والمصادر ومواعيد اللقاءات، ثمّ أكّد موافقتك وأرسلها للاعتماد.',
+      heading: 'شعبتك تنتظر تجهيزك',
       cta: 'افتح ورشة الشعبة',
     })
     await recordAudit(this.prisma, {

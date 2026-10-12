@@ -104,7 +104,7 @@ export class TrainerChangeService {
     ])
     const qualified = qual?.status === 'qualified'
     if (!qualified && !assignment) {
-      throw new AuthError('not_qualified', 'لا يمكنك الاقتراح إلا على دورةٍ من دوراتك أو مسندةٍ إليك', 403)
+      throw new AuthError('not_qualified', 'لا يمكنك الاقتراح إلا على دورة من دوراتك أو مسندة إليك', 403)
     }
   }
 
@@ -459,10 +459,10 @@ export class TrainerChangeService {
       await safeNotify(this.prisma, {
         userId: profile.userId, channel: 'in_app', audience: 'trainer',
         templateKey: grant ? 'trainer.scope.granted' : 'trainer.scope.revoked',
-        title: grant ? 'مُنحتَ نطاقَ الكتالوج' : 'سُحب منك نطاقُ الكتالوج',
+        title: grant ? 'منحت نطاق الكتالوج' : 'سحب منك نطاق الكتالوج',
         body: grant
-          ? 'صار اقتراحُك يجوز أن يمسّ الدورةَ نفسَها لا شعبتَك وحدَها، ويُعرض معه أثرُه قبل النشر.'
-          : 'تبقى اقتراحاتُك على شعبك وحدها، وما نُشر قبل السحب باقٍ كما هو.',
+          ? 'صار اقتراحك يجوز أن يمسّ الدورة نفسها لا شعبتك وحدها، ويعرض معه أثره قبل النشر.'
+          : 'تبقى اقتراحاتك على شعبك وحدها، وما نشر قبل السحب باق كما هو.',
       })
     }
     return { profileId, grantedAt: updated.catalogScopeGrantedAt?.toISOString() ?? null }
@@ -507,7 +507,7 @@ export class TrainerChangeService {
       if (!impact.checked) {
         throw new AuthError(
           'impact_not_checked',
-          'لا يُنشر تغيير بنطاق الكتالوج قبل فحص أثره التشخيصي — شغّل «افحص الأثر التشخيصي» ثم انشر',
+          'لا ينشر تغيير بنطاق الكتالوج قبل فحص أثره التشخيصي — شغّل «افحص الأثر التشخيصي» ثم انشر',
           409,
         )
       }

@@ -72,8 +72,8 @@ export async function attestationState(
     return {
       ok: false, attestation: null, ageDays: null,
       reasonAr:
-        'لا استرجاعَ مُثبَتٌ لنسخةٍ احتياطيّة. شغّل على الخادم: bash deploy/backup.sh --verify — ' +
-        'ينزّل آخرَ نسخةٍ ويسترجعها في قاعدةِ خدشٍ ويعدّ صفوفَها. وقبل ذلك لا يُمحى شيءٌ لا رجعةَ فيه.',
+        'لا استرجاع مثبت لنسخة احتياطيّة. شغّل على الخادم: bash deploy/backup.sh --verify — ' +
+        'ينزّل آخر نسخة ويسترجعها في قاعدة خدش ويعدّ صفوفها. وقبل ذلك لا يمحى شيء لا رجعة فيه.',
     }
   }
   const ageDays = Math.floor((now.getTime() - Date.parse(attestation.at)) / 86_400_000)
@@ -81,8 +81,8 @@ export async function attestationState(
     return {
       ok: false, attestation, ageDays,
       reasonAr:
-        `آخرُ استرجاعٍ مُثبَتٍ عمرُه ${ageDays} يوما (الحدّ ${MAX_AGE_DAYS}). ` +
-        'وإثباتٌ قديمٌ لا يقول شيئا عن قاعدةِ اليوم — أعد: bash deploy/backup.sh --verify',
+        `آخر استرجاع مثبت عمره ${ageDays} يوما (الحدّ ${MAX_AGE_DAYS}). ` +
+        'وإثبات قديم لا يقول شيئا عن قاعدة اليوم — أعد: bash deploy/backup.sh --verify',
     }
   }
   return { ok: true, attestation, ageDays, reasonAr: null }

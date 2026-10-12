@@ -192,8 +192,8 @@ export class CatalogAdminService {
     if (twin) {
       throw new AuthError(
         'duplicate_name',
-        `في القاموس مهارةٌ بهذا الاسم: ${twin.nameAr} (${twin.id}) — اربِط دورتَك بها،`
-        + ' أو سمِّ الجديدةَ اسما يفرّقها عنها. واسمان متشابهان يقسمان قياسَ المهارة الواحدة.',
+        `في القاموس مهارة بهذا الاسم: ${twin.nameAr} (${twin.id}) — اربط دورتك بها،`
+        + ' أو سمّ الجديدة اسما يفرّقها عنها. واسمان متشابهان يقسمان قياس المهارة الواحدة.',
         409,
       )
     }
@@ -234,7 +234,7 @@ export class CatalogAdminService {
     const unique = [...new Set(skillIds)]
     const known = await this.prisma.skill.findMany({ where: { id: { in: unique } }, select: { id: true } })
     const missing = unique.filter((id) => !known.some((k) => k.id === id))
-    if (missing.length) throw new AuthError('unknown_skill', `مهاراتٌ غيرُ معروفة: ${missing.join(' · ')}`, 422)
+    if (missing.length) throw new AuthError('unknown_skill', `مهارات غير معروفة: ${missing.join(' · ')}`, 422)
 
     const before = (await this.prisma.courseSkillLink.findMany({
       where: { courseId }, select: { skillId: true },
@@ -286,14 +286,14 @@ export class CatalogAdminService {
     const known = new Set(domainsV2.map((d) => d.id as string))
     const unknown = domains.filter((d) => !known.has(d))
     if (unknown.length) {
-      throw new AuthError('unknown_domain', `مجالاتٌ لا يعرفها التشخيص: ${unknown.join(' · ')}`, 422)
+      throw new AuthError('unknown_domain', `مجالات لا يعرفها التشخيص: ${unknown.join(' · ')}`, 422)
     }
 
     const stages = [...new Set(input.stages.map((x) => x.trim()).filter(Boolean))].sort()
     const knownStages = new Set(Object.keys(CAREER_STAGE_LABELS_AR))
     const badStages = stages.filter((x) => !knownStages.has(x))
     if (badStages.length) {
-      throw new AuthError('unknown_stage', `مراحلُ لا يعرفها التشخيص: ${badStages.join(' · ')}`, 422)
+      throw new AuthError('unknown_stage', `مراحل لا يعرفها التشخيص: ${badStages.join(' · ')}`, 422)
     }
 
     /* ولا تُشعَل بلا ما تنافس به: مجالٌ يصلها به احتياج، ومهارةٌ تُقاس.
@@ -301,15 +301,15 @@ export class CatalogAdminService {
        أشعله أنّ دورتَه «تُرشَّح» وهي لا تُرشَّح. */
     if (input.recommendable) {
       if (domains.length === 0) {
-        throw new AuthError('no_domain', 'اذكر مجالَ التشخيص الذي تخدمه — بلا مجالٍ لا يصلها هدفٌ ولا احتياج', 422)
+        throw new AuthError('no_domain', 'اذكر مجال التشخيص الذي تخدمه — بلا مجال لا يصلها هدف ولا احتياج', 422)
       }
       if (course.skillLinks.length === 0) {
-        throw new AuthError('no_skills', 'اربطْ مهاراتِها أوّلا — الدورةُ تنافس بمهاراتها، وبلا مهارةٍ لا شيءَ يُقاس', 422)
+        throw new AuthError('no_skills', 'اربط مهاراتها أوّلا — الدورة تنافس بمهاراتها، وبلا مهارة لا شيء يقاس', 422)
       }
       /* والصمتُ عن الجمهور يُخرجها من المنافسة لا يُدخلها كلَّ منافسة
          (`assessEntityEligibility`) — فتُرشَّح في الورق ولا تنافس مرّةً. */
       if (stages.length === 0) {
-        throw new AuthError('no_stages', 'اذكر جمهورَها — كيانٌ بلا جمهورٍ مُعلَنٍ يخرج من المنافسة ولا ينافس مرّة', 422)
+        throw new AuthError('no_stages', 'اذكر جمهورها — كيان بلا جمهور معلن يخرج من المنافسة ولا ينافس مرّة', 422)
       }
     }
 
@@ -460,7 +460,7 @@ export class CatalogAdminService {
       if (!COURSE_DOMAIN_FAMILIES.includes(family)) {
         throw new AuthError(
           'unknown_family',
-          'دورةٌ بلا مسارٍ أمٍّ تحتاج عائلةً مسمّاةً من قائمة العائلات — منها يُشتقّ معرّفُها ومجالُها',
+          'دورة بلا مسار أمّ تحتاج عائلة مسمّاة من قائمة العائلات — منها يشتقّ معرّفها ومجالها',
           422,
         )
       }
@@ -665,7 +665,7 @@ export class CatalogAdminService {
     'لا أعرفها',
     'مبتدئ',
     'أستخدمها أحيانا',
-    'جيد عمليًا',
+    'جيد عمليا',
     'متقدم وأطبقها بثقة',
   ]
 
@@ -688,11 +688,11 @@ export class CatalogAdminService {
       throw new AuthError('invalid_text', 'نص السؤال قصير جدا — المتعلم يقيس نفسه به')
     }
     if (input.decisionImpactAr.trim().length < 15) {
-      throw new AuthError('invalid_impact', 'أثر القرار مطلوب: سؤال لا نستطيع إكمال جملة أثره يصبح متقاعدا في خطة V2.1 فلا يُطرح')
+      throw new AuthError('invalid_impact', 'أثر القرار مطلوب: سؤال لا نستطيع إكمال جملة أثره يصبح متقاعدا في خطة V2.1 فلا يطرح')
     }
 
     const skill = await this.prisma.skill.findFirst({ where: { slug: input.skillSlug } })
-    if (!skill) throw new AuthError('unknown_skill', `لا مهارة مسجَّلة بالمُعرّف «${input.skillSlug}» — سجّلها أولا أو صحّح الاسم`)
+    if (!skill) throw new AuthError('unknown_skill', `لا مهارة مسجّلة بالمعرّف «${input.skillSlug}» — سجّلها أولا أو صحّح الاسم`)
     if (skill.active === false || skill.mergedInto) {
       throw new AuthError('inactive_skill', `المهارة «${input.skillSlug}» موقوفة أو مدموجة — قياسها لا يدخل أي ترشيح`)
     }
@@ -752,15 +752,15 @@ export class CatalogAdminService {
       والتقرير يعرض الاثنين. والإيقاف بيانيّ وقابل للرجوع — لا تعديل كود. */
   async retireMeasurementQuestion(id: string, reasonAr: string) {
     if (reasonAr.trim().length < 10) {
-      throw new AuthError('reason_required', 'سبب الإيقاف مطلوب — يُقرأ في سجل التدقيق بعد أشهر')
+      throw new AuthError('reason_required', 'سبب الإيقاف مطلوب — يقرأ في سجل التدقيق بعد أشهر')
     }
     const q = await this.prisma.question.findUnique({ where: { id } })
     if (!q) throw new AuthError('not_found', 'السؤال غير موجود', 404)
     if (q.answerType !== 'skill_level_5') {
-      throw new AuthError('not_measurement', 'هذه العملية لأسئلة القياس وحدها — غيرها يُدار من خطة الأسئلة')
+      throw new AuthError('not_measurement', 'هذه العملية لأسئلة القياس وحدها — غيرها يدار من خطة الأسئلة')
     }
     if (!q.active) return { id, active: false, alreadyInactive: true }
-    await this.prisma.question.update({ where: { id }, data: { active: false, reasonAr: `${q.reasonAr ?? ''}\n[أُوقف] ${reasonAr.trim()}`.trim() } })
+    await this.prisma.question.update({ where: { id }, data: { active: false, reasonAr: `${q.reasonAr ?? ''}\n[أوقف] ${reasonAr.trim()}`.trim() } })
     return { id, active: false, alreadyInactive: false }
   }
 
@@ -803,7 +803,7 @@ export class CatalogAdminService {
     steps.push({
       key: 'courses', labelAr: 'الدورات', ok: courseIds.length > 0 && missingCourses.length === 0 && notReady.length === 0,
       reasonAr: courseIds.length === 0
-        ? 'بلا دورة واحدة — المسار وعدٌ بلا محتوى.'
+        ? 'بلا دورة واحدة — المسار وعد بلا محتوى.'
         : missingCourses.length > 0 ? `مراجع دورات مفقودة: ${missingCourses.join('، ')}`
         : notReady.length > 0 ? `دورات بحالة غير صالحة: ${notReady.join('، ')}`
         : `${courseIds.length} دورة مرتبطة.`,
@@ -829,7 +829,7 @@ export class CatalogAdminService {
       key: 'domains', labelAr: 'المجال', ok: pathway.domains.length > 0,
       reasonAr: pathway.domains.length > 0
         ? `${pathway.domains.length} مجال: ${pathway.domains.map((d) => d.domainId).join('، ')}`
-        : 'بلا مجال — لا يدخل مطابقة المجالات إطلاقا، فيُنشر ولا يُوصى به.',
+        : 'بلا مجال — لا يدخل مطابقة المجالات إطلاقا، فينشر ولا يوصى به.',
     })
 
     /* ٥) فحص الأثر — بعد آخر تعديل على المسار، لا فحصٌ قديم لحالة أخرى */
@@ -850,9 +850,9 @@ export class CatalogAdminService {
     steps.push({
       key: 'impact', labelAr: 'فحص الأثر التشخيصي', ok: fresh,
       reasonAr: !lastImpact
-        ? 'لم يُفحص أثره على الشخصيات الاثنتي عشرة بعد.'
-        : fresh ? `فُحص بعد آخر تعديل (${lastImpact.createdAt.toISOString().slice(0, 16).replace('T', ' ')}).`
-        : 'الفحص أقدم من آخر تعديل — أعِد الفحص كي يصف ما ستنشره فعلا.',
+        ? 'لم يفحص أثره على الشخصيات الاثنتي عشرة بعد.'
+        : fresh ? `فحص بعد آخر تعديل (${lastImpact.createdAt.toISOString().slice(0, 16).replace('T', ' ')}).`
+        : 'الفحص أقدم من آخر تعديل — أعد الفحص كي يصف ما ستنشره فعلا.',
     })
 
     return { pathwayId, steps, ok: steps.every((s2) => s2.ok) }

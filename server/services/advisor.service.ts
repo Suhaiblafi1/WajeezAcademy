@@ -121,8 +121,8 @@ export class AdvisorService {
     await safeNotify(this.prisma, {
       userId: advisorId, channel: 'in_app', audience: 'staff',
       templateKey: 'advisor.case.assigned',
-      title: 'أُسنِدت إليك حالةٌ جديدة',
-      body: `حالةُ «${clientName}» صارت في عهدتك — افتحها من «حالاتي» وابدأ بأوّل تواصل.`,
+      title: 'أسندت إليك حالة جديدة',
+      body: `حالة «${clientName}» صارت في عهدتك — افتحها من «حالاتي» وابدأ بأوّل تواصل.`,
       data: { caseId },
     })
     return link
@@ -178,7 +178,7 @@ export class AdvisorService {
     const phone = input.phone?.trim() || null
     if (fullName.length < 2) throw new AuthError('bad_name', 'الاسم حرفان على الأقلّ', 400)
     if (!email && !phone) {
-      throw new AuthError('no_contact', 'بريدٌ أو هاتف — حالةٌ بلا سبيلٍ إلى صاحبها لا تُفتح', 400)
+      throw new AuthError('no_contact', 'بريد أو هاتف — حالة بلا سبيل إلى صاحبها لا تفتح', 400)
     }
 
     /* لا حالتان مفتوحتان لعميلٍ واحد — ولو أدخله اثنان */
@@ -191,7 +191,7 @@ export class AdvisorService {
         select: { id: true },
       })
       if (open) {
-        throw new AuthError('case_exists', 'لهذا البريد حالةٌ مفتوحةٌ بالفعل — افتحها بدل إنشاء ثانية', 409)
+        throw new AuthError('case_exists', 'لهذا البريد حالة مفتوحة بالفعل — افتحها بدل إنشاء ثانية', 409)
       }
     }
 
