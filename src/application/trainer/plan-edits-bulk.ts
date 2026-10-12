@@ -86,3 +86,38 @@ export function bulkSummaryAr(done: number, failed: number): string {
   if (done === 0) return `لم يرفع شيء — ردّت الملفّات كلّها (${total}) بأسبابها أدناه.`
   return `رفع ${done} من ${total} — وردّ ${failed} بسببه أدناه، وما ردّ لم يحفظ منه شيء.`
 }
+
+/* ═══ «احذف المكرر» — يبقى آخرُ ملفٍّ رُفع على الخطّة (١٢ أكتوبر ٢٠٢٦، `keepLatest` في `plan-edit.service.ts`) ═══
+   «give me a button to remove duplication» (صاحب المنصّة): أعادت «أعد ما سحبته» بنودَ رفعاتٍ سابقةٍ فوق
+   الملفّ الجديد. فزرٌّ على البطاقة لخطّتها، وزرٌّ في «خططٌ تنتظر اعتمادك» للخطط كلِّها. */
+export const KEEP_LATEST_AR = {
+  labelAr: 'احذف المكرر',
+  whatAr: 'في الخطة بنود من ملفات أقدم لم يقرر فيها المدرب. «احذف المكرر» يبقي آخر ملف رفعته فقط، ويسحب الأقدم من صفحة المدرب. وما قرر فيه لا يمس.',
+} as const
+
+export const DEDUPE_ALL_AR = {
+  labelAr: 'احذف المكرر من كل الخطط',
+  whatAr: 'يبقي في كل خطة آخر ملف رفعته، ويسحب البنود الأقدم التي لم يقرر فيها المدرب. وما قرر فيه لا يمس، وتعيده «أعد ما سحبته» في بطاقة الخطة.',
+} as const
+
+export function keepLatestPath(planId: string): string {
+  return `/api/admin/cohort-plans/${planId}/edits/keep-latest`
+}
+
+/** «سحب 35 بندا من ملفات أقدم…» — بعد الزرّ على البطاقة */
+export function keptLatestAr(withdrawn: number): string {
+  return `سحب ${countAr(withdrawn, ITEM_FORMS)} من ملفات أقدم، وبقي آخر ملف رفعته. وتعيدها «أعد ما سحبته» إن أردت.`
+}
+
+const PLAN_FORMS = { one: 'خطة', two: 'خطتين', few: 'خطط', many: 'خطة' }
+
+/** خلاصةُ «احذف المكرر من كل الخطط» — كم سُحب ومن كم خطّة، وكم خطّةٍ بلا مكرّر، وما تعذّر */
+export function dedupeSummaryAr(r: { cleaned: number; withdrawn: number; clean: number; failed: number }): string {
+  if (r.cleaned === 0 && r.failed === 0) return 'لا مكرر في أي خطة — كل ما لم يقرر فيه من آخر ملف رفعته.'
+  const parts = [
+    r.cleaned > 0 ? `سحب ${countAr(r.withdrawn, ITEM_FORMS)} من ${countAr(r.cleaned, PLAN_FORMS)}` : 'لم يسحب شيء',
+    r.clean > 0 ? `و${countAr(r.clean, PLAN_FORMS)} بلا مكرر` : '',
+    r.failed > 0 ? `وتعذر ${countAr(r.failed, PLAN_FORMS)} — أسبابها أدناه` : '',
+  ]
+  return parts.filter(Boolean).join('، ') + '.'
+}

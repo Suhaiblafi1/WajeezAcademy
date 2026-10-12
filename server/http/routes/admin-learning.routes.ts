@@ -275,6 +275,15 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
     return planEdits.restore(req.auth!.userId, id)
   })
 
+  /* ═══ «احذف المكرر» — يبقى آخرُ ملفٍّ رُفع، وما لم يقرّر فيه من الأقدم يُسحب (١٢ أكتوبر ٢٠٢٦، `keepLatest`) ═══ */
+  app.post('/api/admin/cohort-plans/:id/edits/keep-latest', {
+    preHandler: requirePermission('cohort.plan.approve'),
+    schema: { tags: ['admin-cohorts'], summary: 'سحب المكرر: ما لم يقرر فيه من ملفات أقدم من آخر ملف رفع' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return planEdits.keepLatest(req.auth!.userId, id)
+  })
+
   app.delete('/api/admin/cohort-plans/:id/edits', {
     preHandler: requirePermission('cohort.plan.approve'),
     schema: { tags: ['admin-cohorts'], summary: 'سحب ما لم يقرّر فيه من التعديلات المقترحة' },

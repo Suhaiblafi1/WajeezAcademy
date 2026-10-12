@@ -123,3 +123,37 @@ describe('صفحة المدرّب', () => {
     expect(panel).not.toMatch(/وقّع|عرضك/)
   })
 })
+
+describe('«احذف المكرر» — على البطاقة وللخطط كلها (١٢ أكتوبر ٢٠٢٦)', () => {
+  const page = code('src/pages/admin/PendingPlans.tsx')
+  const panel = code('src/components/PlanEdits.tsx')
+  const card = panel.slice(panel.indexOf('export function PlanEditsUploader'), panel.indexOf('export function PlanEditsDedupeAll'))
+  const all = panel.slice(panel.indexOf('export function PlanEditsDedupeAll'), panel.indexOf('export function PlanEditsBulkUpload'))
+
+  it('⚠️ البطاقة تقرأ عدده مع «أعد ما سحبته» — ولا يظهر الزرّ إلّا وفيها مكرر', () => {
+    expect(card).toMatch(/setWithdrawn\(w\.count\); setOlder\(w\.older \?\? 0\);/)
+    expect(card).toMatch(/\{older > 0 && \(\s*<Button[^>]*onClick=\{\(\) => void keepLatest\(\)\}>\s*\{KEEP_LATEST_AR\.labelAr\} \(\{older\}\)/)
+    expect(card).toMatch(/apiPost<[^>]*>\(keepLatestPath\(planId\), \{\}\)/)
+  })
+
+  it('⚠️ وما يقع به يقال تحت الأزرار حين يظهر', () => {
+    expect(card).toMatch(/\{canUpload && older > 0 && <p[^>]*>\{KEEP_LATEST_AR\.whatAr\}<\/p>\}/)
+  })
+
+  it('⚠️ وللخطط كلها زرّ واحد لمن يعتمد — كل خطة بمسلك بطاقتها، وما تعذّر لا يوقف ما بعده', () => {
+    expect(page).toMatch(/\{rows !== null && canUploadEdits && scoped\.length > 0 && \(\s*<PlanEditsDedupeAll/)
+    expect(all).toMatch(/await apiPost<[^>]*>\(keepLatestPath\(p\.id\), \{\}\)/)
+    const loop = all.slice(all.indexOf('for (const p of plans)'))
+    expect(loop.indexOf('try {')).toBeGreaterThan(0)
+    expect(loop.indexOf('try {'), 'الاعتراض داخل الحلقة لا حولها').toBeLessThan(loop.indexOf('setFailures(failed)'))
+  })
+
+  it('⚠️ وخطة بلا مكرر ليست فشلا — تعدّ ولا تعرض سببا', () => {
+    expect(all).toMatch(/e\.code === "no_duplicates" \|\| e\.code === "plan_closed"\)\) tally\.clean\+\+/)
+  })
+
+  it('⚠️ وبطاقة ما نظف تعاد — فلا يبقى عددها القديم', () => {
+    expect(page).toMatch(/<PlanEditsDedupeAll[\s\S]{0,200}onCleaned=\{\(id\) => setUploaded\(/)
+    expect(all).toMatch(/tally\.cleaned\+\+; tally\.withdrawn \+= r\.withdrawn;\s*onCleaned\(p\.id\);/)
+  })
+})

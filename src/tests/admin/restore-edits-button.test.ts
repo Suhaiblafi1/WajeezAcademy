@@ -16,7 +16,7 @@ const ui = code('src/components/PlanEdits.tsx')
 
 describe('«أعد ما سحبته»', () => {
   it('⚠️ تقرأ البطاقة كم يعود مع القائمة', () => {
-    expect(ui).toMatch(/setWithdrawn\(\(await apiGet<\{ count: number \}>\(`\/api\/admin\/cohorts\/\$\{cohortId\}\/plan-edits\/withdrawn`\)\)\.count\)/)
+    expect(ui).toMatch(/const w = await apiGet<\{ count: number; older\?: number \}>\(`\/api\/admin\/cohorts\/\$\{cohortId\}\/plan-edits\/withdrawn`\);\s*setWithdrawn\(w\.count\);/)
   })
 
   it('⚠️ والزرّ بعدده حين يعود شيء — ينادي مسار الإعادة', () => {

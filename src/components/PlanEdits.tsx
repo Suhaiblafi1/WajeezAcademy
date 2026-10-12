@@ -8,13 +8,13 @@
    تعرضان ما يحسبه الخادمُ منها، لا تحسبان. */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { CalendarClock, Check, ExternalLink, FileJson, Files, PencilLine, Undo2, X } from "lucide-react";
+import { CalendarClock, Check, CopyX, ExternalLink, FileJson, Files, PencilLine, Undo2, X } from "lucide-react";
 import { apiDelete, apiGet, apiPost, ApiError } from "@/services/api";
 import { Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import Chip from "@/components/ui/Chip";
 import type { EditView, PlanEditStatus } from "@/application/trainer/plan-edits";
-import { BULK_MODE_AR, BULK_MODES, bulkSummaryAr, bulkUploadPath, readEditsFile, replacedLineAr, uploadedLineAr, withdrawnLineAr, type BulkMode } from "@/application/trainer/plan-edits-bulk";
+import { BULK_MODE_AR, BULK_MODES, bulkSummaryAr, bulkUploadPath, DEDUPE_ALL_AR, dedupeSummaryAr, KEEP_LATEST_AR, keepLatestPath, keptLatestAr, readEditsFile, replacedLineAr, uploadedLineAr, withdrawnLineAr, type BulkMode } from "@/application/trainer/plan-edits-bulk";
 import { GapList, NoteSubs } from "@/components/LongText";
 import { gapLayout } from "@/application/trainer/text-layout";
 
@@ -105,12 +105,16 @@ export function PlanEditsUploader({ planId, cohortId, canUpload, canReview, onPe
   const [reviewing, setReviewing] = useState<string | null>(null);
   /* كم يعود بـ«أعِد ما سحبته» — يُقرأ مع القائمة (١٢ أكتوبر ٢٠٢٦، `restore` في `plan-edit.service.ts`) */
   const [withdrawn, setWithdrawn] = useState(0);
+  /* وكم يسحب «احذف المكرر» — بنود ملفات أقدم من آخر ملف رفع ولم يقرر فيها المدرب (`keepLatest`) */
+  const [older, setOlder] = useState(0);
 
   const load = useCallback(async () => {
     try { setItems(await apiGet<PlanEditItem[]>(`/api/admin/cohorts/${cohortId}/plan-edits`)); }
     catch { /* البطاقةُ تُقرأ بلا القائمة */ }
-    try { setWithdrawn((await apiGet<{ count: number }>(`/api/admin/cohorts/${cohortId}/plan-edits/withdrawn`)).count); }
-    catch { setWithdrawn(0); }
+    try {
+      const w = await apiGet<{ count: number; older?: number }>(`/api/admin/cohorts/${cohortId}/plan-edits/withdrawn`);
+      setWithdrawn(w.count); setOlder(w.older ?? 0);
+    } catch { setWithdrawn(0); setOlder(0); }
   }, [cohortId]);
   useEffect(() => { void load(); }, [load]);
 
@@ -150,6 +154,23 @@ export function PlanEditsUploader({ planId, cohortId, canUpload, canReview, onPe
     try {
       setItems(await apiDelete<PlanEditItem[]>(`/api/admin/cohort-plans/${planId}/edits`));
       setMsg("سحب ما لم يقرّر فيه — وتعيده كما كان بـ«أعد ما سحبته».");
+      await load();
+    } catch (e) {
+      setMsg(errText(e, "تعذّر السحب"));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  /* ═══ «احذف المكرر» — يبقى آخرُ ملفٍّ رفعه، ويُسحب ما لم يقرّر فيه من الأقدم (١٢ أكتوبر ٢٠٢٦) ═══
+     «give me a button to remove duplication» (صاحب المنصّة) — بعد أن أعادت «أعد ما سحبته» بنودَ
+     رفعاتٍ سابقةٍ فوق الملفّ الجديد. */
+  const keepLatest = async () => {
+    setBusy(true); setMsg("");
+    try {
+      const r = await apiPost<{ edits: PlanEditItem[]; withdrawn: number }>(keepLatestPath(planId), {});
+      setItems(r.edits);
+      setMsg(keptLatestAr(r.withdrawn));
       await load();
     } catch (e) {
       setMsg(errText(e, "تعذّر السحب"));
@@ -308,6 +329,11 @@ export function PlanEditsUploader({ planId, cohortId, canUpload, canReview, onPe
               جهّز جدولا ثابتا مقترحا
             </Button>
           )}
+          {older > 0 && (
+            <Button tone="secondary" size="sm" icon={CopyX} disabled={busy} onClick={() => void keepLatest()}>
+              {KEEP_LATEST_AR.labelAr} ({older})
+            </Button>
+          )}
           {open > 0 && (
             <Button tone="ghost" size="sm" disabled={busy} onClick={() => void withdraw()}>
               اسحب ما لم يقرّر ({open})
@@ -320,6 +346,7 @@ export function PlanEditsUploader({ planId, cohortId, canUpload, canReview, onPe
           )}
         </div>
       )}
+      {canUpload && older > 0 && <p className="mt-2 text-read leading-6 text-muted-foreground">{KEEP_LATEST_AR.whatAr}</p>}
       {msg && <p className="mt-2 whitespace-pre-wrap text-read font-bold text-teal-light-ink" role="status">{msg}</p>}
     </Inset>
   );
@@ -335,6 +362,54 @@ interface BulkResult {
   labelAr: string | null;
   okAr: string | null;
   problemAr: string | null;
+}
+
+/* ═══ «احذف المكرر من كل الخطط» — نقرةٌ واحدةٌ للخطط المنتظِرة كلِّها (١٢ أكتوبر ٢٠٢٦) ═══
+   «give me a button to remove duplication» (صاحب المنصّة). كلُّ خطّةٍ بالمسلك الذي في بطاقتها
+   (`keepLatest`)، واحدةً بعد واحدة؛ وما لا مكرّرَ فيه يُعدّ ولا يُعرض سببا. */
+export function PlanEditsDedupeAll({ plans, onCleaned }: {
+  plans: readonly { id: string; labelAr: string }[];
+  onCleaned: (planId: string) => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [summary, setSummary] = useState("");
+  const [failures, setFailures] = useState<{ labelAr: string; problemAr: string }[]>([]);
+
+  const run = async () => {
+    setBusy(true); setSummary(""); setFailures([]);
+    const tally = { cleaned: 0, withdrawn: 0, clean: 0, failed: 0 };
+    const failed: { labelAr: string; problemAr: string }[] = [];
+    for (const p of plans) {
+      try {
+        const r = await apiPost<{ withdrawn: number }>(keepLatestPath(p.id), {});
+        tally.cleaned++; tally.withdrawn += r.withdrawn;
+        onCleaned(p.id);
+      } catch (e) {
+        if (e instanceof ApiError && (e.code === "no_duplicates" || e.code === "plan_closed")) tally.clean++;
+        else { tally.failed++; failed.push({ labelAr: p.labelAr, problemAr: errText(e, "تعذّر السحب") }); }
+      }
+    }
+    setFailures(failed);
+    setSummary(dedupeSummaryAr(tally));
+    setBusy(false);
+  };
+
+  return (
+    <Inset className="mb-4 space-y-2 px-4 py-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="max-w-2xl text-read leading-6 text-muted-foreground">{DEDUPE_ALL_AR.whatAr}</p>
+        <Button size="sm" tone="secondary" icon={CopyX} disabled={busy || plans.length === 0} onClick={() => void run()}>
+          {busy ? "يسحب المكرر…" : DEDUPE_ALL_AR.labelAr}
+        </Button>
+      </div>
+      {summary && <p className="text-read font-bold text-teal-light-ink" role="status">{summary}</p>}
+      {failures.length > 0 && (
+        <ul className="space-y-1">
+          {failures.map((f) => <li key={f.labelAr} className="text-read leading-6 text-danger-ink">{f.labelAr}: {f.problemAr}</li>)}
+        </ul>
+      )}
+    </Inset>
+  );
 }
 
 /** `plans` الخططُ المنتظِرة — لتُسمّى كلُّ نتيجةٍ بشعبتها ومدرّبها، ويُفتح ما فيها.

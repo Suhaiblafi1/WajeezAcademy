@@ -2,7 +2,7 @@
    وكم بندا فيه. وما لا يُقرأ يعود بسببه لا يرمي — فلا يوقف ما بعده من الدفعة. */
 
 import { describe, expect, it } from 'vitest'
-import { BULK_MODE_AR, BULK_MODES, bulkSummaryAr, bulkUploadPath, readEditsFile, replacedLineAr, uploadedLineAr, withdrawnLineAr } from '@/application/trainer/plan-edits-bulk'
+import { BULK_MODE_AR, BULK_MODES, bulkSummaryAr, bulkUploadPath, DEDUPE_ALL_AR, dedupeSummaryAr, KEEP_LATEST_AR, keepLatestPath, keptLatestAr, readEditsFile, replacedLineAr, uploadedLineAr, withdrawnLineAr } from '@/application/trainer/plan-edits-bulk'
 
 const PLAN = '7c1a3a52-2a7e-4a36-9a43-0d1d2b6b8f10'
 const file = (over: Record<string, unknown> = {}) => JSON.stringify({
@@ -85,6 +85,37 @@ describe('«ابدأ من جديد» — الطريقة الثالثة (١٢ أ�
 
   it('⚠️ ونصوصها بلا تشكيل إعرابيّ — اللغة البيضاء', () => {
     const all = [...Object.values(BULK_MODE_AR).flatMap((x) => [x.labelAr, x.whatAr]), withdrawnLineAr(5)].join(' ')
+    expect(all).not.toMatch(/[\u064B-\u0650\u0652]/)
+  })
+})
+
+describe('«احذف المكرر» — يبقى آخر ملف رفع (١٢ أكتوبر ٢٠٢٦)', () => {
+  it('⚠️ مسلكه مسلك الخادم', () => {
+    expect(keepLatestPath(PLAN)).toBe(`/api/admin/cohort-plans/${PLAN}/edits/keep-latest`)
+  })
+
+  it('⚠️ ويقول ما يقع به: يبقى آخر ملف، وما قرّر فيه المدرّب لا يمسّ', () => {
+    for (const t of [KEEP_LATEST_AR.whatAr, DEDUPE_ALL_AR.whatAr]) {
+      expect(t).toMatch(/آخر ملف رفعته/)
+      expect(t).toMatch(/لا يمس/)
+    }
+  })
+
+  it('وسطر البطاقة يقول كم سحب بصيغة عدده — ويدلّ على الإعادة', () => {
+    expect(keptLatestAr(1)).toBe('سحب 1 بند من ملفات أقدم، وبقي آخر ملف رفعته. وتعيدها «أعد ما سحبته» إن أردت.')
+    expect(keptLatestAr(35)).toMatch(/^سحب 35 بندا من ملفات أقدم/)
+  })
+
+  it('⚠️ والخلاصة لكل الخطط: كم سحب ومن كم خطة، وكم بلا مكرر، وما تعذّر — ولا «لا مكرر» وفيها ما تعذّر', () => {
+    expect(dedupeSummaryAr({ cleaned: 12, withdrawn: 230, clean: 16, failed: 0 })).toBe('سحب 230 بندا من 12 خطة، و16 خطة بلا مكرر.')
+    expect(dedupeSummaryAr({ cleaned: 2, withdrawn: 5, clean: 0, failed: 1 })).toBe('سحب 5 بنود من 2 خطتين، وتعذر 1 خطة — أسبابها أدناه.')
+    expect(dedupeSummaryAr({ cleaned: 0, withdrawn: 0, clean: 28, failed: 0 })).toMatch(/^لا مكرر في أي خطة/)
+    expect(dedupeSummaryAr({ cleaned: 0, withdrawn: 0, clean: 27, failed: 1 })).not.toMatch(/لا مكرر في أي خطة/)
+  })
+
+  it('⚠️ ونصوصه بلا تشكيل إعرابيّ — اللغة البيضاء', () => {
+    const all = [KEEP_LATEST_AR.labelAr, KEEP_LATEST_AR.whatAr, DEDUPE_ALL_AR.labelAr, DEDUPE_ALL_AR.whatAr, keptLatestAr(5),
+      dedupeSummaryAr({ cleaned: 2, withdrawn: 5, clean: 3, failed: 1 })].join(' ')
     expect(all).not.toMatch(/[\u064B-\u0650\u0652]/)
   })
 })
