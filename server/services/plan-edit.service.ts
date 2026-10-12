@@ -397,17 +397,46 @@ export class PlanEditService {
     if (!(OPEN as readonly string[]).includes(plan.status)) {
       throw new AuthError('plan_closed', 'اعتمدت هذه الخطّة — لا يسحب منها شيء', 409)
     }
+    const count = await this.withdrawOlder(actorId, planId, plan.cohortId)
+    if (count === 0) throw new AuthError('no_duplicates', 'لا مكرر على هذه الخطة — كل ما لم يقرر فيه من آخر ملف رفعته', 409)
+    return { edits: await this.forCohort(plan.cohortId), withdrawn: count }
+  }
+
+  /* ═══ وللخطط كلِّها — في الخادم، لا من قائمة «خططٌ تنتظر اعتمادك» (١٢ أكتوبر ٢٠٢٦) ═══
+     ضغط صاحبُ المنصّة «احذف المكرر من كل الخطط» فقيل «لا مكرر في أي خطة» — «there was too many!!».
+     كان الزرُّ يمرّ على خطط تلك القائمة وحدَها، وهي المرسَلةُ بانتظار القرار؛ وما رُدّ إلى مدرّبه بـ«اطلب
+     تعديلات» — وفيه تصل التعديلاتُ المدرّبين — ليس فيها. فصار يمرّ على كلّ خطّةٍ مفتوحةٍ فيها ما لم يُقرَّر. */
+  async keepLatestAll(actorId: string) {
+    const open = await this.prisma.planEditSuggestion.findMany({
+      where: { status: { in: ['proposed', 'pending'] } }, select: { planId: true }, distinct: ['planId'],
+    })
+    const plans = await this.prisma.cohortDeliveryPlan.findMany({
+      where: { id: { in: open.map((x) => x.planId) }, status: { in: [...OPEN] } },
+      select: { id: true, cohortId: true },
+    })
+    const cleaned: string[] = []
+    let withdrawn = 0
+    for (const p of plans) {
+      const count = await this.withdrawOlder(actorId, p.id, p.cohortId)
+      if (count > 0) { cleaned.push(p.id); withdrawn += count }
+    }
+    return { checked: plans.length, cleaned, withdrawn }
+  }
+
+  private async withdrawOlder(actorId: string, planId: string, cohortId: string): Promise<number> {
     const ids = await this.olderCopies(planId)
-    if (ids.length === 0) throw new AuthError('no_duplicates', 'لا مكرر على هذه الخطة — كل ما لم يقرر فيه من آخر ملف رفعته', 409)
+    if (ids.length === 0) return 0
     const { count } = await this.prisma.planEditSuggestion.updateMany({
       where: { id: { in: ids }, status: { in: ['proposed', 'pending'] } },
       data: { status: 'withdrawn', decidedAt: new Date(), decidedBy: actorId },
     })
-    await recordAudit(this.prisma, {
-      actorId, action: 'cohort.plan.edits.withdraw', entityType: 'cohort', entityId: plan.cohortId,
-      meta: { planId, count, older: true },
-    })
-    return { edits: await this.forCohort(plan.cohortId), withdrawn: count }
+    if (count > 0) {
+      await recordAudit(this.prisma, {
+        actorId, action: 'cohort.plan.edits.withdraw', entityType: 'cohort', entityId: cohortId,
+        meta: { planId, count, older: true },
+      })
+    }
+    return count
   }
 
   async restore(actorId: string, planId: string) {

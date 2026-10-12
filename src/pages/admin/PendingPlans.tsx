@@ -221,12 +221,9 @@ export default function PendingPlans() {
           onOpen={(id) => { setQ(""); goTo(byTrainer(scoped), id); }}
         />
       )}
-      {/* و«احذف المكرر» للخطط كلِّها — يبقى في كلٍّ آخرُ ملفٍّ رُفع (١٢ أكتوبر ٢٠٢٦، `keepLatest`) */}
-      {rows !== null && canUploadEdits && scoped.length > 0 && (
-        <PlanEditsDedupeAll
-          plans={scoped.map((r) => ({ id: r.id, labelAr: `${r.cohort.title} — ${r.trainerName}` }))}
-          onCleaned={(id) => setUploaded((u) => ({ ...u, [id]: (u[id] ?? 0) + 1 }))}
-        />
+      {/* و«احذف المكرر» للخطط المفتوحة كلِّها — ولو لم تكن في هذه القائمة (١٢ أكتوبر ٢٠٢٦، `keepLatestAll`) */}
+      {rows !== null && canUploadEdits && (
+        <PlanEditsDedupeAll onCleaned={(id) => setUploaded((u) => ({ ...u, [id]: (u[id] ?? 0) + 1 }))} />
       )}
       {/* وتقاريرُ المراجعة وملاحقُها كذلك — دفعةً واحدة، لمن يعتمد (١١ أكتوبر ٢٠٢٦) */}
       {rows !== null && canUploadEdits && (

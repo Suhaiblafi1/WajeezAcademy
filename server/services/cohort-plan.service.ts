@@ -1386,10 +1386,16 @@ export class CohortPlanService {
        الذي تمرّ به المهمّةُ وحدَها. وما يمنعه مانعٌ يبقى منتظِرا ويُسمّى. */
     const tasks = await this.assessments.applyPendingForPlan(actorId, plan.cohort.id, planId)
 
+    /* ═══ وأيّامُها وساعتُها من لقاءاتها المعتمَدة (١٢ أكتوبر ٢٠٢٦) ═══
+       «sessions or any other details could be filled here» (صاحب المنصّة): كان لسانُ «الجدول
+       واللقاءات» بعد الاعتماد بلا أيّامٍ وبساعةٍ مفترَضة. فتُكتب بعد اعتماد اللقاءات — من المعتمَد منها */
+    const pattern = await this.cohorts.applySessionPattern(plan.cohort.id)
+
     await recordAudit(this.prisma, {
       actorId, action: 'cohort.plan.approve', entityType: 'cohort', entityId: plan.cohort.id,
       meta: {
         planId,
+        ...(pattern ? { daysOfWeek: pattern.daysOfWeek, startTime: pattern.startTime } : {}),
         ...(applied ? { period: applied.period, termId: applied.termId, moved: applied.moved } : {}),
         meetingsApproved: meetings.approved,
         ...(meetings.failed.length ? { meetingsFailed: meetings.failed.map((f) => f.id) } : {}),

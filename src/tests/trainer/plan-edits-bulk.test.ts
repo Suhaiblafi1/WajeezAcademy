@@ -2,7 +2,7 @@
    وكم بندا فيه. وما لا يُقرأ يعود بسببه لا يرمي — فلا يوقف ما بعده من الدفعة. */
 
 import { describe, expect, it } from 'vitest'
-import { BULK_MODE_AR, BULK_MODES, bulkSummaryAr, bulkUploadPath, DEDUPE_ALL_AR, dedupeSummaryAr, KEEP_LATEST_AR, keepLatestPath, keptLatestAr, readEditsFile, replacedLineAr, uploadedLineAr, withdrawnLineAr } from '@/application/trainer/plan-edits-bulk'
+import { BULK_MODE_AR, BULK_MODES, bulkSummaryAr, bulkUploadPath, DEDUPE_ALL_AR, dedupeSummaryAr, KEEP_LATEST_ALL_PATH, KEEP_LATEST_AR, keepLatestPath, keptLatestAr, readEditsFile, replacedLineAr, uploadedLineAr, withdrawnLineAr } from '@/application/trainer/plan-edits-bulk'
 
 const PLAN = '7c1a3a52-2a7e-4a36-9a43-0d1d2b6b8f10'
 const file = (over: Record<string, unknown> = {}) => JSON.stringify({
@@ -90,8 +90,13 @@ describe('«ابدأ من جديد» — الطريقة الثالثة (١٢ أ�
 })
 
 describe('«احذف المكرر» — يبقى آخر ملف رفع (١٢ أكتوبر ٢٠٢٦)', () => {
-  it('⚠️ مسلكه مسلك الخادم', () => {
+  it('⚠️ مسلكه مسلك الخادم — للخطة، وللخطط المفتوحة كلها', () => {
     expect(keepLatestPath(PLAN)).toBe(`/api/admin/cohort-plans/${PLAN}/edits/keep-latest`)
+    expect(KEEP_LATEST_ALL_PATH).toBe('/api/admin/plan-edits/keep-latest-all')
+  })
+
+  it('⚠️ وزرّ الخطط كلها يقول إنه يشمل ما رُدّ إلى مدربه — لا ما ينتظر اعتمادك وحده', () => {
+    expect(DEDUPE_ALL_AR.whatAr).toMatch(/ما ينتظر اعتمادك وما رددته إلى مدربه/)
   })
 
   it('⚠️ ويقول ما يقع به: يبقى آخر ملف، وما قرّر فيه المدرّب لا يمسّ', () => {

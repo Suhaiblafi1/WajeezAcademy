@@ -140,20 +140,19 @@ describe('«احذف المكرر» — على البطاقة وللخطط كل�
     expect(card).toMatch(/\{canUpload && older > 0 && <p[^>]*>\{KEEP_LATEST_AR\.whatAr\}<\/p>\}/)
   })
 
-  it('⚠️ وللخطط كلها زرّ واحد لمن يعتمد — كل خطة بمسلك بطاقتها، وما تعذّر لا يوقف ما بعده', () => {
-    expect(page).toMatch(/\{rows !== null && canUploadEdits && scoped\.length > 0 && \(\s*<PlanEditsDedupeAll/)
-    expect(all).toMatch(/await apiPost<[^>]*>\(keepLatestPath\(p\.id\), \{\}\)/)
-    const loop = all.slice(all.indexOf('for (const p of plans)'))
-    expect(loop.indexOf('try {')).toBeGreaterThan(0)
-    expect(loop.indexOf('try {'), 'الاعتراض داخل الحلقة لا حولها').toBeLessThan(loop.indexOf('setFailures(failed)'))
+  it('⚠️ وللخطط كلها زرّ واحد لمن يعتمد — طلب واحد يمرّ فيه الخادم على كل خطة مفتوحة، لا على خطط هذه الصفحة', () => {
+    expect(page).toMatch(/\{rows !== null && canUploadEdits && \(\s*<PlanEditsDedupeAll onCleaned=/)
+    expect(page).not.toMatch(/<PlanEditsDedupeAll\s+plans=/)
+    expect(all).toMatch(/await apiPost<[^>]*>\(KEEP_LATEST_ALL_PATH, \{\}\)/)
+    expect(all).not.toMatch(/for \(const p of plans\)/)
   })
 
-  it('⚠️ وخطة بلا مكرر ليست فشلا — تعدّ ولا تعرض سببا', () => {
-    expect(all).toMatch(/e\.code === "no_duplicates" \|\| e\.code === "plan_closed"\)\) tally\.clean\+\+/)
+  it('⚠️ وما لا مكرر فيه يعدّ «بلا مكرر» — من عدد ما فحصه الخادم', () => {
+    expect(all).toMatch(/dedupeSummaryAr\(\{ cleaned: r\.cleaned\.length, withdrawn: r\.withdrawn, clean: r\.checked - r\.cleaned\.length, failed: 0 \}\)/)
   })
 
   it('⚠️ وبطاقة ما نظف تعاد — فلا يبقى عددها القديم', () => {
-    expect(page).toMatch(/<PlanEditsDedupeAll[\s\S]{0,200}onCleaned=\{\(id\) => setUploaded\(/)
-    expect(all).toMatch(/tally\.cleaned\+\+; tally\.withdrawn \+= r\.withdrawn;\s*onCleaned\(p\.id\);/)
+    expect(page).toMatch(/<PlanEditsDedupeAll onCleaned=\{\(id\) => setUploaded\(/)
+    expect(all).toMatch(/for \(const id of r\.cleaned\) onCleaned\(id\);/)
   })
 })

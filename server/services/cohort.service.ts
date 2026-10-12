@@ -19,6 +19,8 @@ import { safeNotify, notifyRole } from './notification.service'
 import { createZoomMeeting, deleteZoomMeeting, getZoomConfig, registerZoomParticipant, setZoomRegistrantStatus, updateZoomMeeting, zoomMissing, zoomReady, zoomStartUrl } from './zoom.service'
 import { LEDGER_CURRENCY } from '../../src/application/commerce/presentment'
 import { DAY_CODES } from '../../src/application/schedule/days'
+import { sessionPattern } from '../../src/application/schedule/session-pattern'
+import { ACADEMY_ZONE } from '../../src/application/trainer/cohort-period'
 import { windowOpen } from '../../src/application/trainer/schedule-window'
 import { cohortDayAr, meetingOver, whenAr } from '../../src/application/learning/cohort-gate'
 import { keepsApprovalOnMove } from '../../src/application/trainer/postpone'
@@ -490,11 +492,33 @@ export class CohortService {
     if (!check.ready) {
       throw new AuthError('open_blocked', `لا يمكن فتح الشعبة: ${check.missing.join(' — ')}`, 409)
     }
+    /* وما اعتُمد قبل أن تُكتب الأيّامُ من اللقاءات يُكتب هنا — قبل أن تُعرض للعامّة */
+    await this.applySessionPattern(cohortId)
     await this.transition(cohortId, 'open', actorId, 'فتح الشعبة بعد اكتمال الشروط')
     const opened = await this.prisma.cohort.update({ where: { id: cohortId }, data: { registrationOpen: true } })
     /* والفتحُ هو الطريقُ المعتاد إلى البيع — فمن انتظرها يُعلَم هنا (١٢ أكتوبر ٢٠٢٦) */
     await notifyIfPurchasable(this.prisma, cohortId)
     return opened
+  }
+
+  /** أيّامُ الشعبة وساعتُها من لقاءاتها المعتمَدة — تُكتب عند اعتماد الخطّة وعند الفتح (`session-pattern.ts`).
+      والملغى والمؤقّتُ والمنتظِرُ ليست منها. ولا لقاءَ معتمَدا: لا يُكتب شيء. */
+  async applySessionPattern(cohortId: string) {
+    const c = await this.prisma.cohort.findUnique({
+      where: { id: cohortId },
+      select: {
+        timezone: true,
+        sessions: { where: { approvalState: 'approved', placeholder: false, status: { not: 'cancelled' } }, select: { startsAt: true } },
+      },
+    })
+    if (!c) return null
+    const zone = c.timezone || ACADEMY_ZONE
+    const pattern = sessionPattern(c.sessions.map((x) => x.startsAt), zone)
+    if (!pattern) return null
+    await this.prisma.cohort.update({
+      where: { id: cohortId }, data: { daysOfWeek: pattern.daysOfWeek, startTime: pattern.startTime, timezone: zone },
+    })
+    return pattern
   }
 
   /* ═══ الحالةُ تتبع التواريخَ لا الضغطات ═══

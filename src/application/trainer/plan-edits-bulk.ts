@@ -97,12 +97,15 @@ export const KEEP_LATEST_AR = {
 
 export const DEDUPE_ALL_AR = {
   labelAr: 'احذف المكرر من كل الخطط',
-  whatAr: 'يبقي في كل خطة آخر ملف رفعته، ويسحب البنود الأقدم التي لم يقرر فيها المدرب. وما قرر فيه لا يمس، وتعيده «أعد ما سحبته» في بطاقة الخطة.',
+  whatAr: 'يمر على كل خطة مفتوحة — ما ينتظر اعتمادك وما رددته إلى مدربه — ويبقي في كل منها آخر ملف رفعته، ويسحب البنود الأقدم التي لم يقرر فيها المدرب. وما قرر فيه لا يمس، وتعيده «أعد ما سحبته» في بطاقة الخطة.',
 } as const
 
 export function keepLatestPath(planId: string): string {
   return `/api/admin/cohort-plans/${planId}/edits/keep-latest`
 }
+
+/** للخطط المفتوحة كلِّها في الخادم — لا خطط «خططٌ تنتظر اعتمادك» وحدَها (`keepLatestAll`) */
+export const KEEP_LATEST_ALL_PATH = '/api/admin/plan-edits/keep-latest-all'
 
 /** «سحب 35 بندا من ملفات أقدم…» — بعد الزرّ على البطاقة */
 export function keptLatestAr(withdrawn: number): string {

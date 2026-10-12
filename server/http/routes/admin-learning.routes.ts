@@ -284,6 +284,12 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
     return planEdits.keepLatest(req.auth!.userId, id)
   })
 
+  /* وللخطط المفتوحة كلِّها — المرسَلةِ وما رُدّ إلى مدرّبه (`keepLatestAll`) */
+  app.post('/api/admin/plan-edits/keep-latest-all', {
+    preHandler: requirePermission('cohort.plan.approve'),
+    schema: { tags: ['admin-cohorts'], summary: 'سحب المكرر من كل خطة مفتوحة: ما لم يقرر فيه من ملفات أقدم من آخر ملف رفع' },
+  }, async (req) => planEdits.keepLatestAll(req.auth!.userId))
+
   app.delete('/api/admin/cohort-plans/:id/edits', {
     preHandler: requirePermission('cohort.plan.approve'),
     schema: { tags: ['admin-cohorts'], summary: 'سحب ما لم يقرّر فيه من التعديلات المقترحة' },
