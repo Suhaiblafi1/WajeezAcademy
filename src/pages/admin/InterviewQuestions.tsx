@@ -67,7 +67,7 @@ function personalAsks(a: Dossier): string[] {
   }
 
   if (a.demoConsent === false) {
-    asks.push('لم يوافق على الدرس التجريبيّ وهو شرط الاعتماد — اسأله عن سببه قبل المضيّ.')
+    asks.push('لم يوافق على الدرس التجريبيّ وهو شرط الاعتماد — اسأله عن السبب قبل المتابعة.')
   }
 
   return asks
@@ -95,7 +95,7 @@ export default function InterviewQuestions({ a, defaultOpen = false }: Interview
         </summary>
 
         <p className="mt-2 text-read leading-6 text-muted-foreground">
-          مرتّبة بمحاور التقييم نفسها — فما سئل عنه يقيّم في سطره.
+          مرتّبة حسب محاور التقييم، فقيّم كلّ إجابة في محورها.
         </p>
 
         {personal.length > 0 && (

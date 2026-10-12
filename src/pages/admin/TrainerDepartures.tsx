@@ -134,9 +134,9 @@ export default function TrainerDepartures() {
       <Card className="mb-4">
         <p className="text-sm leading-7 text-muted-foreground">
           حين يترك مدرّب الأكاديميّة، يفتح ملفّ يجمع <b>كلّ متعلّم</b> في شعبه الحيّة.
-          والترتيب: <b>بديل</b> يأخذ مكانه فلا يتحرّك إلّا الاسم · فإن لم يوجد فـ<b>نقل</b> إلى
-          شعبة على الرمز نفسه · فإن لم يصلح فـ<b>الاختيار لصاحبه</b>: ردّ ما تبقّى أو رصيد باسمه.
-          {" "}ولا تخرج رسالة إلى متعلّم قبل أن يقرّر أمره.
+          الترتيب: <b>بديل</b> يأخذ مكانه فلا يتغيّر إلّا الاسم · وإلّا فـ<b>نقل</b> إلى
+          شعبة بالرمز نفسه · وإلّا فـ<b>الاختيار للمتعلّم</b>: ردّ ما تبقّى أو رصيد باسمه.
+          {" "}ولا ترسل رسالة إلى متعلّم قبل حسم أمره.
         </p>
       </Card>
 
@@ -211,7 +211,7 @@ export default function TrainerDepartures() {
                       {subsFor === c.cohortId ? (
                         subs.length === 0 ? (
                           <p className="text-sm text-muted-foreground">
-                            لا مدرّب مؤهّلا لهذه الدورة غيره — فالطريق الثاني: انقل متعلّميها إلى نظير.
+                            لا مدرّب آخر مؤهّل لهذه الدورة، فانقل متعلّميها إلى شعبة نظيرة.
                           </p>
                         ) : (
                           <div className="grid gap-1.5">
@@ -262,7 +262,7 @@ export default function TrainerDepartures() {
                                 اختار: {c.learnerChoice === "refund" ? "ردّ ما تبقّى" : "رصيدا باسمه"}
                               </span>
                             ) : c.choiceOfferedAt ? (
-                              <span className="text-muted-foreground/70">عرض عليه الاختيار ولم يختر بعد</span>
+                              <span className="text-muted-foreground/70">طلب منه أن يختار ولم يختر بعد</span>
                             ) : null}
                             {c.notifiedAt ? (
                               <span className="text-teal">أبلغ {fmtDateLong(c.notifiedAt)}</span>
@@ -289,10 +289,10 @@ export default function TrainerDepartures() {
                                   tone="secondary" disabled={busy}
                                   onClick={() => run(
                                     () => apiPost(`/api/admin/departure-cases/${c.id}/offer-choice`, {}),
-                                    "عرض عليه الاختيار",
+                                    "طلب منه أن يختار",
                                   )}
                                 >
-                                  اعرض عليه الاختيار
+                                  اطلب منه أن يختار
                                 </Button>
                               ) : null}
                               {/* ولا زرَّ ردٍّ ولا رصيدٍ قبل أن يصل اختيارُه (ن-١٠) */}
@@ -335,14 +335,14 @@ export default function TrainerDepartures() {
                       {/* ولماذا الزرُّ معطَّل — يُقال لا يُترك يُخمَّن */}
                       {!isResolved(c.outcome) && !c.notifiedAt ? (
                         <p className="text-read leading-6 text-muted-foreground/70">
-                          لا يبلّغ قبل أن يقرّر أمره — فالرسالة تحمل ما يجري بعدها لا اعتذارا وانتظارا.
+                          لا يبلّغ قبل حسم أمره، حتّى تخبره الرسالة بما سيحدث لا باعتذار فقط.
                         </p>
                       ) : null}
 
                       {moveFor === c.id ? (
                         equivalents.length === 0 ? (
                           <p className="text-sm text-muted-foreground">
-                            لا شعبة نظيرة مفتوحة على الرمز نفسه — فاعرض عليه الاختيار.
+                            لا شعبة نظيرة مفتوحة بالرمز نفسه، فاطلب منه أن يختار.
                           </p>
                         ) : (
                           <div className="grid gap-1.5">
@@ -378,7 +378,7 @@ export default function TrainerDepartures() {
                             />
                           </StaffField>
                           {c.learnerChoice === "credit" ? (
-                            <StaffField label="زيادة لأجل ما سبّبناه" hint="تضاف إلى الرصيد">
+                            <StaffField label="زيادة تعويضا عن الإزعاج" hint="تضاف إلى الرصيد">
                               <input
                                 className={staffControlCls} inputMode="decimal" value={bonus}
                                 onChange={(e) => setBonus(e.target.value)}
@@ -418,8 +418,8 @@ export default function TrainerDepartures() {
                           </div>
                           {c.learnerChoice === "refund" && payments.length === 0 ? (
                             <p className="text-read leading-6 text-muted-foreground sm:col-span-3">
-                              لا دفعة على هذه الشعبة باسمه — فلا شيء يردّ منه.
-                              راجع الماليّة قبل أن تعده بردّ.
+                              لا دفعة باسمه على هذه الشعبة، فلا شيء يردّ.
+                              راجع الماليّة قبل أن تعده بالردّ.
                             </p>
                           ) : null}
                         </div>

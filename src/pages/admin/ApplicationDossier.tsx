@@ -182,7 +182,7 @@ export default function ApplicationDossier({ a, showContact = true }: { a: Dossi
         ) : (
           <Row label="التواصل معه">
             <span className="text-muted-foreground">
-              محجوب عن الرابط المشترك — بريده وهاتفه في ملفّه داخل الإدارة.
+              مخفيّ في الرابط المشترك — بريده وهاتفه في ملفّه داخل الإدارة.
             </span>
             {a.emailVerifiedAt && (
               <span className="block text-fine text-teal-light-ink">بريده متحقّق ✓</span>
