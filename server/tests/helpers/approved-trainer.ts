@@ -38,13 +38,18 @@ export async function fixtureTrainerId(prisma: PrismaClient): Promise<string> {
   return (await prisma.trainerProfile.create({ data: { applicationId: application.id } })).id
 }
 
-/** حقولُ خطّة مدرّبٍ معتمَدة — تُمرَّر في `plans: { create: … }` مع إنشاء الشعبة */
-export async function approvedTrainerPlan(prisma: PrismaClient) {
+/** حقولُ خطّةٍ معتمَدةٍ لمدرّبٍ بعينه — لجولةٍ لها مدرّبُها: الخطّةُ خطّتُه كما في الإنتاج */
+export function approvedPlanBy(trainerId: string) {
   return {
-    trainerId: await fixtureTrainerId(prisma),
+    trainerId,
     status: 'approved',
     content: { kind: 'trainer', modules: [], resources: [] },
   }
+}
+
+/** حقولُ خطّة مدرّبٍ معتمَدة — تُمرَّر في `plans: { create: … }` مع إنشاء الشعبة */
+export async function approvedTrainerPlan(prisma: PrismaClient) {
+  return approvedPlanBy(await fixtureTrainerId(prisma))
 }
 
 /** أو تُكتب لشعبةٍ قائمة — لما يُنشئه مسارٌ لا تملك الجولةُ حقولَه */

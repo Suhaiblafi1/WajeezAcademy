@@ -36,6 +36,7 @@ import { CommerceService } from '../../services/commerce.service'
 import { EarningsService } from '../../services/earnings.service'
 import { TrainerDiscountService } from '../../services/trainer-discount.service'
 import { makeReadyForApproval } from '../helpers/trainer-ready'
+import { approvedPlanBy } from '../helpers/approved-trainer'
 
 let prisma: PrismaClient
 let commerce: CommerceService
@@ -102,6 +103,7 @@ describe('خصمُ المدرّب — من جيبه لا من إيرادنا', (
 
     cohortId = (await prisma.cohort.create({
       data: {
+        plans: { create: approvedPlanBy(profileId) },
         courseId: 'C-BIZ-101', title: 'شعبة الخصم', status: 'open', registrationOpen: true,
         financialReady: true, price: 100, currency: 'USD', capacity: 20,
       },
@@ -188,6 +190,7 @@ describe('خصمُ المدرّب — من جيبه لا من إيرادنا', (
     const auth = new AuthService(prisma)
     const other = (await prisma.cohort.create({
       data: {
+        plans: { create: approvedPlanBy(profileId) },
         courseId: 'C-BIZ-101', title: 'شعبة خصم الأكاديمية', status: 'open', registrationOpen: true,
         financialReady: true, price: 100, currency: 'USD', capacity: 20,
       },

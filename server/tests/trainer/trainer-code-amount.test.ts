@@ -23,6 +23,7 @@ import { TrainerCodeService } from '../../services/trainer-code.service'
 import { EarningsService } from '../../services/earnings.service'
 import { codeValueFor, MAX_TRAINER_CODE_PERCENT } from '../../../src/application/trainer/trainer-code'
 import { CONTRACT_BODY_VERSION } from '../../../src/application/trainer/contract-body'
+import { approvedPlanBy } from '../helpers/approved-trainer'
 
 let prisma: PrismaClient
 let codes: TrainerCodeService
@@ -53,7 +54,7 @@ const signed = (profileId: string, bodyVersion: string) =>
 async function cohortOf(profileId: string, price: number) {
   const course = await prisma.course.findFirstOrThrow({ select: { id: true } })
   const c = await prisma.cohort.create({
-    data: { courseId: course.id, title: `شعبةٌ بـ${price}`, status: 'open', registrationOpen: true, financialReady: true, price, currency: 'USD', capacity: 10 },
+    data: { plans: { create: approvedPlanBy(profileId) }, courseId: course.id, title: `شعبةٌ بـ${price}`, status: 'open', registrationOpen: true, financialReady: true, price, currency: 'USD', capacity: 10 },
   })
   await prisma.cohortTrainer.create({ data: { cohortId: c.id, profileId, role: 'lead', assignedBy: adminId } })
   return c.id

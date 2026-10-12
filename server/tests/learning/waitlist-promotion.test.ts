@@ -25,6 +25,7 @@ import type { PrismaClient } from '@prisma/client'
 import { setupTestDb, testPrisma } from '../helpers/db'
 import { AuthService } from '../../services/auth.service'
 import { EnrollmentService } from '../../services/enrollment.service'
+import { approvedTrainerPlan } from '../helpers/approved-trainer'
 
 let prisma: PrismaClient
 let auth: AuthService
@@ -43,6 +44,7 @@ async function learner(tag: string) {
 async function cohortWithCapacity(title: string, capacity: number) {
   return prisma.cohort.create({
     data: {
+      plans: { create: await approvedTrainerPlan(prisma) },
       courseId: COURSE, title, status: 'open', registrationOpen: true,
       financialReady: true, price: 100, currency: 'USD', capacity,
       startsAt: new Date(Date.now() + 30 * 86_400_000),
@@ -111,6 +113,7 @@ describe('الترقيةُ التلقائيّة من قائمة الانتظار
   it('وسعةٌ بلا حدّ لا طابورَ لها — والانسحابُ لا يُحدث شيئا', async () => {
     const c = await prisma.cohort.create({
       data: {
+        plans: { create: await approvedTrainerPlan(prisma) },
         courseId: COURSE, title: 'شعبةٌ بلا سقف', status: 'open', registrationOpen: true,
         financialReady: true, price: 100, currency: 'USD', capacity: null,
         startsAt: new Date(Date.now() + 30 * 86_400_000),

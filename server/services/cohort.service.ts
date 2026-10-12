@@ -72,6 +72,8 @@ export class CohortService {
         course: { include: { versions: { orderBy: { version: 'desc' }, take: 1 } } },
         trainers: { include: { profile: { include: { application: { select: { fullName: true } } } } } },
         sessions: true,
+        /* خططُ مدرّبها بحالاتها — `PLAN_GATE_SELECT` */
+        plans: { where: { trainerId: { not: null } }, select: { status: true } },
         _count: { select: { enrollments: { where: { status: 'enrolled' } } } },
       },
     })
@@ -86,6 +88,10 @@ export class CohortService {
       /* نافذةُ جدولةِ المدرّب — تُقرأ في الشاشة لتُعرَض مفتوحةً أو مغلقة */
       scheduleWindowStart: c.scheduleWindowStart, scheduleWindowEnd: c.scheduleWindowEnd,
       trainers: c.trainers.map((t) => ({ profileId: t.profileId, name: t.profile.application.fullName, role: t.role })),
+      /* اعتُمدت لمدرّبها خطّة؟ — شرطُ عرضِها وبيعِها (١٢ أكتوبر ٢٠٢٦). تقرؤه الشاشة
+         فتقول «مخفيّةٌ عن الموقع» لمفتوحةٍ بلا مدرّبٍ معتمَد، و«تنتظر فتحك» لمسوّدةٍ
+         اعتُمدت — فلا تُقرأ «مفتوحة للتسجيل» شعبةٌ يردّها الكتالوجُ والدفع */
+      trainerPlanApproved: planApprovedOnce(c.plans),
     }))
   }
 

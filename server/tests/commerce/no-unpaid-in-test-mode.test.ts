@@ -26,6 +26,7 @@ import { AuthService } from '../../services/auth.service'
 import { CommerceService } from '../../services/commerce.service'
 import { isTestProviderActive } from '../../services/payments/provider'
 import { reclaimAbandonedOrders } from '../../worker/jobs'
+import { approvedTrainerPlan } from '../helpers/approved-trainer'
 
 let prisma: PrismaClient
 let auth: AuthService
@@ -45,6 +46,7 @@ beforeAll(async () => {
   await auth.setRoles(managerId, ['academic_manager'])
   cohortId = (await prisma.cohort.create({
     data: {
+      plans: { create: await approvedTrainerPlan(prisma) },
       courseId: 'C-BIZ-101', title: 'شعبةُ فحصِ الدَّين', status: 'open',
       registrationOpen: true, financialReady: true, price: 100, currency: 'USD', capacity: 50,
     },

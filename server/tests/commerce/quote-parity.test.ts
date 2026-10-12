@@ -19,6 +19,7 @@ import { setupTestDb, testPrisma } from '../helpers/db'
 import { AuthService } from '../../services/auth.service'
 import { CommerceService } from '../../services/commerce.service'
 import { buildDiscountPct } from '../../../src/application/commerce/discount-policy'
+import { approvedTrainerPlan } from '../helpers/approved-trainer'
 
 /* المعرّفات من الكتالوج لا مكتوبةً يدا: دمجُ دورتين يُسقط معرّفا فتنكسر
    الاختباراتُ بـForeign key — حمرةٌ سببها معرّفٌ متقادم لا خللٌ في المقيس. */
@@ -48,6 +49,7 @@ beforeAll(async () => {
     courseIds.push(courseId)
     const c = await prisma.cohort.create({
       data: {
+        plans: { create: await approvedTrainerPlan(prisma) },
         courseId, title: `شعبة تسعير ${i}`, status: 'open',
         registrationOpen: true, financialReady: true,
         price: PRICES[i], currency: 'USD', capacity: 30,
@@ -114,6 +116,7 @@ describe('السلّةُ لا تسقط بمانعٍ في بندٍ منها', () 
     for (let i = 0; i < 4; i += 1) {
       const c = await prisma.cohort.create({
         data: {
+          plans: { create: await approvedTrainerPlan(prisma) },
           courseId: POOL[50 + i], title: `شعبة جزئيّة ${i}`, status: 'open',
           registrationOpen: true, financialReady: true,
           price: PRICES[i], currency: 'USD', capacity: 30,
@@ -180,6 +183,7 @@ describe('السلّةُ لا تسقط بمانعٍ في بندٍ منها', () 
     const fresh = async (i: number) =>
       (await prisma.cohort.create({
         data: {
+          plans: { create: await approvedTrainerPlan(prisma) },
           courseId: POOL[60 + i], title: `شعبة صرامة ${i}`, status: 'open',
           registrationOpen: true, financialReady: true,
           price: 120, currency: 'USD', capacity: 30,

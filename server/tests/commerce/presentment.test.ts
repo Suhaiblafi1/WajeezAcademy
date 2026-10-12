@@ -20,6 +20,7 @@ import { CommerceService } from '../../services/commerce.service'
 import {
   PRESENTMENT_CURRENCIES, PRESENTMENT_CODES, convertFromUsd, isPresentmentCurrency,
 } from '../../../src/application/commerce/presentment'
+import { approvedTrainerPlan } from '../helpers/approved-trainer'
 
 let prisma: PrismaClient
 let commerce: CommerceService
@@ -34,6 +35,7 @@ beforeAll(async () => {
   buyerId = (await auth.register('presentment-buyer@test.local', 'Buyer#12345', 'مشترٍ')).userId
   cohortId = (await prisma.cohort.create({
     data: {
+      plans: { create: await approvedTrainerPlan(prisma) },
       courseId: 'C-BIZ-101', title: 'شعبة عملة العرض',
       status: 'open', registrationOpen: true, financialReady: true,
       price: 100, currency: 'USD', capacity: 50,

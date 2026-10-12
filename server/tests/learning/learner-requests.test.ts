@@ -21,6 +21,7 @@ import { AuthService } from '../../services/auth.service'
 import { EnrollmentService } from '../../services/enrollment.service'
 import { LearnerRequestService } from '../../services/learner-request.service'
 import { AuthError } from '../../services/auth.service'
+import { approvedTrainerPlan } from '../helpers/approved-trainer'
 
 let prisma: PrismaClient
 let requests: LearnerRequestService
@@ -47,6 +48,7 @@ beforeAll(async () => {
 
   const cohort = await prisma.cohort.create({
     data: {
+      plans: { create: await approvedTrainerPlan(prisma) },
       courseId: C_ONE, title: 'شعبة طلبات الشهادة', status: 'active',
       registrationOpen: true, financialReady: true,
       price: 100, currency: 'USD', capacity: 30,
@@ -167,6 +169,7 @@ describe('٢) شهادةُ المسار كاملا — دوراتُه المطل
     /* الدورةُ الثانية: شعبةٌ وتسجيلٌ مكتمل */
     const c2 = await prisma.cohort.create({
       data: {
+        plans: { create: await approvedTrainerPlan(prisma) },
         courseId: C_TWO, title: 'شعبة الدورة الثانية', status: 'active',
         registrationOpen: true, financialReady: true,
         price: 100, currency: 'USD', capacity: 30,

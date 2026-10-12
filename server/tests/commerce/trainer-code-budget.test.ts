@@ -24,6 +24,7 @@ import { CartService } from '../../services/commerce/cart.service'
 import { TrainerCodeBudgetService } from '../../services/trainer-code-budget'
 import { reserveCouponUse } from '../../services/commerce/coupon-ledger'
 import { CODE_UNAVAILABLE_AR } from '../../../src/application/trainer/trainer-code'
+import { approvedPlanBy } from '../helpers/approved-trainer'
 
 let prisma: PrismaClient
 let auth: AuthService
@@ -45,6 +46,7 @@ async function trainer(tag: string) {
 async function cohortOf(profileId: string, title: string, status = 'open') {
   const c = await prisma.cohort.create({
     data: {
+      plans: { create: approvedPlanBy(profileId) },
       courseId, title, status, registrationOpen: status === 'open',
       financialReady: true, price: 100, currency: 'USD', capacity: 20,
     },

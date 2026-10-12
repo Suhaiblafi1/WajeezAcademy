@@ -49,6 +49,8 @@ interface CohortRow {
   /* نافذةُ جدولةِ المدرّب — الثلاثةُ تُقرأ معا، وغيابُ أيٍّ منها بابٌ مغلَق */
   scheduleWindowStart: string | null; scheduleWindowEnd: string | null;
   trainers: { profileId: string; name: string; role: string }[];
+  /** اعتُمدت لمدرّبها خطّة — شرطُ عرضِها في الموقع وبيعِها (١٢ أكتوبر ٢٠٢٦) */
+  trainerPlanApproved: boolean;
 }
 
 interface CourseOption {
@@ -420,6 +422,21 @@ export default function AdminCohorts() {
                       {c.price ? ` · ${c.price} ${c.currency}` : ""}
                     </p>
                   </div>
+                  {/* الحالةُ وحدَها لا تقول ما يراه الزائر: شعبةٌ «مفتوحة» بلا خطّة مدرّبٍ
+                      معتمَدة لا يعرضها الموقعُ ولا يبيعها، ومسوّدةٌ اعتُمدت خطّتُها تنتظر
+                      قرارَ فتحها. فيُقال الاثنان بجانب الحالة (١٢ أكتوبر ٢٠٢٦) */}
+                  {isLiveCohort(c.status) && !c.trainerPlanApproved && (
+                    <span className="rounded-full border border-gold/50 px-3 py-1 text-fine font-bold text-gold-ink"
+                      title="لا مدرّبَ معتمَد — لا تُعرض في الموقع ولا تُباع حتّى تعتمد خطّةَ مدرّبها">
+                      مخفيّةٌ عن الموقع
+                    </span>
+                  )}
+                  {c.status === "draft" && c.trainerPlanApproved && (
+                    <span className="rounded-full border border-teal/50 px-3 py-1 text-fine font-bold text-teal-light-ink"
+                      title="خطّةُ مدرّبها معتمَدة — تُعرض وتُباع حين تفتحها من «الهُويّة والحالة»">
+                      معتمَدة — تنتظر فتحك
+                    </span>
+                  )}
                   <span className={`rounded-full border px-3 py-1 text-fine font-bold ${meta.cls}`}>{meta.label}</span>
                   <ChevronDown className={`h-4 w-4 text-muted-foreground transition ${isOpen ? "rotate-180" : ""}`} />
                 </button>

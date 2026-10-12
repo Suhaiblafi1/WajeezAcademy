@@ -12,6 +12,7 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
 import { setupTestDb, testPrisma } from '../helpers/db'
 import { PublicCatalogService } from '../../services/public-catalog.service'
+import { approvedTrainerPlan } from '../helpers/approved-trainer'
 
 let prisma: PrismaClient
 let publicCatalog: PublicCatalogService
@@ -38,6 +39,7 @@ beforeAll(async () => {
   publicCatalog = new PublicCatalogService(prisma)
   cohortId = (await prisma.cohort.create({
     data: {
+      plans: { create: await approvedTrainerPlan(prisma) },
       courseId: 'C-BIZ-101', title: `شعبةُ مواعيد اللقاءات ${Date.now()}`,
       status: 'open', registrationOpen: true, financialReady: true,
       price: 100, currency: 'USD', capacity: 20, startsAt: at(20),

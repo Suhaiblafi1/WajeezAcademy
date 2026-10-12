@@ -21,6 +21,7 @@ import { TrainerCodeService } from '../../services/trainer-code.service'
 import { EarningsService } from '../../services/earnings.service'
 import { CODE_TERMS_FIRST_BODY, CODE_TERMS_VERSION } from '../../../src/application/trainer/trainer-code'
 import { CLAUSE_4_10_AR } from '../../../src/application/trainer/contract-body'
+import { approvedPlanBy } from '../helpers/approved-trainer'
 
 let prisma: PrismaClient
 let codes: TrainerCodeService
@@ -138,7 +139,7 @@ describe('③ الإيقافُ والإلغاءُ يُطفئان الكوبون'
     const learner = (await auth.register(`tcs-l-${STAMP}@test.local`, 'Learner#12345', 'متعلّم')).userId
     const course = await prisma.course.findFirstOrThrow({ select: { id: true } })
     const cohort = await prisma.cohort.create({
-      data: { courseId: course.id, title: 'شعبةُ الكود', status: 'open', registrationOpen: true, financialReady: true, price: 100, currency: 'USD', capacity: 10 },
+      data: { plans: { create: approvedPlanBy(t.profileId) }, courseId: course.id, title: 'شعبةُ الكود', status: 'open', registrationOpen: true, financialReady: true, price: 100, currency: 'USD', capacity: 10 },
     })
     await prisma.cohortTrainer.create({ data: { cohortId: cohort.id, profileId: t.profileId, role: 'lead', assignedBy: adminId } })
     /* وله أجرٌ يقع عليه الكود: الكودُ يُسقَف بما له عندنا (٢٨ سبتمبر ٢٠٢٦)، ومن لا

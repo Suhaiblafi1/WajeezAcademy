@@ -19,6 +19,7 @@ import { setupTestDb, testPrisma } from '../helpers/db'
 import { AuthService } from '../../services/auth.service'
 import { CommerceService } from '../../services/commerce.service'
 import { AuthError } from '../../services/auth.service'
+import { approvedTrainerPlan } from '../helpers/approved-trainer'
 
 let prisma: PrismaClient
 let commerce: CommerceService
@@ -28,6 +29,7 @@ let financeId = ''
 const mkCohort = async (title: string) =>
   (await prisma.cohort.create({
     data: {
+      plans: { create: await approvedTrainerPlan(prisma) },
       courseId: 'C-BIZ-101', title, status: 'open', registrationOpen: true, financialReady: true,
       price: 100, currency: 'USD', capacity: 20,
       startsAt: new Date(Date.now() + 60 * 86_400_000),

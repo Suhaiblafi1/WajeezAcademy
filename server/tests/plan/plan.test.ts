@@ -10,6 +10,7 @@ import type { PrismaClient } from '@prisma/client'
 import { setupTestDb, testPrisma } from '../helpers/db'
 import { AuthService } from '../../services/auth.service'
 import { PlanService } from '../../services/plan.service'
+import { approvedTrainerPlan } from '../helpers/approved-trainer'
 
 let prisma: PrismaClient
 let auth: AuthService
@@ -28,6 +29,7 @@ async function openCohort(courseId: string, opts: { capacity?: number; open?: bo
   return prisma.cohort.create({
     data: {
       courseId, title: `شعبة ${courseId} ${Date.now()}`,
+      plans: { create: await approvedTrainerPlan(prisma) },
       status: opts.open === false ? 'draft' : 'open',
       registrationOpen: opts.open !== false,
       financialReady: true, price: 100, currency: 'JOD',
@@ -138,11 +140,11 @@ describe('الحالة تُشتقّ من الواقع لا تُخزَّن', () =
   it('أقرب شعبة هي المعروضة حين تتعدّد', async () => {
     const u = await learner()
     const far = await prisma.cohort.create({
-      data: { courseId: A, title: 'بعيدة', status: 'open', registrationOpen: true, financialReady: true,
+      data: { plans: { create: await approvedTrainerPlan(prisma) }, courseId: A, title: 'بعيدة', status: 'open', registrationOpen: true, financialReady: true,
         price: 100, currency: 'JOD', capacity: 5, startsAt: new Date(Date.now() + 90 * 86_400_000) },
     })
     const near = await prisma.cohort.create({
-      data: { courseId: A, title: 'قريبة', status: 'open', registrationOpen: true, financialReady: true,
+      data: { plans: { create: await approvedTrainerPlan(prisma) }, courseId: A, title: 'قريبة', status: 'open', registrationOpen: true, financialReady: true,
         price: 100, currency: 'JOD', capacity: 5, startsAt: new Date(Date.now() + 2 * 86_400_000) },
     })
     await plans.adopt(u, { nameAr: 'خطّة', composed: false, courseIds: [A] })

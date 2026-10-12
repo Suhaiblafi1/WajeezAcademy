@@ -24,6 +24,7 @@ import { CommerceService } from '../../services/commerce.service'
 import { EarningsService } from '../../services/earnings.service'
 import { reclaimAbandonedOrders } from '../../worker/jobs'
 import { reserveCouponUse } from '../../services/commerce/coupon-ledger'
+import { approvedPlanBy } from '../helpers/approved-trainer'
 
 let prisma: PrismaClient
 let auth: AuthService
@@ -46,6 +47,7 @@ async function trainer(tag: string) {
 async function openCohort(key: string, courseId: string, price: number, lead: string) {
   const c = await prisma.cohort.create({
     data: {
+      plans: { create: approvedPlanBy(lead) },
       courseId, title: `شعبة ${key}`, status: 'open', registrationOpen: true,
       financialReady: true, price, currency: 'USD', capacity: 20,
     },

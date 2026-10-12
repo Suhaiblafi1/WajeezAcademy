@@ -113,3 +113,22 @@ describe('خطّةُ التقديم الأساسيّة — تُكتب وتُحد
     expect((plans[0].content as { notesAr: string }).notesAr).toContain('الثاني')
   })
 })
+
+/* ── ③ والإدارةُ ترى ما يراه الزائر ──
+
+   الشعبُ الافتراضيّةُ باقيةٌ «مفتوحة للتسجيل» في القاعدة، ويخفيها الشرطُ وحدَه.
+   فلو قرأت الشاشةُ الحالةَ وحدَها لقالت «مفتوحة» لما لا يعرضه الموقع. فقائمةُ
+   الإدارة تحمل «اعتُمدت لمدرّبها خطّة؟» — وبه تقول «مخفيّةٌ عن الموقع» و«تنتظر فتحك». */
+describe('قائمةُ الإدارة تقول أيُّ شعبةٍ يراها الزائر', () => {
+  it('⚠️ مفتوحةٌ بلا مدرّبٍ معتمَد «غيرُ معتمَدة»، ومسوّدةٌ اعتُمدت خطّتُها «معتمَدة»', async () => {
+    const hidden = await prisma.cohort.create({
+      data: { courseId, title: 'شعبةٌ افتراضيّةٌ مفتوحة', status: 'open', registrationOpen: true, capacity: 10, price: 100, financialReady: true },
+    })
+    const waiting = await readyButTrainer('مسوّدةٌ اعتُمدت خطّتُها')
+    await prisma.cohortDeliveryPlan.create({ data: { cohortId: waiting.id, ...(await approvedTrainerPlan(prisma)) } })
+
+    const rows = await cohorts.list()
+    expect(rows.find((r) => r.id === hidden.id)!.trainerPlanApproved, 'شعبةٌ بلا مدرّبٍ قيل إنّها معتمَدة').toBe(false)
+    expect(rows.find((r) => r.id === waiting.id)!.trainerPlanApproved, 'مسوّدةٌ معتمَدةٌ لم تُعرَف').toBe(true)
+  })
+})
