@@ -98,12 +98,13 @@ describe('الفضاءُ لا يتغيّر حتّى يُؤذَن لدورة', ()
     expect(standaloneCourses()).toEqual([])
     expect(recommendationUniverse().entities.some((e) => e.entity_type === 'course')).toBe(false)
     /* والكتالوجُ كما هو (٧ أكتوبر ٢٠٢٦): ٣٢ قرارا، ٣١ مُشعَلة — C-FIN-101 مطفأةٌ
-       حتّى تُعتمد مهاراتُها أكاديميّا، فلا معتمدَ فيها تنافس به */
+       حتّى تُعتمد مهاراتُها أكاديميّا، فلا معتمدَ فيها تنافس به.
+       و٣١←٣٣ (١٢ أكتوبر ٢٠٢٦): النقلُ والتوزيع (C-SCM-107) وبناءُ العادات (C-WEL-102) */
     installCatalogSnapshot({ ...basePayload(), coreCatalog: JSON.parse(JSON.stringify(coreCatalogJson)) } as any, 'test-real')
     const ids = standaloneCourses().map((c) => c.course_id)
-    expect(ids).toHaveLength(31)
+    expect(ids).toHaveLength(33)
     expect(ids).not.toContain('C-FIN-101')
-    expect(ids).toEqual(expect.arrayContaining(['C-CYB-106', 'C-CYB-107', 'C-SAL-106', 'C-SCM-106', 'C-MGR-108', 'C-COMX-115', 'C-COMX-116']))
+    expect(ids).toEqual(expect.arrayContaining(['C-CYB-106', 'C-CYB-107', 'C-SAL-106', 'C-SCM-106', 'C-MGR-108', 'C-COMX-115', 'C-COMX-116', 'C-SCM-107', 'C-WEL-102']))
   })
 
   it('والرمزُ وحدَه لا يكفي — بلا مجالٍ لا يصلها هدفٌ ولا احتياج', () => {

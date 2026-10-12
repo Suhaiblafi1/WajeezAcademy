@@ -5198,6 +5198,97 @@
         "freelancer",
         "fresh_graduate"
       ]
+    },
+    {
+      "course_id": "C-SCM-107",
+      "pathway_id": "PW-SCM-001",
+      "sequence": 6,
+      "title_ar": "دورة إدارة النقل والتوزيع: اختيار الناقل وتخطيط المسار وحساب كلفة التسليم",
+      "subtitle_ar": "نموذج كلفة تسليم للطلب الواحد · مصفوفة ناقلين وخطة مسار وتوزيع لشركة حقيقية أو محاكاة",
+      "level_ar": "تطبيقي",
+      "total_hours": 16,
+      "skill_slugs": [
+        "supply_chain_mapping",
+        "transport_mode_costing",
+        "carrier_management",
+        "route_load_planning",
+        "distribution_planning",
+        "supply_chain_metrics"
+      ],
+      "skill_ids": [
+        "SK-X-SCM-001",
+        "SK-X-SCM-012",
+        "SK-X-SCM-013",
+        "SK-X-SCM-014",
+        "SK-X-SCM-015",
+        "SK-X-SCM-009"
+      ],
+      "skill_names_ar": [
+        "رسم سلسلة الإمداد",
+        "اختيار نمط النقل وحساب كلفته",
+        "إدارة الناقلين",
+        "تخطيط المسارات والتحميل",
+        "تخطيط التوزيع",
+        "مؤشرات سلسلة الإمداد"
+      ],
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "operations"
+      ],
+      "diagnostic_stages": [
+        "early_career",
+        "experienced",
+        "manager"
+      ]
+    },
+    {
+      "course_id": "C-WEL-102",
+      "pathway_id": "PW-PSY-001",
+      "sequence": 7,
+      "title_ar": "دورة بناء العادات: تغيير صغير تستمر عليه بدل وعد كبير تتركه",
+      "subtitle_ar": "عادة واحدة بخطوة صغيرة وبيئة معدلة · تجربة أربعة أسابيع موثقة وخطة للانقطاع",
+      "level_ar": "تأسيسي",
+      "total_hours": 16,
+      "skill_slugs": [
+        "habit_design",
+        "implementation_intentions",
+        "self_monitoring",
+        "relapse_planning",
+        "emotion_regulation",
+        "reflection"
+      ],
+      "skill_ids": [
+        "SK-PSY-035",
+        "SK-PSY-036",
+        "SK-PSY-037",
+        "SK-PSY-038",
+        "SK-PSY-025",
+        "SK-LEARN-009"
+      ],
+      "skill_names_ar": [
+        "تصميم العادات",
+        "نوايا التنفيذ (إذا… فإني…)",
+        "المتابعة الذاتية للسلوك",
+        "التخطيط للانقطاع والعودة",
+        "تنظيم الانفعال",
+        "التأمل والمراجعة الذاتية"
+      ],
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "personal_development"
+      ],
+      "diagnostic_stages": [
+        "early_career",
+        "experienced",
+        "founder",
+        "freelancer",
+        "fresh_graduate",
+        "manager",
+        "other_unsure",
+        "senior_manager",
+        "trainer_ld",
+        "university_student"
+      ]
     }
   ],
   "skill_extensions": [
@@ -6852,6 +6943,62 @@
       "name_ar": "تخطيط الاتصال الاستراتيجي",
       "family_id": "COMX",
       "family_ar": "الإلقاء وتصميم العروض"
+    },
+    {
+      "skill_id": "SK-X-SCM-012",
+      "slug": "transport_mode_costing",
+      "name_ar": "اختيار نمط النقل وحساب كلفته",
+      "family_id": "SCM",
+      "family_ar": "سلسلة الإمداد واللوجستيات"
+    },
+    {
+      "skill_id": "SK-X-SCM-013",
+      "slug": "carrier_management",
+      "name_ar": "إدارة الناقلين",
+      "family_id": "SCM",
+      "family_ar": "سلسلة الإمداد واللوجستيات"
+    },
+    {
+      "skill_id": "SK-X-SCM-014",
+      "slug": "route_load_planning",
+      "name_ar": "تخطيط المسارات والتحميل",
+      "family_id": "SCM",
+      "family_ar": "سلسلة الإمداد واللوجستيات"
+    },
+    {
+      "skill_id": "SK-X-SCM-015",
+      "slug": "distribution_planning",
+      "name_ar": "تخطيط التوزيع",
+      "family_id": "SCM",
+      "family_ar": "سلسلة الإمداد واللوجستيات"
+    },
+    {
+      "skill_id": "SK-PSY-035",
+      "slug": "habit_design",
+      "name_ar": "تصميم العادات",
+      "family_id": "PSY",
+      "family_ar": "علم النفس للفهم"
+    },
+    {
+      "skill_id": "SK-PSY-036",
+      "slug": "implementation_intentions",
+      "name_ar": "نوايا التنفيذ (إذا… فإني…)",
+      "family_id": "PSY",
+      "family_ar": "علم النفس للفهم"
+    },
+    {
+      "skill_id": "SK-PSY-037",
+      "slug": "self_monitoring",
+      "name_ar": "المتابعة الذاتية للسلوك",
+      "family_id": "PSY",
+      "family_ar": "علم النفس للفهم"
+    },
+    {
+      "skill_id": "SK-PSY-038",
+      "slug": "relapse_planning",
+      "name_ar": "التخطيط للانقطاع والعودة",
+      "family_id": "PSY",
+      "family_ar": "علم النفس للفهم"
     }
   ]
 }
