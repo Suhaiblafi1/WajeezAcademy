@@ -18,7 +18,9 @@
    الشاشاتُ. `RegistrationClosedNotice` يعرض ما يقوله الخادم، وحارسُه في
    `src/tests` — وهذا يحرس أنّ الخادمَ **يمنع**، لا أنّ الواجهةَ تُخفي. */
 
-import { beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { beforeAll, beforeEach, describe, expect as vexpect, it } from 'vitest'
+import { plainExpect } from '../helpers/plain-expect'
+const expect = plainExpect(vexpect)
 import type { PrismaClient } from '@prisma/client'
 import { setupTestDb, testPrisma } from '../helpers/db'
 import { AuthService } from '../../services/auth.service'

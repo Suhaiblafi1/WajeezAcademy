@@ -10,7 +10,9 @@
    واحدة، وأنّ المرفوضَ يحمل سببا يقرؤه إنسانٌ فيُصلحه — لا «رابطٌ غيرُ
    صالح». */
 
-import { describe, expect, it } from 'vitest'
+import { describe, expect as vexpect, it } from 'vitest'
+import { plainExpect } from '../helpers/plain-expect'
+const expect = plainExpect(vexpect)
 import { normalizeCalendlyBookingUrl, normalizeCalendlyGuests } from '../../services/integrations.service'
 
 const ok = (input: string) => {

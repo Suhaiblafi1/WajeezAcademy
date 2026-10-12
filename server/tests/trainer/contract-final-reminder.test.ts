@@ -13,7 +13,9 @@
    والبريدُ يُلتقَط عند `sendDirectEmail` كأخيه `contract-resign`: ما يُقاس هو
    ما خرج من الخدمة، لا ما كان ينبغي أن يخرج. */
 
-import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeAll, beforeEach, describe, expect as vexpect, it, vi } from 'vitest'
+import { plainExpect } from '../helpers/plain-expect'
+const expect = plainExpect(vexpect)
 import { createHash } from 'node:crypto'
 import type { PrismaClient } from '@prisma/client'
 

@@ -12,7 +12,9 @@
       بها المتعلّم، فلا يُقبل هنا ما ينكسر هناك.
    ٥) والرفضُ يوجب سببا — ردٌّ بلا سبب لا يُفيد الكاتب في شيء. */
 
-import { beforeAll, describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect as vexpect, it } from 'vitest'
+import { plainExpect } from '../helpers/plain-expect'
+const expect = plainExpect(vexpect)
 import type { PrismaClient } from '@prisma/client'
 import { setupTestDb, testPrisma } from '../helpers/db'
 import { ModuleAuthoringService, DRAFT, IN_REVIEW, AWAITING_FINAL, PUBLISHED } from '../../services/module-authoring.service'

@@ -14,7 +14,9 @@
    ③ والنقلُ لا يكتب ما يردّه الحفظ: مخرَجٌ أطولُ من حدّه، وسطرٌ أطولُ من حدّه،
       وحرفٌ واحدٌ في سطر — كلُّها تُنقل إلى ما يُحفظ بعده. */
 
-import { beforeAll, describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect as vexpect, it } from 'vitest'
+import { plainExpect } from '../helpers/plain-expect'
+const expect = plainExpect(vexpect)
 import { createHash } from 'node:crypto'
 import type { PrismaClient } from '@prisma/client'
 import type { FastifyInstance } from 'fastify'

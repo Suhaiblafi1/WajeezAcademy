@@ -13,7 +13,9 @@
    ⑤ واعتمادُ الخطّة يعتمد الدورة، واعتمادُ آخرها يفعّله ويوقّع عقدَه — وما
       دام له دورةٌ تنتظر لا يُفعَّل. */
 
-import { beforeAll, describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect as vexpect, it } from 'vitest'
+import { plainExpect } from '../helpers/plain-expect'
+const expect = plainExpect(vexpect)
 import { createHash } from 'node:crypto'
 import type { PrismaClient } from '@prisma/client'
 import { setupTestDb, testPrisma } from '../helpers/db'

@@ -8,7 +8,9 @@
    ولا شبكةَ هنا: `fetch` مُلتقَط، فيُقرأ ما كان سيُرسَل ويُردّ ما كانت
    Calendly سترُدّه. والحارسُ على **الأثر في القاعدة** لا على ورودِ نصّ. */
 
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, beforeEach, describe, expect as vexpect, it } from 'vitest'
+import { plainExpect } from '../helpers/plain-expect'
+const expect = plainExpect(vexpect)
 import type { PrismaClient } from '@prisma/client'
 import { JOBS, syncCalendlyInterviews } from '../../worker/jobs'
 import { maskedIntegrationsView, saveCalendlyConfig, getCalendlyConfig } from '../../services/integrations.service'
@@ -219,7 +221,8 @@ describe('الوظيفةُ مسجَّلةٌ في دورة العامل', () => {
        أحدٌ هي الحالةُ التي كان فيها هذا العطبُ أصلا. */
     const job = JOBS.find((j) => j.key === 'calendly_interview_sync')
     expect(job, 'غيرُ مسجَّلةٍ في JOBS').toBeDefined()
-    expect(job!.run).toBe(syncCalendlyInterviews)
+    /* الدالّةُ نفسُها لا نصٌّ — فبلا غلاف «اللغة البيضاء» */
+    vexpect(job!.run).toBe(syncCalendlyInterviews)
     /* ودورتُها لا تطول: حجزٌ لا يظهر قبل ساعةٍ يُربك المراجعةَ والمتقدّمَ معا */
     expect(job!.everyMs).toBeLessThanOrEqual(10 * 60_000)
   })

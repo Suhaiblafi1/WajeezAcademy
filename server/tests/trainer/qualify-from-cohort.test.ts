@@ -18,7 +18,9 @@
    ٣) **تعارضُ الجدول يُفحص قبل الطلب**: يُردّ الطالبُ الآن، لا بعد يومين من
       انتظار قرارٍ لا يقبل التنفيذ. */
 
-import { beforeAll, describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect as vexpect, it } from 'vitest'
+import { plainExpect } from '../helpers/plain-expect'
+const expect = plainExpect(vexpect)
 import type { PrismaClient } from '@prisma/client'
 import type { FastifyInstance } from 'fastify'
 import { setupTestDb, testPrisma } from '../helpers/db'

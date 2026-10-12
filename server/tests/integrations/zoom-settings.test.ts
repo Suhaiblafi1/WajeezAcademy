@@ -15,7 +15,9 @@
    ⑤ ⚠️ وفحصُ الاتصال يقول إن لم يكن للأحداث رمز.
    ⑥ ⚠️ وبريدُ المضيف الفارغُ يعني صاحبَ التطبيق — كما يعد عنوانُ حقله — والغائبُ يُبقي ما كان. */
 
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect as vexpect, it } from 'vitest'
+import { plainExpect } from '../helpers/plain-expect'
+const expect = plainExpect(vexpect)
 import type { PrismaClient } from '@prisma/client'
 import type { FastifyInstance } from 'fastify'
 import { createHmac } from 'node:crypto'

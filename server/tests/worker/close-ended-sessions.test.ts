@@ -11,7 +11,9 @@
    ③ ودورةٌ ثانيةٌ بلا أثر.
    ④ والتذكيرُ لا يصل عن لقاءٍ ينتظر الاعتمادَ أو أُلغي. */
 
-import { beforeAll, describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect as vexpect, it } from 'vitest'
+import { plainExpect } from '../helpers/plain-expect'
+const expect = plainExpect(vexpect)
 import type { PrismaClient } from '@prisma/client'
 import { setupTestDb, testPrisma } from '../helpers/db'
 import { closeEndedSessions, sendSessionReminders } from '../../worker/jobs'

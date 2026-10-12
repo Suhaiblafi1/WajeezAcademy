@@ -14,7 +14,9 @@
 
    والقاعدةُ ليست «لا تعديل»: يُضيف ما شاء ويبدّل ما لم يُدفع عنه. */
 
-import { beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { beforeAll, beforeEach, describe, expect as vexpect, it } from 'vitest'
+import { plainExpect } from '../helpers/plain-expect'
+const expect = plainExpect(vexpect)
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { PrismaClient } from '@prisma/client'

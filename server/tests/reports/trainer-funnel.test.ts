@@ -14,7 +14,10 @@
       (موعدٌ مضى ولم يُلغَ) فيُعَدّ لقاءً وقع، ويُقاس تسرُّبُ الغياب صفرا.
    ④ **وكلُّ صفٍّ يقول أساسَ نسبته** — فنسبةٌ من المذكَّرين لا تُقرأ من الكلّ. */
 
-import { beforeAll, describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect as vexpect, it } from 'vitest'
+import { plainExpect } from '../helpers/plain-expect'
+const expect = plainExpect(vexpect)
+import { plainAr } from '../../../src/application/text/plain-ar'
 import type { PrismaClient } from '@prisma/client'
 import { setupTestDb, testPrisma } from '../helpers/db'
 import { ReportsService } from '../../services/reports.service'
@@ -44,7 +47,7 @@ async function application(tag: string, data: {
 }
 
 const row = (rows: Record<string, unknown>[], stage: string) =>
-  rows.find((r) => r.stage === stage) as { count: number; pct: number; base: string; medianDays: number | null }
+  rows.find((r) => plainAr(String(r.stage)) === plainAr(stage)) as { count: number; pct: number; base: string; medianDays: number | null }
 
 let funnel: Record<string, unknown>[]
 
