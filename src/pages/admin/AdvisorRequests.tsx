@@ -88,7 +88,7 @@ export default function AdvisorRequests() {
     setBusy(id);
     try {
       await apiPost(`/api/admin/advisor-requests/${id}/decision`, { decision, noteAr: note[id]?.trim() || undefined });
-      toast(decision === "approved" ? "اعتمد الطلب — وولّد كوبون مقصور على العميل إن كان خصما" : "رفض الطلب، ويصل سببك إلى المستشار");
+      toast(decision === "approved" ? "اعتمد الطلب — وإن كان خصما أنشئ كوبون لهذا العميل فقط" : "رفض الطلب، ويصل سببك إلى المستشار");
       await load();
     } catch (e) {
       toastError(e instanceof ApiError ? e.message : "تعذّر تنفيذ القرار");
@@ -134,10 +134,10 @@ export default function AdvisorRequests() {
         /* الطابورُ أقدمُه أوّلا كما يردّه الخادم — فأوّلُ المعروض أقدمُ ما
            لم يُبتّ فيه. والبحثُ قد يُخفيه، فيُقال السببُ ولا يبهت الزرُّ صامتا. */
         disabledReasonAr={rows && rows.length > 0 && view.total === 0
-          ? "البحث الحاليّ لا يظهر منها شيئا — امسحه لتبدأ."
+          ? "بحثك لا يطابق أيّ طلب — امسحه لتبدأ."
           : undefined}
         onAction={() => { if (view.rows[0]) revealRow(`advisor-req-${view.rows[0].id}`); }}
-        doneAr="لا طلب ينتظر قرارك — وحين يطلب مستشار خصما لعميله أو تعديلا على خطّته يظهر هنا بسببه كاملا."
+        doneAr="لا طلبات تنتظر قرارك — حين يطلب مستشار خصما لعميله أو تعديلا على خطّته يظهر هنا مع سببه."
       />
 
       {rows !== null && rows.length > 0 && (
@@ -183,12 +183,12 @@ export default function AdvisorRequests() {
 
                 <div className="mt-3">
                   <label htmlFor={`note-${r.id}`} className="mb-1.5 block text-fine font-bold text-muted-foreground">
-                    ردّك — إلزاميّ عند الرفض، يقرؤه المستشار
+                    ردّك — مطلوب عند الرفض، ويقرؤه المستشار
                   </label>
                   <textarea
                     id={`note-${r.id}`} rows={2} value={reason}
                     onChange={(e) => setNote((n) => ({ ...n, [r.id]: e.target.value }))}
-                    placeholder="مثال: الخصم فوق سقف هذه الفئة — اعرض عليها التقسيط بدلا منه."
+                    placeholder="مثال: الخصم فوق سقف هذه الفئة — اقترح التقسيط بدلا منه."
                     className={areaCls}
                   />
                 </div>
@@ -203,7 +203,7 @@ export default function AdvisorRequests() {
                     <XCircle className="h-3.5 w-3.5" /> ارفض
                   </Button>
                   {reason.trim().length < MIN_REASON && (
-                    <span className="text-fine text-muted-foreground">الرفض يلزمه سبب لا يقلّ عن {MIN_REASON} حرفا</span>
+                    <span className="text-fine text-muted-foreground">الرفض يحتاج سببا من {MIN_REASON} حرفا على الأقلّ</span>
                   )}
                 </div>
               </Panel>

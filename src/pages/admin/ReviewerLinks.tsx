@@ -81,7 +81,7 @@ export default function ReviewerLinks({ applicationId }: { applicationId: string
       setCopied(false)
       /* ما جرى للبريد يُقال صراحةً: «أُنشئ» وحدَها تُقرأ «وصل» — وقد لا يكون */
       if (send && email.trim()) {
-        toast(r.emailDelivery === 'sent' ? `أرسل الرابط إلى ${email.trim()}` : 'أنشئ الرابط — ولم يرسل البريد، فانسخه بيدك')
+        toast(r.emailDelivery === 'sent' ? `أرسل الرابط إلى ${email.trim()}` : 'أنشئ الرابط، لكن لم يرسل البريد — انسخه يدويّا')
       }
       setName('')
       setEmail('')
@@ -100,7 +100,7 @@ export default function ReviewerLinks({ applicationId }: { applicationId: string
     if (!row.copyUrl) return
     try {
       await navigator.clipboard.writeText(row.copyUrl)
-      toast(`نسخ رابط ${row.reviewerName} — هو نفسه، ولم يتغيّر شيء`)
+      toast(`نسخ رابط ${row.reviewerName} — الرابط نفسه دون تغيير`)
     } catch {
       /* المتصفّحُ قد يمنع الحافظة — فيُعرض النصُّ ليُنسَخ باليد */
       setFresh({ url: row.copyUrl, name: row.reviewerName })
@@ -121,7 +121,7 @@ export default function ReviewerLinks({ applicationId }: { applicationId: string
       if (row.reviewerEmail) {
         toast(r.emailDelivery === 'sent'
           ? `جدّد الرابط وأرسل إلى ${row.reviewerEmail}`
-          : 'جدّد الرابط — ولم يرسل البريد، فانسخه بيدك')
+          : 'جدّد الرابط، لكن لم يرسل البريد — انسخه يدويّا')
       } else {
         toast('جدّد الرابط — انسخه الآن')
       }
@@ -152,7 +152,7 @@ export default function ReviewerLinks({ applicationId }: { applicationId: string
         <Link2 className="ms-1 inline h-3.5 w-3.5" aria-hidden="true" /> روابط القرّاء
       </h4>
       <p className="mt-1 text-read leading-6 text-muted-foreground">
-        رابط لكلّ قارئ باسمه — يفتح بلا حساب، وما يكتبه ينسب إليه. ولا يرى قارئ تقييم زميله.
+        لكلّ قارئ رابط باسمه يفتح بلا حساب، وما يكتبه يسجّل باسمه. ولا يرى أحد تقييم غيره.
       </p>
 
       <div className="mt-3 flex flex-wrap gap-2">
@@ -181,14 +181,14 @@ export default function ReviewerLinks({ applicationId }: { applicationId: string
           type="checkbox" checked={send} disabled={!email.trim()}
           onChange={(e) => setSend(e.target.checked)} className="accent-gold"
         />
-        أرسله إليه بالبريد الآن — فالرمز لا يحفظ، ولا سبيل إلى إرساله بعد هذه اللحظة.
+        أرسله إليه بالبريد الآن — الرمز لا يحفظ، ولا يمكن إرساله لاحقا.
       </label>
 
       {/* ═══ اللوحُ الوحيدُ الذي يُقرأ فيه الرمز ═══ */}
       {fresh && (
         <Inset className="mt-3 border-gold/40">
           <p className="text-read font-bold text-gold-ink">
-            رابط {fresh.name} — انسخه الآن، فلا يعرض ثانية أبدا
+            رابط {fresh.name} — انسخه الآن، فلن يظهر مرّة أخرى
           </p>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <code dir="ltr" className="min-w-0 flex-1 break-all rounded-lg border border-white/12 bg-black/20 p-2 text-read">
@@ -258,8 +258,8 @@ export default function ReviewerLinks({ applicationId }: { applicationId: string
 
       {rows && rows.length > 0 && (
         <p className="mt-3 text-read leading-6 text-muted-foreground">
-          و«جدّده وانسخه» يعطيك رابطا جديدا للقارئ نفسه — يبقى تقييمه وسجلّ فتحه،
-          <b className="text-gold-ink"> ويتوقّف رابطه القديم فورا</b>. ومن كان بريده محفوظا وصله الجديد تلقائيّا.
+          و«جدّده وانسخه» يعطي القارئ نفسه رابطا جديدا — يبقى تقييمه وسجلّ فتحه،
+          <b className="text-gold-ink"> ويتوقّف الرابط القديم فورا</b>. وإن كان بريده محفوظا يصله الجديد تلقائيّا.
         </p>
       )}
     </Panel>

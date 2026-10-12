@@ -46,7 +46,7 @@ export default function Auth() {
         <Card as="section" className="mx-auto mt-8 max-w-md">
           <h2 className="text-sm font-black">أوّل مرّة هنا؟</h2>
           <p className="mt-1 text-read leading-6 text-muted-foreground">
-            الحساب يحفظ ما تبدؤه — وبدايتك تختلف باختلافك:
+            الحساب يحفظ تقدمك. ابدأ حسب حالتك:
           </p>
           <div className="mt-3 grid gap-2">
             <Inset as="a" interactive href="/#diagnostic" className="flex items-center gap-2.5 text-read leading-6">

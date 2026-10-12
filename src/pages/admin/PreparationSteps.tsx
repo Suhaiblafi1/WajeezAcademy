@@ -157,7 +157,7 @@ function Step({
 
       {locked ? (
         <p className="mt-3 text-read leading-6 text-muted-foreground">
-          تدار هذه الخطوة بصلاحيّة لا تملكها — وحالها أعلاه يقرأ ولا يحرّر.
+          هذه الخطوة تحتاج صلاحيّة لا تملكها، فيمكنك رؤية حالها فقط.
         </p>
       ) : (
         <div className="mt-3">{children}</div>
@@ -210,8 +210,8 @@ function FeeStep({
         </Inset>
       ) : (
         <p className="text-read leading-6 text-muted-foreground">
-          لا قاعدة سارية. وبلا قاعدة لا يولّد كشف مستحقّات أصلا — فتبقى «مستحقّاتي»
-          عنده صفرا ولا يعلم أحد لماذا.
+          لا قاعدة سارية. وبلا قاعدة لا ينشأ كشف مستحقّات، فتبقى «مستحقّاتي»
+          عنده صفرا.
         </p>
       )}
 
@@ -261,7 +261,7 @@ function FeeStep({
         </Button>
         {live && (
           <p className="mt-1.5 text-read leading-5 text-muted-foreground">
-            القاعدة السابقة تغلق بتاريخها ولا تمحى — فما حسب عليها يبقى مفسّرا.
+            القاعدة السابقة تغلق بتاريخها ولا تحذف، فيبقى ما حسب عليها واضحا.
           </p>
         )}
       </div>
@@ -413,7 +413,7 @@ function CoursesStep({
               rows={2} maxLength={2000} placeholder="نبذة عنها" className={areaCls}
             />
             <p className="text-read leading-5 text-muted-foreground">
-              وهي كلمات صاحبها — فما كان يكتب في سجلّ الأثر كاملا.
+              هذه كلمات صاحبها، ويسجّل التعديل كاملا في الأثر.
             </p>
             <div className="flex flex-wrap gap-2">
               <Button
@@ -439,7 +439,7 @@ function CoursesStep({
             <textarea
               value={rejectNote} onChange={(e) => setRejectNote(e.target.value)}
               rows={2} maxLength={2000} className={areaCls}
-              placeholder="لم ردّت — يصل صاحبها، وبلا سبب يعيدها كما هي"
+              placeholder="سبب الرفض — يصل صاحبها، وبلا سبب يعيدها كما هي"
             />
             <div className="flex flex-wrap gap-2">
               <Button
@@ -467,7 +467,7 @@ function CoursesStep({
         <h5 className="text-read font-black text-foreground">الدورات المؤهّل لها — {qualified.length}</h5>
         {qualified.length === 0 ? (
           <p className="mt-1.5 text-read leading-6 text-muted-foreground">
-            لا دورة بعد. وما ذكره في طلبه من دورات الكتالوج يبذر آليّا عند قبوله داخليّا.
+            لا دورة بعد. دورات الكتالوج التي ذكرها في طلبه تضاف تلقائيا عند قبوله داخليّا.
           </p>
         ) : (
           <ul className="mt-2 flex flex-wrap gap-1.5">
@@ -530,7 +530,7 @@ function CoursesStep({
               <ul className="mt-2.5 grid gap-2.5">{open.map(renderProposal)}</ul>
             ) : (
               <p className="mt-1.5 text-read leading-6 text-muted-foreground">
-                لا اقتراح ينتظر قرارا — بتّ فيها كلّها.
+                لا اقتراح ينتظر قرارا — قرّرت فيها كلّها.
               </p>
             )}
 
@@ -540,7 +540,7 @@ function CoursesStep({
                   tone="ghost" size="sm" icon={showDecided ? ChevronUp : ChevronDown}
                   onClick={() => setShowDecided(!showDecided)} aria-expanded={showDecided}
                 >
-                  ما بتّ فيه — {decidedSummaryAr}
+                  ما قرّرت فيه — {decidedSummaryAr}
                 </Button>
                 {showDecided && <ul className="mt-2.5 grid gap-2.5">{decided.map(renderProposal)}</ul>}
               </div>
@@ -549,8 +549,8 @@ function CoursesStep({
         )}
 
         <p className="mt-2.5 text-read leading-5 text-muted-foreground">
-          و«دورة جديدة» تنشأ في شاشة الكتالوج بنموذجها الكامل — مهاراتها وساعاتها —
-          ثمّ تربط من طابور الاقتراحات. ولا تنشأ من هنا كي لا يكتب باسمه ما لم يكتبه.
+          و«الدورة الجديدة» تنشأ في شاشة الكتالوج بكامل بياناتها (المهارات والساعات)،
+          ثمّ تربط من طابور الاقتراحات. ولا تنشأ من هنا حتّى لا ينسب إليه ما لم يكتبه.
         </p>
       </div>
     </div>
@@ -601,7 +601,7 @@ function ContractStep({
     <div className="grid gap-3">
       {live.length === 0 ? (
         <p className="text-read leading-6 text-muted-foreground">
-          لا عقد بعد. والعقد يركّب مرّة ويجمّد نصّه، ثمّ يرسل رابطا يوقّع منه.
+          لا عقد بعد. يجهّز العقد مرّة ويثبّت نصّه، ثمّ يرسل إليه رابط للتوقيع.
         </p>
       ) : (
         <ul className="grid gap-2">
@@ -657,7 +657,7 @@ function ContractStep({
                       ? "وقّعنا العقد عن الأكاديميّة فنفذ — وتمّت الخطوة الثالثة"
                       /* والعرضُ المشروطُ لا ينفذ باعتماد توقيعه (١ أكتوبر ٢٠٢٦): كان
                          هنا «نفَذ العقدُ» للبابَين */
-                      : "اعتمد توقيعه وفتحت بوّابته — ونوقّع العرض حين تعتمد دوراته")}
+                      : "اعتمد توقيعه وفتحت بوّابته — ونوقّع الاتفاقيّة حين تعتمد دوراته")}
                   >
                     {awaitingCountersign.gatesActivation === false ? "اعتمد ووقّع عن الأكاديميّة" : "اعتمد التوقيع"}
                   </Button>
@@ -673,7 +673,7 @@ function ContractStep({
                   طابقت الاسم بالهويّة — اعتمد توقيعه
                 </Button>
                 <p className="mt-1.5 text-read leading-5 text-muted-foreground">
-                  ولا يفتح حسابه بهذا: القبول الكامل قرارك أنت، أسفل هذه الخطوات.
+                  هذا لا يفتح حسابه: القبول النهائيّ قرارك، أسفل هذه الخطوات.
                 </p>
               </div>
             )
@@ -687,7 +687,7 @@ function ContractStep({
                 onClick={() => void run(async () => {
                   await apiPost(`/api/admin/trainer-contracts/${sent.id}/resend`, {});
                   await onChanged();
-                }, "جدّد الرابط وأرسل — والقديم مات لحظتها")}
+                }, "جدّد الرابط وأرسل — والقديم لم يعد يعمل")}
               >
                 جدّد الرابط وأعد الإرسال
               </Button>
@@ -699,14 +699,14 @@ function ContractStep({
             <div>
               <Button tone={live.length === 0 ? "confirm" : "ghost"} size="sm" icon={FileSignature}
                 loading={busy} onClick={() => void openComposer()}>
-                {live.length === 0 ? "ركّب العقد" : "ركّب عقدا جديدا"}
+                {live.length === 0 ? "جهّز العقد" : "جهّز عقدا جديدا"}
               </Button>
             </div>
           ) : prefill && (
             <Card className="bg-paper/20 p-3.5">
               {prefill.missingLegal.length > 0 && (
                 <Inset as="p" tone="warn" className="mb-3 px-3.5 py-2.5 text-read leading-6">
-                  ناقص في هويّة الأكاديميّة: {prefill.missingLegal.join(" · ")} — يستكمل قبل الإرسال.
+                  ناقص في هويّة الأكاديميّة: {prefill.missingLegal.join(" · ")} — أكمله قبل الإرسال.
                 </Inset>
               )}
               {/* ═══ وما يمنع الإرسالَ يُقال قبل أن تُملأ خانة (٣٠ سبتمبر ٢٠٢٦) ═══
@@ -749,7 +749,7 @@ function ContractStep({
 
                 {prefill.feeNotes.length > 0 && (
                   <div className="text-read leading-6 text-muted-foreground">
-                    ممّا قيل في المقابلة عن الأجر — للاستئناس لا للاحتساب:
+                    ما قيل في المقابلة عن الأجر — للاطّلاع فقط، لا يدخل في الحساب:
                     <ul className="mt-1 grid gap-0.5">
                       {prefill.feeNotes.map((n, i) => (
                         <li key={i}>
@@ -762,10 +762,10 @@ function ContractStep({
 
                 {!prefill.compensation && (
                   <label className="grid gap-1 text-read text-muted-foreground">
-                    ولا يرسل بلا أجر إلّا بسبب مكتوب
+                    لا يرسل بلا أجر إلّا بسبب مكتوب
                     <input value={waived} onChange={(e) => setWaived(e.target.value)}
                       maxLength={500} className={inputCls}
-                      placeholder="لم يرسل العقد بلا قاعدة أتعاب قائمة" />
+                      placeholder="لماذا يرسل العقد بلا قاعدة أتعاب؟" />
                   </label>
                 )}
 
@@ -814,7 +814,7 @@ function ContractStep({
                       await onChanged();
                     }, "أنشئ العقد وأرسل — يوقّع من رابطه")}
                   >
-                    ركّب وأرسل
+                    جهّز وأرسل
                   </Button>
                   <Button tone="ghost" size="sm" onClick={() => { setComposing(false); setPrefill(null); }}>
                     تراجع
@@ -869,9 +869,9 @@ export default function PreparationSteps({
         <h4 className="text-sm font-black text-foreground">لم يبدأ تجهيزه بعد</h4>
         <p className="mt-2 text-read leading-7 text-muted-foreground">
           التجهيز يبدأ بـ<b className="text-foreground">«اقبله داخليّا»</b> في شريط القرار أعلاه:
-          يفتح له ملفّ مدرّب، وتبذر مؤهّلاته ممّا ذكره في طلبه، فتضبط أتعابه
-          وتصنّف دوراته ويركّب عقده — <b className="text-foreground">ولا يصله خبر قبول بعد</b>.
-          والقبول الكامل بعد أن تتمّ الثلاث.
+          يفتح له ملفّ مدرّب وتضاف مؤهّلاته ممّا ذكره في طلبه، ثمّ تضبط أتعابه
+          وتصنّف دوراته وتجهّز عقده — <b className="text-foreground">ولا يصله خبر قبول بعد</b>.
+          والقبول النهائيّ بعد إكمال الخطوات الثلاث.
         </p>
       </Panel>
     );
@@ -884,8 +884,8 @@ export default function PreparationSteps({
           <CircleDashed className="h-4 w-4" aria-hidden="true" /> تجهيزه قبل القبول الكامل
         </h4>
         <p className="mt-2 text-read leading-7 text-muted-foreground">
-          ثلاث خطوات تعمل من هنا ولا تجمع من شاشات أخرى. وحين تتمّ الثلاث يفتح
-          زرّ <b className="text-foreground">«اعتمده نهائيّا»</b> في شريط القرار — وعندها وحدها
+          ثلاث خطوات تنجزها من هنا. وحين تتمّ يفتح
+          زرّ <b className="text-foreground">«اعتمده نهائيّا»</b> في شريط القرار، وعندها فقط
           يصله خبر اعتماده وتفتح بوّابته.
         </p>
         {readiness && (

@@ -126,7 +126,7 @@ export default function CourseDecisionsUpload({ onApplied }: { onApplied: () => 
     try {
       parsed = JSON.parse(text);
     } catch {
-      setErr("ليس نصّ JSON يقرأ — أهو الملفّ الذي أعدّ للقرارات كاملا؟");
+      setErr("النصّ ليس JSON صالحا — تأكّد أنّه ملفّ القرارات كاملا.");
       return;
     }
     setRaw(parsed);
@@ -178,19 +178,18 @@ export default function CourseDecisionsUpload({ onApplied }: { onApplied: () => 
       {open ? (
         <div className="mt-3">
           <p className="text-sm leading-7 text-muted-foreground">
-            ملفّ أعدّ لمراجعة اقتراحات المدرّبين: <b>ربط برمز قائم</b>، أو <b>دورة جديدة</b>،
-            أو <b>سؤال لصاحبه</b> — ومعها <b>تأهيلهم</b> لما يدرّسون. يعرض كلّ ما سيفعله قبل أن يفعله،
-            وكلّ خطوة تقع من باب زرّها في هذه الشاشة أو في شاشة الإسناد، فيكتب أثرها ويصل صاحبها خبرها.
-            {" "}<b>وقرارات المدرّب الواحد تطبّق معا أو تترك معا</b>: خطوة لا تطبّق تبقي صاحبها
-            كما هو حتّى تصلح، ويطبّق غيره. وما طبّق من قبل لا يعاد.
+            ملفّ لمراجعة اقتراحات المدرّبين: <b>ربط برمز قائم</b>، أو <b>دورة جديدة</b>،
+            أو <b>سؤال لصاحبه</b> — مع <b>تأهيلهم</b> لما يدرّسون. يعرض كل خطوة قبل تنفيذها،
+            وتسجّل كل خطوة ويبلّغ صاحبها.
+            {" "}<b>وقرارات المدرّب الواحد تطبّق معا أو لا تطبّق</b>: إن تعذّرت خطوة بقي المدرّب
+            كما هو حتّى تصلحها، ويطبّق الباقون. وما طبّق سابقا لا يتكرّر.
           </p>
 
           <Inset className="mt-3">
             <b className="text-read text-foreground">١) ورقة القرارات</b>
             <p className="mt-1 text-sm leading-7 text-muted-foreground">
-              الطابور المفتوح كلّه بصيغة هذا الملفّ: لكلّ اقتراح معرّفه ومرجع صاحبه وخانات قراره
-              فارغة، ومعه نصّه وأقرب رموزنا إليه للقراءة. انسخها أو نزّلها لمن يقرّر فيها — ثمّ ارفع
-              ما يعود منها في الخطوة الثانية.
+              كل الاقتراحات المفتوحة بصيغة هذا الملفّ، مع خانات قرار فارغة وأقرب رموزنا لكل اقتراح.
+              انسخها أو نزّلها لمن يقرّر، ثمّ ارفعها بعد القرار في الخطوة الثانية.
             </p>
             {sheetErr ? (
               <p role="alert" className="mt-2 text-sm font-bold text-red-300">{sheetErr}</p>
@@ -211,7 +210,7 @@ export default function CourseDecisionsUpload({ onApplied }: { onApplied: () => 
                 {copyFailed ? (
                   <div className="mt-2">
                     <label htmlFor="decisions-sheet" className="text-sm font-bold text-foreground">
-                      لم يقبل المتصفّح النسخ — حدّد النصّ كلّه وانسخه بيدك:
+                      تعذّر النسخ — حدّد النصّ كلّه وانسخه يدويّا:
                     </label>
                     <textarea
                       id="decisions-sheet" readOnly dir="ltr" rows={6} value={sheet.text}
@@ -276,8 +275,8 @@ export default function CourseDecisionsUpload({ onApplied }: { onApplied: () => 
                   طبّقت <b>{countAr(outcome.applied.length, STEPS_DONE)}</b>.
                   {outcome.failed ? (
                     <span className="text-red-300">
-                      {" "}ووقف التطبيق عند الخطوة {outcome.failed.n}: {outcome.failed.errorAr} — أصلح سببها ثمّ
-                      ارفع الملفّ ثانية فيكمل من حيث وقف.
+                      {" "}ووقف التطبيق عند الخطوة {outcome.failed.n}: {outcome.failed.errorAr} — أصلح السبب ثمّ
+                      ارفع الملفّ مجدّدا ليكمل من حيث وقف.
                     </span>
                   ) : null}
                 </p>

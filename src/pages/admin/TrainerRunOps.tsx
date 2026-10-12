@@ -227,7 +227,7 @@ function PublicProfileEditor({
           <div className="min-w-40 flex-1">
             <p className="text-read font-black">صورة رفعها بنفسه — تنتظر اعتمادك</p>
             <p className="text-read leading-5 text-muted-foreground">
-              لا تراها صفحة الفريق حتّى تعتمدها. والردّ لا يحذفها من حسابه — يمنع عرضها عامّة فقط.
+              لا تظهر في صفحة الفريق قبل اعتمادها. والرفض يخفيها عن العامّة فقط ولا يحذفها.
             </p>
           </div>
           <Button
@@ -259,7 +259,7 @@ function PublicProfileEditor({
           <ImagePlus className="h-3.5 w-3.5" /> ارفع صورة
         </Button>
         <span className="text-fine leading-5 text-muted-foreground">
-          حتّى ميغابايت · JPEG أو PNG أو WebP — والرفع يحتاج تفعيل التخزين على الخادم.
+          JPEG أو PNG أو WebP — الرفع يحتاج تفعيل التخزين على الخادم.
         </span>
       </div>
       {framing && (
@@ -320,7 +320,7 @@ function PendingTextReview({
         أرسل عنوانه ونبذته {fmtDateTime(p.at)} — تنتظر اعتمادك
       </p>
       <p className="mt-0.5 text-read leading-6 text-muted-foreground">
-        عدّل ما شئت في الحقلين، ثمّ اعتمد: يكتب ما فيهما في صفحة «المدربون». وما هو معتمد الآن يبقى معروضا حتّى تقرّر.
+        عدّل الحقلين إن شئت ثمّ اعتمد، فيظهر ما فيهما في صفحة «المدربون». ويبقى المعتمد الحاليّ ظاهرا حتّى تقرّر.
       </p>
       <label className="mt-2.5 block text-fine font-bold text-muted-foreground" htmlFor={`phl-${trainer.profileId}`}>
         العنوان المهنيّ
@@ -450,8 +450,8 @@ export default function TrainerRunOps() {
           )}
         </h3>
         <p className="mt-1 text-read leading-6 text-muted-foreground">
-          يقدّمها من يجدول الشعبة، ويبتّ فيها من يملك التأهيل — <b>فمن يطلب ليس من يقرّر</b>.
-          والموافقة <b>تؤهّل وتسند إلى الشعبة المطلوبة في فعل واحد</b>.
+          يطلبها من يجدول الشعبة، ويقرّر فيها صاحب صلاحية التأهيل — <b>فمن يطلب ليس من يقرّر</b>.
+          والموافقة <b>تؤهّل وتسند إلى الشعبة المطلوبة معا</b>.
         </p>
 
         {requests.length === 0 ? (
@@ -560,7 +560,7 @@ export default function TrainerRunOps() {
           >
             <p className="text-read leading-6 text-muted-foreground">
               ينشأ في خطوة واحدة: <b className="text-foreground">حسابه</b> و<b className="text-foreground">ملفّ مدرّب نشط</b> و<b className="text-foreground">دوره</b> —
-              فيؤهّل ويسند من هذه الشاشة مباشرة. ولا يظهر للعامّة حتّى تعتمد صورته ونبذته.
+              فتؤهّله وتسنده من هنا مباشرة. ولا يظهر للعامّة حتّى تعتمد صورته ونبذته.
             </p>
             <div className="mt-3 grid gap-3 sm:grid-cols-3">
               <label className="block">
@@ -606,7 +606,7 @@ export default function TrainerRunOps() {
             <GraduationCap className="mx-auto h-10 w-10 text-muted-foreground/50" />
             <p className="mt-3 text-sm font-black">لا مدرّب بعد</p>
             <p className="mt-1 text-read leading-6 text-muted-foreground">
-              يظهر هنا كلّ من أنشئ له ملفّ مدرّب — أي من اعتمد من تبويب «الطلبات».
+              يظهر هنا كل من اعتمد من تبويب «الطلبات».
             </p>
           </Card>
         ) : (
@@ -645,7 +645,7 @@ export default function TrainerRunOps() {
                   {!t.hasAccount && (
                     <Inset as="p" tone="warn" className="mt-2.5 flex items-start gap-1.5 p-2.5 text-read leading-6 text-gold-ink">
                       <ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                      لا حساب مربوط بهذا الملفّ — فلا تفتح له بوّابته ولو أسند. اعتمده من تبويب «الطلبات».
+                      لا حساب مربوط بهذا الملفّ، فلن يدخل بوّابته ولو أسند. اعتمده من تبويب «الطلبات».
                     </Inset>
                   )}
 
@@ -653,7 +653,7 @@ export default function TrainerRunOps() {
                     <div>
                       <p className="text-read font-black text-muted-foreground">مؤهّل لـ</p>
                       {t.qualifications.length === 0 ? (
-                        <p className="mt-1 text-read text-muted-foreground">لا تأهيل بعد — وبلا تأهيل لا يسند إلى شعبة.</p>
+                        <p className="mt-1 text-read text-muted-foreground">غير مؤهّل بعد، فلا يسند إلى شعبة.</p>
                       ) : (
                         <ul className="mt-1 space-y-0.5 text-fine leading-6">
                           {t.qualifications.map((x) => (
@@ -762,7 +762,7 @@ export default function TrainerRunOps() {
           }}
         >
           يخفى فورا من الصفحات العامّة، وتلغى جلساته القادمة، ويوقف حسابه.
-          ويرفع الإيقاف من تبويب «الطلبات» بزرّ «ارفع الإيقاف».
+          ويمكن رفع الإيقاف من تبويب «الطلبات».
         </ConfirmAction>
       )}
     </div>

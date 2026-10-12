@@ -168,12 +168,12 @@ export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: Co
         {picked && (
           <p className="mt-2 text-read leading-5 text-muted-foreground">
             {picked.qualification === "qualified"
-              ? "مؤهّل لهذه الدورة — الإسناد يقع الآن، ويفحص تعارض جدوله قبل وقوعه."
+              ? "مؤهّل لهذه الدورة — يسند الآن بعد فحص تعارض جدوله."
               : picked.qualification === "pending"
-                ? (canQualify ? "له طلب تأهيل قائم على هذه الدورة — والقرار بيدك: أهّله فيسند، أو ردّه بسبب." : "له طلب تأهيل قائم على هذه الدورة — بانتظار من يملك التأهيل.")
+                ? (canQualify ? "له طلب تأهيل لهذه الدورة — أهّله فيسند، أو ارفضه مع ذكر السبب." : "له طلب تأهيل لهذه الدورة — بانتظار صاحب الصلاحية.")
                 : picked.qualification === "rejected"
-                  ? "سبق أن ردّ تأهيله لهذه الدورة. رفع طلب جديد يعيدها إلى طاولة القرار."
-                  : (canQualify ? "غير مؤهّل لهذه الدورة بعد — طلب التأهيل يعود إليك، وموافقتك تؤهّله وتسنده معا." : "غير مؤهّل لهذه الدورة بعد — الطلب يذهب إلى من يملك التأهيل، وموافقته تؤهّله وتسنده معا.")}
+                  ? "رفض تأهيله لهذه الدورة سابقا. يمكنك رفع طلب جديد."
+                  : (canQualify ? "غير مؤهّل لهذه الدورة — الطلب يصلك، وموافقتك تؤهّله وتسنده معا." : "غير مؤهّل لهذه الدورة — الطلب يذهب لصاحب الصلاحية، وموافقته تؤهّله وتسنده معا.")}
           </p>
         )}
         {/* القرارُ في موضعه: من يملك الصلاحيّةَ لا يُحال إلى شاشةٍ أخرى ولا ينتظر أحدا */}
@@ -200,7 +200,7 @@ export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: Co
           </div>
         )}
         {trainers.length === 0 && (
-          <p className="mt-2 text-read text-muted-foreground">لا مدرّبين نشطين بعد — تعتمد الطلبات من «طلبات المدربين».</p>
+          <p className="mt-2 text-read text-muted-foreground">لا مدرّبين نشطين — اعتمد الطلبات من «طلبات المدربين».</p>
         )}
       </Section>
       )}
@@ -236,8 +236,7 @@ export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: Co
       {editable && tab === "schedule" && (
         <Section icon={Pencil} title="الجدول الأسبوعيّ — الأيّام والوقت">
           <p className="mb-3 text-read leading-6 text-muted-foreground">
-            هذا جدول الشعبة لا لقاءاتها. وتغييره لا ينقل اللقاءات المولّدة من قبل —
-            بل يصير الأساس لما يولّد بعده.
+            تغيير الجدول لا ينقل اللقاءات الموجودة، بل يطبّق على ما يولّد بعده.
           </p>
           <div className="grid gap-2 sm:grid-cols-2">
             <DayOfWeekPicker value={editForm.days} onChange={(days) => setEditForm({ ...editForm, days })} label="الأيّام" />
@@ -439,7 +438,7 @@ export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: Co
       {/* تسجيلات الجلسات وأرشفة المحتوى */}
       {tab === "content" && (
       <Section icon={BookOpen} title="تسجيلات اللقاءات وأرشفة المحتوى — ملفات خاصة موقعة">
-        <p className="mb-2 text-read font-bold text-muted-foreground">تسجيل تسجيل جلسة (يرتبط بالجلسة ووحدة اختيارية):</p>
+        <p className="mb-2 text-read font-bold text-muted-foreground">أضف تسجيل جلسة (يرتبط بالجلسة وبوحدة اختياريّا):</p>
         <div className="grid gap-2 sm:grid-cols-3">
           <SessionSelect cohortId={cohort.id} value={recForm.sessionId}
             onChange={(sessionId) => setRecForm({ ...recForm, sessionId })} />
@@ -462,7 +461,7 @@ export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: Co
           سجّل التسجيل
         </Button>
 
-        <p className="mt-4 mb-2 border-t border-white/8 pt-3 text-read font-bold text-muted-foreground">أرشفة أو تعطيل مادة/تسجيل (لا حذف — أثر قانوني يبقى):</p>
+        <p className="mt-4 mb-2 border-t border-white/8 pt-3 text-read font-bold text-muted-foreground">أرشفة أو تعطيل مادة/تسجيل (لا حذف — يبقى الأثر القانوني):</p>
         <div className="flex flex-wrap gap-2">
           <ContentSelect cohortId={cohort.id} value={contentForm.kind && contentForm.id ? `${contentForm.kind}:${contentForm.id}` : ""}
             onChange={(picked) => {
@@ -534,7 +533,7 @@ function DropEnrollment({ cohortId, busy, form, onForm, act }: {
   const picked = rows?.find((r) => r.enrollmentId === form.enrollmentId) ?? null;
 
   if (rows !== null && rows.length === 0) {
-    return <p className="text-read text-muted-foreground">لا مسجّلين في هذه الشعبة — لا شيء يسقط.</p>;
+    return <p className="text-read text-muted-foreground">لا مسجّلين في هذه الشعبة.</p>;
   }
 
   return (

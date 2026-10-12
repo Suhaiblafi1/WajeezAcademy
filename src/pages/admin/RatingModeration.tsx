@@ -98,9 +98,9 @@ export default function RatingModeration() {
       <Card tone="accent" className="mb-5 flex items-start gap-3">
         <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-teal-light-ink" />
         <p className="text-read leading-6 text-foreground">
-          قرارك هنا يحكم <span className="font-black text-foreground">التعليق المكتوب</span> وحده:
-          ينشر علنا أو يحجب. <span className="font-black text-foreground">الدرجة تدخل المعدّل في كل الأحوال</span> —
-          فالرقم المعلن يبقى قياسا لا اختيارا. والقائمة تصلك بلا اسم المقيّم عمدا: الحكم على النصّ.
+          قرارك هنا يخصّ <span className="font-black text-foreground">التعليق المكتوب</span> فقط:
+          ينشر أو يحجب. <span className="font-black text-foreground">الدرجة تدخل المعدّل دائما</span> —
+          فالرقم المعلن قياس لا اختيار. واسم المقيّم مخفيّ عمدا لتحكم على النصّ وحده.
         </p>
       </Card>
 
@@ -134,10 +134,10 @@ export default function RatingModeration() {
           waitingAr="تنتظر مراجعتك"
           actionAr="ابدأ بأوّلها"
           disabledReasonAr={rows.length > 0 && view.total === 0
-            ? "البحث الحاليّ لا يظهر منها شيئا — امسحه لتبدأ."
+            ? "بحثك لا يطابق أيّ تعليق — امسحه لتبدأ."
             : undefined}
           onAction={() => { if (view.rows[0]) revealRow(`rating-${view.rows[0].id}`); }}
-          doneAr="لا تعليق ينتظر مراجعتك — وما يكتب بعدها يصل هذا التبويب فورا، والدرجة تدخل المعدّل في كلّ حال."
+          doneAr="لا تعليقات تنتظر مراجعتك — والجديدة تظهر هنا فورا، والدرجة تدخل المعدّل دائما."
         />
       )}
 
@@ -154,7 +154,7 @@ export default function RatingModeration() {
       {!offline && !loading && rows.length > 0 && (
         <>
         <ListToolbar q={q} onQ={setQ} onPage={setPage} view={view} unit="تعليقا"
-          placeholder="ابحث في نصّ التعليق أو باسم من قيل فيه…" />
+          placeholder="ابحث في نصّ التعليق أو باسم من يخصّه…" />
         {view.rows.length === 0 ? (
           <Card as="p" className="px-5 py-10 text-center text-sm text-muted-foreground">
             لا تعليق يطابق بحثك — امسح الكلمة أو جرّب غيرها.
@@ -208,7 +208,7 @@ export default function RatingModeration() {
           }}
         >
           <Inset as="p" className="px-3 py-2 leading-6 text-foreground">«{blocking.commentAr}»</Inset>
-          <p>يحجب <b className="text-foreground">النصّ وحده</b> — ودرجة التقييم باقية في المعدّل، فالحجب لا يخفي رأيا بل يمنع نشر عبارة.</p>
+          <p>يحجب <b className="text-foreground">النصّ فقط</b> — وتبقى الدرجة في المعدّل، فالحجب يمنع نشر العبارة لا الرأي.</p>
         </ConfirmAction>
       )}
     </AdminLayout>

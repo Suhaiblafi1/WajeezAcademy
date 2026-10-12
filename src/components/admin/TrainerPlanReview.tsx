@@ -171,7 +171,7 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
     setDownloading(true); setMsg("");
     try {
       const name = await apiDownload(`/api/admin/cohorts/${cohortId}/trainer-plan/review-bundle`, "خطة-الشعبة.zip");
-      setMsg(`نزّلت «${name}» — فيها المنهج نصّا مقروءا وكلّ ملفّ رفعه المدرّب. ولم يتغيّر في الخطّة شيء.`);
+      setMsg(`نزّلت «${name}» — فيها المنهج وملفّات المدرّب. ولم تتغيّر الخطّة.`);
     } catch (e) { setMsg(e instanceof ApiError ? e.message : "تعذّر التنزيل"); }
     finally { setDownloading(false); }
   };
@@ -260,12 +260,12 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
                     {trainerPlan.approvedPlan.reviewedAt && <span className="font-normal text-muted-foreground"> — اعتمدت {fmtDateAr(trainerPlan.approvedPlan.reviewedAt)}</span>}
                   </p>
                   <p className="mt-1 text-read leading-6 text-muted-foreground">
-                    هذه مراجعة لخطّة معتمدة — وهذا ما تغيّر فيها بخطوات المدرّب. والمنهج كما سيكون باعتمادك في لسان «المنهاج».
+                    هذه خطّة معتمدة سابقا، وهنا ما غيّره المدرّب. والمنهج بعد اعتمادك في تبويب «المنهاج».
                   </p>
                   <div className="mt-2">
                     <PlanDiffList
                       sections={planDiff(trainerPlan.approvedPlan.content, trainerPlan.content, { date: cohortDayAr })}
-                      emptyText="لم يتغيّر في الخطّة نفسها شيء — وما يعتمد معها من لقاءات ومهامّ مذكور أدناه."
+                      emptyText="لم تتغيّر الخطّة نفسها — واللقاءات والمهامّ التي تعتمد معها أدناه."
                     />
                   </div>
                 </Inset>
@@ -285,7 +285,7 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
                       {trainerPlan.returned.at && <span className="font-normal text-muted-foreground"> — ردّت {fmtDateAr(trainerPlan.returned.at)}</span>}
                     </p>
                     <p className="mt-1 text-read leading-6 text-muted-foreground">
-                      أعاد المدرّب إرسالها بعد ردّك — هذا ما عدّله عن النسخة التي رددتها، وملاحظتك في كلّ خطوة بجانبه.
+                      أعاد المدرّب إرسالها بعد ردّك — هذا ما عدّله، وملاحظتك بجانب كل خطوة.
                     </p>
                     <div className="mt-2">
                       <SinceReturnList general={since.general} rows={since.rows} />
@@ -304,8 +304,8 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
                   </p>
                   <p className="mt-1 text-read leading-6 text-muted-foreground">
                     {trainerPlan.status === "submitted"
-                      ? `أعاد مدرّبها إرسالها لموسمها: لا ترسل إلّا وهي تبدأ في ${cohortDayAr(trainerPlan.postponedTo)} أو بعده.`
-                      : `هي في يد مدرّبها يعدّلها، ولا يرسلها إلّا وهي تبدأ في ${cohortDayAr(trainerPlan.postponedTo)} أو بعده.`}
+                      ? `أعاد المدرّب إرسالها لموسمها: يجب أن تبدأ في ${cohortDayAr(trainerPlan.postponedTo)} أو بعده.`
+                      : `المدرّب يعدّلها، ولا يرسلها إلّا إذا بدأت في ${cohortDayAr(trainerPlan.postponedTo)} أو بعده.`}
                   </p>
                 </Inset>
               )}
@@ -319,7 +319,7 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
                 <PlanScorecard
                   items={scorecard}
                   heading="بطاقة المعايير"
-                  intro="تحسبها المنصّة من الخطّة، ورآها المدرّب قبل أن يرسل. «مطلوب» يمنعه من الإرسال، و«نصيحة» قراره."
+                  intro="تحسبها المنصّة من الخطّة، ورآها المدرّب قبل الإرسال. «مطلوب» يمنع الإرسال، و«نصيحة» قراره."
                 />
               </details>
               {/* وما طُلب منه يُقرأ بأقسامه — وبعد إعادة الإرسال «ما طلبتَه» ليُقابَل
@@ -349,15 +349,15 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
           {trainerPlan?.status === "submitted" && canApprovePlan && riding.length > 0 && (
             <p className="mt-3 text-read leading-6 text-muted-foreground">
               باعتمادها {riding.length === 1 ? "يعتمد لقاؤها المنتظر معها" : `تعتمد لقاءاتها المنتظرة (${riding.length}) معها`}:
-              {" "}ينشأ لكلّ اجتماع Zoom، وينشر للمسجّلين بتاريخه ويصلهم بالبريد — وأوّلها يرفع ما بقي من الجدول المبدئيّ إن كان.
+              {" "}ينشأ لكل لقاء اجتماع Zoom، ويصل المسجّلين بالبريد — وأوّلها يزيل الجدول المبدئيّ إن وجد.
             </p>
           )}
           {/* ومهامُّها المنتظِرةُ كذلك — الاعتمادُ واحد (٣ج-٣) */}
           {trainerPlan?.status === "submitted" && canApprovePlan && waitingTasks.length > 0 && (
             <p className="mt-2 text-read leading-6 text-muted-foreground">
               {waitingTasks.length === 1
-                ? "وباعتمادها تعتمد معها المهمّة المنتظرة أدناه — كما تقرؤها في لسان «المنهاج»."
-                : `وباعتمادها تعتمد معها المهامّ المنتظرة (${waitingTasks.length}) أدناه — كما تقرؤها في لسان «المنهاج».`}
+                ? "وتعتمد معها المهمّة المنتظرة أدناه، كما في تبويب «المنهاج»."
+                : `وتعتمد معها المهامّ المنتظرة (${waitingTasks.length}) أدناه، كما في تبويب «المنهاج».`}
             </p>
           )}
           {/* ═══ وكلمةٌ تصله مع الاعتماد (٧ أكتوبر ٢٠٢٦) ═══
@@ -386,14 +386,14 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
               <div className="mt-2">
                 <StaffField
                   label="كلمة الإدارة"
-                  hint="تصل المدرّب مع خبر الاعتماد في الجرس والبريد. للمقترح لا للمطلوب: ما يجب أن يعدّل قبل الاعتماد مكانه «اطلب تعديلات»."
+                  hint="تصل المدرّب مع خبر الاعتماد. للاقتراحات فقط؛ وما يجب تعديله قبل الاعتماد مكانه «اطلب تعديلات»."
                 >
                   <textarea
                     rows={3}
                     maxLength={REVIEW_NOTE_MAX}
                     value={approveNote}
                     onChange={(e) => setApproveNote(e.target.value)}
-                    placeholder="مثلا: اعتمدناها — ومعها في البريد مقترحات لمصادر عربيّة لكلّ محور، تضيفها إن شئت."
+                    placeholder="مثلا: اعتمدناها، وأرفقنا مصادر عربيّة مقترحة لكل محور."
                     className={staffAreaCls}
                   />
                 </StaffField>
@@ -410,8 +410,8 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
                 {blocked.length === 1 ? "معيار ملزم لم يتحقّق" : `${blocked.length} معايير ملزمة لم تتحقّق`}: {blocked.map((b) => b.labelAr).join(" · ")}
               </p>
               <ul className="mt-2 list-disc space-y-1 ps-5 text-read leading-6 text-foreground">
-                <li><b>اطلب تعديلات بما في البطاقة</b> (المستحسن): تملأ صناديق الردّ ممّا سقط، كلّ في خطوته، فتعدّلها ثمّ ترسلها. ولا يرسلها ثانية حتّى يتمّ المطلوب.</li>
-                <li><b>اعتمدها كما هي</b>: تعتمد بنقصها الآن، ويراها المتعلّمون كذلك — ولك أن تكتب ما يستحسن في كلمة الاعتماد أعلاه.</li>
+                <li><b>اطلب تعديلات بما في البطاقة</b> (الأفضل): تملأ صناديق الردّ بما نقص في كل خطوة، فتعدّلها ثمّ ترسلها. ولا يعيد إرسالها حتّى يكمل المطلوب.</li>
+                <li><b>اعتمدها كما هي</b>: تعتمد ناقصة، ويراها المتعلّمون كذلك — ويمكنك كتابة اقتراحاتك في كلمة الاعتماد أعلاه.</li>
               </ul>
             </Inset>
           )}
@@ -460,8 +460,8 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
                 <p className="text-read font-black text-gold-ink">أجّلها إلى موسم قادم — لم تقبل لهذا الفصل</p>
                 <ul className="mt-2 list-disc space-y-1 ps-5 text-read leading-6 text-foreground">
                   <li>يصل المدرّب جرس وبريد يقولان صراحة إنّها <b>لم تقبل لهذا الفصل</b> وأجّلت إلى {seasonAr(to)} — ومعهما تقرير المراجعة إن رفعته أعلاه.</li>
-                  <li>تخرج من طابورك، ولا تفتح للتسجيل هذا الفصل، وتنتقل الشعبة إلى فصل ذلك الموسم.</li>
-                  <li>تبقى خطّته كما هي يعدّلها متى شاء — ولا يرسلها إلّا وهي تبدأ في {cohortDayAr(seasonStart(to))} أو بعده.</li>
+                  <li>تخرج من قائمتك، ولا تفتح للتسجيل هذا الفصل، وتنتقل الشعبة إلى ذلك الموسم.</li>
+                  <li>تبقى خطّته ويعدّلها متى شاء — ولا يرسلها إلّا إذا بدأت في {cohortDayAr(seasonStart(to))} أو بعده.</li>
                 </ul>
                 <fieldset className="mt-3">
                   <legend className="text-read font-bold text-foreground">إلى أيّ موسم؟</legend>
@@ -475,7 +475,7 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
                   </div>
                 </fieldset>
                 <div className="mt-3">
-                  <StaffField label="كلمة تصله مع التأجيل (اختياريّة)" hint="مثلا لماذا أجّلت: اخترنا من دوراتك أجهزها لهذا الفصل. وما يعدّل مكانه التقرير.">
+                  <StaffField label="كلمة تصله مع التأجيل (اختياريّة)" hint="مثلا سبب التأجيل: اخترنا أجهز دوراتك لهذا الفصل. والتعديلات مكانها التقرير.">
                     <textarea rows={2} maxLength={REVIEW_NOTE_MAX} value={postponeNote} onChange={(e) => setPostponeNote(e.target.value)} className={staffAreaCls} />
                   </StaffField>
                 </div>
@@ -536,8 +536,8 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
           {riding.length > 0 && canApprovePlan && trainerPlan?.status !== "submitted" && (
             <p className="mt-4 border-t border-white/10 pt-4 text-read leading-6 text-muted-foreground">
               {riding.length === 1
-                ? "لقاء واحد ينتظر خطّة الشعبة — يعتمد معها حين يرسلها المدرّب، فلا قرار عليه وحده."
-                : `لقاءات (${riding.length}) تنتظر خطّة الشعبة — تعتمد معها حين يرسلها المدرّب، فلا قرار عليها وحدها.`}
+                ? "لقاء واحد ينتظر خطّة الشعبة — يعتمد معها حين يرسلها المدرّب."
+                : `لقاءات (${riding.length}) تنتظر خطّة الشعبة — تعتمد معها حين يرسلها المدرّب.`}
             </p>
           )}
           {individual.length > 0 && canApprovePlan && (
@@ -546,10 +546,10 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
                 لقاءات مباشرة تنتظر قرارك ({individual.length})
               </p>
               <p className="mt-1 text-read leading-6 text-muted-foreground">
-                باعتمادك ينشأ اجتماع Zoom وينشر اللقاء للمسجّلين بتاريخه ويصلهم بالبريد.
+                باعتمادك ينشأ اجتماع Zoom، ويظهر اللقاء للمسجّلين ويصلهم بالبريد.
                 {/* والأوّلُ منها يرفع الجدولَ المبدئيّ (`clearPlaceholders`) — يُقال
                     قبل النقر، فمن يعتمد يعرف ما يُخرجه من تقاويم المسجَّلين. */}
-                {" "}وأوّل لقاء تعتمده يرفع ما بقي من الجدول المبدئيّ الذي فتحت به الشعبة، إن كان — فيرى المسجّلون مواعيد مدرّبهم وحدها.
+                {" "}وأوّل لقاء تعتمده يزيل الجدول المبدئيّ إن وجد، فيرى المسجّلون مواعيد المدرّب فقط.
               </p>
               <ul className="mt-3 space-y-2">
                 {individual.map((ps) => (
@@ -620,7 +620,7 @@ export function PlanCurriculum({ trainerPlan, cohortTitle }: { trainerPlan: Trai
         const aud = asAudience(trainerPlan.content?.audience);
         const who = stagesAr(aud);
         const goal = goalsAr(aud);
-        const unset = <span className="text-muted-foreground">لم يحدّد — أرسلت قبل أن يسأل عنه</span>;
+        const unset = <span className="text-muted-foreground">لم يحدّد — أرسلت قبل إضافة هذا الحقل</span>;
         const own = ownMaterialLabels(trainerPlan.content, (trainerPlan.content?.modules ?? []).map((m) => m.moduleId));
         return (
           <>

@@ -100,7 +100,7 @@ export default function AdvisorCases() {
     try {
       setCases(await apiGet<CaseRow[]>(`/api/advisor/cases${statusFilter ? `?status=${statusFilter}` : ""}`));
     } catch (err) {
-      setOffline(err instanceof ApiError ? err.message : "الخادم غير متصل — هذه الصفحة تتطلب جلسة مستشار حقيقية عبر API");
+      setOffline(err instanceof ApiError ? err.message : "الخادم غير متصل — هذه الصفحة تحتاج دخولا بحساب مستشار");
     } finally {
       setLoading(false);
     }
@@ -225,15 +225,15 @@ export default function AdvisorCases() {
 
           {/* الوجه الأكاديميّ — أين وصل عميلي */}
           <Card as="section">
-            <h2 className="mb-3 flex items-center gap-2 text-sm font-black text-teal-light-ink"><GraduationCap className="h-4 w-4" /> أين وصل — قراءة لا تعديل</h2>
+            <h2 className="mb-3 flex items-center gap-2 text-sm font-black text-teal-light-ink"><GraduationCap className="h-4 w-4" /> أين وصل — للاطلاع فقط</h2>
             <LearnerPanel key={detail.id} caseId={detail.id} />
           </Card>
 
           {/* ما لا يملكه المستشار وحده */}
           <Card as="section" className="lg:col-span-2">
-            <h2 className="mb-1 flex items-center gap-2 text-sm font-black text-teal-light-ink"><BadgePercent className="h-4 w-4" /> طلبات تبتّ فيها الإدارة</h2>
+            <h2 className="mb-1 flex items-center gap-2 text-sm font-black text-teal-light-ink"><BadgePercent className="h-4 w-4" /> طلبات تقررها الإدارة</h2>
             <p className="mb-3 text-read leading-6 text-muted-foreground">
-              خصم على فاتورته، أو تعديل على خطّته. لا ينفّذ بطلبك وحده — ويبقى أثره مكتوبا.
+              خصم على فاتورته أو تعديل على خطته. لا ينفذ إلا بموافقة الإدارة، ويبقى مسجلا.
             </p>
             <RequestsPanel key={detail.id} caseId={detail.id} />
           </Card>
@@ -383,8 +383,8 @@ export default function AdvisorCases() {
           }}
         >
           <p className="text-read leading-6 text-muted-foreground">
-            بريد أو هاتف على الأقلّ — <b className="text-foreground">حالة بلا سبيل إلى صاحبها لا تفتح</b>.
-            ولا تشخيص ينسب إليه قبل أن يقاس.
+            بريد أو هاتف على الأقل — <b className="text-foreground">لا تفتح حالة دون وسيلة تواصل</b>.
+            ولا ينسب إليه تشخيص قبل أن يجريه.
           </p>
           <div className="mt-3 grid gap-3 sm:grid-cols-3">
             <label className="block">
@@ -422,7 +422,7 @@ export default function AdvisorCases() {
         <Panel className="grid place-items-center py-16 text-center">
           <ClipboardList className="h-12 w-12 text-muted-foreground/50" />
           <h2 className="mt-4 text-xl font-black">لا حالات مسندة هنا</h2>
-          <p className="mt-2 max-w-md text-sm leading-7 text-muted-foreground">حين تسند إليك حالة من لوحة الإدارة تظهر هنا فورا — ويصلك جرسها. أو <b className="text-foreground">أدخل عميلا قابلته</b> بنفسك من الزرّ أعلاه.</p>
+          <p className="mt-2 max-w-md text-sm leading-7 text-muted-foreground">عندما تسند إليك حالة تظهر هنا فورا ويصلك تنبيه. أو <b className="text-foreground">أدخل عميلا قابلته</b> من الزر أعلاه.</p>
         </Panel>
       ) : flat ? (
         /* تصفيةٌ صريحةٌ أو بحث: قائمةٌ مسطّحة أنفعُ من قِمعٍ بعمودٍ واحد */
@@ -488,7 +488,7 @@ export default function AdvisorCases() {
             void act(() => apiPost(`/api/advisor/follow-ups/${target.id}/complete`, { outcome }), "أنجزت المتابعة");
           }}
         >
-          <p>تغلق المتابعة وتبقى نتيجتها في سجلّ الحالة — يقرؤها من يتابع بعدك.</p>
+          <p>تغلق المتابعة وتبقى نتيجتها في سجل الحالة لمن يتابع بعدك.</p>
         </ConfirmAction>
       )}
     </AdvisorLayout>

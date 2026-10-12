@@ -89,8 +89,8 @@ export default function AdvisorEarnings() {
       </Card>
 
       <Card as="p" className="mt-6 px-5 py-4 text-center text-read leading-6 text-muted-foreground">
-        الإيراد محسوب من الطلبات المدفوعة فعلا لعملائك ضمن حالاتك النشطة، والعمولة نسبة تعيّنها الإدارة —
-        لأي استفسار عن الرقم أو النسبة تواصل مع منسّقك.
+        الإيراد من الطلبات المدفوعة لعملاء حالاتك النشطة، والعمولة نسبة تحددها الإدارة.
+        لأي استفسار عن الرقم أو النسبة تواصل مع منسقك.
       </Card>
     </AdvisorLayout>
   );

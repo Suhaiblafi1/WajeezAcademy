@@ -78,7 +78,7 @@ const STRIP_CLS = classesAt(APPS, STRIP_OPEN)
 const OUTER_OPEN = [...APPS.slice(0, STRIP_OPEN).matchAll(/<Card\b/g)].at(-1)?.index ?? -1
 const OUTER = extentAt(APPS, OUTER_OPEN, 'Card')
 const OUTER_CLS = classesAt(APPS, OUTER_OPEN)
-const NOTE_TEXT = 'لا يعتمد اعتمادا كاملا قبل أن يتمّ تجهيزه'
+const NOTE_TEXT = 'لا يعتمد نهائيّا قبل إكمال تجهيزه'
 const NOTE_CARD_CLS = classesAt(APPS, openBefore(APPS, NOTE_TEXT, 'Card'))
 
 describe('شريط القرار على الهاتف', () => {

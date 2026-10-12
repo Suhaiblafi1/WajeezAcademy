@@ -179,8 +179,8 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
         </h1>
         <p className="mx-auto mt-3 max-w-xl leading-8 text-muted-foreground">
           {isPathways
-            ? 'ابحث أو صفّ حسب المجال. وإن حرت، فالتشخيص يختار لك ويشرح لماذا.'
-            : 'دورة واحدة تكفي أحيانا. وإن أكملت لاحقا لمسارها الكامل، خصم ما دفعته من سعره.'}
+            ? 'ابحث أو صفّ حسب المجال. وإن احترت، فالتشخيص يختار لك ويشرح السبب.'
+            : 'دورة واحدة تكفي أحيانا. وإن أكملت مسارها لاحقا، نخصم ما دفعته من سعره.'}
         </p>
       </div>
 
@@ -208,7 +208,7 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
           >
             <option value="featured">المختارة أولا</option>
             <option value="shortest">الأقصر زمنا</option>
-            <option value="longest">الأعمق زمنا</option>
+            <option value="longest">الأطول زمنا</option>
             <option value="name">أبجدي</option>
           </select>
         </Card>
@@ -437,7 +437,7 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
       <Panel tone="accent" className="mt-14 p-8 text-center">
         <p className="text-lg font-bold">لم تجد ما يناسبك بالضبط؟</p>
         <p className="mx-auto mt-2 max-w-md text-sm leading-7 text-muted-foreground">
-          التشخيص يطابقك مع مساراتنا المصممة — أو يركّب لك مسارا مخصصا من عدة مسارات — ويشرح لك لماذا.
+          التشخيص يختار لك أنسب مساراتنا، أو يجمع لك مسارا من عدة مسارات، ويشرح السبب.
         </p>
         <Link to="/diagnostic" className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-teal-deep px-8 py-3.5 font-bold text-white transition hover:bg-teal-darker">
           ابدأ التشخيص مجانا

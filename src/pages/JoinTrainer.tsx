@@ -535,7 +535,7 @@ export default function JoinTrainer() {
     && emailConfirm.trim().toLowerCase() === emailNormalized;
 
   const fieldErrors = useMemo<Record<string, string | null>>(() => ({
-    name: nameWords.length >= 2 ? null : 'اكتب اسمك كاملا — اسمك واسم عائلتك، لا كلمة واحدة',
+    name: nameWords.length >= 2 ? null : 'اكتب اسمك واسم عائلتك',
     email: /.+@.+\..+/.test(form.email) ? null : 'بريد بصيغة صحيحة، مثل name@example.com',
     /* الرقمُ شرطٌ من أوّل قسمٍ لا من آخره — انظر تعليقَ الحقل نفسِه */
     /* ═══ والقياسُ على الدولة المختارة لا على حدٍّ واحدٍ للجميع ═══
@@ -544,7 +544,7 @@ export default function JoinTrainer() {
        الحدّ الأدنى العامّ — فلا يُرفض رقمٌ صحيحٌ لدولةٍ لا نملك صيغتَها. */
     phone: (() => {
       const digits = normalizeDigits(form.phone)
-      if (digits.length === 0) return 'رقم جوالك — عليه نتواصل معك'
+      if (digits.length === 0) return 'اكتب رقم جوالك لنتواصل معك'
       const known = mobileFormatByDial(form.phoneCountryCode)
       if (known) {
         if (known.format.digits.includes(digits.length)) return null
@@ -573,7 +573,7 @@ export default function JoinTrainer() {
        حقلَين في قسمَين لا يدري أيَّهما الصواب. */
     emailConfirm: !emailConfirm.trim() || emailConfirmMatches
       ? null
-      : 'لا يطابق بريدك في القسم الأول — صحّح ما كتبته هنا، أو عد إلى القسم الأول وعدّل البريد نفسه',
+      : 'لا يطابق بريد القسم الأول — صحّحه هنا أو في القسم الأول',
   /* و`phoneCountryCode` بينها: رسالةُ الجوال تُقاس بصيغة الدولة المختارة،
      فلو غابت لبقيت الرسالةُ على دولةٍ سابقةٍ بعد تغيير الرمز. */
   }), [nameWords.length, form.email, form.phone, form.phoneCountryCode, form.hasAccreditation,
@@ -623,7 +623,7 @@ export default function JoinTrainer() {
     /* دورةٌ من الكتالوج أو سطرٌ يكتبه بنفسه — أحدهما يكفي، فالكتالوج ليس
        نهاية ما يُتقنه أحد. */
     if (teachable.length === 0 && !hasProposal(proposals)) {
-      m[2].push("دورة واحدة تستطيع تقديمها — من القائمة أو بقلمك");
+      m[2].push("دورة واحدة تستطيع تقديمها — من القائمة أو تكتبها");
     }
     /* الموسمُ شرطٌ عند الخادم (`min(1)`) منذ أوّل يوم، ولم تكن الواجهةُ تذكره —
        فالزرُّ يُفعَّل والطلبُ يُردّ ٤٢٢ ويبقى `draft` أبدا، والمتقدّمُ يملك
@@ -844,8 +844,8 @@ export default function JoinTrainer() {
           </h1>
           <p className="mt-3 text-sm leading-7 text-muted-foreground">
             {INTERVIEW_BOOKING_PAUSE.active
-              ? "شكرا لك. طلبك كامل عند فريقنا ولا ينقصه منك شيء. وحجز المواعيد موقوف مؤقّتا لامتلائها — والتفصيل أدناه."
-              : "شكرا لك. طلبك كامل عند فريقنا، ولم يبق إلّا أن تختار موعد لقاء التعارف من التقويم أدناه."}
+              ? "شكرا لك. طلبك كامل ولا ينقصه شيء. حجز المواعيد متوقف مؤقتا لأنها امتلأت — التفاصيل أدناه."
+              : "شكرا لك. طلبك كامل، وبقي أن تختار موعد لقاء التعارف من التقويم أدناه."}
           </p>
           <StepBar current={4} className="mt-6 text-right" />
           <Card as="p" tone="warn" className="mt-4">
@@ -944,7 +944,7 @@ export default function JoinTrainer() {
       k: "ما تستطيع تدريسه",
       v: [
         teachable.length ? `${teachable.slice(0, 3).join(" · ")}${teachable.length > 3 ? ` وغيرها (${teachable.length} بالمجمل)` : ""}` : "",
-        hasProposal(proposals) ? `ودورات اقترحتها بقلمك (${cleanProposals(proposals).length})` : "",
+        hasProposal(proposals) ? `ودورات اقترحتها (${cleanProposals(proposals).length})` : "",
       ].filter(Boolean).join(" · "),
     },
     {
@@ -1005,15 +1005,15 @@ export default function JoinTrainer() {
       <SeoHead {...seoFor('/join-trainer')} />
       <div className="mx-auto max-w-3xl">
         <span className="kicker">انضم إلى نخبة المدربين</span>
-        <h1 className="h-section mt-4">درّب ما تتقنه — وأثرّ في مسارات حقيقية</h1>
+        <h1 className="h-section mt-4">درّب ما تتقنه — واترك أثرا حقيقيا</h1>
         <p className="mt-4 max-w-2xl text-base leading-8 text-foreground">
-          مدربو وجيز لا يلقون دروسا مسجلة فحسب — يراجعون عملا بأيديهم، ويرافقون متعلّمين حتى إتقان المهارة، ويعتمدون ما أنجزوه في نهاية المسار.
-          نموذج واحد بثلاثة أقسام — يحفظ تقدّمك كلما مضيت، ولا ينتظرك بريد بينها.
+          مدربو وجيز لا يكتفون بالدروس المسجلة: يراجعون عمل المتعلمين، ويرافقونهم حتى يتقنوا المهارة، ويعتمدون ما أنجزوه في نهاية المسار.
+          نموذج واحد من ثلاثة أقسام، يحفظ تقدمك أولا بأول.
         </p>
 
         <div className="mt-8 grid gap-4 sm:grid-cols-3">
           {[
-            { icon: Compass, text: "مسارات مبنية بمنهجية موثقة لا بمزاج" },
+            { icon: Compass, text: "مسارات مبنية على منهجية واضحة" },
             { icon: Users, text: "متعلّمون جادّون وصلوا عبر تشخيص" },
             { icon: Mic2, text: "مقابلة ودرس تجريبي قبل الاعتماد" },
           ].map((f) => (
@@ -1032,8 +1032,8 @@ export default function JoinTrainer() {
         {/* ووعدُ الحفظ يُنقض صراحةً حين يتعذّر — لا يُترك المتقدّمُ يظنّه قائما */}
         {draftBlocked && (
           <Inset as="p" tone="danger" className="mt-5 text-read leading-6 text-red-200">
-            تعذّر حفظ إجاباتك في هذا المتصفّح — تصفّح خاصّ أو متصفّح داخل تطبيق.
-            أكمل الطلب في جلسة واحدة، ولا تحدّث الصفحة قبل إرساله.
+            تعذّر حفظ إجاباتك في هذا المتصفح (ربما تصفح خاص أو متصفح داخل تطبيق).
+            أكمل الطلب مرة واحدة، ولا تحدّث الصفحة قبل إرساله.
           </Inset>
         )}
         {resumed && (
@@ -1053,7 +1053,7 @@ export default function JoinTrainer() {
           {/* ══ ١) من أنت ══ */}
           {step === 1 && (
             <div className="space-y-4">
-              <Question n={1} title="من أنت؟" hint="نتواصل معك على هذين — فراجعهما قبل المضيّ.">
+              <Question n={1} title="من أنت؟" hint="سنتواصل معك عليهما، فتأكد منهما.">
                 <FieldRow>
                   <Field label="الاسم الكامل" htmlFor="jt-name" required error={errOf("name")}>
                     <input id="jt-name" name="name" autoComplete="name" required value={form.fullName} onChange={set("fullName")} onBlur={touch("name")} {...invalidProps("jt-name-error", errOf("name"))} className={controlCls} />
@@ -1114,8 +1114,8 @@ export default function JoinTrainer() {
                       <KeyRound className="h-4 w-4" /> كلمة مرور لحسابك على المنصّة
                     </p>
                     <p className="mt-1 text-read leading-6 text-muted-foreground">
-                      تدخل بها ببريدك أعلاه لتتابع حالة طلبك في كل مرحلة — وإن اعتمدت تفتح لك بوابة المدربين من الحساب نفسه.
-                      إن كان لك حساب على وجيز بهذا البريد فأدخل كلمته الحالية.
+                      تدخل بها مع بريدك لمتابعة طلبك، ثم لبوابة المدربين إن اعتمدت.
+                      إن كان لك حساب على وجيز بهذا البريد فاكتب كلمة مروره الحالية.
                     </p>
                     <FieldRow>
                       {/* الحدُّ داخلَ الصندوق لا تحته: سطرٌ تحت الحقل يُقرأ
@@ -1159,7 +1159,7 @@ export default function JoinTrainer() {
               {/* «نبذة عنك» سؤالٌ مفتوح يُجاب بسطرٍ عامّ («مدرب شغوف بالتطوير»)
                   ما لم يُقل ماذا يُكتب فيه — فالتلميح يسمّي الثلاثة التي
                   يقرؤها المراجع. */}
-              <Question n={2} title="عملك اليوم" hint="ما تعمله الآن يقول لنا أيّ الدورات أقرب إليك.">
+              <Question n={2} title="عملك اليوم" hint="عملك الحالي يساعدنا على معرفة الدورات الأقرب لك.">
                 <FieldRow>
                   <Field label="حالتك المهنية الحالية" htmlFor="jt-employment" required>
                     <select id="jt-employment" value={form.employmentStatus} onChange={set("employmentStatus")} className={`${controlCls} [&>option]:bg-surface`}>
@@ -1174,7 +1174,7 @@ export default function JoinTrainer() {
                     label="نبذة مختصرة عنك"
                     htmlFor="jt-bio"
                     wide
-                    hint="هذه النبذة تظهر في صفحتك العامّة بعد اعتمادك — يقرؤها من ينقر اسمك في «المدربون» أو في مسار تدرّبه. فاكتبها لمتدرّب يوازن بينك وبين غيرك، لا لموظّف يراجع طلبك."
+                    hint="تظهر في صفحتك العامة بعد اعتمادك. اكتبها لمتعلم يختار مدربه، لا لموظف يراجع طلبك."
                   >
                     {/* ثلاثةُ أسطرٍ كان الحقلُ يعرضها والمثالُ فيه أربعة — فمن
                         كتب نبذتَه لم يرَ أوّلها وهو يراجع آخرها. خمسةٌ تعرض
@@ -1200,8 +1200,8 @@ export default function JoinTrainer() {
                     <p id="jt-bio-count" className="mt-2 flex flex-wrap items-center justify-between gap-2 text-read">
                       <span className={bioWords > BIO_MAX_WORDS ? "text-gold-ink" : "text-muted-foreground"}>
                         {bioWords > BIO_MAX_WORDS
-                          ? `أطول من السقف — احذف ${countAr(bioWords - BIO_MAX_WORDS, WORD_FORMS)}.`
-                          : "تعرض هذه النبذة في بطاقتك العامّة قبل أن يسجّل أحد في دورتك."}
+                          ? `أطول من الحد — احذف ${countAr(bioWords - BIO_MAX_WORDS, WORD_FORMS)}.`
+                          : "تظهر في بطاقتك العامة قبل أن يسجّل أحد في دورتك."}
                       </span>
                       <span className="shrink-0 tabular-nums text-muted-foreground" dir="ltr">
                         {bioWords} / {BIO_MAX_WORDS}
@@ -1211,13 +1211,13 @@ export default function JoinTrainer() {
                 </FieldRow>
               </Question>
 
-              <Question n={3} title="ما الذي تتقن تدريبه؟" required hint="اختر ما تتقنه فعلا — الكثرة هنا لا تحسب لك، والدقة تحسب.">
+              <Question n={3} title="ما الذي تتقن تدريبه؟" required hint="اختر ما تتقنه فعلا — الدقة أهم من الكثرة.">
                 <ChoiceGrid options={TRAINING_SPECIALIZATIONS} selected={specialties} onToggle={(v) => toggle(specialties, v, setSpecialties)} cols={2} name="تخصصاتك التدريبية" />
               </Question>
 
               {/* الاعتماد مع الخبرة لا مع الروابط: مؤهّلٌ رسميّ يُقرأ مع سنوات
                   الخبرة ويُقارن بها، لا رابطٌ يُلصق. */}
-              <Question n={4} title="خبرتك" hint="إتقان المجال شيء والقدرة على تدريبه شيء آخر — نقرؤهما منفصلين.">
+              <Question n={4} title="خبرتك" hint="خبرة العمل غير خبرة التدريب، فنسأل عن كل منهما.">
                 <FieldRow>
                   <Field label="سنوات الخبرة المهنية في المجال" htmlFor="jt-years" required>
                     <select id="jt-years" value={form.domainYears} onChange={set("domainYears")} className={`${controlCls} [&>option]:bg-surface`}>
@@ -1240,7 +1240,7 @@ export default function JoinTrainer() {
                       ? { ...form, hasAccreditation: true }
                       : { ...form, hasAccreditation: false, accreditationBody: "", accreditationOther: "", accreditationRef: "" })}
                   >
-                    لدي اعتماد أو ترخيص رسمي من جهة أو هيئة تدريب معترف بها
+                    لدي اعتماد أو ترخيص رسمي من جهة تدريب معترف بها
                   </ConsentRow>
                   {form.hasAccreditation && (
                     <Card className="mt-3 bg-paper/20">
@@ -1277,7 +1277,7 @@ export default function JoinTrainer() {
                         )}
                       </FieldRow>
                       <p className="mt-4 text-read leading-6 text-muted-foreground">
-                        نطلب وثيقة الاعتماد لاحقا في خطوة المستندات — والمذكور هنا لا ينشر ولا يعرض للمتعلمين قبل توثيقه.
+                        نطلب وثيقة الاعتماد في خطوة المستندات، ولا يظهر للمتعلمين قبل التحقق منه.
                       </p>
                     </Card>
                   )}
@@ -1331,7 +1331,7 @@ export default function JoinTrainer() {
                 n={7}
                 required
                 title="أدلتك"
-                hint="رابط واحد على الأقلّ — أيّها كان، والصقه كما هو فلا حاجة لكتابة «https». وهي ما يقرؤه المراجع قبل غيره، وتمنح الأولوية للطلبات التي تعرض خبرة قابلة للتحقق ونماذج حقيقية من العمل أو التدريب."
+                hint="رابط واحد على الأقل، والصقه كما هو بلا «https». يقرؤها المراجع أولا، والأولوية لمن يقدّم خبرة يمكن التحقق منها ونماذج حقيقية من عمله أو تدريبه."
               >
                 <FieldRow>
                   <Field label="لينكدإن أو ملف أعمال" htmlFor="jt-links">
@@ -1363,7 +1363,7 @@ export default function JoinTrainer() {
 
               {/* عدّادٌ مباشر لا رسالةَ رفضٍ بعد الضغط: من كتب ٤٠ حرفا يجب أن يرى
                   كم بقي وهو يكتب، لا أن يُردّ عند الإرسال. */}
-              <Question n={8} title="لماذا تريد الانضمام إلى وجيز تحديدا؟" required hint="نقرؤها فعلا — وهي أول ما يقرؤه المراجع.">
+              <Question n={8} title="لماذا تريد الانضمام إلى وجيز تحديدا؟" required hint="أول ما يقرؤه المراجع.">
                 <textarea
                   id="jt-why" rows={4} value={form.motivation} onChange={set("motivation")}
                   maxLength={MOTIVATION_MAX}
@@ -1374,7 +1374,7 @@ export default function JoinTrainer() {
                 <p id="jt-why-count" className="mt-2 flex flex-wrap items-center justify-between gap-2 text-read">
                   <span className={motivationLen < MOTIVATION_MIN ? "text-gold-ink" : "text-muted-foreground"}>
                     {motivationLen < MOTIVATION_MIN
-                      ? `اكتب ${MOTIVATION_MIN} حرفا على الأقل. أضف مثالا يوضّح القيمة التي ستقدّمها للمتعلمين في وجيز.`
+                      ? `اكتب ${MOTIVATION_MIN} حرفا على الأقل، مع مثال على ما ستقدّمه للمتعلمين.`
                       : "شكرا — هذا يكفي."}
                   </span>
                   <span className="shrink-0 tabular-nums text-muted-foreground" dir="ltr">
@@ -1396,7 +1396,7 @@ export default function JoinTrainer() {
               <Question
                 n={1}
                 title="مستنداتك"
-                hint="السيرة الذاتية مطلوبة، وما عداها موصى به بشدة. الحدّ ٤MB لكل ملف. والفيديو التدريبي لا يرفع من هنا — ضع رابطه في «فيديو تدريبي أو قناة» في الخطوة الأولى."
+                hint="السيرة الذاتية مطلوبة، والباقي ننصح به. الحد ٤MB لكل ملف. الفيديو التدريبي لا يرفع هنا — ضع رابطه في «فيديو تدريبي أو قناة» في الخطوة الأولى."
               >
                 <div className="grid gap-3 sm:grid-cols-2">
                   {DOC_KINDS.map((d) => {
@@ -1441,7 +1441,7 @@ export default function JoinTrainer() {
                 n={2}
                 title="ما الدورات التي تستطيع تقديمها؟"
                 required
-                hint="اختر مجالك ثم دوراته التي تتقنها — ولك أكثر من مجال وأكثر من دورة. واختيارك هنا يسهّل تعيينك على شعبة بعد الاعتماد، ولا يلزمك بها."
+                hint="اختر مجالك ثم الدورات التي تتقنها، ويمكنك اختيار أكثر من مجال ودورة. اختيارك يسهّل تعيينك على شعبة بعد الاعتماد ولا يلزمك بها."
               >
                 <TeachableCoursePicker selected={teachable} onChange={setTeachable} />
 
@@ -1460,7 +1460,7 @@ export default function JoinTrainer() {
                   <Field
                     label="دورات تستطيع تقديمها ولم نذكرها"
                     htmlFor="jt-proposal-title-0"
-                    hint="كتالوجنا ليس نهاية المعرفة. اكتب ما تتقنه ولا تجده أعلاه — دورة في كل سطر."
+                    hint="اكتب ما تتقنه ولا تجده أعلاه — دورة في كل سطر."
                   >
                     <ul className="grid gap-2.5">
                       {proposals.map((row, i) => (
@@ -1478,7 +1478,7 @@ export default function JoinTrainer() {
                           <textarea
                             value={row.summaryAr} maxLength={1500} rows={3}
                             onChange={(e) => patchProposal(i, { summaryAr: e.target.value })}
-                            placeholder="نبذة عن الدورة (اختياريّة) — ماذا فيها، ولمن، وما الذي يخرج به المتدرّب"
+                            placeholder="نبذة (اختيارية): ماذا فيها، ولمن، وماذا يتعلم المتدرب"
                             aria-label={`نبذة الدورة المقترحة ${i + 1}`}
                             className={controlCls}
                           />
@@ -1552,8 +1552,8 @@ export default function JoinTrainer() {
                       />
                     </FieldSet>
                     <p className="mt-4 text-read leading-6 text-muted-foreground">
-                      وجوابك هنا لا يرجّح طلبك ولا يضعفه — نسأله لنعرف كيف نعدّ
-                      محتواك معك إن اعتمدت، لا لنفاضل به.
+                      جوابك لا يؤثر على قبول طلبك، نسأل لنعرف كيف نجهّز
+                      محتواك معك إن اعتمدت.
                     </p>
                   </Card>
                 )}
@@ -1561,7 +1561,7 @@ export default function JoinTrainer() {
 
               {/* اليومُ وحده لا يقول متى هو متفرّغ فيه: من يعمل نهارا لا يدرّب
                   إلا مساء، والشعبةُ تُجدوَل بالساعة لا باليوم. */}
-              <Question n={4} title="متى تستطيع أن تدرّب؟" hint="الشعبة تجدول بالساعة لا باليوم — فقل متى من اليوم، لا اليوم وحده.">
+              <Question n={4} title="متى تستطيع أن تدرّب؟" hint="نحدد مواعيد الشعب بالساعة، فاختر الأيام والأوقات معا.">
                 <FieldRow>
                   {/* حقلُ `number` لا يقبل «٧» العربيّةَ الهنديّة: يبتلعها بلا
                       رسالةٍ فيظنّ الكاتبُ أنّه كتب ولم يُكتب شيء. فالشرطُ
@@ -1597,7 +1597,7 @@ export default function JoinTrainer() {
                   </FieldSet>
                   {/* الموسمُ: الشعبةُ تُفتح في موسمٍ، والمدرّبُ متفرّغٌ في بعضها
                       لا كلّها — فيختار ما يشاء منها، واحدا أو أكثر. */}
-                  <FieldSet legend="وفي أي مواسم السنة؟" required hint="اختر موسما أو أكثر — الشعب تفتح في مواسم لا طول السنة." wide>
+                  <FieldSet legend="وفي أي مواسم السنة؟" required hint="اختر موسما أو أكثر — الشعب تفتح في مواسم محددة." wide>
                     <OptionGrid
                       items={TRAINING_SEASONS.map((sn) => ({ value: sn.value, label: `${sn.label} · ${sn.months} (${sn.monthNums})` }))}
                       isOn={(v) => seasons.includes(v)}
@@ -1624,7 +1624,7 @@ export default function JoinTrainer() {
                 n={1}
                 title="كيف نتواصل معك للاجتماع التعريفي؟"
                 required
-                hint="بعد قراءة طلبك نتواصل معك لتحديد موعد اجتماع تعريفي قصير — اختر الوسيلة الأنسب لك."
+                hint="بعد قراءة طلبك نتواصل معك لتحديد اجتماع تعريفي قصير."
               >
                 <div className="grid gap-2 sm:grid-cols-2">
                   {CONTACT_CHANNELS.map((c) => {
@@ -1659,7 +1659,7 @@ export default function JoinTrainer() {
 
                 {contactChannel === "other_email" && (
                   <div className="mt-4">
-                    <Field label="البريد الآخر الذي تفضّله" htmlFor="jt-alt-email" required hint="يحفظ في طلبك بجانب بريد حسابك — والدخول يبقى ببريد الحساب." error={errOf("altEmail")}>
+                    <Field label="البريد الآخر الذي تفضّله" htmlFor="jt-alt-email" required hint="نحفظه مع طلبك، ويبقى الدخول ببريد حسابك." error={errOf("altEmail")}>
                       <input
                         id="jt-alt-email" type="email" dir="ltr" autoComplete="email" placeholder="name@example.com"
                         value={contactAltEmail} onChange={(e) => setContactAltEmail(e.target.value)} onBlur={touch("altEmail")}
@@ -1691,7 +1691,7 @@ export default function JoinTrainer() {
                 n={2}
                 title="أكّد بريدك الإلكتروني"
                 required
-                hint="اكتبه من ذاكرتك لا بالنسخ — فهذا هو ما يمسك الحرف الساقط."
+                hint="اكتبه بنفسك دون نسخ، لنكشف أي خطأ في حرف."
               >
                 <Field label="أعد كتابة بريدك الإلكتروني" htmlFor="jt-email-confirm" required error={errOf("emailConfirm")}>
                   <input
@@ -1707,7 +1707,7 @@ export default function JoinTrainer() {
                   <Inset as="p" tone="positive" className="mt-4 flex items-start gap-2 text-read leading-6 text-foreground">
                     <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" />
                     <span>
-                      متطابق — نكمل. وستصلك رسالة التوثيق على{" "}
+                      متطابق. ستصلك رسالة التوثيق على{" "}
                       <b dir="ltr" className="font-mono text-foreground">{form.email.trim()}</b>، فافتحها ووثّق بريدك.
                     </span>
                   </Inset>
@@ -1720,7 +1720,7 @@ export default function JoinTrainer() {
                   <Inset as="p" tone="warn" className="mt-4 text-read leading-6 text-gold-ink">
                     <b className="text-gold-ink">لا يطابق.</b> في القسم الأول كتبت{" "}
                     <b dir="ltr" className="font-mono text-foreground">{form.email.trim() || "—"}</b>.
-                    فإن كان هذا هو الصواب فصحّح ما كتبته هنا؛ وإن كان البريد نفسه خطأ{" "}
+                    إن كان صحيحا فصحّح ما كتبته هنا، وإلا{" "}
                     <button type="button" onClick={() => setStep(1)} className="cursor-pointer font-black underline">
                       عد إلى القسم الأول وعدّله
                     </button>.
@@ -1734,7 +1734,7 @@ export default function JoinTrainer() {
                   <Sparkles className="h-3.5 w-3.5 text-teal-light-ink" /> ما سيقرؤه المراجع عنك
                 </p>
                 <p className="mt-1.5 text-read leading-6 text-muted-foreground">
-                  هذا ملفّك كما سيصل لجنة المراجعة — راجعه سطرا سطرا، فبعد الإرسال يعدّل من حسابك لا من هنا.
+                  هذا ملفك كما يصل لجنة المراجعة. راجعه جيدا، فبعد الإرسال تعدّله من حسابك لا من هنا.
                 </p>
                 <dl className="mt-4 space-y-2.5 border-t border-white/10 pt-3.5">
                   {reviewRows.map((row) => (
@@ -1761,8 +1761,8 @@ export default function JoinTrainer() {
                   )}
                 </dl>
                 <p className="mt-3.5 border-t border-white/10 pt-3 text-read leading-6 text-muted-foreground">
-                  رقم طلبك: <b className="font-mono text-foreground" dir="ltr">{result?.reference ?? "—"}</b> — سيصلك في بريد التأكيد مع تفاصيل طلبك.
-                  وحين تحجز مقابلتك يصل هذا الملفّ نفسه إلى المراجع في ملفّ PDF ومعه سيرتك.
+                  رقم طلبك: <b className="font-mono text-foreground" dir="ltr">{result?.reference ?? "—"}</b> — يصلك في بريد التأكيد.
+                  وعند حجز مقابلتك يصل هذا الملف للمراجع بصيغة PDF مع سيرتك.
                 </p>
               </Card>
             </div>
@@ -1797,8 +1797,8 @@ export default function JoinTrainer() {
               وهي الشكوى التي وُضعت المحطّةُ الرابعةُ لها. */}
           {step === 3 && (
             <Inset as="p" tone="accent" className="text-read leading-6 text-foreground">
-              وبعد هذا الزرّ تختار موعد لقاء التعارف مباشرة من التقويم — وهي آخر خطوة،
-              ويصلك التأكيد ودعوة التقويم فور اختيارك.
+              بعد هذا الزر تختار موعد لقاء التعارف من التقويم، وهي آخر خطوة.
+              يصلك التأكيد ودعوة التقويم فورا.
             </Inset>
           )}
 
@@ -1855,7 +1855,7 @@ export default function JoinTrainer() {
             <Search className="h-4 w-4 text-teal-light-ink" /> قدّمت سابقا؟ تابع حالة طلبك
           </summary>
           <p className="mt-4 text-read leading-6 text-muted-foreground">
-            بريدك يكفي. ولتفاصيل أكثر — وسحب الطلب — <Link to="/auth" className="text-teal-light-ink underline">سجّل الدخول</Link> ببريدك وكلمة المرور التي اخترتها عند التقديم.
+            بريدك يكفي. لتفاصيل أكثر أو لسحب الطلب <Link to="/auth" className="text-teal-light-ink underline">سجّل الدخول</Link> ببريدك وكلمة المرور التي اخترتها.
           </p>
           <div className="mt-4 grid gap-3 border-t border-white/5 pt-5 sm:grid-cols-2">
             <input dir="ltr" type="email" placeholder="بريدك المستخدم في الطلب *" aria-label="البريد" value={lookup.email}
@@ -1879,8 +1879,8 @@ export default function JoinTrainer() {
                     موثَّق» وسكتت أختُها — فيُصدَّق السكوتُ طمأنينةً. */}
                 <p className={`mt-2 text-read leading-6 ${lookupResult.emailVerified ? "text-emerald-300" : "text-gold-ink"}`}>
                   {lookupResult.emailVerified
-                    ? "بريدك موثّق — تمّ التوثيق."
-                    : "بريدك غير موثّق بعد — افتح رسالة التأكيد في بريدك وانقر رابطها. وإن لم تجدها فراجع مجلّد الرسائل غير المرغوبة، أو اطلبها من جديد بعد الدخول إلى حسابك."}
+                    ? "بريدك موثّق."
+                    : "بريدك غير موثّق بعد. افتح رسالة التأكيد وانقر رابطها، وإن لم تجدها فابحث في الرسائل غير المرغوبة أو اطلبها مجددا من حسابك."}
                 </p>
               </Inset>
               {/* ═══ والزرُّ الذي وعد به النصُّ يكون تحته فعلا ═══
@@ -1914,7 +1914,7 @@ export default function JoinTrainer() {
                     </a>
                   ) : (
                     <p className="mt-1 text-read leading-6 text-muted-foreground">
-                      أرسل Calendly تفاصيل الاجتماع وخياري إعادة الجدولة والإلغاء إلى بريدك.
+                      أرسل Calendly إلى بريدك تفاصيل الاجتماع ورابط تغيير الموعد أو إلغائه.
                     </p>
                   )}
                   {/* وما يُعمل به قبل الموعد — البابان يقرآن الأسطرَ نفسَها */}

@@ -227,7 +227,7 @@ export default function Finance() {
         /* والسببُ يُقال: البحثُ قد يُخفي الطابورَ كلَّه، فيبهت الزرُّ بلا
            أن يُعرف لماذا. */
         disabledReasonAr={tab === "requests" && reqView.total === 0
-          ? "البحث الحاليّ لا يظهر منها شيئا — امسحه لتبدأ."
+          ? "بحثك لا يطابق أيّ طلب — امسحه لتبدأ."
           : undefined}
         onAction={() => {
           /* اللسانُ أوّلا، ثمّ أوّلُ معلَّقٍ معروضٍ يُبلَغ ويُركَّز عليه */
@@ -235,7 +235,7 @@ export default function Finance() {
           const first = reqView.rows.find((r) => r.status === "pending") ?? reqView.rows[0];
           if (first) revealRow(`enroll-req-${first.id}`);
         }}
-        doneAr="لا طلب تسجيل ينتظر مراجعتك — وما يصل منها يظهر هنا فورا."
+        doneAr="لا طلبات تسجيل تنتظر مراجعتك — والجديد يظهر هنا فورا."
       />
 
       <div className="mb-5 flex flex-wrap items-center gap-2">
@@ -258,9 +258,9 @@ export default function Finance() {
       {readOnly && (
         <Card as="p" className="mb-5 flex items-start gap-2 px-4 py-3 text-read font-bold leading-6 text-muted-foreground">
           <Wallet className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gold-ink" />
-          حسابك يقرأ المال ولا يحرّكه: تعرف من دفع ومن لم يدفع لتقرّر تسجيلا، وتراجع طلبات التسجيل.
-          أمّا تسجيل دفعة يدويّة واعتماد استرداد وإنشاء كوبون فهي بيد <b className="text-foreground">المالية</b> —
-          فصل مقصود: من يسجّل التسجيل لا يسجّل دفعته.
+          حسابك يرى المال ولا يغيّره: تعرف من دفع ومن لم يدفع لتقرّر التسجيل، وتراجع طلباته.
+          أمّا تسجيل دفعة يدويّة واعتماد استرداد وإنشاء كوبون فهي لـ<b className="text-foreground">المالية</b> —
+          عمدا: من يسجّل التسجيل لا يسجّل دفعته.
         </Card>
       )}
 
@@ -271,7 +271,7 @@ export default function Finance() {
         <div className="space-y-3">
           {requests.length === 0 && (
             <EmptyState icon={Inbox} titleAr="لا طلبات تسجيل تنتظر"
-              reasonAr="طلب التسجيل يصل هنا حين يختار متعلّم شعبة بلا شراء مباشر — والشراء المباشر لا يمرّ بهذه الشاشة."
+              reasonAr="يصل طلب التسجيل هنا حين يختار متعلّم شعبة دون شراء مباشر. والشراء المباشر لا يمرّ من هنا."
               tone="done" />
           )}
           {requests.length > 0 && (
@@ -297,7 +297,7 @@ export default function Finance() {
           </BulkBar>
           {requests.length > 0 && reqView.total === 0 && (
             <EmptyState icon={Inbox} titleAr="لا طلب يطابق بحثك" tone="filter"
-              reasonAr={`لا شيء يطابق «${q.trim()}» في أسماء المتعلّمين ولا بريدهم ولا الشعب.`}
+              reasonAr={`لا نتائج لـ«${q.trim()}» في أسماء المتعلّمين أو بريدهم أو الشعب.`}
               actions={[{ onClick: () => { setQ(""); setPage(1); }, labelAr: "امسح البحث", hintAr: "تعود القائمة كاملة" }]} />
           )}
           {reqView.rows.map((r) => (
@@ -326,7 +326,7 @@ export default function Finance() {
                   <input value={couponFor[r.id] ?? ""} onChange={(e) => setCouponFor({ ...couponFor, [r.id]: e.target.value })}
                     placeholder="كوبون (اختياري)" dir="ltr" className={`${inputCls} w-32 font-mono`} />
                   <Button tone="confirm" size="sm" disabled={busy}
-                    onClick={() => act(() => apiPost(`/api/admin/enrollment-requests/${r.id}/approve`, { couponCode: couponFor[r.id] || undefined }), "ووفق: حجز المقعد وأنشئت الفاتورة")}>
+                    onClick={() => act(() => apiPost(`/api/admin/enrollment-requests/${r.id}/approve`, { couponCode: couponFor[r.id] || undefined }), "تمّت الموافقة: حجز المقعد وأنشئت الفاتورة")}>
                     <CheckCircle2 className="h-3.5 w-3.5" /> موافقة وحجز مقعد
                   </Button>
                   <Button tone="danger" size="sm" disabled={busy}
@@ -353,7 +353,7 @@ export default function Finance() {
           )}
           {invoices.length > 0 && invView.total === 0 && (
             <EmptyState icon={Receipt} titleAr="لا فاتورة تطابق بحثك" tone="filter"
-              reasonAr={`لا شيء يطابق «${q.trim()}» في أسماء المشترين ولا بريدهم ولا أرقام الفواتير.`}
+              reasonAr={`لا نتائج لـ«${q.trim()}» في أسماء المشترين أو بريدهم أو أرقام الفواتير.`}
               actions={[{ onClick: () => { setQ(""); setPage(1); }, labelAr: "امسح البحث", hintAr: "تعود القائمة كاملة" }]} />
           )}
           {invView.rows.map((inv) => (
@@ -489,7 +489,7 @@ export default function Finance() {
               أنشئ الخطة
             </Button>
             <p className="mt-3 flex items-center gap-1.5 text-read text-muted-foreground">
-              <FileText className="h-3 w-3" /> الخطط الفعالة تظهر للعامة عبر /api/public/subscription-plans
+              <FileText className="h-3 w-3" /> الخطط الفعّالة تظهر للجميع عبر /api/public/subscription-plans
             </p>
           </Panel>
         </div>
@@ -504,7 +504,7 @@ export default function Finance() {
           onConfirm={() => { setBulkConfirm(null); void bulkRequests("approve"); }}
         >
           <p>لكلّ طلب منها: <b className="text-foreground">يحجز مقعد في شعبته وتصدر فاتورته</b>. والمقعد المحجوز ينقص السعة المعروضة فورا.</p>
-          <p>ولا كوبون في الجماعيّ — الكوبون قرار لصفّ بعينه، وتعميمه يمنح خصما لمن لم يقصد.</p>
+          <p>ولا كوبون في الموافقة الجماعيّة — الكوبون لطلب واحد، وتعميمه يعطي خصما لمن لا تقصده.</p>
         </ConfirmAction>
       )}
 
@@ -534,7 +534,7 @@ export default function Finance() {
           onCancel={() => setBulkConfirm(null)}
           onConfirm={(reason) => { setBulkConfirm(null); void bulkRequests("reject", reason); }}
         >
-          <p>يغلق كلّ طلب منها ويخبر صاحبه. والسبب الذي تكتبه هو ما يقرؤه — فاكتبه له لا للسجلّ.</p>
+          <p>يغلق كلّ طلب ويصل صاحبه سببك كما تكتبه — فاكتبه له لا للسجلّ.</p>
         </ConfirmAction>
       )}
     </AdminLayout>

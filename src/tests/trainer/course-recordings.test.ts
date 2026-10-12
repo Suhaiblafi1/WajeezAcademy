@@ -182,6 +182,6 @@ describe('ونصوص السؤال من مصدر واحد', () => {
     const page = code('src/pages/JoinTrainer.tsx')
     expect(page, 'النموذج لا يعرض سبب السؤال').toContain('RECORDINGS_WHY')
     expect(page, 'لا يطمأن المتقدّم أنّ جوابه لا يفاضل به')
-      .toMatch(/لا يرجّح طلبك ولا يضعفه/)
+      .toMatch(/لا يؤثر على قبول طلبك/)
   })
 })

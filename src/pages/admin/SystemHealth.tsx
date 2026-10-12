@@ -41,8 +41,8 @@ const TONE: Record<Level, { chip: string; box: string; icon: typeof AlertTriangl
 };
 
 const HEADLINE: Record<Level, string> = {
-  broken: "فيه ما هو معطّل الآن — اقرأ البنود الحمراء أوّلا",
-  attention: "لا شيء معطّل، وفيه ما يحتاج نظرة",
+  broken: "يوجد عطل الآن — ابدأ بالبنود الحمراء",
+  attention: "لا أعطال، لكن هناك ما يحتاج مراجعة",
   ok: "كلّ ما يقاس سليم",
   unknown: "بعض ما يقاس لم يقرأ",
 };
@@ -76,7 +76,7 @@ export default function SystemHealth() {
     <AdminLayout title="صحّة النظام">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <p className="text-read leading-6 text-muted-foreground">
-          محسوبة من حالة القاعدة عند فتح الصفحة — لا رقم محفوظا هنا.
+          تحسب من قاعدة البيانات عند فتح الصفحة — لا أرقام محفوظة هنا.
           {data && <span className="mr-2 text-muted-foreground">آخر قراءة: {fmtDateTime(new Date(data.checkedAt))}</span>}
         </p>
         <Button tone="secondary" type="button" onClick={() => void load()} disabled={busy}>

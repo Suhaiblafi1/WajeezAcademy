@@ -32,7 +32,7 @@ export default function VerifyEmail() {
 
   /* غياب الرمز يُعرف أثناء التصيير — لا حاجة إلى تأثير يقلب الحالة بعده */
   const state: State = !token
-    ? { kind: "error", message: "الرابط بلا رمز — افتحه من الرسالة كما وصلتك." }
+    ? { kind: "error", message: "الرابط ناقص — افتحه من الرسالة كما وصلتك." }
     : sent ?? { kind: "working" };
 
   return (
@@ -70,7 +70,7 @@ export default function VerifyEmail() {
             <h1 className="mt-5 text-2xl font-black">تعذّر توثيق البريد</h1>
             <p className="mt-3 text-sm leading-7 text-muted-foreground">{state.message}</p>
             <p className="mt-3 text-read leading-6 text-muted-foreground">
-              الروابط تنتهي بعد ٤٨ ساعة، وتستهلك بعد أوّل فتح. اطلب رابطا جديدا من صفحة حسابك.
+              الرابط صالح ٤٨ ساعة ولمرة واحدة فقط. اطلب رابطا جديدا من صفحة حسابك.
             </p>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
               <Link to="/student/account" className="rounded-full bg-teal px-6 py-3 font-black text-on-teal hover:bg-teal-light">

@@ -140,7 +140,7 @@ export default function AdminTasks() {
             : []}
           actionAr="ابدأ بأعجلها"
           onAction={() => { if (open[0]) revealRow(`task-${open[0].id}`); }}
-          doneAr="لا مهمّة مكلّفا بها تنتظر — وما يكلّف به يصل هنا مع إشعار فور تكليفه."
+          doneAr="لا مهامّ تنتظر — والجديدة تصل هنا مع إشعار."
         />
 
         {loading ? null : (
@@ -171,7 +171,7 @@ export default function AdminTasks() {
               <Panel as="section" tone="warn">
                 <h2 className="text-sm font-black text-gold-ink">كلّف موظّفا بمهمّة</h2>
                 {/* التكليفُ يُشعِر مكلَّفَه في الفعل نفسِه — لا خطوةَ إشعارٍ بعده */}
-                <p className="mt-1 text-read text-muted-foreground">يصله إشعار بها فورا، ولا يكلّف من هو أعلى رتبة منك.</p>
+                <p className="mt-1 text-read text-muted-foreground">يصله إشعار فورا. ولا يمكنك تكليف من هو أعلى منك.</p>
                 <div className="mt-3 grid gap-2 sm:grid-cols-2">
                   <select value={form.assigneeId} onChange={(e) => setForm({ ...form, assigneeId: e.target.value })}
                     aria-label="المكلّف" className={`${field} cursor-pointer [&>option]:bg-surface`}>
@@ -226,7 +226,7 @@ export default function AdminTasks() {
                   <Bell className="h-4 w-4 text-teal-light-ink" /> إشعار بلا مهمّة
                 </h2>
                 {/* إعلانٌ يصل ولا يُتابَع ولا يُغلَق — وحبّتُه منفصلة عن التكليف */}
-                <p className="mt-1 text-read text-muted-foreground">يصل ولا يتابع ولا يغلق. للتكليف الذي يتابع استعمل اللوح أعلاه.</p>
+                <p className="mt-1 text-read text-muted-foreground">يصل فقط، بلا متابعة أو إغلاق. للمتابعة استخدم التكليف أعلاه.</p>
                 <div className="mt-3 space-y-2">
                   <input value={announce.title} onChange={(e) => setAnnounce({ ...announce, title: e.target.value })}
                     placeholder="عنوان الإشعار" aria-label="عنوان الإشعار" className={field} />

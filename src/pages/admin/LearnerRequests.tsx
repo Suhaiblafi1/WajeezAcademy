@@ -138,10 +138,10 @@ export default function LearnerRequests() {
         ] : []}
         actionAr="ابدأ بأقدمها"
         disabledReasonAr={rows && rows.length > 0 && view.total === 0
-          ? "البحث الحاليّ لا يظهر منها شيئا — امسحه لتبدأ."
+          ? "بحثك لا يطابق أيّ طلب — امسحه لتبدأ."
           : undefined}
         onAction={() => { if (view.rows[0]) revealRow(`learner-req-${view.rows[0].id}`); }}
-        doneAr="لا طلب ينتظر قرارك — وحين ينهي متعلّم دورته أو مساره ويطلب شهادته أو توصية يظهر هنا، مستوفيا قواعد الإكمال: فحساب الأهليّة يقع قبل الطلب لا بعده."
+        doneAr="لا طلبات تنتظر قرارك — حين يكمل متعلّم دورته أو مساره ويطلب شهادة أو توصية يظهر طلبه هنا، بعد فحص أهليّته."
       />
 
       {rows !== null && rows.length > 0 && (
@@ -204,14 +204,14 @@ export default function LearnerRequests() {
 
                 <div className="mt-3">
                   <label htmlFor={`note-${r.id}`} className="mb-1.5 block text-fine font-bold text-muted-foreground">
-                    ردّك — إلزاميّ عند الاعتذار، يقرؤه المتعلّم في بوابته
+                    ردّك — مطلوب عند الاعتذار، ويقرؤه المتعلّم في بوّابته
                   </label>
                   <textarea
                     id={`note-${r.id}`}
                     rows={2}
                     value={reason}
                     onChange={(e) => setNote((n) => ({ ...n, [r.id]: e.target.value }))}
-                    placeholder="مثال: صدرت شهادتك ورقمها في «شهاداتي» — أو: نحتاج تسليم مشروع الدورة قبل الشهادة."
+                    placeholder="مثال: صدرت شهادتك وتجدها في «شهاداتي» — أو: سلّم مشروع الدورة قبل الشهادة."
                     className={areaCls}
                   />
                 </div>
@@ -236,7 +236,7 @@ export default function LearnerRequests() {
                     <XCircle className="h-3.5 w-3.5" /> اعتذر
                   </Button>
                   {reason.trim().length < MIN_REASON && (
-                    <span className="text-fine text-muted-foreground">الاعتذار يلزمه سبب لا يقلّ عن {MIN_REASON} أحرف</span>
+                    <span className="text-fine text-muted-foreground">الاعتذار يحتاج سببا من {MIN_REASON} أحرف على الأقلّ</span>
                   )}
                 </div>
 

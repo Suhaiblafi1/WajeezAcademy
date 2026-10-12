@@ -27,7 +27,7 @@ type EntityId = (typeof ENTITIES)[number]['id']
 
 const TOPICS = [
   'استفسار عن مسار أو تشخيص',
-  'عرض تدريبي لجهة',
+  'برنامج تدريبي لجهة',
   'شراكة أو تكامل',
   'طلب استرداد',
   'الانضمام كمدرب',
@@ -36,18 +36,18 @@ const TOPICS = [
 
 /* مخطط الأثر — رحلة الجهة معنا في أربع خطوات (حقائق عن المنهج لا وعود) */
 const IMPACT_STEPS = [
-  { icon: ScanSearch, t: 'نشخّص أولا', d: 'فجوات فريقك تقاس قبل أي التحاق — لا تخمين' },
-  { icon: Route, t: 'مسار واحد مفسّر', d: 'شعب ومسارات تخصّص لهوية جهتك وأهدافها' },
-  { icon: FileCheck, t: 'مخرج عملي موثق', d: 'كل متدرب ينتهي بمخرج يراجع ويقيّم بشريا' },
-  { icon: BarChart3, t: 'تقرير إنجاز للجهة', d: 'من أكمل، وماذا أنجز، وأين تبقى الفجوات' },
+  { icon: ScanSearch, t: 'نشخّص أولا', d: 'نقيس ما ينقص فريقك قبل أي التحاق' },
+  { icon: Route, t: 'مسار واحد مفسّر', d: 'شعب ومسارات مصممة لجهتك وأهدافها' },
+  { icon: FileCheck, t: 'مخرج عملي موثق', d: 'كل متدرب ينهي مشروعا يراجعه ويقيّمه مدرب' },
+  { icon: BarChart3, t: 'تقرير إنجاز للجهة', d: 'من أكمل، وماذا أنجز، وما الذي بقي' },
 ]
 
 /* نقطة سياقية واحدة صادقة لكل نوع جهة — من واقع الصفحات المؤسسية السابقة */
 const ENTITY_NOTE: Partial<Record<EntityId, string>> = {
   company: 'شعب خاصة بشركتك بمدربين متخصصين، ومخرجات تراها في عمل الموظف لا في شهادة فقط.',
-  gov: 'مسارات مصممة لواقع العمل الحكومي — خدمة الجمهور، المراسلات، المشتريات — مع تقارير إنجاز رسمية للجهة الراعية.',
-  edu: 'برامج تكمل مقرراتك بمهارات سوق العمل — بشهادات موثقة بمخرجات لا بالحضور.',
-  nonprofit: 'نفس منهجية المخرج الموثق — تخصّص الشعب والمجالات لطبيعة عملكم المجتمعي.',
+  gov: 'مسارات لواقع العمل الحكومي (خدمة الجمهور، المراسلات، المشتريات) مع تقارير إنجاز رسمية للجهة.',
+  edu: 'برامج تكمل مقرراتك بمهارات سوق العمل، بشهادات مبنية على الإنجاز لا الحضور.',
+  nonprofit: 'نفس المنهجية، مع شعب ومجالات تناسب عملكم المجتمعي.',
 }
 
 const FIELD =
@@ -75,8 +75,8 @@ export default function Contact() {
 
   /* اختيار الجهة يضبط موضوع الطلب تلقائيا — ويعيده للافتراضي عند العودة لفرد */
   useEffect(() => {
-    if (institutional && topic === TOPICS[0]) setTopic('عرض تدريبي لجهة')
-    if (!institutional && topic === 'عرض تدريبي لجهة') setTopic(TOPICS[0])
+    if (institutional && topic === TOPICS[0]) setTopic('برنامج تدريبي لجهة')
+    if (!institutional && topic === 'برنامج تدريبي لجهة') setTopic(TOPICS[0])
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [entity])
 
@@ -90,13 +90,13 @@ export default function Contact() {
     if (!valid) {
       setErr(
         name.trim().length < 2
-          ? 'أدخل اسمك الكريم'
+          ? 'اكتب اسمك'
           : !emailValid
             ? 'صيغة البريد غير صحيحة — مثال: name@mail.com'
             : !orgValid
-              ? 'اذكر اسم جهتك ليصل طلبك للفريق المختص'
+              ? 'اكتب اسم جهتك ليصل طلبك للفريق المختص'
               : message.trim().length < 10
-                ? 'اكتب رسالتك بتفصيل أكبر قليلا (10 أحرف على الأقل) لنخدمك أدق'
+                ? 'اكتب رسالة أوضح (10 أحرف على الأقل)'
                 : 'نحتاج موافقتك على معالجة بياناتك للرد عليك'
       )
       return
@@ -120,9 +120,9 @@ export default function Contact() {
       <div className="grid gap-10 lg:grid-cols-5">
         {/* بيانات التواصل */}
         <div className="lg:col-span-2">
-          <h1 className="text-3xl font-black md:text-4xl">تفضّل بالكلام</h1>
+          <h1 className="text-3xl font-black md:text-4xl">تواصل معنا</h1>
           <p className="mt-4 text-base leading-8 text-muted-foreground">
-            سؤال عن مسار؟ عرض تدريبي لجهتك؟ شراكة؟ فريقنا يقرأ كل رسالة بنفسه ويرد خلال يوم عمل واحد.
+            سؤال عن مسار؟ برنامج تدريبي لجهتك؟ شراكة؟ نقرأ كل رسالة ونرد خلال يوم عمل واحد.
           </p>
           <div className="mt-7 space-y-3">
             <Inset className="flex items-center gap-3 px-4 py-3">
@@ -141,14 +141,14 @@ export default function Contact() {
               <Building2 className="mt-1 h-4 w-4 shrink-0 text-gold-ink" />
               <p className="text-read leading-6 text-muted-foreground">
                 <span className="font-bold text-muted-foreground">تتواصل باسم جهة؟ </span>
-                حدد نوعها في النموذج — يظهر لك ما يهم جهتك فورا، ويصل طلبك لفريق الحلول المؤسسية مباشرة.
+                حدد نوعها في النموذج ليصل طلبك لفريق المؤسسات مباشرة.
               </p>
             </Inset>
           </div>
           <Inset as="p" className="mt-5 px-4 py-3 text-read leading-6 text-muted-foreground">
-            إن كان سؤالك «أي مسار يناسبني؟» — فأصدق إجابة يعطيها لك{' '}
+            إن كان سؤالك «أي مسار يناسبني؟» فالجواب عند{' '}
             <Link to="/diagnostic" className="font-semibold text-teal-light-ink underline-offset-4 hover:underline">التشخيص الذكي</Link>
-            {' '}في دقائق، مجانا ودون التزام.
+            {' '}في دقائق، مجانا.
           </Inset>
         </div>
 
@@ -161,8 +161,8 @@ export default function Contact() {
               </span>
               <h2 className="mt-5 text-2xl font-black">وصلت رسالتك</h2>
               <p className="mt-3 max-w-sm text-sm leading-7 text-muted-foreground">
-                رقمك المرجعي <span dir="ltr" className="font-bold text-teal-light-ink">{ref}</span> — احتفظ به لأي متابعة.
-                سيرد عليك فريقنا خلال يوم عمل واحد.
+                رقمك المرجعي <span dir="ltr" className="font-bold text-teal-light-ink">{ref}</span> — احتفظ به للمتابعة.
+                نرد عليك خلال يوم عمل واحد.
               </p>
               <Link to="/" className="mt-6 text-sm font-semibold text-teal-light-ink underline-offset-4 hover:underline">
                 عودة للرئيسية
@@ -219,7 +219,7 @@ export default function Contact() {
 
               <div className="mt-5 grid gap-4 sm:grid-cols-2">
                 <div>
-                  <label htmlFor="ct-name" className={LABEL}>الاسم الكريم</label>
+                  <label htmlFor="ct-name" className={LABEL}>الاسم</label>
                   <input id="ct-name" name="name" type="text" required autoComplete="name" value={name}
                     onChange={(e) => setName(e.target.value)} placeholder="مثال: سارة العتيبي" className={FIELD} />
                 </div>
@@ -249,7 +249,7 @@ export default function Contact() {
                 <label htmlFor="ct-message" className={LABEL}>رسالتك</label>
                 <textarea id="ct-message" name="message" required rows={5} value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  placeholder={institutional ? 'اذكر عدد المتدربين المتوقع، والمجالات التي تهم جهتك…' : 'اكتب سؤالك أو طلبك بتفصيل يساعدنا نخدمك من أول رد…'}
+                  placeholder={institutional ? 'اذكر عدد المتدربين المتوقع، والمجالات التي تهم جهتك…' : 'اكتب سؤالك أو طلبك بوضوح…'}
                   className={`${FIELD} resize-none`} />
               </div>
               <Inset as="label" htmlFor="ct-consent" className="mt-4 flex cursor-pointer items-start gap-2.5">
@@ -278,7 +278,7 @@ export default function Contact() {
       {/* تهدئة للمتردد — التشخيص يجيب عن سؤال المسار دون رسالة */}
       <div className="mt-10 flex items-center justify-center gap-2 text-xs text-muted-foreground">
         <Compass className="h-3.5 w-3.5" />
-        سؤالك «أي مسار يناسبني؟» — التشخيص الذكي يجيب عنه في دقائق دون أن ترسل شيئا
+        سؤالك «أي مسار يناسبني؟» — يجيب عنه التشخيص الذكي في دقائق دون مراسلة
       </div>
     </SiteShell>
   )

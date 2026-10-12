@@ -59,7 +59,7 @@ const ORDINAL_AR: readonly string[] = ["", "أولى", "ثانية", "ثالثة
     من «منظومة كاملة» في صفحة المسار، وحلّت محلَّ بطاقة «مشروعها العملي». */
 const COURSE_COMPANIONS = [
   { icon: MonitorPlay, t: "وحدات مسجّلة وجلسات مباشرة", d: "فيديو لكلّ وحدة، وجلسة حيّة مع المدرّب، ومهمّة تطبيقيّة." },
-  { icon: ClipboardCheck, t: "واجبات يراجعها مدرّب بشري", d: "يقرأ عملك ويردّ بتغذية راجعة عمليّة — لا تصحيحا آليّا." },
+  { icon: ClipboardCheck, t: "واجبات يراجعها مدرّب بشري", d: "يقرأ عملك ويرد بملاحظات عملية — لا تصحيحا آليا." },
   { icon: Library, t: "ملخّصات وجيز", d: "ملخّصات من مكتبة المنصّة تكمل موضوع الدورة." },
   { icon: Headset, t: "مستشار تراسله", d: "قبل الشراء وبعده — يجيب أسئلتك ويرشدك لخطوتك التالية." },
 ] as const;
@@ -581,7 +581,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                 </p>
                 {pricing.discountPct > 0 && (
                   <p className="text-read font-bold text-teal-light-ink">
-                    وخصم بناء المسار عند {pricing.count} دورات — {pricing.discountPct}٪ — قائم لك حين تفتح الشعب.
+                    وخصم بناء المسار ({pricing.discountPct}٪ عند {pricing.count} دورات) محفوظ لك حين تفتح الشعب.
                   </p>
                 )}
                 {/* «حين تُفتح الشعب» — ومتى تُفتح؟ (البند ٥٢) */}
@@ -621,7 +621,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
               )}
               {pendingCode && (
                 <p className="mt-1.5 text-read leading-6 text-gold-ink">
-                  يحسب الكود <span dir="ltr" className="font-mono">{pendingCode}</span> عند الدفع — نتحقّق منه هناك ونقول على أيّ دوراتك يقع.
+                  نتحقق من الكود <span dir="ltr" className="font-mono">{pendingCode}</span> عند الدفع، ونبيّن على أي دوراتك ينطبق.
                 </p>
               )}
               {/* الفئات من مصدر السياسة لا من نصٍّ مكتوب هنا: نسبةٌ تُذكر في
@@ -693,8 +693,8 @@ function CoursePathPage({ courseId }: { courseId: string }) {
               <Inset as="p" className="mt-2.5 flex items-start gap-2 px-3.5 py-2.5 text-read leading-5 text-muted-foreground">
                 <ListChecks className="mt-0.5 h-3.5 w-3.5 shrink-0 text-teal-light-ink" />
                 <span>
-                  بلغت {MAX_BUILT_COURSES} دورات — وهو حدّ ما تبنيه بنفسك. ليس بخلا بل حماية لإنهائه:
-                  خطة تنجز خير من خطة تشترى. وما تختاره بعدها يحفظ لمرحلتك التالية أدناه.
+                  بلغت {MAX_BUILT_COURSES} دورات، وهو الحد الأقصى لمسار تبنيه بنفسك، لتتمكن من إنهائه.
+                  وما تختاره بعدها نحفظه لمرحلتك التالية أدناه.
                 </span>
               </Inset>
             )}
@@ -720,7 +720,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
               مرحلتك التالية — محفوظة لك
             </h2>
             <p className="mt-1.5 text-read leading-relaxed text-muted-foreground">
-              اخترتها بعد بلوغ الحد، فحفظناها بدل رفضها. أنه مسارك الأول ثم ابن هذه — أو احذف واحدة من الخمس أعلاه وأدخلها مكانها.
+              اخترتها بعد بلوغ الحد فحفظناها لك. أكمل مسارك الأول ثم ابدأ بها، أو احذف واحدة من الخمس أعلاه وضعها مكانها.
             </p>
             <ul className="mt-3.5 space-y-2">
               {deferred.map((id) => {
@@ -798,8 +798,8 @@ function CoursePathPage({ courseId }: { courseId: string }) {
               سمّ مسارك
             </h2>
             <p className="mt-1.5 text-sm leading-relaxed text-foreground">
-              أنت رتّبت هذه الدورات لحاجتك. سمّها، ونحفظها عندنا — فقد تصير مسارا معتمدا لغيرك، وقد نعود إليك
-              فيه. الاسم وقائمة دوراتك فقط، بلا شيء آخر.
+              سمّ هذه الدورات ونحفظها عندنا، فقد تصبح مسارا معتمدا لغيرك ونتواصل معك
+              بشأنه. نحفظ الاسم وقائمة الدورات فقط.
             </p>
             <div className="mt-4 flex flex-wrap gap-3">
               <input
@@ -821,7 +821,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
             </div>
             {saveState === "failed" && (
               <p className="mt-2 text-read leading-5 text-muted-foreground">
-                تعذّر الحفظ الآن — مسارك أمامك كما هو ويمكنك الشراء، وأعد المحاولة لاحقا.
+                تعذّر الحفظ الآن. مسارك كما هو ويمكنك الشراء، وأعد المحاولة لاحقا.
               </p>
             )}
           </Panel>

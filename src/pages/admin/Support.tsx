@@ -184,7 +184,7 @@ export default function Support() {
                   </Button>
                 ))}
               </div>
-              <p className="mt-2 text-read text-muted-foreground">الخادم يرفض الانتقالات غير المشروعة برسالة مفهومة.</p>
+              <p className="mt-2 text-read text-muted-foreground">الانتقال غير المسموح يرفض مع ذكر السبب.</p>
             </Card>
 
             <Card as="article">
@@ -220,7 +220,7 @@ export default function Support() {
               </div>
               {agents.length === 0 && (
                 <p className="mt-2 text-read text-muted-foreground">
-                  لا حساب نشطا بدور «support» — يمنح الدور من «المستخدمون والأدوار».
+                  لا يوجد حساب نشط بدور «support» — امنح الدور من «المستخدمون والأدوار».
                 </p>
               )}
             </Card>
@@ -281,7 +281,7 @@ export default function Support() {
           ]}
           actionAr="افتح أعجلها"
           onAction={() => { if (awaiting[0]) void openDetail(awaiting[0].id); }}
-          doneAr="لا تذكرة تنتظر ردّك — وتذاكر المتعلّمين تصل هنا فور فتحها من بوّابتهم."
+          doneAr="لا تذاكر تنتظر ردّك — والجديدة تظهر هنا فورا."
         />
       )}
 
@@ -293,7 +293,7 @@ export default function Support() {
         <EmptyState
           icon={LifeBuoy}
           titleAr={statusFilter ? `لا تذاكر بحالة «${STATUS_AR[statusFilter]}»` : "لا تذاكر بعد"}
-          reasonAr="تذاكر المتعلّمين تصل هنا فور فتحها من بوّابتهم — ولا تنشأ من هذه الشاشة."
+          reasonAr="يفتح المتعلّمون التذاكر من بوّابتهم وتظهر هنا فورا، ولا تنشأ من هنا."
           tone={statusFilter ? "filter" : "start"}
           actions={statusFilter
             ? [{ onClick: () => setStatusFilter(""), labelAr: "اعرض كلّ الحالات", hintAr: "يزال المرشّح الحاليّ" }]
@@ -307,7 +307,7 @@ export default function Support() {
           <EmptyState
             icon={LifeBuoy}
             titleAr="لا تذكرة تطابق بحثك"
-            reasonAr={`لا شيء يطابق «${q.trim()}» في العناوين ولا أصحاب التذاكر ولا التصنيفات.`}
+            reasonAr={`لا نتائج لـ«${q.trim()}» في العناوين أو أصحاب التذاكر أو التصنيفات.`}
             tone="filter"
             actions={[{ onClick: () => { setQ(""); setPage(1); }, labelAr: "امسح البحث", hintAr: "تعود القائمة كاملة" }]}
           />

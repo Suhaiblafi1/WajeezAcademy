@@ -140,7 +140,7 @@ const ROW_DECISION_AR: Record<"reject" | "defer" | "undo_reject" | "undo_withdra
     titleAr: (n) => `رفض طلب «${n}»`,
     confirmAr: "ارفضه بلطف",
     reason: { labelAr: "السبب — للأثر الداخليّ، ولا يصل المتقدّم", minLength: 5 },
-    bodyAr: "يصله بريد اعتذار من المنصّة، وسببك يبقى في الأثر عندنا ولا يرسل — فاكتبه لمن يراجع الطلب بعدك.",
+    bodyAr: "يصله بريد اعتذار. سببك لا يرسل إليه، ويبقى في الأثر لمن يراجع الطلب بعدك.",
   },
   /* ═══ والتأجيلُ إلى الفصول القادمة (٦ أكتوبر ٢٠٢٦) ═══
 
@@ -150,28 +150,28 @@ const ROW_DECISION_AR: Record<"reject" | "defer" | "undo_reject" | "undo_withdra
   defer: {
     titleAr: (n) => `تأجيل طلب «${n}» إلى الفصول القادمة`,
     confirmAr: "أجّله وأبلغه",
-    reason: { labelAr: "ملاحظة له إن شئت — تصله بنصّها في بريده", minLength: 0 },
-    bodyAr: "يصير الطلب «مؤجّلا — للفصول القادمة» ويبقى بملفّه ومستنداته ومقابلته. ويصله بريد يقول إنّ الفصل القادم لا يحمل طلبا كافيا على دوراته، وإنّنا نتواصل معه بعد شهرين.",
+    reason: { labelAr: "ملاحظة له إن أردت — تصله كما هي في بريده", minLength: 0 },
+    bodyAr: "يصبح الطلب «مؤجّلا — للفصول القادمة» بكلّ ما فيه، ويصله بريد بأنّ الطلب على دوراته قليل هذا الفصل، وأنّنا نتواصل معه بعد شهرين.",
   },
   undo_reject: {
     titleAr: (n) => `التراجع عن رفض «${n}»`,
     confirmAr: "تراجع وأبلغه",
     reason: { labelAr: "لماذا نتراجع؟ — يصل المتقدّم بنصّه في رسالته", minLength: 10 },
-    bodyAr: "يعود الطلب إلى «قيد المراجعة» بملفّه ومستنداته، ويصله بريد يقول إنّنا عدنا في قرارنا — وفيه سببك بنصّه.",
+    bodyAr: "يعود الطلب إلى «قيد المراجعة» كما هو، ويصله بريد بأنّنا تراجعنا عن القرار، وفيه سببك.",
   },
   /* وإعادةُ المسحوب على مقاس أختها (٢٩ سبتمبر ٢٠٢٦): السببُ يسافر بنصّه كذلك */
   undo_withdraw: {
     titleAr: (n) => `إعادة طلب «${n}» المسحوب`,
     confirmAr: "أعده وأبلغه",
     reason: { labelAr: "لماذا نعيده؟ — يصل صاحبه بنصّه في رسالته", minLength: 10 },
-    bodyAr: "يعود الطلب من «مسحوب» إلى «قيد المراجعة» بملفّه ومستنداته، ويصله بريد فيه سببك بنصّه — ومن سحبه بيده يردّ إن لم يرد المضيّ فنغلقه.",
+    bodyAr: "يعود الطلب من «مسحوب» إلى «قيد المراجعة» كما هو، ويصله بريد فيه سببك. وإن سحبه بنفسه ولا يريد المتابعة، يردّ فنغلقه.",
   },
   /* والعشرةُ حدُّ البطاقة نفسُه: «نحتاج معلومات» ليست طلبا يُعمَل به */
   request_info: {
     titleAr: (n) => `طلب معلومات من «${n}»`,
     confirmAr: "أرسل الطلب إليه",
-    reason: { labelAr: "ما الذي تريده منه؟ — يصله بنصّه في رسالة وفي صفحة حالته", minLength: 10 },
-    bodyAr: "ينتقل الطلب إلى «بانتظار معلومات المرشّح»، ويصله بريد فيه نصّ ما طلبته — ويبقى طلبه مفتوحا للتعديل.",
+    reason: { labelAr: "ما الذي تريده منه؟ — يصله في رسالة وفي صفحة حالته", minLength: 10 },
+    bodyAr: "ينتقل الطلب إلى «بانتظار معلومات المرشّح»، ويصله بريد بما طلبته، ويبقى طلبه مفتوحا للتعديل.",
   },
 };
 type RowDecisionAction = keyof typeof ROW_DECISION_AR;
@@ -309,7 +309,7 @@ function FollowUpBadge({ status, at, askedAt, now }: { status: string; at?: stri
       due ? "border-gold/50 text-gold-ink" : "border-white/15 text-muted-foreground"
     }`}>
       <CalendarClock className="h-3.5 w-3.5" aria-hidden="true" />
-      {due ? `حلّ موعد التواصل معه — ${fmtDateLong(at)}` : `نتواصل معه في ${fmtDateLong(at)}`}
+      {due ? `حان موعد التواصل معه — ${fmtDateLong(at)}` : `نتواصل معه في ${fmtDateLong(at)}`}
     </span>
   );
 }
@@ -407,7 +407,7 @@ function TrainerCoursesTab({ summary }: { summary?: TrainerSummary }) {
   if (!summary) {
     return (
       <Panel as="article" className="text-xs leading-6 text-muted-foreground">
-        لا ملفّ مدرّب بعد — الملفّ ينشأ مع «القبول المشروط»، وقبله لا دورات ولا شعب.
+        لا ملفّ مدرّب بعد. ينشأ الملفّ مع «القبول المشروط».
       </Panel>
     );
   }
@@ -444,8 +444,8 @@ function TrainerCoursesTab({ summary }: { summary?: TrainerSummary }) {
         <h4 className="text-sm font-black">الدورات المؤهّل لها</h4>
         {summary.qualifiedCourses.length === 0 ? (
           <p className="mt-3 text-read leading-6 text-muted-foreground">
-            لا دورة بعد. التأهيل يطلب من الشعبة التي يراد إسناده إليها، وموافقة المدير الأكاديميّ
-            تؤهّله وتسنده في فعل واحد.
+            لا دورة بعد. اطلب تأهيله من الشعبة التي تريد إسنادها إليه، وموافقة المدير الأكاديميّ
+            تؤهّله وتسنده معا.
           </p>
         ) : (
           <ul className="mt-3 flex flex-wrap gap-1.5">
@@ -888,7 +888,7 @@ export default function TrainerApplications() {
         key: "approve", label: "اعتمده مدرّبا — بنقرة", icon: CheckCircle2,
         run: () => void act(
           () => apiPost(`/api/admin/trainer-applications/${a.id}/decision`, { action: "approve" }),
-          "اعتمد مدرّبا — وأعلم بذلك",
+          "اعتمد مدرّبا — وأبلغ بذلك",
         ),
       });
     }
@@ -1199,11 +1199,11 @@ export default function TrainerApplications() {
             {askOpen && (
               <div className="mt-3 border-t border-white/10 pt-3">
                 <label htmlFor="ask-note" className="text-read font-bold text-muted-foreground">
-                  ما الذي تريده منه؟ يصله بنصّه في رسالة وفي صفحة حالته.
+                  ما الذي تريده منه؟ يصله في رسالة وفي صفحة حالته.
                 </label>
                 <textarea
                   id="ask-note" rows={3} value={askNote} onChange={(e) => setAskNote(e.target.value)}
-                  placeholder="مثال: نحتاج شهادة اعتمادك من الوكالة التونسية، وفيديو تدريبي واحد لا يقلّ عن عشر دقائق."
+                  placeholder="مثال: نحتاج صورة شهادة اعتمادك، وفيديو تدريبي لا يقلّ عن عشر دقائق."
                   className={`${staffAreaCls} mt-2`}
                 />
                 <div className="mt-2 flex items-center gap-2">
@@ -1217,7 +1217,7 @@ export default function TrainerApplications() {
                     أرسل الطلب إليه
                   </Button>
                   <span className="text-read text-muted-foreground">
-                    {askNote.trim().length < 10 ? "اكتب ما تريده — عشرة أحرف على الأقلّ." : "يصله بريد بنصّه، ويبقى طلبه مفتوحا للتعديل."}
+                    {askNote.trim().length < 10 ? "اكتب ما تريده — عشرة أحرف على الأقلّ." : "يصله بريد بما كتبته، ويبقى طلبه مفتوحا للتعديل."}
                   </span>
                 </div>
               </div>
@@ -1236,14 +1236,14 @@ export default function TrainerApplications() {
             <Card className="max-lg:contents lg:-mx-1 lg:mb-4 lg:!px-4 lg:!py-3">
               <div className="flex flex-wrap items-center gap-2 border-white/10 max-lg:mt-3 max-lg:border-t max-lg:pt-3">
                 <span className="text-read leading-6 text-gold-ink">
-                  لا يعتمد اعتمادا كاملا قبل أن يتمّ تجهيزه — <b>{missingAr.join(" · ")}</b>
+                  لا يعتمد نهائيّا قبل إكمال تجهيزه — <b>{missingAr.join(" · ")}</b>
                 </span>
                 <Button tone="secondary" size="sm" onClick={() => setTab("prep")}>
                   افتح «التجهيز»
                 </Button>
                 {canOverride && (
                   <span className="text-fine leading-5 text-muted-foreground">
-                    ولك — وحدك — أن تتجاوزها بسبب يبقى مكتوبا.
+                    ويمكنك وحدك تجاوز ذلك بسبب يبقى مكتوبا.
                   </span>
                 )}
               </div>
@@ -1542,12 +1542,12 @@ export default function TrainerApplications() {
                 {purgeOpen && (
                   <div className="mt-3">
                     <p className="text-read leading-6 text-muted-foreground">
-                      يذهب الطلب ووثائقه ومقابلاته وتقييماته وروابط قرّائه، ولا يستردّ.
+                      يحذف الطلب ووثائقه ومقابلاته وتقييماته وروابط قرّائه، ولا يمكن استرجاعها.
                       ويبقى في سجلّ التدقيق: من حذف، ومتى، ولماذا.
                     </p>
                     {a.profile && (
                       <p className="mt-2 text-read leading-6 text-gold-ink">
-                        وله ملفّ مدرّب — يذهب معه: تأهيلاته وإسناده وشعبه ورموز إحالته وقواعد مستحقّاته.
+                        وله ملفّ مدرّب يحذف معه: تأهيلاته وإسناده وشعبه ورموز إحالته وقواعد مستحقّاته.
                       </p>
                     )}
                     <Button tone="danger" icon={Trash2} type="button" disabled={busy}
@@ -1586,7 +1586,7 @@ export default function TrainerApplications() {
               <h4 id="sec-rubric" className="scroll-mt-28 text-sm font-black">التقييمات — {a.reviews.length}</h4>
               {a.reviews.length === 0 ? (
                 <p className="mt-2 text-read leading-6 text-muted-foreground">
-                  لا تقييم بعد. أنشئ رابطا باسم قارئ من «روابط القرّاء» أعلاه، وما يكتبه يظهر هنا.
+                  لا تقييم بعد. أنشئ رابطا لقارئ من «روابط القرّاء» أعلاه، وتقييمه يظهر هنا.
                 </p>
               ) : (
                 <div className="mt-3 space-y-3">
@@ -1689,7 +1689,7 @@ export default function TrainerApplications() {
               {/* للمتقدّم حسابٌ منذ تقديمه: التفعيلُ يربطه — فلا زرَّ دعوةٍ له */}
               {a.status === "onboarding" && !a.profile?.userId && a.userId && (
                 <Inset as="p" tone="accent" className="mt-3 text-read leading-6 text-foreground">
-                  للمتقدّم حساب منذ تقديمه — «فعّله مدرّبا نشطا» يربط حسابه بملفّه ويفتح له بوّابة المدربين مباشرة.
+                  للمتقدّم حساب من وقت تقديمه. «فعّله مدرّبا نشطا» يربطه بملفّه ويفتح له بوّابة المدربين.
                 </Inset>
               )}
               {a.status === "onboarding" && !a.profile?.userId && !a.userId && (
@@ -1752,7 +1752,7 @@ export default function TrainerApplications() {
             confirmLabelAr="تجاوز واعتمده"
             tone="danger"
             busy={busy}
-            reason={{ labelAr: "لم يعتمد ناقص التجهيز؟ — يبقى في الأثر وفي سجلّ حالته", minLength: 20 }}
+            reason={{ labelAr: "لماذا تعتمده قبل إكمال تجهيزه؟ — يبقى في الأثر وفي سجلّ حالته", minLength: 20 }}
             onCancel={() => setOverrideOpen(false)}
             onConfirm={(reason) => {
               if (!reason) return;
@@ -1769,13 +1769,11 @@ export default function TrainerApplications() {
               لم تتمّ بعد: <b>{missingAr.join(" · ")}</b>
             </p>
             <p className="mt-2 text-read leading-6 text-muted-foreground">
-              وأثر التجاوز ليس شكليّا: بلا اتّفاق ماليّ ساريا لا يولّد كشف مستحقّات
-              أصلا، فتبقى «مستحقّاتي» عنده صفرا. وبلا دورة مؤهّل لها يفتح بوّابته على
-              فراغ. وبلا عقد موقّع لا وثيقة تحكم ما بيننا.
+              بلا اتّفاق ماليّ سار لا ينشأ له كشف مستحقّات، فتبقى «مستحقّاتي» عنده صفرا.
+              وبلا دورة مؤهّل لها تفتح بوّابته فارغة. وبلا عقد موقّع لا وثيقة تحكم ما بيننا.
             </p>
             <p className="mt-2 text-read leading-6 text-muted-foreground">
-              وله أن يعتمد الآن ويستكمل تجهيزه بعدها — لكنّ أحدا لن يتذكّر أنّه ناقص
-              ما لم يكتب هنا.
+              يمكن إكمال تجهيزه بعد الاعتماد، لكن لن يتذكّر أحد أنّه ناقص ما لم تكتبه هنا.
             </p>
           </ConfirmAction>
         )}
@@ -1798,18 +1796,18 @@ export default function TrainerApplications() {
                    البريد — فمن نُقض ردُّه ولم يبلغه شيءٌ يبقى على خبره الأوّل،
                    ومن قرّر يجب أن يعلم ذلك ليُبلغه بنفسه. */
                 (result) => mailOutcomeAr(
-                  "رفع الرفض — عاد الطلب إلى المراجعة، ووصل السبب صاحبه",
+                  "ألغي الرفض — عاد الطلب إلى المراجعة، ووصل السبب صاحبه",
                   (result as { emailDelivery?: string } | null)?.emailDelivery,
                 ),
               );
             }}
           >
             <p className="text-read leading-6">
-              يعود الطلب <b dir="ltr">{a.reference}</b> إلى «قيد المراجعة» بملفّه ومستنداته كما هي،
-              ويصل <b>{a.email}</b> بريد يقول إنّنا عدنا في قرارنا — وفيه سببك بنصّه.
+              يعود الطلب <b dir="ltr">{a.reference}</b> إلى «قيد المراجعة» كما هو،
+              ويصل <b>{a.email}</b> بريد بأنّنا تراجعنا عن القرار، وفيه سببك.
             </p>
             <p className="mt-2 text-read leading-6 text-muted-foreground">
-              ولا يعود إلى الحالة التي ردّ منها: يقرأ طلبه من أوّل الطابور، والقرار بعده جديد.
+              ولا يعود إلى حالته السابقة: يراجع من البداية، والقرار بعدها جديد.
             </p>
           </ConfirmAction>
         )}
@@ -1837,12 +1835,12 @@ export default function TrainerApplications() {
             }}
           >
             <p className="text-read leading-6">
-              يعود الطلب <b dir="ltr">{a.reference}</b> من «مسحوب» إلى «قيد المراجعة» بملفّه ومستنداته كما هي،
-              ويصل <b>{a.email}</b> بريد يقول إنّنا أعدنا فتحه — وفيه سببك بنصّه.
+              يعود الطلب <b dir="ltr">{a.reference}</b> من «مسحوب» إلى «قيد المراجعة» كما هو،
+              ويصل <b>{a.email}</b> بريد بأنّنا أعدنا فتحه، وفيه سببك.
             </p>
             <p className="mt-2 text-read leading-6 text-muted-foreground">
-              ولا يعود إلى الحالة التي سحب منها: يقرأ من أوّل الطابور، والقبول بعده نقرة واحدة. ومن
-              سحبه بيده ولا يريد المضيّ يردّ على الرسالة فنغلقه.
+              ولا يعود إلى حالته قبل السحب: يراجع من البداية، والقبول بعدها بنقرة واحدة.
+              وإن سحبه بنفسه ولا يريد المتابعة، يردّ على الرسالة فنغلقه.
             </p>
           </ConfirmAction>
         )}
@@ -1874,7 +1872,7 @@ export default function TrainerApplications() {
             <p className="text-read leading-6">
               يذهب <b>{purging.fullName}</b> ومعه {purging.documents.length} وثيقة
               {" "}و{purging.reviews.length} تقييما و{purging.interviews.length} مقابلة
-              {" "}و{purging.statusHistory.length} انتقال حالة — ولا رجعة.
+              {" "}و{purging.statusHistory.length} انتقال حالة — ولا يمكن التراجع.
             </p>
             {!PURGEABLE.includes(purging.status) && (
               <p className="mt-2 text-read leading-6 text-gold-ink">
@@ -1882,7 +1880,7 @@ export default function TrainerApplications() {
               </p>
             )}
             <p className="mt-2 text-read leading-6 text-muted-foreground">
-              وحسابه يحذف معه إن لم يكن له غير هذا الطلب — وإن كان له تسجيل أو شراء بقي، ويقال لك.
+              ويحذف حسابه معه إن لم يكن له غير هذا الطلب. وإن كان له تسجيل أو شراء يبقى الحساب ونخبرك.
             </p>
           </ConfirmAction>
         )}
@@ -1927,8 +1925,8 @@ export default function TrainerApplications() {
             <p className="text-read font-bold">مواعيد المقابلات لا تصل الآن</p>
             <p className="mt-1 text-read text-muted-foreground">{syncTrust.reasonAr}</p>
             <p className="mt-1 text-read text-muted-foreground">
-              وما دامت ساقطة فلا صفّ مقابلة ينشأ، ولا نتيجة تسجّل، ولا شارة تظهر في الصفّ.
-              وتسجّل اللقاءات الواقعة يدويّا من ملفّ صاحبها حتّى تعود.
+              وحتّى تعود لا تنشأ مقابلات ولا تسجّل نتائج ولا تظهر شارات في الصفوف.
+              سجّل اللقاءات التي جرت يدويّا من ملفّ صاحبها.
             </p>
           </div>
         </Card>
@@ -2115,7 +2113,7 @@ export default function TrainerApplications() {
           <UserPlus className="h-12 w-12 text-muted-foreground/50" />
           <h2 className="mt-4 text-xl font-black">لا طلبات بهذه الحالة</h2>
           <p className="mt-2 max-w-md text-sm leading-7 text-muted-foreground">
-            طلبات نموذج «انضم مدربا» تصل هنا مباشرة عبر قاعدة البيانات فور إرسالها.
+            طلبات نموذج «انضم مدربا» تظهر هنا فور إرسالها.
           </p>
         </Panel>
       ) : (
@@ -2137,7 +2135,7 @@ export default function TrainerApplications() {
             ))}
             {commonActions.length === 0 ? (
               <span className="text-fine text-muted-foreground">
-                لا إجراء يصلح للمحدّد كلّه — الحالات مختلفة، فاختر ما يتّحد حاله.
+                لا إجراء يناسب كلّ المحدّد — الحالات مختلفة، فحدّد طلبات بالحالة نفسها.
               </span>
             ) : commonActions.map((d) => (
               /* فعلٌ جماعيٌّ في شريطِه لا فعلُ الصفحة — وكان ممتلئا بالذهبيّ
@@ -2326,7 +2324,7 @@ export default function TrainerApplications() {
                 { action: target.action, note: reason || undefined },
               ),
               target.action === "reject"
-                ? "ردّ الطلب — وأعلم صاحبه، وسببك في الأثر"
+                ? "رفض الطلب — وأبلغ صاحبه، وسببك في الأثر"
                 : target.action === "request_info"
                   ? "أرسل الطلب إليه — ونصّه في صفحة حالته"
                   : (result) => mailOutcomeAr(
@@ -2334,7 +2332,7 @@ export default function TrainerApplications() {
                       ? "أعيد الطلب المسحوب إلى المراجعة، ووصل السبب صاحبه"
                       : target.action === "defer"
                         ? `أجّل الطلب إلى الفصول القادمة — ونتواصل معه في ${fmtDateLong(deferredFollowUpAt(new Date()))}`
-                        : "رفع الرفض — عاد الطلب إلى المراجعة، ووصل السبب صاحبه",
+                        : "ألغي الرفض — عاد الطلب إلى المراجعة، ووصل السبب صاحبه",
                     (result as { emailDelivery?: string } | null)?.emailDelivery,
                   ),
             );
@@ -2414,7 +2412,7 @@ export default function TrainerApplications() {
               ))}
             </div>
             <label htmlFor="followup-body" className="mt-3 block text-read font-bold text-muted-foreground">
-              متن الرسالة — يصله بنصّه، وعدّله كما تشاء
+              نصّ الرسالة — يصله كما هو، وعدّله كما تشاء
             </label>
             <textarea
               id="followup-body" rows={7} value={followUp.bodyAr}
@@ -2423,7 +2421,7 @@ export default function TrainerApplications() {
             />
             <p className="mt-1 text-read leading-5 text-muted-foreground">
               التحيّة باسمه ورقم طلبه {chosen?.ctaAr ? "وزرّ «" + chosen.ctaAr + "»" : ""} من القالب —
-              اكتب المتن وحده. وسطر فارغ بين فقرتين يقرأ فاصلا.
+              اكتب النصّ فقط، واترك سطرا فارغا بين الفقرات.
             </p>
           </ConfirmAction>
         );
@@ -2444,7 +2442,7 @@ export default function TrainerApplications() {
             labelAr: bulkDecision.action === "reject"
               ? "السبب — للأثر الداخليّ، ولا يصل المتقدّم"
               : bulkDecision.action === "defer"
-                ? "ملاحظة لهم إن شئت — تصل كلّ واحد بنصّها في بريده"
+                ? "ملاحظة لهم إن أردت — تصل كلّ واحد كما هي في بريده"
                 : "السبب — يصل صاحب كلّ طلب كما تكتبه، ويبقى في الأثر",
             /* ولا حدَّ أدنى للتأجيل: ملاحظتُه لا تُشترط (`ROW_DECISION_AR.defer`) */
             minLength: bulkDecision.action === "defer" ? 0 : 5,
@@ -2459,10 +2457,10 @@ export default function TrainerApplications() {
           <p>
             يطبّق القرار على المحدّد كلّه، ويخبر أصحابه برسالة من المنصّة.{" "}
             {bulkDecision.action === "reject"
-              ? "وسببك يبقى في الأثر عندنا ولا يرسل — فاكتبه لمن يراجع الطلب بعدك."
+              ? "سببك لا يرسل إليهم، ويبقى في الأثر لمن يراجع الطلب بعدك."
               : bulkDecision.action === "defer"
-                ? `ويصل كلّ واحد بريد التأجيل باسمه، وفيه أنّنا نتواصل معه في ${fmtDateLong(deferredFollowUpAt(new Date()))}. والملاحظة — إن كتبتها — واحدة للجميع.`
-                : "والسبب واحد للجميع ويصلهم بنصّه — فاكتبه عامّا يصلح لكلّ من يقرؤه."}
+                ? `يصل كلّ واحد بريد تأجيل باسمه بأنّنا نتواصل معه في ${fmtDateLong(deferredFollowUpAt(new Date()))}. والملاحظة واحدة للجميع.`
+                : "والسبب واحد يصل الجميع كما هو، فاكتبه عامّا يناسبهم كلّهم."}
           </p>
         </ConfirmAction>
       )}

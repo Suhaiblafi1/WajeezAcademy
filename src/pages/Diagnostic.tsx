@@ -960,7 +960,7 @@ export default function Diagnostic() {
         <section className="story-fade mx-auto max-w-2xl px-5 py-7 sm:py-10 md:py-10">
           {offline && (
             <Card tone="warn" role="status" className="mb-5 px-5 py-3 text-center text-xs font-bold text-gold-ink">
-              انقطع الاتصال بالشبكة — لا تقلق: تشخيصك يعمل على جهازك وإجاباتك محفوظة، أكمل بثقة
+              انقطع الاتصال — لا تقلق، إجاباتك محفوظة على جهازك ويمكنك المتابعة
             </Card>
           )}
           {/* شريط جولة التدقيق — يحل محل شريط المراحل أثناء «دقّق خطتك أكثر» */}
@@ -969,7 +969,7 @@ export default function Diagnostic() {
               <div className="flex items-center justify-between gap-3">
                 <p className="flex items-center gap-2 text-sm font-black text-teal-light-ink">
                   <Wand2 className="h-4 w-4" />
-                  جولة تدقيق خطتك — أسئلة أعمق لزيادة وضوح التوصية
+                  تدقيق خطتك — أسئلة إضافية لتوصية أدق
                 </p>
                 <span className="text-xs font-bold text-muted-foreground">
                   سؤال {deepStep.index} من {deepStep.total}
@@ -1041,7 +1041,7 @@ export default function Diagnostic() {
                 ولا تُعرض وحدَها إلّا حين لا سببَ يُقال. */}
             {isDeepening && !questionNote && (
               <p className="mb-4 w-fit rounded-full border border-gold/40 bg-gold/10 px-3 py-1 text-xs font-bold text-gold-ink">
-                سؤال تعميق — بناء على إجاباتك تحديدا
+                سؤال إضافي — بناء على إجاباتك
               </p>
             )}
             {/* درجةٌ أصغر على الهاتف: نص السؤال كان يأخذ ثلاثة أسطر من الشاشة فلا يبقى
@@ -1063,7 +1063,7 @@ export default function Diagnostic() {
                 <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gold-ink" />
                 <span>
                   {contradictionAr}
-                  <span className="text-muted-foreground"> — تستطيع الرجوع وتعديلها، أو المضي إن كانتا تصفانك معا.</span>
+                  <span className="text-muted-foreground"> — يمكنك الرجوع وتعديلها، أو المتابعة إن كانتا تصفانك معا.</span>
                 </span>
               </Inset>
             )}
@@ -1163,7 +1163,7 @@ export default function Diagnostic() {
                       <p className="mt-2 text-left text-read text-muted-foreground" dir="rtl">
                         {ratingsDraft[item.key]
                           ? ["", "لم أبدأ بعد", "أعرف الأساسيات", "أستخدمها بمساعدة", "أستخدمها بثقة", "أعلّمها لغيري"][ratingsDraft[item.key]]
-                          : "اختر مستواك — بصدق"}
+                          : "اختر مستواك بصدق"}
                       </p>
                     </Card>
                   ))}
@@ -1194,7 +1194,7 @@ export default function Diagnostic() {
                 {/* أول سؤال يكسر عقد «نقرة واحدة تكفي» بعد سبعة أسئلة تنتقل وحدها،
                     فيُعلَن تغيّر النمط قبل الخيارات لا بعدها. */}
                 <p className="mb-3 text-read leading-5 font-bold text-gold-ink">
-                  اختر ما ينطبق عليك — يمكن أكثر من واحد — ثم «متابعة».
+                  اختر كل ما ينطبق عليك، ثم «متابعة».
                 </p>
                 {/* كان عمودا واحدا على الجوال: تسعة خيارات تنتهي عند 884 بكسل على شاشة
                     ارتفاعها 844، فيقع زر «متابعة» عند 908 خارج الشاشة تماما — والمتعلم
@@ -1260,7 +1260,7 @@ export default function Diagnostic() {
                 {savedFlash ? (
                   <>
                     <CheckCircle2 className="h-4 w-4" />
-                    حفظ تقدمك — أكمل لاحقا متى شئت
+                    احفظ تقدمك وأكمل لاحقا
                   </>
                 ) : (
                   "احفظ وأكمل لاحقا"
@@ -1364,8 +1364,8 @@ export default function Diagnostic() {
                 </h2>
                 {isExploratory && (
                   <p className="mx-auto mt-4 max-w-md text-sm leading-loose text-foreground">
-                    لا نريد أن نرشّح لك مسارا عاما لا يعكس فجواتك الفعلية. أجب عن استبيان أعمق مبني على
-                    مواقف عملية، وسنحدّد المهارات التي تحتاجها ثم نبني لك خطة دورات مناسبة.
+                    لا نريد أن نرشّح لك مسارا عاما لا يناسب احتياجك. أجب عن استبيان أعمق مبني على
+                    مواقف عملية، لنحدد المهارات التي تحتاجها ونبني لك خطة مناسبة.
                   </p>
                 )}
                 <div className="mx-auto mt-4 max-w-md space-y-2 text-sm leading-loose text-muted-foreground">
@@ -1420,13 +1420,13 @@ export default function Diagnostic() {
                       <ListChecks className="ml-2 h-4 w-4" />
                       ابدأ الاستبيان التفصيلي
                     </Button>
-                    <p className="mt-2.5 text-read text-muted-foreground">مواقف عملية تقيس مهاراتك مباشرة — لا إعادة لما أجبت عنه.</p>
+                    <p className="mt-2.5 text-read text-muted-foreground">مواقف عملية تقيس مهاراتك مباشرة، دون تكرار ما أجبت عنه.</p>
                   </div>
                 )}
                 {isExploratory && canDeepen && deepUnavailable && (
                   <Card as="p" tone="warn" className="mx-auto mt-9 max-w-md px-5 py-3 text-read leading-relaxed text-gold-ink">
-                    لا تكفي أسئلتنا المتبقية لاستبيان تفصيلي مفيد على إجاباتك الحالية — فإعادة التشخيص
-                    بإجابات أدقّ أنفع لك من أسئلة لا تضيف.
+                    لا تكفي الأسئلة المتبقية لاستبيان تفصيلي مفيد، لذا إعادة التشخيص
+                    بإجابات أدق أنفع لك.
                   </Card>
                 )}
                 <div className={`flex flex-wrap items-center justify-center gap-3 ${isExploratory && canDeepen ? "mt-5" : "mt-9"}`}>
@@ -1462,7 +1462,7 @@ export default function Diagnostic() {
                   />
                 </p>
                 <p className="mt-4 text-read leading-relaxed text-muted-foreground">
-                  هذا تشخيص تعليمي مهني: ليس تقييما نفسيا أو طبيا. لا نرشّح مسارا بلا دليل كاف — هذه مسؤولية لا ضعف.
+                  هذا تشخيص تعليمي مهني، وليس تقييما نفسيا أو طبيا. ولا نرشّح مسارا دون دليل كاف.
                 </p>
                 {/* هذه هي الشاشة الفعلية التي تُعرض حين لا مسار — لا الشاشة أدناه
                     (فرعها الآخر لا يُعرض أبدا: كل أبواب الوصول إلى "result"
@@ -1503,14 +1503,14 @@ export default function Diagnostic() {
                 </Button>
                 {!deepUnavailable && (
                   <p className="mx-auto mt-2 max-w-md text-read leading-relaxed text-muted-foreground">
-                    خطوة اختيارية تماما: ٤–٨ أسئلة قصيرة تزيد دقة توصيتك — تخطّها بلا أي أثر إن كانت الصورة واضحة لك.
+                    خطوة اختيارية: ٤–٨ أسئلة قصيرة تزيد دقة توصيتك. يمكنك تخطيها دون أي أثر.
                   </p>
                 )}
               </div>
             )}
             {deepUnavailable && (
               <p className="mt-2 text-read font-bold text-teal-light-ink print:hidden">
-                صورتك مكتملة بما يكفي — لا أسئلة إضافية نافعة، توصيتك جاهزة بثقة.
+                صورتك واضحة بما يكفي، وتوصيتك جاهزة.
               </p>
             )}
           </div>
@@ -1529,8 +1529,8 @@ export default function Diagnostic() {
                   <div>
                     <p className="text-sm font-black text-teal-light-ink">اطمئن — بقي مسارك هو نفسه بعد التدقيق</p>
                     <p className="mt-1 text-read leading-relaxed text-muted-foreground">
-                      {cmp.note_ar} وإن حسّنا دورة داخل مسارك أو اقترحنا إضافة تناسبك فستجدها في خطتك أدناه —
-                      ويمكنك تخصيصها بنفسك: استبدالا أو حذفا أو هدية مجانية.
+                      {cmp.note_ar} وإن حسّنا دورة في مسارك أو اقترحنا إضافة فستجدها في خطتك أدناه،
+                      ويمكنك تعديلها: استبدالا أو حذفا أو هدية مجانية.
                     </p>
                   </div>
                 </Card>
@@ -1635,7 +1635,7 @@ export default function Diagnostic() {
               <Card className="mt-6">
                 <p className="text-sm font-black text-teal-light-ink">ماذا ستحصل عليه فعليا؟</p>
                 <p className="mt-1.5 text-read leading-6 text-muted-foreground">
-                  لا تحصل على قائمة دورات فقط؛ تحصل على ترتيب تعلم، ومتابعة، ومراجعة، ومخرجا تطبيقيا يثبت أنك تقدمت.
+                  ليست قائمة دورات فقط: ترتيب تعلم، ومتابعة، ومراجعة، ومشروع عملي يثبت تقدمك.
                 </p>
                 <div className="mt-4 grid grid-cols-2 gap-2 md:grid-cols-4">
                   {[
@@ -1674,8 +1674,8 @@ export default function Diagnostic() {
                 <Card className="mt-4 flex flex-wrap items-center justify-between gap-3 px-5 py-4">
                   <p className="text-read leading-relaxed text-muted-foreground">
                     <span className="font-bold text-foreground">للاطّلاع فقط — وليس خطتك: «{topPathway.name}»</span>
-                    {" "}— أقوى مسار مفرد ضمن خطتك، استمدت منه دورات أساسية في تركيبتك.
-                    راجعه إن أردت التركيز على مجال واحد بدل الخطة أعلاه.
+                    {" "}— أقوى مسار مفرد في خطتك، ومنه أخذنا دوراتها الأساسية.
+                    راجعه إن أردت التركيز على مجال واحد.
                   </p>
                   <Link
                     to={`/pathways/${topPathway.id}`}
@@ -1804,8 +1804,8 @@ export default function Diagnostic() {
               </h3>
               <p className="mt-3 text-sm leading-loose text-foreground">
                 كتبت أنك درست سابقا ما يشبه: <span className="font-bold text-foreground">{result.priorOverlap.join("، ")}</span>.
-                راجع محاورها قبل الدفع — وإن كنت أتقنتها فعلا، اطلب من مستشارك استبدالها بدورة أعمق،
-                فوعدنا أنك لن تدفع ثمن ما تعرفه أصلا.
+                راجع محاورها قبل الدفع، وإن كنت تتقنها فاطلب من مستشارك استبدالها بدورة أعمق؛
+                فلن تدفع ثمن ما تعرفه.
               </p>
             </Panel>
           )}
@@ -1901,11 +1901,11 @@ export default function Diagnostic() {
             <Panel tone="warn" className="mt-8 md:p-8">
               <h3 className="flex items-center gap-2 text-lg font-black text-gold-ink">
                 <BellRing className="h-5 w-5" />
-                مهارات تحتاجها ولا نغطيها بعد — ولن نخفي ذلك عنك
+                مهارات تحتاجها ولا نغطيها بعد
               </h3>
               <p className="mt-3 text-sm leading-loose text-foreground">
                 فجواتك في {result.unavailableSkills.join(" و")} مهمة لهدفك، لكن كتالوجنا الحالي لا يغطيها بعد.
-                نفضل أن تعرف الحقيقة كاملة على أن نبيعك مسارا ناقصا.
+                نفضّل أن تعرف ذلك على أن نبيعك مسارا ناقصا.
               </p>
               <Button tone="secondary" className="mt-4 border-gold/60 text-gold-ink hover:bg-gold/10" asChild>
                 <a
@@ -1928,9 +1928,9 @@ export default function Diagnostic() {
                 حالتك تستحق جلسة مع مستشار بشري
               </h3>
               <p className="mt-3 text-sm leading-loose text-foreground">
-                المحرك غير متأكد تماما من التوصية الأنسب لحالتك، أو أنك طلبت استشارة شخصية.
-                نوصي بجلسة تعريفية مع مستشار وجيز (30 دقيقة) لصياغة خطتك بدقة — التشخيص الذي
-                أتممته للتو سيجعل الجلسة أقصر وأعمق.
+                لم نتأكد من التوصية الأنسب لك، أو أنك طلبت استشارة شخصية.
+                ننصح بجلسة تعريفية مع مستشار وجيز (30 دقيقة) لبناء خطتك بدقة، والتشخيص الذي
+                أكملته يجعل الجلسة أقصر وأنفع.
               </p>
               <AdvisorContact
                 text={`مرحبا، أكملت مؤشر وجيز وأخبرني أن حالتي تستحق جلسة مع مستشار بشري — أريد حجز الجلسة التعريفية.`}
@@ -1948,9 +1948,9 @@ export default function Diagnostic() {
             <div className="card-soft mt-8">
               <h3 className="h-card">{altCount === 2 ? "خياران" : "خياراتك الثلاثة"} في ميزان واحد — بدّل بثقة</h3>
               <p className="mt-2 text-read leading-relaxed text-muted-foreground">
-                {altCount === 2 ? "مساران انتقاهما المحرك" : "ثلاثة مسارات انتقاها المحرك"} لحالتك تحديدا:
+                {altCount === 2 ? "مساران اخترناهما" : "ثلاثة مسارات اخترناها"} لحالتك:
                 توصيتنا الأساسية{result.faster ? "، وبديل أسرع" : ""}{result.cheaper ? "، وبديل أوفر" : ""} — والقرار الأخير لك.
-                تفاصيل الاستثمار تظهر في صفحة المسار بعد اعتماده.
+                السعر يظهر في صفحة المسار بعد اعتماده.
               </p>
               <div className={`mt-6 grid gap-4 ${altCount === 2 ? "md:grid-cols-2" : "md:grid-cols-3"}`}>
                 {/* الأساسي */}
@@ -2035,8 +2035,8 @@ export default function Diagnostic() {
               كان هنا في ذيل الصفحة ومطويًّا، أي بعد أن يكون القرار قد اتُّخذ. */}
 
           <p className="mt-6 text-center text-read leading-relaxed text-muted-foreground">
-            التوصية صادرة عن محرك تشخيص قطعي مبني على إجاباتك، وهي نقطة بداية مفسّرة —
-            القرار النهائي دائما بيدك، ومستشارونا موجودون عند الحاجة.
+            التوصية مبنية على إجاباتك، وهي نقطة بداية واضحة الأسباب،
+            والقرار النهائي لك، ومستشارونا موجودون عند الحاجة.
             هذا تشخيص تعليمي مهني: ليس تقييما نفسيا أو طبيا، ولا وعدا بوظيفة أو دخل.
           </p>
 

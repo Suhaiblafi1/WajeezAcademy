@@ -78,7 +78,7 @@ export default function TrainerNextSteps({ cohortId }: { cohortId: string }) {
     setBusy("publish");
     try {
       await apiPost(`/api/admin/trainers/${steps.trainer.profileId}/publish-approval`);
-      tell("publish", { ok: true, text: "اعتمد ظهوره العامّ — صار اسمه وسيرته يعرضان للعامّة، وأخبر" });
+      tell("publish", { ok: true, text: "اعتمد ظهوره العامّ — اسمه وسيرته ظاهران للعامّة، ووصله الخبر" });
     } catch (e) {
       tell("publish", { ok: false, text: e instanceof ApiError ? e.message : "تعذّر الاعتماد" });
     } finally {
@@ -91,9 +91,9 @@ export default function TrainerNextSteps({ cohortId }: { cohortId: string }) {
 
   return (
     <Inset className="mt-3" role="region" aria-label="ما بقي عليك">
-      <p className="text-read font-black text-foreground">وما بقي عليك — قراران لك</p>
+      <p className="text-read font-black text-foreground">بقي قراران لك</p>
       <p className="mt-1 text-read leading-6 text-muted-foreground">
-        فعّل {steps.trainer.name}: صار مدرّبا نشطا وعقده نافذ. وبقي ما لا يقع وحده — قرّره الآن، أو اتركه وتجده في بطاقة كلّ شعبة و«التأهيل والإسناد».
+        {steps.trainer.name} مدرّب نشط الآن وعقده نافذ. قرّر الباقي الآن، أو لاحقا من بطاقة كل شعبة و«التأهيل والإسناد».
       </p>
 
       {steps.cohorts.length > 0 && (
@@ -137,7 +137,7 @@ export default function TrainerNextSteps({ cohortId }: { cohortId: string }) {
                         </Button>
                       </div>
                       <p className="mt-1.5 text-read leading-6 text-muted-foreground">
-                        يرفع علمها فيقبل المسجّلون حتّى تمتلئ — أو اتركها مسوّدة وافتحها من بطاقتها حين تشاء.
+                        تقبل المسجّلين حتّى تمتلئ — أو اتركها مسوّدة وافتحها لاحقا من بطاقتها.
                       </p>
                       {said[c.id] && !said[c.id]!.ok && (
                         <p className="mt-1.5 text-read font-bold text-red-300" role="alert">{said[c.id]!.text}</p>
@@ -163,7 +163,7 @@ export default function TrainerNextSteps({ cohortId }: { cohortId: string }) {
           ) : (
             <>
               <p className="mt-1 text-read leading-6 text-muted-foreground">
-                اسمه لا يظهر على الموقع العامّ حتّى تعتمد نشره. «اعتمد ظهوره العامّ» يوثّق ملفّه ويظهر اسمه وسيرته وصورته في صفحات دوراته وصفحته — أو اتركه الآن، ويبقى الباب في «التأهيل والإسناد».
+                لا يظهر اسمه على الموقع حتّى تعتمد نشره. «اعتمد ظهوره العامّ» يوثّق ملفّه ويظهر اسمه وسيرته وصورته في صفحاته — أو اعتمده لاحقا من «التأهيل والإسناد».
               </p>
               {canPublish ? (
                 <Button tone="secondary" size="sm" className="mt-2" disabled={busy !== null} onClick={() => void publish()}>

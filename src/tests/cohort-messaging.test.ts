@@ -79,7 +79,7 @@ describe('نقل موعد لقاء', () => {
     expect(admin, 'لا اعتماد').toContain('"approve"')
     expect(admin, 'لا ردّ').toContain('"reject"')
     /* والفارق يُقال للإداريّ: الاعتماد يحرّك الموعد، والردّ لا يحرّكه */
-    expect(admin).toMatch(/الاعتماد يحرّك الموعد/)
+    expect(admin).toMatch(/الاعتماد ينقل الموعد/)
   })
 
   it('صلاحية القرار للإدارة وحدها', () => {

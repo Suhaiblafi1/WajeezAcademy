@@ -46,7 +46,7 @@ export default function Pipeline({
         <Card as="section" tone="warn">
           <h2 className="flex items-center gap-2 text-xs font-black text-gold-ink">
             <AlertTriangle className="h-4 w-4" />
-            فات موعد متابعة {overdue.length} — الصفقة تفقد بالنسيان أكثر ممّا تفقد بالرفض
+            فات موعد متابعة {overdue.length} — تابعها قبل أن تضيع
           </h2>
           <div className="mt-3 flex flex-wrap gap-2">
             {overdue.map((c) => (
@@ -108,7 +108,7 @@ export default function Pipeline({
       {CLOSED_STAGES.some((s) => byStage(s.key).length > 0) && (
         <details className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
           <summary className="cursor-pointer text-fine font-bold text-muted-foreground">
-            خرجوا من القمع ({CLOSED_STAGES.reduce((n, s) => n + byStage(s.key).length, 0)})
+            حالات مغلقة ({CLOSED_STAGES.reduce((n, s) => n + byStage(s.key).length, 0)})
           </summary>
           <div className="mt-3 flex flex-wrap gap-2">
             {CLOSED_STAGES.flatMap((s) =>

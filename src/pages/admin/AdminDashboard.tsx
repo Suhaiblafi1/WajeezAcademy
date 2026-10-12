@@ -164,7 +164,7 @@ export default function AdminDashboard() {
       const w = countWindows(tickets, (t) => t.createdAt, now);
       out.push({
         to: "/admin/support", label: "تذاكر دعم تحتاج معالجة", value: String(n),
-        hint: n > 0 ? "عملاء ينتظرون ردا" : "صندوق الدعم نظيف", icon: LifeBuoy, tone: n > 0 ? "gold" : "plain",
+        hint: n > 0 ? "عملاء ينتظرون ردا" : "لا تذاكر مفتوحة", icon: LifeBuoy, tone: n > 0 ? "gold" : "plain",
         trend: flowTrend(w.current, w.previous, TICKET_FORMS), trendPrefixAr: "الوارد",
       });
     }
@@ -233,7 +233,7 @@ export default function AdminDashboard() {
 
       {cards === null && !failed && (
         <div className="flex items-center justify-center gap-2 py-16 text-muted-foreground">
-          <Loader2 className="h-5 w-5 animate-spin" /> أجمع لك الصورة من المصادر الحية…
+          <Loader2 className="h-5 w-5 animate-spin" /> جار تحميل الأرقام…
         </div>
       )}
 

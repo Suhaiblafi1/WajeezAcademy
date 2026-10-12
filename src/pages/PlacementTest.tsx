@@ -70,8 +70,8 @@ export default function PlacementTest() {
           <Panel tone="accent" className="mt-6">
             <p className="text-sm font-black text-foreground">الاختبار قيد المراجعة — يفتح قريبا</p>
             <p className="mt-2 text-read leading-relaxed text-muted-foreground">
-              يراجع مدرّب الإنجليزيّة أسئلته قبل أن يعرض على أحد. وإلى أن يفتح فلك خياران:
-              أن تسجّل بالمستوى الذي وصفته الآن — ويراجع معك في أوّل لقاء — أو أن تعود هنا حين يفتح.
+              يراجع مدرب الإنجليزية أسئلته الآن. وإلى أن يفتح لك خياران:
+              أن تسجّل بالمستوى الذي وصفته (ويراجعه معك المدرب في أول لقاء)، أو أن تعود حين يفتح.
             </p>
             <Button as={Link} to="/diagnostic" tone="secondary" className="mt-4">عد إلى خطّتي</Button>
           </Panel>
@@ -84,9 +84,9 @@ export default function PlacementTest() {
             </p>
             <ul className="mt-3 flex flex-col gap-1.5 text-read leading-relaxed text-muted-foreground">
               <li>{total} سؤالا في قواعد اللغة ومفرداتها والقراءة — من المستوى الأوّل إلى المتقدّم.</li>
-              <li>بين ربع ساعة وعشرين دقيقة، ومجّانيّ، ولا حاجة إلى حساب.</li>
-              <li>ما لا تعرفه اتركه — التخمين يفسد القياس ولا يرفع مستواك.</li>
-              <li>والنتيجة لك: تحدّث بها خطّتك أو تبقي مستواك الموصوف.</li>
+              <li>من ربع ساعة إلى عشرين دقيقة، مجانا وبلا حساب.</li>
+              <li>اترك ما لا تعرفه — التخمين يفسد النتيجة ولا يرفع مستواك.</li>
+              <li>بعد النتيجة تختار: تحديث خطتك بها أو إبقاء المستوى الذي وصفته.</li>
             </ul>
             <Button tone="confirm" className="mt-5" onClick={() => setPage(0)}>ابدأ الاختبار</Button>
           </Card>
@@ -163,7 +163,7 @@ function PlacementOutcome({ result, stated }: { result: PlacementResult; stated:
           ))}
         </ul>
         <p className="mt-3 text-read leading-6 text-muted-foreground">
-          يحسب المستوى مجتازا بثلثي أسئلته، ومستواك أعلى ما اجتزته وكلّ ما دونه مجتاز.
+          تجتاز المستوى بإصابة ثلثي أسئلته، ومستواك أعلى ما اجتزته (وما دونه يحسب مجتازا).
         </p>
       </Card>
 
@@ -177,13 +177,13 @@ function PlacementOutcome({ result, stated }: { result: PlacementResult; stated:
               <Button as={Link} to={applyPlacementHref(result.level)} tone="primary" className="w-full justify-start text-right">
                 <CheckCircle2 className="h-4 w-4" /> حدّث خطّتي بمستوى الاختبار (<span dir="ltr">{result.cefr}</span>)
               </Button>
-              <p className="mt-1 text-read leading-6 text-muted-foreground">نعيد بناء خطّتك على هذا المستوى بلا إعادة الأسئلة — وتتغيّر الدورات المقترحة إن لزم.</p>
+              <p className="mt-1 text-read leading-6 text-muted-foreground">نعيد بناء خطتك على هذا المستوى دون إعادة الأسئلة، وقد تتغير الدورات المقترحة.</p>
             </li>
             <li>
               <Button as={Link} to="/diagnostic" tone="secondary" className="w-full justify-start text-right">
                 أبق مستواي الموصوف (<span dir="ltr">{said.cefr}</span>)
               </Button>
-              <p className="mt-1 text-read leading-6 text-muted-foreground">تبقى خطّتك كما هي — ويراجع مستواك مع مدرّبك في أوّل لقاء.</p>
+              <p className="mt-1 text-read leading-6 text-muted-foreground">تبقى خطتك كما هي، ويراجع مدربك مستواك في أول لقاء.</p>
             </li>
           </ul>
         </Panel>
@@ -194,7 +194,7 @@ function PlacementOutcome({ result, stated }: { result: PlacementResult; stated:
                 فلا يُعرض «حدّث خطّتي» على تشخيصٍ قد يكون في غيرها */}
             {said
               ? "الاختبار يؤكّد ما وصفته — خطّتك مبنيّة على مستواك الصحيح."
-              : "اختر «اللغة الإنجليزيّة» في التشخيص وصف مستواك بما قاله الاختبار — فتبنى خطّتك عليه."}
+              : "في التشخيص اختر «اللغة الإنجليزية» وحدد المستوى الذي أظهره الاختبار لتبنى خطتك عليه."}
           </p>
           <div className="mt-4 flex flex-wrap gap-3">
             {/* والمؤكَّدُ يعود عبر بابِ التعديل بالمستوى نفسِه: تُبنى الخطّةُ كما هي، ويقول

@@ -170,8 +170,8 @@ export default function AssignByTrainer() {
           <Users className="h-4 w-4 text-teal-light-ink" aria-hidden="true" /> ① اختر المدرّب
         </h2>
         <p className="mt-1 text-read leading-6 text-muted-foreground">
-          ابدأ من الإنسان لا من الدورة: اختر مدرّبا فتظهر لك الشعب التي يصلح لها وحدها.
-          وإسناد شعبة بعينها بابه في <Link to="/admin/cohorts" className="font-bold text-teal-light-ink underline decoration-dotted underline-offset-4">الشعب</Link>.
+          اختر مدرّبا لتظهر الشعب المناسبة له فقط.
+          ولإسناد شعبة محدّدة اذهب إلى <Link to="/admin/cohorts" className="font-bold text-teal-light-ink underline decoration-dotted underline-offset-4">الشعب</Link>.
         </p>
 
         <div className="mt-4">
@@ -181,7 +181,7 @@ export default function AssignByTrainer() {
             <Inset as="p" className="py-10 text-center text-read leading-6 text-muted-foreground">
               {q.trim()
                 ? `لا مدرّب يطابق «${q.trim()}».`
-                : "لا مدرّب نشطا بحساب مربوط — والموقوف ومن بلا حساب لا يسند إليهما."}
+                : "لا مدرّب نشطا بحساب مربوط — لا يسند لموقوف أو بلا حساب."}
             </Inset>
           ) : (
             <ul className="space-y-2">
@@ -222,11 +222,11 @@ export default function AssignByTrainer() {
 
           {/* ═══ يُقال لماذا القائمةُ قصيرة ═══ */}
           <Inset className="mt-3 text-read leading-6 text-muted-foreground">
-            تظهر هنا الشعب المفتوحة على الدورات التي أهّل لها هذا المدرّب وحدها
+            تظهر هنا فقط الشعب المفتوحة في الدورات المؤهّل لها
             {qualified.length > 0 && (
               <> — وهي <b className="text-foreground">{qualified.map((x) => x.courseTitle).join(" · ")}</b></>
             )}
-            . ولتأهيله لغيرها باب أسفله.
+            . ولتأهيله لغيرها انظر أدناه.
           </Inset>
 
           {/* حالاتُ تأهيلٍ ليست «مؤهَّلا» تُقال ولا تُخفى */}
@@ -242,11 +242,11 @@ export default function AssignByTrainer() {
 
           {qualified.length === 0 ? (
             <Inset tone="warn" as="p" className="mt-3 text-read leading-6 text-gold-ink">
-              لا تأهيل قائما لهذا المدرّب — فلا شعبة تسند إليه بعد. أهّله أدناه وتظهر شعبها فورا.
+              هذا المدرّب غير مؤهّل لأيّ دورة بعد. أهّله أدناه فتظهر الشعب فورا.
             </Inset>
           ) : his.length === 0 ? (
             <Inset as="p" className="mt-3 text-read leading-6 text-muted-foreground">
-              لا شعبة مفتوحة على دوراته الآن — أهّله لدورة لها شعبة، أو افتح شعبة على إحدى دوراته من «الشعب».
+              لا شعبة مفتوحة في دوراته الآن — أهّله لدورة لها شعبة، أو افتح شعبة لدوراته من «الشعب».
             </Inset>
           ) : (
             <ul className="mt-4 space-y-2">
@@ -291,10 +291,10 @@ export default function AssignByTrainer() {
               <UserPlus className="h-4 w-4 text-teal-light-ink" aria-hidden="true" /> أهّله لدورة أخرى
             </p>
             <p className="mt-1 text-read leading-6 text-muted-foreground">
-              تعرض الدورات التي لها شعب مفتوحة ولم يؤهّل لها — فالتأهيل هنا يتبع بإسناد لا يترك معلّقا.
+              تظهر الدورات التي لها شعب مفتوحة ولم يؤهّل لها، لتسنده بعد التأهيل مباشرة.
             </p>
             {qualifiable.length === 0 ? (
-              <p className="mt-2 text-read text-muted-foreground">لا دورة أخرى لها شعبة مفتوحة يصلح أن يؤهّل لها الآن.</p>
+              <p className="mt-2 text-read text-muted-foreground">لا دورة أخرى لها شعبة مفتوحة الآن.</p>
             ) : (
               <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_auto]">
                 <select aria-label="الدورة التي يؤهّل لها" value={qualifyFor}

@@ -239,8 +239,7 @@ export default function ApplicantStatus() {
                     (`notifyInfoRequested`) — فالردُّ عليها طريقٌ قائمٌ لا
                     يُبنى، ويصل إلى الصندوق الذي راسلناه منه. */}
                 <p className="mt-2 text-read leading-6 text-muted-foreground">
-                  أرسلنا لك هذا الطلب على بريدك — <b className="text-foreground">ردّ على رسالتنا</b> بما نحتاجه،
-                  ويصل فريقنا مباشرة.
+                  أرسلنا هذا الطلب إلى بريدك — <b className="text-foreground">ردّ على رسالتنا</b> بما نحتاجه.
                 </p>
               </Card>
             )}
@@ -295,7 +294,7 @@ export default function ApplicantStatus() {
                   </a>
                 ) : (
                   <p className="mt-1 text-read leading-6 text-muted-foreground">
-                    أرسل Calendly تفاصيل الاجتماع وخياري إعادة الجدولة والإلغاء إلى بريدك.
+                    أرسل Calendly إلى بريدك تفاصيل الاجتماع ورابط تغيير الموعد أو إلغائه.
                   </p>
                 )}
                 {/* وما يُعمل به قبل الموعد — تحت الخبر لا فوقَه */}

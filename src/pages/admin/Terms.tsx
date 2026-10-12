@@ -221,8 +221,8 @@ export default function Terms() {
           </h2>
           <p className="mt-1 text-read leading-6 text-muted-foreground">
             {gate.gate.open
-              ? "التسجيل مفتوح: الشراء يمضي بشروط الشعبة ونافذة فصلها كما هي."
-              : "التسجيل موقوف: من ينقر «ادفع» يرى الرسالة أدناه ويطلب بريده — ولا يلمس علم شعبة ولا نافذة فصل."}
+              ? "التسجيل مفتوح: الشراء يتمّ حسب شروط الشعبة ونافذة فصلها."
+              : "التسجيل موقوف: من ينقر «ادفع» يرى الرسالة أدناه ويترك بريده. ولا تتغيّر الشعب ولا نوافذ الفصول."}
           </p>
 
           <div className="mt-3 grid gap-3 sm:grid-cols-[auto_1fr] sm:items-end">
@@ -273,7 +273,7 @@ export default function Terms() {
       <Panel as="section" className="mb-6">
         <h2 className="flex items-center gap-2 text-sm font-black"><CalendarPlus className="h-4 w-4 text-teal-light-ink" aria-hidden="true" /> موسم جديد</h2>
         <p className="mt-1 text-read leading-6 text-muted-foreground">
-          المواسم أربعة في السنة، وحدود كلّ منها ثابتة: موسم الشتاء نوفمبر إلى يناير، وهكذا. اختر السنة والموسم — والتواريخ تحسب.
+          أربعة مواسم في السنة بحدود ثابتة (الشتاء: نوفمبر إلى يناير). اختر السنة والموسم، وتحسب التواريخ تلقائيّا.
         </p>
         <div className="mt-3 grid gap-3 sm:grid-cols-[auto_1fr_auto] sm:items-end">
           <label>
@@ -308,10 +308,9 @@ export default function Terms() {
               يُشتقّ من تاريخ البدء حين تُعتمَد خطّتُه. فتسميتُه هنا تضع حدودا
               مبدئيّةً لما لم يحدّد مدرّبُه مدّتَه بعد — لا تفكّ حبسا. */}
           <p className="mt-1 text-read leading-6 text-muted-foreground">
-            الشعبة بلا فصل <b className="text-foreground">لم تفتح بعد</b> — لا معطوبة. ومدرّبها لا ينتظر التسمية:
-            يحدّد مدّتها بنفسه ويجدول داخلها، ويشتقّ فصلها من تاريخ بدئها حين تعتمد خطّته. وتسميته هنا
-            تضع لها حدودا مبدئيّة حتّى ذلك الحين.
-            {terms !== null && terms.length === 0 && " وأنشئ موسما أوّلا — لا فصل يسمّى به بعد."}
+            الشعبة بلا فصل <b className="text-foreground">لم تفتح بعد</b>، وليست معطوبة. يحدّد مدرّبها مدّتها، ويحدّد
+            فصلها من تاريخ البدء عند اعتماد خطّته. واختيار الفصل هنا يضع حدودا مبدئيّة حتّى ذلك الحين.
+            {terms !== null && terms.length === 0 && " أنشئ موسما أوّلا."}
           </p>
           <ul className="mt-4 space-y-3">
             {termless.map((c) => (
@@ -361,7 +360,7 @@ export default function Terms() {
       {terms === null ? (
         <div className="grid place-items-center py-16"><Loader2 className="h-7 w-7 animate-spin text-muted-foreground/50" aria-label="جار التحميل" /></div>
       ) : terms.length === 0 ? (
-        <Panel as="p" className="py-10 text-center text-read text-muted-foreground">لا مواسم بعد — أنشئ أوّلها أعلاه، فيصير للدورات موعد يعلن.</Panel>
+        <Panel as="p" className="py-10 text-center text-read text-muted-foreground">لا مواسم بعد — أنشئ أوّلها أعلاه.</Panel>
       ) : (
         <div className="space-y-5">
           {listed.map((t) => {
@@ -414,7 +413,7 @@ export default function Terms() {
                 {/* ② نافذةُ التسجيل */}
                 <Card as="section" className="mt-4">
                   <h3 className="text-read font-black">نافذة التسجيل</h3>
-                  <p className="mt-1 text-read leading-6 text-muted-foreground">بلا نافذة يبقى التسجيل مفتوحا ما دامت شعبة مفتوحة. وبها يعلن الموعد وينتظر.</p>
+                  <p className="mt-1 text-read leading-6 text-muted-foreground">بلا نافذة يبقى التسجيل مفتوحا ما دامت الشعبة مفتوحة. ومعها يعلن الموعد وينتظر المسجّلون.</p>
                   <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
                     <label>
                       <span className="mb-1.5 block text-read font-bold text-muted-foreground">يفتح</span>
@@ -432,7 +431,7 @@ export default function Terms() {
                 <Card as="section" className="mt-3">
                   <h3 className="text-read font-black">توزيع شعب الموسم</h3>
                   <p className="mt-1 text-read leading-6 text-muted-foreground">
-                    لكلّ دورة منشورة بسعر شعبة في أسبوعها وشهرها من الموسم، بلا تزاحم بين دورات المسار الواحد. المعاينة لا تفتح شيئا — والتطبيق يفتح.
+                    شعبة لكل دورة منشورة لها سعر، موزّعة على أسابيع الموسم بلا تزاحم في المسار الواحد. المعاينة لا تفتح شيئا، والتطبيق يفتح.
                   </p>
                   <div className="mt-3 flex flex-wrap gap-2">
                     <Button tone="secondary" disabled={busy !== null} onClick={() => preview(t)}><Play className="h-3.5 w-3.5" /> عاين التوزيع</Button>

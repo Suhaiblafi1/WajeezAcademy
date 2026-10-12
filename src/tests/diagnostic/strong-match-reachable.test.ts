@@ -194,7 +194,7 @@ describe('٣٤ · الرقم شيء والدرجة شيء آخر', () => {
       'الترجيح الذاتيّ عدّ قياسا في الرقم المعروض').toBe(1)
 
     const card = read('src/pages/diagnostic/ResultPlanCards.tsx')
-    expect(card).toContain('تسمح المنصّة بقياسها')
+    expect(card).toContain('مهارة يمكن قياسها')
     expect(card).toMatch(/basis\.measured/)
     const vm = read('src/application/diagnostic/view-model.ts')
     expect(vm).toContain('evidence_basis')

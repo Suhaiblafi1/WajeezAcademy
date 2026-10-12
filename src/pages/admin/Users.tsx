@@ -296,8 +296,8 @@ export default function Users() {
         <Card tone="warn" className="mb-5">
           <h3 className="text-sm font-black text-gold-ink">حساب جديد بدوره</h3>
           <p className="mt-1 text-read leading-6 text-muted-foreground">
-            لا كلمة مرور تختار هنا: يصله بريد يشرح دوره وما يفتحه له، ويعيّن كلمته بنفسه من رابط صالح <b>{MAIL_LINK_WINDOW_AR}</b>.
-            ويبقى «مدعوّا» حتّى يدخل، فلا يحسب فريقا عاملا قبل ذلك.
+            لا تختار كلمة مرور هنا: يصله بريد فيه رابط صالح <b>{MAIL_LINK_WINDOW_AR}</b> ليعيّن كلمته بنفسه.
+            ويبقى «مدعوّا» حتّى يدخل.
           </p>
           <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_1fr_12rem_auto]">
             <input
@@ -345,7 +345,7 @@ export default function Users() {
             <summary className="cursor-pointer text-fine font-bold text-gold-ink">أو ادع فريقا كاملا بدفعة واحدة</summary>
             <p className="mt-2 text-read leading-6 text-muted-foreground">
               سطر لكلّ شخص: <span dir="ltr" className="font-mono">name@example.com, الاسم الكامل</span> — بالدور المختار أعلاه.
-              وما يفشل من الأسطر يقال وحده، فلا تتوقّف الدفعة عند أوّل خطأ.
+              والسطر الخاطئ لا يوقف الباقي.
             </p>
             <textarea
               value={bulk} onChange={(e) => setBulk(e.target.value)} rows={4}
@@ -607,12 +607,12 @@ export default function Users() {
                         <div>
                           <p className="text-sm font-black">صلاحيات {perms.user.displayName}</p>
                           <p className="mt-0.5 text-read leading-relaxed text-muted-foreground">
-                            الدور حزمة، وهذا استثناء لشخصه: منح زائد عليه، أو منع ينزع منه وحده. والمنع أعلى من الدور والمنح معا.
+                            استثناء لهذا الشخص فوق دوره: منح إضافيّ أو منع. والمنع يغلب الدور والمنح.
                           </p>
                           {/* لا تفويضَ في العلوّ: من لا يعلو رتبةَ صاحبه لا يمسّ شيئا — ويُقال قبل المحاولة */}
                           {perms.rank.actor <= perms.rank.target && (
                             <Inset as="p" className="mt-2 border-[#FABC05]/40 bg-[#FABC05]/10 px-3 py-2 text-read font-bold leading-6 text-[#FABC05]">
-                              لا تدار إلّا صلاحيات من هو أقلّ منك رتبة — هذا الحساب في رتبتك أو فوقها.
+                              لا يمكنك تعديل صلاحيات هذا الحساب — رتبته مثل رتبتك أو أعلى.
                             </Inset>
                           )}
                         </div>
@@ -689,7 +689,7 @@ export default function Users() {
                       </div>
 
                       <p className="mt-3 border-t border-white/8 pt-3 text-read leading-relaxed text-muted-foreground">
-                        كلّ منح ومنع يقيّد في سجلّ التدقيق باسمك وسببه، وتبطل جلسات صاحبه فورا — فلا يعمل بصلاحية نزعت ولا ينتظر ليعمل بما منح.
+                        كل منح ومنع يسجّل باسمك وسببه، وتنتهي جلسات صاحبه فورا ليسري التغيير.
                       </p>
                     </>
                   )}
@@ -717,8 +717,7 @@ export default function Users() {
                   {u.roles.some((r) => r.id === "learner") && !rolePick.includes("learner") && (
                     <Inset as="p" className="mt-3 flex items-start gap-2 border-[#FABC05]/40 bg-[#FABC05]/10 px-3 py-2.5 text-read font-bold leading-6 text-[#FABC05]">
                       <ShieldOff className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                      بنزع «متعلّم» تغلق بوابة التعلّم عن هذا الحساب: لا شعبه ولا نواتجه
-                      ولا شهاداته. وما اشتراه يبقى محفوظا ويعود بإعادة الدور.
+                      نزع «متعلّم» يغلق بوابة التعلّم عن الحساب. وما اشتراه يبقى محفوظا ويعود بإعادة الدور.
                     </Inset>
                   )}
                   <Button tone="confirm" size="sm" disabled={busy || rolePick.length === 0}
@@ -796,7 +795,7 @@ export default function Users() {
           )}
 
           {preview.deletable > 0 && (
-            <p>ولا يمحى سجلّ من هنا: من حمل شيئا ردّ ولم يحذف قسرا — والمحو بالسجلّ يبقى حسابا حسابا بسبب يكتب.</p>
+            <p>الحساب الذي له سجلّ لا يحذف هنا. لمحوه مع سجلّه افتحه وحده واذكر السبب.</p>
           )}
         </ConfirmAction>
       )}
@@ -818,8 +817,8 @@ export default function Users() {
             );
           }}
         >
-          <p><b className="text-foreground">ما يفتحه هذا:</b> إصدار الشهادات. الشهادة تنسب إلى شخص باسمه، فلا تصدر لبريد لم يثبت أنّه له — وهذا الحاجز يبقى صارما حتّى مع تعطّل قناة البريد.</p>
-          <p>والشراء وطلب التسجيل لا يحتاجان هذا: هما يمرّان أصلا حين لا تكون قناة البريد موصولة، فالحاجز لا يصير قفلا بلا مفتاح.</p>
+          <p><b className="text-foreground">ما يفتحه هذا:</b> إصدار الشهادات. لا تصدر شهادة لبريد غير موثّق، حتّى لو تعطّل البريد.</p>
+          <p>أمّا الشراء وطلب التسجيل فلا يحتاجان التوثيق.</p>
           <p><span dir="ltr" className="font-mono text-muted-foreground">{confirming.user.email}</span></p>
           <p>ويسجّل في أثر الحساب: من وثّق، ومتى، وبأيّ سبب.</p>
         </ConfirmAction>
@@ -840,7 +839,7 @@ export default function Users() {
               "أرشف الحساب — أغلق وأبطلت جلساته، وسجلّاته كما هي");
           }}
         >
-          <p><b className="text-foreground">الأرشفة ليست حذفا:</b> الحساب يبقى بسجلّه كلّه — تسجيلاته وفواتيره وشهاداته — ولا يعود يدخل، وتبطل جلساته ودعواته القائمة فورا.</p>
+          <p><b className="text-foreground">الأرشفة ليست حذفا:</b> يبقى الحساب بكل سجلّه، لكنّه لا يدخل، وتلغى جلساته ودعواته فورا.</p>
           <p>وتراجع بإعادة التنشيط من تبويب «مؤرشفون» متى شئت.</p>
         </ConfirmAction>
       )}
@@ -860,7 +859,7 @@ export default function Users() {
         >
           <p>الحذف النهائيّ <b className="text-foreground">لا رجعة فيه</b>: يزال الصفّ من القاعدة.</p>
           <p className="font-mono text-muted-foreground" dir="ltr">{confirming.user.email}</p>
-          <p>وإن كان للحساب سجلّ (تسجيل أو طلب أو فاتورة) فسيرفض الخادم الحذف ويقول ما فيه — ولك بعدها خيار المحو بالسجلّ. والأرشفة هي الفعل الموصى به لمن غادر.</p>
+          <p>إن كان للحساب سجلّ (تسجيل أو طلب أو فاتورة) يرفض الحذف، ويبقى لك المحو بالسجلّ. ولمن غادر ننصح بالأرشفة.</p>
         </ConfirmAction>
       )}
 
