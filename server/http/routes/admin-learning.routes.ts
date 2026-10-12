@@ -303,6 +303,12 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
     schema: { tags: ['admin-cohorts'], summary: 'الخطط المنتظرة كلّها حزمة واحدة للمراجعة' },
   }, async (req, reply) => sendZip(reply, await bundles.allPending(req.auth!.userId)))
 
+  /* والخططُ المفتوحةُ كلُّها — ومنها ما عند المدرّبين، وما فعلوه بالتعديلات (١٢ أكتوبر ٢٠٢٦، `allOpen`) */
+  app.get('/api/admin/cohort-plans/open/review-bundle', {
+    preHandler: requirePermission('cohort.plan.approve'),
+    schema: { tags: ['admin-cohorts'], summary: 'الخطط المفتوحة كلّها — ومنها ما عند المدرّبين — حزمة واحدة بقرارات المدرّبين' },
+  }, async (req, reply) => sendZip(reply, await bundles.allOpen(req.auth!.userId)))
+
   /* ═══ وما بقي بعد الاعتماد الأخير (٣ أكتوبر ٢٠٢٦) ═══
      شعبُ مدرّب هذه الشعبة المعتمَدةُ التي لم تُفتح، ونواقصُ فتح كلٍّ، وظهورُه العامّ —
      للّوح الذي يظهر حيث فُعِّل (`TrainerPlanReview`). يقرؤه من يعتمد الخطط؛ والفتحُ

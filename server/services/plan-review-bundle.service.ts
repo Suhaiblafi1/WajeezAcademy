@@ -26,11 +26,12 @@
 import JSZip from 'jszip'
 import type { PrismaClient } from '@prisma/client'
 import { CohortPlanService } from './cohort-plan.service'
+import { PlanEditService } from './plan-edit.service'
 import { getObject, getObjectMeta } from './object-store'
 import { recordAudit } from './audit'
 import { publicSiteUrl } from './notification.service'
 import {
-  bundleFiles, reviewMarkdown, safeName, type BundleFile, type ReviewBundleInput, type ReviewSession,
+  bundleFiles, DECISIONS_MD_NAME, decisionsMarkdown, reviewMarkdown, safeName, type BundleFile, type ReviewBundleInput, type ReviewSession,
 } from '../../src/application/trainer/plan-review-bundle'
 import { zonedDay } from '../../src/application/trainer/cohort-period'
 
@@ -54,10 +55,12 @@ interface Budget { used: number }
 export class PlanReviewBundleService {
   private prisma: PrismaClient
   private plans: CohortPlanService
+  private edits: PlanEditService
 
   constructor(prisma: PrismaClient) {
     this.prisma = prisma
     this.plans = new CohortPlanService(prisma)
+    this.edits = new PlanEditService(prisma)
   }
 
   /** خطّةُ شعبةٍ واحدة — أو `null` إن لم يبدأ مدرّبُها خطّةً بعد */
@@ -91,6 +94,45 @@ export class PlanReviewBundleService {
     zip.file('فهرس.md', `${index.join('\n')}\n`)
     if (included.length) await this.audit(actorId, included, true)
     return { fileName: `خطط-تنتظر-الاعتماد-${zonedDay(now)}.zip`, zip: await this.generate(zip), cohortIds: included }
+  }
+
+  /* ═══ والخططُ المفتوحةُ كلُّها — ومنها ما عند المدرّبين (١٢ أكتوبر ٢٠٢٦) ═══
+     «طبّق ذلك على كلّ خطّةٍ أرسلتُها إلى المدرّبين» (صاحب المنصّة). وحزمةُ المنتظِرة لا تحمل ما رُدّ إلى
+     مدرّبه — وهو أكثرُ ما وصلته التعديلات. فهذه آخرُ خطّةٍ لكلّ شعبةٍ في يد مدرّبها أو بانتظار القرار،
+     بحالها في الفهرس، وما فعله المدرّبُ بالتعديلات في مجلّد كلٍّ منها. */
+  async allOpen(actorId: string, now = new Date()): Promise<ReviewBundle> {
+    const rows = await this.prisma.cohortDeliveryPlan.findMany({
+      where: {
+        status: { in: [...OPEN_PLAN_STATUSES] }, trainerId: { not: null },
+        trainer: { is: { userId: { not: null } } }, cohort: { status: { not: 'cancelled' } },
+      },
+      orderBy: [{ createdAt: 'desc' }],
+      select: { cohortId: true },
+    })
+    const cohortIds = [...new Set(rows.map((r) => r.cohortId))]
+    const zip = new JSZip()
+    const budget: Budget = { used: 0 }
+    const index: string[] = [`# الخطط المفتوحة — ${zonedDay(now)}`, '', 'ومنها ما رددته إلى مدرّبه. وفي مجلّد كلّ خطّة ما فعله المدرّب بالتعديلات المقترحة.', '']
+    const added: { cohortId: string; trainerName: string; cohortTitle: string; status: string }[] = []
+    for (const cohortId of cohortIds) {
+      const plan = await this.plans.latestForCohort(cohortId)
+      if (!plan || !(OPEN_PLAN_STATUSES as readonly string[]).includes(plan.status)) continue
+      added.push({ cohortId, trainerName: plan.trainerName ?? 'مدرّب', cohortTitle: plan.cohortTitle, status: plan.status })
+    }
+    added.sort((a, b) => a.trainerName.localeCompare(b.trainerName, 'ar') || a.cohortTitle.localeCompare(b.cohortTitle, 'ar'))
+    const included: string[] = []
+    let n = 0
+    for (const a of added) {
+      n += 1
+      const folder = await this.addPlan(zip, a.cohortId, `${String(n).padStart(2, '0')}. ${a.trainerName}`, budget, now)
+      if (!folder) continue
+      included.push(a.cohortId)
+      index.push(`${n}. **${a.trainerName}** — ${a.cohortTitle} · ${OPEN_STATUS_AR[a.status] ?? a.status} → \`${folder}/${PLAN_MD_NAME}\``)
+    }
+    if (included.length === 0) index.push('لا خطّة مفتوحة الآن.')
+    zip.file('فهرس.md', `${index.join('\n')}\n`)
+    if (included.length) await this.audit(actorId, included, true)
+    return { fileName: `الخطط-المفتوحة-${zonedDay(now)}.zip`, zip: await this.generate(zip), cohortIds: included }
   }
 
   /** يضيف خطّةً إلى الحزمة في مجلّدها، ويُعيد اسمَ المجلّد — أو `null` بلا خطّة */
@@ -154,6 +196,23 @@ export class PlanReviewBundleService {
     }
     zip.file(`${folder}/${PLAN_MD_NAME}`, reviewMarkdown(input, files, skipped))
     zip.file(`${folder}/plan.json`, JSON.stringify(plan, null, 2))
+    /* وما فعله المدرّبُ بالتعديلات — مقروءا، وبالأصل في `edits.json` */
+    const [views, raw] = await Promise.all([
+      this.edits.forCohort(cohortId),
+      this.prisma.planEditSuggestion.findMany({
+        where: { planId: plan.id, status: { not: 'withdrawn' } },
+        orderBy: [{ createdAt: 'asc' }, { seq: 'asc' }],
+        select: { id: true, batchId: true, seq: true, kind: true, step: true, required: true, reasonAr: true, status: true, noteAr: true, edit: true, before: true, createdAt: true, decidedAt: true, reviewedAt: true },
+      }),
+    ])
+    zip.file(`${folder}/${DECISIONS_MD_NAME}`, decisionsMarkdown(plan.cohortTitle, plan.trainerName, views.map((v) => ({
+      titleAr: v.view.titleAr, stepAr: v.view.stepAr, status: v.status, required: v.required, reasonAr: v.reasonAr, noteAr: v.noteAr,
+    }))))
+    const viewOf = new Map(views.map((v) => [v.id, v]))
+    zip.file(`${folder}/edits.json`, JSON.stringify(raw.map((r) => ({
+      ...r, titleAr: viewOf.get(r.id)?.view.titleAr ?? null, rows: viewOf.get(r.id)?.view.rows ?? null,
+      stale: viewOf.get(r.id)?.stale ?? null, goneAr: viewOf.get(r.id)?.goneAr ?? null,
+    })), null, 2))
     return folder
   }
 
@@ -182,6 +241,12 @@ export class PlanReviewBundleService {
       })
     }
   }
+}
+
+/** الخطّةُ المفتوحة: في يد مدرّبها أو بانتظار القرار */
+const OPEN_PLAN_STATUSES = ['draft', 'submitted', 'changes_requested'] as const
+const OPEN_STATUS_AR: Record<string, string> = {
+  submitted: 'تنتظر اعتمادك', changes_requested: 'عند المدرّب — رددتها بتعديلات', draft: 'مسودة عند المدرّب',
 }
 
 const mb = (bytes: number) => `${Math.round((bytes / (1024 * 1024)) * 10) / 10}MB`

@@ -49,6 +49,12 @@
   وحدَها تبقى. والتعليقاتُ ليست منه. ولا يُمسّ نصُّ عقدٍ موقَّعٍ بنصّه. وما يطابق نصّا حُفظ قبل القرار
   يمرّ بـ`plainAr` (`src/application/text/plain-ar.ts`).
 
+- **ما يُطلب من المدرّب بطاقةُ «قبل/بعد» يقبلها أو يرفضها — لا طلبَ يعمله بنفسه.** قرارُ صاحب المنصّة
+  (١٢ أكتوبر ٢٠٢٦): «we make the suggestion as before and after so he accept or reject.. for all trainers
+  the same.. i don't need any suggestions that would ask him to do something himself». فكلُّ تعديلٍ نراه —
+  نصٌّ أو مهمّةٌ أو موعدٌ أو لقاءٌ أو عنوانُ شعبةٍ أو كرّاسة — نكتبه نحن بطاقةً جاهزة، ولا يُكتب في تقريرٍ أو
+  ملاحظةٍ «عدّل كذا بنفسك». وما لا تحمله البطاقاتُ بعدُ يُبنى له بابُها، لا يُحال على المدرّب.
+
 - **Claude replies in English.** Decision of the platform owner (7 September
   2026). This governs **conversation only** — chat replies, explanations,
   questions. It does **not** change what is written into the repository:

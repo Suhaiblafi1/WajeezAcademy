@@ -41,6 +41,7 @@ import WorkHeader from "@/components/admin/WorkHeader";
 import { revealRow } from "@/components/admin/reveal";
 import TrainerPlanReview, { type PlanOutcome } from "@/components/admin/TrainerPlanReview";
 import { PlanEditsBulkUpload, PlanEditsDedupeAll } from "@/components/PlanEdits";
+import { BUNDLE_SCOPES, type BundleScope } from "@/application/trainer/review-bundle-scopes";
 import { ReviewReportsBulkUpload } from "@/components/ReviewReports";
 import { useRealSession } from "@/services/session";
 import { courseLineNeeded, prepNoteAr, sharedPrepNote, type PrepFlags } from "@/application/trainer/plan-decision";
@@ -114,11 +115,14 @@ export default function PendingPlans() {
      مجلّدُها في ZIP واحد بترتيب الطابور، وفي رأسه فهرس (`plan-review-bundle.service.ts`).
      والزرُّ للطابور كلِّه وإن كان البحثُ أو المدرّبُ مصفّى — يُقال ذلك بجانبه. */
   const [bundle, setBundle] = useState<{ busy: boolean; msg: string }>({ busy: false, msg: "" });
-  const downloadAll = async () => {
+  /* ═══ وحزمةٌ ثانيةٌ للخطط المفتوحة كلِّها — ومنها ما عند المدرّبين (١٢ أكتوبر ٢٠٢٦) ═══
+     «طبّق ذلك على كلّ خطّةٍ أرسلتُها إلى المدرّبين» (صاحب المنصّة) — وحزمةُ المنتظِرة لا تحملها. والزرّان
+     معا بما يقع بكلٍّ: المنتظِرةُ وحدَها، أو المفتوحةُ كلُّها بما فعله المدرّبون بالتعديلات (`allOpen`). */
+  const downloadAll = async (scope: BundleScope = "pending") => {
     if (bundle.busy) return;
     setBundle({ busy: true, msg: "" });
     try {
-      const name = await apiDownload("/api/admin/cohort-plans/pending/review-bundle", "خطط-تنتظر-الاعتماد.zip");
+      const name = await apiDownload(BUNDLE_SCOPES[scope].path, BUNDLE_SCOPES[scope].fileName);
       setBundle({ busy: false, msg: `نزّلت «${name}» — ولم يتغيّر في أيّ خطّة شيء.` });
     } catch (e) {
       setBundle({ busy: false, msg: e instanceof ApiError ? e.message : "تعذّر التنزيل" });
@@ -201,14 +205,22 @@ export default function PendingPlans() {
         افتح الخطّة لتقرأ منهجها كاملا، ثمّ «اعتمدها» أو «اطلب تعديلات». ولا يفتح تسجيل الشعبة قبل اعتماد خطّتها.
       </p>
 
-      {rows !== null && rows.length > 0 && (
+      {rows !== null && (
         <Inset className="mb-4 flex flex-wrap items-center justify-between gap-3 px-4 py-3">
-          <p className="max-w-2xl text-read leading-6 text-muted-foreground">
-            للمراجعة خارج المنصّة: ملفّ مضغوط فيه كل الخطط المنتظرة ({plansAr(rows.length)}) بمناهجها وملفّاتها.
-            {(trainerFilter || q) && " ويشمل ما أخفته التصفية."}
-          </p>
-          <Button size="sm" tone="secondary" icon={Download} disabled={bundle.busy} onClick={() => void downloadAll()}>
-            {bundle.busy ? "يجهّز التنزيل…" : "نزّل الخطط كلّها للمراجعة"}
+          {rows.length > 0 && (
+            <>
+              <p className="max-w-2xl text-read leading-6 text-muted-foreground">
+                للمراجعة خارج المنصّة: ملفّ مضغوط فيه كل الخطط المنتظرة ({plansAr(rows.length)}) بمناهجها وملفّاتها.
+                {(trainerFilter || q) && " ويشمل ما أخفته التصفية."}
+              </p>
+              <Button size="sm" tone="secondary" icon={Download} disabled={bundle.busy} onClick={() => void downloadAll("pending")}>
+                {bundle.busy ? "يجهّز التنزيل…" : "نزّل الخطط كلّها للمراجعة"}
+              </Button>
+            </>
+          )}
+          <p className="max-w-2xl text-read leading-6 text-muted-foreground">{BUNDLE_SCOPES.open.whatAr}</p>
+          <Button size="sm" tone="secondary" icon={Download} disabled={bundle.busy} onClick={() => void downloadAll("open")}>
+            {bundle.busy ? "يجهّز التنزيل…" : BUNDLE_SCOPES.open.labelAr}
           </Button>
           {bundle.msg && <p className="w-full text-read font-bold text-teal-light-ink" role="status">{bundle.msg}</p>}
         </Inset>
