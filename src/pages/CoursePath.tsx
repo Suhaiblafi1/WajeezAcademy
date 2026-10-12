@@ -24,6 +24,7 @@ import Modal from "@/components/Modal";
 import BuyPanel from "@/components/BuyPanel";
 import { couponFieldCls } from "@/components/FormKit";
 import CohortPicker from "@/components/CohortPicker";
+import CourseInterestForm from "@/components/CourseInterestForm";
 import { useRealSession } from "@/services/session";
 import CourseTitle from "@/components/CourseTitle";
 import { usePublishedContent } from "@/services/public-content";
@@ -511,6 +512,10 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                       }}
                       compact
                     />
+                    {/* ولا شعبةَ لها: «أبلغني» لمن جاء يريدها — بريدٌ واحدٌ بلا حساب (١٢ أكتوبر ٢٠٢٦) */}
+                    {pricesLoaded && options.length === 0 && (
+                      <CourseInterestForm courseId={c.id} email={session?.email ?? ""} />
+                    )}
                   </div>
                 </Card>
               );

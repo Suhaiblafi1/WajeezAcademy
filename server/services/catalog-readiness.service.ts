@@ -21,6 +21,7 @@ import type { PrismaClient } from '@prisma/client'
 import { recordAudit } from './audit'
 import { safeNotify } from './notification.service'
 import { cohortAcceptsRegistration, PLAN_GATE_SELECT, TERM_WINDOW_SELECT } from './registration-window'
+import { CourseInterestService } from './course-interest.service'
 
 /** السعةُ المقترحةُ لشعبةٍ تُفتح — يملؤها لوحُ ما بعد الاعتماد (`TrainerNextSteps`) */
 export const DEFAULT_CAPACITY = 20
@@ -126,6 +127,9 @@ export async function notifyIfPurchasable(prisma: PrismaClient, cohortId: string
   })
   if (!cohort || !['open', 'full'].includes(cohort.status)) return { notified: 0 }
   if (!cohortAcceptsRegistration(cohort).open) return { notified: 0 }
+  /* ومن ترك بريدَه للدورة من صفحتها العامّة — بلا حساب (١٢ أكتوبر ٢٠٢٦). والبريدُ
+     ينتظر بابَ الموسم إن كان مغلقا: العلّةُ في `course-interest.service.ts` */
+  await new CourseInterestService(prisma).notifyCourse(cohort.courseId)
   return notifyPlanWaiters(prisma, [cohort.courseId])
 }
 

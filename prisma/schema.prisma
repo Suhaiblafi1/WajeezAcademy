@@ -4395,6 +4395,29 @@ model RegistrationInterest {
   @@index([seasonKey, notifiedAt])
 }
 
+/// بريدُ من أراد دورةً لا شعبةَ مفتوحةً لها بعد — «أبلغني» في صفحتها العامّة (١٢ أكتوبر ٢٠٢٦).
+///
+/// ولمَ جدولٌ غيرُ `RegistrationInterest`: ذاك ينتظر **فتحَ باب الموسم** للمنصّة كلِّها،
+/// وهذا ينتظر **شعبةً لدورةٍ بعينها** — وعدان مختلفان، وموافقتان مختلفتان. ومنه يُقرأ
+/// الطلبُ على الدورات بلا شعبة في لوحة الإدارة، بجانب من ينتظرها في خطّته.
+///
+/// والمفتاحُ `(email, courseId)`. ومن أُبلغ ثمّ عاد يطلبها ثانيةً يعود منتظرا (`notifiedAt`
+/// يُفرَّغ): أُبلغ بشعبةٍ فاتته، وطلبُه الثاني طلبٌ جديد.
+model CourseInterest {
+  id         String    @id @default(uuid()) @db.Uuid
+  email      String
+  courseId   String
+  /// نصُّ ما وافق عليه حين تركه — رسالةٌ واحدةٌ عند فتح شعبةٍ لها
+  consentAr  String
+  /// متى أُبلغ — و`null` تعني «ما زال ينتظر»
+  notifiedAt DateTime?
+  createdAt  DateTime  @default(now())
+  lastSeenAt DateTime  @default(now())
+
+  @@unique([email, courseId])
+  @@index([courseId, notifiedAt])
+}
+
 /// ═══ «التسويق» في بوّابة المدرّب (٢٩ سبتمبر ٢٠٢٦) ═══
 ///
 /// قرارُ صاحب المنصّة: قسمٌ يرفع فيه المدرّبُ رابطَ فيديو يعرّف فيه بنفسه

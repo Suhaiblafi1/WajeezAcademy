@@ -146,6 +146,7 @@ const PHRASES: Record<string, string> = {
   'registration.season.close': 'إيقاف التسجيل حتّى يفتح باب الموسم',
   'registration.season.open': 'فتح باب التسجيل للموسم',
   'registration.season.notify': 'إبلاغ من ترك بريده أنّ الباب فتح',
+  'course.interest.notify': 'إبلاغ من ترك بريده لدورة أنّ شعبتها فتحت',
   /* فعلٌ واحدٌ لفاعلَين: تنقله الإدارةُ بيدها، وينقله التقويمُ حين تمضي
      الأشهرُ (حمولتُه `byCalendar`) — والفاعلُ في الأثر يفرّق بينهما. */
   'term.status': 'نقل حالة فصل دراسيّ',
