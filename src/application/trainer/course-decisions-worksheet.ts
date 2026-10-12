@@ -59,15 +59,15 @@ export interface WorksheetRow {
 
 /** كيف تُملأ — مكتوبةٌ في الورقة نفسِها، فلا يحتاج من يملؤها شاشةً أخرى */
 export const WORKSHEET_HOW_TO_AR: readonly string[] = [
-  'لكلّ اقتراحٍ قرارٌ واحدٌ في «verdict»، وما يلزمه بجانبه:',
-  '«link» مع «courseId» — نسخةٌ من رمزٍ قائم.',
-  '«became_course» مع «courseId» — صار دورةً في الكتالوج، والرمزُ يكون قد نُشر قبلها.',
-  '«ask» مع «questionAr» — سؤالٌ لصاحبه، خمسةُ أحرفٍ فأكثر.',
-  '«reject» مع «noteAr» — ردٌّ بسببٍ يقرؤه صاحبه، خمسةُ أحرفٍ فأكثر.',
-  '«titleAr» و«summaryAr» في البند تصحيحٌ للنصّ إن أُريد — والنصُّ الحاليّ في «context».',
-  '«qualify» لكلّ مدرّب: رموزٌ يُؤهَّل لها — وما في «context.qualified» مؤهَّلٌ له من قبل.',
-  'وما لا قرارَ فيه يُحذف بندُه، ومن لا قرارَ له يُحذف كلُّه. و«context» يُقرأ ولا يُطبَّق.',
-  'ثمّ تُرفع في «دوراتٌ مقترحة» ← «طبّق قراراتٍ من ملفّ»: تُعرض خطواتُها قبل أن تُطبَّق.',
+  'لكلّ اقتراح قرار واحد في «verdict»، وما يلزمه بجانبه:',
+  '«link» مع «courseId» — نسخة من رمز قائم.',
+  '«became_course» مع «courseId» — صار دورة في الكتالوج، والرمز يكون قد نشر قبلها.',
+  '«ask» مع «questionAr» — سؤال لصاحبه، خمسة أحرف فأكثر.',
+  '«reject» مع «noteAr» — ردّ بسبب يقرؤه صاحبه، خمسة أحرف فأكثر.',
+  '«titleAr» و«summaryAr» في البند تصحيح للنصّ إن أريد — والنصّ الحاليّ في «context».',
+  '«qualify» لكلّ مدرّب: رموز يؤهّل لها — وما في «context.qualified» مؤهّل له من قبل.',
+  'وما لا قرار فيه يحذف بنده، ومن لا قرار له يحذف كلّه. و«context» يقرأ ولا يطبّق.',
+  'ثمّ ترفع في «دورات مقترحة» ← «طبّق قرارات من ملفّ»: تعرض خطواتها قبل أن تطبّق.',
 ]
 
 const isOpen = (status: string) => OPEN_PROPOSAL_STATUSES.includes(status)
@@ -89,7 +89,7 @@ export function buildDecisionsWorksheet(rows: readonly WorksheetRow[], now: Date
   return {
     kind: DECISIONS_KIND,
     version: DECISIONS_VERSION,
-    titleAr: `قراراتُ الدورات المقترحة — ${now.toISOString().slice(0, 10)}`,
+    titleAr: `قرارات الدورات المقترحة — ${now.toISOString().slice(0, 10)}`,
     context: {
       exportedAt: now.toISOString(),
       openProposals: open.length,

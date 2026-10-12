@@ -48,9 +48,9 @@ export default function ResetPassword() {
         {done ? (
           <div className="text-center">
             <ShieldCheck className="mx-auto h-12 w-12 text-emerald-400" />
-            <h1 className="mt-5 text-2xl font-black">عُيّنت كلمة المرور</h1>
+            <h1 className="mt-5 text-2xl font-black">عيّنت كلمة المرور</h1>
             <p className="mt-3 text-sm leading-7 text-muted-foreground">
-              أُخرجت من كل الأجهزة — سجّل الدخول بكلمتك الجديدة.
+              أخرجت من كل الأجهزة — سجّل الدخول بكلمتك الجديدة.
             </p>
             <Button tone="confirm" onClick={() => navigate("/auth")} className="mt-8">
               تسجيل الدخول
@@ -90,10 +90,10 @@ export default function ResetPassword() {
                 </Card>
               )}
               <Button tone="confirm" type="submit" disabled={!ready} className="w-full disabled:cursor-not-allowed">
-                {busy ? "يُعيَّن…" : "تعيين كلمة المرور"}
+                {busy ? "يعيّن…" : "تعيين كلمة المرور"}
               </Button>
               <p className="text-center text-read text-muted-foreground">
-                تعيين كلمة جديدة يُخرجك من كل الأجهزة. · <Link to="/auth" className="text-teal-light-ink hover:underline">تسجيل الدخول</Link>
+                تعيين كلمة جديدة يخرجك من كل الأجهزة. · <Link to="/auth" className="text-teal-light-ink hover:underline">تسجيل الدخول</Link>
               </p>
             </form>
           </>

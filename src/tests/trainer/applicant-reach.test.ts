@@ -17,8 +17,20 @@
    البريدُ في فرع القرار، وإلى أين يشير الزرّ، وأبقي الزرُّ المسحوب. فنصٌّ
    يُبدَّل لا يُحمّر شيئا، وفعلٌ يسقط يُحمّره. */
 
-import { describe, expect, it } from 'vitest'
-import { readFileSync } from 'node:fs'
+import { describe, expect as vexpect, it } from 'vitest'
+/* ما يُفحص بلا تشكيلٍ إعرابيّ — بعضُ ما يُقرأ هنا بعد «اللغة البيضاء» وبعضُه (الخادمُ والعقودُ والتشخيص) قبلها */
+const plainDeep = (v: unknown): unknown =>
+  typeof v === 'string' ? plainAr(v) : Array.isArray(v) ? v.map(plainDeep)
+    : v && typeof v === 'object' && Object.getPrototypeOf(v) === Object.prototype ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, plainDeep(x)])) : v
+const expect = Object.assign((v: unknown, m?: string) => vexpect(plainDeep(v), m), vexpect) as typeof vexpect
+import { readFileSync as readRaw } from 'node:fs'
+import { plainAr } from '@/application/text/plain-ar'
+/* ما يُقرأ من الملفّات بلا تشكيلٍ إعرابيّ — بعضُها بعد «اللغة البيضاء» وبعضُها (العقود والخادم) قبلها */
+function readFileSync(p: Parameters<typeof readRaw>[0]): Buffer
+function readFileSync(p: Parameters<typeof readRaw>[0], e: BufferEncoding | { encoding: BufferEncoding }): string
+function readFileSync(p: Parameters<typeof readRaw>[0], e?: BufferEncoding | { encoding: BufferEncoding }): string | Buffer {
+  return e === undefined ? readRaw(p) : plainAr(String(readRaw(p, e)))
+}
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { demoRequestMail, noShowFollowupMail } from '../../../server/services/trainer-decision-mail'
@@ -43,8 +55,8 @@ const noComments = (src: string) => src
 const REF = 'WJ-TR-2026-00211'
 const NAME = 'صهيب الخوالدة'
 
-describe('① طلبُ الدرس التجريبيّ يصل بريدا لا حالةً وحدَها', () => {
-  it('⚠️ والقرارُ يُرسلها — لا يقلب الحالةَ ويسكت', () => {
+describe('① طلب الدرس التجريبيّ يصل بريدا لا حالة وحدها', () => {
+  it('⚠️ والقرار يرسلها — لا يقلب الحالة ويسكت', () => {
     /* العطبُ الأوّل: `request_demo` لم يكن له فرعٌ يُرسل. والفحصُ على متن
        الدالّة نفسِه لا على وجودها — دالّةٌ تُكتب ولا تُرسل هي الصمتُ عينُه.
 
@@ -59,116 +71,116 @@ describe('① طلبُ الدرس التجريبيّ يصل بريدا لا حا
        — فلو أُعيد إليه النقلُ يوما عاد الوسمُ الذي حُذف من بابٍ خلفيّ. */
     const src = code('server/services/trainer-review.service.ts')
     const i = src.indexOf('async requestDemo(')
-    expect(i, 'لا دالّةَ تطلب الدرسَ — الطلبُ صار صمتا').toBeGreaterThan(-1)
+    expect(i, 'لا دالّة تطلب الدرس — الطلب صار صمتا').toBeGreaterThan(-1)
     const body = src.slice(i, i + 1600)
-    expect(body, 'الدالّةُ لا تبني الرسالة').toContain('demoRequestMail(')
-    expect(body, 'الرسالةُ تُبنى ولا تُرسَل').toContain('sendDirectEmail(')
-    expect(body, 'الطلبُ لا يُكتب في الأثر — فلا تُقرأ شارتُه على صفّه')
+    expect(body, 'الدالّة لا تبني الرسالة').toContain('demoRequestMail(')
+    expect(body, 'الرسالة تبنى ولا ترسل').toContain('sendDirectEmail(')
+    expect(body, 'الطلب لا يكتب في الأثر — فلا تقرأ شارته على صفّه')
       .toContain("action: 'trainer.demo.request'")
-    expect(body, 'الطلبُ ينقل الحالةَ — وهو مراسَلةٌ لا قرار').not.toContain('transition(')
+    expect(body, 'الطلب ينقل الحالة — وهو مراسلة لا قرار').not.toContain('transition(')
   })
 
-  it('⚠️ وتقول كيف يُرسل الدرسَ — وإلّا فهي طلبٌ بلا طريق', () => {
+  it('⚠️ وتقول كيف يرسل الدرس — وإلّا فهي طلب بلا طريق', () => {
     /* لا بابَ رفعٍ في المنصّة لهذا. فرسالةٌ تطلب درسا ولا تقول أين يضعه
        تترك صاحبَها حيث كان: يعرف أنّنا ننتظر، ولا يعرف ماذا يفعل. */
     const body = JSON.stringify(demoRequestMail({ fullName: NAME, reference: REF }).doc)
-    expect(body, 'لا يُقال له كيف يُرسل').toMatch(/ردَّ على هذه الرسالة|ردّ على هذه الرسالة/)
+    expect(body, 'لا يقال له كيف يرسل').toMatch(/ردّ على هذه الرسالة|ردّ على هذه الرسالة/)
   })
 
-  it('⚠️ وملاحظةُ المراجع تسافر معها — موضوعا ومدّةً وشرطا', () => {
-    const asked = 'درسٌ في تجويد سورة الفاتحة، عشر دقائق'
+  it('⚠️ وملاحظة المراجع تسافر معها — موضوعا ومدّة وشرطا', () => {
+    const asked = 'درس في تجويد سورة الفاتحة، عشر دقائق'
     const body = JSON.stringify(demoRequestMail({ fullName: NAME, reference: REF, noteAr: asked }).doc)
-    expect(body, 'ما طلبه المراجعُ لم يخرج إليه').toContain(asked)
+    expect(body, 'ما طلبه المراجع لم يخرج إليه').toContain(asked)
   })
 
-  it('وبلا ملاحظةٍ تقول شيئا محدّدا — لا «درسا» مجرّدة', () => {
+  it('وبلا ملاحظة تقول شيئا محدّدا — لا «درسا» مجرّدة', () => {
     const body = JSON.stringify(demoRequestMail({ fullName: NAME, reference: REF }).doc)
-    expect(body, 'لا مدّةَ ولا موضوعَ حين لا يكتب المراجعُ شيئا').toMatch(/دقائق|موضوعا/)
+    expect(body, 'لا مدّة ولا موضوع حين لا يكتب المراجع شيئا').toMatch(/دقائق|موضوعا/)
   })
 
-  it('⚠️ ولا نجومَ في متنها — القالبُ يُهرّب ولا يترجم `**`', () => {
+  it('⚠️ ولا نجوم في متنها — القالب يهرّب ولا يترجم `**`', () => {
     /* `richHtml` تُهرّب النصَّ ولا تحوّل `**` إلى خطٍّ عريض، فما كُتب بها
        يصل إلى القارئ نجوما. والنقضُ: تُكتب نجمتان فيسقط هذا. */
     const doc = demoRequestMail({ fullName: NAME, reference: REF, noteAr: 'شيء' }).doc
     for (const b of doc.blocks) {
       const text = (b as { text?: unknown }).text
       if (typeof text === 'string') {
-        expect(text, `نجومٌ تصل القارئَ كما هي: «${text.slice(0, 40)}…»`).not.toContain('**')
+        expect(text, `نجوم تصل القارئ كما هي: «${text.slice(0, 40)}…»`).not.toContain('**')
       }
     }
   })
 })
 
-describe('② «عدّل طلبك» سُحب — والمسوّدةُ وحدَها تُكمَل', () => {
+describe('② «عدّل طلبك» سحب — والمسوّدة وحدها تكمل', () => {
   const page = () => code('src/pages/ApplicantStatus.tsx')
 
-  it('⚠️ لا زرَّ تعديلٍ لطلبٍ أُرسل', () => {
+  it('⚠️ لا زرّ تعديل لطلب أرسل', () => {
     /* والفحصُ على الشرط: لو عاد `EDITABLE_STATUSES.includes` لَعاد الزرُّ
        لكلّ حالةٍ حيّة — وهو ما سُحب. */
     const src = page()
-    expect(src, 'عاد الزرُّ إلى كلّ حالةٍ قابلةٍ للتعديل')
+    expect(src, 'عاد الزرّ إلى كلّ حالة قابلة للتعديل')
       .not.toMatch(/EDITABLE_STATUSES\.includes\(mine\.status\)/)
-    expect(noComments(src), 'ما زال يُعرض نصُّ «عدّل طلبك» زرّا').not.toMatch(/>\s*عدّل طلبك/)
+    expect(noComments(src), 'ما زال يعرض نصّ «عدّل طلبك» زرّا').not.toMatch(/>\s*عدّل طلبك/)
   })
 
-  it('والمسوّدةُ تُكمَل — فنصفُ طلبٍ لا يُترك بلا باب', () => {
+  it('والمسوّدة تكمل — فنصف طلب لا يترك بلا باب', () => {
     const src = page()
     const i = src.indexOf('mine.status === "draft" && (')
-    expect(i, 'سُحب بابُ المسوّدة معه — ولا طريقَ لها إلى الإرسال').toBeGreaterThan(-1)
-    expect(src.slice(i, i + 400), 'لا زرَّ إكمالٍ في فرع المسوّدة').toContain('أكمل طلبك')
+    expect(i, 'سحب باب المسوّدة معه — ولا طريق لها إلى الإرسال').toBeGreaterThan(-1)
+    expect(src.slice(i, i + 400), 'لا زرّ إكمال في فرع المسوّدة').toContain('أكمل طلبك')
   })
 
-  it('⚠️ ومن طُلبت منه إضافةٌ لا يُحال إلى زرٍّ ليس هناك', () => {
+  it('⚠️ ومن طلبت منه إضافة لا يحال إلى زرّ ليس هناك', () => {
     /* أخطرُ ما يبقى بعد سحب زرّ: سطرٌ يقول «من الزرّ أعلاه». */
     const src = page()
     const i = src.indexOf('mine.status === "information_requested"')
-    expect(i, 'لا فرعَ لطلب المعلومات').toBeGreaterThan(-1)
+    expect(i, 'لا فرع لطلب المعلومات').toBeGreaterThan(-1)
     const block = src.slice(i, i + 1400)
-    expect(noComments(block), 'يُحيل إلى زرّ «عدّل طلبك» وقد سُحب').not.toMatch(/زرّ «عدّل طلبك»|الزرّ أعلاه/)
-    expect(block, 'لا يُقال له بأيّ طريقٍ يُجيب').toMatch(/ردَّ على رسالتنا|ردّ على رسالتنا/)
+    expect(noComments(block), 'يحيل إلى زرّ «عدّل طلبك» وقد سحب').not.toMatch(/زرّ «عدّل طلبك»|الزرّ أعلاه/)
+    expect(block, 'لا يقال له بأيّ طريق يجيب').toMatch(/ردّ على رسالتنا|ردّ على رسالتنا/)
   })
 
-  it('وإذنُ الخادم بالتعديل لم يُمَسّ — المسحوبُ زرٌّ لا صلاحيّة', () => {
+  it('وإذن الخادم بالتعديل لم يمسّ — المسحوب زرّ لا صلاحيّة', () => {
     /* لو سُحبت الحالةُ من `EDITABLE_STATUSES` لانحرف معها بابُ طلب
        المعلومات كلُّه (`info-request-reach`) — والمقصودُ الشاشةُ وحدَها. */
     const opts = code('src/application/trainer/application-options.ts')
     const block = /export const EDITABLE_STATUSES[^=]*=\s*\[([\s\S]*?)\]/.exec(opts)?.[1] ?? ''
-    expect(block, 'لم يُقرأ متنُ القائمة — تعطّل الفحص').not.toBe('')
-    expect(block, 'خرجت «طُلبت منه معلومات» من قائمة التعديل').toContain('information_requested')
+    expect(block, 'لم يقرأ متن القائمة — تعطّل الفحص').not.toBe('')
+    expect(block, 'خرجت «طلبت منه معلومات» من قائمة التعديل').toContain('information_requested')
   })
 })
 
-describe('③ شاشةُ ما بعد الإرسال — ما حُذف لا يعود', () => {
+describe('③ شاشة ما بعد الإرسال — ما حذف لا يعود', () => {
   const join = () => code('src/pages/JoinTrainer.tsx')
 
-  it('⚠️ لا قسمَ «وفي أثناء ذلك» — كان يُعيد ما فوقَه', () => {
-    expect(noComments(join()), 'عاد القسمُ الذي حُذف').not.toContain('وفي أثناء ذلك')
+  it('⚠️ لا قسم «وفي أثناء ذلك» — كان يعيد ما فوقه', () => {
+    expect(noComments(join()), 'عاد القسم الذي حذف').not.toContain('وفي أثناء ذلك')
   })
 
-  it('⚠️ وبطاقةُ الحساب زرٌّ بلا فقرةٍ تشرحه', () => {
+  it('⚠️ وبطاقة الحساب زرّ بلا فقرة تشرحه', () => {
     const src = join()
     const i = src.indexOf('to="/auth"')
-    expect(i, 'لا زرَّ دخولٍ في شاشة ما بعد الإرسال').toBeGreaterThan(-1)
-    expect(noComments(src), 'عاد العنوانُ والفقرةُ فوق الزرّ').not.toContain('تابع حالة طلبك من حسابك')
-    expect(src, 'عادت الفقرةُ التي تصف ما يراه بعد الدخول')
+    expect(i, 'لا زرّ دخول في شاشة ما بعد الإرسال').toBeGreaterThan(-1)
+    expect(noComments(src), 'عاد العنوان والفقرة فوق الزرّ').not.toContain('تابع حالة طلبك من حسابك')
+    expect(src, 'عادت الفقرة التي تصف ما يراه بعد الدخول')
       .not.toContain('سترى حالة طلبك في كل مرحلة')
   })
 
-  it('⚠️ وبطاقةُ التوثيق سطرٌ واحدٌ وفعلان — لا أربعُ فقرات', () => {
+  it('⚠️ وبطاقة التوثيق سطر واحد وفعلان — لا أربع فقرات', () => {
     const card = code('src/components/EmailVerifyStatus.tsx')
-    expect(noComments(card), 'عاد شرحُ أنّ البطاقة تتحدّث وحدَها').not.toContain('تتحدّث هذه البطاقةُ')
-    expect(noComments(card), 'عاد سطرُ مجلّد الرسائل غير المرغوبة').not.toContain('Spam')
+    expect(noComments(card), 'عاد شرح أنّ البطاقة تتحدّث وحدها').not.toContain('تتحدّث هذه البطاقة')
+    expect(noComments(card), 'عاد سطر مجلّد الرسائل غير المرغوبة').not.toContain('Spam')
     /* والفعلان يبقيان: هما عملٌ لا شرح، وحذفُهما يترك صاحبَه بلا طريق */
-    expect(card, 'سُحب زرُّ تحديث الحالة').toContain('وثّقتُ بريدي')
-    expect(card, 'سُحب زرُّ إعادة الإرسال').toContain('أعد الإرسال')
+    expect(card, 'سحب زرّ تحديث الحالة').toContain('وثّقت بريدي')
+    expect(card, 'سحب زرّ إعادة الإرسال').toContain('أعد الإرسال')
   })
 
-  it('⚠️ وصفحةُ الحالة مثلُها — «كل الصفحات المشابهة»', () => {
-    expect(noComments(code('src/pages/ApplicantStatus.tsx')), 'بقيت فقرةُ التوثيق الطويلةُ هنا')
-      .not.toContain('فعلى هذا البريد وحدَه نتواصل معك')
+  it('⚠️ وصفحة الحالة مثلها — «كل الصفحات المشابهة»', () => {
+    expect(noComments(code('src/pages/ApplicantStatus.tsx')), 'بقيت فقرة التوثيق الطويلة هنا')
+      .not.toContain('فعلى هذا البريد وحده نتواصل معك')
   })
 
-  it('ولم تُمَسّ بطاقةُ حجز الموعد — «لا تلمس ما يخصّ حجز الموعد»', () => {
+  it('ولم تمسّ بطاقة حجز الموعد — «لا تلمس ما يخصّ حجز الموعد»', () => {
     /* شرطُ صاحب المنصّة صراحةً: التقليمُ لا يطال الحجز، فبابُه مقفولٌ عند
        التقديم مفتوحٌ عند الدعوة — وذاك قرارٌ قائمٌ بذاته. */
     /* ═══ وتُعَدّ المركّباتُ لا يُبحث عن واحدة ═══
@@ -180,45 +192,45 @@ describe('③ شاشةُ ما بعد الإرسال — ما حُذف لا يع�
 
        فالمقيسُ العدد: من أسقط إحداهما أسقط الحارسَ معها. */
     const mounts = noComments(join()).match(/<BookInterview[\s/>]/g) ?? []
-    expect(mounts.length, 'سقطت بطاقةُ الحجز — أو إحدى موضعَيها — مع ما قُلّم').toBe(2)
+    expect(mounts.length, 'سقطت بطاقة الحجز — أو إحدى موضعيها — مع ما قلّم').toBe(2)
   })
 })
 
-describe('④ رسالةُ الاطمئنان تأخذه إلى التقويم مباشرةً', () => {
+describe('④ رسالة الاطمئنان تأخذه إلى التقويم مباشرة', () => {
   const invite = NO_SHOW_FOLLOWUPS.find((f) => f.ctaAr)!
   const base = {
     followup: invite, fullName: NAME, reference: REF,
-    bodyAr: 'أتمنّى أن تكون بخير.\n\nنحبّ أن نلتقيك في وقتٍ آخر.',
+    bodyAr: 'أتمنّى أن تكون بخير.\n\nنحبّ أن نلتقيك في وقت آخر.',
     statusUrl: 'https://x.test/join-trainer/status',
   }
   const ctaOf = (doc: { blocks: readonly unknown[] }) =>
     doc.blocks.find((b): b is { kind: 'cta'; href: string } =>
       typeof b === 'object' && b !== null && (b as { kind?: string }).kind === 'cta')
 
-  it('⚠️ الزرُّ إلى كلندلي حين يُمرَّر تقويمُه والحجزُ مفتوح', () => {
+  it('⚠️ الزرّ إلى كلندلي حين يمرّر تقويمه والحجز مفتوح', () => {
     const cta = ctaOf(noShowFollowupMail({
       ...base, paused: false, bookingUrl: 'https://calendly.com/hadeel-7/wajeez-academy?name=x',
     }).doc)
     expect(cta?.href, 'يردّه إلى حسابه بدل التقويم').toContain('calendly.com')
-    expect(cta?.href, 'يمرّ بصفحة الحالة — وهو حاجزٌ ثانٍ أمام من تخلّف مرّة')
+    expect(cta?.href, 'يمرّ بصفحة الحالة — وهو حاجز ثان أمام من تخلّف مرّة')
       .not.toContain('/status')
   })
 
-  it('⚠️ ويسقط إلى صفحة الحالة بلا رابط — لا زرٌّ بلا وجهة', () => {
+  it('⚠️ ويسقط إلى صفحة الحالة بلا رابط — لا زرّ بلا وجهة', () => {
     expect(ctaOf(noShowFollowupMail({ ...base, paused: false }).doc)?.href).toBe(base.statusUrl)
   })
 
-  it('⚠️ والوقفُ يردّه إليها وإن مُرِّر الرابط', () => {
+  it('⚠️ والوقف يردّه إليها وإن مرّر الرابط', () => {
     const cta = ctaOf(noShowFollowupMail({
       ...base, paused: true, bookingUrl: 'https://calendly.com/hadeel-7/wajeez-academy',
     }).doc)
     expect(cta?.href).toBe(base.statusUrl)
   })
 
-  it('⚠️ والخدمةُ تمرّر التقويمَ بحاضريه — وإلّا بقي الزرُّ على حاله', () => {
+  it('⚠️ والخدمة تمرّر التقويم بحاضريه — وإلّا بقي الزرّ على حاله', () => {
     const src = code('server/services/trainer-review.service.ts')
     const i = src.indexOf('noShowFollowupMail({')
-    expect(i, 'لا استدعاءَ لرسالة المتابعة').toBeGreaterThan(-1)
-    expect(src.slice(i, i + 420), 'الرسالةُ تُبنى بلا تقويم').toMatch(/bookingUrl:\s*await this\.bookingLink/)
+    expect(i, 'لا استدعاء لرسالة المتابعة').toBeGreaterThan(-1)
+    expect(src.slice(i, i + 420), 'الرسالة تبنى بلا تقويم').toMatch(/bookingUrl:\s*await this\.bookingLink/)
   })
 })

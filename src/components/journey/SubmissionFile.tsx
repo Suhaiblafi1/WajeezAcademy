@@ -61,7 +61,7 @@ export function SubmissionFilePick({
 export function UploadProgress({ pct }: { pct: number }) {
   return (
     <div className="mt-2" role="status" aria-live="polite">
-      <p className="text-read text-muted-foreground">يُرفع الملف… {pct}% — لا تغلق الصفحة حتى يكتمل.</p>
+      <p className="text-read text-muted-foreground">يرفع الملف… {pct}% — لا تغلق الصفحة حتى يكتمل.</p>
       <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-white/10">
         <div className="h-full rounded-full bg-teal transition-[width]" style={{ width: `${pct}%` }} />
       </div>

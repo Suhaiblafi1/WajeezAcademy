@@ -14,7 +14,7 @@ export default function Auth() {
     <SiteShell>
       <SeoHead
         title="الدخول أو إنشاء حساب"
-        description="سجّل دخولك إلى أكاديمية وجيز أو أنشئ حسابك ليُحفظ تشخيصك ومسارك وشهاداتك في مكان واحد."
+        description="سجّل دخولك إلى أكاديمية وجيز أو أنشئ حسابك ليحفظ تشخيصك ومسارك وشهاداتك في مكان واحد."
         path="/auth"
         noindex
       />
@@ -44,18 +44,18 @@ export default function Auth() {
             وسقط «تصفّح المسارات» و«دورةٌ بعينها»: كلاهما في ترويسة الموقع
             على بُعد نقرةٍ، وليسا جوابا لسؤالِ الهويّة. */}
         <Card as="section" className="mx-auto mt-8 max-w-md">
-          <h2 className="text-sm font-black">أوّلُ مرّةٍ هنا؟</h2>
+          <h2 className="text-sm font-black">أوّل مرّة هنا؟</h2>
           <p className="mt-1 text-read leading-6 text-muted-foreground">
-            الحسابُ يحفظ ما تبدؤه — وبدايتُك تختلف باختلافك:
+            الحساب يحفظ ما تبدؤه — وبدايتك تختلف باختلافك:
           </p>
           <div className="mt-3 grid gap-2">
             <Inset as="a" interactive href="/#diagnostic" className="flex items-center gap-2.5 text-read leading-6">
               <Compass className="h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" />
-              <span><b className="text-foreground">إن كنت متعلّما</b> — ابدأ بالتشخيص المجّانيّ: يقيس مستواك ويقترح مسارَك</span>
+              <span><b className="text-foreground">إن كنت متعلّما</b> — ابدأ بالتشخيص المجّانيّ: يقيس مستواك ويقترح مسارك</span>
             </Inset>
             <Inset as={Link} interactive to="/join-trainer" className="flex items-center gap-2.5 text-read leading-6">
               <Presentation className="h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" />
-              <span><b className="text-foreground">إن كنت مدرّبا ولم تقدّم طلبَ الانضمام</b> — ابدأ من هنا</span>
+              <span><b className="text-foreground">إن كنت مدرّبا ولم تقدّم طلب الانضمام</b> — ابدأ من هنا</span>
             </Inset>
           </div>
         </Card>

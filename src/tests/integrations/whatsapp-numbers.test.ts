@@ -40,8 +40,8 @@ function walk(dir: string, out: string[] = []): string[] {
   return out
 }
 
-describe('تطبيعُ رقم واتساب', () => {
-  it('يجرّد ما لا يقبله wa.me: الزائدَ والصفرَين الدوليّين والفواصل', () => {
+describe('تطبيع رقم واتساب', () => {
+  it('يجرّد ما لا يقبله wa.me: الزائد والصفرين الدوليّين والفواصل', () => {
     expect(normalizeWhatsApp('+962 77 105 2222')).toBe('962771052222')
     expect(normalizeWhatsApp('00962771052222')).toBe('962771052222')
     expect(normalizeWhatsApp('962-77-105-2222')).toBe('962771052222')
@@ -57,34 +57,34 @@ describe('تطبيعُ رقم واتساب', () => {
   })
 })
 
-describe('الرجوعُ حين يخلو موضع', () => {
+describe('الرجوع حين يخلو موضع', () => {
   const FALLBACK = '962771052222'
 
-  it('موضعٌ مضبوطٌ يُقرأ رقمُه هو', () => {
+  it('موضع مضبوط يقرأ رقمه هو', () => {
     expect(whatsAppFor({ discount_proof: '962700000000' }, 'discount_proof', FALLBACK)).toBe('962700000000')
   })
 
-  it('وموضعٌ خالٍ يرجع إلى «مراسلة مستشار» قبل الرقم المدمج', () => {
+  it('وموضع خال يرجع إلى «مراسلة مستشار» قبل الرقم المدمج', () => {
     expect(whatsAppFor({ advisor: '962711111111' }, 'discount_proof', FALLBACK)).toBe('962711111111')
   })
 
-  it('ولا رقمَ أصلا يعني رابطا لا يُبنى — لا رابطا فارغا يُعرض', () => {
+  it('ولا رقم أصلا يعني رابطا لا يبنى — لا رابطا فارغا يعرض', () => {
     expect(whatsAppFor({}, 'advisor', '')).toBe('')
     expect(waHref({}, 'advisor', '', 'مرحبا')).toBeNull()
     expect(waHref({}, 'advisor', FALLBACK, 'مرحبا')).toBe(`https://wa.me/${FALLBACK}?text=${encodeURIComponent('مرحبا')}`)
   })
 })
 
-describe('بنيةُ الشاشات — لا رقمَ محبوسٌ في الشيفرة', () => {
+describe('بنية الشاشات — لا رقم محبوس في الشيفرة', () => {
   const files = walk(join(root, 'src'))
     .filter((p) => !p.endsWith('application/site/whatsapp.ts'))
 
-  it('لا ملفَّ يبني رابطَ wa.me بيده — كلُّها تمرّ بـwaHref', () => {
+  it('لا ملفّ يبني رابط wa.me بيده — كلّها تمرّ بـwaHref', () => {
     const offenders = files.filter((p) => /https:\/\/wa\.me\//.test(stripComments(readFileSync(p, 'utf8'))))
-    expect(offenders.map((p) => p.slice(root.length + 1)), 'رابطٌ مبنيٌّ بيدٍ يتجاوز أرقامَ الإدارة').toEqual([])
+    expect(offenders.map((p) => p.slice(root.length + 1)), 'رابط مبنيّ بيد يتجاوز أرقام الإدارة').toEqual([])
   })
 
-  it('ولا ملفَّ يقرأ CONTACT.whatsapp إلّا رجوعا يُمرَّر لـwaHref/whatsAppFor', () => {
+  it('ولا ملفّ يقرأ CONTACT.whatsapp إلّا رجوعا يمرّر لـwaHref/whatsAppFor', () => {
     const offenders: string[] = []
     for (const p of files) {
       const src = stripComments(readFileSync(p, 'utf8'))
@@ -94,34 +94,34 @@ describe('بنيةُ الشاشات — لا رقمَ محبوسٌ في الشي
         offenders.push(`${p.slice(root.length + 1)}: ${line.trim()}`)
       }
     }
-    expect(offenders, 'الرقمُ المدمج يُقرأ خارج سلسلة الرجوع').toEqual([])
+    expect(offenders, 'الرقم المدمج يقرأ خارج سلسلة الرجوع').toEqual([])
   })
 })
 
-describe('شاشةُ الإدارة والخادم', () => {
+describe('شاشة الإدارة والخادم', () => {
   const screen = stripComments(readFileSync(join(root, 'src/pages/admin/Integrations.tsx'), 'utf8'))
   const routes = stripComments(readFileSync(join(root, 'server/http/routes/integrations.routes.ts'), 'utf8'))
 
-  it('تُولَّد خانةٌ لكلّ موضعٍ من السجلّ — فموضعٌ جديدٌ سطرٌ واحدٌ لا شاشةٌ تُعدَّل', () => {
-    expect(screen, 'الخاناتُ مكتوبةٌ يدا لا مولَّدة').toMatch(/WHATSAPP_SPOTS\.map\(/)
+  it('تولّد خانة لكلّ موضع من السجلّ — فموضع جديد سطر واحد لا شاشة تعدّل', () => {
+    expect(screen, 'الخانات مكتوبة يدا لا مولّدة').toMatch(/WHATSAPP_SPOTS\.map\(/)
     expect(screen).toContain('/api/admin/integrations/whatsapp')
   })
 
-  it('والمساراتُ الثلاثةُ مسجَّلةٌ: قراءةٌ عامّةٌ وقراءةُ إدارةٍ وحفظٌ محروس', () => {
+  it('والمسارات الثلاثة مسجّلة: قراءة عامّة وقراءة إدارة وحفظ محروس', () => {
     expect(routes).toContain("app.get('/api/site/whatsapp'")
     expect(routes).toContain("app.get('/api/admin/integrations/whatsapp'")
     expect(routes).toContain("app.put('/api/admin/integrations/whatsapp'")
   })
 
-  it('والحفظُ خلف settings.manage — لا يُبدَّل رقمٌ عامٌّ بلا صلاحيّة', () => {
+  it('والحفظ خلف settings.manage — لا يبدّل رقم عامّ بلا صلاحيّة', () => {
     const put = routes.slice(routes.indexOf("app.put('/api/admin/integrations/whatsapp'"))
     expect(put.slice(0, 400)).toContain("requirePermission('settings.manage')")
   })
 
-  it('ولكلّ موضعٍ اسمٌ وأينَ يظهر — فمن يملأ الخانةَ يعرف ما يغيّر', () => {
+  it('ولكلّ موضع اسم وأين يظهر — فمن يملأ الخانة يعرف ما يغيّر', () => {
     expect(WHATSAPP_SPOTS.length).toBeGreaterThan(0)
     for (const sp of WHATSAPP_SPOTS) {
-      expect(sp.key, 'مفتاحٌ لاتينيٌّ قصيرٌ يُحفظ في JSON').toMatch(/^[a-z][a-z0-9_]*$/)
+      expect(sp.key, 'مفتاح لاتينيّ قصير يحفظ في JSON').toMatch(/^[a-z][a-z0-9_]*$/)
       expect(sp.labelAr.trim().length, `«${sp.key}» بلا اسم`).toBeGreaterThan(3)
       expect(sp.whereAr.trim().length, `«${sp.key}» لا يقول أين يظهر`).toBeGreaterThan(3)
     }

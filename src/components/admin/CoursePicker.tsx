@@ -31,7 +31,7 @@ import {
 import { staffControlCls, staffSelectCls } from '@/components/FormKit'
 
 export default function CoursePicker({
-  courses, value, onChange, id, labelAr = 'اختر الدورةَ القائمة…',
+  courses, value, onChange, id, labelAr = 'اختر الدورة القائمة…',
 }: {
   courses: readonly PickableCourse[]
   value: string
@@ -54,10 +54,10 @@ export default function CoursePicker({
           <select
             value={group}
             onChange={(e) => setGroup(e.target.value)}
-            aria-label="رشّحْ بالمجال أو المسار"
+            aria-label="رشّح بالمجال أو المسار"
             className={`${staffSelectCls} !w-auto min-w-[10rem] flex-1`}
           >
-            <option value={ALL_GROUPS}>كلُّ المجالات</option>
+            <option value={ALL_GROUPS}>كلّ المجالات</option>
             {groups.map((g) => <option key={g} value={g}>{g}</option>)}
           </select>
         )}
@@ -90,7 +90,7 @@ export default function CoursePicker({
         {shown.length === courses.length
           ? `${courses.length} دورة`
           : `${shown.length} من ${courses.length} دورة`}
-        {shown.length === 0 && ' — لا شيءَ يطابق، وسّعْ البحثَ أو غيّرِ المجال.'}
+        {shown.length === 0 && ' — لا شيء يطابق، وسّع البحث أو غيّر المجال.'}
       </p>
     </div>
   )

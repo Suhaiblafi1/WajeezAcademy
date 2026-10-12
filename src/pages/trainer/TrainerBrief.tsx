@@ -53,16 +53,16 @@ html[data-theme="light"] .guide-root.brief-root { --g-paper: 221 239 241; --g-ca
 .brief-tile { background: rgb(255 255 255 / .88); border-radius: .75rem; color: rgb(var(--g-dark-ink)); }
 .brief-pick { border-color: rgb(var(--g-amber)); box-shadow: 0 0 0 1px rgb(var(--g-amber)); }
 .brief-printonly { display: none; }
-/* رؤوسٌ أصغرُ من الدليل: ثلاثُ صفحاتٍ لا كتاب */
+/* رؤوس أصغر من الدليل: ثلاث صفحات لا كتاب */
 .brief-section h2.guide-h { font-size: 1.75rem; line-height: 1.35; }
 @media (min-width: 768px) { .brief-section h2.guide-h { font-size: 2rem; } }
 
 @page {
   size: A4; margin: 10mm 11mm 13mm; background: #DDEFF1;
-  @bottom-left { content: "التدريبُ مع أكاديمية وجيز  |  " counter(page); font-size: 8pt; color: #5b6b68; }
+  @bottom-left { content: "التدريب مع أكاديمية وجيز  |  " counter(page); font-size: 8pt; color: #5b6b68; }
 }
 @media print {
-  /* ثلاثُ ورقات: كلُّ ورقةٍ تبدأ صفحتَها، والحرفُ بحجمٍ يُقرأ، والعرضُ عرضُ الورقة */
+  /* ثلاث ورقات: كلّ ورقة تبدأ صفحتها، والحرف بحجم يقرأ، والعرض عرض الورقة */
   html { font-size: 9.8px !important; }
   .brief-sheet + .brief-sheet { break-before: page; }
   .brief-body { max-width: none !important; padding-inline: 0 !important; padding-bottom: 0 !important; }
@@ -74,14 +74,14 @@ html[data-theme="light"] .guide-root.brief-root { --g-paper: 221 239 241; --g-ca
   .brief-grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
   .brief-grid-5 { grid-template-columns: repeat(5, minmax(0, 1fr)) !important; }
   .brief-pay-card, .brief-step, .brief-fact, .brief-journey > li { break-inside: avoid; }
-  /* ولا يبقى رأسُ قسمٍ وحدَه في ذيل ورقة */
+  /* ولا يبقى رأس قسم وحده في ذيل ورقة */
   .brief-section > .relative { break-inside: avoid; break-after: avoid; }
   .brief-span { grid-column: 1 / -1 !important; }
-  /* وفراغٌ أضيقُ قليلا بين الكتل — فلا تنقسم ورقةٌ على بطاقتين */
+  /* وفراغ أضيق قليلا بين الكتل — فلا تنقسم ورقة على بطاقتين */
   .brief-fact, .brief-step, .brief-pay-card { padding-top: .6rem !important; padding-bottom: .6rem !important; }
   .brief-section .mt-7 { margin-top: 1.1rem !important; }
   .brief-section .mt-6 { margin-top: 1rem !important; }
-  /* والختامُ بلا أزراره — لا تُضغط على ورق — وفيه عنوانُ التقديم */
+  /* والختام بلا أزراره — لا تضغط على ورق — وفيه عنوان التقديم */
   .brief-end { margin-top: 1.4rem !important; border-radius: .5rem !important; }
   .brief-end > div { padding-top: 1.6rem !important; padding-bottom: 1.6rem !important; }
   .brief-printonly { display: block !important; }
@@ -189,7 +189,7 @@ function About() {
 }
 
 export default function TrainerBrief() {
-  const waLink = waHref(useWhatsAppNumbers(), "advisor", CONTACT.whatsapp, "مرحبا، قرأتُ صفحةَ «التدريب مع أكاديمية وجيز» وعندي سؤال:");
+  const waLink = waHref(useWhatsAppNumbers(), "advisor", CONTACT.whatsapp, "مرحبا، قرأت صفحة «التدريب مع أكاديمية وجيز» وعندي سؤال:");
   /* نصيحةُ موسم الشتاء — تسكت من نفسها حين يحلّ ديسمبر */
   const advice = useMemo(() => startAdvice(null, new Date().toISOString().slice(0, 10)) !== null, []);
   const nav = [...BRIEF_SECTIONS, PAY_SECTION, STEPS_SECTION];
@@ -203,7 +203,7 @@ export default function TrainerBrief() {
     <div dir="rtl" className="guide-root brief-root min-h-screen text-foreground">
       <SeoHead
         title={TRAINER_BRIEF_TITLE_AR}
-        description="لمن تدرّس، وماذا، وكيف ومتى، وما تُعِدّه أنت، وكيف تُحاسَب ويجري التعاقد — لمن دعوناه إلى التدريب معنا."
+        description="لمن تدرّس وماذا، ومتى وكيف، وما تعدّه، وكيف تحاسب ونتعاقد."
         path={TRAINER_BRIEF_PATH}
         noindex
       />
@@ -213,7 +213,7 @@ export default function TrainerBrief() {
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-5 py-2.5">
           <Link to="/" className="flex min-w-0 items-center gap-2">
             <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="h-9 w-9 shrink-0 object-contain" />
-            <span className="guide-h block truncate leading-6"><span className="hidden sm:inline">وجيز | </span>التدريبُ معنا</span>
+            <span className="guide-h block truncate leading-6"><span className="hidden sm:inline">وجيز | </span>التدريب معنا</span>
           </Link>
           <div className="flex shrink-0 items-center gap-2">
             <ThemeToggle />
@@ -228,16 +228,16 @@ export default function TrainerBrief() {
         <Pixels shape="v" hue="blush" size="2rem" className="absolute top-0 left-8 md:left-16" />
         <Pixels shape="stair" hue="amber" size="1.4rem" className="absolute bottom-0 right-0" />
         <div className="relative mx-auto max-w-5xl px-5 pb-10 pt-12 md:pt-14">
-          <span className="guide-pill" data-hue="amber">دعوةٌ للتدريب</span>
+          <span className="guide-pill" data-hue="amber">دعوة للتدريب</span>
           <h1 id="brief-title" className="mt-4 text-4xl font-black leading-tight md:text-5xl" style={{ color: "rgb(var(--g-dark-ink))" }}>
             {TRAINER_BRIEF_TITLE_AR}
           </h1>
           <p className="mt-4 max-w-2xl text-lg leading-9" style={{ color: "rgb(var(--g-dark-ink))" }}>
-            ثلاثُ صفحاتٍ تجيب عمّا يُسأل قبل القرار: من نحن، ولمن تدرّس، وماذا، وكيف ومتى، وما تُعِدّه أنت، وكيف تُحاسَب ويجري التعاقد.
+            ثلاث صفحات: من نحن، ولمن تدرّس وماذا، ومتى وكيف، وما تعدّه، وكيف تحاسب ونتعاقد.
           </p>
           <div className="mt-5 flex max-w-2xl items-start gap-3 rounded-xl bg-white/85 px-5 py-4 text-base leading-8" style={{ color: "rgb(var(--g-dark-ink))" }}>
             <Sparkles className="mt-1.5 h-5 w-5 shrink-0" aria-hidden="true" />
-            <p>وعدُنا لمن يتعلّم معنا: لا نقيس تعلّمك بما شاهدت، بل بما أنجزت وأثبتّ. والمدرّبُ من يقوده إلى ذلك — ولهذا لا يبدأ عندنا من صفحةٍ بيضاء.</p>
+            <p>وعدنا للمتعلّم: نقيس تعلّمه بما أنجز وأثبت، لا بما شاهد. والمدرّب يقوده إليه، ولا يبدأ من صفحة بيضاء.</p>
           </div>
           <ul className="brief-grid-4 mt-6 grid grid-cols-2 gap-3 md:grid-cols-4">
             {BRIEF_FACTS.map((f) => (
@@ -250,7 +250,7 @@ export default function TrainerBrief() {
           <div className="guide-noprint mt-6 flex flex-wrap items-center gap-3">
             <Button icon={Printer} onClick={() => window.print()}>اطبعها أو احفظها PDF</Button>
           </div>
-          <p className="mt-4 text-sm leading-7" style={{ color: "rgb(var(--g-dark-ink) / .8)" }}>حُدِّث في {BRIEF_UPDATED_AR}</p>
+          <p className="mt-4 text-sm leading-7" style={{ color: "rgb(var(--g-dark-ink) / .8)" }}>حدّث في {BRIEF_UPDATED_AR}</p>
         </div>
       </section>
       <div className="brief-body mx-auto max-w-5xl px-5">

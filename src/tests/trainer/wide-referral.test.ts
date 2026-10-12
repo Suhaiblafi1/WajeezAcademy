@@ -30,108 +30,108 @@ const code = (p: string) =>
 
 const MIGRATION = 'prisma/migrations/20260913140000_trainer_wide_referral/migration.sql'
 
-describe('① الرابطُ الواسعُ صفٌّ واحدٌ لا صفوف', () => {
-  it('و`cohortId` صار يقبل الفراغ — وإلّا فلا رابطَ واسعَ أصلا', () => {
+describe('① الرابط الواسع صفّ واحد لا صفوف', () => {
+  it('و`cohortId` صار يقبل الفراغ — وإلّا فلا رابط واسع أصلا', () => {
     const schema = code('prisma/schema.prisma')
     const model = schema.slice(schema.indexOf('model TrainerReferralLink'))
     const body = model.slice(0, model.indexOf('}'))
-    expect(body, 'الشعبةُ ما زالت إلزاميّة').toMatch(/cohortId\s+String\?/)
-    expect(body, 'العلاقةُ ما زالت إلزاميّة').toMatch(/cohort\s+Cohort\?/)
+    expect(body, 'الشعبة ما زالت إلزاميّة').toMatch(/cohortId\s+String\?/)
+    expect(body, 'العلاقة ما زالت إلزاميّة').toMatch(/cohort\s+Cohort\?/)
   })
 
-  it('وفرادتُه بفهرسٍ جزئيٍّ لا بـ`@@unique` — فالثاني لا يمنع تكرار الفراغ', () => {
+  it('وفرادته بفهرس جزئيّ لا بـ`@@unique` — فالثاني لا يمنع تكرار الفراغ', () => {
     const sql = raw(MIGRATION)
     /* الفحصُ على **بنية** الفهرس: فريدٌ، على `profileId`، بشرطِ الفراغ.
        فهرسٌ بلا `WHERE` يمنع رابطَ الشعبة الثاني للمدرّب نفسِه، وفهرسٌ بلا
        `UNIQUE` لا يمنع شيئا. */
     const idx = sql.slice(sql.indexOf('CREATE UNIQUE INDEX "TrainerReferralLink'))
-    expect(idx, 'لا فهرسَ فريدٌ للرابط الواسع').toContain('CREATE UNIQUE INDEX')
+    expect(idx, 'لا فهرس فريد للرابط الواسع').toContain('CREATE UNIQUE INDEX')
     expect(idx.slice(0, 300)).toMatch(/ON "TrainerReferralLink"\s*\(\s*"profileId"\s*\)/)
-    expect(idx.slice(0, 300), 'الفهرسُ غيرُ مشروطٍ بالفراغ — فيمنع روابطَ الشعب').toMatch(/WHERE\s+"cohortId"\s+IS\s+NULL/)
+    expect(idx.slice(0, 300), 'الفهرس غير مشروط بالفراغ — فيمنع روابط الشعب').toMatch(/WHERE\s+"cohortId"\s+IS\s+NULL/)
   })
 
-  it('والترحيلُ يرفع الإلزامَ عن العمود — وإلّا رفض PostgreSQL الصفَّ الواسع', () => {
+  it('والترحيل يرفع الإلزام عن العمود — وإلّا رفض PostgreSQL الصفّ الواسع', () => {
     expect(raw(MIGRATION)).toMatch(/ALTER TABLE "TrainerReferralLink" ALTER COLUMN "cohortId" DROP NOT NULL/)
   })
 
-  it('ومسارُه العامُّ عمودٌ فريدٌ على الملفّ — لا مشتقٌّ في كلّ نداء', () => {
+  it('ومساره العامّ عمود فريد على الملفّ — لا مشتقّ في كلّ نداء', () => {
     const schema = code('prisma/schema.prisma')
     const model = schema.slice(schema.indexOf('model TrainerProfile'))
-    expect(model.slice(0, model.indexOf('\n}')), 'لا عمودَ للمسار العامّ').toMatch(/publicSlug\s+String\?\s+@unique/)
+    expect(model.slice(0, model.indexOf('\n}')), 'لا عمود للمسار العامّ').toMatch(/publicSlug\s+String\?\s+@unique/)
     expect(raw(MIGRATION)).toMatch(/CREATE UNIQUE INDEX "TrainerProfile_publicSlug_key"/)
   })
 })
 
-describe('② الرابطُ الواسعُ يُقبل على ما يدرّبه صاحبُه وحدَه', () => {
+describe('② الرابط الواسع يقبل على ما يدرّبه صاحبه وحده', () => {
   const svc = code('server/services/referral.service.ts')
 
-  it('عند التسوية: يُقاطَع ما في السلّة بما يدرّبه — لا يُؤخذ أوّلُها', () => {
+  it('عند التسوية: يقاطع ما في السلّة بما يدرّبه — لا يؤخذ أوّلها', () => {
     const fn = svc.slice(svc.indexOf('async acceptAtCheckout'))
     const body = fn.slice(0, fn.indexOf('\n  }'))
-    expect(body, 'لا فرعَ للرابط الواسع').toMatch(/link\.cohortId === null/)
+    expect(body, 'لا فرع للرابط الواسع').toMatch(/link\.cohortId === null/)
     /* والقبولُ **مشتقٌّ من الإسناد**: استعلامُ `cohortTrainer` بـ`profileId`
        صاحبِ الرمز وبما في السلّة. وبلا هذا يصير الرمزُ الواسعُ أجرَ إحالةٍ
        على شعبةِ زميله. */
-    expect(body, 'القبولُ غيرُ مقيَّدٍ بإسناد صاحبِ الرمز').toMatch(
+    expect(body, 'القبول غير مقيّد بإسناد صاحب الرمز').toMatch(
       /cohortTrainer\.findMany\(\{[\s\S]{0,200}profileId: link\.profileId[\s\S]{0,200}cohortId: \{ in: cohortIds \}/,
     )
-    expect(body, 'لا يُهمَل الرمزُ حين لا يدرّب شيئا من السلّة').toMatch(/reason: 'not_his_cohort'/)
+    expect(body, 'لا يهمل الرمز حين لا يدرّب شيئا من السلّة').toMatch(/reason: 'not_his_cohort'/)
   })
 
-  it('وعند ختم التسجيل: الرمزُ الواسعُ لا يُختم إلّا على شعبةٍ يدرّبها', () => {
+  it('وعند ختم التسجيل: الرمز الواسع لا يختم إلّا على شعبة يدرّبها', () => {
     const enr = code('server/services/enrollment.service.ts')
     const fn = enr.slice(enr.indexOf('private async referralFor'))
     const body = fn.slice(0, fn.indexOf('\n  }'))
-    expect(body, 'رمزُ الشعبة لا يُطابَق بشعبتها').toMatch(/link\.cohortId === cohortId/)
-    expect(body, 'الواسعُ يُختم بلا فحصِ إسناد').toMatch(
+    expect(body, 'رمز الشعبة لا يطابق بشعبتها').toMatch(/link\.cohortId === cohortId/)
+    expect(body, 'الواسع يختم بلا فحص إسناد').toMatch(
       /cohortTrainer\.findFirst\(\{[\s\S]{0,160}cohortId[\s\S]{0,160}profileId: link\.profileId/,
     )
-    expect(body, 'الختمُ لا يتوقّف على الإسناد').toMatch(/teaches \?/)
+    expect(body, 'الختم لا يتوقّف على الإسناد').toMatch(/teaches \?/)
   })
 
-  it('والعدُّ على ختمِ التسجيل لا على النقرات — والمنسحبُ خارجَه', () => {
+  it('والعدّ على ختم التسجيل لا على النقرات — والمنسحب خارجه', () => {
     const fn = svc.slice(svc.indexOf('async reachOf'))
     const body = fn.slice(0, fn.indexOf('\n  }'))
     expect(body).toMatch(/enrollment\.count\(\{[\s\S]{0,120}referralProfileId: profile\.id/)
-    expect(body, 'المنسحبُ يُعدّ مسجَّلا').toMatch(/status: \{ not: 'dropped' \}/)
+    expect(body, 'المنسحب يعدّ مسجّلا').toMatch(/status: \{ not: 'dropped' \}/)
   })
 })
 
-describe('③ صفحةُ المدرّب العامّةُ خلف بوّابةِ الظهور', () => {
+describe('③ صفحة المدرّب العامّة خلف بوّابة الظهور', () => {
   const cat = code('server/services/public-catalog.service.ts')
   const fn = cat.slice(cat.indexOf('async trainerPublicPage'))
   const body = fn.slice(0, fn.indexOf('\n  }'))
 
-  it('لا تُعرض لمن لم يُعتمد نشرُ ملفّه — والبوّابةُ المشتركةُ لا شرطٌ مكتوبٌ بيدها', () => {
+  it('لا تعرض لمن لم يعتمد نشر ملفّه — والبوّابة المشتركة لا شرط مكتوب بيدها', () => {
     /* الفحصُ على **الاستيراد والاستعمال** معا: شرطٌ منسوخٌ بيدٍ يمرّ اليومَ
        ويفترق غدا عن `trainer-visibility.ts` — وهي موضعُ القاعدة الواحد. */
-    expect(cat, 'البوّابةُ المشتركةُ غيرُ مستوردة').toMatch(/import \{[^}]*PUBLIC_TRAINER_WHERE[^}]*\} from '\.\/trainer-visibility'/)
-    expect(body, 'الصفحةُ لا تمرّ بالبوّابة').toMatch(/\.\.\.PUBLIC_TRAINER_WHERE/)
+    expect(cat, 'البوّابة المشتركة غير مستوردة').toMatch(/import \{[^}]*PUBLIC_TRAINER_WHERE[^}]*\} from '\.\/trainer-visibility'/)
+    expect(body, 'الصفحة لا تمرّ بالبوّابة').toMatch(/\.\.\.PUBLIC_TRAINER_WHERE/)
   })
 
-  it('والمسارُ الذي لا مدرّبَ له غيرُ موجودٍ — لا موجودٌ فارغ', () => {
+  it('والمسار الذي لا مدرّب له غير موجود — لا موجود فارغ', () => {
     expect(body).toMatch(/if \(!profile\) throw new AuthError\('not_found'/)
   })
 
-  it('وشعبُها من الاستعلام المشترك لا من نسخةٍ ثانية', () => {
+  it('وشعبها من الاستعلام المشترك لا من نسخة ثانية', () => {
     /* نسختان تفترقان: عدُّ المقاعد هنا يجمع المحجوزَ مع المسجَّل، وأوّلُ من
        ينسخ ينسى. فالترشيحُ وسيطٌ والجسدُ واحد. */
-    expect(body, 'الصفحةُ تستعلم الشعبَ بنفسها').not.toMatch(/cohort\.findMany/)
+    expect(body, 'الصفحة تستعلم الشعب بنفسها').not.toMatch(/cohort\.findMany/)
     expect(body).toMatch(/this\.openCohorts\(\{ trainers: \{ some: \{ profileId: profile\.id \} \} \}\)/)
     const list = cat.slice(cat.indexOf('async cohorts()'))
-    expect(list.slice(0, list.indexOf('\n  }')), 'القائمةُ العامّةُ لم تعد تستعمل المشترك').toMatch(/return this\.openCohorts\(\{\}\)/)
+    expect(list.slice(0, list.indexOf('\n  }')), 'القائمة العامّة لم تعد تستعمل المشترك').toMatch(/return this\.openCohorts\(\{\}\)/)
   })
 
-  it('والبابان مفتوحان: مسارُ الخادم ومسارُ الواجهة', () => {
+  it('والبابان مفتوحان: مسار الخادم ومسار الواجهة', () => {
     expect(code('server/http/routes/public.routes.ts')).toContain("'/api/public/trainers/:slug'")
     expect(code('src/App.tsx')).toMatch(/<Route path="\/t\/:slug"/)
   })
 })
 
-describe('البابُ يُنسب لصاحبه، واللوحةُ تقول كم دخل منه', () => {
-  it('الصفحةُ تحفظ رمزَ صاحبها في الجلسة — بالمفتاح نفسِه الذي يقرؤه الشراء', () => {
+describe('الباب ينسب لصاحبه، واللوحة تقول كم دخل منه', () => {
+  it('الصفحة تحفظ رمز صاحبها في الجلسة — بالمفتاح نفسه الذي يقرؤه الشراء', () => {
     const page = code('src/pages/TrainerPublic.tsx')
-    expect(page, 'مفتاحٌ مكتوبٌ بيدٍ لا المشترك').toMatch(/import \{ REFERRAL_KEY \} from "@\/application\/commerce\/referral"/)
+    expect(page, 'مفتاح مكتوب بيد لا المشترك').toMatch(/import \{ REFERRAL_KEY \} from "@\/application\/commerce\/referral"/)
     expect(page).toMatch(/sessionStorage\.setItem\(REFERRAL_KEY, code\)/)
     /* والرمزُ من الخادم لا من العنوان: زائرٌ وصل بلا `?ref=` يُنسب لصاحب
        الصفحة كذلك — وهو بابُه. */
@@ -142,19 +142,19 @@ describe('البابُ يُنسب لصاحبه، واللوحةُ تقول كم 
      والمحروسُ هو هو — الرابطُ والرقمُ من نداءٍ واحد، والبوّابةُ تُقال لا
      تُخفى — وموضعُه وحدَه تبدّل. ويحرس **النقلَ نفسَه** ملفٌّ آخر
      (`referral-tab.test.ts`) كيلا تعود نسخةٌ ثانيةٌ في الرئيسية. */
-  it('وصفحةُ «دعوتي» تعرض الرابطَ والرقمَ معا من نداءٍ واحد', () => {
+  it('وصفحة «دعوتي» تعرض الرابط والرقم معا من نداء واحد', () => {
     const home = code('src/pages/trainer/Referral.tsx')
     expect(home).toContain('/api/trainer/me/referral')
-    expect(home, 'الرقمُ محسوبٌ في الواجهة لا مأخوذٌ من ختم التسجيل').toMatch(/referral\.registered/)
+    expect(home, 'الرقم محسوب في الواجهة لا مأخوذ من ختم التسجيل').toMatch(/referral\.registered/)
     /* والنسخُ صار دالّةً واحدةً بمفتاح (`copy`) منذ نزلت روابطُ الشعب
        بجانبه (١٥ سبتمبر ٢٠٢٦): رايةُ «نُسخ» كانت واحدةً، فلو بقيت أضاءت
        تحت كلّ زرٍّ معا ولم يدرِ الناسخُ أيَّها نسخ. والمحروسُ هو هو —
        رابطُ الملفّ الكامل يُنسخ بنقرة. */
-    expect(home, 'لا رابطَ يُنسخ').toMatch(/copy\("wide", referral\.url\)/)
-    expect(home, 'النسخُ لا يبلغ الحافظة').toMatch(/writeText\(url\)/)
+    expect(home, 'لا رابط ينسخ').toMatch(/copy\("wide", referral\.url\)/)
+    expect(home, 'النسخ لا يبلغ الحافظة').toMatch(/writeText\(url\)/)
   })
 
-  it('وتقول متى لا يعمل الرابطُ بدل أن تعطيه رابطا يردّ ٤٠٤', () => {
+  it('وتقول متى لا يعمل الرابط بدل أن تعطيه رابطا يردّ ٤٠٤', () => {
     const home = code('src/pages/trainer/Referral.tsx')
     expect(home).toMatch(/!referral\.publicReady/)
     const svc = code('server/services/referral.service.ts')

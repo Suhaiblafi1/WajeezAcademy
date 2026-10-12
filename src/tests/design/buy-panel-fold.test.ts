@@ -20,26 +20,26 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '../../..')
 const code = readFileSync(join(root, 'src/components/BuyPanel.tsx'), 'utf8')
   .replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '')
 
-describe('لوحُ الشراء · البنودُ تُطوى ولا يُطوى تحذير', () => {
-  it('القائمةُ مطويّةٌ في الأصل — وإلّا فلا معنى للتغيير', () => {
-    expect(code, 'لا حالةَ طيٍّ أصلا').toMatch(/useState\(false\)/)
-    expect(code, 'القائمةُ لا تُخفى').toMatch(/hidden=\{!listShown\}/)
+describe('لوح الشراء · البنود تطوى ولا يطوى تحذير', () => {
+  it('القائمة مطويّة في الأصل — وإلّا فلا معنى للتغيير', () => {
+    expect(code, 'لا حالة طيّ أصلا').toMatch(/useState\(false\)/)
+    expect(code, 'القائمة لا تخفى').toMatch(/hidden=\{!listShown\}/)
   })
 
-  it('⚠️ والظهورُ مقسورٌ حين يُستبعَد بند — لا يُترك لنقرة المشتري', () => {
+  it('⚠️ والظهور مقسور حين يستبعد بند — لا يترك لنقرة المشتري', () => {
     /* الفحصُ على البنية: `listShown` تجمع اختيارَ المشتري **أو** الاستبعاد.
        فلو صارت `listOpen` وحدَها لطُوي التحذيرُ ولم يحمرّ شيء. */
-    expect(code, 'الظهورُ لا يُقسَر عند الاستبعاد').toMatch(/listShown\s*=\s*listOpen\s*\|\|\s*hasExcluded/)
-    expect(code, 'لا يُحسب المستبعَدُ من الشعبة المختارة').toMatch(/hasExcluded[\s\S]{0,200}excludedOf\.has/)
+    expect(code, 'الظهور لا يقسر عند الاستبعاد').toMatch(/listShown\s*=\s*listOpen\s*\|\|\s*hasExcluded/)
+    expect(code, 'لا يحسب المستبعد من الشعبة المختارة').toMatch(/hasExcluded[\s\S]{0,200}excludedOf\.has/)
   })
 
-  it('والزرُّ يقول للقارئ أنّ فيها ما استُبعد، ولا يُطفأ', () => {
-    expect(code, 'لا يُنبَّه على الاستبعاد في متن الزرّ').toContain('فيها ما استُبعد')
+  it('والزرّ يقول للقارئ أنّ فيها ما استبعد، ولا يطفأ', () => {
+    expect(code, 'لا ينبّه على الاستبعاد في متن الزرّ').toContain('فيها ما استبعد')
     /* زرٌّ معطَّلٌ لا يقول لماذا — فيبقى يُنقر ويبقى مفتوحا */
-    expect(code, 'زرُّ الكشف يُعطَّل').not.toMatch(/aria-controls="buy-lines"[\s\S]{0,200}disabled/)
+    expect(code, 'زرّ الكشف يعطّل').not.toMatch(/aria-controls="buy-lines"[\s\S]{0,200}disabled/)
   })
 
-  it('ويبقى معلَنا لقارئ الشاشة — لا طيٌّ صامت', () => {
+  it('ويبقى معلنا لقارئ الشاشة — لا طيّ صامت', () => {
     expect(code).toMatch(/aria-expanded=\{listShown\}/)
     expect(code).toMatch(/aria-controls="buy-lines"/)
   })

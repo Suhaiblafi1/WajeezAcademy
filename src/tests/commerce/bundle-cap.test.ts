@@ -27,42 +27,42 @@ const PRICES = [...new Set(CORE.courses.map((c) => c.list_price))].sort((a, b) =
 const CHEAPEST = PRICES[0]
 const DEAREST = PRICES[PRICES.length - 1]
 
-describe('سقفُ مبلغ الباقة', () => {
-  it('لا سلّةَ تتجاوز السقفَ مهما بلغ مجموعُها', () => {
+describe('سقف مبلغ الباقة', () => {
+  it('لا سلّة تتجاوز السقف مهما بلغ مجموعها', () => {
     for (let n = 1; n <= 12; n += 1) {
       const separate = DEAREST * n
       expect(bundlePayable(separate, n), `${n} دورة`).toBeLessThanOrEqual(MAX_BUNDLE_TOTAL)
     }
   })
 
-  it('ويُطبَّق على السلّة الحرّة كما على المسار الجاهز — وإلّا دفع من اشترى أقلَّ أكثر', () => {
+  it('ويطبّق على السلّة الحرّة كما على المسار الجاهز — وإلّا دفع من اشترى أقلّ أكثر', () => {
     /* أغلى ما يبنيه المتعلّم بنفسه (خمس دورات) في مقابل مسارٍ جاهزٍ بستّ */
     const topFive = PRICES.slice().reverse()
     const free = topFive[0] * 1 + DEAREST * (MAX_BUILT_COURSES - 1)
     const built = bundlePayable(free, MAX_BUILT_COURSES)
     const ready = bundlePayable(DEAREST * 6, 6)
-    expect(built, 'بناءٌ حرٌّ من خمسٍ يتجاوز مسارا جاهزا من ستّ').toBeLessThanOrEqual(ready)
+    expect(built, 'بناء حرّ من خمس يتجاوز مسارا جاهزا من ستّ').toBeLessThanOrEqual(ready)
   })
 
-  it('ولا يمسّ ما دونه — فالسلّمُ يبقى هو القاعدةَ لجمهور السلال', () => {
+  it('ولا يمسّ ما دونه — فالسلّم يبقى هو القاعدة لجمهور السلال', () => {
     const separate = CHEAPEST * 3
     /* إلى القرش لا إلى الدولار: ثلاثُ دوراتٍ بمئةٍ وعشرين = ٣٦٠ ← ١٨٪ ← ٢٩٥٫٢٠ (`money`) */
     expect(bundlePayable(separate, 3)).toBeCloseTo(separate * (1 - buildDiscountPct(3) / 100), 2)
   })
 
-  it('ولا يُطبَّق على عملةٍ غير عملته — «٧٥٠» في عملةٍ أخرى رقمٌ بلا معنى', () => {
+  it('ولا يطبّق على عملة غير عملته — «٧٥٠» في عملة أخرى رقم بلا معنى', () => {
     const separate = DEAREST * 10
     expect(bundlePayable(separate, 10, MAX_BUNDLE_TOTAL_CURRENCY)).toBe(MAX_BUNDLE_TOTAL)
-    expect(bundlePayable(separate, 10, 'SAR'), 'طُبِّق سقفُ دولارٍ على عملةٍ أخرى')
+    expect(bundlePayable(separate, 10, 'SAR'), 'طبّق سقف دولار على عملة أخرى')
       .toBeGreaterThan(MAX_BUNDLE_TOTAL)
   })
 
-  it('والكتالوجُ كلُّه بعملة السقف — وإلّا فالسقفُ يسقط صامتا عن بعضه', () => {
+  it('والكتالوج كلّه بعملة السقف — وإلّا فالسقف يسقط صامتا عن بعضه', () => {
     const others = [...new Set(CORE.courses.map((c) => c.list_currency))].filter((c) => c !== MAX_BUNDLE_TOTAL_CURRENCY)
-    expect(others, 'دوراتٌ بعملةٍ لا يشملها السقف').toEqual([])
+    expect(others, 'دورات بعملة لا يشملها السقف').toEqual([])
   })
 
-  it('وإضافةُ دورةٍ لا تُخفض ما يُدفع — على مدى أسعار الكتالوج كلِّه', () => {
+  it('وإضافة دورة لا تخفض ما يدفع — على مدى أسعار الكتالوج كلّه', () => {
     /* أسوأُ حالةٍ ممكنة: سلّةٌ من أغلى n دوراتٍ في الكتالوج، ثمّ تُضاف أرخصُ دورة.
        والدوراتُ لا السعرُ الأعلى مكرّرا: منذ ٧ أكتوبر ٢٠٢٦ في الكتالوج استثناءٌ
        واحدٌ بثلاثمئة (CPIM)، ولا سلّةَ فيها ثلاثُ نسخٍ منه — فسلّةُ «ثلاثِمئةٍ ×
@@ -73,7 +73,7 @@ describe('سقفُ مبلغ الباقة', () => {
       const top = byCourse.slice(0, n).reduce((s, p) => s + p, 0)
       const before = bundlePayable(top, n)
       const after = bundlePayable(top + CHEAPEST, n + 1)
-      expect(after, `${n} ← ${n + 1}: من زاد دورةً دفع أقلّ`).toBeGreaterThanOrEqual(before)
+      expect(after, `${n} ← ${n + 1}: من زاد دورة دفع أقلّ`).toBeGreaterThanOrEqual(before)
     }
   })
 })

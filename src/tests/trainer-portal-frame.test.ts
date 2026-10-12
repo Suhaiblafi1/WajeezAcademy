@@ -34,7 +34,7 @@ const SCREENS = [
 ]
 
 describe('إطار بوابة المدرب', () => {
-  it('كلّ شاشةٍ في البوابة تلبس إطارها — بلا استثناء', () => {
+  it('كلّ شاشة في البوابة تلبس إطارها — بلا استثناء', () => {
     for (const f of SCREENS) {
       const src = read(f)
       expect(src, `${f} لا يستورد إطار البوابة`).toContain('TrainerLayout')
@@ -43,7 +43,7 @@ describe('إطار بوابة المدرب', () => {
     }
   })
 
-  it('لا رأسَ ثانيا: العلامة والشعار في الإطار وحده', () => {
+  it('لا رأس ثانيا: العلامة والشعار في الإطار وحده', () => {
     /* رأسٌ ثانٍ داخل شاشة يعني إطارا ثالثا للبوابة — وهو ما كان */
     for (const f of SCREENS) {
       const src = read(f).replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '')
@@ -52,7 +52,7 @@ describe('إطار بوابة المدرب', () => {
     expect(read(LAYOUT), 'الإطار بلا رأس').toMatch(/<header[\s>]/)
   })
 
-  it('كلّ شاشةٍ لها تبويب يبلغها — ولا شاشة تُكتب بالمسار وحده', () => {
+  it('كلّ شاشة لها تبويب يبلغها — ولا شاشة تكتب بالمسار وحده', () => {
     const layout = read(LAYOUT)
     const tabs = [...layout.matchAll(/\{ to: "(\/trainer[^"]*)"/g)].map((m) => m[1])
     expect(tabs, 'التبويبات مفقودة').not.toHaveLength(0)
@@ -66,7 +66,7 @@ describe('إطار بوابة المدرب', () => {
 describe('تقويم بوابة المدرب', () => {
   const FILES = [...SCREENS, 'src/components/TrainerWorkQueue.tsx', 'src/components/AtRiskList.tsx']
 
-  it('ميلاديٌّ واحد — لا هجريّ ولا لغةُ تنسيقٍ لكل شاشة', () => {
+  it('ميلاديّ واحد — لا هجريّ ولا لغة تنسيق لكل شاشة', () => {
     for (const f of FILES) {
       let src: string
       try { src = read(f) } catch { continue }
@@ -90,7 +90,7 @@ describe('تقويم بوابة المدرب', () => {
      وانتقل مكانُه. فالمطلوب اليوم شرطان: أن تُفوِّض الثلاثُ إلى تلك الوحدة
      لا أن تنسّق بأنفسها، وأن تحمل لغتُها `ca-gregory` — وإلّا صار التاريخ
      هجريّا عند من لغةُ متصفّحه `ar-SA`، وهو ما وقع فعلا في بوابة المدرب. */
-  it('الوحدة تُثبّت التقويم صراحةً — لا تتركه للغة المتصفّح', () => {
+  it('الوحدة تثبّت التقويم صراحة — لا تتركه للغة المتصفّح', () => {
     const fmt = read('src/utils/format.ts')
     const DELEGATES = ['fmtDateWith', 'fmtSession', 'fmtDate', 'fmtDateLong', 'fmtDateTime']
     for (const fn of ['fmtDateAr', 'fmtDateTimeAr', 'fmtShortDateTimeAr']) {
@@ -106,6 +106,6 @@ describe('تقويم بوابة المدرب', () => {
     const unit = read('src/application/text/format-ar.ts')
     const locale = /UI_LOCALE\s*=\s*'([^']+)'/.exec(unit)?.[1] ?? ''
     expect(locale, 'UI_LOCALE مفقودة من وحدة التنسيق').toBeTruthy()
-    expect(locale, 'لغةُ الواجهة لا تُثبّت التقويم — فيصير هجريّا عند من لغته ar-SA').toContain('ca-gregory')
+    expect(locale, 'لغة الواجهة لا تثبّت التقويم — فيصير هجريّا عند من لغته ar-SA').toContain('ca-gregory')
   })
 })

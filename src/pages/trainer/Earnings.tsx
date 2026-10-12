@@ -101,7 +101,7 @@ function BankAccountPanel() {
       <Panel as="section" className="mb-6">
         <p className="text-sm font-black">حسابي البنكيّ</p>
         <p className="mt-2 text-read leading-6 text-muted-foreground">
-          خانةُ الحسابات البنكيّة غيرُ مهيّأةٍ على الخادم بعد — راسِلِ الإدارةَ لتسليم حسابك.
+          حفظ الحسابات البنكيّة غير مهيّأ بعد — راسل الإدارة.
         </p>
       </Panel>
     );
@@ -155,7 +155,7 @@ function BankAccountPanel() {
       setForm(EMPTY_BANK);
       load();
     } catch (e) {
-      setErr(e instanceof ApiError ? e.message : "تعذّر حفظُ الحساب");
+      setErr(e instanceof ApiError ? e.message : "تعذّر حفظ الحساب");
     } finally { setBusy(false); }
   };
 
@@ -166,7 +166,7 @@ function BankAccountPanel() {
       setConfirmRemove(false);
       load();
     } catch (e) {
-      setErr(e instanceof ApiError ? e.message : "تعذّر إلغاءُ الحساب");
+      setErr(e instanceof ApiError ? e.message : "تعذّر إلغاء الحساب");
     } finally { setBusy(false); }
   };
 
@@ -174,19 +174,19 @@ function BankAccountPanel() {
     <Panel as="section" className="mb-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-sm font-black">حسابي البنكيّ — إليه تُحوَّل مستحقّاتُك</p>
+          <p className="text-sm font-black">حسابي البنكيّ — إليه تحوّل مستحقّاتك</p>
           <p className="mt-1 flex items-center gap-1.5 text-read text-muted-foreground">
             <Lock className="h-3.5 w-3.5 shrink-0 text-teal-light-ink" aria-hidden="true" />
-            سرّيٌّ: يُحفظ معمّى، ولا يُنشر ولا يُعرض لأحد — لا في عقدٍ ولا في رسالة.
+            سرّيّ ومعمّى، لا يعرض لأحد.
           </p>
         </div>
         {!open && (
           <div className="flex flex-wrap gap-2">
             <Button size="sm" icon={a ? RefreshCw : Banknote} onClick={startEdit}>
-              {a ? "بدّلْه" : "أدخِلْ حسابك"}
+              {a ? "بدّله" : "أدخل حسابك"}
             </Button>
             {a && !confirmRemove && (
-              <Button size="sm" tone="ghost" icon={Trash2} onClick={() => setConfirmRemove(true)}>ألغِه</Button>
+              <Button size="sm" tone="ghost" icon={Trash2} onClick={() => setConfirmRemove(true)}>ألغه</Button>
             )}
           </div>
         )}
@@ -197,12 +197,11 @@ function BankAccountPanel() {
       {a && !open && confirmRemove && (
         <Inset tone="warn" className="mt-3 grid gap-3 p-3">
           <p className="text-read leading-6">
-            يُلغى الحسابُ المنتهي بـ<span dir="ltr" className="font-mono">{a.tail4}</span>، ولا يُصرَف لك مستحقٌّ حتّى تُدخل حسابا غيرَه.
-            ويصلك بريدٌ بالإلغاء.
+            يلغى الحساب المنتهي بـ<span dir="ltr" className="font-mono">{a.tail4}</span>، ولا يصرف لك مستحقّ حتّى تدخل غيره.
           </p>
           <div className="flex flex-wrap gap-2">
-            <Button size="sm" tone="danger" icon={Trash2} loading={busy} onClick={() => void remove()}>نعم، ألغِ الحساب</Button>
-            <Button size="sm" tone="ghost" disabled={busy} onClick={() => setConfirmRemove(false)}>تراجعْ</Button>
+            <Button size="sm" tone="danger" icon={Trash2} loading={busy} onClick={() => void remove()}>نعم، ألغ الحساب</Button>
+            <Button size="sm" tone="ghost" disabled={busy} onClick={() => setConfirmRemove(false)}>تراجع</Button>
           </div>
         </Inset>
       )}
@@ -210,11 +209,11 @@ function BankAccountPanel() {
       {a && !open && (
         <dl className="mt-4 grid gap-x-6 gap-y-1.5 sm:grid-cols-2">
           <div className="flex gap-2 text-read">
-            <dt className="text-muted-foreground">{a.accountKind === "local" ? "رقمُ الحساب:" : "IBAN:"}</dt>
+            <dt className="text-muted-foreground">{a.accountKind === "local" ? "رقم الحساب:" : "IBAN:"}</dt>
             <dd dir="ltr" className="font-mono font-bold">{a.maskedAr}</dd>
           </div>
           <div className="flex gap-2 text-read">
-            <dt className="text-muted-foreground">صاحبُ الحساب:</dt>
+            <dt className="text-muted-foreground">صاحب الحساب:</dt>
             <dd className="font-bold">{a.holderName}</dd>
           </div>
           <div className="flex gap-2 text-read">
@@ -231,12 +230,12 @@ function BankAccountPanel() {
             </div>
           )}
           <div className="flex gap-2 text-read">
-            <dt className="text-muted-foreground">سُجّل:</dt>
+            <dt className="text-muted-foreground">سجّل:</dt>
             <dd className="font-bold">{fmtDateAr(a.createdAt)}</dd>
           </div>
           {a.outcome === "differs" && (
             <p className="mt-2 text-read leading-6 text-gold-ink sm:col-span-2">
-              ⚠️ {a.outcomeSaidAr} — والحسابُ يُشترط باسمك الشخصيّ، فالماليّةُ تسأل عنه قبل أوّل حوالة.
+              ⚠️ {a.outcomeSaidAr} — ويشترط أن يكون الحساب باسمك الشخصيّ.
             </p>
           )}
         </dl>
@@ -244,23 +243,23 @@ function BankAccountPanel() {
 
       {!a && !open && (
         <p className="mt-3 text-read leading-6 text-muted-foreground">
-          لم تُدخِلْ حسابَك بعد — ولا يُصرَف مستحقٌّ قبله. يُكتب مرّةً ويبقى، وتبدّله أو تلغيه متى شئت.
+          لم تدخل حسابك بعد، ولا يصرف مستحقّ قبله.
         </p>
       )}
 
       {open && (
         <Inset className="mt-4 grid gap-4 p-4">
           <div className="grid gap-3 sm:grid-cols-2">
-            <StaffField label="دولةُ المصرف">
+            <StaffField label="دولة المصرف">
               <select className={staffSelectCls} value={form.countryCode} onChange={(e) => pickCountry(e.target.value)}>
                 <option value="">اختر الدولة…</option>
                 {COUNTRIES_SORTED.map((c) => <option key={c.iso2} value={c.iso2}>{flagOf(c.iso2)} {c.ar}</option>)}
               </select>
             </StaffField>
-            <StaffField as="div" label="نوعُ الرقم">
+            <StaffField as="div" label="نوع الرقم">
               <OptionGrid
-                cols={2} name="نوعُ الرقم"
-                items={[{ value: "iban", label: "IBAN" }, { value: "local", label: "رقمُ حسابٍ محلّيّ" }]}
+                cols={2} name="نوع الرقم"
+                items={[{ value: "iban", label: "IBAN" }, { value: "local", label: "رقم حساب محلّيّ" }]}
                 isOn={(v) => form.accountKind === v}
                 onToggle={(v) => setForm({ ...form, accountKind: v === "local" ? "local" : "iban" })}
               />
@@ -268,9 +267,9 @@ function BankAccountPanel() {
           </div>
 
           <StaffField
-            label="اسمُ صاحب الحساب — اسمُك أنت"
+            label="اسم صاحب الحساب — اسمك أنت"
             hint={state.contractNameAr
-              ? `كما يطبعه المصرف، باسمك الشخصيّ. واسمُك في العقد: ${state.contractNameAr}`
+              ? `كما يطبعه المصرف، باسمك الشخصيّ. واسمك في العقد: ${state.contractNameAr}`
               : "كما يطبعه المصرف، باسمك الشخصيّ"}
           >
             <input className={staffControlCls} value={form.holderName} maxLength={160} autoComplete="name"
@@ -278,7 +277,7 @@ function BankAccountPanel() {
           </StaffField>
 
           <div className="grid gap-3 sm:grid-cols-2">
-            <StaffField label="اسمُ المصرف">
+            <StaffField label="اسم المصرف">
               <input className={staffControlCls} value={form.bankNameAr} maxLength={120}
                 onChange={(e) => setForm({ ...form, bankNameAr: e.target.value })} />
             </StaffField>
@@ -289,51 +288,50 @@ function BankAccountPanel() {
           </div>
 
           <StaffField
-            label={form.accountKind === "iban" ? "رقمُ IBAN" : "رقمُ الحساب"}
+            label={form.accountKind === "iban" ? "رقم IBAN" : "رقم الحساب"}
             hint={form.accountKind === "iban"
-              ? `كاملا — يبدأ برمز الدولة${country ? ` (${country.iso2})` : ""} ثمّ رقمين. والمسافاتُ لا تضرّ`
-              : "كما في كشف حسابك — أرقامٌ وحروفٌ بلا مسافات"}
+              ? `كاملا — يبدأ برمز الدولة${country ? ` (${country.iso2})` : ""} ثمّ رقمين. والمسافات لا تضرّ`
+              : "كما في كشف حسابك — أرقام وحروف بلا مسافات"}
           >
             <input dir="ltr" className={`${staffControlCls} font-mono`} value={form.iban} maxLength={42}
               autoComplete="off" spellCheck={false} inputMode={form.accountKind === "iban" ? "text" : "numeric"}
               placeholder={form.accountKind === "iban" ? `${form.countryCode || "JO"}00 0000 0000 0000 0000 00` : "000123456789"}
               aria-invalid={ibanBad || ibanCountryBad || undefined}
               onChange={(e) => setForm({ ...form, iban: e.target.value })} />
-            {ibanCountryBad && <span className="mt-1.5 block text-fine font-bold text-red-300">الـIBAN يبدأ بـ{form.countryCode} لحسابٍ في {country?.ar} — تحقّق من الدولة أو الرقم.</span>}
-            {!ibanCountryBad && ibanBad && <span className="mt-1.5 block text-fine font-bold text-red-300">هذا الرقمُ لا يطابق صيغةَ IBAN — راجِعْ خانةً خانة.</span>}
+            {ibanCountryBad && <span className="mt-1.5 block text-fine font-bold text-red-300">الـIBAN يبدأ بـ{form.countryCode} لحساب في {country?.ar} — تحقّق من الدولة أو الرقم.</span>}
+            {!ibanCountryBad && ibanBad && <span className="mt-1.5 block text-fine font-bold text-red-300">الرقم لا يطابق صيغة IBAN.</span>}
           </StaffField>
 
           <div className="grid gap-3 sm:grid-cols-2">
             {form.accountKind === "local" && (
-              <StaffField label={routing.labelAr} hint="يطلبه مصرفُك للحوالة إليه">
+              <StaffField label={routing.labelAr} hint="يطلبه مصرفك للحوالة إليه">
                 <input dir="ltr" className={`${staffControlCls} font-mono`} value={form.routingCode} maxLength={34}
                   placeholder={routing.example} autoComplete="off"
                   onChange={(e) => setForm({ ...form, routingCode: e.target.value })} />
               </StaffField>
             )}
-            <StaffField label="SWIFT / BIC" hint={form.countryCode === "JO" ? "لا يلزم داخلَ الأردن" : "يلزم للحوالات الدوليّة — ثماني خاناتٍ أو إحدى عشرة"}>
+            <StaffField label="SWIFT / BIC" hint={form.countryCode === "JO" ? "لا يلزم داخل الأردن" : "يلزم للحوالات الدوليّة — ثماني خانات أو إحدى عشرة"}>
               <input dir="ltr" className={`${staffControlCls} font-mono`} value={form.swiftBic} maxLength={16}
                 placeholder="ARABJOAX" autoComplete="off" aria-invalid={swiftBad || undefined}
                 onChange={(e) => setForm({ ...form, swiftBic: e.target.value })} />
-              {swiftBad && <span className="mt-1.5 block text-fine font-bold text-red-300">رمزُ SWIFT ثماني خاناتٍ أو إحدى عشرة.</span>}
+              {swiftBad && <span className="mt-1.5 block text-fine font-bold text-red-300">رمز SWIFT ثماني خانات أو إحدى عشرة.</span>}
             </StaffField>
           </div>
 
           <ConsentRow checked={form.ownName} onChange={(v) => setForm({ ...form, ownName: v })}>
-            أُقرّ أنّ هذا الحسابَ <b>باسمي الشخصيّ</b> — لا باسم قريبٍ ولا شريكٍ ولا شركة. ولا تُحوَّل المستحقّاتُ إلى حسابِ غيري.
+            أقرّ أنّ هذا الحساب <b>باسمي الشخصيّ</b> — لا باسم قريب ولا شريك ولا شركة. ولا تحوّل المستحقّات إلى حساب غيري.
           </ConsentRow>
 
           <p className="flex items-start gap-2 text-read leading-6 text-muted-foreground">
             <ShieldCheck className="mt-1 h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" />
-            يُحفظ رقمُك معمّى، ولا يُعرض عليك بعدها إلّا بطرفه الأخير، ولا يراه أحدٌ ولا يظهر في عقدٍ ولا رسالة.
-            ولا يُفتح إلّا لحظةَ تحويلِ مستحقٍّ معتمَد، ويُسجَّل كلُّ فتح. ويصلك بريدٌ عند كلّ تبديلٍ أو إلغاء.
+            يحفظ معمّى ويظهر بطرفه الأخير فقط، ولا يفتح إلّا عند تحويل مستحقّ معتمد.
           </p>
 
           <div className="flex flex-wrap gap-2">
             <Button tone="confirm" icon={Banknote} loading={busy} disabled={!canSave} onClick={() => void save()}>
-              احفظْ حسابي
+              احفظ حسابي
             </Button>
-            <Button tone="ghost" disabled={busy} onClick={() => { setOpen(false); setErr(""); }}>تراجعْ</Button>
+            <Button tone="ghost" disabled={busy} onClick={() => { setOpen(false); setErr(""); }}>تراجع</Button>
           </div>
         </Inset>
       )}
@@ -381,7 +379,7 @@ function RealEarningsView() {
           الذي أكّدته الإدارةُ حقُّ المدرّب أن يراه قبل أن يُحسب له شيء —
           وإلّا فكيف يتأكّد أنّ ما وصله هو ما اتُّفق عليه. */}
       <Panel as="section" tone="accent" className="mb-6">
-        <p className="flex items-center gap-2 text-sm font-black"><ShieldCheck className="h-4 w-4 text-teal-light-ink" /> اتفاقُك المسبق</p>
+        <p className="flex items-center gap-2 text-sm font-black"><ShieldCheck className="h-4 w-4 text-teal-light-ink" /> اتفاقك المسبق</p>
         {agreement ? (
           <>
             {/* ═══ والعامُّ أوّلا ثمّ ما عبر رابطك (٢٩ سبتمبر ٢٠٢٦) ═══
@@ -394,32 +392,32 @@ function RealEarningsView() {
               {RULE_TYPE_AR[agreement.type] ?? agreement.type} —{" "}
               {agreement.type === "per_seat" && agreement.referralRate != null ? (
                 <>
-                  <span dir="ltr" className="font-mono">{Number(agreement.rate)}</span> {agreement.currency} عن كلّ متعلّمٍ عامّ
-                  {" · و"}<span dir="ltr" className="font-mono">{Number(agreement.referralRate)}</span> {agreement.currency} عن كلّ متعلّمٍ جاء عبر رابطك
+                  <span dir="ltr" className="font-mono">{Number(agreement.rate)}</span> {agreement.currency} عن كلّ متعلّم عامّ
+                  {" · و"}<span dir="ltr" className="font-mono">{Number(agreement.referralRate)}</span> {agreement.currency} عن كلّ متعلّم جاء عبر رابطك
                 </>
               ) : (
                 <>
                   <span dir="ltr" className="font-mono">{Number(agreement.rate)}</span> {agreement.currency}
-                  {agreement.type === "per_seat" && " عن كلّ متعلّمٍ عامّ"}
+                  {agreement.type === "per_seat" && " عن كلّ متعلّم عامّ"}
                   {agreement.type === "revenue_share" && " من إيراد الشعبة"}
                 </>
               )}
             </p>
             <p className="mt-1 text-read leading-6 text-muted-foreground">
-              {agreement.minSeats > 0 && <>يُحسب لك {agreement.minSeats} مقاعدَ على الأقلّ ولو سجّل أقلّ. </>}
-              ساريةٌ منذ {fmtDateAr(agreement.effectiveFrom)}. وكلُّ كشفٍ أدناه يُحسب على هذا الأساس — فإن رأيت غيرَه فقل لنا.
+              {agreement.minSeats > 0 && <>يحسب لك {agreement.minSeats} مقاعد على الأقلّ ولو سجّل أقلّ. </>}
+              سارية منذ {fmtDateAr(agreement.effectiveFrom)}، وعليها تحسب كشوفك.
             </p>
             {scoped.length > 0 && (
               <ul className="mt-3 space-y-1 text-read text-muted-foreground">
                 {scoped.map((r) => (
-                  <li key={r.id}>· اتفاقٌ خاصٌّ {r.cohortId ? "بشعبةٍ بعينها" : "بدورةٍ بعينها"}: {RULE_TYPE_AR[r.type] ?? r.type} — <span dir="ltr" className="font-mono">{Number(r.rate)}</span> {r.currency}</li>
+                  <li key={r.id}>· اتفاق خاصّ {r.cohortId ? "بشعبة بعينها" : "بدورة بعينها"}: {RULE_TYPE_AR[r.type] ?? r.type} — <span dir="ltr" className="font-mono">{Number(r.rate)}</span> {r.currency}</li>
                 ))}
               </ul>
             )}
           </>
         ) : (
           <p className="mt-2 text-read leading-6 text-muted-foreground">
-            لم تُسجَّل قاعدةُ أتعابٍ لك بعد — تحدّدها الإدارةُ قبل أوّل شعبة، وتظهر هنا فورَ حفظها. ولا يُحسب لك كشفٌ قبلها.
+            لم تحدّد الإدارة أتعابك بعد، ولا يحسب كشف قبلها.
           </p>
         )}
       </Panel>
@@ -434,7 +432,7 @@ function RealEarningsView() {
       {/* ═══ شعبةً شعبة — من أين جاء طلابك وماذا يُحسب لك عنهم ═══ */}
       {(cohorts ?? []).length > 0 && (
         <Panel as="section" className="mb-6">
-          <p className="text-sm font-black">شعبك — عامٌّ وعبر رابطك</p>
+          <p className="text-sm font-black">شعبك — عامّ وعبر رابطك</p>
           <div className="mt-3 overflow-x-auto">
             <table className="w-full text-read">
               <thead>
@@ -443,7 +441,7 @@ function RealEarningsView() {
                   {/* العامُّ أوّلا ثمّ عبر رابطك — بالقرار نفسِه (٢٩ سبتمبر ٢٠٢٦) */}
                   <th className="pb-2 pl-3 font-bold">عامّ</th>
                   <th className="pb-2 pl-3 font-bold">عبر رابطك</th>
-                  <th className="pb-2 font-bold">المتوقَّع</th>
+                  <th className="pb-2 font-bold">المتوقّع</th>
                 </tr>
               </thead>
               <tbody>
@@ -471,21 +469,21 @@ function RealEarningsView() {
           ولا تُعرض حين لا شيءَ ينتظر: لوحةٌ بصفرٍ تُعلّم القارئَ تخطّيها. */}
       {(awaitingDiscounts?.rows.length ?? 0) > 0 && (
         <Panel as="section" tone="warn" className="mb-6">
-          <p className="text-sm font-black text-gold-ink">أكوادٌ وخصومٌ أصدرتَها بنفسك — تُحسم من كشفك القادم</p>
+          <p className="text-sm font-black text-gold-ink">أكواد وخصوم أصدرتها بنفسك — تحسم من كشفك القادم</p>
           <p className="mt-2 text-read leading-7 text-muted-foreground">
-            هذا ما منحته أكوادُك (وخصومُك القديمةُ بالمبلغ) في مشترياتٍ دُفعت. يُدرج بندا باسمه في أوّل كشفٍ يُحرَّر لك
-            ويُحسم منه، ولا يتجاوز ما يُحسم في كشفٍ واحدٍ قيمتَه — وما زاد يُؤجَّل إلى الذي يليه (البند 4-10 من عقدك).
+            ما منحته أكوادك وخصومك في مشتريات مدفوعة، يحسم من أوّل كشف لك. ولا يتجاوز الحسم قيمة
+            الكشف، وما زاد يؤجّل إلى الذي يليه (البند 4-10).
           </p>
           <ul className="mt-3 space-y-1.5">
             {awaitingDiscounts.rows.map((d) => (
               <li key={d.id} className="flex flex-wrap items-center justify-between gap-3 text-read text-muted-foreground">
-                <span>{d.forWhomAr} <span dir="ltr" className="font-mono text-fine">({d.code})</span>{d.usedAt && <> · استُعمل {fmtDateAr(d.usedAt)}</>}</span>
+                <span>{d.forWhomAr} <span dir="ltr" className="font-mono text-fine">({d.code})</span>{d.usedAt && <> · استعمل {fmtDateAr(d.usedAt)}</>}</span>
                 <span dir="ltr" className="font-mono font-bold text-gold-ink">−{fmt(d.amount)} {d.currency}</span>
               </li>
             ))}
           </ul>
           <p className="mt-3 text-read font-bold text-gold-ink">
-            المجموع المنتظَر حسمُه: <span dir="ltr" className="font-mono">{fmt(awaitingDiscounts.total)}</span> {awaitingDiscounts.currency}
+            المجموع المنتظر حسمه: <span dir="ltr" className="font-mono">{fmt(awaitingDiscounts.total)}</span> {awaitingDiscounts.currency}
           </p>
         </Panel>
       )}
@@ -497,14 +495,14 @@ function RealEarningsView() {
           ولا تُعرض اللوحةُ حين لا شيءَ يُعاد. */}
       {(awaitingDiscounts?.credits?.length ?? 0) > 0 && (
         <Panel as="section" tone="accent" className="mb-6">
-          <p className="text-sm font-black text-teal-light-ink">يُعاد إليك في كشفك القادم</p>
+          <p className="text-sm font-black text-teal-light-ink">يعاد إليك في كشفك القادم</p>
           <p className="mt-2 text-read leading-7 text-muted-foreground">
-            رُدّ ثمنُ مشترياتٍ بأكوادك بعد أن حُسم ما منحته، فيُعاد إليك ما حُسم زيادةً بندا موجبا (البند 4-10 من عقدك).
+            ردّ ثمن مشتريات بأكوادك بعد الحسم، فيعاد إليك ما حسم زيادة (البند 4-10).
           </p>
           <ul className="mt-3 space-y-1.5">
             {(awaitingDiscounts?.credits ?? []).map((d) => (
               <li key={d.id} className="flex flex-wrap items-center justify-between gap-3 text-read text-muted-foreground">
-                <span>{d.forWhomAr} <span dir="ltr" className="font-mono text-fine">({d.code})</span>{d.refundedAt && <> · رُدّ {fmtDateAr(d.refundedAt)}</>}</span>
+                <span>{d.forWhomAr} <span dir="ltr" className="font-mono text-fine">({d.code})</span>{d.refundedAt && <> · ردّ {fmtDateAr(d.refundedAt)}</>}</span>
                 <span dir="ltr" className="font-mono font-bold text-teal-light-ink">+{fmt(d.amount)} {d.currency}</span>
               </li>
             ))}
@@ -534,7 +532,7 @@ function RealEarningsView() {
       >
         <TicketPercent className="h-4 w-4 shrink-0 text-gold-ink" aria-hidden="true" />
         <span>
-          أكوادُ الخصم التي تُصدرها بنفسك تُدار في <b className="text-foreground">«دعوتي»</b> — وخصوماتُها تُحسم من كشفك هنا (البند 4-10).
+          أكوادك تدار في <b className="text-foreground">«دعوتي»</b>، وخصوماتها تحسم من كشفك هنا (البند 4-10).
         </span>
       </Inset>
 
@@ -558,7 +556,7 @@ function RealEarningsView() {
           <Panel className="grid place-items-center py-16 text-center">
             <Banknote className="h-10 w-10 text-muted-foreground/50" />
             <p className="mt-3 max-w-sm text-sm leading-7 text-muted-foreground">
-              لا كشوف بعد — عند اعتماد أول مستحقات لك من الإدارة المالية تظهر هنا تلقائياً ببنودها وحالتها.
+              لا كشوف بعد — تظهر هنا حين تعتمد أوّل مستحقّاتك.
             </p>
           </Panel>
         )}
@@ -569,7 +567,7 @@ function RealEarningsView() {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="font-black">كشف فترة <span dir="ltr" className="font-mono text-sm">{p.period}</span></p>
-                  {p.paidAt && <p className="mt-0.5 text-read text-muted-foreground">صُرف {fmtDateAr(p.paidAt)}</p>}
+                  {p.paidAt && <p className="mt-0.5 text-read text-muted-foreground">صرف {fmtDateAr(p.paidAt)}</p>}
                 </div>
                 <div className="text-left">
                   <p className="text-xl font-black">{fmt(p.total)} <span className="text-xs text-muted-foreground">{p.currency}</span></p>
@@ -596,9 +594,9 @@ function RealEarningsView() {
       </div>
 
       <Card as="p" className="mt-8 px-5 py-4 text-center text-read leading-6 text-muted-foreground">
-        الكشف يمر بثلاث مراحل: إنشاء من الإدارة المالية ← اعتماد ← صرف. كل بند مرتبط بمصدره لمنع الازدواج.
+        مراحل الكشف: إنشاء ← اعتماد ← صرف.
         {' '}{payoutTimingNoteAr()}{' '}
-        ولأي استفسار عن بند تواصل مع منسقك قبل موعد الصرف.
+        ولأيّ استفسار راسل منسّقك قبل موعد الصرف.
       </Card>
     </TrainerLayout>
   );

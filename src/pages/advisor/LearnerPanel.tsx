@@ -70,7 +70,7 @@ export default function LearnerPanel({ caseId }: { caseId: string }) {
   if (!snap.hasAccount) {
     return (
       <Inset as="p" className="border-dashed px-4 py-5 text-center text-read leading-6 text-muted-foreground">
-        لا حساب لهذا العميل بعد — عميلٌ محتمل لم يسجّل. تظهر هنا دوراتُه وتقدّمُه فور إنشائه حسابه.
+        لا حساب لهذا العميل بعد — عميل محتمل لم يسجّل. تظهر هنا دوراته وتقدّمه فور إنشائه حسابه.
       </Inset>
     )
   }
@@ -87,7 +87,7 @@ export default function LearnerPanel({ caseId }: { caseId: string }) {
             <Compass className="h-3.5 w-3.5" /> خلاصة تشخيصه
           </p>
           <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-fine text-muted-foreground">
-            {snap.diagnostic.topPathwayName && <span>المسار المرشَّح: {snap.diagnostic.topPathwayName}</span>}
+            {snap.diagnostic.topPathwayName && <span>المسار المرشّح: {snap.diagnostic.topPathwayName}</span>}
             {snap.diagnostic.confidenceBand && <span>· ثقة الترشيح: {snap.diagnostic.confidenceBand}</span>}
             {snap.diagnostic.needsAdvisor && <span className="font-bold text-gold-ink">· يحتاج مراجعتك</span>}
           </div>
@@ -157,7 +157,7 @@ export default function LearnerPanel({ caseId }: { caseId: string }) {
           <GraduationCap className="h-3.5 w-3.5 text-teal-light-ink" /> دوراته وتقدّمها
         </p>
         {active.length === 0 ? (
-          <p className="mt-2 text-read text-muted-foreground">لا تسجيلَ فعّالا بعد.</p>
+          <p className="mt-2 text-read text-muted-foreground">لا تسجيل فعّالا بعد.</p>
         ) : (
           <ul className="mt-2 space-y-2.5">
             {active.map((e) => {
@@ -189,7 +189,7 @@ export default function LearnerPanel({ caseId }: { caseId: string }) {
           <CalendarClock className="h-3.5 w-3.5 text-teal-light-ink" /> جلساته القادمة
         </p>
         {snap.upcomingSessions.length === 0 ? (
-          <p className="mt-2 text-read text-muted-foreground">لا جلسةَ قادمة مجدولة.</p>
+          <p className="mt-2 text-read text-muted-foreground">لا جلسة قادمة مجدولة.</p>
         ) : (
           <ul className="mt-2 space-y-1.5">
             {snap.upcomingSessions.map((s) => (

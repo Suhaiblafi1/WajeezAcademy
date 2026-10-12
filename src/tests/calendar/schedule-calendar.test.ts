@@ -19,39 +19,39 @@ const code = (p: string) => read(p).replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '').repla
 describe('«جدولي» صار تقويما', () => {
   const page = code('src/pages/trainer/Schedule.tsx')
 
-  it('⚠️ الشاشةُ تنادي التقويمَ لا تصيّر شبكةً بيدها', () => {
-    expect(page, 'لا تقويمَ في الشاشة').toMatch(/<MonthCalendar\b/)
-    expect(page, 'حسابُ الشهر أُعيد في الشاشة بدل الوحدة المفحوصة')
+  it('⚠️ الشاشة تنادي التقويم لا تصيّر شبكة بيدها', () => {
+    expect(page, 'لا تقويم في الشاشة').toMatch(/<MonthCalendar\b/)
+    expect(page, 'حساب الشهر أعيد في الشاشة بدل الوحدة المفحوصة')
       .not.toMatch(/getDay\(\)|new Date\([^)]*,\s*1\s*-\s*/)
   })
 
-  it('⚠️ والقائمةُ باقيةٌ تحته — التقويمُ شكلٌ والقائمةُ تفصيل', () => {
+  it('⚠️ والقائمة باقية تحته — التقويم شكل والقائمة تفصيل', () => {
     /* حذفُها يُخسِر اسمَ الدورة والشعبةِ والدورِ ووقتَ النهاية — ولا تسعها
        خانةُ يوم. */
-    expect(page, 'القائمةُ التفصيليّةُ حُذفت مع التقويم').toContain('byDay.entries()')
-    expect(page, 'اسمُ الدورة والشعبة سقط من التفصيل').toMatch(/s\.courseTitle/)
+    expect(page, 'القائمة التفصيليّة حذفت مع التقويم').toContain('byDay.entries()')
+    expect(page, 'اسم الدورة والشعبة سقط من التفصيل').toMatch(/s\.courseTitle/)
   })
 
-  it('⚠️ و«القادمة» تُميَّز — وهي أوّلُ ما يُبحث عنه في تقويم', () => {
+  it('⚠️ و«القادمة» تميّز — وهي أوّل ما يبحث عنه في تقويم', () => {
     expect(page).toMatch(/nextItem\(data\.sessions/)
-    expect(page, 'التمييزُ لا يصل التقويم').toMatch(/isNext=/)
+    expect(page, 'التمييز لا يصل التقويم').toMatch(/isNext=/)
   })
 
-  it('⚠️ والتزاحمُ يبقى ظاهرا في التقويم — لا في القائمة وحدَها', () => {
+  it('⚠️ والتزاحم يبقى ظاهرا في التقويم — لا في القائمة وحدها', () => {
     /* التزاحمُ هو علّةُ وجود هذه الشاشة أصلا: من رآه في القائمة وحدَها
        فاته في الشكل الذي جاء يقرؤه. */
     expect(page).toMatch(/clashesWith\.length > 0[\s\S]{0,120}?bg-red/)
   })
 
-  it('⚠️ والمكوّنُ لا يعرف ما يُعرض فيه — فيصلح لجدول المتعلّم كذلك (ك-١١)', () => {
+  it('⚠️ والمكوّن لا يعرف ما يعرض فيه — فيصلح لجدول المتعلّم كذلك (ك-١١)', () => {
     const cal = code('src/components/MonthCalendar.tsx')
     for (const own of ['sessionId', 'cohortTitle', 'courseTitle', 'clashesWith']) {
-      expect(cal, `التقويمُ صار يعرف «${own}» فارتبط بجدول المدرّب وحدَه`).not.toContain(own)
+      expect(cal, `التقويم صار يعرف «${own}» فارتبط بجدول المدرّب وحده`).not.toContain(own)
     }
-    expect(cal, 'لا مدخلَ لقراءة تاريخ العنصر').toMatch(/at:\s*\(item: T\) => Date/)
+    expect(cal, 'لا مدخل لقراءة تاريخ العنصر').toMatch(/at:\s*\(item: T\) => Date/)
   })
 
-  it('وسبعةُ أعمدةٍ تبقى على الهاتف — تقويمٌ بعمودٍ قائمةٌ بثوبِ تقويم', () => {
+  it('وسبعة أعمدة تبقى على الهاتف — تقويم بعمود قائمة بثوب تقويم', () => {
     expect(code('src/components/MonthCalendar.tsx')).toMatch(/grid-cols-7/)
   })
 })

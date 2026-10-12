@@ -27,8 +27,8 @@ import EmptyState from "@/components/EmptyState";
 import { Card, Panel } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 const HONESTY_NOTE =
-  "الاسترجاع لا يرفع مستوى مهارتك ولا يخفضه — مستواك يأتي من القياس في مؤشر وجيز ومن إعادة القياس بعد الدورة. " +
-  "هذه البطاقات لتثبيت ما تعلمته، لا لتقييمك.";
+  "الاسترجاع لا يغيّر مستوى مهارتك — مستواك من القياس في مؤشر وجيز وبعد الدورة. " +
+  "هذه البطاقات للتثبيت لا للتقييم.";
 
 /** بطاقة واحدة: السؤال ثم التصحيح ثم موعد العودة */
 function ReviewCard({
@@ -135,9 +135,9 @@ export default function Review() {
 
   if (snap === null) {
     return (
-      <PortalLayout title="تثبيتُ ما تعلّمت">
+      <PortalLayout title="تثبيت ما تعلّمت">
         <div className="grid place-items-center py-20">
-          <Loader2 className="h-8 w-8 animate-spin text-teal-ink" aria-label="جارٍ التحميل" />
+          <Loader2 className="h-8 w-8 animate-spin text-teal-ink" aria-label="جار التحميل" />
         </div>
       </PortalLayout>
     );
@@ -146,7 +146,7 @@ export default function Review() {
   const answeredAll = queue.length > 0 && queue.every((i) => picked[`${i.moduleId}#${i.checkIndex}`] !== undefined);
 
   return (
-    <PortalLayout title="تثبيتُ ما تعلّمت">
+    <PortalLayout title="تثبيت ما تعلّمت">
       {error && (
         <Card as="p" tone="danger" className="mb-4 px-5 py-4 text-sm text-red-200">{error}</Card>
       )}
@@ -185,9 +185,9 @@ export default function Review() {
             className="mt-6"
             icon={Layers}
             titleAr="لا بطاقات بعد"
-            reasonAr="تُفتح بطاقات المراجعة من تمرين الاسترجاع في نهاية كل وحدة — أنهِ وحدة ثم اطلب جدولة عودتها."
+            reasonAr="تفتح من تمرين الاسترجاع في آخر كل وحدة — أنه وحدة واطلب جدولة عودتها."
             actions={[
-              { to: "/student/learning", labelAr: "أنهِ وحدة من دوراتي", hintAr: "أول بطاقة تُفتح بعدها" },
+              { to: "/student/learning", labelAr: "أنه وحدة من دوراتي", hintAr: "أول بطاقة تفتح بعدها" },
               { to: "/student/learning", labelAr: "اعرف الوحدة التالية", hintAr: "موضعك من المسار" },
             ]}
           />
@@ -197,7 +197,7 @@ export default function Review() {
             icon={Layers}
             tone="done"
             titleAr="لا شيء مستحق الآن"
-            reasonAr="راجعتَ كل ما حلّ موعده. التباعد نفسه هو الفائدة، فلا نقدّم موعدا — عد في الموعد المذكور أعلاه."
+            reasonAr="راجعت كل ما حلّ موعده. عد في الموعد المذكور أعلاه."
             actions={[{ to: "/student/learning", labelAr: "تابع دوراتي", hintAr: "وحدة جديدة تفتح بطاقات جديدة" }]}
           />
         )
@@ -221,7 +221,7 @@ export default function Review() {
             <Panel tone="accent" className="mt-6 flex flex-wrap items-center gap-3 bg-teal-ink/[0.07]">
               <CheckCircle2 className="h-5 w-5 shrink-0 text-teal-light-ink" aria-hidden="true" />
               <p className="min-w-0 flex-1 text-sm font-bold">
-                أنهيت مستحقّ اليوم. كل بطاقة جُدولت لموعدها المذكور تحتها.
+                أنهيت مستحقّ اليوم. موعد كل بطاقة تحتها.
               </p>
               <Button tone="secondary" type="button"
                 onClick={() => { setPicked({}); setSaved({}); setSnap(null); setReload((n) => n + 1); }} className="min-h-11">

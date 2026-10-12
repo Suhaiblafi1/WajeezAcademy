@@ -147,6 +147,6 @@ export function findAtRisk(rows: unknown, now: number): AtRiskLearner[] {
 
 /** جملة تشرح للمدرب ما يعنيه «متعثر» — تُعرض دائما بجانب القائمة، لا تُخفى */
 export const RISK_RULE_AR =
-  `يُرصد المتعثر بأسباب مقيسة لا بدرجة: غياب ${ABSENCE_THRESHOLD} جلسات أو أكثر · ` +
+  `يرصد المتعثر بأسباب مقيسة لا بدرجة: غياب ${ABSENCE_THRESHOLD} جلسات أو أكثر · ` +
   `تأخر ${PACE_GAP_POINTS} نقطة أو أكثر عن الوتيرة المتوقعة عند الجلسة الحالية · ` +
   `تقييم مستحق بلا تسليم · أو لا حضور ولا تسليم بعد ${MIN_SESSIONS_FOR_PACE} جلسات.`

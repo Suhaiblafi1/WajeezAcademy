@@ -72,10 +72,10 @@ export function dueLabelAr(dueAt: string | Date, now: Date): string {
 }
 
 /** صيغُ ما يُعَدّ في هذين اللوحَين — في موضعٍ واحدٍ فلا تفترق بين شاشتَين */
-export const AR_SUBMISSIONS: ArCounts = { one: 'تسليمٌ واحدٌ', two: 'تسليمان', few: 'تسليمات', many: 'تسليما' }
-export const AR_CARDS: ArCounts = { one: 'بطاقةُ استرجاعٍ واحدةٌ', two: 'بطاقتا استرجاعٍ', few: 'بطاقاتِ استرجاعٍ', many: 'بطاقةَ استرجاعٍ' }
-export const AR_SESSIONS: ArCounts = { one: 'جلسةٌ واحدةٌ', two: 'جلستان', few: 'جلسات', many: 'جلسةً' }
-export const AR_COHORTS: ArCounts = { one: 'شعبةٍ واحدة', two: 'شعبتين', few: 'شعب', many: 'شعبةً' }
+export const AR_SUBMISSIONS: ArCounts = { one: 'تسليم واحد', two: 'تسليمان', few: 'تسليمات', many: 'تسليما' }
+export const AR_CARDS: ArCounts = { one: 'بطاقة استرجاع واحدة', two: 'بطاقتا استرجاع', few: 'بطاقات استرجاع', many: 'بطاقة استرجاع' }
+export const AR_SESSIONS: ArCounts = { one: 'جلسة واحدة', two: 'جلستان', few: 'جلسات', many: 'جلسة' }
+export const AR_COHORTS: ArCounts = { one: 'شعبة واحدة', two: 'شعبتين', few: 'شعب', many: 'شعبة' }
 
 /** ترتيبُ العرض: الأقربُ أوّلا، والفائتُ قبل كلّ شيء (وهو الأقربُ حسابا) */
 export function byDueAt<T extends { dueAt: string }>(rows: readonly T[]): T[] {

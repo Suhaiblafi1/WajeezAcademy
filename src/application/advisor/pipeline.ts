@@ -5,12 +5,12 @@
    تصييرَ شاشةٍ ليُفحص. */
 
 export const STAGES = [
-  { key: 'new', label: 'جديدة', hint: 'وصل تشخيصُه ولم نتواصل بعد' },
-  { key: 'contacted', label: 'تواصلنا', hint: 'أوّل اتصالٍ تمّ' },
-  { key: 'needs_review', label: 'تحتاج مراجعة', hint: 'طلبُه يحتاج قرارا' },
-  { key: 'follow_up', label: 'متابعة', hint: 'له موعدٌ نعود إليه فيه' },
-  { key: 'recommended', label: 'عُرض عليه', hint: 'أُرسلت له الخطّة وسعرُها' },
-  { key: 'enrolled', label: 'سجّل', hint: 'أُغلقت الصفقة' },
+  { key: 'new', label: 'جديدة', hint: 'وصل تشخيصه ولم نتواصل بعد' },
+  { key: 'contacted', label: 'تواصلنا', hint: 'أوّل اتصال تمّ' },
+  { key: 'needs_review', label: 'تحتاج مراجعة', hint: 'طلبه يحتاج قرارا' },
+  { key: 'follow_up', label: 'متابعة', hint: 'له موعد نعود إليه فيه' },
+  { key: 'recommended', label: 'عرض عليه', hint: 'أرسلت له الخطّة وسعرها' },
+  { key: 'enrolled', label: 'سجّل', hint: 'أغلقت الصفقة' },
 ] as const
 
 /** ما يخرج من القِمع — يُعرض مطويّا لا عمودا يزاحم */

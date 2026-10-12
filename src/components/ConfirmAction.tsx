@@ -108,7 +108,7 @@ export default function ConfirmAction({
             {/* الشرطُ يُقال ما لم يتحقّق، فلا يُقرأ «٤٤ من ١٠» بعد تحقّقه */}
             <span className={`mt-1 block ${reasonOk ? "text-teal-light-ink" : "text-muted-foreground"}`}>
               {reasonOk
-                ? "يكفي — ويُقرأ كما كتبتَه"
+                ? "يكفي — ويقرأ كما كتبته"
                 : `اكتب ${reason.minLength - why.trim().length} حرفا أخرى على الأقلّ`}
             </span>
           </label>
@@ -127,7 +127,7 @@ export default function ConfirmAction({
           </button>
           <Button tone="secondary" type="button"
             onClick={onCancel}>
-            تراجَع
+            تراجع
           </Button>
         </div>
       </Inset>

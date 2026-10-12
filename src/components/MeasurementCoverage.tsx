@@ -52,7 +52,7 @@ export default function MeasurementCoverage({ className = "" }: { className?: st
           </p>
           <p className="mt-1 text-read leading-6 text-foreground">
             هذه المهارات يتطلبها أكثر من مسار بلا تغطية — فسؤال قياس واحد لكل واحدة
-            يُخرج عدة مسارات من الصفر معا. الترتيب بما يُفتح لا بما يُستعمل.
+            يخرج عدة مسارات من الصفر معا. الترتيب بما يفتح لا بما يستعمل.
           </p>
           <ul className="mt-3 space-y-2">
             {topGaps.slice(0, 3).map((g) => (
@@ -103,7 +103,7 @@ export default function MeasurementCoverage({ className = "" }: { className?: st
       <button onClick={() => setOpenGaps(!openGaps)}
         className="mt-4 flex cursor-pointer items-center gap-1.5 text-fine font-bold text-teal-light-ink hover:text-foreground">
         <ChevronDown className={`h-3.5 w-3.5 transition ${openGaps ? "rotate-180" : ""}`} aria-hidden="true" />
-        {openGaps ? "أخفِ الفجوات" : `اعرض كل الفجوات (${r.gaps.length})`}
+        {openGaps ? "أخف الفجوات" : `اعرض كل الفجوات (${r.gaps.length})`}
       </button>
       {openGaps && (
         <ul className="mt-3 flex flex-wrap gap-2">
@@ -124,13 +124,13 @@ export default function MeasurementCoverage({ className = "" }: { className?: st
           <button onClick={() => setOpenOrphans(!openOrphans)}
             className="flex w-full cursor-pointer items-center gap-2 text-start text-xs font-black text-amber-300">
             <HelpCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
-            {r.orphanQuestions.length} سؤال قياس يقيس مفتاحا ليس مهارة مسجَّلة
+            {r.orphanQuestions.length} سؤال قياس يقيس مفتاحا ليس مهارة مسجّلة
             <ChevronDown className={`ms-auto h-3.5 w-3.5 transition ${openOrphans ? "rotate-180" : ""}`} aria-hidden="true" />
           </button>
           <p className="mt-1 text-read leading-6 text-foreground">
-            جوابُ هذه الأسئلة يسقط في متجه المهارات تحت مفتاح لا تطلبه دورة ولا يحتاجه مسار.
-            ما كان منها على سطح B2C يُسأل المتعلم فعلا ولا يُحتسب — وما كان خارجه لا يُسأل،
-            فالخلل فيه توثيقي لا وقتُ متعلم مهدور.
+            جواب هذه الأسئلة يسقط في متجه المهارات تحت مفتاح لا تطلبه دورة ولا يحتاجه مسار.
+            ما كان منها على سطح B2C يسأل المتعلم فعلا ولا يحتسب — وما كان خارجه لا يسأل،
+            فالخلل فيه توثيقي لا وقت متعلم مهدور.
           </p>
           {openOrphans && (
             <ul className="mt-3 space-y-1.5">
@@ -142,7 +142,7 @@ export default function MeasurementCoverage({ className = "" }: { className?: st
                   <span className={`rounded-full border px-2 py-0.5 font-bold ${
                     q.onB2cSurface ? "border-red-400/40 text-red-300" : "border-white/20 text-muted-foreground"
                   }`}>
-                    {q.onB2cSurface ? "يُسأل ويُهمَل" : "خارج السطح — توثيقي"}
+                    {q.onB2cSurface ? "يسأل ويهمل" : "خارج السطح — توثيقي"}
                   </span>
                   <span className="text-muted-foreground">{q.textAr}</span>
                 </li>
@@ -155,7 +155,7 @@ export default function MeasurementCoverage({ className = "" }: { className?: st
       <p className="mt-4 flex items-start gap-2 text-read leading-6 text-muted-foreground">
         <Activity className="mt-0.5 h-3.5 w-3.5 shrink-0 text-teal-light-ink" aria-hidden="true" />
         <span>
-          الأرقام من الكتالوج المثبَّت الآن — أي من اللقطة المنشورة التي يعيشها المتعلم، لا من ملفات المستودع.
+          الأرقام من الكتالوج المثبّت الآن — أي من اللقطة المنشورة التي يعيشها المتعلم، لا من ملفات المستودع.
           وإضافة سؤال قياس صارت من الإدارة بلا نشر كود: يدخل خطة الأسئلة وطبقات المهارات عند بناء اللقطة.
         </span>
       </p>

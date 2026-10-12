@@ -13,14 +13,14 @@ import { reportTitleAr } from '@/application/trainer/review-reports-bulk'
 const code = (p: string) => readFileSync(join(process.cwd(), p), 'utf8')
   .replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '').replace(/^\s*(\/\/|--).*$/gm, '')
 
-describe('رسالةُ القرار تذكر التقريرَ وموضعَه', () => {
-  it('بلا تقريرٍ لا جملة', () => {
+describe('رسالة القرار تذكر التقرير وموضعه', () => {
+  it('بلا تقرير لا جملة', () => {
     expect(reviewReportLineAr([])).toBeNull()
   })
 
-  it('تقريرٌ واحدٌ باسمه، وأين يُقرأ', () => {
+  it('تقرير واحد باسمه، وأين يقرأ', () => {
     const line = reviewReportLineAr(['تقرير.pdf'])!
-    expect(line).toContain('تقريرُ مراجعةٍ مفصّل: «تقرير.pdf»')
+    expect(line).toContain('تقرير مراجعة مفصّل: «تقرير.pdf»')
     expect(line).toContain('تجده في خطوة «المراجعة» من صفحة شعبتك')
   })
 
@@ -30,27 +30,27 @@ describe('رسالةُ القرار تذكر التقريرَ وموضعَه', (
     expect(reportTitleAr('صهيب الخوالدة — مهارة الخطابة (2).pdf')).toBe('ملحق المرجع الدولي')
     expect(reviewReportLineAr(['ف — ش (1).pdf', 'ف — ش (2).pdf'])).toContain('«تقرير المراجعة» و«ملحق المرجع الدولي»')
     expect(reportTitleAr('خطّة الشعبة.pdf'), 'وما سواها باسمه').toBe('خطّة الشعبة.pdf')
-    expect(reportTitleAr('تقرير (2).pdf'), 'نسخةُ تنزيلٍ ثانية ليست ملحقا').toBe('تقرير (2).pdf')
+    expect(reportTitleAr('تقرير (2).pdf'), 'نسخة تنزيل ثانية ليست ملحقا').toBe('تقرير (2).pdf')
   })
 
-  it('وأكثرُ من تقرير بأسمائها', () => {
-    expect(reviewReportLineAr(['أ.pdf', 'ب.docx'])).toContain('تقاريرُ مراجعةٍ مفصّلة: «أ.pdf» و«ب.docx»')
+  it('وأكثر من تقرير بأسمائها', () => {
+    expect(reviewReportLineAr(['أ.pdf', 'ب.docx'])).toContain('تقارير مراجعة مفصّلة: «أ.pdf» و«ب.docx»')
   })
 })
 
-describe('والشاشتان تحملان وجهَيهما', () => {
-  it('بطاقةُ المراجعة ترفع التقرير والخطّةُ بانتظار القرار', () => {
+describe('والشاشتان تحملان وجهيهما', () => {
+  it('بطاقة المراجعة ترفع التقرير والخطّة بانتظار القرار', () => {
     expect(code('src/components/admin/TrainerPlanReview.tsx'))
       .toMatch(/status === "submitted" && canApprovePlan && \(\s*<ReviewReportUploader planId=\{trainerPlan\.id\}/)
   })
 
   /* وصار في «المراجعة» مع بنودها، للقراءة إن شاء (١١ أكتوبر ٢٠٢٦) — كان في الرأس مع الملاحظة */
-  it('وصفحةُ المدرّب تعرضه في «المراجعة»', () => {
+  it('وصفحة المدرّب تعرضه في «المراجعة»', () => {
     const ws = code('src/pages/trainer/CohortWorkspace.tsx')
     const at = ws.indexOf('{stage === "review" ? (')
     expect(at).toBeGreaterThan(0)
     const review = ws.slice(at, ws.indexOf(') : revision.pending > 0 && inHand ? (', at))
     expect(review).toContain('<ReviewReportList reports={ws.reviewReports ?? []} />')
-    expect(ws.match(/<ReviewReportList /g)?.length, 'التقريرُ في موضعين').toBe(1)
+    expect(ws.match(/<ReviewReportList /g)?.length, 'التقرير في موضعين').toBe(1)
   })
 })

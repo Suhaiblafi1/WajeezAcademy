@@ -19,12 +19,12 @@ import BuildStampLine from "@/components/BuildStampLine";
    بقارئ شاشة، وشارتان بنصٍّ واحدٍ تقول إحداهما ما ليس لها. */
 const BADGE_AR: Record<NonNullable<AdminNavItem["badge"]>, (n: number) => { title: string; sr: string }> = {
   awaitingCountersign: (n) => ({
-    title: `${n} عقدٍ موقَّعٍ ينتظر ختمَك واعتمادَ صاحبه`,
-    sr: `${n} عقدٍ موقَّعٍ ينتظر ختمَك`,
+    title: `${n} عقد موقّع ينتظر ختمك واعتماد صاحبه`,
+    sr: `${n} عقد موقّع ينتظر ختمك`,
   }),
   awaitingPlans: (n) => {
-    const said = countAr(n, { one: "خطّةٌ تنتظر", two: "خطّتان تنتظران", few: "خطط تنتظر", many: "خطّةً تنتظر" });
-    return { title: `${said} اعتمادَك — يُفتح بها تسجيلُ شعبها ويُفعَّل مدرّبُ الإعداد`, sr: `${said} اعتمادَك` };
+    const said = countAr(n, { one: "خطّة تنتظر", two: "خطّتان تنتظران", few: "خطط تنتظر", many: "خطّة تنتظر" });
+    return { title: `${said} اعتمادك — يفتح بها تسجيل شعبها ويفعّل مدرّب الإعداد`, sr: `${said} اعتمادك` };
   },
 };
 
@@ -261,9 +261,9 @@ export default function AdminLayout({ children, title }: { children: React.React
 
           {shown.length === 0 && (
             <p className="px-3 text-fine leading-6 text-muted-foreground">
-              لا شاشةَ تطابق «{q}» — جرّب كلمةً أقصر، أو
+              لا شاشة تطابق «{q}» — جرّب كلمة أقصر، أو
               <button type="button" onClick={() => setNavQuery("")} className="mx-1 cursor-pointer font-bold text-teal-light-ink hover:underline">امسح الترشيح</button>
-              لترى المجموعات كلَّها.
+              لترى المجموعات كلّها.
             </p>
           )}
         </aside>

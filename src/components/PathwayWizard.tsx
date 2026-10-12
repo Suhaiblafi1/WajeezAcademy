@@ -102,7 +102,7 @@ export default function PathwayWizard({ courses, onDone }: { courses: CourseOpti
       entityType: "pathway", entityId: createdId,
       payload: { action: "create", personas: d.personas, goals: d.goals, domainIds: d.domainIds, courseIds: d.courseIds },
     });
-    toast("قُدّم المسار للاعتماد — ينشره مراجع آخر");
+    toast("قدّم المسار للاعتماد — ينشره مراجع آخر");
     onDone();
   });
 
@@ -171,7 +171,7 @@ export default function PathwayWizard({ courses, onDone }: { courses: CourseOpti
           <div>
             <p className="mb-1 text-read font-black text-foreground">الشخصيات ({d.personas.length}) — إلزامي</p>
             <p className="mb-2 text-read leading-6 text-muted-foreground">
-              الشخصية تفتح المراحل المهنية التي يُرشَّح لها المسار. والفراغ لا يعني «الكل بحذر» — يعني أن المسار
+              الشخصية تفتح المراحل المهنية التي يرشّح لها المسار. والفراغ لا يعني «الكل بحذر» — يعني أن المسار
               يطابق كل شخصية بلا قيد، فينافس من لا يناسبه.
             </p>
             <div className="flex flex-wrap gap-2">
@@ -206,7 +206,7 @@ export default function PathwayWizard({ courses, onDone }: { courses: CourseOpti
             {unreachable.length > 0 && (
               <Inset as="p" tone="warn" className="mt-2 flex items-start gap-2 px-3 py-2 text-read leading-6 text-amber-300">
                 <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                <span>أهداف لا يُنتجها التدفق الحالي: <span dir="ltr" className="font-mono">{unreachable.join(" · ")}</span> — تُحفظ ولا تمنع، لكن المسار لن يُرشَّح منها؛ يبقى المجال والمهارة والمرحلة.</span>
+                <span>أهداف لا ينتجها التدفق الحالي: <span dir="ltr" className="font-mono">{unreachable.join(" · ")}</span> — تحفظ ولا تمنع، لكن المسار لن يرشّح منها؛ يبقى المجال والمهارة والمرحلة.</span>
               </Inset>
             )}
           </div>
@@ -223,8 +223,8 @@ export default function PathwayWizard({ courses, onDone }: { courses: CourseOpti
         <>
           <p className="mb-1 text-read font-black text-foreground">مجالات المسار ({d.domainIds.length}) — إلزامي</p>
           <p className="mb-2 text-read leading-6 text-muted-foreground">
-            المجال هو الباب الذي يدخل منه المسار إلى التوصية: يُطابَق بهدف المتعلم ووظيفته.
-            بلا مجال يُنشر المسار ولا يُوصى به أبدا — ولذلك لا يجتاز حاجز النشر.
+            المجال هو الباب الذي يدخل منه المسار إلى التوصية: يطابق بهدف المتعلم ووظيفته.
+            بلا مجال ينشر المسار ولا يوصى به أبدا — ولذلك لا يجتاز حاجز النشر.
             {d.domainIds.length > 1 && " الأول في اختيارك هو الأقرب."}
           </p>
           <div className="flex flex-wrap gap-2">
@@ -243,7 +243,7 @@ export default function PathwayWizard({ courses, onDone }: { courses: CourseOpti
       {key === "review" && (
         <div className="space-y-4">
           <Inset as="p" tone="positive" className="px-4 py-3 text-read leading-6 text-emerald-300">
-            أُنشئ المسار <span dir="ltr" className="font-mono">{createdId}</span> كمسودة بجمهوره ومجالاته ودوراته.
+            أنشئ المسار <span dir="ltr" className="font-mono">{createdId}</span> كمسودة بجمهوره ومجالاته ودوراته.
           </Inset>
 
           {readiness && (
@@ -264,7 +264,7 @@ export default function PathwayWizard({ courses, onDone }: { courses: CourseOpti
           )}
 
           <Button tone="secondary" disabled={busy !== null} onClick={checkImpact}>
-            {busy === "impact" ? "يحاكي ١٢ شخصية…" : impact ? "أعِد فحص الأثر" : "افحص الأثر التشخيصي"}
+            {busy === "impact" ? "يحاكي ١٢ شخصية…" : impact ? "أعد فحص الأثر" : "افحص الأثر التشخيصي"}
           </Button>
 
           {impact && (
@@ -273,7 +273,7 @@ export default function PathwayWizard({ courses, onDone }: { courses: CourseOpti
               {impact.changed.map((c) => <p key={c.name} className="text-amber-300">• {c.name}</p>)}
               {impact.changedCount === 0 && (
                 <p className="mt-1 text-muted-foreground">
-                  لا تغيير على الشخصيات الاثنتي عشرة — طبيعيٌّ لمسار جديد لا ينافس أحدا بعد،
+                  لا تغيير على الشخصيات الاثنتي عشرة — طبيعيّ لمسار جديد لا ينافس أحدا بعد،
                   والأثر يظهر حين يصبح منشورا ويدخل المنافسة.
                 </p>
               )}
@@ -281,8 +281,8 @@ export default function PathwayWizard({ courses, onDone }: { courses: CourseOpti
           )}
 
           <Inset as="p" className="px-4 py-3 text-read leading-6 text-foreground">
-            لا يُنشر المسار من هنا: كل كيان معتمد يحتاج طلب تغيير يعتمده <strong>شخص آخر</strong>
-            {" "}(maker-checker) — واعتماد الذات مرفوض. الزر التالي يقدّمه للاعتماد، ثم يَنشره
+            لا ينشر المسار من هنا: كل كيان معتمد يحتاج طلب تغيير يعتمده <strong>شخص آخر</strong>
+            {" "}(maker-checker) — واعتماد الذات مرفوض. الزر التالي يقدّمه للاعتماد، ثم ينشره
             المعتمد من «النشر والإصدارات» بعد اجتياز البوابة كاملة.
           </Inset>
         </div>
@@ -324,7 +324,7 @@ export default function PathwayWizard({ courses, onDone }: { courses: CourseOpti
           </Button>
         )}
         {step === 4 && !impact && (
-          <span className="text-fine text-muted-foreground">افحص الأثر أولا — لا يُقدَّم مسار لم يُعرف أثره.</span>
+          <span className="text-fine text-muted-foreground">افحص الأثر أولا — لا يقدّم مسار لم يعرف أثره.</span>
         )}
       </div>
     </Panel>

@@ -36,7 +36,7 @@ const ROUTES = 'server/http/routes/trainer-applications.routes.ts'
 const SERVICE = 'server/services/trainer-application.service.ts'
 
 describe('نموذج انضمام المدرب', () => {
-  it('حدّ الدافع رقمٌ واحد في الواجهة والمخطط والخدمة', () => {
+  it('حدّ الدافع رقم واحد في الواجهة والمخطط والخدمة', () => {
     const ui = /export const MOTIVATION_MIN = (\d+);/.exec(FORM())?.[1]
     const schema = /motivation: z\.string\(\)\.trim\(\)\.min\((\d+)\)/.exec(read(ROUTES))?.[1]
     const service = /motivation\.length < (\d+)\)/.exec(read(SERVICE))?.[1]
@@ -59,21 +59,21 @@ describe('نموذج انضمام المدرب', () => {
     expect(accred, 'الاعتماد عاد بين الروابط').toBeLessThan(links)
   })
 
-  it('جهات الاعتماد قائمةٌ عربية واسعة ومعها باب مفتوح', () => {
+  it('جهات الاعتماد قائمة عربية واسعة ومعها باب مفتوح', () => {
     const src = FORM()
     const block = /const ACCREDITATION_BODIES[\s\S]*?\n\];/.exec(src)?.[0] ?? ''
     const countries = block.match(/\{ country: "/g) ?? []
-    expect(countries.length, 'القائمة أضيق من أن تُغطّي الوطن العربي').toBeGreaterThanOrEqual(12)
+    expect(countries.length, 'القائمة أضيق من أن تغطّي الوطن العربي').toBeGreaterThanOrEqual(12)
     for (const must of ['السعودية', 'الأردن', 'الإمارات', 'مصر', 'المغرب']) {
       expect(block, `${must} خارج القائمة`).toContain(`{ country: "${must}"`)
     }
     /* «أخرى» ليست خيارا في القائمة فحسب — بل تفتح حقلا يُكتب فيه */
     expect(src).toMatch(/const ACCREDITATION_OTHER = "أخرى/)
-    expect(src, 'خيار «أخرى» لا يُعرض').toContain('<option value={ACCREDITATION_OTHER}>')
+    expect(src, 'خيار «أخرى» لا يعرض').toContain('<option value={ACCREDITATION_OTHER}>')
     expect(src, '«أخرى» بلا حقل كتابة').toContain('form.accreditationBody === ACCREDITATION_OTHER && (')
   })
 
-  it('كلّ شرطٍ يُطفئ «التالي» له اسمٌ يُقرأ', () => {
+  it('كلّ شرط يطفئ «التالي» له اسم يقرأ', () => {
     const src = FORM()
     const block = /const stepValid = useMemo\(\(\) => \(\{[\s\S]*?\}\), \[[^\]]*\]\);/.exec(src)?.[0] ?? ''
     expect(block, 'كتلة stepValid مفقودة').toBeTruthy()
@@ -85,9 +85,9 @@ describe('نموذج انضمام المدرب', () => {
       const expr = new RegExp(`\\n\\s*${n}: ([^\\n]*?),\\s*\\n`).exec(block)?.[1]
       expect(expr, `شرط الخطوة ${n} مفقود`).toBeTruthy()
       const terms = expr!.split('&&').map((t) => t.trim())
-      expect(terms, `الخطوة ${n} لا تُقاس بقائمة نقصها`).toContain(`missing[${n}].length === 0`)
+      expect(terms, `الخطوة ${n} لا تقاس بقائمة نقصها`).toContain(`missing[${n}].length === 0`)
       const stray = terms.filter((t) => !ALLOWED(n).includes(t))
-      expect(stray, `شرطٌ يُطفئ «التالي» في الخطوة ${n} بلا اسم في قائمة النقص`).toEqual([])
+      expect(stray, `شرط يطفئ «التالي» في الخطوة ${n} بلا اسم في قائمة النقص`).toEqual([])
     }
     /* وبما أنّ الزرّ صار يقرأ من القائمة، فإسقاط بندٍ منها يفتح البابَ لا
        يُبقيه مغلقا بلا سبب — فكلُّ إلزامٍ في النموذج له سطرُه هنا. */
@@ -100,14 +100,14 @@ describe('نموذج انضمام المدرب', () => {
       ['الدافع', 'motivationLen'], ['الخصوصية', 'form.privacyConsent'],
       ['السيرة الذاتية', 'uploads.cv'], ['ما يستطيع تقديمه', 'teachable.length === 0'], ['الدرس التجريبي', 'demoConsent'],
     ] as const) {
-      expect(list, `${subject}: إلزامٌ بلا سطرٍ في قائمة النقص — والزرّ يقرأ منها`).toContain(guard)
+      expect(list, `${subject}: إلزام بلا سطر في قائمة النقص — والزرّ يقرأ منها`).toContain(guard)
     }
 
     /* والقائمة تُعرض فعلا وتُنطق لقارئ الشاشة */
-    expect(src, 'قائمة النقص لا تُعرض').toContain('aria-live="polite"')
+    expect(src, 'قائمة النقص لا تعرض').toContain('aria-live="polite"')
   })
 
-  it('السؤال عن القادم لا عن الماضي: مجالٌ يقصّ الكتالوج، ونصٌّ حرّ بجانبه', () => {
+  it('السؤال عن القادم لا عن الماضي: مجال يقصّ الكتالوج، ونصّ حرّ بجانبه', () => {
     const src = FORM()
     /* والمحطّاتُ نزلت إلى ملفّ الخيارات — تقرؤها الصفحةُ ولا تكتبها */
     const optionsSrc = read('src/pages/join-trainer/options.ts')
@@ -118,12 +118,12 @@ describe('نموذج انضمام المدرب', () => {
     expect(src, 'الصفحة ما زالت ترسل الدورات السابقة').not.toContain('previousCourses:')
 
     expect(src, 'سؤال ما يستطيع تقديمه مفقود').toContain('ما الدورات التي تستطيع تقديمها؟')
-    expect(src, 'المعرّفات لا تُرسَل — فلا يُربط بمقرر عند التعيين').toContain('teachableCourseIds: teachable')
+    expect(src, 'المعرّفات لا ترسل — فلا يربط بمقرر عند التعيين').toContain('teachableCourseIds: teachable')
     /* أ-٣ (١٣ سبتمبر ٢٠٢٦): النصُّ الحرُّ صار سجلّاتٍ تُقرأ واحدةً تلو
        الأخرى، فالمحروسُ هو هو — أنّ ما ليس في الكتالوج يُرسَل ولا يُهمَل —
        وتبدّل شكلُه وحدَه. والعمودُ القديمُ لم يعد يُكتب. */
-    expect(src, 'ما ليس في الكتالوج لا يُرسَل').toContain('teachableProposals: cleanProposals(proposals)')
-    expect(src, 'العمودُ المهجورُ عاد يُكتب').not.toContain('teachableOther: teachableOther.trim()')
+    expect(src, 'ما ليس في الكتالوج لا يرسل').toContain('teachableProposals: cleanProposals(proposals)')
+    expect(src, 'العمود المهجور عاد يكتب').not.toContain('teachableOther: teachableOther.trim()')
 
     /* المجال أوّلا: الكتالوج مئةُ عنوان، وعرضُها دفعةً واحدة مسحٌ لا اختيار */
     const picker = read('src/components/TeachableCoursePicker.tsx')
@@ -131,14 +131,14 @@ describe('نموذج انضمام المدرب', () => {
     const listIdx = picker.indexOf('inDomain.map')
     expect(domainIdx, 'قائمة المجال مفقودة').toBeGreaterThan(0)
     expect(listIdx, 'قائمة دورات المجال مفقودة').toBeGreaterThan(0)
-    expect(domainIdx, 'الدورات تُعرض قبل المجال').toBeLessThan(listIdx)
+    expect(domainIdx, 'الدورات تعرض قبل المجال').toBeLessThan(listIdx)
     /* والمجالُ معرفيّ لا جمهور: كان يُقصّ بـ`pathwayCategory` وهي تُعيد
        «موظفون» و«طلاب ومهنة» — فيُسأل المدرّب عن مجاله فيُعرض عليه جمهور،
        ومن يُتقن الأمن السيبرانيّ لا يجده في القائمة أصلا. */
-    expect(picker, 'الدورات لا تُقصّ بالمجال المعرفيّ').toContain('courseDomain(c.id) === domain')
+    expect(picker, 'الدورات لا تقصّ بالمجال المعرفيّ').toContain('courseDomain(c.id) === domain')
     expect(picker, 'عاد التصنيف بالفئة المستهدفة').not.toContain('pathwayCategory')
     /* والكتالوج لا يصل مع الحزمة: بلا جلبه تبقى القائمة فارغة أبدا */
-    expect(picker, 'الكتالوج لا يُجلب — فالقائمة تبقى فارغة').toContain('usePublishedContent()')
+    expect(picker, 'الكتالوج لا يجلب — فالقائمة تبقى فارغة').toContain('usePublishedContent()')
 
     /* ═══ أربعُ محطّاتٍ تُرى، وثلاثٌ منها نموذجٌ يُملأ ═══
 
@@ -147,13 +147,13 @@ describe('نموذج انضمام المدرب', () => {
        تُملأ لَسقط ذاك الحارسُ صامتا — ولذلك يُفحص العددان معا. */
     const steps = (/const STEPS = \[[\s\S]*?\] as const;/.exec(optionsSrc)?.[0].match(/\{ n: \d+,/g) ?? []).length
     expect(steps, 'عدد المحطّات تغيّر').toBe(4)
-    expect(optionsSrc, 'محطّاتُ النموذج لم تعد معلَنةً — فالرابعةُ قد تصير خطوةً تُملأ')
+    expect(optionsSrc, 'محطّات النموذج لم تعد معلنة — فالرابعة قد تصير خطوة تملأ')
       .toContain('export const FORM_STEPS = 3')
-    expect(src, 'الإرسالُ لم يعد محبوسا في الخطوة الثالثة').toContain('if (step !== 3) return;')
+    expect(src, 'الإرسال لم يعد محبوسا في الخطوة الثالثة').toContain('if (step !== 3) return;')
     /* والمنتقي داخل خطوة الأدلة لا خطوةً مستقلّة */
   })
 
-  it('«التالي» لا يُرسل الطلب — وشاشة الحساب لا تُقفَز', () => {
+  it('«التالي» لا يرسل الطلب — وشاشة الحساب لا تقفز', () => {
     const src = FORM()
     /* زرٌّ واحد يتبدّل نوعه من button إلى submit على العنصر نفسه: فعلُ النقرة
        الافتراضيّ يقع بعد إعادة الرسم فيُرسَل الطلب فورا وتُقفز الخطوة الثالثة.
@@ -170,23 +170,23 @@ describe('نموذج انضمام المدرب', () => {
   it('التوفّر يقول متى من اليوم لا اليوم وحده', () => {
     const src = FORM()
     expect(src).toMatch(/const PERIODS = \[[\s\S]*?value: 'morning'[\s\S]*?value: 'evening'[\s\S]*?\] as const/)
-    expect(src, 'الفترات لا تُرسَل مع التوفّر').toContain('periods: periods.length ? periods : undefined')
+    expect(src, 'الفترات لا ترسل مع التوفّر').toContain('periods: periods.length ? periods : undefined')
     /* والخادم يقبلها — وإلّا سقط الطلب كلّه عند الإرسال */
     expect(read(ROUTES), 'المخطط لا يعرف الفترات').toContain("periods: z.array(z.enum(['morning', 'evening'])).optional()")
   })
 
-  it('المسودّة تُحفظ وتُستأنف، ولا تحفظ سرّا', () => {
+  it('المسودّة تحفظ وتستأنف، ولا تحفظ سرّا', () => {
     const src = FORM()
     expect(src, 'لا حفظ للمسودّة').toContain('saveDraft({')
     expect(src, 'لا استئناف').toContain('loadDraft()')
     /* المسح عند نجاح الإرسال بعينه — لا في مكانٍ آخر يجعل الفحص يمرّ به */
     expect(src, 'المسودّة تبقى بعد وصول الطلب').toMatch(/setPhase2Done\(true\);\s*\n\s*clearDraft\(\);/)
-    expect(src, 'الاستئناف يقع صامتا بلا أن يُقال').toContain('أكملنا من حيث توقّفت')
+    expect(src, 'الاستئناف يقع صامتا بلا أن يقال').toContain('أكملنا من حيث توقّفت')
 
     /* كلمة المرور ورمز التحقق أسرارٌ عابرة: تُستثنى في الوحدة نفسها لا بالنسيان */
     const draft = read('src/application/trainer/application-draft.ts')
     expect(draft).toMatch(/NEVER_PERSISTED = \['accountPassword', 'verifyTokenInput', 'password', 'passwordConfirm'\]/)
-    expect(draft, 'الاستثناء معلَنٌ ولا يُطبَّق').toContain('if ((NEVER_PERSISTED as readonly string[]).includes(k)) continue')
+    expect(draft, 'الاستثناء معلن ولا يطبّق').toContain('if ((NEVER_PERSISTED as readonly string[]).includes(k)) continue')
   })
 
   /* ── الهيئة: سؤالٌ له حدّ، وحقلٌ بقياسٍ واحد، وخياراتٌ متساوية ──
@@ -198,7 +198,7 @@ describe('نموذج انضمام المدرب', () => {
 
      والإصلاحُ بنيويّ لا تجميليّ، فيُحرَس بنيويّا: بطاقةُ سؤالٍ مرقّمة لكلّ
      مجموعة، وشبكةٌ متساوية الخلايا للخيارات — ولا عودةَ للرصف الحرّ. */
-  it('الهيئة: كلّ سؤالٍ في بطاقةٍ مرقّمة، والخيارات في شبكةٍ متساوية', () => {
+  it('الهيئة: كلّ سؤال في بطاقة مرقّمة، والخيارات في شبكة متساوية', () => {
     const src = FORM()
 
     /* البطاقات: ثمانٍ في الخطوة الأولى وثلاثٌ في الثانية — لا شريطٌ واحد */
@@ -206,11 +206,11 @@ describe('نموذج انضمام المدرب', () => {
     expect(cards.length, 'اختفت بطاقات الأسئلة فعاد الشريط الواحد').toBeGreaterThanOrEqual(10)
 
     /* الخيارات في شبكة — و`Chips` (الرصف بعرض النصّ) لا يعود */
-    expect(src, 'الخيارات لا تُرصَف في شبكة').toContain('<ChoiceGrid')
+    expect(src, 'الخيارات لا ترصف في شبكة').toContain('<ChoiceGrid')
     expect(src, 'عاد الرصف الحرّ المتعرّج').not.toContain('<Chips')
 
     /* قياسٌ واحد لكلّ حقل — لا صنفٌ يُكتب بيد كلّ حقل على حدة */
-    expect(src, 'صنف الحقول القديم ما زال يُستعمل').not.toContain('const inputCls')
+    expect(src, 'صنف الحقول القديم ما زال يستعمل').not.toContain('const inputCls')
     expect(src, 'الحقول لا تأخذ القياس الموحّد').toContain('controlCls')
 
     /* والعناوين الصغيرة المكتوبة بيدٍ لكلّ حقل حلّ محلَّها `Field` */
@@ -228,7 +228,7 @@ describe('نموذج انضمام المدرب', () => {
 
      والبابان اللذان أُغلقا يُحرسان هنا معا — وإغلاقُ أحدهما وحدَه لا يكفي:
      الأوّلُ يمنع الحلقةَ على من يأتي، والثاني يُخرج منها من هو فيها. */
-  it('رقمُ الجوال شرطٌ في القسم الأوّل — لا في الثالث وحدَه', () => {
+  it('رقم الجوال شرط في القسم الأوّل — لا في الثالث وحده', () => {
     const src = FORM()
     const list = /const missing = useMemo\(\(\) => \{[\s\S]*?\n {2}\}, \[[^\]]*\]\);/.exec(src)?.[0] ?? ''
     expect(list, 'كتلة قائمة النقص مفقودة').toBeTruthy()
@@ -240,26 +240,26 @@ describe('نموذج انضمام المدرب', () => {
       .split('\n')
       .find((l) => l.includes('m[1].push') && l.includes('form.phone'))
     expect(step1.length, 'قائمة نقص القسم الأوّل فارغة').toBeGreaterThan(0)
-    expect(phoneLine, 'الرقم ليس شرطا في القسم الأوّل — فيُنشأ طلبٌ بلا رقم').toBeTruthy()
+    expect(phoneLine, 'الرقم ليس شرطا في القسم الأوّل — فينشأ طلب بلا رقم').toBeTruthy()
 
     /* وحدٌّ واحدٌ يحكم القسمَين: لو افترقا قَبِل قسمٌ ما يردّه الآخر */
-    expect(/export const PHONE_MIN_DIGITS = (\d+);/.exec(src)?.[1], 'لا حدَّ معلَن للرقم').toBeTruthy()
+    expect(/export const PHONE_MIN_DIGITS = (\d+);/.exec(src)?.[1], 'لا حدّ معلن للرقم').toBeTruthy()
     const uses = src.match(/normalizeDigits\(form\.phone\)\.length < PHONE_MIN_DIGITS/g) ?? []
-    expect(uses.length, 'القسمان لا يقيسان الرقمَ بالحدّ نفسِه').toBeGreaterThanOrEqual(2)
+    expect(uses.length, 'القسمان لا يقيسان الرقم بالحدّ نفسه').toBeGreaterThanOrEqual(2)
 
     /* والحقلُ نفسُه يقول إنّه مطلوب — وإلّا فالنجمةُ غائبةٌ والقائمةُ تتّهم */
     const field = /<Field label="رقم الجوال[^>]*>/.exec(src)?.[0] ?? ''
     expect(field, 'حقل رقم الجوال مفقود').toBeTruthy()
-    expect(field, 'الحقل لا يُعلن أنّه مطلوب').toContain('required')
+    expect(field, 'الحقل لا يعلن أنّه مطلوب').toContain('required')
     expect(field, 'الحقل بلا رسالة خطأ').toContain('error={errOf("phone")}')
   })
 
-  it('الرقمُ يعبر إلى الخادم مع القسم الأخير — لا مع الأوّل وحدَه', () => {
+  it('الرقم يعبر إلى الخادم مع القسم الأخير — لا مع الأوّل وحده', () => {
     /* الطرفُ الثاني من الإغلاق: من أُنشئ طلبُه بلا رقمٍ قبل اليوم ما زال
        مفتوحا، وتصحيحُه لا يصل إلّا إن حمله نداءُ `phase-2`. */
     const submit = /const submit = async \(e: React\.FormEvent\) => \{[\s\S]*?\n {2}\};/.exec(read(PAGE))?.[0] ?? ''
     expect(submit, 'دالة الإرسال مفقودة').toBeTruthy()
-    expect(submit, 'الإرسال الأخير لا يحمل الرقم — فتصحيحُه لا يصل').toMatch(/phone: normalizeDigits\(form\.phone\)/)
+    expect(submit, 'الإرسال الأخير لا يحمل الرقم — فتصحيحه لا يصل').toMatch(/phone: normalizeDigits\(form\.phone\)/)
 
     /* والخادمُ يقبله ويكتبه — وإلّا فالنداءُ يحمله ويُرمى */
     expect(read(ROUTES), 'مخطط القسم الأخير لا يقبل الرقم').toMatch(/phone: z\.string\(\)\.max\(20\)\.optional\(\)/)
@@ -267,14 +267,14 @@ describe('نموذج انضمام المدرب', () => {
     const phase2 = /async completePhase2\([\s\S]*?\n {2}\}\n/.exec(svc)?.[0] ?? ''
     expect(phase2, 'دالة القسم الأخير مفقودة').toBeTruthy()
     expect(phase2, 'الخدمة لا تقرأ الرقم الواصل').toContain('input.phone')
-    expect(phase2, 'الرقم الواصل لا يُكتب في القاعدة').toMatch(/sentPhone \? \{ phone/)
+    expect(phase2, 'الرقم الواصل لا يكتب في القاعدة').toMatch(/sentPhone \? \{ phone/)
     /* وحارسُ الوسيلة يقيس الرقمَ الفعليّ لا المحفوظَ وحدَه — وإلّا بقيت
        الحلقةُ قائمةً ولو وصل الرقمُ في النداء نفسِه. */
-    expect(phase2, 'الحارس ما زال يقرأ المحفوظ وحدَه').not.toContain('def.needsPhone && !app.phone')
+    expect(phase2, 'الحارس ما زال يقرأ المحفوظ وحده').not.toContain('def.needsPhone && !app.phone')
     expect(phase2, 'الحارس لا يقيس الرقم الفعليّ').toContain('def.needsPhone && !phone')
   })
 
-  it('الشبكة تُسوّي الخلايا فعلا — لا تكتفي بالاسم', () => {
+  it('الشبكة تسوّي الخلايا فعلا — لا تكتفي بالاسم', () => {
     const kit = read('src/components/FormKit.tsx')
     /* خليّةٌ بعرضٍ كامل وارتفاعٍ أدنى موحّد: هذا ما يجعلها متساوية */
     expect(kit, 'الخليّة لا تملأ عمودها فتعود بعرض نصّها').toContain('min-h-12 w-full')
@@ -295,79 +295,79 @@ describe('نموذج انضمام المدرب', () => {
    ٢) الدولُ كلُّها ويُبحث فيها بالاسم — لا أحدَ عشرَ رمزا في قائمةٍ منسدلة.
    ٣) المضيُّ إلى القسم التالي يريه رأسَه لا ذيلَه.
    ٤) والملخّصُ يسمّي ما سيصل المراجعَ ولا يعدّه. */
-describe('نموذج انضمام المدرب — جولةُ الطلبات', () => {
-  it('الشرطُ داخلَ الصندوق: كلمةُ المرور والساعاتُ والهاتف', () => {
+describe('نموذج انضمام المدرب — جولة الطلبات', () => {
+  it('الشرط داخل الصندوق: كلمة المرور والساعات والهاتف', () => {
     const src = read(PAGE)
     /* الجملةُ المحذوفةُ بعينها — عادت إن ظهرت */
-    expect(src, 'جملةُ «بلا رمز الدولة» عادت تحت حقل الهاتف').not.toContain('بلا رمز الدولة وبلا صفر البداية')
+    expect(src, 'جملة «بلا رمز الدولة» عادت تحت حقل الهاتف').not.toContain('بلا رمز الدولة وبلا صفر البداية')
 
     const phone = /<Field label="رقم الجوال[^>]*>/.exec(src)?.[0] ?? ''
     expect(phone, 'حقل الهاتف مفقود').toBeTruthy()
-    expect(phone, 'عاد التلميحُ تحت حقل الهاتف').not.toContain('hint=')
+    expect(phone, 'عاد التلميح تحت حقل الهاتف').not.toContain('hint=')
 
     const password = /<Field label="كلمة المرور"[^>]*>/.exec(src)?.[0] ?? ''
     expect(password, 'حقل كلمة المرور مفقود').toBeTruthy()
-    expect(password, 'حدُّ كلمة المرور عاد تحت الصندوق').not.toContain('hint=')
+    expect(password, 'حدّ كلمة المرور عاد تحت الصندوق').not.toContain('hint=')
     /* والحدُّ داخلَ الصندوق فعلا — لا محذوفا بحجّة النقل */
     const passwordInput = /<input\s+id="jt-password"[\s\S]*?\/>/.exec(src)?.[0] ?? ''
-    expect(passwordInput, 'صندوقُ كلمة المرور بلا حدٍّ مكتوبٍ فيه').toContain('placeholder="٨ أحرف على الأقل"')
+    expect(passwordInput, 'صندوق كلمة المرور بلا حدّ مكتوب فيه').toContain('placeholder="٨ أحرف على الأقل"')
 
     const hours = /<Field label="ساعات أسبوعيا[^>]*>/.exec(src)?.[0] ?? ''
     expect(hours, 'حقل الساعات مفقود').toBeTruthy()
-    expect(hours, 'شرطُ الساعات عاد تحت الصندوق').not.toContain('hint=')
+    expect(hours, 'شرط الساعات عاد تحت الصندوق').not.toContain('hint=')
     const hoursInput = /<input id="jt-hours"[\s\S]*?\/>/.exec(src)?.[0] ?? ''
-    expect(hoursInput, 'صندوقُ الساعات بلا شرطٍ مكتوبٍ فيه').toContain('placeholder="بالأرقام الإنجليزية (1–80)"')
+    expect(hoursInput, 'صندوق الساعات بلا شرط مكتوب فيه').toContain('placeholder="بالأرقام الإنجليزية (1–80)"')
   })
 
-  it('الدولُ كلُّها من مصدرٍ واحدٍ يُبحث فيه — لا قائمةٌ مكتوبةٌ بيد', () => {
+  it('الدول كلّها من مصدر واحد يبحث فيه — لا قائمة مكتوبة بيد', () => {
     const src = FORM()
     /* القائمةُ اليدويّةُ لا تعود — لا بالاسم ولا بمحتواها */
-    expect(src, 'عادت قائمةُ رموزِ الهاتف المكتوبةُ بيد').not.toContain('COUNTRY_CODES')
-    expect(src, 'عادت خريطةُ المناطق الزمنيّة المكتوبةُ بيد').not.toContain('COUNTRY_TIMEZONE')
-    expect(src, 'الدولُ العربيّةُ لم تعد تُشتقّ من المصدر الواحد').toContain('ARAB_COUNTRY_NAMES')
+    expect(src, 'عادت قائمة رموز الهاتف المكتوبة بيد').not.toContain('COUNTRY_CODES')
+    expect(src, 'عادت خريطة المناطق الزمنيّة المكتوبة بيد').not.toContain('COUNTRY_TIMEZONE')
+    expect(src, 'الدول العربيّة لم تعد تشتقّ من المصدر الواحد').toContain('ARAB_COUNTRY_NAMES')
 
     /* ومنتقيان يُبحث فيهما لا `<select>` — والقديمان لا يعودان */
     expect(src, 'منتقي رمز الدولة غائب').toContain('<PhoneCodePicker id="jt-cc"')
     expect(src, 'منتقي دولة الإقامة غائب').toContain('<CountryPicker id="jt-country"')
-    expect(src, 'عادت القائمةُ المنسدلةُ لرمز الدولة').not.toMatch(/<select id="jt-cc"/)
-    expect(src, 'عادت القائمةُ المنسدلةُ لدولة الإقامة').not.toMatch(/<select id="jt-country"/)
+    expect(src, 'عادت القائمة المنسدلة لرمز الدولة').not.toMatch(/<select id="jt-cc"/)
+    expect(src, 'عادت القائمة المنسدلة لدولة الإقامة').not.toMatch(/<select id="jt-country"/)
 
     /* والمنتقي يُبحث فيه فعلا: صندوقُ بحثٍ ودورٌ معلَن، لا زينةُ اسم */
     const picker = read('src/components/CountryPicker.tsx')
     expect(picker, 'المنتقي بلا صندوق بحث').toContain("role=\"combobox\"")
-    expect(picker, 'المنتقي بلا قائمةٍ معلَنةٍ لقارئ الشاشة').toContain("role=\"listbox\"")
-    expect(picker, 'المنتقي لا يستعمل بحثَ القائمة').toContain('searchCountries')
+    expect(picker, 'المنتقي بلا قائمة معلنة لقارئ الشاشة').toContain("role=\"listbox\"")
+    expect(picker, 'المنتقي لا يستعمل بحث القائمة').toContain('searchCountries')
     /* ولوحةُ المفاتيح: أسهمٌ واختيارٌ وطيّ — من يملأ نموذجا لا يرفع يدَه للفأرة */
     for (const key of ['ArrowDown', 'ArrowUp', 'Enter', 'Escape']) {
       expect(picker, `المنتقي لا يستجيب لـ${key}`).toContain(`'${key}'`)
     }
     /* والمنطقةُ الزمنيّةُ تُشتقّ من القائمة العالميّة لا من تسعَ عشرةَ دولة */
-    expect(read(PAGE), 'المنطقةُ الزمنيّةُ لم تعد تُشتقّ').toContain('timezone: timezoneOf(form.country)')
+    expect(read(PAGE), 'المنطقة الزمنيّة لم تعد تشتقّ').toContain('timezone: timezoneOf(form.country)')
   })
 
-  it('المضيُّ يُري رأسَ القسم لا ذيلَه — وبعد الرسم لا معه', () => {
+  it('المضيّ يري رأس القسم لا ذيله — وبعد الرسم لا معه', () => {
     const src = read(PAGE)
     const next = /const next = async \(\) => \{[\s\S]*?\n {2}\};/.exec(src)?.[0] ?? ''
     expect(next, 'دالة المضيّ مفقودة').toBeTruthy()
     /* التمريرُ داخلَ المعالِج يبدأ على القسم القديم ويُقطع حين يُستبدل */
-    expect(next, 'عاد التمريرُ إلى معالِج الزرّ — يقع قبل الرسم فيُلقى المتقدّم في الذيل')
+    expect(next, 'عاد التمرير إلى معالج الزرّ — يقع قبل الرسم فيلقى المتقدّم في الذيل')
       .not.toContain('window.scrollTo')
 
     /* والأثرُ يُلتقط بمرساته لا بأوّل `useEffect` في الملفّ: تعبيرٌ جشعٌ
        يبدأ من أثرٍ آخرَ فيحرس ما لم يُقصد. فالبدايةُ إعلانُ المرساة. */
     const effect = /const stepsRef[\s\S]*?\}, \[step\]\);/.exec(src)?.[0] ?? ''
-    expect(effect, 'لا أثرَ يمرّر بعد تبدّل القسم').toBeTruthy()
+    expect(effect, 'لا أثر يمرّر بعد تبدّل القسم').toBeTruthy()
     /* ووثبةٌ لا رحلة: «الناعم» يُقطع في منتصفه حين يتبدّل المحتوى */
-    expect(effect, 'التمريرُ عاد ناعما فيُقطع في منتصفه').not.toContain('smooth')
+    expect(effect, 'التمرير عاد ناعما فيقطع في منتصفه').not.toContain('smooth')
     /* والتركيزُ ينتقل معه — وإلّا بقي على زرٍّ اختفى */
-    expect(effect, 'التركيزُ لا ينتقل إلى القسم الجديد').toContain('focus(')
+    expect(effect, 'التركيز لا ينتقل إلى القسم الجديد').toContain('focus(')
     /* والمرساةُ تُمرَّر إلى شريط المحطّات بعد أن صار مكوّنا يُرسم في الشاشتين
        — فتُفحص الحلقةُ كاملةً: تسليمُ المرساة، ثمّ حملُها على القائمة مع
        `tabIndex`. ولو انقطع طرفٌ منها لم يقبل العنصرُ التركيزَ أصلا. */
-    expect(src, 'المرساةُ لا تصل شريطَ المحطّات').toMatch(/<StepBar[^>]*listRef=\{stepsRef\}/)
-    expect(src, 'شريطُ المحطّات بلا `tabIndex` فلا يقبل التركيز').toMatch(/ref=\{listRef\}[^>]*tabIndex=\{-1\}/)
+    expect(src, 'المرساة لا تصل شريط المحطّات').toMatch(/<StepBar[^>]*listRef=\{stepsRef\}/)
+    expect(src, 'شريط المحطّات بلا `tabIndex` فلا يقبل التركيز').toMatch(/ref=\{listRef\}[^>]*tabIndex=\{-1\}/)
     /* والترويسةُ لاصقةٌ فوق الصفحة — فبلا هامشِ تمريرٍ تحجب ما وُثب إليه */
-    expect(src, 'المرساةُ تحت الترويسة اللاصقة بلا هامش').toMatch(/ref=\{listRef\}[\s\S]{0,200}scroll-mt-/)
+    expect(src, 'المرساة تحت الترويسة اللاصقة بلا هامش').toMatch(/ref=\{listRef\}[\s\S]{0,200}scroll-mt-/)
   })
 
   /* ═══ والشكوى نفسُها وقعت على الشاشة التالية (١٩ سبتمبر ٢٠٢٦) ═══
@@ -377,165 +377,165 @@ describe('نموذج انضمام المدرب — جولةُ الطلبات', (
      تمريرٌ يقع في المعالِج قبل أن تُرسَم شاشةُ النجاح، و`scroll-behavior:
      smooth` في `index.css` تجعله رحلةً تُقطع حين ينكمش المستند — فيستقرّ
      المتصفّح عند تذييل الشاشة الجديدة، والتقويمُ فوقَ رأسه. */
-  it('⚠️ وشاشةُ النجاح تُفتح من رأسها — وبعد الرسم لا معه', () => {
+  it('⚠️ وشاشة النجاح تفتح من رأسها — وبعد الرسم لا معه', () => {
     const src = read(PAGE)
     const submit = /const submit = async \(e: React\.FormEvent\) => \{[\s\S]*?\n {2}\};/.exec(src)?.[0] ?? ''
-    expect(submit, 'دالةُ الإرسال مفقودة').toBeTruthy()
+    expect(submit, 'دالة الإرسال مفقودة').toBeTruthy()
     /* وهي الدالّةُ التي تُظهر الشاشة — فلو لم تظهرها لكان الحارسُ يحرس غيرَها */
-    expect(submit, 'الإرسالُ لم يعد يُظهر شاشةَ النجاح').toContain('setPhase2Done(true)')
-    expect(submit, 'عاد التمريرُ إلى معالِج الإرسال — يقع قبل الرسم فيُلقى المتقدّم في التذييل')
+    expect(submit, 'الإرسال لم يعد يظهر شاشة النجاح').toContain('setPhase2Done(true)')
+    expect(submit, 'عاد التمرير إلى معالج الإرسال — يقع قبل الرسم فيلقى المتقدّم في التذييل')
       .not.toContain('window.scrollTo')
 
     /* والأثرُ يُلتقط بمرساته لا بأوّل `useEffect`: تعبيرٌ جشعٌ يحرس ما لم يُقصد */
     const effect = /const doneRef[\s\S]*?\}, \[phase2Done\]\);/.exec(src)?.[0] ?? ''
-    expect(effect, 'لا أثرَ يمرّر بعد ظهور شاشة النجاح').toBeTruthy()
+    expect(effect, 'لا أثر يمرّر بعد ظهور شاشة النجاح').toBeTruthy()
     /* ووثبةٌ لا رحلة: «الناعم» يُقطع حين ينكمش المستند */
-    expect(effect, 'التمريرُ عاد ناعما فيُقطع في منتصفه').not.toContain('smooth')
+    expect(effect, 'التمرير عاد ناعما فيقطع في منتصفه').not.toContain('smooth')
     /* والتركيزُ ينتقل معه — وإلّا بقي على زرٍّ اختفى */
-    expect(effect, 'التركيزُ لا ينتقل إلى رأس الشاشة الجديدة').toContain('focus(')
+    expect(effect, 'التركيز لا ينتقل إلى رأس الشاشة الجديدة').toContain('focus(')
     /* والمرساةُ محمولةٌ على الشاشة فعلا، تقبل التركيزَ ولا تختفي تحت الترويسة */
-    expect(src, 'المرساةُ لا تصل شاشةَ النجاح').toMatch(/ref=\{doneRef\}[^>]*tabIndex=\{-1\}/)
-    expect(src, 'المرساةُ تحت الترويسة اللاصقة بلا هامش').toMatch(/ref=\{doneRef\}[\s\S]{0,200}scroll-mt-/)
+    expect(src, 'المرساة لا تصل شاشة النجاح').toMatch(/ref=\{doneRef\}[^>]*tabIndex=\{-1\}/)
+    expect(src, 'المرساة تحت الترويسة اللاصقة بلا هامش').toMatch(/ref=\{doneRef\}[\s\S]{0,200}scroll-mt-/)
   })
 
-  it('الملخّصُ يسمّي ما سيصل المراجعَ ولا يعدّه', () => {
+  it('الملخّص يسمّي ما سيصل المراجع ولا يعدّه', () => {
     const src = read(PAGE)
     /* والفحصُ على البنية لا على ورودِ حرف: الجملةُ القديمةُ تُذكر في تعليقٍ
        يشرح ما كان، فحارسٌ يفتّش عن حروفها يحمرّ على شرحه لا على عودته.
        فالمحروسُ **التعبيرُ الذي كان يعدّ**. */
-    expect(src, 'عاد عدُّ المستندات بلا اسم')
+    expect(src, 'عاد عدّ المستندات بلا اسم')
       .not.toMatch(/Object\.values\(uploads\)\.filter\([^)]*\)\.length/)
     /* من `uploadedDocs` إلى آخر الجدول: المستنداتُ تُسمّى قبله والصفوفُ تقرؤه */
     const rows = /const uploadedDocs[\s\S]*?\n {2}\];/.exec(src)?.[0] ?? ''
-    expect(rows, 'جدولُ الملخّص مفقود').toBeTruthy()
+    expect(rows, 'جدول الملخّص مفقود').toBeTruthy()
     /* المستنداتُ باسم نوعِها واسمِ ملفِّها — «١ مستندا» لا يُراجَع */
-    expect(rows, 'المستنداتُ لا تُسمّى بنوعها').toContain('DOC_KINDS')
-    expect(rows, 'اسمُ الملفّ المرفوع لا يُعرض').toMatch(/uploads\[d\.kind\]\?\.name/)
+    expect(rows, 'المستندات لا تسمّى بنوعها').toContain('DOC_KINDS')
+    expect(rows, 'اسم الملفّ المرفوع لا يعرض').toMatch(/uploads\[d\.kind\]\?\.name/)
     /* وما يُتواصَل به معه أمامَه — أكثرُ ما يُخطئ فيه الناسُ */
     for (const key of ['form.email', 'form.phone', 'contactChannel']) {
-      expect(rows, `الملخّصُ لا يعرض ${key} — وهو ما سيُتواصَل به`).toContain(key)
+      expect(rows, `الملخّص لا يعرض ${key} — وهو ما سيتواصل به`).toContain(key)
     }
     /* وخبرتُه واعتمادُه وتوفّرُه — لا سطرٌ عامٌّ واحد */
     for (const k of ['خبرتك', 'اعتمادك', 'توفّرك', 'مستنداتك', 'ما تستطيع تدريسه']) {
-      expect(rows, `الملخّصُ بلا سطرِ «${k}»`).toContain(k)
+      expect(rows, `الملخّص بلا سطر «${k}»`).toContain(k)
     }
     /* وما لم يُملأ يُقال ولا يُسكت عنه: السكوتُ يُقرأ رضا */
-    expect(src, 'الحقلُ الفارغ يُسكت عنه فيظنّ المتقدّمُ أنّه مملوء').toContain('لم تذكره')
+    expect(src, 'الحقل الفارغ يسكت عنه فيظنّ المتقدّم أنّه مملوء').toContain('لم تذكره')
   })
 })
 
 /* ═══ ثلاثُ شكاوى من صاحب المنصّة على الهاتف (١٢ سبتمبر ٢٠٢٦) ═══ */
-describe('نقرةٌ واحدةٌ، وعنوانٌ لا يفترض، ووعدٌ يُوفى', () => {
+describe('نقرة واحدة، وعنوان لا يفترض، ووعد يوفى', () => {
   const src = read(PAGE)
   /* بلا التعليقات — فذِكرُ الشيء في شرحٍ ليس فعلا له */
   const code = src.replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '')
 
-  it('الفئاتُ الثمانُ تُنقر نقرةً واحدة — لا منسدلةً تُفتح ثمّ يُختار منها', () => {
+  it('الفئات الثمان تنقر نقرة واحدة — لا منسدلة تفتح ثمّ يختار منها', () => {
     /* «يجب أن أنقر نقرتين لأختار؟» — وثمانيةٌ تسع الشاشةَ ظاهرة، وأخواتُها
        في هذا النموذج كلُّها شبكةٌ تُنقر مرّة. */
     const grid = /<ChoiceGrid[^>]*TARGET_AUDIENCES/s.test(code)
       || /options=\{TARGET_AUDIENCES\}[\s\S]{0,200}?onToggle/.test(code)
-    expect(grid, 'الفئاتُ ما زالت خلفَ منسدلة').toBe(true)
-    expect(code, 'الفئاتُ ما زالت في MultiPick').not.toMatch(/<MultiPick[^>]*TARGET_AUDIENCES/s)
+    expect(grid, 'الفئات ما زالت خلف منسدلة').toBe(true)
+    expect(code, 'الفئات ما زالت في MultiPick').not.toMatch(/<MultiPick[^>]*TARGET_AUDIENCES/s)
     /* والدولُ تبقى منسدلةً: اثنتان وعشرون فأكثر، وشبكتُها جدارٌ يبتلع الصفحة */
-    expect(code, 'الدولُ خرجت من المنسدلة — وشبكتُها تبتلع الصفحة').toMatch(/<MultiPick[^>]*ARAB_COUNTRIES/s)
+    expect(code, 'الدول خرجت من المنسدلة — وشبكتها تبتلع الصفحة').toMatch(/<MultiPick[^>]*ARAB_COUNTRIES/s)
   })
 
   it('وعنوانا التواصل لا يفترضان أنّ الحساب مهنيّ', () => {
     /* «لا داعي لذلك، لأنّه ممكن يكون شخصيّا أو مهنيّا» — وأكثرُ المدرّبين
        جمهورُهم على حسابٍ واحدٍ لا يُصنّف. */
     expect(code, 'ما زال يفترض حسابا مهنيّا').not.toContain('حساب إنستغرام المهني')
-    expect(code, 'ما زال يفترض صفحةً مهنيّة').not.toContain('صفحة فيسبوك المهنية')
-    expect(code, 'حقلُ إنستغرام اختفى').toContain('حساب إنستغرام')
+    expect(code, 'ما زال يفترض صفحة مهنيّة').not.toContain('صفحة فيسبوك المهنية')
+    expect(code, 'حقل إنستغرام اختفى').toContain('حساب إنستغرام')
   })
 
-  it('⚠️ ومتابعةُ الحالة تعرض زرَّ الحجز فعلا — والنصُّ يعد بزرٍّ «أدناه»', () => {
+  it('⚠️ ومتابعة الحالة تعرض زرّ الحجز فعلا — والنصّ يعد بزرّ «أدناه»', () => {
     /* «احجز موعدَ اجتماعك التعريفيّ من الزرّ أدناه» كانت تُقال في بطاقة
        المتابعة ولا زرَّ تحتها: يُغلق المتقدّمُ الصفحةَ ولا يحجز، ونظنّه
        تأخّر. والشرطُ شرطُ صفحة الحالة نفسُه — لا يُدعى من حجز. */
     const card = src.slice(src.indexOf('lookupResult &&'))
-    expect(card, 'بطاقةُ المتابعة بلا زرِّ حجز').toContain('<BookInterview')
-    expect(card, 'يُعرض لمن لا تقبل حالتُه الحجز').toContain('BOOKABLE_STATUSES.includes')
-    expect(card, 'يُعرض لمن حجز سلفا').toContain('!lookupResult.hasInterview')
+    expect(card, 'بطاقة المتابعة بلا زرّ حجز').toContain('<BookInterview')
+    expect(card, 'يعرض لمن لا تقبل حالته الحجز').toContain('BOOKABLE_STATUSES.includes')
+    expect(card, 'يعرض لمن حجز سلفا').toContain('!lookupResult.hasInterview')
   })
 })
 
 /* ═══ أربعُ شكاوى من الهاتف (١٢ سبتمبر ٢٠٢٦) ═══ */
-describe('الحقولُ لا تُكبّر iOS، والمثالُ يتبع الدولة، والتقويمُ يُرى وهو يُحمَّل', () => {
+describe('الحقول لا تكبّر iOS، والمثال يتبع الدولة، والتقويم يرى وهو يحمّل', () => {
   const page = read(PAGE).replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '')
 
-  it('⚠️ حقولُ النماذج ١٦ بكسلا — دونَها يُكبّر iOS الصفحةَ عند التركيز فتُسحب', () => {
+  it('⚠️ حقول النماذج ١٦ بكسلا — دونها يكبّر iOS الصفحة عند التركيز فتسحب', () => {
     /* شكوى «القسم الثاني وما بعده يتحرّك يمينا ويسارا» على iPhone. ولا
        امتدادَ أفقيّا في الصفحة — قِيست على ٣٦٠ و٣٩٠ و٤١٢ فلم يتجاوز شيء،
        ولا عنصرَ يُسحب. والسببُ تكبيرُ iOS التلقائيُّ تحت ستّةَ عشر. */
     const kit = readFileSync(join(root, 'src/components/FormKit.tsx'), 'utf8')
     const ctl = /export const controlCls\s*=\s*\n?\s*'([^']*)'/.exec(kit)?.[1] ?? ''
     const area = /export const areaCls\s*=\s*\n?\s*'([^']*)'/.exec(kit)?.[1] ?? ''
-    expect(ctl, 'صنفُ الحقل غيرُ موجود').toBeTruthy()
+    expect(ctl, 'صنف الحقل غير موجود').toBeTruthy()
     for (const [name, cls] of [['controlCls', ctl], ['areaCls', area]] as const) {
-      expect(cls, `${name} ما زال دون ١٦ بكسلا — يُكبّر iOS الصفحةَ عند التركيز`).not.toMatch(/\btext-sm\b/)
-      expect(cls, `${name} بلا حجمٍ صريح`).toMatch(/\btext-base\b/)
+      expect(cls, `${name} ما زال دون ١٦ بكسلا — يكبّر iOS الصفحة عند التركيز`).not.toMatch(/\btext-sm\b/)
+      expect(cls, `${name} بلا حجم صريح`).toMatch(/\btext-base\b/)
     }
   })
 
-  it('ومثالُ الجوال وتحقّقُه يتبعان رمزَ الدولة — لا مثالٌ أردنيٌّ للجميع', () => {
-    expect(page, 'المثالُ ما زال ثابتا').not.toContain('placeholder="791234567"')
-    expect(page, 'المثالُ لا يُشتقّ من الرمز المختار').toContain('mobileFormatByDial(form.phoneCountryCode)')
+  it('ومثال الجوال وتحقّقه يتبعان رمز الدولة — لا مثال أردنيّ للجميع', () => {
+    expect(page, 'المثال ما زال ثابتا').not.toContain('placeholder="791234567"')
+    expect(page, 'المثال لا يشتقّ من الرمز المختار').toContain('mobileFormatByDial(form.phoneCountryCode)')
     /* والجدولُ يحمل صيغا حقيقيّة، ولا يدّعي معرفةَ ما لا يُعرف */
     const data = readFileSync(join(root, 'src/data/countries.ts'), 'utf8')
     expect(data).toMatch(/SA:\s*\{\s*digits:\s*\[9\]/)
-    expect(data, 'لا مهربَ لما لا نعرف صيغتَه').toMatch(/export function mobileFormatByDial/)
+    expect(data, 'لا مهرب لما لا نعرف صيغته').toMatch(/export function mobileFormatByDial/)
   })
 
-  it('وتقويمُ Calendly يبدأ فورا ويُرى لوحُه قبل أن يجيب', () => {
+  it('وتقويم Calendly يبدأ فورا ويرى لوحه قبل أن يجيب', () => {
     const card = readFileSync(join(root, 'src/components/BookInterview.tsx'), 'utf8')
       .replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '')
-    expect(card, 'ما زال يؤجَّل تحميلُه حتّى يقترب من الشاشة').not.toMatch(/loading="lazy"/)
-    expect(card, 'لا لوحَ يُرى ريثما يجيب — فيبقى مستطيلا فارغا').toContain('يُحمَّل تقويمُ المواعيد')
-    expect(card, 'لا يُعرف متى جاء فيُرفع اللوح').toContain('onLoad')
+    expect(card, 'ما زال يؤجّل تحميله حتّى يقترب من الشاشة').not.toMatch(/loading="lazy"/)
+    expect(card, 'لا لوح يرى ريثما يجيب — فيبقى مستطيلا فارغا').toContain('يحمّل تقويم المواعيد')
+    expect(card, 'لا يعرف متى جاء فيرفع اللوح').toContain('onLoad')
   })
 
-  it('وتعذُّرُ حفظ المسودّة يُقال — والصفحةُ تَعِد بأنّ الإجابات محفوظة', () => {
+  it('وتعذّر حفظ المسودّة يقال — والصفحة تعد بأنّ الإجابات محفوظة', () => {
     /* المسودّةُ تعمل (جُرّبت في متصفّحٍ حقيقيّ: تُكتب وتُستعاد ويظهر إشعارُها).
        والعطبُ الباقي أنّ تعذُّرَها كان صامتا — تصفّحٌ خاصّ أو متصفّحٌ داخل
        تطبيقٍ يرمي `setItem`، فيُوعَد المتقدّمُ بحفظٍ لا يقع. */
     const draft = readFileSync(join(root, 'src/application/trainer/application-draft.ts'), 'utf8')
     /* على سطر التوقيع وحدَه: `[^]*?` كانت تعبر إلى دالّةٍ أخرى في الملفّ
        تردّ `boolean` — فمرّ الحارسُ وهو منقوض. ولا نقطةَ تعبر السطر. */
-    expect(draft, 'الحفظُ لا يُخبر بنتيجته').toMatch(/export function saveDraft\(.*\): boolean/)
-    expect(page, 'الصفحةُ لا تقرأ نتيجةَ الحفظ').toContain('setDraftBlocked')
-    expect(page, 'لا يُقال للمتقدّم إنّ الحفظَ تعذّر').toContain('تعذّر حفظُ إجاباتك')
+    expect(draft, 'الحفظ لا يخبر بنتيجته').toMatch(/export function saveDraft\(.*\): boolean/)
+    expect(page, 'الصفحة لا تقرأ نتيجة الحفظ').toContain('setDraftBlocked')
+    expect(page, 'لا يقال للمتقدّم إنّ الحفظ تعذّر').toContain('تعذّر حفظ إجاباتك')
   })
 })
 
-describe('الحجزُ يُرى لصاحبه، والإطارُ لا يُمرَّر داخلَه', () => {
+describe('الحجز يرى لصاحبه، والإطار لا يمرّر داخله', () => {
   const card = () => readFileSync(join(root, 'src/components/BookInterview.tsx'), 'utf8')
   const clean = (x: string) => x.replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '')
 
-  it('ومتابعةُ الحالة العامّةُ تعرض الموعدَ المحجوز لا زرَّ حجزٍ ثانٍ', () => {
+  it('ومتابعة الحالة العامّة تعرض الموعد المحجوز لا زرّ حجز ثان', () => {
     /* صفحةُ المسجَّل تعرضه منذ مدّة، وشاشةُ الإدارة كذلك (TrainerOps).
        والعامّةُ — بالبريد وحدَه — كانت تعرض الزرَّ أو لا شيء. */
     const page = read(PAGE)
     const block = page.slice(page.indexOf('lookupResult &&'))
     /* على **الشرط** لا على ورودِ الاسم: تعطيلُ الشرط يُبقي الاسمَ في الوسم
        الميّت، فمرّ الحارسُ وهو منقوض قبل أن يُشدّ. */
-    expect(block, 'عرضُ الموعد غيرُ مشروطٍ بوجوده — أو حُذف الشرط')
+    expect(block, 'عرض الموعد غير مشروط بوجوده — أو حذف الشرط')
       .toMatch(/lookupResult\.hasInterview && lookupResult\.interviewAt/)
-    expect(block, 'لا يُسمّى الموعدُ لصاحبه').toContain('موعدُ لقاء التعارف')
+    expect(block, 'لا يسمّى الموعد لصاحبه').toContain('موعد لقاء التعارف')
     const svc = readFileSync(join(root, 'server/services/trainer-application.service.ts'), 'utf8')
-    expect(svc, 'الخادمُ لا يردّ موعدَ المقابلة').toMatch(/interviewAt: app\.interviews\[0\]\?\.scheduledAt/)
+    expect(svc, 'الخادم لا يردّ موعد المقابلة').toMatch(/interviewAt: app\.interviews\[0\]\?\.scheduledAt/)
   })
 
-  it('⚠️ وارتفاعُ الإطار يتبع محتوى Calendly — لا تمريرٌ داخلَ تمرير', () => {
+  it('⚠️ وارتفاع الإطار يتبع محتوى Calendly — لا تمرير داخل تمرير', () => {
     /* ارتفاعٌ ثابتٌ أقصرُ من المحتوى يُنتج تمريرَين متداخلَين: داخلَ الإطار
        لقراءة أعلاه، وخارجَه لتمرير الصفحة. */
     const c = clean(card())
-    expect(c, 'لا يُقرأ ارتفاعُ المحتوى المبثوث').toContain('calendly.page_height')
-    expect(c, 'الارتفاعُ ما زال ثابتا في الصنف').toMatch(/height: frameHeight/)
+    expect(c, 'لا يقرأ ارتفاع المحتوى المبثوث').toContain('calendly.page_height')
+    expect(c, 'الارتفاع ما زال ثابتا في الصنف').toMatch(/height: frameHeight/)
   })
 
-  it('ويُقال له أن يتحقّق قبل حجزٍ ثانٍ — فالمزامنةُ قد لا تكون قائمة', () => {
-    expect(clean(card()), 'لا تنبيهَ لمن حجز سابقا').toContain('حجزتَ موعدا سابقا؟')
+  it('ويقال له أن يتحقّق قبل حجز ثان — فالمزامنة قد لا تكون قائمة', () => {
+    expect(clean(card()), 'لا تنبيه لمن حجز سابقا').toContain('حجزت موعدا سابقا؟')
   })
 })
 
@@ -545,70 +545,70 @@ describe('الحجزُ يُرى لصاحبه، والإطارُ لا يُمرَ�
    ولا تقول أوصل ووُثّق، وتأخذ البريدَ مرّةً في القسم الأوّل ولا تراجعه، وتحجز
    موعدا ولا تقول إنّ تغييرَه بيده. والوعدُ الذي لا يُقاس يُصدَّق مرّةً ثمّ
    يُكتشف بعد فوات. */
-describe('شاشةُ «وصل طلبك» تقيس ما تَعِد به', () => {
+describe('شاشة «وصل طلبك» تقيس ما تعد به', () => {
   const page = () => read(PAGE)
   const clean = (x: string) => x.replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '')
   const CARD = 'src/components/EmailVerifyStatus.tsx'
 
-  it('⚠️ حالةُ البريد تُعرض بحالتَيها — «غير موثَّق» حتّى يوثّق، ثمّ «تمّ التوثيق»', () => {
+  it('⚠️ حالة البريد تعرض بحالتيها — «غير موثّق» حتّى يوثّق، ثمّ «تمّ التوثيق»', () => {
     /* كانت بطاقةً واحدةً تقول «أرسلنا» ثمّ تصمت: من فتح الرابطَ وعاد يقرأ
        الجملةَ نفسَها، فلا يدري أحُسبت نقرتُه. والتوثيقُ شرطُ اعتماد طلبه. */
     const card = clean(read(CARD))
-    expect(card, 'لا تُقال حالةُ «غير موثَّق»').toContain('غير موثَّق')
-    expect(card, 'لا يُقال «تمّ التوثيق» لمن وثّق').toContain('تمّ التوثيق')
+    expect(card, 'لا تقال حالة «غير موثّق»').toContain('غير موثّق')
+    expect(card, 'لا يقال «تمّ التوثيق» لمن وثّق').toContain('تمّ التوثيق')
     /* والحالتان مفترقتان في الشيفرة لا في نصٍّ واحد: فرعٌ يردّ بطاقةَ
        الموثَّق قبل بطاقة الانتظار. */
-    expect(card, 'الحالتان ليستا فرعَين — فقد تُعرضان معا أو لا تُعرض واحدة')
+    expect(card, 'الحالتان ليستا فرعين — فقد تعرضان معا أو لا تعرض واحدة')
       .toMatch(/if \(verified === 'done'\)/)
-    expect(page(), 'شاشةُ «وصل طلبك» لا تركّب بطاقةَ الحالة').toContain('<EmailVerifyStatus')
+    expect(page(), 'شاشة «وصل طلبك» لا تركّب بطاقة الحالة').toContain('<EmailVerifyStatus')
   })
 
-  it('⚠️ والحالةُ تُقرأ من الخادم لا من ظنّ الشاشة — والخادمُ يردّها', () => {
+  it('⚠️ والحالة تقرأ من الخادم لا من ظنّ الشاشة — والخادم يردّها', () => {
     const card = clean(read(CARD))
-    expect(card, 'البطاقةُ لا تسأل الخادمَ عن الحالة').toContain('/api/v1/trainer-applications/status')
-    expect(card, 'لا تقرأ حقلَ التوثيق من ردّه').toContain('emailVerified')
+    expect(card, 'البطاقة لا تسأل الخادم عن الحالة').toContain('/api/v1/trainer-applications/status')
+    expect(card, 'لا تقرأ حقل التوثيق من ردّه').toContain('emailVerified')
     /* والطرفُ الآخر: الخادمُ يشتقّ الحقلَ من العمود فعلا. ولولا هذا لكانت
        البطاقةُ تقرأ `undefined` أبدا فتقول «غير موثَّق» لمن وثّق. */
     const svc = read(SERVICE)
-    expect(svc, 'الحالةُ العامّةُ لا تردّ التوثيق').toMatch(/emailVerified: !!app\.emailVerifiedAt/)
+    expect(svc, 'الحالة العامّة لا تردّ التوثيق').toMatch(/emailVerified: !!app\.emailVerifiedAt/)
   })
 
-  it('⚠️ ولا تُستفتى الحالةُ بمؤقّت — `‎/status` عشرُ مرّاتٍ في عشر دقائق', () => {
+  it('⚠️ ولا تستفتى الحالة بمؤقّت — `‎/status` عشر مرّات في عشر دقائق', () => {
     /* مؤقّتٌ كلَّ ثانيتين يحرق النصيبَ في نصف دقيقةٍ ثمّ يقف المتقدّمُ أمام
        ٤٢٩ لا أمام حالة. واللحظةُ التي تهمّ عودتُه إلى اللسان. */
     const card = clean(read(CARD))
-    expect(card, 'عاد مؤقّتٌ يسأل الخادمَ دوريّا').not.toMatch(/setInterval|setTimeout/)
-    expect(card, 'لا يُسأل عند العودة إلى اللسان').toMatch(/addEventListener\('focus'/)
-    expect(card, 'لا يُسأل عند ظهور الصفحة').toMatch(/visibilitychange/)
+    expect(card, 'عاد مؤقّت يسأل الخادم دوريّا').not.toMatch(/setInterval|setTimeout/)
+    expect(card, 'لا يسأل عند العودة إلى اللسان').toMatch(/addEventListener\('focus'/)
+    expect(card, 'لا يسأل عند ظهور الصفحة').toMatch(/visibilitychange/)
     /* ومهلةٌ بين سؤالَين، ورقمُها معلَنٌ يُقرأ لا مبثوثٌ في شرط */
-    expect(card, 'لا مهلةَ بين سؤالَين — فعشرُ عوداتٍ في دقيقةٍ عشرةُ نداءات')
+    expect(card, 'لا مهلة بين سؤالين — فعشر عودات في دقيقة عشرة نداءات')
       .toMatch(/VERIFY_POLL_GAP_MS/)
   })
 
-  it('⚠️ والبريدُ يُؤكَّد في آخر الطلب — ومَن أخطأ يُقال له أين يُصحَّح', () => {
+  it('⚠️ والبريد يؤكّد في آخر الطلب — ومن أخطأ يقال له أين يصحّح', () => {
     /* حرفٌ ساقطٌ في البريد = طلبٌ كاملٌ لا يبلغ صاحبَه، ولا نعرف نحن أنّه لم
        يبلغه: لا رسالةَ توثيق، ولا دعوةَ مقابلة، ولا حساب. */
     const src = FORM()
-    expect(src, 'لا حقلَ تأكيدٍ للبريد').toContain('id="jt-email-confirm"')
+    expect(src, 'لا حقل تأكيد للبريد').toContain('id="jt-email-confirm"')
     /* والفحصُ على المقارنة لا على وجود الحقل: حقلٌ لا يُقارَن زينة */
-    expect(src, 'المكتوبُ لا يُقارَن ببريد القسم الأوّل').toMatch(/emailConfirm\.trim\(\)\.toLowerCase\(\) === emailNormalized/)
+    expect(src, 'المكتوب لا يقارن ببريد القسم الأوّل').toMatch(/emailConfirm\.trim\(\)\.toLowerCase\(\) === emailNormalized/)
     /* ومطبَّعا: البريدُ لا يفرّق بين كبيرٍ وصغير، ومسافةُ لصقٍ ليست خطأً */
-    expect(src, 'المقارنةُ حرفيّةٌ — فتُردّ حالةُ الأحرف ومسافةُ اللصق').toMatch(/form\.email\.trim\(\)\.toLowerCase\(\)/)
+    expect(src, 'المقارنة حرفيّة — فتردّ حالة الأحرف ومسافة اللصق').toMatch(/form\.email\.trim\(\)\.toLowerCase\(\)/)
     /* والزرُّ يقرأ من قائمة النقص — فسطرٌ لها أو إلزامٌ يُطفئ الزرَّ بلا اسم */
     const list = /const missing = useMemo\(\(\) => \{[\s\S]*?\n {2}\}, \[[^\]]*\]\);/.exec(src)?.[0] ?? ''
-    expect(list, 'تأكيدُ البريد إلزامٌ بلا سطرٍ في قائمة النقص').toContain('emailConfirmMatches')
-    expect(list, 'وسطرُه لا يُسمّى للمتقدّم').toMatch(/m\[3\]\.push\("تأكيد بريدك/)
+    expect(list, 'تأكيد البريد إلزام بلا سطر في قائمة النقص').toContain('emailConfirmMatches')
+    expect(list, 'وسطره لا يسمّى للمتقدّم').toMatch(/m\[3\]\.push\("تأكيد بريدك/)
     /* والمخرجُ مع الرفض: «عدّل في الصفحة الأولى» ونقلةٌ إليها لا بحثٌ عنها */
-    expect(src, 'لا يُقال له أين يُصحَّح البريدُ نفسُه').toContain('عد إلى القسم الأول وعدّله')
+    expect(src, 'لا يقال له أين يصحّح البريد نفسه').toContain('عد إلى القسم الأول وعدّله')
   })
 
-  it('⚠️ ويُقال له إنّ تغيير الموعد من دعوة البريد نفسِها', () => {
+  it('⚠️ ويقال له إنّ تغيير الموعد من دعوة البريد نفسها', () => {
     /* رسالةُ Calendly تحمل «Reschedule» و«Cancel»، ومن لم يُقَل له ذلك
        يراسلنا أو يتغيّب. */
     const card = clean(readFileSync(join(root, 'src/components/BookInterview.tsx'), 'utf8'))
-    expect(card, 'لا يُقال له إنّ الموعدَ يتغيّر من الدعوة').toMatch(/تغيّر موعدك أو تلغيه من الدعوة/)
+    expect(card, 'لا يقال له إنّ الموعد يتغيّر من الدعوة').toMatch(/تغيّر موعدك أو تلغيه من الدعوة/)
     /* وبعد الحجز لا قبلَه وحدَه: الحجزُ هو اللحظةُ التي يُقرأ فيها هذا */
     const done = card.slice(card.indexOf('{done ? ('), card.indexOf(') : ('))
-    expect(done, 'التنبيهُ خارجَ شاشة ما بعد الحجز — فلا يراه من حجز').toMatch(/الدعوة نفسِها/)
+    expect(done, 'التنبيه خارج شاشة ما بعد الحجز — فلا يراه من حجز').toMatch(/الدعوة نفسها/)
   })
 })

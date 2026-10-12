@@ -73,7 +73,7 @@ export default function StageOffer({
             <p className="mt-2.5 flex items-start gap-1.5 text-read leading-5 text-muted-foreground">
               <Info className="mt-0.5 h-3 w-3 shrink-0" />
               <span>
-                هذه من دورات المسار ولم تُضِفها بعد. تفاصيلُها كاملةً وخصمُ بناء المسار في{" "}
+                هذه من دورات المسار ولم تضفها بعد. تفاصيلها كاملة وخصم بناء المسار في{" "}
                 <Link to={`/build/${stage.courseId}`} className="font-bold text-teal-light-ink underline underline-offset-4">
                   صفحتها
                 </Link>
@@ -88,7 +88,7 @@ export default function StageOffer({
             <CalendarClock className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
             <span>
               <span className="font-bold text-foreground">بانتظار شعبة.</span>{" "}
-              لا تُطلب الآن ولا يُدفع ثمنُها — نُعلمك فور جدولتها، أو استبدلها بدورةٍ بديلة.
+              لا تطلب الآن ولا يدفع ثمنها — نعلمك فور جدولتها، أو استبدلها بدورة بديلة.
             </span>
           </Card>
           <div className="mt-3">
@@ -103,7 +103,7 @@ export default function StageOffer({
       ) : (
         <Card className="mt-4">
           <p className="text-read leading-6 text-muted-foreground">
-            لم تُفتح شعبةٌ لهذه الدورة الآن. صفحتُها العامّة تعرض تفاصيلَها كاملةً، ونُعلمك فور فتح أوّل شعبة.
+            لم تفتح شعبة لهذه الدورة الآن. صفحتها العامّة تعرض تفاصيلها كاملة، ونعلمك فور فتح أوّل شعبة.
           </p>
           <Link
             to={`/build/${stage.courseId}`}

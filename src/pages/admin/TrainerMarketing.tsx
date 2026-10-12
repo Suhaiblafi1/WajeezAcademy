@@ -68,24 +68,24 @@ export default function TrainerMarketing() {
 
   if (openId) {
     return (
-      <AdminLayout title="تسويقُ المدرّبين">
+      <AdminLayout title="تسويق المدرّبين">
         <TrainerDetail profileId={openId} onBack={() => { setOpenId(null); load(); }} />
       </AdminLayout>
     );
   }
 
   return (
-    <AdminLayout title="تسويقُ المدرّبين">
+    <AdminLayout title="تسويق المدرّبين">
       <p className="mb-5 max-w-3xl text-sm leading-7 text-muted-foreground">
-        فيديوهاتُ المدرّبين وصورُهم للتعريف بهم وبدوراتهم. ولكلّ دورةٍ أو مسارٍ ملصقٌ تصمّمونه وترفعونه هنا —
-        ويصل المدرّبَ فيوافق أو يطلب تعديلا. <b className="text-foreground">لا يُستعمل ملصقٌ علنا قبل موافقته.</b>
+        فيديوهات المدرّبين وصورهم للتعريف بهم وبدوراتهم. ولكلّ دورة أو مسار ملصق تصمّمونه وترفعونه هنا —
+        ويصل المدرّب فيوافق أو يطلب تعديلا. <b className="text-foreground">لا يستعمل ملصق علنا قبل موافقته.</b>
       </p>
       {err ? (
         <Card tone="danger" role="alert" className="text-center text-read font-bold text-red-300">{err}</Card>
       ) : !rows ? (
-        <div className="grid place-items-center py-16"><Loader2 className="h-7 w-7 animate-spin text-muted-foreground/50" aria-label="جارٍ التحميل" /></div>
+        <div className="grid place-items-center py-16"><Loader2 className="h-7 w-7 animate-spin text-muted-foreground/50" aria-label="جار التحميل" /></div>
       ) : rows.length === 0 ? (
-        <EmptyState icon={Megaphone} titleAr="لا مدرّبَ بعد" reasonAr="يظهر هنا كلُّ مدرّبٍ بدأ عملَه على موادّه — ومعه ما قدّمه للتسويق." />
+        <EmptyState icon={Megaphone} titleAr="لا مدرّب بعد" reasonAr="يظهر هنا كلّ مدرّب بدأ عمله على موادّه — ومعه ما قدّمه للتسويق." />
       ) : (
         <>
           <ListToolbar q={q} onQ={setQ} onPage={setPage} view={view} unit="مدرّبا" placeholder="ابحث باسم المدرّب أو بريده…" />
@@ -101,8 +101,8 @@ export default function TrainerMarketing() {
                 <div className="flex flex-wrap items-center gap-2">
                   {r.posters.changesRequested > 0 && <Chip tone="danger">طلب تعديل ({r.posters.changesRequested})</Chip>}
                   {r.posters.pending > 0 && <Chip tone="warn">عند المدرّب ({r.posters.pending})</Chip>}
-                  {r.posters.approved > 0 && <Chip tone="positive">معتمَد ({r.posters.approved})</Chip>}
-                  <Button size="sm" onClick={() => setOpenId(r.profileId)}>افتحْ</Button>
+                  {r.posters.approved > 0 && <Chip tone="positive">معتمد ({r.posters.approved})</Chip>}
+                  <Button size="sm" onClick={() => setOpenId(r.profileId)}>افتح</Button>
                 </div>
               </Card>
             ))}
@@ -126,12 +126,12 @@ function TrainerDetail({ profileId, onBack }: { profileId: string; onBack: () =>
   return (
     <div className="grid gap-5">
       <div>
-        <Button size="sm" tone="ghost" icon={ArrowRight} onClick={onBack}>كلُّ المدرّبين</Button>
+        <Button size="sm" tone="ghost" icon={ArrowRight} onClick={onBack}>كلّ المدرّبين</Button>
       </div>
       {err ? (
         <Card tone="danger" role="alert" className="text-center text-read font-bold text-red-300">{err}</Card>
       ) : !d ? (
-        <div className="grid place-items-center py-16"><Loader2 className="h-7 w-7 animate-spin text-muted-foreground/50" aria-label="جارٍ التحميل" /></div>
+        <div className="grid place-items-center py-16"><Loader2 className="h-7 w-7 animate-spin text-muted-foreground/50" aria-label="جار التحميل" /></div>
       ) : (
         <>
           <Panel as="section">
@@ -144,18 +144,18 @@ function TrainerDetail({ profileId, onBack }: { profileId: string; onBack: () =>
           </Panel>
 
           <Panel as="section">
-            <h2 className="text-base font-black">صورُه ({d.photos.length})</h2>
+            <h2 className="text-base font-black">صوره ({d.photos.length})</h2>
             {d.photos.length === 0 ? (
-              <p className="mt-1 text-sm text-muted-foreground">لم يرفع صورةً بعد.</p>
+              <p className="mt-1 text-sm text-muted-foreground">لم يرفع صورة بعد.</p>
             ) : (
               <ul className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
                 {d.photos.map((p) => (
                   <li key={p.id}>
                     <a href={mediaSrc(p.imageUrl)} target="_blank" rel="noreferrer noopener" download className="block">
                       <Inset className="aspect-square overflow-hidden p-0">
-                        {p.imageUrl && <img src={mediaSrc(p.imageUrl)} alt={`صورةُ ${d.fullName}`} className="h-full w-full object-cover" loading="lazy" />}
+                        {p.imageUrl && <img src={mediaSrc(p.imageUrl)} alt={`صورة ${d.fullName}`} className="h-full w-full object-cover" loading="lazy" />}
                       </Inset>
-                      <span className="mt-1 inline-flex items-center gap-1 text-sm text-teal-light-ink"><Download className="h-3.5 w-3.5" aria-hidden="true" /> افتحْها بدقّتها</span>
+                      <span className="mt-1 inline-flex items-center gap-1 text-sm text-teal-light-ink"><Download className="h-3.5 w-3.5" aria-hidden="true" /> افتحها بدقّتها</span>
                     </a>
                   </li>
                 ))}
@@ -164,9 +164,9 @@ function TrainerDetail({ profileId, onBack }: { profileId: string; onBack: () =>
           </Panel>
 
           <section className="grid gap-3">
-            <h2 className="text-base font-black">دوراتُه ومساراتُه — والملصقات</h2>
+            <h2 className="text-base font-black">دوراته ومساراته — والملصقات</h2>
             {d.targets.length === 0 ? (
-              <p className="text-sm text-muted-foreground">لا دورةَ مؤهَّلا لها ولا مسار.</p>
+              <p className="text-sm text-muted-foreground">لا دورة مؤهّلا لها ولا مسار.</p>
             ) : d.targets.map((t) => (
               <TargetPosters key={`${t.kind}:${t.id}`} profileId={d.profileId} target={t} uploadsEnabled={d.uploadsEnabled} onChanged={load} />
             ))}
@@ -178,7 +178,7 @@ function TrainerDetail({ profileId, onBack }: { profileId: string; onBack: () =>
 }
 
 function VideoLink({ v }: { v: VideoRow | null }) {
-  if (!v) return <p className="mt-1 text-sm text-muted-foreground">لم يُضِف رابطا بعد.</p>;
+  if (!v) return <p className="mt-1 text-sm text-muted-foreground">لم يضف رابطا بعد.</p>;
   return (
     <div className="mt-1">
       <a href={v.url} target="_blank" rel="noreferrer noopener" dir="ltr"
@@ -211,7 +211,7 @@ function TargetPosters({
       );
       if (file && r.uploadUrl) await putSigned(r.uploadUrl, file, r.maxBytes);
       await apiPost(`/api/admin/trainer-marketing/posters/${r.id}/submit`, {});
-      toast("أُرسل الملصقُ إلى المدرّب");
+      toast("أرسل الملصق إلى المدرّب");
       setNote(""); setLink(""); setFile(null);
       if (fileRef.current) fileRef.current.value = "";
       onChanged();
@@ -233,7 +233,7 @@ function TargetPosters({
   return (
     <Card className="p-4">
       <div className="flex flex-wrap items-start justify-between gap-2">
-        <h3 className="min-w-0 flex-1 text-read font-bold leading-6">{t.titleAr || "دورةٌ بلا اسمٍ في الكتالوج"}</h3>
+        <h3 className="min-w-0 flex-1 text-read font-bold leading-6">{t.titleAr || "دورة بلا اسم في الكتالوج"}</h3>
         <Chip tone="neutral">{t.kind === "course" ? "دورة" : "مسار"}</Chip>
       </div>
       <div className="mt-2">
@@ -243,7 +243,7 @@ function TargetPosters({
 
       {lastDecision?.trainerNoteAr && (
         <Inset tone="danger" className="mt-3 p-3 text-sm leading-6">
-          طلب تعديلَ النسخة {lastDecision.version}: {lastDecision.trainerNoteAr}
+          طلب تعديل النسخة {lastDecision.version}: {lastDecision.trainerNoteAr}
         </Inset>
       )}
 
@@ -256,7 +256,7 @@ function TargetPosters({
                 <Inset className="overflow-hidden p-0">
                   {p.imageUrl
                     ? <a href={mediaSrc(p.imageUrl)} target="_blank" rel="noreferrer noopener"><img src={mediaSrc(p.imageUrl)} alt={`النسخة ${p.version}`} className="aspect-[4/5] w-full object-cover" loading="lazy" /></a>
-                    : <div className="grid aspect-[4/5] place-items-center text-sm text-muted-foreground">لم يُرفع التصميم</div>}
+                    : <div className="grid aspect-[4/5] place-items-center text-sm text-muted-foreground">لم يرفع التصميم</div>}
                 </Inset>
                 <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                   <Chip tone={st.tone}>{st.staffAr}</Chip>
@@ -264,7 +264,7 @@ function TargetPosters({
                 </div>
                 {p.decidedAt && <p className="text-sm text-muted-foreground">قرّر {fmtDateLong(p.decidedAt)}</p>}
                 {p.status === "draft" && (
-                  <Button size="sm" tone="ghost" icon={Trash2} disabled={busy} onClick={() => void dropDraft(p.id)}>احذفِ المسوّدة</Button>
+                  <Button size="sm" tone="ghost" icon={Trash2} disabled={busy} onClick={() => void dropDraft(p.id)}>احذف المسوّدة</Button>
                 )}
               </li>
             );
@@ -273,25 +273,25 @@ function TargetPosters({
       )}
 
       <Inset className="mt-4 grid gap-3 p-3">
-        <p className="text-read font-bold">{t.posters.length ? "نسخةٌ جديدة" : "أوّلُ ملصق"}</p>
+        <p className="text-read font-bold">{t.posters.length ? "نسخة جديدة" : "أوّل ملصق"}</p>
         {uploadsEnabled ? (
           <div className="flex flex-wrap items-center gap-2">
-            <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" aria-label="اختر ملفَّ الملصق"
+            <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" aria-label="اختر ملفّ الملصق"
               onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
             <Button size="sm" icon={ImagePlus} onClick={() => fileRef.current?.click()}>اختر التصميم</Button>
             <span className="text-sm text-muted-foreground">{file ? file.name : "JPEG أو PNG أو WebP حتّى ٤ ميغابايت"}</span>
           </div>
         ) : (
-          <StaffField label="رابطُ التصميم" hint="رفعُ الملفّات غيرُ مفعّل — ألصِقْ رابطَ صورة الملصق">
+          <StaffField label="رابط التصميم" hint="رفع الملفّات غير مفعّل — ألصق رابط صورة الملصق">
             <input dir="ltr" className={staffControlCls} value={link} maxLength={500} placeholder="https://…" onChange={(e) => setLink(e.target.value)} />
           </StaffField>
         )}
-        <StaffField label="ملحوظةٌ للمدرّب" hint="لا تلزم — ما تغيّر في هذه النسخة مثلا">
+        <StaffField label="ملحوظة للمدرّب" hint="لا تلزم — ما تغيّر في هذه النسخة مثلا">
           <input className={staffControlCls} value={note} maxLength={MAX_MARKETING_NOTE} onChange={(e) => setNote(e.target.value)} />
         </StaffField>
         <div>
           <Button size="sm" tone="confirm" icon={Send} loading={busy} disabled={!ready} onClick={() => void send()}>
-            أرسِلْه ليوافق
+            أرسله ليوافق
           </Button>
         </div>
       </Inset>

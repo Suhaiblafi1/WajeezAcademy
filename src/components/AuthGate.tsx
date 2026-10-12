@@ -175,7 +175,7 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
       setPass("");
       setConfirm("");
       setResetToken("");
-      setNotice("عُيّنت كلمة المرور — سجّل الدخول من جديد");
+      setNotice("عيّنت كلمة المرور — سجّل الدخول من جديد");
       setView("auth");
       setMode("login");
     } finally {
@@ -260,7 +260,7 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
               disabled={busy || !emailValid}
               className="mt-4 h-12 w-full rounded-2xl bg-gold text-sm font-black text-on-gold transition hover:bg-gold/90 disabled:cursor-not-allowed disabled:opacity-40"
             >
-              {busy ? "جارٍ الإرسال…" : "أرسل رابط الاستعادة"}
+              {busy ? "جار الإرسال…" : "أرسل رابط الاستعادة"}
             </button>
             <button
               type="button"
@@ -291,7 +291,7 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
             <img src="/logo-mark.png" alt="علامة أكاديمية وجيز" className="mx-auto h-12 w-12 object-contain" />
             <h2 className="mt-4 text-2xl font-black text-foreground">تعيين كلمة مرور جديدة</h2>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-              أدخل رمز الاستعادة وكلمة المرور الجديدة — تُبطل الجلسات القديمة تلقائيا
+              أدخل رمز الاستعادة وكلمة المرور الجديدة — تبطل الجلسات القديمة تلقائيا
             </p>
           </div>
           <form onSubmit={submitResetConfirm} noValidate className="space-y-4 px-8 py-6">
@@ -366,7 +366,7 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
               disabled={busy || !resetToken.trim() || !passValid || confirm !== pass}
               className="h-12 w-full rounded-2xl bg-gold text-sm font-black text-on-gold transition hover:bg-gold/90 disabled:cursor-not-allowed disabled:opacity-40"
             >
-              {busy ? "جارٍ التعيين…" : "عيّن كلمة المرور الجديدة"}
+              {busy ? "جار التعيين…" : "عيّن كلمة المرور الجديدة"}
             </button>
             <button
               type="button"
@@ -522,7 +522,7 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
               </div>
               {mode === "signup" && (
                 <p className="mt-1.5 text-read text-muted-foreground">
-                  ٨ أحرف فأكثر — ويُفضّل رقم أو رمز (! @ #) لتقويتها
+                  ٨ أحرف فأكثر — ويفضّل رقم أو رمز (! @ #) لتقويتها
                 </p>
               )}
             </div>
@@ -617,7 +617,7 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
 
           {mode === "login" && (
             <p className="mt-4 text-center text-read leading-relaxed text-muted-foreground">
-              لحمايتك: يُقفل الدخول مؤقتا بعد خمس محاولات خاطئة
+              لحمايتك: يقفل الدخول مؤقتا بعد خمس محاولات خاطئة
             </p>
           )}
         </div>

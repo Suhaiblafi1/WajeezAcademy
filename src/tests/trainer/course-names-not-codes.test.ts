@@ -48,13 +48,13 @@ function trainerScreens(): string[] {
 }
 const TRAINER_SCREENS = trainerScreens()
 
-describe('رمزُ الدورة لا يُعرض للمدرّب', () => {
-  it('المسحُ يجد شاشاتِ المدرّب — وإلّا كان يخضرّ على فراغ', () => {
-    expect(TRAINER_SCREENS.length, 'لم تُقرأ شاشةٌ واحدة').toBeGreaterThan(8)
+describe('رمز الدورة لا يعرض للمدرّب', () => {
+  it('المسح يجد شاشات المدرّب — وإلّا كان يخضرّ على فراغ', () => {
+    expect(TRAINER_SCREENS.length, 'لم تقرأ شاشة واحدة').toBeGreaterThan(8)
   })
 
   for (const f of TRAINER_SCREENS) {
-    it(`⚠️ ${f.split('/').pop()} لا تُصيّر \`courseId\` نصّا`, () => {
+    it(`⚠️ ${f.split('/').pop()} لا تصيّر \`courseId\` نصّا`, () => {
       /* ═══ والرمزُ يُكتب بإملاءَين ═══
 
          كان الفحصُ على `.courseId}` وحدَها. و«دوراتي المقترحة» تطبعه
@@ -64,20 +64,20 @@ describe('رمزُ الدورة لا يُعرض للمدرّب', () => {
          فوُسّع على الإملاءَين: `courseId` و`course.id` (ومعها `course?.id`). */
       const hit = renderedText(f).split('\n')
         .find((l) => /\.courseId\s*\}/.test(l) || /\.course\??\.id\s*[}`]/.test(l))
-      expect(hit ?? null, `رمزُ الدورة يُقرأ في سطر: ${hit?.trim().slice(0, 90)}`).toBeNull()
+      expect(hit ?? null, `رمز الدورة يقرأ في سطر: ${hit?.trim().slice(0, 90)}`).toBeNull()
     })
   }
 
-  it('⚠️ وحين لا اسمَ في الكتالوج لا يُطبع الرمزُ بديلا عنه', () => {
-    /* `{q.title || q.courseId}` كان يضع الرمزَ في موضع الاسم بعينه —
-       وهو العطبُ نفسُه من بابٍ آخر، لا احتياطٌ منه. */
+  it('⚠️ وحين لا اسم في الكتالوج لا يطبع الرمز بديلا عنه', () => {
+    /* `{q.title || q.courseId}` كان يضع الرمز في موضع الاسم بعينه —
+       وهو العطب نفسه من باب آخر، لا احتياط منه. */
     const q = renderedText('src/pages/trainer/Qualifications.tsx')
-    expect(q, 'الرمزُ يحلّ محلَّ الاسم حين يغيب').not.toMatch(/\|\|\s*q\.courseId/)
-    expect(read('src/pages/trainer/Qualifications.tsx'), 'لا قولَ لغياب الاسم').toContain('دورةٌ بلا اسمٍ في الكتالوج')
+    expect(q, 'الرمز يحلّ محلّ الاسم حين يغيب').not.toMatch(/\|\|\s*q\.courseId/)
+    expect(read('src/pages/trainer/Qualifications.tsx'), 'لا قول لغياب الاسم').toContain('دورة بلا اسم في الكتالوج')
   })
 
-  it('وما بقي يفيد المدرّبَ: أيُّ نسخةٍ أُهِّل لها ومتى', () => {
-    /* الحذفُ لا يجرّد البطاقةَ ممّا يحتاجه — وإلّا صار الإصلاحُ خسارة */
+  it('وما بقي يفيد المدرّب: أيّ نسخة أهّل لها ومتى', () => {
+    /* الحذف لا يجرّد البطاقة ممّا يحتاجه — وإلّا صار الإصلاح خسارة */
     const q = read('src/pages/trainer/Qualifications.tsx')
     expect(q).toMatch(/النسخة \{q\.currentVersion\}/)
     expect(q).toMatch(/fmtDate\(q\.qualifiedAt\)/)

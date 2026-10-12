@@ -47,7 +47,7 @@ export default function JoinTrainerVerify() {
         {state.kind === "working" && (
           <>
             <Loader2 className="mx-auto h-10 w-10 animate-spin text-teal-light-ink" />
-            <p className="mt-5 text-sm text-muted-foreground">يُوثَّق بريدك…</p>
+            <p className="mt-5 text-sm text-muted-foreground">يوثّق بريدك…</p>
           </>
         )}
 
@@ -55,11 +55,11 @@ export default function JoinTrainerVerify() {
           <>
             <CheckCircle2 className="mx-auto h-12 w-12 text-emerald-400" />
             <h1 className="mt-5 text-2xl font-black">
-              {state.alreadyVerified ? "بريدك موثَّق من قبل" : "وُثِّق بريدك"}
+              {state.alreadyVerified ? "بريدك موثّق من قبل" : "وثّق بريدك"}
             </h1>
             <p className="mt-3 text-sm leading-7 text-muted-foreground">
               طلبك <b className="font-mono text-muted-foreground" dir="ltr">{reference}</b> عند فريق المراجعة،
-              ولم يبقَ إلّا أن تحجز موعدَ لقاء التعارف — تجد التقويمَ في صفحة طلبك.
+              ولم يبق إلّا أن تحجز موعد لقاء التعارف — تجد التقويم في صفحة طلبك.
             </p>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
               <Link to="/auth" className="rounded-full bg-teal px-6 py-3 font-black text-on-teal hover:bg-teal-light">
@@ -80,7 +80,7 @@ export default function JoinTrainerVerify() {
             {/* والمدّةُ من الثابت نفسِه الذي يُحسب به الانتهاء — فلا تقول
                 الشاشةُ مدّةً والخادمُ يقيس غيرَها. */}
             <p className="mt-3 text-read leading-6 text-muted-foreground">
-              الروابط صالحةٌ {MAIL_LINK_WINDOW_AR} لا أكثر. اطلب رسالة جديدة من صفحة الانضمام بإدخال بريدك في «تابع حالة طلبك».
+              الروابط صالحة {MAIL_LINK_WINDOW_AR} لا أكثر. اطلب رسالة جديدة من صفحة الانضمام بإدخال بريدك في «تابع حالة طلبك».
             </p>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
               <Link to="/join-trainer" className="rounded-full bg-teal px-6 py-3 font-black text-on-teal hover:bg-teal-light">

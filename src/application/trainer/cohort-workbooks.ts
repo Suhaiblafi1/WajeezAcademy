@@ -74,8 +74,8 @@ export const workbookModeOf = (c: { workbookMode?: string | null } | null | unde
 
 /* ═══ القالب — ملفّاه في `public/templates/` يبنيهما `scripts/workbook-template` ═══ */
 export const WORKBOOK_TEMPLATES = {
-  course: { href: '/templates/wajeez-workbook-course.docx', download: 'قالب كرّاسة الدورة — وجيز.docx', labelAr: 'قالبُ كرّاسة الدورة' },
-  modules: { href: '/templates/wajeez-workbook-module.docx', download: 'قالب كرّاسة المحور — وجيز.docx', labelAr: 'قالبُ كرّاسة المحور' },
+  course: { href: '/templates/wajeez-workbook-course.docx', download: 'قالب كرّاسة الدورة — وجيز.docx', labelAr: 'قالب كرّاسة الدورة' },
+  modules: { href: '/templates/wajeez-workbook-module.docx', download: 'قالب كرّاسة المحور — وجيز.docx', labelAr: 'قالب كرّاسة المحور' },
 } as const
 
 /** قالبُ الكرّاسة مملوءا بخطّة الشعبة (٧ أكتوبر ٢٠٢٦) — للدورة، أو لمحاورَ بعينها.
@@ -111,10 +111,10 @@ export const MATERIAL_PATCH: Record<WorkbookMaterial, { onTemplate: boolean; own
 export const MATERIAL_RIGHTS_ANCHOR = 'material-rights'
 
 export const WORKBOOK_RIGHTS_AR = {
-  title: 'كرّاستُك ملكُك',
-  body: 'ما تكتبه فيها لك، ولك أن تستعمله كما تشاء. واستعمالُ القالب لا ينقل ملكيّتَه إلى وجيز، ولا يغيّر شيئا في الاتفاقيّة: '
-    + 'ما فيها عن مادّتك (البند 10) يبقى كما هو — ومنه ترخيصٌ غيرُ حصريٍّ ودائمٌ لوجيز باستعمال ما تعدّه للشعبة وتعديلِه داخل المنصّة '
-    + 'لأغراضها التعليميّة (10-3). والقالبُ شكلٌ يجعل كرّاساتِ الدورات متّسقةً للمتعلّم؛ وشكلُه وشعارُه لوجيز.',
+  title: 'كرّاستك ملكك',
+  body: 'ما تكتبه فيها لك، ولك أن تستعمله كما تشاء. واستعمال القالب لا ينقل ملكيّته إلى وجيز، ولا يغيّر شيئا في الاتفاقيّة: '
+    + 'ما فيها عن مادّتك (البند 10) يبقى كما هو — ومنه ترخيص غير حصريّ ودائم لوجيز باستعمال ما تعدّه للشعبة وتعديله داخل المنصّة '
+    + 'لأغراضها التعليميّة (10-3). والقالب شكل يجعل كرّاسات الدورات متّسقة للمتعلّم؛ وشكله وشعاره لوجيز.',
 } as const
 
 /* ═══ مجموعاتُ المحاور ═══
@@ -189,11 +189,11 @@ const materialUnsaid = (w: { onTemplate?: boolean | null; ownMaterial?: boolean 
 export function ownMaterialLabels(content: WorkbookContent | null | undefined, moduleIds: readonly string[]): string[] {
   if (workbookModeOf(content) === 'course') {
     const wb = content?.workbook ?? null
-    return workbookDone(wb) && workbookMaterialOf(wb) === 'own' ? ['كرّاسةُ الدورة'] : []
+    return workbookDone(wb) && workbookMaterialOf(wb) === 'own' ? ['كرّاسة الدورة'] : []
   }
   return workbookGroups(content?.workbooks, moduleIds)
     .filter((g) => workbookDone(g) && workbookMaterialOf(g) === 'own')
-    .map((g) => `كرّاسةُ ${groupLabelAr(g, moduleIds)}`)
+    .map((g) => `كرّاسة ${groupLabelAr(g, moduleIds)}`)
 }
 
 /* ═══ ما ينقص الخطوة — يقرؤه الخادمُ (قائمةُ التجهيز) والشاشةُ معا ═══ */
@@ -205,17 +205,17 @@ export function workbooksProblems(
   const out: string[] = []
   if (workbookModeOf(content) === 'course') {
     const wb = content?.workbook ?? null
-    if (!workbookDone(wb)) out.push('ضع كرّاسةَ الدورة — ملفَّ PDF أو رابطا يضمّ المحاورَ كلَّها')
-    else if (opts.templateRequired && materialUnsaid(wb)) out.push('قل في كرّاسة الدورة: على قالب وجيز، أم مادّتُك الجاهزة')
+    if (!workbookDone(wb)) out.push('ضع كرّاسة الدورة — ملفّ PDF أو رابطا يضمّ المحاور كلّها')
+    else if (opts.templateRequired && materialUnsaid(wb)) out.push('قل في كرّاسة الدورة: على قالب وجيز، أم مادّتك الجاهزة')
     return out
   }
-  if (moduleIds.length === 0) return ['اكتب محاورك في «المحاور ومواعيدها» أوّلا — فلكلّ محورٍ كرّاستُه']
+  if (moduleIds.length === 0) return ['اكتب محاورك في «المحاور ومواعيدها» أوّلا — فلكلّ محور كرّاسته']
   const groups = workbookGroups(content?.workbooks, moduleIds)
   const empty = groups.filter((g) => !workbookDone(g))
-  if (empty.length > 0) out.push(`ضع كرّاسةَ ${empty.map((g) => groupLabelAr(g, moduleIds)).join('، و')} — ملفَّ PDF أو رابطا`)
+  if (empty.length > 0) out.push(`ضع كرّاسة ${empty.map((g) => groupLabelAr(g, moduleIds)).join('، و')} — ملفّ PDF أو رابطا`)
   const unsure = groups.filter((g) => workbookDone(g) && materialUnsaid(g))
   if (opts.templateRequired && unsure.length > 0) {
-    out.push(`قل في كرّاسة ${unsure.map((g) => groupLabelAr(g, moduleIds)).join('، و')}: على قالب وجيز، أم مادّتُك الجاهزة`)
+    out.push(`قل في كرّاسة ${unsure.map((g) => groupLabelAr(g, moduleIds)).join('، و')}: على قالب وجيز، أم مادّتك الجاهزة`)
   }
   return out
 }

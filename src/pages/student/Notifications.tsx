@@ -58,7 +58,7 @@ export default function Notifications() {
       ) : rows.length === 0 ? (
         <Panel className="grid place-items-center py-20 text-center">
           <Bell className="h-12 w-12 text-muted-foreground/50" />
-          <p className="mt-4 text-sm text-muted-foreground">لا إشعارات بعد — قرارات التسجيل والجلسات والتصحيح تصل هنا فورا.</p>
+          <p className="mt-4 text-sm text-muted-foreground">لا إشعارات بعد.</p>
         </Panel>
       ) : (
         <div className="space-y-2">

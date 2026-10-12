@@ -24,7 +24,7 @@ export async function runBulk(
       await apply(id)
       out.ok.push(id)
     } catch (err) {
-      out.failed.push({ id, message: err instanceof Error ? err.message : 'سببٌ غير معروف' })
+      out.failed.push({ id, message: err instanceof Error ? err.message : 'سبب غير معروف' })
     }
     done += 1
     onProgress?.(done, ids.length)
@@ -38,6 +38,6 @@ export function bulkMessage(outcome: BulkOutcome, doneVerbAr: string): string {
   const bad = outcome.failed.length
   if (bad === 0) return `${doneVerbAr} على ${ok}.`
   const first = outcome.failed[0].message
-  if (ok === 0) return `لم يُنفَّذ على أيٍّ من ${bad} — أوّلُ سبب: ${first}`
-  return `${doneVerbAr} على ${ok}، وتعذّر على ${bad} — أوّلُ سبب: ${first}`
+  if (ok === 0) return `لم ينفّذ على أيّ من ${bad} — أوّل سبب: ${first}`
+  return `${doneVerbAr} على ${ok}، وتعذّر على ${bad} — أوّل سبب: ${first}`
 }

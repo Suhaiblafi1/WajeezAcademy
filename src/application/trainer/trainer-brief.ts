@@ -22,4 +22,4 @@
 export const TRAINER_BRIEF_PATH = '/trainer/teach-with-us'
 
 /** اسمُها حيث يُذكَر */
-export const TRAINER_BRIEF_TITLE_AR = 'التدريبُ مع أكاديمية وجيز'
+export const TRAINER_BRIEF_TITLE_AR = 'التدريب مع أكاديمية وجيز'

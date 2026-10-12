@@ -17,23 +17,23 @@ import { checkName, checkSql, statusColumns } from '../../../scripts/status-chec
 
 const column = () => statusColumns().find((c) => c.model === 'CohortFile' && c.field === 'purpose')
 
-describe('أغراضُ ملفّات الشعبة: الشيفرةُ = التعليقُ = آخرُ قيدٍ مُرحَّل', () => {
+describe('أغراض ملفّات الشعبة: الشيفرة = التعليق = آخر قيد مرحّل', () => {
   it('⚠️ ما في `FILE_PURPOSES` هو ما في تعليق `CohortFile.purpose`', () => {
     const c = column()
-    expect(c, 'تعليقُ العمود لم يعد قائمةً يُولَّد منها قيد').toBeTruthy()
-    expect([...c!.values].sort(), 'زيد غرضٌ في الشيفرة ولم يُزَد في تعليق العمود — فيردّه القيد')
+    expect(c, 'تعليق العمود لم يعد قائمة يولّد منها قيد').toBeTruthy()
+    expect([...c!.values].sort(), 'زيد غرض في الشيفرة ولم يزد في تعليق العمود — فيردّه القيد')
       .toEqual([...FILE_PURPOSES].sort())
   })
 
-  it('⚠️ وآخرُ ترحيلٍ يكتب القيدَ يكتبه كما يولّده التعليقُ اليوم', () => {
+  it('⚠️ وآخر ترحيل يكتب القيد يكتبه كما يولّده التعليق اليوم', () => {
     const c = column()!
     const dir = join(process.cwd(), 'prisma/migrations')
     const last = readdirSync(dir).filter((d) => /^\d{14}_/.test(d)).sort()
       .map((d) => readFileSync(join(dir, d, 'migration.sql'), 'utf8'))
       .filter((sql) => sql.includes(`ADD CONSTRAINT "${checkName(c)}"`))
       .pop()
-    expect(last, 'لا ترحيلَ يكتب قيدَ الأغراض').toBeTruthy()
+    expect(last, 'لا ترحيل يكتب قيد الأغراض').toBeTruthy()
     const add = checkSql(c).split('\n')[1]
-    expect(last, 'التعليقُ تغيّر ولم يُولَّد ترحيلُه: npx tsx scripts/status-checks.ts').toContain(add)
+    expect(last, 'التعليق تغيّر ولم يولّد ترحيله: npx tsx scripts/status-checks.ts').toContain(add)
   })
 })

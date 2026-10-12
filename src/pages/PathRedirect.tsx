@@ -46,10 +46,10 @@ export default function PathRedirect() {
   if (current) {
     return (
       <SiteShell>
-        <SeoHead title="لا مسارَ بهذا الرابط" description="الرابطُ غيرُ صحيحٍ أو سُحب المسارُ من الرفّ." path={`/path/${slug}`} noindex />
+        <SeoHead title="لا مسار بهذا الرابط" description="الرابط غير صحيح أو سحب المسار من الرفّ." path={`/path/${slug}`} noindex />
         <div className="mx-auto max-w-3xl px-5 py-16">
           <Panel className="p-8 text-center">
-            <h1 className="text-2xl font-black">لا مسارَ بهذا الرابط</h1>
+            <h1 className="text-2xl font-black">لا مسار بهذا الرابط</h1>
             <p className="mt-3 text-read leading-7 text-muted-foreground">
               تأكّد من الرابط، أو تصفّح <Link to="/trainers" className="font-bold underline">مدرّبي وجيز</Link>.
             </p>
@@ -61,8 +61,8 @@ export default function PathRedirect() {
 
   return (
     <SiteShell>
-      <SeoHead title="جارٍ فتحُ المسار" description="تحويلٌ إلى صفحة صاحب المسار." path={`/path/${slug}`} noindex />
-      <div className="mx-auto max-w-3xl px-5 py-16 text-center text-read text-muted-foreground">جارٍ فتحُ المسار…</div>
+      <SeoHead title="جار فتح المسار" description="تحويل إلى صفحة صاحب المسار." path={`/path/${slug}`} noindex />
+      <div className="mx-auto max-w-3xl px-5 py-16 text-center text-read text-muted-foreground">جار فتح المسار…</div>
     </SiteShell>
   );
 }

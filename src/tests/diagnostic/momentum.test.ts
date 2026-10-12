@@ -1,4 +1,10 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect as vexpect, it } from 'vitest'
+import { plainAr } from '@/application/text/plain-ar'
+/* ما يُفحص بلا تشكيلٍ إعرابيّ — بعضُ ما يُقرأ هنا بعد «اللغة البيضاء» وبعضُه (الخادمُ والعقودُ والتشخيص) قبلها */
+const plainDeep = (v: unknown): unknown =>
+  typeof v === 'string' ? plainAr(v) : Array.isArray(v) ? v.map(plainDeep)
+    : v && typeof v === 'object' && Object.getPrototypeOf(v) === Object.prototype ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, plainDeep(x)])) : v
+const expect = Object.assign((v: unknown, m?: string) => vexpect(plainDeep(v), m), vexpect) as typeof vexpect
 import {
   KIND_LABEL_AR, NO_STREAK_NOTE, WINDOW_DAYS,
   buildMomentum, momentumFactsFrom, sinceLabelAr,
@@ -46,7 +52,7 @@ describe('ط-٥ الحساب', () => {
     expect(m.daysSince).toBe(3)
   })
 
-  it('النافذة ثلاثون يوما: ما خرج منها لا يُحتسب ولا يُخفى آخر أثر', () => {
+  it('النافذة ثلاثون يوما: ما خرج منها لا يحتسب ولا يخفى آخر أثر', () => {
     const m = buildMomentum({ events: [ev('module', WINDOW_DAYS + 5)], cohortPace: null }, NOW)
     expect(m.hasEvidence).toBe(true)
     expect(m.last).not.toBeNull()
@@ -54,18 +60,18 @@ describe('ط-٥ الحساب', () => {
     expect(m.daysSince).toBe(WINDOW_DAYS + 5)
   })
 
-  it('الأثر المستقبلي يُهمَل — جلسة لم تُعقد ليست أثرا', () => {
+  it('الأثر المستقبلي يهمل — جلسة لم تعقد ليست أثرا', () => {
     const future = new Date(NOW.getTime() + 5 * DAY).toISOString()
     const m = buildMomentum({ events: [{ kind: 'session', at: future, labelAr: 'جلسة قادمة' }], cohortPace: null }, NOW)
     expect(m.hasEvidence).toBe(false)
   })
 
-  it('التاريخ المعطوب يُطرح ولا يرمي', () => {
+  it('التاريخ المعطوب يطرح ولا يرمي', () => {
     const m = buildMomentum({ events: [{ kind: 'module', at: 'ليس تاريخا', labelAr: 'x' }, ev('module', 2)], cohortPace: null }, NOW)
     expect(m.countedTotal).toBe(1)
   })
 
-  it('العدّ بالنوع، والأحدث ثلاثة فقط تُعرض', () => {
+  it('العدّ بالنوع، والأحدث ثلاثة فقط تعرض', () => {
     const m = buildMomentum({
       events: [ev('retrieval', 1), ev('retrieval', 2), ev('module', 3), ev('session', 4), ev('submission', 5)],
       cohortPace: null,
@@ -76,7 +82,7 @@ describe('ط-٥ الحساب', () => {
     expect(m.recent).toHaveLength(3)
   })
 
-  it('إيقاع الشعبة يُمرَّر كما هو — هدف وضعته الشعبة لا نحن', () => {
+  it('إيقاع الشعبة يمرّر كما هو — هدف وضعته الشعبة لا نحن', () => {
     const pace = { cohortTitle: 'شعبة', done: 5, total: 8 }
     expect(buildMomentum({ events: [], cohortPace: pace }, NOW).cohortPace).toEqual(pace)
   })
@@ -84,7 +90,7 @@ describe('ط-٥ الحساب', () => {
 
 describe('ط-٥ نصّ المدة', () => {
   it('يقول واقعة بلا حكم', () => {
-    expect(sinceLabelAr(null)).toBe('لا أثر مسجَّل بعد')
+    expect(sinceLabelAr(null)).toBe('لا أثر مسجّل بعد')
     expect(sinceLabelAr(0)).toBe('اليوم')
     expect(sinceLabelAr(1)).toBe('أمس')
     expect(sinceLabelAr(2)).toBe('قبل يومين')
@@ -119,7 +125,7 @@ describe('ط-٥ استخراج الآثار من ردود الخادم', () => {
     certificates: [{ status: 'active', issuedAt: ago(20) }],
   }
 
-  it('يحتسب الأدلة فقط: حضور فعلي ووحدة مُقرّة وتسليم مقبول وشهادة', () => {
+  it('يحتسب الأدلة فقط: حضور فعلي ووحدة مقرّة وتسليم مقبول وشهادة', () => {
     const facts = momentumFactsFrom([detail])
     const kinds = facts.events.map((e) => e.kind).sort()
     expect(kinds).toEqual(['certificate', 'module', 'session', 'submission'])
@@ -127,7 +133,7 @@ describe('ط-٥ استخراج الآثار من ردود الخادم', () => {
     expect(facts.events).toHaveLength(4)
   })
 
-  it('الحضور يؤرَّخ بجلسته لا بلحظة تسجيله', () => {
+  it('الحضور يؤرّخ بجلسته لا بلحظة تسجيله', () => {
     const facts = momentumFactsFrom([detail])
     const session = facts.events.find((e) => e.kind === 'session')!
     expect(session.at).toBe(ago(9))
@@ -163,7 +169,7 @@ describe('ط-٥ استخراج الآثار من ردود الخادم', () => {
     expect(buildMomentum(facts, NOW).counted.remeasure).toBe(2)
   })
 
-  it('إيقاع الشعبة الجارية يُقدَّم على المنتهية — «٤ من ٤» في شعبة أُغلقت تاريخ لا إيقاع', () => {
+  it('إيقاع الشعبة الجارية يقدّم على المنتهية — «٤ من ٤» في شعبة أغلقت تاريخ لا إيقاع', () => {
     const finished = {
       cohort: { title: 'شعبة منتهية', sessions: [
         { id: 'a', startsAt: ago(20), status: 'done' },

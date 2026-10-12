@@ -33,7 +33,7 @@
 
 /** رفضُ البوّابة — يُسجَّل في سجلّ الإشعار كما يُسجَّل أيُّ فشلِ إرسال */
 export const MAIL_GATE_REFUSAL_AR =
-  'الإرسالُ الحقيقيّ موقوفٌ في هذه البيئة — اضبط MAIL_LIVE=on إن قصدتَه'
+  'الإرسال الحقيقيّ موقوف في هذه البيئة — اضبط MAIL_LIVE=on إن قصدته'
 
 /** أتُرسِل هذه البيئةُ بريدا حقيقيّا؟ ولا تُرسل حتّى تُثبِت. */
 export function liveMailAllowed(env: Record<string, string | undefined> = process.env): boolean {

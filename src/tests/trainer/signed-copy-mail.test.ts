@@ -62,37 +62,37 @@ function fnBody(src: string, name: string): string {
 const SVC = bare('server/services/trainer-review.service.ts')
 const SIGN = fnBody(SVC, 'signContractByToken')
 
-describe('بريدُ النسخة الموقَّعة يُحيل ولا يسكب', () => {
-  it('وجسمُ دالّة التوقيع مقروءٌ — وإلّا فالحارسُ يقيس الفراغ', () => {
-    expect(SIGN, 'لم يُقرأ جسمُ `signContractByToken`').not.toBe('')
-    expect(SIGN, 'الجسمُ المقروءُ ليس جسمَ التوقيع').toContain('signerLegalName: legalName')
-    expect(SIGN.length, 'الجسمُ المقروءُ أقصرُ من أن يكون هو').toBeGreaterThan(1500)
+describe('بريد النسخة الموقّعة يحيل ولا يسكب', () => {
+  it('وجسم دالّة التوقيع مقروء — وإلّا فالحارس يقيس الفراغ', () => {
+    expect(SIGN, 'لم يقرأ جسم `signContractByToken`').not.toBe('')
+    expect(SIGN, 'الجسم المقروء ليس جسم التوقيع').toContain('signerLegalName: legalName')
+    expect(SIGN.length, 'الجسم المقروء أقصر من أن يكون هو').toBeGreaterThan(1500)
   })
 
-  it('لا يُسكَب المتنُ في كتلةِ رسالة', () => {
+  it('لا يسكب المتن في كتلة رسالة', () => {
     /* والصيغةُ التي كانت: `{ kind: 'p', text: c.bodyAr ?? '' }` */
-    expect(SIGN, 'عاد المتنُ يُسكَب في البريد').not.toMatch(/text:\s*c\.bodyAr/)
-    expect(SIGN, 'عاد المتنُ يُسكَب في البريد بصيغةٍ أخرى').not.toMatch(/text:[^\n]*bodyAr/)
+    expect(SIGN, 'عاد المتن يسكب في البريد').not.toMatch(/text:\s*c\.bodyAr/)
+    expect(SIGN, 'عاد المتن يسكب في البريد بصيغة أخرى').not.toMatch(/text:[^\n]*bodyAr/)
   })
 
-  it('والرسالةُ تُبنى في الدالّة الخالصة لا في جسم الخدمة', () => {
+  it('والرسالة تبنى في الدالّة الخالصة لا في جسم الخدمة', () => {
     /* فلو عادت كتلُ الرسالة تُكتب هنا لَعاد نصُّها بلا حارسٍ يقرؤه نصّا */
-    expect(SIGN, 'لم تعد الرسالةُ تُبنى في `signedCopyMail`').toContain('signedCopyMail({')
-    expect(SIGN, 'عادت كتلُ الرسالة تُكتب في جسم الخدمة').not.toMatch(/blocks:\s*\[/)
+    expect(SIGN, 'لم تعد الرسالة تبنى في `signedCopyMail`').toContain('signedCopyMail({')
+    expect(SIGN, 'عادت كتل الرسالة تكتب في جسم الخدمة').not.toMatch(/blocks:\s*\[/)
   })
 
-  it('وتُسلَّم إليها حقائقُ الصفّ لا قيمٌ مخترَعة', () => {
+  it('وتسلّم إليها حقائق الصفّ لا قيم مخترعة', () => {
     /* ═══ وهذا ما بقي للخدمة من الرسالة ═══
 
        الدالّةُ الخالصةُ تُختبَر بما يُعطى لها، فتخضرُّ على مُدخلٍ صحيحٍ ولو
        كانت الخدمةُ تسلّمها غيرَه. فيُقاس هنا **ما تسلّمه**: بصمةُ الصفّ
        لا حسابٌ آخر، والاسمُ الذي وقّع به، واشتراطُ العرض من عموده. */
-    expect(SIGN, 'بصمةُ النصّ لا تُقرأ من الصفّ').toMatch(/bodyHash:\s*c\.bodyHash/)
-    expect(SIGN, 'الاسمُ القانونيُّ لا يُسلَّم للرسالة').toMatch(/legalName,/)
-    expect(SIGN, 'اشتراطُ العرض لا يُقرأ من عموده').toMatch(/conditional:\s*c\.gatesActivation/)
+    expect(SIGN, 'بصمة النصّ لا تقرأ من الصفّ').toMatch(/bodyHash:\s*c\.bodyHash/)
+    expect(SIGN, 'الاسم القانونيّ لا يسلّم للرسالة').toMatch(/legalName,/)
+    expect(SIGN, 'اشتراط العرض لا يقرأ من عموده').toMatch(/conditional:\s*c\.gatesActivation/)
     /* وبابُ نسخته من مسكّ الروابط نفسِه لا من نصٍّ يُركَّب هنا: لو رُكّب
        بيدٍ لَانحرف عن `/c/<رمز>` في أوّل تغييرٍ للمسار. */
-    expect(SIGN, 'لم يُسلَّم للرسالة بابُ نسخته').toMatch(/contractUrl:\s*this\.signingUrl\(token\)/)
+    expect(SIGN, 'لم يسلّم للرسالة باب نسخته').toMatch(/contractUrl:\s*this\.signingUrl\(token\)/)
   })
 
   /* ═══ والوعدُ يُقال بشرطه ═══
@@ -109,11 +109,11 @@ describe('بريدُ النسخة الموقَّعة يُحيل ولا يسكب'
      والشرطُ معا.
 
      فيُقاس ما حلّ محلَّه: **لا زرَّ في هذه الرسالة البتّة**. */
-  it('ولا زرَّ إلى البوّابة في رسالة التوقيع — والقائمُ إلى نسخته', () => {
-    expect(SIGN, 'عاد يُسأل عن حسابٍ لا زرَّ له').not.toMatch(/hasPortal/)
+  it('ولا زرّ إلى البوّابة في رسالة التوقيع — والقائم إلى نسخته', () => {
+    expect(SIGN, 'عاد يسأل عن حساب لا زرّ له').not.toMatch(/hasPortal/)
     const LINK = 'https://www.wajeezacademy.com/c/tok-sample-0123456789abcdef'
     const mk = (conditional: boolean, contractUrl: string | null) => signedCopyMail({
-      legalName: 'صهيب الخوالدة', title: 'عرضٌ مشروط',
+      legalName: 'صهيب الخوالدة', title: 'عرض مشروط',
       signedOnAr: '27 سبتمبر 2026', bodyHash: 'abc', conditional, contractUrl,
     })
     const hrefs = (m: ReturnType<typeof signedCopyMail>) => m.doc.blocks
@@ -122,15 +122,15 @@ describe('بريدُ النسخة الموقَّعة يُحيل ولا يسكب'
 
     for (const conditional of [true, false]) {
       const got = hrefs(mk(conditional, LINK))
-      expect(got.length, `لا زرَّ إلى نسخته (conditional=${conditional})`).toBe(1)
+      expect(got.length, `لا زرّ إلى نسخته (conditional=${conditional})`).toBe(1)
       /* والبابُ المنسوخُ يُمنَع بعينه: أيُّ وصلةٍ إلى البوّابة وعدٌ سابقٌ لأوانه */
-      expect(got[0], `زرٌّ إلى بوّابةٍ لم تُفتح (conditional=${conditional})`)
+      expect(got[0], `زرّ إلى بوّابة لم تفتح (conditional=${conditional})`)
         .not.toMatch(/\/trainer(\/|$|\?)/)
-      expect(got[0], `الزرُّ لا يفتح نسخته (conditional=${conditional})`).toContain('/c/')
+      expect(got[0], `الزرّ لا يفتح نسخته (conditional=${conditional})`).toContain('/c/')
 
       /* ولا زرَّ البتّة حين لا رمزَ — فلا يُرسَم زرٌّ إلى لا شيء */
       expect(hrefs(mk(conditional, null)).length,
-        `زرٌّ بلا رابطٍ يقصده (conditional=${conditional})`).toBe(0)
+        `زرّ بلا رابط يقصده (conditional=${conditional})`).toBe(0)
     }
   })
 })

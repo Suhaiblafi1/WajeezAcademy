@@ -72,15 +72,15 @@ export function periodProblem(
   p: { startsOn?: string | null; endsOn?: string | null } | null | undefined,
   opts: { today?: string; approvedStart?: string | null } = {},
 ): string | null {
-  if (!p?.startsOn) return 'حدّد تاريخَ بدء الشعبة'
-  if (!p.endsOn) return 'حدّد تاريخَ انتهاء الشعبة'
-  if (!realDate(p.startsOn) || !realDate(p.endsOn)) return 'تاريخٌ غيرُ صالح — راجِع اليومَ والشهر'
-  if (p.endsOn <= p.startsOn) return 'تاريخُ الانتهاء بعد تاريخ البدء — لا قبله ولا في يومه'
+  if (!p?.startsOn) return 'حدّد تاريخ بدء الشعبة'
+  if (!p.endsOn) return 'حدّد تاريخ انتهاء الشعبة'
+  if (!realDate(p.startsOn) || !realDate(p.endsOn)) return 'تاريخ غير صالح — راجع اليوم والشهر'
+  if (p.endsOn <= p.startsOn) return 'تاريخ الانتهاء بعد تاريخ البدء — لا قبله ولا في يومه'
   if (periodDays({ startsOn: p.startsOn, endsOn: p.endsOn }) > MAX_PERIOD_DAYS) {
-    return 'مدّةٌ أطولُ من سنة — تحقّق من السنة في التاريخ'
+    return 'مدّة أطول من سنة — تحقّق من السنة في التاريخ'
   }
   if (opts.today && p.startsOn < opts.today && p.startsOn !== (opts.approvedStart ?? null)) {
-    return 'تاريخُ البدء مضى — اختر يوما من اليوم فما بعده'
+    return 'تاريخ البدء مضى — اختر يوما من اليوم فما بعده'
   }
   return null
 }

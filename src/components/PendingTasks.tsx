@@ -41,7 +41,7 @@ const reviewOf = (r: PendingTaskRow): TaskReview =>
   taskReview({ status: r.status ?? 'published', pendingChange: r.pendingChange, reviewerNote: r.reviewerNote }, true)
 
 const APPROVE_LABEL: Partial<Record<TaskReview, string>> = {
-  new: 'اعتمِدها', edit: 'اعتمِد التعديل', remove: 'اعتمِد الحذف',
+  new: 'اعتمدها', edit: 'اعتمد التعديل', remove: 'اعتمد الحذف',
 }
 
 export function PendingTasks({ tasks, axisNo, busy, onDecide }: {
@@ -56,14 +56,14 @@ export function PendingTasks({ tasks, axisNo, busy, onDecide }: {
   const fmt: TaskValueFormat = {
     type: (t) => TYPE_AR[t] ?? t,
     date: (v) => fmtDateTimeAr(v),
-    axis: (id) => (axisNo.has(id) ? `المحور ${axisNo.get(id)}` : 'محورٌ خارجَ الخطّة'),
+    axis: (id) => (axisNo.has(id) ? `المحور ${axisNo.get(id)}` : 'محور خارج الخطّة'),
   }
   return (
-    <div className="mt-4 border-t border-white/10 pt-4" role="region" aria-label="مهامُّ تنتظر قرارك">
-      <p className="text-read font-black text-foreground">مهامُّ تنتظر قرارك ({tasks.length})</p>
+    <div className="mt-4 border-t border-white/10 pt-4" role="region" aria-label="مهامّ تنتظر قرارك">
+      <p className="text-read font-black text-foreground">مهامّ تنتظر قرارك ({tasks.length})</p>
       <p className="mt-1 text-read leading-6 text-muted-foreground">
-        أضافها المدرّبُ أو طلب تعديلَها أو حذفَها بعد اعتماد خطّته — ولا يرى المتعلّمون شيئا منها حتّى تعتمده،
-        ويبقون على المعتمَد. واعتمادُ مراجعةٍ للخطّة يعتمدها معها.
+        أضافها المدرّب أو طلب تعديلها أو حذفها بعد اعتماد خطّته — ولا يرى المتعلّمون شيئا منها حتّى تعتمده،
+        ويبقون على المعتمد. واعتماد مراجعة للخطّة يعتمدها معها.
       </p>
       <ul className="mt-3 space-y-2">
         {tasks.map((t) => {
@@ -79,7 +79,7 @@ export function PendingTasks({ tasks, axisNo, busy, onDecide }: {
               <p className="mt-1 text-read text-muted-foreground">
                 {formatTaskValue('type', live.type, fmt)}
                 {live.moduleId && <> · {formatTaskValue('moduleId', live.moduleId, fmt)}</>}
-                {' · '}{live.dueAt ? `آخرُ موعدها ${fmt.date(live.dueAt)}` : 'بلا آخرِ موعد'}
+                {' · '}{live.dueAt ? `آخر موعدها ${fmt.date(live.dueAt)}` : 'بلا آخر موعد'}
               </p>
               {review === 'new' && (
                 <BriefView text={formatTaskValue('briefAr', live.briefAr, fmt)} muted className="mt-1" />
@@ -95,7 +95,7 @@ export function PendingTasks({ tasks, axisNo, busy, onDecide }: {
                 </dl>
               )}
               {review === 'remove' && (
-                <p className="mt-1 text-read leading-6 text-muted-foreground">يطلب حذفَها — وتبقى عند المتعلّمين حتّى تعتمد حذفَها.</p>
+                <p className="mt-1 text-read leading-6 text-muted-foreground">يطلب حذفها — وتبقى عند المتعلّمين حتّى تعتمد حذفها.</p>
               )}
               {declining?.id === t.id ? (
                 <div className="mt-2 space-y-2">
@@ -103,9 +103,9 @@ export function PendingTasks({ tasks, axisNo, busy, onDecide }: {
                     rows={2}
                     maxLength={2000}
                     value={declining.note}
-                    aria-label={`سببُ ردّ «${t.title}»`}
+                    aria-label={`سبب ردّ «${t.title}»`}
                     onChange={(e) => setDeclining({ id: t.id, note: e.target.value })}
-                    placeholder="لماذا تردّه؟ يصل المدرّبَ بنصّه."
+                    placeholder="لماذا تردّه؟ يصل المدرّب بنصّه."
                     className={staffAreaCls}
                   />
                   <div className="flex flex-wrap gap-2">
@@ -113,18 +113,18 @@ export function PendingTasks({ tasks, axisNo, busy, onDecide }: {
                       tone="danger" size="sm" disabled={busy || !declining.note.trim()}
                       onClick={() => void onDecide(t.id, false, declining.note.trim()).then((ok) => { if (ok) setDeclining(null) })}
                     >
-                      أرسِل الردّ
+                      أرسل الردّ
                     </Button>
-                    <Button tone="ghost" size="sm" disabled={busy} onClick={() => setDeclining(null)}>تراجَع</Button>
+                    <Button tone="ghost" size="sm" disabled={busy} onClick={() => setDeclining(null)}>تراجع</Button>
                   </div>
                 </div>
               ) : (
                 <div className="mt-2 flex flex-wrap gap-2">
                   <Button tone="confirm" size="sm" disabled={busy} onClick={() => void onDecide(t.id, true)}>
-                    {APPROVE_LABEL[review] ?? 'اعتمِدها'}
+                    {APPROVE_LABEL[review] ?? 'اعتمدها'}
                   </Button>
                   <Button tone="danger" size="sm" disabled={busy} onClick={() => setDeclining({ id: t.id, note: '' })}>
-                    ردَّه
+                    ردّه
                   </Button>
                 </div>
               )}

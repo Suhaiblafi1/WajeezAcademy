@@ -55,35 +55,35 @@ function tsx(dir: string, out: string[] = []): string[] {
 const strip = (t: string) => t.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
 const goldsIn = (abs: string) => (strip(readFileSync(abs, 'utf8')).match(/tone="primary"/g) ?? []).length
 
-describe('الذهبيُّ فعلُ الصفحة، لا لونُ كلِّ فعلٍ مهمّ', () => {
+describe('الذهبيّ فعل الصفحة، لا لون كلّ فعل مهمّ', () => {
   const counts = tsx(join(root, 'src'))
     .map((f) => ({ file: relative(root, f), n: goldsIn(f) }))
     .filter((r) => r.n > 0)
 
-  it('لا ملفَّ فيه أكثرُ من ذهبيٍّ واحد — إلّا معالجَ خطوات', () => {
+  it('لا ملفّ فيه أكثر من ذهبيّ واحد — إلّا معالج خطوات', () => {
     const over = counts.filter((r) => r.n > 1 && !STEPPED.has(r.file))
     expect(
       over,
-      'ذهبيّان في شاشةٍ واحدةٍ يُلغيان بعضَهما.\n'
-      + 'حفظُ نموذجٍ داخل قسمٍ فعلٌ مُثبِت: tone="confirm".\n'
+      'ذهبيّان في شاشة واحدة يلغيان بعضهما.\n'
+      + 'حفظ نموذج داخل قسم فعل مثبت: tone="confirm".\n'
       + over.map((r) => `  ${r.file}: ${r.n}`).join('\n'),
     ).toEqual([])
   })
 
-  it('والمستثنى مُسمًّى وموجودٌ فعلا — لا اسمَ ميّتٍ يوسّع الثغرة', () => {
+  it('والمستثنى مسمّى وموجود فعلا — لا اسم ميّت يوسّع الثغرة', () => {
     for (const f of STEPPED) {
-      expect(counts.some((r) => r.file === f), `مستثنًى لا وجودَ له: ${f}`).toBe(true)
+      expect(counts.some((r) => r.file === f), `مستثنى لا وجود له: ${f}`).toBe(true)
     }
   })
 
-  it('ولا ذهبيَّ صغير — فعلُ الصفحة لا يُكتب بحجمٍ ثانويّ', () => {
+  it('ولا ذهبيّ صغير — فعل الصفحة لا يكتب بحجم ثانويّ', () => {
     const small: string[] = []
     for (const f of tsx(join(root, 'src'))) {
       if ((strip(readFileSync(f, 'utf8')).match(/tone="primary" size="sm"/g) ?? []).length) {
         small.push(relative(root, f))
       }
     }
-    expect(small, `ذهبيٌّ بحجمٍ صغير — إمّا ليس فعلَ الصفحة، وإمّا حجمُه خطأ:\n${small.join('\n')}`)
+    expect(small, `ذهبيّ بحجم صغير — إمّا ليس فعل الصفحة، وإمّا حجمه خطأ:\n${small.join('\n')}`)
       .toEqual([])
   })
 })
@@ -110,7 +110,7 @@ describe('الذهبيُّ فعلُ الصفحة، لا لونُ كلِّ فعل
    كسولا)، ثمّ رسمُ الاستيرادات منه. وهو **تقريبٌ يزيد ولا ينقص**: يرى ما قد
    يُعرض لا ما يُعرض حتما. ولذلك يُستثنى ما ثبت تعاقبُه بالقراءة — ويُسمّى
    استثناؤه بسببه، لا يُترك ثغرةً عامّة. */
-describe('⑦ · رئيسيٌّ واحدٌ في الشاشة — تُقاس بالشاشة لا بالملفّ', () => {
+describe('⑦ · رئيسيّ واحد في الشاشة — تقاس بالشاشة لا بالملفّ', () => {
   const SRC = join(root, 'src')
   const files = tsx(SRC).map((f) => relative(root, f).split(sep).join('/'))
   const all = new Set(files)
@@ -175,11 +175,11 @@ describe('⑦ · رئيسيٌّ واحدٌ في الشاشة — تُقاس با
      كما يُعَدُّ في أيّ شاشة. */
   const SEQUENTIAL: Record<string, { why: string; files: string[] }> = {
     '/admin/catalog': {
-      why: 'معالجان يُفتح أحدُهما بـ`openForm` لا كلاهما، وكلٌّ منهما خطوةٌ في المرّة',
+      why: 'معالجان يفتح أحدهما بـ`openForm` لا كلاهما، وكلّ منهما خطوة في المرّة',
       files: ['src/components/CourseWizard.tsx', 'src/components/PathwayWizard.tsx'],
     },
     '/student/learning': {
-      why: 'مراحلُ الرحلة تتعاقب (العرضُ ثمّ العمل)، و`StageWork` تبويبات — واحدٌ يُرى في المرّة',
+      why: 'مراحل الرحلة تتعاقب (العرض ثمّ العمل)، و`StageWork` تبويبات — واحد يرى في المرّة',
       files: [
         'src/components/BuyCohort.tsx',
         'src/components/journey/StageWork.tsx',
@@ -202,32 +202,32 @@ describe('⑦ · رئيسيٌّ واحدٌ في الشاشة — تُقاس با
     }
   })
 
-  it('الاشتقاقُ يعمل — ولو انكسر لَخضرّ ما بعده بلا معنى', () => {
-    expect(screens.length, 'لم تُقرأ مساراتٌ من App.tsx').toBeGreaterThan(60)
-    expect(measured.some((m) => m.total > 0), 'لا ذهبيَّ في أيّ شاشة — تعطّل العدّ').toBe(true)
+  it('الاشتقاق يعمل — ولو انكسر لخضرّ ما بعده بلا معنى', () => {
+    expect(screens.length, 'لم تقرأ مسارات من App.tsx').toBeGreaterThan(60)
+    expect(measured.some((m) => m.total > 0), 'لا ذهبيّ في أيّ شاشة — تعطّل العدّ').toBe(true)
   })
 
-  it('لا شاشةَ يبلغها ذهبيّان', () => {
+  it('لا شاشة يبلغها ذهبيّان', () => {
     const over = measured.filter((m) => m.counted > 1)
     expect(
       over,
-      'ذهبيّان في شاشةٍ واحدةٍ يُلغيان بعضَهما — ولو كانا في ملفَّين.\n'
-      + 'فعلُ قسمٍ أو نافذةٍ نبرتُه `confirm`، وأداةُ الإطار `ghost`.\n'
+      'ذهبيّان في شاشة واحدة يلغيان بعضهما — ولو كانا في ملفّين.\n'
+      + 'فعل قسم أو نافذة نبرته `confirm`، وأداة الإطار `ghost`.\n'
       + over.map((m) => `  ${m.path}\n${m.carriers.map((c) => `      ${c.n} × ${c.f}`).join('\n')}`).join('\n'),
     ).toEqual([])
   })
 
-  it('والمستثنى يبقى مستحقّا — فلا يبقى اسمٌ يوسّع الثغرة بعد أن زال سببُه', () => {
+  it('والمستثنى يبقى مستحقّا — فلا يبقى اسم يوسّع الثغرة بعد أن زال سببه', () => {
     for (const [path, { why, files }] of Object.entries(SEQUENTIAL)) {
       const m = measured.find((x) => x.path === path)
-      expect(m, `مستثنًى لا مسارَ له: ${path}`).toBeTruthy()
+      expect(m, `مستثنى لا مسار له: ${path}`).toBeTruthy()
       expect(m!.total, `«${path}» لم يعد يبلغه ذهبيّان — فاحذف استثناءه (${why})`)
         .toBeGreaterThan(1)
       /* وكلُّ ملفٍّ مُسمًّى يحمل ذهبيّا فعلا ويبلغ الشاشة — وإلّا فاسمٌ ميّت */
       const reach = reachable(m!.file)
       for (const f of files) {
-        expect(reach.has(f), `مستثنًى لا يبلغ «${path}»: ${f}`).toBe(true)
-        expect(goldsIn(join(root, f)), `مستثنًى بلا ذهبيّ: ${f}`).toBeGreaterThan(0)
+        expect(reach.has(f), `مستثنى لا يبلغ «${path}»: ${f}`).toBe(true)
+        expect(goldsIn(join(root, f)), `مستثنى بلا ذهبيّ: ${f}`).toBeGreaterThan(0)
       }
     }
   })

@@ -57,12 +57,12 @@ function groups(): { title: string; routes: string[] }[] {
   return out
 }
 
-describe('تصنيفُ اللوحة · لكلّ شاشةٍ مجموعةٌ واحدة', () => {
+describe('تصنيف اللوحة · لكلّ شاشة مجموعة واحدة', () => {
   const GROUPS = groups()
 
-  it('الكتلةُ تُقرأ أصلا — وإلّا فالفحصُ كلُّه زينة', () => {
-    expect(BLOCK, 'كتلةُ المجموعات مفقودة').toBeTruthy()
-    expect(GROUPS.length, 'لا مجموعاتِ في الكتلة').toBeGreaterThan(3)
+  it('الكتلة تقرأ أصلا — وإلّا فالفحص كلّه زينة', () => {
+    expect(BLOCK, 'كتلة المجموعات مفقودة').toBeTruthy()
+    expect(GROUPS.length, 'لا مجموعات في الكتلة').toBeGreaterThan(3)
   })
 
   /* ═══ وصفحةُ تفصيلٍ تُفتح من شاشةٍ في مجموعة — لا تُصنَّف وحدَها (١١ أكتوبر ٢٠٢٦) ═══
@@ -77,7 +77,7 @@ describe('تصنيفُ اللوحة · لكلّ شاشةٍ مجموعةٌ واح
     },
   }
 
-  it('وصفحةُ التفصيل يربط إليها ملفٌّ تعرضه شاشةٌ في مجموعة', () => {
+  it('وصفحة التفصيل يربط إليها ملفّ تعرضه شاشة في مجموعة', () => {
     const placed = GROUPS.flatMap((g) => g.routes)
     for (const [path, d] of Object.entries(DETAIL)) {
       expect(APP, `${path} ليس في App.tsx`).toContain(`<Route path="${path}"`)
@@ -86,7 +86,7 @@ describe('تصنيفُ اللوحة · لكلّ شاشةٍ مجموعةٌ واح
     }
   })
 
-  it('كلُّ مسارِ إدارةٍ في `App.tsx` له مجموعةٌ — إلّا تحويلا أو شاشةَ حساب', () => {
+  it('كلّ مسار إدارة في `App.tsx` له مجموعة — إلّا تحويلا أو شاشة حساب', () => {
     /* التحويلُ يُعرف بشكله: `element={<Navigate` — فلا يُنتظر له تبويب.
        و«حسابي» تُفتح من قائمة الحساب في الترويسة لا من تصنيفِ عمل. */
     const ACCOUNT = '/admin/account'
@@ -96,48 +96,48 @@ describe('تصنيفُ اللوحة · لكلّ شاشةٍ مجموعةٌ واح
       .filter((p) => p !== ACCOUNT)
       .filter((p) => !(p in DETAIL))
 
-    expect(routes.length, 'لم تُقرأ مساراتُ الإدارة من App.tsx').toBeGreaterThan(20)
+    expect(routes.length, 'لم تقرأ مسارات الإدارة من App.tsx').toBeGreaterThan(20)
 
     const placed = GROUPS.flatMap((g) => g.routes)
     const orphans = routes.filter((r) => !placed.includes(r))
-    expect(orphans, `شاشةٌ بلا مجموعة — لا يبلغها إلّا من يعرف عنوانها:\n${orphans.join('\n')}`).toEqual([])
+    expect(orphans, `شاشة بلا مجموعة — لا يبلغها إلّا من يعرف عنوانها:\n${orphans.join('\n')}`).toEqual([])
   })
 
-  it('ولا شاشةَ في مجموعتين — فالباحثُ عنها يجدها مرّةً لا مرّتين', () => {
+  it('ولا شاشة في مجموعتين — فالباحث عنها يجدها مرّة لا مرّتين', () => {
     const placed = GROUPS.flatMap((g) => g.routes)
     const twice = placed.filter((r, i) => placed.indexOf(r) !== i)
-    expect([...new Set(twice)], 'شاشةٌ مكرَّرةٌ في مجموعتين').toEqual([])
+    expect([...new Set(twice)], 'شاشة مكرّرة في مجموعتين').toEqual([])
   })
 
-  it('والمجموعةُ بين اثنتين وخمسٍ — فلا تعود «الأكاديمية» ذاتُ الثماني عشرة', () => {
+  it('والمجموعة بين اثنتين وخمس — فلا تعود «الأكاديمية» ذات الثماني عشرة', () => {
     /* الحدُّ الأعلى هو الحارسُ الحقيقيّ: ما فوق خمسٍ يُمسح بالعين مسحَ قائمة
        لا مسحَ مجموعة. والأدنى يمنع عنوانا لشاشةٍ واحدة. */
     const bad = GROUPS.filter((g) => g.routes.length < 2 || g.routes.length > 5)
       .map((g) => `${g.title}: ${g.routes.length}`)
-    expect(bad, `مجموعةٌ خارج المدى (٢–٥):\n${bad.join('\n')}`).toEqual([])
+    expect(bad, `مجموعة خارج المدى (٢–٥):\n${bad.join('\n')}`).toEqual([])
   })
 
-  it('ولكلّ شاشةٍ سطرٌ يقول ما تفعله — لا اسمٌ عارٍ', () => {
+  it('ولكلّ شاشة سطر يقول ما تفعله — لا اسم عار', () => {
     /* بلا السطر لا يفرّق أحدٌ بين «طلبات المتعلّمين» و«الطلبة المسجَّلون»،
        فيفتح الاثنتين ليعرف. والفحصُ على **عدد** البنود لا على ورودِ الحقل:
        حقلٌ واحدٌ مكتوبٌ يُرضي `toContain` وتسعةٌ وعشرون بلا سطر. */
     const items = [...BLOCK.matchAll(/to: "\/admin[^"]*"/g)].length
     const descs = [...BLOCK.matchAll(/descAr: "([^"]{8,})"/g)].length
-    expect(descs, `${items} شاشةً و${descs} سطرَ وصف — بعضُها بلا سطر`).toBe(items)
+    expect(descs, `${items} شاشة و${descs} سطر وصف — بعضها بلا سطر`).toBe(items)
   })
 })
 
-describe('تصنيفُ اللوحة · الدليلُ والقائمةُ من مصدرٍ واحد', () => {
-  it('الدليلُ يقرأ `sectionsFor` ولا يكتب قائمتَه', () => {
-    expect(DIRECTORY, 'الدليلُ لا يقرأ مصدرَ القائمة').toContain('sectionsFor')
+describe('تصنيف اللوحة · الدليل والقائمة من مصدر واحد', () => {
+  it('الدليل يقرأ `sectionsFor` ولا يكتب قائمته', () => {
+    expect(DIRECTORY, 'الدليل لا يقرأ مصدر القائمة').toContain('sectionsFor')
     /* ولا يكتب مسارا بيده: نسخةٌ ثانيةٌ تفترق عن الأولى عند أوّل تعديل */
     const own = [...DIRECTORY.matchAll(/to="\/admin[^"]*"/g)].map((m) => m[0])
-    expect(own, `الدليلُ يكتب مساراتِه بيده:\n${own.join('\n')}`).toEqual([])
+    expect(own, `الدليل يكتب مساراته بيده:\n${own.join('\n')}`).toEqual([])
   })
 
-  it('والترشيحُ بالصلاحية يقع في المصدر الواحد لا في كلٍّ بنسخته', () => {
-    expect(NAV, 'لا دالّةَ ترشيحٍ مشتركة').toContain('export function sectionsFor')
+  it('والترشيح بالصلاحية يقع في المصدر الواحد لا في كلّ بنسخته', () => {
+    expect(NAV, 'لا دالّة ترشيح مشتركة').toContain('export function sectionsFor')
     /* والشريطُ نفسُه يستعملها — وإلّا بقيت الدالّةُ للدليل وحدَه */
-    expect(LAYOUT, 'الشريطُ لا يستعمل الدالّةَ المشتركة').toContain('sectionsFor(user?.permissions)')
+    expect(LAYOUT, 'الشريط لا يستعمل الدالّة المشتركة').toContain('sectionsFor(user?.permissions)')
   })
 })

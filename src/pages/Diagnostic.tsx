@@ -820,7 +820,7 @@ export default function Diagnostic() {
               — وهما ما يُقنع — في صفٍّ واحدٍ متّزن، ونزل الإفصاحُ كاملا. */}
           <div className="mx-auto mt-6 flex max-w-full flex-nowrap items-center justify-center gap-2 whitespace-nowrap">
             {[
-              { icon: Compass, text: "توصية مفسَّرة، ليست حظًا" },
+              { icon: Compass, text: "توصية مفسّرة، ليست حظا" },
               { icon: Clock3, text: "٣–٦ دقائق" },
             ].map((f) => (
               <span key={f.text} className="inline-flex shrink-0 items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1.5 text-fine font-bold text-foreground sm:px-3.5 sm:text-fine">
@@ -1012,7 +1012,7 @@ export default function Diagnostic() {
               aria-valuemin={1}
               aria-valuemax={ESTIMATE_MAX}
               aria-valuenow={asked.length + 1}
-              aria-valuetext={`سؤال ${asked.length + 1} من ${ESTIMATE_MIN} إلى ${ESTIMATE_MAX} — وقد تنتهي الجولةُ عند الثامن`}
+              aria-valuetext={`سؤال ${asked.length + 1} من ${ESTIMATE_MIN} إلى ${ESTIMATE_MAX} — وقد تنتهي الجولة عند الثامن`}
               className="relative h-1.5 overflow-hidden rounded-full bg-white/10"
             >
               <div
@@ -1041,7 +1041,7 @@ export default function Diagnostic() {
                 ولا تُعرض وحدَها إلّا حين لا سببَ يُقال. */}
             {isDeepening && !questionNote && (
               <p className="mb-4 w-fit rounded-full border border-gold/40 bg-gold/10 px-3 py-1 text-xs font-bold text-gold-ink">
-                سؤال تعميق — بناءً على إجاباتك تحديدا
+                سؤال تعميق — بناء على إجاباتك تحديدا
               </p>
             )}
             {/* درجةٌ أصغر على الهاتف: نص السؤال كان يأخذ ثلاثة أسطر من الشاشة فلا يبقى
@@ -1121,7 +1121,7 @@ export default function Diagnostic() {
                     onClick={() => answer(question.id, "")}
                     className="text-sm font-semibold text-muted-foreground transition hover:text-foreground"
                   >
-                    تخطَّ هذا السؤال
+                    تخطّ هذا السؤال
                   </button>
                   <Button tone="confirm"
                     onClick={() => answer(question.id, textDraft.trim())}
@@ -1260,7 +1260,7 @@ export default function Diagnostic() {
                 {savedFlash ? (
                   <>
                     <CheckCircle2 className="h-4 w-4" />
-                    حُفظ تقدمك — أكمل لاحقا متى شئت
+                    حفظ تقدمك — أكمل لاحقا متى شئت
                   </>
                 ) : (
                   "احفظ وأكمل لاحقا"
@@ -1360,7 +1360,7 @@ export default function Diagnostic() {
                   </Badge>
                 </div>
                 <h2 className="mt-5 text-2xl font-black leading-snug md:text-3xl">
-                  {isExploratory ? "إجاباتك الحالية لا تكفي بعد لبناء خطة نثق بها" : "حالتك تستحق مستشارًا بشريًا قبل الترشيح"}
+                  {isExploratory ? "إجاباتك الحالية لا تكفي بعد لبناء خطة نثق بها" : "حالتك تستحق مستشارا بشريا قبل الترشيح"}
                 </h2>
                 {isExploratory && (
                   <p className="mx-auto mt-4 max-w-md text-sm leading-loose text-foreground">
@@ -1456,13 +1456,13 @@ export default function Diagnostic() {
                     className="font-bold text-muted-foreground underline underline-offset-4 transition hover:text-[#6EC7D1]"
                     text={
                       isExploratory
-                        ? "مرحبا، أكملت مؤشر وجيز ولم تكفِ إجاباتي لبناء خطة — أريد مستشارا يساعدني."
+                        ? "مرحبا، أكملت مؤشر وجيز ولم تكف إجاباتي لبناء خطة — أريد مستشارا يساعدني."
                         : "مرحبا، أكملت مؤشر وجيز وأحالني التشخيص لمستشار — أريد مراجعة حالتي."
                     }
                   />
                 </p>
                 <p className="mt-4 text-read leading-relaxed text-muted-foreground">
-                  هذا تشخيص تعليمي مهني: ليس تقييما نفسيا أو طبيا. لا نرشّح مسارا بلا دليل كافٍ — هذه مسؤولية لا ضعف.
+                  هذا تشخيص تعليمي مهني: ليس تقييما نفسيا أو طبيا. لا نرشّح مسارا بلا دليل كاف — هذه مسؤولية لا ضعف.
                 </p>
                 {/* هذه هي الشاشة الفعلية التي تُعرض حين لا مسار — لا الشاشة أدناه
                     (فرعها الآخر لا يُعرض أبدا: كل أبواب الوصول إلى "result"
@@ -1503,7 +1503,7 @@ export default function Diagnostic() {
                 </Button>
                 {!deepUnavailable && (
                   <p className="mx-auto mt-2 max-w-md text-read leading-relaxed text-muted-foreground">
-                    خطوة اختيارية تماما: ٤–٨ أسئلة قصيرة تزيد دقة توصيتك — تخطَّها بلا أي أثر إن كانت الصورة واضحة لك.
+                    خطوة اختيارية تماما: ٤–٨ أسئلة قصيرة تزيد دقة توصيتك — تخطّها بلا أي أثر إن كانت الصورة واضحة لك.
                   </p>
                 )}
               </div>
@@ -1643,8 +1643,8 @@ export default function Diagnostic() {
                     { icon: BookOpen, label: "دورات مسجلة ومباشرة", hint: "بالترتيب الصحيح لك" },
                     { icon: CalendarClock, label: "متابعة أسبوعية", hint: "لا تتعثر وحدك" },
                     { icon: UserCheck, label: "مراجعة بشرية", hint: "مدرب يقرأ واجبك" },
-                    { icon: FileText, label: "مشروع تطبيقي", hint: "يُقيَّم ويُعتمد" },
-                    { icon: BrainCircuit, label: "ملخصات كتب وجيز", hint: "تسمعها وتُختبر فيها" },
+                    { icon: FileText, label: "مشروع تطبيقي", hint: "يقيّم ويعتمد" },
+                    { icon: BrainCircuit, label: "ملخصات كتب وجيز", hint: "تسمعها وتختبر فيها" },
                     { icon: ShieldCheck, label: "شهادة إتمام", hint: "بمخرج يثبت جاهزيتك" },
                     { icon: Gift, label: "دورة إضافية مجانية", hint: "هدية فوق مسارك" },
                   ].map((f) => (
@@ -1674,7 +1674,7 @@ export default function Diagnostic() {
                 <Card className="mt-4 flex flex-wrap items-center justify-between gap-3 px-5 py-4">
                   <p className="text-read leading-relaxed text-muted-foreground">
                     <span className="font-bold text-foreground">للاطّلاع فقط — وليس خطتك: «{topPathway.name}»</span>
-                    {" "}— أقوى مسار مفرد ضمن خطتك، استُمدت منه دورات أساسية في تركيبتك.
+                    {" "}— أقوى مسار مفرد ضمن خطتك، استمدت منه دورات أساسية في تركيبتك.
                     راجعه إن أردت التركيز على مجال واحد بدل الخطة أعلاه.
                   </p>
                   <Link
@@ -1779,8 +1779,8 @@ export default function Diagnostic() {
               {[
                 "دورات مسجلة + جلسات مباشرة مع المدرب",
                 "ملخصات كتب وجيز الصوتية المرتبطة بمسارك",
-                "واجبات تُراجع بشريا — لا تصحيحا آليا",
-                "مشروع تخرج حقيقي يُقدَّم للمراجعة قبل الاعتماد",
+                "واجبات تراجع بشريا — لا تصحيحا آليا",
+                "مشروع تخرج حقيقي يقدّم للمراجعة قبل الاعتماد",
                 "شهادة موثقة بشروط إنجاز — لا شهادة مشاهدة",
                 "خريطة مهارات قبل وبعد (0–5)",
                 "خطة تقدم شخصية لما بعد المسار",
@@ -1911,7 +1911,7 @@ export default function Diagnostic() {
                 <a
                   href={`mailto:${ACADEMY_EMAILS.support}?subject=${encodeURIComponent("أشعرني عند توفر: " + result.unavailableSkills.join("، "))}`}
                 >
-                  أشعِرني عند توفرها
+                  أشعرني عند توفرها
                 </a>
               </Button>
             </Panel>
@@ -1928,7 +1928,7 @@ export default function Diagnostic() {
                 حالتك تستحق جلسة مع مستشار بشري
               </h3>
               <p className="mt-3 text-sm leading-loose text-foreground">
-                المحرك غير متأكد تمامًا من التوصية الأنسب لحالتك، أو أنك طلبت استشارة شخصية.
+                المحرك غير متأكد تماما من التوصية الأنسب لحالتك، أو أنك طلبت استشارة شخصية.
                 نوصي بجلسة تعريفية مع مستشار وجيز (30 دقيقة) لصياغة خطتك بدقة — التشخيص الذي
                 أتممته للتو سيجعل الجلسة أقصر وأعمق.
               </p>
@@ -2035,8 +2035,8 @@ export default function Diagnostic() {
               كان هنا في ذيل الصفحة ومطويًّا، أي بعد أن يكون القرار قد اتُّخذ. */}
 
           <p className="mt-6 text-center text-read leading-relaxed text-muted-foreground">
-            التوصية صادرة عن محرك تشخيص قطعي مبني على إجاباتك، وهي نقطة بداية مفسَّرة —
-            القرار النهائي دائمًا بيدك، ومستشارونا موجودون عند الحاجة.
+            التوصية صادرة عن محرك تشخيص قطعي مبني على إجاباتك، وهي نقطة بداية مفسّرة —
+            القرار النهائي دائما بيدك، ومستشارونا موجودون عند الحاجة.
             هذا تشخيص تعليمي مهني: ليس تقييما نفسيا أو طبيا، ولا وعدا بوظيفة أو دخل.
           </p>
 

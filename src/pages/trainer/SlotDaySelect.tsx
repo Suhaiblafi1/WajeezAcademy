@@ -23,7 +23,7 @@ export default function SlotDaySelect({ slot, value, onChange, ariaLabel, disabl
     <select value={value} disabled={disabled} aria-label={ariaLabel}
       onChange={(e) => e.target.value && onChange(e.target.value)} className={staffControlCls}>
       <option value="" disabled={value !== ""}>{placeholder}</option>
-      {foreign && <option value={value} disabled>{value} · خارجَ وقت المحور</option>}
+      {foreign && <option value={value} disabled>{value} · خارج وقت المحور</option>}
       {days.map((d) => <option key={d.date} value={d.date}>{slotDayOptionAr(d)}</option>)}
     </select>
   );

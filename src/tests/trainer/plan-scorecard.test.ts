@@ -27,7 +27,7 @@ function good(): Draft {
     content: {
       modules: MODS.map((id) => ({
         moduleId: id, titleAr: `محور ${id}`,
-        activityAr: 'يحلّ المتعلّمُ حالةً من سوقٍ أردنيّ', artifactAr: 'ورقةُ تحليلٍ من صفحتين',
+        activityAr: 'يحلّ المتعلّم حالة من سوق أردنيّ', artifactAr: 'ورقة تحليل من صفحتين',
       })),
       resources: MODS.flatMap((id) => [
         { title: `ملخّص كتاب ${id}`, url: 'https://example.com/book', category: 'reading', moduleId: id },
@@ -38,9 +38,9 @@ function good(): Draft {
     assessments: [
       ...SATURDAYS.map((d, i) => ({
         title: `واجب ${i + 1}`, type: 'assignment', moduleId: MODS[i]!, maxScore: 10,
-        briefAr: 'حلّل الحالةَ المرفقة وسلّم ورقةً من صفحتين بنتائجك', dueAt: plus(at(d), 24 * 5),
+        briefAr: 'حلّل الحالة المرفقة وسلّم ورقة من صفحتين بنتائجك', dueAt: plus(at(d), 24 * 5),
       })),
-      { title: 'مشروع التخرّج', type: 'project', dueAt: '2027-01-25T20:59:00.000Z', maxScore: 100, briefAr: 'مشروعٌ يجمع المحاورَ كلَّها في خطّةٍ واحدة' },
+      { title: 'مشروع التخرّج', type: 'project', dueAt: '2027-01-25T20:59:00.000Z', maxScore: 100, briefAr: 'مشروع يجمع المحاور كلّها في خطّة واحدة' },
     ],
   }
 }
@@ -48,20 +48,20 @@ function good(): Draft {
 const card = (input: ScorecardInput) => new Map(planScorecard(input).map((i) => [i.key, i]))
 const failing = (input: ScorecardInput) => planScorecard(input).filter((i) => i.status !== 'ok').map((i) => `${i.key}:${i.status}`)
 
-describe('الخطّةُ التامّة', () => {
-  it('تمرّ بكلّ معيار — ولا شيءَ يُنصَح به ولا يمنع', () => {
+describe('الخطّة التامّة', () => {
+  it('تمرّ بكلّ معيار — ولا شيء ينصح به ولا يمنع', () => {
     expect(failing(good())).toEqual([])
   })
 
-  it('وتُقاس ساعاتُها ومهامُّها ولا تُفترَض', () => {
+  it('وتقاس ساعاتها ومهامّها ولا تفترض', () => {
     const c = card(good())
     expect(c.get('live_hours')!.measuredAr).toBe('4 لقاءات — 8 ساعات')
-    expect(c.get('graded_tasks')!.measuredAr).toContain('4 مهامَّ مقيَّمة')
+    expect(c.get('graded_tasks')!.measuredAr).toContain('4 مهامّ مقيّمة')
   })
 })
 
-describe('المُلزِمُ الأربعة — تسقط `blocked`', () => {
-  it('① شعبةُ الشتاء تنتهي في ٣٠ يناير على الأكثر', () => {
+describe('الملزم الأربعة — تسقط `blocked`', () => {
+  it('① شعبة الشتاء تنتهي في ٣٠ يناير على الأكثر', () => {
     const i = good()
     i.period = { startsOn: '2026-11-29', endsOn: '2027-01-31' }
     expect(failing(i)).toEqual(['end_date:blocked'])
@@ -72,7 +72,7 @@ describe('المُلزِمُ الأربعة — تسقط `blocked`', () => {
     expect(seasonEndProblem({ startsOn: '2027-02-15', endsOn: '2027-04-30' })).toBeNull()
   })
 
-  it('② مشروعُ التخرّج بموعدٍ، والموعدُ داخلَ الشعبة', () => {
+  it('② مشروع التخرّج بموعد، والموعد داخل الشعبة', () => {
     const none = good()
     none.assessments = none.assessments.map((t) => (t.type === 'project' ? { ...t, dueAt: null } : t))
     expect(failing(none)).toContain('project:blocked')
@@ -87,54 +87,54 @@ describe('المُلزِمُ الأربعة — تسقط `blocked`', () => {
     expect(failing(missing)).toEqual(['project:blocked'])
   })
 
-  it('③ لكلّ محورٍ تطبيقٌ عمليّ — جملةٌ لا حرف', () => {
+  it('③ لكلّ محور تطبيق عمليّ — جملة لا حرف', () => {
     const i = good()
     const mods = (i.content as { modules: { activityAr: string; artifactAr: string }[] }).modules
     mods[1]!.activityAr = 'x'
     expect(failing(i)).toEqual(['practice:blocked'])
-    expect(practiceGaps(mods as never)).toEqual(['المحور 2: بلا تطبيقٍ عمليّ'])
+    expect(practiceGaps(mods as never)).toEqual(['المحور 2: بلا تطبيق عمليّ'])
   })
 
-  it('③ب والمُسلَّمُ لا يُقاس في البطاقة (١١ أكتوبر ٢٠٢٦) — يكرّر المهامّ، وسقط حقلُه', () => {
+  it('③ب والمسلّم لا يقاس في البطاقة (١١ أكتوبر ٢٠٢٦) — يكرّر المهامّ، وسقط حقله', () => {
     const i = good()
     const mods = (i.content as { modules: { activityAr: string; artifactAr: string }[] }).modules
     mods[2]!.artifactAr = ''
     mods[3]!.artifactAr = 'تقرير'
-    expect(failing(i), 'عاد صفُّ «المُسلَّم» يكرّر المهامّ').toEqual([])
+    expect(failing(i), 'عاد صفّ «المسلّم» يكرّر المهامّ').toEqual([])
     expect(planScorecard(i).some((x) => x.key === 'artifact')).toBe(false)
     expect(blockedItems(planScorecard(i))).toEqual([])
-    expect(artifactGaps(mods as never)).toEqual(['المحور 3: بلا مُسلَّم', 'المحور 4: بلا مُسلَّم'])
+    expect(artifactGaps(mods as never)).toEqual(['المحور 3: بلا مسلّم', 'المحور 4: بلا مسلّم'])
     expect(practiceGaps(mods as never)).toEqual([])
   })
 
-  it('④ مصدرٌ للدورة — والمسجَّلُ والمصدرُ بلا رابطٍ لا يُحسبان', () => {
+  it('④ مصدر للدورة — والمسجّل والمصدر بلا رابط لا يحسبان', () => {
     const i = good()
     const c = i.content as { resources: Record<string, unknown>[] }
     c.resources = [
-      { title: 'جلسةٌ مسجّلة', url: 'https://v', category: 'recorded', moduleId: 'M3' },
+      { title: 'جلسة مسجّلة', url: 'https://v', category: 'recorded', moduleId: 'M3' },
       { title: 'بلا رابط', url: '', category: 'reading', moduleId: 'M3' },
     ]
     expect(failing(i)).toEqual(['sources:blocked'])
-    expect(courseSourceProblem(c.resources)).toBe('لا مصدرَ للدورة بعد')
+    expect(courseSourceProblem(c.resources)).toBe('لا مصدر للدورة بعد')
   })
 
-  it('④ ومحورٌ بلا مصدرٍ لا يمنع ولا يُنصَح فيه — الربطُ بمحورٍ اختيار (١١ أكتوبر ٢٠٢٦)', () => {
+  it('④ ومحور بلا مصدر لا يمنع ولا ينصح فيه — الربط بمحور اختيار (١١ أكتوبر ٢٠٢٦)', () => {
     const i = good()
     const c = i.content as { resources: Record<string, unknown>[] }
     c.resources = c.resources.filter((r) => r.moduleId !== 'M3')
     expect(failing(i)).toEqual([])
     /* ومصدرٌ للشعبة كلِّها بلا محورٍ يكفي وحدَه المُلزِم */
-    c.resources = [{ title: 'كتابُ الدورة', url: 'https://b', category: 'reading' }]
+    c.resources = [{ title: 'كتاب الدورة', url: 'https://b', category: 'reading' }]
     expect(blockedItems(planScorecard(i))).toEqual([])
   })
 
-  it('وما كان مُلزِما قبلها: لقاءٌ لكلّ محور', () => {
+  it('وما كان ملزما قبلها: لقاء لكلّ محور', () => {
     const i = good()
     i.sessions = i.sessions.map((s, n) => (n === 3 ? { ...s, moduleIds: ['M3'] } : s))
     expect(failing(i)).toContain('live_per_module:blocked')
   })
 
-  it('والمانعُ من البطاقة هو المُلزِمُ الساقطُ وحدَه', () => {
+  it('والمانع من البطاقة هو الملزم الساقط وحده', () => {
     const i = good()
     i.period = { startsOn: '2026-11-29', endsOn: '2027-02-10' }
     i.sessions = i.sessions.slice(0, 1).map((s) => ({ ...s, moduleIds: MODS }))
@@ -143,7 +143,7 @@ describe('المُلزِمُ الأربعة — تسقط `blocked`', () => {
 })
 
 describe('النصيحة — تسقط `advice` ولا تمنع', () => {
-  it('ساعاتٌ أقلُّ من ساعتين لكلّ محور', () => {
+  it('ساعات أقلّ من ساعتين لكلّ محور', () => {
     const i = good()
     i.sessions = [{ startsAt: at('2026-12-05'), endsAt: plus(at('2026-12-05'), 3), moduleIds: MODS }]
     const f = failing(i)
@@ -151,13 +151,13 @@ describe('النصيحة — تسقط `advice` ولا تمنع', () => {
     expect(card(i).get('live_hours')!.gaps).toEqual(['ينقصها 5 ساعات'])
   })
 
-  it('لقاءٌ أطولُ من ثلاث ساعات', () => {
+  it('لقاء أطول من ثلاث ساعات', () => {
     const i = good()
     i.sessions[0] = { ...i.sessions[0]!, endsAt: plus(at(SATURDAYS[0]!), 4) }
     expect(failing(i)).toEqual(['session_length:advice'])
   })
 
-  it('فاصلٌ أقلُّ من أسبوع، وفاصلٌ أطولُ من ثلاثة أسابيع', () => {
+  it('فاصل أقلّ من أسبوع، وفاصل أطول من ثلاثة أسابيع', () => {
     const near = good()
     near.sessions[1] = { ...near.sessions[1]!, startsAt: at('2026-12-08'), endsAt: plus(at('2026-12-08'), 2) }
     expect(failing(near)).toContain('session_gaps:advice')
@@ -168,7 +168,7 @@ describe('النصيحة — تسقط `advice` ولا تمنع', () => {
     expect(failing(far)).toContain('session_gaps:advice')
   })
 
-  it('أكثرُ من أربع ساعاتٍ في سبعة أيّام', () => {
+  it('أكثر من أربع ساعات في سبعة أيّام', () => {
     const i = good()
     i.sessions.push({ startsAt: at('2026-12-07'), endsAt: plus(at('2026-12-07'), 3), moduleIds: ['M1'] })
     expect(failing(i)).toContain('weekly_load:advice')
@@ -186,7 +186,7 @@ describe('النصيحة — تسقط `advice` ولا تمنع', () => {
     expect(card(late).get('session_times')!.gaps.join()).toContain('ينتهي في 23:00')
   })
 
-  it('عيدُ الميلاد عطلةٌ رسميّة، وثلاثةُ مواعيدَ أسبوعيّةٍ ليست إيقاعا', () => {
+  it('عيد الميلاد عطلة رسميّة، وثلاثة مواعيد أسبوعيّة ليست إيقاعا', () => {
     const i = good()
     i.sessions[2] = { ...i.sessions[2]!, startsAt: at('2026-12-25'), endsAt: plus(at('2026-12-25'), 2) }
     expect(card(i).get('rhythm')!.gaps.join()).toContain('عيد الميلاد')
@@ -194,16 +194,16 @@ describe('النصيحة — تسقط `advice` ولا تمنع', () => {
     const mixed = good()
     mixed.sessions[1] = { ...mixed.sessions[1]!, startsAt: at('2026-12-12', '16:00'), endsAt: plus(at('2026-12-12', '16:00'), 2) }
     mixed.sessions[2] = { ...mixed.sessions[2]!, startsAt: at('2026-12-18', '15:00'), endsAt: plus(at('2026-12-18', '15:00'), 2) }
-    expect(card(mixed).get('rhythm')!.gaps[0]).toMatch(/^3 مواعيدَ مختلفة/)
+    expect(card(mixed).get('rhythm')!.gaps[0]).toMatch(/^3 مواعيد مختلفة/)
   })
 
-  it('مشروعٌ بعد آخر لقاءٍ بأقلَّ من أسبوع', () => {
+  it('مشروع بعد آخر لقاء بأقلّ من أسبوع', () => {
     const i = good()
     i.assessments = i.assessments.map((t) => (t.type === 'project' ? { ...t, dueAt: '2026-12-29T20:59:00.000Z' } : t))
     expect(failing(i)).toEqual(['project_time:advice'])
   })
 
-  it('محورٌ بلا مهمّةٍ مقيَّمة، ومهمّةٌ قبل أن يُشرح محورُها أو بلا وصف', () => {
+  it('محور بلا مهمّة مقيّمة، ومهمّة قبل أن يشرح محورها أو بلا وصف', () => {
     const i = good()
     i.assessments = i.assessments.filter((t) => t.moduleId !== 'M4')
     expect(failing(i)).toEqual(['graded_tasks:advice'])
@@ -211,22 +211,22 @@ describe('النصيحة — تسقط `advice` ولا تمنع', () => {
     const early = good()
     early.assessments[0] = { ...early.assessments[0]!, dueAt: plus(at(SATURDAYS[0]!), 24), briefAr: 'حلّ' }
     expect(card(early).get('task_timing')!.gaps).toEqual([
-      '«واجب 1»: بلا وصفٍ يكفي ليُنجَز',
-      expect.stringContaining('قبل أن يمضي 3 أيّامٍ على لقاء محورها'),
+      '«واجب 1»: بلا وصف يكفي لينجز',
+      expect.stringContaining('قبل أن يمضي 3 أيّام على لقاء محورها'),
     ])
   })
 
-  it('مصدرٌ واحدٌ للدورة، أو كلُّها من صنفٍ واحد', () => {
+  it('مصدر واحد للدورة، أو كلّها من صنف واحد', () => {
     const one = good()
     const c = one.content as { resources: Record<string, unknown>[] }
-    c.resources = [{ title: 'كتابُ الدورة', url: 'https://b', category: 'reading' }]
+    c.resources = [{ title: 'كتاب الدورة', url: 'https://b', category: 'reading' }]
     expect(failing(one)).toEqual(['sources_mix:advice'])
-    expect(card(one).get('sources_mix')!.gaps).toEqual(['مصدرٌ واحدٌ للدورة كلِّها'])
-    c.resources.push({ title: 'كتابٌ ثانٍ', url: 'https://c', category: 'reading' })
-    expect(card(one).get('sources_mix')!.gaps).toEqual(['كلُّها مقروء — أضف فيديو أو بودكاست'])
+    expect(card(one).get('sources_mix')!.gaps).toEqual(['مصدر واحد للدورة كلّها'])
+    c.resources.push({ title: 'كتاب ثان', url: 'https://c', category: 'reading' })
+    expect(card(one).get('sources_mix')!.gaps).toEqual(['كلّها مقروء — أضف فيديو أو بودكاست'])
   })
 
-  it('ونصيحةُ البدء الموسميّة: قبل أواخر نوفمبر', () => {
+  it('ونصيحة البدء الموسميّة: قبل أواخر نوفمبر', () => {
     const i = good()
     i.period = { startsOn: '2026-11-10', endsOn: '2027-01-30' }
     expect(failing(i)).toEqual(['start_date:advice'])
@@ -236,30 +236,30 @@ describe('النصيحة — تسقط `advice` ولا تمنع', () => {
   })
 })
 
-describe('العددُ بالعربيّة', () => {
-  it('الساعاتُ والأيّام', () => {
+describe('العدد بالعربيّة', () => {
+  it('الساعات والأيّام', () => {
     expect([60, 120, 240, 150, 660].map(hoursAr)).toEqual(['ساعة', 'ساعتان', '4 ساعات', '2.5 ساعة', '11 ساعة'])
     expect([1, 2, 4, 12].map(daysAr)).toEqual(['يوم', 'يومين', '4 أيّام', '12 يوما'])
   })
 })
 
-describe('ملاحظاتُ الردّ من البطاقة', () => {
-  it('كلٌّ في خطوته — المطلوبُ أوّلا ثمّ المقترَح، وما تحقّق لا يُكتب', () => {
+describe('ملاحظات الردّ من البطاقة', () => {
+  it('كلّ في خطوته — المطلوب أوّلا ثمّ المقترح، وما تحقّق لا يكتب', () => {
     const i = good()
     i.period = { startsOn: '2026-11-29', endsOn: '2027-02-05' }
     i.sessions[0] = { ...i.sessions[0]!, endsAt: plus(at(SATURDAYS[0]!), 4) }
     i.sessions[1] = { ...i.sessions[1]!, moduleIds: ['M1'] }
     const notes = scorecardNotes(planScorecard(i))
     expect(Object.keys(notes).sort()).toEqual(['identity', 'sessions'])
-    expect(notes.identity).toMatch(/^مطلوب — نهايةُ الشعبة: الآن /)
+    expect(notes.identity).toMatch(/^مطلوب — نهاية الشعبة: الآن /)
     const lines = notes.sessions!.split('\n')
     /* «الآن ← نقترح» (١١ أكتوبر ٢٠٢٦): ما هو الآن، ثمّ المعيارُ بجملته */
-    expect(lines[0]).toBe('مطلوب — لقاءٌ لكلّ محور: الآن المحور 2: بلا لقاءٍ مباشر ← نقترح: لكلّ محورٍ لقاءٌ مباشرٌ واحدٌ على الأقلّ')
-    expect(lines[1]).toMatch(/^مقترَح — طولُ اللقاء: الآن .+ ← نقترح: بين ساعتين وثلاث/)
+    expect(lines[0]).toBe('مطلوب — لقاء لكلّ محور: الآن المحور 2: بلا لقاء مباشر ← نقترح: لكلّ محور لقاء مباشر واحد على الأقلّ')
+    expect(lines[1]).toMatch(/^مقترح — طول اللقاء: الآن .+ ← نقترح: بين ساعتين وثلاث/)
   })
 
-  it('ولا تتجاوز حدَّ الصندوق', () => {
-    const many = Array.from({ length: 400 }, (_, k) => `سطرٌ طويلٌ رقم ${k}`)
+  it('ولا تتجاوز حدّ الصندوق', () => {
+    const many = Array.from({ length: 400 }, (_, k) => `سطر طويل رقم ${k}`)
     const notes = scorecardNotes([{ key: 'x', labelAr: 'س', standardAr: '', measuredAr: '', gaps: many, required: false, status: 'advice', step: 'modules' }])
     expect(notes.modules!.length).toBe(REVIEW_NOTE_MAX)
     expect(notes.modules!.endsWith('…')).toBe(true)

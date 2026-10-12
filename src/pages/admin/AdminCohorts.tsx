@@ -179,7 +179,7 @@ export default function AdminCohorts() {
   const reviewReschedule = (id: string, action: "approve" | "reject") =>
     act(
       () => apiPost(`/api/admin/session-reschedules/${id}/review`, { action, comment: rsComment[id]?.trim() || undefined }),
-      action === "approve" ? "اعتُمد الموعد الجديد — وأُخبر المتعلّمون" : "لم يُعتمد الاقتراح — ووصل المدرب تعليقك",
+      action === "approve" ? "اعتمد الموعد الجديد — وأخبر المتعلّمون" : "لم يعتمد الاقتراح — ووصل المدرب تعليقك",
     );
 
   /* «افتح الشعبة» — وما ردّ به يُقال بجانبه، وتُقرأ الشروطُ بعده كما صارت */
@@ -189,10 +189,10 @@ export default function AdminCohorts() {
     setOpenError((prev) => ({ ...prev, [id]: "" }));
     try {
       await apiPost(`/api/admin/cohorts/${id}/open`);
-      setFlash({ kind: "ok", text: "فُتحت الشعبة — التسجيل متاح الآن" });
+      setFlash({ kind: "ok", text: "فتحت الشعبة — التسجيل متاح الآن" });
       await load();
     } catch (err) {
-      setOpenError((prev) => ({ ...prev, [id]: err instanceof ApiError ? err.message : "تعذّر فتحُ الشعبة" }));
+      setOpenError((prev) => ({ ...prev, [id]: err instanceof ApiError ? err.message : "تعذّر فتح الشعبة" }));
     } finally {
       await loadChecklist(id);
       setBusy(false);
@@ -314,7 +314,7 @@ export default function AdminCohorts() {
             ))}
           </div>
           <p className="mt-3 text-read leading-relaxed text-muted-foreground">
-            الاعتماد يحرّك الموعد ويُخبر المتعلّمين. والردّ لا يحرّكه، ويصل المدرب بتعليقك.
+            الاعتماد يحرّك الموعد ويخبر المتعلّمين. والردّ لا يحرّكه، ويصل المدرب بتعليقك.
           </p>
         </Panel>
       )}
@@ -461,7 +461,7 @@ export default function AdminCohorts() {
                               return fixAt ? (
                                 <button key={m} type="button" onClick={() => setTab(fixAt)} className={`${chip} hover:bg-red-500/10`}
                                   title={`افتح «${COHORT_TABS.find((t) => t.id === fixAt)?.label}»`}>
-                                  <XCircle className="h-3 w-3" /> {m} — أكمِلها في «{COHORT_TABS.find((t) => t.id === fixAt)?.label}»
+                                  <XCircle className="h-3 w-3" /> {m} — أكملها في «{COHORT_TABS.find((t) => t.id === fixAt)?.label}»
                                 </button>
                               ) : (
                                 <span key={m} className={chip}>
@@ -482,16 +482,16 @@ export default function AdminCohorts() {
                         وتُعرض هنا لا في شاشةٍ أخرى: مكانُ الشرط مكانُ إيفائه. */}
                     {check && !check.ready && check.missing.some((m) => m.startsWith("لا خطة تقديم")) && (
                       <Card tone="warn">
-                        <p className="text-read font-black text-gold-ink">اكتب خطّةَ التقديم</p>
+                        <p className="text-read font-black text-gold-ink">اكتب خطّة التقديم</p>
                         <p className="mt-1 text-read leading-6 text-muted-foreground">
-                          كيف تُقدَّم هذه الشعبة فعلا: الأيّامُ والوقتُ وطريقةُ التقديم وما يلزم المتعلّمَ إحضارُه.
-                          تُقرأ ولا تُصدَّق تلقائيّا — فاكتب ما يقع، لا ما يُشتهى.
+                          كيف تقدّم هذه الشعبة فعلا: الأيّام والوقت وطريقة التقديم وما يلزم المتعلّم إحضاره.
+                          تقرأ ولا تصدّق تلقائيّا — فاكتب ما يقع، لا ما يشتهى.
                         </p>
                         <textarea
                           value={planDraft[c.id] ?? ""}
                           onChange={(e) => setPlanDraft((d) => ({ ...d, [c.id]: e.target.value }))}
                           rows={3}
-                          placeholder="مثال: تقديمٌ عن بُعد عبر Zoom، الثلاثاء والخميس ٦ مساءً بتوقيت عمّان، ثماني جلسات، مع تمرينٍ تطبيقيٍّ بعد كلّ جلسة يُراجَع في التي تليها."
+                          placeholder="مثال: تقديم عن بعد عبر Zoom، الثلاثاء والخميس ٦ مساء بتوقيت عمّان، ثماني جلسات، مع تمرين تطبيقيّ بعد كلّ جلسة يراجع في التي تليها."
                           aria-label="خطة تقديم الشعبة"
                           className={`${areaCls} mt-2.5`}
                         />
@@ -501,11 +501,11 @@ export default function AdminCohorts() {
                             await apiPut(`/api/admin/cohorts/${c.id}/delivery-plan`, { notesAr: (planDraft[c.id] ?? "").trim() });
                             setPlanDraft((d) => ({ ...d, [c.id]: "" }));
                             await loadChecklist(c.id);
-                          }, "حُفظت خطّةُ التقديم")} className="mt-2.5">
+                          }, "حفظت خطّة التقديم")} className="mt-2.5">
                           <FileText className="h-3.5 w-3.5" /> احفظ الخطّة
                         </Button>
                         {(planDraft[c.id] ?? "").trim().length > 0 && (planDraft[c.id] ?? "").trim().length < 20 && (
-                          <p className="mt-1.5 text-read text-muted-foreground">٢٠ حرفا فأكثر — خطّةٌ أقصرُ لا تُقرأ.</p>
+                          <p className="mt-1.5 text-read text-muted-foreground">٢٠ حرفا فأكثر — خطّة أقصر لا تقرأ.</p>
                         )}
                       </Card>
                     )}
@@ -528,7 +528,7 @@ export default function AdminCohorts() {
                         </Button>
                       )}
                       {!["completed", "cancelled"].includes(c.status) && (
-                        <Button tone="danger" disabled={busy} onClick={() => act(() => apiPost(`/api/admin/cohorts/${c.id}/transition`, { to: "cancelled", note: "إلغاء من لوحة الإدارة" }), "أُلغيت الشعبة")}>
+                        <Button tone="danger" disabled={busy} onClick={() => act(() => apiPost(`/api/admin/cohorts/${c.id}/transition`, { to: "cancelled", note: "إلغاء من لوحة الإدارة" }), "ألغيت الشعبة")}>
                           إلغاء
                         </Button>
                       )}
@@ -556,10 +556,10 @@ export default function AdminCohorts() {
                             بمعنى جلسةِ الدخول، والمنصّةُ تستعملها للمعنيين.
                             فالعنوانُ يسمّيها **لقاءً**، والسطرُ تحته يقول
                             أثرَها: أين تظهر، وما الذي يُبنى عليها. */}
-                        <p className="flex items-center gap-1.5 text-read font-black text-foreground"><CalendarPlus className="h-3.5 w-3.5" /> لقاءٌ واحد — يُضاف بيده</p>
+                        <p className="flex items-center gap-1.5 text-read font-black text-foreground"><CalendarPlus className="h-3.5 w-3.5" /> لقاء واحد — يضاف بيده</p>
                         <p className="mb-3 mt-1 text-read leading-5 text-muted-foreground">
-                          موعدُ لقاءٍ حيٍّ واحد (محاضرةُ يومٍ بعينه). يظهر في تقويم المتعلّم وتقويم المدرّب،
-                          ويُرصد فيه الحضور، ويُربط به تسجيلُه ورابطُ اجتماعه.
+                          موعد لقاء حيّ واحد (محاضرة يوم بعينه). يظهر في تقويم المتعلّم وتقويم المدرّب،
+                          ويرصد فيه الحضور، ويربط به تسجيله ورابط اجتماعه.
                         </p>
                         <div className="grid gap-2 sm:grid-cols-5">
                           <input placeholder="عنوان الجلسة" value={sessionForm.title} onChange={(e) => setSessionForm({ ...sessionForm, title: e.target.value })}
@@ -578,7 +578,7 @@ export default function AdminCohorts() {
                               );
                               setSessionForm({ title: "", date: "", time: "18:00", hours: "2", withZoom: sessionForm.withZoom });
                               setLastSession(r);
-                            }, "أُضيف اللقاء")}>
+                            }, "أضيف اللقاء")}>
                             أضف
                           </Button>
                         </div>
@@ -591,15 +591,15 @@ export default function AdminCohorts() {
                             onChange={(e) => setSessionForm({ ...sessionForm, withZoom: e.target.checked })}
                             className="mt-0.5 h-4 w-4 shrink-0 accent-teal" />
                           <span>
-                            <b className="text-foreground">أنشئ اجتماعَ Zoom وبلّغ المسجَّلين</b> — يُنشأ الاجتماعُ
-                            باسم الأكاديميّة ويصل رابطُه كلَّ متعلّمٍ في هذه الشعبة داخل المنصّة.
+                            <b className="text-foreground">أنشئ اجتماع Zoom وبلّغ المسجّلين</b> — ينشأ الاجتماع
+                            باسم الأكاديميّة ويصل رابطه كلّ متعلّم في هذه الشعبة داخل المنصّة.
                           </span>
                         </label>
                         {lastSession && (
                           <Inset as="p" tone="positive" className="mt-3 text-read leading-6 text-emerald-200">
                             {lastSession.zoom
-                              ? `أُنشئ اللقاءُ واجتماعُه، وبُلِّغ ${lastSession.notified} متعلّما.`
-                              : `أُنشئ اللقاءُ بلا اجتماع، وبُلِّغ ${lastSession.notified} متعلّما.`}
+                              ? `أنشئ اللقاء واجتماعه، وبلّغ ${lastSession.notified} متعلّما.`
+                              : `أنشئ اللقاء بلا اجتماع، وبلّغ ${lastSession.notified} متعلّما.`}
                           </Inset>
                         )}
                       </Card>
@@ -619,16 +619,16 @@ export default function AdminCohorts() {
                             تُعرض كأنّها يوميّة. فيُقال ذلك صراحةً، ويُقال
                             كم لقاءً في الشعبة الآن كي يُعرف أثمّةَ ما يُولَّد. */}
                         <p className="flex items-center gap-1.5 text-read font-black text-foreground">
-                          <Sparkles className="h-3.5 w-3.5" /> توليدُ اللقاءات من الجدول الأسبوعيّ
+                          <Sparkles className="h-3.5 w-3.5" /> توليد اللقاءات من الجدول الأسبوعيّ
                         </p>
                         <p className="mb-3 mt-1 text-read leading-5 text-muted-foreground">
                           {c.sessionsCount > 0
-                            ? `في الشعبة ${c.sessionsCount} لقاءً مجدولا — وُلِّدت عند إنشائها. ولا حاجةَ لهذا إلّا إن تغيّر الجدولُ بعد ذلك؛ والموجودُ لا يُكرَّر.`
-                            : "لا لقاءات بعد. يقرأ أيّامَ الشعبة ووقتَها، ويُنشئ لقاءات الأسابيع دفعةً واحدة بدل إضافتها لقاءً لقاءً."}
+                            ? `في الشعبة ${c.sessionsCount} لقاء مجدولا — ولّدت عند إنشائها. ولا حاجة لهذا إلّا إن تغيّر الجدول بعد ذلك؛ والموجود لا يكرّر.`
+                            : "لا لقاءات بعد. يقرأ أيّام الشعبة ووقتها، وينشئ لقاءات الأسابيع دفعة واحدة بدل إضافتها لقاء لقاء."}
                         </p>
                         {c.daysOfWeek.length === 0 || !c.startTime ? (
                           <p className="text-read text-muted-foreground">
-                            لا جدولَ أسبوعيًّا لهذه الشعبة — اضبط أيّامَها ووقتَها من «تعديل الشعبة» ثمّ ولّد جلساتها.
+                            لا جدول أسبوعيّا لهذه الشعبة — اضبط أيّامها ووقتها من «تعديل الشعبة» ثمّ ولّد جلساتها.
                           </p>
                         ) : (
                           <div className="grid gap-2 sm:grid-cols-4">
@@ -659,13 +659,13 @@ export default function AdminCohorts() {
                                     durationMinutes: Number(genForm.duration),
                                     apply: true,
                                   });
-                                  setFlash({ kind: "ok", text: `وُلِّدت ${r.created} جلسة${r.skipped ? ` · وتُخطّيت ${r.skipped} موجودةً أصلا` : ""}` });
+                                  setFlash({ kind: "ok", text: `ولّدت ${r.created} جلسة${r.skipped ? ` · وتخطّيت ${r.skipped} موجودة أصلا` : ""}` });
                                 }, "")} className="flex-1">
                                 ولّد
                               </Button>
                             </div>
                             <p className="text-read leading-5 text-muted-foreground sm:col-span-4">
-                              الجدول: {daysLabelAr(c.daysOfWeek)} · {c.startTime}. الموجودُ لا يُكرَّر، وبدايةُ الشعبة ونهايتُها تتبعان جلساتِها.
+                              الجدول: {daysLabelAr(c.daysOfWeek)} · {c.startTime}. الموجود لا يكرّر، وبداية الشعبة ونهايتها تتبعان جلساتها.
                             </p>
                           </div>
                         )}
@@ -674,17 +674,17 @@ export default function AdminCohorts() {
 
                     <Card className="bg-paper/20">
                       <p className="mb-3 flex items-center gap-1.5 text-read font-black text-muted-foreground">
-                        <CopyPlus className="h-3.5 w-3.5" /> تكرارُ الشعبة لفصلٍ قادم
+                        <CopyPlus className="h-3.5 w-3.5" /> تكرار الشعبة لفصل قادم
                       </p>
                       <div className="grid gap-2 sm:grid-cols-4">
                         <label className="text-fine text-muted-foreground sm:col-span-2">
-                          عنوانُ النسخة
+                          عنوان النسخة
                           <input value={dupForm.title} onChange={(e) => setDupForm({ ...dupForm, title: e.target.value })}
                             placeholder={`${c.title} — نسخة`}
                             className="mt-1 w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none" />
                         </label>
                         <label className="text-fine text-muted-foreground">
-                          إزاحةُ الأسابيع
+                          إزاحة الأسابيع
                           <input type="number" min={0} max={104} value={dupForm.shiftWeeks}
                             onChange={(e) => setDupForm({ ...dupForm, shiftWeeks: e.target.value })}
                             className="mt-1 w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs text-foreground focus:border-teal focus:outline-none" />
@@ -700,7 +700,7 @@ export default function AdminCohorts() {
                                 withAssessments: true,
                               });
                               setDupForm({ title: "", shiftWeeks: "8", withSessions: true });
-                            }, "أُنشئت نسخةٌ مسودّةً — بجدولها وموادّها ومهامّها، بلا تسجيلاتٍ ولا حضور")}
+                            }, "أنشئت نسخة مسودّة — بجدولها وموادّها ومهامّها، بلا تسجيلات ولا حضور")}
                             className="w-full">
                             كرّرها
                           </Button>
@@ -709,7 +709,7 @@ export default function AdminCohorts() {
                           <input type="checkbox" checked={dupForm.withSessions}
                             onChange={(e) => setDupForm({ ...dupForm, withSessions: e.target.checked })}
                             className="h-3.5 w-3.5 cursor-pointer accent-teal" />
-                          انسخ الجلساتَ أيضا بإزاحة الأسابيع (وإلّا فولّدها في النسخة بجدولها)
+                          انسخ الجلسات أيضا بإزاحة الأسابيع (وإلّا فولّدها في النسخة بجدولها)
                         </label>
                       </div>
                     </Card>
@@ -738,7 +738,7 @@ export default function AdminCohorts() {
                             joinUrl: z.joinUrl, meetingId: z.meetingId || undefined, passcode: z.passcode || undefined,
                           });
                           setZoomForm((prev) => ({ ...prev, [c.id]: { sessionId: "", joinUrl: "", meetingId: "", passcode: "" } }));
-                        }, "رُبط اجتماع Zoom بالجلسة")} />
+                        }, "ربط اجتماع Zoom بالجلسة")} />
                     </Card>
 
                     </>)}
@@ -756,7 +756,7 @@ export default function AdminCohorts() {
                               const res = await apiPost<{ status: string }>(`/api/admin/cohorts/${c.id}/enrollments`, { userId: enrollLearner!.id });
                               const name = enrollLearner!.displayName;
                               setEnrollLearner(null);
-                              setFlash({ kind: "ok", text: res.status === "waitlisted" ? `الشعبة ممتلئة — أُدرج ${name} في قائمة الانتظار` : `سُجل ${name} بنجاح` });
+                              setFlash({ kind: "ok", text: res.status === "waitlisted" ? `الشعبة ممتلئة — أدرج ${name} في قائمة الانتظار` : `سجل ${name} بنجاح` });
                             }, "")}>
                             سجّل
                           </Button>
@@ -779,7 +779,7 @@ export default function AdminCohorts() {
                     {/* «من غيّر هذه الشعبة؟» — يُسأل هنا، فيُقرأ هنا. وكان
                         الجوابُ يقتضي فتحَ «سجلّ الأثر» ومعرفةَ معرّفِ الشعبة. */}
                     {tab === "identity" && (
-                      <EntityAuditTimeline entityType="cohort" entityId={c.id} labelAr="أثرُ هذه الشعبة" />
+                      <EntityAuditTimeline entityType="cohort" entityId={c.id} labelAr="أثر هذه الشعبة" />
                     )}
                   </div>
                 )}
@@ -828,12 +828,12 @@ function ScheduleWindowCard({ cohort, busy, act }: {
   return (
     <Card className="bg-paper/20">
       <p className="flex items-center gap-1.5 text-read font-black text-foreground">
-        <CalendarClock className="h-4 w-4 shrink-0 text-teal-ink" /> نافذةُ جدولةِ المدرّب
+        <CalendarClock className="h-4 w-4 shrink-0 text-teal-ink" /> نافذة جدولة المدرّب
       </p>
       <p className="mt-1 text-read leading-6 text-muted-foreground">
         {isOpen
-          ? "مفتوحة — يضيف مدرّبُ الشعبة ما شاء من لقاءاتها وينقلها داخلَ هذا الحدّ بلا طابور موافقات. وما يقع خارجَه يبقى اقتراحا يُرفع إليك."
-          : "مغلقة — الجدولةُ إليك وحدَك، والمدرّبُ لا يملك إلّا اقتراحَ تأجيلٍ يُرفع إلى طابورك. افتحها ليقرّر داخلَ حدّك."}
+          ? "مفتوحة — يضيف مدرّب الشعبة ما شاء من لقاءاتها وينقلها داخل هذا الحدّ بلا طابور موافقات. وما يقع خارجه يبقى اقتراحا يرفع إليك."
+          : "مغلقة — الجدولة إليك وحدك، والمدرّب لا يملك إلّا اقتراح تأجيل يرفع إلى طابورك. افتحها ليقرّر داخل حدّك."}
       </p>
       <div className="mt-3 grid gap-2 sm:grid-cols-2">
         <label className="text-fine text-muted-foreground">
@@ -849,7 +849,7 @@ function ScheduleWindowCard({ cohort, busy, act }: {
       </div>
       {!complete && !cleared && (
         <p className="mt-2 text-read text-gold-ink">
-          الحدّان يُفتحان معا — املأ ما نقص، أو أفرغهما لإغلاق النافذة.
+          الحدّان يفتحان معا — املأ ما نقص، أو أفرغهما لإغلاق النافذة.
         </p>
       )}
       <Button tone="confirm" disabled={busy || (!complete && !cleared)} className="mt-3"
@@ -858,13 +858,13 @@ function ScheduleWindowCard({ cohort, busy, act }: {
             start: form.start ? new Date(`${form.start}T00:00:00.000Z`).toISOString() : null,
             end: form.end ? new Date(`${form.end}T23:59:59.000Z`).toISOString() : null,
           }),
-          complete ? "فُتحت نافذةُ الجدولة — المدرّبُ يقرّر داخلَ حدّك" : "أُغلقت نافذةُ الجدولة — الجدولةُ إليك وحدَك",
+          complete ? "فتحت نافذة الجدولة — المدرّب يقرّر داخل حدّك" : "أغلقت نافذة الجدولة — الجدولة إليك وحدك",
         )}>
         {complete ? "افتح النافذة" : "أغلق النافذة"}
       </Button>
       {isOpen && (
         <p className="mt-2 text-read text-muted-foreground">
-          في الشعبة {cohort.sessionsCount} لقاءً — بلا سقف.
+          في الشعبة {cohort.sessionsCount} لقاء — بلا سقف.
         </p>
       )}
     </Card>
@@ -899,7 +899,7 @@ function ZoomAttach({ cohortId, sessionsCount, value, onChange, busy, onSubmit }
           onChange={(e) => onChange({ ...value, sessionId: e.target.value })}
           className="w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs text-foreground focus:border-teal focus:outline-none disabled:opacity-50"
         >
-          <option value="">{sessions === null ? "تُحمَّل الجلسات…" : "اختر الجلسة"}</option>
+          <option value="">{sessions === null ? "تحمّل الجلسات…" : "اختر الجلسة"}</option>
           {sessions?.map((sn) => (
             <option key={sn.id} value={sn.id}>
               {sn.title} — {fmtDateTimeAr(sn.startsAt)}{sn.hasZoom ? " (مربوطة)" : ""}

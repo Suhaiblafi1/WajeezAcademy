@@ -67,10 +67,10 @@ export function bodyFileLabelAr(mime: string | null | undefined): string {
 /** لماذا يُردّ هذا الملفّ — أو `null` فيُقبل */
 export function bodyFileBlockerAr(mime: string, sizeBytes?: number): string | null {
   if (!BODY_FILE_MIMES.includes(mime)) {
-    return `لا يُقبل إلّا ${BODY_FILE_TYPES.map((t) => t.labelAr).join(' أو ')} — وما عداهما يُرفع في «المصادر»`
+    return `لا يقبل إلّا ${BODY_FILE_TYPES.map((t) => t.labelAr).join(' أو ')} — وما عداهما يرفع في «المصادر»`
   }
   if (typeof sizeBytes === 'number' && sizeBytes > MAX_BODY_FILE_BYTES) {
-    return `الملفُّ أكبرُ من ${Math.round(MAX_BODY_FILE_BYTES / (1024 * 1024))} ميغابايت`
+    return `الملفّ أكبر من ${Math.round(MAX_BODY_FILE_BYTES / (1024 * 1024))} ميغابايت`
   }
   return null
 }
@@ -186,14 +186,14 @@ export function fileBlockerAr(
     const names = purpose === 'module_body'
       ? BODY_FILE_TYPES.map((t) => t.labelAr)
       : purpose === 'workbook'
-        ? ['PDF — احفظ القالبَ PDF من Word ثمّ ارفعه']
+        ? ['PDF — احفظ القالب PDF من Word ثمّ ارفعه']
         : purpose === 'review_report'
           ? ['PDF', 'Word']
           : [...new Set(RESOURCE_FILE_TYPES.map((t) => t.labelAr))]
-    return `لا يُقبل إلّا ${names.join(' أو ')}`
+    return `لا يقبل إلّا ${names.join(' أو ')}`
   }
   if (typeof sizeBytes === 'number' && sizeBytes > MAX_BODY_FILE_BYTES) {
-    return `الملفُّ أكبرُ من ${Math.round(MAX_BODY_FILE_BYTES / (1024 * 1024))} ميغابايت`
+    return `الملفّ أكبر من ${Math.round(MAX_BODY_FILE_BYTES / (1024 * 1024))} ميغابايت`
   }
   return null
 }
@@ -217,5 +217,5 @@ export function resourceHasSource(r: ResourceSourceLike): boolean {
 
 /** ما ينقص هذا المصدرَ — أو `null` فهو تامّ */
 export function resourceSourceBlockerAr(r: ResourceSourceLike): string | null {
-  return resourceHasSource(r) ? null : 'بلا رابطٍ ولا ملفّ — ولا يُعرض على متعلّمٍ سطرٌ لا يقود إلى شيء'
+  return resourceHasSource(r) ? null : 'بلا رابط ولا ملفّ — ولا يعرض على متعلّم سطر لا يقود إلى شيء'
 }

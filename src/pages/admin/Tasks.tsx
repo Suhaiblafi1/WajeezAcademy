@@ -32,7 +32,7 @@ interface StaffUser { id: string; displayName: string; email: string; roles: { n
 const PRIORITY_AR: Record<string, string> = { normal: "عادية", high: "عاجلة" };
 
 /* «١ مهمّةٌ» و«٢ مهمّتان» و«٣ مهامّ» و«١١ مهمّةً» — والعددُ يُقرأ لا يُحسب */
-const TASK_FORMS = { one: "مهمّةٌ", two: "مهمّتان", few: "مهامَّ", many: "مهمّةً" };
+const TASK_FORMS = { one: "مهمّة", two: "مهمّتان", few: "مهامّ", many: "مهمّة" };
 
 export default function AdminTasks() {
   const { user } = useRealSession();
@@ -104,14 +104,14 @@ export default function AdminTasks() {
           <p className="mt-1 text-read text-muted-foreground">
             {showAssignee && t.assignee ? `${t.assignee.displayName} · ` : ""}
             {t.dueAt ? `الموعد ${fmtDate(new Date(t.dueAt))}` : "بلا موعد"}
-            {t.status === "done" && t.doneAt ? ` · أُنجزت ${fmtDate(new Date(t.doneAt))}` : ""}
+            {t.status === "done" && t.doneAt ? ` · أنجزت ${fmtDate(new Date(t.doneAt))}` : ""}
           </p>
           {t.doneNoteAr && <p className="mt-1 text-read text-teal-light-ink">{t.doneNoteAr}</p>}
         </div>
         {t.status !== "done" && (
           <Button tone="confirm" size="sm" disabled={busy}
-            onClick={() => act(() => apiPost(`/api/staff/tasks/${t.id}/complete`, {}), "أُغلقت المهمّة")} className="shrink-0 text-teal-light-ink">
-            <CheckCircle2 className="h-3 w-3" /> أنجزتُها
+            onClick={() => act(() => apiPost(`/api/staff/tasks/${t.id}/complete`, {}), "أغلقت المهمّة")} className="shrink-0 text-teal-light-ink">
+            <CheckCircle2 className="h-3 w-3" /> أنجزتها
           </Button>
         )}
       </div>
@@ -133,14 +133,14 @@ export default function AdminTasks() {
           icon={ClipboardList}
           count={open.length}
           forms={TASK_FORMS}
-          waitingAr="تنتظر إنجازَك"
+          waitingAr="تنتظر إنجازك"
           /* «٠ عاجلة» ليست خبرا — فلا يُعرض المجموعُ إلّا حين يعني شيئا */
           stats={open.some((t) => t.priority === "high")
             ? [`${open.filter((t) => t.priority === "high").length} منها عاجلة`]
             : []}
           actionAr="ابدأ بأعجلها"
           onAction={() => { if (open[0]) revealRow(`task-${open[0].id}`); }}
-          doneAr="لا مهمّةَ مكلَّفا بها تنتظر — وما يُكلَّف به يصل هنا مع إشعارٍ فورَ تكليفه."
+          doneAr="لا مهمّة مكلّفا بها تنتظر — وما يكلّف به يصل هنا مع إشعار فور تكليفه."
         />
 
         {loading ? null : (
@@ -150,7 +150,7 @@ export default function AdminTasks() {
             {(mine.length > 0 || assigned.length > 0) && (
               <input value={q} onChange={(e) => setQ(e.target.value)}
                 aria-label="ابحث في المهامّ"
-                placeholder="ابحث بعنوان المهمّة أو نصّها أو اسم المكلَّف…"
+                placeholder="ابحث بعنوان المهمّة أو نصّها أو اسم المكلّف…"
                 className={staffControlCls} />
             )}
             <Panel as="section">
@@ -163,7 +163,7 @@ export default function AdminTasks() {
                 <ul className="mt-3 space-y-2">{mineShown.map((t) => row(t, false))}</ul>
               )}
               {mine.length > 0 && mineShown.length === 0 && (
-                <p className="mt-3 text-read text-muted-foreground">لا مهمّةَ تطابق بحثَك.</p>
+                <p className="mt-3 text-read text-muted-foreground">لا مهمّة تطابق بحثك.</p>
               )}
             </Panel>
 
@@ -171,10 +171,10 @@ export default function AdminTasks() {
               <Panel as="section" tone="warn">
                 <h2 className="text-sm font-black text-gold-ink">كلّف موظّفا بمهمّة</h2>
                 {/* التكليفُ يُشعِر مكلَّفَه في الفعل نفسِه — لا خطوةَ إشعارٍ بعده */}
-                <p className="mt-1 text-read text-muted-foreground">يصله إشعارٌ بها فورا، ولا يُكلَّف من هو أعلى رتبةً منك.</p>
+                <p className="mt-1 text-read text-muted-foreground">يصله إشعار بها فورا، ولا يكلّف من هو أعلى رتبة منك.</p>
                 <div className="mt-3 grid gap-2 sm:grid-cols-2">
                   <select value={form.assigneeId} onChange={(e) => setForm({ ...form, assigneeId: e.target.value })}
-                    aria-label="المكلَّف" className={`${field} cursor-pointer [&>option]:bg-surface`}>
+                    aria-label="المكلّف" className={`${field} cursor-pointer [&>option]:bg-surface`}>
                     <option value="">اختر الموظّف…</option>
                     {people.map((p) => (
                       <option key={p.id} value={p.id}>{p.displayName} — {p.roles.map((r) => r.nameAr).join("، ") || "بلا دور"}</option>
@@ -199,7 +199,7 @@ export default function AdminTasks() {
                       ...(form.dueAt ? { dueAt: new Date(`${form.dueAt}T12:00:00Z`).toISOString() } : {}),
                       priority: form.priority,
                     }).then(() => setForm({ assigneeId: "", title: "", bodyAr: "", dueAt: "", priority: "normal" })),
-                    "كُلّف الموظّف — ووصله إشعارٌ بها",
+                    "كلّف الموظّف — ووصله إشعار بها",
                   )} className="mt-3">
                   كلّفه
                 </Button>
@@ -208,14 +208,14 @@ export default function AdminTasks() {
 
             {canAssign && (
               <Panel as="section">
-                <h2 className="text-sm font-black">ما كلّفتُ به غيري ({assigned.filter((t) => t.status !== "done").length} مفتوحة)</h2>
+                <h2 className="text-sm font-black">ما كلّفت به غيري ({assigned.filter((t) => t.status !== "done").length} مفتوحة)</h2>
                 {assigned.length === 0 ? (
                   <p className="mt-3 text-read text-muted-foreground">لم تكلّف أحدا بعد.</p>
                 ) : (
                   <ul className="mt-3 space-y-2">{assignedShown.map((t) => row(t, true))}</ul>
                 )}
                 {assigned.length > 0 && assignedShown.length === 0 && (
-                  <p className="mt-3 text-read text-muted-foreground">لا مهمّةَ تطابق بحثَك.</p>
+                  <p className="mt-3 text-read text-muted-foreground">لا مهمّة تطابق بحثك.</p>
                 )}
               </Panel>
             )}
@@ -223,10 +223,10 @@ export default function AdminTasks() {
             {canNotify && (
               <Panel as="section">
                 <h2 className="flex items-center gap-2 text-sm font-black">
-                  <Bell className="h-4 w-4 text-teal-light-ink" /> إشعارٌ بلا مهمّة
+                  <Bell className="h-4 w-4 text-teal-light-ink" /> إشعار بلا مهمّة
                 </h2>
                 {/* إعلانٌ يصل ولا يُتابَع ولا يُغلَق — وحبّتُه منفصلة عن التكليف */}
-                <p className="mt-1 text-read text-muted-foreground">يصل ولا يُتابَع ولا يُغلَق. للتكليف الذي يُتابَع استعمل اللوح أعلاه.</p>
+                <p className="mt-1 text-read text-muted-foreground">يصل ولا يتابع ولا يغلق. للتكليف الذي يتابع استعمل اللوح أعلاه.</p>
                 <div className="mt-3 space-y-2">
                   <input value={announce.title} onChange={(e) => setAnnounce({ ...announce, title: e.target.value })}
                     placeholder="عنوان الإشعار" aria-label="عنوان الإشعار" className={field} />
@@ -253,9 +253,9 @@ export default function AdminTasks() {
                     () => apiPost("/api/staff/notify", {
                       userIds: announce.to, title: announce.title.trim(), bodyAr: announce.bodyAr.trim(),
                     }).then(() => setAnnounce({ title: "", bodyAr: "", to: [] })),
-                    `أُرسل الإشعار إلى ${announce.to.length}`,
+                    `أرسل الإشعار إلى ${announce.to.length}`,
                   )} className="mt-3 text-teal-light-ink">
-                  <Send className="h-3.5 w-3.5" /> أرسِل
+                  <Send className="h-3.5 w-3.5" /> أرسل
                 </Button>
               </Panel>
             )}

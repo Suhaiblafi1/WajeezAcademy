@@ -157,8 +157,8 @@ export function buildWorkQueue(
         const note = (s.reviewNote ?? '').trim()
         items.push({
           kind: 'session_rejected',
-          titleAr: `لقاءٌ رُدَّ عليك — «${s.title}»`,
-          detailAr: note ? `${c.title} · «${note}»` : `${c.title} · بلا ملاحظةٍ من الإدارة`,
+          titleAr: `لقاء ردّ عليك — «${s.title}»`,
+          detailAr: note ? `${c.title} · «${note}»` : `${c.title} · بلا ملاحظة من الإدارة`,
           actionAr: 'انقل الموعد',
           href: `/trainer/cohort/${c.id}`,
           external: false,
@@ -194,7 +194,7 @@ export function buildWorkQueue(
       if (over && !markedSessionIds.has(s.id) && enrollments.length > 0) {
         items.push({
           kind: 'attendance_missing',
-          titleAr: `حضور «${s.title}» لم يُسجَّل`,
+          titleAr: `حضور «${s.title}» لم يسجّل`,
           detailAr: `${c.title} · ${arCount(enrollments.length, 'متعلم واحد', 'متعلمين')} في انتظار التسجيل`,
           actionAr: 'سجّل الحضور',
           href: `/trainer/cohort/${c.id}`,
@@ -250,8 +250,8 @@ export function buildWorkQueue(
     if (p.planStatus === 'changes_requested') {
       items.push({
         kind: 'plan_returned',
-        titleAr: `شعبةٌ رُدَّت إليك — «${p.title}»`,
-        detailAr: courseAr ? `${courseAr} · اقرأ ملاحظةَ الإدارة ثمّ أعِد الإرسال` : 'اقرأ ملاحظةَ الإدارة ثمّ أعِد الإرسال',
+        titleAr: `شعبة ردّت إليك — «${p.title}»`,
+        detailAr: courseAr ? `${courseAr} · اقرأ ملاحظة الإدارة ثمّ أعد الإرسال` : 'اقرأ ملاحظة الإدارة ثمّ أعد الإرسال',
         actionAr: 'اقرأ الملاحظة',
         href: where,
         external: false,
@@ -265,9 +265,9 @@ export function buildWorkQueue(
     if (mine && !p.next) {
       items.push({
         kind: 'plan_ready_unsent',
-        titleAr: `شعبةٌ جاهزةٌ ولم تُرسَل — «${p.title}»`,
-        detailAr: courseAr ? `${courseAr} · تجهيزُها تمَّ، وينقصها إرسالُك` : 'تجهيزُها تمَّ، وينقصها إرسالُك',
-        actionAr: 'أرسِلها للاعتماد',
+        titleAr: `شعبة جاهزة ولم ترسل — «${p.title}»`,
+        detailAr: courseAr ? `${courseAr} · تجهيزها تمّ، وينقصها إرسالك` : 'تجهيزها تمّ، وينقصها إرسالك',
+        actionAr: 'أرسلها للاعتماد',
         href: where,
         external: false,
         urgency: 25,
@@ -279,11 +279,11 @@ export function buildWorkQueue(
       const left = Math.max(0, p.total - p.done)
       items.push({
         kind: 'plan_incomplete',
-        titleAr: `تجهيزُ «${p.title}» لم يكتمل`,
+        titleAr: `تجهيز «${p.title}» لم يكتمل`,
         detailAr: p.next
           ? `${p.done} من ${p.total} · التالي: ${p.next.labelAr}`
-          : `${p.done} من ${p.total} · ${arCount(left, 'بندٌ واحدٌ باقٍ', 'بنودٍ باقية')}`,
-        actionAr: 'أكمِل التجهيز',
+          : `${p.done} من ${p.total} · ${arCount(left, 'بند واحد باق', 'بنود باقية')}`,
+        actionAr: 'أكمل التجهيز',
         href: where,
         external: false,
         urgency: 45,
@@ -325,10 +325,10 @@ export function buildWorkQueue(
     items.push({
       kind: 'offer_pending',
       titleAr: waiting.length === 1
-        ? `عُرضت عليك «${soonest.courseTitleAr}»`
-        : `${arCount(waiting.length, 'عرضٌ واحدٌ ينتظر', 'عروض تنتظر')} جوابَك`,
-      detailAr: `أقربُ مهلةٍ تنتهي ${fmtDate(soonest.expiresAt)} — والاعتذارُ جوابٌ لا يُحسَب عليك`,
-      actionAr: 'اقرأه وأجِبْ',
+        ? `عرضت عليك «${soonest.courseTitleAr}»`
+        : `${arCount(waiting.length, 'عرض واحد ينتظر', 'عروض تنتظر')} جوابك`,
+      detailAr: `أقرب مهلة تنتهي ${fmtDate(soonest.expiresAt)} — والاعتذار جواب لا يحسب عليك`,
+      actionAr: 'اقرأه وأجب',
       href: '/trainer/qualifications',
       external: false,
       urgency: 8,
@@ -347,10 +347,10 @@ export function buildWorkQueue(
     items.push({
       kind: 'prep_due',
       titleAr: prep.length === 1
-        ? `أجلُ إعداد «${soonest.courseTitleAr}» يقترب`
-        : arCount(prep.length, 'أجلُ إعدادٍ واحدٍ يقترب', 'آجال إعدادٍ تقترب'),
-      detailAr: `ينتهي ${fmtDate(soonest.prepDueAt as string)} — أقِرّ بجاهزيّتك أو أخبرنا بما تحتاجه`,
-      actionAr: 'أقِرّ بجاهزيّتي',
+        ? `أجل إعداد «${soonest.courseTitleAr}» يقترب`
+        : arCount(prep.length, 'أجل إعداد واحد يقترب', 'آجال إعداد تقترب'),
+      detailAr: `ينتهي ${fmtDate(soonest.prepDueAt as string)} — أقرّ بجاهزيّتك أو أخبرنا بما تحتاجه`,
+      actionAr: 'أقرّ بجاهزيّتي',
       href: '/trainer/qualifications',
       external: false,
       urgency: 18,

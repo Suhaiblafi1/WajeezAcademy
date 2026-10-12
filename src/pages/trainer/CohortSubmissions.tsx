@@ -67,9 +67,9 @@ export default function CohortSubmissions({ cohortId, only }: {
         items={items}
         learners={learners}
         {...(only === "project"
-          ? { titleAr: "تسليماتُ مشروع التخرّج", emptyAr: "لا مشروعَ تخرّجٍ بعد — وما تضعه أعلاه يظهر هنا بتسليماته." }
+          ? { titleAr: "تسليمات مشروع التخرّج", emptyAr: "لا مشروع تخرّج بعد." }
           : only === "practical"
-            ? { titleAr: "تسليماتُ المهامّ العمليّة", emptyAr: "لا مهمّةَ عمليّةً بعد — وما تؤلّفه أعلاه يظهر هنا بتسليماته." }
+            ? { titleAr: "تسليمات المهامّ العمليّة", emptyAr: "لا مهمّة عمليّة بعد." }
             : {})}
       />
     </Panel>

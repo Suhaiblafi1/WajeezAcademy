@@ -61,12 +61,12 @@ export default function SkillCheck() {
     <SiteShell>
       <section className="mx-auto max-w-2xl px-5 py-12 md:py-16">
         <h1 className="text-2xl font-black leading-snug md:text-3xl">
-          {check ? `فحصُ المهارة: ${check.title_ar}` : "فحصُ المهارة"}
+          {check ? `فحص المهارة: ${check.title_ar}` : "فحص المهارة"}
         </h1>
 
         {!check && (
           <Panel className="mt-6 text-sm leading-7 text-foreground">
-            لا فحصَ لهذا المجال بعد. <Link to="/diagnostic" className="font-bold underline">عُد إلى التشخيص</Link>
+            لا فحص لهذا المجال بعد. <Link to="/diagnostic" className="font-bold underline">عد إلى التشخيص</Link>
           </Panel>
         )}
 
@@ -78,11 +78,11 @@ export default function SkillCheck() {
 
         {bank && !bank.open && (
           <Panel tone="accent" className="mt-6">
-            <p className="text-sm font-black text-foreground">هذا الفحصُ غيرُ متاحٍ الآن</p>
+            <p className="text-sm font-black text-foreground">هذا الفحص غير متاح الآن</p>
             <p className="mt-2 text-read leading-relaxed text-muted-foreground">
-              تُراجَع أسئلتُه. وخطّتُك قائمةٌ على المستوى الذي وصفتَه، ويُراجَع معك في أوّل لقاء.
+              تراجع أسئلته. وخطّتك قائمة على المستوى الذي وصفته، ويراجع معك في أوّل لقاء.
             </p>
-            <Button as={Link} to="/diagnostic" tone="secondary" className="mt-4">عُد إلى خطّتي</Button>
+            <Button as={Link} to="/diagnostic" tone="secondary" className="mt-4">عد إلى خطّتي</Button>
           </Panel>
         )}
 
@@ -92,10 +92,10 @@ export default function SkillCheck() {
               <ClipboardCheck className="h-4 w-4 text-teal-light-ink" aria-hidden="true" /> قبل أن تبدأ
             </p>
             <ul className="mt-3 flex flex-col gap-1.5 text-read leading-relaxed text-muted-foreground">
-              <li>{total} سؤالا من الأساسيّ إلى المتقدّم — ثلاثُ دقائق تقريبا.</li>
-              <li>مجّانيّ، ولا حاجةَ إلى حساب.</li>
-              <li>ما لا تعرفه اتركه — التخمينُ يُفسد القياس ولا يرفع مستواك.</li>
-              <li>والنتيجةُ لك: تحدّث بها خطّتك أو تُبقي مستواك الموصوف.</li>
+              <li>{total} سؤالا من الأساسيّ إلى المتقدّم — ثلاث دقائق تقريبا.</li>
+              <li>مجّانيّ، ولا حاجة إلى حساب.</li>
+              <li>ما لا تعرفه اتركه — التخمين يفسد القياس ولا يرفع مستواك.</li>
+              <li>والنتيجة لك: تحدّث بها خطّتك أو تبقي مستواك الموصوف.</li>
             </ul>
             <Button tone="confirm" className="mt-5" onClick={() => setPage(0)}>ابدأ الفحص</Button>
           </Card>
@@ -104,7 +104,7 @@ export default function SkillCheck() {
         {bank?.open && !result && page >= 0 && pages[page] && (
           <div className="mt-6">
             <p className="text-read font-bold text-muted-foreground">
-              الجزء {page + 1} من {pages.length} · أجبتَ عن {Object.keys(answers).length} من {total}
+              الجزء {page + 1} من {pages.length} · أجبت عن {Object.keys(answers).length} من {total}
             </p>
             <ol className="mt-4 flex flex-col gap-4">
               {pages[page].map((q, n) => (
@@ -155,7 +155,7 @@ function CheckOutcome({ result, stated, field }: { result: FieldCheckResult; sta
           <Gauge className="h-5 w-5 text-teal-light-ink" aria-hidden="true" />
           مستواك في «{field}»: {tested?.name_ar}
         </p>
-        <p className="mt-3 text-read text-muted-foreground">أصبتَ {result.correct} من {result.total}.</p>
+        <p className="mt-3 text-read text-muted-foreground">أصبت {result.correct} من {result.total}.</p>
         <ul className="mt-3 flex flex-wrap gap-2">
           {result.per_level.map((l) => (
             <li key={l.level}>
@@ -166,27 +166,27 @@ function CheckOutcome({ result, stated, field }: { result: FieldCheckResult; sta
           ))}
         </ul>
         <p className="mt-3 text-read leading-6 text-muted-foreground">
-          يُحسب المستوى مجتازا بثلثي أسئلته، ومستواك أعلى ما اجتزتَه وكلُّ ما دونه مجتاز.
+          يحسب المستوى مجتازا بثلثي أسئلته، ومستواك أعلى ما اجتزته وكلّ ما دونه مجتاز.
         </p>
       </Card>
 
       {differs ? (
         <Panel>
           <p className="text-sm font-black text-foreground">
-            وصفتَ مستواك «{said.name_ar}»، والفحصُ يقول «{tested?.name_ar}» — والخيارُ لك:
+            وصفت مستواك «{said.name_ar}»، والفحص يقول «{tested?.name_ar}» — والخيار لك:
           </p>
           <ul className="mt-4 flex flex-col gap-3">
             <li>
               <Button as={Link} to={applyFieldLevelHref(result.level)} tone="primary" className="w-full justify-start text-right">
                 <CheckCircle2 className="h-4 w-4" /> حدّث خطّتي بمستوى الفحص ({tested?.name_ar})
               </Button>
-              <p className="mt-1 text-read leading-6 text-muted-foreground">نعيد بناء خطّتك على هذا المستوى بلا إعادة الأسئلة — وتتغيّر الدوراتُ المقترحة إن لزم.</p>
+              <p className="mt-1 text-read leading-6 text-muted-foreground">نعيد بناء خطّتك على هذا المستوى بلا إعادة الأسئلة — وتتغيّر الدورات المقترحة إن لزم.</p>
             </li>
             <li>
               <Button as={Link} to="/diagnostic" tone="secondary" className="w-full justify-start text-right">
-                أبقِ مستواي الموصوف ({said.name_ar})
+                أبق مستواي الموصوف ({said.name_ar})
               </Button>
-              <p className="mt-1 text-read leading-6 text-muted-foreground">تبقى خطّتك كما هي — ويُراجَع مستواك مع مدرّبك في أوّل لقاء.</p>
+              <p className="mt-1 text-read leading-6 text-muted-foreground">تبقى خطّتك كما هي — ويراجع مستواك مع مدرّبك في أوّل لقاء.</p>
             </li>
           </ul>
         </Panel>
@@ -194,14 +194,14 @@ function CheckOutcome({ result, stated, field }: { result: FieldCheckResult; sta
         <Panel>
           <p className="text-sm leading-7 text-foreground">
             {said
-              ? "الفحصُ يؤكّد ما وصفتَه — خطّتك مبنيّةٌ على مستواك الصحيح."
-              : "صِف مستواك في التشخيص بما قاله الفحص — فتُبنى خطّتك عليه."}
+              ? "الفحص يؤكّد ما وصفته — خطّتك مبنيّة على مستواك الصحيح."
+              : "صف مستواك في التشخيص بما قاله الفحص — فتبنى خطّتك عليه."}
           </p>
           <div className="mt-4 flex flex-wrap gap-3">
             {/* والمؤكَّدُ يعود عبر بابِ التعديل بالمستوى نفسِه: تُبنى الخطّةُ كما هي، ويقول سطرُ
                 مستواها «بناءً على فحص المهارة» بدل جوابه */}
             <Button as={Link} to={said ? applyFieldLevelHref(result.level) : "/diagnostic"} tone="secondary">
-              {said ? "عُد إلى خطّتي" : "إلى التشخيص"}
+              {said ? "عد إلى خطّتي" : "إلى التشخيص"}
             </Button>
           </div>
         </Panel>

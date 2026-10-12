@@ -68,20 +68,20 @@ const stories = find(
   (n) => ts.isFunctionDeclaration(n) && n.name?.text === 'Stories',
 )!
 
-describe('نماذجُ الرحلات خلف سطرٍ يُنقر', () => {
-  it('دالّةُ القسم مقروءة — وإلّا خضرَّ ما بعدها على الفراغ', () => {
-    expect(stories, 'لم تُوجد دالّة Stories').toBeTruthy()
+describe('نماذج الرحلات خلف سطر ينقر', () => {
+  it('دالّة القسم مقروءة — وإلّا خضرّ ما بعدها على الفراغ', () => {
+    expect(stories, 'لم توجد دالّة Stories').toBeTruthy()
     expect(findAll(stories, (n) => opening(n) !== null).length).toBeGreaterThan(5)
   })
 
   const trigger = () =>
     findAll(stories, (n) => tagOf(n) === 'button' && attr(n, 'aria-controls') !== null)[0]
 
-  it('سطرٌ يُنقر يقول ما يفتحه', () => {
+  it('سطر ينقر يقول ما يفتحه', () => {
     const btn = trigger()
-    expect(btn, 'لا زرَّ يفتح النماذج').toBeTruthy()
-    expect(attr(btn, 'aria-expanded'), 'الزرُّ لا يقول أمطويٌّ هو أم مفتوح').toBeTruthy()
-    expect(attr(btn, 'onClick'), 'زرٌّ لا يفعل شيئا').toBeTruthy()
+    expect(btn, 'لا زرّ يفتح النماذج').toBeTruthy()
+    expect(attr(btn, 'aria-expanded'), 'الزرّ لا يقول أمطويّ هو أم مفتوح').toBeTruthy()
+    expect(attr(btn, 'onClick'), 'زرّ لا يفعل شيئا').toBeTruthy()
   })
 
   const panel = () => {
@@ -89,33 +89,33 @@ describe('نماذجُ الرحلات خلف سطرٍ يُنقر', () => {
     return findAll(stories, (n) => (attr(n, 'id') ?? '').replace(/["'{}]/g, '') === controls)[0]
   }
 
-  it('واللوحُ الذي يشير إليه موجودٌ ويُخفى بشرط', () => {
+  it('واللوح الذي يشير إليه موجود ويخفى بشرط', () => {
     const p = panel()
-    expect(p, 'الزرُّ يشير إلى لوحٍ لا وجودَ له').toBeTruthy()
+    expect(p, 'الزرّ يشير إلى لوح لا وجود له').toBeTruthy()
     const hidden = attr(p, 'hidden')
-    expect(hidden, 'اللوحُ مبسوطٌ دائما — لا شيءَ يخفيه').toBeTruthy()
+    expect(hidden, 'اللوح مبسوط دائما — لا شيء يخفيه').toBeTruthy()
     /* والإخفاءُ مربوطٌ بحالةٍ لا ثابتٌ: `hidden` أو `hidden={true}` تُخفيه
        أبدا، فلا يفتحه الزرّ. */
     expect(hidden).toMatch(/\{[^}]*\w/)
     expect(hidden).not.toMatch(/\{true\}/)
   })
 
-  it('والبطاقاتُ داخلَ اللوح لا في الصفحة', () => {
+  it('والبطاقات داخل اللوح لا في الصفحة', () => {
     const inPanel = findAll(panel(), (n) =>
       ts.isCallExpression(n) &&
       ts.isPropertyAccessExpression(n.expression) &&
       n.expression.name.text === 'map' &&
       n.expression.expression.getText(source) === 'stories',
     )
-    expect(inPanel.length, 'شريطُ النماذج خارجَ اللوح — فيُعرض مباشرة').toBe(1)
+    expect(inPanel.length, 'شريط النماذج خارج اللوح — فيعرض مباشرة').toBe(1)
   })
 
-  it('ولا يبقى فوقَ السطر عنوانُ قسمٍ يُغني عن طيّه', () => {
+  it('ولا يبقى فوق السطر عنوان قسم يغني عن طيّه', () => {
     /* العنوانُ «هكذا تُبنى الرحلة عندنا» نزل داخلَ اللوح: لو بقي فوقه لكان
        القسمُ مبسوطا في كلّ الأحوال — وهو الذي طُلب طيُّه. */
     const headings = findAll(stories, (n) => tagOf(n) === 'h2')
-    expect(headings.length, 'لا عنوانَ للقسم أصلا').toBeGreaterThan(0)
+    expect(headings.length, 'لا عنوان للقسم أصلا').toBeGreaterThan(0)
     const inPanel = findAll(panel(), (n) => tagOf(n) === 'h2')
-    expect(inPanel.length, 'عنوانُ القسم خارجَ اللوح').toBe(headings.length)
+    expect(inPanel.length, 'عنوان القسم خارج اللوح').toBe(headings.length)
   })
 })

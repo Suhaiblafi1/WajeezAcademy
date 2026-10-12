@@ -60,32 +60,32 @@ export function interviewSyncTrust(f: SyncFacts): SyncTrust {
   if (!f.hasToken) {
     return {
       trusted: false,
-      reasonAr: 'لا رمزَ محفوظٌ لـCalendly — فلا حجزَ يصل الطابورَ، ومن حجز لا يُعرف.',
+      reasonAr: 'لا رمز محفوظ لـCalendly — فلا حجز يصل الطابور، ومن حجز لا يعرف.',
     }
   }
   if (!f.enabled) {
     return {
       trusted: false,
-      reasonAr: 'تكاملُ Calendly مطفأ — فالحجوزاتُ لا تصل كأن لا تكاملَ أصلا.',
+      reasonAr: 'تكامل Calendly مطفأ — فالحجوزات لا تصل كأن لا تكامل أصلا.',
     }
   }
   if (!f.at) {
     return {
       trusted: false,
-      reasonAr: 'لم تجرِ دورةُ مزامنةٍ بعد — فما يُعرف عن الحجز غيرُ مكتمل.',
+      reasonAr: 'لم تجر دورة مزامنة بعد — فما يعرف عن الحجز غير مكتمل.',
     }
   }
   if (f.errorAr) {
     return {
       trusted: false,
-      reasonAr: `مزامنةُ مواعيد Calendly ساقطة (${f.errorAr}) — فلا حجزَ يُقرأ، و«لم يحجز موعدا» لا يُعتمد عليه.`,
+      reasonAr: `مزامنة مواعيد Calendly ساقطة (${f.errorAr}) — فلا حجز يقرأ، و«لم يحجز موعدا» لا يعتمد عليه.`,
     }
   }
   const staleMs = f.now.getTime() - new Date(f.at).getTime()
   if (staleMs > SYNC_STALE_MS) {
     return {
       trusted: false,
-      reasonAr: 'انقطع نبضُ مزامنة المواعيد — فآخرُ ما نعرفه عن الحجز قديم.',
+      reasonAr: 'انقطع نبض مزامنة المواعيد — فآخر ما نعرفه عن الحجز قديم.',
     }
   }
   return { trusted: true, reasonAr: null }

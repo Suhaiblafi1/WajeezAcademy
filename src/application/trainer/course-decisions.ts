@@ -88,21 +88,21 @@ function optText(o: Record<string, unknown>, k: string, where: string, errs: str
     return null
   }
   const t = v.trim()
-  if (t.length > TEXT_MAX) errs.push(`${where}: «${k}» أطولُ من ${TEXT_MAX} حرف`)
+  if (t.length > TEXT_MAX) errs.push(`${where}: «${k}» أطول من ${TEXT_MAX} حرف`)
   return t || null
 }
 
 /** يقرأ الملفَّ ويردّ أخطاءه كلَّها معا — لا أوّلَها وحدَه، فيُصلَح مرّةً لا مرّات */
 export function parseDecisionsFile(raw: unknown): ParseResult {
   const errs: string[] = []
-  if (!isObj(raw)) return { ok: false, errorsAr: ['الملفُّ ليس كائنَ JSON'] }
+  if (!isObj(raw)) return { ok: false, errorsAr: ['الملفّ ليس كائن JSON'] }
   if (raw.kind !== DECISIONS_KIND) {
-    return { ok: false, errorsAr: [`ليس ملفَّ قراراتِ دورات — «kind» يجب أن يكون «${DECISIONS_KIND}»`] }
+    return { ok: false, errorsAr: [`ليس ملفّ قرارات دورات — «kind» يجب أن يكون «${DECISIONS_KIND}»`] }
   }
   if (raw.version !== DECISIONS_VERSION) {
-    return { ok: false, errorsAr: [`إصدارُ الملفّ «${String(raw.version)}» غيرُ مقروء — المقروءُ ${DECISIONS_VERSION}`] }
+    return { ok: false, errorsAr: [`إصدار الملفّ «${String(raw.version)}» غير مقروء — المقروء ${DECISIONS_VERSION}`] }
   }
-  const titleAr = optText(raw, 'titleAr', 'الملفّ', errs) ?? 'ملفُّ قرارات'
+  const titleAr = optText(raw, 'titleAr', 'الملفّ', errs) ?? 'ملفّ قرارات'
   if (!Array.isArray(raw.trainers) || raw.trainers.length === 0) {
     return { ok: false, errorsAr: ['لا مدرّبين في الملفّ («trainers» فارغة)'] }
   }
@@ -115,9 +115,9 @@ export function parseDecisionsFile(raw: unknown): ParseResult {
     const reference = typeof t.reference === 'string' ? t.reference.trim() : ''
     const fullName = typeof t.fullName === 'string' ? t.fullName.trim() : ''
     if (!reference) errs.push(`${at}: بلا «reference»`)
-    if (!fullName) errs.push(`${at}: بلا «fullName» — الاسمُ يُطابَق مع المرجع`)
+    if (!fullName) errs.push(`${at}: بلا «fullName» — الاسم يطابق مع المرجع`)
     const where = reference || at
-    if (reference && refs.has(reference)) errs.push(`${where}: مكرَّرٌ في الملفّ — تُجمع قراراتُه في بندٍ واحد`)
+    if (reference && refs.has(reference)) errs.push(`${where}: مكرّر في الملفّ — تجمع قراراته في بند واحد`)
     refs.add(reference)
 
     const proposals: ProposalEntry[] = []
@@ -142,31 +142,31 @@ export function parseDecisionsFile(raw: unknown): ParseResult {
       const verdictGiven = p.verdict !== undefined && p.verdict !== null
       if (verdictGiven) {
         if (!(PROPOSAL_VERDICTS as readonly unknown[]).includes(p.verdict)) {
-          errs.push(`${pat}: قرارٌ مجهول «${String(p.verdict)}» — المعروف: ${PROPOSAL_VERDICTS.join(' · ')}`)
+          errs.push(`${pat}: قرار مجهول «${String(p.verdict)}» — المعروف: ${PROPOSAL_VERDICTS.join(' · ')}`)
         } else entry.verdict = p.verdict as ProposalVerdict
       }
-      if (entry.titleAr !== null && entry.titleAr.length < 3) errs.push(`${pat}: العنوانُ ثلاثةُ أحرفٍ فأكثر`)
+      if (entry.titleAr !== null && entry.titleAr.length < 3) errs.push(`${pat}: العنوان ثلاثة أحرف فأكثر`)
       if (proposalId) {
-        if (seenIds.has(proposalId)) errs.push(`${pat}: الاقتراحُ نفسُه مكرَّر`)
+        if (seenIds.has(proposalId)) errs.push(`${pat}: الاقتراح نفسه مكرّر`)
         seenIds.add(proposalId)
         if (entry.titleAr === null && entry.summaryAr === null && !verdictGiven) {
-          errs.push(`${pat}: بندٌ لا يطلب شيئا`)
+          errs.push(`${pat}: بند لا يطلب شيئا`)
         }
       } else if (!entry.titleAr) {
-        errs.push(`${pat}: اقتراحٌ جديدٌ بلا عنوان`)
+        errs.push(`${pat}: اقتراح جديد بلا عنوان`)
       } else {
         const k = normalizeAr(entry.titleAr)
-        if (seenTitles.has(k)) errs.push(`${pat}: اقتراحٌ جديدٌ مكرَّرُ العنوان`)
+        if (seenTitles.has(k)) errs.push(`${pat}: اقتراح جديد مكرّر العنوان`)
         seenTitles.add(k)
       }
       if ((entry.verdict === 'link' || entry.verdict === 'became_course') && !entry.courseId) {
         errs.push(`${pat}: «${entry.verdict}» بلا «courseId»`)
       }
       if (entry.verdict === 'ask' && (entry.questionAr ?? '').length < 5) {
-        errs.push(`${pat}: السؤالُ خمسةُ أحرفٍ فأكثر — سطرٌ غامضٌ يُعيد الاقتراحَ كما هو`)
+        errs.push(`${pat}: السؤال خمسة أحرف فأكثر — سطر غامض يعيد الاقتراح كما هو`)
       }
       if (entry.verdict === 'reject' && (entry.noteAr ?? '').length < 5) {
-        errs.push(`${pat}: الرفضُ بسببٍ يُقرأ — خمسةُ أحرفٍ فأكثر`)
+        errs.push(`${pat}: الرفض بسبب يقرأ — خمسة أحرف فأكثر`)
       }
       proposals.push(entry)
     })
@@ -175,22 +175,22 @@ export function parseDecisionsFile(raw: unknown): ParseResult {
     const rawQualify = t.qualify === undefined ? [] : t.qualify
     if (!Array.isArray(rawQualify)) errs.push(`${where}: «qualify» ليست قائمة`)
     else for (const q of rawQualify) {
-      if (typeof q !== 'string' || !q.trim()) { errs.push(`${where}: رمزُ دورةٍ فارغٌ في «qualify»`); continue }
+      if (typeof q !== 'string' || !q.trim()) { errs.push(`${where}: رمز دورة فارغ في «qualify»`); continue }
       if (!qualify.includes(q.trim())) qualify.push(q.trim())
     }
 
     let status: TrainerStatusAction | null = null
     if (t.status !== undefined && t.status !== null) {
       if (!(TRAINER_STATUS_ACTIONS as readonly unknown[]).includes(t.status)) {
-        errs.push(`${where}: حالٌ مجهولة «${String(t.status)}» — المعروف: ${TRAINER_STATUS_ACTIONS.join(' · ')}`)
+        errs.push(`${where}: حال مجهولة «${String(t.status)}» — المعروف: ${TRAINER_STATUS_ACTIONS.join(' · ')}`)
       } else status = t.status as TrainerStatusAction
     }
     const statusNoteAr = optText(t, 'statusNoteAr', where, errs)
     if (status && (statusNoteAr ?? '').length < 5) {
-      errs.push(`${where}: تغييرُ الحال بسببٍ يُقرأ في سجلّه — «statusNoteAr» خمسةُ أحرفٍ فأكثر`)
+      errs.push(`${where}: تغيير الحال بسبب يقرأ في سجلّه — «statusNoteAr» خمسة أحرف فأكثر`)
     }
     if (proposals.length === 0 && qualify.length === 0 && !status) {
-      errs.push(`${where}: لا قرارَ له في الملفّ`)
+      errs.push(`${where}: لا قرار له في الملفّ`)
     }
     trainers.push({ reference, fullName, proposals, qualify, status, statusNoteAr })
   })
@@ -263,9 +263,9 @@ export const STEP_PERMISSION: Record<StepKind, string> = {
 export type StepState = 'todo' | 'done' | 'blocked'
 
 export const STEP_STATE_LABELS: Record<StepState, string> = {
-  todo: 'ستُطبَّق',
-  done: 'طُبّقت من قبل',
-  blocked: 'لا تُطبَّق',
+  todo: 'ستطبّق',
+  done: 'طبّقت من قبل',
+  blocked: 'لا تطبّق',
 }
 
 export interface PlannedStep {
@@ -307,7 +307,7 @@ const VERDICT_STATUS: Record<'link' | 'became_course', string> = {
 
 /** حالُ اقتراحٍ بلغة من يقرأ — لسبب الامتناع */
 const PROPOSAL_SAID: Record<string, string> = {
-  linked: 'رُبط', became_course: 'صار دورة', rejected: 'رُفض',
+  linked: 'ربط', became_course: 'صار دورة', rejected: 'رفض',
 }
 
 export function planDecisions(file: DecisionsFile, world: DecisionsWorld): DecisionsPlan {
@@ -320,9 +320,9 @@ export function planDecisions(file: DecisionsFile, world: DecisionsWorld): Decis
     const profile = t?.profile ?? null
     /* ما يمنع المدرّبَ كلَّه — ويُكتب على كلّ خطوةٍ من خطواته */
     const whole = !t
-      ? `لا طلبَ بالمرجع ${entry.reference}`
+      ? `لا طلب بالمرجع ${entry.reference}`
       : normalizeAr(t.fullName) !== normalizeAr(entry.fullName)
-        ? `المرجعُ ${entry.reference} لـ«${t.fullName}» لا لـ«${entry.fullName}» — أيُّهما المقصود؟`
+        ? `المرجع ${entry.reference} لـ«${t.fullName}» لا لـ«${entry.fullName}» — أيّهما المقصود؟`
         : null
 
     const base = {
@@ -339,8 +339,8 @@ export function planDecisions(file: DecisionsFile, world: DecisionsWorld): Decis
       own.push(step)
       return step
     }
-    const noProfile = 'لا ملفَّ مدرّبٍ له بعد — القبولُ الداخليُّ أوّلا'
-    const noProposal = 'لا اقتراحَ بهذا المعرّف في طابوره — حُذف أو ليس له'
+    const noProfile = 'لا ملفّ مدرّب له بعد — القبول الداخليّ أوّلا'
+    const noProposal = 'لا اقتراح بهذا المعرّف في طابوره — حذف أو ليس له'
 
     /* ① الاقتراحات: ما يُنشأ وما يُصحَّح — ويُحفظ لكلّ بندٍ اقتراحُه */
     const resolved: { proposal: ProposalState | null; createdBy: PlannedStep | null; label: string }[] = []
@@ -356,10 +356,10 @@ export function planDecisions(file: DecisionsFile, world: DecisionsWorld): Decis
         add({
           kind: 'edit_proposal',
           labelAr: p.titleAr !== null
-            ? `تصحيحُ عنوانِ «${current}» إلى «${p.titleAr}»`
-            : `تصحيحُ نبذةِ «${current}»`,
+            ? `تصحيح عنوان «${current}» إلى «${p.titleAr}»`
+            : `تصحيح نبذة «${current}»`,
           state: !found ? 'blocked' : titleChanges || summaryChanges ? 'todo' : 'done',
-          reasonAr: !found ? noProposal : titleChanges || summaryChanges ? null : 'النصُّ كما في الملفّ',
+          reasonAr: !found ? noProposal : titleChanges || summaryChanges ? null : 'النصّ كما في الملفّ',
           proposalId: p.proposalId,
           titleAr: titleChanges ? p.titleAr : null,
           summaryAr: summaryChanges ? p.summaryAr : null,
@@ -370,9 +370,9 @@ export function planDecisions(file: DecisionsFile, world: DecisionsWorld): Decis
         const found = profile?.proposals.find((x) => normalizeAr(x.titleAr) === normalizeAr(title)) ?? null
         const created = add({
           kind: 'create_proposal',
-          labelAr: `إدخالُ «${title}» طابورَ التصنيف`,
+          labelAr: `إدخال «${title}» طابور التصنيف`,
           state: found ? 'done' : profile ? 'todo' : 'blocked',
-          reasonAr: found ? 'في طابوره اقتراحٌ بهذا العنوان' : profile ? null : noProfile,
+          reasonAr: found ? 'في طابوره اقتراح بهذا العنوان' : profile ? null : noProfile,
           proposalId: found?.id ?? null,
           titleAr: title,
           summaryAr: p.summaryAr,
@@ -389,14 +389,14 @@ export function planDecisions(file: DecisionsFile, world: DecisionsWorld): Decis
       const already = quals.get(courseId) === 'qualified'
       add({
         kind: 'qualify',
-        labelAr: `تأهيلُه لـ${courseId}`,
+        labelAr: `تأهيله لـ${courseId}`,
         state: already ? 'done'
           : !courseStatus || courseStatus === 'archived' || !profile || !live ? 'blocked' : 'todo',
-        reasonAr: already ? 'مؤهَّلٌ لها'
-          : !courseStatus ? `لا دورةَ بالرمز ${courseId} في الكتالوج بعد`
-            : courseStatus === 'archived' ? `الدورةُ ${courseId} مؤرشفة`
+        reasonAr: already ? 'مؤهّل لها'
+          : !courseStatus ? `لا دورة بالرمز ${courseId} في الكتالوج بعد`
+            : courseStatus === 'archived' ? `الدورة ${courseId} مؤرشفة`
               : !profile ? noProfile
-                : !live ? 'ملفُّه ليس في طورٍ يُؤهَّل فيه — موقوفٌ أو لم يُقبل'
+                : !live ? 'ملفّه ليس في طور يؤهّل فيه — موقوف أو لم يقبل'
                   : null,
         courseId,
       })
@@ -409,7 +409,7 @@ export function planDecisions(file: DecisionsFile, world: DecisionsWorld): Decis
       const missing = !proposal && !createdBy
       /* قرارٌ قائمٌ غيرُ ما في الملفّ — يُحترم ولا يُكتب فوقه */
       const decided = proposal && !OPEN.has(proposal.status)
-        ? `قُرّر فيه غيرُ ما في الملفّ: ${PROPOSAL_SAID[proposal.status] ?? proposal.status}`
+        ? `قرّر فيه غير ما في الملفّ: ${PROPOSAL_SAID[proposal.status] ?? proposal.status}`
           + (proposal.courseId ? ` بـ${proposal.courseId}` : '')
         : null
       let step: PlannedStep
@@ -421,14 +421,14 @@ export function planDecisions(file: DecisionsFile, world: DecisionsWorld): Decis
         step = add({
           kind: p.verdict,
           labelAr: p.verdict === 'link'
-            ? `ربطُ «${label}» بـ${courseId} — نسخةٌ من رمزٍ قائم`
-            : `«${label}» صار الدورةَ ${courseId}`,
+            ? `ربط «${label}» بـ${courseId} — نسخة من رمز قائم`
+            : `«${label}» صار الدورة ${courseId}`,
           state: missing ? 'blocked' : same ? 'done'
             : !courseStatus || courseStatus === 'archived' || decided ? 'blocked' : 'todo',
           reasonAr: missing ? noProposal
-            : same ? 'قائمٌ كما في الملفّ'
-              : !courseStatus ? `لا دورةَ بالرمز ${courseId} في الكتالوج بعد`
-                : courseStatus === 'archived' ? `الدورةُ ${courseId} مؤرشفة`
+            : same ? 'قائم كما في الملفّ'
+              : !courseStatus ? `لا دورة بالرمز ${courseId} في الكتالوج بعد`
+                : courseStatus === 'archived' ? `الدورة ${courseId} مؤرشفة`
                   : decided,
           proposalId: proposal?.id ?? null,
           courseId,
@@ -438,9 +438,9 @@ export function planDecisions(file: DecisionsFile, world: DecisionsWorld): Decis
         const same = proposal?.status === 'info_requested' && (proposal.questionAr ?? '').trim() === p.questionAr
         step = add({
           kind: 'ask',
-          labelAr: `سؤالُه عن «${label}»: ${p.questionAr}`,
+          labelAr: `سؤاله عن «${label}»: ${p.questionAr}`,
           state: missing ? 'blocked' : same ? 'done' : decided ? 'blocked' : 'todo',
-          reasonAr: missing ? noProposal : same ? 'سُئل هذا السؤالَ نفسَه' : decided,
+          reasonAr: missing ? noProposal : same ? 'سئل هذا السؤال نفسه' : decided,
           proposalId: proposal?.id ?? null,
           questionAr: p.questionAr,
         })
@@ -448,9 +448,9 @@ export function planDecisions(file: DecisionsFile, world: DecisionsWorld): Decis
         const same = proposal?.status === 'rejected'
         step = add({
           kind: 'reject',
-          labelAr: `ردُّ «${label}»: ${p.noteAr}`,
+          labelAr: `ردّ «${label}»: ${p.noteAr}`,
           state: missing ? 'blocked' : same ? 'done' : decided ? 'blocked' : 'todo',
-          reasonAr: missing ? noProposal : same ? 'مردودٌ من قبل' : decided,
+          reasonAr: missing ? noProposal : same ? 'مردود من قبل' : decided,
           proposalId: proposal?.id ?? null,
           noteAr: p.noteAr,
         })
@@ -464,9 +464,9 @@ export function planDecisions(file: DecisionsFile, world: DecisionsWorld): Decis
       const problem = !t || done ? null : world.withdrawProblem(t.status)
       add({
         kind: 'withdraw',
-        labelAr: `سحبُ طلبه: ${entry.statusNoteAr}`,
+        labelAr: `سحب طلبه: ${entry.statusNoteAr}`,
         state: done ? 'done' : problem || !t ? 'blocked' : 'todo',
-        reasonAr: done ? 'مسحوبٌ من قبل' : problem,
+        reasonAr: done ? 'مسحوب من قبل' : problem,
         noteAr: entry.statusNoteAr,
       })
     } else if (entry.status === 'suspend') {
@@ -474,11 +474,11 @@ export function planDecisions(file: DecisionsFile, world: DecisionsWorld): Decis
       const self = Boolean(profile?.userId && profile.userId === world.actorUserId)
       add({
         kind: 'suspend',
-        labelAr: `إيقافُه مدرّبا: ${entry.statusNoteAr}`,
+        labelAr: `إيقافه مدرّبا: ${entry.statusNoteAr}`,
         state: done ? 'done' : profile && !self ? 'todo' : 'blocked',
-        reasonAr: done ? 'موقوفٌ من قبل'
+        reasonAr: done ? 'موقوف من قبل'
           : !profile ? noProfile
-            : self ? 'هذا ملفُّك أنت — لا توقف نفسَك من هنا' : null,
+            : self ? 'هذا ملفّك أنت — لا توقف نفسك من هنا' : null,
         noteAr: entry.statusNoteAr,
       })
     }
@@ -503,7 +503,7 @@ export function planDecisions(file: DecisionsFile, world: DecisionsWorld): Decis
     const maker = steps[s.createdByStep - 1]
     if (maker.state === 'blocked' && s.state !== 'blocked') {
       s.state = 'blocked'
-      s.reasonAr = `يتبع الخطوةَ ${maker.n} ولا تُطبَّق`
+      s.reasonAr = `يتبع الخطوة ${maker.n} ولا تطبّق`
     }
   }
   /* والمدرّبُ الواحدُ قرارٌ واحد: خطوةٌ ممتنعةٌ تُبقي خطواتِه كلَّها كما هي */
@@ -513,7 +513,7 @@ export function planDecisions(file: DecisionsFile, world: DecisionsWorld): Decis
     const first = firstBlocked.get(s.reference)
     if (first === undefined || s.state !== 'todo') continue
     s.state = 'blocked'
-    s.reasonAr = `تُترك مع الخطوة ${first} التي لا تُطبَّق — قراراتُ المدرّب الواحد تُطبَّق معا أو تُترك معا`
+    s.reasonAr = `تترك مع الخطوة ${first} التي لا تطبّق — قرارات المدرّب الواحد تطبّق معا أو تترك معا`
   }
 
   const counts: Record<StepState, number> = { todo: 0, done: 0, blocked: 0 }

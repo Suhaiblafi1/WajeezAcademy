@@ -24,12 +24,12 @@ export function guideToc(now: Date): TocGroup[] {
   const byId = new Map(GUIDE_SECTIONS.map((s, i): [string, TocItem] =>
     [s.id, { id: s.id, label: shortTitle(s.title), n: i + 1, isNew: isNewSince(s.added, now) }]))
   return [
-    { title: 'قبل أن تبدأ', kind: 'before', items: [{ id: 'journey', label: 'رحلتُك في المنصّة' }, { id: 'first-week', label: 'أسبوعُك الأوّل' }] },
+    { title: 'قبل أن تبدأ', kind: 'before', items: [{ id: 'journey', label: 'رحلتك في المنصّة' }, { id: 'first-week', label: 'أسبوعك الأوّل' }] },
     ...GUIDE_PARTS.map((p): TocGroup => ({
       title: p.title,
       kind: 'part',
       items: p.ids.map((id) => byId.get(id)).filter((t): t is TocItem => !!t),
     })),
-    { title: 'مساعدة', kind: 'after', items: [{ id: 'faq', label: 'أسئلةٌ شائعة' }, { id: 'help', label: 'تحتاج مساعدة؟' }] },
+    { title: 'مساعدة', kind: 'after', items: [{ id: 'faq', label: 'أسئلة شائعة' }, { id: 'help', label: 'تحتاج مساعدة؟' }] },
   ]
 }

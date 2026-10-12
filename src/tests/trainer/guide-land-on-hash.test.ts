@@ -48,7 +48,7 @@ function fake(hash: string, { top = 5000, margin = '96px' } = {}) {
 }
 
 describe('① يهبط على القسم', () => {
-  it('في الإطار التالي — لا قبله، فرفعُ `ScrollToTop` إلى الأعلى يمضي أوّلا', () => {
+  it('في الإطار التالي — لا قبله، فرفع `ScrollToTop` إلى الأعلى يمضي أوّلا', () => {
     const f = fake('#standard')
     landOnHash(f.win, f.doc, IDS)
     expect(f.scrolls, 'هبط قبل الإطار').toEqual([])
@@ -57,21 +57,21 @@ describe('① يهبط على القسم', () => {
     expect(f.scrolls).toHaveLength(1)
   })
 
-  it('تحت هامشه: عنوانُ القسم لا يختفي تحت الشريط الثابت', () => {
+  it('تحت هامشه: عنوان القسم لا يختفي تحت الشريط الثابت', () => {
     const f = fake('#standard', { top: 5000, margin: '96px' })
     landOnHash(f.win, f.doc, IDS)
     f.frame()
     expect(f.scrolls[0].top).toBe(5000 - 96)
   })
 
-  it('عموديّا وحدَه — فلا تنزاح الصفحةُ جانبا', () => {
+  it('عموديّا وحده — فلا تنزاح الصفحة جانبا', () => {
     const f = fake('#standard')
     landOnHash(f.win, f.doc, IDS)
     f.frame()
     expect(f.scrolls[0]).not.toHaveProperty('left')
   })
 
-  it('ومرّةً بعد الخطوط — فهي تغيّر أطوالَ ما فوق القسم', async () => {
+  it('ومرّة بعد الخطوط — فهي تغيّر أطوال ما فوق القسم', async () => {
     const f = fake('#standard')
     landOnHash(f.win, f.doc, IDS)
     f.frame()
@@ -80,31 +80,31 @@ describe('① يهبط على القسم', () => {
   })
 })
 
-describe('② ولا يُنازع القارئ', () => {
+describe('② ولا ينازع القارئ', () => {
   for (const move of READER_MOVES) {
-    it(`من بدأ يتحرّك (${move}) قبل الخطوط لا يُشدّ إلى القسم بعدها`, async () => {
+    it(`من بدأ يتحرّك (${move}) قبل الخطوط لا يشدّ إلى القسم بعدها`, async () => {
       const f = fake('#standard')
       landOnHash(f.win, f.doc, IDS)
       f.frame()
       const stop = f.listeners.get(move)
-      expect(stop, `لا يُصغى إلى ${move}`).toBeTypeOf('function')
+      expect(stop, `لا يصغى إلى ${move}`).toBeTypeOf('function')
       stop!()
       await f.fonts()
       expect(f.scrolls).toHaveLength(1)
     })
   }
 
-  it('ومن غادر الصفحةَ قبل الإطار لا يُهبَط به', () => {
+  it('ومن غادر الصفحة قبل الإطار لا يهبط به', () => {
     const f = fake('#standard')
     const cleanup = landOnHash(f.win, f.doc, IDS)
     cleanup()
     f.frame()
     expect(f.scrolls).toEqual([])
-    expect(f.listeners.size, 'بقي مُصغٍ بعد المغادرة').toBe(0)
+    expect(f.listeners.size, 'بقي مصغ بعد المغادرة').toBe(0)
   })
 })
 
-describe('③ ولا يفعل شيئا لمرساةٍ ليست قسما', () => {
+describe('③ ولا يفعل شيئا لمرساة ليست قسما', () => {
   it.each(['', '#', '#nope', '#%E0%A4%A', '#main-content'])('«%s»', async (hash) => {
     const f = fake(hash)
     landOnHash(f.win, f.doc, IDS)
@@ -114,14 +114,14 @@ describe('③ ولا يفعل شيئا لمرساةٍ ليست قسما', () => 
     expect(f.listeners.size).toBe(0)
   })
 
-  it('والمرساةُ تُفكّ من ترميزها قبل أن تُطابَق', () => {
+  it('والمرساة تفكّ من ترميزها قبل أن تطابق', () => {
     expect(hashTarget('#first-login', IDS)).toBe('first-login')
     expect(hashTarget(`#${encodeURIComponent('first-login')}`, IDS)).toBe('first-login')
     expect(hashTarget('#%', IDS)).toBeNull()
   })
 })
 
-describe('④ والدليلُ يستعمله فعلا', () => {
+describe('④ والدليل يستعمله فعلا', () => {
   const rel = 'src/pages/trainer/Guide.tsx'
   const sf = ts.createSourceFile(rel, readFileSync(join(process.cwd(), rel), 'utf8'), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
   const page = sf.statements.find((s): s is ts.FunctionDeclaration =>
@@ -137,20 +137,20 @@ describe('④ والدليلُ يستعمله فعلا', () => {
     return out
   }
 
-  it('داخل أثرٍ (`useEffect`) في مكوّن الصفحة نفسِه', () => {
-    expect(page, 'لا مكوّنَ مصدَّرا افتراضيّا في Guide.tsx').toBeTruthy()
+  it('داخل أثر (`useEffect`) في مكوّن الصفحة نفسه', () => {
+    expect(page, 'لا مكوّن مصدّرا افتراضيّا في Guide.tsx').toBeTruthy()
     const inEffect = calls(page!, 'useEffect').filter((e) => calls(e.arguments[0], 'landOnHash').length > 0)
-    expect(inEffect, 'لا يُستدعى landOnHash في أثرٍ من آثار الصفحة').toHaveLength(1)
+    expect(inEffect, 'لا يستدعى landOnHash في أثر من آثار الصفحة').toHaveLength(1)
   })
 
-  it('بمعرّفات الفهرس — فكلُّ ما يدلّ عليه الفهرسُ يُهبَط عليه', () => {
+  it('بمعرّفات الفهرس — فكلّ ما يدلّ عليه الفهرس يهبط عليه', () => {
     const [call] = calls(page!, 'landOnHash')
     const ids = call.arguments[2]
-    expect(ts.isIdentifier(ids) && ids.text, 'المعرّفاتُ غيرُ معرّفات الفهرس').toBe('ids')
+    expect(ts.isIdentifier(ids) && ids.text, 'المعرّفات غير معرّفات الفهرس').toBe('ids')
     const decl = calls(page!, 'useMemo').find((c) => {
       const parent = c.parent
       return ts.isVariableDeclaration(parent) && ts.isIdentifier(parent.name) && parent.name.text === 'ids'
     })
-    expect(decl?.getText(sf), '`ids` لا يُبنى من الفهرس').toMatch(/tocGroups\.flatMap/)
+    expect(decl?.getText(sf), '`ids` لا يبنى من الفهرس').toMatch(/tocGroups\.flatMap/)
   })
 })

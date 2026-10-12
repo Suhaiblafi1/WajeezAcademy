@@ -64,7 +64,7 @@ interface Worklist {
 type BodyFilter = "all" | "missing" | "written";
 
 /* «١ وحدة» و«٣ وحدةً» خطأٌ يُقرأ في كلّ مرّة — والعددُ هنا يُقرأ لا يُحسب */
-const MODULE_FORMS = { one: "وحدةٌ", two: "وحدتان", few: "وحدات", many: "وحدةً" };
+const MODULE_FORMS = { one: "وحدة", two: "وحدتان", few: "وحدات", many: "وحدة" };
 
 const BODY_FILTERS: { id: BodyFilter; label: string }[] = [
   { id: "all", label: "الكلّ" },
@@ -103,12 +103,12 @@ const STATUS_AR: Record<string, string> = {
 };
 
 const PLACEHOLDER: Record<Tab, string> = {
-  body: "# عنوان الدرس\n\nفقرةٌ تشرح الفكرة.\n\n- نقطة\n- نقطة\n\n> اقتباس أو تنبيه",
-  checks: "س: نصّ السؤال\n- خيار خطأ\n+ خيار صحيح\nش: شرحُ الصواب",
+  body: "# عنوان الدرس\n\nفقرة تشرح الفكرة.\n\n- نقطة\n- نقطة\n\n> اقتباس أو تنبيه",
+  checks: "س: نصّ السؤال\n- خيار خطأ\n+ خيار صحيح\nش: شرح الصواب",
   video: "https://www.youtube.com/watch?v=...\n0:00 مقدّمة\n2:30 الفكرة الأولى",
-  scenario: "موقف: وصفُ الموقف المهنيّ\n\nعقدة: البداية\nنص: ما الذي تراه\n> خيارٌ أوّل\nأثر: ما يترتّب\nإلى: البداية",
-  practice: "نشاط: عنوانُ ما سيفعله على عملٍ حقيقيّ\nزمن: 55\nمخرَج: القطعةُ التي تدخل ملفَّه المهنيّ\nبديل: من لا عمل له: مهمّةٌ محدَّدةٌ بديلة\n> خطوة: 15 · ما يُفعل بالضبط في هذه الخطوة\n> خطوة: 25 · الخطوةُ الثانية\n> خطوة: 15 · الخطوةُ الثالثة",
-  rubric: "معيار: ما يُقاس به المخرَج\n- 3: وصفُ المستوى الأعلى بالسلوك\n- 2: وصفُ الأوسط\n- 1: وصفُ الأدنى\n\nمعيار: معيارٌ ثانٍ\n- 3: وصف\n- 2: وصف\n- 1: وصف",
+  scenario: "موقف: وصف الموقف المهنيّ\n\nعقدة: البداية\nنص: ما الذي تراه\n> خيار أوّل\nأثر: ما يترتّب\nإلى: البداية",
+  practice: "نشاط: عنوان ما سيفعله على عمل حقيقيّ\nزمن: 55\nمخرج: القطعة التي تدخل ملفّه المهنيّ\nبديل: من لا عمل له: مهمّة محدّدة بديلة\n> خطوة: 15 · ما يفعل بالضبط في هذه الخطوة\n> خطوة: 25 · الخطوة الثانية\n> خطوة: 15 · الخطوة الثالثة",
+  rubric: "معيار: ما يقاس به المخرج\n- 3: وصف المستوى الأعلى بالسلوك\n- 2: وصف الأوسط\n- 1: وصف الأدنى\n\nمعيار: معيار ثان\n- 3: وصف\n- 2: وصف\n- 1: وصف",
 };
 
 /** أخطاءُ الصيغة للتبويب الحالي — بالمحلّل نفسه الذي يحكم به الخادم */
@@ -187,15 +187,15 @@ export default function Authoring() {
         await apiPut(`${base}/draft`, {
           bodyAr: draft.bodyAr, checksAr: draft.checksAr, videoAr: draft.videoAr, scenarioAr: draft.scenarioAr,
         });
-        setNotice("حُفظت المسوّدة — ولا يراها متعلّم حتى تُنشر.");
+        setNotice("حفظت المسوّدة — ولا يراها متعلّم حتى تنشر.");
       } else if (kind === "submit") {
         const r = await apiPost<Draft>(`${base}/submit`);
         setDraft((d) => (d ? { ...d, status: r.status } : d));
-        setNotice("رُفعت للمراجعة. لا تعتمدها بنفسك — يراجعها غيرك.");
+        setNotice("رفعت للمراجعة. لا تعتمدها بنفسك — يراجعها غيرك.");
       } else if (kind === "withdraw") {
         const r = await apiPost<Draft>(`${base}/withdraw`);
         setDraft((d) => (d ? { ...d, status: r.status } : d));
-        setNotice("سُحبت من المراجعة — تستطيع تعديلها الآن.");
+        setNotice("سحبت من المراجعة — تستطيع تعديلها الآن.");
       } else if (kind === "approve" || kind === "changes") {
         /* الحلقةُ الوسطى: اعتمادٌ أكاديميّ يرفعها للأخير، أو ردٌّ إلى الكاتب */
         const r = await apiPost<Draft>(`${base}/review`, {
@@ -204,8 +204,8 @@ export default function Authoring() {
         });
         setDraft((d) => (d ? { ...d, status: r.status } : d));
         setNotice(kind === "approve"
-          ? "اعتُمدت أكاديميّا — وتنتظر الموافقة النهائية."
-          : "أُعيدت إلى كاتبها مع ملاحظتك.");
+          ? "اعتمدت أكاديميّا — وتنتظر الموافقة النهائية."
+          : "أعيدت إلى كاتبها مع ملاحظتك.");
         setNote("");
         await loadWork();
       } else {
@@ -216,8 +216,8 @@ export default function Authoring() {
         });
         setDraft((d) => (d ? { ...d, status: r.status } : d));
         setNotice(kind === "publish"
-          ? "نُشرت — يراها المتعلّم الآن باسم الأكاديمية."
-          : "أُعيدت إلى المدير الأكاديميّ مع ملاحظتك.");
+          ? "نشرت — يراها المتعلّم الآن باسم الأكاديمية."
+          : "أعيدت إلى المدير الأكاديميّ مع ملاحظتك.");
         setNote("");
         await loadWork();
       }
@@ -253,13 +253,13 @@ export default function Authoring() {
           icon={FileText}
           count={work?.missing ?? 0}
           forms={MODULE_FORMS}
-          waitingAr="تنتظر متنَها"
-          stats={work ? [`من ${fmtNum(work.total)} في الكتالوج`, `${fmtNum(work.withBody)} لها متنُها`] : []}
-          actionAr={bodyFilter === "missing" ? "ابدأ بأوّلها" : "اعرِضها"}
+          waitingAr="تنتظر متنها"
+          stats={work ? [`من ${fmtNum(work.total)} في الكتالوج`, `${fmtNum(work.withBody)} لها متنها`] : []}
+          actionAr={bodyFilter === "missing" ? "ابدأ بأوّلها" : "اعرضها"}
           /* السببُ يُقال ولا يُترك بهتانا صامتا: الزرُّ يبهت لأنّ اللسانَ
              على ما بلا متنٍ والبحثُ لا يُظهر منها شيئا — وهذا ما يُقرأ. */
           disabledReasonAr={bodyFilter === "missing" && rows.length === 0
-            ? "التبويبُ على ما بلا متنٍ ولا يُظهر البحثُ منها شيئا — امسحه لتبدأ."
+            ? "التبويب على ما بلا متن ولا يظهر البحث منها شيئا — امسحه لتبدأ."
             : undefined}
           onAction={() => {
             /* اللسانُ يُضبط أوّلا كي يكون الطابورُ طابورَ ما بلا متن،
@@ -267,7 +267,7 @@ export default function Authoring() {
             if (bodyFilter !== "missing") { setBodyFilter("missing"); return; }
             if (rows[0]) void open(rows[0]);
           }}
-          doneAr={<>كلُّ وحدات الكتالوج لها متنُها — {fmtNum(work?.total ?? 0)} وحدة. لا عملَ منتظرا هنا.</>}
+          doneAr={<>كلّ وحدات الكتالوج لها متنها — {fmtNum(work?.total ?? 0)} وحدة. لا عمل منتظرا هنا.</>}
         />
       )}
 
@@ -328,9 +328,9 @@ export default function Authoring() {
           ) : rows.length === 0 ? (
             <p className="py-8 text-center text-read leading-6 text-muted-foreground">
               {bodyFilter === "missing"
-                ? "لا وحدةَ بلا متن هنا — اكتمل ما اخترتَه."
+                ? "لا وحدة بلا متن هنا — اكتمل ما اخترته."
                 : bodyFilter === "written"
-                  ? "لا وحدةَ لها متنٌ بعد في هذا النطاق."
+                  ? "لا وحدة لها متن بعد في هذا النطاق."
                   : "لا نتيجة لهذا البحث."}
             </p>
           ) : (
@@ -379,9 +379,9 @@ export default function Authoring() {
         <Card as="section">
           {!selected ? (
             <p className="py-20 text-center text-sm leading-7 text-muted-foreground">
-              اختر وحدةً من الطابور لتبدأ.
+              اختر وحدة من الطابور لتبدأ.
               <br />
-              <span className="text-xs text-muted-foreground">الترتيب يضع من ينتظره متعلّمٌ مسجَّلٌ أوّلا.</span>
+              <span className="text-xs text-muted-foreground">الترتيب يضع من ينتظره متعلّم مسجّل أوّلا.</span>
             </p>
           ) : !draft ? (
             <div className="grid place-items-center py-20"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
@@ -396,7 +396,7 @@ export default function Authoring() {
                   </p>
                 </div>
                 <p className="max-w-xs rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-read leading-5 text-muted-foreground">
-                  يُنشر باسم الأكاديمية — لا يظهر اسم كاتبه للمتعلّم.
+                  ينشر باسم الأكاديمية — لا يظهر اسم كاتبه للمتعلّم.
                 </p>
               </header>
 
@@ -404,7 +404,7 @@ export default function Authoring() {
                   فلا يحتاج الشريطُ خانةً لكلِّ زينةٍ في لسان. */}
               <TabBar
                 className="mb-3"
-                ariaLabel="أجزاءُ الوحدة"
+                ariaLabel="أجزاء الوحدة"
                 value={tab}
                 onChange={setTab}
                 items={TABS.map((t) => ({
@@ -458,7 +458,7 @@ export default function Authoring() {
                       <LessonBody body={value} />
                     ) : liveErrors.length > 0 ? (
                       <p className="py-10 text-center text-read leading-6 text-muted-foreground">
-                        تُعرض المعاينة حين تصحّ الصيغة.
+                        تعرض المعاينة حين تصحّ الصيغة.
                       </p>
                     ) : tab === "checks" ? (
                       <ModuleCheck raw={value} moduleId={`preview-${selected.moduleId}`} />
@@ -493,10 +493,10 @@ export default function Authoring() {
                       disabled={busy !== "" || liveErrors.length > 0 || !draft.bodyAr?.trim()}
                       loading={busy === "submit"}
                     >
-                      رفعٌ للمراجعة
+                      رفع للمراجعة
                     </Button>
                     {!draft.bodyAr?.trim() && (
-                      <span className="text-fine text-muted-foreground">لا تُرفع وحدةٌ بلا متن.</span>
+                      <span className="text-fine text-muted-foreground">لا ترفع وحدة بلا متن.</span>
                     )}
                   </>
                 )}
@@ -504,7 +504,7 @@ export default function Authoring() {
                 {isReview && (
                   <Button tone="secondary" type="button" icon={Undo2}
                     onClick={() => void act("withdraw")} disabled={busy !== ""}>
-                    سحبٌ للتعديل
+                    سحب للتعديل
                   </Button>
                 )}
 
@@ -516,24 +516,24 @@ export default function Authoring() {
                 {isReview && canDecide && (
                   <Inset tone="warn" className="flex w-full flex-wrap items-center gap-2">
                     <p className="flex w-full items-center gap-1.5 text-read font-black text-gold">
-                      <ShieldCheck className="h-3.5 w-3.5" /> الاعتماد الأكاديميّ — ولا يعتمد أحدٌ ما كتبه
+                      <ShieldCheck className="h-3.5 w-3.5" /> الاعتماد الأكاديميّ — ولا يعتمد أحد ما كتبه
                     </p>
                     <input
                       value={note} onChange={(e) => setNote(e.target.value)}
-                      aria-label="سببُ الإعادة الأكاديميّة — ما الذي يُعدَّل؟"
-                      placeholder="ما الذي يُعدَّل؟ (مطلوبٌ عند الإعادة)"
+                      aria-label="سبب الإعادة الأكاديميّة — ما الذي يعدّل؟"
+                      placeholder="ما الذي يعدّل؟ (مطلوب عند الإعادة)"
                       className="min-h-9 min-w-[16rem] flex-1 rounded-lg border border-white/10 bg-transparent px-3 py-2 text-xs outline-none placeholder:text-muted-foreground/75 focus:border-gold/50"
                     />
                     <Button tone="confirm" type="button"
                       onClick={() => void act("approve")} disabled={busy !== ""}>
-                      اعتمِدها أكاديميّا
+                      اعتمدها أكاديميّا
                     </Button>
                     <Button tone="secondary" type="button"
                       onClick={() => void act("changes")} disabled={busy !== "" || note.trim().length < 5}>
-                      إعادةٌ إلى الكاتب مع ملاحظة
+                      إعادة إلى الكاتب مع ملاحظة
                     </Button>
                     <p className="w-full text-read leading-5 text-muted-foreground">
-                      الاعتمادُ لا ينشر — يرفعها إلى الموافقة النهائية، ولا يراها متعلّمٌ قبلها.
+                      الاعتماد لا ينشر — يرفعها إلى الموافقة النهائية، ولا يراها متعلّم قبلها.
                     </p>
                   </Inset>
                 )}
@@ -542,26 +542,26 @@ export default function Authoring() {
                   canFinalApprove ? (
                     <Inset tone="accent" className="flex w-full flex-wrap items-center gap-2">
                       <p className="flex w-full items-center gap-1.5 text-read font-black text-teal-light-ink">
-                        <ShieldCheck className="h-3.5 w-3.5" /> الموافقة النهائية — ولا يوقّعها كاتبُها ولا مَن اعتمدها أكاديميّا
+                        <ShieldCheck className="h-3.5 w-3.5" /> الموافقة النهائية — ولا يوقّعها كاتبها ولا من اعتمدها أكاديميّا
                       </p>
                       <input
                         value={note} onChange={(e) => setNote(e.target.value)}
-                        aria-label="سببُ إعادة الموافقة النهائيّة"
-                        placeholder="سببُ الإعادة (مطلوبٌ عند الإعادة)"
+                        aria-label="سبب إعادة الموافقة النهائيّة"
+                        placeholder="سبب الإعادة (مطلوب عند الإعادة)"
                         className="min-h-9 min-w-[16rem] flex-1 rounded-lg border border-white/10 bg-transparent px-3 py-2 text-xs outline-none placeholder:text-muted-foreground/75 focus:border-teal/50"
                       />
                       <Button tone="confirm" type="button"
                         onClick={() => void act("publish")} disabled={busy !== ""}>
-                        وافِق وانشر
+                        وافق وانشر
                       </Button>
                       <Button tone="secondary" type="button"
                         onClick={() => void act("return")} disabled={busy !== "" || note.trim().length < 5}>
-                        أعِدها للمدير الأكاديميّ
+                        أعدها للمدير الأكاديميّ
                       </Button>
                     </Inset>
                   ) : (
                     <Inset as="p" className="w-full text-read leading-6 text-muted-foreground">
-                      اعتُمدت أكاديميّا وتنتظر الموافقة النهائية — وهي بحبّةِ صلاحيةٍ لا يملكها حسابك.
+                      اعتمدت أكاديميّا وتنتظر الموافقة النهائية — وهي بحبّة صلاحية لا يملكها حسابك.
                     </Inset>
                   )
                 )}

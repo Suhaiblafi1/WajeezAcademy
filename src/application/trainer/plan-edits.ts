@@ -25,6 +25,7 @@
 import { STAGE_LABELS, type ReviewSection } from './review-notes'
 import type { ScheduleEdit } from './schedule-proposal'
 import { compactGapsAr, NOTE_SUGGESTION_AR, NOW_SUGGEST_SEP, WEEKDAY_AR } from './plan-scorecard'
+import { plainAr } from '../text/plain-ar'
 import { PLAN_MAX } from './plan-limits'
 import { kindForCategory, RESOURCE_CATEGORIES, RESOURCE_KINDS, type ResourceCategory } from './plan-overlay'
 import { whenAr } from '../learning/cohort-gate'
@@ -175,8 +176,8 @@ function matches(r: ResourceFields, m: ResourceMatch): boolean {
 /** موضعُ المصدر المقصود — أو لماذا لا يُعرف */
 export function findResource(resources: readonly ResourceFields[], m: ResourceMatch): Checked<number> {
   const hits = resources.map((r, i) => (matches(r, m) ? i : -1)).filter((i) => i >= 0)
-  if (hits.length === 0) return { ok: false, problemAr: `لا مصدرَ في الخطّة بعنوان «${m.title}»${m.url ? ' ورابطِه' : ''}` }
-  if (hits.length > 1) return { ok: false, problemAr: `في الخطّة أكثرُ من مصدرٍ بعنوان «${m.title}» — سمِّ محورَه ليُعرف المقصود` }
+  if (hits.length === 0) return { ok: false, problemAr: `لا مصدر في الخطّة بعنوان «${m.title}»${m.url ? ' ورابطه' : ''}` }
+  if (hits.length > 1) return { ok: false, problemAr: `في الخطّة أكثر من مصدر بعنوان «${m.title}» — سمّ محوره ليعرف المقصود` }
   return { ok: true, value: hits[0] }
 }
 
@@ -190,19 +191,19 @@ const LIMITS: Partial<Record<string, number>> = {
 
 function textProblem(field: string, v: unknown): string | null {
   const max = LIMITS[field]
-  if (max !== undefined && typeof v === 'string' && v.length > max) return `«${FIELD_AR[field] ?? field}» أطولُ من ${max} حرف`
-  if (field === 'titleAr' && !(typeof v === 'string' && v.trim().length >= 2)) return 'عنوانُ المحور لا يُمحى'
+  if (max !== undefined && typeof v === 'string' && v.length > max) return `«${FIELD_AR[field] ?? field}» أطول من ${max} حرف`
+  if (field === 'titleAr' && !(typeof v === 'string' && v.trim().length >= 2)) return 'عنوان المحور لا يمحى'
   return null
 }
 
 function resourceProblem(r: Partial<ResourceFields>, c: EditableContent): string | null {
-  if (r.title !== undefined && !(typeof r.title === 'string' && r.title.trim().length >= 2)) return 'عنوانُ المصدر قصيرٌ أو فارغ'
-  if (typeof r.title === 'string' && r.title.length > PLAN_MAX.resourceTitle) return `عنوانُ المصدر أطولُ من ${PLAN_MAX.resourceTitle} حرف`
-  if (typeof r.url === 'string' && r.url.length > PLAN_MAX.resourceUrl) return 'الرابطُ أطولُ من المسموح'
+  if (r.title !== undefined && !(typeof r.title === 'string' && r.title.trim().length >= 2)) return 'عنوان المصدر قصير أو فارغ'
+  if (typeof r.title === 'string' && r.title.length > PLAN_MAX.resourceTitle) return `عنوان المصدر أطول من ${PLAN_MAX.resourceTitle} حرف`
+  if (typeof r.url === 'string' && r.url.length > PLAN_MAX.resourceUrl) return 'الرابط أطول من المسموح'
   if (typeof r.url === 'string' && r.url.trim() && !/^https?:\/\//i.test(r.url.trim())) return `الرابطُ «${r.url}» لا يبدأ بـhttp`
-  if (r.kind != null && !(RESOURCE_KINDS as readonly string[]).includes(r.kind)) return `نوعُ المصدر «${r.kind}» ليس من الأنواع`
-  if (r.category != null && !(RESOURCE_CATEGORIES as readonly string[]).includes(r.category)) return `صنفُ المصدر «${r.category}» ليس من الأصناف`
-  if (r.moduleId && !hasModule(c, r.moduleId)) return `لا محورَ «${r.moduleId}» في الخطّة`
+  if (r.kind != null && !(RESOURCE_KINDS as readonly string[]).includes(r.kind)) return `نوع المصدر «${r.kind}» ليس من الأنواع`
+  if (r.category != null && !(RESOURCE_CATEGORIES as readonly string[]).includes(r.category)) return `صنف المصدر «${r.category}» ليس من الأصناف`
+  if (r.moduleId && !hasModule(c, r.moduleId)) return `لا محور «${r.moduleId}» في الخطّة`
   return null
 }
 
@@ -214,9 +215,9 @@ export function contentBefore(edit: PlanEdit, c: EditableContent): Checked<EditS
   switch (edit.kind) {
     case 'module': {
       const m = c.modules.find((x) => x.moduleId === edit.moduleId)
-      if (!m) return { ok: false, problemAr: `لا محورَ «${edit.moduleId}» في الخطّة` }
+      if (!m) return { ok: false, problemAr: `لا محور «${edit.moduleId}» في الخطّة` }
       const keys = Object.keys(edit.set) as ModuleEditField[]
-      if (keys.length === 0) return { ok: false, problemAr: 'تعديلُ محورٍ بلا حقلٍ يُعدَّل' }
+      if (keys.length === 0) return { ok: false, problemAr: 'تعديل محور بلا حقل يعدّل' }
       for (const k of keys) {
         if (!(MODULE_EDIT_FIELDS as readonly string[]).includes(k)) return { ok: false, problemAr: `«${k}» ليس من حقول المحور` }
         const p = textProblem(k, edit.set[k]); if (p) return { ok: false, problemAr: p }
@@ -225,18 +226,18 @@ export function contentBefore(edit: PlanEdit, c: EditableContent): Checked<EditS
     }
     case 'plan': {
       const keys = Object.keys(edit.set) as PlanEditField[]
-      if (keys.length === 0) return { ok: false, problemAr: 'تعديلٌ بلا حقلٍ يُعدَّل' }
+      if (keys.length === 0) return { ok: false, problemAr: 'تعديل بلا حقل يعدّل' }
       for (const k of keys) {
-        if (!(PLAN_EDIT_FIELDS as readonly string[]).includes(k)) return { ok: false, problemAr: `«${k}» ليس ممّا يُعدَّل في الخطّة` }
+        if (!(PLAN_EDIT_FIELDS as readonly string[]).includes(k)) return { ok: false, problemAr: `«${k}» ليس ممّا يعدّل في الخطّة` }
         const p = textProblem(k, edit.set[k]); if (p) return { ok: false, problemAr: p }
       }
       return { ok: true, value: pick(c as unknown as Record<string, unknown>, keys) }
     }
     case 'resource_add': {
       const p = resourceProblem(edit.resource, c); if (p) return { ok: false, problemAr: p }
-      if (c.resources.length >= PLAN_MAX.resources) return { ok: false, problemAr: `في الخطّة ${PLAN_MAX.resources} مصدرا — الحدُّ الأعلى` }
+      if (c.resources.length >= PLAN_MAX.resources) return { ok: false, problemAr: `في الخطّة ${PLAN_MAX.resources} مصدرا — الحدّ الأعلى` }
       if (c.resources.some((r) => matches(r, { title: edit.resource.title, url: edit.resource.url ?? null, moduleId: edit.resource.moduleId ?? null }))) {
-        return { ok: false, problemAr: `المصدرُ «${edit.resource.title}» في الخطّة فعلا` }
+        return { ok: false, problemAr: `المصدر «${edit.resource.title}» في الخطّة فعلا` }
       }
       return { ok: true, value: null }
     }
@@ -245,7 +246,7 @@ export function contentBefore(edit: PlanEdit, c: EditableContent): Checked<EditS
       if (!at.ok) return at
       if (edit.kind === 'resource_change') {
         const keys = Object.keys(edit.set)
-        if (keys.length === 0) return { ok: false, problemAr: 'تعديلُ مصدرٍ بلا حقلٍ يُعدَّل' }
+        if (keys.length === 0) return { ok: false, problemAr: 'تعديل مصدر بلا حقل يعدّل' }
         const bad = keys.find((k) => !(RESOURCE_EDIT_FIELDS as readonly string[]).includes(k))
         if (bad) return { ok: false, problemAr: `«${bad}» ليس من حقول المصدر` }
         const p = resourceProblem(edit.set, c); if (p) return { ok: false, problemAr: p }
@@ -253,7 +254,7 @@ export function contentBefore(edit: PlanEdit, c: EditableContent): Checked<EditS
       return { ok: true, value: pick(c.resources[at.value] as unknown as Record<string, unknown>, RESOURCE_EDIT_FIELDS) }
     }
     default:
-      return { ok: false, problemAr: 'هذا التعديلُ لا يقع في محتوى الخطّة' }
+      return { ok: false, problemAr: 'هذا التعديل لا يقع في محتوى الخطّة' }
   }
 }
 
@@ -263,42 +264,42 @@ const isInstant = (v: unknown) => typeof v === 'string' && /^\d{4}-\d\d-\d\dT/.t
     وما يُعرف من صفّه (أهو من هذه الشعبة؟ ما موعدُه الآن؟) يفحصه الخادم */
 export function rowEditProblem(edit: PlanEdit, c: EditableContent): string | null {
   const taskFields = (t: Partial<TaskFields>): string | null => {
-    if (t.title !== undefined && !(typeof t.title === 'string' && t.title.trim().length >= 3)) return 'عنوانُ المهمّة أقصرُ من ثلاثة أحرف'
-    if (t.moduleId && !hasModule(c, t.moduleId)) return `لا محورَ «${t.moduleId}» في الخطّة`
-    if (t.maxScore != null && !(Number.isInteger(t.maxScore) && t.maxScore >= 1)) return 'الدرجةُ العظمى عددٌ صحيحٌ من ١ فما فوق'
-    if (t.dueAt != null && !isInstant(t.dueAt)) return `موعدُ المهمّة «${t.dueAt}» ليس لحظةً مقروءة`
-    if (typeof t.briefAr === 'string' && t.briefAr.length > 4000) return 'تعليماتُ المهمّة أطولُ من ٤٠٠٠ حرف'
+    if (t.title !== undefined && !(typeof t.title === 'string' && t.title.trim().length >= 3)) return 'عنوان المهمّة أقصر من ثلاثة أحرف'
+    if (t.moduleId && !hasModule(c, t.moduleId)) return `لا محور «${t.moduleId}» في الخطّة`
+    if (t.maxScore != null && !(Number.isInteger(t.maxScore) && t.maxScore >= 1)) return 'الدرجة العظمى عدد صحيح من ١ فما فوق'
+    if (t.dueAt != null && !isInstant(t.dueAt)) return `موعد المهمّة «${t.dueAt}» ليس لحظة مقروءة`
+    if (typeof t.briefAr === 'string' && t.briefAr.length > 4000) return 'تعليمات المهمّة أطول من ٤٠٠٠ حرف'
     return null
   }
   switch (edit.kind) {
     case 'task_add':
-      if (!['assignment', 'quiz', 'project'].includes(edit.task.type)) return `نوعُ المهمّة «${edit.task.type}» ليس من الأنواع`
+      if (!['assignment', 'quiz', 'project'].includes(edit.task.type)) return `نوع المهمّة «${edit.task.type}» ليس من الأنواع`
       return taskFields(edit.task)
     case 'task_change': {
       const keys = Object.keys(edit.set)
-      if (keys.length === 0) return 'تعديلُ مهمّةٍ بلا حقلٍ يُعدَّل'
+      if (keys.length === 0) return 'تعديل مهمّة بلا حقل يعدّل'
       const bad = keys.find((k) => !(TASK_EDIT_FIELDS as readonly string[]).includes(k))
       if (bad) return `«${bad}» ليس من حقول المهمّة`
       return taskFields(edit.set)
     }
     case 'session_move':
-      if (!isInstant(edit.startsAt) || !isInstant(edit.endsAt)) return 'موعدُ اللقاء ليس لحظةً مقروءة'
-      if (Date.parse(edit.endsAt) <= Date.parse(edit.startsAt)) return 'نهايةُ اللقاء قبل بدايته'
+      if (!isInstant(edit.startsAt) || !isInstant(edit.endsAt)) return 'موعد اللقاء ليس لحظة مقروءة'
+      if (Date.parse(edit.endsAt) <= Date.parse(edit.startsAt)) return 'نهاية اللقاء قبل بدايته'
       return null
     case 'session_remove': case 'note':
       return null
     case 'schedule': {
-      if (edit.moves.length === 0) return 'جدولٌ بلا لقاءٍ يُنقل'
-      if (new Set(edit.moves.map((m) => m.sessionId)).size !== edit.moves.length) return 'لقاءٌ منقولٌ مرّتين في الجدول نفسِه'
+      if (edit.moves.length === 0) return 'جدول بلا لقاء ينقل'
+      if (new Set(edit.moves.map((m) => m.sessionId)).size !== edit.moves.length) return 'لقاء منقول مرّتين في الجدول نفسه'
       for (const m of edit.moves) {
-        if (!isInstant(m.startsAt) || !isInstant(m.endsAt)) return 'موعدُ لقاءٍ في الجدول ليس لحظةً مقروءة'
-        if (Date.parse(m.endsAt) <= Date.parse(m.startsAt)) return 'نهايةُ لقاءٍ في الجدول قبل بدايته'
+        if (!isInstant(m.startsAt) || !isInstant(m.endsAt)) return 'موعد لقاء في الجدول ليس لحظة مقروءة'
+        if (Date.parse(m.endsAt) <= Date.parse(m.startsAt)) return 'نهاية لقاء في الجدول قبل بدايته'
       }
-      if (edit.tasks.some((t) => !isInstant(t.dueAt))) return 'موعدُ مهمّةٍ في الجدول ليس لحظةً مقروءة'
+      if (edit.tasks.some((t) => !isInstant(t.dueAt))) return 'موعد مهمّة في الجدول ليس لحظة مقروءة'
       return null
     }
     default:
-      return 'هذا التعديلُ يقع في محتوى الخطّة لا في صفّ'
+      return 'هذا التعديل يقع في محتوى الخطّة لا في صفّ'
   }
 }
 
@@ -334,12 +335,12 @@ export function sessionMoveChainProblem(
   const t0 = (v: Date | string) => new Date(v).getTime()
   const clash = sessions.find((x) => x.id !== s.id
     && t0(x.startsAt) < end && (x.endsAt ? t0(x.endsAt) : t0(x.startsAt) + 2 * 3_600_000) > start)
-  if (clash) return `يقع على لقاء «${clash.title ?? ''}» في الوقت نفسِه`
+  if (clash) return `يقع على لقاء «${clash.title ?? ''}» في الوقت نفسه`
   const was = t0(s.startsAt)
   const mods = s.moduleIds ?? []
   const before = tasks.find((t) => t.dueAt && t.moduleId && mods.includes(t.moduleId)
     && t0(t.dueAt) > was && t0(t.dueAt) <= start)
-  if (before) return `موعدُ مهمّة «${before.title ?? ''}» يصير قبل اللقاء الذي تُشرح فيه`
+  if (before) return `موعد مهمّة «${before.title ?? ''}» يصير قبل اللقاء الذي تشرح فيه`
   return null
 }
 
@@ -376,13 +377,13 @@ export function scheduleSnapshot(
   const out: Record<string, unknown> = {}
   for (const m of edit.moves) {
     const s = sessions.find((x) => x.id === m.sessionId)
-    if (!s) return { ok: false, problemAr: 'في الجدول لقاءٌ لا وجودَ له في الشعبة — لعلّه حُذف' }
+    if (!s) return { ok: false, problemAr: 'في الجدول لقاء لا وجود له في الشعبة — لعلّه حذف' }
     out[`s:${s.id}:startsAt`] = iso(s.startsAt)
     out[`s:${s.id}:endsAt`] = iso(s.endsAt)
   }
   for (const t of edit.tasks) {
     const row = tasks.find((x) => x.id === t.assessmentId)
-    if (!row) return { ok: false, problemAr: 'في الجدول مهمّةٌ لا وجودَ لها في الشعبة — لعلّها حُذفت' }
+    if (!row) return { ok: false, problemAr: 'في الجدول مهمّة لا وجود لها في الشعبة — لعلّها حذفت' }
     out[`t:${row.id}:dueAt`] = iso(row.dueAt)
   }
   return { ok: true, value: out }
@@ -447,7 +448,7 @@ export function applyContentEdit<C extends EditableContent>(c: C, edit: PlanEdit
       return { ok: true, value: { ...c, resources: c.resources.filter((_, i) => i !== at.value) } }
     }
     default:
-      return { ok: false, problemAr: 'هذا التعديلُ لا يقع في محتوى الخطّة' }
+      return { ok: false, problemAr: 'هذا التعديل لا يقع في محتوى الخطّة' }
   }
 }
 
@@ -458,17 +459,17 @@ export const editsContent = (edit: PlanEdit): boolean =>
 /* ─────────── العرض: «قبل» و«بعد» بلغة المدرّب ─────────── */
 
 const FIELD_AR: Record<string, string> = {
-  titleAr: 'العنوان', outcomeAr: 'المخرَج', activityAr: 'التطبيقُ العمليّ', artifactAr: 'ما يسلّمه المتعلّم',
-  bodyAr: 'المحتوى النظريّ', summaryAr: 'النبذة', liveNoteAr: 'ملاحظةُ اللقاءات',
+  titleAr: 'العنوان', outcomeAr: 'المخرج', activityAr: 'التطبيق العمليّ', artifactAr: 'ما يسلّمه المتعلّم',
+  bodyAr: 'المحتوى النظريّ', summaryAr: 'النبذة', liveNoteAr: 'ملاحظة اللقاءات',
   title: 'العنوان', url: 'الرابط', kind: 'النوع', category: 'الصنف', noteAr: 'لماذا هذا المصدر',
-  moduleId: 'المحور', preReading: 'قراءةٌ قبل اللقاء', briefAr: 'التعليمات', dueAt: 'الموعد', maxScore: 'الدرجةُ العظمى',
+  moduleId: 'المحور', preReading: 'قراءة قبل اللقاء', briefAr: 'التعليمات', dueAt: 'الموعد', maxScore: 'الدرجة العظمى',
   type: 'النوع', when: 'الموعد',
 }
 const KIND_AR: Record<string, string> = {
   link: 'رابط', video: 'فيديو', book: 'كتاب', audiobook: 'كتاب صوتيّ', social: 'منشور', file: 'ملفّ',
 }
 const CATEGORY_AR: Record<string, string> = {
-  recorded: 'دوراتٌ مسجّلة', reading: 'كتبٌ وملفّات', public: 'فيديوهاتٌ وروابطُ عامّة',
+  recorded: 'دورات مسجّلة', reading: 'كتب وملفّات', public: 'فيديوهات وروابط عامّة',
 }
 const TASK_TYPE_AR: Record<string, string> = { assignment: 'واجب', quiz: 'اختبار', project: 'مشروع' }
 
@@ -521,7 +522,7 @@ function rowsFor(fields: readonly string[], before: Record<string, unknown> | nu
 }
 
 const moduleNoAr = (id: string | null | undefined, ctx: EditContext) => {
-  if (!id) return 'للشعبة كلِّها'
+  if (!id) return 'للشعبة كلّها'
   const i = ctx.moduleIds.indexOf(id)
   return i >= 0 ? `للمحور ${i + 1}` : `للمحور «${id}»`
 }
@@ -551,33 +552,33 @@ export function planEditView(edit: PlanEdit, before: EditSnapshot, ctx: EditCont
     case 'resource_add': {
       const r = resourceAsSaved(edit.resource) as unknown as Record<string, unknown>
       const fields = ['title', 'url', 'category', 'noteAr', 'preReading'].filter((f) => norm(r[f]) !== null)
-      return view(`مصدرٌ جديدٌ ${moduleNoAr(edit.resource.moduleId, ctx)}`, rowsFor(fields, null, r, ctx))
+      return view(`مصدر جديد ${moduleNoAr(edit.resource.moduleId, ctx)}`, rowsFor(fields, null, r, ctx))
     }
     case 'resource_change': {
       const keys = Object.keys(edit.set)
-      return view(`تعديلُ مصدر: «${edit.match.title}»`, rowsFor(keys, before, edit.set as Record<string, unknown>, ctx))
+      return view(`تعديل مصدر: «${edit.match.title}»`, rowsFor(keys, before, edit.set as Record<string, unknown>, ctx))
     }
     case 'resource_remove':
-      return view(`حذفُ مصدر: «${edit.match.title}»`, rowsFor(['title', 'url', 'moduleId'], before, null, ctx))
+      return view(`حذف مصدر: «${edit.match.title}»`, rowsFor(['title', 'url', 'moduleId'], before, null, ctx))
     case 'task_add': {
       const t = edit.task as unknown as Record<string, unknown>
       const fields = ['title', 'type', 'briefAr', 'dueAt', 'maxScore'].filter((f) => norm(t[f]) !== null)
-      return view(`مهمّةٌ جديدةٌ ${moduleNoAr(edit.task.moduleId, ctx)}`, rowsFor(fields, null, t, ctx))
+      return view(`مهمّة جديدة ${moduleNoAr(edit.task.moduleId, ctx)}`, rowsFor(fields, null, t, ctx))
     }
     case 'task_change': {
       const name = ctx.taskTitle?.(edit.assessmentId) ?? 'مهمّة'
       const keys = Object.keys(edit.set)
-      return view(`تعديلُ مهمّة: «${name}»`, rowsFor(keys, before, edit.set as Record<string, unknown>, ctx))
+      return view(`تعديل مهمّة: «${name}»`, rowsFor(keys, before, edit.set as Record<string, unknown>, ctx))
     }
     case 'session_move': {
       const name = ctx.sessionTitle?.(edit.sessionId) ?? 'لقاء'
-      return view(`نقلُ لقاء: «${name}»`, [{
+      return view(`نقل لقاء: «${name}»`, [{
         labelAr: FIELD_AR.when, beforeAr: sessionWhenAr(before), afterAr: sessionWhenAr({ startsAt: edit.startsAt, endsAt: edit.endsAt }),
       }])
     }
     case 'session_remove': {
       const name = ctx.sessionTitle?.(edit.sessionId) ?? 'لقاء'
-      return view(`حذفُ لقاء: «${name}»`, [{ labelAr: FIELD_AR.when, beforeAr: sessionWhenAr(before), afterAr: null }])
+      return view(`حذف لقاء: «${name}»`, [{ labelAr: FIELD_AR.when, beforeAr: sessionWhenAr(before), afterAr: null }])
     }
     case 'schedule': {
       /* صفٌّ لكلّ لقاءٍ منقول: ما كان وما نقترح — ثمّ مواعيدُ المهامّ التي تتبعها. واللقطةُ مسطّحة
@@ -590,16 +591,16 @@ export function planEditView(edit: PlanEdit, before: EditSnapshot, ctx: EditCont
       }))
       for (const t of edit.tasks) {
         rows.push({
-          labelAr: `موعدُ «${ctx.taskTitle?.(t.assessmentId) ?? 'مهمّة'}»`,
+          labelAr: `موعد «${ctx.taskTitle?.(t.assessmentId) ?? 'مهمّة'}»`,
           beforeAr: valueAr('dueAt', b[`t:${t.assessmentId}:dueAt`], ctx),
           afterAr: valueAr('dueAt', t.dueAt, ctx),
         })
       }
-      return view(`جدولٌ ثابت: ${WEEKDAY_AR[edit.weekday] ?? ''} ${edit.clock} كلَّ أسبوع`, rows)
+      return view(`جدول ثابت: ${WEEKDAY_AR[edit.weekday] ?? ''} ${edit.clock} كلّ أسبوع`, rows)
     }
     case 'note': {
       /* نقاطٌ سطرا سطرا — و«مطلوب»/«مقترَح» في أوّل السطر (من بطاقة المعايير) يصير وسمَه */
-      const where = edit.step === 'general' ? 'ملاحظةٌ عامّة' : `ملاحظةٌ على «${STAGE_LABELS[edit.step]}»`
+      const where = edit.step === 'general' ? 'ملاحظة عامّة' : `ملاحظة على «${STAGE_LABELS[edit.step]}»`
       const stepAr = edit.step === 'general' ? 'عامّة' : STAGE_LABELS[edit.step]
       /* والنقطةُ ذاتُ «الآن ← نقترح» صفٌّ بخانتيه كالتعديل: ما هو الآن، وما نقترحه */
       return {
@@ -615,7 +616,7 @@ export function planEditView(edit: PlanEdit, before: EditSnapshot, ctx: EditCont
 
 /* ─────────── ملاحظاتُ الردّ بنودا (١١ أكتوبر ٢٠٢٦) ─────────── */
 
-const TAG_AT_START = /^(مطلوب|مقترَح|مقترح)\s*[—–-]\s*/
+const TAG_AT_START = /^(مطلوب|مقترح|مقترح)\s*[—–-]\s*/
 
 export interface NotePoint {
   textAr: string
@@ -630,12 +631,13 @@ export interface NotePoint {
 /** نقاطُ الملاحظة: سطرٌ لكلّ نقطة، بلا علامة تعداد، و«مطلوب»/«مقترَح» وسمٌ إن بدأ به السطر. وسطرُ بطاقة
     المعايير «الاسم: الآن … ← نقترح: …» يُقرأ بخانتيه — والقديمُ بلا «نقترح» يُستدلّ على اقتراحه باسم معياره */
 export function notePoints(text: string): NotePoint[] {
-  return text.split('\n')
+  /* وما حُفظ قبل «اللغة البيضاء» مشكولٌ — فيُقرأ بلا تشكيلٍ كالجديد (`plain-ar.ts`) */
+  return plainAr(text).split('\n')
     .map((l) => l.trim().replace(/^[-•·*]\s+/, '').replace(/^\d+[.)]\s+/, ''))
     .filter(Boolean)
     .map((l) => {
       const m = TAG_AT_START.exec(l)
-      const tagAr = m ? (m[1] === 'مطلوب' ? 'مطلوب' : 'مقترَح') : null
+      const tagAr = m ? (m[1] === 'مطلوب' ? 'مطلوب' : 'مقترح') : null
       const body = m ? l.slice(m[0].length) : l
       return { textAr: body, tagAr, ...nowAndSuggest(body) }
     })
@@ -647,7 +649,7 @@ function nowAndSuggest(body: string): Pick<NotePoint, 'labelAr' | 'nowAr' | 'sug
   const labelAr = body.slice(0, at).trim()
   const rest = body.slice(at + 2)
   const sep = rest.indexOf(NOW_SUGGEST_SEP)
-  const known = NOTE_SUGGESTION_AR[labelAr]
+  const known = NOTE_SUGGESTION_AR[labelAr] ?? Object.entries(NOTE_SUGGESTION_AR).find(([k]) => plainAr(k) === labelAr)?.[1]
   if (sep < 0 && !known) return {}
   const rawNow = (sep < 0 ? rest : rest.slice(0, sep)).replace(/^الآن\s+/, '').trim()
   const suggestAr = sep < 0 ? known! : rest.slice(sep + NOW_SUGGEST_SEP.length).trim()
@@ -655,7 +657,7 @@ function nowAndSuggest(body: string): Pick<NotePoint, 'labelAr' | 'nowAr' | 'sug
 }
 
 /** أهذا سطرُ «واقترحنا على خطّتك…» الذي تكتبه المنصّةُ ملاحظةً عامّةً حين يُردّ بالتعديلات وحدَها؟ */
-export const isEditsLineAr = (text: string): boolean => /^واقترحنا على خطّتك .+، جاهزةً في صفحة الشعبة/.test(text.trim())
+export const isEditsLineAr = (text: string): boolean => /^واقترحنا على خطّتك .+، جاهزة في صفحة الشعبة/.test(plainAr(text).trim())
 
 /** بنودُ الملاحظات من ملاحظات الردّ — العامّةُ أوّلا ثمّ بترتيب الخطوات. والعامّةُ التي كتبتها المنصّةُ
     من عدّ التعديلات (`isEditsLineAr`) لا بندَ لها: تذكر ما في البطاقات نفسِها */
@@ -675,11 +677,11 @@ export function noteItemsFrom(
 /** سطرُ الرسالة حين تصحبها تعديلاتٌ مقترحة — أو لا شيء */
 export function suggestedEditsLineAr(count: number, required: number): string | null {
   if (count <= 0) return null
-  const n = count === 1 ? 'تعديلًا واحدا' : count === 2 ? 'تعديلَين' : count <= 10 ? `${count} تعديلات` : `${count} تعديلًا`
+  const n = count === 1 ? 'تعديلا واحدا' : count === 2 ? 'تعديلين' : count <= 10 ? `${count} تعديلات` : `${count} تعديلا`
   const req = required <= 0 ? ''
-    : required === count ? (count === 1 ? ' (مطلوب)' : ' (كلُّها مطلوبة)')
-    : required === 1 ? ' (منها واحدٌ مطلوب)'
+    : required === count ? (count === 1 ? ' (مطلوب)' : ' (كلّها مطلوبة)')
+    : required === 1 ? ' (منها واحد مطلوب)'
     : required === 2 ? ' (منها اثنان مطلوبان)'
     : ` (منها ${required} مطلوبة)`
-  return `واقترحنا على خطّتك ${n}${req}، جاهزةً في صفحة الشعبة: ترى كلًّا بما قبله وما بعده، فتقبله أو ترفضه — وما تقبله يُكتب في خطّتك.`
+  return `واقترحنا على خطّتك ${n}${req}، جاهزة في صفحة الشعبة: ترى كلّا بما قبله وما بعده، فتقبله أو ترفضه — وما تقبله يكتب في خطّتك.`
 }

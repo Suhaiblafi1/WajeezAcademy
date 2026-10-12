@@ -90,7 +90,7 @@ export default function LearnerSearchField({
       {hits !== null && (
         <ul className="absolute z-20 mt-1 max-h-56 w-full overflow-y-auto rounded-xl border border-border bg-surface p-1 shadow-2xl">
           {hits.length === 0 && (
-            <li className="px-3 py-2 text-read text-muted-foreground">لا متعلّمَ بهذا الاسم أو البريد.</li>
+            <li className="px-3 py-2 text-read text-muted-foreground">لا متعلّم بهذا الاسم أو البريد.</li>
           )}
           {hits.map((h) => (
             <li key={h.id}>
@@ -102,7 +102,7 @@ export default function LearnerSearchField({
               >
                 <span className="truncate text-xs font-bold text-foreground">{h.displayName}</span>
                 <span className="flex shrink-0 items-center gap-2">
-                  {h.enrolled && <span className="rounded-full bg-white/10 px-2 py-0.5 text-fine font-bold text-muted-foreground">مسجَّلٌ هنا</span>}
+                  {h.enrolled && <span className="rounded-full bg-white/10 px-2 py-0.5 text-fine font-bold text-muted-foreground">مسجّل هنا</span>}
                   <span dir="ltr" className="text-fine text-muted-foreground">{h.email}</span>
                 </span>
               </button>

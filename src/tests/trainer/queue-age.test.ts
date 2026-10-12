@@ -27,48 +27,48 @@ describe('ما ينتظرنا يتلوّن', () => {
     expect(queueAge('under_review', daysAgo(days), NOW)?.tone).toBe(tone)
   })
 
-  it('والحدّان عند طرفَيهما لا بعدهما بيوم', () => {
+  it('والحدّان عند طرفيهما لا بعدهما بيوم', () => {
     expect(queueAge('submitted', daysAgo(AGE_WARN_DAYS - 1), NOW)?.tone).toBe('calm')
     expect(queueAge('submitted', daysAgo(AGE_WARN_DAYS), NOW)?.tone).toBe('warn')
     expect(queueAge('submitted', daysAgo(AGE_LATE_DAYS - 1), NOW)?.tone).toBe('warn')
     expect(queueAge('submitted', daysAgo(AGE_LATE_DAYS), NOW)?.tone).toBe('late')
   })
 
-  it('وكلُّ حالةٍ تنتظرنا تقول «عندنا»', () => {
+  it('وكلّ حالة تنتظرنا تقول «عندنا»', () => {
     for (const status of AWAITING_US) {
       expect(queueAge(status, daysAgo(3), NOW)?.ar, status).toContain('عندنا')
     }
   })
 })
 
-describe('وما ينتظر صاحبَه يُقال ولا يتلوّن', () => {
+describe('وما ينتظر صاحبه يقال ولا يتلوّن', () => {
   it.each([...AWAITING_APPLICANT])('«%s» يبقى هادئا مهما طال', (status) => {
     const old = queueAge(status, daysAgo(60), NOW)
-    expect(old?.tone, `${status}: احمرَّ وهو ينتظر صاحبَه`).toBe('calm')
+    expect(old?.tone, `${status}: احمرّ وهو ينتظر صاحبه`).toBe('calm')
     expect(old?.ar).toContain('بانتظاره')
   })
 })
 
-describe('ومن لا عمرَ له', () => {
+describe('ومن لا عمر له', () => {
   it.each(['active', 'rejected', 'withdrawn', 'suspended', 'waitlisted'])('«%s» بلا شارة', (status) => {
     expect(queueAge(status, daysAgo(30), NOW)).toBeNull()
   })
 
-  it('وبلا تاريخٍ لا تُخترع شارة', () => {
+  it('وبلا تاريخ لا تخترع شارة', () => {
     expect(queueAge('submitted', null, NOW)).toBeNull()
     expect(queueAge('submitted', undefined, NOW)).toBeNull()
     expect(queueAge('submitted', 'ليس تاريخا', NOW)).toBeNull()
   })
 })
 
-describe('وصيغةُ العدد عربيّة', () => {
+describe('وصيغة العدد عربيّة', () => {
   it.each([
     [0, 'اليوم'], [1, '1 يوم'], [2, '2 يومين'], [5, '5 أيّام'], [11, '11 يوما'],
   ] as const)('%i يوما → «%s»', (days, text) => {
     expect(queueAge('under_review', daysAgo(days), NOW)?.ar).toContain(text)
   })
 
-  it('وساعةٌ في المستقبل لا تُقرأ «منذ -١»', () => {
+  it('وساعة في المستقبل لا تقرأ «منذ -١»', () => {
     /* فرقُ ساعةِ خادمٍ عن متصفّح يجعل `since` بعد `now` بثوانٍ */
     const ahead = new Date(NOW.getTime() + 3_600_000)
     expect(queueAge('submitted', ahead, NOW)?.days).toBe(0)
@@ -83,14 +83,14 @@ describe('وصيغةُ العدد عربيّة', () => {
    والدالّةُ باقيةٌ ومحروسةٌ فوقَ هذا السطر: قاعدتُها صحيحةٌ وإن لم تُعرض،
    ومن أرادها في موضعٍ آخرَ وجدها كما تُركت. وما يُحرس هنا أنّها **لا تعود
    إلى الصفّ** بلا قرارٍ جديد. */
-describe('والشاشةُ لا تعرض العمرَ في الصفّ', () => {
-  it('لا الدالّةُ تُنادى فيه ولا ساعةٌ تُرسم — ولوحُ السابقِ يُعرض بشرطه', async () => {
+describe('والشاشة لا تعرض العمر في الصفّ', () => {
+  it('لا الدالّة تنادى فيه ولا ساعة ترسم — ولوح السابق يعرض بشرطه', async () => {
     const { readFileSync } = await import('node:fs')
     const src = readFileSync(new URL('../../pages/admin/TrainerApplications.tsx', import.meta.url), 'utf8')
       .replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '')
-    expect(src, 'عادت شارةُ العمر إلى الصفّ').not.toContain('queueAge(')
-    expect(src, 'عادت أيقونةُ الساعة إلى الصفّ').not.toContain('<Clock')
-    expect(src, 'لوحُ «تقدّم سابقا» يُعرض بلا شرطٍ أو لا يُعرض')
+    expect(src, 'عادت شارة العمر إلى الصفّ').not.toContain('queueAge(')
+    expect(src, 'عادت أيقونة الساعة إلى الصفّ').not.toContain('<Clock')
+    expect(src, 'لوح «تقدّم سابقا» يعرض بلا شرط أو لا يعرض')
       .toMatch(/a\.priorApplications\?\.length \?\? 0\) > 0/)
   })
 })

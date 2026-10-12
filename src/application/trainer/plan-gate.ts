@@ -102,19 +102,19 @@ export function boardNextStep<T extends GateItem & { labelAr: string }>(input: {
 }): BoardNext | null {
   const { planStatus, registrationOpen, checklist } = input
   if (planStatus === 'submitted') {
-    return { key: 'awaiting_decision', labelAr: 'أُرسلت — بانتظار قرار الإدارة، ويصلك هنا وبالبريد', waiting: true }
+    return { key: 'awaiting_decision', labelAr: 'أرسلت — بانتظار قرار الإدارة، ويصلك هنا وبالبريد', waiting: true }
   }
   /* والمؤجّلةُ ليست ردّا بتعديلاتٍ لهذا الفصل — تُسمّى بموسمها (`plan-postpone.ts`) */
   if (planStatus === 'changes_requested' && input.postponedTo) {
-    return { key: 'postponed', labelAr: `${postponedLineAr(input.postponedTo)} — لم تُقبل لهذا الفصل. عدّلها متى شئت، وأرسلها بمواعيدَ من موسمها` }
+    return { key: 'postponed', labelAr: `${postponedLineAr(input.postponedTo)} — لم تقبل لهذا الفصل. عدّلها متى شئت، وأرسلها بمواعيد من موسمها` }
   }
   if (planStatus === 'changes_requested') {
-    return { key: 'address_notes', labelAr: 'اقرأ ملاحظةَ الإدارة في رأس كلّ خطوة، وعدّل، ثمّ أعِد الإرسال' }
+    return { key: 'address_notes', labelAr: 'اقرأ ملاحظة الإدارة في رأس كلّ خطوة، وعدّل، ثمّ أعد الإرسال' }
   }
   if (planStatus === 'approved' || planStatus === 'published') {
     return registrationOpen
       ? null
-      : { key: 'awaiting_open', labelAr: 'اعتُمدت — وتفتحها الأكاديميةُ للتسجيل، فتراها هنا مفتوحة', waiting: true }
+      : { key: 'awaiting_open', labelAr: 'اعتمدت — وتفتحها الأكاديمية للتسجيل، فتراها هنا مفتوحة', waiting: true }
   }
   const next = blockingBeforeSubmit(checklist)[0] ?? checklist.find((i) => !i.done) ?? null
   return next ? { key: next.key, labelAr: next.labelAr } : null

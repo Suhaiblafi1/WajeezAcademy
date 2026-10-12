@@ -34,17 +34,17 @@ interface HealthGroup { titleAr: string; items: HealthItem[] }
 interface Snapshot { groups: HealthGroup[]; worst: Level; checkedAt: string }
 
 const TONE: Record<Level, { chip: string; box: string; icon: typeof AlertTriangle; labelAr: string }> = {
-  broken: { chip: "bg-red-500/20 text-red-200", box: "border-red-400/35", icon: AlertTriangle, labelAr: "معطَّل" },
+  broken: { chip: "bg-red-500/20 text-red-200", box: "border-red-400/35", icon: AlertTriangle, labelAr: "معطّل" },
   attention: { chip: "bg-gold/20 text-gold-ink", box: "border-gold/30", icon: Clock, labelAr: "يحتاج نظرة" },
   ok: { chip: "bg-teal/20 text-teal-light-ink", box: "border-white/10", icon: CheckCircle2, labelAr: "سليم" },
-  unknown: { chip: "bg-white/10 text-muted-foreground", box: "border-white/10", icon: CircleHelp, labelAr: "لم يُقرأ" },
+  unknown: { chip: "bg-white/10 text-muted-foreground", box: "border-white/10", icon: CircleHelp, labelAr: "لم يقرأ" },
 };
 
 const HEADLINE: Record<Level, string> = {
-  broken: "فيه ما هو معطَّلٌ الآن — اقرأ البنودَ الحمراء أوّلا",
-  attention: "لا شيءَ معطَّل، وفيه ما يحتاج نظرة",
-  ok: "كلُّ ما يُقاس سليم",
-  unknown: "بعضُ ما يُقاس لم يُقرأ",
+  broken: "فيه ما هو معطّل الآن — اقرأ البنود الحمراء أوّلا",
+  attention: "لا شيء معطّل، وفيه ما يحتاج نظرة",
+  ok: "كلّ ما يقاس سليم",
+  unknown: "بعض ما يقاس لم يقرأ",
 };
 
 export default function SystemHealth() {
@@ -58,7 +58,7 @@ export default function SystemHealth() {
       setData(await apiGet<Snapshot>("/api/admin/system-health"));
       setError("");
     } catch (e) {
-      setError(permissionMessage(e, e instanceof ApiError ? e.message : "تعذّر قراءةُ حالة النظام"));
+      setError(permissionMessage(e, e instanceof ApiError ? e.message : "تعذّر قراءة حالة النظام"));
     } finally {
       setBusy(false);
     }
@@ -76,8 +76,8 @@ export default function SystemHealth() {
     <AdminLayout title="صحّة النظام">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <p className="text-read leading-6 text-muted-foreground">
-          محسوبةٌ من حالة القاعدة عند فتح الصفحة — لا رقمَ محفوظا هنا.
-          {data && <span className="mr-2 text-muted-foreground">آخرُ قراءة: {fmtDateTime(new Date(data.checkedAt))}</span>}
+          محسوبة من حالة القاعدة عند فتح الصفحة — لا رقم محفوظا هنا.
+          {data && <span className="mr-2 text-muted-foreground">آخر قراءة: {fmtDateTime(new Date(data.checkedAt))}</span>}
         </p>
         <Button tone="secondary" type="button" onClick={() => void load()} disabled={busy}>
           {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />} اقرأ الآن
@@ -90,7 +90,7 @@ export default function SystemHealth() {
 
       {data === null && !error && (
         <Panel className="grid place-items-center py-20">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" aria-label="تُقرأ الحالة" />
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" aria-label="تقرأ الحالة" />
         </Panel>
       )}
 

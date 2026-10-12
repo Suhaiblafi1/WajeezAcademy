@@ -33,7 +33,7 @@ export const TASK_FIELD_LABELS: Record<TaskField, string> = {
   briefAr: 'التعليمات',
   type: 'النوع',
   maxScore: 'الدرجة العظمى',
-  dueAt: 'آخرُ موعد',
+  dueAt: 'آخر موعد',
   moduleId: 'المحور',
   attachments: 'المرفقات',
 }
@@ -231,16 +231,16 @@ export function planApprovalApplies(review: TaskReview): boolean {
 /* ═══ ما يُقال — للمدرّب في مهمّته، وللمعتمِد في قائمته ═══ */
 
 export const TASK_REVIEW_TRAINER_AR: Partial<Record<TaskReview, string>> = {
-  new: 'جديدةٌ — تنتظر اعتمادَ الإدارة، ولا يراها المتعلّمون قبله',
-  edit: 'تعديلُك ينتظر اعتمادَ الإدارة — ويرى المتعلّمون المعتمَدَ حتّى يُعتمَد',
-  remove: 'طلبتَ حذفَها — وتبقى عند المتعلّمين حتّى تعتمده الإدارة',
-  declined: 'ردّت الإدارةُ طلبَك',
+  new: 'جديدة — تنتظر اعتماد الإدارة، ولا يراها المتعلّمون قبله',
+  edit: 'تعديلك ينتظر اعتماد الإدارة — ويرى المتعلّمون المعتمد حتّى يعتمد',
+  remove: 'طلبت حذفها — وتبقى عند المتعلّمين حتّى تعتمده الإدارة',
+  declined: 'ردّت الإدارة طلبك',
 }
 
 export const TASK_REVIEW_ADMIN_AR: Partial<Record<TaskReview, string>> = {
-  new: 'مهمّةٌ جديدة',
-  edit: 'تعديلُ مهمّةٍ منشورة',
-  remove: 'حذفُ مهمّةٍ منشورة',
+  new: 'مهمّة جديدة',
+  edit: 'تعديل مهمّة منشورة',
+  remove: 'حذف مهمّة منشورة',
 }
 
 export interface TaskValueFormat {

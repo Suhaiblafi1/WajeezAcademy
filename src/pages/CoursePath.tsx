@@ -59,8 +59,8 @@ const ORDINAL_AR: readonly string[] = ["", "أولى", "ثانية", "ثالثة
     من «منظومة كاملة» في صفحة المسار، وحلّت محلَّ بطاقة «مشروعها العملي». */
 const COURSE_COMPANIONS = [
   { icon: MonitorPlay, t: "وحدات مسجّلة وجلسات مباشرة", d: "فيديو لكلّ وحدة، وجلسة حيّة مع المدرّب، ومهمّة تطبيقيّة." },
-  { icon: ClipboardCheck, t: "واجبات يراجعها مدرّب بشري", d: "يقرأ عملك ويردّ بتغذيةٍ راجعة عمليّة — لا تصحيحا آليّا." },
-  { icon: Library, t: "ملخّصات وجيز", d: "ملخّصاتٌ من مكتبة المنصّة تُكمل موضوع الدورة." },
+  { icon: ClipboardCheck, t: "واجبات يراجعها مدرّب بشري", d: "يقرأ عملك ويردّ بتغذية راجعة عمليّة — لا تصحيحا آليّا." },
+  { icon: Library, t: "ملخّصات وجيز", d: "ملخّصات من مكتبة المنصّة تكمل موضوع الدورة." },
   { icon: Headset, t: "مستشار تراسله", d: "قبل الشراء وبعده — يجيب أسئلتك ويرشدك لخطوتك التالية." },
 ] as const;
 
@@ -194,7 +194,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
     if (!hasCoreCatalog()) {
       return (
         <div dir="rtl" className="grid min-h-screen place-items-center bg-paper text-muted-foreground">
-          جارٍ تحميل الكتالوج…
+          جار تحميل الكتالوج…
         </div>
       );
     }
@@ -202,7 +202,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
       <div dir="rtl" className="grid min-h-screen place-items-center bg-paper px-6 text-center text-foreground">
         <div>
           <p className="text-lg font-black">لم نجد هذه الدورة</p>
-          <p className="mt-2 text-sm text-muted-foreground">قد تكون أُعيدت تسميتها أو نُقلت إلى مسار آخر.</p>
+          <p className="mt-2 text-sm text-muted-foreground">قد تكون أعيدت تسميتها أو نقلت إلى مسار آخر.</p>
           <Link to="/courses" className="mt-5 inline-block rounded-2xl bg-teal-deep px-7 py-3 font-bold">
             تصفّح الدورات
           </Link>
@@ -294,7 +294,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
   return (
     <div dir="rtl" className="min-h-screen bg-paper text-foreground">
       <SeoHead
-        title={`ابنِ مسارك من «${anchor.name}»`}
+        title={`ابن مسارك من «${anchor.name}»`}
         description={`ابدأ بدورة «${anchor.name}» وأضف إليها ما يكملها — وادفع ثمن ما اخترته وحده.`}
         path={`/build/${anchor.id}`}
       />
@@ -572,16 +572,16 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                  يُقرأ ثمنَ أربع. فلا رقم — ويُقال السبب. */
               <div className="space-y-1 text-read leading-5">
                 <p className="text-sm font-black text-foreground">
-                  {pricesLoaded ? "يُعلن السعر مع فتح الشعبة" : "يُقرأ السعر…"}
+                  {pricesLoaded ? "يعلن السعر مع فتح الشعبة" : "يقرأ السعر…"}
                 </p>
                 <p className="text-read leading-5 text-muted-foreground">
                   {pricesLoaded && pricing.priced > 0
-                    ? `${pricing.priced} من ${pricing.count} من دوراتك لها شعبة مسعَّرة، والباقي لم تُفتح شعبته بعد. ولا نعرض مجموعا ناقصا.`
-                    : "نُسعّر كل شعبة على حدة، ولا نعرض رقما قبل أن يكون هو الرقم الذي تدفعه."}
+                    ? `${pricing.priced} من ${pricing.count} من دوراتك لها شعبة مسعّرة، والباقي لم تفتح شعبته بعد. ولا نعرض مجموعا ناقصا.`
+                    : "نسعّر كل شعبة على حدة، ولا نعرض رقما قبل أن يكون هو الرقم الذي تدفعه."}
                 </p>
                 {pricing.discountPct > 0 && (
                   <p className="text-read font-bold text-teal-light-ink">
-                    وخصم بناء المسار عند {pricing.count} دورات — {pricing.discountPct}٪ — قائمٌ لك حين تُفتح الشعب.
+                    وخصم بناء المسار عند {pricing.count} دورات — {pricing.discountPct}٪ — قائم لك حين تفتح الشعب.
                   </p>
                 )}
                 {/* «حين تُفتح الشعب» — ومتى تُفتح؟ (البند ٥٢) */}
@@ -617,11 +617,11 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                 </Button>
               </div>
               {promoApplied && (
-                <p className="mt-1.5 text-read font-bold text-teal-light-ink">طُبِّق خصم {promoPct}٪ {FIRST_TIME_PROMO.labelAr}.</p>
+                <p className="mt-1.5 text-read font-bold text-teal-light-ink">طبّق خصم {promoPct}٪ {FIRST_TIME_PROMO.labelAr}.</p>
               )}
               {pendingCode && (
                 <p className="mt-1.5 text-read leading-6 text-gold-ink">
-                  يُحسب الكود <span dir="ltr" className="font-mono">{pendingCode}</span> عند الدفع — نتحقّق منه هناك ونقول على أيّ دوراتك يقع.
+                  يحسب الكود <span dir="ltr" className="font-mono">{pendingCode}</span> عند الدفع — نتحقّق منه هناك ونقول على أيّ دوراتك يقع.
                 </p>
               )}
               {/* الفئات من مصدر السياسة لا من نصٍّ مكتوب هنا: نسبةٌ تُذكر في
@@ -669,7 +669,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
               className="mt-3.5 h-11 w-full rounded-full bg-gold px-6 text-sm font-black text-on-gold hover:bg-gold/90"
             >
               <CalendarDays className="ml-2 h-4 w-4" />
-              {picked.length === 1 ? "اشترِ هذه الدورة" : `اشترِ (${picked.length} دورات)`}
+              {picked.length === 1 ? "اشتر هذه الدورة" : `اشتر (${picked.length} دورات)`}
             </Button>
 
             {/* التنبيه — بالكلفة الحقيقية للدورة الإضافية لا بسعرها المعلن.
@@ -693,8 +693,8 @@ function CoursePathPage({ courseId }: { courseId: string }) {
               <Inset as="p" className="mt-2.5 flex items-start gap-2 px-3.5 py-2.5 text-read leading-5 text-muted-foreground">
                 <ListChecks className="mt-0.5 h-3.5 w-3.5 shrink-0 text-teal-light-ink" />
                 <span>
-                  بلغتَ {MAX_BUILT_COURSES} دورات — وهو حدّ ما تبنيه بنفسك. ليس بخلا بل حمايةٌ لإنهائه:
-                  خطةٌ تُنجَز خير من خطةٍ تُشترى. وما تختاره بعدها يُحفظ لمرحلتك التالية أدناه.
+                  بلغت {MAX_BUILT_COURSES} دورات — وهو حدّ ما تبنيه بنفسك. ليس بخلا بل حماية لإنهائه:
+                  خطة تنجز خير من خطة تشترى. وما تختاره بعدها يحفظ لمرحلتك التالية أدناه.
                 </span>
               </Inset>
             )}
@@ -720,7 +720,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
               مرحلتك التالية — محفوظة لك
             </h2>
             <p className="mt-1.5 text-read leading-relaxed text-muted-foreground">
-              اخترتها بعد بلوغ الحد، فحفظناها بدل رفضها. أنهِ مسارك الأول ثم ابنِ هذه — أو احذف واحدة من الخمس أعلاه وأدخِلها مكانها.
+              اخترتها بعد بلوغ الحد، فحفظناها بدل رفضها. أنه مسارك الأول ثم ابن هذه — أو احذف واحدة من الخمس أعلاه وأدخلها مكانها.
             </p>
             <ul className="mt-3.5 space-y-2">
               {deferred.map((id) => {
@@ -757,7 +757,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
           <Panel as="section" className="mt-4 sm:p-4">
             <h2 className="flex items-center gap-2 text-base font-black">
               <Layers className="h-4 w-4 text-teal-light-ink" />
-              ابنِ مسارك بنفسك
+              ابن مسارك بنفسك
             </h2>
             <p className="mt-1.5 text-read leading-relaxed text-muted-foreground">
               أضف دورات أخرى قريبة من اهتمامك.
@@ -795,10 +795,10 @@ function CoursePathPage({ courseId }: { courseId: string }) {
           <Panel as="section" tone="warn" className="mt-4 sm:p-4">
             <h2 className="flex items-center gap-2 text-base font-black text-gold-ink">
               <Save className="h-4 w-4" />
-              سمِّ مسارك
+              سمّ مسارك
             </h2>
             <p className="mt-1.5 text-sm leading-relaxed text-foreground">
-              أنت رتّبت هذه الدورات لحاجتك. سمِّها، ونحفظها عندنا — فقد تصير مسارا معتمدا لغيرك، وقد نعود إليك
+              أنت رتّبت هذه الدورات لحاجتك. سمّها، ونحفظها عندنا — فقد تصير مسارا معتمدا لغيرك، وقد نعود إليك
               فيه. الاسم وقائمة دوراتك فقط، بلا شيء آخر.
             </p>
             <div className="mt-4 flex flex-wrap gap-3">
@@ -816,7 +816,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                 variant="outline"
                 className="h-11 rounded-xl border-gold/60 px-5 text-sm font-black text-gold-ink hover:bg-gold/10 disabled:opacity-40"
               >
-                {saveState === "saving" ? "جارٍ الحفظ…" : saveState === "saved" ? "حُفظ — شكرا لك" : "احفظ اسمه"}
+                {saveState === "saving" ? "جار الحفظ…" : saveState === "saved" ? "حفظ — شكرا لك" : "احفظ اسمه"}
               </Button>
             </div>
             {saveState === "failed" && (
@@ -828,7 +828,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
         )}
 
         <p className="mt-8 text-center text-read text-muted-foreground">
-          دفع آمن — يصلك تأكيد فوري على بريدك وتُفتح منصة الطالب الخاصة بك
+          دفع آمن — يصلك تأكيد فوري على بريدك وتفتح منصة الطالب الخاصة بك
         </p>
       </main>
 

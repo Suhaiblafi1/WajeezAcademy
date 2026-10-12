@@ -67,21 +67,21 @@ export interface OutreachKind {
 export const OUTREACH: readonly OutreachKind[] = [
   {
     action: 'trainer.interview.remind',
-    ar: 'ذُكّر بحجز الموعد',
+    ar: 'ذكّر بحجز الموعد',
     /* مِحَكُّ `remindToBookInterview` بعينه: حالةٌ يُحجَز فيها، ولا موعدَ قائم.
        فمن حجز ذهبت شارتُه، ومن ألغى موعدَه عادت — وهو أحوجُ الناس إليها. */
     pending: (a) => canRemindToBook({ status: a.status, liveInterviews: a.interviewsCount }),
   },
   {
     action: 'trainer.application.draft_remind',
-    ar: 'ذُكّر بإكمال الطلب',
+    ar: 'ذكّر بإكمال الطلب',
     /* ومِحَكُّ `remindDraftApplicant`: «مسودة» وحدَها. فمن أكملها صار مقدَّما
        كغيره — «وكأنّه أوّلَ مرّة يقدّم». */
     pending: (a) => a.status === 'draft',
   },
   {
     action: 'trainer.no_show.followup',
-    ar: 'تُوبع بعد غيابه',
+    ar: 'توبع بعد غيابه',
     /* ═══ ومِحَكٌّ واحدٌ يخدم الرسالتَين معا ═══
 
        `canRemindToBook` هو الجواب في الحالَين بلا تفريع: من تُوبع برسالة
@@ -115,13 +115,13 @@ export const OUTREACH: readonly OutreachKind[] = [
         مراسَلات. */
   {
     action: 'trainer.demo.request',
-    ar: 'طُلب منه درسٌ تجريبيّ',
+    ar: 'طلب منه درس تجريبيّ',
     pending: (a) => a.demosCount === 0
       && (REVIEW_OPEN_STATUSES as readonly string[]).includes(a.status),
   },
   {
     action: 'trainer.info_requested.notify',
-    ar: 'طُلبت منه معلومات',
+    ar: 'طلبت منه معلومات',
     /* وهذه تُقرأ من الحالة لا من مِحَكِّ الإرسال: بابُ الطلب مفتوحٌ في ثمانِ
        حالات (`INFO_REQUESTABLE`)، لكنّ **المعلَّقَ** حالةٌ واحدة — أن يكون
        الطلبُ واقفا ينتظر ردَّه. فإن نُقل عنها فقد أُجيب أو مضى الأمر. */

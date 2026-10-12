@@ -34,7 +34,7 @@ export function validateCvFile(file: CvFileLike): { ok: true } | { ok: false; re
     return { ok: false, reason_ar: 'الصيغة غير مسموحة — ارفع ملف PDF أو DOC أو DOCX فقط.' }
   }
   if (!ALLOWED_MIME.has(file.type)) {
-    return { ok: false, reason_ar: 'نوع الملف لا يطابق صيغته — تأكد أنه ملف سيرة ذاتية حقيقي وليس ملفا مُعاد تسميته.' }
+    return { ok: false, reason_ar: 'نوع الملف لا يطابق صيغته — تأكد أنه ملف سيرة ذاتية حقيقي وليس ملفا معاد تسميته.' }
   }
   if (file.size <= 0) {
     return { ok: false, reason_ar: 'الملف فارغ — اختر ملف سيرتك الفعلي.' }

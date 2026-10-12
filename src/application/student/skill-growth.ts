@@ -43,12 +43,12 @@ export interface RemeasureGate {
  */
 export function remeasureGate(f: CompletionFacts): RemeasureGate {
   if (f.enrollmentStatus === 'dropped') return { open: false, reasonAr: 'تسجيلك في هذه الدورة منسحب — لا قياس بعديّ عليه' }
-  if (f.enrollmentStatus === 'waitlisted') return { open: false, reasonAr: 'أنت في قائمة الانتظار — يُفتح القياس بعد الالتحاق والإتمام' }
+  if (f.enrollmentStatus === 'waitlisted') return { open: false, reasonAr: 'أنت في قائمة الانتظار — يفتح القياس بعد الالتحاق والإتمام' }
   if (f.hasCertificate) return { open: true, reasonAr: 'صدرت شهادتك في هذه الدورة' }
   if (f.enrollmentStatus === 'completed') return { open: true, reasonAr: 'تسجيلك مكتمل' }
   if (f.rulesChecked > 0 && f.rulesMet) return { open: true, reasonAr: 'تحققت قواعد إكمال الدورة' }
   if (f.rulesChecked === 0) {
-    return { open: false, reasonAr: 'لم تُعتمد بعد قواعد إكمال لهذه الدورة — يُفتح القياس عند اعتماد إتمامك رسميا' }
+    return { open: false, reasonAr: 'لم تعتمد بعد قواعد إكمال لهذه الدورة — يفتح القياس عند اعتماد إتمامك رسميا' }
   }
   return { open: false, reasonAr: `أكمل متطلبات الدورة أولا — تقدمك الآن ${f.percent}٪` }
 }

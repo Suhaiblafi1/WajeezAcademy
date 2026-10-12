@@ -33,8 +33,8 @@ async function zipOf(entries: Record<string, string>, name = 'حزمة.zip'): Pr
   return new File([await z.generateAsync({ type: 'arraybuffer' })], name, { type: 'application/zip' })
 }
 
-describe('① ما في الحزمة يخرج ملفّاتٍ بأسمائها', () => {
-  it('⚠️ بأسمائها العربيّة كاملةً وبلا مجلّداتها — فتطابق خطّتَها كأنّها اختيرت واحدا واحدا', async () => {
+describe('① ما في الحزمة يخرج ملفّات بأسمائها', () => {
+  it('⚠️ بأسمائها العربيّة كاملة وبلا مجلّداتها — فتطابق خطّتها كأنّها اختيرت واحدا واحدا', async () => {
     const zip = await zipOf({
       [`1 - التقارير والملاحق/${REPORT_A}.pdf`]: PDF,
       [`1 - التقارير والملاحق/${APPX_B}.pdf`]: PDF,
@@ -48,22 +48,22 @@ describe('① ما في الحزمة يخرج ملفّاتٍ بأسمائها', 
       .toMatchObject([{ ok: true, planId: A }, { ok: true, planId: B }])
   })
 
-  it('وما اختير ملفّا لا حزمةً يمرّ كما هو — بجانب ما خرج من الحزمة', async () => {
+  it('وما اختير ملفّا لا حزمة يمرّ كما هو — بجانب ما خرج من الحزمة', async () => {
     const loose = new File([PDF], `${APPX_B}.pdf`, { type: 'application/pdf' })
     const r = await expandReportFiles([loose, await zipOf({ [`${REPORT_A}.pdf`]: PDF })])
     expect(r.files[0]).toBe(loose)
     expect(r.files.map((f) => f.name)).toEqual([`${APPX_B}.pdf`, `${REPORT_A}.pdf`])
   })
 
-  it('والحزمةُ تُعرف بامتدادها أو بنوعها', () => {
+  it('والحزمة تعرف بامتدادها أو بنوعها', () => {
     expect(isZipFile('reports.ZIP', '')).toBe(true)
     expect(isZipFile('reports', 'application/x-zip-compressed')).toBe(true)
     expect(isZipFile(`${REPORT_A}.pdf`, 'application/pdf')).toBe(false)
   })
 })
 
-describe('② ما يُترك من الحزمة', () => {
-  it('⚠️ ما ليس PDF ولا Word يُترك ويُعَدّ، ونسخةُ Word لـPDF فيها تُترك، وبقايا ماك ليست ملفّات', async () => {
+describe('② ما يترك من الحزمة', () => {
+  it('⚠️ ما ليس PDF ولا Word يترك ويعدّ، ونسخة Word لـPDF فيها تترك، وبقايا ماك ليست ملفّات', async () => {
     const zip = await zipOf({
       [`1/${REPORT_A}.pdf`]: PDF,
       [`2 - نسخ Word/${REPORT_A}.docx`]: 'docx',
@@ -74,18 +74,18 @@ describe('② ما يُترك من الحزمة', () => {
       [`1/._${APPX_B}.pdf`]: 'mac',
     })
     const r = await expandReportFiles([zip])
-    expect(r.files.map((f) => f.name), 'Word وحدَه بلا PDF يُرفع').toEqual([`${REPORT_A}.pdf`, `${APPX_B}.docx`])
+    expect(r.files.map((f) => f.name), 'Word وحده بلا PDF يرفع').toEqual([`${REPORT_A}.pdf`, `${APPX_B}.docx`])
     expect(r.skipped).toEqual({ other: 2, wordTwins: 1 })
-    expect(skippedLineAr(r.skipped)).toBe('تُرك من الملفّ المضغوط: 1 نسخةَ Word لملفّاتِ PDF فيها (رُفع الـPDF وحدَه)، و2 ليست PDF ولا Word.')
+    expect(skippedLineAr(r.skipped)).toBe('ترك من الملفّ المضغوط: 1 نسخة Word لملفّات PDF فيها (رفع الـPDF وحده)، و2 ليست PDF ولا Word.')
     expect(skippedLineAr({ other: 0, wordTwins: 0 })).toBe('')
   })
 })
 
-describe('③ حزمةٌ لا تُفتح', () => {
-  it('⚠️ تُقال بسببها — ولا توقف ما بعدها', async () => {
+describe('③ حزمة لا تفتح', () => {
+  it('⚠️ تقال بسببها — ولا توقف ما بعدها', async () => {
     const broken = new File(['ليست حزمة'], 'تقارير.zip', { type: 'application/zip' })
     const r = await expandReportFiles([broken, await zipOf({ [`${REPORT_A}.pdf`]: PDF })])
-    expect(r.problems).toEqual([{ name: 'تقارير.zip', problemAr: expect.stringMatching(/^تعذّر فتحُ الملفّ المضغوط/) }])
+    expect(r.problems).toEqual([{ name: 'تقارير.zip', problemAr: expect.stringMatching(/^تعذّر فتح الملفّ المضغوط/) }])
     expect(r.files.map((f) => f.name)).toEqual([`${REPORT_A}.pdf`])
   })
 })
@@ -94,20 +94,20 @@ describe('④ الصندوق', () => {
   const comp = code('src/components/ReviewReports.tsx')
   const bulk = comp.slice(comp.indexOf('export function ReviewReportsBulkUpload'), comp.indexOf('export function ReviewReportList'))
 
-  it('⚠️ يفتح ما اختير قبل المطابقة — والمطابقةُ على ما خرج لا على ما اختير', () => {
+  it('⚠️ يفتح ما اختير قبل المطابقة — والمطابقة على ما خرج لا على ما اختير', () => {
     const open = bulk.indexOf('const expanded = await expandReportFiles(picked)')
     expect(open).toBeGreaterThan(0)
     expect(bulk).toMatch(/const files = expanded\.files;/)
     expect(open).toBeLessThan(bulk.indexOf('for (const [i, file] of files.entries())'))
   })
 
-  it('⚠️ وما لم يُفتح يُقال في نتائجه، وما تُرك يُقال سطرا', () => {
+  it('⚠️ وما لم يفتح يقال في نتائجه، وما ترك يقال سطرا', () => {
     expect(bulk).toMatch(/const out: ReportResult\[\] = expanded\.problems\.map\(/)
     expect(bulk).toMatch(/setSkippedAr\(skippedLineAr\(expanded\.skipped\)\)/)
     expect(bulk).toMatch(/\{skippedAr && <p/)
   })
 
-  it('⚠️ ونافذةُ الاختيار تقبل zip — وبطاقةُ الخطّة الواحدة لا', () => {
+  it('⚠️ ونافذة الاختيار تقبل zip — وبطاقة الخطّة الواحدة لا', () => {
     expect(bulk).toMatch(/accept=\{\[\.\.\.REVIEW_REPORT_MIMES, "\.pdf", "\.docx", "\.zip", "application\/zip"\]/)
     const card = comp.slice(0, comp.indexOf('export function ReviewReportsBulkUpload'))
     expect(card).not.toContain('.zip')

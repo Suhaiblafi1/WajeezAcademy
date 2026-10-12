@@ -34,7 +34,7 @@ const APP = code('src/App.tsx')
 /** جسمُ دالّةٍ سهميّةٍ مسمّاة — من `const name = ` إلى أوّل `};` في عمودها */
 function fnBody(src: string, name: string): string {
   const at = src.indexOf(`const ${name} = `)
-  expect(at, `لا دالّةَ «${name}»`).toBeGreaterThan(-1)
+  expect(at, `لا دالّة «${name}»`).toBeGreaterThan(-1)
   const end = src.indexOf('\n  };', at)
   return src.slice(at, end)
 }
@@ -48,91 +48,91 @@ describe('① ما تعرضه النافذة', () => {
   ]
   const none = () => false
 
-  it('⚠️ أقدمُ ما لم يُقرأ — لا أحدثُه، فتُقرأ بترتيب إرسالها', () => {
+  it('⚠️ أقدم ما لم يقرأ — لا أحدثه، فتقرأ بترتيب إرسالها', () => {
     expect(announcementToShow(items, { deferred: none })?.id).toBe('old')
   })
 
-  it('⚠️ وما أُجّل في هذه الجلسة يُتخطّى إلى ما بعده — ثمّ لا شيء', () => {
+  it('⚠️ وما أجّل في هذه الجلسة يتخطّى إلى ما بعده — ثمّ لا شيء', () => {
     expect(announcementToShow(items, { deferred: (id) => id === 'old' })?.id).toBe('new')
     expect(announcementToShow(items, { deferred: () => true })).toBeNull()
   })
 
-  it('⚠️ والمطلوبُ من الجرس يُفتح ولو قُرئ أو أُجّل', () => {
+  it('⚠️ والمطلوب من الجرس يفتح ولو قرئ أو أجّل', () => {
     expect(announcementToShow(items, { wanted: 'mid', deferred: () => true })?.id).toBe('mid')
-    expect(announcementToShow(items, { wanted: 'gone', deferred: none })?.id, 'مطلوبٌ لا وجودَ له').toBe('old')
+    expect(announcementToShow(items, { wanted: 'gone', deferred: none })?.id, 'مطلوب لا وجود له').toBe('old')
   })
 
-  it('وحالُ المدرّب في القائمة ثلاث', () => {
+  it('وحال المدرّب في القائمة ثلاث', () => {
     expect(recipientState({ readAt: '2026-10-04', seenAt: '2026-10-04' })).toBe('read')
     expect(recipientState({ seenAt: '2026-10-04', readAt: null })).toBe('seen')
     expect(recipientState({ seenAt: null, readAt: null })).toBe('unseen')
   })
 })
 
-describe('② والنافذةُ لا تمنع', () => {
-  it('⚠️ تُركَّب في إطار البوّابة — فتظهر في أيّ شاشةٍ يفتحها', () => {
+describe('② والنافذة لا تمنع', () => {
+  it('⚠️ تركّب في إطار البوّابة — فتظهر في أيّ شاشة يفتحها', () => {
     expect(LAYOUT).toMatch(/import TrainerAnnouncement from "\.\/TrainerAnnouncement"/)
     expect(LAYOUT).toMatch(/<TrainerAnnouncement \/>/)
   })
 
-  it('⚠️ إغلاقُها (Escape والنقرُ خارجها) تأجيلٌ لا قراءة', () => {
+  it('⚠️ إغلاقها (Escape والنقر خارجها) تأجيل لا قراءة', () => {
     expect(MODAL).toMatch(/<Modal onClose=\{later\}/)
-    expect(fnBody(MODAL, 'later'), 'الإغلاقُ يُكتب قراءة').not.toMatch(/\/read|confirmRead/)
+    expect(fnBody(MODAL, 'later'), 'الإغلاق يكتب قراءة').not.toMatch(/\/read|confirmRead/)
   })
 
-  it('⚠️ وخياران بأثرهما: «قرأتُه» يُكتب، و«ذكّرني لاحقا» يؤجّل', () => {
-    expect(MODAL).toMatch(/onClick=\{\(\) => void confirmRead\(\)\}>قرأتُه</)
+  it('⚠️ وخياران بأثرهما: «قرأته» يكتب، و«ذكّرني لاحقا» يؤجّل', () => {
+    expect(MODAL).toMatch(/onClick=\{\(\) => void confirmRead\(\)\}>قرأته</)
     expect(MODAL).toMatch(/onClick=\{later\}>ذكّرني لاحقا</)
     expect(fnBody(MODAL, 'confirmRead')).toMatch(/\/api\/trainer\/announcements\/\$\{shown\.id\}\/read/)
-    expect(MODAL, 'لا يُقال للمدرّب ما يقع بكلٍّ منهما').toMatch(/«قرأتُه» يُعلم الإدارةَ[\s\S]*«ذكّرني لاحقا» يغلقه الآن/)
+    expect(MODAL, 'لا يقال للمدرّب ما يقع بكلّ منهما').toMatch(/«قرأته» يعلم الإدارة[\s\S]*«ذكّرني لاحقا» يغلقه الآن/)
   })
 
-  it('والنصُّ المقترحُ نصيحةٌ لا أمر — وبلا «عرضك»', () => {
+  it('والنصّ المقترح نصيحة لا أمر — وبلا «عرضك»', () => {
     const text = `${ANNOUNCEMENT_DRAFT.titleAr}\n${ANNOUNCEMENT_DRAFT.bodyAr}`
-    expect(text).toContain('اقتراحٌ لا إلزام')
-    expect(text).not.toMatch(/يجب|ممنوع|لا يُسمح|إلزاميّ/)
+    expect(text).toContain('اقتراح لا إلزام')
+    expect(text).not.toMatch(/يجب|ممنوع|لا يسمح|إلزاميّ/)
     expect(text).not.toContain('عرضك')
   })
 })
 
-describe('③ ولا يُرسَل شيءٌ بلا سؤال', () => {
-  it('⚠️ «أرسِل…» تسأل ولا ترسل — والإرسالُ نداءٌ واحدٌ في خيار «أرسِله الآن»', () => {
-    const ask = ADMIN.slice(ADMIN.indexOf('<Button tone="primary" icon={Send}'), ADMIN.indexOf('أرسِل…'))
+describe('③ ولا يرسل شيء بلا سؤال', () => {
+  it('⚠️ «أرسل…» تسأل ولا ترسل — والإرسال نداء واحد في خيار «أرسله الآن»', () => {
+    const ask = ADMIN.slice(ADMIN.indexOf('<Button tone="primary" icon={Send}'), ADMIN.indexOf('أرسل…'))
     expect(ask).toMatch(/setAsking\(true\)/)
-    expect(ask, '«أرسِل…» ترسل بلا سؤال').not.toMatch(/send\(/)
+    expect(ask, '«أرسل…» ترسل بلا سؤال').not.toMatch(/send\(/)
     const calls = [...ADMIN.matchAll(/void send\(\)/g)]
-    expect(calls, 'الإرسالُ من موضعٍ غيرِ خيار التأكيد').toHaveLength(1)
+    expect(calls, 'الإرسال من موضع غير خيار التأكيد').toHaveLength(1)
     const modalAt = ADMIN.indexOf('<Modal onClose={() => setAsking(false)}')
     expect(modalAt).toBeGreaterThan(-1)
-    expect(calls[0].index!, 'الإرسالُ خارجَ نافذة السؤال').toBeGreaterThan(modalAt)
+    expect(calls[0].index!, 'الإرسال خارج نافذة السؤال').toBeGreaterThan(modalAt)
     expect(fnBody(ADMIN, 'send')).toMatch(/apiPost<[^>]+>\("\/api\/admin\/trainer-announcements"/)
   })
 
-  it('⚠️ وفي السؤال خياران وتحت كلٍّ ما يقع به', () => {
+  it('⚠️ وفي السؤال خياران وتحت كلّ ما يقع به', () => {
     const modal = ADMIN.slice(ADMIN.indexOf('<Modal onClose={() => setAsking(false)}'))
-    expect(modal).toMatch(/>أرسِله الآن<\/Button>\s*<p[^>]*>\s*يصل الآن/)
+    expect(modal).toMatch(/>أرسله الآن<\/Button>\s*<p[^>]*>\s*يصل الآن/)
     expect(modal).toMatch(/>ليس الآن<\/Button>\s*<p[^>]*>\s*لا يصل أحدا/)
   })
 
-  it('والنموذجُ يبدأ بالنصّ المقترح — ويُعدَّل كلُّه', () => {
+  it('والنموذج يبدأ بالنصّ المقترح — ويعدّل كلّه', () => {
     expect(ADMIN).toMatch(/useState<string>\(ANNOUNCEMENT_DRAFT\.titleAr\)/)
     expect(ADMIN).toMatch(/useState<string>\(ANNOUNCEMENT_DRAFT\.bodyAr\)/)
     expect(ADMIN).toMatch(/<textarea value=\{body\} onChange=\{\(e\) => setBody\(e\.target\.value\)\}/)
   })
 
-  it('⚠️ وبابُها في «المدرّبون» لمن يبثّ الإعلانات — ومسارُها قائم', () => {
+  it('⚠️ وبابها في «المدرّبون» لمن يبثّ الإعلانات — ومسارها قائم', () => {
     const item = allSections.flatMap((s) => s.items).find((i) => i.to === '/admin/trainer-announcements')
     expect(item?.need).toBe('staff.notify')
     expect(APP).toMatch(/<Route path="\/admin\/trainer-announcements" element=\{<AdminTrainerAnnouncements \/>\} \/>/)
   })
 })
 
-describe('④ والجرسُ يفتح الإعلانَ نفسَه', () => {
-  it('⚠️ البندُ يفتح نافذتَه بالإعلان المسمّى', () => {
+describe('④ والجرس يفتح الإعلان نفسه', () => {
+  it('⚠️ البند يفتح نافذته بالإعلان المسمّى', () => {
     expect(notificationHref(ANNOUNCEMENT_TEMPLATE_KEY, 'trainer', { announcementId: 'a-1' })).toBe('/trainer?announcement=a-1')
   })
 
-  it('وفي صنفٍ يُكتَم: الإعلاناتُ — والنافذةُ لا تمرّ بالتفضيل', () => {
+  it('وفي صنف يكتم: الإعلانات — والنافذة لا تمرّ بالتفضيل', () => {
     const cat = categoryForTemplate(ANNOUNCEMENT_TEMPLATE_KEY)
     expect(cat?.key).toBe('announcements')
     expect(cat?.silenceable).toBe(true)
@@ -140,37 +140,37 @@ describe('④ والجرسُ يفتح الإعلانَ نفسَه', () => {
 })
 
 describe('⑤ ومن يصير مدرّبا بعد الإرسال', () => {
-  it('⚠️ المقترحُ للنصّ المقترح آخرُ نوفمبر — ولغيره، أو بعد نوفمبر، شهرٌ من اليوم', () => {
+  it('⚠️ المقترح للنصّ المقترح آخر نوفمبر — ولغيره، أو بعد نوفمبر، شهر من اليوم', () => {
     expect(LATE_JOINERS_DRAFT_UNTIL).toBe('2026-11-30')
     expect(defaultLateUntil('2026-10-04', true)).toBe('2026-11-30')
     expect(defaultLateUntil('2026-10-04', false)).toBe('2026-11-03')
-    expect(defaultLateUntil('2026-12-02', true), 'اقتُرح يومٌ مضى').toBe('2027-01-01')
+    expect(defaultLateUntil('2026-12-02', true), 'اقترح يوم مضى').toBe('2027-01-01')
   })
 
-  it('⚠️ ولا يُقبل يومٌ مضى، ولا أبعدُ من سنة، ولا يومٌ لا وجودَ له', () => {
+  it('⚠️ ولا يقبل يوم مضى، ولا أبعد من سنة، ولا يوم لا وجود له', () => {
     expect(lateUntilProblem('2026-10-04', '2026-10-04')).toBeNull()
     expect(lateUntilProblem('2026-10-03', '2026-10-04')).toMatch(/مضى/)
     expect(lateUntilProblem('2027-12-01', '2026-10-04')).toMatch(/سنة/)
     expect(lateUntilProblem('2026-02-30', '2026-01-01')).toMatch(/صحيحا/)
   })
 
-  it('واليومُ يُحسب حتّى آخر ثانيةٍ منه بعمّان', () => {
+  it('واليوم يحسب حتّى آخر ثانية منه بعمّان', () => {
     expect(lateUntilInstant('2026-11-30').toISOString()).toBe('2026-11-30T20:59:59.999Z')
   })
 
-  it('⚠️ وفي النموذج خياران وتحت كلٍّ أثرُه — والمرسَلُ يتبع الخيار', () => {
-    expect(ADMIN).toMatch(/onChange=\{\(\) => setLate\(true\)\} \/>\s*المدرّبون الآن، ومن يصير مدرّبا حتّى[\s\S]*?<p[^>]*>\s*من ينضمّ بعد الإرسال تظهر له النافذةُ/)
-    expect(ADMIN).toMatch(/onChange=\{\(\) => setLate\(false\)\} \/>\s*المدرّبون الآن وحدَهم\s*<\/label>\s*<p[^>]*>من ينضمّ بعد الإرسال لا يصله\.<\/p>/)
+  it('⚠️ وفي النموذج خياران وتحت كلّ أثره — والمرسل يتبع الخيار', () => {
+    expect(ADMIN).toMatch(/onChange=\{\(\) => setLate\(true\)\} \/>\s*المدرّبون الآن، ومن يصير مدرّبا حتّى[\s\S]*?<p[^>]*>\s*من ينضمّ بعد الإرسال تظهر له النافذة/)
+    expect(ADMIN).toMatch(/onChange=\{\(\) => setLate\(false\)\} \/>\s*المدرّبون الآن وحدهم\s*<\/label>\s*<p[^>]*>من ينضمّ بعد الإرسال لا يصله\.<\/p>/)
     expect(fnBody(ADMIN, 'send')).toMatch(/lateJoinersUntil: late \? until : null/)
-    expect(ADMIN, 'لا يُقال في السؤال من يصله بعده').toMatch(/late \? `ومن يصير مدرّبا حتّى \$\{dayLabelAr\(until\)\} يصله حين يفتح بوّابتَه\.` : "ومن ينضمّ بعد الإرسال لا يصله\."/)
+    expect(ADMIN, 'لا يقال في السؤال من يصله بعده').toMatch(/late \? `ومن يصير مدرّبا حتّى \$\{dayLabelAr\(until\)\} يصله حين يفتح بوّابته\.` : "ومن ينضمّ بعد الإرسال لا يصله\."/)
   })
 
-  it('⚠️ وما أُرسل قبل الخيار يصل المنضمّين حتّى آخر نوفمبر — باللحظة نفسِها', () => {
+  it('⚠️ وما أرسل قبل الخيار يصل المنضمّين حتّى آخر نوفمبر — باللحظة نفسها', () => {
     /* على البنية لا على ورود الحرف: سطرُ SQL المعلَّقُ بـ`--` ليس ملئا */
     const sql = readFileSync(join(process.cwd(), 'prisma/migrations/20261004140000_announcement_late_joiners/migration.sql'), 'utf8')
       .replace(/--.*$/gm, '')
     const at = sql.match(/^UPDATE "TrainerAnnouncement" SET "lateJoinersUntil" = '([^']+)' WHERE "lateJoinersUntil" IS NULL;$/m)
-    expect(at, 'لا ملءَ لما أُرسل قبله').not.toBeNull()
+    expect(at, 'لا ملء لما أرسل قبله').not.toBeNull()
     expect(`${at![1].replace(' ', 'T')}Z`).toBe(lateUntilInstant(LATE_JOINERS_DRAFT_UNTIL).toISOString())
   })
 })

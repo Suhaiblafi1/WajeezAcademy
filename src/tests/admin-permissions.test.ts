@@ -30,26 +30,26 @@ const USERS = 'src/pages/admin/Users.tsx'
 const ROUTES = 'server/http/routes/admin-users.routes.ts'
 
 describe('هويّة الإداريّ', () => {
-  it('لا هويّةَ مختلَقة ولا تبديلَ هويّة من المتصفّح', () => {
+  it('لا هويّة مختلقة ولا تبديل هويّة من المتصفّح', () => {
     const tracked = execFileSync('git', ['ls-files'], { cwd: root, encoding: 'utf8' })
-    expect(tracked, 'ملفّ الهويّات المختلَقة ما زال في المستودع').not.toContain('admin-identity')
+    expect(tracked, 'ملفّ الهويّات المختلقة ما زال في المستودع').not.toContain('admin-identity')
 
     const src = read(LAYOUT)
     /* التعليق يشرح ما حُذف فيسمّيه — والفحص على ما يُعرض لا على شرحه */
     const shown = src.replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '')
     for (const ghost of ['عبدالله الرشيد', 'سارة العمري', 'محمد الحربي', 'من أنت؟', 'نسخة تجريبية']) {
-      expect(shown, `«${ghost}» ما زالت تُعرض في لوحة الإدارة`).not.toContain(ghost)
+      expect(shown, `«${ghost}» ما زالت تعرض في لوحة الإدارة`).not.toContain(ghost)
     }
     /* والهويّة من الجلسة لا من تخزينٍ يُكتب فيه ما شئت */
-    expect(shown, 'الهويّة تُقرأ من التخزين المحلّي').not.toContain('localStorage')
+    expect(shown, 'الهويّة تقرأ من التخزين المحلّي').not.toContain('localStorage')
     expect(src).toContain('useRealSession()')
   })
 })
 
-describe('قائمة الإدارة تُبنى من الصلاحيات', () => {
+describe('قائمة الإدارة تبنى من الصلاحيات', () => {
   const src = read(NAV)
 
-  it('لكلّ تبويبٍ صلاحيتُه — ولا تبويب بلا واحدة', () => {
+  it('لكلّ تبويب صلاحيته — ولا تبويب بلا واحدة', () => {
     /* ⚠ الكتلةُ صارت في مدى الوحدة لا داخلَ المكوّن (١٦ سبتمبر ٢٠٢٦):
        دليلُ «كلّ الشاشات» في الرئيسية يقرؤها، فلا تصلح محبوسةً في دالّة.
        والمفحوصُ لم يتغيّر — صلاحيةُ كلّ تبويب — إنّما إزاحةُ إغلاقها. */
@@ -70,36 +70,36 @@ describe('قائمة الإدارة تُبنى من الصلاحيات', () => {
       /* واحدةٌ أو عدّة — و«عدّة» تعني **أيًّا منها**: شاشةٌ تخدم صلاحيتين
          لا تُحرَس بواحدةٍ منهما، وكانت «الطلبات والفواتير» تحمل طابورَ طلبات
          التسجيل والفواتيرَ معا وتُحرَس بـ`finance.view` وحدها. */
-      expect(item, `${to} بلا صلاحية معلَنة ولا إعلانِ فتح — يراه من لا يملكه`)
+      expect(item, `${to} بلا صلاحية معلنة ولا إعلان فتح — يراه من لا يملكه`)
         .toMatch(/need: (?:"[a-z.]+"|\["[a-z.]+"(?:, "[a-z.]+")*\])/)
     }
-    expect(declaredOpen.sort(), 'تبويبٌ مفتوحٌ خارج المأذون به').toEqual([...OPEN].sort())
+    expect(declaredOpen.sort(), 'تبويب مفتوح خارج المأذون به').toEqual([...OPEN].sort())
   })
 
-  it('الصلاحيات المعلَنة موجودةٌ في سجلّ الخادم — لا مفتاحَ يُخترع', () => {
+  it('الصلاحيات المعلنة موجودة في سجلّ الخادم — لا مفتاح يخترع', () => {
     const perms = read('server/auth/permissions.ts')
     const known = new Set([...perms.matchAll(/\{ key: '([^']+)'/g)].map((m) => m[1]))
-    expect(known.size, 'سجلّ الصلاحيات لم يُقرأ').toBeGreaterThan(30)
+    expect(known.size, 'سجلّ الصلاحيات لم يقرأ').toBeGreaterThan(30)
     /* ويُقرأ ما في القوائم أيضا — وإلّا مرّ مفتاحٌ مخترَعٌ داخل قائمةٍ بلا فحص */
     const declared = [...src.matchAll(/need: (?:"([^"]+)"|\[([^\]]+)\])/g)]
       .flatMap((m) => (m[1] ? [m[1]] : [...m[2].matchAll(/"([^"]+)"/g)].map((x) => x[1])))
-    expect(declared.length, 'لم تُقرأ أيُّ صلاحيةٍ من القائمة').toBeGreaterThan(10)
+    expect(declared.length, 'لم تقرأ أيّ صلاحية من القائمة').toBeGreaterThan(10)
     for (const key of declared) {
-      expect(known.has(key), `التبويب يشترط صلاحيةً لا وجود لها: ${key}`).toBe(true)
+      expect(known.has(key), `التبويب يشترط صلاحية لا وجود لها: ${key}`).toBe(true)
     }
   })
 
-  it('الترشيح يقع فعلا — ومن لا تبويبَ له يُقال له', () => {
-    expect(src, 'التبويبات لا تُرشَّح بالصلاحيات').toMatch(/\.filter\(\(it\) => canAny\(it\.need\)\)/)
+  it('الترشيح يقع فعلا — ومن لا تبويب له يقال له', () => {
+    expect(src, 'التبويبات لا ترشّح بالصلاحيات').toMatch(/\.filter\(\(it\) => canAny\(it\.need\)\)/)
     /* و«أيًّا منها» تُقاس: `some` لا `every` — وإلّا صار الجمعُ تضييقا لا توسعة */
-    expect(src, '«عدّة صلاحيات» تعني أيًّا منها لا كلَّها')
+    expect(src, '«عدّة صلاحيات» تعني أيّا منها لا كلّها')
       .toMatch(/\(Array\.isArray\(need\) \? need : \[need\]\)\.some\(/)
-    expect(read(LAYOUT), 'من لا صلاحية له يُترك في لوحةٍ فارغة').toContain('لا صلاحيات مفعّلة لحسابك')
+    expect(read(LAYOUT), 'من لا صلاحية له يترك في لوحة فارغة').toContain('لا صلاحيات مفعّلة لحسابك')
   })
 })
 
 describe('استثناء الصلاحية لشخص', () => {
-  it('بصلاحيةٍ لا بدور — وثلاثُ حبّاتٍ لا حبّةٌ واحدة', () => {
+  it('بصلاحية لا بدور — وثلاث حبّات لا حبّة واحدة', () => {
     /* الرؤية · تعيين الأدوار والإيقاف · التفويض. من يفوّض لمرؤوسيه يحتاج أن
        يراهم ولا يلزم أن يملك تعيين الأدوار — وهو أوسعُ أثرا منه. */
     const perms = read('server/auth/permissions.ts')
@@ -116,28 +116,28 @@ describe('استثناء الصلاحية لشخص', () => {
     expect(users, 'الشاشة تحكم بالدور لا بالصلاحية').not.toContain('roles.includes("super_admin")')
   })
 
-  it('التفويض محكومٌ بالرتبة والمهامّ — من وحدةٍ واحدة لا شروطٍ مبعثرة', () => {
+  it('التفويض محكوم بالرتبة والمهامّ — من وحدة واحدة لا شروط مبعثرة', () => {
     const routes = read(ROUTES)
-    expect(routes, 'القواعد لا تُطبَّق في مسار التفويض').toContain('refuseDelegation(')
+    expect(routes, 'القواعد لا تطبّق في مسار التفويض').toContain('refuseDelegation(')
     /* والقرار يُردّ برسالته لا برسالةٍ عامّة */
     expect(routes).toMatch(/if \(refusal\) return reply\.status\(403\)\.send\(\{ error: refusal \}\)/)
   })
 
-  it('لا استثناء بلا سبب، ولا بابٌ يُغلق على صاحبه', () => {
+  it('لا استثناء بلا سبب، ولا باب يغلق على صاحبه', () => {
     const routes = read(ROUTES)
-    expect(routes, 'يُقبل استثناءٌ بلا سبب').toContain("code: 'reason_required'")
+    expect(routes, 'يقبل استثناء بلا سبب').toContain("code: 'reason_required'")
     expect(routes, 'يستطيع منع إدارة المستخدمين عن نفسه').toContain("code: 'self_lockout'")
     /* والشاشة تمنع الضغط قبل السبب — لا تنتظر ردّ الخادم */
     expect(read(USERS)).toMatch(/permReason\.trim\(\)\.length < 5/)
   })
 
-  it('كلّ تغييرٍ يُقيَّد وتُبطَل جلساتُ صاحبه', () => {
+  it('كلّ تغيير يقيّد وتبطل جلسات صاحبه', () => {
     const routes = read(ROUTES)
     const block = /app\.post\('\/api\/admin\/users\/:id\/permissions'[\s\S]*?\n {2}\}\)/.exec(routes)?.[0] ?? ''
     expect(block, 'مسار الاستثناء مفقود').toBeTruthy()
-    expect(block, 'لا يُقيَّد في سجلّ التدقيق').toContain('recordAudit')
+    expect(block, 'لا يقيّد في سجلّ التدقيق').toContain('recordAudit')
     /* الجلسة تحمل الصلاحيات وقت حلّها: بلا إبطالها يعمل بصلاحيةٍ نُزعت */
-    expect(block, 'الجلسات لا تُبطَل — فيعمل بصلاحيةٍ نُزعت').toContain('revokeAllSessions')
+    expect(block, 'الجلسات لا تبطل — فيعمل بصلاحية نزعت').toContain('revokeAllSessions')
   })
 })
 
@@ -147,18 +147,18 @@ describe('استثناء الصلاحية لشخص', () => {
    والخادمُ يعيد `inviteNote` يعرف فيه أأُرسلت الرسالةُ أم لا. فمن أنشأ حسابا
    على منصّةٍ بلا SMTP قيل له إنّ الدعوة وصلت — فينتظر صاحبُ الحساب رسالةً
    لن تأتي، ولا يعلم المنشئُ أنّ عليه أن يدلّه على «نسيت كلمة المرور». */
-describe('إنشاءُ حسابٍ إداريّ: لا يُبشَّر بما لم يقع', () => {
-  it('الواجهةُ تنقل جوابَ الخادم عن الدعوة ولا تجزم من عندها', () => {
+describe('إنشاء حساب إداريّ: لا يبشّر بما لم يقع', () => {
+  it('الواجهة تنقل جواب الخادم عن الدعوة ولا تجزم من عندها', () => {
     const ui = read(USERS)
     /* التعليقُ يقتبس الصيغةَ المعطوبة، فيُجرَّد قبل الفحص */
     const shown = ui.replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '')
-    expect(shown, 'الواجهة تجزم بوصول الدعوة بلا دليلٍ من الخادم').not.toMatch(/["'`][^"'`]*وصلته دعوة/)
-    expect(shown, 'جوابُ الخادم عن الدعوة لا يُقرأ').toContain('inviteNote')
+    expect(shown, 'الواجهة تجزم بوصول الدعوة بلا دليل من الخادم').not.toMatch(/["'`][^"'`]*وصلته دعوة/)
+    expect(shown, 'جواب الخادم عن الدعوة لا يقرأ').toContain('inviteNote')
   })
 
-  it('والخادمُ يشتقّ «أُرسلت» من حال الإرسال لا يعلنها', () => {
+  it('والخادم يشتقّ «أرسلت» من حال الإرسال لا يعلنها', () => {
     const routes = read(ROUTES)
-    expect(routes, 'مسارُ الإنشاء لا يُعيد حالَ الدعوة').toContain('inviteNote')
-    expect(routes, 'حالُ الإرسال معلَنٌ لا مشتقّ').not.toMatch(/inviteSent:\s*true/)
+    expect(routes, 'مسار الإنشاء لا يعيد حال الدعوة').toContain('inviteNote')
+    expect(routes, 'حال الإرسال معلن لا مشتقّ').not.toMatch(/inviteSent:\s*true/)
   })
 })

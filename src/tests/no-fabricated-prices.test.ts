@@ -29,8 +29,8 @@ function shippedFiles(dir: string, out: string[] = []): string[] {
 
 const FILES = shippedFiles(SRC)
 
-describe('لا تسعير مُختلَق في الحزمة المشحونة', () => {
-  it('الشجرة تُمسح فعلا — وإلا كان الحارس يخضرّ على فراغ', () => {
+describe('لا تسعير مختلق في الحزمة المشحونة', () => {
+  it('الشجرة تمسح فعلا — وإلا كان الحارس يخضرّ على فراغ', () => {
     expect(FILES.length).toBeGreaterThan(50)
   })
 
@@ -48,10 +48,10 @@ describe('لا تسعير مُختلَق في الحزمة المشحونة', ()
         /\bPATHWAY_PRICE\b/.test(src)
       if (used) offenders.push(relative(SRC, f))
     }
-    expect(offenders, `تسعير مُختلَق عاد إلى: ${offenders.join('، ')}`).toEqual([])
+    expect(offenders, `تسعير مختلق عاد إلى: ${offenders.join('، ')}`).toEqual([])
   })
 
-  it('السلّم الصناعيّ نفسه لا يُستورَد من شيفرةٍ مشحونة', () => {
+  it('السلّم الصناعيّ نفسه لا يستورد من شيفرة مشحونة', () => {
     const offenders = FILES.filter((f) => /['"][^'"]*tests\/pricing-scale['"]/.test(readFileSync(f, 'utf8')))
       .map((f) => relative(SRC, f))
     expect(offenders, `سلّم الاختبار سرّب إلى: ${offenders.join('، ')}`).toEqual([])

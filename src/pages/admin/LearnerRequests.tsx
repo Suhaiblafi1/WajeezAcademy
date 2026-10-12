@@ -52,7 +52,7 @@ const STATUS_AR: Record<string, string> = {
 };
 
 /* «١ طلبٌ» و«٢ طلبان» و«٣ طلبات» و«١١ طلبا» — والعددُ يُقرأ لا يُحسب */
-const REQ_FORMS = { one: "طلبٌ", two: "طلبان", few: "طلبات", many: "طلبا" };
+const REQ_FORMS = { one: "طلب", two: "طلبان", few: "طلبات", many: "طلبا" };
 
 /** أقلُّ سببٍ يُقرأ — مطابقٌ لما يفرضه الخادم عند الاعتذار */
 const MIN_REASON = 5;
@@ -94,10 +94,10 @@ export default function LearnerRequests() {
       });
       toast(
         status === "fulfilled"
-          ? "سُجّل الإنجاز — ويصل الخبرُ إلى صاحب الطلب"
+          ? "سجّل الإنجاز — ويصل الخبر إلى صاحب الطلب"
           : status === "declined"
-            ? "سُجّل الاعتذار — ويصل سببُك إلى صاحب الطلب"
-            : "صار الطلبُ قيد المراجعة",
+            ? "سجّل الاعتذار — ويصل سببك إلى صاحب الطلب"
+            : "صار الطلب قيد المراجعة",
       );
       await load();
     } catch (e) {
@@ -120,7 +120,7 @@ export default function LearnerRequests() {
   }
 
   return (
-    <AdminLayout title="طلبات المتعلّمين — شهادةٌ وتوصية">
+    <AdminLayout title="طلبات المتعلّمين — شهادة وتوصية">
       {/* ── العملُ قبل القائمة ──
 
           الطابورُ هنا كلُّه عملٌ ينتظر — والشاشةُ كانت تفتح به مسرودا. فصار
@@ -131,17 +131,17 @@ export default function LearnerRequests() {
         icon={Award}
         count={rows?.length ?? 0}
         forms={REQ_FORMS}
-        waitingAr="تنتظر قرارَك"
+        waitingAr="تنتظر قرارك"
         stats={rows ? [
-          `${rows.filter((r) => r.kind !== "recommendation").length} شهادةً`,
-          `${rows.filter((r) => r.kind === "recommendation").length} توصيةً مهنيّة`,
+          `${rows.filter((r) => r.kind !== "recommendation").length} شهادة`,
+          `${rows.filter((r) => r.kind === "recommendation").length} توصية مهنيّة`,
         ] : []}
         actionAr="ابدأ بأقدمها"
         disabledReasonAr={rows && rows.length > 0 && view.total === 0
-          ? "البحثُ الحاليُّ لا يُظهر منها شيئا — امسحه لتبدأ."
+          ? "البحث الحاليّ لا يظهر منها شيئا — امسحه لتبدأ."
           : undefined}
         onAction={() => { if (view.rows[0]) revealRow(`learner-req-${view.rows[0].id}`); }}
-        doneAr="لا طلبَ ينتظر قرارَك — وحين يُنهي متعلّمٌ دورتَه أو مسارَه ويطلب شهادتَه أو توصيةً يظهر هنا، مستوفيا قواعدَ الإكمال: فحسابُ الأهليّة يقع قبل الطلب لا بعده."
+        doneAr="لا طلب ينتظر قرارك — وحين ينهي متعلّم دورته أو مساره ويطلب شهادته أو توصية يظهر هنا، مستوفيا قواعد الإكمال: فحساب الأهليّة يقع قبل الطلب لا بعده."
       />
 
       {rows !== null && rows.length > 0 && (
@@ -150,7 +150,7 @@ export default function LearnerRequests() {
           placeholder="ابحث باسم المتعلّم أو بريده أو شعبته…" />
         {view.rows.length === 0 ? (
           <Panel as="p" className="py-12 text-center text-sm text-muted-foreground">
-            لا طلبَ يطابق بحثَك — امسح الكلمة أو جرّب غيرها.
+            لا طلب يطابق بحثك — امسح الكلمة أو جرّب غيرها.
           </Panel>
         ) : (
         <ul className="space-y-4">
@@ -193,25 +193,25 @@ export default function LearnerRequests() {
                 {/* جهةُ التوصية بكلام صاحبها — عليها تُكتب، فلا تُكتب عامّة */}
                 {r.audienceAr && (
                   <Inset as="p" tone="accent" className="mt-3 px-4 py-3 text-read leading-7 text-foreground">
-                    <span className="font-bold text-muted-foreground">الجهةُ التي يريدها: </span>{r.audienceAr}
+                    <span className="font-bold text-muted-foreground">الجهة التي يريدها: </span>{r.audienceAr}
                   </Inset>
                 )}
                 {r.noteAr && (
                   <Inset as="p" className="mt-2 px-4 py-3 text-read leading-7 text-foreground">
-                    <span className="font-bold text-muted-foreground">ملاحظتُه: </span>{r.noteAr}
+                    <span className="font-bold text-muted-foreground">ملاحظته: </span>{r.noteAr}
                   </Inset>
                 )}
 
                 <div className="mt-3">
                   <label htmlFor={`note-${r.id}`} className="mb-1.5 block text-fine font-bold text-muted-foreground">
-                    ردُّك — إلزاميٌّ عند الاعتذار، يقرؤه المتعلّم في بوابته
+                    ردّك — إلزاميّ عند الاعتذار، يقرؤه المتعلّم في بوابته
                   </label>
                   <textarea
                     id={`note-${r.id}`}
                     rows={2}
                     value={reason}
                     onChange={(e) => setNote((n) => ({ ...n, [r.id]: e.target.value }))}
-                    placeholder="مثال: صدرت شهادتك ورقمها في «شهاداتي» — أو: نحتاج تسليمَ مشروع الدورة قبل الشهادة."
+                    placeholder="مثال: صدرت شهادتك ورقمها في «شهاداتي» — أو: نحتاج تسليم مشروع الدورة قبل الشهادة."
                     className={areaCls}
                   />
                 </div>
@@ -221,7 +221,7 @@ export default function LearnerRequests() {
                     onClick={() => void decide(r.id, "fulfilled")}
                     disabled={busy === r.id}>
                     {busy === r.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
-                    أُنجز
+                    أنجز
                   </Button>
                   {r.status === "pending" && (
                     <Button tone="secondary" type="button"
@@ -236,14 +236,14 @@ export default function LearnerRequests() {
                     <XCircle className="h-3.5 w-3.5" /> اعتذر
                   </Button>
                   {reason.trim().length < MIN_REASON && (
-                    <span className="text-fine text-muted-foreground">الاعتذار يلزمه سببٌ لا يقلّ عن {MIN_REASON} أحرف</span>
+                    <span className="text-fine text-muted-foreground">الاعتذار يلزمه سبب لا يقلّ عن {MIN_REASON} أحرف</span>
                   )}
                 </div>
 
                 {/* إصدارُ الشهادة نفسِها في شاشة الشعبة — هي حاملةُ القواعد */}
                 {r.enrollment && (
                   <p className="mt-2.5 text-read leading-5 text-muted-foreground">
-                    الإصدار من «الشعب» ← شعبة «{r.enrollment.cohort.title}» ← مرشَّحو الشهادة، ثمّ سجّل الإنجاز هنا.
+                    الإصدار من «الشعب» ← شعبة «{r.enrollment.cohort.title}» ← مرشّحو الشهادة، ثمّ سجّل الإنجاز هنا.
                   </p>
                 )}
               </Panel>

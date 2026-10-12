@@ -99,15 +99,15 @@ export default function AdvisorBrief({ pathwayName, courseNames, message, onClos
         {/* ─── الورقة نفسُها — هي وحدَها ما يُطبع ─── */}
         <Inset id="advisor-brief-sheet" className="mt-4 px-5 py-5 print:mt-0 print:border-0 print:px-0">
           <p className="text-read font-bold leading-6 text-teal-light-ink">أكاديمية وجيز — ملخّص لمستشار المسار المهني</p>
-          <h3 className="mt-2 text-lg font-black leading-snug">المسار المرشَّح: {pathwayName}</h3>
+          <h3 className="mt-2 text-lg font-black leading-snug">المسار المرشّح: {pathwayName}</h3>
           <p className="mt-1 text-read leading-6 text-muted-foreground">
-            حُرّر في {today}
-            {answered > 0 && ` · بعد تشخيصٍ من ${answered} سؤالا`}
+            حرّر في {today}
+            {answered > 0 && ` · بعد تشخيص من ${answered} سؤالا`}
           </p>
 
           {reasons.length > 0 && (
             <section className="mt-4">
-              <h4 className="text-sm font-black">لماذا رُشّح لي هذا المسار</h4>
+              <h4 className="text-sm font-black">لماذا رشّح لي هذا المسار</h4>
               <ul className="mt-1.5 space-y-1 text-read leading-6 text-muted-foreground">
                 {reasons.map((r) => (
                   <li key={r}>— {r}</li>
@@ -143,7 +143,7 @@ export default function AdvisorBrief({ pathwayName, courseNames, message, onClos
           {/* ما لم يُشخَّص صاحبُها: تُقال حالُها صراحةً بدل أقسامٍ فارغة */}
           {!result && (
             <p className="mt-4 text-read leading-6 text-muted-foreground">
-              لم أُكمل مؤشّر وجيز بعد — هذه الورقة تحمل المسار الذي أنظر إليه وحدَه.
+              لم أكمل مؤشّر وجيز بعد — هذه الورقة تحمل المسار الذي أنظر إليه وحده.
             </p>
           )}
 

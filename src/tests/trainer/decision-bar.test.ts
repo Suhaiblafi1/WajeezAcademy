@@ -41,7 +41,7 @@ const LAYOUT = read('src/pages/admin/AdminLayout.tsx')
 /** موضعُ أقربِ وسمٍ `<tag` مفتوحٍ قبل `anchor` — أي الوسمِ الذي يحمله.
     والحدُّ بعد اسم الوسم مقصود: `<p` لا يُطابق `<path` ولا `<pre`. */
 function openBefore(src: string, anchor: string, tag: string, from = src.indexOf(anchor)): number {
-  expect(from, `لا موضعَ لـ«${anchor}»`).toBeGreaterThan(-1)
+  expect(from, `لا موضع لـ«${anchor}»`).toBeGreaterThan(-1)
   let open = -1
   for (const m of src.slice(0, from + anchor.length).matchAll(new RegExp(`<${tag}\\b`, 'g'))) open = m.index!
   expect(open, `لا <${tag}> يحمل «${anchor}»`).toBeGreaterThan(-1)
@@ -78,36 +78,36 @@ const STRIP_CLS = classesAt(APPS, STRIP_OPEN)
 const OUTER_OPEN = [...APPS.slice(0, STRIP_OPEN).matchAll(/<Card\b/g)].at(-1)?.index ?? -1
 const OUTER = extentAt(APPS, OUTER_OPEN, 'Card')
 const OUTER_CLS = classesAt(APPS, OUTER_OPEN)
-const NOTE_TEXT = 'لا يُعتمَد اعتمادا كاملا قبل أن يتمّ تجهيزُه'
+const NOTE_TEXT = 'لا يعتمد اعتمادا كاملا قبل أن يتمّ تجهيزه'
 const NOTE_CARD_CLS = classesAt(APPS, openBefore(APPS, NOTE_TEXT, 'Card'))
 
-describe('شريطُ القرار على الهاتف', () => {
+describe('شريط القرار على الهاتف', () => {
   it('⚠️ لا يلصق — يمضي مع التمرير ولا يغطّي الملفّ', () => {
-    expect(STRIP_CLS, 'لاصقٌ على الهاتف — يغطّي الملفَّ ولا يتحرّك').not.toContain('sticky')
+    expect(STRIP_CLS, 'لاصق على الهاتف — يغطّي الملفّ ولا يتحرّك').not.toContain('sticky')
     expect(STRIP_CLS).not.toContain('fixed')
-    expect(tokens(STRIP_CLS, /^(sm|md):(sticky|fixed)$/), 'لاصقٌ على شاشةٍ صغيرة').toEqual([])
+    expect(tokens(STRIP_CLS, /^(sm|md):(sticky|fixed)$/), 'لاصق على شاشة صغيرة').toEqual([])
   })
 
-  it('وهو بطاقةٌ واحدةٌ هناك كما كانت — القطعتان بلا صندوقٍ تحت `lg`', () => {
+  it('وهو بطاقة واحدة هناك كما كانت — القطعتان بلا صندوق تحت `lg`', () => {
     expect(OUTER.includes(STRIP) && OUTER.includes(NOTE_TEXT), 'القطعتان خرجتا من البطاقة الحاضنة').toBe(true)
-    expect(STRIP_CLS, 'صفُّ الأزرار بطاقةٌ ثانيةٌ على الهاتف').toContain('max-lg:contents')
-    expect(NOTE_CARD_CLS, 'ما ينقص بطاقةٌ ثانيةٌ على الهاتف').toContain('max-lg:contents')
-    expect(OUTER_CLS, 'الحاضنةُ بلا صندوقٍ على الهاتف — فلا بطاقةَ أصلا').not.toContain('max-lg:contents')
+    expect(STRIP_CLS, 'صفّ الأزرار بطاقة ثانية على الهاتف').toContain('max-lg:contents')
+    expect(NOTE_CARD_CLS, 'ما ينقص بطاقة ثانية على الهاتف').toContain('max-lg:contents')
+    expect(OUTER_CLS, 'الحاضنة بلا صندوق على الهاتف — فلا بطاقة أصلا').not.toContain('max-lg:contents')
   })
 })
 
-describe('شريطُ القرار على الحاسوب', () => {
-  it('⚠️ صفُّ الأزرار يلصق تحت الترويسة لا تحتها', () => {
-    expect(STRIP_CLS, 'فقد لصوقَه على الحاسوب — والفعلُ في متناول اليد قرارٌ قائم').toContain('lg:sticky')
+describe('شريط القرار على الحاسوب', () => {
+  it('⚠️ صفّ الأزرار يلصق تحت الترويسة لا تحتها', () => {
+    expect(STRIP_CLS, 'فقد لصوقه على الحاسوب — والفعل في متناول اليد قرار قائم').toContain('lg:sticky')
     /* والإزاحةُ ارتفاعُ الترويسة نفسُها: لو تبدّل أحدُهما وحدَه عاد الصفُّ يغيب تحتها
        أو يترك فرجةً يمرّ فيها المتن */
     const headerRow = /<header\b[^>]*>\s*<div className="([^"]*)"/.exec(LAYOUT)?.[1] ?? ''
     const headerH = /(?:^|\s)h-(\d+)(?:\s|$)/.exec(headerRow)?.[1]
-    expect(headerH, 'لا ارتفاعَ مكتوبا لترويسة الإدارة').toBeDefined()
-    expect(tokens(STRIP_CLS, /^lg:top-/), 'الصفُّ لا يلصق عند حافّة الترويسة').toEqual([`lg:top-${headerH}`])
+    expect(headerH, 'لا ارتفاع مكتوبا لترويسة الإدارة').toBeDefined()
+    expect(tokens(STRIP_CLS, /^lg:top-/), 'الصفّ لا يلصق عند حافّة الترويسة').toEqual([`lg:top-${headerH}`])
   })
 
-  it('⚠️ والبطاقةُ الحاضنةُ بلا صندوقٍ على الحاسوب — وإلّا حبست الملتصقَ فيها', () => {
+  it('⚠️ والبطاقة الحاضنة بلا صندوق على الحاسوب — وإلّا حبست الملتصق فيها', () => {
     /* الملتصقُ يلتصق داخلَ صندوق أبيه وحدَه: لو بقيت الحاضنةُ صندوقا لمضى معها
        الصفُّ بعد بضع مئاتٍ من البكسلات */
     expect(OUTER_CLS).toContain('lg:contents')
@@ -117,45 +117,45 @@ describe('شريطُ القرار على الحاسوب', () => {
     expect(STRIP, 'ما ينقص عاد إلى الصفّ اللاصق — فيطول ويأكل الشاشة').not.toContain(NOTE_TEXT)
   })
 
-  it('والاسمُ يغيب عن الصفّ على الحاسوب — دربُ الوصول يحمله، وبقاؤه يكسر الصفَّ سطرَين', () => {
-    expect(STRIP, 'الاسمُ خرج من الشريط — والهاتفُ يقرؤه فيه').toContain('{a.fullName}</p>')
+  it('والاسم يغيب عن الصفّ على الحاسوب — درب الوصول يحمله، وبقاؤه يكسر الصفّ سطرين', () => {
+    expect(STRIP, 'الاسم خرج من الشريط — والهاتف يقرؤه فيه').toContain('{a.fullName}</p>')
     const nameDiv = classesAt(APPS, openBefore(APPS, '{a.fullName}</p>', 'div', STRIP_OPEN + STRIP.indexOf('{a.fullName}</p>')))
     expect(nameDiv).toContain('lg:hidden')
   })
 
-  it('ونغمتُه صلبة — يمرّ تحته متنٌ يُقرأ', () => {
-    expect(/^<Card\b[^>]*\btone="solid"/.test(STRIP), 'صفٌّ لاصقٌ بأرضيّةٍ شفّافة').toBe(true)
+  it('ونغمته صلبة — يمرّ تحته متن يقرأ', () => {
+    expect(/^<Card\b[^>]*\btone="solid"/.test(STRIP), 'صفّ لاصق بأرضيّة شفّافة').toBe(true)
   })
 })
 
-describe('فهرسُ الأقسام', () => {
-  it('⚠️ لا يلصق على أيّ عرض — والثلاثةُ معا نصفُ نافذة حاسوبٍ محمول', () => {
+describe('فهرس الأقسام', () => {
+  it('⚠️ لا يلصق على أيّ عرض — والثلاثة معا نصف نافذة حاسوب محمول', () => {
     const nav = classesAt(APPS, openBefore(APPS, 'aria-label="أقسام الملفّ"', 'nav'))
-    expect(tokens(nav, /(?:^|:)(sticky|fixed)$/), 'الفهرسُ لاصقٌ').toEqual([])
+    expect(tokens(nav, /(?:^|:)(sticky|fixed)$/), 'الفهرس لاصق').toEqual([])
   })
 
-  it('⚠️ ومن قفز إلى قسمٍ وقع عنوانُه تحت الصفّ اللاصق لا خلفه', () => {
+  it('⚠️ ومن قفز إلى قسم وقع عنوانه تحت الصفّ اللاصق لا خلفه', () => {
     /* يلصق فوق القسم ١٧٩ بكسلا في أسوأ حال: الترويسةُ ٦٥ وصفّا أزرارٍ ١١٤ (تحت
        ١٣٦٦). فالهامشُ لا يقلّ عن ٤٥ (×٤ بكسل) — وكان `scroll-mt-28` وحدَه */
     const first = APPS.indexOf('id="sec-profile"')
     const last = APPS.indexOf('id="sec-rubric"')
-    expect(first, 'لا مرساةَ لأوّل قسم').toBeGreaterThan(-1)
+    expect(first, 'لا مرساة لأوّل قسم').toBeGreaterThan(-1)
     let found = false
     for (const m of APPS.slice(0, first).matchAll(/<div\b/g)) {
       const scroll = classesAt(APPS, m.index!).map((c) => /^lg:\[&_\[id\^=sec-\]\]:scroll-mt-(\d+)$/.exec(c)?.[1]).find(Boolean)
       if (!scroll) continue
       const box = extentAt(APPS, m.index!, 'div')
-      expect(box.includes('id="sec-profile"') && box.includes('id="sec-rubric"') && last > first, 'الهامشُ لا يحيط بالأقسام كلِّها').toBe(true)
-      expect(Number(scroll), 'الهامشُ أقصرُ ممّا يلصق فوقه').toBeGreaterThanOrEqual(45)
+      expect(box.includes('id="sec-profile"') && box.includes('id="sec-rubric"') && last > first, 'الهامش لا يحيط بالأقسام كلّها').toBe(true)
+      expect(Number(scroll), 'الهامش أقصر ممّا يلصق فوقه').toBeGreaterThanOrEqual(45)
       found = true
     }
-    expect(found, 'لا هامشَ وصولٍ للأقسام على الحاسوب').toBe(true)
+    expect(found, 'لا هامش وصول للأقسام على الحاسوب').toBe(true)
   })
 })
 
-describe('وما ينقص يُقرأ على الورق', () => {
+describe('وما ينقص يقرأ على الورق', () => {
   const readableInk = (classes: string[]) => {
-    expect(classes, 'ما ينقص يُكتب بحبرٍ لا يُقرأ على الورق').toContain('text-gold-ink')
+    expect(classes, 'ما ينقص يكتب بحبر لا يقرأ على الورق').toContain('text-gold-ink')
     expect(tokens(classes, /^text-[a-z]+-\d{2,3}\/\d+$/)).toEqual([])
   }
 
@@ -163,7 +163,7 @@ describe('وما ينقص يُقرأ على الورق', () => {
     readableInk(classesAt(APPS, openBefore(APPS, NOTE_TEXT, 'span')))
   })
 
-  it('وفاصلُه عن الأزرار يُرى على الهاتف — لونُه بلا بادئة يبلغها تجاوزُ الورق', () => {
+  it('وفاصله عن الأزرار يرى على الهاتف — لونه بلا بادئة يبلغها تجاوز الورق', () => {
     /* `max-lg:border-white/10` صنفٌ غيرُ `border-white/10`، وتجاوزُ المظهر الفاتح
        مكتوبٌ للثاني وحدَه — فغاب الفاصلُ على الورق أوّلَ ما كُتب */
     const divider = classesAt(APPS, openBefore(APPS, NOTE_TEXT, 'div'))
@@ -172,7 +172,7 @@ describe('وما ينقص يُقرأ على الورق', () => {
     expect(tokens(divider, /^[\w-]+:border-white\//)).toEqual([])
   })
 
-  it('وفي «التجهيز» الذي يفتحه — ما ينقص كلَّ خطوة، وسببُ الاعتذار عن العقد', () => {
+  it('وفي «التجهيز» الذي يفتحه — ما ينقص كلّ خطوة، وسبب الاعتذار عن العقد', () => {
     readableInk(classesAt(PREP, openBefore(PREP, '{blockerAr}</p>', 'p')))
     readableInk(classesAt(PREP, openBefore(PREP, 'اعتذر: {c.declineReasonAr}', 'p')))
   })

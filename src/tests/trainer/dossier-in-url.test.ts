@@ -31,27 +31,27 @@ import { describe, expect, it } from 'vitest'
 const SCREEN = 'src/pages/admin/TrainerApplications.tsx'
 const code = readFileSync(join(process.cwd(), SCREEN), 'utf8')
 
-describe('الملفُّ المفتوحُ في العنوان', () => {
-  it('والشاشةُ تقرأ العنوانَ بخطّاف الموجِّه لا بحالةٍ عندها', () => {
-    expect(code, 'لا تستورد `useSearchParams` — فالعنوانُ لا يُقرأ ولا يُكتب')
+describe('الملفّ المفتوح في العنوان', () => {
+  it('والشاشة تقرأ العنوان بخطّاف الموجّه لا بحالة عندها', () => {
+    expect(code, 'لا تستورد `useSearchParams` — فالعنوان لا يقرأ ولا يكتب')
       .toContain('useSearchParams')
-    expect(code, 'لا تقرأ المُعامِلَ `app` من العنوان')
+    expect(code, 'لا تقرأ المعامل `app` من العنوان')
       .toMatch(/searchParams\.get\(["']app["']\)/)
   })
 
-  it('و«افتحْ» تكتب في العنوان — لا في `setSelected` رأسا', () => {
+  it('و«افتح» تكتب في العنوان — لا في `setSelected` رأسا', () => {
     const open = /const openDetail = \([\s\S]*?\n {2}\};/.exec(code)?.[0] ?? ''
-    expect(open, 'لم يُعثر على `openDetail`').toBeTruthy()
-    expect(open, 'تفتح بلا أن تمسّ العنوان — فلا موضعَ يُرجَع إليه')
+    expect(open, 'لم يعثر على `openDetail`').toBeTruthy()
+    expect(open, 'تفتح بلا أن تمسّ العنوان — فلا موضع يرجع إليه')
       .toContain('setSearchParams')
-    expect(open, 'تكتب في الحالة رأسا — فيفترق العنوانُ عمّا يُعرض')
+    expect(open, 'تكتب في الحالة رأسا — فيفترق العنوان عمّا يعرض')
       .not.toContain('setSelected')
   })
 
-  it('و«أغلِقْ» تمحو المُعامِلَ — فيعود العنوانُ إلى القائمة', () => {
+  it('و«أغلق» تمحو المعامل — فيعود العنوان إلى القائمة', () => {
     const close = /const closeDetail = \([\s\S]*?\n {2}\};/.exec(code)?.[0] ?? ''
-    expect(close, 'لم يُعثر على `closeDetail`').toBeTruthy()
-    expect(close, 'تغلق بلا أن تمحو المُعامِل — فالرجوعُ يفتحه ثانيةً')
+    expect(close, 'لم يعثر على `closeDetail`').toBeTruthy()
+    expect(close, 'تغلق بلا أن تمحو المعامل — فالرجوع يفتحه ثانية')
       .toMatch(/delete\(["']app["']\)/)
   })
 
@@ -61,20 +61,20 @@ describe('الملفُّ المفتوحُ في العنوان', () => {
      العطبُ من حيث أُصلح: يُمحى المعروضُ ويبقى `?app=` في العنوان، فيُعاد
      الجلبُ في التصيير التالي ولا يُغلق شيء. ولا يُستثنى من ذلك إلّا مسحُ
      ما فشل جلبُه — وهو في `loadDetail` مقرونا بمحو المُعامِل. */
-  it('ولا يُغلَق الملفُّ بمحو الحالة وحدَها — في أيّ موضعٍ من الشاشة', () => {
+  it('ولا يغلق الملفّ بمحو الحالة وحدها — في أيّ موضع من الشاشة', () => {
     const closers = [...code.matchAll(/setSelected\(null\)/g)]
     /* الموضعُ الوحيدُ المسموح: داخلَ `useEffect` حين لا مُعامِلَ في العنوان */
     const effect = /useEffect\(\(\) => \{\s*if \(!openApp\) \{ setSelected\(null\); return; \}/.test(code)
-    expect(effect, 'الأثرُ لا يمسح المعروضَ حين يخلو العنوان').toBe(true)
+    expect(effect, 'الأثر لا يمسح المعروض حين يخلو العنوان').toBe(true)
     expect(
       closers.length,
-      'ثمّة موضعٌ يمحو الحالةَ ويترك العنوان — فيبقى `?app=` ويُعاد الفتح',
+      'ثمّة موضع يمحو الحالة ويترك العنوان — فيبقى `?app=` ويعاد الفتح',
     ).toBe(1)
   })
 
-  it('ودربُ الوصول مكتوبٌ: الطابورُ ثمّ اسمُ صاحبه', () => {
-    expect(code, 'لا دربَ وصولٍ — فمن دخل ملفّا بعد ملفٍّ نسي من أين جاء')
-      .toMatch(/aria-label="مسارُ الوصول"/)
-    expect(code, 'الدربُ لا يعود بالإغلاق').toContain('onClick={closeDetail}')
+  it('ودرب الوصول مكتوب: الطابور ثمّ اسم صاحبه', () => {
+    expect(code, 'لا درب وصول — فمن دخل ملفّا بعد ملفّ نسي من أين جاء')
+      .toMatch(/aria-label="مسار الوصول"/)
+    expect(code, 'الدرب لا يعود بالإغلاق').toContain('onClick={closeDetail}')
   })
 })

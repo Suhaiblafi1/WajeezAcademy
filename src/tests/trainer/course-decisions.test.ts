@@ -49,22 +49,22 @@ function world(trainers: TrainerState[], over: Partial<DecisionsWorld> = {}): De
     permissions: ALL,
     permissionLabelAr: (k) => `«${k}»`,
     qualifiableStatuses: ['conditionally_approved', 'contract_pending', 'onboarding', 'active'],
-    withdrawProblem: (from) => (from === 'active' ? 'لا يُسحب نشط' : null),
+    withdrawProblem: (from) => (from === 'active' ? 'لا يسحب نشط' : null),
     ...over,
   }
 }
 
 const entry = (over: Record<string, unknown>) => ({ reference: 'WJ-TR-2026-00041', fullName: 'إيناس عاهد', ...over })
 
-describe('① الملفُّ الخاطئُ يُقال خطؤه كلُّه', () => {
-  it('غيرُ ملفِّ قراراتٍ يُردّ بسببه — ولا يُقرأ على أنّه ملفٌّ فارغ', () => {
+describe('① الملفّ الخاطئ يقال خطؤه كلّه', () => {
+  it('غير ملفّ قرارات يردّ بسببه — ولا يقرأ على أنّه ملفّ فارغ', () => {
     expect(parseDecisionsFile({ kind: 'x', version: 1, trainers: [] })).toMatchObject({ ok: false })
     expect(parseDecisionsFile({ kind: DECISIONS_KIND, version: 2, trainers: [] })).toMatchObject({ ok: false })
     expect(parseDecisionsFile(fileOf([]))).toMatchObject({ ok: false })
     expect(parseDecisionsFile([])).toMatchObject({ ok: false })
   })
 
-  it('أخطاءُ البنود كلُّها معا — فيُصلَح الملفُّ مرّةً لا مرّات', () => {
+  it('أخطاء البنود كلّها معا — فيصلح الملفّ مرّة لا مرّات', () => {
     const r = parseDecisionsFile(fileOf([
       { reference: 'WJ-TR-2026-00001', proposals: [{ verdict: 'link' }] },
       entry({ proposals: [{ proposalId: 'p1', verdict: 'ask', questionAr: 'ما؟' }], status: 'suspend' }),
@@ -72,20 +72,20 @@ describe('① الملفُّ الخاطئُ يُقال خطؤه كلُّه', () 
     ]))
     expect(r.ok).toBe(false)
     const errs = r.ok ? [] : r.errorsAr
-    for (const said of ['بلا «fullName»', 'اقتراحٌ جديدٌ بلا عنوان', 'بلا «courseId»', 'السؤالُ خمسةُ أحرف',
-      'تغييرُ الحال بسببٍ', 'مكرَّرٌ في الملفّ', 'لا قرارَ له']) {
-      expect(errs.some((e) => e.includes(said)), `لم يُقل: ${said}\n${errs.join('\n')}`).toBe(true)
+    for (const said of ['بلا «fullName»', 'اقتراح جديد بلا عنوان', 'بلا «courseId»', 'السؤال خمسة أحرف',
+      'تغيير الحال بسبب', 'مكرّر في الملفّ', 'لا قرار له']) {
+      expect(errs.some((e) => e.includes(said)), `لم يقل: ${said}\n${errs.join('\n')}`).toBe(true)
     }
   })
 
-  it('وقرارٌ مجهولٌ يُسمّى ولا يُقرأ «بلا قرار»', () => {
+  it('وقرار مجهول يسمّى ولا يقرأ «بلا قرار»', () => {
     const r = parseDecisionsFile(fileOf([entry({ proposals: [{ proposalId: 'p1', verdict: 'merge' }] })]))
-    expect(r.ok ? [] : r.errorsAr).toEqual([expect.stringContaining('قرارٌ مجهول «merge»')])
+    expect(r.ok ? [] : r.errorsAr).toEqual([expect.stringContaining('قرار مجهول «merge»')])
   })
 })
 
-describe('② ما طُبّق يُعرف فلا يُعاد', () => {
-  it('المربوطُ بالرمز نفسِه، والمؤهَّلُ، والمسحوب — «طُبّقت من قبل»', () => {
+describe('② ما طبّق يعرف فلا يعاد', () => {
+  it('المربوط بالرمز نفسه، والمؤهّل، والمسحوب — «طبّقت من قبل»', () => {
     const t = trainer({
       status: 'withdrawn',
       proposals: [proposal({ status: 'linked', courseId: 'C-COM-101' })],
@@ -93,25 +93,25 @@ describe('② ما طُبّق يُعرف فلا يُعاد', () => {
     })
     const plan = planDecisions(parsed([entry({
       proposals: [{ proposalId: 'p1', verdict: 'link', courseId: 'C-COM-101' }],
-      qualify: ['C-COM-101'], status: 'withdraw', statusNoteAr: 'ملفٌّ مكرَّر للتجربة',
+      qualify: ['C-COM-101'], status: 'withdraw', statusNoteAr: 'ملفّ مكرّر للتجربة',
     })]), world([t]))
     expect(plan.steps.map((s) => [s.kind, s.state])).toEqual([
       ['qualify', 'done'], ['link', 'done'], ['withdraw', 'done'],
     ])
-    expect(plan.applicable, 'ملفٌّ طُبّق كلُّه يُعرض قابلا للتطبيق').toBe(false)
+    expect(plan.applicable, 'ملفّ طبّق كلّه يعرض قابلا للتطبيق').toBe(false)
   })
 
-  it('واقتراحٌ جديدٌ أُدخل من قبل يُعرف بعنوانه — ولو اختلف الرسمُ', () => {
+  it('واقتراح جديد أدخل من قبل يعرف بعنوانه — ولو اختلف الرسم', () => {
     const t = trainer({ proposals: [proposal({ id: 'p9', titleAr: 'إدارة المشاريع لرواد الأعمال' })] })
     const plan = planDecisions(parsed([entry({
-      proposals: [{ titleAr: 'ادارة المشاريع لرواد الاعمال', verdict: 'ask', questionAr: 'أيُّ إدارةِ مشاريع تقصد؟' }],
+      proposals: [{ titleAr: 'ادارة المشاريع لرواد الاعمال', verdict: 'ask', questionAr: 'أيّ إدارة مشاريع تقصد؟' }],
     })]), world([t]))
     const [create, ask] = plan.steps
     expect(create).toMatchObject({ kind: 'create_proposal', state: 'done', proposalId: 'p9' })
     expect(ask).toMatchObject({ kind: 'ask', state: 'todo', proposalId: 'p9', createdByStep: null })
   })
 
-  it('والتصحيحُ يُقاس بالحرف لا بالتطبيع — فالهمزةُ والتاءُ المربوطةُ تصحيحٌ حقيقيّ', () => {
+  it('والتصحيح يقاس بالحرف لا بالتطبيع — فالهمزة والتاء المربوطة تصحيح حقيقيّ', () => {
     const t = trainer({ proposals: [proposal({ titleAr: 'دوره الخطابه' })] })
     const [edit] = planDecisions(parsed([entry({
       proposals: [{ proposalId: 'p1', titleAr: 'دورة الخطابة' }],
@@ -120,8 +120,8 @@ describe('② ما طُبّق يُعرف فلا يُعاد', () => {
   })
 })
 
-describe('③ قرارُ إنسانٍ قائمٌ لا يُكتب فوقه', () => {
-  it('اقتراحٌ رُبط برمزٍ آخر، ومردود — «لا تُطبَّق» وسببُها', () => {
+describe('③ قرار إنسان قائم لا يكتب فوقه', () => {
+  it('اقتراح ربط برمز آخر، ومردود — «لا تطبّق» وسببها', () => {
     const t = trainer({
       proposals: [
         proposal({ id: 'p1', status: 'linked', courseId: 'C-COM-102' }),
@@ -131,15 +131,15 @@ describe('③ قرارُ إنسانٍ قائمٌ لا يُكتب فوقه', () =
     const plan = planDecisions(parsed([entry({
       proposals: [
         { proposalId: 'p1', verdict: 'link', courseId: 'C-COM-101' },
-        { proposalId: 'p2', verdict: 'ask', questionAr: 'ما جمهورُها؟' },
+        { proposalId: 'p2', verdict: 'ask', questionAr: 'ما جمهورها؟' },
       ],
     })]), world([t]))
     expect(plan.steps.map((s) => s.state)).toEqual(['blocked', 'blocked'])
     expect(plan.steps[0].reasonAr).toContain('C-COM-102')
-    expect(plan.applicable, 'مُلفٌّ فيه ممتنعٌ يُعرض قابلا للتطبيق').toBe(false)
+    expect(plan.applicable, 'ملفّ فيه ممتنع يعرض قابلا للتطبيق').toBe(false)
   })
 
-  it('ورمزٌ لا دورةَ به، أو مؤرشف — لا يُربط به ولا يُؤهَّل له', () => {
+  it('ورمز لا دورة به، أو مؤرشف — لا يربط به ولا يؤهّل له', () => {
     const plan = planDecisions(parsed([entry({
       proposals: [{ proposalId: 'p1', verdict: 'became_course', courseId: 'C-NEW-101' }],
       qualify: ['C-OLD-101'],
@@ -148,7 +148,7 @@ describe('③ قرارُ إنسانٍ قائمٌ لا يُكتب فوقه', () =
     expect(plan.steps[1].reasonAr).toContain('في الكتالوج بعد')
   })
 
-  it('والمرجعُ لغير الاسم يمنع خطواتِ صاحبه كلَّها — ولا يُربط اقتراحُ أحدٍ باسم غيره', () => {
+  it('والمرجع لغير الاسم يمنع خطوات صاحبه كلّها — ولا يربط اقتراح أحد باسم غيره', () => {
     const plan = planDecisions(parsed([{ ...entry({ qualify: ['C-COM-101'] }), fullName: 'ماريا الخوالدة' }]),
       world([trainer({})]))
     expect(plan.steps).toHaveLength(1)
@@ -156,7 +156,7 @@ describe('③ قرارُ إنسانٍ قائمٌ لا يُكتب فوقه', () =
     expect(plan.steps[0].reasonAr).toContain('إيناس عاهد')
   })
 
-  it('ومن ليس في طورٍ يُؤهَّل فيه لا يُؤهَّل — والموقوفُ مثلُه', () => {
+  it('ومن ليس في طور يؤهّل فيه لا يؤهّل — والموقوف مثله', () => {
     const asked = planDecisions(parsed([entry({ qualify: ['C-COM-101'] })]),
       world([trainer({ status: 'under_review' })]))
     const suspended = planDecisions(parsed([entry({ qualify: ['C-COM-101'] })]),
@@ -165,23 +165,23 @@ describe('③ قرارُ إنسانٍ قائمٌ لا يُكتب فوقه', () =
     expect(suspended.steps[0].state).toBe('blocked')
   })
 
-  it('ولا يوقف أحدٌ نفسَه من الملفّ', () => {
-    const plan = planDecisions(parsed([entry({ status: 'suspend', statusNoteAr: 'ملفٌّ تجريبيّ' })]),
+  it('ولا يوقف أحد نفسه من الملفّ', () => {
+    const plan = planDecisions(parsed([entry({ status: 'suspend', statusNoteAr: 'ملفّ تجريبيّ' })]),
       world([trainer({})], { actorUserId: 'u-trainer' }))
     expect(plan.steps[0]).toMatchObject({ kind: 'suspend', state: 'blocked' })
-    expect(plan.steps[0].reasonAr).toContain('ملفُّك أنت')
+    expect(plan.steps[0].reasonAr).toContain('ملفّك أنت')
   })
 })
 
-describe('④ الترتيبُ للمدرّب الواحد', () => {
-  it('الإدخالُ والتصحيحُ، ثمّ التأهيل، ثمّ القرارات، ثمّ حالُه — والقرارُ على جديدٍ يتبع إدخالَه', () => {
+describe('④ الترتيب للمدرّب الواحد', () => {
+  it('الإدخال والتصحيح، ثمّ التأهيل، ثمّ القرارات، ثمّ حاله — والقرار على جديد يتبع إدخاله', () => {
     const plan = planDecisions(parsed([entry({
       proposals: [
         { proposalId: 'p1', titleAr: 'دورة الخطابة', verdict: 'link', courseId: 'C-COM-101' },
         { titleAr: 'التسويق العملي للمشاريع الصغيرة', verdict: 'link', courseId: 'C-COM-102' },
       ],
       qualify: ['C-COM-101', 'C-COM-102'],
-      status: 'suspend', statusNoteAr: 'يُوقف بعد تأهيله لغرض الاختبار',
+      status: 'suspend', statusNoteAr: 'يوقف بعد تأهيله لغرض الاختبار',
     })]), world([trainer({ proposals: [proposal({})] })]))
     expect(plan.steps.map((s) => s.kind)).toEqual([
       'edit_proposal', 'create_proposal', 'qualify', 'qualify', 'link', 'link', 'suspend',
@@ -194,17 +194,17 @@ describe('④ الترتيبُ للمدرّب الواحد', () => {
     expect(plan.applicable).toBe(true)
   })
 
-  it('وقرارٌ على جديدٍ لا يُدخَل يمتنع بامتناع إدخاله', () => {
+  it('وقرار على جديد لا يدخل يمتنع بامتناع إدخاله', () => {
     const noProfile = trainer({ profile: null })
     const plan = planDecisions(parsed([entry({
-      proposals: [{ titleAr: 'فكرةٌ من الفقرة الحرّة', verdict: 'ask', questionAr: 'لمن هي؟ ولكم ساعة؟' }],
+      proposals: [{ titleAr: 'فكرة من الفقرة الحرّة', verdict: 'ask', questionAr: 'لمن هي؟ ولكم ساعة؟' }],
     })]), world([noProfile]))
     expect(plan.steps.map((s) => s.state)).toEqual(['blocked', 'blocked'])
   })
 })
 
-describe('⑤ ولا خطوةَ بلا صلاحيّة زرّها', () => {
-  it('لكلّ خطوةٍ صلاحيّة — والتأهيلُ بلا صلاحيّته يمتنع ويُسمّيها', () => {
+describe('⑤ ولا خطوة بلا صلاحيّة زرّها', () => {
+  it('لكلّ خطوة صلاحيّة — والتأهيل بلا صلاحيّته يمتنع ويسمّيها', () => {
     for (const k of STEP_KINDS) expect(STEP_PERMISSION[k], k).toBeTruthy()
     const plan = planDecisions(parsed([entry({ qualify: ['C-COM-101'] })]), world([trainer({})], {
       permissions: new Set(['trainer.change.review']),
@@ -215,8 +215,8 @@ describe('⑤ ولا خطوةَ بلا صلاحيّة زرّها', () => {
   })
 })
 
-describe('⑥ والمدرّبُ الواحدُ قرارٌ واحد — ولا يمسك غيرَه', () => {
-  it('خطوةٌ ممتنعةٌ تُبقي خطواتِ صاحبها كلَّها — ويُطبَّق مدرّبٌ آخرُ سلمت خطواتُه', () => {
+describe('⑥ والمدرّب الواحد قرار واحد — ولا يمسك غيره', () => {
+  it('خطوة ممتنعة تبقي خطوات صاحبها كلّها — ويطبّق مدرّب آخر سلمت خطواته', () => {
     const other = trainer({ reference: 'WJ-TR-2026-00009', fullName: 'ماريا الخوالدة', applicationId: 'app-2' })
     const plan = planDecisions(parsed([
       entry({
@@ -230,7 +230,7 @@ describe('⑥ والمدرّبُ الواحدُ قرارٌ واحد — ولا �
     ])
     /* والمتروكُ يقول لمَ تُرك — والممتنعُ يقول لمَ امتنع */
     expect(plan.steps[0].reasonAr).toContain('الخطوة 2')
-    expect(plan.steps[1].reasonAr).toContain('رُفض')
-    expect(plan.applicable, 'مدرّبٌ ممتنعٌ أمسك غيرَه').toBe(true)
+    expect(plan.steps[1].reasonAr).toContain('رفض')
+    expect(plan.applicable, 'مدرّب ممتنع أمسك غيره').toBe(true)
   })
 })

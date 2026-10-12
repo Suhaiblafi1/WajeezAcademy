@@ -46,22 +46,22 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '../../..')
 const read = (p: string) => readFileSync(join(root, p), 'utf8')
 const here = (p: string) => existsSync(join(root, p))
 
-describe('مجموعةُ deploy/ — كلُّ مُشارٍ إليه موجود', () => {
-  it('نقطةُ دخول الحاوية التي يسمّيها Dockerfile موجودة', () => {
+describe('مجموعة deploy/ — كلّ مشار إليه موجود', () => {
+  it('نقطة دخول الحاوية التي يسمّيها Dockerfile موجودة', () => {
     /* `ENTRYPOINT ["/sbin/tini", "--", "/app/deploy/docker-entrypoint.sh"]`
        — المسارُ داخل الصورة، و`/app` هو `WORKDIR` أي جذرُ المستودَع. */
     const m = read('Dockerfile').match(/ENTRYPOINT\s*\[([^\]]+)\]/)
     expect(m, 'لا ENTRYPOINT في Dockerfile').toBeTruthy()
     const scripts = [...m![1].matchAll(/"\/app\/([^"]+)"/g)].map((x) => x[1])
-    expect(scripts.length, 'ENTRYPOINT لا يسمّي سكربتا من المستودَع').toBeGreaterThan(0)
+    expect(scripts.length, 'ENTRYPOINT لا يسمّي سكربتا من المستودع').toBeGreaterThan(0)
     for (const s of scripts) {
-      expect(here(s), `${s} يسمّيه ENTRYPOINT ولا وجودَ له — الحاويةُ لا تُقلع`).toBe(true)
+      expect(here(s), `${s} يسمّيه ENTRYPOINT ولا وجود له — الحاوية لا تقلع`).toBe(true)
     }
   })
 
-  it('ولكلّ مؤقّتٍ خدمتُه، ولكلّ خدمةٍ سكربتُها', () => {
+  it('ولكلّ مؤقّت خدمته، ولكلّ خدمة سكربتها', () => {
     const units = readdirSync(join(root, 'deploy')).filter((f) => f.endsWith('.timer'))
-    expect(units.length, 'لا مؤقّتَ نسخٍ احتياطيّ البتّة').toBeGreaterThan(0)
+    expect(units.length, 'لا مؤقّت نسخ احتياطيّ البتّة').toBeGreaterThan(0)
     for (const timer of units) {
       /* systemd يقرن المؤقّتَ بخدمةٍ باسمه الأساسيّ — فغيابُها يجعل المؤقّتَ
          يعمل ولا يشغّل شيئا: أهدأُ عطبٍ ممكن. */
@@ -72,30 +72,30 @@ describe('مجموعةُ deploy/ — كلُّ مُشارٍ إليه موجود',
       expect(exec, `${service} بلا ExecStart يسمّي سكربتا في deploy/`).toBeTruthy()
       expect(
         here(exec![1]),
-        `${service} ينفّذ ${exec![1]} ولا وجودَ له — تتوقّف النسخُ بلا أن يحمرّ شيء`,
+        `${service} ينفّذ ${exec![1]} ولا وجود له — تتوقّف النسخ بلا أن يحمرّ شيء`,
       ).toBe(true)
     }
   })
 
-  it('وكلُّ مسارٍ يسمّيه سكربتُ النشر موجود', () => {
+  it('وكلّ مسار يسمّيه سكربت النشر موجود', () => {
     /* `.env.production` مستثنًى: أسرارٌ لا تُلتزَم في Git أبدا (CLAUDE.md)،
        ومثالُه `‎.env.production.example` هو ما يُلتزَم. */
     const named = [...read('deploy/deploy.sh').matchAll(/\bdeploy\/[A-Za-z0-9._-]+/g)]
       .map((m) => m[0])
       .filter((p) => !p.endsWith('.env.production'))
-    expect(named.length, 'السكربتُ لا يسمّي شيئا — تغيّرت بنيتُه').toBeGreaterThan(1)
+    expect(named.length, 'السكربت لا يسمّي شيئا — تغيّرت بنيته').toBeGreaterThan(1)
     for (const p of [...new Set(named)]) {
-      expect(here(p), `deploy.sh يسمّي ${p} ولا وجودَ له`).toBe(true)
+      expect(here(p), `deploy.sh يسمّي ${p} ولا وجود له`).toBe(true)
     }
   })
 
-  it('وملفُّ Caddy الذي يركّبه compose موجود', () => {
+  it('وملفّ Caddy الذي يركّبه compose موجود', () => {
     /* `- ./Caddyfile:/etc/caddy/Caddyfile:ro` — النسبيُّ إلى مجلّد compose */
     const mounts = [...read('deploy/compose.prod.yml').matchAll(/^\s*-\s*\.\/([A-Za-z0-9._-]+):/gm)]
       .map((m) => m[1])
     expect(mounts.length, 'compose لا يركّب ملفّا من deploy/').toBeGreaterThan(0)
     for (const f of [...new Set(mounts)]) {
-      expect(here(`deploy/${f}`), `compose يركّب deploy/${f} ولا وجودَ له`).toBe(true)
+      expect(here(`deploy/${f}`), `compose يركّب deploy/${f} ولا وجود له`).toBe(true)
     }
   })
 })

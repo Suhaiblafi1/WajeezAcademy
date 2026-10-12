@@ -20,7 +20,7 @@ export function daysUntil(iso: string, now = new Date()): number {
 
 /** «٩ أيّام» بصيغتها — لا «9 يوم» ولا «1 أيام» */
 function daysAr(n: number): string {
-  if (n === 1) return 'يومٍ واحد'
+  if (n === 1) return 'يوم واحد'
   if (n === 2) return 'يومين'
   if (n <= 10) return `${n} أيّام`
   return `${n} يوما`
@@ -33,7 +33,7 @@ export function termUrgencyAr(term: UpcomingTerm, now = new Date()): string | nu
     const left = daysUntil(term.registrationClosesAt, now)
     if (left <= 0) return 'والتسجيل مفتوح'
     return left <= 21
-      ? `والتسجيل يُغلق خلال ${daysAr(left)}`
+      ? `والتسجيل يغلق خلال ${daysAr(left)}`
       : `والتسجيل مفتوح حتّى ${fmtDateAr(term.registrationClosesAt)}`
   }
   if (!term.registrationOpensAt) return null

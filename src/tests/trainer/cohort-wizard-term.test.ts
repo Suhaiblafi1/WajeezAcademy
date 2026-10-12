@@ -15,19 +15,19 @@ const code = (p: string) =>
   readFileSync(join(process.cwd(), p), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
 const WIZ = code('src/pages/admin/CohortWizard.tsx')
 
-describe('معالجُ فتح الشعبة — الفصلُ اختياريّ', () => {
-  it('⚠️ الفصلُ ليس ممّا ينقص الخطوةَ الأولى — لا يمنع «التالي»', () => {
+describe('معالج فتح الشعبة — الفصل اختياريّ', () => {
+  it('⚠️ الفصل ليس ممّا ينقص الخطوة الأولى — لا يمنع «التالي»', () => {
     const missing = WIZ.slice(WIZ.indexOf('const stepMissing'), WIZ.indexOf('const canNext'))
-    expect(missing, 'لا قائمةَ نقصٍ أصلا').toContain('m.push(')
-    expect(missing, 'الفصلُ ما زال شرطا للخطوة').not.toMatch(/termId/)
+    expect(missing, 'لا قائمة نقص أصلا').toContain('m.push(')
+    expect(missing, 'الفصل ما زال شرطا للخطوة').not.toMatch(/termId/)
   })
 
-  it('⚠️ وبلا فصلٍ خيارٌ مسمّى بما يقع — لا «اختر» يوحي بالإلزام', () => {
-    expect(WIZ).toMatch(/<option value="">بلا فصل — يُشتقّ من تاريخ البدء<\/option>/)
-    expect(WIZ, 'بقي القولُ إنّ الشعبةَ بلا فصلٍ تحبس مدرّبَها').not.toMatch(/يُحبَس مدرّبُها|تحبس مدرّبَها/)
+  it('⚠️ وبلا فصل خيار مسمّى بما يقع — لا «اختر» يوحي بالإلزام', () => {
+    expect(WIZ).toMatch(/<option value="">بلا فصل — يشتقّ من تاريخ البدء<\/option>/)
+    expect(WIZ, 'بقي القول إنّ الشعبة بلا فصل تحبس مدرّبها').not.toMatch(/يحبس مدرّبها|تحبس مدرّبها/)
   })
 
-  it('والإنشاءُ يرسل الفصلَ إن اختير وحدَه', () => {
+  it('والإنشاء يرسل الفصل إن اختير وحده', () => {
     expect(WIZ).toMatch(/termId: termId \|\| undefined,/)
   })
 })

@@ -167,12 +167,12 @@ export default function SlotSessions({
         startsAt: at(move.date, move.from), endsAt: at(move.date, move.to),
       });
       toast(moved?.approvalState === "approved"
-        ? `غُيّر موعدُ «${s.title}» وبقي معتمَدا — ووصل متعلّميك موعدُه الجديد`
-        : `غُيّر موعدُ «${s.title}»`);
+        ? `غيّر موعد «${s.title}» وبقي معتمدا — ووصل متعلّميك موعده الجديد`
+        : `غيّر موعد «${s.title}»`);
       setMoving(null);
       onDone();
     } catch (e) {
-      toastError(e instanceof ApiError ? e.message : "تعذّر تغييرُ الموعد");
+      toastError(e instanceof ApiError ? e.message : "تعذّر تغيير الموعد");
     } finally {
       setBusy(false);
     }
@@ -190,8 +190,8 @@ export default function SlotSessions({
       /* ويسري فورا بلا اعتماد، ولو بعد اعتماد الخطّة (٢٨ سبتمبر ٢٠٢٦): المعتمَدُ
          يبقى معتمَدا، ومتعلّموه يرون أثرَه في «متى تُفتح المهامّ» — فيُقال له */
       toast(s.approvalState === "approved"
-        ? `رُبط «${s.title}» بـ${axesLabelAr(next, axisNo)} — ويسري لمتعلّميك فورا بلا اعتماد`
-        : `رُبط «${s.title}» بـ${axesLabelAr(next, axisNo)}`);
+        ? `ربط «${s.title}» بـ${axesLabelAr(next, axisNo)} — ويسري لمتعلّميك فورا بلا اعتماد`
+        : `ربط «${s.title}» بـ${axesLabelAr(next, axisNo)}`);
       onDone();
     } catch (e) {
       toastError(e instanceof ApiError ? e.message : "تعذّر الربط");
@@ -214,13 +214,13 @@ export default function SlotSessions({
       /* «احفظ اللقاء» لا «أرسِله للاعتماد»: الاعتمادُ يقع مع الخطّة كلِّها في خطوتها
          الأخيرة — والزرُّ في كلّ لقاءٍ كان يوحي بأنّ كلَّ لقاءٍ إرسالٌ نهائيّ */
       toast(approvedOnce
-        ? "حُفظ اللقاء — وينتظر اعتمادَ الإدارة قبل أن يراه المسجّلون"
-        : "حُفظ اللقاء — ويُعتمَد مع خطّتك حين ترسلها");
+        ? "حفظ اللقاء — وينتظر اعتماد الإدارة قبل أن يراه المسجّلون"
+        : "حفظ اللقاء — ويعتمد مع خطّتك حين ترسلها");
       setForm(blank());
       setOpen(false);
       onDone();
     } catch (e) {
-      toastError(e instanceof ApiError ? e.message : "تعذّرت إضافةُ اللقاء");
+      toastError(e instanceof ApiError ? e.message : "تعذّرت إضافة اللقاء");
     } finally {
       setBusy(false);
     }
@@ -254,12 +254,12 @@ export default function SlotSessions({
           الموعد {index + 1} <span className="font-bold text-foreground">· {label}</span>
         </p>
         <p className="mt-0.5 text-read text-muted-foreground">
-          من {dayLabelAr(slot.startsOn)} إلى {dayLabelAr(slot.endsOn)}. الأنسبُ أن يكون اللقاءُ في أوّل {EARLY_DAYS} أيّام، لأنّ المهامّ تُفتح بعده.
+          من {dayLabelAr(slot.startsOn)} إلى {dayLabelAr(slot.endsOn)}. الأنسب أن يكون اللقاء في أوّل {EARLY_DAYS} أيّام، لأنّ المهامّ تفتح بعده.
         </p>
       </div>
 
       {/* ② محاورُ الموعد بأسمائها — ولكلٍّ لقاءٌ مباشر؟ يُرى قبل الإرسال لا بعد الردّ */}
-      <ul className="grid gap-1.5" aria-label="لقاءُ كلّ محور">
+      <ul className="grid gap-1.5" aria-label="لقاء كلّ محور">
         {axes.map((id) => (
           <li key={id} className="flex items-start gap-2 text-read">
             {covered.has(id)
@@ -267,7 +267,7 @@ export default function SlotSessions({
               : <TriangleAlert className="mt-1 h-4 w-4 shrink-0 text-gold-ink" aria-hidden="true" />}
             <span>
               <b className="text-foreground">{axisNameAr(id)}</b>
-              <span className={covered.has(id) ? "text-teal-light-ink" : "text-gold-ink"}> — {covered.has(id) ? "له لقاءٌ مباشر" : "ليس له لقاءٌ مباشرٌ بعد"}</span>
+              <span className={covered.has(id) ? "text-teal-light-ink" : "text-gold-ink"}> — {covered.has(id) ? "له لقاء مباشر" : "ليس له لقاء مباشر بعد"}</span>
             </span>
           </li>
         ))}
@@ -275,19 +275,19 @@ export default function SlotSessions({
 
       {/* ═══ لقاءاتُ هذا الموعد — المباشرُ والمسجّلُ في قائمةٍ واحدة ═══ */}
       <div className="grid gap-2 border-t border-white/10 pt-3">
-        <p className="text-read font-black text-foreground">لقاءاتُ هذا الموعد</p>
+        <p className="text-read font-black text-foreground">لقاءات هذا الموعد</p>
         <p className="text-read leading-6 text-muted-foreground">
-          أضِف لقاءً مباشرا، أو جلسةً مسجّلة، أو الاثنين — وما شئتَ من كلٍّ منهما، لمحورٍ واحدٍ أو أكثر.
+          أضف لقاء مباشرا، أو جلسة مسجّلة، أو الاثنين — وما شئت من كلّ منهما، لمحور واحد أو أكثر.
         </p>
         {/* وبعد الاعتماد يُقال أيُّها يسري لحظتَه وأيُّها ينتظر (٢٨ سبتمبر ٢٠٢٦):
             الموضعُ — المحورُ ويومُ الفتح — يُكتب في المعتمَدة متى حفظ، والباقي مراجعة
             (`recorded-links.ts`) */}
         {approvedOnce && recorded.length > 0 && (
           <p className="text-read leading-6 text-muted-foreground">
-            خطّتُك معتمَدة — في الجلسة المسجّلة: المحورُ ويومُ الفتح يسريان فورا، وغيرُهما تعتمده الإدارة.
+            خطّتك معتمدة — في الجلسة المسجّلة: المحور ويوم الفتح يسريان فورا، وغيرهما تعتمده الإدارة.
           </p>
         )}
-        {count === 0 && <p className="text-read text-muted-foreground">لا شيءَ بعد.</p>}
+        {count === 0 && <p className="text-read text-muted-foreground">لا شيء بعد.</p>}
 
         {count > 0 && (
           <ul className="grid gap-2">
@@ -305,28 +305,28 @@ export default function SlotSessions({
                     <span className="text-read font-bold text-foreground">{s.title}</span>
                   </div>
                   <p className="text-read text-muted-foreground">
-                    {fmtDateTimeAr(s.startsAt)} · {pending ? "ينتظر اعتمادَ الإدارة" : "معتمَد"}
+                    {fmtDateTimeAr(s.startsAt)} · {pending ? "ينتظر اعتماد الإدارة" : "معتمد"}
                   </p>
                   {outside
-                    ? <p className="text-read font-bold text-gold-ink">يومُه خارجَ وقت هذا الموعد — غيِّر موعده إلى يومٍ داخله.</p>
-                    : day > EARLY_DAYS && <p className="text-read text-gold-ink">في اليوم {day} من الموعد — والأنسبُ أوّلُ {EARLY_DAYS} أيّام.</p>}
+                    ? <p className="text-read font-bold text-gold-ink">يومه خارج وقت هذا الموعد — غيّر موعده إلى يوم داخله.</p>
+                    : day > EARLY_DAYS && <p className="text-read text-gold-ink">في اليوم {day} من الموعد — والأنسب أوّل {EARLY_DAYS} أيّام.</p>}
                   {/* محاورُ اللقاء — يُضاف ما شاء من محاور موعده أو يُرفع، ولا يُترك بلا محور */}
-                  {axisPicker(s.moduleIds ?? [], choices, (id, on) => void relink(s, id, on), `محاورُ «${s.title}»`)}
+                  {axisPicker(s.moduleIds ?? [], choices, (id, on) => void relink(s, id, on), `محاور «${s.title}»`)}
                   <div>
                     <Button tone={outside ? "secondary" : "ghost"} size="sm" icon={CalendarClock} disabled={locked || busy}
                       onClick={() => startMove(s)}>
-                      غيِّر موعده
+                      غيّر موعده
                     </Button>
                   </div>
                   {moving === s.id && (
                     <Inset tone="accent" className="grid gap-3">
                       <div className="grid gap-3 sm:grid-cols-3">
-                        <StaffField label="اليوم" hint="أيّامُ هذا الموعد فقط.">
-                          <SlotDaySelect slot={slot} value={move.date} ariaLabel={`اليومُ الجديد لـ«${s.title}»`}
+                        <StaffField label="اليوم" hint="أيّام هذا الموعد فقط.">
+                          <SlotDaySelect slot={slot} value={move.date} ariaLabel={`اليوم الجديد لـ«${s.title}»`}
                             onChange={(date) => setMove({ ...move, date })} />
                         </StaffField>
                         <StaffField label="من الساعة" hint="بتوقيت عمّان.">
-                          <select value={move.from} aria-label={`ساعةُ البدء الجديدة لـ«${s.title}»`}
+                          <select value={move.from} aria-label={`ساعة البدء الجديدة لـ«${s.title}»`}
                             onChange={(e) => setMove({ ...move, from: e.target.value, to: toSlotsFor(e.target.value).includes(move.to) ? move.to : "" })}
                             className={staffControlCls}>
                             <option value="">اختر الساعة</option>
@@ -337,7 +337,7 @@ export default function SlotSessions({
                           </select>
                         </StaffField>
                         <StaffField label="إلى الساعة" hint={TO_LADDER_WHY_AR}>
-                          <select value={move.to} disabled={!move.from} aria-label={`ساعةُ الانتهاء الجديدة لـ«${s.title}»`}
+                          <select value={move.to} disabled={!move.from} aria-label={`ساعة الانتهاء الجديدة لـ«${s.title}»`}
                             onChange={(e) => setMove({ ...move, to: e.target.value })} className={staffControlCls}>
                             <option value="">{move.from ? "اختر الساعة" : "اختر البدء أوّلا"}</option>
                             {MOVE_TO.map((c) => {
@@ -349,7 +349,7 @@ export default function SlotSessions({
                       </div>
                       <div className="flex flex-wrap gap-2">
                         <Button tone="confirm" size="sm" loading={busy} disabled={busy || !moveTimed} onClick={() => void saveMove(s)}>
-                          احفظ الموعدَ الجديد
+                          احفظ الموعد الجديد
                         </Button>
                         <Button tone="ghost" size="sm" disabled={busy} onClick={() => setMoving(null)}>إلغاء</Button>
                       </div>
@@ -370,37 +370,37 @@ export default function SlotSessions({
                 <Inset as="li" key={`r${i}`} className="grid gap-2">
                   <div className="flex flex-wrap items-center gap-2">
                     <Chip tone="neutral" icon={Film}>مسجّلة</Chip>
-                    <span className="text-read font-bold text-foreground">{row.title.trim() || "جلسةٌ مسجّلة"}</span>
+                    <span className="text-read font-bold text-foreground">{row.title.trim() || "جلسة مسجّلة"}</span>
                   </div>
                   <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
-                    <input value={row.title} disabled={locked} placeholder="اسمُ الجلسة — مثال: «التحليل العمليّ»"
-                      aria-label={`اسمُ الجلسة المسجّلة ${i + 1}`}
+                    <input value={row.title} disabled={locked} placeholder="اسم الجلسة — مثال: «التحليل العمليّ»"
+                      aria-label={`اسم الجلسة المسجّلة ${i + 1}`}
                       onChange={(e) => onPatchRecorded(i, { title: e.target.value })} className={staffControlCls} />
                     <input dir="ltr" value={row.url ?? ""} disabled={locked} placeholder="https://…"
-                      aria-label={`رابطُ الجلسة المسجّلة ${i + 1}`}
+                      aria-label={`رابط الجلسة المسجّلة ${i + 1}`}
                       onChange={(e) => onPatchRecorded(i, { url: e.target.value })} className={`${staffControlCls} text-left`} />
                     <Button tone="ghost" size="sm" disabled={locked} onClick={() => onRemoveRecorded(i)}>احذفها</Button>
                   </div>
                   <div className="grid gap-2 sm:grid-cols-3">
                     <StaffField label="لأيّ محور؟">
-                      <select value={row.moduleId ?? axes[0] ?? ""} disabled={locked} aria-label={`محورُ الجلسة المسجّلة ${i + 1}`}
+                      <select value={row.moduleId ?? axes[0] ?? ""} disabled={locked} aria-label={`محور الجلسة المسجّلة ${i + 1}`}
                         onChange={(e) => onPatchRecorded(i, { moduleId: e.target.value || null })} className={staffControlCls}>
                         {axes.map((id) => <option key={id} value={id}>{axisNameAr(id)}</option>)}
                       </select>
                     </StaffField>
-                    <StaffField label="تُفتح للمتعلّم يوم" hint="أيّامُ هذا الموعد فقط.">
-                      <SlotDaySelect slot={slot} value={date} disabled={locked} ariaLabel={`يومُ فتح الجلسة المسجّلة ${i + 1}`}
+                    <StaffField label="تفتح للمتعلّم يوم" hint="أيّام هذا الموعد فقط.">
+                      <SlotDaySelect slot={slot} value={date} disabled={locked} ariaLabel={`يوم فتح الجلسة المسجّلة ${i + 1}`}
                         onChange={(d) => onPatchRecorded(i, { opensAt: at(d, clock).toISOString() })} />
                     </StaffField>
                     <StaffField label="الساعة" hint="بتوقيت عمّان.">
-                      <select value={clock} disabled={locked} aria-label={`ساعةُ فتح الجلسة المسجّلة ${i + 1}`}
+                      <select value={clock} disabled={locked} aria-label={`ساعة فتح الجلسة المسجّلة ${i + 1}`}
                         onChange={(e) => date && onPatchRecorded(i, { opensAt: at(date, e.target.value).toISOString() })}
                         className={staffControlCls}>
                         {FROM.map((c) => <option key={c} value={c}>{slotLabelAr(c)}</option>)}
                       </select>
                     </StaffField>
                   </div>
-                  {outside && <p className="text-read font-bold text-gold-ink">يومُ فتحها خارجَ وقت هذا الموعد — اختر يوما من القائمة.</p>}
+                  {outside && <p className="text-read font-bold text-gold-ink">يوم فتحها خارج وقت هذا الموعد — اختر يوما من القائمة.</p>}
                 </Inset>
               );
             })}
@@ -411,19 +411,19 @@ export default function SlotSessions({
         {!open && (
           <div className="flex flex-wrap gap-2">
             <Button tone="secondary" size="sm" icon={CalendarPlus} disabled={locked} onClick={() => { setForm(blank()); setOpen(true); }}>
-              + لقاءٌ مباشر
+              + لقاء مباشر
             </Button>
             <Button tone="secondary" size="sm" icon={Film} disabled={locked}
               onClick={() => onAddRecorded({
                 title: "", url: "", moduleId: uncovered[0] ?? axes[0] ?? null,
                 opensAt: at(slot.startsOn, "08:00").toISOString(),
               })}>
-              + جلسةٌ مسجّلة
+              + جلسة مسجّلة
             </Button>
           </div>
         )}
         {recorded.length > 0 && (
-          <p className="text-read leading-6 text-muted-foreground">الجلسةُ المسجّلةُ تُحفظ مع خطّتك بزرّ «احفظ» في أعلى الصفحة.</p>
+          <p className="text-read leading-6 text-muted-foreground">الجلسة المسجّلة تحفظ مع خطّتك بزرّ «احفظ» في أعلى الصفحة.</p>
         )}
       </div>
 
@@ -431,18 +431,18 @@ export default function SlotSessions({
       {open && (
         <Inset tone="accent" className="grid gap-3">
           <p className="flex items-center gap-2 text-read font-black text-foreground">
-            <Video className="h-4 w-4 text-teal-light-ink" aria-hidden="true" /> لقاءٌ مباشرٌ جديد
+            <Video className="h-4 w-4 text-teal-light-ink" aria-hidden="true" /> لقاء مباشر جديد
           </p>
-          <StaffField as="div" wide label="لأيّ محور؟" hint="اختر محورا أو أكثر — تُفتح مهامُّها بعد اللقاء.">
-            {axisPicker(form.moduleIds, axes, (id, on) => setForm({ ...form, moduleIds: on ? [...form.moduleIds, id] : form.moduleIds.filter((x) => x !== id) }), `محاورُ اللقاء الجديد في الموعد ${index + 1}`)}
+          <StaffField as="div" wide label="لأيّ محور؟" hint="اختر محورا أو أكثر — تفتح مهامّها بعد اللقاء.">
+            {axisPicker(form.moduleIds, axes, (id, on) => setForm({ ...form, moduleIds: on ? [...form.moduleIds, id] : form.moduleIds.filter((x) => x !== id) }), `محاور اللقاء الجديد في الموعد ${index + 1}`)}
           </StaffField>
           <div className="grid gap-3 sm:grid-cols-3">
-            <StaffField label="اليوم" hint={`أيّامُ هذا الموعد فقط: من ${dayLabelAr(slot.startsOn)} إلى ${dayLabelAr(slot.endsOn)}.`}>
-              <SlotDaySelect slot={slot} value={form.date} ariaLabel={`يومُ اللقاء في الموعد ${index + 1}`}
+            <StaffField label="اليوم" hint={`أيّام هذا الموعد فقط: من ${dayLabelAr(slot.startsOn)} إلى ${dayLabelAr(slot.endsOn)}.`}>
+              <SlotDaySelect slot={slot} value={form.date} ariaLabel={`يوم اللقاء في الموعد ${index + 1}`}
                 onChange={(date) => setForm({ ...form, date })} />
             </StaffField>
             <StaffField label="من الساعة" hint="بتوقيت عمّان.">
-              <select value={form.from} aria-label={`ساعةُ بدء اللقاء في الموعد ${index + 1}`}
+              <select value={form.from} aria-label={`ساعة بدء اللقاء في الموعد ${index + 1}`}
                 onChange={(e) => {
                   const from = e.target.value;
                   /* وما اختاره في «إلى» يبقى إن صلح — ولا يُملأ عنه إن لم يصلح */
@@ -457,7 +457,7 @@ export default function SlotSessions({
               </select>
             </StaffField>
             <StaffField label="إلى الساعة" hint={TO_LADDER_WHY_AR}>
-              <select value={form.to} disabled={!form.from} aria-label={`ساعةُ انتهاء اللقاء في الموعد ${index + 1}`}
+              <select value={form.to} disabled={!form.from} aria-label={`ساعة انتهاء اللقاء في الموعد ${index + 1}`}
                 onChange={(e) => setForm({ ...form, to: e.target.value })} className={staffControlCls}>
                 <option value="">{form.from ? "اختر الساعة" : "اختر البدء أوّلا"}</option>
                 {TO.map((c) => {
@@ -467,20 +467,20 @@ export default function SlotSessions({
               </select>
             </StaffField>
           </div>
-          <StaffField wide label="عنوانُ اللقاء (اختياريّ)" hint={`يراه المتعلّم في تقويمه. إن تركته فارغا سمّيناه «${suggested}».`}>
-            <input value={form.title} placeholder={`مثال: ${suggested}`} aria-label={`عنوانُ اللقاء في الموعد ${index + 1}`}
+          <StaffField wide label="عنوان اللقاء (اختياريّ)" hint={`يراه المتعلّم في تقويمه. إن تركته فارغا سمّيناه «${suggested}».`}>
+            <input value={form.title} placeholder={`مثال: ${suggested}`} aria-label={`عنوان اللقاء في الموعد ${index + 1}`}
               onChange={(e) => setForm({ ...form, title: e.target.value })} className={staffControlCls} />
           </StaffField>
-          <StaffField wide label="ملاحظةٌ عن اللقاء (اختياريّ)" hint="هل يُسجَّل؟ هل يحضّر المتعلّمُ شيئا قبله؟">
-            <textarea rows={2} value={form.noteAr} aria-label={`ملاحظاتُ اللقاء في الموعد ${index + 1}`}
+          <StaffField wide label="ملاحظة عن اللقاء (اختياريّ)" hint="هل يسجّل؟ هل يحضّر المتعلّم شيئا قبله؟">
+            <textarea rows={2} value={form.noteAr} aria-label={`ملاحظات اللقاء في الموعد ${index + 1}`}
               onChange={(e) => setForm({ ...form, noteAr: e.target.value })} className={staffControlCls} />
           </StaffField>
           {outside ? (
             <p className="text-read font-bold text-gold-ink">
-              هذا اليومُ خارجَ وقت {label} — اختر يوما من القائمة.
+              هذا اليوم خارج وقت {label} — اختر يوما من القائمة.
             </p>
           ) : formDay > EARLY_DAYS && (
-            <p className="text-read text-gold-ink">هذا اليومُ {formDay} من الموعد — الأنسبُ أوّلُ {EARLY_DAYS} أيّام، لأنّ المهامّ تُفتح بعد اللقاء. ولك أن تُبقيه.</p>
+            <p className="text-read text-gold-ink">هذا اليوم {formDay} من الموعد — الأنسب أوّل {EARLY_DAYS} أيّام، لأنّ المهامّ تفتح بعد اللقاء. ولك أن تبقيه.</p>
           )}
           {!outside && dayNote && (
             <p className="flex items-start gap-2 text-read leading-6 text-gold-ink">

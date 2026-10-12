@@ -23,13 +23,13 @@ const TEMPLATE = `<!doctype html>
 <html lang="ar" dir="rtl">
   <head>
     <title>مسارك يبدأ من فهمك — أكاديمية وجيز</title>
-    <meta name="description" content="وصفُ الرئيسة" />
+    <meta name="description" content="وصف الرئيسة" />
     <link rel="canonical" href="https://www.wajeezacademy.com/" />
     <meta property="og:title" content="مسارك يبدأ من فهمك — أكاديمية وجيز" />
-    <meta property="og:description" content="وصفُ الرئيسة" />
+    <meta property="og:description" content="وصف الرئيسة" />
     <meta property="og:url" content="https://www.wajeezacademy.com/" />
     <meta name="twitter:title" content="مسارك يبدأ من فهمك — أكاديمية وجيز" />
-    <meta name="twitter:description" content="وصفُ الرئيسة" />
+    <meta name="twitter:description" content="وصف الرئيسة" />
     <script type="application/ld+json">
     { "@context": "https://schema.org" }
     </script>
@@ -49,8 +49,8 @@ const descOf = (h: string) => attr(h, /<meta name="description" content="([^"]*)
 const bodyText = (h: string) =>
   (/<div id="root">([\s\S]*?)<\/body>/.exec(h)?.[1] ?? '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
 
-describe('التهيئةُ المسبقة: لكلّ صفحةٍ وسومُها', () => {
-  it.each(PUBLIC_PAGES)('«$path» تحمل canonical الخاصَّ بها', (page) => {
+describe('التهيئة المسبقة: لكلّ صفحة وسومها', () => {
+  it.each(PUBLIC_PAGES)('«$path» تحمل canonical الخاصّ بها', (page) => {
     const html = render(TEMPLATE, page)
     expect(canonicalOf(html)).toBe(`https://www.wajeezacademy.com${page.path}`)
     expect(ogUrlOf(html)).toBe(`https://www.wajeezacademy.com${page.path}`)
@@ -58,9 +58,9 @@ describe('التهيئةُ المسبقة: لكلّ صفحةٍ وسومُها', 
     expect(descOf(html)).toBe(page.description)
   })
 
-  it('ولا صفحتان تتقاسمان canonical — وهو العطبُ الأصليّ بعينه', () => {
+  it('ولا صفحتان تتقاسمان canonical — وهو العطب الأصليّ بعينه', () => {
     const canonicals = PUBLIC_PAGES.map((p) => canonicalOf(render(TEMPLATE, p)))
-    expect(new Set(canonicals).size, 'صفحتان تُعلنان الأصلَ نفسَه فتُطوى إحداهما').toBe(
+    expect(new Set(canonicals).size, 'صفحتان تعلنان الأصل نفسه فتطوى إحداهما').toBe(
       PUBLIC_PAGES.length,
     )
   })
@@ -70,18 +70,18 @@ describe('التهيئةُ المسبقة: لكلّ صفحةٍ وسومُها', 
     expect(new Set(titles).size).toBe(PUBLIC_PAGES.length)
   })
 
-  it('وفي جسد كلّ صفحةٍ نصٌّ يُقرأ بلا جافاسكربت', () => {
+  it('وفي جسد كلّ صفحة نصّ يقرأ بلا جافاسكربت', () => {
     /* محرّكاتُ الإجابة (GPTBot وPerplexityBot وسواهما) لا تشغّل جافاسكربت في
        الغالب — فما لا يكون في المصدر لا يصل إليها. وكان الجسدُ
        `<div id="root"></div>` فارغا تماما. */
     for (const page of PUBLIC_PAGES) {
       const text = bodyText(render(TEMPLATE, page))
-      expect(text.length, `جسدُ «${page.path}» فارغٌ للزاحف`).toBeGreaterThan(200)
-      expect(text, `عنوانُ «${page.path}» غائبٌ عن جسدها`).toContain(page.title)
+      expect(text.length, `جسد «${page.path}» فارغ للزاحف`).toBeGreaterThan(200)
+      expect(text, `عنوان «${page.path}» غائب عن جسدها`).toContain(page.title)
     }
   })
 
-  it('ولكلّ صفحةٍ روابطُ الموقع — وإلّا فلا يجد الزاحفُ صفحةً من صفحة', () => {
+  it('ولكلّ صفحة روابط الموقع — وإلّا فلا يجد الزاحف صفحة من صفحة', () => {
     for (const page of PUBLIC_PAGES) {
       const html = render(TEMPLATE, page)
       const hrefs = [...html.matchAll(/<a href="([^"]+)"/g)].map((m) => m[1])
@@ -90,23 +90,23 @@ describe('التهيئةُ المسبقة: لكلّ صفحةٍ وسومُها', 
     }
   })
 
-  it('وتوجيهُ الفهرسة مكتوبٌ مرّةً واحدة', () => {
+  it('وتوجيه الفهرسة مكتوب مرّة واحدة', () => {
     for (const page of PUBLIC_PAGES) {
       const html = render(TEMPLATE, page)
       const robots = [...html.matchAll(/<meta name="robots" content="([^"]*)"/g)]
-      expect(robots.length, `توجيهُ الفهرسة مكرّرٌ في «${page.path}»`).toBe(1)
+      expect(robots.length, `توجيه الفهرسة مكرّر في «${page.path}»`).toBe(1)
       expect(robots[0][1]).toBe(ROBOTS_INDEXABLE)
     }
   })
 
-  it('ولا تبقى علامةُ الأصل حرفيّةً في أيّ صفحة', () => {
+  it('ولا تبقى علامة الأصل حرفيّة في أيّ صفحة', () => {
     for (const page of PUBLIC_PAGES) {
       expect(render(TEMPLATE, page)).not.toContain('%VITE_SITE_ORIGIN%')
     }
   })
 })
 
-describe('البياناتُ المنظّمة', () => {
+describe('البيانات المنظّمة', () => {
   const graphOf = (html: string) =>
     JSON.parse(
       (/<script type="application\/ld\+json">([\s\S]*?)<\/script>/.exec(html)?.[1] ?? '{}').replace(
@@ -122,17 +122,17 @@ describe('البياناتُ المنظّمة', () => {
     )
   }
 
-  it('كلُّ صفحةٍ تُعرّف نفسَها WebPage', () => {
+  it('كلّ صفحة تعرّف نفسها WebPage', () => {
     for (const page of PUBLIC_PAGES) expect(typesOn(page.path)).toContain('WebPage')
   })
 
-  it('والمنظّمةُ على الرئيسة وحدها — لا في كلّ عنوان', () => {
+  it('والمنظّمة على الرئيسة وحدها — لا في كلّ عنوان', () => {
     expect(typesOn('/')).toContain('EducationalOrganization')
     expect(typesOn('/')).toContain('WebSite')
     expect(typesOn('/pathways')).not.toContain('EducationalOrganization')
   })
 
-  it('والأسئلةُ الشائعة حيث تُعرض فعلا — وكانت تُدّعى في كلّ صفحة', () => {
+  it('والأسئلة الشائعة حيث تعرض فعلا — وكانت تدّعى في كلّ صفحة', () => {
     /* كانت `FAQPage` في `index.html`، أي في **كلّ** عنوانٍ يخدمه الخادم —
        ادّعاءٌ يخالف ما في الصفحة، وهو ما يُسقط الوسمَ عند قوقل. */
     expect(typesOn('/')).toContain('FAQPage')
@@ -141,14 +141,14 @@ describe('البياناتُ المنظّمة', () => {
     expect(typesOn('/contact')).not.toContain('FAQPage')
   })
 
-  it('وفتاتُ الخبز على الصفحات الداخلية لا على الرئيسة', () => {
+  it('وفتات الخبز على الصفحات الداخلية لا على الرئيسة', () => {
     expect(typesOn('/pathways')).toContain('BreadcrumbList')
     expect(typesOn('/')).not.toContain('BreadcrumbList')
   })
 })
 
-describe('التطبيع: القالبُ يعود بِكرا', () => {
-  it('تشغيلٌ ثانٍ على ناتجِ الأوّل يُخرج النتيجةَ نفسَها', () => {
+describe('التطبيع: القالب يعود بكرا', () => {
+  it('تشغيل ثان على ناتج الأوّل يخرج النتيجة نفسها', () => {
     /* `dist/index.html` هو القالبُ **وهو** ملفُّ الرئيسة. فبلا تطبيعٍ كان
        التشغيلُ الثاني يُدخل محتوًى في محتوًى ويكرّر وسمَ `robots`. */
     const home = PUBLIC_PAGES[0]
@@ -157,7 +157,7 @@ describe('التطبيع: القالبُ يعود بِكرا', () => {
     expect(twice).toBe(once)
   })
 
-  it('والتطبيعُ يُعيد الجسدَ فارغا كما بناه Vite', () => {
+  it('والتطبيع يعيد الجسد فارغا كما بناه Vite', () => {
     const filled = render(TEMPLATE, PUBLIC_PAGES[1])
     expect(normalizeTemplate(filled)).toContain('<div id="root"></div>')
   })

@@ -126,24 +126,24 @@ export function pairPenalty(a: PlannableCourse, b: PlannableCourse): { penalty: 
   const skills = overlap(a.skillSlugs, b.skillSlugs)
   if (skills > 0) {
     penalty += PENALTY.sharedSkill * skills
-    reasons.push(`${skills} مهارةً مشتركة`)
+    reasons.push(`${skills} مهارة مشتركة`)
   }
   if (a.pathwayId && a.pathwayId === b.pathwayId) {
     penalty += PENALTY.samePathway
-    reasons.push('المسارُ نفسُه')
+    reasons.push('المسار نفسه')
   }
   if (a.collisionGroup && a.collisionGroup === b.collisionGroup) {
     penalty += PENALTY.sameCollisionGroup
-    reasons.push('مجموعةُ التزاحم نفسُها')
+    reasons.push('مجموعة التزاحم نفسها')
   }
   if (a.domainAr && a.domainAr === b.domainAr) {
     penalty += PENALTY.sameDomain
-    reasons.push(`المجالُ نفسُه (${a.domainAr})`)
+    reasons.push(`المجال نفسه (${a.domainAr})`)
   }
   const families = overlap(a.skillFamilies, b.skillFamilies)
   if (families > 0) {
     penalty += PENALTY.sharedFamily * families
-    reasons.push(`${families} عائلةَ مهاراتٍ مشتركة`)
+    reasons.push(`${families} عائلة مهارات مشتركة`)
   }
   return { penalty: Math.round(penalty * 1000) / 1000, whyAr: reasons.join(' · ') }
 }
@@ -169,10 +169,10 @@ function pathwayOrderBreach(
     const later = course.sequence > other.sequence
     const gap = later ? week - otherWeek : otherWeek - week
     if (gap <= 0) {
-      return `ترتيبُ المسار مكسور: تقع ${later ? 'قبل' : 'بعد'} «${otherId}» وتسلسلُها يقتضي العكس`
+      return `ترتيب المسار مكسور: تقع ${later ? 'قبل' : 'بعد'} «${otherId}» وتسلسلها يقتضي العكس`
     }
     if (Math.abs(course.sequence - other.sequence) === 1 && gap < MIN_PATHWAY_GAP_WEEKS) {
-      return `الفجوةُ عن «${otherId}» ${gap} أسبوعٍ والحدُّ ${MIN_PATHWAY_GAP_WEEKS}`
+      return `الفجوة عن «${otherId}» ${gap} أسبوع والحدّ ${MIN_PATHWAY_GAP_WEEKS}`
     }
   }
   return null
@@ -300,8 +300,8 @@ export function planTerm(input: PlannerInput): PlannerResult {
             courseId: course.courseId,
             whyAr:
               span > input.slots.length
-                ? `سلسلةُ مسارها تحتاج ${span} أسبوعا والفصلُ ${input.slots.length}`
-                : 'السقفُ الأسبوعيُّ ممتلئٌ في كلّ بدايةٍ تسعها',
+                ? `سلسلة مسارها تحتاج ${span} أسبوعا والفصل ${input.slots.length}`
+                : 'السقف الأسبوعيّ ممتلئ في كلّ بداية تسعها',
           })
         }
       }

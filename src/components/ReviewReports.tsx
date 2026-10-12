@@ -57,7 +57,7 @@ export function ReviewReportUploader({ planId, reports, onChange }: {
       );
       await putSigned(r.uploadUrl, file, r.maxBytes);
       await onChange();
-      setMsg(`رُفع «${file.name}» — تذكره رسالةُ قرارك، ويجده المدرّبُ في صفحة شعبته.`);
+      setMsg(`رفع «${file.name}» — تذكره رسالة قرارك، ويجده المدرّب في صفحة شعبته.`);
     } catch (e) {
       setMsg(e instanceof ApiError || e instanceof Error ? e.message : "تعذّر الرفع");
     } finally {
@@ -71,7 +71,7 @@ export function ReviewReportUploader({ planId, reports, onChange }: {
     try {
       await apiDelete(`/api/admin/cohort-plans/${planId}/review-report/${encodeURIComponent(key)}`);
       await onChange();
-      setMsg(`حُذف «${name}».`);
+      setMsg(`حذف «${name}».`);
     } catch (e) {
       setMsg(e instanceof ApiError ? e.message : "تعذّر الحذف");
     } finally {
@@ -81,9 +81,9 @@ export function ReviewReportUploader({ planId, reports, onChange }: {
 
   return (
     <Inset className="mt-3" role="region" aria-label="تقرير المراجعة">
-      <p className="text-read font-black text-foreground">تقريرُ المراجعة (اختياريّ)</p>
+      <p className="text-read font-black text-foreground">تقرير المراجعة (اختياريّ)</p>
       <p className="mt-1 text-read leading-6 text-muted-foreground">
-        ارفعه PDF أو Word قبل قرارك: يُحفظ مع الخطّة، وتذكره رسالةُ القرار للمدرّب جرسا وبريدا،
+        ارفعه PDF أو Word قبل قرارك: يحفظ مع الخطّة، وتذكره رسالة القرار للمدرّب جرسا وبريدا،
         ويجده في صفحة شعبته تحت «تقرير المراجعة».
       </p>
       {reports.length > 0 && (
@@ -106,12 +106,12 @@ export function ReviewReportUploader({ planId, reports, onChange }: {
           ref={input}
           type="file"
           className="sr-only"
-          aria-label="ملفُّ تقرير المراجعة"
+          aria-label="ملفّ تقرير المراجعة"
           accept={[...REVIEW_REPORT_MIMES, ".pdf", ".docx"].join(",")}
           onChange={(e) => { const f = e.target.files?.[0]; if (f) void upload(f); }}
         />
         <Button tone="secondary" size="sm" icon={Upload} disabled={busy} onClick={() => input.current?.click()}>
-          {busy ? "يُرفع…" : reports.length > 0 ? "ارفع تقريرا آخر" : "ارفع التقرير"}
+          {busy ? "يرفع…" : reports.length > 0 ? "ارفع تقريرا آخر" : "ارفع التقرير"}
         </Button>
       </div>
       {msg && <p className="mt-2 text-read font-bold text-teal-light-ink" role="status">{msg}</p>}
@@ -143,13 +143,13 @@ export function ReviewReportsBulkUpload({ plans, onUploaded, onOpen }: {
   const run = async (picked: readonly File[]) => {
     if (progress || picked.length === 0) return;
     setResults([]); setSummary(""); setSkippedAr("");
-    setProgress("يُفتح ما اخترت");
+    setProgress("يفتح ما اخترت");
     const expanded = await expandReportFiles(picked);
     const files = expanded.files;
     setSkippedAr(skippedLineAr(expanded.skipped));
     const out: ReportResult[] = expanded.problems.map((p) => ({ name: p.name, planId: null, labelAr: null, state: "failed", noteAr: p.problemAr }));
     for (const [i, file] of files.entries()) {
-      setProgress(`يُرفع ${i + 1} من ${files.length}`);
+      setProgress(`يرفع ${i + 1} من ${files.length}`);
       const m = matchReportFile(file.name, file.type, plans);
       if (!m.ok) {
         out.push({ name: file.name, planId: null, labelAr: null, state: "failed", noteAr: m.problemAr });
@@ -159,13 +159,13 @@ export function ReviewReportsBulkUpload({ plans, onUploaded, onOpen }: {
             `/api/admin/cohort-plans/${m.planId}/review-report`, { mime: m.mime, originalName: m.storedName },
           );
           await putSigned(r.uploadUrl, file, r.maxBytes);
-          out.push({ name: file.name, planId: m.planId, labelAr: m.labelAr, state: "done", noteAr: "رُفع إلى خطّته" });
+          out.push({ name: file.name, planId: m.planId, labelAr: m.labelAr, state: "done", noteAr: "رفع إلى خطّته" });
           onUploaded(m.planId);
         } catch (e) {
           const already = e instanceof ApiError && e.code === "report_exists";
           out.push({
             name: file.name, planId: m.planId, labelAr: m.labelAr, state: already ? "already" : "failed",
-            noteAr: already ? "كان مرفوعا من قبل — لم يُكرَّر" : e instanceof ApiError || e instanceof Error ? e.message : "تعذّر الرفع",
+            noteAr: already ? "كان مرفوعا من قبل — لم يكرّر" : e instanceof ApiError || e instanceof Error ? e.message : "تعذّر الرفع",
           });
         }
       }
@@ -180,12 +180,12 @@ export function ReviewReportsBulkUpload({ plans, onUploaded, onOpen }: {
   };
 
   return (
-    <Inset className="mb-4 px-4 py-3" role="region" aria-label="تقاريرُ المراجعة دفعةً واحدة">
-      <p className="text-read font-black text-foreground">ارفع تقاريرَ المراجعة وملاحقَها كلَّها دفعةً واحدة</p>
+    <Inset className="mb-4 px-4 py-3" role="region" aria-label="تقارير المراجعة دفعة واحدة">
+      <p className="text-read font-black text-foreground">ارفع تقارير المراجعة وملاحقها كلّها دفعة واحدة</p>
       <p className="mt-1 max-w-3xl text-read leading-6 text-muted-foreground">
-        كلُّ ملفٍّ يذكر خطّتَه في اسمه (اسمَ المدرّب واسمَ الشعبة) فيُرفع إلى بطاقتها وحدَها، وما رُفع من قبل لا يتكرّر. ويراه المدرّبُ في صفحة
-        شعبته من لحظة رفعه — باسمه بلا معرّف الخطّة — وتذكره رسالةُ قرارك حين تقرّر. PDF أو Word، أو الملفُّ
-        المضغوطُ (zip) كما هو بلا أن تفتحه.
+        كلّ ملفّ يذكر خطّته في اسمه (اسم المدرّب واسم الشعبة) فيرفع إلى بطاقتها وحدها، وما رفع من قبل لا يتكرّر. ويراه المدرّب في صفحة
+        شعبته من لحظة رفعه — باسمه بلا معرّف الخطّة — وتذكره رسالة قرارك حين تقرّر. PDF أو Word، أو الملفّ
+        المضغوط (zip) كما هو بلا أن تفتحه.
       </p>
       <div
         className={`mt-3 flex flex-wrap items-center gap-3 rounded-lg border-2 border-dashed p-4 ${over ? "border-teal-light-ink bg-teal-light-ink/5" : "border-border"}`}
@@ -198,14 +198,14 @@ export function ReviewReportsBulkUpload({ plans, onUploaded, onOpen }: {
           type="file"
           multiple
           className="sr-only"
-          aria-label="ملفّاتُ تقارير المراجعة"
+          aria-label="ملفّات تقارير المراجعة"
           accept={[...REVIEW_REPORT_MIMES, ".pdf", ".docx", ".zip", "application/zip"].join(",")}
           onChange={(e) => void run(Array.from(e.target.files ?? []))}
         />
         <Button tone="secondary" size="sm" icon={Files} disabled={progress !== null} onClick={() => input.current?.click()}>
           {progress ? `${progress}…` : "اختر الملفّات"}
         </Button>
-        <span className="text-read text-muted-foreground">أو اسحبها كلَّها إلى هنا وأفلتها.</span>
+        <span className="text-read text-muted-foreground">أو اسحبها كلّها إلى هنا وأفلتها.</span>
       </div>
       {summary && <p className="mt-3 text-read font-bold text-teal-light-ink" role="status">{summary}</p>}
       {skippedAr && <p className="mt-1 text-read text-muted-foreground">{skippedAr}</p>}
@@ -214,14 +214,14 @@ export function ReviewReportsBulkUpload({ plans, onUploaded, onOpen }: {
           {results.map((r, i) => (
             <li key={`${i}-${r.name}`} className="rounded-lg border border-border/60 p-3">
               <div className="flex flex-wrap items-center gap-2">
-                <Chip tone={r.state === "failed" ? "danger" : "positive"}>{r.state === "done" ? "رُفع" : r.state === "already" ? "مرفوع" : "رُدّ"}</Chip>
+                <Chip tone={r.state === "failed" ? "danger" : "positive"}>{r.state === "done" ? "رفع" : r.state === "already" ? "مرفوع" : "ردّ"}</Chip>
                 <span className="text-read font-bold text-foreground" dir="auto">{r.labelAr ?? r.name}</span>
               </div>
               {r.labelAr && <p className="mt-1 text-read text-muted-foreground" dir="auto">{r.name}</p>}
               <p className={`mt-1 text-read leading-6 ${r.state === "failed" ? "text-danger-ink" : "text-foreground"}`}>{r.noteAr}</p>
               {r.planId && r.state !== "failed" && (
                 <Button className="mt-2" tone="ghost" size="sm" icon={ExternalLink} onClick={() => onOpen(r.planId!)}>
-                  افتح خطّتَه
+                  افتح خطّته
                 </Button>
               )}
             </li>
@@ -237,10 +237,10 @@ export function ReviewReportList({ reports }: { reports: readonly ReviewReport[]
   if (reports.length === 0) return null;
   return (
     <Inset className="mt-2" role="region" aria-label="تقرير المراجعة">
-      <p className="text-read font-black text-foreground">تقريرُ المراجعة — للقراءة إن شئت</p>
+      <p className="text-read font-black text-foreground">تقرير المراجعة — للقراءة إن شئت</p>
       {/* وكلُّ ما فيه بنودٌ في «المراجعة» يقبلها أو يرفضها — فلا يلزمه أن يقرأه ليقرّر (١١ أكتوبر ٢٠٢٦) */}
       <p className="mt-1 text-read leading-6 text-muted-foreground">
-        رفعته الإدارةُ بعد قراءة خطّتك. وكلُّ ما فيه مكتوبٌ بنودا أعلاه، فلا يلزمك قراءتُه لتقرّر.
+        رفعته الإدارة بعد قراءة خطّتك. وكلّ ما فيه مكتوب بنودا أعلاه، فلا يلزمك قراءته لتقرّر.
       </p>
       <ul className="mt-2 space-y-1.5">
         {reports.map((r) => (

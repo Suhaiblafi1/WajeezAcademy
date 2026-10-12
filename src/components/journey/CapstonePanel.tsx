@@ -62,19 +62,19 @@ export default function CapstonePanel({
           <Trophy className="h-4.5 w-4.5" /> مشروع تخرّجك
         </h3>
         <p className="mt-0.5 text-read text-muted-foreground">
-          نهاية «{track.titleAr}» — بعد دوراته، لا مرحلةً فيه.
+          نهاية «{track.titleAr}» — بعد دوراته، لا مرحلة فيه.
         </p>
         {track.capstoneAr ? (
           <p className="mt-3 text-sm leading-7 text-foreground">{track.capstoneAr}</p>
         ) : (
           <p className="mt-3 text-read leading-6 text-muted-foreground">
-            لم يُكتب نصُّ مشروع هذا المسار في الكتالوج بعد.
+            لم يكتب نصّ مشروع هذا المسار في الكتالوج بعد.
           </p>
         )}
         <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-gold/20 pt-3.5">
           <p className="min-w-0 flex-1 text-read leading-5 text-muted-foreground">
-            تسليمُ المشروع يُرتَّب مع فريقنا الأكاديميّ: تراسله، فيُسنَد لك مقيّمٌ وموعد.
-            {completion && !completion.eligible && " ويُقدَّم بعد إنجاز دورات المسار."}
+            تسليم المشروع يرتّب مع فريقنا الأكاديميّ: تراسله، فيسند لك مقيّم وموعد.
+            {completion && !completion.eligible && " ويقدّم بعد إنجاز دورات المسار."}
           </p>
           <AdvisorContact
             text={`مرحبا، أنهيت دورات «${track.titleAr}» وأريد ترتيب تسليم مشروع التخرج.`}
@@ -105,7 +105,7 @@ export default function CapstonePanel({
         <RequestCard
           icon={<Award className="h-4 w-4 text-gold-ink" />}
           title="شهادة المسار كاملا"
-          bodyAr="وثيقةٌ واحدة تقول إنّك أنجزت المسار كلّه لا دوراتٍ متفرّقة — برقم تحقّق عامّ باسمك."
+          bodyAr="وثيقة واحدة تقول إنّك أنجزت المسار كلّه لا دورات متفرّقة — برقم تحقّق عامّ باسمك."
           request={certRequest}
           eligible={completion?.eligible ?? false}
           reasonsAr={completion?.reasonsAr ?? []}
@@ -119,7 +119,7 @@ export default function CapstonePanel({
         <RequestCard
           icon={<BadgeCheck className="h-4 w-4 text-teal-light-ink" />}
           title="توصية مهنيّة"
-          bodyAr="يكتبها فريقنا الأكاديميّ عمّا أنجزته فعلا في المسار — لجهةٍ تسمّيها: عملك، أو جامعة، أو منحة."
+          bodyAr="يكتبها فريقنا الأكاديميّ عمّا أنجزته فعلا في المسار — لجهة تسمّيها: عملك، أو جامعة، أو منحة."
           request={recRequest}
           eligible={completion?.eligible ?? false}
           reasonsAr={completion?.reasonsAr ?? []}
@@ -197,7 +197,7 @@ function RequestCard({
         <div className="mt-3">
           {needsAudience && (
             <label className="block">
-              <span className="text-fine font-bold text-muted-foreground">لأيّ جهةٍ تريدها؟</span>
+              <span className="text-fine font-bold text-muted-foreground">لأيّ جهة تريدها؟</span>
               <input
                 value={audience}
                 onChange={(e) => setAudience(e.target.value)}

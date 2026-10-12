@@ -76,7 +76,7 @@ const REMINDERS: readonly (BulkReminder & { fits: (row: BulkRow) => boolean })[]
     key: 'draft',
     labelAr: 'ذكّرهم بإكمال الطلب',
     path: 'draft-reminder',
-    doneAr: 'أُرسل تذكيرُ الإكمال',
+    doneAr: 'أرسل تذكير الإكمال',
     /* مِحَكُّ الخادم بعينه (`remindDraftApplicant`): «مسودة» وحدَها */
     fits: (a) => a.status === 'draft',
   },
@@ -84,7 +84,7 @@ const REMINDERS: readonly (BulkReminder & { fits: (row: BulkRow) => boolean })[]
     key: 'booking',
     labelAr: 'ذكّرهم بحجز الموعد',
     path: 'booking-reminder',
-    doneAr: 'أُرسل التذكير',
+    doneAr: 'أرسل التذكير',
     /* ومِحَكُّ `remindToBookInterview` بعينه — ولو افترقا لعُرض زرٌّ يردّه ٤٠٩ */
     fits: (a) => canRemindToBook({ status: a.status, liveInterviews: a.interviewsCount }),
   },

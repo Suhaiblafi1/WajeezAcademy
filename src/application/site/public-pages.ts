@@ -121,20 +121,20 @@ export const PUBLIC_PAGES: PublicPage[] = [
   {
     path: '/pathways',
     title: 'كل المسارات',
-    description: 'تصفح كتالوج مسارات أكاديمية وجيز كاملا — ابحث وصفِّ حسب المجال والمدة.',
+    description: 'تصفح كتالوج مسارات أكاديمية وجيز كاملا — ابحث وصفّ حسب المجال والمدة.',
     priority: 0.9,
   },
   {
     path: '/courses',
     title: 'كل الدورات',
-    description: 'تصفح دورات أكاديمية وجيز المنفردة — ابحث وصفِّ حسب المجال والمدة.',
+    description: 'تصفح دورات أكاديمية وجيز المنفردة — ابحث وصفّ حسب المجال والمدة.',
     priority: 0.8,
   },
   {
     path: '/mirror',
     title: 'مرآة وجيز',
     description:
-      'أربعة وعشرون بندا في ثلاث دقائق تُظهر ميولك التعلمية وجاهزيتك للتطبيق — بلا بريد ولا حساب.',
+      'أربعة وعشرون بندا في ثلاث دقائق تظهر ميولك التعلمية وجاهزيتك للتطبيق — بلا بريد ولا حساب.',
     priority: 0.7,
   },
   {
@@ -148,14 +148,14 @@ export const PUBLIC_PAGES: PublicPage[] = [
     path: '/calendar',
     title: 'تقويم الفصل',
     description:
-      'ما يُفتح هذا الفصل من دورات أكاديمية وجيز — بأشهره الثلاثة ومواعيد بدايته ونافذة التسجيل.',
+      'ما يفتح هذا الفصل من دورات أكاديمية وجيز — بأشهره الثلاثة ومواعيد بدايته ونافذة التسجيل.',
     priority: 0.7,
   },
   {
     path: '/trainers',
     title: 'الفريق التدريبي',
     description:
-      'تخصصات الفريق التدريبي في أكاديمية وجيز — ويُعيَّن مدرّبُ كلّ شعبةٍ قريبا ويُعلن اسمُه على بطاقتها.',
+      'تخصصات الفريق التدريبي في أكاديمية وجيز — ويعيّن مدرّب كلّ شعبة قريبا ويعلن اسمه على بطاقتها.',
     priority: 0.6,
   },
   {
@@ -211,6 +211,6 @@ export function publicPageByPath(path: string): PublicPage | undefined {
     أن يُرى في الاختبار لا أن يُطفئ الوسومَ صامتا. */
 export function seoFor(path: string): { title: string; description: string; path: string } {
   const page = BY_PATH.get(path)
-  if (!page) throw new Error(`لا صفحةَ عامّةً بالمسار «${path}» في PUBLIC_PAGES`)
+  if (!page) throw new Error(`لا صفحة عامّة بالمسار «${path}» في PUBLIC_PAGES`)
   return { title: page.title, description: page.description, path: page.path }
 }

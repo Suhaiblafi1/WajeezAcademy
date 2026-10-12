@@ -38,7 +38,7 @@ const complete = (over: Partial<Parameters<typeof buildChecklist>[0]> = {}) => b
   content: {
     kind: 'trainer',
     /* ولمحوره تطبيقٌ عمليٌّ ومُسلَّمٌ ومصدر — مُلزِماتٌ من بطاقة المعايير (٨ أكتوبر ٢٠٢٦) */
-    modules: [{ moduleId: 'M0', titleAr: 'محور', bodyAr: body, activityAr: 'تطبيقٌ عمليٌّ قصير', artifactAr: 'ورقةٌ تُسلَّم' }],
+    modules: [{ moduleId: 'M0', titleAr: 'محور', bodyAr: body, activityAr: 'تطبيق عمليّ قصير', artifactAr: 'ورقة تسلّم' }],
     resources: [{ title: 'كرّاسة', url: 'https://x.test/a', moduleId: 'M0' }],
     slots: [{ startsOn: PERIOD.startsOn, endsOn: PERIOD.endsOn, moduleIds: ['M0'] }],
     /* وإقرارُ قالب وجيز — المدرّبُ هنا جديد (٦ أكتوبر ٢٠٢٦) */
@@ -55,30 +55,30 @@ const complete = (over: Partial<Parameters<typeof buildChecklist>[0]> = {}) => b
   ...over,
 })
 
-describe('بوّابةُ الإرسال للاعتماد', () => {
-  it('⚠️ الاعتمادُ لا يُعَدُّ شرطا لنفسه — وكان يُعَدّ فيطفئ الزرَّ أبدا', () => {
+describe('بوّابة الإرسال للاعتماد', () => {
+  it('⚠️ الاعتماد لا يعدّ شرطا لنفسه — وكان يعدّ فيطفئ الزرّ أبدا', () => {
     const list = complete()
     const approval = list.find((c) => c.key === 'approval')!
 
     /* الصفُّ باقٍ ولم يُحذف: المرحلةُ تُعرض على الخطّ وتستقرّ «تمّ» بالاعتماد */
-    expect(approval, 'صفُّ الاعتماد اختفى من القائمة').toBeTruthy()
-    expect(approval.done, 'الاعتمادُ عُدَّ تامًّا قبل أن يُعتمَد').toBe(false)
+    expect(approval, 'صفّ الاعتماد اختفى من القائمة').toBeTruthy()
+    expect(approval.done, 'الاعتماد عدّ تامّا قبل أن يعتمد').toBe(false)
 
     /* وهذا هو العطب بعينه: باقٍ واحدٌ هو الاعتمادُ نفسُه */
-    expect(blockingBeforeSubmit(list), 'الاعتمادُ يحجب نفسَه').toEqual([])
-    expect(readyToSubmit(list), 'شعبةٌ تامّةٌ ما زالت محجوبةً عن الإرسال').toBe(true)
+    expect(blockingBeforeSubmit(list), 'الاعتماد يحجب نفسه').toEqual([])
+    expect(readyToSubmit(list), 'شعبة تامّة ما زالت محجوبة عن الإرسال').toBe(true)
   })
 
-  it('وما نقص قبلَه يحجب فعلا — فالبوّابةُ لم تُفتح على مصراعيها', () => {
+  it('وما نقص قبله يحجب فعلا — فالبوّابة لم تفتح على مصراعيها', () => {
     const noModules = complete({ content: { kind: 'trainer', modules: [], resources: [{ title: 'ك', url: 'https://x.test/a' }] } as never })
-    expect(readyToSubmit(noModules), 'مرّت شعبةٌ بلا محاور').toBe(false)
+    expect(readyToSubmit(noModules), 'مرّت شعبة بلا محاور').toBe(false)
     expect(blockingBeforeSubmit(noModules).map((c) => c.key)).toContain('modules')
 
     const noResources = complete({ content: { kind: 'trainer', modules: [{ moduleId: 'M0', titleAr: 'م', bodyAr: body }], resources: [] } as never })
-    expect(readyToSubmit(noResources), 'مرّت شعبةٌ بلا مصادر').toBe(false)
+    expect(readyToSubmit(noResources), 'مرّت شعبة بلا مصادر').toBe(false)
 
     const noSessions = complete({ sessions: [] })
-    expect(readyToSubmit(noSessions), 'مرّت شعبةٌ بلا لقاءات').toBe(false)
+    expect(readyToSubmit(noSessions), 'مرّت شعبة بلا لقاءات').toBe(false)
   })
 
   /* ═══ نُقض بقرارٍ لا بتنازل: المهامُّ صارت تحجب (ق٨ · ١٧ سبتمبر ٢٠٢٦) ═══
@@ -90,23 +90,23 @@ describe('بوّابةُ الإرسال للاعتماد', () => {
 
      والتسجيلاتُ باقيةٌ اختياريّةً: تُنتَج **بعد** اللقاء، فاشتراطُها قبل
      الاعتماد يحبس الشعبةَ على شيءٍ لم يحن وقتُه. */
-  it('⚠️ والمهامُّ تحجب — مهمّةٌ واحدةٌ على الأقلّ', () => {
+  it('⚠️ والمهامّ تحجب — مهمّة واحدة على الأقلّ', () => {
     const noTasks = complete({ assessmentsCount: 0, assessmentModuleIds: [] })
-    expect(readyToSubmit(noTasks), 'مرّت شعبةٌ بلا مهمّةٍ واحدة').toBe(false)
+    expect(readyToSubmit(noTasks), 'مرّت شعبة بلا مهمّة واحدة').toBe(false)
     expect(blockingBeforeSubmit(noTasks).map((c) => c.key)).toContain('assignments')
     /* وواحدةٌ تكفي — حدٌّ أدنى لا نطاق */
-    expect(readyToSubmit(complete({ assessmentsCount: 1 })), 'واحدةٌ لم تكفِ').toBe(true)
+    expect(readyToSubmit(complete({ assessmentsCount: 1 })), 'واحدة لم تكف').toBe(true)
   })
 
-  it('والتسجيلاتُ لا تحجب — تُنتَج بعد اللقاء لا قبل الاعتماد', () => {
+  it('والتسجيلات لا تحجب — تنتج بعد اللقاء لا قبل الاعتماد', () => {
     const noRecordings = complete({ sessions: [{ startsAt: INSIDE, recordings: [] }] })
-    expect(blockingBeforeSubmit(noRecordings).map((c) => c.key), 'التسجيلاتُ حجبت الإرسال')
+    expect(blockingBeforeSubmit(noRecordings).map((c) => c.key), 'التسجيلات حجبت الإرسال')
       .not.toContain('recordings')
   })
 
-  it('والمعتمَدةُ لا يُعاد إرسالُها من البوّابة نفسِها', () => {
+  it('والمعتمدة لا يعاد إرسالها من البوّابة نفسها', () => {
     const approved = complete({ planStatus: 'approved' })
-    expect(approved.find((c) => c.key === 'approval')!.done, 'المعتمَدةُ لم تستقرّ «تمّ»').toBe(true)
+    expect(approved.find((c) => c.key === 'approval')!.done, 'المعتمدة لم تستقرّ «تمّ»').toBe(true)
   })
 })
 
@@ -121,32 +121,32 @@ describe('بوّابةُ الإرسال للاعتماد', () => {
 
    والعدُّ قاعدةٌ في موضعٍ واحد (`trainerOwned`) يقرؤها خطُّ الشاشة وبطاقةُ
    «شعبي» معا؛ ولو حُسبت في كلٍّ بيدٍ لافترق الرقمان. */
-describe('عدُّ التقدّم: ما بيدِ المدرّب وحدَه', () => {
-  it('⚠️ لا صفَّ للفصل بعد اليوم — والمدّةُ عملُه يُعدُّ عليه ويحجب', () => {
+describe('عدّ التقدّم: ما بيد المدرّب وحده', () => {
+  it('⚠️ لا صفّ للفصل بعد اليوم — والمدّة عمله يعدّ عليه ويحجب', () => {
     const list = complete({ period: null })
 
-    expect(list.map((c) => c.key), 'عاد صفٌّ للفصل بيدِ الإدارة').not.toContain('term')
-    expect(blockingBeforeSubmit(list).map((c) => c.key), 'مرّت خطّةٌ بلا مدّةٍ إلى الاعتماد').toContain('identity')
-    expect(readyToSubmit(list), 'أُرسلت شعبةٌ بلا مدّة').toBe(false)
+    expect(list.map((c) => c.key), 'عاد صفّ للفصل بيد الإدارة').not.toContain('term')
+    expect(blockingBeforeSubmit(list).map((c) => c.key), 'مرّت خطّة بلا مدّة إلى الاعتماد').toContain('identity')
+    expect(readyToSubmit(list), 'أرسلت شعبة بلا مدّة').toBe(false)
 
     /* وهذا هو المقيس: صارت في مقام عمله، فتُنقص عدَدَه حتّى يحدّدها */
     const mine = trainerOwned(list).filter((c) => !c.optional)
-    expect(mine.map((c) => c.key), 'المدّةُ خرجت من عمل المدرّب').toContain('identity')
-    expect(mine.every((c) => c.done), 'عُدَّت شعبةٌ بلا مدّةٍ تامّة').toBe(false)
+    expect(mine.map((c) => c.key), 'المدّة خرجت من عمل المدرّب').toContain('identity')
+    expect(mine.every((c) => c.done), 'عدّت شعبة بلا مدّة تامّة').toBe(false)
   })
 
-  it('⚠️ والاعتمادُ كذلك — وكانت البطاقةُ تقول «٥ من ٦» لشعبةٍ تامّة', () => {
+  it('⚠️ والاعتماد كذلك — وكانت البطاقة تقول «٥ من ٦» لشعبة تامّة', () => {
     const list = complete()
-    expect(trainerOwned(list).map((c) => c.key), 'عُدَّ الاعتمادُ من عمل المدرّب').not.toContain('approval')
+    expect(trainerOwned(list).map((c) => c.key), 'عدّ الاعتماد من عمل المدرّب').not.toContain('approval')
     const mine = trainerOwned(list).filter((c) => !c.optional)
-    expect(mine.length, 'خلا مقامُ عمله من كلّ شيء — فالعدُّ صارَ صفرا من صفر').toBeGreaterThan(0)
-    expect(mine.filter((c) => c.done).length, 'شعبةٌ تامّةٌ لم يبلغ خطُّها تمامَه').toBe(mine.length)
+    expect(mine.length, 'خلا مقام عمله من كلّ شيء — فالعدّ صار صفرا من صفر').toBeGreaterThan(0)
+    expect(mine.filter((c) => c.done).length, 'شعبة تامّة لم يبلغ خطّها تمامه').toBe(mine.length)
   })
 
-  it('وما هو عملُه يبقى معدودا عليه — لا يُعفى ممّا يملك', () => {
+  it('وما هو عمله يبقى معدودا عليه — لا يعفى ممّا يملك', () => {
     const noModules = complete({ content: { kind: 'trainer', modules: [], resources: [{ title: 'ك', url: 'https://x.test/a' }] } as never })
     const mine = trainerOwned(noModules).filter((c) => !c.optional)
-    expect(mine.map((c) => c.key), 'سقط عملُه من عدَده').toContain('modules')
-    expect(mine.every((c) => c.done), 'عُدَّت شعبةٌ بلا محاورَ تامّة').toBe(false)
+    expect(mine.map((c) => c.key), 'سقط عمله من عدده').toContain('modules')
+    expect(mine.every((c) => c.done), 'عدّت شعبة بلا محاور تامّة').toBe(false)
   })
 })

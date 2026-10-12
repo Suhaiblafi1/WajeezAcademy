@@ -57,7 +57,7 @@ export function groupResources(
     }
   })
   const lost = rows.filter(({ r }) => r.moduleId && !ids.includes(r.moduleId))
-  if (lost.length) out.push({ key: 'orphan', moduleId: 'orphan', labelAr: 'مربوطٌ بمحورٍ حُذف — اختر له محورا', rows: lost })
+  if (lost.length) out.push({ key: 'orphan', moduleId: 'orphan', labelAr: 'مربوط بمحور حذف — اختر له محورا', rows: lost })
   return out
 }
 

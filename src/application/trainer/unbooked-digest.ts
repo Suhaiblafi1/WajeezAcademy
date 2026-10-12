@@ -98,9 +98,9 @@ const daysSince = (at: Date, now: Date): number => Math.max(0, Math.floor((now.g
    ويُذكَّر من ذُكِّر أمسِ مرّتَين، ويبقى من لم يُمَسّ آخرَ القائمة. والفرقُ
    بين الاثنين هو كلُّ ما يفعله الموظّفُ بهذه الرسالة. */
 const remindPart = (remindedAt: Date | null, now: Date): string => {
-  if (!remindedAt) return 'لم يُذكَّر بعد'
+  if (!remindedAt) return 'لم يذكّر بعد'
   const d = daysSince(remindedAt, now)
-  return d === 0 ? 'ذُكِّر اليوم' : `ذُكِّر منذ ${daysAr(d)}`
+  return d === 0 ? 'ذكّر اليوم' : `ذكّر منذ ${daysAr(d)}`
 }
 
 /** المتأخّرون عن الحجز، أطولُهم وقوفا أوّلا */
@@ -115,7 +115,7 @@ export function lateToBook(rows: readonly UnbookedRow[], now: Date = new Date())
     late.push({
       ...row,
       days,
-      lineAr: `${row.fullName} (${row.reference}) — أتمّ طلبَه منذ ${daysAr(days)}`
+      lineAr: `${row.fullName} (${row.reference}) — أتمّ طلبه منذ ${daysAr(days)}`
         + ` · ${remindPart(asDate(row.remindedAt), now)}`,
     })
   }
@@ -124,10 +124,10 @@ export function lateToBook(rows: readonly UnbookedRow[], now: Date = new Date())
 
 /** عنوانُ الرسالة — والعددُ فيه يُصرَّف عربيّا، فلا «1 متقدّمين» */
 export function unbookedTitleAr(count: number): string {
-  if (count === 1) return 'متقدّمٌ واحدٌ لم يحجز موعدَ لقاء التعارف'
-  if (count === 2) return 'متقدّمان لم يحجزا موعدَ لقاء التعارف'
-  if (count <= 10) return `${count} متقدّمين لم يحجزوا موعدَ لقاء التعارف`
-  return `${count} متقدّما لم يحجزوا موعدَ لقاء التعارف`
+  if (count === 1) return 'متقدّم واحد لم يحجز موعد لقاء التعارف'
+  if (count === 2) return 'متقدّمان لم يحجزا موعد لقاء التعارف'
+  if (count <= 10) return `${count} متقدّمين لم يحجزوا موعد لقاء التعارف`
+  return `${count} متقدّما لم يحجزوا موعد لقاء التعارف`
 }
 
 /** ملخّصُ الصباح — أو `null` حين لا متأخّرَ، فلا تخرج رسالةٌ بلا خبر */
@@ -139,12 +139,12 @@ export function unbookedDigest(rows: readonly UnbookedRow[], now: Date = new Dat
   const rest = late.length - shown.length
   const lines = shown.map((r) => r.lineAr)
   const parts = [
-    'ولا يصل المتقدّمَ شيءٌ من هذه الرسالة: التذكيرُ يخرج بيدك من طابور الطلبات، ولا تُرسله الآلةُ عن أحد.',
+    'ولا يصل المتقدّم شيء من هذه الرسالة: التذكير يخرج بيدك من طابور الطلبات، ولا ترسله الآلة عن أحد.',
     ...lines,
     ...(rest > 0
       ? [rest === 1
-        ? 'وفي الطابور واحدٌ غيرُهم على الحال نفسِها.'
-        : `وفي الطابور ${rest} غيرُهم على الحال نفسِها.`]
+        ? 'وفي الطابور واحد غيرهم على الحال نفسها.'
+        : `وفي الطابور ${rest} غيرهم على الحال نفسها.`]
       : []),
   ]
 

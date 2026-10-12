@@ -107,7 +107,7 @@ export const DECISIONS: Decision[] = [
      يفتح شيئا. */
   /* واللفظُ لفظُ الحالة نفسِها (`application-status.ts`): زرٌّ يقول «مراجعة
      أكاديميّة» وصفٌّ يقول «رأيٌ ثانٍ» خبران عن فعلٍ واحد. */
-  { action: "academic_review", label: "اطلبْ رأيا ثانيا", from: openExcept("academic_review"), tone: "main" },
+  { action: "academic_review", label: "اطلب رأيا ثانيا", from: openExcept("academic_review"), tone: "main" },
   /* ─────────── بابُ التجهيز (٢٠ سبتمبر ٢٠٢٦) ───────────
 
      كان من `academic_review` وحدَها، وهي حالةٌ لا تقع إلّا بعد درسٍ تجريبيٍّ
@@ -118,19 +118,19 @@ export const DECISIONS: Decision[] = [
      سبتمبر ٢٠٢٦): فمن جاوزه إلى العقد أو التهيئة قد يُراد ردُّه إلى بابه —
      وكان ذلك مغلقا، فيبقى بين حالَين. والمستثنى واحد: هو فيها أصلا. */
   {
-    action: "conditionally_approve", label: "اقبَلْه داخليّا — وابدأ تجهيزه",
+    action: "conditionally_approve", label: "اقبله داخليّا — وابدأ تجهيزه",
     from: openExcept("conditionally_approved"),
     tone: "main",
     /* ولمَ يُقال هذا تحت زرّه: «قبولٌ داخليّ» يُقرأ قبولا، ومن ظنّه بلغ
        صاحبَه انتظر ردّا لا يأتي — أو كتب إليه مهنّئا بما لم يُبلَّغ به. */
-    noteAr: "قرارُ فريقٍ يفتح بابَ التجهيز — ولا يصل المتقدّمَ منه شيء.",
+    noteAr: "قرار فريق يفتح باب التجهيز — ولا يصل المتقدّم منه شيء.",
   },
   { action: "start_onboarding", label: "ابدأ التهيئة", from: openExcept("onboarding"), tone: "main" },
   { action: "activate", label: "فعّله مدرّبا نشطا", from: [...REVIEW_OPEN_STATUSES], tone: "main" },
   /* وآخرُ الطريق: يختصر ما فوقه كلَّه من أيّ حالةٍ يقف فيها الطلب */
   {
-    action: "approve", label: "اعتمِدْه مدرّبا — بنقرة", from: [...REVIEW_OPEN_STATUSES], tone: "main",
-    noteAr: "يُنشئ ملفَّه، ويفتح بوّابتَه بحسابه نفسِه، ويُعلمه بالبريد.",
+    action: "approve", label: "اعتمده مدرّبا — بنقرة", from: [...REVIEW_OPEN_STATUSES], tone: "main",
+    noteAr: "ينشئ ملفّه، ويفتح بوّابته بحسابه نفسه، ويعلمه بالبريد.",
   },
   { action: "reinstate", label: "ارفع الإيقاف", from: ["suspended"], tone: "main" },
 
@@ -145,8 +145,8 @@ export const DECISIONS: Decision[] = [
      طلبٌ على دوراته في الفصل القادم. وما تحته يقول ما يصل صاحبَه قبل الضغط.
      والعلّةُ كاملةً في `deferral.ts`. */
   {
-    action: "defer", label: "أجِّلْه إلى الفصول القادمة", from: openExcept(DEFERRED), tone: "warn",
-    noteAr: "يصله بريدٌ بالتأجيل، وفيه أنّنا نتواصل معه بعد شهرين.",
+    action: "defer", label: "أجّله إلى الفصول القادمة", from: openExcept(DEFERRED), tone: "warn",
+    noteAr: "يصله بريد بالتأجيل، وفيه أنّنا نتواصل معه بعد شهرين.",
   },
 
   /* ─────────── ③ ما يُنهيه، وما يعكس الإنهاء ─────────── */
@@ -161,7 +161,7 @@ export const DECISIONS: Decision[] = [
      ونبرتُه `main` لا `warn`: هو تصحيحٌ **في صالح** المتقدّم، ويُعرض وحدَه
      في شاشةٍ لا فعلَ فيها غيرُه. والسببُ يُؤخذ في نافذةِ تأكيدٍ لا من خانة
      الملاحظة العامّة — لأنّه يسافر إليه بنصّه، فيُقرأ قبل أن يُرسَل. */
-  { action: "undo_reject", label: "تراجَعْ عن الرفض", from: ["rejected"], tone: "main" },
+  { action: "undo_reject", label: "تراجع عن الرفض", from: ["rejected"], tone: "main" },
   /* ─────────── والمسحوبُ يُعاد (٢٩ سبتمبر ٢٠٢٦) ───────────
 
      قال صاحبُ المنصّة: «هناك حساباتٌ مسحوبة.. أرجو إعادتها». فللمسحوب بابُ
@@ -172,7 +172,7 @@ export const DECISIONS: Decision[] = [
      تعيد شكوى ٢١ سبتمبر. ولا يدخل الشريطَ اللاصق (`BAR_ACTIONS`): ذاك حدُّ
      عرضٍ لا يتّسع، ومثلُه «ارفع الإيقاف» — يُعرض في عمود القرارات وقائمة
      الصفّ. */
-  { action: "undo_withdraw", label: "تراجَعْ عن السحب", from: ["withdrawn"], tone: "main" },
+  { action: "undo_withdraw", label: "تراجع عن السحب", from: ["withdrawn"], tone: "main" },
 ];
 
 /**

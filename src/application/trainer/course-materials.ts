@@ -79,12 +79,12 @@ export function cleanCourseMaterials(raw: unknown): CourseMaterials {
 
 /** ما ينقص الموادَّ لتُقيَّم — فارغةٌ إن اكتملت. والخادمُ يردّ الإعلانَ بها بعينها */
 export function materialsMissingAr(m: CourseMaterials | null | undefined): string[] {
-  if (!m) return ['لم تُكتب موادُّها بعد']
+  if (!m) return ['لم تكتب موادّها بعد']
   const out: string[] = []
-  if (m.modules.length === 0) out.push('محورٌ واحدٌ على الأقلّ')
-  else if (m.modules.some((x) => x.outcomeAr.length === 0)) out.push('مخرجٌ لكلّ محور')
-  if (!m.materialsUrl) out.push('رابطُ الموادّ (الكرّاسات والعروض)')
-  if (!m.taskAr) out.push('مهمّةٌ يسلّمها المتعلّم')
-  if (!m.sourcesAr) out.push('مصدرٌ واحدٌ على الأقلّ')
+  if (m.modules.length === 0) out.push('محور واحد على الأقلّ')
+  else if (m.modules.some((x) => x.outcomeAr.length === 0)) out.push('مخرج لكلّ محور')
+  if (!m.materialsUrl) out.push('رابط الموادّ (الكرّاسات والعروض)')
+  if (!m.taskAr) out.push('مهمّة يسلّمها المتعلّم')
+  if (!m.sourcesAr) out.push('مصدر واحد على الأقلّ')
   return out
 }

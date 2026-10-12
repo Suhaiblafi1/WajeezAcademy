@@ -37,13 +37,13 @@ export function PlacementPanel({ note, stated, className = "mt-6" }: { note: str
     <Panel tone="accent" className={className}>
       <p className="flex items-center gap-2 text-sm font-black text-foreground">
         <ClipboardCheck className="h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" />
-        {open ? "اختبارُ تحديد المستوى المجانيّ" : "اختبارُ تحديد المستوى المجانيّ — قريبا"}
+        {open ? "اختبار تحديد المستوى المجانيّ" : "اختبار تحديد المستوى المجانيّ — قريبا"}
       </p>
       <p className="mt-2 text-read leading-relaxed text-muted-foreground">{note}</p>
       {open && (
         <>
           <p className="mt-2 text-read leading-relaxed text-muted-foreground">
-            لك أن تختبر الآن (ربعُ ساعةٍ تقريبا) فنقابل ما وصفتَه بما يقيسه، أو أن تمضي بمستواك الموصوف — والقرارُ بعد النتيجة لك.
+            لك أن تختبر الآن (ربع ساعة تقريبا) فنقابل ما وصفته بما يقيسه، أو أن تمضي بمستواك الموصوف — والقرار بعد النتيجة لك.
           </p>
           <Button as={Link} to={placementHref(stated)} tone="secondary" size="sm" className="mt-3">ابدأ الاختبار المجانيّ</Button>
         </>
@@ -71,7 +71,7 @@ export default function EnglishPlanCard({ plan, level }: { plan: EnglishPlanView
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h3 className="text-base font-black text-foreground">{o.title_ar}</h3>
                 {o.suggested && plan.options.length > 1 && (
-                  <span className="rounded-full bg-teal/15 px-3 py-1 text-fine font-bold text-teal-light-ink">الأنسبُ لمستواك</span>
+                  <span className="rounded-full bg-teal/15 px-3 py-1 text-fine font-bold text-teal-light-ink">الأنسب لمستواك</span>
                 )}
               </div>
               <ol className="mt-3 flex flex-col gap-1.5">
@@ -88,7 +88,7 @@ export default function EnglishPlanCard({ plan, level }: { plan: EnglishPlanView
               </p>
               <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
                 <span className="text-sm font-black text-foreground">
-                  {o.course_ids.length > 1 ? "كلفةُ الدورتين: " : "الكلفة: "}
+                  {o.course_ids.length > 1 ? "كلفة الدورتين: " : "الكلفة: "}
                   <span dir="ltr">{loaded ? costOf(o.course_ids, cohorts) : "…"}</span>
                 </span>
                 <Button as={Link} to={`/build/${o.course_ids[0]}`} tone={o.suggested ? "primary" : "secondary"}>

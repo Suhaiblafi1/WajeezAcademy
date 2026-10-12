@@ -32,7 +32,7 @@ interface AuditEntityView {
 }
 
 export default function EntityAuditTimeline({
-  entityType, entityId, labelAr = "أثرُ هذا العنصر",
+  entityType, entityId, labelAr = "أثر هذا العنصر",
 }: { entityType: string; entityId: string; labelAr?: string }) {
   const [open, setOpen] = useState(false);
   const [data, setData] = useState<AuditEntityView | null>(null);
@@ -48,7 +48,7 @@ export default function EntityAuditTimeline({
       setError("");
     } catch (e) {
       if (e instanceof ApiError && e.status === 403) setHidden(true);
-      else setError(e instanceof ApiError ? e.message : "تعذّر قراءةُ الأثر");
+      else setError(e instanceof ApiError ? e.message : "تعذّر قراءة الأثر");
     } finally {
       setBusy(false);
     }
@@ -71,10 +71,10 @@ export default function EntityAuditTimeline({
 
       {open && (
         <div className="mt-2.5">
-          {busy && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" aria-label="يُحمَّل" />}
+          {busy && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" aria-label="يحمّل" />}
           {error && <p role="alert" className="text-read font-bold text-red-300">{error}</p>}
           {data && data.events.length === 0 && (
-            <p className="text-read text-muted-foreground">لا أثرَ مسجّلا على هذا العنصر بعد.</p>
+            <p className="text-read text-muted-foreground">لا أثر مسجّلا على هذا العنصر بعد.</p>
           )}
           {data && data.events.length > 0 && (
             <ol className="space-y-2">
@@ -93,7 +93,7 @@ export default function EntityAuditTimeline({
               ))}
               {data.total > data.events.length && (
                 <li className="text-read text-muted-foreground">
-                  وأقدمُ من ذلك {data.total - data.events.length} حدثا — تُقرأ كاملةً في «سجلّ الأثر».
+                  وأقدم من ذلك {data.total - data.events.length} حدثا — تقرأ كاملة في «سجلّ الأثر».
                 </li>
               )}
             </ol>

@@ -64,7 +64,7 @@ export default function BarChartCard({
         </p>
       ) : loading ? (
         <div className="mt-6 grid place-items-center py-6">
-          <Loader2 className="h-6 w-6 animate-spin text-teal-ink" aria-label="جارٍ التحميل" />
+          <Loader2 className="h-6 w-6 animate-spin text-teal-ink" aria-label="جار التحميل" />
         </div>
       ) : rows.length === 0 ? (
         <p className="mt-5 text-read leading-6 text-muted-foreground">{emptyAr}</p>

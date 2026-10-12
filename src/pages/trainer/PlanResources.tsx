@@ -31,7 +31,7 @@ const API_BASE: string = import.meta.env.VITE_API_URL ?? "";
 
 /** ما يُقال مرّةً فوق الخانة — كان يُكرَّر تحت كلّ ملفّ */
 export const RESOURCE_DROP_HINT_AR =
-  `يمكن رفعُ عدّة ملفّاتٍ معا · PDF وصورةٌ تُقرآن في الصفحة، وWord وشرائحُ وجداولُ تُنزَّل · حتّى ${Math.round(MAX_BODY_FILE_BYTES / (1024 * 1024))} ميغابايت للملفّ`;
+  `عدّة ملفّات معا · PDF والصور تقرأ في الصفحة، وغيرها ينزّل · حتّى ${Math.round(MAX_BODY_FILE_BYTES / (1024 * 1024))} ميغابايت للملفّ`;
 
 interface Pending { id: number; name: string; error: string | null }
 
@@ -69,11 +69,11 @@ export default function PlanResources({
         method: "PUT", credentials: "include",
         headers: { "content-type": "application/octet-stream" }, body: file,
       });
-      if (!put.ok) throw new ApiError("upload_failed", "تعذّر رفعُ الملفّ", put.status);
+      if (!put.ok) throw new ApiError("upload_failed", "تعذّر رفع الملفّ", put.status);
       onAdd(rowFromFile({ key: res.storageKey, name: file.name, mime: file.type }));
       setPending((p) => p.filter((x) => x.id !== id));
     } catch (e) {
-      const msg = permissionMessage(e, "تعذّر رفعُه الآن — أعد المحاولة بعد قليل.");
+      const msg = permissionMessage(e, "تعذّر رفعه الآن — أعد المحاولة بعد قليل.");
       setPending((p) => p.map((x) => (x.id === id ? { ...x, error: msg } : x)));
     }
   };
@@ -108,15 +108,15 @@ export default function PlanResources({
         onDrop={onDrop}
         className="grid gap-3 border-2 border-dashed border-teal/40 text-center"
       >
-        <p className="text-read font-black text-teal-light-ink">أفلِت الملفّاتِ هنا، أو الصق رابطا</p>
+        <p className="text-read font-black text-teal-light-ink">أفلت الملفّات هنا، أو الصق رابطا</p>
         <p className="text-read leading-6 text-muted-foreground">{RESOURCE_DROP_HINT_AR}</p>
         <input ref={pick} type="file" multiple accept={RESOURCE_FILE_MIMES.join(",")} className="sr-only"
-          aria-label="اختر ملفّاتِ المصادر"
+          aria-label="اختر ملفّات المصادر"
           onChange={(e) => { const fs = [...(e.target.files ?? [])]; e.target.value = ""; if (fs.length) void uploadAll(fs); }} />
         <div className="flex flex-wrap items-center justify-center gap-2">
           <Button tone="secondary" icon={FileUp} disabled={locked} onClick={() => pick.current?.click()}>اختر ملفّات</Button>
           <span className="text-read text-muted-foreground">أو</span>
-          <input dir="ltr" value={link} disabled={locked} placeholder="https://…" aria-label="الصق رابطَ مصدر"
+          <input dir="ltr" value={link} disabled={locked} placeholder="https://…" aria-label="الصق رابط مصدر"
             onChange={(e) => setLink(e.target.value)}
             onPaste={(e) => {
               /* اللصقُ يُضيف حالا إن كان رابطا تامّا — بلا نقرةٍ ثانية */
@@ -130,16 +130,16 @@ export default function PlanResources({
       </Inset>
 
       {pending.length > 0 && (
-        <ul className="grid gap-1.5" aria-label="ملفّاتٌ تُرفع">
+        <ul className="grid gap-1.5" aria-label="ملفّات ترفع">
           {pending.map((p) => (
             <li key={p.id} className="flex items-center gap-2 text-read leading-6">
               {p.error
                 ? <X className="h-4 w-4 shrink-0 text-gold-ink" aria-hidden="true" />
                 : <Loader2 className="h-4 w-4 shrink-0 animate-spin text-teal-light-ink" aria-hidden="true" />}
               <bdi className="min-w-0 truncate">{p.name}</bdi>
-              <span className={p.error ? "text-gold-ink" : "text-muted-foreground"}>{p.error ? `— ${p.error}` : "— يُرفع…"}</span>
+              <span className={p.error ? "text-gold-ink" : "text-muted-foreground"}>{p.error ? `— ${p.error}` : "— يرفع…"}</span>
               {p.error && (
-                <Button tone="ghost" size="sm" aria-label={`أخفِ «${p.name}»`} onClick={() => setPending((x) => x.filter((y) => y.id !== p.id))}>أخفِ</Button>
+                <Button tone="ghost" size="sm" aria-label={`أخف «${p.name}»`} onClick={() => setPending((x) => x.filter((y) => y.id !== p.id))}>أخف</Button>
               )}
             </li>
           ))}
@@ -147,7 +147,7 @@ export default function PlanResources({
       )}
 
       {groups.length === 0 ? (
-        <p className="text-read leading-6 text-muted-foreground">لا مصادرَ بعد — مصدرٌ واحدٌ للدورة يكفي، وربطُه بمحورٍ اختيار.</p>
+        <p className="text-read leading-6 text-muted-foreground">لا مصادر بعد — يكفي مصدر واحد، وربطه بمحور اختياريّ.</p>
       ) : groups.map((g) => (
         <section key={g.key} aria-label={g.labelAr} className="grid gap-1">
           <h4 className={`px-1 text-read font-black ${g.moduleId === "orphan" ? "text-gold-ink" : "text-muted-foreground"}`}>{g.labelAr}</h4>
@@ -167,7 +167,7 @@ export default function PlanResources({
                     </button>
                     {/* المحورُ شارةٌ تتبدّل في الصفّ نفسِه — بدلَ قائمةٍ بفقرة شرحٍ تحت كلّ مصدر */}
                     <select value={r.moduleId && modules.some((m) => m.moduleId === r.moduleId) ? r.moduleId : r.moduleId ? "__lost" : ""}
-                      disabled={locked} aria-label={`محورُ «${name}»`}
+                      disabled={locked} aria-label={`محور «${name}»`}
                       onChange={(e) => e.target.value !== "__lost" && onPatch(i, { moduleId: e.target.value || null, ...(e.target.value ? {} : { preReading: null }) })}
                       className={`row-span-2 h-8 max-w-[9rem] rounded-full border-0 px-3 text-fine font-black [&>option]:bg-surface ${r.moduleId && !modules.some((m) => m.moduleId === r.moduleId) ? "bg-gold/15 text-gold-ink" : "bg-teal/15 text-teal-light-ink"}`}>
                       <option value="">الشعبة كلّها</option>
@@ -181,18 +181,18 @@ export default function PlanResources({
                     </span>
                   </div>
                   {!resourceHasSource(r) && (
-                    <p className="text-read leading-6 text-gold-ink">ينقصه رابطٌ أو ملفّ.</p>
+                    <p className="text-read leading-6 text-gold-ink">ينقصه رابط أو ملفّ.</p>
                   )}
                   {editing && (
                     <div className="grid gap-2 border-t border-white/[0.06] pt-2">
-                      <input value={r.title} disabled={locked} maxLength={200} aria-label={`اسمُ المصدر «${name}»`}
-                        placeholder="سمِّ المحتوى لا المنصّة — «كرّاسة التحرير» لا «ملفّ PDF»"
+                      <input value={r.title} disabled={locked} maxLength={200} aria-label={`اسم المصدر «${name}»`}
+                        placeholder="اسم المحتوى — «كرّاسة التحرير»"
                         onChange={(e) => onPatch(i, { title: e.target.value })} className={controlCls} />
-                      <input value={r.noteAr ?? ""} disabled={locked} maxLength={500} aria-label={`وصفُ المصدر «${name}»`}
-                        placeholder="لماذا يقرؤه المتعلّم؟ ما فيه، ومتى يقرؤه"
+                      <input value={r.noteAr ?? ""} disabled={locked} maxLength={500} aria-label={`وصف المصدر «${name}»`}
+                        placeholder="ما فيه، ومتى يقرؤه"
                         onChange={(e) => onPatch(i, { noteAr: e.target.value })} className={controlCls} />
                       {!(r.bodyFileKey ?? "").trim() && (
-                        <input dir="ltr" value={r.url ?? ""} disabled={locked} placeholder="https://…" aria-label={`رابطُ المصدر «${name}»`}
+                        <input dir="ltr" value={r.url ?? ""} disabled={locked} placeholder="https://…" aria-label={`رابط المصدر «${name}»`}
                           onChange={(e) => onPatch(i, { url: e.target.value })} className={`${controlCls} text-left`} />
                       )}
                       {(r.bodyFileKey ?? "").trim() && (
@@ -203,7 +203,7 @@ export default function PlanResources({
                           <input type="checkbox" checked={Boolean(r.preReading)} disabled={locked}
                             onChange={(e) => onPatch(i, { preReading: e.target.checked || null })}
                             className="h-4 w-4 shrink-0 accent-teal" />
-                          قراءةٌ مسبقة — قبل اللقاء
+                          قراءة مسبقة — قبل اللقاء
                         </label>
                       )}
                       <div><Button tone="secondary" size="sm" onClick={() => setOpen(null)}>تمّ</Button></div>
@@ -215,7 +215,7 @@ export default function PlanResources({
           </ul>
         </section>
       ))}
-      {groups.length > 0 && <p className="text-read leading-6 text-muted-foreground">اضغط الاسمَ لتعدّله.</p>}
+      {groups.length > 0 && <p className="text-read leading-6 text-muted-foreground">اضغط الاسم لتعدّله.</p>}
     </div>
   );
 }

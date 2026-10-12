@@ -28,10 +28,10 @@ const between = (src: string, start: string, end: string) => {
 }
 const screen = code('src/pages/trainer/CohortWorkspace.tsx')
 
-describe('ما يُكتب أطولَ من حدّه يُسمّى بموضعه', () => {
-  const base = { summaryAr: '', modules: [{ titleAr: 'محورٌ أوّل' }], resources: [] as { title: string; category?: string | null }[] }
+describe('ما يكتب أطول من حدّه يسمّى بموضعه', () => {
+  const base = { summaryAr: '', modules: [{ titleAr: 'محور أوّل' }], resources: [] as { title: string; category?: string | null }[] }
 
-  it('في حدّه لا يُقال شيء', () => {
+  it('في حدّه لا يقال شيء', () => {
     expect(planTextProblemsAr({
       ...base,
       summaryAr: 'ن'.repeat(PLAN_MAX.summaryAr),
@@ -39,7 +39,7 @@ describe('ما يُكتب أطولَ من حدّه يُسمّى بموضعه', (
     })).toEqual([])
   })
 
-  it('وما جاوزه يُقال بخطوته وبرقم محوره', () => {
+  it('وما جاوزه يقال بخطوته وبرقم محوره', () => {
     const out = planTextProblemsAr({
       ...base,
       summaryAr: 'ن'.repeat(PLAN_MAX.summaryAr + 1),
@@ -47,52 +47,52 @@ describe('ما يُكتب أطولَ من حدّه يُسمّى بموضعه', (
       resources: [{ title: 'ع'.repeat(PLAN_MAX.resourceTitle + 1), category: 'recorded' }, { title: 'ك'.repeat(PLAN_MAX.resourceTitle + 1) }],
     })
     expect(out.map((p) => p.place)).toEqual(['identity', 'modules', 'recorded', 'resources'])
-    expect(out[1].text, 'لا يُقال أيُّ محور').toContain('المحور 2')
-    expect(out[1].text, 'لا يُقال كم كتب').toContain(String(PLAN_MAX.outcomeAr + 5))
+    expect(out[1].text, 'لا يقال أيّ محور').toContain('المحور 2')
+    expect(out[1].text, 'لا يقال كم كتب').toContain(String(PLAN_MAX.outcomeAr + 5))
   })
 
-  it('والمخطّطُ يقرأ الحدودَ نفسَها — لا رقما مكتوبا بيده', () => {
+  it('والمخطّط يقرأ الحدود نفسها — لا رقما مكتوبا بيده', () => {
     const schema = between(code('server/http/routes/learning-portal.routes.ts'), 'const planContent = z.object(', 'liveNoteAr:')
-    expect(schema, 'لم يُعثر على مخطّط الخطّة').toBeTruthy()
+    expect(schema, 'لم يعثر على مخطّط الخطّة').toBeTruthy()
     for (const field of ['summaryAr', 'outcomeAr', 'activityAr', 'artifactAr'] as const) {
-      expect(schema, `حدُّ «${field}» مكتوبٌ رقما في المخطّط — فيفترق عمّا تقوله الشاشة`).toMatch(new RegExp(`${field}: z\\.string\\(\\)\\.max\\(PLAN_MAX\\.${field}\\)`))
+      expect(schema, `حدّ «${field}» مكتوب رقما في المخطّط — فيفترق عمّا تقوله الشاشة`).toMatch(new RegExp(`${field}: z\\.string\\(\\)\\.max\\(PLAN_MAX\\.${field}\\)`))
     }
     expect(schema).toMatch(/titleAr: z\.string\(\)\.min\(PLAN_TITLE_MIN\)\.max\(PLAN_MAX\.moduleTitle\)/)
     expect(schema).toMatch(/title: z\.string\(\)\.min\(PLAN_TITLE_MIN\)\.max\(PLAN_MAX\.resourceTitle\)/)
   })
 })
 
-describe('ما يمنع الحفظَ لا يحبس المدرّب', () => {
-  it('الشاشةُ تسمّي الحدودَ قبل أن يُرسَل شيء', () => {
+describe('ما يمنع الحفظ لا يحبس المدرّب', () => {
+  it('الشاشة تسمّي الحدود قبل أن يرسل شيء', () => {
     const save = between(screen, 'const saveProblems = (', 'return out;')
-    expect(save, 'لم يُعثر على شرط الحفظ').toBeTruthy()
-    expect(save, 'الحدودُ لا تُفحص قبل الإرسال — فيُردّ الحفظُ بـ«modules.2.outcomeAr»').toContain('planTextProblemsAr(content)')
+    expect(save, 'لم يعثر على شرط الحفظ').toBeTruthy()
+    expect(save, 'الحدود لا تفحص قبل الإرسال — فيردّ الحفظ بـ«modules.2.outcomeAr»').toContain('planTextProblemsAr(content)')
   })
 
-  it('وكلُّ ما يمنعه يحمل خطوتَه — وتلك الخطوةُ تُفتح وإن كانت مقفلةً بالترتيب', () => {
+  it('وكلّ ما يمنعه يحمل خطوته — وتلك الخطوة تفتح وإن كانت مقفلة بالترتيب', () => {
     const save = between(screen, 'const saveProblems = (', 'return out;')
     const pushes = save.match(/out\.push\(/g) ?? []
     const staged = save.match(/out\.push\(\{ stage:/g) ?? []
-    expect(pushes.length, 'لم يُعثر على ما يمنع الحفظ').toBeGreaterThan(0)
-    expect(staged.length, 'ما يمنع الحفظَ بلا خطوةٍ يُصلَح فيها').toBe(pushes.length)
+    expect(pushes.length, 'لم يعثر على ما يمنع الحفظ').toBeGreaterThan(0)
+    expect(staged.length, 'ما يمنع الحفظ بلا خطوة يصلح فيها').toBe(pushes.length)
 
     const persist = between(screen, 'const persist = async (', 'await apiPut(')
-    expect(persist, 'ما منع الحفظَ لا يُحمَل بمواضعه').toMatch(/setGaps\([^;]*refused:/)
+    expect(persist, 'ما منع الحفظ لا يحمل بمواضعه').toMatch(/setGaps\([^;]*refused:/)
 
     const canOpen = between(screen, 'const canOpen = (', ';\n')
-    expect(canOpen, 'الخطوةُ التي فيها ما يمنع الحفظَ تبقى مقفلة — فيُحبس المدرّب').toContain('gaps?.refused.includes(STAGES[i].key)')
+    expect(canOpen, 'الخطوة التي فيها ما يمنع الحفظ تبقى مقفلة — فيحبس المدرّب').toContain('gaps?.refused.includes(STAGES[i].key)')
   })
 
-  it('و«لم يُحفظ» غيرُ «حُفظ ولم تتمّ» — ولكلٍّ رأسُه', () => {
+  it('و«لم يحفظ» غير «حفظ ولم تتمّ» — ولكلّ رأسه', () => {
     const banner = between(screen, '{shownGaps.length > 0 && gaps && (', '</Inset>')
-    expect(banner, 'لم يُعثر على قائمة ما ينقص').toBeTruthy()
+    expect(banner, 'لم يعثر على قائمة ما ينقص').toBeTruthy()
     expect(banner).toContain('gaps.refused.length > 0')
-    expect(banner).toContain('لم يُحفظ شيءٌ بعد')
-    expect(banner).toContain('ما كتبتَه محفوظ')
-    expect(banner, 'لا زرَّ يفتح موضعَ ما منع الحفظ').toContain('openStage(x.key)')
+    expect(banner).toContain('لم يحفظ شيء بعد')
+    expect(banner).toContain('ما كتبته محفوظ')
+    expect(banner, 'لا زرّ يفتح موضع ما منع الحفظ').toContain('openStage(x.key)')
 
     const cont = between(screen, 'const saveAndContinue = async', 'const submitNow = async')
-    expect(cont, 'ما حُفظ ولم تتمّ خطوتُه يُقال كأنّه لم يُحفظ').toMatch(/setGaps\(gapsFor\(stage, fresh\), \{ saved:/)
+    expect(cont, 'ما حفظ ولم تتمّ خطوته يقال كأنّه لم يحفظ').toMatch(/setGaps\(gapsFor\(stage, fresh\), \{ saved:/)
   })
 })
 
@@ -102,41 +102,41 @@ describe('ما يمنع الحفظَ لا يحبس المدرّب', () => {
    أمان، أو أعطِهم زرّا يحفظ ولا يُعدّ به تامّا» — واختار الاثنين معا. وكان
    التنقّلُ بين الخطوات لا يحفظ شيئا، والنقرُ على صفحةٍ أخرى في البوّابة يُذهب ما
    كُتب بلا تحذير (`beforeunload` لا يقع على تنقّلٍ داخلَ الصفحة). */
-describe('③ ولا يضيع ما كُتب بالتنقّل', () => {
+describe('③ ولا يضيع ما كتب بالتنقّل', () => {
   const openStage = between(screen, 'const openStage = async (s: Stage) => {', '\n  };')
 
-  it('مغادرةُ الخطوة تحفظ ما في اليد قبل أن تفتح غيرَها', () => {
-    expect(openStage, 'لم يُعثر على فتح الخطوة').toBeTruthy()
-    expect(openStage, 'الانتقالُ لا يحفظ — فيضيع ما كُتب').toContain('await persist()')
-    expect(openStage.indexOf('await persist()'), 'الحفظُ بعد الانتقال لا قبله').toBeLessThan(openStage.lastIndexOf('setStage(s)'))
-    expect(openStage, 'حفظٌ رُدّ ينقل المدرّبَ عمّا يمنعه').toMatch(/if \(!\(await persist\(\)\)\) \{[^\n]*return; \}/)
+  it('مغادرة الخطوة تحفظ ما في اليد قبل أن تفتح غيرها', () => {
+    expect(openStage, 'لم يعثر على فتح الخطوة').toBeTruthy()
+    expect(openStage, 'الانتقال لا يحفظ — فيضيع ما كتب').toContain('await persist()')
+    expect(openStage.indexOf('await persist()'), 'الحفظ بعد الانتقال لا قبله').toBeLessThan(openStage.lastIndexOf('setStage(s)'))
+    expect(openStage, 'حفظ ردّ ينقل المدرّب عمّا يمنعه').toMatch(/if \(!\(await persist\(\)\)\) \{[^\n]*return; \}/)
   })
 
-  it('والخطوةُ التي فيها ما يمنع الحفظَ تُفتح بلا حفظ — وإلّا عاد الحبس', () => {
+  it('والخطوة التي فيها ما يمنع الحفظ تفتح بلا حفظ — وإلّا عاد الحبس', () => {
     expect(openStage).toContain('saveProblems().some((p) => p.stage === s)')
   })
 
-  it('والخروجُ من الشعبة إلى صفحةٍ أخرى يحفظ — لا تحذيرَ الإغلاق وحدَه', () => {
-    expect(screen, 'لا شيءَ يقع عند الخروج من الشعبة').toMatch(/return \(\) => onLeave\.current\?\.\(\);/)
+  it('والخروج من الشعبة إلى صفحة أخرى يحفظ — لا تحذير الإغلاق وحده', () => {
+    expect(screen, 'لا شيء يقع عند الخروج من الشعبة').toMatch(/return \(\) => onLeave\.current\?\.\(\);/)
     const leave = between(screen, 'leaveSave.current = ', '\n  };')
-    expect(leave, 'لم يُعثر على حفظ الخروج').toBeTruthy()
-    expect(leave, 'الخروجُ لا يرسل الخطّة').toContain('apiPut(`/api/trainer/cohorts/${cohortId}/plan`, content)')
-    expect(leave, 'ما يمنع الحفظَ عند الخروج لا يُقال').toContain('saveProblems().length')
+    expect(leave, 'لم يعثر على حفظ الخروج').toBeTruthy()
+    expect(leave, 'الخروج لا يرسل الخطّة').toContain('apiPut(`/api/trainer/cohorts/${cohortId}/plan`, content)')
+    expect(leave, 'ما يمنع الحفظ عند الخروج لا يقال').toContain('saveProblems().length')
   })
 
   /* ═══ وذهب الزرُّ العائمُ إلى حفظٍ تلقائيّ (١١ أكتوبر ٢٠٢٦) ═══
      «احذفوا زرَّ "احفظ — لم تكتمل بعد": حفظٌ تلقائيٌّ مع مؤشّرٍ صغير، وزرٌّ واحد:
      "التالي"» — ملفُّ صاحب المنصّة «تحسينات بوابة مدرّب وجيز». */
-  it('وما في اليد يُحفظ وحدَه بعد سكونه — لا زرَّ عائما، ولا يُمحى ما كُتب أثناء الحفظ', () => {
-    expect(screen, 'عاد الزرُّ العائم').not.toMatch(/showDraftSave|saveDraft|احفظ — لم تكتمل بعد/)
-    expect(screen, 'لا مؤقّتَ يحفظ').toMatch(/window\.setTimeout\(\(\) => autoSave\.current\?\.\(\), AUTOSAVE_DELAY_MS\)/)
+  it('وما في اليد يحفظ وحده بعد سكونه — لا زرّ عائما، ولا يمحى ما كتب أثناء الحفظ', () => {
+    expect(screen, 'عاد الزرّ العائم').not.toMatch(/showDraftSave|saveDraft|احفظ — لم تكتمل بعد/)
+    expect(screen, 'لا مؤقّت يحفظ').toMatch(/window\.setTimeout\(\(\) => autoSave\.current\?\.\(\), AUTOSAVE_DELAY_MS\)/)
     const auto = between(screen, 'autoSave.current = () => {', '\n  };')
-    expect(auto, 'لم يُعثر على الحفظ التلقائيّ').toBeTruthy()
-    expect(auto, 'يُرسَل ما يمنع الحفظُ ليُردّ').toContain('if (autoMeta.failedKey === editKey || firstProblem) return;')
+    expect(auto, 'لم يعثر على الحفظ التلقائيّ').toBeTruthy()
+    expect(auto, 'يرسل ما يمنع الحفظ ليردّ').toContain('if (autoMeta.failedKey === editKey || firstProblem) return;')
     expect(auto, 'لا يحفظ').toContain('await persist(snap, true)')
-    expect(auto, 'يُستبدل ما في اليد بما عاد — فيُمحى حرفٌ كُتب أثناء الحفظ').not.toMatch(/setContent\(|await load\(/)
-    expect(auto, 'البصمةُ ممّا في اليد لا ممّا أُرسل').toContain('modules: modulesKey(snap)')
+    expect(auto, 'يستبدل ما في اليد بما عاد — فيمحى حرف كتب أثناء الحفظ').not.toMatch(/setContent\(|await load\(/)
+    expect(auto, 'البصمة ممّا في اليد لا ممّا أرسل').toContain('modules: modulesKey(snap)')
     const head = screen.slice(screen.indexOf('<Bar'), screen.indexOf('</Bar>'))
-    expect(head, 'لا مؤشّرَ للحفظ بجانب «التالي»').toContain('{autoLine}')
+    expect(head, 'لا مؤشّر للحفظ بجانب «التالي»').toContain('{autoLine}')
   })
 })

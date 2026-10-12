@@ -18,7 +18,7 @@ export const AUTOSAVE_RETRY_MS = 15_000
 /** «قبل ثوانٍ» · «قبل دقيقة» · «قبل ٥ دقائق» — منذ آخر حفظ */
 export function savedAgoAr(elapsedMs: number): string {
   const s = Math.max(0, Math.floor(elapsedMs / 1000))
-  if (s < 45) return 'قبل ثوانٍ'
+  if (s < 45) return 'قبل ثوان'
   const m = Math.round(s / 60)
   if (m <= 1) return 'قبل دقيقة'
   if (m === 2) return 'قبل دقيقتين'
@@ -50,11 +50,11 @@ export function autosaveView(s: {
 /** المؤشّرُ بجملة — و`null` حين لا شيءَ يُقال */
 export function autosaveLineAr(v: AutosaveView, now: number): string | null {
   switch (v.kind) {
-    case 'saving': return 'يُحفظ…'
-    case 'blocked': return `لم يُحفظ — ${v.reason}`
-    case 'failed': return `لم يُحفظ — ${v.reason}`
-    case 'pending': return 'يُحفظ بعد لحظة'
-    case 'saved': return `حُفظ ${savedAgoAr(now - v.at)}`
+    case 'saving': return 'يحفظ…'
+    case 'blocked': return `لم يحفظ — ${v.reason}`
+    case 'failed': return `لم يحفظ — ${v.reason}`
+    case 'pending': return 'يحفظ بعد لحظة'
+    case 'saved': return `حفظ ${savedAgoAr(now - v.at)}`
     default: return null
   }
 }

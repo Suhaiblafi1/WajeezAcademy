@@ -29,8 +29,8 @@ const LAYOUTS = [
   ['بوّابة المتعلّم', 'src/pages/student/PortalLayout.tsx'],
 ] as const
 
-describe('لا بوّابةَ بلا باب خروج', () => {
-  it('١) كلّ بوّابةٍ فيها خروجٌ يُنقَر', () => {
+describe('لا بوّابة بلا باب خروج', () => {
+  it('١) كلّ بوّابة فيها خروج ينقر', () => {
     for (const [name, path] of LAYOUTS) {
       const src = read(path)
       const hasMenu = src.includes('<StaffAccountMenu')
@@ -39,18 +39,18 @@ describe('لا بوّابةَ بلا باب خروج', () => {
     }
   })
 
-  it('٢) القائمة تُنادي الخادم فعلا — لا تمسح نسخةً محلّية وتدّعي', () => {
+  it('٢) القائمة تنادي الخادم فعلا — لا تمسح نسخة محلّية وتدّعي', () => {
     const src = read(MENU)
     expect(src, 'القائمة لا تنادي signOut').toContain("import { signOut } from '@/services/auth'")
     /* الانتظار قبل التنقّل: بلا `await` يسبق التنقّلُ المسحَ فيعود الداخل
        داخلا وهو يظنّ أنّه خرج — وهو عطبٌ وقع في بوّابة المتعلّم من قبل. */
-    expect(src, 'التنقّل يسبق مسحَ الجلسة').toMatch(/await signOut\(\)\s*\n\s*navigate\(/)
+    expect(src, 'التنقّل يسبق مسح الجلسة').toMatch(/await signOut\(\)\s*\n\s*navigate\(/)
   })
 
   it('٣) والقائمة تقول من أنت وبأيّ أدوار — لا اسما وحده', () => {
     const src = read(MENU)
-    expect(src, 'البريد لا يُعرض').toContain('user?.email')
-    expect(src, 'الأدوار لا تُعرض — فالإداريّ يصطدم بالمنع ولا يعرف لماذا').toContain('user?.roles')
+    expect(src, 'البريد لا يعرض').toContain('user?.email')
+    expect(src, 'الأدوار لا تعرض — فالإداريّ يصطدم بالمنع ولا يعرف لماذا').toContain('user?.roles')
     /* ── ورابطُ الحساب صار يُشتقّ لا يُكتب (١٣ سبتمبر ٢٠٢٦) ──
 
        كان هذا السطرُ يشترط `to="/student/account"` حرفا. وهو الذي ثبَّت
@@ -59,10 +59,10 @@ describe('لا بوّابةَ بلا باب خروج', () => {
        منها القائمةُ — والاشتقاقُ نفسُه مفحوصٌ في
        `src/tests/account-frame-and-session.test.ts`. */
     expect(src, 'رابط صفحة الحساب مفقود').toContain('to={accountPath}')
-    expect(src, 'الرابطُ عاد مكتوبا إلى بوّابة المتعلّم').not.toContain('to="/student/account"')
+    expect(src, 'الرابط عاد مكتوبا إلى بوّابة المتعلّم').not.toContain('to="/student/account"')
   })
 
-  it('٤) و`signOut` نفسُها تنادي مسلك الخادم', () => {
+  it('٤) و`signOut` نفسها تنادي مسلك الخادم', () => {
     const auth = read('src/services/auth.ts')
     expect(auth).toMatch(/export async function signOut[\s\S]{0,200}apiPost\(["']\/api\/auth\/logout["']\)/)
   })

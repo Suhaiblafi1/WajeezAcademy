@@ -113,8 +113,7 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
         <GraduationCap className="h-12 w-12 text-[#6EC7D1]" />
         <h1 className="mt-5 text-2xl font-black">بوابة المدرب</h1>
         <p className="mt-2 max-w-md text-center text-sm leading-7 text-muted-foreground">
-          تُفتح هذه البوابة بحساب مدرّب معتمد. إن كنت مدرّبا فسجّل الدخول،
-          وإن أردت الانضمام إلى فريق التدريب فابدأ بطلب العضوية.
+          للمدرّبين المعتمدين. سجّل الدخول، أو اطلب الانضمام.
         </p>
         <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
           <Link to="/auth" className="rounded-full bg-teal px-6 py-3 font-black text-on-teal transition hover:bg-teal-light">
@@ -183,13 +182,13 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
         <GraduationCap className="h-12 w-12 text-[#6EC7D1]" />
         <h1 className="mt-5 text-2xl font-black">بوّابة المدرّب</h1>
         <p className="mt-2 max-w-md text-center text-sm leading-7 text-muted-foreground">
-          حسابُك يملك صلاحيّاتِ المدرّب، لكن لا ملفَّ مدرّبٍ مرتبطا به — والشعبُ والتقييماتُ والمستحقّاتُ كلُّها تُقرأ من ذلك الملفّ. فلا شيءَ هنا لنعرضه لك.
+          لا ملفّ مدرّب مرتبطا بحسابك، فلا شيء هنا لعرضه.
         </p>
         <p className="mt-3 max-w-md text-center text-read leading-6 text-muted-foreground">
-          وهذا متوقَّعٌ لمدير النظام: بوّابةُ المدرّب لمن يُدرِّس فعلا. لمعاينتها، ادخل بحساب مدرّب.
+          لمعاينتها، ادخل بحساب مدرّب.
         </p>
         <Link to="/admin" className="mt-7 rounded-full border border-white/15 px-6 py-3 font-bold text-foreground transition hover:border-white/40">
-          عُد إلى لوحة الإدارة
+          عد إلى لوحة الإدارة
         </Link>
       </div>
     );
@@ -240,10 +239,10 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
             </Link>
             {/* ويُفتح في لسانٍ آخر: الدليلُ شرحٌ يُقرأ بجانب البوّابة لا بدلا منها،
                 فلا يغادر المدرّبُ شاشتَه ليقرأ عنها (٣٠ سبتمبر ٢٠٢٦). */}
-            <a href={TRAINER_GUIDE_PATH} target="_blank" rel="noopener" aria-label="دليلُ المدرّب — يُفتح في لسانٍ جديد"
+            <a href={TRAINER_GUIDE_PATH} target="_blank" rel="noopener" aria-label="دليل المدرّب — يفتح في لسان جديد"
               className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-teal/50 bg-teal/10 px-3.5 py-1.5 text-fine font-black text-teal-light-ink transition hover:border-teal hover:bg-teal/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal focus-visible:ring-offset-2 focus-visible:ring-offset-paper">
               <BookOpen className="h-4 w-4 shrink-0" aria-hidden="true" />
-              <span>دليلُ المدرّب</span>
+              <span>دليل المدرّب</span>
             </a>
           </div>
           {/* بحث سريع Ctrl+K — لجلسة المدرب الحقيقية فقط: يضرب نقطة الخادم المقيدة بإسناداته */}
@@ -255,7 +254,7 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
           <PortalTabs
             tabs={tabs}
             label="تبويبات بوّابة المدرّب"
-            countLabel="ينتظر تصحيحَك: "
+            countLabel="ينتظر تصحيحك: "
             className="order-last w-full"
           />
           <div className="flex items-center gap-3">

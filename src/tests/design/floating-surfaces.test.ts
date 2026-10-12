@@ -64,8 +64,8 @@ const HEADER_MENUS = [
   ['بوّابة المتعلّم — الجرس وقائمة الحساب', 'src/pages/student/PortalLayout.tsx'],
 ] as const
 
-describe('الأسطحُ الطافية', () => {
-  it('١) أرضيّتُها من النغمة لا من `className` — وإلّا قُرئ ما تحتها من خلالها', () => {
+describe('الأسطح الطافية', () => {
+  it('١) أرضيّتها من النغمة لا من `className` — وإلّا قرئ ما تحتها من خلالها', () => {
     /* وسمُ فتحٍ لـ`Inset` أو `Panel` تحمل `className` فيها أرضيّةٌ صلبة:
        تلك هي الحيلةُ التي لا تثبت. */
     const offenders: string[] = []
@@ -77,30 +77,30 @@ describe('الأسطحُ الطافية', () => {
     }
     expect(
       offenders,
-      'سطحٌ طافٍ يكتب أرضيّتَه في `className` — استعمل `tone="solid"`، '
-      + 'فالصنفان أسبقيّتُهما واحدةٌ والفائزُ يقرّره ترتيبُ ورقة الأنماط:\n'
+      'سطح طاف يكتب أرضيّته في `className` — استعمل `tone="solid"`، '
+      + 'فالصنفان أسبقيّتهما واحدة والفائز يقرّره ترتيب ورقة الأنماط:\n'
       + offenders.join('\n'),
     ).toEqual([])
   })
 
-  it('٢) والطافي يحمل `tone="solid"` فعلا — لا أرضيّةَ شفّافةً بلا بديل', () => {
+  it('٢) والطافي يحمل `tone="solid"` فعلا — لا أرضيّة شفّافة بلا بديل', () => {
     for (const [name, path] of HEADER_MENUS) {
       const src = code(path)
-      expect(src, `${name}: لا نغمةَ صلبةً على سطحها الطافي`).toMatch(/tone="solid"/)
+      expect(src, `${name}: لا نغمة صلبة على سطحها الطافي`).toMatch(/tone="solid"/)
     }
   })
 
-  it('٣) وتُغلَق بمستمعٍ على المستند — لا بستارةٍ يحبسها ضبابُ الترويسة', () => {
+  it('٣) وتغلق بمستمع على المستند — لا بستارة يحبسها ضباب الترويسة', () => {
     for (const [name, path] of HEADER_MENUS) {
       const src = code(path)
       expect(
         src,
-        `${name}: يُغلَق بستارة \`fixed inset-0 z-40\` — و\`backdrop-filter\` `
-        + 'في الترويسة يجعلها كتلةً حاضنة، فلا تمتدّ الستارةُ إلّا على الترويسة',
+        `${name}: يغلق بستارة \`fixed inset-0 z-40\` — و\`backdrop-filter\` `
+        + 'في الترويسة يجعلها كتلة حاضنة، فلا تمتدّ الستارة إلّا على الترويسة',
       ).not.toMatch(/fixed inset-0 z-40/)
       expect(
         src,
-        `${name}: لا مستمعَ إغلاقٍ على المستند`,
+        `${name}: لا مستمع إغلاق على المستند`,
       ).toMatch(/document\.addEventListener\(\s*["']mousedown["']/)
     }
   })
@@ -135,7 +135,7 @@ describe('الأسطحُ الطافية', () => {
       return full.endsWith('.tsx') ? [full] : []
     })
 
-  it('⚠️ ٤) وكلُّ طافٍ في المستودَع يُحجَب — تُستخرج القائمةُ ولا تُكتب باليد', () => {
+  it('⚠️ ٤) وكلّ طاف في المستودع يحجب — تستخرج القائمة ولا تكتب باليد', () => {
     const offenders: string[] = []
     for (const full of tsxFiles(join(root, 'src'))) {
       const src = code(relative(root, full))
@@ -148,7 +148,7 @@ describe('الأسطحُ الطافية', () => {
         if (['Panel', 'Card', 'Inset'].includes(m[1])) {
           const attrs = `${m[2] ?? ''}${m[5] ?? ''}`
           if (attrs.includes('tone="solid"') || OPAQUE.test(cls)) continue
-          offenders.push(`${where} → <${m[1]}> طافٍ بلا حجاب [${cls.slice(0, 48)}]`)
+          offenders.push(`${where} → <${m[1]}> طاف بلا حجاب [${cls.slice(0, 48)}]`)
           continue
         }
 
@@ -162,13 +162,13 @@ describe('الأسطحُ الطافية', () => {
         if (attrs.includes('tone="solid"')) continue
         const inner = /className="([^"]*)"/.exec(attrs)?.[1] ?? ''
         if (OPAQUE.test(inner)) continue
-        offenders.push(`${where} → <${tag[1]}> داخلَ حاضنٍ طافٍ [${cls.slice(0, 48)}]`)
+        offenders.push(`${where} → <${tag[1]}> داخل حاضن طاف [${cls.slice(0, 48)}]`)
       }
     }
     expect(
       offenders,
-      'سطحٌ يطفو فوق الصفحة بأرضيّةٍ شفّافة — يُقرأ ما تحته من خلاله فيتراكب '
-      + 'النصّان. أعطِه `tone="solid"`، أو أرضيّةً صريحة، أو `backdrop-blur`:\n'
+      'سطح يطفو فوق الصفحة بأرضيّة شفّافة — يقرأ ما تحته من خلاله فيتراكب '
+      + 'النصّان. أعطه `tone="solid"`، أو أرضيّة صريحة، أو `backdrop-blur`:\n'
       + offenders.join('\n'),
     ).toEqual([])
   })

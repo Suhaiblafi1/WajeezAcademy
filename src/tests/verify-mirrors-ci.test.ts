@@ -84,8 +84,8 @@ function gateSteps(): string[] {
 const OUTSIDE: { run: string; whyAr: string }[] = [
   {
     run: 'npm run build',
-    whyAr: 'بناءُ الإنتاج — و`typecheck` يمسك أخطاءَ الأنواع قبله، فما يزيده '
-      + 'البناءُ وحدَه نادرٌ وثمنُه في كلّ تحقّقٍ غيرُ مقبول.',
+    whyAr: 'بناء الإنتاج — و`typecheck` يمسك أخطاء الأنواع قبله، فما يزيده '
+      + 'البناء وحده نادر وثمنه في كلّ تحقّق غير مقبول.',
   },
 ]
 
@@ -93,52 +93,52 @@ describe('«npm run verify» يطابق ما تفحصه البوّابة', () =>
   const steps = gateSteps()
   const verifyAll = norm(`${expand(pkg.scripts.verify)} ${expand(pkg.scripts.typecheck)}`)
 
-  it('الأمرُ معرَّفٌ — فلا يُخترع في كلّ مرّة', () => {
-    expect(pkg.scripts.verify, 'لا أمرَ تحقّقٍ واحد').toBeTruthy()
+  it('الأمر معرّف — فلا يخترع في كلّ مرّة', () => {
+    expect(pkg.scripts.verify, 'لا أمر تحقّق واحد').toBeTruthy()
     expect(pkg.scripts.typecheck).toBeTruthy()
   })
 
-  it('والقراءةُ من `ci.yml` تجد خطواتِ البوّابة فعلا — فلا يمرّ بصفرٍ كاذب', () => {
+  it('والقراءة من `ci.yml` تجد خطوات البوّابة فعلا — فلا يمرّ بصفر كاذب', () => {
     /* الحارسُ القديمُ كان يقارن بأربعٍ مكتوبةٍ باليد والبوّابةُ أربعَ عشرة.
        فإن عاد المسحُ بعددٍ صغيرٍ فالعطبُ في القراءة لا في البوّابة. */
-    expect(steps.length, 'تعطّلت قراءةُ `ci.yml` نفسُها').toBeGreaterThanOrEqual(10)
+    expect(steps.length, 'تعطّلت قراءة `ci.yml` نفسها').toBeGreaterThanOrEqual(10)
     expect(steps).toContain('tsc --noEmit -p tsconfig.app.json')
     expect(steps).toContain('vitest run src/tests')
   })
 
-  it('كلُّ خطوةٍ في البوّابة إمّا في `verify` وإمّا مُسمّاةٌ بسببها', () => {
+  it('كلّ خطوة في البوّابة إمّا في `verify` وإمّا مسمّاة بسببها', () => {
     const missing = steps.filter((s) =>
       !verifyAll.includes(norm(expand(s))) && !OUTSIDE.some((o) => norm(expand(o.run)) === norm(expand(s))))
     expect(
       missing,
-      'البوّابةُ تفحصها و«verify» لا يفحصها ولا هي في `OUTSIDE` بسببها:\n' + missing.join('\n'),
+      'البوّابة تفحصها و«verify» لا يفحصها ولا هي في `OUTSIDE` بسببها:\n' + missing.join('\n'),
     ).toEqual([])
   })
 
-  it('وما استُثني ما زال في البوّابة — فلا يُحرَس عذرٌ لخطوةٍ زالت', () => {
+  it('وما استثني ما زال في البوّابة — فلا يحرس عذر لخطوة زالت', () => {
     /* استثناءٌ لخطوةٍ حُذفت من `ci.yml` يُطيل القائمةَ بلا معنى ويخفي أنّها زالت */
     for (const o of OUTSIDE) {
-      expect(steps.map((s) => norm(expand(s))), `استثناءٌ لا وجودَ له في البوّابة: ${o.run}`)
+      expect(steps.map((s) => norm(expand(s))), `استثناء لا وجود له في البوّابة: ${o.run}`)
         .toContain(norm(expand(o.run)))
-      expect(o.whyAr.length, `استثناءٌ بلا سبب: ${o.run}`).toBeGreaterThan(40)
+      expect(o.whyAr.length, `استثناء بلا سبب: ${o.run}`).toBeGreaterThan(40)
     }
   })
 
-  it('ولا استثناءَ يُدّعى وهو في `verify` — فنصفُ نقلةٍ لا تمرّ', () => {
+  it('ولا استثناء يدّعى وهو في `verify` — فنصف نقلة لا تمرّ', () => {
     /* حين نُقلت `ci:question-waste` إلى `verify` بقي عذرُها في `OUTSIDE` لحظةً.
        والاختباراتُ فوقُ تخضرّ على هذا الحال كلُّها: كلٌّ منها يسأل «إمّا في
        `verify` وإمّا مستثناة» لا «ليست في الاثنتين معا». فيبقى في السجلّ عذرٌ
        يقول إنّ البوّابةَ لا تُشغَّل محلّيّا وهي تُشغَّل — والقارئُ يصدّقه. */
     const both = OUTSIDE.filter((o) => verifyAll.includes(norm(expand(o.run))))
-    expect(both.map((o) => o.run), 'استثناءٌ مكتوبٌ لخطوةٍ يشغّلها `verify` فعلا').toEqual([])
+    expect(both.map((o) => o.run), 'استثناء مكتوب لخطوة يشغّلها `verify` فعلا').toEqual([])
   })
 
-  it('ولا يفحص `tsconfig.json` — ملفُّ حلٍّ بمراجعَ لا يفحص شيئا', () => {
+  it('ولا يفحص `tsconfig.json` — ملفّ حلّ بمراجع لا يفحص شيئا', () => {
     /* هذا بعينه الخطأُ الذي كلّف دفعتَين: `tsc --noEmit` بلا `-p` يقرؤه */
     expect(pkg.scripts.typecheck).not.toMatch(/tsc --noEmit(?! -p)/)
   })
 
-  it('وبوّابةُ اللغة فيه — وهي الخطوةُ التي أثبتت أنّ القائمةَ اليدويّة لا تحرس', () => {
-    expect(verifyAll, '`ci:locale` خارجَ `verify` ثانيةً').toContain('scripts/audit-locale.ts --check')
+  it('وبوّابة اللغة فيه — وهي الخطوة التي أثبتت أنّ القائمة اليدويّة لا تحرس', () => {
+    expect(verifyAll, '`ci:locale` خارج `verify` ثانية').toContain('scripts/audit-locale.ts --check')
   })
 })

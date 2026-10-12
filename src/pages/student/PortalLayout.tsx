@@ -169,7 +169,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
   if (!allowed && !sessionChecked) {
     return (
       <div dir="rtl" className="grid min-h-screen place-items-center bg-paper text-foreground">
-        <span className="h-8 w-8 animate-spin rounded-full border-2 border-white/15 border-t-[#38A7B4]" aria-label="يُحمَّل" />
+        <span className="h-8 w-8 animate-spin rounded-full border-2 border-white/15 border-t-[#38A7B4]" aria-label="يحمّل" />
       </div>
     );
   }
@@ -184,12 +184,11 @@ export default function PortalLayout({ children, title }: { children: React.Reac
     return (
       <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center bg-paper px-5 text-foreground">
         <Lock className="h-12 w-12 text-muted-foreground/50" />
-        <h1 className="mt-5 text-2xl font-black">هذا حسابٌ وظيفيّ — لا بوابة تعلّم له</h1>
+        <h1 className="mt-5 text-2xl font-black">هذا حساب وظيفيّ — لا بوابة تعلّم له</h1>
         <p className="mt-3 max-w-md text-center text-sm leading-7 text-muted-foreground">
           حسابك <span className="font-bold text-foreground">{sessionUser.email}</span> يحمل
           {" "}{sessionUser.roles.length === 1 ? "دورا وظيفيّا" : "أدوارا وظيفيّة"} بلا دور «متعلّم»،
-          وبوابة التعلّم تُفتح بذلك الدور. أضِفه للحساب من إدارة المستخدمين إن أردتَ أن
-          تتعلّم به أيضا — أو ادخل ببوابتك الوظيفيّة.
+          لتتعلّم به أضف الدور من إدارة المستخدمين، أو ادخل ببوابتك الوظيفيّة.
         </p>
         <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
           <Link to="/admin" className="rounded-full bg-teal px-6 py-3 font-black text-on-teal hover:bg-teal-light">
@@ -207,10 +206,9 @@ export default function PortalLayout({ children, title }: { children: React.Reac
     return (
       <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center bg-paper px-5 text-foreground">
         <Lock className="h-12 w-12 text-[#FABC05]" />
-        <h1 className="mt-5 text-2xl font-black">منصتك تُفتح بحسابك</h1>
+        <h1 className="mt-5 text-2xl font-black">منصتك تفتح بحسابك</h1>
         <p className="mt-3 max-w-md text-center text-sm leading-7 text-muted-foreground">
-          سجّل دخولك إن كان لك حساب. وإن لم تكن سجّلت في شعبة بعد، فابدأ بالتشخيص
-          ليُقترح عليك مسار، أو تصفّح الشعب المفتوحة واطلب التسجيل.
+          سجّل دخولك، أو ابدأ بالتشخيص لنقترح مسارك.
         </p>
         <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
           <Link to="/auth" className="rounded-full bg-teal px-6 py-3 font-black text-on-teal hover:bg-teal-light">
@@ -247,7 +245,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
            المنصّة ثلاثةُ معانٍ: مراجعةُ المحتوى عند الموظّف، ومراجعةُ تعليقِ
            التقييم، وهذه. والمتعلّمُ يقرؤها «ما سأراجعه» أو «رأيي»، لا
            «تدريبا على التذكّر». فالاسمُ يقول الغرض. */
-        { to: "/student/review", label: "تثبيتُ ما تعلّمت" },
+        { to: "/student/review", label: "تثبيت ما تعلّمت" },
       ],
       /* صفحتا الوحدة وإعادة القياس تتبعان القسم وإن لم تكونا في شريطه */
       match: ["/student/learning", "/student/pathway", "/student/review", "/student/course", "/student/remeasure"],
@@ -405,7 +403,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
                       className="flex w-full cursor-pointer items-center gap-2.5 rounded-xl px-3 py-2.5 text-xs font-bold text-foreground transition hover:bg-red-500/10 hover:text-red-300 disabled:opacity-60"
                     >
                       <LogOut className="h-4 w-4" />
-                      {signingOut ? "يُسجَّل الخروج…" : "تسجيل الخروج"}
+                      {signingOut ? "يسجّل الخروج…" : "تسجيل الخروج"}
                     </button>
                 </Inset>
               )}
@@ -509,7 +507,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
                 className="flex w-full cursor-pointer items-center gap-3 rounded-2xl border border-white/10 px-4 py-3 text-sm font-bold text-foreground transition hover:border-red-400/50 hover:text-red-300 disabled:opacity-60"
               >
                 <LogOut className="h-4 w-4" />
-                {signingOut ? "يُسجَّل الخروج…" : "تسجيل الخروج"}
+                {signingOut ? "يسجّل الخروج…" : "تسجيل الخروج"}
               </button>
             </div>
           </div>

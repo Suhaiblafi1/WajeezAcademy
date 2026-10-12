@@ -122,8 +122,7 @@ export default function MyContract() {
             لا عقدَ موقَّعا في ملفك بعد
           </h2>
           <p className="mt-2 text-read leading-7 text-muted-foreground">
-            العقدُ يصلك رابطا في بريدك تقرؤه وتوقّعه من هناك — لا من هذه الصفحة. وحين توقّعه
-            تجده هنا كاملا، وتحته سجلُّ التوقيعَين، ومنه تطبعه أو تحفظه ملفَّ PDF.
+            يصلك العقدُ رابطا في بريدك لتوقّعه هناك، ثمّ تجده هنا لتطبعه أو تحفظه PDF.
           </p>
           <Inset as={Link} interactive to="/trainer/earnings"
             className="mt-5 flex items-center gap-3 px-4 py-3 text-read text-muted-foreground">

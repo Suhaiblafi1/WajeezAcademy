@@ -44,7 +44,7 @@ export function BriefView({ text, muted = false, className = "" }: { text: strin
         }
         if (b.kind === "rubric") {
           return (
-            <div key={k} className="grid gap-2.5" role="group" aria-label={b.titleAr ?? "مستوياتُ التقييم"}>
+            <div key={k} className="grid gap-2.5" role="group" aria-label={b.titleAr ?? "مستويات التقييم"}>
               {b.titleAr && <span className="font-black text-foreground">{b.titleAr}</span>}
               {b.rows.map((r, i) => (
                 <div key={i} className="grid gap-1.5">
@@ -84,7 +84,7 @@ export function GapList({ layout }: { layout: GapLayout }) {
       </ul>
       {layout.fixesAr.length > 0 && (
         <div className="grid gap-1">
-          <span className="font-black text-foreground">كيف تُصلحه</span>
+          <span className="font-black text-foreground">كيف تصلحه</span>
           <ul className="grid gap-1">
             {layout.fixesAr.map((f) => (
               <li key={f} className="flex items-start gap-2">

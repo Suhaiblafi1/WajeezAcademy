@@ -24,11 +24,11 @@ export interface DossierLinkState {
 export function dossierLinkState(row: DossierLinkTimes, now = Date.now()): DossierLinkState {
   /* والإلغاءُ يسبق الأجل: من أُلغي رابطُه أُلغي وإن كان أجلُه باقيا،
      وقولُ «انتهى أجلُه» عنه يُخفي أنّ إنسانا ألغاه عمدا. */
-  if (row.revokedAt) return { textAr: 'أُلغي', spent: true }
-  if (new Date(row.expiresAt).getTime() <= now) return { textAr: 'انتهى أجلُه', spent: true }
-  if (!row.firstOpenedAt) return { textAr: 'لم يُفتح بعد', spent: false }
+  if (row.revokedAt) return { textAr: 'ألغي', spent: true }
+  if (new Date(row.expiresAt).getTime() <= now) return { textAr: 'انتهى أجله', spent: true }
+  if (!row.firstOpenedAt) return { textAr: 'لم يفتح بعد', spent: false }
   return {
-    textAr: `فُتح آخرَ مرّةٍ ${fmtDateTime(new Date(row.lastOpenedAt ?? row.firstOpenedAt))}`,
+    textAr: `فتح آخر مرّة ${fmtDateTime(new Date(row.lastOpenedAt ?? row.firstOpenedAt))}`,
     spent: false,
   }
 }

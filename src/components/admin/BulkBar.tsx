@@ -19,7 +19,7 @@ export default function BulkBar({
   return (
     <Card tone="warn" className="mb-3 flex flex-wrap items-center gap-3 px-4 py-3">
       <span className="text-xs font-black text-gold-ink">
-        {count} محدَّدا
+        {count} محدّدا
         {busy && progress ? <span className="mr-2 font-normal text-muted-foreground">{progress}</span> : null}
       </span>
       {busy ? (
@@ -29,7 +29,7 @@ export default function BulkBar({
       )}
       <button onClick={onClear} disabled={busy}
         className="mr-auto flex cursor-pointer items-center gap-1 text-fine font-bold text-muted-foreground hover:text-foreground disabled:opacity-40">
-        <X className="h-3 w-3" /> ألغِ التحديد
+        <X className="h-3 w-3" /> ألغ التحديد
       </button>
     </Card>
   );

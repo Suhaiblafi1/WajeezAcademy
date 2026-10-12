@@ -57,7 +57,7 @@ export interface CaseLike {
 /** لماذا لا تخرج الرسالةُ بعد — أو `null` فتخرج */
 export function notifyBlockerAr(c: CaseLike): string | null {
   if (!isResolved(c.outcome)) {
-    return 'لم يُقرَّر بعد ما يجري لهذا المتعلّم — ولا تخرج الرسالةُ قبل القرار'
+    return 'لم يقرّر بعد ما يجري لهذا المتعلّم — ولا تخرج الرسالة قبل القرار'
   }
   return null
 }
@@ -79,9 +79,9 @@ export function canNotify(c: CaseLike): boolean {
  *
  *  فصارت تأخذ **الاختيارَ نفسَه**: لا مآلَ يُشتقّ خارجَها، ولا شرطَ يسبقها. */
 export function settleBlockerAr(learnerChoice: string | null): string | null {
-  if (!learnerChoice) return 'الاختيارُ لصاحبه — لا يُحَلّ بردٍّ ولا برصيدٍ قبل أن يختار'
+  if (!learnerChoice) return 'الاختيار لصاحبه — لا يحلّ بردّ ولا برصيد قبل أن يختار'
   if (!(LEARNER_CHOICES as readonly string[]).includes(learnerChoice)) {
-    return 'اختيارٌ غيرُ معروف — والمآلُ يتبع ما اختاره صاحبُه'
+    return 'اختيار غير معروف — والمآل يتبع ما اختاره صاحبه'
   }
   return null
 }
@@ -96,11 +96,11 @@ export interface CloseInput {
 export function closeBlockersAr(input: CloseInput): string[] {
   const out: string[] = []
   const unresolved = input.cases.filter((c) => !isResolved(c.outcome)).length
-  if (unresolved > 0) out.push(`${unresolved} متعلّما لم يُحَلّ أمرُه بعد`)
+  if (unresolved > 0) out.push(`${unresolved} متعلّما لم يحلّ أمره بعد`)
 
   /* ومن حُلّ أمرُه ولم يُبلَّغ لم يُنتهَ منه: القرارُ بلا رسالةٍ لا يصل صاحبَه */
   const silent = input.cases.filter((c) => isResolved(c.outcome) && !c.notifiedAt).length
-  if (silent > 0) out.push(`${silent} متعلّما قُرِّر أمرُه ولم يُبلَّغ`)
+  if (silent > 0) out.push(`${silent} متعلّما قرّر أمره ولم يبلّغ`)
   return out
 }
 
@@ -116,6 +116,6 @@ export function canClose(input: CloseInput): boolean {
 
    فمن هنا يأخذان معا. ومن زاد خيارا ثالثا فنسي البريدَ سقط الحارس. */
 export const CHOICE_LABEL_AR: Record<LearnerChoice, string> = {
-  refund: 'ردُّ ما تبقّى من قيمة الشعبة',
-  credit: 'رصيدٌ باسمك يُستعمل في شعبةٍ أخرى',
+  refund: 'ردّ ما تبقّى من قيمة الشعبة',
+  credit: 'رصيد باسمك يستعمل في شعبة أخرى',
 }

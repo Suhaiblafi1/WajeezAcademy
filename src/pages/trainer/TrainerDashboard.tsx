@@ -90,7 +90,7 @@ function RealTrainerHome({ name, email }: { name: string; email: string }) {
   if (failed)
     return (
       <Card className="flex items-center justify-center gap-2 py-16 text-muted-foreground">
-        <ServerOff className="h-5 w-5" /> تعذر جلب شعبك — تأكد أن الخادم يعمل ثم حدّث الصفحة.
+        <ServerOff className="h-5 w-5" /> تعذّر جلب شعبك — حدّث الصفحة.
       </Card>
     );
   if (!cohorts || !queue)
@@ -146,10 +146,10 @@ function RealTrainerHome({ name, email }: { name: string; email: string }) {
           مصدرَ لهما في هذه الردود، والقاعدةُ ألّا يُختلق هنا رقمٌ لا مصدرَ
           له. والعددان اللذان لهما مصدرٌ يقولهما السطرُ نثرا. */}
       <p className="mb-6 text-sm leading-7 text-muted-foreground">
-        أهلاً {name} — {cohorts.length > 0
+        أهلا {name} — {cohorts.length > 0
           ? `لديك ${countAr(cohorts.length, COHORT_FORMS)} و${countAr(students, STUDENT_FORMS)}.`
-          : "لم تُسند إليك شعب بعد."}
-        {waitingOnAdmin > 0 && ` و${countAr(waitingOnAdmin, COHORT_FORMS)} تنتظر الإدارةَ لا تنتظرك.`}
+          : "لم تسند إليك شعب بعد."}
+        {waitingOnAdmin > 0 && ` و${countAr(waitingOnAdmin, COHORT_FORMS)} تنتظر الإدارة لا تنتظرك.`}
       </p>
 
       {/* ═══ ولماذا سقطت بطاقاتُ «بوّابتك جاهزة» ═══
@@ -184,7 +184,7 @@ function RealTrainerHome({ name, email }: { name: string; email: string }) {
       <BookAdminMeeting name={name} email={email} />
 
       <p className="mt-6 text-center text-read text-muted-foreground">
-        كل بند أعلاه يقودك إلى مكان تنفيذه — وصفحةُ كلّ شعبةٍ تحمل تجهيزَها وتشغيلَها معا.
+        كلّ بند يقودك إلى مكان تنفيذه.
       </p>
     </div>
   );
@@ -206,7 +206,7 @@ export default function TrainerDashboard() {
     <TrainerLayout title="الرئيسية">
       {checked
         ? <RealTrainerHome name={user?.displayName ?? ""} email={user?.email ?? ""} />
-        : <div className="grid place-items-center py-24"><Loader2 className="h-8 w-8 animate-spin text-teal-ink" aria-label="يُحمَّل" /></div>}
+        : <div className="grid place-items-center py-24"><Loader2 className="h-8 w-8 animate-spin text-teal-ink" aria-label="يحمّل" /></div>}
     </TrainerLayout>
   );
 }

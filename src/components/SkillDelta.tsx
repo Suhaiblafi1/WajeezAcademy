@@ -57,7 +57,7 @@ export default function SkillDelta({ g }: { g: SkillGrowth }) {
         <p className="truncate text-sm font-bold">{g.nameAr}</p>
         <p className="mt-0.5 text-read text-muted-foreground">
           {g.beforeLevel === null
-            ? `قِيست أول مرة بعد الدورة: ${levelLabelAr(g.afterLevel)}`
+            ? `قيست أول مرة بعد الدورة: ${levelLabelAr(g.afterLevel)}`
             : `${levelLabelAr(g.beforeLevel)} ← ${levelLabelAr(g.afterLevel)}`}
         </p>
       </div>

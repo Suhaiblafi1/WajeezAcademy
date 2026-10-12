@@ -171,7 +171,7 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
     setDownloading(true); setMsg("");
     try {
       const name = await apiDownload(`/api/admin/cohorts/${cohortId}/trainer-plan/review-bundle`, "خطة-الشعبة.zip");
-      setMsg(`نُزِّلت «${name}» — فيها المنهجُ نصّا مقروءا وكلُّ ملفٍّ رفعه المدرّب. ولم يتغيّر في الخطّة شيء.`);
+      setMsg(`نزّلت «${name}» — فيها المنهج نصّا مقروءا وكلّ ملفّ رفعه المدرّب. ولم يتغيّر في الخطّة شيء.`);
     } catch (e) { setMsg(e instanceof ApiError ? e.message : "تعذّر التنزيل"); }
     finally { setDownloading(false); }
   };
@@ -189,21 +189,21 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
   return (
     <>
       {!trainerPlan ? (
-        <p className="text-read leading-6 text-muted-foreground">لم يبدأ المدرّبُ تجهيزَ الشعبة بعد.</p>
+        <p className="text-read leading-6 text-muted-foreground">لم يبدأ المدرّب تجهيز الشعبة بعد.</p>
       ) : (
         <>
           <p className="text-read leading-6">
             <b>{PLAN_AR[trainerPlan.status] ?? trainerPlan.status}</b>
             {trainerPlan.trainerName ? <> · {trainerPlan.trainerName}</> : null}
-            {trainerPlan.submittedAt ? <> · أُرسلت {fmtDateTimeAr(trainerPlan.submittedAt)}</> : null}
-            {trainerPlan.trainerConfirmedAt ? <> · وأكّد موافقتَه على كلّ ما فيها</> : null}
+            {trainerPlan.submittedAt ? <> · أرسلت {fmtDateTimeAr(trainerPlan.submittedAt)}</> : null}
+            {trainerPlan.trainerConfirmedAt ? <> · وأكّد موافقته على كلّ ما فيها</> : null}
           </p>
           {/* ═══ لسانان: «الإدارة» لما تقرّره، و«المنهاج» لما أرسله المدرّب (١١ أكتوبر ٢٠٢٦) ═══
               «كثيرُ الكلام.. اجعله على شكل تابات». فالمنهجُ — أطولُ ما في البطاقة — في لسانه،
               ولا يمرّ عليه من جاء ليعتمد تعديلاتٍ أو يرفع تقريرا. والإدارةُ أوّلا: ما ينتظر قرارك. */}
           <TabBar
             className="mt-3"
-            ariaLabel="أقسامُ الخطّة"
+            ariaLabel="أقسام الخطّة"
             items={[{ id: "admin", label: "الإدارة" }, { id: "plan", label: "المنهاج" }]}
             value={tab}
             onChange={setTab}
@@ -214,10 +214,10 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
         <div role="tabpanel" aria-label="المنهاج" className="mt-3">
           <div className="flex flex-wrap gap-2">
             <Button as={Link} to={`/admin/plans/${cohortId}`} target="_blank" rel="noreferrer" tone="secondary" size="sm" icon={ExternalLink}>
-              افتحه في صفحةٍ منفصلة
+              افتحه في صفحة منفصلة
             </Button>
         <Button tone="secondary" size="sm" icon={Download} disabled={downloading} onClick={() => void downloadBundle()}>
-          {downloading ? "يُجهَّز التنزيل…" : "نزِّل الخطّةَ للمراجعة"}
+          {downloading ? "يجهّز التنزيل…" : "نزّل الخطّة للمراجعة"}
         </Button>
           </div>
           {msg && <p className="mt-3 text-read font-bold text-teal-light-ink" role="status">{msg}</p>}
@@ -254,18 +254,18 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
                   عشرين موعدا ليجد التعديلَ الواحد، وإمّا يعتمد ما لم يره. فيُقال هنا
                   بخطوات المدرّب — حيث يكتب ملاحظتَه إن ردّ. */}
               {trainerPlan.status === "submitted" && trainerPlan.approvedPlan && (
-                <Inset className="mt-3" role="region" aria-label="ما تغيّر عن المعتمَد">
+                <Inset className="mt-3" role="region" aria-label="ما تغيّر عن المعتمد">
                   <p className="text-read font-black text-foreground">
-                    ما تغيّر عن المعتمَد
-                    {trainerPlan.approvedPlan.reviewedAt && <span className="font-normal text-muted-foreground"> — اعتُمدت {fmtDateAr(trainerPlan.approvedPlan.reviewedAt)}</span>}
+                    ما تغيّر عن المعتمد
+                    {trainerPlan.approvedPlan.reviewedAt && <span className="font-normal text-muted-foreground"> — اعتمدت {fmtDateAr(trainerPlan.approvedPlan.reviewedAt)}</span>}
                   </p>
                   <p className="mt-1 text-read leading-6 text-muted-foreground">
-                    هذه مراجعةٌ لخطّةٍ معتمَدة — وهذا ما تغيّر فيها بخطوات المدرّب. والمنهجُ كما سيكون باعتمادك في لسان «المنهاج».
+                    هذه مراجعة لخطّة معتمدة — وهذا ما تغيّر فيها بخطوات المدرّب. والمنهج كما سيكون باعتمادك في لسان «المنهاج».
                   </p>
                   <div className="mt-2">
                     <PlanDiffList
                       sections={planDiff(trainerPlan.approvedPlan.content, trainerPlan.content, { date: cohortDayAr })}
-                      emptyText="لم يتغيّر في الخطّة نفسِها شيء — وما يُعتمَد معها من لقاءاتٍ ومهامّ مذكورٌ أدناه."
+                      emptyText="لم يتغيّر في الخطّة نفسها شيء — وما يعتمد معها من لقاءات ومهامّ مذكور أدناه."
                     />
                   </div>
                 </Inset>
@@ -282,10 +282,10 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
                   <Inset className="mt-3" role="region" aria-label="ما تغيّر منذ ردّك">
                     <p className="text-read font-black text-foreground">
                       ما تغيّر منذ ردّك
-                      {trainerPlan.returned.at && <span className="font-normal text-muted-foreground"> — رُدّت {fmtDateAr(trainerPlan.returned.at)}</span>}
+                      {trainerPlan.returned.at && <span className="font-normal text-muted-foreground"> — ردّت {fmtDateAr(trainerPlan.returned.at)}</span>}
                     </p>
                     <p className="mt-1 text-read leading-6 text-muted-foreground">
-                      أعاد المدرّبُ إرسالَها بعد ردّك — هذا ما عدّله عن النسخة التي رددتَها، وملاحظتُك في كلّ خطوةٍ بجانبه.
+                      أعاد المدرّب إرسالها بعد ردّك — هذا ما عدّله عن النسخة التي رددتها، وملاحظتك في كلّ خطوة بجانبه.
                     </p>
                     <div className="mt-2">
                       <SinceReturnList general={since.general} rows={since.rows} />
@@ -300,11 +300,11 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
               {trainerPlan.postponedTo && (
                 <Inset tone="warn" className="mt-3" role="status">
                   <p className="text-read font-black text-gold-ink">
-                    {postponedLineAr(trainerPlan.postponedTo)} — لم تُقبل للفصل الذي أُرسلت له
+                    {postponedLineAr(trainerPlan.postponedTo)} — لم تقبل للفصل الذي أرسلت له
                   </p>
                   <p className="mt-1 text-read leading-6 text-muted-foreground">
                     {trainerPlan.status === "submitted"
-                      ? `أعاد مدرّبُها إرسالَها لموسمها: لا تُرسَل إلّا وهي تبدأ في ${cohortDayAr(trainerPlan.postponedTo)} أو بعده.`
+                      ? `أعاد مدرّبها إرسالها لموسمها: لا ترسل إلّا وهي تبدأ في ${cohortDayAr(trainerPlan.postponedTo)} أو بعده.`
                       : `هي في يد مدرّبها يعدّلها، ولا يرسلها إلّا وهي تبدأ في ${cohortDayAr(trainerPlan.postponedTo)} أو بعده.`}
                   </p>
                 </Inset>
@@ -312,14 +312,14 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
               {/* سطرٌ واحدٌ بعدّها، وتُفتح بنقرة — ومفتوحةً إن سقط مطلوب («كثيرُ الكلام»، ١١ أكتوبر ٢٠٢٦) */}
               <details className="mt-3" open={blocked.length > 0}>
                 <summary className="cursor-pointer text-read font-bold text-teal-light-ink">
-                  بطاقةُ المعايير — {scorecard.filter((i) => i.status === "ok").length} تحقّق
+                  بطاقة المعايير — {scorecard.filter((i) => i.status === "ok").length} تحقّق
                   {" · "}{scorecard.filter((i) => i.status === "advice").length} نصيحة
                   {" · "}{blocked.length} مطلوب
                 </summary>
                 <PlanScorecard
                   items={scorecard}
-                  heading="بطاقةُ المعايير"
-                  intro="تحسبها المنصّةُ من الخطّة، ورآها المدرّبُ قبل أن يرسل. «مطلوب» يمنعه من الإرسال، و«نصيحة» قرارُه."
+                  heading="بطاقة المعايير"
+                  intro="تحسبها المنصّة من الخطّة، ورآها المدرّب قبل أن يرسل. «مطلوب» يمنعه من الإرسال، و«نصيحة» قراره."
                 />
               </details>
               {/* وما طُلب منه يُقرأ بأقسامه — وبعد إعادة الإرسال «ما طلبتَه» ليُقابَل
@@ -330,8 +330,8 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
                 /* وقيلت في «ما تغيّر منذ ردّك» أعلاه بجانب ما تغيّر — فلا تُكرَّر هنا (⑦) */
                 if (trainerPlan.status === "submitted" && trainerPlan.returned) return null;
                 const heading = trainerPlan.status === "submitted"
-                  ? "ما طلبتَه في الردّ السابق — قابِله بما عُدّل"
-                  : trainerPlan.status === "changes_requested" ? "ما طُلب منه" : "ملاحظةُ القرار";
+                  ? "ما طلبته في الردّ السابق — قابله بما عدّل"
+                  : trainerPlan.status === "changes_requested" ? "ما طلب منه" : "ملاحظة القرار";
                 return (
                   <Inset tone="warn" className="mt-2">
                     <p className="text-read font-black text-gold-ink">{heading}</p>
@@ -348,16 +348,16 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
               ولكلٍّ اجتماعُه وإعلانُه (`decide` ← `decideSession`) */}
           {trainerPlan?.status === "submitted" && canApprovePlan && riding.length > 0 && (
             <p className="mt-3 text-read leading-6 text-muted-foreground">
-              باعتمادها {riding.length === 1 ? "يُعتمَد لقاؤها المنتظِرُ معها" : `تُعتمَد لقاءاتُها المنتظِرةُ (${riding.length}) معها`}:
-              {" "}يُنشأ لكلٍّ اجتماعُ Zoom، ويُنشَر للمسجَّلين بتاريخه ويصلهم بالبريد — وأوّلُها يرفع ما بقي من الجدول المبدئيّ إن كان.
+              باعتمادها {riding.length === 1 ? "يعتمد لقاؤها المنتظر معها" : `تعتمد لقاءاتها المنتظرة (${riding.length}) معها`}:
+              {" "}ينشأ لكلّ اجتماع Zoom، وينشر للمسجّلين بتاريخه ويصلهم بالبريد — وأوّلها يرفع ما بقي من الجدول المبدئيّ إن كان.
             </p>
           )}
           {/* ومهامُّها المنتظِرةُ كذلك — الاعتمادُ واحد (٣ج-٣) */}
           {trainerPlan?.status === "submitted" && canApprovePlan && waitingTasks.length > 0 && (
             <p className="mt-2 text-read leading-6 text-muted-foreground">
               {waitingTasks.length === 1
-                ? "وباعتمادها تُعتمَد معها المهمّةُ المنتظِرةُ أدناه — كما تقرؤها في لسان «المنهاج»."
-                : `وباعتمادها تُعتمَد معها المهامُّ المنتظِرةُ (${waitingTasks.length}) أدناه — كما تقرؤها في لسان «المنهاج».`}
+                ? "وباعتمادها تعتمد معها المهمّة المنتظرة أدناه — كما تقرؤها في لسان «المنهاج»."
+                : `وباعتمادها تعتمد معها المهامّ المنتظرة (${waitingTasks.length}) أدناه — كما تقرؤها في لسان «المنهاج».`}
             </p>
           )}
           {/* ═══ وكلمةٌ تصله مع الاعتماد (٧ أكتوبر ٢٠٢٦) ═══
@@ -382,18 +382,18 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
           )}
           {trainerPlan?.status === "submitted" && canApprovePlan && !asking && (
             <details className="mt-3" open={approveNote.length > 0}>
-              <summary className="cursor-pointer text-read font-bold text-teal-light-ink">أضِف كلمةً تصله مع الاعتماد (اختياريّ)</summary>
+              <summary className="cursor-pointer text-read font-bold text-teal-light-ink">أضف كلمة تصله مع الاعتماد (اختياريّ)</summary>
               <div className="mt-2">
                 <StaffField
-                  label="كلمةُ الإدارة"
-                  hint="تصل المدرّبَ مع خبر الاعتماد في الجرس والبريد. للمقترَح لا للمطلوب: ما يجب أن يُعدَّل قبل الاعتماد مكانُه «اطلب تعديلات»."
+                  label="كلمة الإدارة"
+                  hint="تصل المدرّب مع خبر الاعتماد في الجرس والبريد. للمقترح لا للمطلوب: ما يجب أن يعدّل قبل الاعتماد مكانه «اطلب تعديلات»."
                 >
                   <textarea
                     rows={3}
                     maxLength={REVIEW_NOTE_MAX}
                     value={approveNote}
                     onChange={(e) => setApproveNote(e.target.value)}
-                    placeholder="مثلا: اعتمدناها — ومعها في البريد مقترحاتٌ لمصادرَ عربيّةٍ لكلّ محور، تضيفها إن شئت."
+                    placeholder="مثلا: اعتمدناها — ومعها في البريد مقترحات لمصادر عربيّة لكلّ محور، تضيفها إن شئت."
                     className={staffAreaCls}
                   />
                 </StaffField>
@@ -405,13 +405,13 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
               على المعتمِد بابَ الاعتماد. يُقال ما يقع بكلٍّ، ويختار. وخطّةٌ كهذه أُرسلت قبل
               أن يصير المعيارُ مُلزِما — فالمرسَلةُ بعده لا تصل ناقصة. */}
           {trainerPlan?.status === "submitted" && canApprovePlan && !asking && blocked.length > 0 && (
-            <Inset tone="warn" className="mt-3" role="group" aria-label="معاييرُ مُلزِمةٌ لم تتحقّق">
+            <Inset tone="warn" className="mt-3" role="group" aria-label="معايير ملزمة لم تتحقّق">
               <p className="text-read font-black text-gold-ink">
-                {blocked.length === 1 ? "معيارٌ مُلزِمٌ لم يتحقّق" : `${blocked.length} معاييرَ مُلزِمةٍ لم تتحقّق`}: {blocked.map((b) => b.labelAr).join(" · ")}
+                {blocked.length === 1 ? "معيار ملزم لم يتحقّق" : `${blocked.length} معايير ملزمة لم تتحقّق`}: {blocked.map((b) => b.labelAr).join(" · ")}
               </p>
               <ul className="mt-2 list-disc space-y-1 ps-5 text-read leading-6 text-foreground">
-                <li><b>اطلب تعديلات بما في البطاقة</b> (المستحسَن): تُملأ صناديقُ الردّ ممّا سقط، كلٌّ في خطوته، فتعدّلها ثمّ ترسلها. ولا يُرسلها ثانيةً حتّى يتمّ المطلوب.</li>
-                <li><b>اعتمدها كما هي</b>: تُعتمَد بنقصها الآن، ويراها المتعلّمون كذلك — ولك أن تكتب ما يُستحسَن في كلمة الاعتماد أعلاه.</li>
+                <li><b>اطلب تعديلات بما في البطاقة</b> (المستحسن): تملأ صناديق الردّ ممّا سقط، كلّ في خطوته، فتعدّلها ثمّ ترسلها. ولا يرسلها ثانية حتّى يتمّ المطلوب.</li>
+                <li><b>اعتمدها كما هي</b>: تعتمد بنقصها الآن، ويراها المتعلّمون كذلك — ولك أن تكتب ما يستحسن في كلمة الاعتماد أعلاه.</li>
               </ul>
             </Inset>
           )}
@@ -424,7 +424,7 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
                       .then(async (r) => { setApproveNote(""); await Promise.all([loadPlan(), loadPendingSessions()]); if (r.prep?.activated) setActivated(true); decided("approved"); return r; }),
                     (r) => planApprovedMsg(r as PlanDecision),
                   )}>
-                  {riding.length > 0 ? `اعتمدها ولقاءاتِها (${riding.length})` : "اعتمدها"}{blocked.length > 0 ? " كما هي" : ""}{approveNote.trim() ? " مع كلمتك" : ""}
+                  {riding.length > 0 ? `اعتمدها ولقاءاتها (${riding.length})` : "اعتمدها"}{blocked.length > 0 ? " كما هي" : ""}{approveNote.trim() ? " مع كلمتك" : ""}
                 </Button>
                 {scorecard.some((i) => i.status !== "ok") && (
                   <Button tone="danger" size="sm" disabled={busy} onClick={() => { setAskFrom(scorecardNotes(scorecard)); setAsking(true); }}>
@@ -445,8 +445,8 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
             {trainerPlan?.status !== "submitted" && trainerPlan?.status !== "approved" && (
               <Button tone="secondary" size="sm" disabled={busy}
                 onClick={() => {
-                  const note = window.prompt("كلمةٌ تُضاف إلى التذكير (اختياريّ):") ?? "";
-                  void act(() => apiPost(`/api/admin/cohorts/${cohortId}/remind-trainer`, { note: note.trim() || undefined }), "ذُكِّر المدرّب — جرسٌ وبريد");
+                  const note = window.prompt("كلمة تضاف إلى التذكير (اختياريّ):") ?? "";
+                  void act(() => apiPost(`/api/admin/cohorts/${cohortId}/remind-trainer`, { note: note.trim() || undefined }), "ذكّر المدرّب — جرس وبريد");
                 }}>
                 ذكّر المدرّب بإكمال التجهيز
               </Button>
@@ -456,12 +456,12 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
             const choices: Season[] = postponeChoices(trainerPlan.period, new Date().toISOString().slice(0, 10));
             const to = choices[postponeTo] ?? choices[0]!;
             return (
-              <Inset tone="warn" className="mt-3" role="group" aria-label="تأجيلُ الشعبة إلى موسمٍ قادم">
-                <p className="text-read font-black text-gold-ink">أجّلها إلى موسمٍ قادم — لم تُقبل لهذا الفصل</p>
+              <Inset tone="warn" className="mt-3" role="group" aria-label="تأجيل الشعبة إلى موسم قادم">
+                <p className="text-read font-black text-gold-ink">أجّلها إلى موسم قادم — لم تقبل لهذا الفصل</p>
                 <ul className="mt-2 list-disc space-y-1 ps-5 text-read leading-6 text-foreground">
-                  <li>يصل المدرّبَ جرسٌ وبريدٌ يقولان صراحةً إنّها <b>لم تُقبل لهذا الفصل</b> وأُجّلت إلى {seasonAr(to)} — ومعهما تقريرُ المراجعة إن رفعته أعلاه.</li>
-                  <li>تخرج من طابورك، ولا تُفتح للتسجيل هذا الفصل، وتنتقل الشعبةُ إلى فصل ذلك الموسم.</li>
-                  <li>تبقى خطّتُه كما هي يعدّلها متى شاء — ولا يرسلها إلّا وهي تبدأ في {cohortDayAr(seasonStart(to))} أو بعده.</li>
+                  <li>يصل المدرّب جرس وبريد يقولان صراحة إنّها <b>لم تقبل لهذا الفصل</b> وأجّلت إلى {seasonAr(to)} — ومعهما تقرير المراجعة إن رفعته أعلاه.</li>
+                  <li>تخرج من طابورك، ولا تفتح للتسجيل هذا الفصل، وتنتقل الشعبة إلى فصل ذلك الموسم.</li>
+                  <li>تبقى خطّته كما هي يعدّلها متى شاء — ولا يرسلها إلّا وهي تبدأ في {cohortDayAr(seasonStart(to))} أو بعده.</li>
                 </ul>
                 <fieldset className="mt-3">
                   <legend className="text-read font-bold text-foreground">إلى أيّ موسم؟</legend>
@@ -475,7 +475,7 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
                   </div>
                 </fieldset>
                 <div className="mt-3">
-                  <StaffField label="كلمةٌ تصله مع التأجيل (اختياريّة)" hint="مثلا لماذا أُجّلت: اخترنا من دوراتك أجهزَها لهذا الفصل. وما يُعدَّل مكانُه التقرير.">
+                  <StaffField label="كلمة تصله مع التأجيل (اختياريّة)" hint="مثلا لماذا أجّلت: اخترنا من دوراتك أجهزها لهذا الفصل. وما يعدّل مكانه التقرير.">
                     <textarea rows={2} maxLength={REVIEW_NOTE_MAX} value={postponeNote} onChange={(e) => setPostponeNote(e.target.value)} className={staffAreaCls} />
                   </StaffField>
                 </div>
@@ -483,7 +483,7 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
                   <Button tone="danger" size="sm" disabled={busy}
                     onClick={() => void act(
                       () => apiPost(`/api/admin/cohort-plans/${trainerPlan.id}/postpone`, { year: to.year, season: to.season, note: postponeNote.trim() || undefined }).then(loadPlan),
-                      `أُجّلت إلى ${seasonAr(to)} — وصله جرسٌ وبريدٌ بأنّها لم تُقبل لهذا الفصل`,
+                      `أجّلت إلى ${seasonAr(to)} — وصله جرس وبريد بأنّها لم تقبل لهذا الفصل`,
                     ).then((ok) => { if (ok) { setPostponing(false); setPostponeNote(""); decided("postponed"); } })}>
                     أجّلها إلى {seasonAr(to)}
                   </Button>
@@ -499,7 +499,7 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
               editsPending={editsPending}
               onSend={(notes) => void act(
                 () => apiPost(`/api/admin/cohort-plans/${trainerPlan.id}/decide`, { approve: false, note: notes }).then(loadPlan),
-                "رُدّت إليه — وكلُّ ملاحظةٍ في رأس خطوتها عنده",
+                "ردّت إليه — وكلّ ملاحظة في رأس خطوتها عنده",
               ).then((ok) => { if (ok) { setAsking(false); decided("changes_requested"); } })}
               busy={busy}
               onCancel={() => setAsking(false)}
@@ -536,20 +536,20 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
           {riding.length > 0 && canApprovePlan && trainerPlan?.status !== "submitted" && (
             <p className="mt-4 border-t border-white/10 pt-4 text-read leading-6 text-muted-foreground">
               {riding.length === 1
-                ? "لقاءٌ واحدٌ ينتظر خطّةَ الشعبة — يُعتمَد معها حين يرسلها المدرّب، فلا قرارَ عليه وحدَه."
-                : `لقاءاتٌ (${riding.length}) تنتظر خطّةَ الشعبة — تُعتمَد معها حين يرسلها المدرّب، فلا قرارَ عليها وحدَها.`}
+                ? "لقاء واحد ينتظر خطّة الشعبة — يعتمد معها حين يرسلها المدرّب، فلا قرار عليه وحده."
+                : `لقاءات (${riding.length}) تنتظر خطّة الشعبة — تعتمد معها حين يرسلها المدرّب، فلا قرار عليها وحدها.`}
             </p>
           )}
           {individual.length > 0 && canApprovePlan && (
             <div className="mt-4 border-t border-white/10 pt-4">
               <p className="text-read font-black text-foreground">
-                لقاءاتٌ مباشرةٌ تنتظر قرارك ({individual.length})
+                لقاءات مباشرة تنتظر قرارك ({individual.length})
               </p>
               <p className="mt-1 text-read leading-6 text-muted-foreground">
-                باعتمادك يُنشأ اجتماعُ Zoom ويُنشَر اللقاءُ للمسجَّلين بتاريخه ويصلهم بالبريد.
+                باعتمادك ينشأ اجتماع Zoom وينشر اللقاء للمسجّلين بتاريخه ويصلهم بالبريد.
                 {/* والأوّلُ منها يرفع الجدولَ المبدئيّ (`clearPlaceholders`) — يُقال
                     قبل النقر، فمن يعتمد يعرف ما يُخرجه من تقاويم المسجَّلين. */}
-                {" "}وأوّلُ لقاءٍ تعتمده يرفع ما بقي من الجدول المبدئيّ الذي فُتحت به الشعبة، إن كان — فيرى المسجَّلون مواعيدَ مدرّبهم وحدَها.
+                {" "}وأوّل لقاء تعتمده يرفع ما بقي من الجدول المبدئيّ الذي فتحت به الشعبة، إن كان — فيرى المسجّلون مواعيد مدرّبهم وحدها.
               </p>
               <ul className="mt-3 space-y-2">
                 {individual.map((ps) => (
@@ -558,27 +558,27 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
                     <p className="mt-1 text-read text-muted-foreground">
                       {fmtDateTimeAr(ps.startsAt)}
                       {ps.endsAt && <> — {fmtDateTimeAr(ps.endsAt)}</>}
-                      {ps.attachmentName && <> · مرفقٌ: {ps.attachmentName}</>}
+                      {ps.attachmentName && <> · مرفق: {ps.attachmentName}</>}
                     </p>
                     {ps.noteAr && <p className="mt-1 whitespace-pre-line text-read leading-6 text-muted-foreground">{ps.noteAr}</p>}
                     <div className="mt-2 flex flex-wrap gap-2">
                       <Button tone="confirm" size="sm" disabled={busy}
                         onClick={() => act(
                           () => apiPost(`/api/admin/cohort-sessions/${ps.id}/decide`, { approve: true }).then(loadPendingSessions),
-                          "اعتُمد اللقاء — أُنشئ اجتماعُه وبُلِّغ المسجَّلون",
+                          "اعتمد اللقاء — أنشئ اجتماعه وبلّغ المسجّلون",
                         )}>
-                        اعتمِدْه وأعلِنه
+                        اعتمده وأعلنه
                       </Button>
                       <Button tone="danger" size="sm" disabled={busy}
                         onClick={() => {
-                          const note = window.prompt("لمَ يُردّ؟ يصل مدرّبَه بنصّه:");
+                          const note = window.prompt("لم يردّ؟ يصل مدرّبه بنصّه:");
                           if (!note?.trim()) return;
                           void act(
                             () => apiPost(`/api/admin/cohort-sessions/${ps.id}/decide`, { approve: false, note: note.trim() }).then(loadPendingSessions),
-                            "رُدّ اللقاءُ إلى مدرّبه",
+                            "ردّ اللقاء إلى مدرّبه",
                           );
                         }}>
-                        ردَّه
+                        ردّه
                       </Button>
                     </div>
                   </Inset>
@@ -606,7 +606,7 @@ export function PlanCurriculum({ trainerPlan, cohortTitle }: { trainerPlan: Trai
       {trainerPlan.content?.startsOn && trainerPlan.content?.endsOn && (
         <p className="mt-2 text-read leading-6 text-foreground">
           المدّة: من <b>{cohortDayAr(trainerPlan.content.startsOn)}</b> إلى <b>{cohortDayAr(trainerPlan.content.endsOn)}</b>
-          {" "}<span className="text-muted-foreground">— تصير حدودَ الشعبة المعلَنة باعتمادك.</span>
+          {" "}<span className="text-muted-foreground">— تصير حدود الشعبة المعلنة باعتمادك.</span>
         </p>
       )}
       {/* ═══ ومستواها — لمن تُدرَّس (٦ أكتوبر ٢٠٢٦) ═══
@@ -620,7 +620,7 @@ export function PlanCurriculum({ trainerPlan, cohortTitle }: { trainerPlan: Trai
         const aud = asAudience(trainerPlan.content?.audience);
         const who = stagesAr(aud);
         const goal = goalsAr(aud);
-        const unset = <span className="text-muted-foreground">لم يُحدَّد — أُرسلت قبل أن يُسأل عنه</span>;
+        const unset = <span className="text-muted-foreground">لم يحدّد — أرسلت قبل أن يسأل عنه</span>;
         const own = ownMaterialLabels(trainerPlan.content, (trainerPlan.content?.modules ?? []).map((m) => m.moduleId));
         return (
           <>
@@ -637,14 +637,14 @@ export function PlanCurriculum({ trainerPlan, cohortTitle }: { trainerPlan: Trai
                 ثمّ صار للجديد أن يرفع مادّتَه الجاهزة بدلَه ويقولها، والمعتمِدُ يقرّر (٧ أكتوبر):
                 فيُسمّى هنا ما رُفع بها، وما قاله في كلّ كرّاسةٍ بجانبها في بطاقة المنهج تحت */}
             <p className="mt-1 text-read leading-6 text-foreground">
-              قالبُ الكرّاسة:{" "}
+              قالب الكرّاسة:{" "}
               {trainerPlan.workbookBeforeTemplate
-                ? <><b>مستحسَنٌ لهذا المدرّب</b> <span className="text-muted-foreground">— رفع كرّاسةً قبل القالب</span></>
-                : <><b>القالبُ أو مادّتُه الجاهزة</b> <span className="text-muted-foreground">— يقول أيّهما في كلّ كرّاسة</span></>}
+                ? <><b>مستحسن لهذا المدرّب</b> <span className="text-muted-foreground">— رفع كرّاسة قبل القالب</span></>
+                : <><b>القالب أو مادّته الجاهزة</b> <span className="text-muted-foreground">— يقول أيّهما في كلّ كرّاسة</span></>}
             </p>
             {own.length > 0 && (
               <p className="mt-1 text-read leading-6 text-gold-ink">
-                بمادّته الجاهزة لا على القالب: <b>{own.join("، و")}</b> — اقبلها، أو أعدها إليه بملاحظةٍ في «الكرّاسة».
+                بمادّته الجاهزة لا على القالب: <b>{own.join("، و")}</b> — اقبلها، أو أعدها إليه بملاحظة في «الكرّاسة».
               </p>
             )}
           </>

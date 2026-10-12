@@ -38,8 +38,8 @@ const SCREEN = 'src/pages/admin/TrainerApplications.tsx'
 /** موضعُ القرار في المصفوفة — وهو موضعُ زرّه في العمود */
 const at = (action: string) => DECISIONS.findIndex((d) => d.action === action)
 
-describe('① الترتيبُ ترتيبُ رحلة الطلب', () => {
-  it('كلُّ قرارٍ يسبق ما يليه في المسار — لا ترتيبَ كتابةٍ ولا صدفة', () => {
+describe('① الترتيب ترتيب رحلة الطلب', () => {
+  it('كلّ قرار يسبق ما يليه في المسار — لا ترتيب كتابة ولا صدفة', () => {
     /* أزواجٌ من الرحلة نفسِها: الأوّلُ يقع قبل الثاني في حياة الطلب.
        وسقطت منها حلقتان في ٢٦ سبتمبر ٢٠٢٦ بحذف حالتَيهما — `shortlist`
        و`request_demo`، والسلسلةُ تُوصَل فوقَهما: من «بدء المراجعة» إلى
@@ -60,107 +60,107 @@ describe('① الترتيبُ ترتيبُ رحلة الطلب', () => {
     }
   })
 
-  it('وما يُعلّق الطلبَ ثمّ ما يُنهيه — بعد ما يُقدّمه كلِّه', () => {
+  it('وما يعلّق الطلب ثمّ ما ينهيه — بعد ما يقدّمه كلّه', () => {
     const advancing = ['move_to_review', 'shortlist', 'academic_review', 'conditionally_approve', 'approve']
     for (const act of advancing) {
       expect(at(act), `«قائمة الانتظار» قبل «${act}»`).toBeLessThan(at('waitlist'))
       expect(at(act), `«الرفض» قبل «${act}»`).toBeLessThan(at('reject'))
     }
-    expect(at('waitlist'), 'الرفضُ قبل التعليق — والتعليقُ أهونُ منه').toBeLessThan(at('reject'))
-    expect(at('reject'), 'التراجعُ عن الرفض قبل الرفض').toBeLessThan(at('undo_reject'))
-    expect(at('reject'), 'التراجعُ عن السحب قبل الرفض — وهو ممّا يعكس الإنهاء').toBeLessThan(at('undo_withdraw'))
+    expect(at('waitlist'), 'الرفض قبل التعليق — والتعليق أهون منه').toBeLessThan(at('reject'))
+    expect(at('reject'), 'التراجع عن الرفض قبل الرفض').toBeLessThan(at('undo_reject'))
+    expect(at('reject'), 'التراجع عن السحب قبل الرفض — وهو ممّا يعكس الإنهاء').toBeLessThan(at('undo_withdraw'))
   })
 
-  it('والشاشةُ ترث الترتيبَ ولا تعيد فرزَه', () => {
+  it('والشاشة ترث الترتيب ولا تعيد فرزه', () => {
     const screen = code(SCREEN)
-    expect(screen, 'الشاشةُ لا ترشّح من المصفوفة نفسِها')
+    expect(screen, 'الشاشة لا ترشّح من المصفوفة نفسها')
       .toContain('DECISIONS.filter((d) => d.from.includes(a.status))')
-    expect(screen, 'فرزٌ ثانٍ في الشاشة — فموضعُ الزرّ يُبدَّل في موضعَين')
+    expect(screen, 'فرز ثان في الشاشة — فموضع الزرّ يبدّل في موضعين')
       .not.toMatch(/available\s*\.?\s*sort\(/)
   })
 })
 
-describe('② ولا تقسيمَ ولا مطويّة', () => {
+describe('② ولا تقسيم ولا مطويّة', () => {
   const screen = code(SCREEN)
 
-  it('بطاقةُ القرار تعرض المتاحَ كلَّه في عمودٍ واحد', () => {
-    expect(screen, 'عادت البطاقةُ تعرض بعضَ المتاح').toContain('available.map((d) =>')
+  it('بطاقة القرار تعرض المتاح كلّه في عمود واحد', () => {
+    expect(screen, 'عادت البطاقة تعرض بعض المتاح').toContain('available.map((d) =>')
   })
 
-  it('ولا «خطواتٌ تفصيليّة» ولا «اختياريّة» ولا قسمةُ رئيسٍ وتفصيل', () => {
-    for (const gone of ['خطواتٌ تفصيليّة', 'اختياريّة', 'PRIMARY_ACTIONS', 'detailed']) {
-      expect(screen, `«${gone}»: عاد التقسيمُ الذي لا داعيَ له`).not.toContain(gone)
+  it('ولا «خطوات تفصيليّة» ولا «اختياريّة» ولا قسمة رئيس وتفصيل', () => {
+    for (const gone of ['خطوات تفصيليّة', 'اختياريّة', 'PRIMARY_ACTIONS', 'detailed']) {
+      expect(screen, `«${gone}»: عاد التقسيم الذي لا داعي له`).not.toContain(gone)
     }
   })
 
-  it('وحدُّ الشريط اللاصق باقٍ — هو عرضُ صفٍّ لا حكمٌ على الأهمّيّة', () => {
-    expect(screen, 'الشريطُ يعرض المتاحَ كلَّه فيلتفّ على سطرَين')
+  it('وحدّ الشريط اللاصق باق — هو عرض صفّ لا حكم على الأهمّيّة', () => {
+    expect(screen, 'الشريط يعرض المتاح كلّه فيلتفّ على سطرين')
       .toContain('available.filter((d) => BAR_ACTIONS.includes(d.action))')
-    expect(BAR_ACTIONS.length, 'قائمةُ الشريط اتّسعت حتّى صارت عمودا').toBeLessThanOrEqual(4)
+    expect(BAR_ACTIONS.length, 'قائمة الشريط اتّسعت حتّى صارت عمودا').toBeLessThanOrEqual(4)
     for (const act of BAR_ACTIONS) {
       expect(at(act), `«${act}» في الشريط وليس في القرارات`).toBeGreaterThanOrEqual(0)
     }
   })
 })
 
-describe('③④ وواحدٌ ذهبيٌّ لكلّ حالة', () => {
+describe('③④ وواحد ذهبيّ لكلّ حالة', () => {
   /** الحالاتُ التي يُعرض فيها زرٌّ أصلا */
   const actionable = Object.keys(STATUS_LABELS)
     .filter((st) => DECISIONS.some((d) => d.from.includes(st)))
 
-  it('لكلّ حالةٍ فيها أزرارٌ موصًى به — ولا واحدةَ بلا دليل', () => {
-    expect(actionable.length, 'لا حالةَ فيها أزرارٌ أصلا — تعطّل الفحصُ نفسُه')
+  it('لكلّ حالة فيها أزرار موصى به — ولا واحدة بلا دليل', () => {
+    expect(actionable.length, 'لا حالة فيها أزرار أصلا — تعطّل الفحص نفسه')
       .toBeGreaterThan(5)
     for (const st of actionable) {
-      expect(recommendedFor(st), `«${st}»: أزرارٌ بلا واحدٍ يُوصى به`).not.toBeNull()
+      expect(recommendedFor(st), `«${st}»: أزرار بلا واحد يوصى به`).not.toBeNull()
     }
   })
 
-  it('والموصى به متاحٌ في حالته — لا يُضاء زرٌّ لا يُعرض', () => {
+  it('والموصى به متاح في حالته — لا يضاء زرّ لا يعرض', () => {
     for (const st of actionable) {
       const rec = recommendedFor(st)!
       expect(DECISIONS.some((d) => d.action === rec && d.from.includes(st)),
-        `«${st}»: يُوصى بـ«${rec}» وهو غيرُ متاحٍ فيها`).toBe(true)
+        `«${st}»: يوصى بـ«${rec}» وهو غير متاح فيها`).toBe(true)
     }
   })
 
-  it('وحالةٌ لا فعلَ فيها لا يُخترع لها موصًى به', () => {
+  it('وحالة لا فعل فيها لا يخترع لها موصى به', () => {
     /* كان الشاهدُ هنا `withdrawn` وحدَه — حتّى فتح صاحبُ المنصّة للمسحوب بابا
        (٢٩ سبتمبر ٢٠٢٦: «هناك حساباتٌ مسحوبة.. أرجو إعادتها»). فالفحصُ على
        البنية لا على اسم حالة: كلُّ حالةٍ لا قرارَ فيها لا موصًى به لها. */
     const idle = Object.keys(STATUS_LABELS).filter((st) => !actionable.includes(st))
-    expect(idle.length, 'لا حالةَ بلا أزرار — تعطّل الفحصُ نفسُه').toBeGreaterThan(0)
+    expect(idle.length, 'لا حالة بلا أزرار — تعطّل الفحص نفسه').toBeGreaterThan(0)
     for (const st of idle) {
-      expect(recommendedFor(st), `«${st}»: اختُرع فعلٌ لحالةٍ لا قرارَ فيها`).toBeNull()
+      expect(recommendedFor(st), `«${st}»: اخترع فعل لحالة لا قرار فيها`).toBeNull()
     }
   })
 
-  it('والشاشةُ تُذهّب الموصى به وحدَه — والأحمرُ يبقى أحمر', () => {
+  it('والشاشة تذهّب الموصى به وحده — والأحمر يبقى أحمر', () => {
     const screen = code(SCREEN)
-    expect(screen, 'النبرةُ تُقرأ من `tone` فتُذهّب كلَّ `main` — وهي ثلاثةٌ في حالةٍ واحدة')
+    expect(screen, 'النبرة تقرأ من `tone` فتذهّب كلّ `main` — وهي ثلاثة في حالة واحدة')
       .not.toContain('d.tone === "main" ? "primary"')
-    expect(screen, 'لا يُميَّز الموصى به بالذهبيّ')
+    expect(screen, 'لا يميّز الموصى به بالذهبيّ')
       .toContain('d.action === recommended ? "primary" : "secondary"')
-    expect(screen, 'ما لا يُتراجَع عنه سُوّي ببديلٍ عاديّ')
+    expect(screen, 'ما لا يتراجع عنه سوّي ببديل عاديّ')
       .toContain('d.tone === "danger" ? "danger"')
   })
 })
 
-describe('⑤ وأثرُ الفعل تحت زرّه', () => {
-  it('الاعتمادُ يقول ما يفعله — ومن لم يقرأه ظنّه قرارا داخليّا', () => {
+describe('⑤ وأثر الفعل تحت زرّه', () => {
+  it('الاعتماد يقول ما يفعله — ومن لم يقرأه ظنّه قرارا داخليّا', () => {
     const approve = DECISIONS.find((d) => d.action === 'approve')!
-    expect(approve.noteAr, 'الاعتمادُ بلا أثرٍ مكتوب').toBeTruthy()
-    expect(approve.noteAr, 'لا يُقال إنّه يُعلم المتقدّم').toContain('بالبريد')
+    expect(approve.noteAr, 'الاعتماد بلا أثر مكتوب').toBeTruthy()
+    expect(approve.noteAr, 'لا يقال إنّه يعلم المتقدّم').toContain('بالبريد')
   })
 
-  it('و«اقبَلْه داخليّا» يقول إنّه لا يصل المتقدّم — وهو ما يُخطئ فيه القارئ', () => {
+  it('و«اقبله داخليّا» يقول إنّه لا يصل المتقدّم — وهو ما يخطئ فيه القارئ', () => {
     const internal = DECISIONS.find((d) => d.action === 'conditionally_approve')!
-    expect(internal.noteAr, 'القبولُ الداخليُّ بلا أثرٍ مكتوب').toBeTruthy()
-    expect(internal.noteAr, 'لا يُقال إنّه لا يصل صاحبَه').toMatch(/لا يصل/)
+    expect(internal.noteAr, 'القبول الداخليّ بلا أثر مكتوب').toBeTruthy()
+    expect(internal.noteAr, 'لا يقال إنّه لا يصل صاحبه').toMatch(/لا يصل/)
   })
 
-  it('والشاشةُ تعرضه تحت زرّه لا تحت المجموعة', () => {
-    expect(code(SCREEN), 'الأثرُ لا يُعرض أصلا').toContain('{d.noteAr}')
+  it('والشاشة تعرضه تحت زرّه لا تحت المجموعة', () => {
+    expect(code(SCREEN), 'الأثر لا يعرض أصلا').toContain('{d.noteAr}')
   })
 })
 
@@ -179,18 +179,18 @@ describe('⑤ وأثرُ الفعل تحت زرّه', () => {
  * فمن أراد تبديلَ التسمية فليبدّلْها في الموضعَين وفي هذا السطر — والثلاثةُ
  * معا فعلٌ مقصود، والواحدُ منها سهو.
  */
-describe('تسميةُ «رأيٌ ثانٍ» في موضعَيها', () => {
-  it('وسمُ الصفّ يقول ما تُستعمل له لا مرحلةً في مسار', () => {
-    expect(STATUS_LABELS.academic_review).toBe('رأيٌ ثانٍ — قبل قرار المقابلة')
+describe('تسمية «رأي ثان» في موضعيها', () => {
+  it('وسم الصفّ يقول ما تستعمل له لا مرحلة في مسار', () => {
+    expect(STATUS_LABELS.academic_review).toBe('رأي ثان — قبل قرار المقابلة')
   })
 
-  it('ولفظُ الزرّ معه — فلا يقول الزرُّ غيرَ ما يقوله الصفّ', () => {
+  it('ولفظ الزرّ معه — فلا يقول الزرّ غير ما يقوله الصفّ', () => {
     const d = DECISIONS.find((x) => x.action === 'academic_review')
-    expect(d, 'سقط قرارُ الرأي الثاني من القائمة').toBeTruthy()
-    expect(d!.label).toBe('اطلبْ رأيا ثانيا')
+    expect(d, 'سقط قرار الرأي الثاني من القائمة').toBeTruthy()
+    expect(d!.label).toBe('اطلب رأيا ثانيا')
   })
 
-  it('وما يقرؤه المتقدّمُ لا يخبره بوقائعَ لم تقع', () => {
+  it('وما يقرؤه المتقدّم لا يخبره بوقائع لم تقع', () => {
     /* ═══ وهذا الموضعُ الثالثُ فاتني أوّلَ مرّة ═══
 
        بحثتُ عن «مراجعة أكاديمية» فأصبتُ موضعَين وفاتني هذا — لفظُه
@@ -200,14 +200,14 @@ describe('تسميةُ «رأيٌ ثانٍ» في موضعَيها', () => {
        وهو أخطرُ الثلاثة: يقرؤه **المتقدّمُ نفسُه**، وكان يقول إنّ لقاءَ
        تعارفٍ ودرسا تجريبيّا مضيا — وهذه الحالةُ تقع **قبل** المقابلة. */
     const step = APPLICANT_STATUS.academic_review
-    expect(step, 'سقطت الحالةُ من صفحة المتقدّم').toBeTruthy()
+    expect(step, 'سقطت الحالة من صفحة المتقدّم').toBeTruthy()
     for (const lie of ['بعد لقاء التعارف', 'الدرس التجريبي', 'نهائي']) {
-      expect(`${step.label} ${step.explain}`, `يُخبَر المتقدّمُ بما لم يقع: ${lie}`)
+      expect(`${step.label} ${step.explain}`, `يخبر المتقدّم بما لم يقع: ${lie}`)
         .not.toContain(lie)
     }
   })
 
-  it('ولا يبقى الاسمُ القديمُ في وجهٍ يراه الموظّف', () => {
+  it('ولا يبقى الاسم القديم في وجه يراه الموظّف', () => {
     /* «مراجعة أكاديميّة» تقول مرحلةً لازمةً بعد المقابلة، وهي قبلها — فيُملأ
        بغير أهله من يقرأ الاسمَ ولا يعرف قصدَه. */
     expect(STATUS_LABELS.academic_review).not.toContain('مراجعة أكاديمية')

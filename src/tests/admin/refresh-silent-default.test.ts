@@ -14,14 +14,14 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '../../..')
 const SCREEN = readFileSync(join(root, 'src/pages/admin/TrainerContracts.tsx'), 'utf8')
   .replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '').replace(/^\s*\/\/.*$/gm, '')
 
-describe('تحديثُ العروض المفتوحة صامتٌ افتراضا', () => {
-  it('الخانةُ تبدأ غيرَ مؤشَّرة', () => {
+describe('تحديث العروض المفتوحة صامت افتراضا', () => {
+  it('الخانة تبدأ غير مؤشّرة', () => {
     expect(SCREEN).toMatch(/\[refreshNotify,\s*setRefreshNotify\]\s*=\s*useState\(false\)/)
   })
 
-  it('والنداءُ يحمل قيمتَها — وإلّا أبلغ الخادمُ افتراضا', () => {
+  it('والنداء يحمل قيمتها — وإلّا أبلغ الخادم افتراضا', () => {
     const at = SCREEN.indexOf('"/api/admin/trainer-contracts/refresh-bodies"')
-    expect(at, 'لم يُقرأ نداءُ التحديث').toBeGreaterThan(0)
+    expect(at, 'لم يقرأ نداء التحديث').toBeGreaterThan(0)
     expect(SCREEN.slice(at, at + 120)).toMatch(/\{\s*notify:\s*refreshNotify\s*\}/)
   })
 })

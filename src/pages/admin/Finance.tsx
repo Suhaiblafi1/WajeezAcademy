@@ -49,7 +49,7 @@ interface Coupon {
 }
 
 /* «١ طلبٌ» و«٢ طلبان» و«٣ طلبات» و«١١ طلبا» — والعددُ يُقرأ لا يُحسب */
-const REQ_FORMS = { one: "طلبُ تسجيلٍ", two: "طلبا تسجيلٍ", few: "طلباتِ تسجيلٍ", many: "طلبَ تسجيلٍ" };
+const REQ_FORMS = { one: "طلب تسجيل", two: "طلبا تسجيل", few: "طلبات تسجيل", many: "طلب تسجيل" };
 
 const ER_STATUS: Record<string, string> = { pending: "بانتظار المراجعة", seat_held: "مقعد محجوز", approved: "موافق عليه", converted: "تحوّل إلى تسجيل ✓", rejected: "مرفوض", expired: "منتهي" };
 const INV_STATUS: Record<string, string> = { issued: "صادرة", paid: "مدفوعة", partially_refunded: "مستردة جزئيا", refunded: "مستردة", void: "ملغاة" };
@@ -144,7 +144,7 @@ export default function Finance() {
           icon={ServerOff}
           titleAr="الخادم لا يجيب"
           reasonAr={offline}
-          actions={[{ onClick: () => void load(), labelAr: "إعادة المحاولة", hintAr: "تُعاد قراءةُ الطلبات والفواتير" }]}
+          actions={[{ onClick: () => void load(), labelAr: "إعادة المحاولة", hintAr: "تعاد قراءة الطلبات والفواتير" }]}
         />
       </AdminLayout>
     );
@@ -186,7 +186,7 @@ export default function Finance() {
     );
     setBulkProgress("");
     setSel(new Set(outcome.failed.map((f) => f.id)));
-    toast(bulkMessage(outcome, kind === "approve" ? "وُوفق" : "رُفض"));
+    toast(bulkMessage(outcome, kind === "approve" ? "ووفق" : "رفض"));
     setBusy(false);
     await load();
   };
@@ -203,9 +203,9 @@ export default function Finance() {
       <FlowSteps steps={[
         { label: "طلب تسجيل", actor: "الطالب" },
         { label: "مراجعة وموافقة أو اعتذار", actor: "أنت هنا" },
-        { label: "فاتورة تُصدر", actor: "النظام تلقائياً" },
-        { label: "الدفع يُسجَّل", actor: "أنت أو بوابة الدفع" },
-        { label: "المنصة تُفتح للطالب", actor: "تلقائي فور الدفع" },
+        { label: "فاتورة تصدر", actor: "النظام تلقائيا" },
+        { label: "الدفع يسجّل", actor: "أنت أو بوابة الدفع" },
+        { label: "المنصة تفتح للطالب", actor: "تلقائي فور الدفع" },
       ]} />
       {/* ── العملُ قبل الألسنة ──
 
@@ -218,16 +218,16 @@ export default function Finance() {
         icon={Inbox}
         count={selectable.length}
         forms={REQ_FORMS}
-        waitingAr="تنتظر مراجعتَك"
+        waitingAr="تنتظر مراجعتك"
         stats={canViewMoney
-          ? [`${invoices.filter((i) => i.status !== "paid").length} فاتورةً غير مدفوعة`,
+          ? [`${invoices.filter((i) => i.status !== "paid").length} فاتورة غير مدفوعة`,
              `${refunds.filter((r) => r.status === "requested").length} استرداد ينتظر التنفيذ`]
           : []}
-        actionAr={tab === "requests" ? "ابدأ بأوّلها" : "اعرِضها"}
+        actionAr={tab === "requests" ? "ابدأ بأوّلها" : "اعرضها"}
         /* والسببُ يُقال: البحثُ قد يُخفي الطابورَ كلَّه، فيبهت الزرُّ بلا
            أن يُعرف لماذا. */
         disabledReasonAr={tab === "requests" && reqView.total === 0
-          ? "البحثُ الحاليُّ لا يُظهر منها شيئا — امسحه لتبدأ."
+          ? "البحث الحاليّ لا يظهر منها شيئا — امسحه لتبدأ."
           : undefined}
         onAction={() => {
           /* اللسانُ أوّلا، ثمّ أوّلُ معلَّقٍ معروضٍ يُبلَغ ويُركَّز عليه */
@@ -235,7 +235,7 @@ export default function Finance() {
           const first = reqView.rows.find((r) => r.status === "pending") ?? reqView.rows[0];
           if (first) revealRow(`enroll-req-${first.id}`);
         }}
-        doneAr="لا طلبَ تسجيلٍ ينتظر مراجعتَك — وما يصل منها يظهر هنا فورا."
+        doneAr="لا طلب تسجيل ينتظر مراجعتك — وما يصل منها يظهر هنا فورا."
       />
 
       <div className="mb-5 flex flex-wrap items-center gap-2">
@@ -258,9 +258,9 @@ export default function Finance() {
       {readOnly && (
         <Card as="p" className="mb-5 flex items-start gap-2 px-4 py-3 text-read font-bold leading-6 text-muted-foreground">
           <Wallet className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gold-ink" />
-          حسابُك يقرأ المالَ ولا يحرّكه: تعرف من دفع ومن لم يدفع لتقرّر تسجيلا، وتراجع طلباتِ التسجيل.
-          أمّا تسجيلُ دفعةٍ يدويّةٍ واعتمادُ استردادٍ وإنشاءُ كوبونٍ فهي بيد <b className="text-foreground">المالية</b> —
-          فصلٌ مقصود: من يسجّل التسجيلَ لا يسجّل دفعتَه.
+          حسابك يقرأ المال ولا يحرّكه: تعرف من دفع ومن لم يدفع لتقرّر تسجيلا، وتراجع طلبات التسجيل.
+          أمّا تسجيل دفعة يدويّة واعتماد استرداد وإنشاء كوبون فهي بيد <b className="text-foreground">المالية</b> —
+          فصل مقصود: من يسجّل التسجيل لا يسجّل دفعته.
         </Card>
       )}
 
@@ -270,13 +270,13 @@ export default function Finance() {
       {!loading && tab === "requests" && (
         <div className="space-y-3">
           {requests.length === 0 && (
-            <EmptyState icon={Inbox} titleAr="لا طلباتِ تسجيلٍ تنتظر"
-              reasonAr="طلبُ التسجيل يصل هنا حين يختار متعلّمٌ شعبةً بلا شراءٍ مباشر — والشراءُ المباشر لا يمرّ بهذه الشاشة."
+            <EmptyState icon={Inbox} titleAr="لا طلبات تسجيل تنتظر"
+              reasonAr="طلب التسجيل يصل هنا حين يختار متعلّم شعبة بلا شراء مباشر — والشراء المباشر لا يمرّ بهذه الشاشة."
               tone="done" />
           )}
           {requests.length > 0 && (
             <ListToolbar q={q} onQ={setQ} onPage={setPage} view={reqView} unit="طلبا"
-              placeholder="ابحث باسمِ طالبٍ أو بريدٍ أو شعبة…" />
+              placeholder="ابحث باسم طالب أو بريد أو شعبة…" />
           )}
           {selectable.length > 0 && (
             <div className="flex items-center gap-2 text-fine text-muted-foreground">
@@ -284,7 +284,7 @@ export default function Finance() {
                 checked={sel.size > 0 && selectable.every((r) => sel.has(r.id))}
                 onChange={(e) => setSel(e.target.checked ? new Set(selectable.map((r) => r.id)) : new Set())}
                 aria-label="حدّد كلّ الطلبات المعلّقة" className="h-3.5 w-3.5 cursor-pointer accent-gold" />
-              حدّد كلّ المعلَّقة ({selectable.length})
+              حدّد كلّ المعلّقة ({selectable.length})
             </div>
           )}
           <BulkBar count={sel.size} busy={busy} progress={bulkProgress} onClear={() => setSel(new Set())}>
@@ -297,8 +297,8 @@ export default function Finance() {
           </BulkBar>
           {requests.length > 0 && reqView.total === 0 && (
             <EmptyState icon={Inbox} titleAr="لا طلب يطابق بحثك" tone="filter"
-              reasonAr={`لا شيءَ يطابق «${q.trim()}» في أسماء المتعلّمين ولا بريدهم ولا الشعب.`}
-              actions={[{ onClick: () => { setQ(""); setPage(1); }, labelAr: "امسح البحث", hintAr: "تعود القائمةُ كاملةً" }]} />
+              reasonAr={`لا شيء يطابق «${q.trim()}» في أسماء المتعلّمين ولا بريدهم ولا الشعب.`}
+              actions={[{ onClick: () => { setQ(""); setPage(1); }, labelAr: "امسح البحث", hintAr: "تعود القائمة كاملة" }]} />
           )}
           {reqView.rows.map((r) => (
             /* هدفُ زرِّ الرأس — يقبل التركيزَ ليُقرأ حين يُبلَغ بلوحة المفاتيح */
@@ -326,7 +326,7 @@ export default function Finance() {
                   <input value={couponFor[r.id] ?? ""} onChange={(e) => setCouponFor({ ...couponFor, [r.id]: e.target.value })}
                     placeholder="كوبون (اختياري)" dir="ltr" className={`${inputCls} w-32 font-mono`} />
                   <Button tone="confirm" size="sm" disabled={busy}
-                    onClick={() => act(() => apiPost(`/api/admin/enrollment-requests/${r.id}/approve`, { couponCode: couponFor[r.id] || undefined }), "وُوفق: حُجز المقعد وأُنشئت الفاتورة")}>
+                    onClick={() => act(() => apiPost(`/api/admin/enrollment-requests/${r.id}/approve`, { couponCode: couponFor[r.id] || undefined }), "ووفق: حجز المقعد وأنشئت الفاتورة")}>
                     <CheckCircle2 className="h-3.5 w-3.5" /> موافقة وحجز مقعد
                   </Button>
                   <Button tone="danger" size="sm" disabled={busy}
@@ -345,16 +345,16 @@ export default function Finance() {
         <div className="space-y-3">
           {invoices.length === 0 && (
             <EmptyState icon={Receipt} titleAr="لا فواتير بعد"
-              reasonAr="تُنشأ الفاتورةُ عند الموافقة على طلبِ تسجيلٍ أو عند شراءٍ مباشر." tone="start" />
+              reasonAr="تنشأ الفاتورة عند الموافقة على طلب تسجيل أو عند شراء مباشر." tone="start" />
           )}
           {invoices.length > 0 && (
             <ListToolbar q={q} onQ={setQ} onPage={setPage} view={invView} unit="فاتورة"
-              placeholder="ابحث باسمِ مشترٍ أو بريدٍ أو رقمِ فاتورة…" />
+              placeholder="ابحث باسم مشتر أو بريد أو رقم فاتورة…" />
           )}
           {invoices.length > 0 && invView.total === 0 && (
             <EmptyState icon={Receipt} titleAr="لا فاتورة تطابق بحثك" tone="filter"
-              reasonAr={`لا شيءَ يطابق «${q.trim()}» في أسماء المشترين ولا بريدهم ولا أرقام الفواتير.`}
-              actions={[{ onClick: () => { setQ(""); setPage(1); }, labelAr: "امسح البحث", hintAr: "تعود القائمةُ كاملةً" }]} />
+              reasonAr={`لا شيء يطابق «${q.trim()}» في أسماء المشترين ولا بريدهم ولا أرقام الفواتير.`}
+              actions={[{ onClick: () => { setQ(""); setPage(1); }, labelAr: "امسح البحث", hintAr: "تعود القائمة كاملة" }]} />
           )}
           {invView.rows.map((inv) => (
             <Card key={inv.id}>
@@ -363,14 +363,14 @@ export default function Finance() {
                   <p className="font-black">{inv.total} {inv.currency} <span className="mr-2 font-mono text-fine font-normal text-muted-foreground" dir="ltr">{inv.id.slice(0, 8)}…</span></p>
                   <p className="mt-1 text-read text-muted-foreground">{inv.order.user.displayName} · {fmtDate(new Date(inv.issuedAt))}</p>
                 </div>
-                <Chip tone="accent" srPrefixAr="حالةُ الفاتورة">{INV_STATUS[inv.status] ?? inv.status}</Chip>
+                <Chip tone="accent" srPrefixAr="حالة الفاتورة">{INV_STATUS[inv.status] ?? inv.status}</Chip>
               </div>
               {inv.status === "issued" && canRecordPayment && (
                 <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-white/8 pt-3">
                   <input value={payForm[inv.id] ?? ""} onChange={(e) => setPayForm({ ...payForm, [inv.id]: e.target.value })}
                     placeholder="طريقة الدفع — تحويل بنكي / كاش" className={`${inputCls} flex-1`} />
                   <Button tone="confirm" size="sm" disabled={busy || (payForm[inv.id] ?? "").length < 3}
-                    onClick={() => act(() => apiPost(`/api/admin/invoices/${inv.id}/manual-payment`, { methodNote: payForm[inv.id] }), "سُجلت الدفعة اليدوية الموثقة")}>
+                    onClick={() => act(() => apiPost(`/api/admin/invoices/${inv.id}/manual-payment`, { methodNote: payForm[inv.id] }), "سجلت الدفعة اليدوية الموثقة")}>
                     <CreditCard className="h-3.5 w-3.5" /> تسجيل دفعة يدوية
                   </Button>
                 </div>
@@ -385,7 +385,7 @@ export default function Finance() {
                   <input value={refundForm[p.id]?.reason ?? ""} onChange={(e) => setRefundForm({ ...refundForm, [p.id]: { ...refundForm[p.id], reason: e.target.value, amount: refundForm[p.id]?.amount ?? "" } })}
                     placeholder="سبب موثق (5+ أحرف)" className={`${inputCls} flex-1`} />
                   <Button tone="secondary" size="sm" disabled={busy || (refundForm[p.id]?.reason ?? "").length < 5 || !Number(refundForm[p.id]?.amount)}
-                    onClick={() => act(() => apiPost(`/api/admin/payments/${p.id}/refund`, { amount: Number(refundForm[p.id].amount), reason: refundForm[p.id].reason }), "قُدم طلب الاسترداد")} className="text-fine text-gold-ink">
+                    onClick={() => act(() => apiPost(`/api/admin/payments/${p.id}/refund`, { amount: Number(refundForm[p.id].amount), reason: refundForm[p.id].reason }), "قدم طلب الاسترداد")} className="text-fine text-gold-ink">
                     <RotateCcw className="h-3 w-3" /> طلب استرداد
                   </Button>
                   </>)}
@@ -400,8 +400,8 @@ export default function Finance() {
       {!loading && tab === "refunds" && (
         <div className="space-y-3">
           {refunds.length === 0 && (
-            <EmptyState icon={Undo2} titleAr="لا طلباتِ استردادٍ تنتظر"
-              reasonAr="يُقدَّم طلبُ الاسترداد من بوّابة المتعلّم، ويظهر هنا لحظةَ تقديمه." tone="done" />
+            <EmptyState icon={Undo2} titleAr="لا طلبات استرداد تنتظر"
+              reasonAr="يقدّم طلب الاسترداد من بوّابة المتعلّم، ويظهر هنا لحظة تقديمه." tone="done" />
           )}
           {refunds.map((rf) => (
             <Card key={rf.id} className="flex flex-wrap items-center justify-between gap-3">
@@ -410,13 +410,13 @@ export default function Finance() {
                 <p className="mt-1 text-read text-muted-foreground">{fmtDateTime(new Date(rf.createdAt))}</p>
               </div>
               <div className="flex items-center gap-2">
-                <Chip tone="accent" srPrefixAr="حالةُ الطلب">{RF_STATUS[rf.status] ?? rf.status}</Chip>
+                <Chip tone="accent" srPrefixAr="حالة الطلب">{RF_STATUS[rf.status] ?? rf.status}</Chip>
                 {rf.status === "requested" && canRefund && (
                   <>
-                    <Button tone="secondary" size="sm" disabled={busy} onClick={() => act(() => apiPost(`/api/admin/refunds/${rf.id}/process`, { approve: true }), "نُفذ الاسترداد وحُدثت الدفعة والطلب")} className="bg-emerald-500/20">
+                    <Button tone="secondary" size="sm" disabled={busy} onClick={() => act(() => apiPost(`/api/admin/refunds/${rf.id}/process`, { approve: true }), "نفذ الاسترداد وحدثت الدفعة والطلب")} className="bg-emerald-500/20">
                       تنفيذ
                     </Button>
-                    <Button tone="danger" size="sm" disabled={busy} onClick={() => act(() => apiPost(`/api/admin/refunds/${rf.id}/process`, { approve: false, note: "مرفوض من المالية" }), "رُفض الاسترداد")}>
+                    <Button tone="danger" size="sm" disabled={busy} onClick={() => act(() => apiPost(`/api/admin/refunds/${rf.id}/process`, { approve: false, note: "مرفوض من المالية" }), "رفض الاسترداد")}>
                       رفض
                     </Button>
                   </>
@@ -449,7 +449,7 @@ export default function Finance() {
                   expiresAt: couponForm.expiresAt ? new Date(couponForm.expiresAt) : undefined,
                 });
                 setCouponForm({ code: "", percentOff: "", amountOff: "", maxUses: "", expiresAt: "" });
-              }, "أُنشئ الكوبون")} className="mt-3">
+              }, "أنشئ الكوبون")} className="mt-3">
               أنشئ الكوبون
             </Button>
             <ul className="mt-4 space-y-2">
@@ -460,9 +460,9 @@ export default function Finance() {
                   <span className="text-muted-foreground">{c.usedCount ?? 0}/{c.maxUses ?? "∞"}</span>
                   {/* كوبونُ المدرّب يُسمّى: ما يمنحه يُحسم منه لا منّا (البند 4-10)،
                       فلا يُقرأ حملةً من حملاتنا في القائمة نفسِها */}
-                  {c.trainerCode && <Chip tone="accent">كودُ مدرّب — على دوراته</Chip>}
-                  {c.trainerDiscount && <Chip>خصمُ مدرّبٍ بالمبلغ</Chip>}
-                  {!c.active && <Chip tone="danger">{c.trainerCode?.status === "paused" ? "أوقفه مدرّبُه" : "معطّل"}</Chip>}
+                  {c.trainerCode && <Chip tone="accent">كود مدرّب — على دوراته</Chip>}
+                  {c.trainerDiscount && <Chip>خصم مدرّب بالمبلغ</Chip>}
+                  {!c.active && <Chip tone="danger">{c.trainerCode?.status === "paused" ? "أوقفه مدرّبه" : "معطّل"}</Chip>}
                 </Inset>
               ))}
             </ul>
@@ -485,7 +485,7 @@ export default function Finance() {
                   features: planForm.features ? planForm.features.split(/[،,]/).map((f) => f.trim()).filter(Boolean) : undefined,
                 });
                 setPlanForm({ code: "", nameAr: "", price: "", intervalMonths: "1", features: "" });
-              }, "أُنشئت الخطة وأصبحت عامة فورا")} className="mt-3">
+              }, "أنشئت الخطة وأصبحت عامة فورا")} className="mt-3">
               أنشئ الخطة
             </Button>
             <p className="mt-3 flex items-center gap-1.5 text-read text-muted-foreground">
@@ -497,44 +497,44 @@ export default function Finance() {
       {bulkConfirm === "approve" && (
         <ConfirmAction
           tone="default"
-          titleAr={`الموافقةُ على ${sel.size} طلبَ تسجيل`}
+          titleAr={`الموافقة على ${sel.size} طلب تسجيل`}
           confirmLabelAr={`وافق على ${sel.size}`}
           busy={busy}
           onCancel={() => setBulkConfirm(null)}
           onConfirm={() => { setBulkConfirm(null); void bulkRequests("approve"); }}
         >
-          <p>لكلّ طلبٍ منها: <b className="text-foreground">يُحجَز مقعدٌ في شعبته وتُصدَر فاتورتُه</b>. والمقعدُ المحجوزُ يُنقص السعةَ المعروضةَ فورا.</p>
-          <p>ولا كوبونَ في الجماعيّ — الكوبونُ قرارٌ لصفٍّ بعينه، وتعميمُه يمنح خصما لمن لم يُقصد.</p>
+          <p>لكلّ طلب منها: <b className="text-foreground">يحجز مقعد في شعبته وتصدر فاتورته</b>. والمقعد المحجوز ينقص السعة المعروضة فورا.</p>
+          <p>ولا كوبون في الجماعيّ — الكوبون قرار لصفّ بعينه، وتعميمه يمنح خصما لمن لم يقصد.</p>
         </ConfirmAction>
       )}
 
       {rejecting && (
         <ConfirmAction
-          titleAr={`رفضُ طلبِ «${rejecting.whoAr}»`}
+          titleAr={`رفض طلب «${rejecting.whoAr}»`}
           confirmLabelAr="ارفض الطلب"
           busy={busy}
-          reason={{ labelAr: "سببُ الرفض — يصل صاحبَ الطلب كما تكتبه", minLength: 5 }}
+          reason={{ labelAr: "سبب الرفض — يصل صاحب الطلب كما تكتبه", minLength: 5 }}
           onCancel={() => setRejecting(null)}
           onConfirm={(reason) => {
             const target = rejecting;
             setRejecting(null);
-            void act(() => apiPost(`/api/admin/enrollment-requests/${target.id}/reject`, { reason }), "رُفض الطلب — ووصل السببُ صاحبَه");
+            void act(() => apiPost(`/api/admin/enrollment-requests/${target.id}/reject`, { reason }), "رفض الطلب — ووصل السبب صاحبه");
           }}
         >
-          <p>يُغلَق الطلبُ ولا يُحجَز له مقعد، ويقرأ صاحبُه سببَك كما تكتبه.</p>
+          <p>يغلق الطلب ولا يحجز له مقعد، ويقرأ صاحبه سببك كما تكتبه.</p>
         </ConfirmAction>
       )}
 
       {bulkConfirm === "reject" && (
         <ConfirmAction
-          titleAr={`رفضُ ${sel.size} طلبَ تسجيل`}
+          titleAr={`رفض ${sel.size} طلب تسجيل`}
           confirmLabelAr={`ارفض ${sel.size}`}
           busy={busy}
-          reason={{ labelAr: "سببُ الرفض — يصل صاحبَ الطلب كما تكتبه", minLength: 5 }}
+          reason={{ labelAr: "سبب الرفض — يصل صاحب الطلب كما تكتبه", minLength: 5 }}
           onCancel={() => setBulkConfirm(null)}
           onConfirm={(reason) => { setBulkConfirm(null); void bulkRequests("reject", reason); }}
         >
-          <p>يُغلَق كلُّ طلبٍ منها ويُخبَر صاحبُه. والسببُ الذي تكتبه هو ما يقرؤه — فاكتبه له لا للسجلّ.</p>
+          <p>يغلق كلّ طلب منها ويخبر صاحبه. والسبب الذي تكتبه هو ما يقرؤه — فاكتبه له لا للسجلّ.</p>
         </ConfirmAction>
       )}
     </AdminLayout>

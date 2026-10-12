@@ -45,10 +45,10 @@ interface MaterialsRow {
 
 const STATE_AR: Record<PrepState, { label: string; tone: "warn" | "info" | "positive" | "neutral" | "accent" }> = {
   to_decide: { label: "لم يقرّر بعد", tone: "neutral" },
-  preparing: { label: "يُعِدّها في «شعبي»", tone: "info" },
-  returned: { label: "رُدّت إليه بملاحظات", tone: "warn" },
-  submitted: { label: "أُرسلت — تنتظر قرارك", tone: "accent" },
-  approved: { label: "معتمَدة", tone: "positive" },
+  preparing: { label: "يعدّها في «شعبي»", tone: "info" },
+  returned: { label: "ردّت إليه بملاحظات", tone: "warn" },
+  submitted: { label: "أرسلت — تنتظر قرارك", tone: "accent" },
+  approved: { label: "معتمدة", tone: "positive" },
   declined: { label: "اعتذر عنها", tone: "neutral" },
 };
 
@@ -65,15 +65,15 @@ export default function MaterialsReview({ profileId }: { profileId: string }) {
         apiGet<MaterialsRow[]>(`/api/admin/trainers/${profileId}/materials`).catch(() => [] as MaterialsRow[]),
       ]);
       setPrep(p); setLegacy(m);
-    } catch (e) { toastError(permissionMessage(e, "تعذّرت قراءةُ دوراته")); }
+    } catch (e) { toastError(permissionMessage(e, "تعذّرت قراءة دوراته")); }
   };
 
   /* اعتمادٌ بموادّ اللوح القديم — لمن كتبها قبل ٢ أكتوبر ٢٠٢٦ ولم يقبل شعبة */
   const approveLegacy = async (courseId: string) => {
     setBusy(courseId);
     try {
-      await apiPost(`/api/admin/trainers/${profileId}/qualifications`, { courseId, note: "اعتُمدت موادُّها" });
-      toast("اعتُمدت الدورة — وأُهِّل لها");
+      await apiPost(`/api/admin/trainers/${profileId}/qualifications`, { courseId, note: "اعتمدت موادّها" });
+      toast("اعتمدت الدورة — وأهّل لها");
       await load();
     } catch (e) {
       toastError(permissionMessage(e, "تعذّر الاعتماد"));
@@ -85,18 +85,18 @@ export default function MaterialsReview({ profileId }: { profileId: string }) {
   if (!open) {
     return (
       <Button size="sm" className="mt-2" icon={FileStack} onClick={() => { setOpen(true); void load(); }}>
-        اعرض دوراتِه وشعبَ إعدادها
+        اعرض دوراته وشعب إعدادها
       </Button>
     );
   }
-  if (!prep) return <Loader2 className="mt-2 h-5 w-5 animate-spin text-muted-foreground/60" aria-label="جارٍ التحميل" />;
+  if (!prep) return <Loader2 className="mt-2 h-5 w-5 animate-spin text-muted-foreground/60" aria-label="جار التحميل" />;
   /* والمعتمَدةُ بلا شعبةٍ تأتي في قائمة الإعداد منذ ٣ أكتوبر ٢٠٢٦ — فتُعرض مرّةً:
      ما لم يقبله بعدُ يُقرأ «معتمَدة» تحت، وما قبِله يُقرأ بحال شعبته فوق */
   const shown = prep.filter((r) => !(r.approved && r.state === "to_decide"));
   const inPrep = new Set(shown.map((r) => r.courseId));
   const qualified = legacy.filter((r) => r.status === "qualified" && !inPrep.has(r.courseId));
   if (shown.length === 0 && qualified.length === 0) {
-    return <p className="mt-2 text-read text-muted-foreground">لا دورةَ قيد الإعداد ولا معتمدة لهذا المدرّب.</p>;
+    return <p className="mt-2 text-read text-muted-foreground">لا دورة قيد الإعداد ولا معتمدة لهذا المدرّب.</p>;
   }
 
   /* ═══ وخططُه المرسَلةُ معا (٣ أكتوبر ٢٠٢٦) ═══
@@ -107,9 +107,9 @@ export default function MaterialsReview({ profileId }: { profileId: string }) {
     <>
       {sent > 1 && (
         <p className="mt-3 text-read leading-6 text-muted-foreground">
-          {sent === 2 ? "خطّتان تنتظران قرارك" : `${countAr(sent, { one: "خطّةٌ تنتظر", two: "خطّتان تنتظران", few: "خطط تنتظر", many: "خطّةً تنتظر" })} قرارك`} —{" "}
+          {sent === 2 ? "خطّتان تنتظران قرارك" : `${countAr(sent, { one: "خطّة تنتظر", two: "خطّتان تنتظران", few: "خطط تنتظر", many: "خطّة تنتظر" })} قرارك`} —{" "}
           <Link to={`/admin/pending-plans?trainer=${profileId}`} className="font-bold text-teal-light-ink underline">
-            اقرأها واعتمدها معا في «خططٌ تنتظر اعتمادك»
+            اقرأها واعتمدها معا في «خطط تنتظر اعتمادك»
           </Link>
         </p>
       )}
@@ -125,7 +125,7 @@ export default function MaterialsReview({ profileId }: { profileId: string }) {
                   <p className="min-w-0 flex-1 text-read font-bold">{r.titleAr}</p>
                   <Chip tone={s.tone} srPrefixAr="الحال">{s.label}</Chip>
                 </div>
-                {r.declineReasonAr && <p className="mt-1 text-read text-muted-foreground">سببُه: {r.declineReasonAr}</p>}
+                {r.declineReasonAr && <p className="mt-1 text-read text-muted-foreground">سببه: {r.declineReasonAr}</p>}
                 {r.cohortId && (
                   <div className="mt-2 flex flex-wrap items-center gap-2">
                     {/* المرسَلةُ تُفتح في «خططٌ تنتظر اعتمادك» مع أخواتها من خططه —
@@ -135,14 +135,14 @@ export default function MaterialsReview({ profileId }: { profileId: string }) {
                         ? `/admin/pending-plans?trainer=${profileId}&cohort=${r.cohortId}`
                         : `/admin/cohorts?cohort=${r.cohortId}`}
                       size="sm" icon={ExternalLink}>
-                      {r.state === "submitted" ? "افتح خطّتَها واعتمدها" : "افتح شعبتَها"}
+                      {r.state === "submitted" ? "افتح خطّتها واعتمدها" : "افتح شعبتها"}
                     </Button>
                     {r.cohortTitle && <span className="text-read text-muted-foreground">{r.cohortTitle}</span>}
                   </div>
                 )}
                 {oldReady && old?.materials && (
                   <div className="mt-2 grid gap-1.5 text-read leading-7">
-                    <p className="text-muted-foreground">كتب موادَّها في اللوح القديم قبل ٢ أكتوبر ٢٠٢٦ — تُعتمَد بها، أو ينقلها بقبول الدورة إلى شعبتها.</p>
+                    <p className="text-muted-foreground">كتب موادّها في اللوح القديم قبل ٢ أكتوبر ٢٠٢٦ — تعتمد بها، أو ينقلها بقبول الدورة إلى شعبتها.</p>
                     <ol className="list-decimal ps-5">
                       {old.materials.modules.map((m, i) => (
                         <li key={i}><b>{m.titleAr}</b>{m.outcomeAr ? ` — ${m.outcomeAr}` : ""}</li>
@@ -154,7 +154,7 @@ export default function MaterialsReview({ profileId }: { profileId: string }) {
                     <div>
                       <Button size="sm" tone="confirm" icon={CheckCircle2} loading={busy === r.courseId}
                         onClick={() => void approveLegacy(r.courseId)}>
-                        اعتمِدْ هذه الدورة بموادّها
+                        اعتمد هذه الدورة بموادّها
                       </Button>
                     </div>
                   </div>
@@ -167,7 +167,7 @@ export default function MaterialsReview({ profileId }: { profileId: string }) {
           <li key={r.courseId}>
             <Inset tone="default" className="flex flex-wrap items-center justify-between gap-2 p-3">
               <p className="min-w-0 flex-1 text-read font-bold">{r.titleAr}</p>
-              <Chip tone="positive" srPrefixAr="الحال">معتمَدة</Chip>
+              <Chip tone="positive" srPrefixAr="الحال">معتمدة</Chip>
             </Inset>
           </li>
         ))}

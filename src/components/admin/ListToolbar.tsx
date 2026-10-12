@@ -61,11 +61,11 @@ export default function ListToolbar({
       <div className="flex items-center gap-2 text-fine text-muted-foreground">
         {size != null && onSize && (
           <label className="flex items-center gap-1.5">
-            <span className="sr-only">عددُ الصفوف في الصفحة</span>
+            <span className="sr-only">عدد الصفوف في الصفحة</span>
             <select
               value={size}
               onChange={(e) => { onSize(Number(e.target.value)); onPage(1); }}
-              aria-label="عددُ الصفوف في الصفحة"
+              aria-label="عدد الصفوف في الصفحة"
               className="cursor-pointer rounded-lg border border-white/12 bg-paper/30 px-2 py-1 text-fine text-foreground focus:border-teal focus:outline-none [&>option]:bg-surface"
             >
               {PAGE_SIZES.map((n) => <option key={n} value={n}>{n} في الصفحة</option>)}

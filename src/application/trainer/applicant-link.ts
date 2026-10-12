@@ -70,14 +70,14 @@ export function normalizeApplicantLink(input: string): LinkCheck {
   } catch {
     return {
       ok: false,
-      messageAr: 'لم يُقرأ هذا عنوانا — الصقه كما يظهر في شريط العنوان، مثل: linkedin.com/in/اسمك',
+      messageAr: 'لم يقرأ هذا عنوانا — الصقه كما يظهر في شريط العنوان، مثل: linkedin.com/in/اسمك',
     }
   }
 
   if (EXECUTABLE_SCHEMES.includes(url.protocol)) {
     return {
       ok: false,
-      messageAr: `«${url.protocol}» ليس عنوانَ صفحةٍ تُفتح — ضع عنوانَ صفحتك كما هو، مثل: linkedin.com/in/اسمك`,
+      messageAr: `«${url.protocol}» ليس عنوان صفحة تفتح — ضع عنوان صفحتك كما هو، مثل: linkedin.com/in/اسمك`,
     }
   }
 

@@ -53,8 +53,8 @@ const SAID: Record<string, { label: string; tone: "wait" | "good" | "bad" }> = {
   draft: { label: "مسودّة عندك", tone: "wait" },
   submitted: { label: "عند الإدارة", tone: "wait" },
   published: { label: "على الرفّ العامّ", tone: "good" },
-  rejected: { label: "رُدَّ إليك", tone: "bad" },
-  retired: { label: "سُحب من الرفّ", tone: "bad" },
+  rejected: { label: "ردّ إليك", tone: "bad" },
+  retired: { label: "سحب من الرفّ", tone: "bad" },
 };
 
 interface Draft { titleAr: string; blurbAr: string; termId: string; courseIds: string[] }
@@ -123,7 +123,7 @@ export default function MyPaths() {
 
   const editor = (
     <Inset className="mt-3 grid gap-3">
-      <StaffField label="اسمُ المسار" hint="يظهر على الرفّ العامّ ويُعتمد مع المسار">
+      <StaffField label="اسم المسار" hint="يظهر للعامّة بعد الاعتماد">
         <input
           value={draft.titleAr} maxLength={MAX_PATH_TITLE} className={staffControlCls}
           placeholder="مثلا: من الفكرة إلى أوّل عمليّة مؤتمتة"
@@ -131,7 +131,7 @@ export default function MyPaths() {
         />
       </StaffField>
 
-      <StaffField label="نبذةٌ قصيرة" hint="لا تلزم">
+      <StaffField label="نبذة قصيرة" hint="لا تلزم">
         <input
           value={draft.blurbAr} maxLength={MAX_PATH_BLURB} className={staffControlCls}
           placeholder="لمن هو، وما يخرج به"
@@ -140,7 +140,7 @@ export default function MyPaths() {
       </StaffField>
 
       {/* ن-٣: موسمٌ من التقويم لا نصّ — فالبطاقةُ تقول متى يُفتح التسجيلُ صدقا */}
-      <StaffField label="الموسمُ الذي يعمل فيه" hint="من تقويم الأكاديميّة — لا نصّ يبلى">
+      <StaffField label="الموسم الذي يعمل فيه" hint="من تقويم الأكاديميّة">
         <select
           className={staffControlCls} value={draft.termId}
           onChange={(e) => setDraft({ ...draft, termId: e.target.value })}
@@ -152,12 +152,12 @@ export default function MyPaths() {
 
       <StaffField
         as="div"
-        label={`دوراتُه (${draft.courseIds.length} من ${MAX_PATH_COURSES})`}
-        hint={`من الدورات التي اخترناها لك — ${MIN_PATH_COURSES} فأكثر، والترتيبُ ترتيبُ اختيارك`}
+        label={`دوراته (${draft.courseIds.length} من ${MAX_PATH_COURSES})`}
+        hint={`${MIN_PATH_COURSES} فأكثر، بترتيب اختيارك`}
       >
         {myCourses.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            لم نخترْ لك دورةً بعد — والمسارُ يُبنى من دوراتك.
+            لا دورات لك بعد لتبني منها مسارا.
           </p>
         ) : (
           <div className="grid gap-1.5">
@@ -198,12 +198,12 @@ export default function MyPaths() {
                 titleAr: draft.titleAr.trim(), blurbAr: draft.blurbAr.trim() || null,
                 termId: draft.termId || null, courseIds: draft.courseIds,
               }),
-            "حُفظ المسار",
+            "حفظ المسار",
           )}
         >
           احفظ
         </Button>
-        <Button tone="ghost" icon={X} onClick={() => { setEditing(null); setDraft(EMPTY); }}>تراجَع</Button>
+        <Button tone="ghost" icon={X} onClick={() => { setEditing(null); setDraft(EMPTY); }}>تراجع</Button>
       </div>
     </Inset>
   );
@@ -211,11 +211,10 @@ export default function MyPaths() {
   return (
     <TrainerLayout title="مساراتي">
       <Card className="mb-4">
-        <h2 className="mb-1 text-read font-bold text-foreground">مسارٌ ترتّبه من دوراتك — باسمك</h2>
+        <h2 className="mb-1 text-read font-bold text-foreground">مسار ترتّبه من دوراتك — باسمك</h2>
         <p className="text-sm leading-7 text-muted-foreground">
-          تختار دوراتٍ من دوراتك، وترتّبها، وتسمّيها. وبعد اعتماد الإدارة يظهر على صفحة
-          المسارات تحت <b>«مسارات أعدّها مدرّبونا المعتمدون»</b> باسمك وبالموسم الذي يعمل فيه.
-          {" "}والسعرُ والسعةُ بيد الإدارة كما في شعبك.
+          اختر دوراتك ورتّبها وسمّها. بعد الاعتماد يظهر باسمك تحت <b>«مسارات أعدّها مدرّبونا المعتمدون»</b>.
+          {" "}والسعر والسعة بيد الإدارة.
         </p>
       </Card>
 
@@ -223,26 +222,26 @@ export default function MyPaths() {
         <Card tone="danger" role="alert" className="text-center text-read font-bold text-red-300">{err}</Card>
       ) : !rows ? (
         <div className="grid place-items-center py-16">
-          <Loader2 className="h-7 w-7 animate-spin text-muted-foreground/50" aria-label="جارٍ التحميل" />
+          <Loader2 className="h-7 w-7 animate-spin text-muted-foreground/50" aria-label="جار التحميل" />
         </div>
       ) : (
         <>
           {editing === "new" ? (
             <Card className="mb-4">
-              <h3 className="text-read font-bold text-foreground">مسارٌ جديد</h3>
+              <h3 className="text-read font-bold text-foreground">مسار جديد</h3>
               {editor}
             </Card>
           ) : (
             <div className="mb-4">
-              <Button tone="primary" icon={Route} onClick={() => openEditor(null)}>ابنِ مسارا</Button>
+              <Button tone="primary" icon={Route} onClick={() => openEditor(null)}>ابن مسارا</Button>
             </div>
           )}
 
           {rows.length === 0 && editing !== "new" ? (
             <EmptyState
               icon={Route}
-              titleAr="لا مسارَ بعد"
-              reasonAr="رتّب دوراتك في مسارٍ يحمل اسمَك — يراه الزائرُ على صفحة المسارات بعد اعتماد الإدارة."
+              titleAr="لا مسار بعد"
+              reasonAr="رتّب دوراتك في مسار باسمك."
             />
           ) : (
             <div className="grid gap-3">
@@ -273,7 +272,7 @@ export default function MyPaths() {
                             <span className="text-xs text-muted-foreground/70">{p.term.titleAr}</span>
                           ) : null}
                           <span className="text-xs text-muted-foreground/70">
-                            {p.courses.length} دوراتٍ
+                            {p.courses.length} دورات
                           </span>
                         </div>
                       </div>
@@ -283,13 +282,13 @@ export default function MyPaths() {
                           <Button tone="ghost" icon={Pencil} disabled={busy} onClick={() => openEditor(p)}>عدّل</Button>
                           <Button
                             tone="confirm" icon={Send} disabled={busy || p.blockersAr.length > 0}
-                            onClick={() => run(() => apiPost(`/api/trainer/paths/${p.id}/submit`), "وصل الإدارةَ")}
+                            onClick={() => run(() => apiPost(`/api/trainer/paths/${p.id}/submit`), "وصل الإدارة")}
                           >
-                            أرسِله للمراجعة
+                            أرسله للمراجعة
                           </Button>
                           <Button
                             tone="danger" icon={Trash2} disabled={busy}
-                            onClick={() => run(() => apiDelete(`/api/trainer/paths/${p.id}`), "حُذف المسار")}
+                            onClick={() => run(() => apiDelete(`/api/trainer/paths/${p.id}`), "حذف المسار")}
                           >
                             احذف
                           </Button>
@@ -300,7 +299,7 @@ export default function MyPaths() {
                     {/* ما ينقص — قبل الإرسال لا بعده */}
                     {p.editable && p.blockersAr.length > 0 ? (
                       <Inset className="mt-3">
-                        <p className="mb-1 text-sm font-bold text-foreground">قبل أن يُرسَل:</p>
+                        <p className="mb-1 text-sm font-bold text-foreground">قبل أن يرسل:</p>
                         <ul className="grid gap-1">
                           {p.blockersAr.map((b) => (
                             <li key={b} className="text-sm text-muted-foreground">· {b}</li>
@@ -318,7 +317,7 @@ export default function MyPaths() {
 
                     {p.status === "published" ? (
                       <Inset className="mt-3 text-sm text-muted-foreground">
-                        على الرفّ منذ {fmtDateLong(p.publishedAt ?? "")} — يظهر في صفحة المسارات باسمك.
+                        منشور منذ {fmtDateLong(p.publishedAt ?? "")}.
                       </Inset>
                     ) : null}
 

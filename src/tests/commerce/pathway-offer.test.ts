@@ -46,7 +46,7 @@ describe('عرض المسار', () => {
     }
   })
 
-  it('دورة بلا سعر تُسقط المجموع كلّه — لا مجموع ناقص يُقرأ كاملا', () => {
+  it('دورة بلا سعر تسقط المجموع كلّه — لا مجموع ناقص يقرأ كاملا', () => {
     const withUnknown = pathwayOffer([...(pathwayCourses['PW-COM-001'] ?? []), 'C-LA-YOUJAD'])
     expect(withUnknown.fullPrice).toBeNull()
     expect(withUnknown.fromPrice).toBeGreaterThan(0)
@@ -58,7 +58,7 @@ describe('عرض المسار', () => {
     expect(offer.bundleMaxPct).toBe(PATHWAY_BUNDLE_MAX_PCT)
   })
 
-  it('العملة تُكتب كما تُصدَر بها الفاتورة — بلا تحويل', () => {
+  it('العملة تكتب كما تصدر بها الفاتورة — بلا تحويل', () => {
     expect(formatOfferPrice(125, 'USD')).toBe('$125')
     expect(formatOfferPrice(100, 'JOD')).toBe('100 د.أ')
     expect(formatOfferPrice(90, 'EUR')).toBe('90 EUR')
@@ -79,7 +79,7 @@ describe('التصفح مفتوح للجميع — لا بوابة تسجيل ع
     expect(SRC).not.toMatch(/أنشئ حسابك المجاني الآن/)
   })
 
-  it('الفريق التدريبي وقسم الشراء يُعرضان بلا شرط — لا خلف {user &&', () => {
+  it('الفريق التدريبي وقسم الشراء يعرضان بلا شرط — لا خلف {user &&', () => {
     expect(SRC).toMatch(/<p id="trainers-reveal"/)
     expect(SRC).not.toMatch(/\{user && \(\s*\n\s*<p id="trainers-reveal"/)
     /* المقيسُ وجودُ المرساة وأنّها بلا شرط — **لا اسمُ وسمِها**. كان الشرطُ
@@ -90,14 +90,14 @@ describe('التصفح مفتوح للجميع — لا بوابة تسجيل ع
   })
 
   it('شارة «اعتمده تشخيصك» محذوفة — لا مخفيّة', () => {
-    expect(SRC).not.toMatch(/هذا المسار اعتمده تشخيصك — بُني/)
+    expect(SRC).not.toMatch(/هذا المسار اعتمده تشخيصك — بني/)
     expect(SRC).not.toMatch(/عد لنتيجتك لإعادة التخصيص/)
   })
 
   /* كان زرّ الصندوق المحذوف يرسل نيّة شراءٍ وهميّة (`amount:0`) يتلوها قفزٌ
      إلى «trainers-reveal» بعد التسجيل. وبزوال الزرّ صار كل ما يصل بوّابة
      `pendingCheckout` نيّة شراء حقيقية تمرّ مباشرة لخطّتها/دفعها. */
-  it('لا مسلك قفزٍ خاص لنيّة عرضٍ وهميّة بعد الآن', () => {
+  it('لا مسلك قفز خاص لنيّة عرض وهميّة بعد الآن', () => {
     expect(SRC).not.toMatch(/getElementById\("trainers-reveal"\)\?\.scrollIntoView/)
     expect(SRC).toMatch(/if \(intent\?\.kind === "pathway"\) void goToPlan\(intent\);/)
   })
@@ -109,34 +109,34 @@ describe('التصفح مفتوح للجميع — لا بوابة تسجيل ع
    الشراء تتمّ **قبل** نقله لمنصّته». والدعوةُ القديمة («اطلب تسجيلك») كانت
    تقود إلى نافذةٍ تقول إنّ الدفع لم يُفتح بعد وتحيل إلى نموذج تواصل — وهي
    نصٌّ يبقى في الصفحات بعد أن تزول آلتُه، فيَعِد بما لم يعد يقع. */
-describe('الشراءُ مباشرٌ في الصفحتين اللتين يقع فيهما القرار', () => {
+describe('الشراء مباشر في الصفحتين اللتين يقع فيهما القرار', () => {
   const PAGES = ['src/pages/Pathway.tsx', 'src/pages/CoursePath.tsx']
 
   for (const f of PAGES) {
     const src = readFileSync(join(process.cwd(), f), 'utf8')
 
-    it(`${f}: لوحُ الشراء لا نافذةُ الطلب`, () => {
+    it(`${f}: لوح الشراء لا نافذة الطلب`, () => {
       expect(src, 'المكوّن المحذوف عاد').not.toMatch(/EnrollRequest/)
       expect(src).toMatch(/<BuyPanel\b/)
     })
 
-    it(`${f}: ولا دعوةَ «اطلب تسجيلك» — النصُّ يَعِد بما يقع`, () => {
+    it(`${f}: ولا دعوة «اطلب تسجيلك» — النصّ يعد بما يقع`, () => {
       expect(src).not.toMatch(/اطلب تسجيلك/)
     })
   }
 
-  it('واللوحُ يقرأ سعرَه من الخادم لا يحسبه — فالمعروضُ هو المُصدَر', () => {
+  it('واللوح يقرأ سعره من الخادم لا يحسبه — فالمعروض هو المصدر', () => {
     const panel = readFileSync(join(process.cwd(), 'src/components/BuyPanel.tsx'), 'utf8')
-    expect(panel, 'اللوحُ لا يسأل الخادمَ عن السعر').toMatch(/\/api\/learner\/checkout\/quote/)
+    expect(panel, 'اللوح لا يسأل الخادم عن السعر').toMatch(/\/api\/learner\/checkout\/quote/)
     expect(panel).toMatch(/\/api\/learner\/checkout/)
     expect(panel).toMatch(/\/pay/)
     /* رجوعُ المتصفّح ليس دليلَ دفع — التسويةُ بـwebhook موقَّع */
     expect(panel).toMatch(/redirectUrl/)
     /* والكودُ يُرسَل فعلا. كان يُعرض على الشاشة ولا يُرسل، فيُوعَد ولا يُخصم. */
-    expect(panel, 'الكودُ يُكتب ولا يُرسَل').toMatch(/couponCode/)
+    expect(panel, 'الكود يكتب ولا يرسل').toMatch(/couponCode/)
   })
 
-  it('ولا تحويلَ عملةٍ على سطحٍ يقبض المال — فرعُ التحويل كلُّه محذوف', () => {
+  it('ولا تحويل عملة على سطح يقبض المال — فرع التحويل كلّه محذوف', () => {
     for (const f of ['src/services/currency.ts', 'src/components/CurrencyPicker.tsx', 'src/components/EnrollRequest.tsx']) {
       expect(existsSync(join(process.cwd(), f)), `${f} ما زال قائما`).toBe(false)
     }
@@ -150,14 +150,14 @@ describe('الشراءُ مباشرٌ في الصفحتين اللتين يقع 
    فالكودُ صار معلَنا في بطاقة الفئات نفسِها — لأنّه لأوّل شراءٍ لكلّ أحد،
    لا خصمَ فئةٍ يُصدَر بعد تحقّق. وحُذف معه مسارُ الخادم وخدمتُه وبريدُه:
    خادمٌ بلا شاشةٍ تناديه دينٌ لا حارس له. */
-describe('بوّابةُ النتيجة وصندوقُ البريد — كلاهما محذوف', () => {
-  it('لا ResultGate.tsx ولا استيرادٌ له في صفحة التشخيص', () => {
+describe('بوّابة النتيجة وصندوق البريد — كلاهما محذوف', () => {
+  it('لا ResultGate.tsx ولا استيراد له في صفحة التشخيص', () => {
     expect(existsSync(join(process.cwd(), 'src/components/ResultGate.tsx')), 'ResultGate.tsx ما زال قائما').toBe(false)
     const diag = readFileSync(join(process.cwd(), 'src/pages/Diagnostic.tsx'), 'utf8')
     expect(diag).not.toMatch(/ResultGate/)
   })
 
-  it('لا مكوّنَ التقاطِ بريدٍ ولا مسارَ خادمٍ له — ولا استيرادٌ في أيّ صفحة', () => {
+  it('لا مكوّن التقاط بريد ولا مسار خادم له — ولا استيراد في أيّ صفحة', () => {
     expect(existsSync(join(process.cwd(), 'src/components/DiscountEmailCapture.tsx'))).toBe(false)
     expect(existsSync(join(process.cwd(), 'server/http/routes/leads.routes.ts'))).toBe(false)
     expect(existsSync(join(process.cwd(), 'server/services/leads.service.ts'))).toBe(false)
@@ -181,12 +181,12 @@ describe('بوّابةُ النتيجة وصندوقُ البريد — كلاه
      ⚠ والفحصُ على ورودِ الاسم لا يفرّق بين شيفرةٍ ونثر: صياغةٌ أولى للتعليق
      في الصفحة سمّت الخطّافَ حرفا فأسقطت هذا الحارسَ وجارَه. وهو الصواب —
      استثناءُ التعليقات يفتح بابا يُدخل منه. فالنثرُ هناك يصف ولا يسمّي. */
-  it('ووعدُ «بلا حساب» مربوطٌ ببنية: صفحةُ التشخيص لا تعرف جلسةَ المصادقة أصلا', () => {
+  it('ووعد «بلا حساب» مربوط ببنية: صفحة التشخيص لا تعرف جلسة المصادقة أصلا', () => {
     const diag = readFileSync(join(process.cwd(), 'src/pages/Diagnostic.tsx'), 'utf8')
-    expect(diag, 'الشاشةُ تَعِد بنتيجةٍ كاملةٍ بلا حساب').toMatch(/بلا حساب/)
+    expect(diag, 'الشاشة تعد بنتيجة كاملة بلا حساب').toMatch(/بلا حساب/)
     expect(
       diag,
-      'عاد حاجزُ حسابٍ إلى مسار النتيجة — والشاشةُ ما زالت تَعِد «بلا حساب»',
+      'عاد حاجز حساب إلى مسار النتيجة — والشاشة ما زالت تعد «بلا حساب»',
     ).not.toMatch(/useRealSession|useSession\b/)
   })
 
@@ -196,17 +196,17 @@ describe('بوّابةُ النتيجة وصندوقُ البريد — كلاه
      إلى الإدارة صارت تحتاج `useWhatsAppNumbers()` في كلتَيهما — فجُمعت في
      `DiscountProofLink`. فالحارسُ ينتقل معها: يبقى على أنّ **كلَّ صفحةٍ
      تعرضها**، ولا يشترط أن تكون مكتوبةً فيها. */
-  it('كودُ أوّل الشراء معلَنٌ في بطاقتَي الفئات — لا مخفيّا وراء بريد', () => {
+  it('كود أوّل الشراء معلن في بطاقتي الفئات — لا مخفيّا وراء بريد', () => {
     const link = readFileSync(join(process.cwd(), 'src/components/DiscountProofLink.tsx'), 'utf8')
     expect(link, 'الجملة الجديدة').toMatch(/لمعرفة الكود للطلبة وموظفي الحكومة/)
     for (const f of ['src/pages/Pathway.tsx', 'src/pages/CoursePath.tsx']) {
       const src = readFileSync(join(process.cwd(), f), 'utf8')
       expect(src, f).toMatch(/FIRST_TIME_PROMO\.code/)
-      expect(src, `${f}: لا تعرض رابطَ إثبات الخصم`).toMatch(/<DiscountProofLink\s*\/>/)
+      expect(src, `${f}: لا تعرض رابط إثبات الخصم`).toMatch(/<DiscountProofLink\s*\/>/)
     }
   })
 
-  it('الكود نفسه مصدرٌ واحد — لا رقم مكرَّر في المكوّن', () => {
+  it('الكود نفسه مصدر واحد — لا رقم مكرّر في المكوّن', () => {
     expect(FIRST_TIME_PROMO.code).toBe('WA2026')
   })
 })

@@ -54,7 +54,7 @@ export default function NotificationPreferences() {
       );
       if (res?.error) { toastError(res.error.message_ar); return; }
       await load();
-      toast(c.enabled ? `كُتم «${c.labelAr}»` : `عاد «${c.labelAr}»`);
+      toast(c.enabled ? `كتم «${c.labelAr}»` : `عاد «${c.labelAr}»`);
     } catch (e) {
       toastError(e instanceof ApiError ? e.message : "تعذّر الحفظ — أعد المحاولة");
     } finally {
@@ -65,14 +65,14 @@ export default function NotificationPreferences() {
   if (failed) {
     return (
       <Card as="p" className="text-sm text-muted-foreground">
-        تعذّر تحميلُ تفضيلات الإشعارات.{" "}
+        تعذّر تحميل تفضيلات الإشعارات.{" "}
         <button type="button" onClick={() => void load()} className="font-bold text-teal-light-ink underline">أعد المحاولة</button>
       </Card>
     );
   }
 
   if (!prefs) {
-    return <div className="grid place-items-center py-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground/50" aria-label="جارٍ التحميل" /></div>;
+    return <div className="grid place-items-center py-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground/50" aria-label="جار التحميل" /></div>;
   }
 
   return (

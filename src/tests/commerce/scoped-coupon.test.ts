@@ -19,42 +19,42 @@ const line = (cohortId: string, listPrice: number, courseId = `C-${cohortId}`): 
   cohortId, courseId, titleAr: `دورة ${cohortId}`, listPrice,
 })
 
-describe('① النطاقُ يُحترم — دوراتُ غيره لا يمسّها', () => {
-  it('⚠️ دورتُه ودورةُ غيره: الخصمُ على حصّة دورته وحدَها', () => {
+describe('① النطاق يحترم — دورات غيره لا يمسّها', () => {
+  it('⚠️ دورته ودورة غيره: الخصم على حصّة دورته وحدها', () => {
     /* ٣٠٠ مجموعُ دورتين ← الباقةُ ٨٪ = ٢٤ ← يبقى ٢٧٦. حصّةُ دورته (١٠٠ من ٣٠٠)
        منه ٩٢، وعشرون بالمئة منها ١٨٫٤٠ — لا ستّون (٢٠٪ من ٣٠٠) ولا ٥٥٫٢٠
        (٢٠٪ من الباقي كلِّه). */
     const p = priceCart([line('his', 100), line('other', 200)], null, { percentOff: 20, amountOff: null, cohortIds: ['his'] })
     expect(p.bundleDiscount).toBe(24)
-    expect(p.couponDiscount, 'الكودُ وقع على دورةِ غيره').toBe(18.4)
+    expect(p.couponDiscount, 'الكود وقع على دورة غيره').toBe(18.4)
     expect(p.total).toBe(257.6)
     expect(p.couponLines).toBe(1)
     expect(p.lines.find((l) => l.cohortId === 'his')!.couponApplies).toBe(true)
-    expect(p.lines.find((l) => l.cohortId === 'other')!.couponApplies, 'عُلّمت دورةُ غيره مخصومة').toBe(false)
+    expect(p.lines.find((l) => l.cohortId === 'other')!.couponApplies, 'علّمت دورة غيره مخصومة').toBe(false)
   })
 
-  it('⚠️ ولا شيءَ من دوراته في السلّة: لا خصم — ويُقال ذلك لا يُسكَت', () => {
+  it('⚠️ ولا شيء من دوراته في السلّة: لا خصم — ويقال ذلك لا يسكت', () => {
     const p = priceCart([line('a', 100), line('b', 200)], null, { percentOff: 30, amountOff: null, cohortIds: ['his'] })
     expect(p.couponDiscount).toBe(0)
-    expect(p.couponLines, 'الخادمُ يقرأ هذا الصفرَ فيردّ الكود بجملة').toBe(0)
+    expect(p.couponLines, 'الخادم يقرأ هذا الصفر فيردّ الكود بجملة').toBe(0)
   })
 
-  it('⚠️ والهديّةُ لا يقع عليها — سعرُها صفرٌ فلا شيءَ يُخصم منه', () => {
+  it('⚠️ والهديّة لا يقع عليها — سعرها صفر فلا شيء يخصم منه', () => {
     const p = priceCart(
       [line('his', 100, 'C-GIFT'), line('paid', 100)],
       'C-GIFT',
       { percentOff: 20, amountOff: null, cohortIds: ['his'] },
     )
-    expect(p.couponLines, 'عُدّت الهديّةُ دورةً مخصومة').toBe(0)
+    expect(p.couponLines, 'عدّت الهديّة دورة مخصومة').toBe(0)
     expect(p.couponDiscount).toBe(0)
     /* والعلامةُ نفسُها تُقرأ في لوح الدفع — هديّةٌ معلَّمةٌ «خصمها الكود»
        تقول للمشتري إنّ الكودَ عمل وهو لم يخصم شيئا */
-    expect(p.lines.find((l) => l.cohortId === 'his')!.couponApplies, 'عُلّمت الهديّةُ مخصومةً بالكود').toBe(false)
+    expect(p.lines.find((l) => l.cohortId === 'his')!.couponApplies, 'علّمت الهديّة مخصومة بالكود').toBe(false)
   })
 })
 
-describe('② والكودُ بعد خصوم الأكاديميّة — لا على سعر القائمة', () => {
-  it('⚠️ والسقفُ المبلغيُّ يُوزَّع على الدورات بنسبة أسعارها', () => {
+describe('② والكود بعد خصوم الأكاديميّة — لا على سعر القائمة', () => {
+  it('⚠️ والسقف المبلغيّ يوزّع على الدورات بنسبة أسعارها', () => {
     /* خمسُ دوراتٍ بمئتين وخمسةٍ وعشرين = ١١٢٥ ← الباقةُ ٣٠٪ = ٣٣٧٫٥ ← ٧٨٧٫٥ ←
        السقفُ (٧٥٠) يقتطع ٣٧٫٥ ← يبقى ٧٥٠. حصّةُ دورته (٢٢٥ من ١١٢٥) منه ١٥٠،
        وثلاثون بالمئة منها ٤٥ — لا ٦٧٫٥ (٣٠٪ من سعر قائمتها). */
@@ -62,11 +62,11 @@ describe('② والكودُ بعد خصوم الأكاديميّة — لا ع�
     const p = priceCart(lines, null, { percentOff: 30, amountOff: null, cohortIds: ['his'] })
     expect(p.bundleDiscount).toBe(337.5)
     expect(p.capDiscount).toBe(37.5)
-    expect(p.couponDiscount, 'الكودُ حُسب على سعر القائمة لا على ما بقي').toBe(45)
+    expect(p.couponDiscount, 'الكود حسب على سعر القائمة لا على ما بقي').toBe(45)
     expect(p.total).toBe(1125 - 337.5 - 37.5 - 45)
   })
 
-  it('ودوراتُه كلُّها في السلّة: حصّتُها ما بقي كلُّه', () => {
+  it('ودوراته كلّها في السلّة: حصّتها ما بقي كلّه', () => {
     const p = priceCart([line('h1', 100), line('h2', 100)], null, { percentOff: 10, amountOff: null, cohortIds: ['h1', 'h2'] })
     /* ٢٠٠ ← الباقةُ ٨٪ = ١٦ ← ١٨٤ ← عشرةٌ بالمئة ١٨٫٤٠ */
     expect(p.couponDiscount).toBe(18.4)
@@ -74,8 +74,8 @@ describe('② والكودُ بعد خصوم الأكاديميّة — لا ع�
   })
 })
 
-describe('③ والكوبونُ العامُّ كما كان', () => {
-  it('⚠️ بلا نطاقٍ يعمّ ما بقي بعد الباقة والسقف — والرقمُ نفسُه', () => {
+describe('③ والكوبون العامّ كما كان', () => {
+  it('⚠️ بلا نطاق يعمّ ما بقي بعد الباقة والسقف — والرقم نفسه', () => {
     const p = priceCart([line('a', 100), line('b', 200)], null, { percentOff: 20, amountOff: null })
     /* ٢٠٪ من ٢٧٦ = ٥٥٫٢٠ — كما كان يُحسب قبل أن يكون للكوبون نطاق */
     expect(p.couponDiscount).toBe(55.2)
@@ -83,13 +83,13 @@ describe('③ والكوبونُ العامُّ كما كان', () => {
     expect(p.lines.every((l) => l.couponApplies)).toBe(true)
   })
 
-  it('والمبلغُ لا يتجاوز ما بقي', () => {
+  it('والمبلغ لا يتجاوز ما بقي', () => {
     const p = priceCart([line('a', 50)], null, { percentOff: null, amountOff: 80 })
     expect(p.couponDiscount).toBe(50)
     expect(p.total).toBe(0)
   })
 
-  it('وبلا كوبونٍ لا يُعلَّم بندٌ مخصوما', () => {
+  it('وبلا كوبون لا يعلّم بند مخصوما', () => {
     const p = priceCart([line('a', 100)], null, null)
     expect(p.couponLines).toBe(0)
     expect(p.lines[0].couponApplies).toBe(false)

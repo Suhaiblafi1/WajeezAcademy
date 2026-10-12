@@ -20,25 +20,25 @@ const code = (p: string) =>
 
 const CARD = code('src/pages/trainer/SessionsAndAttendance.tsx')
 
-describe('بطاقةُ اللقاء المباشر', () => {
-  it('⚠️ لا رفعَ لملفّ تسجيل — ولا نداءَ رفع', () => {
-    expect(CARD, 'عاد حقلُ رفع ملفٍّ إلى بطاقة اللقاء').not.toMatch(/type="file"/)
-    expect(CARD, 'عاد نداءُ تسجيل ملفٍّ للرفع').not.toMatch(/\/recordings`/)
+describe('بطاقة اللقاء المباشر', () => {
+  it('⚠️ لا رفع لملفّ تسجيل — ولا نداء رفع', () => {
+    expect(CARD, 'عاد حقل رفع ملفّ إلى بطاقة اللقاء').not.toMatch(/type="file"/)
+    expect(CARD, 'عاد نداء تسجيل ملفّ للرفع').not.toMatch(/\/recordings`/)
   })
 
-  it('⚠️ وحالُ التسجيل بعد انتهاء اللقاء وحدَه', () => {
+  it('⚠️ وحال التسجيل بعد انتهاء اللقاء وحده', () => {
     expect(CARD).toMatch(/\(s\.status === "done" \|\| sessionEndMs\(s\) < Date\.now\(\)\) && openableRecordings\(s\.recordings\)\.length === 0 && \(\s*<p[^>]*>\s*بانتظار تسجيل Zoom/)
   })
 })
 
-describe('والخادمُ والطابور', () => {
-  it('⚠️ لا مسلكَ للمدرّب يرفع تسجيلا أو يلصق رابطَه', () => {
+describe('والخادم والطابور', () => {
+  it('⚠️ لا مسلك للمدرّب يرفع تسجيلا أو يلصق رابطه', () => {
     const routes = code('server/http/routes/learning-portal.routes.ts')
     expect(routes).not.toContain("'/api/trainer/sessions/:sessionId/recordings'")
     expect(routes).not.toContain('recording-link')
   })
 
-  it('⚠️ ولا تذكيرَ في طابور المدرّب بتسجيلٍ يرفعه', () => {
+  it('⚠️ ولا تذكير في طابور المدرّب بتسجيل يرفعه', () => {
     expect(code('src/application/trainer/work-queue.ts')).not.toContain('recording_missing')
   })
 })

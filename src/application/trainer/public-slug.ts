@@ -46,7 +46,7 @@ export function uniqueSlug(base: string, taken: ReadonlySet<string>): string {
     const candidate = base.slice(0, SLUG_MAX - suffix.length).replace(/-+$/, '') + suffix
     if (!taken.has(candidate)) return candidate
   }
-  throw new Error('تعذّر اشتقاقُ مسارٍ فريد')
+  throw new Error('تعذّر اشتقاق مسار فريد')
 }
 
 /**

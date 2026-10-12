@@ -24,8 +24,8 @@ const course = (id: string, over: Partial<PlannableCourse> = {}): PlannableCours
 const chain = (pw: string, n: number): PlannableCourse[] =>
   Array.from({ length: n }, (_, i) => course(`${pw}-${i + 1}`, { pathwayId: pw, sequence: i + 1 }))
 
-describe('الحتميّة — المعاينةُ التي تتغيّر ليست معاينة', () => {
-  it('التشغيلان يعطيان الجدولَ نفسَه حرفا بحرف', () => {
+describe('الحتميّة — المعاينة التي تتغيّر ليست معاينة', () => {
+  it('التشغيلان يعطيان الجدول نفسه حرفا بحرف', () => {
     const courses = [...chain('P', 4), ...chain('Q', 4), ...chain('R', 5)]
     const a = planTerm({ courses, slots: slots() })
     const b = planTerm({ courses, slots: slots() })
@@ -33,7 +33,7 @@ describe('الحتميّة — المعاينةُ التي تتغيّر ليست
     expect(a.totalPenalty).toBe(b.totalPenalty)
   })
 
-  it('ولا يتغيّر الجدولُ بتغيّر ترتيب المدخلات', () => {
+  it('ولا يتغيّر الجدول بتغيّر ترتيب المدخلات', () => {
     const courses = [...chain('P', 4), ...chain('Q', 4)]
     const a = planTerm({ courses, slots: slots() })
     const b = planTerm({ courses: [...courses].reverse(), slots: slots() })
@@ -42,8 +42,8 @@ describe('الحتميّة — المعاينةُ التي تتغيّر ليست
   })
 })
 
-describe('قيدُ المسار — ترتيبٌ لكلّ زوج، وفجوةٌ للمتتاليَين', () => {
-  it('اللاحقةُ لا تسبق السابقةَ أبدا', () => {
+describe('قيد المسار — ترتيب لكلّ زوج، وفجوة للمتتاليين', () => {
+  it('اللاحقة لا تسبق السابقة أبدا', () => {
     const courses = [...chain('P', 5), ...chain('Q', 4), ...chain('R', 4)]
     const r = planTerm({ courses, slots: slots() })
     const at = new Map(r.rows.map((x) => [x.courseId, x.week]))
@@ -70,36 +70,36 @@ describe('قيدُ المسار — ترتيبٌ لكلّ زوج، وفجوةٌ 
     }
   })
 
-  it('ومسارٌ طويلٌ يسع الفصلَ يُجدوَل كاملا', () => {
+  it('ومسار طويل يسع الفصل يجدول كاملا', () => {
     const r = planTerm({ courses: chain('P', 5), slots: slots() })
-    expect(r.unplaced, 'مسارٌ من خمسٍ لم يسع فصلا من ثلاثةَ عشرَ أسبوعا').toEqual([])
-    expect(r.rows.every((x) => x.orderBreachAr === null), 'كُسر الترتيبُ بلا تثبيت').toBe(true)
+    expect(r.unplaced, 'مسار من خمس لم يسع فصلا من ثلاثة عشر أسبوعا').toEqual([])
+    expect(r.rows.every((x) => x.orderBreachAr === null), 'كسر الترتيب بلا تثبيت').toBe(true)
   })
 })
 
-describe('السقفُ الأسبوعيُّ يُشتقّ — ولا تسقط دورةٌ صامتةً', () => {
-  it('حملٌ واقعيٌّ يُجدوَل كاملا بلا سقفٍ مُمرَّر', () => {
+describe('السقف الأسبوعيّ يشتقّ — ولا تسقط دورة صامتة', () => {
+  it('حمل واقعيّ يجدول كاملا بلا سقف ممرّر', () => {
     const courses = Array.from({ length: 20 }, (_, i) => chain(`P${i}`, 4)).flat()
     const r = planTerm({ courses, slots: slots() })
     expect(r.rows).toHaveLength(courses.length)
     expect(r.unplaced).toEqual([])
   })
 
-  it('وسقفٌ ضيّقٌ يُمرَّر يُقال أثرُه بسببه لا يُبتلع', () => {
+  it('وسقف ضيّق يمرّر يقال أثره بسببه لا يبتلع', () => {
     const courses = Array.from({ length: 20 }, (_, i) => chain(`P${i}`, 4)).flat()
     const r = planTerm({ courses, slots: slots(), weeklyCap: 2 })
     expect(r.unplaced.length).toBeGreaterThan(0)
     for (const u of r.unplaced) expect(u.whyAr.length, u.courseId).toBeGreaterThan(10)
   })
 
-  it('وسلسلةٌ أطولُ من الفصل تُقال بطولها لا بعبارةٍ عامّة', () => {
+  it('وسلسلة أطول من الفصل تقال بطولها لا بعبارة عامّة', () => {
     const r = planTerm({ courses: chain('P', 9), slots: slots(6) })
-    expect(r.unplaced[0].whyAr).toMatch(/تحتاج \d+ أسبوعا والفصلُ \d+/)
+    expect(r.unplaced[0].whyAr).toMatch(/تحتاج \d+ أسبوعا والفصل \d+/)
   })
 })
 
-describe('المثبَّتُ يُحترَم — التجاوزُ البشريُّ لا يُزحزَح', () => {
-  it('الشعبةُ المثبَّتةُ تبقى في أسبوعها ويُخطَّط حولَها', () => {
+describe('المثبّت يحترم — التجاوز البشريّ لا يزحزح', () => {
+  it('الشعبة المثبّتة تبقى في أسبوعها ويخطّط حولها', () => {
     const courses = [...chain('P', 4), ...chain('Q', 4)]
     const r = planTerm({ courses, slots: slots(), pinned: { 'Q-1': 11 } })
     const row = r.rows.find((x) => x.courseId === 'Q-1')!
@@ -109,22 +109,22 @@ describe('المثبَّتُ يُحترَم — التجاوزُ البشريُ�
 
   /* التثبيتُ يتجاوز البناءَ كلَّه — فقرارُ الإنسان يُحترَم، **وأثرُه يُقال**:
      من ثبّت الرابعةَ قبل الأولى رأى ذلك في صفّه لا بعد شهر. */
-  it('وتثبيتٌ يكسر ترتيبَ المسار يُقال ولا يُمنع', () => {
+  it('وتثبيت يكسر ترتيب المسار يقال ولا يمنع', () => {
     const r = planTerm({ courses: chain('P', 4), slots: slots(), pinned: { 'P-4': 0 } })
     const four = r.rows.find((x) => x.courseId === 'P-4')!
-    expect(four.week, 'لم يُحترَم التثبيت').toBe(0)
-    expect(four.orderBreachAr, 'كُسر الترتيبُ ولم يُقَل').toBeTruthy()
-    expect(four.orderBreachAr).toContain('ترتيبُ المسار مكسور')
+    expect(four.week, 'لم يحترم التثبيت').toBe(0)
+    expect(four.orderBreachAr, 'كسر الترتيب ولم يقل').toBeTruthy()
+    expect(four.orderBreachAr).toContain('ترتيب المسار مكسور')
   })
 
-  it('وتثبيتٌ سليمٌ لا يُنبَّه عليه — لا ضجيجَ بلا سبب', () => {
+  it('وتثبيت سليم لا ينبّه عليه — لا ضجيج بلا سبب', () => {
     const r = planTerm({ courses: chain('P', 4), slots: slots(), pinned: { 'P-1': 0 } })
     expect(r.rows.every((x) => x.orderBreachAr === null)).toBe(true)
   })
 })
 
-describe('العقوبةُ تقول سببَها — لا صندوقَ أسود', () => {
-  it('المهاراتُ المشتركةُ أثقلُ من العائلات المشتركة', () => {
+describe('العقوبة تقول سببها — لا صندوق أسود', () => {
+  it('المهارات المشتركة أثقل من العائلات المشتركة', () => {
     const a = course('A', { skillSlugs: ['x'] })
     const b = course('B', { skillSlugs: ['x'] })
     const c = course('C', { skillFamilies: ['F'] })
@@ -133,21 +133,21 @@ describe('العقوبةُ تقول سببَها — لا صندوقَ أسود'
     expect(PENALTY.sharedSkill).toBeGreaterThan(PENALTY.sharedFamily)
   })
 
-  it('وكلُّ عقوبةٍ معها سببُها بالعربيّة', () => {
+  it('وكلّ عقوبة معها سببها بالعربيّة', () => {
     const a = course('A', { pathwayId: 'P', skillSlugs: ['x'], domainAr: 'التسويق' })
     const b = course('B', { pathwayId: 'P', skillSlugs: ['x'], domainAr: 'التسويق' })
     const p = pairPenalty(a, b)
     expect(p.penalty).toBeGreaterThan(0)
-    expect(p.whyAr).toContain('مهارةً مشتركة')
-    expect(p.whyAr).toContain('المسارُ نفسُه')
+    expect(p.whyAr).toContain('مهارة مشتركة')
+    expect(p.whyAr).toContain('المسار نفسه')
     expect(p.whyAr).toContain('التسويق')
   })
 
-  it('وبلا تقاطعٍ لا عقوبةَ ولا سبب', () => {
+  it('وبلا تقاطع لا عقوبة ولا سبب', () => {
     expect(pairPenalty(course('A'), course('B'))).toEqual({ penalty: 0, whyAr: '' })
   })
 
-  it('والصفُّ يحمل أعلى تزاحمٍ قُبِل — فتُرى المقايضة', () => {
+  it('والصفّ يحمل أعلى تزاحم قبل — فترى المقايضة', () => {
     const courses = [
       course('A', { skillSlugs: ['x', 'y'], pathwayId: 'P', sequence: 1 }),
       course('B', { skillSlugs: ['x', 'y'], pathwayId: 'P', sequence: 2 }),
@@ -159,8 +159,8 @@ describe('العقوبةُ تقول سببَها — لا صندوقَ أسود'
   })
 })
 
-describe('والحملُ يُعرض بالشهر — ليُرى الاتّزان لا ليُدَّعى', () => {
-  it('مجموعُ الأشهر يساوي ما جُدوِل', () => {
+describe('والحمل يعرض بالشهر — ليرى الاتّزان لا ليدّعى', () => {
+  it('مجموع الأشهر يساوي ما جدول', () => {
     const courses = [...chain('P', 4), ...chain('Q', 4), ...chain('R', 4)]
     const r = planTerm({ courses, slots: slots() })
     const total = Object.values(r.loadByMonth).reduce((a, b) => a + b, 0)

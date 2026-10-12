@@ -140,7 +140,7 @@ function PickBadge({ note, fromDomain }: { note: string | null; fromDomain?: str
   return (
     <span className="inline-flex w-fit items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1 text-fine font-semibold text-muted-foreground">
       <Compass className="h-3 w-3" />
-      {fromDomain ? `من ${fromDomain}` : 'مقترحٌ في هذا المجال'}
+      {fromDomain ? `من ${fromDomain}` : 'مقترح في هذا المجال'}
     </span>
   )
 }
@@ -414,7 +414,7 @@ export function Bestsellers() {
 
         {moreCourses.length > 0 && (
           <div className="reveal mt-10">
-            <h3 className="text-lg font-bold md:text-xl">ودوراتٌ مفردة</h3>
+            <h3 className="text-lg font-bold md:text-xl">ودورات مفردة</h3>
             <CategoryFilter counts={crCounts} allCount={crAllCount} active={crCat} onChange={setCrCat} label="تصفية الدورات حسب المجال" />
             <div className="scrollbar-hide -mx-5 mt-5 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-4 sm:mx-0 sm:px-0">
               {moreCourses.map((b) => (

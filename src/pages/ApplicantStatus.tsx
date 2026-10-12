@@ -206,14 +206,14 @@ export default function ApplicantStatus() {
                 {/* سطرٌ واحد (٢٤ سبتمبر ٢٠٢٦) — كما في `EmailVerifyStatus`،
                     وبالقرار نفسِه. والزرُّ تحته هو الفعل. */}
                 <p className="flex flex-wrap items-center gap-2 text-sm font-black text-gold-ink">
-                  <MailWarning className="h-4 w-4 shrink-0" /> وثّق بريدك — افتح رابطَ التأكيد في{' '}
+                  <MailWarning className="h-4 w-4 shrink-0" /> وثّق بريدك — افتح رابط التأكيد في{' '}
                   <b dir="ltr" className="font-mono">{mine.email}</b>
                 </p>
                 <button
                   type="button" onClick={resendConfirmation} disabled={resent === "busy" || resent === "done"}
                   className="mt-2 cursor-pointer text-read font-bold text-teal-light-ink underline decoration-dotted underline-offset-4 disabled:cursor-default disabled:text-muted-foreground disabled:no-underline"
                 >
-                  {resent === "done" ? "أُعيد الإرسال — راجع بريدك" : resent === "error" ? "تعذّر — حاول بعد قليل" : "لم تصلك الرسالة؟ أعد الإرسال"}
+                  {resent === "done" ? "أعيد الإرسال — راجع بريدك" : resent === "error" ? "تعذّر — حاول بعد قليل" : "لم تصلك الرسالة؟ أعد الإرسال"}
                 </button>
               </Card>
             )}
@@ -239,8 +239,8 @@ export default function ApplicantStatus() {
                     (`notifyInfoRequested`) — فالردُّ عليها طريقٌ قائمٌ لا
                     يُبنى، ويصل إلى الصندوق الذي راسلناه منه. */}
                 <p className="mt-2 text-read leading-6 text-muted-foreground">
-                  أرسلنا لك هذا الطلبَ على بريدك — <b className="text-foreground">ردَّ على رسالتنا</b> بما نحتاجه،
-                  ويصل فريقَنا مباشرةً.
+                  أرسلنا لك هذا الطلب على بريدك — <b className="text-foreground">ردّ على رسالتنا</b> بما نحتاجه،
+                  ويصل فريقنا مباشرة.
                 </p>
               </Card>
             )}
@@ -281,7 +281,7 @@ export default function ApplicantStatus() {
                   <CalendarClock className="h-4 w-4" /> موعد لقاء التعارف
                 </p>
                 <p className="mt-2 text-sm leading-7 text-foreground">
-                  {fmtDateTime(new Date(mine.interviews[0].scheduledAt))} — عن بُعد
+                  {fmtDateTime(new Date(mine.interviews[0].scheduledAt))} — عن بعد
                 </p>
                 {/* ═══ ورابطُ التعديل هنا كما هو في صفحة المتابعة بالبريد ═══
 
@@ -291,11 +291,11 @@ export default function ApplicantStatus() {
                 {mine.interviews[0].rescheduleUrl ? (
                   <a href={mine.interviews[0].rescheduleUrl} target="_blank" rel="noopener noreferrer"
                     className="mt-2 inline-flex items-center gap-1.5 text-read font-bold text-teal-light-ink hover:underline">
-                    <CalendarClock className="h-3.5 w-3.5" /> عدِّل موعدَك أو ألغِه عند Calendly
+                    <CalendarClock className="h-3.5 w-3.5" /> عدّل موعدك أو ألغه عند Calendly
                   </a>
                 ) : (
                   <p className="mt-1 text-read leading-6 text-muted-foreground">
-                    أرسل Calendly تفاصيل الاجتماع وخيارَي إعادة الجدولة والإلغاء إلى بريدك.
+                    أرسل Calendly تفاصيل الاجتماع وخياري إعادة الجدولة والإلغاء إلى بريدك.
                   </p>
                 )}
                 {/* وما يُعمل به قبل الموعد — تحت الخبر لا فوقَه */}
@@ -309,7 +309,7 @@ export default function ApplicantStatus() {
                 <p className="flex items-center gap-2 text-read font-bold text-muted-foreground"><Mail className="h-3.5 w-3.5" /> بريدك</p>
                 <p dir="ltr" className="mt-1 text-right text-sm text-muted-foreground">{mine.email}</p>
                 {mine.emailVerifiedAt ? (
-                  <p className="mt-2 flex items-center gap-1.5 text-read font-bold text-emerald-300"><CheckCircle2 className="h-3.5 w-3.5" /> موثَّق</p>
+                  <p className="mt-2 flex items-center gap-1.5 text-read font-bold text-emerald-300"><CheckCircle2 className="h-3.5 w-3.5" /> موثّق</p>
                 ) : null}
                 {/* ولا يُعاد التنبيهُ هنا: هو في أعلى الصفحة بنصّه وزرّه.
                     وتنبيهان في شاشةٍ واحدةٍ يُقرأ أوّلُهما ويُهمَل ثانيهما. */}
@@ -351,7 +351,7 @@ export default function ApplicantStatus() {
             <Card as="section">
               <h3 className="flex items-center gap-2 text-sm font-black"><FileText className="h-4 w-4 text-teal-light-ink" /> مستنداتك</h3>
               {mine.documents.length === 0 ? (
-                <p className="mt-2 text-read leading-5 text-muted-foreground">لم تُرفع مستندات بعد.</p>
+                <p className="mt-2 text-read leading-5 text-muted-foreground">لم ترفع مستندات بعد.</p>
               ) : (
                 <ul className="mt-3 space-y-1.5 text-read leading-5 text-muted-foreground">
                   {mine.documents.map((d, i) => (

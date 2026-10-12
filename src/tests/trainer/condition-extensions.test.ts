@@ -30,15 +30,15 @@ const running = (over: Record<string, unknown> = {}) => ({
   ...over,
 })
 
-describe('① مرّتان — والعددُ من العدّاد', () => {
-  it('السقفُ مرّتان، والمجموعُ تسعةٌ', () => {
+describe('① مرّتان — والعدد من العدّاد', () => {
+  it('السقف مرّتان، والمجموع تسعة', () => {
     expect(MAX_EXTENSIONS).toBe(2)
     /* والمجموعُ يُشتقّ ولا يُكتب: ٥ + (٢ × ٢) */
     expect(MAX_TOTAL_WINDOW_DAYS).toBe(MATERIALS_WINDOW_DAYS + MAX_EXTENSIONS * EXTENSION_DAYS)
     expect(MAX_TOTAL_WINDOW_DAYS).toBe(9)
   })
 
-  it('من لم يمدّدْ له مرّتان، ومن مدّد مرّةً له واحدة، ومن مدّد مرّتين فلا', () => {
+  it('من لم يمدّد له مرّتان، ومن مدّد مرّة له واحدة، ومن مدّد مرّتين فلا', () => {
     expect(extensionsLeft({ conditionExtensionsUsed: 0 })).toBe(2)
     expect(extensionsLeft({ conditionExtensionsUsed: 1 })).toBe(1)
     expect(extensionsLeft({ conditionExtensionsUsed: 2 })).toBe(0)
@@ -50,32 +50,32 @@ describe('① مرّتان — والعددُ من العدّاد', () => {
 
      المرّةُ الثانيةُ كانت تُردّ لأنّ `conditionExtendedAt` مكتوب. فيُقاس هنا
      أنّها تُقبَل — وأنّ الثالثةَ وحدَها تُردّ. */
-  it('والثانيةُ تُقبَل والثالثةُ تُردّ', () => {
-    expect(extendProblemAr(running({ conditionExtensionsUsed: 0 })), 'رُدّت الأولى').toBeNull()
-    expect(extendProblemAr(running({ conditionExtensionsUsed: 1 })), 'رُدّت الثانية').toBeNull()
+  it('والثانية تقبل والثالثة تردّ', () => {
+    expect(extendProblemAr(running({ conditionExtensionsUsed: 0 })), 'ردّت الأولى').toBeNull()
+    expect(extendProblemAr(running({ conditionExtensionsUsed: 1 })), 'ردّت الثانية').toBeNull()
     const third = extendProblemAr(running({ conditionExtensionsUsed: 2 }))
-    expect(third, 'قُبلت الثالثة').not.toBeNull()
-    expect(third, 'الردُّ لا يقول كم مرّةً مُنح').toContain(`${MAX_EXTENSIONS}`)
+    expect(third, 'قبلت الثالثة').not.toBeNull()
+    expect(third, 'الردّ لا يقول كم مرّة منح').toContain(`${MAX_EXTENSIONS}`)
   })
 
-  it('ولا يُستنتَج الإنفاقُ من تاريخ التمديد وحدَه', () => {
+  it('ولا يستنتج الإنفاق من تاريخ التمديد وحده', () => {
     /* صفٌّ مُدّد مرّةً: تاريخُه مكتوبٌ وعدّادُه واحد — فله ثانيةٌ بعدُ */
     expect(extendProblemAr(running({
       conditionExtendedAt: new Date(Date.now() - DAY), conditionExtensionsUsed: 1,
-    })), 'رُدّ من له تمديدٌ ثانٍ لأنّ تاريخَ الأوّل مكتوب').toBeNull()
+    })), 'ردّ من له تمديد ثان لأنّ تاريخ الأوّل مكتوب').toBeNull()
   })
 
-  it('والزرُّ يتبع المِحَكَّ لا ينفرد به', () => {
+  it('والزرّ يتبع المحكّ لا ينفرد به', () => {
     expect(canAskExtension(running({ conditionExtensionsUsed: 1 }))).toBe(true)
     expect(canAskExtension(running({ conditionExtensionsUsed: 2 }))).toBe(false)
   })
 })
 
-describe('② والمتنُ يقول المرّاتِ والسقفَ معا', () => {
+describe('② والمتن يقول المرّات والسقف معا', () => {
   const body = renderContractBodyAr({
     academyPartyLineAr: 'أكاديمية وجيز للتدريب', academyLegalNameAr: 'أكاديمية وجيز للتدريب',
     academyTradingNameAr: 'أكاديمية وجيز', governingLawAr: 'القانون الأردني', disputeVenueAr: 'محاكم عمّان',
-    trainerFullName: 'سعادُ المدرّبة', trainerEmail: 't@example.com',
+    trainerFullName: 'سعاد المدرّبة', trainerEmail: 't@example.com',
     applicationReference: 'WJ-TR-2026-00042', issuedOnAr: '27 سبتمبر 2026',
     courses: [{ courseId: 'C-ACC-101', titleAr: 'أساسيات المحاسبة' }],
     compensation: { type: 'per_seat', rate: '15', referralRate: '25', minSeats: 5, currency: 'USD' },
@@ -89,9 +89,9 @@ describe('② والمتنُ يقول المرّاتِ والسقفَ معا', (
   const clauseExtend = () => /^2-10 .*$/m.exec(body)![0]
 
   it('البند 2-10 يقول «مرتين» ويقول السقف', () => {
-    expect(clauseExtend(), 'ما زال يَعِد بمرّةٍ واحدة').not.toContain('مرة واحدة')
+    expect(clauseExtend(), 'ما زال يعد بمرّة واحدة').not.toContain('مرة واحدة')
     expect(clauseExtend()).toContain('مرتين')
-    expect(clauseExtend(), 'السقفُ غيرُ مذكورٍ — فيحسبه صاحبُه ويحتجّ بحسابه')
+    expect(clauseExtend(), 'السقف غير مذكور — فيحسبه صاحبه ويحتجّ بحسابه')
       .toContain(`${MAX_TOTAL_WINDOW_DAYS} أيام`)
   })
 
@@ -107,19 +107,19 @@ describe('② والمتنُ يقول المرّاتِ والسقفَ معا', (
      المنصّة (الملاحظة ٦): السقفُ لتمديدَي المدرّب، وما مدّته الأكاديميّةُ
      باعتمادٍ متأخّرٍ لا يُحسَب عليه. فتبدّل اللفظُ ويبقى المقيسُ: سقفٌ
      على ما جرى، لا على التقويم. */
-  it('ولا يقول «من تاريخ التوقيع» — فالمهلةُ تتوقّف مدّةَ التقييم', () => {
-    expect(clauseExtend(), 'سقفٌ تقويميٌّ يناقض التوقّفَ المنصوصَ في الفقرة نفسِها')
+  it('ولا يقول «من تاريخ التوقيع» — فالمهلة تتوقّف مدّة التقييم', () => {
+    expect(clauseExtend(), 'سقف تقويميّ يناقض التوقّف المنصوص في الفقرة نفسها')
       .not.toMatch(/فلا تجاوز.*من تاريخ التوقيع/)
     expect(clauseExtend()).toContain('فلا تجاوز المهلة بهذين التمديدين')
-    expect(clauseExtend(), 'لم يُستثنَ تمديدُ البند 2-9 من السقف')
+    expect(clauseExtend(), 'لم يستثن تمديد البند 2-9 من السقف')
       .toContain('ولا يدخل في هذا السقف ما امتدت به المهلة وفق البند 2-9')
-    expect(clauseExtend(), 'سقط نصُّ التوقّف').toContain('وتتوقف عن الجريان مدة بقاء مواده')
+    expect(clauseExtend(), 'سقط نصّ التوقّف').toContain('وتتوقف عن الجريان مدة بقاء مواده')
   })
 
-  it('والخلاصةُ تقول ما يقوله البند — لا مرّةً واحدة', () => {
+  it('والخلاصة تقول ما يقوله البند — لا مرّة واحدة', () => {
     const line = body.split('\n').find((l) => l.startsWith('· وما يلزمك الآن:'))!
     expect(line).toContain('مرتين')
     expect(line).toContain(`${MAX_TOTAL_WINDOW_DAYS} أيام`)
-    expect(line, 'الخلاصةُ تَعِد بمرّةٍ والبندُ بمرّتين').not.toContain('مرة واحدة')
+    expect(line, 'الخلاصة تعد بمرّة والبند بمرّتين').not.toContain('مرة واحدة')
   })
 })

@@ -65,14 +65,14 @@ export default function Advisors() {
 
   const save = async (userId: string) => {
     const pct = Number(form.commissionPct);
-    if (!Number.isFinite(pct) || pct < 0 || pct > 100) { toastError("النسبةُ بين صفرٍ ومئة."); return; }
+    if (!Number.isFinite(pct) || pct < 0 || pct > 100) { toastError("النسبة بين صفر ومئة."); return; }
     setBusy(true);
     try {
       const res = await apiPatch<{ error?: { message_ar: string } }>(`/api/admin/advisors/${userId}`, {
         commissionPct: pct, notesAr: form.notesAr.trim() || undefined,
       });
       if (res?.error) { toastError(res.error.message_ar); return; }
-      toast("حُفظت العمولة — وسُجّل التغيير بصاحبه ووقته.");
+      toast("حفظت العمولة — وسجّل التغيير بصاحبه ووقته.");
       setEditing(null);
       await load();
     } catch (e) { toastError(e instanceof ApiError ? e.message : "تعذّر الحفظ"); }
@@ -99,8 +99,8 @@ export default function Advisors() {
   return (
     <AdminLayout title="المستشارون — العمولة وشروط العمل">
       <p className="mb-5 max-w-2xl text-read leading-6 text-muted-foreground">
-        نسبةُ العمولة تُكتب هنا لا تُتذكَّر، ويُسجَّل كلُّ تغييرٍ فيها بصاحبه ووقته والرقمين معا.
-        وإسنادُ الحالات من «حالات بلا مستشار»، والبتُّ في طلبات الخصم من «طلبات المستشارين».
+        نسبة العمولة تكتب هنا لا تتذكّر، ويسجّل كلّ تغيير فيها بصاحبه ووقته والرقمين معا.
+        وإسناد الحالات من «حالات بلا مستشار»، والبتّ في طلبات الخصم من «طلبات المستشارين».
       </p>
 
       {loading ? (
@@ -109,13 +109,13 @@ export default function Advisors() {
         <Panel className="grid place-items-center py-20 text-center">
           <UserCheck className="h-12 w-12 text-muted-foreground/50" />
           <p className="mt-4 max-w-md text-sm text-muted-foreground">
-            لا مستشارين بعد — يصير الحسابُ مستشارا بإسناد دور «مستشار» من شاشة المستخدمين.
+            لا مستشارين بعد — يصير الحساب مستشارا بإسناد دور «مستشار» من شاشة المستخدمين.
           </p>
         </Panel>
       ) : (
         <>
           <ListToolbar q={q} onQ={setQ} onPage={setPage} view={view} unit="مستشارا"
-            placeholder="ابحث باسمٍ أو بريد…" />
+            placeholder="ابحث باسم أو بريد…" />
           {view.total === 0 ? (
             <Panel as="p" className="py-16 text-center text-sm text-muted-foreground">
               لا مستشار يطابق «{q.trim()}».
@@ -132,9 +132,9 @@ export default function Advisors() {
                       </p>
                       <p className="mt-1 flex flex-wrap items-center gap-2 text-read text-muted-foreground">
                         <span className={`rounded-full border px-2.5 py-0.5 font-bold ${r.commissionPct === null ? "border-white/20 text-muted-foreground" : "border-gold/45 text-gold-ink"}`}>
-                          {r.commissionPct === null ? "لم تُتّفق العمولة بعد" : `عمولة ${r.commissionPct}%`}
+                          {r.commissionPct === null ? "لم تتّفق العمولة بعد" : `عمولة ${r.commissionPct}%`}
                         </span>
-                        <span>{r.activeCases} حالةً مسندة</span>
+                        <span>{r.activeCases} حالة مسندة</span>
                         {r.status !== "active" && <span className="text-red-400">موقوف</span>}
                       </p>
                       {r.notesAr && <p className="mt-1.5 text-read leading-6 text-muted-foreground">{r.notesAr}</p>}
@@ -160,7 +160,7 @@ export default function Advisors() {
                         <div className="space-y-4">
                           <div className="flex flex-wrap gap-4 text-fine">
                             <span className="text-muted-foreground">
-                              إيراد العملاء المحوَّلين: <b className="text-foreground">{fmtMoney(detail.revenueFromReferrals, detail.currency)}</b>
+                              إيراد العملاء المحوّلين: <b className="text-foreground">{fmtMoney(detail.revenueFromReferrals, detail.currency)}</b>
                             </span>
                             <span className="text-muted-foreground">
                               العمولة المستحقّة: <b className="text-gold-ink">{fmtMoney(detail.commissionOwed, detail.currency)}</b>
@@ -168,7 +168,7 @@ export default function Advisors() {
                             <span className="flex items-center gap-1 text-muted-foreground">
                               <Star className="h-3 w-3 text-gold" />
                               {detail.ratingAvg === null
-                                ? `تقييمات قليلة (${detail.ratingCount}) — لا يُعرض المعدَّل قبل ثلاثة`
+                                ? `تقييمات قليلة (${detail.ratingCount}) — لا يعرض المعدّل قبل ثلاثة`
                                 : `${detail.ratingAvg.toFixed(1)} من ٥ (${detail.ratingCount} تقييما)`}
                             </span>
                           </div>
@@ -221,7 +221,7 @@ export default function Advisors() {
                       <label className="text-fine text-muted-foreground">
                         ملاحظة (اختيارية)
                         <input value={form.notesAr} onChange={(e) => setForm({ ...form, notesAr: e.target.value })}
-                          placeholder="شرطٌ أو استثناءٌ متّفقٌ عليه"
+                          placeholder="شرط أو استثناء متّفق عليه"
                           aria-label="ملاحظة على شرط العمل"
                           className="mt-1 w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/75 focus:border-gold focus:outline-none" />
                       </label>

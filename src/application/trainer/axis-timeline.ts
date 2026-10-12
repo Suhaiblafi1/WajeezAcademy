@@ -141,15 +141,15 @@ export function slotProblems(
   const n = moduleIds.length
   if (n === 0) return []
   const list = slots ?? []
-  if (list.length === 0) return ['وزّع المحاورَ على مواعيدها — من متى إلى متى يكون كلُّ محور']
+  if (list.length === 0) return ['وزّع المحاور على مواعيدها — من متى إلى متى يكون كلّ محور']
   const out: string[] = []
-  if (!period) out.push('حدّد مدّةَ الشعبة أوّلا — المواعيدُ داخلها')
+  if (!period) out.push('حدّد مدّة الشعبة أوّلا — المواعيد داخلها')
 
   const need = minSlots(n)
   if (list.length < need) {
     out.push(n > MIN_SLOTS
-      ? `أقلُّ ما تُقسَم عليه الدورةُ ${MIN_SLOTS} مواعيد — افصِل بعضَ المحاور المجموعة`
-      : `لكلّ محورٍ موعدُه — الدورةُ في ${n} محاور فلا يُجمع منها شيء`)
+      ? `أقلّ ما تقسم عليه الدورة ${MIN_SLOTS} مواعيد — افصل بعض المحاور المجموعة`
+      : `لكلّ محور موعده — الدورة في ${n} محاور فلا يجمع منها شيء`)
   }
 
   /* التغطيةُ والترتيب: كلُّ محورٍ في موعدٍ واحد، والمواعيدُ تأخذها بترتيب
@@ -160,32 +160,32 @@ export function slotProblems(
   let ordered = true
   for (const id of list.flatMap((s) => s.moduleIds)) {
     const p = pos.get(id)
-    if (p === undefined) { out.push('في المواعيد محورٌ حُذف من الخطّة — أعِد توزيعها'); continue }
-    if (seen.has(id)) { out.push(`المحور ${p + 1} في موعدين — لكلّ محورٍ موعدٌ واحد`); continue }
+    if (p === undefined) { out.push('في المواعيد محور حذف من الخطّة — أعد توزيعها'); continue }
+    if (seen.has(id)) { out.push(`المحور ${p + 1} في موعدين — لكلّ محور موعد واحد`); continue }
     seen.add(id)
     if (p !== last + 1) ordered = false
     last = p
   }
   const missing = moduleIds.map((id, i) => ({ id, i })).filter(({ id }) => !seen.has(id))
   if (missing.length) {
-    out.push(`${missing.length === 1 ? 'محورٌ' : 'محاورُ'} بلا موعد: ${missing.map(({ i }) => `المحور ${i + 1}`).join('، ')}`)
+    out.push(`${missing.length === 1 ? 'محور' : 'محاور'} بلا موعد: ${missing.map(({ i }) => `المحور ${i + 1}`).join('، ')}`)
   } else if (!ordered) {
-    out.push('المحاورُ على المواعيد بترتيبها، ولا يُجمع إلّا متجاوران — ١+٢ لا ١+٣')
+    out.push('المحاور على المواعيد بترتيبها، ولا يجمع إلّا متجاوران — ١+٢ لا ١+٣')
   }
-  if (list.some((s) => s.moduleIds.length === 0)) out.push('موعدٌ بلا محور — احذفه أو اجمعه مع جاره')
+  if (list.some((s) => s.moduleIds.length === 0)) out.push('موعد بلا محور — احذفه أو اجمعه مع جاره')
 
   /* والتواريخ: داخلَ المدّة، ومتتابعةٌ لا متداخلة — والفجوةُ بينها جائزة
      (عيدٌ أو عطلة)، فلا يُشترط أن يلتصق موعدٌ بما قبله. */
   list.forEach((s, i) => {
     const label = `الموعد ${i + 1}`
-    if (!realDate(s.startsOn) || !realDate(s.endsOn)) { out.push(`${label}: تاريخٌ غيرُ صالح`); return }
+    if (!realDate(s.startsOn) || !realDate(s.endsOn)) { out.push(`${label}: تاريخ غير صالح`); return }
     if (s.endsOn < s.startsOn) { out.push(`${label} ينتهي قبل أن يبدأ`); return }
     if (period && (s.startsOn < period.startsOn || s.endsOn > period.endsOn)) {
-      out.push(`${label} خارجَ مدّة الشعبة (${dayLabelAr(period.startsOn)} – ${dayLabelAr(period.endsOn)})`)
+      out.push(`${label} خارج مدّة الشعبة (${dayLabelAr(period.startsOn)} – ${dayLabelAr(period.endsOn)})`)
     }
     const prev = list[i - 1]
     if (prev && realDate(prev.endsOn) && s.startsOn <= prev.endsOn) {
-      out.push(`${label} يبدأ قبل أن ينتهي الموعدُ ${i} — المواعيدُ متتابعةٌ لا متداخلة`)
+      out.push(`${label} يبدأ قبل أن ينتهي الموعد ${i} — المواعيد متتابعة لا متداخلة`)
     }
   })
   return out
@@ -369,12 +369,12 @@ export function workbookDone(w: SlotWorkbook | null | undefined): boolean {
 /** المواعيدُ التي تنقصها كرّاستُها — بأرقامها ومحاورها */
 export function workbookProblems(slots: readonly PlanSlot[] | null | undefined, moduleIds: readonly string[]): string[] {
   const list = slots ?? []
-  if (list.length === 0) return ['وزّع المحاورَ على مواعيدها أوّلا — فلكلّ موعدٍ كرّاستُه']
+  if (list.length === 0) return ['وزّع المحاور على مواعيدها أوّلا — فلكلّ موعد كرّاسته']
   const pos = new Map(moduleIds.map((id, i) => [id, i + 1]))
   return list
     .map((s, i) => ({ s, i }))
     .filter(({ s }) => !workbookDone(s.workbook))
-    .map(({ s, i }) => `الموعد ${i + 1} (${axesLabelAr(s.moduleIds, pos)}) بلا كرّاسة — ارفع ملفّا أو ألصِق رابطا`)
+    .map(({ s, i }) => `الموعد ${i + 1} (${axesLabelAr(s.moduleIds, pos)}) بلا كرّاسة — ارفع ملفّا أو ألصق رابطا`)
 }
 
 /** موضعُ المحور في الكرّاسة — مكتوبا، أو `null` */
@@ -389,10 +389,10 @@ export function cohortWorkbookProblems(
   moduleIds: readonly string[],
 ): string[] {
   const out: string[] = []
-  if (!workbookDone(wb)) out.push('ارفع كرّاسةَ الدورة — ملفّا واحدا أو رابطا يضمّ المحاورَ كلَّها')
+  if (!workbookDone(wb)) out.push('ارفع كرّاسة الدورة — ملفّا واحدا أو رابطا يضمّ المحاور كلّها')
   const missing = moduleIds.map((id, i) => ({ id, n: i + 1 })).filter(({ id }) => !workbookWhere(wb, id))
   if (missing.length > 0) {
-    out.push(`اكتب أين يبدأ ${missing.length === 1 ? 'المحور' : 'كلٌّ من المحاور'} ${missing.map((m) => m.n).join('، ')} في الكرّاسة — كي يتبعها المتعلّمُ محورا محورا`)
+    out.push(`اكتب أين يبدأ ${missing.length === 1 ? 'المحور' : 'كلّ من المحاور'} ${missing.map((m) => m.n).join('، ')} في الكرّاسة — كي يتبعها المتعلّم محورا محورا`)
   }
   return out
 }
@@ -482,12 +482,12 @@ export function axisTimeProblem(
     const where = distinct
       .map((si) => `${axesLabelAr(ids.filter((_, k) => at[k] === si), pos)} في الموعد ${si + 1}`)
       .join('، و')
-    const merge = distinct.length === 2 ? 'اجمع الموعدين' : 'اجمع مواعيدَها'
-    return `${label} يجمع محاورَ من مواعيدَ مختلفة (${where}) — اللقاءُ في وقت محاوره: اربطه بمحاور موعدٍ واحد، أو ${merge} في «المحاور ومواعيدها»`
+    const merge = distinct.length === 2 ? 'اجمع الموعدين' : 'اجمع مواعيدها'
+    return `${label} يجمع محاور من مواعيد مختلفة (${where}) — اللقاء في وقت محاوره: اربطه بمحاور موعد واحد، أو ${merge} في «المحاور ومواعيدها»`
   }
   const slot = slots[distinct[0]]
   if (!sessionInsideSlot(s, slot)) {
-    return `${label} خارجَ موعد ${axesLabelAr(ids, pos)} (${dayLabelAr(slot.startsOn)} – ${dayLabelAr(slot.endsOn)})`
+    return `${label} خارج موعد ${axesLabelAr(ids, pos)} (${dayLabelAr(slot.startsOn)} – ${dayLabelAr(slot.endsOn)})`
   }
   return null
 }
@@ -519,7 +519,7 @@ export function sessionProblems(input: {
   const covered = new Set(input.sessions.flatMap((s) => s.moduleIds))
   const bare = input.moduleIds.filter((id) => !covered.has(id))
   if (bare.length) {
-    blocking.push(`${bare.length === 1 ? 'محورٌ' : 'محاورُ'} بلا لقاءٍ مباشر: ${bare.map((id) => `المحور ${pos.get(id)}`).join('، ')}`)
+    blocking.push(`${bare.length === 1 ? 'محور' : 'محاور'} بلا لقاء مباشر: ${bare.map((id) => `المحور ${pos.get(id)}`).join('، ')}`)
   }
 
   input.sessions.forEach((s, i) => {
@@ -532,7 +532,7 @@ export function sessionProblems(input: {
     if (input.now && sessionEnd(s).getTime() < input.now.getTime()) return
     const label = `لقاء «${name(s.title, `رقم ${i + 1}`)}»`
     const ids = s.moduleIds.filter((id) => pos.has(id))
-    if (ids.length === 0) { blocking.push(`${label} غيرُ مربوطٍ بمحور — اختر محورَه`); return }
+    if (ids.length === 0) { blocking.push(`${label} غير مربوط بمحور — اختر محوره`); return }
     const off = axisTimeProblem(s, slots, pos, label)
     if (off) { blocking.push(off); return }
     const at = ids.map((id) => slotIndexOf(slots, id))
@@ -540,19 +540,19 @@ export function sessionProblems(input: {
     const slot = slots[at[0]]
     const day = dayInSlot(s.startsAt, slot)
     if (day > EARLY_DAYS) {
-      warnings.push(`${label} في اليوم ${day} من موعده — والأصلُ في أوّل ${EARLY_DAYS} أيّام، فبعده تُفتح المهامّ`)
+      warnings.push(`${label} في اليوم ${day} من موعده — والأصل في أوّل ${EARLY_DAYS} أيّام، فبعده تفتح المهامّ`)
     }
   })
 
   ;(input.recordings ?? []).forEach((r, i) => {
-    const label = `الجلسةُ المسجّلة «${name(r.title, `رقم ${i + 1}`)}»`
-    if (!r.moduleId || !pos.has(r.moduleId)) { blocking.push(`${label} بلا محور — اختر محورَها`); return }
+    const label = `الجلسة المسجّلة «${name(r.title, `رقم ${i + 1}`)}»`
+    if (!r.moduleId || !pos.has(r.moduleId)) { blocking.push(`${label} بلا محور — اختر محورها`); return }
     const idx = slotIndexOf(slots, r.moduleId)
     if (idx === -1) return
-    if (!r.opensAt || Number.isNaN(new Date(r.opensAt).getTime())) { blocking.push(`${label} بلا موعدِ فتح`); return }
+    if (!r.opensAt || Number.isNaN(new Date(r.opensAt).getTime())) { blocking.push(`${label} بلا موعد فتح`); return }
     const slot = slots[idx]
     if (!opensInsideSlot(r.opensAt, slot)) {
-      blocking.push(`${label} تُفتح خارجَ موعد ${axesLabelAr([r.moduleId], pos)} (${dayLabelAr(slot.startsOn)} – ${dayLabelAr(slot.endsOn)})`)
+      blocking.push(`${label} تفتح خارج موعد ${axesLabelAr([r.moduleId], pos)} (${dayLabelAr(slot.startsOn)} – ${dayLabelAr(slot.endsOn)})`)
     }
   })
   return { blocking, warnings }

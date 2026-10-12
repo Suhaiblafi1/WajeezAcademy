@@ -26,7 +26,7 @@ describe('تمييز خطأ القطعة الزائلة', () => {
     }
   })
 
-  it('٢) ولا يبتلع أخطاء التصيير العاديّة — وإلّا أُخفيت عطوبٌ حقيقيّة', () => {
+  it('٢) ولا يبتلع أخطاء التصيير العاديّة — وإلّا أخفيت عطوب حقيقيّة', () => {
     for (const m of [
       "Cannot read properties of undefined (reading 'map')",
       'Maximum update depth exceeded',
@@ -68,7 +68,7 @@ describe('نافذة إعادة التحميل', () => {
     } finally { restore() }
   })
 
-  it('٤) وبلا تخزينٍ متاح لا تُعيد أبدا — الحلقة أسوأ من البياض', () => {
+  it('٤) وبلا تخزين متاح لا تعيد أبدا — الحلقة أسوأ من البياض', () => {
     const original = Object.getOwnPropertyDescriptor(globalThis, 'sessionStorage')
     Object.defineProperty(globalThis, 'sessionStorage', {
       configurable: true,
@@ -82,7 +82,7 @@ describe('نافذة إعادة التحميل', () => {
     }
   })
 
-  it('٥) وتشارك مفتاح حارس index.html — لا نافذتان لعطبٍ واحد', () => {
+  it('٥) وتشارك مفتاح حارس index.html — لا نافذتان لعطب واحد', () => {
     const restore = stub()
     try {
       mayReload(6_000_000)
@@ -91,8 +91,8 @@ describe('نافذة إعادة التحميل', () => {
   })
 })
 
-describe('الحاجز مركّبٌ فوق الشجرة', () => {
-  it('٦) يلفّ المسارات المؤجَّلة في App', async () => {
+describe('الحاجز مركّب فوق الشجرة', () => {
+  it('٦) يلفّ المسارات المؤجّلة في App', async () => {
     const { readFileSync } = await import('node:fs')
     const app = readFileSync(new URL('../../App.tsx', import.meta.url), 'utf8')
     expect(app).toContain('<StaleChunkBoundary')

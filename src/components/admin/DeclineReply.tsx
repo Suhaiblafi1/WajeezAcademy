@@ -48,17 +48,17 @@ export default function DeclineReply({ c, onDone, kind = "declined" }: {
 
   if (c.declineRepliedAt) {
     const choice = c.dataChoice === "keep"
-      ? `واختار إبقاءَ بياناته للمواسم القادمة${c.dataChoiceAt ? ` (${fmtDateTime(c.dataChoiceAt)})` : ""}.`
+      ? `واختار إبقاء بياناته للمواسم القادمة${c.dataChoiceAt ? ` (${fmtDateTime(c.dataChoiceAt)})` : ""}.`
       : c.dataChoice === "delete"
-        ? "وطلب حذفَ بياناته، وتعذّر الحذفُ الآليّ لما في سجلّه — احذفه بيدك من «طلبات المدربين»."
-        : `ولم يختر بعدُ ما نفعله ببياناته — رابطُ خياره صالحٌ ${DATA_CHOICE_LINK_DAYS} يوما، ومن لم يختر تبقى بياناتُه.`;
+        ? "وطلب حذف بياناته، وتعذّر الحذف الآليّ لما في سجلّه — احذفه بيدك من «طلبات المدربين»."
+        : `ولم يختر بعد ما نفعله ببياناته — رابط خياره صالح ${DATA_CHOICE_LINK_DAYS} يوما، ومن لم يختر تبقى بياناته.`;
     return (
       <Inset tone={c.dataChoice === "delete" ? "warn" : "default"} className="mt-2 flex items-start gap-2 p-3 text-read leading-7">
         <MailCheck className="mt-1.5 h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" />
         <span>
           {expired
-            ? <>أغلقتَه برسالة شكرٍ {fmtDateTime(c.declineRepliedAt)} وأُجّل طلبُه إلى الفصول القادمة — {choice}</>
-            : <>رددتَ على اعتذاره {fmtDateTime(c.declineRepliedAt)} — {choice}</>}
+            ? <>أغلقته برسالة شكر {fmtDateTime(c.declineRepliedAt)} وأجّل طلبه إلى الفصول القادمة — {choice}</>
+            : <>رددت على اعتذاره {fmtDateTime(c.declineRepliedAt)} — {choice}</>}
         </span>
       </Inset>
     );
@@ -67,7 +67,7 @@ export default function DeclineReply({ c, onDone, kind = "declined" }: {
   if (!open) {
     return (
       <Button size="sm" className="mt-2" icon={Send} onClick={() => setOpen(true)}>
-        {expired ? "اعتذر له نهائيّا — وأجِّلْه للفصول القادمة" : "ردَّ على اعتذاره"}
+        {expired ? "اعتذر له نهائيّا — وأجّله للفصول القادمة" : "ردّ على اعتذاره"}
       </Button>
     );
   }
@@ -80,8 +80,8 @@ export default function DeclineReply({ c, onDone, kind = "declined" }: {
         `/api/admin/trainer-contracts/${c.id}/${expired ? "expired-reply" : "decline-reply"}`,
         { subjectAr: subject.trim(), bodyAr: body.trim() });
       toast(r.emailDelivery === "sent"
-        ? expired ? "أُغلق العقدُ وأُجّل طلبُه — ووصلته رسالتُك ومعها خيارُه في بياناته" : "أُرسل ردُّك — ومعه خيارُه في بياناته"
-        : "حُفظ ردُّك — وتعذّر البريد، فأعِد إرساله يدويّا");
+        ? expired ? "أغلق العقد وأجّل طلبه — ووصلته رسالتك ومعها خياره في بياناته" : "أرسل ردّك — ومعه خياره في بياناته"
+        : "حفظ ردّك — وتعذّر البريد، فأعد إرساله يدويّا");
       setOpen(false);
       await onDone();
     } catch (e) {
@@ -102,24 +102,24 @@ export default function DeclineReply({ c, onDone, kind = "declined" }: {
       </label>
       {expired ? (
         <p className="text-read leading-6 text-muted-foreground">
-          بالإرسال يُغلَق هذا العقد، ويصير طلبُه «مؤجَّلا — للفصول القادمة»: فيُسأل عن اهتمامه
+          بالإرسال يغلق هذا العقد، ويصير طلبه «مؤجّلا — للفصول القادمة»: فيسأل عن اهتمامه
           في {fmtDateWith(deferredFollowUpAt(new Date()), { year: "numeric", month: "long", day: "numeric", timeZone: ACADEMY_ZONE })}
-          {" "}(بعد {DEFER_FOLLOW_UP_MONTHS === 2 ? "شهرين" : `${DEFER_FOLLOW_UP_MONTHS} أشهر`}) ويُذكَّر فريقُك. ويُلحَق
-          بالرسالة زرُّ «اختر ما نفعله ببياناتك»: إبقاؤها، أو حذفُها في الحال حين يؤكّده — ويصلك خبرُ ما اختار.
-          وتُرسَل مرّةً واحدة. ولمن أردتَ أن يوقّع بعدُ فـ«جدِّدِ الرابط» أعلاه.
+          {" "}(بعد {DEFER_FOLLOW_UP_MONTHS === 2 ? "شهرين" : `${DEFER_FOLLOW_UP_MONTHS} أشهر`}) ويذكّر فريقك. ويلحق
+          بالرسالة زرّ «اختر ما نفعله ببياناتك»: إبقاؤها، أو حذفها في الحال حين يؤكّده — ويصلك خبر ما اختار.
+          وترسل مرّة واحدة. ولمن أردت أن يوقّع بعد فـ«جدّد الرابط» أعلاه.
         </p>
       ) : (
         <p className="text-read leading-6 text-muted-foreground">
-          يُلحَق بالرسالة زرُّ «اختر ما نفعله ببياناتك»: صفحةٌ يختار فيها إبقاءَها للمواسم القادمة أو حذفَها،
-          ويقع الحذفُ في الحال حين يؤكّده — ويصلك خبرُ ما اختار. وتُرسَل الرسالةُ مرّةً واحدة.
+          يلحق بالرسالة زرّ «اختر ما نفعله ببياناتك»: صفحة يختار فيها إبقاءها للمواسم القادمة أو حذفها،
+          ويقع الحذف في الحال حين يؤكّده — ويصلك خبر ما اختار. وترسل الرسالة مرّة واحدة.
         </p>
       )}
       <div className="flex flex-wrap gap-2">
         <Button tone="confirm" size="sm" icon={Send} loading={busy}
           disabled={len < DECLINE_REPLY_BODY_MIN || subject.trim().length < 3} onClick={() => void send()}>
-          {expired ? "أغلِقْه وأرسِلِ الرسالة" : "أرسِلِ الردّ"}
+          {expired ? "أغلقه وأرسل الرسالة" : "أرسل الردّ"}
         </Button>
-        <Button tone="ghost" size="sm" icon={X} disabled={busy} onClick={() => setOpen(false)}>تراجعْ</Button>
+        <Button tone="ghost" size="sm" icon={X} disabled={busy} onClick={() => setOpen(false)}>تراجع</Button>
       </div>
     </Inset>
   );

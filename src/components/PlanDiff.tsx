@@ -32,26 +32,26 @@ export function SinceReturnList({ general, rows }: { general: string | null; row
     <div className="space-y-2 text-read leading-7">
       {general && (
         <p>
-          <span className="font-bold text-foreground">ملاحظتُك العامّة: </span>
+          <span className="font-bold text-foreground">ملاحظتك العامّة: </span>
           <span className="text-muted-foreground">{general}</span>
         </p>
       )}
       {rows.length === 0 ? (
-        <p className="text-muted-foreground">لم يعدّل في الخطّة نفسِها شيئا منذ ردّك.</p>
+        <p className="text-muted-foreground">لم يعدّل في الخطّة نفسها شيئا منذ ردّك.</p>
       ) : (
         <dl className="space-y-2">
           {rows.map((r) => (
             <div key={r.section}>
               <dt className="font-bold text-foreground">{r.label}</dt>
               <dd>
-                {r.note && <p className="text-muted-foreground">ملاحظتُك: {r.note}</p>}
+                {r.note && <p className="text-muted-foreground">ملاحظتك: {r.note}</p>}
                 {r.lines.length > 0 ? (
                   <ul className="list-disc space-y-0.5 ps-5 text-muted-foreground">
                     {r.lines.map((line, i) => <li key={`${r.section}-${i}`}>{line}</li>)}
                   </ul>
                 ) : (
                   <p className="font-bold text-gold-ink" data-unchanged>
-                    لم يتغيّر في هذه الخطوة شيءٌ من الخطّة نفسِها — واللقاءاتُ المباشرةُ والمهامُّ لها قوائمُها أدناه.
+                    لم يتغيّر في هذه الخطوة شيء من الخطّة نفسها — واللقاءات المباشرة والمهامّ لها قوائمها أدناه.
                   </p>
                 )}
               </dd>

@@ -32,7 +32,7 @@ export type ReadinessStepKey = (typeof READINESS_STEPS)[number]
 export const READINESS_LABELS_AR: Record<ReadinessStepKey, string> = {
   compensation: 'الاتفاق الماليّ',
   qualifications: 'المؤهّلات والدورات',
-  contract: 'العقد الموقَّع',
+  contract: 'العقد الموقّع',
 }
 
 /* ═══ ما تُعدّ به الخطوةُ الأولى تامّة ═══
@@ -139,7 +139,7 @@ export function computeReadiness(input: ReadinessInput): Readiness {
       done: compensationDone,
       blockerAr: compensationDone
         ? null
-        : 'لا اتّفاقَ ماليَّ ساريا — اضبط نموذجَ الأجر (بالمقعد أو بالشعبة أو نسبةً من الإيراد) ومبلغَه.',
+        : 'لا اتّفاق ماليّ ساريا — اضبط نموذج الأجر (بالمقعد أو بالشعبة أو نسبة من الإيراد) ومبلغه.',
       noticeAr: null,
     },
     {
@@ -148,9 +148,9 @@ export function computeReadiness(input: ReadinessInput): Readiness {
       done: qualificationsDone,
       blockerAr: qualificationsDone
         ? null
-        : 'لا دورةَ مؤهَّلا لها — أهِّلْه لما سيدرّسه قبل أن يُعتمَد.',
+        : 'لا دورة مؤهّلا لها — أهّله لما سيدرّسه قبل أن يعتمد.',
       noticeAr: input.openProposals > 0
-        ? `وله ${input.openProposals} اقتراحَ دورةٍ ينتظر التصنيف — يُصنَّف أو يُردّ، ولا يحبس اعتمادَه.`
+        ? `وله ${input.openProposals} اقتراح دورة ينتظر التصنيف — يصنّف أو يردّ، ولا يحبس اعتماده.`
         : null,
     },
     {
@@ -159,7 +159,7 @@ export function computeReadiness(input: ReadinessInput): Readiness {
       done: contractDone,
       blockerAr: contractDone
         ? null
-        : 'لا عقدَ وقّعه — أنشئِ العقدَ وأرسلْه، ويُعتمَد بعد توقيعه.',
+        : 'لا عقد وقّعه — أنشئ العقد وأرسله، ويعتمد بعد توقيعه.',
       noticeAr: null,
     },
   ]
@@ -176,7 +176,7 @@ export function computeReadiness(input: ReadinessInput): Readiness {
    ولا يُقال «لا يمكن الاعتماد» ويُسكَت: من قرأها وقف ولا يعرف أين يذهب.
    فتُعدَّد الخطواتُ الناقصةُ بنصّها، وهي نفسُها المعروضةُ في «التجهيز». */
 export function readinessBlockMessageAr(r: Readiness): string {
-  return `لا يُعتمَد قبل أن يتمّ التجهيز — ${r.blockersAr.join(' · ')}`
+  return `لا يعتمد قبل أن يتمّ التجهيز — ${r.blockersAr.join(' · ')}`
 }
 
 /* ═══ التجاوزُ: بابٌ واحدٌ ضيّقٌ بسببٍ مكتوب ═══
@@ -192,9 +192,9 @@ export const OVERRIDE_MIN_REASON = 20
 
 export function overrideReasonProblemAr(reason: string): string | null {
   const t = (reason ?? '').trim()
-  if (t.length === 0) return 'اكتب سببَ التجاوز — لا يُعتمَد ناقصُ التجهيز في صمت.'
+  if (t.length === 0) return 'اكتب سبب التجاوز — لا يعتمد ناقص التجهيز في صمت.'
   if (t.length < OVERRIDE_MIN_REASON) {
-    return `اشرح السببَ في ${OVERRIDE_MIN_REASON} حرفا فأكثر — يُقرأ بعد شهرٍ حين يُسأل عن هذا الاعتماد.`
+    return `اشرح السبب في ${OVERRIDE_MIN_REASON} حرفا فأكثر — يقرأ بعد شهر حين يسأل عن هذا الاعتماد.`
   }
   return null
 }

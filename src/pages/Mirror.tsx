@@ -69,8 +69,8 @@ export default function Mirror() {
           ما الذي تميل إليه فعلا؟
         </h1>
         <p className="mt-3 max-w-xl text-sm leading-7 text-muted-foreground md:text-base md:leading-8">
-          أربعةٌ وعشرون عبارة، ثلاثُ دقائق. <b className="text-foreground">بلا بريدٍ ولا حساب</b> —
-          تُحفظ إجاباتُك على جهازك وحدَه، ومن أخذها لا يُسأل عنها ثانيةً في التشخيص.
+          أربعة وعشرون عبارة، ثلاث دقائق. <b className="text-foreground">بلا بريد ولا حساب</b> —
+          تحفظ إجاباتك على جهازك وحده، ومن أخذها لا يسأل عنها ثانية في التشخيص.
         </p>
 
         <p className="mt-6 text-read font-bold text-muted-foreground" role="status" aria-live="polite">
@@ -111,7 +111,7 @@ export default function Mirror() {
             <h2 id="mirror-result" className="text-xl font-black">مرآتك</h2>
 
             <Panel tone="accent" className="mt-4">
-              <p className="text-read font-black text-teal-light-ink">رمزُك الثلاثيّ</p>
+              <p className="text-read font-black text-teal-light-ink">رمزك الثلاثيّ</p>
               <p className="mt-2 text-lg font-black text-foreground">
                 {result.code.map((d) => DIM_LABEL_AR[d]).join(' · ')}
               </p>
@@ -132,7 +132,7 @@ export default function Mirror() {
             </Panel>
 
             <Panel className="mt-4">
-              <p className="text-read font-black text-muted-foreground">جاهزيّتُك للتعلّم</p>
+              <p className="text-read font-black text-muted-foreground">جاهزيّتك للتعلّم</p>
               <ul className="mt-3 space-y-2.5">
                 {(['goal_clarity', 'application_readiness', 'completion_pattern'] as ReadinessKey[]).map((k) => (
                   <li key={k} className="flex items-baseline justify-between gap-3 text-read">
@@ -149,9 +149,9 @@ export default function Mirror() {
                 <Info className="h-3.5 w-3.5" aria-hidden="true" /> ما لا يقوله هذا الاختبار
               </p>
               <ul className="mt-2.5 space-y-1.5 text-read leading-6 text-muted-foreground">
-                <li>يقيس <b className="text-foreground">ما تميل إليه</b>، لا ما تتقنه — الميلُ ليس قدرة.</li>
-                <li>لا يقول لك أيَّ مسارٍ تختار: الميلُ يرجّح ولا يحسم، والاحتياجُ هو الذي يحسم.</li>
-                <li>ومن مقاييس الجاهزيّة الثلاثة، <b className="text-foreground">وضوحُ الهدف وحدَه</b> يصل إلى التشخيص — والآخران لك أنت، لأنّ المحرّك لا يملك ما يفعله بهما اليوم.</li>
+                <li>يقيس <b className="text-foreground">ما تميل إليه</b>، لا ما تتقنه — الميل ليس قدرة.</li>
+                <li>لا يقول لك أيّ مسار تختار: الميل يرجّح ولا يحسم، والاحتياج هو الذي يحسم.</li>
+                <li>ومن مقاييس الجاهزيّة الثلاثة، <b className="text-foreground">وضوح الهدف وحده</b> يصل إلى التشخيص — والآخران لك أنت، لأنّ المحرّك لا يملك ما يفعله بهما اليوم.</li>
               </ul>
             </Panel>
 
@@ -160,10 +160,10 @@ export default function Mirror() {
                 أكمل إلى التشخيص
                 <ArrowLeft className="h-4 w-4" aria-hidden="true" />
               </Button>
-              <Button onClick={reset} icon={RotateCcw}>أعِد من البداية</Button>
+              <Button onClick={reset} icon={RotateCcw}>أعد من البداية</Button>
             </div>
             <p className="mt-3 text-read leading-5 text-muted-foreground">
-              التشخيصُ يبدأ بما عرفناه هنا، فلا يُسأل عمّا أجبتَ عنه.
+              التشخيص يبدأ بما عرفناه هنا، فلا يسأل عمّا أجبت عنه.
             </p>
           </section>
         )}
