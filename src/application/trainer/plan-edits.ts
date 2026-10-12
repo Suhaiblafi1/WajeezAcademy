@@ -45,13 +45,33 @@ export type PlanEditField = (typeof PLAN_EDIT_FIELDS)[number]
 export const RESOURCE_EDIT_FIELDS = ['title', 'url', 'kind', 'category', 'noteAr', 'moduleId', 'preReading'] as const
 export type ResourceEditField = (typeof RESOURCE_EDIT_FIELDS)[number]
 
-export const TASK_EDIT_FIELDS = ['title', 'briefAr', 'dueAt', 'moduleId', 'maxScore'] as const
+/* ونوعُ المهمّة منها (١٢ أكتوبر ٢٠٢٦): «اختبار» يُقيَّم به ما هو واجب — وكان التقريرُ يقول للمدرّب «غيّره بنفسك» */
+export const TASK_EDIT_FIELDS = ['title', 'type', 'briefAr', 'dueAt', 'moduleId', 'maxScore'] as const
 export type TaskEditField = (typeof TASK_EDIT_FIELDS)[number]
 
 export const PLAN_EDIT_KINDS = [
   'module', 'plan', 'resource_add', 'resource_change', 'resource_remove',
   'task_add', 'task_change', 'session_move', 'session_remove', 'note', 'schedule',
+  'cohort_title', 'task_remove', 'session_add', 'session_change',
 ] as const
+
+/* ═══ وما كان يُطلب من المدرّب أن يعمله بنفسه — بطاقاتٌ «قبل/بعد» (١٢ أكتوبر ٢٠٢٦) ═══
+   قرارُ صاحب المنصّة: «i don't need any suggestions that would ask him to do something himself.. all must
+   be before and after and he accept or reject». وكانت التقاريرُ تقول «غيّر عنوانَ الشعبة» و«احذف المهمّةَ
+   المكرّرة» و«أضف لقاءً» و«عدّل ملاحظةَ اللقاء» — ولا بطاقةَ تحملها. فهذه أبوابُها:
+   · `cohort_title` عنوانُ الشعبة · `task_remove` حذفُ مهمّة · `session_add` لقاءٌ جديد
+   · `session_change` عنوانُ لقاءٍ أو ملاحظتُه — ونوعُ المهمّة صار من حقول `task_change`. */
+export const SESSION_EDIT_FIELDS = ['title', 'noteAr'] as const
+export type SessionEditField = (typeof SESSION_EDIT_FIELDS)[number]
+
+export interface NewSession {
+  title: string
+  /** لحظتان ISO */
+  startsAt: string
+  endsAt: string
+  moduleIds?: string[] | null
+  noteAr?: string | null
+}
 
 /* ═══ و«ملاحظةُ الإدارة» بندٌ يوافق عليه — `note` (١١ أكتوبر ٢٠٢٦) ═══
 
@@ -115,7 +135,11 @@ export type PlanEdit =
   | { kind: 'resource_change'; match: ResourceMatch; set: Partial<ResourceFields> }
   | { kind: 'resource_remove'; match: ResourceMatch }
   | { kind: 'task_add'; task: TaskFields }
-  | { kind: 'task_change'; assessmentId: string; set: Partial<Omit<TaskFields, 'type'>> }
+  | { kind: 'task_change'; assessmentId: string; set: Partial<TaskFields> }
+  | { kind: 'task_remove'; assessmentId: string }
+  | { kind: 'cohort_title'; titleAr: string }
+  | { kind: 'session_add'; session: NewSession }
+  | { kind: 'session_change'; sessionId: string; set: Partial<Record<SessionEditField, string | null>> }
   | { kind: 'session_move'; sessionId: string; startsAt: string; endsAt: string }
   | { kind: 'session_remove'; sessionId: string }
   | { kind: 'note'; step: NoteStep; textAr: string }
@@ -136,7 +160,8 @@ export function planEditStep(edit: PlanEdit): ReviewSection {
   switch (edit.kind) {
     case 'module': return 'modules'
     case 'plan': return edit.set.liveNoteAr !== undefined && edit.set.summaryAr === undefined ? 'sessions' : 'identity'
-    case 'session_move': case 'session_remove': return 'sessions'
+    case 'session_move': case 'session_remove': case 'session_add': case 'session_change': return 'sessions'
+    case 'cohort_title': return 'identity'
     case 'note': return edit.step === 'general' ? 'identity' : edit.step
     case 'schedule': return 'sessions'
     default: return 'assignments'
@@ -268,6 +293,7 @@ export function rowEditProblem(edit: PlanEdit, c: EditableContent): string | nul
     if (t.moduleId && !hasModule(c, t.moduleId)) return `لا محور «${t.moduleId}» في الخطّة`
     if (t.maxScore != null && !(Number.isInteger(t.maxScore) && t.maxScore >= 1)) return 'الدرجة العظمى عدد صحيح من ١ فما فوق'
     if (t.dueAt != null && !isInstant(t.dueAt)) return `موعد المهمّة «${t.dueAt}» ليس لحظة مقروءة`
+    if (t.type !== undefined && !['assignment', 'quiz', 'project'].includes(t.type)) return `نوع المهمّة «${t.type}» ليس من الأنواع`
     if (typeof t.briefAr === 'string' && t.briefAr.length > 4000) return 'تعليمات المهمّة أطول من ٤٠٠٠ حرف'
     return null
   }
@@ -286,8 +312,31 @@ export function rowEditProblem(edit: PlanEdit, c: EditableContent): string | nul
       if (!isInstant(edit.startsAt) || !isInstant(edit.endsAt)) return 'موعد اللقاء ليس لحظة مقروءة'
       if (Date.parse(edit.endsAt) <= Date.parse(edit.startsAt)) return 'نهاية اللقاء قبل بدايته'
       return null
-    case 'session_remove': case 'note':
+    case 'session_remove': case 'note': case 'task_remove':
       return null
+    case 'cohort_title':
+      if (!(typeof edit.titleAr === 'string' && edit.titleAr.trim().length >= 3)) return 'عنوان الشعبة أقصر من ثلاثة أحرف'
+      if (edit.titleAr.length > 200) return 'عنوان الشعبة أطول من ٢٠٠ حرف'
+      return null
+    case 'session_add': {
+      const s = edit.session
+      if (!(typeof s.title === 'string' && s.title.trim().length >= 2)) return 'عنوان اللقاء قصير أو فارغ'
+      if (!isInstant(s.startsAt) || !isInstant(s.endsAt)) return 'موعد اللقاء ليس لحظة مقروءة'
+      if (Date.parse(s.endsAt) <= Date.parse(s.startsAt)) return 'نهاية اللقاء قبل بدايته'
+      const bad = (s.moduleIds ?? []).find((m) => !hasModule(c, m))
+      if (bad) return `لا محور «${bad}» في الخطّة`
+      if (typeof s.noteAr === 'string' && s.noteAr.length > 2000) return 'ملاحظة اللقاء أطول من ٢٠٠٠ حرف'
+      return null
+    }
+    case 'session_change': {
+      const keys = Object.keys(edit.set)
+      if (keys.length === 0) return 'تعديل لقاء بلا حقل يعدّل'
+      const bad = keys.find((k) => !(SESSION_EDIT_FIELDS as readonly string[]).includes(k))
+      if (bad) return `«${bad}» ليس من حقول اللقاء`
+      if (edit.set.title !== undefined && !(typeof edit.set.title === 'string' && edit.set.title.trim().length >= 2)) return 'عنوان اللقاء قصير أو فارغ'
+      if (typeof edit.set.noteAr === 'string' && edit.set.noteAr.length > 2000) return 'ملاحظة اللقاء أطول من ٢٠٠٠ حرف'
+      return null
+    }
     case 'schedule': {
       if (edit.moves.length === 0) return 'جدول بلا لقاء ينقل'
       if (new Set(edit.moves.map((m) => m.sessionId)).size !== edit.moves.length) return 'لقاء منقول مرّتين في الجدول نفسه'
@@ -463,7 +512,7 @@ const FIELD_AR: Record<string, string> = {
   bodyAr: 'المحتوى النظريّ', summaryAr: 'النبذة', liveNoteAr: 'ملاحظة اللقاءات',
   title: 'العنوان', url: 'الرابط', kind: 'النوع', category: 'الصنف', noteAr: 'لماذا هذا المصدر',
   moduleId: 'المحور', preReading: 'قراءة قبل اللقاء', briefAr: 'التعليمات', dueAt: 'الموعد', maxScore: 'الدرجة العظمى',
-  type: 'النوع', when: 'الموعد',
+  type: 'النوع', when: 'الموعد', cohortTitle: 'عنوان الشعبة', sessionNoteAr: 'ملاحظة اللقاء',
 }
 const KIND_AR: Record<string, string> = {
   link: 'رابط', video: 'فيديو', book: 'كتاب', audiobook: 'كتاب صوتيّ', social: 'منشور', file: 'ملفّ',
@@ -581,6 +630,32 @@ export function planEditView(edit: PlanEdit, before: EditSnapshot, ctx: EditCont
     case 'session_remove': {
       const name = ctx.sessionTitle?.(edit.sessionId) ?? 'لقاء'
       return view(`حذف لقاء: «${name}»`, [{ labelAr: FIELD_AR.when, beforeAr: sessionWhenAr(before), afterAr: null }])
+    }
+    case 'cohort_title':
+      return view('عنوان الشعبة', [{ labelAr: FIELD_AR.cohortTitle, beforeAr: valueAr('title', before?.titleAr, ctx), afterAr: edit.titleAr.trim() }])
+    case 'task_remove': {
+      const name = ctx.taskTitle?.(edit.assessmentId) ?? 'مهمّة'
+      return view(`حذف مهمّة: «${name}»`, rowsFor(['title', 'type', 'dueAt', 'maxScore'], before, null, ctx))
+    }
+    case 'session_add': {
+      const s = edit.session
+      const where = s.moduleIds?.length ? s.moduleIds.map((m) => moduleNoAr(m, ctx).replace(/^لل/, 'ال')).join(' و') : null
+      const rows: EditRow[] = [
+        { labelAr: FIELD_AR.title, beforeAr: null, afterAr: s.title.trim() },
+        { labelAr: FIELD_AR.when, beforeAr: null, afterAr: sessionWhenAr({ startsAt: s.startsAt, endsAt: s.endsAt }) },
+      ]
+      if (norm(s.noteAr) !== null) rows.push({ labelAr: FIELD_AR.sessionNoteAr, beforeAr: null, afterAr: String(s.noteAr).trim(), long: true })
+      return view(`لقاء جديد${where ? ` — ${where}` : ''}`, rows)
+    }
+    case 'session_change': {
+      const name = ctx.sessionTitle?.(edit.sessionId) ?? 'لقاء'
+      const keys = Object.keys(edit.set) as SessionEditField[]
+      return view(`تعديل لقاء: «${name}»`, keys.map((k) => ({
+        labelAr: k === 'noteAr' ? FIELD_AR.sessionNoteAr : FIELD_AR.title,
+        beforeAr: before ? valueAr(k, before[k], ctx) : null,
+        afterAr: valueAr(k, edit.set[k], ctx),
+        ...(k === 'noteAr' ? { long: true } : {}),
+      })))
     }
     case 'schedule': {
       /* صفٌّ لكلّ لقاءٍ منقول: ما كان وما نقترح — ثمّ مواعيدُ المهامّ التي تتبعها. واللقطةُ مسطّحة

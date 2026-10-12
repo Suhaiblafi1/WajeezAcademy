@@ -90,6 +90,7 @@ export const planEditItem = z.discriminatedUnion('kind', [
     kind: z.literal('task_change'), assessmentId: z.string().uuid(), ...meta,
     set: nonEmpty({
       title: z.string().trim().min(3).max(200).optional(),
+      type: z.enum(['assignment', 'quiz', 'project']).optional(),
       briefAr: z.string().max(4000).nullable().optional(),
       dueAt: instant.nullable().optional(),
       moduleId: moduleId.nullable().optional(),
@@ -98,6 +99,25 @@ export const planEditItem = z.discriminatedUnion('kind', [
   }).strict(),
   z.object({ kind: z.literal('session_move'), sessionId: z.string().uuid(), startsAt: instant, endsAt: instant, ...meta }).strict(),
   z.object({ kind: z.literal('session_remove'), sessionId: z.string().uuid(), ...meta }).strict(),
+  /* وما كان يُطلب من المدرّب أن يعمله بنفسه — بطاقاتٌ «قبل/بعد» (١٢ أكتوبر ٢٠٢٦، `plan-edits.ts`) */
+  z.object({ kind: z.literal('cohort_title'), titleAr: z.string().trim().min(3).max(200), ...meta }).strict(),
+  z.object({ kind: z.literal('task_remove'), assessmentId: z.string().uuid(), ...meta }).strict(),
+  z.object({
+    kind: z.literal('session_add'), ...meta,
+    session: z.object({
+      title: z.string().trim().min(2).max(200),
+      startsAt: instant, endsAt: instant,
+      moduleIds: z.array(moduleId).max(8).nullish(),
+      noteAr: z.string().max(2000).nullish(),
+    }).strict(),
+  }).strict(),
+  z.object({
+    kind: z.literal('session_change'), sessionId: z.string().uuid(), ...meta,
+    set: nonEmpty({
+      title: z.string().trim().min(2).max(200).optional(),
+      noteAr: z.string().max(2000).nullable().optional(),
+    }),
+  }).strict(),
   /* وجدولٌ كاملٌ بسلسلته (١١ أكتوبر ٢٠٢٦): لقاءاتٌ تُنقل معا ومواعيدُ المهامّ التي تتبعها — يُقبل كلُّه أو يُرفض */
   z.object({
     kind: z.literal('schedule'), ...meta,

@@ -1169,6 +1169,29 @@ export class CohortService {
     }
   }
 
+  /* ═══ عنوانُ اللقاء وملاحظتُه — من بطاقة «قبل/بعد» يقبلها المدرّب (١٢ أكتوبر ٢٠٢٦) ═══
+     «all must be before and after and he accept or reject» (صاحب المنصّة). ولا بابَ لهما في شاشته بعد
+     إنشاء اللقاء؛ فالبطاقةُ تكتبهما حين يقبلها (`session_change`). والموعدُ ليس منهما — بابُه النقل. */
+  async trainerUpdateSessionDetails(userId: string, sessionId: string, set: { title?: string | null; noteAr?: string | null }) {
+    const session = await this.prisma.cohortSession.findUnique({
+      where: { id: sessionId }, select: { id: true, cohortId: true, placeholder: true, title: true },
+    })
+    if (!session) throw new AuthError('not_found', 'اللقاء غير موجود', 404)
+    if (!(await this.isCohortTrainer(userId, session.cohortId))) {
+      throw new AuthError('forbidden', 'لست مدرّب هذه الشعبة', 403)
+    }
+    if (session.placeholder) throw placeholderNotYours()
+    const data: { title?: string; noteAr?: string | null } = {}
+    if (set.title !== undefined) data.title = String(set.title ?? '').trim() || session.title
+    if (set.noteAr !== undefined) data.noteAr = set.noteAr?.trim() || null
+    const row = await this.prisma.cohortSession.update({ where: { id: sessionId }, data })
+    await recordAudit(this.prisma, {
+      actorId: userId, action: 'cohort.session.details', entityType: 'cohort_session', entityId: sessionId,
+      meta: { cohortId: session.cohortId, fields: Object.keys(data) },
+    })
+    return row
+  }
+
   /* ═══ ربطُ لقاءٍ بمحوره — «ولكلّ لقاءٍ محورٌ أو محوران» (٢٧ سبتمبر ٢٠٢٦) ═══
 
      ⚠️ وصار «محورٌ أو أكثر» (٤ أكتوبر ٢٠٢٦) — والحدُّ الباقي وقتُه: محاورُه كلُّها
