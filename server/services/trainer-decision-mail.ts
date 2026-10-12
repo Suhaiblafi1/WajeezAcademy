@@ -35,7 +35,7 @@ import type { ChangeGroup } from '../../src/application/trainer/contract-changel
 import { INTERVIEW_BOOKING_PAUSE, TRAINER_INTERVIEW } from '../../src/application/trainer/application-options'
 import { INTERVIEW_INVITATION, invitationAskAr } from '../../src/application/trainer/interview-invitation'
 import type { NoShowFollowup } from '../../src/application/trainer/no-show-followup'
-import { INTEREST_CHOICES } from '../../src/application/trainer/deferral'
+import { INTEREST_CHOICES, followUpTermAr } from '../../src/application/trainer/deferral'
 import { fmtDateWith } from '../../src/application/text/format-ar'
 import { MAX_EXTENSIONS } from '../../src/application/trainer/conditional-offer'
 import { ACADEMY_ZONE } from '../../src/application/trainer/cohort-period'
@@ -147,12 +147,13 @@ export function deferralMail(input: {
   fullName: string; reference: string; followUpAt: Date; noteAr?: string
 }): DecisionMail {
   const note = input.noteAr?.trim()
-  const whenAr = fmtDateWith(input.followUpAt, { year: 'numeric', month: 'long', day: 'numeric', timeZone: ACADEMY_ZONE })
+  /* الفصلُ لا اليوم — «أيُّ موعدٍ هو الصحيح؟» سأله متقدّمٌ قيل له يومٌ بعينه (١٢ أكتوبر ٢٠٢٦) */
+  const termAr = followUpTermAr(input.followUpAt)
   return {
     subject: `أجّلنا طلبك إلى الفصول القادمة (${input.reference})`,
     doc: {
       greetingName: input.fullName,
-      preheader: `طلبك محفوظ ولم نغلقه — ونتواصل معك في ${whenAr} لنرى اهتمامك بالانضمام.`,
+      preheader: `طلبك محفوظ ولم نغلقه — ونتواصل معك قبل ${termAr}.`,
       heading: 'أجّلنا طلبك إلى الفصول القادمة',
       blocks: [
         {
@@ -169,14 +170,14 @@ export function deferralMail(input: {
         ...(note ? ([{ kind: 'h', text: 'وممّا دار في مراجعتنا' }, { kind: 'callout', text: note }] as const) : []),
         {
           kind: 'p',
-          text: `ونتواصل معك في ${whenAr} — بعد شهرين من اليوم — لنرى اهتمامك بالانضمام إلى الفصول القادمة. `
-            + 'ولا يلزمك شيء قبلها، ولك أن تكتب إلينا متى شئت على هذا العنوان.',
+          text: `ونتواصل معك قبل بداية ${termAr} لنرى اهتمامك بالانضمام. `
+            + 'ولا يلزمك شيء قبلها، ولك أن تردّ على هذه الرسالة متى شئت.',
         },
         {
           kind: 'facts',
           rows: [
             { label: 'رقم الطلب', value: input.reference },
-            { label: 'موعد تواصلنا', value: whenAr },
+            { label: 'موعد تواصلنا', value: `قبل ${termAr}` },
           ],
         },
       ],

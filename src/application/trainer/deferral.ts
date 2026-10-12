@@ -29,19 +29,52 @@
 
    بلا React ولا قاعدة — ويحرسه `src/tests/trainer/deferral.test.ts`. */
 
-/** كم شهرا بين التأجيل والتواصل — «بعد شهرين من الآن» */
-export const DEFER_FOLLOW_UP_MONTHS = 2
+import { SEASON_MONTHS, termBounds, termOf, termTitleAr } from '../terms/season'
+import { TRAINING_SEASONS } from './application-options'
+
+
+/* ═══ موعدُ التواصل: قبل فصلٍ قادمٍ مسمّى، لا «بعد شهرين» (١٢ أكتوبر ٢٠٢٦) ═══
+
+   كتب متقدّمٌ مؤجَّلٌ يسأل: أيُّ موعدٍ هو الصحيح؟ — فقد قيل له «نتواصل في ٨ ديسمبر»،
+   ويومٌ بعينه يُقرأ وعدا يُحاسَب عليه، ولا صلةَ له بفصول المنصّة. فقرّر صاحبُ المنصّة
+   أن يُسمّى الفصلُ لا اليوم: «نتواصل معك قبل موسم الربيع ٢٠٢٧».
+
+   والفصلُ المسمّى هو **الذي بعد القادم**: السببُ أنّ القادمَ لا طلبَ فيه كافيا،
+   فالوعدُ بالتواصل قبله وعدٌ بما قلنا إنّه لن يكون. ويحلّ الموعدُ قبل بدايته بستّة
+   أسابيع — وقتٌ يكفي ليُخطَّط له ويُسند. واليومُ يبقى في القاعدة للعامل وحدَه، والبريدُ
+   والشاشاتُ تقول اسمَ الفصل. */
+
 
 /** اسمُ الحالة في القاعدة — ونتيجةُ المقابلة وحكمُ القارئ بالاسم نفسِه */
 export const DEFERRED = 'deferred'
 
-/** موعدُ التواصل: بعد شهرين تقويميّين من القرار، في اليوم نفسِه — أو آخرِ الشهر إن قصر */
-export function deferredFollowUpAt(decidedAt: Date, months = DEFER_FOLLOW_UP_MONTHS): Date {
-  const y = decidedAt.getUTCFullYear()
-  const m = decidedAt.getUTCMonth() + months
-  const lastDay = new Date(Date.UTC(y, m + 1, 0)).getUTCDate()
-  const d = Math.min(decidedAt.getUTCDate(), lastDay)
-  return new Date(Date.UTC(y, m, d, decidedAt.getUTCHours(), decidedAt.getUTCMinutes(), decidedAt.getUTCSeconds()))
+/** كم يوما قبل بداية الفصل المسمّى نتواصل */
+export const DEFER_LEAD_DAYS = 42
+
+const DAY_MS = 24 * 60 * 60 * 1000
+
+/** الفصلُ الذي نتواصل قبله: الذي بعد القادم */
+export function deferredTerm(decidedAt: Date): { year: number; season: (typeof TRAINING_SEASONS)[number]['value'] } {
+  let t = termOf(decidedAt)
+  for (let k = 0; k < 2; k += 1) {
+    const i = TRAINING_SEASONS.findIndex((s) => s.value === t.season)
+    const next = TRAINING_SEASONS[(i + 1) % TRAINING_SEASONS.length]!.value
+    /* الشتاءُ يعبر رأسَ السنة: ما بعده (الربيع) في السنة التالية لبدايته */
+    t = { year: SEASON_MONTHS[next].start < SEASON_MONTHS[t.season].start ? t.year + 1 : t.year, season: next }
+  }
+  return t
+}
+
+/** موعدُ التواصل: قبل بداية الفصل الذي بعد القادم بستّة أسابيع */
+export function deferredFollowUpAt(decidedAt: Date): Date {
+  const t = deferredTerm(decidedAt)
+  return new Date(termBounds(t.year, t.season).startsOn.getTime() - DEFER_LEAD_DAYS * DAY_MS)
+}
+
+/** اسمُ الفصل الذي نتواصل قبله، من موعد التواصل المحفوظ: «موسم الربيع 2027» */
+export function followUpTermAr(followUpAt: Date | string): string {
+  const t = termOf(new Date(new Date(followUpAt).getTime() + DEFER_LEAD_DAYS * DAY_MS))
+  return termTitleAr(t.year, t.season)
 }
 
 /** حلّ موعدُ التواصل؟ — لطلبٍ ما زال مؤجَّلا وحده */

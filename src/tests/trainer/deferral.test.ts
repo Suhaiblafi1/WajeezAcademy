@@ -34,7 +34,7 @@ const plainDeep = (v: unknown): unknown =>
     : v && typeof v === 'object' && Object.getPrototypeOf(v) === Object.prototype ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, plainDeep(x)])) : v
 const expect = Object.assign((v: unknown, m?: string) => vexpect(plainDeep(v), m), vexpect) as typeof vexpect
 import {
-  DEFERRED, DEFER_FOLLOW_UP_MONTHS, INTEREST_ANSWERS, INTEREST_CHOICES, INTEREST_PAGE_PATH,
+  DEFERRED, DEFER_LEAD_DAYS, deferredTerm, followUpTermAr, INTEREST_ANSWERS, INTEREST_CHOICES, INTEREST_PAGE_PATH,
   answerTarget, deferredFollowUpAt, dueForInterestAsk, followUpDue,
 } from '@/application/trainer/deferral'
 import ts from 'typescript'
@@ -52,19 +52,29 @@ import { TRAINER_STATUSES } from '../../../server/services/trainer-application.s
 const strip = (s: string) => s.replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '').replace(/^\s*\/\/.*$/gm, '')
 const code = (p: string) => strip(readFileSync(join(process.cwd(), p), 'utf8'))
 
-describe('① موعد التواصل — بعد شهرين', () => {
-  it('شهران تقويميّان بساعتهما', () => {
-    expect(DEFER_FOLLOW_UP_MONTHS).toBe(2)
-    expect(deferredFollowUpAt(new Date('2026-10-06T10:30:00Z')).toISOString()).toBe('2026-12-06T10:30:00.000Z')
+describe('① موعد التواصل — قبل فصل مسمّى، لا يوم بعينه', () => {
+  it('الفصل الذي بعد القادم — فالقادم لا طلب فيه كافيا', () => {
+    /* في الخريف: القادم الشتاء، فالمسمّى الربيع من السنة التالية */
+    expect(deferredTerm(new Date('2026-10-08T10:00:00Z'))).toEqual({ year: 2027, season: 'feb_apr' })
+    /* وفي الشتاء (يعبر رأس السنة): القادم الربيع، فالمسمّى الصيف */
+    expect(deferredTerm(new Date('2026-11-20T08:00:00Z'))).toEqual({ year: 2027, season: 'may_jul' })
+    expect(deferredTerm(new Date('2027-01-15T08:00:00Z'))).toEqual({ year: 2027, season: 'may_jul' })
+    /* وفي الصيف: القادم الخريف، فالمسمّى الشتاء من السنة نفسها */
+    expect(deferredTerm(new Date('2027-06-01T08:00:00Z'))).toEqual({ year: 2027, season: 'nov_jan' })
   })
 
-  it('وعبر السنة', () => {
-    expect(deferredFollowUpAt(new Date('2026-11-20T08:00:00Z')).toISOString()).toBe('2027-01-20T08:00:00.000Z')
+  it('يحلّ قبل بدايته بستّة أسابيع — وفي المستقبل دائما', () => {
+    expect(DEFER_LEAD_DAYS).toBe(42)
+    expect(deferredFollowUpAt(new Date('2026-10-08T10:00:00Z')).toISOString()).toBe('2026-12-21T00:00:00.000Z')
+    for (let m = 0; m < 24; m += 1) {
+      const d = new Date(Date.UTC(2026, m, 28))
+      expect(deferredFollowUpAt(d).getTime(), d.toISOString()).toBeGreaterThan(d.getTime())
+    }
   })
 
-  it('وآخر الشهر إن قصر — لا يقفز إلى الشهر الذي بعده', () => {
-    expect(deferredFollowUpAt(new Date('2026-12-31T12:00:00Z')).toISOString()).toBe('2027-02-28T12:00:00.000Z')
-    expect(deferredFollowUpAt(new Date('2027-12-31T12:00:00Z')).toISOString()).toBe('2028-02-29T12:00:00.000Z')
+  it('واسم الفصل يقرأ من الموعد المحفوظ نفسه', () => {
+    expect(followUpTermAr(deferredFollowUpAt(new Date('2026-10-08T10:00:00Z')))).toBe('موسم الربيع 2027')
+    expect(followUpTermAr('2026-12-21T00:00:00.000Z')).toBe('موسم الربيع 2027')
   })
 })
 
@@ -84,7 +94,7 @@ describe('② ومتى يحلّ', () => {
 })
 
 describe('③ والبريد', () => {
-  const followUpAt = new Date('2026-12-05T22:30:00Z') // ٦ ديسمبر بعمّان — ٥ ديسمبر بغرينتش
+  const followUpAt = new Date('2026-12-21T00:00:00Z') // قبل الربيع ٢٠٢٧ بستّة أسابيع
   const input = { fullName: 'ريم', reference: 'WJ-TR-2026-00042', followUpAt }
   const text = (noteAr?: string) => renderMail(deferralMail({ ...input, noteAr }).doc).text
 
@@ -101,11 +111,11 @@ describe('③ والبريد', () => {
     expect(t).toContain('ولا يلزمك أن تتقدّم من جديد')
   })
 
-  it('واليوم مسمّى بتوقيت عمّان — في المتن وفي الجدول', () => {
+  it('والفصل مسمّى لا اليوم — في المتن وفي الجدول', () => {
     const t = text()
-    expect(t).toMatch(/ونتواصل معك في 6 ديسمبر 2026 — بعد شهرين/)
-    expect(t).toMatch(/موعد تواصلنا: 6 ديسمبر 2026/)
-    expect(t, 'اليوم بتوقيت غرينتش').not.toContain('5 ديسمبر')
+    expect(t).toContain('ونتواصل معك قبل بداية موسم الربيع 2027')
+    expect(t).toContain('موعد تواصلنا: قبل موسم الربيع 2027')
+    expect(t, 'يوم بعينه في البريد').not.toMatch(/ديسمبر|شهرين/)
   })
 
   it('والملاحظة تصل بنصّها إن كتبت — ولا إطار بلا نصّ', () => {
@@ -170,7 +180,7 @@ describe('⑥ والحالة', () => {
   it('بلفظ عند الإدارة وشرح عند صاحبها — والشرح يقول السبب والموعد', () => {
     expect(STATUS_LABELS[DEFERRED]).toMatch(/مؤجّل/)
     expect(APPLICANT_STATUS[DEFERRED]?.explain).toMatch(/طلبا كافيا/)
-    expect(APPLICANT_STATUS[DEFERRED]?.explain).toMatch(/شهرين/)
+    expect(APPLICANT_STATUS[DEFERRED]?.explain).toMatch(/قبل فصل قادم/)
   })
   it('ويعدّل ويسحب كالمنتظر', () => {
     expect(EDITABLE_STATUSES).toContain(DEFERRED)
