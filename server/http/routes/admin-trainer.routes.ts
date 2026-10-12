@@ -445,6 +445,17 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     return review.returnMaterialsWithNotes(contractId, req.auth!.userId, notesAr)
   })
 
+  /* «امنحه أيّاما» — من اليوم إن انقضت مهلتُه، ومن أجلها إن كانت قائمة. والعددُ
+     والسببُ يُسألان في الخدمة بالعربيّة (`grantDaysProblemAr`)؛ وهنا سقفٌ يمنع العبث. */
+  app.post('/api/admin/trainer-contracts/:contractId/grant-days', {
+    preHandler: requirePermission('trainer.contract.manage'),
+    schema: { tags: ['admin-trainers'], summary: 'منح المدرّب أيّاما في مهلة موادّه — بسبب يكتب' },
+  }, async (req) => {
+    const { contractId } = z.object({ contractId: z.string().uuid() }).parse(req.params)
+    const body = z.object({ days: z.number().int(), reasonAr: z.string().max(2000) }).parse(req.body)
+    return review.grantConditionDays(contractId, req.auth!.userId, body)
+  })
+
   app.get('/api/admin/trainer-contracts', {
     preHandler: requirePermission('trainer.contract.manage'),
     schema: { tags: ['admin-trainers'], summary: 'قائمة العقود، ومن ينتظر عقدا ولا عقد له' },

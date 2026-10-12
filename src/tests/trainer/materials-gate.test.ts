@@ -84,8 +84,10 @@ describe('الموادّ تعرض قبل الاعتماد لا بعده', () => 
   it('انقضت مهلته ولم يعلن: يمنع، ويقال المخرج', () => {
     const lapsed = { ...running, conditionDeadlineAt: at(-1) }
     expect(materialsGateProblemAr(lapsed)).toMatch(/انقضت مهلته/)
-    /* ولا يُترك بلا باب: التمديدُ قائم، والإعلانُ يُقبل ولو متأخّرا */
-    expect(materialsGateProblemAr(lapsed)).toMatch(/مدّد|اطلب/)
+    /* ولا يُترك بلا باب: المنحةُ قائمةٌ بزرّها منذ ١٢ أكتوبر ٢٠٢٦ (`grantConditionDays`) —
+       وكانت «مدّد مهلته» تُقال ولا زرَّ وراءها — والإعلانُ يُقبل ولو متأخّرا */
+    expect(materialsGateProblemAr(lapsed)).toMatch(/امنحه أيّاما/)
+    expect(materialsGateProblemAr(lapsed)).toMatch(/متأخّرا/)
   })
 
   it('وانقضاء مع إعلان متأخّر: يجاز — فالإعلان يقبل بعد المهلة', () => {

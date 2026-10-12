@@ -172,7 +172,7 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
          بالتوقيع تركَ مدرّبا وقّع ينتظر حسابا لا يُفتح. */
       'trainer.contract.signed', 'trainer.contract.declined',
       'trainer.contract.materials_declared', 'trainer.contract.materials_returned',
-      'trainer.contract.condition_extended',
+      'trainer.contract.condition_extended', 'trainer.contract.condition_days_granted',
       /* وشعبةُ الإعداد (٢ أكتوبر ٢٠٢٦): اعتذارٌ عن دورة، ومدرّبٌ لم يبقَ له ما
          ينتظر، وتفعيلٌ تلقائيٌّ مُنع — كلُّها تنتظر قرارا من الإدارة */
       'trainer.prep.declined', 'trainer.prep.nothing_pending', 'trainer.prep.activation_blocked',
