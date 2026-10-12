@@ -149,6 +149,15 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
     return reportFiles.removeReviewReport(req.auth!.userId, id, storageKey)
   })
 
+  /* وتقاريرُ الخطّة كلُّها — «استبدل التقارير السابقة» في الرفع دفعةً (١٢ أكتوبر ٢٠٢٦) */
+  app.delete('/api/admin/cohort-plans/:id/review-reports', {
+    preHandler: requirePermission('cohort.plan.approve'),
+    schema: { tags: ['admin-cohorts'], summary: 'حذف تقارير المراجعة كلّها لخطّة بانتظار القرار' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return reportFiles.clearReviewReports(req.auth!.userId, id)
+  })
+
   /* ═══ وتعديلاتٌ مقترحةٌ على الخطّة — يقبل المدرّبُ كلًّا أو يرفضه (٨ أكتوبر ٢٠٢٦) ═══
 
      قرارُ صاحب المنصّة: «التعديلُ يطول على المدرّب — نكتبه نحن ويختار هو». يُرفع ملفًّا

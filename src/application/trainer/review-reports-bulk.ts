@@ -96,6 +96,26 @@ export function reportDisplayName(name: string): string {
   return (stem || 'تقرير المراجعة') + ext
 }
 
+/* ═══ «استبدل التقارير السابقة» — يختاره المعتمِد ولا يُفترض (١٢ أكتوبر ٢٠٢٦) ═══
+   قال صاحبُ المنصّة: «أريد أن أعيد كلَّ شيءٍ من البداية»، واختار تقاريرَ جديدةً مكانَ القديمة. فلكلّ خطّةٍ
+   في الدفعة تُحذف تقاريرُها السابقة مرّةً واحدةً قبل أوّل ملفٍّ يُرفع إليها، والخططُ التي لا ملفَّ لها في
+   الدفعة لا تُمسّ. والمسارُ هنا لا في الشاشة. */
+export const REPLACE_REPORTS_AR = {
+  labelAr: 'استبدل التقارير السابقة',
+  whatAr: 'لكل خطة في هذه الدفعة: تحذف تقاريرها السابقة كلها، ثم يرفع الجديد. والخطط التي ليس لها ملف في الدفعة لا تمس.',
+}
+
+/** مسارُ حذف تقارير الخطّة كلِّها */
+export const clearReportsPath = (planId: string) => `/api/admin/cohort-plans/${planId}/review-reports`
+
+/** «رفع إلى خطته، مكان 4 تقارير سابقة» — ولا شيءَ بعد «رفع إلى خطته» إن لم يكن قبله تقرير */
+export function replacedReportsAr(removed: number): string {
+  if (removed <= 0) return 'رفع إلى خطته'
+  const forms = { one: 'تقرير سابق', two: 'تقريرين سابقين', few: 'تقارير سابقة', many: 'تقريرا سابقا' }
+  const n = removed === 1 ? forms.one : removed === 2 ? forms.two : removed <= 10 ? `${removed} ${forms.few}` : `${removed} ${forms.many}`
+  return `رفع إلى خطته، مكان ${n}`
+}
+
 /** خلاصةُ الدفعة — كم رُفع، وكم كان مرفوعا من قبل، وكم رُدّ */
 export function reportsSummaryAr(done: number, already: number, failed: number): string {
   const parts = [`رفع ${done}`]
