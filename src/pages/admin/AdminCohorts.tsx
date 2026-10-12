@@ -9,6 +9,7 @@ import { apiGet, apiPost, apiPut, ApiError } from "@/services/api";
 import { staffControlCls, staffSelectCls } from "@/components/FormKit";
 import { CohortOps, LearningSettings } from "./CohortOps";
 import { COHORT_TABS, type CohortTab } from "./cohort-tabs";
+import { awaitsOpening, COHORT_LISTS, inCohortList, type CohortList } from "./cohort-lists";
 import { tabForGap } from "@/application/learning/open-gaps";
 import CohortReadiness from "./CohortReadiness";
 import CourseDemand from "./CourseDemand";
@@ -87,6 +88,8 @@ export default function AdminCohorts() {
      والجدولَ والسعرَ وبوّابتَي الفتح في نموذجٍ واحد — وهي ثلاثةُ أعمالٍ لا
      تُعمل معا ولا يعملها الشخصُ نفسُه. */
   const [tab, setTab] = useState<CohortTab>("identity");
+  /* «معتمدة — تنتظر فتحك» لسانٌ في رأس القائمة (١٢ أكتوبر ٢٠٢٦، `cohort-lists.ts`) */
+  const [list, setList] = useState<CohortList>("all");
   const [checklist, setChecklist] = useState<Record<string, Checklist>>({});
   /* وما ردّ به الفتحُ — بجانب زرّه لا أعلى الصفحة وحدَه (٣ أكتوبر ٢٠٢٦) */
   const [openError, setOpenError] = useState<Record<string, string>>({});
@@ -229,6 +232,7 @@ export default function AdminCohorts() {
   /* التاريخُ يقارَن على `startsAt`، والشعبةُ بلا بداية تُستبعد متى حُدّد مدى
      — فـ«ما بين تاريخين» لا يشمل ما لا تاريخ له. */
   const filtered = rows.filter((c) => {
+    if (!inCohortList(list, c)) return false;
     if (filters.status && c.status !== filters.status) return false;
     if (filters.pathway && pathwayOf(c.courseId) !== filters.pathway) return false;
     if (filters.trainer && !c.trainers.some((t) => t.name === filters.trainer)) return false;
@@ -354,6 +358,11 @@ export default function AdminCohorts() {
       </div>
 
       {!loading && rows.length > 0 && (
+        <TabBar className="mb-4" ariaLabel="قوائم الشعب" value={list}
+          onChange={(next) => { setList(next); setPage(1); }}
+          items={COHORT_LISTS.map((l) => ({ id: l.id, label: `${l.label} (${rows.filter((c) => inCohortList(l.id, c)).length})` }))} />
+      )}
+      {!loading && rows.length > 0 && (
         <Panel className="mb-4">
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
             <label className="text-fine text-muted-foreground">
@@ -402,9 +411,12 @@ export default function AdminCohorts() {
       ) : rows.length === 0 ? (
         <Panel as="p" className="py-16 text-center text-sm text-muted-foreground">لا شعب بعد — أنشئ أول شعبة من الأعلى.</Panel>
       ) : filtered.length === 0 ? (
-        /* «لا نتائج» غيرُ «لا شعب»: الأولى تُمسح فلاترُها، والثانية تُنشأ شعبةً */
+        /* «لا نتائج» غيرُ «لا شعب»: الأولى تُمسح فلاترُها، والثانية تُنشأ شعبةً.
+           ولسانُ المعتمَدة بلا فلاتر فارغٌ لأنّه لا شيءَ ينتظر — لا لأنّ الفلاتر ضيّقة */
         <Panel as="p" className="py-16 text-center text-sm text-muted-foreground">
-          لا شعبة تطابق الفلاتر — وسّع المدى أو امسحها.
+          {list === "approved" && !filtering && !q
+            ? "لا شعبة معتمدة تنتظر الفتح الآن."
+            : "لا شعبة تطابق الفلاتر — وسّع المدى أو امسحها."}
         </Panel>
       ) : (
         <div className="space-y-4">
@@ -435,7 +447,7 @@ export default function AdminCohorts() {
                       مخفيّة عن الموقع
                     </span>
                   )}
-                  {c.status === "draft" && c.trainerPlanApproved && (
+                  {awaitsOpening(c) && (
                     <span className="rounded-full border border-teal/50 px-3 py-1 text-fine font-bold text-teal-light-ink"
                       title="خطّة مدرّبها معتمدة — تعرض وتباع حين تفتحها من «الهُويّة والحالة»">
                       معتمدة — تنتظر فتحك
@@ -762,7 +774,9 @@ export default function AdminCohorts() {
                     {/* وأقسامُ `CohortOps` تُفرَّق على الألسنة الأربعة — لا
                         تُعرض كلُّها في كلّ لسان. فهي تعرف لسانَها وتصمت في
                         غيره. */}
-                    <CohortOps cohort={c} tab={tab} onDone={(msg) => { setFlash({ kind: "ok", text: msg }); void load(); }} />
+                    {/* وما يُحفظ هنا يُعاد معه شروطُ الفتح (١٢ أكتوبر ٢٠٢٦): حُفظت السعةُ والسعر
+                        فصار الرأسُ «0/25 مقعدا · 170» وبقيت الشاراتُ «لا سعة محددة» حتّى تُطوى البطاقة */}
+                    <CohortOps cohort={c} tab={tab} onDone={(msg) => { setFlash({ kind: "ok", text: msg }); void load(); void loadChecklist(c.id); }} />
 
                     {/* «من غيّر هذه الشعبة؟» — يُسأل هنا، فيُقرأ هنا. وكان
                         الجوابُ يقتضي فتحَ «سجلّ الأثر» ومعرفةَ معرّفِ الشعبة. */}
