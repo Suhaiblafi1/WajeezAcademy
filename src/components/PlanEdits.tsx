@@ -14,7 +14,7 @@ import { Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import Chip from "@/components/ui/Chip";
 import type { EditView, PlanEditStatus } from "@/application/trainer/plan-edits";
-import { BULK_MODE_AR, BULK_MODES, bulkSummaryAr, bulkUploadPath, DEDUPE_ALL_AR, dedupeSummaryAr, KEEP_LATEST_AR, keepLatestPath, keptLatestAr, readEditsFile, replacedLineAr, uploadedLineAr, withdrawnLineAr, type BulkMode } from "@/application/trainer/plan-edits-bulk";
+import { BULK_MODE_AR, BULK_MODES, bulkSummaryAr, bulkUploadPath, DEDUPE_ALL_AR, dedupeSummaryAr, KEEP_LATEST_ALL_PATH, KEEP_LATEST_AR, keepLatestPath, keptLatestAr, readEditsFile, replacedLineAr, uploadedLineAr, withdrawnLineAr, type BulkMode } from "@/application/trainer/plan-edits-bulk";
 import { GapList, NoteSubs } from "@/components/LongText";
 import { gapLayout } from "@/application/trainer/text-layout";
 
@@ -364,50 +364,38 @@ interface BulkResult {
   problemAr: string | null;
 }
 
-/* ═══ «احذف المكرر من كل الخطط» — نقرةٌ واحدةٌ للخطط المنتظِرة كلِّها (١٢ أكتوبر ٢٠٢٦) ═══
-   «give me a button to remove duplication» (صاحب المنصّة). كلُّ خطّةٍ بالمسلك الذي في بطاقتها
-   (`keepLatest`)، واحدةً بعد واحدة؛ وما لا مكرّرَ فيه يُعدّ ولا يُعرض سببا. */
-export function PlanEditsDedupeAll({ plans, onCleaned }: {
-  plans: readonly { id: string; labelAr: string }[];
-  onCleaned: (planId: string) => void;
-}) {
+/* ═══ «احذف المكرر من كل الخطط» — نقرةٌ واحدةٌ للخطط المفتوحة كلِّها (١٢ أكتوبر ٢٠٢٦) ═══
+   «give me a button to remove duplication» (صاحب المنصّة). وكان يمرّ على خطط هذه الصفحة وحدَها —
+   المرسَلةِ بانتظار القرار — فقال «لا مكرر» وفي الخطط التي رُدّت إلى مدرّبيها كثير. فصار طلبا واحدا
+   يمرّ فيه الخادمُ على كلّ خطّةٍ مفتوحة (`keepLatestAll`)، وبطاقةُ ما نظف في الصفحة تُعاد. */
+export function PlanEditsDedupeAll({ onCleaned }: { onCleaned: (planId: string) => void }) {
   const [busy, setBusy] = useState(false);
   const [summary, setSummary] = useState("");
-  const [failures, setFailures] = useState<{ labelAr: string; problemAr: string }[]>([]);
+  const [error, setError] = useState("");
 
   const run = async () => {
-    setBusy(true); setSummary(""); setFailures([]);
-    const tally = { cleaned: 0, withdrawn: 0, clean: 0, failed: 0 };
-    const failed: { labelAr: string; problemAr: string }[] = [];
-    for (const p of plans) {
-      try {
-        const r = await apiPost<{ withdrawn: number }>(keepLatestPath(p.id), {});
-        tally.cleaned++; tally.withdrawn += r.withdrawn;
-        onCleaned(p.id);
-      } catch (e) {
-        if (e instanceof ApiError && (e.code === "no_duplicates" || e.code === "plan_closed")) tally.clean++;
-        else { tally.failed++; failed.push({ labelAr: p.labelAr, problemAr: errText(e, "تعذّر السحب") }); }
-      }
+    setBusy(true); setSummary(""); setError("");
+    try {
+      const r = await apiPost<{ checked: number; cleaned: string[]; withdrawn: number }>(KEEP_LATEST_ALL_PATH, {});
+      for (const id of r.cleaned) onCleaned(id);
+      setSummary(dedupeSummaryAr({ cleaned: r.cleaned.length, withdrawn: r.withdrawn, clean: r.checked - r.cleaned.length, failed: 0 }));
+    } catch (e) {
+      setError(errText(e, "تعذّر السحب"));
+    } finally {
+      setBusy(false);
     }
-    setFailures(failed);
-    setSummary(dedupeSummaryAr(tally));
-    setBusy(false);
   };
 
   return (
     <Inset className="mb-4 space-y-2 px-4 py-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="max-w-2xl text-read leading-6 text-muted-foreground">{DEDUPE_ALL_AR.whatAr}</p>
-        <Button size="sm" tone="secondary" icon={CopyX} disabled={busy || plans.length === 0} onClick={() => void run()}>
+        <Button size="sm" tone="secondary" icon={CopyX} disabled={busy} onClick={() => void run()}>
           {busy ? "يسحب المكرر…" : DEDUPE_ALL_AR.labelAr}
         </Button>
       </div>
       {summary && <p className="text-read font-bold text-teal-light-ink" role="status">{summary}</p>}
-      {failures.length > 0 && (
-        <ul className="space-y-1">
-          {failures.map((f) => <li key={f.labelAr} className="text-read leading-6 text-danger-ink">{f.labelAr}: {f.problemAr}</li>)}
-        </ul>
-      )}
+      {error && <p className="text-read leading-6 text-danger-ink" role="alert">{error}</p>}
     </Inset>
   );
 }

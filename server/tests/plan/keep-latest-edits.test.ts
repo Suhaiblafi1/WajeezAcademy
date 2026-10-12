@@ -216,3 +216,29 @@ describe('٤ — لمن يعتمد، وعلى خطّة مفتوحة', () => {
     expect(r.json().error.code).toBe('plan_closed')
   })
 })
+
+describe('٥ — وللخطط المفتوحة كلّها: ما ينتظر القرار وما رُدّ إلى مدرّبه', () => {
+  it('⚠️ يمرّ على ما رُدّ إلى مدرّبه — وكان الزرّ يمرّ على قائمة المنتظِرة وحدها فيقول «لا مكرر»', async () => {
+    const sent = await openPlan('submitted')
+    const back = await openPlan('changes_requested')
+    const done = await openPlan('submitted')
+    for (const p of [sent, back, done]) { await upload(p.planId, [ITEMS[1]]); await upload(p.planId, B) }
+    await prisma.cohortDeliveryPlan.update({ where: { id: done.planId }, data: { status: 'approved' } })
+
+    const r = await call('POST', '/api/admin/plan-edits/keep-latest-all', 'admin', {})
+    expect(r.statusCode, r.body).toBe(200)
+    const body = r.json() as { checked: number; cleaned: string[]; withdrawn: number }
+    expect(body.cleaned).toEqual(expect.arrayContaining([sent.planId, back.planId]))
+    expect(body.cleaned, 'سحب من خطة معتمدة').not.toContain(done.planId)
+    for (const p of [sent, back]) {
+      expect(await statuses(p.planId)).toEqual(['module:activityAr=تمرينٌ على خريطة الجمهور:withdrawn', 'plan:summaryAr=نبذةٌ ثانية:proposed'])
+    }
+    expect(await statuses(done.planId)).toEqual(['module:activityAr=تمرينٌ على خريطة الجمهور:proposed', 'plan:summaryAr=نبذةٌ ثانية:proposed'])
+    const again = (await call('POST', '/api/admin/plan-edits/keep-latest-all', 'admin', {})).json() as { cleaned: string[] }
+    expect(again.cleaned, 'سحب مرتين').not.toEqual(expect.arrayContaining([sent.planId]))
+  })
+
+  it('⚠️ والمدرّب لا يسحب', async () => {
+    expect((await call('POST', '/api/admin/plan-edits/keep-latest-all', 'a', {})).statusCode).toBe(403)
+  })
+})
