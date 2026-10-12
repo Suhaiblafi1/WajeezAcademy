@@ -64,7 +64,7 @@ describe('الرفع دفعة واحدة — «خطط تنتظر اعتمادك�
   })
 
   it('⚠️ كلّ ملفّ إلى خطّته بمسلك البطاقة نفسه — فيفحص كما يفحص هناك', () => {
-    expect(bulk).toMatch(/apiPost<PlanEditItem\[\]>\(`\/api\/admin\/cohort-plans\/\$\{read\.planId\}\/edits`, read\.body\)/)
+    expect(bulk).toMatch(/apiPost<[^>]*>\(bulkUploadPath\(read\.planId, mode\), read\.body\)/)
     expect(bulk).toMatch(/<input[\s\S]{0,80}type="file"\s*multiple/)
   })
 
@@ -74,10 +74,11 @@ describe('الرفع دفعة واحدة — «خطط تنتظر اعتمادك�
     expect(loop.indexOf('try {'), 'الاعتراض داخل الحلقة لا حولها').toBeLessThan(loop.indexOf('setProgress(null)'))
   })
 
-  it('⚠️ والاستبدال يختاره المعتمد ولا يفترض — ويذهب إلى مسلك الاستبدال وحده', () => {
-    expect(bulk).toMatch(/const \[replace, setReplace\] = useState\(false\)/)
-    expect(bulk).toMatch(/<input type="checkbox"[^>]*checked=\{replace\}/)
-    expect(bulk).toMatch(/if \(replace\) \{\s*const r = await apiPost<\{ replacedDrafts: number \}>\(`\/api\/admin\/cohort-plans\/\$\{read\.planId\}\/edits\/replace-drafts`, read\.body\)/)
+  it('⚠️ وطريقة الرفع يختارها المعتمد ولا تفترض — «أضف» ما لم يختر غيرها، وكل طريقة إلى مسلكها', () => {
+    expect(bulk).toMatch(/const \[mode, setMode\] = useState<BulkMode>\("add"\)/)
+    expect(bulk).toMatch(/\{BULK_MODES\.map\(\(m\) => \([\s\S]{0,160}<input type="radio"[^>]*checked=\{mode === m\}/)
+    expect(bulk).toMatch(/await apiPost<[^>]*>\(bulkUploadPath\(read\.planId, mode\), read\.body\)/)
+    expect(bulk, 'لا مسلك مكتوب في الشاشة يفترق عمّا تقوله').not.toMatch(/edits\/replace-/)
   })
 
   it('وبطاقة الخطّة المفتوحة تعاد بعد الرفع إليها — فترى بنودها', () => {

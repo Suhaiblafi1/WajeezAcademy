@@ -432,3 +432,73 @@ describe('٨ — الاستبدالُ يسحب المسوّداتِ وحدَها
     expect(r.statusCode).toBe(409)
   })
 })
+
+/* ═══ ٩ — «ابدأ من جديد»: الملفُّ مكانَ كلِّ ما لم يقرّر فيه المدرّب (١٢ أكتوبر ٢٠٢٦) ═══
+   «أريد أن أعيد كلَّ شيءٍ من البداية.. اسحب كلَّ شيءٍ وارفق كلَّ شيءٍ من جديد» (صاحب المنصّة). */
+describe('٩ — ابدأ من جديد: يسحب المسوّداتِ وما وصل المدرّب، ويرفع الجديد، في معاملةٍ واحدة', () => {
+  let p = ''
+  const url = () => `/api/admin/cohort-plans/${p}/edits/replace-all`
+  const statuses = async () => (await prisma.planEditSuggestion.findMany({ where: { planId: p }, orderBy: [{ createdAt: 'asc' }, { seq: 'asc' }], select: { kind: true, status: true, edit: true } }))
+    .map((x) => `${x.kind}:${Object.keys((x.edit as { set?: object }).set ?? {}).join(',')}:${x.status}`)
+
+  beforeAll(async () => {
+    ;({ planId: p } = await submittedPlan())
+    const first = { items: [
+      { kind: 'plan', reasonAr: 'نبذةٌ أوضح', set: { summaryAr: 'نبذةٌ أولى' } },
+      { kind: 'module', moduleId: 'M1', reasonAr: 'تطبيقٌ أوضح', set: { activityAr: 'تمرينٌ على خريطة الجمهور' } },
+      { kind: 'module', moduleId: 'M2', reasonAr: 'مخرجٌ أوضح', set: { artifactAr: 'رسالةٌ في صفحة' } },
+    ] }
+    expect((await call('POST', `/api/admin/cohort-plans/${p}/edits`, 'admin', first)).statusCode).toBe(201)
+    /* بندُ المحور 1 يصل المدرّب ولا يقرّر فيه، وبندُ المحور 2 يصله فيرفضه */
+    for (const id of ['M1', 'M2']) {
+      const row = (await prisma.planEditSuggestion.findMany({ where: { planId: p, kind: 'module' } }))
+        .find((x) => (x.edit as { moduleId?: string }).moduleId === id)!
+      expect((await call('POST', `/api/admin/plan-edits/${row.id}/approve`, 'admin', {})).statusCode).toBe(200)
+    }
+    const m2 = (await prisma.planEditSuggestion.findMany({ where: { planId: p, kind: 'module' } }))
+      .find((x) => (x.edit as { moduleId?: string }).moduleId === 'M2')!
+    await prisma.planEditSuggestion.update({ where: { id: m2.id }, data: { status: 'rejected', decidedAt: new Date() } })
+  })
+
+  it('⚠️ لمن يعتمد وحدَه', async () => {
+    expect((await call('POST', url(), 'a', { items: [{ kind: 'plan', reasonAr: 'س', set: { summaryAr: 'ن' } }] })).statusCode).toBe(403)
+  })
+
+  it('⚠️ ملفٌّ يُردّ لا يسحب شيئا', async () => {
+    const r = await call('POST', url(), 'admin', { items: [{ kind: 'module', moduleId: 'M9', reasonAr: 'مجهول', set: { activityAr: 'x' } }] })
+    expect(r.statusCode).toBe(422)
+    expect(await statuses()).toEqual(['plan:summaryAr:proposed', 'module:activityAr:pending', 'module:artifactAr:rejected'])
+  })
+
+  it('يسحب المسوّدةَ وما وصل المدرّب ولم يقرّر فيه، ويرفع الجديدَ — حتّى على موضع ما وصله', async () => {
+    const next = { items: [
+      { kind: 'plan', reasonAr: 'نبذةٌ أوضح', set: { summaryAr: 'نبذةٌ ثانية' } },
+      { kind: 'module', moduleId: 'M1', reasonAr: 'تطبيقٌ أوضح', set: { activityAr: 'تمرينٌ ثانٍ على خريطة الجمهور' } },
+    ] }
+    const r = await call('POST', url(), 'admin', next)
+    expect(r.statusCode, r.body).toBe(201)
+    expect(r.json().withdrawn).toBe(2)
+    expect(await statuses(), 'وما رفضه المدرّبُ قرارُه — لا يُمسّ').toEqual([
+      'plan:summaryAr:withdrawn', 'module:activityAr:withdrawn', 'module:artifactAr:rejected',
+      'plan:summaryAr:proposed', 'module:activityAr:proposed',
+    ])
+    const audit = await prisma.auditEvent.findMany({ where: { action: 'cohort.plan.edits.withdraw' }, select: { meta: true } })
+    expect(audit.some((a) => (a.meta as { planId?: string; count?: number; replacedBy?: string }).planId === p
+      && (a.meta as { count?: number }).count === 2 && (a.meta as { replacedBy?: string }).replacedBy)).toBe(true)
+  })
+
+  it('⚠️ والملفُّ نفسُه يُرفع ثانيةً بـ«ابدأ من جديد» — يسحب ما رفعه قبله', async () => {
+    const again = { items: [{ kind: 'plan', reasonAr: 'نبذةٌ أوضح', set: { summaryAr: 'نبذةٌ ثالثة' } }] }
+    const r = await call('POST', url(), 'admin', again)
+    expect(r.statusCode, r.body).toBe(201)
+    expect(r.json().withdrawn).toBe(2)
+  })
+
+  it('⚠️ ولا على خطّةٍ اعتُمدت', async () => {
+    await prisma.cohortDeliveryPlan.update({ where: { id: p }, data: { status: 'approved' } })
+    const r = await call('POST', url(), 'admin', { items: [{ kind: 'plan', reasonAr: 'نبذةٌ أوضح', set: { summaryAr: 'نبذةٌ رابعة' } }] })
+    expect(r.statusCode, r.body).toBe(409)
+    expect(await prisma.planEditSuggestion.count({ where: { planId: p, status: { in: ['proposed', 'pending'] } } }), 'ولا يسحب شيئا').toBe(1)
+    await prisma.cohortDeliveryPlan.update({ where: { id: p }, data: { status: 'submitted' } })
+  })
+})

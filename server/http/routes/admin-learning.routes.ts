@@ -199,6 +199,20 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
     return reply.status(201).send(await planEdits.replaceDrafts(req.auth!.userId, id, file.items))
   })
 
+  /* ═══ «ابدأ من جديد»: الملفُّ الجديدُ مكانَ كلِّ ما لم يقرّر فيه المدرّب (١٢ أكتوبر ٢٠٢٦) ═══
+     صلاحيّةُ السحب نفسُها — يسحب المسوّداتِ وما وصل المدرّبَ ويرفع الجديد في معاملةٍ واحدة. */
+  app.post('/api/admin/cohort-plans/:id/edits/replace-all', {
+    preHandler: requirePermission('cohort.plan.approve'),
+    schema: { tags: ['admin-cohorts'], summary: 'رفع ملفّ تعديلات مكان كلّ ما لم يقرّر فيه المدرّب — المسودات وما وصله' },
+  }, async (req, reply) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const file = planEditsFile.parse(req.body)
+    if (file.planId && file.planId !== id) {
+      throw new AuthError('wrong_plan', 'هذا الملفّ كتب لخطّة أخرى — افتح بطاقة خطّته وارفعه هناك', 422)
+    }
+    return reply.status(201).send(await planEdits.replaceAll(req.auth!.userId, id, file.items))
+  })
+
   /* ═══ وكلُّ بندٍ يُعتمَد للمدرّب أو يُحذف قبل أن يصله (١٠ أكتوبر ٢٠٢٦) ═══
      «كلُّ ما يُطلب من المدرّب قبولُه يقبله المديرُ أو المديرُ الأكاديميُّ أو مديرُ المحتوى
      أوّلا» (صاحب المنصّة). وصلاحيّتُه مستقلّةٌ عن الرفع: `cohort.plan.edits.review`. */
