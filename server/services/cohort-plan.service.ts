@@ -61,7 +61,7 @@ import { templateRequired, workbooksProblems, type ModuleWorkbook, type Workbook
 import { workbookDocx, workbookFileName, workbookFill } from './workbook-docx'
 import { APPROVED_PLAN_STATUSES, PLAN_GATE_SELECT, planApprovedOnce } from './registration-window'
 import { AssessmentService } from './assessment.service'
-import { DEFAULT_CAPACITY } from './catalog-readiness.service'
+import { DEFAULT_CAPACITY, notifyIfPurchasable } from './catalog-readiness.service'
 import { TRAINER_VISIBILITY_SELECT, trainerPubliclyVisible } from './trainer-visibility'
 import { PLAN_VISIBLE_STATUSES, resourceCategory } from '../../src/application/trainer/plan-overlay'
 import { applyRecordedPlacements, recordedPlacements, samePlanContent } from '../../src/application/trainer/recorded-links'
@@ -1426,6 +1426,10 @@ export class CohortPlanService {
       noteAr: said,
     })
     await this.tellTrainer(plan.trainer, plan.cohort, { ...told, cta: 'افتح شعبتك' }, { reports })
+
+    /* وشعبةٌ مفتوحةٌ كانت تنتظر هذا الاعتمادَ وحدَه صارت تُباع الآن — فمن انتظرها
+       يُعلَم (١٢ أكتوبر ٢٠٢٦). والمسوّدةُ لا: تُفتح بقرارٍ منفصل، وهناك يُعلَم */
+    await notifyIfPurchasable(this.prisma, plan.cohort.id)
 
     let prep: { activated: boolean; waiting?: number; blockedAr?: string } | null = null
     if (qual && 'failedAr' in qual) prep = { activated: false, blockedAr: qual.failedAr }
