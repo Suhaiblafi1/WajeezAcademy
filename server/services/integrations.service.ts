@@ -68,13 +68,13 @@ export const ACADEMY_CONTACT_EMAIL = 'Academy@wajeez.co'
 export const ACADEMY_EMAIL_DOMAIN = 'wajeezacademy.com'
 
 export const ACADEMY_EMAILS = {
-  noReply: `no-reply@${ACADEMY_EMAIL_DOMAIN}`,
+  sender: `academy@${ACADEMY_EMAIL_DOMAIN}`,
   support: ACADEMY_CONTACT_EMAIL,
   calendar: ACADEMY_CONTACT_EMAIL,
 } as const
 
-/** المُرسِلُ الافتراضيُّ لكلّ رسالةٍ آليّة — لا يُقرأ ما يصله */
-export const ACADEMY_EMAIL = ACADEMY_EMAILS.noReply
+/** المُرسِلُ الافتراضيُّ لكلّ رسالةٍ آليّة — والردُّ يُوجَّه إلى العنوان الواحد */
+export const ACADEMY_EMAIL = ACADEMY_EMAILS.sender
 
 export async function getEmailConfig(prisma: PrismaClient): Promise<EmailConfig> {
   const row = await prisma.integrationSetting.findUnique({ where: { provider: 'email' } })
@@ -92,6 +92,7 @@ export async function getEmailConfig(prisma: PrismaClient): Promise<EmailConfig>
   if (env.RESEND_FROM_EMAIL) base.fromEmail = env.RESEND_FROM_EMAIL
   if (env.RESEND_REPLY_TO) base.replyTo = env.RESEND_REPLY_TO
   base.replyTo = currentReplyTo(base.replyTo)
+  base.fromEmail = currentSender(base.fromEmail)
   return base
 }
 
@@ -107,6 +108,13 @@ function currentReplyTo(value: string | undefined): string | undefined {
   const v = value?.trim()
   if (!v) return undefined
   return v.toLowerCase().endsWith('@' + ACADEMY_EMAIL_DOMAIN) ? ACADEMY_CONTACT_EMAIL : v
+}
+
+/* والمُرسِلُ المهجورُ `no-reply@` لا يعود من الإعدادات (١٢ أكتوبر ٢٠٢٦) — والعلّةُ
+   كعلّة عنوان الردّ أعلاه: `deploy/.env.production` يقول `RESEND_FROM_EMAIL=no-reply@…`
+   ولا يدخل Git، والبيئةُ تغلب الشيفرة. وما سواه اختيارٌ صريحٌ يُحترم. */
+function currentSender(value: string): string {
+  return value.trim().toLowerCase() === `no-reply@${ACADEMY_EMAIL_DOMAIN}` ? ACADEMY_EMAILS.sender : value
 }
 
 /* ── الحفظ من شاشة الإدارة — قناع لا يكتب، وكل تغيير موثق ── */

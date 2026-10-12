@@ -712,7 +712,7 @@ https://www.wajeezacademy.com/api/version
 |---|---|
 | `RESEND_API_KEY` | **وجودُه وحدَه يفعّل القناة** · يبدأ بـ`re_` |
 | `RESEND_FROM_NAME` | «أكاديمية وجيز» افتراضا |
-| `RESEND_FROM_EMAIL` | `no-reply@wajeezacademy.com` افتراضا |
+| `RESEND_FROM_EMAIL` | `academy@wajeezacademy.com` افتراضا (و`no-reply@` القديمُ يُستبدل به) |
 
 > **ونطاقُ المُرسِل هو ما يُوثَّق في Resend وتُضبط له SPF/DKIM — لا نطاقُ
 > الموقع.** ورسالةٌ من نطاقٍ غيرِ موثَّقٍ يرفضها Resend نفسُه.

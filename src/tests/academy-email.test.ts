@@ -41,15 +41,15 @@ describe('عناوين الأكاديميّة', () => {
   })
 
   it('وكلّ غاية يراها المستخدم تشير إليه — ولا يبقى عنوان غيره سوى المرسل', () => {
-    const { noReply, ...visible } = ACADEMY_EMAILS
+    const { sender, ...visible } = ACADEMY_EMAILS
     expect(Object.keys(visible).length).toBeGreaterThan(1)
     for (const [k, e] of Object.entries(visible)) expect(e, `ACADEMY_EMAILS.${k}`).toBe(ACADEMY_CONTACT_EMAIL)
-    expect(noReply).not.toBe(ACADEMY_CONTACT_EMAIL)
+    expect(sender).not.toBe(ACADEMY_CONTACT_EMAIL)
   })
 
   it('والمرسل الآليّ على النطاق الموثّق في Resend — وإلّا رفضت كلّ رسالة', () => {
-    expect(ACADEMY_EMAILS.noReply).toMatch(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)
-    expect(ACADEMY_EMAILS.noReply.split('@')[1]).toBe(ACADEMY_EMAIL_DOMAIN)
+    expect(ACADEMY_EMAILS.sender).toMatch(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)
+    expect(ACADEMY_EMAILS.sender.split('@')[1]).toBe(ACADEMY_EMAIL_DOMAIN)
   })
 
   it('ونسخة الخادم تطابق الأصل — فلا تفترقان', () => {
@@ -60,10 +60,10 @@ describe('عناوين الأكاديميّة', () => {
     const c = server.match(/export const ACADEMY_CONTACT_EMAIL = '([^']+)'/)
     expect(c, 'الخادم يعلن ACADEMY_CONTACT_EMAIL').not.toBeNull()
     expect(c![1]).toBe(ACADEMY_CONTACT_EMAIL)
-    /* ومنظِّمُ التقويم والدعمُ في الخادم هما العنوانُ الواحد، والمُرسِلُ `no-reply` */
+    /* ومنظِّمُ التقويم والدعمُ في الخادم هما العنوانُ الواحد، والمُرسِلُ `academy@` */
     expect(server).toMatch(/support: ACADEMY_CONTACT_EMAIL/)
     expect(server).toMatch(/calendar: ACADEMY_CONTACT_EMAIL/)
-    expect(server).toContain('ACADEMY_EMAIL = ACADEMY_EMAILS.noReply')
+    expect(server).toContain('ACADEMY_EMAIL = ACADEMY_EMAILS.sender')
   })
 
   it('و«ردّ» على الرسائل الآليّة يوجّه إلى العنوان الواحد', () => {
@@ -84,6 +84,23 @@ describe('عناوين الأكاديميّة', () => {
       const found = ourAddresses(read(f))
       expect(found.length, `${f} يعلن عنوان الأكاديميّة`).toBeGreaterThan(0)
       for (const e of found) expect(e, f).toBe(ACADEMY_CONTACT_EMAIL)
+    }
+  })
+
+  it('⚠️ والمرسل المهجور no-reply@ يستبدل ولو ضبطته البيئة — وما سواه يحترم', async () => {
+    const { getEmailConfig } = await import('../../server/services/integrations.service')
+    const prisma = { integrationSetting: { findUnique: async () => null } } as never
+    const before = process.env.RESEND_FROM_EMAIL
+    try {
+      process.env.RESEND_FROM_EMAIL = `no-reply@${ACADEMY_EMAIL_DOMAIN}`
+      expect((await getEmailConfig(prisma)).fromEmail).toBe(ACADEMY_EMAILS.sender)
+      process.env.RESEND_FROM_EMAIL = `hello@${ACADEMY_EMAIL_DOMAIN}`
+      expect((await getEmailConfig(prisma)).fromEmail).toBe(`hello@${ACADEMY_EMAIL_DOMAIN}`)
+      delete process.env.RESEND_FROM_EMAIL
+      expect((await getEmailConfig(prisma)).fromEmail).toBe(`academy@${ACADEMY_EMAIL_DOMAIN}`)
+    } finally {
+      if (before === undefined) delete process.env.RESEND_FROM_EMAIL
+      else process.env.RESEND_FROM_EMAIL = before
     }
   })
 })

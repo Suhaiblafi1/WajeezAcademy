@@ -141,7 +141,7 @@ describe('نطاق المرسل في قالب الإنتاج', () => {
 describe('بريد المرسل الافتراضيّ', () => {
   it('يشتقّ من النطاق الحيّ ولا يكتب حرفا', () => {
     expect(EMAIL_DOMAIN).toBe('wajeezacademy.com')
-    expect(DEFAULT_SENDER_EMAIL).toBe('no-reply@wajeezacademy.com')
+    expect(DEFAULT_SENDER_EMAIL).toBe('academy@wajeezacademy.com')
   })
 
   it('ويطابق افتراض الخادم — فلا يفترق ما تقترحه الشاشة عمّا يرسله الخادم', () => {
