@@ -304,7 +304,7 @@ const LOW: readonly string[] = [
      رفعُها وسحبُها عملُ المعتمِد في طابوره، ولا يصل المدرّبَ إلّا مع القرار الذي
      يصحبه (`cohort.plan.changes_requested`) — فلا يبلغه خبرُ الشيء الواحد مرّتين.
      وقبولُه ورفضُه تحريرُه في خطّته كحفظها (`cohort.plan.save`). */
-  'cohort.plan.edits.propose', 'cohort.plan.edits.withdraw',
+  'cohort.plan.edits.propose', 'cohort.plan.edits.withdraw', 'cohort.plan.edits.restore',
   'cohort.plan.edit.accept', 'cohort.plan.edit.reject',
   /* ومراجعةُ الإدارة للمسوّدة: عملُها في طابورها، لا يصل المدرّبَ إلّا مع القرار */
   'cohort.plan.edit.approve', 'cohort.plan.edit.drop', 'cohort.plan.edits.approve_all',

@@ -8,7 +8,7 @@
    تعرضان ما يحسبه الخادمُ منها، لا تحسبان. */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { CalendarClock, Check, ExternalLink, FileJson, Files, PencilLine, X } from "lucide-react";
+import { CalendarClock, Check, ExternalLink, FileJson, Files, PencilLine, Undo2, X } from "lucide-react";
 import { apiDelete, apiGet, apiPost, ApiError } from "@/services/api";
 import { Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
@@ -103,10 +103,14 @@ export function PlanEditsUploader({ planId, cohortId, canUpload, canReview, onPe
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
   const [reviewing, setReviewing] = useState<string | null>(null);
+  /* كم يعود بـ«أعِد ما سحبته» — يُقرأ مع القائمة (١٢ أكتوبر ٢٠٢٦، `restore` في `plan-edit.service.ts`) */
+  const [withdrawn, setWithdrawn] = useState(0);
 
   const load = useCallback(async () => {
     try { setItems(await apiGet<PlanEditItem[]>(`/api/admin/cohorts/${cohortId}/plan-edits`)); }
     catch { /* البطاقةُ تُقرأ بلا القائمة */ }
+    try { setWithdrawn((await apiGet<{ count: number }>(`/api/admin/cohorts/${cohortId}/plan-edits/withdrawn`)).count); }
+    catch { setWithdrawn(0); }
   }, [cohortId]);
   useEffect(() => { void load(); }, [load]);
 
@@ -145,9 +149,34 @@ export function PlanEditsUploader({ planId, cohortId, canUpload, canReview, onPe
     setBusy(true); setMsg("");
     try {
       setItems(await apiDelete<PlanEditItem[]>(`/api/admin/cohort-plans/${planId}/edits`));
-      setMsg("سحب ما لم يقرّر فيه.");
+      setMsg("سحب ما لم يقرّر فيه — وتعيده كما كان بـ«أعد ما سحبته».");
+      await load();
     } catch (e) {
       setMsg(errText(e, "تعذّر السحب"));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  /* ═══ «أعِد ما سحبته» — والسحبُ بنقرةٍ واحدةٍ يُردّ بنقرةٍ واحدة (١٢ أكتوبر ٢٠٢٦) ═══
+     «أين التعديلات؟ كانت موجودةً وأعتقد أنّي سحبتها.. كيف أعيدها؟» (صاحب المنصّة). فتعود كما كانت:
+     ما اعتمدته للمدرّب يصله ثانية، والمسوّدةُ مسوّدة — وما على موضعه بندٌ أحدث يبقى مسحوبا. */
+  const restore = async () => {
+    setBusy(true); setMsg("");
+    try {
+      const r = await apiPost<{ edits: PlanEditItem[]; restored: number; toTrainer: number; skipped: number }>(
+        `/api/admin/cohort-plans/${planId}/edits/restore`, {});
+      setItems(r.edits);
+      const drafts = r.restored - r.toTrainer;
+      setMsg([
+        `أعاد ${r.restored} كما كانت`,
+        r.toTrainer > 0 ? `${r.toTrainer} عند المدرّب` : "",
+        drafts > 0 ? `${drafts} مسوّدة تراجعها` : "",
+        r.skipped > 0 ? `وبقي ${r.skipped} مسحوبا: على مواضعها بنود أحدث` : "",
+      ].filter(Boolean).join(" · ") + ".");
+      await load();
+    } catch (e) {
+      setMsg(errText(e, "تعذّرت الإعادة"));
     } finally {
       setBusy(false);
     }
@@ -282,6 +311,11 @@ export function PlanEditsUploader({ planId, cohortId, canUpload, canReview, onPe
           {open > 0 && (
             <Button tone="ghost" size="sm" disabled={busy} onClick={() => void withdraw()}>
               اسحب ما لم يقرّر ({open})
+            </Button>
+          )}
+          {withdrawn > 0 && (
+            <Button tone="secondary" size="sm" icon={Undo2} disabled={busy} onClick={() => void restore()}>
+              أعد ما سحبته ({withdrawn})
             </Button>
           )}
         </div>

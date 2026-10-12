@@ -226,6 +226,24 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
     return planEdits.reviewAll(req.auth!.userId, id)
   })
 
+  /* ═══ وما سُحب يُعاد كما كان — «أعِد ما سحبته» (١٢ أكتوبر ٢٠٢٦) ═══
+     صلاحيّتُه صلاحيّةُ السحب نفسِه: من يسحب يُعيد. */
+  app.get('/api/admin/cohorts/:cohortId/plan-edits/withdrawn', {
+    preHandler: requirePermission('cohort.manage'),
+    schema: { tags: ['admin-cohorts'], summary: 'كم تعديلا مسحوبا يعود على آخر خطّةٍ للشعبة' },
+  }, async (req) => {
+    const { cohortId } = z.object({ cohortId: z.string().uuid() }).parse(req.params)
+    return planEdits.withdrawnFor(cohortId)
+  })
+
+  app.post('/api/admin/cohort-plans/:id/edits/restore', {
+    preHandler: requirePermission('cohort.plan.approve'),
+    schema: { tags: ['admin-cohorts'], summary: 'إعادةُ ما سُحب من التعديلات المقترحة كما كان — مسوّدةً أو عند المدرّب' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return planEdits.restore(req.auth!.userId, id)
+  })
+
   app.delete('/api/admin/cohort-plans/:id/edits', {
     preHandler: requirePermission('cohort.plan.approve'),
     schema: { tags: ['admin-cohorts'], summary: 'سحب ما لم يقرّر فيه من التعديلات المقترحة' },

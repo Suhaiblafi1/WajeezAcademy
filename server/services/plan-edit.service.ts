@@ -62,6 +62,8 @@ export interface PlanEditItem {
 const IN_HAND = ['draft', 'changes_requested'] as const
 /** خطّةٌ يُقترح عليها: في يده أو بانتظار القرار */
 const OPEN = ['draft', 'submitted', 'changes_requested'] as const
+/** بندٌ من هذه جاء بعد المسحوب على موضعه يحجبه أن يعود (`restore`) — والمحذوفُ عمدا منها */
+const RESTORE_BLOCKERS: readonly string[] = ['proposed', 'pending', 'accepted', 'rejected', 'dropped']
 
 interface Rows {
   content: TrainerPlanContent
@@ -311,6 +313,76 @@ export class PlanEditService {
       })
     }
     return this.forCohort(plan.cohortId)
+  }
+
+  /* ═══ وما سُحب يُعاد كما كان — «أعِد ما سحبته» (١٢ أكتوبر ٢٠٢٦) ═══
+
+     سحب صاحبُ المنصّة تعديلاتِ خطّةٍ بـ«اسحب ما لم يقرّر» ثمّ سأل: «أين التعديلات؟ كانت موجودةً
+     وأعتقد أنّي سحبتها.. كيف أعيدها؟». ولم يكن لها بابُ رجعة: `withdrawn` تخفى من البطاقة ومن المدرّب.
+     فاختار زرّا يعيدها كما كانت.
+
+     ① **كما كانت**: ما اعتمده للمدرّب (`reviewedAt` مكتوب) يعود `pending`، والمسوّدةُ مسوّدة.
+     ② **ولا يعود ما جاء بعده على موضعه بندٌ** — مسوّدةٌ أو بندٌ عند المدرّب أو ما قرّر فيه أو ما حذفه
+        المعتمِدُ عمدا (`dropped`): فملفٌّ رُفع ثانيةً بعد السحب لا يتكرّر، ومسوّدةٌ استُبدلت لا تعود
+        فوق بديلها. وما سُحب مرّتين على موضعٍ واحدٍ يعود أحدثُه.
+     ③ **وعلى خطّةٍ مفتوحةٍ وحدَها** — المعتمَدةُ سقط ما عليها (`lapsed`). */
+  private async restorable(planId: string) {
+    const rows = await this.prisma.planEditSuggestion.findMany({
+      where: { planId },
+      select: { id: true, status: true, edit: true, reviewedAt: true },
+      orderBy: [{ createdAt: 'desc' }, { seq: 'desc' }],
+    })
+    /* من الأحدث إلى الأقدم: ما يحجب موضعا هو ما جاء **بعد** المسحوب — رفعٌ جديدٌ أو حذفٌ أو قرار.
+       وما كان قبله لا يحجبه: مسوّدةٌ حذفها المعتمِدُ ثمّ رفع غيرَها وسحبها، تعود الأخيرة */
+    const taken = new Set<string>()
+    const take: { id: string; toTrainer: boolean }[] = []
+    let skipped = 0
+    for (const r of rows) {
+      const keys = openKeysOf(r.edit as unknown as PlanEdit)
+      if (RESTORE_BLOCKERS.includes(r.status)) { for (const k of keys) taken.add(k); continue }
+      if (r.status !== 'withdrawn') continue
+      if (keys.some((k) => taken.has(k))) { skipped++; continue }
+      for (const k of keys) taken.add(k)
+      take.push({ id: r.id, toTrainer: r.reviewedAt !== null })
+    }
+    return { take, skipped }
+  }
+
+  /** كم يعود لو ضُغط «أعِد ما سحبته» — للزرّ وعددِه */
+  async withdrawnFor(cohortId: string) {
+    const latest = await this.latestTrainerPlan(cohortId)
+    if (!latest || !(OPEN as readonly string[]).includes(latest.status)) return { planId: latest?.id ?? null, count: 0, skipped: 0 }
+    const { take, skipped } = await this.restorable(latest.id)
+    return { planId: latest.id, count: take.length, skipped }
+  }
+
+  async restore(actorId: string, planId: string) {
+    const plan = await this.prisma.cohortDeliveryPlan.findUnique({ where: { id: planId }, select: { cohortId: true, status: true } })
+    if (!plan) throw new AuthError('not_found', 'الخطّة غير موجودة', 404)
+    if (!(OPEN as readonly string[]).includes(plan.status)) {
+      throw new AuthError('plan_closed', 'اعتمدت هذه الخطّة — ما سحب منها لا يعود عليها', 409)
+    }
+    const { take, skipped } = await this.restorable(planId)
+    if (take.length === 0) {
+      throw new AuthError('nothing_withdrawn', skipped > 0
+        ? 'ما سحب على مواضعه بنود أحدث — فلا يعود فوقها'
+        : 'لا شيء مسحوب على هذه الخطّة', 409)
+    }
+    const back = (toTrainer: boolean) => take.filter((x) => x.toTrainer === toTrainer).map((x) => x.id)
+    await this.prisma.$transaction([
+      this.prisma.planEditSuggestion.updateMany({
+        where: { id: { in: back(true) }, status: 'withdrawn' }, data: { status: 'pending', decidedAt: null, decidedBy: null },
+      }),
+      this.prisma.planEditSuggestion.updateMany({
+        where: { id: { in: back(false) }, status: 'withdrawn' }, data: { status: 'proposed', decidedAt: null, decidedBy: null },
+      }),
+    ])
+    const toTrainer = back(true).length
+    await recordAudit(this.prisma, {
+      actorId, action: 'cohort.plan.edits.restore', entityType: 'cohort', entityId: plan.cohortId,
+      meta: { planId, count: take.length, toTrainer, drafts: take.length - toTrainer, skipped },
+    })
+    return { edits: await this.forCohort(plan.cohortId), restored: take.length, toTrainer, skipped }
   }
 
   /* ─────────── الإدارة: تعتمد كلَّ بندٍ للمدرّب أو تحذفه (④) ─────────── */
