@@ -159,6 +159,7 @@ const STAFF: Table = {
   'trainer.data_choice.made': { path: '/admin/trainer-contracts', ctaAr: 'افتح عقود المدرّبين' },
   'trainer.contract.materials_returned': { path: '/trainer', ctaAr: 'اقرأ الملاحظات وعدّل' },
   'trainer.contract.condition_extended': { path: '/trainer', ctaAr: 'افتح بوّابتك' },
+  'trainer.contract.condition_days_granted': { path: '/trainer/board', ctaAr: 'افتح «شعبي»' },
   'trainer.contract.amendment_requested': { path: '/admin/trainer-contracts', ctaAr: 'اقرأ ما طلب تعديله' },
   'trainer.contract.name_correction_requested': { path: '/admin/trainer-contracts', ctaAr: 'طابق هويّته وأعده مصحّحا' },
   /* والمحذوفُ لا صفَّ له يُفتح — فالوجهةُ القائمةُ نفسُها */

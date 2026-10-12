@@ -20,7 +20,7 @@ import {
   AMENDMENT_ACCEPT_REVOKE_REASON_AR, hasAmendmentPlaceholder, versionReadByRequester,
 } from '../../src/application/trainer/contract-resign'
 import {
-  bookingReminderMail, decisionMailFor, deferralMail, demoRequestMail, draftReminderMail, noShowFollowupMail, rejectionUndoneMail, withdrawalUndoneMail, conditionalOfferMail, finalApprovalMail, conditionReminderMail, conditionLapsedMail, signedCopyMail, amendmentAnsweredMail, contractApprovedMail,
+  bookingReminderMail, decisionMailFor, deferralMail, demoRequestMail, draftReminderMail, noShowFollowupMail, rejectionUndoneMail, withdrawalUndoneMail, conditionalOfferMail, finalApprovalMail, conditionReminderMail, conditionLapsedMail, conditionDaysGrantedMail, signedCopyMail, amendmentAnsweredMail, contractApprovedMail,
   contractRevokedMail, contractUpdatedMail, contractResignMail, contractFinalReminderMail,
   contractLapsedMail, contractFactsRows, contractSealedLaterMail, finalApprovalBellAr, type FinalApprovalSeal } from './trainer-decision-mail'
 import {
@@ -47,6 +47,7 @@ import {
   EXTENSION_DAYS, MATERIALS_WINDOW_DAYS, conditionPhase, daysLeft, extensionsLeft,
   materialsGateProblemAr,
   deadlineAfterPause, deadlineFrom, dueReminder, extendProblemAr, extendedDeadline,
+  grantDaysProblemAr, grantedDeadline, grantDaysAr, REMINDER_LEAD_DAYS,
   offerGatesActivation, SEALED_BY_TEXT_AR, signatureApprovalOf,
 } from '../../src/application/trainer/conditional-offer'
 import {
@@ -2738,6 +2739,59 @@ export class TrainerReviewService {
       data: { contractId: contract.id, deadlineAt: next.toISOString() },
     })
     return { deadlineAt: next }
+  }
+
+  /** «امنحه أيّاما» — بيد الإدارة، بسببٍ يُكتب، ولا يمسّ مرّتَي تمديده (`grantDaysProblemAr`) */
+  async grantConditionDays(
+    contractId: string, actorId: string, input: { days: number; reasonAr: string }, now = new Date(),
+  ) {
+    const c = await this.prisma.trainerContract.findUnique({
+      where: { id: contractId },
+      select: {
+        id: true, profileId: true, gatesActivation: true,
+        orientationAt: true, conditionDeadlineAt: true, conditionPausedAt: true,
+        conditionExtendedAt: true, conditionExtensionsUsed: true, conditionMetAt: true,
+        profile: { select: { application: { select: { fullName: true, email: true, reference: true } } } },
+      },
+    })
+    if (!c) throw new AuthError('not_found', 'العقدُ غيرُ موجود', 404)
+    if (!c.gatesActivation) throw new AuthError('cannot_grant', 'هذه اتفاقيّةٌ غيرُ مشروطة — لا مهلةَ موادَّ فيها', 409)
+    const reasonAr = input.reasonAr.trim()
+    const problem = grantDaysProblemAr({ ...c, now }, input.days, reasonAr)
+    if (problem) throw new AuthError('cannot_grant', problem, 409)
+    const next = grantedDeadline({ ...c, now }, input.days)!
+    const wasLapsed = conditionPhase({ ...c, now }) === 'lapsed'
+    await this.prisma.trainerContract.update({
+      where: { id: c.id },
+      data: {
+        conditionDeadlineAt: next,
+        /* وتذكيرُ «بقي يومان» للأجل الجديد — إلّا أن يكون الجديدُ نفسُه داخلَ اليومين:
+           فبريدُ المنحة يحمل الموعد، وتذكيرٌ في الساعة التالية يقول ما قاله. */
+        conditionRemindedAt: next.getTime() - now.getTime() <= REMINDER_LEAD_DAYS * 86_400_000 ? now : null,
+      },
+    })
+    await recordAudit(this.prisma, {
+      actorId, action: 'trainer.contract.condition_days_granted',
+      entityType: 'trainer_contract', entityId: c.id,
+      meta: {
+        days: input.days, reasonAr: reasonAr.slice(0, 500), wasLapsed,
+        from: c.conditionDeadlineAt?.toISOString() ?? null, until: next.toISOString(),
+      },
+    })
+    const app = c.profile.application
+    const deadlineOnAr = fmtDateWith(next, { year: 'numeric', month: 'long', day: 'numeric' })
+    const mail = conditionDaysGrantedMail({
+      fullName: app.fullName, reference: app.reference, days: input.days, deadlineOnAr,
+      portalUrl: `${publicSiteUrl()}/trainer/board`,
+    })
+    const sent = await sendDirectEmail(this.prisma, { to: app.email, subject: mail.subject, ...renderMail(mail.doc) })
+    await this.notifyTrainerUser(c.profileId, {
+      templateKey: 'trainer.contract.condition_days_granted',
+      title: `مُنحتَ ${grantDaysAr(input.days)} لإكمال موادّك`,
+      body: `تنتهي مهلتُك الآن في ${deadlineOnAr}.`,
+      data: { contractId: c.id, deadlineAt: next.toISOString() },
+    })
+    return { deadlineAt: next, emailDelivery: sent.status }
   }
 
   /** «أعِدْها بملاحظات» — تُستأنف المهلةُ **مضافا إليها مدّةُ التجميد بالضبط** */
@@ -6467,15 +6521,24 @@ export class TrainerReviewService {
        متابعةِ الغياب نفسُه (`already_followed_up`).
 
        ويُقرأ للمجموعة كلِّها في استعلامٍ واحد، لا استعلامٌ لكلّ صفّ. */
+    /* ═══ إلّا أن تُمنَح أيّامٌ بعده فتنقضي هي (١٢ أكتوبر ٢٠٢٦) ═══
+       «امنحه أيّاما» (`grantConditionDays`) يفتح أجلا جديدا بعد الانقضاء. فإن انقضى
+       الجديدُ أيضا فذاك انقضاءٌ ثانٍ يُقال — والإبلاغُ الأوّلُ كان عن أجلٍ لم يعد قائما.
+       فالمحسوبُ إبلاغٌ **بعد آخر منحة**، لا أيُّ إبلاغٍ كان. */
     const already = await this.prisma.auditEvent.findMany({
       where: {
-        action: 'trainer.condition.lapsed',
+        action: { in: ['trainer.condition.lapsed', 'trainer.contract.condition_days_granted'] },
         entityType: 'trainer_contract',
         entityId: { in: candidates.map((c) => c.id) },
       },
-      select: { entityId: true },
+      select: { entityId: true, action: true, createdAt: true },
+      orderBy: { createdAt: 'asc' },
     })
-    const told = new Set(already.map((a) => a.entityId))
+    const told = new Set<string>()
+    for (const a of already) {
+      if (a.action === 'trainer.condition.lapsed') told.add(a.entityId)
+      else told.delete(a.entityId)
+    }
 
     let noticed = 0
     for (const c of candidates) {

@@ -20,7 +20,7 @@
    عليه، ولا يملك تغييرَه من شاشته. */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { BadgeCheck, Ban, BellRing, ChevronDown, Download, FilePlus2, FileSignature, FileText, Handshake, IdCard, MessageSquareReply, Printer, RefreshCw, Send, Trash2, Undo2, UserMinus, X } from "lucide-react";
+import { BadgeCheck, Ban, BellRing, CalendarPlus, ChevronDown, Download, FilePlus2, FileSignature, FileText, Handshake, IdCard, MessageSquareReply, Printer, RefreshCw, Send, Trash2, Undo2, UserMinus, X } from "lucide-react";
 import ConfirmAction from "@/components/ConfirmAction";
 import Modal from "@/components/Modal";
 import {
@@ -34,13 +34,14 @@ import {
   DEFAULT_AMENDMENT_ACCEPT_SUBJECT_AR, defaultAmendmentAcceptBodyAr, hasAmendmentPlaceholder, versionReadByRequester,
 } from "@/application/trainer/contract-resign";
 import { apiDelete, apiGet, apiPost, permissionMessage } from "@/services/api";
-import { fmtDateTime } from "@/application/text/format-ar";
+import { fmtDate, fmtDateTime } from "@/application/text/format-ar";
 import { RULE_TYPE_AR } from "@/application/trainer/compensation-labels";
 /* وطورُ الشرط من موضعه الواحد لا مشتقًّا هنا — ورأسُ `conditional-offer.ts`
    يقول إنّ هذه التسمياتَ لـ«صفّ الطابور» كذلك، ولم تكن تصله. */
 import {
   conditionPhase, materialsGateProblemAr, CONDITION_PHASE_LABELS_AR,
   signatureApprovalOf, type SignatureApproval,
+  MAX_GRANT_DAYS, MAX_EXTENSIONS, grantDaysAr, grantDaysProblemAr, grantedDeadline,
 } from "@/application/trainer/conditional-offer";
 import type { Readiness } from "@/application/trainer/readiness";
 import {
@@ -433,6 +434,8 @@ export default function TrainerContracts() {
   /* ونافذةُ «أعِدْها بملاحظات» مستقلّةٌ عن نافذة الاعتماد: قرارانِ متضادّان،
      وحقلٌ واحدٌ لهما يجعل ملاحظةَ الإعادة تُرسَل في خانة مطابقةِ الهويّة. */
   const [sendBack, setSendBack] = useState<{ id: string; notesAr: string } | null>(null);
+  /* «امنحه أيّاما» — العددُ والسببُ قبل أن يُرسَل، والأجلُ الجديدُ يُقرأ قبل الضغط */
+  const [grant, setGrant] = useState<{ id: string; days: number; reasonAr: string } | null>(null);
   /* ونافذةُ «وقِّعْه الآن» لعقدٍ غيرِ مشروطٍ اعتُمد كالعقود الجديدة (٢ أكتوبر ٢٠٢٦):
      مستقلّةٌ عن نافذة الاعتماد — تلك على `signed` وهذه على `signature_approved`،
      وملحوظةُ هذه تُضَمّ إلى خَتمٍ لا إلى مطابقة هويّة. */
@@ -761,6 +764,77 @@ export default function TrainerContracts() {
       : [...cur, { kind, labelAr, required: true }]);
   };
 
+  /* ═══ «امنحه أيّاما» — المهلةُ بيد الإدارة أيضا (١٢ أكتوبر ٢٠٢٦) ═══
+
+     كانت «مدّد مهلته» تُقال هنا ولا زرَّ وراءها: التمديدُ بيد المدرّب وحدَه، مرّتين.
+     فصار للإدارة أن تمنح أيّاما تختار عددَها، بسببٍ يُكتب للسجلّ. والأجلُ الجديدُ
+     يُحسب بالدالّة نفسِها التي يكتب بها الخادم (`grantedDeadline`) فيُقرأ قبل الضغط،
+     وما يمنع المنحةَ يُقال بنصّها (`grantDaysProblemAr`) لا زرّا رماديّا. */
+  const grantBlock = (c: ContractRow) => {
+    const facts = conditionFactsOf(c);
+    const lapsed = conditionPhase(facts) === "lapsed";
+    const open = grant?.id === c.id ? grant : null;
+    const next = open ? grantedDeadline(facts, open.days) : null;
+    const problem = open ? grantDaysProblemAr(facts, open.days, open.reasonAr) : null;
+    return (
+      <div className="mt-3 grid gap-2">
+        <p className="text-read leading-6 text-muted-foreground">
+          {lapsed ? "انقضت مهلتُه في " : "تنتهي مهلتُه في "}
+          <b className="text-foreground">{c.conditionDeadlineAt ? fmtDate(c.conditionDeadlineAt) : "—"}</b>
+          {` — وطلب التمديدَ ${c.conditionExtensionsUsed ?? 0} من ${MAX_EXTENSIONS}.`}
+        </p>
+        {open ? (
+          <div className="grid gap-2">
+            <label className="grid gap-1 text-read">
+              <span className="font-bold text-foreground">كم يوما؟</span>
+              <select className={inputCls} value={open.days}
+                onChange={(e) => setGrant({ ...open, days: Number(e.target.value) })}>
+                {Array.from({ length: MAX_GRANT_DAYS }, (_, i) => i + 1).map((d) => (
+                  <option key={d} value={d}>{grantDaysAr(d)}</option>
+                ))}
+              </select>
+            </label>
+            <label className="grid gap-1 text-read">
+              <span className="font-bold text-foreground">السبب — للسجلّ، ولا يصله</span>
+              <textarea className={areaCls} rows={2} maxLength={2000}
+                placeholder="مثال: «طلب أيّاما لظرفٍ عائليّ، وأرسل شعبتين من ثلاث»"
+                value={open.reasonAr}
+                onChange={(e) => setGrant({ ...open, reasonAr: e.target.value })} />
+            </label>
+            {next && (
+              <p className="text-read leading-6 text-foreground">
+                تنتهي مهلتُه الجديدة في <b>{fmtDate(next)}</b>
+                {lapsed ? " — من اليوم، فمهلتُه انقضت." : " — بعد أجله القائم."}
+                {" "}ويصله بريدٌ بالموعد، ولا تنقص به مرّتا تمديده.
+              </p>
+            )}
+            {/* وما يمنع يُقال بنصّه حين يبدأ الكتابة — لا قبلها فيُستقبَل بخطأ */}
+            {problem && open.reasonAr.trim() !== "" && (
+              <p className="text-read text-danger-ink">{problem}</p>
+            )}
+            <div className="flex flex-wrap gap-2">
+              <Button tone="confirm" icon={CalendarPlus} loading={busy} disabled={problem !== null}
+                onClick={() => void run(async () => {
+                  await apiPost(`/api/admin/trainer-contracts/${c.id}/grant-days`,
+                    { days: open.days, reasonAr: open.reasonAr.trim() });
+                  setGrant(null);
+                  await load();
+                }, `مُنح ${grantDaysAr(open.days)} — وأُبلغ بموعده الجديد`, c.id)}>
+                امنحه {grantDaysAr(open.days)} وأبلِغْه
+              </Button>
+              <Button tone="ghost" onClick={() => setGrant(null)}>تراجعْ</Button>
+            </div>
+          </div>
+        ) : (
+          <Button className="justify-self-start" icon={CalendarPlus}
+            onClick={() => setGrant({ id: c.id, days: 3, reasonAr: "" })}>
+            امنحه أيّاما
+          </Button>
+        )}
+      </div>
+    );
+  };
+
   /* ═══ طورُ الموادّ على العقد — يُعرض موقَّعا ومعتمَدا معا (٣٠ سبتمبر ٢٠٢٦) ═══
 
      كان هذا اللوحُ داخلَ كتلة «وقّعه صاحبُه» وحدَها، والمهلةُ في المسار
@@ -823,10 +897,13 @@ c.gatesActivation
                             ) : (
                               /* ولا زرَّ يُعرَض معطَّلا بلا سبب: الموادُّ ليست عندك بعد،
                                  فيُقال ذلك بدل زرٍّ يُنقَر فيُردّ من الخادم. */
-                              <p className="mt-1 text-read leading-6 text-muted-foreground">
-                                ولم يُعلن اكتمالَ موادّه بعد، فلا شيءَ يُعاد إليه اليوم. وحين
-                                يُعلنه تتجمّد مهلتُه ويظهر هنا زرُّ الإعادة بملاحظاتك.
-                              </p>
+                              <>
+                                <p className="mt-1 text-read leading-6 text-muted-foreground">
+                                  ولم يُعلن اكتمالَ موادّه بعد، فلا شيءَ يُعاد إليه اليوم. وحين
+                                  يُعلنه تتجمّد مهلتُه ويظهر هنا زرُّ الإعادة بملاحظاتك.
+                                </p>
+                                {grantBlock(c)}
+                              </>
                             )}
                           </Inset>
                         ) : null
