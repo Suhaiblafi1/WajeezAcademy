@@ -197,15 +197,15 @@ export default function PendingPlans() {
   return (
     <AdminLayout title="خطط تنتظر اعتمادك">
       <p className="mb-4 max-w-3xl text-read leading-7 text-muted-foreground">
-        كلّ خطّة شعبة أرسلها مدرّبها وأكّد موافقته على ما فيها — من المدرّبين كلّهم، وخطط كلّ مدرّب تحت اسمه.
-        افتح أيّها تقرأ منهجها كاملا كما في بطاقة شعبتها، ثمّ «اعتمدها» أو «اطلب تعديلات». ولا يفتح تسجيل شعبة قبل اعتماد خطّتها.
+        خطط الشعب التي أرسلها المدرّبون وأكّدوا موافقتهم عليها، مرتّبة باسم كل مدرّب.
+        افتح الخطّة لتقرأ منهجها كاملا، ثمّ «اعتمدها» أو «اطلب تعديلات». ولا يفتح تسجيل الشعبة قبل اعتماد خطّتها.
       </p>
 
       {rows !== null && rows.length > 0 && (
         <Inset className="mb-4 flex flex-wrap items-center justify-between gap-3 px-4 py-3">
           <p className="max-w-2xl text-read leading-6 text-muted-foreground">
-            للمراجعة خارج المنصّة: ملفّ مضغوط واحد فيه الخطط المنتظرة كلّها ({plansAr(rows.length)}) — لكلّ خطّة منهجها نصّا مقروءا وكلّ ملفّ رفعه مدرّبها.
-            {(trainerFilter || q) && " ويشمل ما لا يعرض الآن بالتصفية."}
+            للمراجعة خارج المنصّة: ملفّ مضغوط فيه كل الخطط المنتظرة ({plansAr(rows.length)}) بمناهجها وملفّاتها.
+            {(trainerFilter || q) && " ويشمل ما أخفته التصفية."}
           </p>
           <Button size="sm" tone="secondary" icon={Download} disabled={bundle.busy} onClick={() => void downloadAll()}>
             {bundle.busy ? "يجهّز التنزيل…" : "نزّل الخطط كلّها للمراجعة"}
@@ -257,13 +257,13 @@ export default function PendingPlans() {
         actionAr="ابدأ بأقدمها"
         /* الأقدمُ أوّلُ ما لم يُقضَ فيه في الترتيب المعروض — والبحثُ قد يُخفيه */
         disabledReasonAr={waiting.length > 0 && !ordered.some((r) => !decided[r.id])
-          ? "البحث الحاليّ لا يظهر منها ما ينتظر — امسحه لتبدأ."
+          ? "البحث الحاليّ يخفي الخطط المنتظرة — امسحه."
           : undefined}
         onAction={() => {
           const first = ordered.find((r) => !decided[r.id]);
           if (first) goTo(ordered, first.id);
         }}
-        doneAr="لا خطّة تنتظر اعتمادك — وحين يرسل مدرّب خطّة شعبته ويؤكّد موافقته عليها تظهر هنا، ويظهر عددها إلى جانب اسم هذه الشاشة."
+        doneAr="لا خطّة تنتظر اعتمادك. حين يرسل مدرّب خطّته تظهر هنا، ويظهر عددها بجانب اسم الشاشة."
       />
 
       {rows !== null && scoped.length > 0 && (
@@ -288,12 +288,12 @@ export default function PendingPlans() {
                     <h2 className="flex flex-wrap items-baseline gap-x-2 text-read font-black text-foreground">
                       {g.name}
                       <span className="font-normal text-muted-foreground">
-                        {left > 0 ? `— ${plansAr(left)} ${left === 2 ? "تنتظران" : "تنتظر"}` : "— قضي فيها كلّها"}
+                        {left > 0 ? `— ${plansAr(left)} ${left === 2 ? "تنتظران" : "تنتظر"}` : "— انتهت كلّها"}
                       </span>
                     </h2>
                     {onboarding && (
                       <p className="mt-1 text-read leading-6 text-muted-foreground">
-                        في طور الإعداد — التفعيل حين تعتمد دورات الإعداد كلّها، ويقول لك الاعتماد عند كلّ خطّة كم بقي منها.
+                        في مرحلة الإعداد — يفعّل حين تعتمد كل دورات الإعداد، وتجد عند كل خطّة كم بقي.
                       </p>
                     )}
                     {shared && <p className="mt-1 text-read leading-6 text-muted-foreground">{shared}</p>}

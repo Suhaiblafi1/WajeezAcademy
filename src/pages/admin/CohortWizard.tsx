@@ -322,7 +322,7 @@ export default function CohortWizard({
             <input id="wiz-title" value={title} onChange={(e) => setTitle(e.target.value)}
               placeholder="شعبة أكتوبر 2026 — مسائية" className={inputCls} />
             <p className="mt-2 text-read leading-6 text-muted-foreground">
-              يقترح من الدورة والشهر، وهو ما يراه المتعلّم في فاتورته وشهادته — فاجعله يفرّق هذه الشعبة عن أختها.
+              يظهر للمتعلّم في فاتورته وشهادته، فاجعله يميّز هذه الشعبة عن غيرها.
             </p>
             {course && (
               <Inset as="p" className="mt-3 px-3 py-2.5 text-read text-muted-foreground">
@@ -344,11 +344,11 @@ export default function CohortWizard({
             </select>
             <p className="mt-2 text-read leading-6 text-muted-foreground">
               {term ? (
-                <>حدود مبدئيّة حتّى يحدّد مدرّبها مدّته: يبدأ {term.startsOn.slice(0, 10)} وينتهي {term.endsOn.slice(0, 10)}.</>
+                <>حدود مبدئيّة حتّى يحدّد المدرّب المدّة: يبدأ {term.startsOn.slice(0, 10)} وينتهي {term.endsOn.slice(0, 10)}.</>
               ) : (
                 <>
-                  يحدّد مدرّبها متى تبدأ ومتى تنتهي في خطّته، ويشتقّ فصلها من تاريخ بدئها حين تعتمد.
-                  {terms.length === 0 && " ولا موسم مفتوح بعد — فلا فصل يسمّى هنا الآن."}
+                  يحدّد المدرّب البداية والنهاية في خطّته، ويحدّد الفصل من تاريخ البدء عند الاعتماد.
+                  {terms.length === 0 && " ولا موسم مفتوح بعد."}
                 </>
               )}
             </p>
@@ -419,7 +419,7 @@ export default function CohortWizard({
             <input type="number" min={0} value={price} onChange={(e) => setPrice(e.target.value)}
               placeholder={course?.listPrice != null ? String(course.listPrice) : undefined} className={inputCls} />
             <span className="mt-1 block text-fine text-muted-foreground">
-              يورث من سعر قائمة الدورة إن ترك فارغا — والعملة عملة الدورة لا افتراضا.
+              إن ترك فارغا يؤخذ سعر الدورة، والعملة عملة الدورة.
             </span>
           </label>
         </div>
@@ -431,8 +431,7 @@ export default function CohortWizard({
           {trainers === null && <p className="text-read text-muted-foreground"><Loader2 className="mr-1 inline h-3.5 w-3.5 animate-spin" aria-hidden="true" /> تقرأ قائمة المدرّبين…</p>}
           {trainers !== null && trainers.length === 0 && (
             <Inset as="p" className="px-4 py-3 text-read leading-6 text-muted-foreground">
-              لا مدرّب مؤهّلا لهذه الدورة بعد — تنشأ الشعبة مسودّة، ويسند المدرّب من بطاقتها متى تأهّل.
-              وشرط الفتح يبقى قائما: لا شعبة تفتح بلا مدرّب.
+              لا مدرّب مؤهّلا لهذه الدورة بعد. تنشأ الشعبة مسودّة، وتسند المدرّب من بطاقتها لاحقا. ولا تفتح شعبة بلا مدرّب.
             </Inset>
           )}
           {trainers !== null && trainers.length > 0 && (
@@ -488,9 +487,8 @@ export default function CohortWizard({
           <Card tone="warn" className="text-fine leading-6 text-foreground">
             <p className="font-black text-gold-ink">قبل الفتح للتسجيل</p>
             <p className="mt-1">
-              الشعبة تنشأ مسودّة. و«أنشئ وافتح» يفحص شروط الفتح الستّة أوّلا: خطّة تقديم معتمدة، مدرّب
-              مؤهّل مسند، جدول وجلسات، سعة وسعر، وإعداد ماليّ. فإن نقص شيء بقيت مسودّة وقيل لك ما ينقص —
-              ولا تفتح شعبة ناقصة للمتعلّمين.
+              تنشأ الشعبة مسودّة. و«أنشئ وافتح» يفحص شروط الفتح الستّة: خطّة معتمدة، مدرّب
+              مؤهّل مسند، جدول وجلسات، سعة وسعر، وإعداد ماليّ. وإن نقص شيء تبقى مسودّة ونخبرك بما ينقص.
             </p>
           </Card>
         </div>

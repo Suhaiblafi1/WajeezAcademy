@@ -142,7 +142,7 @@ export default function MaterialsReview({ profileId }: { profileId: string }) {
                 )}
                 {oldReady && old?.materials && (
                   <div className="mt-2 grid gap-1.5 text-read leading-7">
-                    <p className="text-muted-foreground">كتب موادّها في اللوح القديم قبل ٢ أكتوبر ٢٠٢٦ — تعتمد بها، أو ينقلها بقبول الدورة إلى شعبتها.</p>
+                    <p className="text-muted-foreground">كتب موادّها في اللوحة القديمة قبل ٢ أكتوبر ٢٠٢٦ — يمكن اعتماد الدورة بها، أو تنتقل إلى شعبتها عند قبولها.</p>
                     <ol className="list-decimal ps-5">
                       {old.materials.modules.map((m, i) => (
                         <li key={i}><b>{m.titleAr}</b>{m.outcomeAr ? ` — ${m.outcomeAr}` : ""}</li>

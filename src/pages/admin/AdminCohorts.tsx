@@ -315,7 +315,7 @@ export default function AdminCohorts() {
             ))}
           </div>
           <p className="mt-3 text-read leading-relaxed text-muted-foreground">
-            الاعتماد يحرّك الموعد ويخبر المتعلّمين. والردّ لا يحرّكه، ويصل المدرب بتعليقك.
+            الاعتماد ينقل الموعد ويبلّغ المتعلّمين. والرفض يبقيه، ويصل تعليقك للمدرّب.
           </p>
         </Panel>
       )}
@@ -544,8 +544,7 @@ export default function AdminCohorts() {
                             أثرَها: أين تظهر، وما الذي يُبنى عليها. */}
                         <p className="flex items-center gap-1.5 text-read font-black text-foreground"><CalendarPlus className="h-3.5 w-3.5" /> لقاء واحد — يضاف بيده</p>
                         <p className="mb-3 mt-1 text-read leading-5 text-muted-foreground">
-                          موعد لقاء حيّ واحد (محاضرة يوم بعينه). يظهر في تقويم المتعلّم وتقويم المدرّب،
-                          ويرصد فيه الحضور، ويربط به تسجيله ورابط اجتماعه.
+                          لقاء مباشر واحد. يظهر في تقويم المتعلّم والمدرّب، ويرتبط به الحضور وتسجيل اللقاء ورابط الاجتماع.
                         </p>
                         <div className="grid gap-2 sm:grid-cols-5">
                           <input placeholder="عنوان الجلسة" value={sessionForm.title} onChange={(e) => setSessionForm({ ...sessionForm, title: e.target.value })}
@@ -577,8 +576,7 @@ export default function AdminCohorts() {
                             onChange={(e) => setSessionForm({ ...sessionForm, withZoom: e.target.checked })}
                             className="mt-0.5 h-4 w-4 shrink-0 accent-teal" />
                           <span>
-                            <b className="text-foreground">أنشئ اجتماع Zoom وبلّغ المسجّلين</b> — ينشأ الاجتماع
-                            باسم الأكاديميّة ويصل رابطه كلّ متعلّم في هذه الشعبة داخل المنصّة.
+                            <b className="text-foreground">أنشئ اجتماع Zoom وبلّغ المسجّلين</b> — باسم الأكاديميّة، ويصل رابطه لكل متعلّمي الشعبة.
                           </span>
                         </label>
                         {lastSession && (
@@ -609,12 +607,12 @@ export default function AdminCohorts() {
                         </p>
                         <p className="mb-3 mt-1 text-read leading-5 text-muted-foreground">
                           {c.sessionsCount > 0
-                            ? `في الشعبة ${c.sessionsCount} لقاء مجدولا — ولّدت عند إنشائها. ولا حاجة لهذا إلّا إن تغيّر الجدول بعد ذلك؛ والموجود لا يكرّر.`
-                            : "لا لقاءات بعد. يقرأ أيّام الشعبة ووقتها، وينشئ لقاءات الأسابيع دفعة واحدة بدل إضافتها لقاء لقاء."}
+                            ? `في الشعبة ${c.sessionsCount} لقاء مجدولا. استخدمه فقط إن تغيّر الجدول، ولن تتكرّر اللقاءات الموجودة.`
+                            : "لا لقاءات بعد. ينشئ كل لقاءات الأسابيع دفعة واحدة من أيّام الشعبة ووقتها."}
                         </p>
                         {c.daysOfWeek.length === 0 || !c.startTime ? (
                           <p className="text-read text-muted-foreground">
-                            لا جدول أسبوعيّا لهذه الشعبة — اضبط أيّامها ووقتها من «تعديل الشعبة» ثمّ ولّد جلساتها.
+                            لا جدول أسبوعيّا — حدّد الأيّام والوقت من «تعديل الشعبة» ثمّ ولّد الجلسات.
                           </p>
                         ) : (
                           <div className="grid gap-2 sm:grid-cols-4">
@@ -651,7 +649,7 @@ export default function AdminCohorts() {
                               </Button>
                             </div>
                             <p className="text-read leading-5 text-muted-foreground sm:col-span-4">
-                              الجدول: {daysLabelAr(c.daysOfWeek)} · {c.startTime}. الموجود لا يكرّر، وبداية الشعبة ونهايتها تتبعان جلساتها.
+                              الجدول: {daysLabelAr(c.daysOfWeek)} · {c.startTime}. لن تتكرّر اللقاءات الموجودة، وتتبع بداية الشعبة ونهايتها جلساتها.
                             </p>
                           </div>
                         )}
@@ -695,7 +693,7 @@ export default function AdminCohorts() {
                           <input type="checkbox" checked={dupForm.withSessions}
                             onChange={(e) => setDupForm({ ...dupForm, withSessions: e.target.checked })}
                             className="h-3.5 w-3.5 cursor-pointer accent-teal" />
-                          انسخ الجلسات أيضا بإزاحة الأسابيع (وإلّا فولّدها في النسخة بجدولها)
+                          انسخ الجلسات أيضا مع إزاحة الأسابيع (أو ولّدها لاحقا من الجدول)
                         </label>
                       </div>
                     </Card>
@@ -818,8 +816,8 @@ function ScheduleWindowCard({ cohort, busy, act }: {
       </p>
       <p className="mt-1 text-read leading-6 text-muted-foreground">
         {isOpen
-          ? "مفتوحة — يضيف مدرّب الشعبة ما شاء من لقاءاتها وينقلها داخل هذا الحدّ بلا طابور موافقات. وما يقع خارجه يبقى اقتراحا يرفع إليك."
-          : "مغلقة — الجدولة إليك وحدك، والمدرّب لا يملك إلّا اقتراح تأجيل يرفع إلى طابورك. افتحها ليقرّر داخل حدّك."}
+          ? "مفتوحة — يضيف المدرّب اللقاءات وينقلها داخل هذه الفترة بلا موافقة. وما خارجها يصلك اقتراحا."
+          : "مغلقة — الجدولة لك وحدك، والمدرّب يقترح التأجيل فقط. افتحها ليجدول ضمن فترة تحدّدها."}
       </p>
       <div className="mt-3 grid gap-2 sm:grid-cols-2">
         <label className="text-fine text-muted-foreground">

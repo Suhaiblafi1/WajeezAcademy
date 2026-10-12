@@ -50,8 +50,8 @@ export default function DeclineReply({ c, onDone, kind = "declined" }: {
     const choice = c.dataChoice === "keep"
       ? `واختار إبقاء بياناته للمواسم القادمة${c.dataChoiceAt ? ` (${fmtDateTime(c.dataChoiceAt)})` : ""}.`
       : c.dataChoice === "delete"
-        ? "وطلب حذف بياناته، وتعذّر الحذف الآليّ لما في سجلّه — احذفه بيدك من «طلبات المدربين»."
-        : `ولم يختر بعد ما نفعله ببياناته — رابط خياره صالح ${DATA_CHOICE_LINK_DAYS} يوما، ومن لم يختر تبقى بياناته.`;
+        ? "وطلب حذف بياناته، وتعذّر الحذف التلقائيّ — احذفها يدويّا من «طلبات المدربين»."
+        : `ولم يختر بعد ما نفعله ببياناته — الرابط صالح ${DATA_CHOICE_LINK_DAYS} يوما، وإن لم يختر تبقى بياناته.`;
     return (
       <Inset tone={c.dataChoice === "delete" ? "warn" : "default"} className="mt-2 flex items-start gap-2 p-3 text-read leading-7">
         <MailCheck className="mt-1.5 h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" />
@@ -102,16 +102,16 @@ export default function DeclineReply({ c, onDone, kind = "declined" }: {
       </label>
       {expired ? (
         <p className="text-read leading-6 text-muted-foreground">
-          بالإرسال يغلق هذا العقد، ويصير طلبه «مؤجّلا — للفصول القادمة»: فيسأل عن اهتمامه
+          بالإرسال يغلق هذا العقد، ويصير طلبه «مؤجّلا — للفصول القادمة»: نسأله عن اهتمامه
           في {fmtDateWith(deferredFollowUpAt(new Date()), { year: "numeric", month: "long", day: "numeric", timeZone: ACADEMY_ZONE })}
-          {" "}(بعد {DEFER_FOLLOW_UP_MONTHS === 2 ? "شهرين" : `${DEFER_FOLLOW_UP_MONTHS} أشهر`}) ويذكّر فريقك. ويلحق
-          بالرسالة زرّ «اختر ما نفعله ببياناتك»: إبقاؤها، أو حذفها في الحال حين يؤكّده — ويصلك خبر ما اختار.
-          وترسل مرّة واحدة. ولمن أردت أن يوقّع بعد فـ«جدّد الرابط» أعلاه.
+          {" "}(بعد {DEFER_FOLLOW_UP_MONTHS === 2 ? "شهرين" : `${DEFER_FOLLOW_UP_MONTHS} أشهر`}) ونذكّر فريقك. ومع
+          الرسالة زرّ «اختر ما نفعله ببياناتك»: إبقاؤها، أو حذفها فورا — ويصلك خبر اختياره.
+          وترسل مرّة واحدة. وإن أردته أن يوقّع فاستخدم «جدّد الرابط» أعلاه.
         </p>
       ) : (
         <p className="text-read leading-6 text-muted-foreground">
-          يلحق بالرسالة زرّ «اختر ما نفعله ببياناتك»: صفحة يختار فيها إبقاءها للمواسم القادمة أو حذفها،
-          ويقع الحذف في الحال حين يؤكّده — ويصلك خبر ما اختار. وترسل الرسالة مرّة واحدة.
+          مع الرسالة زرّ «اختر ما نفعله ببياناتك»: يختار إبقاءها للمواسم القادمة أو حذفها فورا،
+          ويصلك خبر اختياره. وترسل الرسالة مرّة واحدة.
         </p>
       )}
       <div className="flex flex-wrap gap-2">

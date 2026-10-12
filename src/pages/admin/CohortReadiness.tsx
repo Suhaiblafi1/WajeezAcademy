@@ -64,11 +64,9 @@ export default function CohortReadiness({ onApplied }: { onApplied?: () => void 
         <Wallet className="h-4 w-4" /> جاهزيّة العرض — لماذا لا تظهر بعض الأسعار
       </h2>
       <p className="mt-2 max-w-3xl text-read leading-6 text-muted-foreground">
-        السعر يقرأ من الشعب لا من الكتالوج، فما لا شعبة مفتوحة له لا يظهر له سعر —
-        وهذا مقصود: رقم لا تسنده شعبة قابلة للتسجيل وعد يفترق عن الفاتورة.
-        والشعبة تعرض وتباع حين تعتمد خطّة مدرّبها وتفتحها من بطاقتها — وما لا
-        مدرّب معتمد له يظهر في الموقع بلا شعبة مفتوحة.
-        اعرض أوّلا لترى ما سيتغيّر، ثمّ نفّذ.
+        السعر يؤخذ من الشعب المفتوحة لا من الكتالوج، فالدورة بلا شعبة مفتوحة لا يظهر لها سعر.
+        وتظهر الشعبة وتباع حين تعتمد خطّة مدرّبها وتفتحها من بطاقتها.
+        عاين أوّلا ما سيتغيّر، ثمّ نفّذ.
       </p>
 
       {error && (
@@ -84,8 +82,8 @@ export default function CohortReadiness({ onApplied }: { onApplied?: () => void 
             <Tags className="h-3.5 w-3.5 text-gold" /> توحيد أسعار الشعب على سعر القائمة
           </p>
           <p className="mt-1 text-read leading-5 text-muted-foreground">
-            شعبة سعرها يخالف كتالوجها تقول للصفحة رقما وتطالب الفاتورة بغيره.
-            والمقعد المحجوز أو المدفوع لا يعاد تسعيره.
+            إن خالف سعر الشعبة سعر الكتالوج اختلف سعر الصفحة عن الفاتورة.
+            ولا يتغيّر سعر مقعد محجوز أو مدفوع.
           </p>
 
           <div className="mt-3 flex flex-wrap gap-2">
@@ -112,7 +110,7 @@ export default function CohortReadiness({ onApplied }: { onApplied?: () => void 
               </p>
               {align.skippedCommitted > 0 && (
                 <p className="mt-1.5 text-read leading-5 text-gold">
-                  {align.skippedCommitted} شعبة فيها مقاعد محجوزة أو مدفوعة — تركت عمدا، عالجها يدويا.
+                  {align.skippedCommitted} شعبة فيها مقاعد محجوزة أو مدفوعة — لم تتغيّر، عالجها يدويّا.
                 </p>
               )}
               {align.rows.length > 0 && (
@@ -136,8 +134,8 @@ export default function CohortReadiness({ onApplied }: { onApplied?: () => void 
             <CalendarCheck className="h-3.5 w-3.5 text-teal" /> حالات متأخّرة عن تواريخها
           </p>
           <p className="mt-1 text-read leading-5 text-muted-foreground">
-            شعبة بدأت جلساتها تصير «جارية»، وشعبة انتهت آخر جلساتها تصير «منتهية» — ومستحقّات
-            مدرّبها تولّد عند الإكمال، فتأخّر الحالة يؤخّرها. ولا تفتح شعبة آليّا: الفتح يمرّ بشروطه وبقرارك.
+            الشعبة تصير «جارية» حين تبدأ جلساتها، و«منتهية» بعد آخر جلسة. ومستحقّات
+            المدرّب تحسب عند الإكمال، فتأخّر الحالة يؤخّرها. ولا تفتح شعبة تلقائيّا: الفتح بشروطه وبقرارك.
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             <Button tone="secondary" size="sm" type="button"
