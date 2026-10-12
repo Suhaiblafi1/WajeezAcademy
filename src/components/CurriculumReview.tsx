@@ -23,6 +23,7 @@ import type {
 } from '@/application/trainer/curriculum-view'
 import type { ReviewSection } from '@/application/trainer/review-notes'
 import type { WorkbookMaterial } from '@/application/trainer/cohort-workbooks'
+import { BriefView } from "@/components/LongText";
 
 /** الخطوةُ التي يعود إليها المدرّبُ ليعدّل ما قرأه — وهي أقسامُ ملاحظات المعتمِد نفسُها */
 export type CurriculumEditStage = ReviewSection
@@ -30,12 +31,12 @@ export type CurriculumEditStage = ReviewSection
 const TASK_TYPE: Record<string, string> = { assignment: 'واجب', quiz: 'اختبار', project: 'مشروع' }
 /* ومهامُّ ما بعد الاعتماد بما ينتظر فيها (٣ج-٣) — والمعدَّلةُ مقروءةٌ بقيمها المقترَحة */
 const TASK_REVIEW: Record<NonNullable<CurriculumTask['review']>, string> = {
-  new: 'جديدةٌ — تنتظر الاعتماد',
-  edit: 'معدَّلةٌ — تنتظر الاعتماد',
-  remove: 'تُحذف باعتمادها',
+  new: 'جديدة — تنتظر الاعتماد',
+  edit: 'معدّلة — تنتظر الاعتماد',
+  remove: 'تحذف باعتمادها',
 }
 const MEETING_STATE: Record<CurriculumMeeting['state'], { label: string; tone: 'positive' | 'warn' | 'neutral' }> = {
-  approved: { label: 'معتمَد', tone: 'positive' },
+  approved: { label: 'معتمد', tone: 'positive' },
   pending: { label: 'بانتظار الاعتماد', tone: 'warn' },
   held: { label: 'انعقد', tone: 'neutral' },
 }
@@ -46,7 +47,7 @@ const fileHref = (key: string) => `/api/v1/cohort-files/${encodeURIComponent(key
     مادّتُه الجاهزة (٧ أكتوبر): يراها المعتمِدُ فيقبلها أو يعيدها بملاحظة — فتُقال بلونٍ يُرى */
 function MaterialMark({ material }: { material: WorkbookMaterial | null }) {
   if (material === 'template') return <span className="text-teal-light-ink">· على قالب وجيز</span>
-  if (material === 'own') return <span className="font-bold text-gold-ink">· مادّةُ المدرّب الجاهزة — ليست على القالب</span>
+  if (material === 'own') return <span className="font-bold text-gold-ink">· مادّة المدرّب الجاهزة — ليست على القالب</span>
   return <span className="text-muted-foreground">· لم يقل أعلى القالب هي</span>
 }
 
@@ -86,13 +87,13 @@ function Tasks({ list }: { list: CurriculumTask[] }) {
             {t.review && <Chip tone="warn">{TASK_REVIEW[t.review]}</Chip>}
             <span className="text-muted-foreground">
               · {TASK_TYPE[t.type] ?? t.type}
-              {t.dueAt ? ` · آخرُ موعدها ${whenAr(t.dueAt)}` : ' · بلا آخرِ موعد'}
+              {t.dueAt ? ` · آخر موعدها ${whenAr(t.dueAt)}` : ' · بلا آخر موعد'}
               {t.attachments > 0 ? ` · ${t.attachments} مرفق` : ''}
             </span>
           </p>
           {t.briefAr
-            ? <p className="mt-0.5 whitespace-pre-line text-muted-foreground">{t.briefAr}</p>
-            : <p className="mt-0.5 text-gold-ink">بلا تعليمات — ما المطلوبُ من المتعلّم؟</p>}
+            ? <BriefView text={t.briefAr} muted className="mt-1" />
+            : <p className="mt-0.5 text-gold-ink">بلا تعليمات — ما المطلوب من المتعلّم؟</p>}
         </li>
       ))}
     </ul>
@@ -111,7 +112,7 @@ function Resources({ list }: { list: CurriculumResource[] }) {
             {href
               ? <a href={href} target="_blank" rel="noreferrer" className="font-bold text-foreground underline-offset-2 hover:underline">{r.title}</a>
               : <span className="font-bold text-foreground">{r.title}</span>}
-            <span className="text-muted-foreground">· {meta.label}{r.preReading ? ' · قراءةٌ مسبقةٌ مع الكرّاسة' : ''}</span>
+            <span className="text-muted-foreground">· {meta.label}{r.preReading ? ' · قراءة مسبقة مع الكرّاسة' : ''}</span>
             {r.noteAr && <span className="basis-full text-muted-foreground">{r.noteAr}</span>}
           </li>
         )
@@ -148,7 +149,7 @@ export default function CurriculumReview({
           <div className="min-w-0">
             <h3 className="text-base font-black leading-snug">{view.title}</h3>
             <p className="mt-0.5 text-read text-muted-foreground">
-              {view.period ? `من ${dayLabelAr(view.period.startsOn)} إلى ${dayLabelAr(view.period.endsOn)}` : 'بلا مدّةٍ محدّدة بعد'}
+              {view.period ? `من ${dayLabelAr(view.period.startsOn)} إلى ${dayLabelAr(view.period.endsOn)}` : 'بلا مدّة محدّدة بعد'}
               {` · ${counts.axes} محاور · ${counts.meetings} لقاءات · ${counts.tasks} مهامّ · ${counts.resources + counts.recordings} مصادر`}
             </p>
           </div>
@@ -156,17 +157,17 @@ export default function CurriculumReview({
         </div>
         {view.summaryAr
           ? <p className="mt-2 whitespace-pre-line text-read leading-7 text-foreground">{view.summaryAr}</p>
-          : <p className="mt-2 text-read text-gold-ink">بلا نبذة — هي أوّلُ ما يقرؤه المتعلّمُ عن الشعبة.</p>}
+          : <p className="mt-2 text-read text-gold-ink">بلا نبذة — هي أوّل ما يقرؤه المتعلّم عن الشعبة.</p>}
         {/* مستوى الشعبة (٦ أكتوبر ٢٠٢٦) — يقرؤه المدرّبُ والمعتمِدُ هنا، ولا يصل المتعلّمَ بعد */}
         <p className="mt-2 text-read leading-6 text-muted-foreground">
-          المستوى: {view.levelAr ? <b className="text-foreground">{view.levelAr}</b> : 'لم يُحدَّد'}
+          المستوى: {view.levelAr ? <b className="text-foreground">{view.levelAr}</b> : 'لم يحدّد'}
         </p>
         {/* لمن هي وماذا يريد متعلّمُها (٦ أكتوبر ٢٠٢٦) — يُجمعان ولا يصلان التشخيصَ بعد */}
         <p className="mt-1 text-read leading-6 text-muted-foreground">
-          لمن: {view.audienceAr.stages ? <b className="text-foreground">{view.audienceAr.stages}</b> : 'لم يُحدَّد'}
+          لمن: {view.audienceAr.stages ? <b className="text-foreground">{view.audienceAr.stages}</b> : 'لم يحدّد'}
         </p>
         <p className="mt-1 text-read leading-6 text-muted-foreground">
-          الهدف: {view.audienceAr.goals ? <b className="text-foreground">{view.audienceAr.goals}</b> : 'لم يُحدَّد'}
+          الهدف: {view.audienceAr.goals ? <b className="text-foreground">{view.audienceAr.goals}</b> : 'لم يحدّد'}
         </p>
         {/* كرّاسةُ الدورة الواحدة (٣٠ سبتمبر ٢٠٢٦) — تُقرأ مرّةً هنا، وموضعُ كلّ محورٍ فيها في موعده.
             أو لكلّ محورٍ كرّاستُه (٦ أكتوبر ٢٠٢٦) — تُسرد هنا بترتيبها، والفارغةُ تُقال.
@@ -175,7 +176,7 @@ export default function CurriculumReview({
           <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-white/[0.06] pt-3">
             <p className="flex flex-wrap items-center gap-1.5 text-read">
               <BookMarked className="h-3.5 w-3.5 text-teal-light-ink" aria-hidden="true" />
-              <span className="font-bold">كرّاسةُ الدورة:</span>{' '}
+              <span className="font-bold">كرّاسة الدورة:</span>{' '}
               {view.workbook ? (
                 <>
                   <a
@@ -183,12 +184,12 @@ export default function CurriculumReview({
                     target="_blank" rel="noreferrer"
                     className="font-bold text-foreground hover:underline"
                   >
-                    {view.workbook.title ?? view.workbook.fileName ?? 'كرّاسةُ الدورة'}
+                    {view.workbook.title ?? view.workbook.fileName ?? 'كرّاسة الدورة'}
                   </a>
                   <MaterialMark material={view.workbook.material} />
                 </>
               ) : (
-                <span className="text-gold-ink">لم تُوضع بعد.</span>
+                <span className="text-gold-ink">لم توضع بعد.</span>
               )}
             </p>
             <EditLink stage="workbooks" onEdit={onEdit} label="كرّاسة الدورة" />
@@ -199,7 +200,7 @@ export default function CurriculumReview({
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="flex items-center gap-1.5 text-read">
                 <BookMarked className="h-3.5 w-3.5 text-teal-light-ink" aria-hidden="true" />
-                <span className="font-bold">الكرّاسة:</span> لكلّ محورٍ كرّاستُه
+                <span className="font-bold">الكرّاسة:</span> لكلّ محور كرّاسته
               </p>
               <EditLink stage="workbooks" onEdit={onEdit} label="كرّاسات المحاور" />
             </div>
@@ -216,7 +217,7 @@ export default function CurriculumReview({
                       <MaterialMark material={w.material} />
                     </>
                   ) : (
-                    <span className="text-gold-ink">لم تُوضع بعد.</span>
+                    <span className="text-gold-ink">لم توضع بعد.</span>
                   )}
                 </li>
               ))}
@@ -242,21 +243,21 @@ export default function CurriculumReview({
             <Inset key={a.moduleId} className="mt-2 p-3">
               <p className="text-read font-bold text-foreground">المحور {a.n}: {a.title}</p>
               {a.outcome && <p className="mt-0.5 text-read text-muted-foreground"><b className="text-foreground">ما يخرج به: </b>{a.outcome}</p>}
-              {a.activity && <p className="mt-0.5 text-read text-muted-foreground"><b className="text-foreground">التطبيقُ العمليّ: </b>{a.activity}</p>}
+              {a.activity && <p className="mt-0.5 text-read text-muted-foreground"><b className="text-foreground">التطبيق العمليّ: </b>{a.activity}</p>}
               {a.artifact && <p className="mt-0.5 text-read text-muted-foreground"><b className="text-foreground">الناتج: </b>{a.artifact}</p>}
               {a.body ? (
                 <details className="mt-1.5">
-                  <summary className="cursor-pointer text-read font-bold text-teal-light-ink">المتنُ النظريّ · {a.bodyWords} كلمة</summary>
+                  <summary className="cursor-pointer text-read font-bold text-teal-light-ink">المتن النظريّ · {a.bodyWords} كلمة</summary>
                   <p className="mt-1 whitespace-pre-line text-read leading-7 text-foreground">{a.body}</p>
                 </details>
               ) : a.bodyFile ? (
                 <p className="mt-1.5 text-read">
                   <a href={fileHref(a.bodyFile.key)} target="_blank" rel="noreferrer" className="font-bold text-teal-light-ink hover:underline">
-                    المتنُ النظريُّ ملفّا: {a.bodyFile.name ?? 'ملفّ المحور'}
+                    المتن النظريّ ملفّا: {a.bodyFile.name ?? 'ملفّ المحور'}
                   </a>
                 </p>
               ) : (
-                <p className="mt-1.5 text-read text-gold-ink">بلا متنٍ نظريّ بعد.</p>
+                <p className="mt-1.5 text-read text-gold-ink">بلا متن نظريّ بعد.</p>
               )}
             </Inset>
           ))}
@@ -284,7 +285,7 @@ export default function CurriculumReview({
                     target="_blank" rel="noreferrer"
                     className="text-read font-bold text-foreground hover:underline"
                   >
-                    {g.workbook.title ?? g.workbook.fileName ?? 'كرّاسةُ الموعد'}
+                    {g.workbook.title ?? g.workbook.fileName ?? 'كرّاسة الموعد'}
                   </a>
                 ) : (
                   <span className="text-read text-gold-ink">بلا كرّاسة.</span>
@@ -294,29 +295,29 @@ export default function CurriculumReview({
             </Section>
           )}
 
-          <Section title="اللقاءاتُ المباشرة" icon={CalendarDays}>
+          <Section title="اللقاءات المباشرة" icon={CalendarDays}>
             <div className="flex flex-wrap items-start justify-between gap-2">
-              {g.meetings.length > 0 ? <Meetings list={g.meetings} /> : <span className="text-read text-gold-ink">بلا لقاءٍ مباشر.</span>}
+              {g.meetings.length > 0 ? <Meetings list={g.meetings} /> : <span className="text-read text-gold-ink">بلا لقاء مباشر.</span>}
               <EditLink stage="sessions" onEdit={onEdit} label={`لقاءات ${g.label}`} />
             </div>
           </Section>
 
           {g.recordings.length > 0 && (
-            <Section title="الجلساتُ المسجّلة" icon={PlayCircle}>
+            <Section title="الجلسات المسجّلة" icon={PlayCircle}>
               <ul className="space-y-1.5">
                 {g.recordings.map((r, i) => (
                   <li key={`${r.title}-${i}`} className="text-read leading-6">
                     <span className="font-bold text-foreground">{r.title}</span>
-                    <span className="text-muted-foreground">{r.opensAt ? ` · تُفتح ${whenAr(r.opensAt)}` : ' · بلا موعدِ فتح'}</span>
+                    <span className="text-muted-foreground">{r.opensAt ? ` · تفتح ${whenAr(r.opensAt)}` : ' · بلا موعد فتح'}</span>
                   </li>
                 ))}
               </ul>
             </Section>
           )}
 
-          <Section title="المهامُّ التطبيقيّة" icon={Send}>
+          <Section title="المهامّ التطبيقيّة" icon={Send}>
             <div className="flex flex-wrap items-start justify-between gap-2">
-              {g.tasks.length > 0 ? <Tasks list={g.tasks} /> : <span className="text-read text-muted-foreground">بلا مهمّةٍ على هذا الموعد.</span>}
+              {g.tasks.length > 0 ? <Tasks list={g.tasks} /> : <span className="text-read text-muted-foreground">بلا مهمّة على هذا الموعد.</span>}
               <EditLink stage="assignments" onEdit={onEdit} label={`مهامّ ${g.label}`} />
             </div>
           </Section>
@@ -331,16 +332,16 @@ export default function CurriculumReview({
 
       {/* ── وما للشعبة كلِّها ── */}
       {(view.general.meetings.length > 0 || view.general.tasks.length > 0 || view.general.resources.length > 0) && (
-        <Card as="section" className="p-4" aria-label="للشعبة كلِّها">
-          <h4 className="text-read font-black text-foreground">للشعبة كلِّها — بلا محور</h4>
+        <Card as="section" className="p-4" aria-label="للشعبة كلّها">
+          <h4 className="text-read font-black text-foreground">للشعبة كلّها — بلا محور</h4>
           {view.general.meetings.length > 0 && (
-            <Section title="لقاءاتٌ غيرُ مربوطةٍ بمحور" icon={CalendarDays}><Meetings list={view.general.meetings} /></Section>
+            <Section title="لقاءات غير مربوطة بمحور" icon={CalendarDays}><Meetings list={view.general.meetings} /></Section>
           )}
           {view.general.tasks.length > 0 && (
-            <Section title="مهامُّ غيرُ مربوطةٍ بمحور" icon={Send}><Tasks list={view.general.tasks} /></Section>
+            <Section title="مهامّ غير مربوطة بمحور" icon={Send}><Tasks list={view.general.tasks} /></Section>
           )}
           {view.general.resources.length > 0 && (
-            <Section title="مصادرُ للشعبة كلِّها" icon={Library}><Resources list={view.general.resources} /></Section>
+            <Section title="مصادر للشعبة كلّها" icon={Library}><Resources list={view.general.resources} /></Section>
           )}
         </Card>
       )}

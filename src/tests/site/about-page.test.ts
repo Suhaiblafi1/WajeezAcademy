@@ -32,30 +32,30 @@ const code = (file: string) =>
 
 const about = code('src/pages/About.tsx')
 
-describe('الافتتاحُ: الأكاديميةُ جزءٌ من وجيز', () => {
-  it('أخوا الأكاديمية بموقعيهما على وجيز — روابطُ https حقيقيّة', () => {
+describe('الافتتاح: الأكاديمية جزء من وجيز', () => {
+  it('أخوا الأكاديمية بموقعيهما على وجيز — روابط https حقيقيّة', () => {
     expect(FAMILY_INTRO.products.map((p) => p.name)).toEqual(['تطبيق وجيز', 'وجيز مهارات'])
     for (const p of FAMILY_INTRO.products) expect(p.url, p.name).toMatch(/^https:\/\/wajeez\.com(\/|$)/)
   })
 
-  it('وعنوانُ الصفحة الأوّلُ (`h1`) هو التعريف، والتعريفُ أوّلُ ما يُصيَّر', () => {
+  it('وعنوان الصفحة الأوّل (`h1`) هو التعريف، والتعريف أوّل ما يصيّر', () => {
     const h1s = about.match(/<h1\b[^>]*>[\s\S]*?<\/h1>/g) ?? []
     expect(h1s).toHaveLength(1)
     expect(h1s[0]).toContain('{FAMILY_INTRO.title}')
     const body = about.slice(about.indexOf('export default function About'))
-    expect(body.indexOf('<FamilyIntro />'), 'الافتتاحُ غائب').toBeGreaterThan(-1)
+    expect(body.indexOf('<FamilyIntro />'), 'الافتتاح غائب').toBeGreaterThan(-1)
     expect(body.indexOf('<FamilyIntro />')).toBeLessThan(body.indexOf('<Hero />'))
   })
 
-  it('والروابطُ تُصيَّر من الموقعَين نفسيهما — لا عنوانٌ مكتوبٌ باليد في الصفحة', () => {
+  it('والروابط تصيّر من الموقعين نفسيهما — لا عنوان مكتوب باليد في الصفحة', () => {
     expect(about).toMatch(/FAMILY_INTRO\.products\.map\(/)
     expect(about).toMatch(/href=\{p\.url\}/)
     expect(about).not.toMatch(/href="https:\/\/wajeez\.com/)
   })
 })
 
-describe('وسطرا «ما يميّزنا» يُلوَّن منهما ما سُمّي', () => {
-  it('كلُّ عبارةٍ ملوّنةٍ واردةٌ في سطرٍ بعينه — وإلّا لم يُلوَّن شيءٌ صامتا', () => {
+describe('وسطرا «ما يميّزنا» يلوّن منهما ما سمّي', () => {
+  it('كلّ عبارة ملوّنة واردة في سطر بعينه — وإلّا لم يلوّن شيء صامتا', () => {
     expect(FEATURE_HERO.highlights.length).toBeGreaterThan(0)
     for (const h of FEATURE_HERO.highlights) {
       expect(FEATURE_HERO.lines.filter((l) => l.includes(h)), h).toHaveLength(1)
@@ -63,39 +63,39 @@ describe('وسطرا «ما يميّزنا» يُلوَّن منهما ما سُ
   })
 })
 
-describe('ولا شيءَ من الرئيسيّة يتكرّر', () => {
+describe('ولا شيء من الرئيسيّة يتكرّر', () => {
   const imports = about.match(/^import[\s\S]*?from '[^']+'/gm) ?? []
   const imported = imports.join('\n')
 
-  it('الاستيراداتُ تُقرأ فعلا — وإلّا مرّ الحارسُ على فراغ', () => {
+  it('الاستيرادات تقرأ فعلا — وإلّا مرّ الحارس على فراغ', () => {
     expect(imports.length).toBeGreaterThan(5)
   })
 
-  it('لا شعاراتِ إعلامٍ ولا جدارَ مؤسساتٍ ولا أرقامَ ثقة', () => {
+  it('لا شعارات إعلام ولا جدار مؤسسات ولا أرقام ثقة', () => {
     expect(imported).not.toMatch(/\bpartnerLogos\b/)
     expect(imported).not.toMatch(/EcosystemOrgStrip/)
     expect(imported).not.toMatch(/data\/trustMetrics/)
   })
 
-  it('وخطُّ الصفحة خطُّ المنصّة — لا رقعةَ فيها', () => {
+  it('وخطّ الصفحة خطّ المنصّة — لا رقعة فيها', () => {
     expect(about).not.toMatch(/Aref Ruqaa/)
   })
 })
 
-describe('ما يميّزنا — كما سمّاه صاحبُ المنصّة', () => {
-  it('المحطّاتُ الخمسُ بترتيب الرحلة، ثمّ السعر', () => {
+describe('ما يميّزنا — كما سمّاه صاحب المنصّة', () => {
+  it('المحطّات الخمس بترتيب الرحلة، ثمّ السعر', () => {
     expect(FEATURES.map((f) => f.id)).toEqual(['advisor', 'sources', 'training', 'experts', 'graduation'])
     expect(PRICE.title).toMatch(/مخفّضة/)
     expect(PRICE.title).toMatch(/مجتمع المحلّي/)
   })
 
-  it('ولكلّ محطّةٍ شكلُها على الخطّ — لا محطّةَ بلا رسم', () => {
+  it('ولكلّ محطّة شكلها على الخطّ — لا محطّة بلا رسم', () => {
     const spine = about.match(/const SPINE: Record<FeatureId, ReactNode> = \{([\s\S]*?)\n\}/)?.[1] ?? ''
     for (const f of FEATURES) expect(spine, f.id).toMatch(new RegExp(`\\b${f.id}:`))
   })
 })
 
-describe('ولا رقمَ مكتوبٌ باليد في النثر', () => {
+describe('ولا رقم مكتوب باليد في النثر', () => {
   const prose: string[] = [
     ABOUT_TITLE, ABOUT_DESCRIPTION, FAMILY_INTRO.title, FAMILY_INTRO.body,
     ...FAMILY_INTRO.products.flatMap((p) => [p.name, p.note, p.pitch]),
@@ -107,19 +107,19 @@ describe('ولا رقمَ مكتوبٌ باليد في النثر', () => {
     HONESTY_LINE, CLOSING.title, CLOSING.body,
   ]
 
-  it('النصُّ يُقرأ فعلا — وإلّا مرّ الحارسُ على فراغ', () => {
+  it('النصّ يقرأ فعلا — وإلّا مرّ الحارس على فراغ', () => {
     expect(prose.join(' ').length).toBeGreaterThan(1500)
   })
 
-  it('كلُّ رقمٍ في النثر سنةٌ من هذا القرن', () => {
+  it('كلّ رقم في النثر سنة من هذا القرن', () => {
     const digits = prose.flatMap((t) => t.match(/[0-9٠-٩][0-9٠-٩,.٬]*/g) ?? [])
     const notYears = digits.filter((d) => !/^20\d{2}$/.test(d))
-    expect(notYears, `رقمٌ مكتوبٌ باليد: ${notYears.join('، ')}`).toEqual([])
+    expect(notYears, `رقم مكتوب باليد: ${notYears.join('، ')}`).toEqual([])
   })
 })
 
-describe('وشريطُ الرئيسيّة باقٍ على وجيز مهارات', () => {
-  it('لا رقمَ من التطبيق العامّ في شريط الرئيسيّة (القاعدة ١ و٢ في `trustMetrics`)', () => {
+describe('وشريط الرئيسيّة باق على وجيز مهارات', () => {
+  it('لا رقم من التطبيق العامّ في شريط الرئيسيّة (القاعدة ١ و٢ في `trustMetrics`)', () => {
     const home = homeTrustMetrics()
     expect(home.length).toBeGreaterThan(0)
     expect(home.every((m) => m.source_scope === 'wajeez_skills')).toBe(true)
@@ -127,7 +127,7 @@ describe('وشريطُ الرئيسيّة باقٍ على وجيز مهارات'
     expect(home.filter((m) => appKeys.has(m.key))).toEqual([])
   })
 
-  it('و`metricsFor` تسقط على مفتاحٍ غائبٍ أو مرفوضٍ أو من نطاقٍ آخر — لا تُسقطه صامتة', () => {
+  it('و`metricsFor` تسقط على مفتاح غائب أو مرفوض أو من نطاق آخر — لا تسقطه صامتة', () => {
     expect(() => metricsFor('wajeez_app', ['لا-وجود-له'])).toThrow()
     expect(() => metricsFor('wajeez_skills', ['user_rating'])).toThrow()
     expect(() => metricsFor('wajeez_app', ['organizations'])).toThrow()
@@ -135,15 +135,15 @@ describe('وشريطُ الرئيسيّة باقٍ على وجيز مهارات'
   })
 })
 
-describe('النسخةُ النصّيّة هي الصفحةُ نفسُها', () => {
+describe('النسخة النصّيّة هي الصفحة نفسها', () => {
   const page = aboutStaticPage()
   const text = page.sections.flatMap((s) => [s.heading ?? '', ...(s.paragraphs ?? []), ...(s.bullets ?? [])]).join('\n')
 
-  it('صفحةُ `/p/about` في المحتوى الثابت هي المشتقّة', () => {
+  it('صفحة `/p/about` في المحتوى الثابت هي المشتقّة', () => {
     expect(staticPageBySlug('about')).toEqual(page)
   })
 
-  it('وفيها التعريفُ بموقعَيه، وكلُّ محطّة، والسعرُ والختام', () => {
+  it('وفيها التعريف بموقعيه، وكلّ محطّة، والسعر والختام', () => {
     expect(text).toContain(FAMILY_INTRO.body)
     for (const p of FAMILY_INTRO.products) expect(text).toContain(p.url)
     for (const f of FEATURES) {
@@ -156,7 +156,7 @@ describe('النسخةُ النصّيّة هي الصفحةُ نفسُها', () 
     expect(text).toContain(CLOSING.body)
   })
 
-  it('وعنوانُ البحث ووصفُه منها — والوصفُ في حدود ما يعرضه قوقل', () => {
+  it('وعنوان البحث ووصفه منها — والوصف في حدود ما يعرضه قوقل', () => {
     const seo = publicPageByPath('/p/about')
     expect(seo?.title).toBe(ABOUT_TITLE)
     expect(seo?.description).toBe(ABOUT_DESCRIPTION)
@@ -165,24 +165,24 @@ describe('النسخةُ النصّيّة هي الصفحةُ نفسُها', () 
   })
 })
 
-describe('والصفحةُ تدلّ على ما وعد به الطلب', () => {
+describe('والصفحة تدلّ على ما وعد به الطلب', () => {
   const linksTo = (path: string) => new RegExp(`\\bto="${path.replace(/[?]/g, '\\?')}"`).test(about)
 
-  it('التشخيصُ والمنهجيّة', () => {
-    expect(linksTo('/methodology'), 'لا رابطَ إلى المنهجيّة').toBe(true)
-    expect(linksTo('/diagnostic'), 'لا رابطَ إلى التشخيص').toBe(true)
+  it('التشخيص والمنهجيّة', () => {
+    expect(linksTo('/methodology'), 'لا رابط إلى المنهجيّة').toBe(true)
+    expect(linksTo('/diagnostic'), 'لا رابط إلى التشخيص').toBe(true)
   })
 
-  it('والمساراتُ والدوراتُ والفريقُ التدريبيّ', () => {
+  it('والمسارات والدورات والفريق التدريبيّ', () => {
     for (const p of ['/pathways', '/courses', '/trainers']) expect(linksTo(p), p).toBe(true)
   })
 
-  it('⚠️ والختامُ «تواصل معنا» — وهو الذهبيُّ الوحيدُ في الصفحة', () => {
+  it('⚠️ والختام «تواصل معنا» — وهو الذهبيّ الوحيد في الصفحة', () => {
     expect(about.match(/tone="primary"/g) ?? []).toHaveLength(1)
     expect(about).toMatch(/<Button as=\{Link\} to="\/contact" tone="primary"/)
   })
 
-  it('و«من نحن» تُصيَّر من صفحتها لا من قالب الفقرات', () => {
+  it('و«من نحن» تصيّر من صفحتها لا من قالب الفقرات', () => {
     const staticSrc = code('src/pages/Static.tsx')
     expect(staticSrc).toMatch(/lazy\(\(\) => import\("\.\/About"\)\)/)
     expect(staticSrc).toMatch(/if \(slug === "about"\) return <AboutPage \/>/)

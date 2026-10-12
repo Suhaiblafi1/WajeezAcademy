@@ -99,8 +99,8 @@ export default function Journey() {
       setRows([]);
       setOffline(
         err instanceof ApiError && err.status === 401
-          ? "سجّل دخولك بحسابك الحقيقي لتصل إلى رحلتك وجلساتك وواجباتك هنا."
-          : err instanceof ApiError ? err.message : "الخادم غير متصل — أعد المحاولة بعد قليل",
+          ? "سجّل دخولك لتصل إلى رحلتك."
+          : err instanceof ApiError ? err.message : "الخادم غير متصل — حاول بعد قليل",
       );
     }
   }, []);
@@ -235,13 +235,13 @@ export default function Journey() {
         try {
           await uploadTo(assessmentId, res.uploadUrl, file);
         } catch (err) {
-          toastError(`سُلّم الواجب، ولم يكتمل رفع الملف${err instanceof ApiError ? `: ${err.message}` : ""}. ارفعه مرة أخرى من بطاقة الواجب.`);
+          toastError(`سلّم الواجب، ولم يكتمل رفع الملف${err instanceof ApiError ? `: ${err.message}` : ""}. أعد رفعه من بطاقة الواجب.`);
           await reloadDetail();
           return;
         }
       }
       setFiles((prev) => ({ ...prev, [assessmentId]: null }));
-      toast(isResubmit ? "أُعيد التسليم — سيراجعه مدرّبك" : "سُلّم الواجب — سيراجعه مدرّبك");
+      toast(isResubmit ? "أعيد التسليم — سيراجعه مدرّبك" : "سلّم الواجب — سيراجعه مدرّبك");
       await reloadDetail();
     } catch (err) {
       toastError(err instanceof ApiError ? err.message : "تعذّر التسليم");
@@ -286,7 +286,7 @@ export default function Journey() {
     setBusy(assessmentId);
     try {
       await apiPost(`/api/learner/assessments/${assessmentId}/attempts`, { responses });
-      toast("سُلّمت إجاباتك — تُقيَّم وتظهر درجتك هنا");
+      toast("سلّمت إجاباتك — تقيّم وتظهر درجتك هنا");
       await reloadDetail();
     } catch (err) {
       toastError(err instanceof ApiError ? err.message : "تعذّر تسليم الاختبار");
@@ -316,12 +316,12 @@ export default function Journey() {
         {cancelledOrder && (
           <Card tone="warn" className="mb-5 px-4 py-3.5">
             <p className="flex items-center gap-2 text-sm font-black text-gold-ink">
-              <CircleSlash className="h-4 w-4 shrink-0" /> لم تكتمل دفعتك — ولم يُخصم منك شيء
+              <CircleSlash className="h-4 w-4 shrink-0" /> لم تكتمل دفعتك — ولم يخصم منك شيء
             </p>
             <p className="mt-1.5 text-read leading-6 text-muted-foreground">
-              طلبك محفوظ كما تركته. أكمل الدفع متى شئت من{" "}
+              طلبك محفوظ. أكمل الدفع من{" "}
               <Link to="/student/billing" className="font-bold text-gold-ink underline underline-offset-4">الفواتير</Link>
-              {" "}— ولن تفقد مقعدك ما دامت الشعبة مفتوحة.
+              {" "}— ومقعدك باق ما دامت الشعبة مفتوحة.
             </p>
           </Card>
         )}
@@ -354,8 +354,7 @@ export default function Journey() {
               </Inset>
             )}
             <p className="mt-2.5 text-read leading-6 text-muted-foreground">
-              نؤكّد دفعتك مع البنك، ومراحلُك تظهر أدناه فور تأكيدها — عادةً خلال دقائق.
-              وتفصيل الفاتورة في <Link to="/student/billing" className="font-bold text-teal-light-ink underline underline-offset-4">الفواتير</Link>.
+              تظهر مراحلك أدناه فور تأكيد البنك — عادة خلال دقائق. والتفصيل في <Link to="/student/billing" className="font-bold text-teal-light-ink underline underline-offset-4">الفواتير</Link>.
             </p>
           </Card>
         )}
@@ -376,7 +375,7 @@ export default function Journey() {
             </Button>
           </Panel>
         ) : rows === null ? (
-          <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-teal-ink" aria-label="يُحمَّل" /></div>
+          <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-teal-ink" aria-label="يحمّل" /></div>
         ) : !activeTrack ? (
           <EmptyJourney />
         ) : (
@@ -423,7 +422,7 @@ export default function Journey() {
               ) : !stage ? null : stage.enrollmentId ? (
                 detailLoading || !detail ? (
                   <Panel className="grid place-items-center py-16">
-                    <Loader2 className="h-6 w-6 animate-spin text-teal-ink" aria-label="يُحمَّل" />
+                    <Loader2 className="h-6 w-6 animate-spin text-teal-ink" aria-label="يحمّل" />
                   </Panel>
                 ) : (
                   <StageWork
@@ -458,8 +457,7 @@ function EmptyJourney() {
       <BookOpen className="h-12 w-12 text-teal-light-ink" />
       <h2 className="mt-5 text-2xl font-black">رحلتك تبدأ بأوّل دورة</h2>
       <p className="mt-3 max-w-md text-sm leading-7 text-muted-foreground">
-        حين تشتري دورتك الأولى تظهر هنا مراحلُك: دروسُها وجلساتُها وواجباتُها ومصادرُها، ومعها شهادتُها في آخرها.
-        وابدأ بالتشخيص إن أردت مسارا يُقترح على هدفك.
+        اشتر دورتك الأولى لتظهر هنا مراحلها حتى الشهادة. أو ابدأ بالتشخيص لنقترح مسارك.
       </p>
       <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
         <Link to="/pathways" className="rounded-full bg-teal px-6 py-3 font-black text-on-teal transition hover:bg-teal-light">
@@ -503,7 +501,7 @@ function PlanRequest({ track }: { track: JourneyTrack }) {
       return (
         <Card as="p" tone="warn" className="mt-3 px-4 py-3 text-read leading-6 text-gold-ink">
           طلبك على {pending === 1 ? "دورة واحدة" : `${pending} دورات`} قيد المراجعة. نحجز مقاعدك ثمّ تصلك
-          فاتورةٌ واحدة للخطّة كلها — دفعةٌ واحدة لا أربع.
+          فاتورة واحدة للخطّة كلها.
         </Card>
       );
     }
@@ -511,8 +509,8 @@ function PlanRequest({ track }: { track: JourneyTrack }) {
     return (
       <Card className="mt-3 flex flex-wrap items-center justify-between gap-3 px-4 py-3">
         <p className="min-w-0 text-read leading-6 text-muted-foreground">
-          <span className="font-bold text-foreground">{awaiting} من دوراتك لم تُفتح لها شعبة بعد.</span>{" "}
-          لا تُطلب ولا يُدفع ثمنُها — نُعلمك فور جدولتها، أو راجعها مع مستشارك.
+          <span className="font-bold text-foreground">{awaiting} من دوراتك لم تفتح لها شعبة بعد.</span>{" "}
+          لا يدفع ثمنها الآن — نعلمك فور جدولتها.
         </p>
         <AdvisorContact
           text={reviewMsg}
@@ -528,10 +526,10 @@ function PlanRequest({ track }: { track: JourneyTrack }) {
   return (
     <Card tone="accent" className="mt-3 px-4 py-3 text-xs leading-6 text-teal-light-ink">
       <span className="font-bold">
-        {askable === 1 ? "دورةٌ من خطّتك مفتوحةٌ للتسجيل" : `${askable} من دوراتك مفتوحةٌ للتسجيل`}.
+        {askable === 1 ? "دورة من خطّتك مفتوحة للتسجيل" : `${askable} من دوراتك مفتوحة للتسجيل`}.
       </span>{" "}
-      اختر مرحلتَها في الشريط أعلاه، ثمّ شعبتَها وموعدَها — والدفعُ فوريّ ويُسجّلك مباشرة.
-      {awaiting > 0 && " وما لم تُفتح شعبتُه لا يُدفع ثمنه."}
+      اختر مرحلتها أعلاه ثمّ شعبتها — والدفع يسجّلك فورا.
+      {awaiting > 0 && " وما لم تفتح شعبته لا يدفع ثمنه."}
     </Card>
   );
 }

@@ -27,15 +27,15 @@ export type SortDir = 'asc' | 'desc'
 
 /** ما يُرتَّب به — الشاشةُ تبني قائمتَها منه فلا تُكتب الأسماءُ مرّتين */
 export const SORT_OPTIONS: readonly { key: SortKey; labelAr: string }[] = [
-  { key: 'created', labelAr: 'تاريخُ التقديم' },
+  { key: 'created', labelAr: 'تاريخ التقديم' },
   /* ═══ وتاريخُ المقابلة (٢١ سبتمبر ٢٠٢٦) ═══
 
      «أحتاج ترتيبا إضافيّا للأسماء من خلال تاريخ المقابلة، من الأقدم
      للأحدث مثلا». وموضعُه بعد تاريخ التقديم لا آخرَ القائمة: كلاهما
      تاريخٌ يُفرز به الطابور، والاسمُ والرقمُ بحثٌ لا فرز. */
-  { key: 'interview', labelAr: 'تاريخُ المقابلة' },
+  { key: 'interview', labelAr: 'تاريخ المقابلة' },
   { key: 'name', labelAr: 'الاسم' },
-  { key: 'reference', labelAr: 'رقمُ الطلب' },
+  { key: 'reference', labelAr: 'رقم الطلب' },
   { key: 'status', labelAr: 'الحالة' },
 ]
 

@@ -50,9 +50,9 @@ export default function ModuleBodyDoc({
             >
             {/* لمن لا يعرض متصفّحُه PDF — ولا يُترك أمام إطارٍ فارغ */}
               <Card as="p" className="text-read leading-6 text-muted-foreground">
-                متصفّحُك لا يعرض هذه الصيغة.{" "}
+                متصفّحك لا يعرض هذه الصيغة.{" "}
                 <a href={href} download className="font-bold text-teal-light-ink hover:underline">
-                  نزِّل الملفَّ لتقرأه
+                  نزّل الملفّ لتقرأه
                 </a>
               </Card>
             </object>
@@ -61,7 +61,7 @@ export default function ModuleBodyDoc({
             <FileText className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
             <span className="min-w-0 break-words">{title}</span>
             <a href={href} download className="inline-flex items-center gap-1 font-bold text-teal-light-ink hover:underline">
-              <Download className="h-3 w-3" aria-hidden="true" /> نزِّله
+              <Download className="h-3 w-3" aria-hidden="true" /> نزّله
             </a>
           </p>
         </>
@@ -74,7 +74,7 @@ export default function ModuleBodyDoc({
             <p className="text-read font-bold text-foreground">{title}</p>
             {/* يُقال إنّه تنزيلٌ قبل الضغط — لا زرٌّ يبدو قارئا ثمّ يفتح نافذةَ حفظ */}
             <p className="mt-0.5 text-read leading-6 text-muted-foreground">
-              صيغةُ {label} لا تُعرض في المتصفّح — تُفتح بعد تنزيلها.
+              صيغة {label} لا تعرض في المتصفّح — تفتح بعد تنزيلها.
             </p>
           </div>
           <a
@@ -82,7 +82,7 @@ export default function ModuleBodyDoc({
             download
             className="inline-flex min-h-9 items-center gap-1.5 rounded-full bg-teal px-4 py-2 text-xs font-black text-on-teal transition hover:bg-teal-light"
           >
-            <Download className="h-3.5 w-3.5" aria-hidden="true" /> نزِّل الملفّ
+            <Download className="h-3.5 w-3.5" aria-hidden="true" /> نزّل الملفّ
           </a>
         </Card>
       )}

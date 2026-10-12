@@ -37,57 +37,57 @@ const code = (p: string) =>
 
 const WIN = { scheduleWindowStart: new Date('2026-11-01'), scheduleWindowEnd: new Date('2027-01-31') }
 
-describe('البابُ يفتحه الفصلُ وحدَه', () => {
-  it('⚠️ حدّان بلا سقفٍ = نافذةٌ مفتوحة — وهذا هو العطبُ الذي حبس المدرّب', () => {
-    expect(windowOpen(WIN), 'الفصلُ محدَّدٌ والبابُ مغلق').toBe(true)
+describe('الباب يفتحه الفصل وحده', () => {
+  it('⚠️ حدّان بلا سقف = نافذة مفتوحة — وهذا هو العطب الذي حبس المدرّب', () => {
+    expect(windowOpen(WIN), 'الفصل محدّد والباب مغلق').toBe(true)
   })
 
-  it('وبلا حدَّين لا نافذة — الفصلُ لم يُحدَّد بعدُ فعلا', () => {
+  it('وبلا حدّين لا نافذة — الفصل لم يحدّد بعد فعلا', () => {
     expect(windowOpen({ scheduleWindowStart: null, scheduleWindowEnd: null })).toBe(false)
     expect(windowOpen({ scheduleWindowStart: WIN.scheduleWindowStart, scheduleWindowEnd: null })).toBe(false)
     expect(windowOpen({})).toBe(false)
   })
 })
 
-describe('ولا سقفَ لعدد اللقاءات (٤ أكتوبر ٢٠٢٦)', () => {
-  it('⚠️ القاعدةُ لا تعدّ لقاءً: لا «كم بقي» ولا «بلغتَ السقف»', () => {
-    expect(Object.keys(SW).sort(), 'عادت قاعدةٌ تعدّ اللقاءات').toEqual(['windowOpen'])
+describe('ولا سقف لعدد اللقاءات (٤ أكتوبر ٢٠٢٦)', () => {
+  it('⚠️ القاعدة لا تعدّ لقاء: لا «كم بقي» ولا «بلغت السقف»', () => {
+    expect(Object.keys(SW).sort(), 'عادت قاعدة تعدّ اللقاءات').toEqual(['windowOpen'])
   })
 
-  it('⚠️ والخادمُ لا يقرأ السقفَ ولا يكتبه — ولا يقول «بلغتَ سقفَ اللقاءات»', () => {
+  it('⚠️ والخادم لا يقرأ السقف ولا يكتبه — ولا يقول «بلغت سقف اللقاءات»', () => {
     const SVC = code('server/services/cohort.service.ts')
-    expect(SVC, 'عاد الخادمُ يقرأ سقفَ الشعبة أو يكتبه').not.toMatch(/maxSessions/)
-    expect(SVC).not.toContain('بلغتَ سقفَ اللقاءات')
+    expect(SVC, 'عاد الخادم يقرأ سقف الشعبة أو يكتبه').not.toMatch(/maxSessions/)
+    expect(SVC).not.toContain('بلغت سقف اللقاءات')
     const ROUTE = code('server/http/routes/admin-learning.routes.ts')
     const win = ROUTE.slice(ROUTE.indexOf("'/api/admin/cohorts/:id/schedule-window'"), ROUTE.indexOf('return cohorts.setScheduleWindow('))
-    expect(win, 'لا مسلكَ للنافذة').toContain('end: z.coerce.date().nullish()')
-    expect(win, 'عاد المسلكُ يقبل سقفا').not.toMatch(/maxSessions/)
+    expect(win, 'لا مسلك للنافذة').toContain('end: z.coerce.date().nullish()')
+    expect(win, 'عاد المسلك يقبل سقفا').not.toMatch(/maxSessions/)
   })
 
-  it('⚠️ والشاشتان لا تعرضانه ولا تطلبانه — المدرّبُ والإدارة', () => {
+  it('⚠️ والشاشتان لا تعرضانه ولا تطلبانه — المدرّب والإدارة', () => {
     const TRAINER = code('src/pages/trainer/TrainerSchedule.tsx')
-    expect(TRAINER).not.toMatch(/maxSessions|remaining|بلغتَ سقفَ/)
+    expect(TRAINER).not.toMatch(/maxSessions|remaining|بلغت سقف/)
     const ADMIN = code('src/pages/admin/AdminCohorts.tsx')
-    expect(ADMIN, 'عاد حقلُ السقف إلى نافذة الإدارة').not.toMatch(/maxSessions|سقفُ اللقاءات/)
+    expect(ADMIN, 'عاد حقل السقف إلى نافذة الإدارة').not.toMatch(/maxSessions|سقف اللقاءات/)
     expect(ADMIN).toMatch(/const filled = \[form\.start, form\.end\]\.filter\(Boolean\)\.length;/)
   })
 })
 
-describe('والموضعان يقرآن القاعدةَ نفسَها — لا نسخةً في كلٍّ', () => {
+describe('والموضعان يقرآن القاعدة نفسها — لا نسخة في كلّ', () => {
   const SVC = code('server/services/cohort.service.ts')
 
-  it('⚠️ الخادمُ لا يَضُمّ السقفَ إلى شرط فتح الباب', () => {
+  it('⚠️ الخادم لا يضمّ السقف إلى شرط فتح الباب', () => {
     /* الصيغتان المعطوبتان بالحرف:
          Boolean(cohort.scheduleWindowStart && cohort.scheduleWindowEnd && cohort.maxSessions)
          if (!from || !to || !cap)                                                            */
-    expect(SVC, 'ما زال السقفُ يُضَمّ إلى شرط الفتح')
+    expect(SVC, 'ما زال السقف يضمّ إلى شرط الفتح')
       .not.toMatch(/scheduleWindowEnd\s*&&\s*\w*\.?maxSessions/)
-    expect(SVC, 'ما زال غيابُ السقف يُلقي «لم تفتح الإدارةُ نافذة»')
+    expect(SVC, 'ما زال غياب السقف يلقي «لم تفتح الإدارة نافذة»')
       .not.toMatch(/!from\s*\|\|\s*!to\s*\|\|\s*!cap/)
   })
 
   it('⚠️ ويستوردها من الوحدة الواحدة لا يكتبها بيده', () => {
-    expect(SVC, 'الخادمُ لا يقرأ قاعدةَ النافذة المشتركة')
+    expect(SVC, 'الخادم لا يقرأ قاعدة النافذة المشتركة')
       .toMatch(/from ['"].*trainer\/schedule-window['"]/)
     expect(SVC).toMatch(/windowOpen\(/)
   })

@@ -28,45 +28,45 @@ const code = (p: string) =>
 const GUIDE = code('src/pages/trainer/Guide.tsx') + '\n' + code('src/components/guide/GuideKit.tsx')
 const LAYOUT = code('src/pages/trainer/TrainerLayout.tsx')
 
-describe('① الدليلُ يقول إنّه ليس البوّابة', () => {
+describe('① الدليل يقول إنّه ليس البوّابة', () => {
   it('في الغلاف وفي الرأس الثابت', () => {
-    expect(GUIDE).toMatch(/function Cover\(\)[\s\S]*?هذه صفحةُ شرحٍ، لا بوّابتُك/)
+    expect(GUIDE).toMatch(/function Cover\(\)[\s\S]*?هذه صفحة شرح، لا بوّابتك/)
     const header = GUIDE.slice(GUIDE.indexOf('<header'), GUIDE.indexOf('</header>'))
-    expect(header, 'الرأسُ الثابتُ لا يقول إنّها صفحةُ شرح').toContain('صفحةُ شرح')
+    expect(header, 'الرأس الثابت لا يقول إنّها صفحة شرح').toContain('صفحة شرح')
   })
 })
 
-describe('② كلُّ صورةٍ موسومة', () => {
-  it('الوسمُ داخلَ إطار الصورة نفسِها — فلا تُعرض صورةٌ بلا وسم', () => {
+describe('② كلّ صورة موسومة', () => {
+  it('الوسم داخل إطار الصورة نفسها — فلا تعرض صورة بلا وسم', () => {
     const shot = GUIDE.slice(GUIDE.indexOf('function Shot('), GUIDE.indexOf('</figure>', GUIDE.indexOf('function Shot(')))
-    expect(shot).toMatch(/className="guide-shot-tag"[^>]*>صورةٌ للتوضيح</)
+    expect(shot).toMatch(/className="guide-shot-tag"[^>]*>صورة للتوضيح</)
     /* وكلُّ صورةٍ في المحتوى تمرّ بـ`Shot` لا بـ<img> آخر */
-    expect([...GUIDE.matchAll(/<img\b/g)].length, 'صورةٌ تُعرض خارج `Shot` بلا وسم').toBe(4)
+    expect([...GUIDE.matchAll(/<img\b/g)].length, 'صورة تعرض خارج `Shot` بلا وسم').toBe(4)
   })
 })
 
-describe('③ البوّابةُ والدليلُ متجاوران لا متعاقبان', () => {
-  it('ما يخرج من الدليل إلى البوّابة يُفتح في لسانٍ آخر', () => {
-    expect(GUIDE, 'رابطٌ داخليٌّ بـ<Link> يستبدل الدليلَ بالبوّابة').not.toMatch(/<Link\b[^>]*to=\{?["'`]?\/trainer/)
+describe('③ البوّابة والدليل متجاوران لا متعاقبان', () => {
+  it('ما يخرج من الدليل إلى البوّابة يفتح في لسان آخر', () => {
+    expect(GUIDE, 'رابط داخليّ بـ<Link> يستبدل الدليل بالبوّابة').not.toMatch(/<Link\b[^>]*to=\{?["'`]?\/trainer/)
     expect(GUIDE).toMatch(/<a href=\{s\.path\} target="_blank"/)
     expect(GUIDE).toMatch(/href="\/trainer" target="_blank"/)
-    expect(GUIDE, 'روابطُ النصّ الداخليّة تُفتح في اللسان نفسِه').not.toMatch(/<Link key=\{i\} to=\{href\}/)
+    expect(GUIDE, 'روابط النصّ الداخليّة تفتح في اللسان نفسه').not.toMatch(/<Link key=\{i\} to=\{href\}/)
   })
 
-  it('والبوّابةُ تفتح الدليلَ في لسانٍ آخر', () => {
+  it('والبوّابة تفتح الدليل في لسان آخر', () => {
     expect(LAYOUT).toMatch(/href=\{TRAINER_GUIDE_PATH\} target="_blank"/)
   })
 })
 
-describe('④ الفهرسُ أجزاء', () => {
-  it('كلُّ قسمٍ في جزءٍ واحد، وبترتيب الدليل', () => {
+describe('④ الفهرس أجزاء', () => {
+  it('كلّ قسم في جزء واحد، وبترتيب الدليل', () => {
     const inParts = GUIDE_PARTS.flatMap((p) => p.ids)
-    expect(inParts, 'جزءٌ يذكر قسما لا وجودَ له، أو قسمٌ خارج الأجزاء، أو ترتيبٌ مخالف')
+    expect(inParts, 'جزء يذكر قسما لا وجود له، أو قسم خارج الأجزاء، أو ترتيب مخالف')
       .toEqual(GUIDE_SECTIONS.map((s) => s.id))
   })
 
-  it('والاسمُ في الفهرس قصير — ما قبل النقطتين', () => {
-    expect(shortTitle('دوراتي: عروضُ الدورات وقرارُك فيها')).toBe('دوراتي')
+  it('والاسم في الفهرس قصير — ما قبل النقطتين', () => {
+    expect(shortTitle('دوراتي: عروض الدورات وقرارك فيها')).toBe('دوراتي')
     for (const s of GUIDE_SECTIONS) expect(shortTitle(s.title).length, s.title).toBeLessThanOrEqual(26)
     /* والفهرسُ يُبنى منذ ٥ أكتوبر ٢٠٢٦ في `data/trainer-guide/toc.ts` لا في الصفحة —
        فيُسأل الفهرسُ المبنيُّ نفسُه عن أسمائه، لا الشيفرةُ عن نصّها */
@@ -78,12 +78,12 @@ describe('④ الفهرسُ أجزاء', () => {
 /* ═══ والدليلُ يُرى أوّلا (٣ أكتوبر ٢٠٢٦) ═══
    قولُ صاحب المنصّة: «أوضِحْ مكانَ الدليل، وغيِّر مكانَ البحث». فالدليلُ شارةٌ
    باسمها الكامل لصقَ اسم البوّابة قبل البحث، لا زرٌّ شبحيٌّ بين الأدوات. */
-describe('مكانُ الدليل في رأس البوّابة', () => {
-  it('باسمه الكامل، قبل البحث، ولا نبرةَ شبحٍ له', () => {
+describe('مكان الدليل في رأس البوّابة', () => {
+  it('باسمه الكامل، قبل البحث، ولا نبرة شبح له', () => {
     const at = LAYOUT.indexOf('href={TRAINER_GUIDE_PATH}')
-    expect(at, 'لا رابطَ للدليل في الرأس').toBeGreaterThan(-1)
-    expect(at, 'البحثُ يسبق الدليلَ في الرأس').toBeLessThan(LAYOUT.indexOf('<SearchChip'))
-    expect(LAYOUT.slice(at, at + 900)).toContain('دليلُ المدرّب</span>')
-    expect(LAYOUT.slice(at - 200, at + 900), 'عاد الدليلُ زرّا شبحيّا').not.toMatch(/tone="ghost"/)
+    expect(at, 'لا رابط للدليل في الرأس').toBeGreaterThan(-1)
+    expect(at, 'البحث يسبق الدليل في الرأس').toBeLessThan(LAYOUT.indexOf('<SearchChip'))
+    expect(LAYOUT.slice(at, at + 900)).toContain('دليل المدرّب</span>')
+    expect(LAYOUT.slice(at - 200, at + 900), 'عاد الدليل زرّا شبحيّا').not.toMatch(/tone="ghost"/)
   })
 })

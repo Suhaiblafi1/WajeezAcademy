@@ -33,24 +33,24 @@ export default function PlanCurriculumPage() {
     setDownloading(true); setMsg("");
     try {
       const name = await apiDownload(`/api/admin/cohorts/${cohortId}/trainer-plan/review-bundle`, "خطة-الشعبة.zip");
-      setMsg(`نُزِّلت «${name}».`);
+      setMsg(`نزّلت «${name}».`);
     } catch (e) { setMsg(e instanceof ApiError ? e.message : "تعذّر التنزيل"); }
     finally { setDownloading(false); }
   };
 
-  const title = plan?.cohortTitle ? `منهاجُ «${plan.cohortTitle}»` : "المنهاج";
+  const title = plan?.cohortTitle ? `منهاج «${plan.cohortTitle}»` : "المنهاج";
   return (
     <AdminLayout title={title}>
       {plan === undefined ? (
-        <p className="text-read text-muted-foreground">يُحمَّل…</p>
+        <p className="text-read text-muted-foreground">يحمّل…</p>
       ) : plan === null ? (
-        <p className="text-read text-muted-foreground">لا خطّةَ لهذه الشعبة بعد.</p>
+        <p className="text-read text-muted-foreground">لا خطّة لهذه الشعبة بعد.</p>
       ) : (
         <>
           {plan.trainerName && <p className="text-read text-muted-foreground">{plan.trainerName}</p>}
           <div className="mt-3 flex flex-wrap gap-2 print:hidden">
             <Button tone="secondary" size="sm" icon={Download} disabled={downloading} onClick={() => void download()}>
-              {downloading ? "يُجهَّز التنزيل…" : "نزِّله"}
+              {downloading ? "يجهّز التنزيل…" : "نزّله"}
             </Button>
             <Button tone="ghost" size="sm" icon={Printer} onClick={() => window.print()}>اطبعه</Button>
           </div>

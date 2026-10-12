@@ -23,8 +23,8 @@ const root = process.cwd()
 const code = (p: string) =>
   readFileSync(join(root, p), 'utf8').replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '').replace(/^\s*\/\/.*$/gm, '')
 
-describe('صندوقُ «اقتراحٌ للإدارة» زال من مواضعه الأربعة', () => {
-  it('مخطّطُ الخطّة عند الخادم لم يعد يقبل `proposals`', () => {
+describe('صندوق «اقتراح للإدارة» زال من مواضعه الأربعة', () => {
+  it('مخطّط الخطّة عند الخادم لم يعد يقبل `proposals`', () => {
     const routes = code('server/http/routes/learning-portal.routes.ts')
     const schema = routes.slice(
       routes.indexOf('const planContent = z.object({'),
@@ -34,13 +34,13 @@ describe('صندوقُ «اقتراحٌ للإدارة» زال من مواضع�
     expect(schema).not.toContain('courseTitleAr')
   })
 
-  it('وشاشةُ المدرّب لا تكتبهما في الخطّة', () => {
+  it('وشاشة المدرّب لا تكتبهما في الخطّة', () => {
     const ws = code('src/pages/trainer/CohortWorkspace.tsx')
     expect(ws).not.toMatch(/proposals: \{ \.\.\.\(content\.proposals \?\? \{\}\)/)
     expect(ws).not.toContain('pathwayTitleAr')
   })
 
-  it('وشاشةُ المعتمِد لا تعرض خياراتٍ تُطبَّق مع الاعتماد', () => {
+  it('وشاشة المعتمد لا تعرض خيارات تطبّق مع الاعتماد', () => {
     const admin = code('src/pages/admin/CohortOps.tsx')
     expect(admin).not.toContain('applyProposals')
     /* والاعتمادُ نفسُه في مكوّن المراجعة منذ ٣ أكتوبر ٢٠٢٦ — تعرضه البطاقةُ
@@ -52,7 +52,7 @@ describe('صندوقُ «اقتراحٌ للإدارة» زال من مواضع�
     expect(route).toMatch(/plans\.decide\(req\.auth!\.userId, id, body\.approve, body\.note\)/)
   })
 
-  it('والخادمُ لا يكتب اسما على نسخةٍ قائمةٍ من اعتماد خطّة', () => {
+  it('والخادم لا يكتب اسما على نسخة قائمة من اعتماد خطّة', () => {
     const svc = code('server/services/cohort-plan.service.ts')
     expect(svc).not.toContain('courseVersion.updateMany')
     expect(svc).not.toContain('pathwayVersion.updateMany')
@@ -61,7 +61,7 @@ describe('صندوقُ «اقتراحٌ للإدارة» زال من مواضع�
 
   /* والاسمُ في المعجم يبقى: أحداثٌ حقيقيّةٌ كُتبت به قبل الحذف، والمعجمُ هو
      ما يُقرأ به سجلُّ الشعبة — فحذفُ السطر يترك أحداثا بلا اسم. */
-  it('واسمُ الفعل يبقى في معجم الأثر — لأنّ ما كُتب به يُقرأ', () => {
+  it('واسم الفعل يبقى في معجم الأثر — لأنّ ما كتب به يقرأ', () => {
     expect(code('src/application/audit/labels.ts')).toContain("'cohort.plan.proposal_applied'")
   })
 })
@@ -81,61 +81,61 @@ describe('صندوقُ «اقتراحٌ للإدارة» زال من مواضع�
    زالت، والورشةُ لا تنادي ما زال، والمسلكُ لا يقبل، والنوعُ خرج من
    `CHANGE_TYPES` — وهو الجذر: ما دام النوعُ في القائمة فالبابُ مفتوحٌ
    لكلّ من ينادي `submit` ولو بلا شاشة. */
-describe('ق٥ بابُ اسم الدورة مغلقٌ في مواضعه الأربعة', () => {
-  it('⚠️ لا شاشةَ اقتراحِ اسمٍ أصلا', () => {
+describe('ق٥ باب اسم الدورة مغلق في مواضعه الأربعة', () => {
+  it('⚠️ لا شاشة اقتراح اسم أصلا', () => {
     expect(existsSync(join(root, 'src/pages/trainer/CourseTitleProposal.tsx')),
-      'عادت شاشةُ اقتراح الاسم').toBe(false)
+      'عادت شاشة اقتراح الاسم').toBe(false)
   })
 
-  it('⚠️ وورشةُ الشعبة لا تناديها — ولا تحمل إليها مسودّةً قديمة', () => {
+  it('⚠️ وورشة الشعبة لا تناديها — ولا تحمل إليها مسودّة قديمة', () => {
     const ws = code('src/pages/trainer/CohortWorkspace.tsx')
-    expect(ws, 'الورشةُ ما زالت تصيّر شاشةَ الاقتراح').not.toContain('CourseTitleProposal')
-    expect(ws, 'ما زال يُمرَّر اقتراحُ اسمٍ من الخطّة').not.toContain('legacyDraft')
+    expect(ws, 'الورشة ما زالت تصيّر شاشة الاقتراح').not.toContain('CourseTitleProposal')
+    expect(ws, 'ما زال يمرّر اقتراح اسم من الخطّة').not.toContain('legacyDraft')
   })
 
-  it('⚠️ ولا مسلكَ اسمٍ في مسارات المدرّب', () => {
+  it('⚠️ ولا مسلك اسم في مسارات المدرّب', () => {
     const routes = code('server/http/routes/trainer-portal.routes.ts')
     const urls = [...routes.matchAll(/app\.(get|post|patch|delete)\(\s*'([^']+)'/g)].map((m) => m[2])
-    expect(urls.filter((u) => u.includes('course-title')), 'عاد مسلكُ اقتراح الاسم').toEqual([])
+    expect(urls.filter((u) => u.includes('course-title')), 'عاد مسلك اقتراح الاسم').toEqual([])
   })
 
-  it('⚠️ والجذرُ: لا نوعَ `course_title_edit` في الخدمة — لا في الأنواع ولا في التطبيق', () => {
+  it('⚠️ والجذر: لا نوع `course_title_edit` في الخدمة — لا في الأنواع ولا في التطبيق', () => {
     const svc = code('server/services/trainer-change.service.ts')
     const types = svc.slice(svc.indexOf('export const CHANGE_TYPES = ['), svc.indexOf('] as const'))
-    expect(types, 'عاد النوعُ إلى القائمة، فعاد البابُ لكلّ من ينادي `submit`')
+    expect(types, 'عاد النوع إلى القائمة، فعاد الباب لكلّ من ينادي `submit`')
       .not.toContain('course_title_edit')
-    expect(svc, 'بقيت حالةُ تطبيقِ الاسم — فاسمُ إصدارٍ جديدٍ يُبدَّل ببندٍ لا بابَ له')
+    expect(svc, 'بقيت حالة تطبيق الاسم — فاسم إصدار جديد يبدّل ببند لا باب له')
       .not.toMatch(/case 'course_title_edit'/)
     /* والاسمُ يُنسخ من الإصدار الأساس بلا تبديل — وهو ما كان قبل ح-٣ */
     expect(svc).toMatch(/const titleAr = baseVersion\.titleAr/)
   })
 
-  it('⚠️ وبطاقةُ المعتمِد لا تقرأ بندَ اسمٍ لم يعد يُولَد', () => {
+  it('⚠️ وبطاقة المعتمد لا تقرأ بند اسم لم يعد يولد', () => {
     const admin = code('src/pages/admin/TrainerOps.tsx')
-    expect(admin, 'ما زالت البطاقةُ تقرأ بندَ الاسم').not.toContain('course_title_edit')
+    expect(admin, 'ما زالت البطاقة تقرأ بند الاسم').not.toContain('course_title_edit')
   })
 
   /* ولا يُترك المعلَّقُ في طابورٍ لا يعرف أحدٌ ما يفعل به: هجرةٌ تُصيّره
      `superseded` بتعليلها. والفحصُ على وجود الهجرة وعلى ما تفعله — فحذفُ
      البابِ بلا هذه الهجرة يترك طلبَ مدرّبٍ حيًّا بلا من يبتّ فيه. */
-  it('⚠️ وما أُرسل قبل الإغلاق له هجرةٌ تقف به وتقول لماذا', () => {
+  it('⚠️ وما أرسل قبل الإغلاق له هجرة تقف به وتقول لماذا', () => {
     const sql = readFileSync(join(root, 'prisma/migrations/20260917190000_close_course_title_channel/migration.sql'), 'utf8')
     const body = sql.replace(/^\s*--.*$/gm, '')
-    expect(body, 'الهجرةُ لا تمسّ الطلبات المعلّقة').toMatch(/UPDATE "TrainerChangeRequest"/)
+    expect(body, 'الهجرة لا تمسّ الطلبات المعلّقة').toMatch(/UPDATE "TrainerChangeRequest"/)
     expect(body).toMatch(/superseded/)
-    expect(body, 'لم تُعلَّل الوقفةُ لصاحبها').toMatch(/reviewerComment/)
-    expect(body, 'مسّت الهجرةُ ما بُتّ فيه — قرارٌ وقع لا يُعاد كتابتُه')
+    expect(body, 'لم تعلّل الوقفة لصاحبها').toMatch(/reviewerComment/)
+    expect(body, 'مسّت الهجرة ما بتّ فيه — قرار وقع لا يعاد كتابته')
       .toMatch(/status" IN \('draft', 'submitted', 'under_review', 'changes_requested'\)/)
-    expect(body, 'الهجرةُ تطال طلباتٍ ليست اقتراحَ اسم').toMatch(/changeType" = 'course_title_edit'/)
+    expect(body, 'الهجرة تطال طلبات ليست اقتراح اسم').toMatch(/changeType" = 'course_title_edit'/)
   })
 })
 
-describe('المساراتُ الميّتةُ حُذفت — وما تناديه شاشةٌ باقٍ', () => {
+describe('المسارات الميّتة حذفت — وما تناديه شاشة باق', () => {
   const routes = code('server/http/routes/trainer-portal.routes.ts')
 
-  it('لا إرسالَ اقتراحٍ ولا قائمتَه ولا سحبَه ولا مخطّطَ دورةٍ من جانب المدرّب', () => {
+  it('لا إرسال اقتراح ولا قائمته ولا سحبه ولا مخطّط دورة من جانب المدرّب', () => {
     for (const path of ['/api/trainer/change-requests', '/api/trainer/courses/:courseId/blueprint']) {
-      expect(routes, `المسارُ الميّت عاد: ${path}`).not.toContain(`'${path}'`)
+      expect(routes, `المسار الميّت عاد: ${path}`).not.toContain(`'${path}'`)
     }
     expect(routes).not.toContain('/api/trainer/change-requests/:id/withdraw')
   })
@@ -143,13 +143,13 @@ describe('المساراتُ الميّتةُ حُذفت — وما تناديه
   /* ولم تعد شاشةُ المؤهّلات تناديه (٢٩ سبتمبر ٢٠٢٦): لوحُ «نطاقُ اقتراحاتي»
      كان يشرح بابَ «تعديلاتي على دوراتي»، فذهب بذهابه. والمسلكُ باقٍ مع
      أبواب الاقتراح في الخادم — والعلّةُ في رأسها من `trainer-portal.routes.ts`. */
-  it('و`catalog-scope` باقٍ في الخادم — ولا تعرضه «مؤهّلاتي» بعد ذهاب بابه', () => {
+  it('و`catalog-scope` باق في الخادم — ولا تعرضه «مؤهّلاتي» بعد ذهاب بابه', () => {
     expect(routes).toContain("'/api/trainer/catalog-scope'")
     expect(code('src/pages/trainer/Qualifications.tsx')).not.toContain('/api/trainer/catalog-scope')
   })
 })
 
-describe('لوحةُ المدرّب — طابورٌ واحدٌ لا لوحُ أرقام', () => {
+describe('لوحة المدرّب — طابور واحد لا لوح أرقام', () => {
   const home = code('src/pages/trainer/TrainerDashboard.tsx')
 
   /* ═══ تحديثُ هذا الحارس — بقرارٍ لا بتنازل ═══
@@ -166,39 +166,39 @@ describe('لوحةُ المدرّب — طابورٌ واحدٌ لا لوحُ أ
      ووجهتُها. والمحفوظُ من القرار الأوّل هو **الترتيب**: سطرٌ رفيعٌ، ثمّ
      العمل، ثمّ الاجتماعُ في الذيل. والمنقوضُ هو **شكلُ العمل** وحدَه. */
 
-  it('⚠️ الموجزُ يُقرأ ويُمرَّر إلى الطابور — ولا يُرسَم شبكةً ثانيةً لتبويب «شعبي»', () => {
-    expect(home, 'الموجزُ لا يُجلَب').toContain('/api/trainer/cohorts/summary')
+  it('⚠️ الموجز يقرأ ويمرّر إلى الطابور — ولا يرسم شبكة ثانية لتبويب «شعبي»', () => {
+    expect(home, 'الموجز لا يجلب').toContain('/api/trainer/cohorts/summary')
     const at = home.indexOf('buildWorkQueue(')
-    expect(at, 'الطابورُ لا يُبنى في اللوحة').toBeGreaterThan(-1)
+    expect(at, 'الطابور لا يبنى في اللوحة').toBeGreaterThan(-1)
     const args = home.slice(at, home.indexOf(';', at))
-    expect(args, 'الموجزُ مجلوبٌ ولا يبلغ الطابور').toContain('summary')
-    expect(home, 'شبكةُ «شعبي» عادت — وهي تبويبٌ مرسومٌ مرّةً ثانية').not.toMatch(/summary\.map\(/)
+    expect(args, 'الموجز مجلوب ولا يبلغ الطابور').toContain('summary')
+    expect(home, 'شبكة «شعبي» عادت — وهي تبويب مرسوم مرّة ثانية').not.toMatch(/summary\.map\(/)
   })
 
-  it('السطرُ أوّلا، ثمّ الطابور، ثمّ المتعثّرون، ثمّ الاجتماعُ في الذيل', () => {
-    const hello = home.indexOf('أهلاً {name}')
+  it('السطر أوّلا، ثمّ الطابور، ثمّ المتعثّرون، ثمّ الاجتماع في الذيل', () => {
+    const hello = home.indexOf('أهلا {name}')
     const queue = home.indexOf('<TrainerWorkQueue')
     const risk = home.indexOf('<AtRiskList')
     /* وصار سطرُ الاجتماع مكوّنا يُستعمل مرّتين (ع-١) — فيُطلَب وسمُه لا نصُّه */
     const meeting = home.indexOf('<BookAdminMeeting')
-    expect(hello, 'لا سطرَ تحيّةٍ في الرأس').toBeGreaterThan(0)
-    expect(hello, 'الطابورُ قبل السطر').toBeLessThan(queue)
+    expect(hello, 'لا سطر تحيّة في الرأس').toBeGreaterThan(0)
+    expect(hello, 'الطابور قبل السطر').toBeLessThan(queue)
     expect(queue, 'المتعثّرون قبل الطابور').toBeLessThan(risk)
-    expect(risk, 'الاجتماعُ قبل المتعثّرين').toBeLessThan(meeting)
+    expect(risk, 'الاجتماع قبل المتعثّرين').toBeLessThan(meeting)
   })
 
-  it('⚠️ ولا وجهةَ مكتوبةً بيدٍ في اللوحة — الوجهاتُ كلُّها من بنود الطابور', () => {
+  it('⚠️ ولا وجهة مكتوبة بيد في اللوحة — الوجهات كلّها من بنود الطابور', () => {
     /* وجهةُ البند تُحسَب في `work-queue.ts` ومعها إجراؤها وسياقُها. أمّا
        `to="/trainer/…"` مكتوبةً هنا فمعناها قسمٌ ثانٍ يقود حيث يقود التبويبُ
        فوقه — وهي الشكوى بعينها. والفحصُ على شكل المسار لا على نصّ الرابط:
        مسارُ نقطةِ نهايةٍ يسبقه `api` فلا يُطابَق. */
-    expect(home, 'وجهةٌ مكتوبةٌ بيدٍ في اللوحة').not.toMatch(/["'`]\/trainer\//)
+    expect(home, 'وجهة مكتوبة بيد في اللوحة').not.toMatch(/["'`]\/trainer\//)
   })
 
-  it('والعددُ الذي لا مصدرَ له لا يُختلق — لا حضورٌ ٪ ولا تقييمٌ في اللوحة', () => {
+  it('والعدد الذي لا مصدر له لا يختلق — لا حضور ٪ ولا تقييم في اللوحة', () => {
     /* لوحُ «أرقامُك» في التصميم حمل أربعةً: اثنان لهما مصدرٌ في هذه الردود
        (الشعبُ والطلبة) ويقولهما السطرُ نثرا، واثنان لا مصدرَ لهما هنا. */
-    expect(home, 'رقمٌ بلا مصدرٍ في اللوحة').not.toContain('حضورُ لقاءاتك')
-    expect(home, 'رقمٌ بلا مصدرٍ في اللوحة').not.toContain('ما قيل عنك')
+    expect(home, 'رقم بلا مصدر في اللوحة').not.toContain('حضور لقاءاتك')
+    expect(home, 'رقم بلا مصدر في اللوحة').not.toContain('ما قيل عنك')
   })
 })

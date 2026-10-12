@@ -100,7 +100,7 @@ export default function SessionsAndAttendance({ cohortId, refresh = "" }: { coho
   };
 
   const markAttendance = (sessionId: string, enrollmentId: string, status: string) =>
-    act(() => apiPost(`/api/trainer/sessions/${sessionId}/attendance`, { enrollmentId, status }), "سُجل الحضور وأُعيد حساب التقدم");
+    act(() => apiPost(`/api/trainer/sessions/${sessionId}/attendance`, { enrollmentId, status }), "سجل الحضور وأعيد حساب التقدم");
 
   /* ═══ وسقط «ارفع التسجيل» (٣٠ سبتمبر ٢٠٢٦) ═══
 
@@ -134,8 +134,8 @@ export default function SessionsAndAttendance({ cohortId, refresh = "" }: { coho
       setMoveForm(EMPTY_MOVE);
       return moved;
     }, (r) => ((r as { approvalState?: string } | null)?.approvalState === "approved"
-      ? "نُقل الموعد وبقي معتمَدا — ووصل متعلّميك موعدُه الجديد"
-      : "نُقل الموعد — ويعود للاعتماد قبل أن يصل متعلّميك"));
+      ? "نقل الموعد وبقي معتمدا — ووصل متعلّميك موعده الجديد"
+      : "نقل الموعد — ويعود للاعتماد قبل أن يصل متعلّميك"));
 
   /* ═══ يبدأ لقاءه مضيفا (٢٩ سبتمبر ٢٠٢٦) ═══
 
@@ -156,7 +156,7 @@ export default function SessionsAndAttendance({ cohortId, refresh = "" }: { coho
       else window.location.assign(startUrl);
     } catch (e) {
       win?.close();
-      toastError(e instanceof ApiError ? e.message : "تعذّر بدءُ اللقاء — أعد المحاولة");
+      toastError(e instanceof ApiError ? e.message : "تعذّر بدء اللقاء — أعد المحاولة");
     } finally {
       setBusy(false);
     }
@@ -164,10 +164,10 @@ export default function SessionsAndAttendance({ cohortId, refresh = "" }: { coho
 
   /* والحذفُ فعلٌ كانت الشاشةُ تأمر به ولا بابَ له — وصار له مسلكٌ محروس */
   const removeSession = (sessionId: string) =>
-    act(() => apiDelete(`/api/trainer/sessions/${sessionId}`), "حُذف اللقاء");
+    act(() => apiDelete(`/api/trainer/sessions/${sessionId}`), "حذف اللقاء");
 
   if (err) return <Card tone="danger" role="alert" className="text-center text-read font-bold text-red-300">{err}</Card>;
-  if (!row) return <div className="grid place-items-center py-10"><Loader2 className="h-7 w-7 animate-spin text-muted-foreground/50" aria-label="جارٍ التحميل" /></div>;
+  if (!row) return <div className="grid place-items-center py-10"><Loader2 className="h-7 w-7 animate-spin text-muted-foreground/50" aria-label="جار التحميل" /></div>;
 
   const c = row.cohort;
   const active = c.enrollments.filter((e) => e.status !== "waitlisted");
@@ -183,7 +183,7 @@ export default function SessionsAndAttendance({ cohortId, refresh = "" }: { coho
     <Panel as="section">
       <h3 className="flex items-center gap-2 text-sm font-black text-foreground"><CalendarDays className="h-4 w-4 text-teal-light-ink" /> اللقاءات والحضور</h3>
       {sessions.length === 0 ? (
-        <p className="mt-2 text-read text-muted-foreground">لا لقاءَ من جدولك بعد — أضِف لقاءاتِك من النموذج أعلاه.</p>
+        <p className="mt-2 text-read text-muted-foreground">لا لقاءات بعد — أضفها من النموذج أعلاه.</p>
       ) : (
         <div className="mt-3 space-y-3">
           {sessions.map((s) => (
@@ -203,15 +203,15 @@ export default function SessionsAndAttendance({ cohortId, refresh = "" }: { coho
                       <span className="me-1.5 inline-flex items-center rounded-full border border-gold/40 bg-gold/10 px-2.5 py-0.5 text-fine font-black text-gold-ink">
                         بانتظار اعتماد الإدارة
                       </span>
-                      غيرُ ظاهرةٍ للمتعلّمين بعد.
+                      غير ظاهرة للمتعلّمين بعد.
                     </p>
                   )}
                   {s.approvalState === "rejected" && (
                     <p className="mt-1 text-read leading-6 text-muted-foreground">
                       <span className="me-1.5 inline-flex items-center rounded-full border border-red-400/40 bg-red-400/10 px-2.5 py-0.5 text-fine font-black text-red-300">
-                        رُدَّت
+                        ردّت
                       </span>
-                      {s.reviewNote || "راجِع ملاحظةَ الإدارة ثمّ انقل موعدَها."}
+                      {s.reviewNote || "راجع ملاحظة الإدارة ثمّ انقل موعدها."}
                     </p>
                   )}
                   {/* ═══ وما وقع فعلا — كانت زووم تكتبه ولا يراه أحد ═══
@@ -237,7 +237,7 @@ export default function SessionsAndAttendance({ cohortId, refresh = "" }: { coho
                       والفعلُ الذي يزيله في يده: يسجّله بنفسه أدناه. */}
                   {s.zoom?.syncState === "failed" && (
                     <p className="mt-1 text-read leading-6 text-gold-ink">
-                      تعذّرت مزامنةُ الحضور من زووم — سجّله بيدك أدناه.
+                      تعذّرت مزامنة الحضور من زووم — سجّله بيدك أدناه.
                       {s.zoom.syncError ? ` (${s.zoom.syncError})` : ""}
                     </p>
                   )}
@@ -260,7 +260,7 @@ export default function SessionsAndAttendance({ cohortId, refresh = "" }: { coho
                 {s.status !== "done" && (
                   <a href={`/api/calendar/cohort-sessions/${s.id}.ics`}
                     className="flex min-h-9 items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-fine font-bold text-muted-foreground transition hover:border-white/35 hover:text-foreground">
-                    <CalendarPlus className="h-3 w-3" /> أضِفها لتقويمك
+                    <CalendarPlus className="h-3 w-3" /> أضفها لتقويمك
                   </a>
                 )}
                 {s.status !== "done" && (
@@ -296,10 +296,8 @@ export default function SessionsAndAttendance({ cohortId, refresh = "" }: { coho
               {moveFor === s.id && (
                 <Inset tone="accent" className="mt-3 space-y-2.5">
                   <p className="text-read leading-relaxed text-foreground">
-                    الموعدُ لك داخلَ أشهر فصلك. وما تنقله <b>داخلَ موعد محوره</b> يبقى معتمَدا —
-                    قدّمته أو أخّرته — ويصل متعلّميك موعدُه الجديد بالرابط نفسِه.
-                    {" "}وما تنقله خارجَه <b>يعود لانتظار الإدارة</b> — فيغيب عن شاشات متعلّميك حتّى
-                    تعتمده، ويصلهم خبرُ التغيير.
+                    وما تنقله <b>داخل موعد محوره</b> يبقى معتمدا ويصل متعلّميك موعده الجديد.
+                    {" "}وما تنقله خارجه <b>يعود لانتظار الإدارة</b> ويغيب عن شاشات متعلّميك حتّى تعتمده، ويصلهم خبر التغيير.
                   </p>
                   <div className="grid gap-2.5 sm:grid-cols-3">
                     <div>
@@ -321,10 +319,10 @@ export default function SessionsAndAttendance({ cohortId, refresh = "" }: { coho
                   <Button tone="confirm" size="sm" type="button"
                     disabled={busy || !moveForm.date || !moveForm.from || moveForm.to <= moveForm.from}
                     onClick={() => void moveSession(s.id)} className="disabled:cursor-not-allowed">
-                    انقلْه
+                    انقله
                   </Button>
                   {!!moveForm.from && moveForm.to <= moveForm.from && (
-                    <p className="text-read font-bold text-gold-ink">ساعةُ الانتهاء قبل ساعة البدء.</p>
+                    <p className="text-read font-bold text-gold-ink">ساعة الانتهاء قبل ساعة البدء.</p>
                   )}
                 </Inset>
               )}
@@ -351,7 +349,7 @@ export default function SessionsAndAttendance({ cohortId, refresh = "" }: { coho
               {/* ═══ حالُ التسجيل بعد انتهاء اللقاء — وقبله لا شيء ═══ */}
               {(s.status === "done" || sessionEndMs(s) < Date.now()) && openableRecordings(s.recordings).length === 0 && (
                 <p className="mt-3 border-t border-white/8 pt-3 text-read leading-6 text-muted-foreground">
-                  بانتظار تسجيل Zoom — يصل وحدَه بعد انتهاء اللقاء (قد يستغرق ساعة)، فيراه متعلّموك وتعيد أنت مشاهدتَه.
+                  بانتظار تسجيل Zoom — يصل وحده خلال ساعة تقريبا.
                 </p>
               )}
               {openableRecordings(s.recordings).length > 0 && (
@@ -403,16 +401,16 @@ export default function SessionsAndAttendance({ cohortId, refresh = "" }: { coho
       {/* والحذفُ يقول أثرَه كاملا قبل وقوعه — لا «أنت متأكّد؟» */}
       {pendingDelete && (
         <ConfirmAction
-          titleAr="حذفُ اللقاء"
+          titleAr="حذف اللقاء"
           confirmLabelAr="احذفه"
           busy={busy}
           onCancel={() => setPendingDelete(null)}
           onConfirm={() => { const d = pendingDelete; setPendingDelete(null); void removeSession(d.id); }}
         >
           <p className="text-read leading-7">
-            يُحذف «{pendingDelete.title}» من شعبتك، ويُلغى اجتماعُ Zoom معه.
-            وإن كان معتمَدا وصل مسجَّليك خبرُ إلغائه.
-            {" "}ولا يُحذف لقاءٌ سُجّل فيه حضورٌ أو انعقد اجتماعُه — تلك واقعةٌ لا مسوّدة.
+            يحذف «{pendingDelete.title}» من شعبتك، ويلغى اجتماع Zoom معه.
+            وإن كان معتمدا وصل مسجّليك خبر إلغائه.
+            {" "}ولا يحذف لقاء سجّل فيه حضور أو انعقد.
           </p>
         </ConfirmAction>
       )}

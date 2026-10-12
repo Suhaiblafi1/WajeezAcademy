@@ -81,13 +81,13 @@ export function proposeSchedule(input: ScheduleInput): ScheduleProposal {
       return { id: s.id, at, mins, day: zonedDay(new Date(at)), clock: zonedClock(new Date(at)), moduleIds: [...(s.moduleIds ?? [])] }
     })
     .sort((a, b) => a.at - b.at)
-  if (live.length < 2) return { ok: false, reasonAr: 'أقلُّ من لقاءين — لا جدولَ يُرتَّب' }
+  if (live.length < 2) return { ok: false, reasonAr: 'أقلّ من لقاءين — لا جدول يرتّب' }
 
   const score = (sessions: ScheduleInput['sessions'], tasks: ScheduleInput['tasks']) =>
     planScorecard({ period: input.period, content: input.content, sessions, assessments: tasks, now: input.now })
   const before = score(input.sessions, input.tasks)
   if (gapsOf(before, 'rhythm') === 0 && gapsOf(before, 'session_times') === 0) {
-    return { ok: false, reasonAr: 'لقاءاتُه على يومٍ وساعةٍ ثابتين وفي وقتٍ مناسب — لا جدولَ يُقترح' }
+    return { ok: false, reasonAr: 'لقاءاته على يوم وساعة ثابتين وفي وقت مناسب — لا جدول يقترح' }
   }
 
   /* ① اليومُ والساعة: الأكثرُ تكرارا ممّا يصلح للقاءاته كلِّها — فيتغيّر أقلُّ ما يمكن */
@@ -108,7 +108,7 @@ export function proposeSchedule(input: ScheduleInput): ScheduleProposal {
     const latest = Math.floor((minutesOf(LATEST_END) - longest) / 30) * 30
     const clock = clockOf(Math.min(minutesOf('19:00'), latest))
     if (!fitsTime(weekday, clock, longest)) {
-      return { ok: false, reasonAr: 'لقاءاتُه أطولُ من أن تقع في وقتٍ مناسبٍ مساءً — قسّمها أوّلا' }
+      return { ok: false, reasonAr: 'لقاءاته أطول من أن تقع في وقت مناسب مساء — قسّمها أوّلا' }
     }
     target = { n: 0, first: 0, weekday, clock }
   }
@@ -131,7 +131,7 @@ export function proposeSchedule(input: ScheduleInput): ScheduleProposal {
     if (days.length === 0) {
       return {
         ok: false,
-        reasonAr: `لا ${WEEKDAY_AR[target.weekday]} في موعد لقاء ${s.day} بلا عطلةٍ وبعد ما قبله — رتّب مواعيدَ المحاور أوّلا`,
+        reasonAr: `لا ${WEEKDAY_AR[target.weekday]} في موعد لقاء ${s.day} بلا عطلة وبعد ما قبله — رتّب مواعيد المحاور أوّلا`,
       }
     }
     const day = days.reduce((best, x) => (Math.abs(daysBetween(s.day, x)) < Math.abs(daysBetween(s.day, best)) ? x : best))
@@ -140,7 +140,7 @@ export function proposeSchedule(input: ScheduleInput): ScheduleProposal {
     moved.set(s.id, { at, endAt: at + s.mins * 60_000 })
     if (at !== s.at) moves.push({ sessionId: s.id, startsAt: new Date(at).toISOString(), endsAt: new Date(at + s.mins * 60_000).toISOString() })
   }
-  if (moves.length === 0) return { ok: false, reasonAr: 'لقاءاتُه على اليوم والساعة أنفسِهما — لا جدولَ يُقترح' }
+  if (moves.length === 0) return { ok: false, reasonAr: 'لقاءاته على اليوم والساعة أنفسهما — لا جدول يقترح' }
 
   /* ③ والسلسلة: مهمّةُ المحور بقدر ما انتقل أوّلُ لقاءٍ له، والمشروعُ بعد آخر لقاءٍ بأسبوع — داخلَ المدّة */
   const firstOf = (moduleId: string) => live.find((s) => s.moduleIds.includes(moduleId))
@@ -184,26 +184,26 @@ export function proposeSchedule(input: ScheduleInput): ScheduleProposal {
   )
   for (const key of TIMING_KEYS) {
     if (gapsOf(after, key) > gapsOf(before, key)) {
-      return { ok: false, reasonAr: `جدولٌ ثابتٌ هنا يُسيء «${labelOf(after, key)}» — فلا يُقترح. رتّبه بيدك أو اكتب ملاحظة` }
+      return { ok: false, reasonAr: `جدول ثابت هنا يسيء «${labelOf(after, key)}» — فلا يقترح. رتّبه بيدك أو اكتب ملاحظة` }
     }
   }
   const wasBlocked = new Set(before.filter((i) => i.status === 'blocked').map((i) => i.key))
   const newlyBlocked = after.find((i) => i.status === 'blocked' && !wasBlocked.has(i.key))
-  if (newlyBlocked) return { ok: false, reasonAr: `جدولٌ ثابتٌ هنا يُسقط «${newlyBlocked.labelAr}» — فلا يُقترح` }
+  if (newlyBlocked) return { ok: false, reasonAr: `جدول ثابت هنا يسقط «${newlyBlocked.labelAr}» — فلا يقترح` }
   if (gapsOf(after, 'rhythm') + gapsOf(after, 'session_times') >= gapsOf(before, 'rhythm') + gapsOf(before, 'session_times')) {
-    return { ok: false, reasonAr: 'لا جدولَ ثابتٌ يُحسّن الإيقاعَ داخلَ مواعيد المحاور — رتّبها أوّلا' }
+    return { ok: false, reasonAr: 'لا جدول ثابت يحسّن الإيقاع داخل مواعيد المحاور — رتّبها أوّلا' }
   }
 
   /* والسببُ «ما هو الآن ← ما نقترح» (صاحب المنصّة، ١١ أكتوبر ٢٠٢٦): ما في لقاءاته اليومَ أوّلا، ثمّ الجدول */
-  const nowAr = tally.size > MAX_DISTINCT_SLOTS ? `لقاءاتُك اليومَ على ${tally.size} مواعيدَ مختلفة`
-    : live.some((s) => holiday(s.day)) ? 'من لقاءاتك اليومَ ما يقع في عطلةٍ رسميّة'
-    : 'من لقاءاتك اليومَ ما يقع في وقتٍ غيرِ مناسب'
+  const nowAr = tally.size > MAX_DISTINCT_SLOTS ? `لقاءاتك اليوم على ${tally.size} مواعيد مختلفة`
+    : live.some((s) => holiday(s.day)) ? 'من لقاءاتك اليوم ما يقع في عطلة رسميّة'
+    : 'من لقاءاتك اليوم ما يقع في وقت غير مناسب'
   const n = taskMoves.length
-  const tasksAr = n === 0 ? '' : ` ومعها ${n === 1 ? 'موعدُ مهمّة' : n === 2 ? 'موعدا مهمّتين' : n <= 10 ? `مواعيدُ ${n} مهامّ` : `مواعيدُ ${n} مهمّةً`} تتبعها`
-  const movedAr = moves.length === 1 ? 'لقاءٌ واحد' : moves.length === 2 ? 'لقاءان' : moves.length <= 10 ? `${moves.length} لقاءات` : `${moves.length} لقاءً`
+  const tasksAr = n === 0 ? '' : ` ومعها ${n === 1 ? 'موعد مهمّة' : n === 2 ? 'موعدا مهمّتين' : n <= 10 ? `مواعيد ${n} مهامّ` : `مواعيد ${n} مهمّة`} تتبعها`
+  const movedAr = moves.length === 1 ? 'لقاء واحد' : moves.length === 2 ? 'لقاءان' : moves.length <= 10 ? `${moves.length} لقاءات` : `${moves.length} لقاء`
   return {
     ok: true,
     edit: { kind: 'schedule', weekday: target.weekday, clock: target.clock, moves, tasks: taskMoves },
-    reasonAr: `${nowAr} — نقترح ${WEEKDAY_AR[target.weekday]} ${target.clock} كلَّ أسبوع: ينتقل ${movedAr} من ${live.length}${tasksAr}، داخلَ مواعيد محاورها وبلا عطل.`,
+    reasonAr: `${nowAr} — نقترح ${WEEKDAY_AR[target.weekday]} ${target.clock} كلّ أسبوع: ينتقل ${movedAr} من ${live.length}${tasksAr}، داخل مواعيد محاورها وبلا عطل.`,
   }
 }

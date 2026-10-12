@@ -21,7 +21,7 @@ import { INTERVIEW_OUTCOMES, outcomeLabelAr } from "@/application/trainer/interv
 
 
 const CR_STATUS_AR: Record<string, string> = {
-  submitted: "مُقدم", in_review: "قيد المراجعة", changes_requested: "مطلوب تعديل",
+  submitted: "مقدم", in_review: "قيد المراجعة", changes_requested: "مطلوب تعديل",
   approved_for_cohort: "معتمد للشعبة", approved_for_catalog: "معتمد للكتالوج",
   published: "منشور", rejected: "مرفوض", withdrawn: "مسحوب", scheduled: "مجدول للنشر",
 };
@@ -98,7 +98,7 @@ export interface TrainerSummary {
 }
 
 const CONTRACT_STATUS_AR: Record<string, string> = {
-  draft: "مسودة", sent: "أُرسل", signed: "موقَّع", expired: "منتهٍ", terminated: "مفسوخ",
+  draft: "مسودة", sent: "أرسل", signed: "موقّع", expired: "منته", terminated: "مفسوخ",
 };
 
 /** بطاقات التفاصيل المتقدمة لطلب مدرب — تُركب داخل صفحة التفاصيل */
@@ -159,8 +159,8 @@ export function TrainerDetailOps({ app, onAction }: {
                         return {
                           ok: true,
                           ar: back
-                            ? "سُجّل الغياب — وعاد الطلبُ إلى ما قبل الحجز ليحجز موعدا جديدا"
-                            : "سُجّلت نتيجةُ اللقاء",
+                            ? "سجّل الغياب — وعاد الطلب إلى ما قبل الحجز ليحجز موعدا جديدا"
+                            : "سجّلت نتيجة اللقاء",
                         };
                       },
                     )} className="text-fine">
@@ -187,7 +187,7 @@ export function TrainerDetailOps({ app, onAction }: {
                 scheduledAt: new Date(interviewForm.scheduledAt), mode: interviewForm.mode, notes: interviewForm.notes || undefined,
               }),
               (r) => mailOutcomeAr(
-                "جُدولت المقابلة وانتقل الطلب — ووصلته دعوةُ التقويم",
+                "جدولت المقابلة وانتقل الطلب — ووصلته دعوة التقويم",
                 (r as { emailDelivery?: string }).emailDelivery,
               ),
             )}>
@@ -212,7 +212,7 @@ export function TrainerDetailOps({ app, onAction }: {
                 onClick={() => void onAction(
                   () => apiPost(`/api/admin/trainer-applications/${app.id}/booking-reminder`, {}),
                   (r) => mailOutcomeAr(
-                    "أُرسل التذكير — يحجز من صفحة طلبه",
+                    "أرسل التذكير — يحجز من صفحة طلبه",
                     (r as { emailDelivery?: string }).emailDelivery,
                   ),
                 )}>
@@ -221,8 +221,8 @@ export function TrainerDetailOps({ app, onAction }: {
               <p className="mt-1.5 text-read leading-5 text-muted-foreground">
                 {/* وما يُقال له مكتوبٌ للموظّف قبل أن يضغط: الرسالةُ تحمل
                     اهتماما بملفّه، فلا تُرسَل على أنّها تذكيرٌ محيَّد. */}
-                دعوةٌ تقول «مهتمّون بملفّك ونرغب بلقائك»، وزرُّها إلى صفحة طلبه:
-                يسجّل الدخول، يرى حالتَه، ويحجز من تحتها.
+                دعوة تقول «مهتمّون بملفّك ونرغب بلقائك»، وزرّها إلى صفحة طلبه:
+                يسجّل الدخول، يرى حالته، ويحجز من تحتها.
               </p>
             </div>
           )}
@@ -237,14 +237,14 @@ export function TrainerDetailOps({ app, onAction }: {
               onClick={() => void onAction(
                 () => apiPost(`/api/admin/trainer-applications/${app.id}/interview-invite`, {}),
                 (r) => mailOutcomeAr(
-                  "أُرسلت الدعوة — يختار موعده ويصلنا حين يحجز",
+                  "أرسلت الدعوة — يختار موعده ويصلنا حين يحجز",
                   (r as { emailDelivery?: string }).emailDelivery,
                 ),
               )}>
-              <CalendarCheck className="h-3.5 w-3.5" /> ادعُه ليحجز موعدا بنفسه
+              <CalendarCheck className="h-3.5 w-3.5" /> ادعه ليحجز موعدا بنفسه
             </Button>
             <p className="mt-1.5 text-read leading-5 text-muted-foreground">
-              رسالةٌ فيها رابطُ التقويم — يختار وقتَه، ويُكتب الموعدُ هنا حين يحجز.
+              رسالة فيها رابط التقويم — يختار وقته، ويكتب الموعد هنا حين يحجز.
             </p>
           </div>
         </div>
@@ -273,27 +273,27 @@ export function TrainerDetailOps({ app, onAction }: {
             onClick={() => void onAction(async () => {
               const c = await apiPost<{ id: string }>(`/api/admin/trainer-applications/${app.id}/contracts`, { title: contractForm.title });
               setLastContractId(c.id);
-            }, "أُنشئ العقد وأُرسل — الطلب في contract_pending")}>
+            }, "أنشئ العقد وأرسل — الطلب في contract_pending")}>
             أنشئ وأرسل
           </Button>
         </div>
         <div className="mt-2 flex flex-wrap gap-2">
           {/* كان يُملأ آليّا بعد الإنشاء فوقُ — فيعمل في الجلسة التي أُنشئ
               فيها العقد، ويصير حقلَ لصقٍ لمن عاد إلى الطلب بعد يوم. */}
-          <label className="sr-only" htmlFor={`contract-sign-${app.id}`}>العقدُ المراد تسجيلُ توقيعه</label>
+          <label className="sr-only" htmlFor={`contract-sign-${app.id}`}>العقد المراد تسجيل توقيعه</label>
           <select id={`contract-sign-${app.id}`} value={lastContractId} onChange={(e) => setLastContractId(e.target.value)}
             disabled={unsignedContracts.length === 0} className={`${selectCls} flex-1`}>
             <option value="">
               {(app.profile?.contracts?.length ?? 0) === 0
-                ? "لا عقودَ بعد — أنشئ عقدا أوّلا"
-                : unsignedContracts.length === 0 ? "وُقّعت العقودُ كلُّها" : "اختر العقد…"}
+                ? "لا عقود بعد — أنشئ عقدا أوّلا"
+                : unsignedContracts.length === 0 ? "وقّعت العقود كلّها" : "اختر العقد…"}
             </option>
             {unsignedContracts.map((c) => (
               <option key={c.id} value={c.id}>{c.title} — {CONTRACT_STATUS_AR[c.status] ?? c.status}</option>
             ))}
           </select>
           <Button tone="secondary" size="sm" disabled={!lastContractId}
-            onClick={() => void onAction(() => apiPost(`/api/admin/trainer-contracts/${lastContractId}/sign`), "سُجل التوقيع — الطلب في التهيئة")}>
+            onClick={() => void onAction(() => apiPost(`/api/admin/trainer-contracts/${lastContractId}/sign`), "سجل التوقيع — الطلب في التهيئة")}>
             سجّل التوقيع
           </Button>
         </div>
@@ -314,11 +314,11 @@ export function TrainerDetailOps({ app, onAction }: {
           مؤهَّل**. وأمّا «مُسنَدٌ إلى ماذا» فيُقرأ من الشعبة نفسِها لا من
           ملفّه، فمصدرُ الإسناد هناك. */}
       {app.profile && (
-        <FoldSection icon={Briefcase} title="الدورات المؤهَّل لها" defaultOpen={app.status === "active"}>
+        <FoldSection icon={Briefcase} title="الدورات المؤهّل لها" defaultOpen={app.status === "active"}>
           {(app.summary?.qualifiedCourses?.length ?? 0) === 0 ? (
             <p className="text-read leading-6 text-muted-foreground">
-              لا دورة مؤهَّلا لها بعد. التأهيل يُطلب من الشعبة التي يُراد إسنادُه إليها — وموافقة المدير
-              الأكاديميّ تؤهّله وتُسنده في فعلٍ واحد.
+              لا دورة مؤهّلا لها بعد. التأهيل يطلب من الشعبة التي يراد إسناده إليها — وموافقة المدير
+              الأكاديميّ تؤهّله وتسنده في فعل واحد.
             </p>
           ) : (
             <ul className="flex flex-wrap gap-1.5">
@@ -331,7 +331,7 @@ export function TrainerDetailOps({ app, onAction }: {
           )}
           {(app.summary?.pendingQualifications ?? 0) > 0 && (
             <p className="mt-2.5 text-read text-gold-ink">
-              وله {app.summary!.pendingQualifications} طلبُ تأهيلٍ بانتظار القرار.
+              وله {app.summary!.pendingQualifications} طلب تأهيل بانتظار القرار.
             </p>
           )}
         </FoldSection>
@@ -437,8 +437,8 @@ export function TrainerChangeRequests() {
               سبتمبر). وكان يُقال هنا «تصل من بوابة المدرب ← اقتراحاتي»،
               فيذهب من قرأها يبحث عن لسانٍ ليس عند المدرّب. */}
           <p className="mt-3 text-sm text-muted-foreground">
-            لا اقتراحَ ينتظر قرارا. ولا بابَ يصل منه جديدٌ اليومَ — قناةُ اقتراح
-            التعديل مغلقةٌ من جانب المدرّب، وما هنا ما وصل قبل إغلاقها.
+            لا اقتراح ينتظر قرارا. ولا باب يصل منه جديد اليوم — قناة اقتراح
+            التعديل مغلقة من جانب المدرّب، وما هنا ما وصل قبل إغلاقها.
           </p>
         </Panel>
       )}
@@ -479,16 +479,16 @@ export function TrainerChangeRequests() {
               <input value={comment[r.id] ?? ""} onChange={(e) => setComment({ ...comment, [r.id]: e.target.value })}
                 placeholder="تعليق المراجع (اختياري)" className={inputCls} />
               <div className="flex flex-wrap gap-2">
-                <Button tone="secondary" size="sm" disabled={busy} onClick={() => act(() => apiPost(`/api/admin/trainer-change-requests/${r.id}/decision`, { action: "approve_for_cohort", comment: comment[r.id] || undefined }), "اعتُمد للشعبة")}>
+                <Button tone="secondary" size="sm" disabled={busy} onClick={() => act(() => apiPost(`/api/admin/trainer-change-requests/${r.id}/decision`, { action: "approve_for_cohort", comment: comment[r.id] || undefined }), "اعتمد للشعبة")}>
                   <BadgeCheck className="h-3.5 w-3.5" /> اعتماد للشعبة
                 </Button>
-                <Button tone="secondary" size="sm" disabled={busy} onClick={() => act(() => apiPost(`/api/admin/trainer-change-requests/${r.id}/decision`, { action: "approve_for_catalog", comment: comment[r.id] || undefined }), "اعتُمد للكتالوج")}>
+                <Button tone="secondary" size="sm" disabled={busy} onClick={() => act(() => apiPost(`/api/admin/trainer-change-requests/${r.id}/decision`, { action: "approve_for_catalog", comment: comment[r.id] || undefined }), "اعتمد للكتالوج")}>
                   <BadgeCheck className="h-3.5 w-3.5" /> اعتماد للكتالوج
                 </Button>
-                <Button tone="secondary" size="sm" disabled={busy} onClick={() => act(() => apiPost(`/api/admin/trainer-change-requests/${r.id}/decision`, { action: "request_changes", comment: comment[r.id] || "راجع التفاصيل" }), "طُلب تعديل")}>
+                <Button tone="secondary" size="sm" disabled={busy} onClick={() => act(() => apiPost(`/api/admin/trainer-change-requests/${r.id}/decision`, { action: "request_changes", comment: comment[r.id] || "راجع التفاصيل" }), "طلب تعديل")}>
                   <XCircle className="h-3.5 w-3.5" /> طلب تعديل
                 </Button>
-                <Button tone="danger" size="sm" disabled={busy} onClick={() => act(() => apiPost(`/api/admin/trainer-change-requests/${r.id}/decision`, { action: "reject", comment: comment[r.id] || "مرفوض" }), "رُفض الاقتراح")}>
+                <Button tone="danger" size="sm" disabled={busy} onClick={() => act(() => apiPost(`/api/admin/trainer-change-requests/${r.id}/decision`, { action: "reject", comment: comment[r.id] || "مرفوض" }), "رفض الاقتراح")}>
                   <XCircle className="h-3.5 w-3.5" /> رفض
                 </Button>
               </div>
@@ -499,7 +499,7 @@ export function TrainerChangeRequests() {
               requestId={r.id}
               needsImpact={r.scope === "catalog"}
               busy={busy}
-              onPublish={() => act(() => apiPost(`/api/admin/trainer-change-requests/${r.id}/publish`), "نُشر الاقتراح في نطاقه")}
+              onPublish={() => act(() => apiPost(`/api/admin/trainer-change-requests/${r.id}/publish`), "نشر الاقتراح في نطاقه")}
             />
           )}
         </Card>
@@ -562,10 +562,10 @@ function ImpactGate({
               {running ? "يشغّل ١٢ شخصية…" : "افحص الأثر التشخيصي"}
             </Button>
             {checked === false && !verdict && (
-              <span className="text-fine font-bold text-gold-ink">لم يُفحص بعد — النشر بنطاق الكتالوج موقوف حتى الفحص.</span>
+              <span className="text-fine font-bold text-gold-ink">لم يفحص بعد — النشر بنطاق الكتالوج موقوف حتى الفحص.</span>
             )}
             {checked === true && !verdict && (
-              <span className="text-fine text-muted-foreground">فُحص الأثر بعد الاعتماد — يمكن النشر.</span>
+              <span className="text-fine text-muted-foreground">فحص الأثر بعد الاعتماد — يمكن النشر.</span>
             )}
           </div>
 
@@ -590,7 +590,7 @@ function ImpactGate({
                 </p>
               ))}
               <p className="mt-2 text-read text-muted-foreground">
-                الفحص يقارن اللقطة المنشورة بالمنشور + كل ما اعتُمد ولم يُنشر — لا هذا الاقتراح وحده.
+                الفحص يقارن اللقطة المنشورة بالمنشور + كل ما اعتمد ولم ينشر — لا هذا الاقتراح وحده.
               </p>
             </Card>
           )}
@@ -713,7 +713,7 @@ export function TrainerPayouts() {
       cohortId: ruleForm.cohortId || undefined,
     });
     setRuleForm({ ...ruleForm, rate: "", minSeats: "", referralRate: "", cohortId: "" });
-  }, "حُفظت القاعدة — صارت سارية من الآن");
+  }, "حفظت القاعدة — صارت سارية من الآن");
 
   const doPreview = async () => {
     setBusy(true); setMsg(""); setPreview(null); setBatchResult(null);
@@ -725,7 +725,7 @@ export function TrainerPayouts() {
   const doGenerate = () => act(async () => {
     await apiPost("/api/admin/trainer-payouts/generate", { cohortId: genCohortId });
     setPreview(null); setGenCohortId("");
-  }, "وُلّد الكشف — بانتظار الاعتماد");
+  }, "ولّد الكشف — بانتظار الاعتماد");
 
   const doBatch = () => act(async () => {
     const res = await apiPost<{ generated: { title: string; total: number }[]; skipped: { title: string; reason: string }[] }>(
@@ -744,7 +744,7 @@ export function TrainerPayouts() {
     setShowCreate(false);
     setForm({ profileId: "", period: "" });
     setItems([{ description: "", amount: "", sourceRef: "" }]);
-  }, "أُنشئ الكشف — بانتظار الاعتماد");
+  }, "أنشئ الكشف — بانتظار الاعتماد");
 
   const fmt = (n: string | number) => Number(n).toLocaleString("en-US", { maximumFractionDigits: 2 });
 
@@ -773,9 +773,9 @@ export function TrainerPayouts() {
           (ولا كشفَ بعد) وقواعدَ (بلا مجاميع)، ولا سطرَ يجمع المدرّبَ بما اتُّفق
           معه وما يُنتظر له. */}
       <Panel as="section">
-        <h4 className="flex items-center gap-2 text-sm font-black"><Wallet className="h-4 w-4 text-teal-light-ink" /> المدرّبون — القاعدةُ والحالةُ الماليّة</h4>
+        <h4 className="flex items-center gap-2 text-sm font-black"><Wallet className="h-4 w-4 text-teal-light-ink" /> المدرّبون — القاعدة والحالة الماليّة</h4>
         {summary.length === 0 ? (
-          <p className="mt-3 text-read text-muted-foreground">لا مدرّبين معتمَدين بعد.</p>
+          <p className="mt-3 text-read text-muted-foreground">لا مدرّبين معتمدين بعد.</p>
         ) : (
           <div className="mt-3 overflow-x-auto">
             <table className="w-full text-read">
@@ -784,7 +784,7 @@ export function TrainerPayouts() {
                   <th className="pb-2 pl-3 font-bold">المدرّب</th>
                   <th className="pb-2 pl-3 font-bold">القاعدة السارية</th>
                   <th className="pb-2 pl-3 font-bold">بانتظار الاعتماد</th>
-                  <th className="pb-2 pl-3 font-bold">معتمَد</th>
+                  <th className="pb-2 pl-3 font-bold">معتمد</th>
                   <th className="pb-2 font-bold">مدفوع</th>
                 </tr>
               </thead>
@@ -797,7 +797,7 @@ export function TrainerPayouts() {
                     </td>
                     <td className="py-2.5 pl-3">
                       {t.rule
-                        ? <>{RULE_TYPE_AR[t.rule.type] ?? t.rule.type} · <b dir="ltr" className="font-mono">{t.rule.rate}</b> {t.rule.currency}{t.rule.minSeats > 0 ? ` · حدٌّ أدنى ${t.rule.minSeats}` : ""}{t.rule.referralRate != null ? <> · عبر رابطه <b dir="ltr" className="font-mono">{t.rule.referralRate}</b></> : ""}</>
+                        ? <>{RULE_TYPE_AR[t.rule.type] ?? t.rule.type} · <b dir="ltr" className="font-mono">{t.rule.rate}</b> {t.rule.currency}{t.rule.minSeats > 0 ? ` · حدّ أدنى ${t.rule.minSeats}` : ""}{t.rule.referralRate != null ? <> · عبر رابطه <b dir="ltr" className="font-mono">{t.rule.referralRate}</b></> : ""}</>
                         : <span className="font-bold text-gold-ink">لا قاعدة — عيّنها أدناه</span>}
                     </td>
                     <td className="py-2.5 pl-3 tabular-nums" dir="ltr">{t.pending.toLocaleString("en-US")} {t.currency}</td>
@@ -812,7 +812,7 @@ export function TrainerPayouts() {
       </Panel>
 
       {/* قاعدة الأتعاب — تحدد كيف تُحسب مستحقات كل مدرب تلقائياً */}
-      <FoldSection icon={Settings2} title="قواعد الأتعاب — كيف يُحسب أجر كل مدرب">
+      <FoldSection icon={Settings2} title="قواعد الأتعاب — كيف يحسب أجر كل مدرب">
         <div className="space-y-3">
           <div className="flex flex-wrap gap-2">
             <select value={ruleForm.profileId} onChange={(e) => setRuleForm({ ...ruleForm, profileId: e.target.value })} className={`${selectCls} flex-1`}>
@@ -827,12 +827,12 @@ export function TrainerPayouts() {
               className={`${inputCls} w-28 font-mono`} />
             {ruleForm.type === "per_seat" && (
               <input value={ruleForm.minSeats} onChange={(e) => setRuleForm({ ...ruleForm, minSeats: e.target.value })}
-                placeholder="حد أدنى للمقاعد" dir="ltr" inputMode="numeric" title="يُحاسب المدرب على هذا العدد حتى لو قلّ التسجيل الفعلي"
+                placeholder="حد أدنى للمقاعد" dir="ltr" inputMode="numeric" title="يحاسب المدرب على هذا العدد حتى لو قلّ التسجيل الفعلي"
                 className={`${inputCls} w-32 font-mono`} />
             )}
             {ruleForm.type === "per_seat" && (
               <input value={ruleForm.referralRate} onChange={(e) => setRuleForm({ ...ruleForm, referralRate: e.target.value })}
-                placeholder="أجر المقعد عبر رابطه" dir="ltr" inputMode="decimal" title="ما يقبضه عن كلّ متعلّمٍ جاء عبر رابط دعوته — والسعرُ على الطالب واحد"
+                placeholder="أجر المقعد عبر رابطه" dir="ltr" inputMode="decimal" title="ما يقبضه عن كلّ متعلّم جاء عبر رابط دعوته — والسعر على الطالب واحد"
                 className={`${inputCls} w-40 font-mono`} />
             )}
             <select value={ruleForm.cohortId} onChange={(e) => setRuleForm({ ...ruleForm, cohortId: e.target.value })}
@@ -853,14 +853,14 @@ export function TrainerPayouts() {
                 {active
                   ? <>القاعدة السارية{active.cohortId ? " لهذه الشعبة" : " (العامة)"}: <b className="text-foreground">{RULE_TYPE_AR[active.type]}</b> بمعدل <b dir="ltr" className="font-mono text-foreground">{Number(active.rate)}</b> {active.currency}
                       {active.type === "per_seat" && active.minSeats > 0 ? <> · حد أدنى <b className="text-foreground">{active.minSeats}</b> مقاعد</> : null}
-                      {" "}— حفظ قاعدة جديدة بنفس النطاق يغلقها تلقائياً دون مسح تاريخها.</>
-                  : "لا قاعدة سارية بهذا النطاق بعد — بدونها لن يُولَّد أي كشف تلقائي."}
+                      {" "}— حفظ قاعدة جديدة بنفس النطاق يغلقها تلقائيا دون مسح تاريخها.</>
+                  : "لا قاعدة سارية بهذا النطاق بعد — بدونها لن يولّد أي كشف تلقائي."}
               </Inset>
             );
           })()}
           <p className="text-read leading-5 text-muted-foreground">
-            قاعدة الشعبة المخصصة تغلب العامة عند الحساب. الحد الأدنى للمقاعد يعني: يُدفع للمدرب عن هذا العدد حتى لو سجّل أقل —
-            مثال: معدل 40 وحد أدنى 5، سجّل 3 ← يُحتسب 5 × 40.
+            قاعدة الشعبة المخصصة تغلب العامة عند الحساب. الحد الأدنى للمقاعد يعني: يدفع للمدرب عن هذا العدد حتى لو سجّل أقل —
+            مثال: معدل 40 وحد أدنى 5، سجّل 3 ← يحتسب 5 × 40.
           </p>
         </div>
       </FoldSection>
@@ -905,15 +905,15 @@ export function TrainerPayouts() {
           )}
           {batchResult && (
             <Inset className="space-y-1 text-fine leading-6">
-              <p className="font-black text-emerald-300">وُلّد {batchResult.generated.length} كشفاً</p>
+              <p className="font-black text-emerald-300">ولّد {batchResult.generated.length} كشفا</p>
               {batchResult.skipped.map((s, i) => (
-                <p key={i} className="text-muted-foreground">تُركت «{s.title}»: {s.reason}</p>
+                <p key={i} className="text-muted-foreground">تركت «{s.title}»: {s.reason}</p>
               ))}
             </Inset>
           )}
           <p className="text-read leading-5 text-muted-foreground">
-            اكتمال أي شعبة يولّد كشف مدربها تلقائياً إن كانت له قاعدة سارية — هذه الأدوات للتوليد اليدوي عند الحاجة،
-            وكلها تمنع التكرار: شعبة واحدة لا تُولّد كشفين لنفس المدرب أبداً.
+            اكتمال أي شعبة يولّد كشف مدربها تلقائيا إن كانت له قاعدة سارية — هذه الأدوات للتوليد اليدوي عند الحاجة،
+            وكلها تمنع التكرار: شعبة واحدة لا تولّد كشفين لنفس المدرب أبدا.
           </p>
         </div>
       </FoldSection>
@@ -983,7 +983,7 @@ export function TrainerPayouts() {
                 <span className="mr-2 text-fine font-bold text-muted-foreground">فترة <span dir="ltr" className="font-mono">{p.period}</span></span>
               </p>
               <p className="mt-1 text-xl font-black">{fmt(p.total)} <span className="text-xs font-bold text-muted-foreground">{p.currency}</span></p>
-              {p.paidAt && <p className="mt-0.5 text-read text-muted-foreground">صُرف {fmtDateTime(new Date(p.paidAt))}</p>}
+              {p.paidAt && <p className="mt-0.5 text-read text-muted-foreground">صرف {fmtDateTime(new Date(p.paidAt))}</p>}
             </div>
             <span className={`rounded-full border px-3 py-1 text-fine font-bold ${PAYOUT_STATUS_CLS[p.status] ?? ""}`}>
               {PAYOUT_STATUS_AR[p.status] ?? p.status}
@@ -1000,19 +1000,19 @@ export function TrainerPayouts() {
           {(p.status === "pending" || p.status === "approved") && (
             <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-white/8 pt-3">
               {p.status === "pending" && (
-                <Button tone="secondary" size="sm" disabled={busy} onClick={() => act(() => apiPost(`/api/admin/trainer-payouts/${p.id}/approve`), "اعتُمد الكشف")}>
+                <Button tone="secondary" size="sm" disabled={busy} onClick={() => act(() => apiPost(`/api/admin/trainer-payouts/${p.id}/approve`), "اعتمد الكشف")}>
                   <BadgeCheck className="h-3.5 w-3.5" /> اعتماد
                 </Button>
               )}
               {p.status === "approved" && (
-                <Button tone="ghost" size="sm" disabled={busy} onClick={() => act(() => apiPost(`/api/admin/trainer-payouts/${p.id}/pay`), "سُجل الصرف")} className="bg-emerald-500 text-white">
+                <Button tone="ghost" size="sm" disabled={busy} onClick={() => act(() => apiPost(`/api/admin/trainer-payouts/${p.id}/pay`), "سجل الصرف")} className="bg-emerald-500 text-white">
                   <CheckCircle2 className="h-3.5 w-3.5" /> تأكيد الصرف
                 </Button>
               )}
               <input value={cancelReason[p.id] ?? ""} onChange={(e) => setCancelReason({ ...cancelReason, [p.id]: e.target.value })}
                 placeholder="سبب الإلغاء…" className={`${inputCls} max-w-48`} />
               <Button tone="danger" size="sm" disabled={busy || (cancelReason[p.id] ?? "").trim().length < 5}
-                onClick={() => act(() => apiPost(`/api/admin/trainer-payouts/${p.id}/cancel`, { reason: cancelReason[p.id] }), "أُلغي الكشف")}>
+                onClick={() => act(() => apiPost(`/api/admin/trainer-payouts/${p.id}/cancel`, { reason: cancelReason[p.id] }), "ألغي الكشف")}>
                 <XCircle className="h-3.5 w-3.5" /> إلغاء
               </Button>
             </div>

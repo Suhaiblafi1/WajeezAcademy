@@ -11,7 +11,10 @@
    أو موضعُ عنوانه هناك لبُعث كلُّ ما أُعيدت تسميتُه صفّا «لم يدخل الطابور»
    — ولا يقول ذلك إلّا تشغيلُ الخدمة نفسِها. */
 
-import { beforeAll, describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect as vexpect, it } from 'vitest'
+import { plainExpect } from '../helpers/plain-expect'
+/* يُقارَن بلا تشكيلٍ إعرابيّ — العلّةُ في `helpers/plain-expect.ts` */
+const expect = plainExpect(vexpect)
 import type { PrismaClient } from '@prisma/client'
 import { setupTestDb, testPrisma } from '../helpers/db'
 import { AuthService } from '../../services/auth.service'

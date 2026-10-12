@@ -28,20 +28,20 @@ const NOW = new Date('2026-09-19T12:00:00Z')
 const PAST = new Date('2026-09-17T10:00:00Z')
 const FUTURE = new Date('2026-09-25T10:00:00Z')
 
-describe('① الغيابُ ليس لقاءً جرى', () => {
-  it('موعدٌ مضى وسُجّل غيابا لا يُعَدّ لقاءً', () => {
+describe('① الغياب ليس لقاء جرى', () => {
+  it('موعد مضى وسجّل غيابا لا يعدّ لقاء', () => {
     expect(interviewHeld({ scheduledAt: PAST, outcome: NO_SHOW, canceledAt: null }, NOW)).toBe(false)
   })
 
-  it('③ وموعدٌ مضى بلا نتيجةٍ يُعَدّ لقاءً — فالمُقابِلُ ينسى التسجيل', () => {
+  it('③ وموعد مضى بلا نتيجة يعدّ لقاء — فالمقابل ينسى التسجيل', () => {
     expect(interviewHeld({ scheduledAt: PAST, outcome: null, canceledAt: null }, NOW)).toBe(true)
   })
 
-  it('ونتيجةٌ سُجّلت تكفي وإن لم يمضِ الموعدُ بعد', () => {
+  it('ونتيجة سجّلت تكفي وإن لم يمض الموعد بعد', () => {
     expect(interviewHeld({ scheduledAt: FUTURE, outcome: 'passed', canceledAt: null }, NOW)).toBe(true)
   })
 
-  it('وما لم يحن ولا نتيجةَ له لم يجرِ، وكذلك الملغى', () => {
+  it('وما لم يحن ولا نتيجة له لم يجر، وكذلك الملغى', () => {
     expect(interviewHeld({ scheduledAt: FUTURE, outcome: null, canceledAt: null }, NOW)).toBe(false)
     expect(interviewHeld({ scheduledAt: PAST, outcome: null, canceledAt: PAST }, NOW)).toBe(false)
     /* وملغًى سُجّلت له نتيجةٌ قبل إلغائه — الإلغاءُ آخرُ ما وقع */
@@ -49,13 +49,13 @@ describe('① الغيابُ ليس لقاءً جرى', () => {
   })
 })
 
-describe('② ومن لم يحضر لا موعدَ له', () => {
-  it('الغيابُ يُخرج الموعدَ من القائم، كالإلغاء', () => {
+describe('② ومن لم يحضر لا موعد له', () => {
+  it('الغياب يخرج الموعد من القائم، كالإلغاء', () => {
     expect(isLiveInterview({ outcome: NO_SHOW, canceledAt: null })).toBe(false)
     expect(isLiveInterview({ outcome: null, canceledAt: PAST })).toBe(false)
   })
 
-  it('ومن جرى لقاؤه موعدُه قائمٌ — فلا يُدعى إلى حجزٍ ثانٍ', () => {
+  it('ومن جرى لقاؤه موعده قائم — فلا يدعى إلى حجز ثان', () => {
     expect(isLiveInterview({ outcome: 'passed', canceledAt: null })).toBe(true)
     expect(isLiveInterview({ outcome: 'hold', canceledAt: null })).toBe(true)
     expect(isLiveInterview({ outcome: 'failed', canceledAt: null })).toBe(true)
@@ -63,49 +63,49 @@ describe('② ومن لم يحضر لا موعدَ له', () => {
   })
 })
 
-describe('④ المعجمُ نفسُه', () => {
-  it('الغيابُ فيه، وله عنوانٌ عربيٌّ وشرحٌ لما يقع للطلب', () => {
+describe('④ المعجم نفسه', () => {
+  it('الغياب فيه، وله عنوان عربيّ وشرح لما يقع للطلب', () => {
     const noShow = INTERVIEW_OUTCOMES.find((o) => o.key === NO_SHOW)
-    expect(noShow, 'لا مدخلَ للغياب في المعجم').toBeDefined()
+    expect(noShow, 'لا مدخل للغياب في المعجم').toBeDefined()
     expect(noShow!.labelAr).toBe('لم يحضر')
     expect(noShow!.whatAr, 'لا يقول ماذا يقع للطلب').toContain('ما قبل الحجز')
   })
 
-  it('وكلُّ قيمةٍ يقبلها الخادمُ لها عنوانٌ عربيٌّ لا مفتاحٌ لاتينيّ', () => {
+  it('وكلّ قيمة يقبلها الخادم لها عنوان عربيّ لا مفتاح لاتينيّ', () => {
     for (const key of INTERVIEW_OUTCOME_KEYS) {
       const label = outcomeLabelAr(key)
       expect(label, key).not.toBe(key)
-      expect(label, `${key} يُعرض بحروفٍ لاتينيّة`).toMatch(/[؀-ۿ]/)
+      expect(label, `${key} يعرض بحروف لاتينيّة`).toMatch(/[؀-ۿ]/)
     }
     expect(outcomeLabelAr(null)).toBe('بلا نتيجة')
   })
 
-  it('والمفاتيحُ هي المعجمُ نفسُه — فلا قائمتان تفترقان', () => {
+  it('والمفاتيح هي المعجم نفسه — فلا قائمتان تفترقان', () => {
     expect(INTERVIEW_OUTCOME_KEYS).toEqual(INTERVIEW_OUTCOMES.map((o) => o.key))
     expect(INTERVIEW_OUTCOME_KEYS).toContain(NO_SHOW)
   })
 })
 
-describe('⑤ والشاشةُ والخادمُ يقرآن المعجمَ لا قائمةً بأيديهما', () => {
+describe('⑤ والشاشة والخادم يقرآن المعجم لا قائمة بأيديهما', () => {
 
-  it('أزرارُ النتيجة تُبنى من `INTERVIEW_OUTCOMES`', () => {
+  it('أزرار النتيجة تبنى من `INTERVIEW_OUTCOMES`', () => {
     const ops = read('src/pages/admin/TrainerOps.tsx')
-    expect(ops, 'الشاشةُ لا تستورد المعجم').toContain('INTERVIEW_OUTCOMES')
-    expect(ops, 'أزرارٌ مكتوبةٌ بيدها — يُنسى الرابعُ فيها').toMatch(/INTERVIEW_OUTCOMES\.map\(/)
+    expect(ops, 'الشاشة لا تستورد المعجم').toContain('INTERVIEW_OUTCOMES')
+    expect(ops, 'أزرار مكتوبة بيدها — ينسى الرابع فيها').toMatch(/INTERVIEW_OUTCOMES\.map\(/)
     /* ولا تُعرض القيمةُ خاما: `outcomeLabelAr` لا `iv.outcome` */
     expect(ops).toContain('outcomeLabelAr(iv.outcome)')
   })
 
-  it('وحارسُ الطلب في الخادم من المفاتيح نفسِها', () => {
+  it('وحارس الطلب في الخادم من المفاتيح نفسها', () => {
     const route = read('server/http/routes/admin-trainer.routes.ts')
-    expect(route, 'قائمةٌ مكتوبةٌ في الحارس تفترق عن الشاشة').toContain('z.enum(INTERVIEW_OUTCOME_KEYS)')
+    expect(route, 'قائمة مكتوبة في الحارس تفترق عن الشاشة').toContain('z.enum(INTERVIEW_OUTCOME_KEYS)')
   })
 
-  it('وقيمُ العمود في المخطَّط تحمل الغياب — وهو عقدُ قيد القاعدة', () => {
+  it('وقيم العمود في المخطّط تحمل الغياب — وهو عقد قيد القاعدة', () => {
     const schema = read('prisma/schema.prisma')
     const line = schema.split('\n').find((l) => /^\s*outcome\s+String\?/.test(l) && l.includes('passed'))
-    expect(line, 'لم يُعثر على سطر `outcome` في `TrainerInterview`').toBeDefined()
-    expect(line, 'التعليقُ عقدُ القيد المولَّد — وبلا الغياب فيه ترفضه القاعدة').toContain(NO_SHOW)
+    expect(line, 'لم يعثر على سطر `outcome` في `TrainerInterview`').toBeDefined()
+    expect(line, 'التعليق عقد القيد المولّد — وبلا الغياب فيه ترفضه القاعدة').toContain(NO_SHOW)
   })
 
   /* ═══ ومعجمُ القارئ صار هو المعجمَ نفسَه (٢١ سبتمبر ٢٠٢٦) ═══
@@ -120,15 +120,15 @@ describe('⑤ والشاشةُ والخادمُ يقرآن المعجمَ لا �
 
      فسقط سببُ المعجم الثاني وسقط معه (`VERDICT_AR`): «لا أريد شيئين».
      والحارسُ الآن على **وحدة المعجم** لا على غياب الغياب منه. */
-  it('ولا معجمَ ثانيا للقرار — واحدٌ لشيءٍ واحد', () => {
+  it('ولا معجم ثانيا للقرار — واحد لشيء واحد', () => {
     for (const p of ['src/pages/admin/TrainerApplications.tsx', 'src/pages/SharedDossier.tsx']) {
-      expect(read(p), `${p}: عاد معجمٌ ثانٍ لقرار القارئ`).not.toMatch(/const VERDICT_AR|const VERDICTS\b/)
+      expect(read(p), `${p}: عاد معجم ثان لقرار القارئ`).not.toMatch(/const VERDICT_AR|const VERDICTS\b/)
     }
   })
 
-  it('وصفحةُ القارئ تبني أزرارَها من المعجم — فالأربعةُ فيها كما في قسم المقابلة', () => {
+  it('وصفحة القارئ تبني أزرارها من المعجم — فالأربعة فيها كما في قسم المقابلة', () => {
     const shared = read('src/pages/SharedDossier.tsx')
-    expect(shared, 'أزرارُ القرار مكتوبةٌ بيدها — يُنسى الرابعُ فيها')
+    expect(shared, 'أزرار القرار مكتوبة بيدها — ينسى الرابع فيها')
       .toMatch(/INTERVIEW_OUTCOMES\.map\(/)
   })
 })
@@ -144,7 +144,7 @@ describe('⑤ والشاشةُ والخادمُ يقرآن المعجمَ لا �
    فالحارسُ على المستورِدين أنفسِهم لا على ورودِ حرف: من قرأ المعجمَ فهو
    في هذه القائمة، ومن أُضيف إليها يُقرأ اسمُه هنا فيُسأل: أهذا موظّفٌ
    يقرّر، أم متقدّمٌ يُقرَّر فيه؟ */
-describe('⑥ ومعجمُ النتيجة للموظّف وحدَه', () => {
+describe('⑥ ومعجم النتيجة للموظّف وحده', () => {
   /** من يقرأ المعجم اليومَ — وكلُّهم شاشاتُ إدارةٍ أو خدماتُ خادم */
   const ALLOWED = [
     'server/http/routes/admin-trainer.routes.ts',
@@ -189,15 +189,15 @@ describe('⑥ ومعجمُ النتيجة للموظّف وحدَه', () => {
       .sort()
   }
 
-  it('ولا يقرؤه إلّا موظّفٌ — فمن أُضيف يُسأل عنه هنا', () => {
+  it('ولا يقرؤه إلّا موظّف — فمن أضيف يسأل عنه هنا', () => {
     expect(importers()).toEqual([...ALLOWED].sort())
   })
 
-  it('وصفحةُ «حالةُ طلبي» لا تحمل لفظَ الحكم — لا استيرادا ولا حرفا', () => {
+  it('وصفحة «حالة طلبي» لا تحمل لفظ الحكم — لا استيرادا ولا حرفا', () => {
     const applicant = read('src/pages/ApplicantStatus.tsx')
-    expect(applicant, 'صفحةُ المتقدّم تستورد معجمَ الحكم').not.toContain('interview-outcome')
+    expect(applicant, 'صفحة المتقدّم تستورد معجم الحكم').not.toContain('interview-outcome')
     for (const o of INTERVIEW_OUTCOMES) {
-      expect(applicant, `«${o.labelAr}» مكتوبٌ في وجه صاحبه`).not.toContain(o.labelAr)
+      expect(applicant, `«${o.labelAr}» مكتوب في وجه صاحبه`).not.toContain(o.labelAr)
     }
   })
 })

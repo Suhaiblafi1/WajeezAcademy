@@ -32,7 +32,7 @@ const KIND_ROLES: Record<AccountKind, readonly string[]> = {
 }
 
 export const ACCOUNT_KINDS: { value: AccountKind; labelAr: string }[] = [
-  { value: 'staff', labelAr: 'فريقُ العمل' },
+  { value: 'staff', labelAr: 'فريق العمل' },
   { value: 'trainer', labelAr: 'المدرّبون' },
   { value: 'advisor', labelAr: 'المستشارون' },
   { value: 'learner', labelAr: 'المتعلّمون' },

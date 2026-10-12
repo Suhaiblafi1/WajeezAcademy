@@ -26,11 +26,11 @@ export const countWords = (s: string): number => (s.trim() ? s.trim().split(/\s+
 export function publicTextProblemAr(headline: string, bio: string): string | null {
   const h = headline.trim()
   const b = bio.trim()
-  if (h.length < 3) return 'اكتب عنوانَك المهنيَّ — ثلاثةُ أحرفٍ على الأقلّ'
-  if (h.length > HEADLINE_MAX_CHARS) return `العنوانُ أطولُ من ${HEADLINE_MAX_CHARS} حرفا`
+  if (h.length < 3) return 'اكتب عنوانك المهنيّ — ثلاثة أحرف على الأقلّ'
+  if (h.length > HEADLINE_MAX_CHARS) return `العنوان أطول من ${HEADLINE_MAX_CHARS} حرفا`
   const words = countWords(b)
-  if (words < BIO_MIN_WORDS) return `النبذةُ ${BIO_MIN_WORDS} كلماتٍ على الأقلّ`
-  if (words > BIO_MAX_WORDS) return `النبذةُ أطولُ من ${BIO_MAX_WORDS} كلمة`
-  if (b.length > BIO_MAX_CHARS) return `النبذةُ أطولُ من ${BIO_MAX_CHARS} حرف`
+  if (words < BIO_MIN_WORDS) return `النبذة ${BIO_MIN_WORDS} كلمات على الأقلّ`
+  if (words > BIO_MAX_WORDS) return `النبذة أطول من ${BIO_MAX_WORDS} كلمة`
+  if (b.length > BIO_MAX_CHARS) return `النبذة أطول من ${BIO_MAX_CHARS} حرف`
   return null
 }

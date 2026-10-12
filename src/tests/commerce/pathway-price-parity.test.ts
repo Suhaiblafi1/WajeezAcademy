@@ -43,51 +43,51 @@ const linesFor = (ids: readonly string[]): CartLine[] =>
     cohortId: `co-${i}`, courseId: id, titleAr: id, listPrice: priceOf(id)!.amount,
   }))
 
-describe('سعرُ المسار: الشاشةُ والفاتورة', () => {
-  it('المسارات تُقرأ فعلا — الفحصُ ليس فارغا', () => {
+describe('سعر المسار: الشاشة والفاتورة', () => {
+  it('المسارات تقرأ فعلا — الفحص ليس فارغا', () => {
     expect(CORE.launch_pathways.length).toBeGreaterThan(10)
   })
 
-  it('ما تعرضه الصفحةُ هو ما تُصدره الفاتورة — لكلّ مسار', () => {
+  it('ما تعرضه الصفحة هو ما تصدره الفاتورة — لكلّ مسار', () => {
     for (const p of CORE.launch_pathways) {
       const ids = readyPathwayCourseIds(p.id)
       const gift = defaultGift(ids)
       const screen = readyPathwayPrice(ids, gift, priceOf)
       expect(screen, p.id).not.toBeNull()
       const invoice = priceCart(linesFor(ids), gift, null)
-      expect(screen!.payable, `${p.id}: الشاشةُ تعرض ${screen!.payable} والفاتورةُ تُصدر ${invoice.total}`)
+      expect(screen!.payable, `${p.id}: الشاشة تعرض ${screen!.payable} والفاتورة تصدر ${invoice.total}`)
         .toBe(invoice.total)
     }
   })
 
-  it('والمشطوبُ هو مجموعُ القائمة شاملا الهديّة — فيُرى ما وُفِّر', () => {
+  it('والمشطوب هو مجموع القائمة شاملا الهديّة — فيرى ما وفّر', () => {
     for (const p of CORE.launch_pathways) {
       const ids = readyPathwayCourseIds(p.id)
       const gift = defaultGift(ids)
       const screen = readyPathwayPrice(ids, gift, priceOf)!
       const invoice = priceCart(linesFor(ids), gift, null)
       expect(screen.list, p.id).toBe(invoice.listTotal)
-      expect(screen.list, `${p.id}: الوفرُ صفر — فالهديّةُ لم تُطرح`).toBeGreaterThan(screen.payable)
+      expect(screen.list, `${p.id}: الوفر صفر — فالهديّة لم تطرح`).toBeGreaterThan(screen.payable)
     }
   })
 
-  it('والنسبةُ المعروضةُ تطابق الرقمين — لا رقما ثالثا', () => {
+  it('والنسبة المعروضة تطابق الرقمين — لا رقما ثالثا', () => {
     for (const p of CORE.launch_pathways) {
       const ids = readyPathwayCourseIds(p.id)
       const s = readyPathwayPrice(ids, defaultGift(ids), priceOf)!
       expect(s.savedPct, p.id).toBe(Math.round((1 - s.payable / s.list) * 100))
-      expect(s.savedPct, `${p.id}: نسبةٌ خارج المعقول`).toBeGreaterThan(0)
+      expect(s.savedPct, `${p.id}: نسبة خارج المعقول`).toBeGreaterThan(0)
       expect(s.savedPct, p.id).toBeLessThan(100)
     }
   })
 
-  it('ودورةٌ بلا سعر تُسقط المجموعَ كلَّه — لا مجموعَ ناقصٍ يُقرأ كاملا', () => {
+  it('ودورة بلا سعر تسقط المجموع كلّه — لا مجموع ناقص يقرأ كاملا', () => {
     const ids = readyPathwayCourseIds(CORE.launch_pathways[0].id)
     const missing = (id: string) => (id === ids[0] ? null : priceOf(id))
     expect(readyPathwayPrice(ids, defaultGift(ids), missing)).toBeNull()
   })
 
-  it('وبلا هديّة: المدفوعُ كلُّ الدورات — والحسابُ يبقى مطابقا', () => {
+  it('وبلا هديّة: المدفوع كلّ الدورات — والحساب يبقى مطابقا', () => {
     const ids = readyPathwayCourseIds(CORE.launch_pathways[0].id)
     const screen = readyPathwayPrice(ids, null, priceOf)!
     expect(screen.payable).toBe(priceCart(linesFor(ids), null, null).total)

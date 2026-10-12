@@ -39,8 +39,8 @@ export interface NotificationCategory {
 export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
   {
     key: 'sessions',
-    labelAr: 'مواعيدُ الجلسات',
-    whatAr: 'جدولةُ لقاءٍ جديدٍ في شعبتك · تغيّرُ جدولها · وقبل الجلسة بيومٍ وقبلها بساعة',
+    labelAr: 'مواعيد الجلسات',
+    whatAr: 'جدولة لقاء جديد في شعبتك · تغيّر جدولها · وقبل الجلسة بيوم وقبلها بساعة',
     silenceable: true,
     /* ── ثغرةٌ كانت هنا: `session.reminder.1h` بلا صنف ──
 
@@ -68,7 +68,7 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
   {
     key: 'progress',
     labelAr: 'تقدّمي في المسار',
-    whatAr: 'قبولُ تسجيلٍ · انتقالٌ من قائمة الانتظار · قرارٌ في طلبٍ رفعتَه',
+    whatAr: 'قبول تسجيل · انتقال من قائمة الانتظار · قرار في طلب رفعته',
     silenceable: true,
     templateKeys: [
       'enrollment.approved', 'enrollment.confirmed', 'enrollment.rejected',
@@ -90,10 +90,10 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
        فلا يراها مسحٌ يقرأ الحرف. والحارسُ يرفض اليوم كلَّ مفتاحٍ يُبنى هكذا
        حتّى تُسمَّى توسّعاتُه. */
     key: 'grading',
-    labelAr: 'تصحيحُ عملي',
-    whatAr: 'بدءُ مراجعةِ تسليمك · طلبُ إعادته · قبولُه أو رفضُه · وصولُ درجتك أو تعديلُها',
+    labelAr: 'تصحيح عملي',
+    whatAr: 'بدء مراجعة تسليمك · طلب إعادته · قبوله أو رفضه · وصول درجتك أو تعديلها',
     silenceable: false,
-    lockedWhyAr: '«أعد التسليم» يحمل مهلةً — وكتمُه يُضيّع مهلةً لا خبرا. والدرجةُ يُبنى عليها إكمالُ المسار، فبلوغُها شرطُ أن تُراجَع.',
+    lockedWhyAr: '«أعد التسليم» يحمل مهلة — وكتمه يضيّع مهلة لا خبرا. والدرجة يبنى عليها إكمال المسار، فبلوغها شرط أن تراجع.',
     templateKeys: [
       'submission.start_review', 'submission.request_resubmit',
       'submission.accept', 'submission.reject',
@@ -109,15 +109,15 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
        رحلته، والتأخّرُ يُقبل ويُعلَّم. ولم يُضمَّ إلى «مواعيد الجلسات»: من
        كتم الجرسَ عن اللقاءات لم يكتمه عن مهمّةٍ فُتحت، ولا العكس. */
     key: 'cohort_timeline',
-    labelAr: 'ما يُفتح في شعبتي',
-    whatAr: 'فتحُ موعدٍ بكرّاسته ومحتواه · فتحُ مهامِّ محورٍ بعد لقائه · وقبل آخر موعد مهمّةٍ لم تسلّمها بيوم',
+    labelAr: 'ما يفتح في شعبتي',
+    whatAr: 'فتح موعد بكرّاسته ومحتواه · فتح مهامّ محور بعد لقائه · وقبل آخر موعد مهمّة لم تسلّمها بيوم',
     silenceable: true,
     templateKeys: ['timeline.slot_opened', 'timeline.tasks_opened', 'timeline.due_soon'],
   },
   {
     key: 'announcements',
-    labelAr: 'إعلاناتُ الأكاديمية',
-    whatAr: 'ما تُرسله الإدارةُ للعموم أو لشعبتك',
+    labelAr: 'إعلانات الأكاديمية',
+    whatAr: 'ما ترسله الإدارة للعموم أو لشعبتك',
     silenceable: true,
     /* وإعلانُ الإدارة إلى المدرّبين (٤ أكتوبر ٢٠٢٦) — نصيحةٌ لا واجب، فيُكتَم جرسُه.
        ومن كتمه بقيت له النافذةُ في بوّابته حتّى يضغط «قرأتُه»: الكتمُ يُسكت الجرسَ
@@ -127,9 +127,9 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
   {
     key: 'money',
     labelAr: 'المال',
-    whatAr: 'إيصالُ دفعٍ · ردُّ مبلغٍ أو ردُّ طلبِه · إلغاءُ طلبٍ لم يكتمل · مستحقّاتُ مدرّب',
+    whatAr: 'إيصال دفع · ردّ مبلغ أو ردّ طلبه · إلغاء طلب لم يكتمل · مستحقّات مدرّب',
     silenceable: false,
-    lockedWhyAr: 'إيصالُ دفعٍ لا يُكتَم: هو سجلُّك عند الخلاف، وكتمُه يجعل «لم يخبرني أحد» صحيحا في الظاهر.',
+    lockedWhyAr: 'إيصال دفع لا يكتم: هو سجلّك عند الخلاف، وكتمه يجعل «لم يخبرني أحد» صحيحا في الظاهر.',
     /* ═══ والردُّ خبرُ مالٍ كالقبض (ي-٤) ═══
 
        كان المالُ يعود إلى البطاقة — أو يُرفض ردُّه — **ولا مفتاحَ ردٍّ في
@@ -150,9 +150,9 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
   {
     key: 'certificates',
     labelAr: 'الشهادات',
-    whatAr: 'إصدارُ شهادةٍ باسمك · أو إلغاؤها',
+    whatAr: 'إصدار شهادة باسمك · أو إلغاؤها',
     silenceable: false,
-    lockedWhyAr: 'الشهادةُ تُنسب إليك برقمٍ يُتحقَّق منه علنا — فإصدارُها خبرٌ يجب أن يبلغك، وإلغاؤها أوجب.',
+    lockedWhyAr: 'الشهادة تنسب إليك برقم يتحقّق منه علنا — فإصدارها خبر يجب أن يبلغك، وإلغاؤها أوجب.',
     /* والسببُ المكتوب فوق يقع على السحب أشدَّ ممّا يقع على الإصدار: صفحةُ
        التحقّق العامّة تبدأ تعرضها «ملغاة» لمن يحمل رقمَها في اللحظة نفسِها
        (`certificate.service.ts` — `verify`). فمن يسأل عنها يعرف قبل صاحبها. */
@@ -161,9 +161,9 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
   {
     key: 'work',
     labelAr: 'عملي في الأكاديمية',
-    whatAr: 'مهمّةٌ كُلِّفتَ بها · طلبٌ ينتظر قرارك · شعبةٌ أُسنِدت إليك · اعتمادُ ظهورك ونطاقُ اقتراحك · تذكرةُ دعمٍ أو طلبُ انضمامٍ جديد',
+    whatAr: 'مهمّة كلّفت بها · طلب ينتظر قرارك · شعبة أسندت إليك · اعتماد ظهورك ونطاق اقتراحك · تذكرة دعم أو طلب انضمام جديد',
     silenceable: false,
-    lockedWhyAr: 'تكليفٌ لا يعلم به صاحبُه ليس تكليفا — ولذلك لا يُكتَم عملُ الموظّف.',
+    lockedWhyAr: 'تكليف لا يعلم به صاحبه ليس تكليفا — ولذلك لا يكتم عمل الموظّف.',
     templateKeys: [
       'staff.task.assigned', 'staff.task.done', 'admin.support.ticket', 'admin.support_ticket',
       'admin.trainer_application', 'admin.learner_request', 'trainer.qualify.request',
@@ -247,10 +247,10 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
      المدرّبَ، وهو هنا لأنّ الحارسَ يطلب صنفا لكلّ مفتاحٍ يُرسَل. */
   {
     key: 'cohort_plan',
-    labelAr: 'تجهيزُ شعبتي',
-    whatAr: 'إرسالُ خطّةِ شعبتك للاعتماد · قرارُ الإدارة فيها وفي ما تغيّره بعد اعتمادها · تذكيرٌ بإكمال تجهيزها',
+    labelAr: 'تجهيز شعبتي',
+    whatAr: 'إرسال خطّة شعبتك للاعتماد · قرار الإدارة فيها وفي ما تغيّره بعد اعتمادها · تذكير بإكمال تجهيزها',
     silenceable: false,
-    lockedWhyAr: 'قرارُ الإدارة في خطّتك يُبنى عليه فتحُ الشعبة، والتذكيرُ يحمل ما بقي عليك — وكتمُهما يُبقي شعبةً بلا مدرّبٍ يعلم أنّ عليه شيئا.',
+    lockedWhyAr: 'قرار الإدارة في خطّتك يبنى عليه فتح الشعبة، والتذكير يحمل ما بقي عليك — وكتمهما يبقي شعبة بلا مدرّب يعلم أنّ عليه شيئا.',
     /* واللقاءُ المباشرُ من هذا الصنف نفسِه (١٥ سبتمبر ٢٠٢٦): جدولتُه
        تنتظر قرارا كخطّة الشعبة، وقرارُها يُعلن موعدا لعشرين إنسانا أو
        يمنعه. و`pending` يصل الإدارةَ لا المدرّبَ — وهو هنا لأنّ الحارسَ
@@ -273,10 +273,10 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
        ولا واجب». فبديلٌ جاء، أو نقلٌ إلى نظير، أو ردٌّ ورصيدٌ اختاره صاحبُه
        — كلُّها أخبارٌ لا يصحّ أن تُكتَم ثمّ يُقال «لم يخبرني أحد». */
     key: 'enrollment_change',
-    labelAr: 'تغييرٌ في شعبتك',
-    whatAr: 'تغيّرُ مدرّبِ شعبتك · نقلُك إلى شعبةٍ نظيرة · ردُّ ما تبقّى أو رصيدٌ باسمك',
+    labelAr: 'تغيير في شعبتك',
+    whatAr: 'تغيّر مدرّب شعبتك · نقلك إلى شعبة نظيرة · ردّ ما تبقّى أو رصيد باسمك',
     silenceable: false,
-    lockedWhyAr: 'تغييرٌ يمسّ مقعدَك أو مالَك — وكتمُه يجعل «لم يخبرني أحد» صحيحا في الظاهر.',
+    lockedWhyAr: 'تغيير يمسّ مقعدك أو مالك — وكتمه يجعل «لم يخبرني أحد» صحيحا في الظاهر.',
     /* و`enrollment.dropped` هنا لسببٍ قاسٍ: حارسُ ي-٣ كان يقرأ «أُخبِر أحدٌ»
        لا «أُخبِر صاحبُه» — و`drop` ينادي `fillSeatFromWaitlist` فيُخبِر **من
        أخذ المقعدَ الشاغر**، لا من أُسقط تسجيلُه. فمرّ خضراءَ بإشعارٍ يصل
@@ -297,9 +297,9 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
   {
     key: 'account',
     labelAr: 'حسابي ووصولي',
-    whatAr: 'إيقافُ حسابك أو إعادتُه · أرشفتُه أو إخراجُه منها · تغيّرُ أدوارك أو صلاحيّاتك · وتوثيقُ بريدك',
+    whatAr: 'إيقاف حسابك أو إعادته · أرشفته أو إخراجه منها · تغيّر أدوارك أو صلاحيّاتك · وتوثيق بريدك',
     silenceable: false,
-    lockedWhyAr: 'خبرُ وصولِك إلى حسابك ليس تذكيرا يُكتَم — ومن مُنع من الدخول له أن يعرف لماذا.',
+    lockedWhyAr: 'خبر وصولك إلى حسابك ليس تذكيرا يكتم — ومن منع من الدخول له أن يعرف لماذا.',
     templateKeys: [
       'account.suspended', 'account.reinstated',
       'account.archived', 'account.unarchived',

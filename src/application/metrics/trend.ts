@@ -107,7 +107,7 @@ export function flowTrend(current: number, previous: number, forms: CountForms):
 export function stockTrend(): Trend {
   return {
     direction: 'none', delta: 0, percent: null, showArrow: false,
-    sentenceAr: 'رقمُ لحظة — لا سجل لعدده الأسبوع الماضي',
+    sentenceAr: 'رقم لحظة — لا سجل لعدده الأسبوع الماضي',
   }
 }
 

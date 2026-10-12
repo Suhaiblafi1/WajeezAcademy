@@ -159,7 +159,7 @@ export default function Reports() {
                         ))}
                       </tbody>
                     </table>
-                    {result.rows.length > 200 && <p className="mt-2 text-read text-muted-foreground">يُعرض أول 200 صف — صدّر CSV/XLSX للكامل.</p>}
+                    {result.rows.length > 200 && <p className="mt-2 text-read text-muted-foreground">يعرض أول 200 صف — صدّر CSV/XLSX للكامل.</p>}
                   </div>
                 )}
               </Panel>

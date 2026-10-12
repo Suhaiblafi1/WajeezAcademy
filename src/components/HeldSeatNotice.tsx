@@ -51,18 +51,18 @@ export default function HeldSeatNotice({ seat, className = "" }: { seat: HeldSea
       <p className="mt-1.5 text-read leading-6 text-muted-foreground">
         {paid ? (
           <>
-            استلمنا دفعتك عن «{seat.courseTitleAr}» ({seat.cohortTitle}) ولا تدفع مرّةً أخرى.
-            تظهر الشعبة في «تعلّمي» فور تأكيد المزوّد — عادةً خلال دقائق.
+            استلمنا دفعتك عن «{seat.courseTitleAr}» ({seat.cohortTitle}) ولا تدفع مرّة أخرى.
+            تظهر الشعبة في «تعلّمي» فور تأكيد المزوّد — عادة خلال دقائق.
           </>
         ) : unpaid ? (
           <>
-            حُجز مقعدك في «{seat.courseTitleAr}» ({seat.cohortTitle}) بطلبٍ لم يكتمل دفعُه — أكمله
-            بطلبه نفسِه ولا تُنشئ طلبا ثانيا فوقه.
+            حجز مقعدك في «{seat.courseTitleAr}» ({seat.cohortTitle}) بطلب لم يكتمل دفعه — أكمله
+            بطلبه نفسه ولا تنشئ طلبا ثانيا فوقه.
           </>
         ) : (
           <>
             طلبك على «{seat.courseTitleAr}» ({seat.cohortTitle}) قيد المراجعة — نحجز مقعدك ثمّ تصلك
-            فاتورتُه، ولا يُطلب منك دفعٌ قبل ذلك.
+            فاتورته، ولا يطلب منك دفع قبل ذلك.
           </>
         )}
         {seat.invoiceNumber && (

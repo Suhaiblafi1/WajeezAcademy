@@ -69,15 +69,15 @@ function isCrawlable(path: string): boolean {
   return best ? best.allow : true
 }
 
-describe('robots.txt لا يمنع صفحةً عامّة', () => {
-  it('تُقرأ قواعدُ الملفّ أصلا — وإلّا فما بعده يفحص فراغا', () => {
-    expect(rules().length, 'لم تُلتقط قاعدةٌ واحدة').toBeGreaterThan(5)
+describe('robots.txt لا يمنع صفحة عامّة', () => {
+  it('تقرأ قواعد الملفّ أصلا — وإلّا فما بعده يفحص فراغا', () => {
+    expect(rules().length, 'لم تلتقط قاعدة واحدة').toBeGreaterThan(5)
   })
 
-  it.each(PUBLIC_PAGES.map((p) => p.path))('«%s» مسموحٌ للزاحف', (path) => {
+  it.each(PUBLIC_PAGES.map((p) => p.path))('«%s» مسموح للزاحف', (path) => {
     expect(
       isCrawlable(path),
-      'صفحةٌ في خريطة الموقع يمنعها robots.txt — تُسجَّل «محجوبةً» ولا تُفهرَس',
+      'صفحة في خريطة الموقع يمنعها robots.txt — تسجّل «محجوبة» ولا تفهرس',
     ).toBe(true)
   })
 
@@ -88,7 +88,7 @@ describe('robots.txt لا يمنع صفحةً عامّة', () => {
     expect(isCrawlable('/trainers?q=تسويق')).toBe(true)
   })
 
-  it('والبوّاباتُ ممنوعةٌ فعلا — لا يُفتح البابُ باسم إصلاح الحجب', () => {
+  it('والبوّابات ممنوعة فعلا — لا يفتح الباب باسم إصلاح الحجب', () => {
     for (const path of [
       '/student/learning',
       '/student/certificates',
@@ -101,26 +101,26 @@ describe('robots.txt لا يمنع صفحةً عامّة', () => {
       '/s/abc123',
       '/join-trainer/status',
     ]) {
-      expect(isCrawlable(path), `«${path}» مكشوفٌ للزاحف`).toBe(false)
+      expect(isCrawlable(path), `«${path}» مكشوف للزاحف`).toBe(false)
     }
   })
 
   /* وصفحةُ الدعوة المخفيّة (٥ أكتوبر ٢٠٢٦) — عامّةٌ لمن معه رابطُها، ومحجوبةٌ عن
      الزاحف بسطر البوّابة نفسِه. والقرارُ في `application/trainer/trainer-brief.ts`. */
-  it('و«التدريبُ معنا» محجوبةٌ — تُرسَل مع الدعوة ولا تُفهرَس', () => {
-    expect(isCrawlable(TRAINER_BRIEF_PATH), `«${TRAINER_BRIEF_PATH}» مكشوفٌ للزاحف`).toBe(false)
+  it('و«التدريب معنا» محجوبة — ترسل مع الدعوة ولا تفهرس', () => {
+    expect(isCrawlable(TRAINER_BRIEF_PATH), `«${TRAINER_BRIEF_PATH}» مكشوف للزاحف`).toBe(false)
   })
 
-  it('وخريطةُ الموقع مُعلَنةٌ بالعلامة لا بنطاقٍ مكتوبٍ حرفا', () => {
+  it('وخريطة الموقع معلنة بالعلامة لا بنطاق مكتوب حرفا', () => {
     const line = ROBOTS.split('\n').find((l) => l.trim().toLowerCase().startsWith('sitemap:'))
-    expect(line, 'لا سطرَ Sitemap — الزاحفُ يبحث بنفسه').toBeDefined()
+    expect(line, 'لا سطر Sitemap — الزاحف يبحث بنفسه').toBeDefined()
     expect(line).toContain('%VITE_SITE_ORIGIN%/sitemap.xml')
   })
 
-  it('ولا كتلةَ مفردةٍ لزاحفِ إجابةٍ — فهي تُسقط منعَ الكتلة العامّة', () => {
+  it('ولا كتلة مفردة لزاحف إجابة — فهي تسقط منع الكتلة العامّة', () => {
     /* زاحفٌ له كتلتُه يقرؤها **وحدَها** ويُهمل كتلة `*` كلَّها، ومنها منعُ
        البوّابات. فإذنٌ يُكتب له ليقرأ العامَّ ينتهي بفتح الداخليّ. */
     const agents = [...ROBOTS.matchAll(/^\s*User-agent:\s*(.+)$/gim)].map((m) => m[1].trim())
-    expect(agents, `كتلٌ مفردةٌ تُسقط المنعَ العامّ: ${agents.join('، ')}`).toEqual(['*'])
+    expect(agents, `كتل مفردة تسقط المنع العامّ: ${agents.join('، ')}`).toEqual(['*'])
   })
 })

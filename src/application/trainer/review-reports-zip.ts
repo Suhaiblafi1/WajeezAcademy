@@ -43,7 +43,7 @@ export async function expandReportFiles(files: readonly File[]): Promise<Expande
         .filter((e) => !e.dir && !MAC_JUNK.test(e.name))
         .map((e) => ({ name: e.name.split('/').pop() ?? e.name, read: () => e.async('arraybuffer') }))
     } catch {
-      out.problems.push({ name: file.name, problemAr: 'تعذّر فتحُ الملفّ المضغوط — لعلّه لم يكتمل تنزيلُه. نزّله ثانيةً، أو اختر ملفّاته واحدا واحدا' })
+      out.problems.push({ name: file.name, problemAr: 'تعذّر فتح الملفّ المضغوط — لعلّه لم يكتمل تنزيله. نزّله ثانية، أو اختر ملفّاته واحدا واحدا' })
       continue
     }
     const reports = entries.filter((e) => REPORT_EXT.test(e.name))
@@ -60,7 +60,7 @@ export async function expandReportFiles(files: readonly File[]): Promise<Expande
 /** سطرُ ما تُرك من الحِزَم — فارغٌ إن لم يُترك شيء */
 export function skippedLineAr(s: ExpandedReports['skipped']): string {
   const parts: string[] = []
-  if (s.wordTwins > 0) parts.push(`${s.wordTwins} نسخةَ Word لملفّاتِ PDF فيها (رُفع الـPDF وحدَه)`)
+  if (s.wordTwins > 0) parts.push(`${s.wordTwins} نسخة Word لملفّات PDF فيها (رفع الـPDF وحده)`)
   if (s.other > 0) parts.push(`${s.other} ليست PDF ولا Word`)
-  return parts.length ? `تُرك من الملفّ المضغوط: ${parts.join('، و')}.` : ''
+  return parts.length ? `ترك من الملفّ المضغوط: ${parts.join('، و')}.` : ''
 }

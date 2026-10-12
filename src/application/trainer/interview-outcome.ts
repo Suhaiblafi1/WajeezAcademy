@@ -63,10 +63,10 @@ export interface InterviewOutcome {
 /** النتائجُ الخمس — الشاشةُ تعرضها، والخادمُ يقبلها، من هذه القائمة وحدَها */
 export const INTERVIEW_OUTCOMES: readonly InterviewOutcome[] = [
   { key: 'passed', labelAr: 'ناجح', whatAr: 'اجتاز اللقاء' },
-  { key: 'hold', labelAr: 'تعليق', whatAr: 'يُعاد النظرُ فيه' },
-  { key: DEFERRED, labelAr: 'مؤجَّل', whatAr: 'مناسبٌ، ولا طلبَ كافيا على دوراته في الفصل القادم — يُؤجَّل إلى الفصول القادمة' },
-  { key: 'failed', labelAr: 'غير مناسب', whatAr: 'لا يناسب ما نبحث عنه — ولا يُكمَل طلبُه' },
-  { key: NO_SHOW, labelAr: 'لم يحضر', whatAr: 'لم يقع اللقاء — ويعود الطلبُ إلى ما قبل الحجز' },
+  { key: 'hold', labelAr: 'تعليق', whatAr: 'يعاد النظر فيه' },
+  { key: DEFERRED, labelAr: 'مؤجّل', whatAr: 'مناسب، ولا طلب كافيا على دوراته في الفصل القادم — يؤجّل إلى الفصول القادمة' },
+  { key: 'failed', labelAr: 'غير مناسب', whatAr: 'لا يناسب ما نبحث عنه — ولا يكمل طلبه' },
+  { key: NO_SHOW, labelAr: 'لم يحضر', whatAr: 'لم يقع اللقاء — ويعود الطلب إلى ما قبل الحجز' },
 ]
 
 /** المفاتيحُ وحدَها — يبني بها الخادمُ حارسَ طلبه، فلا قائمتان تفترقان */

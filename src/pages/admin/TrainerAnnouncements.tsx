@@ -50,9 +50,9 @@ interface SentAnnouncement {
 
 /** من يصله بعد الإرسال — كما يُقرأ تحت ما أُرسل */
 function lateLineAr(until: string | null): string {
-  if (!until) return "لمن كانوا مدرّبين يومَ أُرسل وحدَهم.";
+  if (!until) return "لمن كانوا مدرّبين يوم أرسل وحدهم.";
   return new Date(until).getTime() >= Date.now()
-    ? `ومن يصير مدرّبا حتّى ${fmtDateAr(until)} يصله حين يفتح بوّابتَه، ويُضاف هنا يومَها.`
+    ? `ومن يصير مدرّبا حتّى ${fmtDateAr(until)} يصله حين يفتح بوّابته، ويضاف هنا يومها.`
     : `وكان يصل من صار مدرّبا حتّى ${fmtDateAr(until)}.`;
 }
 
@@ -64,11 +64,11 @@ interface Recipient {
   readAt: string | null;
 }
 
-const TRAINER_FORMS = { one: "مدرّب", two: "مدرّبَين", few: "مدرّبين", many: "مدرّبا" };
+const TRAINER_FORMS = { one: "مدرّب", two: "مدرّبين", few: "مدرّبين", many: "مدرّبا" };
 
 /** «مدرّبٌ واحد» و«مدرّبان» لا «1 مدرّب» — والعددُ يُقرأ لا يُحسب */
 function trainersAr(n: number): string {
-  if (n === 1) return "مدرّبٌ واحد";
+  if (n === 1) return "مدرّب واحد";
   if (n === 2) return "مدرّبان";
   return countAr(n, TRAINER_FORMS);
 }
@@ -96,7 +96,7 @@ function SentRow({ a }: { a: SentAnnouncement }) {
       const r = await apiGet<{ recipients: Recipient[] }>(`/api/admin/trainer-announcements/${a.id}`);
       setRows(r.recipients);
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "تعذّر جلبُ القائمة");
+      setError(e instanceof ApiError ? e.message : "تعذّر جلب القائمة");
     }
   };
   const unseen = a.total - a.read - a.seen;
@@ -106,7 +106,7 @@ function SentRow({ a }: { a: SentAnnouncement }) {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <p className="text-read font-black">{a.titleAr}</p>
-          <p className="mt-1 text-read text-muted-foreground">أُرسل في {fmtDateTimeAr(a.sentAt)}، ووصل حتّى الآن {trainersAr(a.total)}.</p>
+          <p className="mt-1 text-read text-muted-foreground">أرسل في {fmtDateTimeAr(a.sentAt)}، ووصل حتّى الآن {trainersAr(a.total)}.</p>
           <p className="mt-1 text-read text-muted-foreground">{lateLineAr(a.lateJoinersUntil)}</p>
         </div>
         <Button size="sm" tone="secondary" aria-expanded={open} onClick={() => void toggle()}
@@ -117,15 +117,15 @@ function SentRow({ a }: { a: SentAnnouncement }) {
       <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-read">
         <span className="font-black text-teal-light-ink">قرأه {a.read} من {a.total}</span>
         {a.seen > 0 && <span className="text-gold-ink">رآه ولم يؤكّد: {a.seen}</span>}
-        {unseen > 0 && <span className="text-muted-foreground">لم يفتح بوّابتَه بعد: {unseen}</span>}
+        {unseen > 0 && <span className="text-muted-foreground">لم يفتح بوّابته بعد: {unseen}</span>}
       </div>
       {open && (
         <div className="mt-3">
           {error && <p role="alert" className="text-read font-bold text-danger-ink">{error}</p>}
-          {!rows && !error && <p className="text-read text-muted-foreground">يُحمَّل…</p>}
+          {!rows && !error && <p className="text-read text-muted-foreground">يحمّل…</p>}
           {rows && rows.length > 8 && (
             <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="ابحث باسم المدرّب أو بريده"
-              aria-label="ابحث في من أُرسل إليه الإعلان" className={`${field} mb-2 max-w-sm`} />
+              aria-label="ابحث في من أرسل إليه الإعلان" className={`${field} mb-2 max-w-sm`} />
           )}
           {rows && (
             <ul className="divide-y divide-white/5">
@@ -213,7 +213,7 @@ export default function TrainerAnnouncements() {
       setUntil(defaultLateUntil(today, false));
       await load();
     } catch (e) {
-      setSendError(e instanceof ApiError ? e.message : "لم يُرسَل — تحقّق من اتّصالك وأعِد المحاولة");
+      setSendError(e instanceof ApiError ? e.message : "لم يرسل — تحقّق من اتّصالك وأعد المحاولة");
     } finally {
       setSending(false);
     }
@@ -221,7 +221,7 @@ export default function TrainerAnnouncements() {
 
   if (offline) {
     return (
-      <AdminLayout title="إعلاناتٌ للمدرّبين">
+      <AdminLayout title="إعلانات للمدرّبين">
         <Panel className="grid place-items-center py-20 text-center">
           <ServerOff className="h-12 w-12 text-muted-foreground/50" />
           <h2 className="mt-4 text-xl font-black">لا يمكن الوصول للبيانات</h2>
@@ -232,38 +232,38 @@ export default function TrainerAnnouncements() {
   }
 
   return (
-    <AdminLayout title="إعلاناتٌ للمدرّبين">
+    <AdminLayout title="إعلانات للمدرّبين">
       <p className="mb-4 max-w-3xl text-read leading-7 text-muted-foreground">
-        إعلانٌ يصل كلَّ مدرّبٍ نشط: نافذةٌ في بوّابته حين يفتحها حتّى يضغط «قرأتُه» — ويستطيع أن يؤجّلها فلا تمنعه من عمله —
-        وإشعارٌ في جرسه. ولا بريد. وتحت كلِّ ما أُرسل: من قرأ، ومن رآه ولم يؤكّد، ومن لم يفتح بوّابتَه بعد.
+        إعلان يصل كلّ مدرّب نشط: نافذة في بوّابته حين يفتحها حتّى يضغط «قرأته» — ويستطيع أن يؤجّلها فلا تمنعه من عمله —
+        وإشعار في جرسه. ولا بريد. وتحت كلّ ما أرسل: من قرأ، ومن رآه ولم يؤكّد، ومن لم يفتح بوّابته بعد.
       </p>
 
       {sent && (
         <Inset tone="positive" role="status" className="mb-4 px-4 py-3 text-read">
-          أُرسل «{sent.title}» إلى {trainersAr(sent.recipients)}. تابِع من قرأه في «ما أُرسل» أدناه.
+          أرسل «{sent.title}» إلى {trainersAr(sent.recipients)}. تابع من قرأه في «ما أرسل» أدناه.
         </Inset>
       )}
 
       {canAnnounce && (
         <Panel as="section" aria-labelledby="new-announcement">
           <h2 id="new-announcement" className="flex items-center gap-2 text-sm font-black">
-            <Megaphone className="h-4 w-4 text-teal-light-ink" aria-hidden="true" /> إعلانٌ جديد
+            <Megaphone className="h-4 w-4 text-teal-light-ink" aria-hidden="true" /> إعلان جديد
           </h2>
           <p className="mt-1 text-read text-muted-foreground">
             {title === ANNOUNCEMENT_DRAFT.titleAr
-              ? "فيه النصُّ المقترحُ عن موعد بدء الشُّعب — عدّل فيه ما شئت، أو امسحه واكتب غيرَه."
-              : "اكتب العنوانَ والنصّ، وتراه تحتهما كما سيراه المدرّب."}
+              ? "فيه النصّ المقترح عن موعد بدء الشّعب — عدّل فيه ما شئت، أو امسحه واكتب غيره."
+              : "اكتب العنوان والنصّ، وتراه تحتهما كما سيراه المدرّب."}
           </p>
           <div className="mt-3 grid gap-3">
             <label className="grid gap-1 text-fine font-bold text-muted-foreground">
               العنوان
               <input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={ANNOUNCEMENT_TITLE_MAX}
-                aria-label="عنوانُ الإعلان" className={field} />
+                aria-label="عنوان الإعلان" className={field} />
             </label>
             <label className="grid gap-1 text-fine font-bold text-muted-foreground">
-              النصّ — سطرٌ فارغٌ بين الفقرات
+              النصّ — سطر فارغ بين الفقرات
               <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={12} maxLength={ANNOUNCEMENT_BODY_MAX}
-                aria-label="نصُّ الإعلان" className={`${field} leading-7`} />
+                aria-label="نصّ الإعلان" className={`${field} leading-7`} />
             </label>
             <p className="text-read text-muted-foreground">{b.length} / {ANNOUNCEMENT_BODY_MAX} حرفا</p>
           </div>
@@ -277,7 +277,7 @@ export default function TrainerAnnouncements() {
                 </p>
                 <p className="mt-2 text-lg font-black leading-8">{t || "—"}</p>
                 <div className="mt-4"><AnnouncementBody text={b} /></div>
-                <p className="mt-6 text-read text-muted-foreground">وتحته زرّان: «قرأتُه» و«ذكّرني لاحقا».</p>
+                <p className="mt-6 text-read text-muted-foreground">وتحته زرّان: «قرأته» و«ذكّرني لاحقا».</p>
               </Inset>
             </div>
           )}
@@ -292,14 +292,14 @@ export default function TrainerAnnouncements() {
               المدرّبون الآن، ومن يصير مدرّبا حتّى
               <input type="date" dir="ltr" value={until} min={today} max={addDays(today, LATE_JOINERS_MAX_DAYS)}
                 disabled={!late} onChange={(e) => setUntil(e.target.value)}
-                aria-label="آخرُ يومٍ يصل فيه من يصير مدرّبا بعد الإرسال" className={`${field} w-auto`} />
+                aria-label="آخر يوم يصل فيه من يصير مدرّبا بعد الإرسال" className={`${field} w-auto`} />
             </label>
             <p className="ms-6 text-read leading-6 text-muted-foreground">
-              من ينضمّ بعد الإرسال تظهر له النافذةُ أوّلَ ما يفتح بوّابتَه، ويصله في الجرس — حتّى آخر هذا اليوم.
+              من ينضمّ بعد الإرسال تظهر له النافذة أوّل ما يفتح بوّابته، ويصله في الجرس — حتّى آخر هذا اليوم.
             </p>
             <label className="flex items-center gap-2 text-read text-foreground">
               <input type="radio" name="reach" className="accent-teal" checked={!late} onChange={() => setLate(false)} />
-              المدرّبون الآن وحدَهم
+              المدرّبون الآن وحدهم
             </label>
             <p className="ms-6 text-read leading-6 text-muted-foreground">من ينضمّ بعد الإرسال لا يصله.</p>
             {untilProblem && <p role="alert" className="text-read font-bold text-danger-ink">{untilProblem}</p>}
@@ -307,22 +307,22 @@ export default function TrainerAnnouncements() {
 
           <div className="mt-4 flex flex-wrap items-center gap-3">
             <Button tone="primary" icon={Send} disabled={!ready || !audience} onClick={() => { setSendError(null); setAsking(true); }}>
-              أرسِل…
+              أرسل…
             </Button>
             <p className="text-read text-muted-foreground">
-              {audience === null ? "يُحسب من يصله…"
-                : audience === 0 ? "لا مدرّبَ نشطا يصله الآن."
-                : `يصله الآن ${trainersAr(audience)} — كلُّ مدرّبٍ نشطٍ له بوّابة.`}
+              {audience === null ? "يحسب من يصله…"
+                : audience === 0 ? "لا مدرّب نشطا يصله الآن."
+                : `يصله الآن ${trainersAr(audience)} — كلّ مدرّب نشط له بوّابة.`}
             </p>
           </div>
         </Panel>
       )}
 
       <Panel as="section" aria-labelledby="sent-announcements" className="mt-6">
-        <h2 id="sent-announcements" className="text-sm font-black">ما أُرسل</h2>
-        {!data && <p className="mt-3 text-read text-muted-foreground">يُحمَّل…</p>}
+        <h2 id="sent-announcements" className="text-sm font-black">ما أرسل</h2>
+        {!data && <p className="mt-3 text-read text-muted-foreground">يحمّل…</p>}
         {data?.items.length === 0 && (
-          <p className="mt-3 text-read text-muted-foreground">لم يُرسَل إعلانٌ بعد — ما ترسله يظهر هنا ومعه من قرأه.</p>
+          <p className="mt-3 text-read text-muted-foreground">لم يرسل إعلان بعد — ما ترسله يظهر هنا ومعه من قرأه.</p>
         )}
         {data && data.items.length > 0 && (
           <ul className="mt-3 grid gap-3">
@@ -332,29 +332,29 @@ export default function TrainerAnnouncements() {
       </Panel>
 
       {asking && audience !== null && (
-        <Modal onClose={() => setAsking(false)} label="أترسل الإعلانَ الآن؟" panelClassName="w-full max-w-lg">
+        <Modal onClose={() => setAsking(false)} label="أترسل الإعلان الآن؟" panelClassName="w-full max-w-lg">
           <Inset dir="rtl" tone="solid" className="text-foreground sm:p-6">
             <h2 className="text-sm font-black">أترسل «{t}» الآن إلى {trainersAr(audience)}؟</h2>
             <p className="mt-2 text-read leading-6 text-muted-foreground">
-              {late ? `ومن يصير مدرّبا حتّى ${dayLabelAr(until)} يصله حين يفتح بوّابتَه.` : "ومن ينضمّ بعد الإرسال لا يصله."}
+              {late ? `ومن يصير مدرّبا حتّى ${dayLabelAr(until)} يصله حين يفتح بوّابته.` : "ومن ينضمّ بعد الإرسال لا يصله."}
             </p>
             {sameTitle && (
               <p className="mt-2 text-read leading-6 text-gold-ink">
-                أرسلتَ إعلانا بهذا العنوان في {fmtDateTimeAr(sameTitle.sentAt)}، وقرأه {sameTitle.read} من {sameTitle.total}.
-                إرسالُه ثانيةً يُظهره لهم من جديد.
+                أرسلت إعلانا بهذا العنوان في {fmtDateTimeAr(sameTitle.sentAt)}، وقرأه {sameTitle.read} من {sameTitle.total}.
+                إرساله ثانية يظهره لهم من جديد.
               </p>
             )}
             <div className="mt-4 grid gap-3">
               <div>
-                <Button tone="confirm" loading={sending} onClick={() => void send()}>أرسِله الآن</Button>
+                <Button tone="confirm" loading={sending} onClick={() => void send()}>أرسله الآن</Button>
                 <p className="mt-1 text-read leading-6 text-muted-foreground">
-                  يصل الآن: نافذةٌ في بوّابة كلٍّ منهم حين يفتحها، وإشعارٌ في جرسه. ولا يُسحب بعد أن يُرسَل.
+                  يصل الآن: نافذة في بوّابة كلّ منهم حين يفتحها، وإشعار في جرسه. ولا يسحب بعد أن يرسل.
                 </p>
               </div>
               <div>
                 <Button tone="secondary" disabled={sending} onClick={() => setAsking(false)}>ليس الآن</Button>
                 <p className="mt-1 text-read leading-6 text-muted-foreground">
-                  لا يصل أحدا، ويبقى النصُّ هنا كما كتبتَه.
+                  لا يصل أحدا، ويبقى النصّ هنا كما كتبته.
                 </p>
               </div>
             </div>

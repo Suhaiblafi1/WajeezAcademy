@@ -17,7 +17,7 @@ afterEach(() => {
 })
 
 describe('موارد المكتبة', () => {
-  it('تبدأ فارغة ما لم يُنشر مورد — فلا يظهر تبويب على فراغ', () => {
+  it('تبدأ فارغة ما لم ينشر مورد — فلا يظهر تبويب على فراغ', () => {
     installCoreCatalogRaw({ ...BUNDLED, library_resources: [] })
     expect(getLibraryResources()).toEqual([])
   })
@@ -41,7 +41,7 @@ describe('موارد المكتبة', () => {
     expect(getLibraryResources().map((r) => r.id)).toEqual(['lib-a', 'lib-b', 'lib-c'])
   })
 
-  it('مورد بلا sort_order يُعامل صفرا فيتقدّم لا يختفي', () => {
+  it('مورد بلا sort_order يعامل صفرا فيتقدّم لا يختفي', () => {
     installCoreCatalogRaw({
       ...BUNDLED,
       library_resources: [

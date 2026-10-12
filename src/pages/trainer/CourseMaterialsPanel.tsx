@@ -41,11 +41,11 @@ export interface PrepRow {
 
 const STATE_AR: Record<PrepState, { label: string; tone: "warn" | "info" | "positive" | "neutral" }> = {
   to_decide: { label: "بانتظار قرارك", tone: "warn" },
-  preparing: { label: "تُعِدّها في «شعبي»", tone: "info" },
-  returned: { label: "رُدّت بملاحظات", tone: "warn" },
-  submitted: { label: "أُرسلت — تنتظر اعتمادَنا", tone: "positive" },
-  approved: { label: "اعتُمدت", tone: "positive" },
-  declined: { label: "اعتذرتَ عنها", tone: "neutral" },
+  preparing: { label: "تعدّها في «شعبي»", tone: "info" },
+  returned: { label: "ردّت بملاحظات", tone: "warn" },
+  submitted: { label: "أرسلت — تنتظر اعتمادنا", tone: "positive" },
+  approved: { label: "اعتمدت", tone: "positive" },
+  declined: { label: "اعتذرت عنها", tone: "neutral" },
 };
 
 export default function CourseMaterialsPanel({ rows, onChanged }: {
@@ -66,18 +66,17 @@ export default function CourseMaterialsPanel({ rows, onChanged }: {
   return (
     <section aria-labelledby="materials-h" className="mb-8">
       <h2 id="materials-h" className="flex items-center gap-2 text-lg font-black">
-        <FileStack className="h-5 w-5 text-teal-light-ink" aria-hidden="true" /> {inSetup ? "دوراتُك قيد الإعداد" : "دوراتُك التي تعبّئها"}
+        <FileStack className="h-5 w-5 text-teal-light-ink" aria-hidden="true" /> {inSetup ? "دوراتك قيد الإعداد" : "دوراتك التي تعبّئها"}
       </h2>
       {inSetup ? (
         <p className="mt-1 max-w-3xl text-sm leading-7 text-muted-foreground">
-          لكلّ دورةٍ اخترناها لك: اقبلها أو اعتذر عنها. وكلُّ دورةٍ تقبلها تُنشأ لها شعبةُ إعدادٍ في «شعبي»
-          تعبّئ فيها كلَّ شيءٍ مرّةً واحدة — المحاورَ والكرّاسةَ واللقاءاتِ والمهامَّ والمصادر — ثمّ ترسلها لاعتمادنا.
-          وشعبةُ الإعداد لا متعلّمين فيها ولا تُنشَر، ولا أتعابَ قبل اعتماد دوراتك.
-          {" "}<span className="font-bold text-foreground">قرّرتَ في {decided} من {rows.length}.</span>
+          اقبل كلّ دورة اخترناها لك أو اعتذر عنها. ما تقبله تنشأ له شعبة إعداد في «شعبي» تعبّئها وترسلها لاعتمادنا.
+          لا متعلّمين فيها ولا تنشر، ولا أتعاب قبل اعتماد دوراتك.
+          {" "}<span className="font-bold text-foreground">قرّرت في {decided} من {rows.length}.</span>
         </p>
       ) : (
         <p className="mt-1 max-w-3xl text-sm leading-7 text-muted-foreground">
-          اقبل ما تريد تدريسَه فتُنشأ له شعبةٌ في «شعبي»، تعبّئها مرّةً واحدةً وترسلها لاعتمادنا.
+          اقبل ما تريد تدريسه فتنشأ له شعبة في «شعبي»، تعبّئها وترسلها لاعتمادنا.
         </p>
       )}
       {/* ═══ وجلسةُ التهيئة حيث يُعَدّ ما تُعين عليه (٣٠ سبتمبر ٢٠٢٦) ═══
@@ -92,7 +91,7 @@ export default function CourseMaterialsPanel({ rows, onChanged }: {
       )}
       {inSetup && underReview && (
         <Inset tone="default" className="mt-3 p-3 text-sm leading-6">
-          أرسلتَ شعبَ دوراتك كلَّها، فهي عندنا للاعتماد — وتُفعَّل مدرّبا حين نعتمدها، ويصلك خبرُ ذلك.
+          أرسلت شعب دوراتك كلّها للاعتماد — وتفعّل مدرّبا حين نعتمدها.
         </Inset>
       )}
       <ul className="mt-4 grid gap-2.5">
@@ -130,18 +129,18 @@ function CourseCard({ row: r, onChanged }: { row: PrepRow; onChanged: () => void
       </div>
 
       {r.state === "declined" && r.declineReasonAr && (
-        <p className="mt-1 text-sm leading-6 text-muted-foreground">سببُك: {r.declineReasonAr}</p>
+        <p className="mt-1 text-sm leading-6 text-muted-foreground">سببك: {r.declineReasonAr}</p>
       )}
 
       {r.state === "to_decide" && !declining && (
         <div className="mt-3 flex flex-wrap gap-2">
           <Button tone="confirm" size="sm" icon={Check} loading={busy}
-            onClick={() => void act("accept", {}, "قبِلتَها — وشعبةُ إعدادها في «شعبي»")}>
+            onClick={() => void act("accept", {}, "قبلتها — وشعبة إعدادها في «شعبي»")}>
             اقبلها وابدأ إعدادها
           </Button>
           {!r.approved && (
             <Button tone="secondary" size="sm" icon={X} disabled={busy} onClick={() => setDeclining(true)}>
-              اعتذرْ عنها
+              اعتذر عنها
             </Button>
           )}
         </div>
@@ -150,16 +149,16 @@ function CourseCard({ row: r, onChanged }: { row: PrepRow; onChanged: () => void
       {r.state === "to_decide" && declining && (
         <div className="mt-3 grid gap-2">
           <label className="grid gap-1 text-sm">
-            <span className="font-bold">سببُ الاعتذار — يقرؤه من اختار لك الدورة</span>
+            <span className="font-bold">سبب الاعتذار — يقرؤه من اختار لك الدورة</span>
             <textarea className={staffAreaCls} rows={2} maxLength={1000} value={reason}
               onChange={(e) => setReason(e.target.value)} />
           </label>
           <div className="flex flex-wrap gap-2">
             <Button tone="secondary" size="sm" icon={X} loading={busy} disabled={reason.trim().length < 3}
-              onClick={() => void act("decline", { reasonAr: reason.trim() }, "اعتذرتَ عنها — ووصل سببُك")}>
-              أرسلِ الاعتذار
+              onClick={() => void act("decline", { reasonAr: reason.trim() }, "اعتذرت عنها — ووصل سببك")}>
+              أرسل الاعتذار
             </Button>
-            <Button tone="ghost" size="sm" disabled={busy} onClick={() => setDeclining(false)}>تراجعْ</Button>
+            <Button tone="ghost" size="sm" disabled={busy} onClick={() => setDeclining(false)}>تراجع</Button>
           </div>
         </div>
       )}
@@ -167,7 +166,7 @@ function CourseCard({ row: r, onChanged }: { row: PrepRow; onChanged: () => void
       {r.cohortId && r.state !== "declined" && (
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <Button as={Link} to={`/trainer/cohort/${r.cohortId}`} size="sm" icon={Users}>
-            افتح شعبتَها في «شعبي»
+            افتح شعبتها في «شعبي»
           </Button>
           {r.cohortTitle && <span className="text-sm text-muted-foreground">{r.cohortTitle}</span>}
         </div>

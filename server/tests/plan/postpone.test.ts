@@ -9,7 +9,10 @@
    ٣) **ولا تُرسَل لهذا الفصل ثانيةً** — يُسمّى السببُ في صفّ خطوتها الأولى وفي ردّ الإرسال.
    ٤) **ولا تُؤجَّل شعبةٌ تعمل**، ولا ما ليس بانتظار قرار. */
 
-import { beforeAll, describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect as vexpect, it } from 'vitest'
+import { plainExpect } from '../helpers/plain-expect'
+/* يُقارَن بلا تشكيلٍ إعرابيّ — العلّةُ في `helpers/plain-expect.ts` */
+const expect = plainExpect(vexpect)
 import type { PrismaClient } from '@prisma/client'
 import type { FastifyInstance } from 'fastify'
 import { setupTestDb, testPrisma } from '../helpers/db'

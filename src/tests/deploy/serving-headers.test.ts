@@ -45,22 +45,22 @@ function cspDirectives(text: string): Map<string, string> {
   return out
 }
 
-describe('الملفُّ الذي يخدم هو الذي يُحرَس', () => {
-  it('كلاهما يعلن سياسةَ محتوى — وإلّا فالمقارنةُ تقارن فراغا', () => {
+describe('الملفّ الذي يخدم هو الذي يحرس', () => {
+  it('كلاهما يعلن سياسة محتوى — وإلّا فالمقارنة تقارن فراغا', () => {
     /* حارسٌ للحارس: لو انكسر الالتقاطُ لعادت خريطتان فارغتان، فمرّ كلُّ ما
        بعده وهو لا يفحص شيئا. */
-    expect(cspDirectives(HTACCESS).size, 'لم تُلتقط سياسةُ .htaccess').toBeGreaterThan(5)
-    expect(cspDirectives(CADDY).size, 'لم تُلتقط سياسةُ Caddyfile').toBeGreaterThan(5)
+    expect(cspDirectives(HTACCESS).size, 'لم تلتقط سياسة .htaccess').toBeGreaterThan(5)
+    expect(cspDirectives(CADDY).size, 'لم تلتقط سياسة Caddyfile').toBeGreaterThan(5)
   })
 
-  it('ولا توجيهَ في .htaccess يغيب عن Caddyfile — وقد غاب `worker-src` فعلا', () => {
+  it('ولا توجيه في .htaccess يغيب عن Caddyfile — وقد غاب `worker-src` فعلا', () => {
     const apache = cspDirectives(HTACCESS)
     const caddy = cspDirectives(CADDY)
     const missing = [...apache.keys()].filter((d) => !caddy.has(d))
-    expect(missing, `توجيهاتٌ تخدم على Apache ولا تخدم على Caddy:\n${missing.join('\n')}`).toEqual([])
+    expect(missing, `توجيهات تخدم على Apache ولا تخدم على Caddy:\n${missing.join('\n')}`).toEqual([])
   })
 
-  it('ومصادرُ كلِّ توجيهٍ هي هي — لا سياسةٌ أرخى على المضيف الحيّ', () => {
+  it('ومصادر كلّ توجيه هي هي — لا سياسة أرخى على المضيف الحيّ', () => {
     const apache = cspDirectives(HTACCESS)
     const caddy = cspDirectives(CADDY)
     const looser: string[] = []
@@ -74,11 +74,11 @@ describe('الملفُّ الذي يخدم هو الذي يُحرَس', () => {
     expect(looser, looser.join('\n')).toEqual([])
   })
 
-  it('و`worker-src` بعينها — لأنّها عولجت مرّةً ثمّ عادت', () => {
-    expect(cspDirectives(CADDY).get('worker-src'), 'عاملُ الخدمة يُرفض على سفاري').toBe("'self'")
+  it('و`worker-src` بعينها — لأنّها عولجت مرّة ثمّ عادت', () => {
+    expect(cspDirectives(CADDY).get('worker-src'), 'عامل الخدمة يرفض على سفاري').toBe("'self'")
   })
 
-  it('ولـCaddy أن يزيد: نقلٌ آمنٌ إلزاميّ، واسمُ الخادم مكتوم', () => {
+  it('ولـCaddy أن يزيد: نقل آمن إلزاميّ، واسم الخادم مكتوم', () => {
     expect(CADDY).toContain('Strict-Transport-Security')
     expect(CADDY).toContain('-Server')
   })

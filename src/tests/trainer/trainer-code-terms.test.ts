@@ -29,11 +29,11 @@ const BODY = renderContractBodyAr({
   academyTradingNameAr: ACADEMY_LEGAL.tradingNameAr ?? 'أكاديمية وجيز',
   governingLawAr: ACADEMY_LEGAL.governingLawAr ?? '',
   disputeVenueAr: ACADEMY_LEGAL.disputeVenueAr ?? '',
-  trainerFullName: 'مدرّبُ الاختبار',
+  trainerFullName: 'مدرّب الاختبار',
   trainerEmail: 'trainer@test.local',
   applicationReference: 'WJ-TR-2026-00077',
   issuedOnAr: '٢٧ سبتمبر ٢٠٢٦',
-  courses: [{ courseId: 'C1', titleAr: 'أساسيّاتُ المحاسبة' }],
+  courses: [{ courseId: 'C1', titleAr: 'أساسيّات المحاسبة' }],
   compensation: { type: 'per_seat', rate: '25', currency: 'USD', minSeats: 0, referralRate: '30' },
   rateWaivedReasonAr: null,
   hoursNoteAr: null,
@@ -41,18 +41,18 @@ const BODY = renderContractBodyAr({
   conditional: null,
 })
 
-describe('① النصُّ الذي يُقبَل هو الذي يُطبع', () => {
-  it('⚠️ المتنُ يحمل البندَ بحروفه، في سطره', () => {
+describe('① النصّ الذي يقبل هو الذي يطبع', () => {
+  it('⚠️ المتن يحمل البند بحروفه، في سطره', () => {
     const line = BODY.split('\n').find((l) => l.startsWith('4-10 '))
-    expect(line, 'لا بندَ 4-10 في المتن').toBeTruthy()
-    expect(line, 'البندُ المطبوعُ غيرُ الذي يُقبَل').toBe(CLAUSE_4_10_AR)
+    expect(line, 'لا بند 4-10 في المتن').toBeTruthy()
+    expect(line, 'البند المطبوع غير الذي يقبل').toBe(CLAUSE_4_10_AR)
   })
 
-  it('⚠️ والنسبتان فيه هما حدّا القواعد — لا رقمان يُكتبان', () => {
+  it('⚠️ والنسبتان فيه هما حدّا القواعد — لا رقمان يكتبان', () => {
     expect(CLAUSE_4_10_AR).toContain(`من ${MIN_TRAINER_CODE_PERCENT}% إلى ${MAX_TRAINER_CODE_PERCENT}%`)
   })
 
-  it('ويقول ما يُحسم وما لا يُحسم وما يبقى للقديم', () => {
+  it('ويقول ما يحسم وما لا يحسم وما يبقى للقديم', () => {
     /* ما منحه فعلا لا النسبةَ من سعر القائمة؛ والردُّ ينقصه؛ والقديمُ على شروطه */
     expect(CLAUSE_4_10_AR).toContain('الخصم الذي منحه فعلا')
     expect(CLAUSE_4_10_AR).toContain('نقص الحسم بنسبة ما رد')
@@ -60,12 +60,12 @@ describe('① النصُّ الذي يُقبَل هو الذي يُطبع', () =
   })
 })
 
-describe('② وتعديلُه يرفع إصدارَ القبول', () => {
-  it('⚠️ البصمةُ والإصدارُ معا — يتغيّران معا أو لا يتغيّران', () => {
+describe('② وتعديله يرفع إصدار القبول', () => {
+  it('⚠️ البصمة والإصدار معا — يتغيّران معا أو لا يتغيّران', () => {
     const sha = createHash('sha256').update(CLAUSE_4_10_AR).digest('hex')
     expect(
       { version: CODE_TERMS_VERSION, sha },
-      'تغيّر نصُّ البند 4-10: ارفع `CODE_TERMS_VERSION` (و`CODE_TERMS_FIRST_BODY` إلى جيل المتن الذي حمله) ثمّ حدّث البصمة',
+      'تغيّر نصّ البند 4-10: ارفع `CODE_TERMS_VERSION` (و`CODE_TERMS_FIRST_BODY` إلى جيل المتن الذي حمله) ثمّ حدّث البصمة',
     ).toEqual({
       /* `v2` (١ أكتوبر ٢٠٢٦): الكودُ نسبةٌ أو مبلغ، وسقفُ الثلاثين على الوجهين،
          والمنصّةُ تُريه قيمتَه قبل إصداره — وحمله الجيلُ الحادي والعشرون */
@@ -75,17 +75,17 @@ describe('② وتعديلُه يرفع إصدارَ القبول', () => {
   })
 })
 
-describe('③ والمتنُ الحاليُّ يحمله', () => {
-  it('⚠️ من يوقّع اليومَ لا يُسأل ثانيةً', () => {
-    expect(contractCarriesCodeTerms(CONTRACT_BODY_VERSION), 'المتنُ الحاليُّ لا يحمل الصيغةَ الجديدة').toBe(true)
+describe('③ والمتن الحاليّ يحمله', () => {
+  it('⚠️ من يوقّع اليوم لا يسأل ثانية', () => {
+    expect(contractCarriesCodeTerms(CONTRACT_BODY_VERSION), 'المتن الحاليّ لا يحمل الصيغة الجديدة').toBe(true)
   })
 
-  it('⚠️ ومن وقّع قبل جيلها يُسأل — ولا يُقرأ الإصدارُ حرفا', () => {
+  it('⚠️ ومن وقّع قبل جيلها يسأل — ولا يقرأ الإصدار حرفا', () => {
     expect(contractCarriesCodeTerms(`v${CODE_TERMS_FIRST_BODY - 1}-2026-09-27`)).toBe(false)
     expect(contractCarriesCodeTerms('v12-2026-09-27')).toBe(false)
     expect(contractCarriesCodeTerms('v3-2026-09-21')).toBe(false)
     expect(contractCarriesCodeTerms(`v${CODE_TERMS_FIRST_BODY}-2026-09-27`)).toBe(true)
-    expect(contractCarriesCodeTerms('v21-2027-01-01'), 'جيلٌ أحدثُ يُقرأ أقدم').toBe(true)
+    expect(contractCarriesCodeTerms('v21-2027-01-01'), 'جيل أحدث يقرأ أقدم').toBe(true)
     expect(contractCarriesCodeTerms(null)).toBe(false)
     expect(contractCarriesCodeTerms('draft')).toBe(false)
   })

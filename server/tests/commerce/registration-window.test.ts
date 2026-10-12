@@ -182,7 +182,7 @@ describe('الشرطُ نفسُه — قبل أن يُوصَل بموضع', () =
     const v = cohortAcceptsRegistration({ ...base, plans: [] })
     expect(v.open, 'قبلت شعبةٌ لا مدرّبَ لها').toBe(false)
     expect(v.open === false && v.code).toBe('no_trainer')
-    expect(v.open === false && v.reasonAr).toContain('بلا مدرّبٍ معتمَد')
+    expect(v.open === false && v.reasonAr).toContain('بلا مدرّب معتمد')
     /* و«بانتظار اعتماد» شيءٌ آخر: لا خطّةَ تنتظر — فلا تركب اللقاءاتُ خطّةً لا وجودَ لها */
     expect(awaitingTrainerPlan([])).toBe(false)
   })
@@ -384,7 +384,7 @@ describe('المواضعُ السبعة — شعبةٌ بلا مدرّبٍ مع�
     expect(classified.buyable.map((b) => b.id)).not.toContain(c.id)
     const out = classified.excluded.find((e) => e.cohortId === c.id)!
     expect(out.reason).toBe('no_trainer')
-    expect(out.messageAr).toContain('بلا مدرّبٍ معتمَد')
+    expect(out.messageAr).toContain('بلا مدرّب معتمد')
   })
 
   it('⚠️ ٢· التسجيل المباشر: يُرفض بـ409', async () => {

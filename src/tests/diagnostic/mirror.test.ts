@@ -14,8 +14,20 @@
  *     المبرمَجَ عقوبة، و`completion_pattern` تقرؤه صفرُ مواضع. وبذرُهما من
  *     المرآة يُحيي عقوبةً من بابٍ خلفيّ — فالنفيُ مفحوصٌ لا موصوف. */
 
-import { describe, expect, it } from 'vitest'
-import { readFileSync, readdirSync, statSync } from 'node:fs'
+import { describe, expect as vexpect, it } from 'vitest'
+/* ما يُفحص بلا تشكيلٍ إعرابيّ — بعضُ ما يُقرأ هنا بعد «اللغة البيضاء» وبعضُه (الخادمُ والعقودُ والتشخيص) قبلها */
+const plainDeep = (v: unknown): unknown =>
+  typeof v === 'string' ? plainAr(v) : Array.isArray(v) ? v.map(plainDeep)
+    : v && typeof v === 'object' && Object.getPrototypeOf(v) === Object.prototype ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, plainDeep(x)])) : v
+const expect = Object.assign((v: unknown, m?: string) => vexpect(plainDeep(v), m), vexpect) as typeof vexpect
+import { readFileSync as readRaw, readdirSync, statSync } from 'node:fs'
+import { plainAr } from '@/application/text/plain-ar'
+/* ما يُقرأ من الملفّات بلا تشكيلٍ إعرابيّ — بعضُها بعد «اللغة البيضاء» وبعضُها (العقود والخادم) قبلها */
+function readFileSync(p: Parameters<typeof readRaw>[0]): Buffer
+function readFileSync(p: Parameters<typeof readRaw>[0], e: BufferEncoding | { encoding: BufferEncoding }): string
+function readFileSync(p: Parameters<typeof readRaw>[0], e?: BufferEncoding | { encoding: BufferEncoding }): string | Buffer {
+  return e === undefined ? readRaw(p) : plainAr(String(readRaw(p, e)))
+}
 import { join, sep } from 'node:path'
 import { questionById } from '../../domain/diagnostic/catalog'
 import { RIASEC_DIMS } from '../../domain/diagnostic/v2_1/maps'
@@ -23,36 +35,36 @@ import { RIASEC_ITEM_IDS, mirrorItems } from '../../domain/diagnostic/mirror/ite
 import { scoreMirror } from '../../domain/diagnostic/mirror/score'
 import { clarityBand, mirrorFacts, mirrorInterestVector } from '../../domain/diagnostic/mirror/bridge'
 
-describe('٤٠ · بنودُ المرآة', () => {
-  it('أربعةٌ وعشرون بندا — ثمانيةَ عشرَ من البنك وستّةٌ مؤلَّفة', () => {
+describe('٤٠ · بنود المرآة', () => {
+  it('أربعة وعشرون بندا — ثمانية عشر من البنك وستّة مؤلّفة', () => {
     const items = mirrorItems()
     expect(items).toHaveLength(24)
     expect(items.filter((i) => i.block === 'interest')).toHaveLength(18)
     expect(items.filter((i) => i.block === 'readiness')).toHaveLength(6)
   })
 
-  it('وثلاثةٌ لكلّ بُعدٍ موجودةٌ في البنك فعلا — ولا يُخترَع نصُّ بندٍ غائب', () => {
+  it('وثلاثة لكلّ بعد موجودة في البنك فعلا — ولا يخترع نصّ بند غائب', () => {
     for (const dim of RIASEC_DIMS) {
       const ids = RIASEC_ITEM_IDS[dim]
       expect(ids, `«${dim}» بلا ثلاثة بنود`).toHaveLength(3)
       for (const id of ids) {
         const q = questionById.get(id)
-        expect(q, `${id} غائبٌ عن البنك — فالمرآةُ تعرض بُعدا ناقصا صامتةً`).toBeTruthy()
+        expect(q, `${id} غائب عن البنك — فالمرآة تعرض بعدا ناقصا صامتة`).toBeTruthy()
         expect(q!.measures, `${id} لم يعد يقيس «${dim}»`).toContain(dim)
-        expect(q!.answer_type, `${id} ليس ليكرت — فالمسطرةُ تختلف`).toBe('likert_5')
+        expect(q!.answer_type, `${id} ليس ليكرت — فالمسطرة تختلف`).toBe('likert_5')
       }
     }
   })
 })
 
-describe('٤٠ · التصحيحُ حتميٌّ ومتوسّط', () => {
+describe('٤٠ · التصحيح حتميّ ومتوسّط', () => {
   const full = () => {
     const a: Record<string, number> = {}
     for (const it of mirrorItems()) a[it.id] = 3
     return a
   }
 
-  it('البُعدُ متوسّطُ بنوده الثلاثة — لا آخِرُها', () => {
+  it('البعد متوسّط بنوده الثلاثة — لا آخرها', () => {
     const a = full()
     const [i1, i2, i3] = RIASEC_ITEM_IDS.riasec_social
     a[i1] = 5
@@ -62,46 +74,46 @@ describe('٤٠ · التصحيحُ حتميٌّ ومتوسّط', () => {
     expect(scoreMirror(a).dims.riasec_social).toBeCloseTo(4, 5)
   })
 
-  it('والتعادلُ يُحسم بترتيبٍ ثابت — زائران بالإجابات نفسِها يريان الرمزَ نفسَه', () => {
+  it('والتعادل يحسم بترتيب ثابت — زائران بالإجابات نفسها يريان الرمز نفسه', () => {
     const a = full()
     expect(scoreMirror(a).code).toEqual(scoreMirror({ ...a }).code)
     expect(scoreMirror(a).code).toHaveLength(3)
   })
 
-  it('والرمزُ أعلى ثلاثةِ أبعاد', () => {
+  it('والرمز أعلى ثلاثة أبعاد', () => {
     const a = full()
     for (const id of RIASEC_ITEM_IDS.riasec_artistic) a[id] = 5
     expect(scoreMirror(a).code[0]).toBe('riasec_artistic')
   })
 })
 
-describe('٤٠ · ما يُبذَر وما لا يُبذَر', () => {
+describe('٤٠ · ما يبذر وما لا يبذر', () => {
   const answers = () => {
     const a: Record<string, number> = {}
     for (const it of mirrorItems()) a[it.id] = 5
     return a
   }
 
-  it('«وضوحُ الهدف» يُبذَر بمصدره وبدليلٍ أضعفَ من إجابةِ تشخيص', () => {
+  it('«وضوح الهدف» يبذر بمصدره وبدليل أضعف من إجابة تشخيص', () => {
     const facts = mirrorFacts(scoreMirror(answers()))
     expect(facts['goal_clarity']?.value).toBe('high')
     expect(facts['goal_clarity']?.sourceQuestionId).toBe('MIRROR-goal-clarity')
     expect(facts['goal_clarity']?.evidenceQuality).toBeLessThan(0.9)
   })
 
-  it('و«الاستعدادُ للتطبيق» و«الاستمرار» يُعرضان ولا يُبذَران', () => {
+  it('و«الاستعداد للتطبيق» و«الاستمرار» يعرضان ولا يبذران', () => {
     const facts = mirrorFacts(scoreMirror(answers()))
     expect(
       facts['application_readiness'],
-      'بُذر متقاعدٌ أثرُه المبرمَجُ عقوبة — عادت العقوبةُ من بابٍ خلفيّ',
+      'بذر متقاعد أثره المبرمج عقوبة — عادت العقوبة من باب خلفيّ',
     ).toBeUndefined()
-    expect(facts['completion_pattern'], 'بُذرت حقيقةٌ تقرؤها صفرُ مواضع').toBeUndefined()
+    expect(facts['completion_pattern'], 'بذرت حقيقة تقرؤها صفر مواضع').toBeUndefined()
     /* ويبقيان معروضَين للمتعلّم — وإلّا فقد سُئل عنهما بلا مقابل */
     expect(scoreMirror(answers()).readiness.application_readiness).toBe(5)
     expect(scoreMirror(answers()).readiness.completion_pattern).toBe(5)
   })
 
-  it('وحدُّ الميل ثلاثةٌ — والحيادُ ليس ميلا', () => {
+  it('وحدّ الميل ثلاثة — والحياد ليس ميلا', () => {
     const a = answers()
     for (const id of RIASEC_ITEM_IDS.riasec_realistic) a[id] = 1
     const v = mirrorInterestVector(scoreMirror(a))
@@ -109,7 +121,7 @@ describe('٤٠ · ما يُبذَر وما لا يُبذَر', () => {
     expect(v['riasec_social']).toBe(5)
   })
 
-  it('وحدودُ «وضوح الهدف» هي حدودُ السؤال الذي يقابله', () => {
+  it('وحدود «وضوح الهدف» هي حدود السؤال الذي يقابله', () => {
     expect(clarityBand(5)).toBe('high')
     expect(clarityBand(3.5)).toBe('medium')
     expect(clarityBand(2)).toBe('low')
@@ -117,14 +129,14 @@ describe('٤٠ · ما يُبذَر وما لا يُبذَر', () => {
   })
 })
 
-describe('٤٠ · لوحُ «ما لا يقوله» شرطُ نشرٍ لا زينة', () => {
+describe('٤٠ · لوح «ما لا يقوله» شرط نشر لا زينة', () => {
   const page = readFileSync('src/pages/Mirror.tsx', 'utf8')
 
-  it('اللوحُ موجودٌ ويقول الثلاثةَ صراحة', () => {
+  it('اللوح موجود ويقول الثلاثة صراحة', () => {
     expect(page).toContain('ما لا يقوله هذا الاختبار')
-    expect(page, 'لم يُقل إنّه يقيس الميلَ لا القدرة').toContain('لا ما تتقنه')
-    expect(page, 'لم يُقل إنّ الميلَ يرجّح ولا يحسم').toContain('يرجّح ولا يحسم')
-    expect(page, 'لم يُقل أيُّ المقاييس يصل إلى التشخيص').toContain('وضوحُ الهدف وحدَه')
+    expect(page, 'لم يقل إنّه يقيس الميل لا القدرة').toContain('لا ما تتقنه')
+    expect(page, 'لم يقل إنّ الميل يرجّح ولا يحسم').toContain('يرجّح ولا يحسم')
+    expect(page, 'لم يقل أيّ المقاييس يصل إلى التشخيص').toContain('وضوح الهدف وحده')
   })
 
   /* ⚠️ عُمّم في ١٢ سبتمبر ٢٠٢٦ — البابُ بابٌ أينما كان
@@ -137,9 +149,9 @@ describe('٤٠ · لوحُ «ما لا يقوله» شرطُ نشرٍ لا زي�
      والذي يحرسه الحارسُ في نصّه: «صفحةٌ بلا رابطٍ صفحةٌ لا وجودَ لها». وهذا
      يُقاس بمسحِ الواجهة كلِّها لا ملفّا واحدا — فصار أقوى لا أضعف: يمسك
      الآن يُتمَ الصفحة من أيّ جهةٍ جاء، لا من جهةِ التشخيص وحدَها. */
-  it('وللمرآة بابٌ يصلها — صفحةٌ بلا رابطٍ صفحةٌ لا وجودَ لها', () => {
+  it('وللمرآة باب يصلها — صفحة بلا رابط صفحة لا وجود لها', () => {
     const app = readFileSync('src/App.tsx', 'utf8')
-    expect(app, 'المسارُ غيرُ مسجَّل').toMatch(/path="\/mirror"/)
+    expect(app, 'المسار غير مسجّل').toMatch(/path="\/mirror"/)
 
     /* مسحُ `src` كلِّه عدا `App.tsx` نفسَه: تسجيلُ المسار ليس بابا إليه. */
     const doors: string[] = []
@@ -156,17 +168,17 @@ describe('٤٠ · لوحُ «ما لا يقوله» شرطُ نشرٍ لا زي�
       }
     }
     walk('src')
-    expect(doors, 'لا رابطَ إلى المرآة في الواجهة كلِّها — الصفحةُ يتيمة').not.toEqual([])
+    expect(doors, 'لا رابط إلى المرآة في الواجهة كلّها — الصفحة يتيمة').not.toEqual([])
   })
 
-  it('ولا يُطلب بريدٌ ولا حساب', () => {
-    expect(page).toContain('بلا بريدٍ ولا حساب')
-    expect(page, 'ظهر حقلُ بريدٍ في اختبارٍ يُنشر بلا تسجيل').not.toMatch(/type="email"/)
+  it('ولا يطلب بريد ولا حساب', () => {
+    expect(page).toContain('بلا بريد ولا حساب')
+    expect(page, 'ظهر حقل بريد في اختبار ينشر بلا تسجيل').not.toMatch(/type="email"/)
   })
 })
 
-describe('٤٠ · والمحرّكُ يقرأ البنودَ الثلاثةَ كلَّها', () => {
-  it('متّجهُ الميول متوسّطٌ جارٍ — لا آخِرُ جوابٍ يمحو ما قبله', async () => {
+describe('٤٠ · والمحرّك يقرأ البنود الثلاثة كلّها', () => {
+  it('متّجه الميول متوسّط جار — لا آخر جواب يمحو ما قبله', async () => {
     const { reduceAnswer } = await import('../../domain/diagnostic/facts')
     const vector: Record<string, number> = {}
     const facts = {}
@@ -183,6 +195,6 @@ describe('٤٠ · والمحرّكُ يقرأ البنودَ الثلاثةَ ك
       )
     })
     /* ٥ و٥ و٢ → المتوسّطُ ٤، وآخِرُ جوابٍ ٢ */
-    expect(vector['riasec_social'], 'عاد الإسنادُ يمحو ما قبله').toBeCloseTo(4, 5)
+    expect(vector['riasec_social'], 'عاد الإسناد يمحو ما قبله').toBeCloseTo(4, 5)
   })
 })

@@ -127,39 +127,39 @@ function silentHighActions(): string[] {
   return silent.sort()
 }
 
-describe('ما يمسّ إنسانا يُخبَر به إنسان', () => {
-  it('المسحُ يقرأ أفعالا عاليةً فعلا — وإلّا خضِر الحارسُ على فراغ', () => {
+describe('ما يمسّ إنسانا يخبر به إنسان', () => {
+  it('المسح يقرأ أفعالا عالية فعلا — وإلّا خضر الحارس على فراغ', () => {
     const high = new Set(auditSites().map((s) => s.action).filter((a) => auditWeightOf(a) === 'high'))
-    expect(high.size, 'لم يُقرأ فعلٌ عالٍ واحدٌ من الشيفرة — تعطّل المسحُ نفسُه').toBeGreaterThan(50)
+    expect(high.size, 'لم يقرأ فعل عال واحد من الشيفرة — تعطّل المسح نفسه').toBeGreaterThan(50)
   })
 
-  it('وكلُّ مُرسِلٍ مسمّى ما زال قائما', () => {
+  it('وكلّ مرسل مسمّى ما زال قائما', () => {
     for (const { call, from } of REACHING) {
       expect(
         sourceOf(from),
-        `\`${call}\` لم يعد مصدَّرا من ${from} — حدِّث \`REACHING\` قبل أن يُعَدّ كلُّ شيءٍ صامتا`,
+        `\`${call}\` لم يعد مصدّرا من ${from} — حدّث \`REACHING\` قبل أن يعدّ كلّ شيء صامتا`,
       ).toMatch(new RegExp(`export (?:async )?function ${call}\\(`))
     }
     /* وطريقةُ الصفّ التي يُنادى عليها بـ`.notify(` */
     expect(sourceOf('server/services/notification.service.ts')).toMatch(/\n {2}async notify\(/)
   })
 
-  it('لا فعلَ عالٍ جديدٍ يمرّ صامتا', () => {
+  it('لا فعل عال جديد يمرّ صامتا', () => {
     const fresh = silentHighActions().filter((a) => !SILENT_DEBT.includes(a))
     expect(
       fresh,
-      `أفعالٌ عاليةٌ تُكتب في معالِجٍ لا يُخبِر أحدا: ${fresh.join('، ')}\n`
-      + 'ما غيّر وصولَ إنسانٍ أو مكانتَه أو مالَه أو سجلَّه يصله — نادِ `safeNotify` '
-      + 'في المعالِج نفسِه بمن يعنيه الأمر. ولا يُزاد السطرُ إلى `SILENT_DEBT`.',
+      `أفعال عالية تكتب في معالج لا يخبر أحدا: ${fresh.join('، ')}\n`
+      + 'ما غيّر وصول إنسان أو مكانته أو ماله أو سجلّه يصله — ناد `safeNotify` '
+      + 'في المعالج نفسه بمن يعنيه الأمر. ولا يزاد السطر إلى `SILENT_DEBT`.',
     ).toEqual([])
   })
 
-  it('ولا سطرَ ميّتٍ في خطّ الأساس — ينقص بالعمل لا بالقلم', () => {
+  it('ولا سطر ميّت في خطّ الأساس — ينقص بالعمل لا بالقلم', () => {
     const silent = new Set(silentHighActions())
     const stale = SILENT_DEBT.filter((a) => !silent.has(a))
     expect(
       stale,
-      `أفعالٌ في \`SILENT_DEBT\` لم تعد صامتة: ${stale.join('، ')} — احذفها من القائمة`,
+      `أفعال في \`SILENT_DEBT\` لم تعد صامتة: ${stale.join('، ')} — احذفها من القائمة`,
     ).toEqual([])
   })
 })

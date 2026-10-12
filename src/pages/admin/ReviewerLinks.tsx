@@ -59,7 +59,7 @@ export default function ReviewerLinks({ applicationId }: { applicationId: string
     try {
       setRows(await apiGet<LinkRow[]>(`/api/admin/trainer-applications/${applicationId}/dossier-links`))
     } catch (e) {
-      toastError(e instanceof ApiError ? e.message : 'تعذّر جلبُ الروابط')
+      toastError(e instanceof ApiError ? e.message : 'تعذّر جلب الروابط')
     }
   }, [applicationId])
 
@@ -81,13 +81,13 @@ export default function ReviewerLinks({ applicationId }: { applicationId: string
       setCopied(false)
       /* ما جرى للبريد يُقال صراحةً: «أُنشئ» وحدَها تُقرأ «وصل» — وقد لا يكون */
       if (send && email.trim()) {
-        toast(r.emailDelivery === 'sent' ? `أُرسل الرابطُ إلى ${email.trim()}` : 'أُنشئ الرابط — ولم يُرسَل البريد، فانسخه بيدك')
+        toast(r.emailDelivery === 'sent' ? `أرسل الرابط إلى ${email.trim()}` : 'أنشئ الرابط — ولم يرسل البريد، فانسخه بيدك')
       }
       setName('')
       setEmail('')
       await load()
     } catch (e) {
-      toastError(e instanceof ApiError ? e.message : 'تعذّر إنشاءُ الرابط')
+      toastError(e instanceof ApiError ? e.message : 'تعذّر إنشاء الرابط')
     } finally {
       setBusy(false)
     }
@@ -100,7 +100,7 @@ export default function ReviewerLinks({ applicationId }: { applicationId: string
     if (!row.copyUrl) return
     try {
       await navigator.clipboard.writeText(row.copyUrl)
-      toast(`نُسخ رابطُ ${row.reviewerName} — هو نفسُه، ولم يتغيّر شيء`)
+      toast(`نسخ رابط ${row.reviewerName} — هو نفسه، ولم يتغيّر شيء`)
     } catch {
       /* المتصفّحُ قد يمنع الحافظة — فيُعرض النصُّ ليُنسَخ باليد */
       setFresh({ url: row.copyUrl, name: row.reviewerName })
@@ -120,14 +120,14 @@ export default function ReviewerLinks({ applicationId }: { applicationId: string
       setCopied(false)
       if (row.reviewerEmail) {
         toast(r.emailDelivery === 'sent'
-          ? `جُدِّد الرابطُ وأُرسل إلى ${row.reviewerEmail}`
-          : 'جُدِّد الرابط — ولم يُرسَل البريد، فانسخه بيدك')
+          ? `جدّد الرابط وأرسل إلى ${row.reviewerEmail}`
+          : 'جدّد الرابط — ولم يرسل البريد، فانسخه بيدك')
       } else {
-        toast('جُدِّد الرابط — انسخه الآن')
+        toast('جدّد الرابط — انسخه الآن')
       }
       await load()
     } catch (e) {
-      toastError(e instanceof ApiError ? e.message : 'تعذّر تجديدُ الرابط')
+      toastError(e instanceof ApiError ? e.message : 'تعذّر تجديد الرابط')
     } finally {
       setBusy(false)
     }
@@ -137,7 +137,7 @@ export default function ReviewerLinks({ applicationId }: { applicationId: string
     setBusy(true)
     try {
       await apiDelete(`/api/admin/trainer-applications/${applicationId}/dossier-links/${row.id}`)
-      toast(`أُلغي رابطُ ${row.reviewerName}`)
+      toast(`ألغي رابط ${row.reviewerName}`)
       await load()
     } catch (e) {
       toastError(e instanceof ApiError ? e.message : 'تعذّر الإلغاء')
@@ -149,24 +149,24 @@ export default function ReviewerLinks({ applicationId }: { applicationId: string
   return (
     <Panel as="article" id="sec-links" className="scroll-mt-28 print:hidden">
       <h4 className="text-sm font-black">
-        <Link2 className="ms-1 inline h-3.5 w-3.5" aria-hidden="true" /> روابطُ القُرّاء
+        <Link2 className="ms-1 inline h-3.5 w-3.5" aria-hidden="true" /> روابط القرّاء
       </h4>
       <p className="mt-1 text-read leading-6 text-muted-foreground">
-        رابطٌ لكلّ قارئٍ باسمه — يُفتح بلا حساب، وما يكتبه يُنسَب إليه. ولا يرى قارئٌ تقييمَ زميله.
+        رابط لكلّ قارئ باسمه — يفتح بلا حساب، وما يكتبه ينسب إليه. ولا يرى قارئ تقييم زميله.
       </p>
 
       <div className="mt-3 flex flex-wrap gap-2">
         <input
           value={name} onChange={(e) => setName(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') void create() }}
-          placeholder="اسمُ القارئ — كما يظهر في تقييمه"
+          placeholder="اسم القارئ — كما يظهر في تقييمه"
           aria-label="اسم القارئ"
           className={`${staffControlCls} min-w-0 flex-1`}
         />
         <input
           type="email" dir="ltr" value={email} onChange={(e) => setEmail(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') void create() }}
-          placeholder="بريدُه — اختياريّ"
+          placeholder="بريده — اختياريّ"
           aria-label="بريد القارئ"
           className={`${staffControlCls} min-w-0 flex-1`}
         />
@@ -181,14 +181,14 @@ export default function ReviewerLinks({ applicationId }: { applicationId: string
           type="checkbox" checked={send} disabled={!email.trim()}
           onChange={(e) => setSend(e.target.checked)} className="accent-gold"
         />
-        أرسِلْه إليه بالبريد الآن — فالرمزُ لا يُحفظ، ولا سبيلَ إلى إرساله بعد هذه اللحظة.
+        أرسله إليه بالبريد الآن — فالرمز لا يحفظ، ولا سبيل إلى إرساله بعد هذه اللحظة.
       </label>
 
       {/* ═══ اللوحُ الوحيدُ الذي يُقرأ فيه الرمز ═══ */}
       {fresh && (
         <Inset className="mt-3 border-gold/40">
           <p className="text-read font-bold text-gold-ink">
-            رابطُ {fresh.name} — انسخه الآن، فلا يُعرض ثانيةً أبدا
+            رابط {fresh.name} — انسخه الآن، فلا يعرض ثانية أبدا
           </p>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <code dir="ltr" className="min-w-0 flex-1 break-all rounded-lg border border-white/12 bg-black/20 p-2 text-read">
@@ -199,20 +199,20 @@ export default function ReviewerLinks({ applicationId }: { applicationId: string
               onClick={() => {
                 void navigator.clipboard?.writeText(fresh.url)
                 setCopied(true)
-                toast('نُسخ الرابط')
+                toast('نسخ الرابط')
               }}
             >
-              {copied ? 'نُسخ' : 'انسخ'}
+              {copied ? 'نسخ' : 'انسخ'}
             </Button>
           </div>
         </Inset>
       )}
 
       <div className="mt-3 space-y-2">
-        {rows === null && <p className="text-read text-muted-foreground">…تُقرأ الروابط</p>}
+        {rows === null && <p className="text-read text-muted-foreground">…تقرأ الروابط</p>}
         {rows?.length === 0 && (
           <p className="text-read leading-6 text-muted-foreground">
-            لا روابطَ بعد. أضِف اسمَ من تريده أن يقرأ الملفَّ ويقيّمه.
+            لا روابط بعد. أضف اسم من تريده أن يقرأ الملفّ ويقيّمه.
           </p>
         )}
         {rows?.map((row) => {
@@ -224,7 +224,7 @@ export default function ReviewerLinks({ applicationId }: { applicationId: string
                   {row.reviewerName}
                 </span>
                 <span className="block text-read leading-5 text-muted-foreground">
-                  {state.textAr} · أجلُه {fmtDateTime(new Date(row.expiresAt))}
+                  {state.textAr} · أجله {fmtDateTime(new Date(row.expiresAt))}
                 </span>
               </div>
               {/* والملغى لا يُجدَّد: الإلغاءُ قرارٌ لا يُلتفّ حوله بزرّ. أمّا
@@ -247,7 +247,7 @@ export default function ReviewerLinks({ applicationId }: { applicationId: string
                 )}
                 {!state.spent && (
                   <Button tone="danger" icon={Ban} disabled={busy} onClick={() => void revoke(row)}>
-                    ألغِه
+                    ألغه
                   </Button>
                 )}
               </div>
@@ -258,8 +258,8 @@ export default function ReviewerLinks({ applicationId }: { applicationId: string
 
       {rows && rows.length > 0 && (
         <p className="mt-3 text-read leading-6 text-muted-foreground">
-          و«جدّده وانسخه» يعطيك رابطا جديدا للقارئ نفسِه — يبقى تقييمُه وسجلُّ فتحه،
-          <b className="text-gold-ink"> ويتوقّف رابطُه القديمُ فورا</b>. ومن كان بريدُه محفوظا وصلَه الجديدُ تلقائيّا.
+          و«جدّده وانسخه» يعطيك رابطا جديدا للقارئ نفسه — يبقى تقييمه وسجلّ فتحه،
+          <b className="text-gold-ink"> ويتوقّف رابطه القديم فورا</b>. ومن كان بريده محفوظا وصله الجديد تلقائيّا.
         </p>
       )}
     </Panel>

@@ -41,42 +41,42 @@ const TARGET: Record<string, string> = {
     قراراتُ الطابور، وله بابٌ واحدٌ يعيده — يُفحص أسفلَه مع أخويه. */
 const OUT = ['draft', 'active'] as const
 
-describe('طلبُ المعلومات الإضافيّة مفتوحٌ في كلّ حالةٍ حيّة', () => {
-  it('ومنها ما بعد القبول الداخليّ — وهو نصُّ ما طُلب', () => {
+describe('طلب المعلومات الإضافيّة مفتوح في كلّ حالة حيّة', () => {
+  it('ومنها ما بعد القبول الداخليّ — وهو نصّ ما طلب', () => {
     for (const st of ['conditionally_approved', 'contract_pending', 'onboarding']) {
-      expect(INFO_REQUESTABLE, `«اطلب معلومات» مقفلٌ في ${st}`).toContain(st)
+      expect(INFO_REQUESTABLE, `«اطلب معلومات» مقفل في ${st}`).toContain(st)
       expect(
         transitionProblemAr(st as never, 'information_requested' as never),
-        `الشاشةُ تعرضه في ${st} والخادمُ يردّه`,
+        `الشاشة تعرضه في ${st} والخادم يردّه`,
       ).toBeNull()
     }
   })
 
-  it('وفي كلّ حالةٍ حيّةٍ سوى التي هو فيها', () => {
+  it('وفي كلّ حالة حيّة سوى التي هو فيها', () => {
     for (const st of REVIEW_OPEN_STATUSES) {
       if (st === 'information_requested') continue
-      expect(INFO_REQUESTABLE, `مقفلٌ في ${st}`).toContain(st)
+      expect(INFO_REQUESTABLE, `مقفل في ${st}`).toContain(st)
     }
-    expect(INFO_REQUESTABLE, 'يُعرض على من هو فيه أصلا').not.toContain('information_requested')
+    expect(INFO_REQUESTABLE, 'يعرض على من هو فيه أصلا').not.toContain('information_requested')
   })
 
   /* وبابُ الرجوع يلزم مع بابِ الطلب: من أُرسل إليه سؤالٌ فأجاب لا يُترك
      معلَّقا ولا يُهبَط به إلى أوّل الطابور. */
-  it('ومن أجاب يستطيع الرجوعَ إلى كلّ حالةٍ حيّةٍ كان فيها', () => {
+  it('ومن أجاب يستطيع الرجوع إلى كلّ حالة حيّة كان فيها', () => {
     for (const st of REVIEW_OPEN_STATUSES) {
       /* و«مُقدَّم» مستثناةٌ بقصد: معناها «لم يُقرأ بعد» وقد قُرئ، فالرجوعُ
          إليها يجعل الحالةَ تكذب. ومخرجُها «قيد المراجعة» كما كان. */
       if (st === 'information_requested' || st === 'submitted') continue
       expect(
         transitionProblemAr('information_requested' as never, st as never),
-        `طُلبت منه معلوماتٌ وهو في ${st} — ولا سبيلَ إلى إعادته إليه`,
+        `طلبت منه معلومات وهو في ${st} — ولا سبيل إلى إعادته إليه`,
       ).toBeNull()
     }
   })
 })
 
-describe('وكلُّ قرارٍ متاحٌ من كلّ حالةٍ حيّة', () => {
-  it('لا قرارَ يقفل حالةً حيّةً إلّا التي هو فيها', () => {
+describe('وكلّ قرار متاح من كلّ حالة حيّة', () => {
+  it('لا قرار يقفل حالة حيّة إلّا التي هو فيها', () => {
     const SELF: Record<string, string> = {
       move_to_review: 'under_review', request_info: 'information_requested',
       academic_review: 'academic_review',
@@ -90,20 +90,20 @@ describe('وكلُّ قرارٍ متاحٌ من كلّ حالةٍ حيّة', () 
       if (REVERSALS.includes(d.action)) continue
       for (const st of REVIEW_OPEN_STATUSES) {
         if (SELF[d.action] === st) {
-          expect(d.from, `«${d.action}» يُعرض على من هو في ${st} أصلا`).not.toContain(st)
+          expect(d.from, `«${d.action}» يعرض على من هو في ${st} أصلا`).not.toContain(st)
           continue
         }
-        expect(d.from, `«${d.action}» مقفلٌ في ${st}`).toContain(st)
+        expect(d.from, `«${d.action}» مقفل في ${st}`).toContain(st)
       }
     }
   })
 
-  it('ولا زرَّ تعرضه الشاشةُ ويردّه الخادمُ ٤٠٩', () => {
+  it('ولا زرّ تعرضه الشاشة ويردّه الخادم ٤٠٩', () => {
     for (const d of DECISIONS) {
       for (const st of d.from) {
         expect(
           transitionProblemAr(st as never, TARGET[d.action] as never),
-          `«${d.action}» معروضٌ من ${st} — والخادمُ: ${transitionProblemAr(st as never, TARGET[d.action] as never)}`,
+          `«${d.action}» معروض من ${st} — والخادم: ${transitionProblemAr(st as never, TARGET[d.action] as never)}`,
         ).toBeNull()
       }
     }
@@ -120,41 +120,41 @@ describe('وكلُّ قرارٍ متاحٌ من كلّ حالةٍ حيّة', () 
    حزمةَ الخادم لا تقوم بلا قاعدة. فدورةٌ كاملةٌ ضاعت على ما تمسكه هذه
    الأسطرُ في ثانية. فالقياسُ مكرَّرٌ هنا بقصد: ما يُمسك محلّيّا لا يُنتظَر
    من CI. */
-describe('ولا يُحجَز من حالةٍ ثمّ يُعجَز عن ردّه إليها', () => {
-  it('كلُّ حالةٍ يُحجَز منها موعدٌ يُعاد إليها إن لم يحضر', () => {
+describe('ولا يحجز من حالة ثمّ يعجز عن ردّه إليها', () => {
+  it('كلّ حالة يحجز منها موعد يعاد إليها إن لم يحضر', () => {
     const map: Record<string, string[]> = ALLOWED_TRANSITIONS
     const canBook = (REVIEW_OPEN_STATUSES as readonly string[]).filter(
       (s) => map[s]?.includes('interview_scheduled'),
     )
-    expect(canBook.length, 'لا حالةَ تبلغ الحجزَ — تعطّلت قراءةُ الخريطة').toBeGreaterThan(1)
+    expect(canBook.length, 'لا حالة تبلغ الحجز — تعطّلت قراءة الخريطة').toBeGreaterThan(1)
     for (const from of canBook) {
       expect(
         map.interview_scheduled,
-        `يُحجَز من «${from}» ولا يُعاد إليها — فمن غاب يقف بلا مآل`,
+        `يحجز من «${from}» ولا يعاد إليها — فمن غاب يقف بلا مآل`,
       ).toContain(from)
     }
   })
 })
 
-describe('ومن خرج من الطابور لا يُجَرّ إليه', () => {
-  it('المدرّبُ النشطُ والمسوّدةُ والمنسحبُ: لا قرارَ مراجعةٍ يُعرض عليهم', () => {
+describe('ومن خرج من الطابور لا يجرّ إليه', () => {
+  it('المدرّب النشط والمسوّدة والمنسحب: لا قرار مراجعة يعرض عليهم', () => {
     for (const st of OUT) {
       const shown = DECISIONS.filter((d) => d.from.includes(st)).map((d) => d.action)
-      expect(shown, `${st}: عُرضت عليه قراراتُ الطابور (${shown.join('، ')})`).toEqual([])
-      expect(REVIEW_OPEN_STATUSES as readonly string[], `${st} عُدّ حالةً حيّة`).not.toContain(st)
+      expect(shown, `${st}: عرضت عليه قرارات الطابور (${shown.join('، ')})`).toEqual([])
+      expect(REVIEW_OPEN_STATUSES as readonly string[], `${st} عدّ حالة حيّة`).not.toContain(st)
     }
   })
 
-  it('والموقوفُ بابُه رفعُ الإيقاف، والمردودُ والمسحوبُ بابُهما التراجعُ — واحدٌ لكلٍّ', () => {
+  it('والموقوف بابه رفع الإيقاف، والمردود والمسحوب بابهما التراجع — واحد لكلّ', () => {
     expect(DECISIONS.filter((d) => d.from.includes('suspended')).map((d) => d.action)).toEqual(['reinstate'])
     expect(DECISIONS.filter((d) => d.from.includes('rejected')).map((d) => d.action)).toEqual(['undo_reject'])
     expect(DECISIONS.filter((d) => d.from.includes('withdrawn')).map((d) => d.action)).toEqual(['undo_withdraw'])
   })
 
-  it('ولا يُعتمَد المردودُ ولا المسحوبُ بنقرةٍ — خطوتان مقصودتان', () => {
+  it('ولا يعتمد المردود ولا المسحوب بنقرة — خطوتان مقصودتان', () => {
     expect(ONE_CLICK_APPROVABLE_STATUSES as readonly string[]).not.toContain('rejected')
-    expect(ALLOWED_TRANSITIONS.rejected, 'للمردود مخرجٌ ثانٍ').toEqual(['under_review'])
+    expect(ALLOWED_TRANSITIONS.rejected, 'للمردود مخرج ثان').toEqual(['under_review'])
     expect(ONE_CLICK_APPROVABLE_STATUSES as readonly string[]).not.toContain('withdrawn')
-    expect(ALLOWED_TRANSITIONS.withdrawn, 'للمسحوب مخرجٌ ثانٍ').toEqual(['under_review'])
+    expect(ALLOWED_TRANSITIONS.withdrawn, 'للمسحوب مخرج ثان').toEqual(['under_review'])
   })
 })

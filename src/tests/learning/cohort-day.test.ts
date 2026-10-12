@@ -31,8 +31,8 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '../../..')
 const START = '2026-10-31T21:00:00.000Z'
 const END = '2026-11-28T20:59:59.999Z'
 
-describe('⑪ يومُ الشعبة يومُ عمّان — المساعد', () => {
-  it('بدءُ الشعبة يومُها في عمّان — لا يومٌ قبله، بأيّ صيغة', () => {
+describe('⑪ يوم الشعبة يوم عمّان — المساعد', () => {
+  it('بدء الشعبة يومها في عمّان — لا يوم قبله، بأيّ صيغة', () => {
     expect(cohortDayAr(START)).toBe('1 نوفمبر 2026')
     expect(cohortDayAr(new Date(START))).toBe('1 نوفمبر 2026')
     expect(cohortDayAr(END)).toBe('28 نوفمبر 2026')
@@ -41,19 +41,19 @@ describe('⑪ يومُ الشعبة يومُ عمّان — المساعد', () 
       .toBe(fmtDateWith('2026-11-01T12:00:00Z', { ...DAY_NUMERIC, timeZone: 'UTC' }))
   })
 
-  it('والتاريخُ وحدَه يومُه كما كُتب — مدّةُ الخطّة، وحدودُ الفصل منتصفَ ليل غرينتش', () => {
+  it('والتاريخ وحده يومه كما كتب — مدّة الخطّة، وحدود الفصل منتصف ليل غرينتش', () => {
     expect(cohortDayAr('2026-11-01')).toBe('1 نوفمبر 2026')
     expect(cohortDayAr('2027-02-01T00:00:00.000Z')).toBe('1 فبراير 2027')
   })
 
-  it('ولا يومَ لما لا يوجد — «—» لا تاريخٌ مخترَع', () => {
+  it('ولا يوم لما لا يوجد — «—» لا تاريخ مخترع', () => {
     for (const v of [null, undefined, '', 'ليس تاريخا']) expect(cohortDayAr(v)).toBe('—')
   })
 
   /* إن كانت منطقةُ الجهاز تضع ٢١:٠٠ بغرينتش في اليوم التالي (عمّان فشرقَها) فلا
      يظهر العطبُ هنا أصلا — ويبقى الحارسُ في CI، ومنطقتُه UTC */
   const hidesBug = new Date(START).getDate() === 1
-  it.skipIf(hidesBug)('وبيئةُ الاختبار تُظهر العطبَ لو عاد — بلا منطقةٍ يُقرأ ٣١ أكتوبر', () => {
+  it.skipIf(hidesBug)('وبيئة الاختبار تظهر العطب لو عاد — بلا منطقة يقرأ ٣١ أكتوبر', () => {
     expect(fmtDateWith(START, { day: 'numeric', month: 'long', year: 'numeric' })).toBe('31 أكتوبر 2026')
   })
 })
@@ -116,7 +116,7 @@ function sources(dir: string, acc: string[] = []): string[] {
   return acc
 }
 
-describe('⑪ يومُ الشعبة يومُ عمّان — في كلّ موضع', () => {
+describe('⑪ يوم الشعبة يوم عمّان — في كلّ موضع', () => {
   const SAMPLE = [
     'const a = fmtDateAr(c.startsAt)',
     'const b = cohortDayAr(c.startsAt)',
@@ -124,7 +124,7 @@ describe('⑪ يومُ الشعبة يومُ عمّان — في كلّ موضع
     "const d = fmtDateWith(s.startsAt, { day: 'numeric' })",
     "const e = fmtDateWith(s.startsAt, { day: 'numeric', timeZone: ACADEMY_ZONE })",
     'const f = fmtDateAr(x.createdAt)',
-    '/* fmtDateAr(c.startsAt) في تعليقٍ يروي العطب */',
+    '/* fmtDateAr(c.startsAt) في تعليق يروي العطب */',
     /* واللغةُ متغيّرٌ لا نصٌّ — فبوّابةُ `audit-locale` تمنع تسميتَها خارج `format-ar.ts` */
     'const g = new Date(c.endsAt).toLocaleDateString(UI_LOCALE)',
     'const h = planDiff(a, b, { date: fmtDateAr })',
@@ -133,17 +133,17 @@ describe('⑪ يومُ الشعبة يومُ عمّان — في كلّ موضع
     'const k = <b>{fmtDateLong(term.startsOn)}</b>',
   ].join('\n')
 
-  it('الماسحُ يرى الاستدعاءَ ويتجاوز التعليق — ويفرّق الشاشةَ من رسالة الخادم', () => {
-    expect(zonelessDays('sample.tsx', SAMPLE, { server: false }), 'الماسحُ لا يرى ما يجب، أو يرى غيرَه')
+  it('الماسح يرى الاستدعاء ويتجاوز التعليق — ويفرّق الشاشة من رسالة الخادم', () => {
+    expect(zonelessDays('sample.tsx', SAMPLE, { server: false }), 'الماسح لا يرى ما يجب، أو يرى غيره')
       .toEqual([1, 3, 4, 8, 9, 12])
-    expect(zonelessDays('sample.tsx', SAMPLE, { server: true }), 'ساعةُ اللقاء في رسالة الخادم بلا منطقة')
+    expect(zonelessDays('sample.tsx', SAMPLE, { server: true }), 'ساعة اللقاء في رسالة الخادم بلا منطقة')
       .toEqual([1, 3, 4, 8, 9, 11, 12])
   })
 
-  it('⚠️ ولا موضعَ في src ولا server يكتب يومَ بدءٍ أو انتهاءٍ بلا منطقة', () => {
+  it('⚠️ ولا موضع في src ولا server يكتب يوم بدء أو انتهاء بلا منطقة', () => {
     const client = sources(join(root, 'src'))
     const server = sources(join(root, 'server'))
-    expect(client.length + server.length, 'لم تُقرأ ملفّاتُ الشيفرة — فالحارسُ يقيس الفراغ').toBeGreaterThan(200)
+    expect(client.length + server.length, 'لم تقرأ ملفّات الشيفرة — فالحارس يقيس الفراغ').toBeGreaterThan(200)
     const hits: string[] = []
     for (const [files, isServer] of [[client, false], [server, true]] as const) {
       for (const file of files) {
@@ -152,6 +152,6 @@ describe('⑪ يومُ الشعبة يومُ عمّان — في كلّ موضع
         for (const line of zonelessDays(file, src, { server: isServer })) hits.push(`${relative(root, file)}:${line}`)
       }
     }
-    expect(hits, 'يومُ شعبةٍ يُكتب بمنطقة الجهاز أو الخادم — والمساعدُ `cohortDayAr`').toEqual([])
+    expect(hits, 'يوم شعبة يكتب بمنطقة الجهاز أو الخادم — والمساعد `cohortDayAr`').toEqual([])
   })
 })

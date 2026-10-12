@@ -8,13 +8,15 @@
    تعرضان ما يحسبه الخادمُ منها، لا تحسبان. */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { CalendarClock, Check, ExternalLink, FileJson, Files, X } from "lucide-react";
+import { CalendarClock, Check, ExternalLink, FileJson, Files, PencilLine, X } from "lucide-react";
 import { apiDelete, apiGet, apiPost, ApiError } from "@/services/api";
 import { Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import Chip from "@/components/ui/Chip";
 import type { EditView, PlanEditStatus } from "@/application/trainer/plan-edits";
 import { bulkSummaryAr, readEditsFile, replacedLineAr, uploadedLineAr } from "@/application/trainer/plan-edits-bulk";
+import { GapList } from "@/components/LongText";
+import { gapLayout } from "@/application/trainer/text-layout";
 
 export interface PlanEditItem {
   id: string;
@@ -33,11 +35,11 @@ export interface PlanEditItem {
 
 const STATUS_AR: Record<PlanEditStatus, { label: string; tone: "warn" | "positive" | "neutral" | "danger" | "info" }> = {
   proposed: { label: "ينتظر مراجعتك", tone: "warn" },
-  dropped: { label: "حذفتَه — لم يصل المدرّب", tone: "neutral" },
-  pending: { label: "اعتمدتَه — عند المدرّب", tone: "info" },
-  accepted: { label: "قُبل", tone: "positive" },
-  rejected: { label: "رُفض", tone: "danger" },
-  withdrawn: { label: "سُحب", tone: "neutral" },
+  dropped: { label: "حذفته — لم يصل المدرّب", tone: "neutral" },
+  pending: { label: "اعتمدته — عند المدرّب", tone: "info" },
+  accepted: { label: "قبل", tone: "positive" },
+  rejected: { label: "رفض", tone: "danger" },
+  withdrawn: { label: "سحب", tone: "neutral" },
   lapsed: { label: "سقط بالاعتماد", tone: "neutral" },
 };
 
@@ -113,9 +115,9 @@ export function PlanEditsUploader({ planId, cohortId, canUpload, canReview, onPe
     try {
       let body: unknown;
       try { body = JSON.parse(await file.text()); }
-      catch { throw new Error(`«${file.name}» ليس ملفَّ JSON مقروءا`); }
+      catch { throw new Error(`«${file.name}» ليس ملفّ JSON مقروءا`); }
       setItems(await apiPost<PlanEditItem[]>(`/api/admin/cohort-plans/${planId}/edits`, body));
-      setMsg(`رُفع «${file.name}» مسوّدةً — لا يراه المدرّبُ حتّى تعتمد كلَّ بندٍ أدناه أو تحذفه.`);
+      setMsg(`رفع «${file.name}» مسوّدة — لا يراه المدرّب حتّى تعتمد كلّ بند أدناه أو تحذفه.`);
     } catch (e) {
       setMsg(errText(e, "تعذّر الرفع"));
     } finally {
@@ -131,9 +133,9 @@ export function PlanEditsUploader({ planId, cohortId, canUpload, canReview, onPe
     setBusy(true); setMsg("");
     try {
       setItems(await apiPost<PlanEditItem[]>(`/api/admin/cohort-plans/${planId}/edits/schedule`, {}));
-      setMsg("جُهّز الجدولُ مسوّدةً — راجعه أدناه: كلُّ لقاءٍ بموعده قبلُ وبعدُ، ومعه مواعيدُ المهامّ التي تتبعه.");
+      setMsg("جهّز الجدول مسوّدة — راجعه أدناه: كلّ لقاء بموعده قبل وبعد، ومعه مواعيد المهامّ التي تتبعه.");
     } catch (e) {
-      setMsg(errText(e, "تعذّر تجهيزُ الجدول"));
+      setMsg(errText(e, "تعذّر تجهيز الجدول"));
     } finally {
       setBusy(false);
     }
@@ -143,7 +145,7 @@ export function PlanEditsUploader({ planId, cohortId, canUpload, canReview, onPe
     setBusy(true); setMsg("");
     try {
       setItems(await apiDelete<PlanEditItem[]>(`/api/admin/cohort-plans/${planId}/edits`));
-      setMsg("سُحب ما لم يُقرَّر فيه.");
+      setMsg("سحب ما لم يقرّر فيه.");
     } catch (e) {
       setMsg(errText(e, "تعذّر السحب"));
     } finally {
@@ -183,13 +185,13 @@ export function PlanEditsUploader({ planId, cohortId, canUpload, canReview, onPe
         <div className="mt-2 flex flex-wrap gap-2">
           <Button
             tone="confirm" size="sm" icon={Check} disabled={busy}
-            onClick={() => void review(x.id, () => apiPost<PlanEditItem[]>(`/api/admin/plan-edits/${x.id}/approve`, {}), `اعتُمد «${x.view.titleAr}» للمدرّب.`)}
+            onClick={() => void review(x.id, () => apiPost<PlanEditItem[]>(`/api/admin/plan-edits/${x.id}/approve`, {}), `اعتمد «${x.view.titleAr}» للمدرّب.`)}
           >
-            {reviewing === x.id ? "…" : "اعتمِدْه للمدرّب"}
+            {reviewing === x.id ? "…" : "اعتمده للمدرّب"}
           </Button>
           <Button
             tone="ghost" size="sm" icon={X} disabled={busy}
-            onClick={() => void review(x.id, () => apiPost<PlanEditItem[]>(`/api/admin/plan-edits/${x.id}/drop`, {}), `حُذف «${x.view.titleAr}» — لن يصل المدرّب.`)}
+            onClick={() => void review(x.id, () => apiPost<PlanEditItem[]>(`/api/admin/plan-edits/${x.id}/drop`, {}), `حذف «${x.view.titleAr}» — لن يصل المدرّب.`)}
           >
             احذفه
           </Button>
@@ -205,11 +207,11 @@ export function PlanEditsUploader({ planId, cohortId, canUpload, canReview, onPe
     .filter(([, n]) => n > 0);
 
   return (
-    <Inset className="mt-3" role="region" aria-label="تعديلاتٌ مقترحة">
-      <p className="text-read font-black text-foreground">تعديلاتٌ مقترحةٌ على الخطّة (اختياريّ)</p>
+    <Inset className="mt-3" role="region" aria-label="تعديلات مقترحة">
+      <p className="text-read font-black text-foreground">تعديلات مقترحة على الخطّة (اختياريّ)</p>
       {/* سطرٌ واحد — «كثيرُ الكلام» (صاحب المنصّة، ١١ أكتوبر ٢٠٢٦) */}
       <p className="mt-1 text-read leading-6 text-muted-foreground">
-        تُرفع مسوّدةً لا يراها المدرّب حتّى تعتمد بنودَها، ثمّ «اطلب تعديلات» فيقبل كلًّا أو يرفضه.
+        ترفع مسوّدة لا يراها المدرّب حتّى تعتمد بنودها، ثمّ «اطلب تعديلات» فيقبل كلّا أو يرفضه.
       </p>
       {counts.length > 0 && (
         <div className="mt-2 flex flex-wrap gap-2">
@@ -217,17 +219,17 @@ export function PlanEditsUploader({ planId, cohortId, canUpload, canReview, onPe
         </div>
       )}
       {drafts.length > 0 && (
-        <div className="mt-3 space-y-3" role="group" aria-label="مسوّداتٌ تنتظر مراجعتك">
+        <div className="mt-3 space-y-3" role="group" aria-label="مسوّدات تنتظر مراجعتك">
           <p className="text-read font-bold text-gold-ink">
-            {drafts.length} {drafts.length === 1 ? "بندٌ ينتظر" : "بنودٍ تنتظر"} مراجعتك
+            {drafts.length} {drafts.length === 1 ? "بند ينتظر" : "بنود تنتظر"} مراجعتك
             {" "}<span className="font-normal text-muted-foreground">— مطلوب {drafts.filter((x) => x.required).length} · مقترح {drafts.filter((x) => !x.required).length}</span>
           </p>
           {canReview && drafts.length > 1 && (
             <Button
               tone="confirm" size="sm" icon={Check} disabled={busy}
-              onClick={() => void review("all", () => apiPost<PlanEditItem[]>(`/api/admin/cohort-plans/${planId}/edits/approve-all`, {}), "اعتُمدت كلُّها للمدرّب.")}
+              onClick={() => void review("all", () => apiPost<PlanEditItem[]>(`/api/admin/cohort-plans/${planId}/edits/approve-all`, {}), "اعتمدت كلّها للمدرّب.")}
             >
-              اعتمِدها كلَّها للمدرّب ({drafts.length})
+              اعتمدها كلّها للمدرّب ({drafts.length})
             </Button>
           )}
           {/* في مجموعتين تُفتحان بنقرة — المطلوبُ مفتوحٌ والمقترحُ مطويّ («كثيرُ الكلام»، ١١ أكتوبر ٢٠٢٦)،
@@ -245,7 +247,7 @@ export function PlanEditsUploader({ planId, cohortId, canUpload, canReview, onPe
       )}
       {items.length > drafts.length && (
         <details className="mt-2">
-          <summary className="cursor-pointer text-read font-bold text-teal-light-ink">ما رُوجع ({items.length - drafts.length})</summary>
+          <summary className="cursor-pointer text-read font-bold text-teal-light-ink">ما روجع ({items.length - drafts.length})</summary>
           <ol className="mt-2 space-y-2">
             {items.filter((x) => x.status !== "proposed").map((x) => (
               <li key={x.id} className="text-read leading-6">
@@ -253,7 +255,7 @@ export function PlanEditsUploader({ planId, cohortId, canUpload, canReview, onPe
                 {" "}· <span className="text-muted-foreground">{x.view.stepAr}</span>
                 {" "}· <Chip tone={STATUS_AR[x.status].tone}>{isNote(x) ? NOTE_STATUS_AR[x.status] ?? STATUS_AR[x.status].label : STATUS_AR[x.status].label}</Chip>
                 {x.required && <> · <Chip tone="danger">مطلوب</Chip></>}
-                {x.status === "rejected" && x.noteAr && <p className="text-muted-foreground">كلمتُه: {x.noteAr}</p>}
+                {x.status === "rejected" && x.noteAr && <p className="text-muted-foreground">كلمته: {x.noteAr}</p>}
               </li>
             ))}
           </ol>
@@ -265,21 +267,21 @@ export function PlanEditsUploader({ planId, cohortId, canUpload, canReview, onPe
             ref={input}
             type="file"
             className="sr-only"
-            aria-label="ملفُّ التعديلات المقترحة"
+            aria-label="ملفّ التعديلات المقترحة"
             accept="application/json,.json"
             onChange={(e) => { const f = e.target.files?.[0]; if (f) void upload(f); }}
           />
           <Button tone="secondary" size="sm" icon={FileJson} disabled={busy} onClick={() => input.current?.click()}>
-            {busy ? "يُفحص…" : "ارفع ملفَّ التعديلات"}
+            {busy ? "يفحص…" : "ارفع ملفّ التعديلات"}
           </Button>
           {offerSchedule && (
             <Button tone="secondary" size="sm" icon={CalendarClock} disabled={busy} onClick={() => void schedule()}>
-              جهّز جدولًا ثابتًا مقترحًا
+              جهّز جدولا ثابتا مقترحا
             </Button>
           )}
           {open > 0 && (
             <Button tone="ghost" size="sm" disabled={busy} onClick={() => void withdraw()}>
-              اسحب ما لم يُقرَّر ({open})
+              اسحب ما لم يقرّر ({open})
             </Button>
           )}
         </div>
@@ -350,11 +352,11 @@ export function PlanEditsBulkUpload({ plans, onUploaded, onOpen }: {
   };
 
   return (
-    <Inset className="mb-4 px-4 py-3" role="region" aria-label="ملفّاتُ التعديلات دفعةً واحدة">
-      <p className="text-read font-black text-foreground">ارفع ملفّاتِ التعديلات المقترحة كلَّها دفعةً واحدة</p>
+    <Inset className="mb-4 px-4 py-3" role="region" aria-label="ملفّات التعديلات دفعة واحدة">
+      <p className="text-read font-black text-foreground">ارفع ملفّات التعديلات المقترحة كلّها دفعة واحدة</p>
       <p className="mt-1 max-w-3xl text-read leading-6 text-muted-foreground">
-        كلُّ ملفٍّ يعرف خطّتَه فيُرفع إليها وحدَه، ويُفحص كما يُفحص في بطاقتها: يُرفع كلُّه أو يُردّ كلُّه بسببه. وتُرفع
-        مسوّداتٍ لا يراها المدرّبون — تراجع بنودَ كلِّ خطّةٍ في بطاقتها فتعتمدها أو تحذفها.
+        كلّ ملفّ يعرف خطّته فيرفع إليها وحده، ويفحص كما يفحص في بطاقتها: يرفع كلّه أو يردّ كلّه بسببه. وترفع
+        مسوّدات لا يراها المدرّبون — تراجع بنود كلّ خطّة في بطاقتها فتعتمدها أو تحذفها.
       </p>
       <div
         className={`mt-3 flex flex-wrap items-center gap-3 rounded-lg border-2 border-dashed p-4 ${over ? "border-teal-light-ink bg-teal-light-ink/5" : "border-border"}`}
@@ -367,14 +369,14 @@ export function PlanEditsBulkUpload({ plans, onUploaded, onOpen }: {
           type="file"
           multiple
           className="sr-only"
-          aria-label="ملفّاتُ التعديلات المقترحة"
+          aria-label="ملفّات التعديلات المقترحة"
           accept="application/json,.json"
           onChange={(e) => void run(Array.from(e.target.files ?? []))}
         />
         <Button tone="secondary" size="sm" icon={Files} disabled={progress !== null} onClick={() => input.current?.click()}>
-          {progress ? `يُرفع ${progress}…` : "اختر الملفّات"}
+          {progress ? `يرفع ${progress}…` : "اختر الملفّات"}
         </Button>
-        <span className="text-read text-muted-foreground">أو اسحبها كلَّها إلى هنا وأفلتها.</span>
+        <span className="text-read text-muted-foreground">أو اسحبها كلّها إلى هنا وأفلتها.</span>
       </div>
       <label className="mt-3 flex items-start gap-2 text-read leading-6">
         <input type="checkbox" className="mt-1.5" checked={replace} disabled={progress !== null} onChange={(e) => setReplace(e.target.checked)} />
@@ -393,7 +395,7 @@ export function PlanEditsBulkUpload({ plans, onUploaded, onOpen }: {
             return (
               <li key={`${i}-${r.name}`} className="rounded-lg border border-border/60 p-3">
                 <div className="flex flex-wrap items-center gap-2">
-                  <Chip tone={r.okAr ? "positive" : "danger"}>{r.okAr ? "رُفع" : "رُدّ"}</Chip>
+                  <Chip tone={r.okAr ? "positive" : "danger"}>{r.okAr ? "رفع" : "ردّ"}</Chip>
                   <span className="text-read font-bold text-foreground" dir="auto">{r.labelAr ?? r.name}</span>
                 </div>
                 {r.labelAr && <p className="mt-1 text-read text-muted-foreground" dir="auto">{r.name}</p>}
@@ -401,7 +403,7 @@ export function PlanEditsBulkUpload({ plans, onUploaded, onOpen }: {
                 {r.problemAr && <p className="mt-1 whitespace-pre-wrap text-read leading-6 text-danger-ink">{r.problemAr}</p>}
                 {here && (
                   <Button className="mt-2" tone="ghost" size="sm" icon={ExternalLink} onClick={() => onOpen(r.planId!)}>
-                    افتح خطّتَه وراجع بنودَها
+                    افتح خطّته وراجع بنودها
                   </Button>
                 )}
               </li>
@@ -461,7 +463,7 @@ export function PlanEditsPanel({ cohortId, inHand, unsaved, onApplied, onCounts,
 
   if (items.length === 0) return null;
   const pending = items.filter((x) => x.status === "pending");
-  const blocked = !inHand ? "تُقبل التعديلاتُ حين تعود الخطّةُ إليك." : unsaved ? "احفظ ما كتبتَه أوّلا — فالقبولُ يكتب في الخطّة المحفوظة." : null;
+  const blocked = !inHand ? "تقبل التعديلات حين تعود الخطّة إليك." : unsaved ? "احفظ ما كتبته أوّلا — فالقبول يكتب في الخطّة المحفوظة." : null;
 
   /* ═══ «المراجعة»: بطاقاتٌ مرقّمةٌ واحدةٌ بعد واحدة (١١ أكتوبر ٢٠٢٦) ═══
 
@@ -481,7 +483,7 @@ export function PlanEditsPanel({ cohortId, inHand, unsaved, onApplied, onCounts,
   const whyBox = (x: PlanEditItem, confirmAr: string, doneAr: string) => rejecting === x.id && (
     <div className="mt-2 space-y-2">
       <label className="block text-read text-muted-foreground">
-        لماذا؟ (اختياريّ — يقرؤه المعتمِد)
+        لماذا؟ (اختياريّ — يقرؤه المعتمد)
         <textarea
           rows={2} maxLength={1000} value={note} onChange={(e) => setNote(e.target.value)}
           className="mt-1 w-full rounded-md border border-border bg-background p-2 text-read text-foreground"
@@ -496,7 +498,12 @@ export function PlanEditsPanel({ cohortId, inHand, unsaved, onApplied, onCounts,
     </div>
   );
 
-  /* ═══ بندُ الملاحظة: نقاطُها، ثمّ «موافق» أو «لا أوافق» — وزرٌّ إلى خطوتها يعدّل فيها ═══ */
+  /* ═══ بندُ الملاحظة: نقاطُها، ثمّ «سأعدّله» يفتح خطوتَها (١١ أكتوبر ٢٠٢٦) ═══
+
+     كان «موافق» و«لا أوافق». فقال صاحبُ المنصّة: «إن اقترحتَ عليه ما يقبله أو يرفضه فقبولُه يغيّر
+     الشيء. وإن لم تغيّره أنت فلا تطلب منه أن يوافق — أعطه زرّا: سأعدّله، يأخذه إلى موضعه». فالملاحظةُ لا
+     تكتب في الخطّة شيئا: زرُّها «سأعدّله» يُعلِّمها ويفتح خطوتَها، والعامّةُ «اطّلعتُ عليها». ويبقى له —
+     بقاعدة «لا إجبارَ على فعل» — أن يُبقي الموضعَ كما هو ويقول لماذا. */
   const noteCard = (x: PlanEditItem) => (
     <Card as="li" key={x.id} className="p-4">
       <div className="flex items-start gap-3">
@@ -509,25 +516,34 @@ export function PlanEditsPanel({ cohortId, inHand, unsaved, onApplied, onCounts,
             <Chip tone={x.required ? "danger" : "info"}>{x.required ? "فيها مطلوب" : "ملاحظة"}</Chip>
           </div>
           <NotePoints view={x.view} />
-          {!blocked && (
-            <div className="mt-3 flex flex-wrap gap-2">
-              <Button
-                tone="confirm" size="sm" icon={Check} disabled={busy !== null}
-                onClick={() => void act(x.id, () => apiPost(`/api/trainer/plan-edits/${x.id}/accept`, {}), `وافقتَ على «${x.view.titleAr}».`, false)}
-              >
-                موافق
-              </Button>
-              <Button tone="ghost" size="sm" icon={X} disabled={busy !== null} onClick={() => { setRejecting(rejecting === x.id ? null : x.id); setNote(""); }}>
-                لا أوافق
-              </Button>
-              {onOpenStep && x.step !== "general" && (
-                <Button tone="secondary" size="sm" disabled={busy !== null} onClick={() => onOpenStep(x.step)}>
-                  افتح «{x.view.stepAr}»
+          <div className="mt-3 flex flex-wrap gap-2">
+            {x.step === "general" ? (
+              !blocked && (
+                <Button
+                  tone="confirm" size="sm" icon={Check} disabled={busy !== null}
+                  onClick={() => void act(x.id, () => apiPost(`/api/trainer/plan-edits/${x.id}/accept`, {}), "قرأتها.", false)}
+                >
+                  اطّلعت عليها
                 </Button>
-              )}
-            </div>
-          )}
-          {whyBox(x, "أكّد أنّك لا توافق", `لم توافق على «${x.view.titleAr}» — وصلت كلمتُك الإدارة.`)}
+              )
+            ) : (
+              <Button
+                tone="confirm" size="sm" icon={PencilLine} disabled={busy !== null}
+                onClick={() => blocked
+                  ? onOpenStep?.(x.step)
+                  : void act(x.id, () => apiPost(`/api/trainer/plan-edits/${x.id}/accept`, {}), `افتح «${x.view.stepAr}» وعدّل فيها.`, false)
+                    .then(() => onOpenStep?.(x.step))}
+              >
+                سأعدّله
+              </Button>
+            )}
+            {!blocked && (
+              <Button tone="ghost" size="sm" disabled={busy !== null} onClick={() => { setRejecting(rejecting === x.id ? null : x.id); setNote(""); }}>
+                {x.step === "general" ? "لي رأي آخر" : "أبقيه كما هو"}
+              </Button>
+            )}
+          </div>
+          {whyBox(x, "أرسل رأيك", `وصل رأيك في «${x.view.titleAr}» الإدارة.`)}
         </div>
       </div>
     </Card>
@@ -552,7 +568,7 @@ export function PlanEditsPanel({ cohortId, inHand, unsaved, onApplied, onCounts,
             )}
             {x.stale && !x.goneAr && (
               <p className="mt-2 text-read font-bold text-gold-ink">
-                عدّلتَ هذا الموضعَ بعد أن اقترحناه — «بدلَ» ما كان فيه يومَها، لا ما فيه الآن. لك أن تقبله فوق ما كتبتَ، أو ترفضه.
+                عدّلت هذا الموضع بعد أن اقترحناه — «بدل» ما كان فيه يومها، لا ما فيه الآن. لك أن تقبله فوق ما كتبت، أو ترفضه.
               </p>
             )}
             {x.status === "pending" && !blocked && (
@@ -560,9 +576,9 @@ export function PlanEditsPanel({ cohortId, inHand, unsaved, onApplied, onCounts,
                 {!x.goneAr && (
                   <Button
                     tone="confirm" size="sm" icon={Check} disabled={busy !== null}
-                    onClick={() => void act(x.id, () => apiPost(`/api/trainer/plan-edits/${x.id}/accept`, x.stale ? { force: true } : {}), `قُبل «${x.view.titleAr}» وكُتب في خطّتك.`, true)}
+                    onClick={() => void act(x.id, () => apiPost(`/api/trainer/plan-edits/${x.id}/accept`, x.stale ? { force: true } : {}), `قبل «${x.view.titleAr}» وكتب في خطّتك.`, true)}
                   >
-                    {x.stale ? "اقبله فوق ما كتبتُ" : "اقبله"}
+                    {x.stale ? "اقبله فوق ما كتبت" : "اقبله"}
                   </Button>
                 )}
                 <Button tone="ghost" size="sm" icon={X} disabled={busy !== null} onClick={() => { setRejecting(rejecting === x.id ? null : x.id); setNote(""); }}>
@@ -573,7 +589,7 @@ export function PlanEditsPanel({ cohortId, inHand, unsaved, onApplied, onCounts,
             {rejecting === x.id && (
               <div className="mt-2 space-y-2">
                 <label className="block text-read text-muted-foreground">
-                  لماذا؟ (اختياريّ — يقرؤه المعتمِد)
+                  لماذا؟ (اختياريّ — يقرؤه المعتمد)
                   <textarea
                     rows={2} maxLength={1000} value={note} onChange={(e) => setNote(e.target.value)}
                     className="mt-1 w-full rounded-md border border-border bg-background p-2 text-read text-foreground"
@@ -581,7 +597,7 @@ export function PlanEditsPanel({ cohortId, inHand, unsaved, onApplied, onCounts,
                 </label>
                 <Button
                   tone="secondary" size="sm" disabled={busy !== null}
-                  onClick={() => void act(x.id, async () => { await apiPost(`/api/trainer/plan-edits/${x.id}/reject`, note.trim() ? { noteAr: note.trim() } : {}); setRejecting(null); }, `رُفض «${x.view.titleAr}» — لم يُمسّ شيء.`, false)}
+                  onClick={() => void act(x.id, async () => { await apiPost(`/api/trainer/plan-edits/${x.id}/reject`, note.trim() ? { noteAr: note.trim() } : {}); setRejecting(null); }, `رفض «${x.view.titleAr}» — لم يمسّ شيء.`, false)}
                 >
                   أكّد الرفض
                 </Button>
@@ -593,15 +609,15 @@ export function PlanEditsPanel({ cohortId, inHand, unsaved, onApplied, onCounts,
   );
 
   return (
-    <section className="mt-2 space-y-3" role="region" aria-label="تعديلاتٌ اقترحتها الإدارة">
+    <section className="mt-2 space-y-3" role="region" aria-label="تعديلات اقترحتها الإدارة">
       <Inset className="flex flex-wrap items-center gap-3">
         <div className="min-w-0 flex-1">
           <p className="text-read font-black text-foreground">
-            {pending.length === 0 ? `قرّرتَ فيها كلِّها (${items.length})` : `قرّرتَ في ${decided.length} من ${items.length}`}
+            {pending.length === 0 ? `قرّرت فيها كلّها (${items.length})` : `قرّرت في ${decided.length} من ${items.length}`}
           </p>
-          <p className="mt-0.5 text-read leading-6 text-muted-foreground">ما تقبله يُكتب في خطّتك، وما ترفضه لا يمسّ شيئا.</p>
+          <p className="mt-0.5 text-read leading-6 text-muted-foreground">ما تقبله يكتب في خطّتك، وما ترفضه لا يمسّ شيئا.</p>
           <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-white/10" role="progressbar"
-            aria-label="ما قرّرتَ فيه" aria-valuemin={0} aria-valuemax={items.length} aria-valuenow={decided.length}>
+            aria-label="ما قرّرت فيه" aria-valuemin={0} aria-valuemax={items.length} aria-valuenow={decided.length}>
             <span className="block h-full rounded-full bg-teal transition-all" style={{ width: `${pct}%` }} />
           </div>
         </div>
@@ -612,10 +628,10 @@ export function PlanEditsPanel({ cohortId, inHand, unsaved, onApplied, onCounts,
               const r = await apiPost<{ accepted: number; skipped: { titleAr: string; problemAr: string }[] }>(
                 `/api/trainer/cohorts/${cohortId}/plan-edits/accept-all`, {},
               );
-              if (r.skipped.length) throw new Error(`قُبل ${r.accepted}، وبقي ${r.skipped.length} ينتظر:\n${r.skipped.map((s) => `«${s.titleAr}»: ${s.problemAr}`).join("\n")}`);
-            }, "قُبلت كلُّها وكُتبت في خطّتك.", true)}
+              if (r.skipped.length) throw new Error(`قبل ${r.accepted}، وبقي ${r.skipped.length} ينتظر:\n${r.skipped.map((s) => `«${s.titleAr}»: ${s.problemAr}`).join("\n")}`);
+            }, "قبلت كلّها وكتبت في خطّتك.", true)}
           >
-            اقبلها كلَّها ({pending.length})
+            اقبلها كلّها ({pending.length})
           </Button>
         )}
       </Inset>
@@ -624,7 +640,7 @@ export function PlanEditsPanel({ cohortId, inHand, unsaved, onApplied, onCounts,
 
       {pendingNotes.length > 0 && (
         <>
-          <h3 className="pt-1 text-read font-black text-foreground">ملاحظاتُنا — ما لم تذكره التعديلات</h3>
+          <h3 className="pt-1 text-read font-black text-foreground">ملاحظاتنا — ما لم تذكره التعديلات</h3>
           <ol className="space-y-3">
             {pendingNotes.map((x) => noteCard(x))}
           </ol>
@@ -632,7 +648,7 @@ export function PlanEditsPanel({ cohortId, inHand, unsaved, onApplied, onCounts,
       )}
       {pendingEdits.length > 0 && (
         <>
-          {pendingNotes.length > 0 && <h3 className="pt-1 text-read font-black text-foreground">التعديلاتُ المقترحة</h3>}
+          {pendingNotes.length > 0 && <h3 className="pt-1 text-read font-black text-foreground">التعديلات المقترحة</h3>}
           <ol className="space-y-3">
             {pendingEdits.map((x) => editCard(x))}
           </ol>
@@ -641,14 +657,14 @@ export function PlanEditsPanel({ cohortId, inHand, unsaved, onApplied, onCounts,
 
       {decided.length > 0 && (
         <Inset as="details" className="p-3">
-          <summary className="cursor-pointer text-read font-bold text-teal-light-ink">ما قرّرتَ فيه ({decided.length})</summary>
+          <summary className="cursor-pointer text-read font-bold text-teal-light-ink">ما قرّرت فيه ({decided.length})</summary>
           <ol className="mt-2 space-y-1.5">
             {decided.map((x) => (
               <li key={x.id} className="flex flex-wrap items-center gap-2 text-read leading-6">
                 <span className="w-6 shrink-0 text-center font-black text-muted-foreground">{numberOf(x)}</span>
                 <span className="font-bold text-foreground">{x.view.titleAr}</span>
-                <Chip tone={STATUS_AR[x.status].tone}>{x.status === "accepted" ? (isNote(x) ? "وافقتَ" : "قبلتَه") : x.status === "rejected" ? (isNote(x) ? "لم توافق" : "رفضتَه") : STATUS_AR[x.status].label}</Chip>
-                {x.status === "rejected" && x.noteAr && <span className="text-muted-foreground">— كلمتُك: {x.noteAr}</span>}
+                <Chip tone={STATUS_AR[x.status].tone}>{x.status === "accepted" ? (isNote(x) ? (x.step === "general" ? "قرأتها" : "ستعدّله") : "قبلته") : x.status === "rejected" ? (isNote(x) ? "أبقيته" : "رفضته") : STATUS_AR[x.status].label}</Chip>
+                {x.status === "rejected" && x.noteAr && <span className="text-muted-foreground">— كلمتك: {x.noteAr}</span>}
               </li>
             ))}
           </ol>
@@ -659,8 +675,8 @@ export function PlanEditsPanel({ cohortId, inHand, unsaved, onApplied, onCounts,
 }
 
 const isNote = (x: PlanEditItem) => x.kind === "note";
-/** والملاحظةُ يوافق عليها أو لا — لا «قُبل» و«رُفض» كالتعديل */
-const NOTE_STATUS_AR: Partial<Record<PlanEditStatus, string>> = { pending: "عند المدرّب", accepted: "وافق", rejected: "لم يوافق" };
+/** والملاحظةُ «سيعدّلها» أو «أبقاها كما هي» — لا «قُبل» و«رُفض» كالتعديل (١١ أكتوبر ٢٠٢٦) */
+const NOTE_STATUS_AR: Partial<Record<PlanEditStatus, string>> = { pending: "عند المدرّب", accepted: "سيعدّله", rejected: "أبقاه كما هو" };
 
 /** نقاطُ الملاحظة — سطرٌ لكلّ نقطة، و«مطلوب»/«مقترَح» وسمُها إن كان (`notePoints` في `plan-edits.ts`).
     والنقطةُ من بطاقة المعايير خانتان: «الآن» و«نقترح» — «ماذا كان وماذا نقترح» (صاحب المنصّة، ١١ أكتوبر ٢٠٢٦) */
@@ -675,10 +691,18 @@ export function NotePoints({ view }: { view: EditView }) {
                 {r.tagAr && <Chip tone={r.tagAr === "مطلوب" ? "danger" : "info"}>{r.tagAr}</Chip>}
                 <span className="text-read font-bold text-foreground">{r.labelAr}</span>
               </div>
+              {/* وقائمةُ النواقص محورا محورا ثمّ «كيف تُصلحه» — لا سطرا مكتظّا في خانة (١١ أكتوبر ٢٠٢٦) */}
+              {gapLayout(r.beforeAr) ? (
+                <div className="mt-1.5 grid gap-2">
+                  <GapList layout={gapLayout(r.beforeAr)!} />
+                  <p className="text-read leading-6 text-foreground"><b className="text-teal-light-ink">نقترح:</b> {r.afterAr}</p>
+                </div>
+              ) : (
               <div className="mt-1.5 grid gap-2 sm:grid-cols-2">
                 <Cell label="الآن" text={r.beforeAr} muted />
                 <Cell label="نقترح" text={r.afterAr} />
               </div>
+              )}
             </>
           ) : (
             <div className="flex items-start gap-2 text-read leading-7">
@@ -720,7 +744,7 @@ function SuggestRows({ view }: { view: EditView }) {
           <dt className="text-fine font-bold text-muted-foreground">{r.labelAr}</dt>
           <dd className={`mt-1 grid gap-2 ${r.beforeAr === null ? "" : "sm:grid-cols-2"}`}>
             <Cell label={r.beforeAr === null ? "نضيف" : "نقترح"} text={r.afterAr} href={r.afterHref} long={r.long} />
-            {r.beforeAr !== null && <Cell label="بدلَ" text={r.beforeAr} href={r.beforeHref} long={r.long} muted />}
+            {r.beforeAr !== null && <Cell label="بدل" text={r.beforeAr} href={r.beforeHref} long={r.long} muted />}
           </dd>
         </div>
       ))}

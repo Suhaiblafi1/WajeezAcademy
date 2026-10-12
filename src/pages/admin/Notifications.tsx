@@ -12,7 +12,7 @@ import Button from "@/components/ui/Button";
 import { staffControlCls as inputCls } from "@/components/FormKit";
 
 const CHANNEL_AR: Record<string, string> = { in_app: "داخلي", email: "بريد", sms: "رسالة نصية", whatsapp: "واتساب" };
-const LOG_STATUS_AR: Record<string, string> = { queued: "بالطابور", sent: "أُرسل", delivered: "سُلم", read: "قُرئ", failed: "فشل" };
+const LOG_STATUS_AR: Record<string, string> = { queued: "بالطابور", sent: "أرسل", delivered: "سلم", read: "قرئ", failed: "فشل" };
 
 interface Template { id: string; key: string; channel: string; titleAr: string; bodyAr: string; active: boolean }
 interface LogRow {
@@ -90,7 +90,7 @@ export default function Notifications() {
             onClick={() => act(async () => {
               await apiPost("/api/admin/notification-templates", form);
               setForm({ key: "", channel: "in_app", titleAr: "", bodyAr: "", active: true });
-            }, "حُفظ القالب (upsert بالمفتاح والقناة)")} className="mt-3">
+            }, "حفظ القالب (upsert بالمفتاح والقناة)")} className="mt-3">
             <Save className="h-3.5 w-3.5" /> حفظ القالب
           </Button>
 
@@ -136,7 +136,7 @@ export default function Notifications() {
                   <p className="mt-1 text-read text-muted-foreground">{n.attempts} محاولة · {fmtDateTime(new Date(n.queuedAt))}</p>
                   {n.status === "failed" && (
                     <Button tone="secondary" size="sm" disabled={busy}
-                      onClick={() => act(() => apiPost(`/api/admin/notifications/${n.id}/retry`), "أُعيدت المحاولة")} className="mt-2 text-fine text-gold-ink">
+                      onClick={() => act(() => apiPost(`/api/admin/notifications/${n.id}/retry`), "أعيدت المحاولة")} className="mt-2 text-fine text-gold-ink">
                       <RefreshCw className="h-3 w-3" /> إعادة المحاولة
                     </Button>
                   )}

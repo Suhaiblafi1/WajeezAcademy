@@ -64,10 +64,10 @@ export default function CohortReadiness({ onApplied }: { onApplied?: () => void 
         <Wallet className="h-4 w-4" /> جاهزيّة العرض — لماذا لا تظهر بعض الأسعار
       </h2>
       <p className="mt-2 max-w-3xl text-read leading-6 text-muted-foreground">
-        السعر يُقرأ من الشعب لا من الكتالوج، فما لا شعبةَ مفتوحةً له لا يظهر له سعر —
-        وهذا مقصود: رقمٌ لا تسنده شعبةٌ قابلة للتسجيل وعدٌ يفترق عن الفاتورة.
-        والشعبةُ تُعرض وتُباع حين تعتمد خطّةَ مدرّبها وتفتحها من بطاقتها — وما لا
-        مدرّبَ معتمَدٌ له يظهر في الموقع بلا شعبةٍ مفتوحة.
+        السعر يقرأ من الشعب لا من الكتالوج، فما لا شعبة مفتوحة له لا يظهر له سعر —
+        وهذا مقصود: رقم لا تسنده شعبة قابلة للتسجيل وعد يفترق عن الفاتورة.
+        والشعبة تعرض وتباع حين تعتمد خطّة مدرّبها وتفتحها من بطاقتها — وما لا
+        مدرّب معتمد له يظهر في الموقع بلا شعبة مفتوحة.
         اعرض أوّلا لترى ما سيتغيّر، ثمّ نفّذ.
       </p>
 
@@ -81,11 +81,11 @@ export default function CohortReadiness({ onApplied }: { onApplied?: () => void 
         {/* ── محاذاة الأسعار ── */}
         <Card className="bg-paper/25">
           <p className="flex items-center gap-1.5 text-read font-black">
-            <Tags className="h-3.5 w-3.5 text-gold" /> توحيدُ أسعار الشعب على سعر القائمة
+            <Tags className="h-3.5 w-3.5 text-gold" /> توحيد أسعار الشعب على سعر القائمة
           </p>
           <p className="mt-1 text-read leading-5 text-muted-foreground">
-            شعبةٌ سعرُها يخالف كتالوجها تقول للصفحة رقما وتُطالب الفاتورة بغيره.
-            والمقعدُ المحجوز أو المدفوع لا يُعاد تسعيره.
+            شعبة سعرها يخالف كتالوجها تقول للصفحة رقما وتطالب الفاتورة بغيره.
+            والمقعد المحجوز أو المدفوع لا يعاد تسعيره.
           </p>
 
           <div className="mt-3 flex flex-wrap gap-2">
@@ -107,12 +107,12 @@ export default function CohortReadiness({ onApplied }: { onApplied?: () => void 
             <Inset className="mt-3">
               <p className="text-read leading-6 text-foreground">
                 شعب <b className="tabular-nums">{align.cohorts}</b> ·{" "}
-                {align.applied ? "وُحّدت" : "ستُوحَّد"} <b className="tabular-nums text-gold">{align.changed}</b> ·{" "}
+                {align.applied ? "وحّدت" : "ستوحّد"} <b className="tabular-nums text-gold">{align.changed}</b> ·{" "}
                 مطابقة أصلا <b className="tabular-nums">{align.alreadyAligned}</b>
               </p>
               {align.skippedCommitted > 0 && (
                 <p className="mt-1.5 text-read leading-5 text-gold">
-                  {align.skippedCommitted} شعبةً فيها مقاعدُ محجوزة أو مدفوعة — تُركت عمدا، عالجها يدويا.
+                  {align.skippedCommitted} شعبة فيها مقاعد محجوزة أو مدفوعة — تركت عمدا، عالجها يدويا.
                 </p>
               )}
               {align.rows.length > 0 && (
@@ -133,11 +133,11 @@ export default function CohortReadiness({ onApplied }: { onApplied?: () => void 
         {/* ── الحالةُ تتبع التواريخ ── */}
         <Card className="bg-paper/25 lg:col-span-2">
           <p className="flex items-center gap-1.5 text-read font-black">
-            <CalendarCheck className="h-3.5 w-3.5 text-teal" /> حالاتٌ متأخّرةٌ عن تواريخها
+            <CalendarCheck className="h-3.5 w-3.5 text-teal" /> حالات متأخّرة عن تواريخها
           </p>
           <p className="mt-1 text-read leading-5 text-muted-foreground">
-            شعبةٌ بدأت جلساتُها تصير «جارية»، وشعبةٌ انتهت آخرُ جلساتها تصير «منتهية» — ومستحقّاتُ
-            مدرّبها تُولَّد عند الإكمال، فتأخّرُ الحالة يؤخّرها. ولا تُفتح شعبةٌ آليّا: الفتحُ يمرّ بشروطه وبقرارك.
+            شعبة بدأت جلساتها تصير «جارية»، وشعبة انتهت آخر جلساتها تصير «منتهية» — ومستحقّات
+            مدرّبها تولّد عند الإكمال، فتأخّر الحالة يؤخّرها. ولا تفتح شعبة آليّا: الفتح يمرّ بشروطه وبقرارك.
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             <Button tone="secondary" size="sm" type="button"
@@ -157,12 +157,12 @@ export default function CohortReadiness({ onApplied }: { onApplied?: () => void 
             <Inset className="mt-3">
               {sync.changes.length === 0 ? (
                 <p className="flex items-center gap-1.5 text-read font-bold text-teal-light-ink">
-                  <CheckCircle2 className="h-3 w-3" /> كلُّ الحالات مطابقةٌ لتواريخها.
+                  <CheckCircle2 className="h-3 w-3" /> كلّ الحالات مطابقة لتواريخها.
                 </p>
               ) : (
                 <>
                   <p className="text-read text-foreground">
-                    {sync.applied ? "حُرّكت" : "ستُحرَّك"} <b className="tabular-nums text-teal-light-ink">{sync.applied ? sync.changed : sync.changes.length}</b> شعبة
+                    {sync.applied ? "حرّكت" : "ستحرّك"} <b className="tabular-nums text-teal-light-ink">{sync.applied ? sync.changed : sync.changes.length}</b> شعبة
                   </p>
                   <ul className="mt-2 space-y-1">
                     {sync.changes.slice(0, 12).map((ch) => (

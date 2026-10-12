@@ -181,9 +181,9 @@ export default function BookInterview({ name, email, reference, invited = false,
           وصلنا طلبك — شكرا لك
         </p>
         <p className="mt-3 text-read leading-7 text-foreground">
-          طلبك كاملٌ ومحفوظٌ عند فريقنا
+          طلبك كامل ومحفوظ عند فريقنا
           {reference && <> برقم <b className="font-mono text-foreground" dir="ltr">{reference}</b></>}
-          ، ولا ينقصه منك شيءٌ الآن.
+          ، ولا ينقصه منك شيء الآن.
         </p>
 
         {/* ═══ والاهتمامُ يُقال وإن وُقف الحجز (٢٢ سبتمبر ٢٠٢٦) ═══
@@ -211,10 +211,10 @@ export default function BookInterview({ name, email, reference, invited = false,
         <Inset className="mt-4 text-read leading-7 text-muted-foreground">
           <p className="flex items-start gap-2 font-black text-foreground">
             <CalendarOff className="mt-1 h-4 w-4 shrink-0 text-gold-ink" aria-hidden="true" />
-            <span>حجزُ المواعيد متوقّفٌ مؤقّتا</span>
+            <span>حجز المواعيد متوقّف مؤقّتا</span>
           </p>
           <p className="mt-2 pr-6">
-            امتلأت أوقاتُ اجتماعاتنا لكثرة المتقدّمين، فلا يوجد وقتٌ متاحٌ لحجز{' '}
+            امتلأت أوقات اجتماعاتنا لكثرة المتقدّمين، فلا يوجد وقت متاح لحجز{' '}
             {TRAINER_INTERVIEW.labelAr} هذا الشهر ({INTERVIEW_BOOKING_PAUSE.monthAr}).
           </p>
           <p className="mt-2 pr-6">
@@ -227,9 +227,9 @@ export default function BookInterview({ name, email, reference, invited = false,
         <p className="mt-4 flex items-start gap-2 text-read leading-7 text-muted-foreground">
           <MailCheck className="mt-1 h-4 w-4 shrink-0 text-gold-ink" aria-hidden="true" />
           <span>
-            ولا يلزمك شيءٌ الآن: يصلك رابطُ الحجز على بريدك حين تُفتح المواعيد،
-            و<b className="text-foreground">لا حاجةَ إلى إعادة تقديم طلبك</b> — طلبٌ واحدٌ يكفي،
-            ومكانُك في الطابور محفوظٌ بتاريخ وصوله.
+            ولا يلزمك شيء الآن: يصلك رابط الحجز على بريدك حين تفتح المواعيد،
+            و<b className="text-foreground">لا حاجة إلى إعادة تقديم طلبك</b> — طلب واحد يكفي،
+            ومكانك في الطابور محفوظ بتاريخ وصوله.
           </span>
         </p>
       </Card>
@@ -268,9 +268,9 @@ export default function BookInterview({ name, email, reference, invited = false,
           وصلنا طلبك — شكرا لك
         </p>
         <p className="mt-3 text-read leading-7 text-foreground">
-          طلبك كاملٌ ومحفوظٌ عند فريقنا
+          طلبك كامل ومحفوظ عند فريقنا
           {reference && <> برقم <b className="font-mono text-foreground" dir="ltr">{reference}</b></>}
-          ، ولا ينقصه منك شيءٌ الآن.
+          ، ولا ينقصه منك شيء الآن.
         </p>
 
         <Inset className="mt-4 text-read leading-7 text-muted-foreground">
@@ -279,9 +279,9 @@ export default function BookInterview({ name, email, reference, invited = false,
             <span>وما يحدث الآن</span>
           </p>
           <p className="mt-2 pr-6">
-            يقرأ فريقنا الأكاديميُّ ملفّك وخبراتك. فإن رغبنا بلقائك{' '}
+            يقرأ فريقنا الأكاديميّ ملفّك وخبراتك. فإن رغبنا بلقائك{' '}
             <b className="text-foreground">
-              وصلك رابطُ حجز {TRAINER_INTERVIEW.labelAr} على بريدك
+              وصلك رابط حجز {TRAINER_INTERVIEW.labelAr} على بريدك
             </b>{' '}
             — ومنه تختار الوقت الذي يناسبك.
           </p>
@@ -290,8 +290,8 @@ export default function BookInterview({ name, email, reference, invited = false,
         <p className="mt-4 flex items-start gap-2 text-read leading-7 text-muted-foreground">
           <CalendarClock className="mt-1 h-4 w-4 shrink-0 text-emerald-300" aria-hidden="true" />
           <span>
-            ولا يلزمك شيءٌ الآن، و<b className="text-foreground">لا حاجةَ إلى إعادة تقديم طلبك</b> —
-            طلبٌ واحدٌ يكفي، ومكانُك في الطابور محفوظٌ بتاريخ وصوله.
+            ولا يلزمك شيء الآن، و<b className="text-foreground">لا حاجة إلى إعادة تقديم طلبك</b> —
+            طلب واحد يكفي، ومكانك في الطابور محفوظ بتاريخ وصوله.
           </span>
         </p>
       </Card>
@@ -333,7 +333,7 @@ export default function BookInterview({ name, email, reference, invited = false,
           <CalendarClock className="h-3.5 w-3.5" /> {TRAINER_INTERVIEW.minutes} دقيقة
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <Video className="h-3.5 w-3.5" /> عن بُعد عبر {TRAINER_INTERVIEW.platformAr}
+          <Video className="h-3.5 w-3.5" /> عن بعد عبر {TRAINER_INTERVIEW.platformAr}
         </span>
       </p>
 
@@ -347,10 +347,10 @@ export default function BookInterview({ name, email, reference, invited = false,
         <Inset tone="positive" className="mt-4 text-read leading-6 text-foreground">
           <p className="flex items-start gap-2">
             <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" aria-hidden="true" />
-            <span>حُجز موعدك — تصلك رسالةُ تأكيدٍ بدعوة التقويم، ويظهر في صفحة حالتك بعد لحظات.</span>
+            <span>حجز موعدك — تصلك رسالة تأكيد بدعوة التقويم، ويظهر في صفحة حالتك بعد لحظات.</span>
           </p>
           <p className="mt-2 pr-6">
-            <b className="text-foreground">ولك أن تغيّر موعدك أو تلغيه من الدعوة نفسِها</b> — في رسالة
+            <b className="text-foreground">ولك أن تغيّر موعدك أو تلغيه من الدعوة نفسها</b> — في رسالة
             Calendly زرّا «إعادة الجدولة» و«الإلغاء»، يعملان حتّى قبل الموعد بساعات. فلا تحجز موعدا ثانيا.
           </p>
         </Inset>
@@ -391,14 +391,14 @@ export default function BookInterview({ name, email, reference, invited = false,
               <div className="absolute inset-0 grid place-items-center gap-3 bg-white text-center">
                 <div>
                   <Loader2 className="mx-auto h-5 w-5 animate-spin text-teal-ink" aria-hidden="true" />
-                  <p className="mt-3 text-read leading-6 text-slate-600">يُحمَّل تقويمُ المواعيد…</p>
+                  <p className="mt-3 text-read leading-6 text-slate-600">يحمّل تقويم المواعيد…</p>
                   <a
                     href={url}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="mt-2 inline-flex items-center gap-1 text-read text-teal-ink underline decoration-dotted underline-offset-4"
                   >
-                    أو افتحه في تبويبٍ جديد
+                    أو افتحه في تبويب جديد
                     <ExternalLink className="h-3 w-3" aria-hidden="true" />
                   </a>
                 </div>
@@ -415,13 +415,13 @@ export default function BookInterview({ name, email, reference, invited = false,
               الدليلُ الذي بيده الآن. وهذا سطرٌ يُحذف يومَ تعمل المزامنة —
               وبقاؤه بعدها لا يضرّ، فالتحقّقُ قبل الحجز الثاني صوابٌ دائما. */}
           <Inset as="p" className="mt-3 text-read leading-6 text-muted-foreground">
-            حجزتَ موعدا سابقا؟ تحقّق من بريدك أوّلا — يصلك من Calendly تأكيدٌ فيه موعدُك،
-            و<b className="text-foreground">منه وحدَه تغيّر الموعدَ أو تلغيه</b> بزرّي «إعادة الجدولة»
-            و«الإلغاء». ولا تحجز موعدا ثانيا قبل أن تُلغي الأوّل.
+            حجزت موعدا سابقا؟ تحقّق من بريدك أوّلا — يصلك من Calendly تأكيد فيه موعدك،
+            و<b className="text-foreground">منه وحده تغيّر الموعد أو تلغيه</b> بزرّي «إعادة الجدولة»
+            و«الإلغاء». ولا تحجز موعدا ثانيا قبل أن تلغي الأوّل.
           </Inset>
           <p className="mt-3 text-read leading-6 text-muted-foreground">
-            {reference && <>ورقمُ طلبك <b className="font-mono text-foreground" dir="ltr">{reference}</b> مرفقٌ بالحجز. </>}
-            ولو لم يناسبك أيُّ وقتٍ معروض، راسِلنا وسنرتّب غيرَه.{' '}
+            {reference && <>ورقم طلبك <b className="font-mono text-foreground" dir="ltr">{reference}</b> مرفق بالحجز. </>}
+            ولو لم يناسبك أيّ وقت معروض، راسلنا وسنرتّب غيره.{' '}
             {/* ومخرجٌ لمن حجب الأطرَ أو ضاقت شاشتُه — لا يُترك بلا طريق */}
             <a
               href={url}
@@ -429,7 +429,7 @@ export default function BookInterview({ name, email, reference, invited = false,
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 text-teal-light-ink underline decoration-dotted underline-offset-4"
             >
-              أو افتح صفحة الحجز في تبويبٍ جديد
+              أو افتح صفحة الحجز في تبويب جديد
               <ExternalLink className="h-3 w-3" aria-hidden="true" />
             </a>
           </p>

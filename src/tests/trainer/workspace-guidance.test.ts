@@ -32,20 +32,20 @@ const KIT = 'src/components/FormKit.tsx'
 function stageBlock(src: string, stage: string, nextStage: string): string {
   const from = src.indexOf(`stage === "${stage}" &&`)
   const to = src.indexOf(`stage === "${nextStage}" &&`)
-  expect(from, `لا خطوةَ ${stage}`).toBeGreaterThan(-1)
-  expect(to, `لا خطوةَ ${nextStage}`).toBeGreaterThan(from)
+  expect(from, `لا خطوة ${stage}`).toBeGreaterThan(-1)
+  expect(to, `لا خطوة ${nextStage}`).toBeGreaterThan(from)
   return src.slice(from, to)
 }
 
-describe('لكلّ خطوةٍ رأسٌ يقول ما هي وكم تأخذ', () => {
+describe('لكلّ خطوة رأس يقول ما هي وكم تأخذ', () => {
   const ws = code(WS)
 
   /* و«المراجعة» سابعةٌ بعد «الاعتماد» (١١ أكتوبر ٢٠٢٦) — برأسها كالستّ */
-  it('الخطواتُ السبعُ كلُّها في معجم الرؤوس — بغرضٍ ووقت', () => {
+  it('الخطوات السبع كلّها في معجم الرؤوس — بغرض ووقت', () => {
     const block = ws.slice(ws.indexOf('const STAGE_INTRO'), ws.indexOf('function StageIntro'))
     /* و«الكرّاسات» حلّت محلَّ «المصادر» (٢٧ سبتمبر ٢٠٢٦) — والمصادرُ صارت مع المهامّ */
     for (const key of ['identity', 'modules', 'workbooks', 'sessions', 'assignments', 'approval', 'review']) {
-      expect(block, `لا رأسَ للخطوة ${key}`).toMatch(new RegExp(`${key}:\\s*\\{`))
+      expect(block, `لا رأس للخطوة ${key}`).toMatch(new RegExp(`${key}:\\s*\\{`))
     }
     /* الغرضُ والوقتُ كلاهما — ورأسٌ بلا وقتٍ لا يجيب «أأبدأ الآن؟».
        والعدُّ على القيمةِ المكتوبة (`purpose: "…"`) لا على المفتاح، وإلّا
@@ -54,7 +54,7 @@ describe('لكلّ خطوةٍ رأسٌ يقول ما هي وكم تأخذ', () =
     expect((block.match(/minutes: "/g) ?? []).length).toBe(7)
   })
 
-  it('وكلُّ خطوةٍ تُصيّر رأسَها لا عنوانا مكتوبا بيدها', () => {
+  it('وكلّ خطوة تصيّر رأسها لا عنوانا مكتوبا بيدها', () => {
     /* وبابُ الهُويّة يحمل رأسَه كذلك وإن لم يكن درجةً — فالمُقتطَعُ من
        السلّم لا يُقتطَع من الشرح. */
     for (const s of ['identity', 'modules', 'workbooks', 'sessions', 'assignments', 'approval', 'review']) {
@@ -63,7 +63,7 @@ describe('لكلّ خطوةٍ رأسٌ يقول ما هي وكم تأخذ', () =
   })
 })
 
-describe('الحقلُ يُشرَح لا يُترك لنصِّه البديل', () => {
+describe('الحقل يشرح لا يترك لنصّه البديل', () => {
   const ws = code(WS)
 
   /* والفحصُ ليس «كم حقلا مشروحا» بل **ألّا يبقى حقلٌ بلا شرح**: عتبةٌ
@@ -75,13 +75,13 @@ describe('الحقلُ يُشرَح لا يُترك لنصِّه البديل', 
     return { all, hinted }
   }
 
-  it('كلُّ حقلٍ في «المحاور» مشروحٌ — لا واحدَ بلا تلميح', () => {
+  it('كلّ حقل في «المحاور» مشروح — لا واحد بلا تلميح', () => {
     const { all, hinted } = everyFieldHinted(stageBlock(ws, 'modules', 'workbooks'))
-    expect(all, 'لا حقولَ موصوفةً أصلا').toBeGreaterThanOrEqual(5)
+    expect(all, 'لا حقول موصوفة أصلا').toBeGreaterThanOrEqual(5)
     expect(hinted, `${all - hinted} حقلا بلا تلميح`).toBe(all)
   })
 
-  it('وكلُّ حقلٍ في «الاسمُ والنبذة» كذلك', () => {
+  it('وكلّ حقل في «الاسم والنبذة» كذلك', () => {
     const { all, hinted } = everyFieldHinted(stageBlock(ws, 'identity', 'modules'))
     /* كانت الأرضيّةُ تسعةً حين كان في الخطوة عشرةُ حقول. ثمّ خرج منها حقلا
        «اقتراحٌ للإدارة» إلى ملفّهما (د-٦)، فصارت ثمانيةً — والأرضيّةُ سنَدُ
@@ -99,7 +99,7 @@ describe('الحقلُ يُشرَح لا يُترك لنصِّه البديل', 
 
        والأرضيّةُ سنَدُ المحلِّل لا المحروس: تمنع أن يخضرّ الفحصُ لأنّ الحقولَ
        زالت كلُّها. والمحروسُ لم يتبدّل منذ كُتب: ما بقي مشروحٌ كلُّه. */
-    expect(all, 'لا حقولَ موصوفةً أصلا').toBeGreaterThanOrEqual(2)
+    expect(all, 'لا حقول موصوفة أصلا').toBeGreaterThanOrEqual(2)
     expect(hinted, `${all - hinted} حقلا بلا تلميح`).toBe(all)
   })
 
@@ -108,27 +108,27 @@ describe('الحقلُ يُشرَح لا يُترك لنصِّه البديل', 
      (ق٥ · ١٧ سبتمبر ٢٠٢٦) فزال الملفُّ وحقلاه. ويحرس إغلاقَه
      `cohort-proposals` بنيويّا — لا ملفٌّ هنا يُفحَص. */
 
-  it('ولا يبقى في الخطوتين حقلٌ بالصيغة القديمة — عنوانٌ عارٍ بلا تلميح', () => {
+  it('ولا يبقى في الخطوتين حقل بالصيغة القديمة — عنوان عار بلا تلميح', () => {
     /* الصيغةُ القديمة: `<span className="mb-1.5 block text-read font-bold …">`
        تحت `<label>` — عنوانٌ بلا موضعٍ للشرح. ووجودُها يعني حقلا أُفلت. */
     for (const [a, b] of [['identity', 'modules'], ['modules', 'workbooks'], ['workbooks', 'sessions']] as const) {
-      expect(stageBlock(ws, a, b), `حقلٌ بالصيغة القديمة في ${a}`).not.toMatch(/mb-1\.5 block text-read font-bold/)
+      expect(stageBlock(ws, a, b), `حقل بالصيغة القديمة في ${a}`).not.toMatch(/mb-1\.5 block text-read font-bold/)
     }
   })
 
-  it('و`StaffField` تعرض التلميحَ بحجم المتن لا بحجم اللصيقة', () => {
+  it('و`StaffField` تعرض التلميح بحجم المتن لا بحجم اللصيقة', () => {
     const kit = code(KIT)
     const fn = kit.slice(kit.indexOf('export function StaffField'))
     expect(fn.slice(0, 900)).toMatch(/hint &&[\s\S]{0,120}text-read/)
   })
 })
 
-describe('الحقلُ في الخطوة التي يخصّها', () => {
+describe('الحقل في الخطوة التي يخصّها', () => {
   const ws = code(WS)
 
-  it('وصفُ الشعبة مع اسمها في بابهما — لا في «المحاور»', () => {
-    expect(stageBlock(ws, 'identity', 'modules'), 'الوصفُ ليس مع الاسم في بابه').toContain('content.summaryAr')
-    expect(stageBlock(ws, 'modules', 'workbooks'), 'الوصفُ ما زال في «المحاور»').not.toContain('summaryAr')
+  it('وصف الشعبة مع اسمها في بابهما — لا في «المحاور»', () => {
+    expect(stageBlock(ws, 'identity', 'modules'), 'الوصف ليس مع الاسم في بابه').toContain('content.summaryAr')
+    expect(stageBlock(ws, 'modules', 'workbooks'), 'الوصف ما زال في «المحاور»').not.toContain('summaryAr')
   })
 
   /* ═══ ونُقضت ملاحظةُ الشعبة كلِّها بقرار (١٥ سبتمبر ٢٠٢٦) ═══
@@ -143,33 +143,33 @@ describe('الحقلُ في الخطوة التي يخصّها', () => {
 
      والمحروسُ لم يتبدّل — **الحقلُ في الخطوة التي يخصّها**: لا يعود إلى
      «المحاور» ولا يبقى واحدا للشعبة، ويسكن حيث يُنشأ اللقاء. */
-  it('⚠️ وملاحظةُ اللقاء صارت لكلّ لقاءٍ — لا واحدةً للشعبة كلِّها', () => {
-    expect(ws, 'عادت ملاحظةٌ واحدةٌ للشعبة في الشاشة').not.toContain('content.liveNoteAr')
-    expect(stageBlock(ws, 'modules', 'workbooks'), 'الملاحظةُ عادت إلى «المحاور»').not.toContain('liveNoteAr')
+  it('⚠️ وملاحظة اللقاء صارت لكلّ لقاء — لا واحدة للشعبة كلّها', () => {
+    expect(ws, 'عادت ملاحظة واحدة للشعبة في الشاشة').not.toContain('content.liveNoteAr')
+    expect(stageBlock(ws, 'modules', 'workbooks'), 'الملاحظة عادت إلى «المحاور»').not.toContain('liveNoteAr')
     /* وموضعُها الجديدُ نموذجُ إنشاء اللقاء — تُرسَل مع اللقاء نفسِه */
     const sched = code('src/pages/trainer/TrainerSchedule.tsx')
-    expect(sched, 'لا ملاحظةَ في نموذج اللقاء').toContain('ملاحظاتٌ عن اللقاء (اختياريّ)')
-    expect(sched, 'الملاحظةُ لا تُرسَل مع اللقاء').toMatch(/noteAr: form\.noteAr\.trim\(\) \|\| null/)
+    expect(sched, 'لا ملاحظة في نموذج اللقاء').toContain('ملاحظات عن اللقاء (اختياريّ)')
+    expect(sched, 'الملاحظة لا ترسل مع اللقاء').toMatch(/noteAr: form\.noteAr\.trim\(\) \|\| null/)
   })
 
-  it('وحفظُ الخطوة الأولى يحفظ الخطّةَ معها — وإلّا ضاع الوصفُ صامتا', () => {
+  it('وحفظ الخطوة الأولى يحفظ الخطّة معها — وإلّا ضاع الوصف صامتا', () => {
     /* الوصفُ والمدّةُ في الخطّة لا في الشعبة، والاسمُ في الشعبة. وكان زرُّ
        الخطوة الأولى يُرسل الشعبةَ وحدَها، فلو لم يُرسَل الاثنان لكتب المدرّبُ
        وصفا ورآه يختفي. وصار الحفظُ واحدا لكلّ الخطوات (`persist`، ٢٧ سبتمبر
        ٢٠٢٦) — فيُفحص أنّه يحمل الاثنين. */
     const fn = ws.slice(ws.indexOf('const persist'), ws.indexOf('const gapsFor'))
-    expect(fn, 'لا حفظَ واحدا يحفظ ما في اليد').toBeTruthy()
+    expect(fn, 'لا حفظ واحدا يحفظ ما في اليد').toBeTruthy()
     /* و`over ?? content`: الخطّةُ التي في اليد، أو ما يُحفظ حالا بدلا منها (٤ أكتوبر ٢٠٢٦) */
-    expect(fn, 'الخطّةُ لا تُحفظ مع بيانات الشعبة').toContain('/plan`, over ?? content)')
+    expect(fn, 'الخطّة لا تحفظ مع بيانات الشعبة').toContain('/plan`, over ?? content)')
     expect(fn).toContain('apiPatch(')
   })
 
-  it('وبصمةُ «لم يُحفَظ» تتبع الحقلَ إلى موضعه الجديد', () => {
-    expect(ws, 'بصمةُ الخطوة الأولى لا تشمل الوصفَ والمدّة').toMatch(/identity: JSON\.stringify\(identity\) \+ basicsKey\(content\)/)
+  it('وبصمة «لم يحفظ» تتبع الحقل إلى موضعه الجديد', () => {
+    expect(ws, 'بصمة الخطوة الأولى لا تشمل الوصف والمدّة').toMatch(/identity: JSON\.stringify\(identity\) \+ basicsKey\(content\)/)
     /* والمدّةُ في البصمة (٢٧ سبتمبر ٢٠٢٦): من غيّر تاريخا ولم يحفظ يُعلَّم */
     const key = ws.slice(ws.indexOf('const basicsKey'), ws.indexOf('const basicsKey') + 160)
-    expect(key, 'تاريخُ البدء خارجَ البصمة').toContain('c.startsOn')
-    expect(key, 'تاريخُ الانتهاء خارجَ البصمة').toContain('c.endsOn')
+    expect(key, 'تاريخ البدء خارج البصمة').toContain('c.startsOn')
+    expect(key, 'تاريخ الانتهاء خارج البصمة').toContain('c.endsOn')
     /* ═══ ثمّ عادت للّقاءات بصمةٌ — بحقلٍ حقيقيٍّ هذه المرّة (٢٧ سبتمبر ٢٠٢٦) ═══
 
        كانت `false` صراحةً: حقلُها الوحيدُ (`liveNoteAr`) ذهب إلى كلّ لقاءٍ على
@@ -177,38 +177,38 @@ describe('الحقلُ في الخطوة التي يخصّها', () => {
        بين المسجّلة والمباشرة» — وهي في الخطّة تُحفظ بزرّ الشريط. فبصمتُها
        المسجَّلُ من المصادر، لا الملاحظةُ التي ذهبت. والمحروسُ الأصليُّ باقٍ:
        لا مسودّةَ لحقلٍ لا وجودَ له في الخطوة. */
-    expect(ws, 'بصمةُ اللقاءات لا تقرأ المسجَّل').toMatch(/sessions: recordedKey\(content\) !== baseline\.recorded,/)
-    expect(ws, 'عادت الملاحظةُ الواحدةُ إلى بصمة اللقاءات').not.toMatch(/sessions: [^\n]*liveNoteAr/)
+    expect(ws, 'بصمة اللقاءات لا تقرأ المسجّل').toMatch(/sessions: recordedKey\(content\) !== baseline\.recorded,/)
+    expect(ws, 'عادت الملاحظة الواحدة إلى بصمة اللقاءات').not.toMatch(/sessions: [^\n]*liveNoteAr/)
     /* وبصمةُ المحاور تخلّصت من الوصف والملاحظة معا — وصارت تحمل مواعيدَها
        بلا كرّاساتها: الكرّاسةُ تُحرَّر في درجتها وتُعلَّم هناك */
     const mk = ws.slice(ws.indexOf('const modulesKey'), ws.indexOf('const workbooksKey'))
-    expect(mk, 'بصمةُ المحاور لا تحمل المحاور').toContain('modules: c.modules')
-    expect(mk, 'بصمةُ المحاور لا تحمل مواعيدَها').toContain('slots:')
-    expect(mk, 'الكرّاسةُ في بصمة المحاور').not.toContain('workbook')
-    expect(mk, 'الوصفُ عاد إلى بصمة المحاور').not.toMatch(/summaryAr|liveNoteAr/)
+    expect(mk, 'بصمة المحاور لا تحمل المحاور').toContain('modules: c.modules')
+    expect(mk, 'بصمة المحاور لا تحمل مواعيدها').toContain('slots:')
+    expect(mk, 'الكرّاسة في بصمة المحاور').not.toContain('workbook')
+    expect(mk, 'الوصف عاد إلى بصمة المحاور').not.toMatch(/summaryAr|liveNoteAr/)
   })
 })
 
-describe('المحورُ يُطوى فلا تصير الخطوةُ جدارا', () => {
+describe('المحور يطوى فلا تصير الخطوة جدارا', () => {
   const ws = code(WS)
 
-  it('واحدٌ مفتوحٌ في كلّ مرّة، وحالتُه معلَنةٌ لقارئ الشاشة', () => {
+  it('واحد مفتوح في كلّ مرّة، وحالته معلنة لقارئ الشاشة', () => {
     expect(ws).toMatch(/const \[openModule, setOpenModule\]/)
     const block = stageBlock(ws, 'modules', 'workbooks')
     /* والفتحُ **مشتقٌّ من الحالة** لا ثابتا: `const open = true` يُبقي
        العلامةَ والشرطَ في مكانهما ويُلغي الطيَّ — فالفحصُ على الاشتقاق. */
-    expect(block, 'الفتحُ غيرُ مشتقٍّ من المحور المفتوح').toMatch(/const open = openModule === m\.moduleId/)
-    expect(block, 'لا طيَّ للمحور').toContain('aria-expanded={open}')
-    expect(block, 'الحقولُ تُصيَّر مطويّةً كانت أو مفتوحة').toContain('{open && (')
+    expect(block, 'الفتح غير مشتقّ من المحور المفتوح').toMatch(/const open = openModule === m\.moduleId/)
+    expect(block, 'لا طيّ للمحور').toContain('aria-expanded={open}')
+    expect(block, 'الحقول تصيّر مطويّة كانت أو مفتوحة').toContain('{open && (')
   })
 
-  it('والمحورُ المضافُ يُفتح فورا — وإلّا أُضيف ولا يُرى', () => {
+  it('والمحور المضاف يفتح فورا — وإلّا أضيف ولا يرى', () => {
     const block = stageBlock(ws, 'modules', 'workbooks')
     expect(block).toMatch(/setOpenModule\(moduleId\)/)
   })
 
-  it('والمطويُّ يقول ما ينقصه لا يسكت', () => {
+  it('والمطويّ يقول ما ينقصه لا يسكت', () => {
     const block = stageBlock(ws, 'modules', 'workbooks')
-    expect(block).toContain('ينقصه العنوانُ أو المخرَج')
+    expect(block).toContain('ينقصه العنوان أو المخرج')
   })
 })

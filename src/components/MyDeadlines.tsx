@@ -97,7 +97,7 @@ export default function MyDeadlines({ className = "" }: { className?: string }) 
         </h2>
         {data.overdue > 0 && (
           <span className="rounded-full border border-rose-400/40 bg-rose-500/[0.08] px-3 py-1 text-fine font-black text-danger-ink">
-            {data.overdue} فات موعدُه
+            {data.overdue} فات موعده
           </span>
         )}
       </div>
@@ -119,7 +119,7 @@ export default function MyDeadlines({ className = "" }: { className?: string }) 
                 <div className="flex shrink-0 items-center gap-2">
                   {d.resubmitRequested && (
                     <span className="rounded-full border border-white/20 px-2 py-0.5 text-fine font-bold">
-                      طُلبت إعادةُ التسليم
+                      طلبت إعادة التسليم
                     </span>
                   )}
                   <span className="text-xs font-black">{d.dueLabelAr}</span>
@@ -138,7 +138,7 @@ export default function MyDeadlines({ className = "" }: { className?: string }) 
       {data.retrievalDue > 0 && (
         <p className="mt-4 flex flex-wrap items-center gap-2 text-read text-muted-foreground">
           <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
-          و{data.retrievalDue} بطاقةَ استرجاعٍ استُحقّت — لا موعدَ نهائيَّ لها، لكنّها تُنسى إن تباعدت.
+          و{data.retrievalDue} بطاقة استرجاع استحقّت — لا موعد نهائيّ لها، لكنّها تنسى إن تباعدت.
           <Link to="/student/review" className="font-bold text-teal-light-ink underline">
             افتح «مراجعتي»
           </Link>

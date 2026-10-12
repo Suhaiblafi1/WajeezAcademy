@@ -27,31 +27,31 @@ const BUY_PANEL = code('src/components/BuyPanel.tsx')
    البابان. والحارسان هنا يحرسان ما كانا يحرسانه حيث صار: تاريخُ المدرّب من قاعدة
    الاعتماد نفسِها ومكتوبٌ بتوقيت عمّان، وعلمٌ مرفوعٌ على خطّةٍ لم تُعتمَد لا يُقرأ
    «مفتوحا». وما زاد (العلمُ المنزول) في `last-mile-screens.test.ts`. */
-describe('المدرّبُ يعرف متى يدخلها متعلّموه', () => {
-  it('⚠️ آخرُ الالتحاق بالقاعدة التي يكتبه بها الاعتماد — لا بحسابٍ ثانٍ', () => {
+describe('المدرّب يعرف متى يدخلها متعلّموه', () => {
+  it('⚠️ آخر الالتحاق بالقاعدة التي يكتبه بها الاعتماد — لا بحساب ثان', () => {
     expect(WORKSPACE).toMatch(/joinClosesAt: joinClosesAt\(planPeriod, content\.slots\),/)
     const closes = new Date('2026-11-10T13:00:00Z')
     const line = trainerRegistrationLine({ registrationOpen: true, awaitingPlan: true, joinClosesAt: closes }, new Date('2026-11-01T00:00:00Z'))
-    expect(line.lead).toContain('ويُقبل الملتحقون حتّى بدء موعدها الثاني')
+    expect(line.lead).toContain('ويقبل الملتحقون حتّى بدء موعدها الثاني')
     expect(line.date).toBe(whenAr(closes))
   })
 })
 
-describe('والمعتمِدُ يُقال له ما يحكم به الخادم', () => {
-  it('⚠️ علمٌ مرفوعٌ على خطّةٍ لم تُعتمَد لا يُقرأ «مفتوحا»', () => {
+describe('والمعتمد يقال له ما يحكم به الخادم', () => {
+  it('⚠️ علم مرفوع على خطّة لم تعتمد لا يقرأ «مفتوحا»', () => {
     expect(PLAN_REVIEW).toMatch(/adminRegistrationLine\(\{ \.\.\.r, registrationOpen: r\.registrationOpen \?\? true \}, new Date\(\)\)/)
     const raised = lineText(adminRegistrationLine(
       { registrationOpen: true, awaitingPlan: true, joinClosesAt: new Date('2026-12-01T00:00:00Z') }, new Date('2026-11-01T00:00:00Z'),
     )!)
-    expect(raised).toContain('يُفتح باعتمادك')
+    expect(raised).toContain('يفتح باعتمادك')
     expect(raised).not.toContain('مفتوح')
   })
 })
 
-describe('ولوحُ الشراء يسمّي السببين', () => {
+describe('ولوح الشراء يسمّي السببين', () => {
   /* الشارةُ قصيرةٌ من هنا والنصُّ الكاملُ من الخادم تحتها — وسببٌ بلا شارةٍ يُقرأ
      «غير متاحة الآن» فلا يعرف المشتري أَيَنتظر أم يبحث عن غيرها */
-  it('⚠️ «بانتظار الاعتماد» و«أُغلق الالتحاق» شارتان بأسمائهما', () => {
+  it('⚠️ «بانتظار الاعتماد» و«أغلق الالتحاق» شارتان بأسمائهما', () => {
     const map = BUY_PANEL.slice(BUY_PANEL.indexOf('const REASON_AR'), BUY_PANEL.indexOf('};', BUY_PANEL.indexOf('const REASON_AR')))
     expect(map).toMatch(/\n {2}awaiting_plan: "[^"]+",/)
     expect(map).toMatch(/\n {2}late_closed: "[^"]+",/)

@@ -17,6 +17,7 @@ import {
   REVIEW_NOTE_MAX, REVIEW_SECTIONS, STAGE_LABELS, hasReviewNotes, normalizeReviewNotes, notedSections,
   type ReviewNotes, type ReviewSection,
 } from '@/application/trainer/review-notes'
+import { NoteBody } from './LongText'
 
 export function ReviewNotesForm({ busy, onSend, onCancel, initial, editsPending = 0 }: {
   busy: boolean
@@ -41,32 +42,32 @@ export function ReviewNotesForm({ busy, onSend, onCancel, initial, editsPending 
     />
   )
   return (
-    <Inset tone="warn" className="mt-3" role="group" aria-label="ملاحظاتُ الردّ لكلّ خطوة">
-      <p className="text-read font-black text-gold-ink">ما الذي يُعدَّل؟</p>
+    <Inset tone="warn" className="mt-3" role="group" aria-label="ملاحظات الردّ لكلّ خطوة">
+      <p className="text-read font-black text-gold-ink">ما الذي يعدّل؟</p>
       <p className="mt-1 text-read leading-6 text-muted-foreground">
-        اكتب كلَّ ملاحظةٍ في الخطوة التي تُعدَّل فيها — يقرؤها المدرّبُ في رأس تلك الخطوة حين يفتحها، ويرى
-        في شريطه أيَّ الخطوات عليها ملاحظة. وما لا خطوةَ له فهو للعامّة. واترك الباقي فارغا.
+        اكتب كلّ ملاحظة في الخطوة التي تعدّل فيها — يقرؤها المدرّب في رأس تلك الخطوة حين يفتحها، ويرى
+        في شريطه أيّ الخطوات عليها ملاحظة. وما لا خطوة له فهو للعامّة. واترك الباقي فارغا.
       </p>
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
-        <StaffField wide label="ملاحظةٌ عامّة" hint="تُقرأ في رأس شاشته أيًّا كانت الخطوة.">
-          {area('general', 2, 'مثلا: المنهجُ متماسك — بقي ما في الخطوات أدناه.')}
+        <StaffField wide label="ملاحظة عامّة" hint="تقرأ في رأس شاشته أيّا كانت الخطوة.">
+          {area('general', 2, 'مثلا: المنهج متماسك — بقي ما في الخطوات أدناه.')}
         </StaffField>
         {REVIEW_SECTIONS.map((s) => (
           <StaffField key={s.key} label={s.label}>
-            {area(s.key, 2, 'فارغةٌ إن لم يكن عليها شيء')}
+            {area(s.key, 2, 'فارغة إن لم يكن عليها شيء')}
           </StaffField>
         ))}
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <Button tone="danger" size="sm" disabled={busy || !ready} onClick={() => onSend(clean)}>
-          أرسِلها إليه
+          أرسلها إليه
         </Button>
         <Button tone="ghost" size="sm" disabled={busy} onClick={onCancel}>
-          تراجَع
+          تراجع
         </Button>
-        {!ready && <span className="text-read text-muted-foreground">اكتب ملاحظةً واحدةً على الأقلّ.</span>}
+        {!ready && <span className="text-read text-muted-foreground">اكتب ملاحظة واحدة على الأقلّ.</span>}
         {ready && !hasReviewNotes(clean) && (
-          <span className="text-read text-muted-foreground">بلا ملاحظة: تكفي التعديلاتُ المقترحة ({editsPending}) سببا، ويقرأ سطرَها في رأس شاشته.</span>
+          <span className="text-read text-muted-foreground">بلا ملاحظة: تكفي التعديلات المقترحة ({editsPending}) سببا، ويقرأ سطرها في رأس شاشته.</span>
         )}
       </div>
     </Inset>
@@ -108,7 +109,7 @@ export function ReviewNotesBanner({ notes, current, onOpen }: {
   if (!notes.general && noted.length === 0) return null
   return (
     <Inset tone="warn" className="mt-2">
-      <p className="text-read font-black text-gold-ink">ملاحظةُ الإدارة</p>
+      <p className="text-read font-black text-gold-ink">ملاحظة الإدارة</p>
       {notes.general && (
         <p className="mt-1 whitespace-pre-line text-read leading-7 text-foreground">{notes.general}</p>
       )}
@@ -129,9 +130,10 @@ export function ReviewNotesBanner({ notes, current, onOpen }: {
 export function StageReviewNote({ stage, text }: { stage: ReviewSection; text: string | undefined }) {
   if (!text) return null
   return (
-    <Inset tone="warn" className="mb-4" role="note" aria-label={`ملاحظةُ الإدارة على «${STAGE_LABELS[stage]}»`}>
-      <p className="text-read font-black text-gold-ink">ملاحظةُ الإدارة على هذه الخطوة</p>
-      <p className="mt-1 whitespace-pre-line text-read leading-7 text-foreground">{text}</p>
+    <Inset tone="warn" className="mb-4" role="note" aria-label={`ملاحظة الإدارة على «${STAGE_LABELS[stage]}»`}>
+      <p className="text-read font-black text-gold-ink">ملاحظة الإدارة على هذه الخطوة</p>
+      {/* نقطةً نقطة، والنواقصُ محورا محورا — لا سطرا واحدا مكتظّا (١١ أكتوبر ٢٠٢٦، `LongText.tsx`) */}
+      <div className="mt-2"><NoteBody text={text} /></div>
     </Inset>
   )
 }

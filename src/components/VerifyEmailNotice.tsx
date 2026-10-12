@@ -66,7 +66,7 @@ export default function VerifyEmailNotice({ email, className = "" }: { email: st
     <Button tone="ghost" onClick={send}
       disabled={busy} className="min-h-9 bg-[#FABC05] text-on-gold hover:bg-[#FABC05]/90 hover:text-on-gold disabled:opacity-60">
       <MailCheck className="h-3.5 w-3.5" />
-      {busy ? "يُرسَل…" : "أرسل لي رابط التوثيق"}
+      {busy ? "يرسل…" : "أرسل لي رابط التوثيق"}
     </Button>
   );
 
@@ -76,8 +76,8 @@ export default function VerifyEmailNotice({ email, className = "" }: { email: st
       <div className={`flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl border border-[#FABC05]/25 bg-[#FABC05]/[0.04] px-4 py-2.5 ${className}`}>
         <MailWarning className="h-4 w-4 shrink-0 text-[#FABC05]" aria-hidden="true" />
         <p className="min-w-0 flex-1 text-read leading-6">
-          <span className="font-bold">بريدك غير موثَّق</span>
-          <span className="text-muted-foreground"> — الشراءُ والشهادةُ موقوفان حتّى تُوثّقه.</span>
+          <span className="font-bold">بريدك غير موثّق</span>
+          <span className="text-muted-foreground"> — الشراء والشهادة موقوفان حتّى توثّقه.</span>
         </p>
         {sendButton}
         <Button tone="secondary" type="button"
@@ -102,11 +102,11 @@ export default function VerifyEmailNotice({ email, className = "" }: { email: st
         </span>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-sm font-black">بريدك غير موثَّق</p>
+            <p className="text-sm font-black">بريدك غير موثّق</p>
             <Button tone="secondary" type="button"
               onClick={() => fold(true)}
               aria-expanded className="min-h-9 border-[#FABC05]/30 text-fine">
-              اطوِه <ChevronUp className="h-3 w-3" aria-hidden="true" />
+              اطوه <ChevronUp className="h-3 w-3" aria-hidden="true" />
             </Button>
           </div>
           {/* ترتيب الجملة مقصود: النقطتان بعد نصّ عربيّ، والعنوان اللاتيني في
@@ -115,7 +115,7 @@ export default function VerifyEmailNotice({ email, className = "" }: { email: st
           <p className="mt-1 text-read leading-6 text-muted-foreground">
             الدخول والتصفّح والتشخيص مفتوحة كلها. الموقوف شيئان فقط:
             <span className="font-bold text-foreground"> شراء الشعب</span> و<span className="font-bold text-foreground">استلام الشهادة</span>،
-            حتى تُوثّق عنوانك
+            حتى توثّق عنوانك
             <span dir="ltr" className="mx-1 inline-block font-bold text-foreground">{email}</span>
           </p>
           <div className="mt-3">{sendButton}</div>

@@ -20,8 +20,8 @@
 export type EvidenceKind = 'module' | 'submission' | 'session' | 'retrieval' | 'scenario' | 'remeasure' | 'certificate'
 
 export const KIND_LABEL_AR: Record<EvidenceKind, string> = {
-  module: 'وحدة أُقرّ إكمالها',
-  submission: 'تسليم قُبل',
+  module: 'وحدة أقرّ إكمالها',
+  submission: 'تسليم قبل',
   session: 'جلسة حضرتها',
   retrieval: 'بطاقة استرجاع',
   scenario: 'جولة سيناريو',
@@ -34,7 +34,7 @@ const DAY_MS = 86_400_000
 
 export const NO_STREAK_NOTE =
   'لا سلسلة أيام هنا ولا نقاط ولا ترتيب بين المتعلمين. الانقطاع يوما لا يمحو ما تعلمته، ' +
-  'والعدّاد الذي ينكسر يدفع للانسحاب أكثر مما يدفع للعودة. ما تراه هنا آثارك المسجَّلة بتواريخها.'
+  'والعدّاد الذي ينكسر يدفع للانسحاب أكثر مما يدفع للعودة. ما تراه هنا آثارك المسجّلة بتواريخها.'
 
 export interface EvidenceEvent {
   kind: EvidenceKind
@@ -111,7 +111,7 @@ export function buildMomentum(facts: MomentumFacts, now: Date): Momentum {
 
 /** «قبل يومين» بالعربية — واقعة بلا حكم ولا تحفيز */
 export function sinceLabelAr(days: number | null): string {
-  if (days === null) return 'لا أثر مسجَّل بعد'
+  if (days === null) return 'لا أثر مسجّل بعد'
   if (days <= 0) return 'اليوم'
   if (days === 1) return 'أمس'
   if (days === 2) return 'قبل يومين'
@@ -168,7 +168,7 @@ export function momentumFactsFrom(
 
     for (const m of e.moduleProgress ?? []) {
       if (m.status !== 'completed' || !m.completedAt) continue
-      events.push({ kind: 'module', at: m.completedAt, labelAr: `أُقرّ إكمال وحدة «${m.moduleId}»` })
+      events.push({ kind: 'module', at: m.completedAt, labelAr: `أقرّ إكمال وحدة «${m.moduleId}»` })
     }
 
     for (const s of e.submissions ?? []) {
@@ -176,7 +176,7 @@ export function momentumFactsFrom(
       events.push({
         kind: 'submission',
         at: s.submittedAt,
-        labelAr: s.assessment?.title ? `قُبل تسليمك في «${s.assessment.title}»` : 'قُبل تسليمك',
+        labelAr: s.assessment?.title ? `قبل تسليمك في «${s.assessment.title}»` : 'قبل تسليمك',
       })
     }
 
@@ -201,7 +201,7 @@ export function momentumFactsFrom(
     const key = `${r.courseId ?? ''}#${r.measuredAt}`
     if (remeasureKeys.has(key)) continue
     remeasureKeys.add(key)
-    events.push({ kind: 'remeasure', at: r.measuredAt, labelAr: 'سُجّل قياس نموك بعد دورة' })
+    events.push({ kind: 'remeasure', at: r.measuredAt, labelAr: 'سجّل قياس نموك بعد دورة' })
   }
 
   /* إيقاع الشعبة: الهدف الذي وضعته الشعبة لا نحن.

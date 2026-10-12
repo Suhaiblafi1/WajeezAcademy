@@ -41,10 +41,10 @@ export type StageState =
 export const STAGE_LABEL_AR: Record<StageState, string> = {
   completed: 'أنجزتها',
   in_progress: 'تسير فيها',
-  enrolled: 'مسجَّلة — لم تبدأ',
+  enrolled: 'مسجّلة — لم تبدأ',
   schedulable: 'شعبة مفتوحة',
   awaiting_cohort: 'بانتظار شعبة',
-  not_owned: 'لم تُضَف بعد',
+  not_owned: 'لم تضف بعد',
 }
 
 /** ما تعنيه الحالةُ للمتعلّم: أيَعمل فيها الآن أم يشتريها أم ينتظر؟ */

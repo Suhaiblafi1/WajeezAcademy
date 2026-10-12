@@ -89,7 +89,7 @@ export default function SubmissionFeedback({
                 <li key={c.id} className="grid grid-cols-[1fr_auto] items-center gap-3 text-read">
                   <span className="min-w-0 truncate text-foreground">{c.title}</span>
                   <span className="shrink-0 tabular-nums font-bold">
-                    {got === undefined ? <span className="text-muted-foreground">لم يُقيَّم</span> : <>{got}<span className="text-muted-foreground">/{c.maxScore}</span></>}
+                    {got === undefined ? <span className="text-muted-foreground">لم يقيّم</span> : <>{got}<span className="text-muted-foreground">/{c.maxScore}</span></>}
                   </span>
                 </li>
               );
@@ -102,9 +102,9 @@ export default function SubmissionFeedback({
         <Inset as="p" tone="warn" className="flex items-start gap-2 px-3.5 py-2.5 text-read leading-6 text-foreground">
           <History className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gold-ink" aria-hidden="true" />
           <span>
-            عُدِّلت درجتك من <span className="tabular-nums font-bold">{num(revision.oldScore)}</span> إلى{" "}
+            عدّلت درجتك من <span className="tabular-nums font-bold">{num(revision.oldScore)}</span> إلى{" "}
             <span className="tabular-nums font-bold">{num(revision.newScore)}</span>
-            {revision.createdAt ? ` · ${fmtDate(revision.createdAt)}` : ""} — كل تعديل يُسجَّل ولا يُمحى.
+            {revision.createdAt ? ` · ${fmtDate(revision.createdAt)}` : ""} — كل تعديل يسجّل ولا يمحى.
           </span>
         </Inset>
       )}

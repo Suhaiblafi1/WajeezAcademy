@@ -10,8 +10,8 @@
    (`syncQualificationsFromApplication`). وفي الحالَين **ينتظر قرارَك** — وهو
    ما يحتاج القارئُ أن يعرفه. */
 export const QUALIFICATION_LABELS: Record<string, string> = {
-  qualified: 'مؤهَّل',
-  pending: 'طلبُ تأهيلٍ ينتظر قرارَك',
-  rejected: 'رُفض تأهيلُه',
-  retired: 'سُحب تأهيلُه',
+  qualified: 'مؤهّل',
+  pending: 'طلب تأهيل ينتظر قرارك',
+  rejected: 'رفض تأهيله',
+  retired: 'سحب تأهيله',
 }

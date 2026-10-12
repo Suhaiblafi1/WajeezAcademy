@@ -124,7 +124,7 @@ export default function NotificationBell({ audience }: { audience: BellAudience 
             )}
           </div>
           <div className="max-h-96 overflow-y-auto">
-            {items === null && <p className="p-6 text-center text-read text-muted-foreground">يُحمَّل…</p>}
+            {items === null && <p className="p-6 text-center text-read text-muted-foreground">يحمّل…</p>}
             {items?.length === 0 && <p className="p-6 text-center text-read text-muted-foreground">لا إشعارات بعد — تصلك هنا مستحقاتك وشعبك فور حدوثها.</p>}
             {items?.map((n) => (
               <button

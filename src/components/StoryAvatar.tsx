@@ -197,7 +197,7 @@ export default function StoryAvatar({
       viewBox="0 0 96 96"
       className={`shrink-0 rounded-full text-foreground ${className}`}
       role="img"
-      aria-label={`رسمٌ بالرصاص يمثّل ${name} — نموذج توضيحي لا شخص حقيقي`}
+      aria-label={`رسم بالرصاص يمثّل ${name} — نموذج توضيحي لا شخص حقيقي`}
     >
       <defs>
         <clipPath id={`${gid}-clip`}>

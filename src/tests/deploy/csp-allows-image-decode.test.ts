@@ -36,7 +36,7 @@ const caddyfile = readFileSync(join(__dirname, '..', '..', '..', 'deploy', 'Cadd
 /** يستخرج توجيهةً من سياسة الأمان — بنيةً لا بحثا عن نصّ */
 function cspDirective(name: string): string[] {
   const header = caddyfile.match(/Content-Security-Policy\s+"([^"]+)"/)
-  if (!header) throw new Error('لا سياسةَ أمانٍ في Caddyfile أصلا')
+  if (!header) throw new Error('لا سياسة أمان في Caddyfile أصلا')
   for (const part of header[1].split(';')) {
     const tokens = part.trim().split(/\s+/)
     if (tokens[0] === name) return tokens.slice(1)
@@ -44,20 +44,20 @@ function cspDirective(name: string): string[] {
   return []
 }
 
-describe('سياسةُ الأمان وفكُّ الصور يتّفقان', () => {
-  it('السياسةُ موجودةٌ وفيها `img-src` — وإلّا فالحارسُ يقيس فراغا', () => {
+describe('سياسة الأمان وفكّ الصور يتّفقان', () => {
+  it('السياسة موجودة وفيها `img-src` — وإلّا فالحارس يقيس فراغا', () => {
     expect(cspDirective('img-src').length).toBeGreaterThan(0)
   })
 
-  it('و`data:` مسموحةٌ — عليها يقوم تراجعُ الفكّ في المتصفّحات القديمة', () => {
+  it('و`data:` مسموحة — عليها يقوم تراجع الفكّ في المتصفّحات القديمة', () => {
     expect(
       cspDirective('img-src'),
-      'نُزعت `data:` من img-src: تراجعُ `prepare-image.ts` يُمنع، فتُردّ صورةٌ سليمةٌ '
-      + 'برسالةٍ تتّهم الملفَّ — وهو العطبُ الذي وقع بعينه مع `blob:`.',
+      'نزعت `data:` من img-src: تراجع `prepare-image.ts` يمنع، فتردّ صورة سليمة '
+      + 'برسالة تتّهم الملفّ — وهو العطب الذي وقع بعينه مع `blob:`.',
     ).toContain('data:')
   })
 
-  it('والصورُ من أصلنا مسموحةٌ — عليها تُعرض الصورةُ بعد رفعها', () => {
+  it('والصور من أصلنا مسموحة — عليها تعرض الصورة بعد رفعها', () => {
     expect(cspDirective('img-src')).toContain("'self'")
   })
 })

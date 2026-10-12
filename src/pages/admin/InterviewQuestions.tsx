@@ -45,29 +45,29 @@ function personalAsks(a: Dossier): string[] {
   const asks: string[] = []
 
   if (a.hasAccreditation && !a.accreditationDetails?.trim()) {
-    asks.push('قال إنّ لديه اعتمادا رسميّا ولم يذكر الجهة — من مَنحه؟ ومتى؟ وهل هو سارٍ؟ اطلب صورةَ الشهادة.')
+    asks.push('قال إنّ لديه اعتمادا رسميّا ولم يذكر الجهة — من منحه؟ ومتى؟ وهل هو سار؟ اطلب صورة الشهادة.')
   }
 
   const teachable = a.teachableCourseIds ?? []
   if (teachable.length > 0) {
     const one = courseById(teachable[0])?.name ?? teachable[0]
-    asks.push(`اختار «${one}» ضمن ما يستطيع تدريسه — كيف يبدأ أوّلَ جلسةٍ فيها، وما أوّلُ ما يخرج به المتدرّب؟`)
+    asks.push(`اختار «${one}» ضمن ما يستطيع تدريسه — كيف يبدأ أوّل جلسة فيها، وما أوّل ما يخرج به المتدرّب؟`)
   }
   /* السجلّاتُ أو الفقرةُ القديمة — السؤالُ واحدٌ في الحالتين */
   if (teachable.length === 0 && (readProposals(a.teachableProposals).length > 0 || a.teachableOther?.trim())) {
-    asks.push('لم يختر شيئا من كتالوجنا وكتب بديلا — أيُّ دوراتنا أقربُ إلى ما يُتقنه فعلا؟')
+    asks.push('لم يختر شيئا من كتالوجنا وكتب بديلا — أيّ دوراتنا أقرب إلى ما يتقنه فعلا؟')
   }
 
   if (['none', 'under_1'].includes(a.trainingYears ?? '')) {
-    asks.push('خبرةُ تدريبه أقلُّ من سنة — من درّب فعلا؟ وكم مرّة؟ وأمام كم متدرّبا؟')
+    asks.push('خبرة تدريبه أقلّ من سنة — من درّب فعلا؟ وكم مرّة؟ وأمام كم متدرّبا؟')
   }
 
   if (!a.youtubeUrl?.trim() && !a.linkedinUrl?.trim()) {
-    asks.push('لا رابطَ في طلبه يُظهره وهو يدرّب — اطلب تسجيلا قصيرا أو اسمَ من يشهد له.')
+    asks.push('لا رابط في طلبه يظهره وهو يدرّب — اطلب تسجيلا قصيرا أو اسم من يشهد له.')
   }
 
   if (a.demoConsent === false) {
-    asks.push('لم يوافق على الدرس التجريبيّ وهو شرطُ الاعتماد — اسأله عن سببه قبل المضيّ.')
+    asks.push('لم يوافق على الدرس التجريبيّ وهو شرط الاعتماد — اسأله عن سببه قبل المضيّ.')
   }
 
   return asks
@@ -89,18 +89,18 @@ export default function InterviewQuestions({ a, defaultOpen = false }: Interview
       <details open={defaultOpen} className="group">
         <summary className="flex cursor-pointer list-none items-center gap-2 text-sm font-black transition hover:text-teal-light-ink [&::-webkit-details-marker]:hidden">
           <ChevronDown className="h-4 w-4 shrink-0 text-teal-light-ink transition-transform group-open:rotate-180" aria-hidden="true" />
-          <h4 className="text-sm font-black">أسئلةٌ مقترحةٌ للمقابلة</h4>
+          <h4 className="text-sm font-black">أسئلة مقترحة للمقابلة</h4>
           {/* والعددُ على الغلاف: من لم يفتح يعرف ما خلفه */}
           <span className="mr-auto text-fine font-bold text-muted-foreground">{total} سؤالا</span>
         </summary>
 
         <p className="mt-2 text-read leading-6 text-muted-foreground">
-          مرتّبةٌ بمحاور التقييم نفسِها — فما سُئل عنه يُقيَّم في سطره.
+          مرتّبة بمحاور التقييم نفسها — فما سئل عنه يقيّم في سطره.
         </p>
 
         {personal.length > 0 && (
           <div className="mt-4">
-            <h5 className="text-fine font-black text-gold-ink">يخصُّ هذا الطلبَ وحدَه</h5>
+            <h5 className="text-fine font-black text-gold-ink">يخصّ هذا الطلب وحده</h5>
             <ul className="mt-2 list-disc space-y-1.5 pr-5">
               {personal.map((q) => <Ask key={q}>{q}</Ask>)}
             </ul>

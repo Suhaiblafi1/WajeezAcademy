@@ -25,39 +25,39 @@ const CURRICULUM = REVIEW.slice(REVIEW.indexOf('export function PlanCurriculum')
 const PAGE = code('src/pages/admin/PlanCurriculumPage.tsx')
 const APP = code('src/App.tsx')
 
-describe('① لسانان، والإدارةُ أوّلا', () => {
-  it('⚠️ شريطٌ بلسانين — «الإدارة» ثمّ «المنهاج» — ويُفتح على الإدارة', () => {
+describe('① لسانان، والإدارة أوّلا', () => {
+  it('⚠️ شريط بلسانين — «الإدارة» ثمّ «المنهاج» — ويفتح على الإدارة', () => {
     expect(MAIN).toMatch(/<TabBar[\s\S]{0,120}items=\{\[\{ id: "admin", label: "الإدارة" \}, \{ id: "plan", label: "المنهاج" \}\]\}/)
     expect(MAIN).toMatch(/const \[tab, setTab\] = useState<"admin" \| "plan">\("admin"\);/)
-    expect(PLAN_PANEL.length, 'لوحُ المنهاج مفقود').toBeGreaterThan(50)
-    expect(ADMIN_PANEL.length, 'لوحُ الإدارة مفقود').toBeGreaterThan(50)
+    expect(PLAN_PANEL.length, 'لوح المنهاج مفقود').toBeGreaterThan(50)
+    expect(ADMIN_PANEL.length, 'لوح الإدارة مفقود').toBeGreaterThan(50)
   })
 })
 
-describe('② المنهجُ في لسانه وحدَه', () => {
-  it('⚠️ لوحُ المنهاج يعرضه، ويفتحه منفصلا، وينزّله', () => {
+describe('② المنهج في لسانه وحده', () => {
+  it('⚠️ لوح المنهاج يعرضه، ويفتحه منفصلا، وينزّله', () => {
     expect(PLAN_PANEL).toMatch(/<PlanCurriculum trainerPlan=\{trainerPlan\} cohortTitle=\{cohortTitle\} \/>/)
     expect(PLAN_PANEL).toMatch(/to=\{`\/admin\/plans\/\$\{cohortId\}`\} target="_blank"/)
     expect(PLAN_PANEL).toMatch(/onClick=\{\(\) => void downloadBundle\(\)\}/)
   })
 
-  it('⚠️ ولوحُ الإدارة بلا منهج — لا يمرّ عليه من جاء ليقرّر', () => {
+  it('⚠️ ولوح الإدارة بلا منهج — لا يمرّ عليه من جاء ليقرّر', () => {
     expect(ADMIN_PANEL).not.toMatch(/<PlanCurriculum|<CurriculumReview/)
-    expect(MAIN.match(/<CurriculumReview/g), 'المنهجُ مكتوبٌ في البطاقة خارجَ مكوّنه').toBeNull()
+    expect(MAIN.match(/<CurriculumReview/g), 'المنهج مكتوب في البطاقة خارج مكوّنه').toBeNull()
   })
 
-  it('والمكوّنُ يعرض المدّةَ والمستوى والقالبَ ثمّ المنهجَ كما قرأه المدرّب', () => {
+  it('والمكوّن يعرض المدّة والمستوى والقالب ثمّ المنهج كما قرأه المدرّب', () => {
     expect(CURRICULUM).toMatch(/trainerPlan\.content\?\.startsOn && trainerPlan\.content\?\.endsOn/)
     expect(CURRICULUM).toMatch(/levelRangeAr\(asLevelRange\(trainerPlan\.content\?\.level\)\)/)
     expect(CURRICULUM).toMatch(/<CurriculumReview\s+view=\{curriculumView\(\{/)
   })
 })
 
-describe('③ وما يُقرَّر كلُّه في «الإدارة»', () => {
-  it('⚠️ المعاييرُ والتقريرُ والتعديلاتُ وأزرارُ القرار والردُّ والتأجيلُ والمهامُّ واللقاءات', () => {
+describe('③ وما يقرّر كلّه في «الإدارة»', () => {
+  it('⚠️ المعايير والتقرير والتعديلات وأزرار القرار والردّ والتأجيل والمهامّ واللقاءات', () => {
     for (const [what, re] of [
-      ['بطاقةُ المعايير', /<PlanScorecard\s+items=\{scorecard\}/],
-      ['تقريرُ المراجعة', /<ReviewReportUploader planId=\{trainerPlan\.id\}/],
+      ['بطاقة المعايير', /<PlanScorecard\s+items=\{scorecard\}/],
+      ['تقرير المراجعة', /<ReviewReportUploader planId=\{trainerPlan\.id\}/],
       ['التعديلات', /<PlanEditsUploader/],
       ['الاعتماد', /approvalBody\(approveNote\)/],
       ['الردّ', /<ReviewNotesForm/],
@@ -69,21 +69,21 @@ describe('③ وما يُقرَّر كلُّه في «الإدارة»', () => {
   })
 })
 
-describe('③ب وقليلُ الكلام في «الإدارة»', () => {
-  it('⚠️ بطاقةُ المعايير سطرٌ بعدّها يُفتح بنقرة — ومفتوحةٌ إن سقط مطلوب', () => {
+describe('③ب وقليل الكلام في «الإدارة»', () => {
+  it('⚠️ بطاقة المعايير سطر بعدّها يفتح بنقرة — ومفتوحة إن سقط مطلوب', () => {
     const at = ADMIN_PANEL.indexOf('<PlanScorecard')
     const before = ADMIN_PANEL.slice(0, at)
-    expect(before.slice(before.lastIndexOf('<details')), 'البطاقةُ خارجَ سطرها').toMatch(/^<details className="mt-3" open=\{blocked\.length > 0\}>\s*<summary[^>]*>\s*بطاقةُ المعايير — /)
+    expect(before.slice(before.lastIndexOf('<details')), 'البطاقة خارج سطرها').toMatch(/^<details className="mt-3" open=\{blocked\.length > 0\}>\s*<summary[^>]*>\s*بطاقة المعايير — /)
   })
 })
 
-describe('④ والصفحةُ المنفصلة', () => {
-  it('⚠️ مسارُها في App.tsx، وتقرأ الخطّةَ من مسار البطاقة، وتعرضها بالمكوّن نفسِه، وتُنزَّل', () => {
+describe('④ والصفحة المنفصلة', () => {
+  it('⚠️ مسارها في App.tsx، وتقرأ الخطّة من مسار البطاقة، وتعرضها بالمكوّن نفسه، وتنزّل', () => {
     expect(APP).toMatch(/<Route path="\/admin\/plans\/:cohortId" element=\{<AdminPlanCurriculum \/>\} \/>/)
     expect(APP).toMatch(/const AdminPlanCurriculum = lazy\(\(\) => import\('\.\/pages\/admin\/PlanCurriculumPage'\)\)/)
     expect(PAGE).toMatch(/apiGet<TrainerPlan \| null>\(`\/api\/admin\/cohorts\/\$\{cohortId\}\/trainer-plan`\)/)
     expect(PAGE).toMatch(/<PlanCurriculum trainerPlan=\{plan\} cohortTitle=\{plan\.cohortTitle\} \/>/)
     expect(PAGE).toMatch(/apiDownload\(`\/api\/admin\/cohorts\/\$\{cohortId\}\/trainer-plan\/review-bundle`/)
-    expect(PAGE, 'لا قرارَ في الصفحة المنفصلة').not.toMatch(/\/decide`|apiPost/)
+    expect(PAGE, 'لا قرار في الصفحة المنفصلة').not.toMatch(/\/decide`|apiPost/)
   })
 })

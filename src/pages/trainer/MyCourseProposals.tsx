@@ -108,14 +108,14 @@ function ProposalForm({
     <div className="grid gap-5">
       <Section n={1} title="عن الدورة">
         <div className="grid gap-3 sm:grid-cols-2">
-          <StaffField label="عنوانُ الدورة *" hint="كما تريد أن يقرأه المتدرّب">
+          <StaffField label="عنوان الدورة *" hint="كما تريد أن يقرأه المتدرّب">
             <input
               value={value.titleAr} maxLength={MAX_TITLE} className={staffControlCls}
-              placeholder="مثلا: أتمتةُ التقارير الماليّة بالجداول"
+              placeholder="مثلا: أتمتة التقارير الماليّة بالجداول"
               onChange={(e) => onChange({ ...value, titleAr: e.target.value })}
             />
           </StaffField>
-          <StaffField label="لمن هي؟" hint="الوظيفةُ أو المرحلةُ المهنيّة">
+          <StaffField label="لمن هي؟" hint="الوظيفة أو المرحلة المهنيّة">
             <input
               value={d.audienceAr ?? ""} maxLength={MAX_DETAIL_LINE} className={staffControlCls}
               placeholder="مثلا: محاسبون في سنواتهم الأولى"
@@ -123,7 +123,7 @@ function ProposalForm({
             />
           </StaffField>
         </div>
-        <StaffField label="نبذةٌ عن الدورة" hint="فقرةٌ تُقرأ قبل أن تُصنَّف">
+        <StaffField label="نبذة عن الدورة" hint="فقرة قصيرة">
           <textarea
             value={value.summaryAr} maxLength={MAX_SUMMARY} rows={3} className={staffAreaCls}
             placeholder="ماذا فيها، ولماذا يحتاجها من تستهدفه"
@@ -132,12 +132,12 @@ function ProposalForm({
         </StaffField>
       </Section>
 
-      <Section n={2} title="شكلُها">
+      <Section n={2} title="شكلها">
         <StaffField as="div" label="المستوى">
           <OptionGrid cols={2} name="المستوى" items={opts(PROPOSAL_LEVELS)} isOn={(v) => d.level === v} onToggle={one("level")} />
         </StaffField>
         <div className="grid gap-3 sm:grid-cols-[10rem_1fr]">
-          <StaffField label="عددُ الساعات" hint="تقديرُك">
+          <StaffField label="عدد الساعات" hint="تقديرك">
             <input
               type="number" inputMode="numeric" min={1} max={MAX_PROPOSAL_HOURS} dir="ltr"
               value={d.hours ?? ""} className={staffControlCls} placeholder="12"
@@ -150,19 +150,19 @@ function ProposalForm({
         </div>
       </Section>
 
-      <Section n={3} title="محتواها" hint="بالمحاور والمخرجات نقارنها بكتالوجنا — فنعرف أهي جديدةٌ أم قريبةٌ من دورةٍ قائمة.">
+      <Section n={3} title="محتواها" hint="بها نقارنها بكتالوجنا.">
         <div className="grid gap-3 sm:grid-cols-2">
-          <StaffField label="المحاورُ الرئيسة" hint="محورٌ في كلّ سطر">
+          <StaffField label="المحاور الرئيسة" hint="محور في كلّ سطر">
             <textarea
               value={d.topicsAr ?? ""} maxLength={MAX_DETAIL_TEXT} rows={4} className={staffAreaCls}
-              placeholder={"بناءُ جدولٍ مرجعيّ\nالدوالُّ الشرطيّة\nلوحةُ مؤشّرات"}
+              placeholder={"بناء جدول مرجعيّ\nالدوالّ الشرطيّة\nلوحة مؤشّرات"}
               onChange={(e) => set({ topicsAr: e.target.value })}
             />
           </StaffField>
-          <StaffField label="ما الذي يخرج به المتدرّب؟" hint="ما يقدر عليه بعدها ولم يكن يقدر">
+          <StaffField label="ما الذي يخرج به المتدرّب؟" hint="ما يقدر عليه بعدها">
             <textarea
               value={d.outcomesAr ?? ""} maxLength={MAX_DETAIL_TEXT} rows={4} className={staffAreaCls}
-              placeholder="مثلا: يبني تقريرا شهريّا يتحدّث وحدَه"
+              placeholder="مثلا: يبني تقريرا شهريّا يتحدّث وحده"
               onChange={(e) => set({ outcomesAr: e.target.value })}
             />
           </StaffField>
@@ -173,11 +173,11 @@ function ProposalForm({
           وهل يقبل الدمج. حُذف بقرار صاحب المنصّة (٣٠ سبتمبر ٢٠٢٦): «هذا
           نحن نقرّره لا هو». فالدمجُ حكمُ الإدارة من المحاور والمخرجات، ولا
           يُسأل عنه صاحبُ الاقتراح. والإجاباتُ القديمة تبقى تُقرأ حيث حُفظت. */}
-      <Section n={4} title="جاهزيّتُك" hint="بها نقدّر متى يمكن أن تنطلق.">
+      <Section n={4} title="جاهزيّتك" hint="لنقدّر متى تنطلق.">
         <StaffField as="div" label="هل درّستها من قبل؟">
           <OptionGrid cols={3} name="الخبرة" items={opts(PROPOSAL_EXPERIENCE)} isOn={(v) => d.experience === v} onToggle={one("experience")} />
         </StaffField>
-        <StaffField as="div" label="ما الجاهزُ لديك منها؟" hint="اختر كلَّ ما ينطبق">
+        <StaffField as="div" label="ما الجاهز لديك منها؟" hint="اختر كلّ ما ينطبق">
           <OptionGrid
             cols={3} name="الموادّ الجاهزة" items={opts(PROPOSAL_MATERIALS)}
             isOn={(v) => materials.includes(v as never)}
@@ -202,16 +202,15 @@ function payloadOf(d: Draft) {
 function stateOf(p: Proposal): { label: string; tone: "wait" | "good" | "bad"; sayAr: string } {
   if (p.status === "linked") {
     return {
-      label: "نسختُك من دورةٍ قائمة",
+      label: "نسختك من دورة قائمة",
       tone: "good",
-      sayAr: `هذه عندنا دورةٌ قائمة${p.course?.titleAr ? ` — «${p.course.titleAr}»` : ""}. `
-        + "فاطلب من الإدارة أن تضيفها إلى دوراتك، ثمّ اقترِح اسمَك ومحاورَك عليها من ورشةِ شعبتك — "
-        + "فتصير نسختَك منها لا دورةً ثانية.",
+      sayAr: `هذه عندنا دورة قائمة${p.course?.titleAr ? ` — «${p.course.titleAr}»` : ""}. `
+        + "اطلب من الإدارة إضافتها إلى دوراتك، ثمّ اقترح اسمك ومحاورك عليها من ورشة شعبتك.",
     };
   }
   if (p.status === "became_course") {
     return {
-      label: "صارت دورةً في الكتالوج",
+      label: "صارت دورة في الكتالوج",
       tone: "good",
       /* ═══ باسمها لا برمزها (ح-١ · س-٥) ═══
 
@@ -224,27 +223,27 @@ function stateOf(p: Proposal): { label: string; tone: "wait" | "good" | "bad"; s
          و`course.status` كان مُعلَنا في النوع ولا يُصيَّر — فمن قيل له «صارت
          دورةً» لا يعرف أمنشورةٌ هي أم مسوّدةٌ تنتظر. وهما حالان مختلفان
          عليه: الأولى يُدرّسها، والثانية ينتظرها. */
-      sayAr: `دخلت الكتالوجَ${p.course?.titleAr ? ` باسم «${p.course.titleAr}»` : ""}`
+      sayAr: `دخلت الكتالوج${p.course?.titleAr ? ` باسم «${p.course.titleAr}»` : ""}`
         + (p.course?.status === "published"
-          ? " وهي منشورةٌ الآن"
-          : " ولمّا تُنشر بعدُ")
-        + " — وإضافتُها إلى دوراتك بيدِ الإدارة.",
+          ? " وهي منشورة الآن"
+          : " ولمّا تنشر بعد")
+        + " — وإضافتها إلى دوراتك بيد الإدارة.",
     };
   }
   if (p.status === "info_requested") {
     return {
-      label: "الإدارةُ تسألك",
+      label: "الإدارة تسألك",
       tone: "wait",
-      sayAr: "سؤالٌ واحدٌ يقف عليه قرارُها — أجِبْ عنه أدناه، ولك أن تعدّل العنوانَ والنبذةَ معه.",
+      sayAr: "أجب عن سؤالها أدناه، ولك تعديل العنوان والنبذة.",
     };
   }
   if (p.status === "rejected") {
-    return { label: "لم تُقبل", tone: "bad", sayAr: p.decisionNoteAr || "بلا سببٍ مكتوب." };
+    return { label: "لم تقبل", tone: "bad", sayAr: p.decisionNoteAr || "بلا سبب مكتوب." };
   }
   return {
     label: "عند الإدارة",
     tone: "wait",
-    sayAr: "وصلت الإدارةَ ولم تُصنَّف بعد. ولك أن تعدّلها أو تحذفها ما دامت كذلك.",
+    sayAr: "لم تصنّف بعد — لك تعديلها أو حذفها.",
   };
 }
 
@@ -304,12 +303,12 @@ export default function MyCourseProposals() {
                 onClick={() => run(
                   () => apiPatch(`/api/trainer/course-proposals/${p.id}`, payloadOf(edit))
                     .then(() => setEditId(null)),
-                  "حُفظ التعديل",
+                  "حفظ التعديل",
                 )}
               >
                 احفظ
               </Button>
-              <Button tone="ghost" icon={X} onClick={() => setEditId(null)}>تراجَع</Button>
+              <Button tone="ghost" icon={X} onClick={() => setEditId(null)}>تراجع</Button>
             </div>
           </div>
         ) : (
@@ -345,7 +344,7 @@ export default function MyCourseProposals() {
                   {st.label}
                 </span>
                 <span className="text-xs text-muted-foreground/70">
-                  {p.decidedAt ? `بُتّ فيها ${fmtDateLong(p.decidedAt)}` : `أُرسلت ${fmtDateLong(p.createdAt)}`}
+                  {p.decidedAt ? `بتّ فيها ${fmtDateLong(p.decidedAt)}` : `أرسلت ${fmtDateLong(p.createdAt)}`}
                 </span>
               </div>
             </div>
@@ -364,7 +363,7 @@ export default function MyCourseProposals() {
                   tone="danger" icon={Trash2} disabled={busy}
                   onClick={() => run(
                     () => apiDelete(`/api/trainer/course-proposals/${p.id}`),
-                    "حُذف الاقتراح",
+                    "حذف الاقتراح",
                   )}
                 >
                   احذف
@@ -407,7 +406,7 @@ export default function MyCourseProposals() {
             {p.answerAr ? (
               <div>
                 <div className="font-bold text-foreground">
-                  وأجبتَ
+                  وأجبت
                   {p.answeredAt ? (
                     <span className="ms-1.5 text-xs font-normal text-muted-foreground/70">
                       {fmtDateLong(p.answeredAt)}
@@ -421,11 +420,11 @@ export default function MyCourseProposals() {
             {p.status === "info_requested" ? (
               answerFor === p.id ? (
                 <div className="grid gap-2">
-                  <StaffField label="جوابُك">
+                  <StaffField label="جوابك">
                     <textarea
                       value={answerText} maxLength={MAX_ANSWER} rows={4}
                       className={staffControlCls}
-                      placeholder="أجِبْ بما يكفي لتُصنَّف دورتُك — وعدّل عنوانَها ونبذتَها إن لزم"
+                      placeholder="جوابك"
                       onChange={(e) => setAnswerText(e.target.value)}
                     />
                   </StaffField>
@@ -437,12 +436,12 @@ export default function MyCourseProposals() {
                         () => apiPost(`/api/trainer/course-proposals/${p.id}/answer`, {
                           answerAr: answerText.trim(),
                         }).then(() => { setAnswerFor(null); setAnswerText(""); }),
-                        "وصل جوابُك الإدارةَ",
+                        "وصل جوابك الإدارة",
                       )}
                     >
-                      أرسِل الجواب
+                      أرسل الجواب
                     </Button>
-                    <Button tone="ghost" icon={X} onClick={() => setAnswerFor(null)}>تراجَع</Button>
+                    <Button tone="ghost" icon={X} onClick={() => setAnswerFor(null)}>تراجع</Button>
                   </div>
                 </div>
               ) : (
@@ -451,7 +450,7 @@ export default function MyCourseProposals() {
                     tone="confirm" icon={MessageCircleQuestion} disabled={busy}
                     onClick={() => { setAnswerFor(p.id); setAnswerText(""); }}
                   >
-                    أجِبْ عن السؤال
+                    أجب عن السؤال
                   </Button>
                 </div>
               )
@@ -467,17 +466,15 @@ export default function MyCourseProposals() {
     <TrainerLayout title="دوراتي المقترحة">
       {/* ما هذه الشاشة — تُقال مرّةً في رأسها لا في رسالةِ خطأٍ بعد الإرسال */}
       <p className="mb-5 max-w-3xl text-sm leading-7 text-muted-foreground">
-        دوراتٌ تقدر عليها وليست في كتالوجنا. ما تكتبه هنا <b className="text-foreground">اقتراحٌ لا دورة</b>:
-        لا يظهر في «الدورات» ولا يُحسب في التشخيص المهنيّ حتّى تصنّفه الإدارة — فتجعله
-        <b className="text-foreground"> نسختَك من دورةٍ قائمة</b> إن كانت قريبةً منها، أو
-        <b className="text-foreground"> دورةً جديدةً</b> تدخل الكتالوجَ بمهاراتها. وما كتبتَه في طلبِ انضمامك موجودٌ أدناه.
+        ما تكتبه <b className="text-foreground">اقتراح لا دورة</b>: لا يظهر في «الدورات» ولا يحسب في التشخيص المهنيّ
+        حتّى تصنّفه الإدارة <b className="text-foreground">نسختك من دورة قائمة</b> أو <b className="text-foreground">دورة جديدة</b>.
       </p>
 
       {err ? (
         <Card tone="danger" role="alert" className="text-center text-read font-bold text-red-300">{err}</Card>
       ) : !rows ? (
         <div className="grid place-items-center py-16">
-          <Loader2 className="h-7 w-7 animate-spin text-muted-foreground/50" aria-label="جارٍ التحميل" />
+          <Loader2 className="h-7 w-7 animate-spin text-muted-foreground/50" aria-label="جار التحميل" />
         </div>
       ) : (
         <>
@@ -486,9 +483,9 @@ export default function MyCourseProposals() {
             <div className="mb-5 flex flex-wrap items-start justify-between gap-2">
               <h2 className="flex items-center gap-2 text-base font-black text-foreground">
                 <BookPlus className="h-5 w-5 text-teal" aria-hidden />
-                أضِف دورةً تقترحها
+                أضف دورة تقترحها
               </h2>
-              <p className="text-sm text-muted-foreground">العنوانُ وحدَه يلزم — وكلُّ جوابٍ يوفّر سؤالا تنتظره.</p>
+              <p className="text-sm text-muted-foreground">العنوان وحده يلزم.</p>
             </div>
             <ProposalForm value={draft} onChange={setDraft} />
             <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-white/10 pt-4">
@@ -496,12 +493,12 @@ export default function MyCourseProposals() {
                 tone="confirm" icon={BookPlus} loading={busy} disabled={!canAdd}
                 onClick={() => run(
                   () => apiPost("/api/trainer/course-proposals", payloadOf(draft)).then(() => setDraft(EMPTY)),
-                  "وصلت الإدارةَ",
+                  "وصلت الإدارة",
                 )}
               >
-                أرسِلها للإدارة
+                أرسلها للإدارة
               </Button>
-              {!canAdd ? <span className="text-sm text-muted-foreground">اكتب عنوانَ الدورة أوّلا</span> : null}
+              {!canAdd ? <span className="text-sm text-muted-foreground">اكتب عنوان الدورة أوّلا</span> : null}
             </div>
           </Card>
 
@@ -509,8 +506,8 @@ export default function MyCourseProposals() {
           {rows.length === 0 ? (
             <EmptyState
               icon={BookPlus}
-              titleAr="لا اقتراحَ بعد"
-              reasonAr="اكتب أوّلَ دورةٍ تقدر عليها ولا تجدها في كتالوجنا — تصل الإدارةَ فتُصنَّف."
+              titleAr="لا اقتراح بعد"
+              reasonAr="اقترح دورة تقدر عليها وليست في كتالوجنا."
             />
           ) : (
             <>
@@ -523,7 +520,7 @@ export default function MyCourseProposals() {
                 <section aria-labelledby="proposals-open-h" className="mb-8">
                   <h2 id="proposals-open-h" className="mb-3 flex items-center gap-2 text-base font-black text-foreground">
                     <Hourglass className="h-5 w-5 text-teal" aria-hidden />
-                    اقتراحاتُك عند الإدارة
+                    اقتراحاتك عند الإدارة
                   </h2>
                   <div className="grid gap-3">{pending.map(card)}</div>
                 </section>
@@ -532,10 +529,10 @@ export default function MyCourseProposals() {
                 <section aria-labelledby="proposals-decided-h">
                   <h2 id="proposals-decided-h" className="flex items-center gap-2 text-base font-black text-foreground">
                     <CheckCheck className="h-5 w-5 text-teal" aria-hidden />
-                    ما بُتّ فيه من اقتراحاتك
+                    ما بتّ فيه من اقتراحاتك
                   </h2>
                   <p className="mb-3 mt-1 text-sm leading-7 text-muted-foreground">
-                    ما صار دورةً في الكتالوج، أو نسختَك من دورةٍ قائمة، أو لم يُقبل — مع ما قالته الإدارة.
+                    ما قبل أو لم يقبل، مع ملحوظة الإدارة.
                   </p>
                   <div className="grid gap-3">{decided.map(card)}</div>
                 </section>

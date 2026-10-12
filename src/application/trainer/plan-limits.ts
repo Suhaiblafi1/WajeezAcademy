@@ -48,19 +48,19 @@ export function planTextProblemsAr(c: PlanTextLike): { place: PlanTextPlace; tex
   const out: { place: PlanTextPlace; text: string }[] = []
   const M = PLAN_MAX
   if (over(c.summaryAr, M.summaryAr)) {
-    out.push({ place: 'identity', text: `النبذةُ أطولُ من ${M.summaryAr} حرف (${(c.summaryAr ?? '').length}) — اختصرها` })
+    out.push({ place: 'identity', text: `النبذة أطول من ${M.summaryAr} حرف (${(c.summaryAr ?? '').length}) — اختصرها` })
   }
   c.modules.forEach((m, i) => {
     const n = i + 1
-    if (over(m.titleAr, M.moduleTitle)) out.push({ place: 'modules', text: `عنوانُ المحور ${n} أطولُ من ${M.moduleTitle} حرف — اختصره` })
-    if (over(m.outcomeAr, M.outcomeAr)) out.push({ place: 'modules', text: `مخرَجُ المحور ${n} أطولُ من ${M.outcomeAr} حرف (${(m.outcomeAr ?? '').length}) — اختصره` })
-    if (over(m.activityAr, M.activityAr)) out.push({ place: 'modules', text: `التطبيقُ العمليّ في المحور ${n} أطولُ من ${M.activityAr} حرف (${(m.activityAr ?? '').length}) — اختصره` })
-    if (over(m.artifactAr, M.artifactAr)) out.push({ place: 'modules', text: `مُسلَّمُ المحور ${n} أطولُ من ${M.artifactAr} حرف (${(m.artifactAr ?? '').length}) — اختصره` })
+    if (over(m.titleAr, M.moduleTitle)) out.push({ place: 'modules', text: `عنوان المحور ${n} أطول من ${M.moduleTitle} حرف — اختصره` })
+    if (over(m.outcomeAr, M.outcomeAr)) out.push({ place: 'modules', text: `مخرج المحور ${n} أطول من ${M.outcomeAr} حرف (${(m.outcomeAr ?? '').length}) — اختصره` })
+    if (over(m.activityAr, M.activityAr)) out.push({ place: 'modules', text: `التطبيق العمليّ في المحور ${n} أطول من ${M.activityAr} حرف (${(m.activityAr ?? '').length}) — اختصره` })
+    if (over(m.artifactAr, M.artifactAr)) out.push({ place: 'modules', text: `مسلّم المحور ${n} أطول من ${M.artifactAr} حرف (${(m.artifactAr ?? '').length}) — اختصره` })
   })
   c.resources.forEach((r) => {
     if (!over(r.title, M.resourceTitle)) return
     const place: PlanTextPlace = resourceCategory(r) === 'recorded' ? 'recorded' : 'resources'
-    out.push({ place, text: `اسمُ المصدر «${r.title.trim().slice(0, 40)}…» أطولُ من ${M.resourceTitle} حرف — اختصره` })
+    out.push({ place, text: `اسم المصدر «${r.title.trim().slice(0, 40)}…» أطول من ${M.resourceTitle} حرف — اختصره` })
   })
   return out
 }

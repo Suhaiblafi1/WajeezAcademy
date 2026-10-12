@@ -65,8 +65,8 @@ interface SharedView {
    جلس إليها — و«لم يحضر» خبرٌ يملكه. فهي `INTERVIEW_OUTCOMES` بعينها. */
 
 const KIND_AR: Record<string, string> = {
-  cv: 'السيرة الذاتيّة', certificate: 'شهادة', training_video: 'مادّةٌ تدريبيّة',
-  evidence: 'دليلٌ على الخبرة', reference_letter: 'رسالةُ تزكية', other: 'أخرى',
+  cv: 'السيرة الذاتيّة', certificate: 'شهادة', training_video: 'مادّة تدريبيّة',
+  evidence: 'دليل على الخبرة', reference_letter: 'رسالة تزكية', other: 'أخرى',
 }
 
 export default function SharedDossier() {
@@ -112,7 +112,7 @@ export default function SharedDossier() {
       })
       .catch((e: unknown) => {
         if (!alive) return
-        setError(e instanceof ApiError ? e.message : 'تعذّر فتحُ السجلّ')
+        setError(e instanceof ApiError ? e.message : 'تعذّر فتح السجلّ')
       })
     return () => { alive = false }
   }, [token])
@@ -148,26 +148,26 @@ export default function SharedDossier() {
   if (error && !view) {
     return (
       <div className="mx-auto max-w-lg px-4 py-24 text-center">
-        <h1 className="text-lg font-black">لا يُفتح هذا الرابط</h1>
+        <h1 className="text-lg font-black">لا يفتح هذا الرابط</h1>
         <p className="mt-3 text-read leading-7 text-muted-foreground">{error}</p>
         <p className="mt-2 text-read leading-6 text-muted-foreground">
-          الروابطُ محدودةُ الأجل وتُلغى عند الحاجة — اطلب رابطا جديدا ممّن أرسله إليك.
+          الروابط محدودة الأجل وتلغى عند الحاجة — اطلب رابطا جديدا ممّن أرسله إليك.
         </p>
       </div>
     )
   }
-  if (!view) return <div className="px-4 py-24 text-center text-muted-foreground">…يُفتح السجلّ</div>
+  if (!view) return <div className="px-4 py-24 text-center text-muted-foreground">…يفتح السجلّ</div>
 
   const a = view.application
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 md:px-6">
       <header className="mb-5">
-        <p className="text-read text-muted-foreground">سجلُّ متقدّمٍ للتدريب · {a.reference}</p>
+        <p className="text-read text-muted-foreground">سجلّ متقدّم للتدريب · {a.reference}</p>
         <h1 className="mt-1 text-xl font-black">{a.fullName}</h1>
         <p className="mt-2 text-read leading-6 text-muted-foreground">
           يقرؤه ويقيّمه <span className="font-bold text-teal-light-ink">{view.reviewer.name}</span>
-          {' · '}صلاحيّةُ الرابط حتّى {fmtDateLong(new Date(view.reviewer.expiresAt))}
+          {' · '}صلاحيّة الرابط حتّى {fmtDateLong(new Date(view.reviewer.expiresAt))}
         </p>
       </header>
 
@@ -175,7 +175,7 @@ export default function SharedDossier() {
 
       {a.documents.length > 0 && (
         <Panel as="section" className="mt-4">
-          <h2 className="text-sm font-black">وثائقُه</h2>
+          <h2 className="text-sm font-black">وثائقه</h2>
           <ul className="mt-3 space-y-2">
             {a.documents.map((d) => (
               <li key={d.id}>
@@ -197,9 +197,9 @@ export default function SharedDossier() {
 
       {/* ═══ ما يُملأ — وهو سببُ وجود الصفحة ═══ */}
       <Panel as="section" className="mt-4">
-        <h2 className="text-sm font-black">تقييمُك</h2>
+        <h2 className="text-sm font-black">تقييمك</h2>
         <p className="mt-1 text-read leading-6 text-muted-foreground">
-          احفظ متى شئت — الناقصُ يُقبل، وتستطيع العودةَ فتُتمّه. ولا يرى غيرُك ما تكتب هنا قبل أن يكتب رأيَه.
+          احفظ متى شئت — الناقص يقبل، وتستطيع العودة فتتمّه. ولا يرى غيرك ما تكتب هنا قبل أن يكتب رأيه.
         </p>
 
         <div className="mt-4 space-y-2">
@@ -233,17 +233,17 @@ export default function SharedDossier() {
         </div>
 
         <label className="mt-4 block">
-          <span className="text-read font-bold">ملاحظتُك</span>
+          <span className="text-read font-bold">ملاحظتك</span>
           <textarea value={overallNote} onChange={(e) => setOverallNote(e.target.value)} rows={4}
-            maxLength={4000} placeholder="ما رأيتَه ولا تقوله الدرجات"
+            maxLength={4000} placeholder="ما رأيته ولا تقوله الدرجات"
             className="mt-1 w-full rounded-lg border border-white/12 bg-transparent p-3 text-read leading-6" />
         </label>
 
         {/* الدوراتُ لا تُعدَّل هنا: ملاحظةٌ يعدّلها هو في «المؤهّلات» عنده */}
         <label className="mt-4 block">
-          <span className="text-read font-bold">ملاحظةٌ على دوراته</span>
+          <span className="text-read font-bold">ملاحظة على دوراته</span>
           <span className="block text-read leading-6 text-muted-foreground">
-            لا تُعدَّل دوراتُه من هنا — تصله الملاحظةُ فيحدّث مؤهّلاته بنفسه.
+            لا تعدّل دوراته من هنا — تصله الملاحظة فيحدّث مؤهّلاته بنفسه.
           </span>
           <textarea value={coursesNote} onChange={(e) => setCoursesNote(e.target.value)} rows={3}
             maxLength={4000}
@@ -263,9 +263,9 @@ export default function SharedDossier() {
             **ولا يقع بهذين عقدٌ ولا دفعة**: يُقرآن عند القرار، ويُبنى العقدُ
             في موضعه. */}
         <Inset as="fieldset" className="mt-5 p-4">
-          <legend className="px-1 text-read font-bold">الاتفاقُ الماليّ — إن جرى ذكرُه</legend>
+          <legend className="px-1 text-read font-bold">الاتفاق الماليّ — إن جرى ذكره</legend>
           <p className="text-read leading-6 text-muted-foreground">
-            لغايات التقديم فقط. اتركهما فارغَين إن لم يُذكر المالُ في حديثك معه.
+            لغايات التقديم فقط. اتركهما فارغين إن لم يذكر المال في حديثك معه.
           </p>
           <label className="mt-3 block">
             <span className="text-read font-bold">ما يتوقّعه هو</span>
@@ -276,7 +276,7 @@ export default function SharedDossier() {
           <label className="mt-3 block">
             <span className="text-read font-bold">ما نقترحه نحن</span>
             <input value={feeProposal} onChange={(e) => setFeeProposal(e.target.value)}
-              maxLength={500} placeholder="مثال: ٢٠ دينارا للساعة لأوّل شعبة، تُراجَع بعدها"
+              maxLength={500} placeholder="مثال: ٢٠ دينارا للساعة لأوّل شعبة، تراجع بعدها"
               className="mt-1 w-full rounded-lg border border-white/12 bg-transparent p-3 text-read leading-6" />
           </label>
         </Inset>
@@ -290,11 +290,11 @@ export default function SharedDossier() {
             فالاختيارُ فوق الأزرار لا تحتها. والملغى يُعرض معطَّلا ولا يُخفى:
             من حكم في موعدٍ ثمّ أُلغي يقرأ لماذا لم يعد يُختار. */}
         <fieldset className="mt-4">
-          <legend className="text-read font-bold">في أيّ مقابلةٍ تحكم؟</legend>
+          <legend className="text-read font-bold">في أيّ مقابلة تحكم؟</legend>
           {bookable.length === 0 ? (
             <p className="mt-2 text-read leading-6 text-muted-foreground">
-              لا مقابلةَ مجدولةٌ لهذا المتقدّم بعد — والقرارُ يُعلَّق بلقاءٍ وقع، فلا يُحفظ
-              قرارٌ قبلها. وما تكتبه من درجاتٍ وملاحظاتٍ يُحفَظ ويبقى.
+              لا مقابلة مجدولة لهذا المتقدّم بعد — والقرار يعلّق بلقاء وقع، فلا يحفظ
+              قرار قبلها. وما تكتبه من درجات وملاحظات يحفظ ويبقى.
             </p>
           ) : (
             <div className="mt-2 flex flex-wrap gap-2">
@@ -316,13 +316,13 @@ export default function SharedDossier() {
           )}
           {canceled.length > 0 && (
             <p className="mt-2 text-read leading-6 text-muted-foreground">
-              وملغاةٌ لا يُحكَم فيها: {canceled.map((iv) => fmtDateTime(new Date(iv.scheduledAt))).join(' · ')}
+              وملغاة لا يحكم فيها: {canceled.map((iv) => fmtDateTime(new Date(iv.scheduledAt))).join(' · ')}
             </p>
           )}
         </fieldset>
 
         <fieldset className="mt-4">
-          <legend className="text-read font-bold">قرارُك في هذا اللقاء</legend>
+          <legend className="text-read font-bold">قرارك في هذا اللقاء</legend>
           {/* والقرارُ يُعرض معطَّلا قبل اختيار اللقاء — لا يُخفى: من لم يره
               لم يعرف أنّ عليه أن يختار أوّلا. */}
           <div className="mt-2 flex flex-wrap gap-2">
@@ -342,7 +342,7 @@ export default function SharedDossier() {
             ))}
           </div>
           {!interviewId && bookable.length > 0 && (
-            <p className="mt-2 text-read leading-6 text-muted-foreground">اختر المقابلةَ أوّلا — القرارُ يُنسَب إلى لقاءٍ بعينه.</p>
+            <p className="mt-2 text-read leading-6 text-muted-foreground">اختر المقابلة أوّلا — القرار ينسب إلى لقاء بعينه.</p>
           )}
           {/* وما يقع حين يُحفَظ: القرارُ يُكتب في الموعد نفسِه، فلا يُسجَّل مرّتين */}
           {verdict && interviewId && (
@@ -351,9 +351,9 @@ export default function SharedDossier() {
                   و«مؤجَّل» (٦ أكتوبر ٢٠٢٦) لا يُفهم من لفظه أنّه مناسبٌ ينقصه طلب. */}
               <b className="text-foreground">«{outcomeLabelAr(verdict)}»:</b>{" "}
               {INTERVIEW_OUTCOMES.find((o) => o.key === verdict)?.whatAr}.{" "}
-              يُسجَّل نتيجةً لهذا اللقاء. وإن حكم فيه قارئٌ آخرُ
-              بغيره عُرض القولان معا بأسمائكما، ولم يُكتب في الموعد شيءٌ حتّى تتّفقا.
-              ولا يصل صاحبَ الطلب شيءٌ من حكمك — القرارُ وبريدُه في يد الإدارة.
+              يسجّل نتيجة لهذا اللقاء. وإن حكم فيه قارئ آخر
+              بغيره عرض القولان معا بأسمائكما، ولم يكتب في الموعد شيء حتّى تتّفقا.
+              ولا يصل صاحب الطلب شيء من حكمك — القرار وبريده في يد الإدارة.
             </p>
           )}
         </fieldset>
@@ -361,14 +361,14 @@ export default function SharedDossier() {
         <div className="mt-5 flex flex-wrap items-center gap-3">
           <button type="button" onClick={save} disabled={saving}
             className="rounded-lg bg-teal-light-ink px-5 py-2 text-read font-bold text-black disabled:opacity-50">
-            {saving ? '…يُحفظ' : 'احفظ'}
+            {saving ? '…يحفظ' : 'احفظ'}
           </button>
           <span className="text-read text-muted-foreground">
-            {remaining > 0 ? `بقي ${remaining} من ${RUBRIC_AXES.length} محورا بلا درجة` : 'المحاورُ كلُّها مقيَّمة'}
+            {remaining > 0 ? `بقي ${remaining} من ${RUBRIC_AXES.length} محورا بلا درجة` : 'المحاور كلّها مقيّمة'}
           </span>
           {savedAt && (
             <span className="text-read text-teal-light-ink">
-              حُفظ آخرَ مرّةٍ {fmtDateLong(new Date(savedAt))}
+              حفظ آخر مرّة {fmtDateLong(new Date(savedAt))}
             </span>
           )}
         </div>

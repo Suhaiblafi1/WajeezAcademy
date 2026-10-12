@@ -59,10 +59,10 @@ export default function ModuleBodyUpload({
         method: "PUT", credentials: "include",
         headers: { "content-type": "application/octet-stream" }, body: file,
       });
-      if (!put.ok) throw new ApiError("upload_failed", "تعذّر رفعُ الملفّ", put.status);
+      if (!put.ok) throw new ApiError("upload_failed", "تعذّر رفع الملفّ", put.status);
       onChange({ bodyFileKey: res.storageKey, bodyFileName: file.name, bodyFileMime: file.type });
     } catch (e) {
-      setErr(permissionMessage(e, "تعذّر رفعُ الملفّ الآن — أعد المحاولة بعد قليل."));
+      setErr(permissionMessage(e, "تعذّر رفع الملفّ الآن — أعد المحاولة بعد قليل."));
     } finally {
       setBusy(false);
       if (pick.current) pick.current.value = "";
@@ -78,7 +78,7 @@ export default function ModuleBodyUpload({
       await apiDelete(`/api/trainer/cohorts/${cohortId}/files/${encodeURIComponent(key)}`);
       onChange({ bodyFileKey: null, bodyFileName: null, bodyFileMime: null });
     } catch (e) {
-      setErr(permissionMessage(e, "تعذّر حذفُ الملفّ الآن."));
+      setErr(permissionMessage(e, "تعذّر حذف الملفّ الآن."));
     } finally {
       setBusy(false);
     }
@@ -99,7 +99,7 @@ export default function ModuleBodyUpload({
           </Button>
         </Inset>
         <p className="mt-1.5 text-read leading-6 text-muted-foreground">
-          {hint ?? "يكفي وحدَه لاعتماد المحور."}
+          {hint ?? "يكفي وحده لاعتماد المحور."}
         </p>
         {err && <p role="status" className="mt-1.5 text-read leading-6 text-gold">{err}</p>}
       </div>
@@ -123,10 +123,10 @@ export default function ModuleBodyUpload({
         disabled={disabled || busy}
         className="min-h-9"
       >
-        {busy ? "يُرفَع…" : label}
+        {busy ? "يرفع…" : label}
       </Button>
       <p className="mt-1.5 text-read leading-6 text-muted-foreground">
-        {hint ?? `PDF يُقرأ في الصفحة، وWord يُنزَّل — حتّى ${Math.round(MAX_BODY_FILE_BYTES / (1024 * 1024))} ميغابايت.`}
+        {hint ?? `PDF يقرأ في الصفحة، وWord ينزّل — حتّى ${Math.round(MAX_BODY_FILE_BYTES / (1024 * 1024))} ميغابايت.`}
       </p>
       {err && <p role="status" className="mt-1.5 text-read leading-6 text-gold">{err}</p>}
     </div>

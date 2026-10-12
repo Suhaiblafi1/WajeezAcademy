@@ -11,28 +11,28 @@ import { nextTrainerModuleId, moveModule, isCatalogModule } from '@/application/
 const C = 'C-EDT-101'
 const mods = (...ids: string[]) => ids.map((moduleId) => ({ moduleId }))
 
-describe('معرّفُ محورٍ يضيفه المدرّب', () => {
-  it('يبدأ من واحدٍ حين لا محورَ له في الخطّة', () => {
+describe('معرّف محور يضيفه المدرّب', () => {
+  it('يبدأ من واحد حين لا محور له في الخطّة', () => {
     expect(nextTrainerModuleId(C, [])).toBe('C-EDT-101-T1')
     /* محاورُ الكتالوج لا تصدّر تسلسلَه */
     expect(nextTrainerModuleId(C, mods('C-EDT-101-M1', 'C-EDT-101-M2'))).toBe('C-EDT-101-T1')
   })
 
-  it('ولا يعيد رقما حُذف — وهذا العطبُ الذي يستيقظ بأوّل حذف', () => {
+  it('ولا يعيد رقما حذف — وهذا العطب الذي يستيقظ بأوّل حذف', () => {
     /* [T1, T2, T3] حُذف منها T2 */
     const after = mods('C-EDT-101-T1', 'C-EDT-101-T3')
     /* الاشتقاقُ من الطول يعطي T3 وهو قائم؛ والاشتقاقُ من الأكبر يعطي T4 */
     expect(nextTrainerModuleId(C, after)).toBe('C-EDT-101-T4')
   })
 
-  it('ولا يصطدم بمعرّفٍ قائمٍ مهما كان ترتيبُ القائمة', () => {
+  it('ولا يصطدم بمعرّف قائم مهما كان ترتيب القائمة', () => {
     const list = mods('C-EDT-101-T7', 'C-EDT-101-M1', 'C-EDT-101-T2')
     const next = nextTrainerModuleId(C, list)
     expect(list.map((m) => m.moduleId)).not.toContain(next)
     expect(next).toBe('C-EDT-101-T8')
   })
 
-  it('وإضافةٌ وحذفٌ متعاقبان لا يُخرجان معرّفا مكرّرا أبدا', () => {
+  it('وإضافة وحذف متعاقبان لا يخرجان معرّفا مكرّرا أبدا', () => {
     /* الإضافةُ وحدَها لا تكشف شيئا: بلا حذفٍ يعطي الاشتقاقُ من الطول
        معرّفاتٍ متمايزةً أيضا. فالحذفُ في أثناء الدورة هو المحكّ. */
     let list = mods('C-EDT-101-M1')
@@ -48,27 +48,27 @@ describe('معرّفُ محورٍ يضيفه المدرّب', () => {
     expect(everGiven.size).toBe(10)
   })
 
-  it('ومعرّفُ الدورة يُهرَّب فلا يُقرأ رموزا نمطيّة', () => {
+  it('ومعرّف الدورة يهرّب فلا يقرأ رموزا نمطيّة', () => {
     /* دورةٌ في معرّفها نقطة: بلا هربٍ تطابق النقطةُ أيَّ حرف، فيُقرأ
        `C.EDT-T9` تسلسلا لدورةٍ أخرى ويُقفز الرقمُ بلا سبب. */
     expect(nextTrainerModuleId('C.EDT', mods('CxEDT-T9'))).toBe('C.EDT-T1')
   })
 })
 
-describe('نقلُ المحور خطوةً', () => {
-  it('يرفع المحورَ فوق ما قبله ويُنزله تحت ما بعده', () => {
+describe('نقل المحور خطوة', () => {
+  it('يرفع المحور فوق ما قبله وينزله تحت ما بعده', () => {
     const list = mods('a', 'b', 'c')
     expect(moveModule(list, 1, -1).map((m) => m.moduleId)).toEqual(['b', 'a', 'c'])
     expect(moveModule(list, 1, 1).map((m) => m.moduleId)).toEqual(['a', 'c', 'b'])
   })
 
-  it('والطرفان يثبتان — لا فوقَ الأوّلِ ولا تحتَ الآخر', () => {
+  it('والطرفان يثبتان — لا فوق الأوّل ولا تحت الآخر', () => {
     const list = mods('a', 'b', 'c')
     expect(moveModule(list, 0, -1).map((m) => m.moduleId)).toEqual(['a', 'b', 'c'])
     expect(moveModule(list, 2, 1).map((m) => m.moduleId)).toEqual(['a', 'b', 'c'])
   })
 
-  it('ولا يُسقط محورا ولا يكرّره — العددُ والمجموعةُ كما كانا', () => {
+  it('ولا يسقط محورا ولا يكرّره — العدد والمجموعة كما كانا', () => {
     const list = mods('a', 'b', 'c', 'd')
     for (const [i, d] of [[0, 1], [1, -1], [3, -1], [2, 1]] as [number, -1 | 1][]) {
       const out = moveModule(list, i, d)
@@ -77,22 +77,22 @@ describe('نقلُ المحور خطوةً', () => {
     }
   })
 
-  it('ولا يمسّ القائمةَ الأصليّة — النقلُ يعيد نسخة', () => {
+  it('ولا يمسّ القائمة الأصليّة — النقل يعيد نسخة', () => {
     const list = mods('a', 'b')
     const out = moveModule(list, 0, 1)
     expect(list.map((m) => m.moduleId)).toEqual(['a', 'b'])
     expect(out).not.toBe(list)
   })
 
-  it('وموضعٌ خارج القائمة يُعيدها كما هي لا يرميها', () => {
+  it('وموضع خارج القائمة يعيدها كما هي لا يرميها', () => {
     const list = mods('a', 'b')
     expect(moveModule(list, 5, -1).map((m) => m.moduleId)).toEqual(['a', 'b'])
     expect(moveModule(list, -1, 1).map((m) => m.moduleId)).toEqual(['a', 'b'])
   })
 })
 
-describe('«أمِنَ الكتالوجِ هذا المحور؟»', () => {
-  it('بالعضويّةِ في محاور الدورة لا بشكلِ المعرّف', () => {
+describe('«أمن الكتالوج هذا المحور؟»', () => {
+  it('بالعضويّة في محاور الدورة لا بشكل المعرّف', () => {
     const base = mods('C-EDT-101-M1', 'C-EDT-101-M2')
     expect(isCatalogModule('C-EDT-101-M1', base)).toBe(true)
     expect(isCatalogModule('C-EDT-101-T1', base)).toBe(false)
@@ -115,13 +115,13 @@ const src = (p: string) =>
 const WS = 'src/pages/trainer/CohortWorkspace.tsx'
 const ROUTES = 'server/http/routes/learning-portal.routes.ts'
 
-describe('الشاشةُ تنادي المنطقَ ولا تعيد اشتقاقَه', () => {
-  it('«+ محور» يأخذ معرّفَه من الدالّة، والاشتقاقُ من الطول زال', () => {
+describe('الشاشة تنادي المنطق ولا تعيد اشتقاقه', () => {
+  it('«+ محور» يأخذ معرّفه من الدالّة، والاشتقاق من الطول زال', () => {
     const ws = src(WS)
     expect(ws).toContain('nextTrainerModuleId(ws.course.id, content.modules)')
     /* العطبُ الأصليّ: `-T${content.modules.length + 1}` — وجودُه يعني أنّه
        تُرك في مكانٍ ما ولو أُضيفت الدالّةُ بجانبه. */
-    expect(ws, 'الاشتقاقُ من الطول ما زال في الشاشة').not.toMatch(/-T\$\{[^}]*\.length/)
+    expect(ws, 'الاشتقاق من الطول ما زال في الشاشة').not.toMatch(/-T\$\{[^}]*\.length/)
   })
 
   /* ═══ والنقلُ صار يحمل المواعيدَ معه (٢٧ سبتمبر ٢٠٢٦) ═══
@@ -130,37 +130,37 @@ describe('الشاشةُ تنادي المنطقَ ولا تعيد اشتقاق�
      الثاني. فالزرّان ينقلان عبر `moveAxis` — تنادي `moveModule` نفسَها ثمّ
      تعيد صبَّ المحاور في المواعيد (`reflowSlots`). والمحروسُ الأصليُّ باقٍ:
      المنطقُ مستورَدٌ لا مُعاد اشتقاقُه، وخطوةٌ واحدةٌ في الاتّجاهين. */
-  it('والنقلُ خطوةً واحدةً في الاتّجاهين، ومعطَّلٌ عند الطرف', () => {
+  it('والنقل خطوة واحدة في الاتّجاهين، ومعطّل عند الطرف', () => {
     const ws = src(WS)
     expect(ws).toContain('onClick={() => moveAxis(i, -1)}')
     expect(ws).toContain('onClick={() => moveAxis(i, 1)}')
     const move = ws.slice(ws.indexOf('const moveAxis'), ws.indexOf('const moveAxis') + 400)
-    expect(move, 'النقلُ لا ينادي المنطقَ المستورَد').toContain('moveModule(content.modules, i, delta)')
-    expect(move, 'النقلُ يترك المواعيدَ خلفه').toContain('reflowSlots(')
+    expect(move, 'النقل لا ينادي المنطق المستورد').toContain('moveModule(content.modules, i, delta)')
+    expect(move, 'النقل يترك المواعيد خلفه').toContain('reflowSlots(')
     /* ولا يُترك الزرُّ يعمل عند الطرف فيبدو مكسورا */
     expect(ws).toMatch(/disabled=\{locked \|\| i === 0\}/)
     expect(ws).toMatch(/disabled=\{locked \|\| i === content\.modules\.length - 1\}/)
   })
 
-  it('والحذفُ يمرّ بالاستئذان لا بنقرةٍ تُسقط المحور', () => {
+  it('والحذف يمرّ بالاستئذان لا بنقرة تسقط المحور', () => {
     const ws = src(WS)
     const btn = ws.slice(ws.indexOf('احذف «'), ws.indexOf('احذف «') + 400)
-    expect(btn, 'زرُّ الحذف يعدّل المحاورَ مباشرةً').toContain('setPendingModule(')
+    expect(btn, 'زرّ الحذف يعدّل المحاور مباشرة').toContain('setPendingModule(')
     /* والاستئذانُ هو الذي يُسقطه */
     expect(ws).toMatch(/modules: content\.modules\.filter\(\(_, j\) => j !== pendingModule\.index\)/)
   })
 
-  it('ومحورُ الكتالوج يُقال إنّه يبقى في الدورة', () => {
+  it('ومحور الكتالوج يقال إنّه يبقى في الدورة', () => {
     expect(src(WS)).toContain('isCatalogModule(pendingModule.module.moduleId, ws.course.baseModules)')
   })
 })
 
-describe('الخادمُ يردّ المعرّفَ المكرّر', () => {
-  it('فحصُ التفرّد على مصفوفة المحاور في مخطّط الخطّة', () => {
+describe('الخادم يردّ المعرّف المكرّر', () => {
+  it('فحص التفرّد على مصفوفة المحاور في مخطّط الخطّة', () => {
     const routes = src(ROUTES)
     const block = routes.slice(routes.indexOf('const planContent = z.object({'), routes.indexOf('app.get(\'/api/trainer/cohorts/:id/workspace\''))
-    expect(block, 'لا فحصَ تفرّدٍ على معرّفات المحاور').toContain('superRefine')
+    expect(block, 'لا فحص تفرّد على معرّفات المحاور').toContain('superRefine')
     expect(block).toMatch(/new Set<string>\(\)/)
-    expect(block, 'الفحصُ لا يشير إلى المعرّف المكرّر').toMatch(/seen\.has\(m\.moduleId\)/)
+    expect(block, 'الفحص لا يشير إلى المعرّف المكرّر').toMatch(/seen\.has\(m\.moduleId\)/)
   })
 })

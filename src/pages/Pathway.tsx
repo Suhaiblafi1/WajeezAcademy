@@ -248,7 +248,7 @@ export default function PathwayPage() {
     if (!hasCoreCatalog()) {
       return (
         <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center bg-ground text-muted-foreground">
-          <p className="text-sm">يُحضر المسار…</p>
+          <p className="text-sm">يحضر المسار…</p>
         </div>
       );
     }
@@ -260,7 +260,7 @@ export default function PathwayPage() {
     );
   }
 
-  const advisorMsg = `مرحبا، أكملت تشخيص وجيز ورُشّح لي مسار «${pathway.name}» وأريد استشارة قبل البدء.`;
+  const advisorMsg = `مرحبا، أكملت تشخيص وجيز ورشّح لي مسار «${pathway.name}» وأريد استشارة قبل البدء.`;
 
   /* اختيار الدورات المتعدد — دورة واحدة أو عدة دورات بحرية كاملة */
   const buyableCourses = pathwayCoursesList.filter((c) => c.id !== custom?.giftId);
@@ -454,7 +454,7 @@ export default function PathwayPage() {
             <Card tone="warn" className="story-fade mt-6 px-5 py-4">
               <p className="text-sm font-black text-gold-ink">خطتك المركبة: «{compositeCtx.name_ar}»</p>
               <p className="mt-1 text-read leading-relaxed text-muted-foreground">
-                الدورات أدناه هي تركيبتك كما ركّبها تشخيصك من أكثر من مجال — تُدار وتُتابع عبر مسار «{pathway.name}» المضيف.
+                الدورات أدناه هي تركيبتك كما ركّبها تشخيصك من أكثر من مجال — تدار وتتابع عبر مسار «{pathway.name}» المضيف.
               </p>
             </Card>
           ) : null}
@@ -483,7 +483,7 @@ export default function PathwayPage() {
                     pool,
                     /* الرقمُ من عرض المسار نفسِه (pathwayOffer) لا من ثابتٍ
                        مكتوب: سلّمُ المسار الجاهز غير سلّم البناء الحرّ. */
-                    addReason: `دورات مسارك تُشترى معا بخصم يصل إلى ${offer.bundleMaxPct}٪ — والدورة وحدها بسعرها كاملا.`,
+                    addReason: `دورات مسارك تشترى معا بخصم يصل إلى ${offer.bundleMaxPct}٪ — والدورة وحدها بسعرها كاملا.`,
                     minReached: courseIds.length <= MIN_PATHWAY_COURSES,
                     maxReached: courseIds.length >= MAX_PATHWAY_COURSES,
                     onSwapToggle: setSwapForId,
@@ -611,7 +611,7 @@ export default function PathwayPage() {
               </h2>
               <p className="mt-3 text-sm leading-loose text-foreground">
                 تشخيصك لم يعطنا يقينا كافيا بأنّ هذا المسار هو الأنسب لك — أو أنّك
-                طلبتَ استشارة. جلسةٌ تعريفيّة (٣٠ دقيقة) تصوغ خطّتك بدقّة، وتشخيصُك
+                طلبت استشارة. جلسة تعريفيّة (٣٠ دقيقة) تصوغ خطّتك بدقّة، وتشخيصك
                 يجعلها أقصر وأعمق. ولا تدفع شيئا قبلها.
               </p>
               <AdvisorContact
@@ -705,7 +705,7 @@ export default function PathwayPage() {
                       {/* سقفُ سعر المسار بندٌ باسمه لا نسبةٌ تُدمج — كما في اللوح */}
                       {pickedQuote && pickedQuote.capDiscount > 0 && (
                         <div className="flex items-center justify-between gap-2 text-read leading-6 text-teal-light-ink">
-                          <span>حدُّ سعر المسار</span>
+                          <span>حدّ سعر المسار</span>
                           <span dir="ltr">−{formatCohortPrice({ amount: pickedQuote.capDiscount, currency: pickedTotal!.currency })}</span>
                         </div>
                       )}
@@ -719,7 +719,7 @@ export default function PathwayPage() {
                             {formatCohortPrice({ amount: pickedQuote.total, currency: pickedTotal!.currency })}
                           </span>
                         ) : (
-                          <span className="text-read leading-6 text-muted-foreground">يُعلن السعر مع الشعبة</span>
+                          <span className="text-read leading-6 text-muted-foreground">يعلن السعر مع الشعبة</span>
                         )}
                       </div>
                     </Inset>
@@ -732,14 +732,14 @@ export default function PathwayPage() {
                       (`nextBuildStep`)، فلا وعدَ يفترق عن الفاتورة. */}
                   {nextStep && (
                     <Inset as="p" tone="accent" className="mt-2 px-3.5 py-2 text-read font-semibold leading-5 text-teal-light-ink">
-                      أضف دورةً أخرى ({nextStep.count} دورات) فيصير خصمُ الباقة {nextStep.pct}٪.
+                      أضف دورة أخرى ({nextStep.count} دورات) فيصير خصم الباقة {nextStep.pct}٪.
                     </Inset>
                   )}
                   {picked.length > 0 && (
                     /* التنبيه بلا مقارنةٍ رقمية: المقارنة القديمة كانت بين رقمين
                        مُختلَقين، فكانت تنصح بناءً على ما لا يُدفع. */
                     <Inset as="p" tone="warn" className="mt-2 px-3.5 py-2 text-read font-semibold leading-5 text-gold-ink">
-                      المسار كاملا أوفر — خصمُه {offer.bundleMaxPct}٪، ويشمل التشخيص والمتابعة.
+                      المسار كاملا أوفر — خصمه {offer.bundleMaxPct}٪، ويشمل التشخيص والمتابعة.
                     </Inset>
                   )}
 
@@ -790,8 +790,8 @@ export default function PathwayPage() {
                     {picked.length === 0
                       ? "اختر دورة واحدة على الأقل"
                       : picked.length === 1
-                        ? "اشترِ هذه الدورة"
-                        : `اشترِ (${picked.length} دورات)`}
+                        ? "اشتر هذه الدورة"
+                        : `اشتر (${picked.length} دورات)`}
                   </Button>
                 </Inset>
                 {/* المسار كاملا */}
@@ -822,7 +822,7 @@ export default function PathwayPage() {
                         )}
                       </div>
                       <p className="mt-1.5 text-read leading-5 text-muted-foreground">
-                        {courseIds.length} دورات — وهو ما تُصدره الفاتورة، ويتغيّر إن غيّرت الدورات.
+                        {courseIds.length} دورات — وهو ما تصدره الفاتورة، ويتغيّر إن غيّرت الدورات.
                       </p>
                       {/* خصمُ الفئة — نفس مطويّة صفحة شراء الدورة المفردة،
                           فالوعدُ واحد أينما ظهر. النسبةُ تُقال داخل المطويّة
@@ -858,10 +858,10 @@ export default function PathwayPage() {
                        الوعد يفترق عن الفاتورة. */
                     <div className="mt-4 space-y-1.5 text-read leading-5">
                       <p className="text-sm font-black text-foreground">
-                        {pricesLoaded ? "يُعلن السعر مع فتح الشعبة" : "يُقرأ السعر…"}
+                        {pricesLoaded ? "يعلن السعر مع فتح الشعبة" : "يقرأ السعر…"}
                       </p>
                       <p className="text-muted-foreground">
-                        نُسعّر كل شعبة على حدة، ولا نعرض رقما قبل أن يكون هو الرقم الذي تدفعه.
+                        نسعّر كل شعبة على حدة، ولا نعرض رقما قبل أن يكون هو الرقم الذي تدفعه.
                       </p>
                       {/* والسعرُ يبقى مجهولا، أمّا الموعدُ فلا: «مع فتح الشعبة» متى؟
                           — هذا هو الجواب (البند ٥٢). */}
@@ -878,7 +878,7 @@ export default function PathwayPage() {
                     className="mt-3.5 h-10 rounded-full bg-gold text-sm font-black text-on-gold hover:bg-gold/90 disabled:opacity-60"
                   >
                     <CalendarDays className="ml-1.5 h-3.5 w-3.5" />
-                    {syncing ? "نحفظ خطّتك…" : "اشترِ المسار كاملا"}
+                    {syncing ? "نحفظ خطّتك…" : "اشتر المسار كاملا"}
                   </Button>
                   {/* كان أسفل الزر فراغ في صندوق أطول من محتواه. وثلاثة من عناصر
                       «المنظومة» التسعة أدناه هي في الحقيقة فرق بين شراء دورة وشراء
@@ -951,7 +951,7 @@ export default function PathwayPage() {
             <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
               {[
                 { icon: MonitorPlay, t: "دورات مسجلة + جلسات مباشرة", d: "وحدات فيديو وجلسة حية مع المدرب ومهمة تطبيقية لكل دورة" },
-                { icon: ClipboardCheck, t: "واجبات تُراجع بشريا", d: "مدربك يقرأ واجبك ويعطيك تغذية راجعة عملية — لا تصحيحا آليا" },
+                { icon: ClipboardCheck, t: "واجبات تراجع بشريا", d: "مدربك يقرأ واجبك ويعطيك تغذية راجعة عملية — لا تصحيحا آليا" },
                 { icon: FolderKanban, t: "مشروع تخرج حقيقي", d: "تبني مخرجا على واقعك وتقدمه للمراجعة قبل الاعتماد" },
                 { icon: BadgeCheck, t: "شهادة موثقة بشروط إنجاز", d: "مرتبطة بالحضور والاختبار والمشروع — لا شهادة مشاهدة" },
                 { icon: RouteIcon, t: "خطة تقدم شخصية", d: "خطوة تالية واضحة بعد المسار — ماذا تتعلم بعده ولماذا" },
@@ -993,7 +993,7 @@ export default function PathwayPage() {
 
           <p className="mt-8 flex items-center justify-center gap-2 text-center text-read leading-5 text-muted-foreground">
             <Sparkles className="h-3.5 w-3.5" />
-            منصة الطالب الكاملة (الدورات، الواجبات، المتابعة) تُفتح تلقائيا بعد أول دفع ناجح — وهي محطتنا القادمة.
+            منصة الطالب الكاملة (الدورات، الواجبات، المتابعة) تفتح تلقائيا بعد أول دفع ناجح — وهي محطتنا القادمة.
           </p>
         </div>
       )}

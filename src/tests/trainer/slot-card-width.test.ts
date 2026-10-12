@@ -17,14 +17,14 @@ import { join } from 'node:path'
 const WS = readFileSync(join(process.cwd(), 'src/pages/trainer/CohortWorkspace.tsx'), 'utf8')
   .replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '').replace(/^\s*\/\/.*$/gm, '')
 
-describe('عرضُ الموعد', () => {
-  it('⚠️ الموعدُ وبطاقتُه عمودٌ واحدٌ يضيق — لا يمدّهما سطرُ مخرَجٍ طويل', () => {
+describe('عرض الموعد', () => {
+  it('⚠️ الموعد وبطاقته عمود واحد يضيق — لا يمدّهما سطر مخرج طويل', () => {
     const at = WS.indexOf('{slots.map((slot, si) => (')
-    expect(at, 'لا قائمةَ مواعيد').toBeGreaterThan(0)
+    expect(at, 'لا قائمة مواعيد').toBeGreaterThan(0)
     expect(WS.slice(at, at + 400)).toMatch(/^\{slots\.map\(\(slot, si\) => \(\s*<li key=[^\n]*\s+className="grid grid-cols-1 gap-2">\s*<Card tone="default" className="grid grid-cols-1 gap-3">/)
   })
 
-  it('⚠️ وعنوانُ المحور المطويّ يضيق ويُقصّ سطرُه — وفي الهاتف تنزل أزرارُه سطرا', () => {
+  it('⚠️ وعنوان المحور المطويّ يضيق ويقصّ سطره — وفي الهاتف تنزل أزراره سطرا', () => {
     const at = WS.indexOf('const moduleCard = (m: PlanModule, i: number) => {')
     expect(at).toBeGreaterThan(0)
     const card = WS.slice(at, at + 2500)

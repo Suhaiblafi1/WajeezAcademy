@@ -55,7 +55,7 @@ const STATUS_META: Record<string, { label: string; cls: string }> = {
   active: { label: "نشط", cls: "border-emerald-400/30 text-emerald-300" },
   invited: { label: "مدعوّ — لم يدخل بعد", cls: "border-gold/40 text-gold-ink" },
   suspended: { label: "موقوف", cls: "border-red-500/40 text-red-400" },
-  archived: { label: "مؤرشَف", cls: "border-white/25 text-muted-foreground" },
+  archived: { label: "مؤرشف", cls: "border-white/25 text-muted-foreground" },
 };
 
 interface PermRow {
@@ -156,9 +156,9 @@ export default function Users() {
       }) as { error?: { message_ar: string } } | undefined;
       if (res?.error) throw new ApiError("failed", res.error.message_ar, 400);
       setPerms(await apiGet<PermView>(`/api/admin/users/${userId}/permissions`));
-    }, effect === "grant" ? "مُنحت الصلاحية — وأُبطلت جلساته ليدخل بها"
-      : effect === "deny" ? "مُنعت الصلاحية — وأُبطلت جلساته فورا"
-      : "أُزيل الاستثناء — عاد إلى ما يمنحه دوره");
+    }, effect === "grant" ? "منحت الصلاحية — وأبطلت جلساته ليدخل بها"
+      : effect === "deny" ? "منعت الصلاحية — وأبطلت جلساته فورا"
+      : "أزيل الاستثناء — عاد إلى ما يمنحه دوره");
 
   const load = useCallback(async () => {
     setLoading(true); setOffline(null);
@@ -193,7 +193,7 @@ export default function Users() {
     try {
       const first = await apiDelete(`/api/admin/users/${u.id}`) as
         { ok?: boolean; error?: { code: string; message_ar: string; blockers?: string[]; forceAllowed?: boolean } } | undefined;
-      if (!first?.error) { toast("حُذف الحساب نهائيّا من القاعدة."); await load(); return; }
+      if (!first?.error) { toast("حذف الحساب نهائيّا من القاعدة."); await load(); return; }
       if (first.error.code !== "has_history" || !first.error.forceAllowed) { toastError(first.error.message_ar); return; }
       setConfirming({ kind: "purgeHistory", user: u, blockers: first.error.blockers ?? [] });
     } catch (e) { toastError(e instanceof ApiError ? e.message : "فشل الحذف"); }
@@ -206,7 +206,7 @@ export default function Users() {
       const res = await apiDelete(`/api/admin/users/${u.id}?force=1`, { reason }) as
         { ok?: boolean; error?: { message_ar: string } } | undefined;
       if (res?.error) { toastError(res.error.message_ar); return; }
-      toast("مُحي الحساب بسجلّه كلّه — والأثرُ محفوظ.");
+      toast("محي الحساب بسجلّه كلّه — والأثر محفوظ.");
       await load();
     } catch (e) { toastError(e instanceof ApiError ? e.message : "فشل المحو"); }
     finally { setBusy(false); }
@@ -236,11 +236,11 @@ export default function Users() {
         "/api/admin/users/bulk-purge", { ids: [...picked], confirmCount });
       /* والرسالةُ تقول الرقمَين: «تمّ» وحدَها كذبٌ حين يُردّ نصفُ الدفعة */
       toast(res.refused > 0
-        ? `حُذف ${res.purged} حسابا · رُدّ ${res.refused} لِما يحمله`
-        : `حُذف ${res.purged} حسابا نهائيّا.`);
+        ? `حذف ${res.purged} حسابا · ردّ ${res.refused} لما يحمله`
+        : `حذف ${res.purged} حسابا نهائيّا.`);
       setPicked(new Set()); setPreview(null);
       await load();
-    } catch (e) { toastError(e instanceof ApiError ? e.message : "فشل الحذف جملةً"); }
+    } catch (e) { toastError(e instanceof ApiError ? e.message : "فشل الحذف جملة"); }
     finally { setBusy(false); }
   };
 
@@ -294,10 +294,10 @@ export default function Users() {
 
       {creating && canManage && (
         <Card tone="warn" className="mb-5">
-          <h3 className="text-sm font-black text-gold-ink">حسابٌ جديد بدوره</h3>
+          <h3 className="text-sm font-black text-gold-ink">حساب جديد بدوره</h3>
           <p className="mt-1 text-read leading-6 text-muted-foreground">
-            لا كلمةَ مرورٍ تُختار هنا: يصله بريدٌ يشرح دورَه وما يفتحه له، ويعيّن كلمتَه بنفسه من رابطٍ صالحٍ <b>{MAIL_LINK_WINDOW_AR}</b>.
-            ويبقى «مدعوّا» حتّى يدخل، فلا يُحسب فريقا عاملا قبل ذلك.
+            لا كلمة مرور تختار هنا: يصله بريد يشرح دوره وما يفتحه له، ويعيّن كلمته بنفسه من رابط صالح <b>{MAIL_LINK_WINDOW_AR}</b>.
+            ويبقى «مدعوّا» حتّى يدخل، فلا يحسب فريقا عاملا قبل ذلك.
           </p>
           <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_1fr_12rem_auto]">
             <input
@@ -332,7 +332,7 @@ export default function Users() {
                   return r;
                 },
                 /* الجملةُ كاملةٌ من الخادم: هو وحده يعرف أوصلت الدعوةُ أم لا */
-                (res) => (res as { inviteNote?: string } | undefined)?.inviteNote ?? "أُنشئ الحساب.",
+                (res) => (res as { inviteNote?: string } | undefined)?.inviteNote ?? "أنشئ الحساب.",
               )}
             >
               أنشئ
@@ -342,14 +342,14 @@ export default function Users() {
           {/* دفعةٌ واحدةٌ لفريقٍ كامل — سطرٌ لكلّ شخص «بريد, اسم».
               تأهيلُ ستّةٍ كان ستَّ رحلاتٍ في النموذج نفسِه. */}
           <details className="mt-4 border-t border-white/10 pt-3">
-            <summary className="cursor-pointer text-fine font-bold text-gold-ink">أو ادعُ فريقا كاملا بدفعةٍ واحدة</summary>
+            <summary className="cursor-pointer text-fine font-bold text-gold-ink">أو ادع فريقا كاملا بدفعة واحدة</summary>
             <p className="mt-2 text-read leading-6 text-muted-foreground">
-              سطرٌ لكلّ شخص: <span dir="ltr" className="font-mono">name@example.com, الاسم الكامل</span> — بالدور المختار أعلاه.
-              وما يفشل من الأسطر يُقال وحدَه، فلا تتوقّف الدفعةُ عند أوّل خطأ.
+              سطر لكلّ شخص: <span dir="ltr" className="font-mono">name@example.com, الاسم الكامل</span> — بالدور المختار أعلاه.
+              وما يفشل من الأسطر يقال وحده، فلا تتوقّف الدفعة عند أوّل خطأ.
             </p>
             <textarea
               value={bulk} onChange={(e) => setBulk(e.target.value)} rows={4}
-              aria-label="أسطرُ الدعوة بالدفعة"
+              aria-label="أسطر الدعوة بالدفعة"
               placeholder={"sara@example.com, سارة العامري\nomar@example.com, عمر الشمري"}
               className="mt-2 w-full rounded-xl border border-white/12 bg-paper/30 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/75 focus:border-gold/50 focus:outline-none"
             />
@@ -363,7 +363,7 @@ export default function Users() {
                   const [email, ...rest] = line.split(",");
                   return { email: (email ?? "").trim(), displayName: rest.join(",").trim() };
                 }).filter((r) => r.email !== "" && r.displayName !== "");
-                if (parsed.length === 0) throw new ApiError("bad_rows", "لا سطرَ صالحا — الصيغة «بريد, اسم»", 400);
+                if (parsed.length === 0) throw new ApiError("bad_rows", "لا سطر صالحا — الصيغة «بريد, اسم»", 400);
                 const r = await apiPost<{ created: number; sent: number; failed: number; results: { email: string; ok: boolean; reasonAr?: string }[] }>(
                   "/api/admin/users/bulk-invite", { roleIds: [newUser.roleId], rows: parsed },
                 );
@@ -372,10 +372,10 @@ export default function Users() {
               }, (res) => {
                 const r = res as { created: number; sent: number; failed: number; results: { email: string; ok: boolean; reasonAr?: string }[] };
                 const failures = r.results.filter((x) => !x.ok).map((x) => `${x.email}: ${x.reasonAr ?? "تعذّر"}`);
-                return `أُنشئ ${r.created} حسابا · وصلت ${r.sent} دعوة${r.failed ? ` · تعذّر ${r.failed}: ${failures.join(" · ")}` : ""}`;
+                return `أنشئ ${r.created} حسابا · وصلت ${r.sent} دعوة${r.failed ? ` · تعذّر ${r.failed}: ${failures.join(" · ")}` : ""}`;
               })}
             >
-              ادعُ الدفعة
+              ادع الدفعة
             </Button>
           </details>
         </Card>
@@ -392,14 +392,14 @@ export default function Users() {
         <>
         <TabBar
           className="mb-3"
-          ariaLabel="خاناتُ الحسابات"
+          ariaLabel="خانات الحسابات"
           value={box}
           onChange={(k) => { setBox(k); setQ(""); setPage(1); setEditing(null); setPermFor(null); }}
           items={[
             { id: "active", label: `النشطة (${countOf("active")})` },
             { id: "invited", label: `المدعوّة (${countOf("invited")})` },
             { id: "suspended", label: `الموقوفة (${countOf("suspended")})` },
-            { id: "archived", label: `المؤرشَفة (${countOf("archived")})` },
+            { id: "archived", label: `المؤرشفة (${countOf("archived")})` },
           ]}
         />
         {/* شريطُ الأنواع تحت خانات الحالة: الحالةُ تقول «أين هو» والنوعُ
@@ -413,7 +413,7 @@ export default function Users() {
             aria-pressed={kind === null}
             onClick={() => { setKind(null); setPage(1); }}
           >
-            كلُّ الأنواع ({inBox.length})
+            كلّ الأنواع ({inBox.length})
           </Button>
           {ACCOUNT_KINDS.map((k) => (
             <Button
@@ -427,7 +427,7 @@ export default function Users() {
           ))}
         </div>
         <ListToolbar q={q} onQ={setQ} onPage={setPage} view={view} unit="حسابا"
-          placeholder="ابحث باسمٍ أو بريدٍ أو دور…" />
+          placeholder="ابحث باسم أو بريد أو دور…" />
         {/* ═══ شريطُ الدفعة — يظهر حين يُختار شيء، ويبقى عبر الخانات ═══
 
             والعددُ مكتوبٌ فيه لا مخبوء: من اختار في «النشطة» ثمّ انتقل إلى
@@ -449,15 +449,15 @@ export default function Users() {
                 : `اختر المعروض (${view.rows.length})`}
             </Button>
             {picked.size === 0 ? (
-              <span className="text-fine text-muted-foreground">لا حساب مختار — اختر ما تريد حذفَه جملةً.</span>
+              <span className="text-fine text-muted-foreground">لا حساب مختار — اختر ما تريد حذفه جملة.</span>
             ) : (
               <>
                 <span className="text-read font-black">{picked.size} مختارا</span>
                 <Button tone="danger" size="sm" icon={Trash2} loading={busy}
                   onClick={() => void openBulkPreview()}>
-                  عايِن الحذف
+                  عاين الحذف
                 </Button>
-                <Button tone="ghost" size="sm" onClick={() => setPicked(new Set())}>ألغِ الاختيار</Button>
+                <Button tone="ghost" size="sm" onClick={() => setPicked(new Set())}>ألغ الاختيار</Button>
               </>
             )}
           </Card>
@@ -487,7 +487,7 @@ export default function Users() {
                       if (e.target.checked) next.add(u.id); else next.delete(u.id);
                       return next;
                     })}
-                    aria-label={`اختر ${u.displayName || u.email} للحذف جملةً`}
+                    aria-label={`اختر ${u.displayName || u.email} للحذف جملة`}
                     className="h-4 w-4 shrink-0 accent-red-400"
                   />
                 )}
@@ -509,16 +509,16 @@ export default function Users() {
                         فيُطمئنّ الموظّفُ إلى مهلةٍ ليست له. */}
                     {u.invite.state === "pending" && (
                       <span className="rounded-full border border-teal/40 px-2.5 py-0.5 text-fine font-bold text-teal-light-ink">
-                        دعوةٌ سارية حتّى {fmtShortDateTimeAr(u.invite.expiresAt)}
+                        دعوة سارية حتّى {fmtShortDateTimeAr(u.invite.expiresAt)}
                       </span>
                     )}
                     {u.invite.state === "expired" && (
-                      <span className="rounded-full border border-gold/40 px-2.5 py-0.5 text-fine font-bold text-gold-ink">دعوةٌ انتهت</span>
+                      <span className="rounded-full border border-gold/40 px-2.5 py-0.5 text-fine font-bold text-gold-ink">دعوة انتهت</span>
                     )}
                     {/* بلا توثيقٍ لا تُصدر شهادة — فالشارةُ تقول سببَ التوقّف
                         قبل أن يُفتح الحساب، ولا تُذكر لمن وثّق. */}
                     {!u.emailVerified && (
-                      <span className="rounded-full border border-gold/40 px-2.5 py-0.5 text-fine font-bold text-gold-ink">بريدٌ غيرُ موثَّق</span>
+                      <span className="rounded-full border border-gold/40 px-2.5 py-0.5 text-fine font-bold text-gold-ink">بريد غير موثّق</span>
                     )}
                     {/* من له استثناءٌ يُعرف من القائمة قبل فتحه */}
                     {u.grants > 0 && <span className="rounded-full border border-teal/40 px-2.5 py-0.5 text-fine font-bold text-teal-light-ink">+{u.grants} ممنوحة</span>}
@@ -547,7 +547,7 @@ export default function Users() {
                   )}
                   {canManage && u.status === "active" && (
                     <Button tone="danger" size="sm" disabled={busy}
-                      onClick={() => act(() => apiPost(`/api/admin/users/${u.id}/suspend`), "أُوقف الحساب وأُبطلت جلساته فورا")}>
+                      onClick={() => act(() => apiPost(`/api/admin/users/${u.id}/suspend`), "أوقف الحساب وأبطلت جلساته فورا")}>
                       <ShieldOff className="h-3.5 w-3.5" /> إيقاف
                     </Button>
                   )}
@@ -561,7 +561,7 @@ export default function Users() {
                            الرابطَ لتسليمه بيدٍ حين لا بريد */
                         (res) => {
                           const r = res as { note?: string; link?: string } | undefined;
-                          return r?.link ? `${r.note} الرابط: ${r.link}` : (r?.note ?? "أُصدرت دعوةٌ جديدة.");
+                          return r?.link ? `${r.note} الرابط: ${r.link}` : (r?.note ?? "أصدرت دعوة جديدة.");
                         },
                       )} className="text-gold-ink">
                       <Send className="h-3.5 w-3.5" /> أعد إرسال الدعوة
@@ -575,13 +575,13 @@ export default function Users() {
                   )}
                   {canManage && u.status === "archived" && (
                     <Button tone="secondary" size="sm" disabled={busy}
-                      onClick={() => act(() => apiPost(`/api/admin/users/${u.id}/unarchive`), "أُعيد تنشيطُ الحساب")}>
+                      onClick={() => act(() => apiPost(`/api/admin/users/${u.id}/unarchive`), "أعيد تنشيط الحساب")}>
                       <ShieldCheck className="h-3.5 w-3.5" /> أعد التنشيط
                     </Button>
                   )}
                   {canManage && u.status === "suspended" && (
                     <Button tone="secondary" size="sm" disabled={busy}
-                      onClick={() => act(() => apiPost(`/api/admin/users/${u.id}/reinstate`), "رُفع الإيقاف — الحساب نشطٌ ويدخل من جديد")}>
+                      onClick={() => act(() => apiPost(`/api/admin/users/${u.id}/reinstate`), "رفع الإيقاف — الحساب نشط ويدخل من جديد")}>
                       <ShieldCheck className="h-3.5 w-3.5" /> ارفع الإيقاف
                     </Button>
                   )}
@@ -607,12 +607,12 @@ export default function Users() {
                         <div>
                           <p className="text-sm font-black">صلاحيات {perms.user.displayName}</p>
                           <p className="mt-0.5 text-read leading-relaxed text-muted-foreground">
-                            الدور حزمةٌ، وهذا استثناءٌ لشخصه: منحٌ زائدٌ عليه، أو منعٌ ينزع منه وحده. والمنع أعلى من الدور والمنح معا.
+                            الدور حزمة، وهذا استثناء لشخصه: منح زائد عليه، أو منع ينزع منه وحده. والمنع أعلى من الدور والمنح معا.
                           </p>
                           {/* لا تفويضَ في العلوّ: من لا يعلو رتبةَ صاحبه لا يمسّ شيئا — ويُقال قبل المحاولة */}
                           {perms.rank.actor <= perms.rank.target && (
                             <Inset as="p" className="mt-2 border-[#FABC05]/40 bg-[#FABC05]/10 px-3 py-2 text-read font-bold leading-6 text-[#FABC05]">
-                              لا تُدار إلّا صلاحياتُ من هو أقلّ منك رتبة — هذا الحساب في رتبتك أو فوقها.
+                              لا تدار إلّا صلاحيات من هو أقلّ منك رتبة — هذا الحساب في رتبتك أو فوقها.
                             </Inset>
                           )}
                         </div>
@@ -627,7 +627,7 @@ export default function Users() {
                           placeholder="ابحث في الصلاحيات…" aria-label="ابحث في الصلاحيات"
                           className="w-full rounded-xl border border-white/12 bg-paper/30 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none" />
                         <input value={permReason} onChange={(e) => setPermReason(e.target.value)}
-                          placeholder="سبب الاستثناء — يُقيَّد باسمك ويُقرأ عند المراجعة" aria-label="سبب الاستثناء"
+                          placeholder="سبب الاستثناء — يقيّد باسمك ويقرأ عند المراجعة" aria-label="سبب الاستثناء"
                           className="w-full rounded-xl border border-white/12 bg-paper/30 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none" />
                       </div>
 
@@ -663,7 +663,7 @@ export default function Users() {
                                         : p.effect === "grant" ? "border-teal/45 text-teal-light-ink"
                                         : p.fromRole ? "border-white/15 text-muted-foreground" : "border-white/10 text-muted-foreground/50"
                                     }`}>
-                                      {p.effect === "deny" ? "مُنعت عنه" : p.effect === "grant" ? "مُنحت له" : p.fromRole ? "من دوره" : "خارج دوره"}
+                                      {p.effect === "deny" ? "منعت عنه" : p.effect === "grant" ? "منحت له" : p.fromRole ? "من دوره" : "خارج دوره"}
                                     </span>
                                     {!p.delegatable ? (
                                       <span className="max-w-[11rem] text-left text-fine leading-4 text-muted-foreground">{p.refusal}</span>
@@ -689,7 +689,7 @@ export default function Users() {
                       </div>
 
                       <p className="mt-3 border-t border-white/8 pt-3 text-read leading-relaxed text-muted-foreground">
-                        كلّ منحٍ ومنعٍ يُقيَّد في سجلّ التدقيق باسمك وسببه، وتُبطَل جلسات صاحبه فورا — فلا يعمل بصلاحيةٍ نُزعت ولا ينتظر ليعمل بما مُنح.
+                        كلّ منح ومنع يقيّد في سجلّ التدقيق باسمك وسببه، وتبطل جلسات صاحبه فورا — فلا يعمل بصلاحية نزعت ولا ينتظر ليعمل بما منح.
                       </p>
                     </>
                   )}
@@ -698,7 +698,7 @@ export default function Users() {
 
               {/* أثرُ الحساب: من أنشأه، ومن أوقفه ولماذا، ومن منحه صلاحيّةً
                   ومتى. وكان ذلك كلُّه في السجلّ العامّ وحده. */}
-              <EntityAuditTimeline entityType="user" entityId={u.id} labelAr="أثرُ هذا الحساب" />
+              <EntityAuditTimeline entityType="user" entityId={u.id} labelAr="أثر هذا الحساب" />
 
               {editing === u.id && (
                 <Inset className="mt-4">
@@ -717,12 +717,12 @@ export default function Users() {
                   {u.roles.some((r) => r.id === "learner") && !rolePick.includes("learner") && (
                     <Inset as="p" className="mt-3 flex items-start gap-2 border-[#FABC05]/40 bg-[#FABC05]/10 px-3 py-2.5 text-read font-bold leading-6 text-[#FABC05]">
                       <ShieldOff className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                      بنزع «متعلّم» تُغلق بوابة التعلّم عن هذا الحساب: لا شعبه ولا نواتجه
+                      بنزع «متعلّم» تغلق بوابة التعلّم عن هذا الحساب: لا شعبه ولا نواتجه
                       ولا شهاداته. وما اشتراه يبقى محفوظا ويعود بإعادة الدور.
                     </Inset>
                   )}
                   <Button tone="confirm" size="sm" disabled={busy || rolePick.length === 0}
-                    onClick={() => act(() => apiPost(`/api/admin/users/${u.id}/roles`, { roleIds: rolePick }), "حُدثت الأدوار")} className="mt-3">
+                    onClick={() => act(() => apiPost(`/api/admin/users/${u.id}/roles`, { roleIds: rolePick }), "حدثت الأدوار")} className="mt-3">
                     احفظ الأدوار
                   </Button>
                 </Inset>
@@ -747,13 +747,13 @@ export default function Users() {
       {preview && (
         <ConfirmAction
           titleAr={preview.deletable > 0
-            ? `حذفُ ${preview.deletable} حسابا جملةً — لا رجعةَ فيه`
-            : "لا حساب في هذا الاختيار يُحذف"}
-          confirmLabelAr={preview.deletable > 0 ? `احذف ${preview.deletable} حسابا` : "أغلِق"}
+            ? `حذف ${preview.deletable} حسابا جملة — لا رجعة فيه`
+            : "لا حساب في هذا الاختيار يحذف"}
+          confirmLabelAr={preview.deletable > 0 ? `احذف ${preview.deletable} حسابا` : "أغلق"}
           busy={busy}
           tone={preview.deletable > 0 ? "danger" : "default"}
           typing={preview.deletable > 0
-            ? { expected: String(preview.deletable), labelAr: "اكتب عددَ ما سيُحذف فعلا لتأكيد القصد" }
+            ? { expected: String(preview.deletable), labelAr: "اكتب عدد ما سيحذف فعلا لتأكيد القصد" }
             : undefined}
           onCancel={() => setPreview(null)}
           onConfirm={() => {
@@ -762,14 +762,14 @@ export default function Users() {
           }}
         >
           <p>
-            اخترتَ {preview.rows.length} حسابا:
-            <b className="text-foreground"> {preview.deletable} يُحذف</b>
-            {preview.refused > 0 && <> · <b className="text-foreground">{preview.refused} يُردّ</b></>}.
+            اخترت {preview.rows.length} حسابا:
+            <b className="text-foreground"> {preview.deletable} يحذف</b>
+            {preview.refused > 0 && <> · <b className="text-foreground">{preview.refused} يردّ</b></>}.
           </p>
 
           {preview.deletable > 0 && (
             <Inset>
-              <p className="font-black text-red-300">يُحذفون نهائيّا ({preview.deletable}):</p>
+              <p className="font-black text-red-300">يحذفون نهائيّا ({preview.deletable}):</p>
               <ul className="mt-1.5 space-y-1">
                 {preview.rows.filter((r) => r.deletable).map((r) => (
                   <li key={r.id}>
@@ -782,7 +782,7 @@ export default function Users() {
 
           {preview.refused > 0 && (
             <Inset>
-              <p className="font-black">لا يُحذفون ({preview.refused}) — وهذا ما يحمله كلٌّ منهم:</p>
+              <p className="font-black">لا يحذفون ({preview.refused}) — وهذا ما يحمله كلّ منهم:</p>
               <ul className="mt-1.5 space-y-1.5">
                 {preview.rows.filter((r) => !r.deletable).map((r) => (
                   <li key={r.id}>
@@ -796,18 +796,18 @@ export default function Users() {
           )}
 
           {preview.deletable > 0 && (
-            <p>ولا يُمحى سجلٌّ من هنا: من حمل شيئا رُدّ ولم يُحذف قسرا — والمحوُ بالسجلّ يبقى حسابا حسابا بسببٍ يُكتب.</p>
+            <p>ولا يمحى سجلّ من هنا: من حمل شيئا ردّ ولم يحذف قسرا — والمحو بالسجلّ يبقى حسابا حسابا بسبب يكتب.</p>
           )}
         </ConfirmAction>
       )}
 
       {confirming?.kind === "verifyEmail" && (
         <ConfirmAction
-          titleAr={`توثيقُ بريد «${confirming.user.displayName}» بيدك`}
+          titleAr={`توثيق بريد «${confirming.user.displayName}» بيدك`}
           confirmLabelAr="وثّق البريد"
           busy={busy}
           tone="default"
-          reason={{ labelAr: "لماذا تُوثّقه بيدك؟ — يقرؤه من يراجع السجلّ بعد سنة", minLength: 5 }}
+          reason={{ labelAr: "لماذا توثّقه بيدك؟ — يقرؤه من يراجع السجلّ بعد سنة", minLength: 5 }}
           onCancel={() => setConfirming(null)}
           onConfirm={(reason) => {
             const target = confirming.user;
@@ -818,39 +818,39 @@ export default function Users() {
             );
           }}
         >
-          <p><b className="text-foreground">ما يفتحه هذا:</b> إصدارُ الشهادات. الشهادةُ تُنسب إلى شخصٍ باسمه، فلا تُصدَر لبريدٍ لم يُثبت أنّه له — وهذا الحاجزُ يبقى صارما حتّى مع تعطّل قناة البريد.</p>
-          <p>والشراءُ وطلبُ التسجيل لا يحتاجان هذا: هما يمرّان أصلا حين لا تكون قناةُ البريد موصولة، فالحاجزُ لا يصير قفلا بلا مفتاح.</p>
+          <p><b className="text-foreground">ما يفتحه هذا:</b> إصدار الشهادات. الشهادة تنسب إلى شخص باسمه، فلا تصدر لبريد لم يثبت أنّه له — وهذا الحاجز يبقى صارما حتّى مع تعطّل قناة البريد.</p>
+          <p>والشراء وطلب التسجيل لا يحتاجان هذا: هما يمرّان أصلا حين لا تكون قناة البريد موصولة، فالحاجز لا يصير قفلا بلا مفتاح.</p>
           <p><span dir="ltr" className="font-mono text-muted-foreground">{confirming.user.email}</span></p>
-          <p>ويُسجَّل في أثر الحساب: من وثّق، ومتى، وبأيّ سبب.</p>
+          <p>ويسجّل في أثر الحساب: من وثّق، ومتى، وبأيّ سبب.</p>
         </ConfirmAction>
       )}
 
       {confirming?.kind === "archive" && (
         <ConfirmAction
-          titleAr={`أرشفةُ حساب «${confirming.user.displayName}»`}
-          confirmLabelAr="أرشِف الحساب"
+          titleAr={`أرشفة حساب «${confirming.user.displayName}»`}
+          confirmLabelAr="أرشف الحساب"
           busy={busy}
           tone="default"
-          reason={{ labelAr: "سببُ الأرشفة — يقرؤه من يراجع السجلّ بعد سنة", minLength: 10 }}
+          reason={{ labelAr: "سبب الأرشفة — يقرؤه من يراجع السجلّ بعد سنة", minLength: 10 }}
           onCancel={() => setConfirming(null)}
           onConfirm={(reason) => {
             const target = confirming.user;
             setConfirming(null);
             void act(() => apiPost(`/api/admin/users/${target.id}/archive`, { reason }),
-              "أُرشف الحساب — أُغلق وأُبطلت جلساتُه، وسجلّاتُه كما هي");
+              "أرشف الحساب — أغلق وأبطلت جلساته، وسجلّاته كما هي");
           }}
         >
-          <p><b className="text-foreground">الأرشفةُ ليست حذفا:</b> الحسابُ يبقى بسجلّه كلِّه — تسجيلاتُه وفواتيرُه وشهاداتُه — ولا يعود يدخل، وتُبطَل جلساتُه ودعواتُه القائمةُ فورا.</p>
-          <p>وتُراجَع بإعادة التنشيط من تبويب «مؤرشَفون» متى شئت.</p>
+          <p><b className="text-foreground">الأرشفة ليست حذفا:</b> الحساب يبقى بسجلّه كلّه — تسجيلاته وفواتيره وشهاداته — ولا يعود يدخل، وتبطل جلساته ودعواته القائمة فورا.</p>
+          <p>وتراجع بإعادة التنشيط من تبويب «مؤرشفون» متى شئت.</p>
         </ConfirmAction>
       )}
 
       {confirming?.kind === "purge" && (
         <ConfirmAction
-          titleAr={`حذفُ حساب «${confirming.user.displayName}» نهائيّا`}
+          titleAr={`حذف حساب «${confirming.user.displayName}» نهائيّا`}
           confirmLabelAr="احذف نهائيّا"
           busy={busy}
-          typing={{ expected: confirming.user.email, labelAr: "اكتب بريدَ الحساب حرفا بحرف لتأكيد القصد" }}
+          typing={{ expected: confirming.user.email, labelAr: "اكتب بريد الحساب حرفا بحرف لتأكيد القصد" }}
           onCancel={() => setConfirming(null)}
           onConfirm={() => {
             const target = confirming.user;
@@ -858,18 +858,18 @@ export default function Users() {
             void purge(target);
           }}
         >
-          <p>الحذفُ النهائيُّ <b className="text-foreground">لا رجعةَ فيه</b>: يُزال الصفُّ من القاعدة.</p>
+          <p>الحذف النهائيّ <b className="text-foreground">لا رجعة فيه</b>: يزال الصفّ من القاعدة.</p>
           <p className="font-mono text-muted-foreground" dir="ltr">{confirming.user.email}</p>
-          <p>وإن كان للحساب سجلٌّ (تسجيلٌ أو طلبٌ أو فاتورة) فسيرفض الخادمُ الحذفَ ويقول ما فيه — ولك بعدها خيارُ المحو بالسجلّ. والأرشفةُ هي الفعلُ الموصى به لمن غادر.</p>
+          <p>وإن كان للحساب سجلّ (تسجيل أو طلب أو فاتورة) فسيرفض الخادم الحذف ويقول ما فيه — ولك بعدها خيار المحو بالسجلّ. والأرشفة هي الفعل الموصى به لمن غادر.</p>
         </ConfirmAction>
       )}
 
       {confirming?.kind === "purgeHistory" && (
         <ConfirmAction
-          titleAr={`محوُ حساب «${confirming.user.displayName}» بسجلّه كلّه`}
-          confirmLabelAr="امحُ الحسابَ وسجلَّه"
+          titleAr={`محو حساب «${confirming.user.displayName}» بسجلّه كلّه`}
+          confirmLabelAr="امح الحساب وسجلّه"
           busy={busy}
-          reason={{ labelAr: "سببُ المحو — يبقى في الأثر بعد زوال الحساب", minLength: 5 }}
+          reason={{ labelAr: "سبب المحو — يبقى في الأثر بعد زوال الحساب", minLength: 5 }}
           onCancel={() => setConfirming(null)}
           onConfirm={(reason) => {
             const target = confirming.user;
@@ -877,11 +877,11 @@ export default function Users() {
             void purgeWithHistory(target, reason ?? "");
           }}
         >
-          <p>لهذا الحساب سجلٌّ <b className="text-foreground">سيُمحى معه</b>:</p>
+          <p>لهذا الحساب سجلّ <b className="text-foreground">سيمحى معه</b>:</p>
           <ul className="space-y-1 pr-4">
             {confirming.blockers.map((b) => <li key={b} className="list-disc">{b}</li>)}
           </ul>
-          <p>محوٌ كاملٌ لا يُستعاد — يصلح لحسابات الديمو والتجربة، <b className="text-foreground">لا لعميلٍ حقيقيّ</b>. وأثرُ المحو نفسُه يبقى في السجلّ بسببه وصاحبه.</p>
+          <p>محو كامل لا يستعاد — يصلح لحسابات الديمو والتجربة، <b className="text-foreground">لا لعميل حقيقيّ</b>. وأثر المحو نفسه يبقى في السجلّ بسببه وصاحبه.</p>
         </ConfirmAction>
       )}
     </AdminLayout>

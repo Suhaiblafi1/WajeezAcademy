@@ -58,7 +58,7 @@ export default function PlacementTest() {
   return (
     <SiteShell>
       <section className="mx-auto max-w-2xl px-5 py-12 md:py-16">
-        <h1 className="text-2xl font-black leading-snug md:text-3xl">اختبارُ تحديد مستوى الإنجليزيّة</h1>
+        <h1 className="text-2xl font-black leading-snug md:text-3xl">اختبار تحديد مستوى الإنجليزيّة</h1>
 
         {error && <Panel tone="danger" className="mt-6 text-sm leading-7 text-foreground">{error}</Panel>}
 
@@ -68,12 +68,12 @@ export default function PlacementTest() {
 
         {bank && !bank.open && (
           <Panel tone="accent" className="mt-6">
-            <p className="text-sm font-black text-foreground">الاختبارُ قيد المراجعة — يُفتح قريبا</p>
+            <p className="text-sm font-black text-foreground">الاختبار قيد المراجعة — يفتح قريبا</p>
             <p className="mt-2 text-read leading-relaxed text-muted-foreground">
-              يراجع مدرّبُ الإنجليزيّة أسئلتَه قبل أن يُعرض على أحد. وإلى أن يُفتح فلك خياران:
-              أن تسجّل بالمستوى الذي وصفتَه الآن — ويُراجَع معك في أوّل لقاء — أو أن تعود هنا حين يُفتح.
+              يراجع مدرّب الإنجليزيّة أسئلته قبل أن يعرض على أحد. وإلى أن يفتح فلك خياران:
+              أن تسجّل بالمستوى الذي وصفته الآن — ويراجع معك في أوّل لقاء — أو أن تعود هنا حين يفتح.
             </p>
-            <Button as={Link} to="/diagnostic" tone="secondary" className="mt-4">عُد إلى خطّتي</Button>
+            <Button as={Link} to="/diagnostic" tone="secondary" className="mt-4">عد إلى خطّتي</Button>
           </Panel>
         )}
 
@@ -84,9 +84,9 @@ export default function PlacementTest() {
             </p>
             <ul className="mt-3 flex flex-col gap-1.5 text-read leading-relaxed text-muted-foreground">
               <li>{total} سؤالا في قواعد اللغة ومفرداتها والقراءة — من المستوى الأوّل إلى المتقدّم.</li>
-              <li>بين ربع ساعةٍ وعشرين دقيقة، ومجّانيّ، ولا حاجةَ إلى حساب.</li>
-              <li>ما لا تعرفه اتركه — التخمينُ يُفسد القياس ولا يرفع مستواك.</li>
-              <li>والنتيجةُ لك: تحدّث بها خطّتك أو تُبقي مستواك الموصوف.</li>
+              <li>بين ربع ساعة وعشرين دقيقة، ومجّانيّ، ولا حاجة إلى حساب.</li>
+              <li>ما لا تعرفه اتركه — التخمين يفسد القياس ولا يرفع مستواك.</li>
+              <li>والنتيجة لك: تحدّث بها خطّتك أو تبقي مستواك الموصوف.</li>
             </ul>
             <Button tone="confirm" className="mt-5" onClick={() => setPage(0)}>ابدأ الاختبار</Button>
           </Card>
@@ -95,7 +95,7 @@ export default function PlacementTest() {
         {bank?.open && !result && page >= 0 && pages[page] && (
           <div className="mt-6">
             <p className="text-read font-bold text-muted-foreground">
-              الجزء {page + 1} من {pages.length} · أجبتَ عن {answered} من {total}
+              الجزء {page + 1} من {pages.length} · أجبت عن {answered} من {total}
             </p>
             <ol className="mt-4 flex flex-col gap-4">
               {pages[page].map((q, n) => (
@@ -152,7 +152,7 @@ function PlacementOutcome({ result, stated }: { result: PlacementResult; stated:
           مستواك في الاختبار: <span dir="ltr">{result.cefr}</span>
         </p>
         {tested && <p className="mt-1 text-read text-muted-foreground">{tested.label_ar}</p>}
-        <p className="mt-3 text-read text-muted-foreground">أصبتَ {result.correct} من {result.total}.</p>
+        <p className="mt-3 text-read text-muted-foreground">أصبت {result.correct} من {result.total}.</p>
         <ul className="mt-3 flex flex-wrap gap-2">
           {result.per_level.map((l) => (
             <li key={l.level}>
@@ -163,27 +163,27 @@ function PlacementOutcome({ result, stated }: { result: PlacementResult; stated:
           ))}
         </ul>
         <p className="mt-3 text-read leading-6 text-muted-foreground">
-          يُحسب المستوى مجتازا بثلثي أسئلته، ومستواك أعلى ما اجتزتَه وكلُّ ما دونه مجتاز.
+          يحسب المستوى مجتازا بثلثي أسئلته، ومستواك أعلى ما اجتزته وكلّ ما دونه مجتاز.
         </p>
       </Card>
 
       {differs ? (
         <Panel>
           <p className="text-sm font-black text-foreground">
-            وصفتَ مستواك <span dir="ltr">{said.cefr}</span>، والاختبارُ يقول <span dir="ltr">{result.cefr}</span> — والخيارُ لك:
+            وصفت مستواك <span dir="ltr">{said.cefr}</span>، والاختبار يقول <span dir="ltr">{result.cefr}</span> — والخيار لك:
           </p>
           <ul className="mt-4 flex flex-col gap-3">
             <li>
               <Button as={Link} to={applyPlacementHref(result.level)} tone="primary" className="w-full justify-start text-right">
                 <CheckCircle2 className="h-4 w-4" /> حدّث خطّتي بمستوى الاختبار (<span dir="ltr">{result.cefr}</span>)
               </Button>
-              <p className="mt-1 text-read leading-6 text-muted-foreground">نعيد بناء خطّتك على هذا المستوى بلا إعادة الأسئلة — وتتغيّر الدوراتُ المقترحة إن لزم.</p>
+              <p className="mt-1 text-read leading-6 text-muted-foreground">نعيد بناء خطّتك على هذا المستوى بلا إعادة الأسئلة — وتتغيّر الدورات المقترحة إن لزم.</p>
             </li>
             <li>
               <Button as={Link} to="/diagnostic" tone="secondary" className="w-full justify-start text-right">
-                أبقِ مستواي الموصوف (<span dir="ltr">{said.cefr}</span>)
+                أبق مستواي الموصوف (<span dir="ltr">{said.cefr}</span>)
               </Button>
-              <p className="mt-1 text-read leading-6 text-muted-foreground">تبقى خطّتك كما هي — ويُراجَع مستواك مع مدرّبك في أوّل لقاء.</p>
+              <p className="mt-1 text-read leading-6 text-muted-foreground">تبقى خطّتك كما هي — ويراجع مستواك مع مدرّبك في أوّل لقاء.</p>
             </li>
           </ul>
         </Panel>
@@ -193,13 +193,13 @@ function PlacementOutcome({ result, stated }: { result: PlacementResult; stated:
             {/* بلا مستوى موصوفٍ في الرابط لا نعرف أنّ على الجهاز خطّةَ إنجليزيّةٍ تُحدَّث —
                 فلا يُعرض «حدّث خطّتي» على تشخيصٍ قد يكون في غيرها */}
             {said
-              ? "الاختبارُ يؤكّد ما وصفتَه — خطّتك مبنيّةٌ على مستواك الصحيح."
-              : "اختر «اللغة الإنجليزيّة» في التشخيص وصِف مستواك بما قاله الاختبار — فتُبنى خطّتك عليه."}
+              ? "الاختبار يؤكّد ما وصفته — خطّتك مبنيّة على مستواك الصحيح."
+              : "اختر «اللغة الإنجليزيّة» في التشخيص وصف مستواك بما قاله الاختبار — فتبنى خطّتك عليه."}
           </p>
           <div className="mt-4 flex flex-wrap gap-3">
             {/* والمؤكَّدُ يعود عبر بابِ التعديل بالمستوى نفسِه: تُبنى الخطّةُ كما هي، ويقول
                 سطرُ مستواها «بناءً على اختبار تحديد المستوى» بدل جوابه */}
-            <Button as={Link} to={said ? applyPlacementHref(result.level) : "/diagnostic"} tone="secondary">{said ? "عُد إلى خطّتي" : "إلى التشخيص"}</Button>
+            <Button as={Link} to={said ? applyPlacementHref(result.level) : "/diagnostic"} tone="secondary">{said ? "عد إلى خطّتي" : "إلى التشخيص"}</Button>
           </div>
         </Panel>
       )}

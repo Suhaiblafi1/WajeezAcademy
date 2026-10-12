@@ -36,7 +36,7 @@ const SCALE: { value: number; short: string; full: string }[] = [
   { value: 2, short: "سمعت عنها", full: "أعرف عنها نظريا فقط" },
   { value: 3, short: "طبّقتها مرة", full: "جرّبتها في موقف أو مهمة" },
   { value: 4, short: "أستخدمها", full: "أستخدمها في عملي بانتظام" },
-  { value: 5, short: "أُتقنها", full: "أتقنها وأعلّمها غيري" },
+  { value: 5, short: "أتقنها", full: "أتقنها وأعلّمها غيري" },
 ];
 
 export default function SkillFamilyGrid({ families, onDone, onSkip }: Props) {
@@ -126,7 +126,7 @@ export default function SkillFamilyGrid({ families, onDone, onSkip }: Props) {
           className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold text-muted-foreground transition hover:text-foreground"
         >
           <SkipForward className="h-3.5 w-3.5" />
-          تخطَّ هذه الخطوة
+          تخطّ هذه الخطوة
         </button>
       </div>
       <p className="mt-3 text-center text-read text-muted-foreground">

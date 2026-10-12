@@ -36,7 +36,7 @@ const TONE: Record<InboxItem["severity"], { box: string; chip: string; icon: typ
 /* «١ بندٌ» و«٢ بندان» و«٣ بنود» و«١١ بندا» — والعددُ يُقرأ لا يُحسب.
    والبنودُ مختلفةُ الأجناس (شهادةٌ وجلسةٌ واقتراحُ تأجيل)، فالجامعُ بينها
    «بند» لا اسمُ أحدها. */
-const ITEM_FORMS = { one: "بندٌ", two: "بندان", few: "بنود", many: "بندا" };
+const ITEM_FORMS = { one: "بند", two: "بندان", few: "بنود", many: "بندا" };
 
 const SEVERITY_RANK: Record<InboxItem["severity"], number> = { urgent: 0, attention: 1, info: 2 };
 
@@ -51,7 +51,7 @@ export default function StaffInbox() {
       setItems(await apiGet<InboxItem[]>("/api/staff/inbox"));
       setError("");
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "تعذّر قراءةُ ما ينتظرك");
+      setError(e instanceof ApiError ? e.message : "تعذّر قراءة ما ينتظرك");
     } finally {
       setBusy(false);
     }
@@ -81,11 +81,11 @@ export default function StaffInbox() {
           icon={Inbox}
           count={total}
           forms={ITEM_FORMS}
-          waitingAr="تنتظر قرارَك"
-          stats={first ? [`أعجلُها: ${first.titleAr}`] : []}
-          actionAr="افتح أعجلَها"
+          waitingAr="تنتظر قرارك"
+          stats={first ? [`أعجلها: ${first.titleAr}`] : []}
+          actionAr="افتح أعجلها"
           to={first?.href}
-          doneAr="لا شيءَ ينتظرك الآن — لا اقتراحَ تأجيلٍ ولا طلبَ شهادةٍ ولا جلسةَ ناقصةٍ هذا الأسبوع."
+          doneAr="لا شيء ينتظرك الآن — لا اقتراح تأجيل ولا طلب شهادة ولا جلسة ناقصة هذا الأسبوع."
         />
       )}
 

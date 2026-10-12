@@ -65,7 +65,7 @@ function RatingCard({ item, onSaved }: { item: Rateable; onSaved: () => void }) 
         enrollmentId: item.enrollmentId, subjectType: item.subjectType,
         subjectId: item.subjectId, score, ...(comment.trim() ? { commentAr: comment.trim() } : {}),
       });
-      toast(item.myScore == null ? "شكرا — وصل تقييمك" : "حُدّث تقييمك");
+      toast(item.myScore == null ? "شكرا — وصل تقييمك" : "حدّث تقييمك");
       onSaved();
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "تعذّر إرسال التقييم");
@@ -85,7 +85,7 @@ function RatingCard({ item, onSaved }: { item: Rateable; onSaved: () => void }) 
           <h2 className="mt-1.5 text-sm font-black">{item.nameAr}</h2>
         </div>
         {item.myScore != null && (
-          <span className="text-fine text-muted-foreground">قيّمتَ سابقا — يمكنك التعديل</span>
+          <span className="text-fine text-muted-foreground">قيّمت سابقا — يمكنك التعديل</span>
         )}
       </div>
 
@@ -93,14 +93,14 @@ function RatingCard({ item, onSaved }: { item: Rateable; onSaved: () => void }) 
         <Stars value={score} onPick={(v) => { setScore(v); setNeedsScore(false); }} disabled={busy} />
         {needsScore && score < 1 && (
           <p role="alert" className="mt-2 text-read font-bold leading-5 text-red-300">
-            اختر عددَ النجوم أوّلا — التعليقُ وحدَه لا يُرسَل تقييما.
+            اختر عدد النجوم أوّلا — التعليق وحده لا يرسل.
           </p>
         )}
       </div>
 
       <label className="mt-4 block">
         <span className="mb-1.5 block text-fine font-bold text-muted-foreground">
-          تعليق اختياري — لا يُنشر علنا إلا بعد مراجعة الإدارة
+          تعليق اختياري — لا ينشر علنا إلا بعد مراجعة الإدارة
         </span>
         <textarea
           value={comment}
@@ -117,7 +117,7 @@ function RatingCard({ item, onSaved }: { item: Rateable; onSaved: () => void }) 
             يقول ذلك — فيُضغَط الآن فيُقال ما ينقص، عند موضعه. */}
         <Button tone="confirm" onClick={score < 1 ? () => setNeedsScore(true) : save}
           disabled={busy} className="disabled:cursor-not-allowed">
-          {busy ? "يُرسَل…" : item.myScore == null ? "أرسل التقييم" : "حدّث التقييم"}
+          {busy ? "يرسل…" : item.myScore == null ? "أرسل التقييم" : "حدّث التقييم"}
         </Button>
         {error && <span role="alert" className="text-fine font-bold text-red-300">{error}</span>}
       </div>
@@ -151,9 +151,8 @@ export default function RateMyLearning() {
         <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-teal-light-ink" />
         <p className="text-read leading-6 text-foreground">
           <span className="font-black text-foreground">اسمك لا يصل المدرّب ولا المستشار.</span>{" "}
-          ولا يرى أيٌّ منهما تقييما حتى تبلغ التقييمات الواردة عنه ثلاثة — في العدد
-          القليل يُستدلّ على أصحاب الآراء مهما حُذفت الأسماء. والإدارة ترى التعليقات
-          فور وصولها، مجهولةَ صاحبها كذلك، لأن عليها أن تتصرّف إن كان في الأمر ما يستدعي.
+          ولا يرى أيّ منهما تقييما حتى تبلغ التقييمات عنه ثلاثة.
+          والإدارة ترى التعليقات فور وصولها، بلا اسمك كذلك.
         </p>
       </Card>
 
@@ -174,7 +173,7 @@ export default function RateMyLearning() {
         <EmptyState
           icon={Star}
           titleAr="لا شيء تقيّمه بعد"
-          reasonAr="التقييم يُفتح بعد أن تبدأ شعبتك فعلا — لا رأي فيما لم يُجرَّب. حين تبدأ، ستجد هنا دورتك ومدرّبها."
+          reasonAr="يفتح التقييم حين تبدأ شعبتك، وستجد هنا دورتك ومدرّبها."
           tone="start"
           actions={[{ to: "/student/learning", labelAr: "افتح مسارك", hintAr: "اختر موعد دورتك القادمة" }]}
         />

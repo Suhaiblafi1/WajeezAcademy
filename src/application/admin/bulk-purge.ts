@@ -61,20 +61,20 @@ export function decideBulk(
 
   return targets.map((t) => {
     if (t.id === ctx.actorId) {
-      return { id: t.id, deletable: false, whyAr: 'لا تحذف حسابَك من هنا' }
+      return { id: t.id, deletable: false, whyAr: 'لا تحذف حسابك من هنا' }
     }
     if (t.roles.includes(TOP_ROLE) && topsAfter < 1) {
       return {
         id: t.id,
         deletable: false,
-        whyAr: 'لا يبقى النظامُ بلا مديرٍ أعلى — أبقِ واحدا على الأقلّ',
+        whyAr: 'لا يبقى النظام بلا مدير أعلى — أبق واحدا على الأقلّ',
       }
     }
     if (t.blockers.length > 0) {
       return {
         id: t.id,
         deletable: false,
-        whyAr: `له ${t.blockers.join('، و')} — أوقفه بدل ذلك، فيبقى السجلُّ ويُمنع الدخول`,
+        whyAr: `له ${t.blockers.join('، و')} — أوقفه بدل ذلك، فيبقى السجلّ ويمنع الدخول`,
       }
     }
     return { id: t.id, deletable: true, whyAr: null }
@@ -100,7 +100,7 @@ export function bulkExecuteBlockerAr(
   decisions: readonly BulkDecision[], typed: string,
 ): string | null {
   const n = deletableIds(decisions).length
-  if (n === 0) return 'لا حسابَ في هذه الدفعة يُحذف'
-  if (!bulkConfirmMatches(typed, n)) return `اكتب عددَ ما سيُحذف فعلا: ${n}`
+  if (n === 0) return 'لا حساب في هذه الدفعة يحذف'
+  if (!bulkConfirmMatches(typed, n)) return `اكتب عدد ما سيحذف فعلا: ${n}`
   return null
 }

@@ -71,30 +71,30 @@ function elementSiblings(node: ts.Node): ts.Node[] {
   return parent.children.filter((c) => tagOf(c) !== null)
 }
 
-describe('السطرُ تحت دعوة الصدر', () => {
+describe('السطر تحت دعوة الصدر', () => {
   const hero = find(source, (n) => ts.isFunctionDeclaration(n) && n.name?.getText(source) === 'Hero')
 
-  it('ودالّةُ الصدر موجودة — وإلّا فالحارسُ يحرس العدم', () => {
+  it('ودالّة الصدر موجودة — وإلّا فالحارس يحرس العدم', () => {
     expect(hero).toBeDefined()
   })
 
   const cta = hero && find(hero, (n) => ts.isJsxElement(n) && tagOf(n) === 'a' && attr(n, 'href') === '#diagnostic')
 
-  it('وفيها الدعوةُ — مرساةٌ إلى «مؤشر وجيز»', () => {
+  it('وفيها الدعوة — مرساة إلى «مؤشر وجيز»', () => {
     expect(cta).toBeDefined()
   })
 
-  it('ويتبعها عنصرُ `p` مباشرةً — لا قبلَها ولا عنصرٌ آخرُ بينهما', () => {
+  it('ويتبعها عنصر `p` مباشرة — لا قبلها ولا عنصر آخر بينهما', () => {
     const siblings = elementSiblings(cta!)
     const at = siblings.indexOf(cta!)
     expect(at).toBeGreaterThanOrEqual(0)
 
     const next = siblings[at + 1]
-    expect(next, 'لا عنصرَ بعد الدعوة').toBeDefined()
+    expect(next, 'لا عنصر بعد الدعوة').toBeDefined()
     expect(tagOf(next!)).toBe('p')
   })
 
-  it('وفي السطرِ نصٌّ يُقرأ — لا وسمٌ فارغ', () => {
+  it('وفي السطر نصّ يقرأ — لا وسم فارغ', () => {
     const siblings = elementSiblings(cta!)
     const next = siblings[siblings.indexOf(cta!) + 1] as ts.JsxElement
     const text = next.children

@@ -210,12 +210,12 @@ export function deadlineAfterPause(f: ConditionFacts, resumedAt: Date): Date | n
 export function extendProblemAr(f: ConditionFacts): string | null {
   const used = f.conditionExtensionsUsed ?? 0
   if (used >= MAX_EXTENSIONS) {
-    return `أُنفقت مرّاتُ التمديد (${MAX_EXTENSIONS} × ${EXTENSION_DAYS} يومين) ولا تُمنح ثالثة — وبابُه الآن التأجيلُ إلى الموسم القادم.`
+    return `أنفقت مرّات التمديد (${MAX_EXTENSIONS} × ${EXTENSION_DAYS} يومين) ولا تمنح ثالثة — وبابه الآن التأجيل إلى الموسم القادم.`
   }
   if (!asDate(f.conditionDeadlineAt)) {
-    return 'لا مهلةَ لهذه الاتفاقيّة — وهي تبدأ بتوقيعها.'
+    return 'لا مهلة لهذه الاتفاقيّة — وهي تبدأ بتوقيعها.'
   }
-  if (asDate(f.conditionMetAt)) return 'اعتُمدت موادُّه — لا مهلةَ تُمدَّد.'
+  if (asDate(f.conditionMetAt)) return 'اعتمدت موادّه — لا مهلة تمدّد.'
   return null
 }
 
@@ -248,11 +248,11 @@ export function canAskExtension(f: ConditionFacts): boolean {
    بشرط» لأنّ الظهورَ العامَّ يحكمه `publishApprovedAt` مستقلّا، فما يميّز
    الطورَ حقّا أنّه **لا تدريبَ فيه ولا أتعاب**. */
 export const CONDITION_PHASE_LABELS_AR: Record<ConditionPhase, string> = {
-  none: 'اتفاقيّةٌ مشروطة — بلا مهلة',
-  running: 'اتفاقيّةٌ مشروطة — قيد التجهيز',
-  under_review: 'موادُّه قيد التقييم',
+  none: 'اتفاقيّة مشروطة — بلا مهلة',
+  running: 'اتفاقيّة مشروطة — قيد التجهيز',
+  under_review: 'موادّه قيد التقييم',
   met: 'اكتمل الشرط',
-  lapsed: 'لم يستوفِ الشروط بعد',
+  lapsed: 'لم يستوف الشروط بعد',
 }
 
 /** سطرُ الشريط في بوّابة المدرّب وفي صفّ الطابور */
@@ -260,14 +260,14 @@ export function conditionLineAr(f: ConditionFacts): string {
   const phase = conditionPhase(f)
   if (phase === 'running') {
     const left = daysLeft(f)!
-    const days = left === 1 ? 'يومٌ واحد' : left === 2 ? 'يومان' : `${left} أيّام`
+    const days = left === 1 ? 'يوم واحد' : left === 2 ? 'يومان' : `${left} أيّام`
     /* ومنذ ٢ أكتوبر ٢٠٢٦ تُعَدّ الموادُّ في «شعبي» (`trainer-prep.service.ts`) */
-    return `اتفاقيّةٌ مشروطة — أمامك ${days} لتُعِدّ شعبَ دوراتك في «شعبي» وترسلها لاعتمادنا`
+    return `اتفاقيّة مشروطة — أمامك ${days} لتعدّ شعب دوراتك في «شعبي» وترسلها لاعتمادنا`
   }
-  if (phase === 'under_review') return 'شعبُ دوراتك عندنا للاعتماد — والمهلةُ مجمَّدةٌ حتّى يصلك جوابُنا'
-  if (phase === 'lapsed') return 'انقضت مهلتُك ولم تكتمل شعبُ دوراتك — أجِّلْ إلى الموسم القادم، أو اطلب حذفَ حسابك'
-  if (phase === 'met') return 'اعتُمدت دوراتُك — واكتمل الشرط'
-  return 'اتفاقيّةٌ مشروطة — ويصلك موعدُ جلسة التهيئة ومنها تبدأ مهلتُك'
+  if (phase === 'under_review') return 'شعب دوراتك عندنا للاعتماد — والمهلة مجمّدة حتّى يصلك جوابنا'
+  if (phase === 'lapsed') return 'انقضت مهلتك ولم تكتمل شعب دوراتك — أجّل إلى الموسم القادم، أو اطلب حذف حسابك'
+  if (phase === 'met') return 'اعتمدت دوراتك — واكتمل الشرط'
+  return 'اتفاقيّة مشروطة — ويصلك موعد جلسة التهيئة ومنها تبدأ مهلتك'
 }
 
 /* ═══ متى يُشترَط العقدُ أصلا — قرارُ ٢٥ سبتمبر ٢٠٢٦ ═══
@@ -396,10 +396,10 @@ export function signatureApprovalOf(c: { gatesActivation: boolean; bodyVersion: 
 }
 
 /** ما يردّ به الخادمُ اعتمادا لم يقل صاحبُه أيَّ الخيارات أراد — يعرضها ولا يُلزم بأحدها */
-export const SEALED_BY_TEXT_AR = 'وُقّع هذا العرضُ على نصٍّ سابقٍ يجعل اعتمادَ التوقيع توقيعا منّا عليه. '
-  + 'فلك أن تعتمده كالعقود الجديدة — فتُفتح بوّابتُه ولا نوقّعه إلّا يومَ نعتمد دوراتِه — '
+export const SEALED_BY_TEXT_AR = 'وقّع هذا العرض على نصّ سابق يجعل اعتماد التوقيع توقيعا منّا عليه. '
+  + 'فلك أن تعتمده كالعقود الجديدة — فتفتح بوّابته ولا نوقّعه إلّا يوم نعتمد دوراته — '
   + 'أو كما وقّعه — فيصير نافذا الآن قبل اعتماد دوراته — أو أن تعيده للتوقيع على النصّ الحاضر. '
-  + 'والخياراتُ، وما تغيّر بين النصّين، في صفّه في شاشة «العقود».'
+  + 'والخيارات، وما تغيّر بين النصّين، في صفّه في شاشة «العقود».'
 
 /** أيُشترَط عقدُه الجديدُ باعتماد الموادّ؟ */
 export function offerGatesActivation(prior: readonly PriorContractSeal[]): boolean {
@@ -464,11 +464,11 @@ export function materialsGateProblemAr(f: ConditionFacts): string | null {
   if (phase === 'running') {
     const left = daysLeft(f)
     return left === null
-      ? 'لم يُعلنْ اكتمالَ موادّه بعد — فلا موادَّ عندك لتحكم فيها'
-      : `لم يُعلنْ اكتمالَ موادّه بعد — وأمامه ${left === 1 ? 'يومٌ واحد' : left === 2 ? 'يومان' : `${left} أيّام`}`
+      ? 'لم يعلن اكتمال موادّه بعد — فلا موادّ عندك لتحكم فيها'
+      : `لم يعلن اكتمال موادّه بعد — وأمامه ${left === 1 ? 'يوم واحد' : left === 2 ? 'يومان' : `${left} أيّام`}`
   }
   if (phase === 'lapsed') {
-    return 'انقضت مهلتُه ولم يُعلنْ اكتمالَ موادّه — مدِّدْ مهلتَه، أو اطلبْ منه إعلانَها'
+    return 'انقضت مهلته ولم يعلن اكتمال موادّه — مدّد مهلته، أو اطلب منه إعلانها'
   }
   /* `none`: لا مهلةَ فلا طورَ فلا شيءَ يُنتظَر — ولا يُحبَس من لا يملك أن
      يُعلن (رأسُ هذه الدالّة). */

@@ -113,7 +113,7 @@ export default function Inbox() {
       {error && <Inset as="p" tone="danger" className="mb-4 px-4 py-3 text-sm text-red-200">{error}</Inset>}
 
       {items === null ? (
-        <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-teal-ink" aria-label="جارٍ التحميل" /></div>
+        <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-teal-ink" aria-label="جار التحميل" /></div>
       ) : shown.length === 0 ? (
         /* ط-٤ · فراغُ مرشّح ليس فراغَ صندوق: الأول يُحلّ بإزالة المرشّح لا ببداية
            جديدة. وحين يكون الصندوق نفسه فارغا فالتوجيه إلى ما يُنشئ الرسائل. */
@@ -121,7 +121,7 @@ export default function Inbox() {
           <EmptyState
             icon={InboxIcon}
             titleAr="صندوقك فارغ"
-            reasonAr="قرارات التسجيل والجلسات وتعليقات مدربك وردود الدعم تصل هنا كلها في مكان واحد — ولم يصل شيء بعد."
+            reasonAr="لم يصل شيء بعد — قرارات التسجيل وتعليقات مدربك وردود الدعم تصل هنا."
             actions={[
               { to: "/student/learning", labelAr: "افتح مسارك", hintAr: "أول قرار تسجيل يصلك هنا" },
               { to: "/student/support", labelAr: "افتح تذكرة دعم", hintAr: "إن كان لديك سؤال" },
@@ -132,7 +132,7 @@ export default function Inbox() {
             icon={InboxIcon}
             tone="filter"
             titleAr="لا شيء في هذا التصنيف"
-            reasonAr={`صندوقك ليس فارغا — فيه ${countAr(items.length, MSG_FORMS)}، لكن لا شيء منها في هذا التصنيف.`}
+            reasonAr={`لا شيء في هذا التصنيف — وفي صندوقك ${countAr(items.length, MSG_FORMS)}.`}
             actions={[{ onClick: () => setFilter("all"), labelAr: "اعرض كل الرسائل", hintAr: "إزالة المرشّح" }]}
           />
         )

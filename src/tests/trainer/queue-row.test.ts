@@ -46,49 +46,49 @@ const queueRow = (): string => {
      اشتقاقٌ فوقَه ولا تحتَه. */
   const from = src.indexOf('{view.rows.map(')
   const to = src.indexOf('<RowActions')
-  expect(from, 'صفُّ الطابور مفقود').toBeGreaterThan(-1)
-  expect(to, 'قائمةُ أفعال الصفّ مفقودة — وهي حدُّه').toBeGreaterThan(from)
+  expect(from, 'صفّ الطابور مفقود').toBeGreaterThan(-1)
+  expect(to, 'قائمة أفعال الصفّ مفقودة — وهي حدّه').toBeGreaterThan(from)
   return src.slice(from, to)
 }
 
-describe('① الصفُّ أربعُ حقائقَ لا أربعةُ أسطر', () => {
-  it('يحمل الاسمَ والرقمَ والحالةَ ونتيجةَ اللقاء وموعدَه', () => {
+describe('① الصفّ أربع حقائق لا أربعة أسطر', () => {
+  it('يحمل الاسم والرقم والحالة ونتيجة اللقاء وموعده', () => {
     const row = queueRow()
-    expect(row, 'الاسمُ غاب عن الصفّ').toContain('a.fullName')
-    expect(row, 'الرقمُ المرجعيُّ غاب عن الصفّ').toContain('a.reference')
-    expect(row, 'الحالةُ غابت عن الصفّ').toContain('STATUS_LABELS[a.status]')
+    expect(row, 'الاسم غاب عن الصفّ').toContain('a.fullName')
+    expect(row, 'الرقم المرجعيّ غاب عن الصفّ').toContain('a.reference')
+    expect(row, 'الحالة غابت عن الصفّ').toContain('STATUS_LABELS[a.status]')
     /* ═══ والنتيجةُ صارت نتيجتين تُحسَبان لا حقلا يُقرأ (٢١ سبتمبر ٢٠٢٦) ═══
 
        كان الصفُّ يقرأ `a.interviewOutcome` حرفا — وهي ما يسجّله مُجرِي
        المقابلة وحدَه. فطُلب أن يُعرض معها قرارُ رابط التقييم، وأن يُطوى
        أحدُهما في الآخر عند الاتّفاق. وحكمُ الطيّ في `queue-labels.ts`:
        ما يُحرَس هنا أنّ الصفَّ يناديه، وأنّه لا يعود إلى حقلٍ واحد. */
-    expect(row, 'نتيجةُ اللقاء غابت — وهي ما يُقرَّر عليه').toContain('verdictBadges(a)')
+    expect(row, 'نتيجة اللقاء غابت — وهي ما يقرّر عليه').toContain('verdictBadges(a)')
     /* وموعدُه: «ضعْ في الليبل موعدَ مقابلتهم القادمة، ومن لم يحجز… لم يحجز بعد» */
-    expect(row, 'ليبلُ الموعد غاب عن الصفّ').toContain('bookingLabel(a,')
-    expect(row, 'ليبلُ الموعد بلا تاريخٍ مقروء — عددٌ لا يقول متى').toContain('fmtDateTime(booking.at)')
+    expect(row, 'ليبل الموعد غاب عن الصفّ').toContain('bookingLabel(a,')
+    expect(row, 'ليبل الموعد بلا تاريخ مقروء — عدد لا يقول متى').toContain('fmtDateTime(booking.at)')
   })
 
-  it('ولا يعود إليه ما شُكي منه: تخصّصاتٌ وخبرةٌ وعدُّ وثائقَ وتقييمات', () => {
+  it('ولا يعود إليه ما شكي منه: تخصّصات وخبرة وعدّ وثائق وتقييمات', () => {
     const row = queueRow()
     for (const [what, needle] of [
       ['التخصّصات', 'a.specialties'],
-      ['سنواتُ المجال', 'a.domainYears'],
+      ['سنوات المجال', 'a.domainYears'],
       ['المسمّى الوظيفيّ', 'a.jobTitle'],
-      ['عدُّ الوثائق', 'a.documentsCount'],
-      ['عدُّ التقييمات', 'a.reviewsCount'],
-      ['عدُّ المقابلات', 'a.interviewsCount'],
-      ['حالُ توثيق البريد', 'a.emailVerified'],
-      ['إتمامُ القسم الثاني', 'a.phase2Done'],
+      ['عدّ الوثائق', 'a.documentsCount'],
+      ['عدّ التقييمات', 'a.reviewsCount'],
+      ['عدّ المقابلات', 'a.interviewsCount'],
+      ['حال توثيق البريد', 'a.emailVerified'],
+      ['إتمام القسم الثاني', 'a.phase2Done'],
       /* وشارةُ العمر آخرُ ما خرج: «احذفها نهائيّا من الصفّ» */
-      ['شارةُ عمر الانتظار', 'queueAge('],
-      ['ساعةُ شارة العمر', '<Clock'],
+      ['شارة عمر الانتظار', 'queueAge('],
+      ['ساعة شارة العمر', '<Clock'],
     ] as const) {
-      expect(row, `${what}: عاد إلى الصفّ — وهو ما شُكي منه`).not.toContain(needle)
+      expect(row, `${what}: عاد إلى الصفّ — وهو ما شكي منه`).not.toContain(needle)
     }
   })
 
-  it('وما ذهب من الصفّ باقٍ في الملفّ — لا يُحذف من المنصّة', () => {
+  it('وما ذهب من الصفّ باق في الملفّ — لا يحذف من المنصّة', () => {
     /* الحذفُ من الصفّ ترتيبٌ، ولو ذهبت من الشاشة كلِّها لصار نقصا */
     const screen = code(SCREEN)
     for (const needle of ['documents', 'specialties']) {
@@ -97,24 +97,24 @@ describe('① الصفُّ أربعُ حقائقَ لا أربعةُ أسطر', 
   })
 })
 
-describe('② نتيجةُ اللقاء من معجمها', () => {
-  it('الشاشةُ تترجمها بالدالّة لا بجدولٍ تكتبه', () => {
+describe('② نتيجة اللقاء من معجمها', () => {
+  it('الشاشة تترجمها بالدالّة لا بجدول تكتبه', () => {
     const screen = code(SCREEN)
-    expect(screen, 'عُرضت النتيجةُ بلا ترجمة — فيقرأ الموظّفُ `passed`')
+    expect(screen, 'عرضت النتيجة بلا ترجمة — فيقرأ الموظّف `passed`')
       .toContain('outcomeLabelAr(b.key)')
     /* ولا تُكتب الأسماءُ العربيّةُ هنا ثانيةً بجانب المعجم */
     for (const o of INTERVIEW_OUTCOMES) {
-      expect(screen, `«${o.labelAr}» مكتوبٌ بيدِ الشاشة لا مقروءٌ من المعجم`)
+      expect(screen, `«${o.labelAr}» مكتوب بيد الشاشة لا مقروء من المعجم`)
         .not.toContain(`"${o.labelAr}"`)
     }
   })
 
-  it('ولكلّ نتيجةٍ يقبلها الخادمُ نبرةٌ في الصفّ — ولا لونَ لمجهول', () => {
+  it('ولكلّ نتيجة يقبلها الخادم نبرة في الصفّ — ولا لون لمجهول', () => {
     const screen = code(SCREEN)
     const tones = /const OUTCOME_TONE: Record<string, string> = \{([\s\S]*?)\n\};/.exec(screen)?.[1] ?? ''
-    expect(tones, 'جدولُ نبرات النتيجة مفقود').toBeTruthy()
+    expect(tones, 'جدول نبرات النتيجة مفقود').toBeTruthy()
     for (const o of INTERVIEW_OUTCOMES) {
-      expect(tones, `النتيجةُ «${o.key}» بلا نبرةٍ في الصفّ`).toContain(`${o.key}:`)
+      expect(tones, `النتيجة «${o.key}» بلا نبرة في الصفّ`).toContain(`${o.key}:`)
     }
     /* والعنوانُ يُقرأ من المعجم فعلا — لا حرفا لاتينيّا */
     expect(outcomeLabelAr('passed')).toBe('ناجح')
@@ -122,39 +122,39 @@ describe('② نتيجةُ اللقاء من معجمها', () => {
   })
 })
 
-describe('③ قائمةُ الأفعال تتبع حالةَ الطلب', () => {
+describe('③ قائمة الأفعال تتبع حالة الطلب', () => {
   const screen = code(SCREEN)
 
-  it('شرطُها من `DECISIONS` و`canRemind` أنفسِهما لا من قائمةٍ ثانية', () => {
-    expect(screen, 'شرطُ الأفعال مكتوبٌ بيدٍ — فيظهر فعلٌ يردّه الخادم')
+  it('شرطها من `DECISIONS` و`canRemind` أنفسهما لا من قائمة ثانية', () => {
+    expect(screen, 'شرط الأفعال مكتوب بيد — فيظهر فعل يردّه الخادم')
       .toContain('DECISIONS.some((d) => d.action === action && d.from.includes(status))')
-    expect(screen, 'التذكيرُ لا يقرأ مِحَكَّ الخادم').toMatch(/if \(canRemind\(a\)\)/)
+    expect(screen, 'التذكير لا يقرأ محكّ الخادم').toMatch(/if \(canRemind\(a\)\)/)
   })
 
-  it('وفيها الأفعالُ الأربعةُ التي طُلبت — كلٌّ بشرطه', () => {
+  it('وفيها الأفعال الأربعة التي طلبت — كلّ بشرطه', () => {
     for (const [what, needle] of [
       ['الاعتماد', 'allows("approve", a.status)'],
-      ['طلبُ تحديد الموعد', '/booking-reminder'],
-      ['تذكيرُ المسوّدة', '/draft-reminder'],
+      ['طلب تحديد الموعد', '/booking-reminder'],
+      ['تذكير المسوّدة', '/draft-reminder'],
       ['الرفض', 'allows("reject", a.status)'],
-      ['التراجعُ عن الرفض', 'allows("undo_reject", a.status)'],
-      ['التراجعُ عن السحب', 'allows("undo_withdraw", a.status)'],
+      ['التراجع عن الرفض', 'allows("undo_reject", a.status)'],
+      ['التراجع عن السحب', 'allows("undo_withdraw", a.status)'],
     ] as const) {
       expect(screen, `${what}: غاب عن قائمة أفعال الصفّ`).toContain(needle)
     }
     /* وتذكيرُ المسوّدة للمسوّدة وحدَها — والخادمُ يشترطها */
-    expect(screen, 'تذكيرُ المسوّدة يُعرض لغير المسوّدة').toMatch(/a\.status === "draft"/)
+    expect(screen, 'تذكير المسوّدة يعرض لغير المسوّدة').toMatch(/a\.status === "draft"/)
   })
 
-  it('والقائمةُ تُغلق بالمستمع والمفتاح — لا بستارةٍ تحبسها الترويسة', () => {
+  it('والقائمة تغلق بالمستمع والمفتاح — لا بستارة تحبسها الترويسة', () => {
     const menu = /function RowActions\([\s\S]*?\n\}/.exec(screen)?.[0] ?? ''
-    expect(menu, 'مكوّنُ القائمة مفقود').toBeTruthy()
-    expect(menu, 'لا تُغلق بنقرةٍ خارجها').toContain("document.addEventListener(\"mousedown\"")
-    expect(menu, 'لا تُغلق بـEscape').toContain('e.key === "Escape"')
+    expect(menu, 'مكوّن القائمة مفقود').toBeTruthy()
+    expect(menu, 'لا تغلق بنقرة خارجها').toContain("document.addEventListener(\"mousedown\"")
+    expect(menu, 'لا تغلق بـEscape').toContain('e.key === "Escape"')
     /* ويُعلَن دورُها لقارئ الشاشة — زرٌّ بلا اسمٍ ولا دورٍ لا يُنقر بلوحة */
-    expect(menu, 'الزرُّ بلا اسمٍ مقروء').toContain('aria-label={`إجراءات ${label}`}')
-    expect(menu, 'القائمةُ بلا دورٍ معلَن').toContain('role="menu"')
-    expect(menu, 'عناصرُها بلا دورٍ معلَن').toContain('role="menuitem"')
+    expect(menu, 'الزرّ بلا اسم مقروء').toContain('aria-label={`إجراءات ${label}`}')
+    expect(menu, 'القائمة بلا دور معلن').toContain('role="menu"')
+    expect(menu, 'عناصرها بلا دور معلن').toContain('role="menuitem"')
   })
 })
 
@@ -167,24 +167,24 @@ describe('③ قائمةُ الأفعال تتبع حالةَ الطلب', () =>
    **والحارسُ لم يُحذف بل نُقل إلى حيث انتقل الرقم**: ما يحرسه هو أن يبدأ
    الطابورُ بخمسين لا بعشرين كما كان — والخيارُ بعد ذلك لصاحبه. ولو حُذف
    لَأمكن أن يعود الافتراضُ عشرين ولا يقول ذلك أحد. */
-describe('④ والصفحةُ تبدأ بخمسين', () => {
-  it('لا عشرين كما كانت — والافتراضُ حيث صار الرقمُ يسكن', () => {
+describe('④ والصفحة تبدأ بخمسين', () => {
+  it('لا عشرين كما كانت — والافتراض حيث صار الرقم يسكن', () => {
     const size = /const \[size, setSize\] = useState\((\d+)\)/.exec(code(SCREEN))?.[1]
-    expect(size, 'حجمُ الصفحة الافتراضيُّ لا يُقرأ من الشيفرة').toBeTruthy()
-    expect(Number(size), 'عادت الصفحةُ إلى ما كانت').toBeGreaterThanOrEqual(50)
+    expect(size, 'حجم الصفحة الافتراضيّ لا يقرأ من الشيفرة').toBeTruthy()
+    expect(Number(size), 'عادت الصفحة إلى ما كانت').toBeGreaterThanOrEqual(50)
   })
 
-  it('ويُمرَّر إلى `paginate` — فالخيارُ يعمل لا يُعرض فحسب', () => {
+  it('ويمرّر إلى `paginate` — فالخيار يعمل لا يعرض فحسب', () => {
     /* والمحروسُ وصولُ الحجم لا اسمُ ما يُرقَّم: خرج الترشيحُ إلى `matching`
        ليُقرأ مرّتين — مرّةً للصفحة ومرّةً لـ«حدّد الكلَّ المطابق» — فكُتب
        `paginate(matching, …)` بدل `paginate(sortApplications(…))`. وذاك
        تبدّلُ شكلٍ لا تبدّلُ حكم. */
-    expect(code(SCREEN), 'الترقيمُ لا يقرأ الحجمَ المختار')
+    expect(code(SCREEN), 'الترقيم لا يقرأ الحجم المختار')
       .toMatch(/paginate\([\s\S]*?page, size\);/)
   })
 
-  it('والمُبدِّلُ في الشريط — وإلّا فالحالةُ بلا يدٍ تغيّرها', () => {
-    expect(code(SCREEN), 'الشريطُ بلا مُبدِّلِ حجم')
+  it('والمبدّل في الشريط — وإلّا فالحالة بلا يد تغيّرها', () => {
+    expect(code(SCREEN), 'الشريط بلا مبدّل حجم')
       .toMatch(/size=\{size\}\s+onSize=\{setSize\}/)
   })
 })

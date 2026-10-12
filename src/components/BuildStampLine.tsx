@@ -64,11 +64,11 @@ export default function BuildStampLine() {
     <p className="mt-10 border-t border-white/10 pt-4 text-read text-muted-foreground print:hidden">
       <span className="font-mono">{sha}</span>
       {ref ? <> · {ref}</> : null}
-      {built ? <> · بُني {built}</> : null}
+      {built ? <> · بني {built}</> : null}
       {v.الكود?.البيئة ? <> · {v.الكود.البيئة}</> : null}
       {" — "}
       <Link className="underline hover:text-foreground" to="/admin/system-health">
-        النسخةُ العاملةُ وحالُ البيئة
+        النسخة العاملة وحال البيئة
       </Link>
     </p>
   );

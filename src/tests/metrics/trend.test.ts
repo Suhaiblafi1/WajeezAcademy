@@ -22,12 +22,12 @@ describe('نافذتا المقارنة', () => {
     expect(countWindows(rows, (r) => r.at, NOW)).toEqual({ current: 2, previous: 2 })
   })
 
-  it('طابع فاسد أو غائب لا يُحسب حركة', () => {
+  it('طابع فاسد أو غائب لا يحسب حركة', () => {
     const rows = [{ at: ago(1) }, { at: 'ليس تاريخا' }, { at: null }, { at: undefined }]
     expect(countWindows(rows, (r) => r.at, NOW)).toEqual({ current: 1, previous: 0 })
   })
 
-  it('طابع في المستقبل لا يُحسب — لم يقع بعد', () => {
+  it('طابع في المستقبل لا يحسب — لم يقع بعد', () => {
     const rows = [{ at: new Date(NOW + 3 * DAY).toISOString() }, { at: ago(2) }]
     expect(countWindows(rows, (r) => r.at, NOW)).toEqual({ current: 1, previous: 0 })
   })
@@ -93,7 +93,7 @@ describe('رقم اللحظة', () => {
     expect(t.direction).toBe('none')
     expect(t.percent).toBeNull()
     expect(t.showArrow).toBe(false)
-    expect(t.sentenceAr).toBe('رقمُ لحظة — لا سجل لعدده الأسبوع الماضي')
+    expect(t.sentenceAr).toBe('رقم لحظة — لا سجل لعدده الأسبوع الماضي')
     expect(trendBadgeAr(t)).toBeNull()
   })
 })

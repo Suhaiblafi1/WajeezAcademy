@@ -201,17 +201,17 @@ export function submitVerdict(input: {
   if (!input.resubmitRequested && input.opensAt && now < input.opensAt.getTime()) {
     return {
       ok: false, code: 'not_open_yet',
-      messageAr: `لم تُفتح هذه المهمّةُ بعد — تُفتح ${whenAr(input.opensAt)} بعد لقاء محورها`,
+      messageAr: `لم تفتح هذه المهمّة بعد — تفتح ${whenAr(input.opensAt)} بعد لقاء محورها`,
     }
   }
   if (input.window && now > input.window.closesAt.getTime()) {
     if (now > input.window.accessEndsAt.getTime()) {
-      return { ok: false, code: 'access_ended', messageAr: 'انتهت مدّةُ الوصول إلى هذه الشعبة — لا تسليمَ بعدها' }
+      return { ok: false, code: 'access_ended', messageAr: 'انتهت مدّة الوصول إلى هذه الشعبة — لا تسليم بعدها' }
     }
     if (!input.resubmitRequested) {
       return {
         ok: false, code: 'cohort_closed',
-        messageAr: `انتهت الشعبة ${whenAr(input.window.closesAt)} — والتسليمُ يتوقّف بانتهائها`,
+        messageAr: `انتهت الشعبة ${whenAr(input.window.closesAt)} — والتسليم يتوقّف بانتهائها`,
       }
     }
   }

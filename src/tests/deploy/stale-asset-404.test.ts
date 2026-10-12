@@ -32,19 +32,19 @@ function blockAt(src: string, at: number): string {
   return ''
 }
 
-describe('الأصولُ لا تسقط على index.html', () => {
+describe('الأصول لا تسقط على index.html', () => {
   const at = CADDY.search(/^\s*handle \/assets\/\*\s*\{/m)
   const assets = at < 0 ? '' : blockAt(CADDY, at)
 
-  it('⚠️ لـ/assets/ كتلتُها، تخدم الملفَّ وحدَه بلا سقوط', () => {
-    expect(at, 'لا كتلةَ لـ/assets/* — فالقطعةُ الزائلةُ تُجاب بالصفحة الرئيسة').toBeGreaterThan(-1)
+  it('⚠️ لـ/assets/ كتلتها، تخدم الملفّ وحده بلا سقوط', () => {
+    expect(at, 'لا كتلة لـ/assets/* — فالقطعة الزائلة تجاب بالصفحة الرئيسة').toBeGreaterThan(-1)
     expect(assets).toMatch(/\bfile_server\b/)
-    expect(assets, 'في كتلة الأصول سقوطٌ على صفحة').not.toMatch(/\btry_files\b|index\.html/)
+    expect(assets, 'في كتلة الأصول سقوط على صفحة').not.toMatch(/\btry_files\b|index\.html/)
   })
 
-  it('⚠️ وتسبق كتلةَ السقوط — وإلّا ابتلعها', () => {
+  it('⚠️ وتسبق كتلة السقوط — وإلّا ابتلعها', () => {
     const fallback = CADDY.search(/^\s*try_files\b.*\/index\.html/m)
-    expect(fallback, 'لا سقوطَ على index.html أصلا').toBeGreaterThan(-1)
-    expect(at, 'كتلةُ الأصول بعد السقوط').toBeLessThan(fallback)
+    expect(fallback, 'لا سقوط على index.html أصلا').toBeGreaterThan(-1)
+    expect(at, 'كتلة الأصول بعد السقوط').toBeLessThan(fallback)
   })
 })

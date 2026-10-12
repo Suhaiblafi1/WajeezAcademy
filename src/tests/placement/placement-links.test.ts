@@ -15,8 +15,8 @@ import { applyPlacementHref, placementHref, statedLevelOf } from '../../applicat
 
 const query = (href: string) => new URLSearchParams(href.split('?')[1] ?? '')
 
-describe('رابطُ تحديث الخطّة بمستوى الاختبار', () => {
-  it('لكلّ مستوى: طلبُ تعديلٍ لسؤال الإنجليزيّة بنصّ خياره هو', () => {
+describe('رابط تحديث الخطّة بمستوى الاختبار', () => {
+  it('لكلّ مستوى: طلب تعديل لسؤال الإنجليزيّة بنصّ خياره هو', () => {
     for (const l of ENGLISH_LEVELS) {
       const req = parseReviseRequest(query(applyPlacementHref(l.code)))
       expect(req?.questionId).toBe(Q.ENGLISH_LEVEL)
@@ -25,8 +25,8 @@ describe('رابطُ تحديث الخطّة بمستوى الاختبار', () 
   })
 })
 
-describe('رابطُ الاختبار يحمل المستوى الموصوف', () => {
-  it('يُبنى ويُقرأ — وما ليس مستوى يُتجاهَل', () => {
+describe('رابط الاختبار يحمل المستوى الموصوف', () => {
+  it('يبنى ويقرأ — وما ليس مستوى يتجاهل', () => {
     expect(statedLevelOf(query(placementHref('b1')))).toBe('b1')
     expect(statedLevelOf(query(placementHref(null)))).toBeNull()
     expect(statedLevelOf(new URLSearchParams('from=z9'))).toBeNull()

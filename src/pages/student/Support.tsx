@@ -12,7 +12,7 @@ import { Panel, Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 const STATUS_AR: Record<string, string> = {
   open: "مفتوحة", in_progress: "قيد المعالجة", waiting_customer: "بانتظار ردك",
-  resolved: "محلولة", closed: "مغلقة", reopened: "أُعيد فتحها",
+  resolved: "محلولة", closed: "مغلقة", reopened: "أعيد فتحها",
 };
 
 interface Ticket {
@@ -43,11 +43,11 @@ export default function StudentSupport() {
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const errors = {
     subject: form.subject.trim().length === 0
-      ? "اكتب موضوعا يُعرَف به طلبُك"
-      : form.subject.trim().length < 3 ? "الموضوعُ قصيرٌ — ثلاثةُ أحرفٍ فأكثر" : null,
+      ? "اكتب موضوعا يعرف به طلبك"
+      : form.subject.trim().length < 3 ? "الموضوع ٣ أحرف على الأقل" : null,
     body: form.body.trim().length === 0
       ? "اشرح المشكلة كي يفهمها من يقرؤها"
-      : form.body.trim().length < 3 ? "الشرحُ قصيرٌ جدّا — أضف تفصيلا يُعين على الفهم" : null,
+      : form.body.trim().length < 3 ? "الشرح قصير — أضف تفصيلا" : null,
   };
   const showError = (k: keyof typeof errors) => (touched[k] ? errors[k] : null);
   const formReady = !errors.subject && !errors.body;
@@ -85,7 +85,7 @@ export default function StudentSupport() {
           <div className="mt-4 space-y-3">
             <div className="grid gap-3 sm:grid-cols-2">
               <div>
-                <label className="sr-only" htmlFor="ticket-subject">موضوعُ التذكرة</label>
+                <label className="sr-only" htmlFor="ticket-subject">موضوع التذكرة</label>
                 <input
                   id="ticket-subject"
                   value={form.subject}
@@ -98,7 +98,7 @@ export default function StudentSupport() {
                 <FieldError id="ticket-subject-error">{showError("subject")}</FieldError>
               </div>
               <div>
-                <label className="sr-only" htmlFor="ticket-category">تصنيفُ التذكرة</label>
+                <label className="sr-only" htmlFor="ticket-category">تصنيف التذكرة</label>
                 <select id="ticket-category" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className={`${inputCls} [&>option]:bg-surface`}>
                   <option value="billing">الفواتير والدفع</option>
                   <option value="learning">المحتوى والجلسات</option>
@@ -108,7 +108,7 @@ export default function StudentSupport() {
               </div>
             </div>
             <div>
-              <label className="sr-only" htmlFor="ticket-body">شرحُ المشكلة</label>
+              <label className="sr-only" htmlFor="ticket-body">شرح المشكلة</label>
               <textarea
                 id="ticket-body"
                 value={form.body}
@@ -130,7 +130,7 @@ export default function StudentSupport() {
                   setForm({ subject: "", category: "other", body: "" });
                   setTouched({});
                   setCreateOpen(false);
-                }, "فُتحت التذكرة — يرد عليك فريق الدعم هنا")}>
+                }, "فتحت التذكرة — يرد عليك فريق الدعم هنا")}>
               إرسال التذكرة
             </Button>
           </div>
@@ -142,7 +142,7 @@ export default function StudentSupport() {
       ) : rows.length === 0 ? (
         <Panel className="grid place-items-center py-16 text-center">
           <LifeBuoy className="h-12 w-12 text-muted-foreground/50" />
-          <p className="mt-4 text-sm text-muted-foreground">لا تذاكر — افتح أول تذكرة من الأعلى وسنرد عليك في نفس الخيط.</p>
+          <p className="mt-4 text-sm text-muted-foreground">لا تذاكر بعد — افتح تذكرة من الأعلى.</p>
         </Panel>
       ) : (
         <div className="space-y-3">
@@ -172,7 +172,7 @@ export default function StudentSupport() {
                     <div className="mt-3 flex gap-2">
                       <input value={reply} onChange={(e) => setReply(e.target.value)} placeholder="اكتب ردا…" className={`${inputCls} flex-1`} />
                       <button disabled={busy || !reply.trim()}
-                        onClick={() => act(async () => { await apiPost(`/api/learner/support/tickets/${t.id}/reply`, { body: reply }); setReply(""); }, "أُرسل ردك")}
+                        onClick={() => act(async () => { await apiPost(`/api/learner/support/tickets/${t.id}/reply`, { body: reply }); setReply(""); }, "أرسل ردك")}
                         className="flex cursor-pointer items-center gap-1.5 rounded-xl bg-teal px-4 py-2 text-xs font-black text-on-teal disabled:opacity-40">
                         <Send className="h-3.5 w-3.5" />
                       </button>
@@ -191,7 +191,7 @@ export default function StudentSupport() {
                           onClick={() => act(async () => {
                             await apiPost(`/api/learner/support/tickets/${t.id}/reopen`, { note: reopenNote.trim() });
                             setReopenFor(null); setReopenNote("");
-                          }, "أُعيد فتح التذكرة")}
+                          }, "أعيد فتح التذكرة")}
                           className="cursor-pointer rounded-xl bg-gold px-4 py-2 text-xs font-black text-on-gold disabled:opacity-40">
                           تأكيد
                         </button>

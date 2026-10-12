@@ -38,18 +38,18 @@ const SESSIONS = 'src/pages/trainer/SessionsAndAttendance.tsx'
 function sessionsStage(src: string): string {
   const from = src.indexOf('stage === "sessions" &&')
   const to = src.indexOf('stage === "assignments" &&')
-  expect(from, 'لا مرحلةَ لقاءات').toBeGreaterThan(-1)
-  expect(to, 'لا مرحلةَ تكاليف بعدها').toBeGreaterThan(from)
+  expect(from, 'لا مرحلة لقاءات').toBeGreaterThan(-1)
+  expect(to, 'لا مرحلة تكاليف بعدها').toBeGreaterThan(from)
   return src.slice(from, to)
 }
 
-describe('اللقاءُ وحضورُه في مرحلةٍ واحدة', () => {
-  it('نداءُ تسجيل الحضور غادر التشغيلَ ولم يبقَ له أثرٌ عامل', () => {
+describe('اللقاء وحضوره في مرحلة واحدة', () => {
+  it('نداء تسجيل الحضور غادر التشغيل ولم يبق له أثر عامل', () => {
     const ops = code(OPS)
-    expect(ops, 'تسجيلُ الحضور ما زال في التشغيل').not.toContain('/attendance')
-    expect(ops, 'شبكةُ الحضور ما زالت في التشغيل').not.toContain('ATTENDANCE_OPTIONS')
+    expect(ops, 'تسجيل الحضور ما زال في التشغيل').not.toContain('/attendance')
+    expect(ops, 'شبكة الحضور ما زالت في التشغيل').not.toContain('ATTENDANCE_OPTIONS')
     /* واقتراحُ التأجيل تبع لقاءَه */
-    expect(ops, 'اقتراحُ التأجيل ما زال في التشغيل').not.toContain('/reschedule')
+    expect(ops, 'اقتراح التأجيل ما زال في التشغيل').not.toContain('/reschedule')
   })
 
   it('وهو في ملفّه الجديد كاملا — حضورا ونقلا واجتماعا', () => {
@@ -59,16 +59,16 @@ describe('اللقاءُ وحضورُه في مرحلةٍ واحدة', () => {
     const s = code(SESSIONS)
     expect(s).toContain('/attendance')
     expect(s).toContain('ATTENDANCE_OPTIONS.map')
-    expect(s, 'نقلُ الموعد ليس في بطاقة اللقاء').toMatch(/apiPatch\(`\/api\/trainer\/sessions\//)
-    expect(s, 'وحذفُه كذلك — والشاشةُ كانت تأمر به بلا باب').toMatch(/apiDelete\(`\/api\/trainer\/sessions\//)
-    expect(s, 'رابطُ الاجتماع لا يُفتح من بطاقة اللقاء').toContain('s.zoom')
+    expect(s, 'نقل الموعد ليس في بطاقة اللقاء').toMatch(/apiPatch\(`\/api\/trainer\/sessions\//)
+    expect(s, 'وحذفه كذلك — والشاشة كانت تأمر به بلا باب').toMatch(/apiDelete\(`\/api\/trainer\/sessions\//)
+    expect(s, 'رابط الاجتماع لا يفتح من بطاقة اللقاء').toContain('s.zoom')
   })
 
-  it('والمرحلةُ تُصيّره فعلا — لا ملفٌّ بلا شاشة', () => {
+  it('والمرحلة تصيّره فعلا — لا ملفّ بلا شاشة', () => {
     const stage = sessionsStage(code(WS))
-    expect(stage, 'المرحلةُ لا تُصيّر اللقاءاتِ والحضور').toContain('<SessionsAndAttendance')
-    expect(stage, 'ولا نموذجَ الجدولة').toContain('<TrainerSchedule')
-    expect(code(WS), 'الاستيرادُ مفقود').toContain('from "./SessionsAndAttendance"')
+    expect(stage, 'المرحلة لا تصيّر اللقاءات والحضور').toContain('<SessionsAndAttendance')
+    expect(stage, 'ولا نموذج الجدولة').toContain('<TrainerSchedule')
+    expect(code(WS), 'الاستيراد مفقود').toContain('from "./SessionsAndAttendance"')
   })
 
   /* ═══ قائمةٌ واحدةٌ للقاءات في المرحلة ═══
@@ -77,9 +77,9 @@ describe('اللقاءُ وحضورُه في مرحلةٍ واحدة', () => {
      `ws.sessions` لتُلصق رابطَ تسجيل. فبعد النقل صار في الشاشة الواحدة
      سردان للقاءاتِ الشعبة نفسِها — وهو عينُ الكثافة التي شكا منها صاحبُ
      المنصّة. فنزل حقلُ الرابط إلى بطاقة اللقاء، وسقطت اللوحة. */
-  it('ولا سردان للقاءات في شاشةٍ واحدة', () => {
+  it('ولا سردان للقاءات في شاشة واحدة', () => {
     const stage = sessionsStage(code(WS))
-    expect(stage, 'المرحلةُ تسرد اللقاءاتِ بنفسها فوقَ سردِ المكوّن').not.toContain('ws.sessions.map')
+    expect(stage, 'المرحلة تسرد اللقاءات بنفسها فوق سرد المكوّن').not.toContain('ws.sessions.map')
     /* ═══ وحقلُ رابط التسجيل أُغلق بالكلّيّة (١٧ سبتمبر ٢٠٢٦) ═══
 
        كان الحارسُ يطلب نزولَه إلى بطاقة اللقاء. وسأل صاحبُ المنصّة: «ما
@@ -87,8 +87,8 @@ describe('اللقاءُ وحضورُه في مرحلةٍ واحدة', () => {
        فينا؟» — وضرَرُه أكبرُ من سؤالٍ زائد: هو الخانةُ الوحيدةُ في الشاشة
        التي تقبل رابطا، فيلصق فيها من يملك زووم خاصًّا رابطَ اجتماعه هو
        فيصل المتعلّمين. فذهب من الشاشتَين معا. */
-    expect(stage, 'لوحةُ التسجيلات ما زالت تُسرد على حدة').not.toContain('recording-link')
-    expect(code(SESSIONS), 'خانةُ رابط التسجيل عادت إلى بطاقة اللقاء').not.toContain('/recording-link')
+    expect(stage, 'لوحة التسجيلات ما زالت تسرد على حدة').not.toContain('recording-link')
+    expect(code(SESSIONS), 'خانة رابط التسجيل عادت إلى بطاقة اللقاء').not.toContain('/recording-link')
   })
 
   /* نقلٌ لا نسخ: نداءٌ واحدٌ لتسجيل الحضور في بوّابة المدرّب كلِّها. */
@@ -99,6 +99,6 @@ describe('اللقاءُ وحضورُه في مرحلةٍ واحدة', () => {
         try { readFileSync(join(root, p)); return true } catch { return false }
       })
     const holders = screens.filter((p) => /sessions\/\$\{[^}]+\}\/attendance/.test(code(p)))
-    expect(holders, `شبكةُ الحضور في أكثرَ من شاشة:\n${holders.join('\n')}`).toHaveLength(1)
+    expect(holders, `شبكة الحضور في أكثر من شاشة:\n${holders.join('\n')}`).toHaveLength(1)
   })
 })

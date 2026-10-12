@@ -64,13 +64,13 @@ const ALL_COMMANDS = workflow
 
 const CI_SCRIPTS = Object.keys(pkg.scripts).filter((k) => k.startsWith('ci:'))
 
-describe('البوّاباتُ المعرَّفةُ تعمل في CI', () => {
-  it('المسحُ يقرأ سكربتاتٍ فعلا — وإلّا فالحارسُ أخضرُ لفراغه', () => {
+describe('البوّابات المعرّفة تعمل في CI', () => {
+  it('المسح يقرأ سكربتات فعلا — وإلّا فالحارس أخضر لفراغه', () => {
     expect(CI_SCRIPTS.length).toBeGreaterThan(5)
     expect(RUN_LINES.length).toBeGreaterThan(100)
   })
 
-  it.each(CI_SCRIPTS)('«%s» تُستدعى في ci.yml', (script) => {
+  it.each(CI_SCRIPTS)('«%s» تستدعى في ci.yml', (script) => {
     /* يُقبل النداءُ باسم السكربت (`npm run ci:x`) أو بملفّه مباشرةً
        (`npx tsx scripts/x.ts`) — فبعضُ البوّابات تُستدعى بملفّها. */
     const byName = new RegExp(`npm run ${script.replace(':', ':')}(\\s|$)`).test(ALL_COMMANDS)
@@ -82,9 +82,9 @@ describe('البوّاباتُ المعرَّفةُ تعمل في CI', () => {
     const byFile = file ? ALL_COMMANDS.includes(file) : false
     expect(
       byName || byFile,
-      `البوّابة «${script}» معرَّفةٌ في package.json ولا تُستدعى في ci.yml.\n`
-      + 'وبوّابةٌ خارج CI ليست بوّابة: «خضرةُ CI هي الإذن» (CLAUDE.md).\n'
-      + `أضِفها خطوةً في .github/workflows/ci.yml، أو احذفها إن لم تعد تحرس شيئا.`,
+      `البوّابة «${script}» معرّفة في package.json ولا تستدعى في ci.yml.\n`
+      + 'وبوّابة خارج CI ليست بوّابة: «خضرة CI هي الإذن» (CLAUDE.md).\n'
+      + `أضفها خطوة في .github/workflows/ci.yml، أو احذفها إن لم تعد تحرس شيئا.`,
     ).toBe(true)
   })
 })

@@ -29,7 +29,7 @@ const daysAgo = (d: number) => new Date(NOW.getTime() - d * 86_400_000)
 
 let seq = 0
 const row = (over: Partial<UnbookedRow> = {}): UnbookedRow => ({
-  fullName: `متقدّمٌ ${(seq += 1)}`,
+  fullName: `متقدّم ${(seq += 1)}`,
   reference: `WJ-TR-2609-${String(seq).padStart(4, '0')}`,
   status: 'submitted',
   liveInterviews: 0,
@@ -39,7 +39,7 @@ const row = (over: Partial<UnbookedRow> = {}): UnbookedRow => ({
 })
 
 describe('من يدخل الملخّص', () => {
-  it('① من له موعدٌ قائمٌ لا يُدرَج، ومن ألغاه يُدرَج', () => {
+  it('① من له موعد قائم لا يدرج، ومن ألغاه يدرج', () => {
     expect(lateToBook([row({ liveInterviews: 1 })], NOW)).toEqual([])
     /* الملغى لا يصل هنا مقابلةً قائمة — العدُّ نفسُه يستثني الملغاة */
     expect(lateToBook([row({ liveInterviews: 0 })], NOW)).toHaveLength(1)
@@ -55,7 +55,7 @@ describe('من يدخل الملخّص', () => {
 
      فلم يُحذَف هذا الحارسُ بل قُلب: ما وقع فيه قرارٌ يخرج، و«رأيٌ ثانٍ»
      ليست قرارا. */
-  it('② وما وقع فيه قرارٌ أو حُدّد موعدُه يخرج — و«رأيٌ ثانٍ» ليست قرارا', () => {
+  it('② وما وقع فيه قرار أو حدّد موعده يخرج — و«رأي ثان» ليست قرارا', () => {
     const decided = ['rejected', 'waitlisted', 'interview_scheduled', 'approved', 'withdrawn']
     for (const status of decided) {
       expect(lateToBook([row({ status })], NOW), status).toEqual([])
@@ -66,17 +66,17 @@ describe('من يدخل الملخّص', () => {
     }
   })
 
-  it('③ والعتبةُ عند طرفها: ثلاثةٌ تدخل ويومان لا', () => {
+  it('③ والعتبة عند طرفها: ثلاثة تدخل ويومان لا', () => {
     expect(lateToBook([row({ completedAt: daysAgo(UNBOOKED_AFTER_DAYS - 1) })], NOW)).toEqual([])
     expect(lateToBook([row({ completedAt: daysAgo(UNBOOKED_AFTER_DAYS) })], NOW)).toHaveLength(1)
   })
 
-  it('ومن لا تاريخَ لإتمامه لا يُدرَج — لا تُحسب له مدّةٌ من فراغ', () => {
+  it('ومن لا تاريخ لإتمامه لا يدرج — لا تحسب له مدّة من فراغ', () => {
     expect(lateToBook([row({ completedAt: null })], NOW)).toEqual([])
     expect(lateToBook([row({ completedAt: 'ليس تاريخا' })], NOW)).toEqual([])
   })
 
-  it('⑤ وأطولُهم وقوفا أوّلا', () => {
+  it('⑤ وأطولهم وقوفا أوّلا', () => {
     const late = lateToBook([
       row({ completedAt: daysAgo(4) }),
       row({ completedAt: daysAgo(20) }),
@@ -86,8 +86,8 @@ describe('من يدخل الملخّص', () => {
   })
 })
 
-describe('الملخّصُ نفسُه', () => {
-  it('④ لا ملخّصَ حين لا متأخّر', () => {
+describe('الملخّص نفسه', () => {
+  it('④ لا ملخّص حين لا متأخّر', () => {
     expect(unbookedDigest([], NOW)).toBeNull()
     /* ولا حين يسقط كلُّ من في الطابور على شرطٍ من الشروط */
     expect(unbookedDigest([
@@ -97,7 +97,7 @@ describe('الملخّصُ نفسُه', () => {
     ], NOW)).toBeNull()
   })
 
-  it('⑤ والعددُ وأقدمُهم يُقرآن من الكلّ لا من أوّل صفّ', () => {
+  it('⑤ والعدد وأقدمهم يقرآن من الكلّ لا من أوّل صفّ', () => {
     const digest = unbookedDigest([
       row({ completedAt: daysAgo(4) }),
       row({ completedAt: daysAgo(17) }),
@@ -109,27 +109,27 @@ describe('الملخّصُ نفسُه', () => {
     expect(digest?.oldestAr).toBe('منذ 17 يوما')
   })
 
-  it('⑥ ومن ذُكِّر يُقرأ في سطره متى ذُكِّر', () => {
+  it('⑥ ومن ذكّر يقرأ في سطره متى ذكّر', () => {
     const [never, reminded, today] = lateToBook([
       row({ remindedAt: null }),
       row({ remindedAt: daysAgo(2) }),
       row({ remindedAt: daysAgo(0) }),
     ], NOW)
-    expect(never.lineAr).toContain('لم يُذكَّر بعد')
-    expect(reminded.lineAr).toContain('ذُكِّر منذ 2 يومين')
-    expect(today.lineAr).toContain('ذُكِّر اليوم')
+    expect(never.lineAr).toContain('لم يذكّر بعد')
+    expect(reminded.lineAr).toContain('ذكّر منذ 2 يومين')
+    expect(today.lineAr).toContain('ذكّر اليوم')
   })
 
-  it('وكلُّ سطرٍ يحمل اسمَه ورقمَه ومدّتَه — فيُعرَف من السطر وحدَه', () => {
+  it('وكلّ سطر يحمل اسمه ورقمه ومدّته — فيعرف من السطر وحده', () => {
     const [line] = lateToBook([
-      row({ fullName: 'سميرُ العبادي', reference: 'WJ-TR-2609-0007', completedAt: daysAgo(5) }),
+      row({ fullName: 'سمير العبادي', reference: 'WJ-TR-2609-0007', completedAt: daysAgo(5) }),
     ], NOW)
-    expect(line.lineAr).toContain('سميرُ العبادي')
+    expect(line.lineAr).toContain('سمير العبادي')
     expect(line.lineAr).toContain('WJ-TR-2609-0007')
-    expect(line.lineAr).toContain('أتمّ طلبَه منذ 5 أيّام')
+    expect(line.lineAr).toContain('أتمّ طلبه منذ 5 أيّام')
   })
 
-  it('⑦ والمتنُ فقرةٌ لكلّ اسم — فلا تلتصق الأسماءُ في الرسالة', () => {
+  it('⑦ والمتن فقرة لكلّ اسم — فلا تلتصق الأسماء في الرسالة', () => {
     const digest = unbookedDigest([row(), row(), row()], NOW)
     const paragraphs = digest!.bodyAr.split(/\n{2,}/).filter(Boolean)
     /* سطرُ «لا يصل المتقدّمَ شيء» ثمّ ثلاثةُ أسماء */
@@ -137,42 +137,42 @@ describe('الملخّصُ نفسُه', () => {
     for (const line of digest!.lines) expect(paragraphs).toContain(line)
   })
 
-  it('والمتنُ يقول إنّ المتقدّمَ لا يصله شيءٌ من هذه الرسالة', () => {
+  it('والمتن يقول إنّ المتقدّم لا يصله شيء من هذه الرسالة', () => {
     const digest = unbookedDigest([row()], NOW)
     /* وهو ليس زينةً في النصّ: قرارُ «التذكيرُ يدويّ» يُقرأ هنا، ولولاه
        لَظنّ الموظّفُ أنّ الآلةَ راسلتهم فلا يرسل. */
-    expect(digest?.bodyAr).toContain('ولا يصل المتقدّمَ شيءٌ من هذه الرسالة')
+    expect(digest?.bodyAr).toContain('ولا يصل المتقدّم شيء من هذه الرسالة')
   })
 
-  it('وما زاد على سقف الأسماء يُقال عددا لا يُبتلَع', () => {
+  it('وما زاد على سقف الأسماء يقال عددا لا يبتلع', () => {
     const many = Array.from({ length: DIGEST_NAMES + 3 }, (_, i) => row({ completedAt: daysAgo(4 + i) }))
     const digest = unbookedDigest(many, NOW)
     expect(digest?.count).toBe(DIGEST_NAMES + 3)
     expect(digest?.lines).toHaveLength(DIGEST_NAMES)
-    expect(digest?.bodyAr).toContain('وفي الطابور 3 غيرُهم')
+    expect(digest?.bodyAr).toContain('وفي الطابور 3 غيرهم')
   })
 
-  it('والعنوانُ يُصرَّف عربيّا — فلا «1 متقدّمين»', () => {
-    expect(unbookedTitleAr(1)).toBe('متقدّمٌ واحدٌ لم يحجز موعدَ لقاء التعارف')
-    expect(unbookedTitleAr(2)).toBe('متقدّمان لم يحجزا موعدَ لقاء التعارف')
-    expect(unbookedTitleAr(4)).toBe('4 متقدّمين لم يحجزوا موعدَ لقاء التعارف')
-    expect(unbookedTitleAr(12)).toBe('12 متقدّما لم يحجزوا موعدَ لقاء التعارف')
+  it('والعنوان يصرّف عربيّا — فلا «1 متقدّمين»', () => {
+    expect(unbookedTitleAr(1)).toBe('متقدّم واحد لم يحجز موعد لقاء التعارف')
+    expect(unbookedTitleAr(2)).toBe('متقدّمان لم يحجزا موعد لقاء التعارف')
+    expect(unbookedTitleAr(4)).toBe('4 متقدّمين لم يحجزوا موعد لقاء التعارف')
+    expect(unbookedTitleAr(12)).toBe('12 متقدّما لم يحجزوا موعد لقاء التعارف')
   })
 })
 
-describe('⑧ نافذةُ الصباح بتوقيت الأكاديمية', () => {
+describe('⑧ نافذة الصباح بتوقيت الأكاديمية', () => {
   /* عمّان على +٣ طوالَ السنة (لا توقيتَ صيفيّ منذ ٢٠٢٢) */
   it.each([
-    ['2026-09-19T03:59:00Z', false, 'السادسةُ وتسعٌ وخمسون — قبل النافذة'],
-    ['2026-09-19T04:00:00Z', true, 'السابعةُ تماما — أوّلُ النافذة'],
-    ['2026-09-19T06:59:00Z', true, 'التاسعةُ وتسعٌ وخمسون — آخرُها'],
-    ['2026-09-19T07:00:00Z', false, 'العاشرةُ تماما — خرجت'],
-    ['2026-09-19T21:00:00Z', false, 'منتصفُ الليل'],
+    ['2026-09-19T03:59:00Z', false, 'السادسة وتسع وخمسون — قبل النافذة'],
+    ['2026-09-19T04:00:00Z', true, 'السابعة تماما — أوّل النافذة'],
+    ['2026-09-19T06:59:00Z', true, 'التاسعة وتسع وخمسون — آخرها'],
+    ['2026-09-19T07:00:00Z', false, 'العاشرة تماما — خرجت'],
+    ['2026-09-19T21:00:00Z', false, 'منتصف الليل'],
   ])('%s → %s (%s)', (iso, expected) => {
     expect(isDigestHour(new Date(iso))).toBe(expected)
   })
 
-  it('ولو قُرئت الساعةُ بتوقيت الخادم لاختلف الجواب — وهذا ما يُحرَس', () => {
+  it('ولو قرئت الساعة بتوقيت الخادم لاختلف الجواب — وهذا ما يحرس', () => {
     /* السابعةُ صباحا بتوقيت عمّان هي الرابعةُ في UTC: فالنافذةُ لو قيست
        على UTC لَبدأت بعد ثلاث ساعات. */
     const dawn = new Date('2026-09-19T04:00:00Z')
@@ -180,7 +180,7 @@ describe('⑧ نافذةُ الصباح بتوقيت الأكاديمية', () =
     expect(isDigestHour(dawn, 'UTC'), 'بتوقيت الخادم').toBe(false)
   })
 
-  it('والنافذةُ ثلاثُ ساعاتٍ لا لحظة — فدورةٌ تتأخّر لا تُفوّت اليوم', () => {
+  it('والنافذة ثلاث ساعات لا لحظة — فدورة تتأخّر لا تفوّت اليوم', () => {
     expect(DIGEST_TO_HOUR - DIGEST_FROM_HOUR).toBeGreaterThanOrEqual(2)
   })
 })

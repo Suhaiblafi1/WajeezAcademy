@@ -96,28 +96,28 @@ const TRAINER_FILES = [
   'server/services/trainer-change.service.ts',
 ]
 
-describe('ولا «نؤهّلك» في نصٍّ يقرؤه المدرّب', () => {
-  it('الماسحُ يقرأ النصوصَ ويتجاوز التعليقات، ويرى اسمَ اللسان القديم — وإلّا فالحارسُ يقيس الفراغ', () => {
+describe('ولا «نؤهّلك» في نصّ يقرؤه المدرّب', () => {
+  it('الماسح يقرأ النصوص ويتجاوز التعليقات، ويرى اسم اللسان القديم — وإلّا فالحارس يقيس الفراغ', () => {
     const sample = [
-      '/* حين نؤهّلك في تعليقٍ يروي القرار */',
+      '/* حين نؤهّلك في تعليق يروي القرار */',
       "const a = 'وتظهر حين نؤهّلك لها'",
-      'const b = `النسخة ${v} · أُهِّلت ${d}`',
-      'const c = <p>لستَ مؤهَّلا لها</p>',
+      'const b = `النسخة ${v} · أهّلت ${d}`',
+      'const c = <p>لست مؤهّلا لها</p>',
       "const d = 'افتح «دوراتي» — أهلا بك'",
       "const e = 'افتح مؤهّلاتك'",
-      "notifyTrainerUser(id, { title: 'لم يُقبل تأهيلُك لدورة' })",
-      "notifyStaff(id, { title: 'طلبُ تأهيل' })",
+      "notifyTrainerUser(id, { title: 'لم يقبل تأهيلك لدورة' })",
+      "notifyStaff(id, { title: 'طلب تأهيل' })",
     ].join('\n')
     const sf = parse('sample.tsx', sample)
     const all = textsUnder(sf, sf).filter((t) => hitsOf(t.text).length > 0).map((t) => t.line)
-    expect(all, 'الماسحُ لا يرى النصَّ، أو يرى التعليق، أو لا يرى اسمَ اللسان القديم').toEqual([2, 3, 4, 6, 7, 8])
+    expect(all, 'الماسح لا يرى النصّ، أو يرى التعليق، أو لا يرى اسم اللسان القديم').toEqual([2, 3, 4, 6, 7, 8])
     expect(trainerNotifyTexts(sf).filter((t) => hitsOf(t.text).length > 0).map((t) => t.line),
-      'لا يُفرَز جرسُ المدرّب من جرس الفريق').toEqual([7])
+      'لا يفرز جرس المدرّب من جرس الفريق').toEqual([7])
   })
 
   it('① لا في البوّابة ولا الدليل ولا رسائل القرار', () => {
     const files = [...TRAINER_DIRS.flatMap((d) => sources(join(root, d))), ...TRAINER_FILES.map((f) => join(root, f))]
-    expect(files.length, 'لم تُقرأ ملفّاتُ المدرّب — فالحارسُ يقيس الفراغ').toBeGreaterThan(30)
+    expect(files.length, 'لم تقرأ ملفّات المدرّب — فالحارس يقيس الفراغ').toBeGreaterThan(30)
     const hits: string[] = []
     for (const file of files) {
       const sf = parse(file, readFileSync(file, 'utf8'))
@@ -125,10 +125,10 @@ describe('ولا «نؤهّلك» في نصٍّ يقرؤه المدرّب', () =
         for (const h of hitsOf(t.text)) hits.push(`${relative(root, file)}:${t.line} «${h}»`)
       }
     }
-    expect(hits, `«نؤهّلك» وأخواتُها فيما يقرؤه المدرّب — قل «اخترناها لك» أو «من دوراتك»:\n${hits.join('\n')}`).toEqual([])
+    expect(hits, `«نؤهّلك» وأخواتها فيما يقرؤه المدرّب — قل «اخترناها لك» أو «من دوراتك»:\n${hits.join('\n')}`).toEqual([])
   })
 
-  it('② ولا في جرسٍ يصل المدرّبَ من أيّ ملفّ', () => {
+  it('② ولا في جرس يصل المدرّب من أيّ ملفّ', () => {
     const files = sources(join(root, 'server'))
     const hits: string[] = []
     let calls = 0
@@ -139,14 +139,14 @@ describe('ولا «نؤهّلك» في نصٍّ يقرؤه المدرّب', () =
       calls += texts.length
       for (const t of texts) for (const h of hitsOf(t.text)) hits.push(`${relative(root, file)}:${t.line} «${h}»`)
     }
-    expect(calls, 'لم يُقرأ جرسٌ واحدٌ للمدرّب — فالحارسُ يقيس الفراغ').toBeGreaterThan(10)
-    expect(hits, `«نؤهّلك» وأخواتُها في جرس المدرّب:\n${hits.join('\n')}`).toEqual([])
+    expect(calls, 'لم يقرأ جرس واحد للمدرّب — فالحارس يقيس الفراغ').toBeGreaterThan(10)
+    expect(hits, `«نؤهّلك» وأخواتها في جرس المدرّب:\n${hits.join('\n')}`).toEqual([])
   })
 
   /* وأزرارُ البريد التي تفتح البوّابة — «افتح مؤهّلاتك» كانت أربعا. والجدولُ
      يجمع وجهاتِ الجماهير الثلاثة، فيُقرأ منه ما وجهتُه `/trainer` وحدَه: زرُّ
      «افتح طلبَ التأهيل» يفتح شاشةَ الإدارة، ولغتُها لغةُ الفريق. */
-  it('② ولا في زرّ بريدٍ يفتح بوّابةَ المدرّب', () => {
+  it('② ولا في زرّ بريد يفتح بوّابة المدرّب', () => {
     const file = join(root, 'src/application/notifications/destinations.ts')
     const sf = parse(file, readFileSync(file, 'utf8'))
     const ctas: { text: string; line: number }[] = []
@@ -161,17 +161,17 @@ describe('ولا «نؤهّلك» في نصٍّ يقرؤه المدرّب', () =
       ts.forEachChild(n, visit)
     }
     visit(sf)
-    expect(ctas.length, 'لم يُقرأ زرٌّ واحدٌ يفتح البوّابة — فالحارسُ يقيس الفراغ').toBeGreaterThan(10)
+    expect(ctas.length, 'لم يقرأ زرّ واحد يفتح البوّابة — فالحارس يقيس الفراغ').toBeGreaterThan(10)
     const hits = ctas.flatMap((t) => hitsOf(t.text).map((h) => `destinations.ts:${t.line} «${h}»`))
-    expect(hits, `«نؤهّلك» وأخواتُها في زرّ بريد المدرّب:\n${hits.join('\n')}`).toEqual([])
+    expect(hits, `«نؤهّلك» وأخواتها في زرّ بريد المدرّب:\n${hits.join('\n')}`).toEqual([])
   })
 
-  it('③ وخبرُ اعتماد الشعبة يقول «أُضيفت إلى دوراتك» لا «صرتَ مؤهَّلا»', () => {
+  it('③ وخبر اعتماد الشعبة يقول «أضيفت إلى دوراتك» لا «صرت مؤهّلا»', () => {
     const m = planApprovedTrainerMsg({
-      cohortTitle: 'شعبة', registrationOpen: false, qualifiedCourseAr: 'دورةُ الإعداد',
+      cohortTitle: 'شعبة', registrationOpen: false, qualifiedCourseAr: 'دورة الإعداد',
       meetingsApproved: 0, meetingsFailed: 0, tasksApplied: 0,
     })
-    expect(m.body).toContain('أُضيفت «دورةُ الإعداد» إلى دوراتك')
+    expect(m.body).toContain('أضيفت «دورة الإعداد» إلى دوراتك')
     expect(hitsOf(`${m.title} ${m.heading} ${m.body}`)).toEqual([])
   })
 })

@@ -19,30 +19,30 @@ const src = existsSync(p) ? readFileSync(p, 'utf8') : ''
 /** بلا التعليقات — فذِكرُ أمرٍ في شرحٍ ليس تنفيذا له */
 const code = src.split('\n').filter((l) => !l.trim().startsWith('#')).join('\n')
 
-describe('مركِّبُ النشر التلقائيّ', () => {
+describe('مركّب النشر التلقائيّ', () => {
   it('موجود', () => {
     expect(existsSync(p)).toBe(true)
   })
 
-  it('يفحص قبل أن يركّب — ولا يترك النقصَ يظهر بعد أسبوع', () => {
-    expect(code, 'ملفُّ البيئة: الناشرُ يقف عند أوّل سطرٍ بدونه').toMatch(/deploy\/\.env\.production/)
+  it('يفحص قبل أن يركّب — ولا يترك النقص يظهر بعد أسبوع', () => {
+    expect(code, 'ملفّ البيئة: الناشر يقف عند أوّل سطر بدونه').toMatch(/deploy\/\.env\.production/)
     expect(code, 'SITE_DOMAIN: منه يطلب Caddy الشهادة').toMatch(/SITE_DOMAIN/)
-    expect(code, 'الفرع: خادمٌ على فرعٍ آخرَ لا يُسحَب إليه main').toMatch(/rev-parse --abbrev-ref HEAD/)
+    expect(code, 'الفرع: خادم على فرع آخر لا يسحب إليه main').toMatch(/rev-parse --abbrev-ref HEAD/)
   })
 
-  it('ويجرّب ببيئةٍ فقيرةٍ كبيئة cron لا ببيئة من يشغّله', () => {
+  it('ويجرّب ببيئة فقيرة كبيئة cron لا ببيئة من يشغّله', () => {
     /* أكثرُ ما يُسقط مهمّةً مجدولة: لا وكيلَ SSH ولا PATH كامل. وفحصٌ بالبيئة
        الغنيّة يمرّ ثمّ تفشل الجدولةُ صامتةً كلَّ دقيقة. */
     expect(code).toMatch(/env -i/)
-    expect(code, 'مسارٌ مقصوصٌ كمسار cron').toMatch(/PATH=\/usr\/bin:\/bin/)
+    expect(code, 'مسار مقصوص كمسار cron').toMatch(/PATH=\/usr\/bin:\/bin/)
     expect(code, 'وأنّ docker compose في ذلك المسار').toMatch(/docker compose version/)
   })
 
-  it('وينشر مرّةً بعينِ من يركّب قبل أن يترك الأمرَ للجدولة', () => {
+  it('وينشر مرّة بعين من يركّب قبل أن يترك الأمر للجدولة', () => {
     expect(code).toMatch(/bash deploy\/deploy\.sh/)
   })
 
-  it('ويركّب سطرَ الجدولة على المراقب لا على الناشر مباشرةً', () => {
+  it('ويركّب سطر الجدولة على المراقب لا على الناشر مباشرة', () => {
     /* الناشرُ مباشرةً في cron يعيد النشرَ كلَّ دقيقة بلا داعٍ — والمراقبُ
        يسأل أوّلا فلا يفعل شيئا حين لا جديد. */
     expect(code).toMatch(/scripts\/deploy-watch\.sh/)
@@ -52,23 +52,23 @@ describe('مركِّبُ النشر التلقائيّ', () => {
        والدورةُ نفسُها قرارُ تشغيلٍ يتغيّر (كانت خمسَ دقائق، وصارت دقيقة)،
        فتثبيتُها هنا يجعل الحارسَ يسقط على تغييرٍ مقصودٍ لا على عطب. */
     const line = code.match(/CRON_LINE="([^"]+)"/)
-    expect(line, 'لا سطرَ جدولةٍ في المركِّب').toBeTruthy()
+    expect(line, 'لا سطر جدولة في المركّب').toBeTruthy()
     const fields = line![1].trim().split(/\s+/)
     const schedule = fields.slice(0, 5)
     const command = fields.slice(5).join(' ')
     for (const f of schedule) {
-      expect(f, `حقلُ جدولةٍ غيرُ صالحٍ في «${line![1]}»`).toMatch(/^[\d*/,-]+$/)
+      expect(f, `حقل جدولة غير صالح في «${line![1]}»`).toMatch(/^[\d*/,-]+$/)
     }
-    expect(command, 'الجدولةُ على الناشر مباشرةً — تعيد النشرَ في كلّ دورةٍ بلا داعٍ')
+    expect(command, 'الجدولة على الناشر مباشرة — تعيد النشر في كلّ دورة بلا داع')
       .toMatch(/\$WATCHER\b/)
-    expect(command, 'الناشرُ في الجدولة بلا سؤالٍ عن جديد').not.toMatch(/deploy\.sh/)
+    expect(command, 'الناشر في الجدولة بلا سؤال عن جديد').not.toMatch(/deploy\.sh/)
   })
 
-  it('وآمنُ الإعادة — تشغيلُه مرّتين لا يضع سطرَين', () => {
-    expect(code, 'بلا فحصِ وجودٍ تتراكم الأسطرُ وتتزاحم النشرات').toMatch(/grep -qF/)
+  it('وآمن الإعادة — تشغيله مرّتين لا يضع سطرين', () => {
+    expect(code, 'بلا فحص وجود تتراكم الأسطر وتتزاحم النشرات').toMatch(/grep -qF/)
   })
 
-  it('ويقف عند أوّل خطأٍ بدل أن يكمل على عطب', () => {
+  it('ويقف عند أوّل خطأ بدل أن يكمل على عطب', () => {
     expect(src).toMatch(/set -euo pipefail/)
   })
 })

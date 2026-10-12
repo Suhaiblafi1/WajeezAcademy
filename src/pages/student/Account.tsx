@@ -35,7 +35,7 @@ const API_BASE: string = import.meta.env.VITE_API_URL ?? "";
 const BIRTH_YEAR_FLOOR = 1930;
 
 const ARAB_COUNTRIES = [
-  "الأردن", "السعودية", "الإمارات", "مصر", "الكويت", "قطر", "عُمان", "البحرين",
+  "الأردن", "السعودية", "الإمارات", "مصر", "الكويت", "قطر", "عمان", "البحرين",
   "العراق", "فلسطين", "لبنان", "سوريا", "ليبيا", "تونس", "الجزائر", "المغرب", "السودان", "اليمن", "موريتانيا", "أخرى",
 ];
 const EDUCATION_LEVELS = ["ثانوي", "دبلوم", "بكالوريوس", "ماجستير", "دكتوراه", "أخرى"];
@@ -195,7 +195,7 @@ export default function StudentAccount() {
           setForm((f) => ({ ...f, displayName: f.displayName || localSession.name }));
         }
         setMode("local");
-        if (!(e instanceof ApiError && e.status === 401)) setErr("تعذر الوصول للخادم — سنعمل محليا مؤقتا");
+        if (!(e instanceof ApiError && e.status === 401)) setErr("تعذّر الوصول للخادم — الحفظ محلي مؤقتا");
       }
     })();
     return () => { alive = false; };
@@ -211,9 +211,9 @@ export default function StudentAccount() {
   const addInterest = () => {
     const v = interestDraft.trim();
     if (!v) { setInterestMsg("اكتب اهتماما أوّلا"); return; }
-    if (v.length > 40) { setInterestMsg("٤٠ حرفا حدُّ الاهتمام الواحد"); return; }
-    if (form.interests.includes(v)) { setInterestMsg(`«${v}» مضافٌ عندك بالفعل`); return; }
-    if (form.interests.length >= 12) { setInterestMsg("اثنا عشر اهتماما هي الحدّ — احذف واحدا لتضيف غيره"); return; }
+    if (v.length > 40) { setInterestMsg("٤٠ حرفا حدّ الاهتمام الواحد"); return; }
+    if (form.interests.includes(v)) { setInterestMsg(`«${v}» مضاف عندك بالفعل`); return; }
+    if (form.interests.length >= 12) { setInterestMsg("الحدّ ١٢ اهتماما — احذف واحدا أوّلا"); return; }
     set("interests", [...form.interests, v]);
     setInterestDraft("");
     setInterestMsg("");
@@ -241,7 +241,7 @@ export default function StudentAccount() {
         uploadUrl: string; maxBytes: number; avatarUrl: string; awaitingApproval: boolean;
       }>("/api/learner/avatar-upload", { mime: PHOTO_OUT_MIME });
       if (blob.size > r.maxBytes) {
-        setPhotoMsg({ bad: true, text: `الصورةُ أكبرُ من الحدّ (${Math.round(r.maxBytes / 1024)} ك.ب)` });
+        setPhotoMsg({ bad: true, text: `الصورة أكبر من الحدّ (${Math.round(r.maxBytes / 1024)} ك.ب)` });
         return;
       }
       const res = await fetch(`${API_BASE}${r.uploadUrl}`, {
@@ -249,18 +249,18 @@ export default function StudentAccount() {
       });
       if (!res.ok) {
         /* الحالةُ تُقال: ٥٠١ إشعالٌ مطفأ، و٤١٥ نوعٌ مرفوض، و٤٠٣ رابطٌ منتهٍ */
-        setPhotoMsg({ bad: true, text: `تعذّر رفعُ الصورة (${res.status})` });
+        setPhotoMsg({ bad: true, text: `تعذّر رفع الصورة (${res.status})` });
         return;
       }
       setStoredAvatar(r.avatarUrl);
       setFraming(null);
       setForm((f) => ({ ...f, avatarUrl: "" }));
       setPhotoMsg({ bad: false, text: r.awaitingApproval
-        ? "رُفعت صورتُك. وتظهر في حسابك الآن — أمّا «المدربون» وصفحتُك العامّة فتنتظر اعتمادَ الإدارة."
-        : "رُفعت صورتُك." });
+        ? "رفعت صورتك — وتظهر للعامّة بعد اعتماد الإدارة."
+        : "رفعت صورتك." });
     } catch (e) {
       setPhotoMsg({ bad: true, text: e instanceof ImageConditionError ? e.message
-        : e instanceof ApiError ? e.message : "تعذّر رفعُ الصورة" });
+        : e instanceof ApiError ? e.message : "تعذّر رفع الصورة" });
     } finally {
       setPhotoBusy(false);
       if (fileRef.current) fileRef.current.value = "";
@@ -271,19 +271,19 @@ export default function StudentAccount() {
     const name = form.displayName.trim();
     const url = form.avatarUrl.trim();
     return {
-      displayName: name.length < 2 ? "اسمُك حرفان على الأقلّ" : name.length > 80 ? "الاسمُ أطولُ من ٨٠ حرفا" : null,
+      displayName: name.length < 2 ? "اسمك حرفان على الأقلّ" : name.length > 80 ? "الاسم أطول من ٨٠ حرفا" : null,
       /* الرابطُ يُعرض صورةً في حسابه وشهادته — فرابطٌ بلا بروتوكولٍ صورةٌ مكسورة */
       avatarUrl: !url ? null
-        : url.length > 500 ? "الرابطُ أطولُ من ٥٠٠ حرف"
+        : url.length > 500 ? "الرابط أطول من ٥٠٠ حرف"
         : /^https?:\/\/\S+$/.test(url) ? null
-        : "رابطٌ مباشرٌ للصورة يبدأ بـ https://",
-      phone: form.phone.trim().length > 24 ? "الرقمُ أطولُ من ٢٤ خانة" : null,
+        : "رابط مباشر للصورة يبدأ بـ https://",
+      phone: form.phone.trim().length > 24 ? "الرقم أطول من ٢٤ خانة" : null,
       /* تاريخُ ميلادٍ في المستقبل يُقبله الخادم ويكسر حسابَ العمر في الشهادة */
       birthDate: form.birthDate && form.birthDate > new Date().toISOString().slice(0, 10)
-        ? "تاريخٌ في المستقبل — راجع ما كتبت"
+        ? "تاريخ في المستقبل — راجع ما كتبت"
         : null,
-      careerGoal: form.careerGoal.trim().length > 300 ? "٣٠٠ حرفٍ حدُّ هذا الحقل" : null,
-      goalAr: form.goalAr.trim().length > 300 ? "٣٠٠ حرفٍ حدُّ هذا الحقل" : null,
+      careerGoal: form.careerGoal.trim().length > 300 ? "٣٠٠ حرف حدّ هذا الحقل" : null,
+      goalAr: form.goalAr.trim().length > 300 ? "٣٠٠ حرف حدّ هذا الحقل" : null,
     };
   }, [form.displayName, form.avatarUrl, form.phone, form.birthDate, form.careerGoal, form.goalAr]);
 
@@ -324,10 +324,10 @@ export default function StudentAccount() {
     try {
       if (mode === "server") {
         await apiPatch("/api/learner/profile", payload);
-        setSavedMsg("حُفظت بياناتك في حسابك — تبقى معك على أي جهاز");
+        setSavedMsg("حفظت بياناتك");
       } else {
         localStorage.setItem(LOCAL_KEY, JSON.stringify(form));
-        setSavedMsg("حُفظت محليا في هذه المعاينة — ستُنقل لحسابك الحقيقي عند الربط");
+        setSavedMsg("حفظت محليا — تنقل لحسابك عند الربط");
       }
     } catch (e) {
       setErr(e instanceof ApiError ? e.message : "تعذر الحفظ — حاول مجددا");
@@ -348,7 +348,7 @@ export default function StudentAccount() {
     try {
       const { revoked } = await apiPost<{ ok: boolean; revoked: number }>("/api/auth/logout-all");
       clearLocalSession();
-      setSecMsg(`أُنهيت ${revoked} جلسة — نحوّلك لتسجيل الدخول من جديد`);
+      setSecMsg(`أنهيت ${revoked} جلسة — نحوّلك لتسجيل الدخول من جديد`);
       window.setTimeout(() => window.location.assign("/auth"), 1600);
     } catch (e) {
       setSecErr(e instanceof ApiError ? e.message : "تعذر إنهاء الجلسات — حاول مجددا");
@@ -362,7 +362,7 @@ export default function StudentAccount() {
     try {
       await apiPost("/api/auth/deactivate");
       clearLocalSession();
-      setSecMsg("عُطّل حسابك — بياناتك محفوظة، وإعادة التفعيل عبر التواصل معنا");
+      setSecMsg("عطّل حسابك — بياناتك محفوظة، وإعادة التفعيل عبر التواصل معنا");
       window.setTimeout(() => window.location.assign("/"), 2000);
     } catch (e) {
       setSecErr(e instanceof ApiError ? e.message : "تعذر تعطيل الحساب — حاول مجددا");
@@ -437,8 +437,8 @@ export default function StudentAccount() {
           <Field label="الاسم الكامل *" name="displayName" error={errOf("displayName")}>
             <input value={form.displayName} onChange={(e) => set("displayName", e.target.value)} onBlur={touch("displayName")} {...bad("displayName", errOf("displayName"))} className={inputCls} autoComplete="name" />
           </Field>
-          <Field label="رابط الصورة الشخصية" hint="اختياري — رابط صورة مباشر يظهر في حسابك وشهاداتك" name="avatarUrl" error={errOf("avatarUrl")}>
-            <input dir="ltr" value={form.avatarUrl} onChange={(e) => set("avatarUrl", e.target.value)} onBlur={touch("avatarUrl")} {...bad("avatarUrl", errOf("avatarUrl"))} placeholder={storedAvatar ? "صورةٌ مرفوعةٌ عندنا" : "https://…"} className={`${inputCls} text-left`} />
+          <Field label="رابط الصورة الشخصية" hint="اختياري — يظهر في حسابك وشهاداتك" name="avatarUrl" error={errOf("avatarUrl")}>
+            <input dir="ltr" value={form.avatarUrl} onChange={(e) => set("avatarUrl", e.target.value)} onBlur={touch("avatarUrl")} {...bad("avatarUrl", errOf("avatarUrl"))} placeholder={storedAvatar ? "صورة مرفوعة عندنا" : "https://…"} className={`${inputCls} text-left`} />
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <input
                 ref={fileRef}
@@ -449,10 +449,10 @@ export default function StudentAccount() {
               />
               <Button tone="secondary" size="sm" disabled={photoBusy} onClick={() => fileRef.current?.click()}>
                 {photoBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ImagePlus className="h-3.5 w-3.5" />}
-                {photoBusy ? "جارٍ الرفع…" : "ارفع صورة من جهازك"}
+                {photoBusy ? "جار الرفع…" : "ارفع صورة من جهازك"}
               </Button>
               <span className="text-fine leading-5 text-muted-foreground">
-                تُقتطع مربّعةً · أقلُّ ضلعٍ ٤٠٠ بكسل · JPEG أو PNG أو WebP
+                تقتطع مربّعة · أقلّ ضلع ٤٠٠ بكسل · JPEG أو PNG أو WebP
               </span>
             </div>
             {photoMsg && (
@@ -502,14 +502,14 @@ export default function StudentAccount() {
           {/* حقلا قياسٍ لا حقلا حساب: يقرؤهما مؤشّرُ وجيز، فمن ليس
               متعلّما لا يُسأل عنهما (ج-٢). والإخفاءُ لا يمسّ المخزون. */}
           {learnerFields && (<>
-          <Field label="تاريخ الميلاد" hint="اختياري — يستخدم لشهاداتك والفرص العمرية فقط" name="birthDate" error={errOf("birthDate")}>
+          <Field label="تاريخ الميلاد" hint="اختياري — للشهادات والفرص العمرية فقط" name="birthDate" error={errOf("birthDate")}>
             <DateField
               value={form.birthDate} onChange={(v) => set("birthDate", v)} onBlur={touch("birthDate")}
               fromYear={BIRTH_YEAR_FLOOR} toYear={new Date().getFullYear()} yearOrder="desc"
               selectClassName={inputCls} {...bad("birthDate", errOf("birthDate"))}
             />
           </Field>
-          <Field label="الجنس" hint="اختياري تماما">
+          <Field label="الجنس" hint="اختياري">
             <select value={form.gender} onChange={(e) => set("gender", e.target.value as ProfileForm["gender"])} className={`${inputCls} [&>option]:bg-surface`}>
               <option value="">أفضّل عدم الذكر</option>
               <option value="male">ذكر</option>
@@ -577,7 +577,7 @@ export default function StudentAccount() {
           <Field label="هدفك المهني" name="careerGoal" error={errOf("careerGoal")}>
             <textarea rows={2} maxLength={300} value={form.careerGoal} onChange={(e) => set("careerGoal", e.target.value)} onBlur={touch("careerGoal")} {...bad("careerGoal", errOf("careerGoal"))} placeholder="مثال: أن أقود فريق تسويق خلال سنتين" className={`${inputCls} resize-none`} />
           </Field>
-          <Field label="هدفك التعلمي" hint="ما الذي تريد أن تتقنه في هذه المرحلة؟" name="goalAr" error={errOf("goalAr")}>
+          <Field label="هدفك التعلمي" hint="ما تريد إتقانه الآن" name="goalAr" error={errOf("goalAr")}>
             <textarea rows={2} maxLength={300} value={form.goalAr} onChange={(e) => set("goalAr", e.target.value)} onBlur={touch("goalAr")} {...bad("goalAr", errOf("goalAr"))} className={`${inputCls} resize-none`} />
           </Field>
         </div>
@@ -617,15 +617,15 @@ export default function StudentAccount() {
 
       {/* روابط بقية أقسام الملف */}
       <Panel as="section" className="mt-8 md:p-8">
-        <h2 className="flex items-center gap-2 text-base font-black"><FileText className="h-4 w-4 text-teal-light-ink" /> بقية ملفك — في مكانها الطبيعي</h2>
+        <h2 className="flex items-center gap-2 text-base font-black"><FileText className="h-4 w-4 text-teal-light-ink" /> بقية ملفك</h2>
         <div className="mt-5 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
           {[
             { to: "/student", icon: RouteIcon, t: "مساراتي وتقدمي", d: "مسارك النشط ونسبة إنجازه" },
             { to: "/student/learning", icon: BookOpen, t: "دوراتي وجلساتي", d: "الدورات المسجلة ومواعيدها" },
-            { to: "/student/certificates", icon: Award, t: "شهاداتي", d: "شهادات الإتمام الموثقة وروابط التحقق" },
-            { to: "/student/billing", icon: FileText, t: "فواتيري وطلباتي", d: "أرقام مرجعية وسجل دفعات ودفع اختباري" },
+            { to: "/student/certificates", icon: Award, t: "شهاداتي", d: "شهاداتك وروابط التحقق" },
+            { to: "/student/billing", icon: FileText, t: "فواتيري وطلباتي", d: "فواتيرك ودفعاتك" },
             { to: "/student/cv", icon: FileText, t: "سيرتي الذاتية", d: "رفع بموافقة صريحة وحذف موثق" },
-            { to: "/diagnostic", icon: MessageCircle, t: "نتائج تشخيصي", d: "آخر نتيجة محفوظة وتقريرك الشخصي" },
+            { to: "/diagnostic", icon: MessageCircle, t: "نتائج تشخيصي", d: "آخر نتيجة وتقريرك" },
           ].map((x) => (
             <Card as={Link} tone="accent" interactive key={x.t} to={x.to} className="transition hover:border-teal/50">
               <x.icon className="h-4 w-4 text-teal-light-ink" />
@@ -640,9 +640,9 @@ export default function StudentAccount() {
       <Panel as="section" className="mt-6 md:p-8">
         <h2 className="flex items-center gap-2 text-base font-black"><Lock className="h-4 w-4 text-teal-light-ink" /> الفوترة والطلبات</h2>
         <p className="mt-2 text-sm leading-7 text-muted-foreground">
-          فواتيرك وطلباتك ودفعاتك — بأرقامها المرجعية وسجل مدفوعاتها — في صفحة{" "}
+          فواتيرك ودفعاتك في{" "}
           <Link to="/student/billing" className="font-bold text-teal-light-ink underline-offset-4 hover:underline">فواتيري</Link>.
-          لأي طلب استرداد أو مراجعة فاتورة: <Link to="/contact" className="font-bold text-teal-light-ink underline-offset-4 hover:underline">صفحة التواصل</Link> — اختر «طلب استرداد».
+          وللاسترداد أو مراجعة فاتورة: <Link to="/contact" className="font-bold text-teal-light-ink underline-offset-4 hover:underline">صفحة التواصل</Link> — اختر «طلب استرداد».
         </p>
       </Panel>
 
@@ -675,7 +675,7 @@ export default function StudentAccount() {
             <div className="min-w-0 flex-1">
               <p className="text-sm font-bold">الخروج من كل الأجهزة</p>
               <p className="mt-1 text-read leading-6 text-muted-foreground">
-                سجّلت دخولك على جهاز آخر؟ أنهِ كل الجلسات دفعة واحدة — ستحتاج الدخول من جديد على هذا الجهاز أيضا.
+                ينهي كل جلساتك — وتدخل من جديد هنا أيضا.
               </p>
             </div>
             <Button tone="secondary" type="button" onClick={logoutAll} disabled={!!secBusy} className="shrink-0 disabled:cursor-not-allowed">
@@ -692,7 +692,7 @@ export default function StudentAccount() {
             <div className="min-w-0 flex-1">
               <p className="text-sm font-bold">كلمة المرور</p>
               <p className="mt-1 text-read leading-6 text-muted-foreground">
-                نرسل إلى بريدك رابطا تختار منه كلمةً جديدة.
+                نرسل إلى بريدك رابطا تختار منه كلمة جديدة.
               </p>
             </div>
             <Button tone="secondary" type="button" disabled={!!secBusy || !email} className="shrink-0 disabled:cursor-not-allowed"
@@ -700,13 +700,13 @@ export default function StudentAccount() {
                 setSecErr(""); setSecMsg("");
                 try {
                   await apiPost("/api/auth/password/forgot", { email });
-                  setSecMsg(`أرسلنا رابطَ تغيير كلمة المرور إلى ${email}`);
+                  setSecMsg(`أرسلنا رابط تغيير كلمة المرور إلى ${email}`);
                 } catch (e) {
                   setSecErr(e instanceof ApiError ? e.message : "تعذّر الإرسال — حاول بعد قليل");
                 }
               }}>
               <KeyRound className="h-3.5 w-3.5" />
-              أرسِل رابطَ تغييرها
+              أرسل رابط تغييرها
             </Button>
           </div>
 
@@ -715,7 +715,7 @@ export default function StudentAccount() {
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-bold text-red-300">تعطيل الحساب</p>
                 <p className="mt-1 text-read leading-6 text-muted-foreground">
-                  يوقف حسابك فورا ويبطل جلساتك — بياناتك وتقدمك محفوظة، وإعادة التفعيل عبر التواصل معنا.
+                  يوقف حسابك وجلساتك فورا. بياناتك وتقدمك محفوظة، ويعاد التفعيل بالتواصل معنا.
                 </p>
               </div>
               {!confirmingDeactivate ? (

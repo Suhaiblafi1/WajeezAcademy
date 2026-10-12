@@ -124,19 +124,19 @@ const money = (n: number, c: string) =>
 
 /* شارةٌ قصيرةٌ لسبب الاستبعاد — والنصُّ الكاملُ من الخادم يُعرض تحتها */
 const REASON_AR: Record<string, string> = {
-  already_enrolled: "مسجَّل فيها",
-  settling: "دُفعت — بانتظار التأكيد",
-  order_pending: "طلبٌ لم يكتمل دفعُه",
+  already_enrolled: "مسجّل فيها",
+  settling: "دفعت — بانتظار التأكيد",
+  order_pending: "طلب لم يكتمل دفعه",
   capacity_full: "لا مقاعد",
   closed: "التسجيل مغلق",
   no_price: "بلا سعر معلن",
   /* ومن نافذة الفصل وخطّة المدرّب (٣ج) — والنصُّ الكاملُ من الخادم تحتها */
-  not_yet: "لم يُفتح التسجيل",
-  awaiting_plan: "تُفتح باعتماد خطّتها",
+  not_yet: "لم يفتح التسجيل",
+  awaiting_plan: "تفتح باعتماد خطّتها",
   /* وشعبةٌ لا مدرّبَ معتمَدٌ لها لا تُعرض ولا تُباع (١٢ أكتوبر ٢٠٢٦) — وتبلغ اللوحَ
      من خطّةٍ أو رابطٍ قديم، فيُقال سببُها لا «غير متاحة» */
-  no_trainer: "بلا مدرّبٍ بعد",
-  late_closed: "أُغلق الالتحاق",
+  no_trainer: "بلا مدرّب بعد",
+  late_closed: "أغلق الالتحاق",
 };
 
 export default function BuyPanel({
@@ -324,7 +324,7 @@ export default function BuyPanel({
   );
   const listShown = listOpen || hasExcluded;
 
-  const startsLabel = (o: CohortOption) => (o.startsAt ? cohortDayAr(o.startsAt) : "يُعلن الموعد");
+  const startsLabel = (o: CohortOption) => (o.startsAt ? cohortDayAr(o.startsAt) : "يعلن الموعد");
 
   /* اللوحُ أضيقُ وأقلُّ حشوا (`max-w-md` و`sm:p-5`): شاشةُ الدفع في صفحة
      الدورة كانت «كبيرةً» في عين صاحب المنصّة (٨ سبتمبر ٢٠٢٦)، وما فيها
@@ -343,7 +343,7 @@ export default function BuyPanel({
 
         {loaded && buyable.length === 0 && (
           <Card as="p" className="mt-6 text-sm leading-6 text-muted-foreground">
-            لا شعبة مفتوحة لهذه الدورات الآن. افتح مسارك في منصّتك وسنُعلمك فور فتح أوّل شعبة.
+            لا شعبة مفتوحة لهذه الدورات الآن. افتح مسارك في منصّتك وسنعلمك فور فتح أوّل شعبة.
           </Card>
         )}
 
@@ -385,7 +385,7 @@ export default function BuyPanel({
             >
               <span className="text-sm font-bold">
                 {buyable.length === 1 ? "الدورة وموعدها" : `الدورات ومواعيدها (${buyable.length})`}
-                {hasExcluded && <span className="text-gold-ink"> — فيها ما استُبعد</span>}
+                {hasExcluded && <span className="text-gold-ink"> — فيها ما استبعد</span>}
               </span>
               <ChevronDown className={`h-4 w-4 shrink-0 text-muted-foreground transition ${listShown ? "rotate-180" : ""}`} />
             </button>
@@ -462,7 +462,7 @@ export default function BuyPanel({
                 <span>
                   خارج هذا الطلب لأنّها بلا شعبة مفتوحة بعد:{" "}
                   <span className="text-foreground">{withoutCohort.map((l) => l.name).join("، ")}</span>. تبقى في
-                  مسارك، ونُعلمك فور فتح شعبتها.
+                  مسارك، ونعلمك فور فتح شعبتها.
                 </span>
               </Card>
             )}
@@ -493,7 +493,7 @@ export default function BuyPanel({
                 فيُسمّى ما خصمه، ولا يُظنّ أنّه خصم الطلبَ كلَّه */}
             {quote && quote.couponDiscount > 0 && quote.items.some((i) => !i.isGift && i.couponApplies === false) && (
               <p className="mt-1.5 text-read leading-6 text-muted-foreground">
-                خصمُ الكود على: <span className="text-foreground">{quote.items.filter((i) => i.couponApplies).map((i) => i.titleAr).join("، ")}</span>
+                خصم الكود على: <span className="text-foreground">{quote.items.filter((i) => i.couponApplies).map((i) => i.titleAr).join("، ")}</span>
               </p>
             )}
 
@@ -501,7 +501,7 @@ export default function BuyPanel({
                 من الأصفار وزرِّ دفعٍ لا يفعل شيئا. */}
             {nothingLeft && (
               <Card as="p" tone="accent" className="mt-4 text-read leading-6 text-teal-light-ink">
-                كلُّ ما في هذا الطلب لك بالفعل — لا شيء يُدفع ثمنُه مرّةً أخرى.
+                كلّ ما في هذا الطلب لك بالفعل — لا شيء يدفع ثمنه مرّة أخرى.
                 تجد شعبك ومقاعدك المحجوزة في «تعلّمي».
               </Card>
             )}
@@ -546,7 +546,7 @@ export default function BuyPanel({
                     لا يقابلها شيءٌ في السياسة فتُقرأ وعدا في سلّةٍ أخرى. */}
                 {quote.capDiscount > 0 && (
                   <div className="flex items-center justify-between text-teal-light-ink">
-                    <span>حدُّ سعر المسار</span>
+                    <span>حدّ سعر المسار</span>
                     <span dir="ltr">−{money(quote.capDiscount, quote.currency)}</span>
                   </div>
                 )}
@@ -583,12 +583,12 @@ export default function BuyPanel({
                   >
                     {currency === "USD"
                       ? "ادفع بعملة أخرى"
-                      : `تُقتطع بطاقتك بـ${PRESENTMENT_CURRENCIES[currency].labelAr} — غيّرها`}
+                      : `تقتطع بطاقتك بـ${PRESENTMENT_CURRENCIES[currency].labelAr} — غيّرها`}
                   </button>
                 ) : (
-                  <div role="group" aria-label="بأيّ عملة تُقتطع بطاقتك؟">
+                  <div role="group" aria-label="بأيّ عملة تقتطع بطاقتك؟">
                     <p className="mb-1.5 text-read leading-5 font-bold text-muted-foreground">
-                      بأيّ عملةٍ تُقتطع بطاقتُك؟
+                      بأيّ عملة تقتطع بطاقتك؟
                     </p>
                     <div className="flex flex-wrap items-center gap-1.5">
                       {PRESENTMENT_CODES.map((c) => (
@@ -646,7 +646,7 @@ export default function BuyPanel({
                   {paying ? "نحوّلك إلى صفحة الدفع…" : <>ادفع الآن · <span dir="ltr">{shownTotal}</span></>}
                 </Button>
                 <p className="mt-2 text-center text-read leading-5 text-muted-foreground">
-                  الدفع على صفحة المزوّد — لا نحفظ بيانات بطاقتك. وبعد الدفع تُفتح منصّتك على ما اشتريت.
+                  الدفع على صفحة المزوّد — لا نحفظ بيانات بطاقتك. وبعد الدفع تفتح منصّتك على ما اشتريت.
                 </p>
               </>
             )}

@@ -22,12 +22,12 @@ import Button from "@/components/ui/Button";
 import { staffControlCls as inputCls, staffSelectCls as selectCls } from "@/components/FormKit";
 const STATUS_AR: Record<string, string> = {
   open: "مفتوحة", in_progress: "قيد المعالجة", waiting_customer: "بانتظار العميل",
-  resolved: "محلولة", closed: "مغلقة", reopened: "أُعيد فتحها",
+  resolved: "محلولة", closed: "مغلقة", reopened: "أعيد فتحها",
 };
 const PRIORITY_AR: Record<string, string> = { low: "منخفضة", normal: "عادية", high: "عالية", urgent: "عاجلة" };
 
 /* «١ تذكرةٌ» و«٢ تذكرتان» و«٣ تذاكر» و«١١ تذكرةً» — والعددُ يُقرأ لا يُحسب */
-const TICKET_FORMS = { one: "تذكرةٌ", two: "تذكرتان", few: "تذاكر", many: "تذكرةً" };
+const TICKET_FORMS = { one: "تذكرة", two: "تذكرتان", few: "تذاكر", many: "تذكرة" };
 
 /* ما ينتظر ردًّا فعلا: المفتوحةُ وقيدُ المعالجة وما أُعيد فتحُه. و«بانتظار
    العميل» ليست منها — الكرةُ عنده، وعدُّها في الرأس يَعِد بعملٍ لا يقع. */
@@ -113,7 +113,7 @@ export default function Support() {
           icon={ServerOff}
           titleAr="الخادم لا يجيب"
           reasonAr={offline}
-          actions={[{ onClick: () => void load(), labelAr: "إعادة المحاولة", hintAr: "يُعاد طلبُ التذاكر الآن" }]}
+          actions={[{ onClick: () => void load(), labelAr: "إعادة المحاولة", hintAr: "يعاد طلب التذاكر الآن" }]}
         />
       </AdminLayout>
     );
@@ -165,7 +165,7 @@ export default function Support() {
                     رد داخلي (مخفي عن العميل)
                   </label>
                   <Button tone="confirm" disabled={busy || !reply.trim()}
-                    onClick={() => act(() => apiPost(`/api/admin/support/tickets/${t.id}/reply`, { body: reply, internal }), "أُرسل الرد")}>
+                    onClick={() => act(() => apiPost(`/api/admin/support/tickets/${t.id}/reply`, { body: reply, internal }), "أرسل الرد")}>
                     <Send className="h-3.5 w-3.5" /> إرسال
                   </Button>
                 </div>
@@ -207,20 +207,20 @@ export default function Support() {
                     الشاشة تحت الحقل — أي أنّها تُحيل الإنسانَ إلى شاشةٍ أخرى
                     ليستخرج منها معرّفا من ستّةٍ وثلاثين حرفا ويعود فيلصقه.
                     فصارت القائمةُ هنا، بحارسِ الإسناد نفسِه. */}
-                <label className="sr-only" htmlFor={`agent-${t.id}`}>وكيلُ الدعم</label>
+                <label className="sr-only" htmlFor={`agent-${t.id}`}>وكيل الدعم</label>
                 <select id={`agent-${t.id}`} value={agentId} disabled={agents.length === 0}
                   onChange={(e) => setAgentId(e.target.value)} className={`${selectCls} flex-1`}>
-                  <option value="">{agents.length === 0 ? "لا وكلاءَ نشطين" : "اختر وكيلا…"}</option>
+                  <option value="">{agents.length === 0 ? "لا وكلاء نشطين" : "اختر وكيلا…"}</option>
                   {agents.map((g) => <option key={g.id} value={g.id}>{g.displayName} ({g.email})</option>)}
                 </select>
                 <Button tone="confirm" disabled={busy || !agentId}
-                  onClick={() => act(() => apiPost(`/api/admin/support/tickets/${t.id}/assign`, { agentId }), "أُسندت التذكرة")}>
+                  onClick={() => act(() => apiPost(`/api/admin/support/tickets/${t.id}/assign`, { agentId }), "أسندت التذكرة")}>
                   إسناد
                 </Button>
               </div>
               {agents.length === 0 && (
                 <p className="mt-2 text-read text-muted-foreground">
-                  لا حسابَ نشطا بدور «support» — يُمنح الدورُ من «المستخدمون والأدوار».
+                  لا حساب نشطا بدور «support» — يمنح الدور من «المستخدمون والأدوار».
                 </p>
               )}
             </Card>
@@ -250,7 +250,7 @@ export default function Support() {
         { label: "تذكرة مفتوحة", actor: "العميل" },
         { label: "قيد المعالجة", actor: "أنت هنا" },
         { label: "بانتظار العميل", actor: "العميل يرد" },
-        { label: "محلولة ثم مغلقة", actor: "أنت — ويُبلَّغ العميل" },
+        { label: "محلولة ثم مغلقة", actor: "أنت — ويبلّغ العميل" },
       ]} />
       <div className="mb-5 flex flex-wrap items-center gap-2">
         <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} aria-label="رشّح بالحالة"
@@ -274,14 +274,14 @@ export default function Support() {
           icon={LifeBuoy}
           count={awaiting.length}
           forms={TICKET_FORMS}
-          waitingAr="تنتظر ردَّك"
+          waitingAr="تنتظر ردّك"
           stats={[
-            `${awaiting.filter((t) => t.assignments.length === 0).length} غير مسنَدة`,
-            `${awaiting.filter((t) => t.priority === "urgent" || t.priority === "high").length} عاجلةٌ أو عالية`,
+            `${awaiting.filter((t) => t.assignments.length === 0).length} غير مسندة`,
+            `${awaiting.filter((t) => t.priority === "urgent" || t.priority === "high").length} عاجلة أو عالية`,
           ]}
-          actionAr="افتح أعجلَها"
+          actionAr="افتح أعجلها"
           onAction={() => { if (awaiting[0]) void openDetail(awaiting[0].id); }}
-          doneAr="لا تذكرةَ تنتظر ردَّك — وتذاكرُ المتعلّمين تصل هنا فورَ فتحها من بوّابتهم."
+          doneAr="لا تذكرة تنتظر ردّك — وتذاكر المتعلّمين تصل هنا فور فتحها من بوّابتهم."
         />
       )}
 
@@ -293,23 +293,23 @@ export default function Support() {
         <EmptyState
           icon={LifeBuoy}
           titleAr={statusFilter ? `لا تذاكر بحالة «${STATUS_AR[statusFilter]}»` : "لا تذاكر بعد"}
-          reasonAr="تذاكرُ المتعلّمين تصل هنا فورَ فتحها من بوّابتهم — ولا تُنشأ من هذه الشاشة."
+          reasonAr="تذاكر المتعلّمين تصل هنا فور فتحها من بوّابتهم — ولا تنشأ من هذه الشاشة."
           tone={statusFilter ? "filter" : "start"}
           actions={statusFilter
-            ? [{ onClick: () => setStatusFilter(""), labelAr: "اعرض كلَّ الحالات", hintAr: "يُزال المرشّحُ الحاليّ" }]
+            ? [{ onClick: () => setStatusFilter(""), labelAr: "اعرض كلّ الحالات", hintAr: "يزال المرشّح الحاليّ" }]
             : []}
         />
       ) : rows.length === 0 ? null : (
         <>
         <ListToolbar q={q} onQ={setQ} onPage={setPage} view={view} unit="تذكرة"
-          placeholder="ابحث بعنوانٍ أو صاحبِ تذكرةٍ أو تصنيف…" />
+          placeholder="ابحث بعنوان أو صاحب تذكرة أو تصنيف…" />
         {view.total === 0 ? (
           <EmptyState
             icon={LifeBuoy}
             titleAr="لا تذكرة تطابق بحثك"
-            reasonAr={`لا شيءَ يطابق «${q.trim()}» في العناوين ولا أصحابِ التذاكر ولا التصنيفات.`}
+            reasonAr={`لا شيء يطابق «${q.trim()}» في العناوين ولا أصحاب التذاكر ولا التصنيفات.`}
             tone="filter"
-            actions={[{ onClick: () => { setQ(""); setPage(1); }, labelAr: "امسح البحث", hintAr: "تعود القائمةُ كاملةً" }]}
+            actions={[{ onClick: () => { setQ(""); setPage(1); }, labelAr: "امسح البحث", hintAr: "تعود القائمة كاملة" }]}
           />
         ) : (
         <div className="space-y-3">

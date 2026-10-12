@@ -137,11 +137,11 @@ export default function Integrations() {
   };
 
   const testEmail = async () => {
-    if (!testTo.includes("@")) { toast("أدخل بريداً صحيحاً للاختبار"); return; }
+    if (!testTo.includes("@")) { toast("أدخل بريدا صحيحا للاختبار"); return; }
     setBusy(true);
     try {
       const r = await apiPost<{ ok: boolean; message: string }>("/api/admin/integrations/email/test", { to: testTo });
-      toastError(r.message ?? (r.ok ? "أُرسل" : "فشل"));
+      toastError(r.message ?? (r.ok ? "أرسل" : "فشل"));
     } catch (e) { toastError(e instanceof ApiError ? e.message : "فشل الإرسال التجريبي"); }
     finally { setBusy(false); }
   };
@@ -150,7 +150,7 @@ export default function Integrations() {
   const waBad = WHATSAPP_SPOTS.filter((sp) => (waForm[sp.key] ?? "").trim() && !isValidWhatsApp(waForm[sp.key]));
 
   const saveWhatsApp = async () => {
-    if (waBad.length) { toastError(`رقمٌ غير صالحٍ في «${waBad[0].labelAr}»`); return; }
+    if (waBad.length) { toastError(`رقم غير صالح في «${waBad[0].labelAr}»`); return; }
     /* تُرسَل كلُّ المواضعِ لا المملوءةَ وحدَها: الفراغُ عند الخادم محوٌ،
        فمن أفرغ خانةً أراد أن يرجع موضعُها إلى الرقم العامّ. */
     const payload: Record<string, string> = {};
@@ -158,7 +158,7 @@ export default function Integrations() {
     await act(async () => {
       const r = await apiPut<{ numbers: Record<string, string> }>("/api/admin/integrations/whatsapp", { numbers: payload });
       setWhatsAppNumbers(r.numbers ?? {});
-    }, "حُفظت أرقام واتساب");
+    }, "حفظت أرقام واتساب");
   };
 
   if (offline) {
@@ -192,11 +192,11 @@ export default function Integrations() {
               يُبدَّل في يوم)، وليس فيه سرٌّ يُقنَّع — فلا يُدفن بين المفاتيح. */}
           <Panel as="section" className="lg:col-span-2">
             <p className="flex items-center gap-2 text-sm font-black">
-              <MessageCircle className="h-4 w-4 text-teal-ink" /> أرقام واتساب — لكلّ موضعٍ رقمُه
+              <MessageCircle className="h-4 w-4 text-teal-ink" /> أرقام واتساب — لكلّ موضع رقمه
             </p>
             <p className="mt-1 text-read leading-6 text-muted-foreground">
-              كلُّ زرِّ واتسابٍ في الموقع مذكورٌ هنا باسمِه وبأين يظهر. واتركِ الخانةَ فارغةً
-              ليرجع موضعُها إلى رقم «مراسلة مستشار وجيز» — فرقمٌ واحدٌ يكفي من لا يريد أكثر.
+              كلّ زرّ واتساب في الموقع مذكور هنا باسمه وبأين يظهر. واترك الخانة فارغة
+              ليرجع موضعها إلى رقم «مراسلة مستشار وجيز» — فرقم واحد يكفي من لا يريد أكثر.
             </p>
             <div className="mt-4 grid gap-3 md:grid-cols-2">
               {WHATSAPP_SPOTS.map((sp) => {
@@ -217,14 +217,14 @@ export default function Integrations() {
                     <p className="mt-1 text-read leading-5 text-muted-foreground">يظهر في: {sp.whereAr}</p>
                     {bad && (
                       <p className="mt-1 text-read leading-5 font-bold text-red-300">
-                        أرقامٌ فقط بصيغةٍ دوليّةٍ بلا «+» ولا صفرَين — من ٨ إلى ١٥ خانة.
+                        أرقام فقط بصيغة دوليّة بلا «+» ولا صفرين — من ٨ إلى ١٥ خانة.
                       </p>
                     )}
                     {/* ما سيُحفظ فعلا يُرى قبل الحفظ: من لصق «+962 77…» يطمئنّ
                         أنّ المحفوظ صورةٌ أخرى، ولا يظنّ أنّ شيئا ضاع. */}
                     {!bad && raw.trim() && normalizeWhatsApp(raw) !== raw.trim() && (
                       <p className="mt-1 text-read leading-5 text-muted-foreground">
-                        يُحفظ هكذا: <span dir="ltr" className="font-mono text-teal-light-ink">{normalizeWhatsApp(raw)}</span>
+                        يحفظ هكذا: <span dir="ltr" className="font-mono text-teal-light-ink">{normalizeWhatsApp(raw)}</span>
                       </p>
                     )}
                   </div>
@@ -240,12 +240,12 @@ export default function Integrations() {
           <Panel as="section">
             <p className="flex items-center gap-2 text-sm font-black"><CreditCard className="h-4 w-4 text-gold-ink" /> مزود الدفع</p>
             <p className="mt-1 text-read leading-5 text-muted-foreground">
-              المزودان الحقيقيان يعملان بصفحات دفع مستضافة لديهم — لا بيانات بطاقات تمر بخوادمنا أبداً،
-              والتسوية تتم عبر webhook موقَّت فقط.
+              المزودان الحقيقيان يعملان بصفحات دفع مستضافة لديهم — لا بيانات بطاقات تمر بخوادمنا أبدا،
+              والتسوية تتم عبر webhook موقّت فقط.
             </p>
             {view.payment.envSourced && (
               <Inset as="p" tone="warn" className="mt-3 px-3 py-2 text-read font-bold text-gold-ink">
-                هذا التكامل يُدار من متغيرات البيئة (PAYMENT_DRIVER…) — الحفظ هنا لن يؤثر حتى تُزال متغيرات البيئة.
+                هذا التكامل يدار من متغيرات البيئة (PAYMENT_DRIVER…) — الحفظ هنا لن يؤثر حتى تزال متغيرات البيئة.
               </Inset>
             )}
             <div className="mt-4 space-y-3">
@@ -263,7 +263,7 @@ export default function Integrations() {
                       placeholder={view.payment.publishableKey || "pk_live_… / pk_test_…"} className={`${inputCls} mt-1 w-full font-mono`} />
                   </div>
                   <div>
-                    <label className={labelCls}>المفتاح السري (Secret) — يُخزَّن ولا يُعرض كاملاً أبداً</label>
+                    <label className={labelCls}>المفتاح السري (Secret) — يخزّن ولا يعرض كاملا أبدا</label>
                     <input dir="ltr" type="password" value={payForm.secretKey} onChange={(e) => setPayForm({ ...payForm, secretKey: e.target.value })}
                       placeholder={view.payment.hasSecret ? view.payment.secretKey : "sk_live_… / sk_test_…"} className={`${inputCls} mt-1 w-full font-mono`} />
                   </div>
@@ -280,9 +280,9 @@ export default function Integrations() {
                       الطلبُ وتبقى سجلّاتُنا خضراء والعطبُ عند المشتري وحدَه. */}
                   {!view.payment.siteUrlExplicit && (
                     <Inset as="p" tone="danger" className="px-3 py-2 text-read font-bold leading-5 text-red-300">
-                      اضبط <span dir="ltr" className="font-mono">APP_URL</span> بعنوان الموقع في بيئة الخادم أولا — لن يُقبل التفعيل بدونه.
+                      اضبط <span dir="ltr" className="font-mono">APP_URL</span> بعنوان الموقع في بيئة الخادم أولا — لن يقبل التفعيل بدونه.
                       <span className="mt-1 block font-normal text-red-300/75">
-                        العنوان المستعمل الآن: <span dir="ltr" className="font-mono">{view.payment.siteUrl}</span> — ومنه تُبنى صفحة عودة المشتري بعد الدفع.
+                        العنوان المستعمل الآن: <span dir="ltr" className="font-mono">{view.payment.siteUrl}</span> — ومنه تبنى صفحة عودة المشتري بعد الدفع.
                       </span>
                     </Inset>
                   )}
@@ -295,8 +295,8 @@ export default function Integrations() {
                         («t=…,v1=…» موقَّعةً على «الطابع.الجسم») بنافذةِ خمس دقائق —
                         فبقاءُ النصّ القديم يدفع صاحبَ المنصّة إلى بناء ما لا لزوم له.
                         حارسُ الصيغة: server/tests/commerce/stripe-signature.test.ts */}
-                    <p className="mt-1"><b className="text-foreground">Stripe:</b> صِلْ لوحتَه بهذا العنوان مباشرة وضع <span dir="ltr" className="font-mono">whsec_…</span> في «سر التوقيع» — لا جسرَ ولا رمزَ مشترك. والحدثُ المطلوب <span dir="ltr" className="font-mono">checkout.session.completed</span> وحدَه؛ غيرُه يُسجَّل ويُتجاهَل.</p>
-                    <p className="mt-1"><b className="text-foreground">Moyasar:</b> سجّل «سر التوقيع» نفسَه رمزاً مشتركاً في لوحتهم.</p>
+                    <p className="mt-1"><b className="text-foreground">Stripe:</b> صل لوحته بهذا العنوان مباشرة وضع <span dir="ltr" className="font-mono">whsec_…</span> في «سر التوقيع» — لا جسر ولا رمز مشترك. والحدث المطلوب <span dir="ltr" className="font-mono">checkout.session.completed</span> وحده؛ غيره يسجّل ويتجاهل.</p>
+                    <p className="mt-1"><b className="text-foreground">Moyasar:</b> سجّل «سر التوقيع» نفسه رمزا مشتركا في لوحتهم.</p>
                   </Inset>
                 </>
               )}
@@ -305,7 +305,7 @@ export default function Integrations() {
                 تفعيل هذا المزود — غير المفعّل يعني: المزود الاختباري يعمل
               </label>
               <div className="flex flex-wrap gap-2">
-                <Button tone="confirm" disabled={busy} onClick={() => act(() => apiPut("/api/admin/integrations/payment", payForm), "حُفظت إعدادات الدفع")}>
+                <Button tone="confirm" disabled={busy} onClick={() => act(() => apiPut("/api/admin/integrations/payment", payForm), "حفظت إعدادات الدفع")}>
                   حفظ إعدادات الدفع
                 </Button>
                 <Button tone="secondary" disabled={busy} onClick={() => void testPayment()} className="text-teal-light-ink">
@@ -319,17 +319,17 @@ export default function Integrations() {
           <Panel as="section">
             <p className="flex items-center gap-2 text-sm font-black"><Mail className="h-4 w-4 text-teal-ink" /> قناة البريد (Resend)</p>
             <p className="mt-1 text-read leading-5 text-muted-foreground">
-              فور التفعيل تصبح قناة email في الإشعارات حقيقية — قبول التسجيل والفواتير والشهادات تصل بريداً.
-              غير المفعّلة تسجَّل «فشل: لا مزود» وتُعاد المحاولة تلقائياً.
+              فور التفعيل تصبح قناة email في الإشعارات حقيقية — قبول التسجيل والفواتير والشهادات تصل بريدا.
+              غير المفعّلة تسجّل «فشل: لا مزود» وتعاد المحاولة تلقائيا.
             </p>
             {view.email.envSourced && (
               <Inset as="p" tone="warn" className="mt-3 px-3 py-2 text-read font-bold text-gold-ink">
-                هذا التكامل يُدار من متغيرات البيئة (RESEND_API_KEY…) — الحفظ هنا لن يؤثر حتى تُزال متغيرات البيئة.
+                هذا التكامل يدار من متغيرات البيئة (RESEND_API_KEY…) — الحفظ هنا لن يؤثر حتى تزال متغيرات البيئة.
               </Inset>
             )}
             <div className="mt-4 space-y-3">
               <div>
-                <label className={labelCls}>مفتاح Resend API — يُخزَّن ولا يُعرض كاملاً أبداً</label>
+                <label className={labelCls}>مفتاح Resend API — يخزّن ولا يعرض كاملا أبدا</label>
                 <input dir="ltr" type="password" value={mailForm.apiKey} onChange={(e) => setMailForm({ ...mailForm, apiKey: e.target.value })}
                   placeholder={view.email.hasApiKey ? view.email.apiKey : "re_…"} className={`${inputCls} mt-1 w-full font-mono`} />
               </div>
@@ -352,7 +352,7 @@ export default function Integrations() {
                 </label>
               </div>
               <div className="flex flex-wrap gap-2">
-                <Button tone="confirm" disabled={busy} onClick={() => act(() => apiPut("/api/admin/integrations/email", mailForm), "حُفظت إعدادات البريد")}>
+                <Button tone="confirm" disabled={busy} onClick={() => act(() => apiPut("/api/admin/integrations/email", mailForm), "حفظت إعدادات البريد")}>
                   حفظ إعدادات البريد
                 </Button>
                 <div className="flex flex-1 items-center gap-2">
@@ -370,18 +370,18 @@ export default function Integrations() {
           <Panel as="section">
             <p className="flex items-center gap-2 text-sm font-black"><Video className="h-4 w-4 text-teal-ink" /> اجتماعات Zoom</p>
             <p className="mt-1 text-read leading-5 text-muted-foreground">
-              فور اكتماله يُنشئ المدرّبُ والإدارةُ اجتماعَ اللقاء <b className="text-foreground">من داخل المنصّة</b>،
-              ويصل رابطُه كلَّ مسجَّلٍ في الشعبة إشعارا. وبدونه يبقى البابُ اليدويّ: رابطٌ يُلصق بيده لكلّ لقاء.
+              فور اكتماله ينشئ المدرّب والإدارة اجتماع اللقاء <b className="text-foreground">من داخل المنصّة</b>،
+              ويصل رابطه كلّ مسجّل في الشعبة إشعارا. وبدونه يبقى الباب اليدويّ: رابط يلصق بيده لكلّ لقاء.
             </p>
             {/* «مفعّل» ليس «جاهز» — والفرقُ يُقال قبل أن يفشل أوّلُ لقاء */}
             {view.zoom.enabled && !view.zoom.ready && (
               <Inset as="p" tone="warn" className="mt-3 px-3 py-2 text-read font-bold text-gold-ink">
-                مفعَّلٌ وغيرُ مكتمل — ينقصه: {view.zoom.missing.join(" · ")}
+                مفعّل وغير مكتمل — ينقصه: {view.zoom.missing.join(" · ")}
               </Inset>
             )}
             {view.zoom.envSourced && (
               <Inset as="p" tone="warn" className="mt-3 px-3 py-2 text-read font-bold text-gold-ink">
-                هذا التكامل يُدار من متغيرات البيئة (ZOOM_ACCOUNT_ID…) — الحفظ هنا لن يؤثر حتى تُزال.
+                هذا التكامل يدار من متغيرات البيئة (ZOOM_ACCOUNT_ID…) — الحفظ هنا لن يؤثر حتى تزال.
               </Inset>
             )}
             <div className="mt-4 space-y-3">
@@ -397,13 +397,13 @@ export default function Integrations() {
                     placeholder={view.zoom.hasClientId ? view.zoom.clientId : "…"} className={`${inputCls} mt-1 w-full font-mono`} />
                 </div>
                 <div>
-                  <label className={labelCls}>سرّ التطبيق — يُخزَّن ولا يُعرض</label>
+                  <label className={labelCls}>سرّ التطبيق — يخزّن ولا يعرض</label>
                   <input dir="ltr" type="password" value={zoomForm.clientSecret} onChange={(e) => setZoomForm({ ...zoomForm, clientSecret: e.target.value })}
                     placeholder={view.zoom.hasClientSecret ? view.zoom.clientSecret : "…"} className={`${inputCls} mt-1 w-full font-mono`} />
                 </div>
               </div>
               <div>
-                <label className={labelCls}>بريدُ مضيف الاجتماعات — اتركه فارغا لصاحب التطبيق</label>
+                <label className={labelCls}>بريد مضيف الاجتماعات — اتركه فارغا لصاحب التطبيق</label>
                 <input dir="ltr" value={zoomForm.hostEmail} onChange={(e) => setZoomForm({ ...zoomForm, hostEmail: e.target.value })}
                   placeholder="lessons@wajeezacademy.com" className={`${inputCls} mt-1 w-full font-mono`} />
               </div>
@@ -411,17 +411,17 @@ export default function Integrations() {
                   بلا الرمز يرفض Zoom العنوانَ ولا يصل حدث: لا حضورٌ ولا دخولُ مضيفٍ ولا تسجيل.
                   وكان لا يُضبط إلّا في الخادم — فمن أعدّ Zoom من هنا وحدَه بقيت أحداثُه صامتة. */}
               <div>
-                <label className={labelCls}>عنوانُ الأحداث — يُسجَّل في Zoom ‹Event Subscriptions›</label>
+                <label className={labelCls}>عنوان الأحداث — يسجّل في Zoom ‹Event Subscriptions›</label>
                 <input dir="ltr" readOnly value={view.zoom.webhookUrl}
                   className={`${inputCls} mt-1 w-full font-mono opacity-70`} />
               </div>
               <div>
-                <label className={labelCls}>رمزُ التحقّق من الأحداث — Secret Token · يُخزَّن ولا يُعرض</label>
+                <label className={labelCls}>رمز التحقّق من الأحداث — Secret Token · يخزّن ولا يعرض</label>
                 <input dir="ltr" type="password" value={zoomForm.webhookSecret} onChange={(e) => setZoomForm({ ...zoomForm, webhookSecret: e.target.value })}
                   placeholder={view.zoom.hasWebhookSecret ? view.zoom.webhookSecret : "…"} className={`${inputCls} mt-1 w-full font-mono`} />
                 {view.zoom.webhookSecretEnvSourced && (
                   <p className="mt-1 text-read leading-6 text-gold-ink">
-                    ‏ZOOM_WEBHOOK_SECRET مضبوطٌ على الخادم — وهو يغلب ما يُحفظ هنا حتّى يُزال.
+                    ‏ZOOM_WEBHOOK_SECRET مضبوط على الخادم — وهو يغلب ما يحفظ هنا حتّى يزال.
                   </p>
                 )}
               </div>
@@ -433,7 +433,7 @@ export default function Integrations() {
                 {/* والبريدُ الفارغُ يُرسَل فارغا: فيعود المضيفُ صاحبَ التطبيق كما يعد عنوانُ حقله.
                     وكان يُحوَّل إلى لا شيء فيسقط من الطلب، والخادمُ يُبقي لما غاب قيمتَه القديمة. */}
                 <Button tone="confirm" disabled={busy}
-                  onClick={() => act(() => apiPut("/api/admin/integrations/zoom", { ...zoomForm, hostEmail: zoomForm.hostEmail.trim() }), "حُفظت إعدادات Zoom")}>
+                  onClick={() => act(() => apiPut("/api/admin/integrations/zoom", { ...zoomForm, hostEmail: zoomForm.hostEmail.trim() }), "حفظت إعدادات Zoom")}>
                   حفظ إعدادات Zoom
                 </Button>
                 <Button tone="secondary" disabled={busy} className="text-teal-light-ink"
@@ -461,10 +461,10 @@ export default function Integrations() {
               واجهتُها البرمجيّة. فالزرُّ هنا يغني عن SSH وسطرِ الأوامر. */}
           <Panel>
             <p className="flex items-center gap-2 text-sm font-black">
-              <CalendarClock className="h-4 w-4 text-teal-ink" /> مقابلاتُ Calendly
+              <CalendarClock className="h-4 w-4 text-teal-ink" /> مقابلات Calendly
             </p>
             <p className="mt-1 text-read leading-6 text-muted-foreground">
-              يكتب موعدَ المقابلة عندنا حين يحجزه المتقدّم، ويُلغيه حين يُلغي.
+              يكتب موعد المقابلة عندنا حين يحجزه المتقدّم، ويلغيه حين يلغي.
             </p>
             {calNotice && (
               <Inset as="p" tone={calNotice.tone === "danger" ? "danger" : "positive"}
@@ -474,7 +474,7 @@ export default function Integrations() {
             )}
             {view.calendly.envSourced && (
               <Inset as="p" className="mt-3 text-read leading-6 text-muted-foreground">
-                المفتاحُ مضبوطٌ من بيئة الخادم — وهي تغلب الشاشة. غيِّره في <code dir="ltr">deploy/.env.production</code>.
+                المفتاح مضبوط من بيئة الخادم — وهي تغلب الشاشة. غيّره في <code dir="ltr">deploy/.env.production</code>.
               </Inset>
             )}
             <div className="mt-4 space-y-3">
@@ -484,13 +484,13 @@ export default function Integrations() {
                   أو الرابطُ كاملا بـwww أو بدونها. وما لا يصحّ يُردّ بسببه
                   مكتوبا لا بـ«رابطٌ غيرُ صالح». */}
               <div>
-                <label className={labelCls}>رابطُ الحجز — ما يفتحه المتقدّم</label>
+                <label className={labelCls}>رابط الحجز — ما يفتحه المتقدّم</label>
                 <input dir="ltr" value={calForm.bookingUrl}
                   onChange={(e) => setCalForm({ ...calForm, bookingUrl: e.target.value })}
                   placeholder="hadeel-7/wajeez-academy"
                   className={`${inputCls} mt-1 w-full font-mono`} />
                 <p className="mt-1 text-read leading-6 text-muted-foreground">
-                  اسمُ المستخدم يكفي، والرابطُ كاملا يصحّ. واتركه فارغا للعودة إلى المضمَّن في الموقع.
+                  اسم المستخدم يكفي، والرابط كاملا يصحّ. واتركه فارغا للعودة إلى المضمّن في الموقع.
                 </p>
               </div>
               {/* ═══ حاضرون يُضافون إلى كلّ موعدٍ بلا لمسة ═══
@@ -498,27 +498,27 @@ export default function Integrations() {
                   المقابلةُ بين المتقدّم والمضيف وحدَهما، فمن أراد حضورَها من
                   الإدارة لزمه أن يُضاف يدويّا في كلّ موعد — أو يفوتَه. */}
               <div>
-                <label className={labelCls}>يُضاف حاضرا في كلّ موعد — اختياريّ</label>
+                <label className={labelCls}>يضاف حاضرا في كلّ موعد — اختياريّ</label>
                 <input dir="ltr" value={calForm.guests}
                   onChange={(e) => setCalForm({ ...calForm, guests: e.target.value })}
                   placeholder="you@example.com, someone@example.com"
                   className={`${inputCls} mt-1 w-full font-mono`} />
                 <p className="mt-1 text-read leading-6 text-muted-foreground">
-                  بريدٌ أو أكثرُ مفصولةٌ بفاصلة. يُضافون ضيوفا في دعوة التقويم فتصلهم تفاصيلُ الاجتماع.
+                  بريد أو أكثر مفصولة بفاصلة. يضافون ضيوفا في دعوة التقويم فتصلهم تفاصيل الاجتماع.
                 </p>
                 <Inset as="p" className="mt-2 text-read leading-6 text-muted-foreground">
-                  ⚠ ويلزم تفعيلُ <span dir="ltr">Invitees can add guests</span> في نوع الحدث عند Calendly —
-                  وإلّا تجاهَل الضيوفَ بلا خطأٍ يظهر. وهو متاحٌ على الخطّة المجّانيّة.
+                  ⚠ ويلزم تفعيل <span dir="ltr">Invitees can add guests</span> في نوع الحدث عند Calendly —
+                  وإلّا تجاهل الضيوف بلا خطأ يظهر. وهو متاح على الخطّة المجّانيّة.
                 </Inset>
               </div>
               <div>
-                <label className={labelCls}>الرمزُ الشخصيُّ — به يسأل الخادمُ عن الحجوزات</label>
+                <label className={labelCls}>الرمز الشخصيّ — به يسأل الخادم عن الحجوزات</label>
                 <input dir="ltr" type="password" value={calForm.token}
                   onChange={(e) => setCalForm({ ...calForm, token: e.target.value })}
                   placeholder={view.calendly.hasToken ? view.calendly.token : "eyJraWQ…"}
                   className={`${inputCls} mt-1 w-full font-mono`} />
                 <p className="mt-1 text-read leading-6 text-muted-foreground">
-                  من Calendly ← Integrations &amp; apps ← API &amp; webhooks. ويكفي وحدَه: القراءةُ تعمل على الخطّة المجّانيّة.
+                  من Calendly ← Integrations &amp; apps ← API &amp; webhooks. ويكفي وحده: القراءة تعمل على الخطّة المجّانيّة.
                 </p>
                 {/* ═══ ومن أيِّ حسابٍ يُؤخَذ ═══
 
@@ -526,27 +526,27 @@ export default function Integrations() {
                     حسابٍ غيرِ حسابِ المدير، فيُزامن رمزُه صفرا أبدا — ولا يقول
                     شيءٌ إنّه صفر، لأنّ السؤالَ ينجح ويعود فارغا. فيُقال هنا. */}
                 <Inset as="p" className="mt-2 text-read leading-6 text-muted-foreground">
-                  ويلزم أن يكون من الحساب المضيفِ للمقابلات — <span dir="ltr">{TRAINER_INTERVIEW.url}</span> —
-                  فالرمزُ لا يرى مواعيدَ حسابٍ آخر، ويُزامن صفرا بلا خطأٍ يظهر.
+                  ويلزم أن يكون من الحساب المضيف للمقابلات — <span dir="ltr">{TRAINER_INTERVIEW.url}</span> —
+                  فالرمز لا يرى مواعيد حساب آخر، ويزامن صفرا بلا خطأ يظهر.
                 </Inset>
               </div>
               <div>
-                <label className={labelCls}>مفتاحُ التوقيع — للمستقبِل الفوريّ وحدَه</label>
+                <label className={labelCls}>مفتاح التوقيع — للمستقبل الفوريّ وحده</label>
                 <input dir="ltr" type="password" value={calForm.signingKey}
                   onChange={(e) => setCalForm({ ...calForm, signingKey: e.target.value })}
-                  placeholder={view.calendly.hasSigningKey ? view.calendly.signingKey : "سرٌّ طويلٌ تختاره…"}
+                  placeholder={view.calendly.hasSigningKey ? view.calendly.signingKey : "سرّ طويل تختاره…"}
                   className={`${inputCls} mt-1 w-full font-mono`} />
                 <p className="mt-1 text-read leading-6 text-muted-foreground">
-                  تختاره أنت، ويُمرَّر إلى Calendly عند التسجيل. اتركه فارغا إن اكتفيتَ بالسؤال الدوريّ.
+                  تختاره أنت، ويمرّر إلى Calendly عند التسجيل. اتركه فارغا إن اكتفيت بالسؤال الدوريّ.
                 </p>
               </div>
               <label className="flex items-center gap-2 text-read text-muted-foreground">
                 <input type="checkbox" checked={calForm.enabled}
                   onChange={(e) => setCalForm({ ...calForm, enabled: e.target.checked })} className="accent-gold" />
-                مفعَّل
+                مفعّل
               </label>
               <Button tone="confirm" disabled={busy}
-                onClick={() => act(() => apiPut("/api/admin/integrations/calendly", calForm), "حُفظت إعدادات Calendly")}>
+                onClick={() => act(() => apiPut("/api/admin/integrations/calendly", calForm), "حفظت إعدادات Calendly")}>
                 حفظ إعدادات Calendly
               </Button>
             </div>
@@ -556,17 +556,17 @@ export default function Integrations() {
                 يُترك مطويّا عن الطريق الأوّل: من لا خطّةَ له لا يعنيه، ومن
                 له خطّةٌ يجده حيث يتوقّعه — بعد أن يحفظ رمزَه. */}
             <div className="mt-5 border-t border-white/10 pt-4">
-              <p className={labelCls}>المستقبِلُ الفوريُّ — يحتاج خطّةً مدفوعة</p>
+              <p className={labelCls}>المستقبل الفوريّ — يحتاج خطّة مدفوعة</p>
               <p className="mt-1 text-read leading-6 text-muted-foreground">
-                يُغني عن انتظار دقائقِ السؤال. والاشتراكاتُ ليست في الخطّة المجّانيّة — فافحص أوّلا، والفحصُ لا يُنشئ شيئا.
+                يغني عن انتظار دقائق السؤال. والاشتراكات ليست في الخطّة المجّانيّة — فافحص أوّلا، والفحص لا ينشئ شيئا.
               </p>
               <div>
-                <label className={labelCls}>عنوانُ المستقبِل — يُسجَّل عند Calendly</label>
+                <label className={labelCls}>عنوان المستقبل — يسجّل عند Calendly</label>
                 <input dir="ltr" readOnly value={view.calendly.callbackUrl}
                   className={`${inputCls} mt-1 w-full font-mono opacity-70`} />
                 {!view.calendly.siteUrlExplicit && (
                   <p className="mt-1 text-read leading-6 text-gold-ink">
-                    ‏APP_URL غيرُ مضبوطٍ صراحةً — العنوانُ أعلاه مشتقٌّ، راجعه قبل التسجيل.
+                    ‏APP_URL غير مضبوط صراحة — العنوان أعلاه مشتقّ، راجعه قبل التسجيل.
                   </p>
                 )}
               </div>
@@ -593,8 +593,8 @@ export default function Integrations() {
           {/* قاعدة الأمان */}
           <Card as="p" className="flex items-start gap-2 px-4 py-3 text-read leading-6 text-muted-foreground lg:col-span-2">
             <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-teal-ink" />
-            قواعد ثابتة: الأسرار تُكتب ولا تُقرأ (آخر 4 خانات فقط للعرض)، ومتغيرات البيئة تغلب الشاشة دائماً لبيئات الإنتاج،
-            وكل حفظ وفحص موثق في سجل الأثر — ولا تسوية مالية إلا عبر webhook موقَّت أو تسجيل يدوي بصلاحية.
+            قواعد ثابتة: الأسرار تكتب ولا تقرأ (آخر 4 خانات فقط للعرض)، ومتغيرات البيئة تغلب الشاشة دائما لبيئات الإنتاج،
+            وكل حفظ وفحص موثق في سجل الأثر — ولا تسوية مالية إلا عبر webhook موقّت أو تسجيل يدوي بصلاحية.
           </Card>
         </div>
       )}

@@ -25,7 +25,7 @@ function messy(): ScheduleInput & { sessions: (ScorecardSession & { id: string }
     period: { startsOn: '2026-11-29', endsOn: '2027-01-30' },
     now: new Date('2026-10-08T09:00:00Z'),
     content: {
-      modules: MODS.map((id) => ({ moduleId: id, titleAr: `محور ${id}`, activityAr: 'يحلّ المتعلّمُ حالةً من سوقٍ أردنيّ', artifactAr: 'ورقةُ تحليل' })),
+      modules: MODS.map((id) => ({ moduleId: id, titleAr: `محور ${id}`, activityAr: 'يحلّ المتعلّم حالة من سوق أردنيّ', artifactAr: 'ورقة تحليل' })),
       resources: [{ title: 'ملخّص كتاب', url: 'https://example.com/book', category: 'reading' }, { title: 'TEDx', url: 'https://youtube.com/x', category: 'public' }],
       slots: MODS.map((id, i) => ({ moduleIds: [id], startsOn: WEEKS[i]![0], endsOn: WEEKS[i]![1] })),
     },
@@ -33,9 +33,9 @@ function messy(): ScheduleInput & { sessions: (ScorecardSession & { id: string }
     tasks: [
       ...starts.map((s, i) => ({
         id: `t${i + 1}`, title: `واجب ${i + 1}`, type: 'assignment', moduleId: MODS[i]!, maxScore: 10,
-        briefAr: 'حلّل الحالةَ وسلّم ورقةً من صفحتين', dueAt: plus(s, 24 * 4),
+        briefAr: 'حلّل الحالة وسلّم ورقة من صفحتين', dueAt: plus(s, 24 * 4),
       })),
-      { id: 'p', title: 'مشروع التخرّج', type: 'project', dueAt: '2027-01-25T20:59:00.000Z', maxScore: 100, briefAr: 'مشروعٌ يجمع المحاورَ كلَّها' },
+      { id: 'p', title: 'مشروع التخرّج', type: 'project', dueAt: '2027-01-25T20:59:00.000Z', maxScore: 100, briefAr: 'مشروع يجمع المحاور كلّها' },
     ],
   }
 }
@@ -46,15 +46,15 @@ const applied = (input: ReturnType<typeof messy>, edit: { moves: { sessionId: st
   tasks: input.tasks.map((t) => { const m = edit.tasks.find((x) => x.assessmentId === t.id); return m ? { ...t, dueAt: m.dueAt } : t }),
 })
 
-describe('① يومٌ وساعةٌ ثابتان — وكلُّ لقاءٍ في موعد محوره', () => {
-  it('⚠️ أكثرُ موعدٍ يصلح — السبتُ ١٨:٠٠ — لكلّ لقاء، داخلَ أسبوع محوره وبلا عطلة', () => {
+describe('① يوم وساعة ثابتان — وكلّ لقاء في موعد محوره', () => {
+  it('⚠️ أكثر موعد يصلح — السبت ١٨:٠٠ — لكلّ لقاء، داخل أسبوع محوره وبلا عطلة', () => {
     const input = messy()
     const r = proposeSchedule(input)
     expect(r.ok, r.ok ? '' : r.reasonAr).toBe(true)
     if (!r.ok) return
     expect([r.edit.weekday, r.edit.clock]).toEqual([6, '18:00'])
     /* والسببُ ما هو الآن ثمّ ما نقترح — بعدده ولغته */
-    expect(r.reasonAr).toBe('لقاءاتُك اليومَ على 4 مواعيدَ مختلفة — نقترح السبت 18:00 كلَّ أسبوع: ينتقل 3 لقاءات من 4 ومعها مواعيدُ 3 مهامّ تتبعها، داخلَ مواعيد محاورها وبلا عطل.')
+    expect(r.reasonAr).toBe('لقاءاتك اليوم على 4 مواعيد مختلفة — نقترح السبت 18:00 كلّ أسبوع: ينتقل 3 لقاءات من 4 ومعها مواعيد 3 مهامّ تتبعها، داخل مواعيد محاورها وبلا عطل.')
     const after = applied(input, r.edit)
     const days = after.sessions.map((s) => zonedDay(s.startsAt))
     expect(days).toEqual(['2026-12-05', '2026-12-12', '2026-12-19', '2027-01-02'])
@@ -83,8 +83,8 @@ function shaped(slots: [string, string][], starts: [string, string][]): ReturnTy
   }
 }
 
-describe('①ب الأكثرُ تكرارا لا الأوّل — والأقربُ لا الأبعد — وبلا عطلة', () => {
-  it('⚠️ السبتُ ١٨:٠٠ مرّتين بعد أربعاءَ أوّل — فهو الموعد؛ وكلُّ لقاءٍ إلى أقرب سبتٍ في موعد محوره', () => {
+describe('①ب الأكثر تكرارا لا الأوّل — والأقرب لا الأبعد — وبلا عطلة', () => {
+  it('⚠️ السبت ١٨:٠٠ مرّتين بعد أربعاء أوّل — فهو الموعد؛ وكلّ لقاء إلى أقرب سبت في موعد محوره', () => {
     const input = shaped(
       [['2026-12-01', '2026-12-07'], ['2026-12-08', '2026-12-14'], ['2026-12-15', '2026-12-21'], ['2026-12-22', '2027-01-15']],
       [['2026-12-02', '19:00'], ['2026-12-12', '18:00'], ['2026-12-19', '18:00'], ['2026-12-27', '19:00']],
@@ -95,10 +95,10 @@ describe('①ب الأكثرُ تكرارا لا الأوّل — والأقرب
     /* محورُ الرابع إلى ١٥ يناير: فيه ٢٦ ديسمبر و٢ و٩ يناير — والأقربُ من ٢٧ ديسمبر أوّلُها */
     expect(applied(input, r.edit).sessions.map((s) => zonedDay(s.startsAt))).toEqual(['2026-12-05', '2026-12-12', '2026-12-19', '2026-12-26'])
     expect(r.edit.moves.map((m) => m.sessionId)).toEqual(['s1', 's4'])
-    expect(r.reasonAr).toBe('لقاءاتُك اليومَ على 3 مواعيدَ مختلفة — نقترح السبت 18:00 كلَّ أسبوع: ينتقل لقاءان من 4، داخلَ مواعيد محاورها وبلا عطل.')
+    expect(r.reasonAr).toBe('لقاءاتك اليوم على 3 مواعيد مختلفة — نقترح السبت 18:00 كلّ أسبوع: ينتقل لقاءان من 4، داخل مواعيد محاورها وبلا عطل.')
   })
 
-  it('⚠️ الجمعةُ موعدا: ٢٥ ديسمبر و١ يناير جمعتان وعطلتان — فلا يقع عليهما لقاء', () => {
+  it('⚠️ الجمعة موعدا: ٢٥ ديسمبر و١ يناير جمعتان وعطلتان — فلا يقع عليهما لقاء', () => {
     const input = shaped(
       [['2026-12-01', '2026-12-07'], ['2026-12-08', '2026-12-14'], ['2026-12-15', '2026-12-31'], ['2027-01-01', '2027-01-15']],
       [['2026-12-04', '18:00'], ['2026-12-11', '18:00'], ['2026-12-24', '19:00'], ['2027-01-04', '19:00']],
@@ -112,29 +112,29 @@ describe('①ب الأكثرُ تكرارا لا الأوّل — والأقرب
 })
 
 describe('② والسلسلة', () => {
-  it('⚠️ مهمّةُ كلّ محورٍ تنتقل بقدر ما انتقل لقاؤه — فتبقى بعده بأيّامها', () => {
+  it('⚠️ مهمّة كلّ محور تنتقل بقدر ما انتقل لقاؤه — فتبقى بعده بأيّامها', () => {
     const input = messy()
     const r = proposeSchedule(input)
     if (!r.ok) throw new Error(r.reasonAr)
     const after = applied(input, r.edit)
     for (let i = 0; i < 4; i++) {
       const s = after.sessions[i]!; const t = after.tasks[i]!
-      expect(Math.round((Date.parse(t.dueAt as string) - Date.parse(s.startsAt as string)) / 86_400_000), `مهمّةُ المحور ${i + 1}`).toBe(4)
+      expect(Math.round((Date.parse(t.dueAt as string) - Date.parse(s.startsAt as string)) / 86_400_000), `مهمّة المحور ${i + 1}`).toBe(4)
     }
     expect(r.edit.tasks.map((t) => t.assessmentId)).toEqual(['t2', 't3', 't4'])
   })
 
-  it('⚠️ والمشروعُ يبقى بعد آخر لقاءٍ بأسبوع — يُؤخَّر معه إن لزم، داخلَ المدّة', () => {
+  it('⚠️ والمشروع يبقى بعد آخر لقاء بأسبوع — يؤخّر معه إن لزم، داخل المدّة', () => {
     const input = messy()
     input.tasks = input.tasks.map((t) => (t.type === 'project' ? { ...t, dueAt: '2027-01-08T20:59:00.000Z' } : t))
     const r = proposeSchedule(input)
     if (!r.ok) throw new Error(r.reasonAr)
     const p = r.edit.tasks.find((t) => t.assessmentId === 'p')
-    expect(p, 'المشروعُ لم يتبع آخرَ لقاء').toBeTruthy()
+    expect(p, 'المشروع لم يتبع آخر لقاء').toBeTruthy()
     expect(zonedDay(p!.dueAt)).toBe('2027-01-09')
   })
 
-  it('⚠️ والبطاقةُ بعده أحسنُ في الإيقاع، ولا يسوء فيها معيارُ توقيت', () => {
+  it('⚠️ والبطاقة بعده أحسن في الإيقاع، ولا يسوء فيها معيار توقيت', () => {
     const input = messy()
     const r = proposeSchedule(input)
     if (!r.ok) throw new Error(r.reasonAr)
@@ -146,8 +146,8 @@ describe('② والسلسلة', () => {
   })
 })
 
-describe('③ ولا يُقترح ما يُفسد ولا ما لا حاجةَ إليه', () => {
-  it('⚠️ جدولٌ ثابتٌ أصلا — لا اقتراح، ويُقال لماذا', () => {
+describe('③ ولا يقترح ما يفسد ولا ما لا حاجة إليه', () => {
+  it('⚠️ جدول ثابت أصلا — لا اقتراح، ويقال لماذا', () => {
     const input = messy()
     input.sessions = input.sessions.map((s, i) => {
       const d = ['2026-12-05', '2026-12-12', '2026-12-19', '2027-01-02'][i]!
@@ -158,16 +158,16 @@ describe('③ ولا يُقترح ما يُفسد ولا ما لا حاجةَ إ
     if (!r.ok) expect(r.reasonAr).toMatch(/ثابتين/)
   })
 
-  it('⚠️ ولا يُخرج لقاءً من موعد محوره — إن لم يقع اليومُ فيه قيل ذلك ولم يُقترح شيء', () => {
+  it('⚠️ ولا يخرج لقاء من موعد محوره — إن لم يقع اليوم فيه قيل ذلك ولم يقترح شيء', () => {
     const input = messy()
     const slots = (input.content as { slots: { startsOn: string; endsOn: string; moduleIds: string[] }[] }).slots
     slots[1] = { ...slots[1]!, startsOn: '2026-12-13', endsOn: '2026-12-17' }
     const r = proposeSchedule(input)
     expect(r.ok).toBe(false)
-    if (!r.ok) expect(r.reasonAr).toMatch(/رتّب مواعيدَ المحاور أوّلا/)
+    if (!r.ok) expect(r.reasonAr).toMatch(/رتّب مواعيد المحاور أوّلا/)
   })
 
-  it('⚠️ ولا يُقترح جدولٌ يُسيء معيارَ توقيتٍ آخر — ولو أصلح الإيقاع: فاصلٌ يتجاوز ٢١ يوما', () => {
+  it('⚠️ ولا يقترح جدول يسيء معيار توقيت آخر — ولو أصلح الإيقاع: فاصل يتجاوز ٢١ يوما', () => {
     const input = shaped(
       [['2026-12-01', '2026-12-07'], ['2026-12-08', '2026-12-14'], ['2026-12-15', '2026-12-31'], ['2027-01-09', '2027-01-15']],
       [['2026-12-04', '18:00'], ['2026-12-11', '18:00'], ['2026-12-24', '19:00'], ['2027-01-11', '19:00']],
@@ -175,13 +175,13 @@ describe('③ ولا يُقترح ما يُفسد ولا ما لا حاجةَ إ
     /* الجمعةُ ١٨ ديسمبر ثمّ الجمعةُ ١٥ يناير: ٢٨ يوما — وكانت ١٨ */
     const r = proposeSchedule(input)
     expect(r.ok).toBe(false)
-    if (!r.ok) expect(r.reasonAr).toMatch(/يُسيء «الفاصلُ بين اللقاءات»/)
+    if (!r.ok) expect(r.reasonAr).toMatch(/يسيء «الفاصل بين اللقاءات»/)
   })
 
-  it('ولقاءٌ واحدٌ لا جدولَ له — ولو في وقتٍ غيرِ مناسب: نقلُه بندٌ واحدٌ لا جدول', () => {
+  it('ولقاء واحد لا جدول له — ولو في وقت غير مناسب: نقله بند واحد لا جدول', () => {
     const input = shaped([['2026-12-01', '2026-12-31']], [['2026-12-07', '15:00']])
     const r = proposeSchedule(input)
     expect(r.ok).toBe(false)
-    if (!r.ok) expect(r.reasonAr).toMatch(/أقلُّ من لقاءين/)
+    if (!r.ok) expect(r.reasonAr).toMatch(/أقلّ من لقاءين/)
   })
 })

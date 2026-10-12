@@ -113,7 +113,7 @@ export default function CourseJourney({
           كانت خمس دورات تحمل خمس نسخ من الجملة نفسها فتغرق ما يختلف بينها.
           والشارة أدناه تبقى للمدرب المُعلَن، لأن اسمه معلومة تخص بطاقته وحدها. */}
       <p className="mt-1.5 text-read leading-relaxed text-muted-foreground">
-        نُعلن اسم مدرب كل دورة عند اعتماد شعبتها — ولا نعرض اسما قبل ذلك.
+        نعلن اسم مدرب كل دورة عند اعتماد شعبتها — ولا نعرض اسما قبل ذلك.
       </p>
 
       <ol className="mt-6">
@@ -130,7 +130,7 @@ export default function CourseJourney({
                   دورات مساندة ({list.length - coreCount})
                 </p>
                 <p className="mt-1 text-read leading-relaxed text-muted-foreground">
-                  مهارات من مسارات أخرى يحتاجها صاحب هذا المسار في عمله — تُكمل الرحلة ولا تُكرّرها.
+                  مهارات من مسارات أخرى يحتاجها صاحب هذا المسار في عمله — تكمل الرحلة ولا تكرّرها.
                 </p>
               </div>
             )}
@@ -273,7 +273,7 @@ export default function CourseJourney({
                   {c.description && <p className="text-muted-foreground">{c.description}</p>}
                   {c.targetAudience && (
                     <p className="text-muted-foreground">
-                      <span className="font-bold text-teal-light-ink">لمن صُممت؟ </span>
+                      <span className="font-bold text-teal-light-ink">لمن صممت؟ </span>
                       {c.targetAudience}
                     </p>
                   )}
@@ -380,9 +380,9 @@ export default function CourseJourney({
           <div className="pt-1">
             <p className="text-sm font-black text-gold-ink">شهادة إتمام + تقرير إنجازك + توصية مهنية</p>
             <p className="mt-1 text-read leading-relaxed text-muted-foreground">
-              تُعرض في ملفك ويشاركها أصحاب العمل عبر رابط تحقق. ومعها توصية مهنية موقّعة من وجيز
-              تصف مشروع تخرّجك وكيف قُيّم — تُرسل إلى أيّ جهة تطلبها، ومعها توصية الجهة التي
-              طُبّق لديها مشروعك إن وُجدت.
+              تعرض في ملفك ويشاركها أصحاب العمل عبر رابط تحقق. ومعها توصية مهنية موقّعة من وجيز
+              تصف مشروع تخرّجك وكيف قيّم — ترسل إلى أيّ جهة تطلبها، ومعها توصية الجهة التي
+              طبّق لديها مشروعك إن وجدت.
             </p>
           </div>
         </li>

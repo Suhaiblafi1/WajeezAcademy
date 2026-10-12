@@ -76,10 +76,10 @@ export default function TrainerPublic() {
   if (missing) {
     return (
       <SiteShell>
-        <SeoHead title="لا مدرّبَ بهذا المسار" description="الرابطُ غيرُ صحيحٍ أو لم يُعتمد نشرُ هذا الملفّ بعد." path={`/t/${slug}`} noindex />
+        <SeoHead title="لا مدرّب بهذا المسار" description="الرابط غير صحيح أو لم يعتمد نشر هذا الملفّ بعد." path={`/t/${slug}`} noindex />
         <div className="mx-auto max-w-3xl px-5 py-16">
           <Panel className="p-8 text-center">
-            <h1 className="text-2xl font-black">لا مدرّبَ بهذا المسار</h1>
+            <h1 className="text-2xl font-black">لا مدرّب بهذا المسار</h1>
             <p className="mt-3 text-read leading-7 text-muted-foreground">
               تأكّد من الرابط، أو تصفّح <Link to="/trainers" className="font-bold underline">مدرّبي وجيز</Link>.
             </p>
@@ -92,7 +92,7 @@ export default function TrainerPublic() {
   if (!page) {
     return (
       <SiteShell>
-        <div className="mx-auto max-w-5xl px-5 py-16"><p className="text-read text-muted-foreground">جارٍ التحميل…</p></div>
+        <div className="mx-auto max-w-5xl px-5 py-16"><p className="text-read text-muted-foreground">جار التحميل…</p></div>
       </SiteShell>
     );
   }
@@ -101,7 +101,7 @@ export default function TrainerPublic() {
     <SiteShell>
       <SeoHead
         title={page.name}
-        description={page.headline ?? `شعبُ ${page.name} المفتوحةُ للتسجيل في أكاديمية وجيز.`}
+        description={page.headline ?? `شعب ${page.name} المفتوحة للتسجيل في أكاديمية وجيز.`}
         path={`/t/${page.slug}`}
       />
       <div className="mx-auto max-w-5xl px-5 py-10 sm:py-14">
@@ -113,7 +113,7 @@ export default function TrainerPublic() {
             <div className="min-w-0 flex-1">
               <h1 className="flex flex-wrap items-center gap-2 text-2xl font-black sm:text-3xl">
                 {page.name}
-                <BadgeCheck className="h-5 w-5 text-teal-light-ink" aria-label="مدرّبٌ موثّق" />
+                <BadgeCheck className="h-5 w-5 text-teal-light-ink" aria-label="مدرّب موثّق" />
               </h1>
               {page.headline && <p className="mt-2 text-read leading-7 text-muted-foreground">{page.headline}</p>}
               <ul className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-read text-muted-foreground">
@@ -150,7 +150,7 @@ export default function TrainerPublic() {
             يرى ما هو متاحٌ عنده. */}
         {page.paths.length > 0 && (
           <>
-            <h2 className="mt-10 text-xl font-black">مساراتٌ أعدّها بنفسه</h2>
+            <h2 className="mt-10 text-xl font-black">مسارات أعدّها بنفسه</h2>
             <ul className="mt-4 grid gap-4 sm:grid-cols-2">
               {page.paths.map((p) => (
                 <Card as="li" key={p.slug ?? p.titleAr} id={p.slug ? pathAnchorId(p.slug) : undefined}>
@@ -168,11 +168,11 @@ export default function TrainerPublic() {
           </>
         )}
 
-        <h2 className="mt-10 text-xl font-black">الشعبُ المفتوحةُ للتسجيل</h2>
+        <h2 className="mt-10 text-xl font-black">الشعب المفتوحة للتسجيل</h2>
         {page.cohorts.length === 0 ? (
           <Card className="mt-4 p-6">
             <p className="text-read leading-7 text-muted-foreground">
-              لا شعبةَ مفتوحةً لديه الآن. تصفّح <Link to="/courses" className="font-bold underline">الدورات</Link> أو عُد قريبا.
+              لا شعبة مفتوحة لديه الآن. تصفّح <Link to="/courses" className="font-bold underline">الدورات</Link> أو عد قريبا.
             </p>
           </Card>
         ) : (
@@ -187,7 +187,7 @@ export default function TrainerPublic() {
                       <li className="flex items-center gap-1.5"><CalendarDays className="h-4 w-4 text-teal-light-ink" />تبدأ {cohortDayAr(c.startsAt, DAY_NUMERIC)}</li>
                     )}
                     {c.seatsLeft != null && (
-                      <li>{c.seatsLeft > 0 ? countAr(c.seatsLeft, { one: "مقعد متبقٍّ", two: "مقعدان متبقّيان", few: "مقاعد متبقّية", many: "مقعدا متبقّيا" }) : "اكتملت المقاعد"}</li>
+                      <li>{c.seatsLeft > 0 ? countAr(c.seatsLeft, { one: "مقعد متبقّ", two: "مقعدان متبقّيان", few: "مقاعد متبقّية", many: "مقعدا متبقّيا" }) : "اكتملت المقاعد"}</li>
                     )}
                     {c.price != null && <li className="font-bold text-foreground">{fmtMoney(Number(c.price), c.currency)}</li>}
                   </ul>

@@ -56,57 +56,57 @@ async function boot({ deviceDark, stored }: { deviceDark: boolean; stored?: stri
 beforeEach(() => { vi.unstubAllGlobals() })
 
 describe('المظهر يتبع الجهاز نهارا وليلا', () => {
-  it('بلا اختيارٍ من الزائر — الجهازُ الداكنُ يفتح داكنا', async () => {
+  it('بلا اختيار من الزائر — الجهاز الداكن يفتح داكنا', async () => {
     const { mod } = await boot({ deviceDark: true })
     expect(mod.getTheme()).toBe('dark')
   })
 
-  it('وبلا اختيارٍ — الجهازُ النهاريُّ يفتح نهاريّا، لا داكنا كما كانت القاعدةُ القديمة', async () => {
+  it('وبلا اختيار — الجهاز النهاريّ يفتح نهاريّا، لا داكنا كما كانت القاعدة القديمة', async () => {
     const { mod } = await boot({ deviceDark: false })
-    expect(mod.getTheme(), 'عاد الموقعُ يفتح داكنا رغم جهازٍ نهاريّ — القاعدةُ القديمةُ رجعت').toBe('light')
+    expect(mod.getTheme(), 'عاد الموقع يفتح داكنا رغم جهاز نهاريّ — القاعدة القديمة رجعت').toBe('light')
   })
 
-  it('واختيارُ الزائر يعلو على الجهاز', async () => {
+  it('واختيار الزائر يعلو على الجهاز', async () => {
     const { mod } = await boot({ deviceDark: true, stored: 'light' })
     expect(mod.getTheme()).toBe('light')
     const other = await boot({ deviceDark: false, stored: 'dark' })
     expect(other.mod.getTheme()).toBe('dark')
   })
 
-  it('وقيمةٌ محفوظةٌ لا تُعرَف تُهمَل ويحكم الجهاز', async () => {
+  it('وقيمة محفوظة لا تعرف تهمل ويحكم الجهاز', async () => {
     const { mod } = await boot({ deviceDark: true, stored: 'sepia' })
     expect(mod.getTheme()).toBe('dark')
   })
 })
 
-describe('اختيارُ اليد يبقى بين الزيارات', () => {
-  it('يُكتب في localStorage لا في sessionStorage — وإلّا ضاع بإغلاق اللسان', async () => {
+describe('اختيار اليد يبقى بين الزيارات', () => {
+  it('يكتب في localStorage لا في sessionStorage — وإلّا ضاع بإغلاق اللسان', async () => {
     const { mod, local, session } = await boot({ deviceDark: true })
     expect(mod.toggleTheme()).toBe('light')
-    expect(local.getItem('wajeez_theme'), 'اختيارُ الزائر لم يُحفَظ حفظا باقيا').toBe('light')
-    expect(session.map.size, 'رجع الحفظُ إلى تخزين الزيارة — فيضيع الاختيارُ بإغلاق اللسان').toBe(0)
+    expect(local.getItem('wajeez_theme'), 'اختيار الزائر لم يحفظ حفظا باقيا').toBe('light')
+    expect(session.map.size, 'رجع الحفظ إلى تخزين الزيارة — فيضيع الاختيار بإغلاق اللسان').toBe(0)
   })
 
-  it('ويُطبَّق على <html data-theme> فورا', async () => {
+  it('ويطبّق على <html data-theme> فورا', async () => {
     const { mod, root } = await boot({ deviceDark: true })
     mod.toggleTheme()
     expect(root.dataset.theme).toBe('light')
   })
 })
 
-describe('تبديلُ الجهاز أثناء الجلسة', () => {
-  it('يُتبَع ما دام الزائرُ لم يختر بيده — فالغروبُ يقلب الموقعَ من نفسه', async () => {
+describe('تبديل الجهاز أثناء الجلسة', () => {
+  it('يتبع ما دام الزائر لم يختر بيده — فالغروب يقلب الموقع من نفسه', async () => {
     const { mod, root, fireDeviceChange } = await boot({ deviceDark: false })
     mod.initTheme()
     expect(root.dataset.theme).toBe('light')
     fireDeviceChange(true)
-    expect(root.dataset.theme, 'غرَبت الشمسُ ولم يتبعها الموقع').toBe('dark')
+    expect(root.dataset.theme, 'غربت الشمس ولم يتبعها الموقع').toBe('dark')
   })
 
-  it('ولا يُتبَع إن كان للزائر اختيار — فلا يُنتزع منه المظهرُ عند الغروب', async () => {
+  it('ولا يتبع إن كان للزائر اختيار — فلا ينتزع منه المظهر عند الغروب', async () => {
     const { mod, root, fireDeviceChange } = await boot({ deviceDark: false, stored: 'light' })
     mod.initTheme()
     fireDeviceChange(true)
-    expect(root.dataset.theme, 'انتُزع اختيارُ الزائر حين بدّل الجهازُ').toBe('light')
+    expect(root.dataset.theme, 'انتزع اختيار الزائر حين بدّل الجهاز').toBe('light')
   })
 })

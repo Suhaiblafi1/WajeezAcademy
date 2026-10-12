@@ -34,39 +34,39 @@ const code = (f: string) =>
 describe('«تعذّر الوصول» ليس جوابا', () => {
   const AUTH = code('src/services/auth.ts')
 
-  it('الفحصُ يفرّق بين لا-جلسة وتعذُّرِ وصول — لا يجمعهما في null', () => {
+  it('الفحص يفرّق بين لا-جلسة وتعذّر وصول — لا يجمعهما في null', () => {
     expect(AUTH).toMatch(/status:\s*"unreachable"/)
     expect(AUTH).toMatch(/status:\s*"anon"/)
     expect(AUTH).toMatch(/status:\s*"ok"/)
   })
 
   it('ولا يسقط إلى النسخة المحلّية عند الفشل — وهذا هو العطب بعينه', () => {
-    expect(AUTH, 'عاد السقوطُ إلى التخزين المحلّيّ').not.toMatch(/catch\s*\{\s*return readSession\(\)/)
+    expect(AUTH, 'عاد السقوط إلى التخزين المحلّيّ').not.toMatch(/catch\s*\{\s*return readSession\(\)/)
   })
 
-  it('و٤٠١ وحدَه يُقرأ «لا جلسة» — وما عداه تعذُّرُ وصول', () => {
+  it('و٤٠١ وحده يقرأ «لا جلسة» — وما عداه تعذّر وصول', () => {
     expect(AUTH).toMatch(/e\.status === 401/)
   })
 
-  it('والدالّةُ القديمة لم تبقَ بابا ثانيا', () => {
-    expect(AUTH, 'بقي مسلكان لسؤالٍ واحد').not.toMatch(/export async function refreshSession/)
+  it('والدالّة القديمة لم تبق بابا ثانيا', () => {
+    expect(AUTH, 'بقي مسلكان لسؤال واحد').not.toMatch(/export async function refreshSession/)
   })
 })
 
-describe('الحارسُ يعيد المحاولة ولا يُحوّل بلا جواب', () => {
+describe('الحارس يعيد المحاولة ولا يحوّل بلا جواب', () => {
   const GUARD = code('src/components/RequireRole.tsx')
 
-  it('يقرأ الفحصَ الثلاثيّ لا الثنائيّ', () => {
+  it('يقرأ الفحص الثلاثيّ لا الثنائيّ', () => {
     expect(GUARD).toMatch(/verifySession/)
     expect(GUARD).not.toMatch(/refreshSession/)
   })
 
-  it('ويعيد المحاولة بتراخٍ قبل أن يستسلم', () => {
+  it('ويعيد المحاولة بتراخ قبل أن يستسلم', () => {
     expect(GUARD).toMatch(/RETRY_DELAYS_MS/)
     expect(GUARD).toMatch(/setState\('unreachable'\)/)
   })
 
-  it('وحالةُ التعذُّر شاشةٌ بزرِّ إعادة — لا `Navigate`', () => {
+  it('وحالة التعذّر شاشة بزرّ إعادة — لا `Navigate`', () => {
     expect(GUARD).toMatch(/أعد المحاولة/)
     /* الحالاتُ التي تُحوِّل ثنتان لا ثلاث: anon و forbidden */
     expect(GUARD.match(/<Navigate\b/g)?.length ?? 0).toBe(2)
@@ -75,26 +75,26 @@ describe('الحارسُ يعيد المحاولة ولا يُحوّل بلا ج
   /* جولةُ ٢٠٢٦-٠٩: متعلّمٌ يفتح `/admin` فيُحوَّل إلى `/student` ويرى صفحةً
      سوداء. الحرّاسُ إخوةٌ في الموضع نفسه فيُعاد استعمالُ النسخة، ولا يُعاد
      التحقّقُ إن لم تكن `allow` في الاعتماديّات — فتبقى «ممنوع» إلى الأبد. */
-  it('ويُعيد التحقّقَ حين تتبدّل قائمةُ الأدوار — لا صفحةَ سوداءَ بعد التحويل', () => {
+  it('ويعيد التحقّق حين تتبدّل قائمة الأدوار — لا صفحة سوداء بعد التحويل', () => {
     expect(GUARD).toMatch(/\}, \[attempt, allow\]\)/)
     expect(GUARD).not.toMatch(/eslint-disable-next-line react-hooks\/exhaustive-deps/)
   })
 })
 
-describe('إقلاعٌ واحد مهما تزامنت النداءات', () => {
+describe('إقلاع واحد مهما تزامنت النداءات', () => {
   /* عمليّةُ Node تستقبل طلباتٍ متزامنة على النسخة الواحدة. وحارسُ الإقلاع
      كان على الناتج لا على الوعد، والإقلاعُ بينهما غيرُ ذرّيّ — فيُقلع كلُّ
      نداءٍ من الصفر: عدّةُ عملاء Prisma وعدّةُ برك اتّصال، ويفوز آخرُها
      ويبقى الباقي ممسكا ببركه. */
-  it('عميلُ Prisma بركةٌ واحدة لا برك', () => {
+  it('عميل Prisma بركة واحدة لا برك', () => {
     const C = code('server/db/client.ts')
     expect(C).toMatch(/let connecting: Promise<PrismaClient> \| null/)
     expect(C).toMatch(/connecting = null/)
   })
 
-  it('ومهلةُ الاتّصال مضبوطة — وافتراضُها انتظارٌ بلا نهاية', () => {
+  it('ومهلة الاتّصال مضبوطة — وافتراضها انتظار بلا نهاية', () => {
     const C = code('server/db/client.ts')
-    expect(C, 'بلا مهلةٍ يعلّق النداءُ عند استنفاد الاتّصالات').toMatch(/connectionTimeoutMillis:\s*\d/)
+    expect(C, 'بلا مهلة يعلّق النداء عند استنفاد الاتّصالات').toMatch(/connectionTimeoutMillis:\s*\d/)
     expect(C).toMatch(/max:\s*Number\(process\.env\.DB_POOL_MAX/)
   })
 })

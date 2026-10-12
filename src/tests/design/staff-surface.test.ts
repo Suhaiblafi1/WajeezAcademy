@@ -127,22 +127,22 @@ function uuidPrompts(): string[] {
    الأوّل، وحذفُ الحارس مع آخر عطبٍ يفتح البابَ لأوّل عودة. */
 const REMAINING: string[] = []
 
-describe('شاشاتُ الفريق · لا يُطلب معرّفٌ لا تعرضه شاشة', () => {
-  it('المسحُ يقرأ الشاشاتِ فعلا — فلا يمرّ بصفرٍ كاذب', () => {
-    expect(SCREENS.length, 'تعطّل المسحُ نفسُه').toBeGreaterThan(80)
+describe('شاشات الفريق · لا يطلب معرّف لا تعرضه شاشة', () => {
+  it('المسح يقرأ الشاشات فعلا — فلا يمرّ بصفر كاذب', () => {
+    expect(SCREENS.length, 'تعطّل المسح نفسه').toBeGreaterThan(80)
     /* حارسُ الحارس: لو انكسرت قراءةُ النصِّ النائب لخضرّ كلُّ ما بعدها */
     const anyPlaceholder = SCREENS.some((f) =>
       /placeholder\s*=\s*"/.test(readFileSync(join(root, f), 'utf8')))
-    expect(anyPlaceholder, 'لم يُقرأ أيُّ نصٍّ نائب').toBe(true)
+    expect(anyPlaceholder, 'لم يقرأ أيّ نصّ نائب').toBe(true)
   })
 
-  it('بطاقةُ الشعبة لا تطلب معرّفا يُلصق — أُحيلت إلى منتقياتٍ بالاسم', () => {
+  it('بطاقة الشعبة لا تطلب معرّفا يلصق — أحيلت إلى منتقيات بالاسم', () => {
     const src = readFileSync(join(root, 'src/pages/admin/CohortOps.tsx'), 'utf8')
     const prompts = [...src.matchAll(/placeholder\s*=\s*"([^"]*)"/g)].map((m) => m[1])
     expect(prompts.filter((p) => /UUID/i.test(p))).toEqual([])
   })
 
-  it('والباقي لا يزيد — يُسمّى واحدا واحدا وينقص مع كلّ إحلال', () => {
+  it('والباقي لا يزيد — يسمّى واحدا واحدا وينقص مع كلّ إحلال', () => {
     expect(uuidPrompts()).toEqual(REMAINING)
   })
 })
@@ -214,25 +214,25 @@ const { body, label } = (() => {
   return { body, label }
 })()
 
-describe('شاشاتُ الفريق · أرضيّةُ الخطّ', () => {
-  it('الاشتقاقُ يعمل — ولو انكسر لخضرّ ما بعده بلا معنى', () => {
+describe('شاشات الفريق · أرضيّة الخطّ', () => {
+  it('الاشتقاق يعمل — ولو انكسر لخضرّ ما بعده بلا معنى', () => {
     expect(STAFF_ONLY.length).toBeGreaterThan(40)
     expect(STAFF_ONLY).toContain('src/pages/admin/CohortOps.tsx')
     expect(STAFF_ONLY).not.toContain('src/pages/CoursePath.tsx')
-    /* اللصيقاتُ باقيةٌ بقصد، فوجودُها دليلُ أنّ المسحَ يقرأ فعلا */
-    expect(label.length, 'لم يُقرأ موضعٌ واحد — تعطّل المسحُ').toBeGreaterThan(50)
+    /* اللصيقات باقية بقصد، فوجودها دليل أنّ المسح يقرأ فعلا */
+    expect(label.length, 'لم يقرأ موضع واحد — تعطّل المسح').toBeGreaterThan(50)
   })
 
-  it('لا فقرةَ ولا عنصرَ قائمةٍ بحجمِ لصيقة — المتنُ أربعةَ عشر', () => {
+  it('لا فقرة ولا عنصر قائمة بحجم لصيقة — المتن أربعة عشر', () => {
     expect(
       body,
-      'نصُّ متنٍ دون أربعةَ عشر في شاشة فريق. استعمل `text-read` — وإن كان '
-      + 'شارةً فعلا فألبِسه `rounded-full` أو انقله إلى `<span>`:\n'
+      'نصّ متن دون أربعة عشر في شاشة فريق. استعمل `text-read` — وإن كان '
+      + 'شارة فعلا فألبسه `rounded-full` أو انقله إلى `<span>`:\n'
       + body.slice(0, 12).join('\n'),
     ).toEqual([])
   })
 
-  it('ولا أحدَ عشرَ في المستودَع كلِّه — أرضيّةُ اللصيقة اثنا عشر', () => {
+  it('ولا أحد عشر في المستودع كلّه — أرضيّة اللصيقة اثنا عشر', () => {
     const offenders: string[] = []
     for (const f of SRC.filter((x) => /\.tsx?$/.test(x))) {
       const src = readFileSync(join(root, f), 'utf8')
@@ -243,16 +243,16 @@ describe('شاشاتُ الفريق · أرضيّةُ الخطّ', () => {
     expect(offenders, `استعمل text-fine (١٢px):\n${offenders.join('\n')}`).toEqual([])
   })
 
-  it('وحقلُ الفريق واحدٌ لا تسعة — الصيغةُ في `FormKit` لا في كلّ صفحة', () => {
+  it('وحقل الفريق واحد لا تسعة — الصيغة في `FormKit` لا في كلّ صفحة', () => {
     const kit = readFileSync(join(root, 'src/components/FormKit.tsx'), 'utf8')
     expect(kit).toMatch(/staffControlCls[\s\S]{0,200}text-read/)
-    /* ونقضُه: صفحةٌ تُعيد كتابةَ صيغةِ حقلٍ كاملةٍ في مكانها */
+    /* ونقضه: صفحة تعيد كتابة صيغة حقل كاملة في مكانها */
     const local: string[] = []
     for (const f of STAFF_ONLY.filter((x) => x.startsWith('src/pages/'))) {
       const src = readFileSync(join(root, f), 'utf8')
       if (/^const (input|select)Cls = (?:"|`)[^"`]*rounded-xl/m.test(src)) local.push(f)
     }
-    expect(local, `صيغةُ حقلٍ مكتوبةٌ في مكانها — استورد staffControlCls:\n${local.join('\n')}`).toEqual([])
+    expect(local, `صيغة حقل مكتوبة في مكانها — استورد staffControlCls:\n${local.join('\n')}`).toEqual([])
   })
 })
 
@@ -264,19 +264,19 @@ describe('شاشاتُ الفريق · أرضيّةُ الخطّ', () => {
    وما يُحرَس هنا **بنيةٌ لا نصّ**: أن يبقى لكلّ قسمٍ لسانٌ يقع فيه. فقسمٌ
    يُضاف بلا بوّابةٍ يظهر في الألسنة الأربعة معا — وهو بعينه الانبساطُ الذي
    أُزيل، يعود من باب النسخ بلا أن يحمرّ شيء. */
-describe('بطاقةُ الشعبة · كلُّ قسمٍ في لسانه', () => {
+describe('بطاقة الشعبة · كلّ قسم في لسانه', () => {
   const ops = readFileSync(join(root, 'src/pages/admin/CohortOps.tsx'), 'utf8')
   const list = readFileSync(join(root, 'src/pages/admin/AdminCohorts.tsx'), 'utf8')
   const tabsFile = readFileSync(join(root, 'src/pages/admin/cohort-tabs.ts'), 'utf8')
 
-  it('الألسنةُ أربعةٌ معرَّفةٌ في موضعٍ واحد، والاتّحادُ يطابق القائمة', () => {
+  it('الألسنة أربعة معرّفة في موضع واحد، والاتّحاد يطابق القائمة', () => {
     const union = [...tabsFile.matchAll(/"(identity|schedule|enrollment|content)"/g)].map((m) => m[1])
     /* أربعةٌ في الاتّحاد وأربعةٌ في القائمة = ثمانيةُ ورودات */
     expect(new Set(union).size).toBe(4)
     expect((tabsFile.match(/\{ id: "/g) ?? []).length).toBe(4)
   })
 
-  it('لا قسمَ بلا لسان — كلُّ `<Section` مسبوقٌ ببوّابةِ لسانه', () => {
+  it('لا قسم بلا لسان — كلّ `<Section` مسبوق ببوّابة لسانه', () => {
     /* ── ولماذا لا يُعَدّ عدًّا ──
 
        أوّلُ صياغةٍ قارنت عددَ الأقسام بعدد البوّابات (`gates >= sections`).
@@ -287,7 +287,7 @@ describe('بطاقةُ الشعبة · كلُّ قسمٍ في لسانه', () =>
        الآن **على الموضع**: لكلّ `<Section` يُنظر إلى ما قبله حتّى نهايةِ
        القسم السابق — فإن لم تقع فيه بوّابةُ لسانٍ فالقسمُ مكشوفٌ في الأربعة. */
     const positions = [...ops.matchAll(/<Section /g)].map((m) => m.index!)
-    expect(positions.length, 'اختفت الأقسامُ — تعطّل الفحصُ نفسُه').toBeGreaterThan(5)
+    expect(positions.length, 'اختفت الأقسام — تعطّل الفحص نفسه').toBeGreaterThan(5)
 
     const ungated: string[] = []
     for (const at of positions) {
@@ -300,19 +300,19 @@ describe('بطاقةُ الشعبة · كلُّ قسمٍ في لسانه', () =>
     }
     expect(
       ungated,
-      `قسمٌ بلا بوّابةِ لسان — يظهر في الألسنة الأربعة معا:\n${ungated.join('\n')}`,
+      `قسم بلا بوّابة لسان — يظهر في الألسنة الأربعة معا:\n${ungated.join('\n')}`,
     ).toEqual([])
   })
 
-  it('ولكلّ لسانٍ ما يملؤه — لا لسانٌ يُفتح على فراغ', () => {
+  it('ولكلّ لسان ما يملؤه — لا لسان يفتح على فراغ', () => {
     for (const t of ['identity', 'schedule', 'enrollment', 'content']) {
       const inOps = (ops.match(new RegExp(`tab === "${t}"`, 'g')) ?? []).length
       const inList = (list.match(new RegExp(`tab === "${t}"`, 'g')) ?? []).length
-      expect(inOps + inList, `اللسانُ «${t}» بلا محتوى`).toBeGreaterThan(0)
+      expect(inOps + inList, `اللسان «${t}» بلا محتوى`).toBeGreaterThan(0)
     }
   })
 
-  it('ولا طيَّ داخلَ لسان — `MiniCard` أُزيلت فلا تعود', () => {
+  it('ولا طيّ داخل لسان — `MiniCard` أزيلت فلا تعود', () => {
     /* الفحصُ على الاستعمال لا على ورود الحرف: التعليقُ الذي يشرح ما أُزيل
        يذكر اسمَها، وهو شرحٌ لا طيّة. */
     expect(ops).not.toMatch(/<MiniCard/)
@@ -336,7 +336,7 @@ describe('بطاقةُ الشعبة · كلُّ قسمٍ في لسانه', () =>
    فيلزمها ما يُبلَغ به صفٌّ بعينه: `ListToolbar` أو `matchesQuery`.
 
    والمستثنى يُسمّى واحدا واحدا بسببه — لا يُعَدّ عدًّا. */
-describe('طوابيرُ الفريق · لا قائمةَ تطول بلا وسيلةِ وصول', () => {
+describe('طوابير الفريق · لا قائمة تطول بلا وسيلة وصول', () => {
   /* لكلٍّ سببُه، ونوعُه لا رأيُنا فيه:
 
      لوحةٌ لا قائمة      · AdminDashboard · TrainerDashboard — أرقامٌ ومداخل
@@ -419,14 +419,14 @@ describe('طوابيرُ الفريق · لا قائمةَ تطول بلا وس�
     /* تقرأ مصفوفةً من الخادم = تعرض قائمةً تنمو */
     .filter((x) => /apiGet<[A-Za-z]+\[\]>/.test(x.src))
 
-  it('المسحُ يجد الطوابيرَ فعلا في الأدوار الثلاثة — فلا يمرّ بصفرٍ كاذب', () => {
-    expect(screens.length, 'تعطّل المسحُ نفسُه').toBeGreaterThan(20)
+  it('المسح يجد الطوابير فعلا في الأدوار الثلاثة — فلا يمرّ بصفر كاذب', () => {
+    expect(screens.length, 'تعطّل المسح نفسه').toBeGreaterThan(20)
     for (const name of ['AdvisorRequests', 'GradingQueue', 'Cases']) {
       expect(screens.map((x) => x.name), `غاب عن المسح: ${name}`).toContain(name)
     }
   })
 
-  it('كلُّ طابورٍ يُبحث فيه — أو يُسمّى في المستثنى بسببه', () => {
+  it('كلّ طابور يبحث فيه — أو يسمّى في المستثنى بسببه', () => {
     const bare = screens
       .filter((x) => !EXEMPT.has(x.name))
       /* ⚠️ كان الفحصُ على ورودِ الاسم في الملفّ — أيًّا كان موضعُه. ونُقض
@@ -439,17 +439,17 @@ describe('طوابيرُ الفريق · لا قائمةَ تطول بلا وس�
       .map((x) => x.name)
     expect(
       bare,
-      'قائمةٌ تنمو بلا بحث. استعمل `ListToolbar` مع `paginate` و`matchesQuery` '
-      + `— أو سَمِّها في المستثنى بسببها:\n${bare.join('\n')}`,
+      'قائمة تنمو بلا بحث. استعمل `ListToolbar` مع `paginate` و`matchesQuery` '
+      + `— أو سمّها في المستثنى بسببها:\n${bare.join('\n')}`,
     ).toEqual([])
   })
 
-  it('والمستثنى لا يتضخّم — كلُّ اسمٍ فيه يقابل ملفّا قائما', () => {
+  it('والمستثنى لا يتضخّم — كلّ اسم فيه يقابل ملفّا قائما', () => {
     /* نقضُه: اسمٌ يُترك في المستثنى بعد حذف ملفّه، فيصير البابُ مفتوحا
        لشاشةٍ جديدةٍ تحمل الاسمَ نفسَه وتمرّ بلا بحث. */
     const names = new Set(screens.map((x) => x.name))
     const stale = [...EXEMPT].filter((n) => !names.has(n))
-    expect(stale, `أسماءٌ في المستثنى بلا ملفّ:\n${stale.join('\n')}`).toEqual([])
+    expect(stale, `أسماء في المستثنى بلا ملفّ:\n${stale.join('\n')}`).toEqual([])
   })
 })
 
@@ -465,7 +465,7 @@ describe('طوابيرُ الفريق · لا قائمةَ تطول بلا وس�
 
    فصارت المجاميعُ مصفوفةً، كلُّ مقطعٍ صندوقُه تفصله مسافةٌ لا حرف. وهذا
    الحارسُ يمنع عودةَ الحرف: لا فاصلَ محايدَ الاتّجاه داخل نصِّ مقطع. */
-describe('رأسُ العمل · لا حرفَ يلتحم برقم', () => {
+describe('رأس العمل · لا حرف يلتحم برقم', () => {
   const NEUTRAL = /[\u00b7\u2022]/
 
   /* يقرأ تعبيرَ `stats={…}` كلَّه بالموازنة بين الأقواس.
@@ -492,16 +492,16 @@ describe('رأسُ العمل · لا حرفَ يلتحم برقم', () => {
     .map((f) => ({ file: f, src: readFileSync(join(root, f), 'utf8') }))
     .filter((x) => /<WorkHeader/.test(x.src))
 
-  it('المسحُ يجد مستعملي الرأس ومجاميعَهم — فلا يمرّ بصفرٍ كاذب', () => {
-    expect(users.length, 'لا شاشةَ تستعمل `WorkHeader` — تعطّل المسح').toBeGreaterThan(3)
+  it('المسح يجد مستعملي الرأس ومجاميعهم — فلا يمرّ بصفر كاذب', () => {
+    expect(users.length, 'لا شاشة تستعمل `WorkHeader` — تعطّل المسح').toBeGreaterThan(3)
     /* ولا يكفي أن تُوجد الشاشات: لو انكسر استخراجُ التعبير لَخضرّ الحدُّ
        بلا أن يقرأ حرفا. فيُشترط أن يُستخرج مجموعٌ من أكثرِ من شاشة. */
     const withStats = users.filter((u) => statsExprs(u.src).some((e) => e.trim().length > 0))
-    expect(withStats.length, 'لم يُستخرج تعبيرُ `stats` من شيء — تعطّل الاستخراج')
+    expect(withStats.length, 'لم يستخرج تعبير `stats` من شيء — تعطّل الاستخراج')
       .toBeGreaterThan(3)
   })
 
-  it('لا فاصلَ محايدَ الاتّجاه داخل مقاطع المجاميع', () => {
+  it('لا فاصل محايد الاتّجاه داخل مقاطع المجاميع', () => {
     const bad: string[] = []
     for (const u of users) {
       for (const expr of statsExprs(u.src)) {
@@ -510,8 +510,8 @@ describe('رأسُ العمل · لا حرفَ يلتحم برقم', () => {
     }
     expect(
       bad,
-      'فاصلٌ محايدُ الاتّجاه بين عددين يُقرأ جزءا من الرقم في فقرةٍ عربيّة.\n'
-      + 'اجعل كلَّ مقطعٍ عنصرا في `stats` تفصله مسافةٌ لا حرف:\n' + bad.join('\n'),
+      'فاصل محايد الاتّجاه بين عددين يقرأ جزءا من الرقم في فقرة عربيّة.\n'
+      + 'اجعل كلّ مقطع عنصرا في `stats` تفصله مسافة لا حرف:\n' + bad.join('\n'),
     ).toEqual([])
   })
 })
@@ -528,7 +528,7 @@ describe('رأسُ العمل · لا حرفَ يلتحم برقم', () => {
    للشريط والتنقّلُ بالأسهم — ولم يكن في أيٍّ منها.
 
    فصار `ui/TabBar.tsx` هو الشريط، وهذا يمنع عودةَ السابعة. */
-describe('شاشاتُ الفريق · اللسانُ من `TabBar` لا مكتوبٌ في مكانه', () => {
+describe('شاشات الفريق · اللسان من `TabBar` لا مكتوب في مكانه', () => {
   /* ── المستثنى، باسمه وسببه ──
      لسانان في شاشات المتعلّم بنيتُهما مختلفةٌ لا زينتُهما، فإقحامُهما في
      الشريط إمّا يفسدهما وإمّا ينفخ خاناتِه:
@@ -546,24 +546,24 @@ describe('شاشاتُ الفريق · اللسانُ من `TabBar` لا مكت�
     .filter((f) => !f.startsWith('src/components/ui/'))
     .filter((f) => /role\s*=\s*"tab(list)?"/.test(strip(readFileSync(join(root, f), 'utf8'))))
 
-  it('المسحُ يقرأ الأدوارَ فعلا — فلا يمرّ بصفرٍ كاذب', () => {
+  it('المسح يقرأ الأدوار فعلا — فلا يمرّ بصفر كاذب', () => {
     /* حارسُ الحارس: `TabBar` نفسُه يحمل الدورَين، فلو انكسرت القراءةُ لم يُرَ */
     const bar = readFileSync(join(root, 'src/components/ui/TabBar.tsx'), 'utf8')
-    expect(/role="tablist"/.test(bar) && /role="tab"/.test(bar), 'تعطّلت قراءةُ الأدوار').toBe(true)
+    expect(/role="tablist"/.test(bar) && /role="tab"/.test(bar), 'تعطّلت قراءة الأدوار').toBe(true)
   })
 
-  it('لا شريطَ ألسنةٍ مكتوبٌ بيده — إلّا ما سُمّي بسببه', () => {
+  it('لا شريط ألسنة مكتوب بيده — إلّا ما سمّي بسببه', () => {
     const bad = handRolled.filter((f) => !TAB_EXEMPT.has(f))
     expect(
       bad,
-      'شريطُ ألسنةٍ مكتوبٌ في مكانه. استعمل `ui/TabBar` — يأتي معه '
-      + '`aria-selected` ووقفةٌ واحدةٌ في التنقّل وأسهمٌ تمشي بينها:\n' + bad.join('\n'),
+      'شريط ألسنة مكتوب في مكانه. استعمل `ui/TabBar` — يأتي معه '
+      + '`aria-selected` ووقفة واحدة في التنقّل وأسهم تمشي بينها:\n' + bad.join('\n'),
     ).toEqual([])
   })
 
-  it('والمستثنى يبقى مستحقّا — فلا يبقى اسمٌ بعد أن زال سببُه', () => {
+  it('والمستثنى يبقى مستحقّا — فلا يبقى اسم بعد أن زال سببه', () => {
     for (const f of TAB_EXEMPT) {
-      expect(handRolled, `مستثنًى لم يعد فيه شريطٌ مكتوبٌ بيده: ${f}`).toContain(f)
+      expect(handRolled, `مستثنى لم يعد فيه شريط مكتوب بيده: ${f}`).toContain(f)
     }
   })
 })

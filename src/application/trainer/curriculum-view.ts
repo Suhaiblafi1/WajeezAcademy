@@ -310,7 +310,7 @@ export function curriculumView(input: CurriculumInput): CurriculumView {
   for (const r of resources) {
     const g = r.moduleId ? groupOf.get(r.moduleId) : undefined
     if (resourceCategory(r) === 'recorded' && g) {
-      g.recordings.push({ title: text(r.title) ?? 'جلسةٌ مسجّلة', url: text(r.url), opensAt: text(r.opensAt) })
+      g.recordings.push({ title: text(r.title) ?? 'جلسة مسجّلة', url: text(r.url), opensAt: text(r.opensAt) })
       recordings += 1
       continue
     }
@@ -335,7 +335,7 @@ export function curriculumView(input: CurriculumInput): CurriculumView {
     moduleWorkbooks: workbookModeOf(c) === 'modules'
       ? workbookGroups(c.workbooks, modules.map((m) => m.moduleId)).map((g) => ({
           key: g.moduleIds.join('+'),
-          label: `كرّاسةُ ${groupLabelAr(g, modules.map((m) => m.moduleId))}`,
+          label: `كرّاسة ${groupLabelAr(g, modules.map((m) => m.moduleId))}`,
           done: workbookDone(g),
           material: workbookMaterialOf(g),
           title: text(g.title), url: text(g.url), fileKey: text(g.bodyFileKey), fileName: text(g.bodyFileName),

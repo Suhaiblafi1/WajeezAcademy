@@ -19,19 +19,19 @@ import { join } from 'node:path'
 const HTACCESS = readFileSync(join(process.cwd(), 'public/.htaccess'), 'utf8')
 
 describe('إعادة توجيه SPA على .htaccess', () => {
-  it('الملفات والمجلدات الموجودة فعلا تُقدَّم كما هي قبل أي تحويل', () => {
+  it('الملفات والمجلدات الموجودة فعلا تقدّم كما هي قبل أي تحويل', () => {
     expect(HTACCESS).toMatch(/RewriteCond %\{REQUEST_FILENAME\} -f/)
     expect(HTACCESS).toMatch(/RewriteCond %\{REQUEST_FILENAME\} -d/)
   })
 
-  it('أصلٌ مفقود تحت assets/ يردّ 404 صريحا — لا index.html', () => {
+  it('أصل مفقود تحت assets/ يردّ 404 صريحا — لا index.html', () => {
     expect(
       HTACCESS,
-      'بدون هذه القاعدة يعود الأصل المفقود 200 · text/html فيُرفض كسكربت',
+      'بدون هذه القاعدة يعود الأصل المفقود 200 · text/html فيرفض كسكربت',
     ).toMatch(/RewriteCond %\{REQUEST_URI\} \^\/assets\/\s*\n\s*RewriteRule \^ - \[R=404,L\]/)
   })
 
-  it('استثناءُ assets يسبق القاعدة الشاملة — الترتيبُ في mod_rewrite يحسم', () => {
+  it('استثناء assets يسبق القاعدة الشاملة — الترتيب في mod_rewrite يحسم', () => {
     const assetsIdx = HTACCESS.indexOf('RewriteCond %{REQUEST_URI} ^/assets/')
     const catchAllIdx = HTACCESS.indexOf('RewriteRule ^ index.html [L]')
     expect(assetsIdx).toBeGreaterThan(-1)

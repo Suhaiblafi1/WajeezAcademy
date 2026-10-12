@@ -120,7 +120,7 @@ export default function Terms() {
     const termId = pickTerm[c.id];
     if (!termId) return;
     return act(`term-${c.id}`, () => apiPost(`/api/admin/cohorts/${c.id}/term`, { termId }),
-      "سُمّي فصلُ الشعبة — وفُتحت نافذةُ جدولة مدرّبها");
+      "سمّي فصل الشعبة — وفتحت نافذة جدولة مدرّبها");
   };
 
   /* فتحُ البابِ وإغلاقُه — ولا يُلمس تحته علمُ شعبةٍ واحدة، فما كان مغلقا
@@ -134,7 +134,7 @@ export default function Terms() {
       setGate(r);
       setGateMessage(r.gate.messageAr);
     },
-    open ? "فُتح باب التسجيل — وينتظر من ترك بريده أن تُبلغه" : "أُوقف التسجيل — ومن ينقر الدفعَ يُطلَب بريدُه",
+    open ? "فتح باب التسجيل — وينتظر من ترك بريده أن تبلغه" : "أوقف التسجيل — ومن ينقر الدفع يطلب بريده",
   );
 
   /* إبلاغُ المنتظرين — فعلٌ مستقلٌّ عن الفتح: يُفتح البابُ، ويُتحقَّق من
@@ -143,40 +143,40 @@ export default function Terms() {
     "gate-notify",
     async () => {
       const r = await apiPost<{ queued: number }>("/api/admin/registration-season/notify", { season: gateSeason });
-      toast(r.queued > 0 ? `كُتبت ${r.queued} رسالةً في الطابور — يُرسلها العامل` : "لا أحد ينتظر الآن");
+      toast(r.queued > 0 ? `كتبت ${r.queued} رسالة في الطابور — يرسلها العامل` : "لا أحد ينتظر الآن");
       setGate(await apiGet<GateState>("/api/admin/registration-season"));
     },
-    "أُبلغ المنتظرون",
+    "أبلغ المنتظرون",
   );
 
-  const create = () => act("create", () => apiPost("/api/admin/terms", { year: Number(form.year), season: form.season }), "أُنشئ الموسم بحدوده المحسوبة");
+  const create = () => act("create", () => apiPost("/api/admin/terms", { year: Number(form.year), season: form.season }), "أنشئ الموسم بحدوده المحسوبة");
   const saveWindow = (t: Term) => {
     const w = windows[t.id] ?? { opensAt: "", closesAt: "" };
     return act(`window-${t.id}`, () => apiPost(`/api/admin/terms/${t.id}/registration-window`, {
       opensAt: w.opensAt ? new Date(w.opensAt).toISOString() : null,
       closesAt: w.closesAt ? new Date(w.closesAt).toISOString() : null,
-    }), "حُفظت نافذةُ التسجيل");
+    }), "حفظت نافذة التسجيل");
   };
   const preview = (t: Term) => act(`preview-${t.id}`, async () => {
     setPlans((p) => ({ ...p, [t.id]: undefined as unknown as PlanResult }));
     const r = await apiPost<PlanResult>(`/api/admin/terms/${t.id}/plan`, { apply: false });
     setPlans((p) => ({ ...p, [t.id]: r }));
-  }, "هذه معاينةٌ — لم يُفتح شيءٌ بعد");
+  }, "هذه معاينة — لم يفتح شيء بعد");
   const apply = (t: Term) => act(`apply-${t.id}`, async () => {
     const r = await apiPost<PlanResult>(`/api/admin/terms/${t.id}/plan`, { apply: true });
     setPlans((p) => ({ ...p, [t.id]: r }));
-  }, "وُزّعت شعبُ الموسم وفُتحت");
+  }, "وزّعت شعب الموسم وفتحت");
   /* نقلُ حالة الفصل — والزرُّ يقول أثرَه لا اسمَه وحدَه (`TERM_STATUS_EFFECT_AR`) */
   const moveStatus = (t: Term, to: TermStatus) => act(
     `status-${t.id}`,
     () => apiPost(`/api/admin/terms/${t.id}/status`, { status: to }),
     `${t.titleAr}: ${TERM_STATUS_AR[to]}`,
   );
-  const publish = (t: Term) => act(`publish-${t.id}`, () => apiPost(`/api/admin/terms/${t.id}/publish-calendar`, {}), "نُشر التقويم — يراه الزائرُ الآن");
+  const publish = (t: Term) => act(`publish-${t.id}`, () => apiPost(`/api/admin/terms/${t.id}/publish-calendar`, {}), "نشر التقويم — يراه الزائر الآن");
   const remove = (t: Term) => act(`delete-${t.id}`, async () => {
     await apiDelete(`/api/admin/terms/${t.id}`);
     setConfirmDelete(null);
-  }, "حُذف الموسم");
+  }, "حذف الموسم");
 
   const seasonLabel = (s: string) => TRAINING_SEASONS.find((x) => x.value === s)?.months ?? s;
 
@@ -195,9 +195,9 @@ export default function Terms() {
   return (
     <AdminLayout title="المواسم والتقويم">
       <FlowSteps steps={[
-        { label: "أنشئ الموسم", actor: "سنةٌ وموسم — والتواريخُ تُحسب" },
-        { label: "نافذةُ التسجيل", actor: "متى يُفتح ومتى يُغلق" },
-        { label: "وزّع الشعب", actor: "معاينةٌ ثمّ تطبيق" },
+        { label: "أنشئ الموسم", actor: "سنة وموسم — والتواريخ تحسب" },
+        { label: "نافذة التسجيل", actor: "متى يفتح ومتى يغلق" },
+        { label: "وزّع الشعب", actor: "معاينة ثمّ تطبيق" },
         { label: "انشر التقويم", actor: "فيراه الزائر" },
       ]} />
 
@@ -217,23 +217,23 @@ export default function Terms() {
             {gate.gate.open
               ? <DoorOpen className="h-4 w-4 text-teal-light-ink" aria-hidden="true" />
               : <DoorClosed className="h-4 w-4 text-gold-ink" aria-hidden="true" />}
-            بابُ التسجيل — المنصّةُ كلُّها
+            باب التسجيل — المنصّة كلّها
           </h2>
           <p className="mt-1 text-read leading-6 text-muted-foreground">
             {gate.gate.open
-              ? "التسجيلُ مفتوح: الشراءُ يمضي بشروط الشعبة ونافذة فصلها كما هي."
-              : "التسجيلُ موقوف: من ينقر «ادفع» يرى الرسالةَ أدناه ويُطلَب بريدُه — ولا يُلمَس علمُ شعبةٍ ولا نافذةُ فصل."}
+              ? "التسجيل مفتوح: الشراء يمضي بشروط الشعبة ونافذة فصلها كما هي."
+              : "التسجيل موقوف: من ينقر «ادفع» يرى الرسالة أدناه ويطلب بريده — ولا يلمس علم شعبة ولا نافذة فصل."}
           </p>
 
           <div className="mt-3 grid gap-3 sm:grid-cols-[auto_1fr] sm:items-end">
             <label>
-              <span className="mb-1.5 block text-read font-bold text-muted-foreground">الموسم المنتظَر</span>
+              <span className="mb-1.5 block text-read font-bold text-muted-foreground">الموسم المنتظر</span>
               <select value={gateSeason} onChange={(e) => setGateSeason(e.target.value)} className={staffSelectCls}>
                 {TRAINING_SEASONS.map((s) => <option key={s.value} value={s.value}>{s.label} — {s.months}</option>)}
               </select>
             </label>
             <label>
-              <span className="mb-1.5 block text-read font-bold text-muted-foreground">ما يُقال لمن نقر الدفع</span>
+              <span className="mb-1.5 block text-read font-bold text-muted-foreground">ما يقال لمن نقر الدفع</span>
               <input
                 value={gateMessage}
                 onChange={(e) => setGateMessage(e.target.value)}
@@ -262,8 +262,8 @@ export default function Terms() {
             )}
             <span className="text-read leading-6 text-muted-foreground">
               {gate.waiting.total === 0
-                ? "لم يترك أحدٌ بريدَه بعد."
-                : `ترك بريدَه ${gate.waiting.total} — ${gate.waiting.pending} لم يُبلَّغوا بعد.`}
+                ? "لم يترك أحد بريده بعد."
+                : `ترك بريده ${gate.waiting.total} — ${gate.waiting.pending} لم يبلّغوا بعد.`}
             </span>
           </div>
         </Panel>
@@ -271,9 +271,9 @@ export default function Terms() {
 
       {/* ① إنشاءُ موسم — لا تواريخَ باليد: الموسمُ يحدّدها */}
       <Panel as="section" className="mb-6">
-        <h2 className="flex items-center gap-2 text-sm font-black"><CalendarPlus className="h-4 w-4 text-teal-light-ink" aria-hidden="true" /> موسمٌ جديد</h2>
+        <h2 className="flex items-center gap-2 text-sm font-black"><CalendarPlus className="h-4 w-4 text-teal-light-ink" aria-hidden="true" /> موسم جديد</h2>
         <p className="mt-1 text-read leading-6 text-muted-foreground">
-          المواسمُ أربعة في السنة، وحدودُ كلٍّ منها ثابتة: موسمُ الشتاء نوفمبر إلى يناير، وهكذا. اختر السنةَ والموسم — والتواريخُ تُحسب.
+          المواسم أربعة في السنة، وحدود كلّ منها ثابتة: موسم الشتاء نوفمبر إلى يناير، وهكذا. اختر السنة والموسم — والتواريخ تحسب.
         </p>
         <div className="mt-3 grid gap-3 sm:grid-cols-[auto_1fr_auto] sm:items-end">
           <label>
@@ -301,17 +301,17 @@ export default function Terms() {
       {termless !== null && termless.length > 0 && (
         <Panel as="section" tone="warn" className="mb-6">
           <h2 className="flex items-center gap-2 text-sm font-black text-gold-ink">
-            <CalendarPlus className="h-4 w-4" aria-hidden="true" /> شعبٌ لم يُسمَّ فصلُها ({termless.length})
+            <CalendarPlus className="h-4 w-4" aria-hidden="true" /> شعب لم يسمّ فصلها ({termless.length})
           </h2>
           {/* ═══ ولم تعد «تحبس مدرّبَها» (٢٧ سبتمبر ٢٠٢٦) ═══
               المدرّبُ يحدّد مدّةَ شعبته بنفسه فتُفتح جدولتُه داخلها، والفصلُ
               يُشتقّ من تاريخ البدء حين تُعتمَد خطّتُه. فتسميتُه هنا تضع حدودا
               مبدئيّةً لما لم يحدّد مدرّبُه مدّتَه بعد — لا تفكّ حبسا. */}
           <p className="mt-1 text-read leading-6 text-muted-foreground">
-            الشعبةُ بلا فصلٍ <b className="text-foreground">لم تُفتَح بعد</b> — لا معطوبة. ومدرّبُها لا ينتظر التسمية:
-            يحدّد مدّتَها بنفسه ويجدول داخلها، ويُشتقّ فصلُها من تاريخ بدئها حين تُعتمَد خطّتُه. وتسميتُه هنا
-            تضع لها حدودا مبدئيّةً حتّى ذلك الحين.
-            {terms !== null && terms.length === 0 && " وأنشئ موسما أوّلا — لا فصلَ يُسمّى به بعد."}
+            الشعبة بلا فصل <b className="text-foreground">لم تفتح بعد</b> — لا معطوبة. ومدرّبها لا ينتظر التسمية:
+            يحدّد مدّتها بنفسه ويجدول داخلها، ويشتقّ فصلها من تاريخ بدئها حين تعتمد خطّته. وتسميته هنا
+            تضع لها حدودا مبدئيّة حتّى ذلك الحين.
+            {terms !== null && terms.length === 0 && " وأنشئ موسما أوّلا — لا فصل يسمّى به بعد."}
           </p>
           <ul className="mt-4 space-y-3">
             {termless.map((c) => (
@@ -334,7 +334,7 @@ export default function Terms() {
                       <select
                         value={pickTerm[c.id] ?? ""}
                         onChange={(e) => setPickTerm({ ...pickTerm, [c.id]: e.target.value })}
-                        aria-label={`فصلُ شعبة ${c.title}`}
+                        aria-label={`فصل شعبة ${c.title}`}
                         className={staffSelectCls}
                       >
                         <option value="">اختر فصلا…</option>
@@ -348,7 +348,7 @@ export default function Terms() {
                       disabled={busy !== null || !pickTerm[c.id]}
                       onClick={() => void nameTerm(c)}
                     >
-                      سمِّ الفصل
+                      سمّ الفصل
                     </Button>
                   </div>
                 </div>
@@ -359,9 +359,9 @@ export default function Terms() {
       )}
 
       {terms === null ? (
-        <div className="grid place-items-center py-16"><Loader2 className="h-7 w-7 animate-spin text-muted-foreground/50" aria-label="جارٍ التحميل" /></div>
+        <div className="grid place-items-center py-16"><Loader2 className="h-7 w-7 animate-spin text-muted-foreground/50" aria-label="جار التحميل" /></div>
       ) : terms.length === 0 ? (
-        <Panel as="p" className="py-10 text-center text-read text-muted-foreground">لا مواسمَ بعد — أنشئ أوّلَها أعلاه، فيصير للدورات موعدٌ يُعلَن.</Panel>
+        <Panel as="p" className="py-10 text-center text-read text-muted-foreground">لا مواسم بعد — أنشئ أوّلها أعلاه، فيصير للدورات موعد يعلن.</Panel>
       ) : (
         <div className="space-y-5">
           {listed.map((t) => {
@@ -397,7 +397,7 @@ export default function Terms() {
                             title={TERM_STATUS_EFFECT_AR[to]}
                             onClick={() => void moveStatus(t, to)}
                           >
-                            {to === "open" ? "افتحه للتسجيل" : to === "cancelled" ? "ألغِه" : to === "closed" ? "أنهِه" : "اجعله جاريا"}
+                            {to === "open" ? "افتحه للتسجيل" : to === "cancelled" ? "ألغه" : to === "closed" ? "أنهه" : "اجعله جاريا"}
                           </Button>
                         ))}
                         <span className="text-read text-muted-foreground">{TERM_STATUS_EFFECT_AR[nextStatuses(t.status)[0]]}</span>
@@ -406,22 +406,22 @@ export default function Terms() {
                   </div>
                   <div className="text-read">
                     {published
-                      ? <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/40 bg-emerald-400/10 px-3 py-1 font-black text-emerald-300"><CalendarCheck className="h-3.5 w-3.5" aria-hidden="true" /> منشورٌ {fmtDateAr(t.calendarPublishedAt)}</span>
-                      : <span className="inline-flex items-center rounded-full border border-white/10 px-3 py-1 font-bold text-muted-foreground">لم يُنشر بعد</span>}
+                      ? <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/40 bg-emerald-400/10 px-3 py-1 font-black text-emerald-300"><CalendarCheck className="h-3.5 w-3.5" aria-hidden="true" /> منشور {fmtDateAr(t.calendarPublishedAt)}</span>
+                      : <span className="inline-flex items-center rounded-full border border-white/10 px-3 py-1 font-bold text-muted-foreground">لم ينشر بعد</span>}
                   </div>
                 </div>
 
                 {/* ② نافذةُ التسجيل */}
                 <Card as="section" className="mt-4">
-                  <h3 className="text-read font-black">نافذةُ التسجيل</h3>
-                  <p className="mt-1 text-read leading-6 text-muted-foreground">بلا نافذةٍ يبقى التسجيلُ مفتوحا ما دامت شعبةٌ مفتوحة. وبها يُعلَن الموعدُ ويُنتظَر.</p>
+                  <h3 className="text-read font-black">نافذة التسجيل</h3>
+                  <p className="mt-1 text-read leading-6 text-muted-foreground">بلا نافذة يبقى التسجيل مفتوحا ما دامت شعبة مفتوحة. وبها يعلن الموعد وينتظر.</p>
                   <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
                     <label>
-                      <span className="mb-1.5 block text-read font-bold text-muted-foreground">يُفتح</span>
+                      <span className="mb-1.5 block text-read font-bold text-muted-foreground">يفتح</span>
                       <input type="datetime-local" dir="ltr" value={w.opensAt} onChange={(e) => setWindows({ ...windows, [t.id]: { ...w, opensAt: e.target.value } })} className={`${staffControlCls} text-left`} />
                     </label>
                     <label>
-                      <span className="mb-1.5 block text-read font-bold text-muted-foreground">يُغلق</span>
+                      <span className="mb-1.5 block text-read font-bold text-muted-foreground">يغلق</span>
                       <input type="datetime-local" dir="ltr" value={w.closesAt} onChange={(e) => setWindows({ ...windows, [t.id]: { ...w, closesAt: e.target.value } })} className={`${staffControlCls} text-left`} />
                     </label>
                     <Button tone="secondary" disabled={busy !== null} onClick={() => saveWindow(t)}>احفظ النافذة</Button>
@@ -430,9 +430,9 @@ export default function Terms() {
 
                 {/* ③ توزيعُ الشعب — معاينةٌ ثمّ تطبيق */}
                 <Card as="section" className="mt-3">
-                  <h3 className="text-read font-black">توزيعُ شعب الموسم</h3>
+                  <h3 className="text-read font-black">توزيع شعب الموسم</h3>
                   <p className="mt-1 text-read leading-6 text-muted-foreground">
-                    لكلّ دورةٍ منشورةٍ بسعرٍ شعبةٌ في أسبوعها وشهرها من الموسم، بلا تزاحمٍ بين دورات المسار الواحد. المعاينةُ لا تفتح شيئا — والتطبيقُ يفتح.
+                    لكلّ دورة منشورة بسعر شعبة في أسبوعها وشهرها من الموسم، بلا تزاحم بين دورات المسار الواحد. المعاينة لا تفتح شيئا — والتطبيق يفتح.
                   </p>
                   <div className="mt-3 flex flex-wrap gap-2">
                     <Button tone="secondary" disabled={busy !== null} onClick={() => preview(t)}><Play className="h-3.5 w-3.5" /> عاين التوزيع</Button>
@@ -443,7 +443,7 @@ export default function Terms() {
                   {plan && (
                     <Inset className="mt-3">
                       <p className="text-read font-bold text-foreground">
-                        {plan.applied ? `فُتحت ${plan.opened} شعبة وهُيّئت ${plan.prepared}` : `${plan.rows.length} شعبة تُقترح`}
+                        {plan.applied ? `فتحت ${plan.opened} شعبة وهيّئت ${plan.prepared}` : `${plan.rows.length} شعبة تقترح`}
                         {" · "}بالشهر: {[1, 2, 3].map((m) => `${m}: ${plan.loadByMonth[m] ?? 0}`).join(" · ")}
                       </p>
                       {plan.rows.length > 0 && (
@@ -455,10 +455,10 @@ export default function Terms() {
                         </ul>
                       )}
                       {plan.unplaced.length > 0 && (
-                        <p className="mt-2 text-read leading-6 text-gold-ink">لم تُوضع: {plan.unplaced.map((u) => `${u.titleAr} (${u.whyAr})`).join("، ")}</p>
+                        <p className="mt-2 text-read leading-6 text-gold-ink">لم توضع: {plan.unplaced.map((u) => `${u.titleAr} (${u.whyAr})`).join("، ")}</p>
                       )}
                       {plan.skipped.length > 0 && (
-                        <p className="mt-2 text-read leading-6 text-muted-foreground">تُركت: {plan.skipped.length} دورة — لها شعبةٌ قائمة أو بلا سعر.</p>
+                        <p className="mt-2 text-read leading-6 text-muted-foreground">تركت: {plan.skipped.length} دورة — لها شعبة قائمة أو بلا سعر.</p>
                       )}
                     </Inset>
                   )}
@@ -477,7 +477,7 @@ export default function Terms() {
                       <CalendarCheck className="h-4 w-4" /> انشر التقويم
                     </Button>
                   )}
-                  {!published && t._count.cohorts === 0 && <span className="text-read text-muted-foreground">وزّع الشعبَ أوّلا — تقويمٌ بلا شعب لا يُنشر.</span>}
+                  {!published && t._count.cohorts === 0 && <span className="text-read text-muted-foreground">وزّع الشعب أوّلا — تقويم بلا شعب لا ينشر.</span>}
                   {/* الحذفُ لما لم يُنشر ولا شعبَ فيه — والخادمُ يحرس الشرطين أيضا */}
                   {!published && t._count.cohorts === 0 && (
                     confirmDelete === t.id
@@ -487,8 +487,8 @@ export default function Terms() {
                         </span>
                       : <Button tone="ghost" size="sm" disabled={busy !== null} onClick={() => setConfirmDelete(t.id)}><Trash2 className="h-3.5 w-3.5" /> احذف الموسم</Button>
                   )}
-                  <Link to="/calendar" className="text-read font-bold text-teal-light-ink underline decoration-dotted underline-offset-4">التقويمُ العامّ</Link>
-                  <Link to="/admin/cohorts" className="text-read font-bold text-teal-light-ink underline decoration-dotted underline-offset-4">شعبُ الموسم في «الشعب»</Link>
+                  <Link to="/calendar" className="text-read font-bold text-teal-light-ink underline decoration-dotted underline-offset-4">التقويم العامّ</Link>
+                  <Link to="/admin/cohorts" className="text-read font-bold text-teal-light-ink underline decoration-dotted underline-offset-4">شعب الموسم في «الشعب»</Link>
                 </div>
               </Panel>
             );
@@ -502,8 +502,8 @@ export default function Terms() {
               className="w-full justify-center"
             >
               {showAllTerms
-                ? "اطوِ المواسمَ البعيدة"
-                : `اعرض المواسمَ الأخرى (${foldedTerms.length}) — ماضيةً وأبعدَ من موسمين`}
+                ? "اطو المواسم البعيدة"
+                : `اعرض المواسم الأخرى (${foldedTerms.length}) — ماضية وأبعد من موسمين`}
             </Button>
           )}
         </div>

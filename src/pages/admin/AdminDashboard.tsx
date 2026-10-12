@@ -138,7 +138,7 @@ export default function AdminDashboard() {
         to: "/admin/finance", label: "إيراد محصّل (فواتير مدفوعة)",
         value: top ? `${fmtNum(Math.round(top[1]))} ${top[0]}` : "0",
         hint: `${paid.length} فاتورة مدفوعة — الإجمالي منذ البداية`, icon: Banknote, tone: "teal",
-        trend: flowTrend(w.current, w.previous, INVOICE_FORMS), trendPrefixAr: "المحصَّل",
+        trend: flowTrend(w.current, w.previous, INVOICE_FORMS), trendPrefixAr: "المحصّل",
       });
     }
     if (refunds) {
@@ -164,7 +164,7 @@ export default function AdminDashboard() {
       const w = countWindows(tickets, (t) => t.createdAt, now);
       out.push({
         to: "/admin/support", label: "تذاكر دعم تحتاج معالجة", value: String(n),
-        hint: n > 0 ? "عملاء ينتظرون رداً" : "صندوق الدعم نظيف", icon: LifeBuoy, tone: n > 0 ? "gold" : "plain",
+        hint: n > 0 ? "عملاء ينتظرون ردا" : "صندوق الدعم نظيف", icon: LifeBuoy, tone: n > 0 ? "gold" : "plain",
         trend: flowTrend(w.current, w.previous, TICKET_FORMS), trendPrefixAr: "الوارد",
       });
     }
@@ -274,7 +274,7 @@ export default function AdminDashboard() {
       )}
 
       <p className="mt-8 text-center text-read text-muted-foreground">
-        كل الأرقام هنا حية من قاعدة البيانات وتُحدَّث تلقائيا كل 45 ثانية
+        كل الأرقام هنا حية من قاعدة البيانات وتحدّث تلقائيا كل 45 ثانية
         {updatedAt && ` — آخر تحديث ${fmtTime(updatedAt)}`}.
         التقارير التفصيلية والتصدير في شاشة «التقارير».
       </p>

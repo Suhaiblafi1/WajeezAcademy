@@ -59,7 +59,7 @@ export default function CheckQuestion({
       {shown && (
         <Inset as="p" className="mt-2 px-3.5 py-2.5 text-fine leading-6 text-foreground">
           {chosen === check.correctIndex ? "صحيح. " : "غير صحيح. "}
-          {check.explainAr ?? "الجواب الصحيح موضَّح أعلاه."}
+          {check.explainAr ?? "الجواب الصحيح موضّح أعلاه."}
         </Inset>
       )}
     </div>

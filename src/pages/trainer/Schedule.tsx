@@ -55,7 +55,7 @@ const dayKey = (iso: string) => fmtDateWith(iso, {
 
 const time = fmtTime;
 
-const ROLE_AR: Record<string, string> = { lead: "مدرّبٌ رئيس", assistant: "مساعد" };
+const ROLE_AR: Record<string, string> = { lead: "مدرّب رئيس", assistant: "مساعد" };
 
 /* ── اقتراحاتُ التأجيل: مآلُها هنا، حيث المواعيد (البند ٢٣) ──
 
@@ -70,7 +70,7 @@ interface RescheduleItem {
 }
 
 const RESCHEDULE_STATUS_AR: Record<string, string> = {
-  pending: "بانتظار قرار الإدارة", approved: "اعتُمد", rejected: "رُفض", withdrawn: "سُحب",
+  pending: "بانتظار قرار الإدارة", approved: "اعتمد", rejected: "رفض", withdrawn: "سحب",
 };
 
 export default function TrainerSchedule() {
@@ -99,10 +99,10 @@ export default function TrainerSchedule() {
     setBusy(true);
     try {
       await apiPost(`/api/trainer/reschedules/${id}/withdraw`);
-      toast("سُحب اقتراحك");
+      toast("سحب اقتراحك");
       await loadReschedules();
     } catch (err) {
-      toastError(err instanceof ApiError ? err.message : "تعذّر سحبُ الاقتراح");
+      toastError(err instanceof ApiError ? err.message : "تعذّر سحب الاقتراح");
     } finally {
       setBusy(false);
     }
@@ -113,8 +113,8 @@ export default function TrainerSchedule() {
       <TrainerLayout title="جدولي">
         <EmptyState
           icon={ServerOff}
-          titleAr="تعذّر تحميلُ جدولك"
-          reasonAr="لم يُجب الخادم. أعد تحميلَ الصفحة، وإن تكرّر فأبلغ الإدارة."
+          titleAr="تعذّر تحميل جدولك"
+          reasonAr="أعد تحميل الصفحة، وإن تكرّر فأبلغ الإدارة."
         />
       </TrainerLayout>
     );
@@ -124,7 +124,7 @@ export default function TrainerSchedule() {
     return (
       <TrainerLayout title="جدولي">
         <div className="grid place-items-center py-16">
-          <Loader2 className="h-7 w-7 animate-spin text-muted-foreground/50" aria-label="جارٍ التحميل" />
+          <Loader2 className="h-7 w-7 animate-spin text-muted-foreground/50" aria-label="جار التحميل" />
         </div>
       </TrainerLayout>
     );
@@ -156,10 +156,9 @@ export default function TrainerSchedule() {
           <Card as="p" tone="danger" className="mt-3 flex items-start gap-2 text-read leading-6 text-danger-ink">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
             <span>
-              جلساتٌ من شعبَتين تتزاحم في وقتٍ واحد. حارسُ الإسناد يمنع الشعبةَ المتعارضةَ عند إسنادها،
-              ولا يمنع جلسةً تُضاف بعده — فهذه تُراجَع مع الإدارة، ويمكنك اقتراحُ تأجيلٍ من{" "}
+              جلسات من شعبتين في وقت واحد — حارس الإسناد لا يمنع جلسة تضاف بعده. راجعها مع الإدارة، أو اقترح تأجيلا من{" "}
               <Link to="/trainer/board" className="font-bold underline">لوح شعبي</Link>.
-              {" "}وجلسةٌ بلا وقتِ نهايةٍ تُحسب ساعةً واحدة.
+              {" "}وجلسة بلا نهاية تحسب ساعة واحدة.
             </span>
           </Card>
         )}
@@ -180,7 +179,7 @@ export default function TrainerSchedule() {
           items={data.sessions}
           at={(x) => new Date(x.startsAt)}
           isNext={(x) => x.sessionId === nextSession?.sessionId}
-          emptyAr="لا جلسةَ في هذا الشهر — تنقّل بالأسهم أو ارجع إلى اليوم."
+          emptyAr="لا جلسة في هذا الشهر — تنقّل بالأسهم أو ارجع إلى اليوم."
           renderItem={(x, { isNext }) => (
             <span
               title={`${x.title} — ${x.courseTitle}`}
@@ -204,8 +203,8 @@ export default function TrainerSchedule() {
         <EmptyState
           className="mt-5"
           icon={CalendarDays}
-          titleAr="لا جلسةَ في الأفق"
-          reasonAr={`لا جلسةَ مجدولةً لك في ${data.days} يوما القادمة — وما إن تُسنَد إليك شعبةٌ بجلسات حتّى تظهر هنا مرتّبةً باليوم.`}
+          titleAr="لا جلسة في الأفق"
+          reasonAr={`لا جلسة مجدولة لك في ${data.days} يوما القادمة. تظهر هنا حين تسند إليك شعبة.`}
         />
       ) : (
         <div className="mt-5 space-y-5">
@@ -233,19 +232,19 @@ export default function TrainerSchedule() {
                               <span className="me-1.5 inline-flex items-center rounded-full border border-gold/40 bg-gold/10 px-2.5 py-0.5 text-fine font-black text-gold-ink">
                                 بانتظار اعتماد الإدارة
                               </span>
-                              غيرُ ظاهرةٍ للمتعلّمين بعد — وهي في جدولك.
+                              لا يراها المتعلّمون بعد.
                             </p>
                           )}
                         </div>
                         <div className="flex shrink-0 items-center gap-2 text-xs font-black">
                           {clash && (
                             <span className="rounded-full border border-rose-400/40 px-2 py-0.5 text-fine text-danger-ink">
-                              تتزاحم مع {s.clashesWith.length === 1 ? "جلسةٍ أخرى" : `${s.clashesWith.length} جلسات`}
+                              تتزاحم مع {s.clashesWith.length === 1 ? "جلسة أخرى" : `${s.clashesWith.length} جلسات`}
                             </span>
                           )}
                           <span>
                             {time(s.startsAt)}
-                            {s.endsAt ? ` — ${time(s.endsAt)}` : " (بلا وقتِ نهاية)"}
+                            {s.endsAt ? ` — ${time(s.endsAt)}` : " (بلا وقت نهاية)"}
                           </span>
                         </div>
                       </div>
@@ -262,11 +261,11 @@ export default function TrainerSchedule() {
       {reschedules.length > 0 && (
         <section className="mt-6">
           <h2 className="mb-3 flex items-center gap-2 text-base font-black">
-            <CalendarClock className="h-4 w-4 text-gold-ink" aria-hidden="true" /> اقتراحاتُ التأجيل
+            <CalendarClock className="h-4 w-4 text-gold-ink" aria-hidden="true" /> اقتراحات التأجيل
           </h2>
           <p className="mb-3 text-read leading-6 text-muted-foreground">
-            تُقترَح من بطاقة الجلسة في <Link to="/trainer/board" className="font-bold underline">لوح شعبي</Link> —
-            و<b className="text-foreground">الموعدُ لا يتغيّر عند المتعلّمين حتّى تعتمده الإدارة</b>.
+            تقترح من بطاقة الجلسة في <Link to="/trainer/board" className="font-bold underline">لوح شعبي</Link> —
+            و<b className="text-foreground">الموعد لا يتغيّر عند المتعلّمين حتّى تعتمده الإدارة</b>.
           </p>
           <ul className="space-y-3">
             {reschedules.map((r) => (

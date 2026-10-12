@@ -15,8 +15,20 @@
  * ما يفعله، فتعليقٌ يذكر `<TrainerPlanReview` يُخضرّ حارسا على غيابه.
  */
 
-import { describe, expect, it } from 'vitest'
-import { readFileSync } from 'node:fs'
+import { describe, expect as vexpect, it } from 'vitest'
+/* ما يُفحص بلا تشكيلٍ إعرابيّ — بعضُ ما يُقرأ هنا بعد «اللغة البيضاء» وبعضُه (الخادمُ والعقودُ والتشخيص) قبلها */
+const plainDeep = (v: unknown): unknown =>
+  typeof v === 'string' ? plainAr(v) : Array.isArray(v) ? v.map(plainDeep)
+    : v && typeof v === 'object' && Object.getPrototypeOf(v) === Object.prototype ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, plainDeep(x)])) : v
+const expect = Object.assign((v: unknown, m?: string) => vexpect(plainDeep(v), m), vexpect) as typeof vexpect
+import { readFileSync as readRaw } from 'node:fs'
+import { plainAr } from '@/application/text/plain-ar'
+/* ما يُقرأ من الملفّات بلا تشكيلٍ إعرابيّ — بعضُها بعد «اللغة البيضاء» وبعضُها (العقود والخادم) قبلها */
+function readFileSync(p: Parameters<typeof readRaw>[0]): Buffer
+function readFileSync(p: Parameters<typeof readRaw>[0], e: BufferEncoding | { encoding: BufferEncoding }): string
+function readFileSync(p: Parameters<typeof readRaw>[0], e?: BufferEncoding | { encoding: BufferEncoding }): string | Buffer {
+  return e === undefined ? readRaw(p) : plainAr(String(readRaw(p, e)))
+}
 import { join } from 'node:path'
 import { allSections, sectionsFor } from '@/pages/admin/nav-map'
 import { approvedMsg, courseLineNeeded, planApprovedMsg, prepNoteAr, sharedPrepNote } from '@/application/trainer/plan-decision'
@@ -31,30 +43,30 @@ const OPS = bare('src/pages/admin/CohortOps.tsx')
 const QUEUE = bare('src/pages/admin/PendingPlans.tsx')
 const REVIEW = bare('src/components/admin/TrainerPlanReview.tsx')
 
-describe('① المراجعةُ واحدةٌ في البابين', () => {
-  it('بطاقةُ الشعبة تعرض المكوّنَ في لسان المحتوى — لا نسخةً منه', () => {
+describe('① المراجعة واحدة في البابين', () => {
+  it('بطاقة الشعبة تعرض المكوّن في لسان المحتوى — لا نسخة منه', () => {
     const at = OPS.indexOf('<TrainerPlanReview cohortId={cohort.id}')
-    expect(at, 'سقطت مراجعةُ الخطّة من بطاقة الشعبة').toBeGreaterThan(-1)
+    expect(at, 'سقطت مراجعة الخطّة من بطاقة الشعبة').toBeGreaterThan(-1)
     /* وفي قسم الخطّة المحروس بلسانه: لا `</Section>` بين رأس القسم والمكوّن */
-    const head = OPS.lastIndexOf('<Section icon={BookOpen} title="خطّةُ المدرّب', at)
-    expect(head, 'المكوّنُ خارجَ قسم الخطّة').toBeGreaterThan(-1)
+    const head = OPS.lastIndexOf('<Section icon={BookOpen} title="خطّة المدرّب', at)
+    expect(head, 'المكوّن خارج قسم الخطّة').toBeGreaterThan(-1)
     expect(OPS.slice(head, at)).not.toContain('</Section>')
-    expect(OPS.slice(OPS.lastIndexOf('</Section>', head), head), 'قسمُ الخطّة بلا بوّابة لسانه').toContain('tab === "content"')
+    expect(OPS.slice(OPS.lastIndexOf('</Section>', head), head), 'قسم الخطّة بلا بوّابة لسانه').toContain('tab === "content"')
     /* ولا قرارَ ولا قراءةَ للخطّة في البطاقة نفسِها — تلك نسخةٌ ثانيةٌ تفترق */
-    expect(OPS, 'عادت نسخةٌ من القرار إلى البطاقة').not.toMatch(/cohort-plans\/\$\{/)
+    expect(OPS, 'عادت نسخة من القرار إلى البطاقة').not.toMatch(/cohort-plans\/\$\{/)
     expect(OPS).not.toContain('/trainer-plan`')
   })
 
-  it('والطابورُ يعرض المكوّنَ نفسَه حين تُفتح الخطّة — ولا يقرّر من خارجه', () => {
+  it('والطابور يعرض المكوّن نفسه حين تفتح الخطّة — ولا يقرّر من خارجه', () => {
     expect(QUEUE).toMatch(/import TrainerPlanReview, \{ type PlanOutcome \} from "@\/components\/admin\/TrainerPlanReview";/)
     expect(QUEUE).toMatch(/\{isOpen && \(\s*<div[^>]*>\s*<TrainerPlanReview\s+cohortId=\{r\.cohort\.id\}/)
     /* لا اعتمادَ بالجملة ولا زرَّ يقرّر ما لم يُفتح: الطابورُ لا يرسل شيئا بنفسه */
-    expect(QUEUE, 'في الطابور قرارٌ من خارج المراجعة').not.toMatch(/apiPost|\/decide/)
+    expect(QUEUE, 'في الطابور قرار من خارج المراجعة').not.toMatch(/apiPost|\/decide/)
     /* ويعلم بما قُضي ليعلّمه — لا ليُسقطه من تحت عين قارئه */
     expect(QUEUE).toMatch(/onPlanDecided=\{\(outcome\) => setDecided\(\(d\) => \(\{ \.\.\.d, \[r\.id\]: outcome \}\)\)\}/)
   })
 
-  it('والمكوّنُ يقول ما ردّه الاعتمادُ لمدرّب الإعداد — ويُخبر بابَه بما قُضي', () => {
+  it('والمكوّن يقول ما ردّه الاعتماد لمدرّب الإعداد — ويخبر بابه بما قضي', () => {
     expect(REVIEW).toMatch(/\(r\) => planApprovedMsg\(r as PlanDecision\),/)
     expect(REVIEW).toMatch(/const decided = \(outcome: PlanOutcome\) => \{ onPlanDecided\?\.\(outcome\); signalPlansChanged\(\); \};/)
     expect(REVIEW).toMatch(/decided\("approved"\); return r;/)
@@ -62,26 +74,26 @@ describe('① المراجعةُ واحدةٌ في البابين', () => {
   })
 })
 
-describe('② والطابورُ يُبلَغ', () => {
+describe('② والطابور يبلغ', () => {
   const item = allSections.flatMap((s) => s.items.map((i) => ({ ...i, section: s.title })))
     .find((i) => i.to === '/admin/pending-plans')
 
-  it('بندٌ تحت «المدرّبون — الانضمامُ والتعاقد» بصلاحيّة الاعتماد نفسِها، وبشارةِ عدد', () => {
-    expect(item, 'لا بندَ للطابور في القائمة').toBeDefined()
-    expect(item!.section).toBe('المدرّبون — الانضمامُ والتعاقد')
+  it('بند تحت «المدرّبون — الانضمام والتعاقد» بصلاحيّة الاعتماد نفسها، وبشارة عدد', () => {
+    expect(item, 'لا بند للطابور في القائمة').toBeDefined()
+    expect(item!.section).toBe('المدرّبون — الانضمام والتعاقد')
     expect(item!.need).toBe('cohort.plan.approve')
     expect(item!.badge).toBe('awaitingPlans')
   })
 
-  it('يراه من يعتمد — لا من يدير الشعبَ ولا يعتمد خططَها', () => {
+  it('يراه من يعتمد — لا من يدير الشعب ولا يعتمد خططها', () => {
     const sees = (role: string) => sectionsFor(ROLE_PERMISSIONS[role])
       .some((s) => s.items.some((i) => i.to === '/admin/pending-plans'))
     expect(sees('academic_manager')).toBe(true)
     expect(sees('super_admin')).toBe(true)
-    expect(sees('academic_coordinator'), 'يرى الطابورَ من لا يملك الاعتماد').toBe(false)
+    expect(sees('academic_coordinator'), 'يرى الطابور من لا يملك الاعتماد').toBe(false)
   })
 
-  it('والمسارُ مسجَّلٌ بشاشته', () => {
+  it('والمسار مسجّل بشاشته', () => {
     const app = bare('src/App.tsx')
     expect(app).toMatch(/const AdminPendingPlans = lazy\(\(\) => import\('\.\/pages\/admin\/PendingPlans'\)\)/)
     expect(app).toMatch(/<Route path="\/admin\/pending-plans" element=\{<AdminPendingPlans \/>\} \/>/)
@@ -89,28 +101,28 @@ describe('② والطابورُ يُبلَغ', () => {
 
   /* والنافذةُ محدودةٌ بتسجيل المسار نفسِه لا بعددٍ من الأحرف — علّتُها في
      `awaiting-countersign-badge.test.ts`: نافذةٌ بالأحرف بلغت المسارَ التالي */
-  it('والعددُ بمساره المحروس بصلاحيّة الاعتماد', () => {
+  it('والعدد بمساره المحروس بصلاحيّة الاعتماد', () => {
     const routes = bare('server/http/routes/admin-learning.routes.ts')
     const at = routes.indexOf("'/api/admin/cohort-plans/pending-count'")
-    expect(at, 'لا مسارَ للعدّ').toBeGreaterThan(-1)
+    expect(at, 'لا مسار للعدّ').toBeGreaterThan(-1)
     const next = routes.slice(at).search(/\n {2}app\.(get|post|put|patch|delete)\(/)
     const block = routes.slice(at, next < 0 ? routes.length : at + next)
-    expect(block, 'مسارٌ بلا حارسِ صلاحيّة').toContain("requirePermission('cohort.plan.approve')")
+    expect(block, 'مسار بلا حارس صلاحيّة').toContain("requirePermission('cohort.plan.approve')")
     expect(block).toContain('plans.pendingCount()')
   })
 
-  it('والإطارُ لا يجلبه إلّا لمن يملك الاعتماد', () => {
+  it('والإطار لا يجلبه إلّا لمن يملك الاعتماد', () => {
     const layout = bare('src/pages/admin/AdminLayout.tsx')
     expect(layout).toMatch(/const canApprovePlans = user\?\.permissions\.includes\("cohort\.plan\.approve"\) \?\? false;/)
     const at = layout.indexOf('/api/admin/cohort-plans/pending-count')
-    expect(at, 'لا يُجلَب العدد').toBeGreaterThan(-1)
+    expect(at, 'لا يجلب العدد').toBeGreaterThan(-1)
     const effect = layout.slice(layout.lastIndexOf('useEffect(', at), at)
-    expect(effect, 'يُنادى لمن لا يملك الاعتماد').toContain('if (!canApprovePlans) return;')
+    expect(effect, 'ينادى لمن لا يملك الاعتماد').toContain('if (!canApprovePlans) return;')
     expect(layout).toMatch(/setBadges\(\(b\) => \(\{ \.\.\.b, awaitingPlans: r\.count \}\)\)/)
   })
 
   /* رُئي في لقطة الطابور: رأسُ الصفحة «٢» والشارةُ «٣» حتّى تُفتح شاشةٌ أخرى */
-  it('والشارةُ تتبع القرارَ في مكانه — لا بعد إعادة التحميل', () => {
+  it('والشارة تتبع القرار في مكانه — لا بعد إعادة التحميل', () => {
     const layout = bare('src/pages/admin/AdminLayout.tsx')
     expect(layout).toContain('import { PLANS_CHANGED } from "@/services/plans-signal";')
     expect(layout).toMatch(/window\.addEventListener\(PLANS_CHANGED, load\)/)
@@ -118,55 +130,55 @@ describe('② والطابورُ يُبلَغ', () => {
     expect(REVIEW).toContain('import { signalPlansChanged } from "@/services/plans-signal";')
   })
 
-  it('ولوحُ دورات المدرّب في «العقود» يفتح المرسَلةَ في الطابور مرشَّحا بخططه', () => {
+  it('ولوح دورات المدرّب في «العقود» يفتح المرسلة في الطابور مرشّحا بخططه', () => {
     const panel = bare('src/pages/admin/TrainerMaterialsReview.tsx')
     expect(panel).toMatch(/r\.state === "submitted"\s*\?\s*`\/admin\/pending-plans\?trainer=\$\{profileId\}&cohort=\$\{r\.cohortId\}`/)
   })
 })
 
-describe('③ ما يُقال قبل النقر وبعده بما يحكم به الخادم', () => {
-  it('شعبةُ الإعداد: الزرّان وأثرُ كلٍّ — لا زرٌّ واحدٌ يُساق إليه', () => {
+describe('③ ما يقال قبل النقر وبعده بما يحكم به الخادم', () => {
+  it('شعبة الإعداد: الزرّان وأثر كلّ — لا زرّ واحد يساق إليه', () => {
     const both = prepNoteAr({ onboarding: true, qualifies: true })
-    expect(both).toContain('«اعتمدها» تؤهّل مدرّبَها لدورتها')
-    expect(both, 'لا يُقال أنّ آخرَها يفعّله').toContain('وإن لم يبقَ من دوراته ما ينتظر فُعِّل')
-    expect(both, 'يُجزَم بخَتم العقد ولا خَتمَ لغير المشروط').toContain('إن كان ينتظر ختمَنا')
-    expect(both, 'لا يُقال ما يقع بالردّ').toContain('و«اطلب تعديلات» تعيدها إليه بملاحظاتك')
-    expect(both).toContain('ويُستأنف عدُّ مهلته إن كانت موقوفةً لمراجعتنا')
+    expect(both).toContain('«اعتمدها» تؤهّل مدرّبها لدورتها')
+    expect(both, 'لا يقال أنّ آخرها يفعّله').toContain('وإن لم يبق من دوراته ما ينتظر فعّل')
+    expect(both, 'يجزم بختم العقد ولا ختم لغير المشروط').toContain('إن كان ينتظر ختمنا')
+    expect(both, 'لا يقال ما يقع بالردّ').toContain('و«اطلب تعديلات» تعيدها إليه بملاحظاتك')
+    expect(both).toContain('ويستأنف عدّ مهلته إن كانت موقوفة لمراجعتنا')
 
     /* ودورتُه معتمَدةٌ أصلا (`qualifies: false`): لا يُقال «تؤهّله» */
     const qualified = prepNoteAr({ onboarding: true, qualifies: false })
-    expect(qualified).toContain('دورتُها معتمَدةٌ لمدرّبها أصلا')
+    expect(qualified).toContain('دورتها معتمدة لمدرّبها أصلا')
     expect(qualified).not.toContain('تؤهّل')
 
     /* والنشطُ لا يُفعَّل بها ولا مهلةَ له: لا يُقال ما لا يقع */
     const active = prepNoteAr({ onboarding: false, qualifies: true })
-    expect(active).not.toContain('فُعِّل')
+    expect(active).not.toContain('فعّل')
     expect(active).not.toContain('مهلته')
   })
 
-  it('ورسالةُ الاعتماد تقول ما ردّه الخادمُ لمدرّب الإعداد', () => {
+  it('ورسالة الاعتماد تقول ما ردّه الخادم لمدرّب الإعداد', () => {
     const base = { status: 'approved' } as const
     /* شعبةٌ عاديّة: الرسالةُ كما كانت حرفا */
     expect(planApprovedMsg({ ...base, prep: null })).toBe(approvedMsg(base))
-    expect(planApprovedMsg({ ...base, prep: { activated: true } })).toContain('فُعِّل مدرّبا نشطا')
-    expect(planApprovedMsg({ ...base, prep: { activated: false, waiting: 1 } })).toContain('وبقيت له دورةٌ واحدة لم تُعتمَد بعد')
+    expect(planApprovedMsg({ ...base, prep: { activated: true } })).toContain('فعّل مدرّبا نشطا')
+    expect(planApprovedMsg({ ...base, prep: { activated: false, waiting: 1 } })).toContain('وبقيت له دورة واحدة لم تعتمد بعد')
     expect(planApprovedMsg({ ...base, prep: { activated: false, waiting: 2 } })).toContain('وبقيت له دورتان')
-    expect(planApprovedMsg({ ...base, prep: { activated: false, waiting: 11 } })).toContain('وبقيت له 11 دورةً')
-    const blocked = planApprovedMsg({ ...base, prep: { activated: false, blockedAr: 'لا حسابَ له بعد' } })
-    expect(blocked).toContain('ولم يُفعَّل: لا حسابَ له بعد')
+    expect(planApprovedMsg({ ...base, prep: { activated: false, waiting: 11 } })).toContain('وبقيت له 11 دورة')
+    const blocked = planApprovedMsg({ ...base, prep: { activated: false, blockedAr: 'لا حساب له بعد' } })
+    expect(blocked).toContain('ولم يفعّل: لا حساب له بعد')
   })
 
   it('والجملتان لا تلتحمان بنقطتين — ولو انتهت الأولى بنقطة', () => {
     const msg = planApprovedMsg({
       status: 'approved',
-      meetings: { approved: 0, failed: [{ id: 's1', title: 'اللقاءُ الأوّل', reason: 'تعذّر إنشاءُ الاجتماع' }] },
+      meetings: { approved: 0, failed: [{ id: 's1', title: 'اللقاء الأوّل', reason: 'تعذّر إنشاء الاجتماع' }] },
       prep: { activated: false, waiting: 1 },
     })
     expect(msg).not.toContain('..')
     expect(msg).toContain('أدناه. وبقيت له')
   })
 
-  it('والطابورُ يقول الجملةَ على شعبة الإعداد وحدَها، وقبل القرار لا بعده', () => {
+  it('والطابور يقول الجملة على شعبة الإعداد وحدها، وقبل القرار لا بعده', () => {
     /* وفي البطاقة حين لا تُقال مرّةً في رأس مدرّبها (⑨، ٤ أكتوبر ٢٠٢٦) — والرأسُ أدناه */
     expect(QUEUE).toMatch(/\{r\.prep && !done && !shared && \(\s*<p[^>]*>\{prepNoteAr\(r\.prep\)\}<\/p>/)
   })
@@ -177,33 +189,33 @@ describe('③ ما يُقال قبل النقر وبعده بما يحكم به 
    رأى صاحبُ المنصّة كلَّ بطاقةٍ تقول اسمَ دورتها تحت اسمٍ فيه اسمُها، وجملةَ
    شعبة الإعداد نفسَها في كلّ بطاقةٍ لمدرّبٍ واحد. والعلّةُ في رأس
    `courseLineNeeded` و`sharedPrepNote` (`plan-decision.ts`). */
-describe('⑨ الطابورُ لا يكرّر نفسَه', () => {
-  it('اسمُ الدورة سطرا حين لا يحمله اسمُ الشعبة وحدَه', () => {
-    expect(courseLineNeeded('دورةُ الرسالة — شعبة ٤', 'دورةُ الرسالة'), 'يُكرَّر اسمُ الدورة تحت اسمٍ فيه').toBe(false)
-    expect(courseLineNeeded('دفعةُ أكتوبر — مسائيّة', 'دورةُ الرسالة'), 'شعبةٌ سُمّيت بغير دورتها لا يُعرف لأيّ دورة').toBe(true)
-    expect(courseLineNeeded('أيُّ اسم', '   ')).toBe(false)
+describe('⑨ الطابور لا يكرّر نفسه', () => {
+  it('اسم الدورة سطرا حين لا يحمله اسم الشعبة وحده', () => {
+    expect(courseLineNeeded('دورة الرسالة — شعبة ٤', 'دورة الرسالة'), 'يكرّر اسم الدورة تحت اسم فيه').toBe(false)
+    expect(courseLineNeeded('دفعة أكتوبر — مسائيّة', 'دورة الرسالة'), 'شعبة سمّيت بغير دورتها لا يعرف لأيّ دورة').toBe(true)
+    expect(courseLineNeeded('أيّ اسم', '   ')).toBe(false)
   })
 
-  it('جملةُ شعبة الإعداد مرّةً لبطاقتين فأكثر تقولانها حرفا — وإلّا في كلّ بطاقة', () => {
+  it('جملة شعبة الإعداد مرّة لبطاقتين فأكثر تقولانها حرفا — وإلّا في كلّ بطاقة', () => {
     const p = { onboarding: true, qualifies: true }
     const both = sharedPrepNote([{ prep: p, decided: false }, { prep: { ...p }, decided: false }])
-    expect(both, 'بطاقتان بالجملة نفسِها ولا تُرفع إلى الرأس').toBe(prepNoteAr(p, true))
-    expect(both).toMatch(/^شعبُ الإعداد: /)
+    expect(both, 'بطاقتان بالجملة نفسها ولا ترفع إلى الرأس').toBe(prepNoteAr(p, true))
+    expect(both).toMatch(/^شعب الإعداد: /)
     /* بطاقةٌ واحدةٌ لا تكرارَ فيها، ورأسٌ يجمعها بعاديّةٍ لا يُسنَد إليه ما يخصّها */
     expect(sharedPrepNote([{ prep: p, decided: false }, { prep: null, decided: false }])).toBeNull()
     /* وجملتان مختلفتان لا تُنسب إحداهما إلى الأخرى */
     expect(sharedPrepNote([{ prep: p, decided: false }, { prep: { onboarding: true, qualifies: false }, decided: false }])).toBeNull()
     /* وما قُضي فيه لا جملةَ له */
     expect(sharedPrepNote([{ prep: p, decided: false }, { prep: p, decided: true }])).toBeNull()
-    expect(prepNoteAr(p), 'البطاقةُ الواحدةُ تغيّرت جملتُها').toMatch(/^شعبةُ إعداد: /)
+    expect(prepNoteAr(p), 'البطاقة الواحدة تغيّرت جملتها').toMatch(/^شعبة إعداد: /)
   })
 
-  it('والطابورُ يقولها في رأس المدرّب، ويقول اسمَ الدورة بقاعدته', () => {
+  it('والطابور يقولها في رأس المدرّب، ويقول اسم الدورة بقاعدته', () => {
     expect(QUEUE).toMatch(/const shared = sharedPrepNote\(g\.rows\.map\(\(r\) => \(\{ prep: r\.prep, decided: Boolean\(decided\[r\.id\]\) \}\)\)\);/)
-    expect(QUEUE, 'الجملةُ لا تُقال في رأس المدرّب').toMatch(/\{shared && <p[^>]*>\{shared\}<\/p>\}/)
+    expect(QUEUE, 'الجملة لا تقال في رأس المدرّب').toMatch(/\{shared && <p[^>]*>\{shared\}<\/p>\}/)
     /* ورأسُ المجموعة قبل بطاقاتها — لا بعدها */
     expect(QUEUE.indexOf('{shared && <p')).toBeLessThan(QUEUE.indexOf('{g.rows.map((r) => {'))
-    expect(QUEUE).toMatch(/courseLineNeeded\(r\.cohort\.title, r\.courseTitle\) \? `دورةُ «\$\{r\.courseTitle\}»`/)
-    expect(QUEUE, 'اسمُ الدورة يُكتب بلا قاعدته').not.toContain('دورةُ «{r.courseTitle}»')
+    expect(QUEUE).toMatch(/courseLineNeeded\(r\.cohort\.title, r\.courseTitle\) \? `دورة «\$\{r\.courseTitle\}»`/)
+    expect(QUEUE, 'اسم الدورة يكتب بلا قاعدته').not.toContain('دورة «{r.courseTitle}»')
   })
 })

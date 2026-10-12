@@ -77,7 +77,7 @@ const DYNAMIC_FOUND = (() => {
   const found = new Set<string>()
   for (const f of walk('server')) {
     for (const m of readFileSync(join(root, f), 'utf8').matchAll(/templateKey:\s*`([^`]+)`/g)) {
-      /* يُطبَّع شكلُ الإقحام حتّى يُكتب مفتاحُ الخريطة أعلاه بلا قالبٍ فعليّ */
+      /* يطبّع شكل الإقحام حتّى يكتب مفتاح الخريطة أعلاه بلا قالب فعليّ */
       found.add(m[1].replace(/\$\{([^}]+)\}/g, '@$1@'))
     }
   }
@@ -86,71 +86,71 @@ const DYNAMIC_FOUND = (() => {
 
 const KEYS = (() => {
   const found = new Set<string>()
-  /* ١) ما يُمرَّر حرفا في موضعه */
+  /* ١) ما يمرّر حرفا في موضعه */
   for (const f of walk('server')) {
     for (const m of readFileSync(join(root, f), 'utf8').matchAll(/templateKey:\s*'([^']+)'/g)) {
       found.add(m[1])
     }
   }
-  /* ٢) وما يُعلَن في جدول التذكير ثمّ يُمرَّر متغيّرا */
+  /* ٢) وما يعلن في جدول التذكير ثمّ يمرّر متغيّرا */
   for (const block of [REMINDERS_BLOCK, VERIFY_BLOCK]) {
     for (const m of (block?.[1] ?? '').matchAll(/(?:key|trainerKey):\s*'([^']+)'/g)) {
       found.add(m[1])
     }
   }
-  /* ٣) وتوسّعاتُ ما يُبنى وقتَ التنفيذ */
+  /* ٣) وتوسّعات ما يبنى وقت التنفيذ */
   for (const expansions of Object.values(DYNAMIC)) for (const k of expansions) found.add(k)
   return [...found].sort()
 })()
 
-describe('أصنافُ الإشعارات تغطّي ما يُرسَل فعلا', () => {
-  it('المسحُ يقرأ الخادمَ فعلا — فلا يمرّ الحارسُ بصفرٍ كاذب', () => {
-    /* حارسُ الحارس: خطأٌ في المسار يجعل القائمةَ فارغةً فيمرّ كلُّ شيء */
-    expect(KEYS.length, 'لم يُقرأ مفتاحٌ واحد — تعطّل المسحُ نفسُه').toBeGreaterThan(15)
+describe('أصناف الإشعارات تغطّي ما يرسل فعلا', () => {
+  it('المسح يقرأ الخادم فعلا — فلا يمرّ الحارس بصفر كاذب', () => {
+    /* حارس الحارس: خطأ في المسار يجعل القائمة فارغة فيمرّ كلّ شيء */
+    expect(KEYS.length, 'لم يقرأ مفتاح واحد — تعطّل المسح نفسه').toBeGreaterThan(15)
   })
 
-  it('وجدولُ التذكير مقروءٌ باسمِه — فلا يضيق المسحُ صامتا', () => {
+  it('وجدول التذكير مقروء باسمه — فلا يضيق المسح صامتا', () => {
     expect(
       REMINDERS_BLOCK,
-      'لم يُعثر على «const REMINDERS = [...] as const» في server/worker/jobs.ts.\n'
-      + 'إن أُعيدت تسميتُه فحدّث هذا الحارسَ معه — وإلّا خرجت مفاتيحُ التذكير '
-      + 'من المسح، وهي بعينها التي كُتب لأجلها.',
+      'لم يعثر على «const REMINDERS = [...] as const» في server/worker/jobs.ts.\n'
+      + 'إن أعيدت تسميته فحدّث هذا الحارس معه — وإلّا خرجت مفاتيح التذكير '
+      + 'من المسح، وهي بعينها التي كتب لأجلها.',
     ).not.toBeNull()
     expect(KEYS).toContain('session.reminder.1h')
     expect(KEYS).toContain('session.reminder.trainer.24h')
   })
 
-  it('وجدولُ تذكير التوثيق مقروءٌ باسمِه كذلك (ي-٥)', () => {
+  it('وجدول تذكير التوثيق مقروء باسمه كذلك (ي-٥)', () => {
     expect(
       VERIFY_BLOCK,
-      'لم يُعثر على «const VERIFY_REMINDERS = [...] as const» في server/worker/jobs.ts.\n'
-      + 'إن أُعيدت تسميتُه فحدّث هذا الحارسَ معه — وإلّا خرجت مفاتيحُ تذكير '
-      + 'التوثيق من المسح صامتةً، كما خرج «‎.1h» سنةً.',
+      'لم يعثر على «const VERIFY_REMINDERS = [...] as const» في server/worker/jobs.ts.\n'
+      + 'إن أعيدت تسميته فحدّث هذا الحارس معه — وإلّا خرجت مفاتيح تذكير '
+      + 'التوثيق من المسح صامتة، كما خرج «‎.1h» سنة.',
     ).not.toBeNull()
     expect(KEYS).toContain('account.verify.reminder.1')
     expect(KEYS).toContain('account.verify.reminder.2')
   })
 
-  it('وكلُّ مفتاحٍ يُبنى بقالبٍ نصّيٍّ مُسمّى التوسّعات — فلا بابَ رابع', () => {
+  it('وكلّ مفتاح يبنى بقالب نصّيّ مسمّى التوسّعات — فلا باب رابع', () => {
     const unnamed = DYNAMIC_FOUND.filter((raw) => !DYNAMIC[raw])
     expect(
       unnamed,
-      `مفتاحٌ يُبنى وقتَ التنفيذ ولم تُسمَّ توسّعاتُه: ${unnamed.join('، ')}.\n`
-      + 'أضفه إلى «DYNAMIC» في هذا الملفّ بتوسّعاته كلِّها، ثمّ سجّلها في '
-      + '«categories.ts». وبلا ذلك تُرسَل ولا تظهر في شاشة التفضيلات — '
-      + 'لا مفتوحةً ولا مقفلة.',
+      `مفتاح يبنى وقت التنفيذ ولم تسمّ توسّعاته: ${unnamed.join('، ')}.\n`
+      + 'أضفه إلى «DYNAMIC» في هذا الملفّ بتوسّعاته كلّها، ثمّ سجّلها في '
+      + '«categories.ts». وبلا ذلك ترسل ولا تظهر في شاشة التفضيلات — '
+      + 'لا مفتوحة ولا مقفلة.',
     ).toEqual([])
-    /* والعكسُ كذلك: صيغةٌ سُمّيت هنا ثمّ حُذفت من الشيفرة تبقى تُفحَص بلا داعٍ */
+    /* والعكس كذلك: صيغة سمّيت هنا ثمّ حذفت من الشيفرة تبقى تفحص بلا داع */
     expect(Object.keys(DYNAMIC).sort()).toEqual(DYNAMIC_FOUND)
   })
 
   it.each(KEYS)('«%s» له صنف', (key) => {
     expect(
       categoryForTemplate(key),
-      `المفتاحُ «${key}» يُرسَل ولا صنفَ له في `
+      `المفتاح «${key}» يرسل ولا صنف له في `
       + '«src/application/notifications/categories.ts».\n'
-      + 'وما لا صنفَ له لا يُكتَم ولا يظهر في شاشة التفضيلات — '
-      + 'فيصل صاحبَه وهو يظنّ أنّه أسكته. أضفه إلى صنفه.',
+      + 'وما لا صنف له لا يكتم ولا يظهر في شاشة التفضيلات — '
+      + 'فيصل صاحبه وهو يظنّ أنّه أسكته. أضفه إلى صنفه.',
     ).not.toBeNull()
   })
 })

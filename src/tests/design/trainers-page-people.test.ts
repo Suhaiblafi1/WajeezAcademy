@@ -29,41 +29,41 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '../../..')
 const page = readFileSync(join(root, 'src/pages/Trainers.tsx'), 'utf8')
   .replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '')
 
-describe('صفحةُ الفريق · لا شخصَ إلّا من الخادم', () => {
-  it('⚠️ ولا بطاقةَ تُبنى من القائمة الساكنة — تُقرأ أشخاصا وليست كذلك', () => {
+describe('صفحة الفريق · لا شخص إلّا من الخادم', () => {
+  it('⚠️ ولا بطاقة تبنى من القائمة الساكنة — تقرأ أشخاصا وليست كذلك', () => {
     /* البطاقةُ في هذه الصفحة `Panel as="article"`. فلا يجوز أن تُصيَّر واحدةٌ
        داخل حلقةٍ على `visibleRoles`. */
     const rolesLoop = /visibleRoles\.map\(([\s\S]*?)\n {6}\)/.exec(page)?.[1] ?? ''
-    expect(rolesLoop, 'لم يُعثر على حلقة التخصّصات — تعطّل الفحصُ نفسُه').not.toBe('')
-    expect(rolesLoop, 'التخصّصُ يُصيَّر بطاقةً كبطاقة الشخص').not.toContain('Panel')
-    expect(rolesLoop, 'التخصّصُ يحمل أيقونةَ قبّعةِ تخرّجٍ كالشخص').not.toContain('GraduationCap')
-    expect(rolesLoop, 'التخصّصُ يحمل عبارةَ انتظارِ المدرّب فيُقرأ شخصا').not.toContain('TRAINER_PENDING_AR')
+    expect(rolesLoop, 'لم يعثر على حلقة التخصّصات — تعطّل الفحص نفسه').not.toBe('')
+    expect(rolesLoop, 'التخصّص يصيّر بطاقة كبطاقة الشخص').not.toContain('Panel')
+    expect(rolesLoop, 'التخصّص يحمل أيقونة قبّعة تخرّج كالشخص').not.toContain('GraduationCap')
+    expect(rolesLoop, 'التخصّص يحمل عبارة انتظار المدرّب فيقرأ شخصا').not.toContain('TRAINER_PENDING_AR')
   })
 
-  it('والمعروضون أشخاصا مصدرُهم الخادمُ وحدَه', () => {
-    expect(page, 'الأشخاصُ لا يأتون من الخادم').toContain("apiGet<PublicTrainer[]>('/api/trainers/public')")
+  it('والمعروضون أشخاصا مصدرهم الخادم وحده', () => {
+    expect(page, 'الأشخاص لا يأتون من الخادم').toContain("apiGet<PublicTrainer[]>('/api/trainers/public')")
     /* حلقةُ الأشخاص على المعتمَدين لا على قائمةٍ ساكنة */
     expect(page).toMatch(/filteredApproved\.map/)
   })
 
-  it('⚠️ وحين لا معتمَدَ يُقال ذلك — لا تُترك الصفحةُ بياضا يُقرأ إفلاسا', () => {
+  it('⚠️ وحين لا معتمد يقال ذلك — لا تترك الصفحة بياضا يقرأ إفلاسا', () => {
     /* المعتمَدون على الإنتاج اليومَ صفر. فنزعُ البطاقات بلا بديلٍ يترك زائرا
        أمام صفحةٍ خاوية. */
-    expect(page, 'لا بيانَ حالٍ عند الصفر').toMatch(/filteredApproved\.length === 0 && !query/)
-    expect(page).toContain('لم يُعتمد نشرُ اسمِ مدرّبٍ بعد')
+    expect(page, 'لا بيان حال عند الصفر').toMatch(/filteredApproved\.length === 0 && !query/)
+    expect(page).toContain('لم يعتمد نشر اسم مدرّب بعد')
   })
 
-  it('والتخصّصاتُ تُقال مجالاتٍ صراحةً لا أسماءَ مدرّبين', () => {
+  it('والتخصّصات تقال مجالات صراحة لا أسماء مدرّبين', () => {
     expect(page).toContain('المجالات التي نغطّيها')
-    expect(page).toContain('لا أسماءَ مدرّبين')
+    expect(page).toContain('لا أسماء مدرّبين')
   })
 
   /* «مدرب الكفاءة الرقمية» تحت عنوان «المجالات» يجرّ العينَ إلى شخصٍ ثانيةً —
      وهو ما نُزعت البطاقاتُ لأجله. فيُجرَّد الصدرُ في العرض وحدَه. */
-  it('⚠️ ويُجرَّد صدرُ الدور في العرض — والترشيحُ يبقى على الأصل', () => {
-    expect(page, 'الوسمُ يعرض اسمَ الدور كما هو').toContain('domainOf(role)')
+  it('⚠️ ويجرّد صدر الدور في العرض — والترشيح يبقى على الأصل', () => {
+    expect(page, 'الوسم يعرض اسم الدور كما هو').toContain('domainOf(role)')
     /* الترشيحُ على `role` لا على المجرَّد: من بحث «مدربة» يجب أن يجد */
-    expect(page, 'الترشيحُ صار على المجرَّد فضاع البحثُ بالدور')
+    expect(page, 'الترشيح صار على المجرّد فضاع البحث بالدور')
       .toMatch(/role\.toLowerCase\(\)\.includes\(needle\)/)
   })
 })

@@ -95,7 +95,7 @@ export default function TrainerAnnouncement() {
       setItems((prev) => prev?.map((a) => (a.id === shown.id ? { ...a, readAt: r.readAt } : a)) ?? null);
       close();
     } catch {
-      setError("لم يُحفظ «قرأتُه» — تحقّق من اتّصالك وأعِد المحاولة، أو اختر «ذكّرني لاحقا» فتعود لك.");
+      setError("لم يحفظ «قرأته». أعد المحاولة، أو اختر «ذكّرني لاحقا».");
     } finally {
       setBusy(false);
     }
@@ -114,18 +114,17 @@ export default function TrainerAnnouncement() {
         {error && <p role="alert" className="mt-4 text-read font-bold text-danger-ink">{error}</p>}
         {shown.readAt ? (
           <div className="mt-6 flex flex-wrap items-center gap-3">
-            <p className="min-w-0 flex-1 text-read text-muted-foreground">قرأتَه في {fmtDateTimeAr(shown.readAt)}.</p>
-            <Button tone="secondary" onClick={close}>أغلِق</Button>
+            <p className="min-w-0 flex-1 text-read text-muted-foreground">قرأته في {fmtDateTimeAr(shown.readAt)}.</p>
+            <Button tone="secondary" onClick={close}>أغلق</Button>
           </div>
         ) : (
           <div className="mt-6 grid gap-3">
             <div className="flex flex-wrap gap-2">
-              <Button tone="confirm" loading={busy} onClick={() => void confirmRead()}>قرأتُه</Button>
+              <Button tone="confirm" loading={busy} onClick={() => void confirmRead()}>قرأته</Button>
               <Button tone="secondary" disabled={busy} onClick={later}>ذكّرني لاحقا</Button>
             </div>
             <p className="text-read leading-6 text-muted-foreground">
-              «قرأتُه» يُعلم الإدارةَ أنّه وصلك فلا يعود. و«ذكّرني لاحقا» يغلقه الآن ويعود في زيارتك التالية —
-              ولا يتوقّف شيءٌ في عملك بأيٍّ منهما.
+              «قرأته» يعلم الإدارة فلا يعود. و«ذكّرني لاحقا» يغلقه الآن ويعود في زيارتك التالية.
             </p>
           </div>
         )}

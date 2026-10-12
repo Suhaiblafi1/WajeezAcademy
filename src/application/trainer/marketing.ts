@@ -12,11 +12,11 @@ export const MAX_MARKETING_PHOTOS = 8
 
 /** حالُ الملصق بلغة من يقرؤه — ولكلّ طرفٍ صيغتُه */
 export const POSTER_STATUS_AR: Record<string, { trainerAr: string; staffAr: string; tone: 'warn' | 'positive' | 'danger' | 'neutral' }> = {
-  draft: { trainerAr: 'مسوّدة', staffAr: 'مسوّدةٌ لم تُرسَل', tone: 'neutral' },
+  draft: { trainerAr: 'مسوّدة', staffAr: 'مسوّدة لم ترسل', tone: 'neutral' },
   pending: { trainerAr: 'ينتظر موافقتك', staffAr: 'عند المدرّب', tone: 'warn' },
-  approved: { trainerAr: 'وافقتَ عليه', staffAr: 'وافق — صالحٌ للاستعمال العامّ', tone: 'positive' },
-  changes_requested: { trainerAr: 'طلبتَ تعديله', staffAr: 'طلب تعديلا', tone: 'danger' },
-  superseded: { trainerAr: 'نسخةٌ سابقة', staffAr: 'أزاحتها نسخةٌ أحدث', tone: 'neutral' },
+  approved: { trainerAr: 'وافقت عليه', staffAr: 'وافق — صالح للاستعمال العامّ', tone: 'positive' },
+  changes_requested: { trainerAr: 'طلبت تعديله', staffAr: 'طلب تعديلا', tone: 'danger' },
+  superseded: { trainerAr: 'نسخة سابقة', staffAr: 'أزاحتها نسخة أحدث', tone: 'neutral' },
 }
 
 /** رابطٌ يُحفظ: https وحدَه، بلا مسافات، وبطولٍ معقول — و`null` لما سواه */

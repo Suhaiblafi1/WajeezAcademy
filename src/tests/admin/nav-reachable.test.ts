@@ -32,19 +32,19 @@ const ALL_KEYS: string[] = PERMISSIONS.map((p) => p.key)
 /** كلُّ بندٍ في الشريط، مقرونا بعنوان مجموعته */
 const everyItem = allSections.flatMap((s) => s.items.map((it) => ({ ...it, section: s.title })))
 
-describe('① من ملك الصلاحيّاتِ كلَّها رأى الشاشاتِ كلَّها', () => {
-  it('ولا يسقط بندٌ عن المديرِ الأعلى — فسقوطُه يعني حبّةً لا وجودَ لها', () => {
+describe('① من ملك الصلاحيّات كلّها رأى الشاشات كلّها', () => {
+  it('ولا يسقط بند عن المدير الأعلى — فسقوطه يعني حبّة لا وجود لها', () => {
     const seen = sectionsFor(ALL_KEYS).flatMap((s) => s.items.map((it) => it.to))
     const missing = everyItem.filter((it) => !seen.includes(it.to))
     expect(
       missing.map((m) => `${m.section} › ${m.label} (${String(m.need)})`),
-      'بنودٌ تختفي عن المديرِ الأعلى — وحبّةُ حراستها ليست في `PERMISSIONS`',
+      'بنود تختفي عن المدير الأعلى — وحبّة حراستها ليست في `PERMISSIONS`',
     ).toEqual([])
   })
 
-  it('ولا تسقط مجموعةٌ بعنوانها', () => {
+  it('ولا تسقط مجموعة بعنوانها', () => {
     const titles = sectionsFor(ALL_KEYS).map((s) => s.title)
-    expect(titles, 'مجموعةٌ كاملةٌ اختفت عن المديرِ الأعلى')
+    expect(titles, 'مجموعة كاملة اختفت عن المدير الأعلى')
       .toEqual(allSections.map((s) => s.title))
   })
 
@@ -52,34 +52,34 @@ describe('① من ملك الصلاحيّاتِ كلَّها رأى الشاش�
 
      وهذا يقول **أيُّها** أخطأ، لا «بندٌ اختفى» وسكوت — فمن قرأه عرف
      الحبّةَ بعينها ولم يبحث عنها في تسعٍ وستّين. */
-  it('وكلُّ حبّةٍ يُحرَس بها بندٌ موجودةٌ في `PERMISSIONS`', () => {
+  it('وكلّ حبّة يحرس بها بند موجودة في `PERMISSIONS`', () => {
     const unknown: string[] = []
     for (const it of everyItem) {
       for (const need of Array.isArray(it.need) ? it.need : it.need ? [it.need] : []) {
         if (!ALL_KEYS.includes(need)) unknown.push(`${it.label} → ${need}`)
       }
     }
-    expect(unknown, 'حبّاتٌ يُحرَس بها الشريطُ ولا وجودَ لها — فالبندُ يختفي عن الجميع')
+    expect(unknown, 'حبّات يحرس بها الشريط ولا وجود لها — فالبند يختفي عن الجميع')
       .toEqual([])
   })
 })
 
-describe('② ولكلّ بندٍ طريقٌ يفتحه', () => {
+describe('② ولكلّ بند طريق يفتحه', () => {
   const app = readFileSync(join(process.cwd(), 'src/App.tsx'), 'utf8')
 
-  it('ولا بندَ يُنقر فيُفتح فراغ', () => {
+  it('ولا بند ينقر فيفتح فراغ', () => {
     const orphans = everyItem.filter((it) => !app.includes(`path="${it.to}"`))
     expect(
       orphans.map((o) => `${o.section} › ${o.label} (${o.to})`),
-      'بنودٌ في الشريط بلا طريقٍ مسجَّلٍ في `App.tsx`',
+      'بنود في الشريط بلا طريق مسجّل في `App.tsx`',
     ).toEqual([])
   })
 })
 
-describe('③ ولا مجموعةَ بلا بنود', () => {
-  it('فعنوانٌ لا يُفتح ليس عنوانا', () => {
+describe('③ ولا مجموعة بلا بنود', () => {
+  it('فعنوان لا يفتح ليس عنوانا', () => {
     const empty = allSections.filter((s) => s.items.length === 0).map((s) => s.title)
-    expect(empty, 'مجموعاتٌ بلا بنودٍ في المصدر').toEqual([])
+    expect(empty, 'مجموعات بلا بنود في المصدر').toEqual([])
   })
 })
 
@@ -88,11 +88,11 @@ describe('③ ولا مجموعةَ بلا بنود', () => {
    الترشيحُ صوابٌ ولا يُنقض هنا — إنّما يُثبَت أنّه يرشّح فعلا، فلو عاد
    يعرض كلَّ شيءٍ لكلّ أحدٍ لَصار الشريطُ بابا مفتوحا على شاشاتٍ تردّ
    ٤٠٣ عند أوّل نقرة. */
-describe('والترشيحُ يرشّح — فليس الشريطُ بابا مفتوحا', () => {
-  it('ومن لا حبّةَ عنده لا يرى إلّا المفتوحَ بلا صلاحيّة', () => {
+describe('والترشيح يرشّح — فليس الشريط بابا مفتوحا', () => {
+  it('ومن لا حبّة عنده لا يرى إلّا المفتوح بلا صلاحيّة', () => {
     const open = everyItem.filter((it) => !it.need).length
     const seen = sectionsFor([]).flatMap((s) => s.items)
     expect(seen).toHaveLength(open)
-    expect(seen.every((it) => !it.need), 'بندٌ محروسٌ ظهر لمن لا يملك شيئا').toBe(true)
+    expect(seen.every((it) => !it.need), 'بند محروس ظهر لمن لا يملك شيئا').toBe(true)
   })
 })

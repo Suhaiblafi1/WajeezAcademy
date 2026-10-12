@@ -25,21 +25,21 @@ const shared = code('src/pages/SharedDossier.tsx')
 const ops = code('src/pages/admin/TrainerOps.tsx')
 const routes = code('server/http/routes/admin-trainer.routes.ts')
 
-describe('أسماءُ الدورات تُقرأ أسماءً', () => {
-  it('⚠️ الملفُّ يطلب الكتالوجَ بنفسه — فلا يُطبع المعرّفُ خاما في شاشةٍ ولا في رابط', () => {
-    expect(dossier, 'لا يقرأ أسماءَ الدورات أصلا').toMatch(/courseById\(/)
-    expect(dossier, 'يقرأ الأسماءَ ولا يطلب الكتالوجَ — فتعود فارغةً ويُطبع المعرّف')
+describe('أسماء الدورات تقرأ أسماء', () => {
+  it('⚠️ الملفّ يطلب الكتالوج بنفسه — فلا يطبع المعرّف خاما في شاشة ولا في رابط', () => {
+    expect(dossier, 'لا يقرأ أسماء الدورات أصلا').toMatch(/courseById\(/)
+    expect(dossier, 'يقرأ الأسماء ولا يطلب الكتالوج — فتعود فارغة ويطبع المعرّف')
       .toMatch(/usePublishedContent\(\)/)
   })
 
-  it('والموضعُ في الملفّ لا في الشاشتَين — فمن أضاف شاشةً ثالثةً لا يحتاج أن يتذكّر', () => {
+  it('والموضع في الملفّ لا في الشاشتين — فمن أضاف شاشة ثالثة لا يحتاج أن يتذكّر', () => {
     /* لو كان النداءُ في `TrainerApplications` وحدَها لبقيت صفحةُ الرابط مكسورة */
     expect(dossier).toMatch(/usePublishedContent/)
   })
 })
 
-describe('الأدمنُ يكتب اسمَ الاقتراح', () => {
-  it('المحرّرُ معروضٌ في الملفّ، وينادي المسارَ القائم', () => {
+describe('الأدمن يكتب اسم الاقتراح', () => {
+  it('المحرّر معروض في الملفّ، وينادي المسار القائم', () => {
     expect(apps).toMatch(/<ProposalsEditor/)
     expect(editor).toContain('/teachable-proposals')
     expect(routes).toContain("app.put('/api/admin/trainer-applications/:id/teachable-proposals'")
@@ -54,55 +54,55 @@ describe('الأدمنُ يكتب اسمَ الاقتراح', () => {
      فلم يُترَك الحارسُ يحرس فراغا — إذ حارسٌ على شيءٍ زال يخضرّ أبدا ويوهم
      أنّ شيئا يُحرَس. */
 
-  it('والفقرةُ التي كتبها هو تبقى معروضةً — لا تُمحى ولا تُقسَّم تخمينا', () => {
+  it('والفقرة التي كتبها هو تبقى معروضة — لا تمحى ولا تقسّم تخمينا', () => {
     expect(editor).toMatch(/\{teachableOther\}/)
   })
 
-  it('وحدُّ العشرين يُقرأ من مصدره لا يُكتب رقما', () => {
-    expect(editor, 'رقمٌ مكتوبٌ بدل `MAX_PROPOSALS`').toMatch(/MAX_PROPOSALS/)
+  it('وحدّ العشرين يقرأ من مصدره لا يكتب رقما', () => {
+    expect(editor, 'رقم مكتوب بدل `MAX_PROPOSALS`').toMatch(/MAX_PROPOSALS/)
   })
 })
 
-describe('الاتفاقُ الماليّ', () => {
-  it('حقلانِ في نموذج القارئ يُرسَلان مع التقييم', () => {
+describe('الاتفاق الماليّ', () => {
+  it('حقلان في نموذج القارئ يرسلان مع التقييم', () => {
     expect(shared).toMatch(/feeExpectationAr:/)
     expect(shared).toMatch(/feeProposalAr:/)
   })
 
-  it('⚠️ ونصٌّ لا رقم — الوحدةُ والعملةُ تختلفان، والمدى ليس رقما', () => {
+  it('⚠️ ونصّ لا رقم — الوحدة والعملة تختلفان، والمدى ليس رقما', () => {
     /* `type="number"` هنا يجبر القارئَ على اختراع دقّةٍ لا يملكها */
-    const block = /الاتفاقُ الماليّ[\s\S]*?<\/fieldset>/.exec(shared)?.[0] ?? ''
-    expect(block, 'لا كتلةَ للاتفاق الماليّ').not.toBe('')
-    expect(block, 'خانةٌ رقميّةٌ لما يُقال مدى').not.toMatch(/type="number"/)
+    const block = /الاتفاق الماليّ[\s\S]*?<\/fieldset>/.exec(shared)?.[0] ?? ''
+    expect(block, 'لا كتلة للاتفاق الماليّ').not.toBe('')
+    expect(block, 'خانة رقميّة لما يقال مدى').not.toMatch(/type="number"/)
   })
 
-  it('ويُقرآن في شاشة القرار — فمن قرأ الحكمَ رأى ما دار في المال', () => {
+  it('ويقرآن في شاشة القرار — فمن قرأ الحكم رأى ما دار في المال', () => {
     expect(apps).toMatch(/r\.feeExpectationAr/)
     expect(apps).toMatch(/r\.feeProposalAr/)
   })
 })
 
 describe('ما ذهب من شاشة المدرّب', () => {
-  it('تقييمُ الدرس التجريبيّ والمراجعُ المهنيّة — ولا بقايا نماذجَ لهما', () => {
-    expect(ops, 'عاد قسمُ الديمو').not.toMatch(/id="sec-demo"/)
-    expect(ops, 'عاد قسمُ المراجع').not.toMatch(/id="sec-references"/)
-    expect(ops, 'بقي نموذجُ الروبرك بلا قسمٍ يستعمله').not.toMatch(/function RubricInput/)
+  it('تقييم الدرس التجريبيّ والمراجع المهنيّة — ولا بقايا نماذج لهما', () => {
+    expect(ops, 'عاد قسم الديمو').not.toMatch(/id="sec-demo"/)
+    expect(ops, 'عاد قسم المراجع').not.toMatch(/id="sec-references"/)
+    expect(ops, 'بقي نموذج الروبرك بلا قسم يستعمله').not.toMatch(/function RubricInput/)
   })
 
-  it('والعقدُ والمقابلاتُ باقيان — لم يُحذف ما لم يُطلب حذفُه', () => {
+  it('والعقد والمقابلات باقيان — لم يحذف ما لم يطلب حذفه', () => {
     expect(ops).toMatch(/id="sec-contract"/)
     expect(ops).toMatch(/id="sec-interviews"/)
   })
 })
 
-describe('موضعُ الحذف', () => {
-  it('⚠️ مطويٌّ ولا يُجاور أزرارَ القرار — زرٌّ لا يُنقر يُنقر يوما بالخطأ', () => {
-    expect(apps, 'لا طيَّ للحذف').toMatch(/purgeOpen/)
+describe('موضع الحذف', () => {
+  it('⚠️ مطويّ ولا يجاور أزرار القرار — زرّ لا ينقر ينقر يوما بالخطأ', () => {
+    expect(apps, 'لا طيّ للحذف').toMatch(/purgeOpen/)
     /* وشريطُ القرار اللاصقُ لا يحمل زرَّ حذف */
     /* ويُعرف بلصوقه أيًّا كان عرضُه: صار يلصق من `lg` وحدَها (٣٠ سبتمبر ٢٠٢٦)،
        ثمّ صار صفَّ الأزرار وحدَه بنغمةٍ صلبةٍ قبل أصنافه (١ أكتوبر ٢٠٢٦) */
     const bar = /<Card\b[^>]*?className="(?:[^"]*\s)?(?:[\w-]+:)?sticky\s[^"]*"[\s\S]*?<\/Card>/.exec(apps)?.[0] ?? ''
-    expect(bar, 'لا شريطَ قرار').not.toBe('')
-    expect(bar, 'زرُّ الحذف عاد إلى شريط القرار').not.toMatch(/setPurging/)
+    expect(bar, 'لا شريط قرار').not.toBe('')
+    expect(bar, 'زرّ الحذف عاد إلى شريط القرار').not.toMatch(/setPurging/)
   })
 })

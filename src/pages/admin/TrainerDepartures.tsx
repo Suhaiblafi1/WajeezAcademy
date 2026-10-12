@@ -60,11 +60,11 @@ interface Sub {
 interface Equivalent { cohortId: string; title: string; courseTitleAr: string; enrolled: number; capacity: number | null }
 
 const SAID: Record<string, string> = {
-  pending: "لم يُقرَّر بعد",
-  substituted: "جاء بديلٌ — لم يتحرّك إلّا الاسم",
-  moved: "نُقل إلى شعبةٍ نظيرة",
-  refund_requested: "اختار الردَّ — رُفع الطلبُ إلى الماليّة",
-  credited: "اختار الرصيدَ — صُرف باسمه",
+  pending: "لم يقرّر بعد",
+  substituted: "جاء بديل — لم يتحرّك إلّا الاسم",
+  moved: "نقل إلى شعبة نظيرة",
+  refund_requested: "اختار الردّ — رفع الطلب إلى الماليّة",
+  credited: "اختار الرصيد — صرف باسمه",
 };
 
 export default function TrainerDepartures() {
@@ -130,13 +130,13 @@ export default function TrainerDepartures() {
   const view = paginate(matched, page, 20);
 
   return (
-    <AdminLayout title="رحيلُ المدرّبين">
+    <AdminLayout title="رحيل المدرّبين">
       <Card className="mb-4">
         <p className="text-sm leading-7 text-muted-foreground">
-          حين يترك مدرّبٌ الأكاديميّة، يُفتح ملفٌّ يجمع <b>كلَّ متعلّمٍ</b> في شعبه الحيّة.
-          والترتيب: <b>بديلٌ</b> يأخذ مكانَه فلا يتحرّك إلّا الاسم · فإن لم يوجد فـ<b>نقلٌ</b> إلى
-          شعبةٍ على الرمز نفسِه · فإن لم يصلح فـ<b>الاختيارُ لصاحبه</b>: ردُّ ما تبقّى أو رصيدٌ باسمه.
-          {" "}ولا تخرج رسالةٌ إلى متعلّمٍ قبل أن يُقرَّر أمرُه.
+          حين يترك مدرّب الأكاديميّة، يفتح ملفّ يجمع <b>كلّ متعلّم</b> في شعبه الحيّة.
+          والترتيب: <b>بديل</b> يأخذ مكانه فلا يتحرّك إلّا الاسم · فإن لم يوجد فـ<b>نقل</b> إلى
+          شعبة على الرمز نفسه · فإن لم يصلح فـ<b>الاختيار لصاحبه</b>: ردّ ما تبقّى أو رصيد باسمه.
+          {" "}ولا تخرج رسالة إلى متعلّم قبل أن يقرّر أمره.
         </p>
       </Card>
 
@@ -144,13 +144,13 @@ export default function TrainerDepartures() {
         <Card tone="danger" role="alert" className="text-center text-read font-bold text-red-300">{err}</Card>
       ) : !rows ? (
         <div className="grid place-items-center py-16">
-          <Loader2 className="h-7 w-7 animate-spin text-muted-foreground/50" aria-label="جارٍ التحميل" />
+          <Loader2 className="h-7 w-7 animate-spin text-muted-foreground/50" aria-label="جار التحميل" />
         </div>
       ) : rows.length === 0 ? (
         <EmptyState
           icon={UserMinus}
-          titleAr="لا ملفَّ رحيلٍ مفتوح"
-          reasonAr="حين يترك مدرّبٌ الأكاديميّة يُفتح ملفٌّ من صفحة المدرّب، فتُجمَع شعبُه ومتعلّموه هنا."
+          titleAr="لا ملفّ رحيل مفتوح"
+          reasonAr="حين يترك مدرّب الأكاديميّة يفتح ملفّ من صفحة المدرّب، فتجمع شعبه ومتعلّموه هنا."
         />
       ) : (
         <div className="grid gap-3">
@@ -165,23 +165,23 @@ export default function TrainerDepartures() {
                   <div className="text-read font-bold text-foreground">{r.trainerName}</div>
                   <div className="mt-0.5 text-sm text-muted-foreground">{r.reasonAr}</div>
                   <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground/70">
-                    <span>فُتح {fmtDateLong(r.openedAt)}</span>
+                    <span>فتح {fmtDateLong(r.openedAt)}</span>
                     <span>{r.total} متعلّما</span>
                     {r.pending > 0 ? (
                       <span className="rounded-full bg-red-500/15 px-2 py-0.5 font-bold text-red-300">
-                        {r.pending} لم يُحَلّ
+                        {r.pending} لم يحلّ
                       </span>
                     ) : (
-                      <span className="rounded-full bg-teal/15 px-2 py-0.5 font-bold text-teal">حُلَّ الجميع</span>
+                      <span className="rounded-full bg-teal/15 px-2 py-0.5 font-bold text-teal">حلّ الجميع</span>
                     )}
-                    {r.closedAt ? <span>أُغلق {fmtDateLong(r.closedAt)}</span> : null}
+                    {r.closedAt ? <span>أغلق {fmtDateLong(r.closedAt)}</span> : null}
                   </div>
                 </div>
                 <Button
                   tone={open?.id === r.id ? "ghost" : "secondary"}
                   onClick={() => (open?.id === r.id ? setOpen(null) : openDetail(r.id))}
                 >
-                  {open?.id === r.id ? "أغلِق العرض" : "افتح الملفّ"}
+                  {open?.id === r.id ? "أغلق العرض" : "افتح الملفّ"}
                 </Button>
               </div>
 
@@ -211,7 +211,7 @@ export default function TrainerDepartures() {
                       {subsFor === c.cohortId ? (
                         subs.length === 0 ? (
                           <p className="text-sm text-muted-foreground">
-                            لا مدرّبَ مؤهَّلا لهذه الدورة غيرَه — فالطريقُ الثاني: انقل متعلّميها إلى نظير.
+                            لا مدرّب مؤهّلا لهذه الدورة غيره — فالطريق الثاني: انقل متعلّميها إلى نظير.
                           </p>
                         ) : (
                           <div className="grid gap-1.5">
@@ -220,8 +220,8 @@ export default function TrainerDepartures() {
                                 <div className="text-sm">
                                   <b className="text-foreground">{s.name}</b>
                                   <span className="text-muted-foreground">
-                                    {" · "}{s.hoursTaught} ساعةً درّسها
-                                    {s.ratingAvg ? ` · تقييمُه ${s.ratingAvg.toFixed(1)} من ${s.ratingCount}` : " · بلا تقييمٍ بعد"}
+                                    {" · "}{s.hoursTaught} ساعة درّسها
+                                    {s.ratingAvg ? ` · تقييمه ${s.ratingAvg.toFixed(1)} من ${s.ratingCount}` : " · بلا تقييم بعد"}
                                     {" · "}{s.liveCohorts} شعبا حيّة
                                   </span>
                                 </div>
@@ -230,10 +230,10 @@ export default function TrainerDepartures() {
                                   onClick={() => run(
                                     () => apiPost(`/api/admin/trainer-departures/${open.id}/substitute`,
                                       { cohortId: c.cohortId, profileId: s.profileId }),
-                                    "أُسنِد البديلُ — ولم يتحرّك إلّا الاسم",
+                                    "أسند البديل — ولم يتحرّك إلّا الاسم",
                                   )}
                                 >
-                                  أسنِده
+                                  أسنده
                                 </Button>
                               </Inset>
                             ))}
@@ -259,13 +259,13 @@ export default function TrainerDepartures() {
                             </span>
                             {c.learnerChoice ? (
                               <span className="text-muted-foreground/70">
-                                اختار: {c.learnerChoice === "refund" ? "ردَّ ما تبقّى" : "رصيدا باسمه"}
+                                اختار: {c.learnerChoice === "refund" ? "ردّ ما تبقّى" : "رصيدا باسمه"}
                               </span>
                             ) : c.choiceOfferedAt ? (
-                              <span className="text-muted-foreground/70">عُرض عليه الاختيارُ ولم يختر بعد</span>
+                              <span className="text-muted-foreground/70">عرض عليه الاختيار ولم يختر بعد</span>
                             ) : null}
                             {c.notifiedAt ? (
-                              <span className="text-teal">أُبلغ {fmtDateLong(c.notifiedAt)}</span>
+                              <span className="text-teal">أبلغ {fmtDateLong(c.notifiedAt)}</span>
                             ) : null}
                           </div>
                         </div>
@@ -289,10 +289,10 @@ export default function TrainerDepartures() {
                                   tone="secondary" disabled={busy}
                                   onClick={() => run(
                                     () => apiPost(`/api/admin/departure-cases/${c.id}/offer-choice`, {}),
-                                    "عُرض عليه الاختيار",
+                                    "عرض عليه الاختيار",
                                   )}
                                 >
-                                  اعرِض عليه الاختيار
+                                  اعرض عليه الاختيار
                                 </Button>
                               ) : null}
                               {/* ولا زرَّ ردٍّ ولا رصيدٍ قبل أن يصل اختيارُه (ن-١٠) */}
@@ -314,7 +314,7 @@ export default function TrainerDepartures() {
                                     }
                                   }}
                                 >
-                                  نفِّذ ما اختاره
+                                  نفّذ ما اختاره
                                 </Button>
                               ) : null}
                             </>
@@ -324,10 +324,10 @@ export default function TrainerDepartures() {
                             disabled={busy || !isResolved(c.outcome) || !!c.notifiedAt}
                             onClick={() => run(
                               () => apiPost(`/api/admin/departure-cases/${c.id}/notify`),
-                              "أُبلغ صاحبُه",
+                              "أبلغ صاحبه",
                             )}
                           >
-                            أبلِغه
+                            أبلغه
                           </Button>
                         </div>
                       </div>
@@ -335,14 +335,14 @@ export default function TrainerDepartures() {
                       {/* ولماذا الزرُّ معطَّل — يُقال لا يُترك يُخمَّن */}
                       {!isResolved(c.outcome) && !c.notifiedAt ? (
                         <p className="text-read leading-6 text-muted-foreground/70">
-                          لا يُبلَّغ قبل أن يُقرَّر أمرُه — فالرسالةُ تحمل ما يجري بعدها لا اعتذارا وانتظارا.
+                          لا يبلّغ قبل أن يقرّر أمره — فالرسالة تحمل ما يجري بعدها لا اعتذارا وانتظارا.
                         </p>
                       ) : null}
 
                       {moveFor === c.id ? (
                         equivalents.length === 0 ? (
                           <p className="text-sm text-muted-foreground">
-                            لا شعبةَ نظيرةً مفتوحةً على الرمز نفسِه — فاعرِض عليه الاختيار.
+                            لا شعبة نظيرة مفتوحة على الرمز نفسه — فاعرض عليه الاختيار.
                           </p>
                         ) : (
                           <div className="grid gap-1.5">
@@ -358,7 +358,7 @@ export default function TrainerDepartures() {
                                   tone="confirm" icon={Check} disabled={busy}
                                   onClick={() => run(
                                     () => apiPost(`/api/admin/departure-cases/${c.id}/move`, { toCohortId: e.cohortId }),
-                                    "نُقل إلى النظير",
+                                    "نقل إلى النظير",
                                   )}
                                 >
                                   انقله إليها
@@ -378,7 +378,7 @@ export default function TrainerDepartures() {
                             />
                           </StaffField>
                           {c.learnerChoice === "credit" ? (
-                            <StaffField label="زيادةٌ لأجل ما سبّبناه" hint="تُضاف إلى الرصيد">
+                            <StaffField label="زيادة لأجل ما سبّبناه" hint="تضاف إلى الرصيد">
                               <input
                                 className={staffControlCls} inputMode="decimal" value={bonus}
                                 onChange={(e) => setBonus(e.target.value)}
@@ -388,7 +388,7 @@ export default function TrainerDepartures() {
                             /* «رُفع الطلبُ إلى الماليّة» جملةٌ يقرؤها صاحبُ المال —
                                فلا تخرج بلا دفعةٍ خلفَها. والدفعاتُ بنودُ هذه الشعبة
                                نفسِها، لا أقربُ ما دفعه. */
-                            <StaffField label="الدفعةُ التي يُردّ منها" hint="بنودُ هذه الشعبة وحدَها">
+                            <StaffField label="الدفعة التي يردّ منها" hint="بنود هذه الشعبة وحدها">
                               <select className={staffControlCls} value={paymentId}
                                 onChange={(e) => setPaymentId(e.target.value)}>
                                 <option value="">اختر الدفعة…</option>
@@ -410,16 +410,16 @@ export default function TrainerDepartures() {
                                   amount: Number(amount), bonus: Number(bonus) || undefined,
                                   paymentId: paymentId || undefined,
                                 }),
-                                c.learnerChoice === "credit" ? "صُرف الرصيدُ باسمه" : "رُفع طلبُ الردّ",
+                                c.learnerChoice === "credit" ? "صرف الرصيد باسمه" : "رفع طلب الردّ",
                               )}
                             >
-                              نفِّذ
+                              نفّذ
                             </Button>
                           </div>
                           {c.learnerChoice === "refund" && payments.length === 0 ? (
                             <p className="text-read leading-6 text-muted-foreground sm:col-span-3">
-                              لا دفعةَ على هذه الشعبة باسمه — فلا شيءَ يُردّ منه.
-                              راجِع الماليّةَ قبل أن تَعِده بردّ.
+                              لا دفعة على هذه الشعبة باسمه — فلا شيء يردّ منه.
+                              راجع الماليّة قبل أن تعده بردّ.
                             </p>
                           ) : null}
                         </div>
@@ -434,10 +434,10 @@ export default function TrainerDepartures() {
                         tone="primary" icon={Check} disabled={busy || !open.canClose}
                         onClick={() => run(
                           () => apiPost(`/api/admin/trainer-departures/${open.id}/close`),
-                          "أُغلق الملفّ",
+                          "أغلق الملفّ",
                         )}
                       >
-                        أغلِق الملفّ
+                        أغلق الملفّ
                       </Button>
                       {open.closeBlockersAr.length > 0 ? (
                         <span className="text-sm text-muted-foreground">

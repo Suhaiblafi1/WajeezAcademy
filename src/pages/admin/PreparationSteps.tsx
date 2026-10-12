@@ -157,7 +157,7 @@ function Step({
 
       {locked ? (
         <p className="mt-3 text-read leading-6 text-muted-foreground">
-          تُدار هذه الخطوةُ بصلاحيّةٍ لا تملكها — وحالُها أعلاه يُقرأ ولا يُحرَّر.
+          تدار هذه الخطوة بصلاحيّة لا تملكها — وحالها أعلاه يقرأ ولا يحرّر.
         </p>
       ) : (
         <div className="mt-3">{children}</div>
@@ -192,7 +192,7 @@ function FeeStep({
       setMinSeats("");
       setReferralRate("");
       await onChanged();
-    }, "ضُبط الاتفاقُ الماليّ");
+    }, "ضبط الاتفاق الماليّ");
 
   return (
     <div className="grid gap-3">
@@ -202,7 +202,7 @@ function FeeStep({
           <span className="tabular-nums" dir="ltr">
             {String(live.rate)} {live.type === "revenue_share" ? "%" : live.currency}
           </span>
-          {live.minSeats > 0 && <> · حدٌّ أدنى {live.minSeats} مقعدا</>}
+          {live.minSeats > 0 && <> · حدّ أدنى {live.minSeats} مقعدا</>}
           {live.referralRate && (
             <> · بالإحالة <span className="tabular-nums" dir="ltr">{String(live.referralRate)}</span></>
           )}
@@ -210,14 +210,14 @@ function FeeStep({
         </Inset>
       ) : (
         <p className="text-read leading-6 text-muted-foreground">
-          لا قاعدةَ سارية. وبلا قاعدةٍ لا يُولَّد كشفُ مستحقّاتٍ أصلا — فتبقى «مستحقّاتي»
-          عنده صفرا ولا يعلم أحدٌ لماذا.
+          لا قاعدة سارية. وبلا قاعدة لا يولّد كشف مستحقّات أصلا — فتبقى «مستحقّاتي»
+          عنده صفرا ولا يعلم أحد لماذا.
         </p>
       )}
 
       <div className="grid gap-2 sm:grid-cols-2">
         <label className="grid gap-1 text-read text-muted-foreground">
-          نموذجُ الأجر
+          نموذج الأجر
           <select value={type} onChange={(e) => setType(e.target.value)} className={inputCls}>
             {Object.entries(RULE_TYPE_AR).map(([k, v]) => (
               <option key={k} value={k}>{v}</option>
@@ -234,14 +234,14 @@ function FeeStep({
         {type === "per_seat" && (
           <>
             <label className="grid gap-1 text-read text-muted-foreground">
-              حدٌّ أدنى للمقاعد المحتسبة <span className="text-muted-foreground/70">(اختياريّ)</span>
+              حدّ أدنى للمقاعد المحتسبة <span className="text-muted-foreground/70">(اختياريّ)</span>
               <input
                 value={minSeats} onChange={(e) => setMinSeats(e.target.value)}
                 inputMode="numeric" dir="ltr" placeholder="0" className={inputCls}
               />
             </label>
             <label className="grid gap-1 text-read text-muted-foreground">
-              أجرُ المقعد بإحالته <span className="text-muted-foreground/70">(اختياريّ)</span>
+              أجر المقعد بإحالته <span className="text-muted-foreground/70">(اختياريّ)</span>
               <input
                 value={referralRate} onChange={(e) => setReferralRate(e.target.value)}
                 inputMode="decimal" dir="ltr" placeholder="0.00" className={inputCls}
@@ -257,11 +257,11 @@ function FeeStep({
           disabled={!(Number(rate) > 0)}
           onClick={() => void save()}
         >
-          {live ? "استبدِلِ القاعدةَ السارية" : "اضبطِ الاتفاقَ الماليّ"}
+          {live ? "استبدل القاعدة السارية" : "اضبط الاتفاق الماليّ"}
         </Button>
         {live && (
           <p className="mt-1.5 text-read leading-5 text-muted-foreground">
-            القاعدةُ السابقةُ تُغلق بتاريخها ولا تُمحى — فما حُسب عليها يبقى مفسَّرا.
+            القاعدة السابقة تغلق بتاريخها ولا تمحى — فما حسب عليها يبقى مفسّرا.
           </p>
         )}
       </div>
@@ -272,8 +272,8 @@ function FeeStep({
 /* ═══════════ الخطوةُ الثانية — المؤهّلاتُ والدورات ═══════════ */
 
 const PROPOSAL_STATUS_AR: Record<string, string> = {
-  draft: "مسودّة عنده", submitted: "بانتظار التصنيف", info_requested: "سُئل — ننتظر جوابَه",
-  linked: "رُبطت برمزٍ قائم", became_course: "صارت دورةً", rejected: "رُدّت",
+  draft: "مسودّة عنده", submitted: "بانتظار التصنيف", info_requested: "سئل — ننتظر جوابه",
+  linked: "ربطت برمز قائم", became_course: "صارت دورة", rejected: "ردّت",
 };
 
 function CoursesStep({
@@ -320,7 +320,7 @@ function CoursesStep({
             {p.status === "linked" && (
               /* ولا يختفي المربوطُ: الربطُ حكمُ تشابهٍ يُراجَع */
               <p className="mt-1.5 text-read font-bold text-teal-light-ink">
-                رُبطت بـ «{courseTitle(p.course, p.courseId ?? "—")}»
+                ربطت بـ «{courseTitle(p.course, p.courseId ?? "—")}»
               </p>
             )}
             {p.status === "became_course" && (
@@ -330,7 +330,7 @@ function CoursesStep({
             )}
             {p.status === "rejected" && p.decisionNoteAr && (
               <p className="mt-1.5 text-read leading-6 text-muted-foreground">
-                سببُ الردّ: {p.decisionNoteAr}
+                سبب الردّ: {p.decisionNoteAr}
               </p>
             )}
           </div>
@@ -345,7 +345,7 @@ function CoursesStep({
               tone="secondary" size="sm" icon={Link2}
               onClick={() => { close(); setLinkFor(p.id); setLinkCourse(p.courseId ?? ""); }}
             >
-              {p.status === "linked" ? "اربِطْها بغيرها" : "اربِطْها برمزٍ قائم"}
+              {p.status === "linked" ? "اربطها بغيرها" : "اربطها برمز قائم"}
             </Button>
             {p.status === "linked" && (
               <Button
@@ -353,9 +353,9 @@ function CoursesStep({
                 onClick={() => void run(async () => {
                   await apiPost(`/api/admin/course-proposals/${p.id}/unlink`, {});
                   await onChanged();
-                }, "نُقض الربطُ — عادت إلى الطابور")}
+                }, "نقض الربط — عادت إلى الطابور")}
               >
-                انقُضِ الربط
+                انقض الربط
               </Button>
             )}
             <Button
@@ -365,14 +365,14 @@ function CoursesStep({
                 setEditTitle(p.titleAr); setEditSummary(p.summaryAr ?? "");
               }}
             >
-              صحِّحْ نصَّها
+              صحّح نصّها
             </Button>
             {p.status !== "linked" && (
               <Button
                 tone="danger" size="sm" icon={Trash2}
                 onClick={() => { close(); setRejectFor(p.id); }}
               >
-                ردَّها
+                ردّها
               </Button>
             )}
           </div>
@@ -380,12 +380,12 @@ function CoursesStep({
 
         {linkFor === p.id && (
           <div className="mt-2.5 flex flex-wrap gap-2">
-            <label className="sr-only" htmlFor={`link-${p.id}`}>الرمزُ الذي تُربط به</label>
+            <label className="sr-only" htmlFor={`link-${p.id}`}>الرمز الذي تربط به</label>
             <div className="min-w-[16rem] flex-1">
               <CoursePicker
                 id={`link-${p.id}`} courses={courses}
                 value={linkCourse} onChange={setLinkCourse}
-                labelAr="الرمزُ الذي تُربط به"
+                labelAr="الرمز الذي تربط به"
               />
             </div>
             <Button
@@ -394,11 +394,11 @@ function CoursesStep({
                 await apiPost(`/api/admin/course-proposals/${p.id}/link`, { courseId: linkCourse });
                 close();
                 await onChanged();
-              }, "رُبط الاقتراحُ بالرمز")}
+              }, "ربط الاقتراح بالرمز")}
             >
-              اربِطْ
+              اربط
             </Button>
-            <Button tone="ghost" size="sm" onClick={close}>تراجعْ</Button>
+            <Button tone="ghost" size="sm" onClick={close}>تراجع</Button>
           </div>
         )}
 
@@ -406,14 +406,14 @@ function CoursesStep({
           <div className="mt-2.5 grid gap-2">
             <input
               value={editTitle} onChange={(e) => setEditTitle(e.target.value)}
-              maxLength={200} placeholder="عنوانُ الدورة" className={inputCls}
+              maxLength={200} placeholder="عنوان الدورة" className={inputCls}
             />
             <textarea
               value={editSummary} onChange={(e) => setEditSummary(e.target.value)}
-              rows={2} maxLength={2000} placeholder="نبذةٌ عنها" className={areaCls}
+              rows={2} maxLength={2000} placeholder="نبذة عنها" className={areaCls}
             />
             <p className="text-read leading-5 text-muted-foreground">
-              وهي كلماتُ صاحبها — فما كان يُكتب في سجلّ الأثر كاملا.
+              وهي كلمات صاحبها — فما كان يكتب في سجلّ الأثر كاملا.
             </p>
             <div className="flex flex-wrap gap-2">
               <Button
@@ -425,11 +425,11 @@ function CoursesStep({
                   });
                   close();
                   await onChanged();
-                }, "صُحِّح نصُّ الاقتراح")}
+                }, "صحّح نصّ الاقتراح")}
               >
-                احفظْ
+                احفظ
               </Button>
-              <Button tone="ghost" size="sm" onClick={close}>تراجعْ</Button>
+              <Button tone="ghost" size="sm" onClick={close}>تراجع</Button>
             </div>
           </div>
         )}
@@ -439,7 +439,7 @@ function CoursesStep({
             <textarea
               value={rejectNote} onChange={(e) => setRejectNote(e.target.value)}
               rows={2} maxLength={2000} className={areaCls}
-              placeholder="لمَ رُدَّت — يصل صاحبَها، وبلا سببٍ يعيدها كما هي"
+              placeholder="لم ردّت — يصل صاحبها، وبلا سبب يعيدها كما هي"
             />
             <div className="flex flex-wrap gap-2">
               <Button
@@ -448,11 +448,11 @@ function CoursesStep({
                   await apiPost(`/api/admin/course-proposals/${p.id}/reject`, { noteAr: rejectNote.trim() });
                   close();
                   await onChanged();
-                }, "رُدَّ الاقتراحُ بسببه")}
+                }, "ردّ الاقتراح بسببه")}
               >
-                ردَّها
+                ردّها
               </Button>
-              <Button tone="ghost" size="sm" onClick={close}>تراجعْ</Button>
+              <Button tone="ghost" size="sm" onClick={close}>تراجع</Button>
             </div>
           </div>
         )}
@@ -464,10 +464,10 @@ function CoursesStep({
     <div className="grid gap-4">
       {/* ── ما هو مؤهَّلٌ له ── */}
       <div>
-        <h5 className="text-read font-black text-foreground">الدورات المؤهَّل لها — {qualified.length}</h5>
+        <h5 className="text-read font-black text-foreground">الدورات المؤهّل لها — {qualified.length}</h5>
         {qualified.length === 0 ? (
           <p className="mt-1.5 text-read leading-6 text-muted-foreground">
-            لا دورةَ بعد. وما ذكره في طلبه من دورات الكتالوج يُبذَر آليّا عند قبوله داخليّا.
+            لا دورة بعد. وما ذكره في طلبه من دورات الكتالوج يبذر آليّا عند قبوله داخليّا.
           </p>
         ) : (
           <ul className="mt-2 flex flex-wrap gap-1.5">
@@ -484,13 +484,13 @@ function CoursesStep({
 
         {canQualify && (
           <div className="mt-2.5 flex flex-wrap gap-2">
-            <label className="sr-only" htmlFor={`qualify-${profileId}`}>دورةٌ يُؤهَّل لها</label>
+            <label className="sr-only" htmlFor={`qualify-${profileId}`}>دورة يؤهّل لها</label>
             <select
               id={`qualify-${profileId}`} value={qualifyCourse}
               onChange={(e) => setQualifyCourse(e.target.value)}
               className={`${inputCls} min-w-[14rem] flex-1`}
             >
-              <option value="">أضِفْ دورةً يُؤهَّل لها…</option>
+              <option value="">أضف دورة يؤهّل لها…</option>
               {courses
                 .filter((c) => !qualified.some((q) => q.courseId === c.id))
                 .map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}
@@ -501,9 +501,9 @@ function CoursesStep({
                 await apiPost(`/api/admin/trainers/${profileId}/qualifications`, { courseId: qualifyCourse });
                 setQualifyCourse("");
                 await onChanged();
-              }, "أُهِّل للدورة")}
+              }, "أهّل للدورة")}
             >
-              أهِّلْه
+              أهّله
             </Button>
           </div>
         )}
@@ -512,7 +512,7 @@ function CoursesStep({
       {/* ── دوراتٌ يقترحها هو: المفتوحُ بطاقاتٌ، والمبتوتُ سطرٌ يُفتح (`proposal-fold.ts`) ── */}
       <div className="border-t border-white/10 pt-3.5">
         <h5 className="text-read font-black text-foreground">
-          دوراتٌ يقترحها — {proposals.length}
+          دورات يقترحها — {proposals.length}
           {open.length > 0 && (
             <span className="ms-2 rounded-full bg-amber-500/15 px-2.5 py-0.5 text-fine font-bold text-amber-300">
               {open.length} بانتظار التصنيف
@@ -522,7 +522,7 @@ function CoursesStep({
 
         {proposals.length === 0 ? (
           <p className="mt-1.5 text-read leading-6 text-muted-foreground">
-            لا اقتراحَ منه خارجَ الكتالوج.
+            لا اقتراح منه خارج الكتالوج.
           </p>
         ) : (
           <>
@@ -530,7 +530,7 @@ function CoursesStep({
               <ul className="mt-2.5 grid gap-2.5">{open.map(renderProposal)}</ul>
             ) : (
               <p className="mt-1.5 text-read leading-6 text-muted-foreground">
-                لا اقتراحَ ينتظر قرارا — بُتّ فيها كلِّها.
+                لا اقتراح ينتظر قرارا — بتّ فيها كلّها.
               </p>
             )}
 
@@ -540,7 +540,7 @@ function CoursesStep({
                   tone="ghost" size="sm" icon={showDecided ? ChevronUp : ChevronDown}
                   onClick={() => setShowDecided(!showDecided)} aria-expanded={showDecided}
                 >
-                  ما بُتّ فيه — {decidedSummaryAr}
+                  ما بتّ فيه — {decidedSummaryAr}
                 </Button>
                 {showDecided && <ul className="mt-2.5 grid gap-2.5">{decided.map(renderProposal)}</ul>}
               </div>
@@ -549,8 +549,8 @@ function CoursesStep({
         )}
 
         <p className="mt-2.5 text-read leading-5 text-muted-foreground">
-          و«دورةٌ جديدة» تُنشأ في شاشة الكتالوج بنموذجها الكامل — مهاراتِها وساعاتِها —
-          ثمّ تُربط من طابور الاقتراحات. ولا تُنشأ من هنا كي لا يُكتب باسمه ما لم يكتبه.
+          و«دورة جديدة» تنشأ في شاشة الكتالوج بنموذجها الكامل — مهاراتها وساعاتها —
+          ثمّ تربط من طابور الاقتراحات. ولا تنشأ من هنا كي لا يكتب باسمه ما لم يكتبه.
         </p>
       </div>
     </div>
@@ -560,12 +560,12 @@ function CoursesStep({
 /* ═══════════ الخطوةُ الثالثة — العقد ═══════════ */
 
 const CONTRACT_STATUS_AR: Record<string, string> = {
-  draft: "مسودّة", sent: "أُرسل — بانتظار توقيعه", declined: "اعتذر عنه",
-  revoked: "أُلغي", signed: "وقّعه — بانتظار اعتمادنا",
+  draft: "مسودّة", sent: "أرسل — بانتظار توقيعه", declined: "اعتذر عنه",
+  revoked: "ألغي", signed: "وقّعه — بانتظار اعتمادنا",
   /* اعتمدنا توقيعَه ولم نوقّعه — نوقّعه باعتماد دوراته (١ أكتوبر ٢٠٢٦) */
-  signature_approved: "اعتمدنا توقيعَه — نوقّعه باعتماد دوراته",
+  signature_approved: "اعتمدنا توقيعه — نوقّعه باعتماد دوراته",
   countersigned: "نافذ — وقّعناه",
-  expired: "انقضى", terminated: "فُسخ",
+  expired: "انقضى", terminated: "فسخ",
 };
 
 function ContractStep({
@@ -595,13 +595,13 @@ function ContractStep({
       setTitle(`عقد تدريب ${new Date().getFullYear()}`);
       setDocs(Object.fromEntries(p.defaultDocuments.map((d) => [d.kind, d.required])));
       setComposing(true);
-    }, "جاهزٌ للإنشاء");
+    }, "جاهز للإنشاء");
 
   return (
     <div className="grid gap-3">
       {live.length === 0 ? (
         <p className="text-read leading-6 text-muted-foreground">
-          لا عقدَ بعد. والعقدُ يُركَّب مرّةً ويُجمَّد نصُّه، ثمّ يُرسَل رابطا يوقّع منه.
+          لا عقد بعد. والعقد يركّب مرّة ويجمّد نصّه، ثمّ يرسل رابطا يوقّع منه.
         </p>
       ) : (
         <ul className="grid gap-2">
@@ -642,7 +642,7 @@ function ContractStep({
                 <textarea
                   value={signOffNote} onChange={(e) => setSignOffNote(e.target.value)}
                   rows={2} maxLength={500} className={areaCls}
-                  placeholder="ما طابقتَه بالوثيقة — أو تفويضُك الخطّيُّ إن لم تكن المفوَّضَ في السجلّ"
+                  placeholder="ما طابقته بالوثيقة — أو تفويضك الخطّيّ إن لم تكن المفوّض في السجلّ"
                 />
                 <div className="flex flex-wrap gap-2">
                   <Button
@@ -654,14 +654,14 @@ function ContractStep({
                       setSignOff(null); setSignOffNote("");
                       await onChanged();
                     }, awaitingCountersign.gatesActivation === false
-                      ? "وقّعنا العقدَ عن الأكاديميّة فنفَذ — وتمّت الخطوةُ الثالثة"
+                      ? "وقّعنا العقد عن الأكاديميّة فنفذ — وتمّت الخطوة الثالثة"
                       /* والعرضُ المشروطُ لا ينفذ باعتماد توقيعه (١ أكتوبر ٢٠٢٦): كان
                          هنا «نفَذ العقدُ» للبابَين */
-                      : "اعتُمد توقيعُه وفُتحت بوّابتُه — ونوقّع العرضَ حين تعتمد دوراتِه")}
+                      : "اعتمد توقيعه وفتحت بوّابته — ونوقّع العرض حين تعتمد دوراته")}
                   >
-                    {awaitingCountersign.gatesActivation === false ? "اعتمِدْ ووقِّعْ عن الأكاديميّة" : "اعتمِدِ التوقيع"}
+                    {awaitingCountersign.gatesActivation === false ? "اعتمد ووقّع عن الأكاديميّة" : "اعتمد التوقيع"}
                   </Button>
-                  <Button tone="ghost" size="sm" onClick={() => setSignOff(null)}>تراجعْ</Button>
+                  <Button tone="ghost" size="sm" onClick={() => setSignOff(null)}>تراجع</Button>
                 </div>
               </div>
             ) : (
@@ -670,10 +670,10 @@ function ContractStep({
                   tone="confirm" size="sm" icon={BadgeCheck}
                   onClick={() => setSignOff(awaitingCountersign.id)}
                 >
-                  طابقتُ الاسمَ بالهويّة — اعتمِدْ توقيعَه
+                  طابقت الاسم بالهويّة — اعتمد توقيعه
                 </Button>
                 <p className="mt-1.5 text-read leading-5 text-muted-foreground">
-                  ولا يُفتح حسابُه بهذا: القبولُ الكاملُ قرارُك أنت، أسفلَ هذه الخطوات.
+                  ولا يفتح حسابه بهذا: القبول الكامل قرارك أنت، أسفل هذه الخطوات.
                 </p>
               </div>
             )
@@ -687,9 +687,9 @@ function ContractStep({
                 onClick={() => void run(async () => {
                   await apiPost(`/api/admin/trainer-contracts/${sent.id}/resend`, {});
                   await onChanged();
-                }, "جُدّد الرابطُ وأُرسل — والقديمُ مات لحظتَها")}
+                }, "جدّد الرابط وأرسل — والقديم مات لحظتها")}
               >
-                جدِّدِ الرابطَ وأعِدِ الإرسال
+                جدّد الرابط وأعد الإرسال
               </Button>
             </div>
           )}
@@ -699,14 +699,14 @@ function ContractStep({
             <div>
               <Button tone={live.length === 0 ? "confirm" : "ghost"} size="sm" icon={FileSignature}
                 loading={busy} onClick={() => void openComposer()}>
-                {live.length === 0 ? "ركِّبِ العقدَ" : "ركِّبْ عقدا جديدا"}
+                {live.length === 0 ? "ركّب العقد" : "ركّب عقدا جديدا"}
               </Button>
             </div>
           ) : prefill && (
             <Card className="bg-paper/20 p-3.5">
               {prefill.missingLegal.length > 0 && (
                 <Inset as="p" tone="warn" className="mb-3 px-3.5 py-2.5 text-read leading-6">
-                  ناقصٌ في هويّة الأكاديميّة: {prefill.missingLegal.join(" · ")} — يُستكمَل قبل الإرسال.
+                  ناقص في هويّة الأكاديميّة: {prefill.missingLegal.join(" · ")} — يستكمل قبل الإرسال.
                 </Inset>
               )}
               {/* ═══ وما يمنع الإرسالَ يُقال قبل أن تُملأ خانة (٣٠ سبتمبر ٢٠٢٦) ═══
@@ -722,20 +722,20 @@ function ContractStep({
 
               <div className="grid gap-2">
                 <label className="grid gap-1 text-read text-muted-foreground">
-                  عنوانُ العقد
+                  عنوان العقد
                   <input value={title} onChange={(e) => setTitle(e.target.value)}
                     maxLength={160} className={inputCls} />
                 </label>
 
                 <p className="text-read leading-6 text-muted-foreground">
-                  الملحقُ (أ) — الدوراتُ المؤهَّل لها يومَ الإرسال:{" "}
+                  الملحق (أ) — الدورات المؤهّل لها يوم الإرسال:{" "}
                   {prefill.courses.length === 0
-                    ? <b className="text-amber-300">لا دورةَ بعد — الملحقُ يخرج فارغا</b>
+                    ? <b className="text-amber-300">لا دورة بعد — الملحق يخرج فارغا</b>
                     : <b className="text-foreground">{prefill.courses.map((c) => c.titleAr).join(" · ")}</b>}
                 </p>
 
                 <p className="text-read leading-6 text-muted-foreground">
-                  الملحقُ (ب) — الأتعاب:{" "}
+                  الملحق (ب) — الأتعاب:{" "}
                   {prefill.compensation
                     ? (
                       <b className="text-foreground" dir="ltr">
@@ -744,7 +744,7 @@ function ContractStep({
                         {prefill.compensation.type === "revenue_share" ? "%" : prefill.compensation.currency}
                       </b>
                     )
-                    : <b className="text-amber-300">لا قاعدةَ سارية — اضبطِ الخطوةَ الأولى أوّلا</b>}
+                    : <b className="text-amber-300">لا قاعدة سارية — اضبط الخطوة الأولى أوّلا</b>}
                 </p>
 
                 {prefill.feeNotes.length > 0 && (
@@ -762,22 +762,22 @@ function ContractStep({
 
                 {!prefill.compensation && (
                   <label className="grid gap-1 text-read text-muted-foreground">
-                    ولا يُرسَل بلا أجرٍ إلّا بسببٍ مكتوب
+                    ولا يرسل بلا أجر إلّا بسبب مكتوب
                     <input value={waived} onChange={(e) => setWaived(e.target.value)}
                       maxLength={500} className={inputCls}
-                      placeholder="لمَ يُرسَل العقدُ بلا قاعدةِ أتعابٍ قائمة" />
+                      placeholder="لم يرسل العقد بلا قاعدة أتعاب قائمة" />
                   </label>
                 )}
 
                 <label className="grid gap-1 text-read text-muted-foreground">
-                  ما يُقال عن الساعات والكلفة <span className="text-muted-foreground/70">(اختياريّ)</span>
+                  ما يقال عن الساعات والكلفة <span className="text-muted-foreground/70">(اختياريّ)</span>
                   <textarea value={hoursNote} onChange={(e) => setHoursNote(e.target.value)}
                     rows={2} maxLength={500} className={areaCls} />
                 </label>
 
                 <fieldset className="grid gap-1.5">
                   <legend className="text-read text-muted-foreground">
-                    الملحقُ (ج) — ما يُطلب منه رفعُه قبل التوقيع
+                    الملحق (ج) — ما يطلب منه رفعه قبل التوقيع
                   </legend>
                   <div className="flex flex-wrap gap-x-4 gap-y-1.5">
                     {prefill.documentKinds.map((k) => (
@@ -812,12 +812,12 @@ function ContractStep({
                       setComposing(false);
                       setPrefill(null);
                       await onChanged();
-                    }, "أُنشئ العقدُ وأُرسل — يوقّع من رابطه")}
+                    }, "أنشئ العقد وأرسل — يوقّع من رابطه")}
                   >
-                    ركِّبْ وأرسِلْ
+                    ركّب وأرسل
                   </Button>
                   <Button tone="ghost" size="sm" onClick={() => { setComposing(false); setPrefill(null); }}>
-                    تراجعْ
+                    تراجع
                   </Button>
                 </div>
               </div>
@@ -866,12 +866,12 @@ export default function PreparationSteps({
   if (!profileId) {
     return (
       <Panel as="section" tone="warn">
-        <h4 className="text-sm font-black text-foreground">لم يبدأ تجهيزُه بعد</h4>
+        <h4 className="text-sm font-black text-foreground">لم يبدأ تجهيزه بعد</h4>
         <p className="mt-2 text-read leading-7 text-muted-foreground">
-          التجهيزُ يبدأ بـ<b className="text-foreground">«اقبَلْه داخليّا»</b> في شريط القرار أعلاه:
-          يُفتح له ملفُّ مدرّبٍ، وتُبذَر مؤهّلاتُه ممّا ذكره في طلبه، فتُضبط أتعابُه
-          وتُصنَّف دوراتُه ويُركَّب عقدُه — <b className="text-foreground">ولا يصله خبرُ قبولٍ بعد</b>.
-          والقبولُ الكاملُ بعد أن تتمّ الثلاث.
+          التجهيز يبدأ بـ<b className="text-foreground">«اقبله داخليّا»</b> في شريط القرار أعلاه:
+          يفتح له ملفّ مدرّب، وتبذر مؤهّلاته ممّا ذكره في طلبه، فتضبط أتعابه
+          وتصنّف دوراته ويركّب عقده — <b className="text-foreground">ولا يصله خبر قبول بعد</b>.
+          والقبول الكامل بعد أن تتمّ الثلاث.
         </p>
       </Panel>
     );
@@ -881,12 +881,12 @@ export default function PreparationSteps({
     <div className="grid gap-3">
       <Panel as="section" tone="accent">
         <h4 className="flex items-center gap-2 text-sm font-black text-foreground">
-          <CircleDashed className="h-4 w-4" aria-hidden="true" /> تجهيزُه قبل القبول الكامل
+          <CircleDashed className="h-4 w-4" aria-hidden="true" /> تجهيزه قبل القبول الكامل
         </h4>
         <p className="mt-2 text-read leading-7 text-muted-foreground">
-          ثلاثُ خطواتٍ تُعمل من هنا ولا تُجمع من شاشاتٍ أخرى. وحين تتمّ الثلاثُ يُفتح
-          زرُّ <b className="text-foreground">«اعتمِدْه نهائيّا»</b> في شريط القرار — وعندها وحدَها
-          يصله خبرُ اعتماده وتُفتح بوّابتُه.
+          ثلاث خطوات تعمل من هنا ولا تجمع من شاشات أخرى. وحين تتمّ الثلاث يفتح
+          زرّ <b className="text-foreground">«اعتمده نهائيّا»</b> في شريط القرار — وعندها وحدها
+          يصله خبر اعتماده وتفتح بوّابته.
         </p>
         {readiness && (
           <ol className="mt-3 grid gap-1.5">

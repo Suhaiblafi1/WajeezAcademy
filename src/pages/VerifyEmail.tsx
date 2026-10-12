@@ -42,7 +42,7 @@ export default function VerifyEmail() {
         {state.kind === "working" && (
           <>
             <Loader2 className="mx-auto h-10 w-10 animate-spin text-teal-light-ink" />
-            <p className="mt-5 text-sm text-muted-foreground">يُوثَّق بريدك…</p>
+            <p className="mt-5 text-sm text-muted-foreground">يوثّق بريدك…</p>
           </>
         )}
 
@@ -70,7 +70,7 @@ export default function VerifyEmail() {
             <h1 className="mt-5 text-2xl font-black">تعذّر توثيق البريد</h1>
             <p className="mt-3 text-sm leading-7 text-muted-foreground">{state.message}</p>
             <p className="mt-3 text-read leading-6 text-muted-foreground">
-              الروابط تنتهي بعد ٤٨ ساعة، وتُستهلك بعد أوّل فتح. اطلب رابطا جديدا من صفحة حسابك.
+              الروابط تنتهي بعد ٤٨ ساعة، وتستهلك بعد أوّل فتح. اطلب رابطا جديدا من صفحة حسابك.
             </p>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
               <Link to="/student/account" className="rounded-full bg-teal px-6 py-3 font-black text-on-teal hover:bg-teal-light">

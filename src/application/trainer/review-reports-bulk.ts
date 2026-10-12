@@ -62,7 +62,7 @@ export function matchReportFile(
 ): ReportMatch {
   const mime = reportMime(name, type)
   if (mime !== 'application/pdf' && mime !== DOCX) {
-    return { name, ok: false, problemAr: 'لا يُقبل إلّا PDF أو Word' }
+    return { name, ok: false, problemAr: 'لا يقبل إلّا PDF أو Word' }
   }
   const ids = [...new Set((name.match(UUID) ?? []).map((x) => x.toLowerCase()))]
   if (ids.length === 0) {
@@ -71,14 +71,14 @@ export function matchReportFile(
       return { name, ok: true, planId: named[0].id, labelAr: named[0].labelAr, mime, storedName: reportDisplayName(name) }
     }
     if (named.length > 1) {
-      return { name, ok: false, problemAr: `يصدق اسمُه على ${named.length} خطط — زِد فيه رقمَ الشعبة كما في القائمة، أو ارفعه من بطاقة خطّته` }
+      return { name, ok: false, problemAr: `يصدق اسمه على ${named.length} خطط — زد فيه رقم الشعبة كما في القائمة، أو ارفعه من بطاقة خطّته` }
     }
-    return { name, ok: false, problemAr: 'لا يذكر اسمُ الملفّ خطّةً في القائمة — سمِّه باسم المدرّب واسم الشعبة كما في القائمة، أو ارفعه من بطاقة خطّته' }
+    return { name, ok: false, problemAr: 'لا يذكر اسم الملفّ خطّة في القائمة — سمّه باسم المدرّب واسم الشعبة كما في القائمة، أو ارفعه من بطاقة خطّته' }
   }
-  if (ids.length > 1) return { name, ok: false, problemAr: 'في اسم الملفّ أكثرُ من خطّة — ارفعه من بطاقة خطّته' }
+  if (ids.length > 1) return { name, ok: false, problemAr: 'في اسم الملفّ أكثر من خطّة — ارفعه من بطاقة خطّته' }
   const plan = plans.find((p) => p.id.toLowerCase() === ids[0])
   if (!plan) {
-    return { name, ok: false, problemAr: 'خطّتُه ليست في القائمة المعروضة الآن (قرّرتَ فيها، أو القائمةُ مصفّاةٌ بمدرّب) — ارفعه من بطاقة خطّته' }
+    return { name, ok: false, problemAr: 'خطّته ليست في القائمة المعروضة الآن (قرّرت فيها، أو القائمة مصفّاة بمدرّب) — ارفعه من بطاقة خطّته' }
   }
   return { name, ok: true, planId: plan.id, labelAr: plan.labelAr, mime, storedName: reportDisplayName(name) }
 }
@@ -98,10 +98,10 @@ export function reportDisplayName(name: string): string {
 
 /** خلاصةُ الدفعة — كم رُفع، وكم كان مرفوعا من قبل، وكم رُدّ */
 export function reportsSummaryAr(done: number, already: number, failed: number): string {
-  const parts = [`رُفع ${done}`]
-  if (already > 0) parts.push(`وكان ${already} مرفوعا من قبل فلم يُكرَّر`)
-  if (failed > 0) parts.push(`ورُدّ ${failed} بسببه أدناه`)
-  const tail = failed === 0 ? ' — يراها كلُّ مدرّبٍ في صفحة شعبته من الآن، وتذكرها رسالةُ قرارك.' : '.'
+  const parts = [`رفع ${done}`]
+  if (already > 0) parts.push(`وكان ${already} مرفوعا من قبل فلم يكرّر`)
+  if (failed > 0) parts.push(`وردّ ${failed} بسببه أدناه`)
+  const tail = failed === 0 ? ' — يراها كلّ مدرّب في صفحة شعبته من الآن، وتذكرها رسالة قرارك.' : '.'
   return parts.join('، ') + tail
 }
 

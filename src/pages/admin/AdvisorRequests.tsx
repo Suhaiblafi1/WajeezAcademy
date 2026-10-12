@@ -49,7 +49,7 @@ const KIND_AR: Record<string, string> = {
 };
 
 /* «١ طلبٌ» و«٢ طلبان» و«٣ طلبات» و«١١ طلبا» — والعددُ يُقرأ لا يُحسب */
-const REQ_FORMS = { one: "طلبٌ", two: "طلبان", few: "طلبات", many: "طلبا" };
+const REQ_FORMS = { one: "طلب", two: "طلبان", few: "طلبات", many: "طلبا" };
 
 /** أقلُّ سببٍ يُقرأ — مطابقٌ لما يفرضه الخادم */
 const MIN_REASON = 12;
@@ -88,7 +88,7 @@ export default function AdvisorRequests() {
     setBusy(id);
     try {
       await apiPost(`/api/admin/advisor-requests/${id}/decision`, { decision, noteAr: note[id]?.trim() || undefined });
-      toast(decision === "approved" ? "اعتُمد الطلب — ووُلّد كوبونٌ مقصور على العميل إن كان خصما" : "رُفض الطلب، ويصل سببُك إلى المستشار");
+      toast(decision === "approved" ? "اعتمد الطلب — وولّد كوبون مقصور على العميل إن كان خصما" : "رفض الطلب، ويصل سببك إلى المستشار");
       await load();
     } catch (e) {
       toastError(e instanceof ApiError ? e.message : "تعذّر تنفيذ القرار");
@@ -110,7 +110,7 @@ export default function AdvisorRequests() {
   }
 
   return (
-    <AdminLayout title="طلبات المستشارين — خصمٌ وتعديلُ خطّة">
+    <AdminLayout title="طلبات المستشارين — خصم وتعديل خطّة">
 
       {/* ── العملُ قبل القائمة ──
 
@@ -125,19 +125,19 @@ export default function AdvisorRequests() {
         icon={BadgePercent}
         count={rows?.length ?? 0}
         forms={REQ_FORMS}
-        waitingAr="تنتظر قرارَك"
+        waitingAr="تنتظر قرارك"
         stats={rows ? [
           `${rows.filter((r) => r.kind === "discount").length} خصما على فاتورة`,
-          `${rows.filter((r) => r.kind !== "discount").length} تعديلَ خطّة`,
+          `${rows.filter((r) => r.kind !== "discount").length} تعديل خطّة`,
         ] : []}
         actionAr="ابدأ بأقدمها"
         /* الطابورُ أقدمُه أوّلا كما يردّه الخادم — فأوّلُ المعروض أقدمُ ما
            لم يُبتّ فيه. والبحثُ قد يُخفيه، فيُقال السببُ ولا يبهت الزرُّ صامتا. */
         disabledReasonAr={rows && rows.length > 0 && view.total === 0
-          ? "البحثُ الحاليُّ لا يُظهر منها شيئا — امسحه لتبدأ."
+          ? "البحث الحاليّ لا يظهر منها شيئا — امسحه لتبدأ."
           : undefined}
         onAction={() => { if (view.rows[0]) revealRow(`advisor-req-${view.rows[0].id}`); }}
-        doneAr="لا طلبَ ينتظر قرارَك — وحين يطلب مستشارٌ خصما لعميله أو تعديلا على خطّته يظهر هنا بسببه كاملا."
+        doneAr="لا طلب ينتظر قرارك — وحين يطلب مستشار خصما لعميله أو تعديلا على خطّته يظهر هنا بسببه كاملا."
       />
 
       {rows !== null && rows.length > 0 && (
@@ -147,7 +147,7 @@ export default function AdvisorRequests() {
         {view.rows.length === 0 ? (
           /* «لا نتائج» غيرُ «لا طلبات»: الأولى تُمسح كلمتُها، والثانية تُنتظر */
           <Panel as="p" className="py-12 text-center text-sm text-muted-foreground">
-            لا طلبَ يطابق بحثَك — امسح الكلمة أو جرّب غيرها.
+            لا طلب يطابق بحثك — امسح الكلمة أو جرّب غيرها.
           </Panel>
         ) : (
         <ul className="space-y-4">
@@ -178,12 +178,12 @@ export default function AdvisorRequests() {
                 </div>
 
                 <Inset as="p" className="mt-3 px-4 py-3 text-read leading-7 text-foreground">
-                  <span className="font-bold text-muted-foreground">سببُه: </span>{r.reasonAr}
+                  <span className="font-bold text-muted-foreground">سببه: </span>{r.reasonAr}
                 </Inset>
 
                 <div className="mt-3">
                   <label htmlFor={`note-${r.id}`} className="mb-1.5 block text-fine font-bold text-muted-foreground">
-                    ردُّك — إلزاميٌّ عند الرفض، يقرؤه المستشار
+                    ردّك — إلزاميّ عند الرفض، يقرؤه المستشار
                   </label>
                   <textarea
                     id={`note-${r.id}`} rows={2} value={reason}
@@ -203,7 +203,7 @@ export default function AdvisorRequests() {
                     <XCircle className="h-3.5 w-3.5" /> ارفض
                   </Button>
                   {reason.trim().length < MIN_REASON && (
-                    <span className="text-fine text-muted-foreground">الرفض يلزمه سببٌ لا يقلّ عن {MIN_REASON} حرفا</span>
+                    <span className="text-fine text-muted-foreground">الرفض يلزمه سبب لا يقلّ عن {MIN_REASON} حرفا</span>
                   )}
                 </div>
               </Panel>

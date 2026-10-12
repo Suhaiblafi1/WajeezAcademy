@@ -57,7 +57,7 @@ export default function DiagnosticFunnel() {
       </div>
 
       {rows === null ? (
-        <p className="mt-6 text-sm text-muted-foreground">يُحسب من أحداث الرحلة…</p>
+        <p className="mt-6 text-sm text-muted-foreground">يحسب من أحداث الرحلة…</p>
       ) : started === 0 ? (
         <p className="mt-6 text-sm text-muted-foreground">
           لا أحداث بعد. تظهر المراحل هنا حين يبدأ أول متعلم التشخيص.

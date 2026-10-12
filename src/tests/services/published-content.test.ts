@@ -52,7 +52,7 @@ describe('جلب المحتوى العام: الفراغ ليس جوابا', () 
   beforeEach(() => vi.unstubAllGlobals())
   afterEach(() => vi.unstubAllGlobals())
 
-  it('ردٌّ فارغ من الخادم لا يمحو الكتالوج المعروض', async () => {
+  it('ردّ فارغ من الخادم لا يمحو الكتالوج المعروض', async () => {
     const { source, content } = await freshModules()
     const before = source.getCoreCatalogRaw().launch_pathways.length
     expect(before).toBeGreaterThan(0) // مضاد للفراغ: الاختبار بلا معنى إن بدأ فارغا
@@ -65,7 +65,7 @@ describe('جلب المحتوى العام: الفراغ ليس جوابا', () 
     expect(source.getCoreCatalogRaw().courses.length).toBeGreaterThan(0)
   })
 
-  it('ردٌّ بمسارات وبلا دورات لا يُقبل كذلك', async () => {
+  it('ردّ بمسارات وبلا دورات لا يقبل كذلك', async () => {
     const { source, content } = await freshModules()
     const before = source.getCoreCatalogRaw().courses.length
 
@@ -76,7 +76,7 @@ describe('جلب المحتوى العام: الفراغ ليس جوابا', () 
     expect(source.getCoreCatalogRaw().launch_pathways.some((p) => p.id === 'PW-TEST-001')).toBe(false)
   })
 
-  it('ردٌّ مكتمل يُثبَّت ويستبدل المضمن — الحارس لا يمنع الحالة السليمة', async () => {
+  it('ردّ مكتمل يثبّت ويستبدل المضمن — الحارس لا يمنع الحالة السليمة', async () => {
     const { source, content } = await freshModules()
 
     mockApi(FULL_REPLY)
@@ -86,7 +86,7 @@ describe('جلب المحتوى العام: الفراغ ليس جوابا', () 
     expect(source.getCoreCatalogRaw().launch_pathways[0].id).toBe('PW-TEST-001')
   })
 
-  it('تعذّر الجلب يُبقي الكتالوج قائما عبر الاحتياطي المضمن', async () => {
+  it('تعذّر الجلب يبقي الكتالوج قائما عبر الاحتياطي المضمن', async () => {
     const { source, content } = await freshModules()
 
     vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('شبكة') }))
@@ -101,7 +101,7 @@ describe('جلب المحتوى العام: الفراغ ليس جوابا', () 
 describe('أثر الفراغ على الصفحة الرئيسية', () => {
   afterEach(() => vi.unstubAllGlobals())
 
-  it('مختارات وجيز تُحلّ كلها مقابل الكتالوج المضمن', async () => {
+  it('مختارات وجيز تحلّ كلها مقابل الكتالوج المضمن', async () => {
     vi.resetModules()
     const source = await import('../../data/core-catalog-source')
     const bundled = (await import('../../data/catalog/core-catalog.v2.json')).default

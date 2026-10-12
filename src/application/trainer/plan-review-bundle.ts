@@ -78,7 +78,7 @@ const STEP_AR: Record<WorkspaceStep, string> = { ...STAGE_LABELS, approval: 'ا�
 /** ما قاله المدرّبُ في كرّاسته (`cohort-workbooks.ts`) — بكلمات «المراجعة» نفسِها */
 const MATERIAL_AR: Record<WorkbookMaterial, string> = {
   template: 'على قالب وجيز',
-  own: 'مادّةُ المدرّب الجاهزة — ليست على القالب',
+  own: 'مادّة المدرّب الجاهزة — ليست على القالب',
 }
 const materialAr = (m: WorkbookMaterial | null) => (m ? MATERIAL_AR[m] : 'لم يقل أعلى القالب هي')
 
@@ -207,9 +207,9 @@ export function reviewMarkdown(input: ReviewBundleInput, files: readonly BundleF
     const k = text(key)
     if (!k) return ''
     const why = skipped.get(k)
-    if (why) return `ملفٌّ مرفوع لم يدخل الحزمة (${why})`
+    if (why) return `ملفّ مرفوع لم يدخل الحزمة (${why})`
     const p = pathOf.get(k)
-    return p ? `ملفٌّ مرفوع: \`${p}\`` : 'ملفٌّ مرفوع'
+    return p ? `ملفّ مرفوع: \`${p}\`` : 'ملفّ مرفوع'
   }
   const sessionById = new Map(input.sessions.map((s) => [s.id, s]))
   const taskById = new Map(input.assessments.map((a) => [a.id, a]))
@@ -222,9 +222,9 @@ export function reviewMarkdown(input: ReviewBundleInput, files: readonly BundleF
   if (input.courseTitle && input.courseTitle !== input.cohortTitle) line(`- **الدورة في الكتالوج:** ${input.courseTitle}`)
   line(`- **المدرّب:** ${input.trainerName ?? '—'}`)
   line(`- **حالة الخطة:** ${PLAN_AR[input.status] ?? input.status}`)
-  if (input.submittedAt) line(`- **أُرسلت للاعتماد:** ${whenAr(input.submittedAt)}`)
-  line(`- **نُزّلت للمراجعة:** ${whenAr(now)}`)
-  line('- الأوقاتُ كلُّها بتوقيت عمّان.')
+  if (input.submittedAt) line(`- **أرسلت للاعتماد:** ${whenAr(input.submittedAt)}`)
+  line(`- **نزّلت للمراجعة:** ${whenAr(now)}`)
+  line('- الأوقات كلّها بتوقيت عمّان.')
   line()
 
   /* ═══ حقائقُ المراجعة ═══ */
@@ -242,7 +242,7 @@ export function reviewMarkdown(input: ReviewBundleInput, files: readonly BundleF
   const count = (st: ScoreItem['status']) => card.filter((i) => i.status === st).length
   line('## بطاقة المعايير')
   line()
-  line(`${STATUS_MARK.blocked} مطلوبٌ يمنع الإرسال: ${count('blocked')} · ${STATUS_MARK.advice} نصيحة: ${count('advice')} · ${STATUS_MARK.ok} تحقّق: ${count('ok')}`)
+  line(`${STATUS_MARK.blocked} مطلوب يمنع الإرسال: ${count('blocked')} · ${STATUS_MARK.advice} نصيحة: ${count('advice')} · ${STATUS_MARK.ok} تحقّق: ${count('ok')}`)
   for (const step of WORKSPACE_STEPS) {
     const own = card.filter((i) => i.step === step)
     if (own.length === 0) continue
@@ -250,7 +250,7 @@ export function reviewMarkdown(input: ReviewBundleInput, files: readonly BundleF
     line(`### ${step in STAGE_LABELS ? STAGE_LABELS[step as keyof typeof STAGE_LABELS] : step}`)
     line()
     for (const i of own) {
-      line(`- ${STATUS_MARK[i.status]} **${i.labelAr}**${i.required ? ' (مُلزِم)' : ''}: ${i.measuredAr} — المعيار: ${i.standardAr}`)
+      line(`- ${STATUS_MARK[i.status]} **${i.labelAr}**${i.required ? ' (ملزم)' : ''}: ${i.measuredAr} — المعيار: ${i.standardAr}`)
       for (const g of i.gaps) line(`  - ${g}`)
     }
   }
@@ -267,25 +267,25 @@ export function reviewMarkdown(input: ReviewBundleInput, files: readonly BundleF
   line('## الكراسة')
   line()
   if (view.workbookMode === 'modules') {
-    line('- **الطريقة:** كرّاسةٌ لكلّ محورٍ أو لمحاورَ متجاورة')
+    line('- **الطريقة:** كرّاسة لكلّ محور أو لمحاور متجاورة')
     for (const w of view.moduleWorkbooks) {
       const parts = w.done
         ? [w.title, w.fileKey ? fileRef(w.fileKey) : null, w.url, materialAr(w.material)].filter(Boolean)
-        : ['لم تُوضع بعد']
+        : ['لم توضع بعد']
       line(`- **${w.label}:** ${parts.join(' · ')}`)
     }
   } else if (view.workbook) {
-    line('- **الطريقة:** كرّاسةٌ واحدةٌ للدورة')
+    line('- **الطريقة:** كرّاسة واحدة للدورة')
     if (view.workbook.title) line(`- **اسمها:** ${view.workbook.title}`)
     if (view.workbook.fileKey) line(`- ${fileRef(view.workbook.fileKey)}`)
     if (view.workbook.url) line(`- **رابطها:** ${view.workbook.url}`)
     line(`- **شكلها:** ${materialAr(view.workbook.material)}`)
     const where = view.groups.flatMap((g) => g.axes).filter((a) => a.workbookWhere)
-    if (where.length) line(`- **أين يبدأ كلُّ محور فيها:** ${where.map((a) => `المحور ${a.n}: ${a.workbookWhere}`).join(' · ')}`)
+    if (where.length) line(`- **أين يبدأ كلّ محور فيها:** ${where.map((a) => `المحور ${a.n}: ${a.workbookWhere}`).join(' · ')}`)
   } else if (view.groups.some((g) => g.workbook)) {
-    line('- كرّاسةٌ لكلّ موعد (خطّةٌ أُرسلت قبل الكرّاسة الواحدة) — مذكورةٌ في مواعيدها أدناه.')
+    line('- كرّاسة لكلّ موعد (خطّة أرسلت قبل الكرّاسة الواحدة) — مذكورة في مواعيدها أدناه.')
   } else {
-    line('- لم تُوضع بعد.')
+    line('- لم توضع بعد.')
   }
   line()
 
@@ -299,7 +299,7 @@ export function reviewMarkdown(input: ReviewBundleInput, files: readonly BundleF
     for (const a of g.axes) {
       line(`#### المحور ${a.n}: ${a.title}`)
       line()
-      line(`- **مخرَج المحور:** ${a.outcome ?? '—'}`)
+      line(`- **مخرج المحور:** ${a.outcome ?? '—'}`)
       line(`- **التطبيق العملي:** ${a.activity ?? '—'}`)
       line(`- **ما يسلّمه المتعلّم:** ${a.artifact ?? '—'}`)
       if (a.workbookWhere) line(`- **موضعه في الكراسة:** ${a.workbookWhere}`)
@@ -349,7 +349,7 @@ export function reviewMarkdown(input: ReviewBundleInput, files: readonly BundleF
     const site = input.links.siteUrl.replace(/\/+$/, '')
     line('## روابط خطوات المدرّب')
     line()
-    line('يفتح كلٌّ منها خطّةَ الشعبة على خطوته — حين تكون الخطّةُ في يد المدرّب (رُدّت إليه بتعديلات).')
+    line('يفتح كلّ منها خطّة الشعبة على خطوته — حين تكون الخطّة في يد المدرّب (ردّت إليه بتعديلات).')
     line()
     for (const step of WORKSPACE_STEPS) line(`- **${STEP_AR[step]}:** ${site}${workspaceStepPath(input.links.cohortId, step)}`)
     line()
@@ -357,7 +357,7 @@ export function reviewMarkdown(input: ReviewBundleInput, files: readonly BundleF
 
   line('## ملفات هذه الحزمة')
   line()
-  if (files.length === 0) line('- لم يرفع المدرّبُ ملفّا في هذه الخطة — ما فيها روابطُ ونصوص.')
+  if (files.length === 0) line('- لم يرفع المدرّب ملفّا في هذه الخطة — ما فيها روابط ونصوص.')
   for (const f of files) {
     const why = skipped.get(f.key)
     line(why ? `- ~~${f.path}~~ — لم يدخل: ${why}` : `- \`${f.path}\``)
@@ -371,7 +371,7 @@ export function reviewMarkdown(input: ReviewBundleInput, files: readonly BundleF
       line()
       for (const m of list) {
         const s = sessionById.get(m.id)
-        const state = m.state === 'approved' ? 'معتمَد' : m.state === 'held' ? 'انعقد' : 'بانتظار الاعتماد'
+        const state = m.state === 'approved' ? 'معتمد' : m.state === 'held' ? 'انعقد' : 'بانتظار الاعتماد'
         const parts = [
           `**${m.title}**`,
           meetingWhen(m.startsAt, m.endsAt),
@@ -388,7 +388,7 @@ export function reviewMarkdown(input: ReviewBundleInput, files: readonly BundleF
       line('**الجلسات المسجّلة:**')
       line()
       for (const r of recordings) {
-        line(`- **${r.title}**${r.url ? ` · ${r.url}` : ''}${r.opensAt ? ` · تُفتح ${whenAr(r.opensAt)}` : ' · تُفتح مع أول يوم'}`)
+        line(`- **${r.title}**${r.url ? ` · ${r.url}` : ''}${r.opensAt ? ` · تفتح ${whenAr(r.opensAt)}` : ' · تفتح مع أول يوم'}`)
       }
       line()
     }
@@ -405,7 +405,7 @@ export function reviewMarkdown(input: ReviewBundleInput, files: readonly BundleF
         `**[${TASK_TYPE_AR[t.type] ?? t.type}] ${t.title}**`,
         t.dueAt ? `آخر موعدها ${whenAr(t.dueAt)}` : 'بلا آخر موعد',
         v && v.maxScore > 0 ? `الدرجة العظمى ${v.maxScore}` : null,
-        t.review === 'new' ? 'جديدة — تنتظر الاعتماد' : t.review === 'edit' ? 'معدَّلة — تنتظر الاعتماد' : t.review === 'remove' ? 'تُحذف باعتمادها' : null,
+        t.review === 'new' ? 'جديدة — تنتظر الاعتماد' : t.review === 'edit' ? 'معدّلة — تنتظر الاعتماد' : t.review === 'remove' ? 'تحذف باعتمادها' : null,
       ].filter(Boolean)
       line(`- ${head.join(' · ')}`)
       if (t.briefAr) {
@@ -432,7 +432,7 @@ export function reviewMarkdown(input: ReviewBundleInput, files: readonly BundleF
         `**[${KIND_AR[resourceKind(r.kind)]}] ${r.title}**`,
         r.url,
         r.fileKey ? fileRef(r.fileKey) : null,
-        r.preReading ? 'قراءةٌ مسبقة' : null,
+        r.preReading ? 'قراءة مسبقة' : null,
       ].filter(Boolean)
       line(`- ${parts.join(' · ')}`)
       if (r.noteAr) line(`  - ملاحظة: ${r.noteAr.replace(/\s*\n\s*/g, ' ')}`)
@@ -450,7 +450,7 @@ function facts(view: CurriculumView, input: ReviewBundleInput): string[] {
     const weeks = Math.round(days / 7)
     out.push(`**مدة الشعبة:** من ${cohortDayAr(p.startsOn)} إلى ${cohortDayAr(p.endsOn)} — ${days} يوما${weeks >= 1 ? ` (نحو ${weeksAr(weeks)})` : ''}`)
   } else {
-    out.push('**مدة الشعبة:** لم تُحدَّد بعد')
+    out.push('**مدة الشعبة:** لم تحدّد بعد')
   }
   if (view.levelAr) out.push(`**المستوى:** ${view.levelAr}`)
   if (view.audienceAr.stages) out.push(`**لمن:** ${view.audienceAr.stages}`)
@@ -467,7 +467,7 @@ function facts(view: CurriculumView, input: ReviewBundleInput): string[] {
     out.push(`**أول لقاء مباشر:** ${whenAr(meetings[0]!.startsAt)}`)
     out.push(`**آخر لقاء مباشر:** ${whenAr(last.startsAt)}`)
   } else {
-    out.push('**اللقاءات المباشرة:** لا لقاءَ مجدولا بعد')
+    out.push('**اللقاءات المباشرة:** لا لقاء مجدولا بعد')
   }
   if (view.counts.recordings) out.push(`**الجلسات المسجّلة:** ${view.counts.recordings}`)
 
@@ -486,14 +486,14 @@ function facts(view: CurriculumView, input: ReviewBundleInput): string[] {
     const own = done.filter((w) => w.material === 'own').length
     const unsaid = done.filter((w) => w.material === null).length
     out.push(`**الكراسة:** لكلّ محور — ${done.length} من ${view.moduleWorkbooks.length} موضوعة`
-      + `${own ? ` · ${own} مادّةُ المدرّب الجاهزة لا على القالب` : ''}${unsaid ? ` · ${unsaid} لم يقل أعلى القالب هي` : ''}`)
+      + `${own ? ` · ${own} مادّة المدرّب الجاهزة لا على القالب` : ''}${unsaid ? ` · ${unsaid} لم يقل أعلى القالب هي` : ''}`)
   } else {
     out.push(`**الكراسة:** ${view.workbook
-      ? `واحدةٌ للدورة — ${view.workbook.fileKey ? 'ملفٌّ مرفوع' : 'رابط'} · ${materialAr(view.workbook.material)}`
-      : 'لم تُوضع'}`)
+      ? `واحدة للدورة — ${view.workbook.fileKey ? 'ملفّ مرفوع' : 'رابط'} · ${materialAr(view.workbook.material)}`
+      : 'لم توضع'}`)
   }
 
   const w = cohortWindow(p)
-  if (w) out.push(`**يبقى للمتعلّم أن يقرأ موادَّها حتى:** ${cohortDayAr(w.accessEndsAt)} (ستة أشهر بعد انتهائها — ولا تسليمَ بعد انتهائها)`)
+  if (w) out.push(`**يبقى للمتعلّم أن يقرأ موادّها حتى:** ${cohortDayAr(w.accessEndsAt)} (ستة أشهر بعد انتهائها — ولا تسليم بعد انتهائها)`)
   return out
 }

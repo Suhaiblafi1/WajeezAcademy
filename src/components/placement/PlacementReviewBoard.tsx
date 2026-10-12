@@ -39,7 +39,7 @@ interface ReviewList {
 }
 
 const SKILL_AR: Record<ReviewItem["skill"], string> = {
-  grammar: "قواعد", vocabulary: "مفردات", reading: "قراءة", knowledge: "معرفةٌ وتطبيق",
+  grammar: "قواعد", vocabulary: "مفردات", reading: "قراءة", knowledge: "معرفة وتطبيق",
 };
 
 /* الموضوعات: الإنجليزيّةُ وفحوصُ المجالات الأربعة (٨ أكتوبر ٢٠٢٦). والإنجليزيّةُ تُراجَع
@@ -53,8 +53,8 @@ const levelLabel = (subject: string, level: string) =>
 
 const TABS = [
   { id: "draft", label: "تنتظر المراجعة" },
-  { id: "approved", label: "معتمَدة" },
-  { id: "retired", label: "مُسقَطة" },
+  { id: "approved", label: "معتمدة" },
+  { id: "retired", label: "مسقطة" },
 ];
 
 interface Draft {
@@ -100,7 +100,7 @@ export default function PlacementReviewBoard() {
     try {
       const note = notes[id]?.trim();
       await apiPost(`/api/placement/${subject}/review/${id}/decide`, { approve, ...(note ? { note } : {}) });
-      toast(approve ? "اعتُمد السؤال — صار في الاختبار" : "أُسقط السؤال — خرج من الاختبار ويُعاد متى شئت");
+      toast(approve ? "اعتمد السؤال — صار في الاختبار" : "أسقط السؤال — خرج من الاختبار ويعاد متى شئت");
       await load();
     } catch (e) {
       toastError(e instanceof ApiError ? e.message : "تعذّر تنفيذ القرار");
@@ -124,7 +124,7 @@ export default function PlacementReviewBoard() {
         answerIndex: draft.answer,
         ...(i.skill === "reading" ? { passage: draft.passage } : {}),
       });
-      toast("حُفظ التعديل — وحالُ السؤال كما كانت");
+      toast("حفظ التعديل — وحال السؤال كما كانت");
       setEditing(null);
       setDraft(null);
       await load();
@@ -160,28 +160,28 @@ export default function PlacementReviewBoard() {
       <Card tone={data.open ? "positive" : "accent"} className="mb-5">
         <p className="text-read leading-7 text-foreground">
           {data.open
-            ? "الاختبارُ مفتوحٌ للمتعلّمين: لكلّ مستوى أسئلتُه المعتمدة. وما تعتمده أو تُسقطه بعد الآن يغيّر الاختبارَ فورا."
-            : `الاختبارُ مغلقٌ عن المتعلّمين حتّى يكون لكلّ مستوى ${MIN_APPROVED_PER_LEVEL} أسئلةٍ معتمدةٍ على الأقلّ. ومن يطلبه قبل ذلك يُسجَّل بمستواه الموصوف.`}
+            ? "الاختبار مفتوح للمتعلّمين: لكلّ مستوى أسئلته المعتمدة. وما تعتمده أو تسقطه بعد الآن يغيّر الاختبار فورا."
+            : `الاختبار مغلق عن المتعلّمين حتّى يكون لكلّ مستوى ${MIN_APPROVED_PER_LEVEL} أسئلة معتمدة على الأقلّ. ومن يطلبه قبل ذلك يسجّل بمستواه الموصوف.`}
         </p>
         <ul className="mt-3 flex flex-wrap gap-2">
           {data.per_level.map((l) => (
             <li key={l.level}>
               <Inset className={`px-3 py-1 text-fine font-bold ${l.approved >= MIN_APPROVED_PER_LEVEL ? "text-teal-light-ink" : "text-muted-foreground"}`}>
-                <span dir={dir}>{levelLabel(subject, l.level)}</span> · {l.approved} معتمَد من {l.total}
+                <span dir={dir}>{levelLabel(subject, l.level)}</span> · {l.approved} معتمد من {l.total}
               </Inset>
             </li>
           ))}
         </ul>
         <p className="mt-3 text-read leading-6 text-muted-foreground">
-          «اعتمده» يُدخله الاختبار · «عدّله» يغيّر نصَّه ويُبقي حالَه · «أسقطه» يُخرجه من الاختبار ويبقى هنا تعيده متى شئت.
+          «اعتمده» يدخله الاختبار · «عدّله» يغيّر نصّه ويبقي حاله · «أسقطه» يخرجه من الاختبار ويبقى هنا تعيده متى شئت.
         </p>
       </Card>
 
-      <TabBar className="mb-5" ariaLabel="حالُ الأسئلة" value={status} onChange={setStatus}
+      <TabBar className="mb-5" ariaLabel="حال الأسئلة" value={status} onChange={setStatus}
         items={TABS.map((t) => ({ id: t.id, label: `${t.label} (${data.items.filter((i) => i.status === t.id).length})` }))} />
 
       {rows.length === 0 ? (
-        <Card as="p" className="px-5 py-10 text-center text-sm text-muted-foreground">لا أسئلةَ في هذه الحالة.</Card>
+        <Card as="p" className="px-5 py-10 text-center text-sm text-muted-foreground">لا أسئلة في هذه الحالة.</Card>
       ) : (
         <ul className="space-y-3">
           {rows.map((i) => (
@@ -230,11 +230,11 @@ export default function PlacementReviewBoard() {
                 </div>
               )}
 
-              {i.review_note_ar && <p className="mt-2 text-read text-muted-foreground">ملاحظةُ المراجعة: {i.review_note_ar}</p>}
+              {i.review_note_ar && <p className="mt-2 text-read text-muted-foreground">ملاحظة المراجعة: {i.review_note_ar}</p>}
 
               {editing !== i.id && (
                 <div className="mt-4 space-y-2">
-                  <Inset as="input" value={notes[i.id] ?? ""} placeholder="ملاحظةٌ مع القرار (اختياريّة)" aria-label="ملاحظةٌ مع القرار"
+                  <Inset as="input" value={notes[i.id] ?? ""} placeholder="ملاحظة مع القرار (اختياريّة)" aria-label="ملاحظة مع القرار"
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNotes({ ...notes, [i.id]: e.target.value })}
                     className="w-full p-2 text-read text-foreground" />
                   <div className="flex flex-wrap gap-2">

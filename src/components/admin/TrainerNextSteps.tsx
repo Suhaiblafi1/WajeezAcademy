@@ -58,17 +58,17 @@ export default function TrainerNextSteps({ cohortId }: { cohortId: string }) {
 
   const openCohort = async (c: NextSteps["cohorts"][number]) => {
     const n = Number((capacity[c.id] ?? String(c.capacity ?? steps.suggestedCapacity)).trim());
-    if (!Number.isInteger(n) || n < 1) { tell(c.id, { ok: false, text: "السعةُ عددٌ صحيحٌ من ١ فأكثر" }); return; }
+    if (!Number.isInteger(n) || n < 1) { tell(c.id, { ok: false, text: "السعة عدد صحيح من ١ فأكثر" }); return; }
     setBusy(c.id);
     let stored = false;
     try {
       if (n !== c.capacity) { await apiPatch(`/api/admin/cohorts/${c.id}`, { capacity: n }); stored = true; }
       await apiPost(`/api/admin/cohorts/${c.id}/open`);
-      tell(c.id, { ok: true, text: `فُتحت بسعة ${n} — التسجيل متاح الآن` });
+      tell(c.id, { ok: true, text: `فتحت بسعة ${n} — التسجيل متاح الآن` });
     } catch (e) {
       const why = e instanceof ApiError ? e.message : "تعذّر الفتح";
       /* والسعةُ إن حُفظت ثمّ ردّ الفتحُ — تُقال: حُفظت، ولم تُفتح لسببه */
-      tell(c.id, { ok: false, text: stored ? `حُفظت السعة (${n})، ولم تُفتح: ${why}` : why });
+      tell(c.id, { ok: false, text: stored ? `حفظت السعة (${n})، ولم تفتح: ${why}` : why });
     } finally {
       setBusy(null);
     }
@@ -78,7 +78,7 @@ export default function TrainerNextSteps({ cohortId }: { cohortId: string }) {
     setBusy("publish");
     try {
       await apiPost(`/api/admin/trainers/${steps.trainer.profileId}/publish-approval`);
-      tell("publish", { ok: true, text: "اعتُمد ظهورُه العامّ — صار اسمُه وسيرتُه يُعرضان للعامّة، وأُخبر" });
+      tell("publish", { ok: true, text: "اعتمد ظهوره العامّ — صار اسمه وسيرته يعرضان للعامّة، وأخبر" });
     } catch (e) {
       tell("publish", { ok: false, text: e instanceof ApiError ? e.message : "تعذّر الاعتماد" });
     } finally {
@@ -93,12 +93,12 @@ export default function TrainerNextSteps({ cohortId }: { cohortId: string }) {
     <Inset className="mt-3" role="region" aria-label="ما بقي عليك">
       <p className="text-read font-black text-foreground">وما بقي عليك — قراران لك</p>
       <p className="mt-1 text-read leading-6 text-muted-foreground">
-        فُعِّل {steps.trainer.name}: صار مدرّبا نشطا وعقدُه نافذ. وبقي ما لا يقع وحدَه — قرّره الآن، أو اتركه وتجده في بطاقة كلّ شعبةٍ و«التأهيلُ والإسناد».
+        فعّل {steps.trainer.name}: صار مدرّبا نشطا وعقده نافذ. وبقي ما لا يقع وحده — قرّره الآن، أو اتركه وتجده في بطاقة كلّ شعبة و«التأهيل والإسناد».
       </p>
 
       {steps.cohorts.length > 0 && (
         <div className="mt-3">
-          <p className="text-read font-bold text-foreground">شعبُه — مسوّداتٌ لا يسجّل فيها أحدٌ حتّى تفتحها</p>
+          <p className="text-read font-bold text-foreground">شعبه — مسوّدات لا يسجّل فيها أحد حتّى تفتحها</p>
           <ul className="mt-2 space-y-2">
             {steps.cohorts.map((c) => {
               const others = c.missing.filter((m) => m !== CAPACITY_GAP);
@@ -107,7 +107,7 @@ export default function TrainerNextSteps({ cohortId }: { cohortId: string }) {
                 <Inset as="li" key={c.id}>
                   <p className="text-read font-bold text-foreground">{c.title}</p>
                   <p className="mt-0.5 text-read text-muted-foreground">
-                    {c.startsAt ? <>تبدأ {cohortDayAr(c.startsAt)}</> : "بلا تاريخ بدءٍ بعد"}
+                    {c.startsAt ? <>تبدأ {cohortDayAr(c.startsAt)}</> : "بلا تاريخ بدء بعد"}
                     {c.price !== null && <> · {c.price} {c.currency}</>}
                   </p>
                   {done ? (
@@ -117,9 +117,9 @@ export default function TrainerNextSteps({ cohortId }: { cohortId: string }) {
                   ) : others.length > 0 ? (
                     /* نقصٌ لا يُوفى هنا — يُسمّى بأسمائه، وبابُه البطاقة */
                     <div className="mt-2 text-read leading-6">
-                      <p className="text-gold-ink">لا تُفتح بعد — ينقصها: {others.join(" · ")}</p>
+                      <p className="text-gold-ink">لا تفتح بعد — ينقصها: {others.join(" · ")}</p>
                       <Link to={`/admin/cohorts?cohort=${c.id}`} className="mt-1 inline-flex items-center gap-1 font-bold text-teal-light-ink">
-                        <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" /> أكمِلها من بطاقتها
+                        <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" /> أكملها من بطاقتها
                       </Link>
                     </div>
                   ) : canOpen ? (
@@ -137,14 +137,14 @@ export default function TrainerNextSteps({ cohortId }: { cohortId: string }) {
                         </Button>
                       </div>
                       <p className="mt-1.5 text-read leading-6 text-muted-foreground">
-                        يُرفع علمُها فيُقبل المسجَّلون حتّى تمتلئ — أو اتركها مسوّدةً وافتحها من بطاقتها حين تشاء.
+                        يرفع علمها فيقبل المسجّلون حتّى تمتلئ — أو اتركها مسوّدة وافتحها من بطاقتها حين تشاء.
                       </p>
                       {said[c.id] && !said[c.id]!.ok && (
                         <p className="mt-1.5 text-read font-bold text-red-300" role="alert">{said[c.id]!.text}</p>
                       )}
                     </div>
                   ) : (
-                    <p className="mt-2 text-read text-muted-foreground">فتحُها لمن يملك صلاحيّةَ فتح الشعب.</p>
+                    <p className="mt-2 text-read text-muted-foreground">فتحها لمن يملك صلاحيّة فتح الشعب.</p>
                   )}
                 </Inset>
               );
@@ -155,7 +155,7 @@ export default function TrainerNextSteps({ cohortId }: { cohortId: string }) {
 
       {!steps.trainer.publiclyVisible && (
         <div className="mt-3">
-          <p className="text-read font-bold text-foreground">ظهورُه للعامّة</p>
+          <p className="text-read font-bold text-foreground">ظهوره للعامّة</p>
           {said.publish?.ok ? (
             <p className="mt-1 flex items-center gap-1.5 text-read font-bold text-teal-light-ink" role="status">
               <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" /> {said.publish.text}
@@ -163,14 +163,14 @@ export default function TrainerNextSteps({ cohortId }: { cohortId: string }) {
           ) : (
             <>
               <p className="mt-1 text-read leading-6 text-muted-foreground">
-                اسمُه لا يظهر على الموقع العامّ حتّى تعتمد نشرَه. «اعتمِد ظهورَه العامّ» يوثّق ملفَّه ويُظهر اسمَه وسيرتَه وصورتَه في صفحات دوراته وصفحته — أو اتركه الآن، ويبقى البابُ في «التأهيلُ والإسناد».
+                اسمه لا يظهر على الموقع العامّ حتّى تعتمد نشره. «اعتمد ظهوره العامّ» يوثّق ملفّه ويظهر اسمه وسيرته وصورته في صفحات دوراته وصفحته — أو اتركه الآن، ويبقى الباب في «التأهيل والإسناد».
               </p>
               {canPublish ? (
                 <Button tone="secondary" size="sm" className="mt-2" disabled={busy !== null} onClick={() => void publish()}>
-                  اعتمِد ظهورَه العامّ
+                  اعتمد ظهوره العامّ
                 </Button>
               ) : (
-                <p className="mt-1 text-read text-muted-foreground">اعتمادُه لمن يملك صلاحيّةَ النشر.</p>
+                <p className="mt-1 text-read text-muted-foreground">اعتماده لمن يملك صلاحيّة النشر.</p>
               )}
               {said.publish && !said.publish.ok && (
                 <p className="mt-1.5 text-read font-bold text-red-300" role="alert">{said.publish.text}</p>

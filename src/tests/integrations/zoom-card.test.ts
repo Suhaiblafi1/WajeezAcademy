@@ -21,48 +21,48 @@ const SRC = readFileSync(join(process.cwd(), 'src/pages/admin/Integrations.tsx')
 /** وسمُ `<input …/>` الذي يحمل هذا الربط — كاملا بصفاته */
 function inputTagWith(binding: string): string {
   const at = SRC.indexOf(binding)
-  expect(at, `لا حقلَ مربوطا بـ${binding}`).toBeGreaterThan(-1)
+  expect(at, `لا حقل مربوطا بـ${binding}`).toBeGreaterThan(-1)
   const start = SRC.lastIndexOf('<input', at)
   const end = SRC.indexOf('/>', at)
   expect(start).toBeGreaterThan(-1)
   const tag = SRC.slice(start, end + 2)
   /* ولم يتجاوز الاقتطاعُ وسمَه إلى وسمٍ قبله */
-  expect(tag.slice(1).includes('<input'), 'اقتُطع أكثرُ من وسم').toBe(false)
+  expect(tag.slice(1).includes('<input'), 'اقتطع أكثر من وسم').toBe(false)
   return tag
 }
 
-describe('رمزُ أحداث Zoom في البطاقة', () => {
-  it('⚠️ حقلٌ سرّيٌّ مربوطٌ بالرمز — ويكتب فيه لا في غيره', () => {
+describe('رمز أحداث Zoom في البطاقة', () => {
+  it('⚠️ حقل سرّيّ مربوط بالرمز — ويكتب فيه لا في غيره', () => {
     const tag = inputTagWith('value={zoomForm.webhookSecret}')
-    expect(tag, 'يُعرض الرمزُ حروفا لمن يقف خلف الشاشة').toMatch(/type="password"/)
+    expect(tag, 'يعرض الرمز حروفا لمن يقف خلف الشاشة').toMatch(/type="password"/)
     expect(tag).toMatch(/setZoomForm\(\{ \.\.\.zoomForm, webhookSecret: e\.target\.value \}\)/)
   })
 
-  it('⚠️ يُبدأ بالمقنَّع من الخادم — والحفظُ يرسله مع الإعداد', () => {
+  it('⚠️ يبدأ بالمقنّع من الخادم — والحفظ يرسله مع الإعداد', () => {
     expect(SRC).toMatch(/useState\(\{[^}]*webhookSecret: ""[^}]*\}\)/)
-    expect(SRC, 'لا يُملأ من العرض — فيُرسَل فارغا ويبقى القديم ولا يُعرف أنّه محفوظ').toMatch(/webhookSecret: v\.zoom\.webhookSecret/)
+    expect(SRC, 'لا يملأ من العرض — فيرسل فارغا ويبقى القديم ولا يعرف أنّه محفوظ').toMatch(/webhookSecret: v\.zoom\.webhookSecret/)
     const save = /apiPut\("\/api\/admin\/integrations\/zoom", \{([^}]*)\}/.exec(SRC)
-    expect(save, 'لا حفظَ لإعداد Zoom').not.toBeNull()
-    expect(save![1], 'الحفظُ لا يحمل ما في النموذج كلَّه').toMatch(/\.\.\.zoomForm/)
+    expect(save, 'لا حفظ لإعداد Zoom').not.toBeNull()
+    expect(save![1], 'الحفظ لا يحمل ما في النموذج كلّه').toMatch(/\.\.\.zoomForm/)
   })
 
-  it('⚠️ والبريدُ الفارغُ يُرسَل فارغا — لا يسقط من الطلب فيبقى المضيفُ القديم', () => {
+  it('⚠️ والبريد الفارغ يرسل فارغا — لا يسقط من الطلب فيبقى المضيف القديم', () => {
     /* عنوانُ الحقل يعد: «اتركه فارغا لصاحب التطبيق». وكان الزرُّ يحوّل الفارغَ إلى لا شيء،
        فيسقط المفتاحُ من الطلب والخادمُ يُبقي لما غاب قيمتَه — فيبقى المضيفُ القديم.
 
        ويُنفَّذ تعبيرُ الحمولة نفسُه على نموذجٍ مصطنع، ثمّ يُمرَّر بـJSON كما يمرّ في الطلب
        (ما كان `undefined` يسقط) — فيُقاس ما يُرسَل لا كيف كُتب. */
     const save = /apiPut\("\/api\/admin\/integrations\/zoom", (\{[^}]*\})/.exec(SRC)
-    expect(save, 'لا حفظَ لإعداد Zoom بحمولةٍ مكتوبةٍ في موضعه').not.toBeNull()
+    expect(save, 'لا حفظ لإعداد Zoom بحمولة مكتوبة في موضعه').not.toBeNull()
     const payload = new Function('zoomForm', `return (${save![1]})`) as (f: Record<string, unknown>) => unknown
     const wire = (hostEmail: string) => JSON.parse(JSON.stringify(payload({
       enabled: true, accountId: 'a', clientId: 'c', clientSecret: 's', webhookSecret: '', hostEmail,
     }))) as Record<string, unknown>
-    expect(wire('   '), 'سقط البريدُ الفارغُ من الطلب — فيُبقي الخادمُ المضيفَ القديم').toHaveProperty('hostEmail', '')
+    expect(wire('   '), 'سقط البريد الفارغ من الطلب — فيبقي الخادم المضيف القديم').toHaveProperty('hostEmail', '')
     expect(wire(' host@wajeez.test ').hostEmail).toBe('host@wajeez.test')
   })
 
-  it('والعنوانُ الذي يُنسخ إلى Zoom يُعرض للقراءة', () => {
+  it('والعنوان الذي ينسخ إلى Zoom يعرض للقراءة', () => {
     const tag = inputTagWith('value={view.zoom.webhookUrl}')
     expect(tag).toMatch(/\breadOnly\b/)
   })

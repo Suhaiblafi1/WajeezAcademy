@@ -167,7 +167,7 @@ export default function SkillPicker({
           {asked ? (
             <p className="flex items-center gap-2 text-read font-bold text-teal-light-ink">
               <Check className="h-3.5 w-3.5" aria-hidden="true" />
-              قُدّم طلب المهارة للمراجعة — لا تُضاف قبل الاعتماد.
+              قدّم طلب المهارة للمراجعة — لا تضاف قبل الاعتماد.
             </p>
           ) : askOpen ? (
             <Card>

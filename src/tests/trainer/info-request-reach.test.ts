@@ -30,7 +30,7 @@ const SERVER = 'server/services/trainer-application.service.ts'
 
 const requestInfo = DECISIONS.find((d) => d.action === 'request_info')!
 
-describe('① القائمةُ مشتقّةٌ لا مكتوبة', () => {
+describe('① القائمة مشتقّة لا مكتوبة', () => {
   /* ═══ ومصدرُها تبدّل (٢٢ سبتمبر ٢٠٢٦) ═══
 
      كانت `EDITABLE_STATUSES` إلّا المسوّدة، والحجّةُ أنّ طلبَ المعلومات يقول
@@ -40,108 +40,108 @@ describe('① القائمةُ مشتقّةٌ لا مكتوبة', () => {
      والحجّةُ لم تسقط — بل تحقّقت على وجهٍ آخر: الطلبُ ينقل صاحبَه إلى
      `information_requested`، **وهي في `EDITABLE_STATUSES`**. فبابُ التعديل
      يُفتح بالطلب نفسِه، ولا يلزم أن يكون مفتوحا قبله. */
-  it('هي كلُّ حالةٍ حيّةٍ سوى التي هو فيها — لا قائمةٌ ثانيةٌ تُكتب', () => {
+  it('هي كلّ حالة حيّة سوى التي هو فيها — لا قائمة ثانية تكتب', () => {
     expect([...INFO_REQUESTABLE].sort())
       .toEqual([...REVIEW_OPEN_STATUSES].filter((s) => s !== 'information_requested').sort())
   })
 
-  it('وبابُ التعديل يُفتح بالطلب نفسِه — فليست دعوةً إلى بابٍ مغلق', () => {
-    expect(EDITABLE_STATUSES, 'طُلبت منه معلوماتٌ ولا يستطيع تعديلَ طلبه')
+  it('وباب التعديل يفتح بالطلب نفسه — فليست دعوة إلى باب مغلق', () => {
+    expect(EDITABLE_STATUSES, 'طلبت منه معلومات ولا يستطيع تعديل طلبه')
       .toContain('information_requested')
   })
 
-  it('والقرارُ يقرؤها — فلا تفترق عمّا يُعرض', () => {
+  it('والقرار يقرؤها — فلا تفترق عمّا يعرض', () => {
     expect([...requestInfo.from].sort()).toEqual([...INFO_REQUESTABLE].sort())
   })
 
-  it('وكلُّ حالةٍ فيها حالةٌ معروفة', () => {
+  it('وكلّ حالة فيها حالة معروفة', () => {
     for (const s of INFO_REQUESTABLE) {
       expect(STATUS_LABELS[s], `«${s}» ليست في معجم الحالات`).toBeTruthy()
     }
   })
 })
 
-describe('② ومن خرج من الطابور خارجُها — والمسوّدةُ كذلك', () => {
+describe('② ومن خرج من الطابور خارجها — والمسوّدة كذلك', () => {
   /* ═══ والحدُّ انتقل، ولم يُرفَع (٢٢ سبتمبر ٢٠٢٦) ═══
 
      كان الحدُّ «وقع فيه القرار»، فكان `conditionally_approved` خارجَها —
      وهو بعينه ما شكا منه صاحبُ المنصّة: من يجهّز مدرّبَه فتنقصه ورقةٌ لا
      يجد بابا. فصار الحدُّ «خرج من الطابور»: المدرّبُ النشطُ له بوّابةٌ
      وإسنادٌ ومستحقّات، وردُّه إلى طابور المتقدّمين يكسر ذلك كلَّه. */
-  it('لا تُطلب معلوماتٌ ممّن لم يعد متقدّما', () => {
+  it('لا تطلب معلومات ممّن لم يعد متقدّما', () => {
     for (const s of ['active', 'suspended', 'rejected', 'withdrawn']) {
-      expect(INFO_REQUESTABLE, `«${s}» خرج من الطابور ومع ذلك تُطلب منه`).not.toContain(s)
+      expect(INFO_REQUESTABLE, `«${s}» خرج من الطابور ومع ذلك تطلب منه`).not.toContain(s)
     }
   })
 
-  it('وتُطلب ممّن قُبل داخليّا أو جاوزه — وهو نصُّ ما طُلب', () => {
+  it('وتطلب ممّن قبل داخليّا أو جاوزه — وهو نصّ ما طلب', () => {
     for (const s of ['conditionally_approved', 'contract_pending', 'onboarding']) {
       expect(INFO_REQUESTABLE, `«${s}» ما زال مقفلا`).toContain(s)
     }
   })
 
-  it('ولا من مسوّدةٍ لم تُقدَّم بعد — وله بابُه: «ذكّره بإكمال طلبه»', () => {
-    expect(INFO_REQUESTABLE, 'المسوّدةُ لم تُقدَّم، فلا «إضافةَ» على ما لم يصل')
+  it('ولا من مسوّدة لم تقدّم بعد — وله بابه: «ذكّره بإكمال طلبه»', () => {
+    expect(INFO_REQUESTABLE, 'المسوّدة لم تقدّم، فلا «إضافة» على ما لم يصل')
       .not.toContain('draft')
-    expect(EDITABLE_STATUSES, 'تعطّل الفحص: المسوّدةُ خرجت من التعديل أصلا')
+    expect(EDITABLE_STATUSES, 'تعطّل الفحص: المسوّدة خرجت من التعديل أصلا')
       .toContain('draft')
   })
 
   /* وكان هذا يقيس `email_verification_pending` — حُذفت في ٢٦ سبتمبر ٢٠٢٦،
      فصار الفحصُ يخضرّ لأنّ الحالةَ مجهولةٌ لا لأنّ البابَ مغلق. والباقي هو
      المحروسُ: `draft` طلبٌ لم يُرسَل ولا بريدٌ ثبت أنّه بريدُه. */
-  it('ولا ممّن لم يوثّق بريدَه — الرسالةُ تذهب إلى بريدٍ لم يُثبَت', () => {
-    expect(INFO_REQUESTABLE, 'طُلبت معلوماتٌ من مسوّدةٍ — بريدُها لم يُثبَت')
+  it('ولا ممّن لم يوثّق بريده — الرسالة تذهب إلى بريد لم يثبت', () => {
+    expect(INFO_REQUESTABLE, 'طلبت معلومات من مسوّدة — بريدها لم يثبت')
       .not.toContain('draft')
   })
 
-  it('وثمانٍ لا واحدة — وهو ما تبدّل', () => {
-    expect(INFO_REQUESTABLE.length, 'عادت القائمةُ إلى حالةٍ واحدة').toBeGreaterThan(1)
+  it('وثمان لا واحدة — وهو ما تبدّل', () => {
+    expect(INFO_REQUESTABLE.length, 'عادت القائمة إلى حالة واحدة').toBeGreaterThan(1)
     expect(INFO_REQUESTABLE).toContain('under_review')
-    expect(INFO_REQUESTABLE, 'المراجعةُ الأكاديميّةُ كانت أبعدَ ما لا بابَ له').toContain('academic_review')
+    expect(INFO_REQUESTABLE, 'المراجعة الأكاديميّة كانت أبعد ما لا باب له').toContain('academic_review')
   })
 })
 
-describe('③ والخادمُ يقبل كلَّ ما تعرضه الشاشة', () => {
-  it('كلُّ حالةٍ تُعرض فيها تصل «بانتظار معلومات المرشّح»', () => {
+describe('③ والخادم يقبل كلّ ما تعرضه الشاشة', () => {
+  it('كلّ حالة تعرض فيها تصل «بانتظار معلومات المرشّح»', () => {
     for (const s of INFO_REQUESTABLE) {
       /* والحالةُ نفسُها لا انتقالَ لها: `from === to` تمرّ بلا حركة، والرسالةُ
          تخرج — وهو المقصود: طلبٌ ثانٍ يُلحّ بغير ما طُلب أوّلا. */
       if (s === 'information_requested') continue
       expect(ALLOWED_TRANSITIONS[s as keyof typeof ALLOWED_TRANSITIONS],
-        `«${s}» تُعرض في الشاشة ويردّها الخادمُ ٤٠٩`).toContain('information_requested')
+        `«${s}» تعرض في الشاشة ويردّها الخادم ٤٠٩`).toContain('information_requested')
     }
   })
 
-  it('ولا تُفتح من حالةٍ لا تعرضها الشاشة — فلا بابٌ خلفيّ', () => {
+  it('ولا تفتح من حالة لا تعرضها الشاشة — فلا باب خلفيّ', () => {
     for (const [from, tos] of Object.entries(ALLOWED_TRANSITIONS)) {
       if (!tos.includes('information_requested')) continue
-      expect(INFO_REQUESTABLE, `الخادمُ يقبلها من «${from}» ولا تُعرض`).toContain(from)
+      expect(INFO_REQUESTABLE, `الخادم يقبلها من «${from}» ولا تعرض`).toContain(from)
     }
   })
 })
 
-describe('④ ومنه يُرجَع إلى حيث كان', () => {
+describe('④ ومنه يرجع إلى حيث كان', () => {
   const back = ALLOWED_TRANSITIONS.information_requested
 
-  it('كلُّ ما دخل منه يُرجَع إليه — إلّا «مُقدَّم»، وهي لا يُرجَع إليها بقصد', () => {
+  it('كلّ ما دخل منه يرجع إليه — إلّا «مقدّم»، وهي لا يرجع إليها بقصد', () => {
     for (const s of INFO_REQUESTABLE) {
       if (s === 'information_requested') continue
       if (s === 'submitted') continue
-      expect(back, `من دخل من «${s}» لا يعود إليها — فيخسر موضعَه`).toContain(s)
+      expect(back, `من دخل من «${s}» لا يعود إليها — فيخسر موضعه`).toContain(s)
     }
   })
 
-  it('و«مُقدَّم» مخرجُها «قيد المراجعة» — فالطلبُ قُرئ ولا يُقال لم يُقرأ', () => {
-    expect(back, 'من دخل من «مُقدَّم» لا مخرجَ له').toContain('under_review')
-    expect(back, '«مُقدَّم» تعني لم يُقرأ بعد — وقد قُرئ').not.toContain('submitted')
+  it('و«مقدّم» مخرجها «قيد المراجعة» — فالطلب قرئ ولا يقال لم يقرأ', () => {
+    expect(back, 'من دخل من «مقدّم» لا مخرج له').toContain('under_review')
+    expect(back, '«مقدّم» تعني لم يقرأ بعد — وقد قرئ').not.toContain('submitted')
   })
 
-  it('ولا حالةَ تدخل ولا تخرج — لا فخَّ في الخريطة', () => {
+  it('ولا حالة تدخل ولا تخرج — لا فخّ في الخريطة', () => {
     const stranded = INFO_REQUESTABLE.filter(
       (s) => s !== 'information_requested' && s !== 'submitted' && !back.includes(s as never),
     )
-    expect(stranded, `حالاتٌ تدخل ولا تخرج: ${stranded.join(' · ')}`).toEqual([])
+    expect(stranded, `حالات تدخل ولا تخرج: ${stranded.join(' · ')}`).toEqual([])
   })
 })
 
@@ -154,13 +154,13 @@ describe('⑤ والقائمتان في الطرفين واحدة', () => {
 
      وقد صار حِملا: `INFO_REQUESTABLE` مشتقّةٌ منها، فلو زِيدت حالةٌ في أحد
      الطرفين وحدَه لَانحرف بابُ طلب المعلومات معها. */
-  it('`EDITABLE_STATUSES` هي `PHASE2_OPEN_STATUSES` نفسُها', () => {
+  it('`EDITABLE_STATUSES` هي `PHASE2_OPEN_STATUSES` نفسها', () => {
     const src = readFileSync(join(root, SERVER), 'utf8')
     const block = /const PHASE2_OPEN_STATUSES: TrainerStatus\[\] = \[([\s\S]*?)\]/.exec(src)?.[1]
-    expect(block, 'لم يُعثر على قائمة الخادم').toBeTruthy()
+    expect(block, 'لم يعثر على قائمة الخادم').toBeTruthy()
     const server = [...block!.matchAll(/'([a-z_]+)'/g)].map((m) => m[1])
-    expect(server.length, 'القائمةُ فارغة — تعطّل الفحص').toBeGreaterThan(0)
-    expect([...server].sort(), 'افترقت قائمتا التعديل — والبابُ يُشتقّ منهما')
+    expect(server.length, 'القائمة فارغة — تعطّل الفحص').toBeGreaterThan(0)
+    expect([...server].sort(), 'افترقت قائمتا التعديل — والباب يشتقّ منهما')
       .toEqual([...EDITABLE_STATUSES].sort())
   })
 })

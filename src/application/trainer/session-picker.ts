@@ -18,7 +18,7 @@
    يحفظه أو يتركه. */
 
 import { HOLIDAYS, LATEST_END, WORKDAYS, WORKDAY_EARLIEST, WEEKDAY_AR, weekdayOf } from './plan-scorecard'
-import { EARLY_DAYS, type PlanSlot } from './axis-timeline'
+import { EARLY_DAYS, dayLabelAr, type PlanSlot } from './axis-timeline'
 import { MIN_SESSION_MINUTES } from './session-length'
 
 /** العطلةُ الرسميّةُ في هذا اليوم — أو `null` */
@@ -39,7 +39,7 @@ export function weekdayAr(day: string): string {
 
 /** ما يُعلَّم به خيارُ «من الساعة» في يومٍ بعينه — أو `null` لخيارٍ مناسب */
 export function fromClockNote(day: string, clock: string): string | null {
-  return isWorkday(day) && clock < WORKDAY_EARLIEST ? 'وقتُ عمل' : null
+  return isWorkday(day) && clock < WORKDAY_EARLIEST ? 'وقت عمل' : null
 }
 
 /** ما يُعلَّم به خيارُ «إلى الساعة» — أو `null` */
@@ -50,14 +50,14 @@ export function toClockNote(clock: string): string | null {
 /** ما يُقال تحت اليوم حين يُختار — عطلةٌ أو يومُ عمل؛ نصيحةٌ لا تمنع */
 export function dayNoteAr(day: string): string | null {
   const h = holidayOn(day)
-  if (h) return `${weekdayAr(day)} ${day.slice(8)}/${day.slice(5, 7)} ${h} — عطلةٌ رسميّة، والأفضلُ يومٌ غيرُه.`
-  if (isWorkday(day)) return `${weekdayAr(day)} يومُ عمل — فاجعل اللقاءَ بعد الخامسة مساءً.`
+  if (h) return `${weekdayAr(day)} ${day.slice(8)}/${day.slice(5, 7)} ${h} — عطلة رسميّة، والأفضل يوم غيره.`
+  if (isWorkday(day)) return `${weekdayAr(day)} يوم عمل — فاجعل اللقاء بعد الخامسة مساء.`
   return null
 }
 
 /** لماذا يبدأ سلّمُ «إلى الساعة» بعد ساعتين — كان يُخفي الأقصرَ بلا كلمة فيُظنّ عطبا */
 export const TO_LADDER_WHY_AR =
-  `تبدأ القائمةُ بعد ${MIN_SESSION_MINUTES === 120 ? 'ساعتين' : `${MIN_SESSION_MINUTES} دقيقة`} من البدء، لأنّ اللقاءَ لا يقلّ عنهما. وما ينتهي بعد العاشرة والنصف ليلا يُعلَّم «متأخّر».`
+  `تبدأ القائمة بعد ${MIN_SESSION_MINUTES === 120 ? 'ساعتين' : `${MIN_SESSION_MINUTES} دقيقة`} من البدء، لأنّ اللقاء لا يقلّ عنهما. وما ينتهي بعد العاشرة والنصف ليلا يعلّم «متأخّر».`
 
 /* ─────────── التكرارُ الأسبوعيّ ─────────── */
 
@@ -120,4 +120,42 @@ export function suggestedSessionTitle(
 ): string {
   const parts = moduleIds.map((id) => (titles.get(id) ?? '').trim() || `المحور ${axisNo.get(id) ?? '؟'}`)
   return parts.join(' · ')
+}
+
+/* ═══ أيّامُ الموعد وحدَها — لا تقويمٌ مفتوح (١١ أكتوبر ٢٠٢٦) ═══
+
+   قرارُ صاحب المنصّة: «يومُ اللقاء المباشر، ويومُ فتح الجلسة المسجّلة، داخلَ وقت المحور. جرّبتُه
+   بنفسي: أضعه في أيّ يومٍ وتعطيني ملاحظة — لا، اعرض لي الوقتَ المسموحَ به وحدَه». وكان الحقلُ تقويما
+   بحدّين (`min`/`max`) يُرشد ولا يمنع: اليومُ يُكتب باليد.
+
+   فالمنتقي قائمةُ أيّام الموعد نفسِها: كلُّ يومٍ باسمه وتاريخه، وأوّلُ ثلاثة أيّامٍ «الأنسب» (`EARLY_DAYS`)
+   (فبعد اللقاء تُفتح المهامّ)، والعطلةُ الرسميّةُ معلَّمةٌ ويبقى لها أن تُختار — نصيحةٌ لا منع، كما في
+   بطاقة المعايير. */
+
+export interface SlotDay {
+  /** `YYYY-MM-DD` */
+  date: string
+  /** «السبت 23 يناير» */
+  labelAr: string
+  /** من أوّل `EARLY_DAYS` أيّامٍ في الموعد */
+  early: boolean
+  /** اسمُ العطلة الرسميّة في هذا اليوم — أو `null` */
+  holidayAr: string | null
+}
+
+/** أيّامُ الموعد من أوّله إلى آخره — وموعدٌ مقلوبٌ أو غيرُ مقروءٍ لا أيّامَ له */
+export function slotDays(slot: Pick<PlanSlot, 'startsOn' | 'endsOn'>): SlotDay[] {
+  const ok = (d: string) => /^\d{4}-\d{2}-\d{2}$/.test(d)
+  if (!ok(slot.startsOn) || !ok(slot.endsOn) || slot.endsOn < slot.startsOn) return []
+  const out: SlotDay[] = []
+  for (let d = slot.startsOn; d <= slot.endsOn && out.length < 366; d = addDays(d, 1)) {
+    out.push({ date: d, labelAr: `${weekdayAr(d)} ${dayLabelAr(d)}`, early: out.length < EARLY_DAYS, holidayAr: holidayOn(d) })
+  }
+  return out
+}
+
+/** نصُّ خيار اليوم — «السبت 23 يناير · الأنسب» أو «… · عطلة: عيد الميلاد» */
+export function slotDayOptionAr(d: SlotDay): string {
+  if (d.holidayAr) return `${d.labelAr} · عطلة: ${d.holidayAr}`
+  return d.early ? `${d.labelAr} · الأنسب` : d.labelAr
 }

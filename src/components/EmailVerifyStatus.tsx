@@ -143,7 +143,7 @@ export default function EmailVerifyStatus({
             بريدَه لا يحتاج فقرةً تخبره بما صار إليه. */}
         <p className="flex flex-wrap items-center gap-2 text-sm font-black text-emerald-300">
           <CheckCircle2 className="h-4 w-4 shrink-0" /> تمّ التوثيق —{' '}
-          <b dir="ltr" className="font-mono">{email}</b> موثَّق
+          <b dir="ltr" className="font-mono">{email}</b> موثّق
         </p>
       </Card>
     )
@@ -175,7 +175,7 @@ export default function EmailVerifyStatus({
           ? <><Loader2 className="h-4 w-4 animate-spin" /> نتحقّق من حالة بريدك…</>
           : unknown
             ? <><MailWarning className="h-4 w-4" /> تعذّر التحقّق من حالة بريدك الآن</>
-            : <><MailWarning className="h-4 w-4" /> حالة بريدك: غير موثَّق</>}
+            : <><MailWarning className="h-4 w-4" /> حالة بريدك: غير موثّق</>}
       </p>
       {/* ═══ سطرٌ واحدٌ وفعلان (٢٤ سبتمبر ٢٠٢٦) ═══
 
@@ -191,8 +191,8 @@ export default function EmailVerifyStatus({
           من لم تخرج رسالتُه ينتظر ما لا يجيء. */}
       <p className="mt-2 text-read leading-7 text-foreground">
         {notSent
-          ? <>تعذّر إرسالُ الرسالة إلى <b dir="ltr" className="font-mono text-foreground">{email}</b> — وطلبك محفوظٌ على أيّ حال.</>
-          : <>افتح بريد <b dir="ltr" className="font-mono text-foreground">{email}</b> وانقر رابطَ التأكيد — نقرةٌ واحدة تكفي.</>}
+          ? <>تعذّر إرسال الرسالة إلى <b dir="ltr" className="font-mono text-foreground">{email}</b> — وطلبك محفوظ على أيّ حال.</>
+          : <>افتح بريد <b dir="ltr" className="font-mono text-foreground">{email}</b> وانقر رابط التأكيد — نقرة واحدة تكفي.</>}
       </p>
       <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2">
         <button
@@ -200,15 +200,15 @@ export default function EmailVerifyStatus({
           className="inline-flex cursor-pointer items-center gap-1.5 text-read font-bold text-teal-light-ink underline decoration-dotted underline-offset-4 disabled:cursor-default disabled:text-muted-foreground disabled:no-underline"
         >
           {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCcw className="h-3.5 w-3.5" />}
-          وثّقتُ بريدي — حدّث الحالة
+          وثّقت بريدي — حدّث الحالة
         </button>
         <button
           type="button" onClick={() => void resend()} disabled={resent === 'busy' || resent === 'done'}
           className="cursor-pointer text-read font-bold text-teal-light-ink underline decoration-dotted underline-offset-4 disabled:cursor-default disabled:text-muted-foreground disabled:no-underline"
         >
-          {resent === 'done' ? 'أُعيد الإرسال — راجع بريدك'
+          {resent === 'done' ? 'أعيد الإرسال — راجع بريدك'
             : resent === 'error' ? 'تعذّر — حاول بعد قليل'
-            : resent === 'busy' ? 'نُعيد الإرسال…'
+            : resent === 'busy' ? 'نعيد الإرسال…'
             : 'لم تصلك الرسالة؟ أعد الإرسال'}
         </button>
       </div>

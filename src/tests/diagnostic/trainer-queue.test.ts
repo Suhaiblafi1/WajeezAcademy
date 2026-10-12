@@ -1,4 +1,10 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect as vexpect, it } from 'vitest'
+import { plainAr } from '@/application/text/plain-ar'
+/* ما يُفحص بلا تشكيلٍ إعرابيّ — بعضُ ما يُقرأ هنا بعد «اللغة البيضاء» وبعضُه (الخادمُ والعقودُ والتشخيص) قبلها */
+const plainDeep = (v: unknown): unknown =>
+  typeof v === 'string' ? plainAr(v) : Array.isArray(v) ? v.map(plainDeep)
+    : v && typeof v === 'object' && Object.getPrototypeOf(v) === Object.prototype ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, plainDeep(x)])) : v
+const expect = Object.assign((v: unknown, m?: string) => vexpect(plainDeep(v), m), vexpect) as typeof vexpect
 import {
   buildWorkQueue,
   NOW_WINDOW_BEFORE,
@@ -32,7 +38,7 @@ function cohort(over: Partial<Record<string, unknown>> = {}) {
 }
 
 describe('طابور عمل المدرب — ف-١', () => {
-  it('رد غير مصفوفة أو فارغ لا يُنتج بندا ولا يرمي', () => {
+  it('رد غير مصفوفة أو فارغ لا ينتج بندا ولا يرمي', () => {
     expect(buildWorkQueue(null, 0, NOW)).toEqual([])
     expect(buildWorkQueue([], 0, NOW)).toEqual([])
     expect(buildWorkQueue([{ cohort: null }], 0, NOW)).toEqual([])
@@ -70,7 +76,7 @@ describe('طابور عمل المدرب — ف-١', () => {
     expect(items.filter((i) => i.kind === 'session_soon' || i.kind === 'session_now')).toHaveLength(0)
   })
 
-  it('الحضور غير المسجَّل يُقرأ من حضور التسجيلات لا من الجلسة — ولا ينبّه عن جلسة مسجَّلة', () => {
+  it('الحضور غير المسجّل يقرأ من حضور التسجيلات لا من الجلسة — ولا ينبّه عن جلسة مسجّلة', () => {
     const past = { id: 'S1', title: 'ماضية', startsAt: iso(-3 * DAY), endsAt: iso(-3 * DAY + HOUR), status: 'done', zoom: null, recordings: [{}] }
     const unmarked = buildWorkQueue(
       [cohort({ sessions: [past], enrollments: [{ id: 'E1', status: 'enrolled', attendance: [] }] })],
@@ -85,7 +91,7 @@ describe('طابور عمل المدرب — ف-١', () => {
     expect(marked.some((i) => i.kind === 'attendance_missing')).toBe(false)
   })
 
-  it('«لم يسلّموا» يُحسب على التقييمات المستحقة المنشورة فقط', () => {
+  it('«لم يسلّموا» يحسب على التقييمات المستحقة المنشورة فقط', () => {
     const base = {
       sessions: [],
       enrollments: [{ id: 'E1', status: 'enrolled' }, { id: 'E2', status: 'enrolled' }],
@@ -113,7 +119,7 @@ describe('طابور عمل المدرب — ف-١', () => {
     expect(buildWorkQueue([cohort()], 0, NOW).some((i) => i.kind === 'grading_pending')).toBe(false)
   })
 
-  it('جلسة ملغاة لا تُنتج بندا إطلاقا', () => {
+  it('جلسة ملغاة لا تنتج بندا إطلاقا', () => {
     const items = buildWorkQueue(
       [cohort({ sessions: [{ id: 'S1', title: 'ملغاة', startsAt: iso(-NOW_WINDOW_BEFORE / 2), endsAt: iso(HOUR), status: 'cancelled', zoom: { joinUrl: 'x' }, recordings: [] }], enrollments: [{ id: 'E1', status: 'enrolled' }] })],
       0, NOW,
@@ -140,35 +146,35 @@ describe('طابور عمل المدرب — ف-١', () => {
      ردُّ الإدارة يكتب `approvalState: 'rejected'` ومعه `status: 'cancelled'`.
      والاختبارُ فوق يثبت أنّ الملغى لا يُنتج بندا — فلو قُرئ المردودُ بعد ذلك
      الشرط لَسقط، وهو أوّلُ ما على المدرّب أن يعرفه. */
-  it('⚠️ لقاءٌ رُدَّ يُنتج بندَه — ولو كتبت معه الإدارةُ `cancelled`', () => {
+  it('⚠️ لقاء ردّ ينتج بنده — ولو كتبت معه الإدارة `cancelled`', () => {
     const items = buildWorkQueue(
       [cohort({
-        sessions: [{ id: 'S1', title: 'اللقاء الثالث', startsAt: iso(3 * DAY), endsAt: iso(3 * DAY + HOUR), status: 'cancelled', approvalState: 'rejected', reviewNote: 'الموعدُ يصادف إجازة', zoom: null, recordings: [] }],
+        sessions: [{ id: 'S1', title: 'اللقاء الثالث', startsAt: iso(3 * DAY), endsAt: iso(3 * DAY + HOUR), status: 'cancelled', approvalState: 'rejected', reviewNote: 'الموعد يصادف إجازة', zoom: null, recordings: [] }],
         enrollments: [{ id: 'E1', status: 'enrolled', attendance: [] }],
       })],
       0, NOW,
     )
     const it0 = items.find((i) => i.kind === 'session_rejected')
-    expect(it0, 'المردودُ سقط مع الملغى').toBeTruthy()
+    expect(it0, 'المردود سقط مع الملغى').toBeTruthy()
     expect(it0!.titleAr).toContain('اللقاء الثالث')
-    expect(it0!.detailAr, 'ملاحظةُ الإدارة لم تصل صاحبَها').toContain('الموعدُ يصادف إجازة')
+    expect(it0!.detailAr, 'ملاحظة الإدارة لم تصل صاحبها').toContain('الموعد يصادف إجازة')
     expect(it0!.href).toBe('/trainer/cohort/CO-1')
     expect(it0!.external).toBe(false)
   })
 
-  it('ومردودٌ مضى موعدُه يبقى — فالدرسُ لم يُعقَد وما زال يحتاج موعدا', () => {
+  it('ومردود مضى موعده يبقى — فالدرس لم يعقد وما زال يحتاج موعدا', () => {
     const items = buildWorkQueue(
-      [cohort({ sessions: [{ id: 'S1', title: 'ماضٍ مردود', startsAt: iso(-9 * DAY), endsAt: iso(-9 * DAY + HOUR), status: 'cancelled', approvalState: 'rejected', reviewNote: null, zoom: null, recordings: [] }], enrollments: [{ id: 'E1', status: 'enrolled', attendance: [] }] })],
+      [cohort({ sessions: [{ id: 'S1', title: 'ماض مردود', startsAt: iso(-9 * DAY), endsAt: iso(-9 * DAY + HOUR), status: 'cancelled', approvalState: 'rejected', reviewNote: null, zoom: null, recordings: [] }], enrollments: [{ id: 'E1', status: 'enrolled', attendance: [] }] })],
       0, NOW,
     )
     expect(items.map((i) => i.kind)).toEqual(['session_rejected'])
     /* ولا يُنسَب إلى الإدارة صمتٌ لم تقله ولا كلامٌ لم تكتبه */
-    expect(items[0].detailAr).toContain('بلا ملاحظةٍ من الإدارة')
+    expect(items[0].detailAr).toContain('بلا ملاحظة من الإدارة')
   })
 
-  it('واللقاءُ المنتظِرُ ليس مردودا — لا بندَ ردٍّ له', () => {
+  it('واللقاء المنتظر ليس مردودا — لا بند ردّ له', () => {
     const items = buildWorkQueue(
-      [cohort({ sessions: [{ id: 'S1', title: 'منتظِرة', startsAt: iso(3 * DAY), endsAt: iso(3 * DAY + HOUR), status: 'scheduled', approvalState: 'pending', zoom: null, recordings: [] }], enrollments: [{ id: 'E1', status: 'enrolled', attendance: [] }] })],
+      [cohort({ sessions: [{ id: 'S1', title: 'منتظرة', startsAt: iso(3 * DAY), endsAt: iso(3 * DAY + HOUR), status: 'scheduled', approvalState: 'pending', zoom: null, recordings: [] }], enrollments: [{ id: 'E1', status: 'enrolled', attendance: [] }] })],
       0, NOW,
     )
     expect(items.some((i) => i.kind === 'session_rejected')).toBe(false)
@@ -179,53 +185,53 @@ describe('طابور عمل المدرب — ف-١', () => {
 
    كان اللوحُ يقول «شعبتان تنتظران إرسالَك» رقما لا يقول أيَّ شعبةٍ ولا ما
    ينقصها. فصارت بنودا، ولكلِّ موقفٍ بندُه. */
-describe('بنودُ التجهيز في طابور المدرّب', () => {
+describe('بنود التجهيز في طابور المدرّب', () => {
   const plan = (over: Partial<Record<string, unknown>> = {}) => ({
     id: 'CO-9', title: 'الدفعة الأولى', courseTitle: 'تحرير النصوص', planStatus: 'draft',
     done: 4, total: 4, next: null, ...over,
   })
 
-  it('لا موجزَ ولا مصفوفة: لا بندَ ولا رمي', () => {
+  it('لا موجز ولا مصفوفة: لا بند ولا رمي', () => {
     expect(buildWorkQueue([], 0, NOW)).toEqual([])
     expect(buildWorkQueue([], 0, NOW, null)).toEqual([])
     expect(buildWorkQueue([], 0, NOW, [{ id: '', planStatus: '' }])).toEqual([])
   })
 
-  it('⚠️ شعبةٌ رُدَّت إليه تسبق كلَّ تجهيز — الإدارةُ قرّرت وتنتظره', () => {
+  it('⚠️ شعبة ردّت إليه تسبق كلّ تجهيز — الإدارة قرّرت وتنتظره', () => {
     const items = buildWorkQueue([], 0, NOW, [plan({ planStatus: 'changes_requested', done: 2 })])
     expect(items.map((i) => i.kind)).toEqual(['plan_returned'])
     expect(items[0].titleAr).toContain('الدفعة الأولى')
     expect(items[0].href).toBe('/trainer/cohort/CO-9')
   })
 
-  it('⚠️ وتجهيزٌ تمَّ ولا مانع: بندُ إرسالٍ باسم شعبته', () => {
+  it('⚠️ وتجهيز تمّ ولا مانع: بند إرسال باسم شعبته', () => {
     const items = buildWorkQueue([], 0, NOW, [plan()])
     expect(items.map((i) => i.kind)).toEqual(['plan_ready_unsent'])
-    expect(items[0].actionAr).toBe('أرسِلها للاعتماد')
+    expect(items[0].actionAr).toBe('أرسلها للاعتماد')
   })
 
-  it('⚠️ وتجهيزٌ تمَّ ومانعُه بيد الإدارة: لا بند — بندٌ بلا إجراءٍ خبرٌ لا عمل', () => {
+  it('⚠️ وتجهيز تمّ ومانعه بيد الإدارة: لا بند — بند بلا إجراء خبر لا عمل', () => {
     /* `next` أوّلُ ما يمنع الإرسال ولو لم يكن بيده: تسميةُ الفصل بيد الإدارة.
        فزرُّ «أرسِلها» هنا كذبٌ — يُضغَط فلا يُرسِل. وموضعُ الخبر سطرُ التحيّة. */
-    const items = buildWorkQueue([], 0, NOW, [plan({ next: { key: 'term', labelAr: 'تسمّي الإدارةُ فصلَ الشعبة' } })])
+    const items = buildWorkQueue([], 0, NOW, [plan({ next: { key: 'term', labelAr: 'تسمّي الإدارة فصل الشعبة' } })])
     expect(items).toEqual([])
   })
 
-  it('وتجهيزٌ لم يكتمل: بندُ إكمالٍ يسمّي الخطوةَ التالية وما بقي', () => {
-    const items = buildWorkQueue([], 0, NOW, [plan({ done: 1, total: 4, next: { key: 'sessions', labelAr: 'اجدوِل لقاءاتِ الشعبة' } })])
+  it('وتجهيز لم يكتمل: بند إكمال يسمّي الخطوة التالية وما بقي', () => {
+    const items = buildWorkQueue([], 0, NOW, [plan({ done: 1, total: 4, next: { key: 'sessions', labelAr: 'اجدول لقاءات الشعبة' } })])
     expect(items.map((i) => i.kind)).toEqual(['plan_incomplete'])
     expect(items[0].detailAr).toContain('1 من 4')
-    expect(items[0].detailAr).toContain('اجدوِل لقاءاتِ الشعبة')
-    expect(items[0].count, 'الشارةُ لا تقول كم بقي').toBe(3)
+    expect(items[0].detailAr).toContain('اجدول لقاءات الشعبة')
+    expect(items[0].count, 'الشارة لا تقول كم بقي').toBe(3)
   })
 
-  it('والمرسَلُ والمعتمَدُ والمنشورُ لا شيءَ عليه فيها', () => {
+  it('والمرسل والمعتمد والمنشور لا شيء عليه فيها', () => {
     for (const planStatus of ['submitted', 'approved', 'published', 'superseded']) {
       expect(buildWorkQueue([], 0, NOW, [plan({ planStatus })]), planStatus).toEqual([])
     }
   })
 
-  it('⚠️ والمردودةُ بعد الجارية وقبل التسجيل المنسيّ — وبينهما يُقاس الترتيب', () => {
+  it('⚠️ والمردودة بعد الجارية وقبل التسجيل المنسيّ — وبينهما يقاس الترتيب', () => {
     /* والجلسةُ الماضيةُ بلا حضورٍ مسجَّلٍ هنا قصدا: بندان فقط لا يكشفان
        ترتيبا — يبقيان على حالهما مهما تغيّر الإلحاح. فلا بدّ من ثالثٍ
        **بينهما** كي يكون للحارس ما يسقط به. */
@@ -243,7 +249,7 @@ describe('بنودُ التجهيز في طابور المدرّب', () => {
     expect(items.map((i) => i.kind)).toEqual(['session_now', 'plan_returned', 'attendance_missing'])
   })
 
-  it('⚠️ و«أرسِلها» بعد الجلسة القريبة وقبل «لم يسلّموا» — خطوةٌ واحدةٌ لا تُلحّ كجلسة', () => {
+  it('⚠️ و«أرسلها» بعد الجلسة القريبة وقبل «لم يسلّموا» — خطوة واحدة لا تلحّ كجلسة', () => {
     const items = buildWorkQueue(
       [cohort({
         sessions: [{ id: 'S1', title: 'غدا', startsAt: iso(6 * HOUR), endsAt: iso(7 * HOUR), status: 'scheduled', zoom: null, recordings: [] }],
@@ -270,7 +276,7 @@ describe('إنذار المتعثرين — ف-٢', () => {
     expect(findAtRisk(rows, NOW)).toEqual([])
   })
 
-  it('الغياب يُرصد عند الحد المُعلن لا قبله', () => {
+  it('الغياب يرصد عند الحد المعلن لا قبله', () => {
     const mk = (n: number) => [cohort({
       sessions,
       enrollments: [{ id: 'E1', status: 'enrolled', courseProgress: { percent: 50 }, attendance: sessions.slice(0, n).map((s) => ({ sessionId: s.id, status: 'absent' })), user: { displayName: 'سالم' } }],
@@ -280,7 +286,7 @@ describe('إنذار المتعثرين — ف-٢', () => {
     expect(hit[0].reasons.find((r) => r.kind === 'absences')!.value).toBe(ABSENCE_THRESHOLD)
   })
 
-  it('التأخر عن الوتيرة يُذكر بالرقمين ولا يُحكم قبل جلستين منتهيتين', () => {
+  it('التأخر عن الوتيرة يذكر بالرقمين ولا يحكم قبل جلستين منتهيتين', () => {
     /* جلستان من أربع انتهتا ⇒ المتوقع ٥٠٪ */
     const rows = [cohort({ sessions, enrollments: [{ id: 'E1', status: 'enrolled', courseProgress: { percent: 50 - PACE_GAP_POINTS }, attendance: [], user: { displayName: 'سالم' } }] })]
     const r = findAtRisk(rows, NOW)[0].reasons.find((x) => x.kind === 'behind_pace')!
@@ -292,7 +298,7 @@ describe('إنذار المتعثرين — ف-٢', () => {
     expect(findAtRisk(notStarted, NOW).some((l) => l.reasons.some((x) => x.kind === 'behind_pace'))).toBe(false)
   })
 
-  it('«لا حضور ولا تسليم» يُرصد بعد بدء الشعبة فقط', () => {
+  it('«لا حضور ولا تسليم» يرصد بعد بدء الشعبة فقط', () => {
     const rows = [cohort({ sessions, enrollments: [{ id: 'E1', status: 'enrolled', courseProgress: { percent: 0 }, attendance: [], user: { displayName: 'سالم' } }] })]
     expect(findAtRisk(rows, NOW)[0].reasons.some((r) => r.kind === 'no_activity')).toBe(true)
     expect(MIN_SESSIONS_FOR_PACE).toBeGreaterThan(0)
@@ -308,14 +314,14 @@ describe('إنذار المتعثرين — ف-٢', () => {
     expect(findAtRisk(mk([{ enrollmentId: 'E1', status: 'submitted' }]), NOW)).toEqual([])
   })
 
-  it('المنسحب والمنتظر لا يُرصدان', () => {
+  it('المنسحب والمنتظر لا يرصدان', () => {
     for (const status of ['dropped', 'waitlisted']) {
       const rows = [cohort({ sessions, enrollments: [{ id: 'E1', status, courseProgress: { percent: 0 }, attendance: [], user: { displayName: 'سالم' } }] })]
       expect(findAtRisk(rows, NOW)).toEqual([])
     }
   })
 
-  it('كل سبب يحمل نصا مقروءا — ولا تُعرض درجة خطر', () => {
+  it('كل سبب يحمل نصا مقروءا — ولا تعرض درجة خطر', () => {
     const rows = [cohort({ sessions, enrollments: [{ id: 'E1', status: 'enrolled', courseProgress: { percent: 0 }, attendance: [{ sessionId: 'S1', status: 'absent' }, { sessionId: 'S2', status: 'absent' }], user: { displayName: 'سالم' } }] })]
     const l = findAtRisk(rows, NOW)[0]
     expect(l.reasons.length).toBeGreaterThanOrEqual(2)
@@ -323,7 +329,7 @@ describe('إنذار المتعثرين — ف-٢', () => {
     expect(RISK_RULE_AR).toContain(String(ABSENCE_THRESHOLD))
   })
 
-  it('اسم بديل حين لا اسم معروض — ولا يُترك فراغا', () => {
+  it('اسم بديل حين لا اسم معروض — ولا يترك فراغا', () => {
     const rows = [cohort({ sessions, enrollments: [{ id: 'E1', status: 'enrolled', courseProgress: { percent: 0 }, attendance: [], user: { displayName: '   ' } }] })]
     expect(findAtRisk(rows, NOW)[0].nameAr).toBe('متعلم بلا اسم معروض')
   })
@@ -347,40 +353,40 @@ describe('إنذار المتعثرين — ف-٢', () => {
    إجراءً واحدا ووجهةً واحدة، وهي التي تمنع قسما ثانيا في اللوحة يقود حيث
    يقود التبويبُ فوقه. والفحصُ على البنية — أنواعُ البنود ووجهاتُها
    وترتيبُها — لا على ورودِ نصٍّ في عنوان. */
-describe('عروضُ الإسناد في طابور المدرّب', () => {
+describe('عروض الإسناد في طابور المدرّب', () => {
   const offer = (over: Record<string, unknown> = {}) => ({
-    id: 'OF-1', status: 'offered', courseTitleAr: 'دورةُ العرض',
+    id: 'OF-1', status: 'offered', courseTitleAr: 'دورة العرض',
     expiresAt: iso(3 * DAY), ...over,
   })
 
-  it('بلا عروضٍ لا بندَ — ولا يرمي على ردٍّ غيرِ مصفوفة', () => {
+  it('بلا عروض لا بند — ولا يرمي على ردّ غير مصفوفة', () => {
     expect(buildWorkQueue([], 0, NOW, [], null).length).toBe(0)
     expect(buildWorkQueue([], 0, NOW, [], []).length).toBe(0)
     expect(buildWorkQueue([], 0, NOW, [], [{ id: null }]).length).toBe(0)
   })
 
-  it('عرضٌ مفتوحٌ يصير بندا وجهتُه صفحةُ العروض', () => {
+  it('عرض مفتوح يصير بندا وجهته صفحة العروض', () => {
     const items = buildWorkQueue([], 0, NOW, [], [offer()])
     const it0 = items.find((x) => x.kind === 'offer_pending')
-    expect(it0, 'عرضٌ ينتظر جوابَه ولا بندَ له').toBeTruthy()
+    expect(it0, 'عرض ينتظر جوابه ولا بند له').toBeTruthy()
     expect(it0!.href).toBe('/trainer/qualifications')
     expect(it0!.external).toBe(false)
     expect(it0!.count).toBe(1)
   })
 
-  it('والمنقضي لا بندَ له — فقد أُغلِق، ولا يُطلب جوابٌ عمّا أُغلق', () => {
+  it('والمنقضي لا بند له — فقد أغلق، ولا يطلب جواب عمّا أغلق', () => {
     const items = buildWorkQueue([], 0, NOW, [], [offer({ expiresAt: iso(-DAY) })])
     expect(items.some((x) => x.kind === 'offer_pending')).toBe(false)
   })
 
-  it('والمجاب (قبولا أو اعتذارا) لا بندَ له', () => {
+  it('والمجاب (قبولا أو اعتذارا) لا بند له', () => {
     for (const status of ['accepted', 'declined', 'lapsed', 'withdrawn']) {
       const items = buildWorkQueue([], 0, NOW, [], [offer({ status })])
       expect(items.some((x) => x.kind === 'offer_pending'), status).toBe(false)
     }
   })
 
-  it('وعرضان يجتمعان في بندٍ واحدٍ عدّتُه اثنان، وأقربُ مهلةٍ في متنه', () => {
+  it('وعرضان يجتمعان في بند واحد عدّته اثنان، وأقرب مهلة في متنه', () => {
     const items = buildWorkQueue([], 0, NOW, [], [
       offer({ id: 'A', expiresAt: iso(4 * DAY) }),
       offer({ id: 'B', expiresAt: iso(1 * DAY) }),
@@ -390,20 +396,20 @@ describe('عروضُ الإسناد في طابور المدرّب', () => {
     expect(it0.detailAr).toContain(new Date(NOW + DAY).getUTCDate().toString())
   })
 
-  it('⚠️ والعرضُ أُلحُّ من التصحيح ودونَ اللقاء الجاري — فمهلتُه أيّامٌ لا شهور', () => {
+  it('⚠️ والعرض ألحّ من التصحيح ودون اللقاء الجاري — فمهلته أيّام لا شهور', () => {
     const items = buildWorkQueue(
       [cohort({
-        sessions: [{ id: 'S1', title: 'جلسةٌ الآن', startsAt: iso(-10 * 60_000), endsAt: iso(HOUR), status: 'scheduled', recordings: [] }],
+        sessions: [{ id: 'S1', title: 'جلسة الآن', startsAt: iso(-10 * 60_000), endsAt: iso(HOUR), status: 'scheduled', recordings: [] }],
         enrollments: [{ id: 'E1', status: 'enrolled', attendance: [], user: { displayName: 'أحمد' } }],
       })],
       5, NOW, [], [offer()],
     )
     const kinds = items.map((x) => x.kind)
-    expect(kinds[0], 'سبق العرضُ لقاءً يبدأ الآن').toBe('session_now')
+    expect(kinds[0], 'سبق العرض لقاء يبدأ الآن').toBe('session_now')
     expect(kinds.indexOf('offer_pending')).toBeLessThan(kinds.indexOf('grading_pending'))
   })
 
-  it('وأجلُ الإعداد لا يُذكَر قبل أن يقترب — «لن نستعجل أكثر»', () => {
+  it('وأجل الإعداد لا يذكر قبل أن يقترب — «لن نستعجل أكثر»', () => {
     const far = buildWorkQueue([], 0, NOW, [], [
       offer({ status: 'accepted', prepDueAt: iso(5 * DAY) }),
     ])
@@ -411,17 +417,17 @@ describe('عروضُ الإسناد في طابور المدرّب', () => {
     const near = buildWorkQueue([], 0, NOW, [], [
       offer({ status: 'accepted', prepDueAt: iso(HOUR) }),
     ])
-    expect(near.some((x) => x.kind === 'prep_due'), 'أجلٌ ينتهي بعد ساعةٍ ولا بندَ له').toBe(true)
+    expect(near.some((x) => x.kind === 'prep_due'), 'أجل ينتهي بعد ساعة ولا بند له').toBe(true)
   })
 
-  it('⚠️ ومن أقرّ بجاهزيّته لا يُطالَب ثانيةً', () => {
+  it('⚠️ ومن أقرّ بجاهزيّته لا يطالب ثانية', () => {
     const items = buildWorkQueue([], 0, NOW, [], [
       offer({ status: 'accepted', prepDueAt: iso(HOUR), prepConfirmedAt: iso(-HOUR) }),
     ])
     expect(items.some((x) => x.kind === 'prep_due')).toBe(false)
   })
 
-  it('والمنقضي أجلُه يبقى بندا — فالعملُ قائمٌ ولا يُخفى بمضيّ تاريخ', () => {
+  it('والمنقضي أجله يبقى بندا — فالعمل قائم ولا يخفى بمضيّ تاريخ', () => {
     const items = buildWorkQueue([], 0, NOW, [], [
       offer({ status: 'accepted', prepDueAt: iso(-2 * DAY) }),
     ])

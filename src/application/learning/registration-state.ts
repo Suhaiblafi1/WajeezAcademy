@@ -56,18 +56,18 @@ export function lineText(l: RegistrationLine): string {
 export function adminRegistrationLine(r: RegistrationFacts, now: Date): RegistrationLine | null {
   const s = registrationState(r, now)
   if (s === 'closed_awaiting_plan') {
-    return { lead: 'التسجيل: مغلق، ولا يفتحه اعتمادُك — تُفتح الشعبةُ للتسجيل بقرارٍ منفصلٍ من بطاقتها («الهُويّة والحالة») بعده.' }
+    return { lead: 'التسجيل: مغلق، ولا يفتحه اعتمادك — تفتح الشعبة للتسجيل بقرار منفصل من بطاقتها («الهويّة والحالة») بعده.' }
   }
   if (s === 'closed') {
-    return { lead: 'التسجيل: مغلق — الخطّةُ معتمَدةٌ والشعبةُ لم تُفتح بعد. تفتحها من بطاقتها («الهُويّة والحالة») حين تشاء.' }
+    return { lead: 'التسجيل: مغلق — الخطّة معتمدة والشعبة لم تفتح بعد. تفتحها من بطاقتها («الهويّة والحالة») حين تشاء.' }
   }
   if (s === 'opens_on_approval') {
-    return { lead: 'التسجيل: يُفتح باعتمادك هذه الخطّة — ولا يقبل أحدا قبلها وإن رُفع علمُه.' }
+    return { lead: 'التسجيل: يفتح باعتمادك هذه الخطّة — ولا يقبل أحدا قبلها وإن رفع علمه.' }
   }
   if (!r.joinClosesAt) return null
   return s === 'late_closed'
-    ? { lead: 'أُغلق الالتحاق ', date: whenAr(r.joinClosesAt), tail: ' — ببدء موعدها الثاني.' }
-    : { lead: 'الالتحاقُ مفتوحٌ حتّى ', date: whenAr(r.joinClosesAt), tail: ' — بدءِ موعدها الثاني.' }
+    ? { lead: 'أغلق الالتحاق ', date: whenAr(r.joinClosesAt), tail: ' — ببدء موعدها الثاني.' }
+    : { lead: 'الالتحاق مفتوح حتّى ', date: whenAr(r.joinClosesAt), tail: ' — بدء موعدها الثاني.' }
 }
 
 /** ما يقرؤه المدرّبُ في خطوته الأخيرة — و`joinClosesAt` من مواعيد خطّته بالقاعدة
@@ -77,14 +77,14 @@ export function trainerRegistrationLine(r: RegistrationFacts, now: Date): Regist
   const until = r.joinClosesAt
     ? { date: whenAr(r.joinClosesAt), tail: '.' }
     : { tail: '.' }
-  const join = r.joinClosesAt ? '، ويُقبل الملتحقون حتّى بدء موعدها الثاني — ' : ''
+  const join = r.joinClosesAt ? '، ويقبل الملتحقون حتّى بدء موعدها الثاني — ' : ''
   if (s === 'closed_awaiting_plan') {
-    return { lead: `اعتمادُها لا يفتحها للتسجيل وحدَه — تفتحها الأكاديميةُ بعده${join}`, ...until }
+    return { lead: `اعتمادها لا يفتحها للتسجيل وحده — تفتحها الأكاديمية بعده${join}`, ...until }
   }
   if (s === 'closed') {
-    return { lead: `اعتُمدت، ولم تُفتح للتسجيل بعد — تفتحها الأكاديمية، وتراها مفتوحةً في «شعبي» حين تُفتح${join}`, ...until }
+    return { lead: `اعتمدت، ولم تفتح للتسجيل بعد — تفتحها الأكاديمية، وتراها مفتوحة في «شعبي» حين تفتح${join}`, ...until }
   }
-  if (s === 'opens_on_approval') return { lead: `تُفتح الشعبةُ للتسجيل حين تُعتمَد${join}`, ...until }
-  if (s === 'late_closed') return { lead: 'أُغلق الالتحاقُ ببدء موعدها الثاني — ', date: whenAr(r.joinClosesAt!), tail: '.' }
-  return { lead: `الشعبةُ مفتوحةٌ للتسجيل${join}`, ...until }
+  if (s === 'opens_on_approval') return { lead: `تفتح الشعبة للتسجيل حين تعتمد${join}`, ...until }
+  if (s === 'late_closed') return { lead: 'أغلق الالتحاق ببدء موعدها الثاني — ', date: whenAr(r.joinClosesAt!), tail: '.' }
+  return { lead: `الشعبة مفتوحة للتسجيل${join}`, ...until }
 }

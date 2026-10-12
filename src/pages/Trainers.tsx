@@ -52,7 +52,7 @@ function TrainerOffer({ ids }: { ids: string[] }) {
   if (courses.length === 0) {
     return (
       <p className="text-read leading-6 text-muted-foreground">
-        لم تُسنَد إليه شعبةٌ منشورةٌ بعد — تظهر دوراتُه هنا فور إسنادها.
+        لم تسند إليه شعبة منشورة بعد — تظهر دوراته هنا فور إسنادها.
       </p>
     )
   }
@@ -75,7 +75,7 @@ function TrainerOffer({ ids }: { ids: string[] }) {
       )}
       <p className="mt-2 flex items-center gap-1.5 text-read font-bold text-foreground">
         <BookOpen className="h-3.5 w-3.5 text-teal-light-ink" />
-        دوراتُه — تُشترى من صفحتها
+        دوراته — تشترى من صفحتها
       </p>
       <ul className="mt-1.5 grid gap-1.5">
         {courses.map((c) => (
@@ -251,7 +251,7 @@ export default function Trainers() {
                     className="mt-3 flex min-h-11 w-full items-center justify-between gap-2 border-t border-white/10 pt-3 text-sm font-bold text-teal-light-ink transition hover:text-foreground"
                   >
                     <span>
-                      نبذةٌ ودوراتُه
+                      نبذة ودوراته
                       {t.assignedCourseIds.length > 0 && (
                         <span className="ms-2 rounded-full bg-teal/15 px-2 py-0.5 text-read font-black text-teal-light-ink">
                           {new Set(t.assignedCourseIds).size}
@@ -332,11 +332,11 @@ export default function Trainers() {
           يقول ما هو واقعٌ فعلا. */}
       {filteredApproved.length === 0 && !query && (
         <Card tone="accent" className="mt-12 text-center">
-          <h2 className="text-lg font-black">لم يُعتمد نشرُ اسمِ مدرّبٍ بعد</h2>
+          <h2 className="text-lg font-black">لم يعتمد نشر اسم مدرّب بعد</h2>
           <p className="mx-auto mt-3 max-w-xl text-read leading-7 text-muted-foreground">
-            قاعدتُنا ألّا يُنشر اسمُ مدرّبٍ قبل اعتماد نشره. فما يظهر هنا حين يمتلئ
-            أسماءُ من اجتازوا المراجعةَ فعلا — لا أمثلةَ ولا صورا توضيحيّة. ومدرّبُ
-            كلّ شعبةٍ يُعلن على بطاقتها عند اعتمادها.
+            قاعدتنا ألّا ينشر اسم مدرّب قبل اعتماد نشره. فما يظهر هنا حين يمتلئ
+            أسماء من اجتازوا المراجعة فعلا — لا أمثلة ولا صورا توضيحيّة. ومدرّب
+            كلّ شعبة يعلن على بطاقتها عند اعتمادها.
           </p>
         </Card>
       )}
@@ -346,7 +346,7 @@ export default function Trainers() {
         <section className="mt-12">
           <h2 className="text-center text-lg font-black">المجالات التي نغطّيها</h2>
           <p className="mx-auto mt-2 max-w-xl text-center text-read leading-6 text-muted-foreground">
-            تخصّصاتٌ يطلبها كتالوجُ وجيز — لا أسماءَ مدرّبين.
+            تخصّصات يطلبها كتالوج وجيز — لا أسماء مدرّبين.
           </p>
           <ul className="mx-auto mt-5 flex max-w-3xl flex-wrap justify-center gap-1.5">
             {visibleRoles.map(([role]) => (

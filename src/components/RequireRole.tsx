@@ -105,7 +105,7 @@ export default function RequireRole({ allow }: { allow: readonly string[] }) {
         <ServerOff className="h-12 w-12 text-muted-foreground/50" />
         <h1 className="mt-5 text-xl font-black">تعذّر التحقّق من صلاحيّتك</h1>
         <p className="mt-2 max-w-md text-center text-sm leading-7 text-muted-foreground">
-          لم يصلنا ردٌّ من الخادم، ولا نُقرّر صلاحيّتك بلا ردّ — فلن نأخذك إلى بوابةٍ قد لا تكون بوابتك.
+          لم يصلنا ردّ من الخادم، ولا نقرّر صلاحيّتك بلا ردّ — فلن نأخذك إلى بوابة قد لا تكون بوابتك.
           جرّب مرّة أخرى بعد لحظة.
         </p>
         <Button tone="secondary" onClick={() => setAttempt((n) => n + 1)} className="mt-6">

@@ -36,11 +36,11 @@ interface EligibleTrainer {
 }
 
 const QUALIFICATION_LABEL: Record<EligibleTrainer["qualification"], string> = {
-  qualified: "مؤهَّل",
-  pending: "طلبٌ قائم",
-  rejected: "رُدَّ سابقا",
-  retired: "تأهيلٌ مسحوب",
-  none: "غير مؤهَّل",
+  qualified: "مؤهّل",
+  pending: "طلب قائم",
+  rejected: "ردّ سابقا",
+  retired: "تأهيل مسحوب",
+  none: "غير مؤهّل",
 };
 
 type Done = (msg: string) => void;
@@ -130,13 +130,13 @@ export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: Co
           وبوّابةُ نزاهة التأهيل باقية: هذا الزرُّ **يطلب** ولا يقرّر. يبتّ
           فيه المديرُ الأكاديميّ، وموافقتُه تؤهّل وتُسند في فعلٍ واحد. */}
       {tab === "identity" && (
-      <Section icon={UserPlus} title="مدرّب الشعبة — إسنادٌ مباشر للمؤهَّل، وطلبُ تأهيلٍ لغيره">
+      <Section icon={UserPlus} title="مدرّب الشعبة — إسناد مباشر للمؤهّل، وطلب تأهيل لغيره">
         <div className="flex flex-wrap gap-2">
           <select value={assignForm.profileId} onChange={(e) => setAssignForm({ ...assignForm, profileId: e.target.value })} className={`${selectCls} flex-1`}>
             <option value="">اختر مدربا…</option>
             {trainers.map((t) => (
               <option key={t.profileId} value={t.profileId}>
-                {t.name} — {QUALIFICATION_LABEL[t.qualification]}{t.assignedRole ? " · مُسنَد" : ""}
+                {t.name} — {QUALIFICATION_LABEL[t.qualification]}{t.assignedRole ? " · مسند" : ""}
               </option>
             ))}
           </select>
@@ -148,7 +148,7 @@ export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: Co
             <Button tone="confirm" disabled={busy}
               onClick={() => act(
                 () => apiPost(`/api/admin/cohorts/${cohort.id}/trainers`, assignForm).then(loadTrainers),
-                "عُيّن المدرب للشعبة",
+                "عيّن المدرب للشعبة",
               )}>
               أسنده
             </Button>
@@ -158,7 +158,7 @@ export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: Co
                 () => apiPost(`/api/admin/cohorts/${cohort.id}/qualification-requests`, {
                   profileId: assignForm.profileId, courseId: cohort.courseId,
                 }).then(loadTrainers),
-                "رُفع طلبُ التأهيل — الموافقة تؤهّله وتُسنده معا",
+                "رفع طلب التأهيل — الموافقة تؤهّله وتسنده معا",
               )}>
               أهّله وأسنده الآن
             </Button>
@@ -168,12 +168,12 @@ export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: Co
         {picked && (
           <p className="mt-2 text-read leading-5 text-muted-foreground">
             {picked.qualification === "qualified"
-              ? "مؤهَّل لهذه الدورة — الإسناد يقع الآن، ويُفحص تعارضُ جدوله قبل وقوعه."
+              ? "مؤهّل لهذه الدورة — الإسناد يقع الآن، ويفحص تعارض جدوله قبل وقوعه."
               : picked.qualification === "pending"
-                ? (canQualify ? "له طلبُ تأهيلٍ قائم على هذه الدورة — والقرارُ بيدك: أهّله فيُسنَد، أو رُدَّه بسبب." : "له طلبُ تأهيلٍ قائم على هذه الدورة — بانتظار من يملك التأهيل.")
+                ? (canQualify ? "له طلب تأهيل قائم على هذه الدورة — والقرار بيدك: أهّله فيسند، أو ردّه بسبب." : "له طلب تأهيل قائم على هذه الدورة — بانتظار من يملك التأهيل.")
                 : picked.qualification === "rejected"
-                  ? "سبق أن رُدَّ تأهيلُه لهذه الدورة. رفعُ طلبٍ جديد يُعيدها إلى طاولة القرار."
-                  : (canQualify ? "غير مؤهَّل لهذه الدورة بعد — طلبُ التأهيل يعود إليك، وموافقتُك تؤهّله وتُسنده معا." : "غير مؤهَّل لهذه الدورة بعد — الطلب يذهب إلى من يملك التأهيل، وموافقتُه تؤهّله وتُسنده معا.")}
+                  ? "سبق أن ردّ تأهيله لهذه الدورة. رفع طلب جديد يعيدها إلى طاولة القرار."
+                  : (canQualify ? "غير مؤهّل لهذه الدورة بعد — طلب التأهيل يعود إليك، وموافقتك تؤهّله وتسنده معا." : "غير مؤهّل لهذه الدورة بعد — الطلب يذهب إلى من يملك التأهيل، وموافقته تؤهّله وتسنده معا.")}
           </p>
         )}
         {/* القرارُ في موضعه: من يملك الصلاحيّةَ لا يُحال إلى شاشةٍ أخرى ولا ينتظر أحدا */}
@@ -182,25 +182,25 @@ export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: Co
             <Button tone="confirm" size="sm" disabled={busy}
               onClick={() => act(
                 () => apiPost(`/api/admin/qualification-requests/${picked.qualificationId}/decide`, { approve: true }).then(loadTrainers),
-                "أُهِّل وأُسند للشعبة",
+                "أهّل وأسند للشعبة",
               )}>
               أهّله وأسنده الآن
             </Button>
             <Button tone="danger" size="sm" disabled={busy}
               onClick={() => {
-                const note = window.prompt("سببُ الردّ — يُقرأ في ملفّ المدرّب:");
+                const note = window.prompt("سبب الردّ — يقرأ في ملفّ المدرّب:");
                 if (!note?.trim()) return;
                 void act(
                   () => apiPost(`/api/admin/qualification-requests/${picked.qualificationId}/decide`, { approve: false, note: note.trim() }).then(loadTrainers),
-                  "رُدَّ طلبُ التأهيل",
+                  "ردّ طلب التأهيل",
                 );
               }}>
-              رُدَّه بسبب
+              ردّه بسبب
             </Button>
           </div>
         )}
         {trainers.length === 0 && (
-          <p className="mt-2 text-read text-muted-foreground">لا مدرّبين نشطين بعد — تُعتمد الطلبات من «طلبات المدربين».</p>
+          <p className="mt-2 text-read text-muted-foreground">لا مدرّبين نشطين بعد — تعتمد الطلبات من «طلبات المدربين».</p>
         )}
       </Section>
       )}
@@ -217,15 +217,15 @@ export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: Co
 
       {/* ① الاسم — الهُويّة */}
       {editable && tab === "identity" && (
-        <Section icon={Pencil} title="اسمُ الشعبة">
+        <Section icon={Pencil} title="اسم الشعبة">
           <div className="flex flex-wrap gap-2">
-            <input value={editForm.title} aria-label="اسمُ الشعبة"
+            <input value={editForm.title} aria-label="اسم الشعبة"
               onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
-              placeholder="اسمُ الشعبة" className={`${inputCls} flex-1`} />
+              placeholder="اسم الشعبة" className={`${inputCls} flex-1`} />
             <Button tone="confirm" disabled={busy || editForm.title.trim().length < 3}
               onClick={() => act(() => apiPatch(`/api/admin/cohorts/${cohort.id}`, {
                 title: editForm.title.trim(),
-              }), "حُدث اسمُ الشعبة")}>
+              }), "حدث اسم الشعبة")}>
               احفظ الاسم
             </Button>
           </div>
@@ -234,15 +234,15 @@ export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: Co
 
       {/* ② الجدول الأسبوعيّ — منه تُولَّد اللقاءات */}
       {editable && tab === "schedule" && (
-        <Section icon={Pencil} title="الجدول الأسبوعيّ — الأيّامُ والوقت">
+        <Section icon={Pencil} title="الجدول الأسبوعيّ — الأيّام والوقت">
           <p className="mb-3 text-read leading-6 text-muted-foreground">
-            هذا جدولُ الشعبة لا لقاءاتُها. وتغييرُه لا ينقل اللقاءاتِ المولَّدةَ من قبل —
-            بل يصير الأساسَ لما يُولَّد بعده.
+            هذا جدول الشعبة لا لقاءاتها. وتغييره لا ينقل اللقاءات المولّدة من قبل —
+            بل يصير الأساس لما يولّد بعده.
           </p>
           <div className="grid gap-2 sm:grid-cols-2">
             <DayOfWeekPicker value={editForm.days} onChange={(days) => setEditForm({ ...editForm, days })} label="الأيّام" />
             <label className="text-fine text-muted-foreground">
-              وقتُ البدء
+              وقت البدء
               <input type="time" value={editForm.startTime}
                 onChange={(e) => setEditForm({ ...editForm, startTime: e.target.value })}
                 className={`${inputCls} mt-1`} />
@@ -252,7 +252,7 @@ export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: Co
             onClick={() => act(() => apiPatch(`/api/admin/cohorts/${cohort.id}`, {
               daysOfWeek: editForm.days,
               startTime: editForm.startTime || undefined,
-            }), "حُدث جدولُ الشعبة")}>
+            }), "حدث جدول الشعبة")}>
             احفظ الجدول
           </Button>
         </Section>
@@ -293,7 +293,7 @@ export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: Co
               price: editForm.price ? Number(editForm.price) : undefined,
               registrationOpen: editForm.registrationOpen,
               financialReady: editForm.financialReady,
-            }), "حُدثت السعةُ والسعرُ والبوّابتان")}>
+            }), "حدثت السعة والسعر والبوّابتان")}>
             احفظ
           </Button>
         </Section>
@@ -306,7 +306,7 @@ export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: Co
           والأكاديميُّ أو الأعلى يعتمد — أيُّهما سبق. وهنا يُقرأ ما أرسله ويُقرَّر
           فيه، ويُذكَّر إن تأخّر. */}
       {tab === "content" && (
-      <Section icon={BookOpen} title="خطّةُ المدرّب — تجهيزُ الشعبة واعتمادُها">
+      <Section icon={BookOpen} title="خطّة المدرّب — تجهيز الشعبة واعتمادها">
         {/* والمراجعةُ نفسُها في «خططٌ تنتظر اعتمادك» — مكوّنٌ واحدٌ للبابين
             (`TrainerPlanReview`)، فلا يُعتمَد من أحدهما ما لم يُقرأ في الآخر */}
         <TrainerPlanReview cohortId={cohort.id} cohortTitle={cohort.title} onDone={onDone} />
@@ -314,7 +314,7 @@ export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: Co
       )}
 
       {tab === "content" && (
-      <Section icon={FilePlus2} title="مادة تعليمية — رابط خارجي أو ملف خاص برفع موقَّع">
+      <Section icon={FilePlus2} title="مادة تعليمية — رابط خارجي أو ملف خاص برفع موقّع">
         <div className="grid gap-2 sm:grid-cols-4">
           <input value={materialForm.title} onChange={(e) => setMaterialForm({ ...materialForm, title: e.target.value })} placeholder="عنوان المادة" className={inputCls} />
           <select value={materialForm.kind} onChange={(e) => setMaterialForm({ ...materialForm, kind: e.target.value })} className={selectCls}>
@@ -343,7 +343,7 @@ export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: Co
                 ? { originalName: materialForm.originalName, mime: materialForm.mime, sizeBytes: Number(materialForm.sizeBytes) } : undefined,
             });
             setMaterialForm({ title: "", kind: "link", externalUrl: "", originalName: "", mime: "application/pdf", sizeBytes: "" });
-          }, "سُجلت المادة")}>
+          }, "سجلت المادة")}>
           سجّل المادة
         </Button>
       </Section>
@@ -399,7 +399,7 @@ export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: Co
                 });
                 setAssessForm({ title: "", type: "assignment", maxScore: "100", passScore: "", dueAt: "" });
                 setItems([{ prompt: "", kind: "text", maxScore: "" }]);
-              }, "أُنشئ التقييم وأتاح للمتعلمين")}>
+              }, "أنشئ التقييم وأتاح للمتعلمين")}>
               أنشئ التقييم
             </Button>
           </div>
@@ -414,14 +414,14 @@ export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: Co
 
       {/* إسقاطُ تسجيل — التسجيلُ والمال */}
       {tab === "enrollment" && (
-        <Section icon={UserMinus} title="إسقاطُ تسجيلِ متعلّم">
+        <Section icon={UserMinus} title="إسقاط تسجيل متعلّم">
           <DropEnrollment cohortId={cohort.id} busy={busy} form={dropForm} onForm={setDropForm} act={act} />
         </Section>
       )}
 
       {/* الشهادات — المحتوى وما يُسلَّم */}
       {tab === "content" && (
-        <Section icon={Award} title="الشهادات — إصدارٌ لمن أنهى، وإلغاءٌ بسببٍ يبقى">
+        <Section icon={Award} title="الشهادات — إصدار لمن أنهى، وإلغاء بسبب يبقى">
           {/* ─────────── الشهادات: قائمةٌ لا معرّفاتٌ تُلصق ───────────
 
               كان الإصدارُ يطلب «معرّف التسجيل (UUID)» والإلغاءُ «معرّف
@@ -458,7 +458,7 @@ export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: Co
               durationSec: recForm.durationSec ? Number(recForm.durationSec) : undefined,
             });
             setRecForm({ sessionId: "", title: "", moduleId: "", mime: "video/mp4", sizeBytes: "", durationSec: "" });
-          }, "سُجل التسجيل وأُنشئ رابط رفعه الموقع")}>
+          }, "سجل التسجيل وأنشئ رابط رفعه الموقع")}>
           سجّل التسجيل
         </Button>
 
@@ -475,7 +475,7 @@ export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: Co
             <option value="disabled">معطل</option>
           </select>
           <Button tone="confirm" disabled={busy || !contentForm.id.trim()}
-            onClick={() => act(() => apiPost(`/api/admin/content/${contentForm.kind}/${contentForm.id.trim()}/status`, { status: contentForm.status }), "حُدثت حالة المحتوى")}>
+            onClick={() => act(() => apiPost(`/api/admin/content/${contentForm.kind}/${contentForm.id.trim()}/status`, { status: contentForm.status }), "حدثت حالة المحتوى")}>
             طبّق الحالة
           </Button>
         </div>
@@ -485,7 +485,7 @@ export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: Co
       {/* نشر عام — فعلُ حالةٍ لا فعلُ محتوًى، فمكانُه لسانُ الهُويّة */}
       {tab === "identity" && cohort.status === "open" && (
         <Button tone="confirm" disabled={busy}
-          onClick={() => act(() => apiPost(`/api/admin/cohorts/${cohort.id}/publish`), "نُشرت الشعبة — إسنادات المدربين ظاهرة للعامة")} className="text-gold-ink">
+          onClick={() => act(() => apiPost(`/api/admin/cohorts/${cohort.id}/publish`), "نشرت الشعبة — إسنادات المدربين ظاهرة للعامة")} className="text-gold-ink">
           <Globe className="h-3.5 w-3.5" /> نشر عام لإسنادات المدربين
         </Button>
       )}
@@ -513,7 +513,7 @@ interface RosterRow {
   status: string; enrolledAt: string;
 }
 
-const ROSTER_LABEL: Record<string, string> = { enrolled: "مسجَّل", waitlisted: "قائمةُ انتظار" };
+const ROSTER_LABEL: Record<string, string> = { enrolled: "مسجّل", waitlisted: "قائمة انتظار" };
 
 /** إسقاطُ تسجيل — الاسمُ يُقرأ قبل الضغط، والمُسقَطُ يُسمّى في زرّه */
 function DropEnrollment({ cohortId, busy, form, onForm, act }: {
@@ -534,17 +534,17 @@ function DropEnrollment({ cohortId, busy, form, onForm, act }: {
   const picked = rows?.find((r) => r.enrollmentId === form.enrollmentId) ?? null;
 
   if (rows !== null && rows.length === 0) {
-    return <p className="text-read text-muted-foreground">لا مسجَّلين في هذه الشعبة — لا شيءَ يُسقَط.</p>;
+    return <p className="text-read text-muted-foreground">لا مسجّلين في هذه الشعبة — لا شيء يسقط.</p>;
   }
 
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap gap-2">
-        <label className="sr-only" htmlFor={`drop-${cohortId}`}>المتعلّمُ المراد إسقاطُ تسجيله</label>
+        <label className="sr-only" htmlFor={`drop-${cohortId}`}>المتعلّم المراد إسقاط تسجيله</label>
         <select id={`drop-${cohortId}`} value={form.enrollmentId} disabled={rows === null}
           onChange={(e) => onForm({ ...form, enrollmentId: e.target.value })}
           className={`${selectCls} flex-1`}>
-          <option value="">{rows === null ? "يُقرأ المسجَّلون…" : "اختر المتعلّم…"}</option>
+          <option value="">{rows === null ? "يقرأ المسجّلون…" : "اختر المتعلّم…"}</option>
           {rows?.map((r) => (
             <option key={r.enrollmentId} value={r.enrollmentId}>
               {r.learnerName} — {r.email}{r.status !== "enrolled" ? ` · ${ROSTER_LABEL[r.status] ?? r.status}` : ""}
@@ -552,7 +552,7 @@ function DropEnrollment({ cohortId, busy, form, onForm, act }: {
           ))}
         </select>
         <input value={form.note} onChange={(e) => onForm({ ...form, note: e.target.value })}
-          aria-label="ملاحظةُ الإسقاط" placeholder="ملاحظة (اختياري)" className={inputCls} />
+          aria-label="ملاحظة الإسقاط" placeholder="ملاحظة (اختياري)" className={inputCls} />
       </div>
 
       {/* الزرُّ يسمّي من يُسقطه — فلا يُضغط «إسقاط» مجرَّدا على قائمةٍ فيها عشرون اسما */}
@@ -560,10 +560,10 @@ function DropEnrollment({ cohortId, busy, form, onForm, act }: {
         onClick={() => act(
           () => apiPost(`/api/admin/enrollments/${form.enrollmentId}/drop`, { note: form.note || undefined })
             .then(() => { onForm({ enrollmentId: "", note: "" }); load(); }),
-          `أُسقط تسجيلُ «${picked?.learnerName ?? ""}»`,
+          `أسقط تسجيل «${picked?.learnerName ?? ""}»`,
         )}>
         <UserMinus className="h-3.5 w-3.5" />
-        {picked ? `أسقِط تسجيلَ ${picked.learnerName}` : "أسقِط التسجيل"}
+        {picked ? `أسقط تسجيل ${picked.learnerName}` : "أسقط التسجيل"}
       </Button>
     </div>
   );
@@ -588,7 +588,7 @@ function SessionSelect({ cohortId, value, onChange }: {
       <select id={`rec-session-${cohortId}`} value={value} disabled={rows === null}
         onChange={(e) => onChange(e.target.value)} className={selectCls}>
         <option value="">
-          {rows === null ? "تُحمَّل الجلسات…" : rows.length === 0 ? "لا جلسات بعد" : "اختر الجلسة…"}
+          {rows === null ? "تحمّل الجلسات…" : rows.length === 0 ? "لا جلسات بعد" : "اختر الجلسة…"}
         </option>
         {rows?.map((sn) => (
           <option key={sn.id} value={sn.id}>{sn.title} — {fmtDateTimeAr(sn.startsAt)}</option>
@@ -620,11 +620,11 @@ function ContentSelect({ cohortId, value, onChange }: {
 
   return (
     <>
-      <label className="sr-only" htmlFor={`content-${cohortId}`}>المادّةُ أو التسجيل</label>
+      <label className="sr-only" htmlFor={`content-${cohortId}`}>المادّة أو التسجيل</label>
       <select id={`content-${cohortId}`} value={value} disabled={data === null || empty}
         onChange={(e) => onChange(e.target.value)} className={`${selectCls} flex-1`}>
         <option value="">
-          {data === null ? "يُقرأ المحتوى…" : empty ? "لا محتوى في هذه الشعبة بعد" : "اختر المادّة أو التسجيل…"}
+          {data === null ? "يقرأ المحتوى…" : empty ? "لا محتوى في هذه الشعبة بعد" : "اختر المادّة أو التسجيل…"}
         </option>
         {data && data.materials.length > 0 && (
           <optgroup label="المواد">
@@ -680,14 +680,14 @@ export function LearningSettings({ courses, cohorts, onDone }: {
                بكسلا وجد حقلَ العنوان بستّةٍ وعشرين بكسلَ عرضٍ — لا يُكتب
                فيه شيء. فيلتفّ الصفُّ الآن، والعنوانُ يأخذ سطرَه وحدَه. */
             <div key={i} className="flex flex-wrap items-center gap-2">
-              <input value={c.title} aria-label={`عنوانُ المعيار ${i + 1}`}
+              <input value={c.title} aria-label={`عنوان المعيار ${i + 1}`}
                 onChange={(e) => setCriteria(criteria.map((x, j) => (j === i ? { ...x, title: e.target.value } : x)))}
                 placeholder={`المعيار ${i + 1}`} className={`${inputCls} min-w-0 basis-full sm:flex-1 sm:basis-auto`} />
               {/* الدرجةُ العليا كانت حقلا بلا اسمٍ ولا نصٍّ نائب: قارئُ الشاشة
                   يقول «حقلٌ رقميّ» ولا يقول ماذا يُكتب فيه — كشفه فحصُ
                   الإتاحة بعد توسيعه إلى شاشات الفريق. */}
               <input type="number" min={1} value={c.maxScore}
-                aria-label={`الدرجةُ العليا للمعيار ${i + 1}`}
+                aria-label={`الدرجة العليا للمعيار ${i + 1}`}
                 onChange={(e) => setCriteria(criteria.map((x, j) => (j === i ? { ...x, maxScore: e.target.value } : x)))}
                 className={`${inputCls} w-20`} />
               {criteria.length > 1 && (
@@ -710,7 +710,7 @@ export function LearningSettings({ courses, cohorts, onDone }: {
                 criteria: criteria.map((c) => ({ title: c.title, maxScore: Number(c.maxScore) || 1 })),
               });
               setRubricTitle(""); setCriteria([{ title: "", maxScore: "10" }]);
-            }, "أُنشئ الروبرك")}>
+            }, "أنشئ الروبرك")}>
             أنشئ الروبرك
           </Button>
         </div>
@@ -734,7 +734,7 @@ export function LearningSettings({ courses, cohorts, onDone }: {
             <option value="project_accepted">مشروع مقبول</option>
             <option value="assessment_passed">تقييم مجتاز</option>
           </select>
-          <input type="number" min={1} value={ruleForm.threshold} aria-label="عتبةُ القاعدة"
+          <input type="number" min={1} value={ruleForm.threshold} aria-label="عتبة القاعدة"
             onChange={(e) => setRuleForm({ ...ruleForm, threshold: e.target.value })}
             placeholder="العتبة" className={inputCls} />
         </div>
@@ -746,7 +746,7 @@ export function LearningSettings({ courses, cohorts, onDone }: {
           onClick={() => act(() => apiPost("/api/admin/completion-rules", {
             courseId: ruleForm.courseId, cohortId: ruleForm.cohortId || undefined,
             type: ruleForm.type, threshold: Number(ruleForm.threshold), required: ruleForm.required,
-          }), "حُفظت قاعدة الإكمال")} className="mt-3">
+          }), "حفظت قاعدة الإكمال")} className="mt-3">
           احفظ القاعدة
         </Button>
       </Panel>
@@ -783,13 +783,13 @@ function CertificateCandidates({ cohortId, busy, act }: {
   const load = useCallback(() => {
     apiGet<CertCandidate[]>(`/api/admin/cohorts/${cohortId}/certificate-candidates`)
       .then((r) => { setRows(r); setError(""); })
-      .catch((e) => setError(e instanceof ApiError ? e.message : "تعذّر قراءة المرشَّحين"));
+      .catch((e) => setError(e instanceof ApiError ? e.message : "تعذّر قراءة المرشّحين"));
   }, [cohortId]);
   useEffect(() => { load(); }, [load]);
 
   if (error) return <p className="text-read leading-6 text-muted-foreground">{error}</p>;
-  if (!rows) return <p className="text-read text-muted-foreground">نقرأ المرشَّحين…</p>;
-  if (rows.length === 0) return <p className="text-read text-muted-foreground">لا مسجَّلين في هذه الشعبة بعد.</p>;
+  if (!rows) return <p className="text-read text-muted-foreground">نقرأ المرشّحين…</p>;
+  if (rows.length === 0) return <p className="text-read text-muted-foreground">لا مسجّلين في هذه الشعبة بعد.</p>;
 
   return (
     <ul className="space-y-1.5">
@@ -808,20 +808,20 @@ function CertificateCandidates({ cohortId, busy, act }: {
                     {r.certificate.number}
                   </span>
                   <Button tone="danger" onClick={() => { setRevoking(revoking === r.certificate!.id ? null : r.certificate!.id); setReason(""); }} className="px-2.5 text-fine">
-                    ألغِها
+                    ألغها
                   </Button>
                 </>
               ) : r.eligible ? (
                 <Button tone="confirm" disabled={busy}
                   onClick={() => act(
                     () => apiPost(`/api/admin/enrollments/${r.enrollmentId}/certificate`).then(load),
-                    `أُصدرت شهادة «${r.learnerName}»`,
+                    `أصدرت شهادة «${r.learnerName}»`,
                   )} className="text-fine text-gold-ink">
-                  <BadgeCheck className="h-3 w-3" /> أصدِر
+                  <BadgeCheck className="h-3 w-3" /> أصدر
                 </Button>
               ) : (
                 <span className="rounded-full border border-white/12 px-2.5 py-0.5 text-fine font-bold text-muted-foreground">
-                  لم يُنهِ بعد
+                  لم ينه بعد
                 </span>
               )}
             </span>
@@ -840,7 +840,7 @@ function CertificateCandidates({ cohortId, busy, act }: {
             <div className="mt-2 flex flex-wrap gap-2">
               <input
                 value={reason} onChange={(e) => setReason(e.target.value)}
-                placeholder="سببُ الإلغاء — يبقى في السجلّ (٥ أحرف فأكثر)"
+                placeholder="سبب الإلغاء — يبقى في السجلّ (٥ أحرف فأكثر)"
                 className="min-w-[14rem] flex-1 rounded-lg border border-white/10 bg-transparent px-3 py-1.5 text-fine outline-none placeholder:text-muted-foreground/75 focus:border-red-400/50"
               />
               <Button tone="danger" size="sm"
@@ -848,7 +848,7 @@ function CertificateCandidates({ cohortId, busy, act }: {
                 onClick={() => act(
                   () => apiPost(`/api/admin/certificates/${r.certificate!.id}/revoke`, { reason: reason.trim() })
                     .then(() => { setRevoking(null); setReason(""); load(); }),
-                  "أُلغيت الشهادة ووُثّق السبب",
+                  "ألغيت الشهادة ووثّق السبب",
                 )}
               >
                 أكّد الإلغاء

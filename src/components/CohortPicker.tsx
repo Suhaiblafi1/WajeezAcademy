@@ -63,7 +63,7 @@ export default function CohortPicker({
     return (
       <span className="inline-flex items-center gap-1.5 text-fine font-bold text-muted-foreground">
         <CalendarDays className="h-3.5 w-3.5 shrink-0" />
-        <UpcomingTermLine fallback="يُعلن الموعد مع فتح الشعبة" />
+        <UpcomingTermLine fallback="يعلن الموعد مع فتح الشعبة" />
       </span>
     );
   }

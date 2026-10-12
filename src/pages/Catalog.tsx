@@ -179,8 +179,8 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
         </h1>
         <p className="mx-auto mt-3 max-w-xl leading-8 text-muted-foreground">
           {isPathways
-            ? 'ابحث أو صفِّ حسب المجال. وإن حرتَ، فالتشخيص يختار لك ويشرح لماذا.'
-            : 'دورة واحدة تكفي أحيانا. وإن أكملت لاحقا لمسارها الكامل، خُصم ما دفعته من سعره.'}
+            ? 'ابحث أو صفّ حسب المجال. وإن حرت، فالتشخيص يختار لك ويشرح لماذا.'
+            : 'دورة واحدة تكفي أحيانا. وإن أكملت لاحقا لمسارها الكامل، خصم ما دفعته من سعره.'}
         </p>
       </div>
 
@@ -271,7 +271,7 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
           ? favOnly
             /* «جرّب توسيع البحث» نصيحةٌ لا تصلح هنا: لا بحثَ ضيّقٌ يُوسَّع،
                بل مفضّلةٌ لم يُوضع فيها شيءٌ بعد. */
-            ? 'لا شيءَ في مفضّلتك بعد — اضغط القلبَ على ما يعجبك ليعود إليك'
+            ? 'لا شيء في مفضّلتك بعد — اضغط القلب على ما يعجبك ليعود إليك'
             : 'لا نتائج مطابقة — جرّب توسيع البحث'
           : isPathways
             ? `يعرض ${count} ${count === 1 ? 'مسارا' : 'مسارات'}`
@@ -401,7 +401,7 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
               {/* أقربُ شعبةٍ مفتوحة — أصدقُ من اسم موسم: تاريخٌ يُشترى. وما لا شعبةَ له
                   يكفيه لوحُ «الفصل القادم» فوق النتائج. */}
               {openCohorts.get(c.id)?.[0]?.startsAt && (
-                <p className="mt-1.5 text-read font-bold text-teal-light-ink">شعبةٌ مفتوحة · تبدأ {cohortDayAr(openCohorts.get(c.id)![0].startsAt)}</p>
+                <p className="mt-1.5 text-read font-bold text-teal-light-ink">شعبة مفتوحة · تبدأ {cohortDayAr(openCohorts.get(c.id)![0].startsAt)}</p>
               )}
               <span className="mt-3 w-fit rounded-full border border-teal/25 bg-teal/10 px-2.5 py-1 text-fine text-teal-light-ink">
                 {c.skill}

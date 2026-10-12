@@ -34,7 +34,7 @@ export interface CohortAssessment {
 }
 
 export default function CohortAssignments({
-  items, learners, titleAr = "مهامُّ هذه الشعبة", emptyAr = "لا مهمّةَ في هذه الشعبة بعد — وما تؤلّفه أدناه يظهر هنا.",
+  items, learners, titleAr = "مهامّ هذه الشعبة", emptyAr = "لا مهمّة في هذه الشعبة بعد.",
 }: {
   items: CohortAssessment[];
   /** المسجَّلون فعلا — مقامُ «سلّم ٣ من ١٢»، فقائمةُ الانتظار لا تُسلّم */
@@ -69,12 +69,12 @@ export default function CohortAssignments({
                 </div>
                 <p className="mt-1 text-read text-muted-foreground">
                   سلّم {a.submissions.length} من {learners}
-                  {a.dueAt && <> · يُسلَّم قبل {fmtDateTimeAr(a.dueAt)}</>}
+                  {a.dueAt && <> · يسلّم قبل {fmtDateTimeAr(a.dueAt)}</>}
                   {waiting > 0 && (
                     <>
                       {" · "}
                       <Link to="/trainer/grading" className="font-bold text-gold-ink underline decoration-dotted underline-offset-4">
-                        {waiting} ينتظر تصحيحَك
+                        {waiting} ينتظر تصحيحك
                       </Link>
                     </>
                   )}

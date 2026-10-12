@@ -13,8 +13,20 @@
    ٣٤ · **الرقمُ والعبارةُ يتناقضان بالتصميم**: «٩٧٪ — أفضل تطابق حالي» في
         سطرٍ واحد، و١٧٪ من الجلسات تعرض ٧٨٪ فأعلى تحت «ليس قويّا». */
 
-import { describe, expect, it } from 'vitest'
-import { readFileSync } from 'node:fs'
+import { describe, expect as vexpect, it } from 'vitest'
+/* ما يُفحص بلا تشكيلٍ إعرابيّ — بعضُ ما يُقرأ هنا بعد «اللغة البيضاء» وبعضُه (الخادمُ والعقودُ والتشخيص) قبلها */
+const plainDeep = (v: unknown): unknown =>
+  typeof v === 'string' ? plainAr(v) : Array.isArray(v) ? v.map(plainDeep)
+    : v && typeof v === 'object' && Object.getPrototypeOf(v) === Object.prototype ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, plainDeep(x)])) : v
+const expect = Object.assign((v: unknown, m?: string) => vexpect(plainDeep(v), m), vexpect) as typeof vexpect
+import { readFileSync as readRaw } from 'node:fs'
+import { plainAr } from '@/application/text/plain-ar'
+/* ما يُقرأ من الملفّات بلا تشكيلٍ إعرابيّ — بعضُها بعد «اللغة البيضاء» وبعضُها (العقود والخادم) قبلها */
+function readFileSync(p: Parameters<typeof readRaw>[0]): Buffer
+function readFileSync(p: Parameters<typeof readRaw>[0], e: BufferEncoding | { encoding: BufferEncoding }): string
+function readFileSync(p: Parameters<typeof readRaw>[0], e?: BufferEncoding | { encoding: BufferEncoding }): string | Buffer {
+  return e === undefined ? readRaw(p) : plainAr(String(readRaw(p, e)))
+}
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { launchPathways, pathwaySkills } from '../../domain/diagnostic/catalog'
@@ -33,8 +45,8 @@ const read = (p: string) => readFileSync(join(root, p), 'utf8')
 const activeRequired = (id: string) =>
   pathwaySkills(id).filter((s) => isDiagnosticSkillActive(layersOfSkill(s.slug)))
 
-describe('٣٦ · المسطرةُ القديمة كانت غيرَ قابلةٍ للبلوغ — والقياسُ يُثبتها', () => {
-  it('لا مسارَ واحدٌ يبلغ نصفَ مهاراته قياسا ولو أجاب المتعلّمُ عن كلّ سؤال', () => {
+describe('٣٦ · المسطرة القديمة كانت غير قابلة للبلوغ — والقياس يثبتها', () => {
+  it('لا مسار واحد يبلغ نصف مهاراته قياسا ولو أجاب المتعلّم عن كلّ سؤال', () => {
     const canMeasure = measurableSkills()
     const ceilings = launchPathways.map((p) => {
       const req = activeRequired(p.id)
@@ -45,11 +57,11 @@ describe('٣٦ · المسطرةُ القديمة كانت غيرَ قابلةٍ
     const reachable = ceilings.filter((c) => c.ceiling >= 0.5)
     expect(
       reachable.map((c) => c.id),
-      'تغيّر البنكُ أو الكتالوج — تُراجَع معايرةُ المانع، فالمسطرةُ القديمة صارت قابلةً للبلوغ',
+      'تغيّر البنك أو الكتالوج — تراجع معايرة المانع، فالمسطرة القديمة صارت قابلة للبلوغ',
     ).toEqual([])
   })
 
-  it('والمسطرةُ الجديدةُ سقفُها المئة — يبلغها من قِيس فيه كلُّ ما نستطيع قياسَه', () => {
+  it('والمسطرة الجديدة سقفها المئة — يبلغها من قيس فيه كلّ ما نستطيع قياسه', () => {
     const entity = recommendationUniverse().byId.get('PW-STU-002')!
     const canMeasure = measurableSkills()
     const measured = new Map<string, SkillState>()
@@ -57,27 +69,27 @@ describe('٣٦ · المسطرةُ القديمة كانت غيرَ قابلةٍ
       if (canMeasure.has(slug)) measured.set(slug, { slug, state: 'measured', level: 4 })
     }
     const full = assessEntitySkills(entity, measured, {})
-    expect(full.measurableCoverage, 'المسطرةُ الجديدةُ لا تبلغ سقفَها').toBe(1)
-    expect(full.measuredCoverage, 'الرقمُ المعروضُ تضخّم — يجب أن يبقى على كلّ المهارات').toBeLessThan(0.5)
+    expect(full.measurableCoverage, 'المسطرة الجديدة لا تبلغ سقفها').toBe(1)
+    expect(full.measuredCoverage, 'الرقم المعروض تضخّم — يجب أن يبقى على كلّ المهارات').toBeLessThan(0.5)
   })
 
-  it('والعتبةُ معلَنةٌ رقما واحدا يُقرأ ويُراجَع', () => {
+  it('والعتبة معلنة رقما واحدا يقرأ ويراجع', () => {
     expect(STRONG_MEASURABLE_COVERAGE_MIN).toBeGreaterThan(0.5)
     expect(STRONG_MEASURABLE_COVERAGE_MIN).toBeLessThanOrEqual(0.8)
   })
 })
 
-describe('٣٥ · تقييمُ العائلات يبلغ القرار — لا العرضَ وحدَه', () => {
+describe('٣٥ · تقييم العائلات يبلغ القرار — لا العرض وحده', () => {
   const entity = () => recommendationUniverse().byId.get('PW-STU-002')!
   const measurableOf = (e: ReturnType<typeof entity>) => {
     const can = measurableSkills()
     return e.skill_slugs.filter((s) => can.has(s))
   }
 
-  it('الترجيحُ يرفع التغطيةَ — وكان لا يغيّر شيئا خارج قائمة الدورات', () => {
+  it('الترجيح يرفع التغطية — وكان لا يغيّر شيئا خارج قائمة الدورات', () => {
     const e = entity()
     const req = measurableOf(e)
-    expect(req.length, 'المسارُ بلا مهارةٍ يمكن قياسُها — يُراجَع الحارس').toBeGreaterThan(0)
+    expect(req.length, 'المسار بلا مهارة يمكن قياسها — يراجع الحارس').toBeGreaterThan(0)
     const idx = familyIndex()
     const ratings: Record<string, number> = {}
     for (const slug of req) {
@@ -86,11 +98,11 @@ describe('٣٥ · تقييمُ العائلات يبلغ القرار — لا �
     }
     const without = assessEntitySkills(e, new Map(), {})
     const withRatings = assessEntitySkills(e, new Map(), ratings)
-    expect(withRatings.measurableCoverage, 'الترجيحُ ما زال بلا أثرٍ على التغطية')
+    expect(withRatings.measurableCoverage, 'الترجيح ما زال بلا أثر على التغطية')
       .toBeGreaterThan(without.measurableCoverage)
   })
 
-  it('ولا يُفتح ادّعاءُ المعرفة بترجيحٍ وحدَه — قياسٌ مباشرٌ واحدٌ على الأقلّ', () => {
+  it('ولا يفتح ادّعاء المعرفة بترجيح وحده — قياس مباشر واحد على الأقلّ', () => {
     const e = entity()
     const req = measurableOf(e)
     const idx = familyIndex()
@@ -100,12 +112,12 @@ describe('٣٥ · تقييمُ العائلات يبلغ القرار — لا �
       if (fam) ratings[fam] = 5
     }
     const inferredOnly = assessEntitySkills(e, new Map(), ratings)
-    expect(inferredOnly.hasDirectSkillEvidence, 'ادُّعي دليلٌ مباشرٌ بلا قياسٍ واحد').toBe(false)
+    expect(inferredOnly.hasDirectSkillEvidence, 'ادّعي دليل مباشر بلا قياس واحد').toBe(false)
     const measured = new Map<string, SkillState>([[req[0], { slug: req[0], state: 'measured', level: 3 }]])
     expect(assessEntitySkills(e, measured, ratings).hasDirectSkillEvidence).toBe(true)
   })
 
-  it('والمقيسُ يعلو على المرجَّح — الفجوةُ لا تُبنى على تقديرٍ ذاتيّ', () => {
+  it('والمقيس يعلو على المرجّح — الفجوة لا تبنى على تقدير ذاتيّ', () => {
     const e = entity()
     const req = measurableOf(e)
     const idx = familyIndex()
@@ -116,54 +128,54 @@ describe('٣٥ · تقييمُ العائلات يبلغ القرار — لا �
     }
     /* ترجيحٌ منخفضٌ لا يصنع «فجوةً مقيسة» */
     const inferred = assessEntitySkills(e, new Map(), ratings)
-    expect(inferred.gapSkillSlugs, 'ترجيحٌ ذاتيٌّ صار فجوةً مقيسة').toEqual([])
+    expect(inferred.gapSkillSlugs, 'ترجيح ذاتيّ صار فجوة مقيسة').toEqual([])
   })
 
-  it('والسياقُ يحمل التقييمَ — وكان لا يغادر تركيبَ قائمة الدورات', () => {
+  it('والسياق يحمل التقييم — وكان لا يغادر تركيب قائمة الدورات', () => {
     const types = read('src/domain/diagnostic/v2/types.ts')
-    expect(types, 'تقييمُ العائلات لا يبلغ سياقَ القرار').toContain('familyRatings')
+    expect(types, 'تقييم العائلات لا يبلغ سياق القرار').toContain('familyRatings')
     const engine = read('src/domain/diagnostic/v2_1/engine.ts')
     expect(engine).toMatch(/familyRatings: this\.familyRatings/)
   })
 })
 
-describe('٣٤ · الرقمُ شيءٌ والدرجةُ شيءٌ آخر', () => {
+describe('٣٤ · الرقم شيء والدرجة شيء آخر', () => {
   const card = read('src/pages/diagnostic/ResultPlanCards.tsx')
 
-  it('لا يُطبعان معا في سطرٍ واحد — «٩٧٪ — أفضل تطابق حالي» تناقضٌ بالتصميم', () => {
-    expect(card, 'الرقمُ والدرجةُ ما زالا في سطرٍ واحد')
+  it('لا يطبعان معا في سطر واحد — «٩٧٪ — أفضل تطابق حالي» تناقض بالتصميم', () => {
+    expect(card, 'الرقم والدرجة ما زالا في سطر واحد')
       .not.toMatch(/\{total\}٪\{bandAr/)
   })
 
-  it('ومع الدرجةِ سببُها — مانعٌ يُقرأ خيرٌ من تناقضٍ يُخمَّن', () => {
-    expect(card).toContain('صنفُ النتيجة')
+  it('ومع الدرجة سببها — مانع يقرأ خير من تناقض يخمّن', () => {
+    expect(card).toContain('صنف النتيجة')
     expect(card).toMatch(/blockers\.map/)
   })
 
-  it('والموانعُ تصل الشاشةَ فعلا — كانت تُحسب وتُسجَّل ولا تُعرض', () => {
+  it('والموانع تصل الشاشة فعلا — كانت تحسب وتسجّل ولا تعرض', () => {
     const vm = read('src/application/diagnostic/view-model.ts')
-    expect(vm, 'الموانعُ لا تُوضع في نتيجة العرض').toContain('strong_blockers_ar')
+    expect(vm, 'الموانع لا توضع في نتيجة العرض').toContain('strong_blockers_ar')
     /* ومداخلُ البطاقة صارت تُبنى في `why-pathway.ts` للشاشتين (٤ أكتوبر
        ٢٠٢٦) — شاشةِ النتيجة وصفحةِ المسار. فالفحصُ هناك بالسلوك لا بالنصّ،
        والشاشةُ تبنيها منه. */
     const facts = whyPathwayFacts({
-      reasons: [], confidenceBand: '', resultJson: { strong_blockers_ar: ['مانعٌ بعينه'] },
+      reasons: [], confidenceBand: '', resultJson: { strong_blockers_ar: ['مانع بعينه'] },
     } as unknown as DiagResult)
-    expect(facts.blockers, 'مداخلُ البطاقة لا تحمل الموانع').toEqual(['مانعٌ بعينه'])
+    expect(facts.blockers, 'مداخل البطاقة لا تحمل الموانع').toEqual(['مانع بعينه'])
     const page = read('src/pages/Diagnostic.tsx')
-    expect(page, 'الشاشةُ لا تبني البطاقةَ من المداخل المشتركة').toContain('{...whyPathwayFacts(result)}')
+    expect(page, 'الشاشة لا تبني البطاقة من المداخل المشتركة').toContain('{...whyPathwayFacts(result)}')
   })
 
-  it('والعبارةُ تقول أساسَها — «قوية» وحدَها ادّعاءُ علمٍ بما لم يُقَس', () => {
+  it('والعبارة تقول أساسها — «قوية» وحدها ادّعاء علم بما لم يقس', () => {
     const conf = read('src/domain/diagnostic/v2/confidence.ts')
-    expect(conf).toContain('تطابق قوي بما قِسناه')
+    expect(conf).toContain('تطابق قوي بما قسناه')
     const engine = read('src/domain/diagnostic/v2_1/engine.ts')
-    expect(engine).toContain('قوية بما قِسناه')
+    expect(engine).toContain('قوية بما قسناه')
   })
 
   /* القيدُ في العبارة قد يُهمَل ويُقرأ صدرُها؛ والرقمُ لا يُهمَل. فالأساسُ
      يُعرض عددا: كم قِيست من كم يمكن قياسُها، وكم بقي مجهولا. */
-  it('والأساسُ يُعرض رقما لا عبارةً وحدَها', () => {
+  it('والأساس يعرض رقما لا عبارة وحدها', () => {
     const entity = recommendationUniverse().byId.get('PW-STU-002')!
     const canMeasure = measurableSkills()
     const req = entity.skill_slugs.filter((s) => canMeasure.has(s))
@@ -179,10 +191,10 @@ describe('٣٤ · الرقمُ شيءٌ والدرجةُ شيءٌ آخر', () =>
       if (fam) ratings[fam] = 5
     }
     expect(assessEntitySkills(entity, measured, ratings).measurableMeasuredCount,
-      'الترجيحُ الذاتيُّ عُدَّ قياسا في الرقم المعروض').toBe(1)
+      'الترجيح الذاتيّ عدّ قياسا في الرقم المعروض').toBe(1)
 
     const card = read('src/pages/diagnostic/ResultPlanCards.tsx')
-    expect(card).toContain('تسمح المنصّةُ بقياسها')
+    expect(card).toContain('تسمح المنصّة بقياسها')
     expect(card).toMatch(/basis\.measured/)
     const vm = read('src/application/diagnostic/view-model.ts')
     expect(vm).toContain('evidence_basis')

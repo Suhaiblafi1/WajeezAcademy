@@ -46,9 +46,9 @@ function seasonLineAr(term: ShelfPath["term"]): string | null {
   if (!term) return null;
   const opens = term.registrationOpensAt ? new Date(term.registrationOpensAt) : null;
   if (opens && opens.getTime() > Date.now()) {
-    return `${term.titleAr} — يُفتح التسجيلُ ${fmtDateLong(term.registrationOpensAt ?? "")}`;
+    return `${term.titleAr} — يفتح التسجيل ${fmtDateLong(term.registrationOpensAt ?? "")}`;
   }
-  if (term.status === "open") return `${term.titleAr} — التسجيلُ مفتوحٌ الآن`;
+  if (term.status === "open") return `${term.titleAr} — التسجيل مفتوح الآن`;
   return `${term.titleAr} — يبدأ ${cohortDayAr(term.startsOn)}`;
 }
 
@@ -73,8 +73,8 @@ export default function TrainerPathsShelf() {
         مسارات أعدّها مدرّبونا المعتمدون
       </h2>
       <p className="mt-2 max-w-2xl text-sm leading-7 text-muted-foreground">
-        رتّبها مدرّبٌ من دوراته التي أُهِّل لها، وتحمل اسمَه. وهي غيرُ مسارات
-        «مؤشّر وجيز» — تلك يختارها القياسُ من فجوةِ مهاراتك، وهذه يعرضها صاحبُها.
+        رتّبها مدرّب من دوراته التي أهّل لها، وتحمل اسمه. وهي غير مسارات
+        «مؤشّر وجيز» — تلك يختارها القياس من فجوة مهاراتك، وهذه يعرضها صاحبها.
       </p>
 
       <div className="mt-5 grid gap-4 sm:grid-cols-2">

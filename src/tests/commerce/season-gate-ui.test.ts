@@ -32,8 +32,8 @@ const imports = (body: string, module: string) =>
 const renders = (body: string, component: string) =>
   new RegExp(`<${component}[\\s/>]`).test(body)
 
-describe('كلُّ بابِ شراءٍ عامٍّ يعرض الرسالةَ ويأخذ البريد', () => {
-  it('يستورد اللوحَ ويصيّره — لا يكتفي بردٍّ أحمرَ في أسفل الشاشة', () => {
+describe('كلّ باب شراء عامّ يعرض الرسالة ويأخذ البريد', () => {
+  it('يستورد اللوح ويصيّره — لا يكتفي بردّ أحمر في أسفل الشاشة', () => {
     const gaps: string[] = []
     for (const f of PUBLIC_BUY_DOORS) {
       const body = read(f)
@@ -43,23 +43,23 @@ describe('كلُّ بابِ شراءٍ عامٍّ يعرض الرسالةَ وي
     expect(gaps).toEqual([])
   })
 
-  it('ويعرف القفلَ من الطريقَين: قدراتِ المنصّة قبل النقر، وردِّ الخادم بعده', () => {
+  it('ويعرف القفل من الطريقين: قدرات المنصّة قبل النقر، وردّ الخادم بعده', () => {
     const gaps: string[] = []
     for (const f of PUBLIC_BUY_DOORS) {
       const body = read(f)
       /* `/api/config` — فلا يملأ المشتري سلّةً ثمّ يُردّ */
-      if (!imports(body, 'usePlatformConfig')) gaps.push(`${f}: لا يقرأ حالَ الباب قبل النقر`)
+      if (!imports(body, 'usePlatformConfig')) gaps.push(`${f}: لا يقرأ حال الباب قبل النقر`)
       /* ورمزُ الردّ — لتبويبٍ فُتح قبل الإغلاق، أو قدراتٍ تعذّر تحميلُها */
-      if (!body.includes('"season_closed"')) gaps.push(`${f}: لا يلتقط ردَّ الخادم بعد النقر`)
+      if (!body.includes('"season_closed"')) gaps.push(`${f}: لا يلتقط ردّ الخادم بعد النقر`)
     }
     expect(gaps).toEqual([])
   })
 })
 
-describe('جملةُ الإغلاق مصدرُها واحد', () => {
+describe('جملة الإغلاق مصدرها واحد', () => {
   /* تُكتب من شاشة الفصول وتُقرأ من `/api/config`. ولو نُسخت في الواجهة لَرأى
      الزائرُ جملةً وكتب الإداريُّ أخرى — ولا شيءَ يقول له إنّ تعديلَه لم يصل. */
-  it('اللوحُ لا يحمل جملةً مكتوبةً فيه بل يأخذها خاصّيّةً', () => {
+  it('اللوح لا يحمل جملة مكتوبة فيه بل يأخذها خاصّيّة', () => {
     const body = read('components/RegistrationClosedNotice.tsx')
     /* نصُّ القرار حرفيّا — يقع في تعليق الرأس، فيُفحص خارجَ التعليقات وحدَها */
     const code = body.replace(/\/\*[\s\S]*?\*\//g, '')
@@ -68,31 +68,31 @@ describe('جملةُ الإغلاق مصدرُها واحد', () => {
     expect(code).toMatch(/messageAr[:\s]/)
   })
 
-  it('وأبوابُ الشراء تمرّرها كما وصلت لا تؤلّف بديلا', () => {
+  it('وأبواب الشراء تمرّرها كما وصلت لا تؤلّف بديلا', () => {
     for (const f of PUBLIC_BUY_DOORS) {
       const code = read(f).replace(/\/\*[\s\S]*?\*\//g, '')
-      expect(code, `${f} يكتب جملةَ الإغلاق بيده`).not.toContain('لم يفتح باب التسجيل')
-      expect(code, `${f} لا يمرّر الجملةَ إلى اللوح`).toMatch(/messageAr=\{/)
+      expect(code, `${f} يكتب جملة الإغلاق بيده`).not.toContain('لم يفتح باب التسجيل')
+      expect(code, `${f} لا يمرّر الجملة إلى اللوح`).toMatch(/messageAr=\{/)
     }
   })
 })
 
-describe('اللوحُ ينادي مسارا موجودا', () => {
+describe('اللوح ينادي مسارا موجودا', () => {
   /* زوجُ الواجهةِ والمسار يفترق بإعادةِ تسميةِ أحدهما، ولا يُكتشف إلّا بزائرٍ
      يترك بريدَه فيضيع. فيُفحص الطرفان معا. */
   const ROUTE = '/api/public/registration-interest'
 
-  it('والمسارُ مسجَّلٌ في الخادم بالاسم نفسِه', () => {
+  it('والمسار مسجّل في الخادم بالاسم نفسه', () => {
     expect(read('components/RegistrationClosedNotice.tsx')).toContain(`"${ROUTE}"`)
     const routes = readFileSync(join(process.cwd(), 'server/http/routes/public.routes.ts'), 'utf8')
     expect(routes).toMatch(new RegExp(`app\\.post\\(\\s*'${ROUTE}'`))
   })
 })
 
-describe('افتراضُ القدرات يُستورَد لا يُنسَخ', () => {
+describe('افتراض القدرات يستورد لا ينسخ', () => {
   /* كان الافتراضُ مكتوبا مرّتين — في الخدمة وفي الخطّاف. فكلُّ قدرةٍ تُضاف
      تحتاج موضعَين، وأحدُهما يُنسى: خطّافٌ يقول «مغلق» وخدمةٌ تقول «مفتوح». */
-  it('الخطّافُ يستورد الافتراضَ من الخدمة', () => {
+  it('الخطّاف يستورد الافتراض من الخدمة', () => {
     const hook = read('hooks/usePlatformConfig.ts')
     expect(hook).toContain('PLATFORM_CONFIG_FALLBACK')
     expect(hook).not.toMatch(/fileUploads:\s*(true|false)/)

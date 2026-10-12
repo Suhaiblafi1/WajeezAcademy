@@ -24,38 +24,38 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '../../..')
 const ymd = (d: string) => d
 
 const RETURNED = {
-  summaryAr: 'شعبةٌ تطبيقيّةٌ من أربعة أسابيع',
+  summaryAr: 'شعبة تطبيقيّة من أربعة أسابيع',
   startsOn: '2026-11-01', endsOn: '2026-11-28',
   modules: [
-    { moduleId: 'm1', titleAr: 'صياغةُ الرسالة', bodyAr: 'متنٌ قصير' },
-    { moduleId: 'm2', titleAr: 'الدليل', bodyAr: 'متنُ المحور الثاني' },
+    { moduleId: 'm1', titleAr: 'صياغة الرسالة', bodyAr: 'متن قصير' },
+    { moduleId: 'm2', titleAr: 'الدليل', bodyAr: 'متن المحور الثاني' },
   ],
   slots: [],
   resources: [],
 }
 const RESENT = {
   ...RETURNED,
-  modules: [{ ...RETURNED.modules[0], bodyAr: 'متنٌ أطول فيه مثالٌ من بيئة العمل' }, RETURNED.modules[1]],
-  resources: [{ title: 'مقالةٌ في الإسناد', url: 'https://example.com/a', kind: 'link' }],
+  modules: [{ ...RETURNED.modules[0], bodyAr: 'متن أطول فيه مثال من بيئة العمل' }, RETURNED.modules[1]],
+  resources: [{ title: 'مقالة في الإسناد', url: 'https://example.com/a', kind: 'link' }],
 }
 
-describe('⑦ القاعدة — ملاحظتُك بجانب ما تغيّر في خطوتها', () => {
-  it('ملاحظةٌ بلا تغيير، وملاحظةٌ أُجيبت، وتغييرٌ بلا ملاحظة — بترتيب الخطوات', () => {
+describe('⑦ القاعدة — ملاحظتك بجانب ما تغيّر في خطوتها', () => {
+  it('ملاحظة بلا تغيير، وملاحظة أجيبت، وتغيير بلا ملاحظة — بترتيب الخطوات', () => {
     const r = sinceReturn(RETURNED, RESENT, {
-      general: 'خطّةٌ جيّدة — بقي تعديلان',
-      identity: 'اكتب وقتَ اللقاء في اسم الشعبة',
+      general: 'خطّة جيّدة — بقي تعديلان',
+      identity: 'اكتب وقت اللقاء في اسم الشعبة',
       modules: 'أضف مثالا في المحور الأوّل',
     }, { date: ymd })
-    expect(r.general).toBe('خطّةٌ جيّدة — بقي تعديلان')
+    expect(r.general).toBe('خطّة جيّدة — بقي تعديلان')
     expect(r.rows.map((x) => [x.section, x.note !== null, x.lines.length > 0])).toEqual([
       ['identity', true, false],
       ['modules', true, true],
       ['assignments', false, true],
     ])
-    expect(r.rows[1].lines.join(' ')).toContain('صياغةُ الرسالة')
+    expect(r.rows[1].lines.join(' ')).toContain('صياغة الرسالة')
   })
 
-  it('ولا شيءَ يُذكر حين لا ملاحظةَ ولا تغيير', () => {
+  it('ولا شيء يذكر حين لا ملاحظة ولا تغيير', () => {
     expect(sinceReturn(RETURNED, RETURNED, {}, { date: ymd })).toEqual({ general: null, rows: [] })
   })
 })
@@ -77,26 +77,26 @@ const mentions = (node: ts.Node, name: string) => all(node, (n) => ts.isIdentifi
 describe('⑦ الشاشة — «ما تغيّر منذ ردّك» في بطاقة المراجعة', () => {
   const sf = tree('src/components/admin/TrainerPlanReview.tsx')
 
-  it('تُعرض لخطّةٍ أُعيد إرسالُها بعد ردٍّ — وبها وحدَها', () => {
+  it('تعرض لخطّة أعيد إرسالها بعد ردّ — وبها وحدها', () => {
     const shown = all(sf, (n) => ts.isBinaryExpression(n) && n.operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandToken
       && /trainerPlan\.status === "submitted"/.test(n.left.getText(sf)) && /trainerPlan\.returned\b/.test(n.left.getText(sf))
       && mentions(n.right, 'SinceReturnList'))
-    expect(shown.length, 'المنطقةُ لا تُعرض، أو تُعرض بلا شرطها').toBe(1)
+    expect(shown.length, 'المنطقة لا تعرض، أو تعرض بلا شرطها').toBe(1)
   })
 
-  it('وتُقابِل الخطّةَ كما رُدّت بالمرسَلة — لا العكس، ولا بالمعتمَدة', () => {
+  it('وتقابل الخطّة كما ردّت بالمرسلة — لا العكس، ولا بالمعتمدة', () => {
     const calls = all(sf, (n) => ts.isCallExpression(n) && n.expression.getText(sf) === 'sinceReturn') as ts.CallExpression[]
     expect(calls.length).toBe(1)
     expect(calls[0].arguments.slice(0, 2).map((a) => a.getText(sf)))
       .toEqual(['trainerPlan.returned.content', 'trainerPlan.content'])
   })
 
-  it('ولا تُكرَّر «ما طلبتَه» أسفلَ المنهج وقد قيلت بجانب ما تغيّر', () => {
+  it('ولا تكرّر «ما طلبته» أسفل المنهج وقد قيلت بجانب ما تغيّر', () => {
     const notesBlock = all(sf, (n) => ts.isArrowFunction(n) && mentions(n, 'ReviewNotesList'))
-    expect(notesBlock.length, 'تغيّر بناءُ صندوق «ما طلبتَه» — فتغيّر الحارس').toBeGreaterThan(0)
+    expect(notesBlock.length, 'تغيّر بناء صندوق «ما طلبته» — فتغيّر الحارس').toBeGreaterThan(0)
     const skip = all(notesBlock[0], (n) => ts.isIfStatement(n)
       && /trainerPlan\.returned\b/.test(n.expression.getText(sf))
       && /^return null;?$/.test(n.thenStatement.getText(sf).trim()))
-    expect(skip.length, '«ما طلبتَه» يُكرَّر تحت المنهج وقد قيل في «ما تغيّر منذ ردّك»').toBe(1)
+    expect(skip.length, '«ما طلبته» يكرّر تحت المنهج وقد قيل في «ما تغيّر منذ ردّك»').toBe(1)
   })
 })

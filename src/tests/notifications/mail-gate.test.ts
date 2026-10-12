@@ -37,14 +37,14 @@ function serverSources(): string[] {
 function sendEmailBody(): string {
   const src = readFileSync(MAIL_TS, 'utf-8')
   const start = src.indexOf('export async function sendEmail(')
-  expect(start, 'دالّةُ sendEmail — تغيّر اسمُها أو زالت').toBeGreaterThan(-1)
+  expect(start, 'دالّة sendEmail — تغيّر اسمها أو زالت').toBeGreaterThan(-1)
   const end = src.indexOf('\n}', start)
-  expect(end, 'نهايةُ جسم sendEmail').toBeGreaterThan(start)
+  expect(end, 'نهاية جسم sendEmail').toBeGreaterThan(start)
   return src.slice(start, end)
 }
 
-describe('بوّابةُ الإرسال الحقيقيّ', () => {
-  it('بيئةٌ لم تقل شيئا لا تُرسل', () => {
+describe('بوّابة الإرسال الحقيقيّ', () => {
+  it('بيئة لم تقل شيئا لا ترسل', () => {
     expect(liveMailAllowed({})).toBe(false)
     expect(liveMailAllowed({ NODE_ENV: 'development' })).toBe(false)
     expect(liveMailAllowed({ NODE_ENV: 'test' })).toBe(false)
@@ -53,35 +53,35 @@ describe('بوّابةُ الإرسال الحقيقيّ', () => {
     expect(liveMailAllowed({ RESEND_API_KEY: 're_live_key' })).toBe(false)
   })
 
-  it('الإنتاجُ يُرسل — بأيّ العلامتَين ضُبطت', () => {
+  it('الإنتاج يرسل — بأيّ العلامتين ضبطت', () => {
     expect(liveMailAllowed({ NODE_ENV: 'production' })).toBe(true)
     expect(liveMailAllowed({ APP_ENV: 'production' })).toBe(true)
   })
 
-  it('MAIL_LIVE=on بابٌ صريحٌ خارج الإنتاج', () => {
+  it('MAIL_LIVE=on باب صريح خارج الإنتاج', () => {
     expect(liveMailAllowed({ MAIL_LIVE: 'on', NODE_ENV: 'development' })).toBe(true)
     /* وقيمةٌ أخرى ليست فتحا — `on` وحدَها، فلا يفتحه `off` ولا `false` */
     expect(liveMailAllowed({ MAIL_LIVE: 'off' })).toBe(false)
     expect(liveMailAllowed({ MAIL_LIVE: 'true' })).toBe(false)
   })
 
-  it('عميلُ Resend يُبنى في موضعٍ واحدٍ في الخادم كلِّه', () => {
+  it('عميل Resend يبنى في موضع واحد في الخادم كلّه', () => {
     const sites = serverSources().filter((f) => /new\s+Resend\s*\(/.test(readFileSync(f, 'utf-8')))
     expect(sites.map((f) => f.replace(process.cwd() + '/', ''))).toEqual(['server/services/mail.ts'])
   })
 
-  it('والبوّابةُ تسبق البناءَ في مسار sendEmail', () => {
+  it('والبوّابة تسبق البناء في مسار sendEmail', () => {
     const body = sendEmailBody()
     const gate = body.indexOf('liveMailAllowed(')
     const build = body.search(/new\s+Resend\s*\(/)
-    expect(gate, 'sendEmail لا تسأل البوّابةَ أصلا').toBeGreaterThan(-1)
-    expect(build, 'sendEmail لا تبني عميلَ Resend').toBeGreaterThan(-1)
+    expect(gate, 'sendEmail لا تسأل البوّابة أصلا').toBeGreaterThan(-1)
+    expect(build, 'sendEmail لا تبني عميل Resend').toBeGreaterThan(-1)
     expect(gate).toBeLessThan(build)
     /* وسؤالٌ بلا خروجٍ ليس بوّابة: الرفضُ يخرج من الدالّة بسببه المكتوب */
     expect(body).toMatch(/if\s*\(\s*!\s*liveMailAllowed\(\s*\)\s*\)\s*return[^\n]*MAIL_GATE_REFUSAL_AR/)
   })
 
-  it('ورفضُها نصٌّ عربيٌّ يقول ما يُفعل', () => {
+  it('ورفضها نصّ عربيّ يقول ما يفعل', () => {
     expect(MAIL_GATE_REFUSAL_AR).toContain('MAIL_LIVE=on')
   })
 })

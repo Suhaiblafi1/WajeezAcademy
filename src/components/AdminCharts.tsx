@@ -60,8 +60,8 @@ function lastByKey(rows: Record<string, unknown>[], keyField: string, valueField
 /* حالاتُ التسجيل كما في القاعدة (enrolled | waitlisted | completed | dropped …) —
    كانت تُعرض بالإنجليزيّة الخام على لوحة المدير (جولة ٢٠٢٦-٠٩) */
 const ENROLLMENT_STATUS_AR: Record<string, string> = {
-  enrolled: "مسجَّل", active: "جارٍ", completed: "أكمل", waitlisted: "قائمة انتظار",
-  dropped: "انسحب", withdrawn: "انسحب", seat_held: "مقعد محجوز", pending: "بانتظار الدفع", cancelled: "أُلغي",
+  enrolled: "مسجّل", active: "جار", completed: "أكمل", waitlisted: "قائمة انتظار",
+  dropped: "انسحب", withdrawn: "انسحب", seat_held: "مقعد محجوز", pending: "بانتظار الدفع", cancelled: "ألغي",
 };
 
 export default function AdminCharts({ className = "" }: { className?: string }) {
@@ -118,7 +118,7 @@ export default function AdminCharts({ className = "" }: { className?: string }) 
         unitAr="تشخيص"
         loading={!diagnostic.rows && !diagnostic.failed}
         failed={diagnostic.failed}
-        emptyAr="لا تشخيص مرفق بحساب بعد — يظهر المخطط مع أول نتيجة تُربط"
+        emptyAr="لا تشخيص مرفق بحساب بعد — يظهر المخطط مع أول نتيجة تربط"
       />
       <BarChartCard
         titleAr="التسجيلات بحالتها"

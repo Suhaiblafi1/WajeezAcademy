@@ -23,23 +23,23 @@ export interface PlanDecision {
 /** ما يقوله الاعتمادُ لمن نقره — باللقاءات التي اعتُمدت معه، وبما تعذّر باسمه */
 export function approvedMsg(r: PlanDecision): string {
   const m = r.meetings
-  const withMeetings = m && m.approved > 0 ? ` ومعها ${m.approved === 1 ? 'لقاؤها' : `لقاءاتُها (${m.approved})`}` : ''
+  const withMeetings = m && m.approved > 0 ? ` ومعها ${m.approved === 1 ? 'لقاؤها' : `لقاءاتها (${m.approved})`}` : ''
   const t = r.tasks
-  const withTasks = t && t.applied > 0 ? ` و${t.applied === 1 ? 'مهمّتُها المنتظِرة' : `مهامُّها المنتظِرة (${t.applied})`}` : ''
+  const withTasks = t && t.applied > 0 ? ` و${t.applied === 1 ? 'مهمّتها المنتظرة' : `مهامّها المنتظرة (${t.applied})`}` : ''
   const failed = m?.failed.length
-    ? ` — وتعذّر اعتمادُ ${m.failed.map((f) => `«${f.title}»`).join(' و')}: ${m.failed[0].reason}. أعِد المحاولةَ من بطاقته أدناه.`
-    : ' — وأُخبر المدرّب'
+    ? ` — وتعذّر اعتماد ${m.failed.map((f) => `«${f.title}»`).join(' و')}: ${m.failed[0].reason}. أعد المحاولة من بطاقته أدناه.`
+    : ' — وأخبر المدرّب'
   const tasksLeft = t?.failed.length
     ? ` وبقي من المهامّ ${t.failed.map((f) => `«${f.title}»`).join(' و')}: ${t.failed[0].reason}`
     : ''
-  return `اعتُمدت خطّةُ المدرّب${withMeetings}${withTasks}${failed}${tasksLeft}`
+  return `اعتمدت خطّة المدرّب${withMeetings}${withTasks}${failed}${tasksLeft}`
 }
 
 /** ما بقي من دوراته بلا اعتماد — بالعدد كما يُقرأ لا «2 دورتان» */
 function coursesLeftAr(n: number): string {
-  if (n === 1) return 'دورةٌ واحدة'
+  if (n === 1) return 'دورة واحدة'
   if (n === 2) return 'دورتان'
-  return countAr(n, { one: 'دورة', two: 'دورتان', few: 'دورات', many: 'دورةً' })
+  return countAr(n, { one: 'دورة', two: 'دورتان', few: 'دورات', many: 'دورة' })
 }
 
 /* ═══ وما وقع لمدرّب الإعداد — يُقال ولا يُكتشَف (٣ أكتوبر ٢٠٢٦) ═══
@@ -57,13 +57,13 @@ function coursesLeftAr(n: number): string {
 export function prepOutcomeAr(prep: PlanDecision['prep']): string {
   if (!prep) return ''
   if (prep.activated) {
-    return 'وبها اكتملت دوراتُه كلُّها: فُعِّل مدرّبا نشطا ووصله خبرُ اعتماده جرسا وبريدا — وحالُ عقده في «العقود»، وما بقي عليك أدناه'
+    return 'وبها اكتملت دوراته كلّها: فعّل مدرّبا نشطا ووصله خبر اعتماده جرسا وبريدا — وحال عقده في «العقود»، وما بقي عليك أدناه'
   }
   if (prep.blockedAr) {
-    return `واعتُمدت دوراتُه كلُّها ولم يُفعَّل: ${prep.blockedAr} — أصلِحْ ذلك ثمّ فعّله من ملفّه`
+    return `واعتمدت دوراته كلّها ولم يفعّل: ${prep.blockedAr} — أصلح ذلك ثمّ فعّله من ملفّه`
   }
   if (prep.waiting && prep.waiting > 0) {
-    return `وبقيت له ${coursesLeftAr(prep.waiting)} لم تُعتمَد بعد — يُفعَّل باعتماد آخرها`
+    return `وبقيت له ${coursesLeftAr(prep.waiting)} لم تعتمد بعد — يفعّل باعتماد آخرها`
   }
   return ''
 }
@@ -89,13 +89,13 @@ export interface PrepFlags { onboarding: boolean; qualifies: boolean }
    المشروط وحدَه — وفي الردّ تُستأنف المهلةُ إن كانت موقوفةً لمراجعتنا. */
 export function prepNoteAr(p: PrepFlags, many = false): string {
   const approve = p.qualifies
-    ? '«اعتمدها» تؤهّل مدرّبَها لدورتها'
-    : 'دورتُها معتمَدةٌ لمدرّبها أصلا، و«اعتمدها» تعتمد خطّتَها'
+    ? '«اعتمدها» تؤهّل مدرّبها لدورتها'
+    : 'دورتها معتمدة لمدرّبها أصلا، و«اعتمدها» تعتمد خطّتها'
   const last = p.onboarding
-    ? '، وإن لم يبقَ من دوراته ما ينتظر فُعِّل — ويُختَم عقدُه المشروطُ إن كان ينتظر ختمَنا'
+    ? '، وإن لم يبق من دوراته ما ينتظر فعّل — ويختم عقده المشروط إن كان ينتظر ختمنا'
     : ''
-  const back = p.onboarding ? '، ويُستأنف عدُّ مهلته إن كانت موقوفةً لمراجعتنا' : ''
-  return `${many ? 'شعبُ الإعداد' : 'شعبةُ إعداد'}: ${approve}${last}. و«اطلب تعديلات» تعيدها إليه بملاحظاتك في رأس كلّ خطوة${back}.`
+  const back = p.onboarding ? '، ويستأنف عدّ مهلته إن كانت موقوفة لمراجعتنا' : ''
+  return `${many ? 'شعب الإعداد' : 'شعبة إعداد'}: ${approve}${last}. و«اطلب تعديلات» تعيدها إليه بملاحظاتك في رأس كلّ خطوة${back}.`
 }
 
 /* ═══ الطابورُ لا يكرّر نفسَه (٤ أكتوبر ٢٠٢٦، ⑨) ═══
@@ -145,39 +145,39 @@ export interface TrainerApprovalFacts {
 
 export function planApprovedTrainerMsg(f: TrainerApprovalFacts): { title: string; heading: string; body: string } {
   const parts: string[] = []
-  if (f.qualifiedCourseAr) parts.push(`أُضيفت «${f.qualifiedCourseAr}» إلى دوراتك.`)
+  if (f.qualifiedCourseAr) parts.push(`أضيفت «${f.qualifiedCourseAr}» إلى دوراتك.`)
   parts.push(f.registrationOpen
     ? 'شعبتك جاهزة — تظهر لك من «شعبي» بمن التحق فيها.'
-    : `${parts.length ? 'والشعبةُ' : 'الشعبةُ'} لم تُفتح للتسجيل بعد — تفتحها الأكاديمية، وتراها مفتوحةً في «شعبي» حين تُفتح.`)
+    : `${parts.length ? 'والشعبة' : 'الشعبة'} لم تفتح للتسجيل بعد — تفتحها الأكاديمية، وتراها مفتوحة في «شعبي» حين تفتح.`)
   if (f.meetingsApproved > 0) {
-    const what = f.meetingsApproved === 1 ? 'لقاؤك' : `لقاءاتُك (${f.meetingsApproved})`
-    const verb = f.meetingsApproved === 1 ? 'اعتُمد' : 'اعتُمدت'
+    const what = f.meetingsApproved === 1 ? 'لقاؤك' : `لقاءاتك (${f.meetingsApproved})`
+    const verb = f.meetingsApproved === 1 ? 'اعتمد' : 'اعتمدت'
     parts.push(f.registrationOpen
-      ? `و${verb} معها ${what} ووصل${f.meetingsApproved === 1 ? '' : 'ت'} المسجَّلين في تقاويمهم.`
+      ? `و${verb} معها ${what} ووصل${f.meetingsApproved === 1 ? '' : 'ت'} المسجّلين في تقاويمهم.`
       : `و${verb} معها ${what}.`)
   }
-  if (f.meetingsFailed === 1) parts.push('وبقي لقاءٌ واحدٌ عند الإدارة تُتمّ اعتمادَه.')
-  else if (f.meetingsFailed > 1) parts.push(`وبقيت لقاءاتٌ (${f.meetingsFailed}) عند الإدارة تُتمّ اعتمادَها.`)
-  if (f.tasksApplied > 0) parts.push(`واعتُمد معها ما انتظر من مهامّك (${f.tasksApplied}).`)
+  if (f.meetingsFailed === 1) parts.push('وبقي لقاء واحد عند الإدارة تتمّ اعتماده.')
+  else if (f.meetingsFailed > 1) parts.push(`وبقيت لقاءات (${f.meetingsFailed}) عند الإدارة تتمّ اعتمادها.`)
+  if (f.tasksApplied > 0) parts.push(`واعتمد معها ما انتظر من مهامّك (${f.tasksApplied}).`)
   const note = f.noteAr?.trim()
   return {
-    title: `اعتُمدت خطّةُ «${f.cohortTitle}»`,
-    heading: f.registrationOpen ? 'اعتُمدت خطّةُ شعبتك — وهي جاهزةٌ الآن' : 'اعتُمدت خطّةُ شعبتك',
-    body: `${parts.join(' ')}${note ? `\n\nوكلمةُ الإدارة: ${note}` : ''}`,
+    title: `اعتمدت خطّة «${f.cohortTitle}»`,
+    heading: f.registrationOpen ? 'اعتمدت خطّة شعبتك — وهي جاهزة الآن' : 'اعتمدت خطّة شعبتك',
+    body: `${parts.join(' ')}${note ? `\n\nوكلمة الإدارة: ${note}` : ''}`,
   }
 }
 
 /** ما يقوله قرارُ المهمّة الواحدة — بما وقع فعلا */
 export function taskDecisionMsg(r: { status?: string; kind?: string } | null): string {
-  if (r?.status === 'declined') return 'رُدّ إلى المدرّب بسببه — والمعتمَدُ باقٍ كما هو عند المتعلّمين'
-  if (r?.kind === 'remove') return 'اعتُمد الحذف — لم تعد تظهر للمتعلّمين، وأُخبر المدرّب'
-  if (r?.kind === 'edit') return 'اعتُمد التعديل — يقرؤه المتعلّمون الآن، وأُخبر المدرّب'
-  return 'اعتُمدت المهمّة — صارت في المنهج وتُفتح للمتعلّمين في موعدها، وأُخبر المدرّب'
+  if (r?.status === 'declined') return 'ردّ إلى المدرّب بسببه — والمعتمد باق كما هو عند المتعلّمين'
+  if (r?.kind === 'remove') return 'اعتمد الحذف — لم تعد تظهر للمتعلّمين، وأخبر المدرّب'
+  if (r?.kind === 'edit') return 'اعتمد التعديل — يقرؤه المتعلّمون الآن، وأخبر المدرّب'
+  return 'اعتمدت المهمّة — صارت في المنهج وتفتح للمتعلّمين في موعدها، وأخبر المدرّب'
 }
 
 export const PLAN_AR: Record<string, string> = {
-  draft: 'مسودّةٌ عند المدرّب', submitted: 'بانتظار اعتمادك', changes_requested: 'رُدّت إليه بتعديلات',
-  approved: 'معتمَدة', published: 'منشورة', superseded: 'نسخةٌ قديمة',
+  draft: 'مسودّة عند المدرّب', submitted: 'بانتظار اعتمادك', changes_requested: 'ردّت إليه بتعديلات',
+  approved: 'معتمدة', published: 'منشورة', superseded: 'نسخة قديمة',
 }
 
 /* ═══ الاعتمادُ بكلمة (٧ أكتوبر ٢٠٢٦) ═══
@@ -202,7 +202,7 @@ export function reviewReportLineAr(raw: readonly string[]): string | null {
   /* وبأسمائها التي يقرؤها المدرّب — «تقرير المراجعة» لا «فلان — الشعبة (1).pdf» (١١ أكتوبر ٢٠٢٦) */
   const names = raw.map(reportTitleAr)
   const which = names.length === 1 ? `«${names[0]}»` : names.map((n) => `«${n}»`).join(' و')
-  return `ومع هذا الردّ ${names.length === 1 ? 'تقريرُ مراجعةٍ مفصّل' : 'تقاريرُ مراجعةٍ مفصّلة'}: ${which} — `
+  return `ومع هذا الردّ ${names.length === 1 ? 'تقرير مراجعة مفصّل' : 'تقارير مراجعة مفصّلة'}: ${which} — `
     + 'تجده في خطوة «المراجعة» من صفحة شعبتك، للقراءة إن شئت.'
 }
 
@@ -213,16 +213,16 @@ export function reviewReportLineAr(raw: readonly string[]): string | null {
    أكثرَ احترافيّةً وواضحةً، وتقود للصفحة المسؤولة». فالنصوصُ بنودٌ في «المراجعة»، والجرسُ يقول كم
    ينتظره هناك في سطر، وزرُّه يفتحها (`notificationHref`). والبريدُ كما هو: له مساحتُه. */
 
-const NOTES_AR = { one: 'ملاحظة', two: 'ملاحظتان', few: 'ملاحظات', many: 'ملاحظةً' }
-const EDITS_ADJ = { one: 'مقترح', two: 'مقترحان', few: 'مقترحة', many: 'مقترحًا' }
+const NOTES_AR = { one: 'ملاحظة', two: 'ملاحظتان', few: 'ملاحظات', many: 'ملاحظة' }
+const EDITS_ADJ = { one: 'مقترح', two: 'مقترحان', few: 'مقترحة', many: 'مقترحا' }
 
 /** «56 تعديلًا مقترحًا (منها اثنان مطلوبان)» — عددُ التعديلات وما يُطلب منها، للجرس */
 export function editsCountAr(count: number, required: number): string {
   const form = count === 1 ? 'one' : count === 2 ? 'two' : count <= 10 ? 'few' : 'many'
-  const head = count === 1 ? 'تعديلٌ مقترح' : count === 2 ? 'تعديلان مقترحان' : `${count} ${EDITS_AR[form]} ${EDITS_ADJ[form]}`
+  const head = count === 1 ? 'تعديل مقترح' : count === 2 ? 'تعديلان مقترحان' : `${count} ${EDITS_AR[form]} ${EDITS_ADJ[form]}`
   const req = required <= 0 ? ''
-    : required >= count ? (count === 1 ? ' (مطلوب)' : count === 2 ? ' (كلاهما مطلوب)' : ' (كلُّها مطلوبة)')
-    : required === 1 ? ' (منها واحدٌ مطلوب)'
+    : required >= count ? (count === 1 ? ' (مطلوب)' : count === 2 ? ' (كلاهما مطلوب)' : ' (كلّها مطلوبة)')
+    : required === 1 ? ' (منها واحد مطلوب)'
     : required === 2 ? ' (منها اثنان مطلوبان)'
     : ` (منها ${required} مطلوبة)`
   return head + req
@@ -231,13 +231,13 @@ export function editsCountAr(count: number, required: number): string {
 /** جرسُ الردّ: ما ينتظره في «المراجعة» بعدده — سطرٌ واحد، ومهلتُه إن عادت تعدّ */
 export function returnBellAr(i: { notes: number; edits: number; required: number; reports: number; resumedAr?: string }): string {
   const parts = [
-    i.notes > 0 ? (i.notes === 1 ? 'ملاحظةٌ واحدة' : i.notes === 2 ? 'ملاحظتان' : countAr(i.notes, NOTES_AR)) : null,
+    i.notes > 0 ? (i.notes === 1 ? 'ملاحظة واحدة' : i.notes === 2 ? 'ملاحظتان' : countAr(i.notes, NOTES_AR)) : null,
     i.edits > 0 ? editsCountAr(i.edits, i.required) : null,
-    i.reports > 0 ? 'تقريرُ المراجعة' : null,
+    i.reports > 0 ? 'تقرير المراجعة' : null,
   ].filter((x): x is string => x !== null)
   const what = parts.length
     ? `تنتظرك في «المراجعة» ${parts.join(' و')} — قرّر فيها ثمّ أرسل مراجعتك.`
-    : 'افتح «المراجعة» لترى ما طُلب، ثمّ أرسلها من جديد.'
+    : 'افتح «المراجعة» لترى ما طلب، ثمّ أرسلها من جديد.'
   return `${what}${i.resumedAr ?? ''}`
 }
 
@@ -245,7 +245,7 @@ export function returnBellAr(i: { notes: number; edits: number; required: number
 export function decisionBellTailAr(i: { edits?: { count: number; required: number } | null; reports: number }): string {
   return [
     i.edits && i.edits.count > 0 ? `وتنتظرك في «المراجعة» ${editsCountAr(i.edits.count, i.edits.required)}.` : null,
-    i.reports > 0 ? 'وتقريرُ المراجعة في «المراجعة» للقراءة.' : null,
+    i.reports > 0 ? 'وتقرير المراجعة في «المراجعة» للقراءة.' : null,
   ].filter(Boolean).join(' ')
 }
 
@@ -284,26 +284,26 @@ export interface ReturnMail {
   cta: string
 }
 
-const EDITS_AR = { one: 'تعديلٌ', two: 'تعديلان', few: 'تعديلات', many: 'تعديلًا' }
-const REPORT_FILES_AR = { one: 'ملفّ', two: 'ملفّان', few: 'ملفّات', many: 'ملفًّا' }
+const EDITS_AR = { one: 'تعديل', two: 'تعديلان', few: 'تعديلات', many: 'تعديلا' }
+const REPORT_FILES_AR = { one: 'ملفّ', two: 'ملفّان', few: 'ملفّات', many: 'ملفّا' }
 
 export function returnMailAr(i: ReturnMailInput): ReturnMail {
   const { count, required, bySteps } = i.edits
   const summary: string[] = []
   if (count > 0) {
     const where = bySteps.filter((s) => s.n > 0).map((s) => `«${s.label}» (${s.n})`).join('، ')
-    const ready = count === 1 ? 'جاهز' : count === 2 ? 'جاهزان' : count <= 10 ? 'جاهزة' : 'جاهزًا'
-    const req = required <= 0 ? (count === 1 ? ' — اختياريّ' : ' — كلُّها اختياريّة')
-      : required === count ? (count === 1 ? ' — مطلوب' : ' — كلُّها مطلوبة')
-      : ` — منها ${required === 1 ? 'واحدٌ مطلوب' : required === 2 ? 'اثنان مطلوبان' : required <= 10 ? `${required} مطلوبة` : `${required} مطلوبًا`}، والباقي اختياريّ`
+    const ready = count === 1 ? 'جاهز' : count === 2 ? 'جاهزان' : count <= 10 ? 'جاهزة' : 'جاهزا'
+    const req = required <= 0 ? (count === 1 ? ' — اختياريّ' : ' — كلّها اختياريّة')
+      : required === count ? (count === 1 ? ' — مطلوب' : ' — كلّها مطلوبة')
+      : ` — منها ${required === 1 ? 'واحد مطلوب' : required === 2 ? 'اثنان مطلوبان' : required <= 10 ? `${required} مطلوبة` : `${required} مطلوبا`}، والباقي اختياريّ`
     summary.push(`${countAr(count, EDITS_AR)} ${ready}${req}${where ? `. في: ${where}` : ''}.`)
   }
   if (i.notedSteps.length > 0) {
-    summary.push(`ملاحظاتٌ على ${i.notedSteps.map((s) => `«${s}»`).join(' و')} — نقاطٌ في «المراجعة» توافق عليها.`)
+    summary.push(`ملاحظات على ${i.notedSteps.map((s) => `«${s}»`).join(' و')} — نقاط في «المراجعة» توافق عليها.`)
   }
   if (i.reports > 0) {
-    const files = i.reports === 1 ? 'ملفٌّ واحد' : i.reports === 2 ? 'ملفّان' : countAr(i.reports, REPORT_FILES_AR)
-    summary.push(`تقريرُ المراجعة (${files}) — في خطوة «المراجعة»، للقراءة إن شئت.`)
+    const files = i.reports === 1 ? 'ملفّ واحد' : i.reports === 2 ? 'ملفّان' : countAr(i.reports, REPORT_FILES_AR)
+    summary.push(`تقرير المراجعة (${files}) — في خطوة «المراجعة»، للقراءة إن شئت.`)
   }
 
   /* والتعديلاتُ في خطوتها السابعة «المراجعة» (١١ أكتوبر ٢٠٢٦): بنودٌ مرقّمة، ومنها يُرسَل —
@@ -311,26 +311,26 @@ export function returnMailAr(i: ReturnMailInput): ReturnMail {
   /* والملاحظاتُ بنودٌ في «المراجعة» قبل التعديلات (١١ أكتوبر ٢٠٢٦، `note`) — فالخطواتُ بترتيبها هناك */
   const noted = i.notedSteps.length > 0 || Boolean(i.generalNote?.trim())
   const inReview = count > 0 || noted
-  const steps = [inReview || i.reports > 0 ? 'افتح صفحةَ شعبتك من الزرّ أدناه — تُفتح على «المراجعة».' : 'افتح صفحةَ شعبتك من الزرّ أدناه.']
-  if (noted) steps.push('في أوّلها ملاحظاتُنا نقاطا: وافق عليها أو قل لماذا لا — وما تطلبه تعدّله في خطوته.')
+  const steps = [inReview || i.reports > 0 ? 'افتح صفحة شعبتك من الزرّ أدناه — تفتح على «المراجعة».' : 'افتح صفحة شعبتك من الزرّ أدناه.']
+  if (noted) steps.push('في أوّلها ملاحظاتنا نقاطا: وافق عليها أو قل لماذا لا — وما تطلبه تعدّله في خطوته.')
   if (count > 0) {
     steps.push(required > 0
-      ? 'اضغط «اقبلها كلَّها» — أو قرّر في كلّ بندٍ وحده: نقترح هذا بدلَ هذا، اقبله أو ارفضه. والمطلوبُ منها شرطُ الاعتماد: إن لم تقبله فعدّل موضعَه بطريقتك.'
-      : 'اضغط «اقبلها كلَّها» — أو قرّر في كلّ بندٍ وحده: نقترح هذا بدلَ هذا، اقبل ما يناسبك.')
+      ? 'اضغط «اقبلها كلّها» — أو قرّر في كلّ بند وحده: نقترح هذا بدل هذا، اقبله أو ارفضه. والمطلوب منها شرط الاعتماد: إن لم تقبله فعدّل موضعه بطريقتك.'
+      : 'اضغط «اقبلها كلّها» — أو قرّر في كلّ بند وحده: نقترح هذا بدل هذا، اقبل ما يناسبك.')
   }
   steps.push(inReview
-    ? 'ثمّ أرسل مراجعتَك من «المراجعة» نفسِها — ونراجعها حين تصلنا.'
-    : 'أرسل الخطّةَ من خطوة «الاعتماد» — ونراجعها حين تصلنا.')
+    ? 'ثمّ أرسل مراجعتك من «المراجعة» نفسها — ونراجعها حين تصلنا.'
+    : 'أرسل الخطّة من خطوة «الاعتماد» — ونراجعها حين تصلنا.')
 
-  const ready = count > 0 ? 'وجهّزنا لك تعديلاتٍ تقبلها بنقرة' : 'وكتبنا لك ملاحظاتٍ في خطواتها'
+  const ready = count > 0 ? 'وجهّزنا لك تعديلات تقبلها بنقرة' : 'وكتبنا لك ملاحظات في خطواتها'
   return {
     subject: `شكرا على خطّتك — «${i.cohortTitle}»`,
-    heading: 'شكرا على خطّتك — وهذه خطوتُها التالية',
+    heading: 'شكرا على خطّتك — وهذه خطوتها التالية',
     preheader: `${ready}، ثمّ ترسلها من جديد.`,
-    praise: `وصلتنا خطّتُك لـ«${i.cohortTitle}» كاملةً — شكرا على جهدك فيها. راجعناها، ${ready} لتصير جاهزةً للاعتماد.${i.resumedAr ?? ''}`,
+    praise: `وصلتنا خطّتك لـ«${i.cohortTitle}» كاملة — شكرا على جهدك فيها. راجعناها، ${ready} لتصير جاهزة للاعتماد.${i.resumedAr ?? ''}`,
     note: i.generalNote?.trim() ? i.generalNote.trim() : null,
     summary,
     steps,
-    cta: count > 0 ? 'افتح صفحةَ شعبتك وراجع التعديلات' : 'افتح صفحةَ شعبتك',
+    cta: count > 0 ? 'افتح صفحة شعبتك وراجع التعديلات' : 'افتح صفحة شعبتك',
   }
 }

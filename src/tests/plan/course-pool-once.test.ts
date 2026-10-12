@@ -25,31 +25,31 @@ const END = SRC.lastIndexOf('{edit.minReached && !edit.swapOnly')
 const BLOCK = SRC.slice(START, END)
 
 describe('قائمة الدورات المقترحة', () => {
-  it('٠) الشريحة المفحوصة ليست فارغة — حارسٌ على الحارس', () => {
-    expect(START, 'لم تُعثر كتلة الهديّة والإضافة').toBeGreaterThan(-1)
-    expect(END, 'لم يُعثر حدُّها الأدنى').toBeGreaterThan(START)
+  it('٠) الشريحة المفحوصة ليست فارغة — حارس على الحارس', () => {
+    expect(START, 'لم تعثر كتلة الهديّة والإضافة').toBeGreaterThan(-1)
+    expect(END, 'لم يعثر حدّها الأدنى').toBeGreaterThan(START)
     expect(BLOCK.length).toBeGreaterThan(400)
   })
 
-  it('١) تُصيَّر مرّةً واحدة في كتلة الهديّة والإضافة', () => {
+  it('١) تصيّر مرّة واحدة في كتلة الهديّة والإضافة', () => {
     const renders = BLOCK.split('edit.pool.map(').length - 1
-    expect(renders, 'القائمة تُصيَّر أكثر من مرّة — هذا هو التبعثر').toBe(1)
+    expect(renders, 'القائمة تصيّر أكثر من مرّة — هذا هو التبعثر').toBe(1)
   })
 
-  it('٢) الفعل الباقي: إضافةٌ بالسعر — الهديّة لم تعد تُختار من هنا', () => {
+  it('٢) الفعل الباقي: إضافة بالسعر — الهديّة لم تعد تختار من هنا', () => {
     expect(BLOCK).toContain('edit.onAdd(p.id)')
     expect(BLOCK).not.toContain('edit.onGiftToggle(p.id)')
   })
 
-  it('٣) «أضف» لا يُعرض عند السقف', () => {
+  it('٣) «أضف» لا يعرض عند السقف', () => {
     expect(BLOCK).toContain('!edit.maxReached && (')
   })
 
-  it('٤) شبكةٌ لا صفٌّ يلتفّ — المحاذاة هي ما كان ناقصا', () => {
+  it('٤) شبكة لا صفّ يلتفّ — المحاذاة هي ما كان ناقصا', () => {
     expect(BLOCK).toContain('grid gap-1.5 sm:grid-cols-2')
   })
 
-  it('٥) ولكلّ زرٍّ اسمٌ يُسمع', () => {
+  it('٥) ولكلّ زرّ اسم يسمع', () => {
     expect(BLOCK).toContain('aria-label={`أضف «${p.name}» إلى مسارك`}')
   })
 })

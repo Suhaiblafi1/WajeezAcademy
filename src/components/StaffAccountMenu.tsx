@@ -135,7 +135,7 @@ export default function StaffAccountMenu({ user }: { user: SessionUser | null })
                 className="flex w-full cursor-pointer items-center gap-2.5 rounded-xl px-3 py-2.5 text-xs font-bold text-foreground transition hover:bg-red-500/10 hover:text-red-300 disabled:opacity-60"
               >
                 <LogOut className="h-4 w-4" />
-                {signingOut ? 'يُسجَّل الخروج…' : 'تسجيل الخروج'}
+                {signingOut ? 'يسجّل الخروج…' : 'تسجيل الخروج'}
               </button>
             </div>
         </Inset>

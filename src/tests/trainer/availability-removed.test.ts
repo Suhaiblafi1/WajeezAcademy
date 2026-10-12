@@ -26,19 +26,19 @@ const code = (p: string) =>
 
 const GONE_MODELS = ['TrainerAvailability', 'TrainerBlackout', 'TrainerTermAvailability']
 
-describe('الجداولُ الثلاثة', () => {
+describe('الجداول الثلاثة', () => {
   const models = new Set([...read('prisma/schema.prisma').matchAll(/^model\s+(\w+)\s*\{/gm)].map((m) => m[1]))
 
-  it('المسحُ يقرأ فعلا — وإلّا خضرّ الحارسُ على مخطّطٍ لم يُقرأ', () => {
+  it('المسح يقرأ فعلا — وإلّا خضرّ الحارس على مخطّط لم يقرأ', () => {
     expect(models.size).toBeGreaterThan(100)
     expect(models.has('TrainerProfile')).toBe(true)
   })
 
-  it.each(GONE_MODELS)('لا نموذجَ «%s» في المخطّط', (name) => {
+  it.each(GONE_MODELS)('لا نموذج «%s» في المخطّط', (name) => {
     expect(models.has(name), `عاد النموذج ${name}`).toBe(false)
   })
 
-  it('وترحيلٌ يحذف جداولَها — فالقاعدةُ المرحَّلةُ لا تحمل ما خرج من المخطّط', () => {
+  it('وترحيل يحذف جداولها — فالقاعدة المرحّلة لا تحمل ما خرج من المخطّط', () => {
     const dir = join(root, 'prisma/migrations')
     const sql = readdirSync(dir, { withFileTypes: true })
       .filter((d) => d.isDirectory())
@@ -48,7 +48,7 @@ describe('الجداولُ الثلاثة', () => {
       .join('\n')
       .replace(/^\s*--.*$/gm, '')
     for (const name of GONE_MODELS) {
-      expect(sql, `لا ترحيلَ يحذف ${name}`).toMatch(new RegExp(`DROP TABLE (IF EXISTS )?"${name}"`))
+      expect(sql, `لا ترحيل يحذف ${name}`).toMatch(new RegExp(`DROP TABLE (IF EXISTS )?"${name}"`))
     }
   })
 })
@@ -60,7 +60,7 @@ describe('المسارات', () => {
     .flatMap((f) => [...readFileSync(join(routeDir, f), 'utf8')
       .matchAll(/app\.(?:get|post|put|patch|delete)\(\s*'([^']+)'/g)].map((m) => m[1]))
 
-  it('المسحُ يقرأ المساراتِ فعلا', () => {
+  it('المسح يقرأ المسارات فعلا', () => {
     expect(registered.length).toBeGreaterThan(200)
     expect(registered).toContain('/api/trainer/me/qualifications')
   })
@@ -71,22 +71,22 @@ describe('المسارات', () => {
     '/api/trainer/me/terms',
     '/api/admin/terms/:id/available-trainers',
     '/api/admin/terms/:id/trainers/:profileId',
-  ])('لا مسارَ يبدأ بـ«%s»', (prefix) => {
+  ])('لا مسار يبدأ بـ«%s»', (prefix) => {
     expect(registered.filter((r) => r.startsWith(prefix))).toEqual([])
   })
 
-  it('والخدمةُ نفسُها ذهبت — لا ملفَّ يبقى فيُنادى يوما', () => {
+  it('والخدمة نفسها ذهبت — لا ملفّ يبقى فينادى يوما', () => {
     expect(readdirSync(join(root, 'server/services'))).not.toContain('trainer-availability.service.ts')
   })
 })
 
-describe('شاشةُ المؤهّلات — ما بقي منها', () => {
+describe('شاشة المؤهّلات — ما بقي منها', () => {
   const screen = code('src/pages/trainer/Qualifications.tsx')
 
   /* وصارت تنادي عروضَه واقتراحاتِه معها (٢٩ سبتمبر ٢٠٢٦): «عروضي» دخلتها،
      وحالُ كلّ مؤهَّلٍ يُقرأ من الثلاثة. ولا إتاحةَ ولا نطاقَ فيها — القائمةُ
      مغلقةٌ كما كانت، فمن زاد نداءً عاد إلى هنا. */
-  it('تنادي مؤهّلاتِه وعروضَه واقتراحاتِه وأفعالَ العرض — ولا تنادي غيرَها', () => {
+  it('تنادي مؤهّلاته وعروضه واقتراحاته وأفعال العرض — ولا تنادي غيرها', () => {
     const calls = [...screen.matchAll(/api(?:Get|Post|Put|Patch|Delete)<?[^(]*\(\s*["'`]([^"'`]+)/g)].map((m) => m[1])
     expect([...new Set(calls)].sort()).toEqual([
       '/api/trainer/me/qualifications',
@@ -99,10 +99,10 @@ describe('شاشةُ المؤهّلات — ما بقي منها', () => {
     ])
   })
 
-  it('ولها مسارٌ في التطبيق وبندٌ في قائمة المدرّب — باسمٍ لا يَعِد بما ذهب', () => {
+  it('ولها مسار في التطبيق وبند في قائمة المدرّب — باسم لا يعد بما ذهب', () => {
     expect(code('src/App.tsx')).toMatch(/path="\/trainer\/qualifications"/)
     const tab = code('src/pages/trainer/TrainerLayout.tsx').split('\n').find((l) => l.includes('"/trainer/qualifications"'))
-    expect(tab, 'لا بندَ للشاشة في قائمة المدرّب').toBeTruthy()
+    expect(tab, 'لا بند للشاشة في قائمة المدرّب').toBeTruthy()
     expect(tab).toMatch(/label: "دوراتي"/)
   })
 
@@ -115,31 +115,31 @@ describe('شاشةُ المؤهّلات — ما بقي منها', () => {
      قولُ صاحب المنصّة: «لا تُرِ المدرّبين ما لا يحتاجونه — دُمجت هذه، أُضيفت
      تلك. يرون الدورةَ التي يعبّئونها». فلا أصلَ اقتراحٍ في الشاشة ولا نداءَ
      لاقتراحاته، ولا وعدَ بتأهيلٍ تلقائيٍّ في فراغها. */
-  it('ولا أصلَ اقتراحٍ يُعرض: «دُمجت» و«أُضيفت إلى الكتالوج» خرجتا', () => {
-    expect(screen, 'عاد «دُمجت بدورةٍ قائمة» إلى «مؤهّلاتي»').not.toMatch(/دُمجت بدورةٍ قائمة/)
-    expect(screen, 'عاد «أُضيفت إلى الكتالوج» إلى «مؤهّلاتي»').not.toMatch(/أُضيفت إلى الكتالوج/)
-    expect(screen, 'عادت الشاشةُ تنادي الاقتراحات').not.toMatch(/\/api\/trainer\/course-proposals"/)
-    expect(screen, 'عاد الوعدُ بتأهيلٍ تلقائيٍّ لا يراه').not.toMatch(/reasonAr="تُؤهَّل تلقائيّا/)
+  it('ولا أصل اقتراح يعرض: «دمجت» و«أضيفت إلى الكتالوج» خرجتا', () => {
+    expect(screen, 'عاد «دمجت بدورة قائمة» إلى «مؤهّلاتي»').not.toMatch(/دمجت بدورة قائمة/)
+    expect(screen, 'عاد «أضيفت إلى الكتالوج» إلى «مؤهّلاتي»').not.toMatch(/أضيفت إلى الكتالوج/)
+    expect(screen, 'عادت الشاشة تنادي الاقتراحات').not.toMatch(/\/api\/trainer\/course-proposals"/)
+    expect(screen, 'عاد الوعد بتأهيل تلقائيّ لا يراه').not.toMatch(/reasonAr="تؤهّل تلقائيّا/)
   })
 })
 
-describe('شاشةُ الإسناد لا تقرأ إتاحةً لا وجودَ لها', () => {
+describe('شاشة الإسناد لا تقرأ إتاحة لا وجود لها', () => {
   /** حقولُ نوعٍ بعينه — من جسمه بين قوسيه، لا من الملفّ كلِّه */
   const fieldsOf = (src: string, iface: string) => {
     const at = src.indexOf(`interface ${iface} {`)
-    expect(at, `لا نوعَ ${iface}`).toBeGreaterThanOrEqual(0)
+    expect(at, `لا نوع ${iface}`).toBeGreaterThanOrEqual(0)
     const body = src.slice(at, src.indexOf('\n}', at))
     return [...body.matchAll(/^\s+(\w+)\??:/gm)].map((m) => m[1])
   }
 
-  it('المدرّبُ المرشَّحُ عند الإدارة بلا «غائب» ولا «خارج ساعاته»', () => {
+  it('المدرّب المرشّح عند الإدارة بلا «غائب» ولا «خارج ساعاته»', () => {
     const fields = fieldsOf(code('src/pages/admin/CohortOps.tsx'), 'EligibleTrainer')
     expect(fields).toContain('qualification')
     expect(fields).not.toContain('onLeave')
     expect(fields).not.toContain('outsideDeclaredHours')
   })
 
-  it('والخادمُ لا يحسبهما — فلا حقلَ يُرسَل ولا يقرؤه أحد', () => {
+  it('والخادم لا يحسبهما — فلا حقل يرسل ولا يقرؤه أحد', () => {
     const svc = code('server/services/cohort.service.ts')
     const at = svc.indexOf('async eligibleTrainers(')
     expect(at).toBeGreaterThan(0)

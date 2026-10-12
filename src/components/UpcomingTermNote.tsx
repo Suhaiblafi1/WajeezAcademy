@@ -36,7 +36,7 @@ import { Card } from "@/components/ui/Surface";
     و`fallback` هو ما يُقال حين لا فصلَ بعد: الجملةُ القديمةُ حيث كانت
     جملةً قائمة، ولا شيءَ حيث كان الموضعُ فارغا أصلا. */
 export function UpcomingTermLine({
-  prefix = 'تُفتح في',
+  prefix = 'تفتح في',
   fallback = null,
 }: {
   prefix?: string
@@ -68,7 +68,7 @@ export function UpcomingTermBanner({ className = '' }: { className?: string }) {
     >
       <CalendarDays className="h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" />
       <span className="text-sm font-black text-foreground">
-        الفصلُ القادم: <span className="text-teal-light-ink">{term.titleAr}</span>
+        الفصل القادم: <span className="text-teal-light-ink">{term.titleAr}</span>
       </span>
       <span className="text-xs text-muted-foreground">{termMonthsAr(term)}</span>
       {urgency && <span className="text-xs font-bold text-teal-light-ink">{urgency}</span>}

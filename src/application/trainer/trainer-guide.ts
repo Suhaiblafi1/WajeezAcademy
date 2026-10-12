@@ -24,7 +24,7 @@
 export const TRAINER_GUIDE_PATH = '/trainer/guide'
 
 /** اسمُه حيث يُذكَر */
-export const TRAINER_GUIDE_TITLE_AR = 'دليلُ المدرّب — من الألف إلى الياء'
+export const TRAINER_GUIDE_TITLE_AR = 'دليل المدرّب — من الألف إلى الياء'
 
 /** الكلماتُ التي يُحمَل عليها الرابطُ في الرسالة */
-export const TRAINER_GUIDE_LINK_AR = 'دليلَ المدرّب'
+export const TRAINER_GUIDE_LINK_AR = 'دليل المدرّب'

@@ -42,7 +42,7 @@ export default function FreeNowPerks({ className = '' }: { className?: string })
   return (
     <section className={`border-t border-white/10 pt-3 ${className}`}>
       <h3 className="flex items-center gap-1.5 text-sm font-black text-gold-ink">
-        <Gift className="h-4 w-4" aria-hidden="true" /> ومجّانا لك الآن — بمسارٍ أو بغيره
+        <Gift className="h-4 w-4" aria-hidden="true" /> ومجّانا لك الآن — بمسار أو بغيره
       </h3>
 
       <ul className="mt-3 space-y-2">

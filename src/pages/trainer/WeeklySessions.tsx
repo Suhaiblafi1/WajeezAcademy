@@ -25,6 +25,7 @@ import {
   TO_LADDER_WHY_AR, dayNoteAr, fromClockNote, lateInSlot, suggestedSessionTitle, toClockNote, weeklyProposals, type Weekday,
 } from "@/application/trainer/session-picker";
 import { WEEKDAY_AR } from "@/application/trainer/plan-scorecard";
+import SlotDaySelect from "./SlotDaySelect";
 
 const at = (date: string, clock: string) => {
   const m = toMinutes(clock) ?? 0;
@@ -64,10 +65,10 @@ export default function WeeklySessions({
   };
 
   const problemOf = (r: Row): string | null => {
-    if (!r.date) return "لا يقع هذا اليومُ داخلَ الموعد — اختر يوما";
+    if (!r.date) return "لا يقع هذا اليوم داخل الموعد — اختر يوما";
     if (!from || !to) return null;
     const slot = slots[r.slotIndex];
-    if (slot && !sessionInsideSlot({ startsAt: at(r.date, from), endsAt: at(r.date, to) }, slot)) return "خارجَ الموعد";
+    if (slot && !sessionInsideSlot({ startsAt: at(r.date, from), endsAt: at(r.date, to) }, slot)) return "خارج الموعد";
     return null;
   };
   const ready = Boolean(rows && rows.length > 0 && from && to && rows.every((r) => problemOf(r) === null));
@@ -86,12 +87,12 @@ export default function WeeklySessions({
           });
         } catch (e) {
           failed.push(r);
-          toastError(`«${title}»: ${e instanceof ApiError ? e.message : "تعذّر حفظُه"}`);
+          toastError(`«${title}»: ${e instanceof ApiError ? e.message : "تعذّر حفظه"}`);
         }
       }
       const saved = rows.length - failed.length;
       if (saved > 0) {
-        toast(`حُفظ ${saved === 1 ? "لقاءٌ واحد" : `${saved} لقاءات`} — ${approvedOnce ? "وتنتظر اعتمادَ الإدارة" : "وتُعتمَد مع خطّتك حين ترسلها"}`);
+        toast(`حفظ ${saved === 1 ? "لقاء واحد" : `${saved} لقاءات`} — ${approvedOnce ? "وتنتظر اعتماد الإدارة" : "وتعتمد مع خطّتك حين ترسلها"}`);
       }
       setRows(failed.length ? failed : null);
       if (!failed.length) setWeekday(null);
@@ -102,24 +103,24 @@ export default function WeeklySessions({
   };
 
   if (slots.every((s) => s.moduleIds.every((id) => covered.has(id)))) {
-    return <p className="text-read leading-6 text-muted-foreground">لكلّ محورٍ لقاءٌ مباشرٌ الآن — وما تضيفه بعدُ من بطاقة موعده.</p>;
+    return <p className="text-read leading-6 text-muted-foreground">لكلّ محور لقاء مباشر — وأضف المزيد من بطاقة موعده.</p>;
   }
 
   return (
     <div className="grid gap-3">
       <p className="text-read leading-6 text-muted-foreground">
-        اختر يوما وساعة، فيُقترح لقاءٌ لكلّ موعد. عدّل ما شئت ثمّ احفظ.
+        اختر يوما وساعة، فيقترح لقاء لكلّ موعد. عدّل ما شئت ثمّ احفظ.
       </p>
       <fieldset disabled={locked || busy} className="grid min-w-0 gap-3 sm:grid-cols-3">
-        <StaffField label="اليوم من كلّ أسبوع" hint="الجمعةُ والسبت، أو مساءَ يوم عمل.">
-          <select value={weekday ?? ""} aria-label="يومُ التكرار الأسبوعيّ" className={staffControlCls}
+        <StaffField label="اليوم من كلّ أسبوع" hint="الجمعة والسبت، أو مساء يوم عمل.">
+          <select value={weekday ?? ""} aria-label="يوم التكرار الأسبوعيّ" className={staffControlCls}
             onChange={(e) => (e.target.value === "" ? (setWeekday(null), setRows(null)) : propose(Number(e.target.value) as Weekday))}>
             <option value="">اختر اليوم</option>
             {WEEKDAY_AR.map((d, i) => <option key={d} value={i}>{d}</option>)}
           </select>
         </StaffField>
         <StaffField label="من الساعة" hint="بتوقيت الشعبة (عمّان).">
-          <select value={from} aria-label="ساعةُ بدء اللقاءات الأسبوعيّة" className={staffControlCls}
+          <select value={from} aria-label="ساعة بدء اللقاءات الأسبوعيّة" className={staffControlCls}
             onChange={(e) => { const f = e.target.value; setFrom(f); if (!toSlotsFor(f).includes(to)) setTo(""); }}>
             <option value="">اختر الساعة</option>
             {FROM.map((c) => {
@@ -130,7 +131,7 @@ export default function WeeklySessions({
           </select>
         </StaffField>
         <StaffField label="إلى الساعة" hint={TO_LADDER_WHY_AR}>
-          <select value={to} disabled={!from} aria-label="ساعةُ انتهاء اللقاءات الأسبوعيّة" className={staffControlCls}
+          <select value={to} disabled={!from} aria-label="ساعة انتهاء اللقاءات الأسبوعيّة" className={staffControlCls}
             onChange={(e) => setTo(e.target.value)}>
             <option value="">{from ? "اختر الساعة" : "اختر البدء أوّلا"}</option>
             {TO.map((c) => {
@@ -142,7 +143,7 @@ export default function WeeklySessions({
       </fieldset>
 
       {rows && rows.length > 0 && (
-        <ol className="grid gap-2" aria-label="اللقاءاتُ المقترحة">
+        <ol className="grid gap-2" aria-label="اللقاءات المقترحة">
           {rows.map((r, k) => {
             const slot = slots[r.slotIndex];
             const suggested = suggestedSessionTitle(r.moduleIds, titles, axisNo);
@@ -156,15 +157,18 @@ export default function WeeklySessions({
                     الموعد {r.slotIndex + 1} <span className="font-bold text-foreground">· {axesLabelAr(r.moduleIds, axisNo)}</span>
                     {slot && <span className="font-normal text-muted-foreground"> · {dayLabelAr(slot.startsOn)} – {dayLabelAr(slot.endsOn)}</span>}
                   </p>
-                  <Button tone="ghost" size="sm" icon={X} disabled={locked || busy} aria-label={`ارفع اقتراحَ الموعد ${r.slotIndex + 1}`}
+                  <Button tone="ghost" size="sm" icon={X} disabled={locked || busy} aria-label={`ارفع اقتراح الموعد ${r.slotIndex + 1}`}
                     onClick={() => setRows(rows.filter((_, j) => j !== k))}>ارفعه</Button>
                 </div>
                 <div className="grid gap-2 sm:grid-cols-[12rem_1fr]">
-                  <input type="date" dir="ltr" value={r.date} min={slot?.startsOn} max={slot?.endsOn} disabled={locked || busy}
-                    aria-label={`يومُ اللقاء المقترح في الموعد ${r.slotIndex + 1}`}
-                    onChange={(e) => patch({ date: e.target.value })} className={`${staffControlCls} text-left`} />
+                  {/* من أيّام الموعد وحدَها — لا تقويمٌ مفتوح (١١ أكتوبر ٢٠٢٦، `SlotDaySelect`) */}
+                  {slot ? (
+                    <SlotDaySelect slot={slot} value={r.date} disabled={locked || busy}
+                      ariaLabel={`يوم اللقاء المقترح في الموعد ${r.slotIndex + 1}`}
+                      onChange={(date) => patch({ date })} />
+                  ) : <span className="text-read text-muted-foreground">—</span>}
                   <input value={r.title} placeholder={`مثال: ${suggested}`} disabled={locked || busy}
-                    aria-label={`عنوانُ اللقاء المقترح في الموعد ${r.slotIndex + 1}`}
+                    aria-label={`عنوان اللقاء المقترح في الموعد ${r.slotIndex + 1}`}
                     onChange={(e) => patch({ title: e.target.value })} className={staffControlCls} />
                 </div>
                 {problem && <p className="text-read font-bold text-gold-ink">{problem}</p>}
@@ -174,7 +178,7 @@ export default function WeeklySessions({
                   </p>
                 )}
                 {!problem && r.date && slot && lateInSlot(r.date, slot) && (
-                  <p className="text-read leading-6 text-muted-foreground">بعد أوّل ثلاثة أيّامٍ من الموعد — ولك أن تُبقيه.</p>
+                  <p className="text-read leading-6 text-muted-foreground">بعد أوّل ثلاثة أيّام من الموعد — ولك أن تبقيه.</p>
                 )}
               </Inset>
             );
@@ -182,16 +186,16 @@ export default function WeeklySessions({
         </ol>
       )}
       {rows && rows.length === 0 && (
-        <p className="text-read leading-6 text-muted-foreground">لا اقتراحَ بقي — اختر يوما آخر، أو أضِف لقاءاتِك من بطاقات المواعيد.</p>
+        <p className="text-read leading-6 text-muted-foreground">لا اقتراح بقي — اختر يوما آخر، أو أضف من بطاقات المواعيد.</p>
       )}
       {rows && rows.length > 0 && (
         <div className="flex flex-wrap items-center gap-2">
           <Button tone="confirm" size="sm" loading={busy} disabled={locked || busy || !ready} onClick={() => void save()}>
             احفظ {rows.length === 1 ? "اللقاء" : `اللقاءات الـ${rows.length}`}
           </Button>
-          {!ready && <span className="text-read text-muted-foreground">{!from || !to ? "اختر الساعتين أوّلا." : "أصلِح ما عُلّم أعلاه."}</span>}
+          {!ready && <span className="text-read text-muted-foreground">{!from || !to ? "اختر الساعتين أوّلا." : "أصلح ما علّم أعلاه."}</span>}
           {/* عنوانٌ فارغٌ يُسمّى بعناوين محاوره — يُقال قبل الحفظ */}
-          <span className="text-read text-muted-foreground">والعنوانُ الفارغ يُسمّى بالمثال الباهت فيه.</span>
+          <span className="text-read text-muted-foreground">والعنوان الفارغ يسمّى بالمثال.</span>
         </div>
       )}
     </div>

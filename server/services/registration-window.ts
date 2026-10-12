@@ -129,7 +129,7 @@ export function cohortAcceptsRegistration(
     /* وسببان لا سببٌ واحد: مدرّبٌ كتب ولم يُعتمَد له، وشعبةٌ لا مدرّبَ لها أصلا */
     return cohort.plans.length > 0
       ? { open: false, code: 'awaiting_plan', reasonAr: `تُفتح ${named} للتسجيل حين تُعتمَد خطّةُ مدرّبها` }
-      : { open: false, code: 'no_trainer', reasonAr: `${named} بلا مدرّبٍ معتمَدٍ بعد — تُفتح للتسجيل حين تُعتمَد خطّةُ مدرّبها` }
+      : { open: false, code: 'no_trainer', reasonAr: `${named} بلا مدرّب معتمد بعد — تفتح للتسجيل حين تعتمد خطّة مدرّبها` }
   }
   if (cohort.joinClosesAt && now >= cohort.joinClosesAt) {
     return {

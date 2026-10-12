@@ -121,7 +121,7 @@ export default function CohortOps({ cohortId, initialTo = "" }: {
   };
 
   if (err) return <Card tone="danger" role="alert" className="text-center text-read font-bold text-red-300">{err}</Card>;
-  if (!row) return <div className="grid place-items-center py-16"><Loader2 className="h-7 w-7 animate-spin text-muted-foreground/50" aria-label="جارٍ التحميل" /></div>;
+  if (!row) return <div className="grid place-items-center py-16"><Loader2 className="h-7 w-7 animate-spin text-muted-foreground/50" aria-label="جار التحميل" /></div>;
 
   const c = row.cohort;
   const active = c.enrollments.filter((e) => e.status !== "waitlisted");
@@ -140,8 +140,7 @@ export default function CohortOps({ cohortId, initialTo = "" }: {
           <MessageSquarePlus className="h-4 w-4 text-teal-light-ink" /> مخاطبة الشعبة
         </h3>
         <p className="mt-1 text-read leading-relaxed text-muted-foreground">
-          إعلانٌ يبلغ كلّ مسجَّل، أو رسالةٌ إلى متعلّم بعينه، أو إلى المستشارين الذين يتابعون متعلّميك.
-          وكلُّها تبقى في السجلّ أدناه.
+          إعلان للشعبة، أو رسالة لمتعلّم أو لمستشاري متعلّميك. وتبقى في السجلّ أدناه.
         </p>
         <div className="mt-3 space-y-2.5">
           <select aria-label="إلى من" value={msgForm.enrollmentId}
@@ -164,11 +163,11 @@ export default function CohortOps({ cohortId, initialTo = "" }: {
         </div>
         <div className="mt-4 border-t border-white/8 pt-3">
           <Button type="button" tone="ghost" size="sm" className="px-0 text-teal-light-ink" onClick={() => void loadMessages(c.id)}>
-            {msgLog[c.id] ? "حدّث السجلّ" : "اعرض سجلّ ما أُرسل"}
+            {msgLog[c.id] ? "حدّث السجلّ" : "اعرض سجلّ ما أرسل"}
           </Button>
           {msgLog[c.id] && (
             msgLog[c.id].length === 0 ? (
-              <p className="mt-2 text-read text-muted-foreground">لم تُرسل شيئا في هذه الشعبة بعد.</p>
+              <p className="mt-2 text-read text-muted-foreground">لم ترسل شيئا في هذه الشعبة بعد.</p>
             ) : (
               <ul className="mt-2.5 space-y-2">
                 {msgLog[c.id].map((m) => (
