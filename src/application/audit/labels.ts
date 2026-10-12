@@ -333,6 +333,7 @@ const PHRASES: Record<string, string> = {
   'trainer.contract.materials_declared': 'إعلان المدرّب اكتمال موادّه',
   'trainer.contract.materials_returned': 'إعادة موادّ المدرّب إليه بملاحظات',
   'trainer.contract.condition_extended': 'تمديد مهلة المدرّب يومين',
+  'trainer.contract.condition_days_granted': 'منح المدرّب أيّاما في مهلة موادّه',
   'trainer.contract.document_view': 'اطّلاع موظّف على وثيقة هويّة مع عقد',
   /* وكانت «اعتمادُ الأكاديميّةِ توقيعَ المدرّب» — والفعلُ خَتمٌ: توقيعُ المفوَّض
      عنّا. ومن ١ أكتوبر ٢٠٢٦ صار اعتمادُ التوقيع في العرض المشروط فعلا آخرَ لا
