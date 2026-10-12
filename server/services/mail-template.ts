@@ -58,6 +58,7 @@
    (SPF وDKIM وDMARC) فليس من شأن هذا الملفّ — وهو في `deploy/`. */
 
 import { publicSiteUrl } from './site-url'
+import { ACADEMY_EMAILS } from './integrations.service'
 
 /** لونُ العلامة — مكتوبٌ هنا حرفيّا لأنّ البريد لا يقرأ متغيّرات CSS */
 const BRAND = {
@@ -190,7 +191,9 @@ function textOf(doc: MailDoc): string {
         break
     }
   }
-  out.push('— أكاديمية وجيز')
+  /* وعنوانُ الدعم ظاهرا في التذييل — «أين يصل الردّ؟ أليس في التذييل طريقٌ إلينا؟» (صاحب المنصّة، ١٢ أكتوبر
+     ٢٠٢٦، واختار «البريد وحدَه»). وهو من المصدر الواحد `ACADEMY_EMAILS.support`، والـHTML مثلُه */
+  out.push('— أكاديمية وجيز', `للدعم: ${ACADEMY_EMAILS.support}`)
   /* لا يزيد الفراغُ عن سطرين مهما تجاور الكتل */
   return out.join('\n').replace(/\n{3,}/g, '\n\n').trim()
 }
@@ -420,7 +423,8 @@ ${parts.join('\n')}
 <tr><td bgcolor="${BRAND.footer}" style="padding:16px 28px 20px;border-top:1px solid ${BRAND.hairline};">
 <div style="font-size:12px;line-height:1.9;color:${BRAND.muted};">
 ${anchor(site, 'أكاديمية وجيز', `color:${BRAND.teal};font-weight:700;text-decoration:none;`)} — من ${anchor(GROUP_URL, 'مجموعة وجيز', `color:${BRAND.teal};text-decoration:none;`)}<br>
-هذه رسالةٌ آليّة؛ وردُّك عليها يصل فريقَ الدعم.
+هذه رسالةٌ آليّة؛ وردُّك عليها يصل فريقَ الدعم.<br>
+للدعم: <span dir="ltr">${anchor(`mailto:${ACADEMY_EMAILS.support}`, ACADEMY_EMAILS.support, `color:${BRAND.teal};font-weight:700;text-decoration:none;`)}</span>
 </div>
 </td></tr>
 
