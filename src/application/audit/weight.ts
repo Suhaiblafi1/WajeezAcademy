@@ -288,6 +288,9 @@ const LOW_FAMILIES: readonly string[] = [
 
 /* وأفعالٌ مفردةٌ وزنُها منخفضٌ وإن كانت عائلتُها أثقل */
 const LOW: readonly string[] = [
+  /* وإبلاغُ من ترك بريدَه لدورةٍ أنّ شعبتَها فُتحت — كبابِ الموسم: بريدُه يصله من
+     `OutboxMail` لا من وزن الأثر، والصفُّ أثرُ ما فعلته المنصّة (١٢ أكتوبر ٢٠٢٦) */
+  'course.interest.notify',
   'cohort.create', 'cohort.update', 'cohort.duplicate', 'cohort.publish',
   'cohort.status', 'cohort.status.sync', 'cohort.delivery_plan.set',
   'cohort.plan.save', 'cohort.plan.submit', 'cohort.message.send',

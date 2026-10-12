@@ -11,6 +11,7 @@ import { CohortOps, LearningSettings } from "./CohortOps";
 import { COHORT_TABS, type CohortTab } from "./cohort-tabs";
 import { tabForGap } from "@/application/learning/open-gaps";
 import CohortReadiness from "./CohortReadiness";
+import CourseDemand from "./CourseDemand";
 import CohortWizard, { type WizardTerm } from "./CohortWizard";
 import LearnerSearchField, { type LearnerHit } from "@/components/LearnerSearchField";
 import EntityAuditTimeline from "@/components/EntityAuditTimeline";
@@ -269,6 +270,9 @@ export default function AdminCohorts() {
           {flash.text}
         </Card>
       )}
+
+      {/* من ينتظر دورةً بلا شعبة — لأيّها يُبحث عن مدرّبٍ أوّلا (١٢ أكتوبر ٢٠٢٦) */}
+      <CourseDemand />
 
       <CohortReadiness onApplied={() => void load()} />
 

@@ -17,6 +17,7 @@ import { TRAINING_SEASON_VALUES } from '../../../src/application/trainer/applica
 import { TERM_STATUSES } from '../../../src/application/terms/lifecycle'
 import { readSeasonGate, writeSeasonGate } from '../../services/registration-window'
 import { RegistrationInterestService } from '../../services/registration-interest.service'
+import { CourseInterestService } from '../../services/course-interest.service'
 import { seasonLabel, TRAINING_SEASON_VALUES as SEASON_VALUES } from '../../../src/application/trainer/application-options'
 
 export function registerTermRoutes(app: FastifyInstance, prisma: PrismaClient) {
@@ -134,7 +135,11 @@ export function registerTermRoutes(app: FastifyInstance, prisma: PrismaClient) {
     }
     const seasonKey = season ?? (gate.seasonKey || 'unset')
     const seasonAr = seasonKey !== 'unset' ? seasonLabel(seasonKey).replace(/\s*\(.*\)$/, '') : ''
-    return interest.notifyWaiting(req.auth!.userId, gate, seasonKey, seasonAr)
+    const seasonMail = await interest.notifyWaiting(req.auth!.userId, gate, seasonKey, seasonAr)
+    /* ومن ترك بريدَه لدورةٍ بعينها وفُتحت شعبتُها والبابُ مغلق — يُبلَّغ هنا مع
+       منتظري الموسم، بالفعل نفسِه لا عند الفتح (١٢ أكتوبر ٢٠٢٦) */
+    const courses = await new CourseInterestService(prisma).notifyAllPurchasable()
+    return { queued: seasonMail.queued + courses.queued, seasonQueued: seasonMail.queued, courseQueued: courses.queued }
   })
 
   app.get('/api/admin/terms', {

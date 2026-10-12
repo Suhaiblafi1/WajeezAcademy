@@ -11,6 +11,7 @@ import { getCalendlyConfig } from '../../services/integrations.service'
 import { ShortLinkService } from '../../services/short-link.service'
 import { readSeasonGate } from '../../services/registration-window'
 import { RegistrationInterestService, INTEREST_CONSENT_AR, INTEREST_SOURCES } from '../../services/registration-interest.service'
+import { CourseInterestService, COURSE_INTEREST_CONSENT_AR } from '../../services/course-interest.service'
 import { assertNotBot } from '../honeypot'
 
 export function registerPublicCatalogRoutes(app: FastifyInstance, prisma: PrismaClient) {
@@ -68,6 +69,22 @@ export function registerPublicCatalogRoutes(app: FastifyInstance, prisma: Prisma
     }).parse(req.body)
     const res = await interest.record(body.email, body.source ?? 'buy')
     return reply.status(201).send({ ...res, consentAr: INTEREST_CONSENT_AR })
+  })
+
+  /* «أبلغني حين تفتح شعبتها» — لدورةٍ بعينها، بلا حساب (١٢ أكتوبر ٢٠٢٦).
+     والعلّةُ في `course-interest.service.ts` */
+  const courseInterest = new CourseInterestService(prisma)
+  app.post('/api/public/course-interest', {
+    config: { rateLimit: { max: 5, timeWindow: '10 minutes' } },
+    schema: { tags: ['public'], summary: 'أبلغني حين تفتح شعبة هذه الدورة — بريد ينتظر الدورة' },
+  }, async (req, reply) => {
+    assertNotBot(req.body)
+    const body = z.object({
+      email: z.string().trim().toLowerCase().email().max(200),
+      courseId: z.string().trim().min(1).max(80),
+    }).parse(req.body)
+    const res = await courseInterest.record(body.email, body.courseId)
+    return reply.status(201).send({ ...res, consentAr: COURSE_INTEREST_CONSENT_AR })
   })
 
   app.get('/api/public/pathways', {

@@ -9,6 +9,7 @@ import { TRAINING_SEASONS, type TrainingSeason } from '../../../src/application/
 import type { PrismaClient } from '@prisma/client'
 import { CohortService } from '../../services/cohort.service'
 import { alignCohortPrices } from '../../services/catalog-readiness.service'
+import { CourseInterestService } from '../../services/course-interest.service'
 import { EnrollmentService } from '../../services/enrollment.service'
 import { AssessmentService } from '../../services/assessment.service'
 import { ProgressService } from '../../services/progress.service'
@@ -63,6 +64,13 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
      وكان بجانبها `open-all` — «شعبةٌ لكلّ دورة» بلا مدرّب — وتقاعد (١٢ أكتوبر
      ٢٠٢٦): لا تُفتح شعبةٌ إلّا باعتماد خطّة مدرّبها. والسببُ في رأس
      `catalog-readiness.service.ts`. */
+  /* الطلبُ على الدورات بلا شعبة — لأيّها يُبحث عن مدرّبٍ أوّلا (١٢ أكتوبر ٢٠٢٦).
+     والعلّةُ في `course-interest.service.ts` */
+  app.get('/api/admin/course-demand', {
+    preHandler: requirePermission('cohort.manage'),
+    schema: { tags: ['admin-cohorts'], summary: 'كم ينتظر كلّ دورة بلا شعبة — في خطّته أو ببريده' },
+  }, async () => new CourseInterestService(prisma).demand())
+
   app.post('/api/admin/cohorts/align-prices', {
     preHandler: requirePermission('cohort.open'),
     schema: { tags: ['admin-cohorts'], summary: 'يوحّد أسعار الشعب على سعر قائمة دورتها' },
