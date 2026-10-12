@@ -211,7 +211,8 @@ export class CommerceService {
     const order = await this.prisma.$transaction(async (tx) => {
       const o = await tx.order.create({
         data: {
-          userId, subtotal, discount, total, currency, couponId,
+          /* لا سلّمَ في هذا الباب — خصمُه كوبونٌ وحدَه، فما بحكم الباقة صفر */
+          userId, subtotal, discount, bundleDiscount: 0, total, currency, couponId,
           items: {
             create: reqs.map((r) => ({
               kind: 'cohort',
@@ -323,6 +324,8 @@ export class CommerceService {
       bundlePct: pricing.bundlePct,
       bundleDiscount: pricing.bundleDiscount,
       capDiscount: pricing.capDiscount,
+      /* خصمُ إكمال الخطّة — ما فات من خصمها في دفعاتٍ سابقة (١٢ أكتوبر ٢٠٢٦) */
+      planCredit: pricing.planCredit,
       couponDiscount: pricing.couponDiscount,
       discount: pricing.discount,
       total: pricing.total,
@@ -363,6 +366,8 @@ export class CommerceService {
       const o = await tx.order.create({
         data: {
           userId, subtotal, discount, total, currency, couponId,
+          /* ما خُصم بحكم الباقة وحدَها — منه يُحسب ما فات مشتري الخطّة على دفعات */
+          bundleDiscount: pricing.bundleDiscount + pricing.capDiscount + pricing.planCredit,
           items: {
             /* الهديّةُ بندٌ بصفر لا بندٌ محذوف: الفاتورةُ هي الورقةُ الوحيدة
                التي تبقى من الوعد، فحذفُها منها يُخفي ما استحقّه المشتري. */
@@ -417,6 +422,7 @@ export class CommerceService {
         cohorts: unique, currency,
         listTotal: pricing.listTotal, subtotal, total,
         bundlePct: pricing.bundlePct, bundleDiscount: pricing.bundleDiscount,
+        planCredit: pricing.planCredit,
         couponDiscount: pricing.couponDiscount, discount,
         gift: pricing.lines.find((l) => l.isGift)?.courseId ?? null,
         ...(trainerCode ? { trainerCodeId: trainerCode.id, trainerProfileId: trainerCode.profileId } : {}),
@@ -445,6 +451,7 @@ export class CommerceService {
       listTotal: pricing.listTotal,
       bundlePct: pricing.bundlePct,
       bundleDiscount: pricing.bundleDiscount,
+      planCredit: pricing.planCredit,
       couponDiscount: pricing.couponDiscount,
       items: pricing.lines.map((l) => {
         const c = cohorts.find((x) => x.id === l.cohortId)!
@@ -499,7 +506,7 @@ export class CommerceService {
     const order = await this.prisma.$transaction(async (tx) => {
       const o = await tx.order.create({
         data: {
-          userId: req.userId, subtotal, discount, total, currency: req.cohort.currency, couponId,
+          userId: req.userId, subtotal, discount, bundleDiscount: 0, total, currency: req.cohort.currency, couponId,
           items: { create: [{ kind: 'cohort', refId: req.cohortId, titleAr: `${title} — ${req.cohort.title}`, unitPrice: subtotal }] },
         },
       })

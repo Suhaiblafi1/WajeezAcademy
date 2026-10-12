@@ -863,6 +863,13 @@ export default function PathwayPage() {
                       <p className="text-muted-foreground">
                         نسعّر كل شعبة وحدها، ولا نعرض إلا السعر الذي ستدفعه فعلا.
                       </p>
+                      {/* وبعضُها فُتح: لا يُخسَر شيءٌ بالبدء به — خصمُ الخطّة كاملةً يُكمَل في
+                          الدفعة التالية (`planCredit`، قرارُ صاحب المنصّة «أ٢»، ١٢ أكتوبر ٢٠٢٦) */}
+                      {pricesLoaded && pathwayCoursesList.some((c) => prices.get(c.id)) && (
+                        <p className="text-foreground">
+                          ابدأ بما فتح الآن — خصم خطّتك كاملة محفوظ لك، وما فاتك يخصم من دفعتك القادمة.
+                        </p>
+                      )}
                       {/* والسعرُ يبقى مجهولا، أمّا الموعدُ فلا: «مع فتح الشعبة» متى؟
                           — هذا هو الجواب (البند ٥٢). */}
                       {pricesLoaded && (
@@ -1027,6 +1034,7 @@ export default function PathwayPage() {
           title={checkout.title}
           email={session?.email ?? ""}
           kind={checkout.kind}
+          giftCourseId={checkout.kind === "pathway" ? giftId : null}
           initialCoupon={coupon}
           lines={(checkout.courseIds ?? courseIds)
             .map((cid) => ({ courseId: cid, name: courseById(cid)?.name ?? cid }))}

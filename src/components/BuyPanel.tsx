@@ -57,6 +57,7 @@ import {
   type PresentmentCurrency,
 } from "@/application/commerce/presentment";
 import { cohortDayAr } from "@/application/learning/cohort-gate";
+import { buildDiscountPct } from "@/application/commerce/discount-policy";
 import { track } from "@/services/analytics";
 
 import { Card, Inset } from "@/components/ui/Surface";
@@ -108,6 +109,8 @@ interface Quote {
   bundlePct: number;
   bundleDiscount: number;
   capDiscount: number;
+  /** خصمُ إكمال الخطّة — ما فاته من خصمها في دفعاتٍ سابقة (١٢ أكتوبر ٢٠٢٦) */
+  planCredit: number;
   couponDiscount: number;
   discount: number;
   total: number;
@@ -145,6 +148,7 @@ export default function BuyPanel({
   email,
   initialCoupon = "",
   kind,
+  giftCourseId = null,
   onClose,
 }: {
   title: string;
@@ -156,6 +160,8 @@ export default function BuyPanel({
   /** شراءُ مسارٍ كاملٍ يُقال بصريح العبارة أعلى القائمة — لا فرقُه سعرٌ فقط.
       الأسعارُ رآها المشتري قبل أن يصل هنا (صفحة المسار)، فلا تتكرر هنا. */
   kind?: "pathway" | "course" | "courses";
+  /** هديّةُ الخطّة — تُحبَس عن دفعةٍ لا تُكمل الخطّة، فتُضاف مجّانا مع آخرها */
+  giftCourseId?: string | null;
   onClose: () => void;
 }) {
   const { cohorts, loaded } = useCourseCohorts();
@@ -222,10 +228,24 @@ export default function BuyPanel({
     });
   }, [buyable]);
 
+  /* ═══ والهديّةُ تنتظر آخرَ دفعةٍ من الخطّة (١٢ أكتوبر ٢٠٢٦) ═══
+
+     الهديّةُ تُستحقّ مع الخطّة كاملةً (`giftFor` في الخادم). فإن كان في الخطّة ما لا
+     شعبةَ له بعد، فدخولُها هذه الدفعةَ يُفوتِرها بثمنها — ثمّ لا تعود هديّةً حين
+     تكتمل. فتُحبَس عن هذه الدفعة، وتُضاف بصفرٍ مع آخر دوراتها. */
+  const giftHeld = kind === "pathway" && giftCourseId !== null && withoutCohort.length > 0
+    && buyable.some(({ line }) => line.courseId === giftCourseId);
+  const giftName = giftHeld ? buyable.find(({ line }) => line.courseId === giftCourseId)?.line.name ?? "" : "";
+
   const cohortIds = useMemo(
-    () => buyable.map(({ line }) => chosen[line.courseId]).filter(Boolean),
-    [buyable, chosen],
+    () => buyable
+      .filter(({ line }) => !(giftHeld && line.courseId === giftCourseId))
+      .map(({ line }) => chosen[line.courseId]).filter(Boolean),
+    [buyable, chosen, giftHeld, giftCourseId],
   );
+
+  /* خصمُ الخطّة كاملةً — بعدد دوراتها المدفوعة (بلا الهديّة)، يُقال لمن يشتري بعضَها */
+  const planPct = buildDiscountPct(lines.filter((l) => l.courseId !== giftCourseId).length);
 
   /* التسعير: نداءٌ واحد كلّما تبدّلت الشعبُ أو الكود — والرقمُ الظاهر رقمُه */
   const refresh = useCallback(async (code: string) => {
@@ -463,6 +483,20 @@ export default function BuyPanel({
                   خارج هذا الطلب لأنّها بلا شعبة مفتوحة بعد:{" "}
                   <span className="text-foreground">{withoutCohort.map((l) => l.name).join("، ")}</span>. تبقى في
                   مسارك، ونعلمك فور فتح شعبتها.
+                  {/* ما يكسبه بالانتظار — لا ما يخسره: الخصمُ يُكمَل في الدفعة التالية
+                      (`planCredit` في `cart-pricing.ts`)، قرارُ صاحب المنصّة «أ٢» */}
+                  {kind === "pathway" && planPct > 0 && (
+                    <>
+                      {" "}
+                      <span className="text-foreground">خصم خطّتك كاملة ({planPct}٪) محفوظ لك:</span> حين تشتري
+                      باقيها يخصم من فاتورتها ما فاتك اليوم.
+                    </>
+                  )}
+                  {giftHeld && (
+                    <>
+                      {" "}هديّتك «{giftName}» تضاف مجّانا مع آخر دورة من خطّتك.
+                    </>
+                  )}
                 </span>
               </Card>
             )}
@@ -548,6 +582,13 @@ export default function BuyPanel({
                   <div className="flex items-center justify-between text-teal-light-ink">
                     <span>حدّ سعر المسار</span>
                     <span dir="ltr">−{money(quote.capDiscount, quote.currency)}</span>
+                  </div>
+                )}
+                {/* خصمُ إكمال الخطّة — ما فاته في دفعةٍ سابقةٍ يُخصم هنا، باسمه */}
+                {quote.planCredit > 0 && (
+                  <div className="flex items-center justify-between text-teal-light-ink">
+                    <span>خصم إكمال خطّتك</span>
+                    <span dir="ltr">−{money(quote.planCredit, quote.currency)}</span>
                   </div>
                 )}
                 {quote.couponDiscount > 0 && (

@@ -3847,6 +3847,9 @@ model Order {
   status    String      @default("pending_payment") // pending_payment | paid | cancelled | partially_refunded | refunded
   subtotal  Decimal     @db.Decimal(10, 2)
   discount  Decimal     @default(0) @db.Decimal(10, 2)
+  /// ما خُصم بحكم الباقة: سلّمُها وسقفُها وخصمُ إكمال الخطّة — كلُّ ما في `discount` عدا
+  /// الكوبون (١٢ أكتوبر ٢٠٢٦). منه يُحسب ما فات مشتري الخطّة على دفعات. وفارغٌ لما قبله.
+  bundleDiscount Decimal? @db.Decimal(10, 2)
   total     Decimal     @db.Decimal(10, 2)
   currency  String      @default("USD")
   couponId  String?     @db.Uuid

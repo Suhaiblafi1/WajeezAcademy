@@ -8,7 +8,7 @@
    والتحويل إلى المزوّد لا يعني أنّ الدفع تمّ: التسوية بـwebhook موقَّع، ورجوع
    المتصفّح ليس دليلا. فلا نقول «تمّ» هنا — نقول «إلى صفحة الدفع». */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CreditCard, Loader2 } from "lucide-react";
 import { apiPost, ApiError } from "@/services/api";
 import type { CohortOption } from "@/services/cohort-prices";
@@ -22,6 +22,8 @@ import {
 } from "@/application/commerce/presentment";
 
 interface CheckoutResult { orderId: string; total: number; currency: string }
+/** ما يُفوتَر فعلا — من الخادم: الهديّةُ بصفر، وخصمُ إكمال الخطّة مخصوم */
+interface QuoteResult { total: number; currency: string; planCredit: number; items: { cohortId: string }[] }
 interface PayResult { redirectUrl?: string; status?: string }
 
 export default function BuyCohort({
@@ -43,14 +45,32 @@ export default function BuyCohort({
      (قرارُ صاحب المنصّة)، فلا مبدّلَ عملةٍ في أيّ صفحةٍ أخرى. */
   const [currency, setCurrency] = useState<PresentmentCurrency>("USD");
 
+  /* ═══ والرقمُ على الزرّ رقمُ الفاتورة (١٢ أكتوبر ٢٠٢٦) ═══
+
+     كان الزرُّ يقول سعرَ الشعبة، والفاتورةُ يُصدرها الخادمُ بعد الهديّة وخصم إكمال
+     الخطّة — فمن يُكمل خطّتَه من هنا يرى رقما ويُفوتَر بأقلّ منه، ومن آخرُ دوراته
+     هديّتُه يرى ثمنَها ويدفع صفرا. فيُسأل الخادمُ عن الرقم كما يُسأل لوحُ الشراء،
+     وإن تعذّر بقي سعرُ الشعبة: الشراءُ لا يتوقّف على عرضه. */
+  const [quote, setQuote] = useState<QuoteResult | null>(null);
+  const cohortId = cohort?.id ?? null;
+  useEffect(() => {
+    if (!cohortId) return;
+    let live = true;
+    apiPost<QuoteResult>("/api/learner/checkout/quote", { cohortIds: [cohortId] })
+      .then((q) => { if (live && q.items.some((i) => i.cohortId === cohortId)) setQuote(q); })
+      .catch(() => undefined);
+    return () => { live = false; };
+  }, [cohortId]);
+
   if (!cohort) return null;
 
   /* التحويلُ يُعرض قبل الضغط لا بعده: من يختار الدرهم يرى ٣٦٧٫٢٥ درهما هنا،
      وهو بعينه ما سيراه على صفحة Stripe وفي كشف بطاقته. */
   const usd = cohort.currency === "USD";
+  const amount = quote ? quote.total : cohort.amount;
   const shown = usd
-    ? formatPresentment(convertFromUsd(cohort.amount, currency), currency)
-    : formatOfferPrice(cohort.amount, cohort.currency);
+    ? formatPresentment(convertFromUsd(amount, currency), currency)
+    : formatOfferPrice(amount, cohort.currency);
 
   const buy = async () => {
     setBusy(true);
@@ -107,6 +127,9 @@ export default function BuyCohort({
         {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CreditCard className="h-3.5 w-3.5" />}
         اشتر الآن · <span dir="ltr">{shown}</span>
       </Button>
+      {quote && quote.planCredit > 0 && (
+        <p className="text-read leading-4 text-teal-light-ink">يشمل خصم إكمال خطّتك</p>
+      )}
       {error && <p className="max-w-[16rem] text-left text-read leading-4 text-red-300">{error}</p>}
     </div>
   );
