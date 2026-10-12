@@ -26,6 +26,9 @@ const instant = z.string().datetime({ offset: true })
 const meta = {
   required: z.boolean().optional(),
   reasonAr: z.string().trim().min(2).max(1000),
+  /* ما كان في الموضع حين كُتب البند — من الخطّة كما نُزّلت. فإن عدّله المدرّبُ بعد التنزيل رُدّ البندُ
+     ولم يُكتب فوق ما كتبه (١٢ أكتوبر ٢٠٢٦، `basedOn` في `plan-edit.service.ts`) */
+  basedOn: z.record(z.string(), z.unknown()).nullable().optional(),
 }
 
 const resource = z.object({

@@ -160,3 +160,29 @@ describe('والرفض لا يمسّ شيئا، والتعارض يردّ الم
     expect(r.json().error.message_ar).toMatch(/يقع اللقاء الجديد على لقاء «اللقاء الأول»/)
   })
 })
+
+describe('ولا يكتب على خطة تغيّرت بعد أن نزّلت (basedOn)', () => {
+  it('⚠️ البند يحمل ما كتب عليه — يرفع ما دام الموضع كما هو', async () => {
+    const x = await inHand()
+    const r = await upload(x.planId, [{
+      kind: 'module', moduleId: 'M1', reasonAr: 'مخرج أوضح', set: { outcomeAr: 'يرسم خريطة جمهوره' }, basedOn: { outcomeAr: 'يحلّل جمهوره' },
+    }])
+    expect(r.statusCode, r.body).toBe(201)
+    const stored = await prisma.planEditSuggestion.findFirstOrThrow({ where: { planId: x.planId } })
+    expect(stored.edit, 'حفظ ما كتب عليه في البند').not.toHaveProperty('basedOn')
+  })
+
+  it('⚠️ وعدّله المدرب بعد التنزيل — يردّ البند باسمه ولا يرفع شيء', async () => {
+    const x = await inHand()
+    const now = { ...content, modules: content.modules.map((m) => (m.moduleId === 'M1' ? { ...m, outcomeAr: 'نص كتبه المدرب بعد التنزيل' } : m)) }
+    await prisma.cohortDeliveryPlan.update({ where: { id: x.planId }, data: { content: now as never } })
+    const r = await upload(x.planId, [
+      { kind: 'module', moduleId: 'M1', reasonAr: 'مخرج أوضح', set: { outcomeAr: 'يرسم خريطة جمهوره' }, basedOn: { outcomeAr: 'يحلّل جمهوره' } },
+      { kind: 'task_change', assessmentId: x.quizId, reasonAr: 'موعد أوضح', set: { dueAt: '2026-12-20T20:59:00.000Z' }, basedOn: { dueAt: null } },
+    ])
+    expect(r.statusCode).toBe(422)
+    expect(r.json().error.message_ar).toMatch(/البند 1: عدّل المدرب هذا الموضع بعد تنزيل الخطة/)
+    expect(r.json().error.message_ar, 'ردّ ما لم يتغيّر').not.toMatch(/البند 2:/)
+    expect(await prisma.planEditSuggestion.count({ where: { planId: x.planId } })).toBe(0)
+  })
+})

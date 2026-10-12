@@ -37,7 +37,7 @@ import {
 } from '../../src/application/trainer/plan-edits'
 
 /** بندٌ في الملفّ المرفوع: التعديلُ نفسُه، ولماذا، وأمطلوبٌ هو */
-export type PlanEditInput = PlanEdit & { required?: boolean; reasonAr: string }
+export type PlanEditInput = PlanEdit & { required?: boolean; reasonAr: string; basedOn?: Record<string, unknown> | null }
 
 export interface PlanEditItem {
   id: string
@@ -275,6 +275,13 @@ export class PlanEditService {
       const edit = editOf(item)
       const snap = this.snapshotNow(edit, r)
       if (!snap.ok) { problems.push(`البند ${i + 1}: ${snap.problemAr}`); return null }
+      /* ═══ ولا يُكتب على خطّةٍ تغيّرت بعد أن نُزّلت (١٢ أكتوبر ٢٠٢٦) ═══
+         «كيف ننزّل الخطط وهم يعدّلونها بعد اقتراحاتي؟» (صاحب المنصّة). اللقطةُ تُؤخذ لحظةَ الرفع، فبندٌ كُتب
+         على تنزيلٍ أقدم كان يأخذ «قبلَه» ممّا كتبه المدرّبُ بعده — ويكتب فوقه إن قُبل. فما يحمل ما كُتب عليه
+         (`basedOn`) يُقابَل بالموضع الآن، وما تغيّر يُردّ باسمه ولا يُرفع شيء */
+      if (item.basedOn !== undefined && !sameSnapshot(item.basedOn as EditSnapshot, snap.value)) {
+        problems.push(`البند ${i + 1}: عدّل المدرب هذا الموضع بعد تنزيل الخطة — نزّلها من جديد واكتب البند على ما فيها الآن`)
+      }
       /* ونقلُ لقاءٍ وحدَه لا يكسر ما حوله — وإلّا كُتب جدولا واحدا بسلسلته (`sessionMoveChainProblem`) */
       if (edit.kind === 'session_move') {
         const chain = sessionMoveChainProblem(edit, r.sessions.filter((x) => !x.placeholder), r.tasks)
@@ -776,6 +783,7 @@ function editOf(item: PlanEditInput): PlanEdit {
   const edit: Record<string, unknown> = { ...item }
   delete edit.required
   delete edit.reasonAr
+  delete edit.basedOn
   return edit as unknown as PlanEdit
 }
 
