@@ -163,7 +163,7 @@ export function contentQuality(modules: readonly QualityModule[]): ContentQualit
 
     /* ① العمق */
     const w = words(body)
-    if (w < MIN_THEORY_WORDS) out.depth.push(`${at}: ${w} كلمةً — اشرح الفكرةَ في ${MIN_THEORY_WORDS} كلمةً على الأقلّ`)
+    if (w < MIN_THEORY_WORDS) out.depth.push(`${at}: الشرح ${w} كلمة فقط — اشرح الفكرة في ${MIN_THEORY_WORDS} كلمة على الأقلّ`)
     if (!EXAMPLE.test(flat)) out.depth.push(`${at}: بلا مثالٍ محلول — أضف حالةً من سوقٍ عربيّ تُحلّ خطوةً خطوة`)
     if (!MISTAKE.test(flat)) out.depth.push(`${at}: لا يسمّي خطأً شائعا — اكتبه في فقرةٍ باسمه: ما يفعله المبتدئ، ولماذا يبدو صحيحا، وكيف يتجنّبه`)
 

@@ -24,7 +24,7 @@
 
 import { STAGE_LABELS, type ReviewSection } from './review-notes'
 import type { ScheduleEdit } from './schedule-proposal'
-import { compactGapsAr, NOTE_SUGGESTION_AR, NOW_SUGGEST_SEP, WEEKDAY_AR } from './plan-scorecard'
+import { compactGapsAr, NOTE_FIX_MARK, NOTE_GAP_MARK, NOTE_SUGGESTION_AR, NOW_SUGGEST_SEP, WEEKDAY_AR } from './plan-scorecard'
 import { plainAr } from '../text/plain-ar'
 import { PLAN_MAX } from './plan-limits'
 import { kindForCategory, RESOURCE_CATEGORIES, RESOURCE_KINDS, type ResourceCategory } from './plan-overlay'
@@ -486,6 +486,8 @@ export interface EditRow {
   beforeHref?: string; afterHref?: string
   /** وسمُ نقطة الملاحظة — «مطلوب» أو «مقترَح» */
   tagAr?: string
+  /** ما ينقص وما يفعله — نقطةُ البطاقة منذ ١٢ أكتوبر ٢٠٢٦ (`notePoints`) */
+  subs?: NoteSub[]
 }
 export interface EditView { titleAr: string; stepAr: string; rows: EditRow[] }
 
@@ -605,7 +607,13 @@ export function planEditView(edit: PlanEdit, before: EditSnapshot, ctx: EditCont
       /* والنقطةُ ذاتُ «الآن ← نقترح» صفٌّ بخانتيه كالتعديل: ما هو الآن، وما نقترحه */
       return {
         titleAr: where, stepAr,
-        rows: notePoints(edit.textAr).map((p) => ({
+        rows: notePoints(edit.textAr).map((p) => (p.subs ? {
+          labelAr: p.labelAr ?? '',
+          beforeAr: p.subs.flatMap((x) => x.gapsAr).join('؛ '),
+          afterAr: p.subs.flatMap((x) => (x.fixAr ? [x.fixAr] : [])).join('؛ '),
+          ...(p.tagAr ? { tagAr: p.tagAr } : {}),
+          subs: p.subs,
+        } : {
           labelAr: p.labelAr ?? '', beforeAr: p.nowAr ?? null, afterAr: p.suggestAr ?? p.textAr,
           ...(p.tagAr ? { tagAr: p.tagAr } : {}),
         })),
@@ -626,21 +634,54 @@ export interface NotePoint {
   /** ما هو الآن، وما نقترحه — «ماذا كان وماذا نقترح» (صاحب المنصّة، ١١ أكتوبر ٢٠٢٦) */
   nowAr?: string
   suggestAr?: string
+  /** نقطةُ البطاقة منذ ١٢ أكتوبر ٢٠٢٦: رأسٌ، وتحته ما ينقص («•») وما يفعله («←») — `labelAr` رأسُها */
+  subs?: NoteSub[]
 }
+
+/** ما ينقص في مواضعه، ثمّ ما يفعله مرّةً واحدة — وقد لا يكون له إصلاحٌ مكتوب */
+export interface NoteSub {
+  gapsAr: string[]
+  fixAr: string | null
+}
+
+const LIST_MARK = /^[-•·*]\s+/
+const NUMBER_MARK = /^\d+[.)]\s+/
+const isGapLine = (l: string) => l.startsWith(NOTE_GAP_MARK)
+const isFixLine = (l: string) => l.startsWith(NOTE_FIX_MARK)
 
 /** نقاطُ الملاحظة: سطرٌ لكلّ نقطة، بلا علامة تعداد، و«مطلوب»/«مقترَح» وسمٌ إن بدأ به السطر. وسطرُ بطاقة
     المعايير «الاسم: الآن … ← نقترح: …» يُقرأ بخانتيه — والقديمُ بلا «نقترح» يُستدلّ على اقتراحه باسم معياره */
 export function notePoints(text: string): NotePoint[] {
   /* وما حُفظ قبل «اللغة البيضاء» مشكولٌ — فيُقرأ بلا تشكيلٍ كالجديد (`plain-ar.ts`) */
-  return plainAr(text).split('\n')
-    .map((l) => l.trim().replace(/^[-•·*]\s+/, '').replace(/^\d+[.)]\s+/, ''))
-    .filter(Boolean)
-    .map((l) => {
-      const m = TAG_AT_START.exec(l)
-      const tagAr = m ? (m[1] === 'مطلوب' ? 'مطلوب' : 'مقترح') : null
-      const body = m ? l.slice(m[0].length) : l
-      return { textAr: body, tagAr, ...nowAndSuggest(body) }
-    })
+  const lines = plainAr(text).split('\n').map((l) => l.trim()).filter(Boolean)
+  const out: NotePoint[] = []
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i]!.replace(LIST_MARK, '').replace(NUMBER_MARK, '')
+    const m = TAG_AT_START.exec(l)
+    const tagAr = m ? (m[1] === 'مطلوب' ? 'مطلوب' : 'مقترح') : null
+    const body = m ? l.slice(m[0].length) : l
+    /* ═══ ونقطةُ البطاقة: رأسٌ موسوم، وتحته «•» ما ينقص و«←» ما يفعله (١٢ أكتوبر ٢٠٢٦) ═══
+       وتُعرف بسطر «←» تحتها لا بـ«•» وحدَها: «• انقل اللقاء» تحت سطرٍ موسومٍ كتبه المعتمِدُ بيده
+       نقطةٌ مستقلّةٌ كما كانت (`scorecardNotes` في `plan-scorecard.ts`). */
+    let j = i + 1
+    while (j < lines.length && (isGapLine(lines[j]!) || isFixLine(lines[j]!))) j++
+    const block = lines.slice(i + 1, j)
+    if (tagAr && !body.includes(': ') && block.some(isFixLine)) {
+      const subs: NoteSub[] = []
+      let gaps: string[] = []
+      for (const b of block) {
+        const t = b.slice(1).trim()
+        if (isGapLine(b)) gaps.push(t)
+        else { subs.push({ gapsAr: gaps, fixAr: t }); gaps = [] }
+      }
+      if (gaps.length) subs.push({ gapsAr: gaps, fixAr: null })
+      out.push({ textAr: body, tagAr, labelAr: body, subs })
+      i = j - 1
+      continue
+    }
+    out.push({ textAr: body, tagAr, ...nowAndSuggest(body) })
+  }
+  return out
 }
 
 function nowAndSuggest(body: string): Pick<NotePoint, 'labelAr' | 'nowAr' | 'suggestAr'> {
@@ -659,17 +700,21 @@ function nowAndSuggest(body: string): Pick<NotePoint, 'labelAr' | 'nowAr' | 'sug
 /** أهذا سطرُ «واقترحنا على خطّتك…» الذي تكتبه المنصّةُ ملاحظةً عامّةً حين يُردّ بالتعديلات وحدَها؟ */
 export const isEditsLineAr = (text: string): boolean => /^واقترحنا على خطّتك .+، جاهزة في صفحة الشعبة/.test(plainAr(text).trim())
 
-/** بنودُ الملاحظات من ملاحظات الردّ — العامّةُ أوّلا ثمّ بترتيب الخطوات. والعامّةُ التي كتبتها المنصّةُ
+/** بنودُ الملاحظات من ملاحظات الردّ — العامّةُ أوّلا، ثمّ ما فيه مطلوب، ثمّ بترتيب الخطوات. والعامّةُ التي كتبتها المنصّةُ
     من عدّ التعديلات (`isEditsLineAr`) لا بندَ لها: تذكر ما في البطاقات نفسِها */
 export function noteItemsFrom(
   notes: Partial<Record<NoteStep, string>>,
 ): { edit: Extract<PlanEdit, { kind: 'note' }>; required: boolean }[] {
-  return NOTE_STEPS.flatMap((step) => {
+  const items = NOTE_STEPS.flatMap((step) => {
     const text = notes[step]?.trim()
     if (!text || (step === 'general' && isEditsLineAr(text))) return []
     const required = notePoints(text).some((p) => p.tagAr === 'مطلوب')
     return [{ edit: { kind: 'note' as const, step, textAr: text }, required }]
   })
+  /* والأولويّةُ (١٢ أكتوبر ٢٠٢٦): العامّةُ، ثمّ الخطواتُ التي فيها مطلوب، ثمّ الباقي — بترتيب الشريط في كلٍّ */
+  const general = items.filter((x) => x.edit.step === 'general')
+  const steps = items.filter((x) => x.edit.step !== 'general')
+  return [...general, ...steps.filter((x) => x.required), ...steps.filter((x) => !x.required)]
 }
 
 /* ─────────── وما يُقال في رسالة القرار ─────────── */

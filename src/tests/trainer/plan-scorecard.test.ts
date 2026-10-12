@@ -251,16 +251,21 @@ describe('ملاحظات الردّ من البطاقة', () => {
     i.sessions[1] = { ...i.sessions[1]!, moduleIds: ['M1'] }
     const notes = scorecardNotes(planScorecard(i))
     expect(Object.keys(notes).sort()).toEqual(['identity', 'sessions'])
-    expect(notes.identity).toMatch(/^مطلوب — نهاية الشعبة: الآن /)
+    expect(notes.identity).toMatch(/^مطلوب — نهاية الشعبة\n• تنتهي الشعبة في /)
     const lines = notes.sessions!.split('\n')
-    /* «الآن ← نقترح» (١١ أكتوبر ٢٠٢٦): ما هو الآن، ثمّ المعيارُ بجملته */
-    expect(lines[0]).toBe('مطلوب — لقاء لكلّ محور: الآن المحور 2: بلا لقاء مباشر ← نقترح: لكلّ محور لقاء مباشر واحد على الأقلّ')
-    expect(lines[1]).toMatch(/^مقترح — طول اللقاء: الآن .+ ← نقترح: بين ساعتين وثلاث/)
+    /* نقاطٌ بلغةٍ بيضاء (١٢ أكتوبر ٢٠٢٦): رأسٌ، و«•» ما ينقص، و«←» ما يفعله — والمطلوبُ أوّلا */
+    expect(lines.slice(0, 4)).toEqual([
+      'مطلوب — لقاء لكلّ محور', '• المحور 2: بلا لقاء مباشر', '← أضف لقاء مباشرا واحدا على الأقلّ لكلّ محور', '',
+    ])
+    expect(lines[4]).toBe('مقترح — طول اللقاء')
+    expect(lines[5]).toMatch(/^• .+: 4 ساعات$/)
+    expect(lines[6]).toMatch(/^← قسّم اللقاء الطويل لقاءين/)
   })
 
   it('ولا تتجاوز حدّ الصندوق', () => {
-    const many = Array.from({ length: 400 }, (_, k) => `سطر طويل رقم ${k}`)
-    const notes = scorecardNotes([{ key: 'x', labelAr: 'س', standardAr: '', measuredAr: '', gaps: many, required: false, status: 'advice', step: 'modules' }])
+    /* ولكلّ نقصٍ إصلاحُه — فلا يُجمع، ويطول حتّى يُقصّ */
+    const many = Array.from({ length: 400 }, (_, k) => `المحور ${k}: سطر طويل — إصلاح رقم ${k}`)
+    const notes = scorecardNotes([{ key: 'content_style', labelAr: 'س', standardAr: '', measuredAr: '', gaps: many, required: false, status: 'advice', step: 'modules' }])
     expect(notes.modules!.length).toBe(REVIEW_NOTE_MAX)
     expect(notes.modules!.endsWith('…')).toBe(true)
   })
