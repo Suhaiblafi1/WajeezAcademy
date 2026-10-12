@@ -23,6 +23,7 @@ import type {
 } from '@/application/trainer/curriculum-view'
 import type { ReviewSection } from '@/application/trainer/review-notes'
 import type { WorkbookMaterial } from '@/application/trainer/cohort-workbooks'
+import { BriefView } from "@/components/LongText";
 
 /** الخطوةُ التي يعود إليها المدرّبُ ليعدّل ما قرأه — وهي أقسامُ ملاحظات المعتمِد نفسُها */
 export type CurriculumEditStage = ReviewSection
@@ -91,7 +92,7 @@ function Tasks({ list }: { list: CurriculumTask[] }) {
             </span>
           </p>
           {t.briefAr
-            ? <p className="mt-0.5 whitespace-pre-line text-muted-foreground">{t.briefAr}</p>
+            ? <BriefView text={t.briefAr} muted className="mt-1" />
             : <p className="mt-0.5 text-gold-ink">بلا تعليمات — ما المطلوب من المتعلّم؟</p>}
         </li>
       ))}

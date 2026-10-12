@@ -8,13 +8,15 @@
    تعرضان ما يحسبه الخادمُ منها، لا تحسبان. */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { CalendarClock, Check, ExternalLink, FileJson, Files, X } from "lucide-react";
+import { CalendarClock, Check, ExternalLink, FileJson, Files, PencilLine, X } from "lucide-react";
 import { apiDelete, apiGet, apiPost, ApiError } from "@/services/api";
 import { Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import Chip from "@/components/ui/Chip";
 import type { EditView, PlanEditStatus } from "@/application/trainer/plan-edits";
 import { bulkSummaryAr, readEditsFile, replacedLineAr, uploadedLineAr } from "@/application/trainer/plan-edits-bulk";
+import { GapList } from "@/components/LongText";
+import { gapLayout } from "@/application/trainer/text-layout";
 
 export interface PlanEditItem {
   id: string;
@@ -496,7 +498,12 @@ export function PlanEditsPanel({ cohortId, inHand, unsaved, onApplied, onCounts,
     </div>
   );
 
-  /* ═══ بندُ الملاحظة: نقاطُها، ثمّ «موافق» أو «لا أوافق» — وزرٌّ إلى خطوتها يعدّل فيها ═══ */
+  /* ═══ بندُ الملاحظة: نقاطُها، ثمّ «سأعدّله» يفتح خطوتَها (١١ أكتوبر ٢٠٢٦) ═══
+
+     كان «موافق» و«لا أوافق». فقال صاحبُ المنصّة: «إن اقترحتَ عليه ما يقبله أو يرفضه فقبولُه يغيّر
+     الشيء. وإن لم تغيّره أنت فلا تطلب منه أن يوافق — أعطه زرّا: سأعدّله، يأخذه إلى موضعه». فالملاحظةُ لا
+     تكتب في الخطّة شيئا: زرُّها «سأعدّله» يُعلِّمها ويفتح خطوتَها، والعامّةُ «اطّلعتُ عليها». ويبقى له —
+     بقاعدة «لا إجبارَ على فعل» — أن يُبقي الموضعَ كما هو ويقول لماذا. */
   const noteCard = (x: PlanEditItem) => (
     <Card as="li" key={x.id} className="p-4">
       <div className="flex items-start gap-3">
@@ -509,25 +516,34 @@ export function PlanEditsPanel({ cohortId, inHand, unsaved, onApplied, onCounts,
             <Chip tone={x.required ? "danger" : "info"}>{x.required ? "فيها مطلوب" : "ملاحظة"}</Chip>
           </div>
           <NotePoints view={x.view} />
-          {!blocked && (
-            <div className="mt-3 flex flex-wrap gap-2">
-              <Button
-                tone="confirm" size="sm" icon={Check} disabled={busy !== null}
-                onClick={() => void act(x.id, () => apiPost(`/api/trainer/plan-edits/${x.id}/accept`, {}), `وافقت على «${x.view.titleAr}».`, false)}
-              >
-                موافق
-              </Button>
-              <Button tone="ghost" size="sm" icon={X} disabled={busy !== null} onClick={() => { setRejecting(rejecting === x.id ? null : x.id); setNote(""); }}>
-                لا أوافق
-              </Button>
-              {onOpenStep && x.step !== "general" && (
-                <Button tone="secondary" size="sm" disabled={busy !== null} onClick={() => onOpenStep(x.step)}>
-                  افتح «{x.view.stepAr}»
+          <div className="mt-3 flex flex-wrap gap-2">
+            {x.step === "general" ? (
+              !blocked && (
+                <Button
+                  tone="confirm" size="sm" icon={Check} disabled={busy !== null}
+                  onClick={() => void act(x.id, () => apiPost(`/api/trainer/plan-edits/${x.id}/accept`, {}), "قرأتها.", false)}
+                >
+                  اطّلعت عليها
                 </Button>
-              )}
-            </div>
-          )}
-          {whyBox(x, "أكّد أنّك لا توافق", `لم توافق على «${x.view.titleAr}» — وصلت كلمتك الإدارة.`)}
+              )
+            ) : (
+              <Button
+                tone="confirm" size="sm" icon={PencilLine} disabled={busy !== null}
+                onClick={() => blocked
+                  ? onOpenStep?.(x.step)
+                  : void act(x.id, () => apiPost(`/api/trainer/plan-edits/${x.id}/accept`, {}), `افتح «${x.view.stepAr}» وعدّل فيها.`, false)
+                    .then(() => onOpenStep?.(x.step))}
+              >
+                سأعدّله
+              </Button>
+            )}
+            {!blocked && (
+              <Button tone="ghost" size="sm" disabled={busy !== null} onClick={() => { setRejecting(rejecting === x.id ? null : x.id); setNote(""); }}>
+                {x.step === "general" ? "لي رأي آخر" : "أبقيه كما هو"}
+              </Button>
+            )}
+          </div>
+          {whyBox(x, "أرسل رأيك", `وصل رأيك في «${x.view.titleAr}» الإدارة.`)}
         </div>
       </div>
     </Card>
@@ -647,7 +663,7 @@ export function PlanEditsPanel({ cohortId, inHand, unsaved, onApplied, onCounts,
               <li key={x.id} className="flex flex-wrap items-center gap-2 text-read leading-6">
                 <span className="w-6 shrink-0 text-center font-black text-muted-foreground">{numberOf(x)}</span>
                 <span className="font-bold text-foreground">{x.view.titleAr}</span>
-                <Chip tone={STATUS_AR[x.status].tone}>{x.status === "accepted" ? (isNote(x) ? "وافقت" : "قبلته") : x.status === "rejected" ? (isNote(x) ? "لم توافق" : "رفضته") : STATUS_AR[x.status].label}</Chip>
+                <Chip tone={STATUS_AR[x.status].tone}>{x.status === "accepted" ? (isNote(x) ? (x.step === "general" ? "قرأتها" : "ستعدّله") : "قبلته") : x.status === "rejected" ? (isNote(x) ? "أبقيته" : "رفضته") : STATUS_AR[x.status].label}</Chip>
                 {x.status === "rejected" && x.noteAr && <span className="text-muted-foreground">— كلمتك: {x.noteAr}</span>}
               </li>
             ))}
@@ -659,8 +675,8 @@ export function PlanEditsPanel({ cohortId, inHand, unsaved, onApplied, onCounts,
 }
 
 const isNote = (x: PlanEditItem) => x.kind === "note";
-/** والملاحظةُ يوافق عليها أو لا — لا «قُبل» و«رُفض» كالتعديل */
-const NOTE_STATUS_AR: Partial<Record<PlanEditStatus, string>> = { pending: "عند المدرّب", accepted: "وافق", rejected: "لم يوافق" };
+/** والملاحظةُ «سيعدّلها» أو «أبقاها كما هي» — لا «قُبل» و«رُفض» كالتعديل (١١ أكتوبر ٢٠٢٦) */
+const NOTE_STATUS_AR: Partial<Record<PlanEditStatus, string>> = { pending: "عند المدرّب", accepted: "سيعدّله", rejected: "أبقاه كما هو" };
 
 /** نقاطُ الملاحظة — سطرٌ لكلّ نقطة، و«مطلوب»/«مقترَح» وسمُها إن كان (`notePoints` في `plan-edits.ts`).
     والنقطةُ من بطاقة المعايير خانتان: «الآن» و«نقترح» — «ماذا كان وماذا نقترح» (صاحب المنصّة، ١١ أكتوبر ٢٠٢٦) */
@@ -675,10 +691,18 @@ export function NotePoints({ view }: { view: EditView }) {
                 {r.tagAr && <Chip tone={r.tagAr === "مطلوب" ? "danger" : "info"}>{r.tagAr}</Chip>}
                 <span className="text-read font-bold text-foreground">{r.labelAr}</span>
               </div>
+              {/* وقائمةُ النواقص محورا محورا ثمّ «كيف تُصلحه» — لا سطرا مكتظّا في خانة (١١ أكتوبر ٢٠٢٦) */}
+              {gapLayout(r.beforeAr) ? (
+                <div className="mt-1.5 grid gap-2">
+                  <GapList layout={gapLayout(r.beforeAr)!} />
+                  <p className="text-read leading-6 text-foreground"><b className="text-teal-light-ink">نقترح:</b> {r.afterAr}</p>
+                </div>
+              ) : (
               <div className="mt-1.5 grid gap-2 sm:grid-cols-2">
                 <Cell label="الآن" text={r.beforeAr} muted />
                 <Cell label="نقترح" text={r.afterAr} />
               </div>
+              )}
             </>
           ) : (
             <div className="flex items-start gap-2 text-read leading-7">

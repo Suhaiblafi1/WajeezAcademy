@@ -178,7 +178,7 @@ describe('④ اللقاءات — بطاقة لكلّ موعد', () => {
   it('⚠️ والجلسة المسجّلة بعد الاعتماد: يقال إنّ محورها ويوم فتحها يسريان وإنّ ما سواهما ينتظر (٢٨ سبتمبر ٢٠٢٦)', () => {
     /* وكان يقول «محورها وحده» — ثمّ قال صاحب المنصّة: «free the recording's opening day too» */
     expect(SLOT, 'لا يقال للمدرّب أيّ تعديل في الجلسة المسجّلة يسري لحظته')
-      .toMatch(/\{approvedOnce && \([\s\S]{0,200}المحور ويوم الفتح يسريان فورا، وغيرهما تعتمده الإدارة/)
+      .toMatch(/\{approvedOnce && recorded\.length > 0 && \([\s\S]{0,200}المحور ويوم الفتح يسريان فورا، وغيرهما تعتمده الإدارة/)
     expect(SLOT, 'عاد يوم الفتح إلى ما ينتظر الإدارة').not.toMatch(/أمّا اسمها ورابطها ويوم فتحها/)
     expect(WS, 'الورشة لا تقول للبطاقة إنّ الخطّة اعتمدت').toContain('approvedOnce={ws.approvedOnce ?? false}')
   })
@@ -217,7 +217,9 @@ describe('④ اللقاءات — بطاقة لكلّ موعد', () => {
     expect(SLOT).toContain('!outside && sessionDayAdvice(form.date, zonedDay(new Date()))')
     expect(tip).toContain('SESSION_DAY_ADVICE_AR')
     expect(tip, 'النصيحة بلون التحذير').not.toMatch(/gold|warn/)
-    const send = SLOT.slice(SLOT.indexOf('<Button tone="confirm"'), SLOT.indexOf('احفظ اللقاء', SLOT.indexOf('<Button tone="confirm"')))
+    /* زرُّ نموذج اللقاء الجديد — لا زرُّ «احفظ الموعدَ الجديد» الذي قبله في البطاقة */
+    const save = SLOT.indexOf('احفظ اللقاء')
+    const send = SLOT.slice(SLOT.lastIndexOf('<Button tone="confirm"', save), save)
     expect(send, 'صارت النصيحة مانعا للإرسال').not.toContain('sessionDayAdvice')
   })
 
@@ -240,10 +242,35 @@ describe('④ اللقاءات — بطاقة لكلّ موعد', () => {
     expect(live, 'يعرض كلّ محور ولو في غير وقته').not.toContain('content.modules.map((m, k) => <option')
   })
 
-  it('⚠️ واللقاء والجلسة المسجّلة داخل موعدهما — والتنبيه بعد اليوم الثالث من القاعدة', () => {
-    expect(SLOT).toMatch(/min=\{slot\.startsOn\} max=\{slot\.endsOn\}/)
-    expect((SLOT.match(/min=\{slot\.startsOn\} max=\{slot\.endsOn\}/g) ?? []).length, 'حقل بلا حدود الموعد').toBe(2)
+  /* ═══ «اعرض لي الوقتَ المسموحَ به وحدَه» (صاحب المنصّة، ١١ أكتوبر ٢٠٢٦) ═══
+     كان الحقلُ تقويما بحدّين يُرشد ولا يمنع — يُكتب فيه أيُّ يومٍ ثمّ تُقال ملاحظة. */
+  it('⚠️ واللقاء والجلسة المسجّلة داخل موعدهما — يومهما من قائمة أيّام الموعد لا من تقويم مفتوح', () => {
+    expect(SLOT, 'عاد تقويم مفتوح في بطاقة الموعد').not.toMatch(/type="date"/)
+    /* اللقاءُ الجديد، وتغييرُ موعد لقاءٍ قائم، ويومُ فتح المسجّلة — كلُّها من أيّام الموعد */
+    expect(SLOT).toMatch(/<SlotDaySelect slot=\{slot\} value=\{form\.date\}[^>]*onChange=\{\(date\) => setForm\(\{ \.\.\.form, date \}\)\} \/>/)
+    expect(SLOT).toMatch(/<SlotDaySelect slot=\{slot\} value=\{move\.date\}/)
+    expect(SLOT).toMatch(/<SlotDaySelect slot=\{slot\} value=\{date\}[^>]*onChange=\{\(d\) => onPatchRecorded\(i, \{ opensAt: at\(d, clock\)\.toISOString\(\) \}\)\} \/>/)
+    expect(code('src/pages/trainer/SlotDaySelect.tsx')).toMatch(/const days = useMemo\(\(\) => slotDays\(slot\), \[slot\]\);/)
+    expect(code('src/pages/trainer/SlotDaySelect.tsx'), 'يختار ثانية يوم خارج الموعد').toMatch(/\{foreign && <option value=\{value\} disabled>/)
+    const weekly = code('src/pages/trainer/WeeklySessions.tsx')
+    expect(weekly, 'عاد تقويم مفتوح في التكرار الأسبوعيّ').not.toMatch(/type="date"/)
+    expect(weekly).toMatch(/<SlotDaySelect slot=\{slot\} value=\{r\.date\}/)
     expect(SLOT).toContain('formDay > EARLY_DAYS')
+  })
+
+  /* ═══ والمباشرُ والمسجّلُ قائمةٌ واحدة، والمحورُ باسمه (صاحب المنصّة، ١١ أكتوبر ٢٠٢٦) ═══
+     «يبدوان شيئين لمحورين مختلفين… أعطني قائمةَ المحاور أختار منها، لا أن أعود فأتذكّر ما كان محوري». */
+  it('⚠️ ولقاءات الموعد قائمة واحدة بزرّين متجاورين — والمحور يختار باسمه', () => {
+    const list = SLOT.slice(SLOT.indexOf('لقاءات هذا الموعد</p>'), SLOT.indexOf('لقاء مباشر جديد'))
+    expect(list, 'المسجّل خرج من قائمة اللقاءات').toMatch(/\{sessions\.map\(\(s\) => \{[\s\S]*<Chip tone="info" icon=\{Video\}>مباشر<\/Chip>[\s\S]*\{recorded\.map\(\(\{ row, i \}\) => \{[\s\S]*<Chip tone="neutral" icon=\{Film\}>مسجّلة<\/Chip>/)
+    expect(list).toMatch(/\+ لقاء مباشر\s*<\/Button>\s*<Button[^>]*icon=\{Film\}[\s\S]{0,300}\+ جلسة مسجّلة/)
+    expect(SLOT).toContain('أضف لقاء مباشرا، أو جلسة مسجّلة، أو الاثنين — وما شئت من كلّ منهما، لمحور واحد أو أكثر.')
+    /* المحورُ باسمه في كلّ موضعٍ يُختار فيه */
+    expect(SLOT).toMatch(/const axisNameAr = \(id: string\) => \{[\s\S]{0,120}`المحور \$\{axisNo\.get\(id\) \?\? "؟"\}\$\{t \? ` · \$\{t\}` : ""\}`/)
+    expect(SLOT, 'محاور اللقاء الجديد أرقام بلا أسماء').toMatch(/axisPicker\(form\.moduleIds, axes,/)
+    expect(SLOT, 'محاور اللقاء القائم أرقام بلا أسماء').toMatch(/axisPicker\(s\.moduleIds \?\? \[\], choices,/)
+    expect(SLOT).toMatch(/\{axes\.map\(\(id\) => <option key=\{id\} value=\{id\}>\{axisNameAr\(id\)\}<\/option>\)\}/)
+    expect(SLOT, 'عاد المحور رقما وحده').not.toMatch(/>\s*المحور \{axisNo\.get\(id\)\}\s*</)
   })
 })
 

@@ -25,6 +25,7 @@ import {
   TO_LADDER_WHY_AR, dayNoteAr, fromClockNote, lateInSlot, suggestedSessionTitle, toClockNote, weeklyProposals, type Weekday,
 } from "@/application/trainer/session-picker";
 import { WEEKDAY_AR } from "@/application/trainer/plan-scorecard";
+import SlotDaySelect from "./SlotDaySelect";
 
 const at = (date: string, clock: string) => {
   const m = toMinutes(clock) ?? 0;
@@ -160,9 +161,12 @@ export default function WeeklySessions({
                     onClick={() => setRows(rows.filter((_, j) => j !== k))}>ارفعه</Button>
                 </div>
                 <div className="grid gap-2 sm:grid-cols-[12rem_1fr]">
-                  <input type="date" dir="ltr" value={r.date} min={slot?.startsOn} max={slot?.endsOn} disabled={locked || busy}
-                    aria-label={`يوم اللقاء المقترح في الموعد ${r.slotIndex + 1}`}
-                    onChange={(e) => patch({ date: e.target.value })} className={`${staffControlCls} text-left`} />
+                  {/* من أيّام الموعد وحدَها — لا تقويمٌ مفتوح (١١ أكتوبر ٢٠٢٦، `SlotDaySelect`) */}
+                  {slot ? (
+                    <SlotDaySelect slot={slot} value={r.date} disabled={locked || busy}
+                      ariaLabel={`يوم اللقاء المقترح في الموعد ${r.slotIndex + 1}`}
+                      onChange={(date) => patch({ date })} />
+                  ) : <span className="text-read text-muted-foreground">—</span>}
                   <input value={r.title} placeholder={`مثال: ${suggested}`} disabled={locked || busy}
                     aria-label={`عنوان اللقاء المقترح في الموعد ${r.slotIndex + 1}`}
                     onChange={(e) => patch({ title: e.target.value })} className={staffControlCls} />

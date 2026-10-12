@@ -41,23 +41,28 @@ describe('① التعليمات تصل المتعلّم', () => {
        شاشته — فلا يَعِد أحدُهما بصيغةٍ لا يفي بها الآخر. */
     const sw = code('src/components/journey/StageWork.tsx')
     expect(sw).not.toContain('<LessonBody')
-    expect(sw, 'الأسطر تطوى فتضيع فقرات التعليمات').toMatch(/a\.briefAr &&[\s\S]{0,120}whitespace-pre-line/)
+    /* ومنذ ١١ أكتوبر ٢٠٢٦ تُرتَّب (`BriefView`): خطواتٌ وحقولٌ وجدولُ مستويات — والفقرةُ بأسطرها كما
+       كُتبت، ولا يضيع منها حرف (`text-layout.test.ts`) */
+    expect(sw).toMatch(/\{a\.briefAr && <BriefView text=\{a\.briefAr\}/)
+    const view = code('src/components/LongText.tsx')
+    expect(view, 'الأسطر تطوى فتضيع فقرات التعليمات').toMatch(/if \(!briefHasLayout\(blocks\)\) \{\s*return <p className=\{`whitespace-pre-line /)
+    expect(view, 'الفقرة داخل المرتّب تفقد أسطرها').toMatch(/return <p key=\{k\} className="whitespace-pre-line">\{b\.textAr\}<\/p>;/)
   })
 })
 
 describe('② المرفقات تحفظ وتقرأ', () => {
   it('الخادم يقبلها في الإنشاء والتعديل بالقائمة البيضاء نفسها', () => {
     const r = code('server/http/routes/learning-portal.routes.ts')
-    /* وصار المخطّطُ واحدا يقرؤه المساران (٣٠ سبتمبر ٢٠٢٦) — رابطٌ أو ملفٌّ مرفوع —
-       فلا يفترق الإنشاءُ عن التعديل في ما يقبل */
+    /* وصار المخطّط واحدا يقرؤه المساران (٣٠ سبتمبر ٢٠٢٦) — رابط أو ملفّ مرفوع —
+       فلا يفترق الإنشاء عن التعديل في ما يقبل */
     expect((r.match(/attachments: TASK_ATTACHMENTS\.optional\(\)/g) ?? []).length, 'المرفقات في مسار واحد لا في الاثنين').toBe(2)
     expect(r).toMatch(/const TASK_ATTACHMENTS = z\.array\(z\.object\(\{[\s\S]*?kind: z\.enum\(RESOURCE_KINDS\)/)
   })
 
   it('والمصفوفة الفارغة محو مقصود لا إهمال', () => {
     const svc = code('server/services/assessment.service.ts')
-    /* `patch.attachments ?` يُسقط المصفوفةَ الفارغة، فلا يستطيع المدرّبُ
-       نزعَ مرفقٍ أخطأ فيه أبدا. */
+    /* `patch.attachments ?` يسقط المصفوفة الفارغة، فلا يستطيع المدرّب
+       نزع مرفق أخطأ فيه أبدا. */
     expect(svc).toMatch(/patch\.attachments !== undefined \?/)
   })
 
@@ -71,13 +76,13 @@ describe('② المرفقات تحفظ وتقرأ', () => {
     expect(readTypedLinks(null)).toEqual([])
     expect(readTypedLinks('ليست مصفوفة')).toEqual([])
     expect(readTypedLinks([null, 7, 'نصّ'])).toEqual([])
-    /* والكائنُ المفردُ هو الحالةُ الخطرة: `for…of` عليه **يرمي** لا يعيد
-       فراغا، فتسقط الشاشةُ كلُّها. ونصٌّ أو رقمٌ يمرّان بفحص العنصر بعده،
-       فلا يُثبتان حراسةَ `Array.isArray` — وهذا يُثبتها. */
+    /* والكائن المفرد هو الحالة الخطرة: `for…of` عليه **يرمي** لا يعيد
+       فراغا، فتسقط الشاشة كلّها. ونصّ أو رقم يمرّان بفحص العنصر بعده،
+       فلا يثبتان حراسة `Array.isArray` — وهذا يثبتها. */
     expect(() => readTypedLinks({ title: 'أ', url: 'https://x.test' })).not.toThrow()
     expect(readTypedLinks({ title: 'أ', url: 'https://x.test' })).toEqual([])
     expect(() => readTypedLinks(7)).not.toThrow()
-    /* والناقصُ يُسقَط وحدَه: مرفقٌ بلا رابطٍ لا يُبطل من بجانبه */
+    /* والناقص يسقط وحده: مرفق بلا رابط لا يبطل من بجانبه */
     expect(readTypedLinks([{ title: 'أ' }, { url: 'https://x.test' }, { title: 'ب', url: 'https://y.test' }]))
       .toEqual([{ title: 'ب', url: 'https://y.test', kind: 'link', noteAr: null }])
   })
@@ -93,15 +98,15 @@ describe('③ محرّر المتن — شريط ومعاينة بمكوّن ا�
   })
 
   it('والمعاينة بـ`LessonBody` — لا بنسخة تشبهه', () => {
-    /* معاينةٌ بمكوّنٍ آخرَ وعدٌ يُخلَف: يرى المدرّبُ شيئا ويرى متعلّمُه
-       غيرَه. والفحصُ على الاستيراد والاستعمال معا. */
+    /* معاينة بمكوّن آخر وعد يخلف: يرى المدرّب شيئا ويرى متعلّمه
+       غيره. والفحص على الاستيراد والاستعمال معا. */
     expect(ed).toMatch(/import LessonBody from '@\/components\/LessonBody'/)
     expect(ed).toMatch(/<LessonBody body=\{value\}/)
   })
 
   it('ولا محرّر غنيّ يخرج HTML — فالحقن يعود ممكنا', () => {
-    /* `LessonBody` يحوّل إلى عناصر React مباشرةً، فحقنُ HTML مستحيلٌ
-       بنيويّا. ومحرّرٌ يُخرج HTML يعيد المنقّي وقائمةَ الحجب. */
+    /* `LessonBody` يحوّل إلى عناصر React مباشرة، فحقن HTML مستحيل
+       بنيويّا. ومحرّر يخرج HTML يعيد المنقّي وقائمة الحجب. */
     expect(ed).not.toContain('dangerouslySetInnerHTML')
     expect(ed).not.toContain('contentEditable')
   })

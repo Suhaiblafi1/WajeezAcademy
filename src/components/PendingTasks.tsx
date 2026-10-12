@@ -18,6 +18,7 @@ import {
   TASK_REVIEW_ADMIN_AR, changeLines, formatTaskValue, readTaskChange, taskReview, taskValues,
   type TaskReview, type TaskValueFormat,
 } from '@/application/trainer/task-approval'
+import { BriefView } from '@/components/LongText'
 
 export interface PendingTaskRow {
   id: string
@@ -81,7 +82,7 @@ export function PendingTasks({ tasks, axisNo, busy, onDecide }: {
                 {' · '}{live.dueAt ? `آخر موعدها ${fmt.date(live.dueAt)}` : 'بلا آخر موعد'}
               </p>
               {review === 'new' && (
-                <p className="mt-1 whitespace-pre-line text-read leading-6 text-muted-foreground">{formatTaskValue('briefAr', live.briefAr, fmt)}</p>
+                <BriefView text={formatTaskValue('briefAr', live.briefAr, fmt)} muted className="mt-1" />
               )}
               {lines.length > 0 && (
                 <dl className="mt-2 space-y-1 text-read leading-6" aria-label="ما يتغيّر باعتمادك">

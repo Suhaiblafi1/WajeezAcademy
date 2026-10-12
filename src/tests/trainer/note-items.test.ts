@@ -5,7 +5,8 @@
 
    ① الملاحظةُ نقاطٌ سطرا سطرا، و«مطلوب»/«مقترَح» في أوّل السطر وسمٌ — وهي صيغةُ بطاقة المعايير.
    ② بندٌ لكلّ خطوةٍ عليها ملاحظة، العامّةُ أوّلا — ولا بندَ لسطر «واقترحنا على خطّتك…» الآليّ.
-   ③ وفي «المراجعة» قبل التعديلات: إطارٌ مرقّمٌ بنقاطه، و«موافق» و«لا أوافق»، وزرٌّ إلى خطوتها.
+   ③ وفي «المراجعة» قبل التعديلات: إطارٌ مرقّمٌ بنقاطه، و«سأعدّله» يفتح خطوتَها (لا «موافق»: الملاحظةُ لا
+      تغيّر شيئا بنفسها — صاحبُ المنصّة، ١١ أكتوبر ٢٠٢٦)، و«أُبقيه كما هو» بكلمته.
    ④ ولا تُعدّ «تعديلاتٍ جاهزة»، والقيدُ في القاعدة يتّسع لنوعها.
 
    والقراءةُ البنيويّةُ على الشيفرة بلا تعليقاتها. وجولتُها على قاعدةٍ حقيقيّة في
@@ -80,20 +81,26 @@ describe('③ وفي «المراجعة» قبل التعديلات', () => {
     expect(notesAt, 'الملاحظات بعد التعديلات').toBeLessThan(editsAt)
   })
 
-  it('⚠️ إطارها بنقاطها، و«موافق» يقبلها، و«لا أوافق» يسأل لماذا — وزرّ إلى خطوتها إلّا العامّة', () => {
+  it('⚠️ إطارها بنقاطها، و«سأعدّله» يعلّمها ويفتح خطوتها — لا «موافق» ولا «لا أوافق»', () => {
     const card = trainer.slice(trainer.indexOf('const noteCard = (x: PlanEditItem) => ('), trainer.indexOf('const editCard = (x: PlanEditItem) => ('))
     expect(card).toMatch(/<Card as="li" key=\{x\.id\}/)
     expect(card).toMatch(/<NotePoints view=\{x\.view\} \/>/)
-    expect(card).toMatch(/apiPost\(`\/api\/trainer\/plan-edits\/\$\{x\.id\}\/accept`, \{\}\)[\s\S]{0,200}>\s*موافق\s*<\/Button>/)
-    expect(card).toMatch(/setRejecting\(rejecting === x\.id \? null : x\.id\)[\s\S]{0,100}>\s*لا أوافق\s*<\/Button>/)
-    expect(card).toMatch(/\{whyBox\(x, "أكّد أنّك لا توافق"/)
-    expect(card).toMatch(/\{onOpenStep && x\.step !== "general" && \([\s\S]{0,200}onClick=\{\(\) => onOpenStep\(x\.step\)\}/)
+    /* «سأعدّله»: يُعلِّمها ثمّ يفتح خطوتَها — وإن لم تكن الخطّةُ في يده فتحها وحدَها */
+    expect(card).toMatch(/onClick=\{\(\) => blocked\s*\? onOpenStep\?\.\(x\.step\)\s*: void act\(x\.id, \(\) => apiPost\(`\/api\/trainer\/plan-edits\/\$\{x\.id\}\/accept`, \{\}\)[^\n]*\n\s*\.then\(\(\) => onOpenStep\?\.\(x\.step\)\)\}\s*>\s*سأعدّله\s*<\/Button>/)
+    /* والعامّةُ لا خطوةَ لها: «اطّلعتُ عليها» */
+    expect(card).toMatch(/x\.step === "general" \? \([\s\S]{0,400}>\s*اطّلعت عليها\s*<\/Button>/)
+    /* ولا إجبار: يُبقيه كما هو ويقول لماذا */
+    expect(card).toMatch(/setRejecting\(rejecting === x\.id \? null : x\.id\)[\s\S]{0,100}\{x\.step === "general" \? "لي رأي آخر" : "أبقيه كما هو"\}/)
+    expect(card).toMatch(/\{whyBox\(x, "أرسل رأيك"/)
+    expect(card).not.toMatch(/>\s*(موافق|لا أوافق)\s*</)
     expect(code('src/components/PlanEdits.tsx')).toMatch(/const whyBox = [\s\S]{0,700}\/api\/trainer\/plan-edits\/\$\{x\.id\}\/reject`, note\.trim\(\) \? \{ noteAr: note\.trim\(\) \} : \{\}/)
   })
 
   it('⚠️ ونقطة «الآن ← نقترح» خانتان — «الآن» ثمّ «نقترح»، كخانتي التعديل', () => {
-    const points = panel.slice(panel.indexOf('export function NotePoints'), panel.indexOf('export function NotePoints') + 1600)
-    expect(points).toMatch(/\{r\.beforeAr !== null \? \([\s\S]{0,500}<Cell label="الآن" text=\{r\.beforeAr\} muted \/>\s*<Cell label="نقترح" text=\{r\.afterAr\} \/>/)
+    const points = panel.slice(panel.indexOf('export function NotePoints'), panel.indexOf('export function NotePoints') + 2400)
+    expect(points).toMatch(/\{r\.beforeAr !== null \? \([\s\S]{0,1200}<Cell label="الآن" text=\{r\.beforeAr\} muted \/>\s*<Cell label="نقترح" text=\{r\.afterAr\} \/>/)
+    /* وقائمة النواقص محورا محورا ثمّ «كيف تصلحه» — لا سطرا مكتظّا في خانة (١١ أكتوبر ٢٠٢٦) */
+    expect(points).toMatch(/\{gapLayout\(r\.beforeAr\) \? \([\s\S]{0,200}<GapList layout=\{gapLayout\(r\.beforeAr\)!\} \/>[\s\S]{0,200}نقترح:<\/b> \{r\.afterAr\}/)
   })
 
   it('⚠️ والصفحة تفتح خطوتها — ما كانت من خطواتها', () => {
