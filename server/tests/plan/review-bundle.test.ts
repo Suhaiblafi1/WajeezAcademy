@@ -191,3 +191,53 @@ describe('٣ — من لا يقرأ الخطّةَ لا ينزّلها، وكل�
     expect(rows.some((r) => (r.meta as { bulk?: boolean } | null)?.bulk === true)).toBe(true)
   })
 })
+
+describe('٤ — والخطط المفتوحة كلّها، ومعها ما فعله المدرّب بالتعديلات (١٢ أكتوبر ٢٠٢٦)', () => {
+  it('⚠️ تحمل ما رُدّ إلى مدرّبه لا المنتظرة وحدها — ولا المعتمدة — ومع كلّ خطّة قبوله ورفضه وكلمته', async () => {
+    const course = await prisma.course.findFirstOrThrow({ select: { id: true } })
+    const profile = await prisma.trainerProfile.findFirstOrThrow({ where: { application: { email: `rb-trainer-${STAMP}@test.local` } }, select: { id: true } })
+    const back = await prisma.cohort.create({ data: { courseId: course.id, title: 'شعبةٌ رُدّت', status: 'draft', capacity: 20 } })
+    const done = await prisma.cohort.create({ data: { courseId: course.id, title: 'شعبةٌ اعتُمدت', status: 'draft', capacity: 20 } })
+    const content = { kind: 'trainer', modules: [{ moduleId: 'M1', titleAr: 'المحور', bodyAr: 'نصٌّ' }], resources: [], summaryAr: 'نبذةٌ أولى' }
+    const plan = await prisma.cohortDeliveryPlan.create({ data: { cohortId: back.id, trainerId: profile.id, status: 'changes_requested', submittedAt: new Date(), content: content as never } })
+    await prisma.cohortDeliveryPlan.create({ data: { cohortId: done.id, trainerId: profile.id, status: 'approved', submittedAt: new Date(), content: content as never } })
+    const batchId = crypto.randomUUID()
+    const row = (seq: number, status: string, set: Record<string, string>, noteAr: string | null = null) => prisma.planEditSuggestion.create({
+      data: {
+        cohortId: back.id, planId: plan.id, batchId, seq, kind: 'plan', step: 'identity', required: seq === 1, reasonAr: `سببٌ ${seq}`,
+        edit: { kind: 'plan', set } as never, before: { summaryAr: 'نبذةٌ أولى' } as never, status, noteAr, createdBy: adminId,
+      },
+    })
+    await row(1, 'rejected', { summaryAr: 'نبذةٌ ثانية' }, 'تغيير المواعيد صعب على المنصة — غيّروها أنتم')
+    await row(2, 'accepted', { summaryAr: 'نبذةٌ ثالثة' })
+    await row(3, 'pending', { liveNoteAr: 'ملاحظةٌ للّقاءات' })
+    await row(4, 'withdrawn', { summaryAr: 'نبذةٌ مسحوبة' })
+
+    const res = await get('/api/admin/cohort-plans/open/review-bundle', adminCookie)
+    expect(res.statusCode, res.body).toBe(200)
+    const zip = await unzip(res.rawPayload)
+    const index = await zip.file('فهرس.md')!.async('string')
+    expect(index).toMatch(/\*\*مدرّبةُ الحزمة\*\* — شعبةٌ رُدّت · عند المدرّب/)
+    expect(index).toMatch(/\*\*مدرّبةُ الحزمة\*\* — شعبةُ الحزمة · تنتظر اعتمادك/)
+    expect(index, 'دخلت المعتمدة').not.toContain('شعبةٌ اعتُمدت')
+
+    const md = names(zip).find((n) => n.endsWith('شعبةٌ رُدّت/التعديلات-وقرار-المدرب.md'))
+    expect(md, names(zip).join(' | ')).toBeTruthy()
+    const text = await zip.file(md!)!.async('string')
+    expect(text).toContain('## رفضها (1)')
+    expect(text).toContain('  - كلمة المدرب: تغيير المواعيد صعب على المنصة — غيّروها أنتم')
+    expect(text).toContain('## قبلها (1)')
+    expect(text).toContain('## عند المدرب — لم يقرر (1)')
+    const edits = JSON.parse(await zip.file(md!.replace('التعديلات-وقرار-المدرب.md', 'edits.json'))!.async('string')) as { status: string; edit: unknown }[]
+    expect(edits.map((e) => e.status), 'دخل المسحوب').toEqual(['rejected', 'accepted', 'pending'])
+    expect(edits[0]!.edit).toEqual({ kind: 'plan', set: { summaryAr: 'نبذةٌ ثانية' } })
+
+    /* وحزمةُ المنتظرة كما كانت — لا تحمل ما رُدّ */
+    const pending = await unzip((await get('/api/admin/cohort-plans/pending/review-bundle', adminCookie)).rawPayload)
+    expect(await pending.file('فهرس.md')!.async('string')).not.toContain('شعبةٌ رُدّت')
+  })
+
+  it('⚠️ ومن لا يعتمد الخطط لا ينزّلها', async () => {
+    expect((await get('/api/admin/cohort-plans/open/review-bundle', learnerCookie)).statusCode).toBe(403)
+  })
+})

@@ -497,3 +497,51 @@ function facts(view: CurriculumView, input: ReviewBundleInput): string[] {
   if (w) out.push(`**يبقى للمتعلّم أن يقرأ موادّها حتى:** ${cohortDayAr(w.accessEndsAt)} (ستة أشهر بعد انتهائها — ولا تسليم بعد انتهائها)`)
   return out
 }
+
+/* ═══ وما فعله المدرّبُ بالتعديلات المقترحة — في الحزمة (١٢ أكتوبر ٢٠٢٦) ═══
+
+   «عادت إلينا… اقرأ ما قام به وما رفض» (صاحب المنصّة). وكانت الحزمةُ تحمل الخطّةَ وحدَها: ما قبله
+   المدرّبُ وما رفضه وكلمتُه عند الرفض في بطاقة الخطّة لا في الحزمة. فلكلّ خطّةٍ فيها ملفٌّ يُقرأ —
+   كلُّ بندٍ بعنوانه وخطوته وحالِه وسببِه وكلمةِ المدرّب — و`edits.json` بالأصل لمن أراد. */
+
+export const DECISIONS_MD_NAME = 'التعديلات-وقرار-المدرب.md'
+
+export const EDIT_STATUS_AR: Record<string, string> = {
+  proposed: 'مسودة لم تعتمدها',
+  dropped: 'حذفتها — لم تصل المدرب',
+  pending: 'عند المدرب — لم يقرر',
+  accepted: 'قبلها',
+  rejected: 'رفضها',
+  lapsed: 'سقطت باعتماد الخطة',
+}
+
+export interface DecisionItem {
+  titleAr: string
+  stepAr: string
+  status: string
+  required: boolean
+  reasonAr: string
+  noteAr: string | null
+}
+
+/** ملفُّ القرارات — العددُ لكلّ حالٍ أوّلا، ثمّ ما رفضه بكلمته، ثمّ ما بقي بحاله */
+export function decisionsMarkdown(cohortTitle: string, trainerName: string | null, items: readonly DecisionItem[]): string {
+  const out = [`# التعديلات المقترحة وقرار المدرب — ${cohortTitle}`, '']
+  if (trainerName) out.push(`**المدرب:** ${trainerName}`, '')
+  if (items.length === 0) return `${[...out, 'لا تعديلات مقترحة على هذه الخطة.'].join('\n')}\n`
+  const order = ['rejected', 'pending', 'accepted', 'proposed', 'dropped', 'lapsed']
+  const counts = order.map((s) => [s, items.filter((x) => x.status === s).length] as const).filter(([, n]) => n > 0)
+  out.push(`**العدد:** ${counts.map(([s, n]) => `${EDIT_STATUS_AR[s] ?? s} ${n}`).join(' · ')}`, '')
+  for (const s of order) {
+    const list = items.filter((x) => x.status === s)
+    if (list.length === 0) continue
+    out.push(`## ${EDIT_STATUS_AR[s] ?? s} (${list.length})`, '')
+    for (const x of list) {
+      out.push(`- **${x.titleAr}** · ${x.stepAr}${x.required ? ' · مطلوب' : ''}`)
+      if (x.reasonAr.trim()) out.push(`  - السبب: ${x.reasonAr.trim()}`)
+      if (x.noteAr?.trim()) out.push(`  - كلمة المدرب: ${x.noteAr.trim()}`)
+    }
+    out.push('')
+  }
+  return `${out.join('\n')}\n`
+}
