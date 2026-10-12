@@ -157,6 +157,15 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
     return reportFiles.removeReviewReport(req.auth!.userId, id, storageKey)
   })
 
+  /* وتقاريرُ الخطّة كلُّها — «استبدل التقارير السابقة» في الرفع دفعةً (١٢ أكتوبر ٢٠٢٦) */
+  app.delete('/api/admin/cohort-plans/:id/review-reports', {
+    preHandler: requirePermission('cohort.plan.approve'),
+    schema: { tags: ['admin-cohorts'], summary: 'حذف تقارير المراجعة كلّها لخطّة بانتظار القرار' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return reportFiles.clearReviewReports(req.auth!.userId, id)
+  })
+
   /* ═══ وتعديلاتٌ مقترحةٌ على الخطّة — يقبل المدرّبُ كلًّا أو يرفضه (٨ أكتوبر ٢٠٢٦) ═══
 
      قرارُ صاحب المنصّة: «التعديلُ يطول على المدرّب — نكتبه نحن ويختار هو». يُرفع ملفًّا
@@ -205,6 +214,20 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
       throw new AuthError('wrong_plan', 'هذا الملفّ كتب لخطّة أخرى — افتح بطاقة خطّته وارفعه هناك', 422)
     }
     return reply.status(201).send(await planEdits.replaceDrafts(req.auth!.userId, id, file.items))
+  })
+
+  /* ═══ «ابدأ من جديد»: الملفُّ الجديدُ مكانَ كلِّ ما لم يقرّر فيه المدرّب (١٢ أكتوبر ٢٠٢٦) ═══
+     صلاحيّةُ السحب نفسُها — يسحب المسوّداتِ وما وصل المدرّبَ ويرفع الجديد في معاملةٍ واحدة. */
+  app.post('/api/admin/cohort-plans/:id/edits/replace-all', {
+    preHandler: requirePermission('cohort.plan.approve'),
+    schema: { tags: ['admin-cohorts'], summary: 'رفع ملفّ تعديلات مكان كلّ ما لم يقرّر فيه المدرّب — المسودات وما وصله' },
+  }, async (req, reply) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const file = planEditsFile.parse(req.body)
+    if (file.planId && file.planId !== id) {
+      throw new AuthError('wrong_plan', 'هذا الملفّ كتب لخطّة أخرى — افتح بطاقة خطّته وارفعه هناك', 422)
+    }
+    return reply.status(201).send(await planEdits.replaceAll(req.auth!.userId, id, file.items))
   })
 
   /* ═══ وكلُّ بندٍ يُعتمَد للمدرّب أو يُحذف قبل أن يصله (١٠ أكتوبر ٢٠٢٦) ═══

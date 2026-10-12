@@ -168,6 +168,27 @@ export class CohortFileService {
     return { removed: true }
   }
 
+  /* ═══ «استبدل التقارير السابقة»: تُحذف تقاريرُ الخطّة كلُّها قبل رفع الجديد (١٢ أكتوبر ٢٠٢٦) ═══
+     قال صاحبُ المنصّة: «أريد أن أعيد كلَّ شيءٍ من البداية»، واختار تقاريرَ جديدةً للخطط كلِّها مكانَ
+     القديمة. وكان الحذفُ تقريرا تقريرا من بطاقة كلّ خطّة — أربعةٌ في كلٍّ من إحدى وعشرين. فيُحذف هنا
+     كلُّ تقريرٍ لهذه الخطّة وهي بانتظار القرار، بالحارس نفسِه الذي يحذف به الواحد. */
+  async clearReviewReports(adminId: string, planId: string) {
+    const plan = await this.submittedPlan(planId)
+    const rows = await this.prisma.cohortFile.findMany({
+      where: { purpose: 'review_report', refId: plan.id }, select: { id: true, storageKey: true },
+    })
+    if (rows.length === 0) return { removed: 0 }
+    await this.prisma.cohortFile.deleteMany({ where: { id: { in: rows.map((r) => r.id) } } })
+    for (const r of rows) {
+      try { await deleteObject(r.storageKey) } catch { /* غيابُها ليس عطبا */ }
+    }
+    await recordAudit(this.prisma, {
+      actorId: adminId, action: 'cohort.file.remove',
+      entityType: 'cohort', entityId: plan.cohortId, meta: { purpose: 'review_report', refId: plan.id, count: rows.length },
+    })
+    return { removed: rows.length }
+  }
+
   /** تقاريرُ مراجعة الشعبة — أحدثُها أوّلا، ولخطّةٍ بعينها إن سُمّيت. والرفعُ الذي لم
       يكتمل (بلا بايتات) لا يُعدّ: صفُّه يُكتب قبل الرفع ليعرفه المخزن */
   async reviewReports(cohortId: string, planId?: string) {

@@ -168,6 +168,63 @@ describe('٤ — رسالةُ القرار تذكره، وصفحةُ المدر�
   })
 })
 
+/* ═══ ٦ — «استبدل التقارير السابقة»: تُحذف تقاريرُ الخطّة كلُّها قبل رفع الجديد (١٢ أكتوبر ٢٠٢٦) ═══
+   «أريد أن أعيد كلَّ شيءٍ من البداية» (صاحب المنصّة). على خطّةٍ وحدَها — لا تمسّ خطّةَ الأقسام قبلها. */
+describe('٦ — حذفُ تقارير الخطّة كلِّها قبل رفع الجديد', () => {
+  let plan2 = ''
+  const upload = async (name: string) => {
+    const s = await call('POST', `/api/admin/cohort-plans/${plan2}/review-report`, 'admin', { mime: 'application/pdf', originalName: name })
+    expect(s.statusCode, s.body).toBe(201)
+    const { uploadUrl } = JSON.parse(s.body) as { uploadUrl: string }
+    expect((await call('PUT', uploadUrl, undefined, REPORT, { 'content-type': 'application/pdf' })).statusCode).toBeLessThan(300)
+  }
+  const names = async () => (await prisma.cohortFile.findMany({ where: { purpose: 'review_report', refId: plan2 }, select: { originalName: true } }))
+    .map((x) => x.originalName).sort()
+
+  beforeAll(async () => {
+    const profile = await prisma.trainerProfile.findFirstOrThrow({ where: { userId: trainerUserId }, select: { id: true } })
+    const course = await prisma.course.findFirstOrThrow({ select: { id: true } })
+    const cohort = await prisma.cohort.create({ data: { courseId: course.id, title: 'شعبةُ الاستبدال', status: 'draft', capacity: 20 } })
+    await prisma.cohortTrainer.create({ data: { cohortId: cohort.id, profileId: profile.id, role: 'lead' } })
+    plan2 = (await prisma.cohortDeliveryPlan.create({
+      data: {
+        cohortId: cohort.id, trainerId: profile.id, status: 'submitted', submittedAt: new Date(),
+        content: { kind: 'trainer', modules: [{ moduleId: 'M1', titleAr: 'محور' }], resources: [] } as never,
+      },
+    })).id
+    await upload('التقرير القديم.pdf')
+    await upload('ملحق قديم.pdf')
+  })
+
+  it('⚠️ لمن يعتمد وحده — المدرّب لا يحذف', async () => {
+    expect((await call('DELETE', `/api/admin/cohort-plans/${plan2}/review-reports`, 'owner')).statusCode).toBe(403)
+    expect(await names()).toEqual(['التقرير القديم.pdf', 'ملحق قديم.pdf'])
+  })
+
+  it('يحذف تقارير الخطّة كلّها ويقول كم — ثمّ يرفع الاسم نفسه من جديد، ولا تمسّ خطّة غيرها', async () => {
+    const before = await prisma.cohortFile.count({ where: { purpose: 'review_report', refId: planId } })
+    const r = await call('DELETE', `/api/admin/cohort-plans/${plan2}/review-reports`, 'admin')
+    expect(r.statusCode, r.body).toBe(200)
+    expect(r.json().removed).toBe(2)
+    expect(await names()).toEqual([])
+    await upload('التقرير القديم.pdf')
+    expect(await names()).toEqual(['التقرير القديم.pdf'])
+    expect(await prisma.cohortFile.count({ where: { purpose: 'review_report', refId: planId } }), 'خطّة الأقسام قبلها كما هي').toBe(before)
+  })
+
+  it('وخطّة بلا تقارير — صفر بلا خطأ', async () => {
+    await call('DELETE', `/api/admin/cohort-plans/${plan2}/review-reports`, 'admin')
+    const r = await call('DELETE', `/api/admin/cohort-plans/${plan2}/review-reports`, 'admin')
+    expect(r.statusCode).toBe(200)
+    expect(r.json().removed).toBe(0)
+  })
+
+  it('⚠️ ولا بعد القرار', async () => {
+    await prisma.cohortDeliveryPlan.update({ where: { id: plan2 }, data: { status: 'approved' } })
+    expect((await call('DELETE', `/api/admin/cohort-plans/${plan2}/review-reports`, 'admin')).statusCode).toBe(409)
+  })
+})
+
 describe('٥ — ولا يُرفع ولا يُحذف بعد القرار', () => {
   it('الخطّةُ ليست بانتظار قرارٍ — ٤٠٩ بسببه', async () => {
     expect((await call('POST', `/api/admin/cohort-plans/${planId}/review-report`, 'admin', { mime: 'application/pdf', originalName: 'متأخّر.pdf' })).statusCode).toBe(409)

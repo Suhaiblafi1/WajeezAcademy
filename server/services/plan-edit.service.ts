@@ -183,7 +183,7 @@ export class PlanEditService {
 
   /** يرفعه المعتمِد: يُفحص كلُّه، ويُحفظ كلُّه أو يُردّ كلُّه ببنوده */
   async propose(actorId: string, planId: string, items: readonly PlanEditInput[]) {
-    const { cohortId } = await this.upload(actorId, planId, items, false)
+    const { cohortId } = await this.upload(actorId, planId, items, 'none')
     return this.forCohort(cohortId)
   }
 
@@ -193,11 +193,24 @@ export class PlanEditService {
      معاملةٍ واحدة: إن رُدّ الملفُّ بقيت المسوّداتُ كما هي. وما اعتُمد للمدرّب (`pending`) لا يُمسّ —
      وبندٌ جديدٌ على موضعه يُردّ كما يُردّ في كلّ رفع. */
   async replaceDrafts(actorId: string, planId: string, items: readonly PlanEditInput[]) {
-    const { cohortId, replaced } = await this.upload(actorId, planId, items, true)
+    const { cohortId, replaced } = await this.upload(actorId, planId, items, 'drafts')
     return { edits: await this.forCohort(cohortId), replacedDrafts: replaced }
   }
 
-  private async upload(actorId: string, planId: string, items: readonly PlanEditInput[], replace: boolean) {
+  /* ═══ «ابدأ من جديد»: يُسحب كلُّ ما لم يقرّر فيه المدرّب ويُرفع الملفُّ مكانه (١٢ أكتوبر ٢٠٢٦) ═══
+     قال صاحبُ المنصّة وقد رُدّت ملفّاتُه لأنّ نسخَها السابقة وصلت المدرّبين: «أريد أن أعيد كلَّ شيءٍ من
+     البداية.. اسحب كلَّ شيءٍ وارفق كلَّ شيءٍ من جديد، وساعدني أن أفعل هذا بسهولة». وكان طريقُه بطاقةً
+     بطاقة: «اسحب ما لم يقرّر» ثمّ الرفع — تسعٌ وعشرون مرّة. فالاستبدالُ الثالث يسحب المسوّداتِ وما
+     وصل المدرّبَ ولم يقرّر فيه معا، ويرفع الجديدَ مكانها، في معاملةٍ واحدة: إن رُدّ الملفُّ لم يُسحب شيء.
+     وما قرّر فيه المدرّبُ (قبله أو رفضه) لا يُمسّ — ذلك قرارُه. وما سُحب يُعاد بـ«أعد ما سحبته» ما لم
+     يقع على موضعه بندٌ جديد (`restore`). */
+  async replaceAll(actorId: string, planId: string, items: readonly PlanEditInput[]) {
+    const { cohortId, replaced } = await this.upload(actorId, planId, items, 'all')
+    return { edits: await this.forCohort(cohortId), withdrawn: replaced }
+  }
+
+  /** `none` يُضاف إلى ما هو قائم · `drafts` مكانَ المسوّدات · `all` مكانَ كلِّ ما لم يقرّر فيه المدرّب */
+  private async upload(actorId: string, planId: string, items: readonly PlanEditInput[], replace: 'none' | 'drafts' | 'all') {
     const plan = await this.prisma.cohortDeliveryPlan.findUnique({
       where: { id: planId }, select: { id: true, cohortId: true, status: true, trainerId: true, content: true },
     })
@@ -213,8 +226,9 @@ export class PlanEditService {
        الرفعُ دفعةً واحدةً من «خططٌ تنتظر اعتمادك» يجعل إعادةَ الملفّ نفسِه أيسرَ — فتتكرّر
        بنودُه على المعتمِد ثمّ على المدرّب. فما وقع على موضعِ بندٍ لم يُقرَّر فيه يُردّ،
        كما يُردّ بندان على موضعٍ واحدٍ في ملفٍّ واحد. */
-    const open = await this.prisma.planEditSuggestion.findMany({
-      where: { planId, status: { in: replace ? ['pending'] : ['proposed', 'pending'] } }, select: { edit: true, status: true },
+    /* وفي «ابدأ من جديد» لا قائمَ يُحسب: كلُّ ما لم يقرّر فيه يُسحب مع الرفع */
+    const open = replace === 'all' ? [] : await this.prisma.planEditSuggestion.findMany({
+      where: { planId, status: { in: replace === 'drafts' ? ['pending'] : ['proposed', 'pending'] } }, select: { edit: true, status: true },
     })
     /* ولكلّ موضعٍ حالُ ما عليه: مسوّدةٌ لم تُعتمد، أو بندٌ وصل المدرّب — والعلاجُ غيرُ العلاج */
     const takenBy = new Map<string, string>()
@@ -224,7 +238,7 @@ export class PlanEditService {
     const taken = new Set(takenBy.keys())
     /* والملفُّ كلُّه مرفوعٌ من قبل — سطرٌ واحدٌ يقول ذلك، لا سطرٌ لكلّ بند */
     if (taken.size > 0 && items.every((item) => openKeysOf(editOf(item)).some((k) => taken.has(k)))) {
-      throw new AuthError('edits_already_uploaded', replace
+      throw new AuthError('edits_already_uploaded', replace === 'drafts'
         ? 'رفع هذا الملفّ قبل واعتمدت بنوده للمدرّب — فلا يستبدل ما اعتمد. اسحبه من بطاقة خطّته أوّلا إن أردت'
         : 'رفع هذا الملفّ قبل ولم يقرّر في بنوده — فلا يرفع مرّتين. وإن أردت رفعه من جديد فاختر استبدال المسوّدات عند الرفع، أو اسحبها من بطاقة خطّته أوّلا', 409)
     }
@@ -265,11 +279,11 @@ export class PlanEditService {
 
     const batchId = randomUUID()
     const replaced = await this.prisma.$transaction(async (tx) => {
-      const gone = replace
-        ? (await tx.planEditSuggestion.updateMany({
-          where: { planId, status: 'proposed' }, data: { status: 'withdrawn', decidedAt: new Date(), decidedBy: actorId },
+      const gone = replace === 'none' ? 0
+        : (await tx.planEditSuggestion.updateMany({
+          where: { planId, status: { in: replace === 'all' ? ['proposed', 'pending'] : ['proposed'] } },
+          data: { status: 'withdrawn', decidedAt: new Date(), decidedBy: actorId },
         })).count
-        : 0
       await tx.planEditSuggestion.createMany({
         data: items.map((item, i) => {
           const edit = editOf(item)

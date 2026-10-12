@@ -9,7 +9,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { matchReportFile, nameTokens, reportDisplayName, reportMime, reportsSummaryAr } from '@/application/trainer/review-reports-bulk'
+import { clearReportsPath, matchReportFile, nameTokens, REPLACE_REPORTS_AR, replacedReportsAr, reportDisplayName, reportMime, reportsSummaryAr } from '@/application/trainer/review-reports-bulk'
 
 const code = (p: string) => readFileSync(join(process.cwd(), p), 'utf8')
   .replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '').replace(/^\s*\/\/.*$/gm, '')
@@ -133,6 +133,16 @@ describe('② الصندوق في «خطط تنتظر اعتمادك»', () => {
     expect(bulk).toMatch(/state: already \? "already" : "failed"/)
   })
 
+  it('⚠️ «استبدل التقارير السابقة» يختاره المعتمد ولا يفترض — ويحذف مرّة لكلّ خطّة قبل أوّل رفع إليها', () => {
+    expect(bulk).toMatch(/const \[replace, setReplace\] = useState\(false\)/)
+    expect(bulk).toMatch(/<input type="checkbox"[^>]*checked=\{replace\}/)
+    expect(bulk).toMatch(/const cleared = new Map</)
+    const branch = bulk.slice(bulk.indexOf('if (replace) {'), bulk.indexOf('`/api/admin/cohort-plans/${m.planId}/review-report`'))
+    expect(branch).toMatch(/if \(!cleared\.has\(m\.planId\)\)/)
+    expect(branch).toMatch(/apiDelete<\{ removed: number \}>\(clearReportsPath\(m\.planId\)\)/)
+    expect(branch, 'وإن تعذّر الحذف لا يرفع إليها — لا يجتمع القديم والجديد').toMatch(/if \("problemAr" in c\) throw/)
+  })
+
   it('⚠️ وبطاقة المدرّب لا تقول «مع ردّها» — يراها والخطّة ما تزال تنتظر القرار', () => {
     const list = comp.slice(comp.indexOf('export function ReviewReportList'))
     expect(list).toContain('رفعته الإدارة بعد قراءة خطّتك')
@@ -143,5 +153,19 @@ describe('② الصندوق في «خطط تنتظر اعتمادك»', () => {
     const loop = bulk.slice(bulk.indexOf('for (const [i, file] of files.entries())'))
     expect(loop.indexOf('try {')).toBeGreaterThan(0)
     expect(loop.indexOf('try {'), 'الاعتراض داخل الحلقة لا حولها').toBeLessThan(loop.indexOf('setProgress(null)'))
+  })
+})
+
+describe('③ استبدال التقارير السابقة (١٢ أكتوبر ٢٠٢٦)', () => {
+  it('المسار والنصّ — بلا تشكيل إعرابيّ', () => {
+    expect(clearReportsPath('p1')).toBe('/api/admin/cohort-plans/p1/review-reports')
+    expect(REPLACE_REPORTS_AR.whatAr).toMatch(/لا تمس/)
+    expect(`${REPLACE_REPORTS_AR.labelAr} ${REPLACE_REPORTS_AR.whatAr}`).not.toMatch(/[\u064B-\u0650\u0652]/)
+  })
+  it('وسطر الرفع يقول كم حذف — ولا شيء إن لم يكن قبله تقرير', () => {
+    expect(replacedReportsAr(0)).toBe('رفع إلى خطته')
+    expect(replacedReportsAr(1)).toBe('رفع إلى خطته، مكان تقرير سابق')
+    expect(replacedReportsAr(2)).toBe('رفع إلى خطته، مكان تقريرين سابقين')
+    expect(replacedReportsAr(4)).toBe('رفع إلى خطته، مكان 4 تقارير سابقة')
   })
 })

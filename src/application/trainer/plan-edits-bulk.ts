@@ -45,6 +45,40 @@ export function replacedLineAr(replaced: number): string {
   return `، مكان ${countAr(replaced, { one: 'مسودة سابقة', two: 'مسودتين سابقتين', few: 'مسودات سابقة', many: 'مسودة سابقة' })}`
 }
 
+/** «، وسحب 5 بنود لم يقرر فيها» — في «ابدأ من جديد»؛ ولا شيءَ إن لم يكن قبله شيء */
+export function withdrawnLineAr(withdrawn: number): string {
+  if (withdrawn <= 0) return ''
+  return `، وسحب ${countAr(withdrawn, ITEM_FORMS)} لم يقرر فيها المدرب`
+}
+
+/* ═══ ثلاثُ طرقٍ للرفع دفعةً — يختارها المعتمِد، ولا تُفترض (١٢ أكتوبر ٢٠٢٦) ═══
+   «أضف» ما كان قبل الاستبدال، و«استبدل المسودات» (١٠ أكتوبر)، و«ابدأ من جديد» (١٢ أكتوبر): قال صاحبُ
+   المنصّة «أريد أن أعيد كلَّ شيءٍ من البداية.. اسحب كلَّ شيءٍ وارفق كلَّ شيءٍ من جديد». والمسارُ لكلٍّ هنا
+   لا في الشاشة — فلا يفترق ما تقوله عمّا يقع. */
+export const BULK_MODES = ['add', 'drafts', 'all'] as const
+export type BulkMode = (typeof BULK_MODES)[number]
+
+export const BULK_MODE_AR: Record<BulkMode, { labelAr: string; whatAr: string }> = {
+  add: {
+    labelAr: 'أضف إلى ما هو موجود',
+    whatAr: 'يبقى كل ما رفعته قبل. ويرد الملف إن وقع بند فيه على بند لم يقرر فيه بعد.',
+  },
+  drafts: {
+    labelAr: 'استبدل المسودات التي لم تعتمدها بعد',
+    whatAr: 'تسحب المسودات القديمة ويرفع الملف مكانها. وما اعتمدته للمدرب يبقى كما هو.',
+  },
+  all: {
+    labelAr: 'ابدأ من جديد',
+    whatAr: 'يسحب كل ما لم يقرر فيه المدرب — المسودات وما وصله — ويرفع الملف مكانه. يختفي المسحوب من صفحة المدرب، وتعيده «أعد ما سحبته» ما لم يقع عليه بند جديد. وما قبله المدرب أو رفضه لا يمس.',
+  },
+}
+
+/** مسارُ الرفع لكلّ طريقة */
+export function bulkUploadPath(planId: string, mode: BulkMode): string {
+  const base = `/api/admin/cohort-plans/${planId}/edits`
+  return mode === 'add' ? base : mode === 'drafts' ? `${base}/replace-drafts` : `${base}/replace-all`
+}
+
 /** خلاصةُ الدفعة — كم رُفع وكم رُدّ، ولا يُقال «تمّ» وفيها ما رُدّ */
 export function bulkSummaryAr(done: number, failed: number): string {
   const total = done + failed

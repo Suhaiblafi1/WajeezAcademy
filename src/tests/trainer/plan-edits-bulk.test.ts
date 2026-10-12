@@ -2,7 +2,7 @@
    وكم بندا فيه. وما لا يُقرأ يعود بسببه لا يرمي — فلا يوقف ما بعده من الدفعة. */
 
 import { describe, expect, it } from 'vitest'
-import { bulkSummaryAr, readEditsFile, replacedLineAr, uploadedLineAr } from '@/application/trainer/plan-edits-bulk'
+import { BULK_MODE_AR, BULK_MODES, bulkSummaryAr, bulkUploadPath, readEditsFile, replacedLineAr, uploadedLineAr, withdrawnLineAr } from '@/application/trainer/plan-edits-bulk'
 
 const PLAN = '7c1a3a52-2a7e-4a36-9a43-0d1d2b6b8f10'
 const file = (over: Record<string, unknown> = {}) => JSON.stringify({
@@ -58,5 +58,33 @@ describe('ما يقال بعد الرفع', () => {
     expect(bulkSummaryAr(8, 0)).toMatch(/^رفعت الملفّات كلّها \(8\)/)
     expect(bulkSummaryAr(7, 1)).toBe('رفع 7 من 8 — وردّ 1 بسببه أدناه، وما ردّ لم يحفظ منه شيء.')
     expect(bulkSummaryAr(0, 2)).toMatch(/^لم يرفع شيء/)
+  })
+})
+
+describe('«ابدأ من جديد» — الطريقة الثالثة (١٢ أكتوبر ٢٠٢٦)', () => {
+  it('⚠️ لكلّ طريقةٍ مسلكُها — و«أضف» هي الرفع العاديّ نفسه', () => {
+    expect(BULK_MODES.map((m) => bulkUploadPath(PLAN, m))).toEqual([
+      `/api/admin/cohort-plans/${PLAN}/edits`,
+      `/api/admin/cohort-plans/${PLAN}/edits/replace-drafts`,
+      `/api/admin/cohort-plans/${PLAN}/edits/replace-all`,
+    ])
+  })
+
+  it('⚠️ وكلّ طريقة تقول ما يقع بها — والثالثة أنّ ما قرّر فيه المدرّب لا يمسّ وأنّ المسحوب يعاد', () => {
+    for (const m of BULK_MODES) expect(BULK_MODE_AR[m].whatAr.length, m).toBeGreaterThan(20)
+    expect(BULK_MODE_AR.all.whatAr).toMatch(/أعد ما سحبته/)
+    expect(BULK_MODE_AR.all.whatAr).toMatch(/لا يمس/)
+    expect(BULK_MODE_AR.drafts.whatAr).toMatch(/يبقى كما هو/)
+  })
+
+  it('وسطر الرفع يقول كم سحب — ولا شيء إن لم يسحب', () => {
+    expect(withdrawnLineAr(0)).toBe('')
+    expect(withdrawnLineAr(1)).toBe('، وسحب 1 بند لم يقرر فيها المدرب')
+    expect(withdrawnLineAr(5)).toBe('، وسحب 5 بنود لم يقرر فيها المدرب')
+  })
+
+  it('⚠️ ونصوصها بلا تشكيل إعرابيّ — اللغة البيضاء', () => {
+    const all = [...Object.values(BULK_MODE_AR).flatMap((x) => [x.labelAr, x.whatAr]), withdrawnLineAr(5)].join(' ')
+    expect(all).not.toMatch(/[\u064B-\u0650\u0652]/)
   })
 })

@@ -15,7 +15,7 @@ import { putSigned } from "@/services/signed-upload";
 import { Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import Chip from "@/components/ui/Chip";
-import { matchReportFile, reportTitleAr, reportsSummaryAr, type ReportPlan } from "@/application/trainer/review-reports-bulk";
+import { clearReportsPath, matchReportFile, REPLACE_REPORTS_AR, replacedReportsAr, reportTitleAr, reportsSummaryAr, type ReportPlan } from "@/application/trainer/review-reports-bulk";
 import { expandReportFiles, skippedLineAr } from "@/application/trainer/review-reports-zip";
 import { fmtDateTimeAr } from "@/utils/format";
 import { REVIEW_REPORT_MIMES } from "@/application/trainer/module-body";
@@ -139,9 +139,13 @@ export function ReviewReportsBulkUpload({ plans, onUploaded, onOpen }: {
   const [summary, setSummary] = useState("");
   const [skippedAr, setSkippedAr] = useState("");
   const [over, setOver] = useState(false);
+  /* ويُستبدل ما رُفع قبلُ لكلّ خطّةٍ في الدفعة — يختاره المعتمِد ولا يُفترض (`REPLACE_REPORTS_AR`) */
+  const [replace, setReplace] = useState(false);
 
   const run = async (picked: readonly File[]) => {
     if (progress || picked.length === 0) return;
+    /* لكلّ خطّةٍ مرّةً واحدة: ما حُذف منها قبل أوّل ملفّ، أو سببُ تعذّر الحذف فلا يُرفع إليها شيء */
+    const cleared = new Map<string, { removed: number } | { problemAr: string }>();
     setResults([]); setSummary(""); setSkippedAr("");
     setProgress("يفتح ما اخترت");
     const expanded = await expandReportFiles(picked);
@@ -155,11 +159,26 @@ export function ReviewReportsBulkUpload({ plans, onUploaded, onOpen }: {
         out.push({ name: file.name, planId: null, labelAr: null, state: "failed", noteAr: m.problemAr });
       } else {
         try {
+          let removed = 0;
+          if (replace) {
+            if (!cleared.has(m.planId)) {
+              try {
+                cleared.set(m.planId, await apiDelete<{ removed: number }>(clearReportsPath(m.planId)));
+              } catch (e) {
+                cleared.set(m.planId, { problemAr: e instanceof Error ? e.message : "تعذّر حذف التقارير السابقة" });
+              }
+            }
+            const c = cleared.get(m.planId)!;
+            if ("problemAr" in c) throw new Error(`لم يرفع — ${c.problemAr}`);
+            removed = c.removed;
+            /* والملفّ الثاني للخطّة نفسها لا يقول ما حُذف مرّة ثانية */
+            cleared.set(m.planId, { removed: 0 });
+          }
           const r = await apiPost<{ uploadUrl: string; maxBytes: number }>(
             `/api/admin/cohort-plans/${m.planId}/review-report`, { mime: m.mime, originalName: m.storedName },
           );
           await putSigned(r.uploadUrl, file, r.maxBytes);
-          out.push({ name: file.name, planId: m.planId, labelAr: m.labelAr, state: "done", noteAr: "رفع إلى خطّته" });
+          out.push({ name: file.name, planId: m.planId, labelAr: m.labelAr, state: "done", noteAr: replacedReportsAr(removed) });
           onUploaded(m.planId);
         } catch (e) {
           const already = e instanceof ApiError && e.code === "report_exists";
@@ -207,6 +226,13 @@ export function ReviewReportsBulkUpload({ plans, onUploaded, onOpen }: {
         </Button>
         <span className="text-read text-muted-foreground">أو اسحبها كلّها إلى هنا وأفلتها.</span>
       </div>
+      <label className="mt-3 flex items-start gap-2 text-read leading-6">
+        <input type="checkbox" className="mt-1.5" checked={replace} disabled={progress !== null} onChange={(e) => setReplace(e.target.checked)} />
+        <span>
+          <span className="font-bold text-foreground">{REPLACE_REPORTS_AR.labelAr}</span>
+          <span className="block text-muted-foreground">{REPLACE_REPORTS_AR.whatAr}</span>
+        </span>
+      </label>
       {summary && <p className="mt-3 text-read font-bold text-teal-light-ink" role="status">{summary}</p>}
       {skippedAr && <p className="mt-1 text-read text-muted-foreground">{skippedAr}</p>}
       {results.length > 0 && (
