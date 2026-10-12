@@ -186,3 +186,60 @@ describe('ولا يكتب على خطة تغيّرت بعد أن نزّلت (bas
     expect(await prisma.planEditSuggestion.count({ where: { planId: x.planId } })).toBe(0)
   })
 })
+
+describe('والكرّاسة: نرفع المصحّحة ملفّا، ويرى القديمة والجديدة ويقبل (workbook_replace)', () => {
+  const PDF = Buffer.from('%PDF-1.4\n% كرّاسةٌ مصحّحة\n%%EOF\n')
+  const put = (url: string) => app.inject({ method: 'PUT', url, payload: PDF, headers: { 'content-type': 'application/pdf' } })
+
+  async function withWorkbooks() {
+    const x = await inHand()
+    const oldKey = `wbOld${Math.random().toString(36).slice(2)}${STAMP}`
+    await prisma.cohortFile.create({ data: { cohortId: x.cohortId, purpose: 'workbook', refId: 'M1', storageKey: oldKey, originalName: 'كراسة قديمة.pdf', mime: 'application/pdf' } })
+    const c = { ...content, workbookMode: 'modules', workbooks: [{ moduleIds: ['M1'], bodyFileKey: oldKey, bodyFileName: 'كراسة قديمة.pdf', bodyFileMime: 'application/pdf', onTemplate: true }] }
+    await prisma.cohortDeliveryPlan.update({ where: { id: x.planId }, data: { content: c as never } })
+    return { ...x, oldKey }
+  }
+
+  it('⚠️ يرفع المعتمد الملف للخطة، ويقبل المدرب فتصير كرّاسة محوره — والقالب كما هو', async () => {
+    const x = await withWorkbooks()
+    const start = await call('POST', `/api/admin/cohort-plans/${x.planId}/edit-files`, 'admin', { mime: 'application/pdf', originalName: 'كراسة المحور 1 — مصححة.pdf' })
+    expect(start.statusCode, start.body).toBe(201)
+    const { uploadUrl, storageKey } = start.json() as { uploadUrl: string; storageKey: string }
+    expect((await put(uploadUrl)).statusCode).toBeLessThan(300)
+
+    const r = await upload(x.planId, [{
+      kind: 'workbook_replace', moduleId: 'M1', required: true, reasonAr: 'خانات القالب فارغة والساعات لا تطابق الخطة',
+      file: { key: storageKey, name: 'كراسة المحور 1 — مصححة.pdf', mime: 'application/pdf' },
+    }])
+    expect(r.statusCode, r.body).toBe(201)
+    const views = (await call('GET', `/api/admin/cohorts/${x.cohortId}/plan-edits`, 'admin')).json() as { kind: string; view: { titleAr: string; rows: { beforeAr: string; afterAr: string; beforeHref?: string; afterHref?: string }[] } }[]
+    const v = views.find((e) => e.kind === 'workbook_replace')!.view
+    expect(v.titleAr).toBe('كرّاسة المحور 1')
+    expect(v.rows[0]).toMatchObject({ beforeAr: 'كراسة قديمة.pdf', afterAr: 'كراسة المحور 1 — مصححة.pdf', afterHref: `/api/v1/cohort-files/${storageKey}` })
+
+    await approveAll(x.planId)
+    const a = await accept(await idOf(x.planId, 'workbook_replace'))
+    expect(a.statusCode, a.body).toBe(200)
+    const after = (await prisma.cohortDeliveryPlan.findUniqueOrThrow({ where: { id: x.planId } })).content as { workbooks: Record<string, unknown>[] }
+    expect(after.workbooks[0]).toMatchObject({ moduleIds: ['M1'], bodyFileKey: storageKey, bodyFileName: 'كراسة المحور 1 — مصححة.pdf', onTemplate: true })
+  })
+
+  it('⚠️ ومفتاح ملف لم يرفع لهذه الشعبة يردّ — فلا يقرأ به ملف شعبة أخرى', async () => {
+    const x = await withWorkbooks()
+    const other = await withWorkbooks()
+    const r = await upload(x.planId, [{
+      kind: 'workbook_replace', moduleId: 'M1', reasonAr: 'كرّاسة مصححة',
+      file: { key: other.oldKey, name: 'ليست لها.pdf', mime: 'application/pdf' },
+    }])
+    expect(r.statusCode).toBe(422)
+    expect(r.json().error.message_ar).toMatch(/ملفّ الكرّاسة لم يرفع لهذه الشعبة/)
+  })
+
+  it('⚠️ ومن لا يعتمد الخطط لا يرفع كرّاسة لها، ولا على خطة معتمدة', async () => {
+    const x = await withWorkbooks()
+    expect((await call('POST', `/api/admin/cohort-plans/${x.planId}/edit-files`, 'a', { mime: 'application/pdf', originalName: 'x.pdf' })).statusCode).toBe(403)
+    await prisma.cohortDeliveryPlan.update({ where: { id: x.planId }, data: { status: 'approved' } })
+    const r = await call('POST', `/api/admin/cohort-plans/${x.planId}/edit-files`, 'admin', { mime: 'application/pdf', originalName: 'x.pdf' })
+    expect(r.statusCode).toBe(409)
+  })
+})

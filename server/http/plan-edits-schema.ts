@@ -106,6 +106,11 @@ export const planEditItem = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('cohort_title'), titleAr: z.string().trim().min(3).max(200), ...meta }).strict(),
   z.object({ kind: z.literal('task_remove'), assessmentId: z.string().uuid(), ...meta }).strict(),
   z.object({
+    kind: z.literal('workbook_replace'), ...meta,
+    moduleId: moduleId.nullable(),
+    file: z.object({ key: z.string().trim().min(10).max(200), name: z.string().trim().min(1).max(200), mime: z.literal('application/pdf') }).strict(),
+  }).strict(),
+  z.object({
     kind: z.literal('session_add'), ...meta,
     session: z.object({
       title: z.string().trim().min(2).max(200),

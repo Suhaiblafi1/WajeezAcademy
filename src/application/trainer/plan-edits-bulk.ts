@@ -124,3 +124,42 @@ export function dedupeSummaryAr(r: { cleaned: number; withdrawn: number; clean: 
   ]
   return parts.filter(Boolean).join('، ') + '.'
 }
+
+/* ═══ والكرّاساتُ المصحّحةُ تُختار مع ملفّات التعديلات (١٢ أكتوبر ٢٠٢٦، `workbook_replace`) ═══
+   «We fix the PDF, he accepts» (صاحب المنصّة). وبندُ الكرّاسة يحمل اسمَ ملفّها لا مفتاحَه — فالملفُّ لم يُرفع بعد.
+   فيُختار الـPDF مع ملفّ التعديلات دفعةً واحدة: يُرفع كلٌّ إلى خطّته (`/edit-files`)، ويُكتب مفتاحُه في بنده، ثمّ
+   يُرفع الملفّ. وما سُمّي ولم يُختر يُقال باسمه ولا يُرفع الملفّ. */
+export const isPdfName = (name: string): boolean => /\.pdf$/i.test(name.trim())
+
+interface WorkbookItem { kind?: unknown; file?: { key?: unknown; name?: unknown } | null }
+const itemsOf = (body: unknown): WorkbookItem[] =>
+  Array.isArray((body as { items?: unknown } | null)?.items) ? (body as { items: WorkbookItem[] }).items : []
+
+/** أسماءُ الكرّاسات التي يحملها الملفّ بلا مفتاح — تُختار معه بأسمائها */
+export function workbookFilesNeeded(body: unknown): string[] {
+  const names = itemsOf(body)
+    .filter((x) => x.kind === 'workbook_replace' && !x.file?.key && typeof x.file?.name === 'string')
+    .map((x) => String(x.file!.name).trim())
+  return [...new Set(names)]
+}
+
+/** الملفُّ نفسُه وفي بنود كرّاساته مفاتيحُها — ولا يمسّ الأصل */
+export function withWorkbookKeys(body: unknown, keys: Readonly<Record<string, string>>): unknown {
+  const b = body as Record<string, unknown>
+  return {
+    ...b,
+    items: itemsOf(body).map((x) => {
+      const name = typeof x.file?.name === 'string' ? x.file.name.trim() : ''
+      return x.kind === 'workbook_replace' && !x.file?.key && keys[name]
+        ? { ...x, file: { ...x.file, key: keys[name], mime: 'application/pdf' } }
+        : x
+    }),
+  }
+}
+
+export const editFilePath = (planId: string) => `/api/admin/cohort-plans/${planId}/edit-files`
+
+/** «ملفّ الكرّاسة «…» ليس بين ما اخترته» — لما سُمّي في الملفّ ولم يُختر معه */
+export function missingWorkbooksAr(names: readonly string[]): string {
+  return `${names.length === 1 ? 'ملف الكراسة' : 'ملفات الكراسات'} ${names.map((n) => `«${n}»`).join('، ')} ليس بين ما اخترته — اختره مع ملف التعديلات`
+}

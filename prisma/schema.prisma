@@ -2724,10 +2724,11 @@ model PlanEditSuggestion {
   /// كلُّ ما رُفع في ملفٍّ واحد
   batchId   String    @db.Uuid
   seq       Int
-  kind      String // module | plan | resource_add | resource_change | resource_remove | task_add | task_change | session_move | session_remove | note | schedule | cohort_title | task_remove | session_add | session_change
+  kind      String // module | plan | resource_add | resource_change | resource_remove | task_add | task_change | session_move | session_remove | note | schedule | cohort_title | task_remove | session_add | session_change | workbook_replace
   /// و`note` ملاحظةُ الردّ بندا يوافق عليه المدرّب — لا تكتب في الخطّة شيئا (١١ أكتوبر ٢٠٢٦)
   /// و`schedule` جدولٌ كاملٌ بسلسلته: لقاءاتٌ تُنقل معا ومواعيدُ المهامّ التي تتبعها — يُقبل كلُّه أو يُرفض (١١ أكتوبر ٢٠٢٦)
   /// و`cohort_title` و`task_remove` و`session_add` و`session_change`: ما كان يُطلب من المدرّب أن يعمله بنفسه — بطاقاتٌ «قبل/بعد» يقبلها أو يرفضها (١٢ أكتوبر ٢٠٢٦)
+  /// و`workbook_replace`: كرّاسةٌ نصحّحها نحن ملفّا، يرى القديمةَ والجديدةَ ويقبل أو يرفض (١٢ أكتوبر ٢٠٢٦)
   /// خطوةُ المدرّب التي يقع فيها — identity · modules · workbooks · sessions · assignments
   step      String
   required  Boolean   @default(false)

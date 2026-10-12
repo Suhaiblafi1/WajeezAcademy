@@ -271,6 +271,15 @@ export class PlanEditService {
     const onDraft: number[] = []
     const onTrainer: number[] = []
     const seen = new Map<string, number>()
+    /* ═══ والكرّاسةُ الجديدةُ ملفُّ هذه الشعبة — رُفع لها وبقيت بايتاتُه (١٢ أكتوبر ٢٠٢٦) ═══
+       المفتاحُ في البند نصٌّ؛ فلو قُبل مفتاحٌ لملفّ شعبةٍ أخرى لصار بابا يُقرأ به ملفُّها */
+    const wbKeys = items.flatMap((x) => (x.kind === 'workbook_replace' && x.file?.key ? [x.file.key] : []))
+    const owned = new Set(wbKeys.length === 0 ? [] : (await this.prisma.cohortFile.findMany({
+      where: { cohortId: plan.cohortId, purpose: 'workbook', storageKey: { in: wbKeys } }, select: { storageKey: true },
+    })).map((f) => f.storageKey))
+    items.forEach((x, i) => {
+      if (x.kind === 'workbook_replace' && !owned.has(x.file?.key)) problems.push(`البند ${i + 1}: ملفّ الكرّاسة لم يرفع لهذه الشعبة — ارفعه مع الملفّ دفعة واحدة`)
+    })
     const snaps = items.map((item, i) => {
       const edit = editOf(item)
       const snap = this.snapshotNow(edit, r)
@@ -816,6 +825,7 @@ function targetsOf(edit: PlanEdit): string[] {
     /* وحذفُ المهمّة يقع على حقولها كلِّها — فلا يُرفع معه تعديلُ واحدٍ منها */
     case 'task_remove': return TASK_EDIT_FIELDS.map((f) => `task:${edit.assessmentId}:${f}`)
     case 'cohort_title': return ['cohort:title']
+    case 'workbook_replace': return [`workbook:${edit.moduleId ?? 'course'}`]
     case 'note': return [`note:${edit.step}`]
     case 'schedule': return [
       ...edit.moves.map((m) => `session:${m.sessionId}`),

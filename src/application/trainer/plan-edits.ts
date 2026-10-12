@@ -52,7 +52,7 @@ export type TaskEditField = (typeof TASK_EDIT_FIELDS)[number]
 export const PLAN_EDIT_KINDS = [
   'module', 'plan', 'resource_add', 'resource_change', 'resource_remove',
   'task_add', 'task_change', 'session_move', 'session_remove', 'note', 'schedule',
-  'cohort_title', 'task_remove', 'session_add', 'session_change',
+  'cohort_title', 'task_remove', 'session_add', 'session_change', 'workbook_replace',
 ] as const
 
 /* ═══ وما كان يُطلب من المدرّب أن يعمله بنفسه — بطاقاتٌ «قبل/بعد» (١٢ أكتوبر ٢٠٢٦) ═══
@@ -63,6 +63,12 @@ export const PLAN_EDIT_KINDS = [
    · `session_change` عنوانُ لقاءٍ أو ملاحظتُه — ونوعُ المهمّة صار من حقول `task_change`. */
 export const SESSION_EDIT_FIELDS = ['title', 'noteAr'] as const
 export type SessionEditField = (typeof SESSION_EDIT_FIELDS)[number]
+
+/* ═══ والكرّاسةُ ملفٌّ نصحّحه نحن ويقبله هو — `workbook_replace` (١٢ أكتوبر ٢٠٢٦) ═══
+   سُئل صاحبُ المنصّة عن عيوب الكرّاسات (خاناتُ القالب الفارغة، وساعاتٌ لا تطابق الخطّة، وروابطُ تُحذف) فاختار
+   «We fix the PDF, he accepts»: نرفع الكرّاسةَ المصحّحة، فيرى القديمةَ والجديدةَ ويقبل أو يرفض. والملفُّ ملفُّ
+   هذه الشعبة بغرضه (`workbook`) يرفعه المعتمِد؛ و`moduleId` كرّاسةُ المحور الذي هو فيها، و`null` كرّاسةُ الدورة. */
+export interface WorkbookFile { key: string; name: string; mime: string }
 
 export interface NewSession {
   title: string
@@ -140,6 +146,7 @@ export type PlanEdit =
   | { kind: 'cohort_title'; titleAr: string }
   | { kind: 'session_add'; session: NewSession }
   | { kind: 'session_change'; sessionId: string; set: Partial<Record<SessionEditField, string | null>> }
+  | { kind: 'workbook_replace'; moduleId: string | null; file: WorkbookFile }
   | { kind: 'session_move'; sessionId: string; startsAt: string; endsAt: string }
   | { kind: 'session_remove'; sessionId: string }
   | { kind: 'note'; step: NoteStep; textAr: string }
@@ -162,6 +169,7 @@ export function planEditStep(edit: PlanEdit): ReviewSection {
     case 'plan': return edit.set.liveNoteAr !== undefined && edit.set.summaryAr === undefined ? 'sessions' : 'identity'
     case 'session_move': case 'session_remove': case 'session_add': case 'session_change': return 'sessions'
     case 'cohort_title': return 'identity'
+    case 'workbook_replace': return 'workbooks'
     case 'note': return edit.step === 'general' ? 'identity' : edit.step
     case 'schedule': return 'sessions'
     default: return 'assignments'
@@ -174,11 +182,34 @@ export interface EditableModule {
   moduleId: string; titleAr: string
   outcomeAr?: string | null; activityAr?: string | null; artifactAr?: string | null; bodyAr?: string | null
 }
+interface EditableWorkbook {
+  title?: string | null; url?: string | null
+  bodyFileKey?: string | null; bodyFileName?: string | null; bodyFileMime?: string | null
+}
 export interface EditableContent {
   summaryAr?: string | null
   liveNoteAr?: string | null
   modules: EditableModule[]
   resources: (ResourceFields & { bodyFileKey?: string | null })[]
+  workbookMode?: string | null
+  workbook?: EditableWorkbook | null
+  workbooks?: (EditableWorkbook & { moduleIds: string[] })[] | null
+}
+
+const WORKBOOK_FIELDS = ['title', 'bodyFileName', 'bodyFileKey', 'url'] as const
+
+/** الكرّاسةُ التي يقع عليها البند — كرّاسةُ الدورة، أو كرّاسةُ المحاور التي فيها المحور — أو لماذا لا كرّاسة */
+function workbookAt(c: EditableContent, moduleId: string | null): Checked<{ at: number | 'course'; wb: EditableWorkbook }> {
+  const mode = c.workbookMode === 'modules' ? 'modules' : 'course'
+  if (moduleId === null) {
+    if (mode !== 'course') return { ok: false, problemAr: 'كرّاسات هذه الخطّة لكلّ محور — سمّ المحور' }
+    if (!c.workbook) return { ok: false, problemAr: 'لا كرّاسة للدورة في الخطّة' }
+    return { ok: true, value: { at: 'course', wb: c.workbook } }
+  }
+  if (mode !== 'modules') return { ok: false, problemAr: 'كرّاسة هذه الخطّة واحدة للدورة — لا تسمّ محورا' }
+  const at = (c.workbooks ?? []).findIndex((w) => (w.moduleIds ?? []).includes(moduleId))
+  if (at < 0) return { ok: false, problemAr: `لا كرّاسة للمحور «${moduleId}» في الخطّة` }
+  return { ok: true, value: { at, wb: c.workbooks![at]! } }
 }
 
 /** الفارغُ والغائبُ سواء: «لم يُكتب» */
@@ -265,6 +296,13 @@ export function contentBefore(edit: PlanEdit, c: EditableContent): Checked<EditS
         return { ok: false, problemAr: `المصدر «${edit.resource.title}» في الخطّة فعلا` }
       }
       return { ok: true, value: null }
+    }
+    case 'workbook_replace': {
+      if (!edit.file?.key || !edit.file.name?.trim()) return { ok: false, problemAr: 'الكرّاسة الجديدة بلا ملفّ' }
+      if (edit.file.mime !== 'application/pdf') return { ok: false, problemAr: 'الكرّاسة تُرفع PDF' }
+      const at = workbookAt(c, edit.moduleId)
+      if (!at.ok) return at
+      return { ok: true, value: pick(at.value.wb as Record<string, unknown>, WORKBOOK_FIELDS) }
     }
     case 'resource_change': case 'resource_remove': {
       const at = findResource(c.resources, edit.match)
@@ -496,6 +534,15 @@ export function applyContentEdit<C extends EditableContent>(c: C, edit: PlanEdit
       if (!at.ok) return at
       return { ok: true, value: { ...c, resources: c.resources.filter((_, i) => i !== at.value) } }
     }
+    case 'workbook_replace': {
+      const at = workbookAt(c, edit.moduleId)
+      if (!at.ok) return at
+      /* الملفُّ مكانَ الملفّ — والرابطُ إن كان يسقط: الكرّاسةُ ملفٌّ واحد. وما سواهما (القالب، والمواضع) كما هو */
+      const next = { ...at.value.wb, bodyFileKey: edit.file.key, bodyFileName: edit.file.name.trim(), bodyFileMime: edit.file.mime, url: null }
+      return at.value.at === 'course'
+        ? { ok: true, value: { ...c, workbook: next } }
+        : { ok: true, value: { ...c, workbooks: (c.workbooks ?? []).map((w, i) => (i === at.value.at ? { ...w, ...next } : w)) } }
+    }
     default:
       return { ok: false, problemAr: 'هذا التعديل لا يقع في محتوى الخطّة' }
   }
@@ -503,7 +550,7 @@ export function applyContentEdit<C extends EditableContent>(c: C, edit: PlanEdit
 
 /** أيقع التعديلُ في محتوى الخطّة (فيُحفظ بـ`savePlan`) أم في صفّ مهمّةٍ أو لقاء؟ */
 export const editsContent = (edit: PlanEdit): boolean =>
-  edit.kind === 'module' || edit.kind === 'plan' || edit.kind.startsWith('resource_')
+  edit.kind === 'module' || edit.kind === 'plan' || edit.kind.startsWith('resource_') || edit.kind === 'workbook_replace'
 
 /* ─────────── العرض: «قبل» و«بعد» بلغة المدرّب ─────────── */
 
@@ -630,6 +677,20 @@ export function planEditView(edit: PlanEdit, before: EditSnapshot, ctx: EditCont
     case 'session_remove': {
       const name = ctx.sessionTitle?.(edit.sessionId) ?? 'لقاء'
       return view(`حذف لقاء: «${name}»`, [{ labelAr: FIELD_AR.when, beforeAr: sessionWhenAr(before), afterAr: null }])
+    }
+    case 'workbook_replace': {
+      /* الملفّان يُفتحان من البطاقة — ليقرأ الجديدةَ قبل أن يقبلها */
+      const fileHref = (k: unknown) => (typeof k === 'string' && k ? `/api/v1/cohort-files/${encodeURIComponent(k)}` : undefined)
+      const b = before ?? {}
+      const beforeHref = fileHref(b.bodyFileKey) ?? (isHttp(b.url) ? String(b.url).trim() : undefined)
+      const afterHref = fileHref(edit.file.key)
+      return view(edit.moduleId === null ? 'كرّاسة الدورة' : `كرّاسة ${moduleNoAr(edit.moduleId, ctx).replace(/^لل/, 'ال')}`, [{
+        labelAr: 'الملفّ',
+        beforeAr: valueAr('title', b.bodyFileName ?? b.url ?? b.title, ctx),
+        afterAr: edit.file.name.trim(),
+        ...(beforeHref ? { beforeHref } : {}),
+        ...(afterHref ? { afterHref } : {}),
+      }])
     }
     case 'cohort_title':
       return view('عنوان الشعبة', [{ labelAr: FIELD_AR.cohortTitle, beforeAr: valueAr('title', before?.titleAr, ctx), afterAr: edit.titleAr.trim() }])

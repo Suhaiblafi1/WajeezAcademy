@@ -10,11 +10,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { CalendarClock, Check, CopyX, ExternalLink, FileJson, Files, PencilLine, Undo2, X } from "lucide-react";
 import { apiDelete, apiGet, apiPost, ApiError } from "@/services/api";
+import { putSigned } from "@/services/signed-upload";
 import { Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import Chip from "@/components/ui/Chip";
 import type { EditView, PlanEditStatus } from "@/application/trainer/plan-edits";
-import { BULK_MODE_AR, BULK_MODES, bulkSummaryAr, bulkUploadPath, DEDUPE_ALL_AR, dedupeSummaryAr, KEEP_LATEST_ALL_PATH, KEEP_LATEST_AR, keepLatestPath, keptLatestAr, readEditsFile, replacedLineAr, uploadedLineAr, withdrawnLineAr, type BulkMode } from "@/application/trainer/plan-edits-bulk";
+import { BULK_MODE_AR, BULK_MODES, bulkSummaryAr, bulkUploadPath, DEDUPE_ALL_AR, dedupeSummaryAr, editFilePath, isPdfName, KEEP_LATEST_ALL_PATH, KEEP_LATEST_AR, keepLatestPath, missingWorkbooksAr, withWorkbookKeys, workbookFilesNeeded, keptLatestAr, readEditsFile, replacedLineAr, uploadedLineAr, withdrawnLineAr, type BulkMode } from "@/application/trainer/plan-edits-bulk";
 import { GapList, NoteSubs } from "@/components/LongText";
 import { gapLayout } from "@/application/trainer/text-layout";
 
@@ -416,10 +417,13 @@ export function PlanEditsBulkUpload({ plans, onUploaded, onOpen }: {
   /* وطريقةُ الرفع يختارها المعتمِد، ولا تُفترض — «أضف» ما لم يختر غيرَها (`BULK_MODE_AR`) */
   const [mode, setMode] = useState<BulkMode>("add");
 
-  const run = async (files: readonly File[]) => {
-    if (progress || files.length === 0) return;
+  const run = async (picked: readonly File[]) => {
+    if (progress || picked.length === 0) return;
     setResults([]); setSummary("");
     const out: BulkResult[] = [];
+    /* والكرّاساتُ المصحّحةُ (PDF) تُختار معها — لا تُعدّ ملفّاتٍ تُرفع وحدَها، بل تُرفع مع بندها (`workbookFilesNeeded`) */
+    const pdfs = new Map(picked.filter((f) => isPdfName(f.name)).map((f) => [f.name.trim(), f]));
+    const files = picked.filter((f) => !isPdfName(f.name));
     for (const [i, file] of files.entries()) {
       setProgress(`${i + 1} من ${files.length}`);
       const read = readEditsFile(file.name, await file.text());
@@ -429,7 +433,19 @@ export function PlanEditsBulkUpload({ plans, onUploaded, onOpen }: {
         const labelAr = plans.find((p) => p.id === read.planId)?.labelAr ?? read.titleAr;
         try {
           let okAr = uploadedLineAr(read.count, read.required);
-          const r = await apiPost<{ replacedDrafts?: number; withdrawn?: number }>(bulkUploadPath(read.planId, mode), read.body);
+          const needed = workbookFilesNeeded(read.body);
+          const missing = needed.filter((n) => !pdfs.has(n));
+          if (missing.length) throw new Error(missingWorkbooksAr(missing));
+          const keys: Record<string, string> = {};
+          for (const n of needed) {
+            const pdf = pdfs.get(n)!;
+            const up = await apiPost<{ storageKey: string; uploadUrl: string; maxBytes: number }>(
+              editFilePath(read.planId), { mime: "application/pdf", originalName: n });
+            await putSigned(up.uploadUrl, pdf, up.maxBytes);
+            keys[n] = up.storageKey;
+          }
+          const body = needed.length ? withWorkbookKeys(read.body, keys) : read.body;
+          const r = await apiPost<{ replacedDrafts?: number; withdrawn?: number }>(bulkUploadPath(read.planId, mode), body);
           if (mode === "drafts") okAr += replacedLineAr(r.replacedDrafts ?? 0);
           if (mode === "all") okAr += withdrawnLineAr(r.withdrawn ?? 0);
           out.push({ name: file.name, planId: read.planId, labelAr, okAr, problemAr: null });
@@ -450,7 +466,8 @@ export function PlanEditsBulkUpload({ plans, onUploaded, onOpen }: {
       <p className="text-read font-black text-foreground">ارفع ملفّات التعديلات المقترحة كلّها دفعة واحدة</p>
       <p className="mt-1 max-w-3xl text-read leading-6 text-muted-foreground">
         كلّ ملفّ يعرف خطّته فيرفع إليها وحده، ويفحص كما يفحص في بطاقتها: يرفع كلّه أو يردّ كلّه بسببه. وترفع
-        مسوّدات لا يراها المدرّبون — تراجع بنود كلّ خطّة في بطاقتها فتعتمدها أو تحذفها.
+        مسوّدات لا يراها المدرّبون — تراجع بنود كلّ خطّة في بطاقتها فتعتمدها أو تحذفها. ومعها الكراسات المصححة
+        (PDF) إن سمّاها ملف: اخترها معه دفعة واحدة.
       </p>
       <div
         className={`mt-3 flex flex-wrap items-center gap-3 rounded-lg border-2 border-dashed p-4 ${over ? "border-teal-light-ink bg-teal-light-ink/5" : "border-border"}`}
@@ -464,7 +481,7 @@ export function PlanEditsBulkUpload({ plans, onUploaded, onOpen }: {
           multiple
           className="sr-only"
           aria-label="ملفّات التعديلات المقترحة"
-          accept="application/json,.json"
+          accept="application/json,.json,application/pdf,.pdf"
           onChange={(e) => void run(Array.from(e.target.files ?? []))}
         />
         <Button tone="secondary" size="sm" icon={Files} disabled={progress !== null} onClick={() => input.current?.click()}>
