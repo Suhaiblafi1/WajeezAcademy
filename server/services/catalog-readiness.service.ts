@@ -20,6 +20,7 @@
 import type { PrismaClient } from '@prisma/client'
 import { recordAudit } from './audit'
 import { safeNotify } from './notification.service'
+import { cohortAcceptsRegistration, PLAN_GATE_SELECT, TERM_WINDOW_SELECT } from './registration-window'
 
 /** السعةُ المقترحةُ لشعبةٍ تُفتح — يملؤها لوحُ ما بعد الاعتماد (`TrainerNextSteps`) */
 export const DEFAULT_CAPACITY = 20
@@ -41,8 +42,12 @@ export interface AlignPricesResult {
  * منفّذ. فمن أبقى دورةً بلا شعبة في خطّته كان ينتظر إشعارا لا يأتي، ولا
  * يعرف أنّ شعبتَها فُتحت إلّا إن عاد وفحص بنفسه.
  *
- * ولا يُلاحَق من لم يطلب: `notifyOnCohort` قد يُطفأ. ولا يُكرَّر الإشعار
- * على الفتح نفسه: `notifiedAt` يُختم بعد الإرسال.
+ * ولا يُلاحَق من لم يطلب: `notifyOnCohort` قد يُطفأ. ولا يُكرَّر الإشعار:
+ * `notifiedAt` يُختم بعد الإرسال، وما خُتم لا يُرسَل له ثانيةً (١٢ أكتوبر
+ * ٢٠٢٦). وكان التعليقُ يقول ذلك والاستعلامُ لا يقرؤه — فكلُّ شعبةٍ تُفتح
+ * للدورة نفسِها كانت تُعيد الإشعارَ لكلّ من انتظرها.
+ *
+ * ولا يُعلَم من اشترى الدورةَ أصلا: سُجّل فيها أو دُفع ثمنُ مقعده.
  */
 export async function notifyPlanWaiters(
   prisma: PrismaClient,
@@ -54,6 +59,7 @@ export async function notifyPlanWaiters(
     where: {
       courseId: { in: courseIds },
       notifyOnCohort: true,
+      notifiedAt: null,
       plan: { status: 'active' },
     },
     include: {
@@ -61,6 +67,20 @@ export async function notifyPlanWaiters(
     },
   })
   if (items.length === 0) return { notified: 0 }
+
+  /* من اشترى الدورة — مسجَّلٌ فيها، أو حُجز مقعدُه بطلبٍ مدفوع */
+  const users = [...new Set(items.map((i) => i.plan.userId))]
+  const [enrolled, held] = await Promise.all([
+    prisma.enrollment.findMany({
+      where: { userId: { in: users }, status: { in: ['enrolled', 'completed', 'waitlisted'] }, cohort: { courseId: { in: courseIds } } },
+      select: { userId: true, cohort: { select: { courseId: true } } },
+    }),
+    prisma.enrollmentRequest.findMany({
+      where: { userId: { in: users }, status: { in: ['seat_held', 'converted'] }, cohort: { courseId: { in: courseIds } } },
+      select: { userId: true, cohort: { select: { courseId: true } } },
+    }),
+  ])
+  const owns = new Set([...enrolled, ...held].map((r) => `${r.userId}:${r.cohort.courseId}`))
 
   const titles = new Map<string, string>()
   const courses = await prisma.course.findMany({
@@ -71,6 +91,7 @@ export async function notifyPlanWaiters(
 
   let notified = 0
   for (const item of items) {
+    if (owns.has(`${item.plan.userId}:${item.courseId}`)) continue
     const titleAr = titles.get(item.courseId) ?? item.courseId
     await safeNotify(prisma, {
       userId: item.plan.userId,
@@ -85,6 +106,27 @@ export async function notifyPlanWaiters(
     notified++
   }
   return { notified }
+}
+
+/**
+ * يُعلم المنتظرين **حين تصير الشعبةُ قابلةً للشراء فعلا** — لا حين يُرفع علمُها وحدَه.
+ *
+ * كان الإعلامُ يقع في موضعٍ واحد: رفعُ علم التسجيل من بطاقة الشعبة. وزرُّ «افتح
+ * الشعبة» — وهو الطريقُ المعتاد — لا يُعلم أحدا، ولا اعتمادُ خطّةٍ يرفع آخرَ
+ * مانعٍ عن شعبةٍ مفتوحة. فيُقال للمتعلّم «نُعلمك فور فتح شعبتها» ولا يُعلَم.
+ *
+ * ومنذ ١٢ أكتوبر ٢٠٢٦ لا تُعرض شعبةٌ ولا تُباع إلّا باعتماد خطّة مدرّبها، فالعلمُ
+ * المرفوعُ وحدَه لا يعني شيئا. فالسؤالُ واحدٌ في المواضع الثلاثة — الفتحُ ورفعُ
+ * العلم والاعتماد: أتقبل الشعبةُ الآن تسجيلا؟ بقاعدة التسجيل نفسِها.
+ */
+export async function notifyIfPurchasable(prisma: PrismaClient, cohortId: string): Promise<{ notified: number }> {
+  const cohort = await prisma.cohort.findUnique({
+    where: { id: cohortId },
+    include: { term: TERM_WINDOW_SELECT, plans: PLAN_GATE_SELECT },
+  })
+  if (!cohort || !['open', 'full'].includes(cohort.status)) return { notified: 0 }
+  if (!cohortAcceptsRegistration(cohort).open) return { notified: 0 }
+  return notifyPlanWaiters(prisma, [cohort.courseId])
 }
 
 /**

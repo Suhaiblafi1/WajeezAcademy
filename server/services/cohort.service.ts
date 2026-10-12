@@ -6,7 +6,7 @@ const fmtDay = (d: Date) => d.toISOString().slice(0, 10)
    (والمدرّب ليس منها — يُسنَد دفعةً واحدةً لاحقا؛ التعليل عند `openChecklist`.)
    الحالات: draft | open | full | active | completed | cancelled. */
 
-import { notifyPlanWaiters } from './catalog-readiness.service'
+import { notifyIfPurchasable } from './catalog-readiness.service'
 import { OPEN_GAP } from '../../src/application/learning/open-gaps'
 import type { PrismaClient, Prisma } from '@prisma/client'
 import { AuthError } from './auth.service'
@@ -161,7 +161,7 @@ export class CohortService {
        منفّذ — فمن انتظر لم يكن يعلم إلّا إن عاد وفحص بنفسه. */
     const becameOpen = patch.registrationOpen === true && !cohort.registrationOpen
     if (becameOpen) {
-      await notifyPlanWaiters(this.prisma, [cohort.courseId])
+      await notifyIfPurchasable(this.prisma, cohortId)
     }
     return updated
   }
@@ -491,7 +491,10 @@ export class CohortService {
       throw new AuthError('open_blocked', `لا يمكن فتح الشعبة: ${check.missing.join(' — ')}`, 409)
     }
     await this.transition(cohortId, 'open', actorId, 'فتح الشعبة بعد اكتمال الشروط')
-    return this.prisma.cohort.update({ where: { id: cohortId }, data: { registrationOpen: true } })
+    const opened = await this.prisma.cohort.update({ where: { id: cohortId }, data: { registrationOpen: true } })
+    /* والفتحُ هو الطريقُ المعتاد إلى البيع — فمن انتظرها يُعلَم هنا (١٢ أكتوبر ٢٠٢٦) */
+    await notifyIfPurchasable(this.prisma, cohortId)
+    return opened
   }
 
   /* ═══ الحالةُ تتبع التواريخَ لا الضغطات ═══
