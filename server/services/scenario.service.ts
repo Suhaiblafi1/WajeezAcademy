@@ -61,14 +61,14 @@ export class ScenarioService {
     if (path.length > MAX_STEPS) throw new AuthError('bad_path', 'مسار أطول من المعقول', 400)
     const { courseId, scenario } = await this.scenarioOf(moduleId)
     const mine = await this.myCourseIds(userId)
-    if (!mine.has(courseId)) throw new AuthError('forbidden', 'هذه الوحدة ليست في دورة مسجَّل فيها', 403)
+    if (!mine.has(courseId)) throw new AuthError('forbidden', 'هذه الوحدة ليست في دورة مسجّل فيها', 403)
     if (!scenario) throw new AuthError('no_scenario', 'لا سيناريو في هذه الوحدة', 400)
 
     const replay = replayPath(scenario, path)
     if (!replay.valid) throw new AuthError('bad_path', 'مسار لا يطابق السيناريو المنشور', 400)
     const last = replay.nodes.at(-1)
     if (!last || last.options.length > 0) {
-      throw new AuthError('not_ended', 'الجولة لم تبلغ نهاية — تُحفَظ عند النهاية', 400)
+      throw new AuthError('not_ended', 'الجولة لم تبلغ نهاية — تحفظ عند النهاية', 400)
     }
 
     const now = new Date()

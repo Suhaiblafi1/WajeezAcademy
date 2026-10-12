@@ -283,9 +283,9 @@ export type CalendlyUrlCheck =
 export function normalizeCalendlyBookingUrl(input: string): CalendlyUrlCheck {
   /* علاماتُ الاتّجاه تُنسخ مع النصّ العربيّ ولا تُرى — وتُفسد المطابقة */
   const raw = input.replace(/[\u200e\u200f\u202a-\u202e]/g, '').trim()
-  if (!raw) return { ok: false, messageAr: 'الحقلُ فارغ — الصقِ الرابطَ أو اسمَ المستخدم.' }
+  if (!raw) return { ok: false, messageAr: 'الحقل فارغ — الصق الرابط أو اسم المستخدم.' }
   if (/\s/.test(raw)) {
-    return { ok: false, messageAr: 'في الرابط فراغ — لعلّه نُسخ ناقصا أو معه نصٌّ آخر.' }
+    return { ok: false, messageAr: 'في الرابط فراغ — لعلّه نسخ ناقصا أو معه نصّ آخر.' }
   }
 
   /* اسمُ المستخدم وحدَه أو مسارٌ بلا مضيف: يُكمَّل لا يُرفض */
@@ -299,25 +299,25 @@ export function normalizeCalendlyBookingUrl(input: string): CalendlyUrlCheck {
   try {
     parsed = new URL(withHost)
   } catch {
-    return { ok: false, messageAr: 'تعذّرت قراءةُ الرابط — راجع صيغتَه.' }
+    return { ok: false, messageAr: 'تعذّرت قراءة الرابط — راجع صيغته.' }
   }
 
   const host = parsed.hostname.toLowerCase().replace(/^www\./, '')
   if (host !== CALENDLY_HOST) {
     return {
       ok: false,
-      messageAr: `المضيفُ «${host}» ليس Calendly — والحجزُ يُضمَّن في الصفحة، ولا تسمح سياسةُ المحتوى بغيره.`,
+      messageAr: `المضيف «${host}» ليس Calendly — والحجز يضمّن في الصفحة، ولا تسمح سياسة المحتوى بغيره.`,
     }
   }
 
   const segments = parsed.pathname.split('/').filter(Boolean).map((x) => decodeURIComponent(x))
   if (segments.length === 0) {
-    return { ok: false, messageAr: 'هذا عنوانُ Calendly نفسِه بلا اسمِ مستخدم — أضف اسمَك أو نوعَ الموعد.' }
+    return { ok: false, messageAr: 'هذا عنوان Calendly نفسه بلا اسم مستخدم — أضف اسمك أو نوع الموعد.' }
   }
   if (CALENDLY_APP_PATHS.has(segments[0].toLowerCase())) {
     return {
       ok: false,
-      messageAr: 'هذا عنوانُ لوحة تحكّم Calendly لا رابطُ الحجز. افتح نوعَ الموعد واختر «Copy link» — يبدأ باسم المستخدم.',
+      messageAr: 'هذا عنوان لوحة تحكّم Calendly لا رابط الحجز. افتح نوع الموعد واختر «Copy link» — يبدأ باسم المستخدم.',
     }
   }
 
@@ -352,7 +352,7 @@ export function normalizeCalendlyGuests(input: string): CalendlyGuestsCheck {
   const parts = cleaned.split(/[,;\n]+/).map((v) => v.trim()).filter(Boolean)
   const bad = parts.filter((v) => !EMAIL.test(v))
   if (bad.length) {
-    return { ok: false, messageAr: `ليس بريدا صحيحا: «${bad.join('» و«')}». اكتب بريدا كاملا، وافصل بين البُرد بفاصلة.` }
+    return { ok: false, messageAr: `ليس بريدا صحيحا: «${bad.join('» و«')}». اكتب بريدا كاملا، وافصل بين البرد بفاصلة.` }
   }
   /* المكرَّرُ يُطرح: Calendly يقبله ويرسل دعوتَين إلى العنوان نفسِه */
   return { ok: true, value: [...new Set(parts.map((v) => v.toLowerCase()))].join(',') }
@@ -587,12 +587,12 @@ export async function saveWhatsAppNumbers(
     /* لا مفتاحَ خارجَ السجلّ: الشاشةُ تُولَّد منه، فمفتاحٌ غيرُه لا يقرؤه شيءٌ
        ويبقى في الجدول أبدا لا يعرف أحدٌ من كتبه ولا لمَ. */
     if (!WHATSAPP_SPOT_KEYS.has(k)) {
-      throw new AuthError('bad_whatsapp', `لا موضعَ في الموقع اسمُه «${k}»`, 422)
+      throw new AuthError('bad_whatsapp', `لا موضع في الموقع اسمه «${k}»`, 422)
     }
     const n = normalizeWhatsAppNumber(v)
     if (n) {
       if (!/^\d{8,15}$/.test(n)) {
-        throw new AuthError('bad_whatsapp', `رقمٌ غير صالحٍ في «${k}» — أرقامٌ فقط، من ٨ إلى ١٥ خانة`, 422)
+        throw new AuthError('bad_whatsapp', `رقم غير صالح في «${k}» — أرقام فقط، من ٨ إلى ١٥ خانة`, 422)
       }
       next[k] = n
     } else delete next[k]

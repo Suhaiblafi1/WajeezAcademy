@@ -12,7 +12,10 @@
    تماما — تكليفُ موظّفٍ بعمل (`staff.task.assign`)، لا ما يُسلّمه المتعلّم.
    فالكلمتان تتشابهان ولا تعنيان واحدا، وتوحيدُهما خطأٌ لا إصلاح. */
 
-import { describe, expect, it } from 'vitest'
+import { describe, expect as vexpect, it } from 'vitest'
+import { plainExpect } from '../../../server/tests/helpers/plain-expect'
+/* نصوصُ الخادم بلا تشكيلٍ إعرابيّ بعد «اللغة البيضاء» — والمنتظَرُ هنا قبلها: يُقارَن الطرفان بلا تشكيل */
+const expect = plainExpect(vexpect)
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 

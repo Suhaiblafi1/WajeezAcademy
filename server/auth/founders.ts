@@ -121,7 +121,7 @@ export async function ensureFoundersPromoted(prisma: PrismaClient): Promise<Foun
         entityType: 'user',
         entityId: user.id,
         meta: { email, source: 'FOUNDER_EMAILS' },
-        reason: 'حسابُ مؤسِّسٍ موقوف — يُرفع إيقافُه عند الإقلاع',
+        reason: 'حساب مؤسّس موقوف — يرفع إيقافه عند الإقلاع',
       })
       /* وبريدٌ لا جرس: الجرسُ يُقرأ من داخل الحساب، وهو خارجُه حتّى يدخل.
          و`safeNotify` تكفي لأنّ الجرسَ يُقرأ **بعد** الدخول لا قبله — فهو
@@ -130,8 +130,8 @@ export async function ensureFoundersPromoted(prisma: PrismaClient): Promise<Foun
       await safeNotify(prisma, {
         userId: user.id, channel: 'in_app', audience: 'staff',
         templateKey: 'account.reinstated',
-        title: 'رُفع الإيقافُ عن حسابك',
-        body: 'كان حسابُك في أكاديمية وجيز موقوفا، ورُفع الإيقافُ عند إقلاع الخادم لأنّ بريدَك في قائمة المؤسِّسين. ودخولُك عاد كما كان.',
+        title: 'رفع الإيقاف عن حسابك',
+        body: 'كان حسابك في أكاديمية وجيز موقوفا، ورفع الإيقاف عند إقلاع الخادم لأنّ بريدك في قائمة المؤسّسين. ودخولك عاد كما كان.',
         data: { source: 'FOUNDER_EMAILS' },
       })
       out.reinstated.push(email)
@@ -167,8 +167,8 @@ export async function ensureFoundersPromoted(prisma: PrismaClient): Promise<Foun
     await safeNotify(prisma, {
       userId: user.id, channel: 'in_app', audience: 'staff',
       templateKey: 'account.roles_changed',
-      title: 'أُضيف إليك دورُ مديرِ النظام الأعلى',
-      body: 'أُضيف إلى حسابك في أكاديمية وجيز دورُ مديرِ النظام الأعلى عند إقلاع الخادم، لأنّ بريدَك في قائمة المؤسِّسين. ولوحةُ الإدارة مفتوحةٌ لك الآن.',
+      title: 'أضيف إليك دور مدير النظام الأعلى',
+      body: 'أضيف إلى حسابك في أكاديمية وجيز دور مدير النظام الأعلى عند إقلاع الخادم، لأنّ بريدك في قائمة المؤسّسين. ولوحة الإدارة مفتوحة لك الآن.',
       data: { role: ROLE, source: 'FOUNDER_EMAILS' },
     })
     out.promoted.push(email)

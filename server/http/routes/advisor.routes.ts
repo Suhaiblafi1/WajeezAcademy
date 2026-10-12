@@ -129,7 +129,7 @@ export function registerAdvisorRoutes(app: FastifyInstance, prisma: PrismaClient
   /* ── الوجه الأكاديميّ: المستشار يتابع من أُسند إليه ── */
   app.get('/api/advisor/cases/:id/learner', {
     preHandler: requirePermission('advisor.learner.view'),
-    schema: { tags: ['advisor-portal'], summary: 'الصورة الأكاديمية لعميلٍ مسند — تسجيلاته وتقدّمها وجلساته القادمة وخطّته' },
+    schema: { tags: ['advisor-portal'], summary: 'الصورة الأكاديمية لعميل مسند — تسجيلاته وتقدّمها وجلساته القادمة وخطّته' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     return advisors.learnerSnapshot(req.auth!.userId, id)
@@ -139,7 +139,7 @@ export function registerAdvisorRoutes(app: FastifyInstance, prisma: PrismaClient
      ويُسنَد إليه في الفعل نفسِه. */
   app.post('/api/advisor/cases', {
     preHandler: requirePermission('advisor.cases.operate'),
-    schema: { tags: ['advisor-portal'], summary: 'إدخالُ عميلٍ محتمَل وفتحُ حالته — تُسنَد لمن أدخلها' },
+    schema: { tags: ['advisor-portal'], summary: 'إدخال عميل محتمل وفتح حالته — تسند لمن أدخلها' },
   }, async (req, reply) => {
     const body = z.object({
       fullName: z.string().trim().min(2).max(120),
@@ -153,7 +153,7 @@ export function registerAdvisorRoutes(app: FastifyInstance, prisma: PrismaClient
   /* ── ما لا يملكه المستشار وحده: خصمٌ وتعديلُ خطّة ── */
   app.get('/api/advisor/cases/:id/requests', {
     preHandler: requirePermission('advisor.request.submit'),
-    schema: { tags: ['advisor-portal'], summary: 'طلباتي على هذه الحالة وحالة كلٍّ منها' },
+    schema: { tags: ['advisor-portal'], summary: 'طلباتي على هذه الحالة وحالة كلّ منها' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     return advisorRequests.byCase(req.auth!.userId, id)
@@ -161,7 +161,7 @@ export function registerAdvisorRoutes(app: FastifyInstance, prisma: PrismaClient
 
   app.post('/api/advisor/cases/:id/requests', {
     preHandler: requirePermission('advisor.request.submit'),
-    schema: { tags: ['advisor-portal'], summary: 'رفع طلب خصم أو تعديل خطّة — يبتّ فيه غيرُك' },
+    schema: { tags: ['advisor-portal'], summary: 'رفع طلب خصم أو تعديل خطّة — يبتّ فيه غيرك' },
   }, async (req, reply) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const body = z.object({
@@ -177,7 +177,7 @@ export function registerAdvisorRoutes(app: FastifyInstance, prisma: PrismaClient
 
   app.post('/api/advisor/requests/:requestId/cancel', {
     preHandler: requirePermission('advisor.request.submit'),
-    schema: { tags: ['advisor-portal'], summary: 'سحب طلبٍ معلّق رفعتَه أنت' },
+    schema: { tags: ['advisor-portal'], summary: 'سحب طلب معلّق رفعته أنت' },
   }, async (req) => {
     const { requestId } = z.object({ requestId: z.string().uuid() }).parse(req.params)
     return advisorRequests.cancel(req.auth!.userId, requestId)
@@ -186,7 +186,7 @@ export function registerAdvisorRoutes(app: FastifyInstance, prisma: PrismaClient
   /* ── طابور الإدارة ── */
   app.get('/api/admin/advisor-requests', {
     preHandler: requirePermission('advisor.request.review'),
-    schema: { tags: ['admin-operations'], summary: 'طلبات المستشارين المعلّقة — أقدمُها أوّلا' },
+    schema: { tags: ['admin-operations'], summary: 'طلبات المستشارين المعلّقة — أقدمها أوّلا' },
   }, async () => advisorRequests.pending())
 
   app.post('/api/admin/advisor-requests/:requestId/decision', {
@@ -210,7 +210,7 @@ export function registerAdvisorRoutes(app: FastifyInstance, prisma: PrismaClient
   /* من يُسنَد إليه — يُقرأ بمن يملك الإسناد، لا بمن يملك إدارةَ المستخدمين */
   app.get('/api/admin/advisor-cases/assignable-advisors', {
     preHandler: requirePermission('advisor.assign'),
-    schema: { tags: ['admin-operations'], summary: 'المستشارون النشطون للإسناد — بديلُ لصق المعرّف' },
+    schema: { tags: ['admin-operations'], summary: 'المستشارون النشطون للإسناد — بديل لصق المعرّف' },
   }, async () => advisors.assignableAdvisors())
 
   app.post('/api/admin/advisor-cases/:id/assign', {

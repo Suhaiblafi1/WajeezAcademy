@@ -94,7 +94,7 @@ export async function reserveCouponUse(tx: Tx, input: {
   }
 }
 
-export const CODE_USED_AR = 'استعملتَ هذا الكود من قبل — يُستعمل مرّةً واحدةً لكلّ متعلّم'
+export const CODE_USED_AR = 'استعملت هذا الكود من قبل — يستعمل مرّة واحدة لكلّ متعلّم'
 
 /** يُفرَج عن استعمال طلبٍ أُلغي قبل أن يُدفع — في معاملة الإلغاء نفسِها.
 
@@ -206,7 +206,7 @@ async function ledgerFailed(prisma: PrismaClient, orderId: string, step: 'use' |
     actorId: null, action: 'trainer_code.ledger_failed',
     entityType: 'order', entityId: orderId,
     meta: { step, error: e instanceof Error ? e.message : String(e) },
-    reason: 'استعمالُ كودِ مدرّبٍ لم يُقيَّد في دفتره — تسويةٌ يدويّةٌ مطلوبة',
+    reason: 'استعمال كود مدرّب لم يقيّد في دفتره — تسوية يدويّة مطلوبة',
   }).catch(() => { /* الأثرُ نفسُه لا يُسقط تسويةَ دفعةٍ ولا ردَّها */ })
 }
 

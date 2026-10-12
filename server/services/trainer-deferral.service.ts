@@ -83,10 +83,10 @@ export class TrainerDeferralService {
       })
       if (delivery !== 'sent') mailFailed += 1
       await this.tellStaff(
-        `حلّ موعدُ التواصل مع ${app.fullName}`,
+        `حلّ موعد التواصل مع ${app.fullName}`,
         delivery === 'sent'
-          ? `أُجّل طلبُه (${app.reference}) إلى الفصول القادمة قبل شهرين، وحلّ اليومَ موعدُ التواصل معه — فسألناه بالبريد عن اهتمامه. ويصلكم جوابُه حين يُجيب.`
-          : `أُجّل طلبُه (${app.reference}) إلى الفصول القادمة قبل شهرين، وحلّ اليومَ موعدُ التواصل معه — ولم يخرج إليه بريدُ السؤال. فتواصلوا معه بأنفسكم.`,
+          ? `أجّل طلبه (${app.reference}) إلى الفصول القادمة قبل شهرين، وحلّ اليوم موعد التواصل معه — فسألناه بالبريد عن اهتمامه. ويصلكم جوابه حين يجيب.`
+          : `أجّل طلبه (${app.reference}) إلى الفصول القادمة قبل شهرين، وحلّ اليوم موعد التواصل معه — ولم يخرج إليه بريد السؤال. فتواصلوا معه بأنفسكم.`,
         { applicationId: app.id, reference: app.reference, emailDelivery: delivery },
       )
       asked += 1
@@ -101,7 +101,7 @@ export class TrainerDeferralService {
     })
     /* والرابطُ بعد الجواب لا يعمل: الرمزُ مُحي مع الانتقال — فالقولُ واحدٌ لهما */
     if (!app || app.status !== DEFERRED) {
-      throw new AuthError('interest_link_used', 'هذا الرابطُ أُجيب عنه أو لم يعد صالحا — ولك أن تكتب إلينا مباشرة.', 404)
+      throw new AuthError('interest_link_used', 'هذا الرابط أجيب عنه أو لم يعد صالحا — ولك أن تكتب إلينا مباشرة.', 404)
     }
     return app
   }
@@ -118,11 +118,11 @@ export class TrainerDeferralService {
     const app = await this.byToken(token)
     const to = answerTarget(answer)
     const noteAr = answer === 'interested'
-      ? 'أجاب سؤالَ المتابعة: ما زال مهتمّا بالفصول القادمة'
-      : 'أجاب سؤالَ المتابعة: لم يعد مهتمّا'
+      ? 'أجاب سؤال المتابعة: ما زال مهتمّا بالفصول القادمة'
+      : 'أجاب سؤال المتابعة: لم يعد مهتمّا'
     await this.prisma.$transaction(async (tx) => {
       if (to === 'withdrawn') {
-        await tx.trainerApplication.update({ where: { id: app.id }, data: { withdrawReason: 'لم يعد مهتمّا — أجاب سؤالَ متابعة التأجيل' } })
+        await tx.trainerApplication.update({ where: { id: app.id }, data: { withdrawReason: 'لم يعد مهتمّا — أجاب سؤال متابعة التأجيل' } })
       }
       await this.apps.transition(app.id, to, null, noteAr, tx)
     })
@@ -133,8 +133,8 @@ export class TrainerDeferralService {
     await this.tellStaff(
       answer === 'interested' ? `${app.fullName} ما زال مهتمّا بالتدريب معنا` : `${app.fullName} لم يعد مهتمّا`,
       answer === 'interested'
-        ? `أجاب سؤالَ متابعة التأجيل: ما زال مهتمّا بالفصول القادمة — فعاد طلبُه (${app.reference}) إلى «قيد المراجعة».`
-        : `أجاب سؤالَ متابعة التأجيل: لم يعد مهتمّا — فسُحب طلبُه (${app.reference}) بطلبه.`,
+        ? `أجاب سؤال متابعة التأجيل: ما زال مهتمّا بالفصول القادمة — فعاد طلبه (${app.reference}) إلى «قيد المراجعة».`
+        : `أجاب سؤال متابعة التأجيل: لم يعد مهتمّا — فسحب طلبه (${app.reference}) بطلبه.`,
       { applicationId: app.id, reference: app.reference, answer },
     )
     return { answer, status: to }

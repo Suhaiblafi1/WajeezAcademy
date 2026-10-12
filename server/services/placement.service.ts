@@ -89,7 +89,7 @@ export class PlacementService {
   async score(subject: PlacementSubject, answers: Record<string, number>) {
     const items = await this.approved(subject)
     if (!isOpen(subject, items)) {
-      throw new AuthError('placement_closed', 'الاختبارُ لم يُفتح بعد — أسئلتُه قيد المراجعة', 409)
+      throw new AuthError('placement_closed', 'الاختبار لم يفتح بعد — أسئلته قيد المراجعة', 409)
     }
     return subject === 'english' ? scorePlacement(items as never, answers) : scoreFieldCheck(items as never, answers)
   }
@@ -120,14 +120,14 @@ export class PlacementService {
     const options = patch.options ?? (row.options as string[])
     const answerIndex = patch.answerIndex ?? row.answerIndex
     if (new Set(options.map((o) => o.trim())).size !== options.length) {
-      throw new AuthError('placement_options_duplicate', 'خياران بالنصّ نفسِه — كلُّ خيارٍ يختلف عن غيره', 400)
+      throw new AuthError('placement_options_duplicate', 'خياران بالنصّ نفسه — كلّ خيار يختلف عن غيره', 400)
     }
     if (answerIndex < 0 || answerIndex >= options.length) {
-      throw new AuthError('placement_answer_out_of_range', 'الجوابُ الصحيحُ ليس أحدَ الخيارات', 400)
+      throw new AuthError('placement_answer_out_of_range', 'الجواب الصحيح ليس أحد الخيارات', 400)
     }
     const passage = patch.passage === undefined ? row.passage : patch.passage?.trim() || null
     if (row.skill === 'reading' && !passage) {
-      throw new AuthError('placement_passage_required', 'سؤالُ القراءة يحتاج نصَّه', 400)
+      throw new AuthError('placement_passage_required', 'سؤال القراءة يحتاج نصّه', 400)
     }
     const updated = await this.prisma.placementQuestion.update({
       where: { id },
@@ -165,7 +165,7 @@ export class PlacementService {
   /** السؤالُ في موضوعه — فلا يُعدَّل سؤالُ مجالٍ من رابط موضوعٍ آخر */
   private async find(subject: PlacementSubject, id: string) {
     const row = await this.prisma.placementQuestion.findUnique({ where: { id } })
-    if (!row || row.subject !== subject) throw new AuthError('placement_not_found', 'السؤالُ غيرُ موجود', 404)
+    if (!row || row.subject !== subject) throw new AuthError('placement_not_found', 'السؤال غير موجود', 404)
     return row
   }
 }

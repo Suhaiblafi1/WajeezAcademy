@@ -63,7 +63,7 @@ export class AdvisorRequestService {
     await this.assertAssigned(advisorId, caseId)
 
     if (!REQUEST_KINDS.includes(input.kind)) {
-      throw new AuthError('bad_kind', 'نوع طلبٍ غير معروف')
+      throw new AuthError('bad_kind', 'نوع طلب غير معروف')
     }
     const reason = (input.reasonAr ?? '').trim()
     if (reason.length < MIN_REASON_CHARS) {
@@ -77,7 +77,7 @@ export class AdvisorRequestService {
         throw new AuthError('amount_required', 'حدّد نسبة الخصم أو مبلغه')
       }
       if (hasPercent && hasAmount) {
-        throw new AuthError('amount_ambiguous', 'نسبةٌ أو مبلغ — لا كلاهما')
+        throw new AuthError('amount_ambiguous', 'نسبة أو مبلغ — لا كلاهما')
       }
       if (hasPercent && (input.percentOff! < 1 || input.percentOff! > MAX_PERCENT_OFF)) {
         throw new AuthError('percent_out_of_range', `النسبة بين ١ و${MAX_PERCENT_OFF} — ما فوقها قرار إدارة لا طلب مستشار`)
@@ -116,7 +116,7 @@ export class AdvisorRequestService {
     const r = await this.prisma.advisorRequest.findUnique({ where: { id: requestId } })
     if (!r) throw new AuthError('not_found', 'الطلب غير موجود', 404)
     if (r.advisorId !== advisorId) throw new AuthError('not_owner', 'هذا ليس طلبك', 403)
-    if (r.status !== 'pending') throw new AuthError('not_pending', 'الطلب بُتّ فيه فلا يُسحب')
+    if (r.status !== 'pending') throw new AuthError('not_pending', 'الطلب بتّ فيه فلا يسحب')
 
     const out = await this.prisma.advisorRequest.update({
       where: { id: requestId }, data: { status: 'cancelled' },
@@ -170,7 +170,7 @@ export class AdvisorRequestService {
       include: { case: { select: { clientId: true } } },
     })
     if (!r) throw new AuthError('not_found', 'الطلب غير موجود', 404)
-    if (r.status !== 'pending') throw new AuthError('not_pending', 'بُتّ في هذا الطلب من قبل')
+    if (r.status !== 'pending') throw new AuthError('not_pending', 'بتّ في هذا الطلب من قبل')
 
     /* من رفع الطلب لا يعتمده — ولو ملك الصلاحيتين */
     if (r.advisorId === reviewerId) {

@@ -31,7 +31,7 @@ export function registerStaffTaskRoutes(app: FastifyInstance, prisma: PrismaClie
 
   app.post('/api/staff/tasks', {
     preHandler: canAssign,
-    schema: { tags: ['staff-tasks'], summary: 'تكليفُ موظّفٍ بمهمّة — ويصله إشعارٌ بها' },
+    schema: { tags: ['staff-tasks'], summary: 'تكليف موظّف بمهمّة — ويصله إشعار بها' },
   }, async (req, reply) => {
     const body = z.object({
       assigneeId: z.string().uuid(),
@@ -48,7 +48,7 @@ export function registerStaffTaskRoutes(app: FastifyInstance, prisma: PrismaClie
 
   app.get('/api/staff/tasks/mine', {
     preHandler: requireAuth,
-    schema: { tags: ['staff-tasks'], summary: 'مهامّي — ما كُلّفتُ به' },
+    schema: { tags: ['staff-tasks'], summary: 'مهامّي — ما كلّفت به' },
   }, async (req) => {
     const q = z.object({ status: z.enum(['open', 'done']).optional() }).parse(req.query)
     return svc.mine(req.auth!.userId, q.status)
@@ -56,12 +56,12 @@ export function registerStaffTaskRoutes(app: FastifyInstance, prisma: PrismaClie
 
   app.get('/api/staff/tasks/assigned', {
     preHandler: canAssign,
-    schema: { tags: ['staff-tasks'], summary: 'ما كلّفتُ به غيري — للمتابعة' },
+    schema: { tags: ['staff-tasks'], summary: 'ما كلّفت به غيري — للمتابعة' },
   }, async (req) => svc.assignedByMe(req.auth!.userId))
 
   app.post('/api/staff/tasks/:id/complete', {
     preHandler: requireAuth,
-    schema: { tags: ['staff-tasks'], summary: 'إغلاقُ مهمّة — لمكلَّفها أو مكلِّفها' },
+    schema: { tags: ['staff-tasks'], summary: 'إغلاق مهمّة — لمكلّفها أو مكلّفها' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const body = z.object({ noteAr: z.string().trim().max(1000).optional() }).parse(req.body ?? {})
@@ -70,7 +70,7 @@ export function registerStaffTaskRoutes(app: FastifyInstance, prisma: PrismaClie
 
   app.post('/api/staff/notify', {
     preHandler: canNotify,
-    schema: { tags: ['staff-tasks'], summary: 'إشعارٌ إلى موظّف أو أكثر — بلا مهمّة تُتابَع' },
+    schema: { tags: ['staff-tasks'], summary: 'إشعار إلى موظّف أو أكثر — بلا مهمّة تتابع' },
   }, async (req, reply) => {
     const body = z.object({
       userIds: z.array(z.string().uuid()).min(1).max(200),

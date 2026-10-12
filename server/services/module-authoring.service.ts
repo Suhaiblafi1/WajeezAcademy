@@ -113,7 +113,7 @@ export class ModuleAuthoringService {
     if (open) return open
 
     const base = await this.publishedVersion(moduleId)
-    if (!base) throw new AuthError('no_published_version', 'لا إصدار منشور لهذه الوحدة يُبنى عليه', 409)
+    if (!base) throw new AuthError('no_published_version', 'لا إصدار منشور لهذه الوحدة يبنى عليه', 409)
 
     const next = await this.nextVersionNumber(moduleId)
     return this.prisma.courseModuleVersion.create({
@@ -203,7 +203,7 @@ export class ModuleAuthoringService {
     if (!draft) throw new AuthError('no_draft', 'لا مسوّدة مفتوحة', 409)
     if (draft.status !== DRAFT) throw new AuthError('bad_state', 'المسوّدة مرفوعة أصلا', 409)
     if (!draft.bodyAr?.trim()) {
-      throw new AuthError('empty_body', 'لا تُرفع وحدةٌ بلا محتوى — المحتوى هو الغرض', 422)
+      throw new AuthError('empty_body', 'لا ترفع وحدة بلا محتوى — المحتوى هو الغرض', 422)
     }
     const updated = await this.prisma.courseModuleVersion.update({
       where: { id: draft.id },
@@ -221,7 +221,7 @@ export class ModuleAuthoringService {
     const open = await this.openVersion(moduleId)
     if (!open || open.status !== IN_REVIEW) throw new AuthError('bad_state', 'لا مسوّدة قيد المراجعة', 409)
     if (open.createdBy && open.createdBy !== actorId) {
-      throw new AuthError('not_author', 'لا تُسحب مسوّدةُ غيرك', 403)
+      throw new AuthError('not_author', 'لا تسحب مسوّدة غيرك', 403)
     }
     return this.prisma.courseModuleVersion.update({
       where: { id: open.id }, data: { status: DRAFT, submittedAt: null },
@@ -249,11 +249,11 @@ export class ModuleAuthoringService {
       throw new AuthError('bad_state', 'لا مسوّدة قيد المراجعة الأكاديميّة', 409)
     }
     if (pending.createdBy && pending.createdBy === reviewerId) {
-      throw new AuthError('self_review', 'لا تعتمد ما كتبتَه — يراجعه غيرك', 403)
+      throw new AuthError('self_review', 'لا تعتمد ما كتبته — يراجعه غيرك', 403)
     }
     const noteAr = (input.noteAr ?? '').trim()
     if (input.decision === 'request_changes' && noteAr.length < 5) {
-      throw new AuthError('reason_required', 'اكتب ما يُعدَّل — الردُّ بلا سبب لا يُفيد الكاتب', 422)
+      throw new AuthError('reason_required', 'اكتب ما يعدّل — الردّ بلا سبب لا يفيد الكاتب', 422)
     }
 
     const approve = input.decision === 'approve'
@@ -293,18 +293,18 @@ export class ModuleAuthoringService {
       throw new AuthError('bad_state', 'لا مسوّدة بانتظار الموافقة النهائية', 409)
     }
     if (pending.createdBy && pending.createdBy === approverId) {
-      throw new AuthError('self_review', 'لا تعتمد ما كتبتَه — يراجعه غيرك', 403)
+      throw new AuthError('self_review', 'لا تعتمد ما كتبته — يراجعه غيرك', 403)
     }
     if (pending.academicApprovedBy && pending.academicApprovedBy === approverId) {
       throw new AuthError(
         'same_approver',
-        'أنت مَن اعتمدها أكاديميّا — والموافقةُ النهائية لغيرك، وإلّا صارت الحلقتان واحدة',
+        'أنت من اعتمدها أكاديميّا — والموافقة النهائية لغيرك، وإلّا صارت الحلقتان واحدة',
         403,
       )
     }
     const noteAr = (input.noteAr ?? '').trim()
     if (input.decision === 'return_to_academic' && noteAr.length < 5) {
-      throw new AuthError('reason_required', 'اكتب سببَ الإعادة — الردُّ بلا سبب لا يُفيد أحدا', 422)
+      throw new AuthError('reason_required', 'اكتب سبب الإعادة — الردّ بلا سبب لا يفيد أحدا', 422)
     }
 
     const publish = input.decision === 'publish'

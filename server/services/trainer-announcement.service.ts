@@ -70,7 +70,7 @@ export class TrainerAnnouncementService {
   async send(actorId: string, input: { titleAr: string; bodyAr: string; lateJoinersUntil?: Date | null }) {
     const userIds = await this.audienceNow()
     if (userIds.length === 0) {
-      throw new AuthError('no_recipients', 'لا مدرّبَ نشطا يصله الإعلانُ الآن — لم يُرسَل شيء', 409)
+      throw new AuthError('no_recipients', 'لا مدرّب نشطا يصله الإعلان الآن — لم يرسل شيء', 409)
     }
     const a = await this.prisma.trainerAnnouncement.create({
       data: {
@@ -140,7 +140,7 @@ export class TrainerAnnouncementService {
         },
       },
     })
-    if (!a) throw new AuthError('not_found', 'الإعلانُ غير موجود', 404)
+    if (!a) throw new AuthError('not_found', 'الإعلان غير موجود', 404)
     /* من لم يقرأ أوّلا — هو من يُتابَع — ثمّ بالاسم */
     const rank = (r: { seenAt: Date | null; readAt: Date | null }) => (r.readAt ? 2 : r.seenAt ? 1 : 0)
     const rows = [...a.recipients].sort((x, y) =>
@@ -171,7 +171,7 @@ export class TrainerAnnouncementService {
     const row = await this.prisma.trainerAnnouncementRecipient.findUnique({
       where: { announcementId_userId: { announcementId, userId } },
     })
-    if (!row) throw new AuthError('not_found', 'الإعلانُ غير موجود', 404)
+    if (!row) throw new AuthError('not_found', 'الإعلان غير موجود', 404)
     return row
   }
 

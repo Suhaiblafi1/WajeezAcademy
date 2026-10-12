@@ -30,7 +30,7 @@ import { requirePermission } from '../auth-plugin'
    لكنّ الواجهة ليست الحدّ — من ينادي الـAPI مباشرةً يتجاوزها. */
 const dayCodes = z.array(z.string()).refine(
   (days) => days.every(isDayCode),
-  { message: 'يومٌ غير معروف — الأيّام رموز: sun mon tue wed thu fri sat' },
+  { message: 'يوم غير معروف — الأيّام رموز: sun mon tue wed thu fri sat' },
 )
 
 
@@ -81,19 +81,19 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
 
   app.get('/api/admin/cohort-plans/pending', {
     preHandler: requirePermission('cohort.plan.approve'),
-    schema: { tags: ['admin-cohorts'], summary: 'خططُ المدرّبين بانتظار الاعتماد' },
+    schema: { tags: ['admin-cohorts'], summary: 'خطط المدرّبين بانتظار الاعتماد' },
   }, async () => plans.pending())
 
   /* وعددُها وحدَه — شارةٌ إلى جانب «خططٌ تنتظر اعتمادك» تُجلب مع كلّ شاشة
      إدارة، فلا تجلب الخططَ وسياقَ إعدادها لتعدّها (`AdminLayout.tsx`) */
   app.get('/api/admin/cohort-plans/pending-count', {
     preHandler: requirePermission('cohort.plan.approve'),
-    schema: { tags: ['admin-cohorts'], summary: 'عددُ خطط المدرّبين بانتظار الاعتماد' },
+    schema: { tags: ['admin-cohorts'], summary: 'عدد خطط المدرّبين بانتظار الاعتماد' },
   }, async () => ({ count: await plans.pendingCount() }))
 
   app.get('/api/admin/cohorts/:cohortId/trainer-plan', {
     preHandler: requirePermission('cohort.manage'),
-    schema: { tags: ['admin-cohorts'], summary: 'آخرُ خطّةِ مدرّبٍ لهذه الشعبة — حالتُها ومحتواها' },
+    schema: { tags: ['admin-cohorts'], summary: 'آخر خطّة مدرّب لهذه الشعبة — حالتها ومحتواها' },
   }, async (req) => {
     const { cohortId } = z.object({ cohortId: z.string().uuid() }).parse(req.params)
     return plans.latestForCohort(cohortId)
@@ -114,11 +114,11 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
 
   app.get('/api/admin/cohorts/:cohortId/trainer-plan/review-bundle', {
     preHandler: requirePermission('cohort.manage'),
-    schema: { tags: ['admin-cohorts'], summary: 'خطّةُ مدرّب الشعبة حزمةً للمراجعة — نصُّها وأصلُها وملفّاتُها' },
+    schema: { tags: ['admin-cohorts'], summary: 'خطّة مدرّب الشعبة حزمة للمراجعة — نصّها وأصلها وملفّاتها' },
   }, async (req, reply) => {
     const { cohortId } = z.object({ cohortId: z.string().uuid() }).parse(req.params)
     const b = await bundles.forCohort(req.auth!.userId, cohortId)
-    if (!b) throw new AuthError('not_found', 'لم يبدأ المدرّبُ خطّةَ هذه الشعبة بعد — فلا شيءَ يُنزَّل', 404)
+    if (!b) throw new AuthError('not_found', 'لم يبدأ المدرّب خطّة هذه الشعبة بعد — فلا شيء ينزّل', 404)
     return sendZip(reply, b)
   })
 
@@ -130,7 +130,7 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
   const reportFiles = new CohortFileService(prisma)
   app.post('/api/admin/cohort-plans/:id/review-report', {
     preHandler: requirePermission('cohort.plan.approve'),
-    schema: { tags: ['admin-cohorts'], summary: 'رابطُ رفعِ تقرير مراجعةٍ لخطّةٍ بانتظار القرار (PDF أو Word)' },
+    schema: { tags: ['admin-cohorts'], summary: 'رابط رفع تقرير مراجعة لخطّة بانتظار القرار (PDF أو Word)' },
   }, async (req, reply) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const body = z.object({
@@ -142,7 +142,7 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
 
   app.delete('/api/admin/cohort-plans/:id/review-report/:storageKey', {
     preHandler: requirePermission('cohort.plan.approve'),
-    schema: { tags: ['admin-cohorts'], summary: 'حذفُ تقرير مراجعةٍ قبل القرار' },
+    schema: { tags: ['admin-cohorts'], summary: 'حذف تقرير مراجعة قبل القرار' },
   }, async (req) => {
     const { id, storageKey } = z.object({ id: z.string().uuid(), storageKey: z.string().min(10) }).parse(req.params)
     assertSafeKey(storageKey)
@@ -158,7 +158,7 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
 
   app.get('/api/admin/cohorts/:cohortId/plan-edits', {
     preHandler: requirePermission('cohort.manage'),
-    schema: { tags: ['admin-cohorts'], summary: 'التعديلاتُ المقترحةُ على آخر خطّةٍ للشعبة — وحالُ كلٍّ منها' },
+    schema: { tags: ['admin-cohorts'], summary: 'التعديلات المقترحة على آخر خطّة للشعبة — وحال كلّ منها' },
   }, async (req) => {
     const { cohortId } = z.object({ cohortId: z.string().uuid() }).parse(req.params)
     return planEdits.forCohort(cohortId)
@@ -166,12 +166,12 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
 
   app.post('/api/admin/cohort-plans/:id/edits', {
     preHandler: requirePermission('cohort.plan.approve'),
-    schema: { tags: ['admin-cohorts'], summary: 'رفعُ تعديلاتٍ مقترحةٍ على خطّة مدرّب — ملفٌّ يُفحص كلُّه أو يُردّ كلُّه' },
+    schema: { tags: ['admin-cohorts'], summary: 'رفع تعديلات مقترحة على خطّة مدرّب — ملفّ يفحص كلّه أو يردّ كلّه' },
   }, async (req, reply) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const file = planEditsFile.parse(req.body)
     if (file.planId && file.planId !== id) {
-      throw new AuthError('wrong_plan', 'هذا الملفُّ كُتب لخطّةٍ أخرى — افتح بطاقةَ خطّته وارفعه هناك', 422)
+      throw new AuthError('wrong_plan', 'هذا الملفّ كتب لخطّة أخرى — افتح بطاقة خطّته وارفعه هناك', 422)
     }
     return reply.status(201).send(await planEdits.propose(req.auth!.userId, id, file.items))
   })
@@ -179,7 +179,7 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
   /* ═══ جدولٌ ثابتٌ مقترحٌ بسلسلته — تبنيه المنصّة مسوّدةً تعتمدها الإدارة (١١ أكتوبر ٢٠٢٦) ═══ */
   app.post('/api/admin/cohort-plans/:id/edits/schedule', {
     preHandler: requirePermission('cohort.plan.approve'),
-    schema: { tags: ['admin-cohorts'], summary: 'جدولٌ ثابتٌ مقترحٌ للقاءات الخطّة ومهامّها معا — مسوّدةً تُراجَع قبل المدرّب' },
+    schema: { tags: ['admin-cohorts'], summary: 'جدول ثابت مقترح للقاءات الخطّة ومهامّها معا — مسوّدة تراجع قبل المدرّب' },
   }, async (req, reply) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     return reply.status(201).send(await planEdits.proposeSchedule(req.auth!.userId, id))
@@ -189,12 +189,12 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
      من صندوق الرفع دفعةً: يُفحص الجديدُ كلُّه، ثمّ تُسحب المسوّداتُ ويُحفظ هو في معاملةٍ واحدة. */
   app.post('/api/admin/cohort-plans/:id/edits/replace-drafts', {
     preHandler: requirePermission('cohort.plan.approve'),
-    schema: { tags: ['admin-cohorts'], summary: 'رفعُ ملفّ تعديلاتٍ مكانَ مسوّداتٍ لم تُعتمد — وما اعتُمد للمدرّب يبقى' },
+    schema: { tags: ['admin-cohorts'], summary: 'رفع ملفّ تعديلات مكان مسوّدات لم تعتمد — وما اعتمد للمدرّب يبقى' },
   }, async (req, reply) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const file = planEditsFile.parse(req.body)
     if (file.planId && file.planId !== id) {
-      throw new AuthError('wrong_plan', 'هذا الملفُّ كُتب لخطّةٍ أخرى — افتح بطاقةَ خطّته وارفعه هناك', 422)
+      throw new AuthError('wrong_plan', 'هذا الملفّ كتب لخطّة أخرى — افتح بطاقة خطّته وارفعه هناك', 422)
     }
     return reply.status(201).send(await planEdits.replaceDrafts(req.auth!.userId, id, file.items))
   })
@@ -204,7 +204,7 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
      أوّلا» (صاحب المنصّة). وصلاحيّتُه مستقلّةٌ عن الرفع: `cohort.plan.edits.review`. */
   app.post('/api/admin/plan-edits/:editId/approve', {
     preHandler: requirePermission('cohort.plan.edits.review'),
-    schema: { tags: ['admin-cohorts'], summary: 'اعتمادُ تعديلٍ مقترحٍ للمدرّب — يصله بعدها ليقبله أو يرفضه' },
+    schema: { tags: ['admin-cohorts'], summary: 'اعتماد تعديل مقترح للمدرّب — يصله بعدها ليقبله أو يرفضه' },
   }, async (req) => {
     const { editId } = z.object({ editId: z.string().uuid() }).parse(req.params)
     return planEdits.review(req.auth!.userId, editId, true)
@@ -212,7 +212,7 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
 
   app.post('/api/admin/plan-edits/:editId/drop', {
     preHandler: requirePermission('cohort.plan.edits.review'),
-    schema: { tags: ['admin-cohorts'], summary: 'حذفُ تعديلٍ مقترحٍ قبل أن يصل المدرّب' },
+    schema: { tags: ['admin-cohorts'], summary: 'حذف تعديل مقترح قبل أن يصل المدرّب' },
   }, async (req) => {
     const { editId } = z.object({ editId: z.string().uuid() }).parse(req.params)
     return planEdits.review(req.auth!.userId, editId, false)
@@ -220,7 +220,7 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
 
   app.post('/api/admin/cohort-plans/:id/edits/approve-all', {
     preHandler: requirePermission('cohort.plan.edits.review'),
-    schema: { tags: ['admin-cohorts'], summary: 'اعتمادُ كلِّ ما بقي من التعديلات المقترحة للمدرّب' },
+    schema: { tags: ['admin-cohorts'], summary: 'اعتماد كلّ ما بقي من التعديلات المقترحة للمدرّب' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     return planEdits.reviewAll(req.auth!.userId, id)
@@ -228,7 +228,7 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
 
   app.delete('/api/admin/cohort-plans/:id/edits', {
     preHandler: requirePermission('cohort.plan.approve'),
-    schema: { tags: ['admin-cohorts'], summary: 'سحبُ ما لم يُقرَّر فيه من التعديلات المقترحة' },
+    schema: { tags: ['admin-cohorts'], summary: 'سحب ما لم يقرّر فيه من التعديلات المقترحة' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     return planEdits.withdraw(req.auth!.userId, id)
@@ -236,7 +236,7 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
 
   app.get('/api/admin/cohort-plans/pending/review-bundle', {
     preHandler: requirePermission('cohort.plan.approve'),
-    schema: { tags: ['admin-cohorts'], summary: 'الخططُ المنتظِرةُ كلُّها حزمةً واحدةً للمراجعة' },
+    schema: { tags: ['admin-cohorts'], summary: 'الخطط المنتظرة كلّها حزمة واحدة للمراجعة' },
   }, async (req, reply) => sendZip(reply, await bundles.allPending(req.auth!.userId)))
 
   /* ═══ وما بقي بعد الاعتماد الأخير (٣ أكتوبر ٢٠٢٦) ═══
@@ -245,7 +245,7 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
      والنشرُ بعدُ بأبوابهما وصلاحيّتيهما (`cohort.open` · `trainer.publish`). */
   app.get('/api/admin/cohorts/:cohortId/next-steps', {
     preHandler: requirePermission('cohort.plan.approve'),
-    schema: { tags: ['admin-cohorts'], summary: 'ما بقي بعد اعتماد خطط مدرّب الإعداد — فتحُ شعبه وظهورُه العامّ' },
+    schema: { tags: ['admin-cohorts'], summary: 'ما بقي بعد اعتماد خطط مدرّب الإعداد — فتح شعبه وظهوره العامّ' },
   }, async (req) => {
     const { cohortId } = z.object({ cohortId: z.string().uuid() }).parse(req.params)
     return plans.nextStepsAfterApproval(cohortId)
@@ -253,7 +253,7 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
 
   app.post('/api/admin/cohort-plans/:id/decide', {
     preHandler: requirePermission('cohort.plan.approve'),
-    schema: { tags: ['admin-cohorts'], summary: 'اعتمادُ خطّة مدرّبٍ ولقاءاتِها معا، أو ردُّها بملاحظةٍ لكلّ خطوة' },
+    schema: { tags: ['admin-cohorts'], summary: 'اعتماد خطّة مدرّب ولقاءاتها معا، أو ردّها بملاحظة لكلّ خطوة' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const text = z.string().max(REVIEW_NOTE_MAX).optional()
@@ -276,7 +276,7 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
      والعلّةُ في `cohort-plan.service.ts` (`postpone`) و`plan-postpone.ts`. */
   app.post('/api/admin/cohort-plans/:id/postpone', {
     preHandler: requirePermission('cohort.plan.approve'),
-    schema: { tags: ['admin-cohorts'], summary: 'تأجيلُ خطّة مدرّبٍ إلى موسمٍ قادم — لم تُقبل لهذا الفصل' },
+    schema: { tags: ['admin-cohorts'], summary: 'تأجيل خطّة مدرّب إلى موسم قادم — لم تقبل لهذا الفصل' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const body = z.object({
@@ -298,7 +298,7 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
      لقاءاتِها — وصلاحيّةٌ ثانيةٌ لعملٍ واحدٍ تُمنح لأحدهما وتُنسى للآخر. */
   app.get('/api/admin/cohort-sessions/pending', {
     preHandler: requirePermission('cohort.plan.approve'),
-    schema: { tags: ['admin-cohorts'], summary: 'اللقاءاتُ المباشرةُ بانتظار الاعتماد' },
+    schema: { tags: ['admin-cohorts'], summary: 'اللقاءات المباشرة بانتظار الاعتماد' },
   }, async (req) => {
     const { cohortId } = z.object({ cohortId: z.string().uuid().optional() }).parse(req.query ?? {})
     return cohorts.pendingSessions(cohortId)
@@ -306,7 +306,7 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
 
   app.post('/api/admin/cohort-sessions/:id/decide', {
     preHandler: requirePermission('cohort.plan.approve'),
-    schema: { tags: ['admin-cohorts'], summary: 'اعتمادُ لقاءٍ مباشرٍ أو ردُّه — وبالاعتماد يُنشأ اجتماعُه ويُبلَّغ المسجَّلون' },
+    schema: { tags: ['admin-cohorts'], summary: 'اعتماد لقاء مباشر أو ردّه — وبالاعتماد ينشأ اجتماعه ويبلّغ المسجّلون' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const body = z.object({ approve: z.boolean(), note: z.string().max(2000).optional() }).parse(req.body)
@@ -319,7 +319,7 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
      الخطّةُ ولقاءاتُها: من اعتمد المنهجَ يعتمد ما يُغيَّر فيه. والردُّ بسببه. */
   app.post('/api/admin/cohort-assessments/:id/decide', {
     preHandler: requirePermission('cohort.plan.approve'),
-    schema: { tags: ['admin-cohorts'], summary: 'اعتمادُ مهمّةٍ جديدةٍ أو تعديلِها أو حذفِها بعد اعتماد الخطّة، أو ردُّه بسبب' },
+    schema: { tags: ['admin-cohorts'], summary: 'اعتماد مهمّة جديدة أو تعديلها أو حذفها بعد اعتماد الخطّة، أو ردّه بسبب' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const body = z.object({ approve: z.boolean(), note: z.string().max(2000).optional() }).parse(req.body)
@@ -328,7 +328,7 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
 
   app.post('/api/admin/cohorts/:cohortId/remind-trainer', {
     preHandler: requirePermission('cohort.manage'),
-    schema: { tags: ['admin-cohorts'], summary: 'تذكيرُ مدرّب الشعبة بإكمال تجهيزها — جرسٌ وبريد' },
+    schema: { tags: ['admin-cohorts'], summary: 'تذكير مدرّب الشعبة بإكمال تجهيزها — جرس وبريد' },
   }, async (req) => {
     const { cohortId } = z.object({ cohortId: z.string().uuid() }).parse(req.params)
     const body = z.object({ note: z.string().max(1000).optional() }).parse(req.body ?? {})
@@ -358,7 +358,7 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
   /* الاسمُ الافتراضيُّ للشعبة التالية — يملأ به المعالجُ خانتَه فيُرى قبل الإنشاء */
   app.get('/api/admin/cohorts/next-title', {
     preHandler: requirePermission('cohort.manage'),
-    schema: { tags: ['admin-learning'], summary: 'اسمُ الشعبة التالية في الدورة: «اسمُ الدورة — شعبة N»' },
+    schema: { tags: ['admin-learning'], summary: 'اسم الشعبة التالية في الدورة: «اسم الدورة — شعبة N»' },
   }, async (req) => {
     const { courseId } = z.object({ courseId: z.string().min(2).max(64) }).parse(req.query)
     return { title: await cohorts.nextTitle(courseId) }
@@ -403,7 +403,7 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
      «أسنده» و«أهّله وأسنده» قرارٌ يُتّخذ قبل النقر لا بعده. */
   app.get('/api/admin/cohorts/:id/eligible-trainers', {
     preHandler: requirePermission('cohort.manage'),
-    schema: { tags: ['admin-learning'], summary: 'مدرّبو هذه الشعبة المحتمَلون — بحال تأهيل كلٍّ منهم لدورتها' },
+    schema: { tags: ['admin-learning'], summary: 'مدرّبو هذه الشعبة المحتملون — بحال تأهيل كلّ منهم لدورتها' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     return cohorts.eligibleTrainersFor(id)
@@ -411,7 +411,7 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
 
   app.get('/api/admin/courses/:courseId/eligible-trainers', {
     preHandler: requirePermission('cohort.manage'),
-    schema: { tags: ['admin-learning'], summary: 'مؤهَّلو دورةٍ — يقرؤها معالجُ إنشاء الشعبة قبل وجودها' },
+    schema: { tags: ['admin-learning'], summary: 'مؤهّلو دورة — يقرؤها معالج إنشاء الشعبة قبل وجودها' },
   }, async (req) => {
     const { courseId } = z.object({ courseId: z.string().min(3).max(40) }).parse(req.params)
     return cohorts.eligibleTrainers(courseId)
@@ -437,7 +437,7 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
      فورا: يُشتكى منه المدرّبُ بعد أسبوعٍ حين يعجز عن الجدولة. */
   app.post('/api/admin/cohorts/open-for-trainer', {
     preHandler: requirePermission('trainer.assign'),
-    schema: { tags: ['admin-learning'], summary: 'فتحُ شعبةٍ لمدرّب — دورةٌ ومدرّبٌ في فعلٍ واحد، والفصلُ اختياريٌّ يُشتقّ من مدّته عند الاعتماد' },
+    schema: { tags: ['admin-learning'], summary: 'فتح شعبة لمدرّب — دورة ومدرّب في فعل واحد، والفصل اختياريّ يشتقّ من مدّته عند الاعتماد' },
   }, async (req, reply) => {
     const body = z.object({
       courseId: z.string().min(3).max(40),
@@ -458,7 +458,7 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
   /* وتسميةُ فصلِ شعبةٍ قائمة — للشعب التي وُلدت قبل هذا القرار */
   app.post('/api/admin/cohorts/:id/term', {
     preHandler: requirePermission('cohort.manage'),
-    schema: { tags: ['admin-learning'], summary: 'تسميةُ فصلِ شعبة — ومنه حدودُها ونافذةُ جدولة مدرّبها' },
+    schema: { tags: ['admin-learning'], summary: 'تسمية فصل شعبة — ومنه حدودها ونافذة جدولة مدرّبها' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const body = z.object({ termId: z.string().uuid() }).parse(req.body)
@@ -471,13 +471,13 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
      ولا أحدَ في الإدارة يعلم. فتُعرض هنا مرتّبةً، والمحبوسُ فيها موسوم. */
   app.get('/api/admin/cohorts/without-term', {
     preHandler: requirePermission('cohort.manage'),
-    schema: { tags: ['admin-learning'], summary: 'شعبٌ لم يُسمَّ فصلُها بعد — ومن أُسنِد إليها محبوسٌ عن الجدولة' },
+    schema: { tags: ['admin-learning'], summary: 'شعب لم يسمّ فصلها بعد — ومن أسند إليها محبوس عن الجدولة' },
   }, async () => cohorts.cohortsWithoutTerm())
 
   /* توليدُ الجلسات من النمط — والافتراضُ عرضٌ لا كتابة */
   app.post('/api/admin/cohorts/:id/sessions/generate', {
     preHandler: requirePermission('cohort.manage'),
-    schema: { tags: ['admin-learning'], summary: 'يولّد جلساتِ الشعبة من جدولها الأسبوعيّ — apply=false يعرض أوّلا' },
+    schema: { tags: ['admin-learning'], summary: 'يولّد جلسات الشعبة من جدولها الأسبوعيّ — apply=false يعرض أوّلا' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const body = z.object({
@@ -497,7 +497,7 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
      ويُنادى الآن من الشاشة، ومن العامل الخلفيّ يومَ يوجد. */
   app.post('/api/admin/cohorts/sync-statuses', {
     preHandler: requirePermission('cohort.manage'),
-    schema: { tags: ['admin-learning'], summary: 'يُصلح حالاتَ الشعب المتأخّرةَ عن تواريخها — apply=false يعرض أوّلا' },
+    schema: { tags: ['admin-learning'], summary: 'يصلح حالات الشعب المتأخّرة عن تواريخها — apply=false يعرض أوّلا' },
   }, async (req) => {
     const body = z.object({ apply: z.boolean().default(false) }).parse(req.body ?? {})
     return cohorts.syncStatusesByDate(req.auth!.userId, { apply: body.apply })
@@ -505,7 +505,7 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
 
   app.post('/api/admin/cohorts/:id/duplicate', {
     preHandler: requirePermission('cohort.manage'),
-    schema: { tags: ['admin-learning'], summary: 'ينسخ إعدادَ الشعبة ومحتواها إلى مسودّةٍ جديدة' },
+    schema: { tags: ['admin-learning'], summary: 'ينسخ إعداد الشعبة ومحتواها إلى مسودّة جديدة' },
   }, async (req, reply) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const body = z.object({
@@ -528,7 +528,7 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
      يُسقط ما لا يعرف) — فلا يُردّ حفظُ النافذة لأجل حقلٍ لم يعد له معنى. */
   app.put('/api/admin/cohorts/:id/schedule-window', {
     preHandler: requirePermission('cohort.manage'),
-    schema: { tags: ['admin-learning'], summary: 'فتحُ نافذةِ جدولةٍ للمدرّب أو إغلاقُها — مدًى بلا سقف' },
+    schema: { tags: ['admin-learning'], summary: 'فتح نافذة جدولة للمدرّب أو إغلاقها — مدى بلا سقف' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const body = z.object({
@@ -540,7 +540,7 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
 
   app.get('/api/admin/cohorts/:id/sessions', {
     preHandler: requirePermission('cohort.manage'),
-    schema: { tags: ['admin-learning'], summary: 'جلساتُ الشعبة لاختيارها بالعنوان والتاريخ — بديلُ لصق المعرّف' },
+    schema: { tags: ['admin-learning'], summary: 'جلسات الشعبة لاختيارها بالعنوان والتاريخ — بديل لصق المعرّف' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     return cohorts.sessionsFor(id)
@@ -548,7 +548,7 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
 
   app.get('/api/admin/learners/search', {
     preHandler: requirePermission('enrollment.manage'),
-    schema: { tags: ['admin-learning'], summary: 'بحثُ متعلّمٍ بالاسم أو البريد للتسجيل — بديلُ لصق المعرّف' },
+    schema: { tags: ['admin-learning'], summary: 'بحث متعلّم بالاسم أو البريد للتسجيل — بديل لصق المعرّف' },
   }, async (req) => {
     const { q, cohortId } = z.object({ q: z.string().min(2).max(80), cohortId: z.string().uuid().optional() }).parse(req.query)
     return cohorts.searchLearners(cohortId, q)
@@ -583,7 +583,7 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
   /* ── الجلسات وZoom ── */
   app.post('/api/admin/cohorts/:id/sessions', {
     preHandler: requirePermission('cohort.manage'),
-    schema: { tags: ['admin-learning'], summary: 'إضافة جلسة — واجتماعُها وتبليغُ المسجَّلين معها' },
+    schema: { tags: ['admin-learning'], summary: 'إضافة جلسة — واجتماعها وتبليغ المسجّلين معها' },
   }, async (req, reply) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const body = z.object({
@@ -599,7 +599,7 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
   /* اجتماعٌ حقيقيٌّ لجلسةٍ قائمة — للجلسات التي وُلّدت مع الشعبة بلا اجتماع */
   app.post('/api/admin/sessions/:sessionId/zoom/create', {
     preHandler: requirePermission('cohort.manage'),
-    schema: { tags: ['admin-learning'], summary: 'إنشاءُ اجتماع Zoom حقيقيٍّ لجلسةٍ قائمة' },
+    schema: { tags: ['admin-learning'], summary: 'إنشاء اجتماع Zoom حقيقيّ لجلسة قائمة' },
   }, async (req, reply) => {
     const { sessionId } = z.object({ sessionId: z.string().uuid() }).parse(req.params)
     return reply.status(201).send(await cohorts.attachApiZoom(req.auth!.userId, sessionId))
@@ -646,7 +646,7 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
   /* محتوى الشعبة بأسمائه — يُقرأ قبل الأرشفة لا بعدها */
   app.get('/api/admin/cohorts/:id/content', {
     preHandler: requirePermission('cohort.manage'),
-    schema: { tags: ['admin-learning'], summary: 'موادُّ الشعبة وتسجيلاتُها بأسمائها — بديلُ لصق معرّف المحتوى' },
+    schema: { tags: ['admin-learning'], summary: 'موادّ الشعبة وتسجيلاتها بأسمائها — بديل لصق معرّف المحتوى' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     return cohorts.contentFor(id)
@@ -679,7 +679,7 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
   /* مسجَّلو الشعبة بأسمائهم — تُقرأ قبل الإسقاط لا بعده */
   app.get('/api/admin/cohorts/:id/enrollments', {
     preHandler: requirePermission('enrollment.manage'),
-    schema: { tags: ['admin-learning'], summary: 'مسجَّلو الشعبة لاختيارهم بالاسم — بديلُ لصق معرّف التسجيل' },
+    schema: { tags: ['admin-learning'], summary: 'مسجّلو الشعبة لاختيارهم بالاسم — بديل لصق معرّف التسجيل' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     return cohorts.roster(id)
@@ -739,7 +739,7 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
      «مؤهَّل» ثمّ يرفض الزرّ. */
   app.get('/api/admin/cohorts/:id/certificate-candidates', {
     preHandler: requirePermission('certificate.issue'),
-    schema: { tags: ['admin-learning'], summary: 'مَن أنهى فعلا في هذه الشعبة — بأهليّته وأسبابِ تعثّرها' },
+    schema: { tags: ['admin-learning'], summary: 'من أنهى فعلا في هذه الشعبة — بأهليّته وأسباب تعثّرها' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     return certificates.candidates(id)
@@ -761,7 +761,7 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
      و«اعتذار» بسببٍ يُقرأ — لا صمتٌ يُبقيه منتظرا. */
   app.get('/api/admin/learner-requests', {
     preHandler: requirePermission('certificate.issue'),
-    schema: { tags: ['admin-learning'], summary: 'طلباتُ المتعلّمين المفتوحة — الأقدمُ أوّلا' },
+    schema: { tags: ['admin-learning'], summary: 'طلبات المتعلّمين المفتوحة — الأقدم أوّلا' },
   }, async (req) => {
     const q = z.object({ status: z.enum(['pending', 'in_review', 'fulfilled', 'declined']).optional() }).parse(req.query)
     return learnerRequests.queue(q.status)
@@ -769,7 +769,7 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
 
   app.post('/api/admin/learner-requests/:id/decide', {
     preHandler: requirePermission('certificate.issue'),
-    schema: { tags: ['admin-learning'], summary: 'قرارٌ على طلب متعلّم — والاعتذار بسببٍ إلزاميّ' },
+    schema: { tags: ['admin-learning'], summary: 'قرار على طلب متعلّم — والاعتذار بسبب إلزاميّ' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const body = z.object({

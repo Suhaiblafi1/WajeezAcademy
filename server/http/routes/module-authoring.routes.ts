@@ -58,12 +58,12 @@ export function registerModuleAuthoringRoutes(app: FastifyInstance, prisma: Pris
 
   app.get('/api/admin/authoring/review-queue', {
     preHandler: canDecide,
-    schema: { tags: ['authoring'], summary: 'ما رُفع وينتظر الاعتماد الأكاديميّ' },
+    schema: { tags: ['authoring'], summary: 'ما رفع وينتظر الاعتماد الأكاديميّ' },
   }, async () => svc.pendingReview('academic'))
 
   app.get('/api/admin/authoring/final-queue', {
     preHandler: canFinalApprove,
-    schema: { tags: ['authoring'], summary: 'ما اعتُمد أكاديميّا وينتظر الموافقة النهائية' },
+    schema: { tags: ['authoring'], summary: 'ما اعتمد أكاديميّا وينتظر الموافقة النهائية' },
   }, async () => svc.pendingReview('final'))
 
   app.get('/api/admin/authoring/:moduleId', {
@@ -107,7 +107,7 @@ export function registerModuleAuthoringRoutes(app: FastifyInstance, prisma: Pris
 
   app.post('/api/admin/authoring/:moduleId/withdraw', {
     preHandler: canWrite,
-    schema: { tags: ['authoring'], summary: 'يسحبها من المراجعة ليعدّلها كاتبُها' },
+    schema: { tags: ['authoring'], summary: 'يسحبها من المراجعة ليعدّلها كاتبها' },
   }, async (req) => {
     const { moduleId } = req.params as { moduleId: string }
     const v = await svc.withdraw(moduleId, req.auth!.userId)
@@ -126,7 +126,7 @@ export function registerModuleAuthoringRoutes(app: FastifyInstance, prisma: Pris
 
   app.post('/api/admin/authoring/:moduleId/final', {
     preHandler: canFinalApprove,
-    schema: { tags: ['authoring'], summary: 'الموافقة النهائية — نشرٌ أو إعادةٌ إلى المدير الأكاديميّ بملاحظة' },
+    schema: { tags: ['authoring'], summary: 'الموافقة النهائية — نشر أو إعادة إلى المدير الأكاديميّ بملاحظة' },
   }, async (req) => {
     const { moduleId } = req.params as { moduleId: string }
     const body = finalSchema.parse(req.body)

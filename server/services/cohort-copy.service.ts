@@ -32,11 +32,11 @@ export class CohortCopyService {
 
   private async mine(userId: string, cohortId: string) {
     const profile = await this.prisma.trainerProfile.findUnique({ where: { userId }, select: { id: true } })
-    if (!profile) throw new AuthError('no_profile', 'لا ملفَّ مدرّبٍ مرتبطا بهذا الحساب', 404)
+    if (!profile) throw new AuthError('no_profile', 'لا ملفّ مدرّب مرتبطا بهذا الحساب', 404)
     const link = await this.prisma.cohortTrainer.findFirst({
       where: { cohortId, profileId: profile.id }, select: { cohort: { select: { id: true, courseId: true, title: true } } },
     })
-    if (!link) throw new AuthError('not_your_cohort', 'هذه الشعبة ليست مُسنَدةً إليك', 403)
+    if (!link) throw new AuthError('not_your_cohort', 'هذه الشعبة ليست مسندة إليك', 403)
     return link.cohort
   }
 
@@ -69,10 +69,10 @@ export class CohortCopyService {
   }
 
   async copyFrom(userId: string, targetId: string, input: { sourceCohortId: string; startsOn: string }) {
-    if (input.sourceCohortId === targetId) throw new AuthError('same_cohort', 'اختر شعبةً غيرَ هذه', 400)
+    if (input.sourceCohortId === targetId) throw new AuthError('same_cohort', 'اختر شعبة غير هذه', 400)
     const [target, source] = await Promise.all([this.mine(userId, targetId), this.mine(userId, input.sourceCohortId)])
     if (target.courseId !== source.courseId) {
-      throw new AuthError('other_course', 'يُنسخ من شعبةٍ لنفس الدورة وحدَها', 400)
+      throw new AuthError('other_course', 'ينسخ من شعبة لنفس الدورة وحدها', 400)
     }
     const [targetPlan, sourcePlan, approvedBefore] = await Promise.all([
       this.latestPlan(targetId),
@@ -80,17 +80,17 @@ export class CohortCopyService {
       this.prisma.cohortDeliveryPlan.count({ where: { cohortId: targetId, trainerId: { not: null }, status: { in: ['approved', 'published'] } } }),
     ])
     if (targetPlan && targetPlan.status !== 'draft' && targetPlan.status !== 'changes_requested') {
-      throw new AuthError('plan_locked', 'خطّةُ هذه الشعبة ليست في يدك الآن — لا يُنسخ إليها', 409)
+      throw new AuthError('plan_locked', 'خطّة هذه الشعبة ليست في يدك الآن — لا ينسخ إليها', 409)
     }
     if (approvedBefore > 0) {
-      throw new AuthError('approved_once', 'اعتُمدت لهذه الشعبة خطّةٌ من قبل — عدّلها في خطواتها، فالنسخُ يمحو ما فيها', 409)
+      throw new AuthError('approved_once', 'اعتمدت لهذه الشعبة خطّة من قبل — عدّلها في خطواتها، فالنسخ يمحو ما فيها', 409)
     }
     const content = sourcePlan?.content as TrainerPlanContent | null | undefined
     if (!content || !Array.isArray(content.modules)) {
-      throw new AuthError('nothing_to_copy', `لا خطّةَ في «${source.title}» تُنسخ بعد`, 404)
+      throw new AuthError('nothing_to_copy', `لا خطّة في «${source.title}» تنسخ بعد`, 404)
     }
     const shifted = shiftPlan(content as unknown as Parameters<typeof shiftPlan>[0], input.startsOn)
-    if (!shifted) throw new AuthError('no_period', `لا مدّةَ لـ«${source.title}» — لا يُعرف من أين تُزاح التواريخ`, 400)
+    if (!shifted) throw new AuthError('no_period', `لا مدّة لـ«${source.title}» — لا يعرف من أين تزاح التواريخ`, 400)
 
     /* الملفّاتُ: الخطّةُ ومرفقاتُ المهامّ — مرّةً واحدةً لكلّ مفتاح */
     const tasks = await this.prisma.cohortAssessment.findMany({

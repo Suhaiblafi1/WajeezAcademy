@@ -146,11 +146,11 @@ export function cleanSpecialTermsAr(text: string | null | undefined): string | n
   const items = specialTermsItemsAr(text)
   if (items.length === 0) return null
   if (items.length > SPECIAL_TERMS_MAX_ITEMS) {
-    throw new AuthError('special_terms_too_many', `البنودُ الخاصّةُ ${SPECIAL_TERMS_MAX_ITEMS} بندا على الأكثر — سطرٌ لكلّ بند`, 422)
+    throw new AuthError('special_terms_too_many', `البنود الخاصّة ${SPECIAL_TERMS_MAX_ITEMS} بندا على الأكثر — سطر لكلّ بند`, 422)
   }
   const joined = items.join('\n')
   if (joined.length > SPECIAL_TERMS_MAX_CHARS) {
-    throw new AuthError('special_terms_too_long', `البنودُ الخاصّةُ ${SPECIAL_TERMS_MAX_CHARS} حرفٍ على الأكثر`, 422)
+    throw new AuthError('special_terms_too_long', `البنود الخاصّة ${SPECIAL_TERMS_MAX_CHARS} حرف على الأكثر`, 422)
   }
   return joined
 }
@@ -231,15 +231,15 @@ const INVITATION_TTL_MS = MAIL_LINK_TTL_MS
 
    وكانت تقول «تحقّق شرطُ البند 2-10» — والبندُ 2-10 تمديدُ المهلة. فالشرطُ في
    2-6، وما يقع بتحقّقه (توقيعُنا ونشرُ الحساب والملحق) في 2-12. */
-const CONDITION_SEAL_NOTE_AR = 'خَتمٌ باعتماد الموادّ وتفعيل الحساب — تحقّق الشرطُ (البندان 2-6 و2-12)'
+const CONDITION_SEAL_NOTE_AR = 'ختم باعتماد الموادّ وتفعيل الحساب — تحقّق الشرط (البندان 2-6 و2-12)'
 
 /* بابُ كلِّ نهاية: المردودُ لا يُفتح إلّا بالتراجع عن الرفض، والمسحوبُ إلّا
    بالتراجع عن السحب — والقولُ في `decide`. */
 const UNDO_DOORS = { rejected: 'undo_reject', withdrawn: 'undo_withdraw' } as const
 type UndoAction = (typeof UNDO_DOORS)[keyof typeof UNDO_DOORS]
 const UNDO_DOOR_AR: Record<UndoAction, { label: string; of: string }> = {
-  undo_reject: { label: 'تراجَعْ عن الرفض', of: 'مردود' },
-  undo_withdraw: { label: 'تراجَعْ عن السحب', of: 'مسحوب' },
+  undo_reject: { label: 'تراجع عن الرفض', of: 'مردود' },
+  undo_withdraw: { label: 'تراجع عن السحب', of: 'مسحوب' },
 }
 
 /* ═══ الناقصُ يُقبل، والمجهولُ يُرَدّ ═══
@@ -261,7 +261,7 @@ export function assertRubric(scores: RubricScores) {
   for (const [key, v] of Object.entries(scores)) {
     /* المفتاحُ يُفحص قبل قيمته: مجهولٌ بلا قيمةٍ مجهولٌ كذلك */
     if (!(RUBRIC_CRITERIA as readonly string[]).includes(key)) {
-      throw new AuthError('bad_rubric', `لا محورَ في الروبرك اسمُه «${key}»`)
+      throw new AuthError('bad_rubric', `لا محور في الروبرك اسمه «${key}»`)
     }
     /* ومفتاحٌ حاضرٌ بلا قيمةٍ = محورٌ لم يُقيَّم، لا محورٌ قيمتُه خاطئة */
     if (v === undefined) continue
@@ -698,7 +698,7 @@ export class TrainerReviewService {
         title: 'مقابلة انضمام إلى نخبة مدرّبي وجيز',
         startsAt: input.scheduledAt,
         durationMinutes: TRAINER_INTERVIEW.minutes,
-        description: `مقابلةٌ بشأن طلبك رقم ${app.reference}. ${remote ? 'عن بُعد — يصلك الرابط قبل الموعد.' : 'حضوريّة.'}`,
+        description: `مقابلة بشأن طلبك رقم ${app.reference}. ${remote ? 'عن بعد — يصلك الرابط قبل الموعد.' : 'حضوريّة.'}`,
         url: `${publicSiteUrl()}/join-trainer`,
         organizer: { name: 'أكاديمية وجيز', email: ACADEMY_EMAILS.calendar },
         attendee: { name: app.fullName, email: app.email },
@@ -713,9 +713,9 @@ export class TrainerReviewService {
             { kind: 'facts', rows: [
               { label: 'رقم الطلب', value: app.reference },
               { label: 'الموعد', value: `${when} (بتوقيت عمّان)` },
-              { label: 'المكان', value: remote ? 'عن بُعد — يصلك الرابط قبل الموعد' : 'حضوريّة' },
+              { label: 'المكان', value: remote ? 'عن بعد — يصلك الرابط قبل الموعد' : 'حضوريّة' },
             ] },
-            { kind: 'p', text: 'أرفقنا دعوةَ تقويمٍ مع هذه الرسالة — افتحها لتُضاف إلى تقويمك مباشرة.' },
+            { kind: 'p', text: 'أرفقنا دعوة تقويم مع هذه الرسالة — افتحها لتضاف إلى تقويمك مباشرة.' },
             { kind: 'note', text: 'وإن لم يناسبك الموعد فأخبرنا بالردّ على هذه الرسالة.' },
           ],
         }),
@@ -765,7 +765,7 @@ export class TrainerReviewService {
       const back = await revertWhenNoLiveInterview(
         tx, this.apps, interview.applicationId, actorId,
         /* والسببُ يقول ما وقع فعلا — فلا يُقرأ في السجلّ «لم يحضر» عن نتيجةٍ أخرى */
-        outcome === NO_SHOW ? 'لم يحضر لقاءَ التعارف' : 'لم يبقَ للطلب موعدٌ قائم',
+        outcome === NO_SHOW ? 'لم يحضر لقاء التعارف' : 'لم يبق للطلب موعد قائم',
       )
       return { updated: row, revertedTo: back }
     })
@@ -829,7 +829,7 @@ export class TrainerReviewService {
     if (!(REVIEW_OPEN_STATUSES as readonly string[]).includes(app.status)) {
       throw new AuthError(
         'not_open',
-        `حالةُ الطلب «${app.status}» ليست حالةَ متقدّمٍ يُنتظَر منه درس — فالطلبُ يصله خبرا لا معنى له`,
+        `حالة الطلب «${app.status}» ليست حالة متقدّم ينتظر منه درس — فالطلب يصله خبرا لا معنى له`,
         409,
       )
     }
@@ -973,7 +973,7 @@ export class TrainerReviewService {
        على مؤجَّلٍ — كانت تُرسل إليه البريدَ مرّتين. والشاشةُ لا تعرض الزرَّ عليه
        (`DECISIONS`)، وهذا لما يصل من غيرها. */
     if (action === 'defer' && app.status === 'deferred') {
-      throw new AuthError('already_deferred', 'الطلبُ مؤجَّلٌ أصلا إلى الفصول القادمة — ولا يُرسَل إليه بريدُ التأجيل ثانيةً', 409)
+      throw new AuthError('already_deferred', 'الطلب مؤجّل أصلا إلى الفصول القادمة — ولا يرسل إليه بريد التأجيل ثانية', 409)
     }
 
     /* ═══ ولكلّ نهايةٍ بابُها — لا يُفتح بغيره (٢٩ سبتمبر ٢٠٢٦) ═══
@@ -990,12 +990,12 @@ export class TrainerReviewService {
     if (door && action !== door) {
       throw new AuthError(
         'bad_transition',
-        `هذا الطلبُ ${UNDO_DOOR_AR[door].of} — لا يُفتح إلّا بـ«${UNDO_DOOR_AR[door].label}» وسببٍ يصل صاحبَه`,
+        `هذا الطلب ${UNDO_DOOR_AR[door].of} — لا يفتح إلّا بـ«${UNDO_DOOR_AR[door].label}» وسبب يصل صاحبه`,
         409,
       )
     }
     if (isUndo && !door) {
-      throw new AuthError('bad_transition', `«${UNDO_DOOR_AR[action].label}» لطلبٍ ${UNDO_DOOR_AR[action].of} وحدَه`, 409)
+      throw new AuthError('bad_transition', `«${UNDO_DOOR_AR[action].label}» لطلب ${UNDO_DOOR_AR[action].of} وحده`, 409)
     }
 
     let overrideReason: string | null = null
@@ -1142,8 +1142,8 @@ export class TrainerReviewService {
       throw new AuthError(
         'reason_required',
         action === 'undo_reject'
-          ? 'اكتب سببَ التراجع عن الرفض — يصل المتقدّمَ بنصّه، ولا يُنقض قرارٌ في صمت'
-          : 'اكتب سببَ إعادة الطلب — يصل صاحبَه بنصّه، ولا يُعاد طلبٌ في صمت',
+          ? 'اكتب سبب التراجع عن الرفض — يصل المتقدّم بنصّه، ولا ينقض قرار في صمت'
+          : 'اكتب سبب إعادة الطلب — يصل صاحبه بنصّه، ولا يعاد طلب في صمت',
         422,
       )
     }
@@ -1173,14 +1173,14 @@ export class TrainerReviewService {
       if (other && !TERMINAL_STATUSES.includes(other.status as TrainerStatus)) {
         throw new AuthError(
           'live_application_exists',
-          `لصاحب هذا البريد طلبٌ قائمٌ غيرُه (${other.reference}) — يُكمَل ذاك، ولا يُعاد هذا فيصيرَ له طلبان`,
+          `لصاحب هذا البريد طلب قائم غيره (${other.reference}) — يكمل ذاك، ولا يعاد هذا فيصير له طلبان`,
           409,
         )
       }
       if (other) {
         throw new AuthError(
           'newer_application_exists',
-          `تقدّم صاحبُ هذا البريد بعده بطلبٍ أحدث (${other.reference}) — أعِدْ ذاك إن أردت: هذا فُكّ عن حسابه يومَ تقدّم ثانيةً`,
+          `تقدّم صاحب هذا البريد بعده بطلب أحدث (${other.reference}) — أعد ذاك إن أردت: هذا فكّ عن حسابه يوم تقدّم ثانية`,
           409,
         )
       }
@@ -1189,7 +1189,7 @@ export class TrainerReviewService {
     /* وسببُ التجاوز يُكتب في سجلّ الحالة مع الملاحظة — فالأثرُ يُقرأ بصلاحيّة،
        وسجلُّ الحالة يُقرأ في ملفّ المدرّب أمام من يفتحه. */
     const transitionNote = overrideReason
-      ? [note?.trim(), `تجاوزُ بوّابة التجهيز: ${overrideReason}`].filter(Boolean).join(' — ')
+      ? [note?.trim(), `تجاوز بوّابة التجهيز: ${overrideReason}`].filter(Boolean).join(' — ')
       : note
     /* ═══ ومن طُلبت منه معلوماتٌ يعود إلى حيث كان (٢٢ سبتمبر ٢٠٢٦) ═══
 
@@ -1418,19 +1418,19 @@ export class TrainerReviewService {
     const link = await this.bookingLink({ name: app.fullName, email: app.email, reference: app.reference })
     const mail = await sendDirectEmail(this.prisma, {
       to: app.email,
-      subject: `موعدٌ آخر معنا — اختر ما يناسبك (${app.reference})`,
+      subject: `موعد آخر معنا — اختر ما يناسبك (${app.reference})`,
       ...renderMail({
         greetingName: app.fullName,
-        heading: 'نودّ أن نلتقيك مرّةً أخرى',
+        heading: 'نودّ أن نلتقيك مرّة أخرى',
         blocks: [
-          { kind: 'p', text: 'اخترْ من التقويم الوقتَ الذي يناسبك — تظهر لك الأوقاتُ المتاحةُ وحدَها، ويصلك التأكيدُ ودعوةُ التقويم فورَ اختيارك.' },
+          { kind: 'p', text: 'اختر من التقويم الوقت الذي يناسبك — تظهر لك الأوقات المتاحة وحدها، ويصلك التأكيد ودعوة التقويم فور اختيارك.' },
           { kind: 'cta', label: 'اختر موعدك', href: link },
           { kind: 'facts', rows: [
             { label: 'رقم الطلب', value: app.reference },
             { label: 'المدّة', value: `${TRAINER_INTERVIEW.minutes} دقيقة` },
-            { label: 'المكان', value: `عن بُعد عبر ${TRAINER_INTERVIEW.platformAr}` },
+            { label: 'المكان', value: `عن بعد عبر ${TRAINER_INTERVIEW.platformAr}` },
           ] },
-          { kind: 'note', text: 'ولو لم يناسبك أيُّ وقتٍ معروض، ردَّ على هذه الرسالة وسنرتّب غيرَه.' },
+          { kind: 'note', text: 'ولو لم يناسبك أيّ وقت معروض، ردّ على هذه الرسالة وسنرتّب غيره.' },
         ],
       }),
     })
@@ -1477,7 +1477,7 @@ export class TrainerReviewService {
     if (app.status !== 'draft') {
       throw new AuthError(
         'not_draft',
-        `الطلبُ في حالة «${app.status}» لا في مسوّدة — فلا يُقال لصاحبه «أكمل» وقد أكمل`,
+        `الطلب في حالة «${app.status}» لا في مسوّدة — فلا يقال لصاحبه «أكمل» وقد أكمل`,
         409,
       )
     }
@@ -1523,13 +1523,13 @@ export class TrainerReviewService {
     input: { variant: string; bodyAr: string },
   ): Promise<{ emailDelivery: string; movedTo: string | null }> {
     const followup = followupOf(input.variant)
-    if (!followup) throw new AuthError('unknown_variant', 'رسالةٌ لا نعرفها', 400)
+    if (!followup) throw new AuthError('unknown_variant', 'رسالة لا نعرفها', 400)
 
     const bodyAr = input.bodyAr.trim()
     if (bodyAr.length < FOLLOWUP_BODY_MIN || bodyAr.length > FOLLOWUP_BODY_MAX) {
       throw new AuthError(
         'body_out_of_range',
-        `نصُّ الرسالة بين ${FOLLOWUP_BODY_MIN} و${FOLLOWUP_BODY_MAX} حرفا — والفارغُ يُنتج رسالةً بعنوانٍ بلا متن`,
+        `نصّ الرسالة بين ${FOLLOWUP_BODY_MIN} و${FOLLOWUP_BODY_MAX} حرفا — والفارغ ينتج رسالة بعنوان بلا متن`,
         400,
       )
     }
@@ -1555,10 +1555,10 @@ export class TrainerReviewService {
       throw last?.outcome === NO_SHOW
         ? new AuthError(
             'not_followable',
-            `حالةُ الطلب «${app.status}» بُتَّ فيها — فلا يُدعى صاحبُها إلى موعدٍ ولا يُنقل إلى انتظار`,
+            `حالة الطلب «${app.status}» بتّ فيها — فلا يدعى صاحبها إلى موعد ولا ينقل إلى انتظار`,
             409,
           )
-        : new AuthError('no_absence', 'لم يُسجَّل له غيابٌ — ولا يُقال لمن حضر إنّه لم يحضر', 409)
+        : new AuthError('no_absence', 'لم يسجّل له غياب — ولا يقال لمن حضر إنّه لم يحضر', 409)
     }
 
     const already = await this.prisma.auditEvent.count({
@@ -1569,7 +1569,7 @@ export class TrainerReviewService {
       },
     })
     if (already > 0) {
-      throw new AuthError('already_followed_up', 'تُوبع غيابُه هذا فعلا — ورسالةٌ ثانيةٌ عليه تُقرأ آليّة', 409)
+      throw new AuthError('already_followed_up', 'توبع غيابه هذا فعلا — ورسالة ثانية عليه تقرأ آليّة', 409)
     }
 
     /* والنقلُ أوّلا — ولمَ، مكتوبٌ فوقُ في ④ */
@@ -1577,7 +1577,7 @@ export class TrainerReviewService {
     if (followup.movesTo && app.status !== followup.movesTo) {
       await this.apps.transition(
         applicationId, followup.movesTo, actorId,
-        'لم يحضر لقاءَ التعارف — وتُوبع برسالة شكرٍ بلا دعوة',
+        'لم يحضر لقاء التعارف — وتوبع برسالة شكر بلا دعوة',
       )
       movedTo = followup.movesTo
     }
@@ -1624,10 +1624,10 @@ export class TrainerReviewService {
        والسببُ يُفصَّل بعده: «لا يُذكَّر» وحدَها لا تقول للموظّف لماذا. */
     if (!canRemindToBook({ status: app.status, liveInterviews: app._count.interviews })) {
       throw app._count.interviews > 0
-        ? new AuthError('already_booked', 'حجز موعدَه فعلا — ولا يُذكَّر بما فعل', 409)
+        ? new AuthError('already_booked', 'حجز موعده فعلا — ولا يذكّر بما فعل', 409)
         : new AuthError(
             'not_bookable',
-            `حالةُ الطلب «${app.status}» لا يُحجَز فيها موعد — فالتذكيرُ يدعوه إلى بابٍ مغلق`,
+            `حالة الطلب «${app.status}» لا يحجز فيها موعد — فالتذكير يدعوه إلى باب مغلق`,
             409,
           )
     }
@@ -1661,18 +1661,18 @@ export class TrainerReviewService {
     const asked = note?.trim()
     const mail = await sendDirectEmail(this.prisma, {
       to,
-      subject: `نحتاج منك إضافةً على طلبك — ${reference}`,
+      subject: `نحتاج منك إضافة على طلبك — ${reference}`,
       ...renderMail({
         greetingName: fullName,
-        heading: 'قرأنا طلبك، ونحتاج منك إضافةً قبل أن نُكمل',
+        heading: 'قرأنا طلبك، ونحتاج منك إضافة قبل أن نكمل',
         blocks: [
           ...(asked
             ? ([{ kind: 'h', text: 'وهذا ما نحتاجه' }, { kind: 'callout', text: asked }] as const)
-            : ([{ kind: 'p', text: 'راجعْ طلبك وأكمل ما تراه ناقصا فيه — ومستنداتُك أوّلُ ما يُنظَر فيه.' }] as const)),
-          { kind: 'p', text: 'طلبك ما زال مفتوحا للتعديل: افتح صفحة حالتك، عدّل ما يلزم، ثمّ أرسله من جديد. ولا يلزمك تعبئتُه من أوّله — يُفتح على ما كتبتَه.' },
+            : ([{ kind: 'p', text: 'راجع طلبك وأكمل ما تراه ناقصا فيه — ومستنداتك أوّل ما ينظر فيه.' }] as const)),
+          { kind: 'p', text: 'طلبك ما زال مفتوحا للتعديل: افتح صفحة حالتك، عدّل ما يلزم، ثمّ أرسله من جديد. ولا يلزمك تعبئته من أوّله — يفتح على ما كتبته.' },
           { kind: 'cta', label: 'عدّل طلبك الآن', href: statusUrl },
           { kind: 'facts', rows: [{ label: 'رقم الطلب', value: reference }] },
-          { kind: 'note', text: 'ولو كان في السؤال ما يحتاج توضيحا، ردَّ على هذه الرسالة.' },
+          { kind: 'note', text: 'ولو كان في السؤال ما يحتاج توضيحا، ردّ على هذه الرسالة.' },
         ],
       }),
     })
@@ -1720,7 +1720,7 @@ export class TrainerReviewService {
     await this.prisma.trainerCourseQualification.createMany({
       data: added.map((courseId) => ({
         profileId, courseId, status: 'pending', qualifiedBy: actorId,
-        note: 'من طلب الانضمام — الدوراتُ التي قال إنّه يستطيع تدريسَها، قيد تقييم موادّها',
+        note: 'من طلب الانضمام — الدورات التي قال إنّه يستطيع تدريسها، قيد تقييم موادّها',
         decidedAt: new Date(),
       })),
       skipDuplicates: true,
@@ -1900,7 +1900,7 @@ export class TrainerReviewService {
             }),
             ...(alreadySealed && !sealNoteAr ? {} : {
               countersignNoteAr: identityNote
-                ? `${CONDITION_SEAL_NOTE_AR} — ومطابقةُ الهويّة: ${identityNote}`.slice(0, 500)
+                ? `${CONDITION_SEAL_NOTE_AR} — ومطابقة الهويّة: ${identityNote}`.slice(0, 500)
                 : CONDITION_SEAL_NOTE_AR,
             }),
             /* وانتهت المهلةُ بتحقّق الشرط، ولا تجميدَ يبقى معلّقا */
@@ -1971,7 +1971,7 @@ export class TrainerReviewService {
     if (profile) {
       await this.notifyTrainerUser(profile.id, {
         templateKey: 'trainer.activated',
-        title: 'اعتُمدت موادُّك — وتمّ قبولُك',
+        title: 'اعتمدت موادّك — وتمّ قبولك',
         body: finalApprovalBellAr(sealed),
         data: { contract: offer !== null },
       })
@@ -2100,7 +2100,7 @@ export class TrainerReviewService {
     if (existingApp) {
       throw new AuthError(
         'application_exists',
-        `لهذا البريد طلبٌ قائم (${existingApp.reference}) — اعتمِدْه من طابور الطلبات بدل إنشاء ثانٍ`,
+        `لهذا البريد طلب قائم (${existingApp.reference}) — اعتمده من طابور الطلبات بدل إنشاء ثان`,
         409,
       )
     }
@@ -2127,7 +2127,7 @@ export class TrainerReviewService {
           status: 'active',
           jobTitle: input.headline?.trim() || null,
           statusHistory: {
-            create: { fromStatus: null, toStatus: 'active', note: 'تعيينٌ داخليٌّ من الإدارة — بلا نموذج تقدّم' },
+            create: { fromStatus: null, toStatus: 'active', note: 'تعيين داخليّ من الإدارة — بلا نموذج تقدّم' },
           },
         },
       })
@@ -2175,10 +2175,10 @@ export class TrainerReviewService {
           roleNamesAr: ['مدرّب'],
           invitedByAr: actor?.displayName ?? 'مدير المنصّة',
           dutiesAr: [
-            'شعبُك ومواعيدُ جلساتها',
-            'حضورُ متعلّميك وموادُّ كلِّ لقاء',
-            'طابورُ التصحيح وتقييماتُك',
-            'مستحقّاتُك',
+            'شعبك ومواعيد جلساتها',
+            'حضور متعلّميك وموادّ كلّ لقاء',
+            'طابور التصحيح وتقييماتك',
+            'مستحقّاتك',
           ],
         })
         inviteSent = mail.status === 'sent'
@@ -2191,10 +2191,10 @@ export class TrainerReviewService {
       inviteSent,
       /* لا يُقال «وصلته دعوة» حين لا بريد — انتظارُ رسالةٍ لن تصل أسوأُ من معرفة ذلك */
       noteAr: existingUser
-        ? 'عُيّن مدرّبا على حسابه القائم — يفتح بوّابتَه بكلمة سرّه نفسِها.'
+        ? 'عيّن مدرّبا على حسابه القائم — يفتح بوّابته بكلمة سرّه نفسها.'
         : inviteSent
-          ? 'عُيّن مدرّبا، ووصلته دعوةٌ يعيّن بها كلمةَ سرّه ويفتح بوّابته.'
-          : 'عُيّن مدرّبا، ولم تُرسَل الدعوة — قناةُ البريد غير مفعّلة. اطلب منه «نسيت كلمة المرور» ببريده.',
+          ? 'عيّن مدرّبا، ووصلته دعوة يعيّن بها كلمة سرّه ويفتح بوّابته.'
+          : 'عيّن مدرّبا، ولم ترسل الدعوة — قناة البريد غير مفعّلة. اطلب منه «نسيت كلمة المرور» ببريده.',
     }
   }
 
@@ -2638,7 +2638,7 @@ export class TrainerReviewService {
         approvedCoursesSnapshot: true,
       },
     })
-    if (!c) throw new AuthError('no_contract', 'لا عقدَ موقَّعا في ملفك بعد', 404)
+    if (!c) throw new AuthError('no_contract', 'لا عقد موقّعا في ملفك بعد', 404)
     /* واسمُ الطرف الأوّل يُعاد من المصدر الواحد لا يُكتب في الشاشة حرفا —
        `src/tests/academy-legal.test.ts` يحرس أن لا تُنسخ هذه القيمُ في ملفّ. */
     return { ...c, academyLegalNameAr: ACADEMY_LEGAL.legalNameAr }
@@ -2654,7 +2654,7 @@ export class TrainerReviewService {
       where: { profileId: profile.id, conditionDeadlineAt: { not: null }, conditionMetAt: null },
       orderBy: { createdAt: 'desc' },
     })
-    if (!contract) throw new AuthError('no_condition', 'لا مهلةَ قائمةً على حسابك', 409)
+    if (!contract) throw new AuthError('no_condition', 'لا مهلة قائمة على حسابك', 409)
     return { profile, contract }
   }
 
@@ -2663,12 +2663,12 @@ export class TrainerReviewService {
     const { profile, contract } = await this.openConditionContract(userId)
     const phase = conditionPhase({ ...contract, now })
     if (phase === 'under_review') {
-      throw new AuthError('already_declared', 'موادُّك عندنا للتقييم أصلا — سيصلك خبرُها', 409)
+      throw new AuthError('already_declared', 'موادّك عندنا للتقييم أصلا — سيصلك خبرها', 409)
     }
     /* ويُقبل الإعلانُ ولو انقضت المهلة: من تأخّر يوما ثمّ أتمّ موادَّه أولى
        به أن تُقرأ من أن يُردَّ بابُه، والقرارُ بعدُ لإنسانٍ ينظر. */
     if (phase !== 'running' && phase !== 'lapsed') {
-      throw new AuthError('bad_phase', 'لا مهلةَ تسير على حسابك الآن', 409)
+      throw new AuthError('bad_phase', 'لا مهلة تسير على حسابك الآن', 409)
     }
     /* ═══ ولا يُعلَن اكتمالُ ما لم يُكتب (٣٠ سبتمبر ٢٠٢٦) ═══
        كان الإعلانُ رايةً وحدَها: يجمّد المهلةَ ولا يحمل شيئا، إذ لم يكن
@@ -2676,7 +2676,7 @@ export class TrainerReviewService {
        دورةً دورة، بالنصّ نفسِه الذي تقوله الشاشة (`course-materials.ts`). */
     const gaps = await new TrainerMaterialsService(this.prisma).declareGapsAr(profile.id)
     if (gaps.length > 0) {
-      throw new AuthError('materials_incomplete', `أكمِل موادَّ دوراتك قبل الإعلان — ${gaps.join(' · ')}`, 409)
+      throw new AuthError('materials_incomplete', `أكمل موادّ دوراتك قبل الإعلان — ${gaps.join(' · ')}`, 409)
     }
     await this.prisma.trainerContract.update({
       where: { id: contract.id }, data: { conditionPausedAt: now },
@@ -2690,8 +2690,8 @@ export class TrainerReviewService {
       await notifyRole(this.prisma, ['academic_manager', 'super_admin'], {
         channel: 'in_app',
         templateKey: 'trainer.contract.materials_declared',
-        title: 'أعلن مدرّبٌ اكتمالَ موادّه',
-        body: `أعلن ${profile.application.fullName} اكتمالَ موادّه — والمهلةُ متجمّدةٌ حتّى يُردّ عليه.`,
+        title: 'أعلن مدرّب اكتمال موادّه',
+        body: `أعلن ${profile.application.fullName} اكتمال موادّه — والمهلة متجمّدة حتّى يردّ عليه.`,
         data: { contractId: contract.id, applicationId: profile.applicationId },
       })
     } catch { /* الإشعارُ رفاهيةٌ لا تُسقط التجميد */ }
@@ -2704,7 +2704,7 @@ export class TrainerReviewService {
     const problem = extendProblemAr({ ...contract, now })
     if (problem) throw new AuthError('cannot_extend', problem, 409)
     const next = extendedDeadline({ ...contract, now })
-    if (!next) throw new AuthError('cannot_extend', 'لا مهلةَ تُمدَّد', 409)
+    if (!next) throw new AuthError('cannot_extend', 'لا مهلة تمدّد', 409)
     await this.prisma.trainerContract.update({
       where: { id: contract.id },
       data: {
@@ -2730,11 +2730,11 @@ export class TrainerReviewService {
        إلى متى تترك صاحبَها يحسبها بنفسه. */
     await this.notifyTrainerUser(contract.profileId, {
       templateKey: 'trainer.contract.condition_extended',
-      title: `مُدّت مهلتُك ${EXTENSION_DAYS === 2 ? 'يومين' : `${EXTENSION_DAYS} أيّام`}`,
+      title: `مدّت مهلتك ${EXTENSION_DAYS === 2 ? 'يومين' : `${EXTENSION_DAYS} أيّام`}`,
       /* وكم بقي له يُقال في الخبر نفسِه: «وهو التمديدُ الوحيد» كانت تصدُق
          يومَ كان واحدا. وصارت مرّتين، فيُقال ما بقي — لا يُترك يحسبه. */
-      body: `تنتهي مهلتُك الآن في ${fmtDateWith(next, { year: 'numeric', month: 'long', day: 'numeric' })}. `
-        + (left > 0 ? `ولك تمديدٌ ${left === 1 ? 'واحدٌ' : `${left}`} بعدُ.` : 'وهو آخرُ تمديدٍ لك.'),
+      body: `تنتهي مهلتك الآن في ${fmtDateWith(next, { year: 'numeric', month: 'long', day: 'numeric' })}. `
+        + (left > 0 ? `ولك تمديد ${left === 1 ? 'واحد' : `${left}`} بعد.` : 'وهو آخر تمديد لك.'),
       data: { contractId: contract.id, deadlineAt: next.toISOString() },
     })
     return { deadlineAt: next }
@@ -2749,11 +2749,11 @@ export class TrainerReviewService {
   ) {
     const notes = notesAr.trim()
     if (notes.length < 5) {
-      throw new AuthError('no_notes', 'اكتب ما ينقص موادَّه — سطرٌ واحدٌ يكفي، وهو ما سيقرؤه', 422)
+      throw new AuthError('no_notes', 'اكتب ما ينقص موادّه — سطر واحد يكفي، وهو ما سيقرؤه', 422)
     }
     const c = await this.prisma.trainerContract.findUniqueOrThrow({ where: { id: contractId } })
     if (!c.conditionPausedAt) {
-      throw new AuthError('not_paused', 'موادُّه ليست عندنا للتقييم — لا شيءَ يُعاد', 409)
+      throw new AuthError('not_paused', 'موادّه ليست عندنا للتقييم — لا شيء يعاد', 409)
     }
     /* والمهلةُ تُزاد بمقدار مدّةِ التجميد بالضبط: وقتُ مراجعتنا لا يُحسب
        عليه، ولا يُهدى له يوما لم ننتظره فيه. */
@@ -2775,7 +2775,7 @@ export class TrainerReviewService {
     if (!opts.quiet) {
       await this.notifyTrainerUser(c.profileId, {
         templateKey: 'trainer.contract.materials_returned',
-        title: 'أُعيدت موادُّك بملاحظات',
+        title: 'أعيدت موادّك بملاحظات',
         body: `ما ينقص: ${notes.slice(0, 300)}`,
         data: { contractId, deadlineAt: resumed?.toISOString() ?? null },
       })
@@ -2802,7 +2802,7 @@ export class TrainerReviewService {
        يُكتب صفّ، وبالمخرج مسمّى. والعلّةُ في `contractBlockedAr`. */
     if (pre.blockedAr) throw new AuthError('not_contractable', pre.blockedAr, 409)
     if (pre.openContract) {
-      throw new AuthError('contract_open', 'لهذا المدرّب عقدٌ مفتوحٌ — يُلغى أوّلا ثمّ يُركَّب غيرُه', 409)
+      throw new AuthError('contract_open', 'لهذا المدرّب عقد مفتوح — يلغى أوّلا ثمّ يركّب غيره', 409)
     }
 
     /* ═══ وسقط شرطُ الجلسة عند التركيب (٢٧ سبتمبر ٢٠٢٦) ═══
@@ -2837,17 +2837,17 @@ export class TrainerReviewService {
     const specialTermsAr = cleanSpecialTermsAr(input.specialTermsAr)
 
     if (!effective && !input.rateWaivedReasonAr?.trim()) {
-      throw new AuthError('no_rate', 'لا قاعدةَ أتعابٍ لهذا المدرّب — اضبطها في هذه الشاشة، أو اكتب سببَ إرساله بلا أجرٍ متّفقٍ عليه', 422)
+      throw new AuthError('no_rate', 'لا قاعدة أتعاب لهذا المدرّب — اضبطها في هذه الشاشة، أو اكتب سبب إرساله بلا أجر متّفق عليه', 422)
     }
     if (!hasRequiredIdentityDocument(input.requiredDocuments)) {
-      throw new AuthError('no_identity_document', 'وثيقةُ هويّةٍ واحدةٌ إلزاميّةٌ على الأقلّ — البند 15 يُقرّ باسمه القانونيّ، ولا إقرارَ بلا ما يقابله', 422)
+      throw new AuthError('no_identity_document', 'وثيقة هويّة واحدة إلزاميّة على الأقلّ — البند 15 يقرّ باسمه القانونيّ، ولا إقرار بلا ما يقابله', 422)
     }
 
     /* وتاريخُ الجلسة يُقرأ مرّةً فيُطبَع في المتن. ولم يعد تُحسب منه مهلةٌ
        (٢٧ سبتمبر ٢٠٢٦): الجلسةُ وعدٌ علينا لا أصلٌ لأجل. */
     const orientationAt = input.orientationAt ? new Date(input.orientationAt) : null
     if (input.orientationAt && Number.isNaN(orientationAt!.getTime())) {
-      throw new AuthError('bad_orientation', 'تاريخُ جلسة التهيئة غيرُ مقروء', 422)
+      throw new AuthError('bad_orientation', 'تاريخ جلسة التهيئة غير مقروء', 422)
     }
     /* ولا مهلةَ تُكتب هنا: أصلُها **اعتمادُنا لتوقيعه** ولمّا يقع.
        و`approveSignature` تكتبها في اللحظة التي تُفتح فيها بوّابتُه ويُمنَح
@@ -2866,7 +2866,7 @@ export class TrainerReviewService {
     /* ولا يُثبَّت في الملفّ اسمٌ من حرفين: هو ما يُطبَع طرفا ثانيا في كلّ عقدٍ
        بعده. والحدُّ حدُّ `reissueWithCorrectedName` نفسُه. */
     if (typedName && typedName.length < 4) {
-      throw new AuthError('no_name', 'اكتب الاسمَ القانونيَّ كما في وثيقة الهويّة', 422)
+      throw new AuthError('no_name', 'اكتب الاسم القانونيّ كما في وثيقة الهويّة', 422)
     }
     const legalNameAr = typedName || pre.legalNameAr
 
@@ -3069,16 +3069,16 @@ export class TrainerReviewService {
     if (args.resend) {
       return sendDirectEmail(this.prisma, {
         to: args.to,
-        subject: `رابطٌ جديدٌ للتوقيع — ${contract.title}`,
+        subject: `رابط جديد للتوقيع — ${contract.title}`,
         ...renderMail({
           greetingName: args.fullName,
-          heading: contract.gatesActivation ? 'هذا رابطٌ جديدٌ لتوقيع الاتفاقيّة' : 'هذا رابطٌ جديدٌ لتوقيع عقدك',
+          heading: contract.gatesActivation ? 'هذا رابط جديد لتوقيع الاتفاقيّة' : 'هذا رابط جديد لتوقيع عقدك',
           blocks: [
             ...lead,
-            { kind: 'p', text: 'اقرأ الوثيقة كاملة قبل التوقيع — وما فيها لم يتغيّر، الرابطُ وحدَه هو الجديد.' },
+            { kind: 'p', text: 'اقرأ الوثيقة كاملة قبل التوقيع — وما فيها لم يتغيّر، الرابط وحده هو الجديد.' },
             /* والزرُّ يدلّ ولا يأمر — «اقرأ ووقّع» تُقرأ إلزاما بالتوقيع (#405) */
             { kind: 'cta', label: 'افتح الاتفاقيّة', href: args.url },
-            { kind: 'callout', text: `الرابطُ صالحٌ حتّى ${fmtDateWith(args.expiresAt, { year: 'numeric', month: 'long', day: 'numeric' })}، ولك أن تعتذر عنه بلا حرج.` },
+            { kind: 'callout', text: `الرابط صالح حتّى ${fmtDateWith(args.expiresAt, { year: 'numeric', month: 'long', day: 'numeric' })}، ولك أن تعتذر عنه بلا حرج.` },
             { kind: 'facts', rows: contractFactsRows(args.reference, contract.number) },
           ],
         }),
@@ -3113,18 +3113,18 @@ export class TrainerReviewService {
 
     return sendDirectEmail(this.prisma, {
       to: args.to,
-      subject: `عقدُك مع أكاديمية وجيز — للقراءة والتوقيع (${args.reference})`,
+      subject: `عقدك مع أكاديمية وجيز — للقراءة والتوقيع (${args.reference})`,
       ...renderMail({
         greetingName: args.fullName,
-        heading: 'هذا عقدُك للقراءة والتوقيع',
+        heading: 'هذا عقدك للقراءة والتوقيع',
         blocks: [
           ...lead,
-          { kind: 'p', text: 'اقرأ الاتفاقية كاملة قبل التوقيع — وفيها ما يخصّ أتعابك والدوراتِ التي تدرّسها وحقوقَ الطرفين.' },
+          { kind: 'p', text: 'اقرأ الاتفاقية كاملة قبل التوقيع — وفيها ما يخصّ أتعابك والدورات التي تدرّسها وحقوق الطرفين.' },
           /* والزرُّ يدلّ ولا يأمر — «اقرأ ووقّع» تُقرأ إلزاما بالتوقيع (#405) */
           { kind: 'cta', label: 'افتح الاتفاقيّة', href: args.url },
-          { kind: 'callout', text: `الرابطُ صالحٌ حتّى ${fmtDateWith(args.expiresAt, { year: 'numeric', month: 'long', day: 'numeric' })}، ولك أن تعتذر عنه بلا حرج.` },
+          { kind: 'callout', text: `الرابط صالح حتّى ${fmtDateWith(args.expiresAt, { year: 'numeric', month: 'long', day: 'numeric' })}، ولك أن تعتذر عنه بلا حرج.` },
           { kind: 'facts', rows: contractFactsRows(args.reference, contract.number) },
-          { kind: 'note', text: 'فإن انقضى قبل أن توقّع فاطلب من فريقنا إعادةَ إرساله.' },
+          { kind: 'note', text: 'فإن انقضى قبل أن توقّع فاطلب من فريقنا إعادة إرساله.' },
         ],
       }),
     })
@@ -3140,10 +3140,10 @@ export class TrainerReviewService {
     })
     if (!contract) throw new AuthError('not_found', 'العقد غير موجود', 404)
     if (contract.status !== 'draft') {
-      throw new AuthError('bad_state', 'لا يُرسَل إلّا عقدٌ مسودّة — الملغى والموقَّعُ والمرسَلُ لها أبوابُها', 409)
+      throw new AuthError('bad_state', 'لا يرسل إلّا عقد مسودّة — الملغى والموقّع والمرسل لها أبوابها', 409)
     }
     if (!contractHasBodyAr(contract.bodyAr)) {
-      throw new AuthError('no_body', 'عقدٌ بلا نصّ — من البابِ القديم. أنشئ عقدا جديدا', 409)
+      throw new AuthError('no_body', 'عقد بلا نصّ — من الباب القديم. أنشئ عقدا جديدا', 409)
     }
     /* ═══ ولا يُرسَل عرضٌ مشروطٌ متنُه لا يحمل شرطَه (٢٣ سبتمبر ٢٠٢٦) ═══
 
@@ -3159,7 +3159,7 @@ export class TrainerReviewService {
     if (contract.gatesActivation && !bodyCarriesConditionClause(contract.bodyAr)) {
       throw new AuthError(
         'body_without_condition',
-        'هذا عرضٌ مشروطٌ ونصُّه أُعِدَّ قبل بند الشرط — فبريدُه يحدّث المتقدّمَ عن شرطٍ ومهلةٍ لا تحملهما الوثيقة. ألغِ هذا العرضَ وأنشئ غيرَه، فيخرج متنُه ببند الشرط وتاريخِ جلسة التهيئة.',
+        'هذا عرض مشروط ونصّه أعدّ قبل بند الشرط — فبريده يحدّث المتقدّم عن شرط ومهلة لا تحملهما الوثيقة. ألغ هذا العرض وأنشئ غيره، فيخرج متنه ببند الشرط وتاريخ جلسة التهيئة.',
         409,
       )
     }
@@ -3176,7 +3176,7 @@ export class TrainerReviewService {
         where: { id: contractId, status: 'draft' },
         data: { status: 'sent', sentAt: new Date(), tokenHash, tokenExpiresAt: expiresAt, signerEmail: app.email },
       })
-      if (moved.count === 0) throw new AuthError('bad_state', 'العقدُ لم يعد مسودّة', 409)
+      if (moved.count === 0) throw new AuthError('bad_state', 'العقد لم يعد مسودّة', 409)
       await this.rememberContractLink(tx, { contractId, tokenHash, expiresAt, sentTo: app.email, purpose: 'sent' })
       /* ═══ وحالةُ الطلب تُسأل بنفسها لا بعلَم الاشتراط ═══
 
@@ -3190,7 +3190,7 @@ export class TrainerReviewService {
          فسؤالُ الحالة يُسأل بنفسه. والمحصّلةُ قبل التغيير هي هي: كان
          `gatesActivation` يعني `status !== 'active'` فحُلّ محلَّه نصّا. */
       if (app.status !== 'active' && app.status !== 'contract_pending') {
-        await this.apps.transition(app.id, 'contract_pending', actorId, 'إرسالُ العقد للتوقيع', tx)
+        await this.apps.transition(app.id, 'contract_pending', actorId, 'إرسال العقد للتوقيع', tx)
       }
       await recordAudit(tx, {
         actorId, action: 'trainer.contract.send', entityType: 'trainer_contract', entityId: contractId,
@@ -3229,7 +3229,7 @@ export class TrainerReviewService {
   async replyToAmendment(contractId: string, actorId: string, replyAr: string) {
     const reply = replyAr.trim()
     if (reply.length < 5) {
-      throw new AuthError('no_reply', 'اكتب ردَّك — يقرؤه المدرّبُ وهو أمام زرّ التوقيع', 422)
+      throw new AuthError('no_reply', 'اكتب ردّك — يقرؤه المدرّب وهو أمام زرّ التوقيع', 422)
     }
     const contract = await this.prisma.trainerContract.findUnique({
       where: { id: contractId },
@@ -3243,7 +3243,7 @@ export class TrainerReviewService {
        سؤال: عقدٌ من البابِ القديم يقف في «طُلب تعديلُه» يصله رابطٌ يعمل
        على وثيقةٍ خاوية. فالقيدُ يُعاد حيث يقع الفعل. */
     if (!contractHasBodyAr(contract.bodyAr)) {
-      throw new AuthError('no_body', 'عقدٌ بلا نصّ — من البابِ القديم. ألغِه وأنشئ عقدا جديدا', 409)
+      throw new AuthError('no_body', 'عقد بلا نصّ — من الباب القديم. ألغه وأنشئ عقدا جديدا', 409)
     }
 
     const { token, tokenHash, expiresAt } = this.mintContractToken()
@@ -3259,7 +3259,7 @@ export class TrainerReviewService {
       },
     })
     if (done.count === 0) {
-      throw new AuthError('bad_state', 'لا طلبَ تعديلٍ قائمٌ على هذا العقد', 409)
+      throw new AuthError('bad_state', 'لا طلب تعديل قائم على هذا العقد', 409)
     }
     await this.rememberContractLink(this.prisma, {
       contractId, tokenHash, expiresAt, sentTo: contract.profile.application.email, purpose: 'amendment_reply',
@@ -3451,7 +3451,7 @@ export class TrainerReviewService {
     if (isUntouchableContract(c)) {
       throw new AuthError(
         'signed_contract',
-        'لا يُحذَف عقدٌ مسَّه توقيع — وهو دليلٌ يُحتَجّ به للمدرّب وعليه',
+        'لا يحذف عقد مسّه توقيع — وهو دليل يحتجّ به للمدرّب وعليه',
         409,
       )
     }
@@ -3466,7 +3466,7 @@ export class TrainerReviewService {
       where: { id: contractId, signedAt: null, countersignedAt: null },
     })
     if (done.count === 0) {
-      throw new AuthError('signed_contract', 'وُقِّع العقدُ قبل أن يُحذَف — فلا يُحذَف', 409)
+      throw new AuthError('signed_contract', 'وقّع العقد قبل أن يحذف — فلا يحذف', 409)
     }
     /* ويُخبَر به إنسان: محوٌ لا رجعةَ فيه يقع بنقرةٍ واحدة، ومن كان
        يعمل على هذا الملفّ يجدُه غائبا ولا يدري أذهب أم لم يكن. والأثرُ
@@ -3475,8 +3475,8 @@ export class TrainerReviewService {
       await notifyRole(this.prisma, ['academic_manager', 'super_admin'], {
         channel: 'in_app',
         templateKey: 'trainer.contract.deleted',
-        title: 'حُذِف عقدٌ لم يُوقّع',
-        body: `حُذِف «${c.title}» (حالتُه ${c.status}) — ولم يمسّه توقيع. والأثرُ يحفظ تفصيلَه.`,
+        title: 'حذف عقد لم يوقّع',
+        body: `حذف «${c.title}» (حالته ${c.status}) — ولم يمسّه توقيع. والأثر يحفظ تفصيله.`,
         data: { contractId, profileId: c.profileId },
       })
     } catch { /* الإشعارُ رفاهيةٌ لا تُعيد صفّا مُحي */ }
@@ -3544,11 +3544,11 @@ export class TrainerReviewService {
       /* والموقَّعُ لا يُمَسّ ولو تسرّب صفُّه: الحكمُ في موضعٍ واحدٍ يقرؤه
          الحذفُ وهذا معا (`contract-untouchable.ts`). */
       if (isUntouchableContract(c)) {
-        skipped.push({ id: c.id, whyAr: 'مسّه توقيعٌ فلا يُمَسّ متنُه' })
+        skipped.push({ id: c.id, whyAr: 'مسّه توقيع فلا يمسّ متنه' })
         continue
       }
       if (!contractHasBodyAr(c.bodyAr)) {
-        skipped.push({ id: c.id, whyAr: 'عقدٌ بلا نصّ — من البابِ القديم' })
+        skipped.push({ id: c.id, whyAr: 'عقد بلا نصّ — من الباب القديم' })
         continue
       }
       const app = c.profile.application
@@ -3581,7 +3581,7 @@ export class TrainerReviewService {
         specialTermsAr: c.specialTermsAr,
       }))
       if (nextBody === c.bodyAr) {
-        skipped.push({ id: c.id, whyAr: 'نصُّه هو نفسُه — لا جديد' })
+        skipped.push({ id: c.id, whyAr: 'نصّه هو نفسه — لا جديد' })
         continue
       }
 
@@ -3614,7 +3614,7 @@ export class TrainerReviewService {
          فلو مضى العدُّ والبريدُ بعدها لَبلغ صاحبَه «حُدّث عرضُك» عن تحديثٍ
          لم يقع — وهو أسوأُ الوجهَين: الوثيقةُ سليمةٌ وصاحبُها مُخبَرٌ بغيرها. */
       if (!wrote) {
-        skipped.push({ id: c.id, whyAr: 'تبدّلت حالتُه بين القراءة والكتابة — لم يُكتب فوقه' })
+        skipped.push({ id: c.id, whyAr: 'تبدّلت حالته بين القراءة والكتابة — لم يكتب فوقه' })
         continue
       }
 
@@ -3744,7 +3744,7 @@ export class TrainerReviewService {
     })
     if (!contract) throw new AuthError('not_found', 'العقد غير موجود', 404)
     if (contract.status !== 'sent') {
-      throw new AuthError('bad_state', 'لا يُجدَّد رابطٌ إلّا لعقدٍ مرسَلٍ بانتظار التوقيع', 409)
+      throw new AuthError('bad_state', 'لا يجدّد رابط إلّا لعقد مرسل بانتظار التوقيع', 409)
     }
     const app = contract.profile.application
     const { token, tokenHash, expiresAt } = this.mintContractToken()
@@ -3781,10 +3781,10 @@ export class TrainerReviewService {
     })
     if (!contract) throw new AuthError('not_found', 'العقد غير موجود', 404)
     if (contract.status !== 'sent') {
-      throw new AuthError('bad_state', 'لا يُذكَّر إلّا بعرضٍ مرسَلٍ لم يُوقَّع بعد', 409)
+      throw new AuthError('bad_state', 'لا يذكّر إلّا بعرض مرسل لم يوقّع بعد', 409)
     }
     if (contract.finalReminderAt) {
-      throw new AuthError('already_reminded', 'أُرسل التذكيرُ الأخيرُ بهذا العرض من قبل — وجدِّدِ الرابطَ إن أردتَ مهلةً أخرى', 409)
+      throw new AuthError('already_reminded', 'أرسل التذكير الأخير بهذا العرض من قبل — وجدّد الرابط إن أردت مهلة أخرى', 409)
     }
     const app = contract.profile.application
     const { token, tokenHash, expiresAt } = this.mintContractToken(FINAL_REMINDER_DAYS)
@@ -3793,7 +3793,7 @@ export class TrainerReviewService {
       data: { tokenHash, tokenExpiresAt: expiresAt, finalReminderAt: new Date() },
     })
     if (done.count === 0) {
-      throw new AuthError('already_reminded', 'تغيّر العرضُ قبل الإرسال — أُرسل تذكيرُه أو وُقّع. حدِّثِ الصفحة', 409)
+      throw new AuthError('already_reminded', 'تغيّر العرض قبل الإرسال — أرسل تذكيره أو وقّع. حدّث الصفحة', 409)
     }
     const to = contract.signerEmail ?? app.email
     await this.rememberContractLink(this.prisma, { contractId, tokenHash, expiresAt, sentTo: to, purpose: 'final_reminder' })
@@ -3819,7 +3819,7 @@ export class TrainerReviewService {
   /** الإلغاء — وما أُرسل لا يُحذف. الصفُّ يبقى دليلا على ما رُكّب ومن ألغاه */
   async revokeContract(contractId: string, actorId: string, reasonAr: string) {
     if (reasonAr.trim().length < 5) {
-      throw new AuthError('no_reason', 'سببُ الإلغاء يُكتب — يُقرأ بعد شهرٍ حين يُسأل عنه، ويصل صاحبَه بحرفه', 422)
+      throw new AuthError('no_reason', 'سبب الإلغاء يكتب — يقرأ بعد شهر حين يسأل عنه، ويصل صاحبه بحرفه', 422)
     }
     /* ═══ ويُقرأ الصفُّ قبل إغلاقه — لا لحارسٍ بل لرسالةٍ تخرج (٢٦ سبتمبر) ═══
 
@@ -3854,7 +3854,7 @@ export class TrainerReviewService {
         status: 'revoked', revokedAt: new Date(), revokedBy: actorId, revokeReasonAr: reasonAr.trim(),
       },
     })
-    if (done.count === 0) throw new AuthError('bad_state', 'العقدُ ليس مفتوحا — لا يُلغى موقَّعٌ ولا ملغًى', 409)
+    if (done.count === 0) throw new AuthError('bad_state', 'العقد ليس مفتوحا — لا يلغى موقّع ولا ملغى', 409)
     await recordAudit(this.prisma, {
       actorId, action: 'trainer.contract.revoke', entityType: 'trainer_contract', entityId: contractId,
       meta: { reasonAr: reasonAr.trim() },
@@ -3873,7 +3873,7 @@ export class TrainerReviewService {
 
   /** العقدُ الذي هذا رمزُه الحيّ — أو `null` */
   private async findByLiveToken(token: string) {
-    if (!token || token.length < 16) throw new AuthError('invalid_token', 'الرابطُ غيرُ صالح', 400)
+    if (!token || token.length < 16) throw new AuthError('invalid_token', 'الرابط غير صالح', 400)
     return this.prisma.trainerContract.findUnique({
       where: { tokenHash: sha256(token) },
       include: {
@@ -3886,7 +3886,7 @@ export class TrainerReviewService {
   /** العقدُ برمزه الحيّ — وكلُّ فعلٍ يكتب يدخل من هنا وحدَه، لا من رابطٍ قديم */
   private async byToken(token: string) {
     const c = await this.findByLiveToken(token)
-    if (!c) throw new AuthError('invalid_token', 'الرابطُ غيرُ صالح — تحقّقْ منه أو اطلب إعادةَ إرساله', 404)
+    if (!c) throw new AuthError('invalid_token', 'الرابط غير صالح — تحقّق منه أو اطلب إعادة إرساله', 404)
     return c
   }
 
@@ -3901,14 +3901,14 @@ export class TrainerReviewService {
       where: { tokenHash: sha256(token) },
       include: { contract: { include: { profile: { include: { application: true } } } } },
     })
-    if (!link) throw new AuthError('invalid_token', 'الرابطُ غيرُ صالح — تحقّقْ منه أو اطلب إعادةَ إرساله', 404)
+    if (!link) throw new AuthError('invalid_token', 'الرابط غير صالح — تحقّق منه أو اطلب إعادة إرساله', 404)
     const newer = await this.prisma.trainerContractLink.findFirst({
       where: { contractId: link.contractId, createdAt: { gt: link.createdAt } },
       orderBy: { createdAt: 'asc' },
       select: { createdAt: true },
     })
     const view = await this.closedContractView(link.contract, { sentTo: link.sentTo, newerLinkAt: newer?.createdAt ?? null })
-    if (!view) throw new AuthError('invalid_token', 'الرابطُ غيرُ صالح', 404)
+    if (!view) throw new AuthError('invalid_token', 'الرابط غير صالح', 404)
     return view
   }
 
@@ -3995,7 +3995,7 @@ export class TrainerReviewService {
     const now = new Date()
     if (c.status !== 'sent' || (c.tokenExpiresAt && c.tokenExpiresAt < now)) {
       const closed = await this.closedContractView(c, null)
-      if (!closed) throw new AuthError('invalid_token', 'الرابطُ غيرُ صالح', 404)
+      if (!closed) throw new AuthError('invalid_token', 'الرابط غير صالح', 404)
       return closed
     }
 
@@ -4068,12 +4068,12 @@ export class TrainerReviewService {
        التعديل يوقف التوقيعَ بها وحدَها، في كلّ فعلٍ يُفعَل من الرابط. */
     if (!canRespondToContract(c.status)) {
       if (isAmendmentRequested(c.status)) {
-        throw new AuthError('amendment_pending', 'طلبُك بالتعديل عندنا — ننظر فيه ونعيد إليك الاتفاقيّةَ مصحَّحةً أو نجيبك', 409)
+        throw new AuthError('amendment_pending', 'طلبك بالتعديل عندنا — ننظر فيه ونعيد إليك الاتفاقيّة مصحّحة أو نجيبك', 409)
       }
-      throw new AuthError('bad_state', 'هذا العقدُ لم يعد بانتظار التوقيع', 409)
+      throw new AuthError('bad_state', 'هذا العقد لم يعد بانتظار التوقيع', 409)
     }
     if (c.tokenExpiresAt && c.tokenExpiresAt < new Date()) {
-      throw new AuthError('expired_token', 'انقضى أجلُ الرابط — اطلب من الأكاديمية إعادةَ إرساله', 410)
+      throw new AuthError('expired_token', 'انقضى أجل الرابط — اطلب من الأكاديمية إعادة إرساله', 410)
     }
     return c
   }
@@ -4082,17 +4082,17 @@ export class TrainerReviewService {
   async requestContractDocumentUpload(token: string, input: {
     kind: string; originalName: string; mime: string; sizeBytes: number
   }) {
-    assertFileUploadsEnabled('والبديلُ الآن: أرسِلْ وثيقتَك إلى فريق الأكاديمية بالبريد.')
+    assertFileUploadsEnabled('والبديل الآن: أرسل وثيقتك إلى فريق الأكاديمية بالبريد.')
     const c = await this.openByToken(token)
     const required = readRequiredDocuments(c.requiredDocuments)
     if (!required.some((d) => d.kind === input.kind)) {
-      throw new AuthError('bad_kind', 'هذه الوثيقةُ ليست مطلوبةً في هذا العقد', 422)
+      throw new AuthError('bad_kind', 'هذه الوثيقة ليست مطلوبة في هذا العقد', 422)
     }
     if (!(IDENTITY_MIMES as readonly string[]).includes(input.mime)) {
-      throw new AuthError('bad_mime', 'الصيغُ المقبولة: JPEG أو PNG أو WebP أو PDF', 422)
+      throw new AuthError('bad_mime', 'الصيغ المقبولة: JPEG أو PNG أو WebP أو PDF', 422)
     }
     if (input.sizeBytes <= 0 || input.sizeBytes > MAX_CONTRACT_DOC_BYTES) {
-      throw new AuthError('too_large', `حجمُ الملفّ يتجاوز ${Math.round(MAX_CONTRACT_DOC_BYTES / 1048576)} ميغابايت`, 413)
+      throw new AuthError('too_large', `حجم الملفّ يتجاوز ${Math.round(MAX_CONTRACT_DOC_BYTES / 1048576)} ميغابايت`, 413)
     }
 
     const storageKey = newStorageKey()
@@ -4139,7 +4139,7 @@ export class TrainerReviewService {
     const c = await this.openByToken(token)
     const legalName = input.legalName.trim()
     if (legalName.length < 4) {
-      throw new AuthError('bad_name', 'اكتب اسمَك القانونيَّ كاملا كما في وثيقة هويّتك', 422)
+      throw new AuthError('bad_name', 'اكتب اسمك القانونيّ كاملا كما في وثيقة هويّتك', 422)
     }
     /* ═══ ويكتب عنوانَه وهاتفَه بخطّه ═══
 
@@ -4149,10 +4149,10 @@ export class TrainerReviewService {
     const addressAr = input.addressAr.trim()
     const phone = input.phone.trim()
     if (addressAr.length < 5) {
-      throw new AuthError('bad_address', 'اكتب عنوانَك الكامل — وهو بيانُ طرفٍ في العقد', 422)
+      throw new AuthError('bad_address', 'اكتب عنوانك الكامل — وهو بيان طرف في العقد', 422)
     }
     if (phone.length < 6) {
-      throw new AuthError('bad_phone', 'اكتب رقمَ هاتفك', 422)
+      throw new AuthError('bad_phone', 'اكتب رقم هاتفك', 422)
     }
     /* ═══ ولا تُوقَّع وثيقةٌ خاوية ═══
 
@@ -4161,14 +4161,14 @@ export class TrainerReviewService {
        `null` يمرّ نظيفا. ورسالةُ «تغيّر نصُّ العقد» تكذب على من لا نصَّ
        عنده أصلا: تأمره أن يعيد التحميلَ ويقرأ، ولا شيءَ يُقرأ. */
     if (!contractHasBodyAr(c.bodyAr)) {
-      throw new AuthError('no_body', 'لا نصَّ لهذا العقد، فلا يُوقَّع. راسلِ الأكاديميةَ ليُرسَل إليك عقدٌ بنصّه', 409)
+      throw new AuthError('no_body', 'لا نصّ لهذا العقد، فلا يوقّع. راسل الأكاديمية ليرسل إليك عقد بنصّه', 409)
     }
     if (!c.bodyHash || input.bodyHash !== c.bodyHash) {
-      throw new AuthError('body_changed', 'تغيّر نصُّ العقد بعد فتحك الصفحة — أعِدْ تحميلَها واقرأ النصَّ الجديد قبل التوقيع', 409)
+      throw new AuthError('body_changed', 'تغيّر نصّ العقد بعد فتحك الصفحة — أعد تحميلها واقرأ النصّ الجديد قبل التوقيع', 409)
     }
     const missingAcks = contractAcks(c.gatesActivation, c.bodyVersion).filter((a) => !input.acks.includes(a.key))
     if (missingAcks.length > 0) {
-      throw new AuthError('acks_missing', 'لم تُقرّ ببنودٍ لا بدّ من الإقرار بها قبل التوقيع', 422)
+      throw new AuthError('acks_missing', 'لم تقرّ ببنود لا بدّ من الإقرار بها قبل التوقيع', 422)
     }
     const required = readRequiredDocuments(c.requiredDocuments).filter((d) => d.required)
     const have = new Set(c.documents.map((d) => d.kind))
@@ -4176,7 +4176,7 @@ export class TrainerReviewService {
     if (missingDocs.length > 0) {
       throw new AuthError(
         'documents_missing',
-        `لم تُرفَع بعد: ${missingDocs.map((d) => d.labelAr).join(' · ')}`,
+        `لم ترفع بعد: ${missingDocs.map((d) => d.labelAr).join(' · ')}`,
         422,
       )
     }
@@ -4240,7 +4240,7 @@ export class TrainerReviewService {
              للموقِّع موضعٌ يقرأ فيه ما التزم به. */
         },
       })
-      if (done.count === 0) throw new AuthError('bad_state', 'العقدُ لم يعد بانتظار التوقيع', 409)
+      if (done.count === 0) throw new AuthError('bad_state', 'العقد لم يعد بانتظار التوقيع', 409)
       await tx.trainerOnboardingTask.updateMany({
         where: { profileId: c.profileId, key: 'sign_contract' }, data: { doneAt: signedAt },
       })
@@ -4306,9 +4306,9 @@ export class TrainerReviewService {
     await notifyRole(this.prisma, ['academic_manager', 'super_admin'], {
       channel: 'in_app',
       templateKey: 'trainer.contract.signed',
-      title: 'وقّع مدرّبٌ عقدَه',
+      title: 'وقّع مدرّب عقده',
       body: readiness.ready
-        ? `وقّع ${legalName} «${c.title}» — واكتمل تجهيزُه. افتح ملفَّه واعتمِدْه اعتمادا كاملا.`
+        ? `وقّع ${legalName} «${c.title}» — واكتمل تجهيزه. افتح ملفّه واعتمده اعتمادا كاملا.`
         : `وقّع ${legalName} «${c.title}» — وبقي قبل اعتماده: ${readiness.blockersAr.join(' · ')}`,
       data: { contractId: c.id, applicationId: app.id },
     })
@@ -4325,7 +4325,7 @@ export class TrainerReviewService {
     const c = await this.openByToken(token)
     const body = textAr.trim()
     if (body.length < 5) {
-      throw new AuthError('no_text', 'اكتب ما تريد تعديلَه — سطرٌ واحدٌ يكفي', 422)
+      throw new AuthError('no_text', 'اكتب ما تريد تعديله — سطر واحد يكفي', 422)
     }
     const requestedAt = new Date()
     const done = await this.prisma.trainerContract.updateMany({
@@ -4336,7 +4336,7 @@ export class TrainerReviewService {
         amendmentRequestedAt: requestedAt,
       },
     })
-    if (done.count === 0) throw new AuthError('bad_state', 'العقدُ لم يعد بانتظار التوقيع', 409)
+    if (done.count === 0) throw new AuthError('bad_state', 'العقد لم يعد بانتظار التوقيع', 409)
     await recordAudit(this.prisma, {
       actorId: null, action: 'trainer.contract.amendment_requested',
       entityType: 'trainer_contract', entityId: c.id,
@@ -4345,8 +4345,8 @@ export class TrainerReviewService {
     await notifyRole(this.prisma, ['academic_manager', 'super_admin'], {
       channel: 'in_app',
       templateKey: 'trainer.contract.amendment_requested',
-      title: 'طلب مدرّبٌ تعديلا على عرضه',
-      body: `طلب ${c.profile.application.fullName} تعديلا على «${c.title}» — ونصُّه: ${body.slice(0, 200)}`,
+      title: 'طلب مدرّب تعديلا على عرضه',
+      body: `طلب ${c.profile.application.fullName} تعديلا على «${c.title}» — ونصّه: ${body.slice(0, 200)}`,
       data: { contractId: c.id, applicationId: c.profile.applicationId },
     })
     return { requestedAt }
@@ -4356,7 +4356,7 @@ export class TrainerReviewService {
     const c = await this.openByToken(token)
     const reason = reasonAr.trim()
     if (reason.length < 5) {
-      throw new AuthError('no_reason', 'اكتب سببَ اعتذارك — سطرٌ واحدٌ يكفي، ويساعدنا أن نفهم', 422)
+      throw new AuthError('no_reason', 'اكتب سبب اعتذارك — سطر واحد يكفي، ويساعدنا أن نفهم', 422)
     }
     const declinedAt = new Date()
     const done = await this.prisma.trainerContract.updateMany({
@@ -4377,7 +4377,7 @@ export class TrainerReviewService {
              الرابط» ولا يُعرَف أيُّ بابٍ هو. */
       },
     })
-    if (done.count === 0) throw new AuthError('bad_state', 'العقدُ لم يعد بانتظار التوقيع', 409)
+    if (done.count === 0) throw new AuthError('bad_state', 'العقد لم يعد بانتظار التوقيع', 409)
     await recordAudit(this.prisma, {
       actorId: null, action: 'trainer.contract.decline',
       entityType: 'trainer_contract', entityId: c.id,
@@ -4386,8 +4386,8 @@ export class TrainerReviewService {
     await notifyRole(this.prisma, ['academic_manager', 'super_admin'], {
       channel: 'in_app',
       templateKey: 'trainer.contract.declined',
-      title: 'اعتذر مدرّبٌ عن عقده',
-      body: `اعتذر ${c.profile.application.fullName} عن «${c.title}» — وسببُه: ${reason.slice(0, 200)}`,
+      title: 'اعتذر مدرّب عن عقده',
+      body: `اعتذر ${c.profile.application.fullName} عن «${c.title}» — وسببه: ${reason.slice(0, 200)}`,
       data: { contractId: c.id, applicationId: c.profile.applicationId },
     })
     /* ويُعاد تاريخُه: الرمزُ مات بالاعتذار، فالشاشةُ تبني حالَها من هذا
@@ -4453,7 +4453,7 @@ export class TrainerReviewService {
     })
     if (!c) throw new AuthError('not_found', 'العقد غير موجود', 404)
     if (c.status !== 'signed') {
-      throw new AuthError('bad_state', 'لا يُعتمَد إلّا عقدٌ وقّعه صاحبُه ولم يُعتمَد بعد', 409)
+      throw new AuthError('bad_state', 'لا يعتمد إلّا عقد وقّعه صاحبه ولم يعتمد بعد', 409)
     }
     /* ═══ والاعتمادُ يفتح طورَ الموادّ، ولا يَنشُر الحساب (٢٧ سبتمبر ٢٠٢٦) ═══
 
@@ -4495,7 +4495,7 @@ export class TrainerReviewService {
        (`gatesActivation = false`)، فلا يُنادى `decide` أصلا ولا يجري حارسُها. */
     const actor = await this.prisma.user.findUnique({ where: { id: actorId } })
     if (actor && actor.email === c.profile.application.email) {
-      throw new AuthError('self_decision', 'لا يجوز اعتمادُ عقدٍ مرتبطٍ ببريدك', 403)
+      throw new AuthError('self_decision', 'لا يجوز اعتماد عقد مرتبط ببريدك', 403)
     }
 
     /* ═══ ونصٌّ يجعل الاعتمادَ توقيعا يُعتمَد بما يختاره المعتمِدُ صريحا (٢ أكتوبر ٢٠٢٦) ═══
@@ -4509,7 +4509,7 @@ export class TrainerReviewService {
        وبلا أحدهما يُردّ بالخيارات كلِّها لا بأحدها، ومعًا يُردّان: لا يُخمَّن
        أيُّهما أُريد. */
     if (input.asSigned === true && input.likeNew === true) {
-      throw new AuthError('two_choices', 'اخترْ واحدا: «كما وقّعه» أو «كالعقود الجديدة»', 400)
+      throw new AuthError('two_choices', 'اختر واحدا: «كما وقّعه» أو «كالعقود الجديدة»', 400)
     }
     const rule = signatureApprovalOf(c)
     if (rule === 'sealed_by_text' && input.asSigned !== true && input.likeNew !== true) {
@@ -4554,7 +4554,7 @@ export class TrainerReviewService {
             signatureApprovalNoteAr: note.length > 0 ? note : null,
           },
         })
-        if (done.count === 0) throw new AuthError('bad_state', 'اعتُمد العقدُ قبل ثوانٍ — حدّثْ الصفحة', 409)
+        if (done.count === 0) throw new AuthError('bad_state', 'اعتمد العقد قبل ثوان — حدّث الصفحة', 409)
         await recordAudit(tx, {
           actorId, action: 'trainer.contract.countersign',
           entityType: 'trainer_contract', entityId: c.id,
@@ -4589,7 +4589,7 @@ export class TrainerReviewService {
             signatureApprovalNoteAr: note.length > 0 ? note : null,
           },
         })
-        if (done.count === 0) throw new AuthError('bad_state', 'اعتُمد التوقيعُ قبل ثوانٍ — حدّثْ الصفحة', 409)
+        if (done.count === 0) throw new AuthError('bad_state', 'اعتمد التوقيع قبل ثوان — حدّث الصفحة', 409)
         await recordAudit(tx, {
           actorId, action: 'trainer.contract.approve_signature',
           entityType: 'trainer_contract', entityId: c.id,
@@ -4648,7 +4648,7 @@ export class TrainerReviewService {
         if (transitionProblemAr(c.profile.application.status as TrainerStatus, 'onboarding') === null) {
           await this.apps.transition(
             c.profile.applicationId, 'onboarding', actorId,
-            'اعتمادُ التوقيع — وبه يُفتح طورُ الموادّ', tx,
+            'اعتماد التوقيع — وبه يفتح طور الموادّ', tx,
           )
         }
       }
@@ -4730,24 +4730,24 @@ export class TrainerReviewService {
     })
     if (!c) throw new AuthError('not_found', 'العقد غير موجود', 404)
     if (c.status !== 'signature_approved') {
-      throw new AuthError('bad_state', 'لا يُوقَّع من هنا إلّا عقدٌ اعتُمد توقيعُه ولم نوقّعه بعد', 409)
+      throw new AuthError('bad_state', 'لا يوقّع من هنا إلّا عقد اعتمد توقيعه ولم نوقّعه بعد', 409)
     }
     if (c.gatesActivation) {
       throw new AuthError(
         'conditional_offer',
-        'هذا عرضٌ مشروط: نوقّعه حين تُعتمَد موادُّه — باعتماده النهائيّ، لا من هنا',
+        'هذا عرض مشروط: نوقّعه حين تعتمد موادّه — باعتماده النهائيّ، لا من هنا',
         409,
       )
     }
     /* حارسُ التضارب نفسُه الذي في `approveSignature` و`decide` */
     const actor = await this.prisma.user.findUnique({ where: { id: actorId } })
     if (actor && actor.email === c.profile.application.email) {
-      throw new AuthError('self_decision', 'لا يجوز توقيعُ عقدٍ مرتبطٍ ببريدك', 403)
+      throw new AuthError('self_decision', 'لا يجوز توقيع عقد مرتبط ببريدك', 403)
     }
 
     const note = (input.noteAr ?? '').trim().slice(0, 500)
     const identity = c.signatureApprovalNoteAr
-    const sealNote = [note, identity ? `ومطابقةُ الهويّة: ${identity}` : '']
+    const sealNote = [note, identity ? `ومطابقة الهويّة: ${identity}` : '']
       .filter((s) => s.length > 0).join(' — ').slice(0, 500)
     const sealedAt = new Date()
     await this.prisma.$transaction(async (tx) => {
@@ -4762,7 +4762,7 @@ export class TrainerReviewService {
           countersignNoteAr: sealNote.length > 0 ? sealNote : null,
         },
       })
-      if (done.count === 0) throw new AuthError('bad_state', 'وُقّع العقدُ أو انتهى قبل ثوانٍ — حدّثْ الصفحة', 409)
+      if (done.count === 0) throw new AuthError('bad_state', 'وقّع العقد أو انتهى قبل ثوان — حدّث الصفحة', 409)
       await recordAudit(tx, {
         actorId, action: 'trainer.contract.countersign',
         entityType: 'trainer_contract', entityId: c.id,
@@ -4924,10 +4924,10 @@ export class TrainerReviewService {
     /* الاسمُ: ما كتبه الموظّفُ الآن، وإلّا ما قاله المدرّبُ في طلبه */
     const name = (input.legalNameAr ?? old.nameCorrectionAr ?? '').trim()
     if (name.length < 4) {
-      throw new AuthError('no_name', 'اكتب الاسمَ القانونيَّ كما في وثيقة الهويّة', 422)
+      throw new AuthError('no_name', 'اكتب الاسم القانونيّ كما في وثيقة الهويّة', 422)
     }
     if (!contractHasBodyAr(old.bodyAr)) {
-      throw new AuthError('no_body', 'عقدٌ بلا نصّ — من البابِ القديم. أنشئ عقدا جديدا', 409)
+      throw new AuthError('no_body', 'عقد بلا نصّ — من الباب القديم. أنشئ عقدا جديدا', 409)
     }
     /* ولا يُعاد عن عقدٍ نافذ: ما خُتم بين الطرفين لا يُستبدَل بنقرة، وبابُه
        الفسخُ لا التصحيح. والموقَّعُ الذي لم يُرفَض توقيعُه بعدُ كذلك: يُرفَض
@@ -4936,7 +4936,7 @@ export class TrainerReviewService {
     if (!REPLACEABLE.includes(old.status)) {
       throw new AuthError(
         'bad_state',
-        'لا يُستبدَل عقدٌ مسَّه ختمُنا أو ينتظره — ارفضِ التوقيعَ أوّلا بسببٍ يصل صاحبَه، ثمّ أعِدْه مصحَّحا',
+        'لا يستبدل عقد مسّه ختمنا أو ينتظره — ارفض التوقيع أوّلا بسبب يصل صاحبه، ثمّ أعده مصحّحا',
         409,
       )
     }
@@ -4952,7 +4952,7 @@ export class TrainerReviewService {
           where: { id: old.id, status: old.status },
           data: {
             status: 'revoked', revokedAt: issuedOn, revokedBy: actorId,
-            revokeReasonAr: `أُنشئ عقدٌ بديلٌ بالاسم الصحيح للطرف الثاني: ${name}`.slice(0, 500),
+            revokeReasonAr: `أنشئ عقد بديل بالاسم الصحيح للطرف الثاني: ${name}`.slice(0, 500),
             /* والرمزُ يبقى كأخواته (٣٠ سبتمبر ٢٠٢٦): أزاحه أحدثُ منه، فيُقال
                ذلك على بابه بدل «انتهى هذا الرابط». والتوقيعُ ممنوعٌ بشرط
                الحالة لا بمسح الرمز. */
@@ -4989,8 +4989,8 @@ export class TrainerReviewService {
       await safeNotify(this.prisma, {
         userId: old.profile.userId, channel: 'in_app', audience: 'trainer',
         templateKey: 'trainer.contract.name_reissued',
-        title: 'أُعيد عقدُك مصحَّحا باسمك',
-        body: `صار اسمُك في الطرف الثاني «${name}» كما في وثيقة هويّتك، وأُعيد عقدُك بهذا الاسم. ورابطُ توقيعه في بريدك — والرابطُ السابقُ بطل.`,
+        title: 'أعيد عقدك مصحّحا باسمك',
+        body: `صار اسمك في الطرف الثاني «${name}» كما في وثيقة هويّتك، وأعيد عقدك بهذا الاسم. ورابط توقيعه في بريدك — والرابط السابق بطل.`,
         data: { contractId: created.id, replacesContractId: old.id },
       })
     }
@@ -4998,7 +4998,7 @@ export class TrainerReviewService {
     /* ⑤ ويُرسَل بسببه مقولا: من طلب تصحيحا يعرف أنّ هذا جوابُ طلبه */
     const sent = await this.sendContract(
       created.id, actorId,
-      `هذا عقدُك مصحَّحا: صار اسمُك في الطرف الثاني «${name}» كما في وثيقة هويّتك. والنسخةُ السابقةُ أُلغيت ورابطُها بطل — فوقّعْ هذه وحدَها.`,
+      `هذا عقدك مصحّحا: صار اسمك في الطرف الثاني «${name}» كما في وثيقة هويّتك. والنسخة السابقة ألغيت ورابطها بطل — فوقّع هذه وحدها.`,
     )
     return { ...sent, ok: true as const, contractId: created.id, revision: created.revision }
   }
@@ -5126,13 +5126,13 @@ export class TrainerReviewService {
     const subject = (input.subjectAr ?? '').trim()
     const body = (input.bodyAr ?? '').trim()
     if (subject.length < RESIGN_SUBJECT_MIN || subject.length > RESIGN_SUBJECT_MAX) {
-      throw new AuthError('no_subject', `اكتب عنوانَ الرسالة (${RESIGN_SUBJECT_MIN}–${RESIGN_SUBJECT_MAX} حرفا)`, 422)
+      throw new AuthError('no_subject', `اكتب عنوان الرسالة (${RESIGN_SUBJECT_MIN}–${RESIGN_SUBJECT_MAX} حرفا)`, 422)
     }
     if (body.length < RESIGN_BODY_MIN || body.length > RESIGN_BODY_MAX) {
-      throw new AuthError('no_body_text', `اكتب نصَّ الرسالة (${RESIGN_BODY_MIN}–${RESIGN_BODY_MAX} حرفا)`, 422)
+      throw new AuthError('no_body_text', `اكتب نصّ الرسالة (${RESIGN_BODY_MIN}–${RESIGN_BODY_MAX} حرفا)`, 422)
     }
     if (hasAmendmentPlaceholder(body)) {
-      throw new AuthError('placeholder_left', 'في الرسالة سطرٌ لم يُستبدَل بعد («اكتب هنا…») — اكتب جوابَك مكانه', 422)
+      throw new AuthError('placeholder_left', 'في الرسالة سطر لم يستبدل بعد («اكتب هنا…») — اكتب جوابك مكانه', 422)
     }
     const old = await this.prisma.trainerContract.findUnique({
       where: { id: contractId },
@@ -5140,7 +5140,7 @@ export class TrainerReviewService {
     })
     if (!old) throw new AuthError('not_found', 'العقد غير موجود', 404)
     if (!contractHasBodyAr(old.bodyAr)) {
-      throw new AuthError('no_body', 'عقدٌ بلا نصّ — من البابِ القديم. أنشئ عقدا جديدا', 409)
+      throw new AuthError('no_body', 'عقد بلا نصّ — من الباب القديم. أنشئ عقدا جديدا', 409)
     }
     /* والاسمُ ما وقّع به صاحبُه: هو أعلمُ باسمه، وكتبه بيده في خانة التوقيع */
     const app = old.profile.application
@@ -5155,7 +5155,7 @@ export class TrainerReviewService {
     if (input.compensation && app.status === 'active') {
       throw new AuthError(
         'fee_active_trainer',
-        'مدرّبٌ نشط: تغييرُ أتعابه هنا يسري على ما يُحسب له من اليوم قبل أن يوقّع. أعِدْه بأتعابه القائمة، وغيّرْها من شاشة الأتعاب بتاريخ سريان',
+        'مدرّب نشط: تغيير أتعابه هنا يسري على ما يحسب له من اليوم قبل أن يوقّع. أعده بأتعابه القائمة، وغيّرها من شاشة الأتعاب بتاريخ سريان',
         409,
       )
     }
@@ -5167,7 +5167,7 @@ export class TrainerReviewService {
       const pre = await this.contractPrefill(old.profile.applicationId)
       courses = this.chosenCourses(pre.courses, input.courseIds)
       if (courses.length === 0) {
-        throw new AuthError('no_courses', 'اختر دورةً واحدةً على الأقلّ ممّا هو مؤهَّلٌ له — الملحق (أ) لا يُطبَع فارغا', 422)
+        throw new AuthError('no_courses', 'اختر دورة واحدة على الأقلّ ممّا هو مؤهّل له — الملحق (أ) لا يطبع فارغا', 422)
       }
     }
     const oldFee: ContractCompensation | null = old.compensationType
@@ -5244,8 +5244,8 @@ export class TrainerReviewService {
         })
       if (done.count === 0) {
         throw new AuthError('bad_state', mode === 'resign'
-          ? 'لا يُعاد للتوقيع إلّا عقدٌ موقَّعٌ لم يُعتمَد'
-          : 'لا طلبَ تعديلٍ قائمٌ على هذا العقد', 409)
+          ? 'لا يعاد للتوقيع إلّا عقد موقّع لم يعتمد'
+          : 'لا طلب تعديل قائم على هذا العقد', 409)
       }
       /* ومهمّةُ «توقيع العقد» تُفتَح ثانيةً — علّتُه في `rejectSignature`.
          ومن طلب تعديلا لم يوقّع، فلا مهمّةَ أُغلقت تُفتَح. */
@@ -5316,7 +5316,7 @@ export class TrainerReviewService {
   async rejectSignature(contractId: string, actorId: string, reasonAr: string) {
     const reason = (reasonAr ?? '').trim()
     if (reason.length < 5) {
-      throw new AuthError('no_reason', 'اكتب ما لم يطابق — يصل صاحبَه ويُقرأ بعد شهرٍ حين يُسأل عنه', 422)
+      throw new AuthError('no_reason', 'اكتب ما لم يطابق — يصل صاحبه ويقرأ بعد شهر حين يسأل عنه', 422)
     }
     const c = await this.prisma.trainerContract.findUnique({
       where: { id: contractId },
@@ -5327,11 +5327,11 @@ export class TrainerReviewService {
       where: { id: contractId, status: 'signed' },
       data: {
         status: 'revoked', revokedAt: new Date(), revokedBy: actorId,
-        revokeReasonAr: `رُفض التوقيع: ${reason}`.slice(0, 500),
+        revokeReasonAr: `رفض التوقيع: ${reason}`.slice(0, 500),
       },
     })
     if (done.count === 0) {
-      throw new AuthError('bad_state', 'لا يُرفَض توقيعٌ إلّا على عقدٍ موقَّعٍ لم يُعتمَد', 409)
+      throw new AuthError('bad_state', 'لا يرفض توقيع إلّا على عقد موقّع لم يعتمد', 409)
     }
     await recordAudit(this.prisma, {
       actorId, action: 'trainer.contract.reject_signature',
@@ -5354,14 +5354,14 @@ export class TrainerReviewService {
     try {
       await sendDirectEmail(this.prisma, {
         to: c.signerEmail ?? app.email,
-        subject: `نحتاج مراجعةَ بيانات عقدك — ${c.title}`,
+        subject: `نحتاج مراجعة بيانات عقدك — ${c.title}`,
         ...renderMail({
           greetingName: c.signerLegalName ?? app.fullName,
-          heading: 'لم نستطع اعتمادَ توقيعك بعد',
+          heading: 'لم نستطع اعتماد توقيعك بعد',
           blocks: [
-            { kind: 'p', text: `راجعنا توقيعَك على «${c.title}» ولم نستطع اعتمادَه.` },
+            { kind: 'p', text: `راجعنا توقيعك على «${c.title}» ولم نستطع اعتماده.` },
             { kind: 'callout', text: reason },
-            { kind: 'note', text: 'ويصلك عقدٌ جديدٌ برابطٍ جديدٍ بعد تصحيحه — ولا يلزمك ما لم يُعتمَد.' },
+            { kind: 'note', text: 'ويصلك عقد جديد برابط جديد بعد تصحيحه — ولا يلزمك ما لم يعتمد.' },
           ],
         }),
       })
@@ -5413,13 +5413,13 @@ export class TrainerReviewService {
     if (app) {
       await sendDirectEmail(this.prisma, {
         to: app.email,
-        subject: 'سُجّل توقيعُ عقدك — أكاديمية وجيز',
+        subject: 'سجّل توقيع عقدك — أكاديمية وجيز',
         ...renderMail({
           greetingName: app.fullName,
-          heading: 'سُجّل توقيعُ عقدك',
+          heading: 'سجّل توقيع عقدك',
           blocks: [
-            { kind: 'p', text: 'وانتقل طلبُك إلى طورِ التهيئة. تبقّت مهامُّ التهيئة، وتُفتح لك في بوّابتك حين يُنشأ حسابُك بدعوةٍ تصلك على هذا العنوان.' },
-            { kind: 'note', text: 'وإن لم تكن أنت من وقّع فأبلغنا بردٍّ على هذه الرسالة.' },
+            { kind: 'p', text: 'وانتقل طلبك إلى طور التهيئة. تبقّت مهامّ التهيئة، وتفتح لك في بوّابتك حين ينشأ حسابك بدعوة تصلك على هذا العنوان.' },
+            { kind: 'note', text: 'وإن لم تكن أنت من وقّع فأبلغنا بردّ على هذه الرسالة.' },
           ],
         }),
       })
@@ -5456,12 +5456,12 @@ export class TrainerReviewService {
     const app = await this.prisma.trainerApplication.findUnique({ where: { id: applicationId }, include: { profile: true } })
     if (!app) throw new AuthError('not_found', 'الطلب غير موجود', 404)
     if (!['onboarding', 'contract_pending'].includes(app.status)) {
-      throw new AuthError('bad_state', 'الدعوة تُرسل بعد الاعتماد المشروط ومرحلة العقد فقط', 409)
+      throw new AuthError('bad_state', 'الدعوة ترسل بعد الاعتماد المشروط ومرحلة العقد فقط', 409)
     }
     if (!app.profile) throw new AuthError('no_profile', 'لا ملف مدرب لهذا الطلب', 409)
-    if (app.profile.userId) throw new AuthError('already_linked', 'الحساب أُنشئ وربط مسبقا', 409)
+    if (app.profile.userId) throw new AuthError('already_linked', 'الحساب أنشئ وربط مسبقا', 409)
     if (app.userId) {
-      throw new AuthError('has_account', 'للمتقدّم حسابٌ منذ تقديمه — لا دعوةَ تلزمه؛ زرّ التفعيل يربطه بملفّه ويفتح له بوّابته', 409)
+      throw new AuthError('has_account', 'للمتقدّم حساب منذ تقديمه — لا دعوة تلزمه؛ زرّ التفعيل يربطه بملفّه ويفتح له بوّابته', 409)
     }
 
     const token = newToken()
@@ -5478,8 +5478,8 @@ export class TrainerReviewService {
         heading: `اكتمل اعتماد طلبك (${app.reference}) — وهذه دعوتك لإنشاء حسابك`,
         blocks: [
           { kind: 'cta', label: 'أنشئ حسابك واختر كلمتك', href: acceptUrl },
-          { kind: 'callout', text: `الرابط صالحٌ ${MAIL_LINK_WINDOW_AR}، ويُستخدم مرّةً واحدة.` },
-          { kind: 'note', text: 'فإن انتهى فاطلب من فريقنا إعادةَ إرساله.' },
+          { kind: 'callout', text: `الرابط صالح ${MAIL_LINK_WINDOW_AR}، ويستخدم مرّة واحدة.` },
+          { kind: 'note', text: 'فإن انتهى فاطلب من فريقنا إعادة إرساله.' },
         ],
       }),
     })
@@ -5555,13 +5555,13 @@ export class TrainerReviewService {
   private async confirmActivation(email: string, fullName: string): Promise<void> {
     await sendDirectEmail(this.prisma, {
       to: email,
-      subject: 'أُنشئ حسابُك في أكاديمية وجيز',
+      subject: 'أنشئ حسابك في أكاديمية وجيز',
       ...renderMail({
         greetingName: fullName,
-        heading: 'أُنشئ حسابُك وفُتحت بوّابتُك',
+        heading: 'أنشئ حسابك وفتحت بوّابتك',
         blocks: [
           { kind: 'p', text: 'تدخلها ببريدك هذا وكلمتك الجديدة.' },
-          { kind: 'note', text: 'وإن لم تكن أنت من أنشأه فتواصل معنا فورا بردٍّ على هذه الرسالة — فرابطُ الدعوة يُستخدم مرّةً واحدةً وقد استُهلك.' },
+          { kind: 'note', text: 'وإن لم تكن أنت من أنشأه فتواصل معنا فورا بردّ على هذه الرسالة — فرابط الدعوة يستخدم مرّة واحدة وقد استهلك.' },
         ],
       }),
     })
@@ -5587,8 +5587,8 @@ export class TrainerReviewService {
     if (!opts.quiet) {
       await this.notifyTrainerUser(profileId, {
         templateKey: 'trainer.qualified',
-        title: 'أُضيفت دورةٌ إلى دوراتك',
-        body: `أُضيفت «${await this.courseTitleAr(courseId)}» إلى دوراتك — وتصلك شعبُها حين تُسنَد إليك.`,
+        title: 'أضيفت دورة إلى دوراتك',
+        body: `أضيفت «${await this.courseTitleAr(courseId)}» إلى دوراتك — وتصلك شعبها حين تسند إليك.`,
         data: { courseId },
       })
     }
@@ -5623,7 +5623,7 @@ export class TrainerReviewService {
       where: { profileId_courseId: { profileId, courseId } },
     })
     if (existing?.status === 'qualified') {
-      throw new AuthError('already_qualified', 'المدرب مؤهَّل لهذه الدورة — أسنده مباشرة', 409)
+      throw new AuthError('already_qualified', 'المدرب مؤهّل لهذه الدورة — أسنده مباشرة', 409)
     }
 
     /* تعارضُ الجدول يُفحص عند الطلب لا عند الموافقة وحدَها: من يقرأ الطلب
@@ -5651,7 +5651,7 @@ export class TrainerReviewService {
     await notifyRole(this.prisma, ['academic_manager', 'super_admin'], {
       channel: 'in_app',
       title: 'طلب تأهيل مدرّب — بانتظار قرارك',
-      body: `طُلب تأهيلُ «${profile.application.fullName}» لدورة شعبة «${cohort.title}»، والموافقةُ تؤهّله وتُسنده معا.`,
+      body: `طلب تأهيل «${profile.application.fullName}» لدورة شعبة «${cohort.title}»، والموافقة تؤهّله وتسنده معا.`,
       templateKey: 'trainer.qualify.request',
       data: { profileId: profile.id, courseId, cohortId },
     })
@@ -5766,11 +5766,11 @@ export class TrainerReviewService {
       include: { profile: true },
     })
     if (!q) throw new AuthError('not_found', 'الطلب غير موجود', 404)
-    if (q.status !== 'pending') throw new AuthError('not_pending', 'بُتَّ في هذا الطلب من قبل', 409)
+    if (q.status !== 'pending') throw new AuthError('not_pending', 'بتّ في هذا الطلب من قبل', 409)
 
     if (!approve) {
       /* لا رفضَ صامت: السببُ يُخزَّن ويُقرأ في ملفّ المدرّب */
-      if (!note?.trim()) throw new AuthError('reason_required', 'الرفض يحتاج سببا يُقرأ', 400)
+      if (!note?.trim()) throw new AuthError('reason_required', 'الرفض يحتاج سببا يقرأ', 400)
       const row = await this.prisma.trainerCourseQualification.update({
         where: { id: qualificationId },
         data: { status: 'rejected', note, qualifiedBy: actorId, decidedAt: new Date() },
@@ -5782,8 +5782,8 @@ export class TrainerReviewService {
       /* والرفضُ خبرٌ أيضا: من طُلب تأهيلُه ولم يُقبل كان يبقى ينتظر بلا ردّ */
       await this.notifyTrainerUser(q.profileId, {
         templateKey: 'trainer.qualify.rejected',
-        title: 'لم نُضِف دورةً إلى دوراتك',
-        body: `لم نُضِف «${await this.courseTitleAr(q.courseId)}» إلى دوراتك — والسبب: ${note}`,
+        title: 'لم نضف دورة إلى دوراتك',
+        body: `لم نضف «${await this.courseTitleAr(q.courseId)}» إلى دوراتك — والسبب: ${note}`,
         data: { courseId: q.courseId },
       })
       return { qualification: row, assigned: false, assignNote: null as string | null }
@@ -5799,8 +5799,8 @@ export class TrainerReviewService {
     })
     await this.notifyTrainerUser(q.profileId, {
       templateKey: 'trainer.qualified',
-      title: 'أُضيفت دورةٌ إلى دوراتك',
-      body: `أُضيفت «${await this.courseTitleAr(q.courseId)}» إلى دوراتك — وتصلك شعبُها حين تُسنَد إليك.`,
+      title: 'أضيفت دورة إلى دوراتك',
+      body: `أضيفت «${await this.courseTitleAr(q.courseId)}» إلى دوراتك — وتصلك شعبها حين تسند إليك.`,
       data: { courseId: q.courseId },
     })
 
@@ -5863,8 +5863,8 @@ export class TrainerReviewService {
     if (!cohort) {
       await this.notifyTrainerUser(profileId, {
         templateKey: 'trainer.assigned',
-        title: 'أُسنِدت إليك دورة',
-        body: `أُسنِدت إليك دورة «${courseTitle}» — وتصلك شعبُها حين تُجدوَل.`,
+        title: 'أسندت إليك دورة',
+        body: `أسندت إليك دورة «${courseTitle}» — وتصلك شعبها حين تجدول.`,
         data: { courseId, cohortId },
       })
     }
@@ -5896,7 +5896,7 @@ export class TrainerReviewService {
       /* لا يُلصق في العمود إلّا رابطٌ آمنٌ أو مفتاحُ مخزنٍ أصدرناه نحن.
          عمودٌ يخرج إلى `src` في صفحةٍ عامّةٍ يقبل `javascript:` لو تُرك. */
       if (next && !next.startsWith('https://') && !next.startsWith(PHOTO_KEY_PREFIX)) {
-        throw new AuthError('bad_photo', 'رابطُ الصورة يجب أن يبدأ بـhttps://', 422)
+        throw new AuthError('bad_photo', 'رابط الصورة يجب أن يبدأ بـhttps://', 422)
       }
       /* والصورةُ القديمةُ تُمحى من القرص حين تُستبدل — وإلّا بقيت بايتاتٌ
          لا يشير إليها سجلٌّ، ولا يعرف أحدٌ أنّها هناك ليحذفها. */
@@ -5927,9 +5927,9 @@ export class TrainerReviewService {
      تركه يبقى عمودُه يشير إلى كائنٍ لا وجودَ له — فيردّ مسارُ العرض ٤٠٤،
      وهو أهونُ من رفعٍ لا يُقبل. */
   async startPhotoUpload(profileId: string, actorId: string, mime: string) {
-    assertFileUploadsEnabled('والبديلُ الآن: ألصِق رابطَ الصورة مباشرةً في الحقل.')
+    assertFileUploadsEnabled('والبديل الآن: ألصق رابط الصورة مباشرة في الحقل.')
     if (!(PHOTO_MIMES as readonly string[]).includes(mime)) {
-      throw new AuthError('bad_mime', 'الصورةُ JPEG أو PNG أو WebP', 422)
+      throw new AuthError('bad_mime', 'الصورة JPEG أو PNG أو WebP', 422)
     }
     const profile = await this.requireActiveProfile(profileId)
     const oldKey = photoStorageKey(profile.photoUrl)
@@ -5966,9 +5966,9 @@ export class TrainerReviewService {
     const profile = await this.prisma.trainerProfile.findUnique({
       where: { id: profileId }, select: { id: true, photoUrl: true, photoPendingKey: true },
     })
-    if (!profile) throw new AuthError('not_found', 'الملفُّ غيرُ موجود', 404)
+    if (!profile) throw new AuthError('not_found', 'الملفّ غير موجود', 404)
     if (!profile.photoPendingKey) {
-      throw new AuthError('no_pending_photo', 'لا صورةَ تنتظر الاعتماد', 409)
+      throw new AuthError('no_pending_photo', 'لا صورة تنتظر الاعتماد', 409)
     }
     const oldKey = photoStorageKey(profile.photoUrl)
     const updated = await this.prisma.trainerProfile.update({
@@ -5989,9 +5989,9 @@ export class TrainerReviewService {
     const profile = await this.prisma.trainerProfile.findUnique({
       where: { id: profileId }, select: { id: true, photoPendingKey: true },
     })
-    if (!profile) throw new AuthError('not_found', 'الملفُّ غيرُ موجود', 404)
+    if (!profile) throw new AuthError('not_found', 'الملفّ غير موجود', 404)
     if (!profile.photoPendingKey) {
-      throw new AuthError('no_pending_photo', 'لا صورةَ تنتظر الاعتماد', 409)
+      throw new AuthError('no_pending_photo', 'لا صورة تنتظر الاعتماد', 409)
     }
     await this.prisma.trainerProfile.update({
       where: { id: profile.id }, data: { photoPendingKey: null },
@@ -6076,8 +6076,8 @@ export class TrainerReviewService {
        أولى اللحظات بأن تبلغه. */
     await this.notifyTrainerUser(profile.id, {
       templateKey: 'trainer.publish.approved',
-      title: 'اعتُمد ظهورُك للعامّة',
-      body: 'صار ملفُّك — اسمُك وسيرتُك ودوراتُك — يظهر في صفحة مدرّبي الأكاديمية وفي صفحتك باسمك. راجِعه، فما فيه هو ما يقرؤه الناس.',
+      title: 'اعتمد ظهورك للعامّة',
+      body: 'صار ملفّك — اسمك وسيرتك ودوراتك — يظهر في صفحة مدرّبي الأكاديمية وفي صفحتك باسمك. راجعه، فما فيه هو ما يقرؤه الناس.',
     })
   }
 
@@ -6108,7 +6108,7 @@ export class TrainerReviewService {
     if (profile.userId && profile.userId === actorId) {
       throw new AuthError(
         'self_suspend',
-        'هذا ملفُّك أنت — لا توقف نفسَك من قائمة المدرّبين. وإن أردتَ إيقافَ حسابك فمن ملفّك الشخصيّ.',
+        'هذا ملفّك أنت — لا توقف نفسك من قائمة المدرّبين. وإن أردت إيقاف حسابك فمن ملفّك الشخصيّ.',
         409,
       )
     }
@@ -6144,7 +6144,7 @@ export class TrainerReviewService {
        تدريبُك» لمن بقي دخولُه. فرسالةٌ تقول له إنّ حسابَه أُوقف وهو يدخل من
        فوره أسوأُ من لا رسالة — تُكذّبها الشاشةُ أمامه. */
     const portalUrl = `${publicSiteUrl()}/trainer`
-    const heading = locksAccount ? 'أُوقف حسابُك في أكاديمية وجيز' : 'أُوقف تدريبُك في أكاديمية وجيز'
+    const heading = locksAccount ? 'أوقف حسابك في أكاديمية وجيز' : 'أوقف تدريبك في أكاديمية وجيز'
     await sendDirectEmail(this.prisma, {
       to: profile.application.email,
       subject: heading,
@@ -6153,12 +6153,12 @@ export class TrainerReviewService {
         heading,
         blocks: [
           { kind: 'p', text: locksAccount
-            ? 'لا تُفتح بوّابتُك ولا تُسنَد إليك شعبةٌ جديدة حتّى يُرفع الإيقاف، وشعبُك القائمةُ تبقى كما هي عند الأكاديمية.'
-            : 'لا تُفتح بوّابتُك التدريبيّةُ ولا تُسنَد إليك شعبةٌ جديدة حتّى يُرفع الإيقاف، وشعبُك القائمةُ تبقى كما هي عند الأكاديمية. ودخولُك إلى ما سوى التدريب باقٍ كما كان.' },
-          ...(note ? [{ kind: 'p' as const, text: `والسببُ الذي كُتب: ${note}` }] : []),
+            ? 'لا تفتح بوّابتك ولا تسند إليك شعبة جديدة حتّى يرفع الإيقاف، وشعبك القائمة تبقى كما هي عند الأكاديمية.'
+            : 'لا تفتح بوّابتك التدريبيّة ولا تسند إليك شعبة جديدة حتّى يرفع الإيقاف، وشعبك القائمة تبقى كما هي عند الأكاديمية. ودخولك إلى ما سوى التدريب باق كما كان.' },
+          ...(note ? [{ kind: 'p' as const, text: `والسبب الذي كتب: ${note}` }] : []),
           { kind: 'p', text: [
-            'وإن كان في الأمر لبسٌ فردَّ على هذه الرسالة. و',
-            { text: 'بوّابتك', href: portalUrl }, ' تفتح من موضعها حين يُرفع الإيقاف.',
+            'وإن كان في الأمر لبس فردّ على هذه الرسالة. و',
+            { text: 'بوّابتك', href: portalUrl }, ' تفتح من موضعها حين يرفع الإيقاف.',
           ] },
         ],
       }),
@@ -6309,7 +6309,7 @@ export class TrainerReviewService {
     if (!profile) throw new AuthError('not_found', 'ملف المدرب غير موجود', 404)
     const allowed: readonly string[] = TrainerReviewService.QUALIFIABLE_STATUSES
     if (profile.suspendedAt || !allowed.includes(profile.application.status)) {
-      throw new AuthError('not_live', 'ملفُّ المدرّب ليس في طورٍ يُؤهَّل فيه — القبولُ المشروطُ أوّلا', 409)
+      throw new AuthError('not_live', 'ملفّ المدرّب ليس في طور يؤهّل فيه — القبول المشروط أوّلا', 409)
     }
     return profile
   }

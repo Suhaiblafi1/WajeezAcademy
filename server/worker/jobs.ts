@@ -131,14 +131,14 @@ export async function dispatchQueuedNotifications(prisma: PrismaClient, now = ne
       failed += 1
     }
   }
-  const held = waiting > 0 ? ` · و${waiting} ينتظر قناةً لم تُوصَل بعد` : ''
+  const held = waiting > 0 ? ` · و${waiting} ينتظر قناة لم توصل بعد` : ''
   return {
     job: 'dispatch_notifications',
     summaryAr: (queued.length === 0
-      ? 'لا إشعارَ في الطابور'
-      : `حُوِل ${queued.length} إشعارا: وصل ${done}، وسقط ${failed}`
+      ? 'لا إشعار في الطابور'
+      : `حول ${queued.length} إشعارا: وصل ${done}، وسقط ${failed}`
         + (failed > 0 ? ' (المزوّد)' : '')
-        + (oldest ? ` — أقدمُها انتظر ${Math.max(1, Math.round((now.getTime() - oldest.getTime()) / 60_000))} دقيقة` : ''))
+        + (oldest ? ` — أقدمها انتظر ${Math.max(1, Math.round((now.getTime() - oldest.getTime()) / 60_000))} دقيقة` : ''))
       + held,
     done, failed, ms: Date.now() - started,
   }
@@ -162,8 +162,8 @@ export async function dispatchOutboxMail(prisma: PrismaClient): Promise<JobResul
     return {
       job: 'outbox_mail',
       summaryAr: waiting > 0
-        ? `قناةُ البريد غيرُ موصولة — و${waiting} رسالةً تنتظرها ولا تُحرَق`
-        : 'قناةُ البريد غيرُ موصولة — ولا رسالةَ تنتظر',
+        ? `قناة البريد غير موصولة — و${waiting} رسالة تنتظرها ولا تحرق`
+        : 'قناة البريد غير موصولة — ولا رسالة تنتظر',
       done: 0, failed: 0, ms: Date.now() - started,
     }
   }
@@ -175,10 +175,10 @@ export async function dispatchOutboxMail(prisma: PrismaClient): Promise<JobResul
   return {
     job: 'outbox_mail',
     summaryAr: (run.sent === 0 && run.failed === 0
-      ? 'لا رسالةَ في طابور البريد'
+      ? 'لا رسالة في طابور البريد'
       : `خرج ${run.sent}، وسقط ${run.failed}`)
       + (run.remaining > 0 ? ` — وبقي ${run.remaining} للدورة القادمة` : '')
-      + (dead > 0 ? ` · و${dead} استنفدت محاولاتِها ولم تصل` : ''),
+      + (dead > 0 ? ` · و${dead} استنفدت محاولاتها ولم تصل` : ''),
     done: run.sent, failed: run.failed, ms: Date.now() - started,
   }
 }
@@ -251,7 +251,7 @@ export async function sendVerificationReminders(prisma: PrismaClient, now = new 
   if (!(await liveChannels(prisma)).includes('email')) {
     return {
       job: 'verify_reminders',
-      summaryAr: 'قناةُ البريد غيرُ موصولة — لا يُذكَّر أحدٌ ولا يُمَسّ رمزُه',
+      summaryAr: 'قناة البريد غير موصولة — لا يذكّر أحد ولا يمسّ رمزه',
       done: 0, failed: 0, ms: Date.now() - started,
     }
   }
@@ -296,10 +296,10 @@ export async function sendVerificationReminders(prisma: PrismaClient, now = new 
       try {
         await notifications.notify({
           userId: u.id, channel: 'in_app', templateKey: step.key,
-          title: step.last ? 'تذكيرٌ أخير بتوثيق بريدك' : 'بقي توثيقُ بريدك',
+          title: step.last ? 'تذكير أخير بتوثيق بريدك' : 'بقي توثيق بريدك',
           body: step.last
-            ? 'أرسلنا رابطا جديدا إلى بريدك، وهذا آخرُ تذكيرٍ نرسله في هذا الشأن.'
-            : 'أرسلنا رابطا جديدا إلى بريدك. والتوثيقُ مطلوبٌ للشراء والشهادة.',
+            ? 'أرسلنا رابطا جديدا إلى بريدك، وهذا آخر تذكير نرسله في هذا الشأن.'
+            : 'أرسلنا رابطا جديدا إلى بريدك. والتوثيق مطلوب للشراء والشهادة.',
           audience: 'learner',
         })
       } catch {
@@ -317,7 +317,7 @@ export async function sendVerificationReminders(prisma: PrismaClient, now = new 
 
   return {
     job: 'verify_reminders',
-    summaryAr: (parts.length === 0 ? 'لا تذكيرَ مستحقّا' : `ذُكِّر ${parts.join('، ')}`)
+    summaryAr: (parts.length === 0 ? 'لا تذكير مستحقّا' : `ذكّر ${parts.join('، ')}`)
       + (failed > 0 ? ` · وسقط ${failed} عند المزوّد` : ''),
     done, failed, ms: Date.now() - started,
   }
@@ -401,13 +401,13 @@ export async function notifyTimeline(prisma: PrismaClient, now = new Date()): Pr
   }
 
   const parts = [
-    sent.slot_opened ? `${sent.slot_opened} «فُتح موعد»` : '',
-    sent.tasks_opened ? `${sent.tasks_opened} «فُتحت مهامّ»` : '',
-    sent.due_soon ? `${sent.due_soon} «آخرُ موعدٍ غدا»` : '',
+    sent.slot_opened ? `${sent.slot_opened} «فتح موعد»` : '',
+    sent.tasks_opened ? `${sent.tasks_opened} «فتحت مهامّ»` : '',
+    sent.due_soon ? `${sent.due_soon} «آخر موعد غدا»` : '',
   ].filter(Boolean)
   return {
     job: 'notify_timeline',
-    summaryAr: parts.length ? `أُرسل ${parts.join(' و')}` : 'لا جديدَ على خطوط المحاور',
+    summaryAr: parts.length ? `أرسل ${parts.join(' و')}` : 'لا جديد على خطوط المحاور',
     done, failed, ms: Date.now() - started,
   }
 }
@@ -441,9 +441,9 @@ function timelineMessage(
       .sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime())[0]
     return {
       templateKey: 'timeline.slot_opened',
-      title: `فُتح موعدٌ جديدٌ في «${ctx.title}»`,
-      body: `${ev.moduleIds.map(ctx.label).join(' و')} — متنُه وموضعُه في الكرّاسة في رحلتك الآن.`
-        + (next ? ` ولقاؤه المباشر ${whenAr(next.startsAt)}، وبعده تُفتح مهامُّه.` : ''),
+      title: `فتح موعد جديد في «${ctx.title}»`,
+      body: `${ev.moduleIds.map(ctx.label).join(' و')} — متنه وموضعه في الكرّاسة في رحلتك الآن.`
+        + (next ? ` ولقاؤه المباشر ${whenAr(next.startsAt)}، وبعده تفتح مهامّه.` : ''),
       data: { slotStartsOn: ev.dedupe.split(':slot:')[1] ?? '' },
     }
   }
@@ -452,8 +452,8 @@ function timelineMessage(
     const due = tasks.map((a) => a.dueAt).filter((d): d is Date => d !== null).sort((a, b) => a.getTime() - b.getTime())[0]
     return {
       templateKey: 'timeline.tasks_opened',
-      title: `فُتحت مهامُّ ${ctx.label(ev.moduleId)}`,
-      body: `في «${ctx.title}»: ${tasks.map((a) => `«${a.title}»`).join('، ')}${due ? ` — آخرُ موعدها ${whenAr(due)}` : ''}. تجدها في «الواجبات».`,
+      title: `فتحت مهامّ ${ctx.label(ev.moduleId)}`,
+      body: `في «${ctx.title}»: ${tasks.map((a) => `«${a.title}»`).join('، ')}${due ? ` — آخر موعدها ${whenAr(due)}` : ''}. تجدها في «الواجبات».`,
       data: { moduleId: ev.moduleId },
     }
   }
@@ -461,8 +461,8 @@ function timelineMessage(
   if (!task) return null
   return {
     templateKey: 'timeline.due_soon',
-    title: `آخرُ موعدٍ لـ«${task.title}»: ${whenAr(ev.dueAt)}`,
-    body: `في «${ctx.title}» — ولم تسلّمها بعد. وما يصل بعد موعده يُقبل ويُعلَّم متأخّرا.`,
+    title: `آخر موعد لـ«${task.title}»: ${whenAr(ev.dueAt)}`,
+    body: `في «${ctx.title}» — ولم تسلّمها بعد. وما يصل بعد موعده يقبل ويعلّم متأخّرا.`,
     data: { assessmentId: ev.assessmentId },
   }
 }
@@ -499,7 +499,7 @@ export async function closeEndedSessions(prisma: PrismaClient, now = new Date())
     select: { id: true, cohortId: true },
   })
   if (ended.length === 0) {
-    return { job: 'close_ended_sessions', summaryAr: 'لا لقاءَ انتهى', done: 0, failed: 0, ms: Date.now() - started }
+    return { job: 'close_ended_sessions', summaryAr: 'لا لقاء انتهى', done: 0, failed: 0, ms: Date.now() - started }
   }
   /* والشرطُ يُعاد في الكتابة: حدثُ Zoom قد يسبق الدورةَ إلى اللقاء نفسِه */
   const { count } = await prisma.cohortSession.updateMany({
@@ -510,7 +510,7 @@ export async function closeEndedSessions(prisma: PrismaClient, now = new Date())
   const { recomputed, failed } = await recomputeCohorts(prisma, cohortIds)
   return {
     job: 'close_ended_sessions',
-    summaryAr: `انتهى ${count} لقاءً في ${cohortIds.length} شعبة · وأُعيد حسابُ تقدّم ${recomputed}`
+    summaryAr: `انتهى ${count} لقاء في ${cohortIds.length} شعبة · وأعيد حساب تقدّم ${recomputed}`
       + (failed > 0 ? ` · وتعثّر ${failed}` : ''),
     done: count, failed, ms: Date.now() - started,
   }
@@ -601,8 +601,8 @@ export async function sendSessionReminders(prisma: PrismaClient, now = new Date(
         try {
           await notifications.notify({
             userId: e.userId, channel: 'in_app', templateKey: window.key,
-            title: `جلستُك ${window.labelAr}: ${s.cohort.title}`,
-            body: `«${s.title}» تبدأ ${window.labelAr}.${s.zoom?.joinUrl ? ' رابطُ الانضمام في صفحة الجلسة.' : ' ولا رابطَ انضمامٍ بعد — راجع الأكاديمية.'}`,
+            title: `جلستك ${window.labelAr}: ${s.cohort.title}`,
+            body: `«${s.title}» تبدأ ${window.labelAr}.${s.zoom?.joinUrl ? ' رابط الانضمام في صفحة الجلسة.' : ' ولا رابط انضمام بعد — راجع الأكاديمية.'}`,
             data: { sessionId: s.id, cohortId: s.cohort.id, startsAt: s.startsAt.toISOString() },
             audience: 'learner',
           })
@@ -631,8 +631,8 @@ export async function sendSessionReminders(prisma: PrismaClient, now = new Date(
         try {
           await notifications.notify({
             userId: trainerId, channel: 'in_app', templateKey: window.trainerKey,
-            title: `جلستُك التي تدرّسها ${window.labelAr}: ${s.cohort.title}`,
-            body: `«${s.title}» تبدأ ${window.labelAr}.${s.zoom?.joinUrl ? ' رابطُ الانضمام في صفحة الجلسة.' : ' ولا رابطَ انضمامٍ بعد — راجع الأكاديمية قبل موعدها.'}`,
+            title: `جلستك التي تدرّسها ${window.labelAr}: ${s.cohort.title}`,
+            body: `«${s.title}» تبدأ ${window.labelAr}.${s.zoom?.joinUrl ? ' رابط الانضمام في صفحة الجلسة.' : ' ولا رابط انضمام بعد — راجع الأكاديمية قبل موعدها.'}`,
             data: { sessionId: s.id, cohortId: s.cohort.id, startsAt: s.startsAt.toISOString() },
             audience: 'trainer',
           })
@@ -648,7 +648,7 @@ export async function sendSessionReminders(prisma: PrismaClient, now = new Date(
 
   return {
     job: 'session_reminders',
-    summaryAr: parts.length === 0 ? 'لا جلسةَ تستحقّ تذكيرا الآن' : `أُنشئ ${parts.join(' و')}`,
+    summaryAr: parts.length === 0 ? 'لا جلسة تستحقّ تذكيرا الآن' : `أنشئ ${parts.join(' و')}`,
     done, failed, ms: Date.now() - started,
   }
 }
@@ -666,8 +666,8 @@ export async function syncCohortStatuses(prisma: PrismaClient, now = new Date())
   return {
     job: 'cohort_status_sync',
     summaryAr: out.changes.length === 0
-      ? 'حالاتُ الشعب مطابقةٌ لتواريخها'
-      : `حُدِّثت ${out.changes.length} شعبة: ${out.changes.slice(0, 3).map((c) => c.title).join('، ')}${out.changes.length > 3 ? '…' : ''}`,
+      ? 'حالات الشعب مطابقة لتواريخها'
+      : `حدّثت ${out.changes.length} شعبة: ${out.changes.slice(0, 3).map((c) => c.title).join('، ')}${out.changes.length > 3 ? '…' : ''}`,
     done: out.changes.length, failed: 0, ms: Date.now() - started,
   }
 }
@@ -682,11 +682,11 @@ export async function revokeLeftRegistrants(prisma: PrismaClient, now = new Date
   const started = Date.now()
   const out = await new CohortService(prisma).releaseSessionJoinLinks({}, now)
   const parts: string[] = []
-  if (out.cancelled > 0) parts.push(`أُلغي ${out.cancelled} تسجيلا لمن ترك شعبتَه`)
+  if (out.cancelled > 0) parts.push(`ألغي ${out.cancelled} تسجيلا لمن ترك شعبته`)
   if (out.failed > 0) parts.push(`وأبى Zoom ${out.failed}: ${out.reason}`)
   return {
     job: 'revoke_left_registrants',
-    summaryAr: parts.length === 0 ? 'لا تسجيلَ قائما لمن ترك شعبتَه' : parts.join(' · '),
+    summaryAr: parts.length === 0 ? 'لا تسجيل قائما لمن ترك شعبته' : parts.join(' · '),
     done: out.cancelled, failed: out.failed, ms: Date.now() - started,
   }
 }
@@ -702,8 +702,8 @@ export async function syncTermStatuses(prisma: PrismaClient, now = new Date()): 
   return {
     job: 'term_status_sync',
     summaryAr: out.changes.length === 0
-      ? 'حالاتُ الفصول مطابقةٌ لتواريخها'
-      : `حُدِّث ${out.changes.length} فصلا: ${out.changes.map((c) => `${c.titleAr} (${c.reason})`).join('، ')}`,
+      ? 'حالات الفصول مطابقة لتواريخها'
+      : `حدّث ${out.changes.length} فصلا: ${out.changes.map((c) => `${c.titleAr} (${c.reason})`).join('، ')}`,
     done: out.changes.length, failed: 0, ms: Date.now() - started,
   }
 }
@@ -735,14 +735,14 @@ export async function publishScheduledChanges(prisma: PrismaClient, now = new Da
     } catch (e) {
       /* الرفضُ المشروط ليس عطبا: «فحصُ الأثر لم يُجرَ» قرارٌ يبقى للبشر */
       failed += 1
-      blocked.push(e instanceof Error ? e.message.slice(0, 60) : 'سببٌ غير معروف')
+      blocked.push(e instanceof Error ? e.message.slice(0, 60) : 'سبب غير معروف')
     }
   }
   return {
     job: 'publish_scheduled_changes',
     summaryAr: due.length === 0
-      ? 'لا نشرَ مجدولٌ حلَّ موعدُه'
-      : `نُشر ${done} من ${due.length}${blocked.length > 0 ? ` — ووقف ${blocked.length}: ${[...new Set(blocked)].join(' · ')}` : ''}`,
+      ? 'لا نشر مجدول حلّ موعده'
+      : `نشر ${done} من ${due.length}${blocked.length > 0 ? ` — ووقف ${blocked.length}: ${[...new Set(blocked)].join(' · ')}` : ''}`,
     done, failed, ms: Date.now() - started,
   }
 }
@@ -819,13 +819,13 @@ export async function enforceRetention(prisma: PrismaClient, now = new Date()): 
         select: { id: true }, take: RETENTION_BATCH,
       }),
       (ids) => prisma.notification.deleteMany({ where: { id: { in: ids } } })),
-    trim('بريدٌ خرج',
+    trim('بريد خرج',
       () => prisma.outboxMail.findMany({
         where: { status: 'sent', sentAt: { lt: ago(RETENTION_DAYS.outboxSent) } },
         select: { id: true }, take: RETENTION_BATCH,
       }),
       (ids) => prisma.outboxMail.deleteMany({ where: { id: { in: ids } } })),
-    trim('بريدٌ لم يصل',
+    trim('بريد لم يصل',
       () => prisma.outboxMail.findMany({
         where: { status: 'failed', createdAt: { lt: ago(RETENTION_DAYS.outboxFailed) } },
         select: { id: true }, take: RETENTION_BATCH,
@@ -861,7 +861,7 @@ export async function enforceRetention(prisma: PrismaClient, now = new Date()): 
   const said = parts.filter((p) => p.count > 0).map((p) => `${p.count} ${p.labelAr}`)
   return {
     job: 'enforce_retention',
-    summaryAr: done === 0 ? 'لا صفَّ تجاوز مدّةَ حفظه' : `قُلِّم: ${said.join(' · ')}`,
+    summaryAr: done === 0 ? 'لا صفّ تجاوز مدّة حفظه' : `قلّم: ${said.join(' · ')}`,
     done, failed: 0, ms: Date.now() - started,
   }
 }
@@ -883,8 +883,8 @@ export async function cleanupExpired(prisma: PrismaClient, now = new Date()): Pr
   return {
     job: 'cleanup_expired',
     summaryAr: total === 0
-      ? 'لا صفَّ منتهيا أقدمَ من ثلاثين يوما'
-      : `حُذف ${sessions.count} جلسةً منتهيةً و${tokens.count} رمزا`,
+      ? 'لا صفّ منتهيا أقدم من ثلاثين يوما'
+      : `حذف ${sessions.count} جلسة منتهية و${tokens.count} رمزا`,
     done: total, failed: 0, ms: Date.now() - started,
   }
 }
@@ -950,7 +950,7 @@ export async function reclaimAbandonedOrders(prisma: PrismaClient, now = new Dat
       await recordAudit(prisma, {
         actorId: null, action: 'order.cancel', entityType: 'order', entityId: order.id,
         meta: { userId: order.userId, total: String(order.total), currency: order.currency, ageMs: now.getTime() - order.createdAt.getTime(), couponReleased: released },
-        reason: 'طلبٌ مهجورٌ لم يُدفع — أُلغي آليّا وأُفرِج عن مقاعده',
+        reason: 'طلب مهجور لم يدفع — ألغي آليّا وأفرج عن مقاعده',
       })
       /* ═══ ويُقال لصاحبه (ي-٤) ═══
 
@@ -963,8 +963,8 @@ export async function reclaimAbandonedOrders(prisma: PrismaClient, now = new Dat
           userId: order.userId,
           channel: 'in_app',
           templateKey: 'order.cancelled_abandoned',
-          title: 'أُلغي طلبُك الذي لم يكتمل دفعُه',
-          body: `أُلغي طلبُك (${order.total} ${order.currency}) لأنّه لم يُدفع، وأُفرِج عن مقعده لغيرك. ولم يُقتطع منك شيء — ويمكنك شراؤه من جديدٍ متى شئت.`,
+          title: 'ألغي طلبك الذي لم يكتمل دفعه',
+          body: `ألغي طلبك (${order.total} ${order.currency}) لأنّه لم يدفع، وأفرج عن مقعده لغيرك. ولم يقتطع منك شيء — ويمكنك شراؤه من جديد متى شئت.`,
           data: { orderId: order.id },
           audience: 'learner',
         })
@@ -976,12 +976,12 @@ export async function reclaimAbandonedOrders(prisma: PrismaClient, now = new Dat
     }
   }
 
-  const notes = withPayment > 0 ? ` · ${withPayment} عليه دفعةٌ ناجحة فلم يُمسّ` : ''
+  const notes = withPayment > 0 ? ` · ${withPayment} عليه دفعة ناجحة فلم يمسّ` : ''
   return {
     job: 'reclaim_abandoned_orders',
     summaryAr: done === 0 && failed === 0
-      ? `لا طلبَ مهجورا أقدمَ من ساعة${notes}`
-      : `أُلغي ${done} طلبا مهجورا وأُفرِج عن مقاعدها${notes}`,
+      ? `لا طلب مهجورا أقدم من ساعة${notes}`
+      : `ألغي ${done} طلبا مهجورا وأفرج عن مقاعدها${notes}`,
     done, failed, ms: Date.now() - started,
   }
 }
@@ -1021,10 +1021,10 @@ const CALENDLY_EVENT_CAP = 50
    يرى صمتا لا خبرا. وهو **إخفاقٌ فعلا**: موعدٌ حجزه إنسانٌ ولم يبلغ طابورَ
    المراجعة، ويحتاج نظرَ إنسانٍ ليُدرَك. فيُعَدّ في `failed` ليُكتب. */
 const CALENDLY_SKIP_AR: Record<string, string> = {
-  no_reference: 'بلا رقمِ طلبٍ في الحجز — حُجز من Calendly مباشرةً لا من الموقع',
-  incomplete_payload: 'بياناتُ المدعوّ ناقصة',
-  no_application: 'رقمُ الطلب والبريدُ معا لا يطابقان طلبا — أرجحُه بريدٌ مختلفٌ عند الحجز',
-  no_interview: 'إلغاءُ موعدٍ غيرِ مسجَّلٍ عندنا',
+  no_reference: 'بلا رقم طلب في الحجز — حجز من Calendly مباشرة لا من الموقع',
+  incomplete_payload: 'بيانات المدعوّ ناقصة',
+  no_application: 'رقم الطلب والبريد معا لا يطابقان طلبا — أرجحه بريد مختلف عند الحجز',
+  no_interview: 'إلغاء موعد غير مسجّل عندنا',
 }
 
 export async function syncCalendlyInterviews(prisma: PrismaClient, now = new Date()): Promise<JobResult> {
@@ -1034,7 +1034,7 @@ export async function syncCalendlyInterviews(prisma: PrismaClient, now = new Dat
   /* ولا يكفي `enabled`: مفعَّلٌ بلا رمزٍ يعني سؤالا برمزٍ فارغٍ يردّ ٤٠١
      كلَّ خمس دقائقَ إلى الأبد — وهي الحالةُ التي يقع فيها من فعّل ثمّ نسي. */
   if (!config.enabled || !config.token) {
-    return { job, summaryAr: 'لا رمزَ Calendly محفوظا — لا سؤالَ يُرسل', done: 0, failed: 0, ms: Date.now() - started }
+    return { job, summaryAr: 'لا رمز Calendly محفوظا — لا سؤال يرسل', done: 0, failed: 0, ms: Date.now() - started }
   }
 
   const since = new Date(now.getTime() - CALENDLY_LOOKBACK_MS)
@@ -1045,9 +1045,9 @@ export async function syncCalendlyInterviews(prisma: PrismaClient, now = new Dat
   } catch (e) {
     /* رمزٌ منتهٍ أو شبكةٌ ساقطة: يُقال ولا يُرمى — دورةٌ ساقطةٌ لا توقف
        العاملَ عن بقيّة وظائفه، وصفحةُ صحّةِ النظام تقرأ هذا السطر. */
-    const why = e instanceof CalendlyApiError ? `ردّ ${e.status}` : 'خطأُ شبكة'
+    const why = e instanceof CalendlyApiError ? `ردّ ${e.status}` : 'خطأ شبكة'
     await recordCalendlySync(prisma, { at: now.toISOString(), events: 0, done: 0, skipped: 0, errorAr: why })
-    return { job, summaryAr: `تعذّر سؤالُ Calendly (${why}) — لا مقابلةَ زِيدت`, done: 0, failed: 1, ms: Date.now() - started }
+    return { job, summaryAr: `تعذّر سؤال Calendly (${why}) — لا مقابلة زيدت`, done: 0, failed: 1, ms: Date.now() - started }
   }
 
   /* ما نعرفه سلفا لا يُسأل عن مدعوّيه. وعنوانُ المدعوّ يبدأ بعنوان موعده
@@ -1089,15 +1089,15 @@ export async function syncCalendlyInterviews(prisma: PrismaClient, now = new Dat
     at: now.toISOString(), events: events.length, done, skipped: skippedTotal,
   })
   const parts: string[] = []
-  if (done > 0) parts.push(`${done} مقابلةً حُدّثت`)
+  if (done > 0) parts.push(`${done} مقابلة حدّثت`)
   if (skippedTotal > 0) {
     const why = [...skipped.entries()].map(([r, n]) => `${n} — ${CALENDLY_SKIP_AR[r] ?? r}`).join(' · ')
-    parts.push(`تُجووز ${skippedTotal}: ${why}`)
+    parts.push(`تجووز ${skippedTotal}: ${why}`)
   }
 
   return {
     job,
-    summaryAr: `مزامنةُ Calendly من ${events.length} موعدا: ${parts.join(' · ') || 'لا جديد'}`,
+    summaryAr: `مزامنة Calendly من ${events.length} موعدا: ${parts.join(' · ') || 'لا جديد'}`,
     done,
     /* المتجاوَزُ في عداد الإخفاق ليُكتب الأثرُ — وعلّتُه فوق */
     failed: failed + skippedTotal,
@@ -1145,10 +1145,10 @@ export async function digestUnbookedApplicants(prisma: PrismaClient, now = new D
 
   /* الوقتُ يُسأل عنه في كلّ دورة: العاملُ يُقلع مع كلّ نشرة، ودورةٌ تُقاس
      بالساعات منذ إقلاعه تُرسل ملخّصَ الصباح عصرا لمن نشر ظهرا. */
-  if (!isDigestHour(now)) return quiet('ليس وقتَ الملخّص — يخرج صباحا بتوقيت الأكاديمية')
+  if (!isDigestHour(now)) return quiet('ليس وقت الملخّص — يخرج صباحا بتوقيت الأكاديمية')
   /* والقناةُ قبل الناس: بلا بريدٍ موصولٍ لا يُكتب صفٌّ يُحرق بمحاولةٍ فاشلة */
   if (!(await liveChannels(prisma)).includes('email')) {
-    return quiet('قناةُ البريد غيرُ موصولة — لا يخرج ملخّصٌ إلى أحد')
+    return quiet('قناة البريد غير موصولة — لا يخرج ملخّص إلى أحد')
   }
 
   const candidates = await prisma.trainerApplication.findMany({
@@ -1185,14 +1185,14 @@ export async function digestUnbookedApplicants(prisma: PrismaClient, now = new D
   )
   /* صباحٌ لا متأخّرَ فيه: لا رسالة. ورسالةٌ تقول «لا شيء» كلَّ يومٍ تُعلّم
      قارئَها أن يمرَّ عليها — فتضيع يومَ تحمل خبرا. */
-  if (!digest) return quiet('لا متقدّمَ تأخّر عن حجز موعده')
+  if (!digest) return quiet('لا متقدّم تأخّر عن حجز موعده')
 
   const holders = await prisma.userRole.findMany({
     where: { roleId: { in: DIGEST_ROLES }, user: { status: 'active' } },
     select: { userId: true },
   })
   const staff = [...new Set(holders.map((h) => h.userId))]
-  if (staff.length === 0) return quiet(`${digest.count} لم يحجزوا — ولا حاملَ لأدوار المراجعة يصله الملخّص`)
+  if (staff.length === 0) return quiet(`${digest.count} لم يحجزوا — ولا حامل لأدوار المراجعة يصله الملخّص`)
 
   const notifications = new NotificationService(prisma)
   let done = 0
@@ -1219,10 +1219,10 @@ export async function digestUnbookedApplicants(prisma: PrismaClient, now = new D
 
   return {
     job: 'unbooked_digest',
-    summaryAr: `${digest.titleAr} (أقدمُهم ${digest.oldestAr})`
+    summaryAr: `${digest.titleAr} (أقدمهم ${digest.oldestAr})`
       + ` — وصل ${done} من الإدارة`
       + (failed > 0 ? `، وسقط ${failed} عند المزوّد` : '')
-      + (already > 0 ? `، وسبق اليومَ ${already}` : ''),
+      + (already > 0 ? `، وسبق اليوم ${already}` : ''),
     done, failed, ms: Date.now() - started,
   }
 }
@@ -1247,21 +1247,21 @@ export async function runTrainerOfferDeadlines(prisma: PrismaClient, now = new D
   try {
     const { lapsed } = await offers.lapseExpiredOffers(now)
     done += lapsed
-    if (lapsed > 0) parts.push(`أُغلِق ${lapsed} عرضا بانقضاء مهلته`)
-  } catch { failed += 1; parts.push('تعثّر إغلاقُ العروض المنقضية') }
+    if (lapsed > 0) parts.push(`أغلق ${lapsed} عرضا بانقضاء مهلته`)
+  } catch { failed += 1; parts.push('تعثّر إغلاق العروض المنقضية') }
   try {
     const { reminded } = await offers.remindPrepDue(now)
     done += reminded
-    if (reminded > 0) parts.push(`ذُكِّر ${reminded} بأجل إعداده`)
-  } catch { failed += 1; parts.push('تعثّر تذكيرُ آجال الإعداد') }
+    if (reminded > 0) parts.push(`ذكّر ${reminded} بأجل إعداده`)
+  } catch { failed += 1; parts.push('تعثّر تذكير آجال الإعداد') }
   try {
     const { raised } = await offers.lapsePrepDue(now)
     done += raised
-    if (raised > 0) parts.push(`رُفع ${raised} أجلا انقضى بلا إقرارٍ إلى الإدارة`)
-  } catch { failed += 1; parts.push('تعثّر رفعُ آجال الإعداد المنقضية') }
+    if (raised > 0) parts.push(`رفع ${raised} أجلا انقضى بلا إقرار إلى الإدارة`)
+  } catch { failed += 1; parts.push('تعثّر رفع آجال الإعداد المنقضية') }
   return {
     job: 'trainer_offer_deadlines',
-    summaryAr: parts.length === 0 ? 'لا عرضَ ولا أجلَ إعدادٍ حلَّ موعدُه' : parts.join(' · '),
+    summaryAr: parts.length === 0 ? 'لا عرض ولا أجل إعداد حلّ موعده' : parts.join(' · '),
     done, failed, ms: Date.now() - started,
   }
 }
@@ -1289,16 +1289,16 @@ export async function runConditionDeadlines(prisma: PrismaClient, now = new Date
   try {
     const { reminded } = await review.remindConditionDeadlines(now)
     done += reminded
-    if (reminded > 0) parts.push(`ذُكِّر ${reminded} بقُرب انقضاء مهلة موادّه`)
-  } catch { failed += 1; parts.push('تعثّر تذكيرُ المهل المقاربة') }
+    if (reminded > 0) parts.push(`ذكّر ${reminded} بقرب انقضاء مهلة موادّه`)
+  } catch { failed += 1; parts.push('تعثّر تذكير المهل المقاربة') }
   try {
     const { noticed } = await review.noticeLapsedConditions(now)
     done += noticed
-    if (noticed > 0) parts.push(`أُبلِغ ${noticed} بانقضاء مهلته`)
-  } catch { failed += 1; parts.push('تعثّر إبلاغُ المهل المنقضية') }
+    if (noticed > 0) parts.push(`أبلغ ${noticed} بانقضاء مهلته`)
+  } catch { failed += 1; parts.push('تعثّر إبلاغ المهل المنقضية') }
   return {
     job: 'condition_deadlines',
-    summaryAr: parts.length === 0 ? 'لا مهلةَ عرضٍ مشروطٍ قاربت ولا انقضت' : parts.join(' · '),
+    summaryAr: parts.length === 0 ? 'لا مهلة عرض مشروط قاربت ولا انقضت' : parts.join(' · '),
     done, failed, ms: Date.now() - started,
   }
 }
@@ -1314,55 +1314,55 @@ export async function runDeferralFollowups(prisma: PrismaClient, now = new Date(
   return {
     job: 'deferral_followups',
     summaryAr: asked === 0
-      ? 'لا مؤجَّلَ حلّ موعدُ التواصل معه'
-      : `سُئل ${asked} عن اهتمامه بالفصول القادمة` + (mailFailed > 0 ? `، ولم يخرج البريدُ إلى ${mailFailed} — وأُبلغ الفريقُ ليتواصل بنفسه` : ''),
+      ? 'لا مؤجّل حلّ موعد التواصل معه'
+      : `سئل ${asked} عن اهتمامه بالفصول القادمة` + (mailFailed > 0 ? `، ولم يخرج البريد إلى ${mailFailed} — وأبلغ الفريق ليتواصل بنفسه` : ''),
     done: asked - mailFailed, failed: mailFailed, ms: Date.now() - started,
   }
 }
 
 export const JOBS = [
-  { key: 'dispatch_notifications', everyMs: 60_000, run: dispatchQueuedNotifications, titleAr: 'إرسالُ ما في طابور الإشعارات' },
-  { key: 'outbox_mail', everyMs: 60_000, run: dispatchOutboxMail, titleAr: 'إرسالُ ما في طابور البريد' },
-  { key: 'session_reminders', everyMs: 5 * 60_000, run: sendSessionReminders, titleAr: 'تذكيرُ الجلسات' },
+  { key: 'dispatch_notifications', everyMs: 60_000, run: dispatchQueuedNotifications, titleAr: 'إرسال ما في طابور الإشعارات' },
+  { key: 'outbox_mail', everyMs: 60_000, run: dispatchOutboxMail, titleAr: 'إرسال ما في طابور البريد' },
+  { key: 'session_reminders', everyMs: 5 * 60_000, run: sendSessionReminders, titleAr: 'تذكير الجلسات' },
   /* كلَّ خمس دقائق: ما يُفتح «بعد انتهاء اللقاء» ينتظر هذه الحالة */
-  { key: 'close_ended_sessions', everyMs: 5 * 60_000, run: closeEndedSessions, titleAr: 'انتهاءُ اللقاءات' },
-  { key: 'notify_timeline', everyMs: 15 * 60_000, run: notifyTimeline, titleAr: 'أخبارُ خطوط المحاور' },
+  { key: 'close_ended_sessions', everyMs: 5 * 60_000, run: closeEndedSessions, titleAr: 'انتهاء اللقاءات' },
+  { key: 'notify_timeline', everyMs: 15 * 60_000, run: notifyTimeline, titleAr: 'أخبار خطوط المحاور' },
   /* ي-٥: ودورتُه ساعةٌ لا خمسُ دقائق — عتبتُه يومٌ وأربعةٌ، فدقّةُ الدقائق
      فيه لا تشتري شيئا وتُثقل القاعدةَ باستعلامٍ لا يجد أحدا. */
-  { key: 'verify_reminders', everyMs: HOUR, run: sendVerificationReminders, titleAr: 'تذكيرُ توثيق البريد' },
-  { key: 'cohort_status_sync', everyMs: 15 * 60_000, run: syncCohortStatuses, titleAr: 'حالاتُ الشعب بالتواريخ' },
+  { key: 'verify_reminders', everyMs: HOUR, run: sendVerificationReminders, titleAr: 'تذكير توثيق البريد' },
+  { key: 'cohort_status_sync', everyMs: 15 * 60_000, run: syncCohortStatuses, titleAr: 'حالات الشعب بالتواريخ' },
   /* كلَّ ساعة: الإسقاطُ والانتقالُ يُلغيان التسجيلَ ساعتَهما — وهذه لما أبى فيه
      Zoom ولمن ترك قبلها. واللقاءُ بعد أيّامٍ في الغالب، فساعةٌ تسبقه */
-  { key: 'revoke_left_registrants', everyMs: HOUR, run: revokeLeftRegistrants, titleAr: 'إلغاءُ تسجيل من ترك شعبتَه عند Zoom' },
+  { key: 'revoke_left_registrants', everyMs: HOUR, run: revokeLeftRegistrants, titleAr: 'إلغاء تسجيل من ترك شعبته عند Zoom' },
   /* والفصلُ حدُّه يومٌ لا دقيقة — فساعةٌ تكفي ولا تُثقل */
-  { key: 'term_status_sync', everyMs: HOUR, run: syncTermStatuses, titleAr: 'حالاتُ الفصول بالتواريخ' },
-  { key: 'publish_scheduled_changes', everyMs: 5 * 60_000, run: publishScheduledChanges, titleAr: 'النشرُ المجدول' },
+  { key: 'term_status_sync', everyMs: HOUR, run: syncTermStatuses, titleAr: 'حالات الفصول بالتواريخ' },
+  { key: 'publish_scheduled_changes', everyMs: 5 * 60_000, run: publishScheduledChanges, titleAr: 'النشر المجدول' },
   /* كلَّ عشر دقائق: المقعدُ المحبوسُ يمنع شراءً الآن لا غدا */
-  { key: 'reclaim_abandoned_orders', everyMs: 10 * 60_000, run: reclaimAbandonedOrders, titleAr: 'تحريرُ مقاعدِ الطلبات المهجورة' },
+  { key: 'reclaim_abandoned_orders', everyMs: 10 * 60_000, run: reclaimAbandonedOrders, titleAr: 'تحرير مقاعد الطلبات المهجورة' },
   /* كلَّ خمس دقائق: من حجز مقابلتَه يظهر حجزُه في طابور المراجعة بعد دقائق
      لا بعد يوم — وهي نافذةُ ردٍّ مقبولةٌ على حجزِ موعد. */
-  { key: 'calendly_interview_sync', everyMs: 5 * 60_000, run: syncCalendlyInterviews, titleAr: 'مزامنةُ مقابلات Calendly' },
+  { key: 'calendly_interview_sync', everyMs: 5 * 60_000, run: syncCalendlyInterviews, titleAr: 'مزامنة مقابلات Calendly' },
   /* كلَّ ساعةٍ لا كلَّ يوم: الوظيفةُ نفسُها تسأل عن الساعة، فدورةٌ يوميّةٌ
      تُقاس منذ الإقلاع تُخطئ نافذةَ الصباح كلَّما نُشرت نشرةٌ بعد الظهر. */
-  { key: 'unbooked_digest', everyMs: HOUR, run: digestUnbookedApplicants, titleAr: 'ملخّصُ من لم يحجز موعده' },
+  { key: 'unbooked_digest', everyMs: HOUR, run: digestUnbookedApplicants, titleAr: 'ملخّص من لم يحجز موعده' },
   /* كلَّ ساعة: مهلةُ الردّ أيّامٌ وأجلُ الإعداد أيّام، فساعةٌ دقّةٌ كافيةٌ
      لا تُثقل. والتذكيرُ يسأل عن «قبل يومٍ من الأجل» فيصيبها في كلّ حال. */
-  { key: 'trainer_offer_deadlines', everyMs: HOUR, run: runTrainerOfferDeadlines, titleAr: 'آجالُ عروض الإسناد وإعدادِها' },
+  { key: 'trainer_offer_deadlines', everyMs: HOUR, run: runTrainerOfferDeadlines, titleAr: 'آجال عروض الإسناد وإعدادها' },
   /* كلَّ ساعة: المهلةُ سبعةُ أيّامٍ وعتبةُ التذكير يومان، فساعةٌ دقّةٌ
      كافيةٌ لا تُثقل. والوظيفةُ تسأل عن «بقي يومان أو أقلّ» فتصيبها في كلّ
      حال، ولا تذكّر مرّتين — `conditionRemindedAt` يمنع. */
-  { key: 'condition_deadlines', everyMs: HOUR, run: runConditionDeadlines, titleAr: 'مهلةُ العرض المشروط' },
+  { key: 'condition_deadlines', everyMs: HOUR, run: runConditionDeadlines, titleAr: 'مهلة العرض المشروط' },
   /* كلَّ ساعة: الموعدُ يومٌ بعد شهرين، فساعةٌ دقّةٌ كافيةٌ لا تُثقل */
-  { key: 'deferral_followups', everyMs: HOUR, run: runDeferralFollowups, titleAr: 'متابعةُ المؤجَّلين إلى الفصول القادمة' },
-  { key: 'cleanup_expired', everyMs: 6 * HOUR, run: cleanupExpired, titleAr: 'تنظيفُ ما انتهى' },
+  { key: 'deferral_followups', everyMs: HOUR, run: runDeferralFollowups, titleAr: 'متابعة المؤجّلين إلى الفصول القادمة' },
+  { key: 'cleanup_expired', everyMs: 6 * HOUR, run: cleanupExpired, titleAr: 'تنظيف ما انتهى' },
   /* مرّةً في اليوم: التقليمُ ليس عاجلا، وتكرارُه بلا داعٍ يُقفل جداولَ السجلّ */
-  { key: 'enforce_retention', everyMs: 24 * HOUR, run: enforceRetention, titleAr: 'تقليمُ جداول السجلّ بمدّة حفظها' },
+  { key: 'enforce_retention', everyMs: 24 * HOUR, run: enforceRetention, titleAr: 'تقليم جداول السجلّ بمدّة حفظها' },
 ] as const
 
 /** دورةٌ واحدةٌ لوظيفةٍ واحدة، بأثرها المسجَّل — لا عملَ صامت */
 export async function runJob(prisma: PrismaClient, key: string, now = new Date()): Promise<JobResult> {
   const job = JOBS.find((j) => j.key === key)
-  if (!job) throw new Error(`لا وظيفةَ بهذا المفتاح: ${key}`)
+  if (!job) throw new Error(`لا وظيفة بهذا المفتاح: ${key}`)
   const result = await job.run(prisma, now)
   /* لا يُسجَّل إلّا ما عمل: دورةٌ فارغةٌ كلَّ دقيقةٍ تُغرق السجلَّ بلا خبر */
   if (result.done > 0 || result.failed > 0) {

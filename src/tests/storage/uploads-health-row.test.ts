@@ -17,7 +17,10 @@
 
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { describe, expect, it } from 'vitest'
+import { describe, expect as vexpect, it } from 'vitest'
+import { plainExpect } from '../../../server/tests/helpers/plain-expect'
+/* نصوصُ الخادم بلا تشكيلٍ إعرابيّ بعد «اللغة البيضاء» — والمنتظَرُ هنا قبلها: يُقارَن الطرفان بلا تشكيل */
+const expect = plainExpect(vexpect)
 
 const root = process.cwd()
 const code = (p: string) =>
@@ -57,7 +60,7 @@ describe('والسطرُ يصف ذلك بأسمائه', () => {
 
   /* والفرعان يُفحصان **كلٌّ على حدة**. وحارسٌ يفحص الكتلةَ كلَّها يمرّ وإن
      سقط اسمٌ من أحد الفرعين، ما دام باقيا في الآخر — جُرّب فمرّ، فقُسّم. */
-  const ON = block.slice(block.indexOf('المساراتُ الستّةُ'), block.indexOf('يعمل الآن:'))
+  const ON = block.slice(block.indexOf('المسارات الستّة'), block.indexOf('يعمل الآن:'))
   const OFF = block.slice(block.indexOf('يعمل الآن:'))
 
   it('فرعُ المفعَّل يسمّي الستّةَ كلَّها', () => {

@@ -86,13 +86,13 @@ export async function beat(prisma: PrismaClient, startedAt: Date, now = new Date
   try {
     await recordBeat(prisma, { startedAt, tickMs: TICK_MS, jobs: JOBS.length, now })
   } catch (e) {
-    log(`⚠ تعذّرت كتابةُ النبضة: ${e instanceof Error ? e.message : String(e)}`)
+    log(`⚠ تعذّرت كتابة النبضة: ${e instanceof Error ? e.message : String(e)}`)
   }
 }
 
 async function main(): Promise<void> {
   if (process.env.WORKER_ENABLED !== 'on') {
-    log('غيرُ مفعَّل — يُشغَّل بـ WORKER_ENABLED=on على خادمٍ دائم. لا شيءَ يعمل الآن.')
+    log('غير مفعّل — يشغّل بـ WORKER_ENABLED=on على خادم دائم. لا شيء يعمل الآن.')
     return
   }
   const url = process.env.DATABASE_URL
@@ -106,7 +106,7 @@ async function main(): Promise<void> {
   /* القفلُ غيرُ الحاجب: إن كانت نسخةٌ أخرى تعمل، نخرج بلا ضجيج */
   const [{ locked }] = await prisma.$queryRaw<{ locked: boolean }[]>`SELECT pg_try_advisory_lock(${LOCK_KEY}::bigint) AS locked`
   if (!locked) {
-    log('نسخةٌ أخرى من العامل تعمل بالفعل — نخرج.')
+    log('نسخة أخرى من العامل تعمل بالفعل — نخرج.')
     await prisma.$disconnect()
     return
   }
@@ -114,7 +114,7 @@ async function main(): Promise<void> {
   const lastRun = new Map<string, number>()
   const startedAt = new Date()
   const once = process.argv.includes('--once')
-  log(`يعمل: ${JOBS.length} وظيفةً، نبضُ الحلقة ${TICK_MS / 1000} ثانية${once ? ' — دورةٌ واحدةٌ ثمّ خروج' : ''}`)
+  log(`يعمل: ${JOBS.length} وظيفة، نبض الحلقة ${TICK_MS / 1000} ثانية${once ? ' — دورة واحدة ثمّ خروج' : ''}`)
 
   if (once) {
     const results = await tick(prisma, lastRun)
@@ -129,7 +129,7 @@ async function main(): Promise<void> {
   const stop = async () => {
     if (stopping) return
     stopping = true
-    log('توقّفٌ مرتَّب — ننهي الدورةَ الحاليّةَ ونُفرج عن القفل.')
+    log('توقّف مرتّب — ننهي الدورة الحاليّة ونفرج عن القفل.')
     clearInterval(timer)
     await prisma.$queryRaw`SELECT pg_advisory_unlock(${LOCK_KEY}::bigint)`.catch(() => {})
     await prisma.$disconnect().catch(() => {})

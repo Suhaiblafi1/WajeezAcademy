@@ -27,7 +27,7 @@ import { recordAudit } from './audit'
 
 /** نصُّ الوعد — يُعرض على الشاشة ويُحفظ مع الصفّ، فلا يفترق ما قيل عمّا حُفظ */
 export const INTEREST_CONSENT_AR =
-  'أوافق أن تصلني رسالةٌ واحدةٌ على هذا البريد عند فتح باب التسجيل — ولا شيءَ غيرها.'
+  'أوافق أن تصلني رسالة واحدة على هذا البريد عند فتح باب التسجيل — ولا شيء غيرها.'
 
 /** من أيّ شاشةٍ تُرك البريد — قائمةٌ مغلقةٌ فلا يصير الحقلُ نصّا حرّا */
 export const INTEREST_SOURCES = ['pathway', 'course', 'cohort', 'buy'] as const
@@ -96,15 +96,15 @@ export class RegistrationInterestService {
     for (const row of rows) {
       await enqueueMail(this.prisma, {
         to: row.email,
-        subject: `فُتح باب التسجيل — ${season}`,
+        subject: `فتح باب التسجيل — ${season}`,
         purpose: 'registration.season.open',
         ...renderMail({
-          preheader: `بابُ التسجيل ل${season} مفتوحٌ الآن — والمقاعدُ بالأسبقيّة.`,
-          heading: `فُتح باب التسجيل ل${season}`,
+          preheader: `باب التسجيل ل${season} مفتوح الآن — والمقاعد بالأسبقيّة.`,
+          heading: `فتح باب التسجيل ل${season}`,
           blocks: [
-            { kind: 'p', text: 'تركتَ بريدَك لنُعلمك حين يُفتح، وهذه هي الرسالة.' },
+            { kind: 'p', text: 'تركت بريدك لنعلمك حين يفتح، وهذه هي الرسالة.' },
             { kind: 'cta', label: 'تصفّح الدورات واحجز مقعدك', href: url },
-            { kind: 'note', text: 'وصلتك هذه لأنّك طلبتَ أن نُعلمك — وهي الرسالةُ الوحيدة، فلا شيء بعدها.' },
+            { kind: 'note', text: 'وصلتك هذه لأنّك طلبت أن نعلمك — وهي الرسالة الوحيدة، فلا شيء بعدها.' },
           ],
         }),
       })

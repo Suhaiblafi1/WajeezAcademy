@@ -91,7 +91,7 @@ export class TrainerMarketingService {
     const profile = await this.prisma.trainerProfile.findUnique({
       where: { userId }, include: { application: { select: { status: true, fullName: true } } },
     })
-    if (!profile) throw new AuthError('no_profile', 'لا ملفَّ مدرّبٍ مرتبطا بهذا الحساب', 404)
+    if (!profile) throw new AuthError('no_profile', 'لا ملفّ مدرّب مرتبطا بهذا الحساب', 404)
     const problem = portalDoorProblemAr('materials', {
       status: profile.application.status, suspendedAt: profile.suspendedAt,
     })
@@ -184,7 +184,7 @@ export class TrainerMarketingService {
       return { removed: true }
     }
     const url = cleanMarketingUrl(input.url)
-    if (!url) throw new AuthError('bad_url', 'الرابطُ يبدأ بـhttps:// — ألصِقْه كما يظهر في المتصفّح', 422)
+    if (!url) throw new AuthError('bad_url', 'الرابط يبدأ بـhttps:// — ألصقه كما يظهر في المتصفّح', 422)
     const noteAr = String(input.noteAr ?? '').trim().slice(0, MAX_MARKETING_NOTE) || null
     const row = await this.prisma.trainerMarketingVideo.upsert({
       where,
@@ -203,13 +203,13 @@ export class TrainerMarketingService {
     const profile = await this.profileForUser(userId)
     const count = await this.prisma.trainerMarketingPhoto.count({ where: { profileId: profile.id } })
     if (count >= MAX_MARKETING_PHOTOS) {
-      throw new AuthError('too_many', `يكفي ${MAX_MARKETING_PHOTOS} صور — احذف واحدةً قبل أن تضيف`, 409)
+      throw new AuthError('too_many', `يكفي ${MAX_MARKETING_PHOTOS} صور — احذف واحدة قبل أن تضيف`, 409)
     }
     const captionAr = String(input.captionAr ?? '').trim().slice(0, MAX_MARKETING_NOTE) || null
 
     if (input.url) {
       const url = cleanMarketingUrl(input.url)
-      if (!url) throw new AuthError('bad_url', 'الرابطُ يبدأ بـhttps://', 422)
+      if (!url) throw new AuthError('bad_url', 'الرابط يبدأ بـhttps://', 422)
       const row = await this.prisma.trainerMarketingPhoto.create({ data: { profileId: profile.id, url, captionAr } })
       await recordAudit(this.prisma, {
         actorId: userId, action: 'trainer.marketing.photo.add', entityType: 'trainer_profile', entityId: profile.id,
@@ -218,9 +218,9 @@ export class TrainerMarketingService {
       return { id: row.id }
     }
 
-    assertFileUploadsEnabled('والبديلُ الآن: ألصِقْ رابطَ صورتك (Drive أو غيره).')
+    assertFileUploadsEnabled('والبديل الآن: ألصق رابط صورتك (Drive أو غيره).')
     if (!(PHOTO_MIMES as readonly string[]).includes(String(input.mime))) {
-      throw new AuthError('bad_mime', 'الصورةُ JPEG أو PNG أو WebP', 422)
+      throw new AuthError('bad_mime', 'الصورة JPEG أو PNG أو WebP', 422)
     }
     /* الصفُّ قبل الرابط: `resolveStorageOwner` يقرأ المالكَ من القاعدة */
     const storageKey = newStorageKey()
@@ -235,7 +235,7 @@ export class TrainerMarketingService {
   async removePhoto(userId: string, photoId: string) {
     const profile = await this.profileForUser(userId)
     const row = await this.prisma.trainerMarketingPhoto.findFirst({ where: { id: photoId, profileId: profile.id } })
-    if (!row) throw new AuthError('not_found', 'لا صورةَ بهذا المعرّف', 404)
+    if (!row) throw new AuthError('not_found', 'لا صورة بهذا المعرّف', 404)
     await this.prisma.trainerMarketingPhoto.delete({ where: { id: row.id } })
     if (row.storageKey) { try { await deleteObject(row.storageKey) } catch { /* غيابُها ليس عطبا */ } }
     await recordAudit(this.prisma, {
@@ -249,11 +249,11 @@ export class TrainerMarketingService {
   async decidePoster(userId: string, posterId: string, decision: 'approve' | 'changes', noteAr?: string | null) {
     const profile = await this.profileForUser(userId)
     const poster = await this.prisma.trainerPoster.findFirst({ where: { id: posterId, profileId: profile.id } })
-    if (!poster) throw new AuthError('not_found', 'لا ملصقَ بهذا المعرّف', 404)
-    if (poster.status !== 'pending') throw new AuthError('bad_state', 'هذا الملصقُ لا ينتظر قرارَك', 409)
+    if (!poster) throw new AuthError('not_found', 'لا ملصق بهذا المعرّف', 404)
+    if (poster.status !== 'pending') throw new AuthError('bad_state', 'هذا الملصق لا ينتظر قرارك', 409)
     const note = String(noteAr ?? '').trim()
     if (decision === 'changes' && note.length < 5) {
-      throw new AuthError('note_required', 'اكتب ما تريد تعديلَه — سطرٌ واحدٌ يكفي', 422)
+      throw new AuthError('note_required', 'اكتب ما تريد تعديله — سطر واحد يكفي', 422)
     }
     const at = new Date()
     /* شرطُ الحال في الكتابة نفسِها: نقرتان متزامنتان لا تكتبان قرارين */
@@ -265,7 +265,7 @@ export class TrainerMarketingService {
         decidedAt: at,
       },
     })
-    if (res.count === 0) throw new AuthError('bad_state', 'سبقك قرارٌ على هذا الملصق — حدّث الصفحة', 409)
+    if (res.count === 0) throw new AuthError('bad_state', 'سبقك قرار على هذا الملصق — حدّث الصفحة', 409)
     await recordAudit(this.prisma, {
       actorId: userId,
       action: decision === 'approve' ? 'trainer.poster.approve' : 'trainer.poster.request_changes',
@@ -277,10 +277,10 @@ export class TrainerMarketingService {
       await safeNotify(this.prisma, {
         userId: poster.createdBy, channel: 'in_app', audience: 'staff',
         templateKey: 'trainer.poster.decided',
-        title: decision === 'approve' ? 'وافق المدرّبُ على ملصقه' : 'طلب المدرّبُ تعديلَ ملصقه',
+        title: decision === 'approve' ? 'وافق المدرّب على ملصقه' : 'طلب المدرّب تعديل ملصقه',
         body: decision === 'approve'
           ? `وافق ${profile.application.fullName} على النسخة ${poster.version} — صار صالحا للاستعمال العامّ.`
-          : `طلب ${profile.application.fullName} تعديلَ النسخة ${poster.version}: ${note}`,
+          : `طلب ${profile.application.fullName} تعديل النسخة ${poster.version}: ${note}`,
         data: { posterId: poster.id, profileId: profile.id },
       })
     }
@@ -324,7 +324,7 @@ export class TrainerMarketingService {
     const profile = await this.prisma.trainerProfile.findUnique({
       where: { id: profileId }, select: { id: true, application: { select: { fullName: true, email: true } } },
     })
-    if (!profile) throw new AuthError('not_found', 'لا ملفَّ مدرّبٍ بهذا المعرّف', 404)
+    if (!profile) throw new AuthError('not_found', 'لا ملفّ مدرّب بهذا المعرّف', 404)
     return { profileId: profile.id, fullName: profile.application.fullName, email: profile.application.email, ...(await this.view(profile.id, true)) }
   }
 
@@ -345,13 +345,13 @@ export class TrainerMarketingService {
     }
     if (input.url) {
       const url = cleanMarketingUrl(input.url)
-      if (!url) throw new AuthError('bad_url', 'الرابطُ يبدأ بـhttps://', 422)
+      if (!url) throw new AuthError('bad_url', 'الرابط يبدأ بـhttps://', 422)
       const row = await this.prisma.trainerPoster.create({ data: { ...base, url } })
       return { id: row.id }
     }
-    assertFileUploadsEnabled('والبديلُ الآن: ألصِقْ رابطَ التصميم.')
+    assertFileUploadsEnabled('والبديل الآن: ألصق رابط التصميم.')
     if (!(PHOTO_MIMES as readonly string[]).includes(String(input.mime))) {
-      throw new AuthError('bad_mime', 'الملصقُ JPEG أو PNG أو WebP', 422)
+      throw new AuthError('bad_mime', 'الملصق JPEG أو PNG أو WebP', 422)
     }
     const storageKey = newStorageKey()
     const row = await this.prisma.trainerPoster.create({ data: { ...base, storageKey } })
@@ -364,9 +364,9 @@ export class TrainerMarketingService {
       where: { id: posterId },
       include: { profile: { select: { userId: true } } },
     })
-    if (!poster) throw new AuthError('not_found', 'لا ملصقَ بهذا المعرّف', 404)
-    if (poster.status !== 'draft') throw new AuthError('bad_state', 'أُرسل هذا الملصقُ من قبل', 409)
-    if (!poster.url && !poster.storageKey) throw new AuthError('no_image', 'لا تصميمَ في هذه النسخة', 409)
+    if (!poster) throw new AuthError('not_found', 'لا ملصق بهذا المعرّف', 404)
+    if (poster.status !== 'draft') throw new AuthError('bad_state', 'أرسل هذا الملصق من قبل', 409)
+    if (!poster.url && !poster.storageKey) throw new AuthError('no_image', 'لا تصميم في هذه النسخة', 409)
     const at = new Date()
     await this.prisma.$transaction([
       this.prisma.trainerPoster.updateMany({
@@ -386,7 +386,7 @@ export class TrainerMarketingService {
       await safeNotify(this.prisma, {
         userId: poster.profile.userId, channel: 'in_app', audience: 'trainer',
         templateKey: 'trainer.poster.submitted',
-        title: 'ملصقٌ جديدٌ ينتظر موافقتك',
+        title: 'ملصق جديد ينتظر موافقتك',
         body: `صمّمنا ملصقا لـ${poster.targetKind === 'course' ? 'دورتك' : 'مسارك'} — `
           + 'لا نستعمله علنا حتّى توافق عليه أو تطلب تعديله.',
         data: { posterId: poster.id },
@@ -398,8 +398,8 @@ export class TrainerMarketingService {
   /** حذفُ مسوّدةٍ لم تُرسَل — ما أُرسل سجلٌّ لا يُمحى */
   async deleteDraftPoster(actorId: string, posterId: string) {
     const poster = await this.prisma.trainerPoster.findUnique({ where: { id: posterId } })
-    if (!poster) throw new AuthError('not_found', 'لا ملصقَ بهذا المعرّف', 404)
-    if (poster.status !== 'draft') throw new AuthError('bad_state', 'لا تُحذف إلّا مسوّدةٌ لم تُرسَل', 409)
+    if (!poster) throw new AuthError('not_found', 'لا ملصق بهذا المعرّف', 404)
+    if (poster.status !== 'draft') throw new AuthError('bad_state', 'لا تحذف إلّا مسوّدة لم ترسل', 409)
     await this.prisma.trainerPoster.delete({ where: { id: poster.id } })
     if (poster.storageKey) { try { await deleteObject(poster.storageKey) } catch { /* لا شيء */ } }
     void actorId

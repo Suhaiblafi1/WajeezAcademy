@@ -33,13 +33,13 @@ export function registerIntegrationRoutes(app: FastifyInstance, prisma: PrismaCl
   const health = new SystemHealthService(prisma)
   app.get('/api/admin/system-health', {
     preHandler: requirePermission('settings.manage'),
-    schema: { tags: ['admin-integrations'], summary: 'صحّةُ النظام — محسوبةٌ من حالة القاعدة الآن' },
+    schema: { tags: ['admin-integrations'], summary: 'صحّة النظام — محسوبة من حالة القاعدة الآن' },
   }, async () => health.snapshot())
 
   /* عرض مقنَّع — مفاتيح بآخر 4 خانات فقط */
   app.get('/api/admin/integrations', {
     preHandler: requirePermission('settings.manage'),
-    schema: { tags: ['admin-integrations'], summary: 'إعدادات التكامل — عرض مقنَّع' },
+    schema: { tags: ['admin-integrations'], summary: 'إعدادات التكامل — عرض مقنّع' },
   }, async () => maskedIntegrationsView(prisma))
 
   /* ═══ أرقامُ واتساب ═══
@@ -48,17 +48,17 @@ export function registerIntegrationRoutes(app: FastifyInstance, prisma: PrismaCl
      يضغط الزرّ، فحجبُه خلف بوّابةٍ حراسةٌ لما لا يُحرَس. والكتابةُ خلف
      `settings.manage` كسائر الإعدادات. */
   app.get('/api/site/whatsapp', {
-    schema: { tags: ['public'], summary: 'أرقامُ واتساب لكلّ موضعٍ في الموقع' },
+    schema: { tags: ['public'], summary: 'أرقام واتساب لكلّ موضع في الموقع' },
   }, async () => ({ numbers: await getWhatsAppNumbers(prisma) }))
 
   app.get('/api/admin/integrations/whatsapp', {
     preHandler: requirePermission('settings.manage'),
-    schema: { tags: ['admin-integrations'], summary: 'أرقامُ واتساب كما هي — لا تقنيعَ لما يُعرض للعامّة' },
+    schema: { tags: ['admin-integrations'], summary: 'أرقام واتساب كما هي — لا تقنيع لما يعرض للعامّة' },
   }, async () => ({ numbers: await getWhatsAppNumbers(prisma) }))
 
   app.put('/api/admin/integrations/whatsapp', {
     preHandler: requirePermission('settings.manage'),
-    schema: { tags: ['admin-integrations'], summary: 'حفظُ رقمِ واتساب لكلّ موضع — والفراغُ يُرجع الموضعَ إلى الرقم العامّ' },
+    schema: { tags: ['admin-integrations'], summary: 'حفظ رقم واتساب لكلّ موضع — والفراغ يرجع الموضع إلى الرقم العامّ' },
   }, async (req) => {
     const body = z.object({
       numbers: z.record(z.string().max(40), z.string().max(40)),
@@ -118,7 +118,7 @@ export function registerIntegrationRoutes(app: FastifyInstance, prisma: PrismaCl
 
   app.put('/api/admin/integrations/calendly', {
     preHandler: requirePermission('settings.manage'),
-    schema: { tags: ['admin-integrations'], summary: 'حفظ مفتاح توقيع Calendly ورمزِه الشخصيّ' },
+    schema: { tags: ['admin-integrations'], summary: 'حفظ مفتاح توقيع Calendly ورمزه الشخصيّ' },
   }, async (req) => {
     const body = z.object({
       enabled: z.boolean(),
@@ -144,7 +144,7 @@ export function registerIntegrationRoutes(app: FastifyInstance, prisma: PrismaCl
   app.post('/api/admin/integrations/calendly/register', {
     preHandler: requirePermission('settings.manage'),
     config: { rateLimit: { max: 10, timeWindow: '10 minutes' } },
-    schema: { tags: ['admin-integrations'], summary: 'تسجيلُ اشتراك Calendly — معاينةٌ افتراضا' },
+    schema: { tags: ['admin-integrations'], summary: 'تسجيل اشتراك Calendly — معاينة افتراضا' },
   }, async (req) => {
     const body = z.object({
       /* الرمزُ صار محفوظا للمزامنة الدوريّة، فلا يُلصَق ثانيةً هنا. ويبقى
@@ -154,10 +154,10 @@ export function registerIntegrationRoutes(app: FastifyInstance, prisma: PrismaCl
     }).parse(req.body)
     const config = await getCalendlyConfig(prisma)
     if (!config.signingKey) {
-      return { ok: false, message: 'احفظ مفتاحَ التوقيع أوّلا — به يتحقّق الخادمُ من كلّ حدث' }
+      return { ok: false, message: 'احفظ مفتاح التوقيع أوّلا — به يتحقّق الخادم من كلّ حدث' }
     }
     const token = body.token ?? config.token
-    if (!token) return { ok: false, message: 'لا رمزَ شخصيٌّ محفوظ — احفظه أوّلا ثمّ افحص' }
+    if (!token) return { ok: false, message: 'لا رمز شخصيّ محفوظ — احفظه أوّلا ثمّ افحص' }
     try {
       const result = await registerCalendlyWebhook({
         token, signingKey: config.signingKey, siteUrl: publicSiteUrl(), apply: body.apply,
@@ -172,11 +172,11 @@ export function registerIntegrationRoutes(app: FastifyInstance, prisma: PrismaCl
       }
       const message = result.outcome === 'existing'
         ? (result.missingEvents.length > 0
-          ? `اشتراكٌ قائمٌ على عنواننا — لكن ينقصه: ${result.missingEvents.join(' · ')}. احذفه من Calendly ثمّ سجّل من جديد.`
-          : 'اشتراكٌ قائمٌ على عنواننا بالحدثين — لا حاجةَ لإنشاءِ ثانٍ.')
+          ? `اشتراك قائم على عنواننا — لكن ينقصه: ${result.missingEvents.join(' · ')}. احذفه من Calendly ثمّ سجّل من جديد.`
+          : 'اشتراك قائم على عنواننا بالحدثين — لا حاجة لإنشاء ثان.')
         : result.outcome === 'created'
-          ? `أُنشئ الاشتراك — ${result.account.name} · جرّب حجزا حقيقيّا الآن.`
-          : `لا اشتراكَ على عنواننا بعد (${result.callbackUrl}) — اضغط «سجّل الاشتراك» لإنشائه.`
+          ? `أنشئ الاشتراك — ${result.account.name} · جرّب حجزا حقيقيّا الآن.`
+          : `لا اشتراك على عنواننا بعد (${result.callbackUrl}) — اضغط «سجّل الاشتراك» لإنشائه.`
       return { ok: true, ...result, message }
     } catch (e) {
       if (e instanceof CalendlyApiError) return { ok: false, message: e.message }
@@ -205,7 +205,7 @@ export function registerIntegrationRoutes(app: FastifyInstance, prisma: PrismaCl
     const config = await getPaymentConfig(prisma)
     if (!config.enabled) return { ok: false, message: 'مزود الدفع غير مفعّل — فعّله واحفظ أولا' }
     if (config.driver === 'test') return { ok: true, message: 'المزود الاختباري يعمل — لا مال حقيقي' }
-    if (config.driver === 'manual') return { ok: true, message: 'الدفع اليدوي جاهز — يُسجل من شاشة المالية بصلاحية موثقة' }
+    if (config.driver === 'manual') return { ok: true, message: 'الدفع اليدوي جاهز — يسجل من شاشة المالية بصلاحية موثقة' }
     if (!config.secretKey) return { ok: false, message: 'لا مفتاح سري محفوظا — أدخله واحفظ ثم افحص' }
 
     const probe = config.driver === 'moyasar'
@@ -235,10 +235,10 @@ export function registerIntegrationRoutes(app: FastifyInstance, prisma: PrismaCl
       to,
       subject: 'بريد تجريبي — أكاديمية وجيز',
       ...renderMail({
-        heading: 'وصلتك هذه الرسالة — فإعدادُ البريد سليم',
+        heading: 'وصلتك هذه الرسالة — فإعداد البريد سليم',
         blocks: [
-          { kind: 'p', text: 'قناةُ البريد في الإشعارات جاهزةٌ للعمل الحقيقيّ، والرسائلُ تخرج بهذه الهيئة نفسِها.' },
-          { kind: 'note', text: 'رسالةٌ تجريبيّةٌ أرسلها مديرٌ من شاشة التكاملات — ولا إجراءَ عليك.' },
+          { kind: 'p', text: 'قناة البريد في الإشعارات جاهزة للعمل الحقيقيّ، والرسائل تخرج بهذه الهيئة نفسها.' },
+          { kind: 'note', text: 'رسالة تجريبيّة أرسلها مدير من شاشة التكاملات — ولا إجراء عليك.' },
         ],
       }),
     })
@@ -247,7 +247,7 @@ export function registerIntegrationRoutes(app: FastifyInstance, prisma: PrismaCl
       meta: { to, ok: result.ok, error: result.error },
     })
     return result.ok
-      ? { ok: true, message: `أُرسل بريد تجريبي إلى ${to} — تحقق من صندوق الوارد (أو الرسائل غير المرغوبة)` }
+      ? { ok: true, message: `أرسل بريد تجريبي إلى ${to} — تحقق من صندوق الوارد (أو الرسائل غير المرغوبة)` }
       : { ok: false, message: result.error }
   })
 

@@ -110,13 +110,13 @@ export class CartService {
       if (holdOrder?.status === 'paid') {
         return {
           reason: 'settling',
-          messageAr: `دفعتُك عن «${c.title}» وصلت ونحن نفتح مقعدك — لا تدفع مرّةً أخرى`,
+          messageAr: `دفعتك عن «${c.title}» وصلت ونحن نفتح مقعدك — لا تدفع مرّة أخرى`,
         }
       }
       if (holdOrder?.status === 'pending_payment') {
         return {
           reason: 'order_pending',
-          messageAr: `لك طلبٌ لم يكتمل دفعُه عن «${c.title}» ومقعدُك محجوزٌ به — أكمل دفعه من «الفواتير»`,
+          messageAr: `لك طلب لم يكتمل دفعه عن «${c.title}» ومقعدك محجوز به — أكمل دفعه من «الفواتير»`,
         }
       }
     }
@@ -173,7 +173,7 @@ export class CartService {
   cartCurrency(buyable: CartCohort[], requested: CartCohort[]): string {
     const currency = buyable[0]?.currency ?? requested[0]?.currency ?? LEDGER_CURRENCY
     if (buyable.some((c) => c.currency !== currency)) {
-      throw new AuthError('mixed_currency', 'لا تُجمع شعبٌ بعملاتٍ مختلفة في طلبٍ واحد', 409)
+      throw new AuthError('mixed_currency', 'لا تجمع شعب بعملات مختلفة في طلب واحد', 409)
     }
     return currency
   }
@@ -192,7 +192,7 @@ export class CartService {
        بالتوثيق في اللوح نفسِه. ومنعُه من **رؤية** الرقم يجعل الحاجزَ يبدو
        عطبا — وهو شرطٌ مفهومٌ حين يُقال في موضعه. */
     if (requireVerifiedEmail && !(await this.emailVerified(userId)) && (await this.emailChannelEnabled())) {
-      throw new AuthError('email_unverified', 'وثّق بريدك أولا — الشراء يُفتح بمجرّد فتح رابط التوثيق', 403)
+      throw new AuthError('email_unverified', 'وثّق بريدك أولا — الشراء يفتح بمجرّد فتح رابط التوثيق', 403)
     }
 
     const { unique, cohorts, buyable, excluded } = await this.classifyCart(userId, cohortIds)
@@ -406,7 +406,7 @@ export class CartService {
          النسبةُ لا عملةَ لها، والمبلغُ «عشرون» بلا عملته رقمٌ بلا معنى: عشرون
          دولارا ليست عشرين ريالا. ولا يُحوَّل هنا بسعرٍ يُخترَع. */
       if (trainerCode.amountOff !== null && cartCurrency !== LEDGER_CURRENCY) {
-        throw new AuthError('code_currency', `هذا الكودُ مبلغٌ بـ${LEDGER_CURRENCY}، والسلّةُ بعملةٍ أخرى`, 409)
+        throw new AuthError('code_currency', `هذا الكود مبلغ بـ${LEDGER_CURRENCY}، والسلّة بعملة أخرى`, 409)
       }
     }
     const pricing = priceCart(
@@ -432,7 +432,7 @@ export class CartService {
        فيظنّ أنّ الكودَ عطِب أو أنّه خُصم له ما لم يُخصم. ولا يُسمّى المدرّب:
        اسمُه لا يُعرض قبل اعتماد نشره (قواعدُ المستودَع). */
     if (trainerCode && pricing.couponLines === 0) {
-      throw new AuthError('code_not_applicable', 'هذا الكودُ لدوراتِ مدرّبٍ بعينه، وليس في سلّتك دورةٌ مدفوعةٌ منها', 409)
+      throw new AuthError('code_not_applicable', 'هذا الكود لدورات مدرّب بعينه، وليس في سلّتك دورة مدفوعة منها', 409)
     }
     /* ═══ ورصيدُه — يُسقَف بما له عندنا (٢٨ سبتمبر ٢٠٢٦) ═══
 

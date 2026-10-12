@@ -104,7 +104,7 @@ export class EnrollmentService {
     const user = await this.prisma.user.findUnique({ where: { id: userId }, include: { roles: true } })
     if (!user) throw new AuthError('unknown_user', 'المستخدم غير موجود', 404)
     if (!ENROLLABLE_STATUSES.includes(user.status)) {
-      throw new AuthError('unknown_user', `لا يُسجَّل حسابٌ حالتُه «${user.status}» — ارفع الإيقافَ أوّلا`, 409)
+      throw new AuthError('unknown_user', `لا يسجّل حساب حالته «${user.status}» — ارفع الإيقاف أوّلا`, 409)
     }
 
     const existing = await this.prisma.enrollment.findUnique({ where: { cohortId_userId: { cohortId, userId } } })
@@ -161,10 +161,10 @@ export class EnrollmentService {
       await safeNotify(this.prisma, {
         userId, channel: 'in_app', audience: 'learner',
         templateKey: status === 'waitlisted' ? 'enrollment.waitlisted' : 'enrollment.confirmed',
-        title: status === 'waitlisted' ? `أُضفتَ إلى قائمة انتظار «${title}»` : `سُجّلت في «${title}»`,
+        title: status === 'waitlisted' ? `أضفت إلى قائمة انتظار «${title}»` : `سجّلت في «${title}»`,
         body: status === 'waitlisted'
-          ? `امتلأت «${title}»، فأُضفتَ إلى قائمة انتظارها — ونُعلمك فورَ أن يشغر مقعد. ولا يلزمك شيءٌ الآن.`
-          : `سُجّلت في «${title}» — تجد جلساتِها وموادَّها في «تعلُّمي».`,
+          ? `امتلأت «${title}»، فأضفت إلى قائمة انتظارها — ونعلمك فور أن يشغر مقعد. ولا يلزمك شيء الآن.`
+          : `سجّلت في «${title}» — تجد جلساتها وموادّها في «تعلّمي».`,
         data: { cohortId, enrollmentId: enrollment.id, status },
       })
     }
@@ -202,7 +202,7 @@ export class EnrollmentService {
       await this.cohorts.ensureSessionJoinLinks(s.id).catch(() => { /* الرابطُ رفاهيةٌ لا شرطُ التحاق */ })
     }
     await this.invites.welcome(enrollmentId).catch((e: unknown) => {
-      console.error(`[invite] تعذّرت كتابةُ جدول الملتحق (${enrollmentId})`, e)
+      console.error(`[invite] تعذّرت كتابة جدول الملتحق (${enrollmentId})`, e)
     })
   }
 
@@ -219,11 +219,11 @@ export class EnrollmentService {
       .then((r) => {
         if (r.failed > 0) console.error(`[zoom] بقي ${r.failed} من تسجيلات من ترك قائما (${enrollmentId}): ${r.reason}`)
       })
-      .catch((e: unknown) => { console.error(`[zoom] تعذّر إلغاءُ تسجيل من ترك (${enrollmentId})`, e) })
+      .catch((e: unknown) => { console.error(`[zoom] تعذّر إلغاء تسجيل من ترك (${enrollmentId})`, e) })
     const who = await this.prisma.user.findUnique({ where: { id: userId }, select: { email: true, displayName: true } })
     if (!who?.email) return
     await this.invites.release({ email: who.email, name: who.displayName }, cohortId, whyAr).catch((e: unknown) => {
-      console.error(`[invite] تعذّر رفعُ لقاءات الشعبة من تقويم من تركها (${cohortId})`, e)
+      console.error(`[invite] تعذّر رفع لقاءات الشعبة من تقويم من تركها (${cohortId})`, e)
     })
   }
 
@@ -253,7 +253,7 @@ export class EnrollmentService {
       throw new AuthError('not_found', 'هذا التسجيل ليس لك', 404)
     }
     if (enrollment.status !== 'enrolled') {
-      throw new AuthError('not_switchable', 'لا يُبدَّل إلا تسجيلٌ قائم', 409)
+      throw new AuthError('not_switchable', 'لا يبدّل إلا تسجيل قائم', 409)
     }
     if (enrollment.cohortId === toCohortId) {
       throw new AuthError('same_cohort', 'هذه شعبتك الحالية', 409)
@@ -267,7 +267,7 @@ export class EnrollmentService {
     if (attendance + submissions + attempts > 0) {
       /* أثرٌ في شعبةٍ «لم تبدأ» بحسب التقويم: جلسةٌ قُدّمت أو تسليمٌ مبكّر.
          والأثرُ معلَّقٌ بالتسجيل، فينتقل معه إلى شعبةٍ لم تُعقد جلساتُها. */
-      throw new AuthError('has_activity', 'لك نشاطٌ مسجَّل في هذه الشعبة — راسلنا لترتيب نقلك', 409)
+      throw new AuthError('has_activity', 'لك نشاط مسجّل في هذه الشعبة — راسلنا لترتيب نقلك', 409)
     }
 
     const to = await this.prisma.cohort.findUnique({
@@ -276,7 +276,7 @@ export class EnrollmentService {
     })
     if (!to) throw new AuthError('not_found', 'الشعبة غير موجودة', 404)
     if (to.courseId !== enrollment.cohort.courseId) {
-      throw new AuthError('other_course', 'التبديل بين شعب الدورة نفسها — ولا يُغيَّر المسار بعد الدفع', 409)
+      throw new AuthError('other_course', 'التبديل بين شعب الدورة نفسها — ولا يغيّر المسار بعد الدفع', 409)
     }
     if (!['open', 'full'].includes(to.status)) {
       throw new AuthError('closed', `التسجيل مغلق في «${to.title}»`, 409)
@@ -284,7 +284,7 @@ export class EnrollmentService {
     const toWindow = cohortAcceptsRegistration(to, now)
     if (!toWindow.open) throw new AuthError('closed', toWindow.reasonAr, 409)
     if (to.startsAt && to.startsAt <= now) {
-      throw new AuthError('already_started', `«${to.title}» بدأت — اختر شعبةً لم تبدأ`, 409)
+      throw new AuthError('already_started', `«${to.title}» بدأت — اختر شعبة لم تبدأ`, 409)
     }
     if (to.price !== null && enrollment.cohort.price !== null && Number(to.price) > Number(enrollment.cohort.price)) {
       throw new AuthError('price_higher', `«${to.title}» أعلى سعرا ممّا دفعت — راسلنا لتسوية الفرق`, 409)
@@ -315,7 +315,7 @@ export class EnrollmentService {
         if (issued > 0) {
           throw new AuthError(
             'certificate_on_dropped_seat',
-            `لك في «${to.title}» مقعدٌ سابقٌ صدرت عنه ${issued === 1 ? 'شهادة' : `${issued} شهادات`} — ولا تُمحى الشهادةُ لتحويلِ مقعد. راسلنا لنعيد فتح مقعدك هناك.`,
+            `لك في «${to.title}» مقعد سابق صدرت عنه ${issued === 1 ? 'شهادة' : `${issued} شهادات`} — ولا تمحى الشهادة لتحويل مقعد. راسلنا لنعيد فتح مقعدك هناك.`,
             409,
           )
         }
@@ -360,15 +360,15 @@ export class EnrollmentService {
     await safeNotify(this.prisma, {
       userId, channel: 'in_app', audience: 'learner',
       templateKey: 'enrollment.switched',
-      title: `نُقل مقعدُك إلى «${to.title}»`,
-      body: `نُقل مقعدُك من «${from.title}» إلى «${to.title}»`
+      title: `نقل مقعدك إلى «${to.title}»`,
+      body: `نقل مقعدك من «${from.title}» إلى «${to.title}»`
         + (to.startsAt ? ` — وتبدأ ${cohortDayAr(to.startsAt)}.` : '.')
-        + ' تجد جلساتِها ومادّتها في «تعلُّمي».',
+        + ' تجد جلساتها ومادّتها في «تعلّمي».',
       data: { enrollmentId, from: from.id, to: to.id },
     })
     /* وتقويمُه ينتقل معه: لقاءاتُ المغادَرة تُرفع — وإلّا رأى شعبتَين في أسبوعٍ
        فحضر ما ليس له — ولقاءاتُ الوجهة تصله برابطه. */
-    await this.seatLeft(enrollmentId, userId, from.id, `انتقل مقعدُك إلى «${to.title}» — وتصلك مواعيدُها في رسالتها.`)
+    await this.seatLeft(enrollmentId, userId, from.id, `انتقل مقعدك إلى «${to.title}» — وتصلك مواعيدها في رسالتها.`)
     await this.seatTaken(enrollmentId, to.id)
     return moved
   }
@@ -393,14 +393,14 @@ export class EnrollmentService {
         userId: e.userId,
         channel: 'in_app',
         templateKey: 'enrollment.dropped',
-        title: 'أُسقط تسجيلُك',
-        body: `أُسقط تسجيلُك في «${cohort?.title ?? 'شعبتك'}»، فلم تعد جلساتُها ولا موادُّها تظهر في «تعلُّمي»${note ? `. والسببُ المسجَّل: ${note}` : ''}. راسِلنا إن كان في الأمر خطأ.`,
+        title: 'أسقط تسجيلك',
+        body: `أسقط تسجيلك في «${cohort?.title ?? 'شعبتك'}»، فلم تعد جلساتها ولا موادّها تظهر في «تعلّمي»${note ? `. والسبب المسجّل: ${note}` : ''}. راسلنا إن كان في الأمر خطأ.`,
         data: { cohortId: e.cohortId, enrollmentId },
         audience: 'learner',
       })
     } catch { /* الإشعارُ خدمةٌ مساندة — لا يُبطل إسقاطا وقع */ }
     if (before && SEATED.includes(before.status)) {
-      await this.seatLeft(enrollmentId, e.userId, e.cohortId, `أُسقط تسجيلُك في «${cohort?.title ?? 'شعبتك'}»، فرُفعت لقاءاتُها من تقويمك.`)
+      await this.seatLeft(enrollmentId, e.userId, e.cohortId, `أسقط تسجيلك في «${cohort?.title ?? 'شعبتك'}»، فرفعت لقاءاتها من تقويمك.`)
     }
 
     const promoted = await this.fillSeatFromWaitlist(e.cohortId, actorId)
@@ -470,8 +470,8 @@ export class EnrollmentService {
         userId: promoted.moved.userId,
         channel: 'in_app',
         templateKey: 'enrollment.waitlist.promoted',
-        title: `دخلتَ الشعبة: ${promoted.cohortTitle}`,
-        body: `شغر مقعدٌ في «${promoted.cohortTitle}» فانتقلتَ من قائمة الانتظار إلى المسجَّلين. تجد جلساتها ومادّتها في «تعلُّمي».`,
+        title: `دخلت الشعبة: ${promoted.cohortTitle}`,
+        body: `شغر مقعد في «${promoted.cohortTitle}» فانتقلت من قائمة الانتظار إلى المسجّلين. تجد جلساتها ومادّتها في «تعلّمي».`,
         data: { cohortId, enrollmentId: promoted.moved.id },
         audience: 'learner',
       })
@@ -672,7 +672,7 @@ export class EnrollmentService {
   /** شعبةٌ واحدةٌ من شعبه — لصفحة الشعبة، بالشكل نفسِه الذي يعطيه `trainerCohorts` */
   async trainerCohort(userId: string, cohortId: string) {
     const row = (await this.trainerCohorts(userId)).find((r) => r.cohort.id === cohortId)
-    if (!row) throw new AuthError('not_your_cohort', 'هذه الشعبة ليست مُسنَدةً إليك', 403)
+    if (!row) throw new AuthError('not_your_cohort', 'هذه الشعبة ليست مسندة إليك', 403)
     return row
   }
 }

@@ -145,8 +145,8 @@ export function judgeBeat(
       آخر_نبضة: null, منذ_ثانية: null, نبض_الحلقة_ثانية: null,
       أقلع_في: null, وظائف: null, الالتزام: null,
       يعمل: settling
-        ? `لا يمكن الحكم — الخادمُ أقلع قبل ${Math.round(ctx.uptimeSec)} ثانية، ولم تحلّ أوّلُ نبضةٍ بعد. اسأل بعد ${graceSec} ثانيةً من الإقلاع.`
-        : `لا — لا نبضةَ في القاعدة والخادمُ قائمٌ منذ ${Math.round(ctx.uptimeSec / 60)} دقيقة. راجع: docker compose -f deploy/compose.prod.yml logs worker`,
+        ? `لا يمكن الحكم — الخادم أقلع قبل ${Math.round(ctx.uptimeSec)} ثانية، ولم تحلّ أوّل نبضة بعد. اسأل بعد ${graceSec} ثانية من الإقلاع.`
+        : `لا — لا نبضة في القاعدة والخادم قائم منذ ${Math.round(ctx.uptimeSec / 60)} دقيقة. راجع: docker compose -f deploy/compose.prod.yml logs worker`,
       مع_الكود: 'لا يمكن الحكم — لا نبضة',
     }
   }
@@ -166,17 +166,17 @@ export function judgeBeat(
     وظائف: beat.jobs,
     الالتزام: beat.commit ? beat.commit.slice(0, 7) : null,
     يعمل: alive
-      ? `نعم — نبضَ قبل ${ageSec} ثانية (نبضُ الحلقة ${Math.round(beat.tickMs / 1000)} ثانية)`
-      : `لا — آخرُ نبضةٍ قبل ${ageSec} ثانية، والمهلةُ ${Math.round(graceMs / 1000)}. راجع: docker compose -f deploy/compose.prod.yml logs worker`,
+      ? `نعم — نبض قبل ${ageSec} ثانية (نبض الحلقة ${Math.round(beat.tickMs / 1000)} ثانية)`
+      : `لا — آخر نبضة قبل ${ageSec} ثانية، والمهلة ${Math.round(graceMs / 1000)}. راجع: docker compose -f deploy/compose.prod.yml logs worker`,
     /* الصورةُ واحدةٌ (`wajeez-app:latest`) والحاويتان تُبدَّلان معا — فافتراقُهما
        يعني عاملا لم يُستبدَل في النشرة الأخيرة، وهو يشغّل شيفرةً غيرَ التي
        تُخدَم. ولا يُجزَم بذلك حين يُجهل أحدُ الطرفَين. */
     مع_الكود:
       appSha7 && beat.commit
         ? appSha7 === beat.commit.slice(0, 7)
-          ? 'نعم — العاملُ والخادمُ من التزامٍ واحد'
-          : `لا — الخادمُ على ${appSha7} والعاملُ على ${beat.commit.slice(0, 7)}؛ لم يُستبدَل في النشرة الأخيرة`
-        : 'لا يمكن الحكم — أحدُ البناءَين بلا ختمِ التزام',
+          ? 'نعم — العامل والخادم من التزام واحد'
+          : `لا — الخادم على ${appSha7} والعامل على ${beat.commit.slice(0, 7)}؛ لم يستبدل في النشرة الأخيرة`
+        : 'لا يمكن الحكم — أحد البناءين بلا ختم التزام',
   }
 }
 
@@ -204,7 +204,7 @@ export async function beatReport(
   try {
     beat = await lastBeat(prisma)
   } catch (e) {
-    return blind(`تعذّرت قراءةُ النبضة: ${e instanceof Error ? e.message : 'سببٌ غير معروف'}`)
+    return blind(`تعذّرت قراءة النبضة: ${e instanceof Error ? e.message : 'سبب غير معروف'}`)
   }
   return judgeBeat(beat, {
     appCommit: ctx.appCommit,

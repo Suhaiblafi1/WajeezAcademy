@@ -105,7 +105,7 @@ export class TrainerDossierLinkService {
        القارئ لا يُنبَّه إلّا بردٍّ صريح. (مسجَّلةٌ مخاطرةً في التصميم.) */
     const readerEmail = input.reviewerEmail?.trim().toLowerCase() || null
     if (readerEmail && readerEmail === app.email.trim().toLowerCase()) {
-      throw new AuthError('applicant_email', 'هذا بريدُ المتقدّم نفسِه — ولا يصل الرابطُ صاحبَ الملفّ', 422)
+      throw new AuthError('applicant_email', 'هذا بريد المتقدّم نفسه — ولا يصل الرابط صاحب الملفّ', 422)
     }
 
     const token = newToken()
@@ -152,23 +152,23 @@ export class TrainerDossierLinkService {
     if (!link.reviewerEmail) return null
     const res = await sendDirectEmail(this.prisma, {
       to: link.reviewerEmail,
-      subject: `ملفُّ متقدّمٍ لمراجعتك — ${reference}`,
+      subject: `ملفّ متقدّم لمراجعتك — ${reference}`,
       ...renderMail({
         greetingName: link.reviewerName,
-        heading: 'ملفُّ متقدّمٍ ينتظر قراءتك',
+        heading: 'ملفّ متقدّم ينتظر قراءتك',
         blocks: [
           { kind: 'facts', rows: [
             { label: 'رقم الطلب', value: reference },
             { label: 'ينتهي الرابط', value: fmtDateLong(link.expiresAt) },
           ] },
           { kind: 'cta', label: 'افتح الملفّ واكتب تقييمك', href: url,
-            caption: 'يُفتح بنقرةٍ بلا تسجيلٍ ولا كلمة مرور.' },
+            caption: 'يفتح بنقرة بلا تسجيل ولا كلمة مرور.' },
           /* والتحذيرُ في المتن لا في تعليقِ شيفرة: من يقرأ الرسالةَ هو من
              قد يُعيد توجيهَها، فالتنبيهُ يبلغه حيث هو. */
-          { kind: 'callout', text: 'هذا الرابطُ لك وحدَك ويقوم مقامَ توقيعك — فلا تُعِد توجيهَه، فما يُكتب به يُنسَب إليك.' },
+          { kind: 'callout', text: 'هذا الرابط لك وحدك ويقوم مقام توقيعك — فلا تعد توجيهه، فما يكتب به ينسب إليك.' },
           /* ومن جُدِّد رابطُه وصلته رسالتان، فيُقال له أيُّهما يعمل — وإلّا
              فتح الأوّلَ فرُدّ بـ«غير صالح» وظنّ العطبَ فينا. */
-          { kind: 'note', text: 'وإن كان قد وصلك رابطٌ قبله فهذا يُبطله — افتح هذا وحدَه. وإن وصلك خطأً فأخبرنا بالردّ، ويُلغى.' },
+          { kind: 'note', text: 'وإن كان قد وصلك رابط قبله فهذا يبطله — افتح هذا وحده. وإن وصلك خطأ فأخبرنا بالردّ، ويلغى.' },
         ],
       }),
     })
@@ -259,7 +259,7 @@ export class TrainerDossierLinkService {
     if (link.revokedAt) {
       throw new AuthError(
         'link_revoked',
-        'هذا الرابطُ ملغى — والإلغاءُ قرار. أنشئ رابطا جديدا باسمه إن أردتَ أن يقرأ ثانيةً.',
+        'هذا الرابط ملغى — والإلغاء قرار. أنشئ رابطا جديدا باسمه إن أردت أن يقرأ ثانية.',
         409,
       )
     }
@@ -401,15 +401,15 @@ export class TrainerDossierLinkService {
        حكمٌ بلقاء إنسانٍ لم يُقرأ ملفُّه. */
     const interviewId = input.interviewId || null
     if (input.verdict && !interviewId) {
-      throw new AuthError('interview_required', 'اختر المقابلةَ التي تحكم فيها قبل حفظ القرار', 422)
+      throw new AuthError('interview_required', 'اختر المقابلة التي تحكم فيها قبل حفظ القرار', 422)
     }
     if (interviewId) {
       const iv = await this.prisma.trainerInterview.findFirst({
         where: { id: interviewId, applicationId: link.applicationId },
         select: { canceledAt: true },
       })
-      if (!iv) throw new AuthError('interview_not_found', 'لا مقابلةَ بهذا المعرّف في هذا الطلب', 404)
-      if (iv.canceledAt) throw new AuthError('interview_canceled', 'هذه المقابلةُ ملغاة — لا يُحكَم في لقاءٍ لم يقع', 422)
+      if (!iv) throw new AuthError('interview_not_found', 'لا مقابلة بهذا المعرّف في هذا الطلب', 404)
+      if (iv.canceledAt) throw new AuthError('interview_canceled', 'هذه المقابلة ملغاة — لا يحكم في لقاء لم يقع', 422)
     }
 
     const before = await this.prisma.trainerApplicationReview.findFirst({
@@ -504,7 +504,7 @@ export class TrainerDossierLinkService {
     }
 
     /* ولا حكمَ بقي: من سحب قرارَه سحب معه ما كُتب عنه في الموعد */
-    await this.review.clearInterviewOutcome(interviewId, byAr, 'سُحب آخرُ قرارٍ في هذا اللقاء')
+    await this.review.clearInterviewOutcome(interviewId, byAr, 'سحب آخر قرار في هذا اللقاء')
     return { outcome: null, agreed: true }
   }
 }

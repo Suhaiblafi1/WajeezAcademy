@@ -21,13 +21,13 @@ export function registerLearnerRoutes(app: FastifyInstance, prisma: PrismaClient
   /** نطاقُ صاحب الجلسة — أو ٤٠٣ لمن لا نطاق له */
   const scoped = (req: { auth?: { userId: string; permissions: string[] } | null }): LearnerScope => {
     const scope = scopeFor({ userId: req.auth!.userId, permissions: req.auth!.permissions })
-    if (!scope) throw new AuthError('forbidden', 'حسابك لا يرى الطلبة المسجَّلين', 403)
+    if (!scope) throw new AuthError('forbidden', 'حسابك لا يرى الطلبة المسجّلين', 403)
     return scope
   }
 
   app.get('/api/staff/learners', {
     preHandler: requireAuth,
-    schema: { tags: ['learners'], summary: 'الطلبة المسجَّلون في نطاقك — الكلّ، أو طلبةُ شعبك، أو عملاءُ حالاتك' },
+    schema: { tags: ['learners'], summary: 'الطلبة المسجّلون في نطاقك — الكلّ، أو طلبة شعبك، أو عملاء حالاتك' },
   }, async (req) => {
     const scope = scoped(req)
     const q = z.object({
@@ -39,7 +39,7 @@ export function registerLearnerRoutes(app: FastifyInstance, prisma: PrismaClient
 
   app.get('/api/staff/learners/:userId', {
     preHandler: requireAuth,
-    schema: { tags: ['learners'], summary: 'طالبٌ بعينه — حسابُه وتسجيلاتُه، في حدود نطاقك' },
+    schema: { tags: ['learners'], summary: 'طالب بعينه — حسابه وتسجيلاته، في حدود نطاقك' },
   }, async (req) => {
     const { userId } = z.object({ userId: z.string().uuid() }).parse(req.params)
     return learners.detail(scoped(req), userId)
@@ -47,7 +47,7 @@ export function registerLearnerRoutes(app: FastifyInstance, prisma: PrismaClient
 
   app.post('/api/staff/learners/:userId/enrollments', {
     preHandler: requireAuth,
-    schema: { tags: ['learners'], summary: 'تسجيلُ طالبٍ في شعبة — بصلاحية إدارة التسجيل' },
+    schema: { tags: ['learners'], summary: 'تسجيل طالب في شعبة — بصلاحية إدارة التسجيل' },
   }, async (req, reply) => {
     const { userId } = z.object({ userId: z.string().uuid() }).parse(req.params)
     const { cohortId } = z.object({ cohortId: z.string().uuid() }).parse(req.body)
@@ -56,7 +56,7 @@ export function registerLearnerRoutes(app: FastifyInstance, prisma: PrismaClient
 
   app.delete('/api/staff/learners/enrollments/:enrollmentId', {
     preHandler: requireAuth,
-    schema: { tags: ['learners'], summary: 'إخراجُ طالبٍ من شعبة — انسحابٌ موثَّق لا محوٌ للسجلّ' },
+    schema: { tags: ['learners'], summary: 'إخراج طالب من شعبة — انسحاب موثّق لا محو للسجلّ' },
   }, async (req) => {
     const { enrollmentId } = z.object({ enrollmentId: z.string().uuid() }).parse(req.params)
     const body = z.object({ note: z.string().trim().max(300).optional() }).parse(req.body ?? {})
@@ -65,7 +65,7 @@ export function registerLearnerRoutes(app: FastifyInstance, prisma: PrismaClient
 
   app.patch('/api/staff/learners/:userId', {
     preHandler: requireAuth,
-    schema: { tags: ['learners'], summary: 'تعديلُ حساب طالب — الاسم والبريد والحالة' },
+    schema: { tags: ['learners'], summary: 'تعديل حساب طالب — الاسم والبريد والحالة' },
   }, async (req) => {
     const { userId } = z.object({ userId: z.string().uuid() }).parse(req.params)
     const patch = z.object({

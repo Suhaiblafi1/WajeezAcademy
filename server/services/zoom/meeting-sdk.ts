@@ -45,7 +45,7 @@ export function assertMeetingSdkEnabled(): void {
   if (meetingSdkEnabled()) return
   throw new AuthError(
     'meeting_sdk_unavailable',
-    'فتحُ الجلسة داخل الموقع غيرُ مفعّلٍ بعد. افتح رابطَ الجلسة في تطبيق Zoom.',
+    'فتح الجلسة داخل الموقع غير مفعّل بعد. افتح رابط الجلسة في تطبيق Zoom.',
     501,
   )
 }
@@ -53,7 +53,7 @@ export function assertMeetingSdkEnabled(): void {
 /** المفتاحُ العلنيّ — يُرسَل إلى المتصفّح مع التوقيع، ولا سرَّ فيه */
 export function meetingSdkKey(): string {
   const key = process.env.ZOOM_SDK_KEY
-  if (!key) throw new AuthError('meeting_sdk_unavailable', 'مفتاحُ Meeting SDK غيرُ مضبوط', 501)
+  if (!key) throw new AuthError('meeting_sdk_unavailable', 'مفتاح Meeting SDK غير مضبوط', 501)
   return key
 }
 
@@ -66,14 +66,14 @@ export function signMeetingSdkJwt(input: {
   const sdkKey = process.env.ZOOM_SDK_KEY
   const sdkSecret = process.env.ZOOM_SDK_SECRET
   if (!sdkKey || !sdkSecret) {
-    throw new AuthError('meeting_sdk_unavailable', 'مفاتيحُ Meeting SDK غيرُ مضبوطة', 501)
+    throw new AuthError('meeting_sdk_unavailable', 'مفاتيح Meeting SDK غير مضبوطة', 501)
   }
 
   /* رقمُ الاجتماع أرقامٌ فقط. ورابطُ Zoom اليدويُّ قد يحمله بمسافاتٍ أو شُرَط،
      فتُنزع قبل التحقّق — ثمّ يُرفض ما بقي فيه غيرُ رقم. */
   const meetingNumber = input.meetingNumber.replace(/[\s-]/g, '')
   if (!/^\d{9,12}$/.test(meetingNumber)) {
-    throw new AuthError('bad_meeting_number', 'رقمُ الاجتماع غيرُ صالح', 400)
+    throw new AuthError('bad_meeting_number', 'رقم الاجتماع غير صالح', 400)
   }
 
   const nowSec = Math.floor((input.now?.getTime() ?? Date.now()) / 1000)

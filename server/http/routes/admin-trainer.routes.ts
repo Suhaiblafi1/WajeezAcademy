@@ -95,7 +95,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
      ومتى كانت آخرُ دورة، وجملةٌ تقول لماذا — لا رمزَ ولا جزءَ رمز. */
   app.get('/api/admin/trainer-applications/interview-sync', {
     preHandler: requirePermission('trainer.applications.view'),
-    schema: { tags: ['admin-trainers'], summary: 'أيَثِقُ الطابورُ بما يعرفه عن حجز المقابلات — بلا أسرار' },
+    schema: { tags: ['admin-trainers'], summary: 'أيثق الطابور بما يعرفه عن حجز المقابلات — بلا أسرار' },
   }, async () => {
     const [config, sync] = await Promise.all([
       getCalendlyConfig(prisma),
@@ -122,7 +122,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
   app.delete('/api/admin/trainer-applications/:reference', {
     preHandler: requirePermission('trainer.applications.purge'),
     config: { rateLimit: { max: 20, timeWindow: '10 minutes' } },
-    schema: { tags: ['admin-trainers'], summary: 'حذفُ طلبٍ منتهٍ نهائيّا — بسببٍ يُسجَّل قبل الحذف' },
+    schema: { tags: ['admin-trainers'], summary: 'حذف طلب منته نهائيّا — بسبب يسجّل قبل الحذف' },
   }, async (req) => {
     const { reference } = z.object({ reference: z.string().trim().min(3).max(60) }).parse(req.params)
     const { reasonAr } = z.object({ reasonAr: z.string().trim().min(5).max(500) }).parse(req.body)
@@ -136,7 +136,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
      استرجاعه، وهو المقصود. */
   app.post('/api/admin/trainer-applications/:id/dossier-links', {
     preHandler: requirePermission('trainer.applications.review'),
-    schema: { tags: ['admin-trainers'], summary: 'رابطُ سجلٍّ باسمِ قارئ — يُردّ رمزُه مرّةً واحدة' },
+    schema: { tags: ['admin-trainers'], summary: 'رابط سجلّ باسم قارئ — يردّ رمزه مرّة واحدة' },
   }, async (req, reply) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const body = z.object({
@@ -157,7 +157,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
 
   app.get('/api/admin/trainer-applications/:id/dossier-links', {
     preHandler: requirePermission('trainer.applications.review'),
-    schema: { tags: ['admin-trainers'], summary: 'روابطُ السجلّ وحالُها — مَن، ومتى فُتح، وهل أُلغي' },
+    schema: { tags: ['admin-trainers'], summary: 'روابط السجلّ وحالها — من، ومتى فتح، وهل ألغي' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     return links.list(id)
@@ -167,7 +167,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
      و`POST` لا `GET`: فعلٌ يُبطل القديمَ ويكتب في القاعدة، لا قراءةٌ تُعاد. */
   app.post('/api/admin/trainer-applications/:id/dossier-links/:linkId/rotate', {
     preHandler: requirePermission('trainer.applications.review'),
-    schema: { tags: ['admin-trainers'], summary: 'تجديدُ رابطِ قارئ — يبطل القديمُ ويبقى تقييمُه وسجلُّ فتحه' },
+    schema: { tags: ['admin-trainers'], summary: 'تجديد رابط قارئ — يبطل القديم ويبقى تقييمه وسجلّ فتحه' },
   }, async (req) => {
     const { id, linkId } = z.object({
       id: z.string().uuid(), linkId: z.string().uuid(),
@@ -179,7 +179,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
 
   app.delete('/api/admin/trainer-applications/:id/dossier-links/:linkId', {
     preHandler: requirePermission('trainer.applications.review'),
-    schema: { tags: ['admin-trainers'], summary: 'إلغاءُ رابطِ سجلّ — لا حذفُه، فالتقييمُ المكتوبُ به معلَّقٌ باسمه' },
+    schema: { tags: ['admin-trainers'], summary: 'إلغاء رابط سجلّ — لا حذفه، فالتقييم المكتوب به معلّق باسمه' },
   }, async (req) => {
     const { id, linkId } = z.object({ id: z.string().uuid(), linkId: z.string().uuid() }).parse(req.params)
     return links.revoke(id, linkId, req.auth!.userId)
@@ -207,7 +207,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
      ولا نعرف فراغَه: يختار هو من التقويم الذي يحجب ما حُجز. */
   app.post('/api/admin/trainer-applications/:id/interview-invite', {
     preHandler: requirePermission('trainer.applications.review'),
-    schema: { tags: ['admin-trainers'], summary: 'دعوةُ المتقدّم إلى حجز موعدِ مقابلةٍ بنفسه' },
+    schema: { tags: ['admin-trainers'], summary: 'دعوة المتقدّم إلى حجز موعد مقابلة بنفسه' },
   }, async (req, reply) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     return reply.status(201).send(await review.inviteToBookInterview(id, req.auth!.userId))
@@ -219,7 +219,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
      ٢٢ سبتمبر ٢٠٢٦، والسجلُّ لا يُعاد ترقيمُه لتبدّل نصّ. */
   app.post('/api/admin/trainer-applications/:id/booking-reminder', {
     preHandler: requirePermission('trainer.applications.review'),
-    schema: { tags: ['admin-trainers'], summary: 'تذكيرُ متقدّمٍ لم يحجز موعدَ لقاء التعارف' },
+    schema: { tags: ['admin-trainers'], summary: 'تذكير متقدّم لم يحجز موعد لقاء التعارف' },
   }, async (req, reply) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     return reply.status(201).send(await review.remindToBookInterview(id, req.auth!.userId))
@@ -232,7 +232,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
      فلا يفترق ما يُقاس في الشاشة عمّا يُردّ في الخادم. */
   app.post('/api/admin/trainer-applications/:id/no-show-followup', {
     preHandler: requirePermission('trainer.applications.review'),
-    schema: { tags: ['admin-trainers'], summary: 'متابعةُ متقدّمٍ لم يحضر لقاءَ التعارف — برسالةٍ يُعدَّل متنُها' },
+    schema: { tags: ['admin-trainers'], summary: 'متابعة متقدّم لم يحضر لقاء التعارف — برسالة يعدّل متنها' },
   }, async (req, reply) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const body = z.object({
@@ -249,7 +249,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
      والملاحظةُ تسافر معه في المتن، ولذلك تُقبَل هنا كما تُقبل في القرار. */
   app.post('/api/admin/trainer-applications/:id/demo-request', {
     preHandler: requirePermission('trainer.applications.review'),
-    schema: { tags: ['admin-trainers'], summary: 'طلبُ درسٍ تجريبيٍّ من متقدّم — رسالةٌ بلا نقلةِ حالة' },
+    schema: { tags: ['admin-trainers'], summary: 'طلب درس تجريبيّ من متقدّم — رسالة بلا نقلة حالة' },
   }, async (req, reply) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const body = z.object({ note: z.string().max(1000).optional() }).parse(req.body ?? {})
@@ -260,7 +260,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
      طلبَه لم يصلنا، ونحن نراه في الطابور ولا نراه ينتظرنا. */
   app.post('/api/admin/trainer-applications/:id/draft-reminder', {
     preHandler: requirePermission('trainer.applications.review'),
-    schema: { tags: ['admin-trainers'], summary: 'تذكيرُ متقدّمٍ بإكمال طلبه — للمسوّدة وحدَها' },
+    schema: { tags: ['admin-trainers'], summary: 'تذكير متقدّم بإكمال طلبه — للمسوّدة وحدها' },
   }, async (req, reply) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     return reply.status(201).send(await review.remindDraftApplicant(id, req.auth!.userId))
@@ -328,7 +328,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
 
   app.post('/api/admin/trainer-applications/:id/decision', {
     preHandler: requirePermission('trainer.applications.decide'),
-    schema: { tags: ['admin-trainers'], summary: 'قرار بشري — اعتمادٌ بنقرة، أو خطوةٌ من السلسلة التفصيلية' },
+    schema: { tags: ['admin-trainers'], summary: 'قرار بشري — اعتماد بنقرة، أو خطوة من السلسلة التفصيلية' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const body = z.object({
@@ -373,13 +373,13 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
      قرارَ المدرّبين أصلا، فلا يصير البابُ طريقا جانبيّا حول الطابور. */
   app.post('/api/admin/trainers/direct', {
     preHandler: requirePermission('admin.users.manage'),
-    schema: { tags: ['admin-trainers'], summary: 'تعيينُ مدرّبٍ داخليّا — حسابٌ وطلبٌ نشطٌ وملفٌّ ودورٌ في معاملةٍ واحدة' },
+    schema: { tags: ['admin-trainers'], summary: 'تعيين مدرّب داخليّا — حساب وطلب نشط وملفّ ودور في معاملة واحدة' },
   }, async (req, reply) => {
     if (!req.auth!.permissions.includes('trainer.applications.decide')) {
       return reply.status(403).send({
         error: {
           code: 'forbidden',
-          message_ar: 'تعيينُ مدرّبٍ يحتاج قرارَ المدرّبين أيضا — لا صلاحيةَ الحسابات وحدَها',
+          message_ar: 'تعيين مدرّب يحتاج قرار المدرّبين أيضا — لا صلاحية الحسابات وحدها',
         },
       })
     }
@@ -438,7 +438,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
   /* «أعِدْها بملاحظات» — تُستأنف المهلةُ مضافا إليها مدّةُ التجميد بالضبط */
   app.post('/api/admin/trainer-contracts/:contractId/return-materials', {
     preHandler: requirePermission('trainer.contract.manage'),
-    schema: { tags: ['admin-trainers'], summary: 'إعادةُ موادّ المدرّب بملاحظاتٍ — وتُستأنف مهلتُه' },
+    schema: { tags: ['admin-trainers'], summary: 'إعادة موادّ المدرّب بملاحظات — وتستأنف مهلته' },
   }, async (req) => {
     const { contractId } = z.object({ contractId: z.string().uuid() }).parse(req.params)
     const { notesAr } = z.object({ notesAr: z.string().trim().min(5).max(4000) }).parse(req.body)
@@ -447,21 +447,21 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
 
   app.get('/api/admin/trainer-contracts', {
     preHandler: requirePermission('trainer.contract.manage'),
-    schema: { tags: ['admin-trainers'], summary: 'قائمةُ العقود، ومن ينتظر عقدا ولا عقدَ له' },
+    schema: { tags: ['admin-trainers'], summary: 'قائمة العقود، ومن ينتظر عقدا ولا عقد له' },
   }, async () => review.listContracts())
 
   /* ومسارٌ ثابتٌ قبل `:contractId` — وإلّا التُقط «awaiting-countersign-count»
      معرّفَ عقدٍ. وهو نداءٌ يتكرّر في كلّ شاشةِ إدارة، فلا يحمل إلّا عددا. */
   app.get('/api/admin/trainer-contracts/awaiting-countersign-count', {
     preHandler: requirePermission('trainer.contract.manage'),
-    schema: { tags: ['admin-trainers'], summary: 'عددُ العقود الموقَّعة التي تنتظر ختمَ الأكاديميّة' },
+    schema: { tags: ['admin-trainers'], summary: 'عدد العقود الموقّعة التي تنتظر ختم الأكاديميّة' },
   }, async () => review.countAwaitingCountersign())
 
   /* المتنُ في نداءٍ مستقلّ: القائمةُ تحمل عشراتِ الصفوف، ومتنُ العقد آلافُ
      الأحرف. فحملُه في القائمة يجعل كلَّ فتحةِ شاشةٍ تنقل ما لا يُقرأ. */
   app.get('/api/admin/trainer-contracts/:contractId/body', {
     preHandler: requirePermission('trainer.contract.manage'),
-    schema: { tags: ['admin-trainers'], summary: 'متنُ العقد المجمَّد كما وُقّع عليه' },
+    schema: { tags: ['admin-trainers'], summary: 'متن العقد المجمّد كما وقّع عليه' },
   }, async (req) => {
     const { contractId } = z.object({ contractId: z.string().uuid() }).parse(req.params)
     return review.contractBody(contractId)
@@ -469,7 +469,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
 
   app.get('/api/admin/trainer-applications/:id/contract-prefill', {
     preHandler: requirePermission('trainer.contract.manage'),
-    schema: { tags: ['admin-trainers'], summary: 'معطياتُ شاشة تركيب العقد — الأجرُ والدوراتُ المؤهَّل لها وما ينقص من هويّة الأكاديميّة' },
+    schema: { tags: ['admin-trainers'], summary: 'معطيات شاشة تركيب العقد — الأجر والدورات المؤهّل لها وما ينقص من هويّة الأكاديميّة' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     return review.contractPrefill(id)
@@ -479,7 +479,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
      الأكاديميّة: الموظّفُ يرى الوثيقةَ ويرى مواضعَ النقص قبل أن يُطلب سدُّها. */
   app.post('/api/admin/trainer-applications/:id/contract-preview', {
     preHandler: requirePermission('trainer.contract.manage'),
-    schema: { tags: ['admin-trainers'], summary: 'معاينةُ متن العقد كما يراه المدرّب — بلا حفظ' },
+    schema: { tags: ['admin-trainers'], summary: 'معاينة متن العقد كما يراه المدرّب — بلا حفظ' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const body = composeBody.parse(req.body)
@@ -488,7 +488,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
 
   app.post('/api/admin/trainer-applications/:id/contracts/compose', {
     preHandler: requirePermission('trainer.contract.manage'),
-    schema: { tags: ['admin-trainers'], summary: 'تركيبُ العقد وتجميدُ متنه — ينقل غيرَ النشط إلى contract_pending' },
+    schema: { tags: ['admin-trainers'], summary: 'تركيب العقد وتجميد متنه — ينقل غير النشط إلى contract_pending' },
   }, async (req, reply) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const body = composeBody.parse(req.body)
@@ -500,7 +500,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
      بيده. وبلا ذلك يُنشأ رابطٌ لا يملك أحدٌ رمزَه، أي عقدٌ لا يُوقَّع أبدا. */
   app.post('/api/admin/trainer-contracts/:contractId/send', {
     preHandler: requirePermission('trainer.contract.manage'),
-    schema: { tags: ['admin-trainers'], summary: 'إرسالُ العقد للتوقيع — يسكّ الرابطَ وينقل غيرَ النشط إلى contract_pending' },
+    schema: { tags: ['admin-trainers'], summary: 'إرسال العقد للتوقيع — يسكّ الرابط وينقل غير النشط إلى contract_pending' },
   }, async (req) => {
     const { contractId } = z.object({ contractId: z.string().uuid() }).parse(req.params)
     return review.sendContract(contractId, req.auth!.userId)
@@ -508,7 +508,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
 
   app.post('/api/admin/trainer-contracts/:contractId/resend', {
     preHandler: requirePermission('trainer.contract.manage'),
-    schema: { tags: ['admin-trainers'], summary: 'تجديدُ رابط التوقيع — والقديمُ يموت لحظتَها' },
+    schema: { tags: ['admin-trainers'], summary: 'تجديد رابط التوقيع — والقديم يموت لحظتها' },
   }, async (req) => {
     const { contractId } = z.object({ contractId: z.string().uuid() }).parse(req.params)
     return review.resendContract(contractId, req.auth!.userId)
@@ -517,7 +517,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
   /* التذكيرُ الأخير — رمزٌ جديدٌ صالحٌ ثلاثةَ أيّام، ومرّةً واحدةً لكلّ عرض (١ أكتوبر ٢٠٢٦) */
   app.post('/api/admin/trainer-contracts/:contractId/final-reminder', {
     preHandler: requirePermission('trainer.contract.manage'),
-    schema: { tags: ['admin-trainers'], summary: 'التذكيرُ الأخيرُ بالتوقيع — والعرضُ صالحٌ ثلاثةَ أيّام' },
+    schema: { tags: ['admin-trainers'], summary: 'التذكير الأخير بالتوقيع — والعرض صالح ثلاثة أيّام' },
   }, async (req) => {
     const { contractId } = z.object({ contractId: z.string().uuid() }).parse(req.params)
     return review.sendFinalReminder(contractId, req.auth!.userId)
@@ -531,7 +531,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     preHandler: requirePermission('trainer.contract.manage'),
     schema: {
       tags: ['admin-trainers'],
-      summary: 'تحديثُ نصِّ كلّ عرضٍ مفتوحٍ إلى الإصدار الحاليّ — بالرابط نفسِه',
+      summary: 'تحديث نصّ كلّ عرض مفتوح إلى الإصدار الحاليّ — بالرابط نفسه',
     },
   }, async (req) => {
     /* والبريدُ يُختار، ولا قائمةَ تغييرٍ على صفحة المدرّب في الحالَين (علّتُه في الخدمة) */
@@ -541,7 +541,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
 
   app.post('/api/admin/trainer-contracts/:contractId/revoke', {
     preHandler: requirePermission('trainer.contract.manage'),
-    schema: { tags: ['admin-trainers'], summary: 'إلغاءُ عقدٍ مفتوح — لا يُحذف، والسببُ يُكتب' },
+    schema: { tags: ['admin-trainers'], summary: 'إلغاء عقد مفتوح — لا يحذف، والسبب يكتب' },
   }, async (req) => {
     const { contractId } = z.object({ contractId: z.string().uuid() }).parse(req.params)
     const { reasonAr } = z.object({ reasonAr: z.string().trim().min(5).max(500) }).parse(req.body)
@@ -555,7 +555,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
      أن يردّ على طلب تعديله. */
   app.post('/api/admin/trainer-contracts/:contractId/amendment-reply', {
     preHandler: requirePermission('trainer.contract.manage'),
-    schema: { tags: ['admin-trainers'], summary: 'الردّ على طلب تعديل — يبقى العرضُ ويصلُه جوابُك' },
+    schema: { tags: ['admin-trainers'], summary: 'الردّ على طلب تعديل — يبقى العرض ويصله جوابك' },
   }, async (req) => {
     const { contractId } = z.object({ contractId: z.string().uuid() }).parse(req.params)
     const { replyAr } = z.object({ replyAr: z.string().trim().min(5).max(AMENDMENT_TEXT_MAX) }).parse(req.body)
@@ -567,7 +567,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
      أن يُلغي ملك أن يُلغيَ قبولا لطلب صاحبه. */
   app.post('/api/admin/trainer-contracts/:contractId/amendment-reissue', {
     preHandler: requirePermission('trainer.contract.manage'),
-    schema: { tags: ['admin-trainers'], summary: 'قبولُ طلب التعديل — يُغلَق العرضُ ويصلُه جوابُك وعقدُه المصحَّحُ برابطه في رسالةٍ واحدة' },
+    schema: { tags: ['admin-trainers'], summary: 'قبول طلب التعديل — يغلق العرض ويصله جوابك وعقده المصحّح برابطه في رسالة واحدة' },
   }, async (req) => {
     const { contractId } = z.object({ contractId: z.string().uuid() }).parse(req.params)
     /* ومخطّطُ الإعادة للتوقيع نفسُه (١ أكتوبر ٢٠٢٦): عنوانٌ ونصٌّ يكتبهما
@@ -584,7 +584,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
      وثلاثتُها خلفها. ولا يمسّ قرارَ المدرّبين، فلا `decide` معه. */
   app.post('/api/admin/trainer-contracts/:contractId/name-reissue', {
     preHandler: requirePermission('trainer.contract.manage'),
-    schema: { tags: ['admin-trainers'], summary: 'إعادةُ العقد مصحَّحا باسم الطرف الثاني كما في وثيقة هويّته' },
+    schema: { tags: ['admin-trainers'], summary: 'إعادة العقد مصحّحا باسم الطرف الثاني كما في وثيقة هويّته' },
   }, async (req) => {
     const { contractId } = z.object({ contractId: z.string().uuid() }).parse(req.params)
     /* وبلا اسمٍ يُقرأ ما قاله المدرّبُ في طلبه — فالنقرةُ الواحدةُ تكفي */
@@ -599,7 +599,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
      يقرّر على غير علم. */
   app.get('/api/admin/trainer-contracts/:contractId/impact', {
     preHandler: requirePermission('trainer.contract.manage'),
-    schema: { tags: ['admin-trainers'], summary: 'ما يمسّه إغلاقُ هذا العقد — شعبٌ ومتعلّمون وعروضٌ ومستحقّات' },
+    schema: { tags: ['admin-trainers'], summary: 'ما يمسّه إغلاق هذا العقد — شعب ومتعلّمون وعروض ومستحقّات' },
   }, async (req) => {
     const { contractId } = z.object({ contractId: z.string().uuid() }).parse(req.params)
     return review.contractCloseImpact(contractId)
@@ -607,7 +607,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
 
   app.delete('/api/admin/trainer-contracts/:contractId', {
     preHandler: requirePermission('trainer.contract.manage'),
-    schema: { tags: ['admin-trainers'], summary: 'حذفُ عقدٍ لم يمسّه توقيع' },
+    schema: { tags: ['admin-trainers'], summary: 'حذف عقد لم يمسّه توقيع' },
   }, async (req) => {
     const { contractId } = z.object({ contractId: z.string().uuid() }).parse(req.params)
     return review.deleteContract(contractId, req.auth!.userId)
@@ -617,7 +617,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
      والرابطُ موقَّتٌ لعشر دقائق كوثائق الطلب، وكلُّ فتحةٍ تُكتب في الأثر. */
   app.get('/api/admin/trainer-contracts/:contractId/documents/:documentId/url', {
     preHandler: requirePermission('trainer.contract.manage'),
-    schema: { tags: ['admin-trainers'], summary: 'رابطُ قراءةٍ موقَّتٌ لوثيقةِ هويّةٍ مع عقد' },
+    schema: { tags: ['admin-trainers'], summary: 'رابط قراءة موقّت لوثيقة هويّة مع عقد' },
   }, async (req) => {
     const { contractId, documentId } = z.object({
       contractId: z.string().uuid(), documentId: z.string().uuid(),
@@ -639,7 +639,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
       reply.status(403).send({
         error: {
           code: 'forbidden',
-          message_ar: 'اعتمادُ عقدٍ يفتح حسابا ويمنح دورا — ويحتاج قرارَ المدرّبين أيضا، لا صلاحيةَ العقود وحدَها',
+          message_ar: 'اعتماد عقد يفتح حسابا ويمنح دورا — ويحتاج قرار المدرّبين أيضا، لا صلاحية العقود وحدها',
         },
       })
       return undefined
@@ -653,7 +653,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
      قبل النشر على بابٍ مغلق. */
   app.post('/api/admin/trainer-contracts/:contractId/countersign', {
     preHandler: requirePermission('trainer.contract.manage'),
-    schema: { tags: ['admin-trainers'], summary: 'اعتمادُ توقيعِ المدرّب — يفتح طورَ الموادّ في العرض المشروط بلا توقيعٍ منّا، ويختم العقدَ غيرَ المشروط إلّا أن يُعتمَد كالعقود الجديدة (likeNew) فيُوقَّع بعدُ من /seal، وما وُقّع على نصٍّ يجعل الاعتمادَ توقيعا يُعتمَد بطلبٍ صريح: كما وقّعه فيُختَم (asSigned)، أو كالعقود الجديدة بلا خَتم (likeNew)' },
+    schema: { tags: ['admin-trainers'], summary: 'اعتماد توقيع المدرّب — يفتح طور الموادّ في العرض المشروط بلا توقيع منّا، ويختم العقد غير المشروط إلّا أن يعتمد كالعقود الجديدة (likeNew) فيوقّع بعد من /seal، وما وقّع على نصّ يجعل الاعتماد توقيعا يعتمد بطلب صريح: كما وقّعه فيختم (asSigned)، أو كالعقود الجديدة بلا ختم (likeNew)' },
   }, async (req, reply) => {
     if (!requireDecideToo(req, reply)) return reply
     const { contractId } = z.object({ contractId: z.string().uuid() }).parse(req.params)
@@ -676,7 +676,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
      من صفّه حين تُعتمَد دوراتُه — وبالحارسَين نفسَيهما: صلاحيّةُ العقود وقرارُ المدرّبين. */
   app.post('/api/admin/trainer-contracts/:contractId/seal', {
     preHandler: requirePermission('trainer.contract.manage'),
-    schema: { tags: ['admin-trainers'], summary: 'توقيعُ الأكاديميّة عقدا غيرَ مشروطٍ اعتُمد توقيعُه كالعقود الجديدة — فينفذ ويُزيح ما كان نافذا قبله' },
+    schema: { tags: ['admin-trainers'], summary: 'توقيع الأكاديميّة عقدا غير مشروط اعتمد توقيعه كالعقود الجديدة — فينفذ ويزيح ما كان نافذا قبله' },
   }, async (req, reply) => {
     if (!requireDecideToo(req, reply)) return reply
     const { contractId } = z.object({ contractId: z.string().uuid() }).parse(req.params)
@@ -686,7 +686,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
 
   app.post('/api/admin/trainer-contracts/:contractId/reject-signature', {
     preHandler: requirePermission('trainer.contract.manage'),
-    schema: { tags: ['admin-trainers'], summary: 'رفضُ توقيعٍ لا يطابق وثيقةَ الهويّة — يُغلَق العقدُ ولا يُمحى دليلُه' },
+    schema: { tags: ['admin-trainers'], summary: 'رفض توقيع لا يطابق وثيقة الهويّة — يغلق العقد ولا يمحى دليله' },
   }, async (req, reply) => {
     if (!requireDecideToo(req, reply)) return reply
     const { contractId } = z.object({ contractId: z.string().uuid() }).parse(req.params)
@@ -698,7 +698,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
      العلّةُ في `trainer-decline-reply.service.ts`. */
   app.post('/api/admin/trainer-contracts/:contractId/decline-reply', {
     preHandler: requirePermission('trainer.contract.manage'),
-    schema: { tags: ['admin-trainers'], summary: 'شكرُ من اعتذر عن عقده — ورابطُ خياره في بياناته' },
+    schema: { tags: ['admin-trainers'], summary: 'شكر من اعتذر عن عقده — ورابط خياره في بياناته' },
   }, async (req) => {
     const { contractId } = z.object({ contractId: z.string().uuid() }).parse(req.params)
     const body = z.object({ subjectAr: z.string().max(200), bodyAr: z.string().max(6000) }).parse(req.body ?? {})
@@ -710,11 +710,11 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
      العلّةُ عند `expiredReplyBlockAr` في `decline-reply.ts`. */
   app.post('/api/admin/trainer-contracts/:contractId/expired-reply', {
     preHandler: requirePermission('trainer.contract.manage'),
-    schema: { tags: ['admin-trainers'], summary: 'اعتذارٌ نهائيٌّ لمن انقضى رابطُ توقيعه — يُغلق العقدَ ويؤجّل الطلبَ ويرسل خيارَ البيانات' },
+    schema: { tags: ['admin-trainers'], summary: 'اعتذار نهائيّ لمن انقضى رابط توقيعه — يغلق العقد ويؤجّل الطلب ويرسل خيار البيانات' },
   }, async (req, reply) => {
     if (!req.auth!.permissions.includes('trainer.applications.decide')) {
       return reply.status(403).send({
-        error: { code: 'forbidden', message_ar: 'تأجيلُ الطلب قرارٌ في المدرّبين — يحتاج صلاحيةَ القرار مع صلاحية العقود' },
+        error: { code: 'forbidden', message_ar: 'تأجيل الطلب قرار في المدرّبين — يحتاج صلاحية القرار مع صلاحية العقود' },
       })
     }
     const { contractId } = z.object({ contractId: z.string().uuid() }).parse(req.params)
@@ -725,7 +725,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
   /* وبابٌ غيرُ الرفض لتوقيعٍ صحيحٍ تحتَه نصٌّ قديم — علّتُه في `requestResign` */
   app.post('/api/admin/trainer-contracts/:contractId/resign-request', {
     preHandler: requirePermission('trainer.contract.manage'),
-    schema: { tags: ['admin-trainers'], summary: 'سحبُ عقدٍ موقَّعٍ لم يُعتمَد وإعادتُه للتوقيع على النصّ المحدَّث' },
+    schema: { tags: ['admin-trainers'], summary: 'سحب عقد موقّع لم يعتمد وإعادته للتوقيع على النصّ المحدّث' },
   }, async (req) => {
     /* ولا `requireDecideToo` هنا (١ أكتوبر ٢٠٢٦): علّتُه أنّ الاعتمادَ يفعّل حسابا
        ويمنح دورا، والإعادةُ لا تفعل شيئا من ذلك — هي إلغاءٌ (`revoke`، خلف
@@ -749,7 +749,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
 
   app.get('/api/admin/trainer-offers', {
     preHandler: requirePermission('trainer.assign'),
-    schema: { tags: ['admin-trainers'], summary: 'عروضُ الإسناد — والمفتوحةُ أوّلا' },
+    schema: { tags: ['admin-trainers'], summary: 'عروض الإسناد — والمفتوحة أوّلا' },
   }, async (req) => {
     const q = z.object({
       profileId: z.string().uuid().optional(),
@@ -760,12 +760,12 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
 
   app.get('/api/admin/trainer-offers/options', {
     preHandler: requirePermission('trainer.assign'),
-    schema: { tags: ['admin-trainers'], summary: 'من يصلح أن يُعرَض عليه، وما يصلح أن يُعرَض — ومن عنده عرضٌ قائم' },
+    schema: { tags: ['admin-trainers'], summary: 'من يصلح أن يعرض عليه، وما يصلح أن يعرض — ومن عنده عرض قائم' },
   }, async () => offers.offerOptions())
 
   app.post('/api/admin/trainer-offers', {
     preHandler: requirePermission('trainer.assign'),
-    schema: { tags: ['admin-trainers'], summary: 'عرضُ دورةٍ على مدرّبٍ مؤهَّلٍ لها — دعوةٌ تُقبَل وتُردّ' },
+    schema: { tags: ['admin-trainers'], summary: 'عرض دورة على مدرّب مؤهّل لها — دعوة تقبل وتردّ' },
   }, async (req, reply) => {
     /* والشعبةُ لازمةٌ هنا (٢ أكتوبر ٢٠٢٦): عرضٌ بلا شعبةٍ يقبله المدرّبُ فلا
        يظهر له شيءٌ في «شعبي» ولا ما يعبّئه — جُرّب ورُئي. وتبقى الخدمةُ
@@ -773,8 +773,8 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     const body = z.object({
       profileId: z.string().uuid(),
       courseId: z.string().min(2).max(64),
-      cohortId: z.string({ error: 'اختر الشعبة — العرضُ بلا شعبةٍ لا يفتح للمدرّب شيئا في «شعبي»' })
-        .uuid('اختر الشعبة — العرضُ بلا شعبةٍ لا يفتح للمدرّب شيئا في «شعبي»'),
+      cohortId: z.string({ error: 'اختر الشعبة — العرض بلا شعبة لا يفتح للمدرّب شيئا في «شعبي»' })
+        .uuid('اختر الشعبة — العرض بلا شعبة لا يفتح للمدرّب شيئا في «شعبي»'),
       sessionsCount: z.number().int().min(1).max(500).nullish(),
       startsAt: z.coerce.date().nullish(),
       feeNoteAr: z.string().trim().max(500).nullish(),
@@ -791,12 +791,12 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
      يفعله بالخطوتين منفصلتين. */
   app.get('/api/admin/trainer-offers/prep', {
     preHandler: [requirePermission('trainer.assign'), requirePermission('cohort.manage')],
-    schema: { tags: ['admin-trainers'], summary: 'المرشَّحون لشعبة تعبئة: مدرّبٌ نشطٌ ودورةٌ مؤهَّلٌ لها بلا شعبةٍ له ولا عرضٍ مفتوح' },
+    schema: { tags: ['admin-trainers'], summary: 'المرشّحون لشعبة تعبئة: مدرّب نشط ودورة مؤهّل لها بلا شعبة له ولا عرض مفتوح' },
   }, async () => offers.prepCandidates())
 
   app.post('/api/admin/trainer-offers/prep', {
     preHandler: [requirePermission('trainer.assign'), requirePermission('cohort.manage')],
-    schema: { tags: ['admin-trainers'], summary: 'شعبةٌ مسوّدةٌ وعرضٌ بها لكلّ مختار — ونتيجةُ كلّ واحد' },
+    schema: { tags: ['admin-trainers'], summary: 'شعبة مسوّدة وعرض بها لكلّ مختار — ونتيجة كلّ واحد' },
   }, async (req) => {
     const body = z.object({
       items: z.array(z.object({ profileId: z.string().uuid(), courseId: z.string().min(2).max(64) })).min(1).max(300),
@@ -807,7 +807,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
 
   app.post('/api/admin/trainer-offers/:offerId/withdraw', {
     preHandler: requirePermission('trainer.assign'),
-    schema: { tags: ['admin-trainers'], summary: 'سحبُ عرضٍ قبل قبوله — والسببُ يصل صاحبَه' },
+    schema: { tags: ['admin-trainers'], summary: 'سحب عرض قبل قبوله — والسبب يصل صاحبه' },
   }, async (req) => {
     const { offerId } = z.object({ offerId: z.string().uuid() }).parse(req.params)
     const { reasonAr } = z.object({ reasonAr: z.string().trim().min(5).max(500) }).parse(req.body)
@@ -816,7 +816,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
 
   app.post('/api/admin/trainer-applications/:id/contracts', {
     preHandler: requirePermission('trainer.compensation.manage'),
-    schema: { tags: ['admin-trainers'], summary: '⚠️ مهجور — البابُ القديم بلا متن. يُحذف في المرحلة الثانية' },
+    schema: { tags: ['admin-trainers'], summary: '⚠️ مهجور — الباب القديم بلا متن. يحذف في المرحلة الثانية' },
   }, async (req, reply) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const body = z.object({ title: z.string().min(3), terms: z.record(z.string(), z.unknown()).optional() }).parse(req.body)
@@ -865,7 +865,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
   /* دوراتُ المدرّب في طور الإعداد — وشعبةُ كلٍّ وحالُ خطّتها (٢ أكتوبر ٢٠٢٦) */
   app.get('/api/admin/trainers/:profileId/prep', {
     preHandler: requirePermission('trainer.qualify'),
-    schema: { tags: ['admin-trainers'], summary: 'دوراتُ المدرّب في طور الإعداد: أقبِلها، وشعبتُها، وحالُ خطّتها' },
+    schema: { tags: ['admin-trainers'], summary: 'دورات المدرّب في طور الإعداد: أقبلها، وشعبتها، وحال خطّتها' },
   }, async (req) => {
     const { profileId } = z.object({ profileId: z.string().uuid() }).parse(req.params)
     return new TrainerPrepService(prisma).coursesOf(profileId)
@@ -874,7 +874,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
   /* موادُّ دورات المدرّب في طور العرض المشروط — يقرؤها من يقرّر تأهيلَه */
   app.get('/api/admin/trainers/:profileId/materials', {
     preHandler: requirePermission('trainer.qualify'),
-    schema: { tags: ['admin-trainers'], summary: 'موادُّ دورات المدرّب قيد الإعداد والمعتمدة' },
+    schema: { tags: ['admin-trainers'], summary: 'موادّ دورات المدرّب قيد الإعداد والمعتمدة' },
   }, async (req) => {
     const { profileId } = z.object({ profileId: z.string().uuid() }).parse(req.params)
     return new TrainerMaterialsService(prisma).forProfile(profileId)
@@ -888,7 +888,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
      يقرّر لصارت الموافقةُ ختما لا مراجعة، وسقط معنى التأهيل كلُّه. */
   app.post('/api/admin/cohorts/:cohortId/qualification-requests', {
     preHandler: requirePermission('cohort.manage'),
-    schema: { tags: ['admin-trainers'], summary: 'طلب تأهيل مدرّب لدورة هذه الشعبة — الموافقة تؤهّل وتُسند معا' },
+    schema: { tags: ['admin-trainers'], summary: 'طلب تأهيل مدرّب لدورة هذه الشعبة — الموافقة تؤهّل وتسند معا' },
   }, async (req, reply) => {
     const { cohortId } = z.object({ cohortId: z.string().uuid() }).parse(req.params)
     const body = z.object({
@@ -909,7 +909,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
      وحمولةُ هذه ما يلزم القرارَ: لا مبالغَ ولا قواعدَ تعويض. */
   app.get('/api/admin/trainers/ops', {
     preHandler: requirePermission('trainer.qualify'),
-    schema: { tags: ['admin-trainers'], summary: 'المدرّبون وحالاتُهم التشغيلية — تأهيلا وإسنادا وظهورا' },
+    schema: { tags: ['admin-trainers'], summary: 'المدرّبون وحالاتهم التشغيلية — تأهيلا وإسنادا وظهورا' },
   }, async () => review.listForOps())
 
   app.get('/api/admin/qualification-requests', {
@@ -919,7 +919,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
 
   app.post('/api/admin/qualification-requests/:id/decide', {
     preHandler: requirePermission('trainer.qualify'),
-    schema: { tags: ['admin-trainers'], summary: 'البتّ في طلب تأهيل — الموافقة تؤهّل وتُسند للشعبة المطلوبة' },
+    schema: { tags: ['admin-trainers'], summary: 'البتّ في طلب تأهيل — الموافقة تؤهّل وتسند للشعبة المطلوبة' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const body = z.object({
@@ -956,7 +956,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
      يُفتح بابٌ ثالثٌ حول القرار نفسِه. */
   app.put('/api/admin/trainers/:profileId/public-profile', {
     preHandler: requirePermission('trainer.publish'),
-    schema: { tags: ['admin-trainers'], summary: 'عنوانُ المدرّب ونبذتُه وصورتُه — ما تعرضه صفحةُ الفريق' },
+    schema: { tags: ['admin-trainers'], summary: 'عنوان المدرّب ونبذته وصورته — ما تعرضه صفحة الفريق' },
   }, async (req) => {
     const { profileId } = z.object({ profileId: z.string().uuid() }).parse(req.params)
     const body = z.object({
@@ -969,7 +969,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
 
   app.post('/api/admin/trainers/:profileId/photo-upload', {
     preHandler: requirePermission('trainer.publish'),
-    schema: { tags: ['admin-trainers'], summary: 'رابطُ رفعٍ موقّتٌ لصورة المدرّب — يحتاج FILE_UPLOADS' },
+    schema: { tags: ['admin-trainers'], summary: 'رابط رفع موقّت لصورة المدرّب — يحتاج FILE_UPLOADS' },
   }, async (req, reply) => {
     const { profileId } = z.object({ profileId: z.string().uuid() }).parse(req.params)
     const { mime } = z.object({ mime: z.string().max(60) }).parse(req.body ?? {})
@@ -982,7 +982,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
      عامّ**، فيملكه من يملك النشرَ لا من يملك التأهيل. */
   app.post('/api/admin/trainers/:profileId/photo/approve', {
     preHandler: requirePermission('trainer.publish'),
-    schema: { tags: ['admin-trainers'], summary: 'اعتمادُ الصورة المعلّقة — تصير صورةَ الصفحة العامّة' },
+    schema: { tags: ['admin-trainers'], summary: 'اعتماد الصورة المعلّقة — تصير صورة الصفحة العامّة' },
   }, async (req) => {
     const { profileId } = z.object({ profileId: z.string().uuid() }).parse(req.params)
     return review.approvePendingPhoto(profileId, req.auth!.userId)
@@ -990,7 +990,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
 
   app.post('/api/admin/trainers/:profileId/photo/reject', {
     preHandler: requirePermission('trainer.publish'),
-    schema: { tags: ['admin-trainers'], summary: 'ردُّ الصورة المعلّقة — تبقى صورةَ حسابه ولا تُعرض عامّة' },
+    schema: { tags: ['admin-trainers'], summary: 'ردّ الصورة المعلّقة — تبقى صورة حسابه ولا تعرض عامّة' },
   }, async (req) => {
     const { profileId } = z.object({ profileId: z.string().uuid() }).parse(req.params)
     const { reasonAr } = z.object({ reasonAr: z.string().trim().max(300).optional() }).parse(req.body ?? {})
@@ -1003,7 +1003,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
      المعلَّقَ من القاعدة. وبصلاحيّة النشر، كالصورة. */
   app.post('/api/admin/trainers/:profileId/public-text/approve', {
     preHandler: requirePermission('trainer.publish'),
-    schema: { tags: ['admin-trainers'], summary: 'اعتمادُ عنوان المدرّب ونبذته — كما أرسلهما أو بعد تحريرهما' },
+    schema: { tags: ['admin-trainers'], summary: 'اعتماد عنوان المدرّب ونبذته — كما أرسلهما أو بعد تحريرهما' },
   }, async (req) => {
     const { profileId } = z.object({ profileId: z.string().uuid() }).parse(req.params)
     const body = z.object({ headline: z.string().max(160), bioPublic: z.string().max(1200) }).parse(req.body ?? {})
@@ -1012,7 +1012,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
 
   app.post('/api/admin/trainers/:profileId/public-text/reject', {
     preHandler: requirePermission('trainer.publish'),
-    schema: { tags: ['admin-trainers'], summary: 'ردُّ عنوان المدرّب ونبذته بسببٍ يقرؤه' },
+    schema: { tags: ['admin-trainers'], summary: 'ردّ عنوان المدرّب ونبذته بسبب يقرؤه' },
   }, async (req) => {
     const { profileId } = z.object({ profileId: z.string().uuid() }).parse(req.params)
     const { reasonAr } = z.object({ reasonAr: z.string().max(500) }).parse(req.body ?? {})
@@ -1023,7 +1023,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
      فمن يقرّر في الطلب يصحّح ما يُقرَّر عليه. والسقفُ سقفُ `MAX_PROPOSALS`. */
   app.put('/api/admin/trainer-applications/:id/teachable-proposals', {
     preHandler: requirePermission('trainer.applications.review'),
-    schema: { tags: ['admin-trainers'], summary: 'تحريرُ اقتراحات الدورات — إضافةً وتسميةً وحذفا' },
+    schema: { tags: ['admin-trainers'], summary: 'تحرير اقتراحات الدورات — إضافة وتسمية وحذفا' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const body = z.object({
@@ -1063,7 +1063,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
      بصلاحيّتها المستقلّة، والرصيدُ كوبونٌ مقصورٌ على صاحبه. */
   app.get('/api/admin/trainer-departures', {
     preHandler: requirePermission('trainer.assign'),
-    schema: { tags: ['admin-trainers'], summary: 'ملفّاتُ رحيلِ المدرّبين (ن-٩)' },
+    schema: { tags: ['admin-trainers'], summary: 'ملفّات رحيل المدرّبين (ن-٩)' },
   }, async (req) => {
     const { scope } = z.object({ scope: z.enum(['open', 'all']).optional() }).parse(req.query)
     return departures.list(scope ?? 'open')
@@ -1071,7 +1071,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
 
   app.post('/api/admin/trainer-departures', {
     preHandler: requirePermission('trainer.assign'),
-    schema: { tags: ['admin-trainers'], summary: 'فتحُ ملفِّ رحيل — تُجمَع شعبُه ويُفتح لكلّ متعلّمٍ صفّ' },
+    schema: { tags: ['admin-trainers'], summary: 'فتح ملفّ رحيل — تجمع شعبه ويفتح لكلّ متعلّم صفّ' },
   }, async (req, reply) => {
     const body = z.object({
       profileId: z.string().uuid(),
@@ -1082,7 +1082,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
 
   app.get('/api/admin/trainer-departures/:id', {
     preHandler: requirePermission('trainer.assign'),
-    schema: { tags: ['admin-trainers'], summary: 'ملفُّ رحيلٍ بكلّ اسمٍ فيه وما يمنع إغلاقَه' },
+    schema: { tags: ['admin-trainers'], summary: 'ملفّ رحيل بكلّ اسم فيه وما يمنع إغلاقه' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     return departures.detail(id)
@@ -1090,7 +1090,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
 
   app.get('/api/admin/cohorts/:cohortId/substitutes', {
     preHandler: requirePermission('trainer.assign'),
-    schema: { tags: ['admin-trainers'], summary: 'من يصلح بديلا لهذه الشعبة — تُنتجها المنصّةُ لا الذاكرة' },
+    schema: { tags: ['admin-trainers'], summary: 'من يصلح بديلا لهذه الشعبة — تنتجها المنصّة لا الذاكرة' },
   }, async (req) => {
     const { cohortId } = z.object({ cohortId: z.string().uuid() }).parse(req.params)
     return departures.substitutesFor(cohortId)
@@ -1098,7 +1098,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
 
   app.post('/api/admin/trainer-departures/:id/substitute', {
     preHandler: requirePermission('trainer.assign'),
-    schema: { tags: ['admin-trainers'], summary: 'بديلٌ يأخذ مكانَه — فلا يتحرّك إلّا الاسم (الطريقُ الأوّل)' },
+    schema: { tags: ['admin-trainers'], summary: 'بديل يأخذ مكانه — فلا يتحرّك إلّا الاسم (الطريق الأوّل)' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const body = z.object({
@@ -1109,7 +1109,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
 
   app.get('/api/admin/departure-cases/:caseId/equivalents', {
     preHandler: requirePermission('trainer.assign'),
-    schema: { tags: ['admin-trainers'], summary: 'الشعبُ النظيرة — على الرمز نفسِه، مجموعةٌ معرَّفةٌ لا اجتهاد (ح-٣)' },
+    schema: { tags: ['admin-trainers'], summary: 'الشعب النظيرة — على الرمز نفسه، مجموعة معرّفة لا اجتهاد (ح-٣)' },
   }, async (req) => {
     const { caseId } = z.object({ caseId: z.string().uuid() }).parse(req.params)
     return departures.equivalentCohorts(caseId)
@@ -1117,7 +1117,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
 
   app.post('/api/admin/departure-cases/:caseId/move', {
     preHandler: requirePermission('trainer.assign'),
-    schema: { tags: ['admin-trainers'], summary: 'نقلُ متعلّمٍ إلى نظير (الطريقُ الثاني)' },
+    schema: { tags: ['admin-trainers'], summary: 'نقل متعلّم إلى نظير (الطريق الثاني)' },
   }, async (req) => {
     const { caseId } = z.object({ caseId: z.string().uuid() }).parse(req.params)
     const body = z.object({
@@ -1128,7 +1128,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
 
   app.post('/api/admin/departure-cases/:caseId/offer-choice', {
     preHandler: requirePermission('trainer.assign'),
-    schema: { tags: ['admin-trainers'], summary: 'عرضُ الاختيار على صاحبه — ولا يُختار عنه (ن-١٠)' },
+    schema: { tags: ['admin-trainers'], summary: 'عرض الاختيار على صاحبه — ولا يختار عنه (ن-١٠)' },
   }, async (req) => {
     const { caseId } = z.object({ caseId: z.string().uuid() }).parse(req.params)
     const body = z.object({ noteAr: z.string().trim().max(2000).nullish() }).parse(req.body ?? {})
@@ -1137,7 +1137,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
 
   app.get('/api/admin/departure-cases/:caseId/refundable', {
     preHandler: requirePermission('trainer.assign'),
-    schema: { tags: ['admin-trainers'], summary: 'دفعاتُ هذه الشعبة التي يُردّ منها — لا تُخمَّن' },
+    schema: { tags: ['admin-trainers'], summary: 'دفعات هذه الشعبة التي يردّ منها — لا تخمّن' },
   }, async (req) => {
     const { caseId } = z.object({ caseId: z.string().uuid() }).parse(req.params)
     return departures.refundablePayments(caseId)
@@ -1145,7 +1145,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
 
   app.post('/api/admin/departure-cases/:caseId/settle', {
     preHandler: requirePermission('trainer.assign'),
-    schema: { tags: ['admin-trainers'], summary: 'تنفيذُ ما اختاره — طلبُ ردٍّ إلى الماليّة أو رصيدٌ باسمه' },
+    schema: { tags: ['admin-trainers'], summary: 'تنفيذ ما اختاره — طلب ردّ إلى الماليّة أو رصيد باسمه' },
   }, async (req) => {
     const { caseId } = z.object({ caseId: z.string().uuid() }).parse(req.params)
     const body = z.object({
@@ -1159,7 +1159,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
 
   app.post('/api/admin/departure-cases/:caseId/notify', {
     preHandler: requirePermission('trainer.assign'),
-    schema: { tags: ['admin-trainers'], summary: 'إبلاغُ صاحبه — ويُردّ على صفٍّ لم يُقرَّر (قاعدةُ السمعة)' },
+    schema: { tags: ['admin-trainers'], summary: 'إبلاغ صاحبه — ويردّ على صفّ لم يقرّر (قاعدة السمعة)' },
   }, async (req) => {
     const { caseId } = z.object({ caseId: z.string().uuid() }).parse(req.params)
     return departures.notify(req.auth!.userId, caseId)
@@ -1167,7 +1167,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
 
   app.post('/api/admin/trainer-departures/:id/close', {
     preHandler: requirePermission('trainer.assign'),
-    schema: { tags: ['admin-trainers'], summary: 'إغلاقُ الملفّ — ولا يُغلق واسمٌ معلَّق' },
+    schema: { tags: ['admin-trainers'], summary: 'إغلاق الملفّ — ولا يغلق واسم معلّق' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     return departures.close(req.auth!.userId, id)
@@ -1183,7 +1183,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
      نصُّ تسويقٍ يحمل مصداقيّةَ الأكاديميّة، ولا يُنشر ادّعاءٌ عامٌّ بلا نظرة. */
   app.get('/api/admin/trainer-paths', {
     preHandler: requirePermission('trainer.publish'),
-    schema: { tags: ['admin-trainers'], summary: 'مساراتُ المدرّبين — طابورُ المراجعة (ن-١)' },
+    schema: { tags: ['admin-trainers'], summary: 'مسارات المدرّبين — طابور المراجعة (ن-١)' },
   }, async (req) => {
     const { scope } = z.object({ scope: z.enum(['open', 'all']).optional() }).parse(req.query)
     return trainerPaths.queue(scope ?? 'open')
@@ -1191,7 +1191,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
 
   app.post('/api/admin/trainer-paths/:id/approve', {
     preHandler: requirePermission('trainer.publish'),
-    schema: { tags: ['admin-trainers'], summary: 'نشرُ المسار على الرفّ — يُردّ لمن لم يُعتمد ظهورُه (ن-٢)' },
+    schema: { tags: ['admin-trainers'], summary: 'نشر المسار على الرفّ — يردّ لمن لم يعتمد ظهوره (ن-٢)' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     return trainerPaths.approve(req.auth!.userId, id)
@@ -1199,7 +1199,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
 
   app.post('/api/admin/trainer-paths/:id/reject', {
     preHandler: requirePermission('trainer.publish'),
-    schema: { tags: ['admin-trainers'], summary: 'ردُّ المسار بسببٍ يقرؤه صاحبُه' },
+    schema: { tags: ['admin-trainers'], summary: 'ردّ المسار بسبب يقرؤه صاحبه' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const body = z.object({ noteAr: z.string().trim().min(5).max(2000) }).parse(req.body)
@@ -1208,7 +1208,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
 
   app.post('/api/admin/trainer-paths/:id/retire', {
     preHandler: requirePermission('trainer.publish'),
-    schema: { tags: ['admin-trainers'], summary: 'سحبُ المسار من الرفّ — ولا يمسّ من التحق (ن-٤)' },
+    schema: { tags: ['admin-trainers'], summary: 'سحب المسار من الرفّ — ولا يمسّ من التحق (ن-٤)' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const body = z.object({ noteAr: z.string().trim().max(2000).nullish() }).parse(req.body ?? {})
@@ -1230,7 +1230,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
      · **رفضٌ بسبب** — والسببُ يلزم: من رُفض اقتراحُه بلا سببٍ أعاده كما هو. */
   app.get('/api/admin/course-proposals', {
     preHandler: requirePermission('trainer.change.review'),
-    schema: { tags: ['admin-trainers'], summary: 'دوراتٌ اقترحها المدرّبون — طابورُ التصنيف (ح-٤)' },
+    schema: { tags: ['admin-trainers'], summary: 'دورات اقترحها المدرّبون — طابور التصنيف (ح-٤)' },
   }, async (req) => {
     const { scope } = z.object({ scope: z.enum(['open', 'all']).optional() }).parse(req.query)
     return proposals.queue(scope ?? 'open')
@@ -1244,7 +1244,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
      ليُفتح لا يُقرأ. فصار نقطةَ نهايةٍ تقرؤها الشاشةُ التي يُصنَّف فيها. */
   app.get('/api/admin/course-proposals/clusters', {
     preHandler: requirePermission('trainer.change.review'),
-    schema: { tags: ['admin-trainers'], summary: 'أتتجمّع الاقتراحاتُ في مسارات؟ — تقريرُ قراءةٍ لا بوّابة' },
+    schema: { tags: ['admin-trainers'], summary: 'أتتجمّع الاقتراحات في مسارات؟ — تقرير قراءة لا بوّابة' },
   }, async (req) => {
     const { scope } = z.object({ scope: z.enum(['open', 'all']).optional() }).parse(req.query)
     return proposals.clusters(scope ?? 'open')
@@ -1257,12 +1257,12 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
      والقولُ في `src/application/trainer/course-decisions-worksheet.ts`. */
   app.get('/api/admin/course-proposals/worksheet', {
     preHandler: requirePermission('trainer.change.review'),
-    schema: { tags: ['admin-trainers'], summary: 'ورقةُ القرارات — الطابورُ المفتوحُ بصيغة ملفّ القرارات' },
+    schema: { tags: ['admin-trainers'], summary: 'ورقة القرارات — الطابور المفتوح بصيغة ملفّ القرارات' },
   }, async () => proposals.worksheet())
 
   app.post('/api/admin/course-proposals/:id/link', {
     preHandler: requirePermission('trainer.change.review'),
-    schema: { tags: ['admin-trainers'], summary: 'تصنيفُ اقتراحٍ نسخةً من رمزٍ قائم — يُربط ولا يُنشأ إصدار' },
+    schema: { tags: ['admin-trainers'], summary: 'تصنيف اقتراح نسخة من رمز قائم — يربط ولا ينشأ إصدار' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const body = z.object({
@@ -1274,7 +1274,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
 
   app.post('/api/admin/course-proposals/:id/became-course', {
     preHandler: requirePermission('trainer.change.review'),
-    schema: { tags: ['admin-trainers'], summary: 'ربطُ اقتراحٍ بالدورة الجديدة التي أُنشئت منه' },
+    schema: { tags: ['admin-trainers'], summary: 'ربط اقتراح بالدورة الجديدة التي أنشئت منه' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const body = z.object({
@@ -1291,7 +1291,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
      أنشأ في الكتالوج شيئا له حياتُه — ونقضُهما بزرٍّ يعبث بقرارٍ وقع. */
   app.post('/api/admin/course-proposals/:id/unlink', {
     preHandler: requirePermission('trainer.change.review'),
-    schema: { tags: ['admin-trainers'], summary: 'نقضُ ربطِ اقتراحٍ برمزٍ — يعود إلى الطابور غيرَ مبتوت' },
+    schema: { tags: ['admin-trainers'], summary: 'نقض ربط اقتراح برمز — يعود إلى الطابور غير مبتوت' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const body = z.object({ noteAr: z.string().trim().max(2000).nullish() }).parse(req.body ?? {})
@@ -1300,7 +1300,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
 
   app.patch('/api/admin/course-proposals/:id', {
     preHandler: requirePermission('trainer.change.review'),
-    schema: { tags: ['admin-trainers'], summary: 'تصحيحُ عنوانِ اقتراحٍ أو نبذته — يُكتب ما كان في الأثر' },
+    schema: { tags: ['admin-trainers'], summary: 'تصحيح عنوان اقتراح أو نبذته — يكتب ما كان في الأثر' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const body = z.object({
@@ -1316,7 +1316,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
      المنصّةَ دورةً ويُفقد المدرّبَ ثقتَه. */
   app.post('/api/admin/course-proposals/:id/ask', {
     preHandler: requirePermission('trainer.change.review'),
-    schema: { tags: ['admin-trainers'], summary: 'سؤالُ صاحبِ الاقتراح قبل تصنيفه — يصله في بوّابته' },
+    schema: { tags: ['admin-trainers'], summary: 'سؤال صاحب الاقتراح قبل تصنيفه — يصله في بوّابته' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const body = z.object({ questionAr: z.string().trim().min(5).max(2000) }).parse(req.body)
@@ -1325,7 +1325,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
 
   app.post('/api/admin/course-proposals/:id/reject', {
     preHandler: requirePermission('trainer.change.review'),
-    schema: { tags: ['admin-trainers'], summary: 'رفضُ اقتراحِ دورةٍ بسببٍ يقرؤه صاحبُه' },
+    schema: { tags: ['admin-trainers'], summary: 'رفض اقتراح دورة بسبب يقرؤه صاحبه' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const body = z.object({ noteAr: z.string().trim().min(5).max(2000) }).parse(req.body)
@@ -1342,12 +1342,12 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
   })
   app.post('/api/admin/course-decisions/preview', {
     preHandler: requirePermission('trainer.change.review'),
-    schema: { tags: ['admin-trainers'], summary: 'معاينةُ ملفِّ قراراتِ الدورات — ما سيُطبَّق وما طُبّق وما لا يُطبَّق ولماذا' },
+    schema: { tags: ['admin-trainers'], summary: 'معاينة ملفّ قرارات الدورات — ما سيطبّق وما طبّق وما لا يطبّق ولماذا' },
   }, async (req) => decisions.preview(req.body, decisionsActor(req)))
 
   app.post('/api/admin/course-decisions/apply', {
     preHandler: requirePermission('trainer.change.review'),
-    schema: { tags: ['admin-trainers'], summary: 'تطبيقُ ملفِّ قراراتِ الدورات من أبواب أزرارها — كلُّه أو لا شيء' },
+    schema: { tags: ['admin-trainers'], summary: 'تطبيق ملفّ قرارات الدورات من أبواب أزرارها — كلّه أو لا شيء' },
   }, async (req) => decisions.apply(req.body, decisionsActor(req)))
 
   /* ── مراجعة اقتراحات تعديل الدورات من المدربين ── */
@@ -1371,12 +1371,12 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
      فلا يلتقيان. */
   app.get('/api/admin/trainer-change-requests/open-count', {
     preHandler: requirePermission('trainer.change.review'),
-    schema: { tags: ['admin-trainers'], summary: 'كم اقتراحَ تعديلٍ ينتظر قرارا — عددٌ لا قائمة' },
+    schema: { tags: ['admin-trainers'], summary: 'كم اقتراح تعديل ينتظر قرارا — عدد لا قائمة' },
   }, async () => ({ open: await changes.countOpen() }))
 
   app.post('/api/admin/trainers/:profileId/catalog-scope', {
     preHandler: requirePermission('trainer.change.review'),
-    schema: { tags: ['admin-trainers'], summary: 'منح أو سحب نطاق الكتالوج لمدرب — قرار مسجَّل بتاريخه ومانحه (هـ-١)' },
+    schema: { tags: ['admin-trainers'], summary: 'منح أو سحب نطاق الكتالوج لمدرب — قرار مسجّل بتاريخه ومانحه (هـ-١)' },
   }, async (req) => {
     const { profileId } = z.object({ profileId: z.string().uuid() }).parse(req.params)
     const body = z.object({ grant: z.boolean() }).parse(req.body)
@@ -1416,7 +1416,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
 
   app.get('/api/admin/trainer-change-requests/:id/impact', {
     preHandler: requirePermission('trainer.change.review'),
-    schema: { tags: ['admin-trainers'], summary: 'هل فُحص الأثر بعد الاعتماد؟ — شرط النشر بنطاق الكتالوج' },
+    schema: { tags: ['admin-trainers'], summary: 'هل فحص الأثر بعد الاعتماد؟ — شرط النشر بنطاق الكتالوج' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     return changes.impactChecked(id)
@@ -1452,7 +1452,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
      الطلبُ يُردّ ٤٠٣ ويُسقط الشاشةَ كلَّها. */
   app.get('/api/admin/trainer-payouts/cohort-options', {
     preHandler: requirePermission('trainer.compensation.manage'),
-    schema: { tags: ['admin-trainers'], summary: 'الشعبُ باختصار — لقصر قاعدة الأتعاب وتوليد الكشف' },
+    schema: { tags: ['admin-trainers'], summary: 'الشعب باختصار — لقصر قاعدة الأتعاب وتوليد الكشف' },
   }, async () => earnings.listCohortOptions())
 
   app.get('/api/admin/trainer-payouts', {
@@ -1495,7 +1495,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
      لمستحقٍّ معتمَدٍ بعينه بضغطةٍ تُكتب في الأثر بفترته ومبلغه. */
   app.get('/api/admin/trainer-payouts/:id/bank-account', {
     preHandler: requirePermission('trainer.compensation.manage'),
-    schema: { tags: ['admin-trainers'], summary: 'حسابُ المدرّب مقنَّعا — بلا كشفٍ ولا أثر' },
+    schema: { tags: ['admin-trainers'], summary: 'حساب المدرّب مقنّعا — بلا كشف ولا أثر' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const payout = await prisma.trainerPayout.findUnique({ where: { id }, select: { profileId: true } })
@@ -1505,7 +1505,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
 
   app.post('/api/admin/trainer-payouts/:id/bank-account/reveal', {
     preHandler: requirePermission('finance.bank.reveal'),
-    schema: { tags: ['admin-trainers'], summary: 'كشفُ رقم الحساب لصرف مستحقٍّ معتمَد — يُسجَّل كلُّ كشف' },
+    schema: { tags: ['admin-trainers'], summary: 'كشف رقم الحساب لصرف مستحقّ معتمد — يسجّل كلّ كشف' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     return bank.revealForPayout(id, req.auth!.userId)
@@ -1521,7 +1521,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
 
   app.post('/api/admin/trainer-payouts/:id/cancel', {
     preHandler: requirePermission('trainer.compensation.manage'),
-    schema: { tags: ['admin-trainers'], summary: 'إلغاء كشف لم يُصرف — بسبب موثق' },
+    schema: { tags: ['admin-trainers'], summary: 'إلغاء كشف لم يصرف — بسبب موثق' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const { reason } = z.object({ reason: z.string().min(5).max(500) }).parse(req.body)
@@ -1532,7 +1532,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
 
   app.get('/api/admin/trainer-compensation/summary', {
     preHandler: requirePermission('trainer.compensation.manage'),
-    schema: { tags: ['admin-trainers'], summary: 'كلُّ مدرّبٍ في سطر: قاعدتُه السارية وما يُنتظر له وما اعتُمد وما دُفع' },
+    schema: { tags: ['admin-trainers'], summary: 'كلّ مدرّب في سطر: قاعدته السارية وما ينتظر له وما اعتمد وما دفع' },
   }, async () => earnings.trainerSummaries())
 
   app.get('/api/admin/trainer-compensation-rules', {
@@ -1545,7 +1545,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
 
   app.post('/api/admin/trainer-compensation-rules', {
     preHandler: requirePermission('trainer.compensation.manage'),
-    schema: { tags: ['admin-trainers'], summary: 'تعيين قاعدة أتعاب — تُغلق السارية الحالية تلقائياً' },
+    schema: { tags: ['admin-trainers'], summary: 'تعيين قاعدة أتعاب — تغلق السارية الحالية تلقائيا' },
   }, async (req, reply) => {
     const body = z.object({
       profileId: z.string().uuid(),

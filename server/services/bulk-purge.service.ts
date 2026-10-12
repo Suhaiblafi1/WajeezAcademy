@@ -46,9 +46,9 @@ export class BulkPurgeService {
     rows: BulkPreviewRow[]; deletable: number; refused: number
   }> {
     const unique = [...new Set(ids)]
-    if (unique.length === 0) throw new AuthError('empty', 'لم يُختر حساب', 400)
+    if (unique.length === 0) throw new AuthError('empty', 'لم يختر حساب', 400)
     if (unique.length > MAX_BULK_PURGE) {
-      throw new AuthError('too_many', `لا تزيد الدفعةُ على ${MAX_BULK_PURGE} حسابا`, 400)
+      throw new AuthError('too_many', `لا تزيد الدفعة على ${MAX_BULK_PURGE} حسابا`, 400)
     }
 
     const users = await this.prisma.user.findMany({

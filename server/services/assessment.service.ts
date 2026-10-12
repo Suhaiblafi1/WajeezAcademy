@@ -109,8 +109,8 @@ export class AssessmentService {
     const cohort = await this.prisma.cohort.findUnique({ where: { id: cohortId }, select: { title: true } })
     await notifyRole(this.prisma, ['academic_manager', 'super_admin'], {
       channel: 'in_app',
-      title: 'مهامُّ تنتظر قرارك',
-      body: `أضاف مدرّبُ «${cohort?.title ?? 'الشعبة'}» مهمّةً أو طلب تعديلَها أو حذفَها بعد اعتماد خطّته — ولا يصل المتعلّمين شيءٌ منها حتّى تعتمده. راجِعها من بطاقة الشعبة.`,
+      title: 'مهامّ تنتظر قرارك',
+      body: `أضاف مدرّب «${cohort?.title ?? 'الشعبة'}» مهمّة أو طلب تعديلها أو حذفها بعد اعتماد خطّته — ولا يصل المتعلّمين شيء منها حتّى تعتمده. راجعها من بطاقة الشعبة.`,
       templateKey: 'cohort.assessment.pending',
       data: { cohortId, assessmentId },
     })
@@ -238,7 +238,7 @@ export class AssessmentService {
     /* `Grade.score` عشريٌّ في القاعدة — يُقارَن رقما لا كائنا */
     const highest = Number(top._max.score ?? 0)
     if (highest > nextMax) {
-      throw new AuthError('score_below_awarded', `درجةٌ مرصودةٌ تبلغ ${highest} — لا تُخفَض النهايةُ دونها`)
+      throw new AuthError('score_below_awarded', `درجة مرصودة تبلغ ${highest} — لا تخفض النهاية دونها`)
     }
   }
 
@@ -271,7 +271,7 @@ export class AssessmentService {
     if (before._count.submissions > 0) {
       throw new AuthError(
         'has_submissions',
-        `سلّم فيه ${before._count.submissions} — لا يُحذف تكليفٌ فيه عملُ متعلّمين. أغلِقه بدلا من حذفه.`,
+        `سلّم فيه ${before._count.submissions} — لا يحذف تكليف فيه عمل متعلّمين. أغلقه بدلا من حذفه.`,
         409,
       )
     }
@@ -309,7 +309,7 @@ export class AssessmentService {
   async withdrawChange(actorId: string, assessmentId: string) {
     const before = await this.assertAssessmentTrainer(actorId, assessmentId)
     const change = readTaskChange(before.pendingChange)
-    if (!change) throw new AuthError('nothing_pending', 'لا طلبَ على هذه المهمّة يُسحب', 409)
+    if (!change) throw new AuthError('nothing_pending', 'لا طلب على هذه المهمّة يسحب', 409)
     const updated = await this.prisma.cohortAssessment.update({
       where: { id: assessmentId }, data: { pendingChange: Prisma.DbNull },
     })
@@ -332,10 +332,10 @@ export class AssessmentService {
     })
     if (!task) throw new AuthError('not_found', 'هذه المهمّة غير موجودة', 404)
     const review = taskReview(task, await this.approvedOnce(task.cohortId))
-    if (!awaitsDecision(review)) throw new AuthError('nothing_pending', 'لا شيءَ في هذه المهمّة ينتظر قرارا', 409)
+    if (!awaitsDecision(review)) throw new AuthError('nothing_pending', 'لا شيء في هذه المهمّة ينتظر قرارا', 409)
     const said = note?.trim() || null
     if (!approve && !said) {
-      throw new AuthError('reason_required', 'قل للمدرّب لماذا — الردُّ بلا سببٍ يتركه يخمّن', 400)
+      throw new AuthError('reason_required', 'قل للمدرّب لماذا — الردّ بلا سبب يتركه يخمّن', 400)
     }
     if (approve) await this.applyReview(task, review)
     else {
@@ -364,7 +364,7 @@ export class AssessmentService {
       if (task._count.submissions > 0) {
         throw new AuthError(
           'has_submissions',
-          `سلّم فيها ${task._count.submissions} بعد طلب حذفها — لا تُحذف مهمّةٌ فيها عملُ متعلّمين. ردَّ الطلبَ بسببه.`,
+          `سلّم فيها ${task._count.submissions} بعد طلب حذفها — لا تحذف مهمّة فيها عمل متعلّمين. ردّ الطلب بسببه.`,
           409,
         )
       }
@@ -400,23 +400,23 @@ export class AssessmentService {
     })
     if (!cohort) return
     const approvedTitle: Partial<Record<TaskReview, string>> = {
-      new: `اعتُمدت مهمّتُك «${task.title}»`,
-      edit: `اعتُمد تعديلُ «${task.title}»`,
-      remove: `اعتُمد حذفُ «${task.title}»`,
+      new: `اعتمدت مهمّتك «${task.title}»`,
+      edit: `اعتمد تعديل «${task.title}»`,
+      remove: `اعتمد حذف «${task.title}»`,
     }
     const approvedBody = review === 'remove'
-      ? `حُذفت من «${cohort.title}» ولم تعد تظهر لمتعلّميك.`
-      : `صارت في منهج «${cohort.title}» كما كتبتَها — وتُفتح لمتعلّميك في موعدها.`
+      ? `حذفت من «${cohort.title}» ولم تعد تظهر لمتعلّميك.`
+      : `صارت في منهج «${cohort.title}» كما كتبتها — وتفتح لمتعلّميك في موعدها.`
     const declinedBody = review === 'new'
       ? `${note} — ولا تظهر لمتعلّميك: عدّلها فتعود إلى الإدارة، أو احذفها.`
-      : `${note} — وما اعتُمد قبلُ باقٍ كما هو عند متعلّميك.`
+      : `${note} — وما اعتمد قبل باق كما هو عند متعلّميك.`
     for (const t of cohort.trainers) {
       /* ملفٌّ بلا حسابٍ مربوطٍ لا صندوقَ له */
       if (!t.profile.userId) continue
       await safeNotify(this.prisma, {
         userId: t.profile.userId, channel: 'in_app', audience: 'trainer',
         templateKey: 'cohort.assessment.decision',
-        title: approve ? (approvedTitle[review] ?? `اعتُمد ما طلبتَه في «${task.title}»`) : `ردّت الإدارةُ ما طلبتَه في «${task.title}»`,
+        title: approve ? (approvedTitle[review] ?? `اعتمد ما طلبته في «${task.title}»`) : `ردّت الإدارة ما طلبته في «${task.title}»`,
         body: approve ? approvedBody : declinedBody,
         data: { cohortId: task.cohortId, assessmentId: task.id },
       })
@@ -529,9 +529,9 @@ export class AssessmentService {
       select: { storageKey: true, fileUploadedAt: true, status: true, enrollment: { select: { userId: true } } },
     })
     if (!row || row.enrollment.userId !== userId) throw new AuthError('not_found', 'التسليم غير موجود', 404)
-    if (!row.storageKey) throw new AuthError('no_file', 'لم يُرفق بهذا التسليم ملفّ', 409)
-    if (row.fileUploadedAt) throw new AuthError('file_arrived', 'وصل الملفُّ كاملا — لا حاجة لرفعه ثانية', 409)
-    if (row.status !== 'submitted') throw new AuthError('under_review', 'بدأ مدرّبك مراجعةَ التسليم', 409)
+    if (!row.storageKey) throw new AuthError('no_file', 'لم يرفق بهذا التسليم ملفّ', 409)
+    if (row.fileUploadedAt) throw new AuthError('file_arrived', 'وصل الملفّ كاملا — لا حاجة لرفعه ثانية', 409)
+    if (row.status !== 'submitted') throw new AuthError('under_review', 'بدأ مدرّبك مراجعة التسليم', 409)
     const file = checkSubmissionFile(input)
     await this.prisma.assignmentSubmission.update({
       where: { id: submissionId }, data: { fileName: file.name, fileMime: file.mime, fileSize: file.sizeBytes },
@@ -564,8 +564,8 @@ export class AssessmentService {
       await safeNotify(this.prisma, {
         userId: t.profile.userId, channel: 'in_app', audience: 'trainer',
         templateKey: 'submission.queued',
-        title: `تسليمٌ ينتظر تصحيحَك: ${cohort.title}`,
-        body: `بدأ التسليمُ على «${assessment.title}». افتح «طابور التقييم».`,
+        title: `تسليم ينتظر تصحيحك: ${cohort.title}`,
+        body: `بدأ التسليم على «${assessment.title}». افتح «طابور التقييم».`,
         data: { assessmentId: assessment.id, cohortId: assessment.cohortId },
       })
     }
@@ -670,16 +670,16 @@ export class AssessmentService {
     const reason = note?.trim() ? `\n\nملاحظة المدرّب: ${note.trim()}` : ''
     const copy: Record<typeof action, { title: string; body: string }> = {
       accept: {
-        title: 'قُبل تسليمك ✅',
-        body: `قُبل واجبك في «${where}» — احتُسبت المحطّة، وتستطيع المضيّ إلى التالية.${reason}`,
+        title: 'قبل تسليمك ✅',
+        body: `قبل واجبك في «${where}» — احتسبت المحطّة، وتستطيع المضيّ إلى التالية.${reason}`,
       },
       request_resubmit: {
         title: 'تسليمك يحتاج إضافة',
-        body: `راجع المدرّب واجبك في «${where}» وطلب تسليما جديدا. ما ينقص مكتوبٌ لك، وتستطيع الإعادة الآن.${reason}`,
+        body: `راجع المدرّب واجبك في «${where}» وطلب تسليما جديدا. ما ينقص مكتوب لك، وتستطيع الإعادة الآن.${reason}`,
       },
       reject: {
-        title: 'لم يُقبل تسليمك',
-        body: `لم يُقبل واجبك في «${where}». السبب مكتوبٌ لك، وبابُ الإعادة يفتحه مدرّبك متى راجعتَه.${reason}`,
+        title: 'لم يقبل تسليمك',
+        body: `لم يقبل واجبك في «${where}». السبب مكتوب لك، وباب الإعادة يفتحه مدرّبك متى راجعته.${reason}`,
       },
     }
     await safeNotify(this.prisma, {
@@ -765,7 +765,7 @@ export class AssessmentService {
     const where = owner.enrollment.cohort.title
     await safeNotify(this.prisma, {
       userId: owner.enrollment.userId, channel: 'in_app',
-      title: kind === 'create' ? 'وصلت درجتك' : 'عُدّلت درجتك',
+      title: kind === 'create' ? 'وصلت درجتك' : 'عدّلت درجتك',
       body:
         `${input.score} من ${input.maxScore} في «${where}»` +
         (kind === 'update' ? ' — راجعها مدرّبك وعدّلها.' : '.') +

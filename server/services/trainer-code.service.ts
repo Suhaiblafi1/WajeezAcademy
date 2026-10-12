@@ -175,7 +175,7 @@ export class TrainerCodeService {
     const profile = await this.activeProfile(userId)
     const terms = await this.termsFor(profile.id, userId)
     if (!terms.accepted) {
-      throw new AuthError('terms_required', 'اقبل البندَ 4-10 بصيغته الجديدة أوّلا — به يُحسم من مستحقّاتك ما يمنحه كودُك', 403)
+      throw new AuthError('terms_required', 'اقبل البند 4-10 بصيغته الجديدة أوّلا — به يحسم من مستحقّاتك ما يمنحه كودك', 403)
     }
     const blocker = codeBlockerAr(input)
     if (blocker) throw new AuthError('bad_code', blocker, 400)
@@ -210,7 +210,7 @@ export class TrainerCodeService {
         if (attempt === 2 || !isUniqueViolation(e)) throw e
       }
     }
-    throw new AuthError('code_conflict', 'تعذّر سكُّ رمزٍ فريد — أعِد المحاولة', 409)
+    throw new AuthError('code_conflict', 'تعذّر سكّ رمز فريد — أعد المحاولة', 409)
   }
 
   pause(userId: string, id: string) {
@@ -233,16 +233,16 @@ export class TrainerCodeService {
   ) {
     const profile = await this.activeProfile(userId)
     const row = await this.prisma.trainerCode.findUnique({ where: { id } })
-    if (!row || row.profileId !== profile.id) throw new AuthError('not_found', 'لا كودَ بهذا المعرّف بين ما أصدرتَه', 404)
+    if (!row || row.profileId !== profile.id) throw new AuthError('not_found', 'لا كود بهذا المعرّف بين ما أصدرته', 404)
     if (!from.includes(row.status)) {
-      throw new AuthError('bad_state', row.status === 'revoked' ? 'ألغيتَ هذا الكودَ من قبل' : 'لا يصحّ هذا على حاله الآن', 409)
+      throw new AuthError('bad_state', row.status === 'revoked' ? 'ألغيت هذا الكود من قبل' : 'لا يصحّ هذا على حاله الآن', 409)
     }
     await this.prisma.$transaction(async (tx) => {
       const moved = await tx.trainerCode.updateMany({
         where: { id, status: { in: from } },
         data: { status: to, ...(effect.stamp ? { [effect.stamp]: new Date() } : {}) },
       })
-      if (moved.count === 0) throw new AuthError('bad_state', 'تبدّل حالُ الكود قبل هذا — حدّث الصفحة', 409)
+      if (moved.count === 0) throw new AuthError('bad_state', 'تبدّل حال الكود قبل هذا — حدّث الصفحة', 409)
       /* والكوبونُ يتبعه في المعاملة نفسِها: كودٌ «موقوفٌ» وكوبونٌ يعمل رمزٌ ما زال يخصم */
       await tx.coupon.update({ where: { id: row.couponId }, data: { active: effect.active } })
       await recordAudit(tx, {

@@ -96,8 +96,8 @@ export async function notifyPlanWaiters(
     await safeNotify(prisma, {
       userId: item.plan.userId,
       channel: 'in_app',
-      title: 'فُتحت شعبة دورةٍ كنت تنتظرها',
-      body: `«${titleAr}» صار لها موعدٌ وسعر. افتح خطّتك لتحجز مقعدك.`,
+      title: 'فتحت شعبة دورة كنت تنتظرها',
+      body: `«${titleAr}» صار لها موعد وسعر. افتح خطّتك لتحجز مقعدك.`,
       data: { courseId: item.courseId },
     })
     await prisma.learnerPlanItem.update({
@@ -166,7 +166,7 @@ export async function alignCohortPrices(
       rows.push({
         cohortId: c.id, courseId: c.courseId, title: c.title,
         from: `${current ?? '—'} ${c.currency}`, to: `${target} ${targetCur}`,
-        blocked: `${committed.length} مقعدا محجوزا أو مدفوعا — لا يُعاد تسعيرها`,
+        blocked: `${committed.length} مقعدا محجوزا أو مدفوعا — لا يعاد تسعيرها`,
       })
       continue
     }

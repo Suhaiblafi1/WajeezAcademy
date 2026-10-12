@@ -93,12 +93,12 @@ export class TrainerDiscountService {
     const profile = await this.activeProfile(userId)
     const row = await this.prisma.trainerIssuedDiscount.findUnique({ where: { id } })
     if (!row || row.profileId !== profile.id) {
-      throw new AuthError('not_found', 'لا خصمَ بهذا المعرّف بين ما أصدرتَه', 404)
+      throw new AuthError('not_found', 'لا خصم بهذا المعرّف بين ما أصدرته', 404)
     }
     if (row.status !== 'live') {
       throw new AuthError(
         'bad_state',
-        row.status === 'revoked' ? 'ألغيتَه من قبل' : 'استُعمل هذا الخصمُ فعلا — ولا يُلغى ما استُعمل',
+        row.status === 'revoked' ? 'ألغيته من قبل' : 'استعمل هذا الخصم فعلا — ولا يلغى ما استعمل',
         409,
       )
     }
@@ -151,7 +151,7 @@ export class TrainerDiscountService {
         actorId: null, action: 'trainer_discount.used_failed',
         entityType: 'order', entityId: orderId,
         meta: { couponId, error: e instanceof Error ? e.message : String(e) },
-        reason: 'خصمُ مدرّبٍ استُعمل ولم يُقيَّد — تسويةٌ يدويّةٌ مطلوبة',
+        reason: 'خصم مدرّب استعمل ولم يقيّد — تسوية يدويّة مطلوبة',
       }).catch(() => { /* الأثرُ نفسُه لا يُسقط تسويةَ دفعة */ })
     }
   }
@@ -190,7 +190,7 @@ export class TrainerDiscountService {
             actorId: null, action: 'trainer_discount.refund_after_settlement',
             entityType: 'trainer_profile', entityId: row.profileId,
             meta: { discountId: row.id, orderId, amount: num(row.amount), settledItemId: row.settledItemId },
-            reason: 'خصمُ مدرّبٍ حُسم ثمّ رُدّ ثمنُ شرائه — يُعاد إليه بندا موجبا بيد المسؤول الماليّ',
+            reason: 'خصم مدرّب حسم ثمّ ردّ ثمن شرائه — يعاد إليه بندا موجبا بيد المسؤول الماليّ',
           })
         }
       }
@@ -199,7 +199,7 @@ export class TrainerDiscountService {
         actorId: null, action: 'trainer_discount.used_failed',
         entityType: 'order', entityId: orderId,
         meta: { step: 'refund', error: e instanceof Error ? e.message : String(e) },
-        reason: 'خصمُ مدرّبٍ رُدّ ثمنُ شرائه ولم يُقيَّد — تسويةٌ يدويّةٌ مطلوبة',
+        reason: 'خصم مدرّب ردّ ثمن شرائه ولم يقيّد — تسوية يدويّة مطلوبة',
       }).catch(() => { /* الأثرُ نفسُه لا يُسقط ردّا وقع */ })
     }
   }

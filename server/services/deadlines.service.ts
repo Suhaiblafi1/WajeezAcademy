@@ -45,16 +45,16 @@ export interface LearnerDeadline {
    جدولُ الصيغ لأنّ الفعلَ يتبع العددَ أيضا (فات · فاتا · فاتت). */
 function overduePhraseAr(n: number): string {
   if (n === 0) return ''
-  if (n === 1) return '، وواحدٌ منها فات موعدُه'
-  if (n === 2) return '، واثنان منها فات موعدُهما'
-  return `، و${n} منها فات موعدُها`
+  if (n === 1) return '، وواحد منها فات موعده'
+  if (n === 2) return '، واثنان منها فات موعدهما'
+  return `، و${n} منها فات موعدها`
 }
 
 /** التزاحمُ لا يقع بأقلَّ من جلستَين — فالواحدُ حالةٌ لا تُصاغ */
 function clashPhraseAr(n: number): string {
   if (n === 0) return ''
-  if (n === 2) return ' — واثنتان منها تتزاحمان، فراجِعهما مع الإدارة'
-  return ` — و${n} منها تتزاحم، فراجِعها مع الإدارة`
+  if (n === 2) return ' — واثنتان منها تتزاحمان، فراجعهما مع الإدارة'
+  return ` — و${n} منها تتزاحم، فراجعها مع الإدارة`
 }
 
 export class DeadlinesService {
@@ -130,8 +130,8 @@ export class DeadlinesService {
       /* ما يقوله اللوحُ عن نفسه — فلا يُقرأ الفراغُ عطبا ولا العددُ تهديدا */
       meaningAr: items.length === 0
         ? (retrievalDue > 0
-            ? `لا تسليمَ عليك في ${HORIZON_DAYS} يوما — وعندك ${countAr(retrievalDue, AR_CARDS)} استُحقّت في «مراجعتي»`
-            : `لا تسليمَ عليك في ${HORIZON_DAYS} يوما القادمة`)
+            ? `لا تسليم عليك في ${HORIZON_DAYS} يوما — وعندك ${countAr(retrievalDue, AR_CARDS)} استحقّت في «مراجعتي»`
+            : `لا تسليم عليك في ${HORIZON_DAYS} يوما القادمة`)
         : `${countAr(items.length, AR_SUBMISSIONS)} بموعد${overduePhraseAr(overdue)}`,
     }
   }
@@ -200,7 +200,7 @@ export class DeadlinesService {
       sessions,
       clashing,
       meaningAr: sessions.length === 0
-        ? `لا جلسةَ لك في ${days} يوما القادمة`
+        ? `لا جلسة لك في ${days} يوما القادمة`
         : `${countAr(sessions.length, AR_SESSIONS)} في ${countAr(links.length, AR_COHORTS)}${clashPhraseAr(clashing)}`,
     }
   }

@@ -23,12 +23,12 @@ export function registerTrainerAnnouncementRoutes(app: FastifyInstance, prisma: 
 
   app.get('/api/admin/trainer-announcements', {
     preHandler: canAnnounce,
-    schema: { tags: ['trainer-announcements'], summary: 'إعلاناتُ المدرّبين — ما أُرسل، ومن قرأ، ومن يصله لو أُرسل الآن' },
+    schema: { tags: ['trainer-announcements'], summary: 'إعلانات المدرّبين — ما أرسل، ومن قرأ، ومن يصله لو أرسل الآن' },
   }, async () => svc.list())
 
   app.post('/api/admin/trainer-announcements', {
     preHandler: canAnnounce,
-    schema: { tags: ['trainer-announcements'], summary: 'إرسالُ إعلانٍ إلى المدرّبين — نافذةٌ في بوّابتهم وإشعارٌ في الجرس' },
+    schema: { tags: ['trainer-announcements'], summary: 'إرسال إعلان إلى المدرّبين — نافذة في بوّابتهم وإشعار في الجرس' },
   }, async (req, reply) => {
     const body = z.object({
       titleAr: z.string().trim().min(3).max(ANNOUNCEMENT_TITLE_MAX),
@@ -48,21 +48,21 @@ export function registerTrainerAnnouncementRoutes(app: FastifyInstance, prisma: 
 
   app.get('/api/admin/trainer-announcements/:id', {
     preHandler: canAnnounce,
-    schema: { tags: ['trainer-announcements'], summary: 'من أُرسل إليه الإعلان — ومتى رآه ومتى أكّد قراءتَه' },
+    schema: { tags: ['trainer-announcements'], summary: 'من أرسل إليه الإعلان — ومتى رآه ومتى أكّد قراءته' },
   }, async (req) => svc.recipients(idParam.parse(req.params).id))
 
   app.get('/api/trainer/announcements', {
     preHandler: portal,
-    schema: { tags: ['trainer-announcements'], summary: 'إعلاناتُ الإدارة إلى هذا المدرّب — أحدثُها أوّلا' },
+    schema: { tags: ['trainer-announcements'], summary: 'إعلانات الإدارة إلى هذا المدرّب — أحدثها أوّلا' },
   }, async (req) => svc.mine(req.auth!.userId))
 
   app.post('/api/trainer/announcements/:id/seen', {
     preHandler: portal,
-    schema: { tags: ['trainer-announcements'], summary: 'ظهرت له نافذةُ الإعلان — أوّلَ مرّة' },
+    schema: { tags: ['trainer-announcements'], summary: 'ظهرت له نافذة الإعلان — أوّل مرّة' },
   }, async (req) => svc.seen(req.auth!.userId, idParam.parse(req.params).id))
 
   app.post('/api/trainer/announcements/:id/read', {
     preHandler: portal,
-    schema: { tags: ['trainer-announcements'], summary: '«قرأتُه» — ويصير بندُ الجرس مقروءا معه' },
+    schema: { tags: ['trainer-announcements'], summary: '«قرأته» — ويصير بند الجرس مقروءا معه' },
   }, async (req) => svc.read(req.auth!.userId, idParam.parse(req.params).id))
 }

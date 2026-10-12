@@ -44,19 +44,19 @@ import { WORKBOOK_MODES } from '../../../src/application/trainer/cohort-workbook
     الذي سمّاه صاحبُ المنصّة — اللقاءُ في وقت محاوره — فيُفحص في الخدمة بخطّة الشعبة
     (`assertAxesInTime`)، لأنّ الوقتَ في الخطّة لا في الطلب. */
 const axesArray = z.array(z.string().trim().min(1).max(64))
-  .max(SESSION_AXES_MAX, `اللقاءُ يُربط بـ${SESSION_AXES_MAX} محورا على الأكثر`)
+  .max(SESSION_AXES_MAX, `اللقاء يربط بـ${SESSION_AXES_MAX} محورا على الأكثر`)
 const uniqueAxes = (ids: string[]) => new Set(ids).size === ids.length
 /* ملفُّ التسليم كما يصفه المتعلّم قبل رفعه — والنوعُ يُقرَّر في الخادم من الامتداد */
 const SUBMISSION_FILE_BODY = z.object({
   originalName: z.string().trim().min(1).max(400), mime: z.string().max(200).optional(), sizeBytes: z.number().int().positive(),
 })
-const sessionAxesSchema = axesArray.refine(uniqueAxes, 'محورٌ مكرّرٌ في اللقاء نفسِه')
+const sessionAxesSchema = axesArray.refine(uniqueAxes, 'محور مكرّر في اللقاء نفسه')
 /* والربطُ بعد الإنشاء لا يترك اللقاءَ بلا محور: الإنشاءُ القديمُ يأتي بلا
    محاور (جدولةُ ما قبل المواعيد)، أمّا من ربط فقد اختار — ومحوُ الربط كلِّه
    يُعيد لقاءً لا يُعرف ما شرح. */
 const sessionAxesRequired = axesArray
-  .min(1, 'اختر محورا واحدا على الأقلّ — لكلّ لقاءٍ محورُه أو محاورُه')
-  .refine(uniqueAxes, 'محورٌ مكرّرٌ في اللقاء نفسِه')
+  .min(1, 'اختر محورا واحدا على الأقلّ — لكلّ لقاء محوره أو محاوره')
+  .refine(uniqueAxes, 'محور مكرّر في اللقاء نفسه')
 
 /* يحوّل محتوى شعبة خاما إلى نسخة آمنة للعرض: روابط موقعة بدل مفاتيح التخزين */
 function signCohortContent<T extends {
@@ -124,7 +124,7 @@ const TASK_ATTACHMENTS = z.array(z.object({
   bodyFileMime: z.string().trim().max(120).nullish(),
 }).refine(
   (a) => Boolean((a.bodyFileKey ?? '').trim()) !== /^https?:\/\/\S+$/.test((a.url ?? '').trim()),
-  { message: 'المرفقُ رابطٌ يبدأ بـ https:// أو ملفٌّ مرفوع — واحدٌ منهما' },
+  { message: 'المرفق رابط يبدأ بـ https:// أو ملفّ مرفوع — واحد منهما' },
 /* والمرفوعُ يُحفظ برابطٍ فارغ — `TypedLink.url` نصٌّ دائما */
 ).transform((a) => ({ ...a, url: (a.url ?? '').trim() }))).max(10)
 
@@ -157,7 +157,7 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
      من له ثلاثةُ تسجيلاتٍ يفتح كلَّ واحدٍ على حدةٍ ليرى واجباته. */
   app.get('/api/learner/deadlines', {
     preHandler: requirePermission('learner.portal'),
-    schema: { tags: ['learner-portal'], summary: 'مواعيدي النهائيّة — تسليماتٌ بموعدٍ لم تُسلَّم بعد' },
+    schema: { tags: ['learner-portal'], summary: 'مواعيدي النهائيّة — تسليمات بموعد لم تسلّم بعد' },
   }, async (req) => deadlines.forLearner(req.auth!.userId))
 
   app.get('/api/learner/artifacts', {
@@ -190,7 +190,7 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
      الوسطاء وتاريخِ المتصفّح. */
   app.post('/api/learner/sessions/:sessionId/meeting-ticket', {
     preHandler: requirePermission('learner.portal'),
-    schema: { tags: ['learner-portal'], summary: 'تذكرةُ Meeting SDK لفتح جلسة شعبتي داخل الموقع' },
+    schema: { tags: ['learner-portal'], summary: 'تذكرة Meeting SDK لفتح جلسة شعبتي داخل الموقع' },
   }, async (req) => {
     const { sessionId } = z.object({ sessionId: z.string().uuid() }).parse(req.params)
     return cohorts.meetingSdkTicket(req.auth!.userId, sessionId)
@@ -204,7 +204,7 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
      البدء (وقبل أيّ أثرٍ في الشعبة المغادَرة). */
   app.post('/api/learner/enrollments/:id/switch-cohort', {
     preHandler: requirePermission('learner.portal'),
-    schema: { tags: ['learner-portal'], summary: 'تبديل شعبتي إلى شعبةٍ أخرى من الدورة نفسها لم تبدأ بعد' },
+    schema: { tags: ['learner-portal'], summary: 'تبديل شعبتي إلى شعبة أخرى من الدورة نفسها لم تبدأ بعد' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const body = z.object({ cohortId: z.string().uuid() }).parse(req.body)
@@ -218,12 +218,12 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
      البابُ هنا في بوّابته لا هناك. */
   app.get('/api/learner/departure-choices', {
     preHandler: requirePermission('learner.portal'),
-    schema: { tags: ['learner-portal'], summary: 'ما عُرض عليّ من اختيارٍ بعد رحيل مدرّبي (ن-١٠)' },
+    schema: { tags: ['learner-portal'], summary: 'ما عرض عليّ من اختيار بعد رحيل مدرّبي (ن-١٠)' },
   }, async (req) => departures.myOpenChoices(req.auth!.userId))
 
   app.post('/api/learner/departure-choices/:caseId', {
     preHandler: requirePermission('learner.portal'),
-    schema: { tags: ['learner-portal'], summary: 'أختار: ردُّ ما تبقّى أو رصيدٌ باسمي' },
+    schema: { tags: ['learner-portal'], summary: 'أختار: ردّ ما تبقّى أو رصيد باسمي' },
   }, async (req) => {
     const { caseId } = z.object({ caseId: z.string().uuid() }).parse(req.params)
     const body = z.object({ choice: z.enum(LEARNER_CHOICES) }).parse(req.body)
@@ -257,7 +257,7 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
   /* رفعٌ انقطع — يُطلب له رابطٌ جديدٌ على التسليم نفسِه، لصاحبه وحدَه */
   app.post('/api/learner/submissions/:id/file', {
     preHandler: requirePermission('learner.submit'),
-    schema: { tags: ['learner-portal'], summary: 'رابطُ رفعٍ جديدٌ لملفّ تسليمٍ لم يصل كاملا' },
+    schema: { tags: ['learner-portal'], summary: 'رابط رفع جديد لملفّ تسليم لم يصل كاملا' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     return assessments.renewSubmissionUpload(req.auth!.userId, id, SUBMISSION_FILE_BODY.parse(req.body))
@@ -316,7 +316,7 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
 
   app.post('/api/learner/retrieval/modules/:moduleId', {
     preHandler: requirePermission('learner.portal'),
-    schema: { tags: ['learner-portal'], summary: 'فتح بطاقات وحدة بعد إتمام تمرينها — لا يُعاد جدولة الموجود' },
+    schema: { tags: ['learner-portal'], summary: 'فتح بطاقات وحدة بعد إتمام تمرينها — لا يعاد جدولة الموجود' },
   }, async (req, reply) => {
     const { moduleId } = z.object({ moduleId: z.string().min(3).max(80) }).parse(req.params)
     return reply.status(201).send(await retrieval.openCards(req.auth!.userId, moduleId))
@@ -346,7 +346,7 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
 
   app.post('/api/learner/scenarios/:moduleId/runs', {
     preHandler: requirePermission('learner.portal'),
-    schema: { tags: ['learner-portal'], summary: 'حفظ جولة مكتملة — المسار يُتحقَّق على السيناريو المنشور' },
+    schema: { tags: ['learner-portal'], summary: 'حفظ جولة مكتملة — المسار يتحقّق على السيناريو المنشور' },
   }, async (req, reply) => {
     const { moduleId } = z.object({ moduleId: z.string().min(3).max(80) }).parse(req.params)
     const body = z.object({
@@ -383,12 +383,12 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
 
   app.get('/api/learner/requests', {
     preHandler: requirePermission('learner.portal'),
-    schema: { tags: ['learner-portal'], summary: 'طلباتي — شهادةُ دورة أو مسار أو توصية، بحالتها' },
+    schema: { tags: ['learner-portal'], summary: 'طلباتي — شهادة دورة أو مسار أو توصية، بحالتها' },
   }, async (req) => learnerRequests.mine(req.auth!.userId))
 
   app.get('/api/learner/enrollments/:id/certificate-eligibility', {
     preHandler: requirePermission('learner.portal'),
-    schema: { tags: ['learner-portal'], summary: 'أهليّة شهادة الدورة — وأسبابُ المنع بالنصّ' },
+    schema: { tags: ['learner-portal'], summary: 'أهليّة شهادة الدورة — وأسباب المنع بالنصّ' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     return learnerRequests.courseEligibility(req.auth!.userId, id)
@@ -396,7 +396,7 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
 
   app.get('/api/learner/pathways/:pathwayId/completion', {
     preHandler: requirePermission('learner.portal'),
-    schema: { tags: ['learner-portal'], summary: 'إنجازُ المسار كاملا — كم دورةً أنجز من كم' },
+    schema: { tags: ['learner-portal'], summary: 'إنجاز المسار كاملا — كم دورة أنجز من كم' },
   }, async (req) => {
     const { pathwayId } = z.object({ pathwayId: z.string().min(3).max(64) }).parse(req.params)
     return learnerRequests.pathwayEligibility(req.auth!.userId, pathwayId)
@@ -404,7 +404,7 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
 
   app.post('/api/learner/requests', {
     preHandler: requirePermission('learner.portal'),
-    schema: { tags: ['learner-portal'], summary: 'طلبُ شهادةِ دورةٍ أو شهادةِ مسارٍ كاملا أو توصية' },
+    schema: { tags: ['learner-portal'], summary: 'طلب شهادة دورة أو شهادة مسار كاملا أو توصية' },
   }, async (req) => {
     const body = z.object({
       kind: z.enum(LEARNER_REQUEST_KINDS),
@@ -428,7 +428,7 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
 
   app.get('/api/trainer/cohorts/:id/referral-link', {
     preHandler: requirePermission('trainer.cohort.plan'),
-    schema: { tags: ['trainer-ops'], summary: 'رابطُ دعوتي لهذه الشعبة — يُنشأ مرّةً ويبقى' },
+    schema: { tags: ['trainer-ops'], summary: 'رابط دعوتي لهذه الشعبة — ينشأ مرّة ويبقى' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     return referrals.linkFor(req.auth!.userId, id)
@@ -439,12 +439,12 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
   /* روابطُ شعبي المفتوحة — تُقرأ في «دعوتي» دفعةً واحدة (١٥ سبتمبر ٢٠٢٦) */
   app.get('/api/trainer/me/referral-links', {
     preHandler: requirePermission('trainer.cohort.operate'),
-    schema: { tags: ['trainer-ops'], summary: 'رابطُ دعوتي لكلّ شعبةٍ مفتوحةٍ أدرّبها' },
+    schema: { tags: ['trainer-ops'], summary: 'رابط دعوتي لكلّ شعبة مفتوحة أدرّبها' },
   }, async (req) => referrals.cohortLinksFor(req.auth!.userId))
 
   app.get('/api/trainer/me/referral', {
     preHandler: requirePermission('trainer.cohort.plan'),
-    schema: { tags: ['trainer-ops'], summary: 'رابطي العامُّ على كامل ما أدرّب، ومن سجّل عبره' },
+    schema: { tags: ['trainer-ops'], summary: 'رابطي العامّ على كامل ما أدرّب، ومن سجّل عبره' },
   }, async (req) => {
     const [link, reach] = await Promise.all([
       referrals.wideLinkFor(req.auth!.userId),
@@ -466,12 +466,12 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
 
   app.get('/api/trainer/me/codes', {
     preHandler: requirePermission('trainer.cohort.plan'),
-    schema: { tags: ['trainer-ops'], summary: 'أكوادي، وما استُعمل منها وما حُسم، وقبولي البند 4-10' },
+    schema: { tags: ['trainer-ops'], summary: 'أكوادي، وما استعمل منها وما حسم، وقبولي البند 4-10' },
   }, async (req) => trainerCodes.listFor(req.auth!.userId))
 
   app.post('/api/trainer/me/codes', {
     preHandler: requirePermission('trainer.cohort.plan'),
-    schema: { tags: ['trainer-ops'], summary: 'أصدِرْ كودَ خصمٍ بنسبةٍ أو بمبلغٍ على دوراتي، يُحسم ما يمنحه من مستحقّاتي' },
+    schema: { tags: ['trainer-ops'], summary: 'أصدر كود خصم بنسبة أو بمبلغ على دوراتي، يحسم ما يمنحه من مستحقّاتي' },
   }, async (req, reply) => {
     const body = z.object({
       /* نسبةٌ **أو** مبلغ (١ أكتوبر ٢٠٢٦) — والحدّان من القواعد نفسِها التي
@@ -488,13 +488,13 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
 
   app.post('/api/trainer/me/codes/terms/accept', {
     preHandler: requirePermission('trainer.cohort.plan'),
-    schema: { tags: ['trainer-ops'], summary: 'أقبل البندَ 4-10 بصيغته الجديدة — مرّةً واحدة' },
+    schema: { tags: ['trainer-ops'], summary: 'أقبل البند 4-10 بصيغته الجديدة — مرّة واحدة' },
   }, async (req) => trainerCodes.acceptTerms(req.auth!.userId, req.ip))
 
   for (const [verb, summary] of [
-    ['pause', 'أوقِفْ كودا — لا يُستعمل حتّى أستأنفه'],
-    ['resume', 'استأنِفْ كودا أوقفتُه'],
-    ['revoke', 'ألغِ كودا — نهائيّا'],
+    ['pause', 'أوقف كودا — لا يستعمل حتّى أستأنفه'],
+    ['resume', 'استأنف كودا أوقفته'],
+    ['revoke', 'ألغ كودا — نهائيّا'],
   ] as const) {
     app.post(`/api/trainer/me/codes/:id/${verb}`, {
       preHandler: requirePermission('trainer.cohort.plan'),
@@ -513,12 +513,12 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
 
   app.get('/api/trainer/me/discounts', {
     preHandler: requirePermission('trainer.cohort.plan'),
-    schema: { tags: ['trainer-ops'], summary: 'خصومي القديمةُ بالمبلغ — ما بقي منها وما حُسم' },
+    schema: { tags: ['trainer-ops'], summary: 'خصومي القديمة بالمبلغ — ما بقي منها وما حسم' },
   }, async (req) => trainerDiscounts.listFor(req.auth!.userId))
 
   app.post('/api/trainer/me/discounts/:id/revoke', {
     preHandler: requirePermission('trainer.cohort.plan'),
-    schema: { tags: ['trainer-ops'], summary: 'ألغِ خصما أصدرتُه ولم يُستعمَل بعد' },
+    schema: { tags: ['trainer-ops'], summary: 'ألغ خصما أصدرته ولم يستعمل بعد' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     return trainerDiscounts.revoke(req.auth!.userId, id)
@@ -565,7 +565,7 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
             path: [i, 'moduleId'],
-            message: `معرّفُ المحور «${m.moduleId}» مكرّرٌ في الخطّة`,
+            message: `معرّف المحور «${m.moduleId}» مكرّر في الخطّة`,
           })
         }
         seen.add(m.moduleId)
@@ -704,7 +704,7 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
 
   app.get('/api/trainer/cohorts/:id/workspace', {
     preHandler: requirePermission('trainer.cohort.plan'),
-    schema: { tags: ['trainer-ops'], summary: 'ورشةُ شعبتي — كلُّ ما أعدّله وقائمةُ ما بقي عليّ' },
+    schema: { tags: ['trainer-ops'], summary: 'ورشة شعبتي — كلّ ما أعدّله وقائمة ما بقي عليّ' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     return plans.workspace(req.auth!.userId, id)
@@ -716,7 +716,7 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
      محورٍ أو مجموعةٍ متجاورة. والمدرّبُ وحدَه وفي شعبته (`ownedCohort` في الخدمة). */
   app.get('/api/trainer/cohorts/:id/workbook-template', {
     preHandler: requirePermission('trainer.cohort.plan'),
-    schema: { tags: ['trainer-ops'], summary: 'قالبُ كرّاسة وجيز بصيغة Word مملوءا بخطّة الشعبة — للدورة أو لمحاورَ بعينها' },
+    schema: { tags: ['trainer-ops'], summary: 'قالب كرّاسة وجيز بصيغة Word مملوءا بخطّة الشعبة — للدورة أو لمحاور بعينها' },
   }, async (req, reply) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const { modules } = z.object({ modules: z.string().max(2000).optional() }).parse(req.query)
@@ -731,7 +731,7 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
 
   app.put('/api/trainer/cohorts/:id/plan', {
     preHandler: requirePermission('trainer.cohort.plan'),
-    schema: { tags: ['trainer-ops'], summary: 'حفظُ محتوى شعبتي مسودّةً: مدّتُها ومحاورُها وتطبيقُها ومصادرُها' },
+    schema: { tags: ['trainer-ops'], summary: 'حفظ محتوى شعبتي مسودّة: مدّتها ومحاورها وتطبيقها ومصادرها' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     return plans.savePlan(req.auth!.userId, id, planContent.parse(req.body))
@@ -742,7 +742,7 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
   const copies = new CohortCopyService(prisma)
   app.post('/api/trainer/cohorts/:id/plan/copy', {
     preHandler: requirePermission('trainer.cohort.plan'),
-    schema: { tags: ['trainer-ops'], summary: 'نسخُ خطّة شعبةٍ أخرى لي لنفس الدورة إلى هذه — بتواريخَ مُزاحة' },
+    schema: { tags: ['trainer-ops'], summary: 'نسخ خطّة شعبة أخرى لي لنفس الدورة إلى هذه — بتواريخ مزاحة' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const body = z.object({
@@ -760,7 +760,7 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
 
   app.get('/api/trainer/cohorts/:id/plan-edits', {
     preHandler: requirePermission('trainer.cohort.plan'),
-    schema: { tags: ['trainer-ops'], summary: 'التعديلاتُ التي اقترحتها الإدارةُ على خطّة شعبتي — قبلها وبعدها' },
+    schema: { tags: ['trainer-ops'], summary: 'التعديلات التي اقترحتها الإدارة على خطّة شعبتي — قبلها وبعدها' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     return planEdits.forTrainer(req.auth!.userId, id)
@@ -768,7 +768,7 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
 
   app.post('/api/trainer/plan-edits/:editId/accept', {
     preHandler: requirePermission('trainer.cohort.plan'),
-    schema: { tags: ['trainer-ops'], summary: 'أقبلُ تعديلا مقترحا — يُكتب في خطّتي' },
+    schema: { tags: ['trainer-ops'], summary: 'أقبل تعديلا مقترحا — يكتب في خطّتي' },
   }, async (req) => {
     const { editId } = z.object({ editId: z.string().uuid() }).parse(req.params)
     const { force } = z.object({ force: z.boolean().optional() }).parse(req.body ?? {})
@@ -777,7 +777,7 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
 
   app.post('/api/trainer/plan-edits/:editId/reject', {
     preHandler: requirePermission('trainer.cohort.plan'),
-    schema: { tags: ['trainer-ops'], summary: 'أرفضُ تعديلا مقترحا — ولي أن أقول لماذا' },
+    schema: { tags: ['trainer-ops'], summary: 'أرفض تعديلا مقترحا — ولي أن أقول لماذا' },
   }, async (req) => {
     const { editId } = z.object({ editId: z.string().uuid() }).parse(req.params)
     const { noteAr } = z.object({ noteAr: z.string().max(1000).optional() }).parse(req.body ?? {})
@@ -786,7 +786,7 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
 
   app.post('/api/trainer/cohorts/:id/plan-edits/accept-all', {
     preHandler: requirePermission('trainer.cohort.plan'),
-    schema: { tags: ['trainer-ops'], summary: 'أقبلُ كلَّ ما ينتظر — وما تغيّر موضعُه يبقى منتظِرا ويُسمّى' },
+    schema: { tags: ['trainer-ops'], summary: 'أقبل كلّ ما ينتظر — وما تغيّر موضعه يبقى منتظرا ويسمّى' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     return planEdits.acceptAll(req.auth!.userId, id)
@@ -794,7 +794,7 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
 
   app.patch('/api/trainer/cohorts/:id', {
     preHandler: requirePermission('trainer.cohort.plan'),
-    schema: { tags: ['trainer-ops'], summary: 'تعديلُ بيانات شعبتي — الاسمُ واللغة. والمدّةُ مع الخطّة، والسعرُ للإدارة' },
+    schema: { tags: ['trainer-ops'], summary: 'تعديل بيانات شعبتي — الاسم واللغة. والمدّة مع الخطّة، والسعر للإدارة' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     /* لا `strict`: المفتاحُ الماليُّ يصل الخدمةَ فتردّه باسمه، لا يُبتلع بصمت */
@@ -819,7 +819,7 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
 
   app.post('/api/trainer/cohorts/:id/plan/submit', {
     preHandler: requirePermission('trainer.cohort.plan'),
-    schema: { tags: ['trainer-ops'], summary: '«أوافق على كلّ ما في الشعبة» — وتُرسَل للاعتماد' },
+    schema: { tags: ['trainer-ops'], summary: '«أوافق على كلّ ما في الشعبة» — وترسل للاعتماد' },
   }, async (req, reply) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const { confirm } = z.object({ confirm: z.boolean() }).parse(req.body ?? {})
@@ -850,12 +850,12 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
      هنا — الشعبةُ بعينها لا القائمةُ كلُّها. والبطاقاتُ في «شعبي» من الموجز. */
   app.get('/api/trainer/cohorts/summary', {
     preHandler: requirePermission('trainer.cohort.operate'),
-    schema: { tags: ['trainer-ops'], summary: 'شعبي موجزةً — حالةُ كلٍّ وما أُنجز من تجهيزها وما يليه' },
+    schema: { tags: ['trainer-ops'], summary: 'شعبي موجزة — حالة كلّ وما أنجز من تجهيزها وما يليه' },
   }, async (req) => plans.summaries(req.auth!.userId))
 
   app.get('/api/trainer/cohorts/:id/ops', {
     preHandler: requirePermission('trainer.cohort.operate'),
-    schema: { tags: ['trainer-ops'], summary: 'تشغيلُ شعبةٍ واحدة — جلساتُها ومسجَّلوها وموادُّها وتكاليفُها' },
+    schema: { tags: ['trainer-ops'], summary: 'تشغيل شعبة واحدة — جلساتها ومسجّلوها وموادّها وتكاليفها' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const r = await enrollments.trainerCohort(req.auth!.userId, id)
@@ -867,7 +867,7 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
      الإسناد إلى شعبتَين قائمتَين — فهذه الشاشةُ هي التي تُظهرهما. */
   app.get('/api/trainer/me/schedule', {
     preHandler: requirePermission('trainer.cohort.operate'),
-    schema: { tags: ['trainer-ops'], summary: 'جدولي — جلساتُ شعبي كلِّها في خطٍّ زمنيٍّ واحد' },
+    schema: { tags: ['trainer-ops'], summary: 'جدولي — جلسات شعبي كلّها في خطّ زمنيّ واحد' },
   }, async (req) => {
     const { days } = z.object({ days: z.coerce.number().int().min(1).max(120).optional() }).parse(req.query)
     return deadlines.forTrainer(req.auth!.userId, new Date(), days ?? 30)
@@ -948,7 +948,7 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
 
   app.patch('/api/trainer/assessments/:assessmentId', {
     preHandler: requirePermission('trainer.cohort.operate'),
-    schema: { tags: ['trainer-ops'], summary: 'تعديل تكليفٍ في شعبتي' },
+    schema: { tags: ['trainer-ops'], summary: 'تعديل تكليف في شعبتي' },
   }, async (req) => {
     const { assessmentId } = z.object({ assessmentId: z.string().uuid() }).parse(req.params)
     const body = z.object({
@@ -968,7 +968,7 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
 
   app.delete('/api/trainer/assessments/:assessmentId', {
     preHandler: requirePermission('trainer.cohort.operate'),
-    schema: { tags: ['trainer-ops'], summary: 'حذف تكليفٍ لم يُسلَّم فيه' },
+    schema: { tags: ['trainer-ops'], summary: 'حذف تكليف لم يسلّم فيه' },
   }, async (req) => {
     const { assessmentId } = z.object({ assessmentId: z.string().uuid() }).parse(req.params)
     return assessments.deleteAssessment(req.auth!.userId, assessmentId)
@@ -980,7 +980,7 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
      قبل القرار يسحبه — ويبقى المعتمَدُ كما هو عند متعلّميه. */
   app.post('/api/trainer/assessments/:assessmentId/withdraw-change', {
     preHandler: requirePermission('trainer.cohort.operate'),
-    schema: { tags: ['trainer-ops'], summary: 'سحبُ طلب تعديلِ مهمّةٍ أو حذفِها قبل قرار الإدارة' },
+    schema: { tags: ['trainer-ops'], summary: 'سحب طلب تعديل مهمّة أو حذفها قبل قرار الإدارة' },
   }, async (req) => {
     const { assessmentId } = z.object({ assessmentId: z.string().uuid() }).parse(req.params)
     return assessments.withdrawChange(req.auth!.userId, assessmentId)
@@ -993,7 +993,7 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
 
   app.post('/api/trainer/cohorts/:id/messages', {
     preHandler: requirePermission('trainer.cohort.operate'),
-    schema: { tags: ['trainer-ops'], summary: 'رسالة إلى الشعبة كلّها أو إلى متعلّم فيها — تُسجَّل وتُوصَّل' },
+    schema: { tags: ['trainer-ops'], summary: 'رسالة إلى الشعبة كلّها أو إلى متعلّم فيها — تسجّل وتوصّل' },
   }, async (req, reply) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const body = z.object({
@@ -1007,7 +1007,7 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
 
   app.get('/api/trainer/cohorts/:id/messages', {
     preHandler: requirePermission('trainer.cohort.operate'),
-    schema: { tags: ['trainer-ops'], summary: 'سجلّ ما أُرسل في شعبتي' },
+    schema: { tags: ['trainer-ops'], summary: 'سجلّ ما أرسل في شعبتي' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     await enrollments.assertCohortTrainer(req.auth!.userId, id)
@@ -1025,7 +1025,7 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
 
   app.get('/api/trainer/cohorts/:id/schedule-window', {
     preHandler: requirePermission('trainer.cohort.schedule'),
-    schema: { tags: ['trainer-ops'], summary: 'حدودي في هذه الشعبة — تُقرأ قبل المحاولة لا بعد الرفض' },
+    schema: { tags: ['trainer-ops'], summary: 'حدودي في هذه الشعبة — تقرأ قبل المحاولة لا بعد الرفض' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     return cohorts.scheduleWindowFor(req.auth!.userId, id)
@@ -1033,7 +1033,7 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
 
   app.post('/api/trainer/cohorts/:id/sessions', {
     preHandler: requirePermission('trainer.cohort.schedule'),
-    schema: { tags: ['trainer-ops'], summary: 'إضافةُ لقاءٍ في شعبتي — داخلَ نافذة الإدارة وسقفِها' },
+    schema: { tags: ['trainer-ops'], summary: 'إضافة لقاء في شعبتي — داخل نافذة الإدارة وسقفها' },
   }, async (req, reply) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const body = z.object({
@@ -1060,7 +1060,7 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
          يُردّ عميلٌ قديمٌ يرسلها بخطإٍ مسمًّى لا بابتلاعٍ صامت. */
     }).strict().superRefine((b, ctx) => {
       if (b.endsAt <= b.startsAt) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'نهايةُ اللقاء قبل بدايته', path: ['endsAt'] })
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'نهاية اللقاء قبل بدايته', path: ['endsAt'] })
         return
       }
       /* ═══ ساعتان حدًّا أدنى — والفحصُ هنا لا في الشاشة وحدَها ═══
@@ -1076,7 +1076,7 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
 
   app.patch('/api/trainer/sessions/:sessionId', {
     preHandler: requirePermission('trainer.cohort.schedule'),
-    schema: { tags: ['trainer-ops'], summary: 'نقلُ لقاءٍ في شعبتي — داخلَ النافذة، بلا طابور موافقات' },
+    schema: { tags: ['trainer-ops'], summary: 'نقل لقاء في شعبتي — داخل النافذة، بلا طابور موافقات' },
   }, async (req) => {
     const { sessionId } = z.object({ sessionId: z.string().uuid() }).parse(req.params)
     const body = z.object({
@@ -1086,7 +1086,7 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
          يُفحَص. والنهايةُ اختياريّةٌ هنا، فما لم تُرسَل لا طولَ يُفحَص. */
     }).superRefine((b, ctx) => {
       if (b.endsAt && b.endsAt <= b.startsAt) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'نهايةُ اللقاء قبل بدايته', path: ['endsAt'] })
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'نهاية اللقاء قبل بدايته', path: ['endsAt'] })
         return
       }
       if (b.endsAt && sessionTooShort(b.startsAt, b.endsAt)) {
@@ -1100,7 +1100,7 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
      والعلّةُ في رأس `trainerSetSessionAxes`. */
   app.patch('/api/trainer/sessions/:sessionId/axes', {
     preHandler: requirePermission('trainer.cohort.schedule'),
-    schema: { tags: ['trainer-ops'], summary: 'ربطُ لقاءٍ في شعبتي بمحوره أو محاوره — في وقتها' },
+    schema: { tags: ['trainer-ops'], summary: 'ربط لقاء في شعبتي بمحوره أو محاوره — في وقتها' },
   }, async (req) => {
     const { sessionId } = z.object({ sessionId: z.string().uuid() }).parse(req.params)
     const { moduleIds } = z.object({ moduleIds: sessionAxesRequired }).strict().parse(req.body)
@@ -1115,7 +1115,7 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
      الفصل لا تُنقل (النقلُ يمرّ بالنافذة التي يحاول فتحَها) — فتُحذف. */
   app.delete('/api/trainer/sessions/:sessionId', {
     preHandler: requirePermission('trainer.cohort.schedule'),
-    schema: { tags: ['trainer-ops'], summary: 'حذفُ لقاءٍ لم ينعقد من شعبتي' },
+    schema: { tags: ['trainer-ops'], summary: 'حذف لقاء لم ينعقد من شعبتي' },
   }, async (req) => {
     const { sessionId } = z.object({ sessionId: z.string().uuid() }).parse(req.params)
     return cohorts.trainerDeleteSession(req.auth!.userId, sessionId)
@@ -1127,7 +1127,7 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
      وGET يستقرّ في سجلّات الوسطاء وتاريخِ المتصفّح. */
   app.post('/api/trainer/sessions/:sessionId/host-start', {
     preHandler: requirePermission('trainer.cohort.operate'),
-    schema: { tags: ['trainer-ops'], summary: 'رابطُ بدء لقائي مضيفا — يُطلب من Zoom لحظتَه ولا يُحفظ' },
+    schema: { tags: ['trainer-ops'], summary: 'رابط بدء لقائي مضيفا — يطلب من Zoom لحظته ولا يحفظ' },
   }, async (req) => {
     const { sessionId } = z.object({ sessionId: z.string().uuid() }).parse(req.params)
     return cohorts.trainerHostStart(req.auth!.userId, sessionId)
@@ -1195,7 +1195,7 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
      بحسابه، فلا رابطَ يُنسخ في محادثةٍ ويُفتح بعد شهرٍ بلا حساب. */
   app.get('/api/v1/submission-files/:storageKey', {
     preHandler: requireAuth,
-    schema: { tags: ['trainer-ops'], summary: 'قراءةُ ملفِّ تسليم — لصاحبه ولمدرّب شعبته' },
+    schema: { tags: ['trainer-ops'], summary: 'قراءة ملفّ تسليم — لصاحبه ولمدرّب شعبته' },
   }, async (req, reply) => {
     const { storageKey } = z.object({ storageKey: z.string().min(10) }).parse(req.params)
     assertSafeKey(storageKey)
@@ -1229,7 +1229,7 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
 
   app.post('/api/trainer/grade', {
     preHandler: requirePermission('trainer.cohort.operate'),
-    schema: { tags: ['trainer-ops'], summary: 'تقدير درجة — كل تعديل لاحق يُسجل في سجل لا يُمحى' },
+    schema: { tags: ['trainer-ops'], summary: 'تقدير درجة — كل تعديل لاحق يسجل في سجل لا يمحى' },
   }, async (req, reply) => {
     const body = z.object({
       submissionId: z.string().uuid().optional(), attemptId: z.string().uuid().optional(),
@@ -1251,7 +1251,7 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
   /* ══════════ التحقق العام من الشهادات — بلا دخول ══════════ */
 
   app.get('/api/v1/certificates/verify/:number', {
-    schema: { tags: ['public'], summary: 'تحقق عام من شهادة برقمها — بيانات محدودة ويُسجل كل تحقق' },
+    schema: { tags: ['public'], summary: 'تحقق عام من شهادة برقمها — بيانات محدودة ويسجل كل تحقق' },
   }, async (req) => {
     const { number } = z.object({ number: z.string().min(6).max(40) }).parse(req.params)
     return certificates.verify(number, req.ip)

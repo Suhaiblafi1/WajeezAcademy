@@ -13,7 +13,7 @@ import { requirePermission } from '../auth-plugin'
 import { assertNotBot } from '../honeypot'
 
 const subjectParam = (params: unknown) =>
-  z.object({ subject: z.string().refine(isPlacementSubject, 'موضوعٌ لا اختبارَ له') }).parse(params).subject as PlacementSubject
+  z.object({ subject: z.string().refine(isPlacementSubject, 'موضوع لا اختبار له') }).parse(params).subject as PlacementSubject
 
 export function registerPlacementRoutes(app: FastifyInstance, prisma: PrismaClient) {
   const placement = new PlacementService(prisma)
@@ -21,13 +21,13 @@ export function registerPlacementRoutes(app: FastifyInstance, prisma: PrismaClie
   /* ════ المتعلّم ════ */
 
   app.get('/api/public/placement/:subject', {
-    schema: { tags: ['placement'], summary: 'أسئلةُ الاختبار المعتمَدة — بلا أجوبتها، أو لا شيء قبل فتحه' },
+    schema: { tags: ['placement'], summary: 'أسئلة الاختبار المعتمدة — بلا أجوبتها، أو لا شيء قبل فتحه' },
   }, async (req) => placement.publicBank(subjectParam(req.params)))
 
   app.post('/api/public/placement/:subject/score', {
     config: { rateLimit: { max: 20, timeWindow: '10 minutes' } },
     schema: {
-      tags: ['placement'], summary: 'تصحيحُ الأجوبة وتحديدُ المستوى',
+      tags: ['placement'], summary: 'تصحيح الأجوبة وتحديد المستوى',
       body: { type: 'object', required: ['answers'], properties: { answers: { type: 'object' } } },
     },
   }, async (req) => {
@@ -35,7 +35,7 @@ export function registerPlacementRoutes(app: FastifyInstance, prisma: PrismaClie
     const subject = subjectParam(req.params)
     const body = z.object({
       answers: z.record(z.string().max(40), z.number().int().min(0).max(9))
-        .refine((a) => Object.keys(a).length <= 200, 'أجوبةٌ أكثرُ من الأسئلة'),
+        .refine((a) => Object.keys(a).length <= 200, 'أجوبة أكثر من الأسئلة'),
     }).parse(req.body)
     return placement.score(subject, body.answers)
   })
@@ -44,12 +44,12 @@ export function registerPlacementRoutes(app: FastifyInstance, prisma: PrismaClie
 
   app.get('/api/placement/:subject/review', {
     preHandler: requirePermission('placement.review'),
-    schema: { tags: ['placement'], summary: 'كلُّ أسئلة الموضوع بأجوبتها وحالاتها' },
+    schema: { tags: ['placement'], summary: 'كلّ أسئلة الموضوع بأجوبتها وحالاتها' },
   }, async (req) => placement.reviewList(subjectParam(req.params)))
 
   app.patch('/api/placement/:subject/review/:id', {
     preHandler: requirePermission('placement.review'),
-    schema: { tags: ['placement'], summary: 'تعديلُ نصّ سؤالٍ أو خياراته أو جوابه' },
+    schema: { tags: ['placement'], summary: 'تعديل نصّ سؤال أو خياراته أو جوابه' },
   }, async (req) => {
     const subject = subjectParam(req.params)
     const { id } = z.object({ id: z.string().min(1).max(40) }).parse(req.params)
@@ -65,7 +65,7 @@ export function registerPlacementRoutes(app: FastifyInstance, prisma: PrismaClie
   app.post('/api/placement/:subject/review/:id/decide', {
     preHandler: requirePermission('placement.review'),
     schema: {
-      tags: ['placement'], summary: 'اعتمادُ سؤالٍ أو إسقاطُه',
+      tags: ['placement'], summary: 'اعتماد سؤال أو إسقاطه',
       body: { type: 'object', required: ['approve'], properties: { approve: { type: 'boolean' }, note: { type: 'string' } } },
     },
   }, async (req) => {

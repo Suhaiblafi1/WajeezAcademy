@@ -51,7 +51,7 @@ export class ReferralService {
     const profile = await this.prisma.trainerProfile.findUnique({ where: { userId } })
     if (!profile || profile.suspendedAt) throw new AuthError('not_trainer', 'لا ملف مدرب نشطا لهذا الحساب', 403)
     const link = await this.prisma.cohortTrainer.findFirst({ where: { cohortId, profileId: profile.id } })
-    if (!link) throw new AuthError('not_your_cohort', 'هذه الشعبة ليست مُسنَدةً إليك', 403)
+    if (!link) throw new AuthError('not_your_cohort', 'هذه الشعبة ليست مسندة إليك', 403)
     const cohort = await this.prisma.cohort.findUniqueOrThrow({ where: { id: cohortId }, select: { courseId: true } })
 
     let row = await this.prisma.trainerReferralLink.findUnique({ where: { cohortId_profileId: { cohortId, profileId: profile.id } } })
@@ -168,7 +168,7 @@ export class ReferralService {
         if (again?.publicSlug) return again.publicSlug
       }
     }
-    throw new AuthError('slug_conflict', 'تعذّر اشتقاقُ مسارٍ عامٍّ لاسمك — راجِع الإدارة', 409)
+    throw new AuthError('slug_conflict', 'تعذّر اشتقاق مسار عامّ لاسمك — راجع الإدارة', 409)
   }
 
   /** رابطُ المدرّب على كامل ما يدرّب — ومعه مسارُه العامّ وحالةُ ظهوره */

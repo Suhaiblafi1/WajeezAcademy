@@ -94,7 +94,7 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
 
   app.get('/api/admin/users/:id/permissions', {
     preHandler: canDelegate,
-    schema: { tags: ['admin-users'], summary: 'صلاحيات مستخدم: من دوره، وما مُنح له، وما مُنع عنه' },
+    schema: { tags: ['admin-users'], summary: 'صلاحيات مستخدم: من دوره، وما منح له، وما منع عنه' },
   }, async (req, reply) => {
     /* من لا يفوّض شيئا لا يفتح الشاشة أصلا */
     if (!req.auth!.roles.some((r) => DELEGATABLE_FAMILIES[r])) {
@@ -171,7 +171,7 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
     }
     const reason = body.reason?.trim() ?? ''
     if (body.effect !== 'clear' && reason.length < 5) {
-      return reply.status(400).send({ error: { code: 'reason_required', message_ar: 'اكتب سبب الاستثناء — يُقرأ عند المراجعة' } })
+      return reply.status(400).send({ error: { code: 'reason_required', message_ar: 'اكتب سبب الاستثناء — يقرأ عند المراجعة' } })
     }
 
     if (body.effect === 'clear') {
@@ -195,15 +195,15 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
        المحاولةَ ثمّ يسأل الدعم. والصلاحيّةُ باسمها العربيّ لا بمفتاحها، فمن
        يقرأ «catalog.course.review» يحتاج من يترجمها له. */
     const permissionAr = PERMISSIONS.find((x) => x.key === body.permissionKey)?.description ?? body.permissionKey
-    const whyAr = reason ? ` والسببُ المسجَّل: ${reason}` : ''
+    const whyAr = reason ? ` والسبب المسجّل: ${reason}` : ''
     await notifyAccountOwner(
       prisma, id, 'account.permission_changed',
-      body.effect === 'deny' ? 'نُزعت عنك صلاحيّة' : body.effect === 'grant' ? 'مُنحتَ صلاحيّةً جديدة' : 'عادت صلاحيّاتُك إلى دورك',
+      body.effect === 'deny' ? 'نزعت عنك صلاحيّة' : body.effect === 'grant' ? 'منحت صلاحيّة جديدة' : 'عادت صلاحيّاتك إلى دورك',
       body.effect === 'grant'
-        ? `مُنح حسابُك في أكاديمية وجيز صلاحيّةَ «${permissionAr}». وأُبطلت جلساتُك المفتوحة، فادخل من جديدٍ كي تسريَ.${whyAr}`
+        ? `منح حسابك في أكاديمية وجيز صلاحيّة «${permissionAr}». وأبطلت جلساتك المفتوحة، فادخل من جديد كي تسري.${whyAr}`
         : body.effect === 'deny'
-          ? `نُزعت عن حسابك في أكاديمية وجيز صلاحيّةُ «${permissionAr}»، وأُبطلت جلساتُك المفتوحة — فما كنتَ تفتحه بها لم يعد يُفتح.${whyAr}`
-          : `أُلغي استثناءُ صلاحيّةِ «${permissionAr}» عن حسابك في أكاديمية وجيز، فعادت صلاحيّاتُك إلى ما يمنحه دورُك. وأُبطلت جلساتُك المفتوحة، فادخل من جديد.${whyAr}`,
+          ? `نزعت عن حسابك في أكاديمية وجيز صلاحيّة «${permissionAr}»، وأبطلت جلساتك المفتوحة — فما كنت تفتحه بها لم يعد يفتح.${whyAr}`
+          : `ألغي استثناء صلاحيّة «${permissionAr}» عن حسابك في أكاديمية وجيز، فعادت صلاحيّاتك إلى ما يمنحه دورك. وأبطلت جلساتك المفتوحة، فادخل من جديد.${whyAr}`,
     )
     await recordAudit(prisma, {
       actorId: req.auth!.userId, action: `admin.permission.${body.effect}`,
@@ -228,7 +228,7 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
      ليقرّر ما يقول. */
   app.post('/api/admin/users', {
     preHandler: guard,
-    schema: { tags: ['admin-users'], summary: 'إنشاء حساب إداريّ بدوره — ويصله بريدٌ يشرح دوره ويفعّل حسابه' },
+    schema: { tags: ['admin-users'], summary: 'إنشاء حساب إداريّ بدوره — ويصله بريد يشرح دوره ويفعّل حسابه' },
   }, async (req, reply) => {
     const body = z.object({
       email: z.string().trim().toLowerCase().email('صيغة البريد غير صحيحة'),
@@ -242,7 +242,7 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
     const existing = await prisma.user.findUnique({ where: { email: body.email } })
     if (existing) {
       return reply.status(409).send({
-        error: { code: 'email_taken', message_ar: 'لهذا البريد حسابٌ بالفعل — عيّن دورَه من قائمة المستخدمين' },
+        error: { code: 'email_taken', message_ar: 'لهذا البريد حساب بالفعل — عيّن دوره من قائمة المستخدمين' },
       })
     }
 
@@ -282,8 +282,8 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
       inviteSent: mail?.status === 'sent',
       /* لا يُقال «أُرسلت» حين لا بريد — انتظارُ رسالةٍ لن تصل أسوأ من معرفة ذلك */
       inviteNote: mail?.status === 'sent'
-        ? 'أُنشئ الحساب، ووصلته دعوةٌ تشرح دوره وتفعّل حسابه.'
-        : 'أُنشئ الحساب، ولم تُرسل الدعوة — قناةُ البريد غير مفعّلة. اطلب منه «نسيت كلمة المرور» ببريده.',
+        ? 'أنشئ الحساب، ووصلته دعوة تشرح دوره وتفعّل حسابه.'
+        : 'أنشئ الحساب، ولم ترسل الدعوة — قناة البريد غير مفعّلة. اطلب منه «نسيت كلمة المرور» ببريده.',
     })
   })
 
@@ -293,7 +293,7 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
      يصنع لنفسه ما كان يجب أن يصله — وهذا يفترض أنّه يعرف أنّ له حسابا. */
   app.post('/api/admin/users/:id/resend-invite', {
     preHandler: guard,
-    schema: { tags: ['admin-users'], summary: 'يُصدر دعوةً جديدةً (٧ أيّام) ويُبطل ما قبلها' },
+    schema: { tags: ['admin-users'], summary: 'يصدر دعوة جديدة (٧ أيّام) ويبطل ما قبلها' },
   }, async (req, reply) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const user = await prisma.user.findUnique({
@@ -301,7 +301,7 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
     })
     if (!user) return reply.status(404).send({ error: { code: 'not_found', message_ar: 'الحساب غير موجود' } })
     if (user.status === 'archived') {
-      return reply.status(409).send({ error: { code: 'archived', message_ar: 'حسابٌ مؤرشَف — أعِد تنشيطَه أوّلا' } })
+      return reply.status(409).send({ error: { code: 'archived', message_ar: 'حساب مؤرشف — أعد تنشيطه أوّلا' } })
     }
 
     const { token, expiresAt } = await auth.issueInvite(id)
@@ -328,8 +328,8 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
       sent: mail.status === 'sent',
       expiresAt,
       note: mail.status === 'sent'
-        ? `أُرسلت دعوةٌ جديدةٌ صالحةٌ ${MAIL_LINK_WINDOW_AR} — والقديمةُ أُبطلت.`
-        : 'أُصدرت دعوةٌ جديدةٌ ولم تُرسل — قناةُ البريد غير مفعّلة. سلّمه الرابطَ بنفسك أو فعّل البريد.',
+        ? `أرسلت دعوة جديدة صالحة ${MAIL_LINK_WINDOW_AR} — والقديمة أبطلت.`
+        : 'أصدرت دعوة جديدة ولم ترسل — قناة البريد غير مفعّلة. سلّمه الرابط بنفسك أو فعّل البريد.',
       /* الرابطُ يُعاد لمن يملك إدارةَ المستخدمين وحدَه، وحين لا بريد: فهو
          السبيلُ الوحيدُ لتسليم الدعوة يدويّا — ولا يُسجَّل في الأثر. */
       link: mail.status === 'sent' ? undefined : inviteLink(token),
@@ -342,7 +342,7 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
      لا تتوقّف عند أوّل خطأ: كلُّ سطرٍ يُجاب عنه بحاله، فيُعاد ما فشل وحدَه. */
   app.post('/api/admin/users/bulk-invite', {
     preHandler: guard,
-    schema: { tags: ['admin-users'], summary: 'دعوةُ عدّةِ حساباتٍ بدورٍ واحد — سطرٌ لكلّ شخص' },
+    schema: { tags: ['admin-users'], summary: 'دعوة عدّة حسابات بدور واحد — سطر لكلّ شخص' },
   }, async (req) => {
     const body = z.object({
       roleIds: z.array(z.string()).min(1),
@@ -365,7 +365,7 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
       const email = row.email.trim().toLowerCase()
       try {
         if (await prisma.user.findUnique({ where: { email } })) {
-          results.push({ email, ok: false, sent: false, reasonAr: 'لهذا البريد حسابٌ بالفعل' })
+          results.push({ email, ok: false, sent: false, reasonAr: 'لهذا البريد حساب بالفعل' })
           continue
         }
         const { userId } = await auth.register(email, randomBytes(24).toString('hex'), row.displayName)
@@ -421,8 +421,8 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
        «super_admin» تُحوج قارئَها إلى من يترجمها له. */
     const named = await prisma.role.findMany({ where: { id: { in: roleIds } }, select: { nameAr: true } })
     await notifyAccountOwner(
-      prisma, id, 'account.roles_changed', 'تغيّرت أدوارُك',
-      `تغيّرت أدوارُك في أكاديمية وجيز. وأدوارُك الآن: ${named.map((r) => r.nameAr).join('، ')}.`,
+      prisma, id, 'account.roles_changed', 'تغيّرت أدوارك',
+      `تغيّرت أدوارك في أكاديمية وجيز. وأدوارك الآن: ${named.map((r) => r.nameAr).join('، ')}.`,
     )
     /* ═══ وتعيينُ الأدوار يُسجَّل ═══
 
@@ -468,7 +468,7 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
     | { target: { id: string; email: string; displayName: string; status: string; roles: { roleId: string }[] } }
   > => {
     const target = await prisma.user.findUnique({ where: { id: targetId }, include: { roles: true } })
-    if (!target) return { status: 404, error: { code: 'not_found', message_ar: 'لا حسابَ بهذا المعرّف' } }
+    if (!target) return { status: 404, error: { code: 'not_found', message_ar: 'لا حساب بهذا المعرّف' } }
     /* مديرُ النظام الأعلى يدير كلَّ حسابٍ سوى حسابه (والذاتُ محروسةٌ قبل هذا):
        كان القيدُ «رتبتك أو فوقها» يمنعه من إيقاف مديرِ نظامٍ آخر أو حذفِ
        حسابِ ديمو بدوره — فلا أحدٌ فوقَ الأعلى يفكّه. */
@@ -490,8 +490,8 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
       if ('error' in check) return reply.status(check.status).send({ error: check.error })
       await auth.suspend(id)
       await notifyAccountOwner(
-        prisma, id, 'account.suspended', 'أُوقف حسابُك',
-        'أُوقف حسابُك في أكاديمية وجيز، وأُبطلت جلساتُك المفتوحة. ولا يُقبل دخولُك حتّى يُرفع الإيقاف — فإن كنتَ ترى في ذلك خطأً فراسِل الدعم.',
+        prisma, id, 'account.suspended', 'أوقف حسابك',
+        'أوقف حسابك في أكاديمية وجيز، وأبطلت جلساتك المفتوحة. ولا يقبل دخولك حتّى يرفع الإيقاف — فإن كنت ترى في ذلك خطأ فراسل الدعم.',
       )
       await recordAudit(prisma, {
         actorId: req.auth!.userId, action: 'admin.user.suspend', entityType: 'user', entityId: id,
@@ -516,23 +516,23 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
     preHandler: guard,
     schema: {
       tags: ['admin-users'],
-      summary: 'توثيقُ بريدِ حسابٍ بيدِ موظّف — بسببٍ مكتوب',
+      summary: 'توثيق بريد حساب بيد موظّف — بسبب مكتوب',
       body: { type: 'object', required: ['reason'], properties: { reason: { type: 'string' } } },
     },
   }, async (req, reply) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const { reason } = z.object({
-      reason: z.string().trim().min(5, 'اكتب سببا يُقرأ — خمسةُ أحرفٍ على الأقلّ'),
+      reason: z.string().trim().min(5, 'اكتب سببا يقرأ — خمسة أحرف على الأقلّ'),
     }).parse(req.body)
 
     /* قيدُ الرتبة نفسُه: من لا يبلغ رتبةَ صاحب الحساب لا يمسّ حسابَه */
-    const check = await refuseRank(id, req.auth!.roles, 'توثيقُ بريد')
+    const check = await refuseRank(id, req.auth!.roles, 'توثيق بريد')
     if ('error' in check) return reply.status(check.status).send({ error: check.error })
 
     try {
       const out = await auth.verifyEmailByStaff(id, req.auth!.userId)
       if (out.alreadyVerified) {
-        return { ok: true, alreadyVerified: true, message_ar: 'بريدُ هذا الحساب موثَّقٌ أصلا — لا شيءَ تغيّر' }
+        return { ok: true, alreadyVerified: true, message_ar: 'بريد هذا الحساب موثّق أصلا — لا شيء تغيّر' }
       }
       await recordAudit(prisma, {
         actorId: req.auth!.userId,
@@ -542,7 +542,7 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
         reason,
         meta: { email: out.email, byStaff: true },
       })
-      return { ok: true, alreadyVerified: false, message_ar: `وُثِّق بريدُ «${check.target.displayName}» — وسُجِّل السببُ في أثر الحساب` }
+      return { ok: true, alreadyVerified: false, message_ar: `وثّق بريد «${check.target.displayName}» — وسجّل السبب في أثر الحساب` }
     } catch (e) {
       const err = e as { code?: string; message_ar?: string; status?: number }
       if (err.code) return reply.status(err.status ?? 409).send({ error: { code: err.code, message_ar: err.message_ar ?? 'تعذّر التوثيق' } })
@@ -554,23 +554,23 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
   app.post('/api/admin/users/:id/archive', {
     preHandler: guard,
     schema: {
-      tags: ['admin-users'], summary: 'أرشفةُ حساب — يُغلق وتُبطل جلساتُه وتبقى سجلّاتُه',
+      tags: ['admin-users'], summary: 'أرشفة حساب — يغلق وتبطل جلساته وتبقى سجلّاته',
       body: { type: 'object', required: ['reason'], properties: { reason: { type: 'string' } } },
     },
   }, async (req, reply) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const { reason } = z.object({ reason: z.string().trim().min(10).max(500) }).parse(req.body)
     if (id === req.auth!.userId) {
-      return reply.status(409).send({ error: { code: 'self_archive', message_ar: 'لا تؤرشف حسابك — استعمل إيقافَ الحساب الذاتيّ' } })
+      return reply.status(409).send({ error: { code: 'self_archive', message_ar: 'لا تؤرشف حسابك — استعمل إيقاف الحساب الذاتيّ' } })
     }
-    const check = await refuseRank(id, req.auth!.roles, 'أرشفةَ')
+    const check = await refuseRank(id, req.auth!.roles, 'أرشفة')
     if ('error' in check) return reply.status(check.status).send({ error: check.error })
     await auth.archive(id, req.auth!.userId, reason)
     /* والسببُ يصل صاحبَه كما وصل السجلَّ: سببٌ يُلزَم به الموظّفُ ثمّ يُخفى
        عمّن يمسّه إلزامٌ بلا فائدةٍ لصاحب الشأن. */
     await notifyAccountOwner(
-      prisma, id, 'account.archived', 'أُرشف حسابُك',
-      `أُرشف حسابُك في أكاديمية وجيز، وتبقى سجلّاتُك وشهاداتُك محفوظةً كما هي. والسببُ المسجَّل: ${reason}`,
+      prisma, id, 'account.archived', 'أرشف حسابك',
+      `أرشف حسابك في أكاديمية وجيز، وتبقى سجلّاتك وشهاداتك محفوظة كما هي. والسبب المسجّل: ${reason}`,
     )
     /* السببُ في عمودِه `reason` لا في `meta`: الشاشةُ تقرأ «السببُ المكتوب»
        من العمود، والمرشّحاتُ تعمل عليه. وإلزامُ سببٍ ثمّ إخفاؤه في حمولةٍ
@@ -584,15 +584,15 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
 
   app.post('/api/admin/users/:id/unarchive', {
     preHandler: guard,
-    schema: { tags: ['admin-users'], summary: 'إعادةُ تنشيطِ حسابٍ مؤرشَف' },
+    schema: { tags: ['admin-users'], summary: 'إعادة تنشيط حساب مؤرشف' },
   }, async (req, reply) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
-    const check = await refuseRank(id, req.auth!.roles, 'إعادةَ تنشيطِ')
+    const check = await refuseRank(id, req.auth!.roles, 'إعادة تنشيط')
     if ('error' in check) return reply.status(check.status).send({ error: check.error })
     await auth.unarchive(id)
     await notifyAccountOwner(
-      prisma, id, 'account.unarchived', 'أُعيد تنشيطُ حسابك',
-      'أُخرج حسابُك في أكاديمية وجيز من الأرشيف، وعاد دخولُك كما كان.',
+      prisma, id, 'account.unarchived', 'أعيد تنشيط حسابك',
+      'أخرج حسابك في أكاديمية وجيز من الأرشيف، وعاد دخولك كما كان.',
     )
     await recordAudit(prisma, {
       actorId: req.auth!.userId, action: 'admin.user.unarchive', entityType: 'user', entityId: id,
@@ -601,18 +601,18 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
     return { ok: true }
   })
 
-  app.post('/api/admin/users/:id/reinstate', { preHandler: guard, schema: { tags: ['admin-users'], summary: 'رفعُ الإيقاف — يعيد الحساب نشطا' } },
+  app.post('/api/admin/users/:id/reinstate', { preHandler: guard, schema: { tags: ['admin-users'], summary: 'رفع الإيقاف — يعيد الحساب نشطا' } },
     async (req, reply) => {
       const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
-      const check = await refuseRank(id, req.auth!.roles, 'رفعَ الإيقاف عن')
+      const check = await refuseRank(id, req.auth!.roles, 'رفع الإيقاف عن')
       if ('error' in check) return reply.status(check.status).send({ error: check.error })
       if (check.target.status !== 'suspended') {
         return reply.status(409).send({ error: { code: 'not_suspended', message_ar: 'هذا الحساب ليس موقوفا' } })
       }
       await auth.reinstate(id)
       await notifyAccountOwner(
-        prisma, id, 'account.reinstated', 'رُفع الإيقافُ عن حسابك',
-        'رُفع الإيقافُ عن حسابك في أكاديمية وجيز، وعاد دخولُك كما كان.',
+        prisma, id, 'account.reinstated', 'رفع الإيقاف عن حسابك',
+        'رفع الإيقاف عن حسابك في أكاديمية وجيز، وعاد دخولك كما كان.',
       )
       await recordAudit(prisma, {
         actorId: req.auth!.userId, action: 'admin.user.reinstate', entityType: 'user', entityId: id,
@@ -635,7 +635,7 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
      ويدلّ على البديل. */
   app.delete('/api/admin/users/:id', {
     preHandler: requirePermission('admin.users.purge'),
-    schema: { tags: ['admin-users'], summary: 'حذفُ حسابٍ نهائيّا — يُرفض إن كان له سجلٌّ إلّا قسرا من مدير النظام الأعلى بسبب' },
+    schema: { tags: ['admin-users'], summary: 'حذف حساب نهائيّا — يرفض إن كان له سجلّ إلّا قسرا من مدير النظام الأعلى بسبب' },
   }, async (req, reply) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const { force } = z.object({ force: z.enum(['1', 'true']).optional() }).parse(req.query ?? {})
@@ -643,7 +643,7 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
     if (id === req.auth!.userId) {
       return reply.status(409).send({ error: { code: 'self_purge', message_ar: 'لا تحذف حسابك من هنا' } })
     }
-    const check = await refuseRank(id, req.auth!.roles, 'حذفَ')
+    const check = await refuseRank(id, req.auth!.roles, 'حذف')
     if ('error' in check) return reply.status(check.status).send({ error: check.error })
 
     const footprint = await accountFootprint(prisma, id)
@@ -652,7 +652,7 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
       return {
         error: {
           code: 'has_history',
-          message_ar: `لا يُحذف هذا الحساب: له ${blockers.join('، و')} — وحذفُه يمحوها معه. أوقفه بدل ذلك، فيبقى السجلّ ويُمنع الدخول.`,
+          message_ar: `لا يحذف هذا الحساب: له ${blockers.join('، و')} — وحذفه يمحوها معه. أوقفه بدل ذلك، فيبقى السجلّ ويمنع الدخول.`,
           blockers,
           /* لمدير النظام الأعلى بابٌ ثانٍ: المحوُ بالسجلّ، بسبب */
           forceAllowed: canForcePurge(req),
@@ -663,10 +663,10 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
     /* المحوُ بالسجلّ: للأعلى وحده، وبسببٍ يُقرأ — حسابُ ديمو أو تجربةٍ لا دفترُ عميل */
     if (blockers.length > 0) {
       if (!canForcePurge(req)) {
-        return reply.status(403).send({ error: { code: 'force_forbidden', message_ar: 'المحوُ بالسجلّ لمن يملك حبّته وحده — أوقف الحساب بدل ذلك' } })
+        return reply.status(403).send({ error: { code: 'force_forbidden', message_ar: 'المحو بالسجلّ لمن يملك حبّته وحده — أوقف الحساب بدل ذلك' } })
       }
       if (!reason || reason.length < 5) {
-        return { error: { code: 'reason_required', message_ar: 'اكتب سببَ المحو بالسجلّ — يُحفظ في الأثر بعد أن يذهب الحساب' } }
+        return { error: { code: 'reason_required', message_ar: 'اكتب سبب المحو بالسجلّ — يحفظ في الأثر بعد أن يذهب الحساب' } }
       }
     }
 
@@ -716,7 +716,7 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
      بدوره وحدَه. ولا تُمسّ بها صلاحيّةُ أحدٍ دونه. */
   app.post('/api/admin/users/bulk-purge/preview', {
     preHandler: requirePermission('admin.users.purge_bulk'),
-    schema: { tags: ['admin-users'], summary: 'معاينةُ حذفٍ جملةً — من يُحذف ومن يُردّ ولماذا' },
+    schema: { tags: ['admin-users'], summary: 'معاينة حذف جملة — من يحذف ومن يردّ ولماذا' },
   }, async (req) => {
     const { ids } = z.object({ ids: z.array(z.string().uuid()).min(1) }).parse(req.body)
     return bulkPurge.preview(req.auth!.userId, ids)
@@ -725,7 +725,7 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
   app.post('/api/admin/users/bulk-purge', {
     preHandler: requirePermission('admin.users.purge_bulk'),
     config: { rateLimit: { max: 10, timeWindow: '15 minutes' } },
-    schema: { tags: ['admin-users'], summary: 'تنفيذُ الحذف جملةً — يشترط كتابةَ عدد ما سيُحذف' },
+    schema: { tags: ['admin-users'], summary: 'تنفيذ الحذف جملة — يشترط كتابة عدد ما سيحذف' },
   }, async (req) => {
     const body = z.object({
       ids: z.array(z.string().uuid()).min(1),
@@ -744,7 +744,7 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
      مهما علت رتبتُه. */
   app.get('/api/admin/accounts/reset/preview', {
     preHandler: requirePermission('admin.accounts.reset'),
-    schema: { tags: ['admin-users'], summary: 'معاينةُ إعادة ضبط الحسابات — أعدادٌ وما يُحمى وما يبقى، بلا تنفيذ' },
+    schema: { tags: ['admin-users'], summary: 'معاينة إعادة ضبط الحسابات — أعداد وما يحمى وما يبقى، بلا تنفيذ' },
   }, async (req) => {
     const { mode } = z.object({ mode: z.enum(['purge', 'archive']).optional().default('purge') })
       .parse(req.query ?? {})
@@ -753,7 +753,7 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
 
   app.post('/api/admin/accounts/reset', {
     preHandler: requirePermission('admin.accounts.reset'),
-    schema: { tags: ['admin-users'], summary: 'تنفيذُ إعادة ضبط الحسابات — بعددٍ يُكتب وسببٍ يُحفظ، وبنسخةٍ مُثبَتة' },
+    schema: { tags: ['admin-users'], summary: 'تنفيذ إعادة ضبط الحسابات — بعدد يكتب وسبب يحفظ، وبنسخة مثبتة' },
   }, async (req, reply) => {
     const body = z.object({
       mode: z.enum(['purge', 'archive']).default('purge'),

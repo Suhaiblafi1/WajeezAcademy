@@ -205,12 +205,12 @@ export function buildDossierHtml(
       k: 'من كتالوجنا',
       v: ctx.courseTitles.length
         ? esc(ctx.courseTitles.join(' · '))
-        : (app.teachableOther || proposed.length ? '' : 'لم يختر دورةً من الكتالوج'),
+        : (app.teachableOther || proposed.length ? '' : 'لم يختر دورة من الكتالوج'),
     },
     /* السجلّاتُ أوّلا، والفقرةُ القديمةُ كما كتبها صاحبُها حين لا سجلّ:
        الطلبُ الواحد لا يحمل الاثنين، ولا تُقسَّم فقرةٌ أسطرا تخمينا. */
     {
-      k: 'ودوراتٌ بقلمه',
+      k: 'ودورات بقلمه',
       v: proposed.length
         ? `<ul>${proposed.map((c) => `<li>${esc(proposalLine(c))}</li>`).join('')}</ul>`
         : para(app.teachableOther),
@@ -226,7 +226,7 @@ export function buildDossierHtml(
        لَقرأ المراجعُ عن مئةِ طلبٍ قديمٍ أنّهم قالوا «لا تسجيلات عندي»، وهم
        لم يُسألوا. فالحالاتُ ثلاثٌ في القراءة كما هي في التخزين. */
     {
-      k: 'تسجيلاتٌ جاهزة',
+      k: 'تسجيلات جاهزة',
       v: esc(recordingsSummaryAr(app.hasCourseRecordings, app.wantsToRecordCourses)),
     },
   ])
@@ -246,7 +246,7 @@ export function buildDossierHtml(
   const evidence = rows([
     { k: 'دورات سابقة', v: previous.map((c) => esc(join([String(c.title ?? ''), String(c.org ?? ''), c.year ? String(c.year) : '', c.learnersCount ? `${c.learnersCount} متدربا` : ''], ' — '))).filter(Boolean).join('<br>') },
     { k: 'إجمالي من درّبهم', v: typeof app.totalLearners === 'number' ? `<span dir="ltr">${app.totalLearners}</span>` : '' },
-    { k: 'جهاتٌ درّب لديها', v: para(app.previousOrgs) },
+    { k: 'جهات درّب لديها', v: para(app.previousOrgs) },
     { k: 'ملاحظاته على أدلّته', v: para(app.evidenceNotes) },
     {
       k: 'ما رفعه',
@@ -296,8 +296,8 @@ export function buildDossierHtml(
 </style></head><body>
 <header>
   <div class="brand">أكاديمية وجيز</div>
-  <h1>ملفُّ متقدّمٍ للتدريب — ${esc(app.fullName)}</h1>
-  <p class="lede">أعدّته المنصّة تلقائيّا حين حجز المتقدّمُ مقابلته. سرّيّ — للجنة المراجعة.</p>
+  <h1>ملفّ متقدّم للتدريب — ${esc(app.fullName)}</h1>
+  <p class="lede">أعدّته المنصّة تلقائيّا حين حجز المتقدّم مقابلته. سرّيّ — للجنة المراجعة.</p>
   <div class="meta">
     المقابلة: <b>${esc(when)}</b>
     · رقم الطلب: <b dir="ltr">${esc(app.reference)}</b>
@@ -312,8 +312,8 @@ ${section('توفّره', availabilityRows)}
 ${section('أدلّته وما سبق له', evidence)}
 ${app.motivation ? section('لماذا وجيز — بقلمه', `<p class="prose quote">${para(app.motivation)}</p>`) : ''}
 <footer>
-  السيرةُ الذاتيّةُ مرفقةٌ بهذه الرسالة ملفًّا منفصلا إن رفعها.
-  ولتفاصيل الطلب كلِّها وسجلِّ حالاته: ${esc(publicSiteUrl())}/admin/trainer-applications
+  السيرة الذاتيّة مرفقة بهذه الرسالة ملفّا منفصلا إن رفعها.
+  ولتفاصيل الطلب كلّها وسجلّ حالاته: ${esc(publicSiteUrl())}/admin/trainer-applications
 </footer>
 </body></html>`
 }
@@ -383,7 +383,7 @@ export async function sendInterviewDossier(
      الخامَّ من الوصف نفسِه، فلا يخسر قارئُ النصّ شيئا. */
   const appsUrl = `${publicSiteUrl()}/admin/trainer-applications`
   const mail = renderMail({
-    heading: `حجز ${app.fullName} مقابلتَه عبر Calendly`,
+    heading: `حجز ${app.fullName} مقابلته عبر Calendly`,
     preheader: `${when} — الطلب ${app.reference}`,
     blocks: [
       { kind: 'facts', rows: [
@@ -393,11 +393,11 @@ export async function sendInterviewDossier(
         ...(app.phone ? [{ label: 'الجوال', value: `${app.phoneCountryCode ?? ''}${app.phone}` }] : []),
       ] },
       { kind: 'p', text: pdf
-        ? 'ملفُّ الطلب مرفقٌ بهذه الرسالة (PDF).'
-        : `تعذّر إرفاق ملفّ الطلب — ${pdfError ?? 'سببٌ غيرُ معروف'}. وتفاصيلُه في شاشة «طلبات المدربين».` },
+        ? 'ملفّ الطلب مرفق بهذه الرسالة (PDF).'
+        : `تعذّر إرفاق ملفّ الطلب — ${pdfError ?? 'سبب غير معروف'}. وتفاصيله في شاشة «طلبات المدربين».` },
       { kind: 'p', text: cvBytes
-        ? `وسيرتُه الذاتيّةُ مرفقةٌ ملفًّا منفصلا: ${cv?.originalName}`
-        : 'ولم يرفع سيرةً ذاتيّة.' },
+        ? `وسيرته الذاتيّة مرفقة ملفّا منفصلا: ${cv?.originalName}`
+        : 'ولم يرفع سيرة ذاتيّة.' },
       { kind: 'cta', label: 'افتح شاشة طلبات المدربين', href: appsUrl },
     ],
   })
@@ -411,7 +411,7 @@ export async function sendInterviewDossier(
 
   const sent = await sendDirectEmail(prisma, {
     to: recipients.join(', '),
-    subject: `مقابلةٌ محجوزة: ${app.fullName} — ${app.reference}`,
+    subject: `مقابلة محجوزة: ${app.fullName} — ${app.reference}`,
     ...mail,
     attachments,
   })

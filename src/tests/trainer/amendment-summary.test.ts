@@ -9,7 +9,10 @@
  * على الرسالة كما تُبنى — لا على ورود جملةٍ في ملفّ.
  */
 
-import { describe, expect, it } from 'vitest'
+import { describe, expect as vexpect, it } from 'vitest'
+import { plainExpect } from '../../../server/tests/helpers/plain-expect'
+/* نصوصُ الخادم بلا تشكيلٍ إعرابيّ بعد «اللغة البيضاء» — والمنتظَرُ هنا قبلها: يُقارَن الطرفان بلا تشكيل */
+const expect = plainExpect(vexpect)
 import {
   PERSONAL_CHANGES_TITLE_AR, amendmentTemplateNoteAr, reissueChangesView,
 } from '@/application/trainer/contract-resign'

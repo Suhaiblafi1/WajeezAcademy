@@ -71,7 +71,7 @@ export class CertificateService {
         failures = ['تعذّر تقييم قواعد الإكمال']
       }
       /* حاجزُ البريد صارمٌ في الإصدار، فيُعرض هنا سببا لا مفاجأةً بعد الضغط */
-      if (!e.user.emailVerifiedAt) failures = [...failures, 'بريد المتعلّم غير موثَّق']
+      if (!e.user.emailVerifiedAt) failures = [...failures, 'بريد المتعلّم غير موثّق']
       return {
         enrollmentId: e.id,
         learnerName: e.user.displayName,
@@ -112,7 +112,7 @@ export class CertificateService {
        يعلق هنا: الإصدار بيد الإدارة، فترى السبب وتطلب من المتعلم التوثيق. */
     const learner = await this.prisma.user.findUnique({ where: { id: e.userId } })
     if (!learner?.emailVerifiedAt) {
-      throw new AuthError('email_unverified', 'بريد المتعلم غير موثَّق — الشهادة تُنسب إلى شخص، فلا تصدر قبل إثبات أن عنوانه يصله', 409)
+      throw new AuthError('email_unverified', 'بريد المتعلم غير موثّق — الشهادة تنسب إلى شخص، فلا تصدر قبل إثبات أن عنوانه يصله', 409)
     }
     /* الرقمُ يُولَّد هنا لا يُدخَل يدا — وهو كذلك منذ كُتبت الخدمة.
 
@@ -215,8 +215,8 @@ export class CertificateService {
        وبعد المعاملة لا داخلَها: إشعارٌ يفشل لا ينقض سحبا وقع. */
     await safeNotify(this.prisma, {
       userId: cert.enrollment.userId, channel: 'in_app',
-      title: 'أُلغيت شهادتُك',
-      body: `أُلغيت شهادتُك رقم ${cert.number}، وصار التحقّقُ العامُّ يعرضها ملغاةً ومعها سببُها: ${reason}. راسِلنا إن كان لديك ما تبيّنه.`,
+      title: 'ألغيت شهادتك',
+      body: `ألغيت شهادتك رقم ${cert.number}، وصار التحقّق العامّ يعرضها ملغاة ومعها سببها: ${reason}. راسلنا إن كان لديك ما تبيّنه.`,
       templateKey: 'certificate.revoked',
       data: { certificateId, number: cert.number },
     })
