@@ -26,8 +26,8 @@ interface InterestView {
 
 /** ما يُقال بعد الجواب — بما وقع فعلا لا بما ضُغط */
 const DONE_AR: Record<InterestAnswer, string> = {
-  interested: 'شكرا لك. عاد طلبك إلى المراجعة بملفّه كما هو، ونتواصل معك قريبا لنرى أنسب فصل لدوراتك.',
-  not_interested: 'شكرا لك على وقتك معنا. سحبنا طلبك كما طلبت، ولك أن تتقدّم من جديد متى شئت.',
+  interested: 'شكرا لك. عاد طلبك إلى المراجعة كما هو، وسنتواصل معك قريبا لاختيار أنسب فصل لدوراتك.',
+  not_interested: 'شكرا لك على وقتك معنا. سحبنا طلبك كما طلبت، ويمكنك التقديم من جديد متى شئت.',
 }
 
 export default function DeferralInterest() {
@@ -72,7 +72,7 @@ export default function DeferralInterest() {
           <>
             <p className="mt-4 text-read leading-8">
               أهلا {view.firstName}. قبل شهرين أجّلنا طلبك (<span dir="ltr">{view.reference}</span>) إلى الفصول
-              القادمة، ووعدناك أن نسألك عن اهتمامك. اختر ما يناسبك — وتحت كلّ خيار ما يقع به:
+              القادمة، ووعدنا أن نسألك. اختر ما يناسبك، وتحت كل خيار ما يحدث بعده:
             </p>
             <div className="mt-5 grid gap-3">
               {yes && (
@@ -98,7 +98,7 @@ export default function DeferralInterest() {
               )}
             </div>
             <p className="mt-5 text-read leading-7 text-muted-foreground">
-              ولك أن تردّ على رسالتنا بما شئت بدل الضغط — يقرؤها فريقنا.
+              ويمكنك بدلا من ذلك الرد على رسالتنا، ويقرؤه فريقنا.
             </p>
           </>
         )}

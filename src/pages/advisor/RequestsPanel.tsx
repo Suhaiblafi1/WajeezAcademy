@@ -83,7 +83,7 @@ export default function RequestsPanel({ caseId }: { caseId: string }) {
         courseId: kind === 'discount' ? undefined : courseId,
         reasonAr: reason.trim(),
       })
-      toast('رفع الطلب — تراه الإدارة في طابورها')
+      toast('أرسل الطلب إلى الإدارة')
       setOpen(false); setReason(''); setCourseId('')
       await load()
     } catch (e) {
@@ -130,7 +130,7 @@ export default function RequestsPanel({ caseId }: { caseId: string }) {
 
             {kind === 'discount' ? (
               <>
-                <Field label="الخصم" htmlFor="req-mode" required hint={`النسبة بين ١ و${MAX_PERCENT} — ما فوقها قرار إدارة لا طلب مستشار`}>
+                <Field label="الخصم" htmlFor="req-mode" required hint={`النسبة بين ١ و${MAX_PERCENT} — أكثر من ذلك تقرره الإدارة وحدها`}>
                   <div className="flex gap-2">
                     <select
                       id="req-mode" value={mode} onChange={(e) => setMode(e.target.value as typeof mode)}
@@ -187,7 +187,7 @@ export default function RequestsPanel({ caseId }: { caseId: string }) {
               htmlFor="req-reason"
               required
               wide
-              hint="يقرؤه من يقرّر — فاكتب ما يجعل القرار ممكنا بلا سؤالك."
+              hint="اكتب ما يكفي ليقرر صاحب القرار دون الرجوع إليك."
             >
               <textarea
                 id="req-reason" rows={3} value={reason} onChange={(e) => setReason(e.target.value)}

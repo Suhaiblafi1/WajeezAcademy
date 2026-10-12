@@ -236,9 +236,9 @@ export interface CompositeView {
 }
 
 const VARIANT_AR: Record<CompositeView["variant"], { label: string; hint: string }> = {
-  starter: { label: "نسخة البداية", hint: "جوهر الخطة بأقل عبء — تبدأ بها وتتوسع لاحقا" },
-  full: { label: "النسخة الكاملة", hint: "كل الدورات الأساسية مع ما يناسب ظرفك من الشرطية" },
-  extended: { label: "النسخة الموسعة", hint: "الكاملة مع دورات جسرية تربط المجالين" },
+  starter: { label: "نسخة البداية", hint: "أساس الخطة بأقل جهد، وتتوسع لاحقا" },
+  full: { label: "النسخة الكاملة", hint: "كل الدورات الأساسية مع الإضافية المناسبة لظرفك" },
+  extended: { label: "النسخة الموسعة", hint: "الكاملة مع دورات تربط المجالين" },
 };
 
 /* سعر الخطة — أسفل الصفحة قبل التسجيل مباشرة، لا في أول بطاقة يراها المتعلم.
@@ -271,7 +271,7 @@ export function ResultPriceCard({ courseIds }: { courseIds: readonly string[] })
             <span className="text-sm text-muted-foreground">للدورة</span>
           </div>
           <p className="mt-1.5 text-read leading-5 text-teal-light-ink">
-            وخصم كبير على خطتك كاملة ({courseIds.length} دورات) مقابل شرائها دورة دورة
+            وخصم كبير عند شراء خطتك كاملة ({courseIds.length} دورات) بدل شرائها دورة دورة
           </p>
         </>
       ) : (
@@ -290,8 +290,8 @@ export function ResultPriceCard({ courseIds }: { courseIds: readonly string[] })
         <span className="text-muted-foreground">— يكتب في صفحة الدفع.</span>
       </Inset>
       <p className="mt-3 text-read leading-5 text-muted-foreground">
-        سعر خطتك يحدّد بعد أن تعتمدها — أنت من يقرّر دوراتها.
-        {cheapest && known < courseIds.length && " وبعض دوراتها لم تفتح لها شعبة بعد."} ولا يطلب دفع الآن.
+        يتحدد سعر خطتك بعد اعتمادها، فأنت تختار دوراتها.
+        {cheapest && known < courseIds.length && " وبعض دوراتها لم تفتح لها شعبة بعد."} ولا تدفع شيئا الآن.
       </p>
     </Panel>
   );
@@ -364,7 +364,7 @@ export function WhyThisPathway({
       {evidence.length > 0 && (
         <>
           <p className="mt-2 text-read leading-relaxed text-muted-foreground">
-            لم نخمّن — هذه هي إجاباتك التي بنيت عليها التوصية:
+            هذه إجاباتك التي بنينا عليها التوصية:
           </p>
           <ul className="mt-4 space-y-2.5">
             {evidence.map((r) => (
@@ -411,7 +411,7 @@ export function WhyThisPathway({
                 </ul>
               ) : (
                 <p className="mt-1 text-read leading-5 text-muted-foreground">
-                  لا مانع قائم — قسنا ما تسمح المنصّة بقياسه، والباقي يبقى مجهولا لا مفترضا.
+                  لا مانع. قسنا ما يمكن قياسه، وما لم نقسه لا نفترضه.
                 </p>
               )}
               {/* ── الأساسُ رقما لا عبارة ──
@@ -422,9 +422,9 @@ export function WhyThisPathway({
               {basis && basis.measurable > 0 && (
                 <p className="mt-2 border-t border-white/8 pt-2 text-read leading-5 text-muted-foreground">
                   قسنا <b className="text-foreground">{basis.measured}</b> من{" "}
-                  <b className="text-foreground">{basis.measurable}</b> مهارة تسمح المنصّة بقياسها في هذا المسار
+                  <b className="text-foreground">{basis.measurable}</b> مهارة يمكن قياسها في هذا المسار
                   {basis.unknown > 0 && (
-                    <> — و<b className="text-foreground">{basis.unknown}</b> من مهاراته تبقى مجهولة عندنا</>
+                    <> — و<b className="text-foreground">{basis.unknown}</b> من مهاراته لم نقسها</>
                   )}.
                 </p>
               )}
@@ -447,8 +447,8 @@ export function WhyThisPathway({
             ))}
           </div>
           <p className="mt-4 border-t border-white/10 pt-3 text-read leading-relaxed text-muted-foreground">
-            ترتفع حين تتفق إجاباتك، وتنخفض عند التناقض أو حين تقف حالتك بين مسارين متقاربين.
-            فوق ٧٥٪ نحن واثقون بالترشيح، وبين ٥٠ و٧٥٪ نعرض معه بدائل، ودون ذلك نحيلك لمستشار بشري قبل أي قرار.
+            ترتفع حين تتفق إجاباتك، وتنخفض عند التناقض أو حين تكون بين مسارين متقاربين.
+            فوق ٧٥٪ نثق بالترشيح، وبين ٥٠ و٧٥٪ نقترح معه بدائل، وأقل من ذلك نحيلك لمستشار قبل أي قرار.
           </p>
         </Card>
       )}
@@ -493,7 +493,7 @@ export function CompositePlan({ composite }: { composite: CompositeView }) {
         {/* المسارات التي استُمدت منها الخطة */}
         {represented.length > 0 && (
           <p className="mt-3 text-read leading-relaxed text-muted-foreground">
-            ركّبت من: {represented.map((p) => p.name).join(" + ")}
+            جمعناها من: {represented.map((p) => p.name).join(" + ")}
           </p>
         )}
 

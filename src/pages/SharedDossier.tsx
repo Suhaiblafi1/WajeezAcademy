@@ -151,7 +151,7 @@ export default function SharedDossier() {
         <h1 className="text-lg font-black">لا يفتح هذا الرابط</h1>
         <p className="mt-3 text-read leading-7 text-muted-foreground">{error}</p>
         <p className="mt-2 text-read leading-6 text-muted-foreground">
-          الروابط محدودة الأجل وتلغى عند الحاجة — اطلب رابطا جديدا ممّن أرسله إليك.
+          للروابط مدة صلاحية وقد تلغى. اطلب رابطا جديدا ممن أرسله لك.
         </p>
       </div>
     )
@@ -199,7 +199,7 @@ export default function SharedDossier() {
       <Panel as="section" className="mt-4">
         <h2 className="text-sm font-black">تقييمك</h2>
         <p className="mt-1 text-read leading-6 text-muted-foreground">
-          احفظ متى شئت — الناقص يقبل، وتستطيع العودة فتتمّه. ولا يرى غيرك ما تكتب هنا قبل أن يكتب رأيه.
+          احفظ متى شئت ولو لم تكمل، وعد لإكماله لاحقا. لا يرى غيرك ما تكتبه قبل أن يكتب رأيه.
         </p>
 
         <div className="mt-4 space-y-2">
@@ -243,7 +243,7 @@ export default function SharedDossier() {
         <label className="mt-4 block">
           <span className="text-read font-bold">ملاحظة على دوراته</span>
           <span className="block text-read leading-6 text-muted-foreground">
-            لا تعدّل دوراته من هنا — تصله الملاحظة فيحدّث مؤهّلاته بنفسه.
+            لا تعدّل دوراته من هنا؛ تصله ملاحظتك ويحدّثها بنفسه.
           </span>
           <textarea value={coursesNote} onChange={(e) => setCoursesNote(e.target.value)} rows={3}
             maxLength={4000}
@@ -263,7 +263,7 @@ export default function SharedDossier() {
             **ولا يقع بهذين عقدٌ ولا دفعة**: يُقرآن عند القرار، ويُبنى العقدُ
             في موضعه. */}
         <Inset as="fieldset" className="mt-5 p-4">
-          <legend className="px-1 text-read font-bold">الاتفاق الماليّ — إن جرى ذكره</legend>
+          <legend className="px-1 text-read font-bold">الاتفاق الماليّ — إن ذكر</legend>
           <p className="text-read leading-6 text-muted-foreground">
             لغايات التقديم فقط. اتركهما فارغين إن لم يذكر المال في حديثك معه.
           </p>
@@ -293,8 +293,8 @@ export default function SharedDossier() {
           <legend className="text-read font-bold">في أيّ مقابلة تحكم؟</legend>
           {bookable.length === 0 ? (
             <p className="mt-2 text-read leading-6 text-muted-foreground">
-              لا مقابلة مجدولة لهذا المتقدّم بعد — والقرار يعلّق بلقاء وقع، فلا يحفظ
-              قرار قبلها. وما تكتبه من درجات وملاحظات يحفظ ويبقى.
+              لا مقابلة مجدولة لهذا المتقدم بعد. القرار يرتبط بلقاء تم، فلا يحفظ
+              قبلها. أما الدرجات والملاحظات فتحفظ.
             </p>
           ) : (
             <div className="mt-2 flex flex-wrap gap-2">
@@ -316,7 +316,7 @@ export default function SharedDossier() {
           )}
           {canceled.length > 0 && (
             <p className="mt-2 text-read leading-6 text-muted-foreground">
-              وملغاة لا يحكم فيها: {canceled.map((iv) => fmtDateTime(new Date(iv.scheduledAt))).join(' · ')}
+              ملغاة لا قرار فيها: {canceled.map((iv) => fmtDateTime(new Date(iv.scheduledAt))).join(' · ')}
             </p>
           )}
         </fieldset>
@@ -342,7 +342,7 @@ export default function SharedDossier() {
             ))}
           </div>
           {!interviewId && bookable.length > 0 && (
-            <p className="mt-2 text-read leading-6 text-muted-foreground">اختر المقابلة أوّلا — القرار ينسب إلى لقاء بعينه.</p>
+            <p className="mt-2 text-read leading-6 text-muted-foreground">اختر المقابلة أولا، فالقرار يرتبط بلقاء محدد.</p>
           )}
           {/* وما يقع حين يُحفَظ: القرارُ يُكتب في الموعد نفسِه، فلا يُسجَّل مرّتين */}
           {verdict && interviewId && (
@@ -351,9 +351,9 @@ export default function SharedDossier() {
                   و«مؤجَّل» (٦ أكتوبر ٢٠٢٦) لا يُفهم من لفظه أنّه مناسبٌ ينقصه طلب. */}
               <b className="text-foreground">«{outcomeLabelAr(verdict)}»:</b>{" "}
               {INTERVIEW_OUTCOMES.find((o) => o.key === verdict)?.whatAr}.{" "}
-              يسجّل نتيجة لهذا اللقاء. وإن حكم فيه قارئ آخر
-              بغيره عرض القولان معا بأسمائكما، ولم يكتب في الموعد شيء حتّى تتّفقا.
-              ولا يصل صاحب الطلب شيء من حكمك — القرار وبريده في يد الإدارة.
+              يسجّل نتيجة لهذا اللقاء. وإن اختار مراجع آخر
+              غيره يظهر القراران باسميكما، ولا يسجل شيء حتى تتفقا.
+              ولا يصل صاحب الطلب شيء من قرارك، فالقرار ورسالته بيد الإدارة.
             </p>
           )}
         </fieldset>

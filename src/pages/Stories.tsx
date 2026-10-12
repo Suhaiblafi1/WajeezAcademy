@@ -30,7 +30,7 @@ export default function StoriesPage() {
         </div>
         <h1 className="mt-5 text-2xl font-black sm:text-3xl md:text-4xl">هكذا تبدو الرحلة عندنا</h1>
         <p className="mx-auto mt-3 max-w-xl leading-8 text-muted-foreground">
-          كل رحلة تبدأ بتشخيص أو بمسار جاهز، وتمر بدورات الكتالوج، وتنتهي بمشروع تخرج يدخل ملفك — ومعها قياس لما تغير فعلا.
+          كل رحلة تبدأ بتشخيص أو بمسار جاهز، وتمر بدورات الكتالوج، وتنتهي بمشروع تخرج في ملفك، مع قياس لما تغير فعلا.
         </p>
         <p className="mx-auto mt-3 max-w-lg text-read leading-5 text-muted-foreground">
           نماذج توضيحية مركبة من أنماط شائعة بين المتعلمين — ليست شهادات لأشخاص حقيقيين.
@@ -76,7 +76,7 @@ export default function StoriesPage() {
         <div className="text-center">
           <h2 className="text-xl font-black sm:text-2xl md:text-3xl">ماذا يقول مستخدمو تطبيق وجيز عن تجربتهم مع العلامة</h2>
           <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-muted-foreground">
-            هذه الآراء عن تطبيق وجيز للكتب والملخصات — المنصة الأم التي خرجت منها الأكاديمية — من تقييمات المستخدمين على المتجرين.
+            آراء المستخدمين في المتجرين عن تطبيق وجيز للكتب والملخصات، المنصة الأم للأكاديمية.
           </p>
         </div>
         <div className="mt-10 grid gap-5 md:grid-cols-3">

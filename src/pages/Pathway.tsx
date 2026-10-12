@@ -454,7 +454,7 @@ export default function PathwayPage() {
             <Card tone="warn" className="story-fade mt-6 px-5 py-4">
               <p className="text-sm font-black text-gold-ink">خطتك المركبة: «{compositeCtx.name_ar}»</p>
               <p className="mt-1 text-read leading-relaxed text-muted-foreground">
-                الدورات أدناه هي تركيبتك كما ركّبها تشخيصك من أكثر من مجال — تدار وتتابع عبر مسار «{pathway.name}» المضيف.
+                هذه دوراتك التي اختارها تشخيصك من أكثر من مجال، وتتابعها ضمن مسار «{pathway.name}».
               </p>
             </Card>
           ) : null}
@@ -522,7 +522,7 @@ export default function PathwayPage() {
               ودوراته وفريقه التدريبي ومكان الدفع، بلا حاجزٍ سوى لحظة إتمام
               الشراء نفسها. كان هذا السطر خلف تسجيلٍ كامل، وقد سقط الحاجز. */}
           <p id="trainers-reveal" className="story-fade mt-8 scroll-mt-24 text-center text-read leading-5 text-muted-foreground">
-            كل دورة يقدّمها المدرّب الأعمق في موضوعها —{" "}
+            كل دورة يقدّمها أكثر المدربين خبرة في موضوعها —{" "}
             <button
               type="button"
               onClick={() => setTrainersOpen(true)}
@@ -610,9 +610,9 @@ export default function PathwayPage() {
                 حالتك تستحق جلسة مع مستشار بشري
               </h2>
               <p className="mt-3 text-sm leading-loose text-foreground">
-                تشخيصك لم يعطنا يقينا كافيا بأنّ هذا المسار هو الأنسب لك — أو أنّك
-                طلبت استشارة. جلسة تعريفيّة (٣٠ دقيقة) تصوغ خطّتك بدقّة، وتشخيصك
-                يجعلها أقصر وأعمق. ولا تدفع شيئا قبلها.
+                لم يكف تشخيصك لنتأكد أن هذا المسار هو الأنسب لك، أو أنك
+                طلبت استشارة. جلسة تعريفية (٣٠ دقيقة) تبني خطتك بدقة،
+                ولا تدفع شيئا قبلها.
               </p>
               <AdvisorContact
                 text="مرحبا، أكملت مؤشر وجيز وأخبرني أن حالتي تستحق جلسة مع مستشار بشري — أريد حجز الجلسة التعريفية."
@@ -641,7 +641,7 @@ export default function PathwayPage() {
                 {/* دورة أو أكثر — اختيار حر */}
                 <Inset className="flex flex-col">
                   <p className="text-sm font-black">دورة أو أكثر من المسار</p>
-                  <p className="mt-0.5 text-read text-muted-foreground">اختر ما تحتاجه — ورسومك مجموعها فقط</p>
+                  <p className="mt-0.5 text-read text-muted-foreground">اختر ما تحتاجه، وتدفع ثمنه فقط</p>
                   <div className="mt-3 space-y-1.5">
                     {buyableCourses.map((c) => {
                       const on = pickedIds.includes(c.id);
@@ -822,7 +822,7 @@ export default function PathwayPage() {
                         )}
                       </div>
                       <p className="mt-1.5 text-read leading-5 text-muted-foreground">
-                        {courseIds.length} دورات — وهو ما تصدره الفاتورة، ويتغيّر إن غيّرت الدورات.
+                        {courseIds.length} دورات في الفاتورة، ويتغير العدد إن غيّرت الدورات.
                       </p>
                       {/* خصمُ الفئة — نفس مطويّة صفحة شراء الدورة المفردة،
                           فالوعدُ واحد أينما ظهر. النسبةُ تُقال داخل المطويّة
@@ -861,7 +861,7 @@ export default function PathwayPage() {
                         {pricesLoaded ? "يعلن السعر مع فتح الشعبة" : "يقرأ السعر…"}
                       </p>
                       <p className="text-muted-foreground">
-                        نسعّر كل شعبة على حدة، ولا نعرض رقما قبل أن يكون هو الرقم الذي تدفعه.
+                        نسعّر كل شعبة وحدها، ولا نعرض إلا السعر الذي ستدفعه فعلا.
                       </p>
                       {/* والسعرُ يبقى مجهولا، أمّا الموعدُ فلا: «مع فتح الشعبة» متى؟
                           — هذا هو الجواب (البند ٥٢). */}
@@ -951,7 +951,7 @@ export default function PathwayPage() {
             <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
               {[
                 { icon: MonitorPlay, t: "دورات مسجلة + جلسات مباشرة", d: "وحدات فيديو وجلسة حية مع المدرب ومهمة تطبيقية لكل دورة" },
-                { icon: ClipboardCheck, t: "واجبات تراجع بشريا", d: "مدربك يقرأ واجبك ويعطيك تغذية راجعة عملية — لا تصحيحا آليا" },
+                { icon: ClipboardCheck, t: "واجبات تراجع بشريا", d: "مدربك يقرأ واجبك ويعطيك ملاحظات عملية — لا تصحيحا آليا" },
                 { icon: FolderKanban, t: "مشروع تخرج حقيقي", d: "تبني مخرجا على واقعك وتقدمه للمراجعة قبل الاعتماد" },
                 { icon: BadgeCheck, t: "شهادة موثقة بشروط إنجاز", d: "مرتبطة بالحضور والاختبار والمشروع — لا شهادة مشاهدة" },
                 { icon: RouteIcon, t: "خطة تقدم شخصية", d: "خطوة تالية واضحة بعد المسار — ماذا تتعلم بعده ولماذا" },
@@ -993,7 +993,7 @@ export default function PathwayPage() {
 
           <p className="mt-8 flex items-center justify-center gap-2 text-center text-read leading-5 text-muted-foreground">
             <Sparkles className="h-3.5 w-3.5" />
-            منصة الطالب الكاملة (الدورات، الواجبات، المتابعة) تفتح تلقائيا بعد أول دفع ناجح — وهي محطتنا القادمة.
+            منصة الطالب الكاملة (الدورات، الواجبات، المتابعة) تفتح تلقائيا بعد أول دفع ناجح.
           </p>
         </div>
       )}
@@ -1005,7 +1005,7 @@ export default function PathwayPage() {
       {pendingCheckout && (
         <Modal onClose={() => setPendingCheckout(null)} label="سجّل لإتمام الشراء" panelClassName="w-full max-w-md">
           <AuthGate
-            message="تصفح المسار مفتوح للجميع بلا تسجيل — والتسجيل هنا فقط لإتمام شرائك وربطه بحسابك."
+            message="التصفح مفتوح بلا تسجيل، والتسجيل فقط لإتمام الشراء وربطه بحسابك."
             source="checkout_gate"
             onDone={() => {
               setUser(readUserName());

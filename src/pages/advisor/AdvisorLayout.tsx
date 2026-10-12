@@ -41,7 +41,7 @@ export default function AdvisorLayout({ children, title }: { children: React.Rea
         <Headset className="h-12 w-12 text-[#38A7B4]" />
         <h1 className="mt-5 text-2xl font-black">بوابة المستشار</h1>
         <p className="mt-2 max-w-md text-center text-sm leading-7 text-muted-foreground">
-          تفتح هذه البوابة بحساب مستشار معتمد، ويرى كلّ منهم الحالات المسندة إليه وحدها.
+          تفتح هذه البوابة بحساب مستشار معتمد، ويرى كل مستشار حالاته فقط.
         </p>
         <Link to="/auth" className="mt-7 rounded-full bg-teal px-6 py-3 font-black text-on-teal transition hover:bg-teal-light">
           تسجيل الدخول
@@ -67,10 +67,10 @@ export default function AdvisorLayout({ children, title }: { children: React.Rea
         <Headset className="h-12 w-12 text-[#38A7B4]" />
         <h1 className="mt-5 text-2xl font-black">بوّابة المستشار</h1>
         <p className="mt-2 max-w-md text-center text-sm leading-7 text-muted-foreground">
-          حسابك يملك صلاحيّات المستشار، لكن لا ملفّ مستشار مرتبطا به — والحالات والعمولة والتقييمات كلّها تقرأ من ذلك الملفّ. فلا شيء هنا لنعرضه لك.
+          لحسابك صلاحيات المستشار، لكن لا يرتبط به ملف مستشار، ومنه تأتي الحالات والعمولة والتقييمات. لذلك لا يوجد ما نعرضه هنا.
         </p>
         <p className="mt-3 max-w-md text-center text-read leading-6 text-muted-foreground">
-          وهذا متوقّع لمدير النظام: بوّابة المستشار لمن يرشد فعلا. لمعاينتها، ادخل بحساب مستشار.
+          وهذا متوقع لمدير النظام. لمعاينة البوابة ادخل بحساب مستشار.
         </p>
         <Link to="/admin" className="mt-7 rounded-full border border-white/15 px-6 py-3 font-bold text-foreground transition hover:border-white/40">
           عد إلى لوحة الإدارة

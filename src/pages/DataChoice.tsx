@@ -77,7 +77,7 @@ export default function DataChoice() {
               ) : (
                 <Inset tone="warn" className="grid gap-3 p-4">
                   <p className="text-read leading-7">
-                    يحذف ملفّ طلبك ووثائقه وعقوده الآن، ولا رجعة فيه. وإن أردت العودة يوما تقدّمت من جديد.
+                    يحذف ملف طلبك ووثائقه وعقوده الآن، ولا يمكن التراجع. وإن أردت العودة يوما فقدّم طلبا جديدا.
                   </p>
                   <div className="flex flex-wrap gap-2">
                     <Button tone="danger" loading={busy} onClick={() => void choose('delete')}>نعم، احذفها الآن</Button>
@@ -90,7 +90,7 @@ export default function DataChoice() {
         )}
         {state?.expired && !done && (
           <p className="mt-4 text-read leading-8">
-            انتهت صلاحية هذا الرابط، وبياناتك باقية كما هي. وإن أردت حذفها فردّ على رسالتنا وننفّذ طلبك.
+            انتهت صلاحية هذا الرابط، وبياناتك باقية كما هي. وإن أردت حذفها فرد على رسالتنا.
           </p>
         )}
       </Panel>

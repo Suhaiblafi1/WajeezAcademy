@@ -50,7 +50,7 @@ export default function ResetPassword() {
             <ShieldCheck className="mx-auto h-12 w-12 text-emerald-400" />
             <h1 className="mt-5 text-2xl font-black">عيّنت كلمة المرور</h1>
             <p className="mt-3 text-sm leading-7 text-muted-foreground">
-              أخرجت من كل الأجهزة — سجّل الدخول بكلمتك الجديدة.
+              سجّلنا خروجك من كل الأجهزة. ادخل بكلمة المرور الجديدة.
             </p>
             <Button tone="confirm" onClick={() => navigate("/auth")} className="mt-8">
               تسجيل الدخول
@@ -62,7 +62,7 @@ export default function ResetPassword() {
             <h1 className="mt-4 text-2xl font-black">كلمة مرور جديدة</h1>
             {!token && (
               <Card as="p" className="mt-3 border-[#FABC05]/30 bg-[#FABC05]/5 px-4 py-3 text-read leading-6 text-muted-foreground">
-                الرابط بلا رمز — افتحه من رسالة الاستعادة كما وصلتك، أو اطلب رسالة جديدة.
+                الرابط ناقص — افتحه من رسالة الاستعادة كما وصلتك، أو اطلب رسالة جديدة.
               </Card>
             )}
             <form onSubmit={submit} className="mt-6 space-y-4">

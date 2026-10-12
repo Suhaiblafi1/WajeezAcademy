@@ -70,7 +70,7 @@ export default function Mirror() {
         </h1>
         <p className="mt-3 max-w-xl text-sm leading-7 text-muted-foreground md:text-base md:leading-8">
           أربعة وعشرون عبارة، ثلاث دقائق. <b className="text-foreground">بلا بريد ولا حساب</b> —
-          تحفظ إجاباتك على جهازك وحده، ومن أخذها لا يسأل عنها ثانية في التشخيص.
+          تحفظ إجاباتك على جهازك فقط، ولن نسألك عنها مرة أخرى في التشخيص.
         </p>
 
         <p className="mt-6 text-read font-bold text-muted-foreground" role="status" aria-live="polite">
@@ -150,8 +150,8 @@ export default function Mirror() {
               </p>
               <ul className="mt-2.5 space-y-1.5 text-read leading-6 text-muted-foreground">
                 <li>يقيس <b className="text-foreground">ما تميل إليه</b>، لا ما تتقنه — الميل ليس قدرة.</li>
-                <li>لا يقول لك أيّ مسار تختار: الميل يرجّح ولا يحسم، والاحتياج هو الذي يحسم.</li>
-                <li>ومن مقاييس الجاهزيّة الثلاثة، <b className="text-foreground">وضوح الهدف وحده</b> يصل إلى التشخيص — والآخران لك أنت، لأنّ المحرّك لا يملك ما يفعله بهما اليوم.</li>
+                <li>لا يحدد لك المسار: الميل يساعد في الاختيار، لكن حاجتك هي التي تحسم.</li>
+                <li>من مقاييس الجاهزية الثلاثة، يصل <b className="text-foreground">وضوح الهدف وحده</b> إلى التشخيص، والآخران لك أنت فقط.</li>
               </ul>
             </Panel>
 

@@ -384,7 +384,7 @@ function DiagnosticTeaser() {
 
           {/* إعلان السؤال لقارئ الشاشة */}
           <p className="sr-only" aria-live="polite">
-            {!done ? `سؤال ${step + 1} من ${mirrorQuestions.length}: ${current.text}` : 'اكتملت المؤشر — تظهر خلاصتك الآن'}
+            {!done ? `سؤال ${step + 1} من ${mirrorQuestions.length}: ${current.text}` : 'اكتمل المؤشر — هذه خلاصتك'}
           </p>
 
           <div className="p-5 sm:p-6 md:p-7" key={step}>
@@ -474,8 +474,8 @@ function DiagnosticTeaser() {
 /* ───────────────── how it works ───────────────── */
 const steps = [
   { icon: Compass, title: 'نفهمك', text: 'أسئلة متكيفة عن هدفك وواقعك ووقتك.' },
-  { icon: Target, title: 'نوصي ونشرح', text: 'مسار واحد واضح بثقة، أو تحويل لخبير بشري.' },
-  { icon: Route, title: 'تتعلم بترابط', text: 'كل دورة تبني على التي قبلها، ومدرب ومستشار يرافقانك فعليا.' },
+  { icon: Target, title: 'نوصي ونشرح', text: 'مسار واحد واضح، أو نحوّلك لمستشار.' },
+  { icon: Route, title: 'تتعلم بترابط', text: 'كل دورة تبني على ما قبلها، ومعك مدرب ومستشار.' },
   { icon: BadgeCheck, title: 'تثبت بمخرج', text: 'مشروع حقيقي يراجع ويقيّم. القيمة بالإنجاز، لا بالمشاهدة.' },
 ]
 
@@ -888,9 +888,9 @@ function Faq() {
                   <div className="overflow-hidden">
                     <div className="px-4 pb-4 md:px-5 md:pb-5">
                       <p className="text-read leading-7 text-muted-foreground">
-                        توصية مبنية على منهجية، لا على التخمين: يحلل التشخيص الكامل ميولك وأهدافك وفجوات مهاراتك بأطر مهنية معروفة
-                        (RIASEC وO*NET وESCO وDigComp)، وكل استنتاج مرتبط بإجابة قدّمتها — بلا صناديق سوداء، وبدرجة ثقة معلنة.
-                        أما «مؤشر وجيز» على هذه الصفحة فسؤالان تمهيديّان عن علاقتك بالتعلّم، لا تحليل مهارات.
+                        توصية مبنية على منهجية لا على التخمين: يحلل التشخيص الكامل ميولك وأهدافك ومهاراتك الناقصة بأطر مهنية معروفة
+                        (RIASEC وO*NET وESCO وDigComp)، وكل نتيجة مرتبطة بإجابة منك، مع درجة ثقة واضحة.
+                        أما «مؤشر وجيز» في هذه الصفحة فسؤالان تمهيديان عن علاقتك بالتعلم، لا تحليل مهارات.
                       </p>
                       <Link
                         to="/methodology"
@@ -936,7 +936,7 @@ function FinalCta() {
           <span className="text-teal-light-ink">أكثر من دورة عشوائية.</span>
         </h2>
         <p className="reveal mx-auto mt-6 max-w-md leading-8 text-muted-foreground">
-          امنحنا بضع دقائق من الوضوح، نمنحك خريطة طريق كاملة.
+          امنحنا بضع دقائق، نمنحك خريطة طريق كاملة.
         </p>
         <div className="reveal mt-9">
           {/* كان يعِد بخريطة طريق كاملة ثم يهبط بالزائر إلى المؤشّر التمهيديّ في
@@ -975,7 +975,7 @@ function Partners() {
           <SectionLabel>شركاؤنا</SectionLabel>
           <h2 className="mt-4 text-2xl font-bold md:text-3xl">تحدث عنا الإعلام — وشركاء نجاح نفخر بهم</h2>
           <p className="mx-auto mt-3 max-w-lg text-sm leading-7 text-muted-foreground">
-              أكاديمية وجيز امتداد لمنصة وجيز التي غطتها كبرى الوسائل الإعلامية.
+              أكاديمية وجيز امتداد لمنصة وجيز التي تحدثت عنها كبرى وسائل الإعلام.
           </p>
         </div>
         <div className="reveal mt-10 flex flex-wrap items-center justify-center gap-10 md:gap-16">
@@ -1059,7 +1059,7 @@ const footerCols: { title: string; icon: typeof GraduationCap; links: { label: s
       { label: 'للأفراد', to: '/pathways' },
       { label: 'للشركات', to: '/contact?type=company' },
       { label: 'للجهات الحكومية', to: '/contact?type=gov' },
-      { label: 'طلب عرض مؤسسي', to: '/contact' },
+      { label: 'خدمات المؤسسات', to: '/contact' },
     ],
   },
   {

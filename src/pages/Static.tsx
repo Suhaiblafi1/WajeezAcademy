@@ -115,7 +115,7 @@ function FaqPage() {
     <Shell>
       <SeoHead {...seoFor('/p/faq')} />
       <h1 className="text-3xl font-black leading-snug md:text-4xl">الأسئلة الشائعة</h1>
-      <p className="mt-4 text-lg leading-loose text-muted-foreground">جمعنا ما يسألنا عنه الزوار فعلا — وأجبنا بلا مجاملة.</p>
+      <p className="mt-4 text-lg leading-loose text-muted-foreground">أكثر ما يسأله الزوار، بإجابات صريحة.</p>
       <div className="mt-10 space-y-3">
         {faqs.map((f, i) => (
           <Card key={i} className="overflow-hidden">

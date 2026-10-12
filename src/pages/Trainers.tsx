@@ -52,7 +52,7 @@ function TrainerOffer({ ids }: { ids: string[] }) {
   if (courses.length === 0) {
     return (
       <p className="text-read leading-6 text-muted-foreground">
-        لم تسند إليه شعبة منشورة بعد — تظهر دوراته هنا فور إسنادها.
+        لم تسند إليه شعبة بعد، وتظهر دوراته هنا عند إسنادها.
       </p>
     )
   }
@@ -176,7 +176,7 @@ export default function Trainers() {
         </div>
         <h1 className="mt-5 text-3xl font-black md:text-4xl">مدربون متخصصون — بمراجعة بشرية حقيقية</h1>
         <p className="mx-auto mt-3 max-w-xl leading-8 text-muted-foreground">
-          كل دورة بمدرب متخصص يراجع مخرجك بيده، وكل مسار يجمع اثنين إلى ثلاثة مدربين.
+          لكل دورة مدرب متخصص يراجع عملك بنفسه، ولكل مسار مدربان إلى ثلاثة.
         </p>
         <Card as="p" tone="warn" className="mx-auto mt-3 flex max-w-md items-center justify-center gap-2 px-4 py-2.5 text-read font-bold leading-6 text-gold-ink">
           <ShieldCheck className="h-4 w-4 shrink-0" />
@@ -301,7 +301,7 @@ export default function Trainers() {
                             </Inset>
                           ))}
                           <p className="text-read text-muted-foreground/50">
-                            تعليقات متعلّمين، منشورة باعتماد الأكاديمية. والمتوسّط أعلاه من كل التقييمات لا من المعروض منها.
+                            تعليقات متعلمين نشرتها الأكاديمية. المتوسط أعلاه من كل التقييمات، لا من المنشور فقط.
                           </p>
                         </div>
                       )}
@@ -334,9 +334,9 @@ export default function Trainers() {
         <Card tone="accent" className="mt-12 text-center">
           <h2 className="text-lg font-black">لم يعتمد نشر اسم مدرّب بعد</h2>
           <p className="mx-auto mt-3 max-w-xl text-read leading-7 text-muted-foreground">
-            قاعدتنا ألّا ينشر اسم مدرّب قبل اعتماد نشره. فما يظهر هنا حين يمتلئ
-            أسماء من اجتازوا المراجعة فعلا — لا أمثلة ولا صورا توضيحيّة. ومدرّب
-            كلّ شعبة يعلن على بطاقتها عند اعتمادها.
+            لا ننشر اسم مدرّب قبل اعتماد نشره. ستظهر هنا أسماء من اجتازوا
+            المراجعة فعلا، لا أمثلة ولا صور توضيحية. ويظهر مدرّب كل شعبة
+            على بطاقتها عند اعتمادها.
           </p>
         </Card>
       )}
@@ -377,7 +377,7 @@ export default function Trainers() {
       <Panel tone="accent" className="mt-14 p-8 text-center">
         <p className="text-lg font-bold">هل أنت خبير وتريد التدريب معنا؟</p>
         <p className="mx-auto mt-2 max-w-md text-sm leading-7 text-muted-foreground">
-          نبحث دائما عن مدربين يقدّرون المخرج العملي مثلنا. قدّم طلبك وسيراجعه فريقنا.
+          نبحث دائما عن مدربين يهتمون بالتطبيق العملي مثلنا. قدّم طلبك وسيراجعه فريقنا.
         </p>
         <Link to="/join-trainer" className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-teal-deep px-8 py-3.5 font-bold text-white transition hover:bg-teal-darker">
           انضم كمدرب
