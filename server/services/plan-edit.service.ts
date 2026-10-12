@@ -360,13 +360,13 @@ export class PlanEditService {
     const plan = await this.prisma.cohortDeliveryPlan.findUnique({ where: { id: planId }, select: { cohortId: true, status: true } })
     if (!plan) throw new AuthError('not_found', 'الخطّة غير موجودة', 404)
     if (!(OPEN as readonly string[]).includes(plan.status)) {
-      throw new AuthError('plan_closed', 'اعتُمدت هذه الخطّة — ما سُحب منها لا يعود عليها', 409)
+      throw new AuthError('plan_closed', 'اعتمدت هذه الخطّة — ما سحب منها لا يعود عليها', 409)
     }
     const { take, skipped } = await this.restorable(planId)
     if (take.length === 0) {
       throw new AuthError('nothing_withdrawn', skipped > 0
-        ? 'ما سُحب على مواضعه بنودٌ أحدث — فلا يعود فوقها'
-        : 'لا شيء مسحوبٌ على هذه الخطّة', 409)
+        ? 'ما سحب على مواضعه بنود أحدث — فلا يعود فوقها'
+        : 'لا شيء مسحوب على هذه الخطّة', 409)
     }
     const back = (toTrainer: boolean) => take.filter((x) => x.toTrainer === toTrainer).map((x) => x.id)
     await this.prisma.$transaction([
