@@ -91,9 +91,9 @@ export interface MaskedBankAccount {
 }
 
 const OUTCOME_AR: Record<string, string> = {
-  matches: 'اسمُ صاحب الحساب يطابق اسمَ الموقِّع على العقد',
-  differs: 'اسمُ صاحب الحساب يختلف عن اسم الموقِّع على العقد — تُراجَع قبل الصرف',
-  unverifiable: 'لا عقدَ نافذٌ يُقابَل به الاسم بعد',
+  matches: 'اسم صاحب الحساب يطابق اسم الموقّع على العقد',
+  differs: 'اسم صاحب الحساب يختلف عن اسم الموقّع على العقد — تراجع قبل الصرف',
+  unverifiable: 'لا عقد نافذ يقابل به الاسم بعد',
 }
 
 /** تطبيعٌ للمقارنة: الهمزاتُ والتاءُ المربوطةُ والمدُّ تُكتب بوجوهٍ شتّى */
@@ -134,7 +134,7 @@ export class TrainerBankService {
         application: { select: { status: true, fullName: true, email: true } },
       },
     })
-    if (!profile) throw new AuthError('no_profile', 'لا ملفَّ مدرّبٍ لحسابك', 404)
+    if (!profile) throw new AuthError('no_profile', 'لا ملفّ مدرّب لحسابك', 404)
     return profile
   }
 
@@ -215,7 +215,7 @@ export class TrainerBankService {
     if (leaving > 0) {
       throw new AuthError(
         'departing',
-        'ملفُّ رحيلك مفتوحٌ — لا يُبدَّل الحسابُ البنكيُّ في أثنائه. راجِع الإدارةَ إن كان تغييرُه لازما.',
+        'ملفّ رحيلك مفتوح — لا يبدّل الحساب البنكيّ في أثنائه. راجع الإدارة إن كان تغييره لازما.',
         409,
       )
     }
@@ -229,7 +229,7 @@ export class TrainerBankService {
     if (input.ownNameConfirmed !== true) {
       throw new AuthError(
         'not_own_name',
-        'أقِرَّ أنّ الحسابَ باسمك الشخصيّ — لا تُحوَّل المستحقّاتُ إلى حسابِ غيرك ولا إلى حسابِ شركة',
+        'أقرّ أنّ الحساب باسمك الشخصيّ — لا تحوّل المستحقّات إلى حساب غيرك ولا إلى حساب شركة',
         422,
       )
     }
@@ -238,38 +238,38 @@ export class TrainerBankService {
     const iban = String(input.iban ?? '').replace(/[\s-]+/g, '').toUpperCase()
     if (iban.includes(BANK_MASK)) {
       /* القيمةُ المقنَّعةُ تُعاد من الشاشة — ولا تُكتب فوق السرّ الحقيقيّ */
-      throw new AuthError('masked_value', 'أعِدْ كتابةَ رقم الحساب كاملا — المعروضُ مقنَّعٌ لا يصلح للحفظ', 422)
+      throw new AuthError('masked_value', 'أعد كتابة رقم الحساب كاملا — المعروض مقنّع لا يصلح للحفظ', 422)
     }
     const minLen = kind === 'iban' ? MIN_ACCOUNT_LEN : MIN_LOCAL_ACCOUNT_LEN
     if (iban.length < minLen || iban.length > MAX_ACCOUNT_LEN || !/^[A-Z0-9]+$/.test(iban)) {
       throw new AuthError(
         'bad_iban',
-        `رقمُ الحساب غيرُ مقبول — يُكتب كاملا بحروفٍ وأرقامٍ بلا مسافات (بين ${minLen} و${MAX_ACCOUNT_LEN} خانة)`,
+        `رقم الحساب غير مقبول — يكتب كاملا بحروف وأرقام بلا مسافات (بين ${minLen} و${MAX_ACCOUNT_LEN} خانة)`,
         422,
       )
     }
     if (kind === 'iban' && !/^[A-Z]{2}[0-9]{2}/.test(iban)) {
-      throw new AuthError('bad_iban', 'الـIBAN يبدأ برمز الدولة ثمّ رقمين (مثلا JO94…) — وإن لم يكن لمصرفك IBAN فاختر «رقم حسابٍ محلّيّ»', 422)
+      throw new AuthError('bad_iban', 'الـIBAN يبدأ برمز الدولة ثمّ رقمين (مثلا JO94…) — وإن لم يكن لمصرفك IBAN فاختر «رقم حساب محلّيّ»', 422)
     }
     /* ورمزُ الدولة: من الـIBAN نفسِه إن كان IBAN، وإلّا فممّا اختاره. ولا
        تخمينَ بعد اليوم — كان يُفترض `JO` لكلّ ما ليس IBAN. */
     const chosenCountry = String(input.countryCode ?? '').trim().toUpperCase()
     const countryCode = kind === 'iban' ? iban.slice(0, 2) : chosenCountry
     if (!/^[A-Z]{2}$/.test(countryCode)) {
-      throw new AuthError('bad_country', 'اختر دولةَ المصرف', 422)
+      throw new AuthError('bad_country', 'اختر دولة المصرف', 422)
     }
     const routingCode = String(input.routingCode ?? '').replace(/\s+/g, '').toUpperCase().slice(0, 34) || null
     if (routingCode && !/^[A-Z0-9-]+$/.test(routingCode)) {
-      throw new AuthError('bad_routing', 'رمزُ التوجيه حروفٌ وأرقامٌ فقط', 422)
+      throw new AuthError('bad_routing', 'رمز التوجيه حروف وأرقام فقط', 422)
     }
     const swiftBic = String(input.swiftBic ?? '').replace(/\s+/g, '').toUpperCase() || null
     if (swiftBic && !/^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$/.test(swiftBic)) {
-      throw new AuthError('bad_swift', 'رمزُ SWIFT/BIC ثماني خاناتٍ أو إحدى عشرة (مثلا ARABJOAX)', 422)
+      throw new AuthError('bad_swift', 'رمز SWIFT/BIC ثماني خانات أو إحدى عشرة (مثلا ARABJOAX)', 422)
     }
     const holderName = String(input.holderName ?? '').trim()
-    if (holderName.length < 4) throw new AuthError('bad_holder', 'اكتب اسمَ صاحب الحساب كما يطبعه المصرف', 422)
+    if (holderName.length < 4) throw new AuthError('bad_holder', 'اكتب اسم صاحب الحساب كما يطبعه المصرف', 422)
     const bankNameAr = String(input.bankNameAr ?? '').trim()
-    if (bankNameAr.length < 2) throw new AuthError('bad_bank', 'اكتب اسمَ المصرف', 422)
+    if (bankNameAr.length < 2) throw new AuthError('bad_bank', 'اكتب اسم المصرف', 422)
 
     const signer = await this.signerNameOf(profile.id)
     const score = signer ? nameScore(holderName, signer) : 0
@@ -301,7 +301,7 @@ export class TrainerBankService {
       /* نقرتان متزامنتان: الفهرسُ الجزئيُّ يردّ الثانيةَ بـP2002. ولولاه
          لَكان لرجلٍ واحدٍ حسابان فعّالان، ولا يُعرف إلى أيّهما يُصرَف. */
       if ((e as { code?: string }).code === 'P2002') {
-        throw new AuthError('concurrent_write', 'وصل طلبان معا — حدّثِ الصفحةَ وتحقّقْ من حسابك ثمّ أعِدْ إن لزم', 409)
+        throw new AuthError('concurrent_write', 'وصل طلبان معا — حدّث الصفحة وتحقّق من حسابك ثمّ أعد إن لزم', 409)
       }
       throw e
     })
@@ -327,22 +327,22 @@ export class TrainerBankService {
     try {
       await sendDirectEmail(this.prisma, {
         to: profile.application.email,
-        subject: 'تغيّر حسابُك البنكيُّ في وجيز',
+        subject: 'تغيّر حسابك البنكيّ في وجيز',
         ...renderMail({
           greetingName: profile.application.fullName,
-          heading: 'سُجّل حسابٌ بنكيٌّ جديدٌ لمستحقّاتك',
+          heading: 'سجّل حساب بنكيّ جديد لمستحقّاتك',
           blocks: [
             {
               kind: 'p',
-              text: `سُجّل بتاريخ ${fmtDateWith(new Date(), { year: 'numeric', month: 'long', day: 'numeric' })}`
-                + ` حسابٌ في «${row.bankNameAr}» ينتهي بـ${row.tail4}، وإليه تُحوَّل مستحقّاتُك من الآن.`,
+              text: `سجّل بتاريخ ${fmtDateWith(new Date(), { year: 'numeric', month: 'long', day: 'numeric' })}`
+                + ` حساب في «${row.bankNameAr}» ينتهي بـ${row.tail4}، وإليه تحوّل مستحقّاتك من الآن.`,
             },
             {
               kind: 'callout',
-              text: 'فإن لم تكن أنت من فعل هذا فراسِلْنا فورا وغيّرْ كلمةَ مرورك — '
-                + 'فتبديلُ وجهةِ المال أوّلُ ما يفعله من يصل إلى حسابٍ ليس له.',
+              text: 'فإن لم تكن أنت من فعل هذا فراسلنا فورا وغيّر كلمة مرورك — '
+                + 'فتبديل وجهة المال أوّل ما يفعله من يصل إلى حساب ليس له.',
             },
-            { kind: 'note', text: 'ولا يُعرض رقمُ حسابك في أيّ رسالةٍ منّا، ولا في أيّ عقد.' },
+            { kind: 'note', text: 'ولا يعرض رقم حسابك في أيّ رسالة منّا، ولا في أيّ عقد.' },
           ],
         }),
       })
@@ -378,19 +378,19 @@ export class TrainerBankService {
     try {
       await sendDirectEmail(this.prisma, {
         to: profile.application.email,
-        subject: 'أُلغي حسابُك البنكيُّ في وجيز',
+        subject: 'ألغي حسابك البنكيّ في وجيز',
         ...renderMail({
           greetingName: profile.application.fullName,
-          heading: 'أُلغي الحسابُ البنكيُّ لمستحقّاتك',
+          heading: 'ألغي الحساب البنكيّ لمستحقّاتك',
           blocks: [
             {
               kind: 'p',
-              text: `أُلغي بتاريخ ${fmtDateWith(at, { year: 'numeric', month: 'long', day: 'numeric' })}`
-                + ` حسابُك في «${active.bankNameAr}» المنتهي بـ${active.tail4}. ولا تُصرَف مستحقّاتٌ حتّى تُدخل حسابا جديدا.`,
+              text: `ألغي بتاريخ ${fmtDateWith(at, { year: 'numeric', month: 'long', day: 'numeric' })}`
+                + ` حسابك في «${active.bankNameAr}» المنتهي بـ${active.tail4}. ولا تصرف مستحقّات حتّى تدخل حسابا جديدا.`,
             },
             {
               kind: 'callout',
-              text: 'فإن لم تكن أنت من فعل هذا فراسِلْنا فورا وغيّرْ كلمةَ مرورك.',
+              text: 'فإن لم تكن أنت من فعل هذا فراسلنا فورا وغيّر كلمة مرورك.',
             },
           ],
         }),
@@ -421,9 +421,9 @@ export class TrainerBankService {
       where: { id: payoutId },
       select: { id: true, profileId: true, status: true, period: true, total: true, currency: true },
     })
-    if (!payout) throw new AuthError('not_found', 'المستحقُّ غير موجود', 404)
+    if (!payout) throw new AuthError('not_found', 'المستحقّ غير موجود', 404)
     if (payout.status !== 'approved') {
-      throw new AuthError('bad_state', 'لا يُكشف حسابٌ إلّا لمستحقٍّ معتمَدٍ ينتظر الصرف', 409)
+      throw new AuthError('bad_state', 'لا يكشف حساب إلّا لمستحقّ معتمد ينتظر الصرف', 409)
     }
     const row = await this.prisma.trainerBankAccount.findFirst({
       where: { profileId: payout.profileId, status: 'active' },
@@ -431,7 +431,7 @@ export class TrainerBankService {
     if (!row) {
       throw new AuthError(
         'no_bank_account',
-        'لا حسابَ بنكيّا فعّالا لهذا المدرّب — يُدخله بنفسه من «مستحقّاتي» في بوّابته',
+        'لا حساب بنكيّا فعّالا لهذا المدرّب — يدخله بنفسه من «مستحقّاتي» في بوّابته',
         409,
       )
     }

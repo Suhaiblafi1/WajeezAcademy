@@ -28,7 +28,7 @@ import { AuthError } from '../services/auth.service'
 export const HONEYPOT_FIELD = 'website'
 
 export const HONEYPOT_MESSAGE_AR =
-  'تعذّر التحقّق من النموذج — إن كان متصفّحك أو أحد مكمّلاته يُعبّئ الحقول تلقائيّا فأفرغ حقل «الموقع الإلكتروني» ثم أعد الإرسال'
+  'تعذّر التحقّق من النموذج — إن كان متصفّحك أو أحد مكمّلاته يعبّئ الحقول تلقائيّا فأفرغ حقل «الموقع الإلكتروني» ثم أعد الإرسال'
 
 /** يُنادى **قبل** تحليل الجسم: مخطّطاتُ zod تُسقط المفاتيحَ غيرَ المعروفة */
 export function assertNotBot(body: unknown): void {

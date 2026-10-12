@@ -167,7 +167,7 @@ export async function analyzeImpact(prisma: PrismaClient, changeRef: string, act
     before, after, changed, changedCount: changed.length, totalPersonas: before.length,
     baselineAr: active
       ? `اللقطة المنشورة «${active.label}» — ما يقرأه المحرك الآن`
-      : 'الجداول المنشورة — لا لقطة منشورة بعد، فلا شيء يقرأه المحرك ليُقاس عليه',
+      : 'الجداول المنشورة — لا لقطة منشورة بعد، فلا شيء يقرأه المحرك ليقاس عليه',
     baselineLabel: active?.label ?? null,
     ...diffOutcomes(before, after),
   }

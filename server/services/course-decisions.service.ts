@@ -79,21 +79,21 @@ export class CourseDecisionsService {
 
   async apply(raw: unknown, actor: DecisionsActor): Promise<ApplyResult> {
     if (applying) {
-      return { plan: null, applied: [], failed: null, refusedAr: 'تطبيقُ ملفٍّ آخرَ جارٍ الآن — أعد المحاولة بعد انتهائه' }
+      return { plan: null, applied: [], failed: null, refusedAr: 'تطبيق ملفّ آخر جار الآن — أعد المحاولة بعد انتهائه' }
     }
     applying = true
     try {
       const parsed = parseDecisionsFile(raw)
       if (!parsed.ok) {
-        return { plan: null, applied: [], failed: null, refusedAr: `الملفُّ لا يُقرأ: ${parsed.errorsAr.join(' · ')}` }
+        return { plan: null, applied: [], failed: null, refusedAr: `الملفّ لا يقرأ: ${parsed.errorsAr.join(' · ')}` }
       }
       const plan = planDecisions(parsed.file, await this.world(parsed.file, actor))
       if (!plan.applicable) {
         return {
           plan, applied: [], failed: null,
           refusedAr: plan.counts.blocked > 0
-            ? `لم يُطبَّق شيء: ${plan.counts.blocked} خطوةً لا تُطبَّق، وما سواها طُبّق من قبل`
-            : 'لا جديدَ يُطبَّق — خطواتُ الملفّ كلُّها طُبّقت من قبل',
+            ? `لم يطبّق شيء: ${plan.counts.blocked} خطوة لا تطبّق، وما سواها طبّق من قبل`
+            : 'لا جديد يطبّق — خطوات الملفّ كلّها طبّقت من قبل',
         }
       }
 
@@ -110,7 +110,7 @@ export class CourseDecisionsService {
           if (!(e instanceof AuthError)) console.error('[course-decisions] تعذّرت خطوة', step.n, step.kind, e)
           failed = {
             n: step.n,
-            errorAr: e instanceof AuthError ? e.message : 'تعذّرت الخطوةُ لعطبٍ في الخادم — وسُجّل ليُقرأ',
+            errorAr: e instanceof AuthError ? e.message : 'تعذّرت الخطوة لعطب في الخادم — وسجّل ليقرأ',
           }
           break
         }

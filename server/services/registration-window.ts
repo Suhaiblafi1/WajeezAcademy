@@ -74,7 +74,7 @@ export function termWindowVerdict(term: TermWindow | null, now = new Date()): Wi
   if (term.registrationClosesAt && now > term.registrationClosesAt) {
     return {
       open: false, code: 'closed',
-      reasonAr: `أُغلق التسجيل في ${term.titleAr} — وتُعلَن شعبُ الفصل التالي في موعدها`,
+      reasonAr: `أغلق التسجيل في ${term.titleAr} — وتعلن شعب الفصل التالي في موعدها`,
     }
   }
   return { open: true }
@@ -128,13 +128,13 @@ export function cohortAcceptsRegistration(
   if (!planApprovedOnce(cohort.plans)) {
     /* وسببان لا سببٌ واحد: مدرّبٌ كتب ولم يُعتمَد له، وشعبةٌ لا مدرّبَ لها أصلا */
     return cohort.plans.length > 0
-      ? { open: false, code: 'awaiting_plan', reasonAr: `تُفتح ${named} للتسجيل حين تُعتمَد خطّةُ مدرّبها` }
+      ? { open: false, code: 'awaiting_plan', reasonAr: `تفتح ${named} للتسجيل حين تعتمد خطّة مدرّبها` }
       : { open: false, code: 'no_trainer', reasonAr: `${named} بلا مدرّب معتمد بعد — تفتح للتسجيل حين تعتمد خطّة مدرّبها` }
   }
   if (cohort.joinClosesAt && now >= cohort.joinClosesAt) {
     return {
       open: false, code: 'late_closed',
-      reasonAr: `أُغلق الالتحاقُ بـ${named} — بدأ موعدُها الثاني ${cohortDayAr(cohort.joinClosesAt)}، وتُعلَن شعبتُها التالية في موعدها`,
+      reasonAr: `أغلق الالتحاق بـ${named} — بدأ موعدها الثاني ${cohortDayAr(cohort.joinClosesAt)}، وتعلن شعبتها التالية في موعدها`,
     }
   }
   return termWindowVerdict(cohort.term ?? null, now)

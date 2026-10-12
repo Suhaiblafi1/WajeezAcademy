@@ -59,7 +59,7 @@ export class UnwiredExternalProvider implements NotificationProvider {
     this.channel = channel
   }
   async send(): Promise<{ ok: boolean; error: string }> {
-    return { ok: false, error: `لا مزود مربوطا لقناة ${this.channel} — يُفعَّل من إعدادات التكامل بعد قرار المالك` }
+    return { ok: false, error: `لا مزود مربوطا لقناة ${this.channel} — يفعّل من إعدادات التكامل بعد قرار المالك` }
   }
 }
 

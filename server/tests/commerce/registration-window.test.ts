@@ -15,7 +15,9 @@
    لم تُفتح نافذتُه؟ وأيقبل شعبةً بلا فصلٍ أصلا؟ — لأنّ الشرطَ الجديدَ لو
    أبطل الشعبَ القائمةَ قبل نظام الفصول لكان عطبا أكبرَ ممّا أصلح. */
 
-import { beforeAll, describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect as vexpect, it } from 'vitest'
+import { plainExpect } from '../helpers/plain-expect'
+const expect = plainExpect(vexpect)
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { PrismaClient } from '@prisma/client'

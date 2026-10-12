@@ -35,7 +35,7 @@ export { assertCouponUsable, type UsableCoupon } from './commerce/cart-types'
    المجموع الخام بلا `priceCart` — فلا نطاقَ فيهما يقصر الكودَ على دورات صاحبه،
    ولا دفترَ استعمال. وقبولُه فيهما يُطبّق نسبتَه على دوراتِ غيره فيُحسم منه
    ما لم يمنحه. فيُردّ بجملةٍ تقول أين يُستعمل. */
-const TRAINER_CODE_CHECKOUT_ONLY_AR = 'كودُ المدرّب يُستعمل عند الشراء المباشر من صفحة الدورة — لا في موافقة الطلبات'
+const TRAINER_CODE_CHECKOUT_ONLY_AR = 'كود المدرّب يستعمل عند الشراء المباشر من صفحة الدورة — لا في موافقة الطلبات'
 
 export class CommerceService {
   private referrals: ReferralService
@@ -75,7 +75,7 @@ export class CommerceService {
     if (!verified) {
       const channelUp = await this.cart.emailChannelEnabled()
       if (channelUp) {
-        throw new AuthError('email_unverified', 'وثّق بريدك أولا — اطلب رابط التوثيق من الشريط أعلى الصفحة، والشراء يُفتح بمجرّد فتحه', 403)
+        throw new AuthError('email_unverified', 'وثّق بريدك أولا — اطلب رابط التوثيق من الشريط أعلى الصفحة، والشراء يفتح بمجرّد فتحه', 403)
       }
     }
 
@@ -107,7 +107,7 @@ export class CommerceService {
     assertSeasonOpen(await readSeasonGate(this.prisma))
     const verified = await this.cart.emailVerified(userId)
     if (!verified && (await this.cart.emailChannelEnabled())) {
-      throw new AuthError('email_unverified', 'وثّق بريدك أولا — اطلب رابط التوثيق من الشريط أعلى الصفحة، والشراء يُفتح بمجرّد فتحه', 403)
+      throw new AuthError('email_unverified', 'وثّق بريدك أولا — اطلب رابط التوثيق من الشريط أعلى الصفحة، والشراء يفتح بمجرّد فتحه', 403)
     }
 
     const plan = await new PlanService(this.prisma).active(userId)
@@ -140,7 +140,7 @@ export class CommerceService {
       await safeNotify(this.prisma, {
         userId, channel: 'in_app',
         title: 'وصلنا طلبك — نراجع خطّتك',
-        body: `طلبتَ التسجيل في ${created.length} من دورات «${plan.nameAr}». نراجعها ونحجز مقاعدك، ثم تصلك فاتورةٌ واحدة للخطّة كلها.${awaiting.length > 0 ? ` و${awaiting.length} من دوراتك لم تُفتح لها شعبة بعد — نُعلمك عند فتحها ولا تُحتسب عليك الآن.` : ''}`,
+        body: `طلبت التسجيل في ${created.length} من دورات «${plan.nameAr}». نراجعها ونحجز مقاعدك، ثم تصلك فاتورة واحدة للخطّة كلها.${awaiting.length > 0 ? ` و${awaiting.length} من دوراتك لم تفتح لها شعبة بعد — نعلمك عند فتحها ولا تحتسب عليك الآن.` : ''}`,
         templateKey: 'plan.requested',
         data: { planId: plan.id, requested: created.length, awaiting: awaiting.length },
       })
@@ -173,7 +173,7 @@ export class CommerceService {
     /* عملةٌ واحدة للفاتورة: جمعُ دينارٍ إلى ريالٍ في مبلغٍ واحد رقمٌ لا يُطالَب به */
     const currency = reqs[0].cohort.currency
     if (reqs.some((r) => r.cohort.currency !== currency)) {
-      throw new AuthError('mixed_currency', 'شعب الخطّة بعملات مختلفة — لا تُجمع في فاتورة واحدة', 409)
+      throw new AuthError('mixed_currency', 'شعب الخطّة بعملات مختلفة — لا تجمع في فاتورة واحدة', 409)
     }
 
     /* السعة تُقاس لكل شعبة قبل أيّ حجز: حجزُ بعضها ثم الفشل يترك مقاعد
@@ -245,8 +245,8 @@ export class CommerceService {
     })
     await safeNotify(this.prisma, {
       userId, channel: 'in_app',
-      title: 'حُجزت مقاعد خطّتك — بقي الدفع',
-      body: `حُجز لك ${reqs.length === 1 ? 'مقعد' : `${reqs.length} مقاعد`} في «${plan?.nameAr ?? 'خطّتك'}». أتمم الدفع (${total} ${currency}) دفعةً واحدة ليتحوّل حجزك إلى تسجيل فعليّ في دوراتك كلها.`,
+      title: 'حجزت مقاعد خطّتك — بقي الدفع',
+      body: `حجز لك ${reqs.length === 1 ? 'مقعد' : `${reqs.length} مقاعد`} في «${plan?.nameAr ?? 'خطّتك'}». أتمم الدفع (${total} ${currency}) دفعة واحدة ليتحوّل حجزك إلى تسجيل فعليّ في دوراتك كلها.`,
       templateKey: 'plan.seats_held',
       data: { planId, orderId: order.id, total, cohorts: reqs.length },
     })
@@ -439,8 +439,8 @@ export class CommerceService {
     await safeNotify(this.prisma, {
       userId, channel: 'in_app', audience: 'learner',
       templateKey: 'order.seats_held',
-      title: 'حُجز مقعدُك — وبقي الدفع',
-      body: `حُجز لك ${unique.length === 1 ? 'مقعد' : `${unique.length} مقاعد`} بفاتورة ${order.invoice.number} (${total} ${currency}). أتمم الدفعَ خلال ساعة — وبعدها يُفرَج عن المقعد لغيرك ولا يُقتطع منك شيء.`,
+      title: 'حجز مقعدك — وبقي الدفع',
+      body: `حجز لك ${unique.length === 1 ? 'مقعد' : `${unique.length} مقاعد`} بفاتورة ${order.invoice.number} (${total} ${currency}). أتمم الدفع خلال ساعة — وبعدها يفرج عن المقعد لغيرك ولا يقتطع منك شيء.`,
       data: { orderId: order.order.id, invoiceNumber: order.invoice.number, total, currency },
     })
     return {
@@ -535,10 +535,10 @@ export class CommerceService {
     })
     await safeNotify(this.prisma, {
       userId: req.userId, channel: 'in_app',
-      title: autoPaid ? 'قُبِل طلبُك — وسُجّلت' : 'قُبِل طلب تسجيلك — بقي الدفع',
+      title: autoPaid ? 'قبل طلبك — وسجّلت' : 'قبل طلب تسجيلك — بقي الدفع',
       body: autoPaid
-        ? `سُجّلت في «${title} — ${req.cohort.title}». تجدها في «تعلّمي».`
-        : `حُجز مقعدك في «${title} — ${req.cohort.title}». أتمم الدفع (${total} ${req.cohort.currency}) من صفحة الفواتير ليتحول حجزك إلى تسجيل فعلي.`,
+        ? `سجّلت في «${title} — ${req.cohort.title}». تجدها في «تعلّمي».`
+        : `حجز مقعدك في «${title} — ${req.cohort.title}». أتمم الدفع (${total} ${req.cohort.currency}) من صفحة الفواتير ليتحول حجزك إلى تسجيل فعلي.`,
       templateKey: 'enrollment.approved',
       data: { requestId, orderId: order.id, total },
     })
@@ -556,7 +556,7 @@ export class CommerceService {
     await safeNotify(this.prisma, {
       userId: req.userId, channel: 'in_app',
       title: 'اعتذرنا عن طلب التسجيل',
-      body: `لم يُقبل طلب تسجيلك هذه المرة. السبب: ${reason}. شعباً جديدة تُفتتح دورياً — تابع صفحة الشعب المفتوحة.`,
+      body: `لم يقبل طلب تسجيلك هذه المرة. السبب: ${reason}. شعبا جديدة تفتتح دوريا — تابع صفحة الشعب المفتوحة.`,
       templateKey: 'enrollment.rejected',
       data: { requestId },
     })
@@ -766,7 +766,7 @@ export class CommerceService {
     await recordAudit(this.prisma, {
       actorId, action: 'payment.charge', entityType: 'order', entityId: orderId,
       meta: { provider: provider.name, providerRef: charge.providerRef, mode: 'auto-test' },
-      reason: 'تسويةٌ فوريّة — المزوّدُ العاملُ اختباريّ، فلا طلبَ يبقى بلا دفع',
+      reason: 'تسوية فوريّة — المزوّد العامل اختباريّ، فلا طلب يبقى بلا دفع',
     })
     return true
   }
@@ -842,7 +842,7 @@ export class CommerceService {
       await recordAudit(this.prisma, {
         actorId, action: 'order.settle_partial', entityType: 'order', entityId: orderId,
         meta: { converted: converted.length, failed },
-        reason: 'دفعةٌ سُوّيت وبقيت دورات لم يُسجَّل فيها — تدخّل يدويّ مطلوب',
+        reason: 'دفعة سوّيت وبقيت دورات لم يسجّل فيها — تدخّل يدويّ مطلوب',
       })
     }
 
@@ -851,13 +851,13 @@ export class CommerceService {
       const what = order.items.length > 1 ? `خطّتك (${order.items.length} دورات)` : `«${order.items[0]?.titleAr ?? 'طلبك'}»`
       const tail =
         failed.length > 0
-          ? `وسُجّلت ${converted.length} من ${targets.size}؛ تواصلنا جارٍ بشأن الباقي ولن تدفع عنه مرّة أخرى.`
+          ? `وسجّلت ${converted.length} من ${targets.size}؛ تواصلنا جار بشأن الباقي ولن تدفع عنه مرّة أخرى.`
           : converted.length > 0
-            ? 'مقاعدك صارت تسجيلاً فعلياً — شعبك تظهر في «تعلّمي».'
+            ? 'مقاعدك صارت تسجيلا فعليا — شعبك تظهر في «تعلّمي».'
             : 'تفاصيل طلبك في «الفواتير».'
       await safeNotify(this.prisma, {
         userId: order.userId, channel: 'in_app',
-        title: 'تأكد دفعك ✓ — أهلاً بك',
+        title: 'تأكد دفعك ✓ — أهلا بك',
         body: `استلمنا دفعتك (${num(order.total)} ${order.currency}) عن ${what}. ${tail}`,
         templateKey: 'payment.succeeded',
         data: { orderId, total: num(order.total), enrolled: converted.length, of: targets.size },
@@ -893,7 +893,7 @@ export class CommerceService {
       include: { payment: { include: { invoice: { include: { order: { select: { userId: true } } } } } } },
     })
     if (!refund) throw new AuthError('not_found', 'الاسترداد غير موجود', 404)
-    if (refund.status !== 'pending') throw new AuthError('bad_state', 'الاسترداد بُت فيه مسبقا', 409)
+    if (refund.status !== 'pending') throw new AuthError('bad_state', 'الاسترداد بت فيه مسبقا', 409)
     if (!approve) {
       const r = await this.prisma.refund.update({ where: { id: refundId }, data: { status: 'rejected', approvedBy: actorId } })
       await recordAudit(this.prisma, { actorId, action: 'refund.reject', entityType: 'refund', entityId: refundId, reason: note })
@@ -901,8 +901,8 @@ export class CommerceService {
          «رُفع الطلبُ إلى الماليّة» ثمّ لا يصله جواب. */
       await safeNotify(this.prisma, {
         userId: refund.payment.invoice.order.userId, channel: 'in_app',
-        title: 'لم يُجَب طلبُ ردِّ المبلغ',
-        body: `نظرنا في طلب ردّ ${num(refund.amount)} ${refund.payment.currency} ولم نتمكّن من إجابته${note ? `. والسببُ المسجَّل: ${note}` : ''}. راسِل الدعمَ إن كان لديك ما تضيفه.`,
+        title: 'لم يجب طلب ردّ المبلغ',
+        body: `نظرنا في طلب ردّ ${num(refund.amount)} ${refund.payment.currency} ولم نتمكّن من إجابته${note ? `. والسبب المسجّل: ${note}` : ''}. راسل الدعم إن كان لديك ما تضيفه.`,
         templateKey: 'payment.refund_rejected',
         data: { refundId, amount: num(refund.amount), currency: refund.payment.currency },
       })
@@ -927,7 +927,7 @@ export class CommerceService {
       await recordAudit(this.prisma, {
         actorId, action: 'refund.provider_failed', entityType: 'refund', entityId: refundId, reason: msg,
       })
-      throw new AuthError('refund_provider_failed', `تعذّر ردّ المبلغ عند المزود، فلم يُقيَّد الاسترداد: ${msg}`, 502)
+      throw new AuthError('refund_provider_failed', `تعذّر ردّ المبلغ عند المزود، فلم يقيّد الاسترداد: ${msg}`, 502)
     }
 
     let refundedTotal = 0
@@ -962,8 +962,8 @@ export class CommerceService {
        في `categories.ts`: «هو سجلُّك عند الخلاف». */
     await safeNotify(this.prisma, {
       userId: refund.payment.invoice.order.userId, channel: 'in_app',
-      title: 'رُدَّ إليك مبلغ',
-      body: `رُدَّ إليك ${num(refund.amount)} ${refund.payment.currency}. ويصل المبلغُ بطاقتَك خلال أيّام عملٍ بحسب مصرفك، وقيدُه في «الفواتير» من الآن.`,
+      title: 'ردّ إليك مبلغ',
+      body: `ردّ إليك ${num(refund.amount)} ${refund.payment.currency}. ويصل المبلغ بطاقتك خلال أيّام عمل بحسب مصرفك، وقيده في «الفواتير» من الآن.`,
       templateKey: 'payment.refunded',
       data: { refundId, amount: num(refund.amount), currency: refund.payment.currency },
     })
@@ -1029,12 +1029,12 @@ export class CommerceService {
       include: { invoice: { include: { payments: true } } },
     })
     if (!order || order.userId !== userId) throw new AuthError('not_found', 'الطلب غير موجود', 404)
-    if (order.status === 'paid') throw new AuthError('already_paid', 'الطلب مدفوع — الإلغاء بعد الدفع استردادٌ يُطلب من الدعم', 409)
+    if (order.status === 'paid') throw new AuthError('already_paid', 'الطلب مدفوع — الإلغاء بعد الدفع استرداد يطلب من الدعم', 409)
     if (order.status === 'cancelled') return order
-    if (order.status !== 'pending_payment') throw new AuthError('bad_state', 'لا يُلغى إلّا طلبٌ لم يكتمل دفعُه', 409)
+    if (order.status !== 'pending_payment') throw new AuthError('bad_state', 'لا يلغى إلّا طلب لم يكتمل دفعه', 409)
     /* دفعةٌ نجحت وفاتورتُها لم تُسوَّ بعد: لا يُلغى فوقها — ماله وصل */
     if ((order.invoice?.payments ?? []).some((p) => p.status === 'succeeded')) {
-      throw new AuthError('has_payment', 'وصلتنا دفعةٌ عن هذا الطلب — راسل الدعم بدل الإلغاء', 409)
+      throw new AuthError('has_payment', 'وصلتنا دفعة عن هذا الطلب — راسل الدعم بدل الإلغاء', 409)
     }
 
     /* النقلُ بشرطِ الحالة لا بعدها: إلغاءٌ من صاحبه ومن المُشغِّل الخلفيّ في
@@ -1057,7 +1057,7 @@ export class CommerceService {
     await recordAudit(this.prisma, {
       actorId: userId, action: 'order.cancel', entityType: 'order', entityId: orderId,
       meta: { total: num(order.total), currency: order.currency, couponReleased: released },
-      reason: 'ألغاه صاحبُه قبل الدفع — فُكّت حجوزُه',
+      reason: 'ألغاه صاحبه قبل الدفع — فكّت حجوزه',
     })
     return cancelled
   }

@@ -70,7 +70,7 @@ export class TrainerPrepService {
     const profile = await this.prisma.trainerProfile.findUnique({
       where: { userId }, include: { application: { select: { status: true, fullName: true } } },
     })
-    if (!profile) throw new AuthError('no_profile', 'لا ملفَّ مدرّبٍ مرتبطا بهذا الحساب', 404)
+    if (!profile) throw new AuthError('no_profile', 'لا ملفّ مدرّب مرتبطا بهذا الحساب', 404)
     const problem = portalDoorProblemAr('materials', { status: profile.application.status, suspendedAt: profile.suspendedAt })
     if (problem) throw new AuthError('suspended', problem, 403)
     return profile
@@ -213,7 +213,7 @@ export class TrainerPrepService {
     /* وتُقبَل المعتمَدةُ كذلك (٣ أكتوبر ٢٠٢٦) — إن لم يكن له فيها عرضٌ مفتوح:
        من عُرضت عليه شعبةٌ يجيب عرضَها، ولا تُنشأ له ثانية */
     if (!qual || (qual.status !== 'pending' && qual.status !== 'qualified')) {
-      throw new AuthError('not_pending', 'هذه الدورةُ ليست بانتظار قرارك', 409)
+      throw new AuthError('not_pending', 'هذه الدورة ليست بانتظار قرارك', 409)
     }
     const existing = await this.prepCohortOf(profile.id, courseId)
     if (existing) return existing
@@ -221,11 +221,11 @@ export class TrainerPrepService {
       const open = await this.prisma.trainerAssignmentOffer.count({
         where: { profileId: profile.id, courseId, status: 'offered' },
       })
-      if (open > 0) throw new AuthError('open_offer', 'لهذه الدورة عرضٌ ينتظر جوابَك في «دوراتي» — أجِبه بدلَ أن تُنشئ شعبةً ثانية', 409)
+      if (open > 0) throw new AuthError('open_offer', 'لهذه الدورة عرض ينتظر جوابك في «دوراتي» — أجبه بدل أن تنشئ شعبة ثانية', 409)
       const live = await this.prisma.cohortTrainer.count({
         where: { profileId: profile.id, cohort: { courseId, status: { not: 'cancelled' } } },
       })
-      if (live > 0) throw new AuthError('has_cohort', 'لك شعبةٌ في هذه الدورة في «شعبي» — والشعبُ الزائدةُ تُنشئها الإدارة', 409)
+      if (live > 0) throw new AuthError('has_cohort', 'لك شعبة في هذه الدورة في «شعبي» — والشعب الزائدة تنشئها الإدارة', 409)
     }
 
     const cohorts = new CohortService(this.prisma)
@@ -256,7 +256,7 @@ export class TrainerPrepService {
       })
     }
     if (!qual || qual.status !== 'pending') {
-      throw new AuthError('not_pending', 'هذه الدورةُ ليست بانتظار قرارك', 409)
+      throw new AuthError('not_pending', 'هذه الدورة ليست بانتظار قرارك', 409)
     }
     /* وشعبةُ إعدادٍ قامت لها تُلغى — لا تبقى مسوّدةٌ بلا صاحب */
     const cohort = await this.prepCohortOf(profile.id, courseId)
@@ -271,8 +271,8 @@ export class TrainerPrepService {
     })
     await notifyRole(this.prisma, ['academic_manager', 'super_admin'], {
       channel: 'in_app', templateKey: 'trainer.prep.declined',
-      title: 'اعتذر مدرّبٌ عن دورة',
-      body: `اعتذر ${profile.application.fullName} عن دورةٍ اخترناها له — السبب: ${reason.slice(0, 200)}`,
+      title: 'اعتذر مدرّب عن دورة',
+      body: `اعتذر ${profile.application.fullName} عن دورة اخترناها له — السبب: ${reason.slice(0, 200)}`,
       data: { profileId: profile.id, courseId },
     }).catch(() => undefined)
     /* ومن لم يبقَ له ما ينتظر — اعتُمد ما قبِله واعتذر عن الباقي — يُقال
@@ -316,13 +316,13 @@ export class TrainerPrepService {
       const title = (line.replace(url ?? '', '').trim() || line).slice(0, M.resourceTitle)
       return { title, url, category: 'reading', kind: url ? 'link' : null }
     }).filter((r) => r.title.length >= PLAN_TITLE_MIN).slice(0, M.resources)
-    const summary = extra.length ? `محاورُ كتبتَها زيادةً على محاور الدورة: ${extra.join(' · ')}` : null
+    const summary = extra.length ? `محاور كتبتها زيادة على محاور الدورة: ${extra.join(' · ')}` : null
     const content = {
       kind: 'trainer' as const,
       summaryAr: summary ? summary.slice(0, M.summaryAr) : null,
       modules,
       resources,
-      ...(m.materialsUrl ? { workbook: { title: 'كرّاسةُ الدورة', url: m.materialsUrl, parts: [] } } : {}),
+      ...(m.materialsUrl ? { workbook: { title: 'كرّاسة الدورة', url: m.materialsUrl, parts: [] } } : {}),
     }
     const plans = new CohortPlanService(this.prisma)
     await plans.savePlan(userId, cohortId, content as unknown as Parameters<typeof plans.savePlan>[2])
@@ -330,7 +330,7 @@ export class TrainerPrepService {
     if (m.taskAr.trim()) {
       const { AssessmentService } = await import('./assessment.service')
       await new AssessmentService(this.prisma).createAssessment(userId, {
-        cohortId, title: 'مشروعُ الدورة', type: 'project', briefAr: m.taskAr.trim().slice(0, 4000),
+        cohortId, title: 'مشروع الدورة', type: 'project', briefAr: m.taskAr.trim().slice(0, 4000),
       } as Parameters<InstanceType<typeof AssessmentService>['createAssessment']>[1], { byTrainer: true }).catch(() => undefined)
     }
     await recordAudit(this.prisma, {
@@ -403,7 +403,7 @@ export class TrainerPrepService {
     if (!ctx.pending) return { ctx, qualified: false }
     const { TrainerReviewService } = await import('./trainer-review.service')
     await new TrainerReviewService(this.prisma)
-      .qualifyForCourse(ctx.profileId, ctx.courseId, actorId, 'اعتُمدت خطّةُ شعبة إعدادها', { quiet: opts.quiet })
+      .qualifyForCourse(ctx.profileId, ctx.courseId, actorId, 'اعتمدت خطّة شعبة إعدادها', { quiet: opts.quiet })
     return { ctx, qualified: true }
   }
 
@@ -425,7 +425,7 @@ export class TrainerPrepService {
     const { TrainerReviewService } = await import('./trainer-review.service')
     return new TrainerReviewService(this.prisma).returnMaterialsWithNotes(
       paused.id, actorId,
-      noteAr && noteAr.length >= 5 ? noteAr : 'رُدّت خطّةُ شعبتك بملاحظاتٍ تجدها في خطواتها',
+      noteAr && noteAr.length >= 5 ? noteAr : 'ردّت خطّة شعبتك بملاحظات تجدها في خطواتها',
       new Date(), { quiet: opts.quiet },
     )
   }
@@ -439,17 +439,17 @@ export class TrainerPrepService {
     if (pending > 0 || qualified === 0) return { activated: false as const, waiting: pending }
     const { TrainerReviewService } = await import('./trainer-review.service')
     try {
-      await new TrainerReviewService(this.prisma).decide(applicationId, actorId, 'activate', 'اعتُمدت دوراتُه كلُّها — فُعِّل تلقائيّا')
+      await new TrainerReviewService(this.prisma).decide(applicationId, actorId, 'activate', 'اعتمدت دوراته كلّها — فعّل تلقائيّا')
       await recordAudit(this.prisma, {
         actorId, action: 'trainer.prep.auto_activate', entityType: 'trainer_profile', entityId: profileId, meta: { qualified },
       })
       return { activated: true as const }
     } catch (e) {
-      const why = e instanceof AuthError ? e.message : 'خطأٌ غير متوقّع'
+      const why = e instanceof AuthError ? e.message : 'خطأ غير متوقّع'
       await notifyRole(this.prisma, ['academic_manager', 'super_admin'], {
         channel: 'in_app', templateKey: 'trainer.prep.activation_blocked',
-        title: 'اعتُمدت دوراتُ مدرّبٍ كلُّها ولم يُفعَّل',
-        body: `لم يُفعَّل تلقائيّا: ${why.slice(0, 300)} — أصلِحْ ذلك ثمّ فعّله من ملفّه.`,
+        title: 'اعتمدت دورات مدرّب كلّها ولم يفعّل',
+        body: `لم يفعّل تلقائيّا: ${why.slice(0, 300)} — أصلح ذلك ثمّ فعّله من ملفّه.`,
         data: { profileId, applicationId },
       }).catch(() => undefined)
       return { activated: false as const, blockedAr: why }
@@ -465,10 +465,10 @@ export class TrainerPrepService {
     if (pending > 0) return
     await notifyRole(this.prisma, ['academic_manager', 'super_admin'], {
       channel: 'in_app', templateKey: 'trainer.prep.nothing_pending',
-      title: qualified > 0 ? 'مدرّبٌ جاهزٌ للتفعيل' : 'مدرّبٌ اعتذر عن دوراته كلِّها',
+      title: qualified > 0 ? 'مدرّب جاهز للتفعيل' : 'مدرّب اعتذر عن دوراته كلّها',
       body: qualified > 0
-        ? 'اعتُمدت دوراتُه التي قبِلها واعتذر عن الباقي — فعّله من ملفّه.'
-        : 'لم يبقَ له دورةٌ في طور الإعداد — راجِعْ ملفَّه.',
+        ? 'اعتمدت دوراته التي قبلها واعتذر عن الباقي — فعّله من ملفّه.'
+        : 'لم يبق له دورة في طور الإعداد — راجع ملفّه.',
       data: { profileId },
     }).catch(() => undefined)
   }

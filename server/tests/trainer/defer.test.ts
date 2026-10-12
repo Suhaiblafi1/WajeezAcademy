@@ -58,7 +58,7 @@ beforeAll(async () => {
 }, 180_000)
 
 describe('① القرارُ ينقل ويَعِد ويُبلِغ', () => {
-  it('الحالةُ «مؤجَّل»، وموعدٌ بعد شهرين، وسطرٌ في السجلّ، وأثرُ البريد بالموعد نفسِه', async () => {
+  it('الحالةُ «مؤجَّل»، وموعدٌ قبل الفصل الذي بعد القادم، وسطرٌ في السجلّ، وأثرُ البريد بالموعد نفسِه', async () => {
     const a = await applicant('defer-1@test.local', 'ريم المدرّبة')
     const before = new Date()
     const out = await review.decide(a.id, adminId, 'defer', 'نودّ أن تدرّسي «القيادة لأوّل مرّة» في الربيع')
@@ -68,7 +68,7 @@ describe('① القرارُ ينقل ويَعِد ويُبلِغ', () => {
     expect(row.status).toBe(DEFERRED)
     expect(row.deferredFollowUpAt, 'لا موعدَ تواصلٍ في الطلب').not.toBeNull()
     const expected = deferredFollowUpAt(before).getTime()
-    expect(Math.abs(row.deferredFollowUpAt!.getTime() - expected), 'الموعدُ ليس بعد شهرين').toBeLessThan(DAY)
+    expect(Math.abs(row.deferredFollowUpAt!.getTime() - expected), 'الموعدُ ليس قبل الفصل المسمّى').toBeLessThan(DAY)
 
     const history = await prisma.trainerStatusHistory.findFirst({
       where: { applicationId: a.id, toStatus: DEFERRED }, orderBy: { createdAt: 'desc' },

@@ -58,17 +58,17 @@ export async function accountFootprint(prisma: PrismaClient, userId: string): Pr
 /** ما يمنع الحذفَ العاديّ — بالعدد وبالاسم، كي يُقرأ لا كي يُخمَّن */
 export function footprintBlockersAr(f: AccountFootprint): string[] {
   const b: string[] = []
-  if (f.orders > 0) b.push(`${f.orders} طلبَ شراءٍ وفواتيرَه`)
+  if (f.orders > 0) b.push(`${f.orders} طلب شراء وفواتيره`)
   if (f.enrollments > 0) b.push(`${f.enrollments} تسجيلا في شعب`)
   if (f.certificates > 0) b.push(`${f.certificates} شهادة`)
-  if (f.tickets > 0) b.push(`${f.tickets} تذكرةَ دعم`)
+  if (f.tickets > 0) b.push(`${f.tickets} تذكرة دعم`)
   if (f.ratings > 0) b.push(`${f.ratings} تقييما`)
-  if (f.advisorCases > 0) b.push(`${f.advisorCases} حالةَ استشارة`)
-  if (f.advisorAssignments > 0) b.push(`${f.advisorAssignments} إسنادَ استشارة`)
-  if (f.advisorRequests > 0) b.push(`${f.advisorRequests} طلبَ مستشار`)
-  if (f.cohortMessages > 0) b.push(`${f.cohortMessages} رسالةً في شعب`)
-  if (f.rescheduleRequests > 0) b.push(`${f.rescheduleRequests} طلبَ تأجيل جلسة`)
-  if (f.trainerProfile) b.push('ملفَّ مدرّب')
+  if (f.advisorCases > 0) b.push(`${f.advisorCases} حالة استشارة`)
+  if (f.advisorAssignments > 0) b.push(`${f.advisorAssignments} إسناد استشارة`)
+  if (f.advisorRequests > 0) b.push(`${f.advisorRequests} طلب مستشار`)
+  if (f.cohortMessages > 0) b.push(`${f.cohortMessages} رسالة في شعب`)
+  if (f.rescheduleRequests > 0) b.push(`${f.rescheduleRequests} طلب تأجيل جلسة`)
+  if (f.trainerProfile) b.push('ملفّ مدرّب')
   return b
 }
 

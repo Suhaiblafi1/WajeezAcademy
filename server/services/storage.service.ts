@@ -124,7 +124,7 @@ export function fileUploadsEnabled(): boolean {
 /** يُرفض الوعدُ بالرفع قبل أن يُصدَر رابطُه — بعربيّةٍ تقول البديل */
 export function assertFileUploadsEnabled(altAr: string): void {
   if (fileUploadsEnabled()) return
-  throw new AuthError('uploads_unavailable', `رفعُ الملفّات غيرُ مفعّلٍ بعد على هذه المنصّة. ${altAr}`, 501)
+  throw new AuthError('uploads_unavailable', `رفع الملفّات غير مفعّل بعد على هذه المنصّة. ${altAr}`, 501)
 }
 
 export const MAX_UPLOAD_BYTES: Record<string, number> = {

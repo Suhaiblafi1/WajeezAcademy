@@ -124,7 +124,7 @@ export class SkillGrowthService {
     const e = await this.myEnrollment(userId, enrollmentId)
     const already = await this.prisma.skillRemeasure.count({ where: { enrollmentId } })
     if (already > 0) {
-      throw new AuthError('already_measured', 'قِيس نموك في هذه الدورة مرة واحدة — الفرق سجل لا يُعدَّل', 409)
+      throw new AuthError('already_measured', 'قيس نموك في هذه الدورة مرة واحدة — الفرق سجل لا يعدّل', 409)
     }
 
     let rulesChecked = 0
@@ -173,8 +173,8 @@ export class SkillGrowthService {
     })
     await safeNotify(this.prisma, {
       userId, channel: 'in_app',
-      title: 'سُجّل قياس نموك',
-      body: `قِيست ${written.length} مهارة بعد إتمامك «${e.cohort.title}» — ارتفعت ${improved} منها. النتيجة في ملف مهاراتك.`,
+      title: 'سجّل قياس نموك',
+      body: `قيست ${written.length} مهارة بعد إتمامك «${e.cohort.title}» — ارتفعت ${improved} منها. النتيجة في ملف مهاراتك.`,
       data: { kind: 'skill_remeasure', enrollmentId, courseId: e.cohort.courseId },
     })
 

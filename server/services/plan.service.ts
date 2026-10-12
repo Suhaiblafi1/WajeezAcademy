@@ -239,7 +239,7 @@ export class PlanService {
     if (dropped.length > 0) {
       throw new AuthError(
         'committed_course_dropped',
-        `لا يُغيَّر المسار بعد الشراء: ${dropped.length === 1 ? 'دورةٌ اشتريتها' : `${dropped.length} دورات اشتريتها`} خارج القائمة الجديدة. التنقّل بين الشعب متاحٌ ما لم تبدأ.`,
+        `لا يغيّر المسار بعد الشراء: ${dropped.length === 1 ? 'دورة اشتريتها' : `${dropped.length} دورات اشتريتها`} خارج القائمة الجديدة. التنقّل بين الشعب متاح ما لم تبدأ.`,
         409,
       )
     }
@@ -251,12 +251,12 @@ export class PlanService {
       where: { userId, status: { in: ['enrolled', 'waitlisted', 'completed'] }, cohort: { courseId } },
       select: { id: true },
     })
-    if (enrolled) throw new AuthError('already_enrolled', 'أنت مسجَّل في هذه الدورة — لا تُحذف من الخطّة', 409)
+    if (enrolled) throw new AuthError('already_enrolled', 'أنت مسجّل في هذه الدورة — لا تحذف من الخطّة', 409)
     const req = await this.prisma.enrollmentRequest.findFirst({
       where: { userId, status: { in: ['pending', 'seat_held'] }, cohort: { courseId } },
       select: { id: true },
     })
-    if (req) throw new AuthError('request_pending', 'لك طلبٌ قائم على هذه الدورة — الغِه أوّلا', 409)
+    if (req) throw new AuthError('request_pending', 'لك طلب قائم على هذه الدورة — الغه أوّلا', 409)
   }
 
   /**
@@ -322,9 +322,9 @@ export class PlanService {
   async replaceItem(userId: string, courseId: string, withCourseId: string): Promise<PlanView> {
     const { plan, item } = await this.ownedItem(userId, courseId)
     await this.assertNotEnrolled(userId, courseId)
-    if (withCourseId === courseId) throw new AuthError('same_course', 'هذه هي الدورة نفسُها')
+    if (withCourseId === courseId) throw new AuthError('same_course', 'هذه هي الدورة نفسها')
     if (plan.items.some((i) => i.courseId === withCourseId)) {
-      throw new AuthError('already_in_plan', 'البديل موجودٌ في خطّتك أصلا', 409)
+      throw new AuthError('already_in_plan', 'البديل موجود في خطّتك أصلا', 409)
     }
     const target = await this.prisma.course.findFirst({
       where: { id: withCourseId, status: 'published' }, select: { id: true },
@@ -352,7 +352,7 @@ export class PlanService {
   async removeItem(userId: string, courseId: string): Promise<PlanView> {
     const { plan, item } = await this.ownedItem(userId, courseId)
     await this.assertNotEnrolled(userId, courseId)
-    if (plan.items.length <= 1) throw new AuthError('last_item', 'لا تُحذف آخر دورة في الخطّة', 409)
+    if (plan.items.length <= 1) throw new AuthError('last_item', 'لا تحذف آخر دورة في الخطّة', 409)
 
     await this.prisma.$transaction(async (tx) => {
       await tx.learnerPlanItem.delete({ where: { id: item.id } })

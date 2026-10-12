@@ -116,16 +116,16 @@ export class PlanEditService {
       case 'schedule': return scheduleSnapshot(edit, r.sessions, r.tasks)
       case 'task_change': {
         const t = r.tasks.find((x) => x.id === edit.assessmentId)
-        if (!t) return { ok: false, problemAr: 'لا مهمّةَ بهذا المعرّف في هذه الشعبة — لعلّها حُذفت' }
+        if (!t) return { ok: false, problemAr: 'لا مهمّة بهذا المعرّف في هذه الشعبة — لعلّها حذفت' }
         return { ok: true, value: taskSnapshot(t as unknown as Record<string, unknown>, Object.keys(edit.set)) }
       }
       case 'session_move': case 'session_remove': {
         const s = r.sessions.find((x) => x.id === edit.sessionId)
-        if (!s) return { ok: false, problemAr: 'لا لقاءَ بهذا المعرّف في هذه الشعبة — لعلّه حُذف' }
-        if (s.placeholder) return { ok: false, problemAr: 'هذا موعدٌ تحجزه الإدارة لا لقاءٌ للمدرّب' }
+        if (!s) return { ok: false, problemAr: 'لا لقاء بهذا المعرّف في هذه الشعبة — لعلّه حذف' }
+        if (s.placeholder) return { ok: false, problemAr: 'هذا موعد تحجزه الإدارة لا لقاء للمدرّب' }
         return { ok: true, value: sessionSnapshot(s) }
       }
-      default: return { ok: false, problemAr: 'نوعُ تعديلٍ غيرُ معروف' }
+      default: return { ok: false, problemAr: 'نوع تعديل غير معروف' }
     }
   }
 
@@ -170,11 +170,11 @@ export class PlanEditService {
       where: { planId, status: { in: ['proposed', 'pending'] } }, select: { edit: true },
     })).map((o) => o.edit as unknown as PlanEdit)
     if (open.some((o) => o.kind === 'schedule')) {
-      throw new AuthError('schedule_open', 'في البطاقة جدولٌ مقترحٌ لم يُقرَّر فيه — راجعه أو احذفه قبل أن يُجهَّز غيرُه', 409)
+      throw new AuthError('schedule_open', 'في البطاقة جدول مقترح لم يقرّر فيه — راجعه أو احذفه قبل أن يجهّز غيره', 409)
     }
     const taken = new Set(open.flatMap(openKeysOf))
     if (openKeysOf(r.edit).some((k) => taken.has(k))) {
-      throw new AuthError('schedule_overlaps', 'على بعض هذه اللقاءات أو المهامّ بندٌ مقترحٌ لم يُقرَّر فيه — قرّر فيه أو احذفه أوّلا، ثمّ جهّز الجدول', 409)
+      throw new AuthError('schedule_overlaps', 'على بعض هذه اللقاءات أو المهامّ بند مقترح لم يقرّر فيه — قرّر فيه أو احذفه أوّلا، ثمّ جهّز الجدول', 409)
     }
     return this.propose(actorId, planId, [{ ...r.edit, required: false, reasonAr: r.reasonAr }])
   }
@@ -201,10 +201,10 @@ export class PlanEditService {
     })
     if (!plan || !plan.trainerId) throw new AuthError('not_found', 'الخطّة غير موجودة', 404)
     if (!(OPEN as readonly string[]).includes(plan.status)) {
-      throw new AuthError('plan_closed', 'هذه خطّةٌ اعتُمدت — التعديلاتُ تُقترح على خطّةٍ بانتظار القرار أو في يد مدرّبها', 409)
+      throw new AuthError('plan_closed', 'هذه خطّة اعتمدت — التعديلات تقترح على خطّة بانتظار القرار أو في يد مدرّبها', 409)
     }
-    if (items.length === 0) throw new AuthError('bad_edits', 'الملفُّ بلا تعديلات', 422)
-    if (items.length > PLAN_EDITS_MAX) throw new AuthError('bad_edits', `في الملفّ ${items.length} تعديلا — الحدُّ ${PLAN_EDITS_MAX}. قسّمه ملفّين`, 422)
+    if (items.length === 0) throw new AuthError('bad_edits', 'الملفّ بلا تعديلات', 422)
+    if (items.length > PLAN_EDITS_MAX) throw new AuthError('bad_edits', `في الملفّ ${items.length} تعديلا — الحدّ ${PLAN_EDITS_MAX}. قسّمه ملفّين`, 422)
 
     const r = await this.rows(plan.cohortId, plan.content)
     /* ═══ ولا يُرفع ما رُفع ولم يُقرَّر فيه (١٠ أكتوبر ٢٠٢٦) ═══
@@ -223,8 +223,8 @@ export class PlanEditService {
     /* والملفُّ كلُّه مرفوعٌ من قبل — سطرٌ واحدٌ يقول ذلك، لا سطرٌ لكلّ بند */
     if (taken.size > 0 && items.every((item) => openKeysOf(editOf(item)).some((k) => taken.has(k)))) {
       throw new AuthError('edits_already_uploaded', replace
-        ? 'رُفع هذا الملفُّ قبلُ واعتُمدت بنودُه للمدرّب — فلا يُستبدل ما اعتُمد. اسحبه من بطاقة خطّته أوّلا إن أردت'
-        : 'رُفع هذا الملفُّ قبلُ ولم يُقرَّر في بنوده — فلا يُرفع مرّتين. وإن أردت رفعه من جديد فاختر استبدال المسوّدات عند الرفع، أو اسحبها من بطاقة خطّته أوّلا', 409)
+        ? 'رفع هذا الملفّ قبل واعتمدت بنوده للمدرّب — فلا يستبدل ما اعتمد. اسحبه من بطاقة خطّته أوّلا إن أردت'
+        : 'رفع هذا الملفّ قبل ولم يقرّر في بنوده — فلا يرفع مرّتين. وإن أردت رفعه من جديد فاختر استبدال المسوّدات عند الرفع، أو اسحبها من بطاقة خطّته أوّلا', 409)
     }
     const problems: string[] = []
     const onDraft: number[] = []
@@ -237,11 +237,11 @@ export class PlanEditService {
       /* ونقلُ لقاءٍ وحدَه لا يكسر ما حوله — وإلّا كُتب جدولا واحدا بسلسلته (`sessionMoveChainProblem`) */
       if (edit.kind === 'session_move') {
         const chain = sessionMoveChainProblem(edit, r.sessions.filter((x) => !x.placeholder), r.tasks)
-        if (chain) problems.push(`البند ${i + 1}: نقلُ هذا اللقاء وحدَه يمسّ توقيتاتٍ أخرى — ${chain}. اكتبه وما يمسّه جدولا واحدا (schedule)`)
+        if (chain) problems.push(`البند ${i + 1}: نقل هذا اللقاء وحده يمسّ توقيتات أخرى — ${chain}. اكتبه وما يمسّه جدولا واحدا (schedule)`)
       }
       if (edit.kind === 'schedule') {
         const chain = scheduleChainProblem(edit, r.sessions.filter((x) => !x.placeholder), r.tasks)
-        if (chain) problems.push(`البند ${i + 1}: الجدولُ لا يكتمل بسلسلته — ${chain}`)
+        if (chain) problems.push(`البند ${i + 1}: الجدول لا يكتمل بسلسلته — ${chain}`)
       }
       /* وبندان على موضعٍ واحدٍ لا يُرفعان معا: قبولُ أحدهما يجعل «قبل» الآخر غيرَ ما فيه */
       for (const key of targetsOf(edit)) {
@@ -257,9 +257,9 @@ export class PlanEditService {
     /* ═══ وما وقع على نسخةٍ سابقةٍ يُقال بسببه — لا سطرٌ واحدٌ يتكرّر لكلّ بند (١٠ أكتوبر ٢٠٢٦) ═══
        رُدّت ملفّاتُ صاحب المنصّة الثمانية بثلاثة عشر سطرا متطابقا لكلّ ملفّ، ولا يُعرف منها
        أهي مسوّداتٌ لم يعتمدها (فيكفي الاستبدال) أم بنودٌ وصلت المدرّبين (فتُسحب أوّلا). */
-    if (onDraft.length) problems.push(`${itemsAr(onDraft)}: نسختُها السابقة مسوّدةٌ لم تعتمدها بعد — اختر «استبدل المسودات التي لم تعتمدها بعد» وارفع الملفَّ من جديد`)
-    if (onTrainer.length) problems.push(`${itemsAr(onTrainer)}: نسختُها السابقة اعتمدتَها فوصلت المدرّبَ ولم يقرّر فيها بعد — فلا تُستبدل. إن أردتَ الجديدةَ فاسحب القديمة بـ«اسحب ما لم يُقرَّر» في بطاقة الخطّة ثمّ ارفع الملفّ`)
-    if (problems.length) throw new AuthError('bad_edits', `لم يُرفع شيء — في الملفّ ما لا يقع:\n${problems.join('\n')}`, 422)
+    if (onDraft.length) problems.push(`${itemsAr(onDraft)}: نسختها السابقة مسوّدة لم تعتمدها بعد — اختر «استبدل المسودات التي لم تعتمدها بعد» وارفع الملفّ من جديد`)
+    if (onTrainer.length) problems.push(`${itemsAr(onTrainer)}: نسختها السابقة اعتمدتها فوصلت المدرّب ولم يقرّر فيها بعد — فلا تستبدل. إن أردت الجديدة فاسحب القديمة بـ«اسحب ما لم يقرّر» في بطاقة الخطّة ثمّ ارفع الملفّ`)
+    if (problems.length) throw new AuthError('bad_edits', `لم يرفع شيء — في الملفّ ما لا يقع:\n${problems.join('\n')}`, 422)
 
     const batchId = randomUUID()
     const replaced = await this.prisma.$transaction(async (tx) => {
@@ -318,12 +318,12 @@ export class PlanEditService {
   /** يعتمده للمدرّب (`pending`) أو يحذفه (`dropped`) — والمسوّدةُ وحدَها تُراجَع */
   async review(actorId: string, id: string, approve: boolean) {
     const row = await this.prisma.planEditSuggestion.findUnique({ where: { id }, select: { id: true, cohortId: true, planId: true, kind: true } })
-    if (!row) throw new AuthError('not_found', 'هذا التعديلُ غير موجود', 404)
+    if (!row) throw new AuthError('not_found', 'هذا التعديل غير موجود', 404)
     const done = await this.prisma.planEditSuggestion.updateMany({
       where: { id, status: 'proposed' },
       data: { status: approve ? 'pending' : 'dropped', reviewedBy: actorId, reviewedAt: new Date() },
     })
-    if (done.count !== 1) throw new AuthError('edit_reviewed', 'رُوجع هذا التعديلُ من قبل', 409)
+    if (done.count !== 1) throw new AuthError('edit_reviewed', 'روجع هذا التعديل من قبل', 409)
     await recordAudit(this.prisma, {
       actorId, action: approve ? 'cohort.plan.edit.approve' : 'cohort.plan.edit.drop', entityType: 'cohort', entityId: row.cohortId,
       meta: { planId: row.planId, suggestionId: id, kind: row.kind },
@@ -423,18 +423,18 @@ export class PlanEditService {
     const profile = await this.prisma.trainerProfile.findUnique({ where: { userId }, select: { id: true, suspendedAt: true } })
     if (!profile || profile.suspendedAt) throw new AuthError('not_trainer', 'لا ملف مدرب نشطا لهذا الحساب', 403)
     const link = await this.prisma.cohortTrainer.findFirst({ where: { cohortId, profileId: profile.id }, select: { cohortId: true } })
-    if (!link) throw new AuthError('not_your_cohort', 'هذه الشعبة ليست مُسنَدةً إليك', 403)
+    if (!link) throw new AuthError('not_your_cohort', 'هذه الشعبة ليست مسندة إليك', 403)
   }
 
   private async pendingOf(userId: string, id: string) {
     const row = await this.prisma.planEditSuggestion.findUnique({ where: { id } })
-    if (!row) throw new AuthError('not_found', 'هذا التعديلُ غير موجود', 404)
+    if (!row) throw new AuthError('not_found', 'هذا التعديل غير موجود', 404)
     await this.assertTrainer(userId, row.cohortId)
     /* وما لم تعتمده الإدارةُ لا وجودَ له عنده — لا «قُرِّر فيه» ولا غيرُه (④) */
     if (!TRAINER_VISIBLE_EDIT_STATUSES.includes(row.status as PlanEditStatus)) {
-      throw new AuthError('not_found', 'هذا التعديلُ غير موجود', 404)
+      throw new AuthError('not_found', 'هذا التعديل غير موجود', 404)
     }
-    if (row.status !== 'pending') throw new AuthError('edit_decided', 'قُرِّر في هذا التعديل من قبل', 409)
+    if (row.status !== 'pending') throw new AuthError('edit_decided', 'قرّر في هذا التعديل من قبل', 409)
     return row
   }
 
@@ -443,22 +443,22 @@ export class PlanEditService {
     const row = await this.pendingOf(userId, id)
     const latest = await this.latestTrainerPlan(row.cohortId)
     if (!latest || !(IN_HAND as readonly string[]).includes(latest.status)) {
-      throw new AuthError('plan_submitted', 'خطّتك بانتظار الاعتماد — تُقبل التعديلاتُ حين تعود إليك', 409)
+      throw new AuthError('plan_submitted', 'خطّتك بانتظار الاعتماد — تقبل التعديلات حين تعود إليك', 409)
     }
     const edit = row.edit as unknown as PlanEdit
     const r = await this.rows(row.cohortId, latest.content)
     const now = this.snapshotNow(edit, r)
-    if (!now.ok) throw new AuthError('edit_gone', `لا يقع هذا التعديلُ الآن: ${now.problemAr}. لك أن ترفضه`, 409)
+    if (!now.ok) throw new AuthError('edit_gone', `لا يقع هذا التعديل الآن: ${now.problemAr}. لك أن ترفضه`, 409)
     const stale = !sameSnapshot((row.before ?? null) as EditSnapshot, now.value)
     if (stale && !opts.force) {
-      throw new AuthError('edit_stale', 'تغيّر هذا الموضعُ منذ اقتُرح التعديل — عدّلتَه أنت بعده. اقبله فوق ما كتبتَ، أو ارفضه', 409)
+      throw new AuthError('edit_stale', 'تغيّر هذا الموضع منذ اقترح التعديل — عدّلته أنت بعده. اقبله فوق ما كتبت، أو ارفضه', 409)
     }
 
     /* يُحجَز قبل أن يُطبَّق — نقرتان معا لا تكتبانه مرّتين — ويُعاد منتظِرا إن سقط تطبيقُه */
     const claimed = await this.prisma.planEditSuggestion.updateMany({
       where: { id, status: 'pending' }, data: { status: 'accepted', decidedAt: new Date(), decidedBy: userId },
     })
-    if (claimed.count !== 1) throw new AuthError('edit_decided', 'قُرِّر في هذا التعديل من قبل', 409)
+    if (claimed.count !== 1) throw new AuthError('edit_decided', 'قرّر في هذا التعديل من قبل', 409)
     try {
       await this.apply(userId, row.cohortId, edit, r)
     } catch (e) {
@@ -538,7 +538,7 @@ export class PlanEditService {
     } catch (e) {
       for (const undo of done.reverse()) await undo().catch(() => undefined)
       throw e instanceof AuthError
-        ? new AuthError(e.code, `لم يُنقل شيءٌ من الجدول — ${e.message}`, e.status)
+        ? new AuthError(e.code, `لم ينقل شيء من الجدول — ${e.message}`, e.status)
         : e
     }
   }
@@ -550,7 +550,7 @@ export class PlanEditService {
     const done = await this.prisma.planEditSuggestion.updateMany({
       where: { id, status: 'pending' }, data: { status: 'rejected', decidedAt: new Date(), decidedBy: userId, noteAr: note },
     })
-    if (done.count !== 1) throw new AuthError('edit_decided', 'قُرِّر في هذا التعديل من قبل', 409)
+    if (done.count !== 1) throw new AuthError('edit_decided', 'قرّر في هذا التعديل من قبل', 409)
     await recordAudit(this.prisma, {
       actorId: userId, action: 'cohort.plan.edit.reject', entityType: 'cohort', entityId: row.cohortId,
       meta: { planId: row.planId, suggestionId: id, kind: row.kind, ...(note ? { note } : {}) },

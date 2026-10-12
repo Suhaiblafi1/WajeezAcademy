@@ -27,7 +27,7 @@ export function registerPublishingRoutes(app: FastifyInstance, prisma: PrismaCli
 
   app.delete('/api/admin/publishing/versions/:id', {
     preHandler: requirePermission('catalog.pathway.publish'),
-    schema: { tags: ['publishing'], summary: 'حذف مسودة معلّقة — مسودة بلا لقطة فقط، ويُسجَّل في التدقيق' },
+    schema: { tags: ['publishing'], summary: 'حذف مسودة معلّقة — مسودة بلا لقطة فقط، ويسجّل في التدقيق' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const { reasonAr } = z.object({ reasonAr: z.string().optional() }).parse(req.body ?? {})

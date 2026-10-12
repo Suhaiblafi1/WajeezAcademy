@@ -80,8 +80,8 @@ export function notificationMailDoc(input: NotificationMailInput): MailDoc {
   if (audience === 'learner' && isSilenceable(input.templateKey)) {
     blocks.push({
       kind: 'note',
-      text: 'تصلك هذه الرسائلُ لأنّك مشترك في تنبيهاتها، ولك أن توقفها:',
-      link: { label: 'غيّر تفضيلاتِ رسائلك', href: `${input.siteUrl}${PREFS_PATH}` },
+      text: 'تصلك هذه الرسائل لأنّك مشترك في تنبيهاتها، ولك أن توقفها:',
+      link: { label: 'غيّر تفضيلات رسائلك', href: `${input.siteUrl}${PREFS_PATH}` },
     })
   }
 

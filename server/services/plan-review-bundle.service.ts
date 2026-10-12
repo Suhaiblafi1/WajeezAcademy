@@ -87,7 +87,7 @@ export class PlanReviewBundleService {
       included.push(p.cohort.id)
       index.push(`${n}. **${p.trainerName}** — ${p.cohort.title} (${p.courseTitle}) → \`${folder}/${PLAN_MD_NAME}\``)
     }
-    if (included.length === 0) index.push('لا خطّةَ تنتظر الاعتماد الآن.')
+    if (included.length === 0) index.push('لا خطّة تنتظر الاعتماد الآن.')
     zip.file('فهرس.md', `${index.join('\n')}\n`)
     if (included.length) await this.audit(actorId, included, true)
     return { fileName: `خطط-تنتظر-الاعتماد-${zonedDay(now)}.zip`, zip: await this.generate(zip), cohortIds: included }
@@ -164,7 +164,7 @@ export class PlanReviewBundleService {
     const body = await getObject(f.key).catch(() => null)
     if (!body) return 'غير موجود في المخزن'
     if (body.length > BUNDLE_FILE_MAX_BYTES) return `حجمه ${mb(body.length)} — أكبر من ${mb(BUNDLE_FILE_MAX_BYTES)}`
-    if (budget.used + body.length > BUNDLE_TOTAL_MAX_BYTES) return `امتلأت الحزمة (${mb(BUNDLE_TOTAL_MAX_BYTES)}) — نزّل خطّتَه وحدَها`
+    if (budget.used + body.length > BUNDLE_TOTAL_MAX_BYTES) return `امتلأت الحزمة (${mb(BUNDLE_TOTAL_MAX_BYTES)}) — نزّل خطّته وحدها`
     budget.used += body.length
     zip.file(path, body)
     return null

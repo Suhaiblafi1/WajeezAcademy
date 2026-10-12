@@ -99,9 +99,9 @@ export class ProfileService {
      والمفتاحُ يُكتب **قبل** أن تُصدَر رابطُ الرفع، لأنّ `resolveStorageOwner`
      يقرأ المالكَ من القاعدة: فلو أُصدر الرابطُ أوّلا لَرُدّت بايتاتُه بـ٤٠٤. */
   async startAvatarUpload(userId: string, mime: string) {
-    assertFileUploadsEnabled('والبديلُ الآن: ألصِق رابطَ صورةٍ مباشرا في الحقل.')
+    assertFileUploadsEnabled('والبديل الآن: ألصق رابط صورة مباشرا في الحقل.')
     if (!(PHOTO_MIMES as readonly string[]).includes(mime)) {
-      throw new AuthError('bad_mime', 'الصورةُ JPEG أو PNG أو WebP', 422)
+      throw new AuthError('bad_mime', 'الصورة JPEG أو PNG أو WebP', 422)
     }
     const existing = await this.prisma.learnerProfile.findUnique({
       where: { userId }, select: { avatarUrl: true },

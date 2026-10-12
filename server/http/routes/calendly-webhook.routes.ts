@@ -27,7 +27,7 @@ export function registerCalendlyWebhookRoutes(app: FastifyInstance, prisma: Pris
     /* حدثٌ موقّعٌ لم يُطابَق يُقال في السجلّ — الصمتُ يجعل أوّلَ ضبطٍ خاطئ
        لغزا: Calendly يقول «سُلِّم» ووجيز لا موعدَ فيه ولا سبب. */
     if (result.ignored && result.reason !== 'other_event') {
-      req.log.warn({ reason: result.reason }, 'حدثُ Calendly موقَّعٌ ولم يُطابق طلبا')
+      req.log.warn({ reason: result.reason }, 'حدث Calendly موقّع ولم يطابق طلبا')
     }
     return result
   })

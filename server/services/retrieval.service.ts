@@ -48,7 +48,7 @@ export class RetrievalService {
     const mod = await this.prisma.courseModule.findUnique({ where: { id: moduleId } })
     if (!mod) throw new AuthError('not_found', 'الوحدة غير موجودة', 404)
     const mine = await this.myCourseIds(userId)
-    if (!mine.has(mod.courseId)) throw new AuthError('forbidden', 'هذه الوحدة ليست في دورة مسجَّل فيها', 403)
+    if (!mine.has(mod.courseId)) throw new AuthError('forbidden', 'هذه الوحدة ليست في دورة مسجّل فيها', 403)
 
     const parsed = await this.checksOf(moduleId)
     if (!parsed || parsed.checks.length === 0) {

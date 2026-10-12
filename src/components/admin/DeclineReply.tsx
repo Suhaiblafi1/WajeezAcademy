@@ -18,13 +18,12 @@ import Button from "@/components/ui/Button";
 import { staffAreaCls, staffControlCls } from "@/components/FormKit";
 import { toast, toastError } from "@/components/Toast";
 import { apiPost, ApiError } from "@/services/api";
-import { fmtDateTime, fmtDateWith } from "@/application/text/format-ar";
+import { fmtDateTime } from "@/application/text/format-ar";
 import {
   DATA_CHOICE_LINK_DAYS, DECLINE_REPLY_BODY_MAX, DECLINE_REPLY_BODY_MIN,
   DEFAULT_DECLINE_REPLY_SUBJECT_AR, EXPIRED_REPLY_SUBJECT_AR, defaultDeclineReplyAr, defaultExpiredReplyAr,
 } from "@/application/trainer/decline-reply";
-import { DEFER_FOLLOW_UP_MONTHS, deferredFollowUpAt } from "@/application/trainer/deferral";
-import { ACADEMY_ZONE } from "@/application/trainer/cohort-period";
+import { deferredFollowUpAt, followUpTermAr } from "@/application/trainer/deferral";
 
 export interface DeclineReplyRow {
   id: string;
@@ -103,8 +102,7 @@ export default function DeclineReply({ c, onDone, kind = "declined" }: {
       {expired ? (
         <p className="text-read leading-6 text-muted-foreground">
           بالإرسال يغلق هذا العقد، ويصير طلبه «مؤجّلا — للفصول القادمة»: نسأله عن اهتمامه
-          في {fmtDateWith(deferredFollowUpAt(new Date()), { year: "numeric", month: "long", day: "numeric", timeZone: ACADEMY_ZONE })}
-          {" "}(بعد {DEFER_FOLLOW_UP_MONTHS === 2 ? "شهرين" : `${DEFER_FOLLOW_UP_MONTHS} أشهر`}) ونذكّر فريقك. ومع
+          قبل {followUpTermAr(deferredFollowUpAt(new Date()))} ونذكّر فريقك. ومع
           الرسالة زرّ «اختر ما نفعله ببياناتك»: إبقاؤها، أو حذفها فورا — ويصلك خبر اختياره.
           وترسل مرّة واحدة. وإن أردته أن يوقّع فاستخدم «جدّد الرابط» أعلاه.
         </p>

@@ -18,7 +18,10 @@
       المسقَطُ الآمن. أمّا الوجهةُ المباشرةُ إلى التقويم (٢٤ سبتمبر ٢٠٢٦)
       فحارسُها `trainer/invite-only-booking`، لأنّها تلزمها حالُ البابَين. */
 
-import { describe, expect, it } from 'vitest'
+import { describe, expect as vexpect, it } from 'vitest'
+import { plainExpect } from '../../server/tests/helpers/plain-expect'
+/* نصوصُ الخادم بلا تشكيلٍ إعرابيّ بعد «اللغة البيضاء» — والمنتظَرُ هنا قبلها: يُقارَن الطرفان بلا تشكيل */
+const expect = plainExpect(vexpect)
 import {
   bookingReminderMail, decisionMailFor, draftReminderMail, rejectionMail, rejectionUndoneMail, waitlistMail,
   withdrawalUndoneMail,

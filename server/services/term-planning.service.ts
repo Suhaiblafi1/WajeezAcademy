@@ -104,11 +104,11 @@ export class TermPlanningService {
     for (const c of courses) {
       const titleAr = c.versions[0]?.titleAr ?? c.id
       if (c.cohorts.some((h) => (EXISTING as readonly string[]).includes(h.status))) {
-        skipped.push({ courseId: c.id, titleAr, whyAr: 'لها شعبةٌ قائمةٌ أو مهيّأة' })
+        skipped.push({ courseId: c.id, titleAr, whyAr: 'لها شعبة قائمة أو مهيّأة' })
         continue
       }
       if (c.listPrice === null) {
-        skipped.push({ courseId: c.id, titleAr, whyAr: 'بلا سعر قائمة — لا تُفتح بسعرٍ مُختلَق' })
+        skipped.push({ courseId: c.id, titleAr, whyAr: 'بلا سعر قائمة — لا تفتح بسعر مختلق' })
         continue
       }
       meta.set(c.id, { titleAr, price: Number(c.listPrice), currency: c.listCurrency ?? 'USD' })
@@ -148,7 +148,7 @@ export class TermPlanningService {
         week: r.week, startsAt: r.startsAt.toISOString(), monthWithinTerm: r.monthWithinTerm,
         price: m.price, currency: m.currency,
         worstCollisionAr: r.worstCollision
-          ? `أعلى تزاحمٍ مقبول (${r.worstCollision.penalty}) مع «${r.worstCollision.withCourseId}»: ${r.worstCollision.whyAr}`
+          ? `أعلى تزاحم مقبول (${r.worstCollision.penalty}) مع «${r.worstCollision.withCourseId}»: ${r.worstCollision.whyAr}`
           : null,
         orderBreachAr: r.orderBreachAr,
         pinned: r.pinned,
@@ -187,9 +187,9 @@ export class TermPlanningService {
         .catch(() => undefined)
       await service.setDeliveryPlan(cohort.id, actor, {
         notesAr:
-          `تقديمٌ عن بُعد بجلساتٍ أسبوعيّةٍ يومَي الثلاثاء والخميس ٦ مساءً بتوقيت عمّان، ` +
+          `تقديم عن بعد بجلسات أسبوعيّة يومي الثلاثاء والخميس ٦ مساء بتوقيت عمّان، ` +
           `${SESSION_WEEKS} أسابيع، ضمن ${term.titleAr} (الشهر ${row.monthWithinTerm}). ` +
-          `خطّةٌ أساسيّةٌ أُنشئت مع الشعبة، وتُحرَّر من بطاقتها.`,
+          `خطّة أساسيّة أنشئت مع الشعبة، وتحرّر من بطاقتها.`,
         deliveryMode: 'remote',
       }).catch(() => undefined)
 

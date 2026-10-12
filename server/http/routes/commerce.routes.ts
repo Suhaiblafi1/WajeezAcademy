@@ -33,7 +33,7 @@ export function registerCommerceRoutes(app: FastifyInstance, prisma: PrismaClien
   app.post('/api/learner/plan/enrollment-request', {
     preHandler: requirePermission('enrollment.request'),
     config: { rateLimit: { max: 10, timeWindow: '10 minutes' } },
-    schema: { tags: ['commerce'], summary: 'طلب التسجيل في دورات الخطّة كلها — وما لا شعبة له يُقال' },
+    schema: { tags: ['commerce'], summary: 'طلب التسجيل في دورات الخطّة كلها — وما لا شعبة له يقال' },
   }, async (req, reply) => reply.status(201).send(await commerce.requestPlanEnrollment(req.auth!.userId)))
 
   app.get('/api/learner/orders', {
@@ -51,7 +51,7 @@ export function registerCommerceRoutes(app: FastifyInstance, prisma: PrismaClien
   /* إلغاءُ طلبٍ لم يكتمل دفعُه — يفكّ حجوزَه فلا يبقى مقعدٌ مقفلا بطلبٍ متروك */
   app.post('/api/learner/orders/:id/cancel', {
     preHandler: requireAuth,
-    schema: { tags: ['commerce'], summary: 'إلغاء طلبي قبل الدفع — تُبطل فاتورتُه وتُفكّ حجوزُه' },
+    schema: { tags: ['commerce'], summary: 'إلغاء طلبي قبل الدفع — تبطل فاتورته وتفكّ حجوزه' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     return commerce.cancelOrder(id, req.auth!.userId)
@@ -64,7 +64,7 @@ export function registerCommerceRoutes(app: FastifyInstance, prisma: PrismaClien
      التقويم. */
   app.post('/api/learner/checkout', {
     preHandler: requireAuth,
-    schema: { tags: ['commerce'], summary: 'شراء مباشر لشعبة أو أكثر — يُنشئ طلبا وفاتورة ويحجز المقاعد' },
+    schema: { tags: ['commerce'], summary: 'شراء مباشر لشعبة أو أكثر — ينشئ طلبا وفاتورة ويحجز المقاعد' },
   }, async (req, reply) => {
     const body = z.object({
       cohortIds: z.array(z.string().uuid()).min(1).max(10),
@@ -82,7 +82,7 @@ export function registerCommerceRoutes(app: FastifyInstance, prisma: PrismaClien
      بنيةً لا باتّفاق. */
   app.post('/api/learner/checkout/quote', {
     preHandler: requireAuth,
-    schema: { tags: ['commerce'], summary: 'تسعير السلّة كما ستُصدرها الفاتورة — بلا حجزٍ ولا كتابة' },
+    schema: { tags: ['commerce'], summary: 'تسعير السلّة كما ستصدرها الفاتورة — بلا حجز ولا كتابة' },
   }, async (req) => {
     const body = z.object({
       cohortIds: z.array(z.string().uuid()).min(1).max(10),
@@ -220,7 +220,7 @@ export function registerCommerceRoutes(app: FastifyInstance, prisma: PrismaClien
 
   /* ════ webhook الدفع — موقَّت وidempotent؛ رجوع المتصفح ليس دليلا ════ */
   app.post('/api/webhooks/payments/:provider', {
-    schema: { tags: ['webhooks'], summary: 'أحداث مزود الدفع — توقيع إلزامي والحدث المكرر يُتجاهل' },
+    schema: { tags: ['webhooks'], summary: 'أحداث مزود الدفع — توقيع إلزامي والحدث المكرر يتجاهل' },
   }, async (req) => {
     const { provider } = z.object({ provider: z.string().max(30) }).parse(req.params)
     /* التوقيع، بترتيب المصادر: ترويسة Stripe الرسمية أولا، ثم ترويسة العقد

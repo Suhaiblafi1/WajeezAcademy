@@ -36,7 +36,7 @@ export function registerOperationsRoutes(app: FastifyInstance, prisma: PrismaCli
      واحدةً في الإطار بدل أن تسقط كلُّ شاشةٍ على حدة. */
   app.get('/api/me/portals', {
     preHandler: requireAuth,
-    schema: { tags: ['portal'], summary: 'هل لحسابي ملفُّ مدرّبٍ أو مستشار؟ — يقرؤه إطارُ البوّابة' },
+    schema: { tags: ['portal'], summary: 'هل لحسابي ملفّ مدرّب أو مستشار؟ — يقرؤه إطار البوّابة' },
   }, async (req) => {
     const userId = req.auth!.userId
     const [trainer, advisor] = await Promise.all([

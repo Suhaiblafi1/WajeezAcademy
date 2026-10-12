@@ -190,7 +190,7 @@ export class PublicCatalogService {
         referralLinks: { where: { cohortId: null }, select: { code: true } },
       },
     })
-    if (!profile) throw new AuthError('not_found', 'لا مدرّبَ بهذا المسار', 404)
+    if (!profile) throw new AuthError('not_found', 'لا مدرّب بهذا المسار', 404)
 
     const cohorts = await this.openCohorts({ trainers: { some: { profileId: profile.id } } })
 
@@ -262,7 +262,7 @@ export class PublicCatalogService {
       select: { titleAr: true, profile: { select: { publicSlug: true } } },
     })
     const trainerSlug = path?.profile.publicSlug
-    if (!path || !trainerSlug) throw new AuthError('not_found', 'لا مسارَ بهذا الرابط', 404)
+    if (!path || !trainerSlug) throw new AuthError('not_found', 'لا مسار بهذا الرابط', 404)
     return { trainerSlug, titleAr: path.titleAr }
   }
 

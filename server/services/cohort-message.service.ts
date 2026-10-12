@@ -76,7 +76,7 @@ export class CohortMessageService {
       if (advisorIds.length === 0) {
         throw new AuthError(
           'no_advisors',
-          'لا مستشارَ قائمٌ على أحدٍ من متعلّمي هذه الشعبة — فلا أحدَ تصله رسالتُك',
+          'لا مستشار قائم على أحد من متعلّمي هذه الشعبة — فلا أحد تصله رسالتك',
           409,
         )
       }
@@ -93,8 +93,8 @@ export class CohortMessageService {
         /* والمستشارُ يقرأ من جانب الفريق لا من جانب المتعلّم */
         await safeNotify(this.prisma, {
           userId, channel: 'in_app', audience: 'staff',
-          title: `رسالةٌ من مدرّب — ${cohort.title}`,
-          body: `${author?.displayName ?? 'مدرّبُ الشعبة'}: ${body.slice(0, 240)}`,
+          title: `رسالة من مدرّب — ${cohort.title}`,
+          body: `${author?.displayName ?? 'مدرّب الشعبة'}: ${body.slice(0, 240)}`,
           data: { cohortId, messageId: message.id },
         })
       }
@@ -117,7 +117,7 @@ export class CohortMessageService {
     if (recipients.length === 0) {
       throw new AuthError(
         input.audience === 'learner' ? 'not_in_cohort' : 'no_learners',
-        input.audience === 'learner' ? 'هذا المتعلّم ليس في شعبتك' : 'لا مسجَّلين في هذه الشعبة بعد',
+        input.audience === 'learner' ? 'هذا المتعلّم ليس في شعبتك' : 'لا مسجّلين في هذه الشعبة بعد',
         input.audience === 'learner' ? 403 : 409,
       )
     }
@@ -172,7 +172,7 @@ export class CohortMessageService {
     })
     if (!session) throw new AuthError('not_found', 'الجلسة غير موجودة', 404)
     if (session.status === 'done' || session.status === 'cancelled') {
-      throw new AuthError('session_closed', 'الجلسة انتهت أو أُلغيت — لا يُقترح لها موعد')
+      throw new AuthError('session_closed', 'الجلسة انتهت أو ألغيت — لا يقترح لها موعد')
     }
     if (input.proposedStartsAt.getTime() <= Date.now()) {
       throw new AuthError('past_date', 'الموعد المقترح في الماضي')
@@ -182,7 +182,7 @@ export class CohortMessageService {
     const open = await this.prisma.sessionRescheduleRequest.findFirst({
       where: { sessionId, status: 'pending' }, select: { id: true },
     })
-    if (open) throw new AuthError('already_pending', 'لك اقتراحٌ معلّق لهذه الجلسة — اسحبه أولا', 409)
+    if (open) throw new AuthError('already_pending', 'لك اقتراح معلّق لهذه الجلسة — اسحبه أولا', 409)
 
     const request = await this.prisma.sessionRescheduleRequest.create({
       data: {
@@ -209,7 +209,7 @@ export class CohortMessageService {
   async withdraw(userId: string, id: string) {
     const req = await this.prisma.sessionRescheduleRequest.findUnique({ where: { id } })
     if (!req || req.requestedBy !== userId) throw new AuthError('not_found', 'الاقتراح غير موجود', 404)
-    if (req.status !== 'pending') throw new AuthError('not_pending', 'لا يُسحب اقتراحٌ حُسم')
+    if (req.status !== 'pending') throw new AuthError('not_pending', 'لا يسحب اقتراح حسم')
     return this.prisma.sessionRescheduleRequest.update({ where: { id }, data: { status: 'withdrawn' } })
   }
 
@@ -232,7 +232,7 @@ export class CohortMessageService {
       include: { session: { select: { id: true, title: true, endsAt: true, startsAt: true, cohortId: true } } },
     })
     if (!req) throw new AuthError('not_found', 'الاقتراح غير موجود', 404)
-    if (req.status !== 'pending') throw new AuthError('not_pending', 'حُسم هذا الاقتراح من قبل', 409)
+    if (req.status !== 'pending') throw new AuthError('not_pending', 'حسم هذا الاقتراح من قبل', 409)
 
     const decided = await this.prisma.$transaction(async (tx) => {
       const updated = await tx.sessionRescheduleRequest.update({
@@ -269,7 +269,7 @@ export class CohortMessageService {
       /* ودعوةُ التقويم تتحدّث بالمعرّف نفسِه (`session-invite.service.ts`) — ولا
          يُسقط إخفاقُها قرارا وقع */
       await new SessionInviteService(this.prisma).announce(req.sessionId, 'update')
-        .catch((e: unknown) => console.error('[invite] تعذّرت كتابةُ تحديث الدعوة', e))
+        .catch((e: unknown) => console.error('[invite] تعذّرت كتابة تحديث الدعوة', e))
       const learners = await this.prisma.enrollment.findMany({
         where: { cohortId: req.session.cohortId, status: { not: 'dropped' } },
         select: { userId: true },
@@ -278,14 +278,14 @@ export class CohortMessageService {
         await safeNotify(this.prisma, {
           userId: l.userId, channel: 'in_app', audience: 'learner',
           title: `تغيّر موعد «${req.session.title}»`,
-          body: 'اعتُمد موعدٌ جديد لهذه الجلسة — راجع جدولك.',
+          body: 'اعتمد موعد جديد لهذه الجلسة — راجع جدولك.',
           data: { sessionId: req.sessionId },
         })
       }
     }
     await safeNotify(this.prisma, {
       userId: req.requestedBy, channel: 'in_app', audience: 'trainer',
-      title: input.action === 'approve' ? 'اعتُمد اقتراح التأجيل' : 'لم يُعتمد اقتراح التأجيل',
+      title: input.action === 'approve' ? 'اعتمد اقتراح التأجيل' : 'لم يعتمد اقتراح التأجيل',
       body: input.comment?.trim() || `الجلسة: ${req.session.title}`,
       data: { requestId: id },
     })

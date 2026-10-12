@@ -39,7 +39,7 @@ import {
 import { mailBatchOutcomeAr, mailOutcomeAr } from "@/application/notifications/delivery";
 import { MAIL_LINK_WINDOW_AR } from "@/application/links/mail-link-window";
 import { fmtDateLong, fmtDateTime } from "@/application/text/format-ar";
-import { DEFERRED, deferredFollowUpAt, followUpDue } from "@/application/trainer/deferral";
+import { DEFERRED, deferredFollowUpAt, followUpDue, followUpTermAr } from "@/application/trainer/deferral";
 import ConfirmAction from "@/components/ConfirmAction";
 import { BAR_ACTIONS, DECISIONS, recommendedFor, type Decision } from "@/application/trainer/decisions";
 import { REVIEW_OPEN_STATUSES } from "@/application/trainer/approval";
@@ -151,7 +151,7 @@ const ROW_DECISION_AR: Record<"reject" | "defer" | "undo_reject" | "undo_withdra
     titleAr: (n) => `تأجيل طلب «${n}» إلى الفصول القادمة`,
     confirmAr: "أجّله وأبلغه",
     reason: { labelAr: "ملاحظة له إن أردت — تصله كما هي في بريده", minLength: 0 },
-    bodyAr: "يصبح الطلب «مؤجّلا — للفصول القادمة» بكلّ ما فيه، ويصله بريد بأنّ الطلب على دوراته قليل هذا الفصل، وأنّنا نتواصل معه بعد شهرين.",
+    bodyAr: "يصبح الطلب «مؤجّلا — للفصول القادمة» بكلّ ما فيه، ويصله بريد بأنّ الطلب على دوراته قليل هذا الفصل، وأنّنا نتواصل معه قبل الفصل الذي بعد القادم.",
   },
   undo_reject: {
     titleAr: (n) => `التراجع عن رفض «${n}»`,
@@ -2331,7 +2331,7 @@ export default function TrainerApplications() {
                     target.action === "undo_withdraw"
                       ? "أعيد الطلب المسحوب إلى المراجعة، ووصل السبب صاحبه"
                       : target.action === "defer"
-                        ? `أجّل الطلب إلى الفصول القادمة — ونتواصل معه في ${fmtDateLong(deferredFollowUpAt(new Date()))}`
+                        ? `أجّل الطلب إلى الفصول القادمة — ونتواصل معه قبل ${followUpTermAr(deferredFollowUpAt(new Date()))}`
                         : "ألغي الرفض — عاد الطلب إلى المراجعة، ووصل السبب صاحبه",
                     (result as { emailDelivery?: string } | null)?.emailDelivery,
                   ),
@@ -2347,7 +2347,7 @@ export default function TrainerApplications() {
           {/* وموعدُ التواصل يومٌ يُسمّى قبل الضغط — وهو اليومُ الذي يُكتب في بريده */}
           {rowDecision.action === "defer" && (
             <p className="mt-2 text-read font-bold leading-6">
-              موعد التواصل معه: {fmtDateLong(deferredFollowUpAt(new Date()))}
+              موعد التواصل معه: قبل {followUpTermAr(deferredFollowUpAt(new Date()))} — نذكّرك في {fmtDateLong(deferredFollowUpAt(new Date()))}
             </p>
           )}
         </ConfirmAction>

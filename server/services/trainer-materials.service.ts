@@ -48,7 +48,7 @@ export class TrainerMaterialsService {
     const profile = await this.prisma.trainerProfile.findUnique({
       where: { userId }, include: { application: { select: { status: true } } },
     })
-    if (!profile) throw new AuthError('no_profile', 'لا ملفَّ مدرّبٍ مرتبطا بهذا الحساب', 404)
+    if (!profile) throw new AuthError('no_profile', 'لا ملفّ مدرّب مرتبطا بهذا الحساب', 404)
     const problem = portalDoorProblemAr('materials', {
       status: profile.application.status, suspendedAt: profile.suspendedAt,
     })
@@ -108,10 +108,10 @@ export class TrainerMaterialsService {
       where: { profileId_courseId: { profileId: profile.id, courseId } },
     })
     if (!qual || !(LIVE as readonly string[]).includes(qual.status)) {
-      throw new AuthError('not_found', 'هذه الدورةُ ليست من دوراتك', 404)
+      throw new AuthError('not_found', 'هذه الدورة ليست من دوراتك', 404)
     }
     if (qual.status !== 'pending') {
-      throw new AuthError('bad_state', 'اعتُمدت موادُّ هذه الدورة — وما تغيّره بعدها في مساحة شعبتك', 409)
+      throw new AuthError('bad_state', 'اعتمدت موادّ هذه الدورة — وما تغيّره بعدها في مساحة شعبتك', 409)
     }
     /* ولا يُكتب أثناء التقييم: ما أُعلن اكتمالُه يُقرأ كما أُعلن حتّى يُردّ */
     const paused = await this.prisma.trainerContract.findFirst({
@@ -119,7 +119,7 @@ export class TrainerMaterialsService {
       select: { id: true },
     })
     if (paused) {
-      throw new AuthError('under_review', 'موادُّك عندنا للتقييم — تُعدَّل إن أعدناها إليك بملاحظات', 409)
+      throw new AuthError('under_review', 'موادّك عندنا للتقييم — تعدّل إن أعدناها إليك بملاحظات', 409)
     }
     const materials = cleanCourseMaterials(raw)
     const at = new Date()
@@ -153,7 +153,7 @@ export class TrainerMaterialsService {
         select: { id: true },
       })
       if (plan) continue
-      gaps.push(`«${r.titleAr}»: لم تُرسَل خطّةُ شعبتها للاعتماد بعد`)
+      gaps.push(`«${r.titleAr}»: لم ترسل خطّة شعبتها للاعتماد بعد`)
     }
     return gaps
   }

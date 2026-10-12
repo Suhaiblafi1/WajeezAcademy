@@ -82,7 +82,7 @@ export class TrainerPathService {
 
   private async mineOrThrow(profileId: string, id: string) {
     const row = await this.prisma.trainerPath.findUnique({ where: { id }, include: { courses: true } })
-    if (!row || row.profileId !== profileId) throw new AuthError('unknown_path', 'لا مسارَ بهذا المعرّف', 404)
+    if (!row || row.profileId !== profileId) throw new AuthError('unknown_path', 'لا مسار بهذا المعرّف', 404)
     return row
   }
 
@@ -180,7 +180,7 @@ export class TrainerPathService {
     const ctx = await this.context(userId)
     const before = await this.mineOrThrow(ctx.profileId, id)
     if (!canTrainerEdit(before.status)) {
-      throw new AuthError('locked', 'خرج المسارُ من يدك — لا يُعدَّل في هذه الحال', 409)
+      throw new AuthError('locked', 'خرج المسار من يدك — لا يعدّل في هذه الحال', 409)
     }
     const d = this.clean(input)
     const row = await this.prisma.$transaction(async (tx) => {
@@ -206,7 +206,7 @@ export class TrainerPathService {
     const ctx = await this.context(userId)
     const before = await this.mineOrThrow(ctx.profileId, id)
     if (!canTrainerEdit(before.status)) {
-      throw new AuthError('locked', 'خرج المسارُ من يدك — لا يُحذف في هذه الحال', 409)
+      throw new AuthError('locked', 'خرج المسار من يدك — لا يحذف في هذه الحال', 409)
     }
     await this.prisma.trainerPath.delete({ where: { id } })
     await recordAudit(this.prisma, {
@@ -220,7 +220,7 @@ export class TrainerPathService {
   async submit(userId: string, id: string) {
     const ctx = await this.context(userId)
     const row = await this.mineOrThrow(ctx.profileId, id)
-    if (!canTrainerEdit(row.status)) throw new AuthError('locked', 'أُرسل المسارُ من قبل', 409)
+    if (!canTrainerEdit(row.status)) throw new AuthError('locked', 'أرسل المسار من قبل', 409)
 
     const blockers = pathBlockersAr({
       titleAr: row.titleAr,
@@ -286,14 +286,14 @@ export class TrainerPathService {
       where: { id },
       include: { profile: { select: { ...TRAINER_VISIBILITY_SELECT, application: { select: { fullName: true } } } } },
     })
-    if (!row) throw new AuthError('unknown_path', 'لا مسارَ بهذا المعرّف', 404)
+    if (!row) throw new AuthError('unknown_path', 'لا مسار بهذا المعرّف', 404)
 
     /* ن-٢ — يُفرَض هنا لا في الشاشة: قاعدةُ المستودَع «لا اسمَ مدرّبٍ يُعرض
        حقيقةً قبل اعتمادِ نشره»، والمسارُ يحمل اسمَه في بطاقته. */
     if (!trainerPubliclyVisible(row.profile)) {
       throw new AuthError(
         'trainer_not_public',
-        'لم يُعتمد ظهورُ هذا المدرّب للعامّة — والمسارُ يحمل اسمَه. اعتمِد ظهورَه أوّلا.',
+        'لم يعتمد ظهور هذا المدرّب للعامّة — والمسار يحمل اسمه. اعتمد ظهوره أوّلا.',
         409,
       )
     }
@@ -315,9 +315,9 @@ export class TrainerPathService {
 
   async reject(actorId: string, id: string, noteAr: string) {
     const reason = noteAr.trim()
-    if (reason.length < 5) throw new AuthError('no_reason', 'اكتب سببَ الردّ — بلا سببٍ يُعاد المسارُ كما هو', 400)
+    if (reason.length < 5) throw new AuthError('no_reason', 'اكتب سبب الردّ — بلا سبب يعاد المسار كما هو', 400)
     const row = await this.prisma.trainerPath.findUnique({ where: { id } })
-    if (!row) throw new AuthError('unknown_path', 'لا مسارَ بهذا المعرّف', 404)
+    if (!row) throw new AuthError('unknown_path', 'لا مسار بهذا المعرّف', 404)
 
     const out = await this.prisma.trainerPath.update({
       where: { id },
@@ -333,7 +333,7 @@ export class TrainerPathService {
   /** السحبُ من الرفّ (ن-١) — ولا يمسّ من التحق (ن-٤) */
   async retire(actorId: string, id: string, noteAr?: string | null) {
     const row = await this.prisma.trainerPath.findUnique({ where: { id } })
-    if (!row) throw new AuthError('unknown_path', 'لا مسارَ بهذا المعرّف', 404)
+    if (!row) throw new AuthError('unknown_path', 'لا مسار بهذا المعرّف', 404)
 
     const out = await this.prisma.trainerPath.update({
       where: { id },

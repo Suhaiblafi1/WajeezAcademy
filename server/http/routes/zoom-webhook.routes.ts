@@ -48,7 +48,7 @@ export function registerZoomWebhookRoutes(app: FastifyInstance, prisma: PrismaCl
   const events = new ZoomEventService(prisma)
 
   app.post('/api/webhooks/zoom', {
-    schema: { tags: ['webhooks'], summary: 'أحداثُ Zoom — توقيعٌ إلزاميٌّ وردٌّ سريع' },
+    schema: { tags: ['webhooks'], summary: 'أحداث Zoom — توقيع إلزاميّ وردّ سريع' },
   }, async (req, reply) => {
     const config = await getZoomConfig(prisma)
     const body = (req.body ?? {}) as ZoomEvent

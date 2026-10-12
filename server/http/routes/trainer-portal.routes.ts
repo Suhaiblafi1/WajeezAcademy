@@ -57,7 +57,7 @@ export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: Prisma
      الخام، وحكمُ الطول في الخدمة — فلا يُقال للمدرّب حدّان. */
   app.get('/api/trainer/public-text', {
     preHandler: requirePermission('trainer.portal'),
-    schema: { tags: ['trainer-portal'], summary: 'عنواني ونبذتي — المعتمَدُ وما ينتظر الاعتماد' },
+    schema: { tags: ['trainer-portal'], summary: 'عنواني ونبذتي — المعتمد وما ينتظر الاعتماد' },
   }, async (req) => publicText.mine(req.auth!.userId))
 
   app.put('/api/trainer/public-text', {
@@ -72,12 +72,12 @@ export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: Prisma
      العلّةُ في `trainer-prep.service.ts`. والملفُّ من حسابه لا من الطلب. */
   app.get('/api/trainer/prep', {
     preHandler: requirePermission('trainer.portal'),
-    schema: { tags: ['trainer-portal'], summary: 'دوراتي في طور الإعداد وحالُ كلٍّ: أقبلتُها وأين شعبتُها' },
+    schema: { tags: ['trainer-portal'], summary: 'دوراتي في طور الإعداد وحال كلّ: أقبلتها وأين شعبتها' },
   }, async (req) => prep.mine(req.auth!.userId))
 
   app.post('/api/trainer/prep/:courseId/accept', {
     preHandler: requirePermission('trainer.portal'),
-    schema: { tags: ['trainer-portal'], summary: 'أقبل الدورة — وتُنشأ لها شعبةُ إعدادٍ في «شعبي»' },
+    schema: { tags: ['trainer-portal'], summary: 'أقبل الدورة — وتنشأ لها شعبة إعداد في «شعبي»' },
   }, async (req) => {
     const { courseId } = z.object({ courseId: z.string().min(1).max(64) }).parse(req.params)
     return prep.accept(req.auth!.userId, courseId)
@@ -85,7 +85,7 @@ export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: Prisma
 
   app.post('/api/trainer/prep/:courseId/decline', {
     preHandler: requirePermission('trainer.portal'),
-    schema: { tags: ['trainer-portal'], summary: 'أعتذر عن الدورة — بسببٍ يصل الإدارة' },
+    schema: { tags: ['trainer-portal'], summary: 'أعتذر عن الدورة — بسبب يصل الإدارة' },
   }, async (req) => {
     const { courseId } = z.object({ courseId: z.string().min(1).max(64) }).parse(req.params)
     const { reasonAr } = z.object({ reasonAr: z.string().max(1000) }).parse(req.body)
@@ -98,12 +98,12 @@ export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: Prisma
      ورابطُ موادّها ومهمّتُها ومصادرُها. والملفُّ من حسابه لا من الطلب. */
   app.get('/api/trainer/materials', {
     preHandler: requirePermission('trainer.portal'),
-    schema: { tags: ['trainer-portal'], summary: 'موادُّ دوراتي — قيد الإعداد والمعتمدة' },
+    schema: { tags: ['trainer-portal'], summary: 'موادّ دوراتي — قيد الإعداد والمعتمدة' },
   }, async (req) => materials.mine(req.auth!.userId))
 
   app.put('/api/trainer/materials/:courseId', {
     preHandler: requirePermission('trainer.portal'),
-    schema: { tags: ['trainer-portal'], summary: 'احفظ موادَّ دورةٍ قيد الإعداد' },
+    schema: { tags: ['trainer-portal'], summary: 'احفظ موادّ دورة قيد الإعداد' },
   }, async (req) => {
     const { courseId } = z.object({ courseId: z.string().min(1).max(64) }).parse(req.params)
     return materials.save(req.auth!.userId, courseId, req.body)
@@ -115,12 +115,12 @@ export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: Prisma
      حسابه لا من جسم الطلب — فلا يُعلن أحدٌ عن موادّ غيره ولا يمدّد مهلتَه. */
   app.post('/api/trainer/condition/declare-complete', {
     preHandler: requirePermission('trainer.portal'),
-    schema: { tags: ['trainer-portal'], summary: 'أعلنتُ اكتمالَ موادّي — تتجمّد المهلةُ وتصل الطابور' },
+    schema: { tags: ['trainer-portal'], summary: 'أعلنت اكتمال موادّي — تتجمّد المهلة وتصل الطابور' },
   }, async (req) => review.declareMaterialsComplete(req.auth!.userId))
 
   app.post('/api/trainer/condition/extend', {
     preHandler: requirePermission('trainer.portal'),
-    schema: { tags: ['trainer-portal'], summary: 'امنحني يومين — مرّةً واحدةً، والثانيةُ تُردّ بنصّها' },
+    schema: { tags: ['trainer-portal'], summary: 'امنحني يومين — مرّة واحدة، والثانية تردّ بنصّها' },
   }, async (req) => review.requestConditionExtension(req.auth!.userId))
 
   app.get('/api/trainer/earnings', {
@@ -138,7 +138,7 @@ export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: Prisma
      ضمن قسم المستحقات والعقد»، فهما بابان متجاوران لا بابٌ يُبحث عنه. */
   app.get('/api/trainer/me/contract', {
     preHandler: requirePermission('trainer.portal'),
-    schema: { tags: ['trainer-portal'], summary: 'نسختي الموقَّعة من العقد وسجلُّ تنفيذها — للمدرب نفسه' },
+    schema: { tags: ['trainer-portal'], summary: 'نسختي الموقّعة من العقد وسجلّ تنفيذها — للمدرب نفسه' },
   }, async (req) => review.myContract(req.auth!.userId))
 
   /* ═══ عروضُ الإسناد — والجوابُ له وحدَه ═══
@@ -152,12 +152,12 @@ export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: Prisma
      مستحقّاتي بعد تفعيل حسابه» — لا في الوثيقة الموقَّعة، بمشورةٍ قانونيّة. */
   app.get('/api/trainer/bank-account', {
     preHandler: requirePermission('trainer.portal'),
-    schema: { tags: ['trainer-portal'], summary: 'حسابي البنكيُّ مقنَّعا — ولا يُعاد الرقمُ أبدا' },
+    schema: { tags: ['trainer-portal'], summary: 'حسابي البنكيّ مقنّعا — ولا يعاد الرقم أبدا' },
   }, async (req) => bank.mine(req.auth!.userId))
 
   app.put('/api/trainer/bank-account', {
     preHandler: requirePermission('trainer.portal'),
-    schema: { tags: ['trainer-portal'], summary: 'كتابةُ الحساب البنكيّ أو تبديلُه — يُخزَّن معمّى ويصله خبرُه' },
+    schema: { tags: ['trainer-portal'], summary: 'كتابة الحساب البنكيّ أو تبديله — يخزّن معمّى ويصله خبره' },
   }, async (req) => {
     const body = z.object({
       iban: z.string().trim().min(6).max(MAX_ACCOUNT_LEN + 8),
@@ -177,17 +177,17 @@ export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: Prisma
      أو تبديله». يُزاح ولا يُمحى، والعلّةُ في `removeMine`. */
   app.delete('/api/trainer/bank-account', {
     preHandler: requirePermission('trainer.portal'),
-    schema: { tags: ['trainer-portal'], summary: 'إلغاءُ حسابي البنكيّ — يُزاح ولا يُمحى، ويصله خبرُه' },
+    schema: { tags: ['trainer-portal'], summary: 'إلغاء حسابي البنكيّ — يزاح ولا يمحى، ويصله خبره' },
   }, async (req) => bank.removeMine(req.auth!.userId))
 
   app.get('/api/trainer/offers', {
     preHandler: requirePermission('trainer.portal'),
-    schema: { tags: ['trainer-portal'], summary: 'عروضُ الإسناد التي عُرضت عليّ — وما قبِلتُه وينتظر إعدادي' },
+    schema: { tags: ['trainer-portal'], summary: 'عروض الإسناد التي عرضت عليّ — وما قبلته وينتظر إعدادي' },
   }, async (req) => offers.listForTrainer(req.auth!.userId))
 
   app.post('/api/trainer/offers/:offerId/accept', {
     preHandler: requirePermission('trainer.portal'),
-    schema: { tags: ['trainer-portal'], summary: 'قبولُ عرضٍ — ويُعاد عنده فحصُ التأهيل والجدول والحالة' },
+    schema: { tags: ['trainer-portal'], summary: 'قبول عرض — ويعاد عنده فحص التأهيل والجدول والحالة' },
   }, async (req) => {
     const { offerId } = z.object({ offerId: z.string().uuid() }).parse(req.params)
     return offers.accept(offerId, req.auth!.userId)
@@ -195,7 +195,7 @@ export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: Prisma
 
   app.post('/api/trainer/offers/:offerId/decline', {
     preHandler: requirePermission('trainer.portal'),
-    schema: { tags: ['trainer-portal'], summary: 'الاعتذارُ عن عرض — جوابٌ مشروعٌ لا عطب' },
+    schema: { tags: ['trainer-portal'], summary: 'الاعتذار عن عرض — جواب مشروع لا عطب' },
   }, async (req) => {
     const { offerId } = z.object({ offerId: z.string().uuid() }).parse(req.params)
     const { reasonAr } = z.object({ reasonAr: z.string().trim().min(5).max(500) }).parse(req.body)
@@ -204,7 +204,7 @@ export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: Prisma
 
   app.post('/api/trainer/offers/:offerId/prep-confirm', {
     preHandler: requirePermission('trainer.portal'),
-    schema: { tags: ['trainer-portal'], summary: 'الإقرارُ بالجاهزيّة — يطوي أجلَ الإعداد' },
+    schema: { tags: ['trainer-portal'], summary: 'الإقرار بالجاهزيّة — يطوي أجل الإعداد' },
   }, async (req) => {
     const { offerId } = z.object({ offerId: z.string().uuid() }).parse(req.params)
     return offers.confirmPrep(offerId, req.auth!.userId)
@@ -279,7 +279,7 @@ export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: Prisma
   }, async (req) => {
     const { key } = z.object({ key: z.string().min(2).max(64) }).parse(req.params)
     if (key === 'sign_contract') {
-      throw new AuthError('not_self_completable', 'توقيع العقد يُغلق بتوقيعه لا بإقرارك', 409)
+      throw new AuthError('not_self_completable', 'توقيع العقد يغلق بتوقيعه لا بإقرارك', 409)
     }
     const profile = await changes.profileForUser(req.auth!.userId)
     const task = await prisma.trainerOnboardingTask.findUnique({
@@ -381,12 +381,12 @@ export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: Prisma
 
   app.get('/api/trainer/changes', {
     preHandler: requirePermission('trainer.portal'),
-    schema: { tags: ['trainer-portal'], summary: 'اقتراحاتي على دوراتي وقرارُ الإدارة في كلٍّ منها' },
+    schema: { tags: ['trainer-portal'], summary: 'اقتراحاتي على دوراتي وقرار الإدارة في كلّ منها' },
   }, async (req) => changes.listMine(req.auth!.userId))
 
   app.post('/api/trainer/changes', {
     preHandler: requirePermission('trainer.portal'),
-    schema: { tags: ['trainer-portal'], summary: 'إرسالُ اقتراحِ تعديلٍ على دورةٍ مؤهَّلٍ لها' },
+    schema: { tags: ['trainer-portal'], summary: 'إرسال اقتراح تعديل على دورة مؤهّل لها' },
   }, async (req, reply) => {
     const body = z.object({
       courseId: z.string().trim().min(2).max(64),
@@ -401,7 +401,7 @@ export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: Prisma
 
   app.post('/api/trainer/changes/:id/withdraw', {
     preHandler: requirePermission('trainer.portal'),
-    schema: { tags: ['trainer-portal'], summary: 'سحبُ اقتراحي ما لم يُبتّ فيه' },
+    schema: { tags: ['trainer-portal'], summary: 'سحب اقتراحي ما لم يبتّ فيه' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     return changes.withdraw(req.auth!.userId, id)
@@ -419,12 +419,12 @@ export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: Prisma
      وحدَه يُدخله، وبابُه عند الإدارة. */
   app.get('/api/trainer/course-proposals', {
     preHandler: requirePermission('trainer.portal'),
-    schema: { tags: ['trainer-portal'], summary: 'دوراتي المقترحةُ وحالُ كلٍّ منها (ح-٢)' },
+    schema: { tags: ['trainer-portal'], summary: 'دوراتي المقترحة وحال كلّ منها (ح-٢)' },
   }, async (req) => proposals.mine(req.auth!.userId))
 
   app.post('/api/trainer/course-proposals', {
     preHandler: requirePermission('trainer.portal'),
-    schema: { tags: ['trainer-portal'], summary: 'إضافةُ دورةٍ أقدر عليها وليست في الكتالوج' },
+    schema: { tags: ['trainer-portal'], summary: 'إضافة دورة أقدر عليها وليست في الكتالوج' },
   }, async (req, reply) => {
     const body = z.object({
       titleAr: z.string().trim().min(MIN_PROPOSAL_TITLE).max(MAX_PROPOSAL_TITLE),
@@ -437,7 +437,7 @@ export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: Prisma
 
   app.patch('/api/trainer/course-proposals/:id', {
     preHandler: requirePermission('trainer.portal'),
-    schema: { tags: ['trainer-portal'], summary: 'تعديلُ اقتراحي ما لم يُبتّ فيه' },
+    schema: { tags: ['trainer-portal'], summary: 'تعديل اقتراحي ما لم يبتّ فيه' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const body = z.object({
@@ -456,7 +456,7 @@ export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: Prisma
      فعلا يقع أو لا يقع. */
   app.post('/api/trainer/course-proposals/:id/answer', {
     preHandler: requirePermission('trainer.portal'),
-    schema: { tags: ['trainer-portal'], summary: 'جوابُ سؤالِ الإدارة عن اقتراحي — يعيده إلى الطابور' },
+    schema: { tags: ['trainer-portal'], summary: 'جواب سؤال الإدارة عن اقتراحي — يعيده إلى الطابور' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const body = z.object({
@@ -467,7 +467,7 @@ export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: Prisma
 
   app.delete('/api/trainer/course-proposals/:id', {
     preHandler: requirePermission('trainer.portal'),
-    schema: { tags: ['trainer-portal'], summary: 'حذفُ اقتراحي ما لم يُبتّ فيه' },
+    schema: { tags: ['trainer-portal'], summary: 'حذف اقتراحي ما لم يبتّ فيه' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     return proposals.remove(req.auth!.userId, id)
@@ -480,7 +480,7 @@ export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: Prisma
      على رفٍّ عامٍّ باسمه. */
   app.get('/api/trainer/paths', {
     preHandler: requirePermission('trainer.portal'),
-    schema: { tags: ['trainer-portal'], summary: 'مساراتي وحالُ كلٍّ منها وما ينقصه (ن-١)' },
+    schema: { tags: ['trainer-portal'], summary: 'مساراتي وحال كلّ منها وما ينقصه (ن-١)' },
   }, async (req) => paths.mine(req.auth!.userId))
 
   app.get('/api/trainer/paths/courses', {
@@ -490,19 +490,19 @@ export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: Prisma
 
   app.get('/api/trainer/paths/terms', {
     preHandler: requirePermission('trainer.portal'),
-    schema: { tags: ['trainer-portal'], summary: 'المواسمُ التي يصلح إعلانُ مسارٍ فيها — ما لم ينتهِ (ن-٣)' },
+    schema: { tags: ['trainer-portal'], summary: 'المواسم التي يصلح إعلان مسار فيها — ما لم ينته (ن-٣)' },
   }, async () => paths.upcomingTerms())
 
   app.post('/api/trainer/paths', {
     preHandler: requirePermission('trainer.portal'),
-    schema: { tags: ['trainer-portal'], summary: 'مسارٌ جديدٌ مسوّدةً' },
+    schema: { tags: ['trainer-portal'], summary: 'مسار جديد مسوّدة' },
   }, async (req, reply) => {
     return reply.status(201).send(await paths.create(req.auth!.userId, pathBody.parse(req.body)))
   })
 
   app.patch('/api/trainer/paths/:id', {
     preHandler: requirePermission('trainer.portal'),
-    schema: { tags: ['trainer-portal'], summary: 'تعديلُ مساري ما دام بيدي' },
+    schema: { tags: ['trainer-portal'], summary: 'تعديل مساري ما دام بيدي' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     return paths.update(req.auth!.userId, id, pathBody.parse(req.body))
@@ -510,7 +510,7 @@ export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: Prisma
 
   app.delete('/api/trainer/paths/:id', {
     preHandler: requirePermission('trainer.portal'),
-    schema: { tags: ['trainer-portal'], summary: 'حذفُ مساري ما دام بيدي' },
+    schema: { tags: ['trainer-portal'], summary: 'حذف مساري ما دام بيدي' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     return paths.remove(req.auth!.userId, id)
@@ -518,7 +518,7 @@ export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: Prisma
 
   app.post('/api/trainer/paths/:id/submit', {
     preHandler: requirePermission('trainer.portal'),
-    schema: { tags: ['trainer-portal'], summary: 'إرسالُ المسار للمراجعة — ويُردّ بما ينقص لا بـ«غير صالح»' },
+    schema: { tags: ['trainer-portal'], summary: 'إرسال المسار للمراجعة — ويردّ بما ينقص لا بـ«غير صالح»' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     return paths.submit(req.auth!.userId, id)
@@ -526,7 +526,7 @@ export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: Prisma
 
   app.get('/api/trainer/catalog-scope', {
     preHandler: requirePermission('trainer.portal'),
-    schema: { tags: ['trainer-portal'], summary: 'أهليتي لنطاق الكتالوج — تُقرأ قبل كتابة اقتراح (هـ-١)' },
+    schema: { tags: ['trainer-portal'], summary: 'أهليتي لنطاق الكتالوج — تقرأ قبل كتابة اقتراح (هـ-١)' },
   }, async (req) => changes.myCatalogScope(req.auth!.userId))
 
   /* ═══ وذهبت «إتاحتي» و«فصولي» (٢٧ سبتمبر ٢٠٢٦) ═══
@@ -543,7 +543,7 @@ export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: Prisma
   }, async () => review.listPublicTrainers())
 
   app.get('/api/courses/:courseId/trainer', {
-    schema: { tags: ['trainer-portal'], summary: 'مدرب الدورة المعلن — أو عبارة «يُعلن عند اعتماد الشعبة»' },
+    schema: { tags: ['trainer-portal'], summary: 'مدرب الدورة المعلن — أو عبارة «يعلن عند اعتماد الشعبة»' },
   }, async (req) => {
     const { courseId } = z.object({ courseId: z.string() }).parse(req.params)
     return review.publicCourseTrainer(courseId)

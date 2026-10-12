@@ -22,12 +22,12 @@ export function registerFavoriteRoutes(app: FastifyInstance, prisma: PrismaClien
 
   app.get('/api/favorites', {
     preHandler: requireAuth,
-    schema: { tags: ['favorites'], summary: 'ما حفظه في مفضّلته — مساراتٍ ودورات' },
+    schema: { tags: ['favorites'], summary: 'ما حفظه في مفضّلته — مسارات ودورات' },
   }, async (req) => favorites.mine(req.auth!.userId))
 
   app.post('/api/favorites', {
     preHandler: requireAuth,
-    schema: { tags: ['favorites'], summary: 'يُحفظ مسارٌ أو دورة' },
+    schema: { tags: ['favorites'], summary: 'يحفظ مسار أو دورة' },
   }, async (req) => {
     const body = refSchema.parse(req.body)
     return favorites.add(req.auth!.userId, body.kind, body.refId)
@@ -35,7 +35,7 @@ export function registerFavoriteRoutes(app: FastifyInstance, prisma: PrismaClien
 
   app.delete('/api/favorites', {
     preHandler: requireAuth,
-    schema: { tags: ['favorites'], summary: 'يُزال من المفضّلة' },
+    schema: { tags: ['favorites'], summary: 'يزال من المفضّلة' },
   }, async (req) => {
     const body = refSchema.parse(req.body)
     return favorites.remove(req.auth!.userId, body.kind, body.refId)
@@ -46,7 +46,7 @@ export function registerFavoriteRoutes(app: FastifyInstance, prisma: PrismaClien
   app.post('/api/favorites/merge', {
     preHandler: requireAuth,
     config: { rateLimit: { max: 10, timeWindow: '15 minutes' } },
-    schema: { tags: ['favorites'], summary: 'رفعُ مفضّلةٍ كانت في المتصفّح — مرّةً واحدة' },
+    schema: { tags: ['favorites'], summary: 'رفع مفضّلة كانت في المتصفّح — مرّة واحدة' },
   }, async (req) => {
     const body = z.object({ refs: z.array(refSchema).max(50) }).parse(req.body)
     return favorites.merge(req.auth!.userId, body.refs)

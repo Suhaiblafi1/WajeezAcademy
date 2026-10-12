@@ -24,12 +24,12 @@ export function registerTrainerMarketingRoutes(app: FastifyInstance, prisma: Pri
 
   app.get('/api/trainer/marketing', {
     preHandler: requirePermission('trainer.portal'),
-    schema: { tags: ['trainer-portal'], summary: 'التسويق: فيديوهاتي وصوري وملصقاتي وحالُ كلٍّ منها' },
+    schema: { tags: ['trainer-portal'], summary: 'التسويق: فيديوهاتي وصوري وملصقاتي وحال كلّ منها' },
   }, async (req) => svc.mine(req.auth!.userId))
 
   app.put('/api/trainer/marketing/videos', {
     preHandler: requirePermission('trainer.portal'),
-    schema: { tags: ['trainer-portal'], summary: 'رابطُ فيديو — تعريفٌ بي أو بدورةٍ أو مسار. والرابطُ الفارغُ يمحوه' },
+    schema: { tags: ['trainer-portal'], summary: 'رابط فيديو — تعريف بي أو بدورة أو مسار. والرابط الفارغ يمحوه' },
   }, async (req) => {
     const body = z.object({
       targetKind: z.enum(MARKETING_TARGET_KINDS),
@@ -42,7 +42,7 @@ export function registerTrainerMarketingRoutes(app: FastifyInstance, prisma: Pri
 
   app.post('/api/trainer/marketing/photos', {
     preHandler: requirePermission('trainer.portal'),
-    schema: { tags: ['trainer-portal'], summary: 'صورةٌ للملصقات — رابطُ رفعٍ موقّت، أو رابطُ صورةٍ جاهز' },
+    schema: { tags: ['trainer-portal'], summary: 'صورة للملصقات — رابط رفع موقّت، أو رابط صورة جاهز' },
   }, async (req, reply) => {
     const body = z.object({
       mime: z.string().max(60).nullish(), url: link, captionAr: note,
@@ -52,7 +52,7 @@ export function registerTrainerMarketingRoutes(app: FastifyInstance, prisma: Pri
 
   app.delete('/api/trainer/marketing/photos/:id', {
     preHandler: requirePermission('trainer.portal'),
-    schema: { tags: ['trainer-portal'], summary: 'حذفُ صورةٍ من صوري' },
+    schema: { tags: ['trainer-portal'], summary: 'حذف صورة من صوري' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     return svc.removePhoto(req.auth!.userId, id)
@@ -60,7 +60,7 @@ export function registerTrainerMarketingRoutes(app: FastifyInstance, prisma: Pri
 
   app.post('/api/trainer/marketing/posters/:id/decision', {
     preHandler: requirePermission('trainer.portal'),
-    schema: { tags: ['trainer-portal'], summary: 'موافقتي على الملصق أو طلبُ تعديله — ولا استعمالَ عامًّا قبلها' },
+    schema: { tags: ['trainer-portal'], summary: 'موافقتي على الملصق أو طلب تعديله — ولا استعمال عامّا قبلها' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const body = z.object({ decision: z.enum(['approve', 'changes']), noteAr: note }).parse(req.body)
@@ -71,12 +71,12 @@ export function registerTrainerMarketingRoutes(app: FastifyInstance, prisma: Pri
 
   app.get('/api/admin/trainer-marketing', {
     preHandler: requirePermission('trainer.publish'),
-    schema: { tags: ['admin-trainers'], summary: 'التسويق: المدرّبون وما قدّموه وحالُ ملصقاتهم' },
+    schema: { tags: ['admin-trainers'], summary: 'التسويق: المدرّبون وما قدّموه وحال ملصقاتهم' },
   }, async () => svc.adminList())
 
   app.get('/api/admin/trainer-marketing/:profileId', {
     preHandler: requirePermission('trainer.publish'),
-    schema: { tags: ['admin-trainers'], summary: 'التسويق لمدرّبٍ بعينه — فيديوهاتُه وصورُه وملصقاتُه' },
+    schema: { tags: ['admin-trainers'], summary: 'التسويق لمدرّب بعينه — فيديوهاته وصوره وملصقاته' },
   }, async (req) => {
     const { profileId } = z.object({ profileId: z.string().uuid() }).parse(req.params)
     return svc.adminDetail(profileId)
@@ -84,7 +84,7 @@ export function registerTrainerMarketingRoutes(app: FastifyInstance, prisma: Pri
 
   app.post('/api/admin/trainer-marketing/:profileId/posters', {
     preHandler: requirePermission('trainer.publish'),
-    schema: { tags: ['admin-trainers'], summary: 'نسخةُ ملصقٍ جديدة — مسوّدةٌ برابطِ رفعٍ أو رابطِ تصميم' },
+    schema: { tags: ['admin-trainers'], summary: 'نسخة ملصق جديدة — مسوّدة برابط رفع أو رابط تصميم' },
   }, async (req, reply) => {
     const { profileId } = z.object({ profileId: z.string().uuid() }).parse(req.params)
     const body = z.object({
@@ -96,7 +96,7 @@ export function registerTrainerMarketingRoutes(app: FastifyInstance, prisma: Pri
 
   app.post('/api/admin/trainer-marketing/posters/:id/submit', {
     preHandler: requirePermission('trainer.publish'),
-    schema: { tags: ['admin-trainers'], summary: 'إرسالُ الملصق إلى المدرّب ليوافق — ويُزيح ما قبله' },
+    schema: { tags: ['admin-trainers'], summary: 'إرسال الملصق إلى المدرّب ليوافق — ويزيح ما قبله' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     return svc.submitPoster(req.auth!.userId, id)
@@ -104,7 +104,7 @@ export function registerTrainerMarketingRoutes(app: FastifyInstance, prisma: Pri
 
   app.delete('/api/admin/trainer-marketing/posters/:id', {
     preHandler: requirePermission('trainer.publish'),
-    schema: { tags: ['admin-trainers'], summary: 'حذفُ مسوّدةِ ملصقٍ لم تُرسَل' },
+    schema: { tags: ['admin-trainers'], summary: 'حذف مسوّدة ملصق لم ترسل' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     return svc.deleteDraftPoster(req.auth!.userId, id)

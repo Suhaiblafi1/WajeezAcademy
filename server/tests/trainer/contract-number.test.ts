@@ -10,7 +10,10 @@
    ④ والبديلُ رقمٌ جديد، والمحدَّثُ رقمُه، والمعاينةُ لا تصرف رقما.
    ⑤ ويصل صاحبَه: في رسالة العرض، وفي رسالة «سُجّل توقيعُك»، وفي «عقدي». */
 
-import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeAll, beforeEach, describe, expect as vexpect, it, vi } from 'vitest'
+import { plainExpect } from '../helpers/plain-expect'
+const expect = plainExpect(vexpect)
+import { plainAr } from '../../../src/application/text/plain-ar'
 import { createHash } from 'node:crypto'
 import type { PrismaClient } from '@prisma/client'
 
@@ -190,7 +193,7 @@ describe('⑤ ويصل صاحبَه', () => {
       legalName: 'مدرّبٌ مرقَّم بالاسم', addressAr: 'عمّان — بناية ١٢', phone: '+962790000000',
       bodyHash: sha256(c.bodyAr ?? ''), acks: contractAcks(c.gatesActivation).map((a) => a.key),
     })
-    const signedMail = outbox.find((m) => m.subject.startsWith('سُجّل توقيعُك'))
+    const signedMail = outbox.find((m) => plainAr(m.subject).startsWith(plainAr('سُجّل توقيعُك')))
     expect(signedMail, 'لم تخرج رسالةُ التوقيع').toBeTruthy()
     expect(signedMail!.text, 'رسالةُ «سُجّل توقيعُك» بلا رقم ما وقّعه').toContain(c.number)
 

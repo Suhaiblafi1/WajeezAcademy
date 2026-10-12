@@ -37,16 +37,16 @@ function issueAr(issue: ZodIssue): string {
          فالغيابُ يُستدلّ عليه من رسالته الافتراضيّة. وإن تغيّرت صيغتُها
          سقط الاستدلالُ إلى الرسالة العامّة — لا إلى نصٍّ إنجليزيّ. */
       return /received undefined/i.test(issue.message ?? '')
-        ? 'حقلٌ مطلوبٌ لم يصل'
-        : 'نوعُ القيمة غير متوقَّع'
-    case 'too_small': return 'القيمةُ دون الحدّ الأدنى'
-    case 'too_big': return 'القيمةُ فوق الحدّ الأعلى'
-    case 'invalid_format': return 'الصيغةُ غير صحيحة'
-    case 'invalid_value': return 'قيمةٌ غير مقبولة في هذا الحقل'
-    case 'unrecognized_keys': return 'حقلٌ لا يعرفه هذا الطلب'
-    case 'invalid_union': return 'القيمةُ لا تطابق أيّا من الصيغ المقبولة'
-    case 'not_multiple_of': return 'القيمةُ ليست من مضاعفات المطلوب'
-    default: return 'قيمةٌ غير صالحة'
+        ? 'حقل مطلوب لم يصل'
+        : 'نوع القيمة غير متوقّع'
+    case 'too_small': return 'القيمة دون الحدّ الأدنى'
+    case 'too_big': return 'القيمة فوق الحدّ الأعلى'
+    case 'invalid_format': return 'الصيغة غير صحيحة'
+    case 'invalid_value': return 'قيمة غير مقبولة في هذا الحقل'
+    case 'unrecognized_keys': return 'حقل لا يعرفه هذا الطلب'
+    case 'invalid_union': return 'القيمة لا تطابق أيّا من الصيغ المقبولة'
+    case 'not_multiple_of': return 'القيمة ليست من مضاعفات المطلوب'
+    default: return 'قيمة غير صالحة'
   }
 }
 

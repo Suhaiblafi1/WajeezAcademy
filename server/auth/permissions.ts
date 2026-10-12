@@ -37,7 +37,7 @@ export const PERMISSIONS = [
        نفسَه ما مُنع منه، وهو عينُ ما تمنعه قاعدةُ التفويض أسفلَه.
      · **ويُكتب وقوعُها** — كلُّ اعتمادِ ذاتٍ يُسجَّل في سجلّ الأثر باسمه
        صريحا، فيُقرأ في `/admin/audit` ولا يُستخرَج بعد شهرٍ بمقابلة عمودَين. */
-  { key: 'catalog.self_approve', description: 'اعتمادُ طلبِ تغييرٍ قدّمتَه بنفسك — استثناءُ maker-checker' },
+  { key: 'catalog.self_approve', description: 'اعتماد طلب تغيير قدّمته بنفسك — استثناء maker-checker' },
   // التشخيص
   { key: 'diagnostic.profile.edit', description: 'تحرير الملف التشخيصي لمرشح' },
   { key: 'diagnostic.profile.review', description: 'مراجعة ملف تشخيصي' },
@@ -65,20 +65,20 @@ export const PERMISSIONS = [
      قرارُ صاحب المنصّة: «الحذفُ إمّا إزالةٌ كاملةٌ من القاعدة، وإمّا إيقافٌ
      ويوضع في خانة الحسابات الموقوفة». والأوّلُ لا رجعةَ فيه — فلا يُمنح مع
      الإيقاف في حبّةٍ واحدة، وإلّا مَلَك من يوقِف أن يمحوَ. */
-  { key: 'admin.users.purge', description: 'حذفُ حسابٍ نهائيّا من قاعدة البيانات — لا رجعةَ فيه' },
-  { key: 'admin.users.purge_history', description: 'محوُ حسابٍ بسجلّه كلّه (تسجيلاته وطلباته وفواتيره) — لحسابات الديمو والتجربة وحدها' },
+  { key: 'admin.users.purge', description: 'حذف حساب نهائيّا من قاعدة البيانات — لا رجعة فيه' },
+  { key: 'admin.users.purge_history', description: 'محو حساب بسجلّه كلّه (تسجيلاته وطلباته وفواتيره) — لحسابات الديمو والتجربة وحدها' },
   /* ── البند ٦٦: إعادةُ ضبط الحسابات ──
      أخطرُ حبّةٍ في المنصّة: محوُ **كلّ** حسابات الناس ومعاملاتِهم. فهي
      للمدير الأعلى وحدَه (`ROLE_PERMISSIONS.super_admin` يأخذ الكلَّ)، و
      `NON_DELEGATABLE` تمنع تفويضَها لمن دونه مهما كانت رتبتُه. */
-  { key: 'admin.accounts.reset', description: 'إعادةُ ضبط الحسابات — محوُ حسابات الناس ومعاملاتِهم كلِّها استعدادا للإطلاق. لا رجعةَ فيه' },
+  { key: 'admin.accounts.reset', description: 'إعادة ضبط الحسابات — محو حسابات الناس ومعاملاتهم كلّها استعدادا للإطلاق. لا رجعة فيه' },
   /* ل-١ · ل-٢: الحذفُ جملةً — حبّةٌ واحدةٌ لا تُفوَّض، ولا يمسّ جدولَ دورٍ أحد.
 
      وقرارُ صاحب المنصّة (١٣ سبتمبر ٢٠٢٦) نصَّ على ذلك: «صلاحيّاتُ المدير
      الأكاديميّ لا تُمسّ، والحذفُ جملةً لمدير النظام الأعلى وحدَه، ولا يكسب
      من دونه قدرةً على الحذف لا يملكها اليوم». وهو لا يملكها فعلا:
      `academic_manager` عنده `admin.users.view` وحدَها. */
-  { key: 'admin.users.purge_bulk', description: 'حذفُ حساباتٍ جملةً — للمدير الأعلى وحدَه، ولا تُفوَّض' },
+  { key: 'admin.users.purge_bulk', description: 'حذف حسابات جملة — للمدير الأعلى وحده، ولا تفوّض' },
   /* التكليفُ والإشعار — حبّتان لا واحدة.
 
      من يوزّع المهامّ ليس بالضرورة من يبثّ الإعلانات: الأولى تُتابَع وتُغلَق،
@@ -95,14 +95,14 @@ export const PERMISSIONS = [
   { key: 'trainer.applications.view', description: 'عرض طلبات انضمام المدربين' },
   { key: 'trainer.applications.review', description: 'مراجعة الطلبات وتسجيل الروبرك والمقابلات والديمو' },
   { key: 'trainer.applications.decide', description: 'قرار القبول المشروط أو الرفض أو الانتظار' },
-  { key: 'trainer.applications.purge', description: 'حذفُ طلبٍ نهائيّا — لا تعطيلا. للمنتهية غير المتعاقَد عليها وحدها' },
+  { key: 'trainer.applications.purge', description: 'حذف طلب نهائيّا — لا تعطيلا. للمنتهية غير المتعاقد عليها وحدها' },
   { key: 'trainer.invite', description: 'إرسال دعوة إنشاء الحساب الآمنة بعد الاعتماد والعقد' },
   { key: 'trainer.qualify', description: 'تأهيل مدرب لدورة' },
   { key: 'trainer.assign', description: 'إسناد مدرب إلى شعبة' },
   { key: 'trainer.publish', description: 'الموافقة على ظهور المدرب للعامة' },
   { key: 'trainer.suspend', description: 'إيقاف مدرب ومنع وصوله' },
   { key: 'trainer.change.review', description: 'مراجعة اقتراحات تعديل الدورات من المدربين (checker)' },
-  { key: 'trainer.compensation.manage', description: 'قواعدُ التعويض والمستحقّات — الرقمُ نفسُه' },
+  { key: 'trainer.compensation.manage', description: 'قواعد التعويض والمستحقّات — الرقم نفسه' },
   /* ═══ العقدُ بيدِ من يقرّر، والرقمُ بيدِ من يملكه ═══
 
      كان مفتاحٌ واحدٌ يفتح البابين: `trainer.compensation.manage`، ولا يحمله
@@ -116,19 +116,19 @@ export const PERMISSIONS = [
      هذه المنصّة من قبل. بل **نقلُ الباب**: مفتاحٌ ثانٍ للتعاقد عند من يقرّر،
      ويبقى الرقمُ عند الماليّة وحدَها. فمن يركّب العقدَ يرى الأجرَ مقروءا ولا
      يملك تغييرَه. */
-  { key: 'trainer.contract.manage', description: 'تركيبُ عقد المدرّب وإرسالُه وإلغاؤه — لا ضبطُ أجره' },
+  { key: 'trainer.contract.manage', description: 'تركيب عقد المدرّب وإرساله وإلغاؤه — لا ضبط أجره' },
   // منظومة المدربين — بوابة المدرب
   { key: 'trainer.portal', description: 'دخول بوابة المدرب وعرض تأهيله وإسناداته' },
   { key: 'trainer.change.submit', description: 'اقتراح تعديل على دورة مؤهل لها أو مسندة إليه' },
   // التشغيل الأكاديمي — الإدارة
   { key: 'cohort.manage', description: 'إنشاء الشعب وجدولتها وإدارة جلساتها وروابطها' },
   { key: 'cohort.open', description: 'فتح شعبة بعد تحقق شروط الفتح' },
-  { key: 'cohort.plan.approve', description: 'اعتمادُ خطّة المدرّب لشعبته أو ردُّها بتعديلات' },
+  { key: 'cohort.plan.approve', description: 'اعتماد خطّة المدرّب لشعبته أو ردّها بتعديلات' },
   /* «كلُّ ما يُطلب من المدرّب قبولُه يقبله المديرُ أو المديرُ الأكاديميُّ أو مديرُ المحتوى
      أوّلا» (صاحب المنصّة، ١٠ أكتوبر ٢٠٢٦) — `plan-edits.ts`. ولا دورَ «مدير محتوى» في
      المنصّة، فخُيّر بين دورٍ جديدٍ والمنسّقِ الأكاديميّ والاثنين وحدَهما، فاختار الأخير:
      المديرُ (بالكلّ) والمديرُ الأكاديميُّ لا غيرهما. */
-  { key: 'cohort.plan.edits.review', description: 'مراجعةُ التعديلات المقترحة على خطّة المدرّب واعتمادُها قبل أن تصله' },
+  { key: 'cohort.plan.edits.review', description: 'مراجعة التعديلات المقترحة على خطّة المدرّب واعتمادها قبل أن تصله' },
   { key: 'cohort.override_capacity', description: 'تجاوز سعة شعبة بشكل موثق' },
   { key: 'enrollment.manage', description: 'تسجيل المتعلمين في الشعب وإدارة تسجيلهم' },
   { key: 'material.manage', description: 'إدارة المواد والتسجيلات الخاصة' },
@@ -144,8 +144,8 @@ export const PERMISSIONS = [
 
      والصلاحيّةُ لا تكفي وحدَها: لا بابَ إلّا إن فتحت الإدارةُ نافذةَ الشعبة
      (مدًى وسقفُ لقاءات). فهي إذنُ الدور، والنافذةُ إذنُ الشعبة. */
-  { key: 'trainer.cohort.schedule', description: 'جدولةُ لقاءات شعبه داخلَ النافذة التي تفتحها الإدارة' },
-  { key: 'trainer.cohort.plan', description: 'تجهيزُ الشعبة: محتواها ومواعيدها ومصادرها وتسجيلاتها، وإرسالُها للاعتماد — كلُّ شيءٍ عدا السعر' },
+  { key: 'trainer.cohort.schedule', description: 'جدولة لقاءات شعبه داخل النافذة التي تفتحها الإدارة' },
+  { key: 'trainer.cohort.plan', description: 'تجهيز الشعبة: محتواها ومواعيدها ومصادرها وتسجيلاتها، وإرسالها للاعتماد — كلّ شيء عدا السعر' },
   // المتعلم
   { key: 'learner.portal', description: 'دخول بوابة المتعلم وعرض مساره وتقدمه' },
   { key: 'learner.submit', description: 'تسليم الواجبات ومحاولات التقييم' },
@@ -156,14 +156,14 @@ export const PERMISSIONS = [
   /* دورُ المستشار مبيعاتٌ ومتابعةٌ أكاديمية معا — وكانت له خمسُ صلاحيات
      لا تكفي إلّا للأولى. فمن يتابع طالبا لا يرى تقدّمه ولا مواعيد شعبه،
      ومن يبيع لا يملك أن يطلب خصما فيخرج بالطلب من المنصّة كلّها. */
-  { key: 'advisor.learner.view', description: 'رؤية تقدّم عميلٍ مسند وتسجيلاته ومواعيد جلساته وتقييماته' },
-  { key: 'advisor.request.submit', description: 'رفع طلب خصم أو تعديل خطّة لعميلٍ مسند — يبتّ فيه غيرُه' },
-  { key: 'advisor.request.review', description: 'البتّ في طلبات المستشارين: خصمٌ أو تعديل خطّة' },
+  { key: 'advisor.learner.view', description: 'رؤية تقدّم عميل مسند وتسجيلاته ومواعيد جلساته وتقييماته' },
+  { key: 'advisor.request.submit', description: 'رفع طلب خصم أو تعديل خطّة لعميل مسند — يبتّ فيه غيره' },
+  { key: 'advisor.request.review', description: 'البتّ في طلبات المستشارين: خصم أو تعديل خطّة' },
   /* شرطُ عملِ المستشار — لا حالاتُه. والعمولةُ بندٌ ماليّ، فلا تُطوى في
      `advisor.assign` التي يملكها من يوزّع الحالات. */
-  { key: 'advisor.manage', description: 'إدارةُ المستشارين وشروطِ عملهم — ومنها نسبةُ العمولة' },
+  { key: 'advisor.manage', description: 'إدارة المستشارين وشروط عملهم — ومنها نسبة العمولة' },
   /* سجلُّ الأثر يُقرأ ولا يُكتب: كلُّ ما فيه كتبته الخدماتُ نفسُها. */
-  { key: 'audit.view', description: 'قراءةُ سجلّ الأثر الموحَّد لكلّ ما وقع على المنصّة' },
+  { key: 'audit.view', description: 'قراءة سجلّ الأثر الموحّد لكلّ ما وقع على المنصّة' },
   // السير الذاتية
   { key: 'cv.upload', description: 'رفع سيرة ذاتية بموافقة صريحة' },
   { key: 'cv.view', description: 'عرض سيرة عميل مسند — كل مشاهدة مسجلة' },
@@ -188,7 +188,7 @@ export const PERMISSIONS = [
      العائلةَ من أوّل مقطع، و`trainer` عائلةٌ يفوّضها المديرُ الأكاديميّ —
      فاسمٌ مثل `trainer.bank.reveal` يجعل كشفَ الحسابات قابلا للتفويض من
      خارج الماليّة. */
-  { key: 'finance.bank.reveal', description: 'كشفُ رقم حساب المدرّب البنكيّ لحظةَ الصرف — ويُسجَّل كلُّ كشف' },
+  { key: 'finance.bank.reveal', description: 'كشف رقم حساب المدرّب البنكيّ لحظة الصرف — ويسجّل كلّ كشف' },
   // التقارير
   { key: 'reports.view', description: 'عرض التقارير التشغيلية' },
   { key: 'reports.export', description: 'تصدير التقارير CSV/XLSX' },
@@ -200,13 +200,13 @@ export const PERMISSIONS = [
   /* التقييم (١و) — مفاتيح مستقلّة عن حزم الأدوار العريضة: trainer.portal يفتح
      البوابة كلها، وقراءةُ ما يُقال عنك حبّةٌ أدقّ من ذلك. */
   { key: 'rating.submit', description: 'إرسال تقييم للمدرب أو المستشار أو الدورة' },
-  { key: 'rating.view.subject', description: 'رؤية التقييمات الواردة عنك مجهولةَ المُقيِّم' },
+  { key: 'rating.view.subject', description: 'رؤية التقييمات الواردة عنك مجهولة المقيّم' },
   { key: 'rating.moderate', description: 'مراجعة تعليقات التقييم واعتماد نشرها' },
   /* اختبارُ تحديد مستوى الإنجليزيّة (٨ أكتوبر ٢٠٢٦) — قرارُ صاحب المنصّة: «أكتبه
      مسوّدةً ويراجعه مدرّبُ الإنجليزيّة في بوّابته». حبّةٌ لا دور: مدرّبُ الإنجليزيّة
      مدرّبٌ كغيره، فلا تُعطى لكلّ مدرّب بل تُمنح لمن يراجع بعينه (التخصيصُ الفرديّ)،
      ويملكها المديرُ الأكاديميُّ في حزمته فيراجع ويفوّض. */
-  { key: 'placement.review', description: 'مراجعةُ أسئلة اختبار تحديد المستوى: تعديلُها واعتمادُها وإسقاطُها' },
+  { key: 'placement.review', description: 'مراجعة أسئلة اختبار تحديد المستوى: تعديلها واعتمادها وإسقاطها' },
 ] as const
 
 export type PermissionKey = (typeof PERMISSIONS)[number]['key']
@@ -428,7 +428,7 @@ export function refuseRoleAssignment(
     const names = [...new Set(touched)].map((r) => ROLE_NAMES_AR[r] ?? r).join('، ')
     return {
       code: 'lifecycle_role',
-      message_ar: `«${names}» حالةٌ يكتسبها صاحبُها بطلب الانضمام وتنتهي بقرارٍ عليه — لا تُسند ولا تُنزع من هنا. البتُّ في الطلب من شاشة «طلبات المدربين».`,
+      message_ar: `«${names}» حالة يكتسبها صاحبها بطلب الانضمام وتنتهي بقرار عليه — لا تسند ولا تنزع من هنا. البتّ في الطلب من شاشة «طلبات المدربين».`,
     }
   }
   const tooHigh = roleIds.filter((r) => (ROLE_RANK[r] ?? 0) > actorRank)
@@ -441,7 +441,7 @@ export function refuseRoleAssignment(
   }
   const unknown = roleIds.filter((r) => !(r in ROLE_RANK))
   if (unknown.length > 0) {
-    return { code: 'unknown_role', message_ar: `دورٌ غير معروف: ${unknown.join('، ')}` }
+    return { code: 'unknown_role', message_ar: `دور غير معروف: ${unknown.join('، ')}` }
   }
   return null
 }
@@ -472,7 +472,7 @@ export function refuseDelegation(actor: {
   if (NON_DELEGATABLE.includes(permissionKey)) {
     return {
       code: 'never_delegatable',
-      message_ar: 'هذه الصلاحية لا تُفوَّض لأحد — تُملَك بدور مدير النظام الأعلى وحدَه',
+      message_ar: 'هذه الصلاحية لا تفوّض لأحد — تملك بدور مدير النظام الأعلى وحده',
     }
   }
   const families = actor.roles.flatMap((r) => DELEGATABLE_FAMILIES[r] ?? [])
@@ -480,7 +480,7 @@ export function refuseDelegation(actor: {
     return { code: 'not_delegator', message_ar: 'حسابك لا يفوّض الصلاحيات' }
   }
   if (rankOf(actor.roles) <= rankOf(target.roles)) {
-    return { code: 'rank_too_low', message_ar: 'لا تُدار إلّا صلاحياتُ من هو أقلّ منك رتبة' }
+    return { code: 'rank_too_low', message_ar: 'لا تدار إلّا صلاحيات من هو أقلّ منك رتبة' }
   }
   const family = permissionKey.split('.')[0]
   if (!families.includes('*') && !families.includes(family)) {
@@ -488,7 +488,7 @@ export function refuseDelegation(actor: {
   }
   /* ولا يمنح ما لا يملك: يُفحص أخيرا كي تسبقه الرسائلُ الأوضح */
   if (!families.includes('*') && !actor.permissions.includes(permissionKey)) {
-    return { code: 'not_held', message_ar: 'لا تُفوَّض صلاحيةٌ لا تملكها أنت' }
+    return { code: 'not_held', message_ar: 'لا تفوّض صلاحية لا تملكها أنت' }
   }
   return null
 }

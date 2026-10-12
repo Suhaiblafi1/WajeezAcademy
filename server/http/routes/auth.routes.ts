@@ -142,7 +142,7 @@ export function registerAuthRoutes(app: FastifyInstance, auth: AuthService, pris
   }, async (req) => {
     const body = z.object({ token: z.string().min(10), newPassword: password }).parse(req.body)
     await auth.resetPassword(body.token, body.newPassword)
-    return { ok: true, message: 'عُيّنت كلمة المرور — سجّل الدخول من جديد' }
+    return { ok: true, message: 'عيّنت كلمة المرور — سجّل الدخول من جديد' }
   })
 
   app.post('/api/auth/email/verify/request', {
@@ -151,11 +151,11 @@ export function registerAuthRoutes(app: FastifyInstance, auth: AuthService, pris
     schema: { tags: ['auth'], summary: 'إعادة إرسال رابط توثيق البريد' },
   }, async (req) => {
     const issued = await auth.issueEmailVerification(req.auth!.userId)
-    if (!issued) return { status: 'already_verified', message: 'بريدك موثَّق أصلا' }
+    if (!issued) return { status: 'already_verified', message: 'بريدك موثّق أصلا' }
     const mail = await sendVerifyEmail(prisma, { to: issued.email, displayName: issued.displayName, token: issued.token })
     /* الحالة تُعاد كما هي: «not_configured» تعني أن قناة البريد لم تُفعَّل بعد،
        وقولُ «أُرسل» حينها يجعل المستخدم ينتظر رسالة لا وجود لها. */
-    if (mail.status === 'sent') return { status: 'sent', message: `أُرسل رابط التوثيق إلى ${issued.email}` }
+    if (mail.status === 'sent') return { status: 'sent', message: `أرسل رابط التوثيق إلى ${issued.email}` }
     if (mail.status === 'not_configured') {
       return { status: 'not_configured', message: 'قناة البريد غير مفعّلة بعد — تواصل مع الأكاديمية لتوثيق بريدك' }
     }
@@ -171,7 +171,7 @@ export function registerAuthRoutes(app: FastifyInstance, auth: AuthService, pris
   }, async (req) => {
     const body = z.object({ token: z.string().min(10) }).parse(req.body)
     const { alreadyVerified } = await auth.verifyEmail(body.token)
-    return { ok: true, alreadyVerified, message: alreadyVerified ? 'بريدك موثَّق أصلا' : 'وُثّق بريدك — الشراء والشهادة مفتوحان الآن' }
+    return { ok: true, alreadyVerified, message: alreadyVerified ? 'بريدك موثّق أصلا' : 'وثّق بريدك — الشراء والشهادة مفتوحان الآن' }
   })
 
   /* حارسُ كلّ بوّابةٍ في الواجهة ينادي هذا المسار عند كلّ انتقال، فوقوعُه
@@ -190,7 +190,7 @@ export function registerAuthRoutes(app: FastifyInstance, auth: AuthService, pris
      والخادمُ يعرف الحالةَ أصلا — تُكشَف للواجهة فقط. */
   app.get('/api/auth/me', {
     config: { rateLimit: { max: 3000, timeWindow: '1 minute' } },
-    schema: { tags: ['auth'], summary: 'هوية الجلسة الحالية وصلاحياتها وحالةُ قناة البريد' },
+    schema: { tags: ['auth'], summary: 'هوية الجلسة الحالية وصلاحياتها وحالة قناة البريد' },
   }, async (req) => {
     const cfg = await getEmailConfig(prisma)
     return { user: req.auth, emailChannelEnabled: Boolean(cfg.enabled && cfg.apiKey && cfg.fromEmail) }

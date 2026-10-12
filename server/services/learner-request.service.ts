@@ -94,7 +94,7 @@ export class LearnerRequestService {
       reasonsAr.push('تعذّر تقييم قواعد الإكمال الآن — أعد المحاولة بعد قليل')
     }
     /* الشهادةُ تُنسب إلى شخص، فلا تصدر لعنوانٍ لم يثبت أنّه يصل صاحبَه */
-    if (!e.user.emailVerifiedAt) reasonsAr.push('وثّق بريدك أولا — الشهادة تُنسب إلى شخص')
+    if (!e.user.emailVerifiedAt) reasonsAr.push('وثّق بريدك أولا — الشهادة تنسب إلى شخص')
 
     return { eligible: reasonsAr.length === 0, reasonsAr, percent }
   }
@@ -186,7 +186,7 @@ export class LearnerRequestService {
       const check = await this.pathwayEligibility(userId, input.pathwayId)
       if (!check.eligible) throw new AuthError('not_eligible', check.reasonsAr.join(' — '), 409)
       if (input.kind === 'recommendation' && !(input.audienceAr ?? '').trim()) {
-        throw new AuthError('bad_request', 'اذكر لأيّ جهةٍ تريد التوصية — تُكتب باسمها', 400)
+        throw new AuthError('bad_request', 'اذكر لأيّ جهة تريد التوصية — تكتب باسمها', 400)
       }
       const version = await this.prisma.pathwayVersion.findFirst({
         where: { pathwayId: input.pathwayId },
@@ -248,7 +248,7 @@ export class LearnerRequestService {
     const req = await this.prisma.learnerRequest.findUnique({ where: { id } })
     if (!req) throw new AuthError('not_found', 'الطلب غير موجود', 404)
     if (status === 'declined' && !(decisionAr ?? '').trim()) {
-      throw new AuthError('bad_request', 'الاعتذار يحتاج سببا يُقرأ عند صاحبه', 400)
+      throw new AuthError('bad_request', 'الاعتذار يحتاج سببا يقرأ عند صاحبه', 400)
     }
     const updated = await this.prisma.learnerRequest.update({
       where: { id },
@@ -272,7 +272,7 @@ export class LearnerRequestService {
       await safeNotify(this.prisma, {
         userId: req.userId,
         channel: 'in_app',
-        title: status === 'fulfilled' ? `أُنجز طلبك: ${kind}` : `اعتذارٌ عن طلبك: ${kind}`,
+        title: status === 'fulfilled' ? `أنجز طلبك: ${kind}` : `اعتذار عن طلبك: ${kind}`,
         body: decisionAr?.trim() || (status === 'fulfilled' ? 'تجده في «خزانتي».' : 'تواصل معنا للتفاصيل.'),
         templateKey: 'learner.request_decided',
         data: { requestId: id, status },

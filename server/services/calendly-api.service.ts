@@ -40,7 +40,7 @@ export class CalendlyApiError extends Error {
 export function calendlyCallbackUrl(baseUrl: string): string {
   const base = baseUrl.trim().replace(/\/+$/, '')
   if (!base.startsWith('https://')) {
-    throw new CalendlyApiError(400, `عنوانُ الموقع يجب أن يكون https — جاء «${base || 'فارغا'}»`)
+    throw new CalendlyApiError(400, `عنوان الموقع يجب أن يكون https — جاء «${base || 'فارغا'}»`)
   }
   return `${base}/api/webhooks/calendly`
 }
@@ -71,7 +71,7 @@ export async function calendlyAccount(token: string): Promise<CalendlyAccount> {
     '/users/me', token,
   )
   const organization = me.resource?.current_organization
-  if (!organization) throw new CalendlyApiError(502, 'لم تُعرف المنظّمةُ من ‎/users/me‎ — راجع صلاحيّةَ الرمز')
+  if (!organization) throw new CalendlyApiError(502, 'لم تعرف المنظّمة من ‎/users/me‎ — راجع صلاحيّة الرمز')
   return { organization, name: me.resource?.name ?? '—', email: me.resource?.email ?? '—' }
 }
 

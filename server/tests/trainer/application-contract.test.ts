@@ -16,7 +16,9 @@
    الحقلَ فارغا** — أي `availability` بلا `seasons` — ويشترط أن يُقبل أو
    يُردّ، لا أن يفترق الطرفان في الجواب. */
 
-import { beforeAll, describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect as vexpect, it } from 'vitest'
+import { plainExpect } from '../helpers/plain-expect'
+const expect = plainExpect(vexpect)
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'

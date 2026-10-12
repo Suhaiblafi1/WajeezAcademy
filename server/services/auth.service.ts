@@ -154,7 +154,7 @@ export class AuthService {
     if (lastHour >= SIGNUP_MAX_PER_HOUR || lastDay >= SIGNUP_MAX_PER_DAY) {
       throw new AuthError(
         'too_many_registrations',
-        'حسابات كثيرة أُنشئت من شبكتك — انتظر قليلا، أو تواصل مع الأكاديمية لتسجيل مجموعة',
+        'حسابات كثيرة أنشئت من شبكتك — انتظر قليلا، أو تواصل مع الأكاديمية لتسجيل مجموعة',
         429,
       )
     }
@@ -189,7 +189,7 @@ export class AuthService {
     if (perIp >= LOGIN_MAX_PER_IP) {
       throw new AuthError(
         'too_many_attempts',
-        'محاولاتُ دخولٍ كثيرة من شبكتك — انتظر 15 دقيقة، أو جرّب من شبكة أخرى',
+        'محاولات دخول كثيرة من شبكتك — انتظر 15 دقيقة، أو جرّب من شبكة أخرى',
         429,
       )
     }
@@ -427,7 +427,7 @@ export class AuthService {
       الرسالة لا تفرّق بين رمزٍ مجهول ومنتهٍ: التفريق يخبر المهاجم أيّ رموزه صحيح. */
   async verifyEmail(token: string): Promise<{ userId: string; alreadyVerified: boolean }> {
     const user = await this.prisma.user.findUnique({ where: { emailVerifyTokenHash: sha256(token) } })
-    if (!user) throw new AuthError('invalid_token', 'رابط التوثيق غير صالح أو استُهلك — اطلب رابطا جديدا', 400)
+    if (!user) throw new AuthError('invalid_token', 'رابط التوثيق غير صالح أو استهلك — اطلب رابطا جديدا', 400)
     if (user.emailVerifiedAt) return { userId: user.id, alreadyVerified: true }
     if (!user.emailVerifyExpiresAt || user.emailVerifyExpiresAt < new Date()) {
       throw new AuthError('expired_token', 'انتهت صلاحية رابط التوثيق — اطلب رابطا جديدا', 400)
@@ -464,10 +464,10 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({
       where: { id: userId }, select: { id: true, email: true, emailVerifiedAt: true },
     })
-    if (!user) throw new AuthError('not_found', 'لا حسابَ بهذا المعرّف', 404)
+    if (!user) throw new AuthError('not_found', 'لا حساب بهذا المعرّف', 404)
     if (user.emailVerifiedAt) return { alreadyVerified: true, email: user.email }
     if (userId === actorId) {
-      throw new AuthError('self_verify', 'لا توثّق بريدَك بنفسك — اطلبه من موظّفٍ آخر', 409)
+      throw new AuthError('self_verify', 'لا توثّق بريدك بنفسك — اطلبه من موظّف آخر', 409)
     }
     await this.prisma.user.update({
       where: { id: userId },
@@ -495,8 +495,8 @@ export class AuthService {
   async archive(userId: string, actorId: string, reason: string): Promise<void> {
     const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { status: true } })
     if (!user) throw new AuthError('not_found', 'الحساب غير موجود', 404)
-    if (user.status === 'archived') throw new AuthError('already_archived', 'الحساب مؤرشَفٌ أصلا', 409)
-    if (reason.trim().length < 10) throw new AuthError('reason_required', 'سببُ الأرشفة يُكتب — يقرؤه من يراجع السجلّ بعد سنة')
+    if (user.status === 'archived') throw new AuthError('already_archived', 'الحساب مؤرشف أصلا', 409)
+    if (reason.trim().length < 10) throw new AuthError('reason_required', 'سبب الأرشفة يكتب — يقرؤه من يراجع السجلّ بعد سنة')
     await this.prisma.$transaction([
       this.prisma.user.update({ where: { id: userId }, data: { status: 'archived', suspendedAt: new Date() } }),
       this.prisma.session.updateMany({ where: { userId, revokedAt: null }, data: { revokedAt: new Date() } }),
@@ -512,7 +512,7 @@ export class AuthService {
   /** إعادةُ التنشيط — الأرشفةُ قرارٌ يُراجَع كالإيقاف */
   async unarchive(userId: string): Promise<void> {
     const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { status: true } })
-    if (user?.status !== 'archived') throw new AuthError('not_archived', 'هذا الحساب ليس مؤرشَفا', 409)
+    if (user?.status !== 'archived') throw new AuthError('not_archived', 'هذا الحساب ليس مؤرشفا', 409)
     await this.prisma.user.update({ where: { id: userId }, data: { status: 'active', suspendedAt: null } })
   }
 

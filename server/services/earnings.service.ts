@@ -250,7 +250,7 @@ export class EarningsService {
       meta: { profileId: input.profileId, period: input.period, total, itemsCount: input.items.length },
     })
     await this.notifyTrainer(input.profileId, 'كشف مستحقات جديد بانتظار الاعتماد',
-      `أُنشئ كشف مستحقاتك عن فترة ${input.period} بإجمالي ${total} ${payout.currency} — سيُراجع ويُعتمد من الإدارة المالية، ويصلك إشعار عند كل خطوة.`,
+      `أنشئ كشف مستحقاتك عن فترة ${input.period} بإجمالي ${total} ${payout.currency} — سيراجع ويعتمد من الإدارة المالية، ويصلك إشعار عند كل خطوة.`,
       { payoutId: payout.id, period: input.period, total })
     return payout
   }
@@ -286,7 +286,7 @@ export class EarningsService {
          لو مرّ كلاهما، ومن قرأ «معتمَد» ثمّ صُرف الكشفُ قبله لا يُلغيه */
       const moved = await tx.trainerPayout.updateMany({ where: { id, status: { in: from } }, data: { status: to, ...extra } })
       if (moved.count === 0) {
-        throw new AuthError('bad_transition', 'تبدّلت حالةُ الكشف قبل تنفيذ هذا الإجراء — حدّث الصفحة', 409)
+        throw new AuthError('bad_transition', 'تبدّلت حالة الكشف قبل تنفيذ هذا الإجراء — حدّث الصفحة', 409)
       }
       if (effects) effected = await effects(tx)
       return tx.trainerPayout.findUniqueOrThrow({ where: { id }, include: { items: true } })
@@ -297,16 +297,16 @@ export class EarningsService {
     })
     const NOTICES: Record<string, { title: string; body: string }> = {
       approved: {
-        title: 'اعتُمد كشف مستحقاتك',
-        body: `اعتُمد كشف فترة ${payout.period} بإجمالي ${Number(payout.total)} ${payout.currency} — الخطوة التالية الصرف، وسيصلك تأكيد فور إتمامه.`,
+        title: 'اعتمد كشف مستحقاتك',
+        body: `اعتمد كشف فترة ${payout.period} بإجمالي ${Number(payout.total)} ${payout.currency} — الخطوة التالية الصرف، وسيصلك تأكيد فور إتمامه.`,
       },
       paid: {
-        title: 'صُرفت مستحقاتك ✓',
-        body: `صُرف كشف فترة ${payout.period} بإجمالي ${Number(payout.total)} ${payout.currency}. التفاصيل كلها في بوابتك — «مستحقاتي».`,
+        title: 'صرفت مستحقاتك ✓',
+        body: `صرف كشف فترة ${payout.period} بإجمالي ${Number(payout.total)} ${payout.currency}. التفاصيل كلها في بوابتك — «مستحقاتي».`,
       },
       cancelled: {
-        title: 'أُلغي كشف مستحقات',
-        body: `أُلغي كشف فترة ${payout.period}. السبب: ${reason ?? '—'}. لأي استفسار تواصل مع منسقك.`,
+        title: 'ألغي كشف مستحقات',
+        body: `ألغي كشف فترة ${payout.period}. السبب: ${reason ?? '—'}. لأي استفسار تواصل مع منسقك.`,
       },
     }
     const notice = NOTICES[to]
@@ -377,7 +377,7 @@ export class EarningsService {
       if (!payout.bankAccountId) {
         throw new AuthError(
           'no_reveal',
-          'لم يُكشف حسابُ المدرّب لهذا المستحقّ — اكشفْه أوّلا، فلا يُؤكَّد صرفٌ إلى حسابٍ لم يُفتَح',
+          'لم يكشف حساب المدرّب لهذا المستحقّ — اكشفه أوّلا، فلا يؤكّد صرف إلى حساب لم يفتح',
           409,
         )
       }
@@ -388,7 +388,7 @@ export class EarningsService {
       if (!active || active.id !== payout.bankAccountId) {
         throw new AuthError(
           'bank_account_changed',
-          'تبدّل حسابُ المدرّب بعد كشفه — اكشفْه ثانيةً وتحقّقْ من وجهة الحوالة قبل التأكيد',
+          'تبدّل حساب المدرّب بعد كشفه — اكشفه ثانية وتحقّق من وجهة الحوالة قبل التأكيد',
           409,
         )
       }
@@ -489,7 +489,7 @@ export class EarningsService {
       throw new AuthError('bad_rate', 'نسبة الإيراد لا تتجاوز 100', 400)
     }
     const minSeats = input.minSeats ?? 0
-    if (minSeats < 0) throw new AuthError('bad_min_seats', 'الحد الأدنى للمقاعد لا يكون سالباً', 400)
+    if (minSeats < 0) throw new AuthError('bad_min_seats', 'الحد الأدنى للمقاعد لا يكون سالبا', 400)
     const profile = await this.prisma.trainerProfile.findUnique({ where: { id: input.profileId } })
     if (!profile) throw new AuthError('unknown_profile', 'ملف المدرب غير موجود', 404)
     if (input.cohortId) {
@@ -551,10 +551,10 @@ export class EarningsService {
     if (!cohort) throw new AuthError('unknown_cohort', 'الشعبة غير موجودة', 404)
 
     const profileId = await cohortLeadTrainer(this.prisma, cohortId)
-    if (!profileId) throw new AuthError('no_trainer', 'لا مدرب مسنداً لهذه الشعبة', 409)
+    if (!profileId) throw new AuthError('no_trainer', 'لا مدرب مسندا لهذه الشعبة', 409)
     /* القاعدة الأدق نطاقاً تفوز: شعبة ← دورة ← عامة */
     const rule = await this.activeRule(profileId, { cohortId, courseId: cohort.courseId })
-    if (!rule) throw new AuthError('no_rule', 'لا قاعدة أتعاب سارية لهذا المدرب — عيّن قاعدة أولاً', 409)
+    if (!rule) throw new AuthError('no_rule', 'لا قاعدة أتعاب سارية لهذا المدرب — عيّن قاعدة أولا', 409)
 
     const courseTitle = cohort.course.versions[0]?.titleAr ?? cohort.title
     const items: { description: string; amount: number; sourceRef?: string }[] = []
@@ -596,7 +596,7 @@ export class EarningsService {
       if (referred > 0) {
         const r = rule.referralRate === null ? Number(rule.rate) : Number(rule.referralRate)
         items.push({
-          description: `تدريب «${courseTitle}» — عبر رابطك ${referred} متعلماً × ${r} ${rule.currency}`,
+          description: `تدريب «${courseTitle}» — عبر رابطك ${referred} متعلما × ${r} ${rule.currency}`,
           amount: b.referralAmount,
           sourceRef: `cohort:${cohortId}:referral`,
         })
@@ -606,7 +606,7 @@ export class EarningsService {
          مقعدَ عامَّ يفتح بابَ التكرار. */
       items.push({
         description: general > 0
-          ? `تدريب «${courseTitle}» — ${general} متعلماً عامّا × ${Number(rule.rate)} ${rule.currency}`
+          ? `تدريب «${courseTitle}» — ${general} متعلما عامّا × ${Number(rule.rate)} ${rule.currency}`
           : `تدريب «${courseTitle}» — لا متعلم من تسويق الأكاديمية`,
         amount: b.generalAmount,
         sourceRef: `cohort:${cohortId}`,
@@ -762,15 +762,15 @@ export class EarningsService {
       ...plan.taken.map((t) => {
         const legacy = legacyById.get(t.ref)
         if (legacy) {
-          const usedOn = legacy.usedAt ? ` · استُعمل ${day(legacy.usedAt)}` : ''
+          const usedOn = legacy.usedAt ? ` · استعمل ${day(legacy.usedAt)}` : ''
           return {
-            description: `حسم خصم أصدرتَه — ${legacy.forWhomAr} (${legacy.coupon.code})${usedOn}`,
+            description: `حسم خصم أصدرته — ${legacy.forWhomAr} (${legacy.coupon.code})${usedOn}`,
             amount: -t.amount,
             sourceRef: t.ref,
           }
         }
         const r = codeById.get(t.ref)!
-        const partly = Number(r.owed) < Number(r.amount) ? ' · بعد ردّ جزءٍ من الثمن' : ''
+        const partly = Number(r.owed) < Number(r.amount) ? ' · بعد ردّ جزء من الثمن' : ''
         return {
           /* ووجهُ الكود كما أصدره — «٢٠٪» أو «$20» — لا نسبةٌ تُطبع «null٪» لكودٍ بمبلغ */
           description: `حسم كودك ${r.code.coupon.code} (${codeFaceAr(
@@ -784,7 +784,7 @@ export class EarningsService {
       ...plan.credits.map((c) => {
         const r = codeById.get(c.ref)!
         return {
-          description: `إعادة ما حُسم من كودك ${r.code.coupon.code} — رُدّ ثمنُ الشراء${r.status === 'refunded' ? '' : ' جزئيا'}`,
+          description: `إعادة ما حسم من كودك ${r.code.coupon.code} — ردّ ثمن الشراء${r.status === 'refunded' ? '' : ' جزئيا'}`,
           amount: c.amount,
           sourceRef: c.ref,
         }
@@ -840,10 +840,10 @@ export class EarningsService {
        الإشعار يخالف ما في الكشف أسوأُ من إشعارٍ لا يُرسَل. */
     const deducted = Math.round(taken.reduce((sum, t) => sum + t.amount, 0) * 100) / 100
     const credited = plan.credited
-    await this.notifyTrainer(computed.profile.id, 'وُلّد كشف مستحقاتك تلقائياً',
-      `اكتملت شعبة «${computed.cohort.title}» وحُسبت مستحقاتك عنها: ${total} ${payout.currency} لفترة ${finalPeriod}`
-      + `${deducted > 0 ? ` (بعد حسم ${deducted} من خصومٍ أصدرتَها بنفسك)` : ''}`
-      + `${credited > 0 ? ` (وأُعيد إليك ${credited} عن شراءٍ رُدّ ثمنُه)` : ''} — بانتظار اعتماد الإدارة المالية.`,
+    await this.notifyTrainer(computed.profile.id, 'ولّد كشف مستحقاتك تلقائيا',
+      `اكتملت شعبة «${computed.cohort.title}» وحسبت مستحقاتك عنها: ${total} ${payout.currency} لفترة ${finalPeriod}`
+      + `${deducted > 0 ? ` (بعد حسم ${deducted} من خصوم أصدرتها بنفسك)` : ''}`
+      + `${credited > 0 ? ` (وأعيد إليك ${credited} عن شراء ردّ ثمنه)` : ''} — بانتظار اعتماد الإدارة المالية.`,
       { payoutId: payout.id, cohortId, period: finalPeriod, total, gross: computed.total, deducted, credited })
     return payout
   }

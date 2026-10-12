@@ -68,13 +68,13 @@ export const ACADEMY_CONTACT_EMAIL = 'Academy@wajeez.co'
 export const ACADEMY_EMAIL_DOMAIN = 'wajeezacademy.com'
 
 export const ACADEMY_EMAILS = {
-  noReply: `no-reply@${ACADEMY_EMAIL_DOMAIN}`,
+  sender: `academy@${ACADEMY_EMAIL_DOMAIN}`,
   support: ACADEMY_CONTACT_EMAIL,
   calendar: ACADEMY_CONTACT_EMAIL,
 } as const
 
-/** المُرسِلُ الافتراضيُّ لكلّ رسالةٍ آليّة — لا يُقرأ ما يصله */
-export const ACADEMY_EMAIL = ACADEMY_EMAILS.noReply
+/** المُرسِلُ الافتراضيُّ لكلّ رسالةٍ آليّة — والردُّ يُوجَّه إلى العنوان الواحد */
+export const ACADEMY_EMAIL = ACADEMY_EMAILS.sender
 
 export async function getEmailConfig(prisma: PrismaClient): Promise<EmailConfig> {
   const row = await prisma.integrationSetting.findUnique({ where: { provider: 'email' } })
@@ -92,6 +92,7 @@ export async function getEmailConfig(prisma: PrismaClient): Promise<EmailConfig>
   if (env.RESEND_FROM_EMAIL) base.fromEmail = env.RESEND_FROM_EMAIL
   if (env.RESEND_REPLY_TO) base.replyTo = env.RESEND_REPLY_TO
   base.replyTo = currentReplyTo(base.replyTo)
+  base.fromEmail = currentSender(base.fromEmail)
   return base
 }
 
@@ -107,6 +108,13 @@ function currentReplyTo(value: string | undefined): string | undefined {
   const v = value?.trim()
   if (!v) return undefined
   return v.toLowerCase().endsWith('@' + ACADEMY_EMAIL_DOMAIN) ? ACADEMY_CONTACT_EMAIL : v
+}
+
+/* والمُرسِلُ المهجورُ `no-reply@` لا يعود من الإعدادات (١٢ أكتوبر ٢٠٢٦) — والعلّةُ
+   كعلّة عنوان الردّ أعلاه: `deploy/.env.production` يقول `RESEND_FROM_EMAIL=no-reply@…`
+   ولا يدخل Git، والبيئةُ تغلب الشيفرة. وما سواه اختيارٌ صريحٌ يُحترم. */
+function currentSender(value: string): string {
+  return value.trim().toLowerCase() === `no-reply@${ACADEMY_EMAIL_DOMAIN}` ? ACADEMY_EMAILS.sender : value
 }
 
 /* ── الحفظ من شاشة الإدارة — قناع لا يكتب، وكل تغيير موثق ── */
@@ -283,9 +291,9 @@ export type CalendlyUrlCheck =
 export function normalizeCalendlyBookingUrl(input: string): CalendlyUrlCheck {
   /* علاماتُ الاتّجاه تُنسخ مع النصّ العربيّ ولا تُرى — وتُفسد المطابقة */
   const raw = input.replace(/[\u200e\u200f\u202a-\u202e]/g, '').trim()
-  if (!raw) return { ok: false, messageAr: 'الحقلُ فارغ — الصقِ الرابطَ أو اسمَ المستخدم.' }
+  if (!raw) return { ok: false, messageAr: 'الحقل فارغ — الصق الرابط أو اسم المستخدم.' }
   if (/\s/.test(raw)) {
-    return { ok: false, messageAr: 'في الرابط فراغ — لعلّه نُسخ ناقصا أو معه نصٌّ آخر.' }
+    return { ok: false, messageAr: 'في الرابط فراغ — لعلّه نسخ ناقصا أو معه نصّ آخر.' }
   }
 
   /* اسمُ المستخدم وحدَه أو مسارٌ بلا مضيف: يُكمَّل لا يُرفض */
@@ -299,25 +307,25 @@ export function normalizeCalendlyBookingUrl(input: string): CalendlyUrlCheck {
   try {
     parsed = new URL(withHost)
   } catch {
-    return { ok: false, messageAr: 'تعذّرت قراءةُ الرابط — راجع صيغتَه.' }
+    return { ok: false, messageAr: 'تعذّرت قراءة الرابط — راجع صيغته.' }
   }
 
   const host = parsed.hostname.toLowerCase().replace(/^www\./, '')
   if (host !== CALENDLY_HOST) {
     return {
       ok: false,
-      messageAr: `المضيفُ «${host}» ليس Calendly — والحجزُ يُضمَّن في الصفحة، ولا تسمح سياسةُ المحتوى بغيره.`,
+      messageAr: `المضيف «${host}» ليس Calendly — والحجز يضمّن في الصفحة، ولا تسمح سياسة المحتوى بغيره.`,
     }
   }
 
   const segments = parsed.pathname.split('/').filter(Boolean).map((x) => decodeURIComponent(x))
   if (segments.length === 0) {
-    return { ok: false, messageAr: 'هذا عنوانُ Calendly نفسِه بلا اسمِ مستخدم — أضف اسمَك أو نوعَ الموعد.' }
+    return { ok: false, messageAr: 'هذا عنوان Calendly نفسه بلا اسم مستخدم — أضف اسمك أو نوع الموعد.' }
   }
   if (CALENDLY_APP_PATHS.has(segments[0].toLowerCase())) {
     return {
       ok: false,
-      messageAr: 'هذا عنوانُ لوحة تحكّم Calendly لا رابطُ الحجز. افتح نوعَ الموعد واختر «Copy link» — يبدأ باسم المستخدم.',
+      messageAr: 'هذا عنوان لوحة تحكّم Calendly لا رابط الحجز. افتح نوع الموعد واختر «Copy link» — يبدأ باسم المستخدم.',
     }
   }
 
@@ -352,7 +360,7 @@ export function normalizeCalendlyGuests(input: string): CalendlyGuestsCheck {
   const parts = cleaned.split(/[,;\n]+/).map((v) => v.trim()).filter(Boolean)
   const bad = parts.filter((v) => !EMAIL.test(v))
   if (bad.length) {
-    return { ok: false, messageAr: `ليس بريدا صحيحا: «${bad.join('» و«')}». اكتب بريدا كاملا، وافصل بين البُرد بفاصلة.` }
+    return { ok: false, messageAr: `ليس بريدا صحيحا: «${bad.join('» و«')}». اكتب بريدا كاملا، وافصل بين البرد بفاصلة.` }
   }
   /* المكرَّرُ يُطرح: Calendly يقبله ويرسل دعوتَين إلى العنوان نفسِه */
   return { ok: true, value: [...new Set(parts.map((v) => v.toLowerCase()))].join(',') }
@@ -587,12 +595,12 @@ export async function saveWhatsAppNumbers(
     /* لا مفتاحَ خارجَ السجلّ: الشاشةُ تُولَّد منه، فمفتاحٌ غيرُه لا يقرؤه شيءٌ
        ويبقى في الجدول أبدا لا يعرف أحدٌ من كتبه ولا لمَ. */
     if (!WHATSAPP_SPOT_KEYS.has(k)) {
-      throw new AuthError('bad_whatsapp', `لا موضعَ في الموقع اسمُه «${k}»`, 422)
+      throw new AuthError('bad_whatsapp', `لا موضع في الموقع اسمه «${k}»`, 422)
     }
     const n = normalizeWhatsAppNumber(v)
     if (n) {
       if (!/^\d{8,15}$/.test(n)) {
-        throw new AuthError('bad_whatsapp', `رقمٌ غير صالحٍ في «${k}» — أرقامٌ فقط، من ٨ إلى ١٥ خانة`, 422)
+        throw new AuthError('bad_whatsapp', `رقم غير صالح في «${k}» — أرقام فقط، من ٨ إلى ١٥ خانة`, 422)
       }
       next[k] = n
     } else delete next[k]

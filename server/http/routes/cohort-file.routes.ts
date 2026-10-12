@@ -28,7 +28,7 @@ export function registerCohortFileRoutes(app: FastifyInstance, prisma: PrismaCli
 
   app.post('/api/trainer/cohorts/:cohortId/files', {
     preHandler: requireAuth,
-    schema: { tags: ['trainer'], summary: 'رابطُ رفعٍ لملفِّ شعبة — متنِ محورٍ أو مصدر (يحتاج FILE_UPLOADS)' },
+    schema: { tags: ['trainer'], summary: 'رابط رفع لملفّ شعبة — متن محور أو مصدر (يحتاج FILE_UPLOADS)' },
   }, async (req, reply) => {
     const { cohortId } = z.object({ cohortId: z.string().uuid() }).parse(req.params)
     const body = z.object({
@@ -45,7 +45,7 @@ export function registerCohortFileRoutes(app: FastifyInstance, prisma: PrismaCli
 
   app.delete('/api/trainer/cohorts/:cohortId/files/:storageKey', {
     preHandler: requireAuth,
-    schema: { tags: ['trainer'], summary: 'فكُّ ملفِّ شعبةٍ ومحوُه' },
+    schema: { tags: ['trainer'], summary: 'فكّ ملفّ شعبة ومحوه' },
   }, async (req) => {
     const { cohortId, storageKey } = z.object({
       cohortId: z.string().uuid(), storageKey: z.string().min(10),
@@ -56,7 +56,7 @@ export function registerCohortFileRoutes(app: FastifyInstance, prisma: PrismaCli
 
   app.get('/api/v1/cohort-files/:storageKey', {
     preHandler: requireAuth,
-    schema: { tags: ['learner'], summary: 'قراءةُ ملفِّ شعبة — لمن التحق بها أو يدرّسها أو يعتمد خطّتها' },
+    schema: { tags: ['learner'], summary: 'قراءة ملفّ شعبة — لمن التحق بها أو يدرّسها أو يعتمد خطّتها' },
   }, async (req, reply) => {
     const { storageKey } = z.object({ storageKey: z.string().min(10) }).parse(req.params)
     assertSafeKey(storageKey)

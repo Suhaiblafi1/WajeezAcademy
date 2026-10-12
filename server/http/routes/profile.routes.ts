@@ -36,7 +36,7 @@ export function registerProfileRoutes(app: FastifyInstance, prisma: PrismaClient
   app.post('/api/learner/avatar-upload', {
     preHandler: requireAuth,
     config: { rateLimit: { max: 10, timeWindow: '1 minute' } },
-    schema: { tags: ['learner'], summary: 'رابطُ رفعٍ موقّتٌ لصورة الحساب — يحتاج FILE_UPLOADS' },
+    schema: { tags: ['learner'], summary: 'رابط رفع موقّت لصورة الحساب — يحتاج FILE_UPLOADS' },
   }, async (req, reply) => {
     const { mime } = z.object({ mime: z.string().min(3).max(64) }).parse(req.body)
     return reply.status(201).send(await profiles.startAvatarUpload(req.auth!.userId, mime))
@@ -52,7 +52,7 @@ export function registerProfileRoutes(app: FastifyInstance, prisma: PrismaClient
      والحارسُ هنا **أنّ المفتاحَ مملوك**: أربعةٌ وعشرون بايتا عشوائيّةٌ لا
      تُخمَّن، ولا يُفشيها إلّا صاحبُها. ولا تقول الصورةُ اسما ولا بريدا. */
   app.get('/api/v1/avatars/:storageKey', {
-    schema: { tags: ['public'], summary: 'صورةُ حسابٍ بمفتاحها — تظهر في الشهادات' },
+    schema: { tags: ['public'], summary: 'صورة حساب بمفتاحها — تظهر في الشهادات' },
   }, async (req, reply) => {
     const { storageKey } = z.object({ storageKey: z.string().min(10) }).parse(req.params)
     assertSafeKey(storageKey)

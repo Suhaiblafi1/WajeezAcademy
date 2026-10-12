@@ -180,7 +180,7 @@ export class RatingService {
     if (count < MIN_RATINGS_TO_REVEAL) {
       return {
         revealed: false as const, count: 0, avg: null,
-        noticeAr: `لا تُعرض التقييمات حتى تبلغ ${MIN_RATINGS_TO_REVEAL} — في العدد القليل يُستدلّ على أصحابها.`,
+        noticeAr: `لا تعرض التقييمات حتى تبلغ ${MIN_RATINGS_TO_REVEAL} — في العدد القليل يستدلّ على أصحابها.`,
       }
     }
     const rows = await this.prisma.rating.findMany({

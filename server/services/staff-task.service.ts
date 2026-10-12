@@ -44,7 +44,7 @@ export class StaffTaskService {
     if (!target) throw new AuthError('not_found', 'الحساب غير موجود', 404)
     if (target.status !== 'active') throw new AuthError('inactive', 'هذا الحساب موقوف', 409)
     if (rankOf(target.roles.map((r) => r.roleId)) > rankOf(actor.roles)) {
-      throw new AuthError('rank_exceeded', `لا ${verbAr} من هو أعلى رتبةً منك`, 403)
+      throw new AuthError('rank_exceeded', `لا ${verbAr} من هو أعلى رتبة منك`, 403)
     }
     return target
   }
@@ -107,7 +107,7 @@ export class StaffTaskService {
     if (task.assigneeId !== userId && task.assignedBy !== userId) {
       throw new AuthError('not_yours', 'هذه المهمّة ليست لك ولم تكلّف بها', 403)
     }
-    if (task.status !== 'open') throw new AuthError('bad_state', 'أُغلقت هذه المهمّة من قبل', 409)
+    if (task.status !== 'open') throw new AuthError('bad_state', 'أغلقت هذه المهمّة من قبل', 409)
 
     const done = await this.prisma.staffTask.update({
       where: { id: taskId },
@@ -117,7 +117,7 @@ export class StaffTaskService {
     if (task.assignedBy !== userId) {
       await safeNotify(this.prisma, {
         userId: task.assignedBy, audience: 'staff', channel: 'in_app',
-        title: `أُنجزت مهمّة: ${task.title}`,
+        title: `أنجزت مهمّة: ${task.title}`,
         body: noteAr?.trim() || 'بلا ملاحظة.',
         templateKey: 'staff.task.done',
         data: { taskId },
@@ -136,8 +136,8 @@ export class StaffTaskService {
      المهامّ، وجمعُهما يجعل منحَ إحداهما منحا للأخرى. */
   async notify(actor: Assigner, input: { userIds: string[]; title: string; bodyAr: string }) {
     const unique = [...new Set(input.userIds)]
-    if (unique.length === 0) throw new AuthError('no_recipients', 'لا مستقبِل للإشعار', 400)
-    for (const id of unique) await this.assertNotAbove(actor, id, 'تُشعر')
+    if (unique.length === 0) throw new AuthError('no_recipients', 'لا مستقبل للإشعار', 400)
+    for (const id of unique) await this.assertNotAbove(actor, id, 'تشعر')
 
     for (const userId of unique) {
       await safeNotify(this.prisma, {

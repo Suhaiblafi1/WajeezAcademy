@@ -43,7 +43,7 @@ const COHORT_TRANSITIONS: Record<string, string[]> = {
 function placeholderNotYours() {
   return new AuthError(
     'placeholder_session',
-    'هذا موعدٌ مبدئيٌّ فُتحت به الشعبة، لا لقاءٌ من جدولك — أضِف لقاءاتِك بنفسك، ويُرفع هذا تلقائيّا حين تعتمد الإدارةُ أوّلَها',
+    'هذا موعد مبدئيّ فتحت به الشعبة، لا لقاء من جدولك — أضف لقاءاتك بنفسك، ويرفع هذا تلقائيّا حين تعتمد الإدارة أوّلها',
     409,
   )
 }
@@ -151,7 +151,7 @@ export class CohortService {
   }>) {
     const cohort = await this.prisma.cohort.findUnique({ where: { id: cohortId } })
     if (!cohort) throw new AuthError('not_found', 'الشعبة غير موجودة', 404)
-    if (['completed', 'cancelled'].includes(cohort.status)) throw new AuthError('bad_state', 'شعبة منتهية أو ملغاة لا تُعدل', 409)
+    if (['completed', 'cancelled'].includes(cohort.status)) throw new AuthError('bad_state', 'شعبة منتهية أو ملغاة لا تعدل', 409)
     const updated = await this.prisma.cohort.update({ where: { id: cohortId }, data: patch })
     await recordAudit(this.prisma, { actorId, action: 'cohort.update', entityType: 'cohort', entityId: cohortId, meta: patch as object })
 
@@ -214,12 +214,12 @@ export class CohortService {
       await safeNotify(this.prisma, {
         userId: profile.userId, channel: 'in_app', audience: 'trainer',
         templateKey: 'trainer.assigned',
-        title: 'أُسنِدت إليك شعبة',
-        body: `أُسنِدت إليك شعبةُ «${cohort.title}»`
+        title: 'أسندت إليك شعبة',
+        body: `أسندت إليك شعبة «${cohort.title}»`
           + (cohort.startsAt
             ? ` — تبدأ ${cohortDayAr(cohort.startsAt)}.`
             : '.')
-          + ' تجد جلساتِها ومتعلّميها في بوّابتك.',
+          + ' تجد جلساتها ومتعلّميها في بوّابتك.',
         data: { cohortId, role },
       })
     }
@@ -447,7 +447,7 @@ export class CohortService {
     if (!cohort) throw new AuthError('not_found', 'الشعبة غير موجودة', 404)
     const notesAr = input.notesAr.trim()
     if (notesAr.length < 20) {
-      throw new AuthError('plan_too_short', 'خطّةُ التقديم أقصرُ من أن تُقرأ — اكتب كيف تُقدَّم هذه الشعبة فعلا (٢٠ حرفا فأكثر)')
+      throw new AuthError('plan_too_short', 'خطّة التقديم أقصر من أن تقرأ — اكتب كيف تقدّم هذه الشعبة فعلا (٢٠ حرفا فأكثر)')
     }
     const content = {
       kind: 'baseline',
@@ -528,9 +528,9 @@ export class CohortService {
       }, c.sessions[0].endsAt ?? c.sessions[0].startsAt)
 
       if (last < now) {
-        changes.push({ cohortId: c.id, title: c.title, from: c.status, to: 'completed', reason: 'انتهت آخرُ جلساتها' })
+        changes.push({ cohortId: c.id, title: c.title, from: c.status, to: 'completed', reason: 'انتهت آخر جلساتها' })
       } else if (first <= now && c.status !== 'active') {
-        changes.push({ cohortId: c.id, title: c.title, from: c.status, to: 'active', reason: 'بدأت أوّلُ جلساتها' })
+        changes.push({ cohortId: c.id, title: c.title, from: c.status, to: 'active', reason: 'بدأت أوّل جلساتها' })
       }
     }
     if (options.apply !== true) return { applied: false, changed: 0, changes }
@@ -649,7 +649,7 @@ export class CohortService {
     const cohort = await this.prisma.cohort.findUnique({ where: { id: cohortId }, select: { id: true } })
     if (!cohort) throw new AuthError('not_found', 'الشعبة غير موجودة', 404)
     if (input.start && input.end && input.start >= input.end) {
-      throw new AuthError('bad_request', 'نهايةُ النافذة قبل بدايتها', 400)
+      throw new AuthError('bad_request', 'نهاية النافذة قبل بدايتها', 400)
     }
     const updated = await this.prisma.cohort.update({
       where: { id: cohortId },
@@ -704,7 +704,7 @@ export class CohortService {
     })
     if (!cohort) throw new AuthError('not_found', 'الشعبة غير موجودة', 404)
     if (['completed', 'cancelled'].includes(cohort.status)) {
-      throw new AuthError('bad_state', 'شعبةٌ منتهيةٌ أو ملغاةٌ لا يُبدَّل فصلُها', 409)
+      throw new AuthError('bad_state', 'شعبة منتهية أو ملغاة لا يبدّل فصلها', 409)
     }
     const term = await this.prisma.term.findUnique({
       where: { id: termId },
@@ -712,7 +712,7 @@ export class CohortService {
     })
     if (!term) throw new AuthError('not_found', 'الفصل غير موجود', 404)
     if (['closed', 'cancelled'].includes(term.status)) {
-      throw new AuthError('term_closed', `فصلُ «${term.titleAr}» أُغلق — اختر فصلا مفتوحا`, 409)
+      throw new AuthError('term_closed', `فصل «${term.titleAr}» أغلق — اختر فصلا مفتوحا`, 409)
     }
 
     /* ولقاءٌ خارجَ الفصل يمنع النسبة: الصامتُ هنا يترك جلسةً معلَنةً
@@ -730,8 +730,8 @@ export class CohortService {
       const when = strays.slice(0, 3).map((x) => fmtDay(x.startsAt)).join('، ')
       throw new AuthError(
         'sessions_outside_term',
-        `في هذه الشعبة ${strays.length === 1 ? 'لقاءٌ واحدٌ' : `${strays.length} لقاءاتٍ`}`
-        + ` خارجَ أشهر «${term.titleAr}» (${when}${strays.length > 3 ? ' وغيرُها' : ''}).`
+        `في هذه الشعبة ${strays.length === 1 ? 'لقاء واحد' : `${strays.length} لقاءات`}`
+        + ` خارج أشهر «${term.titleAr}» (${when}${strays.length > 3 ? ' وغيرها' : ''}).`
         + ` احذفها أو انقلها إلى داخل الفصل، أو اختر فصلا يغطّيها.`,
         409,
       )
@@ -798,7 +798,7 @@ export class CohortService {
       : null
     if (input.termId && !term) throw new AuthError('not_found', 'الفصل غير موجود', 404)
     if (term && ['closed', 'cancelled'].includes(term.status)) {
-      throw new AuthError('term_closed', `فصلُ «${term.titleAr}» أُغلق — اختر فصلا مفتوحا`, 409)
+      throw new AuthError('term_closed', `فصل «${term.titleAr}» أغلق — اختر فصلا مفتوحا`, 409)
     }
 
     /* والتأهيلُ يُفحص **قبل** أن تُنشأ الشعبة: `assignTrainer` يردّ غيرَ
@@ -897,7 +897,7 @@ export class CohortService {
     })
     if (!cohort) throw new AuthError('not_found', 'الشعبة غير موجودة', 404)
     if (['completed', 'cancelled'].includes(cohort.status)) {
-      throw new AuthError('bad_state', 'لا جدولةَ لشعبةٍ منتهية', 409)
+      throw new AuthError('bad_state', 'لا جدولة لشعبة منتهية', 409)
     }
     const { scheduleWindowStart: from, scheduleWindowEnd: to } = cohort
     /* البابُ يفتحه الفصلُ وحدَه — والعلّةُ كاملةً في رأس `schedule-window.ts`.
@@ -905,13 +905,13 @@ export class CohortService {
        قال صاحبُ المنصّة (٤ أكتوبر ٢٠٢٦): «لا حاجةَ لسقف الشعبة — يضيفون ما شاؤوا،
        وساعاتٌ أكثرُ جودةٌ أعلى». فلا عددَ يُفحص هنا: المدى وحدَه. */
     if (!windowOpen(cohort) || !from || !to) {
-      throw new AuthError('forbidden', 'لم تُحدَّد مدّةُ هذه الشعبة بعد — حدّدها في خطوتها الأولى («المعلومات الأساسيّة») فتُفتح الجدولةُ داخلها', 403)
+      throw new AuthError('forbidden', 'لم تحدّد مدّة هذه الشعبة بعد — حدّدها في خطوتها الأولى («المعلومات الأساسيّة») فتفتح الجدولة داخلها', 403)
     }
     if (when.startsAt < from || when.startsAt > to) {
-      throw new AuthError('forbidden', `الموعدُ خارجَ مدّة الشعبة (${fmtDay(from)} — ${fmtDay(to)})`, 403)
+      throw new AuthError('forbidden', `الموعد خارج مدّة الشعبة (${fmtDay(from)} — ${fmtDay(to)})`, 403)
     }
     if (when.endsAt && when.endsAt > to) {
-      throw new AuthError('forbidden', `نهايةُ اللقاء بعد آخر يومٍ في مدّة الشعبة (${fmtDay(to)})`, 403)
+      throw new AuthError('forbidden', `نهاية اللقاء بعد آخر يوم في مدّة الشعبة (${fmtDay(to)})`, 403)
     }
   }
 
@@ -953,7 +953,7 @@ export class CohortService {
     noteAr?: string | null
   }) {
     if (!(await this.isCohortTrainer(userId, cohortId))) {
-      throw new AuthError('forbidden', 'لستَ مدرّبَ هذه الشعبة', 403)
+      throw new AuthError('forbidden', 'لست مدرّب هذه الشعبة', 403)
     }
     await this.assertWithinWindow(cohortId, input)
     /* وفحصُ التعارض هو فحصُ الإدارة نفسُه — `addSession` تحمله */
@@ -986,7 +986,7 @@ export class CohortService {
     })
     if (!session) throw new AuthError('not_found', 'اللقاء غير موجود', 404)
     if (!(await this.isCohortTrainer(userId, session.cohortId))) {
-      throw new AuthError('forbidden', 'لستَ مدرّبَ هذه الشعبة', 403)
+      throw new AuthError('forbidden', 'لست مدرّب هذه الشعبة', 403)
     }
     if (session.placeholder) throw placeholderNotYours()
     /* والنقلُ يُفحص بالمدى — ولا عددَ يُفحص منذ سقط السقف (٤ أكتوبر ٢٠٢٦) */
@@ -1052,14 +1052,14 @@ export class CohortService {
     if (backToPending) {
       await this.notifyAdminsOfPendingSession(moved.id, session.cohortId, session.title)
       await this.tellCohortScheduleChanged(session.cohortId, session,
-        'نقله مدرّبُك ويُراجَع الآن عند الإدارة. ويصلك موعدُه الجديدُ حين يُعتمَد.')
+        'نقله مدرّبك ويراجع الآن عند الإدارة. ويصلك موعده الجديد حين يعتمد.')
       /* ويُرفع من تقاويمهم بموعده القديم — فلا يحضر أحدٌ ساعةً لم يعد فيها لقاء */
       await this.inviteSafely('move-out', () => this.invites.withdraw(
         {
           id: session.id, cohortId: session.cohortId, cohortTitle: session.cohort.title,
           title: session.title, startsAt: session.startsAt, endsAt: session.endsAt,
         },
-        'نقله مدرّبُك ويُراجَع الآن عند الإدارة — وتصلك دعوتُه بموعده الجديد حين يُعتمَد.',
+        'نقله مدرّبك ويراجع الآن عند الإدارة — وتصلك دعوته بموعده الجديد حين يعتمد.',
       ))
     } else if (kept) {
       /* ودعوةُ التقويم تتحدّث بالمعرّف نفسِه — يتحرّك الموعدُ في تقاويمهم لا يتكرّر */
@@ -1068,7 +1068,7 @@ export class CohortService {
          وأنّه أُخّر أو قُدّم: التقديمُ أشدُّ على من رتّب يومَه، فلا يُسمّى تأجيلا */
       const verb = moved.startsAt.getTime() < session.startsAt.getTime() ? 'قدّمه' : 'أجّله'
       await this.tellCohortScheduleChanged(session.cohortId, session,
-        `${verb} مدرّبُك إلى ${whenAr(moved.startsAt)} — ورابطُ الانضمام نفسُه.`)
+        `${verb} مدرّبك إلى ${whenAr(moved.startsAt)} — ورابط الانضمام نفسه.`)
     }
     return moved
   }
@@ -1098,19 +1098,19 @@ export class CohortService {
     })
     if (!session) throw new AuthError('not_found', 'اللقاء غير موجود', 404)
     if (!(await this.isCohortTrainer(userId, session.cohortId))) {
-      throw new AuthError('forbidden', 'لستَ مدرّبَ هذه الشعبة', 403)
+      throw new AuthError('forbidden', 'لست مدرّب هذه الشعبة', 403)
     }
-    if (session.status === 'cancelled') throw new AuthError('session_cancelled', 'هذا اللقاء ملغًى', 409)
+    if (session.status === 'cancelled') throw new AuthError('session_cancelled', 'هذا اللقاء ملغى', 409)
     if (session.approvalState !== 'approved') {
-      throw new AuthError('not_approved', 'هذا اللقاء بانتظار اعتماد الإدارة — يُبدأ بعد أن يُعتمَد', 409)
+      throw new AuthError('not_approved', 'هذا اللقاء بانتظار اعتماد الإدارة — يبدأ بعد أن يعتمد', 409)
     }
     const meetingId = session.zoom?.provider === 'zoom_api' ? session.zoom.meetingId : null
     if (!meetingId) {
-      throw new AuthError('no_api_meeting', 'هذا اللقاء بلا اجتماعٍ أنشأته المنصّة — افتح رابطَه كما هو', 409)
+      throw new AuthError('no_api_meeting', 'هذا اللقاء بلا اجتماع أنشأته المنصّة — افتح رابطه كما هو', 409)
     }
     const cfg = await getZoomConfig(this.prisma)
     if (!zoomReady(cfg)) {
-      throw new AuthError('zoom_not_configured', `تكاملُ Zoom غير مكتمل — ينقصه: ${zoomMissing(cfg).join(' · ')}`, 409)
+      throw new AuthError('zoom_not_configured', `تكامل Zoom غير مكتمل — ينقصه: ${zoomMissing(cfg).join(' · ')}`, 409)
     }
     const r = await zoomStartUrl(cfg, meetingId)
     if (!r.ok) throw new AuthError('zoom_start_failed', r.reason, 502)
@@ -1137,10 +1137,10 @@ export class CohortService {
       const r = await updateZoomMeeting(cfg, meetingId, {
         startsAt: moved.startsAt, durationMinutes, timezone: session.timezone ?? session.cohort.timezone ?? undefined,
       })
-      if (!r.ok) console.error('[zoom] تعذّر نقلُ الاجتماع مع لقائه', meetingId, r.reason)
+      if (!r.ok) console.error('[zoom] تعذّر نقل الاجتماع مع لقائه', meetingId, r.reason)
       return r.ok
     } catch (e) {
-      console.error('[zoom] تعذّر نقلُ الاجتماع مع لقائه', meetingId, e)
+      console.error('[zoom] تعذّر نقل الاجتماع مع لقائه', meetingId, e)
       return false
     }
   }
@@ -1172,10 +1172,10 @@ export class CohortService {
     })
     if (!session) throw new AuthError('not_found', 'اللقاء غير موجود', 404)
     if (!(await this.isCohortTrainer(userId, session.cohortId))) {
-      throw new AuthError('forbidden', 'لستَ مدرّبَ هذه الشعبة', 403)
+      throw new AuthError('forbidden', 'لست مدرّب هذه الشعبة', 403)
     }
     if (session.placeholder) throw placeholderNotYours()
-    if (session.status === 'cancelled') throw new AuthError('bad_state', 'لقاءٌ مردودٌ أو ملغًى لا يُربط', 409)
+    if (session.status === 'cancelled') throw new AuthError('bad_state', 'لقاء مردود أو ملغى لا يربط', 409)
     const axes = sessionAxes(moduleIds)
     /* والربطُ لا يضع اللقاءَ في غير وقت محاوره — ولو بعد الاعتماد (فوق) */
     await this.assertAxesInTime(session.cohortId, session, axes.moduleIds)
@@ -1212,7 +1212,7 @@ export class CohortService {
       await safeNotify(this.prisma, {
         userId: r.userId, channel: 'in_app', audience: 'learner',
         templateKey: 'cohort.schedule_changed',
-        title: `تغيّر موعدٌ في ${cohort?.title ?? 'شعبتك'}`,
+        title: `تغيّر موعد في ${cohort?.title ?? 'شعبتك'}`,
         body: `${session.title} — ${whyAr}`,
         data: { cohortId, sessionId: session.id },
       })
@@ -1226,8 +1226,8 @@ export class CohortService {
   private async notifyAdminsOfPendingSession(sessionId: string, cohortId: string, title: string) {
     await notifyRole(this.prisma, ['academic_manager', 'super_admin'], {
       channel: 'in_app',
-      title: 'لقاءٌ مباشرٌ بانتظار اعتمادك',
-      body: `جدول مدرّبُ الشعبة «${title}» — راجِعه واعتمِده ليصل المسجَّلين.`,
+      title: 'لقاء مباشر بانتظار اعتمادك',
+      body: `جدول مدرّب الشعبة «${title}» — راجعه واعتمده ليصل المسجّلين.`,
       templateKey: 'cohort.session.pending',
       data: { cohortId, sessionId },
     })
@@ -1258,11 +1258,11 @@ export class CohortService {
     })
     if (!session) throw new AuthError('not_found', 'اللقاء غير موجود', 404)
     if (!(await this.isCohortTrainer(userId, session.cohortId))) {
-      throw new AuthError('forbidden', 'لستَ مدرّبَ هذه الشعبة', 403)
+      throw new AuthError('forbidden', 'لست مدرّب هذه الشعبة', 403)
     }
     if (session.placeholder) throw placeholderNotYours()
     if (session._count.attendance > 0 || session.zoom?.actualStartAt) {
-      throw new AuthError('bad_state', 'لقاءٌ انعقد ولا يُحذف — سُجِّل فيه حضور. راجع الإدارة إن أردت إلغاءه', 409)
+      throw new AuthError('bad_state', 'لقاء انعقد ولا يحذف — سجّل فيه حضور. راجع الإدارة إن أردت إلغاءه', 409)
     }
     /* واجتماعُ زووم يُلغى معه، وإلّا بقي في حساب الأكاديميّة موعدٌ لا شعبةَ
        له ويفتحه من وصله رابطُه. والإخفاقُ لا يمنع الحذفَ: صفٌّ يشير إلى
@@ -1272,13 +1272,13 @@ export class CohortService {
         const cfg = await getZoomConfig(this.prisma)
         if (zoomReady(cfg)) await deleteZoomMeeting(cfg, session.zoom.meetingId)
       } catch (e) {
-        console.error('[zoom] تعذّر إلغاءُ الاجتماع مع لقائه', session.zoom.meetingId, e)
+        console.error('[zoom] تعذّر إلغاء الاجتماع مع لقائه', session.zoom.meetingId, e)
       }
     }
     /* والمُعلَنُ يُبلَّغ قبل أن يُمحى صفُّه — فبعد الحذف لا مرجعَ يُقرأ منه */
     const wasAnnounced = session.approvalState === 'approved'
     const told = wasAnnounced
-      ? await this.tellCohortScheduleChanged(session.cohortId, session, 'أُلغي هذا اللقاء. ويصلك بديلُه إن جُدوِل.')
+      ? await this.tellCohortScheduleChanged(session.cohortId, session, 'ألغي هذا اللقاء. ويصلك بديله إن جدول.')
       : 0
     /* وتُرفع دعوتُه من التقاويم قبل صفّه — والرسالةُ تُبنى ممّا يُمحى بعد سطر */
     if (wasAnnounced) {
@@ -1287,7 +1287,7 @@ export class CohortService {
           id: session.id, cohortId: session.cohortId, cohortTitle: session.cohort.title,
           title: session.title, startsAt: session.startsAt, endsAt: session.endsAt,
         },
-        'أُلغي هذا اللقاء — ويصلك بديلُه إن جُدوِل.',
+        'ألغي هذا اللقاء — ويصلك بديله إن جدول.',
       ))
     }
 
@@ -1336,18 +1336,18 @@ export class CohortService {
     if (['completed', 'cancelled'].includes(cohort.status)) throw new AuthError('bad_state', 'لا جلسات لشعبة منتهية', 409)
 
     const days = (input.daysOfWeek ?? cohort.daysOfWeek).filter((d) => DAY_INDEX[d] !== undefined)
-    if (days.length === 0) throw new AuthError('no_pattern', 'لا أيّامَ في جدول الشعبة — اختر أيّامَ الأسبوع أوّلا')
+    if (days.length === 0) throw new AuthError('no_pattern', 'لا أيّام في جدول الشعبة — اختر أيّام الأسبوع أوّلا')
     const time = input.startTime ?? cohort.startTime
-    if (!time || !/^\d{2}:\d{2}$/.test(time)) throw new AuthError('no_time', 'وقتُ البدء غير محدّد — اضبطه بصيغة 18:00')
-    if (input.weeks < 1 || input.weeks > 52) throw new AuthError('bad_weeks', 'عددُ الأسابيع بين ١ و٥٢')
+    if (!time || !/^\d{2}:\d{2}$/.test(time)) throw new AuthError('no_time', 'وقت البدء غير محدّد — اضبطه بصيغة 18:00')
+    if (input.weeks < 1 || input.weeks > 52) throw new AuthError('bad_weeks', 'عدد الأسابيع بين ١ و٥٢')
     /* التباعدُ يُحدُّ كما تُحدُّ الأسابيع — ولا يُقبل كسرٌ ولا صفرٌ ولا مدًى
        يقذف آخرَ جلسةٍ إلى سنةٍ أخرى. */
     const gap = input.intervalWeeks ?? 1
     if (!Number.isInteger(gap) || gap < 1 || gap > 8) {
-      throw new AuthError('bad_interval', 'التباعدُ بين الجلسات أسبوعٌ إلى ثمانية')
+      throw new AuthError('bad_interval', 'التباعد بين الجلسات أسبوع إلى ثمانية')
     }
     if ((input.weeks - 1) * gap + 1 > 52) {
-      throw new AuthError('bad_span', 'الجدولُ بهذا التباعد يتجاوز ٥٢ أسبوعا')
+      throw new AuthError('bad_span', 'الجدول بهذا التباعد يتجاوز ٥٢ أسبوعا')
     }
 
     const [hh, mm] = time.split(':').map(Number)
@@ -1381,7 +1381,7 @@ export class CohortService {
     if (input.apply !== true) {
       return { applied: false, created: 0, skipped: planned.length - fresh.length, sessions: planned }
     }
-    if (fresh.length === 0) throw new AuthError('nothing_to_create', 'لا جلسةَ جديدةً في هذا النطاق — كلُّها موجودةٌ أصلا', 409)
+    if (fresh.length === 0) throw new AuthError('nothing_to_create', 'لا جلسة جديدة في هذا النطاق — كلّها موجودة أصلا', 409)
 
     /* تعارضُ جدول المدرّب يُفحص للمجموعة كلِّها قبل كتابةِ أيٍّ منها */
     for (const t of cohort.trainers) {
@@ -1563,7 +1563,7 @@ export class CohortService {
     if (!isTrainer) {
       if (session.approvalState !== 'approved') throw new AuthError('not_found', 'الجلسة غير موجودة', 404)
       if (meetingOver(session, session.zoom, new Date())) {
-        throw new AuthError('session_ended', 'انتهى هذا اللقاء — تسجيلُه يظهر في «مصادر هذه المرحلة» حين يجهز', 409)
+        throw new AuthError('session_ended', 'انتهى هذا اللقاء — تسجيله يظهر في «مصادر هذه المرحلة» حين يجهز', 409)
       }
     }
 
@@ -1597,8 +1597,8 @@ export class CohortService {
     if (config && !zoomReady(config)) {
       throw new AuthError(
         'zoom_not_configured',
-        `تكاملُ Zoom غير مكتمل — ينقصه: ${zoomMissing(config).join(' · ')}. `
-        + 'اضبطه من «التكاملات»، أو أنشئ اللقاءَ بلا اجتماعٍ وألصق رابطا يدويّا.',
+        `تكامل Zoom غير مكتمل — ينقصه: ${zoomMissing(config).join(' · ')}. `
+        + 'اضبطه من «التكاملات»، أو أنشئ اللقاء بلا اجتماع وألصق رابطا يدويّا.',
         409,
       )
     }
@@ -1634,7 +1634,7 @@ export class CohortService {
     attachmentKey?: string | null; attachmentName?: string | null; attachmentMime?: string | null
   }) {
     if (!(await this.isCohortTrainer(userId, cohortId))) {
-      throw new AuthError('forbidden', 'لستَ مدرّبَ هذه الشعبة', 403)
+      throw new AuthError('forbidden', 'لست مدرّب هذه الشعبة', 403)
     }
     await this.assertWithinWindow(cohortId, input)
     /* وداخلَ مدّة الشعبة لا يكفي: في وقت محاوره (`assertAxesInTime`) */
@@ -1712,10 +1712,10 @@ export class CohortService {
       })
       await this.notifyCohortTrainers(session.cohortId, {
         templateKey: 'cohort.session.rejected',
-        title: `لم يُعتمَد لقاءُ «${session.title}»`,
+        title: `لم يعتمد لقاء «${session.title}»`,
         body: note?.trim()
-          ? `راجِع الملاحظةَ ثمّ أعِد جدولتَه: ${note.trim()}`
-          : 'راجِع الإدارةَ لمعرفة السبب ثمّ أعِد جدولتَه.',
+          ? `راجع الملاحظة ثمّ أعد جدولته: ${note.trim()}`
+          : 'راجع الإدارة لمعرفة السبب ثمّ أعد جدولته.',
         data: { cohortId: session.cohortId, sessionId },
       })
       return { session: rejected, zoom: null, notified: 0 }
@@ -1749,8 +1749,8 @@ export class CohortService {
     if (!opts.quiet) {
       await this.notifyCohortTrainers(session.cohortId, {
         templateKey: 'cohort.session.approved',
-        title: `اعتُمد لقاءُ «${session.title}»`,
-        body: `وصل المسجَّلين في تقويمهم وبالبريد${zoom ? '، ومعه رابطُ الاجتماع' : ''}.`,
+        title: `اعتمد لقاء «${session.title}»`,
+        body: `وصل المسجّلين في تقويمهم وبالبريد${zoom ? '، ومعه رابط الاجتماع' : ''}.`,
         data: { cohortId: session.cohortId, sessionId },
       })
     }
@@ -1782,7 +1782,7 @@ export class CohortService {
           const cfg = await getZoomConfig(this.prisma)
           if (zoomReady(cfg)) await deleteZoomMeeting(cfg, r.zoom.meetingId)
         } catch (e) {
-          console.error('[zoom] تعذّر إلغاءُ اجتماعِ موعدٍ مبدئيّ', r.zoom.meetingId, e)
+          console.error('[zoom] تعذّر إلغاء اجتماع موعد مبدئيّ', r.zoom.meetingId, e)
         }
       }
     }
@@ -1800,8 +1800,8 @@ export class CohortService {
       await safeNotify(this.prisma, {
         userId: r.userId, channel: 'in_app', audience: 'learner',
         templateKey: 'cohort.schedule_changed',
-        title: `صار لـ${cohort?.title ? `«${cohort.title}»` : 'شعبتك'} جدولُ مدرّبها`,
-        body: 'رُفعت المواعيدُ المبدئيّةُ التي فُتحت بها الشعبة، وحلّت محلَّها مواعيدُ مدرّبك — ويصلك كلُّ لقاءٍ منها حين يُعتمَد.',
+        title: `صار لـ${cohort?.title ? `«${cohort.title}»` : 'شعبتك'} جدول مدرّبها`,
+        body: 'رفعت المواعيد المبدئيّة التي فتحت بها الشعبة، وحلّت محلّها مواعيد مدرّبك — ويصلك كلّ لقاء منها حين يعتمد.',
         data: { cohortId },
       })
     }
@@ -1874,7 +1874,7 @@ export class CohortService {
 
     const config = preloaded ?? await getZoomConfig(this.prisma)
     if (!zoomReady(config)) {
-      throw new AuthError('zoom_not_configured', `تكاملُ Zoom غير مكتمل — ينقصه: ${zoomMissing(config).join(' · ')}`, 409)
+      throw new AuthError('zoom_not_configured', `تكامل Zoom غير مكتمل — ينقصه: ${zoomMissing(config).join(' · ')}`, 409)
     }
     /* المدّةُ من الجلسة نفسِها، وساعتان حين لا نهايةَ لها — لا رقمٌ يُخمَّن في Zoom */
     const durationMinutes = session.endsAt
@@ -2017,7 +2017,7 @@ export class CohortService {
     const config = await getZoomConfig(this.prisma)
     /* بلا مفاتيح لا إلغاءَ ممكنا — ولا يُعدّ إخفاقا يُكتب كلَّ ساعة: لوحةُ
        التكاملات تقول إنّ Zoom غيرُ موصول، والدورةُ تُلغيها حين يُوصل */
-    if (!zoomReady(config)) return { cancelled: 0, failed: 0, reason: 'مفاتيحُ Zoom ناقصة' }
+    if (!zoomReady(config)) return { cancelled: 0, failed: 0, reason: 'مفاتيح Zoom ناقصة' }
     let cancelled = 0
     let failed = 0
     let reason: string | null = null
@@ -2033,7 +2033,7 @@ export class CohortService {
         }
       } catch (e) {
         failed += 1
-        reason ??= e instanceof Error ? e.message : 'تعذّر الوصولُ إلى Zoom'
+        reason ??= e instanceof Error ? e.message : 'تعذّر الوصول إلى Zoom'
       }
     }
     return { cancelled, failed, reason }
@@ -2076,8 +2076,8 @@ export class CohortService {
       await safeNotify(this.prisma, {
         userId: r.userId, channel: 'in_app', audience: 'learner',
         templateKey: 'cohort.meeting.linked',
-        title: `صار للقاء رابطُ انضمام — ${session.cohort.title}`,
-        body: `${session.title} — ${when}. تجد رابطَ الانضمام في صفحة رحلتك قبل موعده.`,
+        title: `صار للقاء رابط انضمام — ${session.cohort.title}`,
+        body: `${session.title} — ${when}. تجد رابط الانضمام في صفحة رحلتك قبل موعده.`,
         data,
       })
     }
@@ -2086,8 +2086,8 @@ export class CohortService {
       await safeNotify(this.prisma, {
         userId: t.profile.userId, channel: 'in_app', audience: 'trainer',
         templateKey: 'cohort.meeting.linked.trainer',
-        title: `صار للقاء رابطُ انضمام — ${session.cohort.title}`,
-        body: `${session.title} — ${when}. تجد رابطَ الانضمام في جدولك.`,
+        title: `صار للقاء رابط انضمام — ${session.cohort.title}`,
+        body: `${session.title} — ${when}. تجد رابط الانضمام في جدولك.`,
         data,
       })
     }
@@ -2109,7 +2109,7 @@ export class CohortService {
     try {
       return await fn()
     } catch (e) {
-      console.error(`[invite] تعذّرت كتابةُ دعوات اللقاء (${label})`, e)
+      console.error(`[invite] تعذّرت كتابة دعوات اللقاء (${label})`, e)
       return 0
     }
   }
@@ -2134,9 +2134,9 @@ export class CohortService {
       await safeNotify(this.prisma, {
         userId: r.userId, channel: 'in_app', audience: 'learner',
         templateKey: 'cohort.session.scheduled',
-        title: `لقاءٌ جديدٌ في ${cohort?.title ?? 'شعبتك'}`,
+        title: `لقاء جديد في ${cohort?.title ?? 'شعبتك'}`,
         body: zoom
-          ? `${session.title} — ${when}. رابطُ الانضمام في صفحة رحلتك.`
+          ? `${session.title} — ${when}. رابط الانضمام في صفحة رحلتك.`
           : `${session.title} — ${when}.`,
         data: { cohortId, sessionId: session.id, hasMeeting: Boolean(zoom) },
       })
@@ -2155,7 +2155,7 @@ export class CohortService {
     let storageKey: string | undefined
     let uploadUrl: string | undefined
     if (input.file) {
-      assertFileUploadsEnabled('أضف المادّة برابطٍ خارجيّ حتّى يجهز مخزنُ الملفّات.')
+      assertFileUploadsEnabled('أضف المادّة برابط خارجيّ حتّى يجهز مخزن الملفّات.')
       const max = MAX_COHORT_MEDIA_BYTES
       if (input.file.sizeBytes <= 0 || input.file.sizeBytes > max) throw new AuthError('too_large', 'الملف يتجاوز الحد المسموح', 413)
       storageKey = newStorageKey()
@@ -2177,7 +2177,7 @@ export class CohortService {
   }) {
     const session = await this.prisma.cohortSession.findUnique({ where: { id: sessionId } })
     if (!session) throw new AuthError('not_found', 'الجلسة غير موجودة', 404)
-    assertFileUploadsEnabled('أضِفِ التسجيلَ رابطا من «+ جلسةٌ مسجّلة» في خطوة «اللقاءات».')
+    assertFileUploadsEnabled('أضف التسجيل رابطا من «+ جلسة مسجّلة» في خطوة «اللقاءات».')
     if (input.sizeBytes <= 0 || input.sizeBytes > MAX_COHORT_MEDIA_BYTES) {
       throw new AuthError('too_large', 'الملف يتجاوز الحد المسموح', 413)
     }

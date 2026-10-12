@@ -3,7 +3,9 @@
    ما تحميه هذه الاختبارات: أن الخطوات الخمس لا تصير تعريفين يتباعدان، وأن
    النقص الذي ينتج «جوكرا» (بلا جمهور · بلا مجال) يمنع النشر لا يُبلَّغ فقط. */
 
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect as vexpect, it } from 'vitest'
+import { plainExpect } from '../helpers/plain-expect'
+const expect = plainExpect(vexpect)
 import type { PrismaClient } from '@prisma/client'
 import { setupTestDb, testPrisma } from '../helpers/db'
 import { AuthError } from '../../services/auth.service'
