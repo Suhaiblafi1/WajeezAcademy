@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   AlertTriangle,
-  CalendarClock, CalendarPlus, CheckCircle2, ChevronDown, CopyPlus, FileText, Loader2, Lock, Play, RefreshCw, Sparkles,
+  CalendarClock, CalendarPlus, CheckCircle2, ChevronDown, CopyPlus, Loader2, Lock, Play, RefreshCw, Sparkles,
   ServerOff, UserPlus, Users, Video, XCircle,
 } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import { apiGet, apiPost, apiPut, ApiError } from "@/services/api";
-import { areaCls, staffControlCls, staffSelectCls } from "@/components/FormKit";
+import { staffControlCls, staffSelectCls } from "@/components/FormKit";
 import { CohortOps, LearningSettings } from "./CohortOps";
 import { COHORT_TABS, type CohortTab } from "./cohort-tabs";
 import { tabForGap } from "@/application/learning/open-gaps";
@@ -87,7 +87,6 @@ export default function AdminCohorts() {
   const [checklist, setChecklist] = useState<Record<string, Checklist>>({});
   /* وما ردّ به الفتحُ — بجانب زرّه لا أعلى الصفحة وحدَه (٣ أكتوبر ٢٠٢٦) */
   const [openError, setOpenError] = useState<Record<string, string>>({});
-  const [planDraft, setPlanDraft] = useState<Record<string, string>>({});
 
   /* نماذج — والإنشاءُ صار في المعالج (CohortWizard)، وسعرُ الدورة وعملتُها
      يُمرَّران إليه من الكتالوج لأنّهما ما يرثه الخادمُ فعلا. */
@@ -474,42 +473,12 @@ export default function AdminCohorts() {
                       ) : <Loader2 className="h-4 w-4 animate-spin text-muted-foreground/50" />}
                     </div>
 
-                    {/* ── خطّةُ التقديم — الشرطُ الذي لم يكن يُوفَّى من المنصّة ──
+                    {/* ── وكانت هنا «اكتب خطّةَ التقديم» لشعبةٍ بلا خطّة ──
 
-                        صفوفُ خطط الشعبة كانت تُكتب في موضعٍ واحدٍ فقط: نشرُ
-                        اقتراحِ تعديلٍ من مدرّبٍ بنطاق شعبة. فالشرطُ قائمٌ ولا
-                        بابَ إليه، وكلُّ شعبةٍ يدويّةٍ عالقةٌ في المسوّدة أبدا.
-                        وتُعرض هنا لا في شاشةٍ أخرى: مكانُ الشرط مكانُ إيفائه. */}
-                    {check && !check.ready && check.missing.some((m) => m.startsWith("لا خطة تقديم")) && (
-                      <Card tone="warn">
-                        <p className="text-read font-black text-gold-ink">اكتب خطّةَ التقديم</p>
-                        <p className="mt-1 text-read leading-6 text-muted-foreground">
-                          كيف تُقدَّم هذه الشعبة فعلا: الأيّامُ والوقتُ وطريقةُ التقديم وما يلزم المتعلّمَ إحضارُه.
-                          تُقرأ ولا تُصدَّق تلقائيّا — فاكتب ما يقع، لا ما يُشتهى.
-                        </p>
-                        <textarea
-                          value={planDraft[c.id] ?? ""}
-                          onChange={(e) => setPlanDraft((d) => ({ ...d, [c.id]: e.target.value }))}
-                          rows={3}
-                          placeholder="مثال: تقديمٌ عن بُعد عبر Zoom، الثلاثاء والخميس ٦ مساءً بتوقيت عمّان، ثماني جلسات، مع تمرينٍ تطبيقيٍّ بعد كلّ جلسة يُراجَع في التي تليها."
-                          aria-label="خطة تقديم الشعبة"
-                          className={`${areaCls} mt-2.5`}
-                        />
-                        <Button tone="confirm" type="button"
-                          disabled={busy || (planDraft[c.id] ?? "").trim().length < 20}
-                          onClick={() => act(async () => {
-                            await apiPut(`/api/admin/cohorts/${c.id}/delivery-plan`, { notesAr: (planDraft[c.id] ?? "").trim() });
-                            setPlanDraft((d) => ({ ...d, [c.id]: "" }));
-                            await loadChecklist(c.id);
-                          }, "حُفظت خطّةُ التقديم")} className="mt-2.5">
-                          <FileText className="h-3.5 w-3.5" /> احفظ الخطّة
-                        </Button>
-                        {(planDraft[c.id] ?? "").trim().length > 0 && (planDraft[c.id] ?? "").trim().length < 20 && (
-                          <p className="mt-1.5 text-read text-muted-foreground">٢٠ حرفا فأكثر — خطّةٌ أقصرُ لا تُقرأ.</p>
-                        )}
-                      </Card>
-                    )}
-
+                        سقطت مع شرطها (١٢ أكتوبر ٢٠٢٦): الشعبةُ لا تُفتح إلّا بخطّة
+                        مدرّبٍ معتمَدة، فخطّةٌ أساسيّةٌ يكتبها المديرُ لا تفتح شيئا —
+                        وعرضُها نقصا يُوفى هنا يَعِد بما لا يقع. والسببُ في
+                        `CohortService.openChecklist`. */}
                     {/* إجراءات الحالة */}
                     <div className="flex flex-wrap gap-2">
                       {c.status === "draft" && (

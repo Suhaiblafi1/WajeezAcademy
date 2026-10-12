@@ -83,7 +83,9 @@ describe('① نصُّ التسجيل من حال الشعبة — بترتيب 
       for (const plans of [[], [{ status: 'submitted' }], [{ status: 'approved' }], [{ status: 'superseded' }, { status: 'draft' }]]) {
         for (const joinClosesAt of [null, past, future]) {
           const server = cohortAcceptsRegistration({ registrationOpen, plans, joinClosesAt }, now).open
-          const awaitingPlan = plans.length > 0 && !plans.some((p) => ['approved', 'published', 'superseded'].includes(p.status))
+          /* «لم تُعتمَد لمدرّبها خطّةٌ قطّ» — كما يحسبه الخادمُ للشاشة (`cohort-plan.service`).
+             وشعبةٌ لا خطّةَ لمدرّبها أصلا منه: لا تقبل أحدا (١٢ أكتوبر ٢٠٢٦) */
+          const awaitingPlan = !plans.some((p) => ['approved', 'published', 'superseded'].includes(p.status))
           const screen = registrationState({ registrationOpen, awaitingPlan, joinClosesAt }, now) === 'open'
           expect(screen, `علم ${registrationOpen} · خطط ${JSON.stringify(plans)} · التحاق ${joinClosesAt?.toISOString() ?? '—'}`).toBe(server)
         }

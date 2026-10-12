@@ -15,6 +15,7 @@
 
 import type { PrismaClient } from '@prisma/client'
 import { TermService } from './term.service'
+import { APPROVED_TRAINER_PLAN_WHERE } from './registration-window'
 
 export interface CalendarEntry {
   cohortId: string
@@ -63,7 +64,9 @@ export class TermCalendarService {
     if (!term.calendarPublishedAt) return null
 
     const cohorts = await this.prisma.cohort.findMany({
-      where: { termId: term.id, status: { in: ['open', 'full', 'active'] } },
+      /* والتقويمُ عامٌّ كالكتالوج، فيُعرض فيه ما يُعرض هناك: شعبةٌ اعتُمدت خطّةُ
+         مدرّبها (١٢ أكتوبر ٢٠٢٦) — لا شعبةٌ بموعدٍ لا مدرّبَ وراءه */
+      where: { termId: term.id, status: { in: ['open', 'full', 'active'] }, ...APPROVED_TRAINER_PLAN_WHERE },
       include: {
         course: {
           select: {

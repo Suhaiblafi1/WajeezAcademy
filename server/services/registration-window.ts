@@ -32,9 +32,16 @@
    يومَ البدء، والالتحاقُ المتأخّرُ حتّى الموعد الثاني».
 
    ٣) **خطّةُ مدرّبها معتمَدة**: شعبةٌ بدأ مدرّبُها خطّتَها ولم تُعتمَد لا تقبل
-      أحدا — وإن رُفع علمُها بيدٍ لا تعرف أنّ خطّتَها لم تُقرأ بعد. وشعبةٌ لا
-      خطّةَ لمدرّبها أصلا (ما قبل هذا النظام، وما تديره الإدارةُ بنفسها) لا
-      تُمنع: الجديدُ لا يُبطل القائم.
+      أحدا — وإن رُفع علمُها بيدٍ لا تعرف أنّ خطّتَها لم تُقرأ بعد.
+
+      **وشعبةٌ لا خطّةَ لمدرّبها أصلا لا تُعرض ولا تُباع** — قرارُ صاحب المنصّة
+      (١٢ أكتوبر ٢٠٢٦): «أريد أن يظهر للعوامّ فقط الدورات التي لها مدرّبٌ
+      واعتمدتُها أنا، والباقي يظهر بلا شعبٍ مفتوحة». وكانت تُستثنى («الجديدُ لا
+      يُبطل القائم») يومَ فُتحت شعبٌ افتراضيّةٌ لكلّ دورةٍ على أن يُسنَد المدرّبون
+      لاحقا — فبقيت تُعرض بموعدٍ وسعرٍ ولا مدرّبَ وراءها. والآن لا استثناء:
+      الشعبةُ تُعرض وتُباع حين يعتمد صاحبُ المنصّة خطّةَ مدرّبها، لا قبل. ولا
+      يُمسّ صفٌّ في القاعدة: الشعبُ الافتراضيّةُ باقيةٌ بحالها وبمن فيها، ويخفيها
+      الشرطُ وحدَه — فإن عُدل عنه عادت كما كانت.
    ٤) **والالتحاقُ حتّى الموعد الثاني** (`joinClosesAt`): يُكتب عند الاعتماد من
       مواعيد الخطّة. ومن جاء بعد بدء الشعبة وقبل موعدها الثاني ملتحقٌ متأخّرٌ
       يُقبل؛ وبعده لا — قد فاته من المنهج ما لا يُستدرك. */
@@ -75,7 +82,7 @@ export function termWindowVerdict(term: TermWindow | null, now = new Date()): Wi
 
 export type CohortVerdict =
   | { open: true }
-  | { open: false; reasonAr: string; code: 'not_yet' | 'closed' | 'flag_off' | 'awaiting_plan' | 'late_closed' }
+  | { open: false; reasonAr: string; code: 'not_yet' | 'closed' | 'flag_off' | 'awaiting_plan' | 'no_trainer' | 'late_closed' }
 
 /** حالاتُ خطّةٍ اعتُمدت — و`superseded` معتمَدةٌ نزلت لما بعدها: الشعبةُ اعتُمدت */
 export const APPROVED_PLAN_STATUSES = ['approved', 'published', 'superseded'] as const
@@ -85,7 +92,14 @@ export function planApprovedOnce(plans: readonly { status: string }[]): boolean 
   return plans.some((p) => (APPROVED_PLAN_STATUSES as readonly string[]).includes(p.status))
 }
 
-/** شعبةٌ بدأ مدرّبُها خطّتَها ولم تُعتمَد له خطّةٌ قطّ — لا تقبل تسجيلا بعد */
+/** الشرطُ نفسُه بلغة الاستعلام: اعتُمدت لمدرّب الشعبة خطّةٌ قطّ. وتقرؤه كلُّ
+    قائمةٍ عامّةٍ تسرد الشعب — الكتالوجُ وتقويمُ الفصل — فلا تفترقان */
+export const APPROVED_TRAINER_PLAN_WHERE = {
+  plans: { some: { trainerId: { not: null }, status: { in: [...APPROVED_PLAN_STATUSES] } } },
+} satisfies Prisma.CohortWhereInput
+
+/** شعبةٌ بدأ مدرّبُها خطّتَها ولم تُعتمَد له خطّةٌ قطّ — وشعبةٌ لا خطّةَ لمدرّبها
+    أصلا خارجُها: هي «بلا مدرّب» لا «بانتظار اعتماد» (`ridesWithPlan`) */
 export function awaitingTrainerPlan(plans: readonly { status: string }[]): boolean {
   return plans.length > 0 && !planApprovedOnce(plans)
 }
@@ -111,8 +125,11 @@ export function cohortAcceptsRegistration(
       reasonAr: cohort.title ? `التسجيل مغلق في «${cohort.title}»` : 'التسجيل في هذه الشعبة غير مفتوح',
     }
   }
-  if (awaitingTrainerPlan(cohort.plans)) {
-    return { open: false, code: 'awaiting_plan', reasonAr: `تُفتح ${named} للتسجيل حين تُعتمَد خطّةُ مدرّبها` }
+  if (!planApprovedOnce(cohort.plans)) {
+    /* وسببان لا سببٌ واحد: مدرّبٌ كتب ولم يُعتمَد له، وشعبةٌ لا مدرّبَ لها أصلا */
+    return cohort.plans.length > 0
+      ? { open: false, code: 'awaiting_plan', reasonAr: `تُفتح ${named} للتسجيل حين تُعتمَد خطّةُ مدرّبها` }
+      : { open: false, code: 'no_trainer', reasonAr: `${named} بلا مدرّبٍ معتمَدٍ بعد — تُفتح للتسجيل حين تُعتمَد خطّةُ مدرّبها` }
   }
   if (cohort.joinClosesAt && now >= cohort.joinClosesAt) {
     return {
@@ -148,13 +165,8 @@ export function openRegistrationWhere(now = new Date()): Prisma.CohortWhereInput
           },
         ],
       },
-      /* وخطّةُ مدرّبها — لا خطّةَ له أصلا، أو خطّةٌ اعتُمدت (`awaitingTrainerPlan`) */
-      {
-        OR: [
-          { plans: { none: { trainerId: { not: null } } } },
-          { plans: { some: { trainerId: { not: null }, status: { in: [...APPROVED_PLAN_STATUSES] } } } },
-        ],
-      },
+      /* وخطّةُ مدرّبها معتمَدة — ولا استثناءَ لشعبةٍ بلا مدرّب (١٢ أكتوبر ٢٠٢٦) */
+      APPROVED_TRAINER_PLAN_WHERE,
       /* والالتحاقُ قبل موعدها الثاني */
       { OR: [{ joinClosesAt: null }, { joinClosesAt: { gt: now } }] },
     ],

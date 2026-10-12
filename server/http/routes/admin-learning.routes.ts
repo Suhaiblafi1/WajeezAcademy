@@ -8,7 +8,7 @@ import { REVIEW_NOTE_MAX } from '../../../src/application/trainer/review-notes'
 import { TRAINING_SEASONS, type TrainingSeason } from '../../../src/application/trainer/application-options'
 import type { PrismaClient } from '@prisma/client'
 import { CohortService } from '../../services/cohort.service'
-import { openAllCohorts, alignCohortPrices } from '../../services/catalog-readiness.service'
+import { alignCohortPrices } from '../../services/catalog-readiness.service'
 import { EnrollmentService } from '../../services/enrollment.service'
 import { AssessmentService } from '../../services/assessment.service'
 import { ProgressService } from '../../services/progress.service'
@@ -54,23 +54,15 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
     return cohorts.list(status)
   })
 
-  /* ── جاهزيّة العرض: فتحُ الشعب ومحاذاةُ الأسعار من اللوحة ──
+  /* ── جاهزيّة العرض: محاذاةُ الأسعار من اللوحة ──
 
-     كانت العمليّتان في `scripts/` وحدهما، فلا تُنفَّذان إلّا من طرفيّةٍ تملك
-     `DATABASE_URL` الإنتاج — فبقيت ٨١ دورةً معروضةً بلا سعر لأنّ أحدا لم
-     يفتح طرفيّة. والمنطق مشترك مع السكربتين فلا يفترق الزرّ عن السطر.
+     كانت في `scripts/` وحدها، فلا تُنفَّذ إلّا من طرفيّةٍ تملك `DATABASE_URL`
+     الإنتاج. والمنطق مشترك مع السكربت فلا يفترق الزرّ عن السطر. و`apply=false`
+     هو الافتراض: تُعرض النتيجة أوّلا ولا يُكتب شيء.
 
-     و`apply=false` هو الافتراض: تُعرض النتيجة أوّلا ولا يُكتب شيء. */
-  app.post('/api/admin/cohorts/open-all', {
-    preHandler: requirePermission('cohort.open'),
-    schema: { tags: ['admin-cohorts'], summary: 'يفتح شعبةً لكلّ دورة منشورة بلا شعبةٍ حيّة — موزّعةً على الفصل الأوّل (weeks = أقلّ مهلةٍ للتسجيل بالأسابيع)' },
-  }, async (req) => {
-    const b = (req.body ?? {}) as { apply?: boolean; weeks?: number; capacity?: number }
-    return openAllCohorts(prisma, {
-      apply: b.apply === true, weeks: b.weeks, capacity: b.capacity, actorId: req.auth!.userId,
-    })
-  })
-
+     وكان بجانبها `open-all` — «شعبةٌ لكلّ دورة» بلا مدرّب — وتقاعد (١٢ أكتوبر
+     ٢٠٢٦): لا تُفتح شعبةٌ إلّا باعتماد خطّة مدرّبها. والسببُ في رأس
+     `catalog-readiness.service.ts`. */
   app.post('/api/admin/cohorts/align-prices', {
     preHandler: requirePermission('cohort.open'),
     schema: { tags: ['admin-cohorts'], summary: 'يوحّد أسعار الشعب على سعر قائمة دورتها' },

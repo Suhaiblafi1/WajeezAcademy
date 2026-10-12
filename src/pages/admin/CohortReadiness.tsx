@@ -1,26 +1,21 @@
-/* جاهزيّة العرض — فتحُ الشعب ومحاذاةُ أسعارها بزرّ.
+/* جاهزيّة العرض — محاذاةُ أسعار الشعب، وحالاتٌ متأخّرةٌ عن تواريخها، بزرّ.
 
    السعر لا يُقرأ من الكتالوج بل من الشعب: رقمٌ لا تسنده شعبةٌ قابلة للتسجيل
-   وعدٌ يفترق عن الفاتورة. فما لا شعبةَ له لا سعرَ له — والعلاج فتحُ الشعب.
+   وعدٌ يفترق عن الفاتورة. فما لا شعبةَ له لا سعرَ له.
 
-   وكانت العمليّتان في `scripts/` وحدهما، فلا تُنفَّذان إلّا من طرفيّةٍ تملك
-   وصولا إلى قاعدة الإنتاج. فبقيت دوراتٌ معروضةٌ بلا سعر لأنّ أحدا لم يفتح
-   طرفيّة — وهذا ثمنٌ باهظ لعمليّةٍ تستغرق ثانية.
+   وكانت هنا بطاقةُ «فتحُ شعبةٍ لكلّ دورة بلا شعبة» — وتقاعدت (١٢ أكتوبر ٢٠٢٦):
+   لا تُعرض شعبةٌ ولا تُباع إلّا باعتماد خطّة مدرّبها، فزرٌّ يفتح شعبا بلا مدرّبٍ
+   لم يعد يفتح شيئا. والسببُ في رأس `catalog-readiness.service.ts`.
 
    والعرضُ يسبق التنفيذ دائما: لا زرَّ ينفّذ قبل أن تُعرض النتيجة، لأنّه
    يكتب في قاعدةٍ حيّة فيها مدفوعات. */
 
 import { useState } from "react";
-import { AlertTriangle, CalendarCheck, CheckCircle2, PlayCircle, Tags, Wallet } from "lucide-react";
+import { AlertTriangle, CalendarCheck, CheckCircle2, Tags, Wallet } from "lucide-react";
 import { apiPost, ApiError } from "@/services/api";
 
 import { Card, Panel, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
-interface OpenResult {
-  applied: boolean; publishedCourses: number; opened: number; prepared: number; alreadyLive: number;
-  skippedNoListPrice: number; startsAt: string;
-  rows: { courseId: string; titleAr: string; price: number; currency: string; reason?: string; blocked?: string[] }[];
-}
 interface AlignResult {
   applied: boolean; cohorts: number; changed: number; alreadyAligned: number;
   skippedNoListPrice: number; skippedCommitted: number;
@@ -38,22 +33,19 @@ interface SyncResult {
 }
 
 export default function CohortReadiness({ onApplied }: { onApplied?: () => void }) {
-  const [open, setOpen] = useState<OpenResult | null>(null);
   const [align, setAlign] = useState<AlignResult | null>(null);
   const [sync, setSync] = useState<SyncResult | null>(null);
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
 
   const run = async (
-    what: "open" | "align" | "sync",
+    what: "align" | "sync",
     apply: boolean,
   ) => {
     setBusy(`${what}-${apply ? "apply" : "preview"}`);
     setError("");
     try {
-      if (what === "open") {
-        setOpen(await apiPost<OpenResult>("/api/admin/cohorts/open-all", { apply }));
-      } else if (what === "align") {
+      if (what === "align") {
         setAlign(await apiPost<AlignResult>("/api/admin/cohorts/align-prices", { apply }));
       } else {
         setSync(await apiPost<SyncResult>("/api/admin/cohorts/sync-statuses", { apply }));
@@ -74,6 +66,8 @@ export default function CohortReadiness({ onApplied }: { onApplied?: () => void 
       <p className="mt-2 max-w-3xl text-read leading-6 text-muted-foreground">
         السعر يُقرأ من الشعب لا من الكتالوج، فما لا شعبةَ مفتوحةً له لا يظهر له سعر —
         وهذا مقصود: رقمٌ لا تسنده شعبةٌ قابلة للتسجيل وعدٌ يفترق عن الفاتورة.
+        والشعبةُ تُعرض وتُباع حين تعتمد خطّةَ مدرّبها وتفتحها من بطاقتها — وما لا
+        مدرّبَ معتمَدٌ له يظهر في الموقع بلا شعبةٍ مفتوحة.
         اعرض أوّلا لترى ما سيتغيّر، ثمّ نفّذ.
       </p>
 
@@ -84,93 +78,6 @@ export default function CohortReadiness({ onApplied }: { onApplied?: () => void 
       )}
 
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
-        {/* ── فتح الشعب ── */}
-        <Card className="bg-paper/25">
-          <p className="flex items-center gap-1.5 text-read font-black">
-            <PlayCircle className="h-3.5 w-3.5 text-teal" /> فتحُ شعبةٍ لكلّ دورة بلا شعبة
-          </p>
-          <p className="mt-1 text-read leading-5 text-muted-foreground">
-            تبدأ من مبدأ الفصل (٤ أكتوبر ٢٠٢٦) أو بعد أسبوعين، أيّهما أبعد · ستّةُ مواعيدَ
-            تتناوب: يومٌ واحدٌ لكلّ شعبة، ٦ أو ٨ مساءً بتوقيت عمّان (الأحد–الخميس) ·
-            ٣ أو ٤ جلساتٍ مباشرة بينها أسبوعان · سعة ٢٠ · بسعر قائمة دورتها.
-          </p>
-
-          <div className="mt-3 flex flex-wrap gap-2">
-            <Button tone="secondary" size="sm" type="button"
-              onClick={() => void run("open", false)}
-              disabled={busy !== ""} loading={busy === "open-preview"}>
-              اعرض ما سيتغيّر
-            </Button>
-            {open && !open.applied && open.opened > 0 && (
-              <Button tone="confirm" size="sm" type="button"
-                onClick={() => void run("open", true)}
-                disabled={busy !== ""} loading={busy === "open-apply"}>
-                {`هيّئ ${open.opened} شعبة`}
-              </Button>
-            )}
-          </div>
-
-          {open && (
-            <Inset className="mt-3">
-              <p className="text-read leading-6 text-foreground">
-                دورات منشورة <b className="tabular-nums">{open.publishedCourses}</b> ·{" "}
-                {open.applied ? "هُيّئت" : "ستُهيّأ"} <b className="tabular-nums">{open.applied ? open.opened + open.prepared : open.opened}</b>
-                {open.applied && (
-                  <> · <span className="text-teal-light-ink">فُتحت <b className="tabular-nums">{open.opened}</b></span></>
-                )}
-                {" "}· لها شعبةٌ أصلا <b className="tabular-nums">{open.alreadyLive}</b>
-                {open.skippedNoListPrice > 0 && (
-                  <> · <span className="text-gold">بلا سعر قائمة {open.skippedNoListPrice}</span></>
-                )}
-              </p>
-              {open.applied && open.opened > 0 && (
-                <p className="mt-1.5 flex items-center gap-1.5 text-read font-bold text-teal-light-ink">
-                  <CheckCircle2 className="h-3 w-3" /> ظهرت أسعارُها الآن في الموقع.
-                </p>
-              )}
-
-              {/* ما هُيّئ ولم يُفتح — والسببُ يُقال لا يُخفى.
-
-                  كان هذا الزرُّ ينشئ الشعبةَ **مفتوحةً للبيع مباشرةً**
-                  متخطّيا شروطَ الفتح الستّة: بلا مدرّبٍ ولا جدولٍ ولا خطّة.
-                  فصار يمرّ بالبوّابة نفسِها، وما نقصه شيءٌ يبقى مسوّدةً
-                  ونقصُه مكتوب. */}
-              {open.applied && open.prepared > 0 && (
-                <details className="mt-2" open>
-                  <summary className="cursor-pointer text-fine font-bold text-gold">
-                    هُيّئت ولم تُفتح ({open.prepared}) — وما ينقصها
-                  </summary>
-                  <p className="mt-1.5 text-read leading-5 text-muted-foreground">
-                    أُنشئت بجلساتها وخطّةِ تقديمها وسعرها، ولم تُفتح لأنّ شرطا نقص.
-                    وأكثرُه مدرّبٌ مؤهَّل — يُسنَد من «المدربون ← التأهيل والإسناد».
-                  </p>
-                  <ul className="mt-1.5 space-y-1">
-                    {open.rows.filter((r) => r.blocked?.length).slice(0, 40).map((r) => (
-                      <li key={r.courseId} className="text-read leading-5 text-muted-foreground">
-                        {r.titleAr} — <span className="text-gold">{r.blocked!.join(" · ")}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </details>
-              )}
-              {open.rows.some((r) => r.reason) && (
-                <details className="mt-2">
-                  <summary className="cursor-pointer text-fine text-gold">
-                    دوراتٌ لم تُفتح ({open.rows.filter((r) => r.reason).length}) — ولماذا
-                  </summary>
-                  <ul className="mt-1.5 space-y-1">
-                    {open.rows.filter((r) => r.reason).map((r) => (
-                      <li key={r.courseId} className="text-read leading-5 text-muted-foreground">
-                        {r.titleAr} — {r.reason}
-                      </li>
-                    ))}
-                  </ul>
-                </details>
-              )}
-            </Inset>
-          )}
-        </Card>
-
         {/* ── محاذاة الأسعار ── */}
         <Card className="bg-paper/25">
           <p className="flex items-center gap-1.5 text-read font-black">

@@ -1,28 +1,31 @@
-/* بوّابةُ فتح الشعبة — شرطٌ لم يكن يُوفَّى، وزرٌّ كان يتخطّاها كلَّها.
+/* بوّابةُ فتح الشعبة — خطّةُ مدرّبٍ معتمَدة، والزرُّ الجماعيُّ تقاعد.
 
-   ── ① خطّةُ التقديم: شرطٌ بلا باب ──
+   ── ① لا شعبةَ تُفتح بلا مدرّبٍ اعتُمدت خطّتُه (١٢ أكتوبر ٢٠٢٦) ──
 
-   من شروط الفتح الخمسة «خطّةُ تقديمٍ للشعبة». وصفوفُ `CohortDeliveryPlan`
-   كانت تُكتب في **موضعٍ واحدٍ في المستودَع كلِّه**: نشرُ اقتراحِ تعديلٍ من
-   مدرّبٍ بنطاق شعبة. فكلُّ شعبةٍ تُنشأ يدويّا عالقةٌ في المسوّدة أبدا — لا
-   لعطبٍ في المنطق بل لأنّ الشرطَ لا سبيلَ إلى إيفائه.
+   قرارُ صاحب المنصّة: «أريد أن يظهر للعوامّ فقط الدورات التي لها مدرّبٌ
+   واعتمدتُها أنا». وكان المدرّبُ قد خرج من شروط الفتح على قرارٍ أقدم («تُفتح
+   الشعبُ كلُّها ويُسنَد المدرّبون لاحقا») — فعاد بصيغة القرار الجديد: خطّةُ
+   مدرّبٍ **معتمَدة**، لا اسمٌ مُسنَدٌ ولا خطّةٌ أساسيّةٌ يكتبها المدير.
 
-   ── ② الزرُّ الجماعيُّ: بابٌ خلفيّ ──
+   والنقصُ يُسمّى بما يُوفى به: «لا مدرّبَ معتمَد» لشعبةٍ لا خطّةَ لمدرّبها،
+   و«خطّةُ المدرّب لم تُعتمَد بعد» لمن كتب ولم يُعتمَد له. فالمديرُ يعرف أيبحث
+   عن مدرّبٍ أم يقرأ خطّةً تنتظره.
 
-   `openAllCohorts` كان يُنشئ الصفَّ بـ`status: 'open'` و`registrationOpen`
-   مباشرةً، فيتخطّى الشروطَ الخمسة كلَّها. فزرٌّ واحدٌ يفتح للبيع **شعبا بلا
-   مدرّبٍ ولا جدولٍ ولا خطّة** — ويدفع متعلّمٌ ثمنَ مقعدٍ لا أحدَ يدرّس فيه.
-   ولا يفشل شيءٌ ولا يشتكي أحدٌ حتّى يأتي أوّلُ موعد.
+   ── ② والزرُّ الجماعيُّ «شعبةٌ لكلّ دورة» تقاعد ──
 
-   والحارسُ هنا على الأثر لا على السطر: يُشغَّل الزرُّ فعلا، ثمّ يُسأل عمّا
-   في القاعدة. */
+   `openAllCohorts` كان يفتح للبيع شعبا بلا مدرّب. وبعد هذا الشرط لا يفتح
+   شيئا، فخرج هو ومساره وسكربته (`catalog-readiness.service.ts`).
+
+   والحارسُ هنا على الأثر لا على السطر: تُسأل الخدمةُ نفسُها وتُفتح الشعبةُ
+   فعلا، ثمّ يُسأل عمّا في القاعدة. */
 
 import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
 import { setupTestDb, testPrisma } from '../helpers/db'
 import { AuthService } from '../../services/auth.service'
 import { CohortService } from '../../services/cohort.service'
-import { openAllCohorts } from '../../services/catalog-readiness.service'
+import { OPEN_GAP } from '../../../src/application/learning/open-gaps'
+import { approvedTrainerPlan, fixtureTrainerId } from '../helpers/approved-trainer'
 
 let prisma: PrismaClient
 let cohorts: CohortService
@@ -37,24 +40,60 @@ beforeAll(async () => {
   const admin = await auth.register('cohort-gate@test.local', 'Admin#12345', 'مدير')
   actorId = admin.userId
   await auth.setRoles(actorId, ['academic_manager'])
-  courseId = (await prisma.course.findFirstOrThrow({ orderBy: { id: 'asc' } })).id
+  /* منشورةٌ — فلا يُخلَط نقصُ المدرّب بنقص النشر */
+  courseId = (await prisma.course.findFirstOrThrow({ where: { status: 'published' }, orderBy: { id: 'asc' } })).id
 }, 180_000)
 
-describe('خطّةُ التقديم — الشرطُ صار له باب', () => {
-  it('شعبةٌ بلا خطّةٍ تُعلن نقصَها، وكتابةُ الخطّة تُسقط النقص', async () => {
-    const c = await prisma.cohort.create({
-      data: { courseId, title: 'شعبةُ فحصِ الخطّة', status: 'draft', capacity: 10, price: 100, currency: 'USD', financialReady: true },
-    })
-    const before = await cohorts.openChecklist(c.id)
-    expect(before.missing.some((m) => m.startsWith('لا خطة تقديم')), 'الشرطُ لا يظهر أصلا').toBe(true)
+/** شعبةٌ مسوّدةٌ استوفت كلَّ شرطٍ إلّا مدرّبَها — جلسةٌ وسعةٌ وسعر */
+async function readyButTrainer(title: string) {
+  return prisma.cohort.create({
+    data: {
+      courseId, title, status: 'draft', capacity: 10, price: 100, currency: 'USD', financialReady: true,
+      sessions: { create: { title: 'الجلسة 1', startsAt: new Date(Date.now() + 30 * 86_400_000) } },
+    },
+  })
+}
 
+describe('لا شعبةَ تُفتح بلا مدرّبٍ اعتُمدت خطّتُه', () => {
+  it('⚠️ شعبةٌ لا مدرّبَ لها تُعلن نقصَها باسمه — ولا تُفتح', async () => {
+    const c = await readyButTrainer('شعبةٌ بلا مدرّب')
+    const check = await cohorts.openChecklist(c.id)
+    expect(check.ready, 'فُتحت شعبةٌ لا مدرّبَ لها').toBe(false)
+    expect(check.missing).toEqual([OPEN_GAP.noTrainer])
+    await expect(cohorts.open(c.id, actorId)).rejects.toMatchObject({ code: 'open_blocked' })
+    expect((await prisma.cohort.findUniqueOrThrow({ where: { id: c.id } })).status).toBe('draft')
+  })
+
+  it('⚠️ وخطّةٌ أساسيّةٌ يكتبها المديرُ لا تقوم مقامَ المدرّب', async () => {
+    /* كانت الخطّةُ الأساسيّةُ تُوفي شرطَ «خطّة التقديم» فتُفتح بها شعبةٌ بلا
+       مدرّب — وبها فُتحت الشعبُ الافتراضيّة كلُّها */
+    const c = await readyButTrainer('شعبةٌ بخطّةٍ أساسيّة')
     await cohorts.setDeliveryPlan(c.id, actorId, {
       notesAr: 'تقديمٌ عن بُعد عبر Zoom، الثلاثاء والخميس السادسة مساءً بتوقيت عمّان، ثماني جلسات.',
     })
-    const after = await cohorts.openChecklist(c.id)
-    expect(after.missing.some((m) => m.startsWith('لا خطة تقديم')), 'كُتبت الخطّةُ وبقي الشرطُ ناقصا').toBe(false)
+    expect((await cohorts.openChecklist(c.id)).missing).toEqual([OPEN_GAP.noTrainer])
   })
 
+  it('ومدرّبٌ كتب ولم يُعتمَد له يُسمّى نقصُه غيرَ ذلك — خطّةٌ تنتظرك لا مدرّبٌ يُبحث عنه', async () => {
+    const c = await readyButTrainer('شعبةٌ خطّتُها تنتظر')
+    await prisma.cohortDeliveryPlan.create({
+      data: { cohortId: c.id, trainerId: await fixtureTrainerId(prisma), status: 'submitted', content: { kind: 'trainer' } },
+    })
+    expect((await cohorts.openChecklist(c.id)).missing).toEqual([OPEN_GAP.trainerPlan])
+  })
+
+  it('وباعتماد خطّة مدرّبها تُفتح — والتسجيلُ معها', async () => {
+    const c = await readyButTrainer('شعبةٌ اعتُمدت خطّةُ مدرّبها')
+    await prisma.cohortDeliveryPlan.create({ data: { cohortId: c.id, ...(await approvedTrainerPlan(prisma)) } })
+    expect((await cohorts.openChecklist(c.id)).ready).toBe(true)
+    await cohorts.open(c.id, actorId)
+    const after = await prisma.cohort.findUniqueOrThrow({ where: { id: c.id } })
+    expect(after.status).toBe('open')
+    expect(after.registrationOpen).toBe(true)
+  })
+})
+
+describe('خطّةُ التقديم الأساسيّة — تُكتب وتُحدَّث ولا تُكرَّر', () => {
   it('ولا تُقبل خطّةٌ أقصرُ من أن تُقرأ — الشرطُ يُوفَّى لا يُختَم', async () => {
     const c = await prisma.cohort.create({
       data: { courseId, title: 'شعبةُ الخطّة القصيرة', status: 'draft', capacity: 10 },
@@ -72,69 +111,5 @@ describe('خطّةُ التقديم — الشرطُ صار له باب', () => 
     const plans = await cohorts.deliveryPlans(c.id)
     expect(plans).toHaveLength(1)
     expect((plans[0].content as { notesAr: string }).notesAr).toContain('الثاني')
-  })
-})
-
-describe('الزرُّ الجماعيّ يمرّ بالبوّابة نفسِها', () => {
-  /* ── ما تغيّر، ولماذا يُحرَس عكسُ ما كان يُحرَس ──
-
-     كان هذا الوصفُ يشترط ألّا تُفتح شعبةٌ بلا مدرّبٍ مؤهَّل. وقرارُ صاحب
-     الأكاديميّة أن تُفتح الشعبُ كلُّها الآن على الفصل الأوّل وأن يُسنَد
-     المدرّبون دفعةً واحدةً لاحقا — فخرج المدرّبُ من شروط الفتح.
-
-     والحراسةُ لا تُرفع بل تنتقل إلى ما بقي صوابا: أن تُفتح **بجدولٍ وسعرٍ
-     وخطّةٍ ومقعد**، فلا يُباع موعدٌ لا وجودَ له. */
-
-  /* ── مهلةٌ صريحةٌ بقدر عملِه (١٧ سبتمبر ٢٠٢٦) ──
-
-     احمرّت البوّابةُ على هذا الاختبارِ وحدَه من ١٣٧٧: `Test timed out in
-     5000ms`. ولم يكن توكيدا سقط — كان الوقتَ نفاد.
-
-     وقيس بدل أن يُظنّ: شُغّل الملفُّ محلّيّا بقاعدةٍ حقيقيّةٍ مرّتين فمرّ في
-     **٢٧٣٠ms** ثمّ **٢٧٣٢ms** — قراءتان متطابقتان، أي ٥٥٪ من مهلةِ vitest
-     الافتراضيّة على جهازٍ غيرِ مزدحم. وتشغيلُ `main` نفسُه نجح قبلها بثلاث
-     ساعات على المحتوى عينِه. فالعلّةُ ليست في المنطق: **لا هامشَ**، وعدّاءُ
-     CI المشترَكُ أبطأُ فيتجاوز الخمسَ ثوانٍ مرّةً ويمرّ مرّة.
-
-     والعملُ مشروعٌ لا منتفخ: يفتح الشعبَ كلَّها — وهي تكبر بكِبَر الكتالوج،
-     وقد نما ٤٠٪ في #195 — ثمّ يفحص كلَّ شعبةٍ مفتوحةٍ بجلساتِها وخطّتِها
-     وسعرِها. فالخللُ في المهلةِ الافتراضيّة لا في ما يفعله.
-
-     وعشرون ثانيةً لا ثلاثون: سبعةُ أضعافِ المقيس تكفي أبطأَ عدّاء، وتبقى
-     دون أن تبتلع انحدارا حقيقيّا لو صار الفتحُ أبطأَ مرّاتٍ ممّا هو. ولم
-     يُحذَف توكيدٌ ولا عُطّل اختبار — الوقتُ وحدَه تغيّر. */
-  it('يفتح الشعبَ كلَّها — كلٌّ بجدولها وخطّتها', async () => {
-    const res = await openAllCohorts(prisma, { apply: true, actorId })
-    expect(res.applied).toBe(true)
-    expect(res.opened, 'لم تُفتح شعبةٌ واحدة').toBeGreaterThan(0)
-    expect(res.prepared, `بقيت شعبٌ مسوّدةً: ${JSON.stringify(res.rows.filter((r) => r.blocked))}`).toBe(0)
-
-    const opened = await prisma.cohort.findMany({
-      where: { status: 'open' },
-      include: { sessions: true, plans: true },
-    })
-    for (const c of opened) {
-      expect(c.sessions.length, `شعبةٌ مفتوحةٌ بلا جلسات: ${c.title}`).toBeGreaterThan(0)
-      expect(c.plans.length, `شعبةٌ مفتوحةٌ بلا خطّةِ تقديم: ${c.title}`).toBeGreaterThan(0)
-      expect(c.price, `شعبةٌ مفتوحةٌ بلا سعر: ${c.title}`).not.toBeNull()
-      expect(c.registrationOpen, `شعبةٌ مفتوحةٌ والتسجيلُ مغلق: ${c.title}`).toBe(true)
-    }
- 
-  }, 20_000)
-
-  it('ولا جلسةَ قبل موعد الشعبة — الجدولُ يبدأ حيث وُضعت في الفصل', async () => {
-    const opened = await prisma.cohort.findMany({
-      where: { status: 'open', title: { contains: '— شعبة ' } },
-      include: { sessions: { orderBy: { startsAt: 'asc' } } },
-    })
-    expect(opened.length).toBeGreaterThan(0)
-    for (const c of opened) {
-      expect(c.startsAt, `شعبةٌ بلا تاريخ بدء: ${c.title}`).not.toBeNull()
-      expect(c.sessions[0].startsAt.getTime(), `جلسةٌ قبل موعد شعبتها: ${c.title}`)
-        .toBeGreaterThanOrEqual(new Date().getTime())
-    }
-    /* والمواعيدُ موزّعةٌ لا مكوّمةٌ في يومٍ واحد */
-    const distinctStarts = new Set(opened.map((c) => c.startsAt!.toISOString().slice(0, 10)))
-    expect(distinctStarts.size, 'كلُّ الشعب تبدأ في اليوم نفسِه').toBeGreaterThan(1)
   })
 })

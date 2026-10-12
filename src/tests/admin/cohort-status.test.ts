@@ -27,8 +27,9 @@ describe('حالاتُ الشعبة الحيّة', () => {
   })
 
   it('توافق ما يعدّه الخادمُ حيّا', () => {
+    /* وكان معه `catalog-readiness.service.ts` — وخرجت منه القائمةُ مع زرّ «شعبةٌ
+       لكلّ دورة» الذي كان يقرؤها (١٢ أكتوبر ٢٠٢٦) */
     for (const f of [
-      'server/services/catalog-readiness.service.ts',
       'server/services/catalog-impact.service.ts',
     ]) {
       expect(read(f), `${f} يخالف مفردةَ الواجهة`).toContain("['open', 'full', 'active']")

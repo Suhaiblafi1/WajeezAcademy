@@ -26,6 +26,7 @@ import { CommerceService } from '../../services/commerce.service'
 import { EnrollmentService } from '../../services/enrollment.service'
 import { PublicCatalogService } from '../../services/public-catalog.service'
 import { CartService } from '../../services/commerce/cart.service'
+import { TermCalendarService } from '../../services/term-calendar.service'
 import { termWindowVerdict, cohortAcceptsRegistration, awaitingTrainerPlan } from '../../services/registration-window'
 
 let prisma: PrismaClient
@@ -75,8 +76,12 @@ async function futureTerm() {
   })
 }
 
-/** شعبةٌ علمُها مرفوع — و«فصلُها» اختياريّ كما في الواقع */
-async function cohort(courseId: string, termId: string | null) {
+/** شعبةٌ علمُها مرفوع — و«فصلُها» اختياريّ كما في الواقع.
+
+    وخطّةُ مدرّبها معتمَدةٌ افتراضا: منذ ١٢ أكتوبر ٢٠٢٦ لا تقبل شعبةٌ بلا مدرّبٍ
+    معتمَد أحدا، فلو أُنشئت بلا خطّةٍ لرُدّت بسببها قبل أن يُسأل عن الفصل —
+    وكلُّ وصفٍ هنا يسأل عن شرطٍ واحدٍ بعينه. و`trainer: 'none'` لما يسأل عنه */
+async function cohort(courseId: string, termId: string | null, opts: { trainer?: 'approved' | 'none' } = {}) {
   return prisma.cohort.create({
     data: {
       courseId, title: `شعبة ${courseId} ${Date.now()}-${Math.random()}`,
@@ -84,6 +89,9 @@ async function cohort(courseId: string, termId: string | null) {
       price: 100, currency: 'JOD', capacity: 10,
       startsAt: new Date(Date.now() + 70 * DAY),
       termId,
+      ...(opts.trainer === 'none' ? {} : {
+        plans: { create: { trainerId: trainerProfileId, status: 'approved', content: { kind: 'trainer', modules: [], resources: [] } } },
+      }),
     },
   })
 }
@@ -164,8 +172,18 @@ describe('الشرطُ نفسُه — قبل أن يُوصَل بموضع', () =
     for (const status of ['approved', 'published', 'superseded']) {
       expect(cohortAcceptsRegistration({ ...base, plans: [{ status: 'draft' }, { status }] }).open, status).toBe(true)
     }
-    /* وشعبةٌ لا خطّةَ لمدرّبها أصلا لا تُمنع — القائمُ لا يُبطَل */
-    expect(cohortAcceptsRegistration({ ...base, plans: [] }).open).toBe(true)
+  })
+
+  /* ═══ ولا استثناءَ لشعبةٍ بلا مدرّب (١٢ أكتوبر ٢٠٢٦) ═══
+     قرارُ صاحب المنصّة: «أريد أن يظهر للعوامّ فقط الدورات التي لها مدرّبٌ
+     واعتمدتُها أنا». وكانت الشعبةُ التي لا خطّةَ لمدرّبها تمرّ («القائمُ لا
+     يُبطَل») — وبها مرّت الشعبُ الافتراضيّةُ كلُّها بلا مدرّب. */
+  it('⚠️ شعبةٌ لا خطّةَ لمدرّبها أصلا تُردّ — بسببٍ غيرِ «بانتظار الاعتماد»', () => {
+    const v = cohortAcceptsRegistration({ ...base, plans: [] })
+    expect(v.open, 'قبلت شعبةٌ لا مدرّبَ لها').toBe(false)
+    expect(v.open === false && v.code).toBe('no_trainer')
+    expect(v.open === false && v.reasonAr).toContain('بلا مدرّبٍ معتمَد')
+    /* و«بانتظار اعتماد» شيءٌ آخر: لا خطّةَ تنتظر — فلا تركب اللقاءاتُ خطّةً لا وجودَ لها */
     expect(awaitingTrainerPlan([])).toBe(false)
   })
 
@@ -297,7 +315,7 @@ describe('والقائمُ لا يُبطَل — شعبةٌ بلا فصلٍ تم
    نُسي تحميلُ الخطط في موضعٍ لباع مقعدا في شعبةٍ لم يقرأ أحدٌ منهجَها. */
 describe('المواضعُ الستّة — شعبةٌ خطّةُ مدرّبها لم تُعتمَد تُردّ', () => {
   const awaiting = async (courseId: string) => {
-    const c = await cohort(courseId, null)
+    const c = await cohort(courseId, null, { trainer: 'none' })
     await trainerPlan(c.id, 'submitted')
     return c
   }
@@ -351,11 +369,84 @@ describe('المواضعُ الستّة — شعبةٌ خطّةُ مدرّبها
   })
 })
 
+/* ═══ وشعبةٌ لا مدرّبَ معتمَدٌ لها تُردّ في المواضع كلِّها (١٢ أكتوبر ٢٠٢٦) ═══
+
+   الشعبُ الافتراضيّةُ فُتحت لكلّ دورةٍ بموعدٍ وسعرٍ ولا مدرّب. والقرارُ أن تخفى
+   كلُّها بشرطٍ لا بلمس صفوفها: علمُها مرفوعٌ وحالُها «مفتوحة» — والشرطُ وحدَه
+   يردّها. فيُسأل كلُّ موضعٍ بعينه، ومعها السابعُ العامّ: تقويمُ الفصل. */
+describe('المواضعُ السبعة — شعبةٌ بلا مدرّبٍ معتمَدٍ تُردّ', () => {
+  const trainerless = (courseId: string, termId: string | null = null) => cohort(courseId, termId, { trainer: 'none' })
+
+  it('⚠️ ١· السلّة: تُستبعد بسببها', async () => {
+    const u = await learner()
+    const c = await trainerless(nextCourse())
+    const classified = await cart.classifyCart(u, [c.id])
+    expect(classified.buyable.map((b) => b.id)).not.toContain(c.id)
+    const out = classified.excluded.find((e) => e.cohortId === c.id)!
+    expect(out.reason).toBe('no_trainer')
+    expect(out.messageAr).toContain('بلا مدرّبٍ معتمَد')
+  })
+
+  it('⚠️ ٢· التسجيل المباشر: يُرفض بـ409', async () => {
+    const u = await learner()
+    const c = await trainerless(nextCourse())
+    await expect(enrollments.enroll(c.id, u, null)).rejects.toMatchObject({ status: 409 })
+  })
+
+  it('⚠️ ٣· التبديل: لا يُنقل إليها', async () => {
+    const u = await learner()
+    const courseId = nextCourse()
+    const from = await cohort(courseId, null)
+    const to = await trainerless(courseId)
+    const e = await enrollments.enroll(from.id, u, null)
+    await expect(enrollments.switchCohort(u, e.id, to.id)).rejects.toMatchObject({ status: 409 })
+  })
+
+  it('⚠️ ٤· إنشاءُ الطلب: يُرفض بـ409', async () => {
+    const u = await learner()
+    const c = await trainerless(nextCourse())
+    await expect(commerce.requestEnrollment(u, c.id)).rejects.toMatchObject({ status: 409 })
+  })
+
+  it('⚠️ ٥· شعبُ الخطّة: الدورةُ «بانتظار شعبة»', async () => {
+    const u = await learner()
+    const courseId = nextCourse()
+    await trainerless(courseId)
+    await plans.adopt(u, { nameAr: 'خطّتي', composed: true, courseIds: [courseId] })
+    const item = (await plans.active(u))!.items.find((i) => i.courseId === courseId)
+    expect(item!.state).toBe('awaiting_cohort')
+  })
+
+  it('⚠️ ٦· الكتالوجُ العامّ: لا تُعرض — وتُعرض حين تُعتمَد خطّةُ مدرّبها', async () => {
+    const c = await trainerless(nextCourse())
+    expect((await publicCatalog.cohorts()).map((r) => r.id)).not.toContain(c.id)
+    /* والقرارُ يُرفع بالاعتماد لا بلمس الشعبة — فالشرطُ لا يحجب ما اعتُمد */
+    await trainerPlan(c.id, 'approved')
+    expect((await publicCatalog.cohorts()).map((r) => r.id)).toContain(c.id)
+  })
+
+  it('⚠️ ٧· تقويمُ الفصل العامّ: لا تُعرض فيه — وتُعرض بجانبها شعبةٌ معتمَدة', async () => {
+    termSeq += 1
+    const term = await prisma.term.create({
+      data: {
+        year: 2090 + termSeq, season: 'may_jul', titleAr: `فصلٌ منشورٌ تقويمُه ${termSeq}`,
+        startsOn: new Date(Date.now() + 60 * DAY), endsOn: new Date(Date.now() + 120 * DAY),
+        status: 'open', calendarPublishedAt: new Date(),
+      },
+    })
+    const hidden = await trainerless(nextCourse(), term.id)
+    const shown = await cohort(nextCourse(), term.id)
+    const cal = await new TermCalendarService(prisma).calendar({ termId: term.id })
+    const ids = cal!.months.flatMap((m) => m.entries.map((e) => e.cohortId))
+    expect(ids, 'عرض التقويمُ شعبةً لا مدرّبَ لها').not.toContain(hidden.id)
+    expect(ids).toContain(shown.id)
+  })
+})
+
 /* ═══ والالتحاقُ حتّى الموعد الثاني (٣ج) ═══ */
 describe('بعد بدء الموعد الثاني — يُردّ الالتحاق، وقبله يُقبل', () => {
   const started = async (courseId: string, closesInMs: number) => {
     const c = await cohort(courseId, null)
-    await trainerPlan(c.id, 'approved')
     await prisma.cohort.update({ where: { id: c.id }, data: { joinClosesAt: new Date(Date.now() + closesInMs) } })
     return c
   }
