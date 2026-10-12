@@ -15,7 +15,7 @@ import Button from "@/components/ui/Button";
 import Chip from "@/components/ui/Chip";
 import type { EditView, PlanEditStatus } from "@/application/trainer/plan-edits";
 import { bulkSummaryAr, readEditsFile, replacedLineAr, uploadedLineAr } from "@/application/trainer/plan-edits-bulk";
-import { GapList } from "@/components/LongText";
+import { GapList, NoteSubs } from "@/components/LongText";
 import { gapLayout } from "@/application/trainer/text-layout";
 
 export interface PlanEditItem {
@@ -691,8 +691,11 @@ export function NotePoints({ view }: { view: EditView }) {
                 {r.tagAr && <Chip tone={r.tagAr === "مطلوب" ? "danger" : "info"}>{r.tagAr}</Chip>}
                 <span className="text-read font-bold text-foreground">{r.labelAr}</span>
               </div>
-              {/* وقائمةُ النواقص محورا محورا ثمّ «كيف تُصلحه» — لا سطرا مكتظّا في خانة (١١ أكتوبر ٢٠٢٦) */}
-              {gapLayout(r.beforeAr) ? (
+              {/* ونقطةُ البطاقة: ما ينقص نقاطا ثمّ ما يفعله (١٢ أكتوبر ٢٠٢٦، `NoteSubs`) — والقديمةُ: قائمةُ
+                  النواقص محورا محورا ثمّ «كيف تُصلحه» — لا سطرا مكتظّا في خانة (١١ أكتوبر ٢٠٢٦) */}
+              {r.subs ? (
+                <div className="mt-1.5"><NoteSubs subs={r.subs} /></div>
+              ) : gapLayout(r.beforeAr) ? (
                 <div className="mt-1.5 grid gap-2">
                   <GapList layout={gapLayout(r.beforeAr)!} />
                   <p className="text-read leading-6 text-foreground"><b className="text-teal-light-ink">نقترح:</b> {r.afterAr}</p>

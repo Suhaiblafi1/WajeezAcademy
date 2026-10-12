@@ -100,7 +100,9 @@ describe('③ وفي «المراجعة» قبل التعديلات', () => {
     const points = panel.slice(panel.indexOf('export function NotePoints'), panel.indexOf('export function NotePoints') + 2400)
     expect(points).toMatch(/\{r\.beforeAr !== null \? \([\s\S]{0,1200}<Cell label="الآن" text=\{r\.beforeAr\} muted \/>\s*<Cell label="نقترح" text=\{r\.afterAr\} \/>/)
     /* وقائمة النواقص محورا محورا ثمّ «كيف تصلحه» — لا سطرا مكتظّا في خانة (١١ أكتوبر ٢٠٢٦) */
-    expect(points).toMatch(/\{gapLayout\(r\.beforeAr\) \? \([\s\S]{0,200}<GapList layout=\{gapLayout\(r\.beforeAr\)!\} \/>[\s\S]{0,200}نقترح:<\/b> \{r\.afterAr\}/)
+    expect(points).toMatch(/: gapLayout\(r\.beforeAr\) \? \([\s\S]{0,200}<GapList layout=\{gapLayout\(r\.beforeAr\)!\} \/>[\s\S]{0,200}نقترح:<\/b> \{r\.afterAr\}/)
+    /* ونقطةُ البطاقة منذ ١٢ أكتوبر ٢٠٢٦ تُعرض بـ`NoteSubs` قبلهما: ما ينقص نقاطا ثمّ ما يفعله */
+    expect(points).toMatch(/\{r\.subs \? \(\s*<div className="mt-1\.5"><NoteSubs subs=\{r\.subs\} \/><\/div>\s*\) : gapLayout/)
   })
 
   it('⚠️ والصفحة تفتح خطوتها — ما كانت من خطواتها', () => {
@@ -145,12 +147,18 @@ describe('⑤ «الآن ← نقترح»', () => {
     expect(r.suggestAr).toMatch(/^اليوم والساعة أنفسهما كلّ أسبوع/)
   })
 
+  /* وصار السطرُ الجديدُ نقطةً بلغةٍ بيضاء (١٢ أكتوبر ٢٠٢٦، `plain-notes.test.ts`): رأسٌ و«•» و«←» —
+     والصفُّ يحمل خانتيه مجموعتين، ومعهما النقاطُ نفسُها */
   it('⚠️ والسطر الجديد يحمل خانتيه — ويعرض صفّا بهما', () => {
     const notes = scorecardNotes([
       { key: 'rhythm', step: 'sessions', status: 'advice', labelAr: 'إيقاع ثابت وبلا عطل', gaps: ['3 مواعيد أسبوعيّة'], measuredAr: 'x', standardAr: 'اليوم والساعة أنفسهما' },
     ] as never)
     const v = planEditView({ kind: 'note', step: 'sessions', textAr: notes.sessions! }, null, { moduleIds: [] })
-    expect(v.rows).toEqual([{ labelAr: 'إيقاع ثابت وبلا عطل', beforeAr: '3 مواعيد أسبوعيّة', afterAr: 'اليوم والساعة أنفسهما', tagAr: 'مقترح' }])
+    const fix = 'ثبّت يوما وساعة واحدة كلّ أسبوع، ولا لقاء في 25 ديسمبر ولا في 1 يناير'
+    expect(v.rows).toEqual([{
+      labelAr: 'موعد أسبوعيّ ثابت', beforeAr: '3 مواعيد أسبوعيّة', afterAr: fix, tagAr: 'مقترح',
+      subs: [{ gapsAr: ['3 مواعيد أسبوعيّة'], fixAr: fix }],
+    }])
   })
 
   it('وكلام المعتمد الحرّ نقطة كما كتبها — لا يشقّ عند نقطتين', () => {

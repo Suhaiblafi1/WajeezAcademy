@@ -31,9 +31,12 @@ export function ReviewNotesForm({ busy, onSend, onCancel, initial, editsPending 
   const [draft, setDraft] = useState<ReviewNotes>(initial ?? {})
   const clean = normalizeReviewNotes(draft)
   const ready = hasReviewNotes(clean) || editsPending > 0
+  /* والصندوقُ بطول ما فيه — النقطةُ رأسٌ وسطورٌ تحته (`scorecardNotes`)، فلا تُقرأ من شقٍّ بسطرين.
+     والسطرُ الطويلُ يلتفّ في نصف العرض: نحوُ أربعين حرفا للسطر المرئيّ */
+  const linesOf = (text: string) => text.split('\n').reduce((n, l) => n + Math.max(1, Math.ceil(l.length / 40)), 0)
   const area = (key: keyof ReviewNotes, rows: number, placeholder: string) => (
     <textarea
-      rows={rows}
+      rows={Math.min(18, Math.max(rows, linesOf(draft[key] ?? '')))}
       maxLength={REVIEW_NOTE_MAX}
       value={draft[key] ?? ''}
       onChange={(e) => setDraft({ ...draft, [key]: e.target.value })}

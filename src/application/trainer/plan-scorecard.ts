@@ -42,6 +42,7 @@ import { startAdvice } from './start-advice'
 import type { WorkspaceStep } from './workspace-step'
 import { REVIEW_NOTE_MAX, type ReviewNotes } from './review-notes'
 import { MIN_THEORY_WORDS, contentQuality } from './content-quality'
+import { plainAr } from '../text/plain-ar'
 
 /* ─────────── العتبات ─────────── */
 
@@ -554,17 +555,126 @@ export function compactGapsAr(gaps: readonly string[]): string {
   return gaps.map((g) => g.trim()).join('؛ ')
 }
 
+/* ═══ والملاحظةُ نقاطٌ مختصرةٌ بلغةٍ بيضاء — المطلوبُ أوّلا (١٢ أكتوبر ٢٠٢٦) ═══
+
+   رأى صاحبُ المنصّة صناديقَ الردّ مملوءةً من البطاقة فقال: «الملاحظاتُ المكتوبةُ بالداخل غيرُ مفهومةٍ
+   نهائيّا. اشرحها بطريقةٍ أفضل، ورتّب النصوصَ لكي تظهر للمدرّب بطريقةٍ مختصرةٍ مفهومةٍ مرتّبةٍ بنقاطٍ حسب
+   الأولويّة». وكان السطرُ «مقترح — عمق المحتوى النظريّ: الآن المحاور 1، 3–8: لا يسمّي خطأً شائعا — اكتبه
+   في فقرةٍ باسمه… ← نقترح: فكرةٌ تُشرح في 250 كلمة، ومثالٌ محلول، وخطأٌ شائع» — اسمُ معيارٍ لا يعرفه، ثمّ
+   النقصُ وإصلاحُه ملتصقَين، ثمّ المعيارُ كلُّه ثانيةً ولو نقص منه جزءٌ واحد.
+
+   فصارت كلُّ نقطةٍ رأسا، وتحته ما ينقص سطرا لكلّ موضع، ثمّ ما يفعله مرّةً واحدة:
+
+       مقترح — شرح المحاور
+       • المحاور 1، 3–8: لا يسمّي خطأً شائعا
+       ← اكتبه في فقرةٍ باسمه: ما يفعله المبتدئ، ولماذا يبدو صحيحا، وكيف يتجنّبه
+       • المحور 2: بلا مثالٍ محلول
+       ← أضف حالةً من سوقٍ عربيّ تُحلّ خطوةً خطوة
+
+   ① **الرأسُ بلغة المدرّب** (`NOTE_TITLE_AR`) لا اسمُ المعيار في البطاقة.
+   ② **و«•» ما ينقص، و«←» ما يفعله** — والإصلاحُ إصلاحُ هذا النقص بعينه: من النقص نفسِه حيث يحمله
+      (`FIX_IN_GAP`: المحتوى والمصادر)، وإلّا فجملةُ فعلٍ واحدةٌ لمعياره (`NOTE_ACTION_AR`).
+   ③ **ويُجمع ما إصلاحُه واحد** — «المحاور 1، 3–8» سطرٌ لا ثمانية، ولا يُسرد أكثرُ من أربعة مواضع.
+   ④ **والمطلوبُ أوّلا ثمّ المقترح**، وبين النقاط سطرٌ فارغ — فيُقرأ في الصندوق نفسِه قبل أن يُرسَل، ويُعدَّل.
+   والعرضُ عند المدرّب يقرأ الشكلَين: هذا، والقديمَ «الآن ← نقترح» لما أُرسل قبله (`notePoints`). */
+export const NOTE_FIX_MARK = '←'
+export const NOTE_GAP_MARK = '•'
+
+/** رأسُ النقطة بلغة المدرّب — لكلّ معيارٍ في البطاقة */
+export const NOTE_TITLE_AR: Readonly<Record<string, string>> = {
+  end_date: 'نهاية الشعبة',
+  start_date: 'بداية الشعبة',
+  practice: 'تطبيق عمليّ لكلّ محور',
+  content_depth: 'شرح المحاور',
+  content_style: 'أسلوب الكتابة',
+  content_claims: 'الأرقام والوعود',
+  live_hours: 'ساعات اللقاء المباشر',
+  live_per_module: 'لقاء لكلّ محور',
+  session_length: 'طول اللقاء',
+  session_gaps: 'المسافة بين اللقاءات',
+  weekly_load: 'ساعات اللقاء في الأسبوع',
+  session_times: 'أوقات اللقاءات',
+  rhythm: 'موعد أسبوعيّ ثابت',
+  project: 'مشروع التخرّج',
+  project_time: 'وقت لإنجاز المشروع',
+  graded_tasks: 'مهمّة مقيّمة لكلّ محور',
+  task_timing: 'وصف المهامّ ومواعيدها',
+  sources: 'مصدر للدورة',
+  sources_mix: 'تنوّع المصادر',
+}
+
+/** ما يفعله — جملةُ فعلٍ واحدة، لما لا يحمل نقصُه إصلاحَه. وتصدق على موضعٍ واحدٍ وعلى مواضع */
+export const NOTE_ACTION_AR: Readonly<Record<string, string>> = {
+  end_date: 'اجعل آخر يوم في الشعبة، ومعه موعد مشروع التخرّج، داخل الموسم',
+  start_date: 'إن شئت فابدأ من أواخر نوفمبر — يتّسع وقت التسويق للشعبة',
+  practice: 'أضف لكلّ محور تطبيقا يفعله المتعلّم بيده',
+  live_hours: 'اجعل اللقاءات ساعتين لكلّ محور على الأقلّ',
+  live_per_module: 'أضف لقاء مباشرا واحدا على الأقلّ لكلّ محور',
+  session_length: 'قسّم اللقاء الطويل لقاءين، أو خطّط فيه استراحة — الأنسب بين ساعتين وثلاث',
+  session_gaps: 'اجعل بين كلّ لقاء والذي قبله أسبوعا إلى أسبوعين',
+  weekly_load: `خفّف لقاءات ذلك الأسبوع إلى ${MAX_WEEKLY_MINUTES / 60} ساعات على الأكثر`,
+  session_times: 'انقل اللقاء إلى ما بعد الخامسة مساء (الأحد–الخميس) أو إلى الجمعة والسبت، وليختم قبل 10:30 ليلا',
+  /* بأرقامٍ غربيّة كسائر النصّ: «و١» تُقرأ «وا» في الخطّ */
+  rhythm: 'ثبّت يوما وساعة واحدة كلّ أسبوع، ولا لقاء في 25 ديسمبر ولا في 1 يناير',
+  project: 'أضف مشروع تخرّج واحدا، وحدّد آخر موعد لتسليمه داخل مدّة الشعبة',
+  project_time: 'اجعل موعد المشروع بعد آخر لقاء بأسبوع على الأقلّ',
+  graded_tasks: 'أضف مهمّة مقيّمة لكلّ محور — واجبا أو اختبارا',
+  task_timing: `أكمل وصف المهمّة ودرجتها، واجعل موعدها بعد لقاء محورها بـ${TASK_AFTER_SESSION_DAYS} أيّام، ولا موعدين في أسبوع`,
+  sources: 'أضف مصدرا واحدا على الأقلّ برابط أو ملفّ',
+  sources_mix: 'أضف مصدرا من نوع آخر: كتابا أو ملخّصه، أو فيديو أو بودكاست',
+}
+
+/** معاييرُ يحمل نقصُها إصلاحَه بعد « — » (`content-quality.ts` وتنوّعُ المصادر) */
+const FIX_IN_GAP: ReadonlySet<string> = new Set(['content_depth', 'content_style', 'content_claims', 'sources_mix'])
+/** أكثرُ ما يُسرد من المواضع تحت إصلاحٍ واحد — وما زاد يُعَدّ */
+const MAX_WHERE = 4
+
+/** «المحور 3: بلا لقاء» ← الموضعُ والنقص — والموضعُ ما قبل النقطتين إن قصُر */
+function splitWhere(text: string): { whereAr: string | null; issueAr: string } {
+  const at = text.indexOf(': ')
+  return at > 0 && at <= 60
+    ? { whereAr: text.slice(0, at).trim(), issueAr: text.slice(at + 2).trim() }
+    : { whereAr: null, issueAr: text.trim() }
+}
+
+/** أسطرُ النقطة: رأسُها، ثمّ لكلّ إصلاحٍ ما ينقص («•») وما يفعله («←») — وما إصلاحُه واحدٌ يُجمع */
+export function noteLinesFor(i: ScoreItem, word: 'مطلوب' | 'مقترح'): string[] {
+  const groups: { fixAr: string; rows: { whereAr: string | null; issueAr: string }[] }[] = []
+  for (const g of i.gaps) {
+    const { whereAr, issueAr: raw } = splitWhere(g)
+    const dash = FIX_IN_GAP.has(i.key) ? raw.indexOf(' — ') : -1
+    const issueAr = dash > 0 ? raw.slice(0, dash).trim() : raw
+    const fixAr = dash > 0 ? raw.slice(dash + 3).trim() : (NOTE_ACTION_AR[i.key] ?? i.standardAr)
+    const group = groups.find((x) => x.fixAr === fixAr)
+    if (group) group.rows.push({ whereAr, issueAr })
+    else groups.push({ fixAr, rows: [{ whereAr, issueAr }] })
+  }
+  const lines = [`${word} — ${NOTE_TITLE_AR[i.key] ?? i.labelAr}`]
+  for (const { fixAr, rows } of groups) {
+    /* المحاورُ بنقصٍ واحدٍ سطرٌ واحد: «المحاور 1، 3–8: …» (`compactGapsAr`) — وما سواها سطرٌ لكلّ موضع */
+    const merged = compactGapsAr(rows.map((r) => (r.whereAr ? `${r.whereAr}: ${r.issueAr}` : r.issueAr)))
+    const each = rows.length > 1 && !merged.includes('؛ ') ? [merged] : rows.map((r) => (r.whereAr ? `${r.whereAr}: ${r.issueAr}` : r.issueAr))
+    /* أربعةٌ ثمّ «و3 مواضع أخرى» — وخامسٌ وحدَه يُسرد، فلا «و1 غيرها» */
+    const shown = each.length > MAX_WHERE + 1 ? each.slice(0, MAX_WHERE) : each
+    for (const x of shown) lines.push(`${NOTE_GAP_MARK} ${x}`)
+    const rest = each.length - shown.length
+    if (rest > 0) lines.push(`${NOTE_GAP_MARK} ${rest === 2 ? 'وموضعان آخران' : rest <= 10 ? `و${rest} مواضع أخرى` : `و${rest} موضعا آخر`}`)
+    lines.push(`${NOTE_FIX_MARK} ${fixAr}`)
+  }
+  return lines
+}
+
 export function scorecardNotes(items: readonly ScoreItem[]): ReviewNotes {
   const out: ReviewNotes = {}
   for (const step of NOTE_STEPS) {
     const own = items.filter((i) => i.step === step && i.status !== 'ok')
     if (own.length === 0) continue
-    const line = (word: string) => (i: ScoreItem) =>
-      `${word} — ${i.labelAr}: الآن ${compactGapsAr(i.gaps) || i.measuredAr}${NOW_SUGGEST_SEP}${i.standardAr}`
-    const text = [
-      ...own.filter((i) => i.status === 'blocked').map(line('مطلوب')),
-      ...own.filter((i) => i.status === 'advice').map(line('مقترح')),
-    ].join('\n')
+    const joined = [
+      ...own.filter((i) => i.status === 'blocked').map((i) => noteLinesFor(i, 'مطلوب')),
+      ...own.filter((i) => i.status === 'advice').map((i) => noteLinesFor(i, 'مقترح')),
+    ].map((lines) => lines.join('\n')).join('\n\n')
+    /* وبلا تشكيلٍ إعرابيّ — «اللغةُ البيضاء» (`plain-ar.ts`): أسطرُ النقص من مصادرها مشكولةٌ أحيانا */
+    const text = plainAr(joined)
     out[step] = text.length > REVIEW_NOTE_MAX ? `${text.slice(0, REVIEW_NOTE_MAX - 1)}…` : text
   }
   return out

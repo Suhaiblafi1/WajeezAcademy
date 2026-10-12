@@ -8,7 +8,7 @@
 import { Lightbulb } from "lucide-react";
 import Chip from "@/components/ui/Chip";
 import { briefBlocks, briefHasLayout, gapLayout, type GapLayout } from "@/application/trainer/text-layout";
-import { notePoints } from "@/application/trainer/plan-edits";
+import { notePoints, type NoteSub } from "@/application/trainer/plan-edits";
 
 /** تعليماتُ المهمّة — مرتّبةً إن كان فيها ما يُرتَّب، وإلّا فقرةً كما كُتبت */
 export function BriefView({ text, muted = false, className = "" }: { text: string; muted?: boolean; className?: string }) {
@@ -99,6 +99,44 @@ export function GapList({ layout }: { layout: GapLayout }) {
   );
 }
 
+/* ═══ ما ينقص ثمّ ما يفعله — نقطةُ البطاقة بلغةٍ بيضاء (١٢ أكتوبر ٢٠٢٦) ═══
+
+   «الملاحظاتُ غيرُ مفهومةٍ نهائيّا… مختصرةً مفهومةً مرتّبةً بنقاطٍ حسب الأولويّة» (صاحب المنصّة). فلكلّ
+   إصلاحٍ مواضعُه نقاطا — الموضعُ بخطٍّ أثقل — ثمّ ما يفعله بمصباحه مرّةً واحدة (`scorecardNotes`). */
+export function NoteSubs({ subs }: { subs: readonly NoteSub[] }) {
+  return (
+    <div className="grid gap-2.5 text-read leading-6">
+      {subs.map((x, k) => (
+        <div key={k} className="grid gap-1">
+          {x.gapsAr.length > 0 && (
+            <ul className="grid gap-0.5">
+              {x.gapsAr.map((g, n) => {
+                const at = g.indexOf(": ");
+                return (
+                  <li key={n} className="flex items-start gap-2 text-muted-foreground">
+                    <span className="mt-2.5 h-1.5 w-1.5 shrink-0 rounded-full bg-teal/60" aria-hidden="true" />
+                    <span className="min-w-0 flex-1">
+                      {at > 0 && at <= 60
+                        ? <><b className="font-bold text-foreground">{g.slice(0, at)}:</b> {g.slice(at + 2)}</>
+                        : g}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+          {x.fixAr && (
+            <p className="flex items-start gap-2 text-foreground">
+              <Lightbulb className="mt-1 h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" />
+              <span className="min-w-0 flex-1">{x.fixAr}</span>
+            </p>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 /** ملاحظةُ الإدارة على خطوة — نقطةً نقطة: اسمُ المعيار ووسمُه، ثمّ «الآن» مرتّبا، ثمّ «نقترح» */
 export function NoteBody({ text }: { text: string }) {
   const points = notePoints(text);
@@ -108,6 +146,17 @@ export function NoteBody({ text }: { text: string }) {
         const gaps = p.nowAr ? gapLayout(p.nowAr) : null;
         const tag = p.tagAr && <Chip tone={p.tagAr === "مطلوب" ? "danger" : "info"}>{p.tagAr}</Chip>;
         const rule = i > 0 ? "border-t border-white/10 pt-3" : "";
+        if (p.subs) {
+          return (
+            <li key={i} className={`grid gap-1.5 ${rule}`}>
+              <div className="flex flex-wrap items-center gap-2">
+                {tag}
+                <span className="text-read font-bold text-foreground">{p.labelAr}</span>
+              </div>
+              <NoteSubs subs={p.subs} />
+            </li>
+          );
+        }
         /* والكلمةُ الحرّةُ كما كتبها المعتمِد — سطرا بوسمه */
         if (!p.labelAr) {
           return (
