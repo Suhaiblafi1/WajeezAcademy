@@ -59,7 +59,7 @@ import {
 } from '../../src/application/trainer/axis-timeline'
 import { templateRequired, workbooksProblems, type ModuleWorkbook, type WorkbookMode } from '../../src/application/trainer/cohort-workbooks'
 import { workbookDocx, workbookFileName, workbookFill } from './workbook-docx'
-import { APPROVED_PLAN_STATUSES, PLAN_GATE_SELECT, awaitingTrainerPlan, planApprovedOnce } from './registration-window'
+import { APPROVED_PLAN_STATUSES, PLAN_GATE_SELECT, planApprovedOnce } from './registration-window'
 import { AssessmentService } from './assessment.service'
 import { DEFAULT_CAPACITY } from './catalog-readiness.service'
 import { TRAINER_VISIBILITY_SELECT, trainerPubliclyVisible } from './trainer-visibility'
@@ -1236,7 +1236,9 @@ export class CohortPlanService {
       /* التسجيلُ كما يُحكَم لا كما يقول علمُه: شعبةٌ خطّتُها لم تُعتمَد لا تقبل
          أحدا وإن رُفع العلم، والالتحاقُ يُغلق ببدء الموعد الثاني (٣ج) */
       registration: {
-        awaitingPlan: cohort ? awaitingTrainerPlan(cohort.plans) : false,
+        /* «لم تُعتمَد لمدرّبها خطّةٌ قطّ» بقاعدة التسجيل نفسِها — وشعبةٌ بلا خطّة
+           مدرّبٍ أصلا لا تقبل أحدا (١٢ أكتوبر ٢٠٢٦)، فلا تُقرأ هنا «مفتوحة» */
+        awaitingPlan: cohort ? !planApprovedOnce(cohort.plans) : false,
         joinClosesAt: cohort?.joinClosesAt ?? null,
         /* شعبةُ الإعداد مسوّدةٌ علمُها منزول — واعتمادُ خطّتها لا يرفعه، تُفتح بقرارٍ
            منفصل. فيُقرأ العلمُ كما هو، والجملةُ من `registration-state.ts` */

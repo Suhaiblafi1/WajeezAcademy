@@ -21,6 +21,7 @@ import { AuthService } from '../../services/auth.service'
 import { EnrollmentService } from '../../services/enrollment.service'
 import { buildApp } from '../../http/app'
 import { SESSION_COOKIE } from '../../http/auth-plugin'
+import { approvedTrainerPlan } from '../helpers/approved-trainer'
 
 let prisma: PrismaClient
 let auth: AuthService
@@ -70,6 +71,7 @@ beforeAll(async () => {
 
   const mkCohort = async (title: string) => prisma.cohort.create({
     data: {
+      plans: { create: await approvedTrainerPlan(prisma) },
       courseId: 'C-BIZ-101', title, status: 'open', registrationOpen: true,
       financialReady: true, price: 100, currency: 'USD', capacity: 30,
       startsAt: new Date(Date.now() + 30 * 86_400_000),

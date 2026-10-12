@@ -14,7 +14,7 @@ import type { PrismaClient } from '@prisma/client'
 import { setupTestDb, testPrisma } from '../helpers/db'
 import { PlanService } from '../../services/plan.service'
 import { AuthService } from '../../services/auth.service'
-import { openAllCohorts } from '../../services/catalog-readiness.service'
+import { approvedTrainerPlan } from '../helpers/approved-trainer'
 
 let prisma: PrismaClient
 let plans: PlanService
@@ -32,18 +32,27 @@ beforeAll(async () => {
   const u = await auth.register(`planner-${STAMP}@test.local`, 'Planner#12345', 'learner')
   userId = u.userId
 
-  /* قاعدةُ الاختبار تُبنى بلا شعب — تُهيَّأ بالخدمة نفسِها لا ببذرٍ خاصّ،
-     كي تكون الشعبُ كشعب الإنتاج بأسعارها وجلساتها.
+  /* قاعدةُ الاختبار تُبنى بلا شعب — فتُفتح شعبةٌ لكلّ دورةٍ مسعَّرة **بذرا
+     صريحا**، بسعر قائمتها وخطّةِ مدرّبٍ معتمَدة. وكانت تُهيَّأ بزرّ «شعبةٌ لكلّ
+     دورة» فتقاعد (١٢ أكتوبر ٢٠٢٦).
 
-     ثمّ تُفتح **بذرا صريحا**: هذا الملفُّ موضوعُه خياراتُ خطّة المتعلّم، لا
-     بوّابةُ فتح الشعبة. والبوّابةُ تشترط مدرّبا مؤهَّلا (وهو صواب، ويحرسه
-     `cohort-open-gate.test.ts`)، فبناءُ مدرّبٍ كاملٍ هنا يجعل الفحصَ يفشل
-     لسببٍ لا علاقةَ له بما يقيسه. */
-  await openAllCohorts(prisma, { apply: true })
-  await prisma.cohort.updateMany({
-    where: { status: 'draft' },
-    data: { status: 'open', registrationOpen: true },
+     وهذا الملفُّ موضوعُه خياراتُ خطّة المتعلّم، لا بوّابةُ فتح الشعبة: البوّابةُ
+     تشترط خطّةَ مدرّبٍ معتمَدة (ويحرسها `cohort-open-gate.test.ts`)، فتُكتب هنا
+     بأقصر طريقٍ كي لا يفشل الفحصُ لسببٍ لا علاقةَ له بما يقيسه. */
+  const trainerPlan = await approvedTrainerPlan(prisma)
+  const priced = await prisma.course.findMany({
+    where: { status: 'published', listPrice: { not: null } },
+    select: { id: true, listPrice: true, listCurrency: true },
   })
+  for (const c of priced) {
+    await prisma.cohort.create({
+      data: {
+        courseId: c.id, title: `شعبةُ ${c.id}`, status: 'open', registrationOpen: true,
+        financialReady: true, price: c.listPrice, currency: c.listCurrency ?? 'USD', capacity: 20,
+        startsAt: new Date(Date.now() + 30 * 86_400_000), plans: { create: trainerPlan },
+      },
+    })
+  }
 
   /* دوراتٌ لها شعبةٌ مفتوحة، وأخرى بلا — من الواقع لا مُختلَقة */
   const open = await prisma.cohort.findMany({

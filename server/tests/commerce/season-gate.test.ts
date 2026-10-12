@@ -27,6 +27,7 @@ import { RegistrationInterestService } from '../../services/registration-interes
 import {
   OPEN_SEASON, SEASON_GATE_KEY, parseSeasonGate, readSeasonGate, writeSeasonGate,
 } from '../../services/registration-window'
+import { approvedTrainerPlan } from '../helpers/approved-trainer'
 
 let prisma: PrismaClient
 let auth: AuthService
@@ -51,6 +52,7 @@ async function cohort() {
   cohortSeq += 1
   return prisma.cohort.create({
     data: {
+      plans: { create: await approvedTrainerPlan(prisma) },
       courseId: 'C-CAR-101', title: `شعبةُ موسمٍ ${cohortSeq}-${Date.now()}`,
       status: 'open', registrationOpen: true, financialReady: true,
       price: 100, currency: 'USD', capacity: 10,

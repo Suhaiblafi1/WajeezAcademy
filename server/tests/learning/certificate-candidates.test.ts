@@ -16,6 +16,7 @@ import { setupTestDb, testPrisma } from '../helpers/db'
 import { AuthService } from '../../services/auth.service'
 import { EnrollmentService } from '../../services/enrollment.service'
 import { CertificateService } from '../../services/certificate.service'
+import { approvedTrainerPlan } from '../helpers/approved-trainer'
 
 let prisma: PrismaClient
 let certificates: CertificateService
@@ -35,6 +36,7 @@ beforeAll(async () => {
 
   const cohort = await prisma.cohort.create({
     data: {
+      plans: { create: await approvedTrainerPlan(prisma) },
       courseId: 'C-BIZ-101', title: 'شعبة الشهادات', status: 'active',
       registrationOpen: true, financialReady: true,
       price: 100, currency: 'USD', capacity: 30,

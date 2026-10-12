@@ -11,7 +11,7 @@ import { OPEN_GAP } from '../../src/application/learning/open-gaps'
 import type { PrismaClient, Prisma } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
-import { awaitingTrainerPlan } from './registration-window'
+import { awaitingTrainerPlan, planApprovedOnce } from './registration-window'
 import { EarningsService } from './earnings.service'
 import { newStorageKey, signKey, SIGNED_URL_TTL_MS, assertFileUploadsEnabled, MAX_COHORT_MEDIA_BYTES } from './storage.service'
 import { assertMeetingSdkEnabled, meetingSdkKey, signMeetingSdkJwt, type ZoomSdkRole } from './zoom/meeting-sdk'
@@ -72,6 +72,8 @@ export class CohortService {
         course: { include: { versions: { orderBy: { version: 'desc' }, take: 1 } } },
         trainers: { include: { profile: { include: { application: { select: { fullName: true } } } } } },
         sessions: true,
+        /* خططُ مدرّبها بحالاتها — `PLAN_GATE_SELECT` */
+        plans: { where: { trainerId: { not: null } }, select: { status: true } },
         _count: { select: { enrollments: { where: { status: 'enrolled' } } } },
       },
     })
@@ -86,6 +88,10 @@ export class CohortService {
       /* نافذةُ جدولةِ المدرّب — تُقرأ في الشاشة لتُعرَض مفتوحةً أو مغلقة */
       scheduleWindowStart: c.scheduleWindowStart, scheduleWindowEnd: c.scheduleWindowEnd,
       trainers: c.trainers.map((t) => ({ profileId: t.profileId, name: t.profile.application.fullName, role: t.role })),
+      /* اعتُمدت لمدرّبها خطّة؟ — شرطُ عرضِها وبيعِها (١٢ أكتوبر ٢٠٢٦). تقرؤه الشاشة
+         فتقول «مخفيّةٌ عن الموقع» لمفتوحةٍ بلا مدرّبٍ معتمَد، و«تنتظر فتحك» لمسوّدةٍ
+         اعتُمدت — فلا تُقرأ «مفتوحة للتسجيل» شعبةٌ يردّها الكتالوجُ والدفع */
+      trainerPlanApproved: planApprovedOnce(c.plans),
     }))
   }
 
@@ -378,20 +384,24 @@ export class CohortService {
     }
   }
 
-  /* ═══ شروطُ الفتح — والمدرّبُ ليس منها ═══
+  /* ═══ شروطُ الفتح — والمدرّبُ المعتمَدُ منها ثانيةً (١٢ أكتوبر ٢٠٢٦) ═══
 
-     كان المدرّبُ المؤهَّلُ شرطا سادسا يمنع الفتح، وكان صوابا حين تُسنَد
-     الأسماءُ واحدا واحدا. وقرارُ صاحب الأكاديميّة أن تُفتح الشعبُ كلُّها
-     الآن على الفصل الأوّل، وأن يُسنَد المدرّبون **دفعةً واحدةً لاحقا** —
-     فبقاءُ الشرط يعني كتالوجا كاملا محبوسا في المسوّدة بانتظار إسنادٍ
-     لم يحن، ومتعلّما لا يستطيع الحجزَ لفصلٍ يبدأ بعد أسابيع.
+     كان المدرّبُ شرطا ثمّ خرج: قرارُ صاحب الأكاديميّة يومَها أن تُفتح الشعبُ
+     كلُّها على الفصل الأوّل وأن يُسنَد المدرّبون **دفعةً واحدةً لاحقا**، ويُقال
+     للمتعلّم «سيتم تعيين المدرب قريبا». فعُرضت شعبٌ بموعدٍ وسعرٍ لا مدرّبَ
+     وراءها، ولم يأتِ الإسنادُ الجماعيّ — جاء المدرّبون واحدا واحدا بخططهم.
 
-     وما يُحفظ مقابلَ ذلك أن **لا يُوعَد بما لا يوجد**: الشعبةُ تُفتح بجدولها
-     وسعرها ومقاعدها، والمدرّبُ يُقال عنه في وجه المتعلّم «سيتم تعيين المدرب
-     قريبا» لا اسمٌ مختلَق ولا صمت. وحين تُسنَد الأسماء تظهر مكانَها.
+     وقرارُه اليوم: «أريد أن يظهر للعوامّ فقط الدورات التي لها مدرّبٌ
+     واعتمدتُها أنا». فعاد الشرط بصيغة القرار نفسِه: **خطّةُ مدرّبٍ معتمَدة**،
+     لا اسمٌ مُسنَدٌ وحدَه — والاعتمادُ هو ما يقرّر أنّ الشعبةَ جاهزةٌ لتُباع.
+     وهو الشرطُ الذي يقرؤه التسجيلُ والكتالوج (`openRegistrationWhere`)، فلا
+     تُفتح شعبةٌ يخفيها الكتالوجُ ويردّها الدفع.
 
-     والشروطُ الخمسةُ الباقيةُ على حالها: دورةٌ منشورة، جدولُ جلسات، سعة،
-     خطّةُ تقديم، وإعدادٌ ماليّ. فما يُباع له موعدٌ وسعرٌ ومقعد. */
+     وسقط معه شرطُ «خطّة التقديم» الأساسيّة: خطّةُ مدرّبٍ معتمَدةٌ خطّةُ تقديمٍ
+     وزيادة، فبقاؤه نقصٌ ثانٍ يُعرض لما يُوفى بالأوّل.
+
+     فالشروطُ خمسة: دورةٌ منشورة، جدولُ جلسات، سعة، خطّةُ مدرّبٍ معتمَدة،
+     وإعدادٌ ماليّ. فما يُباع له مدرّبٌ وموعدٌ وسعرٌ ومقعد. */
 
   /** فحص شروط الفتح الخمسة — يعيد قائمة النواقص دون تغيير حالة */
   async openChecklist(cohortId: string) {
@@ -404,14 +414,11 @@ export class CohortService {
     if (cohort.course.status !== 'published') missing.push('الدورة ليست منشورة')
     if (!cohort.sessions.length) missing.push(OPEN_GAP.schedule)
     if (!cohort.capacity || cohort.capacity < 1) missing.push(OPEN_GAP.capacity)
-    if (!cohort.plans.some((p) => ['approved', 'published'].includes(p.status)) && !cohort.plans.length) {
-      missing.push('لا خطة تقديم للشعبة — اكتبها من بطاقة الشعبة')
-    }
-    /* وخطّةُ مدرّبٍ بدأها ولم تُعتمَد لا تُفتح شعبتُها (٣ج): «التسجيلُ يُفتح بعد
-       الاعتماد». وكان الشرطُ أعلاه يُوفى بأيّ صفِّ خطّةٍ ولو مسودّة — فتُفتح شعبةٌ
-       لم يقرأ أحدٌ منهجَها. والقاعدةُ قاعدةُ التسجيل نفسُها (`awaitingTrainerPlan`) */
-    if (awaitingTrainerPlan(cohort.plans.filter((p) => p.trainerId !== null))) {
-      missing.push('خطّةُ المدرّب لم تُعتمَد بعد — تُفتح الشعبةُ للتسجيل باعتمادها')
+    /* خطّةُ مدرّبٍ معتمَدة — والنقصُ يُسمّى بما يُوفى به: شعبةٌ لا مدرّبَ لها غيرُ
+       شعبةٍ كتب مدرّبُها ولم يُعتمَد له (٣ج). والقاعدةُ قاعدةُ التسجيل نفسُها */
+    const trainerPlans = cohort.plans.filter((p) => p.trainerId !== null)
+    if (!planApprovedOnce(trainerPlans)) {
+      missing.push(trainerPlans.length > 0 ? OPEN_GAP.trainerPlan : OPEN_GAP.noTrainer)
     }
     if (!cohort.financialReady || cohort.price === null) missing.push(OPEN_GAP.financial)
     return { ready: missing.length === 0, missing }

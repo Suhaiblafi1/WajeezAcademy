@@ -23,6 +23,7 @@ import type { PrismaClient } from '@prisma/client'
 import { setupTestDb, testPrisma } from '../helpers/db'
 import { AuthService } from '../../services/auth.service'
 import { EnrollmentService } from '../../services/enrollment.service'
+import { approvedTrainerPlan } from '../helpers/approved-trainer'
 
 const POOL: string[] = (
   JSON.parse(
@@ -41,6 +42,7 @@ let learnerId = ''
 const mkCohort = async (over: Record<string, unknown> = {}) =>
   prisma.cohort.create({
     data: {
+      plans: { create: await approvedTrainerPlan(prisma) },
       courseId: COURSE, title: 'شعبة', status: 'open',
       registrationOpen: true, financialReady: true,
       price: 100, currency: 'USD', capacity: 20,

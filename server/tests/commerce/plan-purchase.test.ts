@@ -20,6 +20,7 @@ import { setupTestDb, testPrisma } from '../helpers/db'
 import { AuthService } from '../../services/auth.service'
 import { PlanService } from '../../services/plan.service'
 import { CommerceService } from '../../services/commerce.service'
+import { approvedTrainerPlan } from '../helpers/approved-trainer'
 
 let prisma: PrismaClient
 let auth: AuthService
@@ -57,6 +58,7 @@ async function learner() {
 async function openCohort(courseId: string, opts: { capacity?: number; price?: number; currency?: string } = {}) {
   return prisma.cohort.create({
     data: {
+      plans: { create: await approvedTrainerPlan(prisma) },
       courseId, title: `شعبة ${courseId} ${Date.now()}-${Math.random()}`,
       status: 'open', registrationOpen: true, financialReady: true,
       price: opts.price ?? 100, currency: opts.currency ?? 'JOD',

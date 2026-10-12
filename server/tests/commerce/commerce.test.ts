@@ -10,6 +10,7 @@ import type { PrismaClient } from '@prisma/client'
 import { setupTestDb, testPrisma } from '../helpers/db'
 import { AuthService } from '../../services/auth.service'
 import { CommerceService } from '../../services/commerce.service'
+import { approvedTrainerPlan } from '../helpers/approved-trainer'
 
 let prisma: PrismaClient
 let auth: AuthService
@@ -37,6 +38,7 @@ beforeAll(async () => {
   /* شعبة مفتوحة بسعر وسعة — كتالوج الاختبار مستورد مسبقا */
   const cohort = await prisma.cohort.create({
     data: {
+      plans: { create: await approvedTrainerPlan(prisma) },
       courseId: 'C-BIZ-101', title: 'شعبة التجارة الاختبارية', status: 'open',
       registrationOpen: true, financialReady: true, price: 500, currency: 'JOD', capacity: 5,
     },

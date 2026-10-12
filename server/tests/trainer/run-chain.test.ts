@@ -28,6 +28,7 @@ import { PublicCatalogService } from '../../services/public-catalog.service'
 import { buildApp } from '../../http/app'
 import { SESSION_COOKIE } from '../../http/auth-plugin'
 import { makeReadyForApproval } from '../helpers/trainer-ready'
+import { approvedPlanBy } from '../helpers/approved-trainer'
 
 let prisma: PrismaClient
 let auth: AuthService
@@ -78,7 +79,7 @@ beforeAll(async () => {
   const course = await prisma.course.findFirstOrThrow({ orderBy: { id: 'asc' } })
   courseId = course.id
   const cohort = await prisma.cohort.create({
-    data: { courseId, title: 'شعبةُ فحصِ السلسلة', status: 'open', capacity: 10, registrationOpen: true },
+    data: { plans: { create: approvedPlanBy(profileId) }, courseId, title: 'شعبةُ فحصِ السلسلة', status: 'open', capacity: 10, registrationOpen: true },
   })
   cohortId = cohort.id
 }, 180_000)

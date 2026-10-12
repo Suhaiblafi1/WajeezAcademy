@@ -18,6 +18,7 @@ import { CommerceService } from '../../services/commerce.service'
 import { EnrollmentService } from '../../services/enrollment.service'
 import { EarningsService } from '../../services/earnings.service'
 import { makeReadyForApproval } from '../helpers/trainer-ready'
+import { approvedTrainerPlan } from '../helpers/approved-trainer'
 
 let prisma: PrismaClient
 let referrals: ReferralService
@@ -75,7 +76,7 @@ describe('رابطُ دعوة المدرّب', () => {
     trainerUserId = t1.userId; profileId = t1.profileId; otherTrainerUserId = t2.userId
 
     const mkCohort = async (title: string) => (await prisma.cohort.create({
-      data: { courseId: 'C-BIZ-101', title, status: 'open', registrationOpen: true, financialReady: true, price: 100, currency: 'USD', capacity: 20 },
+      data: { plans: { create: await approvedTrainerPlan(prisma) }, courseId: 'C-BIZ-101', title, status: 'open', registrationOpen: true, financialReady: true, price: 100, currency: 'USD', capacity: 20 },
     })).id
     cohortId = await mkCohort('شعبة الإحالة')
     otherCohortId = await mkCohort('شعبة أخرى')

@@ -129,8 +129,9 @@ describe('التشغيل التعليمي الكامل', () => {
       title: 'جلسة الافتتاح', startsAt: new Date('2026-10-05T18:00:00Z'), endsAt: new Date('2026-10-05T20:00:00Z'),
     })
     sessionId = s.id
+    /* خطّةُ مدرّبها المعتمَدة — شرطُ الفتح منذ ١٢ أكتوبر ٢٠٢٦ */
     await prisma.cohortDeliveryPlan.create({
-      data: { cohortId, content: { note: 'خطة' }, status: 'approved', createdBy: managerId },
+      data: { cohortId, trainerId: profileId, content: { note: 'خطة' }, status: 'approved', createdBy: managerId },
     })
     await cohorts.open(cohortId, managerId)
     const check = await cohorts.openChecklist(cohortId)

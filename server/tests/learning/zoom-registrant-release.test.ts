@@ -22,6 +22,7 @@ import { EnrollmentService } from '../../services/enrollment.service'
 import { SessionInviteService } from '../../services/session-invite.service'
 import { forgetZoomToken } from '../../services/zoom.service'
 import { runJob } from '../../worker/jobs'
+import { approvedPlanBy } from '../helpers/approved-trainer'
 
 let prisma: PrismaClient
 let cohorts: CohortService
@@ -92,6 +93,7 @@ async function learner(key: string) {
 async function openCohort(title: string, over: Record<string, unknown> = {}) {
   const c = await prisma.cohort.create({
     data: {
+      plans: { create: approvedPlanBy(profileId) },
       courseId, title, status: 'open', registrationOpen: true, capacity: 20, price: 100, currency: 'USD', timezone: 'Asia/Amman',
       scheduleWindowStart: new Date(Date.now() - 2 * 24 * H), scheduleWindowEnd: new Date(Date.now() + 60 * 24 * H), maxSessions: 60,
       ...over,

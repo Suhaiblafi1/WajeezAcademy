@@ -21,6 +21,7 @@ import { TrainerReviewService } from '../../services/trainer-review.service'
 import { ReferralService } from '../../services/referral.service'
 import { EnrollmentService } from '../../services/enrollment.service'
 import { EarningsService } from '../../services/earnings.service'
+import { approvedPlanBy } from '../helpers/approved-trainer'
 
 let prisma: PrismaClient
 let earnings: EarningsService
@@ -79,7 +80,7 @@ describe('الأصيلُ والحدُّ الأدنى — معادلةٌ واحد
     leadUserId = lead.userId; leadProfileId = lead.profileId; assistantProfileId = assistant.profileId
 
     const mkCohort = async (title: string) => (await prisma.cohort.create({
-      data: { courseId: 'C-BIZ-101', title, status: 'open', registrationOpen: true, financialReady: true, price: 100, currency: 'USD', capacity: 20 },
+      data: { plans: { create: approvedPlanBy(leadProfileId) }, courseId: 'C-BIZ-101', title, status: 'open', registrationOpen: true, financialReady: true, price: 100, currency: 'USD', capacity: 20 },
     })).id
     cohortId = await mkCohort('شعبةٌ فيها مساعد')
     floorCohortId = await mkCohort('شعبةٌ دون الحدّ الأدنى')

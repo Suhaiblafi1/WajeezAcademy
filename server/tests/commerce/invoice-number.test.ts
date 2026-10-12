@@ -13,6 +13,7 @@ import type { PrismaClient } from '@prisma/client'
 import { setupTestDb, testPrisma } from '../helpers/db'
 import { AuthService } from '../../services/auth.service'
 import { CommerceService } from '../../services/commerce.service'
+import { approvedTrainerPlan } from '../helpers/approved-trainer'
 
 let prisma: PrismaClient
 let auth: AuthService
@@ -32,6 +33,7 @@ beforeAll(async () => {
   const course = await prisma.course.findFirstOrThrow({ select: { id: true } })
   cohortId = (await prisma.cohort.create({
     data: {
+      plans: { create: await approvedTrainerPlan(prisma) },
       courseId: course.id, title: 'شعبةُ الفواتير', status: 'open', registrationOpen: true,
       financialReady: true, price: 100, currency: 'USD', capacity: 50,
     },

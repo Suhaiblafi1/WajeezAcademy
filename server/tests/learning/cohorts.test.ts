@@ -131,11 +131,11 @@ describe('دورة حياة الشعبة', () => {
   })
 
   it('5) بعد اكتمال الشروط يفتح ويصبح التسجيل متاحا', async () => {
-    /* شروط الفتح: دورة منشورة ✓ + جدول ✓ (خطوة 3) + سعة + خطة تقديم
-       + إعداد مالي. والمدرّبُ خارجَها — يُسنَد لاحقا. */
+    /* شروط الفتح: دورة منشورة ✓ + جدول ✓ (خطوة 3) + سعة + خطّةُ مدرّبٍ معتمَدة
+       + إعداد مالي. والمدرّبُ منها ثانيةً بخطّته المعتمَدة (١٢ أكتوبر ٢٠٢٦). */
     await cohorts.update(managerId, cohortId, { capacity: 1, price: 500, currency: 'JOD', financialReady: true })
     await prisma.cohortDeliveryPlan.create({
-      data: { cohortId, content: { note: 'خطة تقديم الشعبة' }, status: 'approved', createdBy: managerId },
+      data: { cohortId, trainerId: profileId, content: { note: 'خطة تقديم الشعبة' }, status: 'approved', createdBy: managerId },
     })
     const check = await cohorts.openChecklist(cohortId)
     expect(check.ready).toBe(true)
@@ -180,7 +180,7 @@ describe('دورة حياة الشعبة', () => {
     await cohorts.assignTrainer(promo.id, profileId, managerId)
     await cohorts.update(managerId, promo.id, { capacity: 1, price: 500, currency: 'JOD', financialReady: true })
     await prisma.cohortDeliveryPlan.create({
-      data: { cohortId: promo.id, content: { note: 'خطة تقديم' }, status: 'approved', createdBy: managerId },
+      data: { cohortId: promo.id, trainerId: profileId, content: { note: 'خطة تقديم' }, status: 'approved', createdBy: managerId },
     })
     await cohorts.open(promo.id, managerId)
 

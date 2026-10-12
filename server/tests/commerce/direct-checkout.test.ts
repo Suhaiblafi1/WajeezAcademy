@@ -13,6 +13,7 @@ import type { PrismaClient } from '@prisma/client'
 import { setupTestDb, testPrisma } from '../helpers/db'
 import { AuthService } from '../../services/auth.service'
 import { CommerceService } from '../../services/commerce.service'
+import { approvedTrainerPlan } from '../helpers/approved-trainer'
 
 let prisma: PrismaClient
 let commerce: CommerceService
@@ -31,6 +32,7 @@ beforeAll(async () => {
   const mk = async (title: string, over: Record<string, unknown> = {}) =>
     (await prisma.cohort.create({
       data: {
+        plans: { create: await approvedTrainerPlan(prisma) },
         courseId: 'C-BIZ-101', title, status: 'open', registrationOpen: true, financialReady: true,
         price: 120, currency: 'USD', capacity: 20,
         startsAt: new Date(Date.now() + 60 * 86_400_000), // بعد شهرين
@@ -84,12 +86,14 @@ describe('الشراء المباشر', () => {
   it('٦) وعملتان في طلبٍ واحد تُرفضان — الجمع بينهما فاتورةٌ كاذبة', async () => {
     const jod = await prisma.cohort.create({
       data: {
+        plans: { create: await approvedTrainerPlan(prisma) },
         courseId: 'C-BIZ-101', title: 'شعبة بالدينار', status: 'open', registrationOpen: true,
         financialReady: true, price: 90, currency: 'JOD', capacity: 20,
       },
     })
     const usd = await prisma.cohort.create({
       data: {
+        plans: { create: await approvedTrainerPlan(prisma) },
         courseId: 'C-BIZ-101', title: 'شعبة بالدولار', status: 'open', registrationOpen: true,
         financialReady: true, price: 120, currency: 'USD', capacity: 20,
       },
