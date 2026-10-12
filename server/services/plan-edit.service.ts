@@ -64,6 +64,8 @@ const IN_HAND = ['draft', 'changes_requested'] as const
 const OPEN = ['draft', 'submitted', 'changes_requested'] as const
 /** بندٌ من هذه جاء بعد المسحوب على موضعه يحجبه أن يعود (`restore`) — والمحذوفُ عمدا منها */
 const RESTORE_BLOCKERS: readonly string[] = ['proposed', 'pending', 'accepted', 'rejected', 'dropped']
+/** ما لم يأتِ في ملفٍّ رفعه المعتمِد: ملاحظاتُ الردّ، والجدولُ الذي تبنيه المنصّة — فلا يُعدّ «آخرَ ملفّ» ولا يُسحب مكرّرا */
+const NOT_A_FILE: readonly string[] = ['note', 'schedule']
 
 interface Rows {
   content: TrainerPlanContent
@@ -362,12 +364,50 @@ export class PlanEditService {
     return { take, skipped }
   }
 
-  /** كم يعود لو ضُغط «أعِد ما سحبته» — للزرّ وعددِه */
+  /** كم يعود لو ضُغط «أعِد ما سحبته» — للزرّ وعددِه. ومعه كم يُسحب بـ«احذف المكرر» (`older`) */
   async withdrawnFor(cohortId: string) {
     const latest = await this.latestTrainerPlan(cohortId)
-    if (!latest || !(OPEN as readonly string[]).includes(latest.status)) return { planId: latest?.id ?? null, count: 0, skipped: 0 }
+    if (!latest || !(OPEN as readonly string[]).includes(latest.status)) return { planId: latest?.id ?? null, count: 0, skipped: 0, older: 0 }
     const { take, skipped } = await this.restorable(latest.id)
-    return { planId: latest.id, count: take.length, skipped }
+    return { planId: latest.id, count: take.length, skipped, older: (await this.olderCopies(latest.id)).length }
+  }
+
+  /* ═══ «احذف المكرر» — يبقى آخرُ ملفٍّ رُفع، ويُسحب ما بقي من الأقدم (١٢ أكتوبر ٢٠٢٦) ═══
+
+     رفع صاحبُ المنصّة الملفَّ الجديد ثمّ ضغط «أعد ما سحبته»، فعادت بنودٌ من رفعاتٍ سابقةٍ لم يقع عليها
+     الجديد — وصارت خطّةٌ بخمسين بندا عند مدرّبها وملفُّها خمسةَ عشر. وقال: «give me a button to remove
+     duplication». فالمكرّرُ **ما لم يقرّر فيه المدرّبُ من ملفٍّ أقدمَ من آخر ملفٍّ رُفع على الخطّة**:
+     ① وآخرُ ملفٍّ أحدثُ رفعةٍ بقي منها بند — قرّر فيه المدرّبُ أو لم يقرّر. والمسحوبةُ كلُّها والمحذوفةُ
+        ليست «آخرَ ملفّ».
+     ② وملاحظاتُ الردّ والجدولُ الذي تبنيه المنصّة (`NOT_A_FILE`) ليست ملفّا: لا تُعدّ ولا تُسحب.
+     ③ والسحبُ سحب: ما قرّر فيه المدرّبُ لا يُمسّ، والمسحوبُ يعود بـ«أعد ما سحبته». */
+  private async olderCopies(planId: string): Promise<string[]> {
+    const rows = await this.prisma.planEditSuggestion.findMany({
+      where: { planId, kind: { notIn: [...NOT_A_FILE] }, status: { in: ['proposed', 'pending', 'accepted', 'rejected'] } },
+      select: { id: true, batchId: true, status: true },
+      orderBy: [{ createdAt: 'desc' }, { seq: 'desc' }],
+    })
+    const latest = rows[0]?.batchId
+    return rows.filter((r) => r.batchId !== latest && (r.status === 'proposed' || r.status === 'pending')).map((r) => r.id)
+  }
+
+  async keepLatest(actorId: string, planId: string) {
+    const plan = await this.prisma.cohortDeliveryPlan.findUnique({ where: { id: planId }, select: { cohortId: true, status: true } })
+    if (!plan) throw new AuthError('not_found', 'الخطّة غير موجودة', 404)
+    if (!(OPEN as readonly string[]).includes(plan.status)) {
+      throw new AuthError('plan_closed', 'اعتمدت هذه الخطّة — لا يسحب منها شيء', 409)
+    }
+    const ids = await this.olderCopies(planId)
+    if (ids.length === 0) throw new AuthError('no_duplicates', 'لا مكرر على هذه الخطة — كل ما لم يقرر فيه من آخر ملف رفعته', 409)
+    const { count } = await this.prisma.planEditSuggestion.updateMany({
+      where: { id: { in: ids }, status: { in: ['proposed', 'pending'] } },
+      data: { status: 'withdrawn', decidedAt: new Date(), decidedBy: actorId },
+    })
+    await recordAudit(this.prisma, {
+      actorId, action: 'cohort.plan.edits.withdraw', entityType: 'cohort', entityId: plan.cohortId,
+      meta: { planId, count, older: true },
+    })
+    return { edits: await this.forCohort(plan.cohortId), withdrawn: count }
   }
 
   async restore(actorId: string, planId: string) {

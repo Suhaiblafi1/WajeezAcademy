@@ -40,7 +40,7 @@ import ListToolbar from "@/components/admin/ListToolbar";
 import WorkHeader from "@/components/admin/WorkHeader";
 import { revealRow } from "@/components/admin/reveal";
 import TrainerPlanReview, { type PlanOutcome } from "@/components/admin/TrainerPlanReview";
-import { PlanEditsBulkUpload } from "@/components/PlanEdits";
+import { PlanEditsBulkUpload, PlanEditsDedupeAll } from "@/components/PlanEdits";
 import { ReviewReportsBulkUpload } from "@/components/ReviewReports";
 import { useRealSession } from "@/services/session";
 import { courseLineNeeded, prepNoteAr, sharedPrepNote, type PrepFlags } from "@/application/trainer/plan-decision";
@@ -219,6 +219,13 @@ export default function PendingPlans() {
           plans={scoped.map((r) => ({ id: r.id, labelAr: `${r.cohort.title} — ${r.trainerName}` }))}
           onUploaded={(id) => setUploaded((u) => ({ ...u, [id]: (u[id] ?? 0) + 1 }))}
           onOpen={(id) => { setQ(""); goTo(byTrainer(scoped), id); }}
+        />
+      )}
+      {/* و«احذف المكرر» للخطط كلِّها — يبقى في كلٍّ آخرُ ملفٍّ رُفع (١٢ أكتوبر ٢٠٢٦، `keepLatest`) */}
+      {rows !== null && canUploadEdits && scoped.length > 0 && (
+        <PlanEditsDedupeAll
+          plans={scoped.map((r) => ({ id: r.id, labelAr: `${r.cohort.title} — ${r.trainerName}` }))}
+          onCleaned={(id) => setUploaded((u) => ({ ...u, [id]: (u[id] ?? 0) + 1 }))}
         />
       )}
       {/* وتقاريرُ المراجعة وملاحقُها كذلك — دفعةً واحدة، لمن يعتمد (١١ أكتوبر ٢٠٢٦) */}
