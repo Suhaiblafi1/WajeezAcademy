@@ -77,15 +77,15 @@ export default function TrainerMarketing() {
   return (
     <AdminLayout title="تسويق المدرّبين">
       <p className="mb-5 max-w-3xl text-sm leading-7 text-muted-foreground">
-        فيديوهات المدرّبين وصورهم للتعريف بهم وبدوراتهم. ولكلّ دورة أو مسار ملصق تصمّمونه وترفعونه هنا —
-        ويصل المدرّب فيوافق أو يطلب تعديلا. <b className="text-foreground">لا يستعمل ملصق علنا قبل موافقته.</b>
+        فيديوهات المدرّبين وصورهم للتعريف بهم وبدوراتهم. ولكلّ دورة أو مسار ملصق تصمّمونه وترفعونه هنا،
+        فيوافق المدرّب أو يطلب تعديلا. <b className="text-foreground">لا يستعمل ملصق علنا قبل موافقته.</b>
       </p>
       {err ? (
         <Card tone="danger" role="alert" className="text-center text-read font-bold text-red-300">{err}</Card>
       ) : !rows ? (
         <div className="grid place-items-center py-16"><Loader2 className="h-7 w-7 animate-spin text-muted-foreground/50" aria-label="جار التحميل" /></div>
       ) : rows.length === 0 ? (
-        <EmptyState icon={Megaphone} titleAr="لا مدرّب بعد" reasonAr="يظهر هنا كلّ مدرّب بدأ عمله على موادّه — ومعه ما قدّمه للتسويق." />
+        <EmptyState icon={Megaphone} titleAr="لا مدرّب بعد" reasonAr="يظهر هنا كلّ مدرّب بدأ إعداد موادّه، مع ما قدّمه للتسويق." />
       ) : (
         <>
           <ListToolbar q={q} onQ={setQ} onPage={setPage} view={view} unit="مدرّبا" placeholder="ابحث باسم المدرّب أو بريده…" />
@@ -286,7 +286,7 @@ function TargetPosters({
             <input dir="ltr" className={staffControlCls} value={link} maxLength={500} placeholder="https://…" onChange={(e) => setLink(e.target.value)} />
           </StaffField>
         )}
-        <StaffField label="ملحوظة للمدرّب" hint="لا تلزم — ما تغيّر في هذه النسخة مثلا">
+        <StaffField label="ملحوظة للمدرّب" hint="اختياريّة — مثلا: ما تغيّر في هذه النسخة">
           <input className={staffControlCls} value={note} maxLength={MAX_MARKETING_NOTE} onChange={(e) => setNote(e.target.value)} />
         </StaffField>
         <div>

@@ -123,8 +123,8 @@ export default function AdminLayout({ children, title }: { children: React.React
         <Crown className="h-12 w-12 text-[#FABC05]" />
         <h1 className="mt-5 text-2xl font-black">لا صلاحيات مفعّلة لحسابك</h1>
         <p className="mt-2 max-w-md text-center text-sm leading-7 text-muted-foreground">
-          حسابك <b className="text-foreground">{user?.displayName}</b> يدخل اللوحة، ولا صلاحية إداريّة مفعّلة عليه بعد.
-          راجع مدير النظام ليمنحك ما يخصّ عملك.
+          حسابك <b className="text-foreground">{user?.displayName}</b> يدخل اللوحة، لكن بلا صلاحيات إداريّة بعد.
+          اطلب من مدير النظام صلاحيات عملك.
         </p>
         <Link to="/" className="mt-6 text-xs text-muted-foreground hover:text-foreground">العودة للموقع العام</Link>
       </div>

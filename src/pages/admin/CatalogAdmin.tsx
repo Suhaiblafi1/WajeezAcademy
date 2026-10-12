@@ -407,13 +407,13 @@ export default function CatalogAdmin() {
                 {soloFor === c.id && (
                   <Inset className="mt-3 grid gap-3">
                     <p className="text-read leading-7 text-muted-foreground">
-                      دورة قائمة بنفسها تدخل فضاء التوصية بمهاراتها ومجالها — بلا أن تلحق بمسار.
-                      <b className="text-foreground"> ولا تزاحم مسارا</b>: تقف حيث كان التشخيص يقول
-                      «لا شيء لك» فيحيل إلى مستشار.
+                      دورة مستقلّة يرشّحها التشخيص بمهاراتها ومجالها دون مسار.
+                      <b className="text-foreground"> ولا تنافس المسارات</b>: تظهر حين لا يجد التشخيص
+                      ما يناسب المتعلّم بدل تحويله إلى مستشار.
                     </p>
                     <fieldset className="grid gap-1.5">
                       <legend className="text-read font-bold text-muted-foreground">
-                        مجال التشخيص الذي تخدمه — ولا ترشّح بلا واحد
+                        مجال التشخيص — اختر واحدا على الأقلّ
                       </legend>
                       <div className="flex flex-wrap gap-x-4 gap-y-1.5">
                         {DIAGNOSTIC_DOMAINS.map((d) => (
@@ -432,7 +432,7 @@ export default function CatalogAdmin() {
                     </fieldset>
                     <fieldset className="grid gap-1.5">
                       <legend className="text-read font-bold text-muted-foreground">
-                        جمهورها — ولا تنافس مرّة بلا جمهور معلن
+                        جمهورها — اختر واحدا على الأقلّ
                       </legend>
                       <div className="flex flex-wrap gap-x-4 gap-y-1.5">
                         {Object.entries(CAREER_STAGE_LABELS_AR).map(([id, label]) => (
@@ -457,7 +457,7 @@ export default function CatalogAdmin() {
                           () => apiPut(`/api/admin/catalog/courses/${c.id}/standalone`, {
                             recommendable: true, domains: soloDomains, stages: soloStages,
                           }),
-                          "صارت ترشّح وحدها — تدخل فضاء التوصية عند النشر",
+                          "صارت ترشّح وحدها — يبدأ ترشيحها بعد النشر",
                         ).then(() => setSoloFor(null))}
                       >
                         اجعلها ترشّح وحدها
@@ -469,7 +469,7 @@ export default function CatalogAdmin() {
                             () => apiPut(`/api/admin/catalog/courses/${c.id}/standalone`, {
                               recommendable: false, domains: soloDomains, stages: soloStages,
                             }),
-                            "أطفئ ترشيحها المستقلّ — ومجالها يبقى مكتوبا",
+                            "توقّف ترشيحها المستقلّ — ومجالها محفوظ",
                           ).then(() => setSoloFor(null))}
                         >
                           أطفئ ترشيحها
@@ -478,7 +478,7 @@ export default function CatalogAdmin() {
                       <Button tone="ghost" size="sm" onClick={() => setSoloFor(null)}>أغلق</Button>
                       {c.skillCount === 0 && (
                         <span className="text-read text-amber-300">
-                          اربط مهاراتها أوّلا — تنافس بمهاراتها، وبلا مهارة لا شيء يقاس.
+                          اربط مهاراتها أوّلا — لا ترشيح بلا مهارات.
                         </span>
                       )}
                     </div>
@@ -498,7 +498,7 @@ export default function CatalogAdmin() {
                         onClick={() => void act(
                           () => apiPut(`/api/admin/catalog/courses/${c.id}/skills`, { skillIds: skillDraft }),
                           skillDraft.length === 0
-                            ? "فكّت مهارات الدورة — ولن تنشر حتّى تربط بواحدة على الأقلّ"
+                            ? "أزيلت مهارات الدورة — ولن تنشر قبل ربط مهارة واحدة على الأقلّ"
                             : `ربطت ${skillDraft.length} مهارة بالدورة`,
                         ).then(() => setSkillsFor(null))}
                       >
@@ -507,7 +507,7 @@ export default function CatalogAdmin() {
                       <Button tone="ghost" size="sm" onClick={() => setSkillsFor(null)}>أغلق</Button>
                       {/* الاستبدالُ يُقال صراحةً: من ظنّها إضافةً فكَّ ما لم يقصد */}
                       <span className="text-fine text-muted-foreground">
-                        المحفوظ يستبدل بما تختاره هنا — لا يضاف إليه.
+                        ما تختاره هنا يحلّ محلّ المحفوظ ولا يضاف إليه.
                       </span>
                     </div>
                   </Inset>
@@ -524,7 +524,7 @@ export default function CatalogAdmin() {
               {skills.filter((s) => s.measureState === "measured").length} مقيسة ·{" "}
               {skills.filter((s) => s.measureState === "registered_unmeasured").length} مسجّلة بلا سؤال ·{" "}
               {skills.filter((s) => s.measureState === "inactive").length} موقوفة تشخيصيا · من {skills.length}
-              <span className="text-muted-foreground"> — غير المقيسة تدخل مقام تغطية القياس ولا تقاس أبدا.</span>
+              <span className="text-muted-foreground"> — غير المقيسة تحسب في نسبة تغطية القياس ولا تقاس.</span>
             </Card>
             <ul className="mt-2 grid gap-2 sm:grid-cols-2">
               {skillView.rows.map((s) => (
@@ -575,7 +575,7 @@ export default function CatalogAdmin() {
 
       {/* نماذج الإنشاء */}
       <section className="mt-8 space-y-3">
-        <h2 className="text-lg font-black">إنشاء وتعديل — كلها مسودات تمر بسير الاعتماد</h2>
+        <h2 className="text-lg font-black">إنشاء وتعديل — كلّها مسودّات تمرّ بالاعتماد</h2>
 
         <FormHead id="course" icon={BookMarked} title="دورة جديدة (مسودة)" hint="أربع خطوات: الدورة، وحداتها، مهاراتها، مراجعة" />
         {openForm === "course" && (
@@ -609,7 +609,7 @@ export default function CatalogAdmin() {
           />
         )}
 
-        <FormHead id="skill" icon={FilePlus2} title="مهارة جديدة (مسودة)" hint="وحدة قياس المحرك التشخيصي" />
+        <FormHead id="skill" icon={FilePlus2} title="مهارة جديدة (مسودة)" hint="ما يقيسه التشخيص" />
         {openForm === "skill" && (
           <Card className="border-gold/20">
             <div className="grid gap-3 sm:grid-cols-4">
@@ -643,7 +643,7 @@ export default function CatalogAdmin() {
             <textarea value={crForm.payload} onChange={(e) => setCrForm({ ...crForm, payload: e.target.value })} rows={5}
               dir="ltr" className={`${inputCls} mt-3 font-mono text-xs`} />
             <p className="mt-2 text-read text-muted-foreground">
-              أمثلة حقول: titleAr للاسم، objectives للأهداف، skillIds لربط المهارات — تدمج في إصدار جديد بعد الاعتماد والنشر.
+              أمثلة: titleAr للاسم، objectives للأهداف، skillIds للمهارات — تطبّق في إصدار جديد بعد الاعتماد والنشر.
             </p>
             {/* `confirm` لا `primary`: هذا الزرُّ حفظُ **قسمٍ** في صفحةٍ فيها
                 ثلاثةُ أقسامِ إنشاءٍ متوازية (دورة · مسار · طلبُ تعديل) — فليس
@@ -687,8 +687,8 @@ export default function CatalogAdmin() {
         <p className="mt-3 flex items-center gap-1.5 text-read text-muted-foreground">
           <BookMarked className="h-3.5 w-3.5" />
           {canSelfApprove
-            ? "maker-checker: صانع الطلب لا يعتمده بنفسه — وحسابك مستثنى، فما قدّمته تعتمده وحدك ويكتب في سجلّ الأثر باسمه."
-            : "maker-checker: لا يستطيع صانع الطلب اعتماده بنفسه — الخادم يرفض ذلك."}
+            ? "maker-checker: من يقدّم الطلب لا يعتمده — إلّا حسابك: تعتمد ما قدّمته، ويسجّل ذلك في سجلّ الأثر."
+            : "maker-checker: من يقدّم الطلب لا يعتمده — والخادم يرفض ذلك."}
         </p>
       </section>
 

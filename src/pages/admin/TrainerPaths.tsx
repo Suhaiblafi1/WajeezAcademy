@@ -101,9 +101,9 @@ export default function TrainerPaths() {
     <AdminLayout title="مسارات المدرّبين">
       <Card className="mb-4">
         <p className="text-sm leading-7 text-muted-foreground">
-          مسار يرتّبه مدرّب من دوراته ويعرض على صفحة المسارات تحت
-          {" "}<b>«مسارات أعدّها مدرّبونا المعتمدون»</b> باسمه. والاسم يعتمد مع المسار هنا —
-          فهو نصّ عامّ يحمل مصداقيّة الأكاديميّة. ولا يزاحم هذا الرفّ مسارات التشخيص.
+          مسار يرتّبه مدرّب من دوراته، ويظهر باسمه في صفحة المسارات تحت
+          {" "}<b>«مسارات أعدّها مدرّبونا المعتمدون»</b>. تعتمد اسمه مع المسار هنا لأنّه
+          نصّ عامّ يمثّل الأكاديميّة. ولا يدخل في مسارات التشخيص.
         </p>
       </Card>
 
@@ -120,7 +120,7 @@ export default function TrainerPaths() {
 
           <div className="mb-3 mt-2">
             <Button tone="ghost" onClick={() => setShowAll(!showAll)}>
-              {showAll ? "أظهر ما ينتظر المراجعة وحده" : "أظهر كلّ المسارات"}
+              {showAll ? "أظهر ما ينتظر المراجعة فقط" : "أظهر كلّ المسارات"}
             </Button>
           </div>
 
@@ -128,7 +128,7 @@ export default function TrainerPaths() {
             <EmptyState
               icon={Route}
               titleAr={showAll ? "لا مسار يطابق بحثك" : "لا مسار ينتظر المراجعة"}
-              reasonAr="حين يرتّب مدرّب مسارا من دوراته ويرسله، يصل هنا قبل أن يظهر على الرفّ العامّ."
+              reasonAr="حين يرسل مدرّب مسارا من دوراته يصل هنا قبل أن يظهر للعامّة."
             />
           ) : (
             <div className="grid gap-3">
@@ -191,8 +191,8 @@ export default function TrainerPaths() {
                       <Inset tone="danger" className="mt-3 flex items-start gap-2 text-sm leading-7 text-red-300">
                         <ShieldAlert className="mt-1 h-4 w-4 shrink-0" aria-hidden />
                         <span>
-                          لم يعتمد ظهور <b>{r.trainerName}</b> للعامّة — والمسار يحمل اسمه، فلا ينشر قبله.
-                          اعتمد ظهوره من «طلبات المدربين» ثمّ عد.
+                          لم يعتمد ظهور <b>{r.trainerName}</b> للعامّة بعد، والمسار يحمل اسمه فلا ينشر قبل ذلك.
+                          اعتمده من «طلبات المدربين» ثمّ عد.
                         </span>
                       </Inset>
                     ) : null}
@@ -217,8 +217,8 @@ export default function TrainerPaths() {
                         <StaffField
                           label={noteKind === "reject" ? "لماذا يردّ؟" : "لماذا يسحب؟"}
                           hint={noteKind === "reject"
-                            ? "يقرؤه المدرّب في بوّابته — وبلا سبب يعيده كما هو"
-                            : "السحب يخرجه من الرفّ ولا يمسّ من التحق ولا يلغي موسما"}
+                            ? "يقرؤه المدرّب في بوّابته — وبلا سبب قد يعيده كما هو"
+                            : "السحب يخفيه من الصفحة، ولا يؤثّر على المسجّلين ولا يلغي أيّ موسم"}
                         >
                           <input
                             className={staffControlCls} value={note} maxLength={2000}

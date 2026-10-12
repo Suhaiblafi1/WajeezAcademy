@@ -114,7 +114,7 @@ export default function PublishingBoard() {
               {busy === "create" || busy === "publish" ? "ينشر…" : "أنشئ وانشر"}
             </Button>
           </div>
-          <p className="mt-2 text-read text-muted-foreground">النشر ذري: يرفض عند أي نقص ولا ينشر شيئا جزئيا.</p>
+          <p className="mt-2 text-read text-muted-foreground">النشر كامل أو لا شيء: أيّ نقص يوقفه كلّه.</p>
         </Card>
       </div>
 
@@ -188,8 +188,8 @@ export default function PublishingBoard() {
             void act(`del-${target.id}`, () => apiDelete(`/api/admin/publishing/versions/${target.id}`, { reasonAr: "تنظيف مسودة معلّقة من لوحة النشر" }))
           }}
         >
-          <p>مسودّة بلا لقطة تعني نشرا أخفق بعد إنشاء الإصدار: لا تنشر ولا تسترجع، وتحجز تسميتها للأبد.</p>
-          <p>بحذفها <b className="text-foreground">تحرّر التسمية للاستعمال</b>، ويسجّل الحذف في سجلّ الأثر بصاحبه ووقته. ولا يمسّ أيّ إصدار منشور.</p>
+          <p>مسودّة بلا لقطة تعني أنّ النشر فشل بعد إنشاء الإصدار: لا تنشر ولا تسترجع، وتبقى تسميتها محجوزة دائما.</p>
+          <p>بحذفها <b className="text-foreground">تصبح التسمية متاحة</b>، ويسجّل الحذف في سجلّ الأثر مع صاحبه ووقته. ولا يتأثّر أيّ إصدار منشور.</p>
         </ConfirmAction>
       )}
     </AdminLayout>

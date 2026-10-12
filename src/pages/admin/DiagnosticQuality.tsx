@@ -48,7 +48,7 @@ export default function DiagnosticQuality() {
     } catch (e) {
       /* 403 تعني أن الدور الحالي ليس مدير التشخيص/النظام — رسالة مفهومة لا «عطل» */
       if (e instanceof ApiError && e.status === 403) {
-        setError("هذه اللوحة خاصة بدور «مدير التشخيص» أو «مدير النظام» — حسابك الحالي لا يملك صلاحية المحاكي. في الديمو: ادخل بحساب superadmin.demo@wajeez.local لعرضها.");
+        setError("هذه اللوحة لدور «مدير التشخيص» أو «مدير النظام» — حسابك لا يملك صلاحية المحاكي. في الديمو: ادخل بحساب superadmin.demo@wajeez.local.");
       } else {
         setError(e instanceof ApiError ? e.message : "تعذر الاتصال بخادم API — شغّله بـ npm run api:dev");
       }
@@ -141,7 +141,7 @@ export default function DiagnosticQuality() {
 
       <section className="mt-8">
         <h2 className="text-lg font-black">آراء المتعلمين في نتائجهم</h2>
-        <p className="mt-1 text-read text-muted-foreground">بطاقة «هل تصف هذه النتيجة وضعك؟» أسفل النتيجة الكاملة — مربوطة بجلسة التشخيص والمسار.</p>
+        <p className="mt-1 text-read text-muted-foreground">بطاقة «هل تصف هذه النتيجة وضعك؟» أسفل النتيجة الكاملة، وترتبط بجلسة التشخيص والمسار.</p>
         {!feedback || feedback.total === 0 ? (
           <p className="mt-3 text-sm text-muted-foreground">لا آراء بعد — تصل هنا فور إرسال أول متعلم رأيه.</p>
         ) : (

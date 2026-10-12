@@ -191,7 +191,7 @@ export default function Authoring() {
       } else if (kind === "submit") {
         const r = await apiPost<Draft>(`${base}/submit`);
         setDraft((d) => (d ? { ...d, status: r.status } : d));
-        setNotice("رفعت للمراجعة. لا تعتمدها بنفسك — يراجعها غيرك.");
+        setNotice("رفعت للمراجعة — يعتمدها شخص غيرك.");
       } else if (kind === "withdraw") {
         const r = await apiPost<Draft>(`${base}/withdraw`);
         setDraft((d) => (d ? { ...d, status: r.status } : d));
@@ -259,7 +259,7 @@ export default function Authoring() {
           /* السببُ يُقال ولا يُترك بهتانا صامتا: الزرُّ يبهت لأنّ اللسانَ
              على ما بلا متنٍ والبحثُ لا يُظهر منها شيئا — وهذا ما يُقرأ. */
           disabledReasonAr={bodyFilter === "missing" && rows.length === 0
-            ? "التبويب على ما بلا متن ولا يظهر البحث منها شيئا — امسحه لتبدأ."
+            ? "بحثك لا يطابق أيّ وحدة بلا متن — امسحه لتبدأ."
             : undefined}
           onAction={() => {
             /* اللسانُ يُضبط أوّلا كي يكون الطابورُ طابورَ ما بلا متن،
@@ -267,7 +267,7 @@ export default function Authoring() {
             if (bodyFilter !== "missing") { setBodyFilter("missing"); return; }
             if (rows[0]) void open(rows[0]);
           }}
-          doneAr={<>كلّ وحدات الكتالوج لها متنها — {fmtNum(work?.total ?? 0)} وحدة. لا عمل منتظرا هنا.</>}
+          doneAr={<>كلّ وحدات الكتالوج لها متنها — {fmtNum(work?.total ?? 0)} وحدة. لا عمل هنا.</>}
         />
       )}
 
@@ -328,7 +328,7 @@ export default function Authoring() {
           ) : rows.length === 0 ? (
             <p className="py-8 text-center text-read leading-6 text-muted-foreground">
               {bodyFilter === "missing"
-                ? "لا وحدة بلا متن هنا — اكتمل ما اخترته."
+                ? "لا وحدة بلا متن هنا — كلّها مكتملة."
                 : bodyFilter === "written"
                   ? "لا وحدة لها متن بعد في هذا النطاق."
                   : "لا نتيجة لهذا البحث."}
@@ -381,7 +381,7 @@ export default function Authoring() {
             <p className="py-20 text-center text-sm leading-7 text-muted-foreground">
               اختر وحدة من الطابور لتبدأ.
               <br />
-              <span className="text-xs text-muted-foreground">الترتيب يضع من ينتظره متعلّم مسجّل أوّلا.</span>
+              <span className="text-xs text-muted-foreground">ما ينتظره متعلّم مسجّل يظهر أوّلا.</span>
             </p>
           ) : !draft ? (
             <div className="grid place-items-center py-20"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
@@ -516,7 +516,7 @@ export default function Authoring() {
                 {isReview && canDecide && (
                   <Inset tone="warn" className="flex w-full flex-wrap items-center gap-2">
                     <p className="flex w-full items-center gap-1.5 text-read font-black text-gold">
-                      <ShieldCheck className="h-3.5 w-3.5" /> الاعتماد الأكاديميّ — ولا يعتمد أحد ما كتبه
+                      <ShieldCheck className="h-3.5 w-3.5" /> الاعتماد الأكاديميّ — لا يعتمد أحد ما كتبه بنفسه
                     </p>
                     <input
                       value={note} onChange={(e) => setNote(e.target.value)}
@@ -533,7 +533,7 @@ export default function Authoring() {
                       إعادة إلى الكاتب مع ملاحظة
                     </Button>
                     <p className="w-full text-read leading-5 text-muted-foreground">
-                      الاعتماد لا ينشر — يرفعها إلى الموافقة النهائية، ولا يراها متعلّم قبلها.
+                      الاعتماد لا ينشر: ينقلها إلى الموافقة النهائية، ولا يراها متعلّم قبلها.
                     </p>
                   </Inset>
                 )}
@@ -542,7 +542,7 @@ export default function Authoring() {
                   canFinalApprove ? (
                     <Inset tone="accent" className="flex w-full flex-wrap items-center gap-2">
                       <p className="flex w-full items-center gap-1.5 text-read font-black text-teal-light-ink">
-                        <ShieldCheck className="h-3.5 w-3.5" /> الموافقة النهائية — ولا يوقّعها كاتبها ولا من اعتمدها أكاديميّا
+                        <ShieldCheck className="h-3.5 w-3.5" /> الموافقة النهائية — لا يوقّعها كاتبها ولا من اعتمدها أكاديميّا
                       </p>
                       <input
                         value={note} onChange={(e) => setNote(e.target.value)}
@@ -561,7 +561,7 @@ export default function Authoring() {
                     </Inset>
                   ) : (
                     <Inset as="p" className="w-full text-read leading-6 text-muted-foreground">
-                      اعتمدت أكاديميّا وتنتظر الموافقة النهائية — وهي بحبّة صلاحية لا يملكها حسابك.
+                      اعتمدت أكاديميّا وتنتظر الموافقة النهائية — وحسابك لا يملك صلاحيتها.
                     </Inset>
                   )
                 )}

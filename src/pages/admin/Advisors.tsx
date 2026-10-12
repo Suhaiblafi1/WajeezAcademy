@@ -72,7 +72,7 @@ export default function Advisors() {
         commissionPct: pct, notesAr: form.notesAr.trim() || undefined,
       });
       if (res?.error) { toastError(res.error.message_ar); return; }
-      toast("حفظت العمولة — وسجّل التغيير بصاحبه ووقته.");
+      toast("حفظت العمولة — وسجّل التغيير مع صاحبه ووقته.");
       setEditing(null);
       await load();
     } catch (e) { toastError(e instanceof ApiError ? e.message : "تعذّر الحفظ"); }
@@ -99,8 +99,8 @@ export default function Advisors() {
   return (
     <AdminLayout title="المستشارون — العمولة وشروط العمل">
       <p className="mb-5 max-w-2xl text-read leading-6 text-muted-foreground">
-        نسبة العمولة تكتب هنا لا تتذكّر، ويسجّل كلّ تغيير فيها بصاحبه ووقته والرقمين معا.
-        وإسناد الحالات من «حالات بلا مستشار»، والبتّ في طلبات الخصم من «طلبات المستشارين».
+        تكتب نسبة العمولة هنا، ويسجّل كلّ تغيير فيها مع صاحبه ووقته والقيمتين القديمة والجديدة.
+        وإسناد الحالات من «حالات بلا مستشار»، وطلبات الخصم من «طلبات المستشارين».
       </p>
 
       {loading ? (
@@ -109,7 +109,7 @@ export default function Advisors() {
         <Panel className="grid place-items-center py-20 text-center">
           <UserCheck className="h-12 w-12 text-muted-foreground/50" />
           <p className="mt-4 max-w-md text-sm text-muted-foreground">
-            لا مستشارين بعد — يصير الحساب مستشارا بإسناد دور «مستشار» من شاشة المستخدمين.
+            لا مستشارين بعد — امنح حسابا دور «مستشار» من شاشة المستخدمين.
           </p>
         </Panel>
       ) : (
@@ -168,7 +168,7 @@ export default function Advisors() {
                             <span className="flex items-center gap-1 text-muted-foreground">
                               <Star className="h-3 w-3 text-gold" />
                               {detail.ratingAvg === null
-                                ? `تقييمات قليلة (${detail.ratingCount}) — لا يعرض المعدّل قبل ثلاثة`
+                                ? `تقييمات قليلة (${detail.ratingCount}) — يظهر المعدّل من ثلاثة فأكثر`
                                 : `${detail.ratingAvg.toFixed(1)} من ٥ (${detail.ratingCount} تقييما)`}
                             </span>
                           </div>

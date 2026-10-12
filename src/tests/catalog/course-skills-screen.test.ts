@@ -79,7 +79,7 @@ describe('صفّ الدورة يقول لماذا لن تنشر', () => {
   })
 
   it('والاستبدال يقال للمستخدم — فمن ظنّها إضافة فكّ ما لم يقصد', () => {
-    expect(coursesBlock).toContain('يستبدل')
+    expect(coursesBlock).toContain('يحلّ محلّ المحفوظ')
   })
 })
 

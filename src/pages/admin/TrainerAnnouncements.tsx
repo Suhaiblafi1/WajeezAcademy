@@ -50,7 +50,7 @@ interface SentAnnouncement {
 
 /** من يصله بعد الإرسال — كما يُقرأ تحت ما أُرسل */
 function lateLineAr(until: string | null): string {
-  if (!until) return "لمن كانوا مدرّبين يوم أرسل وحدهم.";
+  if (!until) return "للمدرّبين يوم الإرسال فقط.";
   return new Date(until).getTime() >= Date.now()
     ? `ومن يصير مدرّبا حتّى ${fmtDateAr(until)} يصله حين يفتح بوّابته، ويضاف هنا يومها.`
     : `وكان يصل من صار مدرّبا حتّى ${fmtDateAr(until)}.`;
@@ -234,8 +234,8 @@ export default function TrainerAnnouncements() {
   return (
     <AdminLayout title="إعلانات للمدرّبين">
       <p className="mb-4 max-w-3xl text-read leading-7 text-muted-foreground">
-        إعلان يصل كلّ مدرّب نشط: نافذة في بوّابته حين يفتحها حتّى يضغط «قرأته» — ويستطيع أن يؤجّلها فلا تمنعه من عمله —
-        وإشعار في جرسه. ولا بريد. وتحت كلّ ما أرسل: من قرأ، ومن رآه ولم يؤكّد، ومن لم يفتح بوّابته بعد.
+        يصل الإعلان كلّ مدرّب نشط: نافذة في بوّابته حتّى يضغط «قرأته» (ويمكنه تأجيلها)، وإشعار في الجرس، بلا بريد.
+        وتحت كلّ إعلان: من قرأ، ومن رآه ولم يؤكّد، ومن لم يفتح بوّابته بعد.
       </p>
 
       {sent && (
@@ -251,7 +251,7 @@ export default function TrainerAnnouncements() {
           </h2>
           <p className="mt-1 text-read text-muted-foreground">
             {title === ANNOUNCEMENT_DRAFT.titleAr
-              ? "فيه النصّ المقترح عن موعد بدء الشّعب — عدّل فيه ما شئت، أو امسحه واكتب غيره."
+              ? "فيه نصّ مقترح عن موعد بدء الشعب — عدّله أو امسحه واكتب غيره."
               : "اكتب العنوان والنصّ، وتراه تحتهما كما سيراه المدرّب."}
           </p>
           <div className="mt-3 grid gap-3">
@@ -295,7 +295,7 @@ export default function TrainerAnnouncements() {
                 aria-label="آخر يوم يصل فيه من يصير مدرّبا بعد الإرسال" className={`${field} w-auto`} />
             </label>
             <p className="ms-6 text-read leading-6 text-muted-foreground">
-              من ينضمّ بعد الإرسال تظهر له النافذة أوّل ما يفتح بوّابته، ويصله في الجرس — حتّى آخر هذا اليوم.
+              من ينضمّ بعد الإرسال يراه عند أوّل فتح لبوّابته وفي الجرس — حتّى نهاية هذا اليوم.
             </p>
             <label className="flex items-center gap-2 text-read text-foreground">
               <input type="radio" name="reach" className="accent-teal" checked={!late} onChange={() => setLate(false)} />
@@ -322,7 +322,7 @@ export default function TrainerAnnouncements() {
         <h2 id="sent-announcements" className="text-sm font-black">ما أرسل</h2>
         {!data && <p className="mt-3 text-read text-muted-foreground">يحمّل…</p>}
         {data?.items.length === 0 && (
-          <p className="mt-3 text-read text-muted-foreground">لم يرسل إعلان بعد — ما ترسله يظهر هنا ومعه من قرأه.</p>
+          <p className="mt-3 text-read text-muted-foreground">لا إعلانات بعد — ما ترسله يظهر هنا مع من قرأه.</p>
         )}
         {data && data.items.length > 0 && (
           <ul className="mt-3 grid gap-3">
@@ -341,14 +341,14 @@ export default function TrainerAnnouncements() {
             {sameTitle && (
               <p className="mt-2 text-read leading-6 text-gold-ink">
                 أرسلت إعلانا بهذا العنوان في {fmtDateTimeAr(sameTitle.sentAt)}، وقرأه {sameTitle.read} من {sameTitle.total}.
-                إرساله ثانية يظهره لهم من جديد.
+                إرساله مرّة أخرى يظهره لهم من جديد.
               </p>
             )}
             <div className="mt-4 grid gap-3">
               <div>
                 <Button tone="confirm" loading={sending} onClick={() => void send()}>أرسله الآن</Button>
                 <p className="mt-1 text-read leading-6 text-muted-foreground">
-                  يصل الآن: نافذة في بوّابة كلّ منهم حين يفتحها، وإشعار في جرسه. ولا يسحب بعد أن يرسل.
+                  يصل الآن: نافذة في بوّابة كلّ منهم وإشعار في الجرس. ولا يمكن سحبه بعد الإرسال.
                 </p>
               </div>
               <div>

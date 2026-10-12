@@ -162,7 +162,7 @@ function ClusterPanel({ scope }: { scope: "open" | "all" }) {
   return (
     <Card className="mb-4">
       <Button tone="ghost" icon={Layers} onClick={() => setOpen(!open)} aria-expanded={open}>
-        {open ? "أخف تقرير التجميع" : "أتتجمّع هذه في مسارات؟ — اعرض التقرير"}
+        {open ? "أخف تقرير التجميع" : "هل تشكّل هذه مسارات؟ — اعرض التقرير"}
       </Button>
 
       {open ? (
@@ -227,8 +227,8 @@ function ClusterPanel({ scope }: { scope: "open" | "all" }) {
                     بلا مرساة ({data.unanchored.length})
                   </b>
                   <p className="mt-1 text-sm leading-7 text-muted-foreground">
-                    لا تشترك كلمة من عناوينها مع الكتالوج، فلا توضع في مجال. وهي إمّا
-                    <b> باب جديد فعلا</b>، وإمّا عنوان غامض يسأل صاحبه عنه.
+                    لا تشترك عناوينها بأيّ كلمة مع الكتالوج، فلا مجال لها. فهي إمّا
+                    <b> موضوع جديد فعلا</b>، أو عنوان غامض تسأل صاحبه عنه.
                   </p>
                   <ul className="mt-2 grid gap-1.5">
                     {data.unanchored.map((p) => (
@@ -242,11 +242,11 @@ function ClusterPanel({ scope }: { scope: "open" | "all" }) {
               ) : null}
 
               <p className="mt-3 text-sm leading-7 text-muted-foreground/70">
-                <b>◆ مرشّح مسار</b> — {data.pathCourseCount} فأكثر بجمهور واحد. يقرأ ولا ينفّذ:
-                المسار وعد ومخرج ختاميّ وشهادة، ولا يولد من عناوين اجتمعت في عمود.
-                {" · "}<b>◇ يقسم بالجمهور</b> — عدده يكفي ولا جمهور يجمعه.
+                <b>◆ مرشّح مسار</b> — {data.pathCourseCount} فأكثر بجمهور واحد. للقراءة فقط:
+                المسار يحتاج هدفا ومشروعا ختاميّا وشهادة، لا عناوين متجاورة فحسب.
+                {" · "}<b>◇ يقسم بالجمهور</b> — عددها يكفي لكن بلا جمهور مشترك.
                 {" · "}<b>· دورة قائمة بنفسها</b> — ما دون ذلك.
-                {" "}ومجال لا يصله هدف: العلاج بنك الأسئلة لا مسار جديد.
+                {" "}ومجال بلا هدف: الحلّ في بنك الأسئلة لا في مسار جديد.
               </p>
             </>
           ) : null}
@@ -319,11 +319,11 @@ export default function CourseProposals() {
     <AdminLayout title="دورات اقترحها المدرّبون">
       <Card className="mb-4">
         <p className="text-sm leading-7 text-muted-foreground">
-          كلّ اقتراح هنا <b>ليس دورة بعد</b>: لا يظهر في الكتالوج ولا يحسب في التشخيص حتّى يصنّف.
-          وبابان للتصنيف — <b>نسخة من رمز قائم</b> إن كانت قريبة منه فتربط به ويقترح المدرّب
-          نسخته بنفسه، أو <b>دورة جديدة</b> تنشأ في نموذج الكتالوج بمهاراتها ثمّ تربط هنا.
-          {" "}وقبلهما <b>اسأل المدرّب</b> إن نقصك ما تقرّر به — فيعود الاقتراح إليك بجوابه.
-          {" "}وكلّ تصنيف يفتح لك <b>مهمّة قائمة بتأهيله</b> للدورة، فلا يصنّف اقتراح ويبقى صاحبه لا يدرّسه.
+          كلّ اقتراح هنا <b>ليس دورة بعد</b>: لا يظهر في الكتالوج ولا في التشخيص قبل تصنيفه.
+          وللتصنيف طريقان: <b>نسخة من رمز قائم</b> قريب منه فتربطه به ويقترح المدرّب
+          نسخته، أو <b>دورة جديدة</b> تنشئها في الكتالوج بمهاراتها ثمّ تربطها هنا.
+          {" "}وإن احتجت معلومة <b>اسأل المدرّب</b> — ويعود الاقتراح إليك بجوابه.
+          {" "}وكلّ تصنيف ينشئ لك <b>مهمّة لتأهيله</b> للدورة، حتّى لا يبقى صاحبه بلا تدريسها.
         </p>
       </Card>
 
@@ -343,15 +343,15 @@ export default function CourseProposals() {
 
           <div className="mb-3 mt-2">
             <Button tone="ghost" onClick={() => setShowDecided(!showDecided)}>
-              {showDecided ? "أخف ما انتهى أمره" : "أظهر ما انتهى أمره — الدورات والمردود"}
+              {showDecided ? "أخف المحسوم" : "أظهر المحسوم — المربوط والمرفوض"}
             </Button>
           </div>
 
           {view.total === 0 ? (
             <EmptyState
               icon={BookPlus}
-              titleAr={showDecided ? "لا اقتراح يطابق بحثك" : "لا اقتراح ينتظر التصنيف ولا مربوط يراجع"}
-              reasonAr="تصل هنا الدورات التي يقولها المدرّبون في طلب انضمامهم أو من بوّابتهم — ولا تدخل الكتالوج حتّى تصنّف."
+              titleAr={showDecided ? "لا اقتراح يطابق بحثك" : "لا اقتراحات تنتظر التصنيف أو المراجعة"}
+              reasonAr="هنا تصل الدورات التي يقترحها المدرّبون عند الانضمام أو من بوّابتهم، ولا تدخل الكتالوج قبل تصنيفها."
             />
           ) : (
             <div className="grid gap-3">
@@ -469,7 +469,7 @@ export default function CourseProposals() {
                         {linked ? (
                           <>
                             <b className="text-teal-light-ink">ربطت بـ «{r.courseTitleAr ?? r.courseId}»</b>
-                            <span className="text-muted-foreground"> — تبقى هنا لتراجع، ولا تدخل الكتالوج باسمها.</span>
+                            <span className="text-muted-foreground"> — تبقى هنا للمراجعة، ولا تدخل الكتالوج باسمها.</span>
                             {" "}
                           </>
                         ) : r.courseId ? (
@@ -482,7 +482,7 @@ export default function CourseProposals() {
                     {/* ── تصحيحُ نصٍّ كتبه صاحبُه ── */}
                     {editFor === r.id ? (
                       <Inset className="mt-3 grid gap-3">
-                        <StaffField label="عنوان الدورة" hint="وهي كلمات صاحبها — فما كان يكتب في سجلّ الأثر كاملا">
+                        <StaffField label="عنوان الدورة" hint="هذه كلمات صاحبها — والنصّ القديم يحفظ كاملا في سجلّ الأثر">
                           <input
                             className={staffControlCls} value={editTitle} maxLength={200}
                             onChange={(e) => setEditTitle(e.target.value)}
@@ -501,7 +501,7 @@ export default function CourseProposals() {
                               () => apiPatch(`/api/admin/course-proposals/${r.id}`, {
                                 titleAr: editTitle.trim(), summaryAr: editSummary.trim() || null,
                               }),
-                              "صحّح نصّ الاقتراح — وما كان في الأثر",
+                              "صحّح نصّ الاقتراح — والقديم في سجلّ الأثر",
                             )}
                           >
                             احفظ
@@ -552,7 +552,7 @@ export default function CourseProposals() {
                           </div>
                         ) : (
                           <p className="text-read leading-6 text-muted-foreground">
-                            لم يجد النظام رمزا قريبا — اختر من القائمة، أو أنشئها دورة جديدة.
+                            لا رمز قريبا منها — اختر من القائمة أو أنشئ دورة جديدة.
                           </p>
                         )}
                         <StaffField
@@ -584,7 +584,7 @@ export default function CourseProposals() {
                       <Inset className="mt-3 grid gap-3">
                         <StaffField
                           label="ما الذي تريد أن تعرفه عنها؟"
-                          hint="يصل المدرّب في «دوراتي المقترحة» ويشعر به — ويعود الاقتراح إليك بجوابه"
+                          hint="يصل المدرّب في «دوراتي المقترحة» مع إشعار، ويعود الاقتراح إليك بجوابه"
                         >
                           <textarea
                             className={staffControlCls} value={askText} maxLength={2000} rows={3}
@@ -635,7 +635,7 @@ export default function CourseProposals() {
                     {/* ── الرفضُ بسبب ── */}
                     {rejectFor === r.id ? (
                       <Inset className="mt-3 grid gap-3">
-                        <StaffField label="لماذا لا تقبل؟" hint="يقرؤه المدرّب في بوّابته — وبلا سبب يعيدها كما هي">
+                        <StaffField label="لماذا لا تقبل؟" hint="يقرؤه المدرّب في بوّابته — وبلا سبب قد يعيدها كما هي">
                           <input
                             className={staffControlCls} value={rejectNote} maxLength={2000}
                             placeholder="مثلا: مغطّاة في C-AUT-103، ولا تضيف مهارة جديدة"

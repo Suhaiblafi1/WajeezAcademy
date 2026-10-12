@@ -159,7 +159,7 @@ describe('⑤ ومن يصير مدرّبا بعد الإرسال', () => {
   })
 
   it('⚠️ وفي النموذج خياران وتحت كلّ أثره — والمرسل يتبع الخيار', () => {
-    expect(ADMIN).toMatch(/onChange=\{\(\) => setLate\(true\)\} \/>\s*المدرّبون الآن، ومن يصير مدرّبا حتّى[\s\S]*?<p[^>]*>\s*من ينضمّ بعد الإرسال تظهر له النافذة/)
+    expect(ADMIN).toMatch(/onChange=\{\(\) => setLate\(true\)\} \/>\s*المدرّبون الآن، ومن يصير مدرّبا حتّى[\s\S]*?<p[^>]*>\s*من ينضمّ بعد الإرسال يراه عند أوّل فتح لبوّابته/)
     expect(ADMIN).toMatch(/onChange=\{\(\) => setLate\(false\)\} \/>\s*المدرّبون الآن وحدهم\s*<\/label>\s*<p[^>]*>من ينضمّ بعد الإرسال لا يصله\.<\/p>/)
     expect(fnBody(ADMIN, 'send')).toMatch(/lateJoinersUntil: late \? until : null/)
     expect(ADMIN, 'لا يقال في السؤال من يصله بعده').toMatch(/late \? `ومن يصير مدرّبا حتّى \$\{dayLabelAr\(until\)\} يصله حين يفتح بوّابته\.` : "ومن ينضمّ بعد الإرسال لا يصله\."/)

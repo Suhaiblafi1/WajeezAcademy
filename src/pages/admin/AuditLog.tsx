@@ -71,9 +71,9 @@ export default function AuditLog() {
   return (
     <AdminLayout title="سجلّ الأثر — من فعل ماذا ومتى">
       <p className="mb-4 max-w-2xl text-read leading-6 text-muted-foreground">
-        كلّ فعل يقع على المنصّة يكتب هنا بصاحبه ووقته: الأدوار والإيقاف والحذف، وفتح الشعب
+        كلّ فعل على المنصّة يسجّل هنا مع صاحبه ووقته: الأدوار والإيقاف والحذف، وفتح الشعب
         والتسجيل والترقية من الانتظار، والفواتير والاستردادات، واعتماد المتون وقرارات المدربين.
-        السجلّ يقرأ ولا يكتب من هنا.
+        السجلّ للقراءة فقط.
       </p>
 
       <div className="mb-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
@@ -136,7 +136,7 @@ export default function AuditLog() {
       ) : !data || data.rows.length === 0 ? (
         <Panel className="grid place-items-center py-20 text-center">
           <Search className="h-12 w-12 text-muted-foreground/50" />
-          <p className="mt-4 text-sm text-muted-foreground">لا وقائع تطابق هذا الفرز — وسّع المدى أو امسحه.</p>
+          <p className="mt-4 text-sm text-muted-foreground">لا نتائج لهذا الفرز — وسّع المدى أو امسحه.</p>
         </Panel>
       ) : (
         <div className="space-y-2">
