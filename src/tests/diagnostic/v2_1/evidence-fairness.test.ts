@@ -389,11 +389,12 @@ describe('Regression المرحلة 4 — عدالة الدليل المهاري
 
   /* ٣٥←٤١ (2026-09-16): ستّةُ مساراتٍ جديدةٍ دخلت الفضاء النشط.
      و٤١←٤٢ (2026-09-22): PW-FAM-001 — مسارُ الأسرة والتربية.
-     و٤٢←٧٣ (2026-10-07): ٣١ دورةً قائمةً بنفسها بقرار صاحب المنصّة. */
-  it('١٠) لا فائز خارج الفضاء النشط الـ73 في أي رحلة (SMART-OPS موسوم needs_revision — إغلاق منطق V2.1)', () => {
+     و٤٢←٧٣ (2026-10-07): ٣١ دورةً قائمةً بنفسها بقرار صاحب المنصّة.
+     و٧٣←٧٥ (2026-10-12): النقلُ والتوزيع (C-SCM-107) وبناءُ العادات (C-WEL-102). */
+  it('١٠) لا فائز خارج الفضاء النشط الـ75 في أي رحلة (SMART-OPS موسوم needs_revision — إغلاق منطق V2.1)', () => {
     const universe = recommendationUniverse()
     const activeIds = new Set(universe.active.map((e) => e.entity_id))
-    expect(activeIds.size).toBe(73)
+    expect(activeIds.size).toBe(75)
     for (const [name, j] of PROPERTY_JOURNEYS) {
       const { rec } = runJourneyTraced(name, j)
       const winner = rec.composite?.templateId ?? rec.primaryPathway?.pathwayId ?? null

@@ -821,6 +821,15 @@
       "academic_status": "future_catalog_skill",
       "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
+    "carrier_management": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+    },
     "cashflow_forecasting": {
       "layers": [
         "pathway_requirement",
@@ -1998,6 +2007,15 @@
       "academic_status": "future_catalog_skill",
       "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
+    "distribution_planning": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+    },
     "document_design": {
       "layers": [
         "pathway_requirement",
@@ -2646,6 +2664,15 @@
       "academic_status": "future_catalog_skill",
       "decision_role_ar": "مهارة قاموسية مستقبلية موقوفة بقرار أكاديمي (2026-08-19): لا قياس ولا تغطية دوراتية ولا متطلب مسار — تصبح مخرج تعلم فقط حين ترتبط بمنتج فعلي وبتفعيل أكاديمي صريح."
     },
+    "habit_design": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+    },
     "healthy_boundaries": {
       "layers": [
         "learning_outcome"
@@ -2754,6 +2781,15 @@
       "pathway_ids": [
         "PW-CYB-001"
       ]
+    },
+    "implementation_intentions": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
     },
     "incident_response": {
       "layers": [
@@ -4491,6 +4527,15 @@
       "academic_status": "approved_active",
       "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
     },
+    "relapse_planning": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
+    },
     "remote_work_tools": {
       "layers": [
         "learning_outcome"
@@ -4636,6 +4681,15 @@
       "pathway_ids": [
         "PW-OPS-001"
       ]
+    },
+    "route_load_planning": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
     },
     "rubric_design": {
       "layers": [
@@ -4784,6 +4838,15 @@
         "PW-EMP-005",
         "PW-STU-003"
       ]
+    },
+    "self_monitoring": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
     },
     "sensemaking": {
       "layers": [
@@ -5321,6 +5384,15 @@
         "PW-LND-001"
       ],
       "measured_by": "QB-M4-032"
+    },
+    "transport_mode_costing": {
+      "layers": [
+        "learning_outcome"
+      ],
+      "active": true,
+      "diagnostic_active": true,
+      "academic_status": "approved_active",
+      "decision_role_ar": "مخرج تعلم مستقبلي — خارج نطاق التشخيص الحالي تمامًا."
     },
     "type_hierarchy_spacing": {
       "layers": [
