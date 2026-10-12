@@ -20,7 +20,7 @@
 
 import type { Prisma, PrismaClient } from '@prisma/client'
 import { AuthError } from '../auth.service'
-import { priceCart } from '../../../src/application/commerce/cart-pricing'
+import { priceCart, type PlanCarry } from '../../../src/application/commerce/cart-pricing'
 import { LEDGER_CURRENCY } from '../../../src/application/commerce/presentment'
 import { getEmailConfig } from '../integrations.service'
 import { assertCouponUsable, cartTitleOf, num, type CartCohort } from './cart-types'
@@ -263,6 +263,100 @@ export class CartService {
     return giftId
   }
 
+  /* ═══ ما اشتُري من الخطّة من قبل — لخصم إكمالها (١٢ أكتوبر ٢٠٢٦) ═══
+
+     قرارُ صاحب المنصّة («أ٢»): من اشترى خطّتَه على دفعات — لأنّ بعضَ دوراتها لم تكن
+     لها شعبةٌ يومَ اشترى — يُخصم من دفعته التالية ما فاته، حتّى تبلغ الخطّةُ سعرَها
+     لو اشتُريت معا. والحسابُ في `priceCart`، وهذا يجمع له ما اشتُري.
+
+     والمعتبَرُ دورةٌ من الخطّة خارجَ هذه السلّة: **مقعدُه فيها قائم** (مسجَّلٌ أو
+     حُجز بطلبٍ مدفوع) **ولها بندٌ في طلبٍ مدفوع**. فما استُردّ أو انسحب منه لا
+     يُحتسب — وإلّا صار الاستردادُ بعد الخصم بابا. والمقعدُ بالدورة لا بالشعبة: من
+     انتقل بين شعبتين بقي مشتريَ الدورة نفسِها.
+
+     وما خُصم عن الطلب السابق من `bundleDiscount`، ولطلبٍ قبل هذا العمود: خصمُه
+     كلُّه إن لم يكن فيه كوبون، وإلّا يُعاد حسابُ باقته من بنوده. */
+  async planCarryFor(userId: string, cohorts: CartCohort[], currency: string): Promise<PlanCarry | null> {
+    const plan = await this.prisma.learnerPlan.findFirst({
+      where: { userId, status: 'active' },
+      orderBy: { updatedAt: 'desc' },
+      include: { items: { select: { courseId: true } } },
+    })
+    if (!plan) return null
+    const planCourseIds = plan.items.map((i) => i.courseId).filter((id) => id !== plan.giftCourseId)
+    const inCart = new Set(cohorts.map((c) => c.courseId))
+    if (!planCourseIds.some((id) => inCart.has(id))) return null
+
+    const none: PlanCarry = { planCourseIds, boughtCount: 0, boughtList: 0, boughtReceived: 0 }
+    const earlier = planCourseIds.filter((id) => !inCart.has(id))
+    if (earlier.length === 0) return none
+
+    const courseOf = new Map((await this.prisma.cohort.findMany({
+      where: { courseId: { in: earlier } }, select: { id: true, courseId: true },
+    })).map((c) => [c.id, c.courseId]))
+    const [enrolled, held, items] = await Promise.all([
+      this.prisma.enrollment.findMany({
+        where: { userId, status: { in: ['enrolled', 'completed'] }, cohortId: { in: [...courseOf.keys()] } },
+        select: { cohortId: true },
+      }),
+      this.prisma.enrollmentRequest.findMany({
+        where: { userId, status: 'seat_held', cohortId: { in: [...courseOf.keys()] }, orderId: { not: null } },
+        select: { cohortId: true, orderId: true },
+      }),
+      this.prisma.orderItem.findMany({
+        where: {
+          kind: 'cohort', refId: { in: [...courseOf.keys()] }, unitPrice: { gt: 0 },
+          order: { userId, status: 'paid', currency },
+        },
+        include: {
+          order: {
+            select: {
+              subtotal: true, discount: true, couponId: true, bundleDiscount: true, currency: true,
+              items: { select: { refId: true, titleAr: true, unitPrice: true } },
+            },
+          },
+        },
+      }),
+    ])
+    /* والمحجوزُ بطلبٍ **مدفوع** وحدَه — كما في الهديّة: طلبٌ لم يُدفع لا يشتري شيئا */
+    const paidOrders = new Set((await this.prisma.order.findMany({
+      where: { id: { in: held.map((h) => h.orderId!) }, status: 'paid' }, select: { id: true },
+    })).map((o) => o.id))
+    const live = new Set([
+      ...enrolled.map((e) => courseOf.get(e.cohortId)),
+      ...held.filter((h) => paidOrders.has(h.orderId!)).map((h) => courseOf.get(h.cohortId)),
+    ])
+
+    let boughtCount = 0, boughtList = 0, boughtReceived = 0
+    const counted = new Set<string>()
+    for (const item of items) {
+      const courseId = courseOf.get(item.refId)
+      if (!courseId || !live.has(courseId) || counted.has(courseId)) continue
+      counted.add(courseId)
+      const unit = num(item.unitPrice)
+      const subtotal = num(item.order.subtotal)
+      boughtCount++
+      boughtList += unit
+      boughtReceived += subtotal > 0 ? (this.orderBundleDiscount(item.order) * unit) / subtotal : 0
+    }
+    return { planCourseIds, boughtCount, boughtList, boughtReceived }
+  }
+
+  /** ما خُصم عن طلبٍ بحكم الباقة وحدَها — من عموده، أو مستنتَجا لطلبٍ قبله */
+  private orderBundleDiscount(order: {
+    discount: Prisma.Decimal; couponId: string | null; bundleDiscount: Prisma.Decimal | null; currency: string
+    items: { refId: string; titleAr: string; unitPrice: Prisma.Decimal }[]
+  }): number {
+    if (order.bundleDiscount !== null) return num(order.bundleDiscount)
+    if (!order.couponId) return num(order.discount)
+    const again = priceCart(
+      order.items.filter((i) => num(i.unitPrice) > 0)
+        .map((i) => ({ cohortId: i.refId, courseId: i.refId, titleAr: i.titleAr, listPrice: num(i.unitPrice) })),
+      null, null, order.currency,
+    )
+    return again.bundleDiscount + again.capDiscount
+  }
+
   async couponFor(userId: string, couponCode?: string) {
     if (!couponCode) return null
     const coupon = await this.prisma.coupon.findUnique({
@@ -332,6 +426,7 @@ export class CartService {
           : { percentOff: coupon.percentOff, amountOff: coupon.amountOff === null ? null : num(coupon.amountOff) }
         : null,
       cartCurrency,
+      await this.planCarryFor(userId, cohorts, cartCurrency),
     )
     /* كودٌ لا يخصّ شيئا في السلّة يُقال لصاحبه — لا يُقبَل صامتا بخصمِ صفر،
        فيظنّ أنّ الكودَ عطِب أو أنّه خُصم له ما لم يُخصم. ولا يُسمّى المدرّب:

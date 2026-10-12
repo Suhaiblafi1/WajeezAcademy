@@ -28,10 +28,38 @@
    فصار للكوبون **نطاقٌ** اختياريّ (`cohortIds`): بلا نطاقٍ يعمّ كما كان، وبه
    يقع على حصّة تلك الشعب ممّا بقي بعد الباقة والسقف — بنسبة سعرها من المجموع.
 
-   الحارس: server/tests/commerce/cart-pricing.test.ts
-   ونطاقُ الكود: src/tests/commerce/scoped-coupon.test.ts */
+   ═══ وخصمُ الخطّة كاملةً محفوظٌ لمن اشتراها على دفعات (١٢ أكتوبر ٢٠٢٦) ═══
 
-import { buildDiscountPct, bundleCapDiscount, money, MAX_BUNDLE_TOTAL_CURRENCY } from './discount-policy'
+   مشتري التشخيص تُقترح له خطّةٌ من أربع دورات، وبعضُها بلا شعبةٍ بعد. فيشتري
+   ما فُتح اليوم بسلّم دورتين (٨٪)، ويشتري الباقيتين حين تُفتحان بسلّم دورتين
+   أيضا — ولو اشتراها كلَّها معا لكان خصمُه ٢٨٪. فيدفع ثمنَ غيابِ شعبٍ لم نفتحها.
+
+   وقرارُ صاحب المنصّة («أ٢»): لا يُعطى خصمُ الخطّة كاملةً اليوم على ما يشتريه
+   وحدَه — وإلّا صار بابا: خطّةٌ من خمسٍ بلا شعبٍ ودورةٌ واحدةٌ بثلاثين بالمئة. بل
+   يشتري اليومَ بسلّمه، فإذا اشترى من الخطّة نفسِها لاحقا **خُصم من فاتورته ما
+   فاته** حتّى تبلغ الخطّةُ كلُّها سعرَها لو اشتُريت معا (`bundlePayable` على
+   مجموعها وعددها، بالسقف نفسِه). فالخصمُ الكاملُ لمن اشترى الخطّةَ كاملةً فقط.
+
+   وهو بندٌ رابعٌ مستقلّ (`planCredit`) بعد الباقة والسقف وقبل الكوبون: الكوبونُ
+   طبقةٌ فوق سعر الباقة، فلا يُقاصَّ به ما فات من خصمها.
+
+   الحارس: server/tests/commerce/cart-pricing.test.ts
+   ونطاقُ الكود: src/tests/commerce/scoped-coupon.test.ts
+   وخصمُ إكمال الخطّة: src/tests/commerce/plan-carry.test.ts */
+
+import { buildDiscountPct, bundleCapDiscount, bundlePayable, money, MAX_BUNDLE_TOTAL_CURRENCY } from './discount-policy'
+
+/** ما اشتُري من الخطّة في طلباتٍ سابقة — يحسبه الخادمُ من الطلبات المدفوعة */
+export interface PlanCarry {
+  /** دوراتُ الخطّة المدفوعة (غيرُ الهديّة) — ما وقع منها في هذه السلّة يُكمل الخطّة */
+  planCourseIds: readonly string[]
+  /** كم دورةً من الخطّة اشتُريت من قبل (خارجَ هذه السلّة) */
+  boughtCount: number
+  /** مجموعُ أسعارها كما فوترت */
+  boughtList: number
+  /** ما خُصم عنها بحكم الباقة وسقفِها وخصمِ الإكمال — بلا الكوبون */
+  boughtReceived: number
+}
 
 /** بندٌ في السلّة قبل الحساب — سعرُ القائمة كما في الشعبة */
 export interface CartLine {
@@ -72,6 +100,8 @@ export interface CartPricing {
   bundleDiscount: number
   /** ما اقتُطع بحكم سقف مبلغ السلّة — صفرٌ في السواد الأعظم من السلال */
   capDiscount: number
+  /** خصمُ إكمال الخطّة: ما فاته من خصمها في دفعاتٍ سابقة — صفرٌ في أوّل دفعة */
+  planCredit: number
   couponDiscount: number
   /** عددُ الدورات المدفوعة التي وقع عليها الكوبون — صفرٌ يعني أنّ الكودَ لا
       يخصّ شيئا في هذه السلّة، فيُقال ذلك للمشتري لا يُقبَل صامتا */
@@ -87,6 +117,8 @@ export function priceCart(
   /* عملةُ السلّة — يمنعها الخادمُ أن تختلط، فهي واحدةٌ للسلّة كلِّها.
      ويلزم هنا لأنّ السقفَ مبلغٌ لا نسبة: «٦٠٠» بلا عملةٍ رقمٌ بلا معنى. */
   currency: string = MAX_BUNDLE_TOTAL_CURRENCY,
+  /* ما اشتُري من الخطّة من قبل — وبلا قيمةٍ لا خصمَ إكمال، كما كانت كلُّ سلّة */
+  carry: PlanCarry | null = null,
 ): CartPricing {
   /* الهديّةُ بندٌ بصفر لا بندٌ محذوف: تبقى في الفاتورة ليقرأ المشتري أنّه
      أخذها، ويقرأ الخادمُ أنّه استحقّها. وحذفُها من البنود يُخفي الوعدَ عن
@@ -111,7 +143,25 @@ export function priceCart(
   /* سقفُ المبلغ بندٌ ثانٍ مستقلّ لا نسبةٌ ثالثة: «خصم الباقة ٣٠٪» و«حدّ سعر
      المسار» سببان مختلفان يُقرآن في الفاتورة كلٌّ باسمه. */
   const capDiscount = money(bundleCapDiscount(money(subtotal - bundleDiscount), currency))
-  const afterBundle = money(subtotal - bundleDiscount - capDiscount)
+
+  /* خصمُ إكمال الخطّة: ما كانت ستبلغه الخطّةُ (ما اشتُري منها مع ما في السلّة)
+     لو اشتُريت معا، ناقصا ما خُصم عن السابق وما يُخصم عن بنودها هنا بالسلّم.
+     ولا يقلّ عن صفر — فلا تُحمَّل سلّةٌ ما زاد عن خصمٍ قديم. */
+  let planCredit = 0
+  if (carry && carry.boughtCount > 0 && subtotal > 0) {
+    const planSet = new Set(carry.planCourseIds)
+    const planPaid = paid.filter((l) => planSet.has(l.courseId))
+    if (planPaid.length > 0) {
+      const planSub = money(planPaid.reduce((s, l) => s + l.unitPrice, 0))
+      const whole = money(carry.boughtList + planSub)
+      const ideal = money(whole - bundlePayable(whole, carry.boughtCount + planPaid.length, currency))
+      /* ما يناله السلّمُ والسقفُ هنا على بنود الخطّة — بحصّتها من السلّة */
+      const normalHere = ((bundleDiscount + capDiscount) * planSub) / subtotal
+      planCredit = money(Math.max(0, ideal - carry.boughtReceived - normalHere))
+      planCredit = Math.min(planCredit, money(subtotal - bundleDiscount - capDiscount))
+    }
+  }
+  const afterBundle = money(subtotal - bundleDiscount - capDiscount - planCredit)
 
   let couponDiscount = 0
   const couponed = paid.filter((l) => l.couponApplies)
@@ -139,7 +189,7 @@ export function priceCart(
     if (couponDiscount > money(base)) couponDiscount = money(base)
   }
 
-  const discount = money(bundleDiscount + capDiscount + couponDiscount)
+  const discount = money(bundleDiscount + capDiscount + planCredit + couponDiscount)
   return {
     lines: priced,
     paidCount: paid.length,
@@ -148,6 +198,7 @@ export function priceCart(
     bundlePct,
     bundleDiscount,
     capDiscount,
+    planCredit,
     couponDiscount,
     couponLines: couponed.length,
     discount,
