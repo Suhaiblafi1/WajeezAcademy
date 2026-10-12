@@ -37,7 +37,7 @@ import { INTERVIEW_INVITATION, invitationAskAr } from '../../src/application/tra
 import type { NoShowFollowup } from '../../src/application/trainer/no-show-followup'
 import { INTEREST_CHOICES } from '../../src/application/trainer/deferral'
 import { fmtDateWith } from '../../src/application/text/format-ar'
-import { MAX_EXTENSIONS } from '../../src/application/trainer/conditional-offer'
+import { MAX_EXTENSIONS, grantDaysAr } from '../../src/application/trainer/conditional-offer'
 import { ACADEMY_ZONE } from '../../src/application/trainer/cohort-period'
 import { FINAL_REMINDER_DAYS, daysWindowAr } from '../../src/application/trainer/notice-periods'
 import { TRAINER_GUIDE_LINK_AR } from '../../src/application/trainer/trainer-guide'
@@ -958,10 +958,10 @@ export interface ConditionLapsedMailInput {
    في وجهه، وهو غيرُ ما وقّع عليه. */
 export function conditionLapsedMail(input: ConditionLapsedMailInput): DecisionMail {
   return {
-    subject: `انقضت مهلةُ موادّك — ولك مخرجان (${input.reference})`,
+    subject: `انقضت مهلةُ موادّك — وبابُك لم يُغلق (${input.reference})`,
     doc: {
       greetingName: input.fullName,
-      preheader: 'ولا إخلالَ من أحد: لك التأجيلُ إلى الموسم القادم، أو حذفُ حسابك.',
+      preheader: 'ولا إخلالَ من أحد: لك أن ترسل شعبَك ولو متأخّرا، أو تؤجّل إلى الموسم القادم، أو تحذف حسابك.',
       heading: 'لم تستوفِ الشروطَ بعد',
       blocks: [
         {
@@ -973,10 +973,15 @@ export function conditionLapsedMail(input: ConditionLapsedMailInput): DecisionMa
              فيُقرأ الرقمُ من المتن الذي وقّعه كلٌّ منهم. */
           text: `انقضت مهلةُ موادّك في ${input.deadlineOnAr} ولم تكتمل. ولا يُعدُّ هذا إخلالا من أيٍّ من الطرفين — وهو منصوصٌ في ${input.noFaultClause ? `البند ${input.noFaultClause} من الاتفاقيّة` : 'الاتفاقيّة'}: الشرطُ لم يتحقّق، ولا مطالبةَ لأحدٍ على أحد.`,
         },
-        { kind: 'h', text: 'ولك مخرجان، والاختيارُ اختيارُك' },
+        { kind: 'h', text: 'ولك ثلاثةُ أبواب، والاختيارُ اختيارُك' },
         {
           kind: 'list',
+          /* ═══ والبابُ الأوّلُ كان مفتوحا ولا يُقال (١٢ أكتوبر ٢٠٢٦) ═══
+             الخادمُ يقبل الإعلانَ بعد المهلة (`declareMaterialsComplete`)، وإرسالُ
+             آخرِ شعبةٍ يُعلنه بنفسه — والرسالةُ لا تعرض إلّا التأجيلَ والحذف. فمن
+             أتمّ شعبَه بعد يومٍ ظنّ أنّ بابَه أُغلق. */
           items: [
+            'أن تُكمل شعبَك في «شعبي» وترسلها ولو بعد المهلة — فنقرؤها ونردّ عليك. وإن احتجتَ أيّاما فاكتب لنا بردّك على هذه الرسالة.',
             'التأجيلُ إلى الموسم القادم — يُسمّى لك موعدُ جلسةِ تهيئةٍ جديدة، ومنها تبدأ مهلتُك من جديد. وما رفعتَه يبقى كما هو.',
             'أو حذفُ حسابك وبياناتك — فتُمحى، ولا يبقى لنا منها شيء.',
           ],
@@ -987,7 +992,44 @@ export function conditionLapsedMail(input: ConditionLapsedMailInput): DecisionMa
         },
         { kind: 'cta', label: 'افتح بوّابتَك', href: input.portalUrl },
         { kind: 'facts', rows: [{ label: 'رقم الطلب', value: input.reference }] },
-        { kind: 'note', text: 'وردُّك على هذه الرسالة يصل فريقَنا — اكتب لنا أيَّ البابَين تريد.' },
+        { kind: 'note', text: 'وردُّك على هذه الرسالة يصل فريقَنا — اكتب لنا أيَّ الأبواب تريد.' },
+      ],
+    },
+  }
+}
+
+export interface ConditionDaysGrantedMailInput {
+  fullName: string
+  reference: string
+  days: number
+  deadlineOnAr: string
+  portalUrl: string
+}
+
+/* ═══ وأيّامٌ منحتها الإدارة — الموعدُ الجديدُ هو الخبر (١٢ أكتوبر ٢٠٢٦) ═══
+
+   زرُّ «امنحه أيّاما» في شاشة العقود (`grantConditionDays`). ولا يصله السببُ الذي
+   كتبه المعتمِد: ذاك للسجلّ. ويصله ما يعمل به — كم يوما، وإلى متى، وأين يُكمل. */
+export function conditionDaysGrantedMail(input: ConditionDaysGrantedMailInput): DecisionMail {
+  const daysAr = grantDaysAr(input.days)
+  return {
+    subject: `مُنحتَ ${daysAr} لإكمال موادّك — أكاديمية وجيز (${input.reference})`,
+    doc: {
+      greetingName: input.fullName,
+      preheader: `مهلتُك الجديدة تنتهي ${input.deadlineOnAr}.`,
+      heading: `مهلتُك الجديدة: ${input.deadlineOnAr}`,
+      blocks: [
+        {
+          kind: 'p',
+          text: `منحتك الأكاديميّةُ ${daysAr} لإكمال شعب دوراتك، فتنتهي مهلتُك الآن ${input.deadlineOnAr}. وما عبّأتَه في «شعبي» محفوظٌ كما هو.`,
+        },
+        { kind: 'cta', label: 'افتح «شعبي» وأكمل شعبَك', href: input.portalUrl },
+        {
+          kind: 'callout',
+          text: 'وحين ترسل آخرَ شعبةٍ تتوقّف المهلةُ عن الجريان حتّى يصلك جوابُنا — فوقتُ مراجعتنا لا يُحسب عليك.',
+        },
+        { kind: 'facts', rows: [{ label: 'رقم الطلب', value: input.reference }] },
+        { kind: 'note', text: 'وردُّك على هذه الرسالة يصل فريقَنا — فاطلب منه ما تحتاجه.' },
       ],
     },
   }

@@ -75,7 +75,7 @@ const HIGH: readonly string[] = [
   'trainer.contract.send', 'trainer.contract.resend', 'trainer.contract.final_reminder_sent',
   'trainer.contract.sign_by_trainer', 'trainer.contract.decline',
   'trainer.contract.materials_declared', 'trainer.contract.materials_returned',
-  'trainer.contract.condition_extended',
+  'trainer.contract.condition_extended', 'trainer.contract.condition_days_granted',
   /* وشعبةُ الإعداد (٢ أكتوبر ٢٠٢٦): الاعتذارُ يُخرج دورةً من طريقه ويُخبر من
      اختارها له، والتفعيلُ التلقائيُّ يجعله نشطا ويوقّع عقدَه من جهتنا. */
   'trainer.prep.decline', 'trainer.prep.auto_activate',
