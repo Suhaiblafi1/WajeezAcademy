@@ -47,6 +47,16 @@ export interface ScheduleEdit {
   clock: string
   moves: ScheduleMove[]
   tasks: ScheduleTaskMove[]
+  /** وحدودُ الخطّة التي يحتاجها الجدول (١٣ أكتوبر ٢٠٢٦): آخرُ يومٍ في مدّة الشعبة، ومواعيدُ المحاور التي ينقلها —
+      تُكتب في الخطّة قبل أن تُنقل اللقاءات، وتعود معها إن سقط النقل. والعلّةُ في `schedulePlanContent` */
+  plan?: SchedulePlan
+}
+
+export interface SchedulePlan {
+  /** آخرُ يومٍ في مدّة الشعبة — `YYYY-MM-DD` */
+  endsOn?: string
+  /** موعدُ كلّ محورٍ ينقله الجدول — يُعرف بمحاوره كما في `content.slots` */
+  slots?: { moduleIds: string[]; startsOn: string; endsOn: string }[]
 }
 
 export type ScheduleProposal = { ok: true; edit: ScheduleEdit; reasonAr: string } | { ok: false; reasonAr: string }

@@ -47,18 +47,18 @@ const h = (iso: string, n: number) => new Date(Date.parse(iso) + n * 3_600_000)
 type Item = { id: string; kind: string; status: string; stale: boolean; view: { titleAr: string; rows: { labelAr: string; beforeAr: string | null; afterAr: string | null }[] } }
 
 /** شعبةٌ بخطّةٍ بانتظار القرار، ولقاءاتٌ على أربعة مواعيدَ مختلفة، ومهمّةٌ لكلّ محورٍ بعد لقائه بأربعة أيّام */
-async function messyCohort(tag: string, who: string) {
+async function messyCohort(tag: string, who: string, end = '2027-01-30') {
   const profileId = profiles[who]!
   const course = await prisma.course.findFirstOrThrow({ select: { id: true } })
   const cohort = await prisma.cohort.create({
     data: {
       courseId: course.id, title: `شعبةُ الجدول ${tag} ${STAMP}`, status: 'draft', capacity: 20,
-      scheduleWindowStart: new Date('2026-12-05T21:00:00.000Z'), scheduleWindowEnd: new Date('2027-01-30T20:59:59.999Z'),
+      scheduleWindowStart: new Date('2026-12-05T21:00:00.000Z'), scheduleWindowEnd: new Date(`${end}T20:59:59.999Z`),
     },
   })
   await prisma.cohortTrainer.create({ data: { cohortId: cohort.id, profileId, role: 'lead' } })
   const plan = await prisma.cohortDeliveryPlan.create({
-    data: { cohortId: cohort.id, trainerId: profileId, status: 'submitted', submittedAt: new Date(), content: content as never },
+    data: { cohortId: cohort.id, trainerId: profileId, status: 'submitted', submittedAt: new Date(), content: { ...content, endsOn: end } as never },
   })
   /* الأحد ١٩:٠٠ · الاثنين ١٩:٠٠ · الأربعاء ١٩:٠٠ · الأحد ١٨:٠٠ — بتوقيت عمّان (+٣) */
   const starts = ['2026-12-06T16:00:00.000Z', '2026-12-14T16:00:00.000Z', '2026-12-23T16:00:00.000Z', '2026-12-27T15:00:00.000Z']
@@ -86,7 +86,7 @@ beforeAll(async () => {
   await auth.setRoles(admin.userId, ['academic_manager'])
   cookies.admin = await login(`sc-admin-${STAMP}@test.local`)
   /* مدرّبٌ لكلّ شعبة — فلا تتعارض لقاءاتُ الشعب في الاختبار نفسِه */
-  for (const [i, who] of ['a', 'b', 'c'].entries()) {
+  for (const [i, who] of ['a', 'b', 'c', 'd', 'e', 'f'].entries()) {
     const email = `sc-${who}-${STAMP}@test.local`
     const u = await auth.register(email, PASS, `مدرّب الجدول ${who}`)
     await auth.setRoles(u.userId, ['trainer'])
@@ -192,6 +192,67 @@ describe('الجدولُ الثابتُ بسلسلته', () => {
     const after = await prisma.cohortSession.findMany({ where: { cohortId: d.cohortId }, orderBy: { startsAt: 'asc' } })
     expect(after.map((s) => s.startsAt.toISOString()), 'بقي نصفُ جدول').toEqual(d.sessions.map((s) => s.startsAt.toISOString()))
     expect((await prisma.cohortAssessment.findUniqueOrThrow({ where: { id: d.tasks[3]!.id } })).dueAt!.toISOString()).toBe(d.tasks[3]!.dueAt!.toISOString())
+    expect((await prisma.planEditSuggestion.findUniqueOrThrow({ where: { id } })).status).toBe('pending')
+  })
+})
+
+describe('⑤ والجدولُ يحمل حدودَ الخطّة التي يحتاجها — آخرَ يومٍ في المدّة ومواعيدَ المحاور (١٣ أكتوبر ٢٠٢٦)', () => {
+  /* «سبتٌ وأربعاء فقط… وأرجو تعديل المواعيد من طرفكم» (مدرّب). وجدولُه يتجاوز آخرَ يومٍ في مدّة شعبته ومواعيدَ محاوره،
+     ولا بطاقةَ كانت تحملهما. فمدّةٌ تنتهي ٨ يناير، ولقاءُ المحور الرابع يُنقل إلى ١٧ يناير */
+  const move = (d: Awaited<ReturnType<typeof messyCohort>>) => ({
+    moves: [{ sessionId: d.sessions[3]!.id, startsAt: '2027-01-17T16:00:00.000Z', endsAt: '2027-01-17T18:00:00.000Z' }],
+    tasks: [{ assessmentId: d.tasks[3]!.id, dueAt: '2027-01-21T16:00:00.000Z' }],
+  })
+  const plan = { endsOn: '2027-01-24', slots: [{ moduleIds: ['M4'], startsOn: '2027-01-17', endsOn: '2027-01-24' }] }
+  /** يُرفع البندُ ويُعتمد وتُردّ الخطّةُ إلى مدرّبها — ثمّ يقبله */
+  const acceptOne = async (d: Awaited<ReturnType<typeof messyCohort>>, who: string, item: Record<string, unknown>) => {
+    const up = await call('POST', `/api/admin/cohort-plans/${d.planId}/edits`, 'admin', { format: 'wajeez.plan-edits/1', planId: d.planId, items: [item] })
+    expect(up.statusCode, up.body).toBe(201)
+    const id = (up.json() as Item[])[0]!.id
+    expect((await call('POST', `/api/admin/plan-edits/${id}/approve`, 'admin', {})).statusCode).toBe(200)
+    expect((await call('POST', `/api/admin/cohort-plans/${d.planId}/decide`, 'admin', { approve: false })).statusCode).toBe(200)
+    return { id, r: await call('POST', `/api/trainer/plan-edits/${id}/accept`, who, {}) }
+  }
+  const latestContent = async (cohortId: string) =>
+    (await prisma.cohortDeliveryPlan.findFirstOrThrow({ where: { cohortId, trainerId: { not: null } }, orderBy: { createdAt: 'desc' } })).content as typeof content
+
+  it('⚠️ بلا حدود الخطّة لا يقع: اللقاءُ خارج مدّة الشعبة — ولا يُنقل شيء', async () => {
+    const d = await messyCohort('د', 'd', '2027-01-08')
+    const { r } = await acceptOne(d, 'd', { kind: 'schedule', reasonAr: 'بلا حدود', weekday: 0, clock: '19:00', ...move(d) })
+    expect(r.statusCode).toBeGreaterThanOrEqual(400)
+    expect(r.json().error.message_ar).toMatch(/خارج مدّة الشعبة/)
+    expect((await prisma.cohortSession.findUniqueOrThrow({ where: { id: d.sessions[3]!.id } })).startsAt.toISOString()).toBe(d.sessions[3]!.startsAt.toISOString())
+  })
+
+  it('⚠️ وبها يقع كلُّه: المدّةُ تمتدّ، وموعدُ المحور يُنقل، ثمّ اللقاءُ وواجبُه', async () => {
+    const d = await messyCohort('هـ', 'e', '2027-01-08')
+    const { id, r } = await acceptOne(d, 'e', { kind: 'schedule', reasonAr: 'بحدودها', weekday: 0, clock: '19:00', ...move(d), plan })
+    expect(r.statusCode, r.body).toBe(200)
+    const c = await latestContent(d.cohortId)
+    expect(c.endsOn).toBe('2027-01-24')
+    expect(c.slots.find((s) => s.moduleIds[0] === 'M4')).toMatchObject({ startsOn: '2027-01-17', endsOn: '2027-01-24' })
+    expect(c.slots.find((s) => s.moduleIds[0] === 'M1')).toMatchObject({ startsOn: WEEKS[0]![0], endsOn: WEEKS[0]![1] })
+    expect((await prisma.cohort.findUniqueOrThrow({ where: { id: d.cohortId } })).scheduleWindowEnd!.toISOString() >= '2027-01-24').toBe(true)
+    expect((await prisma.cohortSession.findUniqueOrThrow({ where: { id: d.sessions[3]!.id } })).startsAt.toISOString()).toBe('2027-01-17T16:00:00.000Z')
+    expect((await prisma.cohortAssessment.findUniqueOrThrow({ where: { id: d.tasks[3]!.id } })).dueAt!.toISOString()).toBe('2027-01-21T16:00:00.000Z')
+    expect((await prisma.planEditSuggestion.findUniqueOrThrow({ where: { id } })).status).toBe('accepted')
+  })
+
+  it('⚠️ أو لا شيء: يسقط نقلٌ بعد أن كُتبت الحدود — فتعود الخطّةُ ومدّتُها كما كانت', async () => {
+    const d = await messyCohort('و', 'f', '2027-01-08')
+    const m = move(d)
+    /* الثاني في مارس — خارجَ المدّة الجديدة نفسِها */
+    m.moves.push({ sessionId: d.sessions[2]!.id, startsAt: '2027-03-07T16:00:00.000Z', endsAt: '2027-03-07T18:00:00.000Z' })
+    m.tasks.push({ assessmentId: d.tasks[2]!.id, dueAt: '2027-03-11T16:00:00.000Z' })
+    const { id, r } = await acceptOne(d, 'f', { kind: 'schedule', reasonAr: 'يسقط', weekday: 0, clock: '19:00', ...m, plan })
+    expect(r.statusCode).toBeGreaterThanOrEqual(400)
+    expect(r.json().error.message_ar).toMatch(/^لم يُنقل شيءٌ من الجدول — /)
+    const c = await latestContent(d.cohortId)
+    expect(c.endsOn, 'بقيت المدّةُ ممدودة').toBe('2027-01-08')
+    expect(c.slots.find((s) => s.moduleIds[0] === 'M4')).toMatchObject({ startsOn: WEEKS[3]![0], endsOn: WEEKS[3]![1] })
+    expect((await prisma.cohort.findUniqueOrThrow({ where: { id: d.cohortId } })).scheduleWindowEnd!.toISOString() < '2027-01-09').toBe(true)
+    const after = await prisma.cohortSession.findMany({ where: { cohortId: d.cohortId }, orderBy: { startsAt: 'asc' } })
+    expect(after.map((s) => s.startsAt.toISOString()), 'بقي نصفُ جدول').toEqual(d.sessions.map((s) => s.startsAt.toISOString()))
     expect((await prisma.planEditSuggestion.findUniqueOrThrow({ where: { id } })).status).toBe('pending')
   })
 })

@@ -13,7 +13,7 @@ import { describe, expect, it } from 'vitest'
 import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import {
-  planEditStep, planEditView, rowEditProblem, scheduleChainProblem, scheduleSnapshot, sessionMoveChainProblem,
+  planEditStep, planEditView, rowEditProblem, scheduleChainProblem, schedulePlanContent, scheduleSnapshot, sessionMoveChainProblem,
   type PlanEdit,
 } from '@/application/trainer/plan-edits'
 
@@ -81,6 +81,49 @@ describe('①ب وعنوانه من أيّام لقاءاته المنقولة �
   })
   it('⚠️ وإن اختلفت الساعة قيلت لكلّ يوم', () => {
     expect(title(twice('15:00'))).toBe('جدول ثابت: السبت 19:00 والأربعاء 18:00 كلّ أسبوع')
+  })
+})
+
+describe('①ج ويحمل حدود الخطّة التي يحتاجها — آخر يوم في المدّة ومواعيد المحاور (١٣ أكتوبر ٢٠٢٦)', () => {
+  /* «سبت وأربعاء فقط» على ستّة عشر لقاءً: ثمانية أسابيع تتجاوز مدّة الشعبة، وكلّ لقاءٍ يخرج من موعد محوره */
+  const P = {
+    modules: C.modules, resources: [], startsOn: '2026-12-05', endsOn: '2026-12-20',
+    slots: [
+      { moduleIds: ['M1'], startsOn: '2026-12-05', endsOn: '2026-12-06' },
+      { moduleIds: ['M2'], startsOn: '2026-12-12', endsOn: '2026-12-14' },
+      { moduleIds: ['M3'], startsOn: '2026-12-19', endsOn: '2026-12-20' },
+    ],
+  }
+  const wide = (over: Partial<NonNullable<Extract<PlanEdit, { kind: 'schedule' }>['plan']>> = {}) => schedule({
+    moves: [{ sessionId: 's3', startsAt: '2026-12-26T16:00:00.000Z', endsAt: '2026-12-26T18:00:00.000Z' }],
+    tasks: [],
+    plan: { endsOn: '2027-01-02', slots: [{ moduleIds: ['M3'], startsOn: '2026-12-26', endsOn: '2027-01-02' }], ...over },
+  })
+  it('⚠️ يقرأ: آخر يوم في المدّة، وموعد كلّ محور ينقله — بما كان وما نقترح', () => {
+    const edit = wide()
+    const snap = scheduleSnapshot(edit, sessions, tasks, P)
+    if (!snap.ok) throw new Error(snap.problemAr)
+    expect(snap.value).toMatchObject({ 'p:endsOn': '2026-12-20', 'slot:M3:startsOn': '2026-12-19', 'slot:M3:endsOn': '2026-12-20' })
+    const v = planEditView(edit, snap.value, ctx)
+    const end = v.rows.find((r) => r.labelAr === 'آخر يوم في مدة الشعبة')
+    expect(end?.beforeAr).toBe('20 ديسمبر')
+    expect(end?.afterAr).toBe('2 يناير')
+    const slot = v.rows.find((r) => r.labelAr === 'موعد المحور 3')
+    expect(slot?.beforeAr).toBe('19 ديسمبر — 20 ديسمبر')
+    expect(slot?.afterAr).toBe('26 ديسمبر — 2 يناير')
+  })
+  it('⚠️ والخطّة بعده: المدّة أطول وموعد المحور الثالث نُقل — وما سواه كما هو', () => {
+    const next = schedulePlanContent(P, wide())
+    if (!next.ok) throw new Error(next.problemAr)
+    expect(next.value.endsOn).toBe('2027-01-02')
+    expect(next.value.slots.map((s) => `${s.startsOn}..${s.endsOn}`)).toEqual(['2026-12-05..2026-12-06', '2026-12-12..2026-12-14', '2026-12-26..2027-01-02'])
+    expect(rowEditProblem(wide(), P)).toBeNull()
+  })
+  it('⚠️ ويردّ: محورا لا موعد له، وموعدا خارج المدّة، ونهاية قبل البداية', () => {
+    expect(rowEditProblem(wide({ slots: [{ moduleIds: ['M9'], startsOn: '2026-12-26', endsOn: '2027-01-02' }] }), P)).toMatch(/لا موعد له في الخطة/)
+    expect(rowEditProblem(wide({ endsOn: '2026-12-28' }), P)).toMatch(/خارج مدة الشعبة/)
+    expect(rowEditProblem(wide({ endsOn: '2026-11-01' }), P)).toMatch(/قبل أولها/)
+    expect(rowEditProblem(wide({ slots: [{ moduleIds: ['M3'], startsOn: '2027-01-02', endsOn: '2026-12-26' }] }), P)).toMatch(/قبل بدايته/)
   })
 })
 
@@ -153,10 +196,12 @@ describe('⑤ والإدارة تطلبه بزرّ — والقاعدة تتّس
     const svc = code('server/services/plan-edit.service.ts')
     expect(svc).toMatch(/if \(edit\.kind === 'session_move'\) \{\s*const chain = sessionMoveChainProblem\(edit, /)
     expect(svc).toMatch(/if \(edit\.kind === 'schedule'\) \{\s*const chain = scheduleChainProblem\(edit, /)
-    expect(svc).toMatch(/case 'schedule': return scheduleSnapshot\(edit, r\.sessions, r\.tasks\)/)
+    expect(svc).toMatch(/case 'schedule': return scheduleSnapshot\(edit, r\.sessions, r\.tasks, r\.content\)/)
+    /* وحدودُ الخطّة تُحفظ قبل أن يُفحص نقل — ويُسجَّل ما يعيدها (١٣ أكتوبر ٢٠٢٦) */
+    expect(svc).toMatch(/await this\.plans\.savePlan\(userId, cohortId, next\.value\)\s*done\.push\(\(\) => this\.plans\.savePlan\(userId, cohortId, r\.content\)\)\s*\}\s*for \(const m of edit\.moves\) \{\s*await this\.cohorts\.assertTrainerMove/)
     expect(svc).toMatch(/catch \(e\) \{\s*for \(const undo of done\.reverse\(\)\) await undo\(\)/)
     /* وكلُّ لقاءٍ يُفحص قبل أن يُنقل أوّلُها */
-    expect(svc).toMatch(/try \{\s*for \(const m of edit\.moves\) \{\s*await this\.cohorts\.assertTrainerMove\(userId, m\.sessionId, [^\n]*\n\s*\}\s*for \(const m of edit\.moves\) \{[^}]*trainerMoveSession/)
+    expect(svc).toMatch(/\}\s*for \(const m of edit\.moves\) \{\s*await this\.cohorts\.assertTrainerMove\(userId, m\.sessionId, [^\n]*\n\s*\}\s*for \(const m of edit\.moves\) \{[^}]*trainerMoveSession/)
   })
 
   it('⚠️ زرّ «جهّز جدولا ثابتا مقترحا» يطلب مسلكه — ويظهر حين يكون في الإيقاع أو الأوقات نصيحة', () => {
