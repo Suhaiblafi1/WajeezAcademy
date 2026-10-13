@@ -60,6 +60,30 @@ describe('① البند يقرأ: ما كان وما نقترح — لكلّ ل
   })
 })
 
+describe('①ب وعنوانه من أيّام لقاءاته المنقولة — لا من يومٍ واحد (١٣ أكتوبر ٢٠٢٦)', () => {
+  /* «سبت وأربعاء فقط» (مدرّبٌ طلب لقاءين في الأسبوع): كان العنوانُ «السبت 19:00 كلّ أسبوع» ونصفُ لقاءاته أربعاء */
+  const twice = (wedClock: string) => schedule({
+    weekday: 6, clock: '19:00',
+    moves: [
+      { sessionId: 's1', startsAt: '2026-12-05T16:00:00.000Z', endsAt: '2026-12-05T18:00:00.000Z' },
+      { sessionId: 's2', startsAt: `2026-12-09T${wedClock}:00.000Z`, endsAt: '2026-12-09T19:00:00.000Z' },
+      { sessionId: 's3', startsAt: '2026-12-12T16:00:00.000Z', endsAt: '2026-12-12T18:00:00.000Z' },
+    ],
+    tasks: [],
+  })
+  const title = (edit: Extract<PlanEdit, { kind: 'schedule' }>) => {
+    const snap = scheduleSnapshot(edit, sessions, tasks)
+    if (!snap.ok) throw new Error(snap.problemAr)
+    return planEditView(edit, snap.value, ctx).titleAr
+  }
+  it('⚠️ يومان بساعةٍ واحدة: «السبت والأربعاء 19:00» — بترتيب وقوعهما', () => {
+    expect(title(twice('16:00'))).toBe('جدول ثابت: السبت والأربعاء 19:00 كلّ أسبوع')
+  })
+  it('⚠️ وإن اختلفت الساعة قيلت لكلّ يوم', () => {
+    expect(title(twice('15:00'))).toBe('جدول ثابت: السبت 19:00 والأربعاء 18:00 كلّ أسبوع')
+  })
+})
+
 describe('② ويفحص قبل أن يحفظ', () => {
   it('⚠️ لا جدول فارغ، ولا لقاء مرّتين، ولا لحظة غير مقروءة، ولا نهاية قبل بداية', () => {
     expect(rowEditProblem(schedule(), C)).toBeNull()
