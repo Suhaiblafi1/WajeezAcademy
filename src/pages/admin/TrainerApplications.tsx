@@ -57,6 +57,7 @@ import { Panel, Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import TabBar from "@/components/ui/TabBar";
 import { RUBRIC_AXES } from "@/application/trainer/rubric";
+import { preparingCoursesAr } from "@/application/trainer/pending-kind";
 /* الحالاتُ التي يقبل الخادمُ حذفَها — تُقرأ من مصدرها لا تُكتب هنا.
    ونسخةٌ ثانيةٌ تنحرف يوما فيَعِد الزرُّ بما يرفضه الخادم. */
 const PURGEABLE: string[] = [...PURGEABLE_STATUSES];
@@ -460,6 +461,9 @@ function TrainerCoursesTab({ summary }: { summary?: TrainerSummary }) {
           <p className="mt-3 text-read text-gold-ink">
             وله {summary.pendingQualifications} طلب تأهيل بانتظار القرار.
           </p>
+        )}
+        {(summary.preparingCourses ?? 0) > 0 && (
+          <p className="mt-3 text-read text-muted-foreground">{preparingCoursesAr(summary.preparingCourses!)}</p>
         )}
       </Panel>
 

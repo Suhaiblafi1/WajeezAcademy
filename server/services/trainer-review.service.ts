@@ -60,6 +60,8 @@ import {
 } from '../../src/application/trainer/contract-link-state'
 import { PUBLIC_TRAINER_WHERE, trainerPubliclyVisible } from './trainer-visibility'
 import { cleanProposals, readProposals } from '../../src/application/trainer/teachable-proposals'
+import { pendingKind } from '../../src/application/trainer/pending-kind'
+import type { PrepCourse } from './trainer-prep.service'
 import {
   IDENTITY_MIMES, MAX_CONTRACT_DOC_BYTES,
   MAX_PHOTO_BYTES, PHOTO_KEY_PREFIX, PHOTO_MIMES, SIGNED_URL_TTL_MS,
@@ -568,7 +570,12 @@ export class TrainerReviewService {
         qualifiedCourses: (app.profile?.qualifications ?? [])
           .filter((q) => q.status === 'qualified')
           .map((q) => ({ courseId: q.courseId, titleAr: q.course.versions[0]?.titleAr ?? q.courseId })),
-        pendingQualifications: (app.profile?.qualifications ?? []).filter((q) => q.status === 'pending').length,
+        /* الطلبُ غيرُ الدورة التي يعدّها (`pending-kind.ts`): الأوّلُ ينتظر قرارك هنا،
+           والثانيةُ يقرّر فيها اعتمادُ خطّتها — فلا يُعدّان معا «طلبات تأهيل» */
+        pendingQualifications: (app.profile?.qualifications ?? [])
+          .filter((q) => q.status === 'pending' && pendingKind(q) === 'request').length,
+        preparingCourses: (app.profile?.qualifications ?? [])
+          .filter((q) => q.status === 'pending' && pendingKind(q) === 'preparing').length,
         cohorts: cohortLinks.map((t) => ({
           id: t.cohort.id, title: t.cohort.title, role: t.role, status: t.cohort.status,
           courseTitle: t.cohort.course.versions[0]?.titleAr ?? t.cohort.courseId,
@@ -5733,10 +5740,31 @@ export class TrainerReviewService {
         })
       : []
     const byId = new Map(cohorts.map((c) => [c.id, c]))
-    return rows.map((r) => ({
-      ...r,
-      requestedCohort: r.requestedCohortId ? byId.get(r.requestedCohortId) ?? null : null,
-    }))
+
+    /* ═══ والدورةُ التي يعدّها ليست طلبا (١٣ أكتوبر ٢٠٢٦) ═══
+       صفُّها `pending` كالطلب، ويقرّر فيها اعتمادُ خطّة شعبة إعدادها لا هذا
+       الطابور (`pending-kind.ts`). فتُوسَم بنوعها وتُحمَل معها حالُ إعدادها
+       وشعبتُه — تقرؤها الشاشةُ قائمةً وحدَها، برابطٍ إلى الخطّة. والحالُ من
+       `coursesOf` نفسِها التي تقرؤها شاشةُ العقود، فلا تختلف الشاشتان. */
+    const prepOf = new Map<string, PrepCourse>()
+    const preparing = rows.filter((r) => pendingKind(r) === 'preparing')
+    if (preparing.length > 0) {
+      const { TrainerPrepService } = await import('./trainer-prep.service')
+      const prep = new TrainerPrepService(this.prisma)
+      for (const profileId of new Set(preparing.map((r) => r.profileId))) {
+        for (const c of await prep.coursesOf(profileId)) prepOf.set(`${profileId}:${c.courseId}`, c)
+      }
+    }
+    return rows.map((r) => {
+      const kind = pendingKind(r)
+      const p = kind === 'preparing' ? prepOf.get(`${r.profileId}:${r.courseId}`) : undefined
+      return {
+        ...r,
+        kind,
+        requestedCohort: r.requestedCohortId ? byId.get(r.requestedCohortId) ?? null : null,
+        prep: p ? { state: p.state, cohortId: p.cohortId, cohortTitle: p.cohortTitle } : null,
+      }
+    })
   }
 
   /* ─────────── لوحُ التشغيل ───────────
