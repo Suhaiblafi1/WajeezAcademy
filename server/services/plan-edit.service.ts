@@ -30,7 +30,7 @@ import { CohortService } from './cohort.service'
 import { CohortPlanService, resolvePeriod, type PlanStatus, type TrainerPlanContent } from './cohort-plan.service'
 import { proposeSchedule } from '../../src/application/trainer/schedule-proposal'
 import {
-  applyContentEdit, contentBefore, editsContent, noteItemsFrom, planEditStep, planEditView, rowEditProblem, sameSnapshot, scheduleChainProblem, scheduleSnapshot,
+  applyContentEdit, contentBefore, editsContent, noteItemsFrom, planEditStep, planEditView, rowEditProblem, sameSnapshot, scheduleChainProblem, schedulePlanContent, scheduleSnapshot,
   sessionMoveChainProblem,
   sessionSnapshot, taskSnapshot, type Checked, type EditContext, type EditSnapshot, type EditView, type PlanEdit,
   type PlanEditStatus, PLAN_EDITS_MAX, TASK_EDIT_FIELDS, TRAINER_VISIBLE_EDIT_STATUSES,
@@ -140,7 +140,7 @@ export class PlanEditService {
         if (s.placeholder) return { ok: false, problemAr: 'هذا موعد تحجزه الإدارة لا لقاء للمدرّب' }
         return { ok: true, value: { title: s.title, noteAr: s.noteAr } }
       }
-      case 'schedule': return scheduleSnapshot(edit, r.sessions, r.tasks)
+      case 'schedule': return scheduleSnapshot(edit, r.sessions, r.tasks, r.content)
       case 'task_change': {
         const t = r.tasks.find((x) => x.id === edit.assessmentId)
         if (!t) return { ok: false, problemAr: 'لا مهمّة بهذا المعرّف في هذه الشعبة — لعلّها حذفت' }
@@ -718,7 +718,7 @@ export class PlanEditService {
       case 'note':
         return
       case 'schedule':
-        await this.applySchedule(userId, edit, r)
+        await this.applySchedule(userId, cohortId, edit, r)
         return
     }
   }
@@ -728,9 +728,17 @@ export class PlanEditService {
      أوّلا بفحص باب النقل نفسِه (`assertTrainerMove`: موعدُ الشعبة، وتعارضُه مع شعبه الأخرى) — فإن لم يصحّ
      واحدٌ لم يُنقل شيء. ثمّ تُنقل بالباب (واجتماعُها معها)، ثمّ مواعيدُ المهامّ ببابها. وإن سقط شيءٌ بعد
      ذلك لعطبٍ لا يُفحص قبله أُعيد ما نُقل قبله إلى ما كان — فلا يبقى نصفُ جدول. */
-  private async applySchedule(userId: string, edit: Extract<PlanEdit, { kind: 'schedule' }>, r: Rows) {
+  private async applySchedule(userId: string, cohortId: string, edit: Extract<PlanEdit, { kind: 'schedule' }>, r: Rows) {
     const done: (() => Promise<unknown>)[] = []
     try {
+      /* وحدودُ الخطّة أوّلا — آخرُ يومٍ في المدّة ومواعيدُ المحاور (`schedulePlanContent`): حفظُها يمدّ نافذةَ
+         الجدولة معها (`savePlan`)، فيصحّ النقلُ بعدها. وتعود الخطّةُ كما كانت إن سقط شيء */
+      if (edit.plan) {
+        const next = schedulePlanContent(r.content, edit)
+        if (!next.ok) throw new AuthError('edit_gone', next.problemAr, 409)
+        await this.plans.savePlan(userId, cohortId, next.value)
+        done.push(() => this.plans.savePlan(userId, cohortId, r.content))
+      }
       for (const m of edit.moves) {
         await this.cohorts.assertTrainerMove(userId, m.sessionId, { startsAt: new Date(m.startsAt), endsAt: new Date(m.endsAt) })
       }
@@ -830,6 +838,8 @@ function targetsOf(edit: PlanEdit): string[] {
     case 'schedule': return [
       ...edit.moves.map((m) => `session:${m.sessionId}`),
       ...edit.tasks.map((t) => `task:${t.assessmentId}:dueAt`),
+      ...(edit.plan?.endsOn !== undefined ? ['plan:endsOn'] : []),
+      ...(edit.plan?.slots ?? []).map((s) => `slot:${[...s.moduleIds].sort().join('+')}`),
     ]
   }
 }

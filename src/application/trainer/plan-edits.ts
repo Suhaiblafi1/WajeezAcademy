@@ -24,6 +24,7 @@
 
 import { STAGE_LABELS, type ReviewSection } from './review-notes'
 import type { ScheduleEdit } from './schedule-proposal'
+import type { PlanSlot } from './axis-timeline'
 import { compactGapsAr, NOTE_FIX_MARK, NOTE_GAP_MARK, NOTE_SUGGESTION_AR, NOW_SUGGEST_SEP, WEEKDAY_AR } from './plan-scorecard'
 import { plainAr } from '../text/plain-ar'
 import { PLAN_MAX } from './plan-limits'
@@ -383,6 +384,10 @@ export function rowEditProblem(edit: PlanEdit, c: EditableContent): string | nul
         if (Date.parse(m.endsAt) <= Date.parse(m.startsAt)) return 'نهاية لقاء في الجدول قبل بدايته'
       }
       if (edit.tasks.some((t) => !isInstant(t.dueAt))) return 'موعد مهمّة في الجدول ليس لحظة مقروءة'
+      if (edit.plan) {
+        const next = schedulePlanContent(c, edit)
+        if (!next.ok) return next.problemAr
+      }
       return null
     }
     default:
@@ -485,6 +490,7 @@ export function scheduleSnapshot(
   edit: ScheduleEdit,
   sessions: readonly { id: string; startsAt: Date | string; endsAt?: Date | string | null }[],
   tasks: readonly { id: string; dueAt?: Date | string | null }[],
+  content?: EditableContent,
 ): Checked<EditSnapshot> {
   const iso = (v: Date | string | null | undefined) => (v == null ? null : new Date(v).toISOString())
   const out: Record<string, unknown> = {}
@@ -499,7 +505,56 @@ export function scheduleSnapshot(
     if (!row) return { ok: false, problemAr: 'في الجدول مهمّة لا وجود لها في الشعبة — لعلّها حذفت' }
     out[`t:${row.id}:dueAt`] = iso(row.dueAt)
   }
+  /* وحدودُ الخطّة التي يمسّها: نهايةُ المدّة، وموعدُ كلّ محورٍ ينقله */
+  if (edit.plan) {
+    const c = (content ?? {}) as EditableContent & { endsOn?: string | null; slots?: PlanSlot[] }
+    if (edit.plan.endsOn !== undefined) out['p:endsOn'] = c.endsOn ?? null
+    for (const s of edit.plan.slots ?? []) {
+      const was = slotOf(c.slots, s.moduleIds)
+      if (!was) return { ok: false, problemAr: `في الجدول موعد لمحور لا موعد له في الخطة (${s.moduleIds.join('، ')})` }
+      out[`slot:${slotKey(s.moduleIds)}:startsOn`] = was.startsOn
+      out[`slot:${slotKey(s.moduleIds)}:endsOn`] = was.endsOn
+    }
+  }
   return { ok: true, value: out }
+}
+
+/* ═══ والجدولُ يحمل حدودَ الخطّة التي يحتاجها (١٣ أكتوبر ٢٠٢٦) ═══
+   طلب مدرّبٌ «سبتا وأربعاء فقط» وأن نعدّل المواعيد عنه. وستّة عشر لقاءً على يومين في الأسبوع ثمانيةُ أسابيع —
+   تتجاوز آخرَ يومٍ في مدّة شعبته، ويقع كلُّ لقاءٍ منقولٍ خارج موعد محوره. فالنقلُ وحدَه يُردّ في بابه
+   (`assertWithinWindow`)، ولا بطاقةَ كانت تحمل المدّة ولا مواعيدَ المحاور — فيُحال إليه ما طلب ألّا يُحال إليه.
+   فصار للجدول أن يحمل `plan`: آخرَ يوم، ومواعيدَ المحاور التي ينقلها. تُكتب في الخطّة أوّلا (حفظُ الخطّة يمدّ
+   نافذةَ الجدولة معها، `savePlan`)، ثمّ تُنقل اللقاءات — وإن سقط شيءٌ عادت الخطّةُ كما كانت. */
+const slotKey = (ids: readonly string[]) => [...ids].sort().join('+')
+const slotOf = (slots: readonly PlanSlot[] | undefined, ids: readonly string[]) =>
+  (slots ?? []).find((s) => slotKey(s.moduleIds) === slotKey(ids))
+const isDay = (v: unknown): v is string => typeof v === 'string' && /^\d{4}-\d\d-\d\d$/.test(v) && !Number.isNaN(Date.parse(`${v}T00:00:00Z`))
+
+/** الخطّةُ بحدود الجدول — أو لماذا لا تُكتب */
+export function schedulePlanContent<C extends EditableContent>(c: C, edit: Pick<ScheduleEdit, 'plan'>): Checked<C> {
+  const plan = edit.plan
+  if (!plan) return { ok: true, value: c }
+  const cur = c as C & { startsOn?: string | null; endsOn?: string | null; slots?: PlanSlot[] }
+  const endsOn = plan.endsOn ?? cur.endsOn ?? null
+  if (plan.endsOn !== undefined) {
+    if (!isDay(plan.endsOn)) return { ok: false, problemAr: `آخر يوم في المدة «${plan.endsOn}» ليس يوما مقروءا` }
+    if (cur.startsOn && plan.endsOn < cur.startsOn) return { ok: false, problemAr: 'آخر يوم في المدة قبل أولها' }
+  }
+  if ((plan.slots ?? []).length > 0 && !(cur.slots ?? []).length) return { ok: false, problemAr: 'لا مواعيد محاور في الخطة لينقلها الجدول' }
+  const slots = (cur.slots ?? []).map((s) => ({ ...s }))
+  const seen = new Set<string>()
+  for (const s of plan.slots ?? []) {
+    const k = slotKey(s.moduleIds)
+    if (seen.has(k)) return { ok: false, problemAr: 'موعد محور منقول مرتين في الجدول نفسه' }
+    seen.add(k)
+    const at = slots.findIndex((x) => slotKey(x.moduleIds) === k)
+    if (at < 0) return { ok: false, problemAr: `في الجدول موعد لمحور لا موعد له في الخطة (${s.moduleIds.join('، ')})` }
+    if (!isDay(s.startsOn) || !isDay(s.endsOn)) return { ok: false, problemAr: 'موعد محور في الجدول ليس يوما مقروءا' }
+    if (s.endsOn < s.startsOn) return { ok: false, problemAr: 'نهاية موعد محور في الجدول قبل بدايته' }
+    if ((cur.startsOn && s.startsOn < cur.startsOn) || (endsOn && s.endsOn > endsOn)) return { ok: false, problemAr: 'موعد محور في الجدول خارج مدة الشعبة' }
+    slots[at] = { ...slots[at]!, startsOn: s.startsOn, endsOn: s.endsOn }
+  }
+  return { ok: true, value: { ...cur, ...(plan.endsOn !== undefined ? { endsOn: plan.endsOn } : {}), ...(plan.slots ? { slots } : {}) } }
 }
 
 /** أتغيّر الموضعُ منذ الاقتراح؟ — والمقارنةُ على القيم لا على ترتيب المفاتيح */
@@ -758,6 +813,19 @@ export function planEditView(edit: PlanEdit, before: EditSnapshot, ctx: EditCont
           labelAr: `موعد «${ctx.taskTitle?.(t.assessmentId) ?? 'مهمّة'}»`,
           beforeAr: valueAr('dueAt', b[`t:${t.assessmentId}:dueAt`], ctx),
           afterAr: valueAr('dueAt', t.dueAt, ctx),
+        })
+      }
+      /* وحدودُ الخطّة التي يحملها: آخرُ يومٍ في المدّة، ثمّ موعدُ كلّ محورٍ ينقله — بأرقام المحاور */
+      const day = (v: unknown) => (isDay(v) ? fmtDateWith(`${v}T12:00:00Z`, { day: 'numeric', month: 'long', timeZone: ACADEMY_ZONE }) : null)
+      const span = (a: unknown, z: unknown) => (day(a) && day(z) ? (a === z ? day(a) : `${day(a)} — ${day(z)}`) : null)
+      if (edit.plan?.endsOn !== undefined) rows.push({ labelAr: 'آخر يوم في مدة الشعبة', beforeAr: day(b['p:endsOn']), afterAr: day(edit.plan.endsOn) })
+      for (const s of edit.plan?.slots ?? []) {
+        const k = slotKey(s.moduleIds)
+        const nums = s.moduleIds.map((id) => ctx.moduleIds.indexOf(id) + 1).filter((n) => n > 0).sort((x, y) => x - y)
+        rows.push({
+          labelAr: nums.length ? `موعد المحور ${nums.join(' و')}` : 'موعد محور',
+          beforeAr: span(b[`slot:${k}:startsOn`], b[`slot:${k}:endsOn`]),
+          afterAr: span(s.startsOn, s.endsOn),
         })
       }
       return view(`جدول ثابت: ${scheduleSlotsAr(edit)} كلّ أسبوع`, rows)

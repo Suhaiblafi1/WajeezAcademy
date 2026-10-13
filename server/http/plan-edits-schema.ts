@@ -22,6 +22,7 @@ import { PLAN_EDITS_MAX } from '../../src/application/trainer/plan-edits'
 const text = (max: number) => z.string().max(max).nullable()
 const moduleId = z.string().trim().min(1).max(64)
 const instant = z.string().datetime({ offset: true })
+const day = z.string().regex(/^\d{4}-\d\d-\d\d$/)
 
 const meta = {
   required: z.boolean().optional(),
@@ -133,6 +134,11 @@ export const planEditItem = z.discriminatedUnion('kind', [
     clock: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
     moves: z.array(z.object({ sessionId: z.string().uuid(), startsAt: instant, endsAt: instant }).strict()).min(1).max(40),
     tasks: z.array(z.object({ assessmentId: z.string().uuid(), dueAt: instant }).strict()).max(40),
+    /* وحدودُ الخطّة التي يحتاجها (١٣ أكتوبر ٢٠٢٦): آخرُ يومٍ في المدّة، ومواعيدُ المحاور التي ينقلها */
+    plan: z.object({
+      endsOn: day.optional(),
+      slots: z.array(z.object({ moduleIds: z.array(moduleId).min(1).max(8), startsOn: day, endsOn: day }).strict()).min(1).max(40).optional(),
+    }).strict().optional(),
   }).strict(),
 ])
 
