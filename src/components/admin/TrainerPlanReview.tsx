@@ -18,7 +18,7 @@ import type { PlanSlot } from "@/application/trainer/axis-timeline";
 import CurriculumReview from "@/components/CurriculumReview";
 import { asLevelRange, levelRangeAr } from "@/application/trainer/cohort-level";
 import { asAudience, goalsAr, stagesAr } from "@/application/trainer/cohort-audience";
-import { ReviewNotesForm, ReviewNotesList } from "@/components/ReviewNotes";
+import { ReviewNotesList } from "@/components/ReviewNotes";
 import { PendingTasks } from "@/components/PendingTasks";
 import { awaitingTasks } from "@/application/trainer/task-approval";
 import { PlanDiffList, SinceReturnList } from "@/components/PlanDiff";
@@ -41,7 +41,7 @@ import { cohortDayAr } from "@/application/learning/cohort-gate";
 import { ownMaterialLabels, type WorkbookContent } from "@/application/trainer/cohort-workbooks";
 import PlanScorecard from "@/components/PlanScorecard";
 import { postponeChoices, postponedLineAr, seasonAr, seasonStart, type Season } from "@/application/trainer/plan-postpone";
-import { blockedItems, planScorecard, scorecardNotes } from "@/application/trainer/plan-scorecard";
+import { blockedItems, planScorecard } from "@/application/trainer/plan-scorecard";
 
 export interface TrainerPlan {
   id: string; status: string; reviewerNote: string | null; trainerName: string | null;
@@ -142,11 +142,12 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
     ? planScorecard({ period: trainerPlan.period, content: trainerPlan.content, sessions: trainerPlan.sessions, assessments: trainerPlan.assessments })
     : [];
   const blocked = blockedItems(scorecard);
-  const [asking, setAsking] = useState(false);
-  /* ما ينتظر المدرّبَ من التعديلات المقترحة — يكفي سببا لـ«اطلب تعديلات» */
+  /* ═══ «اطلب تعديلات» يردّها ببطاقاتها وحدَها — لا ملاحظاتٍ نصّيّة (١٣ أكتوبر ٢٠٢٦) ═══
+     كان الزرُّ يفتح صناديقَ ردٍّ يملؤها ما سقط من بطاقة المعايير («مقترح — …»)، فتصل المدرّبَ ملاحظاتٍ نصّيّةً
+     يعملها بيده — وهي ما نسخه قرارُ «قبل/بعد» (١٢ أكتوبر). ثمّ اختار صاحبُ المنصّة: «No text notes» — يردّها بما
+     ينتظره من بطاقات، وسطرٍ واحدٍ تكتبه المنصّةُ بعددها (`suggestedEditsLineAr`). ولا بطاقةَ تنتظر: لا ردّ، ويُقال
+     لماذا وما الخيارات. */
   const [editsPending, setEditsPending] = useState(0);
-  /* ما يُبدأ به صندوقُ الردّ — فارغا، أو ممّا سقط من بطاقة المعايير بنقرة (٨ أكتوبر ٢٠٢٦) */
-  const [askFrom, setAskFrom] = useState<ReviewNotes | undefined>(undefined);
   /* ═══ والتأجيلُ إلى موسمٍ قادم — قرارٌ ثالث (٨ أكتوبر ٢٠٢٦) ═══
      «أختار أفضلَ اثنتين أو ثلاث… وأقول لهم أن يؤجّلوا الباقية — ويجب أن يعرفوا أنّي لا
      أقبلها لهذا الفصل». يُختار الموسمُ (التالي مقترَحا)، وكلمةٌ اختياريّة. */
@@ -380,13 +381,13 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
               offerSchedule={scorecard.some((i) => (i.key === "rhythm" || i.key === "session_times") && i.status !== "ok")}
             />
           )}
-          {trainerPlan?.status === "submitted" && canApprovePlan && !asking && (
+          {trainerPlan?.status === "submitted" && canApprovePlan && (
             <details className="mt-3" open={approveNote.length > 0}>
               <summary className="cursor-pointer text-read font-bold text-teal-light-ink">أضف كلمة تصله مع الاعتماد (اختياريّ)</summary>
               <div className="mt-2">
                 <StaffField
                   label="كلمة الإدارة"
-                  hint="تصل المدرّب مع خبر الاعتماد. للاقتراحات فقط؛ وما يجب تعديله قبل الاعتماد مكانه «اطلب تعديلات»."
+                  hint="تصل المدرّب مع خبر الاعتماد: شكر أو تهنئة. وما يعدل في خطته مكانه بطاقة «قبل/بعد» ثمّ «اطلب تعديلات»."
                 >
                   <textarea
                     rows={3}
@@ -404,19 +405,19 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
               «لا إجبارَ على فعل» (٢ أكتوبر ٢٠٢٦): المطلوبُ يمنع المدرّبَ من الإرسال، ولا يُغلق
               على المعتمِد بابَ الاعتماد. يُقال ما يقع بكلٍّ، ويختار. وخطّةٌ كهذه أُرسلت قبل
               أن يصير المعيارُ مُلزِما — فالمرسَلةُ بعده لا تصل ناقصة. */}
-          {trainerPlan?.status === "submitted" && canApprovePlan && !asking && blocked.length > 0 && (
+          {trainerPlan?.status === "submitted" && canApprovePlan && blocked.length > 0 && (
             <Inset tone="warn" className="mt-3" role="group" aria-label="معايير ملزمة لم تتحقّق">
               <p className="text-read font-black text-gold-ink">
                 {blocked.length === 1 ? "معيار ملزم لم يتحقّق" : `${blocked.length} معايير ملزمة لم تتحقّق`}: {blocked.map((b) => b.labelAr).join(" · ")}
               </p>
               <ul className="mt-2 list-disc space-y-1 ps-5 text-read leading-6 text-foreground">
-                <li><b>اطلب تعديلات بما في البطاقة</b> (الأفضل): تملأ صناديق الردّ بما نقص في كل خطوة، فتعدّلها ثمّ ترسلها. ولا يعيد إرسالها حتّى يكمل المطلوب.</li>
+                <li><b>اطلب تعديلات</b> (الأفضل): تردّها إليه ببطاقاتها، فيقبل كلّ بطاقة أو يرفضها ثمّ يرسلها. ولا يعيد إرسالها حتّى يكمل المطلوب.</li>
                 <li><b>اعتمدها كما هي</b>: تعتمد ناقصة، ويراها المتعلّمون كذلك — ويمكنك كتابة اقتراحاتك في كلمة الاعتماد أعلاه.</li>
               </ul>
             </Inset>
           )}
           <div className="mt-3 flex flex-wrap gap-2">
-            {trainerPlan?.status === "submitted" && canApprovePlan && !asking && (
+            {trainerPlan?.status === "submitted" && canApprovePlan && (
               <>
                 <Button tone="confirm" size="sm" disabled={busy}
                   onClick={() => act(
@@ -426,13 +427,12 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
                   )}>
                   {riding.length > 0 ? `اعتمدها ولقاءاتها (${riding.length})` : "اعتمدها"}{blocked.length > 0 ? " كما هي" : ""}{approveNote.trim() ? " مع كلمتك" : ""}
                 </Button>
-                {scorecard.some((i) => i.status !== "ok") && (
-                  <Button tone="danger" size="sm" disabled={busy} onClick={() => { setAskFrom(scorecardNotes(scorecard)); setAsking(true); }}>
-                    اطلب تعديلات بما في البطاقة
-                  </Button>
-                )}
-                <Button tone={scorecard.some((i) => i.status !== "ok") ? "secondary" : "danger"} size="sm" disabled={busy} onClick={() => { setAskFrom(undefined); setAsking(true); }}>
-                  {scorecard.some((i) => i.status !== "ok") ? "اطلب تعديلات بكلماتك" : "اطلب تعديلات"}
+                <Button tone="danger" size="sm" disabled={busy || editsPending === 0}
+                  onClick={() => void act(
+                    () => apiPost(`/api/admin/cohort-plans/${trainerPlan.id}/decide`, { approve: false }).then(loadPlan),
+                    "ردّت إليه ببطاقاتها — يقبل كلّ بطاقة أو يرفضها",
+                  ).then((ok) => { if (ok) decided("changes_requested"); })}>
+                  {editsPending > 0 ? `اطلب تعديلات (${editsPending === 1 ? "بطاقة واحدة" : `${editsPending} بطاقات`})` : "اطلب تعديلات"}
                 </Button>
                 {/* وشعبةٌ تعمل لا تُؤجَّل — مراجعتُها تُعتمَد أو تُردّ (`postpone` في الخادم) */}
                 {!trainerPlan.approvedOnce && (
@@ -452,7 +452,7 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
               </Button>
             )}
           </div>
-          {trainerPlan?.status === "submitted" && canApprovePlan && !asking && postponing && !trainerPlan.approvedOnce && (() => {
+          {trainerPlan?.status === "submitted" && canApprovePlan && postponing && !trainerPlan.approvedOnce && (() => {
             const choices: Season[] = postponeChoices(trainerPlan.period, new Date().toISOString().slice(0, 10));
             const to = choices[postponeTo] ?? choices[0]!;
             return (
@@ -492,18 +492,10 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
               </Inset>
             );
           })()}
-          {trainerPlan?.status === "submitted" && canApprovePlan && asking && (
-            <ReviewNotesForm
-              key={askFrom ? "from-scorecard" : "blank"}
-              initial={askFrom}
-              editsPending={editsPending}
-              onSend={(notes) => void act(
-                () => apiPost(`/api/admin/cohort-plans/${trainerPlan.id}/decide`, { approve: false, note: notes }).then(loadPlan),
-                "ردّت إليه — وكلّ ملاحظة في رأس خطوتها عنده",
-              ).then((ok) => { if (ok) { setAsking(false); decided("changes_requested"); } })}
-              busy={busy}
-              onCancel={() => setAsking(false)}
-            />
+          {trainerPlan?.status === "submitted" && canApprovePlan && editsPending === 0 && (
+            <p className="mt-2 text-read text-muted-foreground">
+              لا بطاقة تنتظر المدرّب بعد، فلا ردّ. لك أن ترفع التعديلات أو تعتمد مسوّداتها أعلاه فيصير الزرّ يردّها بها، أو تعتمدها كما هي، أو تؤجّلها.
+            </p>
           )}
           {/* وما قاله الفعلُ يُقرأ حيث نُقر — لا أعلى البطاقة بعد منهجٍ طويل */}
           {msg && <p className="mt-3 text-read font-bold text-teal-light-ink" role="status">{msg}</p>}

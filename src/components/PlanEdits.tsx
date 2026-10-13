@@ -252,7 +252,9 @@ export function PlanEditsUploader({ planId, cohortId, canUpload, canReview, onPe
   );
   const pending = items.filter((x) => x.status === "pending").length;
   const open = drafts.length + pending;
-  useEffect(() => { onPending?.(pending); }, [pending, onPending]);
+  /* وما يُعدّ للردّ بطاقاتٌ لا ملاحظات — كما يعدّها الخادم (`pendingEdits`) */
+  const pendingCards = items.filter((x) => x.status === "pending" && x.kind !== "note").length;
+  useEffect(() => { onPending?.(pendingCards); }, [pendingCards, onPending]);
   const counts = (["proposed", "pending", "accepted", "rejected", "dropped"] as const)
     .map((s) => [s, items.filter((x) => x.status === s).length] as const)
     .filter(([, n]) => n > 0);

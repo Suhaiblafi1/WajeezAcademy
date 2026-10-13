@@ -70,7 +70,7 @@ describe('① المراجعة واحدة في البابين', () => {
     expect(REVIEW).toMatch(/\(r\) => planApprovedMsg\(r as PlanDecision\),/)
     expect(REVIEW).toMatch(/const decided = \(outcome: PlanOutcome\) => \{ onPlanDecided\?\.\(outcome\); signalPlansChanged\(\); \};/)
     expect(REVIEW).toMatch(/decided\("approved"\); return r;/)
-    expect(REVIEW).toMatch(/if \(ok\) \{ setAsking\(false\); decided\("changes_requested"\); \}/)
+    expect(REVIEW).toMatch(/\.then\(\(ok\) => \{ if \(ok\) decided\("changes_requested"\); \}\)/)
   })
 })
 

@@ -54,6 +54,8 @@
   the same.. i don't need any suggestions that would ask him to do something himself». فكلُّ تعديلٍ نراه —
   نصٌّ أو مهمّةٌ أو موعدٌ أو لقاءٌ أو عنوانُ شعبةٍ أو كرّاسة — نكتبه نحن بطاقةً جاهزة، ولا يُكتب في تقريرٍ أو
   ملاحظةٍ «عدّل كذا بنفسك». وما لا تحمله البطاقاتُ بعدُ يُبنى له بابُها، لا يُحال على المدرّب.
+  ومنه (١٣ أكتوبر ٢٠٢٦، «No text notes»): «اطلب تعديلات» يردّ الخطّةَ ببطاقاتها وحدَها — لا صناديقَ ملاحظاتٍ ولا
+  ملءَ ممّا سقط من بطاقة المعايير.
 
 - **Claude replies in English.** Decision of the platform owner (7 September
   2026). This governs **conversation only** — chat replies, explanations,
