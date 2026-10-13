@@ -18,6 +18,7 @@ import { Card, Inset, Panel } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import { staffControlCls as inputCls, staffSelectCls as selectCls } from "@/components/FormKit";
 import { INTERVIEW_OUTCOMES, outcomeLabelAr } from "@/application/trainer/interview-outcome";
+import { preparingCoursesAr } from "@/application/trainer/pending-kind";
 
 
 const CR_STATUS_AR: Record<string, string> = {
@@ -86,6 +87,8 @@ function FoldSection({ icon: Icon, title, children, defaultOpen = false, id, omi
 export interface TrainerSummary {
   qualifiedCourses: { courseId: string; titleAr: string }[];
   pendingQualifications: number;
+  /** دوراتٌ يعدّها — ليست طلبات (`pending-kind.ts`) */
+  preparingCourses?: number;
   cohorts: {
     id: string; title: string; role: string; status: string;
     courseTitle: string; enrolled: number; startsAt: string | null;
@@ -333,6 +336,9 @@ export function TrainerDetailOps({ app, onAction }: {
             <p className="mt-2.5 text-read text-gold-ink">
               وله {app.summary!.pendingQualifications} طلب تأهيل بانتظار القرار.
             </p>
+          )}
+          {(app.summary?.preparingCourses ?? 0) > 0 && (
+            <p className="mt-2.5 text-read text-muted-foreground">{preparingCoursesAr(app.summary!.preparingCourses!)}</p>
           )}
         </FoldSection>
       )}

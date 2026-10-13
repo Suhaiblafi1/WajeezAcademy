@@ -34,6 +34,7 @@ import { controlCls, staffAreaCls } from "@/components/FormKit";
 import { matchesQuery } from "@/application/text/search-ar";
 import { fmtDateTime } from "@/application/text/format-ar";
 import ConfirmAction from "@/components/ConfirmAction";
+import { Link } from "react-router";
 import { useRealSession } from "@/services/session";
 
 import { Card, Inset, Panel } from "@/components/ui/Surface";
@@ -74,7 +75,35 @@ interface PendingRequest {
   profile: { id: string; application: { fullName: string; status: string } };
   course: { id: string; versions: { titleAr: string }[] };
   requestedCohort: { id: string; title: string; startsAt: string | null; status: string } | null;
+  /** طلبٌ من جدولة شعبة، أم دورةٌ يعدّها (`pending-kind.ts`) */
+  kind: "request" | "preparing";
+  /** حالُ إعدادها وشعبتُه — للدورة التي يعدّها وحدَها */
+  prep: { state: PrepState; cohortId: string | null; cohortTitle: string | null } | null;
 }
+
+/* ═══ الدورةُ التي يعدّها ليست طلبا (١٣ أكتوبر ٢٠٢٦) ═══
+
+   سأل صاحبُ المنصّة عن ٥٥ بطاقةً تحت «طلبات التأهيل المعلّقة»، أكثرُها «من طلب
+   الانضمام»، وعليها «أهّله وأسنده» و«ارفض». وتلك دوراتٌ قال المدرّبُ إنّه
+   يدرّسها، يقرّر فيها **اعتمادُ خطّة شعبة إعدادها** — والزرُّ كان يعتمدها قبل
+   أن تُقرأ خطّتُها، ولا شعبةَ يسنده إليها. فاختار «افصلهما»:
+
+     · الطابورُ للطلبات وحدَها، وعددُه عددُها.
+     · والدوراتُ قيد الإعداد قائمةٌ وحدَها مطويّة، لكلٍّ حالُها ورابطُ خطّتها،
+       وزرٌّ صريحٌ «اعتمدها دون انتظار الخطة» يقول قبل التنفيذ ما يقع به.
+
+   ولا «ارفض» عليها هنا: من يعتذر عنها هو المدرّب في «دوراتي»، وما يُسحب منه
+   يُسحب من شاشة العقود حيث عقدُه. */
+type PrepState = "to_decide" | "preparing" | "submitted" | "returned" | "approved" | "declined";
+
+const PREP_AR: Record<PrepState, { label: string; tone: "warn" | "info" | "positive" | "neutral" | "accent" }> = {
+  to_decide: { label: "لم يقبلها بعد", tone: "neutral" },
+  preparing: { label: "يعدها في «شعبي»", tone: "info" },
+  returned: { label: "ردت إليه بملاحظات", tone: "warn" },
+  submitted: { label: "خطتها تنتظر قرارك", tone: "accent" },
+  approved: { label: "معتمدة", tone: "positive" },
+  declined: { label: "اعتذر عنها", tone: "neutral" },
+};
 
 interface CourseOpt { id: string; titleAr?: string; title?: string }
 interface CohortOpt { id: string; title: string; courseId: string; status: string }
@@ -370,6 +399,8 @@ export default function TrainerRunOps() {
   const [note, setNote] = useState<Record<string, string>>({});
   const [pick, setPick] = useState<Record<string, { courseId: string; cohortId: string }>>({});
   const [suspendTarget, setSuspendTarget] = useState<OpsTrainer | null>(null);
+  const [prepOpen, setPrepOpen] = useState(false);
+  const [skipPlan, setSkipPlan] = useState<PendingRequest | null>(null);
   /* تعيينُ مدرّبٍ داخليّا — ثلاثةُ حقولٍ ونقرة (البند ٢٢) */
   const { user: sessionUser } = useRealSession();
   const canAddTrainer =
@@ -417,6 +448,19 @@ export default function TrainerRunOps() {
   );
 
   /* وما ينتظر قرارَك في ملفّه العامّ — نبذةٌ أو صورة — يُقدَّم فلا يضيع بين الصفوف */
+  /* الطابورُ للطلبات وحدَها، والدوراتُ قيد الإعداد مجموعةٌ بمدرّبها */
+  const asks = useMemo(() => requests.filter((r) => r.kind !== "preparing"), [requests]);
+  const preparing = useMemo(() => requests.filter((r) => r.kind === "preparing"), [requests]);
+  const prepByTrainer = useMemo(() => {
+    const by = new Map<string, { name: string; rows: PendingRequest[] }>();
+    for (const r of preparing) {
+      const g = by.get(r.profile.id) ?? { name: r.profile.application.fullName, rows: [] };
+      g.rows.push(r);
+      by.set(r.profile.id, g);
+    }
+    return [...by.values()];
+  }, [preparing]);
+
   const shown = useMemo(
     () => (trainers ?? [])
       .filter((t) => matchesQuery(q, [t.name, t.email]))
@@ -445,8 +489,8 @@ export default function TrainerRunOps() {
         <h3 className="flex items-center gap-2 text-sm font-black">
           <Clock className="h-4 w-4 text-gold-ink" />
           طلبات التأهيل المعلّقة
-          {requests.length > 0 && (
-            <span className="rounded-full bg-gold/20 px-2 py-0.5 text-fine font-black text-gold-ink">{requests.length}</span>
+          {asks.length > 0 && (
+            <span className="rounded-full bg-gold/20 px-2 py-0.5 text-fine font-black text-gold-ink">{asks.length}</span>
           )}
         </h3>
         <p className="mt-1 text-read leading-6 text-muted-foreground">
@@ -454,14 +498,14 @@ export default function TrainerRunOps() {
           والموافقة <b>تؤهّل وتسند إلى الشعبة المطلوبة معا</b>.
         </p>
 
-        {requests.length === 0 ? (
+        {asks.length === 0 ? (
           <Card className="mt-3 text-center">
             <CheckCircle2 className="mx-auto h-8 w-8 text-teal-light-ink/50" />
             <p className="mt-2 text-read text-muted-foreground">لا طلب ينتظر قرارك.</p>
           </Card>
         ) : (
           <ul className="mt-3 space-y-3">
-            {requests.map((r) => (
+            {asks.map((r) => (
               <Card as="li" tone="warn" key={r.id}>
                 <p className="text-sm font-black">{r.profile.application.fullName}</p>
                 <p className="mt-1 text-read leading-6 text-muted-foreground">
@@ -500,6 +544,57 @@ export default function TrainerRunOps() {
           </ul>
         )}
       </section>
+
+      {/* ── دوراتٌ يعدّها المدرّبون — ليست طلبات ── */}
+      {preparing.length > 0 && (
+        <section>
+          <h3 className="flex items-center gap-2 text-sm font-black">
+            <GraduationCap className="h-4 w-4 text-teal-light-ink" />
+            دورات قيد الإعداد
+            <span className="rounded-full bg-paper/60 px-2 py-0.5 text-fine font-black text-muted-foreground">{preparing.length}</span>
+          </h3>
+          <p className="mt-1 text-read leading-6 text-muted-foreground">
+            دورات قال المدرب في طلبه إنه يدرسها. <b>تعتمد حين تعتمد خطتها</b> في «خطط تنتظر اعتمادك» — لا من هنا.
+          </p>
+          <Button size="sm" className="mt-2" onClick={() => setPrepOpen((v) => !v)}>
+            {prepOpen ? "أخفها" : `اعرضها (${preparing.length})`}
+          </Button>
+          {prepOpen && (
+            <ul className="mt-3 space-y-3">
+              {prepByTrainer.map(({ name, rows }) => (
+                <Card as="li" key={rows[0].profile.id}>
+                  <p className="text-sm font-black">{name}</p>
+                  <ul className="mt-2 grid gap-2">
+                    {rows.map((r) => {
+                      const st = PREP_AR[r.prep?.state ?? "to_decide"];
+                      return (
+                        <li key={r.id}>
+                          <Inset tone="default" className="p-3">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <p className="min-w-0 flex-1 text-read font-bold">{r.course.versions[0]?.titleAr ?? courseName(r.courseId)}</p>
+                              <Chip tone={st.tone} srPrefixAr="الحال">{st.label}</Chip>
+                            </div>
+                            <div className="mt-2 flex flex-wrap items-center gap-3">
+                              {r.prep?.cohortId && (
+                                <Link to={`/admin/plans/${r.prep.cohortId}`} className="text-read font-bold text-teal-light-ink underline">
+                                  افتح خطتها
+                                </Link>
+                              )}
+                              <Button size="sm" type="button" disabled={busy === r.id} onClick={() => setSkipPlan(r)}>
+                                اعتمدها دون انتظار الخطة
+                              </Button>
+                            </div>
+                          </Inset>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </Card>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
 
       {/* ── المدرّبون ── */}
       <section>
@@ -763,6 +858,33 @@ export default function TrainerRunOps() {
         >
           يخفى فورا من الصفحات العامّة، وتلغى جلساته القادمة، ويوقف حسابه.
           ويمكن رفع الإيقاف من تبويب «الطلبات».
+        </ConfirmAction>
+      )}
+
+      {/* اعتمادُ دورةٍ قيد الإعداد قبل خطّتها — خيارٌ مفتوح، يقول ما يقع به قبل أن يقع */}
+      {skipPlan && (
+        <ConfirmAction
+          titleAr="اعتمدها دون انتظار الخطة؟"
+          confirmLabelAr="اعتمدها الآن"
+          busy={busy === skipPlan.id}
+          onCancel={() => setSkipPlan(null)}
+          onConfirm={() => {
+            const r = skipPlan;
+            setSkipPlan(null);
+            void act(r.id,
+              () => apiPost(`/api/admin/qualification-requests/${r.id}/decide`, { approve: true, note: "اعتمدت دون انتظار الخطة" }),
+              "اعتمدت الدورة");
+          }}
+        >
+          <p>
+            «{skipPlan.course.versions[0]?.titleAr ?? courseName(skipPlan.courseId)}» لـ{skipPlan.profile.application.fullName}.
+          </p>
+          <ul className="mt-2 list-disc space-y-1 pe-5">
+            <li>تضاف إلى دوراته الآن، دون أن تقرأ خطتها.</li>
+            <li>ويصله تنبيه: «أضيفت دورة إلى دوراتك».</li>
+            {skipPlan.prep?.cohortId && <li>وتبقى شعبة إعدادها وخطتها كما هي.</li>}
+            <li>ولا يفعل حسابه بهذا وحده.</li>
+          </ul>
         </ConfirmAction>
       )}
     </div>
