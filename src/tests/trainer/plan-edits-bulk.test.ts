@@ -2,7 +2,7 @@
    وكم بندا فيه. وما لا يُقرأ يعود بسببه لا يرمي — فلا يوقف ما بعده من الدفعة. */
 
 import { describe, expect, it } from 'vitest'
-import { BULK_MODE_AR, BULK_MODES, bulkSummaryAr, bulkUploadPath, DEDUPE_ALL_AR, dedupeSummaryAr, KEEP_LATEST_ALL_PATH, KEEP_LATEST_AR, keepLatestPath, keptLatestAr, readEditsFile, replacedLineAr, uploadedLineAr, withdrawnLineAr } from '@/application/trainer/plan-edits-bulk'
+import { BULK_MODE_AR, BULK_MODES, bulkSummaryAr, bulkUploadPath, DEDUPE_ALL_AR, dedupeSummaryAr, editFilePath, isPdfName, KEEP_LATEST_ALL_PATH, KEEP_LATEST_AR, keepLatestPath, missingWorkbooksAr, withWorkbookKeys, workbookFilesNeeded, keptLatestAr, readEditsFile, replacedLineAr, uploadedLineAr, withdrawnLineAr } from '@/application/trainer/plan-edits-bulk'
 
 const PLAN = '7c1a3a52-2a7e-4a36-9a43-0d1d2b6b8f10'
 const file = (over: Record<string, unknown> = {}) => JSON.stringify({
@@ -122,5 +122,33 @@ describe('«احذف المكرر» — يبقى آخر ملف رفع (١٢ أك
     const all = [KEEP_LATEST_AR.labelAr, KEEP_LATEST_AR.whatAr, DEDUPE_ALL_AR.labelAr, DEDUPE_ALL_AR.whatAr, keptLatestAr(5),
       dedupeSummaryAr({ cleaned: 2, withdrawn: 5, clean: 3, failed: 1 })].join(' ')
     expect(all).not.toMatch(/[\u064B-\u0650\u0652]/)
+  })
+})
+
+describe('الكرّاسات المصحّحة مع ملف التعديلات (١٢ أكتوبر ٢٠٢٦)', () => {
+  const body = { planId: PLAN, items: [
+    { kind: 'workbook_replace', moduleId: 'M1', reasonAr: 'س', file: { name: ' كراسة 1.pdf ' } },
+    { kind: 'workbook_replace', moduleId: 'M2', reasonAr: 'س', file: { name: 'كراسة 2.pdf', key: 'قائم-سلفا-123', mime: 'application/pdf' } },
+    { kind: 'plan', reasonAr: 'س', set: { summaryAr: 'ن' } },
+  ] }
+
+  it('⚠️ يسمّي ما يحتاج رفعا — بلا مفتاح، مرة واحدة لكل اسم', () => {
+    expect(workbookFilesNeeded(body)).toEqual(['كراسة 1.pdf'])
+    expect(workbookFilesNeeded({ items: [...body.items, body.items[0]] })).toEqual(['كراسة 1.pdf'])
+  })
+
+  it('⚠️ ويكتب المفتاح في بنده وحده، ولا يمسّ الأصل ولا ما له مفتاح', () => {
+    const out = withWorkbookKeys(body, { 'كراسة 1.pdf': 'مفتاح-جديد-456' }) as typeof body
+    expect(out.items[0]!.file).toEqual({ name: ' كراسة 1.pdf ', key: 'مفتاح-جديد-456', mime: 'application/pdf' })
+    expect(out.items[1]!.file).toEqual(body.items[1]!.file)
+    expect(body.items[0]!.file).not.toHaveProperty('key')
+  })
+
+  it('والمسار، والـPDF يعرف باسمه، وما لم يختر يقال باسمه', () => {
+    expect(editFilePath(PLAN)).toBe(`/api/admin/cohort-plans/${PLAN}/edit-files`)
+    expect([isPdfName('a.PDF '), isPdfName('a.json')]).toEqual([true, false])
+    expect(missingWorkbooksAr(['أ.pdf'])).toBe('ملف الكراسة «أ.pdf» ليس بين ما اخترته — اختره مع ملف التعديلات')
+    expect(missingWorkbooksAr(['أ.pdf', 'ب.pdf'])).toMatch(/^ملفات الكراسات «أ.pdf»، «ب.pdf»/)
+    expect(missingWorkbooksAr(['أ.pdf'])).not.toMatch(/[\u064B-\u0650\u0652]/)
   })
 })

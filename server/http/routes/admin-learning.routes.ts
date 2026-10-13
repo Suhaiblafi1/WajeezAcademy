@@ -148,6 +148,19 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
     return reply.status(201).send(await reportFiles.startReviewReportUpload(req.auth!.userId, id, body))
   })
 
+  /* والكرّاسةُ المصحّحةُ لبطاقة «قبل/بعد» (١٢ أكتوبر ٢٠٢٦، `startEditFileUpload`) — والبطاقةُ تحمل مفتاحَها */
+  app.post('/api/admin/cohort-plans/:id/edit-files', {
+    preHandler: requirePermission('cohort.plan.approve'),
+    schema: { tags: ['admin-cohorts'], summary: 'رابط رفع كرّاسة مصحّحة (PDF) لبطاقة تعديل على خطّة مفتوحة' },
+  }, async (req, reply) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const body = z.object({
+      mime: z.string().trim().min(3).max(120),
+      originalName: z.string().trim().min(1).max(200),
+    }).parse(req.body)
+    return reply.status(201).send(await reportFiles.startEditFileUpload(req.auth!.userId, id, body))
+  })
+
   app.delete('/api/admin/cohort-plans/:id/review-report/:storageKey', {
     preHandler: requirePermission('cohort.plan.approve'),
     schema: { tags: ['admin-cohorts'], summary: 'حذف تقرير مراجعة قبل القرار' },

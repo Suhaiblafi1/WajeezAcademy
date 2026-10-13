@@ -33,11 +33,11 @@ import {
   applyContentEdit, contentBefore, editsContent, noteItemsFrom, planEditStep, planEditView, rowEditProblem, sameSnapshot, scheduleChainProblem, scheduleSnapshot,
   sessionMoveChainProblem,
   sessionSnapshot, taskSnapshot, type Checked, type EditContext, type EditSnapshot, type EditView, type PlanEdit,
-  type PlanEditStatus, PLAN_EDITS_MAX, TRAINER_VISIBLE_EDIT_STATUSES,
+  type PlanEditStatus, PLAN_EDITS_MAX, TASK_EDIT_FIELDS, TRAINER_VISIBLE_EDIT_STATUSES,
 } from '../../src/application/trainer/plan-edits'
 
 /** بندٌ في الملفّ المرفوع: التعديلُ نفسُه، ولماذا، وأمطلوبٌ هو */
-export type PlanEditInput = PlanEdit & { required?: boolean; reasonAr: string }
+export type PlanEditInput = PlanEdit & { required?: boolean; reasonAr: string; basedOn?: Record<string, unknown> | null }
 
 export interface PlanEditItem {
   id: string
@@ -70,7 +70,9 @@ const NOT_A_FILE: readonly string[] = ['note', 'schedule']
 interface Rows {
   content: TrainerPlanContent
   tasks: { id: string; title: string; type: string; briefAr: string | null; dueAt: Date | null; moduleId: string | null; maxScore: number }[]
-  sessions: { id: string; title: string; startsAt: Date; endsAt: Date | null; placeholder: boolean; moduleIds: string[] }[]
+  sessions: { id: string; title: string; startsAt: Date; endsAt: Date | null; placeholder: boolean; moduleIds: string[]; noteAr: string | null }[]
+  /** عنوانُ الشعبة — «قبلُ» بطاقة `cohort_title` */
+  cohortTitle: string
 }
 
 export class PlanEditService {
@@ -96,18 +98,19 @@ export class PlanEditService {
   }
 
   private async rows(cohortId: string, content: unknown): Promise<Rows> {
-    const [tasks, sessions] = await Promise.all([
+    const [tasks, sessions, cohort] = await Promise.all([
       this.prisma.cohortAssessment.findMany({
         where: { cohortId },
         select: { id: true, title: true, type: true, briefAr: true, dueAt: true, moduleId: true, maxScore: true },
       }),
       this.prisma.cohortSession.findMany({
         where: { cohortId, status: { not: 'cancelled' } },
-        select: { id: true, title: true, startsAt: true, endsAt: true, placeholder: true, moduleIds: true },
+        select: { id: true, title: true, startsAt: true, endsAt: true, placeholder: true, moduleIds: true, noteAr: true },
       }),
+      this.prisma.cohort.findUnique({ where: { id: cohortId }, select: { title: true } }),
     ])
     const c = (content ?? {}) as TrainerPlanContent
-    return { content: { ...c, modules: c.modules ?? [], resources: c.resources ?? [] }, tasks, sessions }
+    return { content: { ...c, modules: c.modules ?? [], resources: c.resources ?? [] }, tasks, sessions, cohortTitle: cohort?.title ?? '' }
   }
 
   /** ما في موضع التعديل الآن — أو لماذا لا موضعَ له */
@@ -117,6 +120,26 @@ export class PlanEditService {
     if (p) return { ok: false, problemAr: p }
     switch (edit.kind) {
       case 'task_add': case 'note': return { ok: true, value: null }
+      case 'cohort_title': return { ok: true, value: { titleAr: r.cohortTitle } }
+      case 'task_remove': {
+        const t = r.tasks.find((x) => x.id === edit.assessmentId)
+        if (!t) return { ok: false, problemAr: 'لا مهمّة بهذا المعرّف في هذه الشعبة — لعلّها حذفت' }
+        return { ok: true, value: taskSnapshot(t as unknown as Record<string, unknown>, ['title', 'type', 'dueAt', 'maxScore']) }
+      }
+      case 'session_add': {
+        /* ولقاءٌ جديدٌ لا يقع على لقاءٍ قائم — كما لا يقع عليه المنقول */
+        const start = Date.parse(edit.session.startsAt)
+        const end = Date.parse(edit.session.endsAt)
+        const clash = r.sessions.find((x) => x.startsAt.getTime() < end && (x.endsAt ? x.endsAt.getTime() : x.startsAt.getTime() + 2 * 3_600_000) > start)
+        if (clash) return { ok: false, problemAr: `يقع اللقاء الجديد على لقاء «${clash.title}» في الوقت نفسه` }
+        return { ok: true, value: null }
+      }
+      case 'session_change': {
+        const s = r.sessions.find((x) => x.id === edit.sessionId)
+        if (!s) return { ok: false, problemAr: 'لا لقاء بهذا المعرّف في هذه الشعبة — لعلّه حذف' }
+        if (s.placeholder) return { ok: false, problemAr: 'هذا موعد تحجزه الإدارة لا لقاء للمدرّب' }
+        return { ok: true, value: { title: s.title, noteAr: s.noteAr } }
+      }
       case 'schedule': return scheduleSnapshot(edit, r.sessions, r.tasks)
       case 'task_change': {
         const t = r.tasks.find((x) => x.id === edit.assessmentId)
@@ -248,10 +271,26 @@ export class PlanEditService {
     const onDraft: number[] = []
     const onTrainer: number[] = []
     const seen = new Map<string, number>()
+    /* ═══ والكرّاسةُ الجديدةُ ملفُّ هذه الشعبة — رُفع لها وبقيت بايتاتُه (١٢ أكتوبر ٢٠٢٦) ═══
+       المفتاحُ في البند نصٌّ؛ فلو قُبل مفتاحٌ لملفّ شعبةٍ أخرى لصار بابا يُقرأ به ملفُّها */
+    const wbKeys = items.flatMap((x) => (x.kind === 'workbook_replace' && x.file?.key ? [x.file.key] : []))
+    const owned = new Set(wbKeys.length === 0 ? [] : (await this.prisma.cohortFile.findMany({
+      where: { cohortId: plan.cohortId, purpose: 'workbook', storageKey: { in: wbKeys } }, select: { storageKey: true },
+    })).map((f) => f.storageKey))
+    items.forEach((x, i) => {
+      if (x.kind === 'workbook_replace' && !owned.has(x.file?.key)) problems.push(`البند ${i + 1}: ملفّ الكرّاسة لم يرفع لهذه الشعبة — ارفعه مع الملفّ دفعة واحدة`)
+    })
     const snaps = items.map((item, i) => {
       const edit = editOf(item)
       const snap = this.snapshotNow(edit, r)
       if (!snap.ok) { problems.push(`البند ${i + 1}: ${snap.problemAr}`); return null }
+      /* ═══ ولا يُكتب على خطّةٍ تغيّرت بعد أن نُزّلت (١٢ أكتوبر ٢٠٢٦) ═══
+         «كيف ننزّل الخطط وهم يعدّلونها بعد اقتراحاتي؟» (صاحب المنصّة). اللقطةُ تُؤخذ لحظةَ الرفع، فبندٌ كُتب
+         على تنزيلٍ أقدم كان يأخذ «قبلَه» ممّا كتبه المدرّبُ بعده — ويكتب فوقه إن قُبل. فما يحمل ما كُتب عليه
+         (`basedOn`) يُقابَل بالموضع الآن، وما تغيّر يُردّ باسمه ولا يُرفع شيء */
+      if (item.basedOn !== undefined && !sameSnapshot(item.basedOn as EditSnapshot, snap.value)) {
+        problems.push(`البند ${i + 1}: عدّل المدرب هذا الموضع بعد تنزيل الخطة — نزّلها من جديد واكتب البند على ما فيها الآن`)
+      }
       /* ونقلُ لقاءٍ وحدَه لا يكسر ما حوله — وإلّا كُتب جدولا واحدا بسلسلته (`sessionMoveChainProblem`) */
       if (edit.kind === 'session_move') {
         const chain = sessionMoveChainProblem(edit, r.sessions.filter((x) => !x.placeholder), r.tasks)
@@ -658,6 +697,23 @@ export class PlanEditService {
       case 'session_remove':
         await this.cohorts.trainerDeleteSession(userId, edit.sessionId)
         return
+      /* وبعد الاعتماد حذفُ المنشورة طلبٌ ينتظر الإدارة (`deleteAssessment`) — يُقبل البندُ ويبقى الحذفُ في طابورها */
+      case 'task_remove':
+        await this.assessments.deleteAssessment(userId, edit.assessmentId)
+        return
+      case 'cohort_title':
+        await this.plans.updateCohort(userId, cohortId, { title: edit.titleAr.trim() })
+        return
+      case 'session_add':
+        await this.cohorts.trainerAddSessionWithMeeting(userId, cohortId, {
+          title: edit.session.title.trim(), startsAt: new Date(edit.session.startsAt), endsAt: new Date(edit.session.endsAt),
+          ...(edit.session.moduleIds?.length ? { moduleIds: edit.session.moduleIds } : {}),
+          ...(edit.session.noteAr ? { noteAr: edit.session.noteAr } : {}),
+        })
+        return
+      case 'session_change':
+        await this.cohorts.trainerUpdateSessionDetails(userId, edit.sessionId, edit.set)
+        return
       /* والملاحظةُ لا تكتب شيئا — موافقتُه قرارُه، وما تطلبه يعدّله هو في خطوتها */
       case 'note':
         return
@@ -736,6 +792,7 @@ function editOf(item: PlanEditInput): PlanEdit {
   const edit: Record<string, unknown> = { ...item }
   delete edit.required
   delete edit.reasonAr
+  delete edit.basedOn
   return edit as unknown as PlanEdit
 }
 
@@ -746,7 +803,9 @@ function itemsAr(nums: readonly number[]): string {
 }
 
 function openKeysOf(edit: PlanEdit): string[] {
-  return edit.kind === 'task_add' ? [`task_new:${edit.task.title.trim()}`] : targetsOf(edit)
+  if (edit.kind === 'task_add') return [`task_new:${edit.task.title.trim()}`]
+  if (edit.kind === 'session_add') return [`session_new:${edit.session.startsAt}`]
+  return targetsOf(edit)
 }
 
 /** المواضعُ التي يقع عليها تعديل — بندان على موضعٍ واحدٍ لا يُرفعان معا */
@@ -758,7 +817,15 @@ function targetsOf(edit: PlanEdit): string[] {
     case 'resource_change': case 'resource_remove': return [`resource:${edit.match.title.trim()}|${edit.match.url?.trim() ?? ''}`]
     case 'task_add': return []
     case 'task_change': return Object.keys(edit.set).map((f) => `task:${edit.assessmentId}:${f}`)
-    case 'session_move': case 'session_remove': return [`session:${edit.sessionId}`]
+    case 'session_move': return [`session:${edit.sessionId}`]
+    /* والحذفُ يقع على اللقاء كلِّه — موعدِه وتفاصيلِه؛ وتعديلُ التفاصيل لا يقع على الموعد */
+    case 'session_remove': return [`session:${edit.sessionId}`, `session:${edit.sessionId}:details`]
+    case 'session_change': return [`session:${edit.sessionId}:details`]
+    case 'session_add': return []
+    /* وحذفُ المهمّة يقع على حقولها كلِّها — فلا يُرفع معه تعديلُ واحدٍ منها */
+    case 'task_remove': return TASK_EDIT_FIELDS.map((f) => `task:${edit.assessmentId}:${f}`)
+    case 'cohort_title': return ['cohort:title']
+    case 'workbook_replace': return [`workbook:${edit.moduleId ?? 'course'}`]
     case 'note': return [`note:${edit.step}`]
     case 'schedule': return [
       ...edit.moves.map((m) => `session:${m.sessionId}`),

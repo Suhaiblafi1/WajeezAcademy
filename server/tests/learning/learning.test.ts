@@ -342,9 +342,12 @@ describe('طابورُ التصحيح يُنادي صاحبَه', () => {
   it('أوّلُ تسليمٍ يُخبر المدرّب — والطابورُ انتقل من فارغٍ إلى غيرِ فارغ', async () => {
     const before = await prisma.notification.count({ where: { userId: trainerUserId, templateKey: 'submission.queued' } })
     await assessments.submitAssignment(learnerId, queueAssessment, { textAnswer: 'أوّلُ حلّ' })
+    /* بترتيب الكتابة صراحةً — بلا ترتيبٍ تُعيد القاعدةُ الصفوفَ كما تشاء، فلم يكن «الأخير» أحدثَها دائما:
+       سقط في CI (١٢ أكتوبر ٢٠٢٦) وقرأ إشعارَ «واجب الوحدة الأولى» من اختبارٍ قبله */
     const notes = await prisma.notification.findMany({
       where: { userId: trainerUserId, templateKey: 'submission.queued' },
       select: { audience: true, body: true },
+      orderBy: [{ queuedAt: 'asc' }, { id: 'asc' }],
     })
     expect(notes.length, 'لم يُخبَر المدرّبُ بأنّ عملا دخل طابورَه').toBe(before + 1)
     expect(notes[notes.length - 1].audience).toBe('trainer')

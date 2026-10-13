@@ -151,6 +151,41 @@ export class CohortFileService {
     }
   }
 
+  /* ═══ الكرّاسةُ المصحّحة — يرفعها المعتمِدُ لبطاقة «قبل/بعد» (١٢ أكتوبر ٢٠٢٦، `workbook_replace`) ═══
+     «We fix the PDF, he accepts» (صاحب المنصّة). فهي ملفُّ الشعبة بغرض الكرّاسة نفسِه — يقرؤه مدرّبُها والإدارةُ
+     كأيّ كرّاسة، ويصل المتعلّمَ حين يقبلها المدرّبُ فتصير في خطّته. ورمزُها `edit:<الخطّة>`: من البطاقة جاءت.
+     وعلى خطّةٍ مفتوحةٍ وحدَها — المعتمَدةُ لا يُقترح عليها. */
+  async startEditFileUpload(adminId: string, planId: string, input: { mime: string; originalName: string }) {
+    assertFileUploadsEnabled('والبديل الآن: لا كرّاسة بديلة بلا رفع الملفّات.')
+    const plan = await this.prisma.cohortDeliveryPlan.findUnique({
+      where: { id: planId }, select: { id: true, cohortId: true, status: true },
+    })
+    if (!plan) throw new AuthError('not_found', 'الخطّة غير موجودة', 404)
+    if (!['draft', 'submitted', 'changes_requested'].includes(plan.status)) {
+      throw new AuthError('plan_closed', 'اعتمدت هذه الخطّة — لا يقترح عليها شيء', 409)
+    }
+    const blocker = fileBlockerAr('workbook', input.mime)
+    if (blocker) throw new AuthError('bad_mime', blocker, 422)
+    const name = input.originalName.trim().slice(0, 200) || 'الكراسة'
+    const storageKey = newStorageKey()
+    await this.prisma.cohortFile.create({
+      data: { cohortId: plan.cohortId, purpose: 'workbook', refId: `edit:${plan.id}`, storageKey, originalName: name, mime: input.mime, uploadedBy: adminId },
+    })
+    const exp = Date.now() + SIGNED_URL_TTL_MS
+    const sig = signKey(storageKey, exp, 'write')
+    await recordAudit(this.prisma, {
+      actorId: adminId, action: 'cohort.file.upload',
+      entityType: 'cohort', entityId: plan.cohortId, meta: { purpose: 'workbook', refId: `edit:${plan.id}`, mime: input.mime },
+    })
+    return {
+      storageKey,
+      uploadUrl: `/api/v1/uploads/${storageKey}/stream?exp=${exp}&sig=${sig}`,
+      maxBytes: MAX_BODY_FILE_BYTES,
+      originalName: name,
+      mime: input.mime,
+    }
+  }
+
   async removeReviewReport(adminId: string, planId: string, storageKey: string) {
     const plan = await this.submittedPlan(planId)
     const row = await this.prisma.cohortFile.findUnique({

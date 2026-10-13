@@ -64,7 +64,8 @@ describe('الرفع دفعة واحدة — «خطط تنتظر اعتمادك�
   })
 
   it('⚠️ كلّ ملفّ إلى خطّته بمسلك البطاقة نفسه — فيفحص كما يفحص هناك', () => {
-    expect(bulk).toMatch(/apiPost<[^>]*>\(bulkUploadPath\(read\.planId, mode\), read\.body\)/)
+    expect(bulk).toMatch(/apiPost<[^>]*>\(bulkUploadPath\(read\.planId, mode\), body\)/)
+    expect(bulk).toMatch(/const body = needed\.length \? withWorkbookKeys\(read\.body, keys\) : read\.body;/)
     expect(bulk).toMatch(/<input[\s\S]{0,80}type="file"\s*multiple/)
   })
 
@@ -77,7 +78,7 @@ describe('الرفع دفعة واحدة — «خطط تنتظر اعتمادك�
   it('⚠️ وطريقة الرفع يختارها المعتمد ولا تفترض — «أضف» ما لم يختر غيرها، وكل طريقة إلى مسلكها', () => {
     expect(bulk).toMatch(/const \[mode, setMode\] = useState<BulkMode>\("add"\)/)
     expect(bulk).toMatch(/\{BULK_MODES\.map\(\(m\) => \([\s\S]{0,160}<input type="radio"[^>]*checked=\{mode === m\}/)
-    expect(bulk).toMatch(/await apiPost<[^>]*>\(bulkUploadPath\(read\.planId, mode\), read\.body\)/)
+    expect(bulk).toMatch(/await apiPost<[^>]*>\(bulkUploadPath\(read\.planId, mode\), body\)/)
     expect(bulk, 'لا مسلك مكتوب في الشاشة يفترق عمّا تقوله').not.toMatch(/edits\/replace-/)
   })
 
@@ -154,5 +155,26 @@ describe('«احذف المكرر» — على البطاقة وللخطط كل�
   it('⚠️ وبطاقة ما نظف تعاد — فلا يبقى عددها القديم', () => {
     expect(page).toMatch(/<PlanEditsDedupeAll onCleaned=\{\(id\) => setUploaded\(/)
     expect(all).toMatch(/for \(const id of r\.cleaned\) onCleaned\(id\);/)
+  })
+})
+
+describe('والكرّاسات المصحّحة تختار مع ملفات التعديلات (١٢ أكتوبر ٢٠٢٦، workbook_replace)', () => {
+  const panel = code('src/components/PlanEdits.tsx')
+  const bulk = panel.slice(panel.indexOf('export function PlanEditsBulkUpload'), panel.indexOf('export function PlanEditsPanel'))
+
+  it('⚠️ الـPDF لا يرفع وحده ملف تعديلات — يفصل ويرفع مع بنده', () => {
+    expect(bulk).toMatch(/const pdfs = new Map\(picked\.filter\(\(f\) => isPdfName\(f\.name\)\)/)
+    expect(bulk).toMatch(/const files = picked\.filter\(\(f\) => !isPdfName\(f\.name\)\);/)
+    expect(bulk).toMatch(/accept="application\/json,\.json,application\/pdf,\.pdf"/)
+  })
+
+  it('⚠️ وما سمّي ولم يختر يردّ الملف باسمه قبل أن يرفع شيء', () => {
+    const at = (re: RegExp) => bulk.search(re)
+    expect(at(/if \(missing\.length\) throw new Error\(missingWorkbooksAr\(missing\)\);/)).toBeGreaterThan(0)
+    expect(at(/if \(missing\.length\)/)).toBeLessThan(at(/editFilePath\(read\.planId\)/))
+  })
+
+  it('⚠️ وكل كراسة ترفع إلى خطتها ثم يكتب مفتاحها في بندها', () => {
+    expect(bulk).toMatch(/apiPost<[^>]*>\(\s*editFilePath\(read\.planId\), \{ mime: "application\/pdf", originalName: n \}\);\s*await putSigned\(up\.uploadUrl, pdf, up\.maxBytes\);\s*keys\[n\] = up\.storageKey;/)
   })
 })
