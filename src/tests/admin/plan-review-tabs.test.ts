@@ -60,7 +60,7 @@ describe('③ وما يقرّر كلّه في «الإدارة»', () => {
       ['تقرير المراجعة', /<ReviewReportUploader planId=\{trainerPlan\.id\}/],
       ['التعديلات', /<PlanEditsUploader/],
       ['الاعتماد', /approvalBody\(approveNote\)/],
-      ['الردّ', /<ReviewNotesForm/],
+      ['الردّ', /cohort-plans\/\$\{trainerPlan\.id\}\/decide`, \{ approve: false \}/],
       ['التأجيل', /\/postpone`/],
       ['المهامّ', /<PendingTasks/],
       ['اللقاءات', /cohort-sessions\/\$\{ps\.id\}\/decide/],

@@ -26,14 +26,16 @@ describe('بطاقة المراجعة عند المعتمد', () => {
     const approve = src.slice(src.lastIndexOf('<Button', src.indexOf('approvalBody(approveNote)')), src.indexOf('approvalBody(approveNote)'))
     expect(approve).toContain('disabled={busy}')
     expect(approve).not.toMatch(/disabled=\{[^}]*blocked/)
-    expect(src).toContain('اطلب تعديلات بما في البطاقة')
+    expect(src).toContain('<b>اطلب تعديلات</b>')
     expect(src).toContain('اعتمدها كما هي')
   })
 
-  it('وصندوق الردّ يملأ ممّا سقط بنقرة — ويبقى يعدّل قبل الإرسال', () => {
-    expect(src).toMatch(/setAskFrom\(scorecardNotes\(scorecard\)\)/)
-    expect(src).toMatch(/<ReviewNotesForm[\s\S]{0,120}initial=\{askFrom\}/)
-    expect(code('src/components/ReviewNotes.tsx')).toMatch(/useState<ReviewNotes>\(initial \?\? \{\}\)/)
+  /* «No text notes» (صاحب المنصّة، ١٣ أكتوبر ٢٠٢٦): كان «اطلب تعديلات بما في البطاقة» يملأ صناديقَ الردّ ممّا سقط
+     من البطاقة، فتصل المدرّبَ ملاحظاتٍ نصّيّةً يعملها بيده. فلا صندوقَ ولا ملءَ — يُردّ ببطاقاته وحدَها */
+  it('⚠️ و«اطلب تعديلات» لا يملأ صندوقا ممّا سقط ولا يرسل ملاحظة — يردّها ببطاقاتها', () => {
+    expect(src).not.toMatch(/scorecardNotes\(/)
+    expect(src).not.toMatch(/<ReviewNotesForm/)
+    expect(src).toMatch(/disabled=\{busy \|\| editsPending === 0\}\s*onClick=\{\(\) => void act\(\s*\(\) => apiPost\(`\/api\/admin\/cohort-plans\/\$\{trainerPlan\.id\}\/decide`, \{ approve: false \}\)/)
   })
 })
 

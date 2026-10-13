@@ -21,10 +21,12 @@ describe('بطاقة المراجعة', () => {
     expect(src).toMatch(/<PlanEditsUploader[\s\S]{0,200}canUpload=\{canApprovePlan\}/)
   })
 
-  it('⚠️ والتعديلات المنتظرة تكفي سببا لـ«اطلب تعديلات»', () => {
+  it('⚠️ والتعديلات المنتظرة هي «اطلب تعديلات» — بلا بطاقة تنتظر لا ردّ، ويقال لماذا', () => {
     expect(src).toMatch(/onPending=\{setEditsPending\}/)
-    expect(src).toMatch(/<ReviewNotesForm[\s\S]{0,200}editsPending=\{editsPending\}/)
-    expect(code('src/components/ReviewNotes.tsx')).toMatch(/const ready = hasReviewNotes\(clean\) \|\| editsPending > 0/)
+    expect(src).toMatch(/disabled=\{busy \|\| editsPending === 0\}/)
+    expect(src).toMatch(/editsPending === 0 && \(\s*<p[^>]*>\s*لا بطاقة تنتظر المدرّب بعد/)
+    /* والعددُ بطاقاتٌ لا ملاحظات — كما يعدّها الخادم (`pendingEdits`) */
+    expect(code('src/components/PlanEdits.tsx')).toMatch(/const pendingCards = items\.filter\(\(x\) => x\.status === "pending" && x\.kind !== "note"\)\.length;\s*useEffect\(\(\) => \{ onPending\?\.\(pendingCards\); \}/)
   })
 })
 

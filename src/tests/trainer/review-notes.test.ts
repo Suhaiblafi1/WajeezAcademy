@@ -151,12 +151,11 @@ describe('وفي ورشة المدرّب', () => {
 })
 
 describe('وفي بطاقة المعتمد', () => {
-  it('⚠️ الردّ من النموذج بأقسامه — لا من صندوق المتصفّح بسطر واحد', () => {
-    /* بابٌ واحدٌ للردّ — وهو النموذج. ولا يُفحص غيابُ «note: note»: يطابق
-       «note: notes» نفسَها، اسما جزءا من اسم */
-    const declines = PLAN_REVIEW.match(/cohort-plans\/\$\{trainerPlan\.id\}\/decide`, \{ approve: false/g) ?? []
-    expect(declines, 'للردّ على الخطّة باب غير النموذج').toHaveLength(1)
-    expect(PLAN_REVIEW).toMatch(/<ReviewNotesForm[\s\S]{0,200}onSend=\{\(notes\) => void act\(\s*\(\) => apiPost\(`\/api\/admin\/cohort-plans\/\$\{trainerPlan\.id\}\/decide`, \{ approve: false, note: notes \}\)/)
+  /* وصار الردُّ ببطاقاته وحدَها (١٣ أكتوبر ٢٠٢٦، «No text notes»): بابٌ واحد، وجسمُه بلا ملاحظة */
+  it('⚠️ الردّ باب واحد — بلا ملاحظة نصّيّة، ولا صندوق متصفّح', () => {
+    const declines = PLAN_REVIEW.match(/cohort-plans\/\$\{trainerPlan\.id\}\/decide`, \{ approve: false[^}]*\}/g) ?? []
+    expect(declines, 'للردّ على الخطّة باب ثان').toHaveLength(1)
+    expect(declines[0]).toBe('cohort-plans/${trainerPlan.id}/decide`, { approve: false }')
   })
 
   it('⚠️ وما يعتمد مع الخطّة لا يعرض بطاقة بطاقة — يعدّ على زرّ اعتمادها', () => {
