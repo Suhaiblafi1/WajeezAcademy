@@ -454,6 +454,32 @@ export function scheduleChainProblem(
   return null
 }
 
+/* ═══ وأيّامُ الجدول من مواعيده لا من حقلٍ واحد (١٣ أكتوبر ٢٠٢٦) ═══
+   طلب مدرّبٌ لقاءين في الأسبوع («سبت وأربعاء فقط»)، والبندُ يحمل يوما واحدا (`weekday`) — فكان عنوانُه
+   يقول «السبت 19:00 كلّ أسبوع» ونصفُ لقاءاته أربعاء. فالعنوانُ من أيّام اللقاءات المنقولة نفسِها بتوقيت
+   الأكاديميّة، بترتيب وقوعها: «السبت والأربعاء 19:00»، أو «السبت 19:00 والأربعاء 18:00» إن اختلفت الساعة. */
+export function scheduleSlotsAr(edit: Pick<ScheduleEdit, 'weekday' | 'clock' | 'moves'>): string {
+  const local = (iso: string) => {
+    const parts = new Intl.DateTimeFormat('en-US', { timeZone: ACADEMY_ZONE, weekday: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+      .formatToParts(new Date(iso))
+    const get = (t: string) => parts.find((x) => x.type === t)?.value ?? ''
+    return { day: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(get('weekday')), clock: `${get('hour')}:${get('minute')}` }
+  }
+  const slots = new Map<number, Set<string>>()
+  for (const m of [...edit.moves].sort((x, y) => Date.parse(x.startsAt) - Date.parse(y.startsAt))) {
+    const t = local(m.startsAt)
+    if (t.day < 0 || Number.isNaN(Date.parse(m.startsAt))) continue
+    if (!slots.has(t.day)) slots.set(t.day, new Set())
+    slots.get(t.day)!.add(t.clock)
+  }
+  if (slots.size === 0) return `${WEEKDAY_AR[edit.weekday] ?? ''} ${edit.clock}`.trim()
+  const days = [...slots.keys()]
+  const clocks = new Set([...slots.values()].flatMap((c) => [...c]))
+  const and = (xs: string[]) => xs.length === 1 ? xs[0]! : `${xs.slice(0, -1).join('، ')} و${xs[xs.length - 1]}`
+  if (clocks.size === 1) return `${and(days.map((d) => WEEKDAY_AR[d] ?? ''))} ${[...clocks][0]}`
+  return and(days.map((d) => `${WEEKDAY_AR[d] ?? ''} ${[...slots.get(d)!].sort().join(' و')}`))
+}
+
 /** لقطةُ الجدول: موعدُ كلّ لقاءٍ ينقله، وموعدُ كلّ مهمّةٍ تتبعه — مسطّحةً فتُقارَن بـ`sameSnapshot` */
 export function scheduleSnapshot(
   edit: ScheduleEdit,
@@ -734,7 +760,7 @@ export function planEditView(edit: PlanEdit, before: EditSnapshot, ctx: EditCont
           afterAr: valueAr('dueAt', t.dueAt, ctx),
         })
       }
-      return view(`جدول ثابت: ${WEEKDAY_AR[edit.weekday] ?? ''} ${edit.clock} كلّ أسبوع`, rows)
+      return view(`جدول ثابت: ${scheduleSlotsAr(edit)} كلّ أسبوع`, rows)
     }
     case 'note': {
       /* نقاطٌ سطرا سطرا — و«مطلوب»/«مقترَح» في أوّل السطر (من بطاقة المعايير) يصير وسمَه */
