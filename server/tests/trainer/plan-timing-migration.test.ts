@@ -20,7 +20,7 @@ import { fixtureTrainerId } from '../helpers/approved-trainer'
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..')
 let prisma: PrismaClient
 
-const statements = readFileSync(join(root, 'prisma/migrations/20261017120000_plan_timing_from_meetings/migration.sql'), 'utf8')
+const statements = readFileSync(join(root, 'prisma/migrations/20261017130000_plan_timing_from_meetings/migration.sql'), 'utf8')
   .split('\n').filter((l) => !l.trimStart().startsWith('--')).join('\n')
   .split(';').map((x) => x.trim()).filter(Boolean)
 const migrate = async () => { for (const st of statements) await prisma.$executeRawUnsafe(st) }
