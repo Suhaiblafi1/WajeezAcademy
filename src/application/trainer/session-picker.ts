@@ -122,6 +122,17 @@ export function suggestedSessionTitle(
   return parts.join(' · ')
 }
 
+/* ═══ محاورُ اللقاء الجديد قبل أن يختار المدرّب (١٧ أكتوبر ٢٠٢٦) ═══
+
+   في بطاقة الموعد: ما لم يُغطَّ من محاوره — وكلُّها إن غُطّيت. وفي بطاقة الشعبة كلِّها (مواعيدُ
+   المحاور من لقاءاتها، `planSlots`): أوّلُ ما لم يُغطَّ وحدَه — فلقاءٌ يُفتح على كلّ المحاور يخالف
+   ترتيبَها، ويردّه الخادمُ (`meetingOrderProblem`). وإن غُطّيت كلُّها فلا شيء: يختار هو. */
+export function defaultMeetingAxes(axes: readonly string[], covered: ReadonlySet<string>, wholePeriod: boolean): string[] {
+  const uncovered = axes.filter((id) => !covered.has(id))
+  if (wholePeriod) return uncovered.slice(0, 1)
+  return uncovered.length > 0 ? uncovered : [...axes]
+}
+
 /* ═══ أيّامُ الموعد وحدَها — لا تقويمٌ مفتوح (١١ أكتوبر ٢٠٢٦) ═══
 
    قرارُ صاحب المنصّة: «يومُ اللقاء المباشر، ويومُ فتح الجلسة المسجّلة، داخلَ وقت المحور. جرّبتُه

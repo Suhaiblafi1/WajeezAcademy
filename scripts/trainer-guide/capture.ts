@@ -329,16 +329,18 @@ const ACTIVE: Shot[] = [
       const p = e.page
       await open(e, `/trainer/cohort/${await cohortId(e, 'الدفعةُ الأولى')}`)
       await step(e, 2)
-      const slot = p.getByRole('listitem').filter({ has: p.getByText('الموعد 1 · المحور 1', { exact: true }) }).first()
-      await btn(slot, /^المحور 1 —/).click()
+      /* ومنذ ١٧ أكتوبر ٢٠٢٦ لا موعدَ للمحور في هذه الخطوة — مواعيدُه من لقاءاته (`planSlots`):
+         فالبطاقةُ بطاقةُ المحور نفسُه، والأرقامُ ثلاثةٌ لا أربعة */
+      /* والعنوانُ يسقط من زرّ المحور حين يُفتح — فالبطاقةُ تُعرَف بخانة عنوانها بعد الفتح */
+      await btn(p, /^المحور 1 —/).click()
       await settle(e)
+      const card = p.getByRole('listitem').filter({ has: p.getByRole('textbox', { name: 'عنوان المحور 1' }) }).first()
       await shoot(e, {
-        name: 'ws-modules', clip: slot, clipPad: 14, maxHeight: 1450,
+        name: 'ws-modules', clip: card, clipPad: 14, maxHeight: 1450,
         marks: [
-          { target: slot.getByRole('textbox', { name: 'بدايةُ الموعد 1' }), n: 1, pad: 5 },
-          { target: slot.getByRole('textbox', { name: 'عنوان المحور 1' }), n: 2, pad: 5 },
-          { target: slot.getByRole('textbox', { name: 'مخرج المحور 1' }), n: 3, pad: 5 },
-          { target: slot.getByRole('textbox', { name: 'المحتوى النظريّ للمحور 1' }), n: 4, pad: 5 },
+          { target: card.getByRole('textbox', { name: 'عنوان المحور 1' }), n: 1, pad: 5 },
+          { target: card.getByRole('textbox', { name: 'مخرج المحور 1' }), n: 2, pad: 5 },
+          { target: card.getByRole('textbox', { name: 'المحتوى النظريّ للمحور 1' }), n: 3, pad: 5 },
         ],
       })
     },
@@ -376,13 +378,14 @@ const ACTIVE: Shot[] = [
       const p = e.page
       await open(e, `/trainer/cohort/${await cohortId(e, 'الدفعةُ الأولى')}`)
       await step(e, 4)
-      const slot = p.getByRole('listitem').filter({ has: p.getByText('الموعد 1 · المحور 1', { exact: true }) }).first()
+      /* بطاقةٌ واحدةٌ بمدّة الشعبة ومحاورها كلِّها (١٧ أكتوبر ٢٠٢٦) — والنصوصُ بلا تشكيل (١١ أكتوبر) */
+      const card = p.getByRole('listitem').filter({ has: p.getByText('لقاءات الشعبة', { exact: true }) }).first()
       await shoot(e, {
-        name: 'ws-meetings', clip: slot, clipPad: 14,
+        name: 'ws-meetings', clip: card, clipPad: 14, maxHeight: 2400,
         marks: [
-          { target: slot.getByText(/ينتظر اعتمادَ الإدارة/).first(), n: 1, pad: 5 },
-          { target: btn(slot, /لقاءٌ مباشر/), n: 2, pad: 5 },
-          { target: btn(slot, /جلسةٌ مسجّلة/), n: 3, pad: 5 },
+          { target: card.getByText(/· ينتظر اعتماد الإدارة$/).first(), n: 1, pad: 5 },
+          { target: btn(card, /^\+ لقاء مباشر/), n: 2, pad: 5 },
+          { target: btn(card, /^\+ جلسة مسجّلة/), n: 3, pad: 5 },
         ],
       })
     },
@@ -394,7 +397,7 @@ const ACTIVE: Shot[] = [
       const p = e.page
       await open(e, `/trainer/cohort/${await cohortId(e, 'الدفعةُ الأولى')}`)
       await step(e, 4)
-      const title = p.getByText('نصائحُ للقاءاتك').first()
+      const title = p.getByText('نصائح للقاءاتك').first()
       await shoot(e, {
         name: 'ws-session-tips', clip: p.locator('section').filter({ has: title }).first(), clipPad: 14,
         marks: [{ target: title, n: 1, pad: 5 }],
@@ -407,10 +410,10 @@ const ACTIVE: Shot[] = [
       const p = e.page
       await open(e, `/trainer/cohort/${await cohortId(e, 'الدفعةُ الأولى')}`)
       await step(e, 4)
-      const slot = p.getByRole('listitem').filter({ has: p.getByText('الموعد 2 · المحور 2', { exact: true }) }).first()
-      await btn(slot, /لقاءٌ مباشر/).click()
+      const card = p.getByRole('listitem').filter({ has: p.getByText('لقاءات الشعبة', { exact: true }) }).first()
+      await btn(card, /^\+ لقاء مباشر/).click()
       await settle(e)
-      const send = btn(slot, /احفظ اللقاء/)
+      const send = btn(card, /احفظ اللقاء/)
       await shoot(e, {
         name: 'ws-live-form', clip: await panel(send, 500), clipPad: 14,
         marks: [{ target: send, n: 1, pad: 5 }],
