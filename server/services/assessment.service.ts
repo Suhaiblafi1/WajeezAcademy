@@ -123,7 +123,7 @@ export class AssessmentService {
     moduleId?: string; briefAr?: string; maxScore?: number; passScore?: number; dueAt?: Date; rubricId?: string
     attachments?: TypedLink[]
     items?: { prompt: string; kind?: string; maxScore?: number }[]
-  }, opts: { byTrainer?: boolean } = {}) {
+  }, opts: { byTrainer?: boolean; preApproved?: boolean } = {}) {
     const cohort = await this.prisma.cohort.findUnique({ where: { id: input.cohortId } })
     if (!cohort) throw new AuthError('not_found', 'الشعبة غير موجودة', 404)
     if (input.rubricId) {
@@ -132,8 +132,9 @@ export class AssessmentService {
     }
     const dueAt = input.dueAt ?? (await this.slotDueAt(input.cohortId, input.moduleId)) ?? undefined
     /* ومهمّةٌ يضيفها المدرّبُ بعد اعتماد خطّته تُنشأ مسودّةً تنتظر الإدارة (٣ج-٣) —
-       والإدارةُ إن أنشأت نشرت: هي المعتمِد */
-    const awaiting = opts.byTrainer === true && (await this.approvedOnce(input.cohortId))
+       والإدارةُ إن أنشأت نشرت: هي المعتمِد. و`preApproved` بطاقةٌ اعتمدتها الإدارةُ قبل أن يقبلها المدرّب
+       على خطّةٍ معتمدة — فلا تنتظرها ثانيةً (١٧ أكتوبر ٢٠٢٦، `PlanEditService.accept`) */
+    const awaiting = opts.byTrainer === true && opts.preApproved !== true && (await this.approvedOnce(input.cohortId))
     const queueWasEmpty = awaiting && (await this.awaitingCount(input.cohortId)) === 0
     const assessment = await this.prisma.cohortAssessment.create({
       data: {
@@ -181,15 +182,15 @@ export class AssessmentService {
     title?: string; briefAr?: string | null; type?: 'assignment' | 'quiz' | 'project'
     maxScore?: number; dueAt?: Date | null; attachments?: TypedLink[]
     moduleId?: string | null
-  }) {
+  }, opts: { preApproved?: boolean } = {}) {
     const before = await this.assertAssessmentTrainer(actorId, assessmentId)
     /* ═══ وبعد الاعتماد: تعديلُ المنشورة طلبٌ ينتظر الإدارة (٣ج-٣) ═══
 
        المتعلّمون يقرؤون الصفَّ نفسَه — فلا يُكتب فيه ما لم يُعتمَد. والطلبُ
        يُحفظ بجانبه (`pendingChange`)، وتعديلُ الطلب يعدّل الطلبَ لا المعتمَد.
-       والمسودّةُ تُعدَّل كما كانت: لا يراها أحدٌ بعد. */
+       والمسودّةُ تُعدَّل كما كانت: لا يراها أحدٌ بعد. وبطاقةٌ اعتمدتها الإدارةُ (`preApproved`) تُكتب لا تُطلب */
     const approved = await this.approvedOnce(before.cohortId)
-    const gated = approved && before.status === 'published'
+    const gated = approved && before.status === 'published' && opts.preApproved !== true
     const live = taskValues(before)
     const previous = gated ? readTaskChange(before.pendingChange) : null
     /* ومهمّةٌ رُبطت بمحورها ولا موعدَ لها يُفترض لها آخرُ موعده — وما كتبه
@@ -266,7 +267,7 @@ export class AssessmentService {
     return { ...updated, review: taskReview(updated, true) }
   }
 
-  async deleteAssessment(actorId: string, assessmentId: string) {
+  async deleteAssessment(actorId: string, assessmentId: string, opts: { preApproved?: boolean } = {}) {
     const before = await this.assertAssessmentTrainer(actorId, assessmentId)
     if (before._count.submissions > 0) {
       throw new AuthError(
@@ -276,8 +277,9 @@ export class AssessmentService {
       )
     }
     /* وبعد الاعتماد: حذفُ المنشورة طلبٌ ينتظر الإدارة (٣ج-٣) — تبقى عند
-       المتعلّمين حتّى يُعتمَد. والمسودّةُ تُحذف كما كانت: لا يراها أحد */
-    if (before.status === 'published' && (await this.approvedOnce(before.cohortId))) {
+       المتعلّمين حتّى يُعتمَد. والمسودّةُ تُحذف كما كانت: لا يراها أحد. وبطاقةٌ اعتمدتها الإدارةُ
+       (`preApproved`) تحذف ولا تطلب — وما سُلّم فيه لا يُحذف بها أيضا (أعلاه) */
+    if (before.status === 'published' && opts.preApproved !== true && (await this.approvedOnce(before.cohortId))) {
       return this.requestRemoval(actorId, before)
     }
     await this.prisma.cohortAssessment.delete({ where: { id: assessmentId } })

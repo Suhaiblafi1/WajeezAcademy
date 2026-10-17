@@ -141,6 +141,8 @@ export interface TrainerApprovalFacts {
   tasksApplied: number
   /** كلمةُ المعتمِد إن كتبها — تُضاف إلى الخبر ولا تحلّ محلَّه */
   noteAr?: string | null
+  /** بطاقاتٌ اعتمدتها الإدارةُ له وبقيت بعد الاعتماد اقتراحاتٍ اختياريّة (١٧ أكتوبر ٢٠٢٦) */
+  suggestions?: number
 }
 
 export function planApprovedTrainerMsg(f: TrainerApprovalFacts): { title: string; heading: string; body: string } {
@@ -159,6 +161,10 @@ export function planApprovedTrainerMsg(f: TrainerApprovalFacts): { title: string
   if (f.meetingsFailed === 1) parts.push('وبقي لقاء واحد عند الإدارة تتمّ اعتماده.')
   else if (f.meetingsFailed > 1) parts.push(`وبقيت لقاءات (${f.meetingsFailed}) عند الإدارة تتمّ اعتمادها.`)
   if (f.tasksApplied > 0) parts.push(`واعتمد معها ما انتظر من مهامّك (${f.tasksApplied}).`)
+  /* وما اعتمدته الإدارةُ له من بطاقاتٍ يبقى عنده اقتراحا — ويُقال أنّه اختياريّ وأين يجده */
+  const n = f.suggestions ?? 0
+  if (n === 1) parts.push('وبقي لك في «المراجعة» اقتراح واحد من الإدارة، اختياري: إن قبلته دخل خطتك المعتمدة مباشرة.')
+  else if (n > 1) parts.push(`وبقيت لك في «المراجعة» اقتراحات من الإدارة (${n})، اختيارية: ما تقبله يدخل خطتك المعتمدة مباشرة.`)
   const note = f.noteAr?.trim()
   return {
     title: `اعتمدت خطّة «${f.cohortTitle}»`,
