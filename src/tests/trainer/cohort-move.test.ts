@@ -6,7 +6,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
-  MOVE_REMINDER_DAYS, moveChoices, moveProblemAr, moveReminderAt, moveShiftMs, nextTerm, shiftDate, termLabelAr,
+  MOVE_REMINDER_DAYS, movedLabelAr, moveChoices, moveProblemAr, moveReminderAt, moveShiftMs, nextTerm, shiftDate, termLabelAr,
 } from '@/application/trainer/cohort-move'
 
 const DAY = 86_400_000
@@ -54,6 +54,14 @@ describe('②ب تذكير المدرب قبل الفصل بشهر', () => {
   })
 })
 
+describe('②ج وسم الشعبة المنقولة في الإدارة', () => {
+  it('إلى أي فصل، ومتى أول لقاء فيها الآن', () => {
+    const day = (d: string | Date) => new Date(d).toISOString().slice(0, 10)
+    expect(movedLabelAr({ toYear: 2027, toSeason: 'feb_apr', firstAt: '2027-02-02T16:00:00Z' }, day)).toBe('نقلت إلى موسم الربيع 2027 · أول لقاء 2027-02-02')
+    expect(movedLabelAr({ toYear: 2027, toSeason: 'feb_apr', firstAt: null }, day)).toBe('نقلت إلى موسم الربيع 2027')
+  })
+})
+
 describe('③ ما يمنع الطلب', () => {
   const base = {
     status: 'open', firstStartsAt: new Date('2026-11-10T16:00:00Z'),
@@ -90,5 +98,7 @@ describe('④ الشاشتان', () => {
     expect(admin).toContain('`/api/admin/cohort-moves/${id}/review`')
     expect(admin).toMatch(/reviewMove\(m\.id, "approve"\)/)
     expect(admin).toMatch(/reviewMove\(m\.id, "reject"\)/)
+    /* والمنقولةُ موسومةٌ في رأسها */
+    expect(admin).toMatch(/\{c\.moved && \([\s\S]{0,200}?movedLabelAr\(c\.moved\)/)
   })
 })
