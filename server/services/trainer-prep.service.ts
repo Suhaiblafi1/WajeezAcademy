@@ -319,6 +319,8 @@ export class TrainerPrepService {
     const summary = extra.length ? `محاور كتبتها زيادة على محاور الدورة: ${extra.join(' · ')}` : null
     const content = {
       kind: 'trainer' as const,
+      /* مواعيدُ المحاور من لقاءاتها لا تُكتب (١٧ أكتوبر ٢٠٢٦، `planSlots`) */
+      timing: 'meetings' as const,
       summaryAr: summary ? summary.slice(0, M.summaryAr) : null,
       modules,
       resources,

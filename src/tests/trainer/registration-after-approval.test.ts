@@ -29,7 +29,8 @@ const BUY_PANEL = code('src/components/BuyPanel.tsx')
    «مفتوحا». وما زاد (العلمُ المنزول) في `last-mile-screens.test.ts`. */
 describe('المدرّب يعرف متى يدخلها متعلّموه', () => {
   it('⚠️ آخر الالتحاق بالقاعدة التي يكتبه بها الاعتماد — لا بحساب ثان', () => {
-    expect(WORKSPACE).toMatch(/joinClosesAt: joinClosesAt\(planPeriod, content\.slots\),/)
+    /* والمواعيدُ ما يُقرأ منه وقتُ المحاور — المكتوبةُ، أو المشتقّةُ من اللقاءات (١٧ أكتوبر ٢٠٢٦) */
+    expect(WORKSPACE).toMatch(/joinClosesAt: joinClosesAt\(planPeriod, timingSlots\),/)
     const closes = new Date('2026-11-10T13:00:00Z')
     const line = trainerRegistrationLine({ registrationOpen: true, awaitingPlan: true, joinClosesAt: closes }, new Date('2026-11-01T00:00:00Z'))
     expect(line.lead).toContain('ويقبل الملتحقون حتّى بدء موعدها الثاني')

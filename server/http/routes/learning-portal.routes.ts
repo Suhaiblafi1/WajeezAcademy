@@ -647,6 +647,8 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
         bodyFileMime: z.string().trim().max(120).nullish(),
       }).nullish(),
     })).max(40).nullish(),
+    /* ومنذ ١٧ أكتوبر ٢٠٢٦ تُشتقّ المواعيدُ من اللقاءات — والعلامةُ تقول ذلك (`planSlots`) */
+    timing: z.literal('meetings').nullish(),
     /* ═══ كرّاسةُ الشعبة — واحدةٌ للمحاور كلِّها (٣٠ سبتمبر ٢٠٢٦) ═══
 
        ومعها `parts`: أين يبدأ كلُّ محورٍ فيها. والناقصُ يُحفظ ويُسمّى في قائمة

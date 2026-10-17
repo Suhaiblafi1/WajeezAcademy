@@ -174,7 +174,7 @@ describe('② الردُّ: لكلّ خطوةٍ ملاحظتُها', () => {
     const row = await prisma.cohortDeliveryPlan.findUniqueOrThrow({ where: { id: A.planId } })
     expect(row.status).toBe('changes_requested')
     expect(row.reviewerNotes).toEqual({ modules: 'المحورُ الثالث بلا متن', sessions: 'لقاءُ الموعد الثاني خارجه' })
-    expect(row.reviewerNote).toBe('«المحاور ومواعيدها»: المحورُ الثالث بلا متن\n\n«اللقاءات»: لقاءُ الموعد الثاني خارجه')
+    expect(row.reviewerNote).toBe('«المحاور»: المحورُ الثالث بلا متن\n\n«اللقاءات»: لقاءُ الموعد الثاني خارجه')
 
     /* والورشةُ تحملها بأقسامها — فتُقرأ كلُّ واحدةٍ في رأس خطوتها */
     const ws = await plans.workspace(trainerUserId, A.cohortId)

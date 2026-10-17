@@ -35,10 +35,13 @@ const at = (date: string, clock: string) => {
 interface Row { slotIndex: number; date: string; title: string; moduleIds: string[] }
 
 export default function WeeklySessions({
-  cohortId, slots, covered, axisNo, titles, locked, approvedOnce, beforeWrite, onDone,
+  cohortId, slots, covered, axisNo, titles, locked, approvedOnce, beforeWrite, onDone, weeks = false,
 }: {
   cohortId: string;
   slots: readonly PlanSlot[];
+  /** النوافذُ أسابيعُ مقترحةٌ لا مواعيدُ في الخطّة — حين تأخذ المحاورُ وقتَها من لقاءاتها
+      (١٧ أكتوبر ٢٠٢٦): فتُسمّى «الأسبوع» ولا نصيحةَ «أوّل ثلاثة أيّام» */
+  weeks?: boolean;
   /** محاورُ لها لقاءٌ مباشرٌ قائم — لا يُقترح لها شيء */
   covered: ReadonlySet<string>;
   axisNo: ReadonlyMap<string, number>;
@@ -48,6 +51,7 @@ export default function WeeklySessions({
   beforeWrite?: () => Promise<boolean>;
   onDone: () => void;
 }) {
+  const unit = weeks ? "الأسبوع" : "الموعد";
   const [weekday, setWeekday] = useState<Weekday | null>(null);
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
@@ -65,10 +69,10 @@ export default function WeeklySessions({
   };
 
   const problemOf = (r: Row): string | null => {
-    if (!r.date) return "لا يقع هذا اليوم داخل الموعد — اختر يوما";
+    if (!r.date) return `لا يقع هذا اليوم داخل ${unit} — اختر يوما`;
     if (!from || !to) return null;
     const slot = slots[r.slotIndex];
-    if (slot && !sessionInsideSlot({ startsAt: at(r.date, from), endsAt: at(r.date, to) }, slot)) return "خارج الموعد";
+    if (slot && !sessionInsideSlot({ startsAt: at(r.date, from), endsAt: at(r.date, to) }, slot)) return `خارج ${unit}`;
     return null;
   };
   const ready = Boolean(rows && rows.length > 0 && from && to && rows.every((r) => problemOf(r) === null));
@@ -103,7 +107,7 @@ export default function WeeklySessions({
   };
 
   if (slots.every((s) => s.moduleIds.every((id) => covered.has(id)))) {
-    return <p className="text-read leading-6 text-muted-foreground">لكلّ محور لقاء مباشر — وأضف المزيد من بطاقة موعده.</p>;
+    return <p className="text-read leading-6 text-muted-foreground">لكلّ محور لقاء مباشر — وأضف المزيد من {weeks ? "بطاقة اللقاءات" : "بطاقة موعده"}.</p>;
   }
 
   return (
@@ -154,21 +158,21 @@ export default function WeeklySessions({
               <Inset as="li" key={r.slotIndex} className="grid gap-2">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-read font-black text-teal-light-ink">
-                    الموعد {r.slotIndex + 1} <span className="font-bold text-foreground">· {axesLabelAr(r.moduleIds, axisNo)}</span>
+                    {unit} {r.slotIndex + 1} <span className="font-bold text-foreground">· {axesLabelAr(r.moduleIds, axisNo)}</span>
                     {slot && <span className="font-normal text-muted-foreground"> · {dayLabelAr(slot.startsOn)} – {dayLabelAr(slot.endsOn)}</span>}
                   </p>
-                  <Button tone="ghost" size="sm" icon={X} disabled={locked || busy} aria-label={`ارفع اقتراح الموعد ${r.slotIndex + 1}`}
+                  <Button tone="ghost" size="sm" icon={X} disabled={locked || busy} aria-label={`ارفع اقتراح ${unit} ${r.slotIndex + 1}`}
                     onClick={() => setRows(rows.filter((_, j) => j !== k))}>ارفعه</Button>
                 </div>
                 <div className="grid gap-2 sm:grid-cols-[12rem_1fr]">
                   {/* من أيّام الموعد وحدَها — لا تقويمٌ مفتوح (١١ أكتوبر ٢٠٢٦، `SlotDaySelect`) */}
                   {slot ? (
                     <SlotDaySelect slot={slot} value={r.date} disabled={locked || busy}
-                      ariaLabel={`يوم اللقاء المقترح في الموعد ${r.slotIndex + 1}`}
+                      ariaLabel={`يوم اللقاء المقترح في ${unit} ${r.slotIndex + 1}`}
                       onChange={(date) => patch({ date })} />
                   ) : <span className="text-read text-muted-foreground">—</span>}
                   <input value={r.title} placeholder={`مثال: ${suggested}`} disabled={locked || busy}
-                    aria-label={`عنوان اللقاء المقترح في الموعد ${r.slotIndex + 1}`}
+                    aria-label={`عنوان اللقاء المقترح في ${unit} ${r.slotIndex + 1}`}
                     onChange={(e) => patch({ title: e.target.value })} className={staffControlCls} />
                 </div>
                 {problem && <p className="text-read font-bold text-gold-ink">{problem}</p>}
@@ -177,7 +181,7 @@ export default function WeeklySessions({
                     <Lightbulb className="mt-1 h-4 w-4 shrink-0" aria-hidden="true" /> <span>{note}</span>
                   </p>
                 )}
-                {!problem && r.date && slot && lateInSlot(r.date, slot) && (
+                {!problem && !weeks && r.date && slot && lateInSlot(r.date, slot) && (
                   <p className="text-read leading-6 text-muted-foreground">بعد أوّل ثلاثة أيّام من الموعد — ولك أن تبقيه.</p>
                 )}
               </Inset>

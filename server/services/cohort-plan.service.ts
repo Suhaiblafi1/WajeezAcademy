@@ -54,7 +54,7 @@ import {
   asPeriod, periodBounds, periodProblem, zonedDay, withinPeriod, type CohortPeriod,
 } from '../../src/application/trainer/cohort-period'
 import {
-  joinClosesAt, sessionEnd, sessionProblems, slotProblems, workbookProblems,
+  MEETINGS_TIMING, joinClosesAt, meetingProblems, planSlots, sessionEnd, sessionProblems, slotProblems, timedByMeetings, workbookProblems,
   type CohortWorkbook, type PlanSlot,
 } from '../../src/application/trainer/axis-timeline'
 import { templateRequired, workbooksProblems, type ModuleWorkbook, type WorkbookMode } from '../../src/application/trainer/cohort-workbooks'
@@ -134,6 +134,9 @@ export interface TrainerPlanContent {
       ومنه يُحكم متى يُفتح كلُّ شيءٍ للمتعلّم. والقاعدةُ كاملةً في
       `src/application/trainer/axis-timeline.ts`. */
   slots?: PlanSlot[] | null
+  /** ومنذ ١٧ أكتوبر ٢٠٢٦: `meetings` — مواعيدُ المحاور تُشتقّ من لقاءاتها ولا تُكتب
+      (`planSlots`). وغيابُه في خطّةٍ اعتُمدت بمواعيدَ مكتوبةٍ يُبقيها عليها */
+  timing?: typeof MEETINGS_TIMING | null
   /** ═══ كرّاسةُ الشعبة — واحدةٌ للمحاور كلِّها (٣٠ سبتمبر ٢٠٢٦) ═══
 
       حلّت محلَّ كرّاسةٍ لكلّ موعد: ملفٌّ أو رابطٌ واحد، ومعه أين يبدأ كلُّ
@@ -352,9 +355,13 @@ export function buildChecklist(input: {
      ما أُرسل أو اعتُمد قبل أن تولد المواعيد قُرئ واعتُمد بلا مواعيد — ولا
      يُكتب «لم يتمّ» على شعبةٍ جاريةٍ لأنّ حقلا جديدا وُلد بعدها («الشعبُ
      الجاريةُ تنتهي بطريقتها»). ومتى عُدّلت صارت مسودّةً فلزمتها المواعيد. */
+  /* ═══ ومنذ ١٧ أكتوبر ٢٠٢٦ تأخذ المحاورُ وقتَها من لقاءاتها (`timedByMeetings`) ═══
+     فلا مواعيدَ تُكتب في هذه الخطوة ولا تُحاسَب، ويُحكم على الترتيب في خطوة اللقاءات
+     (`meetingProblems`). والعلّةُ في `axis-timeline.ts`. */
+  const byMeetings = timedByMeetings(input.content)
   const slots = input.content?.slots ?? []
-  const legacy = slots.length === 0 && ['submitted', 'approved', 'published'].includes(input.planStatus)
-  const slotIssues = legacy ? [] : slotProblems(slots, moduleIds, input.period)
+  const legacy = !byMeetings && slots.length === 0 && ['submitted', 'approved', 'published'].includes(input.planStatus)
+  const slotIssues = legacy || byMeetings ? [] : slotProblems(slots, moduleIds, input.period)
   const modulesDone = mods.length > 0 && slotIssues.length === 0
   /* ⑦ كرّاسةٌ واحدةٌ للشعبة، وموضعُ كلّ محورٍ فيها (٣٠ سبتمبر ٢٠٢٦).
      وما أُرسل أو اعتُمد بكرّاسةٍ لكلّ موعدٍ قبل ذلك يمضي كما اعتُمد — ومتى
@@ -405,14 +412,13 @@ export function buildChecklist(input: {
      مباشر، واللقاءُ داخلَ موعد محوره (②③). والمسجَّلُ من مصادر الخطّة
      يُحكم معها: بمحوره ولحظةِ فتحه داخلَ موعده. */
   const recorded = resources.filter((r) => resourceCategory(r) === 'recorded')
-  const linked = legacy ? null : sessionProblems({
-    slots, moduleIds,
-    sessions: input.sessions.filter((x) => x.startsAt).map((x) => ({
-      title: x.title ?? null, startsAt: x.startsAt!, endsAt: x.endsAt ?? null, moduleIds: x.moduleIds ?? [],
-    })),
-    recordings: recorded.map((r) => ({ title: r.title, moduleId: r.moduleId ?? null, opensAt: r.opensAt ?? null })),
-    now,
-  })
+  const timelineSessions = input.sessions.filter((x) => x.startsAt).map((x) => ({
+    title: x.title ?? null, startsAt: x.startsAt!, endsAt: x.endsAt ?? null, moduleIds: x.moduleIds ?? [],
+  }))
+  const recordings = recorded.map((r) => ({ title: r.title, moduleId: r.moduleId ?? null, opensAt: r.opensAt ?? null }))
+  const linked = legacy ? null : byMeetings
+    ? meetingProblems({ moduleIds, sessions: timelineSessions, recordings, period: input.period, now })
+    : sessionProblems({ slots, moduleIds, sessions: timelineSessions, recordings, now })
   const coveredCount = moduleIds.filter((id) => input.sessions.some((x) => (x.moduleIds ?? []).includes(id))).length
   /* والجلسةُ المسجّلةُ بلا رابطٍ كالمصدر — تُحفظ، وتُسمّى في صفّ خطوتها */
   const looseRecorded = recorded.filter((r) => !resourceHasSource(r)).length
@@ -471,7 +477,7 @@ export function buildChecklist(input: {
     },
     {
       key: 'modules',
-      labelAr: (legacy ? 'أضف محاور الدورة' : 'وزّع المحاور على مواعيدها')
+      labelAr: (legacy ? 'أضف محاور الدورة' : byMeetings ? 'رتّب محاور الدورة' : 'وزّع المحاور على مواعيدها')
         + (practice.length ? ` · ${practice.join('، ')}` : ''),
       done: modulesDone && practice.length === 0, optional: false,
     },
@@ -479,7 +485,7 @@ export function buildChecklist(input: {
     {
       key: 'sessions',
       labelAr: (linked
-        ? `حدّد لقاءاتك المباشرة — لقاء لكلّ محور في موعده (${coveredCount}/${moduleIds.length})`
+        ? `حدّد لقاءاتك المباشرة — لقاء لكلّ محور ${byMeetings ? 'بترتيب المحاور' : 'في موعده'} (${coveredCount}/${moduleIds.length})`
         : `حدّد مواعيد اللقاءات المباشرة — لقاء لكلّ محور على الأقلّ (${input.sessions.length}/${Math.max(1, sessionsNeeded)})`)
         + (outside > 0 ? ` · ${outside === 1 ? 'لقاء خارج' : `${outside} لقاءات خارج`} مدّة الشعبة` : '')
         + (looseRecorded > 0 ? ` · ${looseRecorded === 1 ? 'جلسة مسجّلة' : `${looseRecorded} جلسات مسجّلة`} بلا رابط` : '')
@@ -1569,6 +1575,20 @@ export class CohortPlanService {
      اختار تاريخا خارجَه؛ وتسميتُه عندها لا عنده.
 
      ومن حضر الشعبةَ يعلم أنّ حدودَها تحرّكت — إن تحرّكت. */
+  /** مواعيدُ المحاور كما تُقرأ لهذه الشعبة — المكتوبةُ، أو المشتقّةُ من لقاءاتها (`planSlots`).
+      واللقاءاتُ هنا ما لم يُلغَ ولا هو مبدئيّ، معتمَدا أو منتظِرا: يُنادى ساعةَ الاعتماد،
+      قبل أن يُعتمَد ما ينتظر معها */
+  private async timingSlots(cohortId: string, content: TrainerPlanContent | null, period: CohortPeriod | null): Promise<PlanSlot[]> {
+    if (!timedByMeetings(content)) return content?.slots ?? []
+    const sessions = await this.prisma.cohortSession.findMany({
+      where: { cohortId, placeholder: false, status: { not: 'cancelled' } },
+      select: { startsAt: true, endsAt: true, moduleId: true, moduleIds: true },
+    })
+    return planSlots(content, sessions.map((x) => ({
+      startsAt: x.startsAt, endsAt: x.endsAt, moduleIds: x.moduleIds.length ? x.moduleIds : x.moduleId ? [x.moduleId] : [],
+    })), period)
+  }
+
   private async applyPeriod(cohortId: string, content: TrainerPlanContent | null) {
     const period = asPeriod(content)
     if (!period || periodProblem(period) !== null) return null
@@ -1588,7 +1608,7 @@ export class CohortPlanService {
         startsAt: from, endsAt: to, scheduleWindowStart: from, scheduleWindowEnd: to,
         /* وآخرُ الالتحاق من مواعيدها — بدءُ الموعد الثاني (٣ج)، يُقرأ في
            `registration-window.ts`. ويُعاد حسابُه مع كلّ مراجعةٍ تُعتمَد */
-        joinClosesAt: joinClosesAt(period, (content as { slots?: PlanSlot[] | null } | null)?.slots),
+        joinClosesAt: joinClosesAt(period, await this.timingSlots(cohortId, content, period)),
         ...(term ? { termId: term.id } : {}),
       },
     })

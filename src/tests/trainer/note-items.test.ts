@@ -61,7 +61,7 @@ describe('② بند لكلّ خطوة', () => {
 
   it('وعنوانها باسم خطوتها، ونقاطها صفوفها', () => {
     const v = planEditView({ kind: 'note', step: 'modules', textAr: 'مطلوب — مصدر\nأوضح' }, null, { moduleIds: [] })
-    expect(v.titleAr).toBe('ملاحظة على «المحاور ومواعيدها»')
+    expect(v.titleAr).toBe('ملاحظة على «المحاور»')
     expect(v.rows.map((r) => [r.tagAr ?? null, r.labelAr, r.beforeAr, r.afterAr])).toEqual([['مطلوب', '', null, 'مصدر'], [null, '', null, 'أوضح']])
     expect(planEditView({ kind: 'note', step: 'general', textAr: 'شكرا' }, null, { moduleIds: [] }).titleAr).toBe('ملاحظة عامّة')
   })

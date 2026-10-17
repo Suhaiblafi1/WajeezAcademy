@@ -110,7 +110,7 @@ describe('ملاحظاتُ الردّ بنودٌ يوافق عليها', () => {
     expect(notes.every((x) => x.status === 'pending')).toBe(true)
     expect(notes.map((x) => x.required)).toEqual([false, true, false])
     const mods = notes.find((x) => x.step === 'modules')!
-    expect(mods.view.titleAr).toBe('ملاحظةٌ على «المحاور ومواعيدها»')
+    expect(mods.view.titleAr).toBe('ملاحظةٌ على «المحاور»')
     expect(mods.view.rows.map((x) => [x.tagAr, x.afterAr])).toEqual([
       ['مطلوب', 'مصدرٌ لكلّ محور: المحور 1 بلا مصدر'],
       ['مقترَح', 'المخرَج أوضح بفعلٍ يُرى'],

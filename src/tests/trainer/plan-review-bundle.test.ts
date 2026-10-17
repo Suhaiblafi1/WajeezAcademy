@@ -208,7 +208,7 @@ describe('بطاقة المعايير في ملفّ المراجعة (٨ أكت�
     expect(md.indexOf('## بطاقة المعايير')).toBeGreaterThan(md.indexOf('## حقائق المراجعة'))
     expect(md.indexOf('## بطاقة المعايير')).toBeLessThan(md.indexOf('## الكراسة'))
     expect(md).toMatch(/❌ مطلوب يمنع الإرسال: \d+ · ⚠️ نصيحة: \d+ · ✅ تحقّق: \d+/)
-    expect(md).toContain('### المحاور ومواعيدها')
+    expect(md).toContain('### المحاور')
   })
 
   it('والمطلوب الساقط يسمّى بموضعه — محاور بلا تطبيق عمليّ', () => {

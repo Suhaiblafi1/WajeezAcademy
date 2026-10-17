@@ -165,7 +165,7 @@ describe('④ الشاشة تنادي القاعدة، والقالبان في �
     expect(block).toMatch(/onClick=\{\(\) => setContent\(\{ \.\.\.content, workbookMode: m\.mode \}\)\}/)
     expect(block, 'الجمع يعاد كتابته').toContain('setGroups(mergeWithNext(wbGroups, i))')
     expect(block, 'الفصل يعاد كتابته').toContain('setGroups(splitGroup(wbGroups, i))')
-    expect(block, 'موعد الفتح يحسب في الشاشة').toContain('workbookOpensOn(g, slots)')
+    expect(block, 'موعد الفتح يحسب في الشاشة').toContain('workbookOpensOn(g, timingSlots)')
     /* وصار الإقرارُ اختيارا: القالبُ أو مادّتُه الجاهزة (٧ أكتوبر ٢٠٢٦) — `workbook-own-material.test.ts` */
     expect(block.match(/<MaterialChoice /g), 'كرّاسة بلا إقرار').toHaveLength(2)
   })

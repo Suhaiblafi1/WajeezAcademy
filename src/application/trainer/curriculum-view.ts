@@ -20,7 +20,7 @@
 
 import type { CohortPeriod } from './cohort-period'
 import { resourceCategory, displayKind } from './plan-overlay'
-import { workbookDone, workbookWhere, type CohortWorkbook, type PlanSlot } from './axis-timeline'
+import { planSlots, workbookDone, workbookWhere, type CohortWorkbook, type PlanSlot } from './axis-timeline'
 import {
   groupLabelAr, workbookGroups, workbookMaterialOf, workbookModeOf, type ModuleWorkbook, type WorkbookMaterial, type WorkbookMode,
 } from './cohort-workbooks'
@@ -199,13 +199,17 @@ export function axesLabel(ns: readonly number[]): string {
 export function curriculumView(input: CurriculumInput): CurriculumView {
   const c = (input.content ?? {}) as {
     summaryAr?: string | null; modules?: PlanModule[]; slots?: PlanSlot[]; resources?: PlanResource[]; workbook?: CohortWorkbook | null
-    workbookMode?: string | null; workbooks?: ModuleWorkbook[] | null
+    workbookMode?: string | null; workbooks?: ModuleWorkbook[] | null; timing?: string | null
     level?: unknown
     audience?: unknown
   }
   const cw = c.workbook ?? null
   const modules = Array.isArray(c.modules) ? c.modules : []
-  const slots = Array.isArray(c.slots) ? c.slots : []
+  /* والمواعيدُ مكتوبةٌ — أو من لقاءات المدرّب منذ ١٧ أكتوبر ٢٠٢٦ (`planSlots`): ما لم يُلغَ ولا هو مبدئيّ */
+  const slots = planSlots({ ...c, slots: Array.isArray(c.slots) ? c.slots : [] }, input.sessions
+    .filter((s) => !s.placeholder && s.status !== 'cancelled')
+    .map((s) => ({ startsAt: s.startsAt, endsAt: s.endsAt ?? null, moduleIds: s.moduleIds?.length ? s.moduleIds : s.moduleId ? [s.moduleId] : [] })),
+  input.period)
   const resources = Array.isArray(c.resources) ? c.resources : []
   const pos = new Map(modules.map((m, i) => [m.moduleId, i + 1]))
   const now = input.now ?? new Date()
