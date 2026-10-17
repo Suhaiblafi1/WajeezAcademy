@@ -5,7 +5,9 @@
    · **الطلب** من المدرّب المسنَد إلى الشعبة: فصلٌ قادمٌ وسبب. يُحفظ فصلُها وأوّلُ لقاءاتها
      وقتَه، ولا يتغيّر شيءٌ في الشعبة. وطلبٌ معلَّقٌ واحدٌ للشعبة — والمدرّبُ يسحب ثمّ يطلب.
    · **الاعتماد** من الإدارة يزيح مواعيدَ الشعبة ولقاءاتِها القائمة بأسابيعَ كاملة، ويربطها
-     بفصلها الجديد إن كان منشأً، ويحدّث دعوةَ كلّ لقاء، ويبلّغ المتعلّمين بالجرس والبريد.
+     بفصلها الجديد إن كان منشأً، ويحدّث دعوةَ كلّ لقاء، وينقل اجتماعَه في Zoom إلى موعده الجديد
+     (قرارُ صاحب المنصّة، ١٧ أكتوبر ٢٠٢٦: «فلا تصل أحدا تذكرةٌ بالموعد القديم»)، ويبلّغ المتعلّمين
+     بالجرس والبريد.
    · **الردّ** يُبقي كلَّ شيءٍ كما كان، ويصل المدرّبَ بسببه. */
 
 import type { PrismaClient } from '@prisma/client'
@@ -13,6 +15,7 @@ import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { notifyRole, safeNotify } from './notification.service'
 import { SessionInviteService } from './session-invite.service'
+import { getZoomConfig, updateZoomMeeting, zoomReady } from './zoom.service'
 import { termOf } from '../../src/application/terms/season'
 import { fmtDateWith } from '../../src/application/text/format-ar'
 import { ACADEMY_ZONE } from '../../src/application/trainer/cohort-period'
@@ -122,6 +125,34 @@ export class CohortMoveService {
     }))
   }
 
+  /* ── اجتماعاتُ Zoom تنتقل مع لقاءاتها — كما في نقل لقاءٍ واحد (`CohortService.moveZoomMeeting`) ──
+     ولا يرمي: المواعيدُ عندنا انتقلت وإخفاقُ Zoom لا يردّها. يُعدّ ما انتقل وما أخفق، ويُكتب في
+     الأثر — والرابطُ نفسُه يبقى صالحا. */
+  private async moveZoomMeetings(sessions: {
+    startsAt: Date; endsAt: Date | null; timezone: string | null; cohort: { timezone: string | null }
+    zoom: { provider: string; meetingId: string | null } | null
+  }[]): Promise<{ moved: number; failed: number }> {
+    const withMeeting = sessions.filter((s) => s.zoom?.provider === 'zoom_api' && s.zoom.meetingId)
+    const out = { moved: 0, failed: 0 }
+    if (withMeeting.length === 0) return out
+    const cfg = await getZoomConfig(this.prisma).catch(() => null)
+    if (!cfg || !zoomReady(cfg)) return { moved: 0, failed: withMeeting.length }
+    for (const s of withMeeting) {
+      try {
+        const durationMinutes = s.endsAt ? Math.max(15, Math.round((s.endsAt.getTime() - s.startsAt.getTime()) / 60_000)) : 120
+        const res = await updateZoomMeeting(cfg, s.zoom!.meetingId!, {
+          startsAt: s.startsAt, durationMinutes, timezone: s.timezone ?? s.cohort.timezone ?? undefined,
+        })
+        if (res.ok) out.moved += 1
+        else { out.failed += 1; console.error('[zoom] تعذّر نقل الاجتماع مع شعبته', s.zoom!.meetingId, res.reason) }
+      } catch (e) {
+        out.failed += 1
+        console.error('[zoom] تعذّر نقل الاجتماع مع شعبته', s.zoom!.meetingId, e)
+      }
+    }
+    return out
+  }
+
   /** قرارُ الإدارة — والاعتمادُ وحده ينقل الشعبة */
   async review(reviewerId: string, id: string, input: { action: 'approve' | 'reject'; comment?: string }) {
     const r = await this.prisma.cohortMoveRequest.findUnique({ where: { id } })
@@ -176,14 +207,26 @@ export class CohortMoveService {
       meta: { requestId: id, to: `${target.season}-${target.year}`, shiftDays: Math.round(shiftMs / 86_400_000) },
     })
 
+    let zoom = { moved: 0, failed: 0 }
     if (input.action === 'approve') {
       const sessions = await this.prisma.cohortSession.findMany({
-        where: { cohortId: r.cohortId, status: { notIn: ['done', 'cancelled'] } }, orderBy: { startsAt: 'asc' }, select: { id: true, startsAt: true },
+        where: { cohortId: r.cohortId, status: { notIn: ['done', 'cancelled'] } }, orderBy: { startsAt: 'asc' },
+        select: {
+          id: true, startsAt: true, endsAt: true, timezone: true,
+          cohort: { select: { timezone: true } }, zoom: { select: { provider: true, meetingId: true } },
+        },
       })
+      zoom = await this.moveZoomMeetings(sessions)
       /* ودعوةُ التقويم تتحدّث بالمعرّف نفسِه — ولا يُسقط إخفاقُها قرارا وقع */
       const invites = new SessionInviteService(this.prisma)
       for (const s of sessions) {
         await invites.announce(s.id, 'update').catch((e: unknown) => console.error('[invite] تعذّرت كتابة تحديث الدعوة', e))
+      }
+      if (zoom.moved + zoom.failed > 0) {
+        await recordAudit(this.prisma, {
+          actorId: reviewerId, action: 'cohort.move.zoom', entityType: 'cohort', entityId: r.cohortId,
+          meta: { requestId: id, ...zoom },
+        })
       }
       const first = sessions[0]?.startsAt
       const learners = await this.prisma.enrollment.findMany({

@@ -5,7 +5,7 @@
    ٢) الاعتمادُ يزيح الشعبةَ ولقاءاتِها القائمة بأسابيعَ كاملة، ويربطها بفصلها، ويبلّغ المتعلّمين.
    ٣) الردُّ يُبقي كلَّ شيء، ويصل المدرّبَ. والسحبُ من صاحبه وحدَه. */
 
-import { beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
 import { setupTestDb, testPrisma } from '../helpers/db'
 import { AuthService } from '../../services/auth.service'
@@ -13,6 +13,34 @@ import { CohortMoveService } from '../../services/cohort-move.service'
 import { EnrollmentService } from '../../services/enrollment.service'
 import { nextTerm } from '../../../src/application/trainer/cohort-move'
 import { termOf } from '../../../src/application/terms/season'
+import { forgetZoomToken } from '../../services/zoom.service'
+
+/* ولا شبكةَ: `fetch` مُلتقَط، وطلباتُ نقل الاجتماع إلى Zoom تُعدّ */
+const SAVED_ENV = { ...process.env }
+const SAVED_FETCH = globalThis.fetch
+const patches: { meetingId: string; body: { start_time?: string; duration?: number } }[] = []
+function stubZoom() {
+  process.env.ZOOM_ACCOUNT_ID = 'acc'
+  process.env.ZOOM_CLIENT_ID = 'cid'
+  process.env.ZOOM_CLIENT_SECRET = 'sec'
+  process.env.ZOOM_HOST_EMAIL = 'lessons@wajeez.test'
+  globalThis.fetch = (async (url: string, init?: { method?: string; body?: string }) => {
+    if (String(url).includes('/oauth/token')) return { ok: true, status: 200, json: async () => ({ access_token: 't', expires_in: 3600 }) }
+    if (init?.method === 'PATCH') {
+      patches.push({ meetingId: decodeURIComponent(String(url).split('/meetings/')[1] ?? ''), body: JSON.parse(init.body ?? '{}') })
+      return { ok: true, status: 204, json: async () => ({}) }
+    }
+    return { ok: false, status: 404, json: async () => ({}) }
+  }) as unknown as typeof fetch
+  forgetZoomToken()
+}
+afterAll(() => {
+  globalThis.fetch = SAVED_FETCH
+  for (const k of ['ZOOM_ACCOUNT_ID', 'ZOOM_CLIENT_ID', 'ZOOM_CLIENT_SECRET', 'ZOOM_HOST_EMAIL']) {
+    if (SAVED_ENV[k] === undefined) delete process.env[k]
+    else process.env[k] = SAVED_ENV[k]
+  }
+})
 
 const DAY = 86_400_000
 let prisma: PrismaClient
@@ -130,6 +158,25 @@ describe('② الاعتماد', () => {
     expect(bell?.title).toContain('شعبة الاعتماد')
     expect(await prisma.cohortMoveRequest.findUniqueOrThrow({ where: { id: r.id } })).toMatchObject({ status: 'approved', reviewedBy: adminId })
     await expect(svc.review(adminId, r.id, { action: 'approve' })).rejects.toMatchObject({ status: 409 })
+  })
+})
+
+describe('②ب اجتماعات Zoom', () => {
+  it('تنتقل مع لقاءاتها إلى الموعد الجديد — بمدّتها', async () => {
+    stubZoom()
+    const cohortId = await mkCohort('شعبة Zoom', profileId)
+    const sessions = await prisma.cohortSession.findMany({ where: { cohortId }, orderBy: { startsAt: 'asc' } })
+    await prisma.zoomMeeting.create({ data: { sessionId: sessions[0]!.id, provider: 'zoom_api', meetingId: `mv-${cohortId}`, joinUrl: 'https://zoom.us/j/1' } })
+    const r = await svc.request(trainerId, cohortId, { toYear: target.year, toSeason: target.season, reason: 'الطلب قليل هذا الفصل' })
+    patches.length = 0
+    await svc.review(adminId, r.id, { action: 'approve' })
+    const moved = await prisma.cohortSession.findUniqueOrThrow({ where: { id: sessions[0]!.id } })
+    expect(patches).toHaveLength(1)
+    expect(patches[0]!.meetingId).toBe(`mv-${cohortId}`)
+    expect(patches[0]!.body.start_time).toBe(moved.startsAt.toISOString())
+    expect(patches[0]!.body.duration).toBe(120)
+    const a = await prisma.auditEvent.findFirst({ where: { action: 'cohort.move.zoom', entityId: cohortId } })
+    expect(a?.meta).toMatchObject({ moved: 1, failed: 0 })
   })
 })
 
