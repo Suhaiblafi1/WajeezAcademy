@@ -34,7 +34,7 @@ import { CohortPlanService, resolvePeriod, type PlanStatus, type TrainerPlanCont
 import { proposeSchedule } from '../../src/application/trainer/schedule-proposal'
 import { PLAN_VISIBLE_STATUSES } from '../../src/application/trainer/plan-overlay'
 import {
-  applyContentEdit, contentBefore, editsContent, noteItemsFrom, planEditStep, planEditView, rowEditProblem, sameSnapshot, scheduleChainProblem, schedulePlanContent, scheduleSnapshot,
+  applyContentEdit, attachmentSnapshot, attachmentsAfter, contentBefore, editsContent, noteItemsFrom, planEditStep, planEditView, rowEditProblem, sameSnapshot, scheduleChainProblem, schedulePlanContent, scheduleSnapshot,
   sessionMoveChainProblem,
   sessionSnapshot, taskSnapshot, type Checked, type EditContext, type EditSnapshot, type EditView, type PlanEdit,
   type PlanEditStatus, PLAN_EDITS_MAX, TASK_EDIT_FIELDS, TRAINER_VISIBLE_EDIT_STATUSES,
@@ -76,7 +76,7 @@ const NOT_A_FILE: readonly string[] = ['note', 'schedule']
 
 interface Rows {
   content: TrainerPlanContent
-  tasks: { id: string; title: string; type: string; briefAr: string | null; dueAt: Date | null; moduleId: string | null; maxScore: number }[]
+  tasks: { id: string; title: string; type: string; briefAr: string | null; dueAt: Date | null; moduleId: string | null; maxScore: number; attachments: unknown }[]
   sessions: { id: string; title: string; startsAt: Date; endsAt: Date | null; placeholder: boolean; moduleIds: string[]; noteAr: string | null }[]
   /** عنوانُ الشعبة — «قبلُ» بطاقة `cohort_title` */
   cohortTitle: string
@@ -108,7 +108,7 @@ export class PlanEditService {
     const [tasks, sessions, cohort] = await Promise.all([
       this.prisma.cohortAssessment.findMany({
         where: { cohortId },
-        select: { id: true, title: true, type: true, briefAr: true, dueAt: true, moduleId: true, maxScore: true },
+        select: { id: true, title: true, type: true, briefAr: true, dueAt: true, moduleId: true, maxScore: true, attachments: true },
       }),
       this.prisma.cohortSession.findMany({
         where: { cohortId, status: { not: 'cancelled' } },
@@ -152,6 +152,11 @@ export class PlanEditService {
         const t = r.tasks.find((x) => x.id === edit.assessmentId)
         if (!t) return { ok: false, problemAr: 'لا مهمّة بهذا المعرّف في هذه الشعبة — لعلّها حذفت' }
         return { ok: true, value: taskSnapshot(t as unknown as Record<string, unknown>, Object.keys(edit.set)) }
+      }
+      case 'task_attachment': {
+        const t = r.tasks.find((x) => x.id === edit.assessmentId)
+        if (!t) return { ok: false, problemAr: 'لا مهمّة بهذا المعرّف في هذه الشعبة — لعلّها حذفت' }
+        return attachmentSnapshot(t.attachments, edit)
       }
       case 'session_move': case 'session_remove': {
         const s = r.sessions.find((x) => x.id === edit.sessionId)
@@ -279,13 +284,16 @@ export class PlanEditService {
     const onTrainer: number[] = []
     const seen = new Map<string, number>()
     /* ═══ والكرّاسةُ الجديدةُ ملفُّ هذه الشعبة — رُفع لها وبقيت بايتاتُه (١٢ أكتوبر ٢٠٢٦) ═══
-       المفتاحُ في البند نصٌّ؛ فلو قُبل مفتاحٌ لملفّ شعبةٍ أخرى لصار بابا يُقرأ به ملفُّها */
-    const wbKeys = items.flatMap((x) => (x.kind === 'workbook_replace' && x.file?.key ? [x.file.key] : []))
+       المفتاحُ في البند نصٌّ؛ فلو قُبل مفتاحٌ لملفّ شعبةٍ أخرى لصار بابا يُقرأ به ملفُّها. والمرفقُ الجديدُ كذلك
+       (١٧ أكتوبر ٢٠٢٦، `task_attachment`): يُرفع مع الملفّ من الباب نفسِه (`/edit-files`) */
+    const fileOf = (x: PlanEditInput) => (x.kind === 'workbook_replace' || x.kind === 'task_attachment' ? x.file : undefined)
+    const wbKeys = items.flatMap((x) => (fileOf(x)?.key ? [fileOf(x)!.key] : []))
     const owned = new Set(wbKeys.length === 0 ? [] : (await this.prisma.cohortFile.findMany({
       where: { cohortId: plan.cohortId, purpose: 'workbook', storageKey: { in: wbKeys } }, select: { storageKey: true },
     })).map((f) => f.storageKey))
     items.forEach((x, i) => {
       if (x.kind === 'workbook_replace' && !owned.has(x.file?.key)) problems.push(`البند ${i + 1}: ملفّ الكرّاسة لم يرفع لهذه الشعبة — ارفعه مع الملفّ دفعة واحدة`)
+      if (x.kind === 'task_attachment' && x.file !== undefined && !owned.has(x.file?.key)) problems.push(`البند ${i + 1}: ملفّ المرفق لم يرفع لهذه الشعبة — ارفعه مع الملفّ دفعة واحدة`)
     })
     const snaps = items.map((item, i) => {
       const edit = editOf(item)
@@ -715,6 +723,15 @@ export class PlanEditService {
       case 'session_move':
         await this.cohorts.trainerMoveSession(userId, edit.sessionId, { startsAt: new Date(edit.startsAt), endsAt: new Date(edit.endsAt) }, { preApproved })
         return
+      /* ومرفقُ المهمّة بباب تعديلها نفسِه — فبعد أوّل اعتمادٍ طلبٌ ينتظر الإدارة، إلّا على خطّته المعتمدة (⑤) */
+      case 'task_attachment': {
+        const next = attachmentsAfter(r.tasks.find((x) => x.id === edit.assessmentId)?.attachments, edit)
+        if (!next.ok) throw new AuthError('edit_gone', next.problemAr, 409)
+        await this.assessments.updateAssessment(userId, edit.assessmentId, {
+          attachments: next.value,
+        } as Parameters<AssessmentService['updateAssessment']>[2], { preApproved })
+        return
+      }
       case 'session_remove':
         await this.cohorts.trainerDeleteSession(userId, edit.sessionId)
         return
@@ -863,6 +880,11 @@ function targetsOf(edit: PlanEdit): string[] {
     case 'task_remove': return TASK_EDIT_FIELDS.map((f) => `task:${edit.assessmentId}:${f}`)
     case 'cohort_title': return ['cohort:title']
     case 'workbook_replace': return [`workbook:${edit.moduleId ?? 'course'}`]
+    case 'workbook_change': return [
+      ...(edit.set.title !== undefined ? [`workbook:${edit.moduleId ?? 'course'}:title`] : []),
+      ...(edit.set.parts ?? []).map((p) => `workbook:course:part:${p.moduleId}`),
+    ]
+    case 'task_attachment': return [`task:${edit.assessmentId}:attachment:${edit.match.title.trim()}`]
     case 'note': return [`note:${edit.step}`]
     case 'schedule': return [
       ...edit.moves.map((m) => `session:${m.sessionId}`),

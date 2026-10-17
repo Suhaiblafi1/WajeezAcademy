@@ -131,6 +131,9 @@ export function dedupeSummaryAr(r: { cleaned: number; withdrawn: number; clean: 
    يُرفع الملفّ. وما سُمّي ولم يُختر يُقال باسمه ولا يُرفع الملفّ. */
 export const isPdfName = (name: string): boolean => /\.pdf$/i.test(name.trim())
 
+/* ومرفقُ المهمّة الجديدُ مثلُها (١٧ أكتوبر ٢٠٢٦، `task_attachment`): PDF يُختار مع الملفّ ويُرفع من الباب نفسِه */
+const FILE_KINDS: readonly unknown[] = ['workbook_replace', 'task_attachment']
+
 interface WorkbookItem { kind?: unknown; file?: { key?: unknown; name?: unknown } | null }
 const itemsOf = (body: unknown): WorkbookItem[] =>
   Array.isArray((body as { items?: unknown } | null)?.items) ? (body as { items: WorkbookItem[] }).items : []
@@ -138,7 +141,7 @@ const itemsOf = (body: unknown): WorkbookItem[] =>
 /** أسماءُ الكرّاسات التي يحملها الملفّ بلا مفتاح — تُختار معه بأسمائها */
 export function workbookFilesNeeded(body: unknown): string[] {
   const names = itemsOf(body)
-    .filter((x) => x.kind === 'workbook_replace' && !x.file?.key && typeof x.file?.name === 'string')
+    .filter((x) => FILE_KINDS.includes(x.kind) && !x.file?.key && typeof x.file?.name === 'string')
     .map((x) => String(x.file!.name).trim())
   return [...new Set(names)]
 }
@@ -150,7 +153,7 @@ export function withWorkbookKeys(body: unknown, keys: Readonly<Record<string, st
     ...b,
     items: itemsOf(body).map((x) => {
       const name = typeof x.file?.name === 'string' ? x.file.name.trim() : ''
-      return x.kind === 'workbook_replace' && !x.file?.key && keys[name]
+      return FILE_KINDS.includes(x.kind) && !x.file?.key && keys[name]
         ? { ...x, file: { ...x.file, key: keys[name], mime: 'application/pdf' } }
         : x
     }),
@@ -159,7 +162,7 @@ export function withWorkbookKeys(body: unknown, keys: Readonly<Record<string, st
 
 export const editFilePath = (planId: string) => `/api/admin/cohort-plans/${planId}/edit-files`
 
-/** «ملفّ الكرّاسة «…» ليس بين ما اخترته» — لما سُمّي في الملفّ ولم يُختر معه */
+/** «الملف «…» ليس بين ما اخترته» — لما سُمّي في الملفّ ولم يُختر معه: كرّاسةً كان أو مرفقَ مهمّة */
 export function missingWorkbooksAr(names: readonly string[]): string {
-  return `${names.length === 1 ? 'ملف الكراسة' : 'ملفات الكراسات'} ${names.map((n) => `«${n}»`).join('، ')} ليس بين ما اخترته — اختره مع ملف التعديلات`
+  return `${names.length === 1 ? 'الملف' : 'الملفات'} ${names.map((n) => `«${n}»`).join('، ')} ليس بين ما اخترته — اختره مع ملف التعديلات`
 }
