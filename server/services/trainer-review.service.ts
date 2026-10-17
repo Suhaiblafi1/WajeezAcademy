@@ -2343,17 +2343,25 @@ export class TrainerReviewService {
       && c.profile?.application
       && transitionProblemAr(c.profile.application.status as TrainerStatus, 'active') === null)
     const profileIds = [...new Set(open.map((c) => c.profile!.id))]
-    if (profileIds.length === 0) return new Set()
-    const rows = await this.prisma.trainerCourseQualification.groupBy({
+    const rows = profileIds.length === 0 ? [] : await this.prisma.trainerCourseQualification.groupBy({
       by: ['profileId', 'status'],
       where: { profileId: { in: profileIds }, status: { in: ['pending', 'qualified'] } },
       _count: { _all: true },
     })
     const count = (profileId: string, status: string) =>
       rows.find((r) => r.profileId === profileId && r.status === status)?._count._all ?? 0
-    return new Set(open
+    const ready = new Set(open
       .filter((c) => count(c.profile!.id, 'pending') === 0 && count(c.profile!.id, 'qualified') > 0)
       .map((c) => c.id))
+    /* وعقدُ النشط المعتمَدُ كالعقود الجديدة: اكتملت دوراتُه إن خلت قائمةُ طوره ممّا يُعَدّ أو ينتظر
+       (`prepDone` — شرطُ توقيعه التلقائيّ نفسُه، ١٧ أكتوبر ٢٠٢٦) */
+    const plain = contracts.filter((c) => !c.gatesActivation && c.status === 'signature_approved' && c.profile)
+    if (plain.length > 0) {
+      const { TrainerPrepService } = await import('./trainer-prep.service')
+      const prep = new TrainerPrepService(this.prisma)
+      for (const c of plain) if (await prep.prepDone(c.profile!.id)) ready.add(c.id)
+    }
+    return ready
   }
 
   /** المتنُ المجمَّد وحدَه — يُقرأ عند السؤال: «أيَّ صياغةٍ وقّع؟» */
@@ -5711,9 +5719,14 @@ export class TrainerReviewService {
     const profile = await this.prisma.trainerProfile.findUnique({
       where: { id: profileId }, select: { applicationId: true, application: { select: { status: true } } },
     })
-    if (profile?.application.status !== 'onboarding') return
     const { TrainerPrepService } = await import('./trainer-prep.service')
-    await new TrainerPrepService(this.prisma).activateIfComplete(profileId, profile.applicationId, actorId)
+    const prep = new TrainerPrepService(this.prisma)
+    if (profile?.application.status === 'onboarding') {
+      await prep.activateIfComplete(profileId, profile.applicationId, actorId)
+      return
+    }
+    /* والنشطُ عقدُه المعتمَدُ كالعقود الجديدة يوقَّع حين تكتمل دوراتُه (`sealIfComplete`) */
+    if (profile?.application.status === 'active') await prep.sealIfComplete(profileId, actorId)
   }
 
   /* ─────────── طلبُ التأهيل من الشعبة ───────────

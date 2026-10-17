@@ -171,3 +171,52 @@ describe('③ كيف اعتُمدت كلُّ دورة — للإدارة', () =>
     expect(how[C2].at, 'لا يقال متى').not.toBeNull()
   })
 })
+
+/* ═══ ④ والنشطُ عقدُه المعتمَدُ كالعقود الجديدة — يوقَّع حين تكتمل دوراتُه (١٧ أكتوبر ٢٠٢٦) ═══
+   سأل صاحبُ المنصّة عن عقدِ مدرّبةٍ نشطة «اعتُمد توقيعُه كالعقود الجديدة — وقِّعْه حين تعتمد دوراتِه»،
+   واختار «Sign automatically»: يوقَّع حين تُعتمَد آخرُ خطّةٍ بدأها، ويصله بريدُ ذلك. */
+describe('④ عقدُ النشط المعتمَدُ كالعقود الجديدة يوقَّع تلقائيّا', () => {
+  /** نشطٌ دوراتُه معتمَدة، وعقدُه غيرُ مشروطٍ اعتُمد توقيعُه ولم نوقّعه */
+  async function activePlain(courses: string[]) {
+    const t = await onboarding(courses)
+    await prisma.trainerCourseQualification.updateMany({ where: { profileId: t.profileId }, data: { status: 'qualified' } })
+    await prisma.trainerApplication.update({ where: { id: t.applicationId }, data: { status: 'active' } })
+    await prisma.trainerContract.update({ where: { id: t.contractId }, data: { gatesActivation: false, status: 'signature_approved' } })
+    return t
+  }
+  const submit = (cohortId: string, trainerId: string) => prisma.cohortDeliveryPlan.create({
+    data: { cohortId, trainerId, status: 'submitted', submittedAt: new Date(), content: { kind: 'trainer', modules: [], resources: [] } },
+  })
+  const contractOf = (id: string) => prisma.trainerContract.findUniqueOrThrow({ where: { id } })
+
+  it('ما دامت له شعبةٌ تُعَدّ لا يوقَّع — وآخرُ خطّةٍ تُعتمَد توقّعه', async () => {
+    const t = await activePlain([C1, C2])
+    const one = await prep.accept(t.userId, C1)
+    const two = await prep.accept(t.userId, C2)
+    expect(await readyOf(t.contractId), 'شعبتاه تُعَدّان وقيل إنّ دوراته اكتملت').toBe(false)
+
+    const r1 = await plans.decide(adminId, (await submit(one.id, t.profileId)).id, true)
+    expect(r1).toMatchObject({ status: 'approved', sealed: { sealed: false } })
+    expect((await contractOf(t.contractId)).status, 'وُقّع وشعبتُه الثانيةُ تُعَدّ').toBe('signature_approved')
+
+    const r2 = await plans.decide(adminId, (await submit(two.id, t.profileId)).id, true)
+    expect(r2, 'اعتُمدت آخرُ خطّةٍ ولم يُقل إنّه وُقّع').toMatchObject({ status: 'approved', sealed: { sealed: true } })
+    const c = await contractOf(t.contractId)
+    expect(c.status, 'اعتُمدت آخرُ خطّةٍ ولم يوقَّع عقدُه').toBe('countersigned')
+    expect(c.countersignedBy).toBe(adminId)
+    expect(await prisma.auditEvent.count({ where: { action: 'trainer.prep.auto_seal', entityId: t.contractId } })).toBe(1)
+  })
+
+  it('عقدٌ من قبل هذا اليوم ودوراتُه مكتملة: القائمةُ تقول `coursesReady`', async () => {
+    const t = await activePlain([C1])
+    expect(await readyOf(t.contractId), 'لا شيءَ يُعَدّ ولم يقل الخادمُ إنّ دوراته اكتملت').toBe(true)
+  })
+
+  it('والتأهيلُ المباشرُ لآخر دورةٍ معلّقةٍ يوقّعه كذلك', async () => {
+    const t = await activePlain([C1, C2])
+    await prisma.trainerCourseQualification.updateMany({ where: { profileId: t.profileId, courseId: C2 }, data: { status: 'pending' } })
+    expect(await readyOf(t.contractId), 'له دورةٌ معلّقة').toBe(false)
+    await review.qualifyForCourse(t.profileId, C2, adminId, 'من التأهيل والإسناد')
+    expect((await contractOf(t.contractId)).status, 'أُهِّل لآخر دوراته ولم يوقَّع عقدُه').toBe('countersigned')
+  })
+})
