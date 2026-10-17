@@ -23,6 +23,8 @@ model User {
   createdAt            DateTime                   @default(now())
   updatedAt            DateTime                   @updatedAt
   suspendedAt          DateTime?
+  /// حسابُ تجربةٍ تعلّمه الإدارة — لا يُعدّ طلبُه في «من ينتظر دورة بلا شعبة» (`test-account.ts`)
+  isTestAccount        Boolean                    @default(false)
   /**
    * توثيق البريد (١هـ) — يحجب الشراء وسكّ الشهادة، ولا يحجب الدخول ولا التصفّح.
    * الرمز يُحفظ هاشا كسائر الرموز: تسريب القاعدة لا يعطي مفاتيح صالحة.

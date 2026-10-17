@@ -82,6 +82,8 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
           /* توثيقُ البريد يُقرأ في الصفّ: بلا توثيقٍ لا تُصدر شهادة، فمن
              ينظر في الطابور يعرف سببَ التوقّف قبل أن يفتح الحساب. */
           emailVerified: u.emailVerifiedAt != null,
+          /* ومفتاحُ «حساب تجريبي» — وما يُعرف تجريبيّا من نفسه يُحسب في الشاشة (`test-account.ts`) */
+          isTestAccount: u.isTestAccount,
         }
       })
     })
@@ -499,6 +501,31 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
       })
       return { ok: true }
     })
+
+  /* ═══ «حساب تجريبي» — لا يُعدّ طلبُه (١٧ أكتوبر ٢٠٢٦) ═══
+
+     «اخفي هذه القائمة اذا كان الطلب من حساب تجريبي» (صاحب المنصّة) عن «من ينتظر دورة بلا شعبة».
+     وحسابُ من يعمل في المنصّة يُعرف من نفسه؛ وهذا المفتاحُ لحساب تجربةٍ لا يحمل إلّا دورَ المتعلّم.
+     ولا يمسّ دخولَه ولا ما يملك — يُخرج طلبَه من عدّ الإدارة وحدَه (`test-account.ts`). */
+  app.post('/api/admin/users/:id/test-account', {
+    preHandler: guard,
+    schema: {
+      tags: ['admin-users'],
+      summary: 'تعليم حساب تجريبيا أو رفعه — لا يعد طلبه في «من ينتظر دورة بلا شعبة»',
+      body: { type: 'object', required: ['value'], properties: { value: { type: 'boolean' } } },
+    },
+  }, async (req, reply) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const { value } = z.object({ value: z.boolean() }).parse(req.body)
+    const user = await prisma.user.findUnique({ where: { id }, select: { email: true } })
+    if (!user) return reply.status(404).send({ error: { code: 'not_found', message_ar: 'الحساب غير موجود' } })
+    await prisma.user.update({ where: { id }, data: { isTestAccount: value } })
+    await recordAudit(prisma, {
+      actorId: req.auth!.userId, action: 'admin.user.test_account', entityType: 'user', entityId: id,
+      meta: { email: user.email, value },
+    })
+    return { ok: true, isTestAccount: value }
+  })
 
   /* ── توثيقُ البريد بيدِ موظّف ──
 

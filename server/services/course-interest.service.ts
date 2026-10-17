@@ -27,6 +27,7 @@ import { renderMail } from './mail-template'
 import { publicSiteUrl } from './site-url'
 import { recordAudit } from './audit'
 import { APPROVED_PLAN_STATUSES, openRegistrationWhere, readSeasonGate } from './registration-window'
+import { DEMO_EMAIL_DOMAIN, isTestAccount } from '../../src/application/admin/test-account'
 
 /** نصُّ الوعد — يُعرض على الشاشة ويُحفظ مع الصفّ، فلا يفترق ما قيل عمّا حُفظ */
 export const COURSE_INTEREST_CONSENT_AR =
@@ -149,13 +150,32 @@ export class CourseInterestService {
      لكلّ دورةٍ لا شعبةَ تُباع لها: كم متعلّما في خطّته ينتظرها ولم يشترها، وكم زائرا
      ترك بريدَه لها ولم يُبلَّغ — وما يقف بينها وبين شعبةٍ تُباع. والأكثرُ طلبا أوّلا. */
   async demand(): Promise<{ rows: DemandRow[] }> {
-    const [items, visitors] = await Promise.all([
+    const [allItems, allVisitors] = await Promise.all([
       this.prisma.learnerPlanItem.findMany({
         where: { plan: { status: 'active' } },
         select: { courseId: true, plan: { select: { userId: true } } },
       }),
-      this.prisma.courseInterest.findMany({ where: { notifiedAt: null }, select: { courseId: true } }),
+      this.prisma.courseInterest.findMany({ where: { notifiedAt: null }, select: { courseId: true, email: true } }),
     ])
+    /* وحسابُ التجربة لا يُعدّ طلبا — من نفسه أو بمفتاح الإدارة (١٧ أكتوبر ٢٠٢٦، `test-account.ts`).
+       والزائرُ ببريده يُعرف بحسابٍ على البريد نفسِه إن كان، أو بنطاق البذر */
+    const people = await this.prisma.user.findMany({
+      where: {
+        OR: [
+          { id: { in: [...new Set(allItems.map((i) => i.plan.userId))] } },
+          { email: { in: [...new Set(allVisitors.map((v) => v.email.trim().toLowerCase()))], mode: 'insensitive' } },
+        ],
+      },
+      select: { id: true, email: true, isTestAccount: true, roles: { select: { roleId: true } } },
+    })
+    const tests = people.filter((u) => isTestAccount({ email: u.email, isTestAccount: u.isTestAccount, roleIds: u.roles.map((r) => r.roleId) }))
+    const testIds = new Set(tests.map((u) => u.id))
+    const testEmails = new Set(tests.map((u) => u.email.trim().toLowerCase()))
+    const items = allItems.filter((i) => !testIds.has(i.plan.userId))
+    const visitors = allVisitors.filter((v) => {
+      const email = v.email.trim().toLowerCase()
+      return !testEmails.has(email) && !email.endsWith(DEMO_EMAIL_DOMAIN)
+    })
     const courseIds = [...new Set([...items.map((i) => i.courseId), ...visitors.map((v) => v.courseId)])]
     if (courseIds.length === 0) return { rows: [] }
     const open = await purchasableCourses(this.prisma, courseIds)
