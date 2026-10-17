@@ -87,3 +87,10 @@ export function moveProblemAr(input: {
   if (input.reason.trim().length < MOVE_REASON_MIN) return 'اكتب السبب — الإدارة تقرؤه لتقرّر'
   return null
 }
+
+/** وسمُ الشعبة المنقولة في الإدارة: «نقلت إلى موسم الربيع 2027 · أول لقاء 2 فبراير 2027» */
+export function movedLabelAr(m: { toYear: number; toSeason: string; firstAt: string | Date | null }, dayAr: (d: string | Date) => string): string {
+  const season = (TRAINING_SEASONS as readonly { value: string }[]).find((s) => s.value === m.toSeason)
+  const term = season ? termLabelAr({ year: m.toYear, season: m.toSeason as TrainingSeason }) : `${m.toSeason} ${m.toYear}`
+  return `نقلت إلى ${term}${m.firstAt ? ` · أول لقاء ${dayAr(m.firstAt)}` : ''}`
+}

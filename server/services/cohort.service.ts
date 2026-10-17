@@ -80,6 +80,8 @@ export class CohortService {
         /* خططُ مدرّبها بحالاتها — `PLAN_GATE_SELECT` */
         plans: { where: { trainerId: { not: null } }, select: { status: true } },
         _count: { select: { enrollments: { where: { status: 'enrolled' } } } },
+        /* آخرُ نقلٍ معتمَدٍ إلى فصلٍ آخر — يُوسَم به رأسُ الشعبة (`cohort-move.ts`) */
+        moveRequests: { where: { status: 'approved' }, orderBy: { reviewedAt: 'desc' }, take: 1, select: { toYear: true, toSeason: true } },
       },
     })
     return rows.map((c) => ({
@@ -97,6 +99,13 @@ export class CohortService {
          فتقول «مخفيّةٌ عن الموقع» لمفتوحةٍ بلا مدرّبٍ معتمَد، و«تنتظر فتحك» لمسوّدةٍ
          اعتُمدت — فلا تُقرأ «مفتوحة للتسجيل» شعبةٌ يردّها الكتالوجُ والدفع */
       trainerPlanApproved: planApprovedOnce(c.plans),
+      /* نُقلت إلى فصلٍ آخر؟ — إلى أيّه، ومتى أوّلُ لقاءٍ فيها الآن (١٧ أكتوبر ٢٠٢٦) */
+      moved: c.moveRequests[0]
+        ? {
+          toYear: c.moveRequests[0].toYear, toSeason: c.moveRequests[0].toSeason,
+          firstAt: c.sessions.filter((s) => s.status !== 'cancelled').map((s) => s.startsAt).sort((a, b) => a.getTime() - b.getTime())[0] ?? c.startsAt,
+        }
+        : null,
     }))
   }
 

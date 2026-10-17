@@ -157,6 +157,11 @@ describe('② الاعتماد', () => {
     const bell = await prisma.notification.findFirst({ where: { userId: learnerId, channel: 'in_app' }, orderBy: { queuedAt: 'desc' } })
     expect(bell?.title).toContain('شعبة الاعتماد')
     expect(await prisma.cohortMoveRequest.findUniqueOrThrow({ where: { id: r.id } })).toMatchObject({ status: 'approved', reviewedBy: adminId })
+    /* وقائمةُ الإدارة تسمّي نقلَها وأوّلَ لقاءٍ فيها الآن */
+    const { CohortService } = await import('../../services/cohort.service')
+    const row = (await new CohortService(prisma).list()).find((x) => x.id === cohortId)
+    expect(row?.moved).toMatchObject({ toYear: target.year, toSeason: target.season })
+    expect(row?.moved?.firstAt?.toISOString()).toBe(after[0]!.startsAt.toISOString())
     await expect(svc.review(adminId, r.id, { action: 'approve' })).rejects.toMatchObject({ status: 409 })
   })
 })

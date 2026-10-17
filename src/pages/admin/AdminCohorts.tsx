@@ -25,6 +25,10 @@ import ListToolbar from "@/components/admin/ListToolbar";
 import { paginate } from "@/application/admin/paginate";
 import { matchesQuery } from "@/application/text/search-ar";
 import TabBar from "@/components/ui/TabBar";
+import { movedLabelAr as movedLabel } from "@/application/trainer/cohort-move";
+import { cohortDayAr as movedDayAr } from "@/application/learning/cohort-gate";
+/** وسمُ الشعبة المنقولة — بيومها بتوقيت الأكاديميّة */
+const movedLabelAr = (m: { toYear: number; toSeason: string; firstAt: string | null }) => movedLabel(m, movedDayAr);
 const STATUS_META: Record<string, { label: string; cls: string }> = {
   draft: { label: "مسودة", cls: "border-white/20 text-muted-foreground" },
   open: { label: "مفتوحة للتسجيل", cls: "border-teal/50 text-teal-light-ink" },
@@ -59,6 +63,8 @@ interface CohortRow {
   trainers: { profileId: string; name: string; role: string }[];
   /** اعتُمدت لمدرّبها خطّة — شرطُ عرضِها في الموقع وبيعِها (١٢ أكتوبر ٢٠٢٦) */
   trainerPlanApproved: boolean;
+  /** نُقلت إلى فصلٍ آخر — آخرُ نقلٍ معتمَد، وأوّلُ لقاءٍ فيها الآن (١٧ أكتوبر ٢٠٢٦) */
+  moved?: { toYear: number; toSeason: string; firstAt: string | null } | null;
 }
 
 interface CourseOption {
@@ -500,6 +506,12 @@ export default function AdminCohorts() {
                     <span className="rounded-full border border-gold/50 px-3 py-1 text-fine font-bold text-gold-ink"
                       title="لا مدرّب معتمد — لا تعرض في الموقع ولا تباع حتّى تعتمد خطّة مدرّبها">
                       مخفيّة عن الموقع
+                    </span>
+                  )}
+                  {/* نُقلت إلى فصلٍ آخر — يُرى بلا فتحها، فلا تُقرأ «تنتظر فتحك» بمواعيدها القديمة */}
+                  {c.moved && (
+                    <span className="rounded-full border border-gold/50 px-3 py-1 text-fine font-bold text-gold-ink">
+                      {movedLabelAr(c.moved)}
                     </span>
                   )}
                   {awaitsOpening(c) && (
