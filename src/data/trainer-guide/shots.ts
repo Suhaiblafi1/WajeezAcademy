@@ -133,20 +133,20 @@ export const GUIDE_SHOTS: Record<string, { w: number; h: number }> = {
     "h": 1684
   },
   "ws-live-form": {
-    "w": 1644,
-    "h": 1374
+    "w": 2200,
+    "h": 1620
   },
   "ws-meetings": {
     "w": 2200,
-    "h": 876
+    "h": 2850
   },
   "ws-modules": {
     "w": 2200,
     "h": 2678
   },
   "ws-session-tips": {
-    "w": 1752,
-    "h": 1012
+    "w": 2200,
+    "h": 758
   },
   "ws-sources": {
     "w": 2200,

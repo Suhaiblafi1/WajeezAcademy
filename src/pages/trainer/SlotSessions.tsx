@@ -61,7 +61,7 @@ import {
   SHORT_SESSION_AR, fromSlots, sessionTooShort, slotLabelAr, toMinutes, toSlotsFor,
 } from "@/application/trainer/session-length";
 import {
-  TO_LADDER_WHY_AR, dayNoteAr, fromClockNote, suggestedSessionTitle, toClockNote,
+  TO_LADDER_WHY_AR, dayNoteAr, defaultMeetingAxes, fromClockNote, suggestedSessionTitle, toClockNote,
 } from "@/application/trainer/session-picker";
 
 /** لقاءٌ كما تعرضه الورشة */
@@ -129,7 +129,8 @@ export default function SlotSessions({
   const blank = () => ({
     title: "",
     date: "", from: "", to: "", noteAr: "",
-    moduleIds: uncovered.length > 0 ? uncovered : [...axes],
+    /* وفي بطاقة الشعبة كلِّها محورٌ واحدٌ لا كلُّها — `defaultMeetingAxes` */
+    moduleIds: defaultMeetingAxes(axes, covered, wholePeriod),
   });
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(blank);

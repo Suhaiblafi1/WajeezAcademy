@@ -512,7 +512,9 @@ async function seedPrepPlan(ctx: Ctx, profileId: string) {
       moduleId: m.id, titleAr: m.versions[0]?.titleAr ?? `المحور ${i + 1}`,
       outcomeAr: TEXT[i].outcome, activityAr: TEXT[i].activity, bodyAr: TEXT[i].body,
     })),
-    slots: mods.map((m, i) => ({ startsOn: day(i * 7), endsOn: day(i * 7 + 6), moduleIds: [m.id] })),
+    /* ومواعيدُ المحاور من لقاءاتها لا تُكتب (١٧ أكتوبر ٢٠٢٦، `planSlots`) — ولقاءاتُها أسبوعيّةٌ
+       بترتيب المحاور أدناه */
+    timing: 'meetings',
     /* كرّاسةٌ واحدةٌ للدورة، وموضعُ كلّ محورٍ فيها (٣٠ سبتمبر ٢٠٢٦) — وإقرارُ قالب
        وجيز (٦ أكتوبر ٢٠٢٦): مدرّبُ الدليل جديدٌ فالإقرارُ له شرط */
     workbook: {

@@ -9,7 +9,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
-  dayNoteAr, firstWeekdayIn, fromClockNote, holidayOn, isWorkday, lateInSlot, suggestedSessionTitle, toClockNote, weeklyProposals, slotDayOptionAr, slotDays } from '@/application/trainer/session-picker'
+  dayNoteAr, defaultMeetingAxes, firstWeekdayIn, fromClockNote, holidayOn, isWorkday, lateInSlot, suggestedSessionTitle, toClockNote, weeklyProposals, slotDayOptionAr, slotDays } from '@/application/trainer/session-picker'
 
 const code = (p: string) =>
   readFileSync(join(process.cwd(), p), 'utf8').replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '').replace(/^\s*\/\/.*$/gm, '')
@@ -105,6 +105,21 @@ describe('النموذج فارغ — المدرّب يكتب، والمنصّة
   it('ولا يحفظ لقاء قبل أن يختار يومه وساعتاه', () => {
     expect(SLOT).toMatch(/const timed = Boolean\(form\.date && form\.from && form\.to\);/)
     expect(SLOT).toMatch(/disabled=\{busy \|\| title\.length < 2 \|\| !timed \|\|/)
+  })
+
+  /* مواعيدُ المحاور من لقاءاتها (١٧ أكتوبر ٢٠٢٦): لقاءٌ جديدٌ على كلّ المحاور يخالف ترتيبَها فيُردّ */
+  it('⚠️ في بطاقة الشعبة كلّها: أوّل محور بلا لقاء وحده — ولا شيء إن غطّيت كلّها', () => {
+    const axes = ['M1', 'M2', 'M3', 'M4']
+    expect(defaultMeetingAxes(axes, new Set(['M1']), true), 'فتح على كلّ ما لم يغطّ').toEqual(['M2'])
+    expect(defaultMeetingAxes(axes, new Set(), true)).toEqual(['M1'])
+    expect(defaultMeetingAxes(axes, new Set(axes), true), 'اختار عنه وكلّها مغطّاة').toEqual([])
+    expect(SLOT, 'الشاشة لا تأخذ محاورها من القاعدة').toMatch(/moduleIds: defaultMeetingAxes\(axes, covered, wholePeriod\),/)
+  })
+
+  it('وفي بطاقة الموعد كما كانت: ما لم يغطّ من محاوره — وكلّها إن غطّيت', () => {
+    const axes = ['M1', 'M2', 'M3']
+    expect(defaultMeetingAxes(axes, new Set(['M1']), false)).toEqual(['M2', 'M3'])
+    expect(defaultMeetingAxes(axes, new Set(axes), false)).toEqual(axes)
   })
 
   it('والزرّ «احفظ اللقاء» — لا «أرسله للاعتماد» في كلّ لقاء', () => {

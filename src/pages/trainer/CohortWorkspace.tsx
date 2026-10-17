@@ -434,7 +434,7 @@ const STAGE_INTRO: Record<Stage, { title: string; purpose: string; minutes: stri
   },
   sessions: {
     title: "اللقاءات المباشرة والمسجّلة",
-    purpose: "لقاء مباشر على الأقلّ لكلّ محور داخل موعده. والمسجّلة اختياريّة.",
+    purpose: "لقاء مباشر على الأقلّ لكلّ محور، بترتيب المحاور. والمسجّلة اختياريّة.",
     minutes: "نحو ١٠ دقائق",
   },
   assignments: {
@@ -2771,7 +2771,7 @@ export default function CohortWorkspace() {
                   </div>
                   {scheduleMode === "manual" ? (
                     <p className="text-read leading-6 text-muted-foreground">
-                      اختر يوم كلّ لقاء وساعته من بطاقة موعده.
+                      {byMeetings ? "اختر يوم كلّ لقاء وساعته من «لقاءات الشعبة» أدناه." : "اختر يوم كلّ لقاء وساعته من بطاقة موعده."}
                     </p>
                   ) : (
                     <WeeklySessions
