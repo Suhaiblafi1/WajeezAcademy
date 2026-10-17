@@ -701,3 +701,209 @@ export function buildTimeline(input: {
 export function openNow(at: Date | null, now: Date = new Date()): boolean {
   return at === null || at.getTime() <= now.getTime()
 }
+
+/* ═══ مواعيدُ المحاور من لقاءاتها — لا تُكتب مرّتين (١٧ أكتوبر ٢٠٢٦) ═══
+
+   قال صاحبُ المنصّة وهو يرى بطاقةَ «يبدأ / وينتهي» لكلّ محور: «لا داعي لربط المحاور
+   بتوقيت.. لأنّه عندما يقوم بإعداد اللقاءات يختار لها مواعيدَ ضمن موعد الشعبة كاملة..
+   واللقاءاتُ أصلا ستكون مربوطةً بالمحاور فالأمرُ هنا مكرّر». وكان الموعدُ يفعل ثلاثةً
+   لا تفعلها اللقاءات: يومُ بدئه يفتح كرّاسةَ المحور ومتنه، ويومُ نهايته آخرُ تسليمٍ
+   لمهامّه، ويمنع لقاءً في غير وقت محوره. فعُرضت عليه ثلاثُ طرقٍ بفروقها، فاختار
+   **«خذ التوقيتَ من اللقاءات»**:
+
+   · المحاورُ تُجمَع بأوّل لقاءٍ لكلٍّ منها: متجاوران يبدآن باللقاء نفسِه موعدٌ واحد.
+   · ويُفتح الموعدُ صباحَ اليوم الذي يلي آخرَ لقاءٍ لما قبله — والأوّلُ أوّلَ يومٍ في الشعبة.
+     ولا بعد أوّل لقاءٍ له أبدا: لقاءان في يومٍ واحدٍ لا يفتحان المحورَ بعد لقائه.
+   · وينتهي اليومَ الذي يسبق أوّلَ لقاءٍ لما بعده — والأخيرُ آخرَ يومٍ في الشعبة. ولا
+     قبل آخرِ لقاءٍ له.
+   · و«في غير وقته» صار ترتيبا: لا يسبق لقاءُ محورٍ آخرَ لقاءٍ لما قبله (`meetingProblems`).
+
+   والشكلُ الناتجُ هو `PlanSlot` نفسُه، فكلُّ ما يقرأ المواعيد — بوّابةُ المتعلّم وآخرُ
+   التسليم وفتحُ الكرّاسة — يقرؤها كما كان، من `planSlots` وحدَها. وما اعتُمد بمواعيدَ
+   مكتوبةٍ يبقى عليها حتّى يُعدَّل: `timing` غائبٌ فيه. */
+
+/** علامةُ الخطّة التي تُشتقّ مواعيدُ محاورها من لقاءاتها */
+export const MEETINGS_TIMING = 'meetings'
+
+export const timedByMeetings = (c: { timing?: string | null } | null | undefined): boolean =>
+  c?.timing === MEETINGS_TIMING
+
+/** محاورُ يجمعها أوّلُ لقاءٍ واحد — بترتيب الخطّة، ولكلٍّ أوّلُ لقاءاته وآخرُها */
+interface MeetingGroup {
+  moduleIds: string[]
+  first: number
+  lastStart: number
+  lastEnd: number
+}
+
+function meetingGroups(moduleIds: readonly string[], sessions: readonly TimelineSession[]): MeetingGroup[] {
+  const known = new Set(moduleIds)
+  const first = new Map<string, number>()
+  const lastStart = new Map<string, number>()
+  const lastEnd = new Map<string, number>()
+  for (const s of sessions) {
+    const t = new Date(s.startsAt).getTime()
+    if (Number.isNaN(t)) continue
+    const e = sessionEnd(s).getTime()
+    for (const id of s.moduleIds) {
+      if (!known.has(id)) continue
+      first.set(id, Math.min(first.get(id) ?? t, t))
+      lastStart.set(id, Math.max(lastStart.get(id) ?? t, t))
+      lastEnd.set(id, Math.max(lastEnd.get(id) ?? e, e))
+    }
+  }
+  const groups: MeetingGroup[] = []
+  /* ومحورٌ بلا لقاءٍ يلحق بما قبله — أو بما بعده إن كان في أوّلها. وخطوةُ اللقاءات
+     تمنع الإرسالَ عليه؛ وهذا لما أُلغي لقاؤه بعد الاعتماد: يُفتح مع جاره لا يُحبَس */
+  let leading: string[] = []
+  for (const id of moduleIds) {
+    const f = first.get(id)
+    const g = groups[groups.length - 1]
+    if (f === undefined) {
+      if (g) g.moduleIds.push(id)
+      else leading.push(id)
+      continue
+    }
+    if (g && g.first === f) {
+      g.moduleIds.push(id)
+      g.lastStart = Math.max(g.lastStart, lastStart.get(id)!)
+      g.lastEnd = Math.max(g.lastEnd, lastEnd.get(id)!)
+      continue
+    }
+    groups.push({ moduleIds: [...leading, id], first: f, lastStart: lastStart.get(id)!, lastEnd: lastEnd.get(id)! })
+    leading = []
+  }
+  return groups
+}
+
+const dayOf = (t: number) => zonedDay(new Date(t))
+const minDay = (a: string, b: string) => (a <= b ? a : b)
+const maxDay = (a: string, b: string) => (a >= b ? a : b)
+
+/** مواعيدُ المحاور مشتقّةً من لقاءاتها المباشرة — `[]` إن لم يكن لقاء */
+export function slotsFromMeetings(
+  moduleIds: readonly string[],
+  sessions: readonly TimelineSession[],
+  period: CohortPeriod | null | undefined,
+): PlanSlot[] {
+  const groups = meetingGroups(moduleIds, sessions)
+  return groups.map((g, i) => {
+    const prev = groups[i - 1]
+    const next = groups[i + 1]
+    const firstDay = dayOf(g.first)
+    const lastDay = dayOf(g.lastStart)
+    const opens = prev ? addDays(dayOf(prev.lastEnd), 1) : (period?.startsOn ?? firstDay)
+    const closes = next ? addDays(dayOf(next.first), -1) : (period?.endsOn ?? dayOf(g.lastEnd))
+    return {
+      startsOn: minDay(opens, firstDay),
+      endsOn: maxDay(closes, lastDay),
+      moduleIds: g.moduleIds,
+      workbook: null,
+    }
+  })
+}
+
+/** مواعيدُ المحاور كما تُقرأ: من اللقاءات إن كانت الخطّةُ عليها، وإلّا المكتوبةُ فيها */
+export function planSlots(
+  content: { timing?: string | null; slots?: readonly PlanSlot[] | null; modules?: readonly { moduleId: string }[] | null } | null | undefined,
+  sessions: readonly TimelineSession[],
+  period: CohortPeriod | null | undefined,
+): PlanSlot[] {
+  if (!timedByMeetings(content)) return [...(content?.slots ?? [])]
+  return slotsFromMeetings((content?.modules ?? []).map((m) => m.moduleId), sessions, period)
+}
+
+/* ═══ ما يمنع خطوةَ اللقاءات حين تأخذ المحاورُ وقتَها منها ═══
+
+   ② لكلّ محورٍ لقاءٌ مباشر، ولكلّ لقاءٍ محور — كما كان. ثمّ:
+   · **داخلَ مدّة الشعبة** — بدلَ «داخلَ موعد محوره».
+   · **وبترتيب المحاور**: لا يبدأ أوّلُ لقاءٍ لمحورٍ قبل آخرِ لقاءٍ لما قبله — وهو
+     «لا تدعه يضع لقاءً لمحورٍ في غير وقته» (٤ أكتوبر ٢٠٢٦) بلغة اللقاءات.
+   · **وأربعةُ مواعيدَ على الأقلّ** (`minSlots`): «الدورةُ أقلُّ شيءٍ أربعةُ محاور، فلا
+     يجمع محورين معا إلّا إذا كانت أكثرَ من أربعة» — والجمعُ صار لقاءً أوّلَ مشتركا.
+   · **والمسجَّلةُ** بمحورها ولحظةِ فتحها داخلَ المدّة.
+
+   ولا تنبيهَ «بعد اليوم الثالث من موعده»: الموعدُ صار يبدأ قبل لقائه بأيّامٍ بقصد —
+   ليُقرأ المحورُ قبل لقائه. */
+export function meetingProblems(input: {
+  moduleIds: readonly string[]
+  sessions: readonly TimelineSession[]
+  recordings?: readonly TimelineRecording[]
+  period: CohortPeriod | null | undefined
+  /** اللحظةُ التي يُحكم بها — وما انتهى قبلها واقعةٌ لا مسودّة */
+  now?: Date | null
+}): { blocking: string[]; warnings: string[] } {
+  const blocking: string[] = []
+  const pos = new Map(input.moduleIds.map((id, i) => [id, i + 1]))
+  const name = (t: string | null | undefined, fallback: string) => (t ?? '').trim() || fallback
+  const period = input.period ?? null
+
+  const covered = new Set(input.sessions.flatMap((s) => s.moduleIds))
+  const bare = input.moduleIds.filter((id) => !covered.has(id))
+  if (bare.length) {
+    blocking.push(`${bare.length === 1 ? 'محور' : 'محاور'} بلا لقاء مباشر: ${bare.map((id) => `المحور ${pos.get(id)}`).join('، ')}`)
+  }
+
+  input.sessions.forEach((s, i) => {
+    if (input.now && sessionEnd(s).getTime() < input.now.getTime()) return
+    const label = `لقاء «${name(s.title, `رقم ${i + 1}`)}»`
+    if (!s.moduleIds.some((id) => pos.has(id))) { blocking.push(`${label} غير مربوط بمحور — اختر محوره`); return }
+    if (period && !sessionInsideSlot(s, period)) {
+      blocking.push(`${label} خارج مدّة الشعبة (${dayLabelAr(period.startsOn)} – ${dayLabelAr(period.endsOn)})`)
+    }
+  })
+
+  const groups = meetingGroups(input.moduleIds, input.sessions)
+  for (let i = 1; i < groups.length; i++) {
+    const prev = groups[i - 1]
+    const g = groups[i]
+    if (g.first < prev.lastStart) {
+      blocking.push(`أوّل لقاء في ${axesLabelAr(g.moduleIds, pos)} قبل آخر لقاء في ${axesLabelAr(prev.moduleIds, pos)} — اللقاءات بترتيب المحاور`)
+    }
+  }
+  const need = minSlots(input.moduleIds.length)
+  if (bare.length === 0 && groups.length > 0 && groups.length < need) {
+    blocking.push(input.moduleIds.length > MIN_SLOTS
+      ? `أقلّ ما تقسم عليه الدورة ${MIN_SLOTS} مواعيد — اجعل لبعض المحاور أوّل لقاء خاصّا بها`
+      : `لكلّ محور أوّل لقاء خاصّ به — الدورة في ${input.moduleIds.length} محاور فلا يجمع منها شيء`)
+  }
+
+  ;(input.recordings ?? []).forEach((r, i) => {
+    const label = `الجلسة المسجّلة «${name(r.title, `رقم ${i + 1}`)}»`
+    if (!r.moduleId || !pos.has(r.moduleId)) { blocking.push(`${label} بلا محور — اختر محورها`); return }
+    if (!r.opensAt || Number.isNaN(new Date(r.opensAt).getTime())) { blocking.push(`${label} بلا موعد فتح`); return }
+    if (period && !opensInsideSlot(r.opensAt, period)) {
+      blocking.push(`${label} تفتح خارج مدّة الشعبة (${dayLabelAr(period.startsOn)} – ${dayLabelAr(period.endsOn)})`)
+    }
+  })
+  return { blocking, warnings: [] }
+}
+
+/** أيقع لقاءٌ يُضاف أو يُربط بترتيب محاوره؟ — لا قبل آخرِ لقاءٍ لما قبلها، ولا بعد أوّلِ
+    لقاءٍ لما بعدها. به يردّ الخادمُ لحظةَ الإضافة ما يمنعه الإرسالُ بعدها (`meetingProblems`):
+    «لا تدعه يضع لقاءً لمحورٍ في غير وقته» (٤ أكتوبر ٢٠٢٦) بلغة اللقاءات */
+export function meetingOrderProblem(
+  moduleIds: readonly string[],
+  others: readonly TimelineSession[],
+  s: TimelineSession,
+  label = 'اللقاء',
+): string | null {
+  const pos = new Map(moduleIds.map((id, i) => [id, i + 1]))
+  const mine = s.moduleIds.map((id) => pos.get(id)).filter((x): x is number => typeof x === 'number')
+  const t = new Date(s.startsAt).getTime()
+  if (mine.length === 0 || Number.isNaN(t)) return null
+  const lo = Math.min(...mine)
+  const hi = Math.max(...mine)
+  for (const o of others) {
+    const at = o.moduleIds.map((id) => pos.get(id)).filter((x): x is number => typeof x === 'number')
+    const ot = new Date(o.startsAt).getTime()
+    if (at.length === 0 || Number.isNaN(ot)) continue
+    if (Math.max(...at) < lo && ot > t) {
+      return `${label} قبل لقاء في ${axesLabelAr(o.moduleIds, pos)} — اللقاءات بترتيب المحاور`
+    }
+    if (Math.min(...at) > hi && ot < t) {
+      return `${label} بعد لقاء في ${axesLabelAr(o.moduleIds, pos)} — اللقاءات بترتيب المحاور`
+    }
+  }
+  return null
+}

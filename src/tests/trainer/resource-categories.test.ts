@@ -120,7 +120,7 @@ describe('الشاشة: خانة لكلّ صنف، ولا «موادّ شعبة�
 
   it('وتاريخ الفتح يعرض للمسجّل وحده، محدودا بأشهر الفصل', () => {
     const rec = stage.slice(stage.indexOf('resourceCategory(r) === "recorded")'))
-    expect(stage).toMatch(/!slotsOn && content\.resources\.some\(\(r\) => resourceCategory\(r\) === "recorded"\)/)
+    expect(stage).toMatch(/!timelineOn && content\.resources\.some\(\(r\) => resourceCategory\(r\) === "recorded"\)/)
     expect(rec, 'التاريخ غير محدود بالفصل').toMatch(/min=\{ws\.cohort\.term \? ws\.cohort\.term\.startsOn/)
     expect(rec).toMatch(/max=\{ws\.cohort\.term \? ws\.cohort\.term\.endsOn/)
     expect(LIST, 'تاريخ فتح في صفّ مصدر غير مسجّل').not.toContain('opensAt')

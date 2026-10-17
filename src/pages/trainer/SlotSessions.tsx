@@ -88,11 +88,14 @@ const clockOf = (iso: string) => {
 
 export default function SlotSessions({
   cohortId, slot, index, axisNo, titles, sessions, recorded, locked, approvedOnce, onDone, beforeWrite,
-  onAddRecorded, onPatchRecorded, onRemoveRecorded,
+  onAddRecorded, onPatchRecorded, onRemoveRecorded, wholePeriod = false,
 }: {
   cohortId: string;
   slot: PlanSlot;
   index: number;
+  /** البطاقةُ لمدّة الشعبة كلِّها ومحاورِها كلِّها — حين تأخذ المحاورُ وقتَها من لقاءاتها
+      (١٧ أكتوبر ٢٠٢٦، `planSlots`): فلا «الموعد ١» ولا نصيحةُ أوّل ثلاثة أيّام */
+  wholePeriod?: boolean;
   /** رقمُ كلّ محورٍ في الخطّة — «المحور ٣» */
   axisNo: ReadonlyMap<string, number>;
   /** عنوانُ كلّ محور — منه يُقترح عنوانُ اللقاء مثالا باهتا لا قيمةً مكتوبة */
@@ -250,12 +253,23 @@ export default function SlotSessions({
   return (
     <Card as="li" className="grid gap-4">
       <div>
-        <p className="text-read font-black text-teal-light-ink">
-          الموعد {index + 1} <span className="font-bold text-foreground">· {label}</span>
-        </p>
-        <p className="mt-0.5 text-read text-muted-foreground">
-          من {dayLabelAr(slot.startsOn)} إلى {dayLabelAr(slot.endsOn)}. الأنسب أن يكون اللقاء في أوّل {EARLY_DAYS} أيّام، لأنّ المهامّ تفتح بعده.
-        </p>
+        {wholePeriod ? (
+          <>
+            <p className="text-read font-black text-teal-light-ink">لقاءات الشعبة</p>
+            <p className="mt-0.5 text-read text-muted-foreground">
+              من {dayLabelAr(slot.startsOn)} إلى {dayLabelAr(slot.endsOn)}. اربط كلّ لقاء بمحوره، واجعلها بترتيب المحاور.
+            </p>
+          </>
+        ) : (
+          <>
+            <p className="text-read font-black text-teal-light-ink">
+              الموعد {index + 1} <span className="font-bold text-foreground">· {label}</span>
+            </p>
+            <p className="mt-0.5 text-read text-muted-foreground">
+              من {dayLabelAr(slot.startsOn)} إلى {dayLabelAr(slot.endsOn)}. الأنسب أن يكون اللقاء في أوّل {EARLY_DAYS} أيّام، لأنّ المهامّ تفتح بعده.
+            </p>
+          </>
+        )}
       </div>
 
       {/* ② محاورُ الموعد بأسمائها — ولكلٍّ لقاءٌ مباشر؟ يُرى قبل الإرسال لا بعد الردّ */}
@@ -275,7 +289,7 @@ export default function SlotSessions({
 
       {/* ═══ لقاءاتُ هذا الموعد — المباشرُ والمسجّلُ في قائمةٍ واحدة ═══ */}
       <div className="grid gap-2 border-t border-white/10 pt-3">
-        <p className="text-read font-black text-foreground">لقاءات هذا الموعد</p>
+        {!wholePeriod && <p className="text-read font-black text-foreground">لقاءات هذا الموعد</p>}
         <p className="text-read leading-6 text-muted-foreground">
           أضف لقاء مباشرا، أو جلسة مسجّلة، أو الاثنين — وما شئت من كلّ منهما، لمحور واحد أو أكثر.
         </p>
@@ -308,8 +322,8 @@ export default function SlotSessions({
                     {fmtDateTimeAr(s.startsAt)} · {pending ? "ينتظر اعتماد الإدارة" : "معتمد"}
                   </p>
                   {outside
-                    ? <p className="text-read font-bold text-gold-ink">يومه خارج وقت هذا الموعد — غيّر موعده إلى يوم داخله.</p>
-                    : day > EARLY_DAYS && <p className="text-read text-gold-ink">في اليوم {day} من الموعد — والأنسب أوّل {EARLY_DAYS} أيّام.</p>}
+                    ? <p className="text-read font-bold text-gold-ink">{wholePeriod ? "يومه خارج مدّة الشعبة — غيّر موعده إلى يوم داخلها." : "يومه خارج وقت هذا الموعد — غيّر موعده إلى يوم داخله."}</p>
+                    : !wholePeriod && day > EARLY_DAYS && <p className="text-read text-gold-ink">في اليوم {day} من الموعد — والأنسب أوّل {EARLY_DAYS} أيّام.</p>}
                   {/* محاورُ اللقاء — يُضاف ما شاء من محاور موعده أو يُرفع، ولا يُترك بلا محور */}
                   {axisPicker(s.moduleIds ?? [], choices, (id, on) => void relink(s, id, on), `محاور «${s.title}»`)}
                   <div>
@@ -321,7 +335,7 @@ export default function SlotSessions({
                   {moving === s.id && (
                     <Inset tone="accent" className="grid gap-3">
                       <div className="grid gap-3 sm:grid-cols-3">
-                        <StaffField label="اليوم" hint="أيّام هذا الموعد فقط.">
+                        <StaffField label="اليوم" hint={wholePeriod ? "أيّام الشعبة فقط." : "أيّام هذا الموعد فقط."}>
                           <SlotDaySelect slot={slot} value={move.date} ariaLabel={`اليوم الجديد لـ«${s.title}»`}
                             onChange={(date) => setMove({ ...move, date })} />
                         </StaffField>
@@ -388,7 +402,7 @@ export default function SlotSessions({
                         {axes.map((id) => <option key={id} value={id}>{axisNameAr(id)}</option>)}
                       </select>
                     </StaffField>
-                    <StaffField label="تفتح للمتعلّم يوم" hint="أيّام هذا الموعد فقط.">
+                    <StaffField label="تفتح للمتعلّم يوم" hint={wholePeriod ? "أيّام الشعبة فقط." : "أيّام هذا الموعد فقط."}>
                       <SlotDaySelect slot={slot} value={date} disabled={locked} ariaLabel={`يوم فتح الجلسة المسجّلة ${i + 1}`}
                         onChange={(d) => onPatchRecorded(i, { opensAt: at(d, clock).toISOString() })} />
                     </StaffField>
@@ -400,7 +414,7 @@ export default function SlotSessions({
                       </select>
                     </StaffField>
                   </div>
-                  {outside && <p className="text-read font-bold text-gold-ink">يوم فتحها خارج وقت هذا الموعد — اختر يوما من القائمة.</p>}
+                  {outside && <p className="text-read font-bold text-gold-ink">{wholePeriod ? "يوم فتحها خارج مدّة الشعبة" : "يوم فتحها خارج وقت هذا الموعد"} — اختر يوما من القائمة.</p>}
                 </Inset>
               );
             })}
@@ -437,7 +451,7 @@ export default function SlotSessions({
             {axisPicker(form.moduleIds, axes, (id, on) => setForm({ ...form, moduleIds: on ? [...form.moduleIds, id] : form.moduleIds.filter((x) => x !== id) }), `محاور اللقاء الجديد في الموعد ${index + 1}`)}
           </StaffField>
           <div className="grid gap-3 sm:grid-cols-3">
-            <StaffField label="اليوم" hint={`أيّام هذا الموعد فقط: من ${dayLabelAr(slot.startsOn)} إلى ${dayLabelAr(slot.endsOn)}.`}>
+            <StaffField label="اليوم" hint={`${wholePeriod ? "أيّام الشعبة" : "أيّام هذا الموعد"} فقط: من ${dayLabelAr(slot.startsOn)} إلى ${dayLabelAr(slot.endsOn)}.`}>
               <SlotDaySelect slot={slot} value={form.date} ariaLabel={`يوم اللقاء في الموعد ${index + 1}`}
                 onChange={(date) => setForm({ ...form, date })} />
             </StaffField>
@@ -477,9 +491,9 @@ export default function SlotSessions({
           </StaffField>
           {outside ? (
             <p className="text-read font-bold text-gold-ink">
-              هذا اليوم خارج وقت {label} — اختر يوما من القائمة.
+              هذا اليوم خارج {wholePeriod ? "مدّة الشعبة" : `وقت ${label}`} — اختر يوما من القائمة.
             </p>
-          ) : formDay > EARLY_DAYS && (
+          ) : !wholePeriod && formDay > EARLY_DAYS && (
             <p className="text-read text-gold-ink">هذا اليوم {formDay} من الموعد — الأنسب أوّل {EARLY_DAYS} أيّام، لأنّ المهامّ تفتح بعد اللقاء. ولك أن تبقيه.</p>
           )}
           {!outside && dayNote && (

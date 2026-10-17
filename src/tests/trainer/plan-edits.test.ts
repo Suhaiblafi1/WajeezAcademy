@@ -147,7 +147,7 @@ describe('ما يراه المدرّب', () => {
     const edit: PlanEdit = { kind: 'module', moduleId: 'M2', set: { artifactAr: 'صفحة واحدة' } }
     const v = planEditView(edit, { artifactAr: null }, ctx)
     expect(v.titleAr).toBe('المحور 2 — ما يسلّمه المتعلّم')
-    expect(v.stepAr).toBe('المحاور ومواعيدها')
+    expect(v.stepAr).toBe('المحاور')
     expect(v.rows).toEqual([{ labelAr: 'ما يسلّمه المتعلّم', beforeAr: null, afterAr: 'صفحة واحدة', long: true }])
   })
 

@@ -100,11 +100,14 @@ describe('② المحاور داخل مواعيدها', () => {
     expect(del, 'المحذوف يبقى في موعده').toContain('dropFromSlots(slots, pendingModule.module.moduleId)')
   })
 
-  it('⚠️ والتوزيع الأوّل يرتّب للمسودّة وحدها — والبصمة من المحفوظ فيعلّم «لم يحفظ»', () => {
+  /* ومنذ ١٧ أكتوبر ٢٠٢٦ لا توزيعَ أوّلَ يُرتَّب: الخطّةُ التي في يده تأخذ مواعيدَ محاورها من لقاءاتها،
+     والمكتوبُ فيها يسقط حين يحفظها — والبصمةُ من المحفوظ فيعلّم «لم يحفظ» حتّى يحفظ */
+  it('⚠️ والتي في يده تصير على اللقاءات — والبصمة من المحفوظ فيعلّم «لم يحفظ»', () => {
     const load = WS.slice(WS.indexOf('const load = useCallback'), WS.indexOf('useEffect(() => { void load(true)'))
     expect(load).toMatch(/const editable = status === "draft" \|\| status === "changes_requested"/)
-    expect(load).toMatch(/editable && !\(saved\.slots\?\.length\)/)
-    expect(load).toContain('defaultSlots(')
+    expect(load).toMatch(/editable && !timedByMeetings\(saved\)/)
+    expect(load).toContain('timing: MEETINGS_TIMING, slots: undefined')
+    expect(load, 'عاد التوزيع الأوّل يرتّب مواعيد').not.toContain('defaultSlots(')
     expect(load, 'البصمة من المرتّب لا من المحفوظ').toContain('modules: modulesKey(saved)')
   })
 
@@ -164,8 +167,10 @@ describe('④ اللقاءات — بطاقة لكلّ موعد', () => {
   const block = stageBlock('sessions', 'assignments')
 
   it('⚠️ للشعبة ذات المواعيد بطاقات مواعيد، ولما سبقها جدولتها القديمة', () => {
-    expect(block).toMatch(/slotsOn \? \(\(\) => \{[\s\S]*<SlotSessions[\s\S]*\}\)\(\) : \(/)
+    expect(block).toMatch(/sessionsOn \? \(\(\) => \{[\s\S]*<SlotSessions[\s\S]*\}\)\(\) : byMeetings \? \(/)
     expect(block).toContain('<TrainerSchedule')
+    /* ومنذ ١٧ أكتوبر ٢٠٢٦ للخطّة التي على اللقاءات بطاقةٌ واحدةٌ بمدّة الشعبة ومحاورها كلِّها */
+    expect(block).toContain('wholePeriod={byMeetings}')
   })
 
   it('⚠️ والربط يقال إنّه يسري فورا بلا اعتماد — لا «يقرّر وحده» (٢٨ سبتمبر ٢٠٢٦)', () => {
@@ -237,7 +242,7 @@ describe('④ اللقاءات — بطاقة لكلّ موعد', () => {
   it('⚠️ وما لم يربط يعرض له ما يقع في وقته من المحاور وحده — كما يحكم الخادم', () => {
     const live = block.slice(block.indexOf('{loose.map((x) => {'), block.indexOf('{looseRecorded.map('))
     expect(live).toMatch(/const held = sessionEnd\(x\)\.getTime\(\) < Date\.now\(\);/)
-    expect(live).toMatch(/return si !== -1 && \(held \|\| sessionInsideSlot\(x, slots\[si\]\)\);/)
+    expect(live).toMatch(/return si !== -1 && \(held \|\| sessionInsideSlot\(x, sessionSlots\[si\]\)\);/)
     expect(live).toContain('{fits.map(({ m, k }) =>')
     expect(live, 'يعرض كلّ محور ولو في غير وقته').not.toContain('content.modules.map((m, k) => <option')
   })
@@ -278,7 +283,7 @@ describe('⑤ المهامّ والمصادر بمحاورها', () => {
   const block = stageBlock('assignments', 'approval')
 
   it('⚠️ المهمّة لا تحفظ بلا محور في شعبة لها مواعيد', () => {
-    expect(block).toMatch(/disabled=\{busy \|\| taskForm\.title\.trim\(\)\.length < 3 \|\| \(slotsOn && !taskForm\.moduleId\)\}/)
+    expect(block).toMatch(/disabled=\{busy \|\| taskForm\.title\.trim\(\)\.length < 3 \|\| \(timelineOn && !taskForm\.moduleId\)\}/)
     expect(block).toContain('aria-label="محور المهمّة"')
   })
 

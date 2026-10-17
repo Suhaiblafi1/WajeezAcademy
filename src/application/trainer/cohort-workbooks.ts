@@ -209,7 +209,7 @@ export function workbooksProblems(
     else if (opts.templateRequired && materialUnsaid(wb)) out.push('قل في كرّاسة الدورة: على قالب وجيز، أم مادّتك الجاهزة')
     return out
   }
-  if (moduleIds.length === 0) return ['اكتب محاورك في «المحاور ومواعيدها» أوّلا — فلكلّ محور كرّاسته']
+  if (moduleIds.length === 0) return ['اكتب محاورك في «المحاور» أوّلا — فلكلّ محور كرّاسته']
   const groups = workbookGroups(content?.workbooks, moduleIds)
   const empty = groups.filter((g) => !workbookDone(g))
   if (empty.length > 0) out.push(`ضع كرّاسة ${empty.map((g) => groupLabelAr(g, moduleIds)).join('، و')} — ملفّ PDF أو رابطا`)

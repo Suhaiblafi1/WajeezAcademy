@@ -22,10 +22,13 @@ import { DAY_CODES } from '../../src/application/schedule/days'
 import { sessionPattern } from '../../src/application/schedule/session-pattern'
 import { ACADEMY_ZONE } from '../../src/application/trainer/cohort-period'
 import { windowOpen } from '../../src/application/trainer/schedule-window'
-import { cohortDayAr, meetingOver, whenAr } from '../../src/application/learning/cohort-gate'
+import { cohortDayAr, learnerPeriod, meetingOver, whenAr } from '../../src/application/learning/cohort-gate'
 import { keepsApprovalOnMove } from '../../src/application/trainer/postpone'
-import { axisTimeProblem, sessionEnd, slotIndexOf, type PlanSlot } from '../../src/application/trainer/axis-timeline'
+import {
+  axisTimeProblem, meetingOrderProblem, planSlots, sessionEnd, slotIndexOf, timedByMeetings, type PlanSlot,
+} from '../../src/application/trainer/axis-timeline'
 import { LEARNER_PLAN_QUERY } from './learner-gate'
+import { LEARNER_SESSION_WHERE } from './session-visibility'
 import { SEATED, SessionInviteService } from './session-invite.service'
 import { cohortTitleAr, nextCohortNumber } from '../../src/application/learning/cohort-title'
 
@@ -955,6 +958,7 @@ export class CohortService {
     cohortId: string,
     when: { startsAt: Date; endsAt?: Date | null },
     moduleIds: readonly string[],
+    exceptSessionId?: string,
   ) {
     if (moduleIds.length === 0) return
     if (sessionEnd(when).getTime() < Date.now()) return
@@ -963,7 +967,27 @@ export class CohortService {
       orderBy: { createdAt: 'desc' },
       select: { content: true },
     })
-    const content = (plan?.content ?? null) as { slots?: PlanSlot[] | null; modules?: { moduleId: string }[] | null } | null
+    const content = (plan?.content ?? null) as {
+      slots?: PlanSlot[] | null; modules?: { moduleId: string }[] | null; timing?: string | null
+    } | null
+    /* ═══ وحين تأخذ المحاورُ وقتَها من لقاءاتها (١٧ أكتوبر ٢٠٢٦) ═══
+       فـ«في وقته» ترتيبٌ: لا قبل آخرِ لقاءٍ لما قبل محاوره، ولا بعد أوّلِ لقاءٍ لما بعدها */
+    if (timedByMeetings(content)) {
+      const others = await this.prisma.cohortSession.findMany({
+        where: {
+          cohortId, placeholder: false, status: { not: 'cancelled' },
+          ...(exceptSessionId ? { id: { not: exceptSessionId } } : {}),
+        },
+        select: { startsAt: true, endsAt: true, moduleId: true, moduleIds: true },
+      })
+      const problem = meetingOrderProblem(
+        (content?.modules ?? []).map((m) => m.moduleId),
+        others.map((o) => ({ startsAt: o.startsAt, endsAt: o.endsAt, moduleIds: o.moduleIds.length ? o.moduleIds : o.moduleId ? [o.moduleId] : [] })),
+        { startsAt: when.startsAt, endsAt: when.endsAt ?? null, moduleIds },
+      )
+      if (problem) throw new AuthError('outside_axis_time', problem, 422)
+      return
+    }
     const slots = content?.slots ?? []
     if (slots.length === 0) return
     const pos = new Map((content?.modules ?? []).map((m, i) => [m.moduleId, i + 1]))
@@ -1005,7 +1029,7 @@ export class CohortService {
         moduleId: true, moduleIds: true, timezone: true,
         zoom: { select: { meetingId: true, provider: true } },
         /* موعدُ محوره من الخطّة التي يراها المتعلّم — منه يُحكم على «داخلَ موعده» (٣ج) */
-        cohort: { select: { title: true, timezone: true, plans: LEARNER_PLAN_QUERY } },
+        cohort: { select: { title: true, timezone: true, startsAt: true, endsAt: true, plans: LEARNER_PLAN_QUERY } },
       },
     })
     if (!session) throw new AuthError('not_found', 'اللقاء غير موجود', 404)
@@ -1046,7 +1070,16 @@ export class CohortService {
        وسقط بابُ «اقترح موعدا» من قبل: من يملك النقلَ لا يستأذن فيه، والاعتمادُ —
        حيث يلزم — يقع بعدَه لا قبلَه. */
     const wasApproved = session.approvalState === 'approved'
-    const slots = ((session.cohort.plans[0]?.content ?? null) as { slots?: PlanSlot[] | null } | null)?.slots ?? []
+    /* وموعدُ محوره مكتوبٌ في الخطّة — أو مشتقٌّ من لقاءاتها المعتمَدة (١٧ أكتوبر ٢٠٢٦): ما بقي
+       بين آخرِ لقاءٍ لما قبله وأوّلِ لقاءٍ لما بعده بقي في وقته */
+    const shown = (session.cohort.plans[0]?.content ?? null) as Parameters<typeof planSlots>[0]
+    const slots = timedByMeetings(shown)
+      ? planSlots(shown, (await this.prisma.cohortSession.findMany({
+          where: { cohortId: session.cohortId, ...LEARNER_SESSION_WHERE, placeholder: false, status: { not: 'cancelled' } },
+          select: { startsAt: true, endsAt: true, moduleId: true, moduleIds: true },
+        })).map((o) => ({ startsAt: o.startsAt, endsAt: o.endsAt, moduleIds: o.moduleIds.length ? o.moduleIds : o.moduleId ? [o.moduleId] : [] })),
+        learnerPeriod(shown, { startsAt: session.cohort.startsAt, endsAt: session.cohort.endsAt }))
+      : ((shown as { slots?: PlanSlot[] | null } | null)?.slots ?? [])
     const axis = session.moduleIds[0] ?? session.moduleId
     const slot = axis ? slots[slotIndexOf(slots, axis)] ?? null : null
     const kept = (wasApproved && opts.preApproved === true) || keepsApprovalOnMove({
@@ -1226,7 +1259,7 @@ export class CohortService {
     if (session.status === 'cancelled') throw new AuthError('bad_state', 'لقاء مردود أو ملغى لا يربط', 409)
     const axes = sessionAxes(moduleIds)
     /* والربطُ لا يضع اللقاءَ في غير وقت محاوره — ولو بعد الاعتماد (فوق) */
-    await this.assertAxesInTime(session.cohortId, session, axes.moduleIds)
+    await this.assertAxesInTime(session.cohortId, session, axes.moduleIds, session.id)
     const updated = await this.prisma.cohortSession.update({ where: { id: sessionId }, data: axes })
     await recordAudit(this.prisma, {
       actorId: userId, action: 'cohort.session.axes', entityType: 'cohort_session', entityId: sessionId,

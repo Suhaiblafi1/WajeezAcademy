@@ -23,7 +23,7 @@
 import {
   ACADEMY_ZONE, asPeriod, periodBounds, realDate, zonedDay, zonedInstant, type CohortPeriod,
 } from '../trainer/cohort-period'
-import { buildTimeline, sessionEnd, type AxisTimeline, type PlanSlot, type TimelineResource } from '../trainer/axis-timeline'
+import { buildTimeline, planSlots, sessionEnd, type AxisTimeline, type PlanSlot, type TimelineResource } from '../trainer/axis-timeline'
 import { fmtDateWith } from '../text/format-ar'
 
 /** «ستّةُ أشهرٍ» يقرأ فيها ما فُتح له بعد انتهاء الشعبة (④) */
@@ -111,21 +111,22 @@ export function learnerGate(input: {
   sessions: readonly GateSession[]
   now: Date
 }): LearnerGate {
-  const c = (input.content ?? null) as { slots?: PlanSlot[] | null; resources?: TimelineResource[] | null } | null
+  const c = (input.content ?? null) as {
+    slots?: PlanSlot[] | null; resources?: TimelineResource[] | null
+    timing?: string | null; modules?: { moduleId: string }[] | null
+  } | null
   const period = learnerPeriod(c, input.cohort)
-  const timeline = c && Array.isArray(c.slots) && c.slots.length > 0
-    ? buildTimeline({
-        slots: c.slots,
-        sessions: input.sessions
-          .filter((s) => !s.placeholder && s.status !== 'cancelled')
-          .map((s) => ({
-            startsAt: s.startsAt,
-            endsAt: s.endsAt ?? null,
-            moduleIds: s.moduleIds?.length ? s.moduleIds : s.moduleId ? [s.moduleId] : [],
-          })),
-        resources: Array.isArray(c.resources) ? c.resources : [],
-        period,
-      })
+  const sessions = input.sessions
+    .filter((s) => !s.placeholder && s.status !== 'cancelled')
+    .map((s) => ({
+      startsAt: s.startsAt,
+      endsAt: s.endsAt ?? null,
+      moduleIds: s.moduleIds?.length ? s.moduleIds : s.moduleId ? [s.moduleId] : [],
+    }))
+  /* والمواعيدُ مكتوبةٌ في الخطّة — أو مشتقّةٌ من لقاءاتها منذ ١٧ أكتوبر ٢٠٢٦ (`planSlots`) */
+  const slots = c ? planSlots(c, sessions, period) : []
+  const timeline = c && slots.length > 0
+    ? buildTimeline({ slots, sessions, resources: Array.isArray(c.resources) ? c.resources : [], period })
     : null
   const window = timeline ? cohortWindow(period) : null
   return { timeline, window, access: accessState(window, input.now) }

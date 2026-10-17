@@ -9,9 +9,9 @@ import { EnrollmentService } from './enrollment.service'
 import { assertFileUploadsEnabled, newStorageKey, signKey, SIGNED_URL_TTL_MS } from './storage.service'
 import { notifyRole, safeNotify } from './notification.service'
 import { PLAN_GATE_SELECT, planApprovedOnce } from './registration-window'
-import { slotIndexOf, type PlanSlot } from '../../src/application/trainer/axis-timeline'
+import { planSlots, slotIndexOf, timedByMeetings, type PlanSlot } from '../../src/application/trainer/axis-timeline'
 import { periodBounds, realDate } from '../../src/application/trainer/cohort-period'
-import { assessmentOpensAt, submitVerdict } from '../../src/application/learning/cohort-gate'
+import { assessmentOpensAt, learnerPeriod, submitVerdict } from '../../src/application/learning/cohort-gate'
 import { loadLearnerGate } from './learner-gate'
 import {
   cleanFileName, SUBMISSION_FILE_MAX_BYTES, submissionFileProblemAr, submissionFileType, withSubmissionFileView,
@@ -74,7 +74,25 @@ export class AssessmentService {
     const plan = await this.prisma.cohortDeliveryPlan.findFirst({
       where: { cohortId, trainerId: { not: null } }, orderBy: { createdAt: 'desc' }, select: { content: true },
     })
-    const slots = ((plan?.content ?? null) as { slots?: PlanSlot[] | null } | null)?.slots ?? []
+    /* والموعدُ مكتوبٌ في الخطّة — أو مشتقٌّ من لقاءاتها (١٧ أكتوبر ٢٠٢٦): آخرُه اليومُ الذي
+       يسبق أوّلَ لقاءٍ لما بعد المحور، أو آخرُ يومٍ في الشعبة (`planSlots`) */
+    const content = (plan?.content ?? null) as Parameters<typeof planSlots>[0]
+    let slots: PlanSlot[] = (content as { slots?: PlanSlot[] | null } | null)?.slots ?? []
+    if (timedByMeetings(content)) {
+      const cohort = await this.prisma.cohort.findUnique({
+        where: { id: cohortId },
+        select: {
+          startsAt: true, endsAt: true,
+          sessions: {
+            where: { placeholder: false, status: { not: 'cancelled' } },
+            select: { startsAt: true, endsAt: true, moduleId: true, moduleIds: true },
+          },
+        },
+      })
+      slots = planSlots(content, (cohort?.sessions ?? []).map((x) => ({
+        startsAt: x.startsAt, endsAt: x.endsAt, moduleIds: x.moduleIds.length ? x.moduleIds : x.moduleId ? [x.moduleId] : [],
+      })), learnerPeriod(content, { startsAt: cohort?.startsAt ?? null, endsAt: cohort?.endsAt ?? null }))
+    }
     const slot = slots[slotIndexOf(slots, moduleId)]
     if (!slot || !realDate(slot.startsOn) || !realDate(slot.endsOn)) return null
     return periodBounds(slot).to

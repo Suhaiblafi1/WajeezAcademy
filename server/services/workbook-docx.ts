@@ -37,7 +37,7 @@ import {
   LineRuleType, Packer, PageBreak, PageNumber, Paragraph, ShadingType, Tab, Table, TableCell, TableLayoutType,
   TableRow, TextRun, WidthType, type FileChild, type IParagraphOptions, type IRunOptions, type ITableCellOptions,
 } from 'docx'
-import { dayLabelAr } from '../../src/application/trainer/axis-timeline'
+import { dayLabelAr, planSlots } from '../../src/application/trainer/axis-timeline'
 import { ACADEMY_ZONE } from '../../src/application/trainer/cohort-period'
 import { asLevelRange, levelRangeAr } from '../../src/application/trainer/cohort-level'
 import { resourceCategory, resourceKind, type ResourceKind } from '../../src/application/trainer/plan-overlay'
@@ -667,10 +667,11 @@ export interface WorkbookFillInput {
   content: {
     summaryAr?: string | null; modules?: FillModule[] | null; level?: unknown
     slots?: { startsOn: string; endsOn: string; moduleIds: string[] }[] | null
+    timing?: string | null
     resources?: { title?: string | null; url?: string | null; kind?: string | null; category?: string | null; moduleId?: string | null }[] | null
   } | null
   baseModules: FillModule[]
-  sessions: { startsAt: Date | string; status: string; placeholder: boolean; moduleIds?: string[] | null }[]
+  sessions: { startsAt: Date | string; endsAt?: Date | string | null; status: string; placeholder: boolean; moduleIds?: string[] | null }[]
   assessments: { title: string; type: string; briefAr: string | null }[]
 }
 
@@ -684,7 +685,10 @@ export function workbookFill(input: WorkbookFillInput, moduleIds?: readonly stri
   const order = modules.map((m) => m.moduleId)
   const picked = moduleIds?.length ? order.filter((id) => moduleIds.includes(id)) : order
   if (moduleIds?.length && picked.length === 0) return null
-  const slots = c?.slots ?? []
+  /* والمواعيدُ مكتوبةٌ — أو من اللقاءات منذ ١٧ أكتوبر ٢٠٢٦ (`planSlots`) */
+  const slots = planSlots(c ? { ...c, modules } : null, input.sessions
+    .filter((x) => !x.placeholder && x.status !== 'cancelled')
+    .map((x) => ({ startsAt: x.startsAt, endsAt: x.endsAt ?? null, moduleIds: x.moduleIds ?? [] })), input.period)
   const live = (id: string) => input.sessions
     .filter((x) => !x.placeholder && x.status !== 'cancelled' && (x.moduleIds ?? []).includes(id))
     .map((x) => new Date(x.startsAt))
