@@ -66,6 +66,7 @@ import { TRAINER_VISIBILITY_SELECT, trainerPubliclyVisible } from './trainer-vis
 import { PLAN_VISIBLE_STATUSES, resourceCategory } from '../../src/application/trainer/plan-overlay'
 import { applyRecordedPlacements, recordedPlacements, samePlanContent } from '../../src/application/trainer/recorded-links'
 import { readFile } from 'node:fs/promises'
+import { planReturns, planTimeline, type PlanEvent } from '../../src/application/trainer/plan-timeline'
 import { join } from 'node:path'
 
 /** بريدُ «اطلب تعديلات» كما يُرسَل — شكرٌ، فكلمةُ الإدارة إن كتبتها، فما جهّزناه، فالخطوات
@@ -1146,8 +1147,19 @@ export class CohortPlanService {
     const { TrainerPrepService } = await import('./trainer-prep.service')
     const prep = new TrainerPrepService(this.prisma)
     const contexts = await Promise.all(rows.map((p) => prep.prepContext(p.cohort.id).catch(() => null)))
+    /* كم مرّةً رُدّت كلُّ خطّة — «جديدة» أم «الجولة ٢» في الطابور (١٧ أكتوبر ٢٠٢٦، `plan-timeline.ts`) */
+    const returns = await this.prisma.auditEvent.findMany({
+      where: {
+        entityType: 'cohort', entityId: { in: rows.map((p) => p.cohort.id) },
+        action: { in: ['cohort.plan.changes_requested', 'cohort.plan.postpone'] },
+      },
+      select: { action: true, meta: true },
+    })
+    const returnsOf = (planId: string) =>
+      planReturns(returns.filter((e) => (e.meta as { planId?: string } | null)?.planId === planId))
     return rows.map((p, i) => ({
       id: p.id,
+      returns: returnsOf(p.id),
       cohort: { id: p.cohort.id, title: p.cohort.title, courseId: p.cohort.courseId },
       courseTitle: p.cohort.course.versions[0]?.titleAr ?? p.cohort.courseId,
       trainerName: p.trainer?.application.fullName ?? '—',
@@ -1159,6 +1171,27 @@ export class CohortPlanService {
          و`onboarding`: مدرّبُها في الطور — فقد يفعّله اعتمادُها إن كانت آخرَ ما ينتظر */
       prep: contexts[i] ? { onboarding: contexts[i]!.onboarding, qualifies: contexts[i]!.pending } : null,
     }))
+  }
+
+  /** سجلُّ تواصل الخطّة — من أثرها، للإدارة وحدَها (`src/application/trainer/plan-timeline.ts`) */
+  async timeline(planId: string) {
+    const plan = await this.prisma.cohortDeliveryPlan.findUnique({ where: { id: planId }, select: { cohortId: true } })
+    if (!plan) throw new AuthError('not_found', 'الخطة غير موجودة', 404)
+    const rows = await this.prisma.auditEvent.findMany({
+      where: { entityType: 'cohort', entityId: plan.cohortId, action: { startsWith: 'cohort.plan.' } },
+      orderBy: { createdAt: 'asc' },
+      select: { action: true, createdAt: true, actorId: true, meta: true },
+    })
+    const mine = rows.filter((r) => (r.meta as { planId?: string } | null)?.planId === planId)
+    const names = new Map((await this.prisma.user.findMany({
+      where: { id: { in: [...new Set(mine.map((r) => r.actorId).filter((x): x is string => Boolean(x)))] } },
+      select: { id: true, displayName: true },
+    })).map((u) => [u.id, u.displayName]))
+    const events: PlanEvent[] = mine.map((r) => ({
+      action: r.action, at: r.createdAt, by: r.actorId ? names.get(r.actorId) ?? null : null,
+      meta: (r.meta as Record<string, unknown> | null) ?? null,
+    }))
+    return { returns: planReturns(events), entries: planTimeline(events) }
   }
 
   /** كم خطّةً تنتظر الاعتماد — لشارة القائمة الجانبيّة، بلا جلب الخطط نفسِها */

@@ -37,6 +37,7 @@ import Button from "@/components/ui/Button";
 import { Download, ExternalLink } from "lucide-react";
 import { Link } from "react-router";
 import TabBar from "@/components/ui/TabBar";
+import PlanTimeline from "@/components/admin/PlanTimeline";
 import { cohortDayAr } from "@/application/learning/cohort-gate";
 import { ownMaterialLabels, type WorkbookContent } from "@/application/trainer/cohort-workbooks";
 import PlanScorecard from "@/components/PlanScorecard";
@@ -207,6 +208,8 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
             {trainerPlan.submittedAt ? <> · أرسلت {fmtDateTimeAr(trainerPlan.submittedAt)}</> : null}
             {trainerPlan.trainerConfirmedAt ? <> · وأكّد موافقته على كلّ ما فيها</> : null}
           </p>
+          {/* متى أُرسلت ومتى رُدّت وما قرّره في البطاقات — للإدارة وحدَها (١٧ أكتوبر ٢٠٢٦) */}
+          <PlanTimeline planId={trainerPlan.id} />
           {/* ═══ لسانان: «الإدارة» لما تقرّره، و«المنهاج» لما أرسله المدرّب (١١ أكتوبر ٢٠٢٦) ═══
               «كثيرُ الكلام.. اجعله على شكل تابات». فالمنهجُ — أطولُ ما في البطاقة — في لسانه،
               ولا يمرّ عليه من جاء ليعتمد تعديلاتٍ أو يرفع تقريرا. والإدارةُ أوّلا: ما ينتظر قرارك. */}
