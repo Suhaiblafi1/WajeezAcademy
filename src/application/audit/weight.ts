@@ -177,6 +177,8 @@ const HIGH: readonly string[] = [
   /* رابطُ اللقاء نُشر، والجلسةُ تحرّكت */
   'zoom.create_api', 'zoom.attach_manual',
   'session.reschedule.approve', 'session.reschedule.reject',
+  /* والشعبةُ كلُّها نُقلت إلى فصلٍ آخر، أو رُدّ طلبُ نقلها */
+  'cohort.move.approve', 'cohort.move.reject',
   /* ═══ وعملُه قُرئ وقُوّم — والمنصّةُ قرّرت هذا قبلنا ═══
 
      قسمةُ صاحب المنصّة لم تسمّ التصحيحَ في العالية، وكنتُ صنّفتُه متوسّطا
@@ -245,6 +247,8 @@ const MEDIUM: readonly string[] = [
   'cohort.remind_trainer',
   /* اقتراحُ تأجيلٍ ينتظر قرارا */
   'session.reschedule.propose',
+  /* وطلبُ نقل الشعبة كلّها ينتظر قرارا */
+  'cohort.move.request', 'cohort.move.withdraw',
   /* بريدُه وُثّق بيدِ موظّف */
   'admin.user.verify_email', 'trainer.application.verify_email',
   /* طلبُه بُتّ فيه */
