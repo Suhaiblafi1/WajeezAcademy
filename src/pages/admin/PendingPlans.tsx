@@ -55,6 +55,8 @@ interface PendingPlan {
   trainerProfileId: string | null;
   submittedAt: string | null;
   trainerConfirmedAt: string | null;
+  /** متى رُدّت إليه — للمردودة */
+  reviewedAt?: string | null;
   /* شعبةُ إعداد؟ — `qualifies`: اعتمادُها يؤهّله لدورتها، و`onboarding`: هو في
      الطور فقد يفعّله اعتمادُها إن كانت آخرَ ما ينتظر (`trainer-prep.service.ts`) */
   prep: PrepFlags | null;
@@ -95,6 +97,10 @@ const OUTCOME_AR: Record<PlanOutcome, { label: string; tone: "positive" | "warn"
 
 export default function PendingPlans() {
   const [rows, setRows] = useState<PendingPlan[] | null>(null);
+  /* ═══ والمردودةُ إلى مدرّبيها — تُعتمد من هنا أيضا (١٧ أكتوبر ٢٠٢٦) ═══
+     «اريد ان اعتمد التعديلات واعتمد الدوره نفسها.. ولكن اريد ان تبقى تعديلاتي ظاهره امامه» (صاحب المنصّة) — واختار
+     «Yes, for returned plans». فلها قائمتُها تحت المنتظِرة، وبطاقتُها نفسُها: «اعتمدها» يعتمد ما حفظه المدرّب */
+  const [returned, setReturned] = useState<PendingPlan[]>([]);
   const [offline, setOffline] = useState<string | null>(null);
   const [params, setParams] = useSearchParams();
   /* من لوح دورات المدرّب في «العقود»: خططُه وحدَه، وخطّةُ الشعبة المنقورة مفتوحة */
@@ -148,6 +154,14 @@ export default function PendingPlans() {
 
   useEffect(() => {
     let alive = true;
+    apiGet<PendingPlan[]>("/api/admin/cohort-plans/returned")
+      .then((r) => { if (alive) setReturned(r); })
+      .catch(() => { /* الصفحةُ تُقرأ بلا المردودة */ });
+    return () => { alive = false; };
+  }, []);
+
+  useEffect(() => {
+    let alive = true;
     apiGet<PendingPlan[]>("/api/admin/cohort-plans/pending")
       .then((r) => {
         if (!alive) return;
@@ -164,6 +178,7 @@ export default function PendingPlans() {
   }, [wantedCohort, trainerFilter, goTo]);
 
   const scoped = (rows ?? []).filter((r) => !trainerFilter || r.trainerProfileId === trainerFilter);
+  const returnedScoped = returned.filter((r) => !trainerFilter || r.trainerProfileId === trainerFilter);
   /* يُبحث بالشعبة والدورة والمدرّب — وهي ما يُسأل به فعلا */
   const ordered = byTrainer(scoped.filter((r) => matchesQuery(q, [r.cohort.title, r.courseTitle, r.trainerName])));
   const view = paginate(ordered, page, PAGE);
@@ -228,7 +243,7 @@ export default function PendingPlans() {
 
       {rows !== null && canUploadEdits && (
         <PlanEditsBulkUpload
-          plans={scoped.map((r) => ({ id: r.id, labelAr: `${r.cohort.title} — ${r.trainerName}` }))}
+          plans={[...scoped, ...returnedScoped].map((r) => ({ id: r.id, labelAr: `${r.cohort.title} — ${r.trainerName}` }))}
           onUploaded={(id) => setUploaded((u) => ({ ...u, [id]: (u[id] ?? 0) + 1 }))}
           onOpen={(id) => { setQ(""); goTo(byTrainer(scoped), id); }}
         />
@@ -369,6 +384,55 @@ export default function PendingPlans() {
             </div>
           )}
         </>
+      )}
+
+      {returnedScoped.length > 0 && (
+        <section aria-label="خطط رددتها إلى مدربيها" className="mt-8">
+          <h2 className="text-read font-black text-foreground">
+            رددتها إلى مدربيها ({returnedScoped.length})
+          </h2>
+          <p className="mt-1 max-w-3xl text-read leading-6 text-muted-foreground">
+            خطط رددتها بـ«اطلب تعديلات» وهي عند مدربيها. لك أن تعتمدها الآن بما حفظوه فيها، وتبقى بطاقاتك عندهم اقتراحات يقبلونها أو يرفضونها.
+          </p>
+          <ul className="mt-3 space-y-3">
+            {byTrainer(returnedScoped).map((r) => {
+              const isOpen = open.has(r.id);
+              const done = decided[r.id];
+              return (
+                <Panel as="li" key={r.id} id={`plan-${r.id}`} tabIndex={-1} className="outline-none">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-read font-black text-foreground">{r.cohort.title}</p>
+                      <p className="mt-1 text-read leading-6 text-muted-foreground">
+                        {r.trainerName}{r.reviewedAt ? ` · رددتها ${fmtDateTimeAr(r.reviewedAt)}` : ""}
+                      </p>
+                    </div>
+                    {done && <Chip tone={OUTCOME_AR[done].tone} srPrefixAr="القرار">{OUTCOME_AR[done].label}</Chip>}
+                  </div>
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <Button size="sm" tone={isOpen ? "ghost" : "secondary"} icon={isOpen ? ChevronUp : BookOpen}
+                      aria-expanded={isOpen} onClick={() => toggle(r.id)}>
+                      {isOpen ? "اطوها" : done ? "اعرضها" : "اقرأها وقرّر"}
+                    </Button>
+                    <Button as={Link} to={`/admin/cohorts?cohort=${r.cohort.id}`} size="sm" tone="ghost" icon={ExternalLink}>
+                      افتح بطاقة الشعبة
+                    </Button>
+                  </div>
+                  {isOpen && (
+                    <div className="mt-4 border-t border-white/10 pt-4">
+                      <TrainerPlanReview
+                        cohortId={r.cohort.id}
+                        key={`${r.id}:${uploaded[r.id] ?? 0}`}
+                        cohortTitle={r.cohort.title}
+                        onPlanDecided={(outcome) => setDecided((d) => ({ ...d, [r.id]: outcome }))}
+                      />
+                    </div>
+                  )}
+                </Panel>
+              );
+            })}
+          </ul>
+        </section>
       )}
     </AdminLayout>
   );

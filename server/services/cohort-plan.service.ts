@@ -573,6 +573,15 @@ export const PENDING_PLAN_WHERE = {
   cohort: { status: { not: 'cancelled' } },
 } as const
 
+/* ═══ والمردودةُ إلى مدرّبيها — تُعتمد كذلك (١٧ أكتوبر ٢٠٢٦، `decide`) ═══
+   والمؤجَّلةُ ليست منها: أُجّلت إلى موسمٍ قادمٍ عمدا (`postpone`) */
+export const RETURNED_PLAN_WHERE = {
+  status: 'changes_requested',
+  postponedTo: null,
+  trainer: { is: { userId: { not: null } } },
+  cohort: { status: { not: 'cancelled' } },
+} as const
+
 export class CohortPlanService {
   private prisma: PrismaClient
   private cohorts: CohortService
@@ -1120,9 +1129,9 @@ export class CohortPlanService {
      إعداد**: اعتمادُها يؤهّله لدورتها، وآخرُها يفعّله ويوقّع عقدَه
      (`trainer-prep.service.ts`). يُقال قبل النقر لا بعده — والحكمُ نفسُه
      الذي يحكم به القرار (`prepContext`)، لا نسخةٌ منه تفترق عنه. */
-  async pending() {
+  async pending(scope: 'submitted' | 'returned' = 'submitted') {
     const rows = await this.prisma.cohortDeliveryPlan.findMany({
-      where: PENDING_PLAN_WHERE,
+      where: scope === 'returned' ? RETURNED_PLAN_WHERE : PENDING_PLAN_WHERE,
       orderBy: { submittedAt: 'asc' },
       include: {
         cohort: {
@@ -1144,6 +1153,8 @@ export class CohortPlanService {
       trainerName: p.trainer?.application.fullName ?? '—',
       trainerProfileId: p.trainer?.id ?? null,
       submittedAt: p.submittedAt, trainerConfirmedAt: p.trainerConfirmedAt,
+      /* ومتى رُدّت إليه — للمردودة */
+      reviewedAt: p.reviewedAt,
       /* شعبةُ إعداد؟ و`qualifies`: تأهيلُه لدورتها معلّقٌ فيقع باعتمادها،
          و`onboarding`: مدرّبُها في الطور — فقد يفعّله اعتمادُها إن كانت آخرَ ما ينتظر */
       prep: contexts[i] ? { onboarding: contexts[i]!.onboarding, qualifies: contexts[i]!.pending } : null,
@@ -1295,7 +1306,13 @@ export class CohortPlanService {
       },
     })
     if (!plan) throw new AuthError('not_found', 'الخطّة غير موجودة', 404)
-    if (plan.status !== 'submitted') throw new AuthError('not_submitted', 'هذه الخطّة ليست بانتظار قرار', 409)
+    /* ═══ والمردودةُ إلى مدرّبها تُعتمد أيضا — بما حفظه فيها الآن (١٧ أكتوبر ٢٠٢٦) ═══
+       «اريد ان اعتمد التعديلات واعتمد الدوره نفسها.. ولكن اريد ان تبقى تعديلاتي ظاهره امامه ليقوم هو بقبولها او
+       رفضها» (صاحب المنصّة) — واختار: «Yes, for returned plans». فخطّةٌ رُدّت بـ«اطلب تعديلات» لا تنتظر أن يعيد
+       المدرّبُ إرسالَها: أرسلها مرّةً ووافق على ما فيها، فتُعتمد بما حفظه الآن، وتبقى البطاقاتُ عنده اقتراحاتٍ
+       (أدناه). والردُّ والتأجيلُ لما ينتظر القرارَ وحدَه، والمؤجَّلةُ لا تُعتمد هنا: أُجّلت إلى موسمٍ قادمٍ عمدا */
+    const fromReturned = approve === true && plan.status === 'changes_requested' && !plan.postponedTo
+    if (plan.status !== 'submitted' && !fromReturned) throw new AuthError('not_submitted', 'هذه الخطّة ليست بانتظار قرار', 409)
     const now = new Date()
     /* وكلمةُ الاعتماد — إن كُتبت — نصٌّ واحد */
     const said = (typeof note === 'string' ? note : note?.general)?.trim() || null
@@ -1452,6 +1469,7 @@ export class CohortPlanService {
         ...(pattern ? { daysOfWeek: pattern.daysOfWeek, startTime: pattern.startTime } : {}),
         ...(applied ? { period: applied.period, termId: applied.termId, moved: applied.moved } : {}),
         meetingsApproved: meetings.approved,
+        ...(fromReturned ? { fromReturned: true } : {}),
         ...(kept.count ? { suggestionsKept: kept.count } : {}),
         ...(meetings.failed.length ? { meetingsFailed: meetings.failed.map((f) => f.id) } : {}),
         ...(tasks.applied ? { tasksApplied: tasks.applied } : {}),
