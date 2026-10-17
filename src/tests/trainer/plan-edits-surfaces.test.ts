@@ -166,7 +166,8 @@ describe('والكرّاسات المصحّحة تختار مع ملفات ال�
   const bulk = panel.slice(panel.indexOf('export function PlanEditsBulkUpload'), panel.indexOf('export function PlanEditsPanel'))
 
   it('⚠️ الـPDF لا يرفع وحده ملف تعديلات — يفصل ويرفع مع بنده', () => {
-    expect(bulk).toMatch(/const pdfs = new Map\(picked\.filter\(\(f\) => isPdfName\(f\.name\)\)/)
+    /* والفصلُ في `pickedPdfs` منذ ١٧ أكتوبر ٢٠٢٦ — بصورة الاسم الواحدة، ويقيسه `plan-edits-bulk.test.ts` */
+    expect(bulk).toMatch(/const pdfs = pickedPdfs\(picked\);/)
     expect(bulk).toMatch(/const files = picked\.filter\(\(f\) => !isPdfName\(f\.name\)\);/)
     expect(bulk).toMatch(/accept="application\/json,\.json,application\/pdf,\.pdf"/)
   })

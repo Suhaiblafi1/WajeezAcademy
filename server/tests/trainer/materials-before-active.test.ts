@@ -77,6 +77,15 @@ async function readyButForMaterials(opts: {
     where: { profileId }, orderBy: { createdAt: 'desc' },
   })
   if (!contract) throw new Error('السقالةُ لم تكتب عقدا — الفحصُ يقيس الفراغ')
+  /* ═══ ودورةٌ لم يُحكم في موادّها بعد (١٧ أكتوبر ٢٠٢٦) ═══
+     البوّابةُ تمنع حكما على ما لم يُعرَض، ومن اعتُمدت دوراتُه كلُّها حُكم فيه دورةً دورة فيمرّ
+     (`materialsGateProblemAr`، ويقيسه `qualify-activates.test.ts`). والسقالةُ تؤهّله لدورةٍ
+     واحدة — شرطُ الجاهزيّة — فيُضاف ما لم يُعتمَد بعد: وهو الطورُ الذي وُلد منه هذا الحارس. */
+  const have = (await prisma.trainerCourseQualification.findMany({ where: { profileId }, select: { courseId: true } }))
+    .map((q) => q.courseId)
+  const other = await prisma.course.findFirst({ where: { id: { notIn: have } }, select: { id: true } })
+  if (!other) throw new Error('لا دورةَ ثانيةَ في القاعدة — الفحصُ يقيس الفراغ')
+  await prisma.trainerCourseQualification.create({ data: { profileId, courseId: other.id, status: 'pending' } })
   await prisma.trainerContract.update({
     where: { id: contract.id },
     data: {
