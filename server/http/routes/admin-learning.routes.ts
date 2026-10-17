@@ -92,6 +92,12 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
     schema: { tags: ['admin-cohorts'], summary: 'خطط المدرّبين بانتظار الاعتماد' },
   }, async () => plans.pending())
 
+  /* والمردودةُ إلى مدرّبيها — تُعتمد من بطاقتها أيضا (١٧ أكتوبر ٢٠٢٦، `RETURNED_PLAN_WHERE`) */
+  app.get('/api/admin/cohort-plans/returned', {
+    preHandler: requirePermission('cohort.plan.approve'),
+    schema: { tags: ['admin-cohorts'], summary: 'خطط المدرّبين التي رُدّت إليهم بتعديلات — وتُعتمد كما حُفظت' },
+  }, async () => plans.pending('returned'))
+
   /* وعددُها وحدَه — شارةٌ إلى جانب «خططٌ تنتظر اعتمادك» تُجلب مع كلّ شاشة
      إدارة، فلا تجلب الخططَ وسياقَ إعدادها لتعدّها (`AdminLayout.tsx`) */
   app.get('/api/admin/cohort-plans/pending-count', {

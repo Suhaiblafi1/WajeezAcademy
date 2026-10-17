@@ -37,7 +37,8 @@ describe('② زرُّ «اعتمدها» وبطاقةُ الخطّة', () => {
   const panel = code('src/components/PlanEdits.tsx')
 
   it('⚠️ يقول قبل النقر إنّ ما اعتمدته يبقى عنده اختياريّا — وإنّ المسوّدات لا تصله', () => {
-    expect(card).toMatch(/trainerPlan\?\.status === "submitted" && canApprovePlan && editsPending > 0 && \(\s*<p[^>]*>\s*«اعتمدها» يبقي البطاقات التي اعتمدتها له \(\{editsPending\}\) عنده اقتراحات اختيارية/)
+    /* ويُقال على كلّ خطّةٍ تُعتمد — المنتظِرةِ والمردودةِ إليه (١٧ أكتوبر ٢٠٢٦، `approvable`) */
+    expect(card).toMatch(/\{approvable && editsPending > 0 && \(\s*<p[^>]*>\s*«اعتمدها» يبقي البطاقات التي اعتمدتها له \(\{editsPending\}\) عنده اقتراحات اختيارية/)
     expect(card).toMatch(/\{editsDrafts > 0 && <> والمسودات التي لم تعتمدها له \(\{editsDrafts\}\) لا تصله/)
     expect(card).toMatch(/onDrafts=\{setEditsDrafts\}/)
     expect(panel).toMatch(/useEffect\(\(\) => \{ onDrafts\?\.\(drafts\.length\); \}/)

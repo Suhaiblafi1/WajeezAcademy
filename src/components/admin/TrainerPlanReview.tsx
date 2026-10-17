@@ -142,6 +142,12 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
     ? planScorecard({ period: trainerPlan.period, content: trainerPlan.content, sessions: trainerPlan.sessions, assessments: trainerPlan.assessments })
     : [];
   const blocked = blockedItems(scorecard);
+  /* ═══ والمردودةُ إليه تُعتمد كذلك — بما حفظه فيها الآن (١٧ أكتوبر ٢٠٢٦) ═══
+     «اريد ان اعتمد التعديلات واعتمد الدوره نفسها.. ولكن اريد ان تبقى تعديلاتي ظاهره امامه» (صاحب المنصّة) — واختار
+     «Yes, for returned plans». فخطّةٌ رُدّت إليه لا تنتظر أن يعيد إرسالها: «اعتمدها» يعتمد ما حفظه، وبطاقاتُك تبقى
+     عنده اقتراحات. والردُّ والتأجيلُ وتقريرُ المراجعة لما ينتظر قرارك وحدَه، والمؤجَّلةُ لا تُعتمد من هنا (`decide`) */
+  const returnedNow = trainerPlan?.status === "changes_requested" && !trainerPlan.postponedTo;
+  const approvable = canApprovePlan && (trainerPlan?.status === "submitted" || returnedNow);
   /* ═══ «اطلب تعديلات» يردّها ببطاقاتها وحدَها — لا ملاحظاتٍ نصّيّة (١٣ أكتوبر ٢٠٢٦) ═══
      كان الزرُّ يفتح صناديقَ ردٍّ يملؤها ما سقط من بطاقة المعايير («مقترح — …»)، فتصل المدرّبَ ملاحظاتٍ نصّيّةً
      يعملها بيده — وهي ما نسخه قرارُ «قبل/بعد» (١٢ أكتوبر). ثمّ اختار صاحبُ المنصّة: «No text notes» — يردّها بما
@@ -349,14 +355,14 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
           )}
           {/* والاعتمادُ يقول ما يُطلقه قبل النقر: اللقاءاتُ المنتظِرةُ تُعتمَد معه،
               ولكلٍّ اجتماعُه وإعلانُه (`decide` ← `decideSession`) */}
-          {trainerPlan?.status === "submitted" && canApprovePlan && riding.length > 0 && (
+          {approvable && riding.length > 0 && (
             <p className="mt-3 text-read leading-6 text-muted-foreground">
               باعتمادها {riding.length === 1 ? "يعتمد لقاؤها المنتظر معها" : `تعتمد لقاءاتها المنتظرة (${riding.length}) معها`}:
               {" "}ينشأ لكل لقاء اجتماع Zoom، ويصل المسجّلين بالبريد — وأوّلها يزيل الجدول المبدئيّ إن وجد.
             </p>
           )}
           {/* ومهامُّها المنتظِرةُ كذلك — الاعتمادُ واحد (٣ج-٣) */}
-          {trainerPlan?.status === "submitted" && canApprovePlan && waitingTasks.length > 0 && (
+          {approvable && waitingTasks.length > 0 && (
             <p className="mt-2 text-read leading-6 text-muted-foreground">
               {waitingTasks.length === 1
                 ? "وتعتمد معها المهمّة المنتظرة أدناه، كما في تبويب «المنهاج»."
@@ -386,7 +392,7 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
               offerSchedule={scorecard.some((i) => (i.key === "rhythm" || i.key === "session_times") && i.status !== "ok")}
             />
           )}
-          {trainerPlan?.status === "submitted" && canApprovePlan && (
+          {approvable && (
             <details className="mt-3" open={approveNote.length > 0}>
               <summary className="cursor-pointer text-read font-bold text-teal-light-ink">أضف كلمة تصله مع الاعتماد (اختياريّ)</summary>
               <div className="mt-2">
@@ -421,8 +427,14 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
               </ul>
             </Inset>
           )}
+          {/* والمردودةُ إليه: يُقال قبل النقر ما يُعتمد — ما حفظه الآن، بلا انتظار إرسالها (١٧ أكتوبر ٢٠٢٦) */}
+          {returnedNow && canApprovePlan && (
+            <p className="mt-3 text-read leading-6 text-muted-foreground">
+              الخطة عند المدرب الآن، رددتها إليه بتعديلات. «اعتمدها» يعتمد ما حفظه فيها حتى الآن ولا ينتظر أن يرسلها، ويصله خبر الاعتماد.
+            </p>
+          )}
           <div className="mt-3 flex flex-wrap gap-2">
-            {trainerPlan?.status === "submitted" && canApprovePlan && (
+            {approvable && trainerPlan && (
               <>
                 <Button tone="confirm" size="sm" disabled={busy}
                   onClick={() => act(
@@ -432,6 +444,8 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
                   )}>
                   {riding.length > 0 ? `اعتمدها ولقاءاتها (${riding.length})` : "اعتمدها"}{blocked.length > 0 ? " كما هي" : ""}{approveNote.trim() ? " مع كلمتك" : ""}
                 </Button>
+                {/* والردُّ لما ينتظر قرارك وحدَه — المردودةُ عنده فعلا */}
+                {trainerPlan.status === "submitted" && (
                 <Button tone="danger" size="sm" disabled={busy || editsPending === 0}
                   onClick={() => void act(
                     () => apiPost(`/api/admin/cohort-plans/${trainerPlan.id}/decide`, { approve: false }).then(loadPlan),
@@ -439,8 +453,9 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
                   ).then((ok) => { if (ok) decided("changes_requested"); })}>
                   {editsPending > 0 ? `اطلب تعديلات (${editsPending === 1 ? "بطاقة واحدة" : `${editsPending} بطاقات`})` : "اطلب تعديلات"}
                 </Button>
+                )}
                 {/* وشعبةٌ تعمل لا تُؤجَّل — مراجعتُها تُعتمَد أو تُردّ (`postpone` في الخادم) */}
-                {!trainerPlan.approvedOnce && (
+                {trainerPlan.status === "submitted" && !trainerPlan.approvedOnce && (
                   <Button tone="secondary" size="sm" disabled={busy} aria-expanded={postponing} onClick={() => setPostponing((v) => !v)}>
                     أجّلها إلى الفصل القادم
                   </Button>
@@ -500,7 +515,7 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
           {/* ═══ و«اعتمدها» يقول ما يقع بالبطاقات قبل النقر (١٧ أكتوبر ٢٠٢٦) ═══
               «when I press اعتمدها, the changes still appear for the trainer… no need for a new button» (صاحب
               المنصّة): ما اعتمدته له يبقى عنده اقتراحا، والمسوّدةُ التي لم تعتمدها لا تصله. */}
-          {trainerPlan?.status === "submitted" && canApprovePlan && editsPending > 0 && (
+          {approvable && editsPending > 0 && (
             <p className="mt-2 text-read leading-6 text-muted-foreground">
               «اعتمدها» يبقي البطاقات التي اعتمدتها له ({editsPending}) عنده اقتراحات اختيارية: ما يقبله يدخل الخطة المعتمدة مباشرة، وما يرفضه لا يغير شيئا.
               {editsDrafts > 0 && <> والمسودات التي لم تعتمدها له ({editsDrafts}) لا تصله — اعتمدها أعلاه أولا إن أردت أن تصله.</>}
