@@ -435,6 +435,7 @@ const PHRASES: Record<string, string> = {
   'cohort.move.approve': 'اعتماد نقل شعبة إلى فصل آخر',
   'cohort.move.reject': 'ردّ طلب نقل شعبة',
   'cohort.move.zoom': 'نقل اجتماعات Zoom مع شعبة نقلت',
+  'cohort.move.remind': 'تذكير مدرّبي شعبة نقلت قبل فصلها الجديد',
   'session.reschedule.reject': 'ردّ اقتراح تأجيل جلسة',
 
   /* طلبُ مستشار — `advisor-request.service.ts:165` */

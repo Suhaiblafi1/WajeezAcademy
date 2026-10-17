@@ -1320,6 +1320,20 @@ export async function runDeferralFollowups(prisma: PrismaClient, now = new Date(
   }
 }
 
+/* ═══ تذكيرُ مدرّبي الشعبة المنقولة قبل فصلها الجديد بشهر (١٧ أكتوبر ٢٠٢٦) ═══
+   قرارُ صاحب المنصّة والعلّةُ في `src/application/trainer/cohort-move.ts`، والعملُ في
+   `CohortMoveService.remindDue`. ولا يُذكَّر أحدٌ مرّتين. */
+export async function runCohortMoveReminders(prisma: PrismaClient, now = new Date()): Promise<JobResult> {
+  const started = Date.now()
+  const { CohortMoveService } = await import('../services/cohort-move.service')
+  const { reminded } = await new CohortMoveService(prisma).remindDue(now)
+  return {
+    job: 'cohort_move_reminders',
+    summaryAr: reminded === 0 ? 'لا شعبة منقولة اقترب فصلها' : `ذكّر مدرّبو ${reminded} شعبة منقولة بمراجعتها قبل فصلها`,
+    done: reminded, failed: 0, ms: Date.now() - started,
+  }
+}
+
 export const JOBS = [
   { key: 'dispatch_notifications', everyMs: 60_000, run: dispatchQueuedNotifications, titleAr: 'إرسال ما في طابور الإشعارات' },
   { key: 'outbox_mail', everyMs: 60_000, run: dispatchOutboxMail, titleAr: 'إرسال ما في طابور البريد' },
@@ -1354,6 +1368,8 @@ export const JOBS = [
   { key: 'condition_deadlines', everyMs: HOUR, run: runConditionDeadlines, titleAr: 'مهلة العرض المشروط' },
   /* كلَّ ساعة: الموعدُ يومٌ بعد شهرين، فساعةٌ دقّةٌ كافيةٌ لا تُثقل */
   { key: 'deferral_followups', everyMs: HOUR, run: runDeferralFollowups, titleAr: 'متابعة المؤجّلين إلى الفصول القادمة' },
+  /* كلَّ ساعة: الموعدُ شهرٌ قبل الفصل، فساعةٌ دقّةٌ كافية */
+  { key: 'cohort_move_reminders', everyMs: HOUR, run: runCohortMoveReminders, titleAr: 'تذكير مدرّبي الشعب المنقولة قبل فصلها' },
   { key: 'cleanup_expired', everyMs: 6 * HOUR, run: cleanupExpired, titleAr: 'تنظيف ما انتهى' },
   /* مرّةً في اليوم: التقليمُ ليس عاجلا، وتكرارُه بلا داعٍ يُقفل جداولَ السجلّ */
   { key: 'enforce_retention', everyMs: 24 * HOUR, run: enforceRetention, titleAr: 'تقليم جداول السجلّ بمدّة حفظها' },

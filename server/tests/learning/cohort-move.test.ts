@@ -11,7 +11,7 @@ import { setupTestDb, testPrisma } from '../helpers/db'
 import { AuthService } from '../../services/auth.service'
 import { CohortMoveService } from '../../services/cohort-move.service'
 import { EnrollmentService } from '../../services/enrollment.service'
-import { nextTerm } from '../../../src/application/trainer/cohort-move'
+import { moveReminderAt, nextTerm } from '../../../src/application/trainer/cohort-move'
 import { termOf } from '../../../src/application/terms/season'
 import { forgetZoomToken } from '../../services/zoom.service'
 
@@ -177,6 +177,24 @@ describe('②ب اجتماعات Zoom', () => {
     expect(patches[0]!.body.duration).toBe(120)
     const a = await prisma.auditEvent.findFirst({ where: { action: 'cohort.move.zoom', entityId: cohortId } })
     expect(a?.meta).toMatchObject({ moved: 1, failed: 0 })
+  })
+})
+
+describe('②ج التذكير قبل الفصل الجديد بشهر', () => {
+  it('لمدرّبي آخر نقل معتمد، مرة واحدة، حين يحل موعده', async () => {
+    const cohortId = await mkCohort('شعبة التذكير', profileId)
+    const r = await svc.request(trainerId, cohortId, { toYear: target.year, toSeason: target.season, reason: 'الطلب قليل هذا الفصل' })
+    await svc.review(adminId, r.id, { action: 'approve' })
+    const at = moveReminderAt(target)
+    const bells = () => prisma.notification.count({ where: { userId: trainerId, title: { contains: 'راجع «شعبة التذكير»' } } })
+
+    expect((await svc.remindDue(new Date(at.getTime() - 3_600_000))).reminded, 'ذكّر قبل موعده').toBe(0)
+    expect(await bells()).toBe(0)
+    await svc.remindDue(new Date(at.getTime() + 60_000))
+    expect(await bells()).toBe(2) // جرسٌ وبريد
+    await svc.remindDue(new Date(at.getTime() + 2 * 3_600_000))
+    expect(await bells(), 'ذكّر مرتين').toBe(2)
+    expect((await prisma.cohortMoveRequest.findUniqueOrThrow({ where: { id: r.id } })).reminderSentAt).not.toBeNull()
   })
 })
 
