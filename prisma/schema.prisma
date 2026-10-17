@@ -1720,6 +1720,8 @@ model CohortMoveRequest {
   reviewedBy      String?   @db.Uuid
   reviewedAt      DateTime?
   reviewerComment String?
+  /// متى ذُكّر مدرّبوها قبل الفصل الجديد بشهر — مرّةً واحدة (`cohort-move.ts`)
+  reminderSentAt  DateTime?
   createdAt       DateTime  @default(now())
   cohort          Cohort    @relation(fields: [cohortId], references: [id], onDelete: Cascade)
 

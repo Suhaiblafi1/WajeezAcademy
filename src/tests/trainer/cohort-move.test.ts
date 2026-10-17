@@ -6,7 +6,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
-  moveChoices, moveProblemAr, moveShiftMs, nextTerm, shiftDate, termLabelAr,
+  MOVE_REMINDER_DAYS, moveChoices, moveProblemAr, moveReminderAt, moveShiftMs, nextTerm, shiftDate, termLabelAr,
 } from '@/application/trainer/cohort-move'
 
 const DAY = 86_400_000
@@ -44,6 +44,13 @@ describe('② الإزاحة', () => {
   it('والإعادة إلى فصل أقرب إزاحة سالبة', () => {
     expect(moveShiftMs({ year: 2027, season: 'feb_apr' }, { year: 2026, season: 'nov_jan' })).toBeLessThan(0)
     expect(shiftDate(null, 7 * DAY)).toBeNull()
+  })
+})
+
+describe('②ب تذكير المدرب قبل الفصل بشهر', () => {
+  it('ثلاثون يوما قبل بداية الفصل المنقول إليه', () => {
+    expect(MOVE_REMINDER_DAYS).toBe(30)
+    expect(moveReminderAt({ year: 2027, season: 'feb_apr' }).toISOString()).toBe('2027-01-02T00:00:00.000Z')
   })
 })
 

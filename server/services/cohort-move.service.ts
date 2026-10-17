@@ -5,7 +5,9 @@
    · **الطلب** من المدرّب المسنَد إلى الشعبة: فصلٌ قادمٌ وسبب. يُحفظ فصلُها وأوّلُ لقاءاتها
      وقتَه، ولا يتغيّر شيءٌ في الشعبة. وطلبٌ معلَّقٌ واحدٌ للشعبة — والمدرّبُ يسحب ثمّ يطلب.
    · **الاعتماد** من الإدارة يزيح مواعيدَ الشعبة ولقاءاتِها القائمة بأسابيعَ كاملة، ويربطها
-     بفصلها الجديد إن كان منشأً، ويحدّث دعوةَ كلّ لقاء، ويبلّغ المتعلّمين بالجرس والبريد.
+     بفصلها الجديد إن كان منشأً، ويحدّث دعوةَ كلّ لقاء، وينقل اجتماعَه في Zoom إلى موعده الجديد
+     (قرارُ صاحب المنصّة، ١٧ أكتوبر ٢٠٢٦: «فلا تصل أحدا تذكرةٌ بالموعد القديم»)، ويبلّغ المتعلّمين
+     بالجرس والبريد.
    · **الردّ** يُبقي كلَّ شيءٍ كما كان، ويصل المدرّبَ بسببه. */
 
 import type { PrismaClient } from '@prisma/client'
@@ -13,11 +15,12 @@ import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { notifyRole, safeNotify } from './notification.service'
 import { SessionInviteService } from './session-invite.service'
-import { termOf } from '../../src/application/terms/season'
+import { getZoomConfig, updateZoomMeeting, zoomReady } from './zoom.service'
+import { termBounds, termOf } from '../../src/application/terms/season'
 import { fmtDateWith } from '../../src/application/text/format-ar'
 import { ACADEMY_ZONE } from '../../src/application/trainer/cohort-period'
 import {
-  moveProblemAr, moveShiftMs, shiftDate, termLabelAr, type TermRef,
+  moveProblemAr, moveReminderAt, moveShiftMs, shiftDate, termLabelAr, type TermRef,
 } from '../../src/application/trainer/cohort-move'
 import { TRAINING_SEASON_VALUES, type TrainingSeason } from '../../src/application/trainer/application-options'
 
@@ -122,6 +125,34 @@ export class CohortMoveService {
     }))
   }
 
+  /* ── اجتماعاتُ Zoom تنتقل مع لقاءاتها — كما في نقل لقاءٍ واحد (`CohortService.moveZoomMeeting`) ──
+     ولا يرمي: المواعيدُ عندنا انتقلت وإخفاقُ Zoom لا يردّها. يُعدّ ما انتقل وما أخفق، ويُكتب في
+     الأثر — والرابطُ نفسُه يبقى صالحا. */
+  private async moveZoomMeetings(sessions: {
+    startsAt: Date; endsAt: Date | null; timezone: string | null; cohort: { timezone: string | null }
+    zoom: { provider: string; meetingId: string | null } | null
+  }[]): Promise<{ moved: number; failed: number }> {
+    const withMeeting = sessions.filter((s) => s.zoom?.provider === 'zoom_api' && s.zoom.meetingId)
+    const out = { moved: 0, failed: 0 }
+    if (withMeeting.length === 0) return out
+    const cfg = await getZoomConfig(this.prisma).catch(() => null)
+    if (!cfg || !zoomReady(cfg)) return { moved: 0, failed: withMeeting.length }
+    for (const s of withMeeting) {
+      try {
+        const durationMinutes = s.endsAt ? Math.max(15, Math.round((s.endsAt.getTime() - s.startsAt.getTime()) / 60_000)) : 120
+        const res = await updateZoomMeeting(cfg, s.zoom!.meetingId!, {
+          startsAt: s.startsAt, durationMinutes, timezone: s.timezone ?? s.cohort.timezone ?? undefined,
+        })
+        if (res.ok) out.moved += 1
+        else { out.failed += 1; console.error('[zoom] تعذّر نقل الاجتماع مع شعبته', s.zoom!.meetingId, res.reason) }
+      } catch (e) {
+        out.failed += 1
+        console.error('[zoom] تعذّر نقل الاجتماع مع شعبته', s.zoom!.meetingId, e)
+      }
+    }
+    return out
+  }
+
   /** قرارُ الإدارة — والاعتمادُ وحده ينقل الشعبة */
   async review(reviewerId: string, id: string, input: { action: 'approve' | 'reject'; comment?: string }) {
     const r = await this.prisma.cohortMoveRequest.findUnique({ where: { id } })
@@ -176,14 +207,26 @@ export class CohortMoveService {
       meta: { requestId: id, to: `${target.season}-${target.year}`, shiftDays: Math.round(shiftMs / 86_400_000) },
     })
 
+    let zoom = { moved: 0, failed: 0 }
     if (input.action === 'approve') {
       const sessions = await this.prisma.cohortSession.findMany({
-        where: { cohortId: r.cohortId, status: { notIn: ['done', 'cancelled'] } }, orderBy: { startsAt: 'asc' }, select: { id: true, startsAt: true },
+        where: { cohortId: r.cohortId, status: { notIn: ['done', 'cancelled'] } }, orderBy: { startsAt: 'asc' },
+        select: {
+          id: true, startsAt: true, endsAt: true, timezone: true,
+          cohort: { select: { timezone: true } }, zoom: { select: { provider: true, meetingId: true } },
+        },
       })
+      zoom = await this.moveZoomMeetings(sessions)
       /* ودعوةُ التقويم تتحدّث بالمعرّف نفسِه — ولا يُسقط إخفاقُها قرارا وقع */
       const invites = new SessionInviteService(this.prisma)
       for (const s of sessions) {
         await invites.announce(s.id, 'update').catch((e: unknown) => console.error('[invite] تعذّرت كتابة تحديث الدعوة', e))
+      }
+      if (zoom.moved + zoom.failed > 0) {
+        await recordAudit(this.prisma, {
+          actorId: reviewerId, action: 'cohort.move.zoom', entityType: 'cohort', entityId: r.cohortId,
+          meta: { requestId: id, ...zoom },
+        })
       }
       const first = sessions[0]?.startsAt
       const learners = await this.prisma.enrollment.findMany({
@@ -207,4 +250,56 @@ export class CohortMoveService {
     })
     return decided
   }
+
+  /* ═══ تذكيرُ مدرّبي الشعبة المنقولة قبل فصلها الجديد بشهر — من العامل (`cohort_move_reminders`) ═══
+     لآخر نقلٍ معتمَدٍ لكلّ شعبة وحدَه: ما قبله تجاوزه فيُختم بلا رسالة. ولا يُذكَّر مرّتين — يُختم
+     بكتابةٍ مشروطةٍ قبل الرسالة. ولا يُذكَّر من بدأ فصلُه أو أُلغيت شعبتُه أو بدأت. */
+  async remindDue(now = new Date()): Promise<{ reminded: number }> {
+    const rows = await this.prisma.cohortMoveRequest.findMany({
+      where: { status: 'approved', reminderSentAt: null },
+      orderBy: { reviewedAt: 'desc' },
+      select: { id: true, cohortId: true, toYear: true, toSeason: true, reviewedAt: true },
+    })
+    let reminded = 0
+    const seen = new Set<string>()
+    for (const r of rows) {
+      const latest = !seen.has(r.cohortId)
+      seen.add(r.cohortId)
+      const newer = latest && await this.prisma.cohortMoveRequest.findFirst({
+        where: { cohortId: r.cohortId, status: 'approved', reviewedAt: { gt: r.reviewedAt ?? new Date(0) } }, select: { id: true },
+      })
+      if (!latest || newer || !isSeason(r.toSeason)) {
+        await this.prisma.cohortMoveRequest.update({ where: { id: r.id }, data: { reminderSentAt: now } })
+        continue
+      }
+      const target: TermRef = { year: r.toYear, season: r.toSeason }
+      if (moveReminderAt(target).getTime() > now.getTime()) continue
+      const cohort = await this.prisma.cohort.findUnique({
+        where: { id: r.cohortId },
+        select: { title: true, status: true, trainers: { select: { profile: { select: { userId: true } } } } },
+      })
+      const started = termBounds(target.year, target.season).startsOn.getTime() <= now.getTime()
+      /* يُختم قبل الرسالة: دورتان متزامنتان لا تذكّران مرّتين */
+      const claimed = await this.prisma.cohortMoveRequest.updateMany({ where: { id: r.id, reminderSentAt: null }, data: { reminderSentAt: now } })
+      if (claimed.count === 0 || !cohort || started || !['draft', 'open', 'full'].includes(cohort.status)) continue
+      for (const t of cohort.trainers) {
+        if (!t.profile.userId) continue
+        for (const channel of ['in_app', 'email'] as const) {
+          await safeNotify(this.prisma, {
+            userId: t.profile.userId, channel, audience: 'trainer',
+            title: `راجع «${cohort.title}» قبل ${termLabelAr(target)}`,
+            body: 'يبدأ الفصل بعد شهر تقريبا. راجع محتوى الدورة وحدّثه إن لزم، وتأكّد من مواعيد اللقاءات.',
+            data: { cohortId: r.cohortId },
+          })
+        }
+      }
+      await recordAudit(this.prisma, {
+        actorId: null, action: 'cohort.move.remind', entityType: 'cohort', entityId: r.cohortId,
+        meta: { requestId: r.id, trainers: cohort.trainers.length },
+      })
+      reminded += 1
+    }
+    return { reminded }
+  }
+
 }

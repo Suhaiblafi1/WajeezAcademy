@@ -61,6 +61,17 @@ export function moveShiftMs(from: TermRef, to: TermRef): number {
 
 export const shiftDate = (d: Date | null, ms: number): Date | null => (d ? new Date(d.getTime() + ms) : null)
 
+/* ═══ وتذكيرُ مدرّبيها قبل الفصل الجديد بشهر (١٧ أكتوبر ٢٠٢٦) ═══
+   قرارُ صاحب المنصّة: «أرسل لمدرّبي الشعبة المنقولة قبل بدء الفصل الجديد بشهرٍ ليراجعوا الدورةَ
+   ويعدّلوها إن لزم، وليتأكّدوا من مواعيد اللقاءات». فما كُتب قبل أشهرٍ قد تقادم. ومن نُقلت شعبتُه
+   وبقي على الفصل أقلُّ من شهرٍ يُذكَّر في أوّل دورةٍ بعد الاعتماد. */
+export const MOVE_REMINDER_DAYS = 30
+
+/** متى يُذكَّر مدرّبو شعبةٍ نُقلت إلى هذا الفصل */
+export function moveReminderAt(target: TermRef): Date {
+  return new Date(termBounds(target.year, target.season).startsOn.getTime() - MOVE_REMINDER_DAYS * DAY_MS)
+}
+
 /** ما يمنع طلبَ النقل — جملةٌ تُعرض، أو `null` حين لا مانع */
 export function moveProblemAr(input: {
   status: string
