@@ -175,7 +175,7 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
       'trainer.contract.condition_extended', 'trainer.contract.condition_days_granted',
       /* وشعبةُ الإعداد (٢ أكتوبر ٢٠٢٦): اعتذارٌ عن دورة، ومدرّبٌ لم يبقَ له ما
          ينتظر، وتفعيلٌ تلقائيٌّ مُنع — كلُّها تنتظر قرارا من الإدارة */
-      'trainer.prep.declined', 'trainer.prep.nothing_pending', 'trainer.prep.activation_blocked',
+      'trainer.prep.declined', 'trainer.prep.nothing_pending', 'trainer.prep.activation_blocked', 'trainer.prep.seal_blocked',
       /* ونبذةُ المدرّب (٣ أكتوبر ٢٠٢٦): أرسلها فتنتظر قرارا، وقرارُنا يصله */
       'trainer.public_text.submitted', 'trainer.public_text.approved', 'trainer.public_text.rejected',
       /* وخيارُ المعتذِر في بياناته — أبقاها أو حُذفت بطلبه (٣ أكتوبر ٢٠٢٦) */

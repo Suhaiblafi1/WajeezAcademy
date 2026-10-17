@@ -153,6 +153,7 @@ const STAFF: Table = {
   'trainer.prep.declined': { path: '/admin/trainer-contracts', ctaAr: 'افتح عقود المدرّبين' },
   'trainer.prep.nothing_pending': { path: '/admin/trainer-contracts', ctaAr: 'افتح عقود المدرّبين' },
   'trainer.prep.activation_blocked': { path: '/admin/trainer-contracts', ctaAr: 'افتح عقود المدرّبين' },
+  'trainer.prep.seal_blocked': { path: '/admin/trainer-contracts', ctaAr: 'افتح عقود المدرّبين' },
   'trainer.public_text.submitted': { path: '/admin/trainer-run', ctaAr: 'اقرأ النبذة واعتمدها' },
   'trainer.public_text.approved': { path: '/trainer/account', ctaAr: 'افتح إعدادات الحساب' },
   'trainer.public_text.rejected': { path: '/trainer/account', ctaAr: 'عدّل نبذتك' },

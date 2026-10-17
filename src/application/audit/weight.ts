@@ -78,7 +78,7 @@ const HIGH: readonly string[] = [
   'trainer.contract.condition_extended', 'trainer.contract.condition_days_granted',
   /* وشعبةُ الإعداد (٢ أكتوبر ٢٠٢٦): الاعتذارُ يُخرج دورةً من طريقه ويُخبر من
      اختارها له، والتفعيلُ التلقائيُّ يجعله نشطا ويوقّع عقدَه من جهتنا. */
-  'trainer.prep.decline', 'trainer.prep.auto_activate',
+  'trainer.prep.decline', 'trainer.prep.auto_activate', 'trainer.prep.auto_seal',
   'trainer.contract.amendment_requested',
   /* وجوابُ الإدارة مثلُه: يُعيد العقدَ إلى التوقيع ويُجدّد رابطَه — ويصله
      نصُّ الجواب بحرفه منذ ٢٦ سبتمبر ٢٠٢٦. */

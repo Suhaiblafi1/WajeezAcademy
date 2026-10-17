@@ -381,6 +381,11 @@ const nextStepOf = (c: ContractRow) => contractNextStep({
 /** أعلينا الدورُ فيه؟ — الوسمُ نفسُه يقرّر تبويبَ «ينتظرك» (`awaitsUs`) */
 const oursOf = (c: ContractRow) => awaitsUs(c.status, nextStepOf(c).who);
 
+/* وغيرُ المشروط المعتمَدُ كالعقود الجديدة يوقَّع تلقائيّا حين تكتمل دوراتُه (١٧ أكتوبر ٢٠٢٦، `sealIfComplete`).
+   والزرُّ باقٍ في الحالَين: لا يُسَدّ البابُ على من أراد التوقيعَ قبل ذلك (قرارُ ٢ أكتوبر). */
+const PLAIN_READY_AR = "واعتمدت دوراته كلها، فوقعه الآن.";
+const PLAIN_AUTO_AR = "ونوقعه تلقائيا حين تعتمد آخر خطة يعدها، ويصله بريد بذلك. ولك أن توقعه الآن.";
+
 /** ما يُقال حين تُعتمَد دوراتُه كلُّها ولم يُفعَّل (`readyBlock`) — نصٌّ قصيرٌ بلا تشكيل */
 const READY_TITLE_AR = "اعتمدت دوراته كلها — بقي تفعيله";
 const READY_WHAT_AR = "شرطه تحقق، فلا مهلة تمدد. بالتفعيل يصير مدربا نشطا، ونوقع عقده عن الأكاديمية، ويصله بريد بذلك.";
@@ -1935,7 +1940,8 @@ c.gatesActivation
                       <Panel tone="warn" className="mt-3 p-3">
                         <p className="text-read leading-7">
                           اعتُمد توقيعُه {c.signatureApprovedAt ? fmtDateTime(c.signatureApprovedAt) : ""} كالعقود
-                          الجديدة — ولم نوقّعه بعد، فلا ينفذ حتّى نوقّعه. وقِّعْه حين تعتمد دوراتِه.
+                          الجديدة — ولم نوقّعه بعد، فلا ينفذ حتّى نوقّعه.{" "}
+                          {c.coursesReady ? PLAIN_READY_AR : PLAIN_AUTO_AR}
                           {c.signatureApprovalNoteAr ? ` · ${c.signatureApprovalNoteAr}` : ""}
                         </p>
                         {rowErr?.id === c.id && (
@@ -1970,7 +1976,7 @@ c.gatesActivation
                           <div className="mt-3 flex flex-wrap gap-2">
                             <Button tone="confirm" icon={BadgeCheck}
                               onClick={() => setSealing({ id: c.id, noteAr: "" })}>
-                              اعتمدتُ دوراتِه — وقِّعْه الآن
+                              {c.coursesReady ? "اعتمدتُ دوراتِه — وقِّعْه الآن" : "وقّعه الآن دون انتظار"}
                             </Button>
                           </div>
                         )}

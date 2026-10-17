@@ -1550,7 +1550,12 @@ export class CohortPlanService {
       prep = await prepSvc.activateOnApproval(qual.ctx, actorId)
         .catch((e: unknown) => ({ activated: false, blockedAr: e instanceof AuthError ? e.message : 'تعذّر التفعيل' }))
     }
-    return { status: 'approved' as const, meetings, tasks, prep }
+    /* وعقدُ النشط المعتمَدُ كالعقود الجديدة يوقَّع حين تُعتمَد آخرُ خطّةٍ بدأها (١٧ أكتوبر ٢٠٢٦، `sealIfComplete`) */
+    const sealed = plan.trainerId
+      ? await prepSvc.sealIfComplete(plan.trainerId, actorId)
+        .catch((e: unknown) => ({ sealed: false as const, blockedAr: e instanceof AuthError ? e.message : 'تعذّر التوقيع' }))
+      : null
+    return { status: 'approved' as const, meetings, tasks, prep, sealed }
   }
 
   /* ═══ التأجيلُ إلى موسمٍ قادم — قرارٌ ثالثٌ بجانب الاعتماد والردّ (٨ أكتوبر ٢٠٢٦) ═══

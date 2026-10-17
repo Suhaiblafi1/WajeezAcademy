@@ -57,7 +57,18 @@ describe('الخطوةُ التالية تتبع من عليه الدور', () =
     expect(sa({ conditionDeadlineAt: '2026-10-08T00:00:00Z', conditionPausedAt: '2026-10-02T00:00:00Z' }))
       .toEqual({ textAr: expect.stringMatching(/راجِعْها/), who: 'you' })
     expect(sa({ conditionDeadlineAt: '2026-10-01T00:00:00Z' }).textAr).toMatch(/انقضت/)
-    expect(sa({ gatesActivation: false }).who).toBe('you')
+    /* وغيرُ المشروط يُعِدّ (عليه) — ويوقَّع تلقائيّا حين تكتمل دوراتُه (١٧ أكتوبر ٢٠٢٦) */
+    expect(sa({ gatesActivation: false }).who).toBe('them')
+  })
+
+  /* ═══ غيرُ المشروط — نشطٌ اعتُمد توقيعُه كالعقود الجديدة (١٧ أكتوبر ٢٠٢٦) ═══
+     اختار صاحبُ المنصّة «Sign automatically»: يوقَّع حين تُعتمَد آخرُ خطّةٍ بدأها. فما دام يُعِدّ
+     فالدورُ عليه («في طور الموادّ»)، وإن اكتملت ولم يوقَّع (من قبل هذا اليوم) فعليك. */
+  it('⚠️ غيرُ المشروط: يُعِدّ (عليه) — واكتملت دوراتُه ولم يوقَّع (عليك: «وقّعه الآن»)', () => {
+    const plain = (o: Partial<NextStepFacts>) => contractNextStep(base({ status: 'signature_approved', gatesActivation: false, ...o }))
+    expect(plain({}).who, 'يُعِدّ وعُدّ عليك').toBe('them')
+    expect(plain({}).textAr).toMatch(/تلقائيا/)
+    expect(plain({ coursesReady: true })).toEqual({ textAr: expect.stringMatching(/وقّعه الآن/), who: 'you' })
   })
 
   /* ═══ اعتُمدت دوراتُه كلُّها ولم يُفعَّل (١٧ أكتوبر ٢٠٢٦) ═══

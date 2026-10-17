@@ -62,7 +62,14 @@ export function contractNextStep(f: NextStepFacts): NextStep {
         ? { textAr: 'وقّع باسمٍ مختلف — قابِلْه بهويّته ثمّ قرّر', who: 'you' }
         : { textAr: 'وقّع — اعتمِدْ توقيعَه', who: 'you' }
     case 'signature_approved': {
-      if (!f.gatesActivation) return { textAr: 'وقِّعْه حين تعتمد دوراتِه', who: 'you' }
+      /* وغيرُ المشروط — نشطٌ اعتُمد توقيعُه كالعقود الجديدة — يوقَّع تلقائيّا حين تكتمل دوراتُه
+         (١٧ أكتوبر ٢٠٢٦، `sealIfComplete`). فإن اكتملت ولم يوقَّع (عقدٌ من قبل هذا اليوم) فالدورُ
+         عليك؛ وإلّا فهو يُعِدّ — وكان «وقِّعْه حين تعتمد دوراتِه» عليك دائما ولو لم يرسل شيئا */
+      if (!f.gatesActivation) {
+        return f.coursesReady
+          ? { textAr: 'اعتمدت دوراته كلها — وقّعه الآن', who: 'you' }
+          : { textAr: 'يعد شعب دوراته — ونوقعه تلقائيا حين تعتمد', who: 'them' }
+      }
       const open = openCondition(f, now)
       if (open) return open
       if (conditionPhase({ ...f, now }) === 'met') return { textAr: 'اكتمل شرطُه — وقِّعْه', who: 'you' }

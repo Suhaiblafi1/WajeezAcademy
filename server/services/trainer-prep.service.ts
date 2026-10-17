@@ -459,6 +459,51 @@ export class TrainerPrepService {
     }
   }
 
+  /* ═══ وعقدُ النشط المعتمَدُ كالعقود الجديدة يوقَّع حين تكتمل دوراتُه (١٧ أكتوبر ٢٠٢٦) ═══
+
+     سأل صاحبُ المنصّة عن عقدِ مدرّبةٍ نشطةٍ اعتُمد توقيعُه «كالعقود الجديدة» (`likeNew`) — «وقِّعْه
+     حين تعتمد دوراتِه» — وعن مدرّبٍ في الطور زرُّه «فعّله ووقّع العقد»: ما الفرقُ ولمَ هما كذلك.
+     ثمّ اختار للنشط: «Sign automatically» — يُوقَّع عقدُه حين تُعتمَد آخرُ خطّةٍ بدأها، كما يُفعَّل
+     من في الطور حين تُعتمَد آخرُ دوراته. وكان لا يُوقَّع إلّا بزرّ «اعتمدتُ دوراتِه — وقِّعْه الآن».
+
+     وما «اكتملت»: قائمةُ الطور (`coursesOf`) لا تحمل ما يُعَدّ ولا ما ينتظر قرارا ولا دورةً معلّقة
+     لم يقرّر فيها — لا يبقى فيها إلّا ما اعتذر عنه، ومعتمَدٌ لم يقبل شعبتَه — وفي يده معتمَد. */
+  async prepDone(profileId: string): Promise<boolean> {
+    const qualified = await this.prisma.trainerCourseQualification.count({ where: { profileId, status: 'qualified' } })
+    if (qualified === 0) return false
+    const rows = await this.coursesOf(profileId)
+    return rows.every((r) => r.state === 'declined' || (r.approved && r.state === 'to_decide'))
+  }
+
+  /** يوقّع عقدَ النشط المعتمَدَ كالعقود الجديدة إن اكتملت دوراتُه — وما يمنع يُقال للإدارة ولا يُسقط ما قبله */
+  async sealIfComplete(profileId: string, actorId: string) {
+    const contract = await this.prisma.trainerContract.findFirst({
+      where: { profileId, status: 'signature_approved', gatesActivation: false },
+      orderBy: { signedAt: { sort: 'desc', nulls: 'last' } },
+      select: { id: true },
+    })
+    if (!contract) return null
+    if (!(await this.prepDone(profileId))) return { sealed: false as const }
+    const { TrainerReviewService } = await import('./trainer-review.service')
+    try {
+      await new TrainerReviewService(this.prisma)
+        .countersignApproved(contract.id, actorId, { noteAr: 'اعتمدت دوراته كلها — وقع تلقائيا' })
+      await recordAudit(this.prisma, {
+        actorId, action: 'trainer.prep.auto_seal', entityType: 'trainer_contract', entityId: contract.id, meta: { profileId },
+      })
+      return { sealed: true as const }
+    } catch (e) {
+      const why = e instanceof AuthError ? e.message : 'خطأ غير متوقّع'
+      await notifyRole(this.prisma, ['academic_manager', 'super_admin'], {
+        channel: 'in_app', templateKey: 'trainer.prep.seal_blocked',
+        title: 'اعتمدت دورات مدرّب كلّها ولم يوقّع عقده',
+        body: `لم يوقّع تلقائيّا: ${why.slice(0, 300)} — وقّعه من صفّه في «العقود».`,
+        data: { profileId, contractId: contract.id },
+      }).catch(() => undefined)
+      return { sealed: false as const, blockedAr: why }
+    }
+  }
+
   /** بعد اعتذارٍ: لا شيءَ ينتظر وفي يده معتمَد — يُقال للإدارة إنّه جاهز */
   private async tellIfReady(profileId: string) {
     const [pending, qualified] = await Promise.all([
