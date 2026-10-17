@@ -144,11 +144,24 @@ describe('الكرّاسات المصحّحة مع ملف التعديلات (١
     expect(body.items[0]!.file).not.toHaveProperty('key')
   })
 
+  /* ومرفقُ المهمّة الجديدُ مثلُ الكرّاسة (١٧ أكتوبر ٢٠٢٦، `task_attachment`) — والعنوانُ وحدَه لا يطلب ملفّا */
+  it('⚠️ ومرفق المهمّة الجديد يختار مع الملف ويكتب مفتاحه في بنده — والعنوان وحده لا يطلب ملفّا', () => {
+    const withTask = { items: [
+      { kind: 'task_attachment', assessmentId: 'x', match: { title: 'نموذج' }, reasonAr: 'س', file: { name: 'مستخرج.pdf' } },
+      { kind: 'task_attachment', assessmentId: 'y', match: { title: 'موذج' }, reasonAr: 'س', title: 'نموذج' },
+    ] }
+    expect(workbookFilesNeeded(withTask)).toEqual(['مستخرج.pdf'])
+    const out = withWorkbookKeys(withTask, { 'مستخرج.pdf': 'مفتاح-789' }) as typeof withTask
+    expect(out.items[0]!.file).toEqual({ name: 'مستخرج.pdf', key: 'مفتاح-789', mime: 'application/pdf' })
+    expect(out.items[1]).toEqual(withTask.items[1])
+  })
+
   it('والمسار، والـPDF يعرف باسمه، وما لم يختر يقال باسمه', () => {
     expect(editFilePath(PLAN)).toBe(`/api/admin/cohort-plans/${PLAN}/edit-files`)
     expect([isPdfName('a.PDF '), isPdfName('a.json')]).toEqual([true, false])
-    expect(missingWorkbooksAr(['أ.pdf'])).toBe('ملف الكراسة «أ.pdf» ليس بين ما اخترته — اختره مع ملف التعديلات')
-    expect(missingWorkbooksAr(['أ.pdf', 'ب.pdf'])).toMatch(/^ملفات الكراسات «أ.pdf»، «ب.pdf»/)
+    /* ويقال «الملف» لا «ملف الكراسة» — فقد يكون مرفق مهمّة (١٧ أكتوبر ٢٠٢٦) */
+    expect(missingWorkbooksAr(['أ.pdf'])).toBe('الملف «أ.pdf» ليس بين ما اخترته — اختره مع ملف التعديلات')
+    expect(missingWorkbooksAr(['أ.pdf', 'ب.pdf'])).toMatch(/^الملفات «أ.pdf»، «ب.pdf»/)
     expect(missingWorkbooksAr(['أ.pdf'])).not.toMatch(/[\u064B-\u0650\u0652]/)
   })
 })

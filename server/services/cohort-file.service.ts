@@ -154,7 +154,8 @@ export class CohortFileService {
   /* ═══ الكرّاسةُ المصحّحة — يرفعها المعتمِدُ لبطاقة «قبل/بعد» (١٢ أكتوبر ٢٠٢٦، `workbook_replace`) ═══
      «We fix the PDF, he accepts» (صاحب المنصّة). فهي ملفُّ الشعبة بغرض الكرّاسة نفسِه — يقرؤه مدرّبُها والإدارةُ
      كأيّ كرّاسة، ويصل المتعلّمَ حين يقبلها المدرّبُ فتصير في خطّته. ورمزُها `edit:<الخطّة>`: من البطاقة جاءت.
-     وعلى خطّةٍ مفتوحةٍ وحدَها — المعتمَدةُ لا يُقترح عليها. */
+     وعلى خطّةٍ مفتوحةٍ وحدَها — المعتمَدةُ لا يُقترح عليها. ومرفقُ المهمّة المصحّحُ يُرفع من هنا كذلك (١٧ أكتوبر
+     ٢٠٢٦، `task_attachment`): PDF مثلُها، يقرؤه المتعلّمُ حين يصير مفتاحُه في مرفقات مهمّةٍ فُتحت له. */
   async startEditFileUpload(adminId: string, planId: string, input: { mime: string; originalName: string }) {
     assertFileUploadsEnabled('والبديل الآن: لا كرّاسة بديلة بلا رفع الملفّات.')
     const plan = await this.prisma.cohortDeliveryPlan.findUnique({

@@ -22,6 +22,7 @@ import { MAX_BODY_CHARS } from '../../services/module-authoring.service'
 import { PlanEditService } from '../../services/plan-edit.service'
 import { DeadlinesService } from '../../services/deadlines.service'
 import { CohortMessageService } from '../../services/cohort-message.service'
+import { CohortMoveService } from '../../services/cohort-move.service'
 import { CohortPlanService, TRAINER_EDITABLE_COHORT_FIELDS } from '../../services/cohort-plan.service'
 import { PLAN_MAX, PLAN_TITLE_MIN } from '../../../src/application/trainer/plan-limits'
 import { ReferralService } from '../../services/referral.service'
@@ -133,6 +134,7 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
   const cohorts = new CohortService(prisma)
   const enrollments = new EnrollmentService(prisma)
   const messages = new CohortMessageService(prisma)
+  const moves = new CohortMoveService(prisma)
   const assessments = new AssessmentService(prisma)
   const progress = new ProgressService(prisma)
   const certificates = new CertificateService(prisma)
@@ -1181,6 +1183,52 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
       comment: z.string().max(500).optional(),
     }).parse(req.body)
     return messages.review(req.auth!.userId, id, body)
+  })
+
+  /* ── نقلُ الشعبة إلى فصلٍ آخر: المدرّبُ يطلب والإدارةُ تعتمد (١٧ أكتوبر ٢٠٢٦) ── */
+
+  app.post('/api/trainer/cohorts/:cohortId/move-request', {
+    preHandler: requirePermission('trainer.cohort.operate'),
+    schema: { tags: ['trainer-ops'], summary: 'طلب نقل شعبتي إلى فصل آخر — الإدارة تعتمد' },
+  }, async (req, reply) => {
+    const { cohortId } = z.object({ cohortId: z.string().uuid() }).parse(req.params)
+    const body = z.object({
+      toYear: z.number().int().min(2020).max(2100),
+      toSeason: z.string().min(1).max(20),
+      reason: z.string().max(500),
+    }).parse(req.body)
+    await enrollments.assertCohortTrainer(req.auth!.userId, cohortId)
+    return reply.status(201).send(await moves.request(req.auth!.userId, cohortId, body))
+  })
+
+  app.get('/api/trainer/cohort-moves', {
+    preHandler: requirePermission('trainer.cohort.operate'),
+    schema: { tags: ['trainer-ops'], summary: 'طلباتي لنقل الشعب وأين وقفت' },
+  }, async (req) => moves.mine(req.auth!.userId))
+
+  app.post('/api/trainer/cohort-moves/:id/withdraw', {
+    preHandler: requirePermission('trainer.cohort.operate'),
+    schema: { tags: ['trainer-ops'], summary: 'سحب طلب نقل معلّق' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return moves.withdraw(req.auth!.userId, id)
+  })
+
+  app.get('/api/admin/cohort-moves', {
+    preHandler: requirePermission('cohort.manage'),
+    schema: { tags: ['admin-cohorts'], summary: 'طلبات نقل الشعب المعلّقة' },
+  }, async () => moves.pending())
+
+  app.post('/api/admin/cohort-moves/:id/review', {
+    preHandler: requirePermission('cohort.manage'),
+    schema: { tags: ['admin-cohorts'], summary: 'اعتماد نقل شعبة إلى فصل آخر أو ردّه' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const body = z.object({
+      action: z.enum(['approve', 'reject']),
+      comment: z.string().max(500).optional(),
+    }).parse(req.body)
+    return moves.review(req.auth!.userId, id, body)
   })
 
   app.get('/api/trainer/grading-queue', {

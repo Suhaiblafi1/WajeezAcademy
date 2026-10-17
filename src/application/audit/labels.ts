@@ -90,6 +90,8 @@ const PHRASES: Record<string, string> = {
   'cohort.trainer.assign': 'إسناد مدرّب إلى شعبة',
   'cohort.message.send': 'رسالة إلى شعبة',
   'session.reschedule.propose': 'اقتراح تأجيل جلسة',
+  'cohort.move.request': 'طلب نقل شعبة إلى فصل آخر',
+  'cohort.move.withdraw': 'سحب طلب نقل شعبة',
   'session.reschedule.decide': 'قرار على اقتراح تأجيل',
   'zoom.attach_manual': 'ربط رابط اجتماع يدويّا',
   'zoom.create_api': 'إنشاء اجتماع Zoom من المنصّة',
@@ -430,6 +432,8 @@ const PHRASES: Record<string, string> = {
 
   /* تأجيلُ جلسة — `cohort-message.service.ts:228` */
   'session.reschedule.approve': 'اعتماد تأجيل جلسة',
+  'cohort.move.approve': 'اعتماد نقل شعبة إلى فصل آخر',
+  'cohort.move.reject': 'ردّ طلب نقل شعبة',
   'session.reschedule.reject': 'ردّ اقتراح تأجيل جلسة',
 
   /* طلبُ مستشار — `advisor-request.service.ts:165` */

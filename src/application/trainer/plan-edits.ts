@@ -24,7 +24,7 @@
 
 import { STAGE_LABELS, type ReviewSection } from './review-notes'
 import type { ScheduleEdit } from './schedule-proposal'
-import type { PlanSlot } from './axis-timeline'
+import { WORKBOOK_WHERE_MAX, type PlanSlot } from './axis-timeline'
 import { compactGapsAr, NOTE_FIX_MARK, NOTE_GAP_MARK, NOTE_SUGGESTION_AR, NOW_SUGGEST_SEP, WEEKDAY_AR } from './plan-scorecard'
 import { plainAr } from '../text/plain-ar'
 import { PLAN_MAX } from './plan-limits'
@@ -54,6 +54,7 @@ export const PLAN_EDIT_KINDS = [
   'module', 'plan', 'resource_add', 'resource_change', 'resource_remove',
   'task_add', 'task_change', 'session_move', 'session_remove', 'note', 'schedule',
   'cohort_title', 'task_remove', 'session_add', 'session_change', 'workbook_replace',
+  'workbook_change', 'task_attachment',
 ] as const
 
 /* ═══ وما كان يُطلب من المدرّب أن يعمله بنفسه — بطاقاتٌ «قبل/بعد» (١٢ أكتوبر ٢٠٢٦) ═══
@@ -70,6 +71,18 @@ export type SessionEditField = (typeof SESSION_EDIT_FIELDS)[number]
    «We fix the PDF, he accepts»: نرفع الكرّاسةَ المصحّحة، فيرى القديمةَ والجديدةَ ويقبل أو يرفض. والملفُّ ملفُّ
    هذه الشعبة بغرضه (`workbook`) يرفعه المعتمِد؛ و`moduleId` كرّاسةُ المحور الذي هو فيها، و`null` كرّاسةُ الدورة. */
 export interface WorkbookFile { key: string; name: string; mime: string }
+
+/* ═══ وما بقي يُطلب من المدرّب أن يعمله بيده — بابان (١٧ أكتوبر ٢٠٢٦) ═══
+   «وما لا تحمله البطاقاتُ بعدُ يُبنى له بابُها، لا يُحال على المدرّب» (قرارُ ١٢ أكتوبر). ووجدت مراجعةُ الخطط ما لا
+   بابَ له: عنوانُ كرّاسةٍ فيه نصٌّ ملصوق، وخطأٌ في موضع محورٍ من كرّاسة الدورة، ومرفقُ مهمّةٍ في عنوانه خطأ أو فيه
+   نسخةٌ قديمةٌ من الكرّاسة. فـ:
+   · `workbook_change` عنوانُ الكرّاسة (للدورة، أو لمحاورها بـ`moduleId`) ومواضعُ المحاور في كرّاسة الدورة —
+     والموضعُ الفارغُ يُمحى.
+   · `task_attachment` مرفقُ مهمّةٍ يُعرف بعنوانه: عنوانٌ جديد، أو ملفٌّ مكانَ ملفّه — PDF نرفعه مع ملفّ التعديلات
+     كالكرّاسة المصحّحة (`/edit-files`). */
+export interface WorkbookPartEdit { moduleId: string; whereAr: string | null }
+export const WORKBOOK_TITLE_MAX = 200
+export const ATTACHMENT_TITLE_MAX = 200
 
 export interface NewSession {
   title: string
@@ -149,6 +162,8 @@ export type PlanEdit =
   | { kind: 'session_add'; session: NewSession }
   | { kind: 'session_change'; sessionId: string; set: Partial<Record<SessionEditField, string | null>> }
   | { kind: 'workbook_replace'; moduleId: string | null; file: WorkbookFile }
+  | { kind: 'workbook_change'; moduleId: string | null; set: { title?: string; parts?: WorkbookPartEdit[] } }
+  | { kind: 'task_attachment'; assessmentId: string; match: { title: string }; title?: string; file?: WorkbookFile }
   | { kind: 'session_move'; sessionId: string; startsAt: string; endsAt: string }
   | { kind: 'session_remove'; sessionId: string }
   | { kind: 'note'; step: NoteStep; textAr: string }
@@ -171,7 +186,7 @@ export function planEditStep(edit: PlanEdit): ReviewSection {
     case 'plan': return edit.set.liveNoteAr !== undefined && edit.set.summaryAr === undefined ? 'sessions' : 'identity'
     case 'session_move': case 'session_remove': case 'session_add': case 'session_change': return 'sessions'
     case 'cohort_title': return 'identity'
-    case 'workbook_replace': return 'workbooks'
+    case 'workbook_replace': case 'workbook_change': return 'workbooks'
     case 'note': return edit.step === 'general' ? 'identity' : edit.step
     case 'schedule': return 'sessions'
     default: return 'assignments'
@@ -187,6 +202,8 @@ export interface EditableModule {
 interface EditableWorkbook {
   title?: string | null; url?: string | null
   bodyFileKey?: string | null; bodyFileName?: string | null; bodyFileMime?: string | null
+  /** مواضعُ المحاور — في كرّاسة الدورة وحدَها */
+  parts?: { moduleId: string; whereAr: string }[] | null
 }
 export interface EditableContent {
   summaryAr?: string | null
@@ -306,6 +323,32 @@ export function contentBefore(edit: PlanEdit, c: EditableContent): Checked<EditS
       if (!at.ok) return at
       return { ok: true, value: pick(at.value.wb as Record<string, unknown>, WORKBOOK_FIELDS) }
     }
+    case 'workbook_change': {
+      const at = workbookAt(c, edit.moduleId)
+      if (!at.ok) return at
+      const keys = Object.keys(edit.set)
+      if (keys.length === 0) return { ok: false, problemAr: 'تعديل كرّاسة بلا حقل يعدّل' }
+      const bad = keys.find((k) => k !== 'title' && k !== 'parts')
+      if (bad) return { ok: false, problemAr: `«${bad}» ليس ممّا يعدّل في الكرّاسة` }
+      const out: Record<string, unknown> = {}
+      if (edit.set.title !== undefined) {
+        const t = edit.set.title
+        if (!(typeof t === 'string' && t.trim().length >= 2)) return { ok: false, problemAr: 'عنوان الكرّاسة قصير أو فارغ' }
+        if (t.length > WORKBOOK_TITLE_MAX) return { ok: false, problemAr: `عنوان الكرّاسة أطول من ${WORKBOOK_TITLE_MAX} حرف` }
+        out.title = norm(at.value.wb.title)
+      }
+      if (edit.set.parts !== undefined) {
+        if (at.value.at !== 'course') return { ok: false, problemAr: 'مواضع المحاور في كرّاسة الدورة وحدها' }
+        if (edit.set.parts.length === 0) return { ok: false, problemAr: 'مواضع بلا محور' }
+        if (new Set(edit.set.parts.map((p) => p.moduleId)).size !== edit.set.parts.length) return { ok: false, problemAr: 'محور مكرّر في المواضع' }
+        for (const p of edit.set.parts) {
+          if (!c.modules.some((m) => m.moduleId === p.moduleId)) return { ok: false, problemAr: `لا محور «${p.moduleId}» في الخطّة` }
+          if (typeof p.whereAr === 'string' && p.whereAr.length > WORKBOOK_WHERE_MAX) return { ok: false, problemAr: `موضع المحور أطول من ${WORKBOOK_WHERE_MAX} حرفا` }
+          out[`part:${p.moduleId}`] = norm((at.value.wb.parts ?? []).find((x) => x.moduleId === p.moduleId)?.whereAr)
+        }
+      }
+      return { ok: true, value: out }
+    }
     case 'resource_change': case 'resource_remove': {
       const at = findResource(c.resources, edit.match)
       if (!at.ok) return at
@@ -354,6 +397,17 @@ export function rowEditProblem(edit: PlanEdit, c: EditableContent): string | nul
       return null
     case 'session_remove': case 'note': case 'task_remove':
       return null
+    case 'task_attachment': {
+      if (!(typeof edit.match?.title === 'string' && edit.match.title.trim())) return 'المرفق يعرف بعنوانه — اكتبه'
+      if (edit.title === undefined && edit.file === undefined) return 'تعديل مرفق بلا عنوان جديد ولا ملفّ'
+      if (edit.title !== undefined && !(typeof edit.title === 'string' && edit.title.trim().length >= 2)) return 'عنوان المرفق قصير أو فارغ'
+      if (typeof edit.title === 'string' && edit.title.length > ATTACHMENT_TITLE_MAX) return `عنوان المرفق أطول من ${ATTACHMENT_TITLE_MAX} حرف`
+      if (edit.file !== undefined) {
+        if (!edit.file?.key || !edit.file.name?.trim()) return 'المرفق الجديد بلا ملفّ'
+        if (edit.file.mime !== 'application/pdf') return 'المرفق الجديد يرفع PDF'
+      }
+      return null
+    }
     case 'cohort_title':
       if (!(typeof edit.titleAr === 'string' && edit.titleAr.trim().length >= 3)) return 'عنوان الشعبة أقصر من ثلاثة أحرف'
       if (edit.titleAr.length > 200) return 'عنوان الشعبة أطول من ٢٠٠ حرف'
@@ -404,6 +458,42 @@ export function taskSnapshot(row: Record<string, unknown>, fields: readonly stri
     out[f] = v instanceof Date ? v.toISOString() : norm(v)
   }
   return out
+}
+
+/* ═══ ومرفقُ المهمّة يُعرف بعنوانه — `task_attachment` (١٧ أكتوبر ٢٠٢٦) ═══ */
+interface Attachment { title?: unknown; url?: unknown; bodyFileKey?: unknown; bodyFileName?: unknown; bodyFileMime?: unknown }
+
+function attachmentAt(attachments: unknown, title: string): Checked<{ at: number; list: Attachment[] }> {
+  const list = Array.isArray(attachments) ? (attachments as Attachment[]) : []
+  const hits = list.map((a, i) => (norm(a.title) === norm(title) ? i : -1)).filter((i) => i >= 0)
+  if (hits.length === 0) return { ok: false, problemAr: `لا مرفق بعنوان «${title}» في هذه المهمّة` }
+  if (hits.length > 1) return { ok: false, problemAr: `في المهمّة أكثر من مرفق بعنوان «${title}»` }
+  return { ok: true, value: { at: hits[0]!, list } }
+}
+
+/** لقطةُ المرفق: عنوانُه، وملفُّه إن كان التعديلُ يبدّله */
+export function attachmentSnapshot(attachments: unknown, edit: Extract<PlanEdit, { kind: 'task_attachment' }>): Checked<EditSnapshot> {
+  const found = attachmentAt(attachments, edit.match.title)
+  if (!found.ok) return found
+  const a = found.value.list[found.value.at]!
+  return {
+    ok: true,
+    value: { title: norm(a.title), ...(edit.file !== undefined ? { fileKey: norm(a.bodyFileKey), fileName: norm(a.bodyFileName), url: norm(a.url) } : {}) },
+  }
+}
+
+/** المرفقاتُ بعد قبوله — العنوانُ أو الملفُّ مكانَ ما كان، والملفُّ يُسقط الرابط، وما سواه كما هو */
+export function attachmentsAfter(attachments: unknown, edit: Extract<PlanEdit, { kind: 'task_attachment' }>): Checked<Attachment[]> {
+  const found = attachmentAt(attachments, edit.match.title)
+  if (!found.ok) return found
+  return {
+    ok: true,
+    value: found.value.list.map((a, i) => (i !== found.value.at ? a : {
+      ...a,
+      ...(edit.title !== undefined ? { title: edit.title.trim() } : {}),
+      ...(edit.file !== undefined ? { url: '', bodyFileKey: edit.file.key, bodyFileName: edit.file.name.trim(), bodyFileMime: edit.file.mime } : {}),
+    })),
+  }
 }
 
 /** لقطةُ لقاءٍ: موعدُه */
@@ -616,6 +706,23 @@ export function applyContentEdit<C extends EditableContent>(c: C, edit: PlanEdit
       if (!at.ok) return at
       return { ok: true, value: { ...c, resources: c.resources.filter((_, i) => i !== at.value) } }
     }
+    case 'workbook_change': {
+      const at = workbookAt(c, edit.moduleId)
+      if (!at.ok) return at
+      let next: EditableWorkbook = { ...at.value.wb }
+      if (edit.set.title !== undefined) next.title = edit.set.title.trim()
+      if (edit.set.parts !== undefined) {
+        /* الموضعُ مكانَ الموضع، والفارغُ يُمحى — وما لم يُسمَّ يبقى كما هو */
+        const named = new Map(edit.set.parts.map((p) => [p.moduleId, typeof p.whereAr === 'string' ? p.whereAr.trim() : '']))
+        const kept = (next.parts ?? []).filter((p) => !named.has(p.moduleId))
+        const added = [...named].filter(([, w]) => w).map(([moduleId, whereAr]) => ({ moduleId, whereAr }))
+        const order = new Map(c.modules.map((m, i) => [m.moduleId, i]))
+        next = { ...next, parts: [...kept, ...added].sort((a, b) => (order.get(a.moduleId) ?? 99) - (order.get(b.moduleId) ?? 99)) }
+      }
+      return at.value.at === 'course'
+        ? { ok: true, value: { ...c, workbook: next } }
+        : { ok: true, value: { ...c, workbooks: (c.workbooks ?? []).map((w, i) => (i === at.value.at ? { ...w, ...next } : w)) } }
+    }
     case 'workbook_replace': {
       const at = workbookAt(c, edit.moduleId)
       if (!at.ok) return at
@@ -632,7 +739,7 @@ export function applyContentEdit<C extends EditableContent>(c: C, edit: PlanEdit
 
 /** أيقع التعديلُ في محتوى الخطّة (فيُحفظ بـ`savePlan`) أم في صفّ مهمّةٍ أو لقاء؟ */
 export const editsContent = (edit: PlanEdit): boolean =>
-  edit.kind === 'module' || edit.kind === 'plan' || edit.kind.startsWith('resource_') || edit.kind === 'workbook_replace'
+  edit.kind === 'module' || edit.kind === 'plan' || edit.kind.startsWith('resource_') || edit.kind === 'workbook_replace' || edit.kind === 'workbook_change'
 
 /* ─────────── العرض: «قبل» و«بعد» بلغة المدرّب ─────────── */
 
@@ -689,6 +796,8 @@ function valueAr(field: string, v: unknown, ctx: EditContext): string | null {
 const LONG = new Set(['bodyAr', 'activityAr', 'briefAr', 'summaryAr', 'noteAr', 'outcomeAr', 'artifactAr'])
 
 const isHttp = (v: unknown) => typeof v === 'string' && /^https?:\/\//i.test(v.trim())
+/** ملفُّ الشعبة يُفتح من البطاقة بمفتاحه — من المسار المحروس */
+const fileHref = (k: unknown) => (typeof k === 'string' && k ? `/api/v1/cohort-files/${encodeURIComponent(k)}` : undefined)
 
 function rowsFor(fields: readonly string[], before: Record<string, unknown> | null, after: Record<string, unknown> | null, ctx: EditContext): EditRow[] {
   return fields.map((f) => ({
@@ -760,9 +869,36 @@ export function planEditView(edit: PlanEdit, before: EditSnapshot, ctx: EditCont
       const name = ctx.sessionTitle?.(edit.sessionId) ?? 'لقاء'
       return view(`حذف لقاء: «${name}»`, [{ labelAr: FIELD_AR.when, beforeAr: sessionWhenAr(before), afterAr: null }])
     }
+    case 'workbook_change': {
+      const b = before ?? {}
+      const rows: EditRow[] = []
+      if (edit.set.title !== undefined) rows.push({ labelAr: FIELD_AR.title, beforeAr: valueAr('title', b.title, ctx), afterAr: edit.set.title.trim() })
+      for (const p of edit.set.parts ?? []) {
+        rows.push({
+          labelAr: `موضع ${moduleNoAr(p.moduleId, ctx).replace(/^لل/, 'ال')}`,
+          beforeAr: valueAr('whereAr', b[`part:${p.moduleId}`], ctx), afterAr: valueAr('whereAr', p.whereAr, ctx),
+        })
+      }
+      return view(edit.moduleId === null ? 'كرّاسة الدورة' : `كرّاسة ${moduleNoAr(edit.moduleId, ctx).replace(/^لل/, 'ال')}`, rows)
+    }
+    case 'task_attachment': {
+      const name = ctx.taskTitle?.(edit.assessmentId) ?? 'مهمّة'
+      const b = before ?? {}
+      const rows: EditRow[] = []
+      if (edit.title !== undefined) rows.push({ labelAr: 'عنوان المرفق', beforeAr: valueAr('title', b.title, ctx), afterAr: edit.title.trim() })
+      if (edit.file !== undefined) {
+        /* الملفّان يُفتحان من البطاقة — ليقرأ الجديدَ قبل أن يقبله */
+        const beforeHref = fileHref(b.fileKey) ?? (isHttp(b.url) ? String(b.url).trim() : undefined)
+        const afterHref = fileHref(edit.file.key)
+        rows.push({
+          labelAr: 'ملفّ المرفق', beforeAr: valueAr('title', b.fileName ?? b.url, ctx), afterAr: edit.file.name.trim(),
+          ...(beforeHref ? { beforeHref } : {}), ...(afterHref ? { afterHref } : {}),
+        })
+      }
+      return view(`مرفق مهمّة: «${name}»`, rows)
+    }
     case 'workbook_replace': {
       /* الملفّان يُفتحان من البطاقة — ليقرأ الجديدةَ قبل أن يقبلها */
-      const fileHref = (k: unknown) => (typeof k === 'string' && k ? `/api/v1/cohort-files/${encodeURIComponent(k)}` : undefined)
       const b = before ?? {}
       const beforeHref = fileHref(b.bodyFileKey) ?? (isHttp(b.url) ? String(b.url).trim() : undefined)
       const afterHref = fileHref(edit.file.key)

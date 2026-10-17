@@ -148,10 +148,11 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
     return reply.status(201).send(await reportFiles.startReviewReportUpload(req.auth!.userId, id, body))
   })
 
-  /* والكرّاسةُ المصحّحةُ لبطاقة «قبل/بعد» (١٢ أكتوبر ٢٠٢٦، `startEditFileUpload`) — والبطاقةُ تحمل مفتاحَها */
+  /* والكرّاسةُ المصحّحةُ لبطاقة «قبل/بعد» (١٢ أكتوبر ٢٠٢٦، `startEditFileUpload`) — والبطاقةُ تحمل مفتاحَها.
+     ومرفقُ المهمّة المصحّحُ كذلك (١٧ أكتوبر ٢٠٢٦، `task_attachment`) */
   app.post('/api/admin/cohort-plans/:id/edit-files', {
     preHandler: requirePermission('cohort.plan.approve'),
-    schema: { tags: ['admin-cohorts'], summary: 'رابط رفع كرّاسة مصحّحة (PDF) لبطاقة تعديل على خطّة مفتوحة' },
+    schema: { tags: ['admin-cohorts'], summary: 'رابط رفع كرّاسة أو مرفق مهمّة مصحّح (PDF) لبطاقة تعديل على خطّة مفتوحة' },
   }, async (req, reply) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const body = z.object({
