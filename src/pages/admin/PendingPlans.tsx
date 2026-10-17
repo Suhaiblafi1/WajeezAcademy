@@ -26,7 +26,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router";
-import { BookOpen, ChevronUp, ClipboardCheck, Download, ExternalLink, ServerOff } from "lucide-react";
+import { BookOpen, ChevronDown, ChevronUp, ClipboardCheck, Download, ExternalLink, ServerOff } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import { apiDownload, apiGet, ApiError } from "@/services/api";
 import { fmtDateTimeAr } from "@/utils/format";
@@ -92,6 +92,39 @@ function byTrainer(rows: readonly PendingPlan[]): PendingPlan[] {
   return [...rows].sort((a, b) => first.get(trainerKey(a))! - first.get(trainerKey(b))!);
 }
 
+/** خططُ كلِّ مدرّبٍ معا — من قائمةٍ رُتّبت بـ`byTrainer` */
+function trainerGroups(rows: readonly PendingPlan[]): { key: string; name: string; rows: PendingPlan[] }[] {
+  const groups: { key: string; name: string; rows: PendingPlan[] }[] = [];
+  for (const r of rows) {
+    const last = groups[groups.length - 1];
+    if (last && last.key === trainerKey(r)) last.rows.push(r);
+    else groups.push({ key: trainerKey(r), name: r.trainerName, rows: [r] });
+  }
+  return groups;
+}
+
+/* ═══ وكلُّ مدرّبٍ خانةٌ تنضمّ وتنسدل (١٧ أكتوبر ٢٠٢٦) ═══
+
+   «اريد ان يكون لكل مدرب خانه يمكن ضمها وانسدالها للسهوله» (صاحب المنصّة) — كشريط المدرّبين في
+   العقود (`TrainerContracts.tsx`). فالمطويّةُ سطرٌ: الاسمُ وكم ينتظر منه، وخططُه كلُّها تحته حين تنسدل. */
+function TrainerStrip({ heading: H, name, status, shown, controls, onToggle, children }: {
+  heading: "h2" | "h3"; name: string; status: string; shown: boolean; controls: string; onToggle: () => void;
+  children?: React.ReactNode;
+}) {
+  return (
+    <H>
+      <Inset as="button" type="button" interactive aria-expanded={shown} aria-controls={controls} onClick={onToggle}
+        className="flex w-full flex-wrap items-center gap-x-3 gap-y-1.5 px-4 py-3 text-start text-read">
+        <ChevronDown aria-hidden="true"
+          className={`h-4 w-4 shrink-0 opacity-60 transition-transform ${shown ? "rotate-180" : ""}`} />
+        <b className="min-w-0 font-black text-foreground">{name}</b>
+        <span className="text-muted-foreground">{status}</span>
+        {children}
+      </Inset>
+    </H>
+  );
+}
+
 const OUTCOME_AR: Record<PlanOutcome, { label: string; tone: "positive" | "warn" }> = {
   approved: { label: "اعتمدت الآن", tone: "positive" },
   changes_requested: { label: "ردّت بملاحظاتك", tone: "warn" },
@@ -113,6 +146,10 @@ export default function PendingPlans() {
   const [page, setPage] = useState(1);
   const [open, setOpen] = useState<Set<string>>(() => new Set());
   const [decided, setDecided] = useState<Record<string, PlanOutcome>>({});
+  /* وخانةُ كلِّ مدرّبٍ مطويّةٌ ابتداءً — إلّا مدرّبا وحيدا في قائمته، فلا شيءَ يُختار بينه */
+  const [groupOpen, setGroupOpen] = useState<Record<string, boolean>>({});
+  const groupShown = (key: string, alone: boolean) => groupOpen[key] ?? alone;
+  const toggleGroup = (key: string, alone: boolean) => setGroupOpen((s) => ({ ...s, [key]: !(s[key] ?? alone) }));
   /* ═══ وملفّاتُ التعديلات كلُّها دفعةً واحدة (١٠ أكتوبر ٢٠٢٦) ═══
      «I need one place to upload all of them same time!» (صاحب المنصّة). والرفعُ لمن يعتمد
      وحدَه كما في البطاقة، وكلُّ خطّةٍ رُفع إليها تُعاد بطاقتُها إن كانت مفتوحة — فتُرى بنودُها. */
@@ -153,6 +190,8 @@ export default function PendingPlans() {
     revealNext.current = id;
     setPage(Math.floor(at / PAGE) + 1);
     setOpen((s) => new Set(s).add(id));
+    /* وخانةُ مدرّبها تنسدل — لا تُبلَغ خطّةٌ في خانةٍ مطويّة */
+    setGroupOpen((s) => ({ ...s, [trainerKey(list[at]!)]: true }));
   }, []);
 
   useEffect(() => {
@@ -207,12 +246,10 @@ export default function PendingPlans() {
   }
 
   /* مجموعاتُ الصفحة المعروضة — والعددُ تحت كلّ اسمٍ من القائمة كلِّها لا من الصفحة */
-  const groups: { key: string; name: string; rows: PendingPlan[] }[] = [];
-  for (const r of view.rows) {
-    const last = groups[groups.length - 1];
-    if (last && last.key === trainerKey(r)) last.rows.push(r);
-    else groups.push({ key: trainerKey(r), name: r.trainerName, rows: [r] });
-  }
+  const groups = trainerGroups(view.rows);
+  const pendingAlone = new Set(ordered.map(trainerKey)).size === 1;
+  const returnedGroups = trainerGroups(byTrainer(returnedScoped));
+  const returnedAlone = returnedGroups.length === 1;
   const trainers = new Set(waiting.map(trainerKey)).size;
   const inPrep = waiting.filter((r) => r.prep?.onboarding).length;
 
@@ -311,80 +348,84 @@ export default function PendingPlans() {
             </Panel>
           ) : (
             <div className="space-y-6">
-              {groups.map((g) => {
+              {groups.map((g, gi) => {
                 const all = scoped.filter((r) => trainerKey(r) === g.key);
                 const left = all.filter((r) => !decided[r.id]).length;
                 const onboarding = all.some((r) => r.prep?.onboarding);
                 /* جملةُ شعبة الإعداد مرّةً في رأسه إن صدقت على بطاقاته كلِّها (⑨) */
                 const shared = sharedPrepNote(g.rows.map((r) => ({ prep: r.prep, decided: Boolean(decided[r.id]) })));
+                const shown = groupShown(g.key, pendingAlone);
                 return (
                   <section key={g.key} aria-label={`خطط ${g.name}`}>
-                    <h2 className="flex flex-wrap items-baseline gap-x-2 text-read font-black text-foreground">
-                      {g.name}
-                      <span className="font-normal text-muted-foreground">
-                        {left > 0 ? `— ${plansAr(left)} ${left === 2 ? "تنتظران" : "تنتظر"}` : "— انتهت كلّها"}
-                      </span>
-                    </h2>
-                    {onboarding && (
-                      <p className="mt-1 text-read leading-6 text-muted-foreground">
-                        في مرحلة الإعداد — يفعّل حين تعتمد كل دورات الإعداد، وتجد عند كل خطّة كم بقي.
-                      </p>
-                    )}
-                    {shared && <p className="mt-1 text-read leading-6 text-muted-foreground">{shared}</p>}
-                    <ul className="mt-3 space-y-3">
-                      {g.rows.map((r) => {
-                        const isOpen = open.has(r.id);
-                        const done = decided[r.id];
-                        /* اسمُ الدورة حين لا يحمله اسمُ الشعبة وحدَه (⑨) */
-                        const sent = r.submittedAt ? `أرسلها ${fmtDateTimeAr(r.submittedAt)}` : "";
-                        const facts = [courseLineNeeded(r.cohort.title, r.courseTitle) ? `دورة «${r.courseTitle}»` : "", sent]
-                          .filter(Boolean).join(" · ")
-                          + (r.trainerConfirmedAt ? `${sent ? " و" : ""}أكّد موافقته على كلّ ما فيها` : "");
-                        return (
-                          /* هدفُ زرِّ الرأس — يقبل التركيزَ ليُقرأ حين يُبلَغ بلوحة المفاتيح */
-                          <Panel as="li" key={r.id} id={`plan-${r.id}`} tabIndex={-1} className="outline-none">
-                            <div className="flex flex-wrap items-start justify-between gap-3">
-                              <div className="min-w-0">
-                                <p className="text-read font-black text-foreground">{r.cohort.title}</p>
-                                {facts && <p className="mt-1 text-read leading-6 text-muted-foreground">{facts}</p>}
-                              </div>
-                              <div className="flex flex-wrap items-center gap-2">
-                                {/* جديدةٌ أم أعادها بعد ردّها — يُرى قبل الفتح (١٧ أكتوبر ٢٠٢٦) */}
-                                {r.returns !== undefined && (
-                                  <Chip tone={r.returns === 0 ? "info" : "warn"} srPrefixAr="جولتها">{roundLabelAr(r.returns)}</Chip>
+                    <TrainerStrip heading="h2" name={g.name} shown={shown} controls={`trainer-plans-${gi}`}
+                      onToggle={() => toggleGroup(g.key, pendingAlone)}
+                      status={left > 0 ? `${plansAr(left)} ${left === 2 ? "تنتظران" : "تنتظر"}` : "انتهت كلّها"}>
+                      {onboarding && <Chip tone="accent" srPrefixAr="المرحلة">في مرحلة الإعداد</Chip>}
+                    </TrainerStrip>
+                    {shown && (
+                      <div id={`trainer-plans-${gi}`} className="mt-2">
+                        {onboarding && (
+                          <p className="mt-1 text-read leading-6 text-muted-foreground">
+                            في مرحلة الإعداد — يفعّل حين تعتمد كل دورات الإعداد، وتجد عند كل خطّة كم بقي.
+                          </p>
+                        )}
+                        {shared && <p className="mt-1 text-read leading-6 text-muted-foreground">{shared}</p>}
+                        <ul className="mt-3 space-y-3">
+                          {g.rows.map((r) => {
+                            const isOpen = open.has(r.id);
+                            const done = decided[r.id];
+                            /* اسمُ الدورة حين لا يحمله اسمُ الشعبة وحدَه (⑨) */
+                            const sent = r.submittedAt ? `أرسلها ${fmtDateTimeAr(r.submittedAt)}` : "";
+                            const facts = [courseLineNeeded(r.cohort.title, r.courseTitle) ? `دورة «${r.courseTitle}»` : "", sent]
+                              .filter(Boolean).join(" · ")
+                              + (r.trainerConfirmedAt ? `${sent ? " و" : ""}أكّد موافقته على كلّ ما فيها` : "");
+                            return (
+                              /* هدفُ زرِّ الرأس — يقبل التركيزَ ليُقرأ حين يُبلَغ بلوحة المفاتيح */
+                              <Panel as="li" key={r.id} id={`plan-${r.id}`} tabIndex={-1} className="outline-none">
+                                <div className="flex flex-wrap items-start justify-between gap-3">
+                                  <div className="min-w-0">
+                                    <p className="text-read font-black text-foreground">{r.cohort.title}</p>
+                                    {facts && <p className="mt-1 text-read leading-6 text-muted-foreground">{facts}</p>}
+                                  </div>
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    {/* جديدةٌ أم أعادها بعد ردّها — يُرى قبل الفتح (١٧ أكتوبر ٢٠٢٦) */}
+                                    {r.returns !== undefined && (
+                                      <Chip tone={r.returns === 0 ? "info" : "warn"} srPrefixAr="جولتها">{roundLabelAr(r.returns)}</Chip>
+                                    )}
+                                    {r.prep && <Chip tone="accent" srPrefixAr="نوعها">شعبة إعداد</Chip>}
+                                    {done && <Chip tone={OUTCOME_AR[done].tone} srPrefixAr="القرار">{OUTCOME_AR[done].label}</Chip>}
+                                  </div>
+                                </div>
+                                {r.prep && !done && !shared && (
+                                  <p className="mt-2 text-read leading-6 text-muted-foreground">{prepNoteAr(r.prep)}</p>
                                 )}
-                                {r.prep && <Chip tone="accent" srPrefixAr="نوعها">شعبة إعداد</Chip>}
-                                {done && <Chip tone={OUTCOME_AR[done].tone} srPrefixAr="القرار">{OUTCOME_AR[done].label}</Chip>}
-                              </div>
-                            </div>
-                            {r.prep && !done && !shared && (
-                              <p className="mt-2 text-read leading-6 text-muted-foreground">{prepNoteAr(r.prep)}</p>
-                            )}
-                            <div className="mt-3 flex flex-wrap items-center gap-2">
-                              <Button size="sm" tone={isOpen ? "ghost" : "primary"} icon={isOpen ? ChevronUp : BookOpen}
-                                aria-expanded={isOpen} onClick={() => toggle(r.id)}>
-                                {isOpen ? "اطوها" : done ? "اعرضها" : "اقرأها وقرّر"}
-                              </Button>
-                              <Button as={Link} to={`/admin/cohorts?cohort=${r.cohort.id}`} size="sm" tone="ghost" icon={ExternalLink}>
-                                افتح بطاقة الشعبة
-                              </Button>
-                            </div>
-                            {/* تُجلب حين تُفتح لا قبلها: عشرون خطّةً لا تُجلب مناهجُها
-                                كلُّها لمن جاء ليقرأ واحدة */}
-                            {isOpen && (
-                              <div className="mt-4 border-t border-white/10 pt-4">
-                                <TrainerPlanReview
-                                  cohortId={r.cohort.id}
-                                  key={`${r.id}:${uploaded[r.id] ?? 0}`}
-                                  cohortTitle={r.cohort.title}
-                                  onPlanDecided={(outcome) => setDecided((d) => ({ ...d, [r.id]: outcome }))}
-                                />
-                              </div>
-                            )}
-                          </Panel>
-                        );
-                      })}
-                    </ul>
+                                <div className="mt-3 flex flex-wrap items-center gap-2">
+                                  <Button size="sm" tone={isOpen ? "ghost" : "primary"} icon={isOpen ? ChevronUp : BookOpen}
+                                    aria-expanded={isOpen} onClick={() => toggle(r.id)}>
+                                    {isOpen ? "اطوها" : done ? "اعرضها" : "اقرأها وقرّر"}
+                                  </Button>
+                                  <Button as={Link} to={`/admin/cohorts?cohort=${r.cohort.id}`} size="sm" tone="ghost" icon={ExternalLink}>
+                                    افتح بطاقة الشعبة
+                                  </Button>
+                                </div>
+                                {/* تُجلب حين تُفتح لا قبلها: عشرون خطّةً لا تُجلب مناهجُها
+                                    كلُّها لمن جاء ليقرأ واحدة */}
+                                {isOpen && (
+                                  <div className="mt-4 border-t border-white/10 pt-4">
+                                    <TrainerPlanReview
+                                      cohortId={r.cohort.id}
+                                      key={`${r.id}:${uploaded[r.id] ?? 0}`}
+                                      cohortTitle={r.cohort.title}
+                                      onPlanDecided={(outcome) => setDecided((d) => ({ ...d, [r.id]: outcome }))}
+                                    />
+                                  </div>
+                                )}
+                              </Panel>
+                            );
+                          })}
+                        </ul>
+                      </div>
+                    )}
                   </section>
                 );
               })}
@@ -401,44 +442,59 @@ export default function PendingPlans() {
           <p className="mt-1 max-w-3xl text-read leading-6 text-muted-foreground">
             خطط رددتها بـ«اطلب تعديلات» وهي عند مدربيها. لك أن تعتمدها الآن بما حفظوه فيها، وتبقى بطاقاتك عندهم اقتراحات يقبلونها أو يرفضونها.
           </p>
-          <ul className="mt-3 space-y-3">
-            {byTrainer(returnedScoped).map((r) => {
-              const isOpen = open.has(r.id);
-              const done = decided[r.id];
+          <div className="mt-3 space-y-4">
+            {returnedGroups.map((g, gi) => {
+              const left = g.rows.filter((r) => !decided[r.id]).length;
+              const shown = groupShown(`ret:${g.key}`, returnedAlone);
               return (
-                <Panel as="li" key={r.id} id={`plan-${r.id}`} tabIndex={-1} className="outline-none">
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="text-read font-black text-foreground">{r.cohort.title}</p>
-                      <p className="mt-1 text-read leading-6 text-muted-foreground">
-                        {r.trainerName}{r.reviewedAt ? ` · رددتها ${fmtDateTimeAr(r.reviewedAt)}` : ""}
-                      </p>
-                    </div>
-                    {done && <Chip tone={OUTCOME_AR[done].tone} srPrefixAr="القرار">{OUTCOME_AR[done].label}</Chip>}
-                  </div>
-                  <div className="mt-3 flex flex-wrap items-center gap-2">
-                    <Button size="sm" tone={isOpen ? "ghost" : "secondary"} icon={isOpen ? ChevronUp : BookOpen}
-                      aria-expanded={isOpen} onClick={() => toggle(r.id)}>
-                      {isOpen ? "اطوها" : done ? "اعرضها" : "اقرأها وقرّر"}
-                    </Button>
-                    <Button as={Link} to={`/admin/cohorts?cohort=${r.cohort.id}`} size="sm" tone="ghost" icon={ExternalLink}>
-                      افتح بطاقة الشعبة
-                    </Button>
-                  </div>
-                  {isOpen && (
-                    <div className="mt-4 border-t border-white/10 pt-4">
-                      <TrainerPlanReview
-                        cohortId={r.cohort.id}
-                        key={`${r.id}:${uploaded[r.id] ?? 0}`}
-                        cohortTitle={r.cohort.title}
-                        onPlanDecided={(outcome) => setDecided((d) => ({ ...d, [r.id]: outcome }))}
-                      />
-                    </div>
+                <section key={g.key} aria-label={`خطط ${g.name} المردودة`}>
+                  <TrainerStrip heading="h3" name={g.name} shown={shown} controls={`returned-plans-${gi}`}
+                    onToggle={() => toggleGroup(`ret:${g.key}`, returnedAlone)}
+                    status={left > 0 ? plansAr(left) : "انتهت كلّها"} />
+                  {shown && (
+                    <ul id={`returned-plans-${gi}`} className="mt-2 space-y-3">
+                      {g.rows.map((r) => {
+                        const isOpen = open.has(r.id);
+                        const done = decided[r.id];
+                        return (
+                          <Panel as="li" key={r.id} id={`plan-${r.id}`} tabIndex={-1} className="outline-none">
+                            <div className="flex flex-wrap items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="text-read font-black text-foreground">{r.cohort.title}</p>
+                                {r.reviewedAt && (
+                                  <p className="mt-1 text-read leading-6 text-muted-foreground">رددتها {fmtDateTimeAr(r.reviewedAt)}</p>
+                                )}
+                              </div>
+                              {done && <Chip tone={OUTCOME_AR[done].tone} srPrefixAr="القرار">{OUTCOME_AR[done].label}</Chip>}
+                            </div>
+                            <div className="mt-3 flex flex-wrap items-center gap-2">
+                              <Button size="sm" tone={isOpen ? "ghost" : "secondary"} icon={isOpen ? ChevronUp : BookOpen}
+                                aria-expanded={isOpen} onClick={() => toggle(r.id)}>
+                                {isOpen ? "اطوها" : done ? "اعرضها" : "اقرأها وقرّر"}
+                              </Button>
+                              <Button as={Link} to={`/admin/cohorts?cohort=${r.cohort.id}`} size="sm" tone="ghost" icon={ExternalLink}>
+                                افتح بطاقة الشعبة
+                              </Button>
+                            </div>
+                            {isOpen && (
+                              <div className="mt-4 border-t border-white/10 pt-4">
+                                <TrainerPlanReview
+                                  cohortId={r.cohort.id}
+                                  key={`${r.id}:${uploaded[r.id] ?? 0}`}
+                                  cohortTitle={r.cohort.title}
+                                  onPlanDecided={(outcome) => setDecided((d) => ({ ...d, [r.id]: outcome }))}
+                                />
+                              </div>
+                            )}
+                          </Panel>
+                        );
+                      })}
+                    </ul>
                   )}
-                </Panel>
+                </section>
               );
             })}
-          </ul>
+          </div>
         </section>
       )}
     </AdminLayout>
