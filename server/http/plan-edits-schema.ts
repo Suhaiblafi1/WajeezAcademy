@@ -17,7 +17,8 @@ import { z } from 'zod'
 import { MAX_BODY_CHARS } from '../services/module-authoring.service'
 import { PLAN_MAX, PLAN_TITLE_MIN } from '../../src/application/trainer/plan-limits'
 import { RESOURCE_CATEGORIES, RESOURCE_KINDS } from '../../src/application/trainer/plan-overlay'
-import { PLAN_EDITS_MAX } from '../../src/application/trainer/plan-edits'
+import { ATTACHMENT_TITLE_MAX, PLAN_EDITS_MAX, WORKBOOK_TITLE_MAX } from '../../src/application/trainer/plan-edits'
+import { WORKBOOK_WHERE_MAX } from '../../src/application/trainer/axis-timeline'
 
 const text = (max: number) => z.string().max(max).nullable()
 const moduleId = z.string().trim().min(1).max(64)
@@ -110,6 +111,22 @@ export const planEditItem = z.discriminatedUnion('kind', [
     kind: z.literal('workbook_replace'), ...meta,
     moduleId: moduleId.nullable(),
     file: z.object({ key: z.string().trim().min(10).max(200), name: z.string().trim().min(1).max(200), mime: z.literal('application/pdf') }).strict(),
+  }).strict(),
+  /* عنوانُ الكرّاسة ومواضعُ محاورها، ومرفقُ المهمّة (١٧ أكتوبر ٢٠٢٦) — والقاعدةُ في `plan-edits.ts` */
+  z.object({
+    kind: z.literal('workbook_change'), ...meta,
+    moduleId: moduleId.nullable(),
+    set: nonEmpty({
+      title: z.string().trim().min(2).max(WORKBOOK_TITLE_MAX).optional(),
+      parts: z.array(z.object({ moduleId, whereAr: z.string().max(WORKBOOK_WHERE_MAX).nullable() }).strict()).min(1).max(40).optional(),
+    }),
+  }).strict(),
+  z.object({
+    kind: z.literal('task_attachment'), assessmentId: z.string().uuid(), ...meta,
+    match: z.object({ title: z.string().trim().min(1).max(ATTACHMENT_TITLE_MAX) }).strict(),
+    title: z.string().trim().min(2).max(ATTACHMENT_TITLE_MAX).optional(),
+    file: z.object({ key: z.string().trim().min(10).max(200), name: z.string().trim().min(1).max(200), mime: z.literal('application/pdf') }).strict().optional(),
+    /* وأحدُهما على الأقلّ — يُفحص مع البند (`rowEditProblem`): عضوُ الاتّحاد المميَّز كائنٌ لا يُشرَط عليه */
   }).strict(),
   z.object({
     kind: z.literal('session_add'), ...meta,
