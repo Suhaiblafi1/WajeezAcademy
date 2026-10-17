@@ -5,7 +5,12 @@
    وزائرٌ ترك بريدَه لها في صفحتها. فالأكثرُ انتظارا أوّلا، ومعه ما يقف بينه وبين
    شعبةٍ تُباع: بلا مدرّب، أو مدرّبٌ يجهّزها، أو خطّةٌ تنتظر اعتمادك، أو معتمدةٌ تنتظر فتحك.
 
-   والحسابُ في الخادم (`CourseInterestService.demand`). وهذه تعرضه ولا تكتب شيئا. */
+   والحسابُ في الخادم (`CourseInterestService.demand`). وهذه تعرضه ولا تكتب شيئا.
+
+   ═══ ولا تظهر حين لا ينتظر أحدٌ حقيقيّ (١٧ أكتوبر ٢٠٢٦) ═══
+
+   «اخفي هذه القائمة اذا كان الطلب من حساب تجريبي» (صاحب المنصّة). فطلبُ حساب التجربة لا يُعدّ
+   (`test-account.ts`)، وما لم يبقَ فيه طلبٌ لا تُعرض له لوحةٌ تقول «لا أحد». */
 
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
@@ -46,7 +51,7 @@ export default function CourseDemand() {
       .catch(() => setError(true));
   }, []);
 
-  if (error) return null;
+  if (error || rows?.length === 0) return null;
 
   const shown = rows ? (all ? rows : rows.slice(0, SHOWN)) : [];
   return (
@@ -55,13 +60,11 @@ export default function CourseDemand() {
         <Users className="h-4 w-4 text-teal" /> من ينتظر دورة بلا شعبة
       </h2>
       <p className="mt-1 max-w-3xl text-read leading-6 text-muted-foreground">
-        كم ينتظر كل دورة لا شعبة تباع لها — في خطّته أو ببريده. ابدأ البحث عن مدرّب من الأعلى.
+        كم ينتظر كل دورة لا شعبة تباع لها — في خطّته أو ببريده، دون الحسابات التجريبية. ابدأ البحث عن مدرّب من الأعلى.
       </p>
 
       {!rows ? (
         <Loader2 className="mt-3 h-4 w-4 animate-spin text-muted-foreground/50" />
-      ) : rows.length === 0 ? (
-        <p className="mt-3 text-read text-muted-foreground">لا أحد ينتظر دورة بلا شعبة الآن.</p>
       ) : (
         <>
           <Inset as="ul" className="mt-3 divide-y divide-white/8 overflow-hidden p-0">

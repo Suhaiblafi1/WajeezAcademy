@@ -3,10 +3,11 @@
    الحمايات من الخادم: لا سحب super_admin من نفسك ولا إيقاف ذاتي من هنا. */
 import { useCallback, useEffect, useState } from "react";
 import { toast, toastError } from "@/components/Toast";
-import { Archive, BadgeCheck, KeyRound, Loader2, Minus, Plus, RefreshCw, Send, ServerOff, ShieldCheck, ShieldOff, Trash2, UserPlus, Users as UsersIcon } from "lucide-react";
+import { Archive, BadgeCheck, FlaskConical, KeyRound, Loader2, Minus, Plus, RefreshCw, Send, ServerOff, ShieldCheck, ShieldOff, Trash2, UserPlus, Users as UsersIcon } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import ListToolbar from "@/components/admin/ListToolbar";
 import { ACCOUNT_KINDS, filterByKind, type AccountKind } from "@/application/admin/account-kind";
+import { testByItself } from "@/application/admin/test-account";
 import { matchesQuery } from "@/application/text/search-ar";
 import { MAIL_LINK_WINDOW_AR } from "@/application/links/mail-link-window";
 import { paginate } from "@/application/admin/paginate";
@@ -37,6 +38,8 @@ interface UserRow {
   /** حالُ دعوته: سارية، أو انتهت، أو لا دعوةَ له */
   invite: { state: "pending" | "expired" | "none"; expiresAt: string | null };
   emailVerified: boolean;
+  /** مفتاحُ «حساب تجريبي» — لا يُعدّ طلبُه في «من ينتظر دورة بلا شعبة» (`test-account.ts`) */
+  isTestAccount: boolean;
 }
 
 /* ═══ الحذفُ جملةً: الشاشةُ تعرض قسمةَ الخادم ولا تحسبها (القسم ل) ═══
@@ -523,6 +526,9 @@ export default function Users() {
                     {/* من له استثناءٌ يُعرف من القائمة قبل فتحه */}
                     {u.grants > 0 && <span className="rounded-full border border-teal/40 px-2.5 py-0.5 text-fine font-bold text-teal-light-ink">+{u.grants} ممنوحة</span>}
                     {u.denies > 0 && <span className="rounded-full border border-red-400/40 px-2.5 py-0.5 text-fine font-bold text-red-300">−{u.denies} ممنوعة</span>}
+                    {u.isTestAccount && (
+                      <span className="rounded-full border border-white/25 px-2.5 py-0.5 text-fine font-bold text-muted-foreground">حساب تجريبي</span>
+                    )}
                   </div>
                 </div>
                 </div>
@@ -543,6 +549,21 @@ export default function Users() {
                     <Button tone="confirm" size="sm" disabled={busy}
                       onClick={() => setConfirming({ kind: "verifyEmail", user: u })} className="text-gold-ink">
                       <BadgeCheck className="h-3.5 w-3.5" /> وثّق بريده
+                    </Button>
+                  )}
+                  {/* ═══ «حساب تجريبي» (١٧ أكتوبر ٢٠٢٦) ═══
+                      لا يُعدّ طلبُه في «من ينتظر دورة بلا شعبة» — ولا يمسّ دخولَه ولا ما يملك. ولا يُعرض
+                      لحسابٍ يُعرف تجريبيّا من نفسه (من يعمل في المنصّة، أو حسابات البذر): لا يُعدّ طلبُه أصلا. */}
+                  {canManage && !testByItself({ email: u.email, roleIds: u.roles.map((r) => r.id) }) && (
+                    <Button tone="secondary" size="sm" disabled={busy} aria-pressed={u.isTestAccount}
+                      title="لا يعد طلبه في «من ينتظر دورة بلا شعبة»، ولا يتغير دخوله ولا ما يملك"
+                      onClick={() => act(
+                        () => apiPost(`/api/admin/users/${u.id}/test-account`, { value: !u.isTestAccount }),
+                        u.isTestAccount
+                          ? "لم يعد حسابا تجريبيا — يعد طلبه من جديد."
+                          : "صار حسابا تجريبيا — لا يعد طلبه في «من ينتظر دورة بلا شعبة».",
+                      )}>
+                      <FlaskConical className="h-3.5 w-3.5" /> {u.isTestAccount ? "ليس تجريبيا" : "حساب تجريبي"}
                     </Button>
                   )}
                   {canManage && u.status === "active" && (
