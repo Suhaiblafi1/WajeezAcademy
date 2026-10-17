@@ -243,12 +243,13 @@ describe('ملكيّةُ الشعبة واعتمادُها', () => {
     expect(saved.checklist.find((c) => c.key === 'identity')?.done, 'اسمٌ ومدّةٌ لم يُتمّا الهُويّة').toBe(true)
     const ws = await plans.workspace(trainerUserId, cohortId)
     expect(ws.checklist.find((c) => c.key === 'modules')?.done).toBe(true)
-    /* ⚠️ ولو غاب المتنُ لم تتمّ المرحلةُ — والحفظُ يمرّ على أيّ حال (د-١) */
+    /* ⚠️ ولو غاب المتنُ تمّت المرحلةُ أيضا — المحتوى النظريُّ اختياريٌّ منذ ١٧ أكتوبر ٢٠٢٦
+       (وكان هنا عكسُه: «لو غاب المتنُ لم تتمّ المرحلة»، د-١) */
     const bare = { ...content, modules: content.modules.map((m) => ({ ...m, bodyAr: '' })) }
     const draft = await plans.savePlan(trainerUserId, cohortId, bare)
-    expect(draft.status, 'نقصُ المتن منع الحفظَ — وهو يمنع الاعتمادَ وحدَه').toBe('draft')
+    expect(draft.status).toBe('draft')
     const after = await plans.workspace(trainerUserId, cohortId)
-    expect(after.checklist.find((c) => c.key === 'modules')?.done, 'مرحلةُ المحاور تمّت بلا متن').toBe(false)
+    expect(after.checklist.find((c) => c.key === 'modules')?.done, 'محورٌ بلا متنٍ منع تمامَ المرحلة').toBe(true)
     await plans.savePlan(trainerUserId, cohortId, content)
     expect(ws.checklist.find((c) => c.key === 'resources')?.done).toBe(true)
     expect(ws.checklist.find((c) => c.key === 'approval')?.done).toBe(false)
@@ -339,10 +340,9 @@ describe('ملكيّةُ الشعبة واعتمادُها', () => {
   })
 
   it('يعدّل ويعيد الإرسال، والاعتمادُ يوفي شرطَ فتح الشعبة', async () => {
-    /* والمتنُ المعدَّلُ يبلغ أرضيّةَ المحتوى النظريّ (`MIN_MODULE_BODY`):
-       كان عشرين حرفا، وهو دون الأربعين. ومنذ صار `submit` يحتجّ بالقائمة
-       (١٥ سبتمبر ٢٠٢٦) يُردّ الإرسالُ على متنٍ ناقص — وهو ما نصّ عليه
-       شرطُ المحتوى النظريّ أصلا: «يمنع الاعتمادَ ولا يمنع الحفظ». */
+    /* والمتنُ المعدَّلُ أطولُ من أرضيّةٍ كانت للمحتوى النظريّ (أربعون حرفا) — وصار
+       اختياريّا منذ ١٧ أكتوبر ٢٠٢٦، فلا يحتجّ `submit` بطوله. ويبقى المتنُ هنا لأنّه
+       ما عدّله المدرّبُ بعد الردّ. */
     await plans.savePlan(trainerUserId, cohortId, {
       ...content,
       modules: [{ ...content.modules[0], bodyAr: 'مثالٌ تطبيقيٌّ أُضيف بعد ردِّ الإدارة، يشرح الخطوةَ بالتفصيل كما يقرؤها المتعلّم' }],

@@ -2,11 +2,9 @@
 
    ═══ ثلاثةُ أعطابٍ يحرسها هذا الملفّ ═══
 
-   ① **قاعدةُ التمام في موضعَين فتفترقان.** كانت «أربعون حرفا» مكتوبةً في
-      الخادم وفي شاشة المدرّب، ورأسُ `plan-overlay` يقول صراحةً لمَ جُمعت:
-      «رقمان يقولان الشيءَ نفسَه يفترقان، فيُقال له تمّ ويُردّ إرسالُه».
-      وع-٢ يزيد عليها بديلا، فلو زِيد في موضعٍ دون آخرَ عاد الافتراقُ —
-      يرى المدرّبُ محورَه تامّا بملفّه ويردّه الخادمُ بأنّه بلا متن.
+   ① وكان أوّلُها «قاعدةُ التمام في موضعَين فتفترقان» — وتقاعدت القاعدةُ نفسُها
+      (١٧ أكتوبر ٢٠٢٦): صار المحتوى النظريُّ اختياريّا، فلا تمامَ يُحسب. ويحرس
+      ذلك `theory-required.test.ts`.
    ② **ملفٌّ يُخترَع حيث لا خطّة.** الكتالوجُ لا يحمل ملفَّ متن، فلو تسرّب
       `undefined` قرأته الشاشةُ «ثمّ ملفّ» وفتحت إطارا فارغا.
    ③ **«قيد التأليف» فوق وحدةٍ لها ملفّ.** وهو أسوأُ من الفراغ: ما رُفع
@@ -16,41 +14,17 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
-  BODY_FILE_MIMES, FILE_PURPOSES, TRAINER_FILE_PURPOSES, MAX_BODY_FILE_BYTES, MIN_MODULE_BODY, acceptedMimes,
-  bodyFileBlockerAr, fileBlockerAr, fileReadsInline, moduleBodyBlockerAr, moduleBodyDone,
+  BODY_FILE_MIMES, FILE_PURPOSES, TRAINER_FILE_PURPOSES, MAX_BODY_FILE_BYTES, acceptedMimes,
+  bodyFileBlockerAr, fileBlockerAr, fileReadsInline,
   readsInline, resourceHasSource, resourceSourceBlockerAr,
 } from '../../application/trainer/module-body'
-import { MIN_MODULE_BODY as VIA_OVERLAY, overlayModules } from '../../application/trainer/plan-overlay'
+import { overlayModules } from '../../application/trainer/plan-overlay'
 
 const root = process.cwd()
 const code = (p: string) =>
   readFileSync(join(root, p), 'utf8').replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '').replace(/^\s*\/\/.*$/gm, '')
 
-const LONG = 'ن'.repeat(MIN_MODULE_BODY)
-
-describe('ع-٢ · متى يتمّ المحور', () => {
-  it('① المكتوب يتمّه — والقصير لا', () => {
-    expect(moduleBodyDone({ bodyAr: LONG })).toBe(true)
-    expect(moduleBodyDone({ bodyAr: 'قصير' }), 'حرف يمرّ فتتعلّم الحيلة').toBe(false)
-    expect(moduleBodyDone({}), 'فارغ يمرّ').toBe(false)
-  })
-
-  it('والملفّ وحده يتمّه — وهو كلّ ع-٢: «بدلا» لا «مع»', () => {
-    expect(moduleBodyDone({ bodyFileKey: 'k-123' }), 'ملفّ لا يتمّ المحور').toBe(true)
-    expect(moduleBodyDone({ bodyAr: '', bodyFileKey: 'k-123' })).toBe(true)
-    expect(moduleBodyDone({ bodyFileKey: '   ' }), 'مفتاح فارغ يعدّ ملفّا').toBe(false)
-  })
-
-  it('وقاعدة واحدة لا اثنتان — والأرضيّة معادة التصدير هي هي', () => {
-    expect(VIA_OVERLAY, 'أرضيّتان تفترقان').toBe(MIN_MODULE_BODY)
-  })
-
-  it('وما ينقص يقال بالبديل لا بـ«غير مكتمل»', () => {
-    expect(moduleBodyBlockerAr({ bodyFileKey: 'k' })).toBeNull()
-    const why = moduleBodyBlockerAr({}) ?? ''
-    expect(why, 'لا يذكر البديل').toMatch(/أرفق|PDF|Word/)
-  })
-})
+const LONG = 'ن'.repeat(40)
 
 describe('ع-٢ · ما يقبل من الملفّات', () => {
   it('الصيغتان لا غير — وما عداهما بابه «المصادر»', () => {

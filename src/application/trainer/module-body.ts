@@ -26,8 +26,6 @@
    ثمّ بُني البثُّ إلى القرص (٣٠ سبتمبر ٢٠٢٦) فزال المانع، وصار السقفُ ٢٥ (١١ أكتوبر
    ٢٠٢٦) — والعلّةُ عند `MAX_BODY_FILE_BYTES` أدناه. */
 
-/** أقلُّ ما يُعدّ محتوًى مكتوبا — مستوردٌ من مالكه في الخادم */
-export const MIN_MODULE_BODY = 40
 
 /* ── الصيغتان، ولمَ هما دون غيرهما ──
 
@@ -75,29 +73,12 @@ export function bodyFileBlockerAr(mime: string, sizeBytes?: number): string | nu
   return null
 }
 
-/* ═══ وتمامُ المحور — القاعدةُ التي يغيّرها ع-٢ ═══
+/* ═══ وكان هنا «تمامُ المحور» — وتقاعد (١٧ أكتوبر ٢٠٢٦) ═══
 
-   كانت: «مكتوبٌ بأربعين حرفا». وصارت: «مكتوبٌ **أو** مرفوع». وهي في موضعٍ
-   واحدٍ يقرؤه الخادمُ (بوّابةُ الإرسال) وتقرؤه شاشةُ المدرّب (قائمةُ ما
-   ينقص) وتقرؤه شاشةُ المتعلّم — فلا يقول أحدُهما «تامّ» ويقول الآخرُ «ناقص».
-
-   ولمَ لا يُشترط الاثنان: «بدلا» في نصّ البند. ومن كتب ورفع فله الاثنان،
-   والمتعلّمُ يقرأ المكتوبَ ويجد الملفَّ تحته. */
-export interface ModuleBodyLike {
-  bodyAr?: string | null
-  bodyFileKey?: string | null
-}
-
-export function moduleBodyDone(m: ModuleBodyLike): boolean {
-  if ((m.bodyFileKey ?? '').trim().length > 0) return true
-  return (m.bodyAr ?? '').trim().length >= MIN_MODULE_BODY
-}
-
-/** ما ينقص هذا المحورَ، بعبارةٍ تقول البديلَ لا «غيرُ مكتمل» */
-export function moduleBodyBlockerAr(m: ModuleBodyLike): string | null {
-  if (moduleBodyDone(m)) return null
-  return `اكتب أربعين حرفا على الأقلّ، أو أرفق ${BODY_FILE_TYPES.map((t) => t.labelAr).join(' أو ')}`
-}
+   `moduleBodyDone` («مكتوبٌ بأربعين حرفا **أو** مرفوع») و`moduleBodyBlockerAr` كانا حاجزَ
+   الإرسال في الخادم والشاشة معا. ثمّ صار المحتوى النظريُّ اختياريّا بقرار صاحب المنصّة —
+   والعلّةُ في `buildChecklist` (`cohort-plan.service.ts`) — فلم يبق لهما قارئ، وخرجا
+   مع أرضيّتهما `MIN_MODULE_BODY`. والملفُّ ما زال بديلا عن الكتابة كما في رأس هذا الملفّ. */
 
 
 /* ═══ أغراضُ ملفّات الشعبة — ولمَ هما في ملفٍّ واحد (د-٣) ═══
