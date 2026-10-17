@@ -197,8 +197,10 @@ describe('⑤ والإدارة تطلبه بزرّ — والقاعدة تتّس
     expect(svc).toMatch(/if \(edit\.kind === 'session_move'\) \{\s*const chain = sessionMoveChainProblem\(edit, /)
     expect(svc).toMatch(/if \(edit\.kind === 'schedule'\) \{\s*const chain = scheduleChainProblem\(edit, /)
     expect(svc).toMatch(/case 'schedule': return scheduleSnapshot\(edit, r\.sessions, r\.tasks, r\.content\)/)
-    /* وحدودُ الخطّة تُحفظ قبل أن يُفحص نقل — ويُسجَّل ما يعيدها (١٣ أكتوبر ٢٠٢٦) */
-    expect(svc).toMatch(/await this\.plans\.savePlan\(userId, cohortId, next\.value\)\s*done\.push\(\(\) => this\.plans\.savePlan\(userId, cohortId, r\.content\)\)\s*\}\s*for \(const m of edit\.moves\) \{\s*await this\.cohorts\.assertTrainerMove/)
+    /* وحدودُ الخطّة تُحفظ قبل أن يُفحص نقل — ويُسجَّل ما يعيدها (١٣ أكتوبر ٢٠٢٦). وتُكتب في الخطّة المعتمدة
+       مباشرةً إن كانت معتمدة، وإلّا بحفظه هو (١٧ أكتوبر ٢٠٢٦، `writeContent`) */
+    expect(svc).toMatch(/await this\.writeContent\(userId, cohortId, next\.value, onApproved\)\s*done\.push\(\(\) => this\.writeContent\(userId, cohortId, r\.content, onApproved\)\)\s*\}\s*for \(const m of edit\.moves\) \{\s*await this\.cohorts\.assertTrainerMove/)
+    expect(svc).toMatch(/return onApproved\s*\? this\.plans\.writeApprovedContent\(userId, cohortId, onApproved\.planId, content\)\s*: this\.plans\.savePlan\(userId, cohortId, content\)/)
     expect(svc).toMatch(/catch \(e\) \{\s*for \(const undo of done\.reverse\(\)\) await undo\(\)/)
     /* وكلُّ لقاءٍ يُفحص قبل أن يُنقل أوّلُها */
     expect(svc).toMatch(/\}\s*for \(const m of edit\.moves\) \{\s*await this\.cohorts\.assertTrainerMove\(userId, m\.sessionId, [^\n]*\n\s*\}\s*for \(const m of edit\.moves\) \{[^}]*trainerMoveSession/)

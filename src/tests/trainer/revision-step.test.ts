@@ -40,9 +40,10 @@ describe('① الدائرة السابعة', () => {
     expect(circle).toMatch(/\{revision\.pending > 0 && \(\s*<span[^>]*>\s*\{revision\.pending\}\s*<\/span>/)
   })
 
-  it('⚠️ وتفتح عليها الصفحة من رابط البريد، أو حين ينتظره فيها بند وخطّته في يده', () => {
+  /* وخطّتُه المعتمدةُ كذلك — ما بقي عليها اقتراحاتٌ يقرّر فيها (١٧ أكتوبر ٢٠٢٦) */
+  it('⚠️ وتفتح عليها الصفحة من رابط البريد، أو حين ينتظره فيها بند وخطّته في يده أو معتمدة', () => {
     expect(WS).toMatch(/const requestedReview = useRef\(params\.get\(STEP_PARAM\) === "review"\);/)
-    expect(WS).toMatch(/const reviewWaits = editable && revItems\.some\(\(x\) => x\.status === "pending"\);/)
+    expect(WS).toMatch(/const reviewWaits = \(editable \|\| status === "approved" \|\| status === "published"\) && revItems\.some\(\(x\) => x\.status === "pending"\);/)
     expect(WS).toMatch(/if \(reviewHas && \(requestedReview\.current \|\| \(!requestedStep\.current && reviewWaits\)\)\) setStage\("review"\);\s*else setStage\(firstStep\(/)
   })
 })
@@ -118,7 +119,7 @@ describe('③ ويرسل مراجعته من موضعها', () => {
 
 describe('④ وفي الخطوات الأخرى سطر يدلّ عليها', () => {
   it('⚠️ «في «المراجعة» N بنود تنتظر قرارك» بزرّ يفتحها', () => {
-    const at = WS.indexOf(') : revision.pending > 0 && inHand ? (')
+    const at = WS.indexOf(') : revision.pending > 0 && (inHand || approved) ? (')
     expect(at).toBeGreaterThan(0)
     expect(WS.slice(at, at + 700)).toMatch(/في «المراجعة» \{revision\.pending\}[\s\S]{0,300}onClick=\{\(\) => void openStage\("review"\)\}>افتح «المراجعة»<\/Button>/)
   })
