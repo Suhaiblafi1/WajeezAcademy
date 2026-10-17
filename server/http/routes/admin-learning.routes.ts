@@ -92,6 +92,15 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
     schema: { tags: ['admin-cohorts'], summary: 'خطط المدرّبين بانتظار الاعتماد' },
   }, async () => plans.pending())
 
+  /* سجلُّ تواصل الخطّة — متى أُرسلت ومتى رُدّت وما قرّر المدرّبُ في البطاقات (١٧ أكتوبر ٢٠٢٦) */
+  app.get('/api/admin/cohort-plans/:id/timeline', {
+    preHandler: requirePermission('cohort.plan.approve'),
+    schema: { tags: ['admin-cohorts'], summary: 'سجلّ تواصل خطّة شعبة — الإرسال والردّ والبطاقات بتواريخها' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return plans.timeline(id)
+  })
+
   /* والمردودةُ إلى مدرّبيها — تُعتمد من بطاقتها أيضا (١٧ أكتوبر ٢٠٢٦، `RETURNED_PLAN_WHERE`) */
   app.get('/api/admin/cohort-plans/returned', {
     preHandler: requirePermission('cohort.plan.approve'),

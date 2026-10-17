@@ -45,6 +45,7 @@ import { BUNDLE_SCOPES, type BundleScope } from "@/application/trainer/review-bu
 import { ReviewReportsBulkUpload } from "@/components/ReviewReports";
 import { useRealSession } from "@/services/session";
 import { courseLineNeeded, prepNoteAr, sharedPrepNote, type PrepFlags } from "@/application/trainer/plan-decision";
+import { roundLabelAr } from "@/application/trainer/plan-timeline";
 
 /** خطّةٌ تنتظر — كما يردّها `CohortPlanService.pending` */
 interface PendingPlan {
@@ -55,6 +56,8 @@ interface PendingPlan {
   trainerProfileId: string | null;
   submittedAt: string | null;
   trainerConfirmedAt: string | null;
+  /** كم مرّةً رُدّت إليه — «جديدة» أم «الجولة ٢» (`plan-timeline.ts`) */
+  returns?: number;
   /** متى رُدّت إليه — للمردودة */
   reviewedAt?: string | null;
   /* شعبةُ إعداد؟ — `qualifies`: اعتمادُها يؤهّله لدورتها، و`onboarding`: هو في
@@ -346,6 +349,10 @@ export default function PendingPlans() {
                                 {facts && <p className="mt-1 text-read leading-6 text-muted-foreground">{facts}</p>}
                               </div>
                               <div className="flex flex-wrap items-center gap-2">
+                                {/* جديدةٌ أم أعادها بعد ردّها — يُرى قبل الفتح (١٧ أكتوبر ٢٠٢٦) */}
+                                {r.returns !== undefined && (
+                                  <Chip tone={r.returns === 0 ? "info" : "warn"} srPrefixAr="جولتها">{roundLabelAr(r.returns)}</Chip>
+                                )}
                                 {r.prep && <Chip tone="accent" srPrefixAr="نوعها">شعبة إعداد</Chip>}
                                 {done && <Chip tone={OUTCOME_AR[done].tone} srPrefixAr="القرار">{OUTCOME_AR[done].label}</Chip>}
                               </div>
