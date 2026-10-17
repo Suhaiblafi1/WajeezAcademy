@@ -1,115 +1,68 @@
-/* «المحتوى النظريّ» شرطٌ للاعتماد لا للحفظ (د-١).
+/* «المحتوى النظريّ» اختياريٌّ — لا يمنع الاعتماد (١٧ أكتوبر ٢٠٢٦).
 
-   طلب صاحبُ المنصّة (١٣ سبتمبر ٢٠٢٦) أن يصير إلزاميّا لكلّ محور. وقرارُ
-   التنفيذ — وهو ما يُحرَس هنا — **يمنع الاعتمادَ ولا يمنع الحفظ**: فمن كتب
-   نصفَ شعبته ثمّ أغلق حاسوبه يجب أن يجد نصفَه حين يعود، ومرحلةٌ لا تُحفظ
-   حتّى تكتمل تُخسِر العملَ الذي بُذل.
+   كان شرطا منذ ١٣ سبتمبر ٢٠٢٦: أربعون حرفا مكتوبةً أو ملفٌّ مرفوعٌ لكلّ محور، وكان
+   هذا الملفُّ يحرسه. ثمّ سأل صاحبُ المنصّة وهو يرى محورا فارغا: «هل المحتوى النظريُّ
+   مهمٌّ كونه يوجد كرّاسةٌ للمادّة؟» — فعُرضت عليه ثلاثُ طرقٍ بفروقها، فاختار
+   **«Always optional»**. والعلّةُ في `buildChecklist` (`cohort-plan.service.ts`).
 
-   وكان الشرطُ «فيها محاورُ» وحدَه — وهو صحيحٌ **دائما**، لأنّ المحاورَ
-   تُحمَّل من الكتالوج بدءا. فمرحلةٌ تُعدّ تامّةً قبل أن يكتب المدرّبُ حرفا. */
+   فيحرس الملفُّ القرارَ الجديد من جهتيه:
+   ① محورٌ بلا متنٍ لا يمنع تمامَ خطوة المحاور — في الخادم ولا في الشاشة ولا في الدليل.
+   ② والخطوةُ نفسُها باقيةٌ شرطا بما سواه: محاورُ، ومواعيدُ سليمة، وتطبيقٌ عمليّ —
+      فأسهلُ طريقٍ لـ① أن تُقلَب الخطوةُ كلُّها اختياريّة، وذاك ما لم يُقرَّر. */
 
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { buildChecklist } from '../../../server/services/cohort-plan.service'
-import { MIN_MODULE_BODY } from '@/application/trainer/plan-overlay'
 
 const read = (p: string) => readFileSync(join(process.cwd(), p), 'utf8')
 const code = (p: string) => read(p).replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '').replace(/^\s*\/\/.*$/gm, '')
 
-const body = (n: number) => 'ن'.repeat(n)
-/* ومنذ صار للمحاور مواعيدُ (٢٧ سبتمبر ٢٠٢٦) فالمرحلةُ تتمّ بمتونها ومواعيدها
-   معا — والمواعيدُ هنا سليمةٌ كي يُقاس المتنُ وحدَه: لكلّ محورٍ أسبوعُه. */
-const plan = (bodies: (string | null)[]) => ({
+/* يومٌ من أيّام المدّة — من ٧ فبراير ٢٠٢٧ */
+const day = (n: number) => new Date(Date.UTC(2027, 1, 7 + n)).toISOString().slice(0, 10)
+/* لكلّ محورٍ أسبوعُه وتطبيقُه — كي يُقاس المتنُ وحدَه */
+const plan = (bodies: (string | null)[], activity = 'تطبيق عمليّ قصير') => ({
   kind: 'trainer' as const,
-  /* والتطبيقُ والمُسلَّمُ تامّان كي يُقاس المتنُ وحدَه (بطاقةُ المعايير، ٨ أكتوبر ٢٠٢٦) */
-  modules: bodies.map((b, i) => ({ moduleId: `M${i}`, titleAr: `محور ${i}`, bodyAr: b, activityAr: 'تطبيق عمليّ قصير', artifactAr: 'ورقة تسلّم' })),
+  modules: bodies.map((b, i) => ({ moduleId: `M${i}`, titleAr: `محور ${i}`, bodyAr: b, activityAr: activity })),
   resources: [{ title: 'مرجع', url: 'https://x.test/a' }],
-  slots: bodies.map((_, i) => ({
-    startsOn: `2027-02-${String(7 + i * 7).padStart(2, '0')}`,
-    endsOn: `2027-02-${String(13 + i * 7).padStart(2, '0')}`,
-    moduleIds: [`M${i}`],
-  })),
+  slots: bodies.map((_, i) => ({ startsOn: day(i * 7), endsOn: day(i * 7 + 6), moduleIds: [`M${i}`] })),
 })
-const build = (bodies: (string | null)[]) => buildChecklist({
+const modules = (bodies: (string | null)[], activity?: string) => buildChecklist({
   cohort: { title: 'شعبة' },
-  /* المدّةُ بيد المدرّب منذ ٢٧ سبتمبر ٢٠٢٦ — وهنا ما يخصّ المحاورَ وحدَها */
   period: { startsOn: '2027-02-07', endsOn: '2027-03-14' },
-  content: plan(bodies) as never,
+  content: plan(bodies, activity) as never,
   sessions: [{ startsAt: new Date('2027-02-09T15:00:00.000Z'), recordings: [] }],
   assessmentsCount: 0,
   planStatus: 'draft',
+}).find((c) => c.key === 'modules')!
+
+describe('① محور بلا محتوى نظريّ لا يمنع الاعتماد', () => {
+  it('⚠️ فارغ أو مسافات أو حرف — والخطوة تامّة', () => {
+    const row = modules([null, '', '    ', 'x'])
+    expect(row.done, 'محور بلا متن منع تمام الخطوة').toBe(true)
+    expect(row.labelAr, 'الخطوة ما زالت تطلب كتابة المحتوى').not.toContain('النظريّ')
+  })
+
+  it('⚠️ والشاشة لا تقول «ينقصه المحتوى النظريّ» — ولا تقول الخانة إنّه يلزم', () => {
+    const ws = code('src/pages/trainer/CohortWorkspace.tsx')
+    expect(ws, 'الشاشة ما زالت تعدّه ناقصا').not.toMatch(/ينقصه? المحتوى النظريّ/)
+    expect(ws, 'الخانة ما زالت تقول إنّه يلزم للاعتماد').not.toContain('يلزم للاعتماد')
+    expect(ws).toContain('label="المحتوى النظريّ"')
+  })
+
+  it('⚠️ ودليل المدرّب لا يطلب منه أربعين حرفا', () => {
+    const guide = code('src/data/trainer-guide/content.ts')
+    expect(guide, 'الدليل ما زال يشترط المحتوى النظريّ').not.toMatch(/حرفا من المحتوى النظريّ|مكتملا بأربعين|محور يتمّ بـ/)
+  })
 })
-const modules = (bodies: (string | null)[]) => build(bodies).find((c) => c.key === 'modules')!
 
-describe('متى تعدّ مرحلة المحاور تامّة', () => {
-  it('⚠️ محور بلا محتوى يمنع تمام المرحلة — وكان يمرّ دائما', () => {
-    expect(modules([body(80), null]).done, 'محور فارغ مرّ').toBe(false)
-    expect(modules([body(80), '']).done).toBe(false)
-    expect(modules([body(80), '    ']).done, 'المسافات عدّت محتوى').toBe(false)
+describe('② وخطوة المحاور باقية شرطا بما سواه', () => {
+  it('⚠️ لا تصير اختياريّة كلّها', () => {
+    expect(modules([null]).optional, 'قُلبت الخطوة كلّها اختياريّة').toBe(false)
   })
 
-  it('⚠️ وحرف واحد ليس محتوى — فشرط يمرّ بحرف شرط صوريّ', () => {
-    expect(modules([body(80), 'x']).done).toBe(false)
-    expect(modules([body(80), body(MIN_MODULE_BODY - 1)]).done, 'مرّ ما دون الأرضيّة').toBe(false)
-    expect(modules([body(80), body(MIN_MODULE_BODY)]).done, 'رفض ما بلغ الأرضيّة تماما').toBe(true)
-  })
-
-  it('والأرضيّة أربعون — تبدّل بقرار يرى يسقط، لا بانزلاق', () => {
-    /* الرقمُ مكتوبٌ هنا باليد ولا يُقرأ من الوحدة: لو قُرئ لتحرّك التوقّعُ
-       معه ومرّ الحارسُ أخضرَ على تبديلٍ لم يره أحد. */
-    expect(MIN_MODULE_BODY).toBe(40)
-  })
-
-  it('وبلا محاور أصلا فالمرحلة ناقصة كما كانت', () => {
+  it('⚠️ وبلا محاور ناقصة — وبلا تطبيق عمليّ ناقصة', () => {
     expect(modules([]).done).toBe(false)
-  })
-
-  it('⚠️ والمرحلة تبقى **إلزاميّة** — لا ترضى بجعلها اختياريّة', () => {
-    /* أسهلُ طريقٍ لإسكات هذا الشرطِ أن تُقلَب `optional` — فيمرّ كلُّ ما
-       فوق، ولا يحمرّ شيء. */
-    expect(modules([body(80)]).optional).toBe(false)
-  })
-})
-
-describe('ويمنع الاعتماد لا الحفظ', () => {
-  it('⚠️ زرّ الحفظ لا يعطّل بنقص المحتوى — يعطّل بغياب تغيير فقط', () => {
-    /* لو دخل `missingBody` في شرط تعطيل الحفظ لخسِر المدرّبُ ما كتبه. */
-    const ws = code('src/pages/trainer/CohortWorkspace.tsx')
-    const save = ws.slice(ws.indexOf('احفظ المحاور') - 400, ws.indexOf('احفظ المحاور'))
-    expect(save, 'نقص المحتوى صار يمنع الحفظ').not.toContain('missingBody')
-  })
-
-  it('⚠️ وشاشة الاعتماد تسمّي المحاور الناقصة ولا تقول «ينقص شيء»', () => {
-    /* شرطٌ لا يقول ما ينقص يترك المدرّبَ يفتح ثمانيةَ محاورَ واحدا واحدا. */
-    const ws = read('src/pages/trainer/CohortWorkspace.tsx')
-    expect(ws).toContain('ينقص المحتوى النظريّ في')
-    expect(ws, 'لا يفتح الناقص بنقرة').toContain('setOpenModule(missingBody[0].moduleId)')
-  })
-
-  /* ═══ وصارت القاعدةُ دالّةً بعد أن كانت رقما (ع-٢) ═══
-
-     كان الشرطُ «أربعون حرفا»، فكان يكفي أن يُستورَد الرقمُ في الموضعَين.
-     وزاد ع-٢ بديلا — ملفٌّ يُرفق — فصار الشرطُ قسمةً: «مكتوبٌ **أو**
-     مرفوع». ورقمٌ مشتركٌ لا يحرس قسمةً: تُزاد في موضعٍ دون آخرَ فيرى
-     المدرّبُ محورَه تامّا بملفّه ويردّه الخادمُ بأنّه بلا متن.
-
-     فالمقصودُ هو هو — مالكٌ واحدٌ — والمفحوصُ صار اسمَ الدالّة. */
-  it('⚠️ والشاشة والخادم على قاعدة واحدة مستوردة — لا قاعدتين', () => {
-    const ws = code('src/pages/trainer/CohortWorkspace.tsx')
-    const svc = code('server/services/cohort-plan.service.ts')
-    expect(ws, 'الشاشة تقرّر التمام بنفسها').toContain('moduleBodyDone')
-    expect(svc, 'الخادم يقرّر التمام بنفسه').toContain('moduleBodyDone')
-
-    /* ولا يعود أحدُهما يقيس الطولَ بيده — لا رقما ولا `MIN_MODULE_BODY`
-       مباشرةً: كلاهما يتخطّى بديلَ الملفّ فيُنكر محورا تامّا. */
-    for (const [who, src] of [['الشاشة', ws], ['الخادم', svc]] as const) {
-      expect(src, `${who} يقيس طول المتن بيده فينكر الملفّ`)
-        .not.toMatch(/bodyAr[^\n]*length\s*>=/)
-    }
-  })
-
-  it('والاسم صار «المحتوى النظريّ» في الشاشة', () => {
-    expect(read('src/pages/trainer/CohortWorkspace.tsx')).toContain('label="المحتوى النظريّ"')
+    expect(modules([null], '').done, 'سقط شرط التطبيق مع المتن').toBe(false)
   })
 })

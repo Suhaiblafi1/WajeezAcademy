@@ -29,7 +29,7 @@
    و`financialReady` — والشاشةُ تقول إنّه بيد الإدارة. */
 
 import { Prisma, type PrismaClient } from '@prisma/client'
-import { moduleBodyDone, resourceHasSource } from '../../src/application/trainer/module-body'
+import { resourceHasSource } from '../../src/application/trainer/module-body'
 import { levelProblem, type LevelRange } from '../../src/application/trainer/cohort-level'
 import { audienceProblem } from '../../src/application/trainer/cohort-audience'
 import { blockingBeforeSubmit, boardNextStep, trainerOwned } from '../../src/application/trainer/plan-gate'
@@ -326,22 +326,19 @@ export function buildChecklist(input: {
     && levelProblem(input.content, input.planStatus) === null
     /* ولمن هي وماذا يريد متعلّمُها — بإلزام المستوى نفسِه (٦ أكتوبر ٢٠٢٦) */
     && audienceProblem(input.content, input.planStatus) === null
-  /* ═══ ولماذا صار المحتوى النظريُّ شرطا للاعتماد ═══
+  /* ═══ والمحتوى النظريُّ اختياريٌّ — لا يمنع الاعتماد (١٧ أكتوبر ٢٠٢٦) ═══
 
-     طلب صاحبُ المنصّة (١٣ سبتمبر ٢٠٢٦) أن يصير «المحتوى النظريّ» إلزاميّا
-     لكلّ محور. وقرارُ التنفيذ: **يمنع الاعتمادَ ولا يمنع الحفظ** — فمن
-     كتب نصفَ شعبته ثمّ أغلق حاسوبه يجب أن يجد نصفَه حين يعود، ومرحلةٌ لا
-     تُحفظ حتّى تكتمل تُخسِر العملَ الذي بُذل.
+     كان شرطا منذ ١٣ سبتمبر ٢٠٢٦: أربعون حرفا مكتوبةً أو ملفٌّ مرفوعٌ لكلّ محور
+     (`moduleBodyDone`)، يقرؤه الخادمُ وشاشةُ المدرّب معا. ثمّ سأل صاحبُ المنصّة وهو
+     يرى محورا فارغا: «هل المحتوى النظريُّ مهمٌّ كونه يوجد كرّاسةٌ للمادّة؟». فعُرضت
+     عليه ثلاثُ طرقٍ بفروقها — يبقى شرطا، أو تكفي عنه الكرّاسة، أو يصير اختياريّا —
+     فاختار: **«Always optional»**.
 
-     وكان الشرطُ «فيها محاورُ» وحدَه — وهو صحيحٌ دائما، لأنّ المحاورَ تُحمَّل
-     من الكتالوج بدءا. فمرحلةٌ تُعدّ تامّةً قبل أن يكتب المدرّبُ حرفا.
+     فلا يمنع الإرسالَ ولا الاعتماد، ولا تقول الشاشةُ «ينقصه». وما كُتب يصل المتعلّمَ
+     دروسا كما كان، ويقرؤه المعتمِدُ نصيحةً في بطاقة المعايير (`content_depth`). والثمنُ
+     معلومٌ عند القرار: محورٌ بلا متنٍ ولا كرّاسةٍ يقرأ فيه المتعلّمُ أنّه قيد التأليف.
 
-     والأرضيّةُ أربعون حرفا لا حرفٌ واحد: «x» ليس محتوى نظريّا، وشرطٌ يمرّ
-     بحرفٍ شرطٌ صوريٌّ يُتعلَّم الالتفافُ عليه في أوّل شعبة. وأربعون جملةٌ
-     قصيرةٌ — أقلُّ ما يُقرأ لا أكثرُ ما يُطلَب. */
-  /* ع-٢: تمامُ المحور صار «مكتوبٌ **أو** مرفوع»، وقاعدتُه في موضعٍ واحدٍ
-     (`moduleBodyDone`) يقرؤه الخادمُ وشاشةُ المدرّب معا — ورقمان يقولان
-     الشيءَ نفسَه يفترقان، فيُقال له «تمّ» ويُردّ إرسالُه. */
+     وتمامُ الخطوة بعده: فيها محاورُ، ومواعيدُها سليمة، ولكلٍّ تطبيقُه العمليّ. */
   const mods = input.content?.modules ?? []
   const moduleIds = mods.map((m) => m.moduleId)
   /* ═══ والمحاورُ على مواعيدها (٢٧ سبتمبر ٢٠٢٦) ═══
@@ -358,7 +355,7 @@ export function buildChecklist(input: {
   const slots = input.content?.slots ?? []
   const legacy = slots.length === 0 && ['submitted', 'approved', 'published'].includes(input.planStatus)
   const slotIssues = legacy ? [] : slotProblems(slots, moduleIds, input.period)
-  const modulesDone = mods.length > 0 && mods.every(moduleBodyDone) && slotIssues.length === 0
+  const modulesDone = mods.length > 0 && slotIssues.length === 0
   /* ⑦ كرّاسةٌ واحدةٌ للشعبة، وموضعُ كلّ محورٍ فيها (٣٠ سبتمبر ٢٠٢٦).
      وما أُرسل أو اعتُمد بكرّاسةٍ لكلّ موعدٍ قبل ذلك يمضي كما اعتُمد — ومتى
      عُدّل صار مسودّةً فلزمته الكرّاسةُ الواحدة.
@@ -474,7 +471,7 @@ export function buildChecklist(input: {
     },
     {
       key: 'modules',
-      labelAr: (legacy ? 'اكتب المحتوى النظريّ لكلّ محور' : 'وزّع المحاور على مواعيدها واكتب محتواها النظريّ')
+      labelAr: (legacy ? 'أضف محاور الدورة' : 'وزّع المحاور على مواعيدها')
         + (practice.length ? ` · ${practice.join('، ')}` : ''),
       done: modulesDone && practice.length === 0, optional: false,
     },
@@ -508,8 +505,9 @@ export function buildChecklist(input: {
        وتُصدِر شهادةً لا يقف خلفها عملٌ نظر فيه إنسان.
 
        ومقابلَه في القرار نفسِه: **المحورُ تامٌّ بمتنٍ من الأكاديميّة أو
-       منه** — وهو قائمٌ في `moduleBodyDone`، إذ يُحمَل متنُ الكتالوج في
-       `baseModules` فيُقرأ تماما بلا أن يُعيد المدرّبُ كتابتَه. */
+       منه**، إذ يُحمَل متنُ الكتالوج في `baseModules` فيُقرأ بلا أن يُعيد
+       المدرّبُ كتابتَه. ثمّ صار المتنُ اختياريّا كلُّه (١٧ أكتوبر ٢٠٢٦) — والعلّةُ
+       في `buildChecklist` عند تمام المحاور. */
     { key: 'assignments', labelAr: 'ألّف مهمّة عمليّة واحدة على الأقلّ — واجب أو اختبار يسلّم ويقيّم' + tasksNote, done: practicalCount > 0 && unlinkedTasks === 0, optional: false },
     /* والمصادرُ في الخطوة نفسِها بعد المهامّ — «وبعدها المهامُّ والواجباتُ وغيرُها
        والتي تُربط بالمحاور» (٢٧ سبتمبر ٢٠٢٦) */

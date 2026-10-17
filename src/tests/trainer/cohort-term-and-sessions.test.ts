@@ -39,9 +39,8 @@ import { plainExpect } from '../../../server/tests/helpers/plain-expect'
 /* نصوصُ الخادم بلا تشكيلٍ إعرابيّ بعد «اللغة البيضاء» — والمنتظَرُ هنا قبلها: يُقارَن الطرفان بلا تشكيل */
 const expect = plainExpect(vexpect)
 import { buildChecklist } from '../../../server/services/cohort-plan.service'
-import { MIN_MODULE_BODY } from '@/application/trainer/plan-overlay'
 
-const body = 'ن'.repeat(MIN_MODULE_BODY)
+const body = 'ن'.repeat(40)
 const mods = (n: number) => Array.from({ length: n }, (_, i) => ({ moduleId: `M${i}`, titleAr: `محور ${i}`, bodyAr: body }))
 /* مدّةُ الشعبة كما يحدّدها مدرّبُها (٢٧ سبتمبر ٢٠٢٦) — واللقاءاتُ في وسطها */
 const PERIOD = { startsOn: '2027-02-07', endsOn: '2027-03-14' }

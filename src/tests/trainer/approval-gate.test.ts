@@ -19,9 +19,8 @@
 import { describe, expect, it } from 'vitest'
 import { buildChecklist } from '../../../server/services/cohort-plan.service'
 import { blockingBeforeSubmit, readyToSubmit, trainerOwned } from '@/application/trainer/plan-gate'
-import { MIN_MODULE_BODY } from '@/application/trainer/plan-overlay'
 
-const body = 'ن'.repeat(MIN_MODULE_BODY)
+const body = 'ن'.repeat(40)
 
 /** مدّةُ الشعبة كما يحدّدها مدرّبُها (٢٧ سبتمبر ٢٠٢٦) — ولقاءٌ في وسطها */
 const PERIOD = { startsOn: '2027-02-07', endsOn: '2027-03-14' }

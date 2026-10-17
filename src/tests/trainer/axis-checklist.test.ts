@@ -14,10 +14,9 @@ const plainDeep = (v: unknown): unknown =>
 const expect = Object.assign((v: unknown, m?: string) => vexpect(plainDeep(v), m), vexpect) as typeof vexpect
 import { buildChecklist } from '../../../server/services/cohort-plan.service'
 import { blockingBeforeSubmit, readyToSubmit } from '@/application/trainer/plan-gate'
-import { MIN_MODULE_BODY } from '@/application/trainer/plan-overlay'
 import { defaultSlots } from '@/application/trainer/axis-timeline'
 
-const body = 'ن'.repeat(MIN_MODULE_BODY)
+const body = 'ن'.repeat(40)
 const PERIOD = { startsOn: '2027-02-07', endsOn: '2027-03-13' }
 const IDS = ['M1', 'M2', 'M3', 'M4', 'M5', 'M6', 'M7', 'M8']
 /* ولكلّ محورٍ تطبيقٌ عمليٌّ ومُسلَّم، ومصدرٌ — مُلزِمان من بطاقة المعايير (٨ أكتوبر ٢٠٢٦) */

@@ -70,7 +70,7 @@ import BodyEditor from "@/components/BodyEditor";
 import TabBar from "@/components/ui/TabBar";
 import ModuleBodyUpload from "@/components/ModuleBodyUpload";
 import WordImport from "@/components/WordImport";
-import { MAX_BODY_FILE_BYTES, moduleBodyDone, resourceHasSource } from "@/application/trainer/module-body";
+import { MAX_BODY_FILE_BYTES, resourceHasSource } from "@/application/trainer/module-body";
 import {
   MATERIAL_PATCH, MATERIAL_RIGHTS_ANCHOR, WORKBOOK_TEMPLATES, groupLabelAr, mergeWithNext, splitGroup, templateRequired, workbookGroups,
   workbookMaterialOf, workbookModeOf, workbookOpensOn, workbooksProblems, workbookTemplateHref,
@@ -903,13 +903,6 @@ export default function CohortWorkspace() {
      مثلُ صفِّ الاعتماد في هذا: تسمّيه الإدارةُ عند الإسناد، فلا يُعدُّ عليه. */
   const gated = trainerOwned(ws.checklist).filter((c) => !c.optional);
   const doneCount = gated.filter((c) => c.done).length;
-  /* المحاورُ التي ينقصها المحتوى النظريّ — بالأرقام والعناوين، لا بعدد.
-     والقاعدةُ قاعدةُ الخادم نفسُها (`moduleBodyDone`): مكتوبٌ بأربعين حرفا
-     **أو** ملفٌّ مرفوع (ع-٢). وقاعدتان تقولان الشيءَ نفسَه تفترقان، فيُقال
-     له «تمّ» ويُردّ إرسالُه. */
-  const missingBody = content.modules
-    .map((m, i) => ({ ...m, n: i + 1 }))
-    .filter((m) => !moduleBodyDone(m));
   const ready = gated.length ? Math.round((doneCount / gated.length) * 100) : 0;
   /* الخطوةُ الحاليّة — يُسمّى بها ما ينقصها حين لا تتمّ */
   const here = STAGES.find((s) => s.key === stage) ?? null;
@@ -1090,8 +1083,6 @@ export default function CohortWorkspace() {
       const mods = saved?.modules ?? [];
       if (mods.length === 0) return ["أضف محورا واحدا على الأقلّ"];
       const out: string[] = [];
-      const miss = mods.map((m, i) => ({ m, n: i + 1 })).filter(({ m }) => !moduleBodyDone(m));
-      if (miss.length) out.push(`ينقص المحتوى النظريّ في: ${miss.map(({ m, n }) => `${n}. ${m.titleAr || "بلا عنوان"}`).join(" · ")}`);
       /* والمواعيدُ بالقاعدة نفسِها التي يحكم بها الخادم — `axis-timeline.ts` */
       out.push(...slotProblems(saved?.slots, ids, w.cohort.period));
       return out.length ? out : [label];
@@ -1171,7 +1162,6 @@ export default function CohortWorkspace() {
   const moduleProblem = (m: PlanModule): string | null => {
     const out: string[] = [];
     if (!m.titleAr.trim()) out.push("اكتب عنوان المحور");
-    if (!moduleBodyDone(m)) out.push("ينقصه المحتوى النظريّ — اكتبه، أو استورده من Word، أو أرفق ملفّا");
     /* والتطبيقُ العمليُّ بقاعدة الخادم نفسِها — جملةٌ لا كلمة (`practiceGaps`) */
     if (practiceGaps([m]).length) out.push("ينقصه التطبيق العمليّ — جملة تقول ما يفعله المتعلّم بيده");
     return out.length ? out.join(" · ") : null;
@@ -2295,7 +2285,7 @@ export default function CohortWorkspace() {
                   </StaffField>
                   {/* وسقط «ما يُسلّمه المتعلّم» (١١ أكتوبر ٢٠٢٦): يكرّر المهامَّ في خطوتها —
                       وما كُتب فيه قبلُ يبقى في الخطّة كما هو، لا يُمحى ولا يُعرض */}
-                  <StaffField label="المحتوى النظريّ" hint="الشرح المكتوب. كلّ عنوان يبدأ درسا. يلزم للاعتماد لا للحفظ.">
+                  <StaffField label="المحتوى النظريّ" hint="الشرح المكتوب. كلّ عنوان يبدأ درسا. اختياريّ: لا يمنع الاعتماد.">
                     <BodyEditor
                       value={m.bodyAr ?? ""}
                       onChange={(next) => setModule(i, { bodyAr: next })}
@@ -3395,25 +3385,8 @@ export default function CohortWorkspace() {
               )}
             </Inset>
           )}
-          {/* ═══ ولماذا تُسمّى المحاورُ الناقصةُ بأسمائها ═══
-
-              «المحتوى النظريّ» صار شرطا للاعتماد (د-١). وشرطٌ يقول «ينقص
-              شيءٌ» بلا أن يقول **ما هو** يترك المدرّبَ يفتح ثمانيةَ محاورَ
-              واحدا واحدا ليجد أيَّها الناقص — وهو بعينه ما شُكي منه في
-              مواضعَ أخرى. فتُذكر أرقامُها وعناوينُها، ويُفتح منها الأوّل
-              بنقرة. */}
-          {!approved && missingBody.length > 0 && (
-            <Inset tone="warn" className="mt-3 text-read leading-6 text-gold-ink">
-              ينقص المحتوى النظريّ في {missingBody.length === 1 ? "محور واحد" : `${missingBody.length} محاور`}:{" "}
-              {missingBody.map((m) => `${m.n}. ${m.titleAr || "بلا عنوان"}`).join(" · ")}
-              <Button
-                tone="ghost" size="sm" className="mt-2"
-                onClick={() => { setStage("modules"); setOpenModule(missingBody[0].moduleId); }}
-              >
-                افتح أوّلها
-              </Button>
-            </Inset>
-          )}
+          {/* وكانت هنا لافتةُ «ينقص المحتوى النظريّ في…» — وصار اختياريّا لا يمنع الاعتماد
+              (١٧ أكتوبر ٢٠٢٦، والعلّةُ في `buildChecklist`) */}
           {!approved && (
             <PlanScorecard
               items={scorecard}

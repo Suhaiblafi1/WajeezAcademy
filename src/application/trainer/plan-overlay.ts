@@ -290,12 +290,6 @@ export function planIsVisible(status: string | null | undefined): boolean {
   return (PLAN_VISIBLE_STATUSES as readonly string[]).includes(status ?? '')
 }
 
-/* ── ونُقلت أرضيّةُ المتن إلى `module-body.ts` (ع-٢) ──
-
-   صار للمتن بديلٌ: ملفٌّ يُرفق. فقاعدةُ «متى يتمّ المحور» لم تعد رقما بل
-   قسمةً بين المكتوب والمرفوع، ومسكنُها مع القسمة. وتُصدَّر من هنا كما كانت
-   فلا يُكسَر مستوردٌ قائم — والقيمةُ واحدةٌ في الموضعَين لأنّها واحدة. */
-export { MIN_MODULE_BODY } from './module-body'
 
 /** نصٌّ ذو معنى — والفراغُ والمسافاتُ وحدَها ليست كتابة */
 function written(v: string | null | undefined): string | null {
