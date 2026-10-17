@@ -113,6 +113,9 @@ export interface ConditionFacts {
   conditionRemindedAt?: DateLike
   /** اعتُمدت موادُّه — انتهت المهلة */
   conditionMetAt?: DateLike
+  /** دوراتُه كلُّها معتمَدةٌ ولا معلّقَ منها — حكمُنا على موادّه وقع دورةً دورة (١٧ أكتوبر ٢٠٢٦).
+      يقوله الخادم؛ والغائبُ «لا» */
+  coursesReady?: boolean | null
   /** يُمرَّر في الاختبار كي لا تتعلّق النتيجةُ بساعة الجهاز */
   now?: Date
 }
@@ -514,6 +517,11 @@ export function offerGatesActivation(prior: readonly PriorContractSeal[]): boole
 export function materialsGateProblemAr(f: ConditionFacts): string | null {
   const phase = conditionPhase(f)
   if (phase === 'met' || phase === 'under_review') return null
+  /* ═══ ودوراتُه كلُّها معتمَدة: موادُّه حُكم فيها فعلا (١٧ أكتوبر ٢٠٢٦) ═══
+     البوّابةُ تمنع حكما على ما لم يُعرَض. ومن اعتُمدت دوراتُه كلُّها — بخطّة شعبتها أو
+     بتأهيلٍ مباشر — عُرض ما عنده وحُكم فيه دورةً دورة، والشرطُ «نوقّعه حين تُعتمَد
+     دوراتُه» تحقّق. وكان يُحبَس خلفها مدرّبٌ دوراتُه الثلاثُ معتمدة لأنّه لم يضغط «أعلنتُ». */
+  if (f.coursesReady) return null
   if (phase === 'running') {
     const left = daysLeft(f)
     return left === null

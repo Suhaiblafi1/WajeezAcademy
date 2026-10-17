@@ -405,7 +405,7 @@ export class TrainerPrepService {
     if (!ctx.pending) return { ctx, qualified: false }
     const { TrainerReviewService } = await import('./trainer-review.service')
     await new TrainerReviewService(this.prisma)
-      .qualifyForCourse(ctx.profileId, ctx.courseId, actorId, 'اعتمدت خطّة شعبة إعدادها', { quiet: opts.quiet })
+      .qualifyForCourse(ctx.profileId, ctx.courseId, actorId, 'اعتمدت خطّة شعبة إعدادها', { quiet: opts.quiet, activate: false })
     return { ctx, qualified: true }
   }
 
@@ -432,8 +432,9 @@ export class TrainerPrepService {
     )
   }
 
-  /** دوراتُه المقبولةُ كلُّها معتمَدة؟ — فيُفعَّل. وإلّا يُقال ما يمنع */
-  private async activateIfComplete(profileId: string, applicationId: string, actorId: string) {
+  /** دوراتُه المقبولةُ كلُّها معتمَدة؟ — فيُفعَّل. وإلّا يُقال ما يمنع.
+      وعامّةٌ منذ ١٧ أكتوبر ٢٠٢٦: يناديها التأهيلُ من أيّ باب (`activateWhenCoursesDone`) */
+  async activateIfComplete(profileId: string, applicationId: string, actorId: string) {
     const [pending, qualified] = await Promise.all([
       this.prisma.trainerCourseQualification.count({ where: { profileId, status: 'pending' } }),
       this.prisma.trainerCourseQualification.count({ where: { profileId, status: 'qualified' } }),

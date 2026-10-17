@@ -15,8 +15,9 @@ import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import {
-  CONTRACT_TABS, defaultTab, inTab, tabOfStatus, type ContractTabId,
+  CONTRACT_TABS, awaitsUs, defaultTab, inTab, tabOfStatus, type ContractTabId,
 } from '@/application/trainer/contract-tabs'
+import { contractNextStep } from '@/application/trainer/contract-next-step'
 import { statusColumns } from '../../../scripts/status-checks'
 
 /* ═══ ومن أين تُقرأ الحالات ═══
@@ -108,6 +109,63 @@ describe('والتبويبُ يفرز ما وُضع له', () => {
       expect(inTab('closed', st), `«${st}» ليست في «منتهية»`).toBe(true)
     }
     expect(inTab('closed', 'countersigned'), 'النافذُ عُدّ منتهيا').toBe(false)
+  })
+})
+
+/* ═══ والدورُ لا حالُ الورقة وحدَها (١٧ أكتوبر ٢٠٢٦) ═══
+   سأل صاحبُ المنصّة: «لما لم يظهر في ينتظرك؟ هناك العديد لا تظهر فيه وموجود بالكل» — عن
+   مدرّبٍ في «في طور الموادّ» وسمُه «انقضت مهلته — مدّد أو أنهِ». فما يقول وسمُه إنّه عليك
+   يسكن «ينتظرك»، ويعود إلى تبويب حالته حين يمضي. */
+describe('«ينتظرك» يتبع الوسمَ: ما عليك فيه', () => {
+  const NOW = new Date('2026-10-17T10:00:00Z')
+  const step = (o: Record<string, unknown>) => contractNextStep({
+    status: 'signature_approved', gatesActivation: true, documentNameAr: 'أحمد', signedNameAr: 'أحمد',
+    conditionDeadlineAt: '2026-10-07T00:00:00Z', conditionPausedAt: null, conditionMetAt: null, now: NOW, ...o,
+  })
+  const tabOfRow = (status: string, who: ReturnType<typeof step>['who']) =>
+    CONTRACT_TABS.filter((t) => t.id !== 'all' && inTab(t.id, status, awaitsUs(status, who))).map((t) => t.id)
+
+  it('⚠️ انقضت مهلتُه، أو أرسل موادَّه، أو اعتُمدت دوراتُه: في «ينتظرك» وحدَه', () => {
+    for (const o of [{}, { conditionPausedAt: '2026-10-05T00:00:00Z' }, { coursesReady: true }]) {
+      const s = step(o)
+      expect(s.who, JSON.stringify(o)).toBe('you')
+      expect(tabOfRow('signature_approved', s.who), JSON.stringify(o)).toEqual(['awaiting_you'])
+    }
+  })
+
+  it('ومهلتُه سائرةٌ ودوراتُه لم تكتمل: يبقى «في طور الموادّ»', () => {
+    const s = step({ conditionDeadlineAt: '2026-10-30T00:00:00Z' })
+    expect(s.who).toBe('them')
+    expect(tabOfRow('signature_approved', s.who)).toEqual(['materials'])
+  })
+
+  it('والمسودّةُ تبقى في «مسودّات» — لها تبويبُها', () => {
+    expect(awaitsUs('draft', 'you')).toBe(false)
+    expect(tabOfRow('draft', 'you')).toEqual(['drafts'])
+  })
+
+  it('والرابطُ المنقضي عليك — فهو في «ينتظرك» لا «ينتظرهم»', () => {
+    expect(tabOfRow('sent', 'you')).toEqual(['awaiting_you'])
+    expect(tabOfRow('sent', 'them')).toEqual(['awaiting_them'])
+  })
+
+  it('ولا عقدَ في تبويبَين، و«الكلّ» يسعه', () => {
+    for (const st of ['signed', 'sent', 'signature_approved', 'countersigned', 'draft', 'revoked']) {
+      for (const who of ['you', 'them', 'none'] as const) {
+        expect(tabOfRow(st, who).length, `${st}/${who}`).toBe(1)
+        expect(inTab('all', st, awaitsUs(st, who))).toBe(true)
+      }
+    }
+  })
+})
+
+/* والشاشةُ تسأل السؤالَ نفسَه في العدّ وفي العرض — فلا يقول التبويبُ «٣» ويعرض اثنين */
+describe('والشاشةُ تعدّ وتعرض بالدور', () => {
+  /* كلُّ سطرٍ ينادي `inTab(` — والاستيرادُ ليس نداء */
+  const calls = SCREEN.split('\n').filter((l) => l.includes('inTab(')).map((l) => l.trim())
+  it('⚠️ كلُّ نداءٍ لـ`inTab` في الشاشة يمرّر الدور', () => {
+    expect(calls.length, 'لم يُقرأ نداءٌ واحد').toBeGreaterThanOrEqual(2)
+    for (const c of calls) expect(c, `نداءٌ بلا دور: ${c}`).toMatch(/inTab\([^\n]*,\s*oursOf\(/)
   })
 })
 

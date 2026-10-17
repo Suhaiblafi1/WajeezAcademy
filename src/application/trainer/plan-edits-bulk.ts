@@ -131,6 +131,17 @@ export function dedupeSummaryAr(r: { cleaned: number; withdrawn: number; clean: 
    يُرفع الملفّ. وما سُمّي ولم يُختر يُقال باسمه ولا يُرفع الملفّ. */
 export const isPdfName = (name: string): boolean => /\.pdf$/i.test(name.trim())
 
+/* ═══ والاسمُ يُقابَل بصورته الواحدة (١٧ أكتوبر ٢٠٢٦) ═══
+   رُدّ ملفُّ تعديلاتٍ بـ«الملفات … ليس بين ما اخترته» والملفّاتُ مختارةٌ معه: الحزمةُ فُكّت في جهاز
+   ماك، فصارت الهمزةُ في «أمن» و«وتأمينها» حرفين (ا + ٔ) والاسمُ في الملفّ حرفٌ واحد — والعينُ لا
+   ترى فرقا. فيُقابَل الاسمان بعد ردّهما إلى صورةٍ واحدة (NFC)، ويُرفع الملفُّ باسمه في البند. */
+export const pdfKey = (name: string): string => name.normalize('NFC').trim()
+
+/** ملفّاتُ PDF المختارة — مفهرسةً بصورة الاسم الواحدة */
+export function pickedPdfs<F extends { name: string }>(picked: readonly F[]): Map<string, F> {
+  return new Map(picked.filter((f) => isPdfName(f.name)).map((f) => [pdfKey(f.name), f]))
+}
+
 /* ومرفقُ المهمّة الجديدُ مثلُها (١٧ أكتوبر ٢٠٢٦، `task_attachment`): PDF يُختار مع الملفّ ويُرفع من الباب نفسِه */
 const FILE_KINDS: readonly unknown[] = ['workbook_replace', 'task_attachment']
 

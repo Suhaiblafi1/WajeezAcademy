@@ -20,6 +20,8 @@
  * نفسِها، و«الكلّ» شبكةُ أمانٍ أخيرةٌ لا يسقط منها صفّ.
  */
 
+import type { NextStepWho } from './contract-next-step'
+
 /** تبويبٌ واحد — والحالاتُ فيه هي مِلاكُه */
 export interface ContractTab {
   id: ContractTabId
@@ -93,6 +95,17 @@ export const CONTRACT_TABS: readonly ContractTab[] = [
   },
 ]
 
+/* ═══ والدورُ علينا وإن لم تتغيّر حالُ الورقة (١٧ أكتوبر ٢٠٢٦) ═══
+
+   سأل صاحبُ المنصّة عن مدرّبٍ في «في طور الموادّ» عليه وسمُ «انقضت مهلته — مدّد أو أنهِ»:
+   «لما لم يظهر في ينتظرك؟ هناك العديد لا تظهر فيه وموجود بالكل». فالتبويبُ كان يقرأ حالَ
+   الورقة وحدَها، والوسمُ بجانب الاسم (`contractNextStep`) يقول إنّ الدورَ عليك — فافترقا.
+   فصار التبويبُ يقرأ الوسمَ نفسَه: ما يقول إنّه عليك يسكن «ينتظرك»، ويعود إلى تبويب حالته
+   حين يمضي. إلّا المسودّةَ: لها تبويبُها، وهي عملٌ لم يبدأ لا انتظار. */
+export function awaitsUs(status: string, who: NextStepWho): boolean {
+  return status !== 'draft' && who === 'you'
+}
+
 /** أيُّ تبويبٍ يسكنه هذا العقد — و«الكلّ» ليس جوابا، فهو يسع الجميع */
 export function tabOfStatus(status: string): Exclude<ContractTabId, 'all'> {
   for (const t of CONTRACT_TABS) {
@@ -104,9 +117,10 @@ export function tabOfStatus(status: string): Exclude<ContractTabId, 'all'> {
   return 'closed'
 }
 
-/** أيقعُ هذا العقدُ في هذا التبويب؟ */
-export function inTab(tab: ContractTabId, status: string): boolean {
+/** أيقعُ هذا العقدُ في هذا التبويب؟ — و`ours` (`awaitsUs`) يقدّمه إلى «ينتظرك» من أيّ تبويب */
+export function inTab(tab: ContractTabId, status: string, ours = false): boolean {
   if (tab === 'all') return true
+  if (ours) return tab === 'awaiting_you'
   return tabOfStatus(status) === tab
 }
 

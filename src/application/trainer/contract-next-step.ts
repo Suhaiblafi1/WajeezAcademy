@@ -29,6 +29,20 @@ export interface NextStepFacts extends ConditionFacts {
   now?: Date
 }
 
+/* ═══ وشرطٌ مفتوحٌ الدورُ فيه علينا (١٧ أكتوبر ٢٠٢٦) ═══
+   اعتُمدت دوراتُه كلُّها ولم يُفعَّل: فبالتفعيل نوقّع العقدَ ويتحقّق شرطُه — وكان الوسمُ يقول
+   «انقضت مهلتُه — مدِّدْ أو أنهِ» عن شرطٍ تحقّق (سؤالُ صاحب المنصّة عن مدرّبٍ دوراتُه الثلاثُ
+   معتمدة). ويصدق على العقد المختوم قبل ١ أكتوبر ٢٠٢٦ وشرطُه مفتوح، فيُسأل في الحالتين. */
+function openCondition(f: NextStepFacts, now: Date): NextStep | null {
+  if (!f.gatesActivation) return null
+  const phase = conditionPhase({ ...f, now })
+  if (phase === 'met') return null
+  if (f.coursesReady) return { textAr: 'اعتمدت دوراته كلها — فعّله ووقّع العقد', who: 'you' }
+  if (phase === 'under_review') return { textAr: 'أرسل شعبَه — راجِعْها واعتمِدْها', who: 'you' }
+  if (phase === 'lapsed') return { textAr: 'انقضت مهلتُه — مدِّدْ أو أنهِ', who: 'you' }
+  return null
+}
+
 const past = (d: string | Date | null | undefined, now: Date) =>
   d != null && new Date(d).getTime() < now.getTime()
 
@@ -49,14 +63,13 @@ export function contractNextStep(f: NextStepFacts): NextStep {
         : { textAr: 'وقّع — اعتمِدْ توقيعَه', who: 'you' }
     case 'signature_approved': {
       if (!f.gatesActivation) return { textAr: 'وقِّعْه حين تعتمد دوراتِه', who: 'you' }
-      const phase = conditionPhase({ ...f, now })
-      if (phase === 'under_review') return { textAr: 'أرسل شعبَه — راجِعْها واعتمِدْها', who: 'you' }
-      if (phase === 'lapsed') return { textAr: 'انقضت مهلتُه — مدِّدْ أو أنهِ', who: 'you' }
-      if (phase === 'met') return { textAr: 'اكتمل شرطُه — وقِّعْه', who: 'you' }
+      const open = openCondition(f, now)
+      if (open) return open
+      if (conditionPhase({ ...f, now }) === 'met') return { textAr: 'اكتمل شرطُه — وقِّعْه', who: 'you' }
       return { textAr: 'يُعِدّ شعبَ دوراته في «شعبي»', who: 'them' }
     }
     case 'countersigned':
-      return { textAr: 'نافذ — لا شيءَ عليك', who: 'none' }
+      return openCondition(f, now) ?? { textAr: 'نافذ — لا شيءَ عليك', who: 'none' }
     default:
       return { textAr: 'انتهى — لا خطوةَ بعده', who: 'none' }
   }

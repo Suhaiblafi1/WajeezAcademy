@@ -59,6 +59,31 @@ describe('الخطوةُ التالية تتبع من عليه الدور', () =
     expect(sa({ conditionDeadlineAt: '2026-10-01T00:00:00Z' }).textAr).toMatch(/انقضت/)
     expect(sa({ gatesActivation: false }).who).toBe('you')
   })
+
+  /* ═══ اعتُمدت دوراتُه كلُّها ولم يُفعَّل (١٧ أكتوبر ٢٠٢٦) ═══
+     سأل صاحبُ المنصّة عن مدرّبٍ دوراتُه الثلاثُ «معتمدة» ووسمُه «انقضت مهلته — مدّد أو أنهِ».
+     فالشرطُ تحقّق: يُقال «فعّله ووقّع العقد» لا مهلةٌ تُمدّ. */
+  it('⚠️ دوراتُه كلُّها معتمَدة: «فعّله ووقّع العقد» — لا «انقضت مهلتُه»', () => {
+    const lapsed = { status: 'signature_approved', conditionDeadlineAt: '2026-10-01T00:00:00Z' }
+    const ready = contractNextStep(base({ ...lapsed, coursesReady: true }))
+    expect(ready.who).toBe('you')
+    expect(ready.textAr).toMatch(/فعّله/)
+    expect(ready.textAr).not.toMatch(/انقضت/)
+    expect(contractNextStep(base({ ...lapsed, coursesReady: false })).textAr).toMatch(/انقضت/)
+    /* والمهلةُ السائرةُ مثلُها: الشرطُ تحقّق قبل أجله */
+    expect(contractNextStep(base({ status: 'signature_approved', conditionDeadlineAt: '2026-10-08T00:00:00Z', coursesReady: true })).who).toBe('you')
+    /* وما تحقّق شرطُه لا يُفعَّل ثانية */
+    expect(contractNextStep(base({ ...lapsed, coursesReady: true, conditionMetAt: '2026-10-02T00:00:00Z' })).textAr).not.toMatch(/فعّله/)
+  })
+
+  it('والمختومُ قبل ١ أكتوبر وشرطُه مفتوح: الدورُ عليك إن انقضت مهلتُه أو اعتُمدت دوراتُه', () => {
+    const cs = (o: Partial<NextStepFacts>) => contractNextStep(base({ status: 'countersigned', ...o }))
+    expect(cs({ conditionDeadlineAt: '2026-10-01T00:00:00Z' }).who).toBe('you')
+    expect(cs({ conditionDeadlineAt: '2026-10-08T00:00:00Z', coursesReady: true }).textAr).toMatch(/فعّله/)
+    expect(cs({ conditionDeadlineAt: '2026-10-08T00:00:00Z' }).who, 'مهلةٌ سائرةٌ على نافذٍ عُدّت عليك').toBe('none')
+    expect(cs({ conditionDeadlineAt: '2026-10-01T00:00:00Z', conditionMetAt: '2026-09-30T00:00:00Z' }).who).toBe('none')
+    expect(cs({ gatesActivation: false, conditionDeadlineAt: '2026-10-01T00:00:00Z' }).who).toBe('none')
+  })
 })
 
 describe('الصفُّ مطويٌّ شريطا في الشاشة', () => {

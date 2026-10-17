@@ -22,6 +22,7 @@ import { toast, toastError } from "@/components/Toast";
 import { apiGet, apiPost, permissionMessage } from "@/services/api";
 import type { CourseMaterials } from "@/application/trainer/course-materials";
 import { countAr } from "@/application/text/count-ar";
+import { fmtDate } from "@/application/text/format-ar";
 
 type PrepState = "to_decide" | "preparing" | "submitted" | "returned" | "approved" | "declined";
 
@@ -41,6 +42,17 @@ interface MaterialsRow {
   status: string;
   materials: CourseMaterials | null;
   missingAr: string[];
+  /** كيف اعتُمدت — شعبتُها أو تأهيلٌ مباشر، ومن ومتى (١٧ أكتوبر ٢٠٢٦، `approvalsOf`) */
+  approval?: { cohortId: string | null; cohortTitle: string | null; byAr: string | null; at: string | null } | null;
+}
+
+/* ═══ «هل قام بإعداد الشعب؟ هل اعتمدتُها أنا؟» (صاحب المنصّة، ١٧ أكتوبر ٢٠٢٦) ═══
+   وسمُ «معتمدة» وحدَه لا يفرّق بين خطّة شعبةٍ اعتُمدت وتأهيلٍ مباشرٍ بلا شعبة. فيُقال تحته
+   أيُّهما، ومن أهّله ومتى — نصٌّ قصيرٌ بلا تشكيل. */
+function approvalLineAr(a: NonNullable<MaterialsRow["approval"]>): string {
+  const how = a.cohortId ? `اعتمدت خطة شعبتها${a.cohortTitle ? ` «${a.cohortTitle}»` : ""}` : "اعتمدت له مباشرة — بلا شعبة ولا خطة";
+  const who = [a.byAr, a.at ? fmtDate(a.at) : null].filter(Boolean).join(" · ");
+  return who ? `${how} · ${who}` : how;
 }
 
 const STATE_AR: Record<PrepState, { label: string; tone: "warn" | "info" | "positive" | "neutral" | "accent" }> = {
@@ -165,9 +177,21 @@ export default function MaterialsReview({ profileId }: { profileId: string }) {
         })}
         {qualified.map((r) => (
           <li key={r.courseId}>
-            <Inset tone="default" className="flex flex-wrap items-center justify-between gap-2 p-3">
-              <p className="min-w-0 flex-1 text-read font-bold">{r.titleAr}</p>
-              <Chip tone="positive" srPrefixAr="الحال">معتمدة</Chip>
+            <Inset tone="default" className="p-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="min-w-0 flex-1 text-read font-bold">{r.titleAr}</p>
+                <Chip tone="positive" srPrefixAr="الحال">معتمدة</Chip>
+              </div>
+              {r.approval && (
+                <div className="mt-1 flex flex-wrap items-center gap-2">
+                  <p className="text-read text-muted-foreground">{approvalLineAr(r.approval)}</p>
+                  {r.approval.cohortId && (
+                    <Button as={Link} to={`/admin/cohorts?cohort=${r.approval.cohortId}`} size="sm" icon={ExternalLink}>
+                      افتح شعبتها
+                    </Button>
+                  )}
+                </div>
+              )}
             </Inset>
           </li>
         ))}
