@@ -1078,8 +1078,9 @@ export class TrainerReviewService {
           conditionExtensionsUsed: true,
         },
       })
+      /* ودوراتُه كلُّها معتمَدة؟ — فموادُّه حُكم فيها دورةً دورة (١٧ أكتوبر ٢٠٢٦، رأسُ `materialsGateProblemAr`) */
       const materialsProblem = openOffer
-        ? materialsGateProblemAr({ ...openOffer, now: new Date() })
+        ? materialsGateProblemAr({ ...openOffer, coursesReady: await this.allCoursesQualified(applicationId), now: new Date() })
         : null
       if (materialsProblem) {
         if (!(opts.actorRoles ?? []).includes('super_admin')) {
@@ -2318,11 +2319,41 @@ export class TrainerReviewService {
         select: { id: true, reference: true, fullName: true, email: true, status: true },
       }),
     ])
+    const ready = await this.coursesReadyFor(contracts)
     return {
-      contracts,
+      contracts: contracts.map((c) => ({ ...c, coursesReady: ready.has(c.id) })),
       candidates,
       missingLegal: missingAcademyLegalFields().map((f) => LEGAL_FIELD_LABELS_AR[f]),
     }
+  }
+
+  /* ═══ اعتُمدت دوراتُه كلُّها ولم يُفعَّل — فلم نوقّع عقدَه (١٧ أكتوبر ٢٠٢٦) ═══
+
+     سأل صاحبُ المنصّة عن مدرّبٍ دوراتُه الثلاثُ «معتمدة» وعقدُه يقول «لم يستوف الشروط بعد —
+     انقضت مهلته». والعلّةُ أنّ الشرطَ لا يتحقّق إلّا بالتفعيل (`completeConditionalOffer`)،
+     والتفعيلُ التلقائيُّ كان على مسلك اعتماد الخطّة وحدَه — فمن أُهِّل لدوراته من «التأهيل
+     والإسناد» أو من اللوح القديم بقي عقدُه ينتظر ما وقع. فيُقال للشاشة هنا: لا دورةَ معلّقة،
+     وفي يده معتمَدة، وحالُه تقبل التفعيل — وهو شرطُ `activateIfComplete` نفسُه. */
+  private async coursesReadyFor(contracts: {
+    id: string; status: string; gatesActivation: boolean; conditionMetAt: Date | null
+    profile: { id: string; application: { status: string } | null } | null
+  }[]): Promise<Set<string>> {
+    const open = contracts.filter((c) => c.gatesActivation && !c.conditionMetAt
+      && ['signature_approved', 'countersigned'].includes(c.status)
+      && c.profile?.application
+      && transitionProblemAr(c.profile.application.status as TrainerStatus, 'active') === null)
+    const profileIds = [...new Set(open.map((c) => c.profile!.id))]
+    if (profileIds.length === 0) return new Set()
+    const rows = await this.prisma.trainerCourseQualification.groupBy({
+      by: ['profileId', 'status'],
+      where: { profileId: { in: profileIds }, status: { in: ['pending', 'qualified'] } },
+      _count: { _all: true },
+    })
+    const count = (profileId: string, status: string) =>
+      rows.find((r) => r.profileId === profileId && r.status === status)?._count._all ?? 0
+    return new Set(open
+      .filter((c) => count(c.profile!.id, 'pending') === 0 && count(c.profile!.id, 'qualified') > 0)
+      .map((c) => c.id))
   }
 
   /** المتنُ المجمَّد وحدَه — يُقرأ عند السؤال: «أيَّ صياغةٍ وقّع؟» */
@@ -5632,7 +5663,7 @@ export class TrainerReviewService {
 
   /** و`quiet`: حين يُقال التأهيلُ في خبر القرار الذي أوقعه (اعتمادُ خطّة شعبة الإعداد
       — `TrainerPrepService.qualifyOnApproval`) فلا يصله عن القرار الواحد خبران */
-  async qualifyForCourse(profileId: string, courseId: string, actorId: string, note?: string, opts: { quiet?: boolean } = {}) {
+  async qualifyForCourse(profileId: string, courseId: string, actorId: string, note?: string, opts: { quiet?: boolean; activate?: boolean } = {}) {
     const profile = await this.requireLiveProfile(profileId)
     const course = await this.prisma.course.findUnique({ where: { id: courseId } })
     if (!course) throw new AuthError('unknown_course', 'الدورة غير موجودة في الكتالوج')
@@ -5653,7 +5684,36 @@ export class TrainerReviewService {
         data: { courseId },
       })
     }
+    if (opts.activate !== false) await this.activateWhenCoursesDone(profileId, actorId)
     return q
+  }
+
+  /** لا دورةَ معلّقة وفي يده معتمَدة — شرطُ `activateIfComplete` نفسُه */
+  private async allCoursesQualified(applicationId: string): Promise<boolean> {
+    const profile = await this.prisma.trainerProfile.findUnique({ where: { applicationId }, select: { id: true } })
+    if (!profile) return false
+    const [pending, qualified] = await Promise.all([
+      this.prisma.trainerCourseQualification.count({ where: { profileId: profile.id, status: 'pending' } }),
+      this.prisma.trainerCourseQualification.count({ where: { profileId: profile.id, status: 'qualified' } }),
+    ])
+    return pending === 0 && qualified > 0
+  }
+
+  /* ═══ وآخرُ دوراته يفعّله من أيّ باب اعتُمد (١٧ أكتوبر ٢٠٢٦) ═══
+
+     كان التفعيلُ التلقائيُّ — ومعه توقيعُنا العقدَ وتحقّقُ شرطه — على مسلك اعتماد الخطّة
+     وحدَه (`activateOnApproval`). فمن أُهِّل لآخر دوراته من «التأهيل والإسناد» أو من اللوح
+     القديم بقي في التهيئة، وعقدُه يقول «نوقّعه حين تُعتمَد دوراتُه» وقد اعتُمدت، ومهلتُه
+     تنقضي على شرطٍ تحقّق. وهو ما رآه صاحبُ المنصّة في عقد مدرّبٍ دوراتُه الثلاثُ معتمدة.
+     فيُسأل هنا السؤالُ نفسُه (`activateIfComplete`): لا معلّقَ وفي يده معتمَد. ومسلكُ الخطّة
+     يمرّر `activate: false` لأنّه يفعّل بعد خبر الاعتماد بترتيبه. */
+  private async activateWhenCoursesDone(profileId: string, actorId: string) {
+    const profile = await this.prisma.trainerProfile.findUnique({
+      where: { id: profileId }, select: { applicationId: true, application: { select: { status: true } } },
+    })
+    if (profile?.application.status !== 'onboarding') return
+    const { TrainerPrepService } = await import('./trainer-prep.service')
+    await new TrainerPrepService(this.prisma).activateIfComplete(profileId, profile.applicationId, actorId)
   }
 
   /* ─────────── طلبُ التأهيل من الشعبة ───────────
@@ -5885,6 +5945,7 @@ export class TrainerReviewService {
       body: `أضيفت «${await this.courseTitleAr(q.courseId)}» إلى دوراتك — وتصلك شعبها حين تسند إليك.`,
       data: { courseId: q.courseId },
     })
+    await this.activateWhenCoursesDone(q.profileId, actorId)
 
     let assigned = false
     let assignNote: string | null = null

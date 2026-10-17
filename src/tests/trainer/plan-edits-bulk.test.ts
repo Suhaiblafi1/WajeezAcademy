@@ -2,7 +2,7 @@
    وكم بندا فيه. وما لا يُقرأ يعود بسببه لا يرمي — فلا يوقف ما بعده من الدفعة. */
 
 import { describe, expect, it } from 'vitest'
-import { BULK_MODE_AR, BULK_MODES, bulkSummaryAr, bulkUploadPath, DEDUPE_ALL_AR, dedupeSummaryAr, editFilePath, isPdfName, KEEP_LATEST_ALL_PATH, KEEP_LATEST_AR, keepLatestPath, missingWorkbooksAr, withWorkbookKeys, workbookFilesNeeded, keptLatestAr, readEditsFile, replacedLineAr, uploadedLineAr, withdrawnLineAr } from '@/application/trainer/plan-edits-bulk'
+import { BULK_MODE_AR, BULK_MODES, bulkSummaryAr, bulkUploadPath, DEDUPE_ALL_AR, dedupeSummaryAr, editFilePath, isPdfName, KEEP_LATEST_ALL_PATH, pdfKey, pickedPdfs, KEEP_LATEST_AR, keepLatestPath, missingWorkbooksAr, withWorkbookKeys, workbookFilesNeeded, keptLatestAr, readEditsFile, replacedLineAr, uploadedLineAr, withdrawnLineAr } from '@/application/trainer/plan-edits-bulk'
 
 const PLAN = '7c1a3a52-2a7e-4a36-9a43-0d1d2b6b8f10'
 const file = (over: Record<string, unknown> = {}) => JSON.stringify({
@@ -163,5 +163,29 @@ describe('الكرّاسات المصحّحة مع ملف التعديلات (١
     expect(missingWorkbooksAr(['أ.pdf'])).toBe('الملف «أ.pdf» ليس بين ما اخترته — اختره مع ملف التعديلات')
     expect(missingWorkbooksAr(['أ.pdf', 'ب.pdf'])).toMatch(/^الملفات «أ.pdf»، «ب.pdf»/)
     expect(missingWorkbooksAr(['أ.pdf'])).not.toMatch(/[\u064B-\u0650\u0652]/)
+  })
+})
+
+/* ═══ الكرّاسةُ المختارةُ تُعرف ولو فُكّت في ماك (١٧ أكتوبر ٢٠٢٦) ═══
+   رُدّ ملفُّ حفصة بـ«ليس بين ما اخترته» والملفّاتُ مختارة: الاسمُ في البند حرفُ همزةٍ واحد (NFC)،
+   والملفُّ بعد الفكّ حرفان (NFD) — والعينُ لا ترى فرقا. */
+describe('اسمُ الـPDF يقابَل بصورته الواحدة', () => {
+  const name = 'أمن الشبكات — الكراسة.pdf'
+  const mac = name.normalize('NFD')
+
+  it('المسحُ صادق: الاسمان مختلفان حرفا ومتّفقان قراءة', () => {
+    expect(mac === name).toBe(false)
+    expect(mac.normalize('NFC')).toBe(name)
+  })
+
+  it('⚠️ ملفٌّ اسمُه بصورة ماك يُعرف باسم البند', () => {
+    const pdfs = pickedPdfs([{ name: mac }, { name: 'ملف.json' }])
+    expect(pdfs.has(pdfKey(name)), 'لم يُعرف الملفُّ المختار').toBe(true)
+    expect(pdfs.get(pdfKey(name))?.name).toBe(mac)
+    expect(pdfs.size, 'عُدّ ملفُّ التعديلات كرّاسة').toBe(1)
+  })
+
+  it('والفراغُ في الطرفين لا يُفرّق', () => {
+    expect(pdfKey(` ${mac} `)).toBe(pdfKey(name))
   })
 })

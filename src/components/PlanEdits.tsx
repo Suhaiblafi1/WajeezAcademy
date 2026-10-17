@@ -15,7 +15,7 @@ import { Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import Chip from "@/components/ui/Chip";
 import type { EditView, PlanEditStatus } from "@/application/trainer/plan-edits";
-import { BULK_MODE_AR, BULK_MODES, bulkSummaryAr, bulkUploadPath, DEDUPE_ALL_AR, dedupeSummaryAr, editFilePath, isPdfName, KEEP_LATEST_ALL_PATH, KEEP_LATEST_AR, keepLatestPath, missingWorkbooksAr, withWorkbookKeys, workbookFilesNeeded, keptLatestAr, readEditsFile, replacedLineAr, uploadedLineAr, withdrawnLineAr, type BulkMode } from "@/application/trainer/plan-edits-bulk";
+import { BULK_MODE_AR, BULK_MODES, bulkSummaryAr, bulkUploadPath, DEDUPE_ALL_AR, dedupeSummaryAr, editFilePath, isPdfName, KEEP_LATEST_ALL_PATH, pdfKey, pickedPdfs, KEEP_LATEST_AR, keepLatestPath, missingWorkbooksAr, withWorkbookKeys, workbookFilesNeeded, keptLatestAr, readEditsFile, replacedLineAr, uploadedLineAr, withdrawnLineAr, type BulkMode } from "@/application/trainer/plan-edits-bulk";
 import { GapList, NoteSubs } from "@/components/LongText";
 import { gapLayout } from "@/application/trainer/text-layout";
 
@@ -436,7 +436,7 @@ export function PlanEditsBulkUpload({ plans, onUploaded, onOpen }: {
     setResults([]); setSummary("");
     const out: BulkResult[] = [];
     /* والكرّاساتُ المصحّحةُ (PDF) تُختار معها — لا تُعدّ ملفّاتٍ تُرفع وحدَها، بل تُرفع مع بندها (`workbookFilesNeeded`) */
-    const pdfs = new Map(picked.filter((f) => isPdfName(f.name)).map((f) => [f.name.trim(), f]));
+    const pdfs = pickedPdfs(picked);
     const files = picked.filter((f) => !isPdfName(f.name));
     for (const [i, file] of files.entries()) {
       setProgress(`${i + 1} من ${files.length}`);
@@ -448,11 +448,11 @@ export function PlanEditsBulkUpload({ plans, onUploaded, onOpen }: {
         try {
           let okAr = uploadedLineAr(read.count, read.required);
           const needed = workbookFilesNeeded(read.body);
-          const missing = needed.filter((n) => !pdfs.has(n));
+          const missing = needed.filter((n) => !pdfs.has(pdfKey(n)));
           if (missing.length) throw new Error(missingWorkbooksAr(missing));
           const keys: Record<string, string> = {};
           for (const n of needed) {
-            const pdf = pdfs.get(n)!;
+            const pdf = pdfs.get(pdfKey(n))!;
             const up = await apiPost<{ storageKey: string; uploadUrl: string; maxBytes: number }>(
               editFilePath(read.planId), { mime: "application/pdf", originalName: n });
             await putSigned(up.uploadUrl, pdf, up.maxBytes);

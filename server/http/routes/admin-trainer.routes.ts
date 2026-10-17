@@ -888,7 +888,10 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     schema: { tags: ['admin-trainers'], summary: 'موادّ دورات المدرّب قيد الإعداد والمعتمدة' },
   }, async (req) => {
     const { profileId } = z.object({ profileId: z.string().uuid() }).parse(req.params)
-    return new TrainerMaterialsService(prisma).forProfile(profileId)
+    const svc = new TrainerMaterialsService(prisma)
+    /* وكيف اعتُمدت كلُّ دورةٍ معتمَدة — شعبتُها أو تأهيلٌ مباشر، ومن ومتى (١٧ أكتوبر ٢٠٢٦) */
+    const [rows, approvals] = await Promise.all([svc.forProfile(profileId), svc.approvalsOf(profileId)])
+    return rows.map((r) => ({ ...r, approval: approvals[r.courseId] ?? null }))
   })
 
   /* ─────────── طلبُ التأهيل من الشعبة ───────────

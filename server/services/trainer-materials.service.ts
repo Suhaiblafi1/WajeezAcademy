@@ -36,6 +36,15 @@ export interface CourseMaterialsRow {
   missingAr: string[]
 }
 
+/** كيف اعتُمدت الدورةُ له — شعبتُها إن اعتُمدت خطّتُها، ومن أهّله ومتى (`approvalsOf`) */
+export interface CourseApproval {
+  cohortId: string | null
+  cohortTitle: string | null
+  byAr: string | null
+  at: string | null
+  noteAr: string | null
+}
+
 const LIVE = ['pending', 'qualified'] as const
 
 export class TrainerMaterialsService {
@@ -90,6 +99,58 @@ export class TrainerMaterialsService {
         missingAr: materialsMissingAr(materials),
       }
     })
+  }
+
+  /* ═══ كيف اعتُمدت كلُّ دورة — للإدارة وحدَها (١٧ أكتوبر ٢٠٢٦) ═══
+
+     سأل صاحبُ المنصّة عن مدرّبٍ دوراتُه «معتمدة» وعقدُه ينتظرها: «هل قام بإعداد الشعب؟ هل
+     اعتمدتُها أنا؟». ووسمُ «معتمدة» يصدق على طريقين لا يفرّق بينهما: خطّةُ شعبةٍ اعتُمدت
+     (`qualifyOnApproval`)، أو تأهيلٌ مباشرٌ بلا شعبة («التأهيل والإسناد» أو اللوح القديم).
+     فيُقال لكلّ دورةٍ معتمَدة: شعبتُها التي اعتُمدت خطّتُها إن كانت، ومن أهّله ومتى من الأثر.
+     ولا يخرج من مسار المدرّب (`mine`): اسمُ الموظّف للإدارة. */
+  async approvalsOf(profileId: string): Promise<Record<string, CourseApproval>> {
+    const quals = await this.prisma.trainerCourseQualification.findMany({
+      where: { profileId, status: 'qualified' },
+      select: { courseId: true, qualifiedBy: true, note: true },
+    })
+    if (quals.length === 0) return {}
+    const courseIds = quals.map((q) => q.courseId)
+    const [cohorts, events] = await Promise.all([
+      this.prisma.cohort.findMany({
+        where: {
+          courseId: { in: courseIds }, status: { not: 'cancelled' },
+          trainers: { some: { profileId, role: 'lead' } },
+          plans: { some: { trainerId: { not: null }, status: { in: ['approved', 'published'] } } },
+        },
+        orderBy: { createdAt: 'asc' },
+        select: { id: true, title: true, courseId: true },
+      }),
+      this.prisma.auditEvent.findMany({
+        where: { action: 'trainer.qualify', entityType: 'trainer_profile', entityId: profileId },
+        orderBy: { createdAt: 'desc' },
+        select: { actorId: true, createdAt: true, meta: true },
+      }),
+    ])
+    const lastEvent = (courseId: string) =>
+      events.find((e) => (e.meta as { courseId?: unknown } | null)?.courseId === courseId) ?? null
+    const actorIds = [...new Set(quals.map((q) => lastEvent(q.courseId)?.actorId ?? q.qualifiedBy).filter((x): x is string => Boolean(x)))]
+    const users = actorIds.length
+      ? await this.prisma.user.findMany({ where: { id: { in: actorIds } }, select: { id: true, displayName: true } })
+      : []
+    const out: Record<string, CourseApproval> = {}
+    for (const q of quals) {
+      const cohort = cohorts.find((c) => c.courseId === q.courseId) ?? null
+      const ev = lastEvent(q.courseId)
+      const by = ev?.actorId ?? q.qualifiedBy
+      out[q.courseId] = {
+        cohortId: cohort?.id ?? null,
+        cohortTitle: cohort?.title ?? null,
+        byAr: users.find((u) => u.id === by)?.displayName ?? null,
+        at: ev?.createdAt.toISOString() ?? null,
+        noteAr: q.note ?? null,
+      }
+    }
+    return out
   }
 
   /** وحالُ الطور معها: ما أُعلن اكتمالُه يُقرأ ولا يُعدَّل حتّى يُردّ */

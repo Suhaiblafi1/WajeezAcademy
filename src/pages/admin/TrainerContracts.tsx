@@ -59,7 +59,7 @@ import { paginate } from "@/application/admin/paginate";
 import { matchesQuery } from "@/application/text/search-ar";
 import TabBar from "@/components/ui/TabBar";
 import {
-  CONTRACT_TABS, defaultTab, inTab, type ContractTabId,
+  CONTRACT_TABS, awaitsUs, defaultTab, inTab, type ContractTabId,
 } from "@/application/trainer/contract-tabs";
 import MaterialsReview from "./TrainerMaterialsReview";
 import DeclineReply from "@/components/admin/DeclineReply";
@@ -139,6 +139,8 @@ interface ContractRow {
   conditionExtendedAt: string | null; conditionExtensionsUsed?: number | null;
   conditionMetAt: string | null;
   orientationAt: string | null;
+  /** دوراتُه كلُّها معتمَدةٌ ولم يُفعَّل — فبالتفعيل نوقّع العقد (١٧ أكتوبر ٢٠٢٦، `coursesReadyFor`) */
+  coursesReady?: boolean;
   documents: { id: string; kind: string; originalName: string; mime: string; uploadedAt: string }[];
   qualifiedSnapshot: { courseId: string; titleAr: string }[] | null;
   profile: { id: string; legalNameAr: string | null; suspendedAt?: string | null; application: { id: string; reference: string; fullName: string; email: string; status: string } | null } | null;
@@ -317,6 +319,7 @@ const conditionFactsOf = (c: ContractRow) => ({
   conditionExtendedAt: c.conditionExtendedAt,
   conditionExtensionsUsed: c.conditionExtensionsUsed,
   conditionMetAt: c.conditionMetAt,
+  coursesReady: c.coursesReady,
 });
 
 interface Prefill {
@@ -375,6 +378,12 @@ const nextStepOf = (c: ContractRow) => contractNextStep({
   ...conditionFactsOf(c), status: c.status, gatesActivation: c.gatesActivation,
   tokenExpiresAt: c.tokenExpiresAt, ...namesOf(c),
 });
+/** أعلينا الدورُ فيه؟ — الوسمُ نفسُه يقرّر تبويبَ «ينتظرك» (`awaitsUs`) */
+const oursOf = (c: ContractRow) => awaitsUs(c.status, nextStepOf(c).who);
+
+/** ما يُقال حين تُعتمَد دوراتُه كلُّها ولم يُفعَّل (`readyBlock`) — نصٌّ قصيرٌ بلا تشكيل */
+const READY_TITLE_AR = "اعتمدت دوراته كلها — بقي تفعيله";
+const READY_WHAT_AR = "شرطه تحقق، فلا مهلة تمدد. بالتفعيل يصير مدربا نشطا، ونوقع عقده عن الأكاديمية، ويصله بريد بذلك.";
 
 /** وجهةُ خطإ المركِّب — ليست معرّفَ صفٍّ، فلا يلتبس بعقدٍ في القائمة */
 const COMPOSE_ERR = "__compose__";
@@ -573,7 +582,7 @@ export default function TrainerContracts() {
     for (const g of groups) {
       n.all += 1;
       for (const t of CONTRACT_TABS) {
-        if (t.id !== "all" && inTab(t.id, g.head.status)) n[t.id] += 1;
+        if (t.id !== "all" && inTab(t.id, g.head.status, oursOf(g.head))) n[t.id] += 1;
       }
     }
     return n;
@@ -590,7 +599,7 @@ export default function TrainerContracts() {
        يريد ما آل إليه أمرُه، لا «لا نتائج». */
     return paginate(
       groups
-        .filter((g) => inTab(activeTab, g.head.status))
+        .filter((g) => inTab(activeTab, g.head.status, oursOf(g.head)))
         .filter((g) => hit(g.head) || g.past.some(hit)),
       contractPage, 10,
     );
@@ -835,6 +844,33 @@ export default function TrainerContracts() {
     );
   };
 
+  /* ═══ اعتُمدت دوراتُه كلُّها ولم يُفعَّل — «فعّله ووقّع العقد» (١٧ أكتوبر ٢٠٢٦) ═══
+
+     سأل صاحبُ المنصّة عن مدرّبٍ دوراتُه الثلاثُ «معتمدة» وعقدُه يقول «لم يستوف الشروط بعد —
+     انقضت مهلته». فالشرطُ تحقّق، والذي بقي التفعيلُ: به يختم الخادمُ العقدَ ويكتب تحقّقَ
+     الشرط (`completeConditionalOffer`). فيُقال ذلك ويُعرض زرُّه هنا حيث يُرى السؤال، لا
+     مهلةٌ تُمدّ على شرطٍ تحقّق. والبوّابةُ في الخادم كما هي: ما يمنع التفعيلَ يُقال بنصّه. */
+  const readyBlock = (c: ContractRow) => {
+    const appId = c.profile?.application?.id;
+    return (
+      <div className="mt-3 grid gap-2">
+        <p className="text-read leading-6 text-muted-foreground">{READY_WHAT_AR}</p>
+        {appId && (
+          <div>
+            <Button tone="confirm" icon={BadgeCheck} loading={busy}
+              onClick={() => void run(async () => {
+                await apiPost(`/api/admin/trainer-applications/${appId}/decision`,
+                  { action: "activate", note: "اعتمدت دوراته كلها — فعّل من شاشة العقود" });
+                await load();
+              }, "فعّل، ووقّعنا عقده — واكتمل شرطه", c.id)}>
+              فعّله ووقّع العقد
+            </Button>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   /* ═══ طورُ الموادّ على العقد — يُعرض موقَّعا ومعتمَدا معا (٣٠ سبتمبر ٢٠٢٦) ═══
 
      كان هذا اللوحُ داخلَ كتلة «وقّعه صاحبُه» وحدَها، والمهلةُ في المسار
@@ -843,14 +879,14 @@ export default function TrainerContracts() {
      يحتاجه، وبقي من أعلن اكتمالَ موادّه معلَّقا. فصار دالّةً تُنادى في الحالين. */
   const conditionBlock = (c: ContractRow) => (
 c.gatesActivation
-                          && conditionPhase(conditionFactsOf(c)) !== "none"
-                          && conditionPhase(conditionFactsOf(c)) !== "met" ? (
+                          && conditionPhase(conditionFactsOf(c)) !== "met"
+                          && (conditionPhase(conditionFactsOf(c)) !== "none" || c.coursesReady) ? (
                           <Inset className="mt-3 px-4 py-3">
                             <p className="text-read font-black text-foreground">
-                              {CONDITION_PHASE_LABELS_AR[conditionPhase(conditionFactsOf(c))]}
+                              {c.coursesReady ? READY_TITLE_AR : CONDITION_PHASE_LABELS_AR[conditionPhase(conditionFactsOf(c))]}
                             </p>
                             {c.profile?.id && <MaterialsReview profileId={c.profile.id} />}
-                            {c.conditionPausedAt ? (
+                            {c.coursesReady ? readyBlock(c) : c.conditionPausedAt ? (
                               <>
                                 <p className="mt-1 text-read leading-6 text-muted-foreground">
                                   أعلن اكتمالَ موادّه في {fmtDateTime(c.conditionPausedAt)}، ومهلتُه
