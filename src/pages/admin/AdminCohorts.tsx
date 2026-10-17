@@ -42,6 +42,12 @@ interface RescheduleRow {
   session: { id: string; title: string; cohort: { id: string; title: string } };
 }
 
+/* طلبُ نقل شعبةٍ إلى فصلٍ آخر — من المدرّب، ولا يقع إلّا باعتمادك (١٧ أكتوبر ٢٠٢٦) */
+interface MoveRow {
+  id: string; cohortId: string; cohortTitle: string; learners: number; requester: string; reason: string;
+  fromAr: string | null; toAr: string; fromStartsAt: string | null; newStartsAt: string | null;
+}
+
 interface CohortRow {
   id: string; title: string; status: string; courseId: string; courseTitle: string;
   startsAt: string | null; endsAt: string | null; daysOfWeek: string[]; startTime: string | null;
@@ -105,6 +111,7 @@ export default function AdminCohorts() {
   const [enrollLearner, setEnrollLearner] = useState<LearnerHit | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [reschedules, setReschedules] = useState<RescheduleRow[]>([]);
+  const [moves, setMoves] = useState<MoveRow[]>([]);
   /* الفلاتر الأربعة — قرارُ صاحب المنصّة: «فلاتر: المدرّب، التاريخ، المجال،
      الحالة». والقائمةُ تطول بطول الكتالوج (٨١ دورة)، فبلا فرزٍ يُقرأ الجدولُ
      بالتمرير لا بالسؤال. */
@@ -120,13 +127,14 @@ export default function AdminCohorts() {
   const load = useCallback(async () => {
     setLoading(true); setOffline(null);
     try {
-      const [cohortRows, courseRows, rsRows, termRows] = await Promise.all([
+      const [cohortRows, courseRows, rsRows, termRows, moveRows] = await Promise.all([
         apiGet<CohortRow[]>("/api/admin/cohorts"),
         apiGet<CourseOption[]>("/api/admin/catalog/courses"),
         /* اقتراحات التأجيل لا تُسقط الصفحة: غيابها أهون من شعبٍ لا تُدار */
         apiGet<RescheduleRow[]>("/api/admin/session-reschedules").catch(() => [] as RescheduleRow[]),
         /* والمواسمُ كذلك: الشعبةُ تُولَد بفصلها منذ ١٧ سبتمبر ٢٠٢٦ */
         apiGet<WizardTerm[]>("/api/admin/terms?all=true").catch(() => [] as WizardTerm[]),
+        apiGet<MoveRow[]>("/api/admin/cohort-moves").catch(() => [] as MoveRow[]),
       ]);
       setRows(cohortRows);
       /* ═══ رابطٌ إلى شعبةٍ بعينها: `?cohort=<id>` (٢ أكتوبر ٢٠٢٦) ═══
@@ -150,6 +158,7 @@ export default function AdminCohorts() {
       }
       setCourses(courseRows.filter((c) => c.status === "published"));
       setReschedules(rsRows);
+      setMoves(moveRows);
       setTerms(termRows);
     } catch (err) {
       setOffline(err instanceof ApiError ? err.message : "الخادم غير متصل — شغّل واجهة API أولا");
@@ -185,6 +194,13 @@ export default function AdminCohorts() {
     act(
       () => apiPost(`/api/admin/session-reschedules/${id}/review`, { action, comment: rsComment[id]?.trim() || undefined }),
       action === "approve" ? "اعتمد الموعد الجديد — وأخبر المتعلّمون" : "لم يعتمد الاقتراح — ووصل المدرب تعليقك",
+    );
+
+  /* ونقلُ الشعبة كلّها — الاعتمادُ يحرّك مواعيدَها ويبلّغ المتعلّمين */
+  const reviewMove = (id: string, action: "approve" | "reject") =>
+    act(
+      () => apiPost(`/api/admin/cohort-moves/${id}/review`, { action, comment: rsComment[id]?.trim() || undefined }),
+      action === "approve" ? "نقلت الشعبة — وأخبر المتعلّمون والمدرب" : "لم ينقل — ووصل المدرب تعليقك",
     );
 
   /* «افتح الشعبة» — وما ردّ به يُقال بجانبه، وتُقرأ الشروطُ بعده كما صارت */
@@ -285,6 +301,45 @@ export default function AdminCohorts() {
           المدرب يقترح والإدارة تعتمد — وهو القرار المتّفق عليه. والموعد لا
           يتبدّل عند المتعلّمين قبل الاعتماد، فما هنا ينتظر قرارا لا علما.
           وموضعه أعلى الصفحة لأنّ ما ينتظر قرارا يسبق ما يُنشأ. */}
+      {moves.length > 0 && (
+        <Panel tone="warn" className="mb-6">
+          <h2 className="flex items-center gap-2 text-sm font-black text-gold-ink">
+            <CalendarClock className="h-4 w-4" /> طلبات نقل شعب إلى فصل آخر ({moves.length})
+          </h2>
+          <div className="mt-4 space-y-3">
+            {moves.map((m) => (
+              <Card key={m.id} className="bg-paper/25">
+                <p className="text-sm font-bold">{m.cohortTitle}</p>
+                <p className="mt-0.5 text-read text-muted-foreground">طلبه {m.requester} · فيها {m.learners} متعلّما</p>
+                <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-1.5 text-xs">
+                  <span className="text-muted-foreground">الآن: <span className="text-foreground">{m.fromAr ?? "بلا فصل"}{m.fromStartsAt ? ` · ${fmtDateTimeAr(m.fromStartsAt)}` : ""}</span></span>
+                  <span className="text-gold-ink">إلى: <span className="font-bold">{m.toAr}{m.newStartsAt ? ` · ${fmtDateTimeAr(m.newStartsAt)}` : ""}</span></span>
+                </div>
+                <Inset as="p" className="mt-2.5 px-3 py-2 text-read leading-6 text-foreground">{m.reason}</Inset>
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <input
+                    aria-label={`تعليق على طلب نقل ${m.cohortTitle}`}
+                    value={rsComment[m.id] ?? ""}
+                    onChange={(e) => setRsComment((prev) => ({ ...prev, [m.id]: e.target.value }))}
+                    placeholder="تعليقك — يصل المدرب مع القرار"
+                    className={`${staffControlCls} min-w-0 flex-1`}
+                  />
+                  <Button tone="confirm" type="button" disabled={busy} onClick={() => void reviewMove(m.id, "approve")}>
+                    انقل الشعبة
+                  </Button>
+                  <Button tone="danger" type="button" disabled={busy} onClick={() => void reviewMove(m.id, "reject")}>
+                    لا أنقلها
+                  </Button>
+                </div>
+              </Card>
+            ))}
+          </div>
+          <p className="mt-3 text-read leading-relaxed text-muted-foreground">
+            النقل يحرّك كل مواعيد الشعبة بأسابيع كاملة، ويبلّغ المتعلّمين بالجرس والبريد. والرفض يبقيها كما هي.
+          </p>
+        </Panel>
+      )}
+
       {reschedules.length > 0 && (
         <Panel tone="warn" className="mb-6">
           <h2 className="flex items-center gap-2 text-sm font-black text-gold-ink">

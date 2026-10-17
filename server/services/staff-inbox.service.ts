@@ -110,6 +110,21 @@ export class StaffInboxService {
         sample: proposals.map((r) => `${r.session.cohort.title} — ${r.session.title}`),
       })
 
+      /* ── طلباتُ نقل شعبةٍ إلى فصلٍ آخر — لا يتغيّر موعدٌ حتّى تُعتمد ── */
+      const moves = await this.prisma.cohortMoveRequest.findMany({
+        where: { status: 'pending' }, orderBy: { createdAt: 'asc' }, take: 5,
+        select: { cohort: { select: { title: true } } },
+      })
+      push({
+        key: 'cohort_moves',
+        titleAr: 'طلبات نقل شعب تنتظر قرارك',
+        whyAr: 'المدرّب طلب نقل شعبته إلى فصل آخر — لا يتغيّر شيء حتّى تعتمده',
+        count: await this.prisma.cohortMoveRequest.count({ where: { status: 'pending' } }),
+        href: '/admin/cohorts',
+        severity: 'urgent',
+        sample: moves.map((m) => m.cohort.title),
+      })
+
       /* ── شعبٌ جلستُها قريبةٌ وناقصةٌ ──
          مدرّبٌ غائبٌ أو رابطٌ غائبٌ يومَ الجلسة عطبٌ يراه المتعلّم لا نحن. */
       const soon = await this.prisma.cohortSession.findMany({

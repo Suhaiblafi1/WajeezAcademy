@@ -27,6 +27,7 @@ import { Panel, Card } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import ProgressRing from "@/components/ui/ProgressRing";
 import { usePrepCohorts } from "@/components/trainer/usePrepCohorts";
+import CohortMoveBox, { type MoveRequestRow } from "@/components/trainer/CohortMoveBox";
 
 interface CohortSummary {
   id: string; title: string; courseTitle: string; role: string; status: string;
@@ -53,6 +54,8 @@ const PLAN_AR: Record<string, { label: string; tone: "default" | "accent" | "pos
 
 export default function CohortBoard() {
   const [rows, setRows] = useState<CohortSummary[]>([]);
+  /* طلباتُ نقل الشعب إلى فصلٍ آخر — المعلَّقُ منها يُرى في بطاقته (١٧ أكتوبر ٢٠٢٦) */
+  const [moves, setMoves] = useState<MoveRequestRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [offline, setOffline] = useState<string | null>(null);
   /* شعبُ الإعداد تُوسَم — لا متعلّمين فيها ولا تُنشَر (٢ أكتوبر ٢٠٢٦) */
@@ -60,7 +63,13 @@ export default function CohortBoard() {
 
   const load = useCallback(async () => {
     setLoading(true); setOffline(null);
-    try { setRows(await apiGet<CohortSummary[]>("/api/trainer/cohorts/summary")); }
+    try {
+      const [summary, mine] = await Promise.all([
+        apiGet<CohortSummary[]>("/api/trainer/cohorts/summary"),
+        apiGet<MoveRequestRow[]>("/api/trainer/cohort-moves").catch(() => [] as MoveRequestRow[]),
+      ]);
+      setRows(summary); setMoves(mine);
+    }
     catch (err) { setOffline(err instanceof ApiError ? err.message : "الخادم غير متصل"); }
     finally { setLoading(false); }
   }, []);
@@ -136,6 +145,13 @@ export default function CohortBoard() {
                       : <span><span className="font-bold text-foreground">التالي:</span> {c.next.labelAr}</span>
                     : <span className="font-bold text-teal-light-ink">التجهيز مكتمل — الشعبة في التشغيل.</span>}
                 </p>
+
+                {/* نقلُها إلى فصلٍ آخر — طلبٌ للإدارة لا تغييرٌ من هنا */}
+                {!prepIds.has(c.id) && (
+                  <CohortMoveBox cohortId={c.id} status={c.status} startsAt={c.startsAt}
+                    pending={moves.find((m) => m.cohortId === c.id && m.status === "pending") ?? null}
+                    onChange={() => void load()} />
+                )}
 
                 <Link to={`/trainer/cohort/${c.id}`} className="mt-4 inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-teal-deep px-5 text-sm font-black text-white transition hover:bg-teal-darker">
                   افتح الشعبة
