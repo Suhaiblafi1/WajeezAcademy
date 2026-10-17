@@ -103,7 +103,8 @@ describe('صفحة المدرّب', () => {
   it('⚠️ ولا يقبل وفي يده ما لم يحفظ — ولا والخطّة بانتظار القرار', () => {
     expect(src).toMatch(/<PlanEditsPanel[\s\S]{0,300}unsaved=\{Object\.values\(dirty\)\.some\(Boolean\)\}/)
     expect(src).toMatch(/<PlanEditsPanel[\s\S]{0,300}inHand=\{planStatus === "draft" \|\| planStatus === "changes_requested"\}/)
-    expect(panel).toMatch(/const blocked = !inHand \? [^:]+ : unsaved \? /)
+    /* وعلى خطّته المعتمدة يقرّر — ما بقي اقتراحاتٌ تُكتب فيها مباشرة (١٧ أكتوبر ٢٠٢٦) */
+    expect(panel).toMatch(/const blocked = !inHand && !approved \? [^:]+ : unsaved \? /)
     expect(panel).toMatch(/x\.status === "pending" && !blocked &&/)
   })
 

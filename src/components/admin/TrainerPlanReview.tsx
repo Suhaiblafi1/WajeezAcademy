@@ -148,6 +148,8 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
      ينتظره من بطاقات، وسطرٍ واحدٍ تكتبه المنصّةُ بعددها (`suggestedEditsLineAr`). ولا بطاقةَ تنتظر: لا ردّ، ويُقال
      لماذا وما الخيارات. */
   const [editsPending, setEditsPending] = useState(0);
+  /* ومسوّداتٌ لم تُعتمد للمدرّب — «اعتمدها» يقول إنّها لا تصله (١٧ أكتوبر ٢٠٢٦) */
+  const [editsDrafts, setEditsDrafts] = useState(0);
   /* ═══ والتأجيلُ إلى موسمٍ قادم — قرارٌ ثالث (٨ أكتوبر ٢٠٢٦) ═══
      «أختار أفضلَ اثنتين أو ثلاث… وأقول لهم أن يؤجّلوا الباقية — ويجب أن يعرفوا أنّي لا
      أقبلها لهذا الفصل». يُختار الموسمُ (التالي مقترَحا)، وكلمةٌ اختياريّة. */
@@ -370,14 +372,17 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
             <ReviewReportUploader planId={trainerPlan.id} reports={trainerPlan.reviewReports ?? []} onChange={loadPlan} />
           )}
           {/* ═══ وتعديلاتٌ مقترحةٌ يقبل المدرّبُ كلًّا أو يرفضه (٨ أكتوبر ٢٠٢٦) ═══
-              تُرفع والخطّةُ بانتظار القرار أو في يده، ويُرى حالُ كلّ بندٍ بعدها حتّى تُعتمَد */}
-          {trainerPlan && trainerPlan.status !== "approved" && trainerPlan.status !== "published" && (
+              تُرفع والخطّةُ بانتظار القرار أو في يده، ويُرى حالُ كلّ بندٍ بعدها. وبعد الاعتماد تُقرأ وحدَها:
+              ما اعتمدته للمدرّب بقي عنده اقتراحا (١٧ أكتوبر ٢٠٢٦) */}
+          {trainerPlan && (
             <PlanEditsUploader
               planId={trainerPlan.id}
               cohortId={cohortId}
               canUpload={canApprovePlan}
               canReview={canReviewEdits}
+              closed={trainerPlan.status === "approved" || trainerPlan.status === "published"}
               onPending={setEditsPending}
+              onDrafts={setEditsDrafts}
               offerSchedule={scorecard.some((i) => (i.key === "rhythm" || i.key === "session_times") && i.status !== "ok")}
             />
           )}
@@ -412,7 +417,7 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
               </p>
               <ul className="mt-2 list-disc space-y-1 ps-5 text-read leading-6 text-foreground">
                 <li><b>اطلب تعديلات</b> (الأفضل): تردّها إليه ببطاقاتها، فيقبل كلّ بطاقة أو يرفضها ثمّ يرسلها. ولا يعيد إرسالها حتّى يكمل المطلوب.</li>
-                <li><b>اعتمدها كما هي</b>: تعتمد ناقصة، ويراها المتعلّمون كذلك — ويمكنك كتابة اقتراحاتك في كلمة الاعتماد أعلاه.</li>
+                <li><b>اعتمدها كما هي</b>: تعتمد ناقصة، ويراها المتعلّمون كذلك — وتبقى البطاقات التي اعتمدتها له عنده اقتراحات اختيارية.</li>
               </ul>
             </Inset>
           )}
@@ -492,6 +497,15 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
               </Inset>
             );
           })()}
+          {/* ═══ و«اعتمدها» يقول ما يقع بالبطاقات قبل النقر (١٧ أكتوبر ٢٠٢٦) ═══
+              «when I press اعتمدها, the changes still appear for the trainer… no need for a new button» (صاحب
+              المنصّة): ما اعتمدته له يبقى عنده اقتراحا، والمسوّدةُ التي لم تعتمدها لا تصله. */}
+          {trainerPlan?.status === "submitted" && canApprovePlan && editsPending > 0 && (
+            <p className="mt-2 text-read leading-6 text-muted-foreground">
+              «اعتمدها» يبقي البطاقات التي اعتمدتها له ({editsPending}) عنده اقتراحات اختيارية: ما يقبله يدخل الخطة المعتمدة مباشرة، وما يرفضه لا يغير شيئا.
+              {editsDrafts > 0 && <> والمسودات التي لم تعتمدها له ({editsDrafts}) لا تصله — اعتمدها أعلاه أولا إن أردت أن تصله.</>}
+            </p>
+          )}
           {trainerPlan?.status === "submitted" && canApprovePlan && editsPending === 0 && (
             <p className="mt-2 text-read text-muted-foreground">
               لا بطاقة تنتظر المدرّب بعد، فلا ردّ. لك أن ترفع التعديلات أو تعتمد مسوّداتها أعلاه فيصير الزرّ يردّها بها، أو تعتمدها كما هي، أو تؤجّلها.

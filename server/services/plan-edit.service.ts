@@ -17,6 +17,9 @@
       (`proposed`) يراجعها من يملك `cohort.plan.edits.review` — المديرُ والمديرُ
       الأكاديميّ — فيعتمد كلَّ بندٍ للمدرّب أو يحذفه. والمدرّبُ لا يرى المسوّدةَ ولا
       يقرّر فيها، ولا تُعدّ في رسالة الردّ.
+   ⑤ **ويبقى ما اعتمدته الإدارةُ له بعد اعتماد خطّته — اقتراحا (١٧ أكتوبر ٢٠٢٦).** «when I press اعتمدها, the
+      changes still appear for the trainer… from my side it's already معتمدة» (صاحب المنصّة). فيقبله على
+      خطّته المعتمدة فيُكتب فيها مباشرةً (`OnApproved`)، أو يرفضه فلا يتغيّر شيء — ولا اعتمادَ ثانٍ.
 
    والقاعدةُ والعرضُ في `src/application/trainer/plan-edits.ts`. */
 
@@ -29,6 +32,7 @@ import { AssessmentService } from './assessment.service'
 import { CohortService } from './cohort.service'
 import { CohortPlanService, resolvePeriod, type PlanStatus, type TrainerPlanContent } from './cohort-plan.service'
 import { proposeSchedule } from '../../src/application/trainer/schedule-proposal'
+import { PLAN_VISIBLE_STATUSES } from '../../src/application/trainer/plan-overlay'
 import {
   applyContentEdit, contentBefore, editsContent, noteItemsFrom, planEditStep, planEditView, rowEditProblem, sameSnapshot, scheduleChainProblem, schedulePlanContent, scheduleSnapshot,
   sessionMoveChainProblem,
@@ -60,6 +64,9 @@ export interface PlanEditItem {
 
 /** خطّةٌ في يد مدرّبها — يُحفظ فيها */
 const IN_HAND = ['draft', 'changes_requested'] as const
+/** خطّتُه معتمدة، والبطاقةُ اعتمدتها الإدارةُ قبل أن يقبلها (⑤) — فتُكتب فيها بلا انتظارٍ ثانٍ.
+    `by` من اعتمدها للمدرّب: باسمه يُعتمد لقاءٌ جديدٌ فيها */
+interface OnApproved { planId: string; by: string | null }
 /** خطّةٌ يُقترح عليها: في يده أو بانتظار القرار */
 const OPEN = ['draft', 'submitted', 'changes_requested'] as const
 /** بندٌ من هذه جاء بعد المسحوب على موضعه يحجبه أن يعود (`restore`) — والمحذوفُ عمدا منها */
@@ -380,7 +387,7 @@ export class PlanEditService {
      ② **ولا يعود ما جاء بعده على موضعه بندٌ** — مسوّدةٌ أو بندٌ عند المدرّب أو ما قرّر فيه أو ما حذفه
         المعتمِدُ عمدا (`dropped`): فملفٌّ رُفع ثانيةً بعد السحب لا يتكرّر، ومسوّدةٌ استُبدلت لا تعود
         فوق بديلها. وما سُحب مرّتين على موضعٍ واحدٍ يعود أحدثُه.
-     ③ **وعلى خطّةٍ مفتوحةٍ وحدَها** — المعتمَدةُ سقط ما عليها (`lapsed`). */
+     ③ **وعلى خطّةٍ مفتوحةٍ وحدَها** — المعتمَدةُ لا يُعاد عليها ما سُحب. */
   private async restorable(planId: string) {
     const rows = await this.prisma.planEditSuggestion.findMany({
       where: { planId },
@@ -636,7 +643,10 @@ export class PlanEditService {
   async accept(userId: string, id: string, opts: { force?: boolean } = {}) {
     const row = await this.pendingOf(userId, id)
     const latest = await this.latestTrainerPlan(row.cohortId)
-    if (!latest || !(IN_HAND as readonly string[]).includes(latest.status)) {
+    const onApproved: OnApproved | null = latest && latest.id === row.planId && (PLAN_VISIBLE_STATUSES as readonly string[]).includes(latest.status)
+      ? { planId: latest.id, by: row.reviewedBy }
+      : null
+    if (!latest || (!onApproved && !(IN_HAND as readonly string[]).includes(latest.status))) {
       throw new AuthError('plan_submitted', 'خطّتك بانتظار الاعتماد — تقبل التعديلات حين تعود إليك', 409)
     }
     const edit = row.edit as unknown as PlanEdit
@@ -654,23 +664,34 @@ export class PlanEditService {
     })
     if (claimed.count !== 1) throw new AuthError('edit_decided', 'قرّر في هذا التعديل من قبل', 409)
     try {
-      await this.apply(userId, row.cohortId, edit, r)
+      await this.apply(userId, row.cohortId, edit, r, onApproved)
     } catch (e) {
       await this.prisma.planEditSuggestion.update({ where: { id }, data: { status: 'pending', decidedAt: null, decidedBy: null } })
       throw e
     }
     await recordAudit(this.prisma, {
       actorId: userId, action: 'cohort.plan.edit.accept', entityType: 'cohort', entityId: row.cohortId,
-      meta: { planId: row.planId, suggestionId: id, kind: row.kind, ...(stale ? { overwrote: true } : {}) },
+      meta: {
+        planId: row.planId, suggestionId: id, kind: row.kind,
+        ...(stale ? { overwrote: true } : {}), ...(onApproved ? { onApprovedPlan: true } : {}),
+      },
     })
     return { status: 'accepted' as const }
   }
 
-  private async apply(userId: string, cohortId: string, edit: PlanEdit, r: Rows) {
+  /** يكتب محتوى الخطّة: في المعتمدة مباشرةً (⑤)، وإلّا بحفظه هو */
+  private writeContent(userId: string, cohortId: string, content: TrainerPlanContent, onApproved: OnApproved | null) {
+    return onApproved
+      ? this.plans.writeApprovedContent(userId, cohortId, onApproved.planId, content)
+      : this.plans.savePlan(userId, cohortId, content)
+  }
+
+  private async apply(userId: string, cohortId: string, edit: PlanEdit, r: Rows, onApproved: OnApproved | null) {
+    const preApproved = onApproved !== null
     if (editsContent(edit)) {
       const next = applyContentEdit(r.content, edit)
       if (!next.ok) throw new AuthError('edit_gone', next.problemAr, 409)
-      await this.plans.savePlan(userId, cohortId, next.value)
+      await this.writeContent(userId, cohortId, next.value, onApproved)
       return
     }
     const at = (v: string | null | undefined) => (v == null ? v : new Date(v))
@@ -682,35 +703,42 @@ export class PlanEditService {
           ...(edit.task.briefAr ? { briefAr: edit.task.briefAr } : {}),
           ...(edit.task.maxScore ? { maxScore: edit.task.maxScore } : {}),
           ...(edit.task.dueAt ? { dueAt: new Date(edit.task.dueAt) } : {}),
-        }, { byTrainer: true })
+        }, { byTrainer: true, preApproved })
         return
       case 'task_change': {
         const { dueAt, ...rest } = edit.set
         await this.assessments.updateAssessment(userId, edit.assessmentId, {
           ...rest, ...(dueAt !== undefined ? { dueAt: at(dueAt) as Date | null } : {}),
-        } as Parameters<AssessmentService['updateAssessment']>[2])
+        } as Parameters<AssessmentService['updateAssessment']>[2], { preApproved })
         return
       }
       case 'session_move':
-        await this.cohorts.trainerMoveSession(userId, edit.sessionId, { startsAt: new Date(edit.startsAt), endsAt: new Date(edit.endsAt) })
+        await this.cohorts.trainerMoveSession(userId, edit.sessionId, { startsAt: new Date(edit.startsAt), endsAt: new Date(edit.endsAt) }, { preApproved })
         return
       case 'session_remove':
         await this.cohorts.trainerDeleteSession(userId, edit.sessionId)
         return
-      /* وبعد الاعتماد حذفُ المنشورة طلبٌ ينتظر الإدارة (`deleteAssessment`) — يُقبل البندُ ويبقى الحذفُ في طابورها */
+      /* وبعد الاعتماد حذفُ المنشورة طلبٌ ينتظر الإدارة (`deleteAssessment`) — يُقبل البندُ ويبقى الحذفُ في طابورها.
+         إلّا على خطّته المعتمدة (⑤): الإدارةُ اعتمدت الحذفَ في البطاقة، فيُحذف */
       case 'task_remove':
-        await this.assessments.deleteAssessment(userId, edit.assessmentId)
+        await this.assessments.deleteAssessment(userId, edit.assessmentId, { preApproved })
         return
       case 'cohort_title':
         await this.plans.updateCohort(userId, cohortId, { title: edit.titleAr.trim() })
         return
-      case 'session_add':
-        await this.cohorts.trainerAddSessionWithMeeting(userId, cohortId, {
+      case 'session_add': {
+        const added = await this.cohorts.trainerAddSessionWithMeeting(userId, cohortId, {
           title: edit.session.title.trim(), startsAt: new Date(edit.session.startsAt), endsAt: new Date(edit.session.endsAt),
           ...(edit.session.moduleIds?.length ? { moduleIds: edit.session.moduleIds } : {}),
           ...(edit.session.noteAr ? { noteAr: edit.session.noteAr } : {}),
         })
+        /* وعلى خطّته المعتمدة يُعتمد باسم من اعتمد البطاقة — بالمسلك الذي تعتمد به الخطّةُ لقاءاتِها: اجتماعُه
+           ودعوتُه لمسجَّليه. وإن سقط إنشاءُ الاجتماع بقي منتظِرا عند الإدارة كما يبقى لقاءٌ لم يُنشأ اجتماعُه */
+        if (onApproved?.by) {
+          await this.cohorts.decideSession(onApproved.by, added.session.id, true, undefined, { quiet: true }).catch(() => undefined)
+        }
         return
+      }
       case 'session_change':
         await this.cohorts.trainerUpdateSessionDetails(userId, edit.sessionId, edit.set)
         return
@@ -718,7 +746,7 @@ export class PlanEditService {
       case 'note':
         return
       case 'schedule':
-        await this.applySchedule(userId, cohortId, edit, r)
+        await this.applySchedule(userId, cohortId, edit, r, onApproved)
         return
     }
   }
@@ -728,31 +756,32 @@ export class PlanEditService {
      أوّلا بفحص باب النقل نفسِه (`assertTrainerMove`: موعدُ الشعبة، وتعارضُه مع شعبه الأخرى) — فإن لم يصحّ
      واحدٌ لم يُنقل شيء. ثمّ تُنقل بالباب (واجتماعُها معها)، ثمّ مواعيدُ المهامّ ببابها. وإن سقط شيءٌ بعد
      ذلك لعطبٍ لا يُفحص قبله أُعيد ما نُقل قبله إلى ما كان — فلا يبقى نصفُ جدول. */
-  private async applySchedule(userId: string, cohortId: string, edit: Extract<PlanEdit, { kind: 'schedule' }>, r: Rows) {
+  private async applySchedule(userId: string, cohortId: string, edit: Extract<PlanEdit, { kind: 'schedule' }>, r: Rows, onApproved: OnApproved | null) {
     const done: (() => Promise<unknown>)[] = []
+    const preApproved = onApproved !== null
     try {
       /* وحدودُ الخطّة أوّلا — آخرُ يومٍ في المدّة ومواعيدُ المحاور (`schedulePlanContent`): حفظُها يمدّ نافذةَ
          الجدولة معها (`savePlan`)، فيصحّ النقلُ بعدها. وتعود الخطّةُ كما كانت إن سقط شيء */
       if (edit.plan) {
         const next = schedulePlanContent(r.content, edit)
         if (!next.ok) throw new AuthError('edit_gone', next.problemAr, 409)
-        await this.plans.savePlan(userId, cohortId, next.value)
-        done.push(() => this.plans.savePlan(userId, cohortId, r.content))
+        await this.writeContent(userId, cohortId, next.value, onApproved)
+        done.push(() => this.writeContent(userId, cohortId, r.content, onApproved))
       }
       for (const m of edit.moves) {
         await this.cohorts.assertTrainerMove(userId, m.sessionId, { startsAt: new Date(m.startsAt), endsAt: new Date(m.endsAt) })
       }
       for (const m of edit.moves) {
         const was = r.sessions.find((x) => x.id === m.sessionId)!
-        await this.cohorts.trainerMoveSession(userId, m.sessionId, { startsAt: new Date(m.startsAt), endsAt: new Date(m.endsAt) })
+        await this.cohorts.trainerMoveSession(userId, m.sessionId, { startsAt: new Date(m.startsAt), endsAt: new Date(m.endsAt) }, { preApproved })
         done.push(() => this.cohorts.trainerMoveSession(userId, m.sessionId, {
           startsAt: new Date(was.startsAt), ...(was.endsAt ? { endsAt: new Date(was.endsAt) } : {}),
-        }))
+        }, { preApproved }))
       }
       for (const t of edit.tasks) {
         const was = r.tasks.find((x) => x.id === t.assessmentId)!
-        await this.assessments.updateAssessment(userId, t.assessmentId, { dueAt: new Date(t.dueAt) } as Parameters<AssessmentService['updateAssessment']>[2])
-        done.push(() => this.assessments.updateAssessment(userId, t.assessmentId, { dueAt: was.dueAt } as Parameters<AssessmentService['updateAssessment']>[2]))
+        await this.assessments.updateAssessment(userId, t.assessmentId, { dueAt: new Date(t.dueAt) } as Parameters<AssessmentService['updateAssessment']>[2], { preApproved })
+        done.push(() => this.assessments.updateAssessment(userId, t.assessmentId, { dueAt: was.dueAt } as Parameters<AssessmentService['updateAssessment']>[2], { preApproved }))
       }
     } catch (e) {
       for (const undo of done.reverse()) await undo().catch(() => undefined)

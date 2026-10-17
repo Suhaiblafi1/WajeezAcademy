@@ -102,7 +102,8 @@ export type PlanEditKind = (typeof PLAN_EDIT_KINDS)[number]
 
     `proposed` ينتظر مراجعةَ الإدارة · `dropped` حذفته الإدارةُ فلم يصل المدرّب ·
     `pending` اعتمدته الإدارةُ فينتظر المدرّب · `accepted` قبله فكُتب · `rejected` رفضه ·
-    `withdrawn` سحبه المعتمِدُ قبل قراره · `lapsed` اعتُمدت الخطّةُ وهو لم يُقرَّر */
+    `withdrawn` سحبه المعتمِدُ قبل قراره · `lapsed` اعتُمدت الخطّةُ وهو مسوّدةٌ أو ملاحظة، أو نزلت خطّتُه.
+    والمعتمَدُ للمدرّب يبقى `pending` بعد اعتماد الخطّة — اقتراحا اختياريّا (١٧ أكتوبر ٢٠٢٦) */
 export const PLAN_EDIT_STATUSES = ['proposed', 'dropped', 'pending', 'accepted', 'rejected', 'withdrawn', 'lapsed'] as const
 export type PlanEditStatus = (typeof PLAN_EDIT_STATUSES)[number]
 

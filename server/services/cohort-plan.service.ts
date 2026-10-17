@@ -923,10 +923,16 @@ export class CohortPlanService {
       }
     }
     const data = { content: content as unknown as Prisma.InputJsonValue }
+    /* ومراجعةٌ تُفتح على خطّةٍ معتمدةٍ تحمل معها ما بقي عليها من اقتراحات الإدارة (١٧ أكتوبر ٢٠٢٦) —
+       فلا يغيب عنه ما لم يقرّر فيه، ولا يُقبل في خطّةٍ تنزل حين تُعتمد المراجعة */
     const plan = latest && (latest.status === 'draft' || latest.status === 'changes_requested')
       ? await this.prisma.cohortDeliveryPlan.update({ where: { id: latest.id }, data })
-      : await this.prisma.cohortDeliveryPlan.create({
-          data: { cohortId, trainerId: profile.id, status: 'draft', createdBy: userId, ...data },
+      : await this.prisma.$transaction(async (tx) => {
+          const row = await tx.cohortDeliveryPlan.create({
+            data: { cohortId, trainerId: profile.id, status: 'draft', createdBy: userId, ...data },
+          })
+          if (latest) await tx.planEditSuggestion.updateMany({ where: { planId: latest.id, status: 'pending' }, data: { planId: row.id } })
+          return row
         })
     /* ═══ ونافذةُ جدولته تتبع مدّتَه لحظةَ الحفظ ═══
 
@@ -960,6 +966,31 @@ export class CohortPlanService {
       },
     })
     return plan
+  }
+
+  /* ═══ بطاقةٌ يقبلها المدرّبُ على خطّته المعتمدة — تُكتب فيها مباشرة (١٧ أكتوبر ٢٠٢٦) ═══
+
+     «from my side it's already معتمدة… I don't want to make it as pending» (صاحب المنصّة). فالبطاقةُ اعتمدتها
+     الإدارةُ قبل أن تصله، وقبولُه لا يفتح مراجعةً تنتظر اعتمادا ثانيا كما يفتحها تعديلُه بيده (`savePlan`):
+     يُكتب في الخطّة التي يراها المتعلّمون، بفحص المدّة نفسِه. وإن تغيّرت مدّتُها أو مواعيدُ محاورها كُتبت
+     حدودُ الشعبة كما يكتبها الاعتماد (`applyPeriod`). */
+  async writeApprovedContent(userId: string, cohortId: string, planId: string, content: TrainerPlanContent) {
+    await this.ownedCohort(userId, cohortId)
+    const plan = await this.prisma.cohortDeliveryPlan.findUnique({ where: { id: planId }, select: { cohortId: true, status: true, content: true } })
+    if (!plan || plan.cohortId !== cohortId || !(PLAN_VISIBLE_STATUSES as readonly string[]).includes(plan.status)) {
+      throw new AuthError('plan_not_approved', 'هذه الخطّة ليست معتمدة الآن — حدّث الصفحة', 409)
+    }
+    if (content.startsOn || content.endsOn) {
+      const cohortRow = await this.prisma.cohort.findUniqueOrThrow({ where: { id: cohortId }, select: { startsAt: true } })
+      const problem = periodProblem(content, {
+        today: zonedDay(new Date()),
+        approvedStart: cohortRow.startsAt ? zonedDay(cohortRow.startsAt) : null,
+      })
+      if (problem) throw new AuthError('bad_period', problem, 400)
+    }
+    await this.prisma.cohortDeliveryPlan.update({ where: { id: planId }, data: { content: content as unknown as Prisma.InputJsonValue } })
+    const bounds = (c: unknown) => JSON.stringify([asPeriod(c as TrainerPlanContent | null), (c as { slots?: unknown } | null)?.slots ?? null])
+    if (asPeriod(content) && bounds(plan.content) !== bounds(content)) await this.applyPeriod(cohortId, content)
   }
 
   /** تعديلُ صفّ الشعبة — بالمسموح وحدَه، والماليُّ والمواعيدُ تُردّ باسمها */
@@ -1266,7 +1297,7 @@ export class CohortPlanService {
     const said = (typeof note === 'string' ? note : note?.general)?.trim() || null
     /* وتقريرُ المراجعة إن رُفع لهذه الخطّة — تذكره رسالةُ القرار أيًّا كان (٨ أكتوبر ٢٠٢٦) */
     const reports = (await new CohortFileService(this.prisma).reviewReports(plan.cohort.id, plan.id)).map((r) => r.originalName)
-    /* والتعديلاتُ المقترحةُ عليها — يذكرها الردُّ والتأجيل، ويُسقطها الاعتماد (٨ أكتوبر ٢٠٢٦) */
+    /* والتعديلاتُ المقترحةُ عليها — يذكرها الردُّ والتأجيل، ويُبقيها الاعتمادُ اقتراحاتٍ (١٧ أكتوبر ٢٠٢٦) */
     const edits = await this.pendingEdits(planId)
 
     if (!approve) {
@@ -1339,6 +1370,11 @@ export class CohortPlanService {
         where: { cohortId: plan.cohort.id, id: { not: planId }, status: { in: ['approved', 'published'] } },
         data: { status: 'superseded' },
       })
+      /* وما بقي على خطّةٍ نزلت لا يُقرَّر فيه — كان ينتقل مع المراجعة حين فُتحت (`savePlan`)، وهذا احتياط */
+      await tx.planEditSuggestion.updateMany({
+        where: { cohortId: plan.cohort.id, planId: { not: planId }, status: { in: ['proposed', 'pending'] } },
+        data: { status: 'lapsed' },
+      })
       await tx.cohortDeliveryPlan.update({
         where: { id: planId },
         data: {
@@ -1351,8 +1387,22 @@ export class CohortPlanService {
       })
     })
     const applied = await this.applyPeriod(plan.cohort.id, plan.content as unknown as TrainerPlanContent | null)
-    /* وما اقتُرح عليها ولم يُقرَّر فيه يسقط — اعتُمدت بما فيها */
-    await this.prisma.planEditSuggestion.updateMany({ where: { planId, status: { in: ['proposed', 'pending'] } }, data: { status: 'lapsed' } })
+    /* ═══ وما اعتمدته الإدارةُ له يبقى عنده اقتراحا — «اعتمدها» لا تُسقطه (١٧ أكتوبر ٢٠٢٦) ═══
+
+       كان الاعتمادُ يُسقط كلَّ بندٍ لم يقرّر فيه المدرّب (`lapsed`). فقال صاحبُ المنصّة: «when I press
+       اعتمدها, the changes still appear for the trainer… I don't mind if he accept or reject them… They should
+       see it as a recommendation… from my side it's already معتمدة… no need for a new button». فـ:
+       ① ما اعتمدته الإدارةُ له (`pending`) يبقى عنده، **اختياريّا** — فلا «مطلوبَ» على خطّةٍ معتمدة؛
+          وما يقبله منه يُكتب في الخطّة المعتمدة مباشرةً بلا اعتمادٍ ثانٍ (`PlanEditService.accept`).
+       ② والمسوّدةُ التي لم تعتمدها (`proposed`) تسقط — لم تصله، والزرُّ يقول ذلك قبل النقر.
+       ③ والملاحظةُ (`note`) تسقط: تطلب منه أن يعدّل بيده، وخطّتُه اعتُمدت. */
+    await this.prisma.planEditSuggestion.updateMany({
+      where: { planId, OR: [{ status: 'proposed' }, { status: 'pending', kind: 'note' }] },
+      data: { status: 'lapsed' },
+    })
+    const kept = await this.prisma.planEditSuggestion.updateMany({
+      where: { planId, status: 'pending' }, data: { required: false },
+    })
 
     /* ═══ والاعتمادُ واحدٌ: الخطّةُ ولقاءاتُها معا (٣ب) ═══
 
@@ -1398,6 +1448,7 @@ export class CohortPlanService {
         ...(pattern ? { daysOfWeek: pattern.daysOfWeek, startTime: pattern.startTime } : {}),
         ...(applied ? { period: applied.period, termId: applied.termId, moved: applied.moved } : {}),
         meetingsApproved: meetings.approved,
+        ...(kept.count ? { suggestionsKept: kept.count } : {}),
         ...(meetings.failed.length ? { meetingsFailed: meetings.failed.map((f) => f.id) } : {}),
         ...(tasks.applied ? { tasksApplied: tasks.applied } : {}),
         ...(tasks.failed.length ? { tasksFailed: tasks.failed.map((f) => f.id) } : {}),
@@ -1430,8 +1481,9 @@ export class CohortPlanService {
       meetingsFailed: meetings.failed.length,
       tasksApplied: tasks.applied,
       noteAr: said,
+      suggestions: kept.count,
     })
-    await this.tellTrainer(plan.trainer, plan.cohort, { ...told, cta: 'افتح شعبتك' }, { reports })
+    await this.tellTrainer(plan.trainer, plan.cohort, { ...told, cta: 'افتح شعبتك', ...(kept.count > 0 ? { step: 'review' as const } : {}) }, { reports })
 
     /* وشعبةٌ مفتوحةٌ كانت تنتظر هذا الاعتمادَ وحدَه صارت تُباع الآن — فمن انتظرها
        يُعلَم (١٢ أكتوبر ٢٠٢٦). والمسوّدةُ لا: تُفتح بقرارٍ منفصل، وهناك يُعلَم */
@@ -1665,7 +1717,8 @@ export class CohortPlanService {
             : []),
           ...(editsLine ? [{ kind: 'p' as const, text: editsLine }] : []),
           ...(reportLine ? [{ kind: 'p' as const, text: reportLine }] : []),
-          { kind: 'cta', label: msg.cta, href: url },
+          /* وزرُّه يفتح «المراجعة» حين ينتظره فيها شيء — كما يفتحها جرسُه (١٧ أكتوبر ٢٠٢٦) */
+          { kind: 'cta', label: msg.cta, href: msg.step ? `${url}?step=${msg.step}` : url },
         ],
       }),
     })

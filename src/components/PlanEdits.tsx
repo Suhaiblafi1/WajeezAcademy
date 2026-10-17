@@ -88,10 +88,14 @@ function Value({ text, href, long, muted }: { text: string | null; href?: string
 /* ═══════════ بطاقةُ المراجعة ═══════════ */
 
 /** لبطاقة المراجعة — يُرفع الملفّ والخطّةُ بانتظار القرار أو في يد مدرّبها */
-export function PlanEditsUploader({ planId, cohortId, canUpload, canReview, onPending, offerSchedule = false }: {
+export function PlanEditsUploader({ planId, cohortId, canUpload: mayUpload, canReview: mayReview, closed = false, onPending, onDrafts, offerSchedule = false }: {
   planId: string;
   cohortId: string;
   canUpload: boolean;
+  /** خطّةٌ معتمدة: يُقرأ حالُ ما بقي عند المدرّب ولا يُرفع ولا يُراجع (١٧ أكتوبر ٢٠٢٦) */
+  closed?: boolean;
+  /** كم مسوّدةً لم تُعتمد للمدرّب — يقول زرُّ «اعتمدها» إنّها لا تصله */
+  onDrafts?: (n: number) => void;
   /** في بطاقة المعايير نصيحةٌ في الإيقاع أو أوقات اللقاءات — فتبني المنصّةُ جدولا ثابتا بسلسلته (١١ أكتوبر ٢٠٢٦) */
   offerSchedule?: boolean;
   /** يعتمد كلَّ بندٍ للمدرّب أو يحذفه — `cohort.plan.edits.review` (١٠ أكتوبر ٢٠٢٦) */
@@ -99,6 +103,8 @@ export function PlanEditsUploader({ planId, cohortId, canUpload, canReview, onPe
   /** كم ينتظر المدرّبَ — تقرؤه البطاقةُ فيكفي سببا لـ«اطلب تعديلات» */
   onPending?: (n: number) => void;
 }) {
+  const canUpload = mayUpload && !closed;
+  const canReview = mayReview && !closed;
   const input = useRef<HTMLInputElement>(null);
   const [items, setItems] = useState<PlanEditItem[]>([]);
   const [busy, setBusy] = useState(false);
@@ -255,16 +261,22 @@ export function PlanEditsUploader({ planId, cohortId, canUpload, canReview, onPe
   /* وما يُعدّ للردّ بطاقاتٌ لا ملاحظات — كما يعدّها الخادم (`pendingEdits`) */
   const pendingCards = items.filter((x) => x.status === "pending" && x.kind !== "note").length;
   useEffect(() => { onPending?.(pendingCards); }, [pendingCards, onPending]);
+  useEffect(() => { onDrafts?.(drafts.length); }, [drafts.length, onDrafts]);
   const counts = (["proposed", "pending", "accepted", "rejected", "dropped"] as const)
     .map((s) => [s, items.filter((x) => x.status === s).length] as const)
     .filter(([, n]) => n > 0);
+
+  /* والمعتمدةُ بلا بطاقةٍ لا صندوقَ لها — لا شيءَ يُقرأ فيه */
+  if (closed && items.length === 0) return null;
 
   return (
     <Inset className="mt-3" role="region" aria-label="تعديلات مقترحة">
       <p className="text-read font-black text-foreground">تعديلات مقترحة على الخطّة (اختياريّ)</p>
       {/* سطرٌ واحد — «كثيرُ الكلام» (صاحب المنصّة، ١١ أكتوبر ٢٠٢٦) */}
       <p className="mt-1 text-read leading-6 text-muted-foreground">
-        ترفع مسوّدة لا يراها المدرّب حتّى تعتمد بنودها، ثمّ «اطلب تعديلات» فيقبل كلّا أو يرفضه.
+        {closed
+          ? "الخطة معتمدة: ما اعتمدته للمدرب بقي عنده اقتراحات اختيارية، وما يقبله يدخل الخطة مباشرة."
+          : "ترفع مسوّدة لا يراها المدرّب حتّى تعتمد بنودها، ثمّ «اطلب تعديلات» فيقبل كلّا أو يرفضه."}
       </p>
       {counts.length > 0 && (
         <div className="mt-2 flex flex-wrap gap-2">
@@ -535,11 +547,13 @@ export function PlanEditsBulkUpload({ plans, onUploaded, onOpen }: {
 
 /** لصفحة المدرّب — ما اقترحته الإدارةُ على خطّته، يقبل كلًّا أو يرفضه.
     `inHand` الخطّةُ في يده (مسودّةٌ أو مردودة) — وإلّا تُقرأ ولا يُقرَّر فيها.
+    `approved` خطّتُه معتمدة: ما بقي اقتراحاتٌ اختياريّة، وما يقبله يُكتب فيها مباشرة (١٧ أكتوبر ٢٠٢٦).
     `unsaved` في يده تعديلٌ لم يُحفظ — فلا يُكتب فوقه بإعادة التحميل.
     `onApplied` يعيد تحميل الصفحة بعد ما يُكتب في الخطّة. */
-export function PlanEditsPanel({ cohortId, inHand, unsaved, onApplied, onCounts, onOpenStep }: {
+export function PlanEditsPanel({ cohortId, inHand, approved = false, unsaved, onApplied, onCounts, onOpenStep }: {
   cohortId: string;
   inHand: boolean;
+  approved?: boolean;
   unsaved: boolean;
   onApplied: () => void | Promise<unknown>;
   /** «افتح الخطوة» في بند الملاحظة — يعدّل فيها ما تطلبه */
@@ -579,7 +593,7 @@ export function PlanEditsPanel({ cohortId, inHand, unsaved, onApplied, onCounts,
 
   if (items.length === 0) return null;
   const pending = items.filter((x) => x.status === "pending");
-  const blocked = !inHand ? "تقبل التعديلات حين تعود الخطّة إليك." : unsaved ? "احفظ ما كتبته أوّلا — فالقبول يكتب في الخطّة المحفوظة." : null;
+  const blocked = !inHand && !approved ? "تقبل التعديلات حين تعود الخطّة إليك." : unsaved ? "احفظ ما كتبته أوّلا — فالقبول يكتب في الخطّة المحفوظة." : null;
 
   /* ═══ «المراجعة»: بطاقاتٌ مرقّمةٌ واحدةٌ بعد واحدة (١١ أكتوبر ٢٠٢٦) ═══
 
@@ -731,7 +745,11 @@ export function PlanEditsPanel({ cohortId, inHand, unsaved, onApplied, onCounts,
           <p className="text-read font-black text-foreground">
             {pending.length === 0 ? `قرّرت فيها كلّها (${items.length})` : `قرّرت في ${decided.length} من ${items.length}`}
           </p>
-          <p className="mt-0.5 text-read leading-6 text-muted-foreground">ما تقبله يكتب في خطّتك، وما ترفضه لا يمسّ شيئا.</p>
+          <p className="mt-0.5 text-read leading-6 text-muted-foreground">
+            {approved
+              ? "خطتك معتمدة، وهذه اقتراحات اختيارية: ما تقبله يدخل خطتك مباشرة، وما ترفضه لا يغير شيئا."
+              : "ما تقبله يكتب في خطّتك، وما ترفضه لا يمسّ شيئا."}
+          </p>
           <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-white/10" role="progressbar"
             aria-label="ما قرّرت فيه" aria-valuemin={0} aria-valuemax={items.length} aria-valuenow={decided.length}>
             <span className="block h-full rounded-full bg-teal transition-all" style={{ width: `${pct}%` }} />

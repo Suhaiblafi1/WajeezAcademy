@@ -1031,8 +1031,9 @@ export class CohortService {
     return session
   }
 
-  /** المدرّبُ ينقل لقاءَه — لا يقترح نقله */
-  async trainerMoveSession(userId: string, sessionId: string, input: { startsAt: Date; endsAt?: Date }) {
+  /** المدرّبُ ينقل لقاءَه — لا يقترح نقله. و`preApproved` نقلٌ في بطاقةٍ اعتمدتها الإدارةُ قبل أن يقبلها
+      (١٧ أكتوبر ٢٠٢٦، `PlanEditService.accept`): المعتمَدُ يبقى معتمَدا ولو خرج عن موعد محوره */
+  async trainerMoveSession(userId: string, sessionId: string, input: { startsAt: Date; endsAt?: Date }, opts: { preApproved?: boolean } = {}) {
     const session = await this.assertTrainerMove(userId, sessionId, input)
     /* ═══ والمنقولُ داخلَ موعد محوره يبقى معتمَدا (٢٩ سبتمبر ٢٠٢٦) ═══
 
@@ -1048,7 +1049,7 @@ export class CohortService {
     const slots = ((session.cohort.plans[0]?.content ?? null) as { slots?: PlanSlot[] | null } | null)?.slots ?? []
     const axis = session.moduleIds[0] ?? session.moduleId
     const slot = axis ? slots[slotIndexOf(slots, axis)] ?? null : null
-    const kept = keepsApprovalOnMove({
+    const kept = (wasApproved && opts.preApproved === true) || keepsApprovalOnMove({
       approved: wasApproved, startsAt: session.startsAt, newStartsAt: input.startsAt, newEndsAt: input.endsAt ?? null,
       now: new Date(), slot,
     })

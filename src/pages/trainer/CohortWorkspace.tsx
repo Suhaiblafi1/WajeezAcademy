@@ -754,7 +754,8 @@ export default function CohortWorkspace() {
         /* وتُفتح على «المراجعة» إن طلبها الرابط وفيها شيء، أو كانت خطّتُه في يده وفيها ما ينتظره —
            ما لم يطلب الرابطُ خطوةً غيرَها */
         const reviewHas = revItems.length > 0 || (w.reviewReports?.length ?? 0) > 0;
-        const reviewWaits = editable && revItems.some((x) => x.status === "pending");
+        /* وعلى خطّته المعتمدة كذلك — ما بقي عليها اقتراحاتٌ يقرّر فيها (١٧ أكتوبر ٢٠٢٦) */
+        const reviewWaits = (editable || status === "approved" || status === "published") && revItems.some((x) => x.status === "pending");
         if (reviewHas && (requestedReview.current || (!requestedStep.current && reviewWaits))) setStage("review");
         else setStage(firstStep(requestedStep.current, fallback, openableAt));
       }
@@ -1919,6 +1920,7 @@ export default function CohortWorkspace() {
           <PlanEditsPanel
             cohortId={ws.cohort.id}
             inHand={planStatus === "draft" || planStatus === "changes_requested"}
+            approved={approved}
             unsaved={Object.values(dirty).some(Boolean)}
             onApplied={() => load()}
             onCounts={setRevision}
@@ -1949,6 +1951,12 @@ export default function CohortWorkspace() {
               </Button>
             </Inset>
           )}
+          {/* وعلى خطّته المعتمدة لا إرسال: ما قبله كُتب فيها، وما رفضه بقي كما هو (١٧ أكتوبر ٢٠٢٦) */}
+          {revision.total > 0 && revision.pending === 0 && approved && (
+            <Inset tone="positive" className="p-4 text-read leading-6">
+              <b className="font-black text-foreground">قررت فيها كلها</b> — خطتك معتمدة، ولا شيء ترسله.
+            </Inset>
+          )}
           {revision.total > 0 && planLocked && (
             <Inset tone="accent" className="p-4 text-read leading-6">
               <b className="font-black text-foreground">أرسلت مراجعتك</b> — يصلك القرار هنا وبالبريد.
@@ -1956,7 +1964,7 @@ export default function CohortWorkspace() {
           )}
           <ReviewReportList reports={ws.reviewReports ?? []} />
         </section>
-      ) : revision.pending > 0 && inHand ? (
+      ) : revision.pending > 0 && (inHand || approved) ? (
         /* وفي الخطوات الأخرى سطرٌ يدلّ عليها — لا القائمةُ نفسُها */
         <Inset tone="accent" className="mb-4 flex flex-wrap items-center gap-2 text-read leading-6">
           <ListChecks className="h-4 w-4 shrink-0" aria-hidden="true" />
