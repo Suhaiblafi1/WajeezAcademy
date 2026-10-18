@@ -142,7 +142,7 @@ export default function AdvisorCallbackForm({
         {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageCircle className="h-4 w-4" />}
         أرسل
       </Button>
-      <p className="mt-2 text-fine leading-5 text-muted-foreground">{GUEST_CONTACT_CONSENT_AR}</p>
+      <p className="mt-2 text-read leading-5 text-muted-foreground">{GUEST_CONTACT_CONSENT_AR}</p>
       {error && <p role="alert" className="mt-1.5 text-read leading-5 text-red-300">{error}</p>}
     </div>
   );
