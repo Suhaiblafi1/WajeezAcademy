@@ -136,7 +136,7 @@ export class CourseDecisionsService {
   private async run(step: PlannedStep, actor: DecisionsActor, created: Map<number, string>) {
     const proposals = new CourseProposalService(this.prisma)
     const review = new TrainerReviewService(this.prisma)
-    const assigner = { userId: actor.userId, roles: actor.roles }
+    const assigner = { userId: actor.userId, roles: actor.roles, permissions: actor.permissions }
     const proposalId = step.proposalId
       ?? (step.createdByStep !== null ? created.get(step.createdByStep) ?? null : null)
     const need = <T>(v: T | null, what: string): T => {

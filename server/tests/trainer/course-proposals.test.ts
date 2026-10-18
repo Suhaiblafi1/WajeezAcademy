@@ -23,7 +23,7 @@ let apps: TrainerApplicationService
 let review: TrainerReviewService
 let proposals: CourseProposalService
 let adminId: string
-/** الفاعلُ برتبته: تصنيفُ الاقتراح يفتح مهمّةً، و`StaffTaskService` تقيس الرتبة */
+/** الفاعلُ بأدواره: تصنيفُ الاقتراح يؤهّل بصلاحيّاتها (`qualifyOnClassify`) */
 let actor: { userId: string; roles: string[] }
 let courseId: string
 
@@ -360,52 +360,82 @@ describe('السؤالُ والجواب', () => {
   })
 })
 
-/* ═══ ما يبقى بعد التصنيف — مهمّةُ التأهيل ═══
+/* ═══ التصنيفُ يؤهّل صاحبَه (١٨ أكتوبر ٢٠٢٦) ═══
 
-   اقتراحٌ صُنِّف «نسخةٌ من رمزٍ قائم» لا يُدرّسه صاحبُه: التأهيلُ فعلٌ ثانٍ في
-   شاشةٍ ثانية. وكان القرارُ ينتهي ولا يبقى ما يذكّر به — فهو ضياعُ العمل بعد
-   إنجازه لا قبله. */
-describe('التصنيفُ يفتح مهمّةً قائمة', () => {
-  it('⚠️ «نسخةٌ من رمزٍ قائم» تفتح مهمّةَ تأهيلٍ على من قرّر — وإلّا صُنِّف ولم يُدرَّس', async () => {
+   كان التصنيفُ يفتح مهمّةَ «أهِّله لها» تُنجَز من زرّ «أهّله مباشرة». وسقط الزرُّ بضمّ شاشتي
+   المدرّبين، فاختار صاحبُ المنصّة «Auto-qualify on proposal accept»: التصنيفُ هو التأهيل. */
+const qualifiedFor = async (profileId: string) =>
+  (await prisma.trainerCourseQualification.findUnique({
+    where: { profileId_courseId: { profileId, courseId } },
+  }))?.status ?? null
+const toldQualified = async (userId: string) =>
+  prisma.notification.count({ where: { userId, templateKey: 'trainer.qualified' } })
+const openTasks = () => prisma.staffTask.count({ where: { assigneeId: adminId, status: 'open' } })
+
+describe('التصنيفُ يؤهّل صاحبَه', () => {
+  it('⚠️ «نسخةٌ من رمزٍ قائم» تؤهّله لها ويعلم — ولا مهمّةَ تبقى بعدها', async () => {
     const t = await approvedTrainer('prop-task-link@test.local', 'عمرُ المدرّب', [
       { titleAr: 'دورةٌ تُربط ويُؤهَّل لها', summaryAr: '' },
     ])
     const [row] = await prisma.trainerCourseProposal.findMany({ where: { profileId: t.profileId } })
-    const before = await prisma.staffTask.count({ where: { assigneeId: adminId, status: 'open' } })
+    const tasks = await openTasks()
 
     await proposals.linkToCourse(actor, row.id, courseId)
 
-    const after = await prisma.staffTask.findMany({
-      where: { assigneeId: adminId, status: 'open' }, orderBy: { createdAt: 'desc' },
-    })
-    expect(after.length, 'صُنِّف الاقتراحُ ولم يبقَ ما يذكّر بتأهيله').toBe(before + 1)
-    expect(after[0].title, 'المهمّةُ لا تقول من يُؤهَّل').toContain('عمرُ المدرّب')
-    expect(after[0].title).toContain(courseId)
-    expect(after[0].priority, 'عملٌ نصفُه تمّ ونصفُه معلّق ليس عاديّا').toBe('high')
+    expect(await qualifiedFor(t.profileId), 'صُنِّف الاقتراحُ ولم يُؤهَّل صاحبُه').toBe('qualified')
+    expect(await toldQualified(t.userId), 'أُهِّل ولم يعلم').toBe(1)
+    expect(await prisma.auditEvent.count({ where: { action: 'trainer.qualify', entityId: t.profileId } })).toBe(1)
+    expect(await openTasks(), 'فُتحت مهمّةٌ لما تمّ').toBe(tasks)
   })
 
-  it('و«دورةٌ جديدة» كذلك — فالبابان يتركان الأثرَ نفسَه', async () => {
+  it('⚠️ و«دورةٌ جديدة» كذلك — فالبابان يتركان الأثرَ نفسَه', async () => {
     const t = await approvedTrainer('prop-task-new@test.local', 'دينا المدرّبة', [
       { titleAr: 'دورةٌ صارت في الكتالوج', summaryAr: '' },
     ])
     const [row] = await prisma.trainerCourseProposal.findMany({ where: { profileId: t.profileId } })
-    const before = await prisma.staffTask.count({ where: { assigneeId: adminId, status: 'open' } })
-
     await proposals.markBecameCourse(actor, row.id, courseId)
-    const after = await prisma.staffTask.count({ where: { assigneeId: adminId, status: 'open' } })
-    expect(after, 'الدورةُ الجديدةُ لا تترك مهمّةَ تأهيل').toBe(before + 1)
+    expect(await qualifiedFor(t.profileId), 'الدورةُ الجديدةُ لم تؤهّل صاحبها').toBe('qualified')
   })
 
-  it('⚠️ والرفضُ لا يفتح مهمّة — ولا يُكلَّف أحدٌ بتأهيلٍ لدورةٍ لم تُقبل', async () => {
+  it('⚠️ والرفضُ لا يؤهّل — لدورةٍ لم تُقبل', async () => {
     const t = await approvedTrainer('prop-task-reject@test.local', 'سعدُ المدرّب', [
       { titleAr: 'دورةٌ مرفوضة', summaryAr: '' },
     ])
     const [row] = await prisma.trainerCourseProposal.findMany({ where: { profileId: t.profileId } })
-    const before = await prisma.staffTask.count({ where: { assigneeId: adminId, status: 'open' } })
-
     await proposals.reject(adminId, row.id, 'مغطّاةٌ في رمزٍ قائمٍ ولا تضيف مهارة')
-    const after = await prisma.staffTask.count({ where: { assigneeId: adminId, status: 'open' } })
-    expect(after, 'فُتحت مهمّةُ تأهيلٍ لدورةٍ مرفوضة').toBe(before)
+    expect(await qualifiedFor(t.profileId), 'أهّل الرفض').toBeNull()
+  })
+
+  it('⚠️ ومن لا يملك التأهيلَ يصنّف ولا يؤهّل — فالصلاحيّتان تفترقان', async () => {
+    const t = await approvedTrainer('prop-task-noperm@test.local', 'رنا المدرّبة', [
+      { titleAr: 'دورةٌ يصنّفها من لا يؤهّل', summaryAr: '' },
+    ])
+    const [row] = await prisma.trainerCourseProposal.findMany({ where: { profileId: t.profileId } })
+    const limited = { ...actor, permissions: ['trainer.change.review'] }
+    await proposals.linkToCourse(limited, row.id, courseId)
+    expect((await prisma.trainerCourseProposal.findUniqueOrThrow({ where: { id: row.id } })).status).toBe('linked')
+    expect(await qualifiedFor(t.profileId), 'أهّل التصنيفُ بلا صلاحيّة التأهيل').toBeNull()
+  })
+
+  it('⚠️ والموقوفُ يُصنَّف اقتراحُه ولا يُؤهَّل — ولا يُردّ التصنيف', async () => {
+    const t = await approvedTrainer('prop-task-suspended@test.local', 'باسلُ الموقوف', [
+      { titleAr: 'دورةُ مدرّبٍ موقوف', summaryAr: '' },
+    ])
+    await review.suspendTrainer(t.profileId, adminId, 'إيقافٌ للاختبار')
+    const [row] = await prisma.trainerCourseProposal.findMany({ where: { profileId: t.profileId } })
+    await proposals.linkToCourse(actor, row.id, courseId)
+    expect((await prisma.trainerCourseProposal.findUniqueOrThrow({ where: { id: row.id } })).status).toBe('linked')
+    expect(await qualifiedFor(t.profileId), 'أُهِّل موقوف').toBeNull()
+  })
+
+  it('ومن أُهِّل لها قبلُ لا يصله خبرٌ ثانٍ', async () => {
+    const t = await approvedTrainer('prop-task-already@test.local', 'لينا المؤهَّلة', [
+      { titleAr: 'دورةٌ يُدرّسها أصلا', summaryAr: '' },
+    ])
+    await review.qualifyForCourse(t.profileId, courseId, adminId)
+    const [row] = await prisma.trainerCourseProposal.findMany({ where: { profileId: t.profileId } })
+    await proposals.linkToCourse(actor, row.id, courseId)
+    expect(await toldQualified(t.userId), 'أُعيد خبرُ التأهيل').toBe(1)
   })
 })
 

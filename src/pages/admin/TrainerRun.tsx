@@ -25,14 +25,19 @@
 
    وهو عرفُ «أتعاب المدرّبين» نفسُه (`TrainerCompensation.tsx`): **نقلُ
    البابِ لا توسيعُ المفتاح**. من يملك `trainer.qualify` يرى البابَ في
-   الشريط، ومن لا يملكه لا يراه ولا يُردّ عنده. */
+   الشريط، ومن لا يملكه لا يراه ولا يُردّ عنده.
+
+   ═══ واسمُها «المدربون» (١٨ أكتوبر ٢٠٢٦) ═══
+
+   ضُمّت إليها «إسنادٌ من المدرّب» وسقط منها التأهيلُ المباشرُ والإسناد — والقولُ في رأس
+   `TrainerRunOps.tsx`. */
 
 import AdminLayout from "./AdminLayout";
 import TrainerRunOps from "./TrainerRunOps";
 
 export default function TrainerRun() {
   return (
-    <AdminLayout title="التأهيل والإسناد">
+    <AdminLayout title="المدربون">
       <TrainerRunOps />
     </AdminLayout>
   );
