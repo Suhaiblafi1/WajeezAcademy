@@ -61,6 +61,7 @@ import {
 import { PUBLIC_TRAINER_WHERE, trainerPubliclyVisible } from './trainer-visibility'
 import { cleanProposals, readProposals } from '../../src/application/trainer/teachable-proposals'
 import { pendingKind } from '../../src/application/trainer/pending-kind'
+import type { PrepTally } from '../../src/application/trainer/prep-tally'
 import type { PrepCourse } from './trainer-prep.service'
 import {
   IDENTITY_MIMES, MAX_CONTRACT_DOC_BYTES,
@@ -2319,9 +2320,11 @@ export class TrainerReviewService {
         select: { id: true, reference: true, fullName: true, email: true, status: true },
       }),
     ])
-    const ready = await this.coursesReadyFor(contracts)
+    const [ready, tally] = await Promise.all([this.coursesReadyFor(contracts), this.prepTallyFor(contracts)])
     return {
-      contracts: contracts.map((c) => ({ ...c, coursesReady: ready.has(c.id) })),
+      contracts: contracts.map((c) => ({
+        ...c, coursesReady: ready.has(c.id), prepTally: c.profile ? tally.get(c.profile.id) ?? null : null,
+      })),
       candidates,
       missingLegal: missingAcademyLegalFields().map((f) => LEGAL_FIELD_LABELS_AR[f]),
     }
@@ -2362,6 +2365,23 @@ export class TrainerReviewService {
       for (const c of plain) if (await prep.prepDone(c.profile!.id)) ready.add(c.id)
     }
     return ready
+  }
+
+  /* ═══ وعدّادُ الشعب بجانب اسمه (١٨ أكتوبر ٢٠٢٦) ═══
+     سؤالُ صاحب المنصّة: «كم دورةً أعدّ شعبَها كلَّها أو جزءا منها؟ ألا يكون عدّادٌ جانبَ اسمه؟».
+     فلكلّ مدرّبٍ عقدُه قائمٌ — وقّعه أو اعتمدناه أو نفذ — عددُ دوراته بحالها (`prep-tally.ts`).
+     وما أُرسل ولم يوقَّع لم يبدأ طورُه بعد، والمغلَقُ سكن: لا عدّادَ لهما. */
+  private async prepTallyFor(contracts: { status: string; profile: { id: string } | null }[]) {
+    const live = ['signed', 'amendment_requested', 'signature_approved', 'countersigned']
+    const profileIds = [...new Set(contracts
+      .filter((c) => c.profile && live.includes(c.status))
+      .map((c) => c.profile!.id))]
+    const out = new Map<string, PrepTally>()
+    if (profileIds.length === 0) return out
+    const { TrainerPrepService } = await import('./trainer-prep.service')
+    const prep = new TrainerPrepService(this.prisma)
+    await Promise.all(profileIds.map(async (id) => { out.set(id, await prep.tallyOf(id)) }))
+    return out
   }
 
   /** المتنُ المجمَّد وحدَه — يُقرأ عند السؤال: «أيَّ صياغةٍ وقّع؟» */
