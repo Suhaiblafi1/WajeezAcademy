@@ -8,7 +8,8 @@
    ② ومن اعتُمدت دوراتُه كلُّها ولم يُفعَّل (عقدٌ عالقٌ من قبل هذا اليوم): القائمةُ تقول `coursesReady`
       — وما دام له معلّقٌ، أو فُعِّل، لا تقوله.
    ③ وللإدارة كيف اعتُمدت كلُّ دورة: تأهيلٌ مباشرٌ بلا شعبة، أو خطّةُ شعبةٍ اعتُمدت — ومن أهّله.
-   ⑤ وعدّادُ الشعب بجانب اسمه في «العقود»: كم دورةً أعدّ شعبتَها كاملةً أو جزءا منها (١٨ أكتوبر). */
+   ⑤ وعدّادُ الشعب بجانب اسمه في «العقود»: كم دورةً أعدّ شعبتَها كاملةً أو جزءا منها (١٨ أكتوبر).
+   ⑥ والمؤجّلةُ لا تحبس تفعيلَه ولا توقيعَ عقده («Don't wait»، ١٨ أكتوبر). */
 
 import { beforeAll, describe, expect as vexpect, it } from 'vitest'
 import { plainExpect } from '../helpers/plain-expect'
@@ -261,5 +262,56 @@ describe('⑤ عدّادُ الشعب في قائمة العقود', () => {
     expect(await tallyOf(t.contractId), 'أُجّلت وعُدّت جزئيّة').toMatchObject({ total: 2, postponed: 1, partial: 1 })
     const rows = await prep.coursesOf(t.profileId)
     expect(rows.find((r) => r.courseId === C1)?.postponedTo, 'لم يُقل إلى أيّ موسمٍ أُجّلت').toBeTruthy()
+  })
+})
+
+/* ═══ ⑥ والمؤجّلةُ لا تحبس التفعيلَ ولا التوقيع (١٨ أكتوبر ٢٠٢٦) ═══
+   «لا تنسَ أنّهم أجّلوا بعضها» — ثمّ «Don't wait»: يُفعَّل ويوقَّع حين تُعتمَد كلُّ دورةٍ لم تؤجَّل. */
+describe('⑥ المؤجّلةُ لا تحبس التفعيلَ ولا التوقيع', () => {
+  const submit = (cohortId: string, trainerId: string) => prisma.cohortDeliveryPlan.create({
+    data: { cohortId, trainerId, status: 'submitted', submittedAt: new Date(), content: { kind: 'trainer', modules: [], resources: [] } },
+  })
+  const season = () => postponeChoices(null, new Date().toISOString().slice(0, 10))[0]
+
+  it('اعتُمدت الأولى وأُجّلت الأخيرة — يُفعَّل بالتأجيل', async () => {
+    const t = await onboarding([C1, C2])
+    const one = await prep.accept(t.userId, C1)
+    const two = await prep.accept(t.userId, C2)
+    await plans.decide(adminId, (await submit(one.id, t.profileId)).id, true)
+    expect(await statusOf(t.applicationId), 'فُعِّل ودورتُه الثانيةُ تُعَدّ').toBe('onboarding')
+
+    const r = await plans.postpone(adminId, (await submit(two.id, t.profileId)).id, season())
+    expect(r, 'لم يبقَ إلّا المؤجّلةُ ولم يُفعَّل').toMatchObject({ status: 'postponed', prep: { activated: true } })
+    expect(await statusOf(t.applicationId)).toBe('active')
+    expect((await prisma.trainerContract.findUniqueOrThrow({ where: { id: t.contractId } })).conditionMetAt).not.toBeNull()
+  })
+
+  it('وأُجّلت أوّلا ثمّ اعتُمدت الباقية — يُفعَّل بالاعتماد، والعقدُ العالقُ «جاهز»', async () => {
+    const t = await onboarding([C1, C2])
+    await prep.accept(t.userId, C1)
+    const two = await prep.accept(t.userId, C2)
+    await plans.postpone(adminId, (await submit(two.id, t.profileId)).id, season())
+    expect(await statusOf(t.applicationId), 'فُعِّل والأولى لم تُعتمَد').toBe('onboarding')
+
+    /* عقدٌ عالق: أُهِّل للأولى بغير بابٍ يفعّل */
+    await prisma.trainerCourseQualification.updateMany({ where: { profileId: t.profileId, courseId: C1 }, data: { status: 'qualified' } })
+    expect(await readyOf(t.contractId), 'لم يبقَ إلّا المؤجّلةُ ولم يُقل جاهز').toBe(true)
+    await review.decide(t.applicationId, adminId, 'activate', 'اعتمدت دوراته كلها — والمؤجلة لموسمها')
+    expect(await statusOf(t.applicationId)).toBe('active')
+  })
+
+  it('والنشطُ عقدُه كالعقود الجديدة يوقَّع حين تؤجَّل آخرُ ما يُعِدّه', async () => {
+    const t = await onboarding([C1, C2])
+    await prisma.trainerCourseQualification.updateMany({ where: { profileId: t.profileId }, data: { status: 'qualified' } })
+    await prisma.trainerApplication.update({ where: { id: t.applicationId }, data: { status: 'active' } })
+    await prisma.trainerContract.update({ where: { id: t.contractId }, data: { gatesActivation: false, status: 'signature_approved' } })
+    const one = await prep.accept(t.userId, C1)
+    const two = await prep.accept(t.userId, C2)
+    const r1 = await plans.decide(adminId, (await submit(one.id, t.profileId)).id, true)
+    expect(r1).toMatchObject({ sealed: { sealed: false } })
+
+    const r2 = await plans.postpone(adminId, (await submit(two.id, t.profileId)).id, season())
+    expect(r2, 'لم يبقَ إلّا المؤجّلةُ ولم يوقَّع').toMatchObject({ sealed: { sealed: true } })
+    expect((await prisma.trainerContract.findUniqueOrThrow({ where: { id: t.contractId } })).status).toBe('countersigned')
   })
 })

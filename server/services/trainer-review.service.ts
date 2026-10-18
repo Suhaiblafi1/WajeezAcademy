@@ -2356,6 +2356,13 @@ export class TrainerReviewService {
     const ready = new Set(open
       .filter((c) => count(c.profile!.id, 'pending') === 0 && count(c.profile!.id, 'qualified') > 0)
       .map((c) => c.id))
+    /* ومن لم يبقَ له معلّقٌ إلّا ما أُجّل إلى موسمٍ قادم جاهزٌ كذلك (١٨ أكتوبر ٢٠٢٦، `blockingPending`) */
+    const waiting = open.filter((c) => count(c.profile!.id, 'pending') > 0 && count(c.profile!.id, 'qualified') > 0)
+    if (waiting.length > 0) {
+      const { TrainerPrepService } = await import('./trainer-prep.service')
+      const prep = new TrainerPrepService(this.prisma)
+      for (const c of waiting) if (await prep.blockingPending(c.profile!.id) === 0) ready.add(c.id)
+    }
     /* وعقدُ النشط المعتمَدُ كالعقود الجديدة: اكتملت دوراتُه إن خلت قائمةُ طوره ممّا يُعَدّ أو ينتظر
        (`prepDone` — شرطُ توقيعه التلقائيّ نفسُه، ١٧ أكتوبر ٢٠٢٦) */
     const plain = contracts.filter((c) => !c.gatesActivation && c.status === 'signature_approved' && c.profile)
@@ -5720,8 +5727,10 @@ export class TrainerReviewService {
   private async allCoursesQualified(applicationId: string): Promise<boolean> {
     const profile = await this.prisma.trainerProfile.findUnique({ where: { applicationId }, select: { id: true } })
     if (!profile) return false
+    /* والمؤجّلةُ لا تُعدّ معلّقة (١٨ أكتوبر ٢٠٢٦، `blockingPending`) */
+    const { TrainerPrepService } = await import('./trainer-prep.service')
     const [pending, qualified] = await Promise.all([
-      this.prisma.trainerCourseQualification.count({ where: { profileId: profile.id, status: 'pending' } }),
+      new TrainerPrepService(this.prisma).blockingPending(profile.id),
       this.prisma.trainerCourseQualification.count({ where: { profileId: profile.id, status: 'qualified' } }),
     ])
     return pending === 0 && qualified > 0

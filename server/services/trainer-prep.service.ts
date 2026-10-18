@@ -465,7 +465,7 @@ export class TrainerPrepService {
       وعامّةٌ منذ ١٧ أكتوبر ٢٠٢٦: يناديها التأهيلُ من أيّ باب (`activateWhenCoursesDone`) */
   async activateIfComplete(profileId: string, applicationId: string, actorId: string) {
     const [pending, qualified] = await Promise.all([
-      this.prisma.trainerCourseQualification.count({ where: { profileId, status: 'pending' } }),
+      this.blockingPending(profileId),
       this.prisma.trainerCourseQualification.count({ where: { profileId, status: 'qualified' } }),
     ])
     if (pending > 0 || qualified === 0) return { activated: false as const, waiting: pending }
@@ -501,7 +501,19 @@ export class TrainerPrepService {
     const qualified = await this.prisma.trainerCourseQualification.count({ where: { profileId, status: 'qualified' } })
     if (qualified === 0) return false
     const rows = await this.coursesOf(profileId)
-    return rows.every((r) => r.state === 'declined' || (r.approved && r.state === 'to_decide'))
+    return rows.every((r) => r.state === 'declined' || (r.approved && r.state === 'to_decide') || Boolean(r.postponedTo))
+  }
+
+  /* ═══ والمؤجّلةُ لا تحبس تفعيلَه ولا توقيعَ عقده (١٨ أكتوبر ٢٠٢٦) ═══
+
+     قال صاحبُ المنصّة: «لا تنسَ أنّهم أجّلوا بعضها» — ثمّ اختار «Don't wait»: يُفعَّل ويوقَّع عقدُه
+     حين تُعتمَد كلُّ دورةٍ لم تؤجَّل. وكانت المؤجّلةُ معلّقةً (`pending`) تحبسه إلى موسمها — أشهرا.
+     والمؤجّلةُ تُعتمَد في موسمها بخطّة شعبتها كما تُعتمَد دورةٌ أُضيفت لنشط (`prepContext`). */
+  async blockingPending(profileId: string): Promise<number> {
+    const postponed = (await this.coursesOf(profileId)).filter((r) => r.postponedTo).map((r) => r.courseId)
+    return this.prisma.trainerCourseQualification.count({
+      where: { profileId, status: 'pending', ...(postponed.length ? { courseId: { notIn: postponed } } : {}) },
+    })
   }
 
   /** عدّادُ الشعب بجانب اسمه في «العقود» — من `coursesOf` نفسِها، وما خرج منها بشعبةٍ قائمةٍ يُعدّ معتمَدا

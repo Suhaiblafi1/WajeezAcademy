@@ -505,8 +505,17 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
                 <div className="mt-3 flex flex-wrap gap-2">
                   <Button tone="danger" size="sm" disabled={busy}
                     onClick={() => void act(
-                      () => apiPost(`/api/admin/cohort-plans/${trainerPlan.id}/postpone`, { year: to.year, season: to.season, note: postponeNote.trim() || undefined }).then(loadPlan),
-                      `أجّلت إلى ${seasonAr(to)} — وصله جرس وبريد بأنّها لم تقبل لهذا الفصل`,
+                      /* وإن لم يبقَ له غيرُ المؤجّلة فُعِّل بها (١٨ أكتوبر ٢٠٢٦) — فتُعرض خطواتُه التالية كما بعد الاعتماد */
+                      () => apiPost(`/api/admin/cohort-plans/${trainerPlan.id}/postpone`, { year: to.year, season: to.season, note: postponeNote.trim() || undefined })
+                        .then(async (res) => {
+                          const r = res as { prep?: { activated?: boolean } | null };
+                          await loadPlan();
+                          if (r.prep?.activated) setActivated(true);
+                          return r;
+                        }),
+                      (r) => (r as { prep?: { activated?: boolean } | null }).prep?.activated
+                        ? `أجّلت إلى ${seasonAr(to)} — ولم يبق له غيرها ففعّل ووقّع عقده`
+                        : `أجّلت إلى ${seasonAr(to)} — وصله جرس وبريد بأنّها لم تقبل لهذا الفصل`,
                     ).then((ok) => { if (ok) { setPostponing(false); setPostponeNote(""); decided("postponed"); } })}>
                     أجّلها إلى {seasonAr(to)}
                   </Button>

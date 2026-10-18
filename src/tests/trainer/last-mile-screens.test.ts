@@ -303,6 +303,7 @@ describe('③أ لوح «ما بقي عليك» يظهر حيث فعّل', () =>
     expect(shown.length, 'اللوح لا يعرض أو يعرض بلا شرط').toBe(1)
     const raised = all(sf, (n) => ts.isIfStatement(n) && /prep\?\.activated/.test(n.expression.getText(sf))
       && callsOf(n.thenStatement, sf, 'setActivated').length > 0)
-    expect(raised.length, 'لا يرفع اللوح بتفعيل المدرّب').toBe(1)
+    /* بالاعتماد، وبالتأجيل حين لا يبقى له غيرُ المؤجّلة (١٨ أكتوبر ٢٠٢٦) */
+    expect(raised.length, 'لا يرفع اللوح بتفعيل المدرّب — بعد الاعتماد وبعد التأجيل').toBe(2)
   })
 })
