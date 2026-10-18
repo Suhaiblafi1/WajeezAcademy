@@ -89,11 +89,24 @@ export default function TrainerNextSteps({ cohortId }: { cohortId: string }) {
   const nothingLeft = steps.cohorts.length === 0 && steps.trainer.publiclyVisible;
   if (nothingLeft) return null;
 
+  /* ═══ ولا تُفتح شعبةُ مدرّبٍ لم يفعّل بعد (١٨ أكتوبر ٢٠٢٦) ═══
+     صار اللوحُ يظهر على كلّ خطّةٍ معتمَدة، ومنها خططُ مدرّبٍ في طور الإعداد بقيت له دوراتٌ لم تُعتمد. وعقدُه لا ينفذ
+     حتّى تُعتمد آخرُها (`trainer-prep.service.ts`) — فيُقال ذلك ولا يُعرض فتحٌ ولا ظهور. */
+  if (!steps.trainer.active) {
+    return steps.cohorts.length === 0 ? null : (
+      <Inset className="mt-3" role="region" aria-label="ما بقي عليك">
+        <p className="text-read leading-6 text-muted-foreground">
+          {steps.trainer.name} لم يفعّل بعد. تفتح شعبه المعتمدة بعد تفعيله، حين تعتمد آخر دوراته.
+        </p>
+      </Inset>
+    );
+  }
+
   return (
     <Inset className="mt-3" role="region" aria-label="ما بقي عليك">
-      <p className="text-read font-black text-foreground">بقي قراران لك</p>
+      <p className="text-read font-black text-foreground">ما بقي لك</p>
       <p className="mt-1 text-read leading-6 text-muted-foreground">
-        {steps.trainer.name} مدرّب نشط الآن وعقده نافذ. قرّر الباقي الآن، أو لاحقا من بطاقة كل شعبة و«التأهيل والإسناد».
+        {steps.trainer.name} مدرّب نشط. افتح شعبه المعتمدة الآن، أو لاحقا من بطاقة كل شعبة.
       </p>
 
       {steps.cohorts.length > 0 && (

@@ -293,17 +293,29 @@ describe('⑥ بند الجرس يفتح خبره', () => {
   })
 })
 
-/* ─────────── ③أ اللوحُ بعد الاعتماد الأخير ─────────── */
+/* ─────────── ③أ اللوحُ بعد الاعتماد — على كلّ خطّةٍ معتمَدة (١٨ أكتوبر ٢٠٢٦) ─────────── */
 
-describe('③أ لوح «ما بقي عليك» يظهر حيث فعّل', () => {
-  it('يعرض بعد اعتماد فعّل مدرّبه — وبه وحده', () => {
+describe('③أ لوح «ما بقي عليك» يظهر على كلّ خطّةٍ معتمَدة', () => {
+  it('⚠️ يعرض لمن يعتمد على كلّ خطّةٍ معتمَدة — لا بعد الاعتماد المفعّل وحدَه', () => {
     const sf = tree('src/components/admin/TrainerPlanReview.tsx')
     const shown = all(sf, (n) => ts.isBinaryExpression(n) && n.operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandToken
-      && n.left.getText(sf) === 'activated' && /TrainerNextSteps/.test(n.right.getText(sf)))
+      && n.left.getText(sf) === 'canApprovePlan && (planApproved || activated)' && /TrainerNextSteps/.test(n.right.getText(sf)))
     expect(shown.length, 'اللوح لا يعرض أو يعرض بلا شرط').toBe(1)
+    const src = sf.getFullText()
+    expect(src).toMatch(/const planApproved = trainerPlan\?\.status === "approved" \|\| trainerPlan\?\.status === "published";/)
+    /* وبالتأجيل حين لا يبقى له غيرُ المؤجّلة (#547) — يُرفع مرّةً واحدة هناك، لا بالاعتماد الذي يكفيه حالُ الخطّة */
     const raised = all(sf, (n) => ts.isIfStatement(n) && /prep\?\.activated/.test(n.expression.getText(sf))
       && callsOf(n.thenStatement, sf, 'setActivated').length > 0)
-    /* بالاعتماد، وبالتأجيل حين لا يبقى له غيرُ المؤجّلة (١٨ أكتوبر ٢٠٢٦) */
-    expect(raised.length, 'لا يرفع اللوح بتفعيل المدرّب — بعد الاعتماد وبعد التأجيل').toBe(2)
+    expect(raised.length, 'لا يرفع اللوح بالتأجيل الذي فعّل').toBe(1)
+  })
+
+  it('⚠️ ولا يفتح شعبةَ مدرّبٍ لم يفعّل — يقول متى تفتح', () => {
+    const src = tree('src/components/admin/TrainerNextSteps.tsx').getFullText()
+    const gate = src.indexOf('if (!steps.trainer.active) {')
+    expect(gate, 'لا حدّ لمن لم يفعّل').toBeGreaterThan(0)
+    const early = src.slice(gate, src.indexOf('\n  return (', gate + 1))
+    expect(early).toMatch(/لم يفعّل بعد\. تفتح شعبه المعتمدة بعد تفعيله، حين تعتمد آخر دوراته\./)
+    expect(early, 'عرض فتحا لمن لم يفعّل').not.toMatch(/openCohort|publish\(\)/)
+    expect(gate, 'الفتح قبل حدّ التفعيل').toBeLessThan(src.indexOf('افتحها للتسجيل'))
   })
 })

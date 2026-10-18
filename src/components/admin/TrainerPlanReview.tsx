@@ -165,7 +165,12 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
   const [postponeNote, setPostponeNote] = useState("");
   /* وكلمةٌ تصله مع الاعتماد — للمقترَح لا للمطلوب (`approvalBody`، ٧ أكتوبر ٢٠٢٦) */
   const [approveNote, setApproveNote] = useState("");
-  /* وفُعِّل مدرّبُها بهذا الاعتماد — فيظهر ما بقي عليك (`TrainerNextSteps`، «3a») */
+  /* ═══ وما بقي بعد الاعتماد يظهر على كلّ خطّةٍ معتمَدة (١٨ أكتوبر ٢٠٢٦) ═══
+     كان لوحُ «ما بقي عليك» (`TrainerNextSteps`، «3a») يظهر بعد الاعتماد الذي فعّل المدرّبَ وحدَه — فكلُّ شعبةٍ
+     بعدها لمدرّبٍ نشطٍ لا تُفتح إلّا من «الشعب». واختار صاحبُ المنصّة («All, in order»، الخطوة A): يظهر على كلّ خطّةٍ
+     معتمَدة، والخادمُ يقول ما بقي (مسوّداتُه المعتمَدة)، واللوحُ لا يفتح لمدرّبٍ لم يفعّل بعد. */
+  const planApproved = trainerPlan?.status === "approved" || trainerPlan?.status === "published";
+  /* وتأجيلُ آخرِ ما يُعِدّه يفعّله (#547) — فيظهر اللوحُ لشعبه المعتمَدة وإن لم تكن هذه منها */
   const [activated, setActivated] = useState(false);
   /* القضاءُ في الخطّة يُبلَّغ مرّتين: البابُ الذي فُتحت منه (الطابورُ يعلّمها)،
      والإطارُ الذي يعدّ ما ينتظر (`plans-signal.ts`) — فلا تبقى شارتُه على عددٍ مضى */
@@ -442,7 +447,7 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
                 <Button tone="confirm" size="sm" disabled={busy}
                   onClick={() => act(
                     () => apiPost<PlanDecision>(`/api/admin/cohort-plans/${trainerPlan.id}/decide`, approvalBody(approveNote))
-                      .then(async (r) => { setApproveNote(""); await Promise.all([loadPlan(), loadPendingSessions()]); if (r.prep?.activated) setActivated(true); decided("approved"); return r; }),
+                      .then(async (r) => { setApproveNote(""); await Promise.all([loadPlan(), loadPendingSessions()]); decided("approved"); return r; }),
                     (r) => planApprovedMsg(r as PlanDecision),
                   )}>
                   {riding.length > 0 ? `اعتمدها ولقاءاتها (${riding.length})` : "اعتمدها"}{blocked.length > 0 ? " كما هي" : ""}{approveNote.trim() ? " مع كلمتك" : ""}
@@ -540,8 +545,8 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
           )}
           {/* وما قاله الفعلُ يُقرأ حيث نُقر — لا أعلى البطاقة بعد منهجٍ طويل */}
           {msg && <p className="mt-3 text-read font-bold text-teal-light-ink" role="status">{msg}</p>}
-          {/* وما بقي بعد الاعتماد الأخير — فتحُ شعبه وظهورُه العامّ، في الموضع الذي فُعِّل فيه */}
-          {activated && <TrainerNextSteps cohortId={cohortId} />}
+          {/* وما بقي بعد الاعتماد — فتحُ شعبه المعتمَدة وظهورُه العامّ، على كلّ خطّةٍ معتمَدة */}
+          {canApprovePlan && (planApproved || activated) && <TrainerNextSteps cohortId={cohortId} />}
 
           {/* ═══ ومهامُّ ما بعد الاعتماد تنتظر قرارك (٣ج-٣) ═══
               «وبعد الاعتماد كلُّ تغييرٍ باعتماد» — جديدةٌ أو تعديلٌ أو حذف، والمتعلّمون
