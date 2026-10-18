@@ -28,6 +28,7 @@ import {
 } from "@/application/trainer/contract-body";
 import { FINAL_REMINDER_DAYS, daysWindowAr } from "@/application/trainer/notice-periods";
 import { changeGroupsBetween } from "@/application/trainer/contract-changelog";
+import { prepTallyAr, prepTallyDetailAr, type PrepTally } from "@/application/trainer/prep-tally";
 import {
   DEFAULT_RESIGN_SUBJECT_AR, RESIGN_BODY_MAX, RESIGN_BODY_MIN, RESIGN_CHANGES_HEADING_AR,
   RESIGN_SUBJECT_MAX, RESIGN_SUBJECT_MIN, defaultResignBodyAr, personalChangesAr, reissueChangesView, noChangesLineAr,
@@ -141,6 +142,8 @@ interface ContractRow {
   orientationAt: string | null;
   /** دوراتُه كلُّها معتمَدةٌ ولم يُفعَّل — فبالتفعيل نوقّع العقد (١٧ أكتوبر ٢٠٢٦، `coursesReadyFor`) */
   coursesReady?: boolean;
+  /** عدّادُ الشعب بجانب اسمه — كم دورةً أعدّ شعبتَها كاملةً أو جزءا منها (١٨ أكتوبر ٢٠٢٦، `prepTallyFor`) */
+  prepTally?: PrepTally | null;
   documents: { id: string; kind: string; originalName: string; mime: string; uploadedAt: string }[];
   qualifiedSnapshot: { courseId: string; titleAr: string }[] | null;
   profile: { id: string; legalNameAr: string | null; suspendedAt?: string | null; application: { id: string; reference: string; fullName: string; email: string; status: string } | null } | null;
@@ -1334,6 +1337,9 @@ c.gatesActivation
                     <ChevronDown aria-hidden="true"
                       className={`h-4 w-4 shrink-0 opacity-60 transition-transform ${isOpen ? "rotate-180" : ""}`} />
                     <b className="min-w-0 text-read">{docNameOf(c)}</b>
+                    {c.prepTally && prepTallyAr(c.prepTally) && (
+                      <Chip srPrefixAr="شعب دوراته">{prepTallyAr(c.prepTally)}</Chip>
+                    )}
                     <Chip tone={NEXT_TONE[step.who]} srPrefixAr="الخطوةُ التالية">{step.textAr}</Chip>
                   </Inset>
                   {isOpen && (<div id={`contract-row-${c.id}`} className="mt-1.5">
@@ -1352,6 +1358,12 @@ c.gatesActivation
                             : " · بلا نصّ (البابُ القديم)"}
                           {" · "}{fmtDateTime(c.createdAt)}
                         </span>
+                        {/* وتفصيلُ العدّاد تحت الاسم: ما اعتُمد وما ينتظرك وما يعدّه وما لم يبدأ */}
+                        {c.prepTally && c.prepTally.total + c.prepTally.declined > 0 && (
+                          <span className="block text-read opacity-70">
+                            دوراته: {prepTallyDetailAr(c.prepTally)}
+                          </span>
+                        )}
                       </span>
                       <span className="flex flex-wrap gap-2">
                         {c.status === "draft" && c.bodyHash && (

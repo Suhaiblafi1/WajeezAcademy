@@ -32,6 +32,7 @@ import { portalDoorProblemAr } from '../../src/application/trainer/portal-access
 import { cleanCourseMaterials, type CourseMaterials } from '../../src/application/trainer/course-materials'
 import { readContractCourses } from '../../src/application/trainer/contract-body'
 import { PLAN_MAX, PLAN_TITLE_MIN } from '../../src/application/trainer/plan-limits'
+import { prepTallyOf, type PrepTally } from '../../src/application/trainer/prep-tally'
 
 /** حالُ الدورة في طور الإعداد كما تُعرض للمدرّب وللإدارة */
 export type PrepState =
@@ -473,6 +474,22 @@ export class TrainerPrepService {
     if (qualified === 0) return false
     const rows = await this.coursesOf(profileId)
     return rows.every((r) => r.state === 'declined' || (r.approved && r.state === 'to_decide'))
+  }
+
+  /** عدّادُ الشعب بجانب اسمه في «العقود» — من `coursesOf` نفسِها، وما خرج منها بشعبةٍ قائمةٍ يُعدّ معتمَدا
+      (`prep-tally.ts`، ١٨ أكتوبر ٢٠٢٦) */
+  async tallyOf(profileId: string): Promise<PrepTally> {
+    const rows = await this.coursesOf(profileId)
+    const left = (await this.prisma.trainerCourseQualification.findMany({
+      where: { profileId, status: 'qualified', courseId: { notIn: rows.map((r) => r.courseId) } },
+      select: { courseId: true },
+    })).map((q) => q.courseId)
+    const live = left.length === 0 ? [] : await this.prisma.cohortTrainer.findMany({
+      where: { profileId, cohort: { courseId: { in: left }, status: { not: 'cancelled' } } },
+      select: { cohort: { select: { courseId: true } } },
+    })
+    const withCohort = new Set(live.map((l) => l.cohort.courseId))
+    return prepTallyOf([...rows.map((r) => r.state), ...left.map((c) => (withCohort.has(c) ? 'done' as const : 'to_decide' as const))])
   }
 
   /** يوقّع عقدَ النشط المعتمَدَ كالعقود الجديدة إن اكتملت دوراتُه — وما يمنع يُقال للإدارة ولا يُسقط ما قبله */

@@ -7,7 +7,8 @@
    ① التأهيلُ المباشرُ لآخر دوراته («التأهيل والإسناد») يفعّله ويختم عقدَه — وما دام له معلّقٌ لا.
    ② ومن اعتُمدت دوراتُه كلُّها ولم يُفعَّل (عقدٌ عالقٌ من قبل هذا اليوم): القائمةُ تقول `coursesReady`
       — وما دام له معلّقٌ، أو فُعِّل، لا تقوله.
-   ③ وللإدارة كيف اعتُمدت كلُّ دورة: تأهيلٌ مباشرٌ بلا شعبة، أو خطّةُ شعبةٍ اعتُمدت — ومن أهّله. */
+   ③ وللإدارة كيف اعتُمدت كلُّ دورة: تأهيلٌ مباشرٌ بلا شعبة، أو خطّةُ شعبةٍ اعتُمدت — ومن أهّله.
+   ⑤ وعدّادُ الشعب بجانب اسمه في «العقود»: كم دورةً أعدّ شعبتَها كاملةً أو جزءا منها (١٨ أكتوبر). */
 
 import { beforeAll, describe, expect as vexpect, it } from 'vitest'
 import { plainExpect } from '../helpers/plain-expect'
@@ -218,5 +219,32 @@ describe('④ عقدُ النشط المعتمَدُ كالعقود الجديد
     expect(await readyOf(t.contractId), 'له دورةٌ معلّقة').toBe(false)
     await review.qualifyForCourse(t.profileId, C2, adminId, 'من التأهيل والإسناد')
     expect((await contractOf(t.contractId)).status, 'أُهِّل لآخر دوراته ولم يوقَّع عقدُه').toBe('countersigned')
+  })
+})
+
+/* ═══ ⑤ عدّادُ الشعب بجانب اسمه (١٨ أكتوبر ٢٠٢٦) ═══
+   سؤالُ صاحب المنصّة: «كم دورةً أعدّ شعبَها كلَّها أو جزءا منها؟ ألا يكون عدّادٌ جانبَ اسمه؟». */
+describe('⑤ عدّادُ الشعب في قائمة العقود', () => {
+  const tallyOf = async (contractId: string) =>
+    (await review.listContracts()).contracts.find((c) => c.id === contractId)?.prepTally
+
+  it('لم يبدأ ← جزئيّة ← تنتظرك ← معتمدة — وما اعتذر عنه خارجَ العدد', async () => {
+    const t = await onboarding([C1, C2])
+    expect(await tallyOf(t.contractId)).toMatchObject({ total: 2, notStarted: 2, partial: 0 })
+
+    const cohort = await prep.accept(t.userId, C1)
+    expect(await tallyOf(t.contractId), 'قامت شعبتُه ولم تُعدّ جزئيّة').toMatchObject({ total: 2, partial: 1, notStarted: 1 })
+
+    const plan = await prisma.cohortDeliveryPlan.create({
+      data: { cohortId: cohort.id, trainerId: t.profileId, status: 'submitted', submittedAt: new Date(), content: { kind: 'trainer', modules: [], resources: [] } },
+    })
+    expect(await tallyOf(t.contractId), 'أرسلها ولم تُعدّ كاملة').toMatchObject({ total: 2, submitted: 1, partial: 0 })
+
+    await prep.decline(t.userId, C2, 'لا أدرّسها الآن')
+    expect(await tallyOf(t.contractId), 'اعتذر عنها وبقيت من دوراته').toMatchObject({ total: 1, submitted: 1, declined: 1, notStarted: 0 })
+
+    await plans.decide(adminId, plan.id, true)
+    expect(await tallyOf(t.contractId), 'اعتُمدت خطّتُها فخرجت من العدد')
+      .toMatchObject({ total: 1, approved: 1, submitted: 0, declined: 1 })
   })
 })
