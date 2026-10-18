@@ -6,6 +6,7 @@
    ① الحكمُ نفسُه بلا قاعدة: من يعمل في المنصّة وحساباتُ البذر تجريبيّةٌ من نفسها، والمتعلّمُ بالمفتاح وحدَه.
    ② ومفتاحُ «حساب تجريبي» في بطاقة الحساب — لمن يدير الحسابات، ولا يُعرض لمن يُعرف من نفسه.
    ③ و«من ينتظر دورة بلا شعبة» لا تُعرض حين لا ينتظر أحدٌ حقيقيّ.
+   ④ ومن في خططهم بأسمائهم، وبجانب كلٍّ «حساب تجريبي» لمن يدير الحسابات — ثمّ تُقرأ القائمةُ ثانية (١٨ أكتوبر ٢٠٢٦).
 
    والفحصُ على الشيفرة بلا تعليقاتها. */
 
@@ -68,5 +69,29 @@ describe('③ «من ينتظر دورة بلا شعبة»', () => {
 
   it('وتقول إنّ التجريبيّة لا تُعدّ', () => {
     expect(panel).toMatch(/دون الحسابات التجريبية/)
+  })
+})
+
+describe('④ «من في خططهم؟» في القائمة نفسِها', () => {
+  const panel = code('src/pages/admin/CourseDemand.tsx')
+
+  it('⚠️ يقرأ الأسماء من الخادم ويعرضها مرّةً لكلّ متعلّم', () => {
+    expect(panel).toMatch(/\.then\(\(r\) => \{ setRows\(r\.rows\); setLearners\(r\.learners \?\? \[\]\); \}\)/)
+    expect(panel).toMatch(/\{learners\.length > 0 && \(\s*<details[^>]*>\s*<summary[^>]*>من في خططهم؟ \(\{learners\.length\}\)<\/summary>/)
+    expect(panel).toMatch(/\{learners\.map\(\(l\) => \(/)
+  })
+
+  it('⚠️ والزرُّ لمن يدير الحسابات — يعلّمه ثمّ يعيد قراءة القائمة', () => {
+    expect(panel).toMatch(/const canMark = viewer\?\.permissions\.includes\("admin\.users\.manage"\) \?\? false;/)
+    expect(panel).toMatch(/\{canMark && \(\s*<Button[^>]*onClick=\{\(\) => void markTest\(l\)\}>\s*حساب تجريبي\s*<\/Button>/)
+    const mark = panel.slice(panel.indexOf('const markTest = async'), panel.indexOf('if (error ||'))
+    expect(mark).toMatch(/await apiPost\(`\/api\/admin\/users\/\$\{l\.id\}\/test-account`, \{ value: true \}\);/)
+    expect(mark.indexOf('await load();'), 'لا تعاد القائمة بعد التعليم').toBeGreaterThan(mark.indexOf('/test-account'))
+  })
+
+  it('⚠️ ويقول ما يقع وكيف يرجع — بلا تشكيل إعرابيّ', () => {
+    const block = panel.slice(panel.indexOf('{learners.length > 0 && ('), panel.indexOf('{!rows ? ('))
+    expect(block).toMatch(/«حساب تجريبي» يخرج طلبه من هذا العد، ولا يغير دخوله ولا ما يملك\. وترجعه من «المستخدمون والأدوار»\./)
+    expect(block).not.toMatch(/[ً-ِْ]/)
   })
 })

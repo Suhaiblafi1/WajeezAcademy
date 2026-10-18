@@ -6,7 +6,9 @@
    ① **من نفسه**: من يعمل في المنصّة (فريقٌ أو مدرّبٌ أو مستشار)، وحساباتُ البذر على `wajeez.local`
       — في خطّته وببريده كذلك. والمتعلّمُ الحقيقيّ يُعدّ كما كان.
    ② **وبمفتاح الإدارة**: «حساب تجريبي» يُخرجه من العدّ، ورفعُه يعيده — بأثرٍ يُقرأ، ولمن يدير الحسابات وحدَه.
-   ③ **ودورةٌ لا يطلبها إلّا حسابُ تجربةٍ لا تُعرض**. */
+   ③ **ودورةٌ لا يطلبها إلّا حسابُ تجربةٍ لا تُعرض**.
+   ④ **ومن هم** (١٨ أكتوبر ٢٠٢٦): من في خططهم بأسمائهم لمن يرى الحسابات — بلا حسابات التجربة — ومن يدير
+      الشعب وحدَها يرى العددَ بلا أسماء. */
 
 import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
@@ -52,6 +54,9 @@ beforeAll(async () => {
   /* يرى الحسابات ولا يديرها (`admin.users.view` بلا `manage`) */
   await person(`ta-viewer-${S}@test.local`, ['academic_manager'])
   cookies.viewer = `${SESSION_COOKIE}=${(await auth.login(`ta-viewer-${S}@test.local`, PASS)).token}`
+  /* يدير الشعب ولا يرى الحسابات (`cohort.manage` بلا `admin.users.view`) */
+  await person(`ta-coord-${S}@test.local`, ['academic_coordinator'])
+  cookies.coord = `${SESSION_COOKIE}=${(await auth.login(`ta-coord-${S}@test.local`, PASS)).token}`
   /* من آخر الكتالوج — بعيدا عمّا تأخذه `course-interest.test.ts` من أوّله */
   courses = (await prisma.course.findMany({ where: { status: 'published' }, select: { id: true }, orderBy: { id: 'desc' } }))
     .map((c) => c.id).slice(0, 4)
@@ -113,4 +118,39 @@ it('⚠️ ③ ودورةٌ لا يطلبها إلّا حسابُ تجربةٍ �
   expect(await row(c)).toBeDefined()
   await flag('admin', t, true)
   expect(await row(c), 'عرضت دورة لا يطلبها إلا حساب تجربة').toBeUndefined()
+})
+
+describe('④ ومن هم — لمن يرى الحسابات', () => {
+  type Demand = { rows: { courseId: string }[]; learners?: { id: string; email: string; courses: number }[] }
+  const demandAs = async (who: string) => {
+    const r = await app.inject({ method: 'GET', url: '/api/admin/course-demand', headers: { cookie: cookies[who] } })
+    expect(r.statusCode, r.body).toBe(200)
+    return r.json() as Demand
+  }
+
+  it('⚠️ من في خططهم بأسمائهم وكم دورةً ينتظر — بلا حسابات التجربة', async () => {
+    const real = await person(`ta-who-${S}@example.com`)
+    await wants(real, courses[3]!)
+    const d = await demandAs('admin')
+    const me = d.learners?.find((l) => l.id === real)
+    expect(me, 'غاب من في خطّته').toMatchObject({ email: `ta-who-${S}@example.com`, courses: 1 })
+    const emails = (d.learners ?? []).map((l) => l.email)
+    for (const t of [`ta-staff-${S}@example.com`, `ta-trainer-${S}@example.com`, `ta-seed-${S}@wajeez.local`]) {
+      expect(emails, `ظهر حساب تجربة: ${t}`).not.toContain(t)
+    }
+  })
+
+  it('⚠️ و«حساب تجريبي» من هناك يخرجه من الأسماء ومن العدّ', async () => {
+    const t = (await demandAs('admin')).learners!.find((l) => l.email === `ta-who-${S}@example.com`)!
+    expect((await flag('admin', t.id, true)).statusCode).toBe(200)
+    const d = await demandAs('admin')
+    expect(d.learners?.map((l) => l.id)).not.toContain(t.id)
+    expect(d.rows.map((r) => r.courseId), 'بقيت دورة لا يطلبها إلا حساب تجربة').not.toContain(courses[3]!)
+  })
+
+  it('⚠️ ومن يدير الشعب وحدَها يرى العددَ بلا أسماء', async () => {
+    const d = await demandAs('coord')
+    expect(d.rows.length).toBeGreaterThan(0)
+    expect(d.learners, 'رأى أسماء من لا يرى الحسابات').toBeUndefined()
+  })
 })
