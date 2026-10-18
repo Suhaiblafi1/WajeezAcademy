@@ -249,6 +249,7 @@ const MEDIUM: readonly string[] = [
   'session.reschedule.propose',
   /* وطلبُ نقل الشعبة كلّها ينتظر قرارا */
   'cohort.move.request', 'cohort.move.withdraw', 'cohort.move.zoom', 'cohort.move.remind',
+  'term.season_switch',
   /* بريدُه وُثّق بيدِ موظّف */
   'admin.user.verify_email', 'trainer.application.verify_email',
   /* طلبُه بُتّ فيه */
