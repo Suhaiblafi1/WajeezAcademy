@@ -5,6 +5,9 @@ import type { PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { safeNotify } from './notification.service'
+import {
+  GUEST_CONTACT_CONSENT_AR, GUEST_SNAPSHOT_MAX_CHARS, normalizePhone,
+} from '../../src/application/advisor/guest-contact'
 
 export const CASE_STATUSES = [
   'new', 'contacted', 'needs_review', 'follow_up', 'recommended', 'enrolled', 'not_interested', 'closed',
@@ -45,6 +48,21 @@ export function summarizeDiagnostic(
     gaps: gapDetails.slice(0, 6).map((g) => ({
       skill: g.skill ?? '', current: g.current ?? '', target: g.target ?? '', priority: g.priority ?? '',
     })),
+  }
+}
+
+/** نتيجةُ تشخيصٍ جاءت من بابٍ عامّ — كائنٌ في حدّ حجمه، أو لا شيء.
+
+    لا يُردّ الطلبُ بسببها: من ترك رقمَه يريد أن يُكلَّم، والنتيجةُ تُعين
+    المستشارَ ولا تشترط عليه. فما جاء غيرَ كائنٍ أو أكبرَ من حدّه يسقط وحدَه
+    ويبقى الطلب. والحدُّ ثمانيةُ أضعافِ نتيجةٍ حقيقيّة (١٨–٢٥ ألف حرفٍ قيست
+    في ١٨ أكتوبر ٢٠٢٦) — يتّسع لجولة تعميقٍ ولا يتّسع لحشوٍ يملأ القاعدة. */
+function guestSnapshot(raw: unknown): object | null {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null
+  try {
+    return JSON.stringify(raw).length <= GUEST_SNAPSHOT_MAX_CHARS ? raw : null
+  } catch {
+    return null
   }
 }
 
@@ -216,6 +234,83 @@ export class AdvisorService {
       return kase
     })
     return created
+  }
+
+  /* ═══════════ الزائرُ يطلب بنفسه أن يُتواصَل معه ═══════════
+
+     آخرَ التشخيص، لمن لا حساب له (والعلّةُ في `guest-contact.ts`). يُنشئ
+     عميلا محتملا وحالةً **بلا إسناد** — فتقع في طابور «حالات بلا مستشار»
+     كحالةِ تشخيصٍ أُرفق بحساب، ويُسندها إداريّ.
+
+     ── وثلاثةُ حدودٍ تُقال صراحةً ──
+
+     ١) **لا يُربط بحسابٍ ببريده.** البريدُ هنا مكتوبٌ لا مُثبَت: من كتب بريدَ
+        غيره لا يصل بحالته إلى حساب ذاك — تسجيلاتِه وسيرتِه في عين المستشار.
+        فالربطُ بالحساب لا يقع إلّا بإثبات البريد، وذاك بابٌ غيرُ هذا.
+     ٢) **ولا حالتان مفتوحتان لصاحبٍ واحد** — ولو أرسل مرّتين أو من جهازين.
+        فإن وُجدت حالةٌ مفتوحةٌ ببريده أو رقمه كُتب في سيرتها أنّه عاد يطلب،
+        وبما كتب. ولا يُمسّ عميلُها ولا نتيجتُها: من يعرف بريدَ غيره لا يبدّل
+        بطلبه رقمَ ذاك أو تشخيصَه في عين مستشاره.
+     ٣) **والجوابُ واحدٌ في الحالين.** بابٌ عامٌّ يقول «لهذا البريد حالة» يكشف
+        لأيّ أحدٍ من يتعامل معنا — فلا يُقال عن الموجود شيء. */
+  async requestContactAsGuest(input: {
+    fullName: string; email?: string | null; phone?: string | null; snapshot?: unknown
+  }, ip?: string): Promise<{ ok: true }> {
+    const fullName = input.fullName.trim()
+    const email = input.email?.trim().toLowerCase() || null
+    const typedPhone = input.phone?.trim() || null
+    const phone = typedPhone ? normalizePhone(typedPhone) : null
+    if (fullName.length < 2) throw new AuthError('bad_name', 'اكتب اسمك — حرفان على الأقل', 400)
+    if (typedPhone && !phone) throw new AuthError('bad_phone', 'رقم واتساب غير صحيح — اكتبه بالأرقام', 400)
+    if (!email && !phone) throw new AuthError('no_contact', 'اكتب رقم واتساب أو بريدا لنتواصل معك', 400)
+    const snapshot = guestSnapshot(input.snapshot)
+
+    const open = await this.prisma.advisorCase.findFirst({
+      where: {
+        status: { notIn: ['closed', 'enrolled', 'not_interested'] },
+        OR: [
+          ...(email ? [{ lead: { email } }, { client: { email } }] : []),
+          ...(phone ? [{ lead: { phone } }] : []),
+        ],
+      },
+      orderBy: { createdAt: 'asc' },
+      select: { id: true },
+    })
+    if (open) {
+      await this.prisma.contactEvent.create({
+        data: {
+          caseId: open.id, channel: 'in_app', direction: 'in',
+          summary: `عاد يطلب أن نتواصل معه من آخر التشخيص — ${[
+            `الاسم: ${fullName}`, phone ? `واتساب: ${phone}` : null, email ? `البريد: ${email}` : null,
+          ].filter(Boolean).join(' · ')}`,
+        },
+      })
+      await recordAudit(this.prisma, {
+        action: 'advisor.case.guest_request', entityType: 'advisor_case', entityId: open.id, ip,
+        meta: { repeated: true, byPhone: Boolean(phone), byEmail: Boolean(email) },
+      })
+      return { ok: true }
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      const lead = await tx.lead.create({
+        data: {
+          fullName, email, phone, source: 'diagnostic', consentAr: GUEST_CONTACT_CONSENT_AR,
+          ...(snapshot ? { diagnosticSnapshot: snapshot } : {}),
+        },
+      })
+      const kase = await tx.advisorCase.create({
+        data: {
+          leadId: lead.id, nextAction: 'تواصل أول — طلبه بنفسه آخر التشخيص',
+          ...(snapshot ? { diagnosticSnapshot: snapshot } : {}),
+        },
+      })
+      await recordAudit(tx, {
+        action: 'advisor.case.guest_request', entityType: 'advisor_case', entityId: kase.id, ip,
+        meta: { leadId: lead.id, byPhone: Boolean(phone), byEmail: Boolean(email), withResult: Boolean(snapshot) },
+      })
+    })
+    return { ok: true }
   }
 
   /* ── بوابة المستشار — المسند إليه فقط ── */
