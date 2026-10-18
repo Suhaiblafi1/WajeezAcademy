@@ -122,3 +122,15 @@ describe('طلبُ المعلومات بعد القبول الداخليّ يع�
     expect(back.status).toBe('under_review')
   })
 })
+
+describe('وطلبُ المعلومات يقول ما المطلوب (١٨ أكتوبر ٢٠٢٦)', () => {
+  it('⚠️ بلا نصٍّ أو بنصٍّ أقصرَ من عشرة أحرف يُردّ — ولا تتغيّر حالةُ الطلب', async () => {
+    const a = await applicant('inforeturn-empty@test.local', 'متقدّمٌ يُسأل بلا سؤال')
+    const before = (await prisma.trainerApplication.findUniqueOrThrow({ where: { id: a.id } })).status
+    await expect(review.decide(a.id, adminId, 'request_info')).rejects.toMatchObject({ code: 'note_required' })
+    await expect(review.decide(a.id, adminId, 'request_info', '  ناقص  ')).rejects.toMatchObject({ code: 'note_required' })
+    expect((await prisma.trainerApplication.findUniqueOrThrow({ where: { id: a.id } })).status).toBe(before)
+    await review.decide(a.id, adminId, 'request_info', 'ينقص إثبات')
+    expect((await prisma.trainerApplication.findUniqueOrThrow({ where: { id: a.id } })).status).toBe('information_requested')
+  })
+})
