@@ -13,6 +13,8 @@ import { readSeasonGate } from '../../services/registration-window'
 import { RegistrationInterestService, INTEREST_CONSENT_AR, INTEREST_SOURCES } from '../../services/registration-interest.service'
 import { CourseInterestService, COURSE_INTEREST_CONSENT_AR } from '../../services/course-interest.service'
 import { assertNotBot } from '../honeypot'
+import { AdvisorService } from '../../services/advisor.service'
+import { GUEST_CONTACT_CONSENT_AR } from '../../../src/application/advisor/guest-contact'
 
 export function registerPublicCatalogRoutes(app: FastifyInstance, prisma: PrismaClient) {
   const catalog = new PublicCatalogService(prisma)
@@ -85,6 +87,28 @@ export function registerPublicCatalogRoutes(app: FastifyInstance, prisma: Prisma
     }).parse(req.body)
     const res = await courseInterest.record(body.email, body.courseId)
     return reply.status(201).send({ ...res, consentAr: COURSE_INTEREST_CONSENT_AR })
+  })
+
+  /* «اترك رقمك ويتواصل معك مستشار» — آخرَ التشخيص، بلا حساب (١٨ أكتوبر ٢٠٢٦).
+     والعلّةُ في `guest-contact.ts`، وحدودُه في `AdvisorService#requestContactAsGuest`.
+
+     وسقفُه أضيقُ من «أبلغني»: كلُّ طلبٍ هنا حالةٌ يقرؤها إنسانٌ ويُسندها، لا
+     بريدٌ في قائمةٍ تنتظر. فثلاثةٌ لكلّ شبكةٍ في ربع ساعة تتّسع لمن أخطأ
+     فأعاد، ولا تتّسع لطابورٍ يُملأ بأسماءٍ مختلَقة. */
+  const advisors = new AdvisorService(prisma)
+  app.post('/api/public/advisor-contact', {
+    config: { rateLimit: { max: 3, timeWindow: '15 minutes' } },
+    schema: { tags: ['public'], summary: 'زائر أنهى التشخيص يطلب أن يتواصل معه مستشار — ببريد أو واتساب' },
+  }, async (req, reply) => {
+    assertNotBot(req.body)
+    const body = z.object({
+      fullName: z.string().trim().min(2, 'اكتب اسمك — حرفان على الأقل').max(120),
+      email: z.string().trim().toLowerCase().email('صيغة البريد غير صحيحة').max(200).optional(),
+      phone: z.string().trim().max(30).optional(),
+      snapshot: z.unknown().optional(),
+    }).parse(req.body)
+    await advisors.requestContactAsGuest(body, req.ip)
+    return reply.status(201).send({ ok: true, consentAr: GUEST_CONTACT_CONSENT_AR })
   })
 
   app.get('/api/public/pathways', {

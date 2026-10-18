@@ -50,6 +50,8 @@ import { Q } from "@/domain/diagnostic/v2_1/maps";
 import { ENGLISH_LEVELS, PLACEMENT_TEST_NOTE_AR } from "@/domain/diagnostic/v2_1/english";
 import { levelSummaryForCourse } from "@/application/diagnostic/level-summary";
 import { loadLastResult } from "@/application/diagnostic/session-store";
+import { singleCourseOf } from "@/application/diagnostic/landing";
+import AdvisorCallbackForm from "@/components/AdvisorCallbackForm";
 /* سعر الدورة الواحدة في القوائم: رقمٌ من شعبةٍ حقيقية، أو «مع الشعبة» —
    ولا تقدير بينهما. */
 /** ترتيبُ الدورة المضافة بالكلمة: «أضف دورة ثالثة» لا «أضف الدورة ٣» —
@@ -124,6 +126,11 @@ function CoursePathPage({ courseId }: { courseId: string }) {
   }, [searchParams]);
   /* سطرُ المستوى — يُقرأ مرّةً من نتيجة التشخيص المحفوظة على الجهاز */
   const [diagLevel] = useState(() => levelSummaryForCourse(courseId, loadLastResult<{ resultJson: Record<string, unknown> }>()?.resultJson));
+  /* هبط هنا تشخيصُه نفسُه — دورةً واحدة (`landOnCourse`)، لا زيارةً من الكتالوج */
+  const [fromDiagnostic] = useState(() => {
+    const last = loadLastResult<{ resultJson: Record<string, unknown> }>();
+    return Boolean(courseId && last?.resultJson && singleCourseOf(last.resultJson) === courseId);
+  });
   const [pending, setPending] = useState<Intent | null>(null);
   const [name, setName] = useState("");
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "failed">("idle");
@@ -714,6 +721,12 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                   </Link>
                 </span>
               </p>
+            )}
+
+            {/* ولمن هبط هنا من تشخيصه بلا حساب: يترك رقمه فنكلّمه نحن (١٨ أكتوبر ٢٠٢٦) —
+                والعلّةُ في رأس `AdvisorCallbackForm` */}
+            {fromDiagnostic && (
+              <AdvisorCallbackForm snapshot={() => loadLastResult()} className="mt-3 text-center" />
             )}
           </Card>
         </Panel>

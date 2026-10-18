@@ -30,7 +30,10 @@ const CASE_STATUS_AR: Record<string, string> = {
 
 interface UnassignedCase {
   id: string; status: string; createdAt: string;
-  lead: { id: string; name?: string | null; email?: string | null } | null;
+  /* `fullName` لا `name`: كان يُقرأ `name` ولا حقلَ بهذا الاسم في العميل المحتمل،
+     فيظهر «—» مكانَ كلّ عميلٍ لا حسابَ له. والهاتفُ يُعرض: من ترك واتسابه وحدَه
+     آخرَ التشخيص لا بريدَ له يُقرأ هنا (١٨ أكتوبر ٢٠٢٦). */
+  lead: { id: string; fullName?: string | null; email?: string | null; phone?: string | null } | null;
   client: { displayName: string; email: string } | null;
 }
 /** مستشارٌ متاحٌ للإسناد — الخادمُ يرشّح بالدور، فلا تُقرأ الأدوارُ هنا */
@@ -67,7 +70,7 @@ export default function Exceptions() {
   useEffect(() => { void load(); }, [load]);
 
   const matched = rows.filter((c) => matchesQuery(q, [
-    c.client?.displayName, c.client?.email, c.lead?.name, c.lead?.email,
+    c.client?.displayName, c.client?.email, c.lead?.fullName, c.lead?.email, c.lead?.phone,
   ]));
   const view = paginate(matched, page, 20);
 
@@ -137,7 +140,7 @@ export default function Exceptions() {
       {!loading && rows.length > 0 && (
         <>
         <ListToolbar q={q} onQ={setQ} onPage={setPage} view={view} unit="حالة"
-          placeholder="ابحث باسم العميل أو بريده…" />
+          placeholder="ابحث باسم العميل أو بريده أو رقمه…" />
         {view.rows.length === 0 ? (
           <Panel as="p" className="py-12 text-center text-sm text-muted-foreground">
             لا حالة تطابق بحثك — امسح الكلمة أو جرّب غيرها.
@@ -147,8 +150,10 @@ export default function Exceptions() {
           {view.rows.map((c) => (
             <Card key={c.id} className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p className="font-black">{c.client?.displayName ?? c.lead?.name ?? "—"}</p>
-                <p className="mt-1 text-read text-muted-foreground" dir="ltr">{c.client?.email ?? c.lead?.email ?? ""}</p>
+                <p className="font-black">{c.client?.displayName ?? c.lead?.fullName ?? "—"}</p>
+                <p className="mt-1 text-read text-muted-foreground" dir="ltr">
+                  {[c.client?.email ?? c.lead?.email, c.lead?.phone].filter(Boolean).join(" · ")}
+                </p>
                 <p className="mt-1 text-read text-muted-foreground">
                   الحالة: {CASE_STATUS_AR[c.status] ?? c.status} · منذ {fmtDate(new Date(c.createdAt))}
                 </p>

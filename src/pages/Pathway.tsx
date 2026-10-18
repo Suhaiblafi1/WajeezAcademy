@@ -27,6 +27,7 @@ import FavoriteButton from "@/components/FavoriteButton";
 import ThemeToggle from "@/components/ThemeToggle";
 import AdvisorContact from "@/components/AdvisorContact";
 import AdvisorBrief from "@/components/AdvisorBrief";
+import AdvisorCallbackForm from "@/components/AdvisorCallbackForm";
 import BuyPanel from "@/components/BuyPanel";
 import CourseJourney from "@/components/CourseJourney";
 import Modal from "@/components/Modal";
@@ -936,6 +937,11 @@ export default function PathwayPage() {
                   className="font-bold text-teal-light-ink underline underline-offset-4 transition hover:text-[#6EC7D1]"
                 />
               </p>
+              {/* ولمن هبط هنا من تشخيصه بلا حساب: يترك رقمه فنكلّمه نحن (١٨ أكتوبر ٢٠٢٦) —
+                  والعلّةُ في رأس `AdvisorCallbackForm` */}
+              {diagTopId === pathway.id && (
+                <AdvisorCallbackForm snapshot={() => loadLastResult<DiagResult>()} className="mt-2 text-center" />
+              )}
               {/* الدعوة إلى التشخيص سطر عند لحظة القرار، لا شريطا مؤطّرا في وسط
                   الصفحة. صفحة المسار الجاهز صفحة منتج معروضة للجميع، وكل صندوق
                   يعترضها يقرأ كأنه نتيجة شخصية لزائر لم يتشخّص أصلا. */}

@@ -3595,6 +3595,8 @@ model Lead {
   status             String        @default("new") // new | converted | archived
   userId             String?       @db.Uuid // يُربط عند إنشاء الحساب
   diagnosticSnapshot Json? // نتيجة تشخيص الضيف قبل إنشاء الحساب
+  /// ما وافق عليه حين طلب بنفسه أن يُتواصل معه — نصُّه كما عُرض (`guest-contact.ts`)
+  consentAr          String?
   createdAt          DateTime      @default(now())
   user               User?         @relation("LeadUser", fields: [userId], references: [id])
   cases              AdvisorCase[]

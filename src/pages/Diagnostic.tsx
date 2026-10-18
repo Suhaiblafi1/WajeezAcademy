@@ -40,6 +40,7 @@ import { seoFor } from "@/application/site/public-pages";
 import EcosystemNote from "@/components/EcosystemNote";
 import { Badge } from "@/components/ui/badge";
 import ResultFeedback from "@/components/ResultFeedback";
+import AdvisorCallbackForm from "@/components/AdvisorCallbackForm";
 import { ResultErrorBoundary } from "@/components/ResultErrorBoundary";
 import SkillFamilyGrid, { type FamilyToRate } from "@/components/SkillFamilyGrid";
 import ComposedPlanCard, { type ComposedPathView } from "@/components/ComposedPlanCard";
@@ -1327,10 +1328,14 @@ export default function Diagnostic() {
             قرارٌ واعٍ لا سهو. */}
         {!topPathway && englishChoiceOf(result.resultJson) ? (
           /* خطّةُ الإنجليزيّة بخياريها — الفرقُ والكلفةُ والاختيارُ له (٨ أكتوبر ٢٠٢٦) */
-          <EnglishPlanCard
-            plan={englishChoiceOf(result.resultJson)!}
-            level={(result.resultJson.level_summary as LevelSummary | null | undefined) ?? null}
-          />
+          <>
+            <EnglishPlanCard
+              plan={englishChoiceOf(result.resultJson)!}
+              level={(result.resultJson.level_summary as LevelSummary | null | undefined) ?? null}
+            />
+            {/* ولمن لا حساب له: يترك رقمه فنكلّمه نحن (١٨ أكتوبر ٢٠٢٦) */}
+            <AdvisorCallbackForm snapshot={() => result} className="-mt-6 px-5 pb-12 text-center" />
+          </>
         ) : !topPathway ? (
           /* اتجاه استكشافي / إحالة مستشار بلا مسار مفروض — بطاقة هادئة موجِّهة، لا صفحة فارغة أبدًا */
           (() => {
@@ -1461,6 +1466,8 @@ export default function Diagnostic() {
                     }
                   />
                 </p>
+                {/* أو يترك رقمه فنكلّمه نحن — لمن لا حساب له (١٨ أكتوبر ٢٠٢٦) */}
+                <AdvisorCallbackForm snapshot={() => result} className="mt-3" />
                 <p className="mt-4 text-read leading-relaxed text-muted-foreground">
                   هذا تشخيص تعليمي مهني، وليس تقييما نفسيا أو طبيا. ولا نرشّح مسارا دون دليل كاف.
                 </p>
