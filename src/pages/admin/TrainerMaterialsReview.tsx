@@ -23,6 +23,7 @@ import { apiGet, apiPost, permissionMessage } from "@/services/api";
 import type { CourseMaterials } from "@/application/trainer/course-materials";
 import { countAr } from "@/application/text/count-ar";
 import { fmtDate } from "@/application/text/format-ar";
+import { postponedLineAr } from "@/application/trainer/plan-postpone";
 
 type PrepState = "to_decide" | "preparing" | "submitted" | "returned" | "approved" | "declined";
 
@@ -34,6 +35,8 @@ interface PrepRow {
   cohortTitle: string | null;
   declineReasonAr: string | null;
   approved?: boolean;
+  /** أُجّلت خطّتُها إلى موسمٍ قادم — فتُقرأ مؤجّلةً لا مردودة (١٨ أكتوبر ٢٠٢٦) */
+  postponedTo?: string | null;
 }
 
 interface MaterialsRow {
@@ -127,7 +130,7 @@ export default function MaterialsReview({ profileId }: { profileId: string }) {
       )}
       <ul className="mt-3 grid gap-2">
         {shown.map((r) => {
-          const s = STATE_AR[r.state];
+          const s = r.postponedTo ? { label: postponedLineAr(r.postponedTo), tone: "neutral" as const } : STATE_AR[r.state];
           const old = legacy.find((x) => x.courseId === r.courseId && x.status === "pending");
           const oldReady = !r.cohortId && old?.materials && old.missingAr.length === 0;
           return (

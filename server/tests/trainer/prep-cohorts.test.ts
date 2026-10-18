@@ -10,7 +10,9 @@
       صاحبُه من المرشَّحين فلا يُجهَّز مرّتين.
    ③ شعبةٌ قامت ولم يقم عرضُها تُحذَف — فلا تبقى مسوّدةٌ بلا صاحب.
    ④ والبابُ الإداريُّ للعرض يردّ عرضا بلا شعبة — فلا يُرسَل بعد اليوم عرضٌ
-      يقبله المدرّبُ ولا يجد في «شعبي» شيئا. */
+      يقبله المدرّبُ ولا يجد في «شعبي» شيئا.
+   ⑤ وكلُّ دورةٍ معلَّمةٌ بموادّها (معتمدة · ناقصة · بلا موادّ)، وقبولُ عرضها ينقل ما اعتُمد
+      منها إلى الشعبة — فلا يجدها فارغة (١٨ أكتوبر ٢٠٢٦). */
 
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { createHash } from 'node:crypto'
@@ -155,5 +157,48 @@ describe('④ البابُ الإداريّ', () => {
     expect(prep.json()).toMatchObject({ done: 1, failed: 0 })
     const o = await prisma.trainerAssignmentOffer.findFirstOrThrow({ where: { profileId: t.profileId } })
     expect(o.cohortId).toBeTruthy()
+  })
+})
+
+describe('⑤ علامةُ الموادّ — ونقلُها مع العرض', () => {
+  const COURSE_C = 'C-PREP-303'
+  const FULL = {
+    modules: [{ titleAr: 'محورٌ كتبه المدرّب', outcomeAr: 'مخرجٌ كتبه المدرّب' }],
+    materialsUrl: 'https://example.com/m', taskAr: 'مشروعٌ يسلّمه المتعلّم', sourcesAr: 'كتابٌ https://example.com/b', noteAr: '',
+  }
+
+  it('معتمدة · ناقصة · بلا موادّ — من صفّ التأهيل', async () => {
+    const t = await mkActiveTrainer([COURSE, COURSE_B])
+    await prisma.trainerCourseQualification.updateMany({ where: { profileId: t.profileId, courseId: COURSE }, data: { materials: FULL } })
+    const marks = Object.fromEntries((await coursesOf(t.profileId)).map((c) => [c.courseId, c.materials]))
+    expect(marks).toEqual({ [COURSE]: 'complete', [COURSE_B]: 'none' })
+
+    await prisma.trainerCourseQualification.updateMany({
+      where: { profileId: t.profileId, courseId: COURSE_B }, data: { materials: { ...FULL, materialsUrl: null } },
+    })
+    expect((await coursesOf(t.profileId)).find((c) => c.courseId === COURSE_B)?.materials).toBe('partial')
+  })
+
+  it('قبولُ العرض ينقل ما اعتُمد من موادّه إلى الشعبة', async () => {
+    if (!(await prisma.course.findUnique({ where: { id: COURSE_C } }))) {
+      await prisma.course.create({ data: { id: COURSE_C, status: 'published', currentVersion: 1 } })
+      await prisma.courseVersion.create({ data: { courseId: COURSE_C, version: 1, titleAr: 'دورةُ النقل مع العرض', totalHours: 10 } })
+      await prisma.courseModule.create({ data: { id: `${COURSE_C}-M1`, courseId: COURSE_C } })
+      await prisma.courseModuleVersion.create({
+        data: { moduleId: `${COURSE_C}-M1`, version: 1, sequence: 1, hours: 2, titleAr: 'محورُ الكتالوج', outcomeAr: 'مخرجُ الكتالوج' },
+      })
+    }
+    const t = await mkActiveTrainer([COURSE_C])
+    await prisma.trainerCourseQualification.updateMany({ where: { profileId: t.profileId }, data: { materials: FULL } })
+    const r = await offers.prepCohorts([{ profileId: t.profileId, courseId: COURSE_C }], {}, adminId)
+    expect(r).toMatchObject({ done: 1, failed: 0 })
+    await offers.accept(r.results[0].offerId!, t.userId)
+
+    const plan = await prisma.cohortDeliveryPlan.findFirst({
+      where: { cohortId: r.results[0].cohortId!, trainerId: { not: null } }, orderBy: { createdAt: 'desc' },
+    })
+    expect(plan, 'قبل العرض فوجد شعبته فارغة').not.toBeNull()
+    const modules = (plan!.content as { modules: { titleAr: string }[] }).modules
+    expect(modules[0].titleAr).toBe('محورٌ كتبه المدرّب')
   })
 })

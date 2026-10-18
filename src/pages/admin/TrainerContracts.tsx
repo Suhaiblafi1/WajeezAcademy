@@ -29,6 +29,7 @@ import {
 import { FINAL_REMINDER_DAYS, daysWindowAr } from "@/application/trainer/notice-periods";
 import { changeGroupsBetween } from "@/application/trainer/contract-changelog";
 import { prepTallyAr, prepTallyDetailAr, type PrepTally } from "@/application/trainer/prep-tally";
+import { MATERIALS_MARK_AR, type MaterialsMark } from "@/application/trainer/course-materials";
 import {
   DEFAULT_RESIGN_SUBJECT_AR, RESIGN_BODY_MAX, RESIGN_BODY_MIN, RESIGN_CHANGES_HEADING_AR,
   RESIGN_SUBJECT_MAX, RESIGN_SUBJECT_MIN, defaultResignBodyAr, personalChangesAr, reissueChangesView, noChangesLineAr,
@@ -365,13 +366,15 @@ interface OfferOption {
 /** مرشَّحٌ لشعبة تعبئة — علّتُه عند `TrainerOfferService.prepCandidates` */
 interface PrepCandidate {
   profileId: string; fullName: string; email: string; reference: string;
-  courses: { courseId: string; titleAr: string; acceptedWithoutCohort: boolean }[];
+  /** وعلامةُ موادّها: معتمدة أو ناقصة أو بلا موادّ (١٨ أكتوبر ٢٠٢٦، `materialsMarkOf`) */
+  courses: { courseId: string; titleAr: string; acceptedWithoutCohort: boolean; materials?: MaterialsMark }[];
 }
 interface PrepResult {
   done: number; failed: number;
   results: { profileId: string; courseId: string; ok: boolean; errorAr?: string }[];
 }
 const PREP_FORMS = { one: "دورة", two: "دورتان", few: "دورات", many: "دورة" };
+const MARK_TONE: Record<MaterialsMark, "positive" | "warn" | "neutral"> = { complete: "positive", partial: "warn", none: "neutral" };
 const COHORT_FORMS = { one: "شعبة", two: "شعبتان", few: "شعب", many: "شعبة" };
 const prepKey = (profileId: string, courseId: string) => `${profileId}|${courseId}`;
 
@@ -2133,6 +2136,9 @@ c.gatesActivation
                                   return n;
                                 })} />
                               <span>{c.titleAr}</span>
+                              {c.materials && (
+                                <Chip tone={MARK_TONE[c.materials]} srPrefixAr="موادّها">{MATERIALS_MARK_AR[c.materials]}</Chip>
+                              )}
                               {c.acceptedWithoutCohort && (
                                 <span className="text-sm opacity-70">— قبِل عرضا بلا شعبة، فلا يجد ما يعبّئه</span>
                               )}

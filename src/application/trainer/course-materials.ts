@@ -88,3 +88,24 @@ export function materialsMissingAr(m: CourseMaterials | null | undefined): strin
   if (!m.sourcesAr) out.push('مصدر واحد على الأقلّ')
   return out
 }
+
+/* ═══ علامةُ الموادّ على الدورة المعتمَدة بلا شعبة (١٨ أكتوبر ٢٠٢٦) ═══
+
+   سأل صاحبُ المنصّة عن «جهّز شعب التعبئة»: «أصحيحٌ أنّ هذه الدورات معتمَدةٌ وموادَّها جاهزة؟».
+   والاعتمادُ يقينٌ فيها — ولا يقين في الموادّ: الدورةُ تُعتمَد بلا شعبةٍ بطريقين، بزرّ «اعتمد هذه
+   الدورة بموادّها» (ما كتبه في اللوح القديم) أو تأهيلا مباشرا لا يسأل عن موادّ. فاختار: «علِّمْ كلَّ
+   دورة». والعلامةُ من صفّ التأهيل نفسِه — ما كُتب فيه وما ينقصه (`materialsMissingAr`). */
+export type MaterialsMark = 'complete' | 'partial' | 'none'
+
+export const MATERIALS_MARK_AR: Record<MaterialsMark, string> = {
+  complete: 'موادّ معتمدة',
+  partial: 'موادّ ناقصة',
+  none: 'بلا موادّ',
+}
+
+export function materialsMarkOf(raw: unknown): MaterialsMark {
+  if (!raw) return 'none'
+  const m = cleanCourseMaterials(raw)
+  if (m.modules.length === 0 && !m.materialsUrl && !m.taskAr && !m.sourcesAr) return 'none'
+  return materialsMissingAr(m).length === 0 ? 'complete' : 'partial'
+}

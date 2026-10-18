@@ -13,7 +13,7 @@ import { prepTallyAr, prepTallyDetailAr, prepTallyOf } from '@/application/train
 describe('العدّادُ يفرّق الكاملةَ من الجزئيّة', () => {
   it('المرسلةُ والمعتمدةُ كاملة، والمسودّةُ والمردودةُ جزئيّة، والمعتذَرُ عنها خارجَ العدد', () => {
     const t = prepTallyOf(['done', 'submitted', 'preparing', 'returned', 'to_decide', 'declined'])
-    expect(t).toEqual({ total: 5, approved: 1, submitted: 1, partial: 2, notStarted: 1, declined: 1 })
+    expect(t).toEqual({ total: 5, approved: 1, submitted: 1, partial: 2, notStarted: 1, postponed: 0, declined: 1 })
     expect(prepTallyAr(t)).toBe('الشعب: 2 كاملة · 2 جزئية من 5')
     expect(prepTallyDetailAr(t)).toBe('معتمدة 1 · تنتظر مراجعتك 1 · قيد الإعداد 2 · لم يبدأ 1 · اعتذر عن 1')
   })
@@ -22,6 +22,13 @@ describe('العدّادُ يفرّق الكاملةَ من الجزئيّة', (
     expect(prepTallyAr(prepTallyOf(['to_decide', 'to_decide']))).toBe('الشعب: 0 من 2')
     expect(prepTallyAr(prepTallyOf(['declined']))).toBeNull()
     expect(prepTallyAr(prepTallyOf([]))).toBeNull()
+  })
+
+  it('والمؤجّلةُ وحدَها — لا جزئيّةً ولا ناقصة («لا تنسَ أنّهم أجّلوا بعضها»)', () => {
+    const t = prepTallyOf(['done', 'preparing', 'postponed', 'postponed'])
+    expect(t).toMatchObject({ total: 4, approved: 1, partial: 1, postponed: 2 })
+    expect(prepTallyAr(t)).toBe('الشعب: 1 كاملة · 1 جزئية · 2 مؤجلة من 4')
+    expect(prepTallyDetailAr(t)).toBe('معتمدة 1 · قيد الإعداد 1 · مؤجلة 2')
   })
 
   it('ما أتمّه كلَّه يُقرأ كاملا كلُّه', () => {

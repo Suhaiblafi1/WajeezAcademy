@@ -22,6 +22,7 @@ import { TrainerPrepService } from '../../services/trainer-prep.service'
 import { TrainerMaterialsService } from '../../services/trainer-materials.service'
 import { CohortPlanService } from '../../services/cohort-plan.service'
 import { contractAcks, CONDITION_CLAUSE_MARK } from '../../../src/application/trainer/contract-body'
+import { postponeChoices } from '../../../src/application/trainer/plan-postpone'
 
 let prisma: PrismaClient
 let auth: AuthService
@@ -246,5 +247,19 @@ describe('⑤ عدّادُ الشعب في قائمة العقود', () => {
     await plans.decide(adminId, plan.id, true)
     expect(await tallyOf(t.contractId), 'اعتُمدت خطّتُها فخرجت من العدد')
       .toMatchObject({ total: 1, approved: 1, submitted: 0, declined: 1 })
+  })
+
+  it('والمؤجّلةُ تُعدّ مؤجّلةً لا جزئيّة («لا تنسَ أنّهم أجّلوا بعضها»)', async () => {
+    const t = await onboarding([C1, C2])
+    const one = await prep.accept(t.userId, C1)
+    await prep.accept(t.userId, C2)
+    const plan = await prisma.cohortDeliveryPlan.create({
+      data: { cohortId: one.id, trainerId: t.profileId, status: 'submitted', submittedAt: new Date(), content: { kind: 'trainer', modules: [], resources: [] } },
+    })
+    const [to] = postponeChoices(null, new Date().toISOString().slice(0, 10))
+    await plans.postpone(adminId, plan.id, to)
+    expect(await tallyOf(t.contractId), 'أُجّلت وعُدّت جزئيّة').toMatchObject({ total: 2, postponed: 1, partial: 1 })
+    const rows = await prep.coursesOf(t.profileId)
+    expect(rows.find((r) => r.courseId === C1)?.postponedTo, 'لم يُقل إلى أيّ موسمٍ أُجّلت').toBeTruthy()
   })
 })
