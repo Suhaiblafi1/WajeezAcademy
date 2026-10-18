@@ -7,6 +7,7 @@ import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import type { PrismaClient } from '@prisma/client'
 import { TermService } from '../../services/term.service'
+import { SeasonSwitchService } from '../../services/season-switch.service'
 import { TermPlanningService } from '../../services/term-planning.service'
 import { TermCalendarService } from '../../services/term-calendar.service'
 import { requireAuth } from '../auth-plugin'
@@ -171,6 +172,23 @@ export function registerTermRoutes(app: FastifyInstance, prisma: PrismaClient) {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const { status } = z.object({ status: z.enum(TERM_STATUSES) }).parse(req.body)
     return terms.setStatus(req.auth!.userId, id, status)
+  })
+
+  /* «انتقل إلى هذا الموسم» — معاينةٌ ثمّ تنفيذ (١٨ أكتوبر ٢٠٢٦، `season-switch.service.ts`) */
+  app.get('/api/admin/terms/:id/switch', {
+    preHandler: requirePermission('cohort.manage'),
+    schema: { tags: ['admin-terms'], summary: 'معاينة الانتقال إلى موسم: ما يفتح وما يلغى وما يغلق' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return new SeasonSwitchService(prisma).preview(id)
+  })
+
+  app.post('/api/admin/terms/:id/switch', {
+    preHandler: requirePermission('cohort.manage'),
+    schema: { tags: ['admin-terms'], summary: 'الانتقال إلى موسم: يفتح شعبه المعتمدة ويلغي شعب التجربة قبله ويغلق مواسمه الماضية' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return new SeasonSwitchService(prisma).apply(req.auth!.userId, id)
   })
 
   app.delete('/api/admin/terms/:id', {

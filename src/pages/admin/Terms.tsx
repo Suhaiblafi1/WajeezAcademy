@@ -33,6 +33,7 @@ import { termHorizon } from "@/application/terms/season";
 import { toast, toastError } from "@/components/Toast";
 import { TERM_STATUS_AR, TERM_STATUS_EFFECT_AR, nextStatuses, type TermStatus } from "@/application/terms/lifecycle";
 import { cohortDayAr } from "@/application/learning/cohort-gate";
+import SeasonSwitch from "@/components/admin/SeasonSwitch";
 
 interface Term {
   id: string; year: number; season: string; titleAr: string;
@@ -376,6 +377,8 @@ export default function Terms() {
                       {seasonLabel(t.season)} · {cohortDayAr(t.startsOn)} إلى {cohortDayAr(t.endsOn)} · {TERM_STATUS_AR[t.status as TermStatus] ?? t.status}
                     </p>
                     <p className="mt-1 text-read text-muted-foreground">{t._count.cohorts} شعبة</p>
+                    {/* زرٌّ واحدٌ بمعاينة: يفتح شعبَه المعتمدة ويغلق شعبَ التجربة قبله ومواسمَه (١٨ أكتوبر ٢٠٢٦) */}
+                    {["planned", "open", "active"].includes(t.status) && <SeasonSwitch termId={t.id} onDone={() => void load()} />}
                     {/* ═══ بابُ الحالة ═══
 
                         كان العمودُ يُقرأ ولا يُكتب: خمسُ قيمٍ وخمسةُ قرّاءَ ولا
