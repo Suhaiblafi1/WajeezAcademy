@@ -37,7 +37,7 @@ describe('«أبلغني» حيث لا شعبة', () => {
 describe('«من ينتظر دورة بلا شعبة» في شاشة الشعب', () => {
   it('⚠️ معروضٌ في الشعب، ويقرأ تقريرَ الخادم', () => {
     expect(COHORTS).toMatch(/<CourseDemand \/>/)
-    expect(DEMAND).toMatch(/apiGet<\{ rows: DemandRow\[\] \}>\("\/api\/admin\/course-demand"\)/)
+    expect(DEMAND).toMatch(/apiGet<\{ rows: DemandRow\[\]; learners\?: DemandLearner\[\] \}>\("\/api\/admin\/course-demand"\)/)
   })
 
   it('وكلُّ حالٍ لها كلمتُها — والخطّةُ المنتظِرةُ رابطٌ إلى اعتمادها', () => {

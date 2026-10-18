@@ -10,13 +10,23 @@
    ═══ ولا تظهر حين لا ينتظر أحدٌ حقيقيّ (١٧ أكتوبر ٢٠٢٦) ═══
 
    «اخفي هذه القائمة اذا كان الطلب من حساب تجريبي» (صاحب المنصّة). فطلبُ حساب التجربة لا يُعدّ
-   (`test-account.ts`)، وما لم يبقَ فيه طلبٌ لا تُعرض له لوحةٌ تقول «لا أحد». */
+   (`test-account.ts`)، وما لم يبقَ فيه طلبٌ لا تُعرض له لوحةٌ تقول «لا أحد».
 
-import { useEffect, useState } from "react";
+   ═══ ومن هم — وبجانب كلٍّ «حساب تجريبي» (١٨ أكتوبر ٢٠٢٦) ═══
+
+   بقيت القائمةُ: حسابُ التجربة متعلّمٌ لا يُعرف من نفسه، ولا يُعرف أيُّ حسابٍ هو. فاختار صاحبُ المنصّة
+   «Show who is waiting»: من في خططهم بأسمائهم مرّةً لكلٍّ، وبجانبه زرٌّ يُخرجه من العدّ — ثمّ تُقرأ القائمةُ
+   ثانيةً، فإن لم يبقَ فيها أحدٌ غابت. والأسماءُ من الخادم لمن يرى الحسابات، والزرُّ لمن يديرها. */
+
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router";
-import { Loader2, Users } from "lucide-react";
-import { apiGet } from "@/services/api";
+import { FlaskConical, Loader2, Users } from "lucide-react";
+import { apiGet, apiPost, ApiError } from "@/services/api";
 import { Inset, Panel } from "@/components/ui/Surface";
+import Button from "@/components/ui/Button";
+import { toast, toastError } from "@/components/Toast";
+import { useRealSession } from "@/services/session";
+import { countAr } from "@/application/text/count-ar";
 
 type DemandState = "no_trainer" | "trainer_preparing" | "plan_submitted" | "approved_draft";
 
@@ -27,6 +37,21 @@ interface DemandRow {
   visitorWaiting: number;
   total: number;
   state: DemandState;
+}
+
+/** من ينتظر في خطّته — كما يردّه `CourseInterestService.demand` لمن يرى الحسابات */
+interface DemandLearner {
+  id: string;
+  nameAr: string;
+  email: string;
+  courses: number;
+}
+
+/** «دورة واحدة» و«دورتان» بلا رقمهما */
+function coursesAr(n: number): string {
+  if (n === 1) return "دورة واحدة";
+  if (n === 2) return "دورتين";
+  return countAr(n, { one: "دورة", two: "دورتين", few: "دورات", many: "دورة" });
 }
 
 /** ما يقف بين الدورة وشعبةٍ تُباع — بكلمة صاحب القرار */
@@ -44,12 +69,30 @@ export default function CourseDemand() {
   const [rows, setRows] = useState<DemandRow[] | null>(null);
   const [all, setAll] = useState(false);
   const [error, setError] = useState(false);
+  const [learners, setLearners] = useState<DemandLearner[]>([]);
+  const { user: viewer } = useRealSession();
+  const canMark = viewer?.permissions.includes("admin.users.manage") ?? false;
+  const [busy, setBusy] = useState(false);
 
-  useEffect(() => {
-    apiGet<{ rows: DemandRow[] }>("/api/admin/course-demand")
-      .then((r) => setRows(r.rows))
-      .catch(() => setError(true));
-  }, []);
+  const load = useCallback(() => apiGet<{ rows: DemandRow[]; learners?: DemandLearner[] }>("/api/admin/course-demand")
+    .then((r) => { setRows(r.rows); setLearners(r.learners ?? []); })
+    .catch(() => setError(true)), []);
+  useEffect(() => { void load(); }, [load]);
+
+  /* «حساب تجريبي» من هنا — المسارُ نفسُه الذي في «المستخدمون والأدوار» (`admin-users.routes.ts`) */
+  const markTest = async (l: DemandLearner) => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      await apiPost(`/api/admin/users/${l.id}/test-account`, { value: true });
+      toast(`صار «${l.nameAr}» حسابا تجريبيا، ولا يعد طلبه.`);
+      await load();
+    } catch (e) {
+      toastError(e instanceof ApiError ? e.message : "تعذر الحفظ");
+    } finally {
+      setBusy(false);
+    }
+  };
 
   if (error || rows?.length === 0) return null;
 
@@ -62,6 +105,31 @@ export default function CourseDemand() {
       <p className="mt-1 max-w-3xl text-read leading-6 text-muted-foreground">
         كم ينتظر كل دورة لا شعبة تباع لها — في خطّته أو ببريده، دون الحسابات التجريبية. ابدأ البحث عن مدرّب من الأعلى.
       </p>
+
+      {learners.length > 0 && (
+        <details className="mt-3" open={learners.length <= 3}>
+          <summary className="cursor-pointer text-read font-bold text-teal-light-ink">من في خططهم؟ ({learners.length})</summary>
+          <ul className="mt-2 space-y-2">
+            {learners.map((l) => (
+              <li key={l.id} className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+                <b className="text-read">{l.nameAr}</b>
+                <span dir="ltr" className="text-fine text-muted-foreground">{l.email}</span>
+                <span className="text-read text-muted-foreground">ينتظر {coursesAr(l.courses)}</span>
+                {canMark && (
+                  <Button size="sm" tone="secondary" icon={FlaskConical} disabled={busy} onClick={() => void markTest(l)}>
+                    حساب تجريبي
+                  </Button>
+                )}
+              </li>
+            ))}
+          </ul>
+          {canMark && (
+            <p className="mt-2 text-read leading-6 text-muted-foreground">
+              «حساب تجريبي» يخرج طلبه من هذا العد، ولا يغير دخوله ولا ما يملك. وترجعه من «المستخدمون والأدوار».
+            </p>
+          )}
+        </details>
+      )}
 
       {!rows ? (
         <Loader2 className="mt-3 h-4 w-4 animate-spin text-muted-foreground/50" />

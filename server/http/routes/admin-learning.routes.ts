@@ -65,11 +65,11 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
      ٢٠٢٦): لا تُفتح شعبةٌ إلّا باعتماد خطّة مدرّبها. والسببُ في رأس
      `catalog-readiness.service.ts`. */
   /* الطلبُ على الدورات بلا شعبة — لأيّها يُبحث عن مدرّبٍ أوّلا (١٢ أكتوبر ٢٠٢٦).
-     والعلّةُ في `course-interest.service.ts` */
+     والعلّةُ في `course-interest.service.ts`. وأسماءُ من في خططهم لمن يرى الحسابات وحدَه (١٨ أكتوبر ٢٠٢٦) */
   app.get('/api/admin/course-demand', {
     preHandler: requirePermission('cohort.manage'),
-    schema: { tags: ['admin-cohorts'], summary: 'كم ينتظر كلّ دورة بلا شعبة — في خطّته أو ببريده' },
-  }, async () => new CourseInterestService(prisma).demand())
+    schema: { tags: ['admin-cohorts'], summary: 'كم ينتظر كلّ دورة بلا شعبة — في خطّته أو ببريده، ومن هم لمن يرى الحسابات' },
+  }, async (req) => new CourseInterestService(prisma).demand({ people: req.auth!.permissions.includes('admin.users.view') }))
 
   app.post('/api/admin/cohorts/align-prices', {
     preHandler: requirePermission('cohort.open'),

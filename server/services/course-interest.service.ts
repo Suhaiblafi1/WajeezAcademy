@@ -47,6 +47,14 @@ export interface DemandRow {
   state: DemandState
 }
 
+/** من ينتظر في خطّته — باسمه، وكم دورةً بلا شعبةٍ ينتظر (١٨ أكتوبر ٢٠٢٦) */
+export interface DemandLearner {
+  id: string
+  nameAr: string
+  email: string
+  courses: number
+}
+
 /** شعبةٌ تُباع الآن لهذه الدورات — بقاعدة التسجيل نفسِها */
 async function purchasableCourses(prisma: PrismaClient, courseIds?: string[]): Promise<Set<string>> {
   const rows = await prisma.cohort.findMany({
@@ -149,7 +157,12 @@ export class CourseInterestService {
 
      لكلّ دورةٍ لا شعبةَ تُباع لها: كم متعلّما في خطّته ينتظرها ولم يشترها، وكم زائرا
      ترك بريدَه لها ولم يُبلَّغ — وما يقف بينها وبين شعبةٍ تُباع. والأكثرُ طلبا أوّلا. */
-  async demand(): Promise<{ rows: DemandRow[] }> {
+  /* ═══ ومن هم — لمن يرى الحسابات (١٨ أكتوبر ٢٠٢٦) ═══
+
+     بقيت القائمةُ بعد «حساب تجريبي» — فحسابُ التجربة متعلّمٌ لا يُعرف من نفسه، ولا يُعرف أيُّ حسابٍ هو.
+     فاختار صاحبُ المنصّة: «Show who is waiting» — من في خططهم بأسمائهم، وبجانب كلٍّ «حساب تجريبي».
+     والأسماءُ لمن يرى الحسابات وحدَه (`people`)؛ ومن يدير الشعب بلا ذلك يرى العدد كما كان. */
+  async demand(opts: { people?: boolean } = {}): Promise<{ rows: DemandRow[]; learners?: DemandLearner[] }> {
     const [allItems, allVisitors] = await Promise.all([
       this.prisma.learnerPlanItem.findMany({
         where: { plan: { status: 'active' } },
@@ -166,7 +179,7 @@ export class CourseInterestService {
           { email: { in: [...new Set(allVisitors.map((v) => v.email.trim().toLowerCase()))], mode: 'insensitive' } },
         ],
       },
-      select: { id: true, email: true, isTestAccount: true, roles: { select: { roleId: true } } },
+      select: { id: true, email: true, displayName: true, isTestAccount: true, roles: { select: { roleId: true } } },
     })
     const tests = people.filter((u) => isTestAccount({ email: u.email, isTestAccount: u.isTestAccount, roleIds: u.roles.map((r) => r.roleId) }))
     const testIds = new Set(tests.map((u) => u.id))
@@ -231,6 +244,15 @@ export class CourseInterestService {
       }
     }).filter((r) => r.total > 0)
       .sort((a, b) => b.total - a.total || a.titleAr.localeCompare(b.titleAr, 'ar'))
-    return { rows }
+    if (!opts.people) return { rows }
+
+    /* ومن هم: كلُّ متعلّمٍ مرّةً، وكم دورةً ينتظر — والأكثرُ أوّلا */
+    const waits = new Map<string, number>()
+    for (const ids of planWaiting.values()) for (const id of ids) waits.set(id, (waits.get(id) ?? 0) + 1)
+    const byId = new Map(people.map((u) => [u.id, u]))
+    const learners: DemandLearner[] = [...waits].map(([id, courses]) => ({
+      id, nameAr: byId.get(id)?.displayName ?? '—', email: byId.get(id)?.email ?? '', courses,
+    })).sort((a, b) => b.courses - a.courses || a.nameAr.localeCompare(b.nameAr, 'ar'))
+    return { rows, learners }
   }
 }
