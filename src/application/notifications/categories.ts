@@ -218,6 +218,8 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
       'trainer.activated',
       /* والمستشارُ مثلُه: حالةٌ أُسنِدت إليه عملٌ ينتظره، وكان يكتشفها بإعادة التحميل */
       'advisor.case.assigned',
+      /* وعميلُه صار له حسابٌ موثَّق — صار يرى تقدّمه، والمتابعةُ تبدأ من هنا */
+      'advisor.case.client_linked',
       /* ي-٤: واختيارُ صاحبِ المقعد بعد رحيل مدرّبه — عملٌ ينتظر تنفيذَه.
          وكان يقع في عمودٍ لا يراه أحدٌ حتّى يفتح الشاشةَ مصادفةً. */
       'departure.chosen',

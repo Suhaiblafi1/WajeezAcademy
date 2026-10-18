@@ -7,6 +7,7 @@ import { createHash, randomBytes } from 'node:crypto'
 import bcrypt from 'bcryptjs'
 import type { PrismaClient } from '@prisma/client'
 import { MAIL_LINK_TTL_MS, RESET_LINK_TTL_MS } from '../../src/application/links/mail-link-window'
+import { linkLeadsAfterVerification } from './lead-link'
 
 /** الدور الأرضيّ لكلّ حساب — يُمنح عند التسجيل ولا يُنزع بترقية */
 const LEARNER_ROLE = 'learner'
@@ -399,6 +400,8 @@ export class AuthService {
       /* أمن: تغيير كلمة المرور يبطل كل الجلسات القائمة */
       this.prisma.session.updateMany({ where: { userId: row.userId, revokedAt: null }, data: { revokedAt: new Date() } }),
     ])
+    /* وما أثبته الرابطُ يلحق به عميلُه المحتمل — والعلّةُ في `lead-link.ts` */
+    if ('emailVerifiedAt' in proved) await linkLeadsAfterVerification(this.prisma, row.userId)
   }
 
   /* ── توثيق البريد (١هـ) ───────────────────────────────────────────────
@@ -436,6 +439,7 @@ export class AuthService {
       where: { id: user.id },
       data: { emailVerifiedAt: new Date(), emailVerifyTokenHash: null, emailVerifyExpiresAt: null },
     })
+    await linkLeadsAfterVerification(this.prisma, user.id)
     return { userId: user.id, alreadyVerified: false }
   }
 
@@ -473,6 +477,7 @@ export class AuthService {
       where: { id: userId },
       data: { emailVerifiedAt: new Date(), emailVerifyTokenHash: null, emailVerifyExpiresAt: null },
     })
+    await linkLeadsAfterVerification(this.prisma, userId, actorId)
     return { alreadyVerified: false, email: user.email }
   }
 

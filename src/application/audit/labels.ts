@@ -143,6 +143,7 @@ const PHRASES: Record<string, string> = {
   'trainer.create_direct': 'تعيين مدرّب داخليّا — بلا نموذج تقدّم',
   'advisor.case.create_own': 'إدخال المستشار عميلا وفتح حالته',
   'advisor.case.guest_request': 'زائر يطلب أن يتواصل معه مستشار',
+  'advisor.case.client_linked': 'ربط حالة بحساب صاحبها بعد توثيق بريده',
   'term.create': 'إنشاء فصل دراسيّ',
   'term.registration_window': 'ضبط نافذة التسجيل للفصل',
   'term.trainer_availability': 'إتاحة مدرّب في فصل',
