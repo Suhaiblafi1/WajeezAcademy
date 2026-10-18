@@ -68,6 +68,7 @@ import { applyRecordedPlacements, recordedPlacements, samePlanContent } from '..
 import { readFile } from 'node:fs/promises'
 import { planReturns, planTimeline, type PlanEvent } from '../../src/application/trainer/plan-timeline'
 import { join } from 'node:path'
+import { ensureTerm, ensureTermOf } from './term-ensure'
 
 /** بريدُ «اطلب تعديلات» كما يُرسَل — شكرٌ، فكلمةُ الإدارة إن كتبتها، فما جهّزناه، فالخطوات
     (`returnMailAr`، ١١ أكتوبر ٢٠٢٦). يُصدَّر لتُعايَن الرسالةُ نفسُها قبل أن تصل أحدا. */
@@ -1593,7 +1594,8 @@ export class CohortPlanService {
     const said = note?.trim() || null
     const msg = postponeMessageAr({ cohortTitle: plan.cohort.title, from, to, note: said })
     const reports = (await new CohortFileService(this.prisma).reviewReports(plan.cohort.id, plan.id)).map((r) => r.originalName)
-    const term = await this.prisma.term.findUnique({ where: { year_season: { year: to.year, season: to.season } }, select: { id: true } })
+    /* والفصلُ يُنشأ إن لم يكن — فلا تسقط المؤجَّلةُ إلى «بلا فصل» (`term-ensure.ts`) */
+    const term = await ensureTerm(this.prisma, to)
 
     await this.prisma.$transaction([
       this.prisma.cohortDeliveryPlan.update({
@@ -1671,7 +1673,7 @@ export class CohortPlanService {
       where: { startsOn: { lte: day }, endsOn: { gte: day }, status: { notIn: ['closed', 'cancelled'] } },
       orderBy: { startsOn: 'asc' },
       select: { id: true },
-    })
+    }) ?? await ensureTermOf(this.prisma, day)
     await this.prisma.cohort.update({
       where: { id: cohortId },
       data: {

@@ -258,7 +258,11 @@ describe('⑤ عدّادُ الشعب في قائمة العقود', () => {
       data: { cohortId: one.id, trainerId: t.profileId, status: 'submitted', submittedAt: new Date(), content: { kind: 'trainer', modules: [], resources: [] } },
     })
     const [to] = postponeChoices(null, new Date().toISOString().slice(0, 10))
+    /* وموسمُها بلا صفٍّ في جدول الفصول — فيُنشأ ولا تسقط الشعبةُ «بلا فصل» (`term-ensure.ts`) */
+    await prisma.term.deleteMany({ where: { year: to.year, season: to.season, cohorts: { none: {} } } })
     await plans.postpone(adminId, plan.id, to)
+    const term = await prisma.cohort.findUniqueOrThrow({ where: { id: one.id }, select: { term: { select: { year: true, season: true } } } })
+    expect(term.term, 'أُجّلت وبقيت بلا فصل').toEqual({ year: to.year, season: to.season })
     expect(await tallyOf(t.contractId), 'أُجّلت وعُدّت جزئيّة').toMatchObject({ total: 2, postponed: 1, partial: 1 })
     const rows = await prep.coursesOf(t.profileId)
     expect(rows.find((r) => r.courseId === C1)?.postponedTo, 'لم يُقل إلى أيّ موسمٍ أُجّلت').toBeTruthy()
