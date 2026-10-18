@@ -1334,6 +1334,19 @@ export async function runCohortMoveReminders(prisma: PrismaClient, now = new Dat
   }
 }
 
+/* ═══ فصولُ الشعب التي سقطت «بلا فصل» (١٨ أكتوبر ٢٠٢٦) ═══
+   العلّةُ في `server/services/term-ensure.ts`. يملأ ما سقط قبل الإصلاح، ويلتقط ما يفلت بعده. */
+export async function runAssignMissingTerms(prisma: PrismaClient): Promise<JobResult> {
+  const started = Date.now()
+  const { assignMissingTerms } = await import('../services/term-ensure')
+  const assigned = await assignMissingTerms(prisma)
+  return {
+    job: 'assign_missing_terms',
+    summaryAr: assigned === 0 ? 'لا شعبة بلا فصل يعرف موسمها' : `سمّى فصل ${assigned} شعبة`,
+    done: assigned, failed: 0, ms: Date.now() - started,
+  }
+}
+
 export const JOBS = [
   { key: 'dispatch_notifications', everyMs: 60_000, run: dispatchQueuedNotifications, titleAr: 'إرسال ما في طابور الإشعارات' },
   { key: 'outbox_mail', everyMs: 60_000, run: dispatchOutboxMail, titleAr: 'إرسال ما في طابور البريد' },
@@ -1370,6 +1383,7 @@ export const JOBS = [
   { key: 'deferral_followups', everyMs: HOUR, run: runDeferralFollowups, titleAr: 'متابعة المؤجّلين إلى الفصول القادمة' },
   /* كلَّ ساعة: الموعدُ شهرٌ قبل الفصل، فساعةٌ دقّةٌ كافية */
   { key: 'cohort_move_reminders', everyMs: HOUR, run: runCohortMoveReminders, titleAr: 'تذكير مدرّبي الشعب المنقولة قبل فصلها' },
+  { key: 'assign_missing_terms', everyMs: HOUR, run: runAssignMissingTerms, titleAr: 'تسمية فصل الشعب التي بلا فصل' },
   { key: 'cleanup_expired', everyMs: 6 * HOUR, run: cleanupExpired, titleAr: 'تنظيف ما انتهى' },
   /* مرّةً في اليوم: التقليمُ ليس عاجلا، وتكرارُه بلا داعٍ يُقفل جداولَ السجلّ */
   { key: 'enforce_retention', everyMs: 24 * HOUR, run: enforceRetention, titleAr: 'تقليم جداول السجلّ بمدّة حفظها' },

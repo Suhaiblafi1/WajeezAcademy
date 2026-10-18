@@ -23,6 +23,7 @@ import {
   moveProblemAr, moveReminderAt, moveShiftMs, shiftDate, termLabelAr, type TermRef,
 } from '../../src/application/trainer/cohort-move'
 import { TRAINING_SEASON_VALUES, type TrainingSeason } from '../../src/application/trainer/application-options'
+import { ensureTerm } from './term-ensure'
 
 /** من يُبلَّغ بطلبٍ جديد — من يملك قرارَ الشعب */
 export const COHORT_MOVE_STAFF_ROLES = ['super_admin', 'academic_manager', 'operations_manager']
@@ -181,7 +182,8 @@ export class CohortMoveService {
       })
       if (input.action === 'approve') {
         const c = await tx.cohort.findUniqueOrThrow({ where: { id: r.cohortId }, select: { startsAt: true, endsAt: true, joinClosesAt: true } })
-        const term = await tx.term.findUnique({ where: { year_season: { year: target.year, season: target.season } }, select: { id: true } })
+        /* والفصلُ يُنشأ إن لم يكن — فلا تسقط المنقولةُ إلى «بلا فصل» (`term-ensure.ts`) */
+        const term = await ensureTerm(tx, target)
         await tx.cohort.update({
           where: { id: r.cohortId },
           data: {
