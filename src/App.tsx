@@ -63,7 +63,6 @@ const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'))
 const AdminCohorts = lazy(() => import('./pages/admin/AdminCohorts'))
 const AdminTerms = lazy(() => import('./pages/admin/Terms'))
 const AdminTrainerApps = lazy(() => import('./pages/admin/TrainerApplications'))
-const AssignByTrainer = lazy(() => import('./pages/admin/AssignByTrainer'))
 const AdminCourseProposals = lazy(() => import('./pages/admin/CourseProposals'))
 const AdminTrainerPaths = lazy(() => import('./pages/admin/TrainerPaths'))
 const AdminTrainerMarketing = lazy(() => import('./pages/admin/TrainerMarketing'))
@@ -343,7 +342,8 @@ export default function App() {
             <Route path="/admin/content" element={<Navigate to="/admin/publishing" replace />} />
             <Route path="/admin/trainers" element={<AdminTrainerApps />} />
             {/* ج-١: بابٌ ثانٍ للإسناد يبدأ من المدرّب — وإسنادُ الشعبة يبقى في صفحتها */}
-            <Route path="/admin/assign-by-trainer" element={<AssignByTrainer />} />
+            {/* «إسنادٌ من المدرّب» ضُمّت إلى «المدربون» (١٨ أكتوبر ٢٠٢٦) — ورابطُها القديمُ يصل إليها */}
+            <Route path="/admin/assign-by-trainer" element={<Navigate to="/admin/trainer-run" replace />} />
             {/* سلسلةُ التشغيل شاشةٌ لا لسانٌ في «طلبات المدربين»: بابُ تلك
                 محروسٌ بـ`trainer.applications.view` وهذه بـ`trainer.qualify`،
                 فكان المنسّقُ ومديرُ العمليّات يريان اللسانَ ويُردّان عند تحميله. */}

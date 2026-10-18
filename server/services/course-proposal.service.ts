@@ -38,14 +38,15 @@
    اقتراحٌ صُنِّف «نسخةٌ من رمزٍ قائم» لا يُدرّسه صاحبُه: التأهيلُ فعلٌ ثانٍ
    في شاشةٍ ثانية. وكان ينتهي القرارُ ولا يبقى ما يذكّر به، فيُصنَّف الاقتراحُ
    ويبقى المدرّبُ غيرَ مؤهَّلٍ لما اقترحه — **وهو ضياعُ العمل بعد إنجازه، لا
-   قبله**. فالقرارُ يخلق مهمّةً قائمةً على من قرّر، وتبقى في «مهامّي» حتّى
-   يُغلقها بيده. */
+   قبله**. فخلق القرارُ مهمّةً على من قرّر، ثمّ صار هو التأهيلَ نفسَه (١٨ أكتوبر
+   ٢٠٢٦ — `qualifyOnClassify`). */
 
 import { Prisma, type PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { safeNotify } from './notification.service'
-import { StaffTaskService, type Assigner } from './staff-task.service'
+import type { Assigner } from './staff-task.service'
+import { ROLE_PERMISSIONS } from '../auth/permissions'
 import { suggestCourses, type MatchableCourse, type ProposalMatch } from '../../src/application/trainer/proposal-match'
 import {
   clusterHeadlineAr, clusterProposals, PATH_COURSE_COUNT,
@@ -90,6 +91,11 @@ export const QUEUE_VISIBLE = [...OPEN_PROPOSAL, 'linked'] as const
 export const DECIDED_PROPOSAL = ['linked', 'became_course', 'rejected'] as const
 
 type Db = PrismaClient | Prisma.TransactionClient
+
+/** من يصنّف — وصلاحيّاتُه تقول أيؤهِّل بتصنيفه (`qualifyOnClassify`)؛ وبلا قائمةٍ تُقرأ من أدواره */
+export interface Classifier extends Assigner {
+  permissions?: readonly string[]
+}
 
 export interface ProposalInput {
   titleAr: string
@@ -559,52 +565,33 @@ export class CourseProposalService {
     return out
   }
 
-  /* ═══ ما يبقى بعد القرار — مهمّةُ التأهيل ═══
+  /* ═══ التصنيفُ يؤهّل صاحبَه (١٨ أكتوبر ٢٠٢٦) ═══
 
-     التصنيفُ يقول «هذه دورتُنا»، ولا يجعل المدرّبَ يدرّسها: التأهيلُ فعلٌ
-     ثانٍ في `/admin/assign-by-trainer`. وبينهما ينامُ الاقتراحُ إلى الأبد إن
-     لم يبقَ ما يذكّر به — وهو ما وقع فعلا: اقتراحاتٌ صُنِّفت وأصحابُها غيرُ
-     مؤهَّلين لها بعد شهور.
+     التصنيفُ يقول «هذه دورتُنا»، وكان التأهيلُ بعده فعلا ثانيا: مهمّةٌ عاليةُ الأولويّة على من
+     قرّر، تقول «أهِّله لها» وتُنجَز من زرّ «أهّله مباشرة». ثمّ ضُمّت شاشتا المدرّبين في «المدربون»
+     وسقط الزرّ، فاختار صاحبُ المنصّة «Auto-qualify on proposal accept»: من قبل اقتراحَه قبله مدرّسا
+     لها — بلا مهمّةٍ ولا زرّ. وهو يعلم ما فيه: يؤهَّل لها بلا خطّةٍ معتمَدة، كما كان الزرّ.
 
-     فالمهمّةُ على **من قرّر** لا على المدرّب: التأهيلُ بيدِ الإدارة لا بيده،
-     ومهمّةٌ تُلقى على من لا يملك إنجازَها إزعاجٌ لا تذكير. واسمُه فيها كي
-     يُقرأ الصفُّ في «مهامّي» بلا فتحِ شاشةٍ أخرى.
-
-     وهي `high` بقصد: عملٌ نصفُه تمّ ونصفُه معلّق أولى بالإنجاز من عملٍ لم
-     يبدأ — والمدرّبُ ينتظر في الطرف الآخر وقد قيل له إنّ دورتَه قُبلت. */
-  private async openQualificationTask(
-    actor: Assigner,
-    input: {
-      proposalId: string; profileId: string; titleAr: string; courseId: string
-      trainerName: string; wasLinked: boolean
-    },
-  ) {
-    /* ═══ ومن أُهِّل لها قبلُ لا تُفتح له مهمّة (٢٩ سبتمبر ٢٠٢٦) ═══
-
-       المهمّةُ تقول «أهِّله لها»، ومن رُبط اقتراحُه بدورةٍ هو مؤهَّلٌ لها أصلا
-       — كمن يقترح ما يدرّسه عندنا بعنوانٍ آخر — تُفتح له مهمّةٌ أُنجز ما فيها
-       قبل أن تُفتح. فتبقى في «مهامّي» عالية الأولويّة تقول ما ليس عملا، ومن
-       رآها يفتح شاشةَ الإسناد ليجد لا شيءَ يُفعل: وذاك يعلّم تجاهلَ المهامّ.
-       وملفُّ القرارات يؤهِّل قبل أن يربط لهذا بعينه. */
+     ولا يُؤهِّل إلّا من يملك التأهيل (`trainer.qualify`) — فالتصنيفُ بابُ `trainer.change.review`،
+     والصلاحيّتان تفترقان. ولا يُؤهَّل موقوفٌ ولا من خرج من الطور (`qualifyForCourse` يردّهما):
+     يُصنَّف اقتراحُه ولا يُؤهَّل. ومن أُهِّل لها قبلُ لا يُعاد تأهيلُه ولا يصله خبرٌ ثانٍ. */
+  private async qualifyOnClassify(actor: Classifier, input: { profileId: string; courseId: string; titleAr: string }) {
+    const permissions = actor.permissions ?? actor.roles.flatMap((r) => ROLE_PERMISSIONS[r] ?? [])
+    if (!permissions.includes('trainer.qualify')) return
     const current = await this.prisma.trainerCourseQualification.findUnique({
       where: { profileId_courseId: { profileId: input.profileId, courseId: input.courseId } },
       select: { status: true },
     })
     if (current?.status === 'qualified') return
-
-    const tasks = new StaffTaskService(this.prisma)
-    await tasks.assign(actor, {
-      assigneeId: actor.userId,
-      priority: 'high',
-      title: `أهّل ${input.trainerName} للدورة ${input.courseId}`,
-      bodyAr: [
-        input.wasLinked
-          ? `اقتراحه «${input.titleAr}» صنّف نسخة من ${input.courseId}.`
-          : `اقتراحه «${input.titleAr}» صار الدورة ${input.courseId} في الكتالوج.`,
-        'ويبقى تأهيله لها — وبلا تأهيل لا يسند إلى شعبة منها، فيبقى القرار بلا أثر.',
-        'التأهيل من: /admin/assign-by-trainer',
-      ].join('\n'),
+    const profile = await this.prisma.trainerProfile.findUnique({
+      where: { id: input.profileId }, select: { suspendedAt: true, application: { select: { status: true } } },
     })
+    /* وفي الدورة: `trainer-review.service` يستورد هذا الملفّ */
+    const { TrainerReviewService } = await import('./trainer-review.service')
+    const live: readonly string[] = TrainerReviewService.QUALIFIABLE_STATUSES
+    if (!profile || profile.suspendedAt || !live.includes(profile.application.status)) return
+    await new TrainerReviewService(this.prisma)
+      .qualifyForCourse(input.profileId, input.courseId, actor.userId, `صنّف اقتراحه «${input.titleAr}»`)
   }
 
   /** «نسخةٌ من رمزٍ قائم» — يُربط ولا يُنشأ إصدارٌ باسم صاحبه.
@@ -612,11 +599,8 @@ export class CourseProposalService {
       وكان بعدها بابٌ بيد المدرّب إلى اسم الدورة (`course_title_edit` · ح-٣)،
       وأُغلق (ق٥ · ١٧ سبتمبر ٢٠٢٦). فمن رُبط اقتراحُه برمزٍ قائمٍ يقرأ اسمَه
       كما هو، وتسميةُ الكتالوج بيد الإدارة. */
-  async linkToCourse(actor: Assigner, id: string, courseId: string, noteAr?: string | null) {
-    const row = await this.prisma.trainerCourseProposal.findUnique({
-      where: { id },
-      include: { profile: { select: { application: { select: { fullName: true } } } } },
-    })
+  async linkToCourse(actor: Classifier, id: string, courseId: string, noteAr?: string | null) {
+    const row = await this.prisma.trainerCourseProposal.findUnique({ where: { id } })
     if (!row) throw new AuthError('unknown_proposal', 'لا اقتراح بهذا المعرّف', 404)
     const course = await this.prisma.course.findUnique({ where: { id: courseId } })
     if (!course) throw new AuthError('unknown_course', 'الدورة غير موجودة', 404)
@@ -633,10 +617,7 @@ export class CourseProposalService {
       entityType: 'trainer_course_proposal', entityId: id,
       meta: { courseId, titleAr: row.titleAr },
     })
-    await this.openQualificationTask(actor, {
-      proposalId: id, profileId: row.profileId, titleAr: row.titleAr, courseId,
-      trainerName: row.profile.application.fullName, wasLinked: true,
-    })
+    await this.qualifyOnClassify(actor, { profileId: row.profileId, titleAr: row.titleAr, courseId })
     return out
   }
 
@@ -644,11 +625,8 @@ export class CourseProposalService {
 
       ولا تُنشأ الدورةُ هنا: نموذجُ الكتالوج يحمل المسارَ والتسلسلَ والساعاتِ
       والمهاراتِ ومدقّقَ التمارين، وثانيةٌ أنحفُ منه تتخلّف عنه بعد شهر. */
-  async markBecameCourse(actor: Assigner, id: string, courseId: string, noteAr?: string | null) {
-    const row = await this.prisma.trainerCourseProposal.findUnique({
-      where: { id },
-      include: { profile: { select: { application: { select: { fullName: true } } } } },
-    })
+  async markBecameCourse(actor: Classifier, id: string, courseId: string, noteAr?: string | null) {
+    const row = await this.prisma.trainerCourseProposal.findUnique({ where: { id } })
     if (!row) throw new AuthError('unknown_proposal', 'لا اقتراح بهذا المعرّف', 404)
     const course = await this.prisma.course.findUnique({ where: { id: courseId } })
     if (!course) throw new AuthError('unknown_course', 'الدورة غير موجودة', 404)
@@ -665,10 +643,7 @@ export class CourseProposalService {
       entityType: 'trainer_course_proposal', entityId: id,
       meta: { courseId, titleAr: row.titleAr },
     })
-    await this.openQualificationTask(actor, {
-      proposalId: id, profileId: row.profileId, titleAr: row.titleAr, courseId,
-      trainerName: row.profile.application.fullName, wasLinked: false,
-    })
+    await this.qualifyOnClassify(actor, { profileId: row.profileId, titleAr: row.titleAr, courseId })
     return out
   }
 

@@ -161,8 +161,8 @@ describe('ملفُّ القرارات — يُعاين ثمّ يُطبَّق م�
     expect(cApp.statusHistory[0].note).toBe('ملفٌّ مكرَّرٌ للتجربة')
     expect((await prisma.trainerProfile.findUniqueOrThrow({ where: { id: dProfile.id } })).suspendedAt).not.toBeNull()
 
-    /* ولا مهمّةَ «أهِّله» لمن أُهِّل قبل أن يُربط — والترتيبُ هو ما يمنعها */
-    expect(await openTasks(), 'فُتحت مهمّةُ تأهيلٍ لمن أُهِّل قبلها').toBe(tasksBefore)
+    /* ولا مهمّةَ «أهِّله» بعد التصنيف — فالتصنيفُ يؤهّل (`qualifyOnClassify`) */
+    expect(await openTasks(), 'فُتحت مهمّةُ تأهيل').toBe(tasksBefore)
 
     /* وصفٌّ يجمع الملفَّ في الأثر */
     const summary = await prisma.auditEvent.findMany({
@@ -225,17 +225,26 @@ describe('ملفُّ القرارات — يُعاين ثمّ يُطبَّق م�
   })
 })
 
-describe('والربطُ لا يفتح مهمّةَ «أهِّله» لمن هو مؤهَّلٌ لها', () => {
-  it('المؤهَّلُ لا مهمّةَ له — وغيرُه تُفتح له كما كانت', async () => {
-    const g = await accepted('dec-g@test.local', 'غيث المؤهَّل', ['يعرفها', 'لا يعرفها'])
-    await review.qualifyForCourse(g.profileId, 'C-DEC-101', adminId)
-    const assigner = { userId: adminId, roles: ['academic_manager'] }
+describe('والربطُ من الملفّ يؤهّل كما يؤهّل زرُّه — بصلاحيّة من رفعه', () => {
+  it('⚠️ يُؤهَّل لما رُبط له — ومن لا يملك التأهيلَ يربط ولا يؤهّل', async () => {
+    const g = await accepted('dec-g@test.local', 'غيث المربوط', ['يعرفها', 'لا يُؤهَّل لها'])
+    const file = (pid: string, courseId: string) => fileOf([{
+      reference: g.reference, fullName: g.fullName,
+      proposals: [{ proposalId: pid, verdict: 'link', courseId }],
+    }])
+    const status = async (courseId: string) => (await prisma.trainerCourseQualification.findUnique({
+      where: { profileId_courseId: { profileId: g.profileId, courseId } },
+    }))?.status ?? null
 
-    const before = await openTasks()
-    await proposals.linkToCourse(assigner, g.idOf('يعرفها'), 'C-DEC-101')
-    expect(await openTasks(), 'فُتحت مهمّةُ «أهِّله» لمن هو مؤهَّل').toBe(before)
-    await proposals.linkToCourse(assigner, g.idOf('لا يعرفها'), 'C-DEC-102')
-    expect(await openTasks(), 'لم تُفتح مهمّةُ التأهيل لمن ليس مؤهَّلا').toBe(before + 1)
+    expect((await decisions.apply(file(g.idOf('يعرفها'), 'C-DEC-101'), actor)).failed).toBeNull()
+    expect(await status('C-DEC-101'), 'رُبط من الملفّ ولم يُؤهَّل').toBe('qualified')
+
+    const limited: DecisionsActor = {
+      ...actor, permissions: actor.permissions.filter((k) => k !== 'trainer.qualify'),
+    }
+    expect((await decisions.apply(file(g.idOf('لا يُؤهَّل لها'), 'C-DEC-102'), limited)).failed).toBeNull()
+    expect((await prisma.trainerCourseProposal.findUniqueOrThrow({ where: { id: g.idOf('لا يُؤهَّل لها') } })).status).toBe('linked')
+    expect(await status('C-DEC-102'), 'أهّل الملفُّ بلا صلاحيّة التأهيل').toBeNull()
   })
 })
 

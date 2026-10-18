@@ -381,7 +381,7 @@ export function planDecisions(file: DecisionsFile, world: DecisionsWorld): Decis
       }
     }
 
-    /* ② التأهيل — قبل القرارات، فلا تُفتح مهمّةُ «أهِّله» لما أُهِّل له */
+    /* ② التأهيل — قبل القرارات، فلا يُعاد بالتصنيف تأهيلُ من أُهِّل (`qualifyOnClassify`) */
     const quals = new Map((profile?.qualifications ?? []).map((q) => [q.courseId, q.status]))
     const live = Boolean(t && profile && !profile.suspended && world.qualifiableStatuses.includes(t.status))
     for (const courseId of entry.qualify) {

@@ -1283,7 +1283,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
       courseId: z.string().min(2).max(64),
       noteAr: z.string().trim().max(2000).nullish(),
     }).parse(req.body)
-    return proposals.linkToCourse(actorOf(req), id, body.courseId, body.noteAr)
+    return proposals.linkToCourse({ ...actorOf(req), permissions: req.auth!.permissions }, id, body.courseId, body.noteAr)
   })
 
   app.post('/api/admin/course-proposals/:id/became-course', {
@@ -1295,7 +1295,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
       courseId: z.string().min(2).max(64),
       noteAr: z.string().trim().max(2000).nullish(),
     }).parse(req.body)
-    return proposals.markBecameCourse(actorOf(req), id, body.courseId, body.noteAr)
+    return proposals.markBecameCourse({ ...actorOf(req), permissions: req.auth!.permissions }, id, body.courseId, body.noteAr)
   })
 
   /* ═══ نقضُ الربط، وتصحيحُ العنوان — بابا رجوعٍ لأضعف القرارات ═══
