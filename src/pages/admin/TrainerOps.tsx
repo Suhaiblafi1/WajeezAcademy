@@ -1,10 +1,9 @@
-/* عمليات إدارة المدربين المتقدمة — مقابلات ونتائجها، تقييم الديمو، مراجع مهنية،
-   عقود وتوقيع، تأهيل وإسناد ونشر عام وإيقاف، ومراجعة اقتراحات تعديل الدورات.
-   كلها API حقيقي من admin-trainer.routes. */
+/* عمليات إدارة المدربين المتقدمة — مقابلات ونتائجها، والدورات المؤهَّل لها، ومراجعة اقتراحات
+   تعديل الدورات. كلها API حقيقي من admin-trainer.routes. والعقدُ في «التجهيز» (`PreparationSteps`). */
 import { useCallback, useEffect, useState } from "react";
 import {
   Wallet,
-  Activity, AlertTriangle, BadgeCheck, Banknote, Briefcase, CalendarCheck, CheckCircle2, ChevronDown, FileSignature,
+  Activity, AlertTriangle, BadgeCheck, Banknote, Briefcase, CalendarCheck, CheckCircle2, ChevronDown,
   Globe, Info, Loader2, Settings2, Star, XCircle, Zap,
 } from "lucide-react";
 import { apiGet, apiPost, ApiError } from "@/services/api";
@@ -100,10 +99,6 @@ export interface TrainerSummary {
   suspendedAt: string | null;
 }
 
-const CONTRACT_STATUS_AR: Record<string, string> = {
-  draft: "مسودة", sent: "أرسل", signed: "موقّع", expired: "منته", terminated: "مفسوخ",
-};
-
 /** بطاقات التفاصيل المتقدمة لطلب مدرب — تُركب داخل صفحة التفاصيل */
 export function TrainerDetailOps({ app, onAction }: {
   /* ── المراجعُ والعقودُ كانت تصل ولا تُعرَض ──
@@ -119,7 +114,6 @@ export function TrainerDetailOps({ app, onAction }: {
     interviews: { id: string; scheduledAt: string; outcome: string | null; canceledAt: string | null }[];
     profile: {
       id: string; userId: string | null;
-      contracts?: { id: string; title: string; status: string; signedAt: string | null }[];
     } | null;
     references?: { id: string; name: string; relation: string | null; verifiedAt: string | null }[];
     summary?: TrainerSummary;
@@ -131,12 +125,7 @@ export function TrainerDetailOps({ app, onAction }: {
     doneMsg: string | ((result: unknown) => { ar: string; ok: boolean }),
   ) => Promise<void>;
 }) {
-  /* وما لم يُوقَّع بعد — فالقائمةُ تعرض ما يُعمل لا كلَّ شيء */
-  const unsignedContracts = (app.profile?.contracts ?? []).filter((c) => !c.signedAt);
-
   const [interviewForm, setInterviewForm] = useState({ scheduledAt: "", mode: "remote", notes: "" });
-  const [contractForm, setContractForm] = useState({ title: "", terms: "" });
-  const [lastContractId, setLastContractId] = useState("");
 
   return (
     <>
@@ -268,39 +257,12 @@ export function TrainerDetailOps({ app, onAction }: {
           فما ذهب هنا نموذجا إدخالٍ ثانيا لشيءٍ له مدخلُه — وشاشتان تكتبان
           في حقلٍ واحدٍ تفترقان يوما. */}
 
-      <FoldSection icon={FileSignature} title="العقد والتوقيع" id="sec-contract" omitFromPrint>
-        <div className="flex flex-wrap gap-2">
-          <input value={contractForm.title} onChange={(e) => setContractForm({ ...contractForm, title: e.target.value })}
-            placeholder="عنوان العقد — عقد تدريب 2026" className={`${inputCls} flex-1`} />
-          <Button tone="confirm" size="sm" disabled={contractForm.title.trim().length < 3}
-            onClick={() => void onAction(async () => {
-              const c = await apiPost<{ id: string }>(`/api/admin/trainer-applications/${app.id}/contracts`, { title: contractForm.title });
-              setLastContractId(c.id);
-            }, "أنشئ العقد وأرسل — الطلب في contract_pending")}>
-            أنشئ وأرسل
-          </Button>
-        </div>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {/* كان يُملأ آليّا بعد الإنشاء فوقُ — فيعمل في الجلسة التي أُنشئ
-              فيها العقد، ويصير حقلَ لصقٍ لمن عاد إلى الطلب بعد يوم. */}
-          <label className="sr-only" htmlFor={`contract-sign-${app.id}`}>العقد المراد تسجيل توقيعه</label>
-          <select id={`contract-sign-${app.id}`} value={lastContractId} onChange={(e) => setLastContractId(e.target.value)}
-            disabled={unsignedContracts.length === 0} className={`${selectCls} flex-1`}>
-            <option value="">
-              {(app.profile?.contracts?.length ?? 0) === 0
-                ? "لا عقود بعد — أنشئ عقدا أوّلا"
-                : unsignedContracts.length === 0 ? "وقّعت العقود كلّها" : "اختر العقد…"}
-            </option>
-            {unsignedContracts.map((c) => (
-              <option key={c.id} value={c.id}>{c.title} — {CONTRACT_STATUS_AR[c.status] ?? c.status}</option>
-            ))}
-          </select>
-          <Button tone="secondary" size="sm" disabled={!lastContractId}
-            onClick={() => void onAction(() => apiPost(`/api/admin/trainer-contracts/${lastContractId}/sign`), "سجل التوقيع — الطلب في التهيئة")}>
-            سجّل التوقيع
-          </Button>
-        </div>
-      </FoldSection>
+      {/* ═══ وذهب «العقد والتوقيع» (١٨ أكتوبر ٢٠٢٦) ═══
+
+          كان هنا «أنشئ وأرسل» و«سجّل التوقيع»: عقدٌ بعنوانٍ وحده، وتوقيعٌ يُسجَّل بنقرةٍ فيُدخل
+          الطلبَ التهيئة — بلا نصٍّ مثبَّت ولا رابطِ توقيعٍ ولا اعتمادٍ لتوقيعه. والعقدُ الحقُّ
+          خطوةٌ في «التجهيز» أعلى الملفّ (`PreparationSteps` · `ContractStep`): يُركَّب نصُّه
+          ويُرسل رابطُه ويُعتمد توقيعُه. فاختار صاحبُ المنصّة حذفَ البديل الذي يتخطّاها. */}
 
       {/* الشعبُ المؤهَّل لها — عرضٌ لا تحكّم.
 

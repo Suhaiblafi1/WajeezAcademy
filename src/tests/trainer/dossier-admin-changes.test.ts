@@ -9,7 +9,8 @@
 
    ═══ ٢) الأدمنُ يكتب اسمَ الاقتراح بنفسه ═══
    ═══ ٣) والاتفاقُ الماليُّ في نموذج القارئ ═══
-   ═══ ٤) وقسمانِ ذهبا من شاشة المدرّب ═══ */
+   ═══ ٤) وقسمانِ ذهبا من شاشة المدرّب ═══
+   ═══ ٥) ثمّ ما يتخطّى العقد (١٨ أكتوبر ٢٠٢٦) ═══ */
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
@@ -89,9 +90,36 @@ describe('ما ذهب من شاشة المدرّب', () => {
     expect(ops, 'بقي نموذج الروبرك بلا قسم يستعمله').not.toMatch(/function RubricInput/)
   })
 
-  it('والعقد والمقابلات باقيان — لم يحذف ما لم يطلب حذفه', () => {
-    expect(ops).toMatch(/id="sec-contract"/)
+  it('والمقابلات باقية — لم يحذف ما لم يطلب حذفه', () => {
     expect(ops).toMatch(/id="sec-interviews"/)
+  })
+})
+
+/* ═══ ثمّ «العقد والتوقيع» و«ابدأ التهيئة» (١٨ أكتوبر ٢٠٢٦) ═══
+
+   بابان يتخطّيان العقد: «أنشئ وأرسل» و«سجّل التوقيع» يُدخلان الطلبَ التهيئةَ بعقدٍ بلا نصٍّ ولا
+   اعتماد، و«ابدأ التهيئة» يُدخلها بلا عقدٍ أصلا. واختار صاحبُ المنصّة حذفَهما — والعقدُ الحقُّ
+   خطوةٌ في «التجهيز» تبقى. */
+describe('ما يتخطّى العقد ذهب — والعقد في «التجهيز» باق', () => {
+  const prep = code('src/pages/admin/PreparationSteps.tsx')
+
+  it('⚠️ لا «العقد والتوقيع» في ملفّ المدرّب — ولا في فهرسه', () => {
+    expect(ops).not.toMatch(/id="sec-contract"/)
+    expect(ops, 'بقي «أنشئ وأرسل»').not.toMatch(/\/trainer-applications\/\$\{app\.id\}\/contracts`/)
+    expect(ops, 'بقي «سجّل التوقيع»').not.toMatch(/\/trainer-contracts\/\$\{[a-zA-Z]+\}\/sign`/)
+    expect(apps).not.toMatch(/id: "sec-contract"/)
+  })
+
+  it('⚠️ ولا «ابدأ التهيئة» بين القرارات', async () => {
+    const { DECISIONS, RECOMMENDED_ACTIONS } = await import('@/application/trainer/decisions')
+    expect(DECISIONS.map((d) => d.action)).not.toContain('start_onboarding')
+    expect(RECOMMENDED_ACTIONS).not.toContain('start_onboarding')
+  })
+
+  it('⚠️ والعقد في «التجهيز»: يركّب نصه ويرسل ويعتمد توقيعه', () => {
+    expect(prep).toMatch(/function ContractStep\(/)
+    expect(prep).toContain('/contract-prefill`')
+    expect(apps).toMatch(/<PreparationSteps\b/)
   })
 })
 
