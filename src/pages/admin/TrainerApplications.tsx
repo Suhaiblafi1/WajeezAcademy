@@ -1087,8 +1087,16 @@ export default function TrainerApplications() {
     const canOverride = user?.roles?.includes("super_admin") ?? false;
     const gatedByPrep = (action: string) => (action === "approve" || action === "activate") && !ready;
 
+    /* ═══ و«اطلب معلومات إضافية» من عمود القرار يفتح خانتَه (١٨ أكتوبر ٢٠٢٦) ═══
+       كان يُرسل القرارَ بلا نصّ — ولا خانةَ في العمود. فيفتح الخانةَ نفسَها التي في الشريط ويضع المؤشّر فيها */
+    const openAsk = () => {
+      setAskOpen(true);
+      setTimeout(() => document.getElementById("ask-note")?.focus(), 0);
+    };
     const decisionClick = (d: Decision, decisionNote?: string) =>
-      d.action === "defer"
+      d.action === "request_info"
+        ? openAsk()
+        : d.action === "defer"
         ? setRowDecision({ app: a, action: "defer" })
         : d.action === "undo_reject"
         ? setUndoOpen(true)

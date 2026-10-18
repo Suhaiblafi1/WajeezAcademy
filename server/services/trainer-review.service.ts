@@ -59,6 +59,7 @@ import {
   type ContractClosedView, type ContractLinkPurpose,
 } from '../../src/application/trainer/contract-link-state'
 import { PUBLIC_TRAINER_WHERE, trainerPubliclyVisible } from './trainer-visibility'
+import { cohortLeadTrainers } from './cohort-lead'
 import { cleanProposals, readProposals } from '../../src/application/trainer/teachable-proposals'
 import { pendingKind } from '../../src/application/trainer/pending-kind'
 import type { PrepTally } from '../../src/application/trainer/prep-tally'
@@ -905,6 +906,12 @@ export class TrainerReviewService {
     const actor = await this.prisma.user.findUnique({ where: { id: actorId } })
     if (actor && actor.email === app.email) {
       throw new AuthError('self_decision', 'لا يجوز اتخاذ قرار في طلب مرتبط ببريدك', 403)
+    }
+    /* ═══ وطلبُ المعلومات يقول ما المطلوب (١٨ أكتوبر ٢٠٢٦) ═══
+       كان زرُّه في عمود القرار يُرسله بلا نصّ — فيصل المتقدّمَ اسمُ حالةٍ لا طلب. والحدُّ حدُّ خانته في الشاشة،
+       وهو هنا لكلّ بابٍ يصل إليه لا للشاشة وحدَها. */
+    if (action === 'request_info' && (note?.trim().length ?? 0) < 10) {
+      throw new AuthError('note_required', 'اكتب ما تريده منه — عشرة أحرف على الأقل', 400)
     }
 
     const targets: Record<typeof action, Parameters<TrainerApplicationService['transition']>[1]> = {
@@ -6398,21 +6405,27 @@ export class TrainerReviewService {
 
   /** مدربو دورة معينة للعرض العام — أو عبارة الإعلان عند غياب معتمد */
   async publicCourseTrainer(courseId: string) {
-    const assignments = await this.prisma.trainerCourseAssignment.findMany({
-      where: { courseId, status: 'active', cohort: { status: { in: ['open', 'full', 'active'] } } },
-      include: {
-        profile: {
-          include: { application: { select: { fullName: true } } },
-        },
-      },
+    /* ═══ مدرّبُ الدورة من أصيل شعبتها — لا من الإسناد وحدَه (١٨ أكتوبر ٢٠٢٦) ═══
+
+       كان يُقرأ من `TrainerCourseAssignment` وحدَه، ولا يكتبه إلّا الإسنادُ اليدويّ (`assignToCohort`). والطريقُ
+       الذي تُفتح به الشعبُ اليوم — شعبةُ إعدادٍ يقبلها المدرّبُ فيُكتب أصيلَها (`trainer-prep.service.ts`) ثمّ تُعتمد
+       خطّتُه — لا يكتبه أبدا: فتقول بطاقةُ الدورة «سيتم تعيين المدرب قريبا» وشعبتُها مفتوحةٌ بمدرّبها. فيُقرأ بالقاعدة
+       التي تُحتسب بها الأتعاب (`cohortLeadTrainers`): أصيلُ الشعبة، ثمّ إسنادُها النشطُ حيث لا أصيل. */
+    const cohorts = await this.prisma.cohort.findMany({
+      where: { courseId, status: { in: ['open', 'full', 'active'] } }, select: { id: true },
+    })
+    const ids = [...new Set((await cohortLeadTrainers(this.prisma, cohorts.map((c) => c.id))).values())]
+    const profiles = await this.prisma.trainerProfile.findMany({
+      where: { id: { in: ids } },
+      include: { application: { select: { fullName: true } } },
     })
     /* البوّابةُ نفسُها التي تحكم الصفحةَ العامّة — كانت هنا بلا شرط اعتمادِ
        النشر، فبطاقةُ الدورة تُظهر ما تخفيه الصفحةُ العامّة عند أوّل افتراق. */
-    const visible = assignments.filter((a) => trainerPubliclyVisible(a.profile))
+    const visible = profiles.filter((p) => trainerPubliclyVisible(p))
     if (!visible.length) return { announced: false, messageAr: 'سيتم تعيين المدرب قريبا', trainers: [] }
     return {
       announced: true,
-      trainers: visible.map((a) => ({ id: a.profile.id, name: a.profile.application.fullName, headline: a.profile.headline })),
+      trainers: visible.map((p) => ({ id: p.id, name: p.application.fullName, headline: p.headline })),
     }
   }
 

@@ -87,9 +87,11 @@ describe('ج-١ · الإسناد يبدأ من المدرّب', () => {
     expect(code('src/pages/admin/CohortOps.tsx'), 'سقط إسناد الشعبة من صفحتها').toContain('مدرّب الشعبة')
   })
 
-  it('وبابها في القائمة محروس بصلاحيّة الإسناد', () => {
+  it('⚠️ وبابها في القائمة محروس بصلاحيّة أوّلِ ما تقرؤه — فلا يراها من يُردّ عند تحميلها (١٨ أكتوبر ٢٠٢٦)', () => {
     const layout = code('src/pages/admin/nav-map.ts')
-    expect(layout).toMatch(/to: "\/admin\/assign-by-trainer"[^}]*need: "trainer\.assign"/)
+    expect(layout).toMatch(/to: "\/admin\/assign-by-trainer"[^}]*need: "trainer\.qualify"/)
+    expect(readFileSync(join(root, 'server/http/routes/admin-trainer.routes.ts'), 'utf8'))
+      .toMatch(/app\.get\('\/api\/admin\/trainers\/ops', \{\s*preHandler: requirePermission\('trainer\.qualify'\)/)
     expect(code('src/App.tsx'), 'لا مسار للشاشة').toContain('/admin/assign-by-trainer')
   })
 })
