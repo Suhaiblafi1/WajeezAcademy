@@ -61,7 +61,7 @@ export const BAR_ACTIONS = ["conditionally_approve", "approve", "reject", "undo_
    ثمّ الاعتمادُ لمن جاوز التجهيز، ثمّ ما بقي من السلسلة لمن هو فيها. */
 export const RECOMMENDED_ACTIONS = [
   "undo_reject", "undo_withdraw", "reinstate", "conditionally_approve", "approve",
-  "activate", "start_onboarding", "move_to_review",
+  "activate", "move_to_review",
 ];
 
 /* ═══ ترتيبُ المصفوفة هو ترتيبُ العرض — ورحلةُ الطلب هي ترتيبُها ═══
@@ -125,7 +125,9 @@ export const DECISIONS: Decision[] = [
        صاحبَه انتظر ردّا لا يأتي — أو كتب إليه مهنّئا بما لم يُبلَّغ به. */
     noteAr: "قرار فريق يفتح باب التجهيز — ولا يصل المتقدّم منه شيء.",
   },
-  { action: "start_onboarding", label: "ابدأ التهيئة", from: openExcept("onboarding"), tone: "main" },
+  /* وكان هنا «ابدأ التهيئة» (`start_onboarding`): يُدخل الطلبَ التهيئةَ بلا عقدٍ موقَّع. وبابُ
+     التهيئة اعتمادُ توقيعه في «التجهيز» — فحذفه صاحبُ المنصّة (١٨ أكتوبر ٢٠٢٦). والانتقالُ
+     باقٍ في الخادم لمسالكه، لا زرَّ يطلبه. */
   { action: "activate", label: "فعّله مدرّبا نشطا", from: [...REVIEW_OPEN_STATUSES], tone: "main" },
   /* وآخرُ الطريق: يختصر ما فوقه كلَّه من أيّ حالةٍ يقف فيها الطلب */
   {

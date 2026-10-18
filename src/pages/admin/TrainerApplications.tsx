@@ -208,7 +208,6 @@ const DOSSIER_SECTIONS: { id: string; label: string }[] = [
   { id: "sec-history", label: "سجلّ الحالة" },
   { id: "sec-questions", label: "أسئلة المقابلة" },
   { id: "sec-interviews", label: "المقابلات" },
-  { id: "sec-contract", label: "العقد والتوقيع" },
   { id: "sec-rubric", label: "الروبرك والقرار" },
 ];
 

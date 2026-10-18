@@ -47,8 +47,8 @@ describe('① الترتيب ترتيب رحلة الطلب', () => {
     const before: [string, string][] = [
       ['move_to_review', 'academic_review'],
       ['academic_review', 'conditionally_approve'],
-      ['conditionally_approve', 'start_onboarding'],
-      ['start_onboarding', 'activate'],
+      /* و«ابدأ التهيئة» حُذف (١٨ أكتوبر ٢٠٢٦) — والسلسلةُ تُوصَل فوقَه */
+      ['conditionally_approve', 'activate'],
       /* والاعتمادُ بنقرةٍ آخرُ الطريق — يختصر ما فوقه، فلا يتقدّمه */
       ['activate', 'approve'],
       ['move_to_review', 'approve'],
