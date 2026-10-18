@@ -490,7 +490,7 @@ export default function Terms() {
                       : <Button tone="ghost" size="sm" disabled={busy !== null} onClick={() => setConfirmDelete(t.id)}><Trash2 className="h-3.5 w-3.5" /> احذف الموسم</Button>
                   )}
                   <Link to="/calendar" className="text-read font-bold text-teal-light-ink underline decoration-dotted underline-offset-4">التقويم العامّ</Link>
-                  <Link to="/admin/cohorts" className="text-read font-bold text-teal-light-ink underline decoration-dotted underline-offset-4">شعب الموسم في «الشعب»</Link>
+                  <Link to="/admin/cohorts" className="text-read font-bold text-teal-light-ink underline decoration-dotted underline-offset-4">شعب الموسم في «تشغيل الشعب»</Link>
                 </div>
               </Panel>
             );
