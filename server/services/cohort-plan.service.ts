@@ -1616,7 +1616,21 @@ export class CohortPlanService {
     const waiting = await this.pendingEdits(planId)
     await this.tellTrainer(plan.trainer, plan.cohort, { ...msg, ...(waiting.count > 0 ? { step: 'review' as const } : {}) },
       { reports, edits: { count: waiting.count, required: waiting.required } })
-    return { status: 'postponed' as const, postponedTo: toDay }
+    /* ═══ والمؤجّلةُ لا تحبسه (١٨ أكتوبر ٢٠٢٦، «Don't wait») ═══
+       فإن لم يبقَ له ما ينتظر غيرُها فُعِّل أو وُقّع عقدُه الآن — كما يقع حين تُعتمَد آخرُ دوراته.
+       وما يمنع يُقال ولا يُسقط التأجيلَ الذي وقع. */
+    const { TrainerPrepService } = await import('./trainer-prep.service')
+    const prepSvc = new TrainerPrepService(this.prisma)
+    const ctx = await prepSvc.prepContext(plan.cohort.id)
+    const prep = ctx
+      ? await prepSvc.activateOnApproval(ctx, actorId)
+        .catch((e: unknown) => ({ activated: false, blockedAr: e instanceof AuthError ? e.message : 'تعذّر التفعيل' }))
+      : null
+    const sealed = plan.trainerId
+      ? await prepSvc.sealIfComplete(plan.trainerId, actorId)
+        .catch((e: unknown) => ({ sealed: false as const, blockedAr: e instanceof AuthError ? e.message : 'تعذّر التوقيع' }))
+      : null
+    return { status: 'postponed' as const, postponedTo: toDay, ...(prep ? { prep } : {}), ...(sealed ? { sealed } : {}) }
   }
 
   /* ═══ الاعتمادُ يكتب المدّة — والفصلُ يُشتقّ منها ═══

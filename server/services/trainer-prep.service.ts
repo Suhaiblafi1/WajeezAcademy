@@ -52,7 +52,9 @@ export interface PrepCourse {
   declineReasonAr: string | null
   /** دورةٌ معتمَدةٌ له أصلا (`qualified`) — يقبلها فتُنشأ شعبتُها، ولا يعتذر عنها:
       الاعتذارُ عن دورةٍ اعتُمدت له ليس بابا هنا (٣ أكتوبر ٢٠٢٦) */
-  approved: boolean
+  approved: boolean  /** أُجّلت خطّتُها إلى موسمٍ قادم — أوّلُ يومٍ فيه (`postpone`، ٨ أكتوبر ٢٠٢٦). وحالُها `returned`
+      كما في الخادم، والعدّادُ والشاشةُ يقولانها مؤجّلةً لا مردودة (١٨ أكتوبر ٢٠٢٦) */
+  postponedTo?: string | null
 }
 
 /** شعبةُ إعدادٍ وقائدُها — كما يقرؤها `prepContext` */
@@ -60,6 +62,10 @@ export type PrepContext = NonNullable<Awaited<ReturnType<TrainerPrepService['pre
 
 /** نصُّ الاعتذار في ملحوظة التأهيل — ومنه يُعرف أنّ `retired` اعتذارٌ منه لا سحبٌ منّا */
 export const DECLINED_NOTE_PREFIX = 'اعتذر عنها المدرّب: '
+
+/** موسمُ التأجيل لدورةٍ رُدّت خطّتُها مؤجَّلة — `YYYY-MM-DD`، أو لا شيء */
+const postponedOf = (state: PrepState, plan: { postponedTo: Date | null } | null): string | null =>
+  state === 'returned' && plan?.postponedTo ? plan.postponedTo.toISOString().slice(0, 10) : null
 
 export class TrainerPrepService {
   private prisma: PrismaClient
@@ -121,14 +127,18 @@ export class TrainerPrepService {
       }
       const cohort = await this.prepCohortOf(profileId, q.courseId)
       let state: PrepState = cohort ? 'preparing' : 'to_decide'
+      let plan: { status: string; postponedTo: Date | null } | null = null
       if (cohort) {
-        const plan = await this.prisma.cohortDeliveryPlan.findFirst({
-          where: { cohortId: cohort.id, trainerId: { not: null } }, orderBy: { createdAt: 'desc' }, select: { status: true },
+        plan = await this.prisma.cohortDeliveryPlan.findFirst({
+          where: { cohortId: cohort.id, trainerId: { not: null } }, orderBy: { createdAt: 'desc' }, select: { status: true, postponedTo: true },
         })
         if (plan?.status === 'submitted') state = 'submitted'
         else if (plan?.status === 'changes_requested') state = 'returned'
       }
-      out.push({ courseId: q.courseId, titleAr, state, cohortId: cohort?.id ?? null, cohortTitle: cohort?.title ?? null, declineReasonAr: null, approved: false })
+      out.push({
+        courseId: q.courseId, titleAr, state, cohortId: cohort?.id ?? null, cohortTitle: cohort?.title ?? null, declineReasonAr: null, approved: false,
+        postponedTo: postponedOf(state, plan),
+      })
     }
     /* ودوراتُ الملحق التي لا صفَّ تأهيلٍ لها أصلا — معلّقةٌ تنتظر قرارَه */
     const known = new Set((await this.prisma.trainerCourseQualification.findMany({
@@ -175,11 +185,14 @@ export class TrainerPrepService {
       const draft = await this.prepCohortOf(profileId, q.courseId)
       if (draft) {
         const plan = await this.prisma.cohortDeliveryPlan.findFirst({
-          where: { cohortId: draft.id, trainerId: { not: null } }, orderBy: { createdAt: 'desc' }, select: { status: true },
+          where: { cohortId: draft.id, trainerId: { not: null } }, orderBy: { createdAt: 'desc' }, select: { status: true, postponedTo: true },
         })
         if (plan?.status === 'approved' || plan?.status === 'published') continue
         const state: PrepState = plan?.status === 'submitted' ? 'submitted' : plan?.status === 'changes_requested' ? 'returned' : 'preparing'
-        out.push({ courseId: q.courseId, titleAr, state, cohortId: draft.id, cohortTitle: draft.title, declineReasonAr: null, approved: true })
+        out.push({
+          courseId: q.courseId, titleAr, state, cohortId: draft.id, cohortTitle: draft.title, declineReasonAr: null, approved: true,
+          postponedTo: postponedOf(state, plan),
+        })
         continue
       }
       /* شعبةٌ قائمةٌ له في هذه الدورة (غيرُ ملغاة) — فهي في «شعبي» أصلا */
@@ -241,6 +254,21 @@ export class TrainerPrepService {
     const materials = qual.materials ? cleanCourseMaterials(qual.materials) : null
     if (materials) await this.carryMaterials(userId, cohort.id, courseId, materials)
     return { id: cohort.id, title: cohort.title }
+  }
+
+  /* ═══ وما عُرض من «جهّز شعب التعبئة» يحمل موادَّه كذلك (١٨ أكتوبر ٢٠٢٦) ═══
+     كان القبولُ من «مؤهّلاتي» ينقل ما اعتُمد من اللوح القديم إلى الشعبة، وقبولُ عرضٍ أنشأت
+     الإدارةُ شعبتَه لا ينقل شيئا — فيجد المدرّبُ شعبةً فارغةً لدورةٍ اعتُمدت موادُّها. فيُنقل
+     هنا ما لم تكن للشعبة خطّةُ مدرّبٍ قبله. */
+  async carryOnOfferAccept(userId: string, profileId: string, courseId: string, cohortId: string): Promise<boolean> {
+    const qual = await this.prisma.trainerCourseQualification.findUnique({
+      where: { profileId_courseId: { profileId, courseId } }, select: { materials: true },
+    })
+    if (!qual?.materials) return false
+    const written = await this.prisma.cohortDeliveryPlan.count({ where: { cohortId, trainerId: { not: null } } })
+    if (written > 0) return false
+    await this.carryMaterials(userId, cohortId, courseId, cleanCourseMaterials(qual.materials))
+    return true
   }
 
   /** «اعتذرْ عنها» — تخرج من دوراته، ويُقال للإدارة لماذا */
@@ -437,7 +465,7 @@ export class TrainerPrepService {
       وعامّةٌ منذ ١٧ أكتوبر ٢٠٢٦: يناديها التأهيلُ من أيّ باب (`activateWhenCoursesDone`) */
   async activateIfComplete(profileId: string, applicationId: string, actorId: string) {
     const [pending, qualified] = await Promise.all([
-      this.prisma.trainerCourseQualification.count({ where: { profileId, status: 'pending' } }),
+      this.blockingPending(profileId),
       this.prisma.trainerCourseQualification.count({ where: { profileId, status: 'qualified' } }),
     ])
     if (pending > 0 || qualified === 0) return { activated: false as const, waiting: pending }
@@ -473,7 +501,19 @@ export class TrainerPrepService {
     const qualified = await this.prisma.trainerCourseQualification.count({ where: { profileId, status: 'qualified' } })
     if (qualified === 0) return false
     const rows = await this.coursesOf(profileId)
-    return rows.every((r) => r.state === 'declined' || (r.approved && r.state === 'to_decide'))
+    return rows.every((r) => r.state === 'declined' || (r.approved && r.state === 'to_decide') || Boolean(r.postponedTo))
+  }
+
+  /* ═══ والمؤجّلةُ لا تحبس تفعيلَه ولا توقيعَ عقده (١٨ أكتوبر ٢٠٢٦) ═══
+
+     قال صاحبُ المنصّة: «لا تنسَ أنّهم أجّلوا بعضها» — ثمّ اختار «Don't wait»: يُفعَّل ويوقَّع عقدُه
+     حين تُعتمَد كلُّ دورةٍ لم تؤجَّل. وكانت المؤجّلةُ معلّقةً (`pending`) تحبسه إلى موسمها — أشهرا.
+     والمؤجّلةُ تُعتمَد في موسمها بخطّة شعبتها كما تُعتمَد دورةٌ أُضيفت لنشط (`prepContext`). */
+  async blockingPending(profileId: string): Promise<number> {
+    const postponed = (await this.coursesOf(profileId)).filter((r) => r.postponedTo).map((r) => r.courseId)
+    return this.prisma.trainerCourseQualification.count({
+      where: { profileId, status: 'pending', ...(postponed.length ? { courseId: { notIn: postponed } } : {}) },
+    })
   }
 
   /** عدّادُ الشعب بجانب اسمه في «العقود» — من `coursesOf` نفسِها، وما خرج منها بشعبةٍ قائمةٍ يُعدّ معتمَدا
@@ -489,7 +529,10 @@ export class TrainerPrepService {
       select: { cohort: { select: { courseId: true } } },
     })
     const withCohort = new Set(live.map((l) => l.cohort.courseId))
-    return prepTallyOf([...rows.map((r) => r.state), ...left.map((c) => (withCohort.has(c) ? 'done' as const : 'to_decide' as const))])
+    return prepTallyOf([
+      ...rows.map((r) => (r.postponedTo ? 'postponed' as const : r.state)),
+      ...left.map((c) => (withCohort.has(c) ? 'done' as const : 'to_decide' as const)),
+    ])
   }
 
   /** يوقّع عقدَ النشط المعتمَدَ كالعقود الجديدة إن اكتملت دوراتُه — وما يمنع يُقال للإدارة ولا يُسقط ما قبله */

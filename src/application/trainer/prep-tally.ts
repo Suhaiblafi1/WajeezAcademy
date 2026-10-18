@@ -7,6 +7,8 @@
    · **كاملة**: شعبةٌ أُرسلت خطّتُها للاعتماد أو اعتُمدت — أتمّ ما عليه فيها.
    · **جزئيّة**: شعبةٌ قامت ولم تُرسَل خطّتُها، أو رُدّت إليه بملاحظات.
    · **لم يبدأ**: دورةٌ لا شعبةَ له فيها بعد.
+   · **مؤجّلة**: أجّلتَ خطّتَها إلى موسمٍ قادم — ليست ناقصة، ولا تُعدّ جزئيّة (١٨ أكتوبر:
+     «لا تنسَ أنّهم أجّلوا بعضها»).
    · **وما اعتذر عنه** لا يُعدّ من دوراته — يُذكر في التفصيل وحدَه.
 
    والحالُ من `coursesOf` نفسِها (`trainer-prep.service.ts`) — فلا يختلف العدّادُ عن صفحة
@@ -19,11 +21,12 @@ export interface PrepTally {
   submitted: number
   partial: number
   notStarted: number
+  postponed: number
   declined: number
 }
 
 /** حالُ الدورة كما تقرؤها `coursesOf` — و`done` لما خرج منها بشعبةٍ قائمة */
-export type TallyState = 'to_decide' | 'preparing' | 'submitted' | 'returned' | 'approved' | 'declined' | 'done'
+export type TallyState = 'to_decide' | 'preparing' | 'submitted' | 'returned' | 'approved' | 'declined' | 'done' | 'postponed'
 
 export function prepTallyOf(states: readonly TallyState[]): PrepTally {
   const n = (...s: TallyState[]) => states.filter((x) => s.includes(x)).length
@@ -34,15 +37,20 @@ export function prepTallyOf(states: readonly TallyState[]): PrepTally {
     submitted: n('submitted'),
     partial: n('preparing', 'returned'),
     notStarted: n('to_decide'),
+    postponed: n('postponed'),
     declined,
   }
 }
 
-/** السطرُ المطويّ: «الشعب: 2 كاملة · 1 جزئية من 5» — ولا شيءَ إن لم تكن له دورة */
+/** السطرُ المطويّ: «الشعب: 2 كاملة · 1 جزئية · 1 مؤجلة من 5» — ولا شيءَ إن لم تكن له دورة */
 export function prepTallyAr(t: PrepTally): string | null {
   if (t.total === 0) return null
   const full = t.approved + t.submitted
-  const parts = [full > 0 ? `${full} كاملة` : null, t.partial > 0 ? `${t.partial} جزئية` : null]
+  const parts = [
+    full > 0 ? `${full} كاملة` : null,
+    t.partial > 0 ? `${t.partial} جزئية` : null,
+    t.postponed > 0 ? `${t.postponed} مؤجلة` : null,
+  ]
     .filter((x): x is string => x !== null)
   return `الشعب: ${parts.length > 0 ? parts.join(' · ') : '0'} من ${t.total}`
 }
@@ -54,6 +62,7 @@ export function prepTallyDetailAr(t: PrepTally): string {
     t.submitted > 0 ? `تنتظر مراجعتك ${t.submitted}` : null,
     t.partial > 0 ? `قيد الإعداد ${t.partial}` : null,
     t.notStarted > 0 ? `لم يبدأ ${t.notStarted}` : null,
+    t.postponed > 0 ? `مؤجلة ${t.postponed}` : null,
     t.declined > 0 ? `اعتذر عن ${t.declined}` : null,
   ].filter((x): x is string => x !== null).join(' · ')
 }

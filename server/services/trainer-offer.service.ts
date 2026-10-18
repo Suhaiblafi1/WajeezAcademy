@@ -31,6 +31,7 @@ import { notifyRole, safeNotify } from './notification.service'
 import { CohortService } from './cohort.service'
 import { TrainerReviewService } from './trainer-review.service'
 import { fmtDateWith } from '../../src/application/text/format-ar'
+import { materialsMarkOf } from '../../src/application/trainer/course-materials'
 import {
   ASSIGNMENT_OFFER_RESPONSE_DAYS, COURSE_PREP_DEFAULT_DAYS, COURSE_PREP_MIN_DAYS,
 } from '../../src/application/trainer/notice-periods'
@@ -209,6 +210,14 @@ export class TrainerOfferService {
         data: { status: 'offered', respondedAt: null, prepDueAt: null },
       })
       throw e
+    }
+
+    /* وما اعتُمد من موادّه يُنقل إلى الشعبة المعروضة (`carryOnOfferAccept`) — ولا يُسقط القبولَ إن تعذّر */
+    if (offer.cohortId) {
+      const { TrainerPrepService } = await import('./trainer-prep.service')
+      await new TrainerPrepService(this.prisma)
+        .carryOnOfferAccept(userId, profile.id, offer.courseId, offer.cohortId)
+        .catch(() => false)
     }
 
     await recordAudit(this.prisma, {
@@ -518,12 +527,23 @@ export class TrainerOfferService {
   /** المرشَّحون لشعبة تعبئة — مدرّبا مدرّبا، ودوراتُ كلٍّ منهم */
   async prepCandidates() {
     const options = await this.offerOptions()
+    /* وعلامةُ موادّ كلِّ دورة — «أصحيحٌ أنّها معتمَدةٌ وموادَّها جاهزة؟» (١٨ أكتوبر ٢٠٢٦، `materialsMarkOf`):
+       الاعتمادُ يقينٌ هنا، والموادُّ لا — فتُقرأ من صفّ التأهيل نفسِه */
+    const quals = options.length === 0 ? [] : await this.prisma.trainerCourseQualification.findMany({
+      where: { profileId: { in: options.map((p) => p.profileId) }, status: 'qualified' },
+      select: { profileId: true, courseId: true, materials: true },
+    })
+    const markOf = (profileId: string, courseId: string) =>
+      materialsMarkOf(quals.find((q) => q.profileId === profileId && q.courseId === courseId)?.materials ?? null)
     return options
       .map((p) => ({
         profileId: p.profileId, fullName: p.fullName, email: p.email, reference: p.reference,
         courses: p.courses
           .filter((c) => !c.alreadyOpen && !c.cohorts.some((h) => h.mine))
-          .map((c) => ({ courseId: c.courseId, titleAr: c.titleAr, acceptedWithoutCohort: c.alreadyAccepted })),
+          .map((c) => ({
+            courseId: c.courseId, titleAr: c.titleAr, acceptedWithoutCohort: c.alreadyAccepted,
+            materials: markOf(p.profileId, c.courseId),
+          })),
       }))
       .filter((p) => p.courses.length > 0)
   }
