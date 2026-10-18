@@ -82,7 +82,7 @@ export class CohortMoveService {
     await notifyRole(this.prisma, COHORT_MOVE_STAFF_ROLES, {
       channel: 'in_app',
       title: `طلب نقل «${w.title}» إلى ${termLabelAr(target)}`,
-      body: 'ينتظر قرارك في «الشعب» — لا يتغيّر موعد حتّى تعتمده.',
+      body: 'ينتظر قرارك في «تشغيل الشعب» — لا يتغير موعد حتى تعتمده.',
       data: { cohortId, requestId: created.id },
     })
     return created

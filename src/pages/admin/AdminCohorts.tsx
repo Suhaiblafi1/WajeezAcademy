@@ -273,7 +273,7 @@ export default function AdminCohorts() {
 
   if (offline) {
     return (
-      <AdminLayout title="عمليات الشعب">
+      <AdminLayout title="تشغيل الشعب">
         <Panel className="grid place-items-center py-20 text-center">
           <ServerOff className="h-12 w-12 text-muted-foreground/50" />
           <h2 className="mt-4 text-xl font-black">لا يمكن الوصول للبيانات</h2>
@@ -287,7 +287,7 @@ export default function AdminCohorts() {
   }
 
   return (
-    <AdminLayout title="عمليات الشعب — الفتح المشروط والجلسات والتسجيل">
+    <AdminLayout title="تشغيل الشعب">
       {flash && (
         <Card as="p" tone={flash.kind === "error" ? "danger" : "accent"} role={flash.kind === "error" ? "alert" : "status"} className={`sticky top-[4.5rem] z-30 mb-5 flex items-center gap-2 px-4 py-3 text-sm font-bold backdrop-blur ${flash.kind === "error" ? "text-red-200" : "text-teal-light-ink"}`}>
           {flash.kind === "error"

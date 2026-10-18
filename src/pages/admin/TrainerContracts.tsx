@@ -2283,7 +2283,7 @@ c.gatesActivation
                   {(offerFor.courses.find((c) => c.courseId === offerCourseId)?.cohorts ?? []).length === 0 && (
                     <span className="text-sm opacity-80">
                       لا شعبةَ لهذه الدورة بعد — أنشئها من «جهّز شعبَ التعبئة» أعلاه (تُنشأ وتُعرَض عليه
-                      معا)، أو من صفحة «الشعب» ثمّ عُد إلى هنا.
+                      معا)، أو من «تشغيل الشعب» ثم عد إلى هنا.
                     </span>
                   )}
                 </label>

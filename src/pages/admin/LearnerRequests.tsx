@@ -243,7 +243,7 @@ export default function LearnerRequests() {
                 {/* إصدارُ الشهادة نفسِها في شاشة الشعبة — هي حاملةُ القواعد */}
                 {r.enrollment && (
                   <p className="mt-2.5 text-read leading-5 text-muted-foreground">
-                    الإصدار من «الشعب» ← شعبة «{r.enrollment.cohort.title}» ← مرشّحو الشهادة، ثمّ سجّل الإنجاز هنا.
+                    الإصدار من «تشغيل الشعب» ← شعبة «{r.enrollment.cohort.title}» ← مرشّحو الشهادة، ثمّ سجّل الإنجاز هنا.
                   </p>
                 )}
               </Panel>
