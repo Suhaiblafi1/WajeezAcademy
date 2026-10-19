@@ -1104,8 +1104,9 @@ export class AdvisorService {
     await recordAudit(this.prisma, {
       actorId: advisorId, action: 'advisor.case.lead_email', entityType: 'advisor_case', entityId: caseId,
     })
+    /* والتوثيقُ يحرسه الربطُ نفسُه — بريدٌ لم يُثبَت لا يربط ولو وُجد حسابُه */
     const owner = await this.prisma.user.findFirst({
-      where: { email: { equals: email, mode: 'insensitive' }, emailVerifiedAt: { not: null } }, select: { id: true },
+      where: { email: { equals: email, mode: 'insensitive' } }, select: { id: true },
     })
     if (!owner) return { linked: false }
     const { linkLeadsToVerifiedAccount } = await import('./lead-link')
