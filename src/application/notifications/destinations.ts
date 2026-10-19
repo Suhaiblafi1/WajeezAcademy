@@ -151,6 +151,7 @@ const STAFF: Table = {
   'staff.task.done': { path: '/admin/tasks', ctaAr: 'افتح المهامّ' },
   'admin.support.ticket': { path: '/admin/support', ctaAr: 'افتح التذكرة' },
   'admin.support_ticket': { path: '/admin/support', ctaAr: 'افتح التذكرة' },
+  'admin.contact_message': { path: '/admin/support', ctaAr: 'افتح رسائل الموقع' },
   'admin.trainer_application': { path: '/admin/trainers', ctaAr: 'افتح طلب الانضمام' },
   /* وملخّصُ من لم يحجز — الشاشةُ نفسُها، وفيها مرشّحُ «لم يحجز موعدا» وزرُّ
      التذكير. فالزرُّ يضع قارئَه حيث يعمل لا حيث يقرأ الخبرَ ثانيةً. */

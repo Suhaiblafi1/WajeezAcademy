@@ -9,6 +9,9 @@ import { liveMailAllowed, MAIL_GATE_REFUSAL_AR } from '../../src/application/not
 export interface MailInput {
   to: string
   subject: string
+  /** من يُجاب حين يضغط المستلمُ «ردّ» — الافتراضُ عنوانُ الأكاديميّة. ورسالةُ زائرٍ تصل الفريقَ
+      يُجاب صاحبُها لا الأكاديميّة نفسُها (`contact.service.ts`) */
+  replyTo?: string
   text: string
   /** الصيغةُ المهيّأة. والنصُّ يبقى معها دائما: بعضُ العملاء يعرضه، وقارئُ
       الشاشة يفضّله، وفلاترُ البريد تعدّ رسالةً بلا نصٍّ علامةً على الإزعاج. */
@@ -66,7 +69,7 @@ export async function sendEmail(config: EmailConfig, input: MailInput): Promise<
       to: input.to,
       /* المُرسِلُ على نطاق الإرسال وحدَه — ومن يضغط «ردّ» إنسانٌ ينتظر جوابا،
          فيُوجَّه ردُّه إلى عنوان الأكاديميّة الواحد الذي يُقرأ. */
-      replyTo: config.replyTo || ACADEMY_EMAILS.support,
+      replyTo: input.replyTo || config.replyTo || ACADEMY_EMAILS.support,
       subject: input.subject,
       text: input.text,
       ...(input.html ? { html: input.html } : {}),

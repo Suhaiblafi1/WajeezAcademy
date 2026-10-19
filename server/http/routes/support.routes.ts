@@ -6,6 +6,7 @@ import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import type { PrismaClient } from '@prisma/client'
 import { SupportService } from '../../services/support.service'
+import { ContactService } from '../../services/contact.service'
 import { requireAuth, requirePermission } from '../auth-plugin'
 
 export function registerSupportRoutes(app: FastifyInstance, prisma: PrismaClient) {
@@ -48,6 +49,22 @@ export function registerSupportRoutes(app: FastifyInstance, prisma: PrismaClient
   })
 
   /* ════ فريق الدعم ════ */
+  /* رسائلُ «تواصل معنا» — من زائرٍ قد لا يكون له حساب، فلا تذكرةَ لها (`contact.service.ts`) */
+  const contact = new ContactService(prisma)
+  app.get('/api/admin/contact-messages', {
+    preHandler: requirePermission('support.operate'),
+    schema: { tags: ['support-admin'], summary: 'رسائل الموقع — ما ينتظر ردّا أوّلا' },
+  }, async () => contact.list())
+
+  app.post('/api/admin/contact-messages/:id/handled', {
+    preHandler: requirePermission('support.operate'),
+    schema: { tags: ['support-admin'], summary: 'علّم رسالة الموقع «تمّ الرد» أو أعد فتحها' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const body = z.object({ handled: z.boolean() }).parse(req.body)
+    return contact.setHandled(id, req.auth!.userId, body.handled)
+  })
+
   app.get('/api/admin/support/tickets', {
     preHandler: requirePermission('support.operate'),
     schema: { tags: ['support-admin'], summary: 'قائمة التذاكر — ترشيح بالحالة أو الوكيل' },

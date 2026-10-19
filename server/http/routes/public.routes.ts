@@ -13,6 +13,7 @@ import { readSeasonGate } from '../../services/registration-window'
 import { RegistrationInterestService, INTEREST_CONSENT_AR, INTEREST_SOURCES } from '../../services/registration-interest.service'
 import { CourseInterestService, COURSE_INTEREST_CONSENT_AR } from '../../services/course-interest.service'
 import { assertNotBot } from '../honeypot'
+import { ContactService } from '../../services/contact.service'
 import { AdvisorService } from '../../services/advisor.service'
 import { GUEST_CONTACT_CONSENT_AR } from '../../../src/application/advisor/guest-contact'
 
@@ -109,6 +110,26 @@ export function registerPublicCatalogRoutes(app: FastifyInstance, prisma: Prisma
     }).parse(req.body)
     await advisors.requestContactAsGuest(body, req.ip)
     return reply.status(201).send({ ok: true, consentAr: GUEST_CONTACT_CONSENT_AR })
+  })
+
+  /* «تواصل معنا» — رسالةٌ تُحفظ وتصل بريدَ الأكاديميّة وصاحبَها (١٩ أكتوبر ٢٠٢٦). وكان النموذجُ
+     يحاكي الإرسال. والعلّةُ في `contact.service.ts`. وسقفُه خمسٌ لكلّ شبكةٍ في ربع ساعة: تتّسع لمن
+     أخطأ فأعاد، ولا تتّسع لصندوقٍ يُملأ — فكلُّ رسالةٍ بريدان وبندٌ يقرؤه إنسان. */
+  const contact = new ContactService(prisma)
+  app.post('/api/public/contact', {
+    config: { rateLimit: { max: 5, timeWindow: '15 minutes' } },
+    schema: { tags: ['public'], summary: 'رسالة «تواصل معنا» — تُحفظ برقم مرجعي وتصل بريد الأكاديمية ونسخةٌ لصاحبها' },
+  }, async (req, reply) => {
+    assertNotBot(req.body)
+    const body = z.object({
+      name: z.string().trim().min(2, 'اكتب اسمك').max(120),
+      email: z.string().trim().toLowerCase().email('صيغة البريد غير صحيحة — مثال: name@mail.com').max(200),
+      entity: z.enum(['individual', 'company', 'gov', 'edu', 'nonprofit']).default('individual'),
+      organization: z.string().trim().max(200).optional(),
+      topic: z.string().trim().min(2).max(80),
+      message: z.string().trim().min(10, 'اكتب رسالة أوضح (10 أحرف على الأقل)').max(5000),
+    }).parse(req.body)
+    return reply.status(201).send(await contact.submit(body))
   })
 
   app.get('/api/public/pathways', {
