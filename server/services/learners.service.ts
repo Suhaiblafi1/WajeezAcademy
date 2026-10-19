@@ -132,6 +132,37 @@ export class LearnersService {
       })
       byUser.set(e.userId, row)
     }
+
+    /* ═══ ومن أنشأ حسابَه ولم يسجّل في شعبةٍ بعد — للإدارة وحدَها (١٩ أكتوبر ٢٠٢٦) ═══
+
+       كانت القائمةُ تُبنى من التسجيلات، فمن سجّل حسابا ولم يشترِ لا يظهر إلّا في
+       «المستخدمون» بين الموظّفين والمدرّبين — وهو أوّلُ من يُتابَع. فيُلحق هنا بلا شعب.
+
+       وللنطاق الأوسع وحدَه: نطاقُ المدرّب شعبُه، ونطاقُ المستشار يُحرس بالتسجيلات
+       (`assertInScope`) — وعملاءُ المستشار بلا شعبٍ يراهم في «حالاتي». والطالبُ
+       من دورُه «متعلّم» وحدَه: من له دورُ موظّفٍ أو مدرّبٍ ليس طالبا ينتظر.
+       ومن خرج من كلّ شعبه يُعدّ معهم: لا شعبةَ له الآن. */
+    if (scope.kind === 'all' && !opts.cohortId) {
+      const signedUp = await this.prisma.user.findMany({
+        where: {
+          roles: { some: { roleId: 'learner' }, every: { roleId: 'learner' } },
+          status: { not: 'archived' },
+          enrollments: { none: { status: { not: 'dropped' } } },
+          ...(opts.q
+            ? {
+                OR: [
+                  { displayName: { contains: opts.q, mode: 'insensitive' } },
+                  { email: { contains: opts.q, mode: 'insensitive' } },
+                ],
+              }
+            : {}),
+        },
+        select: { id: true, email: true, displayName: true, status: true, createdAt: true },
+        orderBy: { createdAt: 'desc' },
+        take: 500,
+      })
+      for (const u of signedUp) byUser.set(u.id, { user: u, enrollments: [] })
+    }
     return [...byUser.values()]
   }
 
