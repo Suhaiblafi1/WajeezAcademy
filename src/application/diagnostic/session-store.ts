@@ -94,6 +94,37 @@ export function loadLastResultSafe(): StoredResultRead {
   return read
 }
 
+/** متى حُفظت النتيجةُ على هذا الجهاز — من غلافها (`wrapResultForStorage`) */
+export function lastResultSavedAt(): string | null {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(LAST_RESULT_KEY) ?? 'null') as { savedAt?: unknown } | null
+    return typeof parsed?.savedAt === 'string' ? parsed.savedAt : null
+  } catch {
+    return null
+  }
+}
+
+/* ═══ نتيجةُ الضيف تلحق حسابَه حين يدخل (١٩ أكتوبر ٢٠٢٦) ═══
+
+   كانت النتيجةُ تُرفع إلى الحساب في لحظةٍ واحدة: نهايةُ التشخيص **وصاحبُه داخلٌ
+   بحسابه** (`Diagnostic.tsx#attachToAccount`). فمن شخّص ضيفا ثمّ سجّل بقيت
+   نتيجتُه على جهازه: لا يقرؤها مستشار، ولا تُفتح له حالة، ولا تبني «مهاراتي».
+
+   فتُرفع بعد كلّ دخولٍ ناجح، ومعها وقتُ حفظها — والخادمُ يقرّر: لا تُكتب فوق
+   نتيجةٍ أحدثَ منها في الحساب (`attachDiagnostic`). فرفعُها ثانيةً بعد دخولٍ
+   ثانٍ لا يغيّر شيئا، ولا تمحو نسخةٌ قديمةٌ في متصفّحٍ آخر تشخيصا أُعيد بعدها. */
+export async function syncPendingDiagnostic(): Promise<void> {
+  const result = loadLastResult<DiagResult>()
+  if (!result) return
+  const completedAt = lastResultSavedAt()
+  await fetch('/api/learner/diagnostic-attach', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ snapshot: result, ...(completedAt ? { completedAt } : {}) }),
+  })
+}
+
 /** توافق خلفي للاستدعاءات القديمة — يعيد النتيجة أو null */
 export function loadLastResult<T>(): T | null {
   const read = loadLastResultSafe()

@@ -207,6 +207,13 @@ export function registerAdvisorRoutes(app: FastifyInstance, prisma: PrismaClient
     schema: { tags: ['admin-operations'], summary: 'الحالات بلا مستشار — للإسناد' },
   }, async () => advisors.listUnassigned())
 
+  /* وما أسنده النظامُ وحدَه — يراه من يملك الإسنادَ ويغيّره بالباب نفسِه أدناه،
+     فلا يُنتزع منه القرارُ بأن صار الإسنادُ تلقائيّا (`AdvisorService#autoAssign`) */
+  app.get('/api/admin/advisor-cases/auto-assigned', {
+    preHandler: requirePermission('advisor.assign'),
+    schema: { tags: ['admin-operations'], summary: 'حالات أسندت تلقائيا في آخر ٣٠ يوما — لمراجعتها أو تغيير مستشارها' },
+  }, async () => advisors.listAutoAssigned())
+
   /* من يُسنَد إليه — يُقرأ بمن يملك الإسناد، لا بمن يملك إدارةَ المستخدمين */
   app.get('/api/admin/advisor-cases/assignable-advisors', {
     preHandler: requirePermission('advisor.assign'),

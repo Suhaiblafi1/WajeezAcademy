@@ -74,13 +74,23 @@ export class AdvisorService {
 
   /* ── ربط التشخيص بالحساب — الجسر بين الضيف والمنظومة ── */
 
-  /** يرفق نتيجة التشخيص بالحساب: ملف متعلم + عميل محتمل + حالة مستشار جديدة */
-  async attachDiagnostic(userId: string, snapshot: unknown, ip?: string) {
+  /** يرفق نتيجة التشخيص بالحساب: ملف متعلم + عميل محتمل + حالة مستشار جديدة.
+
+      و`completedAt` لنتيجةٍ حفظها الجهازُ وصاحبُه ضيفٌ ثمّ رُفعت حين دخل
+      (`syncPendingDiagnostic`): لا تُكتب فوق نتيجةٍ أحدثَ منها في حسابه. من أعاد
+      التشخيصَ من جهازٍ آخر لا تمحو نتيجتَه الجديدةَ نسخةٌ قديمةٌ بقيت في متصفّحٍ
+      ثانٍ — والأحدثُ ما يُقارَن بوقت إرفاق ما في الحساب. */
+  async attachDiagnostic(userId: string, snapshot: unknown, ip?: string, opts: { completedAt?: Date } = {}) {
     if (!snapshot || typeof snapshot !== 'object') {
       throw new AuthError('bad_snapshot', 'نتيجة التشخيص غير صالحة')
     }
     const user = await this.prisma.user.findUnique({ where: { id: userId } })
     if (!user) throw new AuthError('unknown_user', 'المستخدم غير موجود', 404)
+
+    if (opts.completedAt) {
+      const held = await this.prisma.learnerProfile.findUnique({ where: { userId }, select: { attachedAt: true } })
+      if (held?.attachedAt && held.attachedAt >= opts.completedAt) return { lead: null, case: null }
+    }
 
     await this.prisma.learnerProfile.upsert({
       where: { userId },
@@ -90,14 +100,37 @@ export class AdvisorService {
 
     /* عميل محتمل أو تحديث القائم */
     let lead = await this.prisma.lead.findFirst({ where: { userId } })
-    lead ??= await this.prisma.lead.create({
-      data: { fullName: user.displayName, email: user.email, source: 'diagnostic', userId, diagnosticSnapshot: snapshot as object },
-    })
+    if (!lead) {
+      /* ── وزائرٌ ترك رقمَه ببريده قبل أن يسجّل ──
+
+         حالتُه قائمةٌ تنتظر أن يُثبت بريدَه فتلحقه (`lead-link.ts`). وفتحُ
+         ثانيةٍ له هنا يجعله عميلين في عين المستشار حين تلحق الأولى. فلا تُفتح،
+         ولا تُربط هنا أيضا: البريدُ لم يُثبَت بعد. ولا يُعاد منها شيءٌ في الجواب
+         — رقمُ ذلك الزائر واسمُه لا يُقرآن ببريدٍ كُتب. */
+      const pending = await this.prisma.advisorCase.findFirst({
+        where: {
+          clientId: null, status: { notIn: ['closed', 'enrolled', 'not_interested'] },
+          lead: { userId: null, email: { equals: user.email, mode: 'insensitive' } },
+        },
+        select: { id: true },
+      })
+      if (pending) {
+        await recordAudit(this.prisma, {
+          actorId: userId, action: 'diagnostic.attach', entityType: 'advisor_case', entityId: pending.id, ip,
+          meta: { awaitingVerification: true },
+        })
+        return { lead: null, case: null }
+      }
+      lead = await this.prisma.lead.create({
+        data: { fullName: user.displayName, email: user.email, source: 'diagnostic', userId, diagnosticSnapshot: snapshot as object },
+      })
+    }
 
     /* حالة مستشار — لا تكرار لحالة مفتوحة لنفس العميل */
     let kase = await this.prisma.advisorCase.findFirst({
       where: { leadId: lead.id, status: { notIn: ['closed', 'enrolled', 'not_interested'] } },
     })
+    const opened = !kase
     kase ??= await this.prisma.advisorCase.create({
       data: { leadId: lead.id, clientId: userId, diagnosticSnapshot: snapshot as object, nextAction: 'تواصل أول مع العميل' },
     })
@@ -106,12 +139,14 @@ export class AdvisorService {
       actorId: userId, action: 'diagnostic.attach', entityType: 'advisor_case', entityId: kase.id, ip,
       meta: { leadId: lead.id },
     })
+    if (opened) await this.autoAssignQuietly(kase.id)
     return { lead, case: kase }
   }
 
   /* ── الإدارة: الإسناد ── */
 
-  async assign(caseId: string, advisorId: string, actorId: string) {
+  /** `actorId` فارغٌ حين يُسند النظامُ نفسُه (`autoAssign`) — فيبقى ذلك ظاهرا في `assignedBy` */
+  async assign(caseId: string, advisorId: string, actorId: string | null) {
     const kase = await this.prisma.advisorCase.findUnique({ where: { id: caseId } })
     if (!kase) throw new AuthError('not_found', 'الحالة غير موجودة', 404)
     const advisor = await this.prisma.user.findUnique({ where: { id: advisorId }, include: { roles: true } })
@@ -125,7 +160,10 @@ export class AdvisorService {
     const link = await this.prisma.advisorAssignment.create({
       data: { caseId, advisorId, assignedBy: actorId },
     })
-    await recordAudit(this.prisma, { actorId, action: 'advisor.case.assign', entityType: 'advisor_case', entityId: caseId, meta: { advisorId } })
+    await recordAudit(this.prisma, {
+      actorId, action: 'advisor.case.assign', entityType: 'advisor_case', entityId: caseId,
+      meta: { advisorId, ...(actorId ? {} : { automatic: true }) },
+    })
     /* ── ولا يُسنَد أحدٌ في صمت ──
 
        كان الإسنادُ لا يكتب إشعارا، فيكتشف المستشارون الحالاتِ الجديدةَ
@@ -170,6 +208,161 @@ export class AdvisorService {
       include: { lead: true, client: { select: { displayName: true, email: true } } },
       orderBy: { createdAt: 'asc' },
     })
+  }
+
+  /* ═══════════ الإسنادُ التلقائيّ — لأقلّ المستشارين حالاتٍ مفتوحة ═══════════
+
+     كانت كلُّ حالةٍ جديدةٍ تقف في طابور «حالات بلا مستشار» حتّى يُسندها إداريٌّ
+     بيده. ولمّا صار الزائرُ يترك رقمَه آخرَ التشخيص صار الطابورُ يمتلئ كلَّ يوم،
+     ومن ترك رقمَه ينتظر يدا لا مستشارا. وقرارُ صاحب المنصّة (١٩ أكتوبر ٢٠٢٦) بين
+     ثلاثة (أقلُّهم حالاتٍ، أو بالدور، أو يدويٌّ بتنبيه): **أقلُّهم حالاتٍ مفتوحة** —
+     يبقى الحِملُ متوازنا، ولا يُثقَل من أُسند إليه أمس عشرٌ.
+
+     والتعادلُ لمن طال عهدُه بآخر إسناد، ثمّ بالمعرّف — فلا يُترك لترتيب القاعدة.
+     ولا مستشارَ نشطا = لا إسناد: تبقى في الطابور كما كانت. والإداريُّ يرى ما
+     أُسند تلقائيّا ويغيّره (`listAutoAssigned`) — لا يُنتزع منه القرار. */
+  async autoAssign(caseId: string): Promise<string | null> {
+    const advisors = await this.prisma.user.findMany({
+      where: { status: 'active', roles: { some: { roleId: 'advisor' } } },
+      select: { id: true },
+    })
+    if (advisors.length === 0) return null
+    const ids = advisors.map((a) => a.id)
+    const [open, last] = await Promise.all([
+      this.prisma.advisorAssignment.groupBy({
+        by: ['advisorId'],
+        where: { advisorId: { in: ids }, unassignedAt: null, case: { status: { notIn: ['closed', 'enrolled', 'not_interested'] } } },
+        _count: { _all: true },
+      }),
+      this.prisma.advisorAssignment.groupBy({
+        by: ['advisorId'], where: { advisorId: { in: ids } }, _max: { assignedAt: true },
+      }),
+    ])
+    const openOf = new Map(open.map((r) => [r.advisorId, r._count._all]))
+    const lastOf = new Map(last.map((r) => [r.advisorId, r._max.assignedAt?.getTime() ?? 0]))
+    const chosen = [...ids].sort((a, b) =>
+      (openOf.get(a) ?? 0) - (openOf.get(b) ?? 0)
+      || (lastOf.get(a) ?? 0) - (lastOf.get(b) ?? 0)
+      || a.localeCompare(b),
+    )[0]!
+    await this.assign(caseId, chosen, null)
+    return chosen
+  }
+
+  /** الإسنادُ التلقائيّ بعد فتح الحالة — وتعثّرُه لا يُسقط ما فُتح: تبقى في الطابور */
+  private async autoAssignQuietly(caseId: string) {
+    try {
+      await this.autoAssign(caseId)
+    } catch (e) {
+      console.error('[advisor] تعذّر الإسناد التلقائيّ — تبقى الحالة في الطابور', caseId, e)
+    }
+  }
+
+  /** ما أسنده النظامُ ولم يغيّره إداريٌّ بعد — مفتوحا، في آخر ثلاثين يوما */
+  async listAutoAssigned() {
+    return this.prisma.advisorCase.findMany({
+      where: {
+        status: { notIn: ['closed', 'enrolled', 'not_interested'] },
+        assignments: { some: { unassignedAt: null, assignedBy: null, assignedAt: { gte: new Date(Date.now() - 30 * 86_400_000) } } },
+      },
+      include: {
+        lead: true,
+        client: { select: { displayName: true, email: true } },
+        assignments: { where: { unassignedAt: null }, select: { advisorId: true, assignedAt: true, advisor: { select: { displayName: true } } } },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 200,
+    })
+  }
+
+  /* ═══════════ من يشتري بلا تشخيص يجد مستشارا ═══════════
+
+     كانت الحالةُ تولد من التشخيص أو من يد مستشار. فمن جاء إلى صفحة دورةٍ
+     وطلب التسجيلَ أو دفع بلا تشخيصٍ لا يراه مستشارٌ أبدا. وقرارُ صاحب المنصّة
+     (١٩ أكتوبر ٢٠٢٦) بين ثلاثة (عند التسجيل، أو عند أوّل طلب تسجيلٍ أو دفع، أو
+     عند الدفع): **عند أوّل طلب تسجيلٍ أو دفع** — من أبدى نيّةً حقيقيّة، ولم يدفع
+     بعد فيلحقه المستشارُ قبل الدفع.
+
+     ولا تُفتح لمن عرفه مستشارٌ قبلُ: حالةٌ له بأيّ حال — مفتوحةً أو مغلقة —
+     تعني أنّ مستشارا قرأه، وإسنادُه باقٍ فيراه في «طلابي». ولا لمن ترك رقمَه
+     ضيفا ببريده وحالتُه تنتظر توثيقَه — تلحقه تلك (`lead-link.ts`). */
+  async ensureBuyerCase(userId: string): Promise<string | null> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId }, select: { email: true, displayName: true, isTestAccount: true },
+    })
+    /* وحسابُ التجربة لا يفتح حالةَ بيع: يُثقل حِملَ مستشارٍ بعميلٍ لا وجودَ له
+       (`test-account.ts`) */
+    if (!user || user.isTestAccount) return null
+    const known = await this.prisma.advisorCase.findFirst({
+      where: {
+        OR: [
+          { clientId: userId },
+          { lead: { userId } },
+          {
+            clientId: null, status: { notIn: ['closed', 'enrolled', 'not_interested'] },
+            lead: { userId: null, email: { equals: user.email, mode: 'insensitive' } },
+          },
+        ],
+      },
+      select: { id: true },
+    })
+    if (known) return null
+    const kase = await this.prisma.$transaction(async (tx) => {
+      const lead = await tx.lead.create({
+        data: { fullName: user.displayName, email: user.email, source: 'site', userId },
+      })
+      const created = await tx.advisorCase.create({
+        data: { leadId: lead.id, clientId: userId, nextAction: 'طلب تسجيلا بلا تشخيص — تواصل قبل الدفع' },
+      })
+      await recordAudit(tx, {
+        actorId: userId, action: 'advisor.case.buyer_opened', entityType: 'advisor_case', entityId: created.id,
+        meta: { leadId: lead.id },
+      })
+      return created
+    })
+    await this.autoAssignQuietly(kase.id)
+    return kase.id
+  }
+
+  /* ═══════════ دفع العميلُ — فحالتُه «سجّل» ═══════════
+
+     كان المستشارُ يقرأ في «حالاتي» عميلا دفع وسُجّل وحالتُه «تواصلنا» — لا يعرف
+     أنّ البيع تمّ إلّا إن فتح الحالة وقرأ التسجيلات، أو غيّرها بيده. وقرارُ صاحب
+     المنصّة (١٩ أكتوبر ٢٠٢٦) بين اثنين (تتحوّل وحدَها، أو شارةُ «دفع» ويحوّلها هو):
+     **تتحوّل وحدَها** — والحالةُ `enrolled` موجودةٌ لهذا بالضبط.
+
+     ولا يخسر المستشارُ شيئا: إسنادُه باقٍ فيبقى العميلُ في «طلابي»، وعمولتُه تُحسب
+     من الطلبات المدفوعة لا من الحالة. ويُبلَّغ: بيعٌ تمّ خبرُ عمل. */
+  async markClientPaid(userId: string, orderId: string): Promise<number> {
+    const cases = await this.prisma.advisorCase.findMany({
+      where: {
+        status: { notIn: ['closed', 'enrolled', 'not_interested'] },
+        OR: [{ clientId: userId }, { lead: { userId } }],
+      },
+      select: {
+        id: true, status: true,
+        client: { select: { displayName: true } }, lead: { select: { fullName: true } },
+        assignments: { where: { unassignedAt: null }, select: { advisorId: true } },
+      },
+    })
+    for (const c of cases) {
+      await this.prisma.advisorCase.update({ where: { id: c.id }, data: { status: 'enrolled', nextAction: null } })
+      await recordAudit(this.prisma, {
+        actorId: null, action: 'advisor.case.client_paid', entityType: 'advisor_case', entityId: c.id,
+        before: { status: c.status }, after: { status: 'enrolled' }, meta: { orderId },
+      })
+      const name = c.client?.displayName ?? c.lead?.fullName ?? 'عميلك'
+      for (const a of c.assignments) {
+        await safeNotify(this.prisma, {
+          userId: a.advisorId, channel: 'in_app', audience: 'staff',
+          templateKey: 'advisor.case.client_paid',
+          title: 'عميلك دفع وسجّل',
+          body: `«${name}» دفع وصار مسجّلا — حالته صارت «سجّل»، ويبقى في «طلابي».`,
+          data: { caseId: c.id },
+        })
+      }
+    }
+    return cases.length
   }
 
   /* ═══════════ المستشارُ يُدخل من قابله ═══════════
@@ -239,8 +432,8 @@ export class AdvisorService {
   /* ═══════════ الزائرُ يطلب بنفسه أن يُتواصَل معه ═══════════
 
      آخرَ التشخيص، لمن لا حساب له (والعلّةُ في `guest-contact.ts`). يُنشئ
-     عميلا محتملا وحالةً **بلا إسناد** — فتقع في طابور «حالات بلا مستشار»
-     كحالةِ تشخيصٍ أُرفق بحساب، ويُسندها إداريّ.
+     عميلا محتملا وحالةً تُسنَد لأقلّ المستشارين حالاتٍ (`autoAssign`) — وإن لا
+     مستشارَ نشطا وقعت في طابور «حالات بلا مستشار» كما كانت.
 
      ── وثلاثةُ حدودٍ تُقال صراحةً ──
 
@@ -292,7 +485,7 @@ export class AdvisorService {
       return { ok: true }
     }
 
-    await this.prisma.$transaction(async (tx) => {
+    const created = await this.prisma.$transaction(async (tx) => {
       const lead = await tx.lead.create({
         data: {
           fullName, email, phone, source: 'diagnostic', consentAr: GUEST_CONTACT_CONSENT_AR,
@@ -309,7 +502,9 @@ export class AdvisorService {
         action: 'advisor.case.guest_request', entityType: 'advisor_case', entityId: kase.id, ip,
         meta: { leadId: lead.id, byPhone: Boolean(phone), byEmail: Boolean(email), withResult: Boolean(snapshot) },
       })
+      return kase
     })
+    await this.autoAssignQuietly(created.id)
     return { ok: true }
   }
 

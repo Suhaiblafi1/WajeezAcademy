@@ -173,6 +173,8 @@ const STAFF: Table = {
   'advisor.case.assigned': { path: '/advisor/cases', ctaAr: 'افتح الحالة' },
   /* وعميلُه أنشأ حسابه — في الحالة نفسِها يُقرأ تقدّمُه (١٨ أكتوبر ٢٠٢٦) */
   'advisor.case.client_linked': { path: '/advisor/cases', ctaAr: 'افتح الحالة' },
+  /* وعميلُه دفع — الحالةُ نفسُها، وقد صارت «سجّل» (١٩ أكتوبر ٢٠٢٦) */
+  'advisor.case.client_paid': { path: '/advisor/cases', ctaAr: 'افتح الحالة' },
   /* ي-٤: وشاشةُ الرحيل فيها زرُّ «نفِّذ ما اختاره» — الوجهةُ تحمل الفعلَ لا الخبرَ وحدَه */
   'departure.chosen': { path: '/admin/trainer-departures', ctaAr: 'نفّذ ما اختاره' },
   'staff.announce': { path: '/admin/notifications', ctaAr: 'اقرأ الإعلان' },

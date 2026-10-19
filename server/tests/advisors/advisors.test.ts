@@ -52,28 +52,31 @@ beforeAll(async () => {
 describe('انتقال التشخيص إلى حساب وحالة مستشار', () => {
   it('1) إرفاق التشخيص ينشئ ملف متعلم وعميلا محتملا وحالة new', async () => {
     const { lead, case: kase } = await advisors.attachDiagnostic(learnerId, SNAPSHOT, '127.0.0.1')
-    caseId = kase.id
-    expect(kase.status).toBe('new')
-    expect(lead.userId).toBe(learnerId)
+    caseId = kase!.id
+    expect(kase!.status).toBe('new')
+    expect(lead!.userId).toBe(learnerId)
     const profile = await prisma.learnerProfile.findUnique({ where: { userId: learnerId } })
     expect(profile?.diagnosticSnapshot).toMatchObject({ pathwayId: 'PW-FND-003' })
   })
 
   it('2) إرفاق ثان لا يكرر الحالة المفتوحة', async () => {
     const again = await advisors.attachDiagnostic(learnerId, SNAPSHOT)
-    expect(again.case.id).toBe(caseId)
+    expect(again.case!.id).toBe(caseId)
     const count = await prisma.advisorCase.count({ where: { clientId: learnerId } })
     expect(count).toBe(1)
   })
 
-  it('3) الإسناد لمستشار — وغير المستشار مرفوض', async () => {
-    const unassigned = await advisors.listUnassigned()
-    expect(unassigned.some((k) => k.id === caseId)).toBe(true)
+  /* والإسنادُ صار تلقائيّا لأقلّ المستشارين حالاتٍ (١٩ أكتوبر ٢٠٢٦) — فالحالةُ لا تقف
+     في الطابور، بل تُرى في «أسندت تلقائيّا» ويغيّرها الإداريّ (`advisor-flow.test.ts`) */
+  it('3) تُسنَد تلقائيّا، والإداريُّ يغيّر المستشار — وغير المستشار مرفوض', async () => {
+    const auto = await advisors.listAutoAssigned()
+    expect(auto.some((k) => k.id === caseId), 'لم تُسنَد تلقائيّا').toBe(true)
     await expect(advisors.assign(caseId, learnerId, managerId))
       .rejects.toMatchObject({ code: 'not_advisor' })
     await advisors.assign(caseId, advisorId, managerId)
     const mine = await advisors.myCases(advisorId)
     expect(mine.some((k) => k.id === caseId)).toBe(true)
+    expect((await advisors.myCases(otherAdvisorId)).some((k) => k.id === caseId)).toBe(false)
   })
 
   it('4) غير المسند ممنوع من ملف الحالة — المسند فقط يرى', async () => {

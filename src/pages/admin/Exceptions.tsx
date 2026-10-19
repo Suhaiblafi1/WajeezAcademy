@@ -36,11 +36,16 @@ interface UnassignedCase {
   lead: { id: string; fullName?: string | null; email?: string | null; phone?: string | null } | null;
   client: { displayName: string; email: string } | null;
 }
+/** ما أسنده النظامُ وحدَه لأقلّ المستشارين حالاتٍ — يُراجَع هنا ويُغيَّر (١٩ أكتوبر ٢٠٢٦) */
+interface AutoAssignedCase extends UnassignedCase {
+  assignments: { advisorId: string; assignedAt: string; advisor: { displayName: string } }[];
+}
 /** مستشارٌ متاحٌ للإسناد — الخادمُ يرشّح بالدور، فلا تُقرأ الأدوارُ هنا */
 interface AdvisorOption { id: string; displayName: string; email: string }
 
 export default function Exceptions() {
   const [rows, setRows] = useState<UnassignedCase[]>([]);
+  const [autoRows, setAutoRows] = useState<AutoAssignedCase[]>([]);
   const [advisors, setAdvisors] = useState<AdvisorOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [offline, setOffline] = useState<string | null>(null);
@@ -64,6 +69,10 @@ export default function Exceptions() {
     try {
       setAdvisors(await apiGet<AdvisorOption[]>("/api/admin/advisor-cases/assignable-advisors"));
     } catch { setAdvisors([]); }
+    /* وما أُسند تلقائيّا — الإسنادُ صار يقع وحدَه، والقرارُ يبقى هنا: يُرى ويُغيَّر */
+    try {
+      setAutoRows(await apiGet<AutoAssignedCase[]>("/api/admin/advisor-cases/auto-assigned"));
+    } catch { setAutoRows([]); }
     setLoading(false);
   }, []);
 
@@ -103,8 +112,8 @@ export default function Exceptions() {
   return (
     <AdminLayout title="حالات بلا مستشار">
       <FlowSteps steps={[
-        { label: "حالة تصل بلا مستشار", actor: "يكتشفها النظام" },
-        { label: "مراجعة وإسناد", actor: "أنت هنا" },
+        { label: "حالة جديدة", actor: "تسند لأقل المستشارين حالات" },
+        { label: "مراجعة أو تغيير", actor: "أنت هنا" },
         { label: "المستشار يستلمها", actor: "تظهر في بوابته فورا" },
       ]} />
       {/* ── العملُ قبل القائمة ──
@@ -128,7 +137,7 @@ export default function Exceptions() {
             ? "بحثك لا يطابق أيّ حالة — امسحه لتبدأ."
             : undefined}
         onAction={() => { if (view.rows[0]) revealRow(`advisor-${view.rows[0].id}`); }}
-        doneAr="لا حالات بلا مستشار — والجديدة من التشخيص تظهر هنا فور وصولها."
+        doneAr="لا حالات بلا مستشار — الجديدة تسند تلقائيا، وما لم يجد مستشارا يظهر هنا."
       />
 
       <div className="mb-5 flex items-center gap-3">
@@ -176,6 +185,54 @@ export default function Exceptions() {
         </div>
         )}
         </>
+      )}
+
+      {/* ── وما أسنده النظامُ وحدَه ──
+
+          الإسنادُ صار تلقائيّا لأقلّ المستشارين حالاتٍ مفتوحة (`autoAssign`). ولولا
+          هذا القسمُ لصارت الحالةُ عند مستشارٍ ولا شاشةَ تغيّره — فيُنتزع القرارُ
+          ممّن كان يملكه. فما أُسند وحدَه يُعرض هنا بمستشاره، ويُغيَّر بالباب
+          نفسِه؛ ومن غيّره صار إسنادُه بيده فخرج من هذه القائمة. */}
+      {!loading && autoRows.length > 0 && (
+        <section className="mt-10">
+          <h2 className="text-base font-black">أسندت تلقائيا — آخر ٣٠ يوما</h2>
+          <p className="mt-1 text-read text-muted-foreground">
+            لأقل المستشارين حالات. غيّر المستشار إن رأيت غيره أنسب.
+          </p>
+          <div className="mt-4 space-y-3">
+            {autoRows.map((c) => {
+              const current = c.assignments[0];
+              const choice = pick[c.id] ?? "";
+              return (
+                <Card key={c.id} className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="font-black">{c.client?.displayName ?? c.lead?.fullName ?? "—"}</p>
+                    <p className="mt-1 text-read text-muted-foreground" dir="ltr">
+                      {[c.client?.email ?? c.lead?.email, c.lead?.phone].filter(Boolean).join(" · ")}
+                    </p>
+                    <p className="mt-1 text-read text-muted-foreground">
+                      عند: {current?.advisor.displayName ?? "—"}
+                      {current ? ` · منذ ${fmtDate(new Date(current.assignedAt))}` : ""}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <label className="sr-only" htmlFor={`advisor-auto-${c.id}`}>غيّر المستشار</label>
+                    <select id={`advisor-auto-${c.id}`} value={choice}
+                      onChange={(e) => setPick({ ...pick, [c.id]: e.target.value })} className={`${staffSelectCls} max-w-64`}>
+                      <option value="">اختر مستشارا آخر…</option>
+                      {advisors.filter((a) => a.id !== current?.advisorId).map((a) => (
+                        <option key={a.id} value={a.id}>{a.displayName} ({a.email})</option>
+                      ))}
+                    </select>
+                    <Button tone="secondary" disabled={busy || !choice} onClick={() => void assign(c.id)}>
+                      <UserPlus className="h-3.5 w-3.5" /> غيّر
+                    </Button>
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        </section>
       )}
     </AdminLayout>
   );
