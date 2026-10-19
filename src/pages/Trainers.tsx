@@ -1,10 +1,9 @@
 import { Link } from 'react-router'
 import { useEffect, useMemo, useState } from 'react'
 import {
-  ArrowLeft, BadgeCheck, Check, Sparkles, GraduationCap, ShieldCheck, Search, Star, Clock, ChevronDown, Route, BookOpen, MapPin,
+  ArrowLeft, BadgeCheck, Check, Sparkles, GraduationCap, ShieldCheck, Search, Star, Clock, ChevronDown, BookOpen, MapPin,
 } from 'lucide-react'
 import { TRAINER_POOLS, TRAINER_PENDING_AR, courseById } from '@/data/courses'
-import { pathwayById } from '@/data/pathways'
 import { apiGet } from '@/services/api'
 import { usePublishedContent } from '@/services/public-content'
 import SiteShell from '@/components/SiteShell'
@@ -49,7 +48,11 @@ const SPECIALTIES_PREVIEW = 6
    المسنَدة — واحدٌ غالبا، وقد يكون اثنين لمن يدرّس في مسارين.
 
    ═══ وصارت ما يقدّمه للموسم القادم وحدَه، تحت «سيقدم فلان في موسم كذا» (١٩ أكتوبر ٢٠٢٦) ═══
-   «لماذا تظهر كلُّ الدورات للمدرّب وليس للموسم القادم؟» (صاحب المنصّة) — `next-season.ts`. */
+   «لماذا تظهر كلُّ الدورات للمدرّب وليس للموسم القادم؟» (صاحب المنصّة) — `next-season.ts`.
+
+   ═══ ورُفع سطرُ «يقدّم في مسارات» (١٩ أكتوبر ٢٠٢٦) ═══
+   «الغِ قسم "ما يقدّم من مسارات"» (صاحب المنصّة) — بعد «الكلام مكتظ» على البطاقة نفسها. فالبطاقةُ دوراتُه
+   بمواسمها وحدَها، وكلُّ دورةٍ بابُها إلى صفحتها، وصفحتُها تدلّ على مسارها. */
 /** «3 دورات» بصيغتها — والاثنتان «دورتان» لا «2 دورتان» */
 const coursesCountAr = (n: number) =>
   n === 2 ? 'دورتان' : countAr(n, { one: 'دورة', two: 'دورتان', few: 'دورات', many: 'دورة' })
@@ -68,10 +71,6 @@ function TrainerOffer({ name, groups }: { name: string; groups: SeasonGroup[] })
     [groups, catalogVersion],
   )
   const courses = useMemo(() => seasons.flatMap((g) => g.courses), [seasons])
-  const offeredPathways = useMemo(
-    () => [...new Set(courses.map((c) => c.pathwayId))].map((id) => pathwayById(id)).filter((p): p is NonNullable<typeof p> => Boolean(p)),
-    [courses],
-  )
 
   if (courses.length === 0) {
     return (
@@ -83,20 +82,6 @@ function TrainerOffer({ name, groups }: { name: string; groups: SeasonGroup[] })
 
   return (
     <div>
-      {offeredPathways.length > 0 && (
-        <p className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-read font-light leading-7 text-foreground">
-          <Route className="h-3.5 w-3.5 shrink-0 text-teal-light-ink" />
-          <span className="font-medium">{offeredPathways.length === 1 ? 'يقدّم في مسار:' : 'يقدّم في مسارات:'}</span>
-          {offeredPathways.map((p, i) => (
-            <span key={p.id}>
-              <Link to={`/pathways/${p.id}`} className="text-teal-light-ink underline decoration-dotted underline-offset-4 transition hover:text-foreground">
-                {p.shortName}
-              </Link>
-              {i < offeredPathways.length - 1 && '،'}
-            </span>
-          ))}
-        </p>
-      )}
       {/* ═══ الأقربُ مفتوحٌ وما بعده يُطوى — بمسافةٍ وخطٍّ أصغرَ وأخفّ (١٩ أكتوبر ٢٠٢٦) ═══
           «الكلام مكتظ.. يجب أن تنسدل دورات الفصول الأخرى، واترك مسافات، وخفّف حجم الخط واجعله لايت»
           (صاحب المنصّة، على بطاقةٍ بثماني دوراتٍ في ثلاثة مواسم). فالموسمُ القادمُ ظاهر، وكلُّ موسمٍ بعده
