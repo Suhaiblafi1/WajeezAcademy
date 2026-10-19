@@ -60,6 +60,8 @@ interface OpsTrainer {
   hasAccount: boolean;
   suspended: boolean;
   publiclyVisible: boolean;
+  /** له دورةٌ منشورةٌ هذا الفصلَ أو بعده — وإلّا فلا يظهر ولو اعتُمد نشرُه */
+  hasLiveCourse: boolean;
   isVerified: boolean;
   headline: string | null;
   bioPublic: string | null;
@@ -516,6 +518,25 @@ export default function TrainerRunOps() {
     return [...by.values()];
   }, [preparing]);
 
+  /* ═══ اعتمادُ كلِّ الصور المعلَّقة بضغطة (١٩ أكتوبر ٢٠٢٦) ═══
+     قرارُ صاحب المنصّة: «اضف زر اعتماد كل الصور المعلقة». والزرُّ يحمل عددَها
+     فيُعرف ما سيُعتمد قبل الضغط، ويغيب حين لا شيءَ ينتظر. والاعتمادُ الفرديُّ
+     والردُّ باقيان في بطاقة كلٍّ لمن أراد أن يردّ واحدة. */
+  const pendingPhotos = useMemo(() => (trainers ?? []).filter((t) => t.pendingPhotoUrl).length, [trainers]);
+  const approveAllPhotos = async () => {
+    setBusy("approve-photos");
+    try {
+      const r = await apiPost<{ approved: number; failed: number }>("/api/admin/trainers/photos/approve-pending", {});
+      if (r.failed === 0) toast(`اعتمدت الصور المعلقة: ${r.approved}`);
+      else toastError(`اعتمدت ${r.approved}، وتعذّر اعتماد ${r.failed}`);
+      await load();
+    } catch (e) {
+      toastError(e instanceof ApiError ? e.message : "تعذّر اعتماد الصور");
+    } finally {
+      setBusy("");
+    }
+  };
+
   const shown = useMemo(
     () => (trainers ?? [])
       .filter((t) => matchesQuery(q, [t.name, t.email]))
@@ -658,6 +679,14 @@ export default function TrainerRunOps() {
             <Users className="h-4 w-4 text-teal-light-ink" /> المدرّبون ({shown.length})
           </h3>
           <div className="flex flex-wrap items-center gap-3">
+            {pendingPhotos > 0 && (
+              <Button
+                tone="confirm" icon={CheckCircle2} loading={busy === "approve-photos"} disabled={busy !== ""}
+                onClick={() => void approveAllPhotos()}
+              >
+                اعتمد كل الصور المعلقة ({pendingPhotos})
+              </Button>
+            )}
             {canAddTrainer && (
               <Button onClick={() => setAddOpen((v) => !v)} icon={UserPlus} className="text-teal-light-ink">
                 {addOpen ? "أغلق" : "أضف مدرّبا"}
@@ -776,10 +805,14 @@ export default function TrainerRunOps() {
                               : t.pendingText ? "نبذة تنتظرك" : "صورة تنتظرك"}
                           </Chip>
                         )}
-                        {t.publiclyVisible && (
+                        {t.publiclyVisible && t.hasLiveCourse && (
                           <span className="flex items-center gap-1 rounded-full bg-teal/15 px-2 py-0.5 text-fine font-black text-teal-light-ink">
                             <BadgeCheck className="h-3 w-3" /> ظاهر للعامّة
                           </span>
+                        )}
+                        {/* قرارُ ١٩ أكتوبر ٢٠٢٦: لا يظهر للعامّة من لا دورةَ منشورةً له هذا الفصلَ أو بعده */}
+                        {t.publiclyVisible && !t.hasLiveCourse && (
+                          <Chip tone="neutral" srPrefixAr="ظهوره العامّ">معتمد ولا يظهر: لا دورة منشورة له هذا الفصل</Chip>
                         )}
                       </p>
                       <p dir="ltr" className="mt-0.5 text-right text-read text-muted-foreground">{t.email}</p>

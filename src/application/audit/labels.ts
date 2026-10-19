@@ -147,6 +147,7 @@ const PHRASES: Record<string, string> = {
   'advisor.case.client_linked': 'ربط حالة بحساب صاحبها بعد توثيق بريده',
   'advisor.case.buyer_opened': 'فتح حالة مستشار لمن طلب التسجيل بلا تشخيص',
   'advisor.case.client_paid': 'تحويل حالة إلى «سجّل» بعد دفع صاحبها',
+  'advisor.cases.redistribute': 'توزيع حالات مستشار المفتوحة على غيره',
   'term.create': 'إنشاء فصل دراسيّ',
   'term.registration_window': 'ضبط نافذة التسجيل للفصل',
   'term.trainer_availability': 'إتاحة مدرّب في فصل',

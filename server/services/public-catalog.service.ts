@@ -7,7 +7,7 @@ import type { PrismaClient } from '@prisma/client'
 import { readableModuleVersion } from '../catalog/module-version-visibility'
 import { AuthError } from './auth.service'
 import { openRegistrationWhere } from './registration-window'
-import { PUBLIC_TRAINER_WHERE, TRAINER_VISIBILITY_SELECT, trainerPubliclyVisible } from './trainer-visibility'
+import { publicTrainerWhere, TRAINER_VISIBILITY_SELECT, trainerPubliclyVisible } from './trainer-visibility'
 import { photoPublicUrl } from './storage.service'
 import { LEARNER_SESSION_WHERE } from './session-visibility'
 import { cohortSummaryAr } from '../../src/application/learning/cohort-summary'
@@ -184,7 +184,7 @@ export class PublicCatalogService {
      «موجودٌ فارغ» — إذ الثاني يقرّ بوجوده ويُخبر عن حالته. */
   async trainerPublicPage(slug: string) {
     const profile = await this.prisma.trainerProfile.findFirst({
-      where: { publicSlug: slug, ...PUBLIC_TRAINER_WHERE, application: { status: 'active' } },
+      where: { publicSlug: slug, ...publicTrainerWhere(), application: { status: 'active' } },
       include: {
         application: { select: { fullName: true, country: true, specialties: true } },
         referralLinks: { where: { cohortId: null }, select: { code: true } },
@@ -200,7 +200,7 @@ export class PublicCatalogService {
        فمن بنى مسارا باسمه ونُشر على الرفّ العامّ، **لم يكن رابطُه يبلغه** —
        يقع الزائرُ على قائمةِ شعبٍ متفرّقةٍ لا على ما جمعه له صاحبُها.
 
-       ولا يُفحص هنا اعتمادُ نشرِ المدرّب ثانيةً: `PUBLIC_TRAINER_WHERE` أعلاه
+       ولا يُفحص هنا اعتمادُ نشرِ المدرّب ثانيةً: `publicTrainerWhere()` أعلاه
        ردّ الصفحةَ كلَّها ٤٠٤ إن لم يُعتمد. فالمسارُ يُقرأ بحالته وحدَها. */
     const paths = (await this.prisma.trainerPath.findMany({
       where: { profileId: profile.id, status: 'published' },
@@ -246,7 +246,7 @@ export class PublicCatalogService {
       فالنيّةُ كانت مسجّلةً وينقصها الباب.
 
       والبابُ وجهةٌ ترجع إلى صفحة المدرّب، لا صفحةٌ ثانيةٌ للمسار. وذلك
-      لسببٍ واحدٍ يكفي: بوّابةُ النشر (`PUBLIC_TRAINER_WHERE` واعتمادُ
+      لسببٍ واحدٍ يكفي: بوّابةُ النشر (`publicTrainerWhere()` واعتمادُ
       النشر) تسكن في `trainerPublicPage` — وصفحةٌ ثانيةٌ تعرض اسمَ المدرّب
       تصير **مالكا ثانيا لقاعدةٍ واحدة**، وهو بابُ الخطأ الذي دفعت هذه
       المنصّةُ ثمنَه مرارا. فيُعاد الزائرُ إلى المالك الأوّل.
@@ -257,7 +257,7 @@ export class PublicCatalogService {
     const path = await this.prisma.trainerPath.findFirst({
       where: {
         slug, status: 'published',
-        profile: { ...PUBLIC_TRAINER_WHERE, application: { status: 'active' } },
+        profile: { ...publicTrainerWhere(), application: { status: 'active' } },
       },
       select: { titleAr: true, profile: { select: { publicSlug: true } } },
     })

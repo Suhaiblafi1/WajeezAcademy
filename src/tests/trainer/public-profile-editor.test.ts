@@ -43,6 +43,15 @@ describe('محرّر الملفّ العامّ', () => {
     }
   })
 
+  /* قرارُ صاحب المنصّة (١٩ أكتوبر ٢٠٢٦): «اضف زر اعتماد كل الصور المعلقة» */
+  it('وزرّ اعتماد كلّ الصور المعلّقة ينادي مساره — وهو خلف `trainer.publish` كالفرديّ', () => {
+    expect(screen, 'الزرّ لا ينادي المسار').toContain('"/api/admin/trainers/photos/approve-pending"')
+    expect(screen, 'الزرّ يظهر ولو لا معلّق').toMatch(/pendingPhotos > 0 && \(\s*<Button/)
+    const at = routes.indexOf("app.post('/api/admin/trainers/photos/approve-pending'")
+    expect(at, 'لا مسار').toBeGreaterThan(-1)
+    expect(routes.slice(at, at + 300), 'بلا حارس').toContain("requirePermission('trainer.publish')")
+  })
+
   it('وحقل الملفّ يقبل صيغ الصور وحدها', () => {
     expect(screen).toMatch(/accept="image\/jpeg,image\/png,image\/webp"/)
   })
@@ -62,7 +71,7 @@ describe('المسار العامّ للصورة', () => {
     expect(publicRoutes).toContain("app.get('/api/v1/trainer-photos/:storageKey'")
     const at = publicRoutes.indexOf("app.get('/api/v1/trainer-photos/:storageKey'")
     const body = publicRoutes.slice(at, at + 900)
-    expect(body, 'بلا شرط النشر').toContain('PUBLIC_TRAINER_WHERE')
+    expect(body, 'بلا شرط النشر').toContain('...publicTrainerWhere()')
     expect(body, 'المفتاح من العنوان بلا تحقّق من شكله').toContain('assertSafeKey')
     expect(body, 'توقيع موقّت على صورة تعرض في صفحة عامّة').not.toContain('verifySignature')
   })
@@ -70,7 +79,17 @@ describe('المسار العامّ للصورة', () => {
 
 describe('صفحة الفريق', () => {
   it('تعرض الصورة حين توجد', () => {
-    expect(teamPage).toMatch(/t\.photoUrl\s*\?/)
+    expect(teamPage).toMatch(/if \(t\.photoUrl && !failed\)/)
     expect(teamPage).toMatch(/src=\{t\.photoUrl\}/)
+  })
+
+  /* صورةٌ مُحيت من القرص أو رفعٌ تُرك في منتصفه يردّ ٤٠٤. وكانت `<img>` بلا
+     `onError`، فيرى الزائرُ أيقونةَ صورةٍ مكسورة. فكلُّ صورةٍ في الصفحة تعرف
+     ما تفعل إن لم تصل: تُعلَم الحالةُ فيُعرض بديلُ الحروف. */
+  it('⚠️ وصورة لا تصل لا تترك مكسورة — كلّ img يردّ خطأه إلى بديل الحروف', () => {
+    const imgs = teamPage.match(/<img\b[\s\S]*?\/>/g) ?? []
+    expect(imgs.length, 'لم يعثر على صورة في الصفحة — تعطّل الفحص نفسه').toBeGreaterThan(0)
+    for (const img of imgs) expect(img, 'صورة بلا onError').toMatch(/onError=\{\(\) => setFailed\(true\)\}/)
+    expect(teamPage, 'لا بديل حين تسقط الصورة').toMatch(/initialsOf\(t\.name\)/)
   })
 })

@@ -1002,6 +1002,12 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     return review.approvePendingPhoto(profileId, req.auth!.userId)
   })
 
+  /* وكلُّ المعلَّقِ معا — بالصلاحيّة نفسِها، فهو القرارُ نفسُه مكرَّرا */
+  app.post('/api/admin/trainers/photos/approve-pending', {
+    preHandler: requirePermission('trainer.publish'),
+    schema: { tags: ['admin-trainers'], summary: 'اعتماد كلّ الصور المعلّقة — كلّ واحدة بأثرها' },
+  }, async (req) => review.approveAllPendingPhotos(req.auth!.userId))
+
   app.post('/api/admin/trainers/:profileId/photo/reject', {
     preHandler: requirePermission('trainer.publish'),
     schema: { tags: ['admin-trainers'], summary: 'ردّ الصورة المعلّقة — تبقى صورة حسابه ولا تعرض عامّة' },
