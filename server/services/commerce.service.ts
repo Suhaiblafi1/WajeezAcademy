@@ -451,9 +451,12 @@ export class CommerceService {
        يُخبَر بالإلغاء حين يقع — **فكان يُقال له «أُلغي طلبُك» ولم يُقل له
        قطُّ إنّ له وقتا**. وهذا نصفُه الآخر.
 
-       وصنفُه «المال» لا «تقدّمي»: مهلةٌ يسقط بانقضائها مقعدٌ لا تُكتَم. */
+       وصنفُه «المال» لا «تقدّمي»: مهلةٌ يسقط بانقضائها مقعدٌ لا تُكتَم.
+
+       ولا بريدَ معه هنا وحدَه: صاحبُه في صفحة الدفع الآن، والإيصالُ يتبعه بعد دقيقة — فبريدان
+       في دقيقةٍ ضجيج. والحجزُ الذي يصنعه الفريقُ وهو غائبٌ يصله بريدا (`approveEnrollmentRequest`). */
     await safeNotify(this.prisma, {
-      userId, channel: 'in_app', audience: 'learner',
+      userId, channel: 'in_app', audience: 'learner', skipEmail: true,
       templateKey: 'order.seats_held',
       title: 'حجز مقعدك — وبقي الدفع',
       body: `حجز لك ${unique.length === 1 ? 'مقعد' : `${unique.length} مقاعد`} بفاتورة ${order.invoice.number} (${total} ${currency}). أتمم الدفع خلال ساعة — وبعدها يفرج عن المقعد لغيرك ولا يقتطع منك شيء.`,

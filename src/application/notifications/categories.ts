@@ -75,7 +75,7 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
       /* ي-٤: ووضعُه في الطابور — كانت الترقيةُ منه تُخبَر ولا يُخبَر الدخولُ
          فيه، فيُبشَّر بالخروج من صفٍّ لم يعلم أنّه دخله. */
       'enrollment.waitlisted',
-      'enrollment.waitlist.promoted', 'learner.request_decided', 'plan.requested', 'plan.seats_held',
+      'enrollment.waitlist.promoted', 'learner.request_decided', 'plan.requested',
     ],
   },
   {
@@ -127,7 +127,7 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
   {
     key: 'money',
     labelAr: 'المال',
-    whatAr: 'إيصال دفع · ردّ مبلغ أو ردّ طلبه · إلغاء طلب لم يكتمل · مستحقّات مدرّب',
+    whatAr: 'إيصال دفع · مقعد محجوز ينتظر الدفع · ردّ مبلغ أو ردّ طلبه · إلغاء طلب لم يكتمل · مستحقّات مدرّب',
     silenceable: false,
     lockedWhyAr: 'إيصال دفع لا يكتم: هو سجلّك عند الخلاف، وكتمه يجعل «لم يخبرني أحد» صحيحا في الظاهر.',
     /* ═══ والردُّ خبرُ مالٍ كالقبض (ي-٤) ═══
@@ -142,8 +142,9 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
        بالساعة أصلا، فيجد المقعدَ ذهب ولا يعرف أنّه كان له وقت. */
     templateKeys: [
       'payment.succeeded', 'payment.refunded', 'payment.refund_rejected',
-      /* ي-٤: والمهلةُ التي يسقط بانقضائها المقعد — نصفُ «أُلغي طلبُك» الآخر */
-      'order.seats_held',
+      /* ي-٤: والمهلةُ التي يسقط بانقضائها المقعد — نصفُ «أُلغي طلبُك» الآخر. وحجزُ الخطّة مثلُه
+         (١٩ أكتوبر ٢٠٢٦): كان في «تقدّمي» فيُكتَم، ومهلتُه مهلةُ أخيه — والطلبُ يُلغى بعد ساعة */
+      'order.seats_held', 'plan.seats_held',
       'order.cancelled_abandoned', 'trainer_payout',
     ],
   },
@@ -285,7 +286,7 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
        — كلُّها أخبارٌ لا يصحّ أن تُكتَم ثمّ يُقال «لم يخبرني أحد». */
     key: 'enrollment_change',
     labelAr: 'تغيير في شعبتك',
-    whatAr: 'تغيّر مدرّب شعبتك · نقلك إلى شعبة نظيرة · ردّ ما تبقّى أو رصيد باسمك',
+    whatAr: 'تغيّر مدرّب شعبتك · نقلك إلى شعبة نظيرة · إلغاء شعبتك · ردّ ما تبقّى أو رصيد باسمك',
     silenceable: false,
     lockedWhyAr: 'تغيير يمسّ مقعدك أو مالك — وكتمه يجعل «لم يخبرني أحد» صحيحا في الظاهر.',
     /* و`enrollment.dropped` هنا لسببٍ قاسٍ: حارسُ ي-٣ كان يقرأ «أُخبِر أحدٌ»
@@ -295,7 +296,8 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
        يُخمّنه — بل بأن يُخبَر صاحبُه فعلا. */
     /* و`enrollment.switched` معها: المقعدُ والموعدُ تحرّكا، وهو ما يصفه
        عنوانُ الصنف حرفا — وإن كان صاحبُه هو من طلبه. */
-    templateKeys: ['departure.choice', 'departure.resolved', 'enrollment.dropped', 'enrollment.switched'],
+    /* و`cohort.cancelled` (١٩ أكتوبر ٢٠٢٦): شعبتُه أُلغيت — مقعدُه ومالُه معلّقان حتّى يقرّر */
+    templateKeys: ['departure.choice', 'departure.resolved', 'enrollment.dropped', 'enrollment.switched', 'cohort.cancelled'],
   },
   /* ═══ حسابي ووصولي — ي-٣ ═══
 
