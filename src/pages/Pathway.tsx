@@ -95,6 +95,8 @@ export default function PathwayPage() {
      كلّ تصيير تُقحم أثرا جانبيّا في جسم المكوّن. */
   const [advisorReferral] = useState(needsAdvisorReferral);
   const [checkout, setCheckout] = useState<CheckoutIntent | null>(null);
+  /* الشعبةُ التي اختارها لكلّ دورةٍ تحت اسمها — تصل نافذةَ الدفع (`CourseJourney`) */
+  const [pickedCohorts, setPickedCohorts] = useState<Record<string, string>>({});
   /* نية شراء معلقة بانتظار تسجيل الدخول — التصفح مفتوح، والتسجيل يُطلب لحظة الدفع فقط */
   const [pendingCheckout, setPendingCheckout] = useState<CheckoutIntent | null>(null);
   const [syncing, setSyncing] = useState(false);
@@ -476,6 +478,8 @@ export default function PathwayPage() {
             delivery={pathwayDelivery(pathway.id)}
             headingLevel="h2"
             showSchedule
+            picked={pickedCohorts}
+            onPick={(courseId, cohortId) => setPickedCohorts((prev) => ({ ...prev, [courseId]: cohortId }))}
             giftId={giftId}
             graduationProjectAr={pathway.output}
             supportReasons={Object.fromEntries([...supportReasons].filter(([id]) => supportIds.has(id)))}
@@ -1052,7 +1056,7 @@ export default function PathwayPage() {
           giftCourseId={checkout.kind === "pathway" ? giftId : null}
           initialCoupon={coupon}
           lines={(checkout.courseIds ?? courseIds)
-            .map((cid) => ({ courseId: cid, name: courseById(cid)?.name ?? cid }))}
+            .map((cid) => ({ courseId: cid, name: courseById(cid)?.name ?? cid, cohortId: pickedCohorts[cid] }))}
           onClose={() => setCheckout(null)}
         />
       )}

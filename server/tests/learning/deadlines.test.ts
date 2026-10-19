@@ -223,7 +223,8 @@ describe('مواعيدُ المتعلّم', () => {
     const out = await deadlines.forLearner(learnerId)
     expect(out.retrievalDue).toBe(4)
     expect(out.items).toHaveLength(0)
-    expect(out.meaningAr).toContain('مراجعتي')
+    /* باسم الصفحة في الشريط — وكان «مراجعتي» قبل أن تُسمّى (١٩ أكتوبر ٢٠٢٦) */
+    expect(out.meaningAr).toContain('تثبيت ما تعلّمت')
   })
 
   it('والمسارُ محروسٌ بصلاحيّة المتعلّم ولا يبلغه زائر', async () => {

@@ -1327,7 +1327,7 @@
               "TPL-B2B-001"
             ],
             "question_id": "QB-M3C-002",
-            "question_ar": "هل عرضك أو منتجك واضح لمن يشتريه؟",
+            "question_ar": "هل ما تبيعه واضح لمن يشتريه؟",
             "interpretation_if_positive_ar": "منتج/متجر وقناة شراء ذاتية ترجح التجارة الإلكترونية.",
             "interpretation_if_negative_ar": "بيع معقد يحتاج محادثات ولجنة يرجح نمو B2B."
           }
@@ -1768,7 +1768,7 @@
               "TPL-PERSONAL-BRAND-001"
             ],
             "question_id": "QB-M3C-002",
-            "question_ar": "هل عرضك أو منتجك واضح لمن يشتريه؟",
+            "question_ar": "هل ما تبيعه واضح لمن يشتريه؟",
             "interpretation_if_positive_ar": "وجود خدمة وعميل واضحين يرجح العمل الحر.",
             "interpretation_if_negative_ar": "التركيز على الظهور دون عرض خدمة يرجح العلامة المهنية."
           },
@@ -2222,7 +2222,7 @@
               "TPL-FREELANCE-001"
             ],
             "question_id": "QB-M3C-002",
-            "question_ar": "هل عرضك أو منتجك واضح لمن يشتريه؟",
+            "question_ar": "هل ما تبيعه واضح لمن يشتريه؟",
             "interpretation_if_positive_ar": "عدم وجود عرض خدمة مباشر يرجح العلامة المهنية.",
             "interpretation_if_negative_ar": "وجود عرض وعميل وسعر يرجح العمل الحر."
           }

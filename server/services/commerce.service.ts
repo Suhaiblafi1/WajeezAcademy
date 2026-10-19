@@ -556,7 +556,9 @@ export class CommerceService {
       body: autoPaid
         ? `سجّلت في «${title} — ${req.cohort.title}». تجدها في «تعلّمي».`
         : `حجز مقعدك في «${title} — ${req.cohort.title}». أتمم الدفع (${total} ${req.cohort.currency}) من صفحة الفواتير ليتحول حجزك إلى تسجيل فعلي.`,
-      templateKey: 'enrollment.approved',
+      /* وغيرُ المدفوع خبرُ «أتمم الدفع» وبابُه «فواتيري» (١٩ أكتوبر ٢٠٢٦): كان يحمل `enrollment.approved`
+         فيفتح «رحلتي» ونصُّه يقول «من صفحة الفواتير». و«المال» صنفٌ لا يُسكَت — كحجز الخطّة */
+      templateKey: autoPaid ? 'enrollment.approved' : 'order.seats_held',
       data: { requestId, orderId: order.id, total },
     })
     return order
@@ -626,6 +628,12 @@ export class CommerceService {
 
     const config = await getPaymentConfig(this.prisma)
     const provider = getPaymentProvider(config)
+    /* ═══ والدفعُ اليدويُّ يُقال ولا يسقط (١٩ أكتوبر ٢٠٢٦) ═══
+       كان المزوّدُ اليدويُّ يرمي `Error` عاديّا فيصل المتعلّمَ «خطأ داخلي غير متوقع» (٥٠٠) — وطلبُه ومقعدُه
+       محفوظان. فيُقال له ما يقع وأين يمضي. */
+    if (provider.name === 'manual') {
+      throw new AuthError('manual_payment', 'الدفع الإلكتروني غير متاح الآن. طلبك محفوظ في «فواتيري»، وللدفع بتحويل بنكي راسل الدعم.', 409)
+    }
     /* مصدر واحد لأصل الموقع: رابط عودة الدفع كان يسقط إلى localhost في الإنتاج
        متى غاب APP_URL، تماما كروابط الرسائل. */
     const appUrl = publicSiteUrl()

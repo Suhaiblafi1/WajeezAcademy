@@ -623,8 +623,9 @@ export default function StudentAccount() {
         <h2 className="flex items-center gap-2 text-base font-black"><FileText className="h-4 w-4 text-teal-light-ink" /> بقية ملفك</h2>
         <div className="mt-5 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
           {[
-            { to: "/student", icon: RouteIcon, t: "مساراتي وتقدمي", d: "مسارك النشط ونسبة إنجازه" },
-            { to: "/student/learning", icon: BookOpen, t: "دوراتي وجلساتي", d: "الدورات المسجلة ومواعيدها" },
+            /* بأسمائها في الشريط (١٩ أكتوبر ٢٠٢٦): كانت «مساراتي وتقدمي» و«دوراتي وجلساتي» — ولا قسمَ بهذين الاسمين */
+            { to: "/student", icon: RouteIcon, t: "الرئيسية", d: "مسارك النشط ونسبة إنجازه" },
+            { to: "/student/learning", icon: BookOpen, t: "رحلتي", d: "دوراتك ومواعيدها" },
             { to: "/student/certificates", icon: Award, t: "شهاداتي", d: "شهاداتك وروابط التحقق" },
             { to: "/student/billing", icon: FileText, t: "فواتيري وطلباتي", d: "فواتيرك ودفعاتك" },
             { to: "/student/cv", icon: FileText, t: "سيرتي الذاتية", d: "رفع بموافقة صريحة وحذف موثق" },
@@ -645,7 +646,7 @@ export default function StudentAccount() {
         <p className="mt-2 text-sm leading-7 text-muted-foreground">
           فواتيرك ودفعاتك في{" "}
           <Link to="/student/billing" className="font-bold text-teal-light-ink underline-offset-4 hover:underline">فواتيري</Link>.
-          وللاسترداد أو مراجعة فاتورة: <Link to="/contact" className="font-bold text-teal-light-ink underline-offset-4 hover:underline">صفحة التواصل</Link> — اختر «طلب استرداد».
+          وللاسترداد أو مراجعة فاتورة: <Link to="/student/support?topic=refund" className="font-bold text-teal-light-ink underline-offset-4 hover:underline">افتح تذكرة دعم</Link>.
         </p>
       </Panel>
 

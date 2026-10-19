@@ -16,6 +16,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { BellOff, Loader2, Lock } from "lucide-react";
 import { toast, toastError } from "@/components/Toast";
+import { LEARNER_CATEGORY_KEYS } from "@/application/notifications/learner-categories";
 import { apiGet, apiPut, ApiError } from "@/services/api";
 
 import { Panel, Card } from "@/components/ui/Surface";
@@ -84,7 +85,8 @@ export default function NotificationPreferences() {
       <p className="mt-1 text-read leading-5 text-muted-foreground">{prefs.emailNoteAr}</p>
 
       <ul className="mt-4 space-y-2">
-        {prefs.categories.map((c) => (
+        {/* ما يصل المتعلّمَ وحدَه — لا أصنافُ عمل الفريق ولا تجهيز المدرّب (`learner-categories.ts`) */}
+        {prefs.categories.filter((c) => LEARNER_CATEGORY_KEYS.has(c.key)).map((c) => (
           <Card as="li" key={c.key}>
             <div className="flex flex-wrap items-center gap-3">
               <div className="min-w-0 flex-1">

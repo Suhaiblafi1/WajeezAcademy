@@ -137,7 +137,9 @@ export class CohortMessageService {
     for (const r of recipients) {
       await safeNotify(this.prisma, {
         userId: r.userId, channel: 'in_app', audience: 'learner',
-        title, body: `${author?.displayName ?? 'مدرّبك'}: ${body.slice(0, 240)}`,
+        /* والرسالةُ كاملةً (١٩ أكتوبر ٢٠٢٦): كانت تُقصّ عند ٢٤٠ حرفا من ٢٠٠٠ يقبلها المدرّب (`MAX_BODY`)،
+           ولا موضعَ آخرَ في بوّابة المتعلّم يقرأ باقيها — فيصله نصفُ الإعلان ولا يدري أنّه نصف. */
+        title, body: `${author?.displayName ?? 'مدرّبك'}: ${body}`,
         data: { cohortId, messageId: message.id },
       })
     }

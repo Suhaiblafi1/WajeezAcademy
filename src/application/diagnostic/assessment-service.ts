@@ -7,6 +7,8 @@ import { createEngineV2, type DiagnosticEngineV2 } from '../../domain/diagnostic
 import { createEngineV21, type DiagnosticEngineV21 } from '../../domain/diagnostic/v2_1'
 import { scorePathways } from '../../domain/diagnostic/pathway-score'
 import { loadMirrorAnswers, mirrorAnswersToFacts } from '../../domain/diagnostic/teaser-bridge'
+import { loadMirrorV2, mirrorFacts, mirrorInterestVector } from '../../domain/diagnostic/mirror/bridge'
+import { scoreMirror } from '../../domain/diagnostic/mirror/score'
 import type { BankQuestion, Recommendation } from '../../domain/diagnostic/types'
 import type { DiagQuestion } from '../../data/diagnostic'
 import { factsToLegacyAnswers, recommendationToDiagResult } from './view-model'
@@ -184,6 +186,14 @@ export class AssessmentSession {
     /* بذر حقائق «مؤشر وجيز» إن وُجدت — المتعلم لا يُسأل مرتين عما أجاب عنه في الصفحة الرئيسية */
     const mirror = typeof window !== 'undefined' ? loadMirrorAnswers(window.localStorage) : null
     if (mirror) this.engine.seedFacts(mirrorAnswersToFacts(mirror), 'مؤشر وجيز التمهيدي')
+    /* وإجاباتُ «مرآة وجيز» (`/mirror`) — كانت تُحفظ ولا تُقرأ هنا، والصفحةُ تَعِد بأنّ من أجاب فيها لا يُسأل
+       في التشخيص (١٩ أكتوبر ٢٠٢٦). والميولُ لمحرّك ٢٫١ وحدَه — هو الذي يسأل عنها بها */
+    const mirrorV2 = typeof window !== 'undefined' ? loadMirrorV2(window.localStorage) : null
+    if (mirrorV2) {
+      const result = scoreMirror(mirrorV2)
+      this.engine.seedFacts(mirrorFacts(result), 'مرآة وجيز')
+      if ('seedInterests' in this.engine) this.engine.seedInterests(mirrorInterestVector(result), 'مرآة وجيز')
+    }
   }
 
   /** إنشاء سجل الجلسة في المستودع كسوليا — أول عملية حفظ تُنشئه */

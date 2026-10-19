@@ -111,7 +111,13 @@ function CoursePathPage({ courseId }: { courseId: string }) {
      وقرارُ صاحب المنصّة: «يختار الشعب المفتوحة للدورة حسب التوفّر». والاختيارُ
      يعيش هنا لا في لوح الشراء: السعرُ المعروض في هذه الصفحة سعرُ الشعبة
      المختارة، فلو عاش الاختيارُ في اللوح لقالت الصفحةُ رقما ولقُبض غيرُه. */
-  const [cohortChoice, setCohortChoice] = useState<Record<string, string>>({});
+  /* ═══ والشعبةُ التي جاء من أجلها تُختار له (١٩ أكتوبر ٢٠٢٦) ═══
+     «سجّل في هذه الشعبة» في صفحة المدرّب والتقويم كان يفتح الدورةَ بلا شعبتها، فتُختار له أقربُ شعبة.
+     فصار الرابطُ يحملها (`?cohort=`) وتُختار هنا ابتداءً — وإن لم تعد متاحةً عادت أقربَ شعبةٍ كما كان. */
+  const [cohortChoice, setCohortChoice] = useState<Record<string, string>>(() => {
+    const asked = new URLSearchParams(window.location.search).get("cohort");
+    return asked && courseId ? { [courseId]: asked } : {};
+  });
   const [user, setUser] = useState<string | null>(readUserName);
   /* الجلسةُ الحقيقيّة للبريد: لوحُ الشراء يطلب التوثيقَ في موضعه، و`readUserName`
      يقرأ التخزين المحلّيّ وحدَه فقد يخالف كعكةَ الخادم. */

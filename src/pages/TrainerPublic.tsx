@@ -191,7 +191,7 @@ export default function TrainerPublic() {
                     )}
                     {c.price != null && <li className="font-bold text-foreground">{fmtMoney(Number(c.price), c.currency)}</li>}
                   </ul>
-                  <Link to={`/build/${c.courseId}`} className="btn-teal mt-5 inline-flex self-start px-5 py-2.5">
+                  <Link to={`/build/${c.courseId}?cohort=${c.id}`} className="btn-teal mt-5 inline-flex self-start px-5 py-2.5">
                     سجّل في هذه الشعبة
                   </Link>
                 </Card>

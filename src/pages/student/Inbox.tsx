@@ -71,6 +71,13 @@ export default function Inbox() {
   );
   const unread = (items ?? []).filter((i) => i.unread);
 
+  /* والإشعارُ يُعلَّم مقروءا حين يُفتح — صار يفتح صفحةَ خبره لا «إشعاراتي» (١٩ أكتوبر ٢٠٢٦) */
+  const markOne = (i: InboxItem) => {
+    if (i.kind !== "notification" || !i.unread) return;
+    setItems((prev) => (prev ?? []).map((x) => (x.id === i.id ? { ...x, unread: false } : x)));
+    void apiPost(`/api/learner/notifications/${i.id.replace(/^n:/, "")}/read`).catch(() => undefined);
+  };
+
   const markAll = async () => {
     setItems((prev) => (prev ?? []).map((i) => ({ ...i, unread: false })));
     await Promise.allSettled(
@@ -142,7 +149,7 @@ export default function Inbox() {
             const Icon = ICON[i.kind];
             return (
               <li key={i.id}>
-                <Card as={Link} tone={i.unread ? "accent" : "default"} interactive to={i.href} className={`block transition ${i.unread ? "bg-teal-ink/[0.06] hover:border-teal/50" : "hover:border-white/25"}`}>
+                <Card as={Link} tone={i.unread ? "accent" : "default"} interactive to={i.href} onClick={() => markOne(i)} className={`block transition ${i.unread ? "bg-teal-ink/[0.06] hover:border-teal/50" : "hover:border-white/25"}`}>
                   <p className="flex flex-wrap items-center gap-2 text-sm font-black">
                     {i.unread && <span aria-hidden="true" className="h-2 w-2 shrink-0 rounded-full bg-gold" />}
                     <Icon className="h-3.5 w-3.5 shrink-0 text-teal-light-ink" aria-hidden="true" />

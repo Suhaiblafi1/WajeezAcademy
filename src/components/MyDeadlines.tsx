@@ -78,7 +78,7 @@ export default function MyDeadlines({ className = "" }: { className?: string }) 
         {data.meaningAr}
         {data.retrievalDue > 0 && (
           <Link to="/student/review" className="font-bold text-teal-light-ink underline">
-            افتح «مراجعتي»
+            افتح «تثبيت ما تعلّمت»
           </Link>
         )}
       </p>
@@ -140,7 +140,7 @@ export default function MyDeadlines({ className = "" }: { className?: string }) 
           <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
           و{data.retrievalDue} بطاقة استرجاع استحقّت — لا موعد نهائيّ لها، لكنّها تنسى إن تباعدت.
           <Link to="/student/review" className="font-bold text-teal-light-ink underline">
-            افتح «مراجعتي»
+            افتح «تثبيت ما تعلّمت»
           </Link>
         </p>
       )}
