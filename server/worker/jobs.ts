@@ -1366,6 +1366,18 @@ export async function runAdvisorReminders(prisma: PrismaClient, now = new Date()
   }
 }
 
+/** بياناتُ من لم يسجّل تُمحى بعد ستة أشهر بلا نشاط — والعلّةُ في `guest-erasure.service.ts` */
+export async function runEraseIdleGuests(prisma: PrismaClient, now = new Date()): Promise<JobResult> {
+  const started = Date.now()
+  const { eraseIdleGuests } = await import('../services/guest-erasure.service')
+  const { erased } = await eraseIdleGuests(prisma, now)
+  return {
+    job: 'erase_idle_guests',
+    summaryAr: erased === 0 ? 'لا أحد لم يسجل مرت عليه ستة أشهر بلا نشاط' : `محيت بيانات ${erased} لم يسجلوا`,
+    done: erased, failed: 0, ms: Date.now() - started,
+  }
+}
+
 export const JOBS = [
   { key: 'dispatch_notifications', everyMs: 60_000, run: dispatchQueuedNotifications, titleAr: 'إرسال ما في طابور الإشعارات' },
   { key: 'outbox_mail', everyMs: 60_000, run: dispatchOutboxMail, titleAr: 'إرسال ما في طابور البريد' },
@@ -1408,6 +1420,8 @@ export const JOBS = [
   { key: 'cleanup_expired', everyMs: 6 * HOUR, run: cleanupExpired, titleAr: 'تنظيف ما انتهى' },
   /* مرّةً في اليوم: التقليمُ ليس عاجلا، وتكرارُه بلا داعٍ يُقفل جداولَ السجلّ */
   { key: 'enforce_retention', everyMs: 24 * HOUR, run: enforceRetention, titleAr: 'تقليم جداول السجلّ بمدّة حفظها' },
+  /* مرّةً في اليوم: الأجلُ ستة أشهر، فيومٌ دقّةٌ كافية */
+  { key: 'erase_idle_guests', everyMs: 24 * HOUR, run: runEraseIdleGuests, titleAr: 'محو بيانات من لم يسجل بعد ستة أشهر بلا نشاط' },
 ] as const
 
 /** دورةٌ واحدةٌ لوظيفةٍ واحدة، بأثرها المسجَّل — لا عملَ صامت */

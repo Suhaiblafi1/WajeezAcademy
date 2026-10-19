@@ -152,6 +152,7 @@ const PHRASES: Record<string, string> = {
   'advisor.contact.hook': 'تسجيل تواصل مستشار من منصّة محادثات واتساب',
   'advisor.case.whatsapp_opened': 'فتح حالة لعميل جديد راسله مستشار عبر واتساب',
   'advisor.case.lead_email': 'كتابة بريد العميل في حالته ليرتبط بحسابه',
+  'advisor.case.guest_erased': 'محو بيانات من لم يسجل بعد ستة أشهر بلا نشاط',
   'term.create': 'إنشاء فصل دراسيّ',
   'term.registration_window': 'ضبط نافذة التسجيل للفصل',
   'term.trainer_availability': 'إتاحة مدرّب في فصل',
@@ -495,6 +496,7 @@ const PHRASES: Record<string, string> = {
   'worker.session_reminders': 'تذكيرات الجلسات',
   'worker.unbooked_digest': 'ملخّص من لم يحجز موعد لقائه',
   'worker.advisor_reminders': 'تذكير المستشارين بحالات بلا تواصل ومتابعات حلّ موعدها',
+  'worker.erase_idle_guests': 'محو بيانات من لم يسجل بعد ستة أشهر بلا نشاط',
 }
 
 /** معجمُ المقاطع — نطاقاتٌ وأشياءٌ وأفعال */
