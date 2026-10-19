@@ -64,22 +64,30 @@ export function currentTermStart(now: Date): Date {
   return termBounds(t.year, t.season).startsOn
 }
 
-/** شرطُ «له دوراتٌ منشورةٌ هذا الفصلَ أو بعده» وحدَه — تقرؤه شاشةُ الإدارة أيضا */
-export function liveTrainerWhere(now: Date = new Date()): Prisma.TrainerProfileWhereInput {
-  const from = currentTermStart(now)
-  const cohort: Prisma.CohortWhereInput = {
+/** الشعبةُ المنشورةُ هذا الفصلَ أو بعده — شرطُها وحدَه */
+export function liveCohortWhere(now: Date = new Date()): Prisma.CohortWhereInput {
+  return {
     OR: [
       { status: { in: ['open', 'full', 'active'] } },
-      { status: 'completed', endsAt: { gte: from } },
+      { status: 'completed', endsAt: { gte: currentTermStart(now) } },
     ],
   }
+}
+
+/** والمسارُ المنشورُ لفصلٍ لم ينتهِ — والفصلُ فيه اختياريّ (`TrainerPath.termId`):
+    منشورٌ بلا فصلٍ معتمدٌ منشورٌ وليس ماضيا، فيُحسب */
+export function livePathWhere(now: Date = new Date()): Prisma.TrainerPathWhereInput {
+  return { status: 'published', OR: [{ termId: null }, { term: { endsOn: { gte: currentTermStart(now) } } }] }
+}
+
+/** شرطُ «له دوراتٌ منشورةٌ هذا الفصلَ أو بعده» وحدَه — تقرؤه شاشةُ الإدارة أيضا */
+export function liveTrainerWhere(now: Date = new Date()): Prisma.TrainerProfileWhereInput {
+  const cohort = liveCohortWhere(now)
   return {
     OR: [
       { cohortTrainers: { some: { role: 'lead', cohort } } },
       { assignments: { some: { status: 'active', cohort } } },
-      /* والفصلُ في المسار اختياريّ (`TrainerPath.termId`): منشورٌ بلا فصلٍ معتمدٌ
-         منشورٌ وليس ماضيا، فيُحسب */
-      { paths: { some: { status: 'published', OR: [{ termId: null }, { term: { endsOn: { gte: from } } }] } } },
+      { paths: { some: livePathWhere(now) } },
     ],
   }
 }

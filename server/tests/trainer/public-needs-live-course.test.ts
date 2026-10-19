@@ -101,4 +101,15 @@ describe('الظهور العامّ يحتاج دورات منشورة هذا ا
     await setCohort({ status: 'open', endsAt: null })
     expect(await shown()).toEqual(VISIBLE)
   })
+
+  /* ═══ ومن أظهرته دورتُه تُعرض دورتُه في بطاقته (١٩ أكتوبر ٢٠٢٦) ═══
+
+     كانت «دوراتُه» من الإسناد اليدويّ وحدَه، وهذا المدرّبُ أصيلُ شعبته بلا إسناد — كما تُفتح الشعبُ اليوم.
+     فظهر في الصفحة بدورته، وبطاقتُه تقول «لم تسند إليه شعبة بعد». ورُئي ساقطا بردّ `assignedCourseIds`
+     إلى `assignments` وحدَه. */
+  it('⚠️ أصيل شعبة مفتوحة بلا إسناد — دورتها في بطاقته', async () => {
+    expect(await prisma.trainerCourseAssignment.count({ where: { profileId } }), 'الحارس يفترض أصيلا بلا إسناد').toBe(0)
+    const card = (await review.listPublicTrainers()).find((t) => t.id === profileId)
+    expect(card?.assignedCourseIds, 'ظهر بدورته وبطاقته بلا دورة').toEqual(['C-BIZ-101'])
+  })
 })

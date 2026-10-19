@@ -91,6 +91,26 @@ export function cohortsTallyAr(cs: Pick<CardCohort, 'plan' | 'postponedTo'>[]): 
   return `${cs.length === 2 ? 'شعبتان' : head}: ${parts.join(' · ')}`
 }
 
+/* ═══ له شعبةٌ تُباع واسمُه لا يظهر — أوّلَ القائمة (١٩ أكتوبر ٢٠٢٦) ═══
+
+   قِيس في الإنتاج: ستُّ شعبٍ مفتوحةٌ للتسجيل لا يرى المشتري من يدرّسها، لأنّ أسماءَ مدرّبيها لم يُعتمد
+   ظهورُها. واختار صاحبُ المنصّة أن يعتمدها من هنا — ولم يكن في البطاقات ما يدلّه عليهم إلّا قراءتُها كلِّها.
+
+   والشرطُ شرطُ الخادم في اسم الشعبة (`trainerPubliclyVisible`): ظهورٌ معتمَدٌ وتوثيقٌ ولا إيقاف. و«تُباع»
+   ما يختاره المشتري في منتقي الشعبة: مفتوحةٌ أو ممتلئة (`JOINABLE` في `cohort-prices.ts`). */
+const ON_SALE = new Set(['open', 'full'])
+
+/** أله شعبةٌ يختارها المشتري واسمُه لا يُعرض عليها؟ */
+export function hiddenOnSale(t: {
+  publiclyVisible: boolean
+  isVerified: boolean
+  suspended: boolean
+  cohorts: Pick<CardCohort, 'status'>[]
+}): boolean {
+  const shown = t.publiclyVisible && t.isVerified && !t.suspended
+  return !shown && t.cohorts.some((c) => ON_SALE.has(c.status))
+}
+
 /* ─────────── أثرُ الملفّ العامّ ─────────── */
 
 export interface TrailEvent { action: string; at: string | Date; meta?: unknown }

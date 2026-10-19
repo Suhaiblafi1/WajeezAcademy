@@ -31,12 +31,13 @@ import { usePublishedContent } from "@/services/public-content";
 import { useCourseCohorts, type CohortOption } from "@/services/cohort-prices";
 import { track } from "@/services/analytics";
 import { bundleNudge, pathPricing, suggestNext, MAX_BUILT_COURSES } from "@/application/catalog/course-path";
+import { trainerLineAr, trainerNamesOf } from "@/application/catalog/course-trainers";
 import { DISCOUNT_CATEGORIES } from "@/application/commerce/discount-policy";
 import { FIRST_TIME_PROMO, isFirstTimePromo } from "@/application/commerce/first-time-promo";
 import { savePathDraft } from "@/services/path-drafts";
 import {
-  courseById, courseFullById, courseDetails,
-  pathwayCourses, weeksLabel, type Course,
+  courseById, courseFullById,
+  pathwayCourses, weeksLabel, TRAINER_PENDING_AR, type Course,
 } from "@/data/courses";
 import { hasCoreCatalog } from "@/data/core-catalog-source";
 
@@ -220,7 +221,6 @@ function CoursePathPage({ courseId }: { courseId: string }) {
   }
 
   const full = courseFullById(anchor.id);
-  const details = courseDetails(anchor);
   const pickedCourses = picked.map((id) => courseById(id)).filter((c): c is Course => Boolean(c));
   const totalWeeks = pickedCourses.reduce((s, c) => s + c.weeks, 0);
 
@@ -349,7 +349,8 @@ function CoursePathPage({ courseId }: { courseId: string }) {
               <BookOpen className="h-3.5 w-3.5 text-teal-light-ink" /> {anchor.skill}
             </span>
             <span className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 font-bold text-foreground">
-              <User className="h-3.5 w-3.5 text-teal-light-ink" /> {details.trainer.name}
+              {/* المدرّبُ من شعبها المفتوحة — ما يقوله منتقي الشعبة تحته (`course-trainers.ts`) */}
+              <User className="h-3.5 w-3.5 text-teal-light-ink" /> {trainerLineAr(trainerNamesOf(cohorts.get(anchor.id)), TRAINER_PENDING_AR)}
             </span>
           </div>
         </Panel>
