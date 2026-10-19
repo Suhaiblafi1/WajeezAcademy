@@ -17,6 +17,7 @@ import { getEmailConfig, type EmailConfig } from './integrations.service'
 import { sendEmail, type MailAttachment } from './mail'
 import { renderNotificationMail } from './notification-mail'
 import { categoryForTemplate } from '../../src/application/notifications/categories'
+import { alsoByEmail } from '../../src/application/notifications/learner-email'
 import { publicSiteUrl } from './site-url'
 
 /* لأيّ بوابةٍ الإشعار — جرسُ كلٍّ يعرض جمهورَه وحده.
@@ -37,6 +38,8 @@ export interface NotificationPayload {
   data?: Record<string, unknown>
   /** الافتراضي `learner`: السهو يُبقي الإشعار حيث يراه صاحبه لا حيث يختفي */
   audience?: NotificationAudience
+  /** لا بريدَ مع الجرس وإن كان المفتاحُ ممّا يُبرَد (`learner-email.ts`) — حيث صاحبُه حاضرٌ يرى الخبرَ في شاشته */
+  skipEmail?: boolean
 }
 
 export interface NotificationProvider {
@@ -243,8 +246,23 @@ export class NotificationService {
     return pref ? !pref.enabled : false
   }
 
-  /** إرسال (أو محاولة) إشعار — يسجل النتيجة دائما، إلّا ما كتَمَه صاحبُه */
+  /** إرسال (أو محاولة) إشعار — يسجل النتيجة دائما، إلّا ما كتَمَه صاحبُه.
+
+      وخبرُ المتعلّم في المال وتغيّرِ الشعبة يخرج بريدا أيضا (`learner-email.ts`): صفٌّ ثانٍ
+      بقناته، يُعاد ويُعدّ وحدَه. وإخفاقُه لا يُسقط الجرس، والجرسُ هو ما يُردّ.
+
+      والبريدُ نسخةُ الجرس: ما كتمه صاحبُه في الجرس لا يخرج بريدا. فالرسالةُ تقول له «ولك أن
+      توقفها» وتدلّه على شاشة التفضيلات — وتلك لا تعرض إلّا الجرس، فلو لم يتبعه البريدُ لكان
+      الوعدُ كاذبا. */
   async notify(payload: NotificationPayload) {
+    const row = await this.notifyOne(payload)
+    if (row && alsoByEmail(payload)) {
+      try { await this.notifyOne({ ...payload, channel: 'email' }) } catch { /* البريدُ مساندٌ للجرس لا شرطٌ له */ }
+    }
+    return row
+  }
+
+  private async notifyOne(payload: NotificationPayload) {
     if (await this.suppressedFor(payload)) return null
     const notification = await this.prisma.notification.create({
       data: {

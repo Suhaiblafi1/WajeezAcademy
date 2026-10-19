@@ -598,6 +598,24 @@ export class CohortService {
     await this.prisma.cohort.update({ where: { id: cohortId }, data: { status: to } })
     await recordAudit(this.prisma, { actorId, action: 'cohort.status', entityType: 'cohort', entityId: cohortId, meta: { from: cohort.status, to, note } })
 
+    /* ═══ والشعبةُ الملغاةُ تُقال لمن فيها (١٩ أكتوبر ٢٠٢٦) ═══
+       كان الإلغاءُ يقع صامتا: تُعلَّم الشعبةُ `cancelled` ولا يصل متعلّميها شيء، فيأتي أحدُهم يومَ
+       اللقاء إلى رابطٍ لا يُفتح. وبابُه الدعم: النقلُ إلى شعبةٍ أخرى أو ردُّ ما دُفع يقرّره إنسان. */
+    if (to === 'cancelled') {
+      const learners = await this.prisma.enrollment.findMany({
+        where: { cohortId, status: { not: 'dropped' } }, select: { userId: true },
+      })
+      for (const l of learners) {
+        await safeNotify(this.prisma, {
+          userId: l.userId, channel: 'in_app', audience: 'learner',
+          templateKey: 'cohort.cancelled',
+          title: `ألغيت شعبة «${cohort.title}»`,
+          body: 'لن تعقد لقاءاتها. راسل الدعم لننقلك إلى شعبة أخرى أو نرد ما دفعت عنها.',
+          data: { cohortId },
+        })
+      }
+    }
+
     /* اكتمال الشعبة يولّد كشف مستحقات مدربها تلقائياً إن كانت له قاعدة أتعاب سارية.
        عدم وجود قاعدة أو تكرار التوليد لا يعيقان إكمال الشعبة — يُرصدان في سجل التدقيق فقط */
     if (to === 'completed') {

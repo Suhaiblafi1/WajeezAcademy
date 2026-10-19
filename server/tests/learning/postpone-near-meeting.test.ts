@@ -89,8 +89,9 @@ async function approvedMeeting(hours: number, moduleId = 'PP-M1') {
 const move = (id: string, startsAt: Date, hours = 2) =>
   cohorts.trainerMoveSession(trainerUserId, id, { startsAt, endsAt: new Date(startsAt.getTime() + hours * H) })
 const pendingNotices = () => prisma.notification.count({ where: { templateKey: 'cohort.session.pending', userId: adminId } })
+/* بنودُ الجرس — وبجانب كلٍّ صفُّ بريدٍ منذ صار تغيّرُ الشعبة يُبرَد (`learner-email.ts`) */
 const toldLearners = (sessionId: string) => prisma.notification.findMany({
-  where: { templateKey: 'cohort.schedule_changed', userId: { in: enrolled }, data: { path: ['sessionId'], equals: sessionId } },
+  where: { templateKey: 'cohort.schedule_changed', channel: 'in_app', userId: { in: enrolled }, data: { path: ['sessionId'], equals: sessionId } },
 })
 const lastMoveAudit = (sessionId: string) => prisma.auditEvent.findFirstOrThrow({
   where: { action: 'cohort.session.move', entityId: sessionId }, orderBy: { createdAt: 'desc' },

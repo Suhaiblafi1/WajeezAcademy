@@ -167,7 +167,8 @@ describe('③ وأوّلُ لقاءٍ يُعتمَد من جدوله يرفع ا
   })
 
   it('⚠️ والمسجَّلون يُبلَّغون مرّةً واحدة — لا لكلّ موعدٍ رُفع', async () => {
-    const notes = await prisma.notification.findMany({ where: { templateKey: 'cohort.schedule_changed' } })
+    /* بنودُ الجرس — وبجانب كلٍّ صفُّ بريد (`learner-email.ts`) لا يُعدّ تبليغا ثانيا */
+    const notes = await prisma.notification.findMany({ where: { templateKey: 'cohort.schedule_changed', channel: 'in_app' } })
     expect(notes.map((n) => n.userId).sort(), 'لم يُبلَّغ المسجَّلون بتبدّل جدولهم').toEqual([...learners].sort())
   })
 

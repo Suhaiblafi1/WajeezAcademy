@@ -50,8 +50,8 @@ export function registerNotificationRoutes(app: FastifyInstance, prisma: PrismaC
      وحدُّ ما يُكتَم منها وسببُ قفلِ ما لا يُكتَم — كلُّها من مصدرٍ واحد.
      ولو أُضيف صنفٌ غدا ظهر في الشاشة بلا نشرِ واجهة.
 
-     ولا يُعرَض مفتاحُ بريدٍ اليوم: البريدُ غيرُ موصول، ومفتاحٌ لا يفعل شيئا
-     هو نفسُه العطبُ الذي عالجته المرحلةُ ١ — زرٌّ يَعِد بما لا يفعل. */
+     ولا مفتاحَ بريد: البريدُ يحمل ما يضرّ فواتُه وحدَه — المالَ وتغيّرَ الشعبة (`learner-email.ts`،
+     ١٩ أكتوبر ٢٠٢٦) — فلا يُعرض كتمُه. ويُقال ما يصل به، لا يُترك يُكتشف في الصندوق. */
   app.get('/api/me/notification-preferences', {
     preHandler: requireAuth,
     schema: { tags: ['notifications'], summary: 'أصناف الإشعارات وتفضيلي في كلّ منها' },
@@ -68,7 +68,7 @@ export function registerNotificationRoutes(app: FastifyInstance, prisma: PrismaC
         /* الغيابُ يعني «مُفعَّل» */
         enabled: byCategory.get(c.key) ?? true,
       })),
-      emailNoteAr: 'تفضيلات البريد تظهر هنا يوم يوصل مزوّد بريد — ولا يعرض اليوم مفتاح لا يفعل شيئا.',
+      emailNoteAr: 'ما يخص مالك أو تغيّر شعبتك يصلك بالبريد أيضا.',
     }
   })
 

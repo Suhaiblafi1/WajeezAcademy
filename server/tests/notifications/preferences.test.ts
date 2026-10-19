@@ -90,7 +90,8 @@ describe('الحدُّ في الخادم لا في الشاشة', () => {
     })
     const out = await send('payment.succeeded')
     expect(out, 'إيصالُ الدفع سُكِت بصفٍّ في القاعدة — الحدُّ ليس حدّا').not.toBeNull()
-    expect(await prisma.notification.count({ where: { userId } })).toBe(1)
+    /* صفُّ الجرس — وبجانبه صفُّ بريدٍ منذ صار المالُ يُبرَد (`learner-email.ts`) */
+    expect(await prisma.notification.count({ where: { userId, channel: 'in_app' } })).toBe(1)
   })
 
   it('وكذلك الشهادةُ وعملُ الموظّف', async () => {
@@ -124,8 +125,8 @@ describe('المسار — وما يُردُّ بسببه', () => {
         expect(c.lockedWhyAr, `${c.key}: قفلٌ بلا سبب`).toBeTruthy()
       }
     }
-    /* لا مفتاحَ بريدٍ اليوم — والسببُ يُقال */
-    expect(body.emailNoteAr).toMatch(/يومَ يُوصَل/)
+    /* لا مفتاحَ بريد — ويُقال ما يصل به (`learner-email.ts`) */
+    expect(body.emailNoteAr).toMatch(/بالبريد أيضا/)
   })
 
   it('وطلبُ كتمِ ما لا يُكتَم يُردُّ بسببه لا يُتجاهَل صامتا', async () => {

@@ -235,13 +235,13 @@ export class CohortMoveService {
         where: { cohortId: r.cohortId, status: { not: 'dropped' } }, select: { userId: true },
       })
       const body = `نقلت الشعبة إلى ${termLabelAr(target)}${first ? `، وأول لقاء فيها ${dayAr(first)}` : ''}. راجع جدولك.`
+      /* والبريدُ يخرج معه من مفتاحه (`learner-email.ts`) — وكان هنا حلقةُ قناتين بلا مفتاح،
+         فلا يفتح بندُ الجرس شيئا ولا يحمل البريدُ زرّا */
       for (const l of learners) {
-        for (const channel of ['in_app', 'email'] as const) {
-          await safeNotify(this.prisma, {
-            userId: l.userId, channel, audience: 'learner',
-            title: `تغيّر موعد «${title}»`, body, data: { cohortId: r.cohortId },
-          })
-        }
+        await safeNotify(this.prisma, {
+          userId: l.userId, channel: 'in_app', audience: 'learner', templateKey: 'cohort.schedule_changed',
+          title: `تغيّر موعد «${title}»`, body, data: { cohortId: r.cohortId },
+        })
       }
     }
     await safeNotify(this.prisma, {
