@@ -502,6 +502,7 @@ const PHRASES: Record<string, string> = {
   'worker.advisor_reminders': 'تذكير المستشارين بحالات بلا تواصل ومتابعات حلّ موعدها',
   'worker.erase_idle_guests': 'محو بيانات من لم يسجل بعد ستة أشهر بلا نشاط',
   'worker.advisor_payouts': 'توليد كشوف عمولة المستشارين للشهر الذي انتهى',
+  'worker.cohort_corrections': 'تصحيح مواعيد شعب بقرار صاحب المنصة',
 }
 
 /** معجمُ المقاطع — نطاقاتٌ وأشياءٌ وأفعال */

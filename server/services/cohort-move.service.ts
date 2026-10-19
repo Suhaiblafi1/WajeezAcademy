@@ -158,7 +158,7 @@ export class CohortMoveService {
   }
 
   /** قرارُ الإدارة — والاعتمادُ وحده ينقل الشعبة */
-  async review(reviewerId: string, id: string, input: { action: 'approve' | 'reject'; comment?: string }) {
+  async review(reviewerId: string, id: string, input: { action: 'approve' | 'reject'; comment?: string }, opts: { tellRequester?: boolean } = {}) {
     const r = await this.prisma.cohortMoveRequest.findUnique({ where: { id } })
     if (!r) throw new AuthError('not_found', 'الطلب غير موجود', 404)
     if (r.status !== 'pending') throw new AuthError('not_pending', 'حسم هذا الطلب من قبل', 409)
@@ -247,12 +247,55 @@ export class CohortMoveService {
         })
       }
     }
-    await safeNotify(this.prisma, {
+    if (opts.tellRequester !== false) await safeNotify(this.prisma, {
       userId: r.requestedBy, channel: 'in_app', audience: 'trainer',
       title: input.action === 'approve' ? `اعتمد نقل الشعبة إلى ${termLabelAr(target)}` : 'لم يعتمد طلب نقل الشعبة',
       body: comment ?? (input.action === 'approve' ? 'تحرّكت مواعيدها كلّها، ووصل المتعلّمين الموعد الجديد.' : 'بقيت الشعبة في فصلها.'),
       data: { cohortId: r.cohortId, requestId: id },
     })
+    return decided
+  }
+
+  /* ═══ نقلٌ تقرّره الإدارةُ بنفسها — طلبٌ واعتمادٌ معا (١٩ أكتوبر ٢٠٢٦) ═══
+     بالفحص نفسِه والأثرِ نفسِه الذي يمرّ به طلبُ المدرّب (`request` ثمّ `review`): تُزاح المواعيدُ ولقاءاتُها،
+     ويتحدّث Zoom والدعوات، ويُبلَّغ المتعلّمون. والفرقُ أنّ الخبرَ يصل مدرّبي الشعبة لا مَن قرّر. */
+  async staffMove(actorId: string, cohortId: string, input: { toYear: number; toSeason: string; reason: string }) {
+    if (!isSeason(input.toSeason)) throw new AuthError('bad_season', 'اختر فصلا من القائمة')
+    const target: TermRef = { year: input.toYear, season: input.toSeason }
+    const w = await this.where(cohortId)
+    const problem = moveProblemAr({ ...w, target, now: new Date(), reason: input.reason })
+    if (problem) throw new AuthError('move_refused', problem)
+    const open = await this.prisma.cohortMoveRequest.findFirst({ where: { cohortId, status: 'pending' }, select: { id: true } })
+    if (open) throw new AuthError('already_pending', 'لهذه الشعبة طلب نقل ينتظر — احسمه أولا', 409)
+
+    const reason = input.reason.trim()
+    /* مُدخَلُ المراجع لا فعلُ أثر — فيُبنى قبل نداء الأثر */
+    const decision = { action: 'approve' as const, comment: reason }
+    const created = await this.prisma.cohortMoveRequest.create({
+      data: {
+        cohortId, requestedBy: actorId,
+        fromYear: w.current?.year ?? null, fromSeason: w.current?.season ?? null, fromStartsAt: w.firstStartsAt,
+        toYear: target.year, toSeason: target.season, reason,
+      },
+    })
+    await recordAudit(this.prisma, {
+      actorId, action: 'cohort.move.request', entityType: 'cohort', entityId: cohortId,
+      meta: { requestId: created.id, to: `${target.season}-${target.year}`, byStaff: true },
+    })
+    const decided = await this.review(actorId, created.id, decision, { tellRequester: false })
+
+    const first = await this.prisma.cohortSession.findFirst({
+      where: { cohortId, status: { notIn: ['cancelled'] } }, orderBy: { startsAt: 'asc' }, select: { startsAt: true },
+    })
+    const leads = await this.prisma.cohortTrainer.findMany({ where: { cohortId }, select: { profile: { select: { userId: true } } } })
+    for (const userId of new Set(leads.map((l) => l.profile.userId).filter((u): u is string => Boolean(u)))) {
+      await safeNotify(this.prisma, {
+        userId, channel: 'in_app', audience: 'trainer',
+        title: `نقلت الإدارة «${w.title}» إلى ${termLabelAr(target)}`,
+        body: `${first ? `أول لقاء فيها ${dayAr(first.startsAt)}. ` : ''}${reason}`,
+        data: { cohortId, requestId: created.id },
+      })
+    }
     return decided
   }
 
