@@ -15,7 +15,8 @@ import { getLibraryResources } from "@/data/core-catalog-source";
 import { Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import { PortalTabs } from "@/components/ui/PortalTabs";
-interface RealNotif { id: string; title: string; body: string; status: string; sentAt: string | null; queuedAt: string }
+import { notificationCtaAr, notificationHref } from "@/application/notifications/destinations";
+interface RealNotif { id: string; title: string; body: string; status: string; sentAt: string | null; queuedAt: string; templateKey?: string | null; data?: unknown }
 
 /** قسمٌ في التنقّل الرئيسي: عنوانه وسؤاله، وصفحاتُه تنقّلٌ ثانويّ تحته */
 interface SubTab { to: string; label: string }
@@ -163,6 +164,14 @@ export default function PortalLayout({ children, title }: { children: React.Reac
     setRealNotifs(realNotifs.map((n) => (n.id === id ? { ...n, status: "read" } : n)));
     setServerUnread((c) => (c != null && c > 0 ? c - 1 : c));
     void apiPost(`/api/learner/notifications/${id}/read`).catch(() => undefined);
+  };
+  /* ═══ والبندُ يفتح خبرَه (١٩ أكتوبر ٢٠٢٦) ═══
+     كان بندُ الجرس يُعلَّم مقروءا ولا يُفتح — ووجهاتُ المتعلّم مكتوبةٌ في `destinations.ts` لا يقرؤها
+     أحد. فصار كجرس المدرّب والفريق: ما له وجهةٌ يُفتح عليها، وما لا وجهةَ له يُعلَّم مقروءا كما كان. */
+  const openNotif = (n: RealNotif) => {
+    if (n.status !== "read") markOneRead(n.id);
+    const href = notificationHref(n.templateKey, "learner", n.data);
+    if (href) { setBellOpen(false); navigate(href); }
   };
 
   /* بوابة القفل لا تظهر قبل اكتمال فحص الجلسة — زائر الديمو يراها فورا، وصاحب الحساب لا يراها أبدا */
@@ -339,10 +348,14 @@ export default function PortalLayout({ children, title }: { children: React.Reac
                         <>
                           {realNotifs.length === 0 && <p className="px-2 py-6 text-center text-read text-muted-foreground">لا إشعارات بعد</p>}
                           {realNotifs.map((n) => (
-                            <button key={n.id} onClick={() => markOneRead(n.id)}
+                            <button key={n.id} onClick={() => openNotif(n)}
                               className={`block w-full cursor-pointer rounded-xl border px-3 py-2 text-right text-fine leading-5 ${n.status === "read" ? "border-white/5 text-muted-foreground" : "border-teal/25 bg-teal/5 text-foreground"}`}>
                               <span className="block font-bold">{n.title}</span>
-                              {n.body}
+                              {/* ثلاثةُ أسطرٍ على الأكثر — والرسالةُ كاملةً في «الرسائل والتنبيهات» */}
+                              <span className="line-clamp-3 whitespace-pre-line">{n.body}</span>
+                              {notificationCtaAr(n.templateKey, "learner", n.data) && (
+                                <span className="mt-1 block font-bold text-teal-light-ink">{notificationCtaAr(n.templateKey, "learner", n.data)} ←</span>
+                              )}
                             </button>
                           ))}
                         </>

@@ -58,7 +58,8 @@ const LEARNER: Table = {
   'enrollment.switched': { path: '/student/learning', ctaAr: 'افتح جدول شعبتك الجديدة' },
   'enrollment.waitlist.promoted': { path: '/student/learning', ctaAr: 'افتح رحلتك' },
   'learner.request_decided': { path: '/student/learning', ctaAr: 'اقرأ قرار طلبك' },
-  'plan.requested': { path: '/student/billing', ctaAr: 'افتح طلبك' },
+  /* وكان هنا `plan.requested` إلى «فواتيري» بـ«افتح طلبك» — ولا فاتورةَ قبل أن تُحجز المقاعد، فيفتح
+     المتعلّمُ صفحةً تقول «لا طلبات بعد». فلا بابَ له حتّى يُحجز (`plan.seats_held`) — ١٩ أكتوبر ٢٠٢٦ */
   'plan.seats_held': { path: '/student/billing', ctaAr: 'أكمل حجز مقعدك' },
   /* التصحيحُ والدرجات — في «رحلتي» مع التسليم الذي صُحِّح */
   'submission.start_review': { path: '/student/learning', ctaAr: 'افتح تسليمك' },
@@ -71,7 +72,8 @@ const LEARNER: Table = {
   /* ي-٤: الردُّ وردُّ طلبِه كلاهما في «الفواتير» — الصفُّ نفسُه يحمل الخبر */
   'order.seats_held': { path: '/student/billing', ctaAr: 'أتمم الدفع' },
   'payment.refunded': { path: '/student/billing', ctaAr: 'افتح كشف فواتيرك' },
-  'payment.refund_rejected': { path: '/student/billing', ctaAr: 'افتح فاتورتك' },
+  /* والخبرُ يقول «راسل الدعم إن كان لديك ما تضيفه» — فبابُه الدعمُ لا الفاتورة (١٩ أكتوبر ٢٠٢٦) */
+  'payment.refund_rejected': { path: '/student/support', ctaAr: 'راسل الدعم' },
   'certificate.issued': { path: '/student/certificates', ctaAr: 'افتح شهادتك' },
   /* والملغاةُ تبقى معروضةً هناك بحالتها — فالوجهةُ تحمل الخبرَ لا تخفيه */
   'certificate.revoked': { path: '/student/certificates', ctaAr: 'افتح شهاداتك' },

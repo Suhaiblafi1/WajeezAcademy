@@ -1,6 +1,7 @@
 /* دعم الطالب — API حقيقي: فتح تذكرة برسالة أولى، تذاكري بخيوطها (الداخلية مخفية)،
    رد، وإعادة فتح للمحلولة/المغلقة. */
 import { useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "react-router";
 import { ChevronRight, LifeBuoy, Loader2, Plus, RefreshCw, Send } from "lucide-react";
 import PortalLayout from "./PortalLayout";
 import { apiGet, apiPost, ApiError } from "@/services/api";
@@ -10,8 +11,10 @@ import { FieldError, invalidProps } from "@/components/FormKit";
 
 import { Panel, Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
+/* حالاتُ التذكرة كما يكتبها الخادم (`TICKET_STATUSES` في `support.service.ts`) — كان هنا `in_progress`
+   و`waiting_customer` ولا يكتبهما أحد، ويُطبع `pending` بالإنجليزيّة (١٩ أكتوبر ٢٠٢٦) */
 const STATUS_AR: Record<string, string> = {
-  open: "مفتوحة", in_progress: "قيد المعالجة", waiting_customer: "بانتظار ردك",
+  open: "مفتوحة", pending: "قيد المعالجة",
   resolved: "محلولة", closed: "مغلقة", reopened: "أعيد فتحها",
 };
 
@@ -28,8 +31,15 @@ export default function StudentSupport() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
-  const [createOpen, setCreateOpen] = useState(false);
-  const [form, setForm] = useState({ subject: "", category: "other", body: "" });
+  /* ═══ وطلبُ الاسترداد يُفتح هنا تذكرةً حقيقيّة (١٩ أكتوبر ٢٠٢٦) ═══
+     كان «الملف الشخصي» يحيله إلى «صفحة التواصل» — وهي تحاكي الإرسال ولا ترسل شيئا. فصار رابطُه
+     `?topic=refund` يفتح التذكرةَ مصنّفةً «الفواتير والدفع» بعنوانها، ويكتب المتعلّمُ ما يريد. */
+  const [params] = useSearchParams();
+  const refund = params.get("topic") === "refund";
+  const [createOpen, setCreateOpen] = useState(refund);
+  const [form, setForm] = useState(refund
+    ? { subject: "طلب استرداد", category: "billing", body: "" }
+    : { subject: "", category: "other", body: "" });
   const [reply, setReply] = useState("");
   const [reopenFor, setReopenFor] = useState<string | null>(null);
   const [reopenNote, setReopenNote] = useState("");

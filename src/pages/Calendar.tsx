@@ -125,7 +125,7 @@ export default function CalendarPage() {
                     <ul className="mt-3 space-y-2.5">
                       {shown.map((e) => (
                         <Card as="li" key={e.cohortId} className="p-3.5">
-                          <Link to={`/build/${e.courseId}`} className="block">
+                          <Link to={`/build/${e.courseId}?cohort=${e.cohortId}`} className="block">
                             <p className="text-sm font-bold leading-6 text-foreground">{courseTitleAr(e.titleAr)}</p>
                           </Link>
                           <p className="mt-1 text-read leading-5 text-muted-foreground">

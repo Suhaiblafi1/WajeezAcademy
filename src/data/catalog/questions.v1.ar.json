@@ -2379,7 +2379,7 @@
       "module_id": "M3C",
       "module_name": "رائد أعمال أو مستقل",
       "version": "1.0",
-      "text_ar": "هل عرضك أو منتجك واضح لمن يشتريه؟",
+      "text_ar": "هل ما تبيعه واضح لمن يشتريه؟",
       "answer_type": "single_choice",
       "options_ar": [
         "غير واضح",

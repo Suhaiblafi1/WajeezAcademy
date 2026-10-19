@@ -20,8 +20,10 @@ import { fmtDateTime } from "@/application/text/format-ar";
 
 import Button from "@/components/ui/Button";
 import { staffControlCls as inputCls, staffSelectCls as selectCls } from "@/components/FormKit";
+/* حالاتُ التذكرة كما يقبلها الخادم (`TICKET_STATUSES` في `support.service.ts`) — كانت القائمةُ تعرض
+   «قيد المعالجة» و«بانتظار العميل» باسمين لا يقبلهما، فيُردّ تبديلُ الحالة (١٩ أكتوبر ٢٠٢٦) */
 const STATUS_AR: Record<string, string> = {
-  open: "مفتوحة", in_progress: "قيد المعالجة", waiting_customer: "بانتظار العميل",
+  open: "مفتوحة", pending: "قيد المعالجة",
   resolved: "محلولة", closed: "مغلقة", reopened: "أعيد فتحها",
 };
 const PRIORITY_AR: Record<string, string> = { low: "منخفضة", normal: "عادية", high: "عالية", urgent: "عاجلة" };

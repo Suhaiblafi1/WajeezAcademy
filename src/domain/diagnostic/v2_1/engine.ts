@@ -693,6 +693,10 @@ export class DiagnosticEngineV21 {
     cursor: number
     before: DeepeningSnapshot | null
   } = { started: false, completed: false, plan: [], cursor: 0, before: null }
+  /* ═══ وما بُذر يبقى بعد تعديل إجابة (١٩ أكتوبر ٢٠٢٦) ═══
+     `rebuild` يمسح الحالةَ ويعيد الإجاباتِ عليها — فكانت حقائقُ «مؤشر وجيز» المبذورةُ تسقط عند أوّل تعديل،
+     فيُسأل المتعلّمُ عمّا أجاب عنه. فيُحفظ البذرُ هنا ويُعاد قبل الإجابات: الإجابةُ الحقيقيّةُ تعلوه. */
+  private seeds: { facts: DiagnosticState['facts']; interests: Record<string, number> } = { facts: {}, interests: {} }
 
   constructor(sessionId?: string) {
     this.state = {
@@ -754,12 +758,33 @@ export class DiagnosticEngineV21 {
       if (this.state.facts[key]) continue
       this.state.facts[key] = fact
       if (fact.raw) this.state.factsRaw[key] = fact.raw
+      this.seeds.facts[key] = fact
       seeded.push(key)
     }
     if (seeded.length > 0) {
       this.traceEntry('facts_seeded', `حقائق منقولة من ${sourceLabel_ar}: ${seeded.length} — لن تُسأل مجددًا.`, {
         source: sourceLabel_ar,
         factKeys: seeded,
+      })
+    }
+  }
+
+  /* ═══ وميولُ «مرآة وجيز» تُبذر كذلك (١٩ أكتوبر ٢٠٢٦) ═══
+     المرآةُ تَعِد: «من أجاب هنا لا يُسأل في التشخيص» — وكانت تحفظ إجاباتها ولا يقرؤها التشخيص، فيُسأل
+     عن ميوله مرّتين. وبنودُ الميول تُسأل ما دام بُعدُها غائبا عن `interestVector` (`nextQuestion`)، فبذرُه
+     يكفيها. والبذرُ لا يدوس جوابا قائما. */
+  seedInterests(vector: Record<string, number>, sourceLabel_ar: string) {
+    const seeded: string[] = []
+    for (const [dim, value] of Object.entries(vector)) {
+      if (this.state.interestVector[dim] !== undefined) continue
+      this.state.interestVector[dim] = value
+      this.seeds.interests[dim] = value
+      seeded.push(dim)
+    }
+    if (seeded.length > 0) {
+      this.traceEntry('facts_seeded', `ميول منقولة من ${sourceLabel_ar}: ${seeded.length} — لن تُسأل مجددًا.`, {
+        source: sourceLabel_ar,
+        interestDims: seeded,
       })
     }
   }
@@ -1227,7 +1252,11 @@ export class DiagnosticEngineV21 {
     this.state.facts = {}
     this.state.factsRaw = {}
     this.state.skillVector = {}
-    this.state.interestVector = {}
+    this.state.interestVector = { ...this.seeds.interests }
+    for (const [key, fact] of Object.entries(this.seeds.facts)) {
+      this.state.facts[key] = fact
+      if (fact.raw) this.state.factsRaw[key] = fact.raw
+    }
     this.state.contradictions = []
     this.state.guardrailStop = null
     this.state.minorFlag = false

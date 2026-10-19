@@ -55,6 +55,8 @@ export default function CourseJourney({
   supportReasons,
   showSchedule = false,
   graduationProjectAr,
+  picked: pickedFromParent,
+  onPick,
 }: {
   courseIds: string[];
   /** سبب وجود كل دورة في الخطة (للخطط المركبة) — يظهر سطرا واحدا تحت الاسم */
@@ -81,10 +83,20 @@ export default function CourseJourney({
       لا رقم لها بل أيقونة، ولها سببٌ مكتوب لأنّ دورةً من مجالٍ آخر بلا تفسير
       تُقرأ حشوا. */
   supportReasons?: Record<string, string>;
+  /* ═══ والشعبةُ المختارةُ تصل الدفعَ (١٩ أكتوبر ٢٠٢٦) ═══
+     كان الاختيارُ حالا داخل المكوّن وحدَه، وتعليقُه يقول «يُقرأ عند الشراء» ولا يقرؤه أحد: نافذةُ الدفع
+     تأخذ أقربَ شعبة. فصار لمن يملك زرَّ الشراء أن يمسك الاختيار (`picked` و`onPick`) ويمرّره إليها. */
+  picked?: Record<string, string>;
+  onPick?: (courseId: string, cohortId: string) => void;
 }) {
   /* نداءٌ واحد للمواعيد، والاختيار محفوظٌ بالدورة — يُقرأ عند الشراء */
   const { cohorts } = useCourseCohorts();
-  const [picked, setPicked] = useState<Record<string, string>>({});
+  const [pickedHere, setPickedHere] = useState<Record<string, string>>({});
+  const picked = pickedFromParent ?? pickedHere;
+  const pick = (courseId: string, cohortId: string) => {
+    if (onPick) onPick(courseId, cohortId);
+    else setPickedHere((prev) => ({ ...prev, [courseId]: cohortId }));
+  };
   /* صندوقُ المقترحات مطويٌّ افتراضا — العرضُ قائمٌ في سطره، والشبكةُ تُفتح بطلب */
   const [poolOpen, setPoolOpen] = useState(false);
   const list = courseIds
@@ -174,7 +186,7 @@ export default function CourseJourney({
                         compact
                         cohorts={cohorts.get(c.id) ?? []}
                         selectedId={picked[c.id] ?? null}
-                        onSelect={(cid) => setPicked((prev) => ({ ...prev, [c.id]: cid }))}
+                        onSelect={(cid) => pick(c.id, cid)}
                       />
                     </div>
                   )}

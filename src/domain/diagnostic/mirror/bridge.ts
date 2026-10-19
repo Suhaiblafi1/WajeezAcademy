@@ -57,4 +57,21 @@ export function mirrorAnsweredIds(result: MirrorResult, answers: Record<string, 
   return Object.keys(answers).filter((id) => id.startsWith('QB-M5-'))
 }
 
+/** إجاباتُ المرآة المحفوظةُ على الجهاز — أو `null` عند غيابها أو تلفها (كـ`loadMirrorAnswers` للمؤشر) */
+export function loadMirrorV2(storage: Pick<Storage, 'getItem'>): Record<string, number> | null {
+  try {
+    const raw = storage.getItem(MIRROR_V2_STORAGE_KEY)
+    if (!raw) return null
+    const parsed: unknown = JSON.parse(raw)
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null
+    const out: Record<string, number> = {}
+    for (const [k, v] of Object.entries(parsed as Record<string, unknown>)) {
+      if (typeof v === 'number' && Number.isFinite(v)) out[k] = v
+    }
+    return Object.keys(out).length > 0 ? out : null
+  } catch {
+    return null
+  }
+}
+
 export type { RiasecDim }

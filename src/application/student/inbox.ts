@@ -6,6 +6,8 @@
    /api/learner/support/tickets و/api/learner/enrollments/:id.
    لا نقطة جديدة ولا تغيير في المخطط. */
 
+import { notificationHref } from '@/application/notifications/destinations'
+
 export type InboxKind = 'notification' | 'trainer_feedback' | 'review_note' | 'support_reply'
 
 export interface InboxItem {
@@ -37,7 +39,7 @@ const isoOf = (v: unknown): string | null => {
 }
 
 /* ── أشكال ما نقرأ منه (ما نحتاجه فقط) ── */
-export interface RawNotification { id?: string; title?: string; body?: string; status?: string; sentAt?: string | null; queuedAt?: string }
+export interface RawNotification { id?: string; title?: string; body?: string; status?: string; sentAt?: string | null; queuedAt?: string; templateKey?: string | null; data?: unknown }
 export interface RawTicket {
   id?: string
   subject?: string
@@ -80,7 +82,9 @@ export function buildInbox(
       titleAr: str(r?.title) || 'إشعار',
       bodyAr: str(r?.body),
       at,
-      href: '/student/notifications',
+      /* والإشعارُ يفتح خبرَه (١٩ أكتوبر ٢٠٢٦): كان كلُّ إشعارٍ يقود إلى «إشعاراتي» وبنودُها لا تُفتح، فيدور
+         المتعلّمُ في حلقة. ووجهتُه هي وجهةُ زرّ بريده (`destinations.ts`) — وما لا وجهةَ له يبقى حيث كان. */
+      href: notificationHref(r?.templateKey, 'learner', r?.data) ?? '/student/notifications',
       unread: r?.status !== 'read',
     })
   }

@@ -130,7 +130,7 @@ export class DeadlinesService {
       /* ما يقوله اللوحُ عن نفسه — فلا يُقرأ الفراغُ عطبا ولا العددُ تهديدا */
       meaningAr: items.length === 0
         ? (retrievalDue > 0
-            ? `لا تسليم عليك في ${HORIZON_DAYS} يوما — وعندك ${countAr(retrievalDue, AR_CARDS)} استحقّت في «مراجعتي»`
+            ? `لا تسليم عليك في ${HORIZON_DAYS} يوما — وعندك ${countAr(retrievalDue, AR_CARDS)} استحقّت في «تثبيت ما تعلّمت»`
             : `لا تسليم عليك في ${HORIZON_DAYS} يوما القادمة`)
         : `${countAr(items.length, AR_SUBMISSIONS)} بموعد${overduePhraseAr(overdue)}`,
     }

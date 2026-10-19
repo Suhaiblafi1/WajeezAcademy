@@ -273,7 +273,8 @@ export class LearnerRequestService {
         userId: req.userId,
         channel: 'in_app',
         title: status === 'fulfilled' ? `أنجز طلبك: ${kind}` : `اعتذار عن طلبك: ${kind}`,
-        body: decisionAr?.trim() || (status === 'fulfilled' ? 'تجده في «خزانتي».' : 'تواصل معنا للتفاصيل.'),
+        /* وبابُه «رحلتي» حيث طُلب وحالُه — فالنصُّ يقول ما يجده حين يفتحه (١٩ أكتوبر ٢٠٢٦) */
+        body: decisionAr?.trim() || (status === 'fulfilled' ? 'تجد حاله في «رحلتي».' : 'تواصل معنا للتفاصيل.'),
         templateKey: 'learner.request_decided',
         data: { requestId: id, status },
       })

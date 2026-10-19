@@ -10,8 +10,11 @@ import { toast, toastError } from '@/components/Toast';
 
 import { Card, Inset, Panel } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
-interface Payment { id: string; amount: string; status: string; method: string | null; refunds: { id: string; status: string; amount: string }[] }
-interface Invoice { id: string; total: string; currency: string; status: string; issuedAt: string; payments: Payment[] }
+/* ═══ وأسماءُ الحقول كما يكتبها الخادم (١٩ أكتوبر ٢٠٢٦) ═══
+   كانت الشاشةُ تقرأ `invoice.total` و`payment.method` — والمخطّطُ يكتب `amount` و`provider`/`methodNote`
+   (`prisma/schema.prisma`). فكان سطرُ الفاتورة بلا مبلغ، وطريقةُ الدفع لا تُرى أبدا. */
+interface Payment { id: string; amount: string; status: string; provider: string; methodNote: string | null; refunds: { id: string; status: string; amount: string }[] }
+interface Invoice { id: string; number: string; amount: string; currency: string; status: string; issuedAt: string; payments: Payment[] }
 interface Order {
   id: string; status: string; total: string; currency: string; createdAt: string;
   items: { id: string; titleAr?: string | null; title?: string | null; price?: string | null }[];
@@ -37,6 +40,13 @@ const ORDER_STATUS: Record<string, string> = {
 
 /** أطلبٌ لم يكتمل دفعُه؟ — الاسمان مقبولان فلا تُكسر الشاشة بتسميةٍ واحدة */
 const isUnpaid = (status: string) => status === "pending_payment" || status === "pending";
+/* وحالاتُ الدفعة والردّ بالعربيّة — كانت تُطبع كما هي: failed وrefunded وpending وprocessed */
+const PAYMENT_STATUS: Record<string, string> = {
+  succeeded: "ناجحة", pending: "بانتظار تأكيد المزود", failed: "لم تنجح",
+  partially_refunded: "رد جزء منها", refunded: "ردت كلها",
+};
+const REFUND_STATUS: Record<string, string> = { pending: "قيد المراجعة", processed: "أعيد المبلغ", rejected: "لم يقبل" };
+const PROVIDER_AR: Record<string, string> = { test: "تجريبي", manual: "يدوي", moyasar: "بطاقة", stripe: "بطاقة" };
 const INV_STATUS: Record<string, string> = { issued: "صادرة", paid: "مدفوعة", partially_refunded: "مستردة جزئيا", refunded: "مستردة كليا", void: "ملغاة" };
 const PAY_LABEL: Record<string, string> = {
   test: "ادفع الآن (مزود اختباري — لا مال حقيقي)",
@@ -116,7 +126,7 @@ export default function Billing() {
           <ReceiptText className="h-12 w-12 text-muted-foreground/50" />
           <h2 className="mt-4 text-xl font-black">لا طلبات بعد</h2>
           <p className="mt-2 max-w-md text-sm leading-7 text-muted-foreground">
-            تظهر فاتورتك هنا عند اعتماد طلبك، ودفعها يفتح وصولك تلقائيا.
+            تظهر هنا فاتورة كل دورة تسجل فيها، ودفعها يفتح وصولك تلقائيا.
           </p>
         </Panel>
       ) : (
@@ -126,7 +136,7 @@ export default function Billing() {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="font-black">{o.items.map((i) => i.titleAr ?? i.title ?? "عنصر").join(" · ") || "طلب"}</p>
-                  <p className="mt-1 text-read leading-5 text-muted-foreground">{fmtWhen(o.createdAt)} · <span dir="ltr" className="font-mono text-fine">{o.id.slice(0, 8)}…</span></p>
+                  <p className="mt-1 text-read leading-5 text-muted-foreground">{fmtWhen(o.createdAt)} · <span dir="ltr" className="font-mono text-fine">{o.invoice?.number ?? `${o.id.slice(0, 8)}…`}</span></p>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-lg font-black">{o.total} <span className="text-xs font-normal text-muted-foreground">{o.currency}</span></span>
@@ -152,7 +162,7 @@ export default function Billing() {
               )}
               {isUnpaid(o.status) && (
                 <Button tone="secondary" size="sm" disabled={busy === o.id} onClick={() => void cancel(o)} className="mt-3">
-                  <CircleSlash className="h-3 w-3" /> ألغ الطلب وافكّ حجز مقعدي
+                  <CircleSlash className="h-3 w-3" /> ألغ الطلب وفكّ حجز مقعدي
                 </Button>
               )}
               {isUnpaid(o.status) && provider.driver === "manual" && (
@@ -165,18 +175,18 @@ export default function Billing() {
                 <Card className="mt-4 bg-paper/20">
                   <p className="flex items-center justify-between text-read leading-5 font-bold text-muted-foreground">
                     <span>الفاتورة — {INV_STATUS[o.invoice.status] ?? o.invoice.status}</span>
-                    <span>{o.invoice.total} {o.invoice.currency}</span>
+                    <span>{o.invoice.amount} {o.invoice.currency}</span>
                   </p>
                   {o.invoice.payments.length > 0 && (
                     <ul className="mt-2 space-y-1.5">
                       {o.invoice.payments.map((p) => (
                         <li key={p.id} className="flex flex-wrap items-center gap-2 text-read text-muted-foreground">
                           <CreditCard className="h-3 w-3 text-muted-foreground/50" />
-                          دفعة {p.amount} {o.invoice!.currency} — {p.status === "succeeded" ? "ناجحة" : p.status === "pending" ? "بانتظار تأكيد المزود" : p.status}
-                          {p.method && <span className="text-muted-foreground">({p.method})</span>}
+                          دفعة {p.amount} {o.invoice!.currency} — {PAYMENT_STATUS[p.status] ?? "حالها غير معروفة"}
+                          <span className="text-muted-foreground">({p.methodNote || PROVIDER_AR[p.provider] || "دفع"})</span>
                           {p.refunds.map((r) => (
                             <span key={r.id} className="flex items-center gap-1 rounded-full border border-gold/30 px-2 py-0.5 text-fine text-gold-ink">
-                              <RotateCcw className="h-2.5 w-2.5" /> استرداد {r.amount} — {r.status}
+                              <RotateCcw className="h-2.5 w-2.5" /> استرداد {r.amount} — {REFUND_STATUS[r.status] ?? "حاله غير معروف"}
                             </span>
                           ))}
                         </li>

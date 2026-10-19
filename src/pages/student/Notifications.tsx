@@ -1,15 +1,18 @@
 /* إشعارات الطالب — API حقيقي: صندوق in_app، تعليم كمقروء، شارة غير المقروء */
 import { useCallback, useEffect, useState } from "react";
+import { useNavigate } from "react-router";
 import { Bell, CheckCheck, Loader2, RefreshCw } from "lucide-react";
 import PortalLayout from "./PortalLayout";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import NotificationPreferences from "@/components/NotificationPreferences";
 import { fmtWhen } from "@/utils/format";
+import { notificationCtaAr, notificationHref } from "@/application/notifications/destinations";
 
 import { Inset, Panel } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 interface Notif {
   id: string; title: string; body: string; status: string; sentAt: string | null; queuedAt: string;
+  templateKey?: string | null; data?: unknown;
 }
 
 export default function Notifications() {
@@ -30,6 +33,14 @@ export default function Notifications() {
     if (n.status === "read") return;
     setRows((prev) => prev.map((x) => (x.id === n.id ? { ...x, status: "read" } : x)));
     try { await apiPost(`/api/learner/notifications/${n.id}/read`); } catch { /* التفاؤلية تكفي */ }
+  };
+
+  /* والبندُ يفتح خبرَه — كجرس البوّابة (١٩ أكتوبر ٢٠٢٦، `destinations.ts`) */
+  const navigate = useNavigate();
+  const openRow = (n: Notif) => {
+    void markRead(n);
+    const href = notificationHref(n.templateKey, "learner", n.data);
+    if (href) navigate(href);
   };
 
   const markAll = async () => {
@@ -63,7 +74,7 @@ export default function Notifications() {
       ) : (
         <div className="space-y-2">
           {rows.map((n) => (
-            <button key={n.id} onClick={() => void markRead(n)}
+            <button key={n.id} onClick={() => openRow(n)}
               className={`w-full cursor-pointer rounded-2xl border p-4 text-right transition ${
                 n.status === "read" ? "border-white/5 bg-white/[0.01] text-muted-foreground" : "border-teal/25 bg-teal/5 hover:border-teal/50"
               }`}>
@@ -72,7 +83,12 @@ export default function Notifications() {
                 {n.title}
               </p>
               <p className="mt-1 text-read leading-6">{n.body}</p>
-              <p className="mt-1 text-read text-muted-foreground">{fmtWhen(n.sentAt ?? n.queuedAt)}</p>
+              <p className="mt-1 text-read text-muted-foreground">
+                {fmtWhen(n.sentAt ?? n.queuedAt)}
+                {notificationCtaAr(n.templateKey, "learner", n.data) && (
+                  <span className="mr-2 font-bold text-teal-light-ink">· {notificationCtaAr(n.templateKey, "learner", n.data)} ←</span>
+                )}
+              </p>
             </button>
           ))}
         </div>

@@ -158,7 +158,9 @@ export default function StageWork({
             <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
               <div className="h-full rounded-full bg-teal transition-all" style={{ width: `${Math.max(2, percent)}%` }} />
             </div>
-            <p className="mt-1 text-read text-muted-foreground">{percent}٪ من دروسها مكتملة</p>
+            {/* والنسبةُ ليست دروسا وحدَها: ٤٠٪ دروس و٣٠٪ حضور و٣٠٪ واجبات واختبارات (`progress.service.ts`).
+                وكانت تُقرأ «من دروسها مكتملة» فيرى من أتمّ دروسَه كلَّها ٧٠٪ ولا يدري لماذا (١٩ أكتوبر ٢٠٢٦) */}
+            <p className="mt-1 text-read text-muted-foreground" title="من الدروس والحضور والواجبات">تقدمك {percent}٪</p>
           </div>
         </div>
 
