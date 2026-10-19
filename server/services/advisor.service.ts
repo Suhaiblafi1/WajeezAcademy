@@ -402,7 +402,6 @@ export class AdvisorService {
     return this.prisma.advisorCase.findMany({
       where: {
         status: { notIn: ['closed', 'enrolled', 'not_interested'] },
-        assignments: { some: { unassignedAt: null } },
         OR: [
           { client: { displayName: like } }, { client: { email: like } },
           { lead: { fullName: like } }, { lead: { email: like } }, { lead: { phone: { contains: term } } },
@@ -460,6 +459,102 @@ export class AdvisorService {
       meta: { moved, stayed: links.length - moved },
     })
     return { moved, stayed: links.length - moved }
+  }
+
+  /* ═══ حالتان لطالبٍ واحد تُدمجان — ويختار الإداريُّ من يبقى مستشارَه (١٩ أكتوبر ٢٠٢٦) ═══
+
+     للطالب الواحد أبوابٌ عدّة تفتح حالة: التشخيصُ والشراءُ والزائرُ الذي ترك رقمَه ومنصّةُ
+     واتساب. فقد تقع له حالتان عند مستشارين، ويُراسَل مرّتين، ويُعدّ اثنين. وكان المستشارُ
+     يُقال له «اطلب من الإدارة جمعهما» ولا أداةَ تجمعهما. وقرارُ صاحب المنصّة بين ثلاثة (يدمج
+     الإداريُّ ويختار المستشار، أو تُدمج وحدَها، أو لا دمج): **يدمج الإداريُّ ويختار المستشار**.
+
+     فكلُّ ما في الحالتين يصير في واحدة: التواصلُ والملاحظاتُ والمهامُّ والمتابعاتُ والطلبات،
+     والبريدُ والرقمُ والحسابُ والتشخيصُ ما غاب منها عن الباقية. والأخرى تُغلق وفيها سببُها،
+     وملاحظةٌ في الباقية تقول ما دُمج فيها. ولا تُدمج حالتان لحسابين مختلفين: ليستا لطالبٍ واحد.
+
+     والمالُ كالنقل (`attributedRevenue`): إسنادُ الأخرى يُرفع ساعةَ الدمج، ومن لم يُختَر في
+     الباقية يُرفع إسنادُه، والمختارُ يبدأ منها — فلكلٍّ ما دُفع وهو عنده. ولذلك **تبقى ذاتُ
+     الحساب** إن كانت إحداهما وحدَها مرتبطةً به: لو انتقل الحسابُ إلى الأخرى لَصار إسنادُها القديمُ
+     يُحسب عن زمنٍ لم تكن فيه لصاحبه، فتُنسب دفعاتٌ لمن لم يكن الطالبُ عنده يومَها. */
+  async mergeCases(caseIds: [string, string], advisorId: string, actorId: string): Promise<{ keptId: string; closedId: string }> {
+    if (caseIds[0] === caseIds[1]) throw new AuthError('same_case', 'اختر حالتين مختلفتين', 409)
+    const advisor = await this.prisma.user.findFirst({
+      where: { id: advisorId, status: 'active', roles: { some: { roleId: 'advisor' } } }, select: { id: true },
+    })
+    if (!advisor) throw new AuthError('not_advisor', 'اختر مستشارا نشطا', 409)
+    const cases = await this.prisma.advisorCase.findMany({
+      where: { id: { in: caseIds } },
+      include: { lead: true, assignments: { where: { unassignedAt: null } } },
+    })
+    if (cases.length !== 2) throw new AuthError('not_found', 'الحالة غير موجودة', 404)
+    if (cases.some((c) => c.status === 'closed')) throw new AuthError('case_closed', 'لا تدمج حالة مغلقة', 409)
+    if (cases[0]!.clientId && cases[1]!.clientId && cases[0]!.clientId !== cases[1]!.clientId) {
+      throw new AuthError('different_accounts', 'الحالتان لحسابين مختلفين — ليستا لطالب واحد', 409)
+    }
+    /* تبقى ذاتُ الحساب، ثمّ حالةُ المستشار المختار، ثمّ الأقدم */
+    const byAge = [...cases].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
+    const keep = byAge.filter((c) => c.clientId).length === 1
+      ? byAge.find((c) => c.clientId)!
+      : byAge.find((c) => c.assignments.some((a) => a.advisorId === advisorId)) ?? byAge[0]!
+    const drop = cases.find((c) => c.id !== keep.id)!
+    const now = new Date()
+    const dropName = drop.lead?.fullName ?? 'حالة'
+
+    await this.prisma.$transaction(async (tx) => {
+      for (const model of ['contactEvent', 'advisorNote', 'advisorTask', 'followUp', 'advisorRequest'] as const) {
+        await (tx[model] as { updateMany: (a: object) => Promise<unknown> }).updateMany({ where: { caseId: drop.id }, data: { caseId: keep.id } })
+      }
+      /* العميلُ المحتملُ: ما غاب عن الباقية يُؤخذ من الأخرى، ولا يُكتب فوق ما فيها */
+      let leadId = keep.leadId
+      if (!keep.lead && drop.lead) {
+        leadId = drop.lead.id
+      } else if (keep.lead && drop.lead) {
+        await tx.lead.update({
+          where: { id: keep.lead.id },
+          data: {
+            email: keep.lead.email ?? drop.lead.email,
+            phone: keep.lead.phone ?? drop.lead.phone,
+            userId: keep.lead.userId ?? drop.lead.userId,
+            ...(keep.lead.diagnosticSnapshot == null && drop.lead.diagnosticSnapshot != null
+              ? { diagnosticSnapshot: drop.lead.diagnosticSnapshot as object } : {}),
+          },
+        })
+      }
+      await tx.advisorCase.update({
+        where: { id: keep.id },
+        data: {
+          leadId,
+          ...(keep.diagnosticSnapshot == null && drop.diagnosticSnapshot != null
+            ? { diagnosticSnapshot: drop.diagnosticSnapshot as object } : {}),
+          /* من سجّل في إحداهما سجّل — ومن لم يُكلَّم في الباقية كُلّم في الأخرى */
+          ...(drop.status === 'enrolled' || keep.status === 'new' ? { status: drop.status } : {}),
+        },
+      })
+      await tx.advisorNote.create({
+        data: {
+          caseId: keep.id, authorId: actorId,
+          body: `دمجت معها حالة «${dropName}»${[drop.lead?.email, drop.lead?.phone].filter(Boolean).length ? ` — ${[drop.lead?.email, drop.lead?.phone].filter(Boolean).join(' · ')}` : ''}.`,
+        },
+      })
+      await tx.advisorCase.update({ where: { id: drop.id }, data: { status: 'closed', nextAction: 'دمجت في حالة أخرى للطالب نفسه' } })
+      await tx.advisorAssignment.updateMany({ where: { caseId: drop.id, unassignedAt: null }, data: { unassignedAt: now } })
+      if (!keep.assignments.some((a) => a.advisorId === advisorId)) {
+        await tx.advisorAssignment.updateMany({ where: { caseId: keep.id, unassignedAt: null }, data: { unassignedAt: now } })
+        await tx.advisorAssignment.create({ data: { caseId: keep.id, advisorId, assignedBy: actorId, assignedAt: now } })
+      }
+      await recordAudit(tx, {
+        actorId, action: 'advisor.cases.merge', entityType: 'advisor_case', entityId: keep.id,
+        meta: { closedId: drop.id, advisorId },
+      })
+    })
+    await safeNotify(this.prisma, {
+      userId: advisorId, channel: 'in_app', audience: 'staff',
+      templateKey: 'advisor.case.assigned',
+      title: 'دمجت حالتان لطالب واحد',
+      body: `حالتا «${keep.lead?.fullName ?? dropName}» صارتا حالة واحدة عندك، وفيها كل ما سجل في الاثنتين.`,
+      data: { caseId: keep.id },
+    })
+    return { keptId: keep.id, closedId: drop.id }
   }
 
   /** ما أسنده النظامُ ولم يغيّره إداريٌّ بعد — مفتوحا، في آخر ثلاثين يوما */
@@ -1121,7 +1216,10 @@ export class AdvisorService {
       },
       select: { id: true },
     })
-    if (other) throw new AuthError('case_exists', 'لهذا البريد حالة مفتوحة أخرى — اطلب من الإدارة جمعهما', 409)
+    if (other) {
+      await this.alertDuplicate(caseId, other.id)
+      throw new AuthError('case_exists', 'لهذا البريد حالة أخرى للطالب — أبلغنا الإدارة لتدمجهما', 409)
+    }
 
     await this.prisma.lead.update({ where: { id: kase.leadId }, data: { email } })
     await recordAudit(this.prisma, {
@@ -1135,6 +1233,24 @@ export class AdvisorService {
     const { linkLeadsToVerifiedAccount } = await import('./lead-link')
     const out = await linkLeadsToVerifiedAccount(this.prisma, owner.id, advisorId)
     return { linked: out.cases > 0 }
+  }
+
+  /** حالتان لطالبٍ واحد — يُقال لمن يُسند فيدمجهما (`mergeCases`)، مرّةً في اليوم للحالة لا مع كلّ محاولة */
+  private async alertDuplicate(caseId: string, otherId: string) {
+    const recent = await this.prisma.notification.count({
+      where: {
+        templateKey: 'advisor.case.duplicate', queuedAt: { gte: new Date(Date.now() - 24 * HOUR_MS) },
+        data: { path: ['caseId'], equals: caseId },
+      },
+    })
+    if (recent > 0) return
+    await notifyRole(this.prisma, assignerRoles(), {
+      channel: 'in_app',
+      templateKey: 'advisor.case.duplicate',
+      title: 'حالتان لطالب واحد',
+      body: 'كتب مستشار بريد طالب له حالة أخرى. ابحث عنه في «حالات بلا مستشار» وادمج الحالتين.',
+      data: { caseId, otherCaseId: otherId },
+    })
   }
 
   async addContactEvent(advisorId: string, caseId: string, input: { channel: string; direction?: 'out' | 'in'; summary: string }) {

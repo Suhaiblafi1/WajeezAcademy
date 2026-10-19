@@ -254,6 +254,18 @@ export function registerAdvisorRoutes(app: FastifyInstance, prisma: PrismaClient
     return advisors.redistribute(body.fromAdvisorId, req.auth!.userId)
   })
 
+  /* وحالتان لطالبٍ واحد تُدمجان — ويختار الإداريُّ من يبقى مستشارَه (`mergeCases`) */
+  app.post('/api/admin/advisor-cases/merge', {
+    preHandler: requirePermission('advisor.assign'),
+    schema: { tags: ['admin-operations'], summary: 'دمج حالتين لطالب واحد في حالة واحدة عند المستشار المختار' },
+  }, async (req) => {
+    const body = z.object({
+      caseIds: z.tuple([z.string().uuid(), z.string().uuid()]),
+      advisorId: z.string().uuid(),
+    }).parse(req.body)
+    return advisors.mergeCases(body.caseIds, body.advisorId, req.auth!.userId)
+  })
+
   /* من يُسنَد إليه — يُقرأ بمن يملك الإسناد، لا بمن يملك إدارةَ المستخدمين */
   app.get('/api/admin/advisor-cases/assignable-advisors', {
     preHandler: requirePermission('advisor.assign'),

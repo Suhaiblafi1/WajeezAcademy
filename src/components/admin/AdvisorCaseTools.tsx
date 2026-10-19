@@ -8,10 +8,13 @@
 
    فأداتان: بحثٌ في كلّ حالةٍ مفتوحةٍ مسندة باسم صاحبها أو بريده أو رقمه، يُغيَّر منه
    مستشارُها بالباب نفسِه؛ ونقلُ كلِّ حالات مستشارٍ المفتوحة إلى أقلّ الآخرين حالاتٍ
-   بضغطة — بقاعدة الإسناد التلقائيّ نفسِها (`AdvisorService#redistribute`). */
+   بضغطة — بقاعدة الإسناد التلقائيّ نفسِها (`AdvisorService#redistribute`).
+
+   ودمجُ حالتين لطالبٍ واحد من نتائج البحث نفسِها: تُختار الاثنتان ومن يبقى مستشارَه، ويقول
+   التأكيدُ ما سيقع (`AdvisorService#mergeCases`). */
 
 import { useEffect, useState } from "react";
-import { Search, Shuffle, UserPlus } from "lucide-react";
+import { Merge, Search, Shuffle, UserPlus } from "lucide-react";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import { toast, toastError } from "@/components/Toast";
 import { fmtDate } from "@/application/text/format-ar";
@@ -48,6 +51,10 @@ export default function AdvisorCaseTools({
   const [loads, setLoads] = useState<AdvisorLoad[]>([]);
   const [from, setFrom] = useState("");
   const [confirming, setConfirming] = useState(false);
+  /* حالتان تُختاران للدمج، ومن يبقى مستشارَ الطالب */
+  const [merging, setMerging] = useState<string[]>([]);
+  const [mergeTo, setMergeTo] = useState("");
+  const [confirmMerge, setConfirmMerge] = useState(false);
 
   const loadLoads = async () => {
     try { setLoads(await apiGet<AdvisorLoad[]>("/api/admin/advisor-cases/advisor-loads")); }
@@ -75,6 +82,29 @@ export default function AdvisorCaseTools({
       await loadLoads();
       onChanged();
     } catch (e) { toastError(e instanceof ApiError ? e.message : "تعذّر التغيير"); }
+    finally { setBusy(false); }
+  };
+
+  const toggleMerge = (caseId: string) => {
+    const next = merging.includes(caseId) ? merging.filter((id) => id !== caseId) : [...merging, caseId].slice(-2);
+    setMerging(next);
+    /* المستشارُ المقترحُ صاحبُ أولى الحالتين إن كان نشطا — والاختيارُ للإداريّ */
+    const first = found?.find((c) => c.id === next[0])?.assignments[0]?.advisorId ?? "";
+    setMergeTo(advisors.some((a) => a.id === first) ? first : "");
+  };
+  const mergeAdvisor = advisors.find((a) => a.id === mergeTo) ?? null;
+  const merge = async () => {
+    setConfirmMerge(false);
+    if (merging.length !== 2 || !mergeAdvisor) return;
+    setBusy(true);
+    try {
+      await apiPost("/api/admin/advisor-cases/merge", { caseIds: merging, advisorId: mergeAdvisor.id });
+      toast("دمجت الحالتان");
+      setMerging([]);
+      await search();
+      await loadLoads();
+      onChanged();
+    } catch (e) { toastError(e instanceof ApiError ? e.message : "تعذّر الدمج"); }
     finally { setBusy(false); }
   };
 
@@ -138,6 +168,10 @@ export default function AdvisorCaseTools({
                     </p>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
+                    <label className="flex items-center gap-1.5 text-read text-muted-foreground">
+                      <input type="checkbox" checked={merging.includes(c.id)} onChange={() => toggleMerge(c.id)} className="accent-gold" />
+                      اختر للدمج
+                    </label>
                     <label className="sr-only" htmlFor={`advisor-any-${c.id}`}>غيّر المستشار</label>
                     <select id={`advisor-any-${c.id}`} value={choice}
                       onChange={(e) => setPick({ ...pick, [c.id]: e.target.value })} className={`${staffSelectCls} max-w-64`}>
@@ -154,6 +188,24 @@ export default function AdvisorCaseTools({
               );
             })}
           </div>
+        )}
+
+        {merging.length === 2 && (
+          <Card className="mt-4">
+            <h3 className="text-sm font-black">ادمج حالتين لطالب واحد</h3>
+            <p className="mt-1 text-read text-muted-foreground">تصير الحالتان حالة واحدة عند المستشار الذي تختاره، وتغلق الأخرى.</p>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <label className="sr-only" htmlFor="advisor-merge-to">من يبقى مستشاره</label>
+              <select id="advisor-merge-to" value={mergeTo} onChange={(e) => setMergeTo(e.target.value)}
+                className={`${staffSelectCls} max-w-72`}>
+                <option value="">من يبقى مستشاره…</option>
+                {advisors.map((a) => <option key={a.id} value={a.id}>{a.displayName} ({a.email})</option>)}
+              </select>
+              <Button tone="secondary" disabled={busy || !mergeAdvisor} onClick={() => setConfirmMerge(true)}>
+                <Merge className="h-3.5 w-3.5" /> ادمج
+              </Button>
+            </div>
+          </Card>
         )}
       </section>
 
@@ -178,6 +230,20 @@ export default function AdvisorCaseTools({
           </Button>
         </div>
       </section>
+
+      {confirmMerge && mergeAdvisor && (
+        <ConfirmAction
+          tone="default"
+          titleAr="دمج حالتي الطالب"
+          confirmLabelAr="ادمج"
+          busy={busy}
+          onCancel={() => setConfirmMerge(false)}
+          onConfirm={() => void merge()}
+        >
+          يجمع التواصل والملاحظات والمتابعات والبريد والرقم في حالة واحدة عند {mergeAdvisor.displayName}، وتغلق الأخرى.
+          ولكل مستشار عمولة ما دفع الطالب وهو عنده.
+        </ConfirmAction>
+      )}
 
       {confirming && source && (
         <ConfirmAction
