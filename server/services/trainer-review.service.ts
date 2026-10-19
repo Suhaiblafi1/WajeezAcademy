@@ -58,7 +58,7 @@ import {
   SIGNED_COPY_STATES, closedStateOf, sameMailbox,
   type ContractClosedView, type ContractLinkPurpose,
 } from '../../src/application/trainer/contract-link-state'
-import { liveTrainerWhere, publicTrainerWhere, trainerPubliclyVisible } from './trainer-visibility'
+import { liveCohortWhere, livePathWhere, liveTrainerWhere, publicTrainerWhere, trainerPubliclyVisible } from './trainer-visibility'
 import { cohortLeadTrainers } from './cohort-lead'
 import { cleanProposals, readProposals } from '../../src/application/trainer/teachable-proposals'
 import { pendingKind } from '../../src/application/trainer/pending-kind'
@@ -6433,11 +6433,28 @@ export class TrainerReviewService {
 
   /** القائمة العامة — بوّابةُ الظهور الواحدة (`trainer-visibility.ts`) + طلبٌ نشط */
   async listPublicTrainers() {
+    /* ═══ دوراتُه بالقاعدة التي أظهرته — لا بالإسناد اليدويّ وحدَه (١٩ أكتوبر ٢٠٢٦) ═══
+
+       كانت «دوراتُه» تُقرأ من `TrainerCourseAssignment` وحدَه، ولا يكتبه إلّا الإسنادُ اليدويّ. والطريقُ الذي
+       تُفتح به الشعبُ اليوم — شعبةُ إعدادٍ يقبلها المدرّبُ فيُكتب أصيلَها — لا يكتبه. فقِيس في الإنتاج: عشرةُ
+       مدرّبين ظاهرين، لتسعةٍ منهم شعبٌ مفتوحة، وبطاقةُ كلٍّ منهم تقول «لم تسند إليه شعبة بعد».
+
+       فتُقرأ بشرط البوّابة نفسِه (`liveTrainerWhere`): أصيلُ شعبةٍ منشورة، أو إسنادُه النشط، أو مسارُه
+       المنشور. فمن ظهر في الصفحة له دورةٌ في بطاقته — والبوّابةُ والبطاقةُ لا تفترقان. */
+    const now = new Date()
+    const cohort = liveCohortWhere(now)
     const profiles = await this.prisma.trainerProfile.findMany({
-      where: { ...publicTrainerWhere(), application: { status: 'active' } },
+      where: { ...publicTrainerWhere(now), application: { status: 'active' } },
       include: {
         application: { select: { fullName: true, country: true, specialties: true } },
-        assignments: { where: { status: 'active' }, select: { courseId: true, cohortId: true } },
+        cohortTrainers: {
+          where: { role: 'lead', cohort }, orderBy: { cohort: { startsAt: 'asc' } }, select: { cohort: { select: { courseId: true } } },
+        },
+        assignments: { where: { status: 'active' }, select: { courseId: true } },
+        paths: {
+          where: livePathWhere(now),
+          select: { courses: { orderBy: { sequence: 'asc' }, select: { courseId: true } } },
+        },
       },
     })
     /* التعليقات المعتمَدة للنشر (١و) — نداءٌ واحد لكل المدرّبين المعروضين ثم
@@ -6469,7 +6486,11 @@ export class TrainerReviewService {
       testimonials: p.ratingAvg != null ? bySubject.get(p.id) ?? [] : [],
       hoursTaught: p.hoursTaught,
       graduatesCount: p.graduatesCount,
-      assignedCourseIds: p.assignments.map((a) => a.courseId),
+      assignedCourseIds: [...new Set([
+        ...p.cohortTrainers.map((t) => t.cohort.courseId),
+        ...p.assignments.map((a) => a.courseId),
+        ...p.paths.flatMap((path) => path.courses.map((c) => c.courseId)),
+      ])],
     }))
   }
 
