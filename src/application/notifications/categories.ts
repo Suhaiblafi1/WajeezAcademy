@@ -167,6 +167,8 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
     lockedWhyAr: 'تكليف لا يعلم به صاحبه ليس تكليفا — ولذلك لا يكتم عمل الموظّف.',
     templateKeys: [
       'staff.task.assigned', 'staff.task.done', 'admin.support.ticket', 'admin.support_ticket',
+      /* ورسالةُ «تواصل معنا» من الموقع (١٩ أكتوبر ٢٠٢٦) — زائرٌ ينتظر ردّا كصاحب التذكرة */
+      'admin.contact_message',
       'admin.trainer_application', 'admin.learner_request', 'trainer.qualify.request',
       /* وتوقيعُ العقد واعتذارُه: كلاهما قرارٌ ينتظر عملا — الموقَّعُ يُراجَع
          توقيعُه ويُفعَّل حسابُه، والمعتذَرُ عنه يُبحَث سببُه. ومن لم يعلم

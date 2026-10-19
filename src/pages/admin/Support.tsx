@@ -11,6 +11,7 @@ import WorkHeader from "@/components/admin/WorkHeader";
 import { matchesQuery } from "@/application/text/search-ar";
 import { paginate } from "@/application/admin/paginate";
 import FlowSteps from "@/components/FlowSteps";
+import SiteMessages from "@/components/admin/SiteMessages";
 import EmptyState from "@/components/EmptyState";
 import { Panel, Card, Inset } from "@/components/ui/Surface";
 import Chip from "@/components/ui/Chip";
@@ -264,6 +265,9 @@ export default function Support() {
           <RefreshCw className="h-3.5 w-3.5" /> تحديث
         </Button>
       </div>
+
+      {/* رسائلُ «تواصل معنا» — من زائرٍ قد لا يكون له حساب، فلا تذكرةَ لها (١٩ أكتوبر ٢٠٢٦) */}
+      <SiteMessages />
 
       {/* ── العملُ قبل القائمة ──
 

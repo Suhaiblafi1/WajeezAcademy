@@ -4154,6 +4154,28 @@ model Notification {
  * ── الدعم — تذاكر برسائل وتعيين وسجل حالات؛ دور support يرى الحد الأدنى ──
  */
 
+/// رسالةُ «تواصل معنا» من الموقع العامّ — من زائرٍ قد لا يكون له حساب (١٩ أكتوبر ٢٠٢٦).
+/// كان النموذجُ يحاكي الإرسال: يعرض رقما مرجعيّا ولا يصل أحدا. والتذكرةُ (`SupportTicket`)
+/// تشترط حسابا، فللزائر صفُّه هنا. والعلّةُ في `server/services/contact.service.ts`.
+model ContactMessage {
+  id           String    @id @default(uuid()) @db.Uuid
+  /// الرقمُ الذي يراه المُرسِلُ ويصله في بريده — «WJ-C-…»
+  reference    String    @unique
+  name         String
+  email        String
+  /// بأيّ صفةٍ يتواصل — فردٌ أو جهة (`ENTITIES` في `src/pages/Contact.tsx`)
+  entity       String    @default("individual")
+  organization String?
+  topic        String
+  message      String
+  /// متى ردّ عليها الفريقُ ومن — فارغٌ يعني «تنتظر ردّا»
+  handledAt    DateTime?
+  handledBy    String?   @db.Uuid
+  createdAt    DateTime  @default(now())
+
+  @@index([handledAt, createdAt])
+}
+
 model SupportTicket {
   id            String                @id @default(uuid()) @db.Uuid
   userId        String                @db.Uuid

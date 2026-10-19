@@ -68,7 +68,9 @@ describe('عناوين الأكاديميّة', () => {
 
   it('و«ردّ» على الرسائل الآليّة يوجّه إلى العنوان الواحد', () => {
     const mail = read('server/services/mail.ts')
-    expect(mail).toMatch(/replyTo: config\.replyTo \|\| ACADEMY_EMAILS\.support/)
+    /* ورسالةٌ بعينها تسمّي من يُجاب (`input.replyTo`) — رسالةُ زائرٍ تصل الفريقَ فيُجاب صاحبُها
+       (`contact.service.ts`، ١٩ أكتوبر ٢٠٢٦). وما لم تسمِّ أحدا فالعنوانُ الواحدُ كما كان */
+    expect(mail).toMatch(/replyTo: input\.replyTo \|\| config\.replyTo \|\| ACADEMY_EMAILS\.support/)
   })
 
   it('ولا يكتب عنوان حرفا في ملفّ غير مصدريه', () => {

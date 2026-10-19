@@ -116,7 +116,7 @@ export interface DirectMailResult {
 export async function sendDirectEmail(
   prisma: PrismaClient,
   input: {
-    to: string; subject: string; text: string; html?: string
+    to: string; subject: string; text: string; html?: string; replyTo?: string
     icsContent?: string; icsFilename?: string; icsMethod?: 'REQUEST' | 'CANCEL' | 'PUBLISH'
     /** مرفقاتٌ تُسلَّم كما هي — ملفُّ المتقدّم وسيرتُه حين تُحجز مقابلتُه */
     attachments?: MailAttachment[]

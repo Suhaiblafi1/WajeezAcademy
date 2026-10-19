@@ -10,6 +10,8 @@ import SeoHead from '@/components/SeoHead'
 import { seoFor } from '@/application/site/public-pages'
 import { track } from '@/services/analytics'
 import { Panel, Card, Inset } from '@/components/ui/Surface'
+import { apiPost, ApiError } from '@/services/api'
+import { HONEYPOT_FIELD, useHoneypot } from '@/components/HoneypotField'
 
 /* ───────────── التواصل الموحد — بلا صفحات منفصلة للجهات ─────────────
    قرار المالك 2026-08-20: صفحة تواصل واحدة تكفي — الزائر يحدد «من هو»
@@ -69,7 +71,10 @@ export default function Contact() {
   const [consent, setConsent] = useState(false)
   const [busy, setBusy] = useState(false)
   const [ref, setRef] = useState<string | null>(null)
+  /* هل وصلته نسختُه بالبريد؟ — يُقال ما وقع لا ما يُرجى */
+  const [copySent, setCopySent] = useState(false)
   const [err, setErr] = useState('')
+  const hp = useHoneypot()
 
   const institutional = entity !== 'individual'
 
@@ -84,7 +89,7 @@ export default function Contact() {
   const orgValid = !institutional || org.trim().length >= 2
   const valid = name.trim().length >= 2 && emailValid && orgValid && message.trim().length >= 10 && consent
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (busy) return
     if (!valid) {
@@ -103,14 +108,25 @@ export default function Contact() {
     }
     setBusy(true)
     setErr('')
-    /* محاكاة إرسال — عند الربط: POST /api/contact ثم بريد تأكيد للمُرسل */
-    window.setTimeout(() => {
-      const reference = `WJ-C-${Math.random().toString(36).slice(2, 8).toUpperCase()}`
-      setRef(reference)
-      setBusy(false)
+    /* ═══ إرسالٌ حقيقيّ (١٩ أكتوبر ٢٠٢٦) ═══
+       كان هنا `setTimeout` يعرض رقما مرجعيّا عشوائيّا ولا يُرسل شيئا — فمن كتب ظنّ أنّه وصل.
+       والرقمُ الآن رقمُ الخادم، والرسالةُ تصل بريدَ الأكاديميّة ونسخةٌ لصاحبها (`contact.service.ts`). */
+    try {
+      const res = await apiPost<{ reference: string; copySent: boolean }>('/api/public/contact', {
+        name: name.trim(), email: email.trim(), entity,
+        ...(institutional ? { organization: org.trim() } : {}),
+        topic, message: message.trim(),
+        ...(hp.value ? { [HONEYPOT_FIELD]: hp.value } : {}),
+      })
+      setRef(res.reference)
+      setCopySent(res.copySent)
       if (topic === 'طلب استرداد') track('refund_requested')
       else track('contact_submitted', { topic, entity })
-    }, 700)
+    } catch (e) {
+      setErr(e instanceof ApiError ? e.message : 'تعذّر الإرسال — تحقق من اتصالك وأعد المحاولة')
+    } finally {
+      setBusy(false)
+    }
   }
 
   return (
@@ -162,14 +178,15 @@ export default function Contact() {
               <h2 className="mt-5 text-2xl font-black">وصلت رسالتك</h2>
               <p className="mt-3 max-w-sm text-sm leading-7 text-muted-foreground">
                 رقمك المرجعي <span dir="ltr" className="font-bold text-teal-light-ink">{ref}</span> — احتفظ به للمتابعة.
-                نرد عليك خلال يوم عمل واحد.
+                نرد عليك خلال يوم عمل واحد{copySent ? '، ووصلتك نسخة منها على بريدك' : ''}.
               </p>
               <Link to="/" className="mt-6 text-sm font-semibold text-teal-light-ink underline-offset-4 hover:underline">
                 عودة للرئيسية
               </Link>
             </Panel>
           ) : (
-            <form onSubmit={submit} noValidate className="rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:p-8">
+            <form onSubmit={(e) => void submit(e)} noValidate className="rounded-3xl border border-white/10 bg-white/[0.03] p-6 md:p-8">
+              {hp.field}
               <div>
                 <span className={LABEL}>تتواصل بصفتك</span>
                 <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="نوع الجهة">
