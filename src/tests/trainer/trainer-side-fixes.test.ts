@@ -78,8 +78,10 @@ describe('④ «ذكّرهم» إلى مركز التواصل', () => {
 
 describe('⑤ والحسابُ البنكيّ في التهيئة', () => {
   it('⚠️ يُقال ما يمنعه بدل خانةٍ يُردّ حفظها', () => {
-    const page = code('src/pages/trainer/Earnings.tsx')
-    expect(page).toMatch(/if \(state\.writeProblemAr && !state\.account\) \{/)
+    /* والخانةُ صارت مشتركةً بين المدرّب والمستشار (١٩ أكتوبر ٢٠٢٦) — والصفحةُ تستعملها */
+    expect(code('src/pages/trainer/Earnings.tsx')).toMatch(/<BankAccountPanel endpoint="\/api\/trainer\/bank-account" copy=\{BANK_COPY\.trainer\} \/>/)
+    const panel = code('src/components/BankAccountPanel.tsx')
+    expect(panel).toMatch(/if \(state\.writeProblemAr && !state\.account\) \{/)
   })
 })
 
