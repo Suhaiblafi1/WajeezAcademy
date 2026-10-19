@@ -46,6 +46,7 @@ import { Card, Inset, Panel } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import Chip from "@/components/ui/Chip";
 import { BIO_MAX_WORDS, countWords } from "@/application/trainer/public-text";
+import { PITCH_MAX_CHARS, PITCH_MAX_LINES, cleanPitchLines, pitchHeadingAr, pitchProblemAr } from "@/application/trainer/pitch";
 interface OpsQualification { courseId: string; courseTitle: string; status: string }
 interface OpsAssignment {
   courseId: string; courseTitle: string
@@ -70,6 +71,10 @@ interface OpsTrainer {
   pendingPhotoUrl: string | null;
   /* وعنوانٌ ونبذةٌ كتبهما هو من حسابه — يُعدَّلان هنا إن شئتَ ثمّ يُعتمَدان */
   pendingText: { headline: string | null; bio: string | null; at: string } | null;
+  /* «لماذا اخترناه»: المعروضُ، وآخرُ اقتراح، ومسوّدتُه الأولى لمن لم يُقترح عليه شيء */
+  pitchLines: string[];
+  pitchLatest: { id: string; lines: string[]; status: "pending" | "accepted" | "rejected"; noteAr: string | null; decidedAt: string | null } | null;
+  pitchDraft: string[] | null;
   qualifications: OpsQualification[];
   assignments: OpsAssignment[];
 }
@@ -131,6 +136,86 @@ const QUAL_LABEL: Record<string, string> = {
 
    حقلُ الرابط يعمل الآنَ بلا تخزين. وزرُّ الرفع يحتاج `FILE_UPLOADS=on`،
    فيُقال ذلك في الشاشة لا في رسالة خطأ بعد الضغط. */
+/* ═══ «لماذا اخترناه» — نكتبه هنا، ويصل المدرّبَ بطاقةَ «قبل/بعد» (١٩ أكتوبر ٢٠٢٦) ═══
+
+   قرارُ صاحب المنصّة: «أضف كلماتٍ تشجّع الناس لهذا المدرّب، والمدرّب يوافق أو يرفض».
+   فالحقولُ تبدأ بآخر ما يُعرف: المعلَّقُ عنده، أو المرفوضُ لتُعدَّل، أو المعروضُ، أو
+   مسوّدتُه الأولى من نبذته (`server/services/trainer-pitch-drafts.ts`). ولا يظهر منها
+   للعامّة شيءٌ قبل قبوله — فالإرسالُ هنا اقتراحٌ لا نشر. */
+function PitchEditor({ trainer, onSaved }: { trainer: OpsTrainer; onSaved: () => Promise<void> | void }) {
+  const latest = trainer.pitchLatest;
+  const pending = latest?.status === "pending" ? latest : null;
+  const start = pending?.lines
+    ?? (latest?.status === "rejected" ? latest.lines : null)
+    ?? (trainer.pitchLines.length > 0 ? trainer.pitchLines : trainer.pitchDraft ?? []);
+  const [lines, setLines] = useState<string[]>(() =>
+    Array.from({ length: PITCH_MAX_LINES }, (_, i) => start[i] ?? ""));
+  const [busy, setBusy] = useState(false);
+  const clean = cleanPitchLines(lines);
+  const problem = pitchProblemAr(clean);
+  const unchanged = clean.join("\n") === (pending?.lines ?? trainer.pitchLines).join("\n");
+
+  const run = async (path: string, body: unknown, ok: string) => {
+    setBusy(true);
+    try {
+      await apiPost(path, body);
+      toast(ok);
+      await onSaved();
+    } catch (e) {
+      toastError(e instanceof ApiError ? e.message : "تعذّر الحفظ");
+    } finally { setBusy(false); }
+  };
+
+  return (
+    <Inset className="mt-2.5 p-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <p className="text-read font-black">{pitchHeadingAr(trainer.name)}</p>
+        {pending && <Chip tone="warn" srPrefixAr="الحالة">عند المدرب — ينتظر قبوله</Chip>}
+        {!pending && latest?.status === "rejected" && <Chip tone="danger" srPrefixAr="الحالة">رفضه</Chip>}
+        {!pending && latest?.status !== "rejected" && trainer.pitchLines.length > 0 && (
+          <Chip tone="positive" srPrefixAr="الحالة">يظهر في بطاقته</Chip>
+        )}
+        {!latest && trainer.pitchLines.length === 0 && trainer.pitchDraft && (
+          <Chip tone="neutral" srPrefixAr="الحالة">مسودة من نبذته — راجعها ثم أرسلها</Chip>
+        )}
+      </div>
+      {!pending && latest?.status === "rejected" && latest.noteAr && (
+        <p className="mt-1.5 text-read leading-6 text-muted-foreground">سببه: {latest.noteAr}</p>
+      )}
+      <div className="mt-2 grid gap-2">
+        {lines.map((l, i) => (
+          <input
+            key={i}
+            value={l}
+            maxLength={PITCH_MAX_CHARS}
+            aria-label={`السطر ${i + 1}`}
+            placeholder={i === 0 ? "حقيقة من نبذته، مثل: درّب أكثر من 250 متدربا مع اليونيسف" : "سطر اختياري"}
+            onChange={(e) => setLines((cur) => cur.map((x, j) => (j === i ? e.target.value : x)))}
+            className={`${controlCls} w-full`}
+          />
+        ))}
+      </div>
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <Button
+          tone="confirm" size="sm" loading={busy} disabled={Boolean(problem) || unchanged}
+          onClick={() => void run(`/api/admin/trainers/${trainer.profileId}/pitch`, { lines: clean }, "أرسلت للمدرب — تظهر حين يقبلها")}
+        >
+          {pending ? "أرسل التعديل للمدرب" : "أرسلها للمدرب"}
+        </Button>
+        {pending && (
+          <Button
+            tone="ghost" size="sm" disabled={busy}
+            onClick={() => void run(`/api/admin/trainers/${trainer.profileId}/pitch/withdraw`, {}, "سحبت الاقتراح")}
+          >
+            اسحب الاقتراح
+          </Button>
+        )}
+        {problem && <span className="text-read text-muted-foreground">{problem}</span>}
+      </div>
+    </Inset>
+  );
+}
+
 function PublicProfileEditor({
   trainer, onSaved,
 }: {
@@ -805,6 +890,8 @@ export default function TrainerRunOps() {
                   </div>
 
                   <PublicProfileEditor trainer={t} onSaved={load} />
+                  {/* والمفتاحُ يحمل آخرَ اقتراح: كلُّ إرسالٍ أو قرارٍ يبدأ الحقولَ من جديد */}
+                  <PitchEditor key={`${t.profileId}:${t.pitchLatest?.id ?? ""}:${t.pitchLines.join("|")}`} trainer={t} onSaved={load} />
 
                   {/* الإجراءات — والتأهيلُ والإسنادُ من صفحة الشعبة */}
                   <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-white/10 pt-3">

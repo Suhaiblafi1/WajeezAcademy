@@ -1,7 +1,7 @@
 import { Link } from 'react-router'
 import { useEffect, useMemo, useState } from 'react'
 import {
-  ArrowLeft, BadgeCheck, GraduationCap, ShieldCheck, Search, Star, Clock, ChevronDown, Route, BookOpen, MapPin,
+  ArrowLeft, BadgeCheck, Check, Sparkles, GraduationCap, ShieldCheck, Search, Star, Clock, ChevronDown, Route, BookOpen, MapPin,
 } from 'lucide-react'
 import { TRAINER_POOLS, TRAINER_PENDING_AR, courseById } from '@/data/courses'
 import { pathwayById } from '@/data/pathways'
@@ -12,6 +12,7 @@ import SeoHead from '@/components/SeoHead'
 import { seoFor } from '@/application/site/public-pages'
 import { Panel, Card, Inset } from '@/components/ui/Surface'
 import { countAr } from '@/application/text/count-ar'
+import { pitchHeadingAr } from '@/application/trainer/pitch'
 
 interface PublicTrainer {
   id: string; name: string; headline: string | null; bio: string | null;
@@ -21,6 +22,8 @@ interface PublicTrainer {
   /* ١و — تعليقات اعتمدتها الإدارة للنشر؛ فارغة حتى ذلك */
   testimonials?: { score: number; commentAr: string }[];
   hoursTaught: number | null; graduatesCount: number | null;
+  /* «لماذا اخترناه» المقبولُ وحدَه — فارغٌ حتّى يقبل (`trainer-pitch.service.ts`) */
+  pitch?: string[];
 }
 
 /* أسماء العائلات بالعربية */
@@ -109,6 +112,10 @@ function TrainerOffer({ ids }: { ids: string[] }) {
    «الملفّ المهنيّ» من ثلاثٍ عُرضت عليه: مربّعٌ بمئةٍ وستّين بكسلا، والصورةُ
    المرفوعةُ ٥١٢ فتبقى حادّةً على شاشةٍ مضاعفة.
 
+   وصارت الصورةُ تملأ طولَ البطاقة بجوار النصّ (١٩ أكتوبر ٢٠٢٦): «لا تترك فراغا تحت
+   الصورة — كبّرها أو غيّر شكل الصندوق». فعرضُها ١٧٦–١٩٢ وطولُها طولُ ما بجوارها، ولا
+   تقصر عن ١٧٦. وعلى الهاتف تبقى مربّعا بجوار الاسم، والنصُّ تحتها بعرض البطاقة.
+
    ── وصورةٌ لا تصل لا تُترك مكسورة ──
 
    كانت `<img>` بلا `onError`: كائنٌ مُحي من القرص أو رفعٌ تُرك في منتصفه
@@ -140,7 +147,7 @@ const MONOGRAM_FIELD = {
 
 function TrainerPhoto({ t }: { t: PublicTrainer }) {
   const [failed, setFailed] = useState(false)
-  const box = 'h-24 w-24 shrink-0 rounded-2xl sm:row-span-2 sm:h-40 sm:w-40'
+  const box = 'h-24 w-24 shrink-0 rounded-2xl sm:row-span-2 sm:h-full sm:min-h-44 sm:w-44 lg:w-48'
   if (t.photoUrl && !failed) {
     return (
       <img
@@ -170,10 +177,37 @@ function TrainerPhoto({ t }: { t: PublicTrainer }) {
    النبذة ظاهرةً، والزرُّ يكمل النبذةَ ويفتح الأرقامَ والتعليقاتِ ودوراتِه.
 
    والنبذةُ عنصرٌ واحدٌ يتنقّل بالشبكة: بجوار الصورة على الشاشة العريضة،
-   وتحتها بعرض البطاقة على الهاتف — لا نسختان تُخفى إحداهما. */
+   وتحتها بعرض البطاقة على الهاتف — لا نسختان تُخفى إحداهما.
+
+   ── و«لماذا اخترناه» مكانَ النبذة متى قبله (١٩ أكتوبر ٢٠٢٦) ──
+
+   اختار صاحبُ المنصّة من هيئتين عُرضتا عليه بلقطات: سطورُنا في البطاقة، ونبذتُه
+   بكلامه أوّلَ ما يُفتح بالزرّ — لا الاثنتان معا فيطولَ الصندوقُ ويتكرّر المعنى. ومن
+   لم يقبل بعدُ تبقى نبذتُه مكانَها كما كانت. */
+
+/** سطورُنا عنه — حقائقُ من نبذته في صندوقٍ يُقرأ بنظرة (`application/trainer/pitch.ts`) */
+function PitchBlock({ t }: { t: PublicTrainer }) {
+  return (
+    <Inset tone="accent" className="col-span-2 mt-3 px-4 py-3 sm:col-span-1 sm:col-start-2">
+      <p className="flex items-center gap-1.5 text-sm font-black text-teal-ink">
+        <Sparkles className="h-4 w-4 shrink-0" aria-hidden="true" />
+        {pitchHeadingAr(t.name)}
+      </p>
+      <ul className="mt-2 space-y-1.5">
+        {(t.pitch ?? []).map((l) => (
+          <li key={l} className="flex items-start gap-2 text-read leading-6 text-foreground/85">
+            <Check className="mt-1 h-3.5 w-3.5 shrink-0 text-teal-ink" aria-hidden="true" />
+            {l}
+          </li>
+        ))}
+      </ul>
+    </Inset>
+  )
+}
 function TrainerCard({ t, open, onToggle }: { t: PublicTrainer; open: boolean; onToggle: () => void }) {
   const panelId = `trainer-bio-${t.id}`
   const courses = new Set(t.assignedCourseIds).size
+  const pitched = (t.pitch?.length ?? 0) > 0
   return (
     <Card as="article" className="flex flex-col transition hover:border-teal/40">
       <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 sm:gap-x-5">
@@ -199,7 +233,7 @@ function TrainerCard({ t, open, onToggle }: { t: PublicTrainer; open: boolean; o
             )}
           </div>
         </div>
-        {t.bio && (
+        {pitched ? <PitchBlock t={t} /> : t.bio && (
           <p className={`col-span-2 mt-3 whitespace-pre-line text-read leading-6 text-muted-foreground sm:col-span-1 sm:col-start-2 ${open ? '' : 'line-clamp-3'}`}>
             {t.bio}
           </p>
@@ -215,6 +249,13 @@ function TrainerCard({ t, open, onToggle }: { t: PublicTrainer; open: boolean; o
       )}
 
       <div id={panelId} hidden={!open} className="mt-4 space-y-3">
+        {/* ونبذتُه بكلامه أوّلَ ما يُفتح — حين أخذ صندوقُنا مكانَها في البطاقة */}
+        {pitched && t.bio && (
+          <div>
+            <p className="text-sm font-black">النبذة</p>
+            <p className="mt-1 whitespace-pre-line text-read leading-6 text-muted-foreground">{t.bio}</p>
+          </div>
+        )}
         {/* الإحصاءات — تُعرض فقط عند وجود بيانات حقيقية مسجلة */}
         {(t.ratingAvg != null || t.hoursTaught != null || t.graduatesCount != null) && (
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
@@ -266,7 +307,7 @@ function TrainerCard({ t, open, onToggle }: { t: PublicTrainer; open: boolean; o
         aria-controls={panelId}
         className="mt-4 flex min-h-11 w-full items-center justify-between gap-2 border-t border-white/10 pt-3 text-sm font-bold text-teal-light-ink transition hover:text-foreground"
       >
-        {open ? 'عرض أقل' : 'النبذة كاملة والدورات'}
+        {open ? 'عرض أقل' : pitched ? 'النبذة والدورات' : 'النبذة كاملة والدورات'}
         <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden="true" />
       </button>
     </Card>

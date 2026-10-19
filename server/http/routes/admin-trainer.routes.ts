@@ -18,6 +18,7 @@ import { EarningsService } from '../../services/earnings.service'
 import { TrainerMaterialsService } from '../../services/trainer-materials.service'
 import { TrainerPrepService } from '../../services/trainer-prep.service'
 import { TrainerPublicTextService } from '../../services/trainer-public-text.service'
+import { TrainerPitchService } from '../../services/trainer-pitch.service'
 import { TrainerDeclineReplyService } from '../../services/trainer-decline-reply.service'
 import { requirePermission } from '../auth-plugin'
 import { blastRadiusSentenceAr, courseBlastRadius } from '../../services/catalog-impact.service'
@@ -64,6 +65,7 @@ const reissueBody = z.object({
 export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaClient) {
   const review = new TrainerReviewService(prisma)
   const publicText = new TrainerPublicTextService(prisma)
+  const pitch = new TrainerPitchService(prisma)
   const declineReply = new TrainerDeclineReplyService(prisma)
   const offers = new TrainerOfferService(prisma)
   const bank = new TrainerBankService(prisma)
@@ -1015,6 +1017,26 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     const { profileId } = z.object({ profileId: z.string().uuid() }).parse(req.params)
     const { reasonAr } = z.object({ reasonAr: z.string().trim().max(300).optional() }).parse(req.body ?? {})
     return review.rejectPendingPhoto(profileId, req.auth!.userId, reasonAr)
+  })
+
+  /* ═══ «لماذا اخترناه» — نكتبه ويقبله هو أو يرفضه (١٩ أكتوبر ٢٠٢٦) ═══
+     العلّةُ في `trainer-pitch.service.ts`. وبصلاحيّة النشر كالصورة والنبذة: هو نصٌّ
+     يُعرض للعامّة باسمنا. والطولُ يُحكم في الخدمة، وهنا حدُّ الحقل الخام. */
+  app.post('/api/admin/trainers/:profileId/pitch', {
+    preHandler: requirePermission('trainer.publish'),
+    schema: { tags: ['admin-trainers'], summary: '«لماذا اخترناه» — اقتراحٌ يصل المدرّب بطاقة قبل وبعد' },
+  }, async (req) => {
+    const { profileId } = z.object({ profileId: z.string().uuid() }).parse(req.params)
+    const { lines } = z.object({ lines: z.array(z.string().max(400)).max(10) }).parse(req.body ?? {})
+    return pitch.propose(profileId, req.auth!.userId, lines)
+  })
+
+  app.post('/api/admin/trainers/:profileId/pitch/withdraw', {
+    preHandler: requirePermission('trainer.publish'),
+    schema: { tags: ['admin-trainers'], summary: 'سحب «لماذا اخترناه» المعلّق قبل أن يقرّر فيه المدرّب' },
+  }, async (req) => {
+    const { profileId } = z.object({ profileId: z.string().uuid() }).parse(req.params)
+    return pitch.withdraw(profileId, req.auth!.userId)
   })
 
   /* ═══ عنوانُه ونبذتُه كما أرسلهما — يُعدَّلان هنا ثمّ يُعتمَدان (٣ أكتوبر ٢٠٢٦) ═══

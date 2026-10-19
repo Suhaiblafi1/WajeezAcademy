@@ -59,6 +59,7 @@ import {
   type ContractClosedView, type ContractLinkPurpose,
 } from '../../src/application/trainer/contract-link-state'
 import { liveTrainerWhere, publicTrainerWhere, trainerPubliclyVisible } from './trainer-visibility'
+import { PITCH_DRAFTS } from './trainer-pitch-drafts'
 import { cohortLeadTrainers } from './cohort-lead'
 import { cleanProposals, readProposals } from '../../src/application/trainer/teachable-proposals'
 import { pendingKind } from '../../src/application/trainer/pending-kind'
@@ -5894,6 +5895,11 @@ export class TrainerReviewService {
     const profiles = await this.prisma.trainerProfile.findMany({
       include: {
         application: { select: { fullName: true, email: true, status: true } },
+        /* آخرُ «لماذا اخترناه» اقتُرح عليه — معلَّقٌ أو قُرِّر فيه (`trainer-pitch.service.ts`) */
+        pitchSuggestions: {
+          where: { status: { not: 'withdrawn' } }, orderBy: { createdAt: 'desc' }, take: 1,
+          select: { id: true, lines: true, status: true, noteAr: true, decidedAt: true, createdAt: true },
+        },
         qualifications: {
           include: { course: { include: { versions: { orderBy: { version: 'desc' }, take: 1, select: { titleAr: true } } } } },
         },
@@ -5923,6 +5929,10 @@ export class TrainerReviewService {
       suspended: Boolean(p.suspendedAt),
       publiclyVisible: p.publicVisibility && Boolean(p.publishApprovedAt),
       hasLiveCourse: live.has(p.id),
+      /* «لماذا اخترناه»: المعروضُ، وآخرُ اقتراح، ومسوّدتُه الأولى لمن لم يُقترح عليه شيءٌ بعد */
+      pitchLines: p.pitchLines,
+      pitchLatest: p.pitchSuggestions[0] ?? null,
+      pitchDraft: p.pitchLines.length === 0 && p.pitchSuggestions.length === 0 ? PITCH_DRAFTS[p.id] ?? null : null,
       isVerified: p.isVerified,
       /* ما تعرضه صفحةُ الفريق — يُقرأ هنا ليُحرَّر هنا */
       headline: p.headline,
@@ -6430,6 +6440,8 @@ export class TrainerReviewService {
       hoursTaught: p.hoursTaught,
       graduatesCount: p.graduatesCount,
       assignedCourseIds: p.assignments.map((a) => a.courseId),
+      /* «لماذا اخترناه» المقبولُ وحدَه — المعلَّقُ لا يبلغ العامّة (`trainer-pitch.service.ts`) */
+      pitch: p.pitchLines,
     }))
   }
 

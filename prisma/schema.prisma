@@ -1305,6 +1305,9 @@ model TrainerProfile {
   publicTextPendingAt   DateTime?
   /// سببُ ردِّ آخرِ ما أرسله — يقرؤه في حسابه، ويُمحى بإرساله التالي
   publicTextRejectNoteAr String?
+  /// «لماذا اخترناه» — سطورٌ نكتبها نحن عنه، ولا تُنشر إلّا بقبوله (١٩ أكتوبر ٢٠٢٦).
+  /// والمقترَحُ في `TrainerPitchSuggestion` حتّى يقبله (`trainer-pitch.service.ts`)
+  pitchLines            String[]                     @default([])
   ratingAvg             Float? // متوسط التقييم من خريجين حقيقيين — null = لا يُعرض
   ratingCount           Int? // عدد التقييمات
   hoursTaught           Int? // ساعات التدريب الفعلية مع الأكاديمية
@@ -1368,6 +1371,7 @@ model TrainerProfile {
   marketingVideos       TrainerMarketingVideo[]
   marketingPhotos       TrainerMarketingPhoto[]
   posters               TrainerPoster[]
+  pitchSuggestions      TrainerPitchSuggestion[]
   issuedDiscounts       TrainerIssuedDiscount[]
   codes                 TrainerCode[]
   codeRedemptions       TrainerCodeRedemption[]
@@ -1707,6 +1711,28 @@ model CohortMessage {
  * الاعتماد تُزاح مواعيدُ الشعبة كلُّها بأسابيعَ كاملة. والعلّةُ في
  * `src/application/trainer/cohort-move.ts`.
  */
+/**
+ * ── «لماذا اخترناه» — نكتبه نحن، ويقبله المدرّب أو يرفضه (١٩ أكتوبر ٢٠٢٦) ──
+ * قرارُ صاحب المنصّة: «أضف كلماتٍ تشجّع الناس لهذا المدرّب، والمدرّب يوافق أو
+ * يرفض التعديل». فهي بطاقةُ «قبل/بعد» كبقيّة ما نقترحه عليه: `before` ما يُعرض
+ * الآن، و`lines` ما نقترح. ولا يصل الصفحةَ العامّة شيءٌ قبل قبوله.
+ */
+model TrainerPitchSuggestion {
+  id        String         @id @default(uuid()) @db.Uuid
+  profileId String         @db.Uuid
+  lines     String[]
+  before    String[]       @default([])
+  status    String         @default("pending") // pending | accepted | rejected | withdrawn
+  /// كلمتُه حين يرفض — اختياريّة
+  noteAr    String?
+  createdBy String         @db.Uuid
+  createdAt DateTime       @default(now())
+  decidedAt DateTime?
+  profile   TrainerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId, status])
+}
+
 model CohortMoveRequest {
   id              String    @id @default(uuid()) @db.Uuid
   cohortId        String    @db.Uuid

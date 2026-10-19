@@ -17,6 +17,7 @@ import { Card, Inset, Panel } from "@/components/ui/Surface";
 import DateField from "@/components/ui/DateField";
 import Button from "@/components/ui/Button";
 import PublicTextCard from "@/components/trainer/PublicTextCard";
+import PitchCard from "@/components/trainer/PitchCard";
 /* ─────────── صفحة «حسابي» — الملف الشخصي الكامل للطالب ───────────
    وضعان صادقان:
    - خادم حقيقي: جلسة API فعّالة → قراءة وحفظ في قاعدة البيانات.
@@ -480,6 +481,8 @@ export default function StudentAccount() {
       {/* ═══ وللمدرّب: عنوانُه ونبذتُه في «المدربون» (٣ أكتوبر ٢٠٢٦) ═══
           تحت صورته لأنّهم يُعرضون معا — والعلّةُ في `PublicTextCard`. */}
       {mode === "server" && roles?.includes("trainer") && <PublicTextCard inputCls={inputCls} />}
+      {/* و«لماذا اخترناك» تحتهما: سطورٌ نكتبها نحن ويقبلها هو أو يرفضها (١٩ أكتوبر ٢٠٢٦) */}
+      {mode === "server" && roles?.includes("trainer") && <PitchCard inputCls={inputCls} />}
 
       {/* المعلومات الشخصية */}
       <Panel as="section" className="mt-6 md:p-8">
