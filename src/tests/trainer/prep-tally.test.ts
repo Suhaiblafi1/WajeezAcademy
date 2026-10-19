@@ -8,7 +8,7 @@
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { prepTallyAr, prepTallyDetailAr, prepTallyOf } from '@/application/trainer/prep-tally'
+import { prepTallyAr, prepTallyDetailAr, prepTallyOf, waitingOnThemselves } from '@/application/trainer/prep-tally'
 
 describe('العدّادُ يفرّق الكاملةَ من الجزئيّة', () => {
   it('المرسلةُ والمعتمدةُ كاملة، والمسودّةُ والمردودةُ جزئيّة، والمعتذَرُ عنها خارجَ العدد', () => {
@@ -49,5 +49,28 @@ describe('والعدّادُ في السطر المطويّ نفسِه — بج�
     expect(name).toBeGreaterThan(0)
     expect(tally, 'العدّادُ ليس في السطر المطويّ').toBeGreaterThan(name)
     expect(bar.indexOf('{step.textAr}')).toBeGreaterThan(tally)
+  })
+})
+
+/* من يحسب أنّه ينتظرنا ودوراتُه لم تبدأ — «tell me who» (١٩ أكتوبر ٢٠٢٦) */
+describe('من لم يبدأ إعداد دوراته وعقده ينتظر توقيعنا', () => {
+  const tally = (notStarted: number) => prepTallyOf(Array.from({ length: notStarted }, () => 'to_decide' as const))
+  const row = (id: string, o: Partial<{ status: string; gatesActivation: boolean; prepTally: ReturnType<typeof prepTallyOf> | null }>) =>
+    ({ id, status: 'signature_approved', gatesActivation: false, prepTally: tally(9), ...o })
+
+  it('يسمي من اعتمد توقيعه ولم نوقعه وفي دوراته ما لم يبدأ — ولا غيره', () => {
+    const rows = [
+      row('ياسمين', {}),
+      row('بدأ كلها', { prepTally: prepTallyOf(['submitted', 'approved']) }),
+      row('وقعناه', { status: 'countersigned' }),
+      row('مشروط', { gatesActivation: true }),
+      row('بلا عداد', { prepTally: null }),
+    ]
+    expect(waitingOnThemselves(rows).map((r) => r.id)).toEqual(['ياسمين'])
+  })
+
+  it('والشاشة تعرض القائمة بأسمائهم', () => {
+    const page = readFileSync(resolve(process.cwd(), 'src/pages/admin/TrainerContracts.tsx'), 'utf8')
+    expect(page).toMatch(/waitingOnThemselves\(contracts\)\.map\(\(c\) => \([\s\S]{0,120}fullName/)
   })
 })
