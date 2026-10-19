@@ -15,7 +15,24 @@ describe('صفحة المدربين — الموسم القادم', () => {
   })
 
   it('ولكل موسم رأسه باسم المدرب — لا «دوراته» عامة', () => {
-    expect(page).toMatch(/seasons\.map\(\(g\) =>[\s\S]*?seasonHeadingAr\(name, g\.termAr\)/)
+    expect(page).toMatch(/seasons\.map\(\(g, i\) =>[\s\S]*?seasonHeadingAr\(name, g\.termAr\)/)
     expect(page, 'عاد رأس «دوراته» العام').not.toContain('دوراته — تشترى من صفحتها')
+  })
+
+  /* ═══ «الكلام مكتظ» — الأقربُ مفتوحٌ وما بعده يُطوى، وخطٌّ أصغرُ وأخفّ (١٩ أكتوبر ٢٠٢٦) ═══
+
+     «يجب أن تنسدل دورات الفصول الأخرى، واترك مسافات، وخفّف حجم الخط واجعله لايت» (صاحب المنصّة).
+     رُئي ساقطا على البطاقة القديمة: المواسمُ كلُّها مفتوحة، والأسماءُ ١٤ بخطٍّ عريض. */
+  it('⚠️ الموسم الأقرب مفتوح، وما بعده مطوي برأسه وعدد دوراته', () => {
+    const block = page.slice(page.indexOf('seasons.map((g, i) =>'))
+    expect(block, 'المواسم كلها مفتوحة').toMatch(/return i === 0 \? \(\s*<div[\s\S]*?\) : \(\s*<details/)
+    expect(block, 'المطوي بلا رأسه').toMatch(/<summary[\s\S]*?seasonHeadingAr\(name, g\.termAr\)[\s\S]*?coursesCountAr\(g\.courses\.length\)[\s\S]*?<\/summary>/)
+  })
+
+  it('⚠️ وأسماء الدورات أصغر وأخف — لا ١٤ عريضة', () => {
+    const row = page.match(/<span className="([^"]*)">\{c\.name\}<\/span>/)
+    expect(row, 'سطر اسم الدورة غاب').not.toBeNull()
+    expect(row![1].split(/\s+/)).toEqual(expect.arrayContaining(['text-fine', 'font-light']))
+    expect(row![1], 'عاد الخط العريض').not.toMatch(/font-(bold|semibold)|text-read/)
   })
 })
