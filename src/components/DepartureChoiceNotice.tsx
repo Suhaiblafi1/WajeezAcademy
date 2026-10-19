@@ -88,7 +88,7 @@ export default function DepartureChoiceNotice({ className = "" }: { className?: 
                 شيء قبل أن تختار.
               </p>
               {r.noteAr && (
-                <p className="mt-2 text-fine leading-6 text-muted-foreground">{r.noteAr}</p>
+                <p className="mt-2 text-read leading-6 text-muted-foreground">{r.noteAr}</p>
               )}
 
               {/* مجموعةُ خيارٍ لا زرّان: قارئُ الشاشة يسمعها «١ من ٢» فيعلم

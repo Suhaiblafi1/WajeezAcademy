@@ -46,8 +46,6 @@ const StudentSupport = lazy(() => import('./pages/student/Support'))
 const MyVault = lazy(() => import('./pages/student/MyVault'))
 const StudentLibrary = lazy(() => import('./pages/student/Library'))
 const RateMyLearning = lazy(() => import('./pages/student/RateMyLearning'))
-const TrainerMyRatings = lazy(() => import('./pages/trainer/MyRatings'))
-const TrainerReferral = lazy(() => import('./pages/trainer/Referral'))
 const AdminRatingModeration = lazy(() => import('./pages/admin/RatingModeration'))
 const TrainerPlacementReview = lazy(() => import('./pages/trainer/PlacementReview'))
 const AdminPlacementReview = lazy(() => import('./pages/admin/PlacementReview'))
@@ -58,7 +56,6 @@ const AdvisorCases = lazy(() => import('./pages/advisor/Cases'))
 const TrainerDashboard = lazy(() => import('./pages/trainer/TrainerDashboard'))
 const GradingQueue = lazy(() => import('./pages/trainer/GradingQueue'))
 const Earnings = lazy(() => import('./pages/trainer/Earnings'))
-const TrainerMyContract = lazy(() => import('./pages/trainer/MyContract'))
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'))
 const AdminCohorts = lazy(() => import('./pages/admin/AdminCohorts'))
 const AdminTerms = lazy(() => import('./pages/admin/Terms'))
@@ -315,14 +312,15 @@ export default function App() {
                 قرارُ صاحب المنصّة (٨ سبتمبر ٢٠٢٦). */}
             <Route path="/trainer/cohort/:id" element={<CohortWorkspace />} />
             <Route path="/trainer/earnings" element={<Earnings />} />
-            {/* «عقدي» بجانب «مستحقاتي» — قرارُ صاحب المنصّة (٢٥ سبتمبر ٢٠٢٦):
-                «الملف يكون في منصته ضمن قسم المستحقات والعقد». */}
-            <Route path="/trainer/contract" element={<TrainerMyContract />} />
+            {/* «عقدي» و«دعوتي» قسمان في «مستحقاتي»، و«ما قيل عنّي» قسمٌ في «الرئيسية» (الخطوة G، ١٩
+                أكتوبر ٢٠٢٦) — وقرارُ ٢٥ سبتمبر قبلها: «الملف يكون في منصته ضمن قسم المستحقات والعقد».
+                والمساراتُ الثلاثةُ تحويلٌ إلى مواضعها: رسائلُ مضت تحملها. */}
+            <Route path="/trainer/contract" element={<Navigate to="/trainer/earnings?tab=contract" replace />} />
             {/* «اقتراحاتي» حُذفت: «ليس اقتراحا بل واجبٌ عليه» — الشعبةُ تُجهَّز من ورشتها */}
             <Route path="/trainer/proposals" element={<Navigate to="/trainer/board" replace />} />
             <Route path="/trainer/board" element={<CohortBoard />} />
-            <Route path="/trainer/ratings" element={<TrainerMyRatings />} />
-            <Route path="/trainer/referral" element={<TrainerReferral />} />
+            <Route path="/trainer/ratings" element={<Navigate to="/trainer#ratings" replace />} />
+            <Route path="/trainer/referral" element={<Navigate to="/trainer/earnings?tab=referral" replace />} />
             {/* مراجعةُ اختبار تحديد المستوى — لمن مُنح `placement.review` (٨ أكتوبر ٢٠٢٦) */}
             <Route path="/trainer/placement-review" element={<TrainerPlacementReview />} />
           </Route>

@@ -1,5 +1,5 @@
 import { Link } from "react-router";
-import { BookCheck, BookOpen, CalendarDays, ClipboardCheck, FileSignature, GraduationCap, Languages, LayoutDashboard, Link2, Megaphone, Star, Users, Wallet } from "lucide-react";
+import { BookCheck, BookOpen, CalendarDays, ClipboardCheck, GraduationCap, Languages, LayoutDashboard, Megaphone, Users, Wallet } from "lucide-react";
 import { PortalTabs, type PortalTab } from "@/components/ui/PortalTabs";
 import NotificationBell from "@/components/NotificationBell";
 import SearchChip from "@/components/SearchChip";
@@ -154,14 +154,10 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
     /* وبعدها «التسويق» (٢٩ سبتمبر ٢٠٢٦): التعريفُ بدوراته ومساراته وملصقاتُها —
        فهو جارُ ما يُسوَّق له. */
     { to: "/trainer/marketing", label: "التسويق", icon: Megaphone },
+    /* و«عقدي» و«دعوتي» قسمان فيها، و«ما قيل عنّي» قسمٌ في «الرئيسية» (الخطوة G، ١٩ أكتوبر ٢٠٢٦):
+       القائمةُ ثمانيةُ ألسنةٍ بعد أربعة عشر. وكان «عقدي» لسانا بجانبها بقرار ٢٥ سبتمبر ٢٠٢٦ («الملف
+       يكون في منصته ضمن قسم المستحقات والعقد») — فصار فيها كما قال. */
     { to: "/trainer/earnings", label: "مستحقاتي", icon: Wallet },
-    /* وبعدها «عقدي» مباشرةً — قرارُ صاحب المنصّة (٢٥ سبتمبر ٢٠٢٦): «الملف
-       يكون في منصته ضمن قسم المستحقات والعقد». فهما بابان متجاوران: ما
-       تستحقّه، والوثيقةُ التي على أساسها تستحقّه. */
-    { to: "/trainer/contract", label: "عقدي", icon: FileSignature },
-    { to: "/trainer/ratings", label: "ما قيل عنّي", icon: Star },
-    /* ب-٥: بعد «ما قيل عنّي» مباشرةً — قرارُ صاحب المنصّة (١٣ سبتمبر ٢٠٢٦) */
-    { to: "/trainer/referral", label: "دعوتي", icon: Link2 },
     /* مراجعةُ اختبار تحديد المستوى (٨ أكتوبر ٢٠٢٦) — لا تُرى إلّا لمن مُنح
        `placement.review`: مدرّبُ الإنجليزيّة بعينه، لا كلُّ مدرّب. */
     ...(user?.permissions.includes("placement.review")

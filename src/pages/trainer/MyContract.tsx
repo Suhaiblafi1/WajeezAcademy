@@ -28,7 +28,6 @@ import { MATERIAL_RIGHTS_ANCHOR, WORKBOOK_RIGHTS_AR } from '@/application/traine
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { FileSignature, Loader2, Printer, Wallet } from 'lucide-react'
-import TrainerLayout from './TrainerLayout'
 import { apiGet, ApiError } from '@/services/api'
 import { Card, Inset, Panel } from '@/components/ui/Surface'
 import Button from '@/components/ui/Button'
@@ -115,7 +114,7 @@ export default function MyContract() {
 
   if (unsigned) {
     return (
-      <TrainerLayout title="عقدي">
+      <>
         <Panel>
           <h2 className="flex items-center gap-2 text-lg font-black text-foreground">
             <FileSignature className="h-5 w-5 shrink-0 text-teal-light-ink" aria-hidden="true" />
@@ -131,26 +130,26 @@ export default function MyContract() {
           </Inset>
           <MaterialRights />
         </Panel>
-      </TrainerLayout>
+      </>
     )
   }
   if (err) {
     return (
-      <TrainerLayout title="عقدي">
+      <>
         <Card as="p" tone="danger" className="text-center text-sm font-bold text-red-300" role="alert">{err}</Card>
         <Inset as={Link} interactive to="/trainer/earnings"
           className="mt-4 flex items-center gap-3 px-4 py-3 text-read text-muted-foreground">
           <Wallet className="h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" />
           <span>العودةُ إلى «مستحقاتي»</span>
         </Inset>
-      </TrainerLayout>
+      </>
     )
   }
   if (!data) {
     return (
-      <TrainerLayout title="عقدي">
+      <>
         <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground/50" /></div>
-      </TrainerLayout>
+      </>
     )
   }
 
@@ -158,7 +157,7 @@ export default function MyContract() {
   const hasBody = contractHasBodyAr(data.bodyAr)
 
   return (
-    <TrainerLayout title="عقدي — نسختي الموقَّعة">
+    <>
       {/* ═══ الرأسُ لا يُطبع: الورقةُ للوثيقة وحدَها ═══
 
           وما يُقال هنا شرحٌ للشاشة (أين أنت، وما حالُ عقدك، وكيف تحفظه) —
@@ -243,6 +242,6 @@ export default function MyContract() {
             اعتمادِ موادّ، وهذا الملحقُ عن الاعتماد. */}
         <ContractApproval snapshot={data.approvedCoursesSnapshot} approvedAt={data.conditionMetAt} />
       </div>
-    </TrainerLayout>
+    </>
   )
 }
