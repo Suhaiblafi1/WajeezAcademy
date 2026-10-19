@@ -115,6 +115,18 @@ describe('لكلٍّ ما كان في نوبته', () => {
     expect(await attributedRevenue(prisma, a)).toBe(45)
   })
 
+  it('⚠️ ومن عاد إليه طالبُه تلقائيّا لا يفتح نوبتَه تواصلُه القديم — ما دُفع في نوبة غيره لغيره', async () => {
+    const [a, b, c] = [await advisor(), await advisor(), await client()]
+    const k = await caseFor(c)
+    await link(k, a, ago(30), { unassignedAt: ago(20) })
+    await prisma.contactEvent.create({ data: { caseId: k, channel: 'phone', summary: 'تواصل قديم', createdBy: a, createdAt: ago(25) } })
+    await link(k, b, ago(20), { unassignedAt: ago(10) })
+    await link(k, a, ago(10), { automatic: true })
+    await paid(c, 15, ago(15))
+    expect(await attributedRevenue(prisma, b)).toBe(15)
+    expect(await attributedRevenue(prisma, a), 'قبض العائدُ ما دُفع في نوبة غيره').toBe(0)
+  })
+
   it('والحالةُ المغلقةُ بلا نقلٍ تبقى نوبتُها مفتوحة', async () => {
     const [a, c] = [await advisor(), await client()]
     const k = await caseFor(c)
