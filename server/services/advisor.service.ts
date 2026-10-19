@@ -105,13 +105,33 @@ function guestSnapshot(raw: unknown): object | null {
    **بعد تواصلٍ مسجَّل، والسجلُّ يُصدَّق** — وكلُّ تواصلٍ مكتوبٌ باسم صاحبه ووقته فيُراجَع.
    فما أسنده النظامُ (`automatic`) لا يبدأ حسابُه من يوم الإسناد بل من أوّل تواصلٍ سجّله
    المستشارُ نفسُه في تلك الحالة؛ ولا تواصلَ قبل الدفع = لا شيءَ عن تلك الدفعة. وما أسنده
-   إداريٌّ أو أدخله المستشارُ بيده يبقى من يوم إسناده كما كان. */
+   إداريٌّ أو أدخله المستشارُ بيده يبقى من يوم إسناده كما كان.
+
+   ── ومن نُقل عنه طالبُه لا يقبض عنه بعد نقله (١٩ أكتوبر ٢٠٢٦) ──
+
+   كان الحسابُ يبدأ ولا ينتهي: من نُقل طالبُه إلى غيره بقي يقبض على كلّ ما يدفعه بعدها، والجديدُ
+   يقبض على الدفعة نفسِها — فتُدفع الدفعةُ مرّتين. وصار النقلُ كثيرا (تغييرُ المستشار، وتوزيعُ
+   حالات من غادر، ونقلُ ما لم يُتواصَل معه). وقرارُ صاحب المنصّة بين ثلاثة (لكلٍّ ما كان في نوبته،
+   أو يقبضان معا، أو يأخذ الأخيرُ كلَّه): **لكلٍّ ما كان في نوبته**.
+
+   فلكلّ إسنادٍ نوبة: من بدايته (أو أوّلِ تواصلٍ إن كان تلقائيّا) إلى رفعه أو إلى إسنادِ الطالب
+   نفسِه لمستشارٍ غيره في أيّ حالة — أيُّهما أسبق. وما بين النقل وأوّلِ تواصلِ الجديد في إسنادٍ
+   تلقائيّ لا يُحسب لأحد. والحالةُ المغلقةُ بلا نقلٍ تبقى نوبتُها مفتوحة: إتمامُ العمل لا يمحو أجرَه. */
 export async function attributedRevenue(prisma: PrismaClient, advisorId: string): Promise<number> {
-  const assignments = await prisma.advisorAssignment.findMany({
-    where: { advisorId },
-    select: { caseId: true, assignedAt: true, automatic: true, case: { select: { clientId: true } } },
+  const mine = await prisma.advisorAssignment.findMany({
+    where: { advisorId, case: { clientId: { not: null } } },
+    select: { case: { select: { clientId: true } } },
   })
-  const autoCaseIds = assignments.filter((a) => a.automatic).map((a) => a.caseId)
+  const clientIds = [...new Set(mine.map((a) => a.case.clientId!))]
+  if (clientIds.length === 0) return 0
+
+  /* كلُّ إسنادات هؤلاء العملاء لكلّ المستشارين — إسنادُ غيره بعده يُنهي نوبتَه */
+  const all = await prisma.advisorAssignment.findMany({
+    where: { case: { clientId: { in: clientIds } } },
+    select: { caseId: true, advisorId: true, assignedAt: true, unassignedAt: true, automatic: true, case: { select: { clientId: true } } },
+    orderBy: { assignedAt: 'asc' },
+  })
+  const autoCaseIds = all.filter((a) => a.advisorId === advisorId && a.automatic).map((a) => a.caseId)
   const contacts = autoCaseIds.length > 0
     ? await prisma.contactEvent.findMany({
         where: { caseId: { in: autoCaseIds }, createdBy: advisorId },
@@ -119,31 +139,34 @@ export async function attributedRevenue(prisma: PrismaClient, advisorId: string)
       })
     : []
 
-  const firstTouch = new Map<string, Date>()
-  for (const a of assignments) {
-    const clientId = a.case.clientId
-    if (!clientId) continue
-    const start = a.automatic
+  const windows = new Map<string, { from: Date; to: Date | null }[]>()
+  for (const a of all) {
+    if (a.advisorId !== advisorId) continue
+    const clientId = a.case.clientId!
+    const from = a.automatic
       ? contacts
           .filter((c) => c.caseId === a.caseId && c.createdAt >= a.assignedAt)
           .reduce<Date | null>((min, c) => (!min || c.createdAt < min ? c.createdAt : min), null)
       : a.assignedAt
-    if (!start) continue
-    const prev = firstTouch.get(clientId)
-    if (!prev || start < prev) firstTouch.set(clientId, start)
+    if (!from) continue
+    const handover = all.find((b) => b.case.clientId === clientId && b.advisorId !== advisorId && b.assignedAt > a.assignedAt)
+    const ends = [a.unassignedAt, handover?.assignedAt].filter((d): d is Date => d != null)
+    const to = ends.length > 0 ? new Date(Math.min(...ends.map((d) => d.getTime()))) : null
+    if (to && to <= from) continue
+    windows.set(clientId, [...(windows.get(clientId) ?? []), { from, to }])
   }
-  const clientIds = [...firstTouch.keys()]
-  if (clientIds.length === 0) return 0
+  if (windows.size === 0) return 0
 
   const paid = await prisma.order.findMany({
-    where: { userId: { in: clientIds }, status: 'paid' },
+    where: { userId: { in: [...windows.keys()] }, status: 'paid' },
     select: { userId: true, total: true, paidAt: true, createdAt: true },
   })
   return paid.reduce((sum, o) => {
-    const since = firstTouch.get(o.userId)
     /* `paidAt` قد يغيب على صفٍّ قديم — فيُقرأ تاريخُ الطلب بدلا منه */
     const when = o.paidAt ?? o.createdAt
-    return since && when >= since ? sum + Number(o.total) : sum
+    /* ونوبتان له على العميل نفسِه لا تعدّان الدفعةَ مرّتين — تُحسب إن وقعت في إحداهما */
+    const inWindow = (windows.get(o.userId) ?? []).some((w) => when >= w.from && (!w.to || when < w.to))
+    return inWindow ? sum + Number(o.total) : sum
   }, 0)
 }
 
