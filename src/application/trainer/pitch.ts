@@ -12,9 +12,14 @@
  * الإرسال، والخادمُ يردّ ما تجاوزها — بالحكم نفسِه.
  */
 
+import { BIO_MAX_CHARS, BIO_MAX_WORDS, BIO_MIN_WORDS, countWords } from './public-text'
+
 /** ثلاثةُ أسطرٍ على الأكثر — ما يُقرأ بنظرةٍ في البطاقة */
 export const PITCH_MAX_LINES = 3
-/** وكلُّ سطرٍ جملةٌ واحدة — لا فقرة */
+/* وكلُّ سطرٍ جملةٌ واحدةٌ باثنتي عشرةَ كلمةً على الأكثر — «حدّد عدد الكلمات للتناسق»
+   (صاحب المنصّة، ١٩ أكتوبر ٢٠٢٦): البطاقاتُ العشرُ بجوار بعضها، وسطرٌ بثلاثين كلمةً
+   يطيل صندوقا واحدا فيختلّ الصفّ. والحروفُ سقفٌ ثانٍ لكلمةٍ لا تنتهي. */
+export const PITCH_MAX_WORDS = 12
 export const PITCH_MAX_CHARS = 120
 
 /** السطورُ كما تُحفظ: مقصوصةُ الأطراف، بلا فراغ */
@@ -26,7 +31,19 @@ export function cleanPitchLines(raw: readonly string[]): string[] {
 export function pitchProblemAr(lines: readonly string[]): string | null {
   if (lines.length === 0) return 'اكتب سطرا واحدا على الأقل'
   if (lines.length > PITCH_MAX_LINES) return `${PITCH_MAX_LINES} أسطر على الأكثر`
+  if (lines.some((l) => countWords(l) > PITCH_MAX_WORDS)) return `السطر ${PITCH_MAX_WORDS} كلمة على الأكثر`
   if (lines.some((l) => l.length > PITCH_MAX_CHARS)) return `السطر أطول من ${PITCH_MAX_CHARS} حرفا`
+  return null
+}
+
+/* ═══ والنبذةُ بصياغتنا — «قبل/بعد» يقبلها أو يرفضها (١٩ أكتوبر ٢٠٢٦) ═══
+   بحدود نبذته هو نفسِها (`public-text.ts`): نبذةٌ واحدةٌ بسقفٍ واحد، أيًّا كاتبُها. */
+export function bioSuggestionProblemAr(text: string): string | null {
+  const t = text.trim()
+  const words = countWords(t)
+  if (words < BIO_MIN_WORDS) return `النبذة ${BIO_MIN_WORDS} كلمات على الأقل`
+  if (words > BIO_MAX_WORDS) return `النبذة ${BIO_MAX_WORDS} كلمة على الأكثر`
+  if (t.length > BIO_MAX_CHARS) return `النبذة أطول من ${BIO_MAX_CHARS} حرفا`
   return null
 }
 

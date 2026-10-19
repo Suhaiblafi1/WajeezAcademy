@@ -307,11 +307,14 @@ const PHRASES: Record<string, string> = {
   'trainer.public_text.submit': 'إرسال المدرّب عنوانه ونبذته للاعتماد',
   'trainer.public_text.approve': 'اعتماد عنوان المدرّب ونبذته للعرض العامّ',
   'trainer.public_text.reject': 'ردّ عنوان المدرّب ونبذته قبل عرضهما',
-  /* «لماذا نفتخر به» — نكتبه ويقبله المدرّب أو يرفضه (١٩ أكتوبر ٢٠٢٦، `trainer-pitch.service.ts`) */
-  'trainer.pitch.propose': 'اقتراح «لماذا نفتخر به» على المدرّب',
-  'trainer.pitch.withdraw': 'سحب «لماذا نفتخر به» قبل قرار المدرّب',
-  'trainer.pitch.accept': 'قبول المدرّب «لماذا نفتخر به» — ظهر في بطاقته',
-  'trainer.pitch.reject': 'رفض المدرّب «لماذا نفتخر به»',
+  /* ما نقترحه على بطاقة المدرّب — «لماذا نفتخر به» ونبذتُه بصياغتنا (١٩ أكتوبر ٢٠٢٦،
+     `trainer-suggestion.service.ts`). والنوعُ في `meta.kind` */
+  'trainer.suggestion.propose': 'اقتراحنا على بطاقة المدرّب — «لماذا نفتخر به» أو نبذته',
+  'trainer.suggestion.withdraw': 'سحب اقتراحنا على بطاقة المدرّب قبل قراره',
+  'trainer.suggestion.accept': 'قبول المدرّب اقتراحنا — ظهر في بطاقته',
+  'trainer.suggestion.edit': 'تعديل المدرّب «لماذا نفتخر به» — ينتظر اعتمادنا',
+  'trainer.suggestion.approve_edit': 'اعتماد تعديل المدرّب على «لماذا نفتخر به»',
+  'trainer.suggestion.reject': 'رفض المدرّب اقتراحنا على بطاقته',
   'account.avatar.upload': 'رفع صاحب الحساب صورته',
   /* إتاحةُ المدرّب (المهمّة ٧١) — تُسجَّل لأنّ الغيابَ **يردُّ إسنادا**:
      فمن سأل «لماذا لم يُسنَد؟» يجد الجوابَ في الأثر لا في واتساب. */

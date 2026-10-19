@@ -266,8 +266,8 @@ const MEDIUM: readonly string[] = [
   /* صورتُه ومراجعتُه */
   'trainer.photo.approve', 'trainer.photo.reject',
   'trainer.public_text.approve', 'trainer.public_text.reject',
-  /* و«لماذا نفتخر به» (١٩ أكتوبر ٢٠٢٦): نقترحه عليه أو نسحبه — قرارٌ ينتظره في بوّابته */
-  'trainer.pitch.propose', 'trainer.pitch.withdraw',
+  /* وما نقترحه على بطاقته (١٩ أكتوبر ٢٠٢٦): نقترحه أو نسحبه أو نعتمد تعديلَه — قرارٌ يصله */
+  'trainer.suggestion.propose', 'trainer.suggestion.withdraw', 'trainer.suggestion.approve_edit',
   'rating.approve', 'rating.reject',
   /* تذكرتُه */
   'support.ticket.assign', 'support.ticket.status',
@@ -349,8 +349,8 @@ const LOW: readonly string[] = [
   'trainer.assign', 'trainer.create_direct', 'trainer.profile.create',
   'trainer.account.link', 'trainer.demo.evaluate', 'trainer.document.register',
   'trainer.public_profile.save', 'trainer.photo.upload', 'trainer.public_text.submit',
-  /* وقبولُه «لماذا نفتخر به» أو رفضُه — فعلُه هو، يصلنا خبرُه ولا يُرسَل إليه */
-  'trainer.pitch.accept', 'trainer.pitch.reject',
+  /* وقبولُه اقتراحَنا أو تعديلُه أو رفضُه — فعلُه هو، يصلنا خبرُه ولا يُرسَل إليه */
+  'trainer.suggestion.accept', 'trainer.suggestion.edit', 'trainer.suggestion.reject',
   'trainer.review.add', 'trainer.review.update',
   'trainer.application.submit', 'trainer.application.resume', 'trainer.application.reapply',
   'trainer.application.purge', 'trainer.application.proposals_edit',

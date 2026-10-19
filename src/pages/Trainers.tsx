@@ -209,7 +209,8 @@ function TrainerCard({ t, open, onToggle }: { t: PublicTrainer; open: boolean; o
   const courses = new Set(t.assignedCourseIds).size
   const pitched = (t.pitch?.length ?? 0) > 0
   return (
-    <Card as="article" className="flex flex-col transition hover:border-teal/40">
+    /* والمعرّفُ مرساةُ «شاهد بطاقتك» في بوّابة المدرّب (`ProfileSuggestions`) */
+    <Card as="article" id={`trainer-${t.id}`} className="flex scroll-mt-24 flex-col transition hover:border-teal/40">
       <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 sm:gap-x-5">
         <TrainerPhoto t={t} />
         <div className="min-w-0">

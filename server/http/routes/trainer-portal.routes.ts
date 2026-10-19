@@ -21,7 +21,7 @@ import { TrainerBankService, MAX_ACCOUNT_LEN, BANK_ACCOUNT_KINDS } from '../../s
 import { TrainerMaterialsService } from '../../services/trainer-materials.service'
 import { TrainerPrepService } from '../../services/trainer-prep.service'
 import { TrainerPublicTextService } from '../../services/trainer-public-text.service'
-import { TrainerPitchService } from '../../services/trainer-pitch.service'
+import { TrainerSuggestionService } from '../../services/trainer-suggestion.service'
 import { EarningsService } from '../../services/earnings.service'
 import { requirePermission } from '../auth-plugin'
 import { AuthError } from '../../services/auth.service'
@@ -52,7 +52,7 @@ export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: Prisma
   const materials = new TrainerMaterialsService(prisma)
   const prep = new TrainerPrepService(prisma)
   const publicText = new TrainerPublicTextService(prisma)
-  const pitch = new TrainerPitchService(prisma)
+  const suggestions = new TrainerSuggestionService(prisma)
 
   /* ═══ عنوانُه ونبذتُه في «المدربون» — يكتبهما ونعتمدهما (٣ أكتوبر ٢٠٢٦) ═══
      العلّةُ في `trainer-public-text.service.ts`. والحدودُ هنا حدودُ الحقل
@@ -70,29 +70,30 @@ export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: Prisma
     return publicText.submit(req.auth!.userId, body)
   })
 
-  /* ═══ «لماذا نفتخر به» — نكتبه عنه، ويقبله أو يرفضه (١٩ أكتوبر ٢٠٢٦) ═══
-     العلّةُ في `trainer-pitch.service.ts`. والقرارُ له وحدَه: لا يُقرَّر في اقتراحٍ
-     ليس لملفّه. */
-  app.get('/api/trainer/pitch', {
+  /* ═══ ما نقترحه على بطاقته — يقبله أو يعدّله أو يرفضه (١٩ أكتوبر ٢٠٢٦) ═══
+     العلّةُ في `trainer-suggestion.service.ts`. والقرارُ له وحدَه: لا يُقرَّر في اقتراحٍ
+     ليس لملفّه. والسطورُ مع القبول تعديلُه على «لماذا نفتخر بك» — فتعود إلينا. */
+  app.get('/api/trainer/suggestions', {
     preHandler: requirePermission('trainer.portal'),
-    schema: { tags: ['trainer-portal'], summary: '«لماذا نفتخر بك» — ما يظهر الآن وما ينتظر قراري' },
-  }, async (req) => pitch.mine(req.auth!.userId))
+    schema: { tags: ['trainer-portal'], summary: 'ما تقترحه الأكاديميّة على بطاقتي — وما يظهر الآن' },
+  }, async (req) => suggestions.mine(req.auth!.userId))
 
-  app.post('/api/trainer/pitch/:id/accept', {
+  app.post('/api/trainer/suggestions/:id/accept', {
     preHandler: requirePermission('trainer.portal'),
-    schema: { tags: ['trainer-portal'], summary: 'أقبل «لماذا نفتخر بك» — فيظهر في بطاقتي' },
+    schema: { tags: ['trainer-portal'], summary: 'أقبل الاقتراح — كما هو، أو بتعديلي فيعود للمراجعة' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
-    return pitch.decide(req.auth!.userId, id, true)
+    const { lines } = z.object({ lines: z.array(z.string().max(400)).max(10).optional() }).parse(req.body ?? {})
+    return suggestions.accept(req.auth!.userId, id, lines)
   })
 
-  app.post('/api/trainer/pitch/:id/reject', {
+  app.post('/api/trainer/suggestions/:id/reject', {
     preHandler: requirePermission('trainer.portal'),
-    schema: { tags: ['trainer-portal'], summary: 'أرفض «لماذا نفتخر بك» — وتبقى بطاقتي كما هي' },
+    schema: { tags: ['trainer-portal'], summary: 'أرفض الاقتراح — وتبقى بطاقتي كما هي' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const { noteAr } = z.object({ noteAr: z.string().max(300).optional() }).parse(req.body ?? {})
-    return pitch.decide(req.auth!.userId, id, false, noteAr)
+    return suggestions.reject(req.auth!.userId, id, noteAr)
   })
 
   /* ═══ شعبةُ الإعداد — يقبل الدورةَ فيعبّئها في «شعبي» (٢ أكتوبر ٢٠٢٦) ═══

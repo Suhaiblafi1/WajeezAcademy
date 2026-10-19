@@ -1306,7 +1306,7 @@ model TrainerProfile {
   /// سببُ ردِّ آخرِ ما أرسله — يقرؤه في حسابه، ويُمحى بإرساله التالي
   publicTextRejectNoteAr String?
   /// «لماذا نفتخر به» — سطورٌ نكتبها نحن عنه، ولا تُنشر إلّا بقبوله (١٩ أكتوبر ٢٠٢٦).
-  /// والمقترَحُ في `TrainerPitchSuggestion` حتّى يقبله (`trainer-pitch.service.ts`)
+  /// والمقترَحُ في `TrainerTextSuggestion` حتّى يقبله (`trainer-suggestion.service.ts`)
   pitchLines            String[]                     @default([])
   ratingAvg             Float? // متوسط التقييم من خريجين حقيقيين — null = لا يُعرض
   ratingCount           Int? // عدد التقييمات
@@ -1371,7 +1371,7 @@ model TrainerProfile {
   marketingVideos       TrainerMarketingVideo[]
   marketingPhotos       TrainerMarketingPhoto[]
   posters               TrainerPoster[]
-  pitchSuggestions      TrainerPitchSuggestion[]
+  textSuggestions       TrainerTextSuggestion[]
   issuedDiscounts       TrainerIssuedDiscount[]
   codes                 TrainerCode[]
   codeRedemptions       TrainerCodeRedemption[]
@@ -1712,25 +1712,31 @@ model CohortMessage {
  * `src/application/trainer/cohort-move.ts`.
  */
 /**
- * ── «لماذا نفتخر به» — نكتبه نحن، ويقبله المدرّب أو يرفضه (١٩ أكتوبر ٢٠٢٦) ──
- * قرارُ صاحب المنصّة: «أضف كلماتٍ تشجّع الناس لهذا المدرّب، والمدرّب يوافق أو
- * يرفض التعديل». فهي بطاقةُ «قبل/بعد» كبقيّة ما نقترحه عليه: `before` ما يُعرض
- * الآن، و`lines` ما نقترح. ولا يصل الصفحةَ العامّة شيءٌ قبل قبوله.
+ * ── ما نقترحه نحن على بطاقة المدرّب — يقبله أو يرفضه (١٩ أكتوبر ٢٠٢٦) ──
+ * نوعان، وقرارُ صاحب المنصّة في كلٍّ:
+ *  · `pitch` «لماذا نفتخر به» — جديدٌ لا تعديل: «نريد أن نضيف عنك هذا»، ويعدّله
+ *    المدرّبُ أو يضيف إليه. وما قبله كما هو ينشر فورا، وما عدّله (`editedLines`)
+ *    يعود إلينا فنعتمده (`edited`) — فالعنوانُ بصوتنا.
+ *  · `bio` نبذتُه بصياغتنا — بطاقةُ «قبل/بعد» يقبلها أو يرفضها، لا يعدّلها.
+ * و`before` ما يُعرض لحظةَ الاقتراح، و`lines` ما نقترح (والنبذةُ سطرٌ واحد).
  */
-model TrainerPitchSuggestion {
-  id        String         @id @default(uuid()) @db.Uuid
-  profileId String         @db.Uuid
-  lines     String[]
-  before    String[]       @default([])
-  status    String         @default("pending") // pending | accepted | rejected | withdrawn
+model TrainerTextSuggestion {
+  id          String         @id @default(uuid()) @db.Uuid
+  profileId   String         @db.Uuid
+  kind        String         @default("pitch") // pitch | bio
+  lines       String[]
+  before      String[]       @default([])
+  /// ما عدّله المدرّبُ من سطورنا — ينتظر اعتمادَنا (`pitch` وحدَه)
+  editedLines String[]       @default([])
+  status      String         @default("pending") // pending | edited | accepted | rejected | withdrawn
   /// كلمتُه حين يرفض — اختياريّة
-  noteAr    String?
-  createdBy String         @db.Uuid
-  createdAt DateTime       @default(now())
-  decidedAt DateTime?
-  profile   TrainerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  noteAr      String?
+  createdBy   String         @db.Uuid
+  createdAt   DateTime       @default(now())
+  decidedAt   DateTime?
+  profile     TrainerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
 
-  @@index([profileId, status])
+  @@index([profileId, kind, status])
 }
 
 model CohortMoveRequest {

@@ -59,7 +59,7 @@ import {
   type ContractClosedView, type ContractLinkPurpose,
 } from '../../src/application/trainer/contract-link-state'
 import { liveTrainerWhere, publicTrainerWhere, trainerPubliclyVisible } from './trainer-visibility'
-import { PITCH_DRAFTS } from './trainer-pitch-drafts'
+import { BIO_DRAFTS, PITCH_DRAFTS } from './trainer-suggestion-drafts'
 import { cohortLeadTrainers } from './cohort-lead'
 import { cleanProposals, readProposals } from '../../src/application/trainer/teachable-proposals'
 import { pendingKind } from '../../src/application/trainer/pending-kind'
@@ -5895,10 +5895,10 @@ export class TrainerReviewService {
     const profiles = await this.prisma.trainerProfile.findMany({
       include: {
         application: { select: { fullName: true, email: true, status: true } },
-        /* آخرُ «لماذا نفتخر به» اقتُرح عليه — معلَّقٌ أو قُرِّر فيه (`trainer-pitch.service.ts`) */
-        pitchSuggestions: {
-          where: { status: { not: 'withdrawn' } }, orderBy: { createdAt: 'desc' }, take: 1,
-          select: { id: true, lines: true, status: true, noteAr: true, decidedAt: true, createdAt: true },
+        /* ما اقترحناه على بطاقته — يُقرأ آخرُ كلِّ نوعٍ منه (`trainer-suggestion.service.ts`) */
+        textSuggestions: {
+          where: { status: { not: 'withdrawn' } }, orderBy: { createdAt: 'desc' },
+          select: { id: true, kind: true, lines: true, editedLines: true, status: true, noteAr: true, decidedAt: true },
         },
         qualifications: {
           include: { course: { include: { versions: { orderBy: { version: 'desc' }, take: 1, select: { titleAr: true } } } } },
@@ -5918,7 +5918,9 @@ export class TrainerReviewService {
     const live = new Set((await this.prisma.trainerProfile.findMany({
       where: liveTrainerWhere(), select: { id: true },
     })).map((r) => r.id))
-    return profiles.map((p) => ({
+    return profiles.map((p) => {
+      const latest = (kind: string) => p.textSuggestions.find((x) => x.kind === kind) ?? null
+      return {
       profileId: p.id,
       applicationId: p.applicationId,
       name: p.application.fullName,
@@ -5929,10 +5931,13 @@ export class TrainerReviewService {
       suspended: Boolean(p.suspendedAt),
       publiclyVisible: p.publicVisibility && Boolean(p.publishApprovedAt),
       hasLiveCourse: live.has(p.id),
-      /* «لماذا نفتخر به»: المعروضُ، وآخرُ اقتراح، ومسوّدتُه الأولى لمن لم يُقترح عليه شيءٌ بعد */
+      /* ما نقترحه على بطاقته: المعروضُ، وآخرُ اقتراحٍ من كلّ نوع، ومسوّدتُه الأولى لمن لم
+         يُقترح عليه منه شيءٌ بعد */
       pitchLines: p.pitchLines,
-      pitchLatest: p.pitchSuggestions[0] ?? null,
-      pitchDraft: p.pitchLines.length === 0 && p.pitchSuggestions.length === 0 ? PITCH_DRAFTS[p.id] ?? null : null,
+      pitchLatest: latest('pitch'),
+      pitchDraft: p.pitchLines.length === 0 && !latest('pitch') ? PITCH_DRAFTS[p.id] ?? null : null,
+      bioLatest: latest('bio'),
+      bioDraft: latest('bio') ? null : BIO_DRAFTS[p.id] ?? null,
       isVerified: p.isVerified,
       /* ما تعرضه صفحةُ الفريق — يُقرأ هنا ليُحرَّر هنا */
       headline: p.headline,
@@ -5957,7 +5962,8 @@ export class TrainerReviewService {
         cohortTitle: a.cohort?.title ?? null,
         cohortStatus: a.cohort?.status ?? null,
       })),
-    }))
+      }
+    })
   }
 
   /* البتُّ في الطلب — والموافقةُ تؤهّل وتُسند في فعلٍ واحد.

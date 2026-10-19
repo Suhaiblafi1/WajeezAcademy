@@ -46,7 +46,7 @@ import { Card, Inset, Panel } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import Chip from "@/components/ui/Chip";
 import { BIO_MAX_WORDS, countWords } from "@/application/trainer/public-text";
-import { PITCH_MAX_CHARS, PITCH_MAX_LINES, cleanPitchLines, pitchHeadingAr, pitchProblemAr } from "@/application/trainer/pitch";
+import { PITCH_MAX_CHARS, PITCH_MAX_LINES, PITCH_MAX_WORDS, bioSuggestionProblemAr, cleanPitchLines, pitchHeadingAr, pitchProblemAr } from "@/application/trainer/pitch";
 interface OpsQualification { courseId: string; courseTitle: string; status: string }
 interface OpsAssignment {
   courseId: string; courseTitle: string
@@ -73,10 +73,24 @@ interface OpsTrainer {
   pendingText: { headline: string | null; bio: string | null; at: string } | null;
   /* «لماذا نفتخر به»: المعروضُ، وآخرُ اقتراح، ومسوّدتُه الأولى لمن لم يُقترح عليه شيء */
   pitchLines: string[];
-  pitchLatest: { id: string; lines: string[]; status: "pending" | "accepted" | "rejected"; noteAr: string | null; decidedAt: string | null } | null;
+  pitchLatest: OpsSuggestion | null;
   pitchDraft: string[] | null;
+  /* ونبذتُه بصياغتنا — «قبل/بعد» عنده (`trainer-suggestion.service.ts`) */
+  bioLatest: OpsSuggestion | null;
+  bioDraft: string | null;
   qualifications: OpsQualification[];
   assignments: OpsAssignment[];
+}
+
+/** آخرُ ما اقترحناه على بطاقته من نوعٍ — ولا يُقرأ المسحوب */
+interface OpsSuggestion {
+  id: string;
+  kind: "pitch" | "bio";
+  lines: string[];
+  editedLines: string[];
+  status: "pending" | "edited" | "accepted" | "rejected";
+  noteAr: string | null;
+  decidedAt: string | null;
 }
 
 interface PendingRequest {
@@ -136,25 +150,26 @@ const QUAL_LABEL: Record<string, string> = {
 
    حقلُ الرابط يعمل الآنَ بلا تخزين. وزرُّ الرفع يحتاج `FILE_UPLOADS=on`،
    فيُقال ذلك في الشاشة لا في رسالة خطأ بعد الضغط. */
-/* ═══ «لماذا نفتخر به» — نكتبه هنا، ويصل المدرّبَ بطاقةَ «قبل/بعد» (١٩ أكتوبر ٢٠٢٦) ═══
+/* ═══ ما نقترحه على بطاقته — «لماذا نفتخر به» ونبذتُه بصياغتنا (١٩ أكتوبر ٢٠٢٦) ═══
 
-   قرارُ صاحب المنصّة: «أضف كلماتٍ تشجّع الناس لهذا المدرّب، والمدرّب يوافق أو يرفض».
-   فالحقولُ تبدأ بآخر ما يُعرف: المعلَّقُ عنده، أو المرفوضُ لتُعدَّل، أو المعروضُ، أو
-   مسوّدتُه الأولى من نبذته (`server/services/trainer-pitch-drafts.ts`). ولا يظهر منها
-   للعامّة شيءٌ قبل قبوله — فالإرسالُ هنا اقتراحٌ لا نشر. */
-function PitchEditor({ trainer, onSaved }: { trainer: OpsTrainer; onSaved: () => Promise<void> | void }) {
-  const latest = trainer.pitchLatest;
-  const pending = latest?.status === "pending" ? latest : null;
-  const start = pending?.lines
-    ?? (latest?.status === "rejected" ? latest.lines : null)
-    ?? (trainer.pitchLines.length > 0 ? trainer.pitchLines : trainer.pitchDraft ?? []);
-  const [lines, setLines] = useState<string[]>(() =>
-    Array.from({ length: PITCH_MAX_LINES }, (_, i) => start[i] ?? ""));
+   قرارُ صاحب المنصّة: «لماذا نفتخر بك» **إضافةٌ** تصله «نريد أن نضيف عنك هذا» فيعدّلها
+   ويضيف إليها — وما عدّله يعود هنا فيُعتمد (`edited`)؛ والنبذةُ بصياغتنا **«قبل/بعد»** يقبلها
+   أو يرفضها. والحقولُ تبدأ بآخر ما يُعرف: تعديلُه، أو المعلَّقُ عنده، أو المرفوضُ لتُعدَّل،
+   أو المعروضُ، أو مسوّدتُه الأولى من نبذته (`server/services/trainer-suggestion-drafts.ts`).
+   ولا يظهر منها للعامّة شيءٌ قبل قراره — فالإرسالُ هنا اقتراحٌ لا نشر. */
+
+/** حالُ آخر اقتراح — شارةٌ واحدةٌ تقول أين هو */
+function SuggestionChip({ latest, shown, draft }: { latest: OpsSuggestion | null; shown: boolean; draft: boolean }) {
+  if (latest?.status === "pending") return <Chip tone="warn" srPrefixAr="الحالة">عند المدرب — ينتظر قراره</Chip>;
+  if (latest?.status === "edited") return <Chip tone="info" srPrefixAr="الحالة">عدّله المدرب — راجعه واعتمده</Chip>;
+  if (latest?.status === "rejected") return <Chip tone="danger" srPrefixAr="الحالة">رفضه</Chip>;
+  if (shown) return <Chip tone="positive" srPrefixAr="الحالة">يظهر في بطاقته</Chip>;
+  if (draft) return <Chip tone="neutral" srPrefixAr="الحالة">مسودة من نبذته — راجعها ثم أرسلها</Chip>;
+  return null;
+}
+
+function useRun(onSaved: () => Promise<void> | void) {
   const [busy, setBusy] = useState(false);
-  const clean = cleanPitchLines(lines);
-  const problem = pitchProblemAr(clean);
-  const unchanged = clean.join("\n") === (pending?.lines ?? trainer.pitchLines).join("\n");
-
   const run = async (path: string, body: unknown, ok: string) => {
     setBusy(true);
     try {
@@ -165,52 +180,123 @@ function PitchEditor({ trainer, onSaved }: { trainer: OpsTrainer; onSaved: () =>
       toastError(e instanceof ApiError ? e.message : "تعذّر الحفظ");
     } finally { setBusy(false); }
   };
+  return { busy, run };
+}
+
+function PitchEditor({ trainer, onSaved }: { trainer: OpsTrainer; onSaved: () => Promise<void> | void }) {
+  const latest = trainer.pitchLatest;
+  const open = latest?.status === "pending" || latest?.status === "edited" ? latest : null;
+  const edited = latest?.status === "edited" ? latest : null;
+  const start = edited?.editedLines
+    ?? (latest?.status === "pending" || latest?.status === "rejected" ? latest.lines : null)
+    ?? (trainer.pitchLines.length > 0 ? trainer.pitchLines : trainer.pitchDraft ?? []);
+  const [lines, setLines] = useState<string[]>(() =>
+    Array.from({ length: PITCH_MAX_LINES }, (_, i) => start[i] ?? ""));
+  const { busy, run } = useRun(onSaved);
+  const clean = cleanPitchLines(lines);
+  const problem = pitchProblemAr(clean);
+  const base = `/api/admin/trainers/${trainer.profileId}/suggestions`;
+  const unchanged = !edited && clean.join("\n") === (open?.lines ?? trainer.pitchLines).join("\n");
 
   return (
     <Inset className="mt-2.5 p-3">
       <div className="flex flex-wrap items-center gap-2">
         <p className="text-read font-black">{pitchHeadingAr(trainer.name)}</p>
-        {pending && <Chip tone="warn" srPrefixAr="الحالة">عند المدرب — ينتظر قبوله</Chip>}
-        {!pending && latest?.status === "rejected" && <Chip tone="danger" srPrefixAr="الحالة">رفضه</Chip>}
-        {!pending && latest?.status !== "rejected" && trainer.pitchLines.length > 0 && (
-          <Chip tone="positive" srPrefixAr="الحالة">يظهر في بطاقته</Chip>
-        )}
-        {!latest && trainer.pitchLines.length === 0 && trainer.pitchDraft && (
-          <Chip tone="neutral" srPrefixAr="الحالة">مسودة من نبذته — راجعها ثم أرسلها</Chip>
-        )}
+        <SuggestionChip latest={latest} shown={trainer.pitchLines.length > 0} draft={Boolean(trainer.pitchDraft)} />
       </div>
-      {!pending && latest?.status === "rejected" && latest.noteAr && (
+      {latest?.status === "rejected" && latest.noteAr && (
         <p className="mt-1.5 text-read leading-6 text-muted-foreground">سببه: {latest.noteAr}</p>
+      )}
+      {/* تعديلُه «قبل/بعد» — ما أرسلناه وما أرسله، والحقولُ تبدأ بتعديله */}
+      {edited && (
+        <div className="mt-2 grid gap-2 sm:grid-cols-2">
+          <div className="rounded-md border border-border/60 px-3 py-2 text-read leading-6">
+            <span className="font-black text-muted-foreground">ما أرسلناه: </span>
+            <span className="text-muted-foreground">{edited.lines.join(" · ")}</span>
+          </div>
+          <div className="rounded-md border border-border/60 px-3 py-2 text-read leading-6">
+            <span className="font-black text-muted-foreground">تعديله: </span>
+            {edited.editedLines.join(" · ")}
+          </div>
+        </div>
       )}
       <div className="mt-2 grid gap-2">
         {lines.map((l, i) => (
-          <input
-            key={i}
-            value={l}
-            maxLength={PITCH_MAX_CHARS}
-            aria-label={`السطر ${i + 1}`}
-            placeholder={i === 0 ? "حقيقة من نبذته، مثل: درّب أكثر من 250 متدربا مع اليونيسف" : "سطر اختياري"}
-            onChange={(e) => setLines((cur) => cur.map((x, j) => (j === i ? e.target.value : x)))}
-            className={`${controlCls} w-full`}
-          />
+          <div key={i}>
+            <input
+              value={l}
+              maxLength={PITCH_MAX_CHARS}
+              aria-label={`السطر ${i + 1}`}
+              placeholder={i === 0 ? "حقيقة من نبذته بصوت الفخر، مثل: 15 سنة يصنع مدربين، لا متدربين فقط" : "سطر اختياري"}
+              onChange={(e) => setLines((cur) => cur.map((x, j) => (j === i ? e.target.value : x)))}
+              className={`${controlCls} w-full`}
+            />
+            {l.trim() && <span className="mt-0.5 block text-read text-muted-foreground">{countWords(l)} / {PITCH_MAX_WORDS} كلمة</span>}
+          </div>
         ))}
       </div>
       <div className="mt-2 flex flex-wrap items-center gap-2">
-        <Button
-          tone="confirm" size="sm" loading={busy} disabled={Boolean(problem) || unchanged}
-          onClick={() => void run(`/api/admin/trainers/${trainer.profileId}/pitch`, { lines: clean }, "أرسلت للمدرب — تظهر حين يقبلها")}
-        >
-          {pending ? "أرسل التعديل للمدرب" : "أرسلها للمدرب"}
-        </Button>
-        {pending && (
-          <Button
-            tone="ghost" size="sm" disabled={busy}
-            onClick={() => void run(`/api/admin/trainers/${trainer.profileId}/pitch/withdraw`, {}, "سحبت الاقتراح")}
-          >
+        {edited ? (
+          <Button tone="confirm" size="sm" loading={busy} disabled={Boolean(problem)}
+            onClick={() => void run(`${base}/pitch/approve-edit`, { lines: clean }, "اعتمدت تعديله — ظهر في بطاقته")}>
+            اعتمد تعديله
+          </Button>
+        ) : (
+          <Button tone="confirm" size="sm" loading={busy} disabled={Boolean(problem) || unchanged}
+            onClick={() => void run(base, { kind: "pitch", lines: clean }, "أرسلت للمدرب — تظهر حين يقبلها")}>
+            {open ? "أرسل التعديل للمدرب" : "أرسلها للمدرب"}
+          </Button>
+        )}
+        {open && (
+          <Button tone="ghost" size="sm" disabled={busy}
+            onClick={() => void run(`${base}/pitch/withdraw`, {}, "سحبت الاقتراح")}>
             اسحب الاقتراح
           </Button>
         )}
         {problem && <span className="text-read text-muted-foreground">{problem}</span>}
+      </div>
+    </Inset>
+  );
+}
+
+/* والنبذةُ بصياغتنا — تصله «قبل/بعد». وهي غيرُ «حفظ الملفّ العامّ» أعلاه: ذاك يكتب النبذةَ
+   مباشرةً، وهذا يقترحها عليه فلا تتغيّر إلّا بقبوله. */
+function BioSuggestEditor({ trainer, onSaved }: { trainer: OpsTrainer; onSaved: () => Promise<void> | void }) {
+  const latest = trainer.bioLatest;
+  const pending = latest?.status === "pending" ? latest : null;
+  const start = latest && latest.status !== "accepted" ? latest.lines[0] ?? "" : trainer.bioDraft ?? "";
+  const [text, setText] = useState(start);
+  const { busy, run } = useRun(onSaved);
+  const problem = bioSuggestionProblemAr(text);
+  const unchanged = text.trim() === (pending?.lines[0] ?? trainer.bioPublic ?? "").trim();
+  const base = `/api/admin/trainers/${trainer.profileId}/suggestions`;
+
+  return (
+    <Inset className="mt-2.5 p-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <p className="text-read font-black">نبذة بصياغتنا — يقبلها أو يرفضها</p>
+        <SuggestionChip latest={latest} shown={latest?.status === "accepted"} draft={Boolean(trainer.bioDraft)} />
+      </div>
+      {latest?.status === "rejected" && latest.noteAr && (
+        <p className="mt-1.5 text-read leading-6 text-muted-foreground">سببه: {latest.noteAr}</p>
+      )}
+      <textarea
+        rows={4} value={text} onChange={(e) => setText(e.target.value)} aria-label="النبذة المقترحة"
+        className={`${controlCls} mt-2 w-full`}
+      />
+      <span className="mt-0.5 block text-read text-muted-foreground">{countWords(text)} / {BIO_MAX_WORDS} كلمة</span>
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <Button tone="confirm" size="sm" loading={busy} disabled={Boolean(problem) || unchanged}
+          onClick={() => void run(base, { kind: "bio", lines: [text] }, "أرسلت للمدرب — يراها قبل وبعد")}>
+          {pending ? "أرسل التعديل للمدرب" : "أرسلها للمدرب"}
+        </Button>
+        {pending && (
+          <Button tone="ghost" size="sm" disabled={busy}
+            onClick={() => void run(`${base}/bio/withdraw`, {}, "سحبت الاقتراح")}>
+            اسحب الاقتراح
+          </Button>
+        )}
+        {problem && text.trim() && <span className="text-read text-muted-foreground">{problem}</span>}
       </div>
     </Inset>
   );
@@ -891,7 +977,8 @@ export default function TrainerRunOps() {
 
                   <PublicProfileEditor trainer={t} onSaved={load} />
                   {/* والمفتاحُ يحمل آخرَ اقتراح: كلُّ إرسالٍ أو قرارٍ يبدأ الحقولَ من جديد */}
-                  <PitchEditor key={`${t.profileId}:${t.pitchLatest?.id ?? ""}:${t.pitchLines.join("|")}`} trainer={t} onSaved={load} />
+                  <PitchEditor key={`${t.profileId}:${t.pitchLatest?.id ?? ""}:${t.pitchLatest?.status ?? ""}:${t.pitchLines.join("|")}`} trainer={t} onSaved={load} />
+                  <BioSuggestEditor key={`${t.profileId}:bio:${t.bioLatest?.id ?? ""}:${t.bioLatest?.status ?? ""}`} trainer={t} onSaved={load} />
 
                   {/* الإجراءات — والتأهيلُ والإسنادُ من صفحة الشعبة */}
                   <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-white/10 pt-3">
