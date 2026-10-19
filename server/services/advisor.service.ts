@@ -833,6 +833,28 @@ export class AdvisorService {
 
   /* ── بوابة المستشار — المسند إليه فقط ── */
 
+  /* ═══ والطالبُ يعرف مستشارَه (١٩ أكتوبر ٢٠٢٦) ═══
+
+     كانت لوحتُه لا تقول من مستشارُه، وزرُّ المراسلة يذهب إلى رقم الأكاديمية بلا اسم — فمن
+     يقرأ لا يعرف لمن يحوّله. وقرارُ صاحب المنصّة والعلّةُ في `advisor-message.ts`: الاسمُ
+     وحدَه، والرقمُ رقمُ الأكاديمية.
+
+     والمستشارُ هو صاحبُ الإسناد النشط على حالته — والمسجَّلُ منها معها: المستشارُ يبقى
+     يتابع من سجّل («طلابي»). لا المغلقةُ ولا من قال «غير مهتمّ»، ولا مستشارٌ موقوف: اسمُ من
+     غادر يُرسَل إليه ما لن يقرأه. */
+  async myAdvisorOf(userId: string): Promise<{ displayName: string } | null> {
+    const link = await this.prisma.advisorAssignment.findFirst({
+      where: {
+        unassignedAt: null,
+        advisor: { status: 'active' },
+        case: { status: { notIn: ['closed', 'not_interested'] }, OR: [{ clientId: userId }, { lead: { userId } }] },
+      },
+      orderBy: { assignedAt: 'desc' },
+      select: { advisor: { select: { displayName: true } } },
+    })
+    return link ? { displayName: link.advisor.displayName } : null
+  }
+
   /** حارس: هل هذه الحالة مسندة لهذا المستشار الآن؟ */
   async assertAssigned(advisorId: string, caseId: string) {
     const link = await this.prisma.advisorAssignment.findFirst({
