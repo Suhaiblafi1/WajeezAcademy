@@ -127,7 +127,7 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
   {
     key: 'money',
     labelAr: 'المال',
-    whatAr: 'إيصال دفع · مقعد محجوز ينتظر الدفع · ردّ مبلغ أو ردّ طلبه · إلغاء طلب لم يكتمل · مستحقّات مدرّب',
+    whatAr: 'إيصال دفع · مقعد محجوز ينتظر الدفع · ردّ مبلغ أو ردّ طلبه · إلغاء طلب لم يكتمل · مستحقّات مدرّب · كشف عمولة مستشار',
     silenceable: false,
     lockedWhyAr: 'إيصال دفع لا يكتم: هو سجلّك عند الخلاف، وكتمه يجعل «لم يخبرني أحد» صحيحا في الظاهر.',
     /* ═══ والردُّ خبرُ مالٍ كالقبض (ي-٤) ═══
@@ -146,6 +146,8 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
          (١٩ أكتوبر ٢٠٢٦): كان في «تقدّمي» فيُكتَم، ومهلتُه مهلةُ أخيه — والطلبُ يُلغى بعد ساعة */
       'order.seats_held', 'plan.seats_held',
       'order.cancelled_abandoned', 'trainer_payout',
+      /* وكشفُ عمولة المستشار كمستحقّات المدرّب (١٩ أكتوبر ٢٠٢٦) — مالُه لا يُكتَم خبرُه */
+      'advisor_payout',
     ],
   },
   {

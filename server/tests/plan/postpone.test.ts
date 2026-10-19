@@ -111,7 +111,7 @@ describe('٢ — ما يقع بالتأجيل', () => {
       where: { userId: trainerUserId, templateKey: 'cohort.plan.decision' }, orderBy: { queuedAt: 'desc' },
     })
     expect(bell?.title).toBe('«شعبةُ التفاوض — تُؤجَّل» مؤجّلةٌ إلى موسم الربيع 2027')
-    expect(bell?.body).toContain('لم تُقبل «شعبةُ التفاوض — تُؤجَّل» لموسم الشتاء 2026، وأُجّلت إلى موسم الربيع 2027')
+    expect(bell?.body).toContain('لم تُقبل «شعبةُ التفاوض — تُؤجَّل» لموسم الشتاء 2026/2027، وأُجّلت إلى موسم الربيع 2027')
     expect(bell?.body).toContain('وكلمةُ الإدارة: اخترنا لك ثلاثا هذا الفصل.')
   })
 

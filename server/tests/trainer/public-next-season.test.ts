@@ -23,7 +23,7 @@ beforeAll(async () => {
   await setupTestDb()
   prisma = await testPrisma()
   review = new TrainerReviewService(prisma)
-  c = (await prisma.course.findMany({ where: { status: 'published' }, take: 8, orderBy: { id: 'asc' }, select: { id: true } })).map((x) => x.id)
+  c = (await prisma.course.findMany({ where: { status: 'published' }, take: 9, orderBy: { id: 'asc' }, select: { id: true } })).map((x) => x.id)
   profileId = (await review.createTrainerDirectly(ACTOR, { fullName: 'مدربة المواسم', email: 'next-season@test.local' })).profileId
   await review.approvePublicVisibility(profileId, ACTOR)
 
@@ -42,6 +42,8 @@ beforeAll(async () => {
   await lead(2, 'active', winter.id, '2096-11-03')
   await lead(3, 'completed', winter.id, '2096-11-02')
   await lead(4, 'draft', winter.id, '2096-11-04')
+  /* وصفُّ فصلها يقول الشتاء ومواعيدُها في الربيع — يراها المشتري في الربيع */
+  await lead(8, 'open', winter.id, '2097-02-15')
   await prisma.trainerCourseAssignment.create({ data: { profileId, courseId: c[5]!, status: 'active' } })
   await prisma.trainerPath.create({
     data: { profileId, titleAr: 'مسار الشتاء', status: 'published', publishedAt: new Date(), termId: winter.id, courses: { create: [{ courseId: c[6]!, sequence: 1 }] } },
@@ -54,14 +56,20 @@ beforeAll(async () => {
 describe('بطاقة المدرب العامة — الموسم القادم وحده', () => {
   it('⚠️ ① المفتوحة والممتلئة تحت موسمها، والأقرب أولا', async () => {
     const o = (await card()).offer
-    expect(o.map((g) => g.termAr)).toEqual(['موسم الشتاء 2096', 'موسم الربيع 2097'])
+    expect(o.map((g) => g.termAr)).toEqual(['موسم الشتاء 2096/2097', 'موسم الربيع 2097'])
     expect(o[0]!.courseIds).toContain(c[0])
-    expect(o[1]!.courseIds).toEqual([c[1]])
+    expect(o[1]!.courseIds).toContain(c[1])
   })
 
   it('⚠️ ② لا الجارية ولا المنتهية ولا المسودة، ولا إسناد بلا شعبة، ولا مسار بلا موسم', async () => {
     const ids = (await card()).assignedCourseIds
     for (const k of [2, 3, 4, 5, 7]) expect(ids, `ظهرت الدورة ${k}`).not.toContain(c[k])
+  })
+
+  it('⚠️ وموسم الشعبة من مواعيدها لا من صف فصلها', async () => {
+    const o = (await card()).offer
+    expect(o.find((g) => g.termAr === 'موسم الربيع 2097')?.courseIds, 'قرئ الموسم من صف الفصل').toContain(c[8])
+    expect(o[0]!.courseIds).not.toContain(c[8])
   })
 
   it('③ ومساره المنشور لموسم مسمى في موسمه', async () => {

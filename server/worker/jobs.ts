@@ -1380,6 +1380,70 @@ export async function runAdvisorReminders(prisma: PrismaClient, now = new Date()
   }
 }
 
+/** كشوفُ عمولة المستشارين للشهر الذي انتهى — والعلّةُ في `advisor-payout.service.ts` */
+export async function runAdvisorPayouts(prisma: PrismaClient, now = new Date()): Promise<JobResult> {
+  const started = Date.now()
+  const { AdvisorPayoutService, lastClosedPeriod } = await import('../services/advisor-payout.service')
+  const { created } = await new AdvisorPayoutService(prisma).generate(lastClosedPeriod(now), null, now)
+  return {
+    job: 'advisor_payouts',
+    summaryAr: created === 0 ? 'لا كشف عمولة جديد' : `ولد ${created} كشف عمولة`,
+    done: created, failed: 0, ms: Date.now() - started,
+  }
+}
+
+/* ═══ تصحيحُ شعبٍ بقرار صاحب المنصّة — مرّةً واحدة لكلٍّ (١٩ أكتوبر ٢٠٢٦) ═══
+
+   «استراتيجية التسعير — شعبة ٤» نُقلت إلى «موسم الشتاء 2027» — وكان الاسمُ يعني نوفمبر 2027 إلى يناير 2028 ويُقرأ
+   الشتاءَ القادم — فصار أوّلُ لقائها 30 نوفمبر 2027. واختار صاحبُ المنصّة: «Move to coming winter». فتُنقل بالنقل نفسِه
+   الذي يمرّ به طلبُ المدرّب (`staffMove`): تُزاح مواعيدُها ولقاءاتُها بأسابيعَ كاملة، ويتحدّث Zoom والدعوات، وتُبلَّغ
+   مدرّبتُها. والقرارُ باسم من اعتمد النقلَ الأوّل.
+
+   ولا يقع إلّا مرّة: يُشترط أن يكون أوّلُ لقائها ما زال الموعدَ المنقولَ إليه خطأ. فإن تحرّك — بهذا التصحيح أو بغيره —
+   لم يُمسّ. */
+export interface CohortCorrection { cohortId: string; firstAt: string; to: { year: number; season: string }; reasonAr: string }
+export const COHORT_CORRECTIONS: CohortCorrection[] = [{
+  cohortId: 'f0025a7b-1437-4d17-b8b5-b633bd9b5045',
+  firstAt: '2027-11-30T15:00:00.000Z',
+  to: { year: 2026, season: 'nov_jan' },
+  reasonAr: 'نقلت إلى موسم الشتاء 2027/2028 باسم ملتبس، ومقصودها الشتاء القادم — بقرار صاحب المنصة.',
+}]
+
+export async function runCohortCorrections(prisma: PrismaClient): Promise<JobResult> {
+  return applyCohortCorrections(prisma, COHORT_CORRECTIONS)
+}
+
+/** يطبّق قائمةَ تصحيحاتٍ — والوظيفةُ تمرّر قائمتَها، والاختبارُ قائمتَه */
+export async function applyCohortCorrections(prisma: PrismaClient, list: CohortCorrection[]): Promise<JobResult> {
+  const started = Date.now()
+  const { CohortMoveService } = await import('../services/cohort-move.service')
+  const moves = new CohortMoveService(prisma)
+  let done = 0
+  let failed = 0
+  for (const c of list) {
+    const first = await prisma.cohortSession.findFirst({
+      where: { cohortId: c.cohortId, status: { notIn: ['cancelled'] } }, orderBy: { startsAt: 'asc' }, select: { startsAt: true },
+    })
+    if (!first || first.startsAt.toISOString() !== c.firstAt) continue
+    const decidedBy = (await prisma.cohortMoveRequest.findFirst({
+      where: { cohortId: c.cohortId, status: 'approved', reviewedBy: { not: null } }, orderBy: { reviewedAt: 'desc' }, select: { reviewedBy: true },
+    }))?.reviewedBy
+    if (!decidedBy) { failed += 1; continue }
+    try {
+      await moves.staffMove(decidedBy, c.cohortId, { toYear: c.to.year, toSeason: c.to.season, reason: c.reasonAr })
+      done += 1
+    } catch (e) {
+      console.error('[cohort_corrections] تعذّر تصحيح شعبة', c.cohortId, e)
+      failed += 1
+    }
+  }
+  return {
+    job: 'cohort_corrections',
+    summaryAr: done === 0 && failed === 0 ? 'لا شعبة تنتظر تصحيحا' : `صحح موعد ${done} شعبة${failed ? `، وتعذر ${failed}` : ''}`,
+    done, failed, ms: Date.now() - started,
+  }
+}
+
 /** بياناتُ من لم يسجّل تُمحى بعد ستة أشهر بلا نشاط — والعلّةُ في `guest-erasure.service.ts` */
 export async function runEraseIdleGuests(prisma: PrismaClient, now = new Date()): Promise<JobResult> {
   const started = Date.now()
@@ -1434,8 +1498,12 @@ export const JOBS = [
   { key: 'cleanup_expired', everyMs: 6 * HOUR, run: cleanupExpired, titleAr: 'تنظيف ما انتهى' },
   /* مرّةً في اليوم: التقليمُ ليس عاجلا، وتكرارُه بلا داعٍ يُقفل جداولَ السجلّ */
   { key: 'enforce_retention', everyMs: 24 * HOUR, run: enforceRetention, titleAr: 'تقليم جداول السجلّ بمدّة حفظها' },
+  /* كلَّ ستّ ساعات: الكشفُ يولد بعد انتهاء الشهر بساعاتٍ لا بيوم — ومن له كشفٌ يُتخطّى */
+  { key: 'advisor_payouts', everyMs: 6 * HOUR, run: runAdvisorPayouts, titleAr: 'كشوف عمولة المستشارين للشهر الذي انتهى' },
   /* مرّةً في اليوم: الأجلُ ستة أشهر، فيومٌ دقّةٌ كافية */
   { key: 'erase_idle_guests', everyMs: 24 * HOUR, run: runEraseIdleGuests, titleAr: 'محو بيانات من لم يسجل بعد ستة أشهر بلا نشاط' },
+  /* كلَّ ساعة: يقع مرّةً لكلّ شعبة ثمّ لا يجد شيئا — وشرطُه موعدُها لا عدّاد */
+  { key: 'cohort_corrections', everyMs: HOUR, run: runCohortCorrections, titleAr: 'تصحيح مواعيد شعب بقرار صاحب المنصة' },
 ] as const
 
 /** دورةٌ واحدةٌ لوظيفةٍ واحدة، بأثرها المسجَّل — لا عملَ صامت */

@@ -60,6 +60,8 @@ model User {
   advisorAssignments   AdvisorAssignment[]        @relation("CaseAdvisor")
   advisorProfile       AdvisorProfile?
   advisorRequests      AdvisorRequest[]           @relation("AdvisorRequestBy")
+  advisorPayouts       AdvisorPayout[]            @relation("AdvisorPayouts")
+  advisorBankAccounts  AdvisorBankAccount[]
   advisorRequestsRuled AdvisorRequest[]           @relation("AdvisorRequestDecidedBy")
   couponsRestricted    Coupon[]                   @relation("CouponRestrictedTo")
   skillRemeasures      SkillRemeasure[]           @relation("SkillRemeasureUser")
@@ -3658,6 +3660,86 @@ model AdvisorCase {
   requests           AdvisorRequest[]
 
   @@index([status, updatedAt])
+}
+
+/// كشفُ عمولة المستشار لشهرٍ واحد (١٩ أكتوبر ٢٠٢٦) — والعلّةُ في `advisor-payout.service.ts`.
+model AdvisorPayout {
+  id             String              @id @default(uuid()) @db.Uuid
+  advisorId      String              @db.Uuid
+  /// الشهرُ الذي دُفعت فيه دفعاتُ طلابه — «2026-09»
+  period         String
+  status         String              @default("pending") // pending | approved | paid | cancelled
+  /// نسبتُه يومَ وُلّد الكشف — فتعديلُها بعده لا يغيّره
+  commissionPct  Decimal             @db.Decimal(5, 2)
+  total          Decimal             @default(0) @db.Decimal(10, 2)
+  currency       String              @default("USD")
+  approvedBy     String?             @db.Uuid
+  approvedAt     DateTime?
+  paidBy         String?             @db.Uuid
+  paidAt         DateTime?
+  /// رقمُ الحوالة أو ما يدلّ عليها — اختياريّ
+  paidRefAr      String?
+  cancelReasonAr String?
+  /// الحسابُ الذي كُشف لهذا الكشف — ويُردّ الصرفُ إن تبدّل بعده (`advisor-bank.service.ts`)
+  bankAccountId  String?             @db.Uuid
+  createdAt      DateTime            @default(now())
+  advisor        User                @relation("AdvisorPayouts", fields: [advisorId], references: [id])
+  bankAccount    AdvisorBankAccount? @relation(fields: [bankAccountId], references: [id], onDelete: SetNull)
+  items          AdvisorPayoutItem[]
+
+  @@index([advisorId, period])
+  @@index([status, createdAt])
+}
+
+/// حسابُ المستشار البنكيّ لعمولته (١٩ أكتوبر ٢٠٢٦) — كحساب المدرّب، والعلّةُ في `advisor-bank.service.ts`.
+model AdvisorBankAccount {
+  id                 String          @id @default(uuid()) @db.Uuid
+  userId             String          @db.Uuid
+  status             String          @default("active") // active | superseded
+  /// معمّى بظرفٍ مربوطٍ بصاحبه (`advisorBankAad`) — لا يُقرأ صريحا إلّا لحظةَ الصرف
+  ibanSealed         String
+  tail4              String
+  countryCode        String          @db.VarChar(2)
+  holderName         String
+  bankNameAr         String
+  branchAr           String?
+  swiftBic           String?
+  accountKind        String          @default("iban") // iban | local
+  routingCode        String?
+  ownNameConfirmedAt DateTime?
+  /// اسمُ صاحب الحساب أمام اسمه في المنصّة — يُقال لمن يصرف ولا يمنع
+  outcome            String          @default("unverifiable") // matches | differs | unverifiable
+  outcomeScore       Int             @default(0)
+  setBy              String?         @db.Uuid
+  createdAt          DateTime        @default(now())
+  supersededAt       DateTime?
+  lastRevealAt       DateTime?
+  user               User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payouts            AdvisorPayout[]
+
+  @@index([userId, status])
+}
+
+/// بندٌ في كشف المستشار: عمولةُ دفعةٍ واحدة، أو ما يُحسم لاستردادٍ منها
+model AdvisorPayoutItem {
+  id            String        @id @default(uuid()) @db.Uuid
+  payoutId      String        @db.Uuid
+  /// مكرَّرٌ من الكشف ليحرسه فهرسٌ فريد: لا تُعدّ دفعةٌ في كشفين
+  advisorId     String        @db.Uuid
+  kind          String        @default("commission") // commission | refund
+  orderId       String        @db.Uuid
+  /// للاسترداد وحدَه — لكلّ استردادٍ بندُه
+  refundId      String?       @db.Uuid
+  /// المبلغُ الذي حُسبت عليه العمولة — سالبٌ للاسترداد
+  base          Decimal       @db.Decimal(10, 2)
+  amount        Decimal       @db.Decimal(10, 2)
+  descriptionAr String
+  /// أُلغي كشفُه — فتعود دفعتُه إلى ما يُحسب في الكشف التالي
+  voidedAt      DateTime?
+  payout        AdvisorPayout @relation(fields: [payoutId], references: [id], onDelete: Cascade)
+
+  @@index([payoutId])
+  @@index([advisorId, orderId])
 }
 
 /// ملفُّ المستشار — شروطُ عمله لا حالاتُه.
