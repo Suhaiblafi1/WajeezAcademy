@@ -7,6 +7,7 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
 import type { FastifyInstance } from 'fastify'
 import { setupTestDb, testPrisma } from '../helpers/db'
+import { giveLiveCourse } from '../helpers/live-course'
 import { makeReadyForApproval } from '../helpers/trainer-ready'
 import { AuthService } from '../../services/auth.service'
 import { TrainerReviewService, RUBRIC_CRITERIA } from '../../services/trainer-review.service'
@@ -149,6 +150,8 @@ describe('صلاحيات منظومة المدربين عبر HTTP', () => {
   })
 
   it('7) غير الموثق لا يظهر في القائمة العامة، والموثق بموافقة نشر يظهر', async () => {
+    /* وله دورةٌ منشورةٌ من البداية: فغيابُه قبل الاعتماد سببُه الاعتمادُ وحدَه */
+    await giveLiveCourse(prisma, profileId)
     const before = await app.inject({ method: 'GET', url: '/api/trainers/public' })
     expect(before.json().find((t: { id: string }) => t.id === profileId)).toBeUndefined()
 
