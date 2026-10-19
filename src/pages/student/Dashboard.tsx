@@ -5,6 +5,7 @@ import {
   Loader2, Send, Sparkles, Target, TrendingUp, Video, LifeBuoy,
 } from "lucide-react";
 import PortalLayout from "./PortalLayout";
+import MyAdvisorCard from "@/components/MyAdvisorCard";
 import { buildJourney, defaultTrackId, type JourneyPlan, type JourneyTrack } from "@/application/student/journey";
 import { usePublishedContent } from "@/services/public-content";
 import { useRealSession } from "@/services/session";
@@ -22,9 +23,8 @@ import { cohortDayAr, DAY_NUMERIC } from "@/application/learning/cohort-gate";
 /* حُذفت خريطة ADVISORS هنا كما حُذفت في صفحة المسار: أسماءُ أشخاصٍ مكتوبةٌ في
    الكود تُعرض للطالب الدافع كأنها مستشارُه المعيَّن. والقاعدة أن لا اسم يُعرض
    كحقيقة قبل توثيقه واعتماده.
-   وللإسناد الحقيقي جداولُه في القاعدة (AdvisorCase وAdvisorAssignment
-   وAdvisorNote)، ولا تقرؤها هذه الصفحة بعدُ. فحين تُوصَل، يُعرض المستشار
-   المعيَّن فعلا وملاحظتُه الفعلية — لا اسمٌ يُنتقى برمز المسار. */
+   ووُصل الإسنادُ الحقيقيّ (١٩ أكتوبر ٢٠٢٦): بطاقةُ «مستشارك» (`MyAdvisorCard`) تقرأ
+   صاحبَ الإسناد النشط على حالته من القاعدة — لا اسمٌ يُنتقى برمز المسار. */
 
 /* ─── أنواع الوضع الحقيقي (مطابقة لاستجابات /api/learner) ─── */
 interface RealEnrollment {
@@ -481,6 +481,9 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
         </Panel>
       </div>
 
+      {/* مستشارُه المسنَد — اسمُه وزرُّ مراسلته (`MyAdvisorCard`) */}
+      <MyAdvisorCard className="mt-6" />
+
       {/* روابط سريعة */}
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Panel as={Link} tone="accent" interactive to="/student/skills" className="block transition hover:border-teal/60">
@@ -571,6 +574,7 @@ function EmptyRealDashboard({ name, signals }: { name: string; signals: EmptySig
             تابع في رحلتي
           </Link>
         </Panel>
+        <MyAdvisorCard className="mt-6" />
       </PortalLayout>
     );
   }
@@ -590,6 +594,7 @@ function EmptyRealDashboard({ name, signals }: { name: string; signals: EmptySig
             افتح فواتيري
           </Link>
         </Panel>
+        <MyAdvisorCard className="mt-6" />
       </PortalLayout>
     );
   }
@@ -609,6 +614,7 @@ function EmptyRealDashboard({ name, signals }: { name: string; signals: EmptySig
             اختر شعبتك الأولى
           </Link>
         </Panel>
+        <MyAdvisorCard className="mt-6" />
       </PortalLayout>
     );
   }
@@ -630,6 +636,7 @@ function EmptyRealDashboard({ name, signals }: { name: string; signals: EmptySig
           </Link>
         </div>
       </Panel>
+      <MyAdvisorCard className="mt-6" />
     </PortalLayout>
   );
 }
