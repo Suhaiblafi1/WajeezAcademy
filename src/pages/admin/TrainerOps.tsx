@@ -7,7 +7,10 @@ import {
   Globe, Info, Loader2, Settings2, Star, XCircle, Zap,
 } from "lucide-react";
 import { apiGet, apiPost, ApiError } from "@/services/api";
-import { fmtDateTime } from "@/application/text/format-ar";
+import { fmtDate, fmtDateTime } from "@/application/text/format-ar";
+import { MANUAL_PAYOUT_AR } from "@/application/trainer/pay-readiness";
+import { PAYOUT_OBJECTION_DAYS } from "@/application/trainer/notice-periods";
+import ConfirmAction from "@/components/ConfirmAction";
 import { LEDGER_CURRENCY } from "@/application/commerce/presentment"
 
 import { RULE_TYPE_AR } from "@/application/trainer/compensation-labels";
@@ -593,6 +596,15 @@ interface PayoutRow {
   paidAt?: string | null; createdAt: string;
   items: { id: string; description: string; amount: string | number; sourceRef?: string | null }[];
   profile: { application?: { fullName: string; reference: string } | null };
+  /* أيستحقّ الصرفَ الآن — لكلّ شعبةٍ في الكشف سطر، وبلا شعبة فهو يدويّ (`pay-readiness.ts`) */
+  readiness: { saidAr: string; ready: boolean }[];
+  ready: boolean | null;
+  approvableFrom: string;
+  bankAccount: {
+    id: string; maskedAr: string; holderName: string; bankNameAr: string; branchAr: string | null;
+    swiftBic: string | null; accountKind: string; routingCode: string | null; outcome: string; outcomeSaidAr: string;
+  } | null;
+  revealed: boolean;
 }
 interface ProfileOpt { id: string; fullName: string; reference: string; status?: string }
 interface TrainerSummaryRow {
@@ -631,6 +643,9 @@ export function TrainerPayouts() {
   const [showCancelledZero, setShowCancelledZero] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [cancelReason, setCancelReason] = useState<Record<string, string>>({});
+  /* الرقمُ الصريحُ يبقى في الشاشة وحدَها — لا يُحفظ ولا يعود بعد تحديثها */
+  const [ibans, setIbans] = useState<Record<string, string>>({});
+  const [revealFor, setRevealFor] = useState<PayoutRow | null>(null);
   const [form, setForm] = useState({ profileId: "", period: "" });
   const [items, setItems] = useState<{ description: string; amount: string; sourceRef: string }[]>([
     { description: "", amount: "", sourceRef: "" },
@@ -700,6 +715,12 @@ export function TrainerPayouts() {
       "/api/admin/trainer-payouts/generate", { batch: true });
     setBatchResult(res); setPreview(null);
   }, "اكتمل التوليد الدفعي");
+
+  const reveal = (p: PayoutRow) => act(async () => {
+    const { iban } = await apiPost<{ iban: string }>(`/api/admin/trainer-payouts/${p.id}/bank-account/reveal`);
+    setIbans((m) => ({ ...m, [p.id]: iban }));
+    setRevealFor(null);
+  }, "كشف رقم الحساب وسجل الكشف");
 
   const create = () => act(async () => {
     await apiPost("/api/admin/trainer-payouts", {
@@ -966,13 +987,42 @@ export function TrainerPayouts() {
             ))}
           </ul>
           {(p.status === "pending" || p.status === "approved") && (
+            <div className="mt-3 grid gap-1 border-t border-white/8 pt-3 text-read">
+              {p.readiness.length === 0 && <p className="text-gold-ink">{MANUAL_PAYOUT_AR}</p>}
+              {p.readiness.map((r, k) => (
+                <p key={k} className={r.ready ? "text-teal-light-ink" : "text-gold-ink"}>{r.ready ? "✓ " : ""}{r.saidAr}</p>
+              ))}
+              {p.status === "pending" && new Date(p.approvableFrom) > new Date() && (
+                <p className="text-muted-foreground">
+                  يعتمد من {fmtDate(p.approvableFrom)} — مهلة اعتراض المدرب {PAYOUT_OBJECTION_DAYS} أيام من ظهور الكشف له.
+                </p>
+              )}
+              {p.status === "approved" && !p.bankAccount && (
+                <p className="text-gold-ink">لم يدخل المدرب حسابه البنكي بعد، فلا يصرف حتى يدخله من «مستحقاتي».</p>
+              )}
+              {p.status === "approved" && p.bankAccount && (
+                <p>
+                  {p.bankAccount.accountKind === "local" ? "رقم الحساب" : "IBAN"}:{" "}
+                  <span dir="ltr" className="font-mono font-bold">{ibans[p.id] ?? p.bankAccount.maskedAr}</span>
+                  {" · "}{p.bankAccount.holderName} · {p.bankAccount.bankNameAr}{p.bankAccount.branchAr ? ` — ${p.bankAccount.branchAr}` : ""}
+                  {p.bankAccount.swiftBic ? <> · SWIFT <span dir="ltr" className="font-mono">{p.bankAccount.swiftBic}</span></> : null}
+                  {p.bankAccount.routingCode ? <> · <span dir="ltr" className="font-mono">{p.bankAccount.routingCode}</span></> : null}
+                </p>
+              )}
+              {p.status === "approved" && p.bankAccount?.outcome === "differs" && <p className="text-gold-ink">⚠️ {p.bankAccount.outcomeSaidAr}</p>}
+            </div>
+          )}
+          {(p.status === "pending" || p.status === "approved") && (
             <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-white/8 pt-3">
               {p.status === "pending" && (
-                <Button tone="secondary" size="sm" disabled={busy} onClick={() => act(() => apiPost(`/api/admin/trainer-payouts/${p.id}/approve`), "اعتمد الكشف")}>
+                <Button tone="secondary" size="sm" disabled={busy || new Date(p.approvableFrom) > new Date()} onClick={() => act(() => apiPost(`/api/admin/trainer-payouts/${p.id}/approve`), "اعتمد الكشف")}>
                   <BadgeCheck className="h-3.5 w-3.5" /> اعتماد
                 </Button>
               )}
-              {p.status === "approved" && (
+              {p.status === "approved" && p.bankAccount && !ibans[p.id] && (
+                <Button tone="secondary" size="sm" disabled={busy} onClick={() => setRevealFor(p)}>اكشف رقم الحساب</Button>
+              )}
+              {p.status === "approved" && p.bankAccount && (ibans[p.id] || p.revealed) && (
                 <Button tone="ghost" size="sm" disabled={busy} onClick={() => act(() => apiPost(`/api/admin/trainer-payouts/${p.id}/pay`), "سجل الصرف")} className="bg-emerald-500 text-white">
                   <CheckCircle2 className="h-3.5 w-3.5" /> تأكيد الصرف
                 </Button>
@@ -990,6 +1040,15 @@ export function TrainerPayouts() {
           </>
         );
       })()}
+      {revealFor && (
+        <ConfirmAction
+          titleAr={`كشف رقم حساب ${revealFor.profile.application?.fullName ?? "المدرب"}`}
+          confirmLabelAr="اكشف الرقم" tone="default" busy={busy}
+          onCancel={() => setRevealFor(null)} onConfirm={() => void reveal(revealFor)}
+        >
+          يظهر الرقم كاملا في هذه الشاشة فقط، ويسجل الكشف باسمك مع الكشف ومبلغه. وإن بدل المدرب حسابه بعدها فلا يقبل الصرف حتى تكشفه ثانية.
+        </ConfirmAction>
+      )}
     </div>
   );
 }
