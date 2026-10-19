@@ -12,11 +12,14 @@
       سادسٌ بنسخةٍ ثانيةٍ من الجملة لسقط هذا. */
 
 import { describe, expect, it } from 'vitest'
+import { createElement } from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { dirname, join, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { daysUntil, termUrgencyAr, termMonthsAr } from '@/application/terms/upcoming-text'
 import type { UpcomingTerm } from '@/services/upcoming-term'
+import CohortPicker from '@/components/CohortPicker'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '../../..')
 const read = (p: string) => readFileSync(join(root, p), 'utf8')
@@ -89,22 +92,33 @@ describe('عدّ الأيّام — ونداء لا لافتة', () => {
    (`UpcomingTermBanner`) لا على ما يظهر على الشاشة.
 
    فأُضيف أدناه حارسٌ يقيس المُصيَّر لا الاسم — وهو الذي كان سيمسكها. */
-describe('والأسطح الثلاثة تنادي النصّ الواحد', () => {
+/* ⚠️ وصارت صفرا — «لا شعبة لها بعد» (قرارُ صاحب المنصّة، ١٩ أكتوبر ٢٠٢٦)
+
+   كانت الأسطحُ الثلاثةُ أدناه تنادي سطرَ الفصل القادم تحت ما لا شعبةَ له، وهذا الملفُّ يشترط أن تناديه.
+   ثمّ سأل صاحبُ المنصّة عن دورةٍ بلا شعبةٍ يقول سطرُها «تفتح في موسم الشتاء… والتسجيل مفتوح حتّى ٣٠
+   نوفمبر»: «كيف تفتح بفصل الشتاء وهي يجب أن تكون مفتوحةً الآن إذا كان ذلك صحيحا؟». والسطرُ يستعير حالَ
+   الفصل لدورةٍ لا تُشترى. فاختار «لا شعبة لها بعد» بلا وعدٍ بموسم — فانقلب الحارس: لا ينادي سطحٌ منها
+   سطرَ الفصل. والاستيرادُ يُفحص لا ذكرُ الاسم، فالتعليقُ الشارحُ لا يُسقطه. */
+describe('والأسطح الثلاثة لا تعد بموسم لما لا شعبة له', () => {
   const SURFACES: [string, string][] = [
-    ['صفحة المسار — «يعلن السعر مع فتح الشعبة»', 'src/pages/Pathway.tsx'],
-    ['صفحة الدورة — الجملة نفسها', 'src/pages/CoursePath.tsx'],
+    ['صفحة المسار — صندوق «يعلن السعر مع فتح الشعبة»', 'src/pages/Pathway.tsx'],
+    ['صفحة الدورة — الصندوق نفسه', 'src/pages/CoursePath.tsx'],
     ['منتقي الشعب حين لا شعبة له', 'src/components/CohortPicker.tsx'],
   ]
 
   for (const [why, path] of SURFACES) {
-    it(why, () => {
-      /* الاستيرادُ لا ذكرُ الاسم: أوّلُ صياغةٍ لهذا الفحص كانت `toContain`
-         على اسم الوحدة، فمرّ `CohortPicker` **لأنّ تعليقا فيه يذكرها** —
-         حارسٌ يخضرّ على ملفٍّ لا ينادي المكوّنَ أصلا. */
-      expect(read(path), `${path} لا يستورد مكوّن الفصل القادم`)
-        .toMatch(/^import \{[^}]*Upcoming\w+[^}]*\} from ["']@\/components\/UpcomingTermNote["']/m)
+    it(`⚠️ ${why}`, () => {
+      expect(read(path), `${path} يعيد سطر الفصل تحت ما لا شعبة له`)
+        .not.toMatch(/^import \{[^}]*Upcoming\w+[^}]*\} from ["']@\/components\/UpcomingTermNote["']/m)
     })
   }
+
+  it('⚠️ والمنتقي بلا شعبة يقول «لا شعبة لها بعد» — لا موسم ولا «التسجيل مفتوح»', () => {
+    /* يُصيَّر ولا يُقرأ ملفُّه: ما يُفحص هو ما يراه الزائر */
+    const html = renderToStaticMarkup(createElement(CohortPicker, { cohorts: [], selectedId: null, onSelect: () => {} }))
+    expect(html).toContain('لا شعبة لها بعد')
+    expect(html).not.toMatch(/تفتح في|التسجيل|يعلن الموعد/)
+  })
 
   it('ولا نسخة ثانية من الجملة خارج المكوّن', () => {
     /* «تُفتح في» كانت مكتوبةً في `CohortPicker` نفسِه — فلو عادت إلى أيّ سطحٍ
@@ -156,8 +170,9 @@ describe('والأسطح الثلاثة تنادي النصّ الواحد', () 
     expect(offenders, `جملة «الفصل القادم» ما زالت تصيّر:\n${offenders.join('\n')}`).toEqual([])
   })
 
-  it('وتبقى الجملة القديمة حين لا فصل — لا يخترع موعد', () => {
-    expect(read('src/components/CohortPicker.tsx')).toContain('يعلن الموعد مع فتح الشعبة')
+  /* وكان هنا «وتبقى الجملة القديمة حين لا فصل» — يشترط «يعلن الموعد مع فتح الشعبة» في المنتقي. وذهبت
+     الجملةُ مع سطر الفصل بقرار ١٩ أكتوبر ٢٠٢٦، وحارسُ ما حلّ محلّها أعلاه. والمكوّنُ نفسُه لا يخترع موعدا: */
+  it('ومكوّن الفصل لا يخترع موعدا حين لا فصل', () => {
     expect(read('src/components/UpcomingTermNote.tsx')).toMatch(/if \(!term\) return/)
   })
 })

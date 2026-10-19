@@ -42,7 +42,6 @@ import { useRealSession } from "@/services/session";
 import { usePublishedContent } from "@/services/public-content";
 import SeoHead from "@/components/SeoHead";
 import EcosystemNote from "@/components/EcosystemNote";
-import { UpcomingTermLine } from "@/components/UpcomingTermNote";
 import { pathwayOffer, readyPathwayPrice } from "@/application/commerce/pathway-offer";
 import { needsAdvisorReferral } from "@/application/plan/advisor-referral";
 import { whyPathwayFacts, whyResultForPathway } from "@/application/plan/why-pathway";
@@ -884,13 +883,8 @@ export default function PathwayPage() {
                           ابدأ بما فتح الآن — خصم خطّتك كاملة محفوظ لك، وما فاتك يخصم من دفعتك القادمة.
                         </p>
                       )}
-                      {/* والسعرُ يبقى مجهولا، أمّا الموعدُ فلا: «مع فتح الشعبة» متى؟
-                          — هذا هو الجواب (البند ٥٢). */}
-                      {pricesLoaded && (
-                        <p className="text-read font-bold leading-5 text-foreground">
-                          <UpcomingTermLine />
-                        </p>
-                      )}
+                      {/* وكان هنا سطرُ الفصل القادم — رُفع (١٩ أكتوبر ٢٠٢٦): ما لا شعبةَ له لا يُقال إنّه يُفتح في
+                          موسم. والعلّةُ عند «لا شعبة لها بعد» في `CohortPicker.tsx`. */}
                     </div>
                   )}
                   <Button tone="confirm"
