@@ -117,6 +117,9 @@ function guestSnapshot(raw: unknown): object | null {
    فلكلّ إسنادٍ نوبة: من بدايته (أو أوّلِ تواصلٍ إن كان تلقائيّا) إلى رفعه أو إلى إسنادِ الطالب
    نفسِه لمستشارٍ غيره في أيّ حالة — أيُّهما أسبق. وما بين النقل وأوّلِ تواصلِ الجديد في إسنادٍ
    تلقائيّ لا يُحسب لأحد. والحالةُ المغلقةُ بلا نقلٍ تبقى نوبتُها مفتوحة: إتمامُ العمل لا يمحو أجرَه. */
+/** من هو في إجازته الآن — شرطٌ على المستخدم (`advisor-away.service.ts`) */
+export const awayNowWhere = (now: Date) => ({ advisorProfile: { is: { awayFrom: { lte: now }, awayUntil: { gt: now } } } })
+
 export async function attributedRevenue(prisma: PrismaClient, advisorId: string): Promise<number> {
   const orders = await attributedOrders(prisma, advisorId)
   return Math.round(orders.reduce((sum, o) => sum + netOf(o), 0) * 100) / 100
@@ -337,9 +340,13 @@ export class AdvisorService {
     const rows = await this.prisma.user.findMany({
       where: { status: 'active', roles: { some: { roleId: 'advisor' } } },
       orderBy: { displayName: 'asc' },
-      select: { id: true, displayName: true, email: true },
+      select: { id: true, displayName: true, email: true, advisorProfile: { select: { awayFrom: true, awayUntil: true } } },
     })
-    return rows
+    /* ومن في إجازته الآن يُقال — يُختار إن أراده من يُسند، ولا ينقل الغطاءُ ما أُسند إليه في إجازته */
+    const now = new Date()
+    return rows.map(({ advisorProfile: p, ...a }) => ({
+      ...a, awayUntil: p?.awayFrom && p.awayUntil && p.awayFrom <= now && p.awayUntil > now ? p.awayUntil : null,
+    }))
   }
 
   async listUnassigned() {
@@ -365,6 +372,8 @@ export class AdvisorService {
     const advisors = await this.prisma.user.findMany({
       where: {
         status: 'active', roles: { some: { roleId: 'advisor' } },
+        /* ومن في إجازته لا يُسند إليه (١٩ أكتوبر ٢٠٢٦) — والعلّةُ في `advisor-away.service.ts` */
+        NOT: awayNowWhere(new Date()),
         ...(opts.exclude?.length ? { id: { notIn: opts.exclude } } : {}),
       },
       select: { id: true },
@@ -456,7 +465,10 @@ export class AdvisorService {
     const [advisors, open] = await Promise.all([
       this.prisma.user.findMany({
         where: { roles: { some: { roleId: 'advisor' } } },
-        select: { id: true, displayName: true, email: true, status: true },
+        select: {
+          id: true, displayName: true, email: true, status: true,
+          advisorProfile: { select: { awayFrom: true, awayUntil: true, awayNoteAr: true } },
+        },
         orderBy: { displayName: 'asc' },
       }),
       this.prisma.advisorAssignment.groupBy({
@@ -466,7 +478,12 @@ export class AdvisorService {
       }),
     ])
     const openOf = new Map(open.map((r) => [r.advisorId, r._count._all]))
-    return advisors.map((a) => ({ ...a, openCases: openOf.get(a.id) ?? 0 }))
+    /* وإجازتُه — الحاضرةُ والقادمة، لا ما انقضى */
+    const now = new Date()
+    return advisors.map(({ advisorProfile: p, ...a }) => ({
+      ...a, openCases: openOf.get(a.id) ?? 0,
+      away: p?.awayFrom && p.awayUntil && p.awayUntil > now ? { from: p.awayFrom, until: p.awayUntil, noteAr: p.awayNoteAr } : null,
+    }))
   }
 
   /* ═══ ومستشارٌ غادر أو أُثقل: حالاتُه المفتوحةُ تُوزَّع على غيره بضغطة ═══

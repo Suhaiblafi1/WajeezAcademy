@@ -9,6 +9,7 @@ import { apiGet, apiPost, ApiError } from "@/services/api";
 import Pipeline from "./Pipeline";
 import LearnerPanel from "./LearnerPanel";
 import RequestsPanel from "./RequestsPanel";
+import AwayPanel from "./AwayPanel";
 import { STATUS_AR } from "@/application/advisor/pipeline";
 import { snapshotSummary } from "@/application/advisor/snapshot-summary";
 import { fmtDateWith } from "@/application/text/format-ar";
@@ -340,6 +341,8 @@ export default function AdvisorCases() {
 
   return (
     <AdvisorLayout title="حالاتي — عملاء التشخيص المسندون إليّ">
+      {/* وإجازتُه في رأسها — من ينتظره يُغطّى حين تبدأ (`advisor-away.service.ts`) */}
+      <AwayPanel />
       {/* القِمع أوّلا — «أين أنا؟» في نظرة، ثمّ التصفية لمن أرادها */}
       <div className="mb-5 flex flex-wrap items-center gap-2">
         <button onClick={() => setStatusFilter("")}

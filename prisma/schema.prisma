@@ -3756,6 +3756,10 @@ model AdvisorProfile {
   /// نسبةُ العمولة المئويّة على ما يُغلقه — ٠ حتّى تُتّفق
   commissionPct Decimal  @default(0) @db.Decimal(5, 2)
   notesAr       String?
+  /// إجازتُه — لا حالاتٍ جديدةً فيها، ومن ينتظر أوّلَ تواصلٍ منه يُنقل لغيره (`advisor-away.service.ts`)
+  awayFrom      DateTime?
+  awayUntil     DateTime?
+  awayNoteAr    String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
