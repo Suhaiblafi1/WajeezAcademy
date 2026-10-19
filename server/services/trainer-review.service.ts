@@ -58,7 +58,7 @@ import {
   SIGNED_COPY_STATES, closedStateOf, sameMailbox,
   type ContractClosedView, type ContractLinkPurpose,
 } from '../../src/application/trainer/contract-link-state'
-import { PUBLIC_TRAINER_WHERE, trainerPubliclyVisible } from './trainer-visibility'
+import { liveTrainerWhere, publicTrainerWhere, trainerPubliclyVisible } from './trainer-visibility'
 import { cohortLeadTrainers } from './cohort-lead'
 import { cleanProposals, readProposals } from '../../src/application/trainer/teachable-proposals'
 import { pendingKind } from '../../src/application/trainer/pending-kind'
@@ -67,7 +67,7 @@ import type { PrepCourse } from './trainer-prep.service'
 import {
   IDENTITY_MIMES, MAX_CONTRACT_DOC_BYTES,
   MAX_PHOTO_BYTES, PHOTO_KEY_PREFIX, PHOTO_MIMES, SIGNED_URL_TTL_MS,
-  assertFileUploadsEnabled, newStorageKey, photoPublicUrl, photoStorageKey, signKey,
+  assertFileUploadsEnabled, newStorageKey, photoPublicUrl, photoStorageKey, releasePhotoObject, signKey,
 } from './storage.service'
 import { deleteObject } from './object-store'
 import { EarningsService } from './earnings.service'
@@ -5908,6 +5908,11 @@ export class TrainerReviewService {
       },
       orderBy: { createdAt: 'desc' },
     })
+    /* ومن اعتُمد نشرُه ولا دورةَ منشورةً له هذا الفصلَ أو بعده لا يظهر للعامّة
+       (`liveTrainerWhere`). فيُقال هنا، وإلّا ظنّ المديرُ النشرَ معطّلا. */
+    const live = new Set((await this.prisma.trainerProfile.findMany({
+      where: liveTrainerWhere(), select: { id: true },
+    })).map((r) => r.id))
     return profiles.map((p) => ({
       profileId: p.id,
       applicationId: p.applicationId,
@@ -5918,6 +5923,7 @@ export class TrainerReviewService {
       hasAccount: Boolean(p.userId),
       suspended: Boolean(p.suspendedAt),
       publiclyVisible: p.publicVisibility && Boolean(p.publishApprovedAt),
+      hasLiveCourse: live.has(p.id),
       isVerified: p.isVerified,
       /* ما تعرضه صفحةُ الفريق — يُقرأ هنا ليُحرَّر هنا */
       headline: p.headline,
@@ -6091,16 +6097,16 @@ export class TrainerReviewService {
       if (next && !next.startsWith('https://') && !next.startsWith(PHOTO_KEY_PREFIX)) {
         throw new AuthError('bad_photo', 'رابط الصورة يجب أن يبدأ بـhttps://', 422)
       }
-      /* والصورةُ القديمةُ تُمحى من القرص حين تُستبدل — وإلّا بقيت بايتاتٌ
-         لا يشير إليها سجلٌّ، ولا يعرف أحدٌ أنّها هناك ليحذفها. */
-      const oldKey = photoStorageKey(profile.photoUrl)
-      if (oldKey && oldKey !== photoStorageKey(next)) {
-        try { await deleteObject(oldKey) } catch { /* غيابُها ليس عطبا */ }
-      }
       data.photoUrl = next
     }
 
     const saved = await this.prisma.trainerProfile.update({ where: { id: profile.id }, data })
+    /* والصورةُ القديمةُ تُمحى من القرص حين تُستبدل — وإلّا بقيت بايتاتٌ لا يشير
+       إليها سجلٌّ. وبعد الكتابة لا قبلها، وما دام عمودٌ آخرُ لا يحملها. */
+    if (input.photoUrl !== undefined) {
+      const oldKey = photoStorageKey(profile.photoUrl)
+      if (oldKey !== photoStorageKey(saved.photoUrl)) await releasePhotoObject(this.prisma, oldKey)
+    }
     await recordAudit(this.prisma, {
       actorId, action: 'trainer.public_profile.save', entityType: 'trainer_profile', entityId: profile.id,
       meta: { fields: Object.keys(data) },
@@ -6130,7 +6136,7 @@ export class TrainerReviewService {
     await this.prisma.trainerProfile.update({
       where: { id: profile.id }, data: { photoUrl: `${PHOTO_KEY_PREFIX}${storageKey}` },
     })
-    if (oldKey) { try { await deleteObject(oldKey) } catch { /* غيابُها ليس عطبا */ } }
+    await releasePhotoObject(this.prisma, oldKey)
 
     const exp = Date.now() + SIGNED_URL_TTL_MS
     const sig = signKey(storageKey, exp, 'write')
@@ -6169,9 +6175,7 @@ export class TrainerReviewService {
       data: { photoUrl: `${PHOTO_KEY_PREFIX}${profile.photoPendingKey}`, photoPendingKey: null },
     })
     /* والقديمةُ تُحذف بعد النقل لا قبله: لو انقطع شيءٌ بينهما بقيت الأولى */
-    if (oldKey && oldKey !== profile.photoPendingKey) {
-      try { await deleteObject(oldKey) } catch { /* غيابُها ليس عطبا */ }
-    }
+    if (oldKey !== profile.photoPendingKey) await releasePhotoObject(this.prisma, oldKey)
     await recordAudit(this.prisma, {
       actorId, action: 'trainer.photo.approve', entityType: 'trainer_profile', entityId: profile.id,
     })
@@ -6194,6 +6198,32 @@ export class TrainerReviewService {
       reason: reasonAr,
     })
     return { ok: true }
+  }
+
+  /* ═══ واعتمادُ كلِّ المعلَّقِ بضغطةٍ واحدة (١٩ أكتوبر ٢٠٢٦) ═══
+
+     قرارُ صاحب المنصّة: «اضف زر اعتماد كل الصور المعلقة». فكانت الصورُ تُعتمد
+     واحدةً واحدة، كلٌّ في بطاقة صاحبها بين عشرات البطاقات.
+
+     وكلُّ صورةٍ تمرّ بـ`approvePendingPhoto` نفسِها لا بتحديثٍ جماعيّ: فلكلٍّ
+     أثرُها (`trainer.photo.approve`) باسم صاحبها، وتُمحى صورتُه العامّةُ القديمةُ
+     كما في الاعتماد الفرديّ. ومن سقط اعتمادُه — كأن ردّها أحدٌ في اللحظة نفسِها
+     — لا يوقف الباقين: يُعدّ ويُقال. */
+  async approveAllPendingPhotos(actorId: string) {
+    const pending = await this.prisma.trainerProfile.findMany({
+      where: { photoPendingKey: { not: null } }, select: { id: true },
+    })
+    let approved = 0
+    let failed = 0
+    for (const p of pending) {
+      try {
+        await this.approvePendingPhoto(p.id, actorId)
+        approved += 1
+      } catch {
+        failed += 1
+      }
+    }
+    return { approved, failed }
   }
 
   /* ═══ اقتراحاتُ الدورات يحرّرها الأدمن ═══
@@ -6365,7 +6395,7 @@ export class TrainerReviewService {
   /** القائمة العامة — بوّابةُ الظهور الواحدة (`trainer-visibility.ts`) + طلبٌ نشط */
   async listPublicTrainers() {
     const profiles = await this.prisma.trainerProfile.findMany({
-      where: { ...PUBLIC_TRAINER_WHERE, application: { status: 'active' } },
+      where: { ...publicTrainerWhere(), application: { status: 'active' } },
       include: {
         application: { select: { fullName: true, country: true, specialties: true } },
         assignments: { where: { status: 'active' }, select: { courseId: true, cohortId: true } },

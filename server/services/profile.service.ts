@@ -8,9 +8,8 @@ import type { PrismaClient } from '@prisma/client'
 import { z } from 'zod'
 import {
   assertFileUploadsEnabled, newStorageKey, signKey,
-  MAX_PHOTO_BYTES, PHOTO_MIMES, PHOTO_KEY_PREFIX, SIGNED_URL_TTL_MS, photoStorageKey,
+  MAX_PHOTO_BYTES, PHOTO_MIMES, PHOTO_KEY_PREFIX, SIGNED_URL_TTL_MS, photoStorageKey, releasePhotoObject,
 } from './storage.service'
-import { deleteObject } from './object-store'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 
@@ -125,8 +124,8 @@ export class ProfileService {
       })
     }
 
-    /* غيابُ القديمةِ ليس عطبا — المهمُّ ألّا تبقى بلا مالك */
-    if (oldKey) { try { await deleteObject(oldKey) } catch { /* لا شيء */ } }
+    /* والقديمةُ لا تُمحى إن بقيت صورتَه العامّةَ المعتمَدة — `releasePhotoObject` */
+    await releasePhotoObject(this.prisma, oldKey)
 
     const exp = Date.now() + SIGNED_URL_TTL_MS
     await recordAudit(this.prisma, {

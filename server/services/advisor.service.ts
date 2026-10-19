@@ -4,7 +4,8 @@
 import type { PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
-import { safeNotify } from './notification.service'
+import { notifyRole, safeNotify } from './notification.service'
+import { ROLE_PERMISSIONS } from '../auth/permissions'
 import {
   GUEST_CONTACT_CONSENT_AR, GUEST_SNAPSHOT_MAX_CHARS, normalizePhone,
 } from '../../src/application/advisor/guest-contact'
@@ -209,8 +210,10 @@ export class AdvisorService {
 
   /* ── الإدارة: الإسناد ── */
 
-  /** `actorId` فارغٌ حين يُسند النظامُ نفسُه (`autoAssign`) — فيبقى ذلك ظاهرا في `assignedBy` */
-  async assign(caseId: string, advisorId: string, actorId: string | null) {
+  /** `actorId` فارغٌ حين يُسند النظامُ نفسُه (`autoAssign`) — فيبقى ذلك ظاهرا في `assignedBy`.
+      و`automatic` لمن اختار النظامُ مستشارَه ولو بطلب إداريّ (`redistribute`): عمولتُه
+      لا تبدأ إلّا بتواصل (`attributedRevenue`) — فالمستشارُ الجديدُ لم يعمل فيها بعد. */
+  async assign(caseId: string, advisorId: string, actorId: string | null, opts: { automatic?: boolean } = {}) {
     const kase = await this.prisma.advisorCase.findUnique({ where: { id: caseId } })
     if (!kase) throw new AuthError('not_found', 'الحالة غير موجودة', 404)
     const advisor = await this.prisma.user.findUnique({ where: { id: advisorId }, include: { roles: true } })
@@ -222,7 +225,7 @@ export class AdvisorService {
       where: { caseId, unassignedAt: null }, data: { unassignedAt: new Date() },
     })
     const link = await this.prisma.advisorAssignment.create({
-      data: { caseId, advisorId, assignedBy: actorId, automatic: actorId === null },
+      data: { caseId, advisorId, assignedBy: actorId, automatic: opts.automatic ?? actorId === null },
     })
     await recordAudit(this.prisma, {
       actorId, action: 'advisor.case.assign', entityType: 'advisor_case', entityId: caseId,
@@ -285,9 +288,12 @@ export class AdvisorService {
      والتعادلُ لمن طال عهدُه بآخر إسناد، ثمّ بالمعرّف — فلا يُترك لترتيب القاعدة.
      ولا مستشارَ نشطا = لا إسناد: تبقى في الطابور كما كانت. والإداريُّ يرى ما
      أُسند تلقائيّا ويغيّره (`listAutoAssigned`) — لا يُنتزع منه القرار. */
-  async autoAssign(caseId: string): Promise<string | null> {
+  async autoAssign(caseId: string, opts: { exclude?: string[]; actorId?: string | null } = {}): Promise<string | null> {
     const advisors = await this.prisma.user.findMany({
-      where: { status: 'active', roles: { some: { roleId: 'advisor' } } },
+      where: {
+        status: 'active', roles: { some: { roleId: 'advisor' } },
+        ...(opts.exclude?.length ? { id: { notIn: opts.exclude } } : {}),
+      },
       select: { id: true },
     })
     if (advisors.length === 0) return null
@@ -309,17 +315,115 @@ export class AdvisorService {
       || (lastOf.get(a) ?? 0) - (lastOf.get(b) ?? 0)
       || a.localeCompare(b),
     )[0]!
-    await this.assign(caseId, chosen, null)
+    await this.assign(caseId, chosen, opts.actorId ?? null, { automatic: true })
     return chosen
   }
 
   /** الإسنادُ التلقائيّ بعد فتح الحالة — وتعثّرُه لا يُسقط ما فُتح: تبقى في الطابور */
   private async autoAssignQuietly(caseId: string) {
     try {
-      await this.autoAssign(caseId)
+      const chosen = await this.autoAssign(caseId)
+      if (!chosen) await this.alertNoAdvisor(caseId)
     } catch (e) {
       console.error('[advisor] تعذّر الإسناد التلقائيّ — تبقى الحالة في الطابور', caseId, e)
     }
+  }
+
+  /* ═══ ولا مستشارَ نشطا — يُقال لمن يُسند، لا تنتظر الحالةُ صامتة (١٩ أكتوبر ٢٠٢٦) ═══
+
+     كانت الحالةُ تقع في الطابور ولا يعلم بها أحد حتّى يفتح إداريٌّ الشاشةَ مصادفةً —
+     ومن ترك رقمَه ينتظر. فيُبلَّغ كلُّ من يملك الإسنادَ بدوره (`advisor.assign` من
+     `ROLE_PERMISSIONS`، لا قائمةٌ تُكتب باليد فتفترق عنها).
+
+     ومرّةً كلَّ ستِّ ساعاتٍ لا مع كلّ حالة: يومٌ بلا مستشارٍ قد يحمل عشرين زائرا،
+     وعشرون جرسا لخبرٍ واحدٍ تُعلّم الإداريَّ ألّا يقرأ الجرس. والشاشةُ تعدّ الباقي. */
+  private async alertNoAdvisor(caseId: string) {
+    const recent = await this.prisma.notification.count({
+      where: { templateKey: 'advisor.case.no_advisor', queuedAt: { gte: new Date(Date.now() - 6 * 3600_000) } },
+    })
+    if (recent > 0) return
+    const roles = Object.entries(ROLE_PERMISSIONS)
+      .filter(([, keys]) => keys.includes('advisor.assign'))
+      .map(([role]) => role)
+    await notifyRole(this.prisma, roles, {
+      channel: 'in_app',
+      templateKey: 'advisor.case.no_advisor',
+      title: 'حالة تنتظر مستشارا',
+      body: 'وصلت حالة جديدة ولا مستشار نشط يستلمها. فعّل مستشارا أو أسندها من «حالات بلا مستشار».',
+      data: { caseId },
+    })
+  }
+
+  /* ═══════════ تغييرُ مستشار أيّ حالةٍ مفتوحة — لا ما أُسند تلقائيّا وحدَه ═══════════
+
+     كانت شاشةُ الإسناد تعرض ما لا مستشارَ له وما أسنده النظامُ في ثلاثين يوما. فما
+     أسنده إداريٌّ بيده، أو ما قدُم، لا شاشةَ تغيّر مستشارَه — فمن غادر أو أُثقل بقيت
+     حالاتُه عنده. فالبحثُ هنا في كلّ حالةٍ مفتوحةٍ مسندة، باسم صاحبها أو بريده أو رقمه. */
+  async searchOpenCases(q: string) {
+    const term = q.trim()
+    if (term.length < 2) return []
+    const like = { contains: term, mode: 'insensitive' as const }
+    return this.prisma.advisorCase.findMany({
+      where: {
+        status: { notIn: ['closed', 'enrolled', 'not_interested'] },
+        assignments: { some: { unassignedAt: null } },
+        OR: [
+          { client: { displayName: like } }, { client: { email: like } },
+          { lead: { fullName: like } }, { lead: { email: like } }, { lead: { phone: { contains: term } } },
+        ],
+      },
+      include: {
+        lead: true,
+        client: { select: { displayName: true, email: true } },
+        assignments: { where: { unassignedAt: null }, select: { advisorId: true, assignedAt: true, advisor: { select: { displayName: true } } } },
+      },
+      orderBy: { updatedAt: 'desc' },
+      take: 30,
+    })
+  }
+
+  /** المستشارون بحالاتهم المفتوحة — والموقوفُ منهم معهم: من غادر هو من تُنقل حالاتُه */
+  async advisorLoads() {
+    const [advisors, open] = await Promise.all([
+      this.prisma.user.findMany({
+        where: { roles: { some: { roleId: 'advisor' } } },
+        select: { id: true, displayName: true, email: true, status: true },
+        orderBy: { displayName: 'asc' },
+      }),
+      this.prisma.advisorAssignment.groupBy({
+        by: ['advisorId'],
+        where: { unassignedAt: null, case: { status: { notIn: ['closed', 'enrolled', 'not_interested'] } } },
+        _count: { _all: true },
+      }),
+    ])
+    const openOf = new Map(open.map((r) => [r.advisorId, r._count._all]))
+    return advisors.map((a) => ({ ...a, openCases: openOf.get(a.id) ?? 0 }))
+  }
+
+  /* ═══ ومستشارٌ غادر أو أُثقل: حالاتُه المفتوحةُ تُوزَّع على غيره بضغطة ═══
+
+     كلُّ حالةٍ مفتوحةٍ عنده تذهب لأقلّ الآخرين حالاتٍ — بقاعدة الإسناد التلقائيّ نفسِها
+     (`autoAssign`)، فلا يأخذها كلَّها أوّلُ اسمٍ في القائمة. والمغلقةُ تبقى له: إسنادُها
+     شاهدُ عمله وعمولتِه. والمستشارُ الجديدُ لم يعمل فيها بعد، فعمولتُه منها كعمولة
+     الإسناد التلقائيّ: من أوّل تواصلٍ يسجّله. ولا مستشارَ غيرُه نشطا = تبقى عنده. */
+  async redistribute(fromAdvisorId: string, actorId: string): Promise<{ moved: number; stayed: number }> {
+    const links = await this.prisma.advisorAssignment.findMany({
+      where: {
+        advisorId: fromAdvisorId, unassignedAt: null,
+        case: { status: { notIn: ['closed', 'enrolled', 'not_interested'] } },
+      },
+      select: { caseId: true },
+      orderBy: { assignedAt: 'asc' },
+    })
+    let moved = 0
+    for (const l of links) {
+      if (await this.autoAssign(l.caseId, { exclude: [fromAdvisorId], actorId })) moved += 1
+    }
+    await recordAudit(this.prisma, {
+      actorId, action: 'advisor.cases.redistribute', entityType: 'user', entityId: fromAdvisorId,
+      meta: { moved, stayed: links.length - moved },
+    })
+    return { moved, stayed: links.length - moved }
   }
 
   /** ما أسنده النظامُ ولم يغيّره إداريٌّ بعد — مفتوحا، في آخر ثلاثين يوما */

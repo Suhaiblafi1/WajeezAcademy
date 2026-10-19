@@ -15,7 +15,7 @@ import {
   MAX_UPLOAD_ANY, UPLOADABLE_KINDS, PHOTO_KEY_PREFIX, sniffImageMime, kindRequiresImage,
 } from '../../services/storage.service'
 import { assertSafeKey } from '../../services/object-store'
-import { PUBLIC_TRAINER_WHERE } from '../../services/trainer-visibility'
+import { publicTrainerWhere } from '../../services/trainer-visibility'
 import { requirePermission } from '../auth-plugin'
 import { CONTACT_CHANNEL_VALUES, TRAINING_SEASON_VALUES } from '../../../src/application/trainer/application-options'
 import { assertNotBot } from '../honeypot'
@@ -411,16 +411,16 @@ export function registerTrainerApplicationRoutes(app: FastifyInstance, prisma: P
      لمن فتحها متأخّرا.
 
      **فالحارسُ النشرُ لا التوقيع**: لا تُقدَّم صورةٌ إلّا لملفٍّ يجتاز
-     `PUBLIC_TRAINER_WHERE` بعينها — الشرطُ نفسُه الذي يحكم ظهورَ الاسم.
-     فمدرّبٌ لم يُعتمد نشرُه، أو أُوقف، تختفي صورتُه في اللحظة نفسِها التي
-     يختفي فيها اسمُه. ومفتاحُ المخزن عشوائيٌّ بـ٢٤ بايتا، فلا يُخمَّن. */
+     `publicTrainerWhere()` بعينها — الشرطُ نفسُه الذي يحكم ظهورَ الاسم.
+     فمدرّبٌ لم يُعتمد نشرُه، أو أُوقف، أو لا دورةَ منشورةً له هذا الفصلَ أو
+     بعده، تختفي صورتُه في اللحظة نفسِها التي يختفي فيها اسمُه. ومفتاحُ المخزن عشوائيٌّ بـ٢٤ بايتا، فلا يُخمَّن. */
   app.get('/api/v1/trainer-photos/:storageKey', {
     schema: { tags: ['public'], summary: 'صورة مدرّب معتمد النشر — بلا توقيع، وتختفي بإخفائه' },
   }, async (req, reply) => {
     const { storageKey } = z.object({ storageKey: z.string().min(10) }).parse(req.params)
     assertSafeKey(storageKey)
     const profile = await prisma.trainerProfile.findFirst({
-      where: { photoUrl: `${PHOTO_KEY_PREFIX}${storageKey}`, ...PUBLIC_TRAINER_WHERE },
+      where: { photoUrl: `${PHOTO_KEY_PREFIX}${storageKey}`, ...publicTrainerWhere() },
       select: { id: true },
     })
     /* ولا يُفرَّق في الردّ بين «لا صورةَ» و«لم يُعتمد نشرُه»: الفرقُ يقول

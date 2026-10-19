@@ -21,7 +21,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
-import { getObject } from './object-store'
+import { deleteObject, getObject } from './object-store'
 import { MAX_BODY_FILE_BYTES } from '../../src/application/trainer/module-body'
 import { SUBMISSION_FILE_MAX_BYTES } from '../../src/application/learning/submission-file'
 
@@ -186,6 +186,31 @@ export function photoPublicUrl(photoUrl: string | null | undefined): string | nu
   if (!photoUrl) return null
   const key = photoStorageKey(photoUrl)
   return key ? `/api/v1/trainer-photos/${key}` : photoUrl
+}
+
+/* ═══ والصورةُ الواحدةُ قد يحملها عمودان — فلا تُمحى وأحدُهما يشير إليها ═══
+
+   صورةُ الحساب يرفعها المدرّبُ فتسكن `avatarUrl` و`photoPendingKey` بالمفتاح
+   نفسِه، فإذا اعتمدتها الإدارةُ انتقل المفتاحُ إلى `photoUrl` **وبقي في
+   `avatarUrl`**: كائنٌ واحدٌ هو صورةُ حسابه وصورتُه العامّةُ معا.
+
+   وكان كلُّ استبدالٍ يمحو القديمةَ بلا سؤال. فمن رفع صورةَ حسابٍ جديدةً مُحيت
+   صورتُه العامّةُ المعتمَدةُ من القرص وعمودُها ما زال يشير إليها — فتطلبها
+   صفحةُ الفريق فتأخذ ٤٠٤، وتبقى مكسورةً حتّى تُعتمد الجديدة. ورفعُ الإدارة
+   صورةً عامّةً كان يمحو صورةَ حسابه بالطريق نفسِه.
+
+   فالمحوُ يسأل الأعمدةَ الثلاثةَ أوّلا، ويُنادى **بعد** كتابة البديل: لو
+   نُودي قبلها لَوجد العمودَ القديمَ يشير إليها فأبقاها. */
+export async function releasePhotoObject(prisma: PrismaClient, key: string | null): Promise<void> {
+  if (!key) return
+  const ref = `${PHOTO_KEY_PREFIX}${key}`
+  const [avatars, photos, pending] = await Promise.all([
+    prisma.learnerProfile.count({ where: { avatarUrl: ref } }),
+    prisma.trainerProfile.count({ where: { photoUrl: ref } }),
+    prisma.trainerProfile.count({ where: { photoPendingKey: key } }),
+  ])
+  if (avatars + photos + pending > 0) return
+  try { await deleteObject(key) } catch { /* غيابُها ليس عطبا */ }
 }
 
 /* مواد الشعبة وتسجيلاتها ليست وثائق متقدّم: حجمها حجم محاضرة، ومسار رفعها
