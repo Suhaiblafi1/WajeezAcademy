@@ -65,7 +65,8 @@ describe('① يومٌ بلا تواصلٍ مسجَّل — يُذكَّر ال�
   it('⚠️ بعد يومٍ يُذكَّر مرّةً — لا قبله، ولا مرّتين', async () => {
     const early = await caseWith(advA, 20)
     const due = await caseWith(advA, 25)
-    await advisors.remindDue()
+    /* دورتان معا ثمّ ثالثة — الختمُ قبل الجرس هو ما يمنع الثانيةَ المتزامنة */
+    await Promise.all([advisors.remindDue(), advisors.remindDue()])
     await advisors.remindDue()
     expect(await bells(advA, 'advisor.case.no_contact', early.id), 'ذُكّر قبل يوم').toBe(0)
     expect(await bells(advA, 'advisor.case.no_contact', due.id), 'لم يُذكَّر — أو ذُكّر مرّتين').toBe(1)
@@ -109,7 +110,7 @@ describe('② يومان بلا تواصل — يُبلَّغ من يُسند', 
     expect((await advisors.listUncontacted()).some((c) => c.id === day.id)).toBe(false)
 
     const two = await caseWith(advA, 49)
-    await advisors.remindDue()
+    await Promise.all([advisors.remindDue(), advisors.remindDue()])
     await advisors.remindDue()
     expect(await bells(managerId, 'advisor.case.uncontacted', two.id), 'لم تُبلَّغ — أو بُلّغت مرّتين').toBe(1)
     const row = (await advisors.listUncontacted()).find((c) => c.id === two.id)
@@ -143,7 +144,7 @@ describe('③ متابعةٌ حلّ موعدُها', () => {
     const done = await advisors.addFollowUp(advA, kase.id, { scheduledAt: new Date(Date.now() - 10 * 60_000) })
     await advisors.completeFollowUp(advA, done.id, 'reached')
 
-    await advisors.remindDue()
+    await Promise.all([advisors.remindDue(), advisors.remindDue()])
     await advisors.remindDue()
     expect(await bells(advA, 'advisor.followup.due', kase.id), 'لم يُذكَّر — أو ذُكّر مرّتين أو بما لم يحن').toBe(1)
     expect((await prisma.followUp.findUniqueOrThrow({ where: { id: now.id } })).remindedAt).not.toBeNull()
