@@ -49,7 +49,8 @@ interface CaseDetail extends CaseRow {
   notes: { id: string; body: string; createdAt: string }[];
   tasks: { id: string; title: string; status: string; dueAt: string | null; doneAt: string | null; createdAt: string }[];
   followUps: { id: string; scheduledAt: string; channel: string; note: string | null; doneAt: string | null; outcome: string | null }[];
-  contactEvents: { id: string; channel: string; direction: string; summary: string; createdAt: string }[];
+  /* و`source` يقول من سجّله: المستشارُ بيده، أو منصّةُ محادثات واتساب (`whatsapp-hook.service.ts`) */
+  contactEvents: { id: string; channel: string; direction: string; summary: string; source?: string; createdAt: string }[];
 }
 
 const INPUT = "w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none";
@@ -240,7 +241,9 @@ export default function AdvisorCases() {
                 <li key={c.id} className="rounded-xl bg-white/[0.04] p-2.5 text-read leading-5 text-foreground">
                   <span className="font-bold text-foreground">{CHANNEL_LABELS[c.channel] ?? c.channel}</span>
                   {c.direction === "in" ? " (واردة)" : ""} — {c.summary}
-                  <span className="block text-fine text-muted-foreground">{fmt(c.createdAt)}</span>
+                  <span className="block text-fine text-muted-foreground">
+                    {fmt(c.createdAt)}{c.source === "whatsapp_hook" ? " · من منصة واتساب" : ""}
+                  </span>
                 </li>
               ))}
               {detail.contactEvents.length === 0 && <li className="text-read text-muted-foreground">لا تواصل مسجل بعد</li>}

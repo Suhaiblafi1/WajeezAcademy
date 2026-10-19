@@ -549,6 +549,7 @@ export async function maskedIntegrationsView(prisma: PrismaClient) {
       bookingUrl: calendly.bookingUrl ?? '',
       guests: calendly.guests ?? '',
     },
+    whatsappHook: await whatsAppHookView(prisma),
   }
 }
 
@@ -618,4 +619,86 @@ export async function saveWhatsAppNumbers(
     meta: { spots: Object.keys(next) },
   })
   return row
+}
+
+/* ═══ ربطُ منصّة محادثات واتساب — رمزٌ يحرس بابَ «تواصلَ المستشار» (١٩ أكتوبر ٢٠٢٦) ═══
+
+   منصّةُ التوزيع تُخبرنا حين يراسل مستشارٌ طالبا، فيُسجَّل التواصلُ في حالته وحدَه
+   (`whatsapp-hook.service.ts`). والرمزُ سرٌّ كسائر الأسرار هنا: يُكتب ولا يُقرأ إلّا مقنَّعا،
+   والبيئةُ (`WHATSAPP_HOOK_TOKEN`) تغلبه. ولا يولّده الخادم: من يولّده يُعيده كاملا، وهو ما
+   لا يُفعل هنا — فالشاشةُ تولّده في المتصفّح ويُنسخ منه قبل الحفظ. */
+
+export interface WhatsAppHookConfig {
+  enabled: boolean
+  token?: string
+}
+
+/** أقصرُ رمزٍ يُقبل — ما دونه يُخمَّن، وبابُه يكتب ما تُحسب به عمولة */
+export const WHATSAPP_HOOK_TOKEN_MIN = 24
+
+export async function getWhatsAppHookConfig(prisma: PrismaClient): Promise<WhatsAppHookConfig> {
+  const row = await prisma.integrationSetting.findUnique({ where: { provider: 'whatsapp_hook' } })
+  const c = (row?.config ?? {}) as Partial<WhatsAppHookConfig>
+  const base: WhatsAppHookConfig = { enabled: row?.enabled ?? false, token: c.token || undefined }
+  if (process.env.WHATSAPP_HOOK_TOKEN) {
+    base.token = process.env.WHATSAPP_HOOK_TOKEN
+    base.enabled = true
+  }
+  return base
+}
+
+export async function saveWhatsAppHookConfig(
+  prisma: PrismaClient, actorId: string, input: { enabled?: boolean; token?: string },
+) {
+  const current = await getRawConfig(prisma, 'whatsapp_hook')
+  const next: Record<string, unknown> = { ...current }
+  const token = input.token?.trim()
+  if (token && !MASK.test(token)) {
+    if (token.length < WHATSAPP_HOOK_TOKEN_MIN) {
+      throw new AuthError('short_token', `الرمز قصير — ${WHATSAPP_HOOK_TOKEN_MIN} خانة على الأقل`, 422)
+    }
+    next.token = token
+  }
+  const row = await prisma.integrationSetting.upsert({
+    where: { provider: 'whatsapp_hook' },
+    update: { config: next as Prisma.InputJsonValue, enabled: input.enabled ?? false, updatedBy: actorId },
+    create: { provider: 'whatsapp_hook', config: next as Prisma.InputJsonValue, enabled: input.enabled ?? false, updatedBy: actorId },
+  })
+  await recordAudit(prisma, {
+    actorId, action: 'integration.whatsapp_hook.save', entityType: 'integration_setting', entityId: 'whatsapp_hook',
+    meta: { enabled: row.enabled, tokenRotated: Boolean(token && !MASK.test(token)) },
+  })
+  return row
+}
+
+/** آخرُ ما وصل من المنصّة وما صار به — نبضٌ يُكتب فوق سابقه كنبض Calendly، لا سجلٌّ يتراكم */
+export interface WhatsAppHookPulse {
+  at: string
+  outcome: string
+  outcomeAr: string
+}
+
+export async function recordWhatsAppHookPulse(prisma: PrismaClient, pulse: WhatsAppHookPulse): Promise<void> {
+  try {
+    const current = await getRawConfig(prisma, 'whatsapp_hook')
+    await prisma.integrationSetting.update({
+      where: { provider: 'whatsapp_hook' },
+      data: { config: { ...current, pulse: { ...pulse } } as unknown as Prisma.InputJsonValue },
+    })
+  } catch {
+    /* لا صفَّ بعد (الرمزُ من البيئة وحدَها) — والنبضُ خبرٌ لا يُسقط الحدث */
+  }
+}
+
+export async function whatsAppHookView(prisma: PrismaClient) {
+  const cfg = await getWhatsAppHookConfig(prisma)
+  const pulse = (await getRawConfig(prisma, 'whatsapp_hook')).pulse as Partial<WhatsAppHookPulse> | undefined
+  return {
+    enabled: cfg.enabled, envSourced: !!process.env.WHATSAPP_HOOK_TOKEN,
+    token: mask(cfg.token), hasToken: !!cfg.token,
+    url: `${publicSiteUrl()}/api/webhooks/whatsapp-contact`,
+    pulse: pulse && typeof pulse.at === 'string'
+      ? { at: pulse.at, outcome: String(pulse.outcome ?? ''), outcomeAr: String(pulse.outcomeAr ?? '') }
+      : null,
+  }
 }
