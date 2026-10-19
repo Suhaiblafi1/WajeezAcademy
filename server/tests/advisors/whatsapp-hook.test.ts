@@ -146,6 +146,18 @@ describe('③ لمستشار الحالة وحدَه، ومرّةً كلَّ س�
     expect((await post({ studentPhone: 'abc-de', advisorEmail: 'hook-a@test.local' })).json().outcome).toBe('bad_phone')
   })
 
+  it('⚠️ وبريدُ موظّفٍ ليس مستشارا، أو مستشارٍ موقوف — لا يُكتب له', async () => {
+    const { caseId, waPhone } = await guestWith(advA)
+    expect((await post({ studentPhone: waPhone, advisorEmail: 'hook-manager@test.local' })).json().outcome).toBe('unknown_advisor')
+    await prisma.user.update({ where: { id: advA }, data: { status: 'suspended' } })
+    try {
+      expect((await post({ studentPhone: waPhone, advisorEmail: 'hook-a@test.local' })).json().outcome).toBe('unknown_advisor')
+    } finally {
+      await prisma.user.update({ where: { id: advA }, data: { status: 'active' } })
+    }
+    expect(await prisma.contactEvent.count({ where: { caseId, source: 'whatsapp_hook' } })).toBe(0)
+  })
+
   it('⚠️ والحالةُ المغلقةُ لا يُكتب فيها', async () => {
     const { caseId, waPhone } = await guestWith(advA)
     await prisma.advisorCase.update({ where: { id: caseId }, data: { status: 'closed' } })
