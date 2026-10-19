@@ -6,8 +6,13 @@
    ① **الموعدُ ديسمبر** — قبل فصل الربيع ٢٠٢٧، وشارةُ الطابور تسمّي الفصلَ نفسَه.
    ② **والإغلاقُ ينتهي يومَ الموعد** — فلا يُوعَد بديسمبرَ مضى.
    ③ **والمؤجَّلُ بالإغلاق يُعرف بآخر دخولٍ في التأجيل** — لا بأيّ سطرٍ في سجلّه.
-   ④ **والنصُّ** — بلا تشكيلٍ إعرابيّ، ويسمّي الشهرَ والفصل. */
+   ④ **والنصُّ** — بلا تشكيلٍ إعرابيّ، ويسمّي الشهرَ والفصل.
+   ⑤ **وزرُّ الإرسال لا يَعِد بحجز** — «أرسل طلبك» ما دام الاستقبالُ مغلقا، ولا سطرَ
+      تقويمٍ فوقه. */
 
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { CASE_MARKS } from '@/application/text/plain-ar'
 import { termBounds, termTitleAr } from '@/application/terms/season'
@@ -82,5 +87,33 @@ describe('④ والنصّ', () => {
     expect(INTAKE_CLOSED_PROMISE_AR).toContain(TRAINER_INTAKE_CLOSED.nextTermAr)
     expect(INTAKE_DEFERRED_EXPLAIN_AR).toContain(INTAKE_CLOSED_PROMISE_AR)
     expect(INTAKE_DEFERRED_EXPLAIN_AR).toContain(INTAKE_CLOSED_AFTER_AR)
+  })
+})
+
+describe('⑤ وزرُّ الإرسال لا يَعِد بحجز', () => {
+  /* الشيفرةُ بلا تعليقاتها — فلا يمرّ الحارسُ بنصٍّ في شرحٍ لا في زرّ. وتعليقُ JSX
+     واحدٌ بين قوسين لا يعبر إلى آخر: النمطُ الكسولُ وحدَه يبدأ من `{` كتلةِ شيفرةٍ
+     فيبتلع ما بينها وبين أوّل تعليقٍ يُغلق قوسا بعدها — والشيفرةَ التي يُفحص عنها معه. */
+  const root = join(dirname(fileURLToPath(import.meta.url)), '../../..')
+  const src = readFileSync(join(root, 'src/pages/JoinTrainer.tsx'), 'utf8')
+    .replace(/\{\s*\/\*(?:(?!\*\/)[\s\S])*\*\/\s*\}/g, ' ')
+    .replace(/\/\*[\s\S]*?\*\//g, ' ')
+    .replace(/^\s*\/\/.*$/gm, ' ')
+  const send = src.slice(src.indexOf('key="send"'), src.indexOf('</Button>', src.indexOf('key="send"')))
+
+  it('⚠️ والزرُّ يقول «أرسل طلبك» حين يُغلق الاستقبال — و«احجز» في الفرع الآخر وحدَه', () => {
+    expect(send.length, 'لم يوجد زرّ الإرسال').toBeGreaterThan(0)
+    /* والدعوةُ وحدَها (`INTERVIEW_BOOKING_INVITE_ONLY`) طرفُ الإرسال كذلك — اجتمع الحارسان عند الدمج
+       (١٩ أكتوبر ٢٠٢٦، `interview-booking-pause.test.ts`): لا تقويمَ بعد الزرّ في أيٍّ منها. */
+    expect(send).toMatch(/closed \|\| INTERVIEW_BOOKING_PAUSE\.active(?: \|\| INTERVIEW_BOOKING_INVITE_ONLY\.active)? \? "أرسل طلبك" : "احجز موعد لقاء التعارف"/)
+    expect(send.split('احجز موعد لقاء التعارف').length - 1, '«احجز» خارج الشرط').toBe(1)
+  })
+
+  it('⚠️ ولا سطرَ يَعِد بالتقويم فوقه', () => {
+    const i = src.indexOf('بعد هذا الزر تختار موعد لقاء التعارف')
+    expect(i).toBeGreaterThan(-1)
+    /* والنافذةُ ٣٢٠ لا ٢٠٠ (١٩ أكتوبر ٢٠٢٦): بين الشرط والسطر طرفُ الدعوة وحدَها
+       (`INTERVIEW_BOOKING_INVITE_ONLY`) — والشرطُ المحروسُ هو هو. */
+    expect(src.slice(Math.max(0, i - 320), i)).toMatch(/step === 3 && !\(closed \|\| INTERVIEW_BOOKING_PAUSE\.active\) && \(/)
   })
 })

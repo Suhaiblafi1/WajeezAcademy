@@ -62,6 +62,7 @@ import { liveTrainerWhere, publicTrainerWhere, trainerPubliclyVisible } from './
 import { cohortLeadTrainers } from './cohort-lead'
 import { cleanProposals, readProposals } from '../../src/application/trainer/teachable-proposals'
 import { pendingKind } from '../../src/application/trainer/pending-kind'
+import { profileTrailOf, TRAIL_ACTIONS, type CardCohort } from '../../src/application/trainer/trainer-card'
 import type { PrepTally } from '../../src/application/trainer/prep-tally'
 import type { PrepCourse } from './trainer-prep.service'
 import {
@@ -5905,9 +5906,34 @@ export class TrainerReviewService {
             cohort: { select: { id: true, title: true, status: true } },
           },
         },
+        /* شعبُه كما هي — من `CohortTrainer` لا من جدول الإسناد القديم (`trainer-card.ts`) */
+        cohortTrainers: {
+          where: { cohort: { status: { not: 'cancelled' } } },
+          orderBy: { createdAt: 'asc' },
+          select: {
+            cohort: {
+              select: {
+                id: true, courseId: true, title: true, status: true, startsAt: true,
+                course: { select: { versions: { orderBy: { version: 'desc' }, take: 1, select: { titleAr: true } } } },
+                sessions: { where: { status: { not: 'cancelled' } }, orderBy: { startsAt: 'asc' }, take: 1, select: { startsAt: true } },
+                _count: { select: { sessions: { where: { status: { not: 'cancelled' } } } } },
+                plans: { where: { trainerId: { not: null } }, orderBy: { createdAt: 'desc' }, take: 1, select: { status: true, postponedTo: true } },
+                moveRequests: { where: { status: 'approved' }, orderBy: { reviewedAt: 'desc' }, take: 1, select: { toYear: true, toSeason: true } },
+              },
+            },
+          },
+        },
       },
       orderBy: { createdAt: 'desc' },
     })
+    /* وأثرُ الملفّ العامّ — من وضع الصورةَ ومن كتب النبذة — بنداءٍ واحدٍ للكلّ */
+    const trailRows = await this.prisma.auditEvent.findMany({
+      where: { entityType: 'trainer_profile', entityId: { in: profiles.map((p) => p.id) }, action: { in: [...TRAIL_ACTIONS] } },
+      select: { entityId: true, action: true, createdAt: true, meta: true },
+    })
+    const trailOf = (id: string) => profileTrailOf(
+      trailRows.filter((e) => e.entityId === id).map((e) => ({ action: e.action, at: e.createdAt, meta: e.meta })),
+    )
     /* ومن اعتُمد نشرُه ولا دورةَ منشورةً له هذا الفصلَ أو بعده لا يظهر للعامّة
        (`liveTrainerWhere`). فيُقال هنا، وإلّا ظنّ المديرُ النشرَ معطّلا. */
     const live = new Set((await this.prisma.trainerProfile.findMany({
@@ -5948,6 +5974,16 @@ export class TrainerReviewService {
         cohortTitle: a.cohort?.title ?? null,
         cohortStatus: a.cohort?.status ?? null,
       })),
+      cohorts: p.cohortTrainers.map(({ cohort: c }): CardCohort => ({
+        id: c.id, courseId: c.courseId, courseTitle: c.course.versions[0]?.titleAr ?? c.courseId,
+        title: c.title, status: c.status,
+        firstAt: (c.sessions[0]?.startsAt ?? c.startsAt)?.toISOString() ?? null,
+        sessions: c._count.sessions,
+        plan: c.plans[0]?.status ?? null,
+        postponedTo: c.plans[0]?.postponedTo?.toISOString().slice(0, 10) ?? null,
+        moved: c.moveRequests[0] ?? null,
+      })),
+      trail: trailOf(p.id),
     }))
   }
 
@@ -6107,9 +6143,12 @@ export class TrainerReviewService {
       const oldKey = photoStorageKey(profile.photoUrl)
       if (oldKey !== photoStorageKey(saved.photoUrl)) await releasePhotoObject(this.prisma, oldKey)
     }
+    /* والأثرُ يسمّي ما تغيّر فعلا لا ما أُرسل: الشاشةُ ترسل الحقولَ كلَّها في كلّ حفظ، وبطاقةُ المدرّب تقرأ
+       منه «عدّلتها الإدارة» (`trainer-card.ts`) — فحفظُ الصورة وحدَها لا يمحو أنّ النبذةَ كتبها المدرّب. */
+    const changed = (['headline', 'bioPublic', 'photoUrl'] as const).filter((k) => k in data && saved[k] !== profile[k])
     await recordAudit(this.prisma, {
       actorId, action: 'trainer.public_profile.save', entityType: 'trainer_profile', entityId: profile.id,
-      meta: { fields: Object.keys(data) },
+      meta: { fields: changed },
     })
     return {
       headline: saved.headline, bioPublic: saved.bioPublic, photoUrl: photoPublicUrl(saved.photoUrl),

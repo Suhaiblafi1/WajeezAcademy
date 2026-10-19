@@ -1800,7 +1800,7 @@ export default function JoinTrainer() {
             <div ref={missingRef}>
               <Card tone="warn" aria-live="polite">
                 <p className="text-read leading-5 font-black text-gold-ink">
-                  بقي {countAr(missing[step as 1 | 2 | 3].length, MISSING_FORMS)} قبل «{step < 3 ? "التالي" : "حجز الموعد"}»
+                  بقي {countAr(missing[step as 1 | 2 | 3].length, MISSING_FORMS)} قبل «{step < 3 ? "التالي" : closed || INTERVIEW_BOOKING_PAUSE.active ? "أرسل طلبك" : "حجز الموعد"}»
                 </p>
                 <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1.5 text-read leading-6 text-foreground">
                   {missing[step as 1 | 2 | 3].map((m) => (
@@ -1818,11 +1818,13 @@ export default function JoinTrainer() {
               الزرُّ يقول «احجز»، والشاشةُ التالية تفتح التقويم. ومن لم يُقَل
               له ذلك يضغط وهو يظنّ أنّه فرغ، فيقرأ ما بعده شكرا لا خطوة —
               وهي الشكوى التي وُضعت المحطّةُ الرابعةُ لها. */}
-          {step === 3 && (
+          {/* وما بعد الزرّ إرسالٌ لا حجز حين يُغلق الاستقبالُ أو يُوقَف الحجز — فلا يُوعَد
+              بتقويمٍ لن يُفتح، ويقول الزرُّ وسطرُ النقص «أرسل». (`intake-closed.ts`) */}
+          {step === 3 && !(closed || INTERVIEW_BOOKING_PAUSE.active) && (
             <Inset as="p" tone="accent" className="text-read leading-6 text-foreground">
-              {INTERVIEW_BOOKING_INVITE_ONLY.active || INTERVIEW_BOOKING_PAUSE.active
-                ? "بعد هذا الزر يصل طلبك إلى فريقنا. وإن رغبنا بلقائك وصلك رابط حجز لقاء التعارف على بريدك."
-                : "بعد هذا الزر تختار موعد لقاء التعارف من التقويم، وهي آخر خطوة. يصلك التأكيد ودعوة التقويم فورا."}
+              {!INTERVIEW_BOOKING_INVITE_ONLY.active
+                ? "بعد هذا الزر تختار موعد لقاء التعارف من التقويم، وهي آخر خطوة. يصلك التأكيد ودعوة التقويم فورا."
+                : "بعد هذا الزر يصل طلبك إلى فريقنا. وإن رغبنا بلقائك وصلك رابط حجز لقاء التعارف على بريدك."}
             </Inset>
           )}
 
@@ -1860,12 +1862,14 @@ export default function JoinTrainer() {
               <Button tone="primary" key="send"
                 type="submit" disabled={busy} className="disabled:cursor-not-allowed">
                 {busy ? <Loader2 className="h-4 w-4 animate-spin" />
-                  : INTERVIEW_BOOKING_PAUSE.active ? <Check className="h-4 w-4" />
+                  : closed || INTERVIEW_BOOKING_PAUSE.active || INTERVIEW_BOOKING_INVITE_ONLY.active ? <Check className="h-4 w-4" />
                   : <CalendarClock className="h-4 w-4" />}
                 {/* والزرُّ يتبع المفتاح: ما دام الحجزُ موقوفا فما بعده إرسالٌ
                     لا حجز، وزرٌّ يقول «احجز» ثمّ يفتح إشعارَ وقفٍ خُلفٌ للوعد
-                    — وهو العطبُ الذي كُتب له هذا الزرُّ أصلا، مقلوبا. */}
-                {busy ? "نحفظ طلبك…" : INTERVIEW_BOOKING_PAUSE.active || INTERVIEW_BOOKING_INVITE_ONLY.active ? "أرسل طلبك" : "احجز موعد لقاء التعارف"}
+                    — وهو العطبُ الذي كُتب له هذا الزرُّ أصلا، مقلوبا. وكذلك
+                    إغلاقُ الاستقبال (١٩ أكتوبر ٢٠٢٦): بعده «نتواصل في ديسمبر»
+                    لا تقويم. والدعوةُ وحدَها كذلك: لا تقويمَ بعد الإرسال. */}
+                {busy ? "نحفظ طلبك…" : closed || INTERVIEW_BOOKING_PAUSE.active || INTERVIEW_BOOKING_INVITE_ONLY.active ? "أرسل طلبك" : "احجز موعد لقاء التعارف"}
               </Button>
             )}
           </div>

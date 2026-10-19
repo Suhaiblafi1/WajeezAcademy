@@ -481,6 +481,7 @@ const PHRASES: Record<string, string> = {
   'worker.revoke_left_registrants': 'إلغاء تسجيل من ترك شعبته عند Zoom',
   'worker.session_reminders': 'تذكيرات الجلسات',
   'worker.unbooked_digest': 'ملخّص من لم يحجز موعد لقائه',
+  'worker.advisor_reminders': 'تذكير المستشارين بحالات بلا تواصل ومتابعات حلّ موعدها',
 }
 
 /** معجمُ المقاطع — نطاقاتٌ وأشياءٌ وأفعال */
