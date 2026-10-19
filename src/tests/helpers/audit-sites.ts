@@ -78,7 +78,7 @@ export const DYNAMIC: Record<string, readonly string[]> = {
     'worker.calendly_interview_sync', 'worker.cleanup_expired', 'worker.cohort_status_sync',
     'worker.dispatch_notifications', 'worker.enforce_retention', 'worker.publish_scheduled_changes',
     'worker.reclaim_abandoned_orders', 'worker.revoke_left_registrants', 'worker.session_reminders',
-    'worker.advisor_reminders',
+    'worker.advisor_reminders', 'worker.erase_idle_guests',
   ],
 }
 
