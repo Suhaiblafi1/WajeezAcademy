@@ -64,6 +64,7 @@ import {
   DOC_KINDS,
   DOMAIN_YEARS,
   EMPLOYMENT_STATUS,
+  FORM_STEPS,
   LANGUAGES,
   MAX_DOC_BYTES,
   MISSING_FORMS,
@@ -193,15 +194,23 @@ const codeSelectCls = `${controlCls.replace("w-full", "")} w-32 shrink-0 px-2`;
    «بقيت خطوةٌ واحدة» غيرَ مصدَّقة.
 
    و`current` يقبل ٤ وإن كان `step` في النموذج ١..٣: المحطّةُ الرابعةُ ليست
-   خطوةَ نموذجٍ تُملأ، وهي «الحالية» حين يصير الحجزُ هو ما بقي. */
-function StepBar({ current, listRef, className = "mt-10" }: {
+   خطوةَ نموذجٍ تُملأ، وهي «الحالية» حين يصير الحجزُ هو ما بقي.
+
+   ═══ ولا محطّةَ حجزٍ حين يُغلق الاستقبال (١٩ أكتوبر ٢٠٢٦) ═══
+
+   قرارُ صاحب المنصّة: لا يُعرض خيارُ لقاء التعارف ما دام الاستقبالُ مغلقا. فالرابعةُ
+   «حجز لقاء التعارف — تختار وقتك بنفسك» وعدٌ بما لا يقع، و`withBooking` يُسقطها
+   فتبقى ثلاثُ محطّاتٍ في ثلاثة أعمدة. (`intake-closed.ts`) */
+function StepBar({ current, listRef, className = "mt-10", withBooking = true }: {
   current: number;
   listRef?: React.Ref<HTMLOListElement>;
   className?: string;
+  withBooking?: boolean;
 }) {
+  const shown = withBooking ? STEPS : STEPS.filter((s) => s.n <= FORM_STEPS);
   return (
-    <ol ref={listRef} tabIndex={-1} className={`${className} grid scroll-mt-24 grid-cols-1 gap-2 outline-none sm:grid-cols-4`} aria-label="مراحل الطلب">
-      {STEPS.map((s) => {
+    <ol ref={listRef} tabIndex={-1} className={`${className} grid scroll-mt-24 grid-cols-1 gap-2 outline-none ${withBooking ? "sm:grid-cols-4" : "sm:grid-cols-3"}`} aria-label="مراحل الطلب">
+      {shown.map((s) => {
         const state = s.n === current ? "current" : s.n < current ? "done" : "todo";
         return (
           <li key={s.n} aria-current={state === "current" ? "step" : undefined}>
@@ -1045,7 +1054,7 @@ export default function JoinTrainer() {
         </div>
 
         {/* مؤشر الخطوات — أربع محطات، آخرُها الموعد. ومكتوبٌ في `options.ts` لماذا */}
-        <StepBar current={step} listRef={stepsRef} />
+        <StepBar current={step} listRef={stepsRef} withBooking={!closed} />
 
         {/* الاستئناف يُقال ولا يُفترض: من يرى حقولا مملوءة ولا يعرف من ملأها
             يرتاب. والباب مفتوح للبدء من جديد بضغطة. */}
@@ -1782,7 +1791,8 @@ export default function JoinTrainer() {
                 </dl>
                 <p className="mt-3.5 border-t border-white/10 pt-3 text-read leading-6 text-muted-foreground">
                   رقم طلبك: <b className="font-mono text-foreground" dir="ltr">{result?.reference ?? "—"}</b> — يصلك في بريد التأكيد.
-                  وعند حجز مقابلتك يصل هذا الملف للمراجع بصيغة PDF مع سيرتك.
+                  {/* ولا ذكرَ لحجز المقابلة ما دام الاستقبالُ مغلقا — لا حجزَ بعده (`intake-closed.ts`) */}
+                  {!closed && <> وعند حجز مقابلتك يصل هذا الملف للمراجع بصيغة PDF مع سيرتك.</>}
                 </p>
               </Card>
             </div>

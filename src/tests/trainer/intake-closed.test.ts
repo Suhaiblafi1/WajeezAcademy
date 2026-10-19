@@ -8,7 +8,9 @@
    ③ **والمؤجَّلُ بالإغلاق يُعرف بآخر دخولٍ في التأجيل** — لا بأيّ سطرٍ في سجلّه.
    ④ **والنصُّ** — بلا تشكيلٍ إعرابيّ، ويسمّي الشهرَ والفصل.
    ⑤ **وزرُّ الإرسال لا يَعِد بحجز** — «أرسل طلبك» ما دام الاستقبالُ مغلقا، ولا سطرَ
-      تقويمٍ فوقه. */
+      تقويمٍ فوقه.
+   ⑥ **ولا خيارَ للقاء التعارف في الاستمارة** — لا محطّةَ «حجز لقاء التعارف» في شريط
+      الخطوات، ولا «وعند حجز مقابلتك» في الملخّص. */
 
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
@@ -111,5 +113,23 @@ describe('⑤ وزرُّ الإرسال لا يَعِد بحجز', () => {
     const i = src.indexOf('بعد هذا الزر تختار موعد لقاء التعارف')
     expect(i).toBeGreaterThan(-1)
     expect(src.slice(Math.max(0, i - 200), i)).toMatch(/step === 3 && !\(closed \|\| INTERVIEW_BOOKING_PAUSE\.active\) && \(/)
+  })
+})
+
+describe('⑥ ولا خيارَ للقاء التعارف في الاستمارة', () => {
+  const root = join(dirname(fileURLToPath(import.meta.url)), '../../..')
+  const src = readFileSync(join(root, 'src/pages/JoinTrainer.tsx'), 'utf8')
+    .replace(/\{\s*\/\*(?:(?!\*\/)[\s\S])*\*\/\s*\}/g, ' ')
+    .replace(/\/\*[\s\S]*?\*\//g, ' ')
+    .replace(/^\s*\/\/.*$/gm, ' ')
+
+  it('⚠️ شريطُ الاستمارة يُسقط محطّةَ الحجز حين يُغلق الاستقبال', () => {
+    expect(src).toMatch(/<StepBar current=\{step\} listRef=\{stepsRef\} withBooking=\{!closed\} \/>/)
+    expect(src, 'المكوّن لا يُسقطها').toMatch(/withBooking \? STEPS : STEPS\.filter\(\(s\) => s\.n <= FORM_STEPS\)/)
+    expect(src, 'يرسم القائمةَ كلَّها لا المعروضة').toMatch(/\{shown\.map\(/)
+  })
+
+  it('⚠️ والملخّصُ لا يذكر حجزَ المقابلة حينها', () => {
+    expect(src).toMatch(/\{!closed && <> وعند حجز مقابلتك/)
   })
 })
