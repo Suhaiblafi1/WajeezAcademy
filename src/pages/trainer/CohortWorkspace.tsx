@@ -68,6 +68,8 @@ import { Lightbulb } from "lucide-react";
 import { RESOURCE_META } from "@/components/resource-kind-meta";
 import BodyEditor from "@/components/BodyEditor";
 import TabBar from "@/components/ui/TabBar";
+import CohortRun from "./CohortRun";
+import { isRunningCohort } from "@/application/trainer/running-cohort";
 import ModuleBodyUpload from "@/components/ModuleBodyUpload";
 import WordImport from "@/components/WordImport";
 import { MAX_BODY_FILE_BYTES, resourceHasSource } from "@/application/trainer/module-body";
@@ -587,6 +589,9 @@ export default function CohortWorkspace() {
   const prepIds = usePrepCohorts();
   const [err, setErr] = useState("");
   const [stage, setStage] = useState<Stage>("identity");
+  /* ═══ «التشغيل» أو «الخطة» — للشعبة الجارية لسانان (١٩ أكتوبر ٢٠٢٦، `CohortRun.tsx`) ═══
+     تُفتح الجاريةُ على «التشغيل»، والسلّمُ في «الخطة» كما هو. ومن جاء برابطٍ يطلب خطوةً فُتح على «الخطة». */
+  const [view, setView] = useState<"run" | "plan">("plan");
   /* ما في «المراجعة»: كم بندا اقترحته الإدارة، وكم منها ينتظر قرارَه */
   const [revision, setRevision] = useState({ total: 0, pending: 0 });
   /* ما ينقص الخطوةَ كي تتمّ — يُقال بعد «احفظ وتابِع» حين لا تتمّ، بأسمائه لا
@@ -762,6 +767,7 @@ export default function CohortWorkspace() {
         const reviewWaits = (editable || status === "approved" || status === "published") && revItems.some((x) => x.status === "pending");
         if (reviewHas && (requestedReview.current || (!requestedStep.current && reviewWaits))) setStage("review");
         else setStage(firstStep(requestedStep.current, fallback, openableAt));
+        setView(isRunningCohort(w.cohort.status, w.learners.length) && !requestedStep.current && !requestedReview.current ? "run" : "plan");
       }
       return w;
     } catch (e) { setErr(e instanceof ApiError ? e.message : "تعذّر فتح صفحة الشعبة"); return null; }
@@ -1183,6 +1189,11 @@ export default function CohortWorkspace() {
      يُقرأ من المحفوظ الآن، ويذهب حين تتمّ الخطوة. وما منع الحفظَ يبقى كما قيل. */
   /* بصمةُ لقاءات الشعبة — تتبدّل فتُقرأ «اللقاءاتُ المجدولة» ثانيةً (`SessionsAndAttendance`) */
   const sessionsKey = ws.sessions.map((x) => `${x.id}:${x.startsAt}:${x.status}:${x.approvalState ?? ""}`).join("|");
+  const running = isRunningCohort(ws.cohort.status, ws.learners.length);
+  /* اللقاءُ القادم — لسطر «التشغيل» الأوّل */
+  const nextSession = ws.sessions
+    .filter((x) => !x.placeholder && x.status !== "cancelled" && new Date(x.startsAt).getTime() > now)
+    .sort((a, b) => a.startsAt.localeCompare(b.startsAt))[0] ?? null;
   const shownGaps: string[] = !gaps ? [] : gaps.refused.length > 0 || stage === "approval" ? gaps.items : doneOf(stage) ? [] : gapsFor(stage, ws);
   /* ═══ «احفظ وتابِع» — الزرُّ المضاء ═══
 
@@ -1645,9 +1656,35 @@ export default function CohortWorkspace() {
 
           ① النقطةُ الذهبيّةُ «لم يُحفَظ» تبقى على علامتها مهما ضمر الشريط.
           ② ملاحظةُ الإدارة حين تُردُّ الخطّةُ تبقى في المنطقة اللاصقة.
-          ③ الشريطُ يبقى ظاهرا ولا يُشرَط بالطور (قرارُ ١٥ سبتمبر).
+          ③ الشريطُ يبقى ظاهرا ولا يُشرَط بالطور (قرارُ ١٥ سبتمبر). إلّا الشعبةَ الجارية
+            (١٩ أكتوبر ٢٠٢٦، باختيار صاحب المنصّة بعد أن رأى الصور): تُفتح على «التشغيل»
+            والشريطُ في لسان «الخطة» بجانبه — `cohort-run-view.test.ts`.
           ④ والأسماءُ تبقى مسموعةً كاملةً: كلُّ علامةٍ تحمل «الخطوة ن من ٦:
             اسمُها — حالُها» وإن غاب الاسمُ عن العين. */}
+      {/* الشعبةُ الجارية: لسانا «التشغيل» و«الخطة» — والسلّمُ في الثاني وحدَه (١٩ أكتوبر ٢٠٢٦) */}
+      {running && (
+        <TabBar
+          className="mb-5"
+          ariaLabel="صفحة الشعبة"
+          value={view}
+          onChange={setView}
+          items={[
+            { id: "run", label: "التشغيل" },
+            { id: "plan", label: revision.pending > 0 ? `الخطة (${revision.pending})` : "الخطة" },
+          ]}
+        />
+      )}
+      {running && view === "run" && (
+        <CohortRun
+          cohortId={ws.cohort.id}
+          learners={ws.learners.length}
+          nextSessionAr={nextSession ? fmtDateTimeAr(nextSession.startsAt) : null}
+          refresh={sessionsKey}
+          pendingReview={revision.pending}
+          onOpenReview={() => { setView("plan"); setStage("review"); }}
+        />
+      )}
+      {(!running || view === "plan") && (<>
       <Bar
         as="section"
         tone="solid"
@@ -3494,6 +3531,7 @@ export default function CohortWorkspace() {
           )}
         </Panel>
       )}
+      </>)}
 
     </TrainerLayout>
   );
