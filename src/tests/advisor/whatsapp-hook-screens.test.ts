@@ -45,6 +45,8 @@ describe('البابُ ورمزُه', () => {
     expect(INTEGRATIONS).toMatch(/token: mask\(cfg\.token\), hasToken: !!cfg\.token,/)
     expect(SCREEN).toMatch(/crypto\.getRandomValues\(new Uint8Array\(32\)\)/)
     expect(SCREEN).toMatch(/apiPut\("\/api\/admin\/integrations\/whatsapp-hook", hookForm\)/)
+    expect(ROUTE, 'حفظُ الرمز بلا صلاحيّة الإعدادات').toMatch(
+      /app\.put\('\/api\/admin\/integrations\/whatsapp-hook', \{\s*preHandler: requirePermission\('settings\.manage'\)/)
   })
 })
 

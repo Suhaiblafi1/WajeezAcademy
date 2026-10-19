@@ -11,7 +11,7 @@ import { SystemHealthService } from '../../services/system-health.service'
 import {
   getPaymentConfig, getEmailConfig, savePaymentConfig, saveEmailConfig, saveZoomConfig, maskedIntegrationsView,
   getCalendlyConfig, saveCalendlyConfig,
-  getWhatsAppNumbers, saveWhatsAppNumbers, saveWhatsAppHookConfig,
+  getWhatsAppNumbers, saveWhatsAppNumbers,
 } from '../../services/integrations.service'
 import { getZoomConfig, zoomProbe, forgetZoomToken } from '../../services/zoom.service'
 import { registerCalendlyWebhook, CalendlyApiError } from '../../services/calendly-api.service'
@@ -131,16 +131,6 @@ export function registerIntegrationRoutes(app: FastifyInstance, prisma: PrismaCl
       guests: z.string().max(400).optional(),
     }).parse(req.body)
     await saveCalendlyConfig(prisma, req.auth!.userId, body)
-    return maskedIntegrationsView(prisma)
-  })
-
-  /* ربطُ منصّة محادثات واتساب — الرمزُ يُكتب ولا يُقرأ (`saveWhatsAppHookConfig`) */
-  app.put('/api/admin/integrations/whatsapp-hook', {
-    preHandler: requirePermission('settings.manage'),
-    schema: { tags: ['admin-integrations'], summary: 'حفظ رمز ربط منصة محادثات واتساب وتفعيله' },
-  }, async (req) => {
-    const body = z.object({ enabled: z.boolean(), token: z.string().max(200).optional() }).parse(req.body)
-    await saveWhatsAppHookConfig(prisma, req.auth!.userId, body)
     return maskedIntegrationsView(prisma)
   })
 

@@ -1,10 +1,12 @@
 /* بابُ منصّة محادثات واتساب — رمزٌ في الترويسة، وتواصلُ المستشار يُسجَّل في حالة الطالب.
-   والعلّةُ في `server/services/whatsapp-hook.service.ts`. */
+   والعلّةُ في `server/services/whatsapp-hook.service.ts`. وإعدادُه من شاشة التكاملات هنا معه:
+   البابُ وسرُّه في ملفٍّ واحد. */
 
 import type { FastifyInstance } from 'fastify'
 import type { PrismaClient } from '@prisma/client'
 import { z } from 'zod'
-import { getWhatsAppHookConfig } from '../../services/integrations.service'
+import { requirePermission } from '../auth-plugin'
+import { getWhatsAppHookConfig, maskedIntegrationsView, saveWhatsAppHookConfig } from '../../services/integrations.service'
 import { WhatsAppHookService, hookTokenMatches, tokenFromHeaders } from '../../services/whatsapp-hook.service'
 
 export function registerWhatsAppHookRoutes(app: FastifyInstance, prisma: PrismaClient) {
@@ -25,5 +27,15 @@ export function registerWhatsAppHookRoutes(app: FastifyInstance, prisma: PrismaC
       summary: z.string().max(2000).optional(),
     }).parse(req.body)
     return hook.handle(body)
+  })
+
+  /* والرمزُ يُكتب ولا يُقرأ (`saveWhatsAppHookConfig`) — بصلاحيّة الإعدادات كسائر التكاملات */
+  app.put('/api/admin/integrations/whatsapp-hook', {
+    preHandler: requirePermission('settings.manage'),
+    schema: { tags: ['admin-integrations'], summary: 'حفظ رمز ربط منصة محادثات واتساب وتفعيله' },
+  }, async (req) => {
+    const body = z.object({ enabled: z.boolean(), token: z.string().max(200).optional() }).parse(req.body)
+    await saveWhatsAppHookConfig(prisma, req.auth!.userId, body)
+    return maskedIntegrationsView(prisma)
   })
 }
