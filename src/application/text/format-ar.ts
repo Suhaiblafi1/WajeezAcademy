@@ -47,7 +47,12 @@ export function fmtMoney(n: number, currency = 'USD'): string {
   )
 }
 
-/** تاريخٌ مختصر: «31‏/8‏/2026» */
+/** تاريخٌ مختصر: «31‏/8‏/2026»
+ *
+ *  وفيه علاماتُ اتّجاهٍ يمينيّة (U+200F) بعد كلّ رقم — هي التي ترتّبه في السطر العربيّ.
+ *  فلا يُلفّ في عنصرٍ `dir="ltr"`: تنقلب فيه العلاماتُ فيُقرأ «192026/10/» (١٩ أكتوبر
+ *  ٢٠٢٦، صفحةُ حالة المتقدّم). وإن جاور نصّا لاتينيّا في سطرٍ يساريّ عُزل بـ`<bdi>`.
+ *  ويحرسه `src/tests/text/ltr-dates.test.ts`. والحكمُ نفسُه لـ`fmtDateTime`. */
 export function fmtDate(v: DateLike): string {
   const d = toDate(v)
   return d ? d.toLocaleDateString(UI_LOCALE) : '—'

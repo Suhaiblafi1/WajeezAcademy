@@ -348,7 +348,7 @@ export default function ApplicantStatus() {
                       <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${i === mine.statusHistory.length - 1 ? "bg-teal" : "bg-white/30"}`} />
                       {APPLICANT_STATUS[h.toStatus]?.label ?? h.toStatus}
                     </span>
-                    <span className="shrink-0 text-muted-foreground" dir="ltr">{fmtDate(h.createdAt)}</span>
+                    <span className="shrink-0 text-muted-foreground">{fmtDate(h.createdAt)}</span>
                   </li>
                 ))}
               </ol>
@@ -364,7 +364,7 @@ export default function ApplicantStatus() {
                   {mine.documents.map((d, i) => (
                     <li key={`${d.kind}-${i}`} className="flex items-center justify-between gap-3">
                       <span>{DOC_AR[d.kind] ?? d.kind} · <span className="text-muted-foreground">{d.originalName}</span></span>
-                      <span className="shrink-0 text-muted-foreground" dir="ltr">{fmtDate(d.uploadedAt)}</span>
+                      <span className="shrink-0 text-muted-foreground">{fmtDate(d.uploadedAt)}</span>
                     </li>
                   ))}
                 </ul>

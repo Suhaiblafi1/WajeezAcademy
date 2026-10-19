@@ -171,7 +171,7 @@ export default function DiagnosticQuality() {
                     <span className="rounded-full border border-teal/40 bg-teal/10 px-2.5 py-0.5 text-fine font-bold text-teal-light-ink">
                       {VERDICT_AR[r.verdict] ?? r.verdict}
                     </span>
-                    <p className="text-read text-muted-foreground" dir="ltr">{r.pathwayId ?? "—"} · {fmtDateTime(new Date(r.createdAt))}</p>
+                    <p className="text-read text-muted-foreground" dir="ltr">{r.pathwayId ?? "—"} · <bdi>{fmtDateTime(new Date(r.createdAt))}</bdi></p>
                   </div>
                   <p className="mt-2 text-read leading-relaxed text-foreground">{r.note}</p>
                 </Card>
