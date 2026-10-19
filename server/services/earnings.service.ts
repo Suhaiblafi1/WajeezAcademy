@@ -17,6 +17,8 @@ import { codeFaceAr } from '../../src/application/trainer/trainer-code'
 import { planLedger, type LedgerEntry } from '../../src/application/trainer/trainer-code'
 import { cohortLeadTrainer } from './cohort-lead'
 import { PAYOUT_OBJECTION_DAYS } from '../../src/application/trainer/notice-periods'
+import { cohortIdsOf, payReadiness, payReadinessAr } from '../../src/application/trainer/pay-readiness'
+import { TrainerBankService } from './trainer-bank.service'
 
 /** القاعدةُ أو معاملةٌ مفتوحةٌ عليها — ما يُتوقَّع له يُقرأ في معاملة الطلب أيضا */
 type Db = PrismaClient | Prisma.TransactionClient
@@ -154,18 +156,47 @@ export class EarningsService {
     }))
   }
 
-  /* كل الكشوف للإدارة — مع اسم المدرب، بفلتر حالة اختياري */
+  /* كل الكشوف للإدارة — مع اسم المدرب، بفلتر حالة اختياري.
+
+     ومعه ما يحتاجه من يصرف (١٩ أكتوبر ٢٠٢٦): أيستحقّ الصرفَ الآن (`pay-readiness.ts`)، ومتى يُعتمد
+     بعد مهلة الاعتراض، وحسابُه مقنَّعا وهل كُشف لهذا الكشف — كان زرُّ «تأكيد الصرف» يُردّ دائما
+     بـ`no_reveal` ولا زرَّ كشفٍ في الشاشة. */
   async listAll(status?: string) {
     if (status && !['pending', 'approved', 'paid', 'cancelled'].includes(status)) {
       throw new AuthError('bad_status', 'حالة غير معروفة', 400)
     }
-    return this.prisma.trainerPayout.findMany({
+    const payouts = await this.prisma.trainerPayout.findMany({
       where: status ? { status } : undefined,
       include: {
         items: true,
         profile: { include: { application: { select: { fullName: true, reference: true } } } },
       },
       orderBy: [{ status: 'asc' }, { period: 'desc' }, { createdAt: 'desc' }],
+    })
+    const cohortIds = [...new Set(payouts.flatMap((p) => cohortIdsOf(p.items)))]
+    const cohorts = cohortIds.length === 0 ? [] : await this.prisma.cohort.findMany({
+      where: { id: { in: cohortIds } },
+      select: { id: true, title: true, status: true, sessions: { select: { status: true, approvalState: true } } },
+    })
+    const bank = new TrainerBankService(this.prisma)
+    const accounts = new Map<string, Awaited<ReturnType<typeof bank.maskedFor>>>()
+    for (const p of payouts) {
+      if (p.status === 'approved' && !accounts.has(p.profileId)) accounts.set(p.profileId, await bank.maskedFor(p.profileId))
+    }
+    return payouts.map((p) => {
+      const readiness = cohortIdsOf(p.items)
+        .map((id) => cohorts.find((c) => c.id === id))
+        .filter((c): c is (typeof cohorts)[number] => !!c)
+        .map((c) => payReadiness(c))
+      const account = accounts.get(p.profileId) ?? null
+      return {
+        ...p,
+        readiness: readiness.map((r) => ({ ...r, saidAr: payReadinessAr(r) })),
+        ready: readiness.length > 0 ? readiness.every((r) => r.ready) : null,
+        approvableFrom: new Date(p.createdAt.getTime() + PAYOUT_OBJECTION_DAYS * 24 * 60 * 60 * 1000),
+        bankAccount: account,
+        revealed: !!account && account.id === p.bankAccountId,
+      }
     })
   }
 
