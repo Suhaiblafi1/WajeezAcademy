@@ -22,6 +22,7 @@ import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { notifyRole, safeNotify } from './notification.service'
 import { bioSuggestionProblemAr, cleanPitchLines, pitchProblemAr } from '../../src/application/trainer/pitch'
+import { BIO_DRAFTS, PITCH_DRAFTS } from './trainer-suggestion-drafts'
 
 export type SuggestionKind = 'pitch' | 'bio'
 
@@ -102,6 +103,43 @@ export class TrainerSuggestionService {
       })
     }
     return made as SuggestionView
+  }
+
+  /* ═══ وإرسالُ كلِّ المسوّدات بضغطةٍ واحدة (١٩ أكتوبر ٢٠٢٦) ═══
+
+     قرارُ صاحب المنصّة: «أضف زرّ إرسال الكلّ». فيُرسَل ما تعرضه الشاشةُ مسوّدةً
+     لم تُرسَل — والشرطُ شرطُها نفسُه (`listForOps`): «لماذا نفتخر به» لمن لا يظهر له
+     شيءٌ منه ولم يُقترح عليه، والنبذةُ لمن لم يُقترح عليه منها شيء. فما عند المدرّب
+     أو قرّر فيه لا يُسحب ولا يُعاد، والضغطةُ الثانيةُ لا ترسل شيئا.
+
+     وكلٌّ يمرّ بـ`propose` نفسِها: بقواعده وأثره وإشعاره. ومن سقط — كنبذةٍ تطابق
+     نبذتَه الآن حرفا — لا يوقف الباقين: يُعدّ ويُقال. والمسوّداتُ تُمرَّر للاختبار. */
+  async sendAllDrafts(
+    actorId: string,
+    drafts: { pitch: Record<string, readonly string[]>; bio: Record<string, string> } = { pitch: PITCH_DRAFTS, bio: BIO_DRAFTS },
+  ): Promise<{ sent: number; failed: number }> {
+    const ids = [...new Set([...Object.keys(drafts.pitch), ...Object.keys(drafts.bio)])]
+    const profiles = await this.prisma.trainerProfile.findMany({
+      where: { id: { in: ids } },
+      select: { id: true, pitchLines: true, textSuggestions: { where: { status: { not: 'withdrawn' } }, select: { kind: true } } },
+    })
+    let sent = 0
+    let failed = 0
+    for (const p of profiles) {
+      const has = (kind: SuggestionKind) => p.textSuggestions.some((x) => x.kind === kind)
+      const due: Array<[SuggestionKind, readonly string[]]> = []
+      if (drafts.pitch[p.id] && p.pitchLines.length === 0 && !has('pitch')) due.push(['pitch', drafts.pitch[p.id]])
+      if (drafts.bio[p.id] && !has('bio')) due.push(['bio', [drafts.bio[p.id]]])
+      for (const [kind, lines] of due) {
+        try {
+          await this.propose(p.id, actorId, kind, lines)
+          sent += 1
+        } catch {
+          failed += 1
+        }
+      }
+    }
+    return { sent, failed }
   }
 
   /** سحبُ المعلَّق من نوعٍ — عند المدرّب أو عائدا إلينا بتعديله */

@@ -17,7 +17,11 @@
    ═══ وكيف رُئي ساقطا ═══
 
    كُتبت سطورُه المعدَّلةُ في `pitchLines` عند القبول بتعديل لا عند اعتمادنا، فظهرت في
-   القائمة العامّة وسقط الحارسُ الثاني. ثمّ أُعيدت. */
+   القائمة العامّة وسقط الحارسُ الثاني. ثمّ أُعيدت.
+
+   ٦) و«أرسل كلّ الاقتراحات» يرسل ما لم يُرسَل وحدَه: لا يسحب ما عند المدرّب، ولا يعيد
+      ما قرّر فيه، والضغطةُ الثانيةُ لا ترسل شيئا. ورُئي ساقطا حين أُسقط شرطُ «لم يُقترح
+      عليه»: سُحب المعلَّقُ وأُرسل غيرُه، وأرسلت الضغطةُ الثانيةُ من جديد. */
 
 import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
@@ -136,5 +140,41 @@ describe('النبذة بصياغتنا — قبل وبعد', () => {
 
   it('والسحب لا يجد شيئا حين لا معلّق', async () => {
     await expect(svc.withdraw(profileId, ACTOR, 'bio')).rejects.toThrow()
+  })
+})
+
+describe('أرسل كلّ الاقتراحات — ما لم يُرسل وحده', () => {
+  let freshId = ''
+  let freshUser = ''
+  let busyId = ''
+  const NOBODY = '00000000-0000-0000-0000-0000000000ff'
+  const DRAFT_PITCH = ['خمس عشرة سنة مدربا ومدرب مدربين']
+  const DRAFT_BIO = 'مدرب ومدرب مدربين منذ خمس عشرة سنة، يقدم دورات التواصل في الأعمال على كل المستويات.'
+  const drafts = () => ({
+    pitch: { [freshId]: DRAFT_PITCH, [busyId]: DRAFT_PITCH, [NOBODY]: DRAFT_PITCH },
+    bio: { [freshId]: DRAFT_BIO },
+  })
+
+  beforeAll(async () => {
+    const fresh = await review.createTrainerDirectly(ACTOR, { fullName: 'مدرّب لم يصله شيء', email: 'suggest-c@test.local' })
+    freshId = fresh.profileId
+    freshUser = fresh.userId
+    busyId = (await review.createTrainerDirectly(ACTOR, { fullName: 'مدرّب عنده اقتراح', email: 'suggest-d@test.local' })).profileId
+    await svc.propose(busyId, ACTOR, 'pitch', FIRST)
+  })
+
+  it('⚠️ يرسل المسوّدات لمن لم يصله شيء — ولا يمسّ ما عند غيره، ولا يتعثّر بملفّ غائب', async () => {
+    const before = await prisma.trainerTextSuggestion.findFirstOrThrow({ where: { profileId: busyId, status: 'pending' } })
+    expect(await svc.sendAllDrafts(ACTOR, drafts())).toEqual({ sent: 2, failed: 0 })
+    const mine = await svc.mine(freshUser)
+    expect(mine.pitch.pending?.lines).toEqual(DRAFT_PITCH)
+    expect(mine.bio.pending?.lines).toEqual([DRAFT_BIO])
+    const still = await prisma.trainerTextSuggestion.findFirstOrThrow({ where: { profileId: busyId, status: 'pending' } })
+    expect(still.id, 'سُحب ما كان عند المدرّب وأُرسل غيره').toBe(before.id)
+  })
+
+  it('⚠️ والضغطة الثانية لا ترسل شيئا', async () => {
+    expect(await svc.sendAllDrafts(ACTOR, drafts())).toEqual({ sent: 0, failed: 0 })
+    expect(await prisma.trainerTextSuggestion.count({ where: { profileId: freshId } })).toBe(2)
   })
 })

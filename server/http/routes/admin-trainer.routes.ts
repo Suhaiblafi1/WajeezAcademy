@@ -1033,6 +1033,12 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     return suggestions.propose(profileId, req.auth!.userId, kind, lines)
   })
 
+  /* وكلُّ المسوّدات معا — بالصلاحيّة نفسِها، فهو الإرسالُ نفسُه مكرَّرا */
+  app.post('/api/admin/trainers/suggestions/send-drafts', {
+    preHandler: requirePermission('trainer.publish'),
+    schema: { tags: ['admin-trainers'], summary: 'إرسال كلّ المسوّدات التي لم تُرسَل — كلٌّ بأثره وإشعاره' },
+  }, async (req) => suggestions.sendAllDrafts(req.auth!.userId))
+
   app.post('/api/admin/trainers/:profileId/suggestions/:kind/withdraw', {
     preHandler: requirePermission('trainer.publish'),
     schema: { tags: ['admin-trainers'], summary: 'سحب الاقتراح المعلّق من نوعه قبل أن يُقرَّر فيه' },

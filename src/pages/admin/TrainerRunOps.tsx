@@ -26,7 +26,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   BadgeCheck, CheckCircle2, Clock, GraduationCap, ImagePlus, Loader2, Search,
-  ServerOff, ShieldAlert, UserPlus, Users, XCircle,
+  Send, ServerOff, ShieldAlert, UserPlus, Users, XCircle,
 } from "lucide-react";
 import { toast, toastError } from "@/components/Toast";
 import { apiGet, apiPost, apiPut, ApiError } from "@/services/api";
@@ -708,6 +708,28 @@ export default function TrainerRunOps() {
     }
   };
 
+  /* ═══ وإرسالُ كلِّ المسوّدات بضغطة (١٩ أكتوبر ٢٠٢٦) ═══
+     قرارُ صاحب المنصّة: «أضف زرّ إرسال الكلّ». والعددُ ما تعرضه البطاقاتُ مسوّدةً
+     لم تُرسَل، والخادمُ يرسلها كما كُتبت (`sendAllDrafts`) — فما حرّرته في بطاقةٍ ولم
+     ترسله يُرسَل منها لا من هنا. */
+  const draftCount = useMemo(
+    () => (trainers ?? []).reduce((n, t) => n + (t.pitchDraft ? 1 : 0) + (t.bioDraft ? 1 : 0), 0),
+    [trainers],
+  );
+  const sendAllDrafts = async () => {
+    setBusy("send-drafts");
+    try {
+      const r = await apiPost<{ sent: number; failed: number }>("/api/admin/trainers/suggestions/send-drafts", {});
+      if (r.failed === 0) toast(`أرسلت الاقتراحات للمدربين: ${r.sent}`);
+      else toastError(`أرسلت ${r.sent}، وتعذر إرسال ${r.failed}`);
+      await load();
+    } catch (e) {
+      toastError(e instanceof ApiError ? e.message : "تعذر إرسال الاقتراحات");
+    } finally {
+      setBusy("");
+    }
+  };
+
   const shown = useMemo(
     () => (trainers ?? [])
       .filter((t) => matchesQuery(q, [t.name, t.email]))
@@ -856,6 +878,14 @@ export default function TrainerRunOps() {
                 onClick={() => void approveAllPhotos()}
               >
                 اعتمد كل الصور المعلقة ({pendingPhotos})
+              </Button>
+            )}
+            {draftCount > 0 && (
+              <Button
+                tone="confirm" icon={Send} loading={busy === "send-drafts"} disabled={busy !== ""}
+                onClick={() => void sendAllDrafts()}
+              >
+                أرسل كل الاقتراحات ({draftCount})
               </Button>
             )}
             {canAddTrainer && (

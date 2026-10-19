@@ -76,6 +76,7 @@ describe('بطاقة المدرّب: إضافة تعدّل، ونبذة قبل �
       "/api/admin/trainers/:profileId/suggestions'",
       "/api/admin/trainers/:profileId/suggestions/:kind/withdraw'",
       "/api/admin/trainers/:profileId/suggestions/pitch/approve-edit'",
+      "/api/admin/trainers/suggestions/send-drafts'",
     ]) {
       const at = adminRoutes.indexOf(path)
       expect(at, `${path}: لا مسار`).toBeGreaterThan(-1)
@@ -88,6 +89,12 @@ describe('بطاقة المدرّب: إضافة تعدّل، ونبذة قبل �
     }
     expect(ops, 'شاشة الإدارة لا تعتمد تعديل المدرّب').toContain('`${base}/pitch/approve-edit`')
     expect(ops, 'شاشة الإدارة لا تقترح النبذة').toContain('{ kind: "bio", lines: [text] }')
+  })
+
+  it('⚠️ وزرّ «أرسل كل الاقتراحات» يعدّ المسوّدات ويغيب حين لا شيء', () => {
+    expect(ops).toContain('"/api/admin/trainers/suggestions/send-drafts"')
+    expect(ops, 'العدد لا يقرأ المسوّدتين').toMatch(/\(t\.pitchDraft \? 1 : 0\) \+ \(t\.bioDraft \? 1 : 0\)/)
+    expect(ops, 'الزرّ لا يغيب حين لا مسوّدة').toMatch(/\{draftCount > 0 && \(/)
   })
 })
 
