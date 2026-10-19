@@ -50,6 +50,10 @@ const SPECIALTIES_PREVIEW = 6
 
    ═══ وصارت ما يقدّمه للموسم القادم وحدَه، تحت «سيقدم فلان في موسم كذا» (١٩ أكتوبر ٢٠٢٦) ═══
    «لماذا تظهر كلُّ الدورات للمدرّب وليس للموسم القادم؟» (صاحب المنصّة) — `next-season.ts`. */
+/** «3 دورات» بصيغتها — والاثنتان «دورتان» لا «2 دورتان» */
+const coursesCountAr = (n: number) =>
+  n === 2 ? 'دورتان' : countAr(n, { one: 'دورة', two: 'دورتان', few: 'دورات', many: 'دورة' })
+
 function TrainerOffer({ name, groups }: { name: string; groups: SeasonGroup[] }) {
   /* الكتالوجُ يُحمَّل كسولا ويُستبدل وقتَ التشغيل (`core-catalog-source.ts`).
      وكانت النبذةُ تُصيَّر عند فتحها فقط فتجده غالبا قد وصل؛ وصارت تُصيَّر مع
@@ -80,12 +84,12 @@ function TrainerOffer({ name, groups }: { name: string; groups: SeasonGroup[] })
   return (
     <div>
       {offeredPathways.length > 0 && (
-        <p className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-read leading-6 text-foreground">
+        <p className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-read font-light leading-7 text-foreground">
           <Route className="h-3.5 w-3.5 shrink-0 text-teal-light-ink" />
-          <span className="font-bold">{offeredPathways.length === 1 ? 'يقدّم في مسار:' : 'يقدّم في مسارات:'}</span>
+          <span className="font-medium">{offeredPathways.length === 1 ? 'يقدّم في مسار:' : 'يقدّم في مسارات:'}</span>
           {offeredPathways.map((p, i) => (
             <span key={p.id}>
-              <Link to={`/pathways/${p.id}`} className="font-bold text-teal-light-ink underline decoration-dotted underline-offset-4 transition hover:text-foreground">
+              <Link to={`/pathways/${p.id}`} className="text-teal-light-ink underline decoration-dotted underline-offset-4 transition hover:text-foreground">
                 {p.shortName}
               </Link>
               {i < offeredPathways.length - 1 && '،'}
@@ -93,18 +97,18 @@ function TrainerOffer({ name, groups }: { name: string; groups: SeasonGroup[] })
           ))}
         </p>
       )}
-      {seasons.map((g) => (
-        <div key={g.termAr ?? "later"}>
-          <p className="mt-2 flex items-center gap-1.5 text-read font-bold text-foreground">
-            <BookOpen className="h-3.5 w-3.5 text-teal-light-ink" />
-            {seasonHeadingAr(name, g.termAr)}
-          </p>
-          <ul className="mt-1.5 grid gap-1.5">
+      {/* ═══ الأقربُ مفتوحٌ وما بعده يُطوى — بمسافةٍ وخطٍّ أصغرَ وأخفّ (١٩ أكتوبر ٢٠٢٦) ═══
+          «الكلام مكتظ.. يجب أن تنسدل دورات الفصول الأخرى، واترك مسافات، وخفّف حجم الخط واجعله لايت»
+          (صاحب المنصّة، على بطاقةٍ بثماني دوراتٍ في ثلاثة مواسم). فالموسمُ القادمُ ظاهر، وكلُّ موسمٍ بعده
+          سطرٌ واحدٌ بعدد دوراته يُفتح بطلب. وأسماءُ الدورات ١٢ بوزنٍ خفيف (٣٠٠ — خطُّ الموقع يحمله). */}
+      {seasons.map((g, i) => {
+        const list = (
+          <ul className="mt-2.5 grid gap-2">
             {g.courses.map((c) => (
               <li key={c.id}>
-                <Inset as={Link} interactive to={`/build/${c.id}`} className="flex items-center justify-between gap-2 px-3 py-2">
-                  <span className="min-w-0 truncate text-read font-bold text-foreground">{c.name}</span>
-                  <span className="inline-flex shrink-0 items-center gap-1 text-read font-semibold text-teal-light-ink">
+                <Inset as={Link} interactive to={`/build/${c.id}`} className="flex items-center justify-between gap-3 px-3.5 py-2.5">
+                  <span className="min-w-0 truncate text-fine font-light text-foreground">{c.name}</span>
+                  <span className="inline-flex shrink-0 items-center gap-1 text-fine font-normal text-teal-light-ink">
                     تفاصيل الدورة
                     <ArrowLeft className="h-3 w-3" />
                   </span>
@@ -112,8 +116,27 @@ function TrainerOffer({ name, groups }: { name: string; groups: SeasonGroup[] })
               </li>
             ))}
           </ul>
-        </div>
-      ))}
+        )
+        return i === 0 ? (
+          <div key={g.termAr ?? "later"} className="mt-5">
+            <p className="flex items-center gap-1.5 text-read font-medium text-foreground">
+              <BookOpen className="h-3.5 w-3.5 text-teal-light-ink" />
+              {seasonHeadingAr(name, g.termAr)}
+            </p>
+            {list}
+          </div>
+        ) : (
+          <details key={g.termAr ?? "later"} className="group mt-4 border-t border-white/10 pt-4">
+            <summary className="flex cursor-pointer list-none items-center gap-1.5 text-read font-normal text-muted-foreground transition hover:text-foreground [&::-webkit-details-marker]:hidden">
+              <BookOpen className="h-3.5 w-3.5 shrink-0 text-teal-light-ink" />
+              <span className="min-w-0 flex-1">{seasonHeadingAr(name, g.termAr)}</span>
+              <span className="shrink-0 text-fine">{coursesCountAr(g.courses.length)}</span>
+              <ChevronDown className="h-4 w-4 shrink-0 transition-transform group-open:rotate-180" aria-hidden="true" />
+            </summary>
+            {list}
+          </details>
+        )
+      })}
     </div>
   )
 }
