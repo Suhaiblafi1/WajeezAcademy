@@ -216,6 +216,8 @@ export const allSections: AdminNavSection[] = [
     items: [
       { to: "/admin/advisors", label: "المستشارون والعمولة", icon: UserCheck, need: "advisor.manage",
         descAr: "من يستشير من، وقاعدةُ العمولة، وما استُحقّ منها" },
+      { to: "/admin/advisor-payouts", label: "كشوف عمولة المستشارين", icon: HandCoins, need: "advisor.payout.manage",
+        descAr: "كشفُ كلّ شهرٍ ببنوده: يُعتمد ثمّ يُصرف — والاستردادُ يُحسم في التالي" },
       { to: "/admin/advisor-requests", label: "طلبات المستشارين", icon: BadgePercent, need: "advisor.request.review",
         descAr: "خصمٌ يطلبه مستشارٌ لعميله أو تعديلٌ على خطّته — بسببه كاملا" },
       /* «الاستثناءات» كان اسما لا يدلّ على شيء، وحارسا لا يحرس ما وراءه:

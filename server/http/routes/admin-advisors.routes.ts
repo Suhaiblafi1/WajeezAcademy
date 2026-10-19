@@ -10,6 +10,7 @@ import type { PrismaClient, Prisma } from '@prisma/client'
 import { requirePermission } from '../auth-plugin'
 import { recordAudit } from '../../services/audit'
 import { attributedRevenue } from '../../services/advisor.service'
+import { AdvisorPayoutService } from '../../services/advisor-payout.service'
 import { auditActionAr, entityTypeAr } from '../../../src/application/audit/labels'
 
 export function registerAdminAdvisorRoutes(app: FastifyInstance, prisma: PrismaClient) {
@@ -78,14 +79,14 @@ export function registerAdminAdvisorRoutes(app: FastifyInstance, prisma: PrismaC
 
     /* لا عمولةَ بلا نسبةٍ مُتَّفَقٍ عليها صراحة — «لم تُحدَّد» تُحسب صفرا هنا،
        والقائمةُ تُميّزها بصريّا («لم تُتّفق بعد» لا «صفر بالمئة») */
-    const commissionPct = user.advisorProfile ? Number(user.advisorProfile.commissionPct) : 0
-    const commissionOwed = Math.round(revenueFromReferrals * commissionPct) / 100
+    /* والمستحقُّ ما لم يُصرف بعد — كشوفٌ تنتظر وما لم يدخل كشفا (`advisor-payout.service.ts`) */
+    const money = await new AdvisorPayoutService(prisma).summaryFor(userId)
 
     return {
       userId: user.id, displayName: user.displayName, email: user.email, status: user.status,
       commissionPct: user.advisorProfile ? Number(user.advisorProfile.commissionPct) : null,
       notesAr: user.advisorProfile?.notesAr ?? '',
-      revenueFromReferrals, commissionOwed, currency: 'USD',
+      revenueFromReferrals, commissionOwed: money.owed, commissionPaid: money.paid, currency: money.currency,
       ratingAvg: ratingAgg._count >= MIN_RATINGS_TO_SHOW ? Number(ratingAgg._avg.score) : null,
       ratingCount: ratingAgg._count,
       cases: assignments.map((a) => ({

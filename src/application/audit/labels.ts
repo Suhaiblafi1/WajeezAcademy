@@ -153,6 +153,10 @@ const PHRASES: Record<string, string> = {
   'advisor.case.whatsapp_opened': 'فتح حالة لعميل جديد راسله مستشار عبر واتساب',
   'advisor.case.lead_email': 'كتابة بريد العميل في حالته ليرتبط بحسابه',
   'advisor.case.guest_erased': 'محو بيانات من لم يسجل بعد ستة أشهر بلا نشاط',
+  'advisor_payout.generate': 'توليد كشف عمولة مستشار',
+  'advisor_payout.approve': 'اعتماد كشف عمولة مستشار',
+  'advisor_payout.pay': 'تأكيد صرف كشف عمولة مستشار',
+  'advisor_payout.cancel': 'إلغاء كشف عمولة مستشار',
   'term.create': 'إنشاء فصل دراسيّ',
   'term.registration_window': 'ضبط نافذة التسجيل للفصل',
   'term.trainer_availability': 'إتاحة مدرّب في فصل',
@@ -497,6 +501,7 @@ const PHRASES: Record<string, string> = {
   'worker.unbooked_digest': 'ملخّص من لم يحجز موعد لقائه',
   'worker.advisor_reminders': 'تذكير المستشارين بحالات بلا تواصل ومتابعات حلّ موعدها',
   'worker.erase_idle_guests': 'محو بيانات من لم يسجل بعد ستة أشهر بلا نشاط',
+  'worker.advisor_payouts': 'توليد كشوف عمولة المستشارين للشهر الذي انتهى',
 }
 
 /** معجمُ المقاطع — نطاقاتٌ وأشياءٌ وأفعال */
@@ -508,7 +513,7 @@ const WORDS: Record<string, string> = {
   term: 'فصل دراسيّ', accounts: 'حسابات', platform: 'المنصّة',
   content_change_request: 'طلب تغيير محتوى',
   version: 'إصدار', certificate: 'شهادة', trainer: 'مدرّب', trainer_compensation: 'تعويض مدرّب',
-  trainer_payout: 'مستحقّ مدرّب', application: 'طلب انضمام', contract: 'عقد', invitation: 'دعوة',
+  trainer_payout: 'مستحقّ مدرّب', advisor_payout: 'كشف عمولة مستشار', application: 'طلب انضمام', contract: 'عقد', invitation: 'دعوة',
   profile: 'ملفّ', document: 'وثيقة', interview: 'مقابلة', demo: 'حصّة تجريبيّة', review: 'مراجعة',
   change: 'اقتراح تعديل', course_proposal: 'اقتراح دورة',
   trainer_course_decisions: 'ملفّ قرارات دورات المدرّبين', path: 'مسار', account: 'حساب', enrollment: 'تسجيل', enrollment_request: 'طلب تسجيل',

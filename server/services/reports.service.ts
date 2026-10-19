@@ -12,6 +12,7 @@ import {
 import { suggestCourses } from '../../src/application/trainer/proposal-match'
 import { readMatchableCourses } from './course-proposal.service'
 import { AdvisorService, attributedRevenue } from './advisor.service'
+import { AdvisorPayoutService } from './advisor-payout.service'
 
 export interface ReportFilter {
   from?: Date
@@ -40,7 +41,7 @@ const COLUMN_AR: Record<string, string> = {
   recommendation: 'التوصية', learners: 'المتعلمون',
   advisor: 'المستشار', enrolled: 'سجّلوا',
   openCases: 'حالات مفتوحة', medianHoursToContact: 'ساعات حتى أول تواصل (الوسيط)', contactedWithinDayPct: 'تواصل خلال يوم ٪',
-  waitingOver2Days: 'بلا تواصل منذ يومين', revenueInTheirTime: 'دفعات طلابه وهم عنده', commissionOwed: 'العمولة المستحقة',
+  waitingOver2Days: 'بلا تواصل منذ يومين', revenueInTheirTime: 'دفعات طلابه وهم عنده', commissionOwed: 'العمولة المستحقة', commissionPaid: 'العمولة المصروفة',
   trainer: 'المدرب', cohort: 'الشعبة', sessionsDone: 'جلسات منجزة', submissionsReviewed: 'تسليمات مراجعة', avgScorePct: 'متوسط الدرجة ٪',
   monthCurrency: 'الشهر والعملة', revenue: 'الإيراد',
   kind: 'النوع', provider: 'المزود', total: 'الإجمالي',
@@ -178,7 +179,7 @@ export class ReportsService {
            «خلال يوم» على ما مرّ عليه يومٌ — حالةُ الساعة الأخيرة لم تُعطَ فرصتَها. والانتظارُ يُقرأ من
            قائمة الإدارة نفسِها (`listUncontacted`)، والمالُ من حساب العمولة نفسِه (`attributedRevenue`)
            — فلا رقمٌ هنا يخالف ما في شاشةٍ أخرى. */
-        methodAr: 'لكل مستشار: حالاته المفتوحة الآن؛ الوسيط بالساعات من الإسناد إلى أول تواصل سجله هو؛ نسبة ما تواصل فيه خلال يوم مما مر عليه يوم؛ ما بلا تواصل منذ يومين الآن؛ من سجل من حالاته؛ دفعات طلابه وهم عنده والعمولة بنسبته. وما أدخله المستشار بنفسه خارج سرعة التواصل',
+        methodAr: 'لكل مستشار: حالاته المفتوحة الآن؛ الوسيط بالساعات من الإسناد إلى أول تواصل سجله هو؛ نسبة ما تواصل فيه خلال يوم مما مر عليه يوم؛ ما بلا تواصل منذ يومين الآن؛ من سجل من حالاته؛ دفعات طلابه وهم عنده؛ والعمولة المستحقة ما لم يصرف بعد، والمصروفة ما صرف في كشوفه. وما أدخله المستشار بنفسه خارج سرعة التواصل',
         run: async () => {
           const HOUR = 3_600_000
           const now = Date.now()
@@ -209,6 +210,7 @@ export class ReportsService {
             return s.length % 2 ? s[m]! : (s[m - 1]! + s[m]!) / 2
           }
 
+          const payouts = new AdvisorPayoutService(p)
           const rows = []
           for (const a of advisors) {
             const mine = links.filter((l) => l.advisorId === a.id)
@@ -230,6 +232,7 @@ export class ReportsService {
             }
             const active = mine.filter((l) => !l.unassignedAt)
             const revenue = await attributedRevenue(p, a.id)
+            const money = await payouts.summaryFor(a.id)
             const pct = a.advisorProfile ? Number(a.advisorProfile.commissionPct) : null
             const med = median(hours)
             rows.push({
@@ -241,7 +244,9 @@ export class ReportsService {
               waitingOver2Days: waiting.get(a.id) ?? 0,
               enrolled: active.filter((l) => l.case.status === 'enrolled').length,
               revenueInTheirTime: revenue,
-              commissionOwed: pct === null ? '—' : Math.round(revenue * pct) / 100,
+              /* المستحقُّ ما لم يُصرف: كشوفٌ تنتظر، وما لم يدخل كشفا بعدُ — والمصروفُ بجانبه */
+              commissionOwed: pct === null ? '—' : money.owed,
+              commissionPaid: money.paid,
             })
           }
           return rows

@@ -162,6 +162,9 @@ export const PERMISSIONS = [
   /* شرطُ عملِ المستشار — لا حالاتُه. والعمولةُ بندٌ ماليّ، فلا تُطوى في
      `advisor.assign` التي يملكها من يوزّع الحالات. */
   { key: 'advisor.manage', description: 'إدارة المستشارين وشروط عملهم — ومنها نسبة العمولة' },
+  /* وكشوفُ عمولته عند من يصرف (`finance`) كما تُصرف مستحقّاتُ المدرّب — والنسبةُ نفسُها
+     باقيةٌ في `advisor.manage`: من يصرف لا يقرّر كم. */
+  { key: 'advisor.payout.manage', description: 'كشوف عمولة المستشارين: توليدها واعتمادها وتأكيد صرفها' },
   /* سجلُّ الأثر يُقرأ ولا يُكتب: كلُّ ما فيه كتبته الخدماتُ نفسُها. */
   { key: 'audit.view', description: 'قراءة سجلّ الأثر الموحّد لكلّ ما وقع على المنصّة' },
   // السير الذاتية
@@ -315,7 +318,7 @@ export const ROLE_PERMISSIONS: Record<string, PermissionKey[]> = {
      change». فتركّب العقدَ وترسله وتعيده للتوقيع بأجرٍ جديد. ولا تعتمد توقيعا
      ولا تردّه: ذاك خلف `trainer.applications.decide` وليس لها. ولا تفتح
      شاشةَ الطلبات — `trainer.applications.view` باقيةٌ عند من يقرّر. */
-  finance: ['trainer.compensation.manage', 'trainer.contract.manage', 'commerce.manage', 'finance.view', 'finance.payment.record', 'finance.refund.process', 'finance.bank.reveal', 'reports.view', 'reports.export'],
+  finance: ['trainer.compensation.manage', 'advisor.payout.manage', 'trainer.contract.manage', 'commerce.manage', 'finance.view', 'finance.payment.record', 'finance.refund.process', 'finance.bank.reveal', 'reports.view', 'reports.export'],
   support: ['catalog.view', 'support.operate'],
   learner: ['learner.portal', 'learner.submit', 'cv.upload', 'enrollment.request', 'rating.submit'],
 }
