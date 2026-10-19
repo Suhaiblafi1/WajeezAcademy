@@ -110,13 +110,56 @@ function normalizeName(v: string): string {
 
 /** نسبةُ اشتراكِ الكلمات — لا مسافةُ تحرير: الأسماءُ تُقارَن بأجزائها،
     ومن سقط منه اسمُ جدّه ليس رجلا آخر. */
-function nameScore(a: string, b: string): number {
+export function nameScore(a: string, b: string): number {
   const x = new Set(normalizeName(a).split(' ').filter(Boolean))
   const y = new Set(normalizeName(b).split(' ').filter(Boolean))
   if (x.size === 0 || y.size === 0) return 0
   let shared = 0
   for (const w of x) if (y.has(w)) shared += 1
   return Math.round((shared / Math.max(x.size, y.size)) * 100)
+}
+
+/** الحسابُ كما يُكتب، مفحوصا — للمدرّب والمستشار معا (`advisor-bank.service.ts`) */
+export function parseBankInput(input: BankAccountInput) {
+  const kind: BankAccountKind = input.accountKind === 'local' ? 'local' : 'iban'
+
+  const iban = String(input.iban ?? '').replace(/[\s-]+/g, '').toUpperCase()
+  if (iban.includes(BANK_MASK)) {
+    /* القيمةُ المقنَّعةُ تُعاد من الشاشة — ولا تُكتب فوق السرّ الحقيقيّ */
+    throw new AuthError('masked_value', 'أعد كتابة رقم الحساب كاملا — المعروض مقنّع لا يصلح للحفظ', 422)
+  }
+  const minLen = kind === 'iban' ? MIN_ACCOUNT_LEN : MIN_LOCAL_ACCOUNT_LEN
+  if (iban.length < minLen || iban.length > MAX_ACCOUNT_LEN || !/^[A-Z0-9]+$/.test(iban)) {
+    throw new AuthError(
+      'bad_iban',
+      `رقم الحساب غير مقبول — يكتب كاملا بحروف وأرقام بلا مسافات (بين ${minLen} و${MAX_ACCOUNT_LEN} خانة)`,
+      422,
+    )
+  }
+  if (kind === 'iban' && !/^[A-Z]{2}[0-9]{2}/.test(iban)) {
+    throw new AuthError('bad_iban', 'الـIBAN يبدأ برمز الدولة ثمّ رقمين (مثلا JO94…) — وإن لم يكن لمصرفك IBAN فاختر «رقم حساب محلّيّ»', 422)
+  }
+  /* ورمزُ الدولة: من الـIBAN نفسِه إن كان IBAN، وإلّا فممّا اختاره. ولا
+     تخمينَ بعد اليوم — كان يُفترض `JO` لكلّ ما ليس IBAN. */
+  const chosenCountry = String(input.countryCode ?? '').trim().toUpperCase()
+  const countryCode = kind === 'iban' ? iban.slice(0, 2) : chosenCountry
+  if (!/^[A-Z]{2}$/.test(countryCode)) {
+    throw new AuthError('bad_country', 'اختر دولة المصرف', 422)
+  }
+  const routingCode = String(input.routingCode ?? '').replace(/\s+/g, '').toUpperCase().slice(0, 34) || null
+  if (routingCode && !/^[A-Z0-9-]+$/.test(routingCode)) {
+    throw new AuthError('bad_routing', 'رمز التوجيه حروف وأرقام فقط', 422)
+  }
+  const swiftBic = String(input.swiftBic ?? '').replace(/\s+/g, '').toUpperCase() || null
+  if (swiftBic && !/^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$/.test(swiftBic)) {
+    throw new AuthError('bad_swift', 'رمز SWIFT/BIC ثماني خانات أو إحدى عشرة (مثلا ARABJOAX)', 422)
+  }
+  const holderName = String(input.holderName ?? '').trim()
+  if (holderName.length < 4) throw new AuthError('bad_holder', 'اكتب اسم صاحب الحساب كما يطبعه المصرف', 422)
+  const bankNameAr = String(input.bankNameAr ?? '').trim()
+  if (bankNameAr.length < 2) throw new AuthError('bad_bank', 'اكتب اسم المصرف', 422)
+  const branchAr = String(input.branchAr ?? '').trim() || null
+  return { kind, iban, countryCode, routingCode, swiftBic, holderName, bankNameAr, branchAr }
 }
 
 export class TrainerBankService {
@@ -241,43 +284,7 @@ export class TrainerBankService {
         422,
       )
     }
-    const kind: BankAccountKind = input.accountKind === 'local' ? 'local' : 'iban'
-
-    const iban = String(input.iban ?? '').replace(/[\s-]+/g, '').toUpperCase()
-    if (iban.includes(BANK_MASK)) {
-      /* القيمةُ المقنَّعةُ تُعاد من الشاشة — ولا تُكتب فوق السرّ الحقيقيّ */
-      throw new AuthError('masked_value', 'أعد كتابة رقم الحساب كاملا — المعروض مقنّع لا يصلح للحفظ', 422)
-    }
-    const minLen = kind === 'iban' ? MIN_ACCOUNT_LEN : MIN_LOCAL_ACCOUNT_LEN
-    if (iban.length < minLen || iban.length > MAX_ACCOUNT_LEN || !/^[A-Z0-9]+$/.test(iban)) {
-      throw new AuthError(
-        'bad_iban',
-        `رقم الحساب غير مقبول — يكتب كاملا بحروف وأرقام بلا مسافات (بين ${minLen} و${MAX_ACCOUNT_LEN} خانة)`,
-        422,
-      )
-    }
-    if (kind === 'iban' && !/^[A-Z]{2}[0-9]{2}/.test(iban)) {
-      throw new AuthError('bad_iban', 'الـIBAN يبدأ برمز الدولة ثمّ رقمين (مثلا JO94…) — وإن لم يكن لمصرفك IBAN فاختر «رقم حساب محلّيّ»', 422)
-    }
-    /* ورمزُ الدولة: من الـIBAN نفسِه إن كان IBAN، وإلّا فممّا اختاره. ولا
-       تخمينَ بعد اليوم — كان يُفترض `JO` لكلّ ما ليس IBAN. */
-    const chosenCountry = String(input.countryCode ?? '').trim().toUpperCase()
-    const countryCode = kind === 'iban' ? iban.slice(0, 2) : chosenCountry
-    if (!/^[A-Z]{2}$/.test(countryCode)) {
-      throw new AuthError('bad_country', 'اختر دولة المصرف', 422)
-    }
-    const routingCode = String(input.routingCode ?? '').replace(/\s+/g, '').toUpperCase().slice(0, 34) || null
-    if (routingCode && !/^[A-Z0-9-]+$/.test(routingCode)) {
-      throw new AuthError('bad_routing', 'رمز التوجيه حروف وأرقام فقط', 422)
-    }
-    const swiftBic = String(input.swiftBic ?? '').replace(/\s+/g, '').toUpperCase() || null
-    if (swiftBic && !/^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$/.test(swiftBic)) {
-      throw new AuthError('bad_swift', 'رمز SWIFT/BIC ثماني خانات أو إحدى عشرة (مثلا ARABJOAX)', 422)
-    }
-    const holderName = String(input.holderName ?? '').trim()
-    if (holderName.length < 4) throw new AuthError('bad_holder', 'اكتب اسم صاحب الحساب كما يطبعه المصرف', 422)
-    const bankNameAr = String(input.bankNameAr ?? '').trim()
-    if (bankNameAr.length < 2) throw new AuthError('bad_bank', 'اكتب اسم المصرف', 422)
+    const { kind, iban, countryCode, routingCode, swiftBic, holderName, bankNameAr, branchAr } = parseBankInput(input)
 
     const signer = await this.signerNameOf(profile.id)
     const score = signer ? nameScore(holderName, signer) : 0
@@ -295,7 +302,7 @@ export class TrainerBankService {
           tail4: iban.slice(-4),
           countryCode,
           holderName, bankNameAr,
-          branchAr: String(input.branchAr ?? '').trim() || null,
+          branchAr,
           swiftBic,
           accountKind: kind,
           routingCode,

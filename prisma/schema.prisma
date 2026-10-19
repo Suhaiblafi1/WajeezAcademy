@@ -61,6 +61,7 @@ model User {
   advisorProfile       AdvisorProfile?
   advisorRequests      AdvisorRequest[]           @relation("AdvisorRequestBy")
   advisorPayouts       AdvisorPayout[]            @relation("AdvisorPayouts")
+  advisorBankAccounts  AdvisorBankAccount[]
   advisorRequestsRuled AdvisorRequest[]           @relation("AdvisorRequestDecidedBy")
   couponsRestricted    Coupon[]                   @relation("CouponRestrictedTo")
   skillRemeasures      SkillRemeasure[]           @relation("SkillRemeasureUser")
@@ -3679,12 +3680,44 @@ model AdvisorPayout {
   /// رقمُ الحوالة أو ما يدلّ عليها — اختياريّ
   paidRefAr      String?
   cancelReasonAr String?
+  /// الحسابُ الذي كُشف لهذا الكشف — ويُردّ الصرفُ إن تبدّل بعده (`advisor-bank.service.ts`)
+  bankAccountId  String?             @db.Uuid
   createdAt      DateTime            @default(now())
   advisor        User                @relation("AdvisorPayouts", fields: [advisorId], references: [id])
+  bankAccount    AdvisorBankAccount? @relation(fields: [bankAccountId], references: [id], onDelete: SetNull)
   items          AdvisorPayoutItem[]
 
   @@index([advisorId, period])
   @@index([status, createdAt])
+}
+
+/// حسابُ المستشار البنكيّ لعمولته (١٩ أكتوبر ٢٠٢٦) — كحساب المدرّب، والعلّةُ في `advisor-bank.service.ts`.
+model AdvisorBankAccount {
+  id                 String          @id @default(uuid()) @db.Uuid
+  userId             String          @db.Uuid
+  status             String          @default("active") // active | superseded
+  /// معمّى بظرفٍ مربوطٍ بصاحبه (`advisorBankAad`) — لا يُقرأ صريحا إلّا لحظةَ الصرف
+  ibanSealed         String
+  tail4              String
+  countryCode        String          @db.VarChar(2)
+  holderName         String
+  bankNameAr         String
+  branchAr           String?
+  swiftBic           String?
+  accountKind        String          @default("iban") // iban | local
+  routingCode        String?
+  ownNameConfirmedAt DateTime?
+  /// اسمُ صاحب الحساب أمام اسمه في المنصّة — يُقال لمن يصرف ولا يمنع
+  outcome            String          @default("unverifiable") // matches | differs | unverifiable
+  outcomeScore       Int             @default(0)
+  setBy              String?         @db.Uuid
+  createdAt          DateTime        @default(now())
+  supersededAt       DateTime?
+  lastRevealAt       DateTime?
+  user               User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payouts            AdvisorPayout[]
+
+  @@index([userId, status])
 }
 
 /// بندٌ في كشف المستشار: عمولةُ دفعةٍ واحدة، أو ما يُحسم لاستردادٍ منها

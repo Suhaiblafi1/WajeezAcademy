@@ -1,16 +1,19 @@
 /* كشوفُ عمولة المستشارين — بابُ من يصرف (١٩ أكتوبر ٢٠٢٦). والعلّةُ في `advisor-payout.service.ts`.
 
    وبابٌ مستقلٌّ عن `admin-advisors.routes.ts`: ذاك بيد من يقرّر النسبة (`advisor.manage`)،
-   وهذا بيد من يصرف (`advisor.payout.manage`) — كما تُفصل قواعدُ أتعاب المدرّب عن عقده. */
+   وهذا بيد من يصرف (`advisor.payout.manage`) — كما تُفصل قواعدُ أتعاب المدرّب عن عقده.
+   وكشفُ رقم الحساب وحدَه بـ`finance.bank.reveal`، كما يُكشف حسابُ المدرّب. */
 
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import type { PrismaClient } from '@prisma/client'
 import { requirePermission } from '../auth-plugin'
 import { AdvisorPayoutService, lastClosedPeriod } from '../../services/advisor-payout.service'
+import { AdvisorBankService } from '../../services/advisor-bank.service'
 
 export function registerAdminAdvisorPayoutRoutes(app: FastifyInstance, prisma: PrismaClient) {
   const payouts = new AdvisorPayoutService(prisma)
+  const bank = new AdvisorBankService(prisma)
   const canPay = requirePermission('advisor.payout.manage')
   const byId = z.object({ id: z.string().uuid() })
 
@@ -38,6 +41,12 @@ export function registerAdminAdvisorPayoutRoutes(app: FastifyInstance, prisma: P
     await payouts.approve(byId.parse(req.params).id, req.auth!.userId)
     return { ok: true }
   })
+
+  /* والكشفُ بصلاحيّةٍ ماليّةٍ مستقلّة (`finance.bank.reveal`) كحساب المدرّب — وكلُّ كشفٍ يُكتب */
+  app.post('/api/admin/advisor-payouts/:id/bank-account/reveal', {
+    preHandler: requirePermission('finance.bank.reveal'),
+    schema: { tags: ['admin-advisors'], summary: 'كشف رقم حساب المستشار لصرف كشف معتمد — يسجل كل كشف' },
+  }, async (req) => bank.revealForPayout(byId.parse(req.params).id, req.auth!.userId))
 
   app.post('/api/admin/advisor-payouts/:id/pay', {
     preHandler: canPay,

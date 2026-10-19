@@ -35,8 +35,11 @@ describe('البابُ بيد من يصرف', () => {
     expect(ROUTES).toMatch(/const canPay = requirePermission\('advisor\.payout\.manage'\)/)
     const routes = ROUTES.match(/app\.(get|post)\(/g) ?? []
     const guarded = ROUTES.match(/preHandler: canPay,/g) ?? []
-    expect(routes.length).toBe(5)
-    expect(guarded.length, 'مسارٌ بلا حارس').toBe(routes.length)
+    /* وكشفُ رقم الحساب وحدَه بصلاحيّته الماليّة — `advisor-bank-screens.test.ts` */
+    const reveal = ROUTES.match(/preHandler: requirePermission\('finance\.bank\.reveal'\),/g) ?? []
+    expect(routes.length).toBe(6)
+    expect(guarded.length + reveal.length, 'مسارٌ بلا حارس').toBe(routes.length)
+    expect(reveal.length).toBe(1)
     expect(NAV).toMatch(/to: "\/admin\/advisor-payouts", [^}]*need: "advisor\.payout\.manage"/)
     expect(APP).toMatch(/<Route path="\/admin\/advisor-payouts" element=\{<AdminAdvisorPayouts \/>\} \/>/)
   })

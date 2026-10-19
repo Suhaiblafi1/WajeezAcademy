@@ -8,7 +8,7 @@
    ⑤ **وما صُرف وما ينتظر وما لم يدخل كشفا** — في «عمولتي» وفي التقرير.
    ⑥ **والعاملُ يولّد الشهرَ الذي انتهى.** */
 
-import { beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
 import { setupTestDb, testPrisma } from '../helpers/db'
 import { AuthService } from '../../services/auth.service'
@@ -16,6 +16,8 @@ import { AdvisorService, attributedRevenue } from '../../services/advisor.servic
 import { AdvisorPayoutService, lastClosedPeriod } from '../../services/advisor-payout.service'
 import { ReportsService } from '../../services/reports.service'
 import { runJob } from '../../worker/jobs'
+import { AdvisorBankService } from '../../services/advisor-bank.service'
+import { BANK_KEY_ENV, resetBankKeyCacheForTests } from '../../services/bank-crypto'
 
 let prisma: PrismaClient
 let auth: AuthService
@@ -58,6 +60,17 @@ async function refund(p: { orderId: string; paymentId: string; total: number }, 
   await prisma.refund.create({ data: { paymentId: p.paymentId, amount, reason: 'استرداد', status: 'processed', processedAt: at, createdAt: at } })
   await prisma.order.update({ where: { id: p.orderId }, data: { status: amount >= p.total ? 'refunded' : 'partially_refunded' } })
 }
+/** الصرفُ بعد كشف الحساب — كما يصرف من يصرف (`advisor-bank.test.ts` يحرس هذا الشرط نفسَه) */
+async function pay(payoutId: string, ref?: string) {
+  const { advisorId } = await prisma.advisorPayout.findUniqueOrThrow({ where: { id: payoutId } })
+  const bank = new AdvisorBankService(prisma)
+  if (!(await bank.maskedFor(advisorId))) {
+    await bank.setMine(advisorId, { iban: 'JO94CBJO0010000000000131000302', holderName: 'مستشار الكشف', bankNameAr: 'البنك العربي', ownNameConfirmed: true })
+  }
+  await bank.revealForPayout(payoutId, financeId)
+  await payouts.markPaid(payoutId, financeId, ref)
+}
+let savedKey: string | undefined
 const live = (advisorId: string, period: string) =>
   prisma.advisorPayout.findMany({ where: { advisorId, period, status: { not: 'cancelled' } }, include: { items: true } })
 
@@ -68,7 +81,16 @@ beforeAll(async () => {
   payouts = new AdvisorPayoutService(prisma)
   financeId = (await auth.register('payout-finance@test.local', 'Finance#12345', 'المالية')).userId
   await auth.setRoles(financeId, ['finance'])
+  savedKey = process.env[BANK_KEY_ENV]
+  process.env[BANK_KEY_ENV] = 'd'.repeat(64)
+  resetBankKeyCacheForTests()
 }, 240_000)
+
+afterAll(() => {
+  if (savedKey === undefined) delete process.env[BANK_KEY_ENV]
+  else process.env[BANK_KEY_ENV] = savedKey
+  resetBankKeyCacheForTests()
+})
 
 describe('① كشفُ الشهر ببنوده', () => {
   it('⚠️ بندٌ لكلّ دفعةٍ في نوبته حتّى نهاية الشهر — وبنسبته يومَ وُلّد', async () => {
@@ -141,7 +163,7 @@ describe('③ الاستردادُ بندٌ سالبٌ في كشفه', () => {
     await payouts.generate(P3.period, financeId)
     const [p3] = await live(a, P3.period)
     await payouts.approve(p3!.id, financeId)
-    await payouts.markPaid(p3!.id, financeId, 'TR-1')
+    await pay(p3!.id, 'TR-1')
 
     await prisma.advisorProfile.update({ where: { userId: a }, data: { commissionPct: 20 } })
     await refund(first, 50, P2.mid)
@@ -192,7 +214,7 @@ describe('④ يُعتمد ثمّ يُصرف، أو يُلغى فتعود دفع
     await expect(payouts.approve(p!.id, a)).rejects.toMatchObject({ code: 'own_payout' })
     await payouts.approve(p!.id, financeId)
     await expect(payouts.approve(p!.id, financeId)).rejects.toMatchObject({ code: 'bad_transition' })
-    await payouts.markPaid(p!.id, financeId, 'TR-77')
+    await pay(p!.id, 'TR-77')
     await expect(payouts.cancel(p!.id, financeId, 'سبب كاف للإلغاء')).rejects.toMatchObject({ code: 'bad_transition' })
     const after = await prisma.advisorPayout.findUniqueOrThrow({ where: { id: p!.id } })
     expect(after).toMatchObject({ status: 'paid', paidRefAr: 'TR-77', paidBy: financeId, approvedBy: financeId })
@@ -221,7 +243,7 @@ describe('④ يُعتمد ثمّ يُصرف، أو يُلغى فتعود دفع
     await payouts.generate(P1.period, financeId)
     const [p] = await live(a, P1.period)
     await payouts.approve(p!.id, financeId)
-    await payouts.markPaid(p!.id, financeId)
+    await pay(p!.id)
     const bells = await prisma.notification.findMany({ where: { userId: a, templateKey: 'advisor_payout' } })
     expect(bells.map((b) => b.audience)).toEqual(['staff', 'staff', 'staff'])
   })
@@ -235,7 +257,7 @@ describe('⑤ ما صُرف وما ينتظر وما لم يدخل كشفا', ()
     await payouts.generate(P3.period, financeId)
     const [p3] = await live(a, P3.period)
     await payouts.approve(p3!.id, financeId)
-    await payouts.markPaid(p3!.id, financeId)
+    await pay(p3!.id)
     await paid(s, 200, P2.mid)
     await payouts.generate(P2.period, financeId)
     await paid(s, 400, new Date(now.getTime() - 60_000))
