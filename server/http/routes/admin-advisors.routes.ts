@@ -9,6 +9,7 @@ import { z } from 'zod'
 import type { PrismaClient, Prisma } from '@prisma/client'
 import { requirePermission } from '../auth-plugin'
 import { recordAudit } from '../../services/audit'
+import { attributedRevenue } from '../../services/advisor.service'
 import { auditActionAr, entityTypeAr } from '../../../src/application/audit/labels'
 
 export function registerAdminAdvisorRoutes(app: FastifyInstance, prisma: PrismaClient) {
@@ -63,16 +64,11 @@ export function registerAdminAdvisorRoutes(app: FastifyInstance, prisma: PrismaC
       include: { case: { include: { client: { select: { id: true, displayName: true, email: true } }, lead: true } } },
       orderBy: { assignedAt: 'desc' },
     })
-    const clientIds = [...new Set(
-      assignments.map((a) => a.case.clientId).filter((id): id is string => Boolean(id)),
-    )]
-
     /* لا تقييمٌ يُنسب لصاحبه ولا معدَّلٌ يُعرض تحت ثلاثة — نفس قاعدة تقييم المدرّب */
     const MIN_RATINGS_TO_SHOW = 3
-    const [paidOrders, ratingAgg, requests] = await Promise.all([
-      clientIds.length > 0
-        ? prisma.order.findMany({ where: { userId: { in: clientIds }, status: 'paid' }, select: { total: true } })
-        : Promise.resolve([]),
+    /* الإيرادُ بحسابِ «عمولتي» نفسِه لا بحسابٍ ثانٍ — والعلّةُ عند `attributedRevenue` */
+    const [revenueFromReferrals, ratingAgg, requests] = await Promise.all([
+      attributedRevenue(prisma, userId),
       prisma.rating.aggregate({
         where: { subjectType: 'advisor', subjectId: userId, publishStatus: 'approved' },
         _avg: { score: true }, _count: true,
@@ -80,7 +76,6 @@ export function registerAdminAdvisorRoutes(app: FastifyInstance, prisma: PrismaC
       prisma.advisorRequest.findMany({ where: { advisorId: userId }, orderBy: { createdAt: 'desc' } }),
     ])
 
-    const revenueFromReferrals = paidOrders.reduce((sum, o) => sum + Number(o.total), 0)
     /* لا عمولةَ بلا نسبةٍ مُتَّفَقٍ عليها صراحة — «لم تُحدَّد» تُحسب صفرا هنا،
        والقائمةُ تُميّزها بصريّا («لم تُتّفق بعد» لا «صفر بالمئة») */
     const commissionPct = user.advisorProfile ? Number(user.advisorProfile.commissionPct) : 0
