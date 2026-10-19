@@ -177,6 +177,10 @@ const STAFF: Table = {
   'advisor.case.client_paid': { path: '/advisor/cases', ctaAr: 'افتح الحالة' },
   /* وحالةٌ لا مستشارَ نشطا يستلمها — في طابورها حيث تُسند (١٩ أكتوبر ٢٠٢٦) */
   'advisor.case.no_advisor': { path: '/admin/exceptions', ctaAr: 'افتح حالات بلا مستشار' },
+  /* وحالةٌ لم يسجّل مستشارُها تواصلا: يومٌ فتذكيرُه، ويومان فخبرُ من يُسند — ومتابعةٌ حلّ موعدُها (١٩ أكتوبر ٢٠٢٦) */
+  'advisor.case.no_contact': { path: '/advisor/cases', ctaAr: 'افتح الحالة' },
+  'advisor.case.uncontacted': { path: '/admin/exceptions', ctaAr: 'افتح القائمة' },
+  'advisor.followup.due': { path: '/advisor/cases', ctaAr: 'افتح الحالة' },
   /* ي-٤: وشاشةُ الرحيل فيها زرُّ «نفِّذ ما اختاره» — الوجهةُ تحمل الفعلَ لا الخبرَ وحدَه */
   'departure.chosen': { path: '/admin/trainer-departures', ctaAr: 'نفّذ ما اختاره' },
   'staff.announce': { path: '/admin/notifications', ctaAr: 'اقرأ الإعلان' },
