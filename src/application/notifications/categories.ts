@@ -178,6 +178,9 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
       'trainer.prep.declined', 'trainer.prep.nothing_pending', 'trainer.prep.activation_blocked', 'trainer.prep.seal_blocked',
       /* ونبذةُ المدرّب (٣ أكتوبر ٢٠٢٦): أرسلها فتنتظر قرارا، وقرارُنا يصله */
       'trainer.public_text.submitted', 'trainer.public_text.approved', 'trainer.public_text.rejected',
+      /* وما نقترحه على بطاقته (١٩ أكتوبر ٢٠٢٦): يصله فيقرّر، وقرارُه وتعديلُه يصلاننا */
+      'trainer.suggestion.proposed', 'trainer.suggestion.edit_approved',
+      'trainer.suggestion.edited', 'trainer.suggestion.accepted', 'trainer.suggestion.rejected',
       /* وخيارُ المعتذِر في بياناته — أبقاها أو حُذفت بطلبه (٣ أكتوبر ٢٠٢٦) */
       'trainer.data_choice.made',
       'trainer.contract.amendment_requested',

@@ -18,6 +18,7 @@ import { EarningsService } from '../../services/earnings.service'
 import { TrainerMaterialsService } from '../../services/trainer-materials.service'
 import { TrainerPrepService } from '../../services/trainer-prep.service'
 import { TrainerPublicTextService } from '../../services/trainer-public-text.service'
+import { TrainerSuggestionService } from '../../services/trainer-suggestion.service'
 import { TrainerDeclineReplyService } from '../../services/trainer-decline-reply.service'
 import { requirePermission } from '../auth-plugin'
 import { blastRadiusSentenceAr, courseBlastRadius } from '../../services/catalog-impact.service'
@@ -64,6 +65,7 @@ const reissueBody = z.object({
 export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaClient) {
   const review = new TrainerReviewService(prisma)
   const publicText = new TrainerPublicTextService(prisma)
+  const suggestions = new TrainerSuggestionService(prisma)
   const declineReply = new TrainerDeclineReplyService(prisma)
   const offers = new TrainerOfferService(prisma)
   const bank = new TrainerBankService(prisma)
@@ -1015,6 +1017,43 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     const { profileId } = z.object({ profileId: z.string().uuid() }).parse(req.params)
     const { reasonAr } = z.object({ reasonAr: z.string().trim().max(300).optional() }).parse(req.body ?? {})
     return review.rejectPendingPhoto(profileId, req.auth!.userId, reasonAr)
+  })
+
+  /* ═══ ما نقترحه على بطاقته — «لماذا نفتخر به» ونبذتُه بصياغتنا (١٩ أكتوبر ٢٠٢٦) ═══
+     العلّةُ في `trainer-suggestion.service.ts`. وبصلاحيّة النشر كالصورة والنبذة: نصٌّ
+     يُعرض للعامّة باسمنا. والطولُ يُحكم في الخدمة، وهنا حدُّ الحقل الخام. */
+  const KIND = z.enum(['pitch', 'bio'])
+
+  app.post('/api/admin/trainers/:profileId/suggestions', {
+    preHandler: requirePermission('trainer.publish'),
+    schema: { tags: ['admin-trainers'], summary: 'اقتراحٌ على بطاقة المدرّب — «لماذا نفتخر به» أو نبذته بصياغتنا' },
+  }, async (req) => {
+    const { profileId } = z.object({ profileId: z.string().uuid() }).parse(req.params)
+    const { kind, lines } = z.object({ kind: KIND, lines: z.array(z.string().max(2000)).max(10) }).parse(req.body ?? {})
+    return suggestions.propose(profileId, req.auth!.userId, kind, lines)
+  })
+
+  /* وكلُّ المسوّدات معا — بالصلاحيّة نفسِها، فهو الإرسالُ نفسُه مكرَّرا */
+  app.post('/api/admin/trainers/suggestions/send-drafts', {
+    preHandler: requirePermission('trainer.publish'),
+    schema: { tags: ['admin-trainers'], summary: 'إرسال كلّ المسوّدات التي لم تُرسَل — كلٌّ بأثره وإشعاره' },
+  }, async (req) => suggestions.sendAllDrafts(req.auth!.userId))
+
+  app.post('/api/admin/trainers/:profileId/suggestions/:kind/withdraw', {
+    preHandler: requirePermission('trainer.publish'),
+    schema: { tags: ['admin-trainers'], summary: 'سحب الاقتراح المعلّق من نوعه قبل أن يُقرَّر فيه' },
+  }, async (req) => {
+    const { profileId, kind } = z.object({ profileId: z.string().uuid(), kind: KIND }).parse(req.params)
+    return suggestions.withdraw(profileId, req.auth!.userId, kind)
+  })
+
+  app.post('/api/admin/trainers/:profileId/suggestions/pitch/approve-edit', {
+    preHandler: requirePermission('trainer.publish'),
+    schema: { tags: ['admin-trainers'], summary: 'اعتماد ما عدّله المدرّب من «لماذا نفتخر به» — كما عدّله أو بعد تحرير' },
+  }, async (req) => {
+    const { profileId } = z.object({ profileId: z.string().uuid() }).parse(req.params)
+    const { lines } = z.object({ lines: z.array(z.string().max(400)).max(10) }).parse(req.body ?? {})
+    return suggestions.approveEdit(profileId, req.auth!.userId, lines)
   })
 
   /* ═══ عنوانُه ونبذتُه كما أرسلهما — يُعدَّلان هنا ثمّ يُعتمَدان (٣ أكتوبر ٢٠٢٦) ═══

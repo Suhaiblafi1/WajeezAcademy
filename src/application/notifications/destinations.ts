@@ -128,6 +128,9 @@ const TRAINER: Table = {
   /* وإعلانُ الإدارة (٤ أكتوبر ٢٠٢٦) — يُفتح في نافذته فوق بوّابته، ولو قرأه من قبل
      (`?announcement=` أدناه، و`TrainerAnnouncement.tsx`) */
   'trainer.announcement': { path: '/trainer', ctaAr: 'اقرأ الإعلان' },
+  /* وما نقترحه على بطاقته — يُقرَّر في إعدادات حسابه، ويُرى في صفحة المدرّبين حين نعتمد تعديله */
+  'trainer.suggestion.proposed': { path: '/trainer/account', ctaAr: 'افتح الاقتراح' },
+  'trainer.suggestion.edit_approved': { path: '/trainers', ctaAr: 'شاهد بطاقتك' },
   /* ═══ وخمسةٌ كانت في جدول الفريق (١٩ أكتوبر ٢٠٢٦) ═══
      تُرسَل إلى المدرّب (`audience: 'trainer'`)، ووجهاتُها في جدول `STAFF` — فخرجت إليه بلا زرّ: الوجهةُ تُقرأ
      من جدول جمهورها وحدَه (`destinationFor`). */
@@ -162,6 +165,9 @@ const STAFF: Table = {
   'trainer.prep.activation_blocked': { path: '/admin/trainer-contracts', ctaAr: 'افتح عقود المدرّبين' },
   'trainer.prep.seal_blocked': { path: '/admin/trainer-contracts', ctaAr: 'افتح عقود المدرّبين' },
   'trainer.public_text.submitted': { path: '/admin/trainer-run', ctaAr: 'اقرأ النبذة واعتمدها' },
+  'trainer.suggestion.edited': { path: '/admin/trainer-run', ctaAr: 'راجع التعديل واعتمده' },
+  'trainer.suggestion.accepted': { path: '/admin/trainer-run', ctaAr: 'افتح تشغيل المدربين' },
+  'trainer.suggestion.rejected': { path: '/admin/trainer-run', ctaAr: 'اقرأ سبب الرفض' },
   'trainer.data_choice.made': { path: '/admin/trainer-contracts', ctaAr: 'افتح عقود المدرّبين' },
   'trainer.contract.amendment_requested': { path: '/admin/trainer-contracts', ctaAr: 'اقرأ ما طلب تعديله' },
   'trainer.contract.name_correction_requested': { path: '/admin/trainer-contracts', ctaAr: 'طابق هويّته وأعده مصحّحا' },

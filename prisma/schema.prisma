@@ -1305,6 +1305,9 @@ model TrainerProfile {
   publicTextPendingAt   DateTime?
   /// سببُ ردِّ آخرِ ما أرسله — يقرؤه في حسابه، ويُمحى بإرساله التالي
   publicTextRejectNoteAr String?
+  /// «لماذا نفتخر به» — سطورٌ نكتبها نحن عنه، ولا تُنشر إلّا بقبوله (١٩ أكتوبر ٢٠٢٦).
+  /// والمقترَحُ في `TrainerTextSuggestion` حتّى يقبله (`trainer-suggestion.service.ts`)
+  pitchLines            String[]                     @default([])
   ratingAvg             Float? // متوسط التقييم من خريجين حقيقيين — null = لا يُعرض
   ratingCount           Int? // عدد التقييمات
   hoursTaught           Int? // ساعات التدريب الفعلية مع الأكاديمية
@@ -1368,6 +1371,7 @@ model TrainerProfile {
   marketingVideos       TrainerMarketingVideo[]
   marketingPhotos       TrainerMarketingPhoto[]
   posters               TrainerPoster[]
+  textSuggestions       TrainerTextSuggestion[]
   issuedDiscounts       TrainerIssuedDiscount[]
   codes                 TrainerCode[]
   codeRedemptions       TrainerCodeRedemption[]
@@ -1707,6 +1711,34 @@ model CohortMessage {
  * الاعتماد تُزاح مواعيدُ الشعبة كلُّها بأسابيعَ كاملة. والعلّةُ في
  * `src/application/trainer/cohort-move.ts`.
  */
+/**
+ * ── ما نقترحه نحن على بطاقة المدرّب — يقبله أو يرفضه (١٩ أكتوبر ٢٠٢٦) ──
+ * نوعان، وقرارُ صاحب المنصّة في كلٍّ:
+ *  · `pitch` «لماذا نفتخر به» — جديدٌ لا تعديل: «نريد أن نضيف عنك هذا»، ويعدّله
+ *    المدرّبُ أو يضيف إليه. وما قبله كما هو ينشر فورا، وما عدّله (`editedLines`)
+ *    يعود إلينا فنعتمده (`edited`) — فالعنوانُ بصوتنا.
+ *  · `bio` نبذتُه بصياغتنا — بطاقةُ «قبل/بعد» يقبلها أو يرفضها، لا يعدّلها.
+ * و`before` ما يُعرض لحظةَ الاقتراح، و`lines` ما نقترح (والنبذةُ سطرٌ واحد).
+ */
+model TrainerTextSuggestion {
+  id          String         @id @default(uuid()) @db.Uuid
+  profileId   String         @db.Uuid
+  kind        String         @default("pitch") // pitch | bio
+  lines       String[]
+  before      String[]       @default([])
+  /// ما عدّله المدرّبُ من سطورنا — ينتظر اعتمادَنا (`pitch` وحدَه)
+  editedLines String[]       @default([])
+  status      String         @default("pending") // pending | edited | accepted | rejected | withdrawn
+  /// كلمتُه حين يرفض — اختياريّة
+  noteAr      String?
+  createdBy   String         @db.Uuid
+  createdAt   DateTime       @default(now())
+  decidedAt   DateTime?
+  profile     TrainerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@index([profileId, kind, status])
+}
+
 model CohortMoveRequest {
   id              String    @id @default(uuid()) @db.Uuid
   cohortId        String    @db.Uuid
