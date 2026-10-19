@@ -11,6 +11,7 @@ import { fmtDate, fmtDateTime } from "@/application/text/format-ar";
 import { APPLICANT_STATUS, BOOKABLE_STATUSES, WITHDRAWABLE_STATUSES, contactChannelLabel } from "@/application/trainer/application-options";
 import BookInterview from "@/components/BookInterview";
 import { isInvitedToBook } from "@/application/trainer/interview-invitation";
+import { deferredByIntake, INTAKE_DEFERRED_EXPLAIN_AR } from "@/application/trainer/intake-closed";
 
 import { Card } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
@@ -122,7 +123,9 @@ export default function ApplicantStatus() {
 
   const doSignOut = async () => { await signOut(); navigate("/auth", { replace: true }); };
 
-  const st = mine ? APPLICANT_STATUS[mine.status] ?? { label: mine.status, explain: "", tone: "neutral" as const } : null;
+  const base = mine ? APPLICANT_STATUS[mine.status] ?? { label: mine.status, explain: "", tone: "neutral" as const } : null;
+  /* والمؤجَّلُ لإغلاق الاستقبال لم يُراجَع — فيُقرأ له ما قيل له عند الإرسال (`intake-closed.ts`) */
+  const st = base && mine && deferredByIntake(mine) ? { ...base, explain: INTAKE_DEFERRED_EXPLAIN_AR } : base;
   const phone = mine?.phone ? `${mine.phoneCountryCode ?? ""}${mine.phone}` : null;
   const canWithdraw = mine ? (WITHDRAWABLE_STATUSES as readonly string[]).includes(mine.status) : false;
 

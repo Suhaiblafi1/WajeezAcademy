@@ -21,6 +21,9 @@ import { CountryPicker, PhoneCodePicker } from "@/components/CountryPicker";
 import { mobileFormatByDial, timezoneOf } from "@/data/countries";
 import BookInterview from "@/components/BookInterview";
 import EmailVerifyStatus from "@/components/EmailVerifyStatus";
+import IntakeClosedNotice from "@/components/IntakeClosedNotice";
+import { INTAKE_DEFERRED_EXPLAIN_AR, intakeClosed } from "@/application/trainer/intake-closed";
+import { DEFERRED } from "@/application/trainer/deferral";
 import {
   cleanProposals, emptyProposal, hasProposal, MAX_PROPOSALS,
   type TeachableProposal,
@@ -795,13 +798,14 @@ export default function JoinTrainer() {
       if (lookup.reference.trim()) q.set("reference", lookup.reference.trim());
       const res = await apiGet<{
         reference: string; status: string; hasInterview: boolean; interviewAt: string | null
-        interviewRescheduleUrl: string | null; emailVerified: boolean
+        interviewRescheduleUrl: string | null; emailVerified: boolean; intakeDeferred?: boolean
       }>(
         `/api/v1/trainer-applications/status?${q.toString()}`,
       );
       const st = APPLICANT_STATUS[res.status];
       setLookupResult({
-        reference: res.reference, label: st?.label ?? res.status, explain: st?.explain ?? "",
+        reference: res.reference, label: st?.label ?? res.status,
+        explain: res.intakeDeferred ? INTAKE_DEFERRED_EXPLAIN_AR : st?.explain ?? "",
         status: res.status, hasInterview: res.hasInterview, interviewAt: res.interviewAt,
         interviewRescheduleUrl: res.interviewRescheduleUrl, emailVerified: res.emailVerified,
       });
@@ -815,6 +819,10 @@ export default function JoinTrainer() {
   /* ── شاشة ما بعد الإرسال ── تظهر بعد اكتمال الأقسام الثلاثة لا بعد الأول:
      بدء الطلب في الخلفية تفصيلٌ تقني، وإظهار شاشة النجاح عنده يوهم المتقدّم
      أنه انتهى وقد بقي نصف طلبه. */
+  /* الإشعارُ في رأس الاستمارة بساعة المتصفّح، وشاشةُ ما بعد الإرسال بحكم الخادم:
+     هو الذي أجّل الطلبَ أو لم يؤجّله، فلا تقول الشاشةُ غيرَ ما وقع. */
+  const closed = intakeClosed();
+  const deferredNow = completion?.status === DEFERRED;
   if (result && phase2Done) {
     /* ولا قناةَ تُحسب هنا بعد اليوم: كانت لبطاقة «وفي أثناء ذلك» وحدَها
        (حُذفت ٢٤ سبتمبر ٢٠٢٦)، وحسابُها الآن عملٌ لا يُقرأ. */
@@ -839,15 +847,21 @@ export default function JoinTrainer() {
               وُقف الحجزُ (`INTERVIEW_BOOKING_PAUSE`) لم تبقَ عليه خطوة: طلبُه
               تمّ، وما بقي علينا نحن. فعنوانٌ يقول «بقيت خطوة» يجعله يبحث عن
               فعلٍ ليس له — وهو العطبُ الأوّل مقلوبا. */}
+          {/* ═══ والاستقبالُ إن أُغلق فالشاشةُ ختامٌ لا خطوة (١٩ أكتوبر ٢٠٢٦) ═══
+
+              لا موعدَ يُحجَز ولا محطّةَ رابعة: ما بقي علينا نحن، في شهرٍ مسمّى.
+              فلا «بقيت خطوة» ولا شريطَ يضيء «حجز لقاء التعارف». (`intake-closed.ts`) */}
           <h1 className="mt-6 text-2xl font-black">
-            {INTERVIEW_BOOKING_PAUSE.active ? "وصل طلبك — شكرا لك" : "وصل طلبك — وبقيت خطوة واحدة"}
+            {deferredNow || INTERVIEW_BOOKING_PAUSE.active ? "وصل طلبك — شكرا لك" : "وصل طلبك — وبقيت خطوة واحدة"}
           </h1>
           <p className="mt-3 text-sm leading-7 text-muted-foreground">
-            {INTERVIEW_BOOKING_PAUSE.active
-              ? "شكرا لك. طلبك كامل ولا ينقصه شيء. حجز المواعيد متوقف مؤقتا لأنها امتلأت — التفاصيل أدناه."
-              : "شكرا لك. طلبك كامل، وبقي أن تختار موعد لقاء التعارف من التقويم أدناه."}
+            {deferredNow
+              ? "طلبك كامل ولا ينقصه شيء."
+              : INTERVIEW_BOOKING_PAUSE.active
+                ? "شكرا لك. طلبك كامل ولا ينقصه شيء. حجز المواعيد متوقف مؤقتا لأنها امتلأت — التفاصيل أدناه."
+                : "شكرا لك. طلبك كامل، وبقي أن تختار موعد لقاء التعارف من التقويم أدناه."}
           </p>
-          <StepBar current={4} className="mt-6 text-right" />
+          {!deferredNow && <StepBar current={4} className="mt-6 text-right" />}
           <Card as="p" tone="warn" className="mt-4">
             <span className="text-xs text-muted-foreground">رقم طلبك</span>
             <span className="mt-1 block font-mono text-xl font-black tracking-wide text-gold-ink" dir="ltr">{result.reference}</span>
@@ -856,9 +870,11 @@ export default function JoinTrainer() {
           <div className="mt-6 space-y-4 text-right">
             {/* الحجزُ أوّلا لا الانتظار: كانت هذه البطاقةُ تَعِد بأن «نتواصل معك
                 لتحديد موعد»، فيقف المتقدّمُ بلا شيءٍ بيده. والموعدُ صار بيده. */}
-            <BookInterview
-              name={form.fullName.trim()} email={form.email.trim()} reference={result.reference}
-            />
+            {deferredNow ? <IntakeClosedNotice when="after" /> : (
+              <BookInterview
+                name={form.fullName.trim()} email={form.email.trim()} reference={result.reference}
+              />
+            )}
 
             {/* ═══ حُذف «وفي أثناء ذلك» (٢٤ سبتمبر ٢٠٢٦) ═══
 
@@ -1010,6 +1026,10 @@ export default function JoinTrainer() {
           مدربو وجيز لا يكتفون بالدروس المسجلة: يراجعون عمل المتعلمين، ويرافقونهم حتى يتقنوا المهارة، ويعتمدون ما أنجزوه في نهاية المسار.
           نموذج واحد من ثلاثة أقسام، يحفظ تقدمك أولا بأول.
         </p>
+
+        {/* يُقال قبل أن يبدأ لا بعد أن يُرسل: من ملأ أربعةَ أقسامٍ ثمّ قرأ «توقّفنا»
+            ظنّ أنّنا أخفيناه عنه. (`intake-closed.ts`) */}
+        {closed && <IntakeClosedNotice when="before" className="mt-6" />}
 
         <div className="mt-8 grid gap-4 sm:grid-cols-3">
           {[
