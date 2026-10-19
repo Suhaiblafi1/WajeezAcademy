@@ -149,6 +149,8 @@ const PHRASES: Record<string, string> = {
   'advisor.case.client_paid': 'تحويل حالة إلى «سجّل» بعد دفع صاحبها',
   'advisor.cases.redistribute': 'توزيع حالات مستشار المفتوحة على غيره',
   'advisor.contact.hook': 'تسجيل تواصل مستشار من منصّة محادثات واتساب',
+  'advisor.case.whatsapp_opened': 'فتح حالة لعميل جديد راسله مستشار عبر واتساب',
+  'advisor.case.lead_email': 'كتابة بريد العميل في حالته ليرتبط بحسابه',
   'term.create': 'إنشاء فصل دراسيّ',
   'term.registration_window': 'ضبط نافذة التسجيل للفصل',
   'term.trainer_availability': 'إتاحة مدرّب في فصل',

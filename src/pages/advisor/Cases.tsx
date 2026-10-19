@@ -22,6 +22,8 @@ import Button from "@/components/ui/Button";
 /* أسماءُ المراحل من `pipeline` وحدَه — لا جدولَ ثانيا يفترق عن القِمع */
 const STATUS_LABELS = STATUS_AR;
 const CHANNEL_LABELS: Record<string, string> = { whatsapp: "واتساب", email: "بريد", phone: "اتصال", in_app: "داخل المنصة" };
+/* من أين جاء العميل — و`whatsapp` حالةٌ فتحتها منصّةُ المحادثات (`whatsapp-hook.service.ts`) */
+const SOURCE_LABELS: Record<string, string> = { diagnostic: "التشخيص الذكي", whatsapp: "واتساب" };
 
 interface CaseRow {
   id: string; status: string; nextAction: string | null; nextFollowUpAt: string | null;
@@ -159,7 +161,14 @@ export default function AdvisorCases() {
             <p className="font-black">{partyOf(detail).name}</p>
             {partyOf(detail).email && <p className="mt-1 text-read text-muted-foreground" dir="ltr">{partyOf(detail).email}</p>}
             {partyOf(detail).phone && <p className="text-read text-muted-foreground" dir="ltr">{partyOf(detail).phone}</p>}
-            <p className="mt-2 text-read text-muted-foreground">المصدر: {partyOf(detail).source === "diagnostic" ? "التشخيص الذكي" : partyOf(detail).source ?? "حساب مسجل"}</p>
+            <p className="mt-2 text-read text-muted-foreground">المصدر: {SOURCE_LABELS[partyOf(detail).source ?? ""] ?? partyOf(detail).source ?? "حساب مسجل"}</p>
+            {/* ولم تلحق حسابا بعد — بريدُه يربطها حين يوثّقه (`setLeadEmail`) */}
+            {!detail.client && (
+              <LeadEmailForm key={detail.id} current={partyOf(detail).email} onSubmit={(email) => void act(
+                () => apiPost(`/api/advisor/cases/${detail.id}/lead-email`, { email }),
+                "حفظ البريد"
+              )} />
+            )}
             <p className="mt-3 rounded-xl bg-white/[0.04] p-3 text-read leading-6 text-foreground">
               {snapshotSummary(detail.client?.learnerProfile?.diagnosticSnapshot ?? detail.diagnosticSnapshot)}
             </p>
@@ -524,6 +533,22 @@ function ContactForm({ onSubmit }: { onSubmit: (channel: string, summary: string
       <Button tone="confirm" size="sm" type="submit" disabled={summary.trim().length < 3} className="mt-2">
         <MessageSquarePlus className="h-3 w-3" /> تسجيل
       </Button>
+    </form>
+  );
+}
+
+/** بريدُ العميل — لحالةٍ لم تلحق حسابَ صاحبها بعد */
+function LeadEmailForm({ current, onSubmit }: { current: string; onSubmit: (email: string) => void }) {
+  const [email, setEmail] = useState(current);
+  return (
+    <form onSubmit={(e) => { e.preventDefault(); if (email.trim()) onSubmit(email.trim()); }} className="mt-3">
+      <label className={LBL} htmlFor="lead-email">بريد العميل — ليرتبط بحسابه</label>
+      <div className="flex gap-2">
+        <input id="lead-email" dir="ltr" type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+          placeholder="name@example.com" className={INPUT} />
+        <Button tone="secondary" size="sm" type="submit" disabled={!email.trim()}>حفظ</Button>
+      </div>
+      <p className="mt-1 text-read leading-6 text-muted-foreground">يرتبط بحسابه حين يوثق هذا البريد، فترى تقدمه وتحسب دفعاته.</p>
     </form>
   );
 }

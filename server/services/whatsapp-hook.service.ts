@@ -25,6 +25,18 @@
    ٤) **ومرّةً كلَّ ستّ ساعاتٍ للحالة** — المحادثةُ عشراتُ الرسائل، والسجلُّ يحتاج أنّها وقعت
       لا عددَها.
 
+   ═══ ورقمٌ بلا حالة — تُفتح له حالةٌ عند من راسله (١٩ أكتوبر ٢٠٢٦) ═══
+
+   من جاء من واتساب وحدَه لم يمرّ بالموقع، فلا حالةَ له يُكتب فيها — وكان يُردّ «لا حالة»
+   فيضيع عملُ المستشار معه. وقرارُ صاحب المنصّة بين ثلاثة (تُفتح وحدَها، أو قائمةٌ يفتح منها
+   المستشار، أو يُدخله بيده): **تُفتح وحدَها**، مسنَدةً لمن راسله وفيها أوّلُ تواصل.
+
+   والإسنادُ «تلقائيّ» (`automatic`): المنصّةُ اختارت المستشارَ لا إداريّ — فيُرى في «أسندت
+   تلقائيا» ويُغيَّر، وعمولتُه من أوّل تواصل، وهو هذا. ولا تُربط بحسابٍ برقمه: الرقمُ لم
+   يُثبَت كما لا يُثبَت بريدٌ يُكتب — فالمستشارُ يكتب بريدَه في الحالة، وتلحق حسابَه حين
+   يوثّقه (`setLeadEmail` · `lead-link.ts`). ورسالتان معا لرقمٍ جديدٍ لا تفتحان حالتين: القفلُ
+   على ذيل الرقم في المعاملة.
+
    والجوابُ ٢٠٠ لكلّ ما وصل بالرمز، وفيه سببُه إن لم يُسجَّل: منصّةٌ تعيد المحاولةَ على غيره
    تُغرقنا بحدثٍ لن يتغيّر جوابُه. وآخرُ ما وصل يُقال في شاشة التكاملات (`recordWhatsAppHookPulse`). */
 
@@ -33,6 +45,22 @@ import type { PrismaClient } from '@prisma/client'
 import { recordAudit } from './audit'
 import { recordWhatsAppHookPulse } from './integrations.service'
 import { phoneTail } from '../../src/application/advisor/phone-tail'
+import { normalizePhone } from '../../src/application/advisor/guest-contact'
+
+type Db = Pick<PrismaClient, '$queryRaw'>
+
+/** الحالاتُ المفتوحةُ والمسجَّلةُ بهذا الذيل — الرقمُ يُقرأ أرقاما وحدَها في القاعدة كما في `phoneTail`،
+    فما أدخله مستشارٌ بمسافاتٍ أو شرطاتٍ يطابق ما وصل من واتساب. والمسجَّلةُ معها: المتابعةُ بعد
+    التسجيل تواصل */
+function casesByTail(db: Db, tail: string) {
+  return db.$queryRaw<{ id: string }[]>`
+    SELECT c.id FROM "AdvisorCase" c
+    LEFT JOIN "Lead" l ON l.id = c."leadId"
+    LEFT JOIN "LearnerProfile" p ON p."userId" = c."clientId"
+    WHERE c.status NOT IN ('closed', 'not_interested')
+      AND (right(regexp_replace(coalesce(l.phone, ''), '\\D', '', 'g'), 9) = ${tail}
+        OR right(regexp_replace(coalesce(p.phone, ''), '\\D', '', 'g'), 9) = ${tail})`
+}
 
 export const HOOK_CONTACT_EVERY_HOURS = 6
 export const HOOK_SUMMARY_DEFAULT_AR = 'راسل الطالب عبر واتساب — من منصة المحادثات'
@@ -51,13 +79,15 @@ export function tokenFromHeaders(headers: Record<string, unknown>): string | und
   return bearer || custom || undefined
 }
 
-export type HookOutcome = 'logged' | 'throttled' | 'unknown_advisor' | 'no_case' | 'not_assigned' | 'bad_phone'
+export type HookOutcome = 'logged' | 'opened' | 'throttled' | 'unknown_advisor' | 'not_assigned' | 'bad_phone'
+
+type HookInput = { studentPhone: string; studentName?: string; advisorEmail: string; summary?: string }
 
 export const HOOK_OUTCOME_AR: Record<HookOutcome, string> = {
   logged: 'سجل تواصل المستشار في حالة الطالب',
+  opened: 'فتحت حالة جديدة عند المستشار وسجل التواصل',
   throttled: 'سجل تواصله في هذه الحالة قبل أقل من ست ساعات',
   unknown_advisor: 'بريد المستشار لا يطابق مستشارا نشطا عندنا',
-  no_case: 'لا حالة مفتوحة بهذا الرقم',
   not_assigned: 'الطالب في عهدة مستشار آخر',
   bad_phone: 'رقم الطالب غير صالح',
 }
@@ -68,13 +98,13 @@ export class WhatsAppHookService {
     this.prisma = prisma
   }
 
-  async handle(input: { studentPhone: string; advisorEmail: string; summary?: string }, now = new Date()) {
+  async handle(input: HookInput, now = new Date()) {
     const outcome = await this.resolve(input, now)
     await recordWhatsAppHookPulse(this.prisma, { at: now.toISOString(), outcome, outcomeAr: HOOK_OUTCOME_AR[outcome] })
-    return { logged: outcome === 'logged', outcome, messageAr: HOOK_OUTCOME_AR[outcome] }
+    return { logged: outcome === 'logged' || outcome === 'opened', outcome, messageAr: HOOK_OUTCOME_AR[outcome] }
   }
 
-  private async resolve(input: { studentPhone: string; advisorEmail: string; summary?: string }, now: Date): Promise<HookOutcome> {
+  private async resolve(input: HookInput, now: Date): Promise<HookOutcome> {
     const tail = phoneTail(input.studentPhone)
     if (!tail) return 'bad_phone'
     const advisor = await this.prisma.user.findFirst({
@@ -86,16 +116,13 @@ export class WhatsAppHookService {
     })
     if (!advisor) return 'unknown_advisor'
 
-    /* الرقمُ يُقرأ أرقاما وحدَها في القاعدة كما في `phoneTail` — ما أدخله مستشارٌ بمسافاتٍ أو
-       شرطاتٍ يطابق ما وصل من واتساب بلا شيء منها. والمسجَّلةُ معها: المتابعةُ بعد التسجيل تواصل */
-    const cases = await this.prisma.$queryRaw<{ id: string }[]>`
-      SELECT c.id FROM "AdvisorCase" c
-      LEFT JOIN "Lead" l ON l.id = c."leadId"
-      LEFT JOIN "LearnerProfile" p ON p."userId" = c."clientId"
-      WHERE c.status NOT IN ('closed', 'not_interested')
-        AND (right(regexp_replace(coalesce(l.phone, ''), '\\D', '', 'g'), 9) = ${tail}
-          OR right(regexp_replace(coalesce(p.phone, ''), '\\D', '', 'g'), 9) = ${tail})`
-    if (cases.length === 0) return 'no_case'
+    const cases = await casesByTail(this.prisma, tail)
+    if (cases.length === 0) {
+      const opened = await this.openCase(advisor.id, tail, input, now)
+      /* سبقته رسالةٌ أخرى ففتحت الحالة — فيُكمل كأنّها كانت */
+      if (opened) return 'opened'
+      return this.resolve(input, now)
+    }
 
     const link = await this.prisma.advisorAssignment.findFirst({
       where: { caseId: { in: cases.map((c) => c.id) }, advisorId: advisor.id, unassignedAt: null },
@@ -127,5 +154,36 @@ export class WhatsAppHookService {
       meta: { advisorId: advisor.id, source: 'whatsapp_hook' },
     })
     return 'logged'
+  }
+
+  /** حالةٌ لرقمٍ جديد عند من راسله — أو `false` إن فتحتها رسالةٌ سبقت في اللحظة نفسِها */
+  private async openCase(advisorId: string, tail: string, input: HookInput, now: Date): Promise<boolean> {
+    return this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT 1 AS ok FROM pg_advisory_xact_lock(hashtext(${`wa-hook:${tail}`}))`
+      if ((await casesByTail(tx, tail)).length > 0) return false
+      const lead = await tx.lead.create({
+        data: {
+          fullName: input.studentName?.trim().slice(0, 120) || `عميل واتساب ${tail.slice(-4)}`,
+          phone: normalizePhone(input.studentPhone) ?? input.studentPhone.trim(),
+          source: 'whatsapp',
+        },
+      })
+      const kase = await tx.advisorCase.create({
+        data: { leadId: lead.id, status: 'contacted', nextAction: 'اعرف هدفه واكتب بريده ليرتبط بحسابه' },
+      })
+      await tx.advisorAssignment.create({ data: { caseId: kase.id, advisorId, assignedBy: null, automatic: true, assignedAt: now } })
+      await tx.contactEvent.create({
+        data: {
+          caseId: kase.id, channel: 'whatsapp', direction: 'out', source: 'whatsapp_hook',
+          summary: (input.summary?.trim() || HOOK_SUMMARY_DEFAULT_AR).slice(0, 300),
+          createdBy: advisorId, createdAt: now,
+        },
+      })
+      await recordAudit(tx, {
+        actorId: null, action: 'advisor.case.whatsapp_opened', entityType: 'advisor_case', entityId: kase.id,
+        meta: { advisorId, leadId: lead.id },
+      })
+      return true
+    })
   }
 }
