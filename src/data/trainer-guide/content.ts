@@ -202,7 +202,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
     id: 'proposals',
     title: 'دوراتي المقترحة: ما تدرّسه ولا تجده عندنا',
     tab: 'دوراتي المقترحة',
-    path: '/trainer/course-proposals',
+    path: '/trainer/qualifications?tab=proposals',
     why: 'دورة تتقنها وليست في كتالوجنا؟ اقترحها هنا بأجوبة قصيرة، ونقرّر نحن أن نضيفها دورة جديدة أو نجعلها نسختك من دورة قريبة. ويعمل هذا الباب من يوم اعتماد توقيعك.',
     blocks: [
       { kind: 'figure', shot: 'proposal-form', alt: 'نموذج اقتراح دورة بأقسامه الأربعة', caption: '1 عنوان الدورة — وحده الإلزاميّ · 2 المحاور الرئيسة، كلّ محور في سطر · 3 هل درّستها من قبل · 4 «أرسلها للإدارة»' },
@@ -550,7 +550,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
     id: 'paths',
     title: 'مساراتي: مسار باسمك من دوراتك',
     tab: 'مساراتي',
-    path: '/trainer/paths',
+    path: '/trainer/qualifications?tab=paths',
     why: 'ترتّب دورات اخترناها لك في مسار تسمّيه — من دورتين إلى ثماني — فيظهر بعد اعتمادنا على صفحة المسارات باسمك.',
     blocks: [
       { kind: 'figure', shot: 'paths', alt: 'مسار مسوّدة وما بقي قبل إرساله', caption: '1 حاله «مسودّة عندك» · 2 ما بقي قبل الإرسال · 3 «عدّل» · 4 «أرسله للمراجعة»' },

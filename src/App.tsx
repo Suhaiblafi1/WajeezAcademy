@@ -84,8 +84,6 @@ const ContractLinkRequest = lazy(() => import('./pages/ContractLinkRequest'))
 const ApplicantStatus = lazy(() => import('./pages/ApplicantStatus'))
 const TrainerAcceptInvite = lazy(() => import('./pages/TrainerAcceptInvite'))
 const TrainerQualifications = lazy(() => import('./pages/trainer/Qualifications'))
-const TrainerCourseProposals = lazy(() => import('./pages/trainer/MyCourseProposals'))
-const TrainerMyPaths = lazy(() => import('./pages/trainer/MyPaths'))
 const TrainerMarketing = lazy(() => import('./pages/trainer/Marketing'))
 const TrainerGuide = lazy(() => import('./pages/trainer/Guide'))
 const TrainerBrief = lazy(() => import('./pages/trainer/TrainerBrief'))
@@ -300,13 +298,14 @@ export default function App() {
             {/* «عروضي» دخلت «مؤهّلاتي» (٢٩ سبتمبر ٢٠٢٦) — العرضُ حالُ مؤهَّلٍ
                 يُقرَّر عنده. ويبقى المسارُ القديمُ تحويلا: إشعاراتٌ مضت تحمله. */}
             <Route path="/trainer/offers" element={<Navigate to="/trainer/qualifications" replace />} />
-            {/* ح-٢: دوراتٌ يقترحها وليست في الكتالوج — من طلبه، ثمّ بيده */}
-            <Route path="/trainer/course-proposals" element={<TrainerCourseProposals />} />
+            {/* ح-٢: دوراتٌ يقترحها وليست في الكتالوج — وصارت قسما في «دوراتي» (الخطوة F، ١٩ أكتوبر
+                ٢٠٢٦). والمسارُ تحويلٌ إلى قسمها: رسائلُ مضت تحمله. */}
+            <Route path="/trainer/course-proposals" element={<Navigate to="/trainer/qualifications?tab=proposals" replace />} />
             {/* و«تعديلاتي على دوراتي» ذهبت بقرار صاحب المنصّة (٢٩ سبتمبر ٢٠٢٦):
                 «لا داعيَ لهذا القسم كلّيّا». والمسارُ تحويلٌ لا صفحةٌ مفقودة. */}
             <Route path="/trainer/course-edits" element={<Navigate to="/trainer/qualifications" replace />} />
-            {/* ن-١: مسارٌ يبنيه المدرّبُ من دوراته ويُعرض على الرفّ العامّ */}
-            <Route path="/trainer/paths" element={<TrainerMyPaths />} />
+            {/* ن-١: مسارٌ يبنيه المدرّبُ من دوراته ويُعرض على الرفّ العامّ — قسمٌ في «دوراتي» كذلك */}
+            <Route path="/trainer/paths" element={<Navigate to="/trainer/qualifications?tab=paths" replace />} />
             {/* التسويق: فيديوهاتُه وصورُه، وملصقاتٌ لا تُستعمل علنا إلّا بموافقته */}
             <Route path="/trainer/marketing" element={<TrainerMarketing />} />
             <Route path="/trainer/schedule" element={<TrainerSchedule />} />

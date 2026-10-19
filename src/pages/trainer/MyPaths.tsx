@@ -18,7 +18,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Check, Loader2, Pencil, Route, Send, Trash2, X } from "lucide-react";
-import TrainerLayout from "./TrainerLayout";
 import EmptyState from "@/components/EmptyState";
 import { toast, toastError } from "@/components/Toast";
 import { apiDelete, apiGet, apiPatch, apiPost, ApiError } from "@/services/api";
@@ -209,7 +208,8 @@ export default function MyPaths() {
   );
 
   return (
-    <TrainerLayout title="مساراتي">
+    /* قسمٌ في «دوراتي» لا شاشةٌ بلسانها (الخطوة F، ١٩ أكتوبر ٢٠٢٦) — والإطارُ إطارُها */
+    <>
       <Card className="mb-4">
         <h2 className="mb-1 text-read font-bold text-foreground">مسار ترتّبه من دوراتك — باسمك</h2>
         <p className="text-sm leading-7 text-muted-foreground">
@@ -337,6 +337,6 @@ export default function MyPaths() {
           )}
         </>
       )}
-    </TrainerLayout>
+    </>
   );
 }

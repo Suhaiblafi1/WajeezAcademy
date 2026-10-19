@@ -89,9 +89,12 @@ describe('شاشة المؤهّلات — ما بقي منها', () => {
   it('تنادي مؤهّلاته وعروضه واقتراحاته وأفعال العرض — ولا تنادي غيرها', () => {
     const calls = [...screen.matchAll(/api(?:Get|Post|Put|Patch|Delete)<?[^(]*\(\s*["'`]([^"'`]+)/g)].map((m) => m[1])
     expect([...new Set(calls)].sort()).toEqual([
+      /* وشعبُه في «شعبي» منذ الخطوة F (١٩ أكتوبر ٢٠٢٦): ما أُسند إليه بلا عرضٍ كان لا يُرى هنا، فيقرأ
+         المدرّبُ النشطُ «لا دورة بعد» وهو يدرّس. والقراءةُ قراءةُ «شعبي» نفسِها لا نداءٌ جديد. */
+      '/api/trainer/cohorts/summary',
       '/api/trainer/me/qualifications',
       '/api/trainer/offers',
-      '/api/trainer/offers/${lead.id}/prep-confirm',
+      '/api/trainer/offers/${accepted.id}/prep-confirm',
       '/api/trainer/offers/${open.id}/accept',
       '/api/trainer/offers/${open.id}/decline',
       /* ودوراتُ طور الإعداد منذ ٢ أكتوبر ٢٠٢٦ — بدلَ لوح الموادّ */

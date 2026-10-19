@@ -43,7 +43,10 @@ describe('② ولا موضع ثان للتعبئة', () => {
     expect(PANEL, 'عاد محرّر الموادّ إلى «مؤهّلاتي»').not.toMatch(/\/api\/trainer\/materials/)
     expect(PANEL, 'عادت حقول الموادّ إلى «مؤهّلاتي»').not.toMatch(/<textarea[^>]*value=\{draft\./)
     expect(PANEL).toMatch(/\/api\/trainer\/prep\/\$\{encodeURIComponent\(r\.courseId\)\}\/\$\{path\}/)
-    expect(PANEL, 'لا رابط من الدورة إلى شعبتها').toMatch(/to=\{`\/trainer\/cohort\/\$\{r\.cohortId\}`\}/)
+    /* والرابطُ إلى الشعبة صار في صفّ الدورة نفسِه (الخطوة F، ١٩ أكتوبر ٢٠٢٦): «دوراتي» صفٌّ لكلّ دورة،
+       وشعبُه فيها — شعبةُ إعدادٍ أو قائمة — تُفتح منه. فالحارسُ تبع الرابطَ إلى موضعه ولم يسقط. */
+    expect(QUALS, 'لا رابط من الدورة إلى شعبتها').toMatch(/to=\{`\/trainer\/cohort\/\$\{c\.id\}`\}/)
+    expect(QUALS, 'شعبة الإعداد لا تفتح من صفّها').toMatch(/r\.prep\?\.cohortId && r\.prep\.state !== "declined" \? \[\{ id: r\.prep\.cohortId/)
   })
 
   it('والخادم يردّ الكتابة لدورة معتمدة ويدلّ على مساحة الشعبة', () => {

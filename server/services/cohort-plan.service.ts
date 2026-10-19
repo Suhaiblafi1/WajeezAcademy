@@ -877,7 +877,8 @@ export class CohortPlanService {
       /* «التالي» بحال الخطّة والشعبة لا بالقائمة وحدَها — والعلّةُ في `plan-gate.ts` */
       const next = boardNextStep({ planStatus, registrationOpen: c.registrationOpen, checklist, postponedTo: dayOf(plan?.postponedTo) })
       return {
-        id: c.id, title: c.title, courseTitle: c.course.versions[0]?.titleAr ?? c.course.id, role: l.role,
+        /* ومعرّفُ دورتها — تجمع به «دوراتي» شعبَه إلى دوراته (الخطوة F، ١٩ أكتوبر ٢٠٢٦) */
+        id: c.id, title: c.title, courseId: c.courseId, courseTitle: c.course.versions[0]?.titleAr ?? c.course.id, role: l.role,
         status: c.status, startsAt: c.startsAt, endsAt: c.endsAt, proposedStartsOn,
         trainerOrdinal: ordinals.get(c.id) ?? null,
         learners: c._count.enrollments, sessions: countableSessions(c.sessions).length,

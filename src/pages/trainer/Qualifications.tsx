@@ -1,5 +1,13 @@
 /* «دوراتي» — كلُّ دورةٍ لي، وحالُها، وقراري فيها. صفحةٌ واحدةٌ لا ثلاث.
 
+   ═══ وصارت قائمةً واحدةً بأقسامٍ ثلاثة (الخطوة F، ١٩ أكتوبر ٢٠٢٦) ═══
+
+   درس صاحبُ المنصّة جانبَ المدرّب واختار («All, in order»): كانت الدورةُ تصله من ثلاثة أبواب —
+   «دوراتُك قيد الإعداد» فوق، وعروضُ الشعب تحتها، وما أُسند إليه في «شعبي» لا يُرى هنا أصلا — ولكلٍّ
+   كلماتُ حاله. فصار **صفٌّ لكلّ دورة** من الأبواب كلّها وحالُها كلمةٌ واحدة، وأفعالُ كلّ بابٍ في صفّه
+   (`application/trainer/my-courses.ts`). و«دوراتي المقترحة» و«مساراتي» صارتا قسمين هنا بعد أن كانتا
+   لسانين في القائمة.
+
    ═══ وكان اسمُها «مؤهّلاتي» حتّى ٦ أكتوبر ٢٠٢٦ ═══
 
    «نؤهّلك» قد تُقرأ «ندرّبك» (`qualify-word.test.ts`)، فخرجت من كلّ ما يقرؤه
@@ -53,23 +61,28 @@
    من يتحكّم بكلّ شيء.. اللقاءاتُ بيده ضمن فترة الشعبة نفسِها». */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link } from "react-router";
+import { Link, useSearchParams } from "react-router";
 import { Award, CalendarClock, Check, ChevronDown, ClipboardCheck, Loader2, PencilLine, ServerOff, Users, X } from "lucide-react";
 import TrainerLayout from "./TrainerLayout";
-import CourseMaterialsPanel, { type PrepRow } from "./CourseMaterialsPanel";
+import { PrepDecision, PrepSetupNote, type PrepRow } from "./CourseMaterialsPanel";
+import CourseProposalsSection from "./MyCourseProposals";
+import MyPathsSection from "./MyPaths";
 import EmptyState from "@/components/EmptyState";
 import { toast, toastError } from "@/components/Toast";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import { staffControlCls, StaffField } from "@/components/FormKit";
 import { Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
-import Chip, { type ChipTone } from "@/components/ui/Chip";
+import Chip from "@/components/ui/Chip";
 import TabBar from "@/components/ui/TabBar";
 import ListToolbar from "@/components/admin/ListToolbar";
 import { paginate } from "@/application/admin/paginate";
 import { matchesQuery } from "@/application/text/search-ar";
 import { fmtDateLong } from "@/application/text/format-ar";
 import { cohortDayAr, DAY_NUMERIC } from "@/application/learning/cohort-gate";
+import {
+  buildMyCourses, MY_COURSE_FILTERS, type MyCourse, type MyCourseCohort, type MyCourseFilter,
+} from "@/application/trainer/my-courses";
 
 interface Qualification { courseId: string; title: string; currentVersion: number; qualifiedAt: string }
 
@@ -96,36 +109,20 @@ interface Offer {
 
 const fmtDate = fmtDateLong;
 
-/* ═══ الحالُ — مفتاحٌ واحدٌ لكلّ صفّ، وبه يُرشَّح ═══ */
-type StateKey = "open" | "added" | "withdrawn" | "declined" | "lapsed";
+type Row = MyCourse<Offer, PrepRow>;
 
-const STATE: Record<StateKey, { label: string; tone: ChipTone }> = {
-  open: { label: "متاحة لك — قرّر", tone: "warn" },
-  added: { label: "أضيفت إلى دوراتك", tone: "positive" },
-  withdrawn: { label: "سحبت", tone: "danger" },
-  declined: { label: "اعتذرت عنها", tone: "neutral" },
-  lapsed: { label: "انقضت مهلتها", tone: "neutral" },
-};
+/* ═══ ثلاثةُ أقسامٍ في لسانٍ واحد (الخطوة F، ١٩ أكتوبر ٢٠٢٦) ═══
+   «دوراتي المقترحة» و«مساراتي» كانتا لسانين في قائمة المدرّب، فصارتا قسمين هنا. ومساراهما القديمان
+   يُحالان إلى قسميهما (`App.tsx`) — فروابطُ الرسائل التي خرجت تفتح ما وعدت به. */
+const SECTIONS = [
+  { id: "courses", label: "دوراتي" },
+  { id: "proposals", label: "دوراتي المقترحة" },
+  { id: "paths", label: "مساراتي" },
+] as const;
+type Section = (typeof SECTIONS)[number]["id"];
 
-type Filter = "all" | "open" | "added" | "withdrawn";
-const FILTERS: { id: Filter; label: string; keys: StateKey[] }[] = [
-  { id: "all", label: "الكلّ", keys: [] },
-  { id: "open", label: "متاحة", keys: ["open"] },
-  /* ولا «دُمجت» ولا «أُضيفت إلى الكتالوج» (٣ أكتوبر ٢٠٢٦): قولُ صاحب المنصّة
-     «لا تُرِ المدرّبَ ما لا يحتاج قراءتَه». فأصلُ الدورة — اقتراحُه أم اختيارُنا —
-     لا يغيّر ما يفعله بها. */
-  { id: "added", label: "قبلتها", keys: ["added"] },
-  { id: "withdrawn", label: "سحبت أو اعتذرت", keys: ["withdrawn", "declined", "lapsed"] },
-];
-
-interface Row {
-  courseId: string;
-  title: string;
-  qual: Qualification | null;
-  /** الأحدثُ أوّلا */
-  offers: Offer[];
-  state: StateKey;
-}
+/** فوق هذا العدد تظهر أدواتُ الفرز والبحث — وما دونه يُقرأ بالعين */
+const TOOLS_FROM = 6;
 
 /** كم بقي من مهلة — والعددُ بالعربيّة لا بتاريخٍ يُحسب في الرأس */
 function remainingAr(iso: string, now: number): string {
@@ -138,57 +135,44 @@ function remainingAr(iso: string, now: number): string {
   return `بقي ${hours} ساعة`;
 }
 
-function stateOf(offer: Offer, now: number): StateKey {
-  if (offer.status === "offered") return new Date(offer.expiresAt).getTime() > now ? "open" : "lapsed";
-  if (offer.status === "accepted") return "added";
-  if (offer.status === "withdrawn") return "withdrawn";
-  if (offer.status === "declined") return "declined";
-  if (offer.status === "lapsed") return "lapsed";
-  return "lapsed";
-}
-
-/** صفٌّ لكلّ دورةٍ فيها عرضُ شعبة — ومعه تأهيلُه إن كان */
-function buildRows(quals: Qualification[], offers: Offer[], now: number): Row[] {
-  const byCourse = new Map<string, Omit<Row, "state">>();
-  const touch = (courseId: string, title: string) => {
-    const r = byCourse.get(courseId) ?? { courseId, title, qual: null, offers: [] };
-    if (!r.title && title) r.title = title;
-    byCourse.set(courseId, r);
-    return r;
-  };
-  /* ═══ صفٌّ لما فيه قرار — عرضُ شعبة (٣ أكتوبر ٢٠٢٦) ═══
-     كانت تُعرض هنا كلُّ دورةٍ أُهِّل لها وأصلُها (اقتراحٌ دُمج أو أُضيف).
-     وقولُ صاحب المنصّة: «يرى المدرّبُ الدورةَ التي يعبّئها، ولا يحتاج غيرَ
-     ذلك». فما يعبّئه في «دوراتُك قيد الإعداد» أعلاه، وهنا عروضُ الشعب وحدَها. */
-  for (const o of offers) touch(o.courseId, o.courseTitleAr).offers.push(o);
-  for (const q of quals) if (byCourse.has(q.courseId)) byCourse.get(q.courseId)!.qual = q;
-  const order: Record<StateKey, number> = { open: 0, added: 1, withdrawn: 4, declined: 5, lapsed: 5 };
-  return [...byCourse.values()]
-    .map((r) => {
-      r.offers.sort((a, b) => b.offeredAt.localeCompare(a.offeredAt));
-      /* العرضُ المفتوحُ يحكم ولو سبقه في الترتيب عرضٌ أحدثُ بُتّ فيه */
-      const lead = r.offers.find((o) => o.status === "offered" && new Date(o.expiresAt).getTime() > now) ?? r.offers[0];
-      return { ...r, state: stateOf(lead, now) };
-    })
-    .sort((a, b) => order[a.state] - order[b.state] || a.title.localeCompare(b.title, "ar"));
-}
 
 export default function TrainerQualifications() {
+  const [params, setParams] = useSearchParams();
+  const asked = params.get("tab");
+  const section: Section = SECTIONS.some((s) => s.id === asked) ? (asked as Section) : "courses";
+  return (
+    <TrainerLayout title="دوراتي">
+      <TabBar
+        ariaLabel="أقسام دوراتي"
+        className="mb-5"
+        value={section}
+        onChange={(id) => setParams(id === "courses" ? {} : { tab: id }, { replace: true })}
+        items={SECTIONS.map((s) => ({ id: s.id, label: s.label }))}
+      />
+      {section === "courses" && <MyCoursesList />}
+      {section === "proposals" && <CourseProposalsSection />}
+      {section === "paths" && <MyPathsSection />}
+    </TrainerLayout>
+  );
+}
+
+function MyCoursesList() {
   const [quals, setQuals] = useState<Qualification[] | null>(null);
   const [offers, setOffers] = useState<Offer[]>([]);
   const [prep, setPrep] = useState<PrepRow[]>([]);
+  const [cohorts, setCohorts] = useState<MyCourseCohort[]>([]);
   const [down, setDown] = useState(false);
   const [busy, setBusy] = useState(false);
   /* محرّرُ اعتذارٍ واحدٌ في كلّ وقت — والسببُ يُكتب قبل الإرسال لا بعده */
   const [declining, setDeclining] = useState<string | null>(null);
   const [reason, setReason] = useState("");
-  const [filter, setFilter] = useState<Filter>("all");
+  const [filter, setFilter] = useState<MyCourseFilter>("all");
   const [q, setQ] = useState("");
   const [page, setPage] = useState(1);
   const [now] = useState(() => Date.now());
 
   /* والكتابةُ في ردّ النداء لا في جسم الأثر (`react-hooks/set-state-in-effect`).
-     والمؤهّلاتُ وحدَها تُسقط الشاشةَ إن غابت؛ العروضُ والاقتراحاتُ تكميلٌ —
+     والمؤهّلاتُ وحدَها تُسقط الشاشةَ إن غابت؛ العروضُ ودوراتُ الإعداد والشعبُ تكميلٌ —
      غيابُها يُفقِد الحالَ تفصيلَها ولا يُخفي ما أُهِّل له. */
   const load = useCallback(() =>
     Promise.all([
@@ -196,27 +180,33 @@ export default function TrainerQualifications() {
       apiGet<Offer[]>("/api/trainer/offers").catch(() => [] as Offer[]),
       /* دوراتُ طور الإعداد — يقبلها فتُعَدّ في «شعبي» (٢ أكتوبر ٢٠٢٦) */
       apiGet<PrepRow[]>("/api/trainer/prep").catch(() => [] as PrepRow[]),
+      /* وشعبُه في «شعبي» — ما أُسند إليه بلا عرضٍ كان لا يُرى هنا (الخطوة F) */
+      apiGet<MyCourseCohort[]>("/api/trainer/cohorts/summary").catch(() => [] as MyCourseCohort[]),
     ])
-      .then(([qs, os, pr]) => { setQuals(qs); setOffers(os); setPrep(pr); setDown(false); })
+      .then(([qs, os, pr, cs]) => { setQuals(qs); setOffers(os); setPrep(pr); setCohorts(cs); setDown(false); })
       .catch(() => setDown(true)), []);
 
   useEffect(() => { void load(); }, [load]);
 
-  const rows = useMemo(() => buildRows(quals ?? [], offers, now), [quals, offers, now]);
+  const rows = useMemo(
+    () => buildMyCourses({ quals: quals ?? [], offers, prep, cohorts, now }),
+    [quals, offers, prep, cohorts, now],
+  );
   const counts = useMemo(() => {
-    const c = {} as Record<Filter, number>;
-    for (const f of FILTERS) c[f.id] = f.keys.length === 0 ? rows.length : rows.filter((r) => f.keys.includes(r.state)).length;
+    const c = {} as Record<MyCourseFilter, number>;
+    for (const f of MY_COURSE_FILTERS) c[f.id] = f.states.length === 0 ? rows.length : rows.filter((r) => f.states.includes(r.state)).length;
     return c;
   }, [rows]);
+  const tools = rows.length > TOOLS_FROM;
   const view = useMemo(() => {
-    const keys = FILTERS.find((f) => f.id === filter)?.keys ?? [];
+    const states = MY_COURSE_FILTERS.find((f) => f.id === filter)?.states ?? [];
     return paginate(
       rows
-        .filter((r) => keys.length === 0 || keys.includes(r.state))
-        .filter((r) => matchesQuery(q, [r.title, STATE[r.state].label, ...r.offers.map((o) => o.cohort?.title)])),
-      page, 20,
+        .filter((r) => !tools || states.length === 0 || states.includes(r.state))
+        .filter((r) => !tools || matchesQuery(q, [r.title, r.labelAr, ...r.cohorts.map((c) => c.title), ...r.offers.map((o) => o.cohort?.title)])),
+      tools ? page : 1, tools ? 20 : Math.max(rows.length, 1),
     );
-  }, [rows, filter, q, page]);
+  }, [rows, filter, q, page, tools]);
 
   async function run(work: () => Promise<unknown>, okAr: string) {
     setBusy(true);
@@ -235,112 +225,109 @@ export default function TrainerQualifications() {
 
   if (down) {
     return (
-      <TrainerLayout title="دوراتي">
-        <EmptyState
-          icon={ServerOff}
-          titleAr="تعذّر الوصول إلى الخادم"
-          reasonAr="تحقّق من اتصالك ثمّ أعد المحاولة."
-          actions={[{ labelAr: "أعد المحاولة", onClick: () => void load() }]}
-        />
-      </TrainerLayout>
+      <EmptyState
+        icon={ServerOff}
+        titleAr="تعذّر الوصول إلى الخادم"
+        reasonAr="تحقّق من اتصالك ثمّ أعد المحاولة."
+        actions={[{ labelAr: "أعد المحاولة", onClick: () => void load() }]}
+      />
     );
   }
 
   if (!quals) {
     return (
-      <TrainerLayout title="دوراتي">
-        <div className="grid place-items-center py-16">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground/50" aria-label="جار التحميل" />
-        </div>
-      </TrainerLayout>
+      <div className="grid place-items-center py-16">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground/50" aria-label="جار التحميل" />
+      </div>
+    );
+  }
+
+  if (rows.length === 0) {
+    /* وكانت تقول «تُؤهَّل تلقائيّا لكلّ دورةٍ ذكرتَها» — ودوراتُ طلبه قيد
+       الإعداد لا مؤهَّلة، فكان النصُّ يَعِد بما لا يراه. فصار يقول أين هي. */
+    return (
+      <EmptyState
+        icon={Award}
+        titleAr="لا دورة بعد"
+        reasonAr="تظهر هنا دوراتك والشعب المتاحة لك. ولك أن تقترح دورة ليست في كتالوجنا."
+        actions={[{ to: "/trainer/qualifications?tab=proposals", labelAr: "دوراتي المقترحة", hintAr: "اقترح دورة تقدر عليها" }]}
+      />
     );
   }
 
   return (
-    <TrainerLayout title="دوراتي">
-      <p className="mb-5 max-w-3xl text-sm leading-7 text-muted-foreground">
-        دوراتك والشعب المتاحة لك: اقبلها أو اعتذر بسبب — والاعتذار لا يحسب عليك.
-      </p>
+    <>
+      {/* ═══ أين يُعدَّل محتوى الدورة بعد اعتمادها (٢ أكتوبر ٢٠٢٦) ═══
 
-      <CourseMaterialsPanel rows={prep} onChanged={() => void load()} />
+          بلاغُ صاحب المنصّة: «المدرّبُ يقول لا يستطيع تعديلَ دوراته من
+          مؤهّلاتي». وقرارُه: لا موضعَ ثانٍ للتعبئة — «المدرّبُ يعبّئ في شعبي».
+          فهذا السطرُ يقول ذلك ويدلّ عليه، ولا يفتح محرّرا هنا. */}
+      <Inset tone="accent" className="mb-4 flex flex-wrap items-center justify-between gap-3 p-3.5">
+        <p className="flex min-w-0 flex-1 items-start gap-2 text-read leading-7">
+          <PencilLine className="mt-1.5 h-4 w-4 shrink-0" aria-hidden="true" />
+          <span>كل دوراتك هنا وحال كل منها. والمحتوى تعبّئه في «شعبي».</span>
+        </p>
+        <Button as={Link} to="/trainer/board" size="sm" icon={Users}>افتح «شعبي»</Button>
+      </Inset>
 
-      {rows.length === 0 ? (
-        /* وكانت تقول «تُؤهَّل تلقائيّا لكلّ دورةٍ ذكرتَها» — ودوراتُ طلبه قيد
-           الإعداد لا مؤهَّلة، فكان النصُّ يَعِد بما لا يراه. فصار يقول أين هي. */
-        prep.length > 0 ? null : (
-          <EmptyState
-            icon={Award}
-            titleAr="لا دورة بعد"
-            reasonAr="تظهر هنا دوراتك والشعب المتاحة لك. ولك أن تقترح دورة ليست في كتالوجنا."
-            actions={[{ to: "/trainer/course-proposals", labelAr: "دوراتي المقترحة", hintAr: "اقترح دورة تقدر عليها" }]}
-          />
-        )
-      ) : (
+      <PrepSetupNote rows={prep} />
+
+      {tools && (
         <>
-          {/* ═══ أين يُعدَّل محتوى الدورة بعد اعتمادها (٢ أكتوبر ٢٠٢٦) ═══
-
-              بلاغُ صاحب المنصّة: «المدرّبُ يقول لا يستطيع تعديلَ دوراته من
-              مؤهّلاتي». وكان ذلك بالتصميم ولا يقوله شيء: المحرّرُ يغيب حين
-              تُعتمَد الموادّ، وجملةُ الخادم التي تدلّ على مساحة الشعبة لا تُرى
-              لأنّ الزرَّ الذي يستدعيها غاب قبلها.
-
-              وقرارُه: لا موضعَ ثانٍ للتعبئة — «المدرّبُ يعبّئ في شعبي، وهناك
-              يتمّم الأمرَ قبل موافقة الأكاديميّة». فهذا السطرُ يقول ذلك ويدلّ
-              عليه، ولا يفتح محرّرا هنا. */}
-          <Inset tone="accent" className="mb-4 flex flex-wrap items-center justify-between gap-3 p-3.5">
-            <p className="flex min-w-0 flex-1 items-start gap-2 text-read leading-7">
-              <PencilLine className="mt-1.5 h-4 w-4 shrink-0" aria-hidden="true" />
-              <span>هنا تقرّر فقط — والمحتوى تعبّئه في «شعبي».</span>
-            </p>
-            <Button as={Link} to="/trainer/board" size="sm" icon={Users}>افتح «شعبي»</Button>
-          </Inset>
           <TabBar
             ariaLabel="حال دوراتي"
             className="mb-4"
             value={filter}
             onChange={(f) => { setFilter(f); setPage(1); }}
-            items={FILTERS.map((f) => ({
+            items={MY_COURSE_FILTERS.map((f) => ({
               id: f.id,
               label: <>{f.label} <span className="tabular-nums opacity-70">({counts[f.id]})</span></>,
             }))}
           />
           <ListToolbar q={q} onQ={setQ} onPage={setPage} view={view} unit="دورة"
             placeholder="ابحث باسم الدورة أو شعبتها…" />
-
-          {view.rows.length === 0 ? (
-            <p className="py-6 text-center text-sm text-muted-foreground">لا دورة في هذا الباب.</p>
-          ) : (
-            <ul className="grid gap-2.5">
-              {view.rows.map((r) => (
-                <CourseRow
-                  key={r.courseId} row={r} now={now} busy={busy}
-                  declining={declining} reason={reason}
-                  onDeclineStart={(id) => { setDeclining(id); setReason(""); }}
-                  onDeclineCancel={() => setDeclining(null)}
-                  onReason={setReason}
-                  run={run}
-                />
-              ))}
-            </ul>
-          )}
         </>
       )}
-    </TrainerLayout>
+
+      {view.rows.length === 0 ? (
+        <p className="py-6 text-center text-sm text-muted-foreground">لا دورة في هذا الباب.</p>
+      ) : (
+        <ul className="grid gap-2.5">
+          {view.rows.map((r) => (
+            <CourseRow
+              key={r.courseId} row={r} now={now} busy={busy}
+              declining={declining} reason={reason}
+              onDeclineStart={(id) => { setDeclining(id); setReason(""); }}
+              onDeclineCancel={() => setDeclining(null)}
+              onReason={setReason}
+              run={run}
+              onChanged={() => void load()}
+            />
+          ))}
+        </ul>
+      )}
+    </>
   );
 }
 
 function CourseRow({
-  row: r, now, busy, declining, reason, onDeclineStart, onDeclineCancel, onReason, run,
+  row: r, now, busy, declining, reason, onDeclineStart, onDeclineCancel, onReason, run, onChanged,
 }: {
   row: Row; now: number; busy: boolean; declining: string | null; reason: string;
   onDeclineStart: (offerId: string) => void; onDeclineCancel: () => void; onReason: (v: string) => void;
   run: (work: () => Promise<unknown>, okAr: string) => Promise<void>;
+  onChanged: () => void;
 }) {
-  const st = STATE[r.state];
   const q = r.qual;
-  const lead = r.offers.find((o) => o.status === "offered" && new Date(o.expiresAt).getTime() > now) ?? r.offers[0];
+  const open = r.openOffer;
+  /* العرضُ الذي يُقرأ في الصفّ: المفتوحُ، وإلّا الأحدثُ — حين يكون هو ما يحكم الحال */
+  const lead = open ?? (r.state === "closed" || (r.state === "teaching" && r.cohorts.length === 0) ? r.offers[0] ?? null : null);
   const earlier = r.offers.filter((o) => o !== lead);
-  const open = r.state === "open" && lead ? lead : null;
+  const accepted = r.offers.find((o) => o.status === "accepted" && o.prepDueAt && !o.prepConfirmedAt) ?? null;
+  /* شعبُه فيها — ومن لا يقرأ «شعبي» بعدُ (طورُ الإعداد) تأتيه شعبةُ إعداده من بابها */
+  const links: { id: string; title: string | null }[] = r.cohorts.length > 0
+    ? r.cohorts.map((c) => ({ id: c.id, title: c.title }))
+    : r.prep?.cohortId && r.prep.state !== "declined" ? [{ id: r.prep.cohortId, title: r.prep.cohortTitle }] : [];
 
   return (
     /* ═══ ولماذا لا رمزَ للدورة في الصفّ ═══
@@ -348,43 +335,42 @@ function CourseRow({
        شكا صاحبُ المنصّة (١٣ سبتمبر ٢٠٢٦): «أسماءُ الدورات بدل رموزها».
        والرمزُ حُذف لا استُبدل — الاسمُ فوقه أصلا. وحين لا اسمَ في الكتالوج
        يُقال إنّ الاسمَ غائب، لا يُطبع الرمزُ بديلا. */
-    <Card as="li" className={`p-4 ${open ? "border-gold/40" : ""}`}>
+    <Card as="li" className={`p-4 ${r.state === "decide" ? "border-gold/40" : ""}`}>
       <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1.5">
         <h2 className="min-w-0 flex-1 text-read font-bold leading-6 text-foreground">
           {r.title || "دورة بلا اسم في الكتالوج"}
         </h2>
-        <Chip tone={st.tone} srPrefixAr="الحال">{st.label}</Chip>
+        <Chip tone={r.tone} srPrefixAr="الحال">{r.labelAr}</Chip>
       </div>
 
-      <p className="mt-1 text-read leading-6 text-muted-foreground">
-        {q ? <>النسخة {q.currentVersion} · من دوراتك منذ {fmtDate(q.qualifiedAt)}</> : "ليست من دوراتك الآن"}
-        {lead?.cohort ? <> · شعبة «{lead.cohort.title}»{lead.cohort.startsAt ? ` تبدأ ${cohortDayAr(lead.cohort.startsAt, DAY_NUMERIC)}` : ""}</> : null}
-      </p>
-
+      {q && (
+        <p className="mt-1 text-read leading-6 text-muted-foreground">
+          النسخة {q.currentVersion} · من دوراتك منذ {fmtDate(q.qualifiedAt)}
+        </p>
+      )}
 
       {lead ? <OfferBody offer={lead} now={now} /> : null}
+      {r.prep?.state === "declined" && !lead && r.prep.declineReasonAr && (
+        <p className="mt-1 text-sm leading-6 text-muted-foreground">سببك: {r.prep.declineReasonAr}</p>
+      )}
 
       {/* ═══ أجلُ الإعداد — بعد القبول وحدَه ═══ */}
-      {lead?.status === "accepted" && lead.prepDueAt && (
+      {accepted?.prepDueAt && (
         <Inset
-          tone={lead.prepConfirmedAt ? "positive" : lead.prepLapsedAt ? "warn" : "default"}
+          tone={accepted.prepLapsedAt ? "warn" : "default"}
           className="mt-3 flex flex-wrap items-center justify-between gap-3 p-3"
         >
           <p className="text-sm leading-6">
             <CalendarClock className="ms-0 me-1.5 inline h-4 w-4 align-[-2px]" aria-hidden="true" />
-            {lead.prepConfirmedAt
-              ? `أقررت بجاهزيّتك ${fmtDate(lead.prepConfirmedAt)}.`
-              : `أجل إعدادك ${lead.prepDays} أيّام، وينتهي ${fmtDate(lead.prepDueAt)}.`}
-            {!lead.prepConfirmedAt && lead.prepLapsedAt && " وقد انقضى — والإسناد قائم، وتنظر فيه الإدارة."}
+            {`أجل إعدادك ${accepted.prepDays} أيّام، وينتهي ${fmtDate(accepted.prepDueAt)}.`}
+            {accepted.prepLapsedAt && " وقد انقضى — والإسناد قائم، وتنظر فيه الإدارة."}
           </p>
-          {!lead.prepConfirmedAt && (
-            <Button
-              tone="confirm" size="sm" icon={ClipboardCheck} disabled={busy}
-              onClick={() => run(() => apiPost(`/api/trainer/offers/${lead.id}/prep-confirm`, {}), "سجّل إقرارك بالجاهزيّة")}
-            >
-              أقرّ بجاهزيّتي
-            </Button>
-          )}
+          <Button
+            tone="confirm" size="sm" icon={ClipboardCheck} disabled={busy}
+            onClick={() => run(() => apiPost(`/api/trainer/offers/${accepted.id}/prep-confirm`, {}), "سجّل إقرارك بالجاهزيّة")}
+          >
+            أقرّ بجاهزيّتي
+          </Button>
         </Inset>
       )}
 
@@ -425,6 +411,25 @@ function CourseRow({
             <Button tone="ghost" size="sm" disabled={busy} onClick={onDeclineCancel}>تراجع</Button>
           </div>
         </Inset>
+      )}
+
+      {/* ودورةُ الإعداد بقرارها — «اقبلها وابدأ إعدادها» أو الاعتذارُ بسبب */}
+      {!open && r.prep?.state === "to_decide" && <PrepDecision row={r.prep} onChanged={onChanged} />}
+
+      {/* ═══ شعبُه فيها — تُفتح من صفّ دورتها ═══ */}
+      {links.length > 0 && (
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          {links.slice(0, 3).map((c) => (
+            <Button key={c.id} as={Link} to={`/trainer/cohort/${c.id}`} size="sm" icon={Users} tone="secondary">
+              {links.length === 1 ? "افتح شعبتها" : c.title ?? "افتح الشعبة"}
+            </Button>
+          ))}
+          {links.length > 3 && (
+            <Link to="/trainer/board" className="text-sm font-bold text-muted-foreground hover:text-foreground">
+              وغيرها في «شعبي» ({links.length - 3})
+            </Link>
+          )}
+        </div>
       )}
 
       {/* ── وما سبق من عروضٍ عليها — سجلٌّ يُفتح ولا يزاحم ── */}

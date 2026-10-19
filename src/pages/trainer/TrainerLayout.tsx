@@ -1,5 +1,5 @@
 import { Link } from "react-router";
-import { BookCheck, BookOpen, BookPlus, CalendarDays, ClipboardCheck, FileSignature, GraduationCap, Languages, LayoutDashboard, Link2, Megaphone, Route, Star, Users, Wallet } from "lucide-react";
+import { BookCheck, BookOpen, CalendarDays, ClipboardCheck, FileSignature, GraduationCap, Languages, LayoutDashboard, Link2, Megaphone, Star, Users, Wallet } from "lucide-react";
 import { PortalTabs, type PortalTab } from "@/components/ui/PortalTabs";
 import NotificationBell from "@/components/NotificationBell";
 import SearchChip from "@/components/SearchChip";
@@ -148,14 +148,9 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
        و«عروضي» دخلتها (٢٩ سبتمبر ٢٠٢٦): العرضُ حالُ مؤهَّلٍ يُقرَّر عنده،
        لا بابٌ ثانٍ يُقابَل بالأوّل بالعين. */
     { to: "/trainer/qualifications", label: "دوراتي", icon: BookCheck },
-    /* ح-٢: بعد «دوراتي» — السؤالان جارانِ: ما أُهِّلتُ له، وما أقترحه ولم
-       يدخل الكتالوجَ بعد. وقرارُ الإدارة يصل هنا، فلا يُدفن في صفحةٍ طويلة. */
-    { to: "/trainer/course-proposals", label: "دوراتي المقترحة", icon: BookPlus },
-    /* وكانت بعدها «تعديلاتي على دوراتي» — وذهبت بقرار صاحب المنصّة
-       (٢٩ سبتمبر ٢٠٢٦): «لا داعيَ لهذا القسم كلّيّا». */
-    /* ن-١: بعد «دوراتي المقترحة» — الأولى دوراتٌ ليست عندنا، وهذه ترتيبُ
-       ما عندنا في مسارٍ باسمه. والسؤالان متجاوران في ذهنه. */
-    { to: "/trainer/paths", label: "مساراتي", icon: Route },
+    /* وكانت بعدها «دوراتي المقترحة» و«مساراتي» لسانين — وصارتا قسمين في «دوراتي» (الخطوة F،
+       ١٩ أكتوبر ٢٠٢٦): ما أُهِّل له، وما يقترحه، وما يرتّبه في مسار — أسئلةٌ ثلاثةٌ عن دوراته
+       في بابٍ واحد. وكانت قبلهما «تعديلاتي على دوراتي» وذهبت (٢٩ سبتمبر ٢٠٢٦). */
     /* وبعدها «التسويق» (٢٩ سبتمبر ٢٠٢٦): التعريفُ بدوراته ومساراته وملصقاتُها —
        فهو جارُ ما يُسوَّق له. */
     { to: "/trainer/marketing", label: "التسويق", icon: Megaphone },

@@ -28,7 +28,6 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { BookPlus, Check, CheckCheck, Hourglass, Link2, Loader2, MessageCircleQuestion, Pencil, Trash2, X } from "lucide-react";
-import TrainerLayout from "./TrainerLayout";
 import EmptyState from "@/components/EmptyState";
 import { toast, toastError } from "@/components/Toast";
 import { apiDelete, apiGet, apiPatch, apiPost, ApiError } from "@/services/api";
@@ -463,7 +462,8 @@ export default function MyCourseProposals() {
 
 
   return (
-    <TrainerLayout title="دوراتي المقترحة">
+    /* قسمٌ في «دوراتي» لا شاشةٌ بلسانها (الخطوة F، ١٩ أكتوبر ٢٠٢٦) — والإطارُ إطارُها */
+    <>
       {/* ما هذه الشاشة — تُقال مرّةً في رأسها لا في رسالةِ خطأٍ بعد الإرسال */}
       <p className="mb-5 max-w-3xl text-sm leading-7 text-muted-foreground">
         ما تكتبه <b className="text-foreground">اقتراح لا دورة</b>: لا يظهر في «الدورات» ولا يحسب في التشخيص المهنيّ
@@ -541,6 +541,6 @@ export default function MyCourseProposals() {
           )}
         </>
       )}
-    </TrainerLayout>
+    </>
   );
 }
