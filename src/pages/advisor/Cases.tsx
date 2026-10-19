@@ -10,6 +10,7 @@ import Pipeline from "./Pipeline";
 import LearnerPanel from "./LearnerPanel";
 import RequestsPanel from "./RequestsPanel";
 import { STATUS_AR } from "@/application/advisor/pipeline";
+import { snapshotSummary } from "@/application/advisor/snapshot-summary";
 import { fmtDateWith } from "@/application/text/format-ar";
 import ConfirmAction from "@/components/ConfirmAction";
 import ListToolbar from "@/components/admin/ListToolbar";
@@ -60,17 +61,6 @@ const LBL = "mb-1 block text-fine font-bold text-muted-foreground";
 function fmt(d: string | null) {
   if (!d) return "—";
   return fmtDateWith(new Date(d), { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
-}
-
-/* لقطة التشخيص: نستخرج أبرز مسار وثقة مهما كان شكل الحفظ */
-function snapshotSummary(snap: unknown): string {
-  if (!snap || typeof snap !== "object") return "لا لقطة تشخيص";
-  const s = snap as Record<string, unknown>;
-  const top = s.top ?? (s.result as Record<string, unknown> | undefined)?.top;
-  const conf = s.confidence ?? (s.result as Record<string, unknown> | undefined)?.confidence;
-  const topId = typeof top === "string" ? top : (top as Record<string, unknown> | undefined)?.pathwayId ?? (top as Record<string, unknown> | undefined)?.id;
-  return [topId ? `أبرز مسار: ${String(topId)}` : null, typeof conf === "number" ? `ثقة ${Math.round(conf * 100)}٪` : null]
-    .filter(Boolean).join(" · ") || "لقطة محفوظة";
 }
 
 /** حالات المستشار الحقيقية — كل الإجراءات محروسة بالإسناد في الخادم */

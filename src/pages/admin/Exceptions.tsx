@@ -20,6 +20,7 @@ import WorkHeader from "@/components/admin/WorkHeader";
 import { revealRow } from "@/components/admin/reveal";
 import { paginate } from "@/application/admin/paginate";
 import { matchesQuery } from "@/application/text/search-ar";
+import AdvisorCaseTools from "@/components/admin/AdvisorCaseTools";
 /* «١ حالةٌ» و«٢ حالتان» و«٣ حالات» و«١١ حالةً» — والعددُ يُقرأ لا يُحسب */
 const CASE_FORMS = { one: "حالة", two: "حالتان", few: "حالات", many: "حالة" };
 
@@ -234,6 +235,9 @@ export default function Exceptions() {
           </div>
         </section>
       )}
+
+      {/* وتغييرُ مستشار أيّ حالة، ونقلُ حالات مستشارٍ غادر — والعلّةُ في رأس الأداة */}
+      {!loading && <AdvisorCaseTools advisors={advisors} onChanged={() => void load()} />}
     </AdminLayout>
   );
 }

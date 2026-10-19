@@ -41,7 +41,7 @@ interface LearnersResponse {
 }
 
 const SCOPE_NOTE: Record<LearnersResponse["scope"], string> = {
-  all: "كلّ الطلبة المسجّلين في الأكاديمية.",
+  all: "كلّ الطلبة في الأكاديمية — ومعهم من أنشأ حسابه ولم يسجّل في شعبة بعد.",
   trainer: "طلبة شعبك فقط.",
   advisor: "عملاء حالاتك المسندة فقط.",
 };
@@ -123,7 +123,7 @@ export default function LearnersPanel() {
               ? "يظهر هنا من يسجّل في شعبك."
               : data.scope === "advisor"
                 ? "يظهر هنا عملاء حالاتك المسجّلون في شعب."
-                : "لا تسجيلات بعد."}
+                : "لا طلبة بعد."}
           </p>
         </Panel>
       ) : (
@@ -149,6 +149,12 @@ export default function LearnersPanel() {
                 )}
               </div>
 
+              {/* ومن أنشأ حسابه ولم يسجّل بعد — يُرى ليُتابَع، لا يختفي في «المستخدمون» */}
+              {l.enrollments.length === 0 && (
+                <p className="mt-3 text-read leading-5 text-muted-foreground">
+                  لم يسجل في شعبة بعد — أنشأ حسابه {cohortDayAr(l.user.createdAt, DAY_NUMERIC)}.
+                </p>
+              )}
               <ul className="mt-3 space-y-1.5">
                 {l.enrollments.map((e) => (
                   <Inset as="li" key={e.id} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2">

@@ -214,6 +214,30 @@ export function registerAdvisorRoutes(app: FastifyInstance, prisma: PrismaClient
     schema: { tags: ['admin-operations'], summary: 'حالات أسندت تلقائيا في آخر ٣٠ يوما — لمراجعتها أو تغيير مستشارها' },
   }, async () => advisors.listAutoAssigned())
 
+  /* وتغييرُ مستشار أيّ حالةٍ مفتوحة — بحثا، لا ما أُسند تلقائيّا وحدَه (`searchOpenCases`) */
+  app.get('/api/admin/advisor-cases/search', {
+    preHandler: requirePermission('advisor.assign'),
+    schema: { tags: ['admin-operations'], summary: 'بحث في الحالات المفتوحة المسندة — لتغيير مستشارها' },
+  }, async (req) => {
+    const { q } = z.object({ q: z.string().trim().max(80).default('') }).parse(req.query)
+    return advisors.searchOpenCases(q)
+  })
+
+  /* المستشارون بحالاتهم المفتوحة — والموقوفُ معهم، ليُنقل ما عنده */
+  app.get('/api/admin/advisor-cases/advisor-loads', {
+    preHandler: requirePermission('advisor.assign'),
+    schema: { tags: ['admin-operations'], summary: 'كم حالة مفتوحة عند كل مستشار — ومنهم الموقوف' },
+  }, async () => advisors.advisorLoads())
+
+  /* مستشارٌ غادر أو أُثقل: تُوزَّع حالاتُه المفتوحة على غيره (`redistribute`) */
+  app.post('/api/admin/advisor-cases/redistribute', {
+    preHandler: requirePermission('advisor.assign'),
+    schema: { tags: ['admin-operations'], summary: 'توزيع حالات مستشار المفتوحة على أقل المستشارين الآخرين حالات' },
+  }, async (req) => {
+    const body = z.object({ fromAdvisorId: z.string().uuid() }).parse(req.body)
+    return advisors.redistribute(body.fromAdvisorId, req.auth!.userId)
+  })
+
   /* من يُسنَد إليه — يُقرأ بمن يملك الإسناد، لا بمن يملك إدارةَ المستخدمين */
   app.get('/api/admin/advisor-cases/assignable-advisors', {
     preHandler: requirePermission('advisor.assign'),
