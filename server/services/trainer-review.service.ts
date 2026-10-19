@@ -61,12 +61,13 @@ import {
   SIGNED_COPY_STATES, closedStateOf, sameMailbox,
   type ContractClosedView, type ContractLinkPurpose,
 } from '../../src/application/trainer/contract-link-state'
-import { liveCohortWhere, livePathWhere, liveTrainerWhere, publicTrainerWhere, trainerPubliclyVisible } from './trainer-visibility'
+import { livePathWhere, liveTrainerWhere, publicTrainerWhere, trainerPubliclyVisible } from './trainer-visibility'
 import { BIO_DRAFTS, PITCH_DRAFTS } from './trainer-suggestion-drafts'
 import { cohortLeadTrainers } from './cohort-lead'
 import { cleanProposals, readProposals } from '../../src/application/trainer/teachable-proposals'
 import { pendingKind } from '../../src/application/trainer/pending-kind'
 import { profileTrailOf, TRAIL_ACTIONS, type CardCohort } from '../../src/application/trainer/trainer-card'
+import { groupBySeason } from '../../src/application/trainer/next-season'
 import type { PrepTally } from '../../src/application/trainer/prep-tally'
 import type { PrepCourse } from './trainer-prep.service'
 import {
@@ -6479,19 +6480,27 @@ export class TrainerReviewService {
 
        فتُقرأ بشرط البوّابة نفسِه (`liveTrainerWhere`): أصيلُ شعبةٍ منشورة، أو إسنادُه النشط، أو مسارُه
        المنشور. فمن ظهر في الصفحة له دورةٌ في بطاقته — والبوّابةُ والبطاقةُ لا تفترقان. */
+    /* ═══ وصارت ما يُشترى للموسم القادم وحدَه، بموسمه (١٩ أكتوبر ٢٠٢٦) ═══
+       «لماذا تظهر كلُّ الدورات للمدرّب وليس للموسم القادم؟» (صاحب المنصّة). فالبطاقةُ تقرأ الشعبَ المفتوحةَ
+       للتسجيل أو الممتلئة، ومسارَه المنشورَ لموسمٍ مسمّى — والبوّابةُ التي تُظهره باقيةٌ كما هي.
+       والعلّةُ في `src/application/trainer/next-season.ts`. */
     const now = new Date()
-    const cohort = liveCohortWhere(now)
+    const onSale: Prisma.CohortWhereInput = { status: { in: ['open', 'full'] } }
+    const seasonOf = { startsAt: true, term: { select: { year: true, season: true, startsOn: true } } } as const
     const profiles = await this.prisma.trainerProfile.findMany({
       where: { ...publicTrainerWhere(now), application: { status: 'active' } },
       include: {
         application: { select: { fullName: true, country: true, specialties: true } },
         cohortTrainers: {
-          where: { role: 'lead', cohort }, orderBy: { cohort: { startsAt: 'asc' } }, select: { cohort: { select: { courseId: true } } },
+          where: { role: 'lead', cohort: onSale }, select: { cohort: { select: { courseId: true, ...seasonOf } } },
         },
-        assignments: { where: { status: 'active' }, select: { courseId: true } },
+        assignments: { where: { status: 'active', cohort: onSale }, select: { courseId: true, cohort: { select: seasonOf } } },
         paths: {
-          where: livePathWhere(now),
-          select: { courses: { orderBy: { sequence: 'asc' }, select: { courseId: true } } },
+          where: { ...livePathWhere(now), termId: { not: null } },
+          select: {
+            term: { select: { year: true, season: true, startsOn: true } },
+            courses: { orderBy: { sequence: 'asc' }, select: { courseId: true } },
+          },
         },
       },
     })
@@ -6513,25 +6522,32 @@ export class TrainerReviewService {
       bySubject.set(r.subjectId, list)
     }
 
-    return profiles.map((p) => ({
-      id: p.id, name: p.application.fullName, headline: p.headline, bio: p.bioPublic,
-      country: p.application.country,
-      specialties: p.application.specialties.map((s) => s.specialty),
-      photoUrl: photoPublicUrl(p.photoUrl),
-      ratingAvg: p.ratingAvg,
-      ratingCount: p.ratingCount,
-      /* التعليق لا يُعرض إلا مع متوسّط معروض: تعليقٌ بلا رقم يُقرأ انتقاءً */
-      testimonials: p.ratingAvg != null ? bySubject.get(p.id) ?? [] : [],
-      hoursTaught: p.hoursTaught,
-      graduatesCount: p.graduatesCount,
-      assignedCourseIds: [...new Set([
-        ...p.cohortTrainers.map((t) => t.cohort.courseId),
-        ...p.assignments.map((a) => a.courseId),
-        ...p.paths.flatMap((path) => path.courses.map((c) => c.courseId)),
-      ])],
-      /* «لماذا نفتخر به» المقبولُ وحدَه — المعلَّقُ لا يبلغ العامّة (`trainer-pitch.service.ts`) */
-      pitch: p.pitchLines,
-    }))
+    /* ما يقدّمه بمواسمه — الأقربُ أوّلا، وكلُّ دورةٍ مرّة (`groupBySeason`) */
+    const offerOf = (p: (typeof profiles)[number]) => groupBySeason([
+      ...p.cohortTrainers.map((t) => ({ courseId: t.cohort.courseId, term: t.cohort.term, at: t.cohort.startsAt })),
+      ...p.assignments.flatMap((a) => a.cohort ? [{ courseId: a.courseId, term: a.cohort.term, at: a.cohort.startsAt }] : []),
+      ...p.paths.flatMap((path) => path.courses.map((c) => ({ courseId: c.courseId, term: path.term }))),
+    ])
+
+    return profiles.map((p) => {
+      const offer = offerOf(p)
+      return {
+        id: p.id, name: p.application.fullName, headline: p.headline, bio: p.bioPublic,
+        country: p.application.country,
+        specialties: p.application.specialties.map((s) => s.specialty),
+        photoUrl: photoPublicUrl(p.photoUrl),
+        ratingAvg: p.ratingAvg,
+        ratingCount: p.ratingCount,
+        /* التعليق لا يُعرض إلا مع متوسّط معروض: تعليقٌ بلا رقم يُقرأ انتقاءً */
+        testimonials: p.ratingAvg != null ? bySubject.get(p.id) ?? [] : [],
+        hoursTaught: p.hoursTaught,
+        graduatesCount: p.graduatesCount,
+        offer,
+        assignedCourseIds: offer.flatMap((g) => g.courseIds),
+        /* «لماذا نفتخر به» المقبولُ وحدَه — المعلَّقُ لا يبلغ العامّة (`trainer-pitch.service.ts`) */
+        pitch: p.pitchLines,
+      }
+    })
   }
 
   /** مدربو دورة معينة للعرض العام — أو عبارة الإعلان عند غياب معتمد */
