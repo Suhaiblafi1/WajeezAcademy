@@ -120,6 +120,16 @@ export function registerAdvisorRoutes(app: FastifyInstance, prisma: PrismaClient
     return reply.status(201).send(await advisors.addContactEvent(req.auth!.userId, id, body))
   })
 
+  /* بريدُ العميل في حالته — فتلحق حسابَه حين يوثّقه (`setLeadEmail`) */
+  app.post('/api/advisor/cases/:id/lead-email', {
+    preHandler: requirePermission('advisor.cases.operate'),
+    schema: { tags: ['advisor-portal'], summary: 'كتابة بريد العميل في حالته — لترتبط بحسابه حين يوثقه' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const body = z.object({ email: z.string().trim().max(200) }).parse(req.body)
+    return advisors.setLeadEmail(req.auth!.userId, id, body.email)
+  })
+
   /* ── عمولتي — ما تراه الإدارة عن المستشار الآن يراه هو عن نفسه ── */
   app.get('/api/advisor/earnings', {
     preHandler: requirePermission('advisor.cases.view'),

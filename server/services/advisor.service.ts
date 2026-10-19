@@ -1074,6 +1074,45 @@ export class AdvisorService {
     })
   }
 
+  /* ═══ بريدُ العميل يُكتب في حالته — فتلحق حسابَه (١٩ أكتوبر ٢٠٢٦) ═══
+
+     من جاء من واتساب وحدَه حالتُه برقمه (`whatsapp-hook.service.ts`)، ومن أدخله المستشارُ برقمه
+     كذلك. والرقمُ لا يربط بحساب: لم يُثبَت. فكانت حالتُه لا تلحق حسابَه أبدا — لا يرى المستشارُ
+     تقدّمَه، ولا تُحسب له دفعاتُه. فيكتب المستشارُ بريدَه هنا، ويلحق الحسابَ كما يلحقه بريدُ
+     `createOwnCase`: الآن إن كان صاحبُه وثّقه، وإلّا حين يوثّقه (`lead-link.ts`).
+
+     ولا يُغيَّر بريدُ حالةٍ لحقت حسابا — صاحبُها معروف. ولا حالتان مفتوحتان لبريدٍ واحد. */
+  async setLeadEmail(advisorId: string, caseId: string, rawEmail: string): Promise<{ linked: boolean }> {
+    await this.assertAssigned(advisorId, caseId)
+    const email = rawEmail.trim().toLowerCase()
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new AuthError('bad_email', 'صيغة البريد غير صحيحة', 422)
+    const kase = await this.prisma.advisorCase.findUnique({
+      where: { id: caseId }, select: { clientId: true, leadId: true, lead: { select: { userId: true } } },
+    })
+    if (!kase?.leadId) throw new AuthError('not_found', 'الحالة بلا عميل محتمل', 404)
+    if (kase.clientId || kase.lead?.userId) throw new AuthError('already_linked', 'الحالة مرتبطة بحساب صاحبها', 409)
+    const other = await this.prisma.advisorCase.findFirst({
+      where: {
+        id: { not: caseId }, status: { notIn: ['closed', 'enrolled', 'not_interested'] },
+        OR: [{ lead: { email: { equals: email, mode: 'insensitive' } } }, { client: { email: { equals: email, mode: 'insensitive' } } }],
+      },
+      select: { id: true },
+    })
+    if (other) throw new AuthError('case_exists', 'لهذا البريد حالة مفتوحة أخرى — اطلب من الإدارة جمعهما', 409)
+
+    await this.prisma.lead.update({ where: { id: kase.leadId }, data: { email } })
+    await recordAudit(this.prisma, {
+      actorId: advisorId, action: 'advisor.case.lead_email', entityType: 'advisor_case', entityId: caseId,
+    })
+    const owner = await this.prisma.user.findFirst({
+      where: { email: { equals: email, mode: 'insensitive' }, emailVerifiedAt: { not: null } }, select: { id: true },
+    })
+    if (!owner) return { linked: false }
+    const { linkLeadsToVerifiedAccount } = await import('./lead-link')
+    const out = await linkLeadsToVerifiedAccount(this.prisma, owner.id, advisorId)
+    return { linked: out.cases > 0 }
+  }
+
   async addContactEvent(advisorId: string, caseId: string, input: { channel: string; direction?: 'out' | 'in'; summary: string }) {
     if (input.summary.trim().length < 3) throw new AuthError('empty_summary', 'ملخص التواصل فارغ')
     await this.assertAssigned(advisorId, caseId)

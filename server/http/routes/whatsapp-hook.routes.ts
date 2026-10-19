@@ -23,6 +23,8 @@ export function registerWhatsAppHookRoutes(app: FastifyInstance, prisma: PrismaC
     }
     const body = z.object({
       studentPhone: z.string().min(5).max(40),
+      /* اسمُه في المنصّة — لحالةٍ تُفتح لرقمٍ جديد، وإلّا سُمّي بآخر أرقامه */
+      studentName: z.string().max(200).optional(),
       advisorEmail: z.string().email().max(200),
       summary: z.string().max(2000).optional(),
     }).parse(req.body)
