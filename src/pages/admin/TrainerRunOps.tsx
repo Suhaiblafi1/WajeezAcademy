@@ -37,7 +37,7 @@ import { PHOTO_OUT_MIME } from "@/lib/prepare-image";
 const API_BASE: string = import.meta.env.VITE_API_URL ?? "";
 import { controlCls, staffAreaCls } from "@/components/FormKit";
 import { matchesQuery } from "@/application/text/search-ar";
-import { fmtDateTime } from "@/application/text/format-ar";
+import { fmtDate, fmtDateTime } from "@/application/text/format-ar";
 import ConfirmAction from "@/components/ConfirmAction";
 import { Link } from "react-router";
 import { useRealSession } from "@/services/session";
@@ -46,11 +46,11 @@ import { Card, Inset, Panel } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import Chip from "@/components/ui/Chip";
 import { BIO_MAX_WORDS, countWords } from "@/application/trainer/public-text";
+import {
+  cohortLineAr, cohortsTallyAr, photoTrailAr, planMarkAr, planMarkOf, PLAN_MARK, textTrailAr,
+  type CardCohort, type ProfileTrail,
+} from "@/application/trainer/trainer-card";
 interface OpsQualification { courseId: string; courseTitle: string; status: string }
-interface OpsAssignment {
-  courseId: string; courseTitle: string
-  cohortId: string | null; cohortTitle: string | null; cohortStatus: string | null
-}
 interface OpsTrainer {
   profileId: string;
   applicationId: string;
@@ -69,7 +69,10 @@ interface OpsTrainer {
   /* وعنوانٌ ونبذةٌ كتبهما هو من حسابه — يُعدَّلان هنا إن شئتَ ثمّ يُعتمَدان */
   pendingText: { headline: string | null; bio: string | null; at: string } | null;
   qualifications: OpsQualification[];
-  assignments: OpsAssignment[];
+  /* شعبُه بحالها ومواعيدها وخطّتها — من `CohortTrainer` (`trainer-card.ts`) */
+  cohorts: CardCohort[];
+  /* ومن وضع صورتَه ومن كتب نبذتَه — من الأثر */
+  trail: ProfileTrail;
 }
 
 interface PendingRequest {
@@ -115,6 +118,54 @@ interface CourseOpt { id: string; titleAr?: string; title?: string }
 const QUAL_LABEL: Record<string, string> = {
   qualified: "مؤهّل", pending: "طلب معلّق", rejected: "مرفوض", retired: "متقاعد",
 };
+
+/* دوراتُه وشعبُه — كلُّ دورةٍ بتأهيله فيها، وتحتها شعبُه: حالُها، وأوّلُ لقاء، وحالُ خطّته.
+   وكان هنا عمودُ «مسند إلى» يقرأ جدولَ الإسناد القديم، فيقول «لا إسناد نشط» لمن له شعبٌ قائمة.
+   والعلّةُ في `src/application/trainer/trainer-card.ts`. */
+function TrainerCourses({ trainer: t }: { trainer: OpsTrainer }) {
+  const courses = [
+    ...t.qualifications.map((q) => ({ courseId: q.courseId, title: q.courseTitle, status: q.status as string | null })),
+    ...[...new Map(t.cohorts.filter((c) => !t.qualifications.some((q) => q.courseId === c.courseId))
+      .map((c) => [c.courseId, { courseId: c.courseId, title: c.courseTitle, status: null as string | null }])).values()],
+  ];
+  return (
+    <div className="mt-2.5">
+      <p className="text-read font-black text-muted-foreground">
+        دوراته وشعبه <span className="font-bold">· {cohortsTallyAr(t.cohorts)}</span>
+      </p>
+      {courses.length === 0 ? (
+        <p className="mt-1 text-read text-muted-foreground">لا دورة له بعد.</p>
+      ) : (
+        <ul className="mt-1 space-y-1.5 text-fine leading-6">
+          {courses.map((x) => {
+            const mine = t.cohorts.filter((c) => c.courseId === x.courseId);
+            return (
+              <li key={x.courseId}>
+                <span className="font-bold">{x.title}</span>
+                {x.status && (
+                  <span className={x.status === "qualified" ? "text-teal-light-ink" : "text-muted-foreground"}> · {QUAL_LABEL[x.status] ?? x.status}</span>
+                )}
+                {mine.length === 0 ? (
+                  <p className="ps-4 text-muted-foreground">لا شعبة له فيها بعد.</p>
+                ) : (
+                  <ul className="ps-4">
+                    {mine.map((c) => (
+                      <li key={c.id} className="flex flex-wrap items-center gap-x-2">
+                        <Link to={`/admin/cohorts?cohort=${c.id}`} className="font-bold text-teal-light-ink underline-offset-2 hover:underline">{c.title}</Link>
+                        <span className="text-muted-foreground">{cohortLineAr(c, fmtDate)}</span>
+                        <Chip tone={PLAN_MARK[planMarkOf(c)].tone}>{planMarkAr(c, fmtDate)}</Chip>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}
 
 /* ملفُّ المدرّب العامّ — ما تعرضه صفحةُ الفريق، يُحرَّر حيث يُقرَّر نشرُه.
 
@@ -210,6 +261,10 @@ function PublicProfileEditor({
   return (
     <div className="mt-3 border-t border-white/10 pt-3">
       <p className="text-read font-black text-muted-foreground">ملفّه العامّ — ما تعرضه صفحة الفريق</p>
+      <ul className="mt-1 text-fine leading-6 text-muted-foreground">
+        <li>{photoTrailAr({ hasPhoto: Boolean(trainer.photoUrl), pending: Boolean(trainer.pendingPhotoUrl), trail: trainer.trail }, fmtDate)}</li>
+        <li>{textTrailAr({ hasText: Boolean(trainer.headline || trainer.bioPublic), pending: Boolean(trainer.pendingText), trail: trainer.trail }, fmtDate)}</li>
+      </ul>
       <div className="mt-2 grid gap-2.5 md:grid-cols-2">
         <div>
           <label className="block text-fine font-bold text-muted-foreground" htmlFor={`hl-${trainer.profileId}`}>
@@ -739,37 +794,7 @@ export default function TrainerRunOps() {
                     </Inset>
                   )}
 
-                  <div className="mt-2.5 grid gap-3 md:grid-cols-2">
-                    <div>
-                      <p className="text-read font-black text-muted-foreground">مؤهّل لـ</p>
-                      {t.qualifications.length === 0 ? (
-                        <p className="mt-1 text-read text-muted-foreground">لا دورة له بعد.</p>
-                      ) : (
-                        <ul className="mt-1 space-y-0.5 text-fine leading-6">
-                          {t.qualifications.map((x) => (
-                            <li key={x.courseId}>
-                              {x.courseTitle}
-                              <span className={x.status === "qualified" ? "text-teal-light-ink" : "text-muted-foreground"}> · {QUAL_LABEL[x.status] ?? x.status}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-                    <div>
-                      <p className="text-read font-black text-muted-foreground">مسند إلى</p>
-                      {t.assignments.length === 0 ? (
-                        <p className="mt-1 text-read text-muted-foreground">لا إسناد نشط.</p>
-                      ) : (
-                        <ul className="mt-1 space-y-0.5 text-fine leading-6">
-                          {t.assignments.map((a, i) => (
-                            <li key={`${a.courseId}-${a.cohortId ?? i}`}>
-                              {a.courseTitle}{a.cohortTitle ? ` — ${a.cohortTitle}` : " — بلا شعبة"}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-                  </div>
+                  <TrainerCourses trainer={t} />
 
                   <PublicProfileEditor trainer={t} onSaved={load} />
 
