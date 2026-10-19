@@ -71,7 +71,7 @@ describe('المسار العامّ للصورة', () => {
     expect(publicRoutes).toContain("app.get('/api/v1/trainer-photos/:storageKey'")
     const at = publicRoutes.indexOf("app.get('/api/v1/trainer-photos/:storageKey'")
     const body = publicRoutes.slice(at, at + 900)
-    expect(body, 'بلا شرط النشر').toContain('PUBLIC_TRAINER_WHERE')
+    expect(body, 'بلا شرط النشر').toContain('...publicTrainerWhere()')
     expect(body, 'المفتاح من العنوان بلا تحقّق من شكله').toContain('assertSafeKey')
     expect(body, 'توقيع موقّت على صورة تعرض في صفحة عامّة').not.toContain('verifySignature')
   })

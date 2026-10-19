@@ -47,6 +47,7 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
 import type { FastifyInstance } from 'fastify'
 import { setupTestDb, testPrisma } from '../helpers/db'
+import { giveLiveCourse } from '../helpers/live-course'
 import { buildApp } from '../../http/app'
 import { TrainerReviewService } from '../../services/trainer-review.service'
 import { putObject } from '../../services/object-store'
@@ -78,6 +79,7 @@ beforeAll(async () => {
   /* تُعتمد للنشر أوّلا: فلو بقيت غيرَ معتمَدةٍ لَاخضرّ الحارسُ الأوّلُ لسببٍ
      خاطئ — يردّ المسارُ ٤٠٤ لأنّها غيرُ منشورةٍ لا لأنّ الصورةَ معلّقة. */
   await review.approvePublicVisibility(profileId, ACTOR)
+  await giveLiveCourse(prisma, profileId)
   await putObject(PENDING_KEY, PNG_HEAD, { mime: 'image/png', originalName: 'p.png' })
   await prisma.trainerProfile.update({
     where: { id: profileId }, data: { photoPendingKey: PENDING_KEY },

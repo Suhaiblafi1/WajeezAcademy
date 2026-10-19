@@ -19,6 +19,7 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
 import type { FastifyInstance } from 'fastify'
 import { setupTestDb, testPrisma } from '../helpers/db'
+import { giveLiveCourse } from '../helpers/live-course'
 import { buildApp } from '../../http/app'
 import { TrainerReviewService } from '../../services/trainer-review.service'
 import { putObject } from '../../services/object-store'
@@ -34,6 +35,7 @@ const PNG_HEAD = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x
 async function trainer(email: string, pendingKey: string | null): Promise<string> {
   const { profileId } = await review.createTrainerDirectly(ACTOR, { fullName: `مدرّب ${email}`, email })
   await review.approvePublicVisibility(profileId, ACTOR)
+  await giveLiveCourse(prisma, profileId)
   if (pendingKey) {
     await putObject(pendingKey, PNG_HEAD, { mime: 'image/png', originalName: 'p.png' })
     await prisma.trainerProfile.update({ where: { id: profileId }, data: { photoPendingKey: pendingKey } })

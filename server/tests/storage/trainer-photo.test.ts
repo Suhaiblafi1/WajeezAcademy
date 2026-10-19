@@ -13,7 +13,7 @@
 
    ١) **الحارسُ النشرُ لا التوقيع.** الصورةُ `<img src>` في صفحةٍ عامّة، فلا
       تصلح لرابطٍ ينتهي بعد عشر دقائق. فبديلُه أنّ المسارَ لا يقدّم صورةً
-      إلّا لملفٍّ يجتاز `PUBLIC_TRAINER_WHERE` بعينها. ولو سقط هذا لَظهرت
+      إلّا لملفٍّ يجتاز `publicTrainerWhere()` بعينها. ولو سقط هذا لَظهرت
       صورةُ من لم يُعتمد نشرُه — وهو ما تمنعه قاعدةُ المستودع نصّا.
    ٢) **وإيقافُ المدرّبِ يُخفي صورتَه في اللحظة نفسِها** التي يُخفي اسمَه.
    ٣) والعمودُ لا يقبل إلّا `https://` أو مفتاحَ مخزنٍ أصدرناه — فما يخرج إلى
@@ -26,6 +26,7 @@ const expect = plainExpect(vexpect)
 import type { PrismaClient } from '@prisma/client'
 import type { FastifyInstance } from 'fastify'
 import { setupTestDb, testPrisma } from '../helpers/db'
+import { giveLiveCourse } from '../helpers/live-course'
 import { buildApp } from '../../http/app'
 import { TrainerReviewService } from '../../services/trainer-review.service'
 import { putObject } from '../../services/object-store'
@@ -77,6 +78,8 @@ describe('المسارُ العامُّ يحرسه النشرُ لا التوق�
   })
 
   it('فإذا اعتُمد نشرُه قُدّمت بلا توقيعٍ ولا جلسة', async () => {
+    /* وله دورةٌ منشورة — شرطُ الظهور منذ ١٩ أكتوبر ٢٠٢٦ (`trainer-visibility.ts`) */
+    await giveLiveCourse(prisma, profileId)
     await review.approvePublicVisibility(profileId, ACTOR)
     const res = await get()
     expect(res.statusCode).toBe(200)

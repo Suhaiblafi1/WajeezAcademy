@@ -21,6 +21,7 @@
    تقولان الشيءَ نفسَه، ويحرسهما `src/tests/trainers-page.test.ts`. */
 
 import type { Prisma } from '@prisma/client'
+import { termBounds, termOf } from '../../src/application/terms/season'
 
 /** ما تحتاجه البوّابةُ من الملفّ — يُنتقى في `select` حيث يُقرأ ضمن علاقة */
 export interface TrainerVisibilityFields {
@@ -39,7 +40,57 @@ export const PUBLIC_TRAINER_WHERE: Prisma.TrainerProfileWhereInput = {
   publicVisibility: true, isVerified: true, publishApprovedAt: { not: null }, suspendedAt: null,
 }
 
-/** الترشيحُ — للملفّ حين يصل ضمن إسنادٍ أو شعبة */
+/* ═══ ولا اسمَ ولا صورةَ إلّا لمن له دوراتٌ منشورةٌ هذا الفصلَ أو بعده ═══
+
+   قرارُ صاحب المنصّة (١٩ أكتوبر ٢٠٢٦): «يجب أن تكون الصور المنشورة والحسابات
+   المنشورة فقط للمدربين الذين لهم دورات هذا الفصل أو بعده! لا ينشر حساب لمن لم
+   نعتمد دوراته ولم تنشر». فاعتمادُ النشر أعلاه شرطٌ لا يكفي وحدَه.
+
+   و«دوراتُه» بقاعدة الأتعاب نفسِها (`cohort-lead.ts`): أصيلُ الشعبة، أو إسنادُه
+   النشطُ فيها. و«منشورة» شعبةٌ خرجت من الإعداد إلى الناس: مفتوحةٌ أو ممتلئةٌ أو
+   جارية — وهذه من الفصل الجاري أو ما بعده بطبيعتها. والمكتملةُ تُحسب إن انتهت
+   في الفصل الجاري: هي من دوراته «هذا الفصل». ومثلُها مسارُه المنشورُ لفصلٍ لم
+   ينتهِ أو بلا فصل. وشعبةُ الإعداد والمسودّةُ والملغاة لا تُحسب: لم تُعتمد ولم تُنشر.
+
+   والفصلُ من التاريخ (`termOf`) لا من `termId`: شعبُ الإنتاج كلُّها بلا فصلٍ
+   مربوط — قِيس في ١٩ أكتوبر: ٣٢ شعبةً مفتوحةً و`termId` فارغٌ فيها كلِّها.
+
+   ولماذا دالّةٌ لا ثابت: اليومُ جزءٌ من الشرط، وثابتٌ يُحسب عند تحميل الوحدة
+   يتجمّد على يوم الإقلاع والخادمُ يعمل أسابيع. */
+
+/** أوّلُ يومٍ في الفصل الجاري — ما انتهى قبله ليس «هذا الفصلَ أو بعده» */
+export function currentTermStart(now: Date): Date {
+  const t = termOf(now)
+  return termBounds(t.year, t.season).startsOn
+}
+
+/** شرطُ «له دوراتٌ منشورةٌ هذا الفصلَ أو بعده» وحدَه — تقرؤه شاشةُ الإدارة أيضا */
+export function liveTrainerWhere(now: Date = new Date()): Prisma.TrainerProfileWhereInput {
+  const from = currentTermStart(now)
+  const cohort: Prisma.CohortWhereInput = {
+    OR: [
+      { status: { in: ['open', 'full', 'active'] } },
+      { status: 'completed', endsAt: { gte: from } },
+    ],
+  }
+  return {
+    OR: [
+      { cohortTrainers: { some: { role: 'lead', cohort } } },
+      { assignments: { some: { status: 'active', cohort } } },
+      /* والفصلُ في المسار اختياريّ (`TrainerPath.termId`): منشورٌ بلا فصلٍ معتمدٌ
+         منشورٌ وليس ماضيا، فيُحسب */
+      { paths: { some: { status: 'published', OR: [{ termId: null }, { term: { endsOn: { gte: from } } }] } } },
+    ],
+  }
+}
+
+/** البوّابةُ كاملةً — لكلّ سطحٍ يعرض المدرّبَ بذاته: صفحةُ الفريق وصفحتُه وصورتُه */
+export function publicTrainerWhere(now: Date = new Date()): Prisma.TrainerProfileWhereInput {
+  return { ...PUBLIC_TRAINER_WHERE, AND: [liveTrainerWhere(now)] }
+}
+
+/** الترشيحُ — للملفّ حين يصل ضمن إسنادٍ أو شعبة. ولا يُسأل فيه عن الدورات:
+    من يصل هكذا يُعرض **مدرّبا لشعبةٍ أو مسارٍ منشورٍ** بعينه، فهو صاحبُ دورة. */
 export function trainerPubliclyVisible(p: TrainerVisibilityFields): boolean {
   return p.publicVisibility && p.isVerified && p.publishApprovedAt !== null && p.suspendedAt === null
 }

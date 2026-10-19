@@ -60,6 +60,8 @@ interface OpsTrainer {
   hasAccount: boolean;
   suspended: boolean;
   publiclyVisible: boolean;
+  /** له دورةٌ منشورةٌ هذا الفصلَ أو بعده — وإلّا فلا يظهر ولو اعتُمد نشرُه */
+  hasLiveCourse: boolean;
   isVerified: boolean;
   headline: string | null;
   bioPublic: string | null;
@@ -748,10 +750,14 @@ export default function TrainerRunOps() {
                               : t.pendingText ? "نبذة تنتظرك" : "صورة تنتظرك"}
                           </Chip>
                         )}
-                        {t.publiclyVisible && (
+                        {t.publiclyVisible && t.hasLiveCourse && (
                           <span className="flex items-center gap-1 rounded-full bg-teal/15 px-2 py-0.5 text-fine font-black text-teal-light-ink">
                             <BadgeCheck className="h-3 w-3" /> ظاهر للعامّة
                           </span>
+                        )}
+                        {/* قرارُ ١٩ أكتوبر ٢٠٢٦: لا يظهر للعامّة من لا دورةَ منشورةً له هذا الفصلَ أو بعده */}
+                        {t.publiclyVisible && !t.hasLiveCourse && (
+                          <Chip tone="neutral" srPrefixAr="ظهوره العامّ">معتمد ولا يظهر: لا دورة منشورة له هذا الفصل</Chip>
                         )}
                       </p>
                       <p dir="ltr" className="mt-0.5 text-right text-read text-muted-foreground">{t.email}</p>

@@ -58,7 +58,7 @@ import {
   SIGNED_COPY_STATES, closedStateOf, sameMailbox,
   type ContractClosedView, type ContractLinkPurpose,
 } from '../../src/application/trainer/contract-link-state'
-import { PUBLIC_TRAINER_WHERE, trainerPubliclyVisible } from './trainer-visibility'
+import { liveTrainerWhere, publicTrainerWhere, trainerPubliclyVisible } from './trainer-visibility'
 import { cohortLeadTrainers } from './cohort-lead'
 import { cleanProposals, readProposals } from '../../src/application/trainer/teachable-proposals'
 import { pendingKind } from '../../src/application/trainer/pending-kind'
@@ -5907,6 +5907,11 @@ export class TrainerReviewService {
       },
       orderBy: { createdAt: 'desc' },
     })
+    /* ومن اعتُمد نشرُه ولا دورةَ منشورةً له هذا الفصلَ أو بعده لا يظهر للعامّة
+       (`liveTrainerWhere`). فيُقال هنا، وإلّا ظنّ المديرُ النشرَ معطّلا. */
+    const live = new Set((await this.prisma.trainerProfile.findMany({
+      where: liveTrainerWhere(), select: { id: true },
+    })).map((r) => r.id))
     return profiles.map((p) => ({
       profileId: p.id,
       applicationId: p.applicationId,
@@ -5917,6 +5922,7 @@ export class TrainerReviewService {
       hasAccount: Boolean(p.userId),
       suspended: Boolean(p.suspendedAt),
       publiclyVisible: p.publicVisibility && Boolean(p.publishApprovedAt),
+      hasLiveCourse: live.has(p.id),
       isVerified: p.isVerified,
       /* ما تعرضه صفحةُ الفريق — يُقرأ هنا ليُحرَّر هنا */
       headline: p.headline,
@@ -6388,7 +6394,7 @@ export class TrainerReviewService {
   /** القائمة العامة — بوّابةُ الظهور الواحدة (`trainer-visibility.ts`) + طلبٌ نشط */
   async listPublicTrainers() {
     const profiles = await this.prisma.trainerProfile.findMany({
-      where: { ...PUBLIC_TRAINER_WHERE, application: { status: 'active' } },
+      where: { ...publicTrainerWhere(), application: { status: 'active' } },
       include: {
         application: { select: { fullName: true, country: true, specialties: true } },
         assignments: { where: { status: 'active' }, select: { courseId: true, cohortId: true } },

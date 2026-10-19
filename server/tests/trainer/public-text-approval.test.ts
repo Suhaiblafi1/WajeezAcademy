@@ -17,6 +17,7 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
 import { setupTestDb, testPrisma } from '../helpers/db'
+import { giveLiveCourse } from '../helpers/live-course'
 import { TrainerReviewService } from '../../services/trainer-review.service'
 import { TrainerPublicTextService } from '../../services/trainer-public-text.service'
 
@@ -46,6 +47,7 @@ beforeAll(async () => {
   profileId = made.profileId
   userId = made.userId
   await review.approvePublicVisibility(profileId, ACTOR)
+  await giveLiveCourse(prisma, profileId)
   await prisma.trainerProfile.update({
     where: { id: profileId }, data: { headline: 'مدير مبيعات', bioPublic: OLD_BIO },
   })

@@ -28,6 +28,7 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
 import type { FastifyInstance } from 'fastify'
 import { setupTestDb, testPrisma } from '../helpers/db'
+import { giveLiveCourse } from '../helpers/live-course'
 import { buildApp } from '../../http/app'
 import { TrainerReviewService } from '../../services/trainer-review.service'
 import { ProfileService } from '../../services/profile.service'
@@ -67,6 +68,7 @@ beforeAll(async () => {
   profileId = made.profileId
   userId = made.userId
   await review.approvePublicVisibility(profileId, ACTOR)
+  await giveLiveCourse(prisma, profileId)
 }, 240_000)
 
 describe('صورة الحساب الجديدة لا تكسر الصورة العامّة', () => {
