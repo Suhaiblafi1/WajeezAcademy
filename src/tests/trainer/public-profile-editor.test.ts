@@ -70,7 +70,17 @@ describe('المسار العامّ للصورة', () => {
 
 describe('صفحة الفريق', () => {
   it('تعرض الصورة حين توجد', () => {
-    expect(teamPage).toMatch(/t\.photoUrl\s*\?/)
+    expect(teamPage).toMatch(/if \(t\.photoUrl && !failed\)/)
     expect(teamPage).toMatch(/src=\{t\.photoUrl\}/)
+  })
+
+  /* صورةٌ مُحيت من القرص أو رفعٌ تُرك في منتصفه يردّ ٤٠٤. وكانت `<img>` بلا
+     `onError`، فيرى الزائرُ أيقونةَ صورةٍ مكسورة. فكلُّ صورةٍ في الصفحة تعرف
+     ما تفعل إن لم تصل: تُعلَم الحالةُ فيُعرض بديلُ الحروف. */
+  it('⚠️ وصورة لا تصل لا تترك مكسورة — كلّ img يردّ خطأه إلى بديل الحروف', () => {
+    const imgs = teamPage.match(/<img\b[\s\S]*?\/>/g) ?? []
+    expect(imgs.length, 'لم يعثر على صورة في الصفحة — تعطّل الفحص نفسه').toBeGreaterThan(0)
+    for (const img of imgs) expect(img, 'صورة بلا onError').toMatch(/onError=\{\(\) => setFailed\(true\)\}/)
+    expect(teamPage, 'لا بديل حين تسقط الصورة').toMatch(/initialsOf\(t\.name\)/)
   })
 })

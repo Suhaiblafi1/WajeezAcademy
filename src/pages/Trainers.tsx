@@ -1,15 +1,17 @@
 import { Link } from 'react-router'
 import { useEffect, useMemo, useState } from 'react'
 import {
-  ArrowLeft, BadgeCheck, GraduationCap, ShieldCheck, Search, Star, Clock, ChevronDown, Route, BookOpen,
+  ArrowLeft, BadgeCheck, GraduationCap, ShieldCheck, Search, Star, Clock, ChevronDown, Route, BookOpen, MapPin,
 } from 'lucide-react'
 import { TRAINER_POOLS, TRAINER_PENDING_AR, courseById } from '@/data/courses'
 import { pathwayById } from '@/data/pathways'
 import { apiGet } from '@/services/api'
+import { usePublishedContent } from '@/services/public-content'
 import SiteShell from '@/components/SiteShell'
 import SeoHead from '@/components/SeoHead'
 import { seoFor } from '@/application/site/public-pages'
 import { Panel, Card, Inset } from '@/components/ui/Surface'
+import { countAr } from '@/application/text/count-ar'
 
 interface PublicTrainer {
   id: string; name: string; headline: string | null; bio: string | null;
@@ -40,9 +42,15 @@ const SPECIALTIES_PREVIEW = 6
    ومسار، وكلُّ دورةٍ لها مسارُها الأمّ. فمسارُ المدرّب هو ما تجتمع فيه دوراتُه
    المسنَدة — واحدٌ غالبا، وقد يكون اثنين لمن يدرّس في مسارين. */
 function TrainerOffer({ ids }: { ids: string[] }) {
+  /* الكتالوجُ يُحمَّل كسولا ويُستبدل وقتَ التشغيل (`core-catalog-source.ts`).
+     وكانت النبذةُ تُصيَّر عند فتحها فقط فتجده غالبا قد وصل؛ وصارت تُصيَّر مع
+     البطاقة مخفيّةً — فلو حُسبت قبل وصوله لَبقيت «لم تسند إليه شعبة» لمن له
+     دورة. فتُعاد عند كلّ تثبيتٍ للقطة. */
+  const catalogVersion = usePublishedContent()
   const courses = useMemo(
     () => [...new Set(ids)].map((id) => courseById(id)).filter((c): c is NonNullable<typeof c> => Boolean(c)),
-    [ids],
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- إبطال ذاكرة عند تبديل الكتالوج
+    [ids, catalogVersion],
   )
   const offeredPathways = useMemo(
     () => [...new Set(courses.map((c) => c.pathwayId))].map((id) => pathwayById(id)).filter((p): p is NonNullable<typeof p> => Boolean(p)),
@@ -91,6 +99,177 @@ function TrainerOffer({ ids }: { ids: string[] }) {
         ))}
       </ul>
     </div>
+  )
+}
+
+/* ───────────────── صورةُ المدرّب — وما يحلّ محلَّها ─────────────────
+
+   كانت دائرةً بستّةٍ وخمسين بكسلا، فكان الوجهُ أصغرَ ما في البطاقة وأوسمةُ
+   التخصّص أكبرَه. وقرارُ صاحب المنصّة (١٩ أكتوبر ٢٠٢٦) «صورهم أكبر» وهيئةُ
+   «الملفّ المهنيّ» من ثلاثٍ عُرضت عليه: مربّعٌ بمئةٍ وستّين بكسلا، والصورةُ
+   المرفوعةُ ٥١٢ فتبقى حادّةً على شاشةٍ مضاعفة.
+
+   ── وصورةٌ لا تصل لا تُترك مكسورة ──
+
+   كانت `<img>` بلا `onError`: كائنٌ مُحي من القرص أو رفعٌ تُرك في منتصفه
+   (`trainer-review.service.ts` · `startPhotoUpload`) يردّ ٤٠٤، فيرى الزائرُ
+   أيقونةَ صورةٍ مكسورةٍ ونصَّها البديل. فالخطأُ يردّها إلى ما يُعرض لمن لا
+   صورةَ له أصلا — حروفُ اسمه على أرضيّة العلامة. */
+
+/* «Reine Metlej» ← «RM»، و«احمد صالح» ← «أ». والعربيّةُ حرفٌ واحد: حرفان
+   منفصلان منها لا يُقرآن اسما. والألفُ المجرّدةُ تُرسم بهمزتها، وإلّا قُرئت
+   خطّا عموديّا أو «I». */
+function initialsOf(name: string): string {
+  const words = name.trim().split(/\s+/).filter(Boolean)
+  const first = words[0] ?? ''
+  if (/^[A-Za-z]/.test(first)) {
+    const last = words.length > 1 ? words[words.length - 1] : ''
+    return (first[0] + (last[0] ?? '')).toUpperCase()
+  }
+  const ch = first.slice(0, 1)
+  return ch === 'ا' ? 'أ' : ch
+}
+
+/* أرضيّةُ الحروف: فيروزيٌّ معمّقٌ بضوءٍ من زاويةٍ ودوائرَ خافتة — لتُقرأ
+   مقصودةً بجوار الصور لا مكانا فارغا. والألوانُ من رموز السمة لا حرفيّة. */
+const MONOGRAM_FIELD = {
+  backgroundImage:
+    'radial-gradient(120% 85% at 80% 0%, rgb(var(--teal-light) / 0.5), transparent 62%), '
+    + 'repeating-radial-gradient(circle at 15% 115%, rgb(255 255 255 / 0.08) 0 1.5px, transparent 1.5px 16px)',
+}
+
+function TrainerPhoto({ t }: { t: PublicTrainer }) {
+  const [failed, setFailed] = useState(false)
+  const box = 'h-24 w-24 shrink-0 rounded-2xl sm:row-span-2 sm:h-40 sm:w-40'
+  if (t.photoUrl && !failed) {
+    return (
+      <img
+        src={t.photoUrl}
+        alt={`صورة ${t.name}`}
+        width={160}
+        height={160}
+        loading="lazy"
+        decoding="async"
+        onError={() => setFailed(true)}
+        className={`${box} object-cover object-[50%_30%]`}
+      />
+    )
+  }
+  /* `bg-teal-deep` مع `text-white` يبقى أبيضَ في المظهر النهاريّ (`styles/light.css`) */
+  return (
+    <span aria-hidden="true" style={MONOGRAM_FIELD} className={`${box} grid place-items-center bg-teal-deep text-4xl font-black text-white sm:text-5xl`}>
+      {initialsOf(t.name)}
+    </span>
+  )
+}
+
+/* ───────────────── بطاقةُ المدرّب — ملفٌّ مهنيّ ─────────────────
+
+   كانت رأسا (اسمٌ وتعريفٌ وأوسمة) ونبذةً مطويّةً كلُّها خلف زرّ — فأوّلُ ما
+   يعرّف بالمدرّب، خبرتُه بكلامه، لا يُرى إلّا لمن ضغط. فصارت ثلاثةُ أسطرٍ من
+   النبذة ظاهرةً، والزرُّ يكمل النبذةَ ويفتح الأرقامَ والتعليقاتِ ودوراتِه.
+
+   والنبذةُ عنصرٌ واحدٌ يتنقّل بالشبكة: بجوار الصورة على الشاشة العريضة،
+   وتحتها بعرض البطاقة على الهاتف — لا نسختان تُخفى إحداهما. */
+function TrainerCard({ t, open, onToggle }: { t: PublicTrainer; open: boolean; onToggle: () => void }) {
+  const panelId = `trainer-bio-${t.id}`
+  const courses = new Set(t.assignedCourseIds).size
+  return (
+    <Card as="article" className="flex flex-col transition hover:border-teal/40">
+      <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 sm:gap-x-5">
+        <TrainerPhoto t={t} />
+        <div className="min-w-0">
+          <h3 className="flex items-center gap-1.5 text-lg font-black leading-snug md:text-xl">
+            {t.name}
+            <BadgeCheck className="h-5 w-5 shrink-0 text-teal-ink" aria-label="مدرب موثق" />
+          </h3>
+          {t.headline && <p className="mt-1 line-clamp-2 text-read leading-6 text-foreground/80">{t.headline}</p>}
+          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-read">
+            {t.country && (
+              <span className="inline-flex items-center gap-1 text-muted-foreground">
+                <MapPin className="h-3.5 w-3.5 shrink-0 text-teal-light-ink" aria-hidden="true" />
+                {t.country}
+              </span>
+            )}
+            {courses > 0 && (
+              <span className="inline-flex items-center gap-1 font-bold text-teal-light-ink">
+                <BookOpen className="h-3.5 w-3.5" aria-hidden="true" />
+                {countAr(courses, { one: 'دورة', two: 'دورتان', few: 'دورات', many: 'دورة' })}
+              </span>
+            )}
+          </div>
+        </div>
+        {t.bio && (
+          <p className={`col-span-2 mt-3 whitespace-pre-line text-read leading-6 text-muted-foreground sm:col-span-1 sm:col-start-2 ${open ? '' : 'line-clamp-3'}`}>
+            {t.bio}
+          </p>
+        )}
+      </div>
+
+      {t.specialties.length > 0 && (
+        <ul className="mt-4 flex flex-wrap gap-1.5">
+          {t.specialties.map((s) => (
+            <li key={s} className="rounded-full bg-teal/10 px-2.5 py-1 text-fine text-teal-light-ink">{s}</li>
+          ))}
+        </ul>
+      )}
+
+      <div id={panelId} hidden={!open} className="mt-4 space-y-3">
+        {/* الإحصاءات — تُعرض فقط عند وجود بيانات حقيقية مسجلة */}
+        {(t.ratingAvg != null || t.hoursTaught != null || t.graduatesCount != null) && (
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
+            {t.ratingAvg != null && (
+              <span className="inline-flex items-center gap-1 font-bold text-gold-ink">
+                <Star className="h-3.5 w-3.5 fill-gold" />
+                {t.ratingAvg.toFixed(1)}
+                {t.ratingCount != null && <span className="font-normal text-muted-foreground">({t.ratingCount} تقييما)</span>}
+              </span>
+            )}
+            {t.hoursTaught != null && (
+              <span className="inline-flex items-center gap-1">
+                <Clock className="h-3.5 w-3.5 text-teal-ink" />
+                {t.hoursTaught} ساعة تدريب معنا
+              </span>
+            )}
+            {t.graduatesCount != null && (
+              <span className="inline-flex items-center gap-1">
+                <GraduationCap className="h-3.5 w-3.5 text-teal-ink" />
+                {t.graduatesCount} خريجا
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* ١و — التعليقات المعتمَدة للنشر. المتوسّط أعلاه محسوبٌ على كل
+            التقييمات لا على المعروض منها، فلا يُقرأ الاقتباس رقما. */}
+        {t.testimonials && t.testimonials.length > 0 && (
+          <div className="space-y-2">
+            {t.testimonials.map((c, i) => (
+              <Inset as="blockquote" key={i} className="px-3 py-2">
+                <span className="mb-0.5 block text-fine font-bold text-gold-ink">{c.score} ★</span>
+                <p className="text-read leading-6 text-muted-foreground">{c.commentAr}</p>
+              </Inset>
+            ))}
+            <p className="text-read text-muted-foreground/50">
+              تعليقات متعلمين نشرتها الأكاديمية. المتوسط أعلاه من كل التقييمات، لا من المنشور فقط.
+            </p>
+          </div>
+        )}
+
+        <TrainerOffer ids={t.assignedCourseIds} />
+      </div>
+
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        aria-controls={panelId}
+        className="mt-4 flex min-h-11 w-full items-center justify-between gap-2 border-t border-white/10 pt-3 text-sm font-bold text-teal-light-ink transition hover:text-foreground"
+      >
+        {open ? 'عرض أقل' : 'النبذة كاملة والدورات'}
+        <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden="true" />
+      </button>
+    </Card>
   )
 }
 
@@ -199,119 +378,22 @@ export default function Trainers() {
 
       {/* المدربون المعتمدون رسميا — يظهرون أولا وفقط بعد اكتمال الاعتماد والموافقة.
 
-          البطاقةُ رأسٌ ثابت (الاسمُ والتعريفُ والتخصّصات) ونبذةٌ تنسدل بزرّ:
-          السيرةُ والأرقامُ والتعليقاتُ ودوراتُه ومسارُه. قرارُ صاحب المنصّة
-          (٨ سبتمبر ٢٠٢٦) — والطيُّ معلَنٌ لقارئ الشاشة بـ`aria-expanded` و
-          `aria-controls`، لا `details` لأنّ الرأسَ يحمل روابطَ وصورةً لا
-          تصلح داخل `summary`. */}
+          البطاقةُ ملفٌّ مهنيّ (`TrainerCard`): صورةٌ كبيرةٌ وثلاثةُ أسطرٍ من النبذة
+          ظاهرة، وزرٌّ يكمل الباقي. والطيُّ معلَنٌ لقارئ الشاشة بـ`aria-expanded`
+          و`aria-controls`، لا `details` لأنّ الرأسَ يحمل روابطَ وصورةً لا تصلح
+          داخل `summary`. */}
       {filteredApproved.length > 0 && (
-        <section className="mt-12">
-          <h2 className="text-center text-2xl font-black">مدربون معتمدون</h2>
-          <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredApproved.map((t) => {
-              const open = expanded.has(t.id)
-              const panelId = `trainer-bio-${t.id}`
-              return (
-                <Panel as="article" tone="accent" key={t.id} className="flex flex-col transition hover:border-teal/50">
-                  <div className="flex items-center gap-3">
-                    {t.photoUrl ? (
-                      <img
-                        src={t.photoUrl}
-                        alt={`صورة ${t.name}`}
-                        className="h-14 w-14 shrink-0 rounded-full border border-teal/40 object-cover"
-                        loading="lazy"
-                      />
-                    ) : (
-                      <span className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-teal/20 text-xl font-black text-teal-light-ink">
-                        {t.name.slice(0, 1)}
-                      </span>
-                    )}
-                    <div className="min-w-0">
-                      <h3 className="flex items-center gap-1.5 font-black">
-                        {t.name}
-                        <BadgeCheck className="h-4 w-4 shrink-0 text-teal-ink" aria-label="مدرب موثق" />
-                      </h3>
-                      {t.headline && <p className="mt-0.5 text-read leading-5 text-muted-foreground">{t.headline}</p>}
-                      {t.country && <p className="mt-0.5 text-read text-muted-foreground">{t.country}</p>}
-                    </div>
-                  </div>
-
-                  <div className="mt-3 flex flex-wrap gap-1.5">
-                    {t.specialties.map((s) => (
-                      <span key={s} className="rounded-full border border-teal/25 bg-teal/10 px-2.5 py-1 text-fine text-teal-light-ink">{s}</span>
-                    ))}
-                  </div>
-
-                  {/* عددُ الدورات في الرأس: يقول إنّ في النبذة ما يُشترى قبل أن تُفتح */}
-                  <button
-                    type="button"
-                    onClick={() => toggle(t.id)}
-                    aria-expanded={open}
-                    aria-controls={panelId}
-                    className="mt-3 flex min-h-11 w-full items-center justify-between gap-2 border-t border-white/10 pt-3 text-sm font-bold text-teal-light-ink transition hover:text-foreground"
-                  >
-                    <span>
-                      نبذة ودوراته
-                      {t.assignedCourseIds.length > 0 && (
-                        <span className="ms-2 rounded-full bg-teal/15 px-2 py-0.5 text-read font-black text-teal-light-ink">
-                          {new Set(t.assignedCourseIds).size}
-                        </span>
-                      )}
-                    </span>
-                    <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden="true" />
-                  </button>
-
-                  {open && (
-                    <div id={panelId} className="mt-3 space-y-3">
-                      {/* الإحصاءات — تُعرض فقط عند وجود بيانات حقيقية مسجلة */}
-                      {(t.ratingAvg != null || t.hoursTaught != null || t.graduatesCount != null) && (
-                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
-                          {t.ratingAvg != null && (
-                            <span className="inline-flex items-center gap-1 font-bold text-gold-ink">
-                              <Star className="h-3.5 w-3.5 fill-gold" />
-                              {t.ratingAvg.toFixed(1)}
-                              {t.ratingCount != null && <span className="font-normal text-muted-foreground">({t.ratingCount} تقييما)</span>}
-                            </span>
-                          )}
-                          {t.hoursTaught != null && (
-                            <span className="inline-flex items-center gap-1">
-                              <Clock className="h-3.5 w-3.5 text-teal-ink" />
-                              {t.hoursTaught} ساعة تدريب معنا
-                            </span>
-                          )}
-                          {t.graduatesCount != null && (
-                            <span className="inline-flex items-center gap-1">
-                              <GraduationCap className="h-3.5 w-3.5 text-teal-ink" />
-                              {t.graduatesCount} خريجا
-                            </span>
-                          )}
-                        </div>
-                      )}
-
-                      {t.bio && <p className="text-read leading-6 text-muted-foreground">{t.bio}</p>}
-
-                      {/* ١و — التعليقات المعتمَدة للنشر. المتوسّط أعلاه محسوبٌ على كل
-                          التقييمات لا على المعروض منها، فلا يُقرأ الاقتباس رقما. */}
-                      {t.testimonials && t.testimonials.length > 0 && (
-                        <div className="space-y-2">
-                          {t.testimonials.map((c, i) => (
-                            <Inset as="blockquote" key={i} className="px-3 py-2">
-                              <span className="mb-0.5 block text-fine font-bold text-gold-ink">{c.score} ★</span>
-                              <p className="text-read leading-6 text-muted-foreground">{c.commentAr}</p>
-                            </Inset>
-                          ))}
-                          <p className="text-read text-muted-foreground/50">
-                            تعليقات متعلمين نشرتها الأكاديمية. المتوسط أعلاه من كل التقييمات، لا من المنشور فقط.
-                          </p>
-                        </div>
-                      )}
-
-                      <TrainerOffer ids={t.assignedCourseIds} />
-                    </div>
-                  )}
-                </Panel>
-              )
-            })}
+        <section className="mt-14">
+          <div className="flex flex-wrap items-end justify-between gap-2">
+            <h2 className="text-2xl font-black md:text-3xl">مدربون معتمدون</h2>
+            <p className="text-read text-muted-foreground">
+              {countAr(filteredApproved.length, { one: 'مدرب', two: 'مدربان', few: 'مدربين', many: 'مدربا' })}
+            </p>
+          </div>
+          <div className="mt-6 grid items-start gap-5 lg:grid-cols-2">
+            {filteredApproved.map((t) => (
+              <TrainerCard key={t.id} t={t} open={expanded.has(t.id)} onToggle={() => toggle(t.id)} />
+            ))}
           </div>
         </section>
       )}

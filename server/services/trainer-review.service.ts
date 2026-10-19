@@ -67,7 +67,7 @@ import type { PrepCourse } from './trainer-prep.service'
 import {
   IDENTITY_MIMES, MAX_CONTRACT_DOC_BYTES,
   MAX_PHOTO_BYTES, PHOTO_KEY_PREFIX, PHOTO_MIMES, SIGNED_URL_TTL_MS,
-  assertFileUploadsEnabled, newStorageKey, photoPublicUrl, photoStorageKey, signKey,
+  assertFileUploadsEnabled, newStorageKey, photoPublicUrl, photoStorageKey, releasePhotoObject, signKey,
 } from './storage.service'
 import { deleteObject } from './object-store'
 import { EarningsService } from './earnings.service'
@@ -6090,16 +6090,16 @@ export class TrainerReviewService {
       if (next && !next.startsWith('https://') && !next.startsWith(PHOTO_KEY_PREFIX)) {
         throw new AuthError('bad_photo', 'رابط الصورة يجب أن يبدأ بـhttps://', 422)
       }
-      /* والصورةُ القديمةُ تُمحى من القرص حين تُستبدل — وإلّا بقيت بايتاتٌ
-         لا يشير إليها سجلٌّ، ولا يعرف أحدٌ أنّها هناك ليحذفها. */
-      const oldKey = photoStorageKey(profile.photoUrl)
-      if (oldKey && oldKey !== photoStorageKey(next)) {
-        try { await deleteObject(oldKey) } catch { /* غيابُها ليس عطبا */ }
-      }
       data.photoUrl = next
     }
 
     const saved = await this.prisma.trainerProfile.update({ where: { id: profile.id }, data })
+    /* والصورةُ القديمةُ تُمحى من القرص حين تُستبدل — وإلّا بقيت بايتاتٌ لا يشير
+       إليها سجلٌّ. وبعد الكتابة لا قبلها، وما دام عمودٌ آخرُ لا يحملها. */
+    if (input.photoUrl !== undefined) {
+      const oldKey = photoStorageKey(profile.photoUrl)
+      if (oldKey !== photoStorageKey(saved.photoUrl)) await releasePhotoObject(this.prisma, oldKey)
+    }
     await recordAudit(this.prisma, {
       actorId, action: 'trainer.public_profile.save', entityType: 'trainer_profile', entityId: profile.id,
       meta: { fields: Object.keys(data) },
@@ -6129,7 +6129,7 @@ export class TrainerReviewService {
     await this.prisma.trainerProfile.update({
       where: { id: profile.id }, data: { photoUrl: `${PHOTO_KEY_PREFIX}${storageKey}` },
     })
-    if (oldKey) { try { await deleteObject(oldKey) } catch { /* غيابُها ليس عطبا */ } }
+    await releasePhotoObject(this.prisma, oldKey)
 
     const exp = Date.now() + SIGNED_URL_TTL_MS
     const sig = signKey(storageKey, exp, 'write')
@@ -6168,9 +6168,7 @@ export class TrainerReviewService {
       data: { photoUrl: `${PHOTO_KEY_PREFIX}${profile.photoPendingKey}`, photoPendingKey: null },
     })
     /* والقديمةُ تُحذف بعد النقل لا قبله: لو انقطع شيءٌ بينهما بقيت الأولى */
-    if (oldKey && oldKey !== profile.photoPendingKey) {
-      try { await deleteObject(oldKey) } catch { /* غيابُها ليس عطبا */ }
-    }
+    if (oldKey !== profile.photoPendingKey) await releasePhotoObject(this.prisma, oldKey)
     await recordAudit(this.prisma, {
       actorId, action: 'trainer.photo.approve', entityType: 'trainer_profile', entityId: profile.id,
     })
