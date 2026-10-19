@@ -78,6 +78,16 @@ describe('① الإسنادُ تلقائيٌّ لأقلّ المستشارين 
     expect([first, second, third].map((a) => a?.advisorId)).not.toContain(advOff)
   })
 
+  it('⚠️ وفي التعادل لمن طال عهدُه بآخر إسناد — لا لترتيب المعرّف', async () => {
+    /* حِملان متساويان، وأقربُهما إسنادا صاحبُ المعرّف الأصغر — فالمعرّفُ وحدَه يختاره خطأً */
+    await prisma.advisorCase.updateMany({ data: { status: 'closed' } })
+    const [small, big] = [advA, advB].sort((x, y) => x.localeCompare(y))
+    await advisors.assign((await guestCase('تعادل ١')).id, big!, managerId)
+    await advisors.assign((await guestCase('تعادل ٢')).id, small!, managerId)
+    const next = await activeAssignee((await guestCase('تعادل ٣')).id)
+    expect(next?.advisorId, 'اختير أقربُهما إسنادا').toBe(big)
+  })
+
   it('⚠️ وأقلُّهم حالاتٍ مفتوحةً يأخذ — لا بالدور', async () => {
     /* أ يحمل حالتين مفتوحتين على الأقلّ، وب لا شيء — فالحِملُ لا الدورُ يقرّر */
     for (const n of ['حمل أ ١', 'حمل أ ٢']) await advisors.assign((await guestCase(n)).id, advA, managerId)
