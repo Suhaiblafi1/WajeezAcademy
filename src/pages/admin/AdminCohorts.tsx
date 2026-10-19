@@ -10,6 +10,7 @@ import { staffControlCls, staffSelectCls } from "@/components/FormKit";
 import { CohortOps, LearningSettings } from "./CohortOps";
 import { COHORT_TABS, type CohortTab } from "./cohort-tabs";
 import { awaitsOpening, COHORT_LISTS, inCohortList, type CohortList } from "./cohort-lists";
+import OpenApproved from "@/components/admin/OpenApproved";
 import { tabForGap } from "@/application/learning/open-gaps";
 import CohortReadiness from "./CohortReadiness";
 import CourseDemand from "./CourseDemand";
@@ -423,6 +424,8 @@ export default function AdminCohorts() {
           onChange={(next) => { setList(next); setPage(1); }}
           items={COHORT_LISTS.map((l) => ({ id: l.id, label: `${l.label} (${rows.filter((c) => inCohortList(l.id, c)).length})` }))} />
       )}
+      {/* «افتح المعتمدة كلها» — بمعاينة، وما نقل إلى موسم آخر يبقى (١٩ أكتوبر ٢٠٢٦، `open-approved.service.ts`) */}
+      {!loading && list === "approved" && <OpenApproved onDone={() => void load()} />}
       {!loading && rows.length > 0 && (
         <Panel className="mb-4">
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">

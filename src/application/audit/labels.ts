@@ -92,6 +92,7 @@ const PHRASES: Record<string, string> = {
   'cohort.message.send': 'رسالة إلى شعبة',
   'session.reschedule.propose': 'اقتراح تأجيل جلسة',
   'term.season_switch': 'الانتقال إلى موسم جديد: فتح شعبه وإغلاق ما قبله',
+  'cohort.open_approved': 'فتح الشعب المعتمدة كلها مرة واحدة',
   'cohort.move.request': 'طلب نقل شعبة إلى فصل آخر',
   'cohort.move.withdraw': 'سحب طلب نقل شعبة',
   'session.reschedule.decide': 'قرار على اقتراح تأجيل',
