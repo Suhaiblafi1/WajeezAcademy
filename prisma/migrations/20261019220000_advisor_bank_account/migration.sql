@@ -41,3 +41,10 @@ ALTER TABLE "AdvisorBankAccount" ADD CONSTRAINT "AdvisorBankAccount_userId_fkey"
 -- فعّالٌ واحدٌ لكلّ مستشار — لا صفّان يتنازعان على أين تذهب عمولتُه
 CREATE UNIQUE INDEX "AdvisorBankAccount_one_active"
   ON "AdvisorBankAccount"("userId") WHERE "status" = 'active';
+
+-- قيودُ الحالات مولَّدةٌ بـ`scripts/status-checks.ts` لا مكتوبةٌ باليد
+ALTER TABLE "AdvisorBankAccount" DROP CONSTRAINT IF EXISTS "AdvisorBankAccount_status_allowed";
+ALTER TABLE "AdvisorBankAccount" ADD CONSTRAINT "AdvisorBankAccount_status_allowed" CHECK ("status" IN ('active', 'superseded'));
+
+ALTER TABLE "AdvisorBankAccount" DROP CONSTRAINT IF EXISTS "AdvisorBankAccount_outcome_allowed";
+ALTER TABLE "AdvisorBankAccount" ADD CONSTRAINT "AdvisorBankAccount_outcome_allowed" CHECK ("outcome" IN ('matches', 'differs', 'unverifiable'));
