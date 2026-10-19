@@ -1347,6 +1347,25 @@ export async function runAssignMissingTerms(prisma: PrismaClient): Promise<JobRe
   }
 }
 
+/* ═══ حالةٌ لم يسجّل مستشارُها تواصلا، ومتابعةٌ حلّ موعدُها (١٩ أكتوبر ٢٠٢٦) ═══
+   قرارُ صاحب المنصّة والأرقامُ في `src/application/advisor/contact-sla.ts`، والعملُ في
+   `AdvisorService#remindDue`. ولا يُذكَّر أحدٌ مرّتين: كلُّ تذكيرٍ يُختم قبل جرسه. */
+export async function runAdvisorReminders(prisma: PrismaClient, now = new Date()): Promise<JobResult> {
+  const started = Date.now()
+  const { AdvisorService } = await import('../services/advisor.service')
+  const { reminded, escalated, followUps } = await new AdvisorService(prisma).remindDue(now)
+  const parts = [
+    reminded > 0 ? `تذكير بالتواصل: ${reminded}` : '',
+    escalated > 0 ? `إبلاغ من يسند بحالة بلا تواصل منذ يومين: ${escalated}` : '',
+    followUps > 0 ? `تذكير بمتابعة حلّ موعدها: ${followUps}` : '',
+  ].filter(Boolean)
+  return {
+    job: 'advisor_reminders',
+    summaryAr: parts.length === 0 ? 'لا حالة تنتظر تواصلا ولا متابعة حلّ موعدها' : parts.join(' · '),
+    done: reminded + escalated + followUps, failed: 0, ms: Date.now() - started,
+  }
+}
+
 export const JOBS = [
   { key: 'dispatch_notifications', everyMs: 60_000, run: dispatchQueuedNotifications, titleAr: 'إرسال ما في طابور الإشعارات' },
   { key: 'outbox_mail', everyMs: 60_000, run: dispatchOutboxMail, titleAr: 'إرسال ما في طابور البريد' },
@@ -1384,6 +1403,8 @@ export const JOBS = [
   /* كلَّ ساعة: الموعدُ شهرٌ قبل الفصل، فساعةٌ دقّةٌ كافية */
   { key: 'cohort_move_reminders', everyMs: HOUR, run: runCohortMoveReminders, titleAr: 'تذكير مدرّبي الشعب المنقولة قبل فصلها' },
   { key: 'assign_missing_terms', everyMs: HOUR, run: runAssignMissingTerms, titleAr: 'تسمية فصل الشعب التي بلا فصل' },
+  /* كلَّ ربع ساعة: المتابعةُ موعدٌ بالدقيقة، فتُذكَّر قبله بدورة (`FOLLOW_UP_LEAD_MINUTES`) */
+  { key: 'advisor_reminders', everyMs: 15 * 60_000, run: runAdvisorReminders, titleAr: 'تذكير المستشارين بالتواصل والمتابعات' },
   { key: 'cleanup_expired', everyMs: 6 * HOUR, run: cleanupExpired, titleAr: 'تنظيف ما انتهى' },
   /* مرّةً في اليوم: التقليمُ ليس عاجلا، وتكرارُه بلا داعٍ يُقفل جداولَ السجلّ */
   { key: 'enforce_retention', everyMs: 24 * HOUR, run: enforceRetention, titleAr: 'تقليم جداول السجلّ بمدّة حفظها' },

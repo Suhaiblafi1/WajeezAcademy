@@ -73,11 +73,12 @@ export const DYNAMIC: Record<string, readonly string[]> = {
   'admin.permission.@body.effect@': [
     'admin.permission.grant', 'admin.permission.deny', 'admin.permission.clear',
   ],
-  /* مفاتيحُ وظائف العامل التسعة — `worker/jobs.ts` */
+  /* مفاتيحُ وظائف العامل — `worker/jobs.ts` */
   'worker.@key@': [
     'worker.calendly_interview_sync', 'worker.cleanup_expired', 'worker.cohort_status_sync',
     'worker.dispatch_notifications', 'worker.enforce_retention', 'worker.publish_scheduled_changes',
     'worker.reclaim_abandoned_orders', 'worker.revoke_left_registrants', 'worker.session_reminders',
+    'worker.advisor_reminders',
   ],
 }
 

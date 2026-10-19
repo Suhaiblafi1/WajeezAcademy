@@ -214,6 +214,12 @@ export function registerAdvisorRoutes(app: FastifyInstance, prisma: PrismaClient
     schema: { tags: ['admin-operations'], summary: 'حالات أسندت تلقائيا في آخر ٣٠ يوما — لمراجعتها أو تغيير مستشارها' },
   }, async () => advisors.listAutoAssigned())
 
+  /* وما مرّ على إسناده يومان ولم يسجّل مستشارُه تواصلا — يُرى ويُغيَّر مستشارُه بالباب نفسِه (`remindDue`) */
+  app.get('/api/admin/advisor-cases/uncontacted', {
+    preHandler: requirePermission('advisor.assign'),
+    schema: { tags: ['admin-operations'], summary: 'حالات لم يسجل مستشارها تواصلا منذ يومين — لتغيير مستشارها أو متابعته' },
+  }, async () => advisors.listUncontacted())
+
   /* وتغييرُ مستشار أيّ حالةٍ مفتوحة — بحثا، لا ما أُسند تلقائيّا وحدَه (`searchOpenCases`) */
   app.get('/api/admin/advisor-cases/search', {
     preHandler: requirePermission('advisor.assign'),

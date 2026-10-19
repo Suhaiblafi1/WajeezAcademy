@@ -47,6 +47,7 @@ interface AdvisorOption { id: string; displayName: string; email: string }
 export default function Exceptions() {
   const [rows, setRows] = useState<UnassignedCase[]>([]);
   const [autoRows, setAutoRows] = useState<AutoAssignedCase[]>([]);
+  const [quietRows, setQuietRows] = useState<AutoAssignedCase[]>([]);
   const [advisors, setAdvisors] = useState<AdvisorOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [offline, setOffline] = useState<string | null>(null);
@@ -70,9 +71,15 @@ export default function Exceptions() {
     try {
       setAdvisors(await apiGet<AdvisorOption[]>("/api/admin/advisor-cases/assignable-advisors"));
     } catch { setAdvisors([]); }
-    /* وما أُسند تلقائيّا — الإسنادُ صار يقع وحدَه، والقرارُ يبقى هنا: يُرى ويُغيَّر */
+    /* وما مرّ على إسناده يومان ولم يسجّل مستشارُه تواصلا (`remindDue`) */
+    let quiet: AutoAssignedCase[] = [];
+    try { quiet = await apiGet<AutoAssignedCase[]>("/api/admin/advisor-cases/uncontacted"); } catch { /* القسمُ يغيب وحدَه */ }
+    setQuietRows(quiet);
+    /* وما أُسند تلقائيّا — الإسنادُ صار يقع وحدَه، والقرارُ يبقى هنا: يُرى ويُغيَّر.
+       وما في «بلا تواصل» لا يُعاد هنا: حالةٌ واحدةٌ في قسمين تُقرأ حالتين */
+    const quietIds = new Set(quiet.map((c) => c.id));
     try {
-      setAutoRows(await apiGet<AutoAssignedCase[]>("/api/admin/advisor-cases/auto-assigned"));
+      setAutoRows((await apiGet<AutoAssignedCase[]>("/api/admin/advisor-cases/auto-assigned")).filter((c) => !quietIds.has(c.id)));
     } catch { setAutoRows([]); }
     setLoading(false);
   }, []);
@@ -186,6 +193,53 @@ export default function Exceptions() {
         </div>
         )}
         </>
+      )}
+
+      {/* ── وما لم يتواصل معه مستشارُه (١٩ أكتوبر ٢٠٢٦) ──
+
+          يُذكَّر المستشارُ بعد يومٍ بلا تواصلٍ مسجَّل، وبعد يومين يُبلَّغ من يُسند وتظهر الحالةُ
+          هنا — قبل ما أُسند تلقائيّا، فهي أحقُّ بالنظر: صاحبُها ينتظر. ولا تنتقل وحدَها:
+          قرارُ صاحب المنصّة أن يُغيَّر مستشارُها بيد إنسان (`contact-sla.ts`). */}
+      {!loading && quietRows.length > 0 && (
+        <section className="mt-10">
+          <h2 className="text-base font-black">بلا تواصل منذ يومين</h2>
+          <p className="mt-1 text-read text-muted-foreground">
+            لم يسجل مستشارها تواصلا منذ أسندت إليه. غيّر المستشار أو تابع معه.
+          </p>
+          <div className="mt-4 space-y-3">
+            {quietRows.map((c) => {
+              const current = c.assignments[0];
+              const choice = pick[c.id] ?? "";
+              return (
+                <Card key={c.id} className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="font-black">{c.client?.displayName ?? c.lead?.fullName ?? "—"}</p>
+                    <p className="mt-1 text-read text-muted-foreground" dir="ltr">
+                      {[c.client?.email ?? c.lead?.email, c.lead?.phone].filter(Boolean).join(" · ")}
+                    </p>
+                    <p className="mt-1 text-read text-muted-foreground">
+                      عند: {current?.advisor.displayName ?? "—"}
+                      {current ? ` · أسندت ${fmtDate(new Date(current.assignedAt))}` : ""}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <label className="sr-only" htmlFor={`advisor-quiet-${c.id}`}>غيّر المستشار</label>
+                    <select id={`advisor-quiet-${c.id}`} value={choice}
+                      onChange={(e) => setPick({ ...pick, [c.id]: e.target.value })} className={`${staffSelectCls} max-w-64`}>
+                      <option value="">اختر مستشارا آخر…</option>
+                      {advisors.filter((a) => a.id !== current?.advisorId).map((a) => (
+                        <option key={a.id} value={a.id}>{a.displayName} ({a.email})</option>
+                      ))}
+                    </select>
+                    <Button tone="secondary" disabled={busy || !choice} onClick={() => void assign(c.id)}>
+                      <UserPlus className="h-3.5 w-3.5" /> غيّر
+                    </Button>
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        </section>
       )}
 
       {/* ── وما أسنده النظامُ وحدَه ──
