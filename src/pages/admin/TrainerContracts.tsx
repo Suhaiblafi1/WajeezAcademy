@@ -28,7 +28,7 @@ import {
 } from "@/application/trainer/contract-body";
 import { FINAL_REMINDER_DAYS, daysWindowAr } from "@/application/trainer/notice-periods";
 import { changeGroupsBetween } from "@/application/trainer/contract-changelog";
-import { prepTallyAr, prepTallyDetailAr, type PrepTally } from "@/application/trainer/prep-tally";
+import { prepTallyAr, prepTallyDetailAr, waitingOnThemselves, type PrepTally } from "@/application/trainer/prep-tally";
 import { MATERIALS_MARK_AR, type MaterialsMark } from "@/application/trainer/course-materials";
 import {
   DEFAULT_RESIGN_SUBJECT_AR, RESIGN_BODY_MAX, RESIGN_BODY_MIN, RESIGN_CHANGES_HEADING_AR,
@@ -1233,6 +1233,24 @@ c.gatesActivation
               </div>
             </section>
           )}
+        </Card>
+      )}
+
+      {/* ═══ من يحسب أنّه ينتظرنا ودوراتُه لم تبدأ (١٩ أكتوبر ٢٠٢٦) — العلّةُ عند `waitingOnThemselves` ═══ */}
+      {waitingOnThemselves(contracts).length > 0 && (
+        <Card tone="accent" className="p-4">
+          <h2 className="mb-1 text-lg font-black">لم يبدؤوا إعداد دوراتهم ({waitingOnThemselves(contracts).length})</h2>
+          <p className="mb-2 text-sm text-muted-foreground">
+            اعتمدنا توقيعهم ولم نوقّع العقد بعد، ونوقّعه حين تعتمد دوراتهم. وقد وصلهم بريد قديم يقول إنّ لا شيء عليهم.
+          </p>
+          <ul className="list-disc ps-5 text-sm leading-7">
+            {waitingOnThemselves(contracts).map((c) => (
+              <li key={c.id}>
+                {c.profile?.application?.fullName ?? c.signerLegalName ?? c.title}
+                {c.prepTally ? ` — ${prepTallyDetailAr(c.prepTally)}` : ""}
+              </li>
+            ))}
+          </ul>
         </Card>
       )}
 

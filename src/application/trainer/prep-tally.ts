@@ -66,3 +66,20 @@ export function prepTallyDetailAr(t: PrepTally): string {
     t.declined > 0 ? `اعتذر عن ${t.declined}` : null,
   ].filter((x): x is string => x !== null).join(' · ')
 }
+
+/* ═══ من ينتظر نفسَه وهو يحسب أنّه ينتظرنا (١٩ أكتوبر ٢٠٢٦) ═══
+
+   بلاغُ صاحب المنصّة عن مدرّبةٍ اعتُمد توقيعُها «كالعقود الجديدة»: دوراتُها التسعُ «لم يبدأ»،
+   وبريدُ اعتمادها قال لها «ولا يتغيّر في بوّابتك شيء». وتوقيعُنا معلَّقٌ بإعداد دوراتها — فهي
+   تنتظرنا ونحن ننتظرها. وصُحّح البريدُ لمن يأتي، وطلب أن يُعرف من أصابه قبله: «tell me who».
+
+   فهم: عقدٌ غيرُ مشروطٍ اعتُمد توقيعُه ولم نوقّعه، وفي دوراته ما لم يبدأ. */
+export interface WaitingRow {
+  status: string
+  gatesActivation: boolean
+  prepTally?: PrepTally | null
+}
+
+export function waitingOnThemselves<T extends WaitingRow>(rows: readonly T[]): T[] {
+  return rows.filter((r) => r.status === 'signature_approved' && !r.gatesActivation && (r.prepTally?.notStarted ?? 0) > 0)
+}
