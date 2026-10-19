@@ -156,8 +156,8 @@ export default function TrainerSchedule() {
           <Card as="p" tone="danger" className="mt-3 flex items-start gap-2 text-read leading-6 text-danger-ink">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
             <span>
-              جلسات من شعبتين في وقت واحد — حارس الإسناد لا يمنع جلسة تضاف بعده. راجعها مع الإدارة، أو اقترح تأجيلا من{" "}
-              <Link to="/trainer/board" className="font-bold underline">لوح شعبي</Link>.
+              جلسات من شعبتين في وقت واحد — حارس الإسناد لا يمنع جلسة تضاف بعده. انقل إحداها بنفسك من صفحة شعبتها في{" "}
+              <Link to="/trainer/board" className="font-bold underline">شعبي</Link>، من «اللقاءات».
               {" "}وجلسة بلا نهاية تحسب ساعة واحدة.
             </span>
           </Card>
@@ -257,15 +257,17 @@ export default function TrainerSchedule() {
         </div>
       )}
 
-      {/* ── اقتراحاتُ تأجيلي ومآلُها ── */}
+      {/* ── اقتراحاتُ تأجيلي ومآلُها ──
+          ولا يُقترح تأجيلٌ بعد ١٧ سبتمبر ٢٠٢٦: المدرّبُ ينقل لقاءَه بنفسه (`SessionsAndAttendance`). فما هنا
+          اقتراحاتٌ قديمةٌ بقيت عند الإدارة، والنصُّ يقول ذلك لا «تقترح من بطاقة الجلسة» (١٩ أكتوبر ٢٠٢٦). */}
       {reschedules.length > 0 && (
         <section className="mt-6">
           <h2 className="mb-3 flex items-center gap-2 text-base font-black">
             <CalendarClock className="h-4 w-4 text-gold-ink" aria-hidden="true" /> اقتراحات التأجيل
           </h2>
           <p className="mb-3 text-read leading-6 text-muted-foreground">
-            تقترح من بطاقة الجلسة في <Link to="/trainer/board" className="font-bold underline">لوح شعبي</Link> —
-            و<b className="text-foreground">الموعد لا يتغيّر عند المتعلّمين حتّى تعتمده الإدارة</b>.
+            اقتراحات أرسلتها قبل أن يصير نقل اللقاء بيدك. <b className="text-foreground">ولا يتغير موعدها عند المتعلمين حتى تعتمدها الإدارة</b>.
+            {" "}واليوم تنقل اللقاء بنفسك من صفحة شعبته في <Link to="/trainer/board" className="font-bold underline">شعبي</Link>.
           </p>
           <ul className="space-y-3">
             {reschedules.map((r) => (

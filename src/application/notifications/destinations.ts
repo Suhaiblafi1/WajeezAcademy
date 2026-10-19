@@ -104,9 +104,8 @@ const TRAINER: Table = {
   'trainer.assigned': { path: '/trainer/board', ctaAr: 'افتح شعبتك الجديدة' },
   'cohort.plan.submitted': { path: '/trainer/board', ctaAr: 'افتح خطّة شعبتك' },
   'cohort.plan.decision': { path: '/trainer/board', ctaAr: 'اقرأ قرار الخطّة' },
-  /* ولقاءاتُ المدرّب المنتظِرةُ وقرارُها — وجهتُها لوحُه لا لوحُ الإدارة:
-     `cohort.session.pending` يصل الإدارةَ، وشاشتُها شعبةُ اللقاء نفسِها. */
-  'cohort.session.pending': { path: '/admin/cohorts', ctaAr: 'راجع اللقاء واعتمده' },
+  /* وقرارُ الإدارة في لقاءاته — وجهتُه لوحُه لا لوحُ الإدارة. و`cohort.session.pending` يصل الإدارةَ، فوجهتُه في
+     جدول الفريق أدناه (كانت هنا فخرج إليها بلا زرّ — ١٩ أكتوبر ٢٠٢٦). */
   'cohort.session.approved': { path: '/trainer/board', ctaAr: 'افتح لقاءات شعبتك' },
   'cohort.session.rejected': { path: '/trainer/board', ctaAr: 'اقرأ الملاحظة وأعد جدولته' },
   /* وقرارُ الإدارة في مهمّته بعد الاعتماد (٣ج-٣) — مهامُّه في شعبته من لوحه */
@@ -129,6 +128,14 @@ const TRAINER: Table = {
   /* وإعلانُ الإدارة (٤ أكتوبر ٢٠٢٦) — يُفتح في نافذته فوق بوّابته، ولو قرأه من قبل
      (`?announcement=` أدناه، و`TrainerAnnouncement.tsx`) */
   'trainer.announcement': { path: '/trainer', ctaAr: 'اقرأ الإعلان' },
+  /* ═══ وخمسةٌ كانت في جدول الفريق (١٩ أكتوبر ٢٠٢٦) ═══
+     تُرسَل إلى المدرّب (`audience: 'trainer'`)، ووجهاتُها في جدول `STAFF` — فخرجت إليه بلا زرّ: الوجهةُ تُقرأ
+     من جدول جمهورها وحدَه (`destinationFor`). */
+  'trainer.public_text.approved': { path: '/trainer/account', ctaAr: 'افتح إعدادات الحساب' },
+  'trainer.public_text.rejected': { path: '/trainer/account', ctaAr: 'عدّل نبذتك' },
+  'trainer.contract.materials_returned': { path: '/trainer', ctaAr: 'اقرأ الملاحظات وعدّل' },
+  'trainer.contract.condition_extended': { path: '/trainer', ctaAr: 'افتح بوّابتك' },
+  'trainer.contract.condition_days_granted': { path: '/trainer/board', ctaAr: 'افتح «شعبي»' },
 }
 
 const STAFF: Table = {
@@ -155,12 +162,7 @@ const STAFF: Table = {
   'trainer.prep.activation_blocked': { path: '/admin/trainer-contracts', ctaAr: 'افتح عقود المدرّبين' },
   'trainer.prep.seal_blocked': { path: '/admin/trainer-contracts', ctaAr: 'افتح عقود المدرّبين' },
   'trainer.public_text.submitted': { path: '/admin/trainer-run', ctaAr: 'اقرأ النبذة واعتمدها' },
-  'trainer.public_text.approved': { path: '/trainer/account', ctaAr: 'افتح إعدادات الحساب' },
-  'trainer.public_text.rejected': { path: '/trainer/account', ctaAr: 'عدّل نبذتك' },
   'trainer.data_choice.made': { path: '/admin/trainer-contracts', ctaAr: 'افتح عقود المدرّبين' },
-  'trainer.contract.materials_returned': { path: '/trainer', ctaAr: 'اقرأ الملاحظات وعدّل' },
-  'trainer.contract.condition_extended': { path: '/trainer', ctaAr: 'افتح بوّابتك' },
-  'trainer.contract.condition_days_granted': { path: '/trainer/board', ctaAr: 'افتح «شعبي»' },
   'trainer.contract.amendment_requested': { path: '/admin/trainer-contracts', ctaAr: 'اقرأ ما طلب تعديله' },
   'trainer.contract.name_correction_requested': { path: '/admin/trainer-contracts', ctaAr: 'طابق هويّته وأعده مصحّحا' },
   /* والمحذوفُ لا صفَّ له يُفتح — فالوجهةُ القائمةُ نفسُها */
@@ -190,6 +192,8 @@ const STAFF: Table = {
   'cohort.plan.submitted': { path: '/admin/pending-plans', ctaAr: 'اقرأ الخطّة وقرّر' },
   /* ومهامُّ ما بعد الاعتماد تنتظر في بطاقة الشعبة نفسِها (٣ج-٣) */
   'cohort.assessment.pending': { path: '/admin/cohorts', ctaAr: 'راجع المهامّ واعتمدها' },
+  /* ولقاءُ مدرّبٍ ينتظر الاعتماد — شاشتُه شعبةُ اللقاء نفسِها (`notifyAdminsOfPendingSession`) */
+  'cohort.session.pending': { path: '/admin/cohorts', ctaAr: 'راجع اللقاء واعتمده' },
 }
 
 const BY_AUDIENCE: Record<MailAudience, Table> = {

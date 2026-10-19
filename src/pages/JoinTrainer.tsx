@@ -31,7 +31,7 @@ import {
 import DateField from "@/components/ui/DateField";
 import { clearDraft, draftHasContent, loadDraft, saveDraft } from "@/application/trainer/application-draft";
 import {
-  APPLICANT_STATUS, BOOKABLE_STATUSES, CONTACT_CHANNELS, INTERVIEW_BOOKING_PAUSE,
+  APPLICANT_STATUS, BOOKABLE_STATUSES, CONTACT_CHANNELS, INTERVIEW_BOOKING_INVITE_ONLY, INTERVIEW_BOOKING_PAUSE,
   RECORDING_ANSWERS, RECORDINGS_WHY, recordingAnswerPatch, TRAINING_SEASONS, WANTS_RECORDING_ANSWERS,
   type ContactChannel,
 } from "@/application/trainer/application-options";
@@ -852,14 +852,17 @@ export default function JoinTrainer() {
               لا موعدَ يُحجَز ولا محطّةَ رابعة: ما بقي علينا نحن، في شهرٍ مسمّى.
               فلا «بقيت خطوة» ولا شريطَ يضيء «حجز لقاء التعارف». (`intake-closed.ts`) */}
           <h1 className="mt-6 text-2xl font-black">
-            {deferredNow || INTERVIEW_BOOKING_PAUSE.active ? "وصل طلبك — شكرا لك" : "وصل طلبك — وبقيت خطوة واحدة"}
+            {/* وبالدعوة وحدَها (`INTERVIEW_BOOKING_INVITE_ONLY`) لا تقويمَ تحته — فلا «بقيت خطوة» (١٩ أكتوبر ٢٠٢٦) */}
+            {deferredNow || INTERVIEW_BOOKING_PAUSE.active || INTERVIEW_BOOKING_INVITE_ONLY.active ? "وصل طلبك — شكرا لك" : "وصل طلبك — وبقيت خطوة واحدة"}
           </h1>
           <p className="mt-3 text-sm leading-7 text-muted-foreground">
             {deferredNow
               ? "طلبك كامل ولا ينقصه شيء."
               : INTERVIEW_BOOKING_PAUSE.active
                 ? "شكرا لك. طلبك كامل ولا ينقصه شيء. حجز المواعيد متوقف مؤقتا لأنها امتلأت — التفاصيل أدناه."
-                : "شكرا لك. طلبك كامل، وبقي أن تختار موعد لقاء التعارف من التقويم أدناه."}
+                : INTERVIEW_BOOKING_INVITE_ONLY.active
+                  ? "شكرا لك. طلبك كامل ولا ينقصه منك شيء. نقرأ ملفك، وإن رغبنا بلقائك وصلك رابط حجز لقاء التعارف على بريدك."
+                  : "شكرا لك. طلبك كامل، وبقي أن تختار موعد لقاء التعارف من التقويم أدناه."}
           </p>
           {!deferredNow && <StepBar current={4} className="mt-6 text-right" />}
           <Card as="p" tone="warn" className="mt-4">
@@ -1819,8 +1822,9 @@ export default function JoinTrainer() {
               بتقويمٍ لن يُفتح، ويقول الزرُّ وسطرُ النقص «أرسل». (`intake-closed.ts`) */}
           {step === 3 && !(closed || INTERVIEW_BOOKING_PAUSE.active) && (
             <Inset as="p" tone="accent" className="text-read leading-6 text-foreground">
-              بعد هذا الزر تختار موعد لقاء التعارف من التقويم، وهي آخر خطوة.
-              يصلك التأكيد ودعوة التقويم فورا.
+              {!INTERVIEW_BOOKING_INVITE_ONLY.active
+                ? "بعد هذا الزر تختار موعد لقاء التعارف من التقويم، وهي آخر خطوة. يصلك التأكيد ودعوة التقويم فورا."
+                : "بعد هذا الزر يصل طلبك إلى فريقنا. وإن رغبنا بلقائك وصلك رابط حجز لقاء التعارف على بريدك."}
             </Inset>
           )}
 
@@ -1858,14 +1862,14 @@ export default function JoinTrainer() {
               <Button tone="primary" key="send"
                 type="submit" disabled={busy} className="disabled:cursor-not-allowed">
                 {busy ? <Loader2 className="h-4 w-4 animate-spin" />
-                  : closed || INTERVIEW_BOOKING_PAUSE.active ? <Check className="h-4 w-4" />
+                  : closed || INTERVIEW_BOOKING_PAUSE.active || INTERVIEW_BOOKING_INVITE_ONLY.active ? <Check className="h-4 w-4" />
                   : <CalendarClock className="h-4 w-4" />}
                 {/* والزرُّ يتبع المفتاح: ما دام الحجزُ موقوفا فما بعده إرسالٌ
                     لا حجز، وزرٌّ يقول «احجز» ثمّ يفتح إشعارَ وقفٍ خُلفٌ للوعد
                     — وهو العطبُ الذي كُتب له هذا الزرُّ أصلا، مقلوبا. وكذلك
                     إغلاقُ الاستقبال (١٩ أكتوبر ٢٠٢٦): بعده «نتواصل في ديسمبر»
-                    لا تقويم. */}
-                {busy ? "نحفظ طلبك…" : closed || INTERVIEW_BOOKING_PAUSE.active ? "أرسل طلبك" : "احجز موعد لقاء التعارف"}
+                    لا تقويم. والدعوةُ وحدَها كذلك: لا تقويمَ بعد الإرسال. */}
+                {busy ? "نحفظ طلبك…" : closed || INTERVIEW_BOOKING_PAUSE.active || INTERVIEW_BOOKING_INVITE_ONLY.active ? "أرسل طلبك" : "احجز موعد لقاء التعارف"}
               </Button>
             )}
           </div>

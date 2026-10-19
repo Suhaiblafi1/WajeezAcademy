@@ -103,13 +103,17 @@ describe('⑤ وزرُّ الإرسال لا يَعِد بحجز', () => {
 
   it('⚠️ والزرُّ يقول «أرسل طلبك» حين يُغلق الاستقبال — و«احجز» في الفرع الآخر وحدَه', () => {
     expect(send.length, 'لم يوجد زرّ الإرسال').toBeGreaterThan(0)
-    expect(send).toMatch(/closed \|\| INTERVIEW_BOOKING_PAUSE\.active \? "أرسل طلبك" : "احجز موعد لقاء التعارف"/)
+    /* والدعوةُ وحدَها (`INTERVIEW_BOOKING_INVITE_ONLY`) طرفُ الإرسال كذلك — اجتمع الحارسان عند الدمج
+       (١٩ أكتوبر ٢٠٢٦، `interview-booking-pause.test.ts`): لا تقويمَ بعد الزرّ في أيٍّ منها. */
+    expect(send).toMatch(/closed \|\| INTERVIEW_BOOKING_PAUSE\.active(?: \|\| INTERVIEW_BOOKING_INVITE_ONLY\.active)? \? "أرسل طلبك" : "احجز موعد لقاء التعارف"/)
     expect(send.split('احجز موعد لقاء التعارف').length - 1, '«احجز» خارج الشرط').toBe(1)
   })
 
   it('⚠️ ولا سطرَ يَعِد بالتقويم فوقه', () => {
     const i = src.indexOf('بعد هذا الزر تختار موعد لقاء التعارف')
     expect(i).toBeGreaterThan(-1)
-    expect(src.slice(Math.max(0, i - 200), i)).toMatch(/step === 3 && !\(closed \|\| INTERVIEW_BOOKING_PAUSE\.active\) && \(/)
+    /* والنافذةُ ٣٢٠ لا ٢٠٠ (١٩ أكتوبر ٢٠٢٦): بين الشرط والسطر طرفُ الدعوة وحدَها
+       (`INTERVIEW_BOOKING_INVITE_ONLY`) — والشرطُ المحروسُ هو هو. */
+    expect(src.slice(Math.max(0, i - 320), i)).toMatch(/step === 3 && !\(closed \|\| INTERVIEW_BOOKING_PAUSE\.active\) && \(/)
   })
 })

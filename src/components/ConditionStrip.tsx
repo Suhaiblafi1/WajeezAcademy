@@ -59,12 +59,6 @@ export interface ConditionContract {
   conditionMetAt?: string | null;
 }
 
-export interface OnboardingTask {
-  key: string;
-  title: string;
-  doneAt?: string | null;
-}
-
 /* نبرةُ الشريط تتبع الطور: المنقضيةُ تحذيرٌ يُرى، والمجمَّدةُ انتظارٌ
    هادئ، والسائرةُ تذكيرٌ لا إنذار. */
 const TONE: Record<ConditionPhase, "warn" | "accent" | "default"> = {
@@ -84,10 +78,9 @@ const ICON: Record<ConditionPhase, typeof AlarmClock> = {
 };
 
 export default function ConditionStrip({
-  contract, tasks = [], onDone,
+  contract, onDone,
 }: {
   contract: ConditionContract | null | undefined;
-  tasks?: OnboardingTask[];
   onDone: () => void;
 }) {
   const [busy, setBusy] = useState<"extend" | null>(null);
@@ -98,7 +91,6 @@ export default function ConditionStrip({
 
   const phase = conditionPhase(contract);
   const Icon = ICON[phase];
-  const missing = tasks.filter((t) => !t.doneAt);
 
 
   const extend = async () => {
@@ -126,11 +118,9 @@ export default function ConditionStrip({
             ترسل كلّ شعبة من خطوتها الأخيرة في «شعبي» — وحين ترسل آخرها تتجمّد مهلتك بنفسها.
           </p>
         )}
-        {missing.length > 0 && (
-          <p className="mt-1 text-read leading-6 text-muted-foreground">
-            وبقي من مهامّ تهيئتك: {missing.map((t) => t.title).join(" · ")}
-          </p>
-        )}
+        {/* وكان هنا «وبقي من مهامّ تهيئتك: …» — ثلاثُ مهامّ (التعريفُ بالمنهجيّة، وتهيئةُ الحساب، وموجزُ
+            الشعبة الأولى) لا زرَّ ينجزها ولا مسلكَ يختمها، والرابعةُ (التوقيعُ) منجَزةٌ قبل أن تُفتح البوّابة.
+            فكان السطرُ يعرض على كلّ مدرّبٍ ما لا يستطيع إنجازَه أبدا، فحُذف (١٩ أكتوبر ٢٠٢٦). */}
       </div>
       <div className="flex shrink-0 flex-wrap items-center gap-2">
         {canAskExtension(contract) && (

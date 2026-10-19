@@ -225,7 +225,8 @@ export function buildWorkQueue(
         titleAr: `${arCount(missing.length, 'متعلم واحد لم يسلّم', 'متعلمين لم يسلّموا')} «${a.title}»`,
         detailAr: `${c.title} · استحق ${fmtDate(new Date(a.dueAt))}`,
         actionAr: 'ذكّرهم',
-        href: `/trainer/cohort/${c.id}`,
+        /* والتذكيرُ رسالة — ومركزُ المراسلة في «طلبتي» لا في صفحة الشعبة (١٩ أكتوبر ٢٠٢٦) */
+        href: `/trainer/learners?cohort=${c.id}`,
         external: false,
         urgency: 30,
         count: missing.length,
