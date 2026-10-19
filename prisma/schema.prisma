@@ -3714,6 +3714,8 @@ model ContactEvent {
   direction String      @default("out") // out | in
   summary   String
   createdBy String?     @db.Uuid
+  /// manual | whatsapp_hook — سجّله المستشارُ بيده، أو أخبرت به منصّةُ المحادثات (`whatsapp-hook.service.ts`)
+  source    String      @default("manual")
   createdAt DateTime    @default(now())
   case      AdvisorCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
 
