@@ -11,7 +11,7 @@
 export const FIRST_TIME_PROMO = {
   code: 'WA2026',
   percentOff: 10,
-  /** لمن لم يشترِ من قبل — القيد يُطبَّق عند الفوترة لا في العرض */
+  /** لمن لم يشترِ من قبل — القيد يُطبَّق عند الفوترة لا في العرض (`server/services/commerce/first-purchase.ts`) */
   labelAr: 'لأول عملية شراء',
 } as const
 

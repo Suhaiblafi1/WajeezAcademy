@@ -20,6 +20,7 @@ import { PlanService } from './plan.service'
 import { CartService } from './commerce/cart.service'
 import { TrainerDiscountService } from './trainer-discount.service'
 import { assertCouponUsable, num } from './commerce/cart-types'
+import { assertFirstPurchase } from './commerce/first-purchase'
 import { applyCodeRefund, markCodeUsePaid, releaseCouponUse, reserveCouponUse } from './commerce/coupon-ledger'
 import { nextInvoiceNumber } from './commerce/invoice-number'
 import { refundedShare } from '../../src/application/trainer/trainer-code'
@@ -215,6 +216,7 @@ export class CommerceService {
       assertCouponUsable(coupon, userId)
       /* الفحصُ يرمي عند الغياب — فما بعده كوبونٌ موجود */
       if (!coupon) throw new AuthError('bad_coupon', 'الكوبون غير صالح')
+      await assertFirstPurchase(this.prisma, coupon, userId)
       if (coupon.trainerCode) throw new AuthError('trainer_code_checkout_only', TRAINER_CODE_CHECKOUT_ONLY_AR, 409)
       couponMaxUses = coupon.maxUses
       discount = coupon.percentOff ? Math.round((subtotal * coupon.percentOff) / 100 * 100) / 100 : num(coupon.amountOff)
@@ -511,6 +513,7 @@ export class CommerceService {
       assertCouponUsable(coupon, req.userId)
       /* الفحصُ يرمي عند الغياب — فما بعده كوبونٌ موجود */
       if (!coupon) throw new AuthError('bad_coupon', 'الكوبون غير صالح')
+      await assertFirstPurchase(this.prisma, coupon, req.userId)
       if (coupon.trainerCode) throw new AuthError('trainer_code_checkout_only', TRAINER_CODE_CHECKOUT_ONLY_AR, 409)
       couponMaxUses = coupon.maxUses
       const price = num(req.cohort.price)
