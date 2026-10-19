@@ -20,7 +20,7 @@ import {
   AMENDMENT_ACCEPT_REVOKE_REASON_AR, hasAmendmentPlaceholder, versionReadByRequester,
 } from '../../src/application/trainer/contract-resign'
 import {
-  bookingReminderMail, decisionMailFor, deferralMail, demoRequestMail, draftReminderMail, noShowFollowupMail, rejectionUndoneMail, withdrawalUndoneMail, conditionalOfferMail, finalApprovalMail, conditionReminderMail, conditionLapsedMail, conditionDaysGrantedMail, signedCopyMail, amendmentAnsweredMail, contractApprovedMail,
+  bookingReminderMail, decisionMailFor, deferralMail, intakeDeferralMail, demoRequestMail, draftReminderMail, noShowFollowupMail, rejectionUndoneMail, withdrawalUndoneMail, conditionalOfferMail, finalApprovalMail, conditionReminderMail, conditionLapsedMail, conditionDaysGrantedMail, signedCopyMail, amendmentAnsweredMail, contractApprovedMail,
   contractRevokedMail, contractUpdatedMail, contractResignMail, contractFinalReminderMail,
   contractLapsedMail, contractFactsRows, contractSealedLaterMail, finalApprovalBellAr, type FinalApprovalSeal } from './trainer-decision-mail'
 import {
@@ -30,6 +30,9 @@ import { MAIL_LINK_TTL_MS, MAIL_LINK_WINDOW_AR } from '../../src/application/lin
 import { canRemindToBook, TRAINER_INTERVIEW, trainerInterviewUrl } from '../../src/application/trainer/application-options'
 import { REVIEW_OPEN_STATUSES } from '../../src/application/trainer/approval'
 import { deferredFollowUpAt } from '../../src/application/trainer/deferral'
+import {
+  INTAKE_DEFER_NOTE_AR, intakeClosed, intakeFollowUpAt, type DeferReason,
+} from '../../src/application/trainer/intake-closed'
 import { NO_SHOW } from '../../src/application/trainer/interview-outcome'
 import { OUTREACH_ACTIONS } from '../../src/application/trainer/outreach'
 import { INVITATION_ACTION } from '../../src/application/trainer/interview-invitation'
@@ -212,6 +215,8 @@ export interface DecideOptions {
   /** ما طابقه المعتمِدُ بوثيقة الهويّة — يأتي من شاشة العقود وحدَها، ويُكتب
       في ملحوظة خَتمِ العرض. ولا معنى له في قرارٍ لا عرضَ مشروطَ فيه. */
   sealNoteAr?: string | null
+  /** سببُ التأجيل — «لا طلب كاف» افتراضا، أو «أغلقنا الاستقبال» ما دام مغلقا (`intake-closed.ts`) */
+  deferReason?: DeferReason
 }
 
 export const RUBRIC_CRITERIA = [
@@ -993,6 +998,13 @@ export class TrainerReviewService {
     if (action === 'defer' && app.status === 'deferred') {
       throw new AuthError('already_deferred', 'الطلب مؤجّل أصلا إلى الفصول القادمة — ولا يرسل إليه بريد التأجيل ثانية', 409)
     }
+    /* ═══ و«أغلقنا الاستقبال» سببٌ ما دام مغلقا (١٩ أكتوبر ٢٠٢٦) ═══
+
+       بعد موعد التواصل يَعِد البريدُ بديسمبرَ مضى — فيُردّ هنا كما تُخفيه الشاشة. */
+    const intakeDefer = action === 'defer' && opts.deferReason === 'intake_closed'
+    if (intakeDefer && !intakeClosed(new Date())) {
+      throw new AuthError('intake_open', 'استقبال الطلبات مفتوح الآن — اختر سببا آخر للتأجيل', 409)
+    }
 
     /* ═══ ولكلّ نهايةٍ بابُها — لا يُفتح بغيره (٢٩ سبتمبر ٢٠٢٦) ═══
 
@@ -1207,9 +1219,13 @@ export class TrainerReviewService {
 
     /* وسببُ التجاوز يُكتب في سجلّ الحالة مع الملاحظة — فالأثرُ يُقرأ بصلاحيّة،
        وسجلُّ الحالة يُقرأ في ملفّ المدرّب أمام من يفتحه. */
+    /* والتأجيلُ لإغلاق الاستقبال يبدأ سطرُه بعلامته — بها تقرؤه صفحةُ حالته
+       (`deferredByIntake`)، وملاحظةُ المراجع بعدها */
     const transitionNote = overrideReason
       ? [note?.trim(), `تجاوز بوّابة التجهيز: ${overrideReason}`].filter(Boolean).join(' — ')
-      : note
+      : intakeDefer
+        ? [INTAKE_DEFER_NOTE_AR, note?.trim()].filter(Boolean).join(' — ')
+        : note
     /* ═══ ومن طُلبت منه معلوماتٌ يعود إلى حيث كان (٢٢ سبتمبر ٢٠٢٦) ═══
 
        لمّا فُتح طلبُ المعلومات من كلّ حالةٍ حيّة — ومنها ما بعد القبول
@@ -1232,7 +1248,11 @@ export class TrainerReviewService {
       })
     }
 
-    await this.apps.transition(applicationId, targets[action], actorId, transitionNote)
+    await this.apps.transition(
+      applicationId, targets[action], actorId, transitionNote, undefined,
+      /* وموعدُه موعدُ الإغلاق — لا «قبل الفصل الذي بعد القادم» من يوم القرار */
+      intakeDefer ? intakeFollowUpAt() : undefined,
+    )
 
     /* رفعُ الإيقاف يُعيد الملفَّ والحساب معا — وإلّا بقي «نشطا» وحسابُه موقوف */
     if (action === 'reinstate') {
@@ -1349,11 +1369,13 @@ export class TrainerReviewService {
         where: { id: applicationId }, select: { deferredFollowUpAt: true },
       })
       const followUpAt = fresh?.deferredFollowUpAt ?? deferredFollowUpAt(new Date())
-      const mail = deferralMail({ fullName: app.fullName, reference: app.reference, followUpAt, noteAr: note })
+      const mail = intakeDefer
+        ? intakeDeferralMail({ fullName: app.fullName, reference: app.reference, noteAr: note })
+        : deferralMail({ fullName: app.fullName, reference: app.reference, followUpAt, noteAr: note })
       const sent = await sendDirectEmail(this.prisma, { to: app.email, subject: mail.subject, ...renderMail(mail.doc) })
       await recordAudit(this.prisma, {
         actorId, action: 'trainer.deferral.notify', entityType: 'trainer_application', entityId: applicationId,
-        meta: { followUpAt: followUpAt.toISOString(), emailDelivery: sent.status },
+        meta: { followUpAt: followUpAt.toISOString(), emailDelivery: sent.status, reason: intakeDefer ? 'intake_closed' : 'demand' },
       })
       return { emailDelivery: sent.status }
     }

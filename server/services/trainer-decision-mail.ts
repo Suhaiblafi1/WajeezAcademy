@@ -36,6 +36,9 @@ import { INTERVIEW_BOOKING_PAUSE, TRAINER_INTERVIEW } from '../../src/applicatio
 import { INTERVIEW_INVITATION, invitationAskAr } from '../../src/application/trainer/interview-invitation'
 import type { NoShowFollowup } from '../../src/application/trainer/no-show-followup'
 import { INTEREST_CHOICES, followUpTermAr } from '../../src/application/trainer/deferral'
+import {
+  INTAKE_CLOSED_AFTER_AR, INTAKE_CLOSED_PROMISE_AR, INTAKE_CLOSED_TITLE_AR, TRAINER_INTAKE_CLOSED,
+} from '../../src/application/trainer/intake-closed'
 import { fmtDateWith } from '../../src/application/text/format-ar'
 import { MAX_EXTENSIONS, grantDaysAr } from '../../src/application/trainer/conditional-offer'
 import { ACADEMY_ZONE } from '../../src/application/trainer/cohort-period'
@@ -178,6 +181,37 @@ export function deferralMail(input: {
           rows: [
             { label: 'رقم الطلب', value: input.reference },
             { label: 'موعد تواصلنا', value: `قبل ${termAr}` },
+          ],
+        },
+      ],
+    },
+  }
+}
+
+/* ═══ التأجيلُ لإغلاق الاستقبال — سببٌ ثانٍ يختاره المراجع (١٩ أكتوبر ٢٠٢٦) ═══
+
+   لمن قدّم قبل الإغلاق ولم يُلقَ بعد. يقول له ما يُقال لمن يقدّم اليوم بلفظه ووعده
+   (`intake-closed.ts`) — لا «الطلب على دوراتك قليل»، فذاك سببٌ آخرُ لم يقع له.
+   والملاحظةُ تصله بنصّها في إطارٍ كملاحظة التأجيل. */
+export function intakeDeferralMail(input: {
+  fullName: string; reference: string; noteAr?: string
+}): DecisionMail {
+  const note = input.noteAr?.trim()
+  return {
+    subject: `أجّلنا طلبك إلى ${TRAINER_INTAKE_CLOSED.nextTermAr} (${input.reference})`,
+    doc: {
+      greetingName: input.fullName,
+      preheader: `${INTAKE_CLOSED_TITLE_AR} — ونتواصل معك في ${TRAINER_INTAKE_CLOSED.contactMonthAr}.`,
+      heading: INTAKE_CLOSED_TITLE_AR,
+      blocks: [
+        { kind: 'p', text: 'شكرا لوقتك وصبرك. أجّلنا طلبك إلى الفصل القادم.' },
+        { kind: 'p', text: `${INTAKE_CLOSED_PROMISE_AR} ${INTAKE_CLOSED_AFTER_AR}` },
+        ...(note ? ([{ kind: 'h', text: 'ملاحظة من فريقنا' }, { kind: 'callout', text: note }] as const) : []),
+        {
+          kind: 'facts',
+          rows: [
+            { label: 'رقم الطلب', value: input.reference },
+            { label: 'موعد تواصلنا', value: `${TRAINER_INTAKE_CLOSED.contactMonthAr} — قبل ${TRAINER_INTAKE_CLOSED.nextTermAr}` },
           ],
         },
       ],

@@ -33,6 +33,7 @@ import { getCalendlyConfig, getCalendlySync } from '../../services/integrations.
 import { AMENDMENT_TEXT_MAX } from '../../../src/application/trainer/contract-endings'
 import { RESIGN_BODY_MAX, RESIGN_BODY_MIN, RESIGN_SUBJECT_MAX, RESIGN_SUBJECT_MIN } from '../../../src/application/trainer/contract-resign'
 import { SPECIAL_TERMS_MAX_CHARS } from '../../../src/application/trainer/contract-body'
+import { DEFER_REASON_VALUES } from '../../../src/application/trainer/intake-closed'
 
 /* اختياريّةٌ: النقصُ جائزٌ كما في `assertRubric`. وصارمةٌ: المفتاحُ المجهولُ
    يُرَدّ في الحاجز كما يُرَدّ في الخدمة — ولا يُقبل صامتا فيضيع. */
@@ -356,12 +357,15 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
          والرتبةُ تُقرأ هنا لا هناك: الحاجزُ يعرف الرتب، والخدمةُ لا تعرفها.
          وردُّه في الخدمة يجعل الحكمَ واحدا مهما تعدّدت أبوابُ النداء. */
       overrideReasonAr: z.string().trim().max(500).optional(),
+      /* سببُ التأجيل — يُقرأ مع `defer` وحدَه (`intake-closed.ts`) */
+      deferReason: z.enum(DEFER_REASON_VALUES).optional(),
     }).parse(req.body)
     /* وحالُ بريد القرار يُعاد كما ردّه الإرسالُ — لا تُكتب الشاشةُ «أُبلغ»
        على ظنٍّ (`src/application/notifications/delivery.ts`). */
     const outcome = await review.decide(id, req.auth!.userId, body.action, body.note, {
       overrideReasonAr: body.overrideReasonAr,
       actorRoles: req.auth!.roles,
+      deferReason: body.deferReason,
     })
     return { ok: true, ...outcome }
   })

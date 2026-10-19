@@ -85,12 +85,45 @@ export const INTAKE_DEFER_NOTE_AR = `استقبال الطلبات مغلق له
 /** شرحُ حالته في صفحة المتابعة — بلفظ ما قيل له عند الإرسال */
 export const INTAKE_DEFERRED_EXPLAIN_AR = `${INTAKE_CLOSED_TITLE_AR}. ${INTAKE_CLOSED_PROMISE_AR} ${INTAKE_CLOSED_AFTER_AR}`
 
-/** أمؤجَّلٌ بإغلاق الاستقبال؟ — الحالةُ مؤجَّلة، وآخرُ دخولٍ فيها سطرُ الإغلاق */
+/** أمؤجَّلٌ بإغلاق الاستقبال؟ — الحالةُ مؤجَّلة، وآخرُ دخولٍ فيها يبدأ بسطر الإغلاق.
+    «يبدأ» لا «يساوي»: المراجعُ يؤجّل بهذا السبب ويضيف ملاحظتَه بعده. */
 export function deferredByIntake(app: {
   status: string
   statusHistory: readonly { toStatus: string; note: string | null }[]
 }): boolean {
   if (app.status !== 'deferred') return false
   const last = [...app.statusHistory].reverse().find((h) => h.toStatus === 'deferred')
-  return last?.note === INTAKE_DEFER_NOTE_AR
+  return last?.note?.startsWith(INTAKE_DEFER_NOTE_AR) ?? false
+}
+
+/* ═══ وسببُ التأجيل يُختار — لمن قدّم قبل الإغلاق (١٩ أكتوبر ٢٠٢٦) ═══
+
+   سأل صاحبُ المنصّة عمّن قدّموا قبل الإغلاق وما زالوا ينتظرون لقاءً لم يقع: أفي
+   التأجيل سببٌ يقول «أغلقنا الاستقبال» كسبب «لا طلب»؟ ولم يكن: زرُّ التأجيل — فرديّا
+   وجماعيّا — يرسل سببا واحدا («لا نتوقّع طلبا كافيا على دوراتك»). فاختار من ثلاثة
+   بدائل أن يُختار السببُ في الزرّ نفسِه، ويختار هو من يصله أيُّهما.
+
+   و«أغلقنا الاستقبال» يقول ما يقوله لمن يقدّم اليوم، بموعده (`intakeFollowUpAt`)، ويُكتب
+   سطرُه في السجلّ فتقرؤه صفحةُ حالته (`deferredByIntake`). ولا يُعرض إلّا والاستقبالُ
+   مغلق — والخادمُ يردّه بعدها. */
+
+export const DEFER_REASONS = [
+  {
+    value: 'demand',
+    labelAr: 'لا يوجد طلب كاف على دوراته',
+    whatAr: 'يصله بريد بأن الطلب على دوراته قليل في الفصل القادم، وأننا نتواصل معه قبل الفصل الذي بعده.',
+  },
+  {
+    value: 'intake_closed',
+    labelAr: INTAKE_CLOSED_TITLE_AR,
+    whatAr: `يصله بريد بأننا توقفنا عن استقبال الطلبات لهذا الفصل، وأننا نتواصل معه في ${TRAINER_INTAKE_CLOSED.contactMonthAr} لينضم إلى ${TRAINER_INTAKE_CLOSED.nextTermAr}.`,
+  },
+] as const
+
+export type DeferReason = (typeof DEFER_REASONS)[number]['value']
+export const DEFER_REASON_VALUES = DEFER_REASONS.map((r) => r.value) as [DeferReason, ...DeferReason[]]
+
+/** الأسبابُ المعروضةُ الآن — «أغلقنا الاستقبال» ما دام مغلقا وحدَه */
+export function deferReasonsNow(now: Date = new Date()): readonly (typeof DEFER_REASONS)[number][] {
+  return intakeClosed(now) ? DEFER_REASONS : DEFER_REASONS.filter((r) => r.value !== 'intake_closed')
 }

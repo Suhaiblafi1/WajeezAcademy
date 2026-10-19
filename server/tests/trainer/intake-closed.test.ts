@@ -7,6 +7,9 @@
    ② **وصفحةُ حالته تعرفه** — `intakeDeferred` له، ولا لمن أجّله مراجع.
    ③ **والوعدُ يُوفى** — في موعده يسأله العاملُ «أما زلتَ مهتمّا؟».
    ④ **والمفتاحُ يعمل** — `TRAINER_INTAKE=open` يعيد الطريقَ العاديّ، ومضيُّ الموعد كذلك.
+   ⑤ **ومن قدّم قبل الإغلاق يؤجَّل بسببه** — المراجعُ يختار «أغلقنا الاستقبال» في زرّ
+      التأجيل: موعدُ ديسمبر، وسطرُ الإغلاق في السجلّ وبعده ملاحظتُه، وصفحةُ حالته تعرفه.
+      و«لا طلب كاف» يبقى كما كان، والسببُ يُردّ بعد موعد التواصل.
 
    والساعةُ مثبَّتةٌ (`Date` وحدَه): الإغلاقُ ينتهي يومَ موعده، فلا يسقط الاختبارُ
    يومَ يمضي ديسمبر. ومتغيّرُ البيئة يُمحى هنا — `vitest.server.config.ts` يفتحه للبقيّة. */
@@ -172,5 +175,63 @@ describe('④ والمفتاحُ يعمل', () => {
     } finally {
       vi.setSystemTime(OCT_20)
     }
+  })
+})
+
+describe('⑤ ومن قدّم قبل الإغلاق يؤجَّل بسببه', () => {
+  /** متقدّمٌ سبق الإغلاق: قدّم والاستقبالُ مفتوح، فطلبُه في الطابور ينتظر */
+  async function earlier(email: string, fullName: string) {
+    process.env.TRAINER_INTAKE = 'open'
+    try {
+      const a = await apply(email, fullName)
+      await prisma.trainerApplication.update({ where: { id: a.id }, data: { emailVerifiedAt: new Date() } })
+      return a
+    } finally {
+      delete process.env.TRAINER_INTAKE
+    }
+  }
+  const lastDeferNote = async (id: string) => (await prisma.trainerStatusHistory.findFirst({
+    where: { applicationId: id, toStatus: DEFERRED }, orderBy: { createdAt: 'desc' }, select: { note: true },
+  }))?.note
+
+  it('⚠️ «أغلقنا الاستقبال»: موعدُ ديسمبر، وسطرُ الإغلاق ثمّ ملاحظتُه، وصفحتُه تعرفه', async () => {
+    const a = await earlier('intake-early-1@test.local', 'سارة منصور')
+    expect(a.status).toBe('submitted')
+    /* في نوفمبر يفترق الموعدان: التأجيلُ العاديّ يحسب «الذي بعد القادم» = الصيف */
+    vi.setSystemTime(new Date('2026-11-15T09:00:00Z'))
+    try {
+      expect(deferredFollowUpAt(new Date()).getTime()).not.toBe(intakeFollowUpAt().getTime())
+      await review.decide(a.id, adminId, 'defer', 'نعتذر عن تأخّر لقائك', { deferReason: 'intake_closed' })
+    } finally {
+      vi.setSystemTime(OCT_20)
+    }
+    const row = await prisma.trainerApplication.findUniqueOrThrow({ where: { id: a.id } })
+    expect(row.status).toBe(DEFERRED)
+    expect(row.deferredFollowUpAt?.getTime()).toBe(intakeFollowUpAt().getTime())
+    expect(await lastDeferNote(a.id)).toBe(`${INTAKE_DEFER_NOTE_AR} — نعتذر عن تأخّر لقائك`)
+    expect((await apps.getPublicStatus(a.email, a.reference)).intakeDeferred).toBe(true)
+    const audit = await prisma.auditEvent.findFirst({
+      where: { entityId: a.id, action: 'trainer.deferral.notify' }, select: { meta: true },
+    })
+    expect((audit?.meta as { reason?: string } | null)?.reason).toBe('intake_closed')
+  })
+
+  it('⚠️ و«لا طلب كاف» كما كان — لا يُقرأ له «توقفنا»', async () => {
+    const a = await earlier('intake-early-2@test.local', 'علا جابر')
+    await review.decide(a.id, adminId, 'defer')
+    expect((await apps.getPublicStatus(a.email, a.reference)).intakeDeferred).toBe(false)
+    expect((await lastDeferNote(a.id)) ?? '', 'بلا ملاحظة: لا سطرَ إغلاق').not.toContain(INTAKE_DEFER_NOTE_AR)
+  })
+
+  it('⚠️ ويُردّ «أغلقنا الاستقبال» بعد موعد التواصل — لا يَعِد بديسمبرَ مضى', async () => {
+    const a = await earlier('intake-early-3@test.local', 'تالا قاسم')
+    vi.setSystemTime(new Date('2026-12-22T09:00:00Z'))
+    try {
+      await expect(review.decide(a.id, adminId, 'defer', undefined, { deferReason: 'intake_closed' }))
+        .rejects.toMatchObject({ code: 'intake_open' })
+    } finally {
+      vi.setSystemTime(OCT_20)
+    }
+    expect((await prisma.trainerApplication.findUniqueOrThrow({ where: { id: a.id } })).status).toBe('submitted')
   })
 })
