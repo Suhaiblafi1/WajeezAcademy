@@ -229,6 +229,8 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
       'advisor.case.no_advisor',
       /* وحالةٌ لم يتواصل معها مستشارُها، ومتابعةٌ حلّ موعدُها — العميلُ ينتظر يدا */
       'advisor.case.no_contact', 'advisor.case.uncontacted', 'advisor.followup.due',
+      /* وحالتان لطالبٍ واحد تنتظران الدمج — طالبٌ يُكلَّم مرّتين */
+      'advisor.case.duplicate',
       /* ي-٤: واختيارُ صاحبِ المقعد بعد رحيل مدرّبه — عملٌ ينتظر تنفيذَه.
          وكان يقع في عمودٍ لا يراه أحدٌ حتّى يفتح الشاشةَ مصادفةً. */
       'departure.chosen',

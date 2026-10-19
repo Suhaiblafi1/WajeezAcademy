@@ -148,6 +148,7 @@ const PHRASES: Record<string, string> = {
   'advisor.case.buyer_opened': 'فتح حالة مستشار لمن طلب التسجيل بلا تشخيص',
   'advisor.case.client_paid': 'تحويل حالة إلى «سجّل» بعد دفع صاحبها',
   'advisor.cases.redistribute': 'توزيع حالات مستشار المفتوحة على غيره',
+  'advisor.cases.merge': 'دمج حالتين لطالب واحد في حالة واحدة',
   'advisor.contact.hook': 'تسجيل تواصل مستشار من منصّة محادثات واتساب',
   'advisor.case.whatsapp_opened': 'فتح حالة لعميل جديد راسله مستشار عبر واتساب',
   'advisor.case.lead_email': 'كتابة بريد العميل في حالته ليرتبط بحسابه',
