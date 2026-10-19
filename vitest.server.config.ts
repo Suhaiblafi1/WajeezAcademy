@@ -28,7 +28,10 @@ export default mergeConfig(
          تُسقط الاختبارَ بـEACCES لا بعطبٍ في الشيفرة.
 
          فيُوجَّه إلى مجلّدٍ مؤقّت: لا أثرَ في الشجرة، ولا اعتمادَ على أذونات. */
-      env: { FILE_UPLOADS: 'on', STORAGE_ROOT: join(tmpdir(), 'wajeez-test-objects') },
+      /* واستقبالُ طلبات المدرّبين مفتوحٌ هنا وإن أُغلق في المنصّة: الإغلاقُ يؤجّل كلَّ
+         طلبٍ يُرسَل، فلو سرى لَما اختُبر الطريقُ الذي يعود يومَ يُطفأ مفتاحُه. واختبارُ
+         الإغلاق يمحو المتغيّرَ بنفسه (`intake-closed.test.ts`). */
+      env: { FILE_UPLOADS: 'on', STORAGE_ROOT: join(tmpdir(), 'wajeez-test-objects'), TRAINER_INTAKE: 'open' },
       /* التوازي بين الملفات ممنوع: كل ملف يعيد بناء قاعدة الاختبار من الصفر */
       fileParallelism: false,
     },
