@@ -14,7 +14,7 @@ import { termTitleAr } from '../../../src/application/terms/season'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..')
 let prisma: PrismaClient
-const statements = readFileSync(join(root, 'prisma/migrations/20261019200000_winter_term_titles/migration.sql'), 'utf8')
+const statements = readFileSync(join(root, 'prisma/migrations/20261019210000_winter_term_titles/migration.sql'), 'utf8')
   .split('\n').filter((l) => !l.trimStart().startsWith('--')).join('\n')
   .split(';').map((x) => x.trim()).filter(Boolean)
 const migrate = async () => { for (const st of statements) await prisma.$executeRawUnsafe(st) }
