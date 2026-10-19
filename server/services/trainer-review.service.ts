@@ -4813,7 +4813,8 @@ export class TrainerReviewService {
         legalName: c.signerLegalName ?? app.fullName,
         title: c.title,
         approvedOnAr: fmtDateWith(approvedAt, { year: 'numeric', month: 'long', day: 'numeric' }),
-        portalUrl: `${publicSiteUrl()}/trainer`,
+        /* وزرُّه «افتح «دوراتي» وابدأ» — فإليها لا إلى «الرئيسية» (١٩ أكتوبر ٢٠٢٦) */
+        portalUrl: `${publicSiteUrl()}/trainer/qualifications`,
         guideUrl: `${publicSiteUrl()}${TRAINER_GUIDE_PATH}`,
         gatesActivation: c.gatesActivation,
         sealedNow: mode === 'seal',
@@ -6604,7 +6605,8 @@ export class TrainerReviewService {
         deadlineOnAr: fmtDateWith(c.conditionDeadlineAt!, { year: 'numeric', month: 'long', day: 'numeric' }),
         daysLeft: left,
         extensionDays: EXTENSION_DAYS,
-        portalUrl: `${publicSiteUrl()}/trainer`,
+        /* وزرُّه «افتح «شعبي» وأكمل شعبك» — فإليها (١٩ أكتوبر ٢٠٢٦) */
+        portalUrl: `${publicSiteUrl()}/trainer/board`,
         extensionsLeft: extensionsLeft(c),
       })
 

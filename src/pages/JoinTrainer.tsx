@@ -28,7 +28,7 @@ import {
 import DateField from "@/components/ui/DateField";
 import { clearDraft, draftHasContent, loadDraft, saveDraft } from "@/application/trainer/application-draft";
 import {
-  APPLICANT_STATUS, BOOKABLE_STATUSES, CONTACT_CHANNELS, INTERVIEW_BOOKING_PAUSE,
+  APPLICANT_STATUS, BOOKABLE_STATUSES, CONTACT_CHANNELS, INTERVIEW_BOOKING_INVITE_ONLY, INTERVIEW_BOOKING_PAUSE,
   RECORDING_ANSWERS, RECORDINGS_WHY, recordingAnswerPatch, TRAINING_SEASONS, WANTS_RECORDING_ANSWERS,
   type ContactChannel,
 } from "@/application/trainer/application-options";
@@ -840,12 +840,15 @@ export default function JoinTrainer() {
               تمّ، وما بقي علينا نحن. فعنوانٌ يقول «بقيت خطوة» يجعله يبحث عن
               فعلٍ ليس له — وهو العطبُ الأوّل مقلوبا. */}
           <h1 className="mt-6 text-2xl font-black">
-            {INTERVIEW_BOOKING_PAUSE.active ? "وصل طلبك — شكرا لك" : "وصل طلبك — وبقيت خطوة واحدة"}
+            {/* وبالدعوة وحدَها (`INTERVIEW_BOOKING_INVITE_ONLY`) لا تقويمَ تحته — فلا «بقيت خطوة» (١٩ أكتوبر ٢٠٢٦) */}
+            {INTERVIEW_BOOKING_PAUSE.active || INTERVIEW_BOOKING_INVITE_ONLY.active ? "وصل طلبك — شكرا لك" : "وصل طلبك — وبقيت خطوة واحدة"}
           </h1>
           <p className="mt-3 text-sm leading-7 text-muted-foreground">
             {INTERVIEW_BOOKING_PAUSE.active
               ? "شكرا لك. طلبك كامل ولا ينقصه شيء. حجز المواعيد متوقف مؤقتا لأنها امتلأت — التفاصيل أدناه."
-              : "شكرا لك. طلبك كامل، وبقي أن تختار موعد لقاء التعارف من التقويم أدناه."}
+              : INTERVIEW_BOOKING_INVITE_ONLY.active
+                ? "شكرا لك. طلبك كامل ولا ينقصه منك شيء. نقرأ ملفك، وإن رغبنا بلقائك وصلك رابط حجز لقاء التعارف على بريدك."
+                : "شكرا لك. طلبك كامل، وبقي أن تختار موعد لقاء التعارف من التقويم أدناه."}
           </p>
           <StepBar current={4} className="mt-6 text-right" />
           <Card as="p" tone="warn" className="mt-4">
@@ -1797,8 +1800,9 @@ export default function JoinTrainer() {
               وهي الشكوى التي وُضعت المحطّةُ الرابعةُ لها. */}
           {step === 3 && (
             <Inset as="p" tone="accent" className="text-read leading-6 text-foreground">
-              بعد هذا الزر تختار موعد لقاء التعارف من التقويم، وهي آخر خطوة.
-              يصلك التأكيد ودعوة التقويم فورا.
+              {INTERVIEW_BOOKING_INVITE_ONLY.active || INTERVIEW_BOOKING_PAUSE.active
+                ? "بعد هذا الزر يصل طلبك إلى فريقنا. وإن رغبنا بلقائك وصلك رابط حجز لقاء التعارف على بريدك."
+                : "بعد هذا الزر تختار موعد لقاء التعارف من التقويم، وهي آخر خطوة. يصلك التأكيد ودعوة التقويم فورا."}
             </Inset>
           )}
 
@@ -1841,7 +1845,7 @@ export default function JoinTrainer() {
                 {/* والزرُّ يتبع المفتاح: ما دام الحجزُ موقوفا فما بعده إرسالٌ
                     لا حجز، وزرٌّ يقول «احجز» ثمّ يفتح إشعارَ وقفٍ خُلفٌ للوعد
                     — وهو العطبُ الذي كُتب له هذا الزرُّ أصلا، مقلوبا. */}
-                {busy ? "نحفظ طلبك…" : INTERVIEW_BOOKING_PAUSE.active ? "أرسل طلبك" : "احجز موعد لقاء التعارف"}
+                {busy ? "نحفظ طلبك…" : INTERVIEW_BOOKING_PAUSE.active || INTERVIEW_BOOKING_INVITE_ONLY.active ? "أرسل طلبك" : "احجز موعد لقاء التعارف"}
               </Button>
             )}
           </div>

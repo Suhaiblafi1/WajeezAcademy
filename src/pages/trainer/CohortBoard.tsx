@@ -163,10 +163,10 @@ export default function CohortBoard() {
         </div>
       )}
 
-      {/* اقتراحاتُ التأجيل تُقترح من صفحة الشعبة، ومآلُها وسحبُها في «جدولي» */}
+      {/* ولا «اقتراحات تأجيل» بعد اليوم: المدرّبُ ينقل لقاءَه من صفحة الشعبة بنفسه (١٩ أكتوبر ٢٠٢٦) */}
       <p className="mt-6 flex items-center gap-2 text-read text-muted-foreground">
         <CalendarDays className="h-4 w-4 text-teal-ink" aria-hidden="true" />
-        اقتراحات تأجيل اللقاءات ومآلها في <Link to="/trainer/schedule" className="font-bold text-teal-light-ink underline decoration-dotted underline-offset-4">جدولي</Link>.
+        لقاءاتك كلها في <Link to="/trainer/schedule" className="font-bold text-teal-light-ink underline decoration-dotted underline-offset-4">جدولي</Link>، وتنقل موعد لقاء من صفحة شعبته.
         <Users className="ms-3 h-4 w-4 text-teal-ink" aria-hidden="true" />
         ومتعلّموك كلّهم في <Link to="/trainer/learners" className="font-bold text-teal-light-ink underline decoration-dotted underline-offset-4">طلبتي</Link>.
       </p>

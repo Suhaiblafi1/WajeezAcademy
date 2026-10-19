@@ -45,14 +45,14 @@ export default function AtRiskList({ learners, className = "" }: { learners: AtR
                   ))}
                 </ul>
               </div>
-              {/* لا بريدَ ولا رقما: المدرّبُ يراسل من الشعبة، والمنصّةُ هي
-                  القناة — فالبريدُ ملكُ المتعلّم ولا يُعرض لغيره. */}
+              {/* لا بريدَ ولا رقما: المدرّبُ يراسل من المنصّة، والبريدُ ملكُ المتعلّم ولا يُعرض لغيره.
+                  ومركزُ المراسلة في «طلبتي» لا في «شعبي» — فإليه، مفتوحا على هذا المتعلّم (١٩ أكتوبر ٢٠٢٦). */}
               <Link
-                to="/trainer/board"
+                to={`/trainer/learners?cohort=${l.cohortId}&to=${l.enrollmentId}`}
                 className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border border-white/15 px-4 text-xs font-bold transition hover:border-teal/60 hover:text-teal-light-ink"
               >
                 <MessageSquare className="h-3.5 w-3.5" aria-hidden="true" />
-                راسله من الشعبة
+                راسله
               </Link>
             </Card>
           ))}

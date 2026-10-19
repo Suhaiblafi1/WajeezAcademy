@@ -40,9 +40,10 @@ const code = (p: string) =>
   readFileSync(join(root, p), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
 
 /** طرفا شرطٍ نصّيّ على المفتاح: `PAUSE.active ? "موقوف" : "مفتوح"` */
-function branches(src: string): { paused: string; open: string } | null {
-  const m = /INTERVIEW_BOOKING_PAUSE\.active\s*\?\s*"([^"]*)"\s*:\s*"([^"]*)"/.exec(src)
-  return m ? { paused: m[1], open: m[2] } : null
+/* والدعوةُ وحدَها (`INTERVIEW_BOOKING_INVITE_ONLY`) طرفُ الوقف نفسُه: لا تقويمَ بعد الإرسال (١٩ أكتوبر ٢٠٢٦) */
+function branches(src: string): { paused: string; open: string; inviteOnly: boolean } | null {
+  const m = /INTERVIEW_BOOKING_PAUSE\.active(\s*\|\|\s*INTERVIEW_BOOKING_INVITE_ONLY\.active)?\s*\?\s*"([^"]*)"\s*:\s*"([^"]*)"/.exec(src)
+  return m ? { paused: m[2], open: m[3], inviteOnly: Boolean(m[1]) } : null
 }
 
 describe('المفتاح — مصدر واحد تقرؤه الشاشات كلّها', () => {
@@ -158,6 +159,7 @@ describe('الشاشات الأخرى تتبع المفتاح نفسه — فل�
     expect(b!.paused, 'طرف الوقف لا يقول ما يقع بالضغط').toMatch(/أرسل/)
     expect(b!.open, 'طرف العودة لم يعد يقول «احجز» — فلا يعود الوعد بإطفاء المفتاح')
       .toContain('احجز')
+    expect(b!.inviteOnly, 'الحجز بالدعوة وحدها والزرّ يقول «احجز» — ولا تقويم بعده').toBe(true)
   })
 
   it('⚠️ وعنوان «وصل طلبك» لا يبقي عليه خطوة ليست له', () => {
@@ -170,5 +172,13 @@ describe('الشاشات الأخرى تتبع المفتاح نفسه — فل�
     expect(b!.paused, 'لا شكر في العنوان — وهو ما طلب أن يقال').toMatch(/شكرا/)
     expect(b!.open, 'طرف العودة فقد «بقيت خطوة» — فلا يعود العنوان بإطفاء المفتاح')
       .toMatch(/بقيت خطوة/)
+    expect(b!.inviteOnly, 'الحجز بالدعوة وحدها والعنوان يقول «بقيت خطوة»').toBe(true)
+  })
+
+  it('⚠️ والمحطّة الرابعة لا تعد بحجزٍ بعد الإرسال ما دام بالدعوة وحدها (١٩ أكتوبر ٢٠٢٦)', () => {
+    const options = code('src/pages/join-trainer/options.ts')
+    expect(options).toMatch(/INTERVIEW_BOOKING_INVITE_ONLY\.active\s*\?\s*\{ n: 4, title: "لقاء التعارف", hint: "يصلك رابطه إن رغبنا بلقائك" \}/)
+    const src = code('src/pages/JoinTrainer.tsx')
+    expect(src).toMatch(/INTERVIEW_BOOKING_INVITE_ONLY\.active\s*\?\s*"شكرا لك\. طلبك كامل ولا ينقصه منك شيء\. نقرأ ملفك/)
   })
 })

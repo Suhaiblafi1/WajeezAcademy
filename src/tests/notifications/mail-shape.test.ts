@@ -92,6 +92,26 @@ describe('ط-١ · رسالة الإشعار', () => {
     ).toEqual([])
   })
 
+  /* ═══ ولا وجهةُ بوّابةٍ في جدول جمهورٍ آخر (١٩ أكتوبر ٢٠٢٦) ═══
+     خمسةُ مفاتيحَ تُرسَل إلى المدرّب كانت وجهاتُها في جدول الفريق، فخرجت إليه بلا زرّ — والحارسُ ② لا يراها:
+     يسأل أهي في جدولٍ ما، لا أفي جدول من تصله. فمسارُ «/trainer» لا يسكن جدولَ الفريق، و«/admin» لا يسكن جدولَ المدرّب. */
+  it('⚠️ ②ب وجهةُ المدرّب في جدوله — ووجهةُ الفريق في جدوله', () => {
+    const keys = NOTIFICATION_CATEGORIES.flatMap((c) => c.templateKeys)
+    const misplaced = keys.flatMap((k) => {
+      const staff = destinationFor(k, 'staff')?.path ?? ''
+      const trainer = destinationFor(k, 'trainer')?.path ?? ''
+      return [
+        ...(staff.startsWith('/trainer') ? [`staff → ${k} → ${staff}`] : []),
+        ...(trainer.startsWith('/admin') ? [`trainer → ${k} → ${trainer}`] : []),
+      ]
+    })
+    expect(misplaced, 'وجهة في جدول غير جمهورها — تخرج رسالته بلا زرّ:\n' + misplaced.join('\n')).toEqual([])
+    for (const k of ['trainer.public_text.approved', 'trainer.public_text.rejected', 'trainer.contract.materials_returned',
+      'trainer.contract.condition_extended', 'trainer.contract.condition_days_granted']) {
+      expect(destinationFor(k, 'trainer'), `${k} يصل المدرّب بلا زرّ`).not.toBeNull()
+    }
+  })
+
   it('③ والمزوّد يسلّم `html` إلى `sendEmail` — لا نصّا خامّا', () => {
     const svc = code('server/services/notification.service.ts')
     const from = svc.indexOf('class ResendEmailProvider')

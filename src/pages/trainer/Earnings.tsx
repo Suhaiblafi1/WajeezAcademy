@@ -52,7 +52,7 @@ interface MaskedBank {
   outcome: string; outcomeScore: number; outcomeSaidAr: string;
   createdAt: string; lastRevealAt: string | null;
 }
-interface BankState { enabled: boolean; account: MaskedBank | null; contractNameAr: string | null }
+interface BankState { enabled: boolean; account: MaskedBank | null; contractNameAr: string | null; writeProblemAr?: string | null }
 
 const fmt = (n: string | number) => Number(n).toLocaleString("en-US", { maximumFractionDigits: 2 });
 
@@ -102,6 +102,18 @@ function BankAccountPanel() {
         <p className="text-sm font-black">حسابي البنكيّ</p>
         <p className="mt-2 text-read leading-6 text-muted-foreground">
           حفظ الحسابات البنكيّة غير مهيّأ بعد — راسل الإدارة.
+        </p>
+      </Panel>
+    );
+  }
+
+  /* ولا خانةَ يُردّ حفظُها: في طور التهيئة يُقال ما يمنعها بدلها (١٩ أكتوبر ٢٠٢٦) */
+  if (state.writeProblemAr && !state.account) {
+    return (
+      <Panel as="section" className="mb-6">
+        <p className="text-sm font-black">حسابي البنكيّ</p>
+        <p className="mt-2 text-read leading-6 text-muted-foreground">
+          {state.writeProblemAr}
         </p>
       </Panel>
     );

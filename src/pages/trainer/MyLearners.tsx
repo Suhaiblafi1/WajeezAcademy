@@ -31,7 +31,7 @@
    على شعبته موجَّها إليه. والمكوّنُ هو هو (`CohortOps.tsx`). */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link } from "react-router";
+import { Link, useSearchParams } from "react-router";
 import { AlertTriangle, GraduationCap, Loader2, MessageSquarePlus, RefreshCw, ServerOff, Users } from "lucide-react";
 import TrainerLayout from "./TrainerLayout";
 import CohortOps from "./CohortOps";
@@ -82,9 +82,12 @@ interface Row {
   concernsAr: string[];
 }
 
+/* والتسجيلُ الجاري `enrolled` في القاعدة لا `active` — فكان يُطبع «enrolled» بلفظه بجانب كلّ متعلّم (١٩ أكتوبر ٢٠٢٦) */
 const ENROLLMENT_AR: Record<string, string> = {
-  active: "مسجّل", completed: "أتمّها", withdrawn: "انسحب", cancelled: "ألغي", waitlisted: "قائمة انتظار",
+  active: "مسجّل", enrolled: "مسجّل", completed: "أتمّها", withdrawn: "انسحب", dropped: "انسحب", cancelled: "ألغي", waitlisted: "قائمة انتظار",
 };
+/** الجاري لا يُقال — يُقال ما خرج عنه */
+const ONGOING = new Set(["active", "enrolled"]);
 
 const ABSENT = new Set(["absent", "excused"]);
 
@@ -142,6 +145,13 @@ export default function TrainerMyLearners() {
   /* مركزُ التواصل: أيُّ شعبة، وإلى من — و`to` فارغٌ يعني الشعبةَ كلَّها */
   const [talk, setTalk] = useState<{ cohortId: string; to: string } | null>(null);
   const talkRef = useRef<HTMLElement>(null);
+  /* ═══ ومن جاء برابطٍ يقصد متعلّما أو شعبة (١٩ أكتوبر ٢٠٢٦) ═══
+     «راسله» في «من يحتاج تدخلك» و«ذكّرهم» في «تنتظرك الآن» كانا يقودان إلى «شعبي» وصفحةِ الشعبة، ولا
+     مراسلةَ فيهما. فصارا يقودان إلى هنا: `?cohort=` و`&to=` يفتحان المركزَ على من قُصد. */
+  const [params] = useSearchParams();
+  const askedCohort = params.get("cohort");
+  const askedTo = params.get("to") ?? "";
+  const scrolled = useRef(false);
   const [pending, setPending] = useState<Record<string, number>>({});
   const [offline, setOffline] = useState<string | null>(null);
   const [q, setQ] = useState("");
@@ -154,7 +164,9 @@ export default function TrainerMyLearners() {
       setCohorts(cohorts.map(({ cohort }) => ({
         id: cohort.id, title: cohort.title, courseTitle: cohort.course.versions[0]?.titleAr ?? cohort.title,
       })));
-      setTalk((t) => t ?? (cohorts[0] ? { cohortId: cohorts[0].cohort.id, to: "" } : null));
+      setTalk((t) => t
+        ?? (askedCohort && cohorts.some(({ cohort }) => cohort.id === askedCohort) ? { cohortId: askedCohort, to: askedTo } : null)
+        ?? (cohorts[0] ? { cohortId: cohorts[0].cohort.id, to: "" } : null));
       /* ما ينتظر تصحيحي لكلّ متعلّم — نداءٌ ثانٍ، وفشلُه لا يُفرِّغ الشاشة */
       const queue = await apiGet<QueueItem[]>("/api/trainer/grading-queue").catch(() => [] as QueueItem[]);
       const byUser: Record<string, number> = {};
@@ -163,7 +175,7 @@ export default function TrainerMyLearners() {
     } catch (err) {
       setOffline(err instanceof ApiError ? err.message : "الخادم غير متصل");
     }
-  }, []);
+  }, [askedCohort, askedTo]);
 
   /* استدعاء غير متزامن: لا setState يجري قبل أول await، فالتصيير
      المتتالي الذي تحذّر منه القاعدة لا يقع هنا. القاعدة لا ترى عبر
@@ -171,6 +183,13 @@ export default function TrainerMyLearners() {
      وهذا الإسكاتُ هو نفسُه المستعمَل في «مستحقاتي». */
   // eslint-disable-next-line react-hooks/set-state-in-effect -- setState بعد await لا قبله
   useEffect(() => { void load(); }, [load]);
+
+  /* والمقصودُ يُرى أوّلا: ينزل إلى المركز مرّةً حين يُرسم */
+  useEffect(() => {
+    if (!askedCohort || scrolled.current || !talk || !talkRef.current) return;
+    scrolled.current = true;
+    talkRef.current.scrollIntoView({ block: "start" });
+  });
 
   if (offline) {
     return (
@@ -249,7 +268,7 @@ export default function TrainerMyLearners() {
                         <p className="text-sm font-black">{r.name}</p>
                         <p className="mt-0.5 text-read text-muted-foreground">
                           {r.courseTitle} · {r.cohortTitle}
-                          {r.enrollmentStatus !== "active" && ` · ${ENROLLMENT_AR[r.enrollmentStatus] ?? r.enrollmentStatus}`}
+                          {!ONGOING.has(r.enrollmentStatus) && ` · ${ENROLLMENT_AR[r.enrollmentStatus] ?? r.enrollmentStatus}`}
                         </p>
                       </div>
                       <div className="flex shrink-0 flex-wrap items-center gap-2 text-fine font-black">

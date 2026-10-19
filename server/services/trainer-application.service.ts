@@ -797,7 +797,15 @@ export class TrainerApplicationService {
       orderBy: { createdAt: 'desc' },
       select: { createdAt: true },
     })
-    return { ...mine, interviewInvitedAt: invited?.createdAt ?? null }
+    /* ═══ وتوقيعُه ينتظر اعتمادَنا (١٩ أكتوبر ٢٠٢٦) ═══
+
+       التوقيعُ بالرابط لا يغيّر حالَ الطلب: يبقى `contract_pending` حتّى نعتمد التوقيع. فكانت صفحتُه تقول
+       «أرسلنا لك العقد. بعد توقيعه…» لمن وقّعه — فيظنّ توقيعَه لم يصل. فيُقال له ما وقع. */
+    const signed = await this.prisma.trainerContract.findFirst({
+      where: { profile: { applicationId: id }, status: 'signed' },
+      select: { signedAt: true },
+    })
+    return { ...mine, interviewInvitedAt: invited?.createdAt ?? null, contractSignedAt: signed?.signedAt ?? null }
   }
 
   /** مفتاحُ استئناف الطلب لصاحب الحساب — يُبدَّل الرمزُ ويُعاد، ما دام الطلبُ يقبل الاستكمال */

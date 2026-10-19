@@ -8,7 +8,7 @@ import SeoHead from "@/components/SeoHead";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import { readRoles, signOut } from "@/services/auth";
 import { fmtDate, fmtDateTime } from "@/application/text/format-ar";
-import { APPLICANT_STATUS, BOOKABLE_STATUSES, WITHDRAWABLE_STATUSES, contactChannelLabel } from "@/application/trainer/application-options";
+import { APPLICANT_STATUS, BOOKABLE_STATUSES, CONTRACT_SIGNED_STATUS, WITHDRAWABLE_STATUSES, contactChannelLabel } from "@/application/trainer/application-options";
 import BookInterview from "@/components/BookInterview";
 import { isInvitedToBook } from "@/application/trainer/interview-invitation";
 
@@ -44,6 +44,8 @@ interface Mine {
   profile: { userId: string | null } | null;
   /** متى خرجت إليه دعوةُ حجز الموعد — من الأثر، و`null` لمن لم تخرج إليه */
   interviewInvitedAt: string | null;
+  /** متى وقّع عقدا ينتظر اعتمادَنا — والحالُ `contract_pending` حتّى نعتمده (١٩ أكتوبر ٢٠٢٦) */
+  contractSignedAt?: string | null;
 }
 
 const DOC_AR: Record<string, string> = { cv: "السيرة الذاتية", evidence: "ملف أعمال", certificate: "شهادات واعتمادات", other: "وثيقة" };
@@ -122,7 +124,9 @@ export default function ApplicantStatus() {
 
   const doSignOut = async () => { await signOut(); navigate("/auth", { replace: true }); };
 
-  const st = mine ? APPLICANT_STATUS[mine.status] ?? { label: mine.status, explain: "", tone: "neutral" as const } : null;
+  const st = !mine ? null
+    : mine.status === "contract_pending" && mine.contractSignedAt ? CONTRACT_SIGNED_STATUS
+      : APPLICANT_STATUS[mine.status] ?? { label: mine.status, explain: "", tone: "neutral" as const };
   const phone = mine?.phone ? `${mine.phoneCountryCode ?? ""}${mine.phone}` : null;
   const canWithdraw = mine ? (WITHDRAWABLE_STATUSES as readonly string[]).includes(mine.status) : false;
 
@@ -183,7 +187,8 @@ export default function ApplicantStatus() {
                   أكمل طلبك <ArrowLeft className="h-4 w-4" />
                 </Button>
               )}
-              {(mine.status === "active" || isTrainer) && (
+              {/* والتهيئةُ تفتح البوّابة — باعتماد توقيعه يُمنح دورَ المدرّب (١٩ أكتوبر ٢٠٢٦) */}
+              {(mine.status === "active" || mine.status === "onboarding" || isTrainer) && (
                 <Link
                   to="/trainer"
                   className="mt-4 inline-flex items-center gap-2 rounded-full bg-teal px-6 py-2.5 text-sm font-black text-on-teal transition hover:bg-teal/90"

@@ -6,7 +6,7 @@ import SearchChip from "@/components/SearchChip";
 import ThemeToggle from "@/components/ThemeToggle";
 import StaffAccountMenu from "@/components/StaffAccountMenu";
 import PortalSearchPalette from "@/components/PortalSearchPalette";
-import ConditionStrip, { type ConditionContract, type OnboardingTask } from "@/components/ConditionStrip";
+import ConditionStrip, { type ConditionContract } from "@/components/ConditionStrip";
 import { useRealSession } from "@/services/session";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { loadMyPortals } from "@/services/portals";
@@ -21,7 +21,6 @@ import TrainerAnnouncement from "./TrainerAnnouncement";
 interface PortalMe {
   pendingGrading?: number;
   contracts?: ConditionContract[];
-  onboardingTasks?: OnboardingTask[];
 }
 
 /** إطار بوابة المدرب: هويته من جلسته وحدها. */
@@ -270,7 +269,7 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
       <div className="mx-auto max-w-6xl px-5 py-8">
         {/* وفوقَ عنوان الشاشة لا داخلَها: المهلةُ حالُ المدرّب لا حالُ
             صفحة، فتُرى في كلّ شاشةٍ يفتحها وهو في يومه السادس. */}
-        <ConditionStrip contract={me?.contracts?.[0]} tasks={me?.onboardingTasks} onDone={refreshMe} />
+        <ConditionStrip contract={me?.contracts?.[0]} onDone={refreshMe} />
         <h1 className="mb-6 text-2xl font-black">{title}</h1>
         {children}
       </div>
