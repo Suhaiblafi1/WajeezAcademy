@@ -22,7 +22,7 @@ export default function MyAdvisorCard({ className = "" }: { className?: string }
       <AdvisorContact
         text="مرحبا، أريد التحدث مع مستشاري."
         label="راسل مستشارك"
-        className="flex shrink-0 items-center gap-2 rounded-full border border-teal/40 px-4 py-2 text-xs font-bold text-teal-light-ink transition hover:bg-teal/10"
+        className="flex shrink-0 items-center gap-2 rounded-full border border-teal/40 px-4 py-2 text-sm font-bold text-teal-light-ink transition hover:bg-teal/10"
       />
     </Panel>
   );
