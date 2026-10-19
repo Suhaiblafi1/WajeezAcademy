@@ -10,6 +10,7 @@ import { RefreshCw, ServerOff, ShieldAlert, UserPlus } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import FlowSteps from "@/components/FlowSteps";
 import { apiGet, apiPost, ApiError, permissionMessage } from "@/services/api";
+import { advisorOptionAr } from "@/application/advisor/away";
 import { fmtDate } from "@/application/text/format-ar";
 
 import { Panel, Card } from "@/components/ui/Surface";
@@ -42,7 +43,7 @@ interface AutoAssignedCase extends UnassignedCase {
   assignments: { advisorId: string; assignedAt: string; advisor: { displayName: string } }[];
 }
 /** مستشارٌ متاحٌ للإسناد — الخادمُ يرشّح بالدور، فلا تُقرأ الأدوارُ هنا */
-interface AdvisorOption { id: string; displayName: string; email: string }
+interface AdvisorOption { id: string; displayName: string; email: string; awayUntil?: string | null }
 
 export default function Exceptions() {
   const [rows, setRows] = useState<UnassignedCase[]>([]);
@@ -182,7 +183,7 @@ export default function Exceptions() {
                 <select id={`advisor-${c.id}`} value={pick[c.id] ?? ""} disabled={advisors.length === 0}
                   onChange={(e) => setPick({ ...pick, [c.id]: e.target.value })} className={`${staffSelectCls} max-w-64`}>
                   <option value="">{advisors.length === 0 ? "لا مستشارين نشطين" : "اختر مستشارا…"}</option>
-                  {advisors.map((a) => <option key={a.id} value={a.id}>{a.displayName} ({a.email})</option>)}
+                  {advisors.map((a) => <option key={a.id} value={a.id}>{advisorOptionAr(a)}</option>)}
                 </select>
                 <Button tone="confirm" disabled={busy || !(pick[c.id] ?? "").trim()} onClick={() => void assign(c.id)}>
                   <UserPlus className="h-3.5 w-3.5" /> إسناد
@@ -228,7 +229,7 @@ export default function Exceptions() {
                       onChange={(e) => setPick({ ...pick, [c.id]: e.target.value })} className={`${staffSelectCls} max-w-64`}>
                       <option value="">اختر مستشارا آخر…</option>
                       {advisors.filter((a) => a.id !== current?.advisorId).map((a) => (
-                        <option key={a.id} value={a.id}>{a.displayName} ({a.email})</option>
+                        <option key={a.id} value={a.id}>{advisorOptionAr(a)}</option>
                       ))}
                     </select>
                     <Button tone="secondary" disabled={busy || !choice} onClick={() => void assign(c.id)}>
@@ -276,7 +277,7 @@ export default function Exceptions() {
                       onChange={(e) => setPick({ ...pick, [c.id]: e.target.value })} className={`${staffSelectCls} max-w-64`}>
                       <option value="">اختر مستشارا آخر…</option>
                       {advisors.filter((a) => a.id !== current?.advisorId).map((a) => (
-                        <option key={a.id} value={a.id}>{a.displayName} ({a.email})</option>
+                        <option key={a.id} value={a.id}>{advisorOptionAr(a)}</option>
                       ))}
                     </select>
                     <Button tone="secondary" disabled={busy || !choice} onClick={() => void assign(c.id)}>
