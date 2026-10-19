@@ -51,9 +51,12 @@ export class CohortMoveService {
     })
     if (!c) throw new AuthError('not_found', 'الشعبة غير موجودة', 404)
     const firstStartsAt = c.sessions[0]?.startsAt ?? c.startsAt ?? null
-    const current: TermRef | null = c.term && isSeason(c.term.season)
-      ? { year: c.term.year, season: c.term.season }
-      : firstStartsAt ? termOf(firstStartsAt) : null
+    /* ═══ وفصلُها من أوّل لقائها لا من صفّ فصلها (١٩ أكتوبر ٢٠٢٦) ═══
+       منه تُحسب الإزاحةُ (`moveShiftMs`) وتُستثنى من الخيارات — وصفُّ الفصل قد يفترق عن المواعيد (التأجيلُ يكتبه
+       قبل أن تتحرّك)، فتقع المواعيدُ في غير ما اختير. وبطاقةُ المدرّب تحسبه من أوّل لقاءٍ كذلك (`CohortMoveBox`). */
+    const current: TermRef | null = firstStartsAt
+      ? termOf(firstStartsAt)
+      : c.term && isSeason(c.term.season) ? { year: c.term.year, season: c.term.season } : null
     return { status: c.status, title: c.title, current, firstStartsAt }
   }
 

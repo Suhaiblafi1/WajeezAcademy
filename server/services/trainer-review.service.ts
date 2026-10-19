@@ -67,7 +67,7 @@ import { cohortLeadTrainers } from './cohort-lead'
 import { cleanProposals, readProposals } from '../../src/application/trainer/teachable-proposals'
 import { pendingKind } from '../../src/application/trainer/pending-kind'
 import { profileTrailOf, TRAIL_ACTIONS, type CardCohort } from '../../src/application/trainer/trainer-card'
-import { groupBySeason } from '../../src/application/trainer/next-season'
+import { cohortSeason, groupBySeason } from '../../src/application/trainer/next-season'
 import type { PrepTally } from '../../src/application/trainer/prep-tally'
 import type { PrepCourse } from './trainer-prep.service'
 import {
@@ -6486,7 +6486,11 @@ export class TrainerReviewService {
        والعلّةُ في `src/application/trainer/next-season.ts`. */
     const now = new Date()
     const onSale: Prisma.CohortWhereInput = { status: { in: ['open', 'full'] } }
-    const seasonOf = { startsAt: true, term: { select: { year: true, season: true, startsOn: true } } } as const
+    /* وموسمُ الشعبة من أوّل لقاءٍ قائمٍ فيها — ما يراه المشتري (`cohortSeason`) */
+    const seasonOf = {
+      startsAt: true, term: { select: { year: true, season: true } },
+      sessions: { where: { status: { not: 'cancelled' } }, orderBy: { startsAt: 'asc' }, take: 1, select: { startsAt: true } },
+    } as const
     const profiles = await this.prisma.trainerProfile.findMany({
       where: { ...publicTrainerWhere(now), application: { status: 'active' } },
       include: {
@@ -6498,7 +6502,7 @@ export class TrainerReviewService {
         paths: {
           where: { ...livePathWhere(now), termId: { not: null } },
           select: {
-            term: { select: { year: true, season: true, startsOn: true } },
+            term: { select: { year: true, season: true } },
             courses: { orderBy: { sequence: 'asc' }, select: { courseId: true } },
           },
         },
@@ -6523,9 +6527,14 @@ export class TrainerReviewService {
     }
 
     /* ما يقدّمه بمواسمه — الأقربُ أوّلا، وكلُّ دورةٍ مرّة (`groupBySeason`) */
+    type Seasoned = { startsAt: Date | null; term: { year: number; season: string } | null; sessions: { startsAt: Date }[] }
+    const seasoned = (c: Seasoned) => {
+      const first = c.sessions[0]?.startsAt ?? c.startsAt
+      return { term: cohortSeason(first, c.term), at: first }
+    }
     const offerOf = (p: (typeof profiles)[number]) => groupBySeason([
-      ...p.cohortTrainers.map((t) => ({ courseId: t.cohort.courseId, term: t.cohort.term, at: t.cohort.startsAt })),
-      ...p.assignments.flatMap((a) => a.cohort ? [{ courseId: a.courseId, term: a.cohort.term, at: a.cohort.startsAt }] : []),
+      ...p.cohortTrainers.map((t) => ({ courseId: t.cohort.courseId, ...seasoned(t.cohort) })),
+      ...p.assignments.flatMap((a) => a.cohort ? [{ courseId: a.courseId, ...seasoned(a.cohort) }] : []),
       ...p.paths.flatMap((path) => path.courses.map((c) => ({ courseId: c.courseId, term: path.term }))),
     ])
 

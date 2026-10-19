@@ -9,27 +9,37 @@
    · شعبةٌ يقودها **مفتوحةٌ للتسجيل أو ممتلئة** — اعتُمدت خطّتُها ونُشرت — في موسمها.
    · وإسنادٌ نشطٌ على شعبةٍ كذلك.
    · ومسارُه المنشورُ لموسمٍ مسمّى لم ينتهِ — في موسمه. وما لا موسمَ له لا يُخمَّن.
-   وكلُّ دورةٍ مرّةً، في أقرب مواسمها. والجاريةُ والمنتهيةُ ليستا «سيقدّم». */
+   وكلُّ دورةٍ مرّةً، في أقرب مواسمها. والجاريةُ والمنتهيةُ ليستا «سيقدّم».
 
-import { termTitleAr } from '../terms/season'
+   ═══ وموسمُ الشعبة من أوّل لقائها — ما يراه المشتري (١٩ أكتوبر ٢٠٢٦) ═══
+   «انظر شيئا معتمدا للفصل القادم وأنت تكتبه في صفحة المدرّب خطأ» (صاحب المنصّة). فالموسمُ يُقرأ من أوّل لقاءٍ قائمٍ
+   في الشعبة (`termOf`) لا من صفّ فصلها، فلا يفترقان؛ والشتاءُ بسنتيه (`termTitleAr`). */
+
+import { termBounds, termOf, termTitleAr } from '../terms/season'
 import type { TrainingSeason } from './application-options'
 
 export interface SeasonItem {
   courseId: string
-  term: { year: number; season: string; startsOn: string | Date } | null
+  term: { year: number; season: string } | null
   /** بدءُ الشعبة — يرتّب دوراتِ الموسم الواحد */
   at?: string | Date | null
+}
+
+/** موسمُ الشعبة: من أوّل لقائها إن كان، وإلّا من فصلها المسمّى */
+export function cohortSeason(firstAt: Date | null, term: { year: number; season: string } | null): { year: number; season: string } | null {
+  return firstAt ? termOf(firstAt) : term
 }
 
 export interface SeasonGroup { termAr: string | null; courseIds: string[] }
 
 const iso = (d: string | Date | null | undefined) => (d == null ? '' : typeof d === 'string' ? d : d.toISOString())
+const startOf = (t: SeasonItem['term']) => (t ? termBounds(t.year, t.season as TrainingSeason).startsOn : null)
 
 /** دوراتُه بمواسمها — الأقربُ أوّلا، وما لا موسمَ له آخرا، وكلُّ دورةٍ في أقرب مواسمها */
 export function groupBySeason(items: SeasonItem[]): SeasonGroup[] {
   const sorted = [...items].sort((a, b) => {
     if (!a.term !== !b.term) return a.term ? -1 : 1
-    return iso(a.term?.startsOn).localeCompare(iso(b.term?.startsOn)) || iso(a.at).localeCompare(iso(b.at))
+    return iso(startOf(a.term)).localeCompare(iso(startOf(b.term))) || iso(a.at).localeCompare(iso(b.at))
   })
   const seen = new Set<string>()
   const groups = new Map<string, SeasonGroup>()

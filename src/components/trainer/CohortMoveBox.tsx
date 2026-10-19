@@ -13,8 +13,9 @@ import { Inset } from "@/components/ui/Surface";
 import { controlCls, areaCls } from "@/components/FormKit";
 import { termOf } from "@/application/terms/season";
 import {
-  MOVABLE_STATUSES, MOVE_REASON_MIN, moveChoices, termLabelAr, type TermRef,
+  MOVABLE_STATUSES, MOVE_REASON_MIN, moveChoices, moveShiftMs, termLabelAr, type TermRef,
 } from "@/application/trainer/cohort-move";
+import { cohortDayAr } from "@/application/learning/cohort-gate";
 import type { TrainingSeason } from "@/application/trainer/application-options";
 
 export interface MoveRequestRow { id: string; cohortId: string; status: string; toYear: number; toSeason: string }
@@ -65,6 +66,8 @@ export default function CohortMoveBox({ cohortId, status, startsAt, pending, onC
   const choices = moveChoices(now, start ? termOf(start) : null);
   const key = (t: TermRef) => `${t.season}:${t.year}`;
   const target = choices.find((t) => key(t) === pick) ?? null;
+  /* وأوّلُ لقاءٍ بعد النقل يُقال قبل الإرسال — فلا يُختار موسمٌ بسنةٍ غير المقصودة (١٩ أكتوبر ٢٠٢٦) */
+  const firstAfter = start && target ? new Date(start.getTime() + moveShiftMs(termOf(start), target)) : null;
 
   if (!open) {
     return (
@@ -83,6 +86,11 @@ export default function CohortMoveBox({ cohortId, status, startsAt, pending, onC
         <option value="">اختر الفصل…</option>
         {choices.map((t) => <option key={key(t)} value={key(t)}>{termLabelAr(t)}</option>)}
       </select>
+      {firstAfter && (
+        <p className="text-read font-bold leading-6">
+          أول لقاء بعد النقل: {cohortDayAr(firstAfter, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+        </p>
+      )}
       <textarea aria-label="السبب" rows={2} maxLength={500} value={reason} onChange={(e) => setReason(e.target.value)}
         placeholder="لماذا تنقلها؟" className={areaCls} />
       <div className="flex flex-wrap gap-2">

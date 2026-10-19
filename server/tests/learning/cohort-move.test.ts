@@ -12,7 +12,8 @@ import { AuthService } from '../../services/auth.service'
 import { CohortMoveService } from '../../services/cohort-move.service'
 import { EnrollmentService } from '../../services/enrollment.service'
 import { moveReminderAt, nextTerm } from '../../../src/application/trainer/cohort-move'
-import { termOf } from '../../../src/application/terms/season'
+import { termBounds, termOf } from '../../../src/application/terms/season'
+import type { TrainingSeason } from '../../../src/application/trainer/application-options'
 import { forgetZoomToken } from '../../services/zoom.service'
 
 /* ولا شبكةَ: `fetch` مُلتقَط، وطلباتُ نقل الاجتماع إلى Zoom تُعدّ */
@@ -54,13 +55,15 @@ let learnerId = ''
 const upcoming = nextTerm(termOf(new Date()))
 const target = nextTerm(upcoming)
 
-async function mkCohort(title: string, profileId: string) {
-  const first = new Date(Date.now() + 40 * DAY)
+async function mkCohort(title: string, profileId: string, opts: { termOf?: { year: number; season: TrainingSeason } } = {}) {
+  /* أوّلُ لقاءٍ داخلَ الفصل القادم أيّا كان يومُ الجولة — ففصلُ الشعبة يُقرأ من أوّل لقائها */
+  const first = new Date(termBounds(upcoming.year, upcoming.season).startsOn.getTime() + 10 * DAY)
   first.setUTCHours(16, 0, 0, 0)
+  const named = opts.termOf ?? upcoming
   const term = await prisma.term.upsert({
-    where: { year_season: { year: upcoming.year, season: upcoming.season } },
+    where: { year_season: { year: named.year, season: named.season } },
     update: {},
-    create: { year: upcoming.year, season: upcoming.season, titleAr: 'الفصل القادم', startsOn: new Date(), endsOn: new Date(Date.now() + 90 * DAY) },
+    create: { year: named.year, season: named.season, titleAr: 'الفصل القادم', startsOn: new Date(), endsOn: new Date(Date.now() + 90 * DAY) },
   })
   const c = await prisma.cohort.create({
     data: {
@@ -163,6 +166,20 @@ describe('② الاعتماد', () => {
     expect(row?.moved).toMatchObject({ toYear: target.year, toSeason: target.season })
     expect(row?.moved?.firstAt?.toISOString()).toBe(after[0]!.startsAt.toISOString())
     await expect(svc.review(adminId, r.id, { action: 'approve' })).rejects.toMatchObject({ status: 409 })
+  })
+})
+
+/* ═══ وفصلُها من أوّل لقائها لا من صفّ فصلها (١٩ أكتوبر ٢٠٢٦) ═══
+   صفُّ الفصل قد يفترق عن المواعيد — التأجيلُ يكتبه قبل أن تتحرّك. وكان النقلُ يقيس منه: فيُردّ طلبٌ إلى فصلٍ
+   غيرِ فصلها الحقيقيّ «إلى فصلها نفسِه»، وتُزاح المواعيدُ بمسافةٍ بين فصلين لا بين موعدها والفصل المختار. */
+describe('②أ فصل الشعبة من أول لقائها', () => {
+  it('⚠️ صف فصلها يقول الفصل الذي بعده ولقاءاتها في القادم — تنقل إليه، وتقع فيه', async () => {
+    const cohortId = await mkCohort('شعبة صفها يفترق', profileId, { termOf: target })
+    const r = await svc.request(trainerId, cohortId, { toYear: target.year, toSeason: target.season, reason: 'الطلب قليل هذا الفصل' })
+    expect(r.fromSeason, 'قيس فصلها من صفه لا من لقاءاتها').toBe(upcoming.season)
+    await svc.review(adminId, r.id, { action: 'approve' })
+    const first = await prisma.cohortSession.findFirstOrThrow({ where: { cohortId }, orderBy: { startsAt: 'asc' } })
+    expect(termOf(first.startsAt), 'وقعت المواعيد في غير الفصل المختار').toEqual(target)
   })
 })
 
