@@ -161,7 +161,11 @@ function MyCoursesList() {
   const [offers, setOffers] = useState<Offer[]>([]);
   const [prep, setPrep] = useState<PrepRow[]>([]);
   const [cohorts, setCohorts] = useState<MyCourseCohort[]>([]);
-  const [down, setDown] = useState(false);
+  /* ═══ و«تعذر الوصول» لما لم يصل وحدَه (١٩ أكتوبر ٢٠٢٦) ═══
+     بلاغُ صاحب المنصّة: مدرّبةٌ وُقّع عقدُها تفتح «دوراتي» فتقرأ «تعذر الوصول إلى الخادم». وكان
+     كلُّ ردٍّ بخطأ — رفضٌ بسببٍ مسمًّى من الخادم — يُعرض كأنّ الخادمَ غاب. فما ردّه الخادمُ بسببه
+     يُقال بسببه، و«تعذر الوصول» لما لم يصل أصلا. */
+  const [down, setDown] = useState<false | { reasonAr: string | null }>(false);
   const [busy, setBusy] = useState(false);
   /* محرّرُ اعتذارٍ واحدٌ في كلّ وقت — والسببُ يُكتب قبل الإرسال لا بعده */
   const [declining, setDeclining] = useState<string | null>(null);
@@ -184,7 +188,7 @@ function MyCoursesList() {
       apiGet<MyCourseCohort[]>("/api/trainer/cohorts/summary").catch(() => [] as MyCourseCohort[]),
     ])
       .then(([qs, os, pr, cs]) => { setQuals(qs); setOffers(os); setPrep(pr); setCohorts(cs); setDown(false); })
-      .catch(() => setDown(true)), []);
+      .catch((e) => setDown({ reasonAr: e instanceof ApiError ? e.message : null })), []);
 
   useEffect(() => { void load(); }, [load]);
 
@@ -227,8 +231,8 @@ function MyCoursesList() {
     return (
       <EmptyState
         icon={ServerOff}
-        titleAr="تعذّر الوصول إلى الخادم"
-        reasonAr="تحقّق من اتصالك ثمّ أعد المحاولة."
+        titleAr={down.reasonAr ? "لم تفتح دوراتك" : "تعذّر الوصول إلى الخادم"}
+        reasonAr={down.reasonAr ?? "تحقّق من اتصالك ثمّ أعد المحاولة."}
         actions={[{ labelAr: "أعد المحاولة", onClick: () => void load() }]}
       />
     );

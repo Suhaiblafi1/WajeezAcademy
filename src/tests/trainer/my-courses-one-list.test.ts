@@ -133,3 +133,12 @@ describe('③ «دوراتي المقترحة» و«مساراتي» قسمان 
     expect(APP).toMatch(/<Route path="\/trainer\/paths" element=\{<Navigate to="\/trainer\/qualifications\?tab=paths" replace \/>\} \/>/)
   })
 })
+
+/* «تعذر الوصول» لما لم يصل وحدَه — وما ردّه الخادمُ بسببه يُقال بسببه (١٩ أكتوبر ٢٠٢٦) */
+describe('«دوراتي» حين لا تفتح', () => {
+  const page = readFileSync(join(process.cwd(), 'src/pages/trainer/Qualifications.tsx'), 'utf8')
+  it('رسالة الخادم تعرض — لا «تعذر الوصول» عن رفض مسمى', () => {
+    expect(page).toMatch(/\.catch\(\(e\) => setDown\(\{ reasonAr: e instanceof ApiError \? e\.message : null \}\)\)/)
+    expect(page).toMatch(/reasonAr=\{down\.reasonAr \?\?/)
+  })
+})
