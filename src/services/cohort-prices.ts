@@ -154,8 +154,9 @@ export function cohortOptionsFrom(rows: unknown): Map<string, CohortOption[]> {
   return map
 }
 
-/** أقرب شعبة مفتوحة لكل دورة، بسعرها وعملتها — مشتقّة من القائمة الكاملة */
-export function useCoursePrices(): { prices: Map<string, CoursePrice>; loaded: boolean } {
+/** أقرب شعبة مفتوحة لكل دورة، بسعرها وعملتها — مشتقّة من القائمة الكاملة.
+    والقائمةُ نفسُها تخرج معها لمن يقرأ منها غيرَ السعر (مدرّبيها) — فلا نداءَ ثانٍ */
+export function useCoursePrices(): { prices: Map<string, CoursePrice>; cohorts: Map<string, CohortOption[]>; loaded: boolean } {
   const { cohorts, loaded } = useCourseCohorts()
   const prices = useMemo(() => {
     const map = new Map<string, CoursePrice>()
@@ -165,7 +166,7 @@ export function useCoursePrices(): { prices: Map<string, CoursePrice>; loaded: b
     }
     return map
   }, [cohorts])
-  return { prices, loaded }
+  return { prices, cohorts, loaded }
 }
 
 export function formatCohortPrice(p: { amount: number; currency: string }): string {

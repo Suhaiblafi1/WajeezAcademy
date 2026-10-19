@@ -35,7 +35,8 @@ import { pathwayById, pathwayCategory } from "@/data/pathways";
 import { hasCoreCatalog } from "@/data/core-catalog-source";
 import { readAdoptedPlan, saveAdoptedPlan, syncAdoptedPlan, PERSONAL_PLAN_NAME_AR } from "@/application/plan/adopted-plan";
 import { useCoursePrices, formatCohortPrice, totalOf } from "@/services/cohort-prices";
-import { courseById, courses, pathwaySupportCourses, readyPathwayCourseIds, pathwayDelivery, pathwayTrainers, courseTrainer, weeksLabel, MIN_PATHWAY_COURSES, MAX_PATHWAY_COURSES } from "@/data/courses";
+import { courseById, courses, pathwaySupportCourses, readyPathwayCourseIds, pathwayDelivery, courseTrainer, weeksLabel, TRAINER_PENDING_AR, MIN_PATHWAY_COURSES, MAX_PATHWAY_COURSES, type Course } from "@/data/courses";
+import { pathwayTeam, trainerLineAr, trainerNamesOf } from "@/application/catalog/course-trainers";
 import { track } from "@/services/analytics";
 import { useRealSession } from "@/services/session";
 import { usePublishedContent } from "@/services/public-content";
@@ -199,7 +200,9 @@ export default function PathwayPage() {
     return pathwayOffer(courseIds);
   }, [courseIds, catalogVersion]);
 
-  const { prices, loaded: pricesLoaded } = useCoursePrices();
+  const { prices, cohorts, loaded: pricesLoaded } = useCoursePrices();
+  /* مدرّبُ الدورة من شعبها المفتوحة لا من تخصّصٍ ساكن — `course-trainers.ts` */
+  const trainerLine = (c: Course) => trainerLineAr(trainerNamesOf(cohorts.get(c.id)), TRAINER_PENDING_AR);
   /* سعرُ المسار كاملا — أو null إن نقص سعرُ دورةٍ واحدة، فلا مجموعَ ناقصا */
   const fullPrice = totalOf(courseIds, prices);
 
@@ -551,11 +554,17 @@ export default function PathwayPage() {
                   الفريق التدريبي لهذا المسار
                 </h3>
                 <div className="mt-4 space-y-2">
-                  {pathwayTrainers(pathway.id).map((t) => (
-                    <Inset key={t.role} className="flex items-center gap-2.5 px-3.5 py-2.5 text-sm">
-                      <User className="h-4 w-4 shrink-0 text-teal-light-ink" />
-                      <span className="font-bold text-foreground">{t.role}</span>
-                      <span className="text-teal-light-ink">{t.name}</span>
+                  {/* المعلَنون بأسمائهم ودوراتهم في المسار، ثمّ تخصّصُ ما لم يُعلن مدرّبُه */}
+                  {pathwayTeam(
+                    pathwayCoursesList.map((c) => ({ name: c.name, role: courseTrainer(c).role, names: trainerNamesOf(cohorts.get(c.id)) })),
+                    TRAINER_PENDING_AR,
+                  ).map((t) => (
+                    <Inset key={t.key} className="flex items-start gap-2.5 px-3.5 py-2.5 text-sm">
+                      <User className="mt-0.5 h-4 w-4 shrink-0 text-teal-light-ink" />
+                      <span className="min-w-0">
+                        <span className="font-bold text-foreground">{t.title}</span>{" "}
+                        <span className={t.announced ? "text-muted-foreground" : "text-teal-light-ink"}>{t.detail}</span>
+                      </span>
                     </Inset>
                   ))}
                 </div>
@@ -668,7 +677,7 @@ export default function PathwayPage() {
                             <span className="min-w-0">
                               <span className="block text-xs font-bold leading-snug">{c.name}</span>
                               <span className="text-fine text-muted-foreground">
-                                {c.weeks} {c.weeks === 1 ? "أسبوع" : "أسابيع"} · {courseTrainer(c).name}
+                                {c.weeks} {c.weeks === 1 ? "أسبوع" : "أسابيع"} · {trainerLine(c)}
                               </span>
                             </span>
                           </span>
