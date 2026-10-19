@@ -6193,6 +6193,32 @@ export class TrainerReviewService {
     return { ok: true }
   }
 
+  /* ═══ واعتمادُ كلِّ المعلَّقِ بضغطةٍ واحدة (١٩ أكتوبر ٢٠٢٦) ═══
+
+     قرارُ صاحب المنصّة: «اضف زر اعتماد كل الصور المعلقة». فكانت الصورُ تُعتمد
+     واحدةً واحدة، كلٌّ في بطاقة صاحبها بين عشرات البطاقات.
+
+     وكلُّ صورةٍ تمرّ بـ`approvePendingPhoto` نفسِها لا بتحديثٍ جماعيّ: فلكلٍّ
+     أثرُها (`trainer.photo.approve`) باسم صاحبها، وتُمحى صورتُه العامّةُ القديمةُ
+     كما في الاعتماد الفرديّ. ومن سقط اعتمادُه — كأن ردّها أحدٌ في اللحظة نفسِها
+     — لا يوقف الباقين: يُعدّ ويُقال. */
+  async approveAllPendingPhotos(actorId: string) {
+    const pending = await this.prisma.trainerProfile.findMany({
+      where: { photoPendingKey: { not: null } }, select: { id: true },
+    })
+    let approved = 0
+    let failed = 0
+    for (const p of pending) {
+      try {
+        await this.approvePendingPhoto(p.id, actorId)
+        approved += 1
+      } catch {
+        failed += 1
+      }
+    }
+    return { approved, failed }
+  }
+
   /* ═══ اقتراحاتُ الدورات يحرّرها الأدمن ═══
 
      ─────────── العطبُ الذي كُتبت له ───────────

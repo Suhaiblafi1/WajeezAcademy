@@ -43,6 +43,15 @@ describe('محرّر الملفّ العامّ', () => {
     }
   })
 
+  /* قرارُ صاحب المنصّة (١٩ أكتوبر ٢٠٢٦): «اضف زر اعتماد كل الصور المعلقة» */
+  it('وزرّ اعتماد كلّ الصور المعلّقة ينادي مساره — وهو خلف `trainer.publish` كالفرديّ', () => {
+    expect(screen, 'الزرّ لا ينادي المسار').toContain('"/api/admin/trainers/photos/approve-pending"')
+    expect(screen, 'الزرّ يظهر ولو لا معلّق').toMatch(/pendingPhotos > 0 && \(\s*<Button/)
+    const at = routes.indexOf("app.post('/api/admin/trainers/photos/approve-pending'")
+    expect(at, 'لا مسار').toBeGreaterThan(-1)
+    expect(routes.slice(at, at + 300), 'بلا حارس').toContain("requirePermission('trainer.publish')")
+  })
+
   it('وحقل الملفّ يقبل صيغ الصور وحدها', () => {
     expect(screen).toMatch(/accept="image\/jpeg,image\/png,image\/webp"/)
   })
