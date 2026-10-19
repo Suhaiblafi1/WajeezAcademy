@@ -1,4 +1,4 @@
-/* «لماذا اخترناه» — نكتبه نحن عن المدرّب، ويقبله أو يرفضه (١٩ أكتوبر ٢٠٢٦).
+/* «لماذا نفتخر به» — نكتبه نحن عن المدرّب، ويقبله أو يرفضه (١٩ أكتوبر ٢٠٢٦).
 
    قرارُ صاحب المنصّة: «أضف كلماتٍ تشجّع الناس لهذا المدرّب، والمدرّب يوافق أو
    يرفض التعديل». وهو بعينه قرارُ ١٢ أكتوبر في كلّ ما نقترحه على المدرّب: بطاقةُ
@@ -63,7 +63,7 @@ export class TrainerPitchService {
       await safeNotify(this.prisma, {
         userId: p.userId, channel: 'in_app', audience: 'trainer',
         templateKey: 'trainer.pitch.proposed',
-        title: 'كتبنا عنك «لماذا اخترناك»',
+        title: 'كتبنا عنك «لماذا نفتخر بك»',
         body: 'سطور قصيرة تظهر في بطاقتك بصفحة المدربين. اقرأها واقبلها أو ارفضها — لا تظهر قبل قبولك.',
         data: { profileId: p.id, suggestionId: made.id },
       })
@@ -123,7 +123,7 @@ export class TrainerPitchService {
     })
     await notifyRole(this.prisma, ['academic_manager', 'super_admin'], {
       channel: 'in_app', templateKey: accept ? 'trainer.pitch.accepted' : 'trainer.pitch.rejected',
-      title: accept ? 'قبل المدرب «لماذا اخترناه»' : 'رفض المدرب «لماذا اخترناه»',
+      title: accept ? 'قبل المدرب «لماذا نفتخر به»' : 'رفض المدرب «لماذا نفتخر به»',
       body: accept
         ? `قبل ${p.application.fullName} السطور، وظهرت في بطاقته بصفحة المدربين.`
         : `رفض ${p.application.fullName} السطور${note ? `: «${note}»` : '.'} وبقيت بطاقته كما كانت.`,

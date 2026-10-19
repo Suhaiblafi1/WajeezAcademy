@@ -266,7 +266,7 @@ const MEDIUM: readonly string[] = [
   /* صورتُه ومراجعتُه */
   'trainer.photo.approve', 'trainer.photo.reject',
   'trainer.public_text.approve', 'trainer.public_text.reject',
-  /* و«لماذا اخترناه» (١٩ أكتوبر ٢٠٢٦): نقترحه عليه أو نسحبه — قرارٌ ينتظره في بوّابته */
+  /* و«لماذا نفتخر به» (١٩ أكتوبر ٢٠٢٦): نقترحه عليه أو نسحبه — قرارٌ ينتظره في بوّابته */
   'trainer.pitch.propose', 'trainer.pitch.withdraw',
   'rating.approve', 'rating.reject',
   /* تذكرتُه */
@@ -349,7 +349,7 @@ const LOW: readonly string[] = [
   'trainer.assign', 'trainer.create_direct', 'trainer.profile.create',
   'trainer.account.link', 'trainer.demo.evaluate', 'trainer.document.register',
   'trainer.public_profile.save', 'trainer.photo.upload', 'trainer.public_text.submit',
-  /* وقبولُه «لماذا اخترناه» أو رفضُه — فعلُه هو، يصلنا خبرُه ولا يُرسَل إليه */
+  /* وقبولُه «لماذا نفتخر به» أو رفضُه — فعلُه هو، يصلنا خبرُه ولا يُرسَل إليه */
   'trainer.pitch.accept', 'trainer.pitch.reject',
   'trainer.review.add', 'trainer.review.update',
   'trainer.application.submit', 'trainer.application.resume', 'trainer.application.reapply',

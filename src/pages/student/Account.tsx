@@ -481,7 +481,7 @@ export default function StudentAccount() {
       {/* ═══ وللمدرّب: عنوانُه ونبذتُه في «المدربون» (٣ أكتوبر ٢٠٢٦) ═══
           تحت صورته لأنّهم يُعرضون معا — والعلّةُ في `PublicTextCard`. */}
       {mode === "server" && roles?.includes("trainer") && <PublicTextCard inputCls={inputCls} />}
-      {/* و«لماذا اخترناك» تحتهما: سطورٌ نكتبها نحن ويقبلها هو أو يرفضها (١٩ أكتوبر ٢٠٢٦) */}
+      {/* و«لماذا نفتخر بك» تحتهما: سطورٌ نكتبها نحن ويقبلها هو أو يرفضها (١٩ أكتوبر ٢٠٢٦) */}
       {mode === "server" && roles?.includes("trainer") && <PitchCard inputCls={inputCls} />}
 
       {/* المعلومات الشخصية */}

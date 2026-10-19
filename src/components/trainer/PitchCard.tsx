@@ -1,4 +1,4 @@
-/* «لماذا اخترناك» — سطورٌ كتبناها عنك، تقبلها أو ترفضها (١٩ أكتوبر ٢٠٢٦).
+/* «لماذا نفتخر بك» — سطورٌ كتبناها عنك، تقبلها أو ترفضها (١٩ أكتوبر ٢٠٢٦).
 
    قرارُ صاحب المنصّة: «أضف كلماتٍ تشجّع الناس لهذا المدرّب، والمدرّب يوافق أو
    يرفض التعديل». فهي بطاقةُ «قبل/بعد» كبقيّة ما نقترحه على المدرّب
@@ -69,7 +69,7 @@ export default function PitchCard({ inputCls }: { inputCls: string }) {
 
   return (
     <Panel as="section" className="mt-6 md:p-8" aria-labelledby="pitch-h">
-      <h2 id="pitch-h" className="text-base font-black">«لماذا اخترناك» في بطاقتك</h2>
+      <h2 id="pitch-h" className="text-base font-black">«لماذا نفتخر بك» في بطاقتك</h2>
       <p className="mt-2 max-w-3xl text-read leading-7 text-muted-foreground">
         سطور قصيرة نكتبها نحن عنك من نبذتك، تظهر في بطاقتك بصفحة المدربين. لا تظهر إلا بقبولك.
       </p>

@@ -1019,12 +1019,12 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     return review.rejectPendingPhoto(profileId, req.auth!.userId, reasonAr)
   })
 
-  /* ═══ «لماذا اخترناه» — نكتبه ويقبله هو أو يرفضه (١٩ أكتوبر ٢٠٢٦) ═══
+  /* ═══ «لماذا نفتخر به» — نكتبه ويقبله هو أو يرفضه (١٩ أكتوبر ٢٠٢٦) ═══
      العلّةُ في `trainer-pitch.service.ts`. وبصلاحيّة النشر كالصورة والنبذة: هو نصٌّ
      يُعرض للعامّة باسمنا. والطولُ يُحكم في الخدمة، وهنا حدُّ الحقل الخام. */
   app.post('/api/admin/trainers/:profileId/pitch', {
     preHandler: requirePermission('trainer.publish'),
-    schema: { tags: ['admin-trainers'], summary: '«لماذا اخترناه» — اقتراحٌ يصل المدرّب بطاقة قبل وبعد' },
+    schema: { tags: ['admin-trainers'], summary: '«لماذا نفتخر به» — اقتراحٌ يصل المدرّب بطاقة قبل وبعد' },
   }, async (req) => {
     const { profileId } = z.object({ profileId: z.string().uuid() }).parse(req.params)
     const { lines } = z.object({ lines: z.array(z.string().max(400)).max(10) }).parse(req.body ?? {})
@@ -1033,7 +1033,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
 
   app.post('/api/admin/trainers/:profileId/pitch/withdraw', {
     preHandler: requirePermission('trainer.publish'),
-    schema: { tags: ['admin-trainers'], summary: 'سحب «لماذا اخترناه» المعلّق قبل أن يقرّر فيه المدرّب' },
+    schema: { tags: ['admin-trainers'], summary: 'سحب «لماذا نفتخر به» المعلّق قبل أن يقرّر فيه المدرّب' },
   }, async (req) => {
     const { profileId } = z.object({ profileId: z.string().uuid() }).parse(req.params)
     return pitch.withdraw(profileId, req.auth!.userId)

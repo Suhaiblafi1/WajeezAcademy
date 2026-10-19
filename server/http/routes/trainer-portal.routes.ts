@@ -70,17 +70,17 @@ export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: Prisma
     return publicText.submit(req.auth!.userId, body)
   })
 
-  /* ═══ «لماذا اخترناه» — نكتبه عنه، ويقبله أو يرفضه (١٩ أكتوبر ٢٠٢٦) ═══
+  /* ═══ «لماذا نفتخر به» — نكتبه عنه، ويقبله أو يرفضه (١٩ أكتوبر ٢٠٢٦) ═══
      العلّةُ في `trainer-pitch.service.ts`. والقرارُ له وحدَه: لا يُقرَّر في اقتراحٍ
      ليس لملفّه. */
   app.get('/api/trainer/pitch', {
     preHandler: requirePermission('trainer.portal'),
-    schema: { tags: ['trainer-portal'], summary: '«لماذا اخترناك» — ما يظهر الآن وما ينتظر قراري' },
+    schema: { tags: ['trainer-portal'], summary: '«لماذا نفتخر بك» — ما يظهر الآن وما ينتظر قراري' },
   }, async (req) => pitch.mine(req.auth!.userId))
 
   app.post('/api/trainer/pitch/:id/accept', {
     preHandler: requirePermission('trainer.portal'),
-    schema: { tags: ['trainer-portal'], summary: 'أقبل «لماذا اخترناك» — فيظهر في بطاقتي' },
+    schema: { tags: ['trainer-portal'], summary: 'أقبل «لماذا نفتخر بك» — فيظهر في بطاقتي' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     return pitch.decide(req.auth!.userId, id, true)
@@ -88,7 +88,7 @@ export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: Prisma
 
   app.post('/api/trainer/pitch/:id/reject', {
     preHandler: requirePermission('trainer.portal'),
-    schema: { tags: ['trainer-portal'], summary: 'أرفض «لماذا اخترناك» — وتبقى بطاقتي كما هي' },
+    schema: { tags: ['trainer-portal'], summary: 'أرفض «لماذا نفتخر بك» — وتبقى بطاقتي كما هي' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const { noteAr } = z.object({ noteAr: z.string().max(300).optional() }).parse(req.body ?? {})
