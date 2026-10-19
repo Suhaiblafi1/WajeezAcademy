@@ -29,7 +29,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router";
 import { Link2, Loader2, TicketPercent, UserPlus, Wallet } from "lucide-react";
-import PortalFrame from "../PortalFrame";
 import { apiGet, apiPost, ApiError, permissionMessage } from "@/services/api";
 import { Panel, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
@@ -480,7 +479,8 @@ export default function Referral() {
   }, []);
 
   return (
-    <PortalFrame title="دعوتي">
+    /* قسمٌ في «مستحقاتي» لا شاشةٌ بلسانها (الخطوة G، ١٩ أكتوبر ٢٠٢٦) — والإطارُ إطارُها */
+    <>
       {error && <Inset as="p" tone="danger" className="mb-4 px-4 py-3 text-read leading-6 text-red-200">{error}</Inset>}
 
       {/* ف-١: تُفتتح بسؤالٍ عمّا يوصي به، لا بشرحِ آليّةِ الرابط */}
@@ -625,6 +625,6 @@ export default function Referral() {
           </Panel>
         </>
       )}
-    </PortalFrame>
+    </>
   );
 }

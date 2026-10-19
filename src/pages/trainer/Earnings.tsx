@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link } from "react-router";
+import { Link, useSearchParams } from "react-router";
 import { Banknote, CheckCircle2, Clock3, Loader2, Lock, RefreshCw, ShieldCheck, TicketPercent, Trash2, XCircle } from "lucide-react";
 import TrainerLayout from "./TrainerLayout";
+import MyContract from "./MyContract";
+import Referral from "./Referral";
+import TabBar from "@/components/ui/TabBar";
 import { apiDelete, apiGet, apiPut, ApiError } from "@/services/api";
 import { fmtDateAr } from "@/utils/format";
 
@@ -368,23 +371,23 @@ function RealEarningsView() {
 
   if (err) {
     return (
-      <TrainerLayout title="مستحقاتي">
+      <>
         <Card as="p" tone="danger" className="text-center text-sm font-bold text-red-300" role="alert">{err}</Card>
-      </TrainerLayout>
+      </>
     );
   }
   if (!data) {
     return (
-      <TrainerLayout title="مستحقاتي">
+      <>
         <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground/50" /></div>
-      </TrainerLayout>
+      </>
     );
   }
 
   const { summary, payouts, agreement, rules, cohorts, awaitingDiscounts } = data;
   const scoped = (rules ?? []).filter((r) => (r.cohortId || r.courseId) && !r.effectiveTo);
   return (
-    <TrainerLayout title="مستحقاتي — كشف مبسط وشفاف">
+    <>
       {/* ═══ اتفاقُك المسبق — قبل أيّ رقم ═══
 
           كانت الصفحةُ تعرض ما قُبض وما يُنتظر ولا تعرض على أيّ أساس. والاتفاقُ
@@ -610,13 +613,41 @@ function RealEarningsView() {
         {' '}{payoutTimingNoteAr()}{' '}
         ولأيّ استفسار راسل منسّقك قبل موعد الصرف.
       </Card>
-    </TrainerLayout>
+    </>
   );
 }
 
 /** مستحقات المدرب — جلسة حقيقية: من الخادم مباشرة. بلا جلسة (ديمو محلي): البيانات التوضيحية المحلية */
 /* حُذف `DemoEarningsView`: مستحقاتٌ ومبالغُ وحالاتُ صرفٍ مولَّدة في المتصفّح
    وتُعرض للمدرّب كأنها مستحقاته. */
+/* ═══ ثلاثةُ أقسامٍ في لسانٍ واحد (الخطوة G، ١٩ أكتوبر ٢٠٢٦) ═══
+   درس صاحبُ المنصّة جانبَ المدرّب واختار («All, in order»): القائمةُ من أربعة عشر لسانا إلى ثمانية.
+   فدخلت «عقدي» و«دعوتي» هنا — وقرارُه قبلها (٢٥ سبتمبر ٢٠٢٦): «الملف يكون في منصته ضمن قسم المستحقات
+   والعقد». ما يستحقّه، والوثيقةُ التي يستحقّه بها، والرابطُ الذي يزيده — بابٌ واحد. ومساراتُها القديمة
+   تُحال إلى أقسامها (`App.tsx`). */
+const SECTIONS = [
+  { id: "earnings", label: "مستحقاتي" },
+  { id: "contract", label: "عقدي" },
+  { id: "referral", label: "دعوتي" },
+] as const;
+type Section = (typeof SECTIONS)[number]["id"];
+
 export default function Earnings() {
-  return <RealEarningsView />;
+  const [params, setParams] = useSearchParams();
+  const asked = params.get("tab");
+  const section: Section = SECTIONS.some((s) => s.id === asked) ? (asked as Section) : "earnings";
+  return (
+    <TrainerLayout title="مستحقاتي">
+      <TabBar
+        ariaLabel="أقسام مستحقاتي"
+        className="mb-5"
+        value={section}
+        onChange={(id) => setParams(id === "earnings" ? {} : { tab: id }, { replace: true })}
+        items={SECTIONS.map((s) => ({ id: s.id, label: s.label }))}
+      />
+      {section === "earnings" && <RealEarningsView />}
+      {section === "contract" && <MyContract />}
+      {section === "referral" && <Referral />}
+    </TrainerLayout>
+  );
 }

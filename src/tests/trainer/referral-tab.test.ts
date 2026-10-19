@@ -20,21 +20,19 @@ const code = (p: string) =>
   read(p).replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '').replace(/^\s*\/\/.*$/gm, '')
 
 describe('«دعوتي» لها تبويبها', () => {
-  it('⚠️ وموضعها بعد «ما قيل عنّي» مباشرة — لا في آخر الشريط', () => {
-    const nav = code('src/pages/trainer/TrainerLayout.tsx')
-    const ratings = nav.indexOf('"/trainer/ratings"')
-    const referral = nav.indexOf('"/trainer/referral"')
-    expect(ratings, 'تبويب «ما قيل عنّي» مفقود').toBeGreaterThan(-1)
-    expect(referral, 'تبويب «دعوتي» ليس في الشريط').toBeGreaterThan(-1)
-    expect(referral, '«دعوتي» قبل «ما قيل عنّي»').toBeGreaterThan(ratings)
-    /* «بعده مباشرةً»: لا بندَ ثالثٌ بينهما. والقَطعُ ينتهي عند اقتباس
-       «دعوتي» نفسِه، فما بينهما خالٍ من `{ to: "` تماما. */
-    const between = nav.slice(ratings, referral)
-    expect(between.match(/\{ to: "/g) ?? [], 'دخل بند بين «ما قيل عنّي» و«دعوتي»').toHaveLength(0)
+  /* ═══ وصار قسما في «مستحقاتي» لا لسانا (الخطوة G، ١٩ أكتوبر ٢٠٢٦) ═══
+     درس صاحبُ المنصّة جانبَ المدرّب واختار القائمةَ ثمانيةَ ألسنة: «دعوتي» و«عقدي» في «مستحقاتي»،
+     و«ما قيل عنّي» في «الرئيسية». فنُسخ «بعد «ما قيل عنّي» مباشرةً» (١٣ سبتمبر) بقرارٍ أحدث. والمحروسُ
+     الباقي هو هو: بابٌ يبلغه، ومسارُه القديمُ لا يقود إلى «لا شيء»، ونُقل ولم يُنسخ، ولا رقمَ فيه. */
+  it('⚠️ قسمٌ في «مستحقاتي» يبلغه لسانُها', () => {
+    const earnings = code('src/pages/trainer/Earnings.tsx')
+    expect(earnings).toMatch(/\{ id: "referral", label: "دعوتي" \}/)
+    expect(earnings).toMatch(/section === "referral" && <Referral \/>/)
+    expect(code('src/pages/trainer/TrainerLayout.tsx')).toMatch(/to: "\/trainer\/earnings", label: "مستحقاتي"/)
   })
 
-  it('⚠️ والمسار معرّف — وإلّا فتبويب يقود إلى «لا شيء»', () => {
-    expect(code('src/App.tsx')).toMatch(/path="\/trainer\/referral" element=\{<TrainerReferral/)
+  it('⚠️ والمسار القديم يُحال إلى قسمه — وإلّا فرابطٌ في رسالةٍ يقود إلى «لا شيء»', () => {
+    expect(code('src/App.tsx')).toMatch(/path="\/trainer\/referral" element=\{<Navigate to="\/trainer\/earnings\?tab=referral" replace \/>\}/)
   })
 
   it('⚠️ ونقل ولم ينسخ — لا بطاقة رابط ثانية في «الرئيسية»', () => {

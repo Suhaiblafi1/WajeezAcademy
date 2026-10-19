@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Loader2, ServerOff } from "lucide-react";
+import MyRatings from "./MyRatings";
 import TrainerLayout from "./TrainerLayout";
 import { apiGet } from "@/services/api";
 import BookAdminMeeting from "@/components/BookAdminMeeting";
@@ -182,6 +183,9 @@ function RealTrainerHome({ name, email }: { name: string; email: string }) {
 
           وصار مكوّنا (ع-١): السطرُ نفسُه في «مركز التواصل»، ونسختان تفترقان. */}
       <BookAdminMeeting name={name} email={email} />
+
+      {/* «ما قيل عنّي» — كان لسانا وصار قسما هنا (الخطوة G، ١٩ أكتوبر ٢٠٢٦) */}
+      <MyRatings />
 
       <p className="mt-6 text-center text-read text-muted-foreground">
         كلّ بند يقودك إلى مكان تنفيذه.

@@ -627,7 +627,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
     id: 'contract',
     title: 'عقدي: نسختك الموقّعة',
     tab: 'عقدي',
-    path: '/trainer/contract',
+    path: '/trainer/earnings?tab=contract',
     /* ═══ ونوقّعه حين نعتمد دوراتك لا قبلها (١ أكتوبر ٢٠٢٦) ═══
        كان «بتوقيعنا وتاريخه» من أوّل يوم — وقرارُ صاحب المنصّة أن لا يتعاقد
        مع أحدٍ قبل أن يعتمد دوراته. فيُقال متى يقع توقيعُنا. */
@@ -644,7 +644,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
     id: 'ratings',
     title: 'ما قيل عنّي: تقييمات متعلّميك',
     tab: 'ما قيل عنّي',
-    path: '/trainer/ratings',
+    path: '/trainer#ratings',
     why: 'ما يقوله متعلّموك عنك، مجمّعا وبلا أسماء.',
     blocks: [
       { kind: 'figure', shot: 'ratings', alt: 'متوسّط التقييم وتوزيعه والتعليقات', caption: 'العدد، والمتوسّط من 5، وتوزيعه، ثمّ التعليقات بلا أصحابها.' },
@@ -660,7 +660,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
     id: 'referral',
     title: 'دعوتي: روابطك وأكوادك',
     tab: 'دعوتي',
-    path: '/trainer/referral',
+    path: '/trainer/earnings?tab=referral',
     why: 'من يسجّل من رابطك يحسب لك بأجر أعلى، ويظهر في «طلبتي» بعلامة «عبر رابطك».',
     blocks: [
       { kind: 'figure', shot: 'referral', alt: 'رابط المدرّب العامّ وزرّ نسخه', caption: '1 «رابطي العامّ» — صفحة باسمك فيها شعبك المفتوحة · 2 «انسخ الرابط»' },

@@ -30,7 +30,13 @@ const SCREENS = [
   'src/pages/trainer/GradingQueue.tsx',
   'src/pages/trainer/CohortWorkspace.tsx',
   'src/pages/trainer/Earnings.tsx',
+]
+/* وأقسامٌ تُصيَّر داخل شاشةٍ لا شاشاتٌ بإطارها (الخطوة G، ١٩ أكتوبر ٢٠٢٦): «ما قيل عنّي» في «الرئيسية»،
+   و«عقدي» و«دعوتي» في «مستحقاتي». فإطارُها إطارُ مضيفها، وقاعدةُ التقويم عليها كما على الشاشات. */
+const SECTIONS = [
   'src/pages/trainer/MyRatings.tsx',
+  'src/pages/trainer/MyContract.tsx',
+  'src/pages/trainer/Referral.tsx',
 ]
 
 describe('إطار بوابة المدرب', () => {
@@ -57,14 +63,16 @@ describe('إطار بوابة المدرب', () => {
     const tabs = [...layout.matchAll(/\{ to: "(\/trainer[^"]*)"/g)].map((m) => m[1])
     expect(tabs, 'التبويبات مفقودة').not.toHaveLength(0)
     /* ورشةُ عمله الفعليّة كانت خارجها */
-    for (const path of ['/trainer', '/trainer/board', '/trainer/grading', '/trainer/earnings', '/trainer/ratings']) {
+    for (const path of ['/trainer', '/trainer/board', '/trainer/grading', '/trainer/earnings']) {
       expect(tabs, `${path} خارج التبويبات — لا يبلغها إلا بكتابة مسارها`).toContain(path)
     }
+    /* و«ما قيل عنّي» قسمٌ في «الرئيسية» منذ الخطوة G — يُبلَغ من لسانها لا من لسانٍ له */
+    expect(read('src/pages/trainer/TrainerDashboard.tsx'), '«ما قيل عنّي» لا يبلغه لسان').toMatch(/<MyRatings \/>/)
   })
 })
 
 describe('تقويم بوابة المدرب', () => {
-  const FILES = [...SCREENS, 'src/components/TrainerWorkQueue.tsx', 'src/components/AtRiskList.tsx']
+  const FILES = [...SCREENS, ...SECTIONS, 'src/components/TrainerWorkQueue.tsx', 'src/components/AtRiskList.tsx']
 
   it('ميلاديّ واحد — لا هجريّ ولا لغة تنسيق لكل شاشة', () => {
     for (const f of FILES) {
