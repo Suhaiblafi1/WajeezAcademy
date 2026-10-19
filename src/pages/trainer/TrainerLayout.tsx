@@ -13,6 +13,8 @@ import { loadMyPortals } from "@/services/portals";
 import { apiGet } from "@/services/api";
 import { GRADING_CHANGED } from "@/services/grading-signal";
 import { TRAINER_GUIDE_PATH } from "@/application/trainer/trainer-guide";
+import { hasOpenCondition } from "@/application/trainer/conditional-offer";
+import { tabsForStage } from "@/application/trainer/setup-tabs";
 import TrainerAnnouncement from "./TrainerAnnouncement";
 
 /* ما يقرؤه الإطارُ من `/api/trainer/me` — لا الملفُّ كلُّه.
@@ -20,6 +22,8 @@ import TrainerAnnouncement from "./TrainerAnnouncement";
    فنداءان لمسارٍ واحدٍ في الإطار نفسِه طلبٌ زائدٌ في كلّ شاشةٍ تُفتح. */
 interface PortalMe {
   pendingGrading?: number;
+  /** شعبُه التي تُشغَّل — من له واحدةٌ لا يُعامَل معاملةَ طور الإعداد */
+  liveCohorts?: number;
   contracts?: ConditionContract[];
 }
 
@@ -164,6 +168,11 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
       ? [{ to: "/trainer/placement-review", label: "اختبار المستوى", icon: Languages }]
       : []),
   ];
+  /* ومن في طور الإعداد يرى ما يعمل به وحدَه (الخطوة H، `setup-tabs.ts`) — وطورُه من عقده كما يقرؤه
+     شريطُ المهلة تحت القائمة، لا من ظنٍّ ثانٍ. ومن له شعبةٌ تُشغَّل أو تسليمٌ ينتظره يرى القائمةَ كلَّها */
+  const contract = me?.contracts?.[0];
+  const inSetup = Boolean(contract && hasOpenCondition(contract)) && (me?.liveCohorts ?? 0) === 0 && pending === 0;
+  const shownTabs = tabsForStage(tabs, inSetup);
 
   /* له الصلاحيّةُ ولا ملفَّ له: شاشةٌ واحدةٌ تشرح، بدل عشرِ شاشاتٍ تسقط */
   if (realTrainer && hasProfile === false) {
@@ -242,7 +251,7 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
             </div>
           )}
           <PortalTabs
-            tabs={tabs}
+            tabs={shownTabs}
             label="تبويبات بوّابة المدرّب"
             countLabel="ينتظر تصحيحك: "
             className="order-last w-full"
