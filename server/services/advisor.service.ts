@@ -66,6 +66,70 @@ function guestSnapshot(raw: unknown): object | null {
   }
 }
 
+/* ═══════════ ما يُحسب للمستشار من دفعات عملائه — حسابٌ واحدٌ له ولإدارته ═══════════
+
+   كان حسابان يفترقان: «عمولتي» يعدّ ما دُفع من يوم الإسناد على كلّ الإسنادات، وملفُّه
+   عند الإدارة يعدّ ما دفعه العميلُ في عمره كلِّه على النشطة وحدَها. فيقرأ المستشارُ
+   رقما ويقرأ من يدفع له رقما آخر — وهو أوّلُ ما يُختلف عليه. فصار حسابا واحدا يقرآنه.
+
+   ── وكلُّ الإسنادات لا النشطةَ وحدَها ──
+
+   كان الشرطُ `unassignedAt: null`، فمن أغلق حالةً ورُفع إسنادُها — وهو ما يقع عند كلّ
+   بيعةٍ تمّت — سقطت عمولتُها من حسابه. أي أنّ إتمامَ العمل كان يمحو أجرَه.
+
+   ── ومن يوم إسناده لا من عمر العميل ──
+
+   كان يُحسب ما دفعه العميلُ في عمره كلِّه — بما اشتراه قبل أن يعرف المستشارَ أصلا.
+   فالنسبةُ على ما دُفع من يوم إسناده فصاعدا: ما قبلَه ليس من عمله.
+
+   ── والإسنادُ التلقائيّ لا يُحسب إلّا بتواصل (١٩ أكتوبر ٢٠٢٦) ──
+
+   قرارُ صاحب المنصّة بين ثلاثة (يُحسب كلُّه، أو بعد تواصلٍ مسجَّل، أو لا يُحسب أبدا):
+   **بعد تواصلٍ مسجَّل، والسجلُّ يُصدَّق** — وكلُّ تواصلٍ مكتوبٌ باسم صاحبه ووقته فيُراجَع.
+   فما أسنده النظامُ (`automatic`) لا يبدأ حسابُه من يوم الإسناد بل من أوّل تواصلٍ سجّله
+   المستشارُ نفسُه في تلك الحالة؛ ولا تواصلَ قبل الدفع = لا شيءَ عن تلك الدفعة. وما أسنده
+   إداريٌّ أو أدخله المستشارُ بيده يبقى من يوم إسناده كما كان. */
+export async function attributedRevenue(prisma: PrismaClient, advisorId: string): Promise<number> {
+  const assignments = await prisma.advisorAssignment.findMany({
+    where: { advisorId },
+    select: { caseId: true, assignedAt: true, automatic: true, case: { select: { clientId: true } } },
+  })
+  const autoCaseIds = assignments.filter((a) => a.automatic).map((a) => a.caseId)
+  const contacts = autoCaseIds.length > 0
+    ? await prisma.contactEvent.findMany({
+        where: { caseId: { in: autoCaseIds }, createdBy: advisorId },
+        select: { caseId: true, createdAt: true },
+      })
+    : []
+
+  const firstTouch = new Map<string, Date>()
+  for (const a of assignments) {
+    const clientId = a.case.clientId
+    if (!clientId) continue
+    const start = a.automatic
+      ? contacts
+          .filter((c) => c.caseId === a.caseId && c.createdAt >= a.assignedAt)
+          .reduce<Date | null>((min, c) => (!min || c.createdAt < min ? c.createdAt : min), null)
+      : a.assignedAt
+    if (!start) continue
+    const prev = firstTouch.get(clientId)
+    if (!prev || start < prev) firstTouch.set(clientId, start)
+  }
+  const clientIds = [...firstTouch.keys()]
+  if (clientIds.length === 0) return 0
+
+  const paid = await prisma.order.findMany({
+    where: { userId: { in: clientIds }, status: 'paid' },
+    select: { userId: true, total: true, paidAt: true, createdAt: true },
+  })
+  return paid.reduce((sum, o) => {
+    const since = firstTouch.get(o.userId)
+    /* `paidAt` قد يغيب على صفٍّ قديم — فيُقرأ تاريخُ الطلب بدلا منه */
+    const when = o.paidAt ?? o.createdAt
+    return since && when >= since ? sum + Number(o.total) : sum
+  }, 0)
+}
+
 export class AdvisorService {
   private prisma: PrismaClient
   constructor(prisma: PrismaClient) {
@@ -158,7 +222,7 @@ export class AdvisorService {
       where: { caseId, unassignedAt: null }, data: { unassignedAt: new Date() },
     })
     const link = await this.prisma.advisorAssignment.create({
-      data: { caseId, advisorId, assignedBy: actorId },
+      data: { caseId, advisorId, assignedBy: actorId, automatic: actorId === null },
     })
     await recordAudit(this.prisma, {
       actorId, action: 'advisor.case.assign', entityType: 'advisor_case', entityId: caseId,
@@ -263,7 +327,7 @@ export class AdvisorService {
     return this.prisma.advisorCase.findMany({
       where: {
         status: { notIn: ['closed', 'enrolled', 'not_interested'] },
-        assignments: { some: { unassignedAt: null, assignedBy: null, assignedAt: { gte: new Date(Date.now() - 30 * 86_400_000) } } },
+        assignments: { some: { unassignedAt: null, automatic: true, assignedAt: { gte: new Date(Date.now() - 30 * 86_400_000) } } },
       },
       include: {
         lead: true,
@@ -535,44 +599,14 @@ export class AdvisorService {
     })
   }
 
-  /** عمولتي المستحقّة فعلا من عملائي الدافعين — نفس حساب ملفّه عند الإدارة،
-      لكن للمستشار نفسه لا لمن يديره. كانت الإدارة وحدها ترى هذا الرقم. */
+  /** عمولتي المستحقّة فعلا من عملائي الدافعين — بحساب ملفّه عند الإدارة نفسِه
+      (`attributedRevenue`)، لكن للمستشار نفسه لا لمن يديره. كانت الإدارة وحدها ترى هذا الرقم. */
   async myEarnings(advisorId: string) {
-    const [profile, assignments] = await Promise.all([
-      this.prisma.advisorProfile.findUnique({ where: { userId: advisorId } }),
-      /* كلُّ الإسنادات لا النشطةَ وحدَها.
-
-         كان الشرطُ `unassignedAt: null`، فمن أغلق حالةً ورُفع إسنادُها —
-         وهو ما يقع عند كلّ بيعةٍ تمّت — سقطت عمولتُها من حسابه. أي أنّ
-         إتمامَ العمل كان يمحو أجرَه. */
-      this.prisma.advisorAssignment.findMany({
-        where: { advisorId },
-        select: { assignedAt: true, unassignedAt: true, case: { select: { clientId: true } } },
-      }),
-    ])
-
-    /* ومتى بدأت نسبتُه من كلّ عميل: أوّلُ يومٍ أُسند إليه فيه.
-
-       وكان يُحسب مجموعُ ما دفعه العميلُ **في عمره كلِّه** — بما اشتراه قبل
-       أن يعرف المستشارَ أصلا، وما يشتريه بعد سنةٍ بلا وساطته. فالنسبةُ
-       على ما دُفع من يوم إسناده فصاعدا: ما قبلَه ليس من عمله. */
-    const firstTouch = new Map<string, Date>()
-    for (const a of assignments) {
-      const clientId = a.case.clientId
-      if (!clientId) continue
-      const prev = firstTouch.get(clientId)
-      if (!prev || a.assignedAt < prev) firstTouch.set(clientId, a.assignedAt)
-    }
-    const clientIds = [...firstTouch.keys()]
-
     const MIN_RATINGS_TO_SHOW = 3
-    const [paidOrders, ratingAgg] = await Promise.all([
-      clientIds.length > 0
-        ? this.prisma.order.findMany({
-            where: { userId: { in: clientIds }, status: 'paid' },
-            select: { userId: true, total: true, paidAt: true, createdAt: true },
-          })
-        : Promise.resolve([]),
+    const [profile, activeCases, revenueFromReferrals, ratingAgg] = await Promise.all([
+      this.prisma.advisorProfile.findUnique({ where: { userId: advisorId } }),
+      this.prisma.advisorAssignment.count({ where: { advisorId, unassignedAt: null } }),
+      attributedRevenue(this.prisma, advisorId),
       /* المعدَّلُ على كلّ التقييمات المرسَلة لا على المعتمَد منها.
 
          كان مقيَّدا بـ`publishStatus: 'approved'` — وهي القاعدة التي يمنعها
@@ -586,13 +620,6 @@ export class AdvisorService {
       }),
     ])
 
-    const revenueFromReferrals = paidOrders.reduce((sum, o) => {
-      const since = firstTouch.get(o.userId)
-      /* `paidAt` قد يغيب على صفٍّ قديم — فيُقرأ تاريخُ الطلب بدلا منه */
-      const when = o.paidAt ?? o.createdAt
-      return since && when >= since ? sum + Number(o.total) : sum
-    }, 0)
-
     /* لا عمولةَ بلا نسبةٍ اتّفقت عليها الإدارة صراحة — «لم تُحدَّد بعد» غير «صفر» */
     const commissionPct = profile ? Number(profile.commissionPct) : null
     const commissionOwed = commissionPct !== null ? Math.round(revenueFromReferrals * commissionPct) / 100 : null
@@ -600,7 +627,7 @@ export class AdvisorService {
     return {
       commissionPct, commissionOwed, revenueFromReferrals, currency: 'USD',
       /* «الحالات النشطة» تعني النشطةَ فعلا — بخلاف مقام العمولة */
-      activeCases: assignments.filter((a) => a.unassignedAt === null).length,
+      activeCases,
       ratingAvg: ratingAgg._count >= MIN_RATINGS_TO_SHOW ? Number(ratingAgg._avg.score) : null,
       ratingCount: ratingAgg._count,
     }

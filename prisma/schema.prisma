@@ -3652,6 +3652,9 @@ model AdvisorAssignment {
   assignedBy   String?     @db.Uuid
   assignedAt   DateTime    @default(now())
   unassignedAt DateTime? // التعيين النشط هو ما لم يُلغَ
+  /// أسنده النظامُ لأقلّ المستشارين حالاتٍ (`autoAssign`) — لا إداريٌّ ولا المستشارُ بيده.
+  /// وعمولتُه لا تبدأ إلّا بأوّل تواصلٍ يسجّله المستشار (`attributedRevenue`)
+  automatic    Boolean     @default(false)
   case         AdvisorCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
   advisor      User        @relation("CaseAdvisor", fields: [advisorId], references: [id])
 
