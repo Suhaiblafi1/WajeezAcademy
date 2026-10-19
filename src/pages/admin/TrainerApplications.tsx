@@ -16,7 +16,7 @@ import { matchesQuery } from "@/application/text/search-ar";
 import { INTERVIEW_OUTCOMES, outcomeLabelAr } from "@/application/trainer/interview-outcome";
 import { STATUS_LABELS } from "@/application/trainer/application-status";
 import { bookingLabel, facetsOf, resultKey, verdictBadges, RESULT_CONTESTED, RESULT_NONE, type ReviewVerdict } from "@/application/trainer/queue-labels";
-import { staffAreaCls, staffSelectCls } from "@/components/FormKit";
+import { OptionGrid, staffAreaCls, staffSelectCls } from "@/components/FormKit";
 import { paginate } from "@/application/admin/paginate";
 import { SORT_OPTIONS, sortApplications, type SortDir, type SortKey } from "@/application/trainer/application-sort";
 import type { SyncTrust } from "@/application/trainer/interview-sync-trust";
@@ -40,6 +40,7 @@ import { mailBatchOutcomeAr, mailOutcomeAr } from "@/application/notifications/d
 import { MAIL_LINK_WINDOW_AR } from "@/application/links/mail-link-window";
 import { fmtDateLong, fmtDateTime } from "@/application/text/format-ar";
 import { DEFERRED, deferredFollowUpAt, followUpDue, followUpTermAr } from "@/application/trainer/deferral";
+import { deferReasonsNow, intakeFollowUpAt, TRAINER_INTAKE_CLOSED, type DeferReason } from "@/application/trainer/intake-closed";
 import ConfirmAction from "@/components/ConfirmAction";
 import { BAR_ACTIONS, DECISIONS, recommendedFor, type Decision } from "@/application/trainer/decisions";
 import { REVIEW_OPEN_STATUSES } from "@/application/trainer/approval";
@@ -131,6 +132,29 @@ const RESULT_LABEL_AR: Record<string, string> = {
    كانت ثنائيّةً (`reject` أو غيرُه) مكتوبةً في خمسة مواضعَ من الحوار. فلمّا
    صار ثالثٌ لزم أن تُقرأ كلُّها معجما: خمسةُ ثلاثيّاتٍ متداخلةٍ في JSX تُقرأ
    ولا يُعرف أيُّها لأيّ فعل. */
+/* ═══ سببُ التأجيل يُختار — والفرقُ مكتوبٌ تحت المختار قبل الضغط (١٩ أكتوبر ٢٠٢٦) ═══
+
+   لا يُعرض إلّا والاستقبالُ مغلق: حينها سببان، ولا يُختار عنه أحدُهما. والسببان
+   وما يصل بكلٍّ في `application/trainer/intake-closed.ts`. */
+function DeferReasonPicker({ value, onChange }: { value: DeferReason | null; onChange: (v: DeferReason) => void }) {
+  const reasons = deferReasonsNow();
+  if (reasons.length < 2) return null;
+  const chosen = reasons.find((r) => r.value === value);
+  return (
+    <div className="mt-3">
+      <p className="mb-2 text-read font-bold leading-6">سبب التأجيل الذي يصله</p>
+      <OptionGrid
+        items={reasons.map((r) => ({ value: r.value, label: r.labelAr }))}
+        isOn={(v) => v === value}
+        onToggle={(v) => onChange(v as DeferReason)}
+        cols={2}
+        name="سبب التأجيل"
+      />
+      {chosen && <p className="mt-2 text-read leading-6 text-muted-foreground">{chosen.whatAr}</p>}
+    </div>
+  );
+}
+
 const ROW_DECISION_AR: Record<"reject" | "defer" | "undo_reject" | "undo_withdraw" | "request_info", {
   titleAr: (name: string) => string;
   confirmAr: string;
@@ -520,6 +544,9 @@ export default function TrainerApplications() {
   /* رفضٌ أو انتظارٌ على دفعةٍ: كلاهما يصل صاحبَ الطلب، فسببُه يُكتب أوّلا —
      ووجهةُ السبب تختلف بينهما، ومكتوبٌ عند النافذة أدناه كيف. */
   const [bulkDecision, setBulkDecision] = useState<{ action: string; labelAr: string } | null>(null);
+  /* سببُ التأجيل للحوارين — يُمحى بعد كلّ حوار، فلا يُرسَل اختيارُ طلبٍ مع غيره */
+  const [deferReason, setDeferReason] = useState<DeferReason | null>(null);
+  const deferChoice = deferReasonsNow().length > 1;
   /* قرارٌ على صفٍّ واحدٍ من قائمة أفعاله — والسببُ يُكتب في نافذته لا في
      خانةٍ عامّة، كما في نظيرَيه داخل الملفّ. */
   /* والملفُّ المفتوحُ يفتحه كذلك (التأجيل) — فيكفيه من الطلب ما يُقرأ في الحوار */
@@ -1021,7 +1048,7 @@ export default function TrainerApplications() {
     await load();
   };
 
-  const bulkDecide = async (action: string, labelAr: string, decisionNote?: string) => {
+  const bulkDecide = async (action: string, labelAr: string, decisionNote?: string, reasonForDefer?: DeferReason | null) => {
     if (busy || sel.size === 0) return;
     setBusy(true); setBulkProgress("");
     /* وحالُ بريد كلّ قرارٍ له بريدٌ يُقرأ خبرُه (التأجيل) — كما في التذكير الجماعيّ */
@@ -1029,7 +1056,10 @@ export default function TrainerApplications() {
     const outcome = await runBulk(
       [...sel],
       async (id) => {
-        const r = await apiPost<{ emailDelivery?: string }>(`/api/admin/trainer-applications/${id}/decision`, { action, note: decisionNote || undefined });
+        const r = await apiPost<{ emailDelivery?: string }>(`/api/admin/trainer-applications/${id}/decision`, {
+          action, note: decisionNote || undefined,
+          deferReason: action === "defer" && reasonForDefer ? reasonForDefer : undefined,
+        });
         if (r?.emailDelivery) deliveries.push(r.emailDelivery);
       },
       (done, total) => setBulkProgress(`${done} من ${total}`),
@@ -2319,20 +2349,26 @@ export default function TrainerApplications() {
       {rowDecision && (
         <ConfirmAction
           titleAr={ROW_DECISION_AR[rowDecision.action].titleAr(rowDecision.app.fullName)}
-          confirmLabelAr={ROW_DECISION_AR[rowDecision.action].confirmAr}
+          confirmLabelAr={rowDecision.action === "defer" && deferChoice && !deferReason
+            ? "اختر سبب التأجيل أولا" : ROW_DECISION_AR[rowDecision.action].confirmAr}
           tone={rowDecision.action === "reject" ? "danger" : "default"}
-          busy={busy}
+          busy={busy || (rowDecision.action === "defer" && deferChoice && !deferReason)}
           reason={ROW_DECISION_AR[rowDecision.action].reason}
-          onCancel={() => setRowDecision(null)}
+          onCancel={() => { setRowDecision(null); setDeferReason(null); }}
           onConfirm={(reason) => {
             /* والتأجيلُ وحدَه يمضي بلا نصّ: ملاحظتُه لا تُشترط */
             if (!reason && rowDecision.action !== "defer") return;
+            if (rowDecision.action === "defer" && deferChoice && !deferReason) return;
             const target = rowDecision;
-            setRowDecision(null);
+            const why = deferChoice ? deferReason : null;
+            setRowDecision(null); setDeferReason(null);
             void act(
               () => apiPost<{ emailDelivery?: string }>(
                 `/api/admin/trainer-applications/${target.app.id}/decision`,
-                { action: target.action, note: reason || undefined },
+                {
+                  action: target.action, note: reason || undefined,
+                  deferReason: target.action === "defer" && why ? why : undefined,
+                },
               ),
               target.action === "reject"
                 ? "رفض الطلب — وأبلغ صاحبه، وسببك في الأثر"
@@ -2342,7 +2378,9 @@ export default function TrainerApplications() {
                     target.action === "undo_withdraw"
                       ? "أعيد الطلب المسحوب إلى المراجعة، ووصل السبب صاحبه"
                       : target.action === "defer"
-                        ? `أجّل الطلب إلى الفصول القادمة — ونتواصل معه قبل ${followUpTermAr(deferredFollowUpAt(new Date()))}`
+                        ? why === "intake_closed"
+                          ? `أجّل الطلب — ونتواصل معه في ${TRAINER_INTAKE_CLOSED.contactMonthAr} لينضم إلى ${TRAINER_INTAKE_CLOSED.nextTermAr}`
+                          : `أجّل الطلب إلى الفصول القادمة — ونتواصل معه قبل ${followUpTermAr(deferredFollowUpAt(new Date()))}`
                         : "ألغي الرفض — عاد الطلب إلى المراجعة، ووصل السبب صاحبه",
                     (result as { emailDelivery?: string } | null)?.emailDelivery,
                   ),
@@ -2352,15 +2390,22 @@ export default function TrainerApplications() {
           <p className="text-read leading-6">
             الطلب <b dir="ltr">{rowDecision.app.reference}</b> — {rowDecision.app.fullName}.
           </p>
+          {/* وحين يُختار السبب يقول ما تحته ما يصل — فلا يُكتب هنا سببٌ واحدٌ قبل الاختيار */}
           <p className="mt-2 text-read leading-6 text-muted-foreground">
-            {ROW_DECISION_AR[rowDecision.action].bodyAr}
+            {rowDecision.action === "defer" && deferChoice
+              ? "يصبح الطلب «مؤجّلا» بكلّ ما فيه، ويصله بريد بالسبب الذي تختاره."
+              : ROW_DECISION_AR[rowDecision.action].bodyAr}
           </p>
+          {rowDecision.action === "defer" && <DeferReasonPicker value={deferReason} onChange={setDeferReason} />}
           {/* وموعدُ التواصل يومٌ يُسمّى قبل الضغط — وهو اليومُ الذي يُكتب في بريده */}
-          {rowDecision.action === "defer" && (
-            <p className="mt-2 text-read font-bold leading-6">
-              موعد التواصل معه: قبل {followUpTermAr(deferredFollowUpAt(new Date()))} — نذكّرك في {fmtDateLong(deferredFollowUpAt(new Date()))}
-            </p>
-          )}
+          {rowDecision.action === "defer" && (!deferChoice || deferReason) && (() => {
+            const at = deferReason === "intake_closed" ? intakeFollowUpAt() : deferredFollowUpAt(new Date());
+            return (
+              <p className="mt-2 text-read font-bold leading-6">
+                موعد التواصل معه: قبل {followUpTermAr(at)} — نذكّرك في {fmtDateLong(at)}
+              </p>
+            );
+          })()}
         </ConfirmAction>
       )}
 
@@ -2441,8 +2486,9 @@ export default function TrainerApplications() {
       {bulkDecision && (
         <ConfirmAction
           titleAr={`«${bulkDecision.labelAr}» على ${sel.size} طلب انضمام`}
-          confirmLabelAr={`${bulkDecision.labelAr} — على ${sel.size}`}
-          busy={busy}
+          confirmLabelAr={bulkDecision.action === "defer" && deferChoice && !deferReason
+            ? "اختر سبب التأجيل أولا" : `${bulkDecision.labelAr} — على ${sel.size}`}
+          busy={busy || (bulkDecision.action === "defer" && deferChoice && !deferReason)}
           reason={{
             /* ═══ ولا يُوعَد بما لا يقع ═══
 
@@ -2458,11 +2504,13 @@ export default function TrainerApplications() {
             /* ولا حدَّ أدنى للتأجيل: ملاحظتُه لا تُشترط (`ROW_DECISION_AR.defer`) */
             minLength: bulkDecision.action === "defer" ? 0 : 5,
           }}
-          onCancel={() => setBulkDecision(null)}
+          onCancel={() => { setBulkDecision(null); setDeferReason(null); }}
           onConfirm={(reason) => {
+            if (bulkDecision.action === "defer" && deferChoice && !deferReason) return;
             const target = bulkDecision;
-            setBulkDecision(null);
-            void bulkDecide(target.action, target.labelAr, reason);
+            const why = deferChoice ? deferReason : null;
+            setBulkDecision(null); setDeferReason(null);
+            void bulkDecide(target.action, target.labelAr, reason, why);
           }}
         >
           <p>
@@ -2470,9 +2518,12 @@ export default function TrainerApplications() {
             {bulkDecision.action === "reject"
               ? "سببك لا يرسل إليهم، ويبقى في الأثر لمن يراجع الطلب بعدك."
               : bulkDecision.action === "defer"
-                ? `يصل كلّ واحد بريد تأجيل باسمه بأنّنا نتواصل معه في ${fmtDateLong(deferredFollowUpAt(new Date()))}. والملاحظة واحدة للجميع.`
+                ? deferChoice
+                  ? "يصل كلّ واحد بريد تأجيل باسمه بالسبب الذي تختاره. والملاحظة واحدة للجميع."
+                  : `يصل كلّ واحد بريد تأجيل باسمه بأنّنا نتواصل معه في ${fmtDateLong(deferredFollowUpAt(new Date()))}. والملاحظة واحدة للجميع.`
                 : "والسبب واحد يصل الجميع كما هو، فاكتبه عامّا يناسبهم كلّهم."}
           </p>
+          {bulkDecision.action === "defer" && <DeferReasonPicker value={deferReason} onChange={setDeferReason} />}
         </ConfirmAction>
       )}
     </AdminLayout>

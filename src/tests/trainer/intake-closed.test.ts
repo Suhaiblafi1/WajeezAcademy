@@ -10,7 +10,9 @@
    ⑤ **وزرُّ الإرسال لا يَعِد بحجز** — «أرسل طلبك» ما دام الاستقبالُ مغلقا، ولا سطرَ
       تقويمٍ فوقه.
    ⑥ **ولا خيارَ للقاء التعارف في الاستمارة** — لا محطّةَ «حجز لقاء التعارف» في شريط
-      الخطوات، ولا «وعند حجز مقابلتك» في الملخّص. */
+      الخطوات، ولا «وعند حجز مقابلتك» في الملخّص.
+   ⑦ **وسببُ التأجيل يُختار** — «أغلقنا الاستقبال» بجانب «لا طلب كاف» ما دام مغلقا، وبريدُه
+      يقول الإغلاقَ لا قلّةَ الطلب، والحواران يرسلان المختار. */
 
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
@@ -21,9 +23,10 @@ import { termBounds, termTitleAr } from '@/application/terms/season'
 import { followUpTermAr } from '@/application/trainer/deferral'
 import {
   INTAKE_CLOSED_AFTER_AR, INTAKE_CLOSED_BEFORE_AR, INTAKE_CLOSED_PROMISE_AR, INTAKE_CLOSED_TITLE_AR,
-  INTAKE_DEFERRED_EXPLAIN_AR, INTAKE_DEFER_NOTE_AR, TRAINER_INTAKE_CLOSED,
-  deferredByIntake, intakeClosed, intakeFollowUpAt,
+  INTAKE_DEFERRED_EXPLAIN_AR, INTAKE_DEFER_NOTE_AR, TRAINER_INTAKE_CLOSED, DEFER_REASONS,
+  deferReasonsNow, deferredByIntake, intakeClosed, intakeFollowUpAt,
 } from '@/application/trainer/intake-closed'
+import { intakeDeferralMail } from '../../../server/services/trainer-decision-mail'
 
 describe('① الموعدُ ديسمبر', () => {
   it('⚠️ ٢١ ديسمبر ٢٠٢٦ — قبل بداية فصل الربيع ٢٠٢٧', () => {
@@ -135,5 +138,55 @@ describe('⑥ ولا خيارَ للقاء التعارف في الاستمار�
 
   it('⚠️ والملخّصُ لا يذكر حجزَ المقابلة حينها', () => {
     expect(src).toMatch(/\{!closed && <> وعند حجز مقابلتك/)
+  })
+})
+
+describe('⑦ وسببُ التأجيل يُختار', () => {
+  const OCT = new Date('2026-10-20T09:00:00Z')
+
+  it('⚠️ «أغلقنا الاستقبال» بجانب «لا طلب كاف» ما دام مغلقا — وحدَه يسقط بعده', () => {
+    expect(deferReasonsNow(OCT).map((r) => r.value)).toEqual(['demand', 'intake_closed'])
+    expect(deferReasonsNow(intakeFollowUpAt()).map((r) => r.value)).toEqual(['demand'])
+  })
+
+  it('⚠️ وما يصل بكلٍّ مكتوبٌ تحته — بلا تشكيل', () => {
+    for (const r of DEFER_REASONS) {
+      expect(r.whatAr.length, r.value).toBeGreaterThan(20)
+      expect(`${r.labelAr} ${r.whatAr}`.match(CASE_MARKS), r.value).toBeNull()
+    }
+  })
+
+  const textOf = (m: ReturnType<typeof intakeDeferralMail>) => [
+    m.subject, m.doc.heading, m.doc.preheader ?? '',
+    ...m.doc.blocks.map((b) => JSON.stringify(b)),
+  ].join(' ')
+
+  it('⚠️ وبريدُه يقول الإغلاقَ والموعد — لا قلّةَ الطلب', () => {
+    const t = textOf(intakeDeferralMail({ fullName: 'سارة', reference: 'WJ-TR-2026-00300' }))
+    expect(t).toContain(INTAKE_CLOSED_TITLE_AR)
+    expect(t).toContain(INTAKE_CLOSED_PROMISE_AR)
+    expect(t, 'يقول سبب «لا طلب» لمن لم يقع له').not.toMatch(/طلبا كافيا|قليل/)
+    expect(t.match(CASE_MARKS)).toBeNull()
+  })
+
+  it('⚠️ والملاحظةُ تصله إن كُتبت — ولا إطارَ لها إن لم تُكتب', () => {
+    expect(textOf(intakeDeferralMail({ fullName: 'سارة', reference: 'R', noteAr: 'نعتذر عن التأخير' }))).toContain('نعتذر عن التأخير')
+    const bare = intakeDeferralMail({ fullName: 'سارة', reference: 'R' })
+    expect(bare.doc.blocks.some((b) => b.kind === 'callout')).toBe(false)
+  })
+
+  it('⚠️ والحواران — الفرديّ والجماعيّ — يرسلان المختار', () => {
+    const root = join(dirname(fileURLToPath(import.meta.url)), '../../..')
+    const src = readFileSync(join(root, 'src/pages/admin/TrainerApplications.tsx'), 'utf8')
+      .replace(/\{\s*\/\*(?:(?!\*\/)[\s\S])*\*\/\s*\}/g, ' ')
+      .replace(/\/\*[\s\S]*?\*\//g, ' ')
+      .replace(/^\s*\/\/.*$/gm, ' ')
+    /* الفرديّ: يرسل سببَه مع القرار */
+    expect(src).toMatch(/deferReason: target\.action === "defer" && why \? why : undefined/)
+    /* والجماعيّ: يمرّره إلى كلّ نداء */
+    expect(src).toMatch(/bulkDecide\(target\.action, target\.labelAr, reason, why\)/)
+    expect(src).toMatch(/deferReason: action === "defer" && reasonForDefer \? reasonForDefer : undefined/)
+    /* والمختارُ يُعرض في الحوارين */
+    expect(src.split('<DeferReasonPicker').length - 1).toBe(2)
   })
 })
