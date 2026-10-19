@@ -16,10 +16,15 @@ import { Panel, Card } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 
 interface PayoutItem { id: string; kind: string; descriptionAr: string; base: number; amount: number; voided: boolean }
+interface MaskedBank {
+  id: string; maskedAr: string; holderName: string; bankNameAr: string; branchAr: string | null;
+  swiftBic: string | null; accountKind: string; routingCode: string | null; outcome: string; outcomeSaidAr: string;
+}
 interface Payout {
   id: string; advisorName: string; period: string; periodAr: string; status: AdvisorPayoutStatus;
   commissionPct: number; total: number; currency: string;
   paidAt: string | null; paidRefAr: string | null; cancelReasonAr: string | null; items: PayoutItem[];
+  bankAccount: MaskedBank | null; revealed: boolean;
 }
 interface Summary {
   advisorId: string; name: string; commissionPct: number | null;
@@ -27,13 +32,15 @@ interface Summary {
 }
 interface Data { payouts: Payout[]; summaries: Summary[]; lastClosedPeriod: string }
 
-type Pending = { kind: "approve" | "pay" | "cancel"; payout: Payout } | null;
+type Pending = { kind: "approve" | "reveal" | "pay" | "cancel"; payout: Payout } | null;
 
 export default function AdminAdvisorPayouts() {
   const [data, setData] = useState<Data | null>(null);
   const [offline, setOffline] = useState<string | null>(null);
   const [status, setStatus] = useState<"" | AdvisorPayoutStatus>("");
   const [refs, setRefs] = useState<Record<string, string>>({});
+  /* الرقمُ الصريحُ يبقى في الشاشة وحدَها — لا يُحفظ ولا يعود بعد تحديثها */
+  const [ibans, setIbans] = useState<Record<string, string>>({});
   const [confirm, setConfirm] = useState<Pending>(null);
   const [busy, setBusy] = useState(false);
 
@@ -61,9 +68,13 @@ export default function AdminAdvisorPayouts() {
     setBusy(true);
     try {
       if (kind === "approve") await apiPost(`/api/admin/advisor-payouts/${payout.id}/approve`, {});
+      if (kind === "reveal") {
+        const { iban } = await apiPost<{ iban: string }>(`/api/admin/advisor-payouts/${payout.id}/bank-account/reveal`, {});
+        setIbans((m) => ({ ...m, [payout.id]: iban }));
+      }
       if (kind === "pay") await apiPost(`/api/admin/advisor-payouts/${payout.id}/pay`, { ref: refs[payout.id]?.trim() || undefined });
       if (kind === "cancel") await apiPost(`/api/admin/advisor-payouts/${payout.id}/cancel`, { reason });
-      toast(kind === "approve" ? "اعتمد الكشف" : kind === "pay" ? "سجل الصرف" : "ألغي الكشف");
+      toast(kind === "approve" ? "اعتمد الكشف" : kind === "reveal" ? "كشف رقم الحساب وسجل الكشف" : kind === "pay" ? "سجل الصرف" : "ألغي الكشف");
       setConfirm(null);
       await load();
     } catch (e) { toastError(e instanceof ApiError ? e.message : "تعذر الاتصال بالخادم"); }
@@ -179,7 +190,25 @@ export default function AdminAdvisorPayouts() {
                   {p.status === "pending" && (
                     <Button onClick={() => setConfirm({ kind: "approve", payout: p })} disabled={busy}>اعتمد</Button>
                   )}
-                  {p.status === "approved" && (
+                  {p.status === "approved" && !p.bankAccount && (
+                    <p className="w-full text-read text-gold-ink">لم يدخل المستشار حسابه البنكي بعد، فلا يصرف حتى يدخله من «عمولتي».</p>
+                  )}
+                  {p.status === "approved" && p.bankAccount && (
+                    <div className="grid w-full gap-1 text-read">
+                      <p>
+                        {p.bankAccount.accountKind === "local" ? "رقم الحساب" : "IBAN"}:{" "}
+                        <span dir="ltr" className="font-mono font-bold">{ibans[p.id] ?? p.bankAccount.maskedAr}</span>
+                        {" · "}{p.bankAccount.holderName} · {p.bankAccount.bankNameAr}{p.bankAccount.branchAr ? ` — ${p.bankAccount.branchAr}` : ""}
+                        {p.bankAccount.swiftBic ? <> · SWIFT <span dir="ltr" className="font-mono">{p.bankAccount.swiftBic}</span></> : null}
+                        {p.bankAccount.routingCode ? <> · <span dir="ltr" className="font-mono">{p.bankAccount.routingCode}</span></> : null}
+                      </p>
+                      {p.bankAccount.outcome === "differs" && <p className="text-gold-ink">⚠️ {p.bankAccount.outcomeSaidAr}</p>}
+                    </div>
+                  )}
+                  {p.status === "approved" && p.bankAccount && !ibans[p.id] && (
+                    <Button tone="secondary" onClick={() => setConfirm({ kind: "reveal", payout: p })} disabled={busy}>اكشف رقم الحساب</Button>
+                  )}
+                  {p.status === "approved" && p.bankAccount && (ibans[p.id] || p.revealed) && (
                     <>
                       <input
                         value={refs[p.id] ?? ""}
@@ -206,6 +235,15 @@ export default function AdminAdvisorPayouts() {
           onCancel={() => setConfirm(null)} onConfirm={() => void act()}
         >
           يصير الكشف معتمدا ينتظر الصرف، ويبلغ المستشار. ويمكن إلغاؤه ما لم يصرف.
+        </ConfirmAction>
+      )}
+      {confirm?.kind === "reveal" && (
+        <ConfirmAction
+          titleAr={`كشف رقم حساب ${confirm.payout.advisorName}`}
+          confirmLabelAr="اكشف الرقم" tone="default" busy={busy}
+          onCancel={() => setConfirm(null)} onConfirm={() => void act()}
+        >
+          يظهر الرقم كاملا في هذه الشاشة فقط، ويسجل الكشف باسمك مع الكشف ومبلغه. وإن بدل المستشار حسابه بعدها فلا يقبل الصرف حتى تكشفه ثانية.
         </ConfirmAction>
       )}
       {confirm?.kind === "pay" && (

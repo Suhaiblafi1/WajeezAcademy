@@ -5,7 +5,8 @@
    هذا الرقم، رغم أنه يخصّه هو لا أحدا غيره.
 
    وكشوفُه الشهريّة هنا (١٩ أكتوبر ٢٠٢٦): ما صُرف له، وما ينتظر في كشف، وما لم يدخل
-   كشفا بعدُ — وكلُّ كشفٍ ببنوده من ساعة يولد. والعلّةُ في `advisor-payout.service.ts`. */
+   كشفا بعدُ — وكلُّ كشفٍ ببنوده من ساعة يولد. والعلّةُ في `advisor-payout.service.ts`.
+   وحسابُه البنكيُّ في رأسها، كخانة المدرّب نفسِها (`advisor-bank.service.ts`). */
 
 import { useCallback, useEffect, useState } from "react";
 import { Banknote, Loader2, ServerOff, Star } from "lucide-react";
@@ -13,6 +14,8 @@ import AdvisorLayout from "./AdvisorLayout";
 import { apiGet, ApiError } from "@/services/api";
 import { fmtDate, fmtMoney } from "@/application/text/format-ar";
 import { PAYOUT_STATUS_AR, type AdvisorPayoutStatus } from "@/application/advisor/payout";
+import BankAccountPanel from "@/components/BankAccountPanel";
+import { BANK_COPY } from "@/application/bank/panel-copy";
 
 import { Panel, Card } from "@/components/ui/Surface";
 interface PayoutItem { id: string; kind: string; descriptionAr: string; base: number; amount: number; voided: boolean }
@@ -69,6 +72,8 @@ export default function AdvisorEarnings() {
 
   return (
     <AdvisorLayout title="عمولتي">
+      <BankAccountPanel endpoint="/api/advisor/bank-account" copy={BANK_COPY.advisor} />
+
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <p className="text-read text-muted-foreground">نسبة عمولتي</p>

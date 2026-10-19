@@ -14,9 +14,12 @@ import type { PrismaClient } from '@prisma/client'
 import { AdvisorService } from '../../services/advisor.service'
 import { AdvisorRequestService } from '../../services/advisor-request.service'
 import { requirePermission } from '../auth-plugin'
+import { AdvisorBankService } from '../../services/advisor-bank.service'
+import { BANK_ACCOUNT_KINDS, MAX_ACCOUNT_LEN } from '../../services/trainer-bank.service'
 
 export function registerAdvisorRoutes(app: FastifyInstance, prisma: PrismaClient) {
   const advisors = new AdvisorService(prisma)
+  const bank = new AdvisorBankService(prisma)
   const advisorRequests = new AdvisorRequestService(prisma)
 
   /* ════ بوابة المستشار — المسند إليه فقط ════ */
@@ -135,6 +138,35 @@ export function registerAdvisorRoutes(app: FastifyInstance, prisma: PrismaClient
     preHandler: requirePermission('advisor.cases.view'),
     schema: { tags: ['advisor-portal'], summary: 'عمولتي المستحقّة من عملائي الدافعين، وتقييمي' },
   }, async (req) => advisors.myEarnings(req.auth!.userId))
+
+  /* ── حسابي البنكيّ لعمولتي (١٩ أكتوبر ٢٠٢٦) — كحساب المدرّب، والعلّةُ في `advisor-bank.service.ts` ── */
+  app.get('/api/advisor/bank-account', {
+    preHandler: requirePermission('advisor.cases.view'),
+    schema: { tags: ['advisor-portal'], summary: 'حسابي البنكي مقنعا — ولا يعاد الرقم أبدا' },
+  }, async (req) => bank.mine(req.auth!.userId))
+
+  app.put('/api/advisor/bank-account', {
+    preHandler: requirePermission('advisor.cases.view'),
+    schema: { tags: ['advisor-portal'], summary: 'كتابة الحساب البنكي أو تبديله — يخزن معمى ويصله خبره' },
+  }, async (req) => {
+    const body = z.object({
+      iban: z.string().trim().min(6).max(MAX_ACCOUNT_LEN + 8),
+      holderName: z.string().trim().min(4).max(160),
+      bankNameAr: z.string().trim().min(2).max(120),
+      branchAr: z.string().trim().max(120).nullish(),
+      swiftBic: z.string().trim().max(16).nullish(),
+      accountKind: z.enum(BANK_ACCOUNT_KINDS).optional(),
+      countryCode: z.string().trim().max(2).nullish(),
+      routingCode: z.string().trim().max(34).nullish(),
+      ownNameConfirmed: z.boolean().optional(),
+    }).parse(req.body)
+    return bank.setMine(req.auth!.userId, body)
+  })
+
+  app.delete('/api/advisor/bank-account', {
+    preHandler: requirePermission('advisor.cases.view'),
+    schema: { tags: ['advisor-portal'], summary: 'إلغاء حسابي البنكي — يزاح ولا يمحى، ويصله خبره' },
+  }, async (req) => bank.removeMine(req.auth!.userId))
 
   /* ── الوجه الأكاديميّ: المستشار يتابع من أُسند إليه ── */
   app.get('/api/advisor/cases/:id/learner', {

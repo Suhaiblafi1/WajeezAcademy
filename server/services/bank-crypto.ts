@@ -141,6 +141,12 @@ export function bankAad(profileId: string): string {
   return `wajeez:bank:${ENVELOPE_VERSION}:${profileId}`
 }
 
+/** ورباطُ ظرف المستشار بحسابه (١٩ أكتوبر ٢٠٢٦) — بادئةٌ غيرُ بادئة المدرّب، فلا يُنقل ظرفٌ من جدولٍ
+    إلى جدولٍ فيُفكّ على غير صاحبه */
+export function advisorBankAad(userId: string): string {
+  return `wajeez:advisor-bank:${ENVELOPE_VERSION}:${userId}`
+}
+
 /** أهذان الظرفان لقيمةٍ واحدة؟ — بلا فكٍّ، وبمقارنةٍ ثابتةِ الزمن */
 export function sameSealedBytes(a: string, b: string): boolean {
   const x = Buffer.from(String(a ?? ''), 'utf8')

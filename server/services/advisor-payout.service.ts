@@ -27,8 +27,9 @@
    ينتظر الاعتماد ← معتمد ← صرف، أو يُلغى قبل الصرف بسبب. والصرفُ نهائيّ. ومن ألغى كشفا
    عادت دفعاتُه إلى ما يُحسب، فيُولَّد من جديدٍ بالنسبة يومَها. ولا يعتمد أحدٌ كشفَه بنفسه.
 
-   ولا مهلةَ اعتراضٍ ولا كشفَ حساب بنكيّ: تلك بنودُ عقد المدرّب، وليس للمستشار عقدٌ بها.
-   فالمرجعُ عند الصرف نصٌّ يكتبه من صرف (رقمُ الحوالة)، والمستشارُ يرى الكشفَ من ساعة يولد.
+   ولا مهلةَ اعتراض: تلك بندٌ في عقد المدرّب، وليس للمستشار عقدٌ بها — فهو يرى الكشفَ من ساعة يولد.
+   وحسابُه البنكيُّ كحساب المدرّب (`advisor-bank.service.ts`): يُكشف لكشفٍ معتمَد، ولا يُؤكَّد صرفٌ قبل
+   كشفه ولا بعد تبديله. ومرجعُ الحوالة نصٌّ يكتبه من صرف.
 
    والحارس: `server/tests/advisors/advisor-payouts.test.ts`. */
 
@@ -37,6 +38,7 @@ import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { attributedOrders } from './advisor.service'
 import { safeNotify } from './notification.service'
+import { AdvisorBankService } from './advisor-bank.service'
 import { LEDGER_CURRENCY } from '../../src/application/commerce/presentment'
 import { fmtDate, fmtMoney } from '../../src/application/text/format-ar'
 import { periodAr } from '../../src/application/advisor/payout'
@@ -163,8 +165,20 @@ export class AdvisorPayoutService {
     await this.notify(p.advisorId, id, 'اعتمد كشف عمولتك', `كشف ${periodAr(p.period)}: ${fmtMoney(Number(p.total))}. يصرف قريبا.`)
   }
 
+  /** ولا يُؤكَّد صرفٌ إلى حسابٍ لم يُكشف لهذا الكشف، ولا إلى حسابٍ تبدّل بعد كشفه (`advisor-bank.service.ts`) —
+      ذاك بابُ الاحتيال في هذا الموضع بعينه: يُكشف الحسابُ، ثمّ يُبدَّل، ثمّ يُؤكَّد الصرفُ إلى غيره. */
   async markPaid(id: string, actorId: string, refAr?: string | null) {
     const ref = refAr?.trim() || null
+    const payout = await this.prisma.advisorPayout.findUnique({ where: { id }, select: { status: true, advisorId: true, bankAccountId: true } })
+    if (payout?.status === 'approved') {
+      if (!payout.bankAccountId) {
+        throw new AuthError('no_reveal', 'لم يكشف حساب المستشار لهذا الكشف — اكشفه أولا، فلا يؤكد صرف إلى حساب لم يفتح', 409)
+      }
+      const active = await this.prisma.advisorBankAccount.findFirst({ where: { userId: payout.advisorId, status: 'active' }, select: { id: true } })
+      if (active?.id !== payout.bankAccountId) {
+        throw new AuthError('bank_account_changed', 'تبدل حساب المستشار بعد كشفه — اكشفه ثانية وتحقق من وجهة الحوالة', 409)
+      }
+    }
     const p = await this.transition(id, actorId, ['approved'], 'paid', { paidBy: actorId, paidAt: new Date(), paidRefAr: ref },
       (tx, before) => recordAudit(tx, {
         actorId, action: 'advisor_payout.pay', entityType: 'advisor_payout', entityId: id,
@@ -243,7 +257,14 @@ export class AdvisorPayoutService {
       orderBy: [{ period: 'desc' }, { createdAt: 'desc' }],
       take: 200,
     })
-    return payouts.map((p) => ({ ...view(p), advisorName: p.advisor.displayName }))
+    /* ومعه حسابُ صاحبه مقنَّعا — يُقرأ قبل الكشف، ويقول هل كُشف لهذا الكشف */
+    const bank = new AdvisorBankService(this.prisma)
+    const accounts = new Map<string, Awaited<ReturnType<typeof bank.maskedFor>>>()
+    for (const id of new Set(payouts.map((p) => p.advisorId))) accounts.set(id, await bank.maskedFor(id))
+    return payouts.map((p) => {
+      const account = accounts.get(p.advisorId) ?? null
+      return { ...view(p), advisorName: p.advisor.displayName, bankAccount: account, revealed: !!account && account.id === p.bankAccountId }
+    })
   }
 
   /** صفٌّ لكلّ مستشارٍ له نسبةٌ أو كشف — ما صُرف وما ينتظر وما لم يدخل كشفا */
