@@ -45,6 +45,13 @@ describe('مستشارُ الطالب', () => {
     expect(await advisors.myAdvisorOf(userId), 'بقي اسمُ من نُقلت عنه').toEqual({ displayName: 'خالد المستشار' })
   })
 
+  it('⚠️ وإسنادٌ رُفع بلا بديل لا يُقال اسمُ صاحبه', async () => {
+    /* لا بابَ اليومَ يرفع إسنادا بلا بديل (`assign` يُنشئ أحدثَ منه) — والحارسُ لمن يبنيه غدا */
+    const { userId, caseId } = await learnerWithAdvisor(advA)
+    await prisma.advisorAssignment.updateMany({ where: { caseId, unassignedAt: null }, data: { unassignedAt: new Date() } })
+    expect(await advisors.myAdvisorOf(userId), 'قيل اسمُ من رُفع إسنادُه').toBeNull()
+  })
+
   it('⚠️ ولا يرى طالبٌ مستشارَ غيره', async () => {
     await learnerWithAdvisor(advA)
     const { userId: other } = await auth.register('my-advisor-none@test.local', 'Learner#12345', 'بلا حالة')
