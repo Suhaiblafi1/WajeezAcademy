@@ -21,6 +21,7 @@ import { CartService } from './commerce/cart.service'
 import { TrainerDiscountService } from './trainer-discount.service'
 import { assertCouponUsable, num } from './commerce/cart-types'
 import { assertFirstPurchase } from './commerce/first-purchase'
+import { payByOf, teamHeldOrderIds } from './commerce/seat-hold'
 import { applyCodeRefund, markCodeUsePaid, releaseCouponUse, reserveCouponUse } from './commerce/coupon-ledger'
 import { nextInvoiceNumber } from './commerce/invoice-number'
 import { refundedShare } from '../../src/application/trainer/trainer-code'
@@ -264,7 +265,8 @@ export class CommerceService {
     await safeNotify(this.prisma, {
       userId, channel: 'in_app',
       title: 'حجزت مقاعد خطّتك — بقي الدفع',
-      body: `حجز لك ${reqs.length === 1 ? 'مقعد' : `${reqs.length} مقاعد`} في «${plan?.nameAr ?? 'خطّتك'}». أتمم الدفع (${total} ${currency}) دفعة واحدة ليتحوّل حجزك إلى تسجيل فعليّ في دوراتك كلها.`,
+      /* والمهلةُ تُقال: يومان من الحجز (`seat-hold.ts`) — وكانت ساعةً لا يعلم بها */
+      body: `حجز لك ${reqs.length === 1 ? 'مقعد' : `${reqs.length} مقاعد`} في «${plan?.nameAr ?? 'خطّتك'}». ادفع (${total} ${currency}) دفعة واحدة خلال يومين ليصير حجزك تسجيلا في دوراتك كلها، وبعدها يفرج عن المقاعد لغيرك.`,
       templateKey: 'plan.seats_held',
       data: { planId, orderId: order.id, total, cohorts: reqs.length },
     })
@@ -561,7 +563,8 @@ export class CommerceService {
       title: autoPaid ? 'قبل طلبك — وسجّلت' : 'قبل طلب تسجيلك — بقي الدفع',
       body: autoPaid
         ? `سجّلت في «${title} — ${req.cohort.title}». تجدها في «تعلّمي».`
-        : `حجز مقعدك في «${title} — ${req.cohort.title}». أتمم الدفع (${total} ${req.cohort.currency}) من صفحة الفواتير ليتحول حجزك إلى تسجيل فعلي.`,
+        /* والمهلةُ تُقال: يومان من الحجز (`seat-hold.ts`) — وكانت ساعةً لا يعلم بها */
+        : `حجز مقعدك في «${title} — ${req.cohort.title}». ادفع (${total} ${req.cohort.currency}) من «فواتيري» خلال يومين، وبعدها يفرج عن المقعد لغيرك.`,
       /* وغيرُ المدفوع خبرُ «أتمم الدفع» وبابُه «فواتيري» (١٩ أكتوبر ٢٠٢٦): كان يحمل `enrollment.approved`
          فيفتح «رحلتي» ونصُّه يقول «من صفحة الفواتير». و«المال» صنفٌ لا يُسكَت — كحجز الخطّة */
       templateKey: autoPaid ? 'enrollment.approved' : 'order.seats_held',
@@ -1145,10 +1148,17 @@ export class CommerceService {
   }
 
   async myOrders(userId: string) {
-    return this.prisma.order.findMany({
+    const orders = await this.prisma.order.findMany({
       where: { userId }, include: { items: true, invoice: { include: { payments: { include: { refunds: true } } } } },
       orderBy: { createdAt: 'desc' },
     })
+    /* وموعدُ الدفع لما لم يُدفع — من المهلة نفسِها التي تُلغي بها الوظيفة (`seat-hold.ts`)، فما
+       تعرضه الشاشةُ هو ما يقع لا تقديرٌ في المتصفّح */
+    const pending = orders.filter((o) => o.status === 'pending_payment').map((o) => o.id)
+    const team = pending.length > 0 ? await teamHeldOrderIds(this.prisma, pending) : new Set<string>()
+    return orders.map((o) => ({
+      ...o, payBy: o.status === 'pending_payment' ? payByOf(o.createdAt, team.has(o.id)) : null,
+    }))
   }
 
   async listInvoices(status?: string) {

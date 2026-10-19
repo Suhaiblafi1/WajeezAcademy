@@ -6,6 +6,7 @@ import { CircleSlash, CreditCard, Loader2, ReceiptText, RefreshCw, RotateCcw, Sh
 import PortalLayout from "./PortalLayout";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import { fmtWhen } from "@/utils/format";
+import { fmtSession } from "@/application/text/format-ar";
 import { toast, toastError } from '@/components/Toast';
 
 import { Card, Inset, Panel } from "@/components/ui/Surface";
@@ -19,6 +20,8 @@ interface Order {
   id: string; status: string; total: string; currency: string; createdAt: string;
   items: { id: string; titleAr?: string | null; title?: string | null; price?: string | null }[];
   invoice: Invoice | null;
+  /** آخرُ لحظةٍ للدفع قبل أن يُفرَج عن المقعد — من الخادم (`seat-hold.ts`)، ولما لم يُدفع وحدَه */
+  payBy?: string | null;
 }
 interface PaymentProviderInfo { driver: "test" | "manual" | "moyasar" | "stripe" }
 
@@ -146,6 +149,13 @@ export default function Billing() {
                 </div>
               </div>
 
+              {/* والمهلةُ تُقال (١٩ أكتوبر ٢٠٢٦): ساعةٌ لمن اشترى بنفسه، ويومان لما حجزه الفريق —
+                  وبعدها يُلغى الطلبُ ويُفرَج عن المقعد. وكان يُلغى ولا يُقال متى */}
+              {isUnpaid(o.status) && o.payBy && (
+                <p className="mt-3 text-read leading-6 font-bold text-gold-ink">
+                  ادفع قبل {fmtSession(o.payBy)}، وبعدها يفرج عن المقعد لغيرك.
+                </p>
+              )}
               {isUnpaid(o.status) && provider.driver !== "manual" && (
                 <div className="mt-4">
                   <Button tone="primary" disabled={busy === o.id} onClick={() => void pay(o)}>
