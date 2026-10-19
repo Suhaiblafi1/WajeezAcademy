@@ -20,6 +20,7 @@ import { PlanReviewBundleService, type ReviewBundle } from '../../services/plan-
 import { AuthError } from '../../services/auth.service'
 import { CohortFileService } from '../../services/cohort-file.service'
 import { PlanEditService } from '../../services/plan-edit.service'
+import { OpenApprovedService } from '../../services/open-approved.service'
 import { planEditsFile } from '../plan-edits-schema'
 import { assertSafeKey } from '../../services/object-store'
 import { requirePermission } from '../auth-plugin'
@@ -660,6 +661,17 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     return cohorts.openChecklist(id)
   })
+
+  /* «افتح المعتمدة كلها» — معاينةٌ ثمّ تنفيذ (١٩ أكتوبر ٢٠٢٦، `open-approved.service.ts`) */
+  app.get('/api/admin/cohorts/open-approved', {
+    preHandler: requirePermission('cohort.open'),
+    schema: { tags: ['admin-learning'], summary: 'معاينة فتح الشعب المعتمدة كلها: ما يفتح وما لا تتم شروطه وما نقل' },
+  }, async () => new OpenApprovedService(prisma).preview())
+
+  app.post('/api/admin/cohorts/open-approved', {
+    preHandler: requirePermission('cohort.open'),
+    schema: { tags: ['admin-learning'], summary: 'يفتح كل مسودة لها مدرب اعتمدت خطته — عدا ما نقل' },
+  }, async (req) => new OpenApprovedService(prisma).apply(req.auth!.userId))
 
   app.post('/api/admin/cohorts/:id/open', {
     preHandler: requirePermission('cohort.open'),
