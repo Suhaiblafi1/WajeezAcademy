@@ -16,7 +16,7 @@ interface AdvisorRow {
 }
 
 interface AdvisorDetail {
-  revenueFromReferrals: number; commissionOwed: number; currency: string;
+  revenueFromReferrals: number; commissionOwed: number; commissionPaid: number; currency: string;
   ratingAvg: number | null; ratingCount: number;
   cases: { caseId: string; status: string; clientName: string; clientEmail: string | null; assignedAt: string }[];
   requests: { id: string; kind: string; status: string; reasonAr: string; createdAt: string; decidedAt: string | null }[];
@@ -164,6 +164,9 @@ export default function Advisors() {
                             </span>
                             <span className="text-muted-foreground">
                               العمولة المستحقّة: <b className="text-gold-ink">{fmtMoney(detail.commissionOwed, detail.currency)}</b>
+                            </span>
+                            <span className="text-muted-foreground">
+                              صرف له: <b className="text-foreground">{fmtMoney(detail.commissionPaid, detail.currency)}</b>
                             </span>
                             <span className="flex items-center gap-1 text-muted-foreground">
                               <Star className="h-3 w-3 text-gold" />

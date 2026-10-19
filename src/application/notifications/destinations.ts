@@ -195,6 +195,8 @@ const STAFF: Table = {
   'advisor.followup.due': { path: '/advisor/cases', ctaAr: 'افتح الحالة' },
   /* وحالتان لطالبٍ واحد — في «حالات بلا مستشار» حيث تُدمجان (`mergeCases`) */
   'advisor.case.duplicate': { path: '/admin/exceptions', ctaAr: 'ادمج الحالتين' },
+  /* وكشفُ عمولته — في «عمولتي» حيث يُقرأ ببنوده (`advisor-payout.service.ts`) */
+  'advisor_payout': { path: '/advisor/earnings', ctaAr: 'افتح كشف عمولتك' },
   /* ي-٤: وشاشةُ الرحيل فيها زرُّ «نفِّذ ما اختاره» — الوجهةُ تحمل الفعلَ لا الخبرَ وحدَه */
   'departure.chosen': { path: '/admin/trainer-departures', ctaAr: 'نفّذ ما اختاره' },
   'staff.announce': { path: '/admin/notifications', ctaAr: 'اقرأ الإعلان' },

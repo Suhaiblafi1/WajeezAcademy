@@ -65,6 +65,7 @@ const AdminTrainerPaths = lazy(() => import('./pages/admin/TrainerPaths'))
 const AdminTrainerMarketing = lazy(() => import('./pages/admin/TrainerMarketing'))
 const AdminTrainerDepartures = lazy(() => import('./pages/admin/TrainerDepartures'))
 const AdminTrainerCompensation = lazy(() => import('./pages/admin/TrainerCompensation'))
+const AdminAdvisorPayouts = lazy(() => import('./pages/admin/AdvisorPayouts'))
 const AdminTrainerRun = lazy(() => import('./pages/admin/TrainerRun'))
 const AdminTrainerContracts = lazy(() => import('./pages/admin/TrainerContracts'))
 const AdminPendingPlans = lazy(() => import('./pages/admin/PendingPlans'))
@@ -372,6 +373,7 @@ export default function App() {
             <Route path="/admin/learners" element={<AdminLearners />} />
             <Route path="/admin/tasks" element={<AdminTasks />} />
             <Route path="/admin/advisors" element={<AdminAdvisors />} />
+            <Route path="/admin/advisor-payouts" element={<AdminAdvisorPayouts />} />
             <Route path="/admin/audit" element={<AdminAuditLog />} />
             <Route path="/admin/system-health" element={<AdminSystemHealth />} />
             <Route path="/admin/reports" element={<AdminReports />} />

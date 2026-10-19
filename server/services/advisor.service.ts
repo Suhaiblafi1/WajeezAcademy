@@ -118,12 +118,35 @@ function guestSnapshot(raw: unknown): object | null {
    نفسِه لمستشارٍ غيره في أيّ حالة — أيُّهما أسبق. وما بين النقل وأوّلِ تواصلِ الجديد في إسنادٍ
    تلقائيّ لا يُحسب لأحد. والحالةُ المغلقةُ بلا نقلٍ تبقى نوبتُها مفتوحة: إتمامُ العمل لا يمحو أجرَه. */
 export async function attributedRevenue(prisma: PrismaClient, advisorId: string): Promise<number> {
+  const orders = await attributedOrders(prisma, advisorId)
+  return Math.round(orders.reduce((sum, o) => sum + netOf(o), 0) * 100) / 100
+}
+
+/** دفعةٌ وقعت في نوبته — وما استُردّ منها بعدُ، كلُّ استردادٍ بوقته */
+export interface AttributedOrder {
+  id: string
+  userId: string
+  total: number
+  paidAt: Date
+  refunds: { id: string; amount: number; processedAt: Date }[]
+}
+
+/** صافي الدفعة بعد ما رُدّ منها — ولا ينزل عن صفر */
+export const netOf = (o: AttributedOrder) => Math.max(0, o.total - o.refunds.reduce((s, r) => s + r.amount, 0))
+
+/* ── دفعاتُ عملائه في نوباته — منها تُحسب عمولتُه وكشوفُه (`advisor-payout.service.ts`) ──
+
+   كانت الدفعةُ المستردّةُ جزئيّا تسقط كلُّها (`status: 'paid'` وحدَها)، فيضيع ما بقي منها
+   عند الطالب. وصارت كلُّ دفعةٍ دُفعت تُقرأ، ويُطرح منها ما رُدّ: فالمستردّةُ كلُّها صفر،
+   وجزئيّا يبقى ما لم يُردّ. والاستردادُ بوقته لا بوقت الدفعة — فالكشفُ الذي دُفعت عمولتُه
+   لا يُعاد، بل يُحسم الاستردادُ في الكشف التالي. */
+export async function attributedOrders(prisma: PrismaClient, advisorId: string): Promise<AttributedOrder[]> {
   const mine = await prisma.advisorAssignment.findMany({
     where: { advisorId, case: { clientId: { not: null } } },
     select: { case: { select: { clientId: true } } },
   })
   const clientIds = [...new Set(mine.map((a) => a.case.clientId!))]
-  if (clientIds.length === 0) return 0
+  if (clientIds.length === 0) return []
 
   /* كلُّ إسنادات هؤلاء العملاء لكلّ المستشارين — إسنادُ غيره بعده يُنهي نوبتَه */
   const all = await prisma.advisorAssignment.findMany({
@@ -155,19 +178,30 @@ export async function attributedRevenue(prisma: PrismaClient, advisorId: string)
     if (to && to <= from) continue
     windows.set(clientId, [...(windows.get(clientId) ?? []), { from, to }])
   }
-  if (windows.size === 0) return 0
+  if (windows.size === 0) return []
 
   const paid = await prisma.order.findMany({
-    where: { userId: { in: [...windows.keys()] }, status: 'paid' },
-    select: { userId: true, total: true, paidAt: true, createdAt: true },
+    where: { userId: { in: [...windows.keys()] }, status: { in: ['paid', 'partially_refunded', 'refunded'] } },
+    select: { id: true, userId: true, total: true, paidAt: true, createdAt: true },
   })
-  return paid.reduce((sum, o) => {
+  const inTurn = paid.filter((o) => {
     /* `paidAt` قد يغيب على صفٍّ قديم — فيُقرأ تاريخُ الطلب بدلا منه */
     const when = o.paidAt ?? o.createdAt
     /* ونوبتان له على العميل نفسِه لا تعدّان الدفعةَ مرّتين — تُحسب إن وقعت في إحداهما */
-    const inWindow = (windows.get(o.userId) ?? []).some((w) => when >= w.from && (!w.to || when < w.to))
-    return inWindow ? sum + Number(o.total) : sum
-  }, 0)
+    return (windows.get(o.userId) ?? []).some((w) => when >= w.from && (!w.to || when < w.to))
+  })
+  if (inTurn.length === 0) return []
+
+  const refunds = await prisma.refund.findMany({
+    where: { status: 'processed', payment: { invoice: { orderId: { in: inTurn.map((o) => o.id) } } } },
+    select: { id: true, amount: true, processedAt: true, createdAt: true, payment: { select: { invoice: { select: { orderId: true } } } } },
+  })
+  return inTurn.map((o) => ({
+    id: o.id, userId: o.userId, total: Number(o.total), paidAt: o.paidAt ?? o.createdAt,
+    refunds: refunds
+      .filter((r) => r.payment.invoice.orderId === o.id)
+      .map((r) => ({ id: r.id, amount: Number(r.amount), processedAt: r.processedAt ?? r.createdAt })),
+  }))
 }
 
 export class AdvisorService {
@@ -998,7 +1032,7 @@ export class AdvisorService {
     })
   }
 
-  /** عمولتي المستحقّة فعلا من عملائي الدافعين — بحساب ملفّه عند الإدارة نفسِه
+  /** عمولتي من عملائي الدافعين وكشوفُها — بحساب ملفّه عند الإدارة نفسِه
       (`attributedRevenue`)، لكن للمستشار نفسه لا لمن يديره. كانت الإدارة وحدها ترى هذا الرقم. */
   async myEarnings(advisorId: string) {
     const MIN_RATINGS_TO_SHOW = 3
@@ -1019,12 +1053,18 @@ export class AdvisorService {
       }),
     ])
 
-    /* لا عمولةَ بلا نسبةٍ اتّفقت عليها الإدارة صراحة — «لم تُحدَّد بعد» غير «صفر» */
+    /* لا عمولةَ بلا نسبةٍ اتّفقت عليها الإدارة صراحة — «لم تُحدَّد بعد» غير «صفر».
+       والمستحقُّ ما لم يُصرف بعد: كشوفٌ تنتظر، وما لم يدخل كشفا (`advisor-payout.service.ts`).
+       والاستيرادُ هنا لا في الرأس: تلك الخدمةُ تقرأ نوباتِه من هذا الملفّ. */
     const commissionPct = profile ? Number(profile.commissionPct) : null
-    const commissionOwed = commissionPct !== null ? Math.round(revenueFromReferrals * commissionPct) / 100 : null
+    const { AdvisorPayoutService } = await import('./advisor-payout.service')
+    const payouts = new AdvisorPayoutService(this.prisma)
+    const [money, statements] = await Promise.all([payouts.summaryFor(advisorId), payouts.listForAdvisor(advisorId)])
 
     return {
-      commissionPct, commissionOwed, revenueFromReferrals, currency: 'USD',
+      commissionPct, commissionOwed: commissionPct !== null ? money.owed : null,
+      paid: money.paid, awaiting: money.awaiting, upcoming: money.upcoming, payouts: statements,
+      revenueFromReferrals, currency: money.currency,
       /* «الحالات النشطة» تعني النشطةَ فعلا — بخلاف مقام العمولة */
       activeCases,
       ratingAvg: ratingAgg._count >= MIN_RATINGS_TO_SHOW ? Number(ratingAgg._avg.score) : null,
