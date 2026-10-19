@@ -13,10 +13,13 @@ import { seoFor } from '@/application/site/public-pages'
 import { Panel, Card, Inset } from '@/components/ui/Surface'
 import { countAr } from '@/application/text/count-ar'
 import { pitchHeadingAr } from '@/application/trainer/pitch'
+import { NO_NEXT_SEASON_AR, seasonHeadingAr, type SeasonGroup } from '@/application/trainer/next-season'
 
 interface PublicTrainer {
   id: string; name: string; headline: string | null; bio: string | null;
   country: string | null; specialties: string[]; assignedCourseIds: string[];
+  /* ما يقدّمه للموسم القادم بمواسمه — والعلّةُ في `src/application/trainer/next-season.ts` */
+  offer?: SeasonGroup[];
   photoUrl: string | null;
   ratingAvg: number | null; ratingCount: number | null;
   /* ١و — تعليقات اعتمدتها الإدارة للنشر؛ فارغة حتى ذلك */
@@ -43,18 +46,24 @@ const SPECIALTIES_PREVIEW = 6
 
    والمسارُ **يُشتقّ** من دوراته لا يُكتب بيد: لا رابطَ في البيانات بين مدرّبٍ
    ومسار، وكلُّ دورةٍ لها مسارُها الأمّ. فمسارُ المدرّب هو ما تجتمع فيه دوراتُه
-   المسنَدة — واحدٌ غالبا، وقد يكون اثنين لمن يدرّس في مسارين. */
-function TrainerOffer({ ids }: { ids: string[] }) {
+   المسنَدة — واحدٌ غالبا، وقد يكون اثنين لمن يدرّس في مسارين.
+
+   ═══ وصارت ما يقدّمه للموسم القادم وحدَه، تحت «سيقدم فلان في موسم كذا» (١٩ أكتوبر ٢٠٢٦) ═══
+   «لماذا تظهر كلُّ الدورات للمدرّب وليس للموسم القادم؟» (صاحب المنصّة) — `next-season.ts`. */
+function TrainerOffer({ name, groups }: { name: string; groups: SeasonGroup[] }) {
   /* الكتالوجُ يُحمَّل كسولا ويُستبدل وقتَ التشغيل (`core-catalog-source.ts`).
      وكانت النبذةُ تُصيَّر عند فتحها فقط فتجده غالبا قد وصل؛ وصارت تُصيَّر مع
      البطاقة مخفيّةً — فلو حُسبت قبل وصوله لَبقيت «لم تسند إليه شعبة» لمن له
      دورة. فتُعاد عند كلّ تثبيتٍ للقطة. */
   const catalogVersion = usePublishedContent()
-  const courses = useMemo(
-    () => [...new Set(ids)].map((id) => courseById(id)).filter((c): c is NonNullable<typeof c> => Boolean(c)),
+  const seasons = useMemo(
+    () => groups
+      .map((g) => ({ termAr: g.termAr, courses: g.courseIds.map((id) => courseById(id)).filter((c): c is NonNullable<typeof c> => Boolean(c)) }))
+      .filter((g) => g.courses.length > 0),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- إبطال ذاكرة عند تبديل الكتالوج
-    [ids, catalogVersion],
+    [groups, catalogVersion],
   )
+  const courses = useMemo(() => seasons.flatMap((g) => g.courses), [seasons])
   const offeredPathways = useMemo(
     () => [...new Set(courses.map((c) => c.pathwayId))].map((id) => pathwayById(id)).filter((p): p is NonNullable<typeof p> => Boolean(p)),
     [courses],
@@ -63,7 +72,7 @@ function TrainerOffer({ ids }: { ids: string[] }) {
   if (courses.length === 0) {
     return (
       <p className="text-read leading-6 text-muted-foreground">
-        لم تسند إليه شعبة بعد، وتظهر دوراته هنا عند إسنادها.
+        {NO_NEXT_SEASON_AR}
       </p>
     )
   }
@@ -84,23 +93,27 @@ function TrainerOffer({ ids }: { ids: string[] }) {
           ))}
         </p>
       )}
-      <p className="mt-2 flex items-center gap-1.5 text-read font-bold text-foreground">
-        <BookOpen className="h-3.5 w-3.5 text-teal-light-ink" />
-        دوراته — تشترى من صفحتها
-      </p>
-      <ul className="mt-1.5 grid gap-1.5">
-        {courses.map((c) => (
-          <li key={c.id}>
-            <Inset as={Link} interactive to={`/build/${c.id}`} className="flex items-center justify-between gap-2 px-3 py-2">
-              <span className="min-w-0 truncate text-read font-bold text-foreground">{c.name}</span>
-              <span className="inline-flex shrink-0 items-center gap-1 text-read font-semibold text-teal-light-ink">
-                تفاصيل الدورة
-                <ArrowLeft className="h-3 w-3" />
-              </span>
-            </Inset>
-          </li>
-        ))}
-      </ul>
+      {seasons.map((g) => (
+        <div key={g.termAr ?? "later"}>
+          <p className="mt-2 flex items-center gap-1.5 text-read font-bold text-foreground">
+            <BookOpen className="h-3.5 w-3.5 text-teal-light-ink" />
+            {seasonHeadingAr(name, g.termAr)}
+          </p>
+          <ul className="mt-1.5 grid gap-1.5">
+            {g.courses.map((c) => (
+              <li key={c.id}>
+                <Inset as={Link} interactive to={`/build/${c.id}`} className="flex items-center justify-between gap-2 px-3 py-2">
+                  <span className="min-w-0 truncate text-read font-bold text-foreground">{c.name}</span>
+                  <span className="inline-flex shrink-0 items-center gap-1 text-read font-semibold text-teal-light-ink">
+                    تفاصيل الدورة
+                    <ArrowLeft className="h-3 w-3" />
+                  </span>
+                </Inset>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
     </div>
   )
 }
@@ -298,7 +311,7 @@ function TrainerCard({ t, open, onToggle }: { t: PublicTrainer; open: boolean; o
           </div>
         )}
 
-        <TrainerOffer ids={t.assignedCourseIds} />
+        <TrainerOffer name={t.name} groups={t.offer ?? [{ termAr: null, courseIds: t.assignedCourseIds }]} />
       </div>
 
       <button
