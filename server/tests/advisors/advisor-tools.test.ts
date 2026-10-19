@@ -62,6 +62,13 @@ describe('① من أنشأ حسابَه ولم يسجّل يظهر في قائ�
     expect(all.some((r) => r.user.id === managerId), 'ظهر موظّفٌ بين الطلبة').toBe(false)
   })
 
+  it('⚠️ ومن يحمل دورَ موظّفٍ مع دور المتعلّم ليس طالبا ينتظر', async () => {
+    const { userId } = await auth.register('staff.learner@test.local', 'Staff#12345', 'موظّف يتعلّم')
+    await auth.setRoles(userId, ['learner', 'operations_manager'])
+    const all = await learners.list({ kind: 'all' })
+    expect(all.some((r) => r.user.id === userId), 'ظهر موظّفٌ بين من ينتظر التسجيل').toBe(false)
+  })
+
   it('⚠️ والبحثُ يجده باسمه — ولا يجده بحثٌ لا يطابقه', async () => {
     const hit = await learners.list({ kind: 'all' }, { q: 'سجّل حسابا' })
     expect(hit.some((r) => r.user.email === 'signed.only@test.local')).toBe(true)
