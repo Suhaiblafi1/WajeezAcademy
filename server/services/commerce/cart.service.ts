@@ -25,6 +25,7 @@ import { LEDGER_CURRENCY } from '../../../src/application/commerce/presentment'
 import { getEmailConfig } from '../integrations.service'
 import { assertCouponUsable, cartTitleOf, num, type CartCohort } from './cart-types'
 import { CODE_USE_COUNTS, CODE_USED_AR } from './coupon-ledger'
+import { assertFirstPurchase } from './first-purchase'
 import { cohortLeadTrainers } from '../cohort-lead'
 import { TrainerCodeBudgetService, type PurchaseLine } from '../trainer-code-budget'
 import { budgetCovers, CODE_UNAVAILABLE_AR, MAX_TRAINER_CODE_PERCENT } from '../../../src/application/trainer/trainer-code'
@@ -366,6 +367,7 @@ export class CartService {
     assertCouponUsable(coupon, userId)
     /* الفحصُ يرمي عند الغياب — فما بعده كوبونٌ موجود */
     if (!coupon) throw new AuthError('bad_coupon', 'الكوبون غير صالح')
+    await assertFirstPurchase(this.prisma, coupon, userId)
     /* ═══ وكودُ المدرّب مرّةً لكلّ متعلّم ═══
 
        يُقال هنا عند التسعير — قبل أن يضغط «ادفع» — لا عند الطلب وحدَه. والقيدُ

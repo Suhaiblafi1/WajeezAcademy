@@ -26,6 +26,7 @@ import { couponFieldCls } from "@/components/FormKit";
 import CohortPicker from "@/components/CohortPicker";
 import CourseInterestForm from "@/components/CourseInterestForm";
 import { useRealSession } from "@/services/session";
+import { apiGet } from "@/services/api";
 import CourseTitle from "@/components/CourseTitle";
 import { usePublishedContent } from "@/services/public-content";
 import { useCourseCohorts, type CohortOption } from "@/services/cohort-prices";
@@ -146,6 +147,8 @@ function CoursePathPage({ courseId }: { courseId: string }) {
   const [promoApplied, setPromoApplied] = useState<string | null>(null);
   /* كودٌ لا تعرفه الصفحة — كودُ مدرّبٍ أو فئة: يُحمل إلى لوح الدفع ويحكم فيه الخادم */
   const [pendingCode, setPendingCode] = useState<string | null>(null);
+  /* كودُ أوّل شراءٍ لا يُخصم لمن اشترى من قبل — وسببُه يُقال هنا لا في لوح الدفع وحدَه */
+  const [promoRefused, setPromoRefused] = useState<string | null>(null);
   /* ما تجاوز السقف يُحفظ لمرحلة تالية بدل أن يُرفض بصمت */
   const [deferred, setDeferred] = useState<string[]>([]);
 
@@ -255,10 +258,23 @@ function CoursePathPage({ courseId }: { courseId: string }) {
 
      وكانت الصفحةُ تقول للباقي «لم نتعرّف على هذا الكود» وتُسقطه — فمن جاءه كودُ
      مدرّبه صالحا قيل له إنّه غيرُ معروف، ولم يصل الكودُ اللوحَ أصلا. */
-  const applyPromo = () => {
+  /* وكودُ التشجيع «لأول عملية شراء» (١٩ أكتوبر ٢٠٢٦): من دخل حسابَه يُسأل عنه الخادمُ قبل أن
+     يُطرح الخصمُ من السعر المعروض — فلا يُوعد مشترٍ سابقٌ بسعرٍ يردّه لوحُ الدفع. والزائرُ لا
+     يُعرف بعد، فيُطبَّق له ويُفحص عند الدفع. وتعذّرُ السؤال لا يمنع: الفوترةُ تفحص على كلّ حال. */
+  const applyPromo = async () => {
     const code = promoInput.trim().toUpperCase();
     if (!code) return;
+    setPromoRefused(null);
     if (isFirstTimePromo(code)) {
+      if (session) {
+        const r = await apiGet<{ eligible: boolean; reasonAr?: string }>("/api/learner/first-purchase-promo").catch(() => null);
+        if (r && !r.eligible) {
+          setPromoApplied(null);
+          setPendingCode(null);
+          setPromoRefused(r.reasonAr ?? null);
+          return;
+        }
+      }
       setPromoApplied(code);
       setPendingCode(null);
       track("promo_applied", { code });
@@ -613,18 +629,18 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                 <input
                   id="promo"
                   value={promoInput}
-                  onChange={(e) => { setPromoInput(e.target.value.toUpperCase()); setPendingCode(null); }}
-                  onKeyDown={(e) => { if (e.key === "Enter") applyPromo(); }}
+                  onChange={(e) => { setPromoInput(e.target.value.toUpperCase()); setPendingCode(null); setPromoRefused(null); }}
+                  onKeyDown={(e) => { if (e.key === "Enter") void applyPromo(); }}
                   placeholder={`كود الخصم — مثال ${FIRST_TIME_PROMO.code}`}
                   aria-label="كود الخصم"
                   dir="ltr"
                   maxLength={24}
                   className={`${couponFieldCls} tracking-widest placeholder:tracking-normal ${
-                    promoApplied ? "border-teal-light text-teal-light-ink" : pendingCode ? "border-gold/50" : "border-white/15 focus:border-teal-light"
+                    promoApplied ? "border-teal-light text-teal-light-ink" : pendingCode || promoRefused ? "border-gold/50" : "border-white/15 focus:border-teal-light"
                   }`}
                 />
                 <Button tone="secondary"
-                  onClick={applyPromo}
+                  onClick={() => void applyPromo()}
                   className="h-auto shrink-0 rounded-xl border-white/20 px-4 py-2 text-xs font-bold text-foreground"
                 >
                   تطبيق
@@ -633,6 +649,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
               {promoApplied && (
                 <p className="mt-1.5 text-read font-bold text-teal-light-ink">طبّق خصم {promoPct}٪ {FIRST_TIME_PROMO.labelAr}.</p>
               )}
+              {promoRefused && <p className="mt-1.5 text-read leading-6 text-gold-ink">{promoRefused}</p>}
               {pendingCode && (
                 <p className="mt-1.5 text-read leading-6 text-gold-ink">
                   نتحقق من الكود <span dir="ltr" className="font-mono">{pendingCode}</span> عند الدفع، ونبيّن على أي دوراتك ينطبق.

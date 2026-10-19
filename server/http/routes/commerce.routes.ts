@@ -14,6 +14,7 @@ import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import type { PrismaClient } from '@prisma/client'
 import { CommerceService } from '../../services/commerce.service'
+import { firstPurchasePromoFor } from '../../services/commerce/first-purchase'
 import { requireAuth, requirePermission } from '../auth-plugin'
 
 export function registerCommerceRoutes(app: FastifyInstance, prisma: PrismaClient) {
@@ -90,6 +91,13 @@ export function registerCommerceRoutes(app: FastifyInstance, prisma: PrismaClien
     }).parse(req.body)
     return commerce.quote(req.auth!.userId, body.cohortIds, body.couponCode)
   })
+
+  /* كودُ أوّل شراء — أيُخصم لهذا الحساب؟ (١٩ أكتوبر ٢٠٢٦). صفحةُ الدورة تطرح خصمَه من السعر
+     المعروض، فتسأل هنا أوّلا: من اشترى من قبل لا يُوعد بسعرٍ يردّه لوحُ الدفع. */
+  app.get('/api/learner/first-purchase-promo', {
+    preHandler: requireAuth,
+    schema: { tags: ['commerce'], summary: 'هل يُخصم كود أول شراء لهذا الحساب — ولماذا إن لم يُخصم' },
+  }, async (req) => firstPurchasePromoFor(prisma, req.auth!.userId))
 
   app.post('/api/learner/orders/:id/pay', {
     preHandler: requireAuth,
