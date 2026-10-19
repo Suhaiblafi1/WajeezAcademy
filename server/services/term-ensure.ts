@@ -44,6 +44,8 @@ export async function assignMissingTerms(prisma: PrismaClient): Promise<number> 
     select: {
       id: true, startsAt: true,
       plans: { where: { trainerId: { not: null } }, orderBy: { createdAt: 'desc' }, select: { status: true, postponedTo: true } },
+      /* ومعتمدةٌ لم يُكتب بدؤها (خطّةٌ مواعيدُها من لقاءاتها) — فأوّلُ لقاءٍ قائمٍ يقول موسمَها (١٩ أكتوبر ٢٠٢٦) */
+      sessions: { where: { status: { not: 'cancelled' }, placeholder: false }, orderBy: { startsAt: 'asc' }, take: 1, select: { startsAt: true } },
     },
   })
   let assigned = 0
@@ -51,7 +53,7 @@ export async function assignMissingTerms(prisma: PrismaClient): Promise<number> 
     const latest = c.plans[0]
     const day = latest?.postponedTo && latest.status !== 'approved'
       ? latest.postponedTo
-      : planApprovedOnce(c.plans) ? c.startsAt : null
+      : planApprovedOnce(c.plans) ? c.startsAt ?? c.sessions[0]?.startsAt ?? null : null
     if (!day) continue
     const term = await ensureTermOf(prisma, day)
     if (!term) continue
