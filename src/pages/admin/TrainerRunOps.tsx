@@ -48,7 +48,7 @@ import Chip from "@/components/ui/Chip";
 import { BIO_MAX_WORDS, countWords } from "@/application/trainer/public-text";
 import { PITCH_MAX_CHARS, PITCH_MAX_LINES, PITCH_MAX_WORDS, bioSuggestionProblemAr, cleanPitchLines, pitchHeadingAr, pitchProblemAr } from "@/application/trainer/pitch";
 import {
-  cohortLineAr, cohortsTallyAr, photoTrailAr, planMarkAr, planMarkOf, PLAN_MARK, textTrailAr,
+  cohortLineAr, cohortsTallyAr, hiddenOnSale, photoTrailAr, planMarkAr, planMarkOf, PLAN_MARK, textTrailAr,
   type CardCohort, type ProfileTrail,
 } from "@/application/trainer/trainer-card";
 interface OpsQualification { courseId: string; courseTitle: string; status: string }
@@ -86,6 +86,9 @@ interface OpsTrainer {
 }
 
 /** آخرُ ما اقترحناه على بطاقته من نوعٍ — ولا يُقرأ المسحوب */
+/** ترتيبُ البطاقة في القائمة — الأعلى أوّلا */
+const opsRank = (t: OpsTrainer) => (hiddenOnSale(t) ? 2 : t.pendingText || t.pendingPhotoUrl ? 1 : 0);
+
 interface OpsSuggestion {
   id: string;
   kind: "pitch" | "bio";
@@ -733,7 +736,8 @@ export default function TrainerRunOps() {
   const shown = useMemo(
     () => (trainers ?? [])
       .filter((t) => matchesQuery(q, [t.name, t.email]))
-      .sort((a, b) => Number(Boolean(b.pendingText || b.pendingPhotoUrl)) - Number(Boolean(a.pendingText || a.pendingPhotoUrl))),
+      /* أوّلا من له شعبةٌ تُباع واسمُه لا يظهر — المشتري لا يرى من يدرّسه (`hiddenOnSale`)، ثمّ ما ينتظر قرارَك */
+      .sort((a, b) => opsRank(b) - opsRank(a)),
     [trainers, q],
   );
 
@@ -1005,6 +1009,9 @@ export default function TrainerRunOps() {
                             {t.pendingText && t.pendingPhotoUrl ? "نبذة وصورة تنتظرانك"
                               : t.pendingText ? "نبذة تنتظرك" : "صورة تنتظرك"}
                           </Chip>
+                        )}
+                        {hiddenOnSale(t) && (
+                          <Chip tone="danger" srPrefixAr="ظهوره العامّ">له شعبة مفتوحة واسمه لا يظهر</Chip>
                         )}
                         {t.publiclyVisible && t.hasLiveCourse && (
                           <span className="flex items-center gap-1 rounded-full bg-teal/15 px-2 py-0.5 text-fine font-black text-teal-light-ink">
