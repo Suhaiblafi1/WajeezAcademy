@@ -23,8 +23,14 @@ export function registerOperationsRoutes(app: FastifyInstance, prisma: PrismaCli
     preHandler: requireAuth,
     schema: { tags: ['operations'], summary: 'إرفاق نتيجة التشخيص بالحساب — ينشئ ملف متعلم وعميلا محتملا وحالة مستشار' },
   }, async (req) => {
-    const body = z.object({ snapshot: z.record(z.string(), z.unknown()) }).parse(req.body)
-    return advisors.attachDiagnostic(req.auth!.userId, body.snapshot, req.ip)
+    const body = z.object({
+      snapshot: z.record(z.string(), z.unknown()),
+      /* متى حفظ الجهازُ النتيجة — لمن رفعها بعد دخوله، فلا تُكتب فوق أحدثَ منها */
+      completedAt: z.string().datetime().optional(),
+    }).parse(req.body)
+    return advisors.attachDiagnostic(req.auth!.userId, body.snapshot, req.ip, {
+      ...(body.completedAt ? { completedAt: new Date(body.completedAt) } : {}),
+    })
   })
 
 

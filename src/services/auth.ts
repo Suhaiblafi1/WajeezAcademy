@@ -11,6 +11,7 @@
 import { ApiError, apiPost } from "./api";
 import { fetchMe, forgetMe } from "./me";
 import { syncPendingPlan } from "@/application/plan/adopted-plan";
+import { syncPendingDiagnostic } from "@/application/diagnostic/session-store";
 import { HONEYPOT_FIELD } from "../components/HoneypotField";
 import { safeGet, safeSet, safeRemove } from "./safe-storage";
 
@@ -252,6 +253,8 @@ export async function signIn(email: string, pass: string): Promise<AuthResult> {
     /* الخطّةُ المعتمَدةُ قبل الحساب تُرفَع الآن — أوّلُ لحظةٍ يصير لها فيها بيت.
        ولا يُنتظَر ناتجُها ولا يُسقط الدخول: الرفعُ أفضلُ جهد، والمحلّيّةُ تبقى. */
     void syncPendingPlan().catch(() => undefined);
+    /* ونتيجةُ التشخيص المحفوظةُ قبل الحساب كذلك — والعلّةُ عند `syncPendingDiagnostic` */
+    void syncPendingDiagnostic().catch(() => undefined);
     return { ok: true };
   } catch (e) {
     if (e instanceof ApiError && (e.status === 401 || e.status === 429)) recordFail();

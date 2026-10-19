@@ -220,6 +220,8 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
       'advisor.case.assigned',
       /* وعميلُه صار له حسابٌ موثَّق — صار يرى تقدّمه، والمتابعةُ تبدأ من هنا */
       'advisor.case.client_linked',
+      /* ودفعُ عميله بيعٌ تمّ — وتبدأ بعده المتابعةُ الأكاديميّة */
+      'advisor.case.client_paid',
       /* ي-٤: واختيارُ صاحبِ المقعد بعد رحيل مدرّبه — عملٌ ينتظر تنفيذَه.
          وكان يقع في عمودٍ لا يراه أحدٌ حتّى يفتح الشاشةَ مصادفةً. */
       'departure.chosen',

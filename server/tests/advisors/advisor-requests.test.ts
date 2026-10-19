@@ -54,7 +54,7 @@ beforeAll(async () => {
   learnerId = l.userId
 
   const attached = await advisors.attachDiagnostic(learnerId, { kind: 'pathway', pathwayId: 'PW-FND-003' })
-  caseId = attached.case.id
+  caseId = attached.case!.id
   await advisors.assign(caseId, advisorId, managerId)
 })
 

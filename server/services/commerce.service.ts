@@ -9,6 +9,7 @@ import { ReferralService } from './referral.service'
 import { recordAudit } from './audit'
 import { EnrollmentService } from './enrollment.service'
 import { safeNotify, publicSiteUrl } from './notification.service'
+import { AdvisorService } from './advisor.service'
 import {
   convertFromUsd, isPresentmentCurrency, type PresentmentCurrency,
 } from '../../src/application/commerce/presentment'
@@ -47,7 +48,11 @@ export class CommerceService {
   /* خصومُ المدرّب: تُقيَّد مستعمَلةً عند التسوية لا عند إنشاء الطلب — والعلّةُ
      في رأس `trainer-discount.service.ts`. */
   private trainerDiscounts: TrainerDiscountService
+  /* حالاتُ المستشارين: من يطلب أو يدفع بلا تشخيصٍ يجد مستشارا، ومن دفع تصير
+     حالتُه «سجّل» — والعلّةُ عند `ensureBuyerCase` و`markClientPaid`. */
+  private advisors: AdvisorService
   constructor(prisma: PrismaClient) {
+    this.advisors = new AdvisorService(prisma)
     this.referrals = new ReferralService(prisma)
     this.prisma = prisma
     this.enrollments = new EnrollmentService(prisma)
@@ -100,7 +105,17 @@ export class CommerceService {
       actorId: userId, action: 'enrollment_request.create', entityType: 'enrollment_request', entityId: req.id,
       meta: { cohortId, ...(verified ? {} : { emailUnverified: true, reason: 'قناة البريد غير مفعّلة — مرّ الطلب بلا توثيق' }) },
     })
+    await this.openBuyerCase(userId)
     return req
+  }
+
+  /** حالةُ مستشارٍ لمن يطلب التسجيلَ بلا تشخيص — أفضلُ جهد: لا يُردّ طلبٌ ولا دفعٌ عن خطأٍ فيها */
+  private async openBuyerCase(userId: string) {
+    try {
+      await this.advisors.ensureBuyerCase(userId)
+    } catch (e) {
+      console.error('[commerce] تعذّر فتح حالة مستشار للمشتري', userId, e)
+    }
   }
 
   async requestPlanEnrollment(userId: string) {
@@ -145,6 +160,7 @@ export class CommerceService {
         data: { planId: plan.id, requested: created.length, awaiting: awaiting.length },
       })
     }
+    if (created.length > 0) await this.openBuyerCase(userId)
     return { planId: plan.id, nameAr: plan.nameAr, requested: created, awaiting, alreadyRequested, alreadyEnrolled }
   }
 
@@ -443,6 +459,7 @@ export class CommerceService {
       body: `حجز لك ${unique.length === 1 ? 'مقعد' : `${unique.length} مقاعد`} بفاتورة ${order.invoice.number} (${total} ${currency}). أتمم الدفع خلال ساعة — وبعدها يفرج عن المقعد لغيرك ولا يقتطع منك شيء.`,
       data: { orderId: order.order.id, invoiceNumber: order.invoice.number, total, currency },
     })
+    await this.openBuyerCase(userId)
     return {
       orderId: order.order.id,
       invoiceId: order.invoice.id,
@@ -844,6 +861,16 @@ export class CommerceService {
         meta: { converted: converted.length, failed },
         reason: 'دفعة سوّيت وبقيت دورات لم يسجّل فيها — تدخّل يدويّ مطلوب',
       })
+    }
+
+    /* وحالةُ مستشاره «سجّل» — بيعٌ تمّ (والعلّةُ عند `markClientPaid`). ولا يُسقط
+       التسويةَ تعثّرُها: المالُ قُبض والتسجيلُ وقع، والحالةُ يغيّرها مستشارُه بيده. */
+    if (order && converted.length > 0) {
+      try {
+        await this.advisors.markClientPaid(order.userId, orderId)
+      } catch (e) {
+        console.error('[commerce] تعذّر تحويل حالة المستشار بعد الدفع', orderId, e)
+      }
     }
 
     /* إشعار تأكيد الدفع — يصل الطالب سواء حُوّل طلبه أم دفع لغير شعبة */
