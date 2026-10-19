@@ -43,7 +43,6 @@ import { hasCoreCatalog } from "@/data/core-catalog-source";
 
 import Button from "@/components/ui/Button";
 import { Card, Inset, Panel } from "@/components/ui/Surface";
-import { UpcomingTermLine } from "@/components/UpcomingTermNote";
 import DiscountProofLink from '@/components/DiscountProofLink'
 import LevelLine from "@/components/LevelLine";
 import { PlacementPanel } from "@/components/EnglishPlanCard";
@@ -603,12 +602,8 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                     وخصم بناء المسار ({pricing.discountPct}٪ عند {pricing.count} دورات) محفوظ لك حين تفتح الشعب.
                   </p>
                 )}
-                {/* «حين تُفتح الشعب» — ومتى تُفتح؟ (البند ٥٢) */}
-                {pricesLoaded && (
-                  <p className="text-read font-bold leading-5 text-foreground">
-                    <UpcomingTermLine />
-                  </p>
-                )}
+                {/* وكان هنا سطرُ الفصل القادم («تفتح في موسم… والتسجيل مفتوح») — رُفع (١٩ أكتوبر ٢٠٢٦): دورةٌ بلا
+                    شعبةٍ لا يُقال إنّها تُفتح في موسم. والعلّةُ عند «لا شعبة لها بعد» في `CohortPicker.tsx`. */}
               </div>
             )}
 

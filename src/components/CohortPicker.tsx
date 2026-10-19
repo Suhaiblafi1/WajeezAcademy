@@ -17,10 +17,13 @@ import { CalendarDays, Check, ChevronDown, Users } from "lucide-react";
 import type { CohortOption } from "@/services/cohort-prices";
 import { daysLabelAr, untilLabelAr } from "@/utils/format";
 import { cohortDayAr } from "@/application/learning/cohort-gate";
-import { UpcomingTermLine } from "@/components/UpcomingTermNote";
 import LiveSessionDates from "@/components/LiveSessionDates";
 
 import Button from "@/components/ui/Button";
+
+/** ما يقال تحت دورةٍ لا شعبةَ لها — قرارُ صاحب المنصّة (١٩ أكتوبر ٢٠٢٦)، وشرحُه عند موضعه أدناه */
+const NO_COHORT_AR = "لا شعبة لها بعد";
+
 /** سطرُ موعدٍ واحد — التاريخ ثمّ بُعده ثمّ أيّامه */
 function When({ c }: { c: CohortOption }) {
   const until = untilLabelAr(c.startsAt);
@@ -53,17 +56,18 @@ export default function CohortPicker({
 }) {
   const [open, setOpen] = useState(false);
 
-  /* لا شعبة = لا تاريخ يُختلق — وهذا يبقى. لكنّ «يُعلن الموعد مع فتح الشعبة»
-     صادقةٌ ولا تفيد: يقرؤها الزائرُ فلا يعرف أينتظر أسبوعا أم فصلا. فإن كان
-     للفصل القادم كيانٌ بتواريخ قيلت التتمّة، وإلّا بقيت الجملةُ وحدَها.
+  /* ═══ لا شعبة = «لا شعبة لها بعد» — لا موسمٌ ولا «التسجيل مفتوح» (١٩ أكتوبر ٢٠٢٦) ═══
 
-     ونصُّ التتمّة في `UpcomingTermNote` لا هنا: هو نفسُه في الكتالوج وصفحة
-     المسار وصفحة الدورة، وأربعُ نسخٍ منه تفترق عند أوّل تعديل. */
+     كان هنا سطرُ الفصل القادم (البند ٥٢): «تفتح في موسم الشتاء… والتسجيل مفتوح حتّى ٣٠ نوفمبر» تحت
+     كلّ دورةٍ لا شعبةَ لها. والسطرُ يستعير حالَ **الفصل** ويلصقه بالدورة: دورةٌ بلا شعبةٍ لا تُشترى، ولا شيءَ
+     يقول إنّها تُفتح في الشتاء. فسأل صاحبُ المنصّة: «كيف تفتح بفصل الشتاء وهي يجب أن تكون مفتوحةً الآن إذا
+     كان ذلك صحيحا؟» — واختار من ثلاثة: «لا شعبة لها بعد»، بلا وعدٍ بموسم. وقِيس يومئذ: نحو ١٢٠ دورةً من
+     ١٤٩ بلا شعبةٍ مفتوحة، فكان السطرُ الكاذبُ أكثرَ ما يُقرأ في الكتالوج. */
   if (cohorts.length === 0) {
     return (
       <span className="inline-flex items-center gap-1.5 text-fine font-bold text-muted-foreground">
         <CalendarDays className="h-3.5 w-3.5 shrink-0" />
-        <UpcomingTermLine fallback="يعلن الموعد مع فتح الشعبة" />
+        {NO_COHORT_AR}
       </span>
     );
   }
