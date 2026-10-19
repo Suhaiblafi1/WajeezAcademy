@@ -12,6 +12,7 @@ import type { PrismaClient, Prisma } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { awaitingTrainerPlan, planApprovedOnce } from './registration-window'
+import { termlessKindOf } from '../../src/application/terms/termless'
 import { EarningsService } from './earnings.service'
 import { newStorageKey, signKey, SIGNED_URL_TTL_MS, assertFileUploadsEnabled, MAX_COHORT_MEDIA_BYTES } from './storage.service'
 import { assertMeetingSdkEnabled, meetingSdkKey, signMeetingSdkJwt, type ZoomSdkRole } from './zoom/meeting-sdk'
@@ -875,7 +876,8 @@ export class CohortService {
     return { cohortId: cohort.id, title: cohort.title, term }
   }
 
-  /** شعبٌ لا فصلَ لها — «لم تُفتَح بعد»، لا معطوبة ولا حابسةٌ مدرّبَها */
+  /** شعبٌ لا فصلَ لها — «لم تُفتَح بعد»، لا معطوبة ولا حابسةٌ مدرّبَها.
+      وكلٌّ بنوعه (`termless.ts`): ما يتحدّد فصلُه وحدَه عند اعتماد خطّة مدرّبه، وما يحتاج الإدارةَ وسببُه */
   async cohortsWithoutTerm() {
     const rows = await this.prisma.cohort.findMany({
       where: { termId: null, status: { notIn: ['completed', 'cancelled'] } },
@@ -886,15 +888,24 @@ export class CohortService {
         course: { select: { id: true, versions: { orderBy: { version: 'desc' }, take: 1, select: { titleAr: true } } } },
         _count: { select: { enrollments: true, sessions: true } },
         trainers: { select: { profile: { select: { application: { select: { fullName: true } } } } } },
+        plans: { where: { trainerId: { not: null } }, orderBy: { createdAt: 'desc' }, select: { status: true, content: true } },
       },
     })
-    return rows.map((c) => ({
-      id: c.id, title: c.title, courseTitleAr: c.course.versions[0]?.titleAr ?? c.course.id, startsAt: c.startsAt,
-      learners: c._count.enrollments, sessions: c._count.sessions,
-      trainers: c.trainers.map((t) => t.profile.application.fullName),
-      /* وسقط «يحبس مدرّبَه» (٢٧ سبتمبر ٢٠٢٦): المدرّبُ يحدّد مدّةَ شعبته
-         بنفسه فتُفتح جدولتُه، ولا ينتظر أن يُسمَّى فصل. */
-    }))
+    return rows.map((c) => {
+      const latest = c.plans[0] ?? null
+      const own = (latest?.content as { startsOn?: unknown } | null)?.startsOn
+      return {
+        id: c.id, title: c.title, courseTitleAr: c.course.versions[0]?.titleAr ?? c.course.id, startsAt: c.startsAt,
+        learners: c._count.enrollments, sessions: c._count.sessions,
+        trainers: c.trainers.map((t) => t.profile.application.fullName),
+        /* وسقط «يحبس مدرّبَه» (٢٧ سبتمبر ٢٠٢٦): المدرّبُ يحدّد مدّةَ شعبته
+           بنفسه فتُفتح جدولتُه، ولا ينتظر أن يُسمَّى فصل. */
+        plan: latest?.status ?? null,
+        /* وتاريخُ البدء الذي اختاره مدرّبُها في خطّته — ومنه يُسمّى فصلُها حين تُعتمَد */
+        startsOn: typeof own === 'string' ? own : c.startsAt?.toISOString().slice(0, 10) ?? null,
+        ...termlessKindOf({ trainers: c.trainers.length, approvedOnce: planApprovedOnce(c.plans) }),
+      }
+    })
   }
 
   /** ما يراه المدرّبُ عن حدوده — يُقرأ قبل المحاولة لا بعد الرفض */

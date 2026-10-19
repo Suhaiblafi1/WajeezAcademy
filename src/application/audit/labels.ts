@@ -149,6 +149,8 @@ const PHRASES: Record<string, string> = {
   'advisor.case.client_paid': 'تحويل حالة إلى «سجّل» بعد دفع صاحبها',
   'advisor.cases.redistribute': 'توزيع حالات مستشار المفتوحة على غيره',
   'advisor.contact.hook': 'تسجيل تواصل مستشار من منصّة محادثات واتساب',
+  'advisor.case.whatsapp_opened': 'فتح حالة لعميل جديد راسله مستشار عبر واتساب',
+  'advisor.case.lead_email': 'كتابة بريد العميل في حالته ليرتبط بحسابه',
   'term.create': 'إنشاء فصل دراسيّ',
   'term.registration_window': 'ضبط نافذة التسجيل للفصل',
   'term.trainer_availability': 'إتاحة مدرّب في فصل',
@@ -309,6 +311,14 @@ const PHRASES: Record<string, string> = {
   'trainer.public_text.submit': 'إرسال المدرّب عنوانه ونبذته للاعتماد',
   'trainer.public_text.approve': 'اعتماد عنوان المدرّب ونبذته للعرض العامّ',
   'trainer.public_text.reject': 'ردّ عنوان المدرّب ونبذته قبل عرضهما',
+  /* ما نقترحه على بطاقة المدرّب — «لماذا نفتخر به» ونبذتُه بصياغتنا (١٩ أكتوبر ٢٠٢٦،
+     `trainer-suggestion.service.ts`). والنوعُ في `meta.kind` */
+  'trainer.suggestion.propose': 'اقتراحنا على بطاقة المدرّب — «لماذا نفتخر به» أو نبذته',
+  'trainer.suggestion.withdraw': 'سحب اقتراحنا على بطاقة المدرّب قبل قراره',
+  'trainer.suggestion.accept': 'قبول المدرّب اقتراحنا — ظهر في بطاقته',
+  'trainer.suggestion.edit': 'تعديل المدرّب «لماذا نفتخر به» — ينتظر اعتمادنا',
+  'trainer.suggestion.approve_edit': 'اعتماد تعديل المدرّب على «لماذا نفتخر به»',
+  'trainer.suggestion.reject': 'رفض المدرّب اقتراحنا على بطاقته',
   'account.avatar.upload': 'رفع صاحب الحساب صورته',
   /* إتاحةُ المدرّب (المهمّة ٧١) — تُسجَّل لأنّ الغيابَ **يردُّ إسنادا**:
      فمن سأل «لماذا لم يُسنَد؟» يجد الجوابَ في الأثر لا في واتساب. */

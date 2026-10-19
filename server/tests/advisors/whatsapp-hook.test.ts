@@ -3,7 +3,9 @@
    ① **لا يُفتح بلا رمز** — ولا وهو معطَّل.
    ② **الطالبُ برقمه كما يصل من واتساب، والمستشارُ ببريده** — فيُسجَّل التواصلُ في حالته، ويُسقط
       التذكير، وتبدأ به عمولةُ ما أسنده النظام.
-   ③ **ولمستشار الحالة وحدَه، ومرّةً كلَّ ستّ ساعات** — وما لا يُسجَّل يُقال سببُه بجوابٍ ٢٠٠. */
+   ③ **ولمستشار الحالة وحدَه، ومرّةً كلَّ ستّ ساعات** — وما لا يُسجَّل يُقال سببُه بجوابٍ ٢٠٠.
+   ④ **ورقمٌ بلا حالة تُفتح له حالةٌ عند من راسله** — مرّةً لا مرّتين، وبريدُه في الحالة يربطها
+      بحسابه حين يوثّقه. */
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { FastifyInstance } from 'fastify'
@@ -139,10 +141,11 @@ describe('③ لمستشار الحالة وحدَه، ومرّةً كلَّ س�
     expect(await prisma.contactEvent.count({ where: { caseId, source: 'whatsapp_hook' } })).toBe(2)
   })
 
-  it('⚠️ ومستشارٌ لا نعرفه، ورقمٌ بلا حالة، ورقمٌ ليس رقما — كلٌّ بسببه', async () => {
+  it('⚠️ ومستشارٌ لا نعرفه، ورقمٌ ليس رقما — كلٌّ بسببه، ولا تُفتح حالة', async () => {
     const { waPhone } = await guestWith(advA)
     expect((await post({ studentPhone: waPhone, advisorEmail: 'nobody@test.local' })).json().outcome).toBe('unknown_advisor')
-    expect((await post({ studentPhone: '962700000001', advisorEmail: 'hook-a@test.local' })).json().outcome).toBe('no_case')
+    expect((await post({ studentPhone: '962700000999', advisorEmail: 'nobody@test.local' })).json().outcome).toBe('unknown_advisor')
+    expect(await prisma.lead.count({ where: { phone: { contains: '700000999' } } }), 'فُتحت حالةٌ لمستشارٍ لا نعرفه').toBe(0)
     expect((await post({ studentPhone: 'abc-de', advisorEmail: 'hook-a@test.local' })).json().outcome).toBe('bad_phone')
   })
 
@@ -158,15 +161,83 @@ describe('③ لمستشار الحالة وحدَه، ومرّةً كلَّ س�
     expect(await prisma.contactEvent.count({ where: { caseId, source: 'whatsapp_hook' } })).toBe(0)
   })
 
-  it('⚠️ والحالةُ المغلقةُ لا يُكتب فيها', async () => {
+  it('⚠️ والحالةُ المغلقةُ لا يُكتب فيها — تُفتح بجانبها حالةٌ جديدة', async () => {
     const { caseId, waPhone } = await guestWith(advA)
     await prisma.advisorCase.update({ where: { id: caseId }, data: { status: 'closed' } })
-    expect((await post({ studentPhone: waPhone, advisorEmail: 'hook-a@test.local' })).json().outcome).toBe('no_case')
+    expect((await post({ studentPhone: waPhone, advisorEmail: 'hook-a@test.local' })).json().outcome).toBe('opened')
+    expect(await prisma.contactEvent.count({ where: { caseId, source: 'whatsapp_hook' } }), 'كُتب في المغلقة').toBe(0)
   })
 
   it('وآخرُ ما وصل يُقال في شاشة التكاملات', async () => {
     const view = await whatsAppHookView(prisma)
     expect(view.pulse?.outcome).toBeTruthy()
     expect(view.url).toMatch(/\/api\/webhooks\/whatsapp-contact$/)
+  })
+})
+
+describe('④ رقمٌ بلا حالة — تُفتح له حالةٌ عند من راسله', () => {
+  it('⚠️ مسنَدةً له تلقائيّا، وفيها أوّلُ تواصل — باسمه من المنصّة', async () => {
+    const res = await post({ studentPhone: '962781111001', studentName: 'سلمى من واتساب', advisorEmail: 'hook-a@test.local' })
+    expect(res.json()).toMatchObject({ logged: true, outcome: 'opened' })
+    const kase = await prisma.advisorCase.findFirstOrThrow({
+      where: { lead: { phone: '962781111001' } },
+      include: { lead: true, assignments: true, contactEvents: true },
+    })
+    expect(kase.lead?.source).toBe('whatsapp')
+    expect(kase.lead?.fullName).toBe('سلمى من واتساب')
+    expect(kase.status).toBe('contacted')
+    expect(kase.assignments).toHaveLength(1)
+    expect(kase.assignments[0]).toMatchObject({ advisorId: advA, automatic: true, assignedBy: null, unassignedAt: null })
+    expect(kase.contactEvents.map((e) => [e.createdBy, e.source])).toEqual([[advA, 'whatsapp_hook']])
+    /* ورسالةٌ تاليةٌ تجد الحالة — لا تفتح ثانية */
+    expect((await post({ studentPhone: '0781111001', advisorEmail: 'hook-a@test.local' })).json().outcome).toBe('throttled')
+    expect(await prisma.lead.count({ where: { phone: { contains: '781111001' } } })).toBe(1)
+  })
+
+  it('⚠️ ورسائلُ معا لرقمٍ جديد لا تفتح حالتين', async () => {
+    const hook = new WhatsAppHookService(prisma)
+    const outs = await Promise.all([1, 2, 3].map(() => hook.handle({ studentPhone: '962782222002', advisorEmail: 'hook-a@test.local' })))
+    expect(outs.filter((o) => o.outcome === 'opened'), 'فُتحت أكثرُ من حالة').toHaveLength(1)
+    expect(await prisma.advisorCase.count({ where: { lead: { phone: '962782222002' } } })).toBe(1)
+  })
+
+  it('وبلا اسمٍ يُسمّى بآخر أرقامه', async () => {
+    await post({ studentPhone: '962783333003', advisorEmail: 'hook-a@test.local' })
+    expect((await prisma.lead.findFirstOrThrow({ where: { phone: '962783333003' } })).fullName).toBe('عميل واتساب 3003')
+  })
+
+  it('⚠️ وبريدُه في الحالة يربطها بحسابه الموثَّق — فتُحسب للمستشار دفعاتُه', async () => {
+    await post({ studentPhone: '962784444004', advisorEmail: 'hook-b@test.local' })
+    const kase = await prisma.advisorCase.findFirstOrThrow({ where: { lead: { phone: '962784444004' } } })
+    const { userId } = await auth.register('wa-student@test.local', 'Learner#12345', 'طالب واتساب')
+    await prisma.user.update({ where: { id: userId }, data: { emailVerifiedAt: new Date() } })
+
+    expect(await advisors.setLeadEmail(advB, kase.id, ' WA-Student@test.local ')).toEqual({ linked: true })
+    expect((await prisma.advisorCase.findUniqueOrThrow({ where: { id: kase.id } })).clientId, 'لم تلحق حسابَه').toBe(userId)
+    const before = await attributedRevenue(prisma, advB)
+    const paidAt = new Date(Date.now() + 1000)
+    await prisma.order.create({ data: { userId, status: 'paid', subtotal: 90, total: 90, currency: 'USD', paidAt, createdAt: paidAt } })
+    expect(await attributedRevenue(prisma, advB) - before).toBe(90)
+  })
+
+  it('⚠️ وبريدٌ لم يوثّقه صاحبُه يُحفظ ولا يربط — حتّى يوثّقه', async () => {
+    await post({ studentPhone: '962785555005', advisorEmail: 'hook-a@test.local' })
+    const kase = await prisma.advisorCase.findFirstOrThrow({ where: { lead: { phone: '962785555005' } } })
+    await auth.register('wa-unverified@test.local', 'Learner#12345', 'لم يوثق')
+    expect(await advisors.setLeadEmail(advA, kase.id, 'wa-unverified@test.local')).toEqual({ linked: false })
+    const after = await prisma.advisorCase.findUniqueOrThrow({ where: { id: kase.id }, include: { lead: true } })
+    expect(after.clientId).toBeNull()
+    expect(after.lead?.email).toBe('wa-unverified@test.local')
+  })
+
+  it('⚠️ ولا يكتبه إلّا مستشارُ الحالة — ولا يُغيَّر بعد أن لحقت حسابا، ولا لبريدٍ له حالةٌ أخرى', async () => {
+    await post({ studentPhone: '962786666006', advisorEmail: 'hook-a@test.local' })
+    const kase = await prisma.advisorCase.findFirstOrThrow({ where: { lead: { phone: '962786666006' } } })
+    await expect(advisors.setLeadEmail(advB, kase.id, 'x@test.local')).rejects.toMatchObject({ code: 'not_assigned' })
+    await expect(advisors.setLeadEmail(advA, kase.id, 'wa-unverified@test.local')).rejects.toMatchObject({ code: 'case_exists' })
+    await expect(advisors.setLeadEmail(advA, kase.id, 'ليس بريدا')).rejects.toMatchObject({ code: 'bad_email' })
+
+    const linked = await prisma.advisorCase.findFirstOrThrow({ where: { lead: { phone: '962784444004' } } })
+    await expect(advisors.setLeadEmail(advB, linked.id, 'other@test.local')).rejects.toMatchObject({ code: 'already_linked' })
   })
 })

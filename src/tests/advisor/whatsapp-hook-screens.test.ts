@@ -18,6 +18,7 @@ const APP = code('server/http/app.ts')
 const INTEGRATIONS = code('server/services/integrations.service.ts')
 const SCREEN = code('src/pages/admin/Integrations.tsx')
 const CASES = code('src/pages/advisor/Cases.tsx')
+const ADVISOR_ROUTES = code('server/http/routes/advisor.routes.ts')
 
 describe('ذيلُ الرقم', () => {
   it('⚠️ يساوي بين ما يرسله واتساب وما كتبه الإنسان', () => {
@@ -53,11 +54,19 @@ describe('البابُ ورمزُه', () => {
 describe('الشاشات', () => {
   it('⚠️ التكاملاتُ تقول العنوانَ والصيغة', () => {
     expect(SCREEN).toMatch(/readOnly value=\{view\.whatsappHook\.url\}/)
-    for (const k of ['"studentPhone"', '"advisorEmail"', 'Authorization: Bearer']) expect(SCREEN).toContain(k)
+    for (const k of ['"studentPhone"', '"studentName"', '"advisorEmail"', 'Authorization: Bearer']) expect(SCREEN).toContain(k)
   })
 
   it('⚠️ وسجلُّ التواصل يقول ما جاء من المنصّة', () => {
     expect(CASES).toMatch(/c\.source === "whatsapp_hook" \? " · من منصة واتساب" : ""/)
+  })
+
+  it('⚠️ وبريدُ العميل يُكتب في حالةٍ لم تلحق حسابا — بباب المستشار وصلاحيّته', () => {
+    expect(CASES).toMatch(/\{!detail\.client && \(\s*<LeadEmailForm key=\{detail\.id\}/)
+    expect(CASES).toMatch(/apiPost\(`\/api\/advisor\/cases\/\$\{detail\.id\}\/lead-email`, \{ email \}\)/)
+    expect(ADVISOR_ROUTES).toMatch(
+      /app\.post\('\/api\/advisor\/cases\/:id\/lead-email', \{\s*preHandler: requirePermission\('advisor\.cases\.operate'\)/)
+    expect(CASES, 'مصدرُ واتساب يُعرض رمزا').toMatch(/whatsapp: "واتساب"/)
   })
 
   it('ونصوصُها بلا تشكيلٍ إعرابيّ', () => {
@@ -66,8 +75,13 @@ describe('الشاشات', () => {
       'انسخ الرمز الآن وضعه في المنصة — لا يعرض بعد الحفظ.', 'حفظ ربط المنصة', 'لم يصل أي طلب بعد.',
       'رقم الطالب كما يصل من واتساب. وبريد المستشار هو بريد حسابه هنا.',
       'يسجل التواصل لمستشار الحالة فقط، ومرة كل ست ساعات للحالة.',
+      'ورقم بلا حالة تفتح له حالة عند المستشار الذي راسله.',
     ]) {
       expect(SCREEN).toContain(t)
+      expect(t).toBe(plainAr(t))
+    }
+    for (const t of ['بريد العميل — ليرتبط بحسابه', 'يرتبط بحسابه حين يوثق هذا البريد، فترى تقدمه وتحسب دفعاته.']) {
+      expect(CASES).toContain(t)
       expect(t).toBe(plainAr(t))
     }
   })

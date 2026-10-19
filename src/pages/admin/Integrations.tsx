@@ -443,11 +443,13 @@ Content-Type: application/json
 
 {
   "studentPhone": "962791234567",
+  "studentName": "اختياري",
   "advisorEmail": "advisor@example.com",
   "summary": "اختياري"
 }`}</pre>
                 <p className="mt-2">رقم الطالب كما يصل من واتساب. وبريد المستشار هو بريد حسابه هنا.</p>
                 <p className="mt-1">يسجل التواصل لمستشار الحالة فقط، ومرة كل ست ساعات للحالة.</p>
+                <p className="mt-1">ورقم بلا حالة تفتح له حالة عند المستشار الذي راسله.</p>
               </Inset>
             </div>
           </Panel>
