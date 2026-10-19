@@ -28,6 +28,7 @@ import { fmtDateAr } from "@/utils/format";
 import { Panel, Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import { staffControlCls, staffSelectCls } from "@/components/FormKit";
+import { termlessAutoAr, termlessWaitAr, type TermlessKind } from "@/application/terms/termless";
 import { TRAINING_SEASONS } from "@/application/trainer/application-options";
 import { termHorizon } from "@/application/terms/season";
 import { toast, toastError } from "@/components/Toast";
@@ -68,6 +69,8 @@ const toLocal = (iso: string | null) => (iso ? iso.slice(0, 16) : "");
 interface TermlessCohort {
   id: string; title: string; courseTitleAr: string;
   learners: number; sessions: number; trainers: string[];
+  /* ما يتحدّد فصلُه وحدَه وما يحتاجك — والعلّةُ في `src/application/terms/termless.ts` */
+  plan: string | null; startsOn: string | null; kind: TermlessKind; whyAr: string | null;
 }
 
 export default function Terms() {
@@ -123,6 +126,49 @@ export default function Terms() {
     return act(`term-${c.id}`, () => apiPost(`/api/admin/cohorts/${c.id}/term`, { termId }),
       "سمّي فصل الشعبة — وفتحت نافذة جدولة مدرّبها");
   };
+
+  /* بطاقةُ شعبةٍ بلا فصل — في «تحتاجك» بسببها، وفي المطويّ بحال خطّتها */
+  const termlessCard = (c: TermlessCohort, line: string | null) => (
+    <Card as="li" key={c.id}>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="text-read font-bold text-foreground">{c.title}</p>
+          <p className="mt-0.5 text-read text-muted-foreground">
+            {c.courseTitleAr}
+            {c.learners > 0 && <> · {c.learners} التحقوا</>}
+            {c.sessions > 0 && <> · {c.sessions} لقاء</>}
+          </p>
+          {c.trainers.length > 0 && (
+            <p className="mt-1 text-read text-muted-foreground">المدرّب: {c.trainers.join("، ")}</p>
+          )}
+          {line && <p className="mt-1 text-read font-bold text-foreground">{line}</p>}
+        </div>
+        <div className="flex flex-wrap items-end gap-2">
+          <label>
+            <span className="mb-1.5 block text-read font-bold text-muted-foreground">الفصل</span>
+            <select
+              value={pickTerm[c.id] ?? ""}
+              onChange={(e) => setPickTerm({ ...pickTerm, [c.id]: e.target.value })}
+              aria-label={`فصل شعبة ${c.title}`}
+              className={staffSelectCls}
+            >
+              <option value="">اختر فصلا…</option>
+              {(terms ?? [])
+                .filter((t) => !["closed", "cancelled"].includes(t.status))
+                .map((t) => <option key={t.id} value={t.id}>{t.titleAr}</option>)}
+            </select>
+          </label>
+          <Button
+            tone="confirm"
+            disabled={busy !== null || !pickTerm[c.id]}
+            onClick={() => void nameTerm(c)}
+          >
+            سمّ الفصل
+          </Button>
+        </div>
+      </div>
+    </Card>
+  );
 
   /* فتحُ البابِ وإغلاقُه — ولا يُلمس تحته علمُ شعبةٍ واحدة، فما كان مغلقا
      قبل الإغلاق يبقى مغلقا بعد الفتح. */
@@ -299,61 +345,37 @@ export default function Terms() {
 
           وموضعُها فوق قائمة المواسم بقصد: إنسانٌ متوقّفٌ عن عمله يسبق
           تخطيطَ تقويمٍ قادم. */}
-      {termless !== null && termless.length > 0 && (
+      {termless !== null && termless.some((c) => c.kind === "needs") && (
         <Panel as="section" tone="warn" className="mb-6">
           <h2 className="flex items-center gap-2 text-sm font-black text-gold-ink">
-            <CalendarPlus className="h-4 w-4" aria-hidden="true" /> شعب لم يسمّ فصلها ({termless.length})
+            <CalendarPlus className="h-4 w-4" aria-hidden="true" /> شعب تحتاج فصلا منك ({termless.filter((c) => c.kind === "needs").length})
           </h2>
           {/* ═══ ولم تعد «تحبس مدرّبَها» (٢٧ سبتمبر ٢٠٢٦) ═══
               المدرّبُ يحدّد مدّةَ شعبته بنفسه فتُفتح جدولتُه داخلها، والفصلُ
-              يُشتقّ من تاريخ البدء حين تُعتمَد خطّتُه. فتسميتُه هنا تضع حدودا
-              مبدئيّةً لما لم يحدّد مدرّبُه مدّتَه بعد — لا تفكّ حبسا. */}
+              يُشتقّ من تاريخ البدء حين تُعتمَد خطّتُه. فهنا ما لا يعرف النظامُ موسمَه وحدَه. */}
           <p className="mt-1 text-read leading-6 text-muted-foreground">
-            الشعبة بلا فصل <b className="text-foreground">لم تفتح بعد</b>، وليست معطوبة. يحدّد مدرّبها مدّتها، ويحدّد
-            فصلها من تاريخ البدء عند اعتماد خطّته. واختيار الفصل هنا يضع حدودا مبدئيّة حتّى ذلك الحين.
+            لا يعرف النظام موسم هذه الشعب. اختر فصلها.
             {terms !== null && terms.length === 0 && " أنشئ موسما أوّلا."}
           </p>
           <ul className="mt-4 space-y-3">
-            {termless.map((c) => (
-              <Card as="li" key={c.id}>
-                <div className="flex flex-wrap items-end justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-read font-bold text-foreground">{c.title}</p>
-                    <p className="mt-0.5 text-read text-muted-foreground">
-                      {c.courseTitleAr}
-                      {c.learners > 0 && <> · {c.learners} التحقوا</>}
-                      {c.sessions > 0 && <> · {c.sessions} لقاء</>}
-                    </p>
-                    {c.trainers.length > 0 && (
-                      <p className="mt-1 text-read text-muted-foreground">المدرّب: {c.trainers.join("، ")}</p>
-                    )}
-                  </div>
-                  <div className="flex flex-wrap items-end gap-2">
-                    <label>
-                      <span className="mb-1.5 block text-read font-bold text-muted-foreground">الفصل</span>
-                      <select
-                        value={pickTerm[c.id] ?? ""}
-                        onChange={(e) => setPickTerm({ ...pickTerm, [c.id]: e.target.value })}
-                        aria-label={`فصل شعبة ${c.title}`}
-                        className={staffSelectCls}
-                      >
-                        <option value="">اختر فصلا…</option>
-                        {(terms ?? [])
-                          .filter((t) => !["closed", "cancelled"].includes(t.status))
-                          .map((t) => <option key={t.id} value={t.id}>{t.titleAr}</option>)}
-                      </select>
-                    </label>
-                    <Button
-                      tone="confirm"
-                      disabled={busy !== null || !pickTerm[c.id]}
-                      onClick={() => void nameTerm(c)}
-                    >
-                      سمّ الفصل
-                    </Button>
-                  </div>
-                </div>
-              </Card>
-            ))}
+            {termless.filter((c) => c.kind === "needs").map((c) => termlessCard(c, c.whyAr))}
+          </ul>
+        </Panel>
+      )}
+
+      {/* ═══ وما يتحدّد فصلُه وحدَه — مطويٌّ، والاختيارُ باقٍ (١٩ أكتوبر ٢٠٢٦) ═══
+          «لماذا يجب أن أعيد التوزيع والمدرّبُ هو من حدّد وأنا اعتمدت.. هذا فعلٌ مكرّر» (صاحب المنصّة).
+          فاعتمادُ خطّة مدرّبها يسمّي فصلَها من تاريخ بدئها، ولا يُعرض هنا عملا ينتظرك. */}
+      {termless !== null && termless.some((c) => c.kind === "auto") && (
+        <Panel as="details" className="mb-6">
+          <summary className="flex cursor-pointer items-center gap-2 text-read font-bold text-muted-foreground">
+            <CalendarPlus className="h-4 w-4" aria-hidden="true" /> {termlessAutoAr(termless.filter((c) => c.kind === "auto").length)}
+          </summary>
+          <p className="mt-2 text-read leading-6 text-muted-foreground">
+            ويمكنك أن تضع لأي منها فصلا مبدئيا قبل ذلك. هذا اختياري.
+          </p>
+          <ul className="mt-3 space-y-3">
+            {termless.filter((c) => c.kind === "auto").map((c) => termlessCard(c, termlessWaitAr(c, fmtDateAr)))}
           </ul>
         </Panel>
       )}
