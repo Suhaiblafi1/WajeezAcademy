@@ -263,7 +263,13 @@ export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: Prisma
         assessment: { cohort: { trainers: { some: { profileId: profile.id } } } },
       },
     })
-    return { ...full, pendingGrading }
+    /* ── وكم شعبةً له تُشغَّل ──
+       من في طور الإعداد يرى ألسنةَ طوره وحدَها (الخطوة H، `setup-tabs.ts`) — إلّا من له شعبةٌ جارية:
+       «طلبتي» لا تُخفى عمّن له طلبة، أيّا كان ما في عقده. */
+    const liveCohorts = await prisma.cohortTrainer.count({
+      where: { profileId: profile.id, cohort: { status: { in: ['open', 'full', 'active', 'completed'] } } },
+    })
+    return { ...full, pendingGrading, liveCohorts }
   })
 
   /* مهام التهيئة تُكمَل من صاحبها.
