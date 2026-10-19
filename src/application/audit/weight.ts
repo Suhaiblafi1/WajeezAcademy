@@ -170,6 +170,7 @@ const HIGH: readonly string[] = [
   'order.checkout', 'order.cancel', 'order.settle_partial',
   'trainer_payout.create', 'trainer_payout.generate',
   'trainer_payout.approve', 'trainer_payout.pay', 'trainer_payout.cancel',
+  'advisor_payout.generate', 'advisor_payout.approve', 'advisor_payout.pay', 'advisor_payout.cancel',
   /* شهادتُه — دعوى مستقلّةٌ على صاحبها */
   'certificate.issue', 'certificate.revoke',
   /* خطّةُ شعبته: اعتُمدت أو رُدّت أو أُجّلت إلى موسمٍ قادم */

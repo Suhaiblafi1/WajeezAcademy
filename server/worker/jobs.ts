@@ -1366,6 +1366,18 @@ export async function runAdvisorReminders(prisma: PrismaClient, now = new Date()
   }
 }
 
+/** كشوفُ عمولة المستشارين للشهر الذي انتهى — والعلّةُ في `advisor-payout.service.ts` */
+export async function runAdvisorPayouts(prisma: PrismaClient, now = new Date()): Promise<JobResult> {
+  const started = Date.now()
+  const { AdvisorPayoutService, lastClosedPeriod } = await import('../services/advisor-payout.service')
+  const { created } = await new AdvisorPayoutService(prisma).generate(lastClosedPeriod(now), null, now)
+  return {
+    job: 'advisor_payouts',
+    summaryAr: created === 0 ? 'لا كشف عمولة جديد' : `ولد ${created} كشف عمولة`,
+    done: created, failed: 0, ms: Date.now() - started,
+  }
+}
+
 /** بياناتُ من لم يسجّل تُمحى بعد ستة أشهر بلا نشاط — والعلّةُ في `guest-erasure.service.ts` */
 export async function runEraseIdleGuests(prisma: PrismaClient, now = new Date()): Promise<JobResult> {
   const started = Date.now()
@@ -1420,6 +1432,8 @@ export const JOBS = [
   { key: 'cleanup_expired', everyMs: 6 * HOUR, run: cleanupExpired, titleAr: 'تنظيف ما انتهى' },
   /* مرّةً في اليوم: التقليمُ ليس عاجلا، وتكرارُه بلا داعٍ يُقفل جداولَ السجلّ */
   { key: 'enforce_retention', everyMs: 24 * HOUR, run: enforceRetention, titleAr: 'تقليم جداول السجلّ بمدّة حفظها' },
+  /* كلَّ ستّ ساعات: الكشفُ يولد بعد انتهاء الشهر بساعاتٍ لا بيوم — ومن له كشفٌ يُتخطّى */
+  { key: 'advisor_payouts', everyMs: 6 * HOUR, run: runAdvisorPayouts, titleAr: 'كشوف عمولة المستشارين للشهر الذي انتهى' },
   /* مرّةً في اليوم: الأجلُ ستة أشهر، فيومٌ دقّةٌ كافية */
   { key: 'erase_idle_guests', everyMs: 24 * HOUR, run: runEraseIdleGuests, titleAr: 'محو بيانات من لم يسجل بعد ستة أشهر بلا نشاط' },
 ] as const
