@@ -49,6 +49,7 @@ import { LIVE_INTERVIEW } from '../services/trainer-interview-state'
 import { isDigestHour, unbookedDigest } from '../../src/application/trainer/unbooked-digest'
 import { getCalendlyConfig, recordCalendlySync } from '../services/integrations.service'
 import { CalendlyWebhookService } from '../services/calendly-webhook.service'
+import { CHECKOUT_HOLD_MS, TEAM_HOLD_MS, teamHeldOrderIds } from '../services/commerce/seat-hold'
 import {
   CalendlyApiError,
   type CalendlyScheduledEvent,
@@ -910,15 +911,28 @@ export async function cleanupExpired(prisma: PrismaClient, now = new Date()): Pr
    ── وما لا يُلمس ──
 
    طلبٌ عليه **دفعةٌ ناجحة** لا يُلغى مهما طال: ماله وصل وإن تعثّرت التسوية،
-   وإلغاؤه يمحو أثرَ ما دُفع. تلك حالةٌ تُقرأ بيدٍ لا تُنظَّف آليّا. */
-const ABANDONED_ORDER_MS = HOUR
+   وإلغاؤه يمحو أثرَ ما دُفع. تلك حالةٌ تُقرأ بيدٍ لا تُنظَّف آليّا.
+
+   ── والساعةُ لمن اشترى بنفسه، ويومان لما حجزه الفريق (١٩ أكتوبر ٢٠٢٦) ──
+
+   من حجز له الفريقُ وهو غائبٌ يصله الخبرُ بريدا وقد يقرؤه بعد ساعات — والمهلتان وعلّتُهما في
+   `commerce/seat-hold.ts`. والطلبُ الذي حجزه الفريقُ لا يُقرأ في الدفعة حتّى تنقضي مهلتُه: لو
+   قُرئ ثمّ تُرك لملأت الطلباتُ المنتظِرةُ الدفعةَ (`LIMITS.cleanup`) وحجبت ما انقضى خلفها. */
 
 export async function reclaimAbandonedOrders(prisma: PrismaClient, now = new Date()): Promise<JobResult> {
   const started = Date.now()
   const notifications = new NotificationService(prisma)
-  const cutoff = new Date(now.getTime() - ABANDONED_ORDER_MS)
+  const cutoff = new Date(now.getTime() - CHECKOUT_HOLD_MS)
+  const teamCutoff = new Date(now.getTime() - TEAM_HOLD_MS)
+  const teamHeld = [...await teamHeldOrderIds(prisma)]
   const stale = await prisma.order.findMany({
-    where: { status: 'pending_payment', createdAt: { lt: cutoff } },
+    where: {
+      status: 'pending_payment',
+      OR: [
+        { createdAt: { lt: teamCutoff } },
+        { createdAt: { lt: cutoff }, id: { notIn: teamHeld } },
+      ],
+    },
     include: { invoice: { include: { payments: { where: { status: 'succeeded' }, take: 1 } } } },
     take: LIMITS.cleanup,
     orderBy: { createdAt: 'asc' },
@@ -980,7 +994,7 @@ export async function reclaimAbandonedOrders(prisma: PrismaClient, now = new Dat
   return {
     job: 'reclaim_abandoned_orders',
     summaryAr: done === 0 && failed === 0
-      ? `لا طلب مهجورا أقدم من ساعة${notes}`
+      ? `لا طلب انقضت مهلة دفعه${notes}`
       : `ألغي ${done} طلبا مهجورا وأفرج عن مقاعدها${notes}`,
     done, failed, ms: Date.now() - started,
   }

@@ -38,6 +38,7 @@ import {
 } from "@/application/student/journey";
 import { courseFullById } from "@/data/courses";
 import { toast, toastError } from '@/components/Toast';
+import { fmtSession } from "@/application/text/format-ar";
 
 import { Panel, Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
@@ -49,6 +50,8 @@ interface PaidOrder {
   currency: string;
   items: { id: string; titleAr: string; unitPrice: string | number }[];
   invoice: { number: string; status: string } | null;
+  /** آخرُ لحظةٍ للدفع لما لم يُدفع (`seat-hold.ts`) */
+  payBy?: string | null;
 }
 
 export default function Journey() {
@@ -107,11 +110,18 @@ export default function Journey() {
 
   useEffect(() => { void load(); }, [load]);
 
+  /* والعائدُ بلا دفعٍ يُقرأ طلبُه كذلك: منه موعدُ الدفع الذي يبقى المقعدُ إليه (١٩ أكتوبر ٢٠٢٦) */
+  const [heldUntil, setHeldUntil] = useState<string | null>(null);
   useEffect(() => {
-    if (!paidOrder || cancelledOrder) { setPaid(null); return; }
+    if (!paidOrder) { setPaid(null); setHeldUntil(null); return; }
     let on = true;
     apiGet<PaidOrder[]>("/api/learner/orders")
-      .then((orders) => { if (on) setPaid(orders.find((o) => o.id === paidOrder) ?? null); })
+      .then((orders) => {
+        if (!on) return;
+        const order = orders.find((o) => o.id === paidOrder) ?? null;
+        setPaid(cancelledOrder ? null : order);
+        setHeldUntil(cancelledOrder ? order?.payBy ?? null : null);
+      })
       .catch(() => undefined);
     return () => { on = false; };
   }, [paidOrder, cancelledOrder]);
@@ -321,7 +331,8 @@ export default function Journey() {
             <p className="mt-1.5 text-read leading-6 text-muted-foreground">
               طلبك محفوظ. أكمل الدفع من{" "}
               <Link to="/student/billing" className="font-bold text-gold-ink underline underline-offset-4">الفواتير</Link>
-              {" "}— ومقعدك باق ما دامت الشعبة مفتوحة.
+              {/* وكان هنا «ومقعدك باق ما دامت الشعبة مفتوحة» — والطلبُ يُلغى بعد مهلته (`seat-hold.ts`) */}
+              {heldUntil ? <> قبل {fmtSession(heldUntil)}، وبعدها يفرج عن المقعد لغيرك.</> : "."}
             </p>
           </Card>
         )}
