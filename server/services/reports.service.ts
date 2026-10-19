@@ -11,6 +11,7 @@ import {
 } from '../../src/application/trainer/accepted-courses'
 import { suggestCourses } from '../../src/application/trainer/proposal-match'
 import { readMatchableCourses } from './course-proposal.service'
+import { AdvisorService, attributedRevenue } from './advisor.service'
 
 export interface ReportFilter {
   from?: Date
@@ -37,7 +38,9 @@ const COLUMN_AR: Record<string, string> = {
   day: 'اليوم', diagnostics: 'نتائج التشخيص',
   entity: 'العنصر', status: 'الحالة', count: 'العدد',
   recommendation: 'التوصية', learners: 'المتعلمون',
-  advisor: 'المستشار', activeCases: 'حالات نشطة', enrolled: 'سجّلوا', followUpsDone: 'متابعات منجزة',
+  advisor: 'المستشار', enrolled: 'سجّلوا',
+  openCases: 'حالات مفتوحة', medianHoursToContact: 'ساعات حتى أول تواصل (الوسيط)', contactedWithinDayPct: 'تواصل خلال يوم ٪',
+  waitingOver2Days: 'بلا تواصل منذ يومين', revenueInTheirTime: 'دفعات طلابه وهم عنده', commissionOwed: 'العمولة المستحقة',
   trainer: 'المدرب', cohort: 'الشعبة', sessionsDone: 'جلسات منجزة', submissionsReviewed: 'تسليمات مراجعة', avgScorePct: 'متوسط الدرجة ٪',
   monthCurrency: 'الشهر والعملة', revenue: 'الإيراد',
   kind: 'النوع', provider: 'المزود', total: 'الإجمالي',
@@ -165,21 +168,83 @@ export class ReportsService {
       },
       {
         key: 'advisor-performance', titleAr: 'أداء المستشار',
-        methodAr: 'لكل مستشار: الحالات النشطة المسندة، المتابعات المنجزة، الحالات المحولة لمسجلة — من إسنادات المستشارين وحالاتهم',
+        /* ═══ ما يحتاجه من يوزّع الطلبة ويدفع العمولة (١٩ أكتوبر ٢٠٢٦) ═══
+
+           كان ثلاثةَ أرقام: «حالات نشطة» تعدّ المغلقةَ والمسجَّلةَ معها، و«سجّلوا»، و«متابعات منجزة».
+           فلا سرعةَ تواصل، ولا نسبتَه، ولا مالَ. وقرارُ صاحب المنصّة بين ثلاثة (يُرقّى بأرقام العمر
+           كلّه، أو بها وبفترة، أو يبقى): **يُرقّى بأرقام العمر كلّه**.
+
+           والسرعةُ على ما أسنده غيرُه إليه: ما أدخله المستشارُ بنفسه عميلُه، فلا انتظارَ يُقاس. ونسبةُ
+           «خلال يوم» على ما مرّ عليه يومٌ — حالةُ الساعة الأخيرة لم تُعطَ فرصتَها. والانتظارُ يُقرأ من
+           قائمة الإدارة نفسِها (`listUncontacted`)، والمالُ من حساب العمولة نفسِه (`attributedRevenue`)
+           — فلا رقمٌ هنا يخالف ما في شاشةٍ أخرى. */
+        methodAr: 'لكل مستشار: حالاته المفتوحة الآن؛ الوسيط بالساعات من الإسناد إلى أول تواصل سجله هو؛ نسبة ما تواصل فيه خلال يوم مما مر عليه يوم؛ ما بلا تواصل منذ يومين الآن؛ من سجل من حالاته؛ دفعات طلابه وهم عنده والعمولة بنسبته. وما أدخله المستشار بنفسه خارج سرعة التواصل',
         run: async () => {
-          const links = await p.advisorAssignment.findMany({
-            where: { unassignedAt: null },
-            include: { advisor: { select: { displayName: true } }, case: { select: { status: true, followUps: { where: { doneAt: { not: null } }, select: { id: true } } } } },
+          const HOUR = 3_600_000
+          const now = Date.now()
+          const advisors = await p.user.findMany({
+            where: { roles: { some: { roleId: 'advisor' } } },
+            select: { id: true, displayName: true, status: true, advisorProfile: { select: { commissionPct: true } } },
+            orderBy: { displayName: 'asc' },
           })
-          const byAdvisor = new Map<string, { advisor: string; activeCases: number; enrolled: number; followUpsDone: number }>()
-          for (const l of links) {
-            const cur = byAdvisor.get(l.advisorId) ?? { advisor: l.advisor.displayName, activeCases: 0, enrolled: 0, followUpsDone: 0 }
-            cur.activeCases += 1
-            if (l.case.status === 'enrolled') cur.enrolled += 1
-            cur.followUpsDone += l.case.followUps.length
-            byAdvisor.set(l.advisorId, cur)
+          if (advisors.length === 0) return []
+          const ids = advisors.map((a) => a.id)
+          const links = await p.advisorAssignment.findMany({
+            where: { advisorId: { in: ids } },
+            select: { advisorId: true, caseId: true, assignedAt: true, assignedBy: true, unassignedAt: true, case: { select: { status: true } } },
+          })
+          const contacts = await p.contactEvent.findMany({
+            where: { caseId: { in: [...new Set(links.map((l) => l.caseId))] }, createdBy: { in: ids } },
+            select: { caseId: true, createdBy: true, createdAt: true },
+          })
+          const waiting = new Map<string, number>()
+          for (const c of await new AdvisorService(p).listUncontacted()) {
+            const id = c.assignments[0]?.advisorId
+            if (id) waiting.set(id, (waiting.get(id) ?? 0) + 1)
           }
-          return [...byAdvisor.values()]
+          const median = (xs: number[]) => {
+            if (xs.length === 0) return null
+            const s = [...xs].sort((a, b) => a - b)
+            const m = Math.floor(s.length / 2)
+            return s.length % 2 ? s[m]! : (s[m - 1]! + s[m]!) / 2
+          }
+
+          const rows = []
+          for (const a of advisors) {
+            const mine = links.filter((l) => l.advisorId === a.id)
+            const hours: number[] = []
+            let due = 0
+            let withinDay = 0
+            for (const l of mine) {
+              if (l.assignedBy === a.id) continue
+              const first = contacts
+                .filter((c) => c.caseId === l.caseId && c.createdBy === a.id && c.createdAt >= l.assignedAt
+                  && (!l.unassignedAt || c.createdAt < l.unassignedAt))
+                .reduce<Date | null>((min, c) => (!min || c.createdAt < min ? c.createdAt : min), null)
+              const h = first ? (first.getTime() - l.assignedAt.getTime()) / HOUR : null
+              if (h !== null) hours.push(h)
+              if (l.assignedAt.getTime() <= now - 24 * HOUR) {
+                due += 1
+                if (h !== null && h <= 24) withinDay += 1
+              }
+            }
+            const active = mine.filter((l) => !l.unassignedAt)
+            const revenue = await attributedRevenue(p, a.id)
+            const pct = a.advisorProfile ? Number(a.advisorProfile.commissionPct) : null
+            const med = median(hours)
+            rows.push({
+              advisor: a.displayName,
+              state: a.status === 'active' ? 'نشط' : 'موقوف',
+              openCases: active.filter((l) => !['closed', 'enrolled', 'not_interested'].includes(l.case.status)).length,
+              medianHoursToContact: med === null ? '—' : Math.round(med * 10) / 10,
+              contactedWithinDayPct: due === 0 ? '—' : Math.round((withinDay / due) * 100),
+              waitingOver2Days: waiting.get(a.id) ?? 0,
+              enrolled: active.filter((l) => l.case.status === 'enrolled').length,
+              revenueInTheirTime: revenue,
+              commissionOwed: pct === null ? '—' : Math.round(revenue * pct) / 100,
+            })
+          }
+          return rows
         },
       },
       {
