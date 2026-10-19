@@ -3687,6 +3687,10 @@ model AdvisorAssignment {
   /// أسنده النظامُ لأقلّ المستشارين حالاتٍ (`autoAssign`) — لا إداريٌّ ولا المستشارُ بيده.
   /// وعمولتُه لا تبدأ إلّا بأوّل تواصلٍ يسجّله المستشار (`attributedRevenue`)
   automatic    Boolean     @default(false)
+  /// ذُكّر المستشارُ أنّه لم يسجّل تواصلا بعد يومٍ من إسناده — مرّةً لكلّ إسناد (`remindDue`)
+  contactRemindedAt  DateTime?
+  /// وبُلّغ من يُسند بعد يومين بلا تواصل — مرّةً لكلّ إسناد
+  contactEscalatedAt DateTime?
   case         AdvisorCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
   advisor      User        @relation("CaseAdvisor", fields: [advisorId], references: [id])
 
@@ -3727,6 +3731,8 @@ model FollowUp {
   note        String?
   createdBy   String?     @db.Uuid
   doneAt      DateTime?
+  /// ذُكّر المستشارُ بحلول موعدها — مرّةً واحدة (`remindDue`)
+  remindedAt  DateTime?
   createdAt   DateTime    @default(now())
   case        AdvisorCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
 
@@ -3740,6 +3746,8 @@ model ContactEvent {
   direction String      @default("out") // out | in
   summary   String
   createdBy String?     @db.Uuid
+  /// manual | whatsapp_hook — سجّله المستشارُ بيده، أو أخبرت به منصّةُ المحادثات (`whatsapp-hook.service.ts`)
+  source    String      @default("manual")
   createdAt DateTime    @default(now())
   case      AdvisorCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
 

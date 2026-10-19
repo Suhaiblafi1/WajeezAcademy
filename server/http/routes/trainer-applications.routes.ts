@@ -168,8 +168,16 @@ export function registerTrainerApplicationRoutes(app: FastifyInstance, prisma: P
 
   /* طلبُ صاحب الحساب هو — الصلاحية trainer.application.own، ولا تُعطى إلا
      لدور المتقدّم. فلا يقرأ متعلمٌ طلبا ولا يقرأ متقدّمٌ طلب غيره. */
+  /* ═══ والقراءةُ وحدَها لمن صار مدرّبا (١٩ أكتوبر ٢٠٢٦) ═══
+     باعتماد توقيعه يُرفع من `trainer_applicant` إلى `trainer` — فيسقط عنه `trainer.application.own`، ومن فتح
+     «حالة طلبك» بعدها قرأ «هذا الإجراء يتطلّب صلاحيّة…» مكانَ طلبه. فيقرأ المدرّبُ طلبَه هو (`myApplication`
+     بحسابه) — والسحبُ والاستئنافُ أدناه باقيان للمتقدّم وحدَه. */
+  const ownApplication = requirePermission('trainer.application.own')
   app.get('/api/v1/trainer-applications/mine', {
-    preHandler: requirePermission('trainer.application.own'),
+    preHandler: async (req, reply) => {
+      if (req.auth?.permissions.includes('trainer.portal')) return
+      return ownApplication(req, reply)
+    },
     schema: { tags: ['trainer-applications'], summary: 'طلب الانضمام الخاص بصاحب الحساب' },
   }, async (req) => svc.myApplication(req.auth!.userId))
 

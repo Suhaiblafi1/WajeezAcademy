@@ -2,6 +2,8 @@ import { Mail, MessageCircle } from 'lucide-react'
 import { CONTACT } from '@/data/stories'
 import { useWhatsAppNumbers } from '@/services/whatsapp'
 import { waHref } from '@/application/site/whatsapp'
+import { withAdvisorName } from '@/application/advisor/advisor-message'
+import { useMyAdvisorName } from '@/services/my-advisor'
 
 /** زر مراسلة المستشار — واتساب عند ضبط الرقم الرسمي في CONTACT.whatsapp
     (عند الربط الفعلي)، وبريد إلكتروني معبأ مسبقا قبلها. لا رقم مؤقت مختلق */
@@ -25,10 +27,12 @@ export default function AdvisorContact({
 }) {
   /* الرقمُ من الإدارة، و`CONTACT.whatsapp` رجوعٌ حتّى يُضبط أوّلُ رقم */
   const numbers = useWhatsAppNumbers()
-  const wa = waHref(numbers, 'advisor', CONTACT.whatsapp, text)
+  /* ومن له مستشارٌ مسنَدٌ تحمل رسالتُه اسمَه — فتصل إليه من رقم الأكاديمية (`advisor-message.ts`) */
+  const message = withAdvisorName(text, useMyAdvisorName())
+  const wa = waHref(numbers, 'advisor', CONTACT.whatsapp, message)
   const hasWhatsApp = Boolean(wa)
   const href = wa
-    ?? `mailto:${CONTACT.email}?subject=${encodeURIComponent('أكاديمية وجيز — مراسلة مستشار')}&body=${encodeURIComponent(text)}`
+    ?? `mailto:${CONTACT.email}?subject=${encodeURIComponent('أكاديمية وجيز — مراسلة مستشار')}&body=${encodeURIComponent(message)}`
   return (
     <a
       href={href}

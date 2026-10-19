@@ -21,6 +21,9 @@ import { CountryPicker, PhoneCodePicker } from "@/components/CountryPicker";
 import { mobileFormatByDial, timezoneOf } from "@/data/countries";
 import BookInterview from "@/components/BookInterview";
 import EmailVerifyStatus from "@/components/EmailVerifyStatus";
+import IntakeClosedNotice from "@/components/IntakeClosedNotice";
+import { INTAKE_DEFERRED_EXPLAIN_AR, intakeClosed } from "@/application/trainer/intake-closed";
+import { DEFERRED } from "@/application/trainer/deferral";
 import {
   cleanProposals, emptyProposal, hasProposal, MAX_PROPOSALS,
   type TeachableProposal,
@@ -28,7 +31,7 @@ import {
 import DateField from "@/components/ui/DateField";
 import { clearDraft, draftHasContent, loadDraft, saveDraft } from "@/application/trainer/application-draft";
 import {
-  APPLICANT_STATUS, BOOKABLE_STATUSES, CONTACT_CHANNELS, INTERVIEW_BOOKING_PAUSE,
+  APPLICANT_STATUS, BOOKABLE_STATUSES, CONTACT_CHANNELS, INTERVIEW_BOOKING_INVITE_ONLY, INTERVIEW_BOOKING_PAUSE,
   RECORDING_ANSWERS, RECORDINGS_WHY, recordingAnswerPatch, TRAINING_SEASONS, WANTS_RECORDING_ANSWERS,
   type ContactChannel,
 } from "@/application/trainer/application-options";
@@ -61,6 +64,7 @@ import {
   DOC_KINDS,
   DOMAIN_YEARS,
   EMPLOYMENT_STATUS,
+  FORM_STEPS,
   LANGUAGES,
   MAX_DOC_BYTES,
   MISSING_FORMS,
@@ -190,15 +194,23 @@ const codeSelectCls = `${controlCls.replace("w-full", "")} w-32 shrink-0 px-2`;
    «بقيت خطوةٌ واحدة» غيرَ مصدَّقة.
 
    و`current` يقبل ٤ وإن كان `step` في النموذج ١..٣: المحطّةُ الرابعةُ ليست
-   خطوةَ نموذجٍ تُملأ، وهي «الحالية» حين يصير الحجزُ هو ما بقي. */
-function StepBar({ current, listRef, className = "mt-10" }: {
+   خطوةَ نموذجٍ تُملأ، وهي «الحالية» حين يصير الحجزُ هو ما بقي.
+
+   ═══ ولا محطّةَ حجزٍ حين يُغلق الاستقبال (١٩ أكتوبر ٢٠٢٦) ═══
+
+   قرارُ صاحب المنصّة: لا يُعرض خيارُ لقاء التعارف ما دام الاستقبالُ مغلقا. فالرابعةُ
+   «حجز لقاء التعارف — تختار وقتك بنفسك» وعدٌ بما لا يقع، و`withBooking` يُسقطها
+   فتبقى ثلاثُ محطّاتٍ في ثلاثة أعمدة. (`intake-closed.ts`) */
+function StepBar({ current, listRef, className = "mt-10", withBooking = true }: {
   current: number;
   listRef?: React.Ref<HTMLOListElement>;
   className?: string;
+  withBooking?: boolean;
 }) {
+  const shown = withBooking ? STEPS : STEPS.filter((s) => s.n <= FORM_STEPS);
   return (
-    <ol ref={listRef} tabIndex={-1} className={`${className} grid scroll-mt-24 grid-cols-1 gap-2 outline-none sm:grid-cols-4`} aria-label="مراحل الطلب">
-      {STEPS.map((s) => {
+    <ol ref={listRef} tabIndex={-1} className={`${className} grid scroll-mt-24 grid-cols-1 gap-2 outline-none ${withBooking ? "sm:grid-cols-4" : "sm:grid-cols-3"}`} aria-label="مراحل الطلب">
+      {shown.map((s) => {
         const state = s.n === current ? "current" : s.n < current ? "done" : "todo";
         return (
           <li key={s.n} aria-current={state === "current" ? "step" : undefined}>
@@ -795,13 +807,14 @@ export default function JoinTrainer() {
       if (lookup.reference.trim()) q.set("reference", lookup.reference.trim());
       const res = await apiGet<{
         reference: string; status: string; hasInterview: boolean; interviewAt: string | null
-        interviewRescheduleUrl: string | null; emailVerified: boolean
+        interviewRescheduleUrl: string | null; emailVerified: boolean; intakeDeferred?: boolean
       }>(
         `/api/v1/trainer-applications/status?${q.toString()}`,
       );
       const st = APPLICANT_STATUS[res.status];
       setLookupResult({
-        reference: res.reference, label: st?.label ?? res.status, explain: st?.explain ?? "",
+        reference: res.reference, label: st?.label ?? res.status,
+        explain: res.intakeDeferred ? INTAKE_DEFERRED_EXPLAIN_AR : st?.explain ?? "",
         status: res.status, hasInterview: res.hasInterview, interviewAt: res.interviewAt,
         interviewRescheduleUrl: res.interviewRescheduleUrl, emailVerified: res.emailVerified,
       });
@@ -815,6 +828,10 @@ export default function JoinTrainer() {
   /* ── شاشة ما بعد الإرسال ── تظهر بعد اكتمال الأقسام الثلاثة لا بعد الأول:
      بدء الطلب في الخلفية تفصيلٌ تقني، وإظهار شاشة النجاح عنده يوهم المتقدّم
      أنه انتهى وقد بقي نصف طلبه. */
+  /* الإشعارُ في رأس الاستمارة بساعة المتصفّح، وشاشةُ ما بعد الإرسال بحكم الخادم:
+     هو الذي أجّل الطلبَ أو لم يؤجّله، فلا تقول الشاشةُ غيرَ ما وقع. */
+  const closed = intakeClosed();
+  const deferredNow = completion?.status === DEFERRED;
   if (result && phase2Done) {
     /* ولا قناةَ تُحسب هنا بعد اليوم: كانت لبطاقة «وفي أثناء ذلك» وحدَها
        (حُذفت ٢٤ سبتمبر ٢٠٢٦)، وحسابُها الآن عملٌ لا يُقرأ. */
@@ -839,15 +856,24 @@ export default function JoinTrainer() {
               وُقف الحجزُ (`INTERVIEW_BOOKING_PAUSE`) لم تبقَ عليه خطوة: طلبُه
               تمّ، وما بقي علينا نحن. فعنوانٌ يقول «بقيت خطوة» يجعله يبحث عن
               فعلٍ ليس له — وهو العطبُ الأوّل مقلوبا. */}
+          {/* ═══ والاستقبالُ إن أُغلق فالشاشةُ ختامٌ لا خطوة (١٩ أكتوبر ٢٠٢٦) ═══
+
+              لا موعدَ يُحجَز ولا محطّةَ رابعة: ما بقي علينا نحن، في شهرٍ مسمّى.
+              فلا «بقيت خطوة» ولا شريطَ يضيء «حجز لقاء التعارف». (`intake-closed.ts`) */}
           <h1 className="mt-6 text-2xl font-black">
-            {INTERVIEW_BOOKING_PAUSE.active ? "وصل طلبك — شكرا لك" : "وصل طلبك — وبقيت خطوة واحدة"}
+            {/* وبالدعوة وحدَها (`INTERVIEW_BOOKING_INVITE_ONLY`) لا تقويمَ تحته — فلا «بقيت خطوة» (١٩ أكتوبر ٢٠٢٦) */}
+            {deferredNow || INTERVIEW_BOOKING_PAUSE.active || INTERVIEW_BOOKING_INVITE_ONLY.active ? "وصل طلبك — شكرا لك" : "وصل طلبك — وبقيت خطوة واحدة"}
           </h1>
           <p className="mt-3 text-sm leading-7 text-muted-foreground">
-            {INTERVIEW_BOOKING_PAUSE.active
-              ? "شكرا لك. طلبك كامل ولا ينقصه شيء. حجز المواعيد متوقف مؤقتا لأنها امتلأت — التفاصيل أدناه."
-              : "شكرا لك. طلبك كامل، وبقي أن تختار موعد لقاء التعارف من التقويم أدناه."}
+            {deferredNow
+              ? "طلبك كامل ولا ينقصه شيء."
+              : INTERVIEW_BOOKING_PAUSE.active
+                ? "شكرا لك. طلبك كامل ولا ينقصه شيء. حجز المواعيد متوقف مؤقتا لأنها امتلأت — التفاصيل أدناه."
+                : INTERVIEW_BOOKING_INVITE_ONLY.active
+                  ? "شكرا لك. طلبك كامل ولا ينقصه منك شيء. نقرأ ملفك، وإن رغبنا بلقائك وصلك رابط حجز لقاء التعارف على بريدك."
+                  : "شكرا لك. طلبك كامل، وبقي أن تختار موعد لقاء التعارف من التقويم أدناه."}
           </p>
-          <StepBar current={4} className="mt-6 text-right" />
+          {!deferredNow && <StepBar current={4} className="mt-6 text-right" />}
           <Card as="p" tone="warn" className="mt-4">
             <span className="text-xs text-muted-foreground">رقم طلبك</span>
             <span className="mt-1 block font-mono text-xl font-black tracking-wide text-gold-ink" dir="ltr">{result.reference}</span>
@@ -856,9 +882,11 @@ export default function JoinTrainer() {
           <div className="mt-6 space-y-4 text-right">
             {/* الحجزُ أوّلا لا الانتظار: كانت هذه البطاقةُ تَعِد بأن «نتواصل معك
                 لتحديد موعد»، فيقف المتقدّمُ بلا شيءٍ بيده. والموعدُ صار بيده. */}
-            <BookInterview
-              name={form.fullName.trim()} email={form.email.trim()} reference={result.reference}
-            />
+            {deferredNow ? <IntakeClosedNotice when="after" /> : (
+              <BookInterview
+                name={form.fullName.trim()} email={form.email.trim()} reference={result.reference}
+              />
+            )}
 
             {/* ═══ حُذف «وفي أثناء ذلك» (٢٤ سبتمبر ٢٠٢٦) ═══
 
@@ -1011,6 +1039,10 @@ export default function JoinTrainer() {
           نموذج واحد من ثلاثة أقسام، يحفظ تقدمك أولا بأول.
         </p>
 
+        {/* يُقال قبل أن يبدأ لا بعد أن يُرسل: من ملأ أربعةَ أقسامٍ ثمّ قرأ «توقّفنا»
+            ظنّ أنّنا أخفيناه عنه. (`intake-closed.ts`) */}
+        {closed && <IntakeClosedNotice when="before" className="mt-6" />}
+
         <div className="mt-8 grid gap-4 sm:grid-cols-3">
           {[
             { icon: Compass, text: "مسارات مبنية على منهجية واضحة" },
@@ -1025,7 +1057,7 @@ export default function JoinTrainer() {
         </div>
 
         {/* مؤشر الخطوات — أربع محطات، آخرُها الموعد. ومكتوبٌ في `options.ts` لماذا */}
-        <StepBar current={step} listRef={stepsRef} />
+        <StepBar current={step} listRef={stepsRef} withBooking={!closed} />
 
         {/* الاستئناف يُقال ولا يُفترض: من يرى حقولا مملوءة ولا يعرف من ملأها
             يرتاب. والباب مفتوح للبدء من جديد بضغطة. */}
@@ -1762,7 +1794,8 @@ export default function JoinTrainer() {
                 </dl>
                 <p className="mt-3.5 border-t border-white/10 pt-3 text-read leading-6 text-muted-foreground">
                   رقم طلبك: <b className="font-mono text-foreground" dir="ltr">{result?.reference ?? "—"}</b> — يصلك في بريد التأكيد.
-                  وعند حجز مقابلتك يصل هذا الملف للمراجع بصيغة PDF مع سيرتك.
+                  {/* ولا ذكرَ لحجز المقابلة ما دام الاستقبالُ مغلقا — لا حجزَ بعده (`intake-closed.ts`) */}
+                  {!closed && <> وعند حجز مقابلتك يصل هذا الملف للمراجع بصيغة PDF مع سيرتك.</>}
                 </p>
               </Card>
             </div>
@@ -1777,7 +1810,7 @@ export default function JoinTrainer() {
             <div ref={missingRef}>
               <Card tone="warn" aria-live="polite">
                 <p className="text-read leading-5 font-black text-gold-ink">
-                  بقي {countAr(missing[step as 1 | 2 | 3].length, MISSING_FORMS)} قبل «{step < 3 ? "التالي" : "حجز الموعد"}»
+                  بقي {countAr(missing[step as 1 | 2 | 3].length, MISSING_FORMS)} قبل «{step < 3 ? "التالي" : closed || INTERVIEW_BOOKING_PAUSE.active ? "أرسل طلبك" : "حجز الموعد"}»
                 </p>
                 <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1.5 text-read leading-6 text-foreground">
                   {missing[step as 1 | 2 | 3].map((m) => (
@@ -1795,10 +1828,13 @@ export default function JoinTrainer() {
               الزرُّ يقول «احجز»، والشاشةُ التالية تفتح التقويم. ومن لم يُقَل
               له ذلك يضغط وهو يظنّ أنّه فرغ، فيقرأ ما بعده شكرا لا خطوة —
               وهي الشكوى التي وُضعت المحطّةُ الرابعةُ لها. */}
-          {step === 3 && (
+          {/* وما بعد الزرّ إرسالٌ لا حجز حين يُغلق الاستقبالُ أو يُوقَف الحجز — فلا يُوعَد
+              بتقويمٍ لن يُفتح، ويقول الزرُّ وسطرُ النقص «أرسل». (`intake-closed.ts`) */}
+          {step === 3 && !(closed || INTERVIEW_BOOKING_PAUSE.active) && (
             <Inset as="p" tone="accent" className="text-read leading-6 text-foreground">
-              بعد هذا الزر تختار موعد لقاء التعارف من التقويم، وهي آخر خطوة.
-              يصلك التأكيد ودعوة التقويم فورا.
+              {!INTERVIEW_BOOKING_INVITE_ONLY.active
+                ? "بعد هذا الزر تختار موعد لقاء التعارف من التقويم، وهي آخر خطوة. يصلك التأكيد ودعوة التقويم فورا."
+                : "بعد هذا الزر يصل طلبك إلى فريقنا. وإن رغبنا بلقائك وصلك رابط حجز لقاء التعارف على بريدك."}
             </Inset>
           )}
 
@@ -1836,12 +1872,14 @@ export default function JoinTrainer() {
               <Button tone="primary" key="send"
                 type="submit" disabled={busy} className="disabled:cursor-not-allowed">
                 {busy ? <Loader2 className="h-4 w-4 animate-spin" />
-                  : INTERVIEW_BOOKING_PAUSE.active ? <Check className="h-4 w-4" />
+                  : closed || INTERVIEW_BOOKING_PAUSE.active || INTERVIEW_BOOKING_INVITE_ONLY.active ? <Check className="h-4 w-4" />
                   : <CalendarClock className="h-4 w-4" />}
                 {/* والزرُّ يتبع المفتاح: ما دام الحجزُ موقوفا فما بعده إرسالٌ
                     لا حجز، وزرٌّ يقول «احجز» ثمّ يفتح إشعارَ وقفٍ خُلفٌ للوعد
-                    — وهو العطبُ الذي كُتب له هذا الزرُّ أصلا، مقلوبا. */}
-                {busy ? "نحفظ طلبك…" : INTERVIEW_BOOKING_PAUSE.active ? "أرسل طلبك" : "احجز موعد لقاء التعارف"}
+                    — وهو العطبُ الذي كُتب له هذا الزرُّ أصلا، مقلوبا. وكذلك
+                    إغلاقُ الاستقبال (١٩ أكتوبر ٢٠٢٦): بعده «نتواصل في ديسمبر»
+                    لا تقويم. والدعوةُ وحدَها كذلك: لا تقويمَ بعد الإرسال. */}
+                {busy ? "نحفظ طلبك…" : closed || INTERVIEW_BOOKING_PAUSE.active || INTERVIEW_BOOKING_INVITE_ONLY.active ? "أرسل طلبك" : "احجز موعد لقاء التعارف"}
               </Button>
             )}
           </div>

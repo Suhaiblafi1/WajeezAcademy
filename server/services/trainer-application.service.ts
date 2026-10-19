@@ -16,6 +16,10 @@ import { notifyRole, sendDirectEmail, publicSiteUrl, type DirectMailStatus } fro
 import { renderMail } from './mail-template'
 import { REVIEW_OPEN_STATUSES, type ReviewOpenStatus } from '../../src/application/trainer/approval'
 import { DEFERRED, deferredFollowUpAt } from '../../src/application/trainer/deferral'
+import {
+  INTAKE_CLOSED_AFTER_AR, INTAKE_CLOSED_PROMISE_AR, INTAKE_CLOSED_TITLE_AR, INTAKE_DEFER_NOTE_AR,
+  TRAINER_INTAKE_CLOSED, deferredByIntake, intakeClosed, intakeFollowUpAt,
+} from '../../src/application/trainer/intake-closed'
 import { cleanProposals } from '../../src/application/trainer/teachable-proposals'
 import { newStorageKey, signKey, SIGNED_URL_TTL_MS, MAX_UPLOAD_BYTES } from './storage.service'
 import { deleteObject } from './object-store'
@@ -33,6 +37,16 @@ import {
 
 const sha256 = (s: string) => createHash('sha256').update(s).digest('hex')
 const newToken = () => randomBytes(32).toString('base64url')
+
+/* ═══ إغلاقُ الاستقبال — والاختباراتُ تفتحه بمفتاح بيئة (١٩ أكتوبر ٢٠٢٦) ═══
+
+   القرارُ وعلّتُه في `intake-closed.ts`. والإغلاقُ يقلب مصيرَ كلّ طلبٍ يُرسَل، فلو
+   سرى في اختبارات الخادم لصار كلُّ طلبٍ فيها مؤجَّلا، ولَما اختُبر الطريقُ الذي يعود
+   يومَ يُطفأ المفتاح. فـ`TRAINER_INTAKE=open` يفتحه (يضبطه `vitest.server.config.ts`)،
+   واختبارُ الإغلاق يمحوه بنفسه. */
+export function intakeClosedNow(now: Date = new Date()): boolean {
+  return process.env.TRAINER_INTAKE !== 'open' && intakeClosed(now)
+}
 
 /* ═══ أربعةَ عشرَ لا سبعةَ عشرَ (٢٦ سبتمبر ٢٠٢٦) ═══
 
@@ -522,6 +536,8 @@ export class TrainerApplicationService {
       phoneCountryCode: string | null; deliveryMode: string | null; contactChannel: string | null
       contactAltEmail: string | null; specialties: { specialty: string }[] },
     verifyToken: string,
+    /** أُجّل عند إرساله لإغلاق الاستقبال — فيُقال ذلك بدل «نتواصل لتحديد موعد» */
+    intakeDeferred = false,
   ): Promise<DirectMailStatus> {
     const site = publicSiteUrl()
     const link = `${site}/join-trainer/verify?ref=${encodeURIComponent(app.reference)}&token=${encodeURIComponent(verifyToken)}`
@@ -551,7 +567,16 @@ export class TrainerApplicationService {
             { label: 'وسيلة التواصل', value: `${channel}${channelValue ? ` — ${channelValue}` : ''}` },
           ] },
           { kind: 'h', text: 'ما التالي' },
-          { kind: 'p', text: `سيقرأ فريقنا الأكاديمي طلبك ومستنداتك، ثمّ نتواصل معك عبر ${channel} لتحديد موعد اجتماع تعريفيّ قصير نعرّفك فيه بمنهجية الأكاديمية ونسمع منك.` },
+          /* والاستقبالُ إن أُغلق قيل ذلك بلفظ الشاشة نفسِه وموعدِها (`intake-closed.ts`).
+             وبحكم الطلب لا بالساعة: البريدُ يقول ما وقع به، لا ما يقع بغيره الآن. */
+          ...(intakeDeferred
+            ? ([
+              { kind: 'callout', text: INTAKE_CLOSED_TITLE_AR },
+              { kind: 'p', text: `${INTAKE_CLOSED_PROMISE_AR} ${INTAKE_CLOSED_AFTER_AR}` },
+            ] as const)
+            : ([
+              { kind: 'p', text: `سيقرأ فريقنا الأكاديمي طلبك ومستنداتك، ثمّ نتواصل معك عبر ${channel} لتحديد موعد اجتماع تعريفيّ قصير نعرّفك فيه بمنهجية الأكاديمية ونسمع منك.` },
+            ] as const)),
           { kind: 'h', text: 'تابع حالة طلبك في أيّ وقت' },
           /* الرابطُ على كلمةٍ لا عنوانا خامّا في وسط الجملة (١٧ سبتمبر ٢٠٢٦).
              والنصُّ الخامُّ يحمل العنوانَ بين قوسين — يبنيه `mail-template`. */
@@ -658,6 +683,8 @@ export class TrainerApplicationService {
        فتُعاد الحالةُ نعم/لا لا تاريخا: الوقتُ لا يُعرض في هذه الشاشة، وما
        لا يُعرض لا يُكشف في ردٍّ عامٍّ يكفي فيه البريدُ وحدَه. */
     emailVerified: boolean
+    /** أُجّل لإغلاق الاستقبال — فيُقرأ له شرحُ الإغلاق لا شرحُ المراجعة */
+    intakeDeferred: boolean
   }> {
     const normalized = email.trim().toLowerCase()
     const ref = reference?.trim().toUpperCase() || null
@@ -673,6 +700,10 @@ export class TrainerApplicationService {
           take: 1,
           select: { scheduledAt: true, rescheduleUrl: true },
         },
+        statusHistory: {
+          where: { toStatus: DEFERRED }, orderBy: { createdAt: 'desc' }, take: 1,
+          select: { toStatus: true, note: true },
+        },
       },
     })
     if (!app) {
@@ -686,6 +717,7 @@ export class TrainerApplicationService {
          بلا زرِّ تعديلٍ بدل زرٍّ لا يفتح شيئا. */
       interviewRescheduleUrl: app.interviews[0]?.rescheduleUrl ?? null,
       emailVerified: !!app.emailVerifiedAt,
+      intakeDeferred: deferredByIntake(app),
     }
   }
 
@@ -797,7 +829,15 @@ export class TrainerApplicationService {
       orderBy: { createdAt: 'desc' },
       select: { createdAt: true },
     })
-    return { ...mine, interviewInvitedAt: invited?.createdAt ?? null }
+    /* ═══ وتوقيعُه ينتظر اعتمادَنا (١٩ أكتوبر ٢٠٢٦) ═══
+
+       التوقيعُ بالرابط لا يغيّر حالَ الطلب: يبقى `contract_pending` حتّى نعتمد التوقيع. فكانت صفحتُه تقول
+       «أرسلنا لك العقد. بعد توقيعه…» لمن وقّعه — فيظنّ توقيعَه لم يصل. فيُقال له ما وقع. */
+    const signed = await this.prisma.trainerContract.findFirst({
+      where: { profile: { applicationId: id }, status: 'signed' },
+      select: { signedAt: true },
+    })
+    return { ...mine, interviewInvitedAt: invited?.createdAt ?? null, contractSignedAt: signed?.signedAt ?? null }
   }
 
   /** مفتاحُ استئناف الطلب لصاحب الحساب — يُبدَّل الرمزُ ويُعاد، ما دام الطلبُ يقبل الاستكمال */
@@ -889,6 +929,8 @@ export class TrainerApplicationService {
 
     const done = new Date()
     const firstCompletion = app.status === 'draft'
+    /* يُحكم مرّةً بساعة الإرسال، فتتّفق عليه الحالةُ والبريدُ وإشعارُ الفريق */
+    const intakeDeferred = firstCompletion && intakeClosedNow(done)
     const verifyToken = newToken()
     await this.prisma.$transaction(async (tx) => {
       await tx.trainerApplication.update({
@@ -945,6 +987,14 @@ export class TrainerApplicationService {
       if (firstCompletion) {
         await this.transition(app.id, 'submitted', app.userId, 'اكتمل التقديم', tx)
       }
+      /* ═══ والاستقبالُ مغلق: يؤجَّل وحدَه إلى الفصل القادم (١٩ أكتوبر ٢٠٢٦) ═══
+
+         خطوتان لا خطوة: «اكتمل التقديم» يبقى سطرا في سجلّه كأيّ طلب، ثمّ التأجيلُ
+         بموعد الإغلاق لا بموعد التأجيل العاديّ — ذاك يُحسب من يوم القرار، وهذا وعدٌ
+         بشهرٍ مسمّى قيل له في الشاشة. والفاعلُ النظامُ لا هو. (`intake-closed.ts`) */
+      if (intakeDeferred) {
+        await this.transition(app.id, DEFERRED, null, INTAKE_DEFER_NOTE_AR, tx, intakeFollowUpAt())
+      }
       /* ═══ استكمالُ المرحلة الثانية بعد طلب معلوماتٍ يعيده إلى موضعه ═══
 
          كان يعيده إلى `under_review` مسكوكةً. وكان ذلك يصحّ حين لم يكن طلبُ
@@ -968,17 +1018,19 @@ export class TrainerApplicationService {
       const full = await this.prisma.trainerApplication.findUniqueOrThrow({
         where: { id: app.id }, include: { specialties: true },
       })
-      emailDelivery = await this.sendConfirmationEmail(full, verifyToken)
+      emailDelivery = await this.sendConfirmationEmail(full, verifyToken, intakeDeferred)
       /* الطلب اكتمل وصار «مقدماً» — أشعر لجنة الاستقبال فوراً */
       await notifyRole(this.prisma, ['super_admin', 'academic_manager', 'operations_manager'], {
         channel: 'in_app',
         title: 'طلب انضمام مدرب جديد',
-        body: `قدّم ${full.fullName} طلب انضمام كاملا (${reference}) — بانتظار الفرز الأولي في «طلبات المدربين».`,
+        body: intakeDeferred
+          ? `قدّم ${full.fullName} طلب انضمام كاملا (${reference}) — والاستقبال مغلق، فأجّل وحده إلى ${TRAINER_INTAKE_CLOSED.nextTermAr}، ونسأله عن اهتمامه في ${fmtDateLong(intakeFollowUpAt())}.`
+          : `قدّم ${full.fullName} طلب انضمام كاملا (${reference}) — بانتظار الفرز الأولي في «طلبات المدربين».`,
         templateKey: 'admin.trainer_application',
         data: { applicationId: app.id, reference },
       })
     }
-    const status = firstCompletion ? 'submitted' : app.status === 'information_requested' ? 'under_review' : (app.status as TrainerStatus)
+    const status = intakeDeferred ? DEFERRED : firstCompletion ? 'submitted' : app.status === 'information_requested' ? 'under_review' : (app.status as TrainerStatus)
     return { phase2CompletedAt: done, status, emailDelivery }
   }
 
@@ -1022,6 +1074,8 @@ export class TrainerApplicationService {
   async transition(
     applicationId: string, to: TrainerStatus, actorId: string | null, note?: string,
     tx?: Prisma.TransactionClient,
+    /** موعدُ التواصل حين يُؤجَّل بوعدٍ مسمّى — وإلّا حُسب من اليوم (`deferral.ts`) */
+    followUpAt?: Date,
   ): Promise<void> {
     const run = async (db: Prisma.TransactionClient) => {
       const app = await db.trainerApplication.findUnique({ where: { id: applicationId } })
@@ -1039,7 +1093,7 @@ export class TrainerApplicationService {
          بالخروج منه — فالرابطُ يُجاب مرّةً واحدةً ولا يعمل بعد أن تغيّر الطلب. */
       const freshAsk = { deferredInterestAskedAt: null, deferredInterestTokenHash: null }
       const followUp = to === DEFERRED
-        ? { deferredFollowUpAt: deferredFollowUpAt(new Date()), ...freshAsk }
+        ? { deferredFollowUpAt: followUpAt ?? deferredFollowUpAt(new Date()), ...freshAsk }
         : app.deferredFollowUpAt || app.deferredInterestTokenHash ? { deferredFollowUpAt: null, ...freshAsk } : {}
       await db.trainerApplication.update({ where: { id: applicationId }, data: { status: to, ...followUp } })
       await db.trainerStatusHistory.create({

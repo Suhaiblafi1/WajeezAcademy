@@ -9,6 +9,22 @@ import { ROLE_PERMISSIONS } from '../auth/permissions'
 import {
   GUEST_CONTACT_CONSENT_AR, GUEST_SNAPSHOT_MAX_CHARS, normalizePhone,
 } from '../../src/application/advisor/guest-contact'
+import {
+  ESCALATE_AFTER_HOURS, FOLLOW_UP_GRACE_HOURS, FOLLOW_UP_LEAD_MINUTES, REMIND_AFTER_HOURS, REMIND_WINDOW_DAYS,
+} from '../../src/application/advisor/contact-sla'
+import { countAr } from '../../src/application/text/count-ar'
+
+const HOUR_MS = 3_600_000
+
+/** من يُبلَّغ بشأن الإسناد — بدوره من `ROLE_PERMISSIONS` (`advisor.assign`)، لا قائمةٌ تُكتب باليد فتفترق عنها */
+function assignerRoles(): string[] {
+  return Object.entries(ROLE_PERMISSIONS)
+    .filter(([, keys]) => keys.includes('advisor.assign'))
+    .map(([role]) => role)
+}
+
+const FOLLOW_UP_VIA_AR: Record<string, string> = { whatsapp: 'عبر واتساب', email: 'بالبريد', phone: 'بالهاتف' }
+const CASE_FORMS_AR = { one: 'حالة', two: 'حالتان', few: 'حالات', many: 'حالة' }
 
 export const CASE_STATUSES = [
   'new', 'contacted', 'needs_review', 'follow_up', 'recommended', 'enrolled', 'not_interested', 'closed',
@@ -342,10 +358,7 @@ export class AdvisorService {
       where: { templateKey: 'advisor.case.no_advisor', queuedAt: { gte: new Date(Date.now() - 6 * 3600_000) } },
     })
     if (recent > 0) return
-    const roles = Object.entries(ROLE_PERMISSIONS)
-      .filter(([, keys]) => keys.includes('advisor.assign'))
-      .map(([role]) => role)
-    await notifyRole(this.prisma, roles, {
+    await notifyRole(this.prisma, assignerRoles(), {
       channel: 'in_app',
       templateKey: 'advisor.case.no_advisor',
       title: 'حالة تنتظر مستشارا',
@@ -441,6 +454,148 @@ export class AdvisorService {
       orderBy: { createdAt: 'desc' },
       take: 200,
     })
+  }
+
+  /* ═══════════ ولا تنتظر حالةٌ مستشارا لا يكلّمها (١٩ أكتوبر ٢٠٢٦) ═══════════
+
+     صار الإسنادُ يقع وحدَه، فصار للحالة مستشارٌ قبل أن يعرف بها إنسان. فإن لم يتواصل
+     لا يقول ذلك شيء: لا تذكيرَ له ولا خبرَ لمن يُسند، والعميلُ ينتظر. والمتابعةُ التي
+     جدولها المستشارُ بيده لا تذكّره بموعدها. وقرارُ صاحب المنصّة والأرقامُ في
+     `contact-sla.ts`: يومٌ فتذكير، ويومان فإبلاغُ من يُسند — **ولا تنتقل حالةٌ إلّا بيد
+     إنسان**، فمن تواصل ولم يسجّل لا تُنتزع منه.
+
+     ── و«التواصل» هو ما تُحسب به العمولة ──
+
+     سجلُّ تواصلٍ كتبه المستشارُ المسنَدُ نفسُه في الحالة بعد إسناده (`attributedRevenue`)
+     — لا حالةٌ غيّرها بيده، ولا تواصلُ من سبقه: من نُقلت إليه حالةٌ لم يكلّم صاحبَها بعد.
+     فالتذكيرُ يحمي عمولتَه أيضا: ما أسنده النظامُ لا يُحسب له قبل أوّل تواصلٍ يسجّله.
+
+     ── وما لا يُذكَّر به ──
+
+     ما أدخله المستشارُ بنفسه (`createOwnCase`): هو من جاء بالعميل، فلا ينتظر أحدٌ يدا.
+     والموقوفُ لا يُذكَّر — لا يرى جرسَه؛ وحالتُه تُبلَّغ لمن يُسند فتُنقل. */
+
+  /** إسناداتٌ نشطةٌ على حالاتٍ مفتوحة لم يسجّل مستشارُها تواصلا بعدها — الأحدثُ أوّلا */
+  private async uncontactedLinks(assignedAt: { gte?: Date; lte: Date }, take: number) {
+    const links = await this.prisma.advisorAssignment.findMany({
+      where: { unassignedAt: null, assignedAt, case: { status: { notIn: ['closed', 'enrolled', 'not_interested'] } } },
+      select: {
+        id: true, caseId: true, advisorId: true, assignedBy: true, assignedAt: true,
+        contactRemindedAt: true, contactEscalatedAt: true,
+        advisor: { select: { displayName: true, status: true } },
+        case: {
+          select: {
+            id: true, status: true, createdAt: true,
+            lead: { select: { id: true, fullName: true, email: true, phone: true } },
+            client: { select: { displayName: true, email: true } },
+            contactEvents: { where: { createdBy: { not: null } }, select: { createdBy: true, createdAt: true } },
+          },
+        },
+      },
+      orderBy: { assignedAt: 'desc' },
+      take,
+    })
+    return links.filter((l) => l.assignedBy !== l.advisorId
+      && !l.case.contactEvents.some((e) => e.createdBy === l.advisorId && e.createdAt >= l.assignedAt))
+  }
+
+  /** ما مرّ على إسناده يومان بلا تواصلٍ مسجَّل — لـ«حالات بلا مستشار»، بلا نافذةِ الجرس */
+  async listUncontacted(now = new Date()) {
+    const links = await this.uncontactedLinks({ lte: new Date(now.getTime() - ESCALATE_AFTER_HOURS * HOUR_MS) }, 500)
+    return links.slice(0, 200).map((l) => ({
+      id: l.case.id, status: l.case.status, createdAt: l.case.createdAt, lead: l.case.lead, client: l.case.client,
+      assignments: [{ advisorId: l.advisorId, assignedAt: l.assignedAt, advisor: { displayName: l.advisor.displayName } }],
+    }))
+  }
+
+  /** دورةُ العامل (`advisor_reminders`) — وكلُّ تذكيرٍ يُختم قبل جرسه، فدورتان لا تذكّران مرّتين */
+  async remindDue(now = new Date()): Promise<{ reminded: number; escalated: number; followUps: number }> {
+    const due = await this.uncontactedLinks({
+      gte: new Date(now.getTime() - REMIND_WINDOW_DAYS * 24 * HOUR_MS),
+      lte: new Date(now.getTime() - REMIND_AFTER_HOURS * HOUR_MS),
+    }, 200)
+    const nameOf = (c: { client: { displayName: string } | null; lead: { fullName: string | null } | null }) =>
+      c.client?.displayName ?? c.lead?.fullName ?? 'عميل'
+
+    let reminded = 0
+    const escalated: typeof due = []
+    for (const l of due) {
+      if (!l.contactRemindedAt && l.advisor.status === 'active') {
+        const claimed = await this.prisma.advisorAssignment.updateMany({
+          where: { id: l.id, contactRemindedAt: null }, data: { contactRemindedAt: now },
+        })
+        if (claimed.count > 0) {
+          await safeNotify(this.prisma, {
+            userId: l.advisorId, channel: 'in_app', audience: 'staff',
+            templateKey: 'advisor.case.no_contact',
+            title: 'حالة تنتظر تواصلك',
+            body: `أسندت إليك حالة «${nameOf(l.case)}» قبل يوم ولم تسجل تواصلا بعد. تواصل معه وسجل ذلك في الحالة.`,
+            data: { caseId: l.caseId },
+          })
+          reminded += 1
+        }
+      }
+      if (!l.contactEscalatedAt && l.assignedAt.getTime() <= now.getTime() - ESCALATE_AFTER_HOURS * HOUR_MS) {
+        const claimed = await this.prisma.advisorAssignment.updateMany({
+          where: { id: l.id, contactEscalatedAt: null }, data: { contactEscalatedAt: now },
+        })
+        if (claimed.count > 0) escalated.push(l)
+      }
+    }
+
+    /* جرسٌ واحدٌ لمن يُسند في الدورة لا جرسٌ لكلّ حالة — والقائمةُ تعدّ الباقي */
+    if (escalated.length > 0) {
+      const one = escalated.length === 1 ? escalated[0]! : null
+      await notifyRole(this.prisma, assignerRoles(), {
+        channel: 'in_app',
+        templateKey: 'advisor.case.uncontacted',
+        title: one ? 'حالة بلا تواصل منذ يومين' : `${countAr(escalated.length, CASE_FORMS_AR)} بلا تواصل منذ يومين`,
+        body: one
+          ? `حالة «${nameOf(one.case)}» عند ${one.advisor.displayName}، ولم يسجل تواصلا منذ أسندت إليه. غيّر المستشار أو تابع معه.`
+          : 'لم يسجل مستشاروها تواصلا منذ أسندت إليهم. غيّر المستشار أو تابع معهم.',
+        data: one ? { caseId: one.caseId } : { count: escalated.length },
+      })
+    }
+
+    /* ── ومتابعةٌ حلّ موعدُها — لمستشار الحالة اليوم لا لمن جدولها ── */
+    const followUps = await this.prisma.followUp.findMany({
+      where: {
+        doneAt: null, remindedAt: null,
+        scheduledAt: {
+          gte: new Date(now.getTime() - FOLLOW_UP_GRACE_HOURS * HOUR_MS),
+          lte: new Date(now.getTime() + FOLLOW_UP_LEAD_MINUTES * 60_000),
+        },
+        case: { status: { notIn: ['closed', 'enrolled', 'not_interested'] } },
+      },
+      select: {
+        id: true, caseId: true, channel: true,
+        case: {
+          select: {
+            lead: { select: { fullName: true } },
+            client: { select: { displayName: true } },
+            assignments: { where: { unassignedAt: null }, select: { advisorId: true, advisor: { select: { status: true } } } },
+          },
+        },
+      },
+      orderBy: { scheduledAt: 'asc' },
+      take: 200,
+    })
+    let followUpsReminded = 0
+    for (const f of followUps) {
+      const claimed = await this.prisma.followUp.updateMany({ where: { id: f.id, remindedAt: null }, data: { remindedAt: now } })
+      const link = f.case.assignments[0]
+      if (claimed.count === 0 || !link || link.advisor.status !== 'active') continue
+      await safeNotify(this.prisma, {
+        userId: link.advisorId, channel: 'in_app', audience: 'staff',
+        templateKey: 'advisor.followup.due',
+        title: 'حان موعد متابعة',
+        body: `متابعة «${nameOf(f.case)}»${FOLLOW_UP_VIA_AR[f.channel] ? ` ${FOLLOW_UP_VIA_AR[f.channel]}` : ''}. افتح الحالة وسجل ما تم.`,
+        data: { caseId: f.caseId },
+      })
+      followUpsReminded += 1
+    }
+
+    return { reminded, escalated: escalated.length, followUps: followUpsReminded }
   }
 
   /* ═══════════ من يشتري بلا تشخيص يجد مستشارا ═══════════
@@ -677,6 +832,28 @@ export class AdvisorService {
   }
 
   /* ── بوابة المستشار — المسند إليه فقط ── */
+
+  /* ═══ والطالبُ يعرف مستشارَه (١٩ أكتوبر ٢٠٢٦) ═══
+
+     كانت لوحتُه لا تقول من مستشارُه، وزرُّ المراسلة يذهب إلى رقم الأكاديمية بلا اسم — فمن
+     يقرأ لا يعرف لمن يحوّله. وقرارُ صاحب المنصّة والعلّةُ في `advisor-message.ts`: الاسمُ
+     وحدَه، والرقمُ رقمُ الأكاديمية.
+
+     والمستشارُ هو صاحبُ الإسناد النشط على حالته — والمسجَّلُ منها معها: المستشارُ يبقى
+     يتابع من سجّل («طلابي»). لا المغلقةُ ولا من قال «غير مهتمّ»، ولا مستشارٌ موقوف: اسمُ من
+     غادر يُرسَل إليه ما لن يقرأه. */
+  async myAdvisorOf(userId: string): Promise<{ displayName: string } | null> {
+    const link = await this.prisma.advisorAssignment.findFirst({
+      where: {
+        unassignedAt: null,
+        advisor: { status: 'active' },
+        case: { status: { notIn: ['closed', 'not_interested'] }, OR: [{ clientId: userId }, { lead: { userId } }] },
+      },
+      orderBy: { assignedAt: 'desc' },
+      select: { advisor: { select: { displayName: true } } },
+    })
+    return link ? { displayName: link.advisor.displayName } : null
+  }
 
   /** حارس: هل هذه الحالة مسندة لهذا المستشار الآن؟ */
   async assertAssigned(advisorId: string, caseId: string) {

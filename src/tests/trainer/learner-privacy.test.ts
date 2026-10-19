@@ -32,10 +32,14 @@ describe('خصوصيّة المتعلّم عند المدرّب', () => {
     expect(src).not.toMatch(/\.email\b/)
   })
 
-  it('والمتعثّرون يراسلون من الشعبة لا من بريدهم', () => {
+  it('⚠️ والمتعثّرون يراسلون من المنصّة لا من بريدهم — من مركز «طلبتي» مفتوحا عليهم', () => {
     const list = code('src/components/AtRiskList.tsx')
     expect(list, 'عاد `mailto:` إلى المدرّب').not.toMatch(/mailto:/)
-    expect(list, 'لا طريق إلى رسائل الشعبة').toMatch(/to="\/trainer\/board"/)
+    /* وكان إلى «شعبي» ولا مراسلةَ فيها (١٩ أكتوبر ٢٠٢٦) */
+    expect(list, 'لا طريق إلى مركز التواصل').toMatch(/to=\{`\/trainer\/learners\?cohort=\$\{l\.cohortId\}&to=\$\{l\.enrollmentId\}`\}/)
+    const page = code('src/pages/trainer/MyLearners.tsx')
+    expect(page, '«طلبتي» لا تقرأ من قُصد').toMatch(/params\.get\("cohort"\)/)
+    expect(page).toMatch(/params\.get\("to"\)/)
     const model = code('src/application/trainer/at-risk.ts')
     expect(model, 'نموذج المتعثّر ما زال يحمل بريدا').not.toMatch(/\bemail\b/)
   })

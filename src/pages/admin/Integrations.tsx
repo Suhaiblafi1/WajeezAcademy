@@ -12,6 +12,7 @@ import { TRAINER_INTERVIEW } from "@/application/trainer/application-options";
 import { calendlyCardNotice } from "@/lib/calendly-card";
 import { WHATSAPP_SPOTS, isValidWhatsApp, normalizeWhatsApp } from "@/application/site/whatsapp";
 import { setWhatsAppNumbers } from "@/services/whatsapp";
+import { fmtDateTime } from "@/application/text/format-ar";
 
 import { Card, Inset, Panel } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
@@ -37,6 +38,10 @@ interface IntegrationsView {
     enabled: boolean; envSourced: boolean; polling: boolean;
     signingKey: string; hasSigningKey: boolean; callbackUrl: string; siteUrlExplicit: boolean;
     token: string; hasToken: boolean; bookingUrl: string; guests: string;
+  };
+  whatsappHook: {
+    enabled: boolean; envSourced: boolean; token: string; hasToken: boolean; url: string;
+    pulse: { at: string; outcome: string; outcomeAr: string } | null;
   };
 }
 
@@ -71,6 +76,10 @@ export default function Integrations() {
   /* أرقامُ واتساب — نداؤها مستقلٌّ عن `/api/admin/integrations`: هي في جدول
      الإعدادات نفسِه لكنّها ليست سرّا يُقنَّع، فلا تُخلط بمن يُقنَّع. */
   const [waForm, setWaForm] = useState<Record<string, string>>({});
+  /* ربطُ منصّة محادثات واتساب — والرمزُ يولَّد هنا في المتصفّح ويُنسخ قبل الحفظ: الخادمُ لا
+     يُعيد سرّا كاملا، فلو ولّده هو لَلزمه أن يُعيده (`saveWhatsAppHookConfig`) */
+  const [hookForm, setHookForm] = useState({ enabled: false, token: "" });
+  const [hookTokenFresh, setHookTokenFresh] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true); setOffline(null);
@@ -93,6 +102,8 @@ export default function Integrations() {
         enabled: v.calendly.enabled, signingKey: v.calendly.signingKey,
         token: v.calendly.token, bookingUrl: v.calendly.bookingUrl, guests: v.calendly.guests,
       });
+      setHookForm({ enabled: v.whatsappHook.enabled, token: v.whatsappHook.token });
+      setHookTokenFresh(false);
       const wa = await apiGet<{ numbers: Record<string, string> }>("/api/admin/integrations/whatsapp");
       setWaForm(wa.numbers ?? {});
       setWhatsAppNumbers(wa.numbers ?? {});
@@ -159,6 +170,12 @@ export default function Integrations() {
       const r = await apiPut<{ numbers: Record<string, string> }>("/api/admin/integrations/whatsapp", { numbers: payload });
       setWhatsAppNumbers(r.numbers ?? {});
     }, "حفظت أرقام واتساب");
+  };
+
+  const newHookToken = () => {
+    const bytes = crypto.getRandomValues(new Uint8Array(32));
+    setHookForm((f) => ({ ...f, token: Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("") }));
+    setHookTokenFresh(true);
   };
 
   if (offline) {
@@ -363,6 +380,75 @@ export default function Integrations() {
                   </Button>
                 </div>
               </div>
+            </div>
+          </Panel>
+
+          {/* ════ منصّةُ محادثات واتساب — تواصلُ المستشار يُسجَّل وحدَه ════
+
+              المحادثةُ في منصّة التوزيع لا هنا، والتذكيرُ والعمولةُ يقومان على تواصلٍ مسجَّل.
+              فالمنصّةُ تُخبرنا حين يراسل المستشارُ طالبا — والعلّةُ في `whatsapp-hook.service.ts`. */}
+          <Panel as="section" className="lg:col-span-2">
+            <p className="flex items-center gap-2 text-sm font-black">
+              <MessageCircle className="h-4 w-4 text-teal-ink" /> ربط منصة محادثات واتساب
+            </p>
+            <p className="mt-1 text-read leading-6 text-muted-foreground">
+              حين يراسل المستشار طالبا من المنصة، ترسل لنا المنصة طلبا فيسجل التواصل في حالة الطالب.
+              فلا يذكر المستشار بما فعل، وتحسب عمولته.
+            </p>
+            {view.whatsappHook.envSourced && (
+              <Inset as="p" className="mt-3 text-read leading-6 text-muted-foreground">
+                الرمز مضبوط من بيئة الخادم (WHATSAPP_HOOK_TOKEN)، ولها الأولوية.
+              </Inset>
+            )}
+            <div className="mt-4 grid gap-4 lg:grid-cols-2">
+              <div className="space-y-3">
+                <div>
+                  <label className={labelCls}>عنوان الاستقبال — يضبط في المنصة</label>
+                  <input dir="ltr" readOnly value={view.whatsappHook.url}
+                    className={`${inputCls} mt-1 w-full font-mono opacity-70`} />
+                </div>
+                <div>
+                  <label className={labelCls}>رمز الربط — يخزن ولا يعرض</label>
+                  <div className="mt-1 flex gap-2">
+                    <input dir="ltr" type={hookTokenFresh ? "text" : "password"} value={hookForm.token}
+                      onChange={(e) => { setHookForm({ ...hookForm, token: e.target.value }); setHookTokenFresh(false); }}
+                      placeholder={view.whatsappHook.hasToken ? view.whatsappHook.token : "…"}
+                      className={`${inputCls} w-full font-mono`} />
+                    <Button tone="secondary" size="sm" onClick={newHookToken}>أنشئ رمزا</Button>
+                  </div>
+                  {hookTokenFresh && (
+                    <p className="mt-1 text-read leading-6 text-gold-ink">انسخ الرمز الآن وضعه في المنصة — لا يعرض بعد الحفظ.</p>
+                  )}
+                </div>
+                <label className="flex items-center gap-2 text-read text-muted-foreground">
+                  <input type="checkbox" checked={hookForm.enabled}
+                    onChange={(e) => setHookForm({ ...hookForm, enabled: e.target.checked })} className="accent-gold" />
+                  مفعّل
+                </label>
+                <Button tone="confirm" disabled={busy}
+                  onClick={() => act(() => apiPut("/api/admin/integrations/whatsapp-hook", hookForm), "حفظ ربط منصة واتساب")}>
+                  حفظ ربط المنصة
+                </Button>
+                <p className="text-read leading-6 text-muted-foreground">
+                  {view.whatsappHook.pulse
+                    ? `آخر طلب وصل: ${fmtDateTime(view.whatsappHook.pulse.at)} — ${view.whatsappHook.pulse.outcomeAr}`
+                    : "لم يصل أي طلب بعد."}
+                </p>
+              </div>
+              <Inset className="text-read leading-6 text-muted-foreground">
+                <p className="font-bold text-foreground">ما ترسله المنصة عند كل رسالة من المستشار</p>
+                <pre dir="ltr" className="mt-2 overflow-x-auto whitespace-pre-wrap font-mono text-foreground">{`POST ${view.whatsappHook.url}
+Authorization: Bearer <الرمز>
+Content-Type: application/json
+
+{
+  "studentPhone": "962791234567",
+  "advisorEmail": "advisor@example.com",
+  "summary": "اختياري"
+}`}</pre>
+                <p className="mt-2">رقم الطالب كما يصل من واتساب. وبريد المستشار هو بريد حسابه هنا.</p>
+                <p className="mt-1">يسجل التواصل لمستشار الحالة فقط، ومرة كل ست ساعات للحالة.</p>
+              </Inset>
             </div>
           </Panel>
 

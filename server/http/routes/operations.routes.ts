@@ -34,6 +34,12 @@ export function registerOperationsRoutes(app: FastifyInstance, prisma: PrismaCli
   })
 
 
+  /* ════ مستشاري — اسمُه وحدَه، لبطاقته في اللوحة ولرسالة واتساب (`myAdvisorOf`) ════ */
+  app.get('/api/learner/advisor', {
+    preHandler: requireAuth,
+    schema: { tags: ['operations'], summary: 'اسم مستشاري المسند — أو لا شيء' },
+  }, async (req) => ({ advisor: await advisors.myAdvisorOf(req.auth!.userId) }))
+
   /* ════ بوّاباتي ════
 
      مديرُ النظام يملك صلاحيّاتِ المدرّب والمستشار، فيدخل بوّابتيهما — ثمّ

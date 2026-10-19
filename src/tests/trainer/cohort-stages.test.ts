@@ -81,8 +81,14 @@ describe('صفحة الشعبة — مراحل على خطّ', () => {
      المركزَ إلى «طلبتي» (٣٠ سبتمبر ٢٠٢٦) — فالشعبةُ تجهيزٌ وحدَه، والمخاطبةُ
      مكوّنٌ للشعبة بعينها يُعرض حيث المتعلّمون. */
   it('الشعبة تجهيز وحده، ومركز التواصل في «طلبتي» مكوّنا للشعبة بعينها', () => {
-    expect(ws, 'عاد لسان الطورين إلى صفحة الشعبة').not.toMatch(/<TabBar[\s\S]*?id: "run"/)
+    /* ═══ وعاد للشعبة الجارية لسانان (١٩ أكتوبر ٢٠٢٦، الخطوة E) ═══
+       «التشغيل» و«الخطة» — باختيار صاحب المنصّة بعد أن رأى الصور (`cohort-run-view.test.ts`).
+       وليس لسانَ الطورين القديم: المخاطبةُ باقيةٌ في «طلبتي»، و«التشغيل» يدلّ عليها برابطٍ ولا
+       يحملها. فالحارسُ يحرس ما كُتب له — لا مركزَ تواصلٍ في صفحة الشعبة ولا في «التشغيل». */
+    const run = code('src/pages/trainer/CohortRun.tsx')
     expect(ws, 'عاد مركز التواصل إلى صفحة الشعبة').not.toMatch(/<CohortOps\b/)
+    expect(run, 'عاد مركز التواصل إلى «التشغيل»').not.toMatch(/<CohortOps\b/)
+    expect(run, '«التشغيل» لا يدلّ على المخاطبة في «طلبتي»').toContain('to={`/trainer/learners?cohort=${cohortId}`}')
     const learners = code('src/pages/trainer/MyLearners.tsx')
     expect(learners, 'لا مركز تواصل في «طلبتي»').toMatch(/<CohortOps key=\{`[^`]+`\} cohortId=\{talk\.cohortId\} initialTo=\{talk\.to\}/)
     expect(learners, '«خاطبه» لا يوجّه المركز إلى المتعلّم').toMatch(/onClick=\{\(\) => talkTo\(r\.cohortId, r\.enrollmentId\)\}/)

@@ -182,6 +182,14 @@ export class TrainerBankService {
     return {
       enabled: bankVaultEnabled(),
       account: row ? this.mask(row) : null,
+      /* ═══ وما يمنع الحفظَ يُقال قبل الكتابة (١٩ أكتوبر ٢٠٢٦) ═══
+         كانت الخانةُ تُعرض في طور التهيئة ثمّ يُردّ حفظُها بـ٤٠٣ (`writableProfile`) — فيكتب رقمَه ثمّ يُقال له
+         «لا». فالقيدُ نفسُه يُقرأ هنا، والشاشةُ تقوله بدل الخانة. */
+      writeProblemAr: profile.suspendedAt
+        ? portalDoorProblemAr('active_only', { status: profile.application.status, suspendedAt: profile.suspendedAt })
+        : portalDoorProblemAr('active_only', { status: profile.application.status, suspendedAt: null })
+          ? 'تضيف حسابك البنكي هنا بعد تفعيلك، حين نعتمد دوراتك.'
+          : null,
       /* ويُعرَض له اسمُ الموقِّع ليكتب مثلَه — لا ليُمنع، بل ليُقلَّ الخلافُ
          من أصله. وبلا عقدٍ نافذٍ لا يُعرَض شيء. */
       contractNameAr: await this.signerNameOf(profile.id),

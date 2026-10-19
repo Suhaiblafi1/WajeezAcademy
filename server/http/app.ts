@@ -41,6 +41,7 @@ import { registerTermRoutes } from './routes/term.routes'
 import { registerCommerceRoutes } from './routes/commerce.routes'
 import { registerZoomWebhookRoutes } from './routes/zoom-webhook.routes'
 import { registerCalendlyWebhookRoutes } from './routes/calendly-webhook.routes'
+import { registerWhatsAppHookRoutes } from './routes/whatsapp-hook.routes'
 import { registerSupportRoutes } from './routes/support.routes'
 import { registerRatingRoutes } from './routes/rating.routes'
 import { registerPlacementRoutes } from './routes/placement.routes'
@@ -313,6 +314,7 @@ export async function buildApp(prisma: PrismaClient) {
   registerLearningPortalRoutes(app, prisma)
   registerZoomWebhookRoutes(app, prisma)
   registerCalendlyWebhookRoutes(app, prisma)
+  registerWhatsAppHookRoutes(app, prisma)
   registerLearnerRoutes(app, prisma)
   registerStaffTaskRoutes(app, prisma)
   registerTrainerAnnouncementRoutes(app, prisma)

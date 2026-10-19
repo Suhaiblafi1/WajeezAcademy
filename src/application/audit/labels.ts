@@ -148,6 +148,7 @@ const PHRASES: Record<string, string> = {
   'advisor.case.buyer_opened': 'فتح حالة مستشار لمن طلب التسجيل بلا تشخيص',
   'advisor.case.client_paid': 'تحويل حالة إلى «سجّل» بعد دفع صاحبها',
   'advisor.cases.redistribute': 'توزيع حالات مستشار المفتوحة على غيره',
+  'advisor.contact.hook': 'تسجيل تواصل مستشار من منصّة محادثات واتساب',
   'term.create': 'إنشاء فصل دراسيّ',
   'term.registration_window': 'ضبط نافذة التسجيل للفصل',
   'term.trainer_availability': 'إتاحة مدرّب في فصل',
@@ -244,6 +245,7 @@ const PHRASES: Record<string, string> = {
   'integration.calendly.register': 'تسجيل اشتراك Calendly للمقابلات',
   'integration.zoom.test': 'اختبار اتّصال Zoom',
   'integration.whatsapp.save': 'حفظ أرقام واتساب لمواضع الموقع',
+  'integration.whatsapp_hook.save': 'حفظ ربط منصّة محادثات واتساب',
   'staff.task.assign': 'تكليف موظّف بمهمّة',
   'staff.task.complete': 'إغلاق مهمّة',
   'staff.notify': 'إشعار موظّف',
@@ -489,6 +491,7 @@ const PHRASES: Record<string, string> = {
   'worker.revoke_left_registrants': 'إلغاء تسجيل من ترك شعبته عند Zoom',
   'worker.session_reminders': 'تذكيرات الجلسات',
   'worker.unbooked_digest': 'ملخّص من لم يحجز موعد لقائه',
+  'worker.advisor_reminders': 'تذكير المستشارين بحالات بلا تواصل ومتابعات حلّ موعدها',
 }
 
 /** معجمُ المقاطع — نطاقاتٌ وأشياءٌ وأفعال */
