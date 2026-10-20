@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router";
+import { Link, useLocation } from "react-router";
 import {
   Award, BookOpen, CheckCircle2, FileText, Loader2, Lock, LogOut,
   ImagePlus, Mail, MessageCircle, Route as RouteIcon, Save, ShieldAlert, KeyRound, User, X } from "lucide-react";
@@ -18,6 +18,7 @@ import DateField from "@/components/ui/DateField";
 import Button from "@/components/ui/Button";
 import PublicTextCard from "@/components/trainer/PublicTextCard";
 import ProfileSuggestions from "@/components/trainer/ProfileSuggestions";
+import NotificationPreferences from "@/components/NotificationPreferences";
 /* ─────────── صفحة «حسابي» — الملف الشخصي الكامل للطالب ───────────
    وضعان صادقان:
    - خادم حقيقي: جلسة API فعّالة → قراءة وحفظ في قاعدة البيانات.
@@ -153,6 +154,14 @@ export default function StudentAccount() {
     return () => { alive = false };
   }, []);
   const learnerFields = showsLearnerFields(roles);
+  /* رابطُ البريد «غيّر تفضيلات رسائلك» يحمل `#notifications` — والقسمُ يُرسم بعد تحميل الملفّ، فلا يجده
+     المتصفّحُ ساعةَ الفتح. فيُقصد حين يُرسم */
+  const { hash } = useLocation();
+  useEffect(() => {
+    if (mode !== "server" || !learnerFields || hash !== "#notifications") return;
+    const t = window.setTimeout(() => document.getElementById("notifications")?.scrollIntoView({ block: "start" }), 50);
+    return () => window.clearTimeout(t);
+  }, [mode, learnerFields, hash]);
 
   useEffect(() => {
     let alive = true;
@@ -669,6 +678,16 @@ export default function StudentAccount() {
           احفظ ملفي
         </Button>
       </div>
+
+      {/* ═══ ما يصلني من رسائل (٢٠ أكتوبر ٢٠٢٦) ═══
+          كان في ذيل «إشعاراتي» — صفحةٌ بلا بندٍ في القائمة صارت «الرسائل والتنبيهات». والتفضيلُ إعدادٌ
+          من إعدادات حسابه فموضعُه هنا، وإليه يقود رابطُ «غيّر تفضيلات رسائلك» في البريد
+          (`#notifications`). وللمتعلّم وحدَه: أصنافُه أصنافُ المتعلّم (`learner-categories.ts`). */}
+      {learnerFields && mode === "server" && (
+        <div id="notifications" className="mt-6 scroll-mt-24">
+          <NotificationPreferences />
+        </div>
+      )}
 
 
       {mode === "server" && (

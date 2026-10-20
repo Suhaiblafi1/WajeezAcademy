@@ -40,7 +40,6 @@ const Certificates = lazy(() => import('./pages/student/Certificates'))
 const AccountPage = lazy(() => import('./pages/student/Account'))
 const StudentBilling = lazy(() => import('./pages/student/Billing'))
 const StudentCv = lazy(() => import('./pages/student/MyCv'))
-const StudentNotifications = lazy(() => import('./pages/student/Notifications'))
 const StudentInbox = lazy(() => import('./pages/student/Inbox'))
 const StudentSupport = lazy(() => import('./pages/student/Support'))
 const MyVault = lazy(() => import('./pages/student/MyVault'))
@@ -264,7 +263,8 @@ export default function App() {
             <Route path="/student/account" element={<AccountPage />} />
             <Route path="/student/billing" element={<StudentBilling />} />
             <Route path="/student/cv" element={<StudentCv />} />
-            <Route path="/student/notifications" element={<StudentNotifications />} />
+            {/* «إشعاراتي» صارت «الرسائل والتنبيهات» (٢٠ أكتوبر ٢٠٢٦) — والمسارُ القديمُ في بريدٍ مرسَلٍ يبقى يُفتح */}
+            <Route path="/student/notifications" element={<Navigate to="/student/inbox" replace />} />
             <Route path="/student/inbox" element={<StudentInbox />} />
             <Route path="/student/support" element={<StudentSupport />} />
           </Route>

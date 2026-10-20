@@ -42,7 +42,8 @@ describe('ن-١٠ · بلاغ الاختيار', () => {
   })
 
   it('ولا يركّب في صفحة بعينها — فمن فتح غيرها لم يره', () => {
-    const pages = ['Journey', 'Dashboard', 'Billing', 'Account', 'Inbox', 'Notifications']
+    /* و«إشعاراتي» حُذفت فصار مسارُها تحويلا إلى «الرسائل والتنبيهات» (٢٠ أكتوبر ٢٠٢٦) */
+    const pages = ['Journey', 'Dashboard', 'Billing', 'Account', 'Inbox']
     for (const p of pages) {
       expect(code(`src/pages/student/${p}.tsx`), `${p} تركّبه دون الإطار`)
         .not.toMatch(/<DepartureChoiceNotice\b/)

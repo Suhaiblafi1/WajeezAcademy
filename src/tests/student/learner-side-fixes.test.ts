@@ -19,22 +19,21 @@ const code = (p: string) => readFileSync(join(process.cwd(), p), 'utf8')
   .replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '').replace(/^\s*\/\/.*$/gm, '')
 
 describe('① الإشعارُ يفتح خبرَه', () => {
-  it('⚠️ في «الرسائل والتنبيهات»: بنده إلى وجهة بريده — وما لا وجهةَ له إلى «إشعاراتي»', () => {
+  /* وكان ما لا وجهةَ له يقود إلى «إشعاراتي» — صفحةٌ تعرض البنودَ نفسَها، فيدور في حلقة. وصار الصندوقُ
+     البابَ الوحيد (٢٠ أكتوبر ٢٠٢٦، `src/tests/student/one-inbox.test.ts`) */
+  it('⚠️ في «الرسائل والتنبيهات»: بنده إلى وجهة بريده بفعلها — وما لا وجهةَ له لا يقود إلى صفحةٍ تكرّره', () => {
     const items = buildInbox([
       { id: 'a', title: 'صدرت شهادتك', body: 'شهادتك جاهزة', status: 'sent', sentAt: '2026-10-19T10:00:00Z', templateKey: 'certificate.issued' },
       { id: 'b', title: 'خبر', body: 'خبر بلا باب', status: 'sent', sentAt: '2026-10-19T09:00:00Z', templateKey: null },
     ], [], [], 'u1')
-    expect(items.find((i) => i.id === 'n:a')?.href).toBe('/student/certificates')
-    expect(items.find((i) => i.id === 'n:b')?.href).toBe('/student/notifications')
+    expect(items.find((i) => i.id === 'n:a')).toMatchObject({ href: '/student/certificates', ctaAr: 'افتح شهادتك' })
+    expect(items.find((i) => i.id === 'n:b')).toMatchObject({ href: null, ctaAr: null })
   })
 
-  it('⚠️ وفي الجرس و«إشعاراتي»: البندُ ينتقل إلى وجهته', () => {
+  it('⚠️ وفي الجرس: البندُ ينتقل إلى وجهته', () => {
     const bell = code('src/pages/student/PortalLayout.tsx')
     expect(bell).toMatch(/onClick=\{\(\) => openNotif\(n\)\}/)
     expect(bell).toMatch(/const href = notificationHref\(n\.templateKey, "learner", n\.data\);\s*if \(href\) \{ setBellOpen\(false\); navigate\(href\); \}/)
-    const page = code('src/pages/student/Notifications.tsx')
-    expect(page).toMatch(/onClick=\{\(\) => openRow\(n\)\}/)
-    expect(page).toMatch(/const href = notificationHref\(n\.templateKey, "learner", n\.data\);\s*if \(href\) navigate\(href\);/)
   })
 
   it('والوجهةُ تقول ما يقوله الخبر', () => {
