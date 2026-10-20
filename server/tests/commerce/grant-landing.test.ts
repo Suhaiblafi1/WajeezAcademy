@@ -9,7 +9,10 @@
    ⑦ **والوسومُ تُنظَّف** — ما ليس وسما يُترك.
    ⑧ **ونتائجُ الحملة بالقناة والدفعة** — والشراءُ يُنسب إلى قناة صاحب الكود ولو اشترى به غيرُه.
    ⑨ **والسؤالان الاختياريّان** — يُحفظان إن أجاب، ولا يُسقطان نموذجا تُركا فيه، وما ليس من القائمة يُردّ؛
-      ومجالُ كلّ دورةٍ مفتوحةٍ في الردّ (منه يُختار)، والمستشارُ يقرأ ما أجاب. */
+      ومجالُ كلّ دورةٍ مفتوحةٍ في الردّ (منه يُختار)، والمستشارُ يقرأ ما أجاب.
+
+   وما يقرأ دوراتِ المنحة يقرؤها بساعة ٢٠٩٩ (`NOW`) وشعبُه بعدها — فالفصلُ فصلُ أقرب شعبةٍ لم تبدأ في القاعدة
+   كلِّها، والعلّةُ في رأس `grant-pathways.test.ts`. */
 
 import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
@@ -32,6 +35,7 @@ let pool: string[] = []
 let seq = 0
 const STAMP = Date.now()
 const DAY = 86_400_000
+const NOW = new Date(Date.UTC(2099, 0, 20))
 
 const nextCourse = () => {
   const id = pool.shift()
@@ -43,7 +47,7 @@ async function cohort(courseId: string, over: Record<string, unknown> = {}) {
     data: {
       plans: { create: approvedPlanBy(profileId) },
       courseId, title: `شعبة صفحة المنحة ${++seq}`, status: 'open', registrationOpen: true, financialReady: true,
-      price: 150, currency: 'USD', capacity: 20, startsAt: new Date(Date.now() + 30 * DAY), ...over,
+      price: 150, currency: 'USD', capacity: 20, startsAt: new Date(NOW.getTime() + 30 * DAY), ...over,
     } as never,
   })
   await prisma.cohortTrainer.create({ data: { cohortId: c.id, profileId, role: 'lead', assignedBy: ownerId } })
@@ -132,12 +136,12 @@ describe('⑤ والمسارات للزائر بلا أجور المدربين',
     await cohort(a)
     const cb = await cohort(b)
     await cohort(c)
-    const shown = await paths.save(null, { titleAr: 'مسار للزائر', courseIds: [a, b] }, ownerId)
-    const hidden = await paths.save(null, { titleAr: 'مسار موقوف', courseIds: [c], active: false }, ownerId)
-    const dead = await paths.save(null, { titleAr: 'مسار أغلقت شعبه', courseIds: [b] }, ownerId)
+    const shown = await paths.save(null, { titleAr: 'مسار للزائر', courseIds: [a, b] }, ownerId, NOW)
+    const hidden = await paths.save(null, { titleAr: 'مسار موقوف', courseIds: [c], active: false }, ownerId, NOW)
+    const dead = await paths.save(null, { titleAr: 'مسار أغلقت شعبه', courseIds: [b] }, ownerId, NOW)
     await prisma.cohort.update({ where: { id: cb.id }, data: { registrationOpen: false } })
 
-    const v = await landing.view()
+    const v = await landing.view(NOW)
     const json = JSON.stringify(v)
     expect(json, 'خرج أجر المدرب إلى الزائر').not.toMatch(/seatCost|margin|ruleRate|ruleType/)
     const row = v.pathways.find((p) => p.id === shown.id)!
@@ -219,7 +223,7 @@ describe('⑨ والسؤالان الاختياريان', () => {
   it('⚠️ مجال كل دورة مفتوحة في الرد — والمستشار يقرأ ما أجاب', async () => {
     const id = nextCourse()
     await cohort(id)
-    const v = await landing.view()
+    const v = await landing.view(NOW)
     expect(v.openCourses.find((x) => x.courseId === id)?.domainAr).toBe(courseDomain(id))
 
     const out = await landing.apply(person({ workField: 'الهندسة', careerLevel: 'موظف بخبرة', interests: [courseDomain('C-PM-101')] }))

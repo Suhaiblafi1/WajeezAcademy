@@ -54,6 +54,8 @@ interface GrantCourse { courseId: string; titleAr: string; cohortId: string; sta
 interface GrantPathway { id: string; titleAr: string; blurbAr: string | null; courses: GrantCourse[]; listTotal: number; grantTotal: number }
 interface View {
   campaign: { open: boolean; percentOff: number; maxCourses: number; closesAt: string | null; left: number | null };
+  /** فصلُ الدورات المعروضة — الفصلُ القادمُ القريب (`grant-pathway.service.ts#pool`) */
+  termAr: string | null;
   pathways: GrantPathway[];
   openCourses: GrantCourse[];
 }
@@ -231,7 +233,10 @@ export default function MemberGrantPage() {
           <Card as="p" className="mt-5 text-read text-muted-foreground">لا دورات متاحة الآن. تواصل مع مستشار ليقترح عليك.</Card>
         ) : (
           <>
-            <p className="mt-6 font-bold">كل الدورات المتاحة ({view.openCourses.length})</p>
+            <p className="mt-6 font-bold">
+              كل الدورات المتاحة ({view.openCourses.length})
+              {view.termAr && <span className="font-normal text-muted-foreground"> · {view.termAr}</span>}
+            </p>
             <div className="mt-2 space-y-2">
               {courses.map((x) => {
                 const on = picked.includes(x.courseId);
@@ -339,8 +344,9 @@ export default function MemberGrantPage() {
             <p className="mt-2 text-read leading-8">{FAMILY_INTRO.body}</p>
             {view.openCourses.length > 0 && (
               <p className="mt-2 text-read font-bold">
-                {dualOr(view.openCourses.length, { one: "دورة مفتوحة", two: "دورتان مفتوحتان", few: "دورات مفتوحة", many: "دورة مفتوحة" })} للتسجيل الآن
-                {domains.length > 1 ? `، في ${dualOr(domains.length, { one: "مجال", two: "مجالين", few: "مجالات", many: "مجالا" })}` : ""}.
+                {dualOr(view.openCourses.length, { one: "دورة مفتوحة", two: "دورتان مفتوحتان", few: "دورات مفتوحة", many: "دورة مفتوحة" })} للتسجيل
+                {view.termAr ? ` في ${view.termAr}` : " الآن"}
+                {domains.length > 1 ? `، من ${dualOr(domains.length, { one: "مجال", two: "مجالين", few: "مجالات", many: "مجالا" })}` : ""}.
               </p>
             )}
           </section>

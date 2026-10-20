@@ -108,6 +108,7 @@ describe('بعد النموذج', () => {
     expect(PAGE).toMatch(/\{GRANT_GAINS_AR\.map\(\(g\) => \{/)
     expect(PAGE).toMatch(/\{grantStepsAr\(c\.percentOff, c\.maxCourses\)\.map\(/)
     expect(PAGE).toMatch(/dualOr\(view\.openCourses\.length,/)
+    expect(PAGE, 'فصل الدورات من الخادم').toMatch(/\{view\.termAr \? ` في \$\{view\.termAr\}` : " الآن"\}/)
     /* والنبذةُ قبل النموذج في الصفحة */
     expect(PAGE.indexOf('{FAMILY_INTRO.body}')).toBeLessThan(PAGE.indexOf('id="grant-form"'))
     const steps = grantStepsAr(60, 5)
