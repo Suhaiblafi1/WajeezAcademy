@@ -12,6 +12,8 @@ import { plainAr } from '@/application/text/plain-ar'
 import { auditActionAr } from '@/application/audit/labels'
 import { allSections } from '@/pages/admin/nav-map'
 import * as GRANT from '@/application/commerce/grant'
+import { grantFollowupAr } from '@/application/commerce/grant-landing'
+import { waToPerson } from '@/application/site/whatsapp'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '../../..')
 const code = (p: string) => readFileSync(join(root, p), 'utf8').replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '')
@@ -22,6 +24,7 @@ const BUY = code('src/components/BuyPanel.tsx')
 const HTTP = code('server/http/app.ts')
 const PATHS = code('src/pages/admin/GrantPathways.tsx')
 const RESULTS = code('src/pages/admin/GrantResults.tsx')
+const REG = code('src/pages/admin/GrantRegistrants.tsx')
 
 describe('شاشة صاحب المنصة', () => {
   it('⚠️ لها طريق وبند في الشريط — بصلاحية الكوبونات', () => {
@@ -81,6 +84,27 @@ describe('نتائج الحملة', () => {
       expect(RESULTS).toContain(t)
       expect(t).toBe(plainAr(t))
     }
+  })
+})
+
+describe('من عبأ النموذج', () => {
+  it('⚠️ قائمة بالأسماء في شاشة المنحة — ببحث وزر واتساب ورسالة جاهزة، وبابها بصلاحية الكوبونات', () => {
+    expect(PAGE).toMatch(/<GrantRegistrants \/>/)
+    expect(REG).toMatch(/apiGet<Registrant\[\]>\("\/api\/admin\/member-grant\/registrants"\)/)
+    expect(REG).toMatch(/<ListToolbar q=\{q\}/)
+    expect(REG).toMatch(/const wa = waToPerson\(r\.phone, grantFollowupAr\(r\.fullName\)\)/)
+    expect(ROUTES).toMatch(/app\.get\('\/api\/admin\/member-grant\/registrants', \{\s*preHandler: canManage/)
+    for (const t of ['من عبأ النموذج', 'اشترى', 'ينتظر الدفع', 'لم يشتر بعد', 'واتساب', grantFollowupAr('سارة')]) {
+      expect(t).toBe(plainAr(t))
+    }
+  })
+
+  it('⚠️ رابط واتساب بمفتاح دولي أو جوال أردني — ولا يخمن مفتاحا لغيره', () => {
+    expect(waToPerson('+962791234567', 'x')).toBe('https://wa.me/962791234567?text=x')
+    expect(waToPerson('00966501234567', 'x')).toBe('https://wa.me/966501234567?text=x')
+    expect(waToPerson('0791234567', 'x')).toBe('https://wa.me/962791234567?text=x')
+    expect(waToPerson('0501234567', 'x'), 'خمن مفتاح بلد لرقم محلي غير أردني').toBeNull()
+    expect(waToPerson(null, 'x')).toBeNull()
   })
 })
 

@@ -79,3 +79,15 @@ export function waHref(numbers: WhatsAppNumbers, key: string, fallback: string, 
   if (!n) return null
   return `https://wa.me/${n}?text=${encodeURIComponent(text)}`
 }
+
+/** رابطُ واتساب **إلى إنسانٍ** برقمه كما حُفظ (لا إلى أرقام الأكاديميّة) — متابعةُ من عبّأ نموذج المنحة
+    (`GrantRegistrants`). بمفتاحه الدوليّ (+ أو 00)، أو جوّالٍ أردنيٍّ محلّيّ (07[789]…) يُكمَل
+    بـ962. ولا يُخمَّن مفتاحٌ لغيره: رابطٌ بمفتاحٍ مختلَقٍ يفتح محادثةً مع غير صاحب الرقم — فبلا رابط. */
+export function waToPerson(phone: string | null | undefined, text: string): string | null {
+  const raw = phone?.trim() ?? ''
+  let digits: string | null = null
+  if (/^\+\d{7,15}$/.test(raw)) digits = raw.slice(1)
+  else if (/^00\d{7,15}$/.test(raw)) digits = raw.slice(2)
+  else if (/^07[789]\d{7}$/.test(raw)) digits = `962${raw.slice(1)}`
+  return digits ? `https://wa.me/${digits}?text=${encodeURIComponent(text)}` : null
+}

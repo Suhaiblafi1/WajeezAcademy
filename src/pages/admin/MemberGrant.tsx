@@ -3,7 +3,7 @@
    قرارُه: «A ويحقّ لي تغيير الـ٦٠٪ كما أشاء». فهنا نسبةُ المنحة وعددُها وآخرُ يومٍ لها وتشغيلُها،
    وما جرى بها. والحفظُ بتأكيدٍ يقول ما يقع بكلّ تغيير — والقرارُ له.
 
-   ثمّ نتائجُ الحملة بالقناة والدفعة (`GrantResults`)، ثمّ مساراتُ المنحة بهامش كلٍّ منها (`GrantPathways`)، وتحتها فحصُ الهامش: كلُّ شعبةٍ مفتوحةٍ بسعرها بعد المنحة مقابل أجر مقعدها للمدرّب، **بالنسبة التي
+   ثمّ نتائجُ الحملة بالقناة والدفعة (`GrantResults`)، ومن عبّأ النموذج بالأسماء (`GrantRegistrants`)، ثمّ مساراتُ المنحة بهامش كلٍّ منها (`GrantPathways`)، وتحتها فحصُ الهامش: كلُّ شعبةٍ مفتوحةٍ بسعرها بعد المنحة مقابل أجر مقعدها للمدرّب، **بالنسبة التي
    في الخانة** لا المحفوظة — فيرى أثرَ النسبة قبل أن يحفظها. والعلّةُ في `server/services/grant.service.ts`. */
 
 import { useCallback, useEffect, useState } from "react";
@@ -11,6 +11,7 @@ import { Loader2, ServerOff } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import GrantPathways from "./GrantPathways";
 import GrantResults from "./GrantResults";
+import GrantRegistrants from "./GrantRegistrants";
 import { toast, toastError } from "@/components/Toast";
 import ConfirmAction from "@/components/ConfirmAction";
 import { apiGet, apiPut, ApiError } from "@/services/api";
@@ -153,6 +154,7 @@ export default function AdminMemberGrant() {
       </Card>
 
       <GrantResults />
+      <GrantRegistrants />
 
       <GrantPathways percentOff={pctOk ? pctNum : null} maxCourses={s.maxCourses} />
 

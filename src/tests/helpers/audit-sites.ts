@@ -79,7 +79,7 @@ export const DYNAMIC: Record<string, readonly string[]> = {
     'worker.dispatch_notifications', 'worker.enforce_retention', 'worker.publish_scheduled_changes',
     'worker.reclaim_abandoned_orders', 'worker.revoke_left_registrants', 'worker.session_reminders',
     'worker.advisor_reminders', 'worker.erase_idle_guests', 'worker.advisor_payouts',
-    'worker.publish_live_trainers',
+    'worker.publish_live_trainers', 'worker.grant_followup',
   ],
 }
 
