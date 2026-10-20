@@ -80,3 +80,22 @@ describe('في صفحة المدربين لا في العقود', () => {
     expect(page).toMatch(/<ReminderDeadline value=\{deadline\} onChange=\{setDeadline\}/)
   })
 })
+
+describe('المعاينة كما يصل البريد', () => {
+  it('الباب يعيد HTML الرسالة، والصفحة تعرضه في إطار معزول — فترى الروابط تنقر', () => {
+    const routes = readFileSync(join(process.cwd(), 'server/http/routes/admin-trainer.routes.ts'), 'utf8')
+    expect(routes).toMatch(/html: renderMail\(p\.mail\.doc\)\.html/)
+    const box = readFileSync(join(process.cwd(), 'src/components/admin/PrepReminders.tsx'), 'utf8')
+    expect(box).toMatch(/<iframe title="معاينة الرسالة" srcDoc=\{shown\.html\} sandbox=/)
+  })
+})
+
+describe('موعد خاص لكل مدرب', () => {
+  it('اختياري: فارغا يتبع موعد الصفحة، والمعاينة والإرسال بموعده', () => {
+    const box = readFileSync(join(process.cwd(), 'src/components/admin/PrepReminders.tsx'), 'utf8')
+    expect(box).toMatch(/const due = own \|\| deadline;/)
+    expect(box).toMatch(/\/preview`, \{ deadline: due \}\)/)
+    expect(box).toMatch(/\/send`, \{ deadline: due \}\)/)
+    expect(box, 'معاينة قديمة تعرض بعد تغير الموعد').toMatch(/\{shown && shown\.due === due && \(/)
+  })
+})
