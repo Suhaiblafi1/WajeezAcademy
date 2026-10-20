@@ -760,10 +760,17 @@ export default function TrainerRunOps() {
   /* ═══ وملفّاتُ من لا مسوّدةَ له — لنكتب له (٢٠ أكتوبر ٢٠٢٦) ═══
      ZIP فيه ما كتبه كلٌّ وسيرتُه وشهاداتُه (`trainer-drafting-bundle.service.ts`)، بصلاحيّة قراءة الطلبات */
   const canDownloadFiles = sessionUser?.permissions.includes("trainer.applications.view") ?? false;
-  const downloadDraftingFiles = async () => {
-    setBusy("drafting-files");
+  /* وأجزاءً لا يجاوز الجزءُ ٢٠MB — «الملفّ كبيرٌ جدّا» (٢٠ أكتوبر ٢٠٢٦)، ولمن له دورةٌ معتمدةٌ وحدَه */
+  const [draftingParts, setDraftingParts] = useState<{ parts: number; trainers: number } | null>(null);
+  useEffect(() => {
+    if (!canDownloadFiles) return;
+    apiGet<{ parts: number; trainers: number }>("/api/admin/trainers/drafting-bundle/parts")
+      .then(setDraftingParts).catch(() => setDraftingParts(null));
+  }, [canDownloadFiles, trainers]);
+  const downloadDraftingFiles = async (part: number) => {
+    setBusy(`drafting-files-${part}`);
     try {
-      await apiDownload("/api/admin/trainers/drafting-bundle", "ملفات-المدربين-للاقتراحات.zip");
+      await apiDownload(`/api/admin/trainers/drafting-bundle?part=${part}`, `ملفات-المدربين-للاقتراحات-${part}.zip`);
     } catch (e) {
       toastError(e instanceof ApiError ? e.message : "تعذر تنزيل الملفات");
     } finally {
@@ -949,13 +956,15 @@ export default function TrainerRunOps() {
                 أرسل للنشطين ومن نشرت دوراتهم ({draftCount})
               </Button>
             )}
-            {canDownloadFiles && (
-              <Button
-                icon={Download} loading={busy === "drafting-files"} disabled={busy !== ""}
-                onClick={() => void downloadDraftingFiles()}
-              >
-                نزّل ملفات المدربين للاقتراحات
-              </Button>
+            {canDownloadFiles && draftingParts && draftingParts.trainers > 0 && (
+              Array.from({ length: draftingParts.parts }, (_, i) => i + 1).map((part) => (
+                <Button
+                  key={part} icon={Download} loading={busy === `drafting-files-${part}`} disabled={busy !== ""}
+                  onClick={() => void downloadDraftingFiles(part)}
+                >
+                  {draftingParts.parts > 1 ? `نزّل ملفات المدربين — الجزء ${part} من ${draftingParts.parts}` : "نزّل ملفات المدربين للاقتراحات"}
+                </Button>
+              ))
             )}
             {canAddTrainer && (
               <Button onClick={() => setAddOpen((v) => !v)} icon={UserPlus} className="text-teal-light-ink">
