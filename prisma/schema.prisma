@@ -3636,6 +3636,8 @@ model Lead {
   createdAt          DateTime      @default(now())
   user               User?         @relation("LeadUser", fields: [userId], references: [id])
   cases              AdvisorCase[]
+  /// كودُ منحته إن عبّأ نموذج الحملة (`grant.service.ts`)
+  grantCode          GrantCode?
 
   @@index([status, createdAt])
 }
@@ -3956,8 +3958,50 @@ model Coupon {
   trainerDiscount TrainerIssuedDiscount?
   /// وكودُ المدرّب بالنسبة إن كان هذا الكوبونُ وجهَه — واحدٌ لواحد
   trainerCode     TrainerCode?
+  /// وكودُ المنحة إن كان هذا الكوبونُ وجهَه — واحدٌ لواحد (`grant.service.ts`)
+  grantCode       GrantCode?
 
   @@index([restrictedToUserId])
+}
+
+/// حملةُ منحة — «منحة أعضاء وجيز» (٢٠ أكتوبر ٢٠٢٦).
+///
+/// قرارُ صاحب المنصّة: خصمٌ بالنسبة لأعضاء وجيز، محدودُ العدد، يُنقل لغيره، و«يحقّ لي تغيير
+/// الـ٦٠٪ كما أشاء». وهو **بدلُ خصم الباقة لا فوقه** («A»). والعلّةُ في `grant.service.ts`.
+model GrantCampaign {
+  id          String      @id @default(uuid()) @db.Uuid
+  slug        String      @unique
+  nameAr      String
+  /// نسبةُ ما يُعطى من الأكواد بعد اليوم — وكلُّ كودٍ يحمل نسبتَه يومَ أُعطي
+  percentOff  Int         @default(60)
+  /// كم كودا يُعطى — وفارغٌ بلا حدّ
+  maxCodes    Int?
+  issuedCount Int         @default(0)
+  /// كم دورةً تقع عليها المنحة في الشراء — «يحقّ لك فقط ٤ دورات»
+  maxCourses  Int         @default(4)
+  /// أوّلُ لحظةٍ لا يُعطى فيها كودٌ ولا يُستعمل — تُقرأ عند الاستعمال، فتمديدُها يمدّ كلَّ كود
+  closesAt    DateTime?
+  active      Boolean     @default(false)
+  updatedBy   String?     @db.Uuid
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  codes       GrantCode[]
+}
+
+/// كودُ منحةٍ شخصيّ: يُعطى لمن عبّأ نموذج الحملة، ويُستعمل مرّةً واحدة، ولا يُربط بحساب —
+/// فيُنقل لغيره. ونسبتُه في كوبونه.
+model GrantCode {
+  id         String        @id @default(uuid()) @db.Uuid
+  campaignId String        @db.Uuid
+  couponId   String        @unique @db.Uuid
+  /// لمن أُعطي — والكودُ يُنقل، فمن يستعمله قد يكون غيرَه
+  leadId     String?       @unique @db.Uuid
+  createdAt  DateTime      @default(now())
+  campaign   GrantCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  coupon     Coupon        @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  lead       Lead?         @relation(fields: [leadId], references: [id], onDelete: SetNull)
+
+  @@index([campaignId, createdAt])
 }
 
 /// طلبُ مستشارٍ يحتاج قرارَ الإدارة — خصمٌ أو تعديلُ خطّة.

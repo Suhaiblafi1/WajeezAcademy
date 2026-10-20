@@ -23,6 +23,7 @@ import { assertCouponUsable, num } from './commerce/cart-types'
 import { assertFirstPurchase } from './commerce/first-purchase'
 import { payByOf, teamHeldOrderIds } from './commerce/seat-hold'
 import { applyCodeRefund, markCodeUsePaid, releaseCouponUse, reserveCouponUse } from './commerce/coupon-ledger'
+import { GRANT_CHECKOUT_ONLY_AR } from '../../src/application/commerce/grant'
 import { nextInvoiceNumber } from './commerce/invoice-number'
 import { refundedShare } from '../../src/application/trainer/trainer-code'
 import { assertSeasonOpen, cohortAcceptsRegistration, PLAN_GATE_SELECT, readSeasonGate, TERM_WINDOW_SELECT } from './registration-window'
@@ -213,12 +214,14 @@ export class CommerceService {
     let couponId: string | undefined
     let couponMaxUses: number | null = null
     if (couponCode) {
-      const coupon = await this.prisma.coupon.findUnique({ where: { code: couponCode.trim().toUpperCase() }, include: { trainerCode: { select: { id: true } } } })
+      const coupon = await this.prisma.coupon.findUnique({ where: { code: couponCode.trim().toUpperCase() }, include: { trainerCode: { select: { id: true } }, grantCode: { select: { id: true } } } })
       assertCouponUsable(coupon, userId)
       /* الفحصُ يرمي عند الغياب — فما بعده كوبونٌ موجود */
       if (!coupon) throw new AuthError('bad_coupon', 'الكوبون غير صالح')
       await assertFirstPurchase(this.prisma, coupon, userId)
       if (coupon.trainerCode) throw new AuthError('trainer_code_checkout_only', TRAINER_CODE_CHECKOUT_ONLY_AR, 409)
+      /* وكودُ المنحة كذلك: هنا لا يُسأل أهو أوّلُ منحةٍ لصاحبه ولا أيُّ السعرين أقلّ (`grant.service.ts`) */
+      if (coupon.grantCode) throw new AuthError('grant_checkout_only', GRANT_CHECKOUT_ONLY_AR, 409)
       couponMaxUses = coupon.maxUses
       discount = coupon.percentOff ? Math.round((subtotal * coupon.percentOff) / 100 * 100) / 100 : num(coupon.amountOff)
       if (discount > subtotal) discount = subtotal
@@ -327,7 +330,7 @@ export class CommerceService {
     const currency = this.cart.cartCurrency(buyable, cohorts)
     /* الباقةُ والهديّةُ والكوبونُ على المشتراة وحدَها — وهي بعينها ما
        سيُرسَل إلى `checkout`، فالمعروضُ هو المُصدَر */
-    const { pricing, couponCode: code } = await this.cart.priceFor(userId, buyable, couponCode, currency)
+    const { pricing, couponCode: code, grantPct } = await this.cart.priceFor(userId, buyable, couponCode, currency)
     const emailOk = (await this.cart.emailVerified(userId)) || !(await this.cart.emailChannelEnabled())
     return {
       currency,
@@ -347,6 +350,8 @@ export class CommerceService {
       /* خصمُ إكمال الخطّة — ما فات من خصمها في دفعاتٍ سابقة (١٢ أكتوبر ٢٠٢٦) */
       planCredit: pricing.planCredit,
       couponDiscount: pricing.couponDiscount,
+      /* نسبةُ المنحة إن كان الكودُ كودَها — فيُسمّى بندُها «منحة أعضاء وجيز» لا «الكود» */
+      grantPct,
       discount: pricing.discount,
       total: pricing.total,
       items: pricing.lines.map((l) => ({
@@ -509,7 +514,7 @@ export class CommerceService {
     let couponId: string | undefined
     let couponMaxUses: number | null = null
     if (couponCode) {
-      const coupon = await this.prisma.coupon.findUnique({ where: { code: couponCode.trim().toUpperCase() }, include: { trainerCode: { select: { id: true } } } })
+      const coupon = await this.prisma.coupon.findUnique({ where: { code: couponCode.trim().toUpperCase() }, include: { trainerCode: { select: { id: true } }, grantCode: { select: { id: true } } } })
       /* المشتري صاحبُ الطلب لا الإداريُّ المعتمِد — والكوبونُ المقصور
          يُقاس على من تُصدَر له الفاتورة. */
       assertCouponUsable(coupon, req.userId)
@@ -517,6 +522,8 @@ export class CommerceService {
       if (!coupon) throw new AuthError('bad_coupon', 'الكوبون غير صالح')
       await assertFirstPurchase(this.prisma, coupon, req.userId)
       if (coupon.trainerCode) throw new AuthError('trainer_code_checkout_only', TRAINER_CODE_CHECKOUT_ONLY_AR, 409)
+      /* وكودُ المنحة كذلك: هنا لا يُسأل أهو أوّلُ منحةٍ لصاحبه ولا أيُّ السعرين أقلّ (`grant.service.ts`) */
+      if (coupon.grantCode) throw new AuthError('grant_checkout_only', GRANT_CHECKOUT_ONLY_AR, 409)
       couponMaxUses = coupon.maxUses
       const price = num(req.cohort.price)
       discount = coupon.percentOff ? Math.round(price * coupon.percentOff / 100 * 100) / 100 : num(coupon.amountOff)

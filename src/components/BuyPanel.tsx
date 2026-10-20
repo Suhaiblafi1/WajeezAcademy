@@ -52,6 +52,7 @@ import { readReferral } from "@/application/commerce/referral";
 import { clearPendingCheckout } from "@/services/pending-checkout";
 import { useCourseCohorts, type CohortOption } from "@/services/cohort-prices";
 import { FIRST_TIME_PROMO } from "@/application/commerce/first-time-promo";
+import { GRANT_ERROR_CODES, MEMBER_GRANT_NAME_AR } from "@/application/commerce/grant";
 import { PATHWAY_ONLY_PERKS } from "@/data/pathway-perks";
 import {
   PRESENTMENT_CODES, PRESENTMENT_CURRENCIES, convertFromUsd, formatPresentment,
@@ -89,7 +90,7 @@ interface QuoteItem {
    زرَّ دفع، والمشتري يبحث عن السبب. ومع كود المدرّب صار للكود أسبابُ ردٍّ
    مفهومة (لدوراتِ مدرّبٍ ليست في سلّتك · استعملتَه من قبل)، فيُقال السببُ تحت
    خانته ويُسعَّر الطلبُ بلا كود — والقرارُ للمشتري. */
-const COUPON_ERRORS: ReadonlySet<string> = new Set(["bad_coupon", "code_used", "code_not_applicable", "code_unavailable"]);
+const COUPON_ERRORS: ReadonlySet<string> = new Set(["bad_coupon", "code_used", "code_not_applicable", "code_unavailable", ...GRANT_ERROR_CODES]);
 
 /** ما استبعده الخادمُ من السلّة وسببُه — نصُّ السبب منه لا مُلفَّقٌ هنا */
 interface ExcludedLine {
@@ -113,6 +114,8 @@ interface Quote {
   /** خصمُ إكمال الخطّة — ما فاته من خصمها في دفعاتٍ سابقة (١٢ أكتوبر ٢٠٢٦) */
   planCredit: number;
   couponDiscount: number;
+  /** نسبةُ منحة أعضاء وجيز إن كان الكودُ كودَها — وهي بدلُ خصم الباقة (٢٠ أكتوبر ٢٠٢٦) */
+  grantPct: number | null;
   discount: number;
   total: number;
   items: QuoteItem[];
@@ -611,7 +614,7 @@ export default function BuyPanel({
                 )}
                 {quote.couponDiscount > 0 && (
                   <div className="flex items-center justify-between text-gold-ink">
-                    <span>الكود {quote.couponCode}</span>
+                    <span>{quote.grantPct !== null ? `${MEMBER_GRANT_NAME_AR} — ${quote.grantPct}٪` : `الكود ${quote.couponCode}`}</span>
                     <span dir="ltr">−{money(quote.couponDiscount, quote.currency)}</span>
                   </div>
                 )}

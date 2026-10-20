@@ -30,13 +30,17 @@ import { cohortLeadTrainers } from '../cohort-lead'
 import { TrainerCodeBudgetService, type PurchaseLine } from '../trainer-code-budget'
 import { budgetCovers, CODE_UNAVAILABLE_AR, MAX_TRAINER_CODE_PERCENT } from '../../../src/application/trainer/trainer-code'
 import { cohortAcceptsRegistration, PLAN_GATE_SELECT, TERM_WINDOW_SELECT } from '../registration-window'
+import { GrantService } from '../grant.service'
+import { GRANT_NOT_BETTER_AR, grantMaxCoursesAr } from '../../../src/application/commerce/grant'
 
 export class CartService {
   private prisma: PrismaClient
   private budgets: TrainerCodeBudgetService
+  private grants: GrantService
   constructor(prisma: PrismaClient) {
     this.prisma = prisma
     this.budgets = new TrainerCodeBudgetService(prisma)
+    this.grants = new GrantService(prisma)
   }
 
   /** أيسع رصيدُ صاحب الكود خصمَه في هذا الشراء؟ — يسأله التسعيرُ، وتسأله معاملةُ الطلب بعد قفله (`tx`) */
@@ -314,6 +318,7 @@ export class CartService {
             select: {
               subtotal: true, discount: true, couponId: true, bundleDiscount: true, currency: true,
               items: { select: { refId: true, titleAr: true, unitPrice: true } },
+              coupon: { select: { grantCode: { select: { id: true } } } },
             },
           },
         },
@@ -347,7 +352,11 @@ export class CartService {
   private orderBundleDiscount(order: {
     discount: Prisma.Decimal; couponId: string | null; bundleDiscount: Prisma.Decimal | null; currency: string
     items: { refId: string; titleAr: string; unitPrice: Prisma.Decimal }[]
+    coupon: { grantCode: { id: string } | null } | null
   }): number {
+    /* وطلبُ المنحة خصمُه كلُّه بدلُ الباقة — وعمودُ الباقة فيه صفر. فلو قُرئ العمودُ لعُدّ
+       مشتريه لم ينل من خصم خطّته شيئا، فيُعطى في دفعته التالية «ما فاته» فوق منحته */
+    if (order.coupon?.grantCode) return num(order.discount)
     if (order.bundleDiscount !== null) return num(order.bundleDiscount)
     if (!order.couponId) return num(order.discount)
     const again = priceCart(
@@ -362,8 +371,14 @@ export class CartService {
     if (!couponCode) return null
     const coupon = await this.prisma.coupon.findUnique({
       where: { code: couponCode.trim().toUpperCase() },
-      include: { trainerCode: { select: { id: true, profileId: true, percentOff: true, amountOff: true } } },
+      include: {
+        trainerCode: { select: { id: true, profileId: true, percentOff: true, amountOff: true } },
+        grantCode: { select: { campaign: { select: { id: true, active: true, closesAt: true, maxCourses: true } } } },
+      },
     })
+    /* كودُ المنحة يُسأل قبل الفحص العامّ — فيُقال سببُ ردّه بلغة المنحة («استعمل من قبل»)
+       لا بلغة الكوبون («استنفد عدد استخداماته») (`grant.service.ts`) */
+    if (coupon?.grantCode) await this.grants.assertUsable(coupon, userId)
     assertCouponUsable(coupon, userId)
     /* الفحصُ يرمي عند الغياب — فما بعده كوبونٌ موجود */
     if (!coupon) throw new AuthError('bad_coupon', 'الكوبون غير صالح')
@@ -425,7 +440,11 @@ export class CartService {
             cohortIds: scope,
             maxPercentOfBase: MAX_TRAINER_CODE_PERCENT,
           }
-          : { percentOff: coupon.percentOff, amountOff: coupon.amountOff === null ? null : num(coupon.amountOff) }
+          : {
+            percentOff: coupon.percentOff, amountOff: coupon.amountOff === null ? null : num(coupon.amountOff),
+            /* وكودُ المنحة بدلُ الباقة لا فوقها — قرارُ صاحب المنصّة («A») */
+            replacesBundle: coupon.grantCode !== null,
+          }
         : null,
       cartCurrency,
       await this.planCarryFor(userId, cohorts, cartCurrency),
@@ -435,6 +454,13 @@ export class CartService {
        اسمُه لا يُعرض قبل اعتماد نشره (قواعدُ المستودَع). */
     if (trainerCode && pricing.couponLines === 0) {
       throw new AuthError('code_not_applicable', 'هذا الكود لدورات مدرّب بعينه، وليس في سلّتك دورة مدفوعة منها', 409)
+    }
+    /* وكودُ منحةٍ سعرُ الباقة أقلُّ منه يُقال لصاحبه ولا يُحرق — فيحتفظ به أو يعطيه غيرَه */
+    if (pricing.grantBeaten) throw new AuthError('grant_not_better', GRANT_NOT_BETTER_AR, 409)
+    /* وعلى عددٍ بحدٍّ — «يحقّ لك فقط ٤ دورات». والهديّةُ لا تُعدّ: سعرُها صفرٌ لا تقع عليه المنحة */
+    const grantCourses = coupon?.grantCode?.campaign.maxCourses
+    if (grantCourses !== undefined && pricing.paidCount > grantCourses) {
+      throw new AuthError('grant_max_courses', grantMaxCoursesAr(grantCourses), 409)
     }
     /* ═══ ورصيدُه — يُسقَف بما له عندنا (٢٨ سبتمبر ٢٠٢٦) ═══
 
@@ -452,6 +478,8 @@ export class CartService {
       couponId: coupon?.id,
       couponCode: coupon?.code ?? null,
       couponMaxUses: coupon?.maxUses ?? null,
+      /* نسبةُ المنحة إن كان الكودُ كودَها — ليُسمّى بندُها في اللوح باسمها */
+      grantPct: coupon?.grantCode ? coupon.percentOff : null,
       trainerCode: trainerCode ? { id: trainerCode.id, profileId: trainerCode.profileId } : null,
       trainerPurchase: purchase,
     }

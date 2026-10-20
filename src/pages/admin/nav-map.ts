@@ -5,7 +5,7 @@
  * مكوّن — فتصديرُها من `AdminLayout.tsx` يكسر التحديثَ الساخن.
  */
 
-import { Activity, Award, BadgePercent, BarChart3, Bell, BookPlus, CalendarCog, CalendarRange, ClipboardCheck, ClipboardList, Coins, FileSignature, FlaskConical, GitBranch, GraduationCap, Handshake, HandCoins, History, Languages, Layers, LayoutDashboard, LifeBuoy, Megaphone, PenLine, PlugZap, Presentation, Route, School, Settings, ShieldAlert, Star, UserCheck, UserMinus, UserPlus, Users, Wallet } from "lucide-react";
+import { Activity, Award, BadgePercent, Gift, BarChart3, Bell, BookPlus, CalendarCog, CalendarRange, ClipboardCheck, ClipboardList, Coins, FileSignature, FlaskConical, GitBranch, GraduationCap, Handshake, HandCoins, History, Languages, Layers, LayoutDashboard, LifeBuoy, Megaphone, PenLine, PlugZap, Presentation, Route, School, Settings, ShieldAlert, Star, UserCheck, UserMinus, UserPlus, Users, Wallet } from "lucide-react";
 
 /* ═══ سبعُ مجموعاتٍ لا ثلاثةُ أبواب ═══
 
@@ -236,6 +236,10 @@ export const allSections: AdminNavSection[] = [
     items: [
       { to: "/admin/finance", label: "الطلبات والفواتير", icon: Wallet, need: ["finance.view", "enrollment.request.review"],
         descAr: "طابورُ طلبات التسجيل، والفواتيرُ والاستردادات" },
+      /* «منحة أعضاء وجيز» (٢٠ أكتوبر ٢٠٢٦): نسبتُها بيد صاحب المنصّة يغيّرها متى شاء، وفحصُ الهامش
+         تحتها — بصلاحيّة الكوبونات، فالمنحةُ كوبونٌ بحملة. */
+      { to: "/admin/member-grant", label: "منحة أعضاء وجيز", icon: Gift, need: "commerce.manage",
+        descAr: "نسبة المنحة وعددها وآخر يوم لها، وهامش كل شعبة بعدها" },
       { to: "/admin/reports", label: "التقارير والتصدير", icon: BarChart3, need: "reports.view",
         descAr: "أرقامُ المنصّة مفصَّلةً، وتصديرُها إلى ملفّ" },
       { to: "/admin/support", label: "تذاكر الدعم", icon: LifeBuoy, need: "support.operate",
