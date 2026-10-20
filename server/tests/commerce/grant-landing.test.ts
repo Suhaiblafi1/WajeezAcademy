@@ -63,7 +63,7 @@ beforeAll(async () => {
   await auth.setRoles(advisor, ['advisor'])
   const user = await prisma.user.create({ data: { email: `gl-tr-${STAMP}@wajeez.test`, displayName: 'مدرب', passwordHash: 'x' } })
   const app = await prisma.trainerApplication.create({ data: { reference: `WJ-TR-GL-${STAMP}`, fullName: 'مدرب', email: user.email, status: 'active' } })
-  profileId = (await prisma.trainerProfile.create({ data: { userId: user.id, applicationId: app.id } })).id
+  profileId = (await prisma.trainerProfile.create({ data: { userId: user.id, applicationId: app.id, publicVisibility: true, isVerified: true, publishApprovedAt: new Date() } })).id
   await prisma.trainerCompensationRule.create({ data: { profileId, type: 'per_seat', rate: 50, effectiveFrom: new Date(Date.now() - DAY) } })
   pool = (await prisma.course.findMany({ where: { status: 'published' }, select: { id: true }, orderBy: { id: 'desc' } })).map((c) => c.id)
   await grants.update({ active: true, percentOff: 60, maxCodes: null, maxCourses: 4, closesAt: null }, ownerId)
