@@ -3625,7 +3625,7 @@ model Lead {
   fullName           String
   email              String?
   phone              String?
-  source             String        @default("site") // diagnostic | site | referral | business
+  source             String        @default("site") // diagnostic | site | referral | business | campaign
   status             String        @default("new") // new | converted | archived
   userId             String?       @db.Uuid // يُربط عند إنشاء الحساب
   diagnosticSnapshot Json? // نتيجة تشخيص الضيف قبل إنشاء الحساب
@@ -3633,6 +3633,13 @@ model Lead {
   consentAr          String?
   /// محيت بياناتُه بعد ستة أشهر بلا نشاط ولم يسجّل (`guest-erasure.service.ts`)
   erasedAt           DateTime?
+  /// حملةٌ جاء منها — `wajeez-members` لمن عبّأ نموذج المنحة (`grant-landing.service.ts`)
+  campaign           String?
+  /// قناتُه ودفعتُه من رابط الحملة (`?ch=whatsapp&w=1`) — ليُعرف أيُّها جاء بمن اشترى
+  channel            String?
+  wave               String?
+  /// مجالُ عمله كما اختاره في نموذج الحملة
+  workField          String?
   createdAt          DateTime      @default(now())
   user               User?         @relation("LeadUser", fields: [userId], references: [id])
   cases              AdvisorCase[]
@@ -3640,6 +3647,7 @@ model Lead {
   grantCode          GrantCode?
 
   @@index([status, createdAt])
+  @@index([campaign, createdAt])
 }
 
 model AdvisorCase {

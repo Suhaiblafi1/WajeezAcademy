@@ -65,12 +65,16 @@ const LABEL_CLS = "mb-1.5 block text-xs font-bold text-muted-foreground";
 /** بوابة الدخول والتسجيل — نموذج حقيقي، تحقق آمن، ورسائل عربية لا تكشف شيئا.
     initialMode: الوضع الابتدائي (بوابة النتيجة تبدأ بـ«حساب جديد»).
     source: وسم تحليلات اختياري يميّز مصدر التسجيل (مثل result_gate). */
-export default function AuthGate({ onDone, message, initialMode = "login", source }: { onDone: () => void; message?: string; initialMode?: "login" | "signup"; source?: string }) {
+export default function AuthGate({ onDone, message, initialMode = "login", source, prefill }: {
+  onDone: () => void; message?: string; initialMode?: "login" | "signup"; source?: string
+  /** اسمٌ وبريدٌ كتبهما قبلُ في الصفحة — نموذجُ المنحة — فلا يكتبهما مرّتين */
+  prefill?: { name?: string; email?: string }
+}) {
   const hp = useHoneypot();
   const [mode, setMode] = useState<"login" | "signup">(initialMode);
   const [view, setView] = useState<View>("auth");
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+  const [name, setName] = useState(prefill?.name ?? "");
+  const [email, setEmail] = useState(prefill?.email ?? "");
   const [pass, setPass] = useState("");
   const [confirm, setConfirm] = useState("");
   const [showPass, setShowPass] = useState(false);

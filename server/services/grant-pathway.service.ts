@@ -96,7 +96,7 @@ export class GrantPathwayService {
   }
 
   /** المساراتُ بدوراتها وأقرب شعبةٍ لكلٍّ وهامشِها — بنسبةٍ تُمرَّر لتُجرَّب، وبلا قيمةٍ نسبةُ الحملة */
-  async list(opts: { percentOff?: number; activeOnly?: boolean } = {}, now = new Date()) {
+  async list(opts: { percentOff?: number; activeOnly?: boolean; withCosts?: boolean } = {}, now = new Date()) {
     const c = await this.grants.campaign()
     const pct = opts.percentOff ?? c.percentOff
     const rows = await this.prisma.grantPathway.findMany({
@@ -113,7 +113,10 @@ export class GrantPathwayService {
     const titleOf = new Map<string, string>()
     for (const t of titles) if (!titleOf.has(t.courseId)) titleOf.set(t.courseId, t.titleAr)
     const cohorts = [...buy.values()]
-    const costs = await this.grants.seatCosts(cohorts.map((b) => ({ id: b.cohortId, courseId: b.courseId, price: b.price })))
+    /* وأجورُ المدرّبين لا تُقرأ لصفحة الحملة — لا تخرج من الإدارة (`grant-landing.service.ts`) */
+    const costs = opts.withCosts === false
+      ? new Map<string, { seatCost: number | null }>()
+      : await this.grants.seatCosts(cohorts.map((b) => ({ id: b.cohortId, courseId: b.courseId, price: b.price })))
 
     return {
       percentOff: pct,
