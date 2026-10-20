@@ -55,9 +55,15 @@ export function groupBySeason(items: SeasonItem[]): SeasonGroup[] {
   return [...groups.values()]
 }
 
-/** رأسُ كلّ موسم: «سيقدم فلان في موسم الشتاء 2026» */
-export function seasonHeadingAr(name: string, termAr: string | null): string {
-  return termAr ? `سيقدم ${name} في ${termAr}` : `سيقدم ${name} قريبا`
+/* ═══ رأسُ كلّ موسم: اسمُ الموسم وحدَه (٢٠ أكتوبر ٢٠٢٦) ═══
+
+   كان «سيقدم فلان في موسم الشتاء 2026» — وقال صاحبُ المنصّة: «طويلة.. اجعلها فقط اسم الموسم!». والاسمُ
+   مكتوبٌ في رأس البطاقة نفسها، فتكرارُه فوق كلّ موسمٍ حشو. وما لا موسمَ له «موسم لاحق». */
+export const LATER_SEASON_AR = 'موسم لاحق'
+
+/** رأسُ الموسم: «موسم الشتاء 2026/2027» — أو «موسم لاحق» لما لا موسمَ له */
+export function seasonHeadingAr(termAr: string | null): string {
+  return termAr ?? LATER_SEASON_AR
 }
 
 export const NO_NEXT_SEASON_AR = 'لا دورة منشورة له للموسم القادم بعد.'

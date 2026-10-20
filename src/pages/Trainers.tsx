@@ -49,6 +49,7 @@ const SPECIALTIES_PREVIEW = 6
 
    ═══ وصارت ما يقدّمه للموسم القادم وحدَه، تحت «سيقدم فلان في موسم كذا» (١٩ أكتوبر ٢٠٢٦) ═══
    «لماذا تظهر كلُّ الدورات للمدرّب وليس للموسم القادم؟» (صاحب المنصّة) — `next-season.ts`.
+   ثمّ صار الرأسُ اسمَ الموسم وحدَه (٢٠ أكتوبر ٢٠٢٦): «طويلة.. اجعلها فقط اسم الموسم!».
 
    ═══ ورُفع سطرُ «يقدّم في مسارات» (١٩ أكتوبر ٢٠٢٦) ═══
    «الغِ قسم "ما يقدّم من مسارات"» (صاحب المنصّة) — بعد «الكلام مكتظ» على البطاقة نفسها. فالبطاقةُ دوراتُه
@@ -57,7 +58,7 @@ const SPECIALTIES_PREVIEW = 6
 const coursesCountAr = (n: number) =>
   n === 2 ? 'دورتان' : countAr(n, { one: 'دورة', two: 'دورتان', few: 'دورات', many: 'دورة' })
 
-function TrainerOffer({ name, groups }: { name: string; groups: SeasonGroup[] }) {
+function TrainerOffer({ groups }: { groups: SeasonGroup[] }) {
   /* الكتالوجُ يُحمَّل كسولا ويُستبدل وقتَ التشغيل (`core-catalog-source.ts`).
      وكانت النبذةُ تُصيَّر عند فتحها فقط فتجده غالبا قد وصل؛ وصارت تُصيَّر مع
      البطاقة مخفيّةً — فلو حُسبت قبل وصوله لَبقيت «لم تسند إليه شعبة» لمن له
@@ -106,7 +107,7 @@ function TrainerOffer({ name, groups }: { name: string; groups: SeasonGroup[] })
           <div key={g.termAr ?? "later"} className="mt-5">
             <p className="flex items-center gap-1.5 text-read font-medium text-foreground">
               <BookOpen className="h-3.5 w-3.5 text-teal-light-ink" />
-              {seasonHeadingAr(name, g.termAr)}
+              {seasonHeadingAr(g.termAr)}
             </p>
             {list}
           </div>
@@ -114,7 +115,7 @@ function TrainerOffer({ name, groups }: { name: string; groups: SeasonGroup[] })
           <details key={g.termAr ?? "later"} className="group mt-4 border-t border-white/10 pt-4">
             <summary className="flex cursor-pointer list-none items-center gap-1.5 text-read font-normal text-muted-foreground transition hover:text-foreground [&::-webkit-details-marker]:hidden">
               <BookOpen className="h-3.5 w-3.5 shrink-0 text-teal-light-ink" />
-              <span className="min-w-0 flex-1">{seasonHeadingAr(name, g.termAr)}</span>
+              <span className="min-w-0 flex-1">{seasonHeadingAr(g.termAr)}</span>
               <span className="shrink-0 text-fine">{coursesCountAr(g.courses.length)}</span>
               <ChevronDown className="h-4 w-4 shrink-0 transition-transform group-open:rotate-180" aria-hidden="true" />
             </summary>
@@ -319,7 +320,7 @@ function TrainerCard({ t, open, onToggle }: { t: PublicTrainer; open: boolean; o
           </div>
         )}
 
-        <TrainerOffer name={t.name} groups={t.offer ?? [{ termAr: null, courseIds: t.assignedCourseIds }]} />
+        <TrainerOffer groups={t.offer ?? [{ termAr: null, courseIds: t.assignedCourseIds }]} />
       </div>
 
       <button
