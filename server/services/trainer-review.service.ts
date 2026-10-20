@@ -1102,9 +1102,9 @@ export class TrainerReviewService {
           conditionExtensionsUsed: true,
         },
       })
-      /* وله دورةٌ معتمَدة؟ — فموادُّه حُكم فيها (١٧ أكتوبر ٢٠٢٦، رأسُ `materialsGateProblemAr`)، وواحدةٌ تكفي (٢٠ أكتوبر) */
+      /* وله خطّةُ شعبةٍ معتمَدة؟ — فموادُّه حُكم فيها (١٧ أكتوبر ٢٠٢٦، رأسُ `materialsGateProblemAr`)، وواحدةٌ تكفي (٢٠ أكتوبر) */
       const materialsProblem = openOffer
-        ? materialsGateProblemAr({ ...openOffer, coursesReady: await this.hasQualifiedCourse(applicationId), now: new Date() })
+        ? materialsGateProblemAr({ ...openOffer, coursesReady: await this.hasApprovedCohort(applicationId), now: new Date() })
         : null
       if (materialsProblem) {
         if (!(opts.actorRoles ?? []).includes('super_admin')) {
@@ -2370,7 +2370,8 @@ export class TrainerReviewService {
      والتفعيلُ التلقائيُّ كان على مسلك اعتماد الخطّة وحدَه — فمن أُهِّل لدوراته من «التأهيل
      والإسناد» أو من اللوح القديم بقي عقدُه ينتظر ما وقع. فيُقال للشاشة هنا: في يده معتمَدة،
      وحالُه تقبل التفعيل — وهو شرطُ `activateIfQualified` نفسُه. وكان معه «لا دورةَ معلّقة»،
-     فنُسخ (٢٠ أكتوبر ٢٠٢٦): دورةٌ واحدةٌ معتمَدةٌ تكفي لتفعيله. */
+     فنُسخ (٢٠ أكتوبر ٢٠٢٦): دورةٌ واحدةٌ معتمَدةٌ تكفي لتفعيله. ثمّ صارت «المعتمَدةُ» خطّةَ شعبةٍ اعتمدناها
+     لا تأهيلا وحدَه («Approved cohort only»، رأسُ `activateIfQualified`). */
   private async coursesReadyFor(contracts: {
     id: string; status: string; gatesActivation: boolean; conditionMetAt: Date | null; signatureApprovedAt: Date | null
     profile: { id: string; application: { status: string } | null } | null
@@ -2380,12 +2381,11 @@ export class TrainerReviewService {
       && c.profile?.application
       && transitionProblemAr(c.profile.application.status as TrainerStatus, 'active') === null)
     const profileIds = [...new Set(open.map((c) => c.profile!.id))]
-    const qualified = profileIds.length === 0 ? [] : await this.prisma.trainerCourseQualification.groupBy({
-      by: ['profileId'],
-      where: { profileId: { in: profileIds }, status: 'qualified' },
-      _count: { _all: true },
+    const approved = profileIds.length === 0 ? [] : await this.prisma.cohortDeliveryPlan.findMany({
+      where: { trainerId: { in: profileIds }, status: { in: ['approved', 'published'] } },
+      select: { trainerId: true }, distinct: ['trainerId'],
     })
-    const hasOne = new Set(qualified.filter((r) => r._count._all > 0).map((r) => r.profileId))
+    const hasOne = new Set(approved.map((r) => r.trainerId))
     const ready = new Set(open.filter((c) => hasOne.has(c.profile!.id)).map((c) => c.id))
     /* وعقدُ النشط المعتمَدُ كالعقود الجديدة: اعتُمدت له دورةٌ بعد اعتماد توقيعه (٢٠ أكتوبر ٢٠٢٦)، أو اكتملت
        دوراتُه (١٧ أكتوبر) — `sealDue`، شرطُ توقيعه التلقائيّ نفسُه */
@@ -5750,11 +5750,12 @@ export class TrainerReviewService {
     return q
   }
 
-  /** في يده دورةٌ معتمَدة — شرطُ `activateIfQualified` نفسُه (٢٠ أكتوبر ٢٠٢٦: واحدةٌ تكفي) */
-  private async hasQualifiedCourse(applicationId: string): Promise<boolean> {
+  /** اعتُمدت له خطّةُ شعبة — شرطُ `activateIfQualified` نفسُه (٢٠ أكتوبر ٢٠٢٦: واحدةٌ تكفي، والتأهيلُ وحدَه لا) */
+  private async hasApprovedCohort(applicationId: string): Promise<boolean> {
     const profile = await this.prisma.trainerProfile.findUnique({ where: { applicationId }, select: { id: true } })
     if (!profile) return false
-    return (await this.prisma.trainerCourseQualification.count({ where: { profileId: profile.id, status: 'qualified' } })) > 0
+    const { TrainerPrepService } = await import('./trainer-prep.service')
+    return (await new TrainerPrepService(this.prisma).approvedPlans(profile.id)) > 0
   }
 
   /* ═══ وآخرُ دوراته يفعّله من أيّ باب اعتُمد (١٧ أكتوبر ٢٠٢٦) ═══
