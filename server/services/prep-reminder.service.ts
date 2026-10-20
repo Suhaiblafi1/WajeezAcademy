@@ -1,49 +1,123 @@
-/* ═══ «ما بقي عليك، وموعدُه» — تذكيرٌ يُرسَل مدرّبا مدرّبا (٢٠ أكتوبر ٢٠٢٦) ═══
+/* ═══ «قبل إطلاق الحملة» — رسالةٌ لكلّ مدرّبٍ بما نحتاجه منه، تُرسَل واحدةً واحدة (٢٠ أكتوبر ٢٠٢٦) ═══
 
    قرارُ صاحب المنصّة: «أرسل لهؤلاء جميعا — ولكلّ مدرّبٍ ما ينقصه وموعدا نهائيّا. حضّرها أنت وأنا أرسلها
-   واحدةً واحدة». ومن وصلهم بريدُ «لا يلزمك شيء الآن» القديمُ منهم (`waitingOnThemselves` في الشاشة).
+   واحدةً واحدة»، و«قل لهم إنّنا على وشك إطلاق الحملة التسويقيّة، فعليهم أن يسرعوا وإلّا ألغينا ملفّاتهم — بلطف».
 
-   وقالها صاحبُ المنصّة بعدها: «قل لهم إنّنا على وشك إطلاق الحملة التسويقيّة، فعليهم أن يسرعوا وإلّا ألغينا
-   ملفّاتهم — بلطف». فالرسالةُ تقول السببَ والموعدَ وما يقع بعده، بلا تهديد.
-
-   فمن اعتُمد توقيعُه (وبابُه مفتوح) وفي دوراته ما لم يكتمل من جهته: دورةٌ لم يقبلها، أو شعبةٌ لم يرسل
-   خطّتَها، أو خطّةٌ رُدّت إليه ببطاقات. وما أرسله وينتظرنا، وما أُجّل، وما اعتُمد — ليس عليه.
-   والرسالةُ تُعاين قبل الإرسال، ولا تُرسَل إلّا بنقرة. */
+   ═══ ثمّ أعاد كتابتَها (٢٠ أكتوبر ٢٠٢٦) ═══
+   رأى النسخةَ الأولى تعدّ كلَّ دورةٍ لم يقبلها المدرّبُ واجبا: «هناك من قرّر أن يقدّم دورةً واحدةً فقط، فلماذا نقول
+   له عُد إلى دوراتك واختر منها؟… ما لم يقبله ليس عالقا أمام وجوده مدرّبا لهذا الفصل». فصارت على حالين:
+   · **لم تقم له شعبةٌ بعد** — وهو الأهمّ: ابدأ بدورةٍ واحدة؛ اقبلها وجهّز خطّتها. وما لن تقدّمه اعتذر عنه، وما تريده
+     لاحقا اقبله ثمّ انقله إلى موسمٍ قادم. ومعها موعدٌ، وإغلاقُ الملفّ بعده — بلطف.
+   · **له شعبةٌ مفتوحة** — نخبره بها، ونسأله: أتضيف غيرها؟ وما لن تقدّمه اعتذر عنه، وما تريده لاحقا انقله.
+   وتحت الحالين ما هو عالقٌ فعلا، كلُّه رابطٌ إلى صفحته: خطّةٌ لم تُرسَل، وبطاقاتٌ تنتظر قرارَه، و«نبذتك» و«لماذا
+   نفتخر بك» تنتظران موافقتَه، وصورةٌ لم تُرفع. «سهلةَ القراءة وسهلةَ التنفيذ وإيجابيّة». */
 
 import type { PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
-import { renderMail, type MailDoc } from './mail-template'
+import { renderMail, type MailBlock, type MailDoc } from './mail-template'
 import { publicSiteUrl, sendDirectEmail } from './notification.service'
 import { TrainerPrepService, type PrepCourse } from './trainer-prep.service'
 import { fmtDateWith } from '../../src/application/text/format-ar'
 import { ACADEMY_ZONE } from '../../src/application/trainer/cohort-period'
 
-/** ما بقي عليه في الدورة — وما ليس عليه `null` */
-export function missingAr(c: Pick<PrepCourse, 'state' | 'postponedTo'>): string | null {
-  if (c.state === 'to_decide') return 'لم تقبلها بعد — اقبلها في «دوراتي» أو اعتذر عنها'
-  if (c.state === 'preparing') return 'لم ترسل خطة شعبتها — أكملها في «شعبي» وأرسلها'
-  if (c.state === 'returned' && !c.postponedTo) return 'رددناها إليك ببطاقات — اقبل كل بطاقة أو ارفضها ثم أرسلها'
-  return null
+/** ما هو عالقٌ عليه فعلا — ولكلٍّ صفحتُه */
+export interface ReminderTask { textAr: string; path: string }
+
+export interface ReminderFacts {
+  /** شعبُه القائمة: مفتوحةٌ أو ممتلئةٌ أو جارية */
+  openCohorts: string[]
+  /** دوراتُه وحالُها — كما تقرؤها «دوراتي» */
+  courses: Pick<PrepCourse, 'state' | 'postponedTo' | 'cohortId' | 'cohortTitle' | 'titleAr'>[]
+  pendingBio: boolean
+  pendingPitch: boolean
+  noPhoto: boolean
 }
 
-export interface ReminderItem { titleAr: string; missingAr: string }
+/** لم تقم له شعبةٌ بعد: لا مفتوحة، ولا خطّةٌ أرسلها أو اعتُمدت */
+export function hasStarted(f: ReminderFacts): boolean {
+  return f.openCohorts.length > 0 || f.courses.some((c) => c.state === 'submitted' || c.state === 'approved')
+}
 
-export function prepReminderMail(input: { name: string; items: ReminderItem[]; deadlineAr: string; portalUrl: string }): { subject: string; doc: MailDoc } {
+export function reminderTasks(f: ReminderFacts): ReminderTask[] {
+  const out: ReminderTask[] = []
+  for (const c of f.courses) {
+    const name = c.cohortTitle ?? c.titleAr
+    if (c.state === 'preparing' && c.cohortId) out.push({ textAr: `أكمل خطة «${name}» وأرسلها`, path: `/trainer/cohort/${c.cohortId}` })
+    if (c.state === 'returned' && !c.postponedTo && c.cohortId) out.push({ textAr: `راجع اقتراحاتنا على «${name}» واقبلها أو ارفضها`, path: `/trainer/cohort/${c.cohortId}` })
+  }
+  if (f.pendingBio) out.push({ textAr: 'وافق على نبذتك أو عدلها', path: '/trainer/account#suggestions-h' })
+  if (f.pendingPitch) out.push({ textAr: 'وافق على «لماذا نفتخر بك» أو عدلها', path: '/trainer/account#suggestions-h' })
+  if (f.noPhoto) out.push({ textAr: 'أضف صورتك', path: '/trainer/account' })
+  return out
+}
+
+/** يستحقّ الرسالة: من لم يبدأ، أو من له ما هو عالق، أو من بدأ وفي دوراته ما لم يقرّر فيه */
+export function needsReminder(f: ReminderFacts): boolean {
+  return !hasStarted(f) || reminderTasks(f).length > 0 || f.courses.some((c) => c.state === 'to_decide')
+}
+
+export function reminderSummaryAr(f: ReminderFacts): string {
+  const n = reminderTasks(f).length
+  const left = n === 0 ? '' : ` — ${n === 1 ? 'أمر واحد عالق' : `${n} أمور عالقة`}`
+  return hasStarted(f) ? `له شعبة${left}` : `لم يبدأ أي شعبة${left}`
+}
+
+export function prepReminderMail(input: { name: string; facts: ReminderFacts; deadlineAr: string; siteUrl: string }): { subject: string; doc: MailDoc } {
+  const { facts: f, siteUrl } = input
+  const link = (text: string, path: string) => ({ text, href: `${siteUrl}${path}` })
+  const started = hasStarted(f)
+  const tasks = reminderTasks(f)
+  const courses = link('«دوراتي»', '/trainer/qualifications')
+
+  const opening: MailBlock[] = started
+    ? [
+        {
+          kind: 'p',
+          text: f.openCohorts.length === 0
+            ? 'وصلتنا خطة شعبتك، وهي عندنا الآن. شكرا لك.'
+            : f.openCohorts.length === 1
+              ? `شعبتك «${f.openCohorts[0]}» مفتوحة للتسجيل الآن. شكرا لك.`
+              : `شعبك ${f.openCohorts.map((t) => `«${t}»`).join(' و')} مفتوحة للتسجيل الآن. شكرا لك.`,
+        },
+        { kind: 'p', text: ['هل تريد إضافة دورة أخرى هذا الموسم؟ اقبلها من ', courses, '.'] },
+        { kind: 'p', text: 'وما لن تقدمه أبدا اعتذر عنه، وما تريد تقديمه لاحقا انقله إلى موسم قادم.' },
+      ]
+    : [
+        { kind: 'p', text: 'لم تفتح لك شعبة بعد، ويكفي أن تبدأ بدورة واحدة:' },
+        {
+          kind: 'steps',
+          items: [
+            { textAr: 'افتح «دوراتي» واقبل الدورة التي ستقدمها هذا الموسم.', state: 'now' },
+            { textAr: 'جهز خطة شعبتها وأرسلها — نراجعها ونفتحها للتسجيل.' },
+            { textAr: 'وما لن تقدمه أبدا اعتذر عنه، وما تريد تقديمه لاحقا اقبله ثم انقله إلى موسم قادم.' },
+          ],
+        },
+        { kind: 'cta', label: 'افتح «دوراتي»', href: `${siteUrl}/trainer/qualifications` },
+      ]
+
+  const blocks: MailBlock[] = [
+    { kind: 'p', text: 'نستعد لإطلاق حملتنا التسويقية للموسم القادم، ونحب أن تكون معنا فيها من أول يوم.' },
+    ...opening,
+  ]
+  if (tasks.length > 0) {
+    blocks.push({ kind: 'h', text: 'وبقي منك' }, { kind: 'list', items: tasks.map((t) => [link(t.textAr, t.path)]) })
+  }
+  /* والموعدُ وإغلاقُ الملفّ لمن لم يبدأ وحدَه — ومن له شعبةٌ يُرجى منه ما بقي بلا إنذار */
+  if (!started) {
+    blocks.push({ kind: 'callout', text: `نرجو أن تبدأ قبل ${input.deadlineAr}. ومن لم يبدأ حتى هذا الموعد سنضطر آسفين إلى إغلاق ملفه على المنصة، ويسعدنا أن نعود للعمل معك متى كنت جاهزا.` })
+  } else if (tasks.length > 0) {
+    blocks.push({ kind: 'callout', text: `نرجو إكمالها قبل ${input.deadlineAr}.` })
+  }
+  blocks.push({ kind: 'note', text: 'وإن احتجت مساعدة أو وقتا أكثر فرد على هذه الرسالة.' })
+
   return {
-    subject: `قبل إطلاق الحملة — ما بقي من دوراتك حتى ${input.deadlineAr}`,
+    subject: started ? 'قبل إطلاق حملتنا — شعبتك جاهزة، وهل تضيف غيرها؟' : `قبل إطلاق حملتنا — ابدأ بدورة واحدة قبل ${input.deadlineAr}`,
     doc: {
       greetingName: input.name,
-      preheader: `بقي عليك ${input.items.length === 1 ? 'دورة واحدة' : `${input.items.length} دورات`} — نرجو إكمالها قبل ${input.deadlineAr}.`,
-      heading: 'ما بقي من دوراتك',
-      blocks: [
-        { kind: 'p', text: 'نستعد لإطلاق حملتنا التسويقية للموسم القادم قريبا، ونريد أن تكون دوراتك فيها من أول يوم. وتظهر الدورة في الحملة حين تكتمل وتعتمد.' },
-        { kind: 'p', text: 'وهذا ما بقي عليك:' },
-        { kind: 'facts', rows: input.items.map((i) => ({ label: i.titleAr, value: i.missingAr })) },
-        { kind: 'callout', text: `نرجو إكمالها قبل ${input.deadlineAr}. وما لم يكتمل حتى هذا الموعد سنضطر آسفين إلى إغلاق ملفك على المنصة، ويسعدنا أن نعود للعمل معك متى كنت جاهزا.` },
-        { kind: 'note', text: 'وإن احتجت وقتا أكثر أو تعذرت عليك دورة فرد على هذه الرسالة، ونتفاهم.' },
-        { kind: 'cta', label: 'افتح «دوراتي»', href: input.portalUrl },
-      ],
+      preheader: started ? 'شعبتك جاهزة للموسم القادم — وبقيت خطوات صغيرة.' : `يكفي أن تبدأ بدورة واحدة قبل ${input.deadlineAr}.`,
+      heading: 'نستعد لإطلاق حملتنا',
+      blocks,
     },
   }
 }
@@ -57,7 +131,25 @@ export class PrepReminderService {
     this.prisma = prisma
   }
 
-  /** من بقي عليه شيء — باسمه وبريده وما بقي */
+  private async factsOf(profileId: string, photo: { photoUrl: string | null; photoPendingKey: string | null }): Promise<ReminderFacts> {
+    const [courses, open, pending] = await Promise.all([
+      new TrainerPrepService(this.prisma).coursesOf(profileId),
+      this.prisma.cohortTrainer.findMany({
+        where: { profileId, role: 'lead', cohort: { status: { in: ['open', 'full', 'active'] } } },
+        select: { cohort: { select: { title: true } } },
+      }),
+      this.prisma.trainerTextSuggestion.findMany({ where: { profileId, status: 'pending' }, select: { kind: true } }),
+    ])
+    return {
+      openCohorts: open.map((o) => o.cohort.title),
+      courses,
+      pendingBio: pending.some((p) => p.kind === 'bio'),
+      pendingPitch: pending.some((p) => p.kind === 'pitch'),
+      noPhoto: !photo.photoUrl && !photo.photoPendingKey,
+    }
+  }
+
+  /** من يستحقّ الرسالة — وخلاصةُ حاله لسطره في الصفحة */
   async list() {
     const profiles = await this.prisma.trainerProfile.findMany({
       where: {
@@ -65,34 +157,32 @@ export class PrepReminderService {
         application: { status: { in: ['onboarding', 'active'] } },
         contracts: { some: { status: { in: ['signature_approved', 'countersigned'] } } },
       },
-      select: { id: true, legalNameAr: true, application: { select: { fullName: true, email: true } } },
+      select: { id: true, photoUrl: true, photoPendingKey: true, application: { select: { fullName: true, email: true } } },
     })
-    const prep = new TrainerPrepService(this.prisma)
-    const out: { profileId: string; name: string; email: string; items: ReminderItem[] }[] = []
+    const out: { profileId: string; name: string; email: string; started: boolean; summaryAr: string; facts: ReminderFacts }[] = []
     for (const p of profiles) {
-      const items = (await prep.coursesOf(p.id))
-        .map((c) => ({ titleAr: c.titleAr, missingAr: missingAr(c) }))
-        .filter((i): i is ReminderItem => i.missingAr !== null)
-      if (items.length > 0) out.push({ profileId: p.id, name: p.application.fullName, email: p.application.email, items })
+      const facts = await this.factsOf(p.id, p)
+      if (!needsReminder(facts)) continue
+      out.push({ profileId: p.id, name: p.application.fullName, email: p.application.email, started: hasStarted(facts), summaryAr: reminderSummaryAr(facts), facts })
     }
-    return out.sort((a, b) => b.items.length - a.items.length)
+    /* من لم يبدأ أوّلا — هو الأهمّ */
+    return out.sort((a, b) => Number(a.started) - Number(b.started))
   }
 
   /** المعاينة — ما يُرسَل بحرفه */
   async preview(profileId: string, deadline: string) {
     const row = (await this.list()).find((r) => r.profileId === profileId)
     if (!row) throw new AuthError('nothing_missing', 'لم يبق على هذا المدرب شيء', 404)
-    const mail = prepReminderMail({ name: row.name, items: row.items, deadlineAr: deadlineAr(deadline), portalUrl: `${publicSiteUrl()}/trainer/qualifications` })
-    return { to: row.email, subject: mail.subject, text: renderMail(mail.doc).text, row }
+    const mail = prepReminderMail({ name: row.name, facts: row.facts, deadlineAr: deadlineAr(deadline), siteUrl: publicSiteUrl() })
+    return { to: row.email, subject: mail.subject, text: renderMail(mail.doc).text, mail, row }
   }
 
   async send(actorId: string, profileId: string, deadline: string) {
     const p = await this.preview(profileId, deadline)
-    const mail = prepReminderMail({ name: p.row.name, items: p.row.items, deadlineAr: deadlineAr(deadline), portalUrl: `${publicSiteUrl()}/trainer/qualifications` })
-    const res = await sendDirectEmail(this.prisma, { to: p.to, subject: mail.subject, ...renderMail(mail.doc) })
+    const res = await sendDirectEmail(this.prisma, { to: p.to, subject: p.mail.subject, ...renderMail(p.mail.doc) })
     await recordAudit(this.prisma, {
       actorId, action: 'trainer.prep.reminder', entityType: 'trainer_profile', entityId: profileId,
-      meta: { deadline, items: p.row.items.length, status: res.status },
+      meta: { deadline, started: p.row.started, tasks: reminderTasks(p.row.facts).length, status: res.status },
     })
     return { sent: res.status, to: p.to }
   }
