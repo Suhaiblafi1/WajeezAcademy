@@ -54,18 +54,18 @@ export default function GrantPathways({ percentOff, maxCourses }: { percentOff: 
       const body = { titleAr: d.titleAr, blurbAr: d.blurbAr || null, courseIds: d.courseIds, active: d.active };
       if (d.id) await apiPut(`/api/admin/member-grant/pathways/${d.id}`, body);
       else await apiPost("/api/admin/member-grant/pathways", body);
-      toast("حفظ المسار");
+      toast("حفظ الاقتراح");
       setDraft(null);
       await load();
-    } catch (e) { toastError(e instanceof ApiError ? e.message : "تعذر حفظ المسار"); }
+    } catch (e) { toastError(e instanceof ApiError ? e.message : "تعذر حفظ الاقتراح"); }
     finally { setBusy(false); }
   };
 
   const remove = async () => {
     if (!removing) return;
     setBusy(true);
-    try { await apiDelete(`/api/admin/member-grant/pathways/${removing.id}`); toast("حذف المسار"); setRemoving(null); await load(); }
-    catch (e) { toastError(e instanceof ApiError ? e.message : "تعذر حذف المسار"); }
+    try { await apiDelete(`/api/admin/member-grant/pathways/${removing.id}`); toast("حذف الاقتراح"); setRemoving(null); await load(); }
+    catch (e) { toastError(e instanceof ApiError ? e.message : "تعذر حذف الاقتراح"); }
     finally { setBusy(false); }
   };
 
@@ -84,17 +84,17 @@ export default function GrantPathways({ percentOff, maxCourses }: { percentOff: 
   return (
     <>
       <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-black">مسارات المنحة</h2>
-        {!draft && <Button size="sm" onClick={() => setDraft({ id: null, titleAr: "", blurbAr: "", courseIds: [], active: true })}>مسار جديد</Button>}
+        <h2 className="text-lg font-black">اقتراحات المنحة</h2>
+        {!draft && <Button size="sm" onClick={() => setDraft({ id: null, titleAr: "", blurbAr: "", courseIds: [], active: true })}>اقتراح جديد</Button>}
       </div>
       <p className="mt-1 text-read text-muted-foreground">
-        يختار منها من يعبئ النموذج. كل مسار حتى {maxCourses} دورات لها شعب مفتوحة.
+        مجموعات دورات تقترحها على من يعبئ النموذج. يضغط أحدها فتختار دوراته، ثم يعدل كما يشاء. كل اقتراح حتى {maxCourses} دورات.
       </p>
 
       {draft && (
         <Card className="mt-3 space-y-3">
           <div className="flex flex-wrap gap-3">
-            <label className="grid flex-1 gap-1 text-read">اسم المسار
+            <label className="grid flex-1 gap-1 text-read">اسم الاقتراح
               <input value={draft.titleAr} onChange={(e) => setDraft({ ...draft, titleAr: e.target.value })} className={staffControlCls} />
             </label>
             <label className="grid flex-[2] gap-1 text-read">لمن يناسب
@@ -124,14 +124,14 @@ export default function GrantPathways({ percentOff, maxCourses }: { percentOff: 
             يظهر لمن يعبئ النموذج
           </label>
           <div className="flex gap-2">
-            <Button size="sm" disabled={busy || draft.titleAr.trim().length < 3 || draft.courseIds.length === 0} onClick={() => void save(draft)}>احفظ المسار</Button>
+            <Button size="sm" disabled={busy || draft.titleAr.trim().length < 3 || draft.courseIds.length === 0} onClick={() => void save(draft)}>احفظ الاقتراح</Button>
             <Button size="sm" tone="ghost" disabled={busy} onClick={() => setDraft(null)}>تراجع</Button>
           </div>
         </Card>
       )}
 
       {list === null ? null : list.length === 0 ? (
-        <Card as="p" className="mt-3 text-read text-muted-foreground">لا مسار بعد.</Card>
+        <Card as="p" className="mt-3 text-read text-muted-foreground">لا اقتراح بعد. من يعبئ النموذج يختار من كل الدورات المتاحة.</Card>
       ) : (
         <div className="mt-3 space-y-3">
           {list.map((p) => (
@@ -174,7 +174,7 @@ export default function GrantPathways({ percentOff, maxCourses }: { percentOff: 
 
       {removing && (
         <ConfirmAction
-          titleAr="حذف مسار منحة" confirmLabelAr="احذف المسار" busy={busy}
+          titleAr="حذف اقتراح" confirmLabelAr="احذف الاقتراح" busy={busy}
           onCancel={() => setRemoving(null)} onConfirm={() => void remove()}
         >
           يختفي «{removing.titleAr}» من صفحة الحملة. ومن اشترى به يبقى شراؤه كما هو. وإن أردت إخفاءه فقط، عدله وألغ «يظهر لمن يعبئ النموذج».

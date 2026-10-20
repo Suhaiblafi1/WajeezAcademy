@@ -166,11 +166,11 @@ export class GrantPathwayService {
   async save(id: string | null, input: GrantPathwayInput, actorId: string) {
     const c = await this.grants.campaign()
     const titleAr = input.titleAr.trim()
-    if (titleAr.length < 3) throw new AuthError('bad_title', 'اكتب اسما للمسار', 400)
+    if (titleAr.length < 3) throw new AuthError('bad_title', 'اكتب اسما للاقتراح', 400)
     const courseIds = [...new Set(input.courseIds)]
     if (courseIds.length === 0) throw new AuthError('no_courses', 'اختر دورة واحدة على الأقل', 400)
     if (courseIds.length > c.maxCourses) {
-      throw new AuthError('too_many', `المسار ${c.maxCourses} دورات بحد أقصى، مثل حد المنحة`, 400)
+      throw new AuthError('too_many', `الاقتراح ${c.maxCourses} دورات بحد أقصى، مثل حد المنحة`, 400)
     }
     const buy = await this.buyable(courseIds)
     const closed = courseIds.filter((x) => !buy.has(x))
