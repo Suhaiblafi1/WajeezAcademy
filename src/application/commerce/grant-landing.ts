@@ -33,3 +33,7 @@ export function campaignParams(search: string): { channel: string | null; wave: 
 
 /** ما توفّره المنحةُ على مسار — يُقال للزائر بالمال لا بالنسبة: «تدفع كذا، ووجيز تتحمّل كذا» */
 export const grantSavingAr = (pay: string, covers: string) => `تدفع ${pay} فقط، ووجيز تتحمل ${covers}`
+
+/** رسالةُ متابعة من عبّأ النموذج ولم يشترِ — تُفتح في واتساب جاهزةً ويرسلها فريقُ الأكاديميّة */
+export const grantFollowupAr = (name: string) =>
+  `مرحبا ${name}، معك أكاديمية وجيز. أخذت كود منحة أعضاء وجيز، هل تحتاج مساعدة في اختيار مسارك؟`

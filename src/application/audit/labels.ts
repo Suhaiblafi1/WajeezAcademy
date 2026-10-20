@@ -166,6 +166,7 @@ const PHRASES: Record<string, string> = {
   'coupon.grant_pathway_save': 'حفظ مسار منحة',
   'coupon.grant_pathway_remove': 'حذف مسار منحة',
   'coupon.grant_apply': 'تعبئة زائر نموذج منحة أعضاء وجيز',
+  'advisor.case.grant_followup': 'فتح حالة متابعة لمن عبأ نموذج المنحة ولم يشتر',
   'advisor.bank.set': 'كتابة المستشار حسابه البنكي أو تبديله',
   'advisor.bank.remove': 'إلغاء المستشار حسابه البنكي',
   'advisor.bank.reveal': 'كشف رقم حساب مستشار لصرف كشف عمولته',
@@ -516,6 +517,7 @@ const PHRASES: Record<string, string> = {
   'worker.advisor_reminders': 'تذكير المستشارين بحالات بلا تواصل ومتابعات حلّ موعدها',
   'worker.erase_idle_guests': 'محو بيانات من لم يسجل بعد ستة أشهر بلا نشاط',
   'worker.advisor_payouts': 'توليد كشوف عمولة المستشارين للشهر الذي انتهى',
+  'worker.grant_followup': 'متابعة من عبأ نموذج المنحة ولم يشتر — حالة عند مستشار بعد يومين',
   'worker.cohort_corrections': 'تصحيح مواعيد شعب بقرار صاحب المنصة',
 }
 
