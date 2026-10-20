@@ -127,6 +127,27 @@ export default function Terms() {
       "سمّي فصل الشعبة — وفتحت نافذة جدولة مدرّبها");
   };
 
+  /* ═══ وحذفُ ما لا مدرّبَ له (٢٠ أكتوبر ٢٠٢٦) ═══
+     «لماذا ما زالت هنا! احذفها» (صاحب المنصّة). بضغطتين كحذف الموسم، والخادمُ يحذف ما لا متعلّمَ
+     فيه ويقول لما بقي سببَه (`trainerless-cohort-delete.service.ts`). */
+  const [confirmCohortDelete, setConfirmCohortDelete] = useState<string | null>(null);
+  const deleteTrainerless = async (ids: string[], key: string) => {
+    if (busy || ids.length === 0) return;
+    setBusy(key);
+    try {
+      const r = await apiPost<{ deleted: { id: string }[]; kept: { title: string; reasonAr: string }[] }>(
+        "/api/admin/cohorts/delete-trainerless", { cohortIds: ids });
+      if (r.deleted.length > 0) toast(`حذفت ${r.deleted.length} شعبة بلا مدرب`);
+      if (r.kept.length > 0) toastError(r.kept.map((k) => `${k.title}: ${k.reasonAr}`).join(" · "));
+      setConfirmCohortDelete(null);
+      await load();
+    } catch (e) {
+      toastError(e instanceof ApiError ? e.message : "تعذر الحذف");
+    } finally {
+      setBusy(null);
+    }
+  };
+
   /* بطاقةُ شعبةٍ بلا فصل — في «تحتاجك» بسببها، وفي المطويّ بحال خطّتها */
   const termlessCard = (c: TermlessCohort, line: string | null) => (
     <Card as="li" key={c.id}>
@@ -165,6 +186,14 @@ export default function Terms() {
           >
             سمّ الفصل
           </Button>
+          {c.trainers.length === 0 && (
+            confirmCohortDelete === c.id
+              ? <span className="inline-flex items-center gap-2">
+                  <Button tone="danger" disabled={busy !== null} onClick={() => void deleteTrainerless([c.id], `del-${c.id}`)}>أكّد الحذف — لا رجعة</Button>
+                  <Button tone="ghost" disabled={busy !== null} onClick={() => setConfirmCohortDelete(null)}>تراجع</Button>
+                </span>
+              : <Button tone="ghost" icon={Trash2} disabled={busy !== null} onClick={() => setConfirmCohortDelete(c.id)}>احذفها</Button>
+          )}
         </div>
       </div>
     </Card>
@@ -357,6 +386,20 @@ export default function Terms() {
             لا يعرف النظام موسم هذه الشعب. اختر فصلها.
             {terms !== null && terms.length === 0 && " أنشئ موسما أوّلا."}
           </p>
+          {(() => {
+            const orphan = termless.filter((c) => c.kind === "needs" && c.trainers.length === 0).map((c) => c.id);
+            if (orphan.length < 2) return null;
+            return (
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                {confirmCohortDelete === "all"
+                  ? <>
+                      <Button tone="danger" disabled={busy !== null} onClick={() => void deleteTrainerless(orphan, "del-all")}>أكّد حذف {orphan.length} شعبة — لا رجعة</Button>
+                      <Button tone="ghost" disabled={busy !== null} onClick={() => setConfirmCohortDelete(null)}>تراجع</Button>
+                    </>
+                  : <Button tone="danger" icon={Trash2} disabled={busy !== null} onClick={() => setConfirmCohortDelete("all")}>احذف كل الشعب بلا مدرب ({orphan.length})</Button>}
+              </div>
+            );
+          })()}
           <ul className="mt-4 space-y-3">
             {termless.filter((c) => c.kind === "needs").map((c) => termlessCard(c, c.whyAr))}
           </ul>

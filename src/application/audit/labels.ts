@@ -53,6 +53,7 @@ const PHRASES: Record<string, string> = {
   'order.cancel': 'إلغاء طلب شراء',
   'order.settle_partial': 'تسوية جزئيّة لطلب',
   'cohort.create': 'إنشاء شعبة',
+  'cohort.delete_trainerless': 'حذف شعبة بلا مدرّب ولا متعلّم',
   'cohort.update': 'تعديل شعبة',
   'cohort.duplicate': 'تكرار شعبة',
   'cohort.publish': 'فتح شعبة للتسجيل',
