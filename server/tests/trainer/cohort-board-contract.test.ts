@@ -33,6 +33,7 @@ let trainerUserId = ''
 let cohortId = ''
 let assessmentId = ''
 let submissionId = ''
+let profileId = ''
 
 beforeAll(async () => {
   await setupTestDb()
@@ -53,6 +54,7 @@ beforeAll(async () => {
   const profile = await prisma.trainerProfile.create({
     data: { applicationId: application.id, userId: trainerUserId, isVerified: true },
   })
+  profileId = profile.id
 
   const cohort = await prisma.cohort.create({
     data: { courseId: 'C-BIZ-101', title: 'شعبةُ اللوح', status: 'active', capacity: 10 },
@@ -113,5 +115,20 @@ describe('والدرجةُ بعد المراجعة لا قبلها', () => {
     await assessments.reviewSubmission(trainerUserId, submissionId, 'start_review')
     const g = await assessments.grade(trainerUserId, { submissionId, score: 90, maxScore: 100 })
     expect(Number(g.score)).toBe(90)
+  })
+})
+
+/* ═══ والملغاةُ ليست من شعبه على الرئيسيّة (٢٠ أكتوبر ٢٠٢٦) ═══
+   كانت `trainerCohorts` تحملها: التحيّةُ تعدّها، و«ما عليك الآن» يطلب تصحيحَ مهامّها، و«متعلّمون يحتاجونك» يعدّ
+   متعلّميها. وتُفتح وحدَها ولو أُلغيت — رابطٌ قديمٌ إليها لا يُردّ بـ«ليست مسندة إليك».
+   ورُئي ساقطا: أُسقط شرطُ الملغاة فسقط الأوّل، وأُسقط `withCancelled` من الواحدة فسقط الثاني. */
+describe('والملغاة ليست من شعبه', () => {
+  it('⚠️ لا تصل قائمة شعبه — وتفتح وحدها', async () => {
+    const gone = await prisma.cohort.create({ data: { courseId: 'C-BIZ-101', title: 'شعبة ألغيت', status: 'cancelled', capacity: 10 } })
+    await prisma.cohortTrainer.create({ data: { cohortId: gone.id, profileId, role: 'lead' } })
+    const rows = await enrollments.trainerCohorts(trainerUserId)
+    expect(rows.map((r) => r.cohort.id), 'وصلت الملغاة قائمة شعبه').not.toContain(gone.id)
+    expect(rows.map((r) => r.cohort.id)).toContain(cohortId)
+    expect((await enrollments.trainerCohort(trainerUserId, gone.id)).cohort.id).toBe(gone.id)
   })
 })

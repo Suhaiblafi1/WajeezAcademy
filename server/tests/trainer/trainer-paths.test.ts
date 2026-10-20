@@ -137,6 +137,22 @@ describe('ن · مسارُ المدرّب على قاعدةٍ حقيقيّة', (
     await expect(paths.submit(t.userId, p.id)).rejects.toMatchObject({ status: 400 })
   })
 
+  /* ٢٠ أكتوبر ٢٠٢٦: كان كلُّ صفّ تأهيلٍ يُعدّ من دوراته — المعلّقُ والمرفوضُ كالمعتمَد. ورُئي ساقطا: أُسقط شرطُ
+     `qualified` من `context` فبُنيت الدورةُ المعلّقةُ في مسارٍ وأُرسل */
+  it('⚠️ ن-١ب · والمعلّقة والمرفوضة ليستا من دوراته — لا تُعرضان ولا يُرسل مسار بهما', async () => {
+    const t = await trainer('path-pending@test.local', 'رنا المدرّبة', ['C-PATH-1'], true)
+    await prisma.trainerCourseQualification.create({ data: { profileId: t.profileId, courseId: 'C-PATH-2', status: 'pending' } })
+    await prisma.trainerCourseQualification.create({ data: { profileId: t.profileId, courseId: 'C-PATH-3', status: 'rejected' } })
+    const mine = (await paths.myCourses(t.userId)).map((c) => c.courseId)
+    expect(mine).toContain('C-PATH-1')
+    expect(mine, 'عرضت المعلّقة أو المرفوضة من دوراته').not.toEqual(expect.arrayContaining(['C-PATH-2']))
+    expect(mine).not.toContain('C-PATH-3')
+    const p = await paths.create(t.userId, {
+      titleAr: 'مسار فيه دورة لم تعتمد له', termId, courseIds: ['C-PATH-1', 'C-PATH-2'],
+    })
+    await expect(paths.submit(t.userId, p.id)).rejects.toMatchObject({ status: 400 })
+  })
+
   /* ═══ وهذا بيتُ القصيد في ن-٤ ═══ */
   it('ن-٤ · والإيقافُ يُخرجه من الرفّ ولا يمسّ صفَّه ولا موسمَه', async () => {
     const t = await trainer('path-susp@test.local', 'فادي المدرّب', ['C-PATH-1', 'C-PATH-2'], true)

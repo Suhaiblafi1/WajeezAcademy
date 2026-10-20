@@ -155,10 +155,19 @@ export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: Co
           ) : (
             <Button tone="primary" disabled={busy || !picked || picked.qualification === "pending"}
               onClick={() => act(
-                () => apiPost(`/api/admin/cohorts/${cohort.id}/qualification-requests`, {
-                  profileId: assignForm.profileId, courseId: cohort.courseId,
-                }).then(loadTrainers),
-                "رفع طلب التأهيل — الموافقة تؤهّله وتسنده معا",
+                async () => {
+                  const r = await apiPost<{ instant?: boolean; assigned?: boolean; assignNote?: string | null }>(`/api/admin/cohorts/${cohort.id}/qualification-requests`, {
+                    profileId: assignForm.profileId, courseId: cohort.courseId,
+                  });
+                  await loadTrainers();
+                  return r;
+                },
+                /* ومن يملك القرارَ يقع طلبُه لحظتَه (٢٠ أكتوبر ٢٠٢٦) — والإسنادُ الساقطُ يُقال لا يُبتلع */
+                (r) => {
+                  const out = r as { instant?: boolean; assigned?: boolean; assignNote?: string | null } | null;
+                  if (!out?.instant) return "رفع طلب التأهيل — الموافقة تؤهّله وتسنده معا";
+                  return out.assigned ? "أهّله وأسنده للشعبة" : `أهّله ولم يسند: ${out.assignNote ?? "تعذّر الإسناد"}`;
+                },
               )}>
               أهّله وأسنده الآن
             </Button>
@@ -173,7 +182,7 @@ export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: Co
                 ? (canQualify ? "له طلب تأهيل لهذه الدورة — أهّله فيسند، أو ارفضه مع ذكر السبب." : "له طلب تأهيل لهذه الدورة — بانتظار صاحب الصلاحية.")
                 : picked.qualification === "rejected"
                   ? "رفض تأهيله لهذه الدورة سابقا. يمكنك رفع طلب جديد."
-                  : (canQualify ? "غير مؤهّل لهذه الدورة — الطلب يصلك، وموافقتك تؤهّله وتسنده معا." : "غير مؤهّل لهذه الدورة — الطلب يذهب لصاحب الصلاحية، وموافقته تؤهّله وتسنده معا.")}
+                  : (canQualify ? "غير مؤهّل لهذه الدورة — يؤهّل ويسند الآن بعد فحص تعارض جدوله." : "غير مؤهّل لهذه الدورة — الطلب يذهب لصاحب الصلاحية، وموافقته تؤهّله وتسنده معا.")}
           </p>
         )}
         {/* القرارُ في موضعه: من يملك الصلاحيّةَ لا يُحال إلى شاشةٍ أخرى ولا ينتظر أحدا */}

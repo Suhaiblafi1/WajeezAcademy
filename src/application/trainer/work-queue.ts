@@ -14,6 +14,7 @@ export type QueueKind =
   | 'not_submitted'        /* تقييم استحق ولم يسلّم فيه أحد */
   | 'session_rejected'     /* لقاءٌ ردّته الإدارةُ — ينتظر نقلَ موعده */
   | 'plan_returned'        /* خطّةُ شعبةٍ رُدَّت إليه بملاحظة */
+  | 'plan_postponed'       /* خطّةٌ أُجّلت إلى موسمٍ قادم — تُعدَّل متى شاء */
   | 'plan_ready_unsent'    /* تجهيزٌ اكتمل ولم يُرسَل للاعتماد */
   | 'plan_incomplete'      /* تجهيزٌ لم يكتمل — والخطوةُ التالية باسمها */
   | 'offer_pending'        /* عرضُ إسنادٍ ينتظر جوابَه، ومهلتُه تجري */
@@ -248,6 +249,22 @@ export function buildWorkQueue(
   for (const p of summaries) {
     const where = `/trainer/cohort/${p.id}`
     const courseAr = (p.courseTitle ?? '').trim()
+    /* ═══ والمؤجَّلةُ مؤجَّلةٌ لا مردودة (٢٠ أكتوبر ٢٠٢٦) ═══
+       التأجيلُ يكتب `changes_requested` ومعه موسمُه (`postpone`)، فكانت تُقرأ «ردّت إليك — أعد الإرسال» في رأس
+       الطابور. وقرارُ ١٨ أكتوبر: تُرى مؤجَّلة. فبندُها آخرُ الطابور، بسطر «التالي» نفسِه (`boardNextStep`) */
+    if (p.planStatus === 'changes_requested' && p.next?.key === 'postponed') {
+      items.push({
+        kind: 'plan_postponed',
+        titleAr: `«${p.title}» مؤجّلة`,
+        detailAr: courseAr ? `${courseAr} · ${p.next.labelAr}` : p.next.labelAr,
+        actionAr: 'افتحها',
+        href: where,
+        external: false,
+        urgency: 50,
+        count: 1,
+      })
+      continue
+    }
     if (p.planStatus === 'changes_requested') {
       items.push({
         kind: 'plan_returned',

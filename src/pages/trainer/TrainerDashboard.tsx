@@ -170,8 +170,9 @@ function RealTrainerHome({ name, email }: { name: string; email: string }) {
           `pages/trainer/Referral.tsx`. فنُقل ولم يُكرَّر: نسختان منه تفترقان
           يوما، ويُقرأ الرقمُ فيهما مختلفا. */}
 
-      {/* ف-١ · طابورُ العمل — وصار يحمل التجهيزَ والردَّ كذلك، فلا عملَ خارجَه */}
-      {(cohorts.length > 0 || summary.length > 0) && <TrainerWorkQueue items={work} className="mb-6" />}
+      {/* ف-١ · طابورُ العمل — وصار يحمل التجهيزَ والردَّ كذلك، فلا عملَ خارجَه. ويُعرض حين فيه بندٌ ولو بلا شعبة
+          (٢٠ أكتوبر ٢٠٢٦): عرضٌ ينتظر جوابَه ومهلتُه تنقضي كان لا يُرى، والسطرُ فوقه «لم تسند إليك شعب بعد» */}
+      {(cohorts.length > 0 || summary.length > 0 || work.length > 0) && <TrainerWorkQueue items={work} className="mb-6" />}
 
       {/* ف-٢ · من يحتاج تدخلك — أهم معلومة عند المدرب ولم تكن معروضة */}
       {cohorts.length > 0 && <AtRiskList learners={atRisk} className="mb-6" />}

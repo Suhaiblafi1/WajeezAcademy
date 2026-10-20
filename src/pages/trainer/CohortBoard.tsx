@@ -51,6 +51,7 @@ const PLAN_AR: Record<string, { label: string; tone: "default" | "accent" | "pos
   published: { label: "منشورة", tone: "positive" },
   superseded: { label: "نسخة قديمة", tone: "default" },
 };
+const PLAN_POSTPONED = { label: "مؤجّلة", tone: "default" } as const;
 
 export default function CohortBoard() {
   const [rows, setRows] = useState<CohortSummary[]>([]);
@@ -95,7 +96,8 @@ export default function CohortBoard() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
           {rows.map((c) => {
-            const st = PLAN_AR[c.planStatus] ?? PLAN_AR.draft;
+            /* والمؤجَّلةُ تُرى مؤجَّلةً لا «طلبت تعديلات» (٢٠ أكتوبر ٢٠٢٦) — التأجيلُ يكتب `changes_requested` */
+            const st = c.next?.key === "postponed" ? PLAN_POSTPONED : PLAN_AR[c.planStatus] ?? PLAN_AR.draft;
             const ready = c.total > 0 ? Math.round((c.done / c.total) * 100) : 0;
             const start = boardStart(c);
             const ordinalNote = trainerOrdinalNoteAr(c.title, c.trainerOrdinal);

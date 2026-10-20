@@ -18,7 +18,7 @@ import {
 import { cohortDayAr } from "@/application/learning/cohort-gate";
 import type { TrainingSeason } from "@/application/trainer/application-options";
 
-export interface MoveRequestRow { id: string; cohortId: string; status: string; toYear: number; toSeason: string }
+export interface MoveRequestRow { id: string; cohortId: string; status: string; toYear: number; toSeason: string; mine?: boolean }
 
 export default function CohortMoveBox({ cohortId, status, startsAt, proposedStartsOn = null, pending, onChange }: {
   cohortId: string;
@@ -68,12 +68,15 @@ export default function CohortMoveBox({ cohortId, status, startsAt, proposedStar
       <Inset tone="warn" className="mt-3 px-3 py-2 text-read leading-6">
         <p className="flex items-center gap-2">
           <CalendarClock className="h-4 w-4 shrink-0 text-gold-ink" aria-hidden="true" />
-          <span>طلبت نقلها إلى <b>{to}</b> — ينتظر موافقة الإدارة.</span>
+          <span>{pending.mine === false ? "طلب شريكك نقلها إلى " : "طلبت نقلها إلى "}<b>{to}</b> — ينتظر موافقة الإدارة.</span>
         </p>
-        <Button tone="ghost" size="sm" type="button" disabled={busy} className="mt-1 px-0"
-          onClick={() => void run(() => apiPost(`/api/trainer/cohort-moves/${pending.id}/withdraw`))}>
-          اسحب الطلب
-        </Button>
+        {/* والسحبُ لطالبه وحدَه (٢٠ أكتوبر ٢٠٢٦) */}
+        {pending.mine !== false && (
+          <Button tone="ghost" size="sm" type="button" disabled={busy} className="mt-1 px-0"
+            onClick={() => void run(() => apiPost(`/api/trainer/cohort-moves/${pending.id}/withdraw`))}>
+            اسحب الطلب
+          </Button>
+        )}
         {err && <p role="alert" className="text-danger-ink">{err}</p>}
       </Inset>
     );

@@ -18,10 +18,14 @@
      ٥. دورةُ إعدادٍ اعتذر عنها ← اعتذرتَ.
      ٦. وما أُهِّل له ولا شيءَ ممّا سبق ← «معتمدة لك».
 
+   ═══ وطلبُ التأهيل يُقرأ ولا يُقرَّر فيه (٢٠ أكتوبر ٢٠٢٦) ═══
+   طلبه من يجدول شعبةً، وقرارُه للإدارة — فحالُه «بانتظار قرار الإدارة» بعد ما يعدّه (٢)، بلا زرّ. وكان يُرى
+   «تنتظر قرارك»، وقبولُه يُنشئ شعبةً ثانيةً غيرَ المطلوبة.
+
    ولا أصلَ اقتراحٍ يُقال (قرارُ ٣ أكتوبر ٢٠٢٦: «لا تُرِ المدرّبَ ما لا يحتاج قراءتَه»): الدورةُ
    دورتُه، اقترحها أم اخترناها له. */
 
-export type MyCourseState = "decide" | "returned" | "preparing" | "submitted" | "teaching" | "ready" | "taught" | "closed";
+export type MyCourseState = "decide" | "returned" | "preparing" | "submitted" | "postponed" | "requested" | "teaching" | "ready" | "taught" | "closed";
 
 export type MyCourseTone = "warn" | "info" | "positive" | "neutral" | "danger";
 
@@ -31,6 +35,9 @@ export const MY_COURSE_STATE: Record<MyCourseState, { label: string; tone: MyCou
   returned: { label: "ردّت بملاحظات", tone: "warn" },
   preparing: { label: "تعدّها في «شعبي»", tone: "info" },
   submitted: { label: "أرسلت — تنتظر اعتمادنا", tone: "info" },
+  /* والمؤجَّلةُ مؤجَّلةٌ لا «ردّت بملاحظات» (٢٠ أكتوبر ٢٠٢٦) — التأجيلُ يكتب `changes_requested` ومعه موسمُه */
+  postponed: { label: "مؤجّلة إلى موسم قادم", tone: "neutral" },
+  requested: { label: "بانتظار قرار الإدارة", tone: "info" },
   teaching: { label: "تدرّسها", tone: "positive" },
   ready: { label: "معتمدة لك", tone: "positive" },
   taught: { label: "درّستها", tone: "neutral" },
@@ -39,7 +46,7 @@ export const MY_COURSE_STATE: Record<MyCourseState, { label: string; tone: MyCou
 
 /** ترتيبُ الصفوف: ما ينتظره أوّلا، ثمّ ما يعدّه، ثمّ ما يدرّسه، والسابقةُ آخرا */
 const ORDER: Record<MyCourseState, number> = {
-  decide: 0, returned: 1, preparing: 2, submitted: 3, teaching: 4, ready: 5, taught: 6, closed: 7,
+  decide: 0, returned: 1, preparing: 2, submitted: 3, postponed: 4, requested: 5, teaching: 6, ready: 7, taught: 8, closed: 9,
 };
 
 export type MyCourseFilter = "all" | "waiting" | "preparing" | "teaching" | "closed";
@@ -47,7 +54,7 @@ export type MyCourseFilter = "all" | "waiting" | "preparing" | "teaching" | "clo
 export const MY_COURSE_FILTERS: { id: MyCourseFilter; label: string; states: MyCourseState[] }[] = [
   { id: "all", label: "الكل", states: [] },
   { id: "waiting", label: "تنتظرك", states: ["decide", "returned"] },
-  { id: "preparing", label: "تعدّها", states: ["preparing", "submitted"] },
+  { id: "preparing", label: "تعدّها", states: ["preparing", "submitted", "postponed"] },
   { id: "teaching", label: "تدرّسها", states: ["teaching", "ready", "taught"] },
   { id: "closed", label: "سابقة", states: ["closed"] },
 ];
@@ -68,6 +75,15 @@ export interface MyCoursePrep {
   titleAr: string;
   state: "to_decide" | "preparing" | "submitted" | "returned" | "approved" | "declined";
   cohortId: string | null;
+  /** موسمُ التأجيل — والمؤجَّلةُ «مؤجّلة» لا «ردّت» */
+  postponedTo?: string | null;
+}
+
+/** طلبُ تأهيلٍ بشعبته ينتظر قرار الإدارة (`/api/trainer/qualification-requests`) */
+export interface MyCourseRequest {
+  courseId: string;
+  titleAr: string;
+  cohortTitle: string | null;
 }
 
 /** شعبتُه كما تقرؤها «شعبي» (`/api/trainer/cohorts/summary`) — وما يلزم منها هنا */
@@ -78,6 +94,8 @@ export interface MyCourseCohort {
   courseTitle: string;
   status: string;
   planStatus: string;
+  /** «التالي» كما تقرؤه «شعبي» — ومنه `postponed` */
+  next?: { key: string } | null;
 }
 
 export interface MyCourse<O extends MyCourseOffer = MyCourseOffer, P extends MyCoursePrep = MyCoursePrep> {
@@ -96,12 +114,15 @@ export interface MyCourse<O extends MyCourseOffer = MyCourseOffer, P extends MyC
   prep: P | null;
   /** شعبُه فيها غيرُ الملغاة — تُفتح من الصفّ */
   cohorts: MyCourseCohort[];
+  /** طلبُ تأهيلٍ ينتظر قرار الإدارة — يُقرأ ولا يُقرَّر فيه */
+  request: MyCourseRequest | null;
 }
 
 const LIVE_COHORT = new Set(["open", "full", "active"]);
 const APPROVED_PLAN = new Set(["approved", "published"]);
 
-function fromPrep(s: Exclude<MyCoursePrep["state"], "declined">): MyCourseState {
+function fromPrep(s: Exclude<MyCoursePrep["state"], "declined">, postponed = false): MyCourseState {
+  if (postponed) return "postponed";
   if (s === "to_decide") return "decide";
   if (s === "approved") return "teaching";
   return s;
@@ -111,8 +132,10 @@ function fromPrep(s: Exclude<MyCoursePrep["state"], "declined">): MyCourseState 
 function fromCohorts(cs: MyCourseCohort[]): MyCourseState | null {
   if (cs.length === 0) return null;
   if (cs.some((c) => LIVE_COHORT.has(c.status) || (c.status === "draft" && APPROVED_PLAN.has(c.planStatus)))) return "teaching";
-  if (cs.some((c) => c.status === "draft" && c.planStatus === "changes_requested")) return "returned";
+  const postponed = (c: MyCourseCohort) => c.next?.key === "postponed";
+  if (cs.some((c) => c.status === "draft" && c.planStatus === "changes_requested" && !postponed(c))) return "returned";
   if (cs.some((c) => c.status === "draft" && c.planStatus === "submitted")) return "submitted";
+  if (cs.some((c) => c.status === "draft" && postponed(c))) return "postponed";
   if (cs.some((c) => c.status === "draft")) return "preparing";
   return "taught";
 }
@@ -128,12 +151,13 @@ export function buildMyCourses<O extends MyCourseOffer, P extends MyCoursePrep>(
   offers: O[];
   prep: P[];
   cohorts: MyCourseCohort[];
+  requests?: MyCourseRequest[];
   now: number;
 }): MyCourse<O, P>[] {
-  const { quals, offers, prep, cohorts, now } = input;
-  const byCourse = new Map<string, { title: string; qual: MyCourseQual | null; offers: O[]; prep: P | null; cohorts: MyCourseCohort[] }>();
+  const { quals, offers, prep, cohorts, now, requests = [] } = input;
+  const byCourse = new Map<string, { title: string; qual: MyCourseQual | null; offers: O[]; prep: P | null; cohorts: MyCourseCohort[]; request: MyCourseRequest | null }>();
   const touch = (courseId: string, title: string) => {
-    const r = byCourse.get(courseId) ?? { title: "", qual: null, offers: [], prep: null, cohorts: [] };
+    const r = byCourse.get(courseId) ?? { title: "", qual: null, offers: [], prep: null, cohorts: [], request: null };
     if (!r.title && title) r.title = title;
     byCourse.set(courseId, r);
     return r;
@@ -142,6 +166,7 @@ export function buildMyCourses<O extends MyCourseOffer, P extends MyCoursePrep>(
   for (const o of offers) touch(o.courseId, o.courseTitleAr).offers.push(o);
   for (const c of cohorts) if (c.status !== "cancelled") touch(c.courseId, c.courseTitle).cohorts.push(c);
   for (const q of quals) touch(q.courseId, q.title).qual = q;
+  for (const x of requests) touch(x.courseId, x.titleAr).request = x;
 
   const out: MyCourse<O, P>[] = [];
   for (const [courseId, r] of byCourse) {
@@ -154,7 +179,8 @@ export function buildMyCourses<O extends MyCourseOffer, P extends MyCoursePrep>(
     let state: MyCourseState;
     let labelAr: string | null = null;
     if (openOffer) state = "decide";
-    else if (livePrep && livePrep.state !== "declined") state = fromPrep(livePrep.state);
+    else if (livePrep && livePrep.state !== "declined") state = fromPrep(livePrep.state, Boolean(livePrep.postponedTo));
+    else if (r.request) state = "requested";
     else if (fromCohort) state = fromCohort;
     else if (lead && lead.status === "accepted") state = "teaching";
     else if (lead) { state = "closed"; labelAr = closedOfOffer(lead.status === "offered" ? "lapsed" : lead.status); }
@@ -165,7 +191,7 @@ export function buildMyCourses<O extends MyCourseOffer, P extends MyCoursePrep>(
       courseId, title: r.title, state, labelAr: labelAr ?? MY_COURSE_STATE[state].label,
       /* وما سحبته الإدارةُ يُرى بلونه — ليس اعتذارا منه */
       tone: labelAr === "سحبت" ? "danger" : MY_COURSE_STATE[state].tone,
-      qual: r.qual, offers: r.offers, openOffer, prep: r.prep, cohorts: r.cohorts,
+      qual: r.qual, offers: r.offers, openOffer, prep: r.prep, cohorts: r.cohorts, request: r.request,
     });
   }
   return out.sort((a, b) => ORDER[a.state] - ORDER[b.state] || a.title.localeCompare(b.title, "ar"));

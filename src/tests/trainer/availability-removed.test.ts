@@ -99,6 +99,8 @@ describe('شاشة المؤهّلات — ما بقي منها', () => {
       '/api/trainer/offers/${open.id}/decline',
       /* ودوراتُ طور الإعداد منذ ٢ أكتوبر ٢٠٢٦ — بدلَ لوح الموادّ */
       '/api/trainer/prep',
+      /* وطلباتُ تأهيله بشعبتها منذ ٢٠ أكتوبر ٢٠٢٦ — تُقرأ ولا يُقرَّر فيها */
+      '/api/trainer/qualification-requests',
     ])
   })
 

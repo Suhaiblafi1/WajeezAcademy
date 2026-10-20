@@ -937,7 +937,8 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
      بوّابةُ نزاهة التأهيل تبقى قائمة: **من يطلب ليس من يقرّر**. فالطلبُ
      بصلاحية إدارة الشعب (`cohort.manage`) — وهي صلاحيةُ من يجدول ويُسند —
      والقرارُ بصلاحية التأهيل (`trainer.qualify`) وحدَها. ولو جاز للطالب أن
-     يقرّر لصارت الموافقةُ ختما لا مراجعة، وسقط معنى التأهيل كلُّه. */
+     يقرّر لصارت الموافقةُ ختما لا مراجعة، وسقط معنى التأهيل كلُّه.
+     إلّا من جمع الصلاحيّتين (المديرُ الأعلى): يُنفَذ طلبُه لحظتَه — قرارُ ٢٠ أكتوبر ٢٠٢٦ أدناه. */
   app.post('/api/admin/cohorts/:cohortId/qualification-requests', {
     preHandler: requirePermission('cohort.manage'),
     schema: { tags: ['admin-trainers'], summary: 'طلب تأهيل مدرّب لدورة هذه الشعبة — الموافقة تؤهّل وتسند معا' },
@@ -948,9 +949,15 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
       courseId: z.string(),
       note: z.string().trim().max(500).optional(),
     }).parse(req.body)
-    return reply.status(201).send(
-      await review.requestQualification(body.profileId, body.courseId, cohortId, req.auth!.userId, body.note),
-    )
+    const request = await review.requestQualification(body.profileId, body.courseId, cohortId, req.auth!.userId, body.note)
+    /* ═══ ومن يملك القرارَ يُنفَذ طلبُه لحظتَه (٢٠ أكتوبر ٢٠٢٦) ═══
+       قرارُ صاحب المنصّة: «Super admin: instant». كان طلبُه ينتظر في «طلبات التأهيل» حتّى يقرّه هو نفسُه، ويرى
+       المدرّبُ في أثنائه ما لا يخصّه. فمن له `trainer.qualify` يؤهّل ويسند في الفعل نفسِه. */
+    if (req.auth!.permissions.includes('trainer.qualify')) {
+      const decided = await review.decideQualification(request.id, true, req.auth!.userId, body.note)
+      return reply.status(201).send({ ...decided.qualification, instant: true, assigned: decided.assigned, assignNote: decided.assignNote })
+    }
+    return reply.status(201).send({ ...request, instant: false })
   })
 
   /* قائمةُ المدرّبين للتشغيل — بصلاحية التأهيل لا بصلاحية المستحقّات.

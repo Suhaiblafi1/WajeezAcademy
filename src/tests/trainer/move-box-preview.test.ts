@@ -54,3 +54,19 @@ describe('صندوق النقل حيث لا ينقل', () => {
     expect(box('cancelled')).toBe('')
   })
 })
+
+/* ٢٠ أكتوبر ٢٠٢٦: الطلبُ المعلّقُ يُرى لشريكه في الشعبة — والسحبُ لطالبه وحدَه (`CohortMoveService.mine`).
+   ورُئي ساقطا: أُعيد زرُّ السحب بلا شرط `mine` فسقط. */
+describe('طلب النقل المعلّق من الشريك', () => {
+  const pendingBox = (mine: boolean) => renderToStaticMarkup(createElement(CohortMoveBox, {
+    cohortId: 'c-1', status: 'draft', startsAt: null, onChange: () => undefined,
+    pending: { id: 'm-1', cohortId: 'c-1', status: 'pending', toYear: 2027, toSeason: 'feb_apr', mine },
+  }))
+
+  it('⚠️ يقال لمن الطلب — ولا زرّ سحب لغير طالبه', () => {
+    expect(pendingBox(true)).toContain('اسحب الطلب')
+    const partner = pendingBox(false)
+    expect(partner).toContain('طلب شريكك نقلها إلى')
+    expect(partner, 'زرّ سحب لا يملكه').not.toContain('اسحب الطلب')
+  })
+})

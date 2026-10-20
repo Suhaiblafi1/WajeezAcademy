@@ -118,11 +118,22 @@ export class CohortMoveService {
     return created
   }
 
-  /** طلباتُ المدرّب نفسِه — ليرى أين وقفت على بطاقة شعبته */
+  /** طلباتُ المدرّب نفسِه — ليرى أين وقفت على بطاقة شعبته.
+      ═══ والمعلّقُ على شعبةٍ يدرّس فيها يُرى ولو طلبه شريكُه (٢٠ أكتوبر ٢٠٢٦) ═══
+      كان المساعدُ لا يرى طلبَ الرئيس، فيرى «انقلها إلى فصل آخر» ويُردّ بـ«لهذه الشعبة طلب نقل ينتظر — اسحبه
+      أوّلا» وهو لا يراه ولا يملك سحبَه. فيُرى، و`mine` يقول هل يسحبه — السحبُ لطالبه وحدَه (`withdraw`). */
   async mine(userId: string) {
-    return this.prisma.cohortMoveRequest.findMany({
-      where: { requestedBy: userId }, orderBy: { createdAt: 'desc' }, take: 50,
+    const profile = await this.prisma.trainerProfile.findUnique({ where: { userId }, select: { id: true } })
+    const rows = await this.prisma.cohortMoveRequest.findMany({
+      where: {
+        OR: [
+          { requestedBy: userId },
+          ...(profile ? [{ status: 'pending', cohort: { trainers: { some: { profileId: profile.id } } } }] : []),
+        ],
+      },
+      orderBy: { createdAt: 'desc' }, take: 50,
     })
+    return rows.map((r) => ({ ...r, mine: r.requestedBy === userId }))
   }
 
   async withdraw(userId: string, id: string) {

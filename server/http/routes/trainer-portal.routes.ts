@@ -103,6 +103,12 @@ export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: Prisma
     schema: { tags: ['trainer-portal'], summary: 'دوراتي في طور الإعداد وحال كلّ: أقبلتها وأين شعبتها' },
   }, async (req) => prep.mine(req.auth!.userId))
 
+  /* طلباتُ تأهيله بشعبتها — تنتظر قرار الإدارة، فتُقرأ ولا يُقرَّر فيها (٢٠ أكتوبر ٢٠٢٦) */
+  app.get('/api/trainer/qualification-requests', {
+    preHandler: requirePermission('trainer.portal'),
+    schema: { tags: ['trainer-portal'], summary: 'طلبات تأهيلي التي تنتظر قرار الإدارة — للقراءة' },
+  }, async (req) => prep.requestsOf(req.auth!.userId))
+
   app.post('/api/trainer/prep/:courseId/accept', {
     preHandler: requirePermission('trainer.portal'),
     schema: { tags: ['trainer-portal'], summary: 'أقبل الدورة — وتنشأ لها شعبة إعداد في «شعبي»' },

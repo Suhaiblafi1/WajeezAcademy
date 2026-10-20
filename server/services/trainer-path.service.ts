@@ -62,7 +62,9 @@ export class TrainerPathService {
         /* و`suspendedAt` تأتي ضمنَ بوّابة الظهور — فلا تُكرَّر فتُطمَس */
         id: true, ...TRAINER_VISIBILITY_SELECT,
         application: { select: { status: true, fullName: true } },
-        qualifications: { select: { courseId: true } },
+        /* والمعتمَدةُ وحدَها (٢٠ أكتوبر ٢٠٢٦): كان كلُّ صفّ تأهيلٍ يُعدّ — المعلّقُ والمرفوضُ والمعتذَرُ عنه — فيبني
+           المدرّبُ مسارا على الرفّ العامّ من دورةٍ لم تُعتمد له */
+        qualifications: { where: { status: 'qualified' }, select: { courseId: true } },
       },
     })
     if (!profile) throw new AuthError('no_profile', 'لا ملف مدرب مرتبطا بهذا الحساب', 404)

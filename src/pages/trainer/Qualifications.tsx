@@ -81,7 +81,7 @@ import { matchesQuery } from "@/application/text/search-ar";
 import { fmtDateLong } from "@/application/text/format-ar";
 import { cohortDayAr, DAY_NUMERIC } from "@/application/learning/cohort-gate";
 import {
-  buildMyCourses, MY_COURSE_FILTERS, type MyCourse, type MyCourseCohort, type MyCourseFilter,
+  buildMyCourses, MY_COURSE_FILTERS, type MyCourse, type MyCourseCohort, type MyCourseFilter, type MyCourseRequest,
 } from "@/application/trainer/my-courses";
 
 interface Qualification { courseId: string; title: string; currentVersion: number; qualifiedAt: string }
@@ -161,6 +161,7 @@ function MyCoursesList() {
   const [offers, setOffers] = useState<Offer[]>([]);
   const [prep, setPrep] = useState<PrepRow[]>([]);
   const [cohorts, setCohorts] = useState<MyCourseCohort[]>([]);
+  const [requests, setRequests] = useState<MyCourseRequest[]>([]);
   /* ═══ و«تعذر الوصول» لما لم يصل وحدَه (١٩ أكتوبر ٢٠٢٦) ═══
      بلاغُ صاحب المنصّة: مدرّبةٌ وُقّع عقدُها تفتح «دوراتي» فتقرأ «تعذر الوصول إلى الخادم». وكان
      كلُّ ردٍّ بخطأ — رفضٌ بسببٍ مسمًّى من الخادم — يُعرض كأنّ الخادمَ غاب. فما ردّه الخادمُ بسببه
@@ -186,15 +187,17 @@ function MyCoursesList() {
       apiGet<PrepRow[]>("/api/trainer/prep").catch(() => [] as PrepRow[]),
       /* وشعبُه في «شعبي» — ما أُسند إليه بلا عرضٍ كان لا يُرى هنا (الخطوة F) */
       apiGet<MyCourseCohort[]>("/api/trainer/cohorts/summary").catch(() => [] as MyCourseCohort[]),
+      /* وطلباتُ تأهيله بشعبتها — تُقرأ ولا يُقرَّر فيها (٢٠ أكتوبر ٢٠٢٦) */
+      apiGet<MyCourseRequest[]>("/api/trainer/qualification-requests").catch(() => [] as MyCourseRequest[]),
     ])
-      .then(([qs, os, pr, cs]) => { setQuals(qs); setOffers(os); setPrep(pr); setCohorts(cs); setDown(false); })
+      .then(([qs, os, pr, cs, rq]) => { setQuals(qs); setOffers(os); setPrep(pr); setCohorts(cs); setRequests(rq); setDown(false); })
       .catch((e) => setDown({ reasonAr: e instanceof ApiError ? e.message : null })), []);
 
   useEffect(() => { void load(); }, [load]);
 
   const rows = useMemo(
-    () => buildMyCourses({ quals: quals ?? [], offers, prep, cohorts, now }),
-    [quals, offers, prep, cohorts, now],
+    () => buildMyCourses({ quals: quals ?? [], offers, prep, cohorts, requests, now }),
+    [quals, offers, prep, cohorts, requests, now],
   );
   const counts = useMemo(() => {
     const c = {} as Record<MyCourseFilter, number>;
@@ -415,6 +418,12 @@ function CourseRow({
             <Button tone="ghost" size="sm" disabled={busy} onClick={onDeclineCancel}>تراجع</Button>
           </div>
         </Inset>
+      )}
+
+      {r.state === "requested" && r.request && (
+        <p className="mt-1 text-read leading-6 text-muted-foreground">
+          {r.request.cohortTitle ? `طلبت الإدارة إسنادك إلى «${r.request.cohortTitle}»` : "طلبت الإدارة إسنادك إلى شعبة فيها"} — القرار لها، ويصلك خبره.
+        </p>
       )}
 
       {/* ودورةُ الإعداد بقرارها — «اقبلها وابدأ إعدادها» أو الاعتذارُ بسبب */}
