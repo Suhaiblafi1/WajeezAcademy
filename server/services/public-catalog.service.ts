@@ -11,7 +11,6 @@ import { publicTrainerWhere, TRAINER_VISIBILITY_SELECT, trainerPubliclyVisible }
 import { photoPublicUrl } from './storage.service'
 import { LEARNER_SESSION_WHERE } from './session-visibility'
 import { cohortSummaryAr } from '../../src/application/learning/cohort-summary'
-import { asLevelRange } from '../../src/application/trainer/cohort-level'
 import { asAudience } from '../../src/application/trainer/cohort-audience'
 import { PLAN_VISIBLE_STATUSES } from '../../src/application/trainer/plan-overlay'
 
@@ -179,10 +178,10 @@ export class PublicCatalogService {
         })),
         sessions: c.sessions,
         summaryAr: cohortSummaryAr(c.plans[0]?.content),
-        /* ═══ ومستواها ولمن هي — كما اختارها مدرّبُها في خطّته المعتمَدة (٢٠ أكتوبر ٢٠٢٦) ═══
-           «استعن بما كتبه المدرّبون بشعبهم» في قسم «لمن هذه الدورة» (صاحب المنصّة). فيخرجان من
-           الخطّة نفسِها التي تخرج منها النبذة، مصفَّيَين: رمزٌ مخترَعٌ أو معطوبٌ يسقط هنا لا في الصفحة. */
-        level: asLevelRange((c.plans[0]?.content as { level?: unknown } | null)?.level),
+        /* ═══ ولمن هي — كما اختارها مدرّبُها في خطّته المعتمَدة (٢٠ أكتوبر ٢٠٢٦) ═══
+           «استعن بما كتبه المدرّبون بشعبهم» في قسم «لمن هذه الدورة» (صاحب المنصّة). فيخرج من الخطّة
+           نفسِها التي تخرج منها النبذة، مصفًّى: رمزٌ مخترَعٌ أو معطوبٌ يسقط هنا لا في الصفحة.
+           والمستوى لا يخرج: سقط من القسم بقراره، فيبقى للمدرّب والمعتمِد كما كان. */
         audience: asAudience((c.plans[0]?.content as { audience?: unknown } | null)?.audience),
         /* والتالي تالٍ لا أوّل: شعبةٌ جاريةٌ أوّلُ لقاءاتها مضى */
         nextSession: c.sessions.find((s) => s.startsAt.getTime() >= now.getTime()) ?? null,

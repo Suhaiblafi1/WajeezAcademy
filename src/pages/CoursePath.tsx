@@ -16,7 +16,7 @@ import { Link, useParams, useSearchParams } from "react-router";
 import { REFERRAL_KEY } from "@/application/commerce/referral";
 import {
   ArrowRight, BookOpen, CheckCircle2, Clock3, CalendarDays, ClipboardCheck, Headset, Layers, Library, ListChecks,
-  MonitorPlay, Plus, Route as RouteIcon, Save, Target, Trash2, User, Sparkles, Flag, Signal, KeyRound,
+  MonitorPlay, Plus, Route as RouteIcon, Save, Target, Trash2, User, Sparkles, Flag,
 } from "lucide-react";
 import SeoHead from "@/components/SeoHead";
 import AuthGate from "@/components/AuthGate";
@@ -412,7 +412,9 @@ function CoursePathPage({ courseId }: { courseId: string }) {
             <div className={`grid gap-4 md:grid-cols-2 ${full.description ? "mt-4 border-t border-white/10 pt-4" : ""}`}>
               {/* ══ لمن هذه الدورة (٢٠ أكتوبر ٢٠٢٦) ══
                   كان سطرَ الكتالوج بلونٍ باهت. وصار: وصفُه بارزا، ثمّ من اختارهم مدرّبو شعبها
-                  (المراحلُ والأهداف)، ثمّ المستوى وما يلزم قبلها. ودورةٌ بلا شعبةٍ تقف عند الكتالوج. */}
+                  (المراحلُ والأهداف). ودورةٌ بلا شعبةٍ تقف عند الكتالوج.
+                  وسقط منه المستوى و«قبلها» بقرار صاحب المنصّة (٢٠ أكتوبر ٢٠٢٦): «موجودٌ داخل
+                  تفاصيل الشعبة، ولكي لا يزيد النصّ هنا». */}
               {who.lead && (
                 <div>
                   <h3 className="flex items-center gap-1.5 text-read font-black text-foreground">
@@ -451,24 +453,6 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                       <Sparkles className="h-3 w-3 text-gold-ink" />
                       {who.fromCohorts > 1 ? "من اختيار مدرّبي شعبها" : "من اختيار مدرّب الشعبة"}
                     </p>
-                  )}
-                  {(who.level || who.prerequisites) && (
-                    <Inset as="dl" className="mt-3 divide-y divide-white/10 px-3 py-0">
-                      {who.level && (
-                        <div className="flex items-start gap-2.5 py-2.5">
-                          <Signal className="mt-1 h-3.5 w-3.5 shrink-0 text-teal-light-ink" />
-                          <dt className="w-14 shrink-0 text-fine leading-6 text-muted-foreground">المستوى</dt>
-                          <dd className="min-w-0 text-read font-bold text-foreground">{who.level}</dd>
-                        </div>
-                      )}
-                      {who.prerequisites && (
-                        <div className="flex items-start gap-2.5 py-2.5">
-                          <KeyRound className="mt-1 h-3.5 w-3.5 shrink-0 text-teal-light-ink" />
-                          <dt className="w-14 shrink-0 text-fine leading-6 text-muted-foreground">قبلها</dt>
-                          <dd className="min-w-0 text-read leading-relaxed text-foreground">{who.prerequisites}</dd>
-                        </div>
-                      )}
-                    </Inset>
                   )}
                 </div>
               )}

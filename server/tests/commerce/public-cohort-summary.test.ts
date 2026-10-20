@@ -74,8 +74,9 @@ describe('نبذةُ الشعبة قبل الدفع', () => {
     expect((await listed()).summaryAr).toBe('شعبةٌ عمليّةٌ في ستّة أسابيع.\n\nتخرج منها بخطّةٍ مكتوبة.')
   })
 
-  /* «لمن هذه الدورة» يقرأ مستوى الشعبة ولمن هي (٢٠ أكتوبر ٢٠٢٦) — من الخطّة التي تخرج منها النبذةُ نفسِها */
-  it('⚠️ ومستواها ولمن هي من الخطّة المعتمَدة — لا من مسودّةٍ أحدث، ورمزٌ مخترَعٌ يسقط', async () => {
+  /* «لمن هذه الدورة» يقرأ لمن هي الشعبة (٢٠ أكتوبر ٢٠٢٦) — من الخطّة التي تخرج منها النبذةُ نفسِها.
+     والمستوى لا يُعلَن: سقط من القسم بقرار صاحب المنصّة، فيبقى للمدرّب والمعتمِد */
+  it('⚠️ ولمن هي من الخطّة المعتمَدة — لا من مسودّةٍ أحدث، ورمزٌ مخترَعٌ يسقط، والمستوى لا يخرج', async () => {
     await plan('approved', 'نبذةٌ بمستوى', 0.5, true, {
       level: { from: 'intermediate', to: 'beginner' },
       audience: { stages: ['fresh_graduate', 'astronaut'], goals: ['first_job'] },
@@ -85,7 +86,7 @@ describe('نبذةُ الشعبة قبل الدفع', () => {
       audience: { stages: ['manager'], goals: ['promotion'] },
     })
     const row = await listed()
-    expect(row.level).toEqual({ from: 'beginner', to: 'intermediate' })
+    expect(row).not.toHaveProperty('level')
     expect(row.audience).toEqual({ stages: ['fresh_graduate'], goals: ['first_job'] })
   })
 })

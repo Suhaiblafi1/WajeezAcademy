@@ -13,7 +13,6 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { withRetry } from './retry'
-import { asLevelRange, type LevelRange } from '@/application/trainer/cohort-level'
 import { asAudience, type CohortAudience } from '@/application/trainer/cohort-audience'
 
 const API_BASE: string = import.meta.env.VITE_API_URL ?? ''
@@ -52,8 +51,7 @@ interface PublicCohort {
   sessions?: { startsAt?: unknown; endsAt?: unknown; title?: unknown }[] | null
   /** نبذةُ مدرّبها من خطّتها المعتمَدة — `cohort-summary.ts` */
   summaryAr?: string | null
-  /** مستواها ولمن هي — من الخطّة نفسِها (`course-audience.ts`) */
-  level?: unknown
+  /** لمن هي — من الخطّة نفسِها (`course-audience.ts`) */
   audience?: unknown
 }
 
@@ -86,8 +84,6 @@ export interface CohortOption {
   sessions: LiveSessionDate[]
   /** «سطران يقرؤهما المتعلّم قبل أن يدفع» — نبذةُ مدرّبها، و`null` إن لم يكتبها */
   summaryAr: string | null
-  /** مستواها كما اختاره مدرّبُها، و`null` إن لم يختر */
-  level: LevelRange | null
   /** لمن هي وماذا يريد متعلّمُها — قائمتان فارغتان إن لم يختر */
   audience: CohortAudience
 }
@@ -186,8 +182,7 @@ export function cohortOptionsFrom(rows: unknown): Map<string, CohortOption[]> {
       trainerProfiles: trainerProfilesOf(c.trainerProfiles, c.trainers),
       sessions: sessionDatesOf(c.sessions),
       summaryAr: typeof c.summaryAr === 'string' && c.summaryAr.trim() ? c.summaryAr.trim() : null,
-      /* يُصفَّيان ثانيةً: خادمٌ أقدمُ لا يرسلهما، وما وصل يُقرأ بالقاعدة نفسِها لا يُصدَّق */
-      level: asLevelRange(c.level),
+      /* يُصفّى ثانيةً: خادمٌ أقدمُ لا يرسله، وما وصل يُقرأ بالقاعدة نفسِها لا يُصدَّق */
       audience: asAudience(c.audience),
     })
     map.set(c.courseId, list)
