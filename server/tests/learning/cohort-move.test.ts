@@ -330,6 +330,49 @@ describe('②هـ خطتها المعتمدة ومهامها تنتقل معها
   })
 })
 
+/* ═══ وبطاقاتُ «قبل/بعد» التي لم يُحسم أمرُها تنتقل معها (٢٠ أكتوبر ٢٠٢٦) ═══
+   بطاقةٌ تنقل لقاءً إلى موعدٍ في الفصل القديم، لو قُبلت بعد النقل أعادته إليه. ولقطتُها لو بقيت لقرأت
+   «تغيّر موضعُها بعدك». ورُئي ساقطا: أُسقطت إزاحةُ البطاقات فسقط الأوّل، وأُزيحت المحسومةُ معها فسقط الثاني. */
+describe('②و بطاقات التعديل المنتظرة', () => {
+  it('⚠️ موعدها ولقطتها ينتقلان — فتبقى قائمةً لا «تغيّر موضعها»، والمحسومة لا تمسّ', async () => {
+    const { PlanEditService } = await import('../../services/plan-edit.service')
+    const { sessionSnapshot } = await import('../../../src/application/trainer/plan-edits')
+    const cohortId = await mkCohort('شعبة بطاقاتها تنتقل', profileId)
+    const plan = await prisma.cohortDeliveryPlan.create({
+      data: { cohortId, trainerId: profileId, status: 'approved', content: { kind: 'trainer', modules: [], resources: [] } },
+    })
+    const session = await prisma.cohortSession.findFirstOrThrow({ where: { cohortId }, orderBy: { startsAt: 'asc' } })
+    const to = new Date(session.startsAt.getTime() + 3 * DAY)
+    const edit = { kind: 'session_move', sessionId: session.id, startsAt: to.toISOString(), endsAt: new Date(to.getTime() + 2 * 3_600_000).toISOString() }
+    const card = (status: string, seq: number) => prisma.planEditSuggestion.create({
+      data: {
+        cohortId, planId: plan.id, batchId: plan.id, seq, kind: 'session_move', step: 'sessions', reasonAr: 'موعد أنسب',
+        edit, before: sessionSnapshot(session) as object, status, createdBy: adminId,
+      },
+    })
+    const waiting = await card('pending', 1)
+    const decided = await card('rejected', 2)
+    const edits = new PlanEditService(prisma)
+    expect((await edits.forCohort(cohortId)).find((x) => x.id === waiting.id)?.stale).toBe(false)
+
+    const r = await svc.request(trainerId, cohortId, { toYear: target.year, toSeason: target.season, reason: 'الطلب قليل هذا الفصل' })
+    await svc.review(adminId, r.id, { action: 'approve' })
+    const after = await prisma.cohortSession.findUniqueOrThrow({ where: { id: session.id } })
+    const shift = after.startsAt.getTime() - session.startsAt.getTime()
+    expect(shift).toBeGreaterThan(0)
+
+    const moved = await prisma.planEditSuggestion.findUniqueOrThrow({ where: { id: waiting.id } })
+    const e = moved.edit as { startsAt: string; endsAt: string }
+    expect(new Date(e.startsAt).getTime() - to.getTime(), 'البطاقة تعيد اللقاء إلى الفصل القديم').toBe(shift)
+    expect(termOf(new Date(e.startsAt))).toEqual(target)
+    expect((moved.before as { startsAt: string }).startsAt).toBe(after.startsAt.toISOString())
+    expect((await edits.forCohort(cohortId)).find((x) => x.id === waiting.id)?.stale, 'البطاقة تقرأ «تغيّر موضعها»').toBe(false)
+
+    const kept = await prisma.planEditSuggestion.findUniqueOrThrow({ where: { id: decided.id } })
+    expect((kept.edit as { startsAt: string }).startsAt, 'مُسّت بطاقة محسومة').toBe(edit.startsAt)
+  })
+})
+
 describe('②ب اجتماعات Zoom', () => {
   it('تنتقل مع لقاءاتها إلى الموعد الجديد — بمدّتها', async () => {
     stubZoom()

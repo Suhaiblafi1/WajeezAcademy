@@ -19,7 +19,7 @@ import { getZoomConfig, updateZoomMeeting, zoomReady } from './zoom.service'
 import { termBounds, termOf } from '../../src/application/terms/season'
 import { fmtDateWith } from '../../src/application/text/format-ar'
 import { ACADEMY_ZONE, asPeriod, periodBounds, realDate } from '../../src/application/trainer/cohort-period'
-import { shiftDay, shiftInstant, shiftPlan, type CopyablePlan } from '../../src/application/trainer/plan-copy'
+import { shiftDatesIn, shiftDay, shiftInstant, shiftPlan, type CopyablePlan } from '../../src/application/trainer/plan-copy'
 import {
   moveProblemAr, moveReminderAt, moveShiftMs, shiftDate, termLabelAr, type TermRef,
 } from '../../src/application/trainer/cohort-move'
@@ -256,6 +256,22 @@ export class CohortMoveService {
                 ...(returned ? { returnedContent: returned } : {}),
                 ...(p.postponedTo ? { postponedTo: shiftDate(p.postponedTo, shiftMs) } : {}),
               },
+            })
+          }
+          /* ═══ وبطاقاتُ «قبل/بعد» التي لم يُحسم أمرُها (٢٠ أكتوبر ٢٠٢٦) ═══
+             بطاقةٌ تنقل لقاءً إلى موعدٍ في الفصل القديم، إن قبلها المدرّبُ بعد النقل، أعادت لقاءه إليه. ولقطةُ
+             ما كان في موضعها لو بقيت لقرأت كلَّ بطاقةٍ «تغيّر موضعُها بعدك». فسأل صاحبُ المنصّة أن تُصلح، فتُزاح
+             مواعيدُ ما ينتظر الإدارةَ أو المدرّبَ واللقطةُ معها (`shiftDatesIn`). والمحسومُ سجلٌّ لا يُمسّ. */
+          const cards = await tx.planEditSuggestion.findMany({
+            where: { cohortId: r.cohortId, status: { in: ['proposed', 'pending'] } }, select: { id: true, edit: true, before: true },
+          })
+          for (const c of cards) {
+            const edit = shiftDatesIn(c.edit, days)
+            const before = c.before === null ? null : shiftDatesIn(c.before, days)
+            if (JSON.stringify(edit) === JSON.stringify(c.edit) && JSON.stringify(before) === JSON.stringify(c.before)) continue
+            await tx.planEditSuggestion.update({
+              where: { id: c.id },
+              data: { edit: edit as Prisma.InputJsonValue, ...(before !== null ? { before: before as Prisma.InputJsonValue } : {}) },
             })
           }
           const tasks = await tx.cohortAssessment.findMany({

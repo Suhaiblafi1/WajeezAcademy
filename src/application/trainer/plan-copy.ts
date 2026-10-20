@@ -35,6 +35,24 @@ export function shiftInstant(at: string | Date | null | undefined, days: number)
   return Number.isNaN(t) ? null : new Date(t + days * DAY_MS).toISOString()
 }
 
+/* ═══ وكلُّ موعدٍ في بنيةٍ لا يُعرف شكلُها — بطاقاتُ التعديل ولقطاتُها (٢٠ أكتوبر ٢٠٢٦) ═══
+   بطاقةُ «قبل/بعد» تحمل مواعيدَ في ثمانية عشر شكلا (`plan-edits.ts`): لقاءٌ يُنقل، ومهمّةٌ بموعدها، وجدولٌ
+   بسلسلته — ولقطةُ ما كان في موضعها مسطّحة. فحين تنتقل الشعبةُ إلى فصلٍ آخر (`cohort-move.service.ts`)
+   يُزاح كلُّ نصٍّ هو **تاريخٌ كاملٌ لا غيرُه** — يومٌ `YYYY-MM-DD` أو لحظةٌ ISO — وما سواه كما هو: عنوانٌ فيه
+   تاريخٌ نصٌّ لا موعد. */
+const INSTANT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:\d{2})$/
+
+/** البنيةُ نفسُها بكلّ يومٍ ولحظةٍ فيها مُزاحا أيّاما */
+export function shiftDatesIn<T>(value: T, days: number): T {
+  const walk = (v: unknown): unknown => {
+    if (typeof v === 'string') return DAY.test(v) ? shiftDay(v, days) : INSTANT.test(v) ? (shiftInstant(v, days) ?? v) : v
+    if (Array.isArray(v)) return v.map(walk)
+    if (v && typeof v === 'object') return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, walk(x)]))
+    return v
+  }
+  return walk(value) as T
+}
+
 interface CopyableSlot { startsOn: string; endsOn: string; moduleIds: string[]; [k: string]: unknown }
 interface CopyableResource { opensAt?: string | null; [k: string]: unknown }
 export interface CopyablePlan {
