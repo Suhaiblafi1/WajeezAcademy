@@ -40,7 +40,8 @@ import { controlCls, staffAreaCls } from "@/components/FormKit";
 import { matchesQuery } from "@/application/text/search-ar";
 import { fmtDate, fmtDateTime } from "@/application/text/format-ar";
 import ConfirmAction from "@/components/ConfirmAction";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
+import { OVERRIDE_MIN_REASON } from "@/application/trainer/readiness";
 import { useRealSession } from "@/services/session";
 
 import { Card, Inset, Panel } from "@/components/ui/Surface";
@@ -90,6 +91,8 @@ interface OpsTrainer {
   trail: ProfileTrail;
   /* آخرُ عقدٍ غيرِ مُزاح — من عليه الخطوةُ ما دام طلبُه غيرَ نشط (`trainer-status.ts`) */
   contract: { status: string } | null;
+  /* يُعتمَد من بطاقته: `null` = لا، ومصفوفةٌ فيها ما ينقص تجهيزَه — فارغةٌ إن تمّ (`listForOps`) */
+  approveBlockersAr: string[] | null;
 }
 
 /** ترتيبُ الحال في القائمة — ترتيبُ الفلاتر نفسُه */
@@ -647,15 +650,19 @@ export default function TrainerRunOps() {
   });
   const [note, setNote] = useState<Record<string, string>>({});
   const [suspendTarget, setSuspendTarget] = useState<OpsTrainer | null>(null);
+  const [approveTarget, setApproveTarget] = useState<OpsTrainer | null>(null);
   const [prepOpen, setPrepOpen] = useState(false);
   const [skipPlan, setSkipPlan] = useState<PendingRequest | null>(null);
   /* تعيينُ مدرّبٍ داخليّا — ثلاثةُ حقولٍ ونقرة (البند ٢٢) */
   const { user: sessionUser } = useRealSession();
+  const navigate = useNavigate();
   const canAddTrainer =
     (sessionUser?.permissions.includes("admin.users.manage") ?? false) &&
     (sessionUser?.permissions.includes("trainer.applications.decide") ?? false);
   const [addOpen, setAddOpen] = useState(false);
   const [addForm, setAddForm] = useState({ fullName: "", email: "", headline: "" });
+  /* وتجاوزُ ما ينقص التجهيزَ للمدير الأعلى وحدَه — والخادمُ يحكم به كذلك (`decide`) */
+  const canOverride = sessionUser?.roles.includes("super_admin") ?? false;
   /* «ما بقي من دوراتك» — من بقي عليه شيء، وموعدٌ واحدٌ لرسائلهم (٢٠ أكتوبر ٢٠٢٦، `PrepReminders.tsx`) */
   const [reminders, setReminders] = useState<Map<string, ReminderRow>>(new Map());
   const [deadline, setDeadline] = useState(() => new Date(Date.now() + 7 * 86_400_000).toISOString().slice(0, 10));
@@ -1097,6 +1104,13 @@ export default function TrainerRunOps() {
                     </div>
                     <ChevronDown className={`mt-1 h-4 w-4 shrink-0 text-muted-foreground transition ${isOpen ? "rotate-180" : ""}`} aria-hidden="true" />
                   </button>
+                  {/* ويُعتمَد من هنا لا من «طلبات المدربين» (٢٠ أكتوبر ٢٠٢٦) — والنافذةُ تقول ما يقع وما ينقص */}
+                  {t.approveBlockersAr && (
+                    <Button tone="confirm" size="sm" type="button" icon={CheckCircle2} className="mt-2"
+                      disabled={busy === k("approve")} onClick={() => setApproveTarget(t)}>
+                      اعتمده مدربا
+                    </Button>
+                  )}
 
                   {isOpen && (<>
                   <p dir="ltr" className="mt-3 border-t border-white/10 pt-3 text-right text-read text-muted-foreground">{t.email}</p>
@@ -1114,7 +1128,7 @@ export default function TrainerRunOps() {
                   {!t.hasAccount && (
                     <Inset as="p" tone="warn" className="mt-2.5 flex items-start gap-1.5 p-2.5 text-read leading-6 text-gold-ink">
                       <ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                      لا حساب مربوط بهذا الملفّ، فلن يدخل بوّابته ولو أسند. اقبله من «طلبات المدربين».
+                      لا حساب مربوط بهذا الملف، فلن يدخل بوابته ولو أسند. يربط حين تعتمده مدربا، أو حين تعتمد توقيعه على العقد.
                     </Inset>
                   )}
 
@@ -1173,6 +1187,76 @@ export default function TrainerRunOps() {
           وترفع الإيقاف من ملفه في «طلبات المدربين».
         </ConfirmAction>
       )}
+
+      {/* ═══ اعتمادُه مدرّبا من بطاقته ═══
+          قرارُ ٢ أكتوبر ٢٠٢٦: لا يُسدّ البابُ بزرٍّ واحد. فإن تمّ تجهيزُه فنقرةٌ تقول ما يقع، وإلّا قيل ما ينقص
+          والخياران: انتظارُ العقد، أو اعتمادُه الآن بسببٍ يُكتب — وهذا للمدير الأعلى وحدَه. */}
+      {approveTarget && (() => {
+        const target = approveTarget;
+        const missing = target.approveBlockersAr ?? [];
+        const run = (reason?: string) => {
+          setApproveTarget(null);
+          void act(`${target.profileId}:approve`,
+            () => apiPost(`/api/admin/trainer-applications/${target.applicationId}/decision`, {
+              action: "approve", overrideReasonAr: reason?.trim() || undefined,
+            }),
+            "اعتمد مدربا — وأبلغ بذلك");
+        };
+        const effects = (
+          <ul className="mt-2 list-disc space-y-1 pe-5">
+            <li>يربط حسابه ويفتح بوابته.</li>
+            <li>يصبح نشطا، ويؤهل للدورات التي ذكرها في طلبه.</li>
+            <li>ويصله بريد بذلك.</li>
+          </ul>
+        );
+        if (missing.length === 0) {
+          return (
+            <ConfirmAction titleAr={`اعتماد ${target.name} مدربا`} confirmLabelAr="اعتمده" tone="default"
+              busy={busy === `${target.profileId}:approve`} onCancel={() => setApproveTarget(null)} onConfirm={() => run()}>
+              {effects}
+            </ConfirmAction>
+          );
+        }
+        const options = (
+          <>
+            <p className="font-bold">ينقصه:</p>
+            <ul className="mt-1 list-disc space-y-1 pe-5">{missing.map((m) => <li key={m}>{m}</li>)}</ul>
+            <p className="mt-3 font-bold">لك خياران:</p>
+            <ul className="mt-1 list-disc space-y-1 pe-5">
+              <li>
+                <span className="font-bold">تنتظر العقد:</span> ترسل عقده من{" "}
+                <Link to="/admin/trainer-contracts" className="font-bold text-teal-light-ink underline">العقود</Link>.
+                حين يوقعه وتعتمد توقيعه، يربط حسابه وحده.
+              </li>
+              <li>
+                <span className="font-bold">تعتمده الآن:</span>{" "}
+                {canOverride
+                  ? "يصبح نشطا دون ما ينقصه، ويحفظ سببك في سجل الأثر."
+                  : "يحتاج المدير الأعلى، فهو وحده يعتمد قبل تمام التجهيز."}
+              </li>
+            </ul>
+          </>
+        );
+        if (!canOverride) {
+          return (
+            <ConfirmAction titleAr={`اعتماد ${target.name} مدربا`} confirmLabelAr="افتح العقود" tone="default"
+              onCancel={() => setApproveTarget(null)}
+              onConfirm={() => { setApproveTarget(null); navigate("/admin/trainer-contracts"); }}>
+              {options}
+            </ConfirmAction>
+          );
+        }
+        return (
+          <ConfirmAction titleAr={`اعتماد ${target.name} مدربا`} confirmLabelAr="اعتمده الآن" tone="default"
+            busy={busy === `${target.profileId}:approve`}
+            reason={{ labelAr: "سبب اعتماده الآن — يحفظ في سجل الأثر", minLength: OVERRIDE_MIN_REASON }}
+            onCancel={() => setApproveTarget(null)} onConfirm={(reason) => run(reason)}>
+            {options}
+            <p className="mt-3 font-bold">وإن اعتمدته الآن:</p>
+            {effects}
+          </ConfirmAction>
+        );
+      })()}
 
       {/* اعتمادُ دورةٍ قيد الإعداد قبل خطّتها — خيارٌ مفتوح، يقول ما يقع به قبل أن يقع */}
       {skipPlan && (

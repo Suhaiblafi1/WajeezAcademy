@@ -71,22 +71,30 @@ export function trainerSteps(t: StatusInput): TrainerStep[] {
   const active = t.applicationStatus === 'active'
   const invited = ['contract_pending', 'onboarding'].includes(t.applicationStatus)
 
-  /* حسابُه: بلا حسابٍ لا يدخل بوّابتَه. ومن دُعي فإنشاؤه عليه */
-  if (!t.hasAccount) {
-    if (invited) him.push('إنشاء حسابه من الدعوة')
-    else you.push('قبوله من «طلبات المدربين» — لا حساب له')
-  }
-
   /* عقدُه — ما دام طلبُه غيرَ نشط. والنشطُ عقدُه وراءه */
+  let contractStep: TrainerStep | null = null
   if (!active) {
     const c = t.contract?.status ?? null
-    if (c === 'draft') you.push('إرسال عقده')
-    else if (c === 'amendment_requested') you.push('الرد على طلب تعديل عقده')
-    else if (c === 'signed') you.push('اعتماد توقيعه على العقد')
-    else if (c === 'sent') him.push('توقيع عقده')
-    else if (c === 'declined' || c === 'revoked' || c === 'expired') you.push('إرسال عقد جديد له')
-    else if (c === null && t.applicationStatus === 'conditionally_approved') you.push('تجهيز عقده وإرساله')
+    if (c === 'draft') contractStep = { turn: 'you', ar: 'إرسال عقده' }
+    else if (c === 'amendment_requested') contractStep = { turn: 'you', ar: 'الرد على طلب تعديل عقده' }
+    else if (c === 'signed') contractStep = { turn: 'you', ar: 'اعتماد توقيعه على العقد' }
+    else if (c === 'sent') contractStep = { turn: 'trainer', ar: 'توقيع عقده' }
+    else if (c === 'declined' || c === 'revoked' || c === 'expired') contractStep = { turn: 'you', ar: 'إرسال عقد جديد له' }
+    else if (c === null && t.applicationStatus === 'conditionally_approved') contractStep = { turn: 'you', ar: 'تجهيز عقده وإرساله' }
   }
+
+  /* ═══ حسابُه: بلا حسابٍ لا يدخل بوّابتَه. ومن دُعي فإنشاؤه عليه ═══
+
+     وكان سطرُه لمن سواه «قبوله من «طلبات المدربين» — لا حساب له»، فسأل صاحبُ المنصّة (٢٠ أكتوبر ٢٠٢٦):
+     «ماذا تقصد بقبول المدرب.. قبول داخلي؟ اجعلها أسهل، اعتمده من هنا بدل من هناك». وكان السطرُ يكرّر خطوةً
+     يقولها العقد: اعتمادُ توقيعه يربط حسابَه وحدَه. فإن كانت للعقد خطوةٌ فهي تكفي، وإلّا قيل «اعتماده مدربا»
+     — وزرُّه في بطاقته (`TrainerRunOps.tsx`). */
+  if (!t.hasAccount) {
+    if (invited) him.push('إنشاء حسابه من الدعوة')
+    else if (active) you.push('ربط حساب بملفه — لا حساب له')
+    else if (!contractStep) you.push('اعتماده مدربا — لا حساب له بعد')
+  }
+  if (contractStep) (contractStep.turn === 'you' ? you : him).push(contractStep.ar)
 
   /* ظهورُه: له دوراتٌ منشورةٌ واسمُه لا يظهر. والزرُّ لا يقبل طلبا غيرَ نشط — فهناك تكفي خطواتُ تفعيله */
   if (hiddenOnSale(t) && active) you.push('اعتماد ظهوره — له دورات منشورة واسمه لا يظهر')

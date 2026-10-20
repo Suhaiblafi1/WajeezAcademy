@@ -70,7 +70,24 @@ describe('حال المدرب وما ينتظره', () => {
   it('ومن دعي ولم ينشئ حسابه فعليه، ومن لا حساب له قبل ذلك فعليك', () => {
     expect(ars(t({ hasAccount: false, applicationStatus: 'onboarding', contract: { status: 'signature_approved' } }), 'trainer'))
       .toContain('إنشاء حسابه من الدعوة')
-    expect(ars(t({ hasAccount: false, applicationStatus: 'under_review', contract: null }), 'you')[0]).toMatch(/^قبوله من/)
+    expect(ars(t({ hasAccount: false, applicationStatus: 'under_review', contract: null }), 'you')[0]).toBe('اعتماده مدربا — لا حساب له بعد')
+  })
+
+  it('⚠️ ومن له عقد قائم فخطوة العقد تكفي — اعتماد توقيعه يربط حسابه (٢٠ أكتوبر ٢٠٢٦)', () => {
+    const noAccount = (status: string) => t({
+      hasAccount: false, applicationStatus: 'conditionally_approved', contract: { status },
+      hasLiveCourse: false, publiclyVisible: false, cohorts: [],
+    })
+    /* «لينا»: عقدها عندها — فلا شيء عليك */
+    expect(ars(noAccount('sent'), 'you')).toEqual([])
+    expect(ars(noAccount('sent'), 'trainer')).toEqual(['توقيع عقده'])
+    expect(trainerStateOf(noAccount('sent'))).toBe('trainer')
+    /* و«فداء»: عقدها انتهى — خطوة واحدة لا اثنتان */
+    expect(ars(noAccount('expired'), 'you')).toEqual(['إرسال عقد جديد له'])
+    /* ولا يقال «قبوله من طلبات المدربين» لأحد بعد اليوم */
+    for (const status of ['sent', 'expired', 'declined', 'signed']) {
+      expect(ars(noAccount(status), 'you').some((a) => a.includes('طلبات المدربين'))).toBe(false)
+    }
   })
 
   it('⚠️ ④ الغائب بطلب نشط: اعتماد ظهوره عليك — وبطلب غير نشط يقال طور طلبه', () => {

@@ -5905,7 +5905,7 @@ export class TrainerReviewService {
   async listForOps() {
     const profiles = await this.prisma.trainerProfile.findMany({
       include: {
-        application: { select: { fullName: true, email: true, status: true } },
+        application: { select: { fullName: true, email: true, status: true, userId: true } },
         /* ما اقترحناه على بطاقته — يُقرأ آخرُ كلِّ نوعٍ منه (`trainer-suggestion.service.ts`) */
         textSuggestions: {
           where: { status: { not: 'withdrawn' } }, orderBy: { createdAt: 'desc' },
@@ -5956,6 +5956,14 @@ export class TrainerReviewService {
     const live = new Set((await this.prisma.trainerProfile.findMany({
       where: liveTrainerWhere(), select: { id: true },
     })).map((r) => r.id))
+    /* ═══ ويُعتمَد من بطاقته (٢٠ أكتوبر ٢٠٢٦) ═══
+       قال صاحبُ المنصّة عن «قبوله من طلبات المدربين»: «اجعلها أسهل.. اعتمده من هنا بدل هناك». فمن لا حسابَ
+       مربوطا بملفّه وله حسابُ متقدّمٍ يربطه الاعتمادُ يُعرض عليه زرُّه هنا، ومعه ما ينقص تجهيزَه — يُقال
+       قبل الضغط لا بعده، والحكمُ حكمُ `decide` نفسُه (`readinessFor`). */
+    const approvable = profiles.filter((p) => !p.userId && !p.suspendedAt && p.application.userId
+      && (REVIEW_OPEN_STATUSES as readonly string[]).includes(p.application.status))
+    const blockersOf = new Map<string, string[]>()
+    for (const p of approvable) blockersOf.set(p.id, (await this.readinessFor(p.id)).blockersAr)
     return profiles.map((p) => {
       const latest = (kind: string) => p.textSuggestions.find((x) => x.kind === kind) ?? null
       return {
@@ -6011,6 +6019,8 @@ export class TrainerReviewService {
       })),
       trail: trailOf(p.id),
       contract: p.contracts[0] ? { status: p.contracts[0].status } : null,
+      /* `null` = لا يُعتمَد من هنا. ومصفوفةٌ = يُعتمَد، وفيها ما ينقص تجهيزَه (فارغةٌ إن تمّ) */
+      approveBlockersAr: blockersOf.get(p.id) ?? null,
       }
     })
   }
