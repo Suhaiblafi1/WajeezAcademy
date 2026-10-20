@@ -35,6 +35,7 @@ import { AMENDMENT_TEXT_MAX } from '../../../src/application/trainer/contract-en
 import { RESIGN_BODY_MAX, RESIGN_BODY_MIN, RESIGN_SUBJECT_MAX, RESIGN_SUBJECT_MIN } from '../../../src/application/trainer/contract-resign'
 import { SPECIAL_TERMS_MAX_CHARS } from '../../../src/application/trainer/contract-body'
 import { DEFER_REASON_VALUES } from '../../../src/application/trainer/intake-closed'
+import { PrepReminderService } from '../../services/prep-reminder.service'
 
 /* اختياريّةٌ: النقصُ جائزٌ كما في `assertRubric`. وصارمةٌ: المفتاحُ المجهولُ
    يُرَدّ في الحاجز كما يُرَدّ في الخدمة — ولا يُقبل صامتا فيضيع. */
@@ -556,6 +557,33 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     /* والبريدُ يُختار، ولا قائمةَ تغييرٍ على صفحة المدرّب في الحالَين (علّتُه في الخدمة) */
     const { notify } = z.object({ notify: z.boolean().default(true) }).parse(req.body ?? {})
     return review.refreshOpenContracts(req.auth!.userId, { notify })
+  })
+
+  /* ═══ «ما بقي من دوراتك» — يُعاين ويُرسَل مدرّبا مدرّبا (٢٠ أكتوبر ٢٠٢٦، `prep-reminder.service.ts`) ═══ */
+  const reminders = new PrepReminderService(prisma)
+  const day = z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
+  app.get('/api/admin/prep-reminders', {
+    preHandler: requirePermission('trainer.contract.manage'),
+    schema: { tags: ['admin-trainers'], summary: 'المدربون الذين بقي عليهم شيء من دوراتهم' },
+  }, async () => reminders.list())
+
+  app.post('/api/admin/prep-reminders/:profileId/preview', {
+    preHandler: requirePermission('trainer.contract.manage'),
+    schema: { tags: ['admin-trainers'], summary: 'معاينة رسالة «ما بقي من دوراتك»' },
+  }, async (req) => {
+    const { profileId } = z.object({ profileId: z.string().uuid() }).parse(req.params)
+    const { deadline } = z.object({ deadline: day }).parse(req.body)
+    const p = await reminders.preview(profileId, deadline)
+    return { to: p.to, subject: p.subject, text: p.text }
+  })
+
+  app.post('/api/admin/prep-reminders/:profileId/send', {
+    preHandler: requirePermission('trainer.contract.manage'),
+    schema: { tags: ['admin-trainers'], summary: 'إرسال رسالة «ما بقي من دوراتك» لمدرب واحد' },
+  }, async (req) => {
+    const { profileId } = z.object({ profileId: z.string().uuid() }).parse(req.params)
+    const { deadline } = z.object({ deadline: day }).parse(req.body)
+    return reminders.send(req.auth!.userId, profileId, deadline)
   })
 
   app.post('/api/admin/trainer-contracts/:contractId/revoke', {
