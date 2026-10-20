@@ -76,10 +76,11 @@ describe('عدّاد ما ينتظر تصحيحه', () => {
     expect(more, 'لا مكوّن لـ«المزيد»').not.toBe('')
     expect(more, 'الزرّ لا يجمع عدّاد ما خلفه').toMatch(/const waiting = items\.reduce\(/)
     const button = more.slice(more.indexOf('<NavPillButton'), more.indexOf('</NavPillButton>'))
-    expect(button, 'عدّاد المخفيّ لا يرسم على الزرّ').toContain('<CountBadge count={waiting} label={countLabel} />')
+    /* وكلمتُه تجمع المعنيين إن اختلفا (٢٠ أكتوبر ٢٠٢٦، لسانُ «دوراتي») — `moreLabel` */
+    expect(button, 'عدّاد المخفيّ لا يرسم على الزرّ').toContain('<CountBadge count={waiting} label={moreLabel} />')
     /* وبندُه في القائمة يحمله أيضا — فمن فتحها عرف أين ينتظره العمل */
     const menu = more.slice(more.indexOf('role="menu"'))
-    expect(menu, 'بند القائمة بلا عدّاد').toContain('<CountBadge count={t.count} label={countLabel} />')
+    expect(menu, 'بند القائمة بلا عدّاد').toContain('<CountBadge count={t.count} label={t.countLabel ?? countLabel} />')
   })
 
   it('وسقوط العدّاد لا يسقط البوّابة', () => {

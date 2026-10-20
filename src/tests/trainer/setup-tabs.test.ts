@@ -46,7 +46,7 @@ describe('② الطورُ من العقد — ولا يُخفى عمّن له �
   it('والخادمُ يعدّ شعبَه التي تُشغَّل', () => {
     const r = code('server/http/routes/trainer-portal.routes.ts')
     expect(r).toMatch(/const liveCohorts = await prisma\.cohortTrainer\.count\(\{\s*where: \{ profileId: profile\.id, cohort: \{ status: \{ in: \['open', 'full', 'active', 'completed'\] \} \} \},?\s*\}\)/)
-    expect(r).toMatch(/return \{ \.\.\.full, pendingGrading, liveCohorts \}/)
+    expect(r).toMatch(/return \{ \.\.\.full, pendingGrading, liveCohorts, coursesWaiting: waitingCourses\.size \}/)
   })
 })
 

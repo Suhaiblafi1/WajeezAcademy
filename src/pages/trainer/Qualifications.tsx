@@ -65,6 +65,8 @@ import { Link, useSearchParams } from "react-router";
 import { Award, CalendarClock, Check, ChevronDown, ClipboardCheck, Loader2, PencilLine, ServerOff, Users, X } from "lucide-react";
 import TrainerLayout from "./TrainerLayout";
 import { PrepDecision, PrepSetupNote, type PrepRow } from "./CourseMaterialsPanel";
+import CohortMoveBox, { type MoveRequestRow } from "@/components/trainer/CohortMoveBox";
+import { boardPlace } from "@/application/trainer/board-place";
 import CourseProposalsSection from "./MyCourseProposals";
 import MyPathsSection from "./MyPaths";
 import EmptyState from "@/components/EmptyState";
@@ -162,6 +164,8 @@ function MyCoursesList() {
   const [prep, setPrep] = useState<PrepRow[]>([]);
   const [cohorts, setCohorts] = useState<MyCourseCohort[]>([]);
   const [requests, setRequests] = useState<MyCourseRequest[]>([]);
+  /* وطلباتُ نقل الشعب — التأجيلُ من صفّ دورتها (٢٠ أكتوبر ٢٠٢٦) */
+  const [moves, setMoves] = useState<MoveRequestRow[]>([]);
   /* ═══ و«تعذر الوصول» لما لم يصل وحدَه (١٩ أكتوبر ٢٠٢٦) ═══
      بلاغُ صاحب المنصّة: مدرّبةٌ وُقّع عقدُها تفتح «دوراتي» فتقرأ «تعذر الوصول إلى الخادم». وكان
      كلُّ ردٍّ بخطأ — رفضٌ بسببٍ مسمًّى من الخادم — يُعرض كأنّ الخادمَ غاب. فما ردّه الخادمُ بسببه
@@ -189,8 +193,9 @@ function MyCoursesList() {
       apiGet<MyCourseCohort[]>("/api/trainer/cohorts/summary").catch(() => [] as MyCourseCohort[]),
       /* وطلباتُ تأهيله بشعبتها — تُقرأ ولا يُقرَّر فيها (٢٠ أكتوبر ٢٠٢٦) */
       apiGet<MyCourseRequest[]>("/api/trainer/qualification-requests").catch(() => [] as MyCourseRequest[]),
+      apiGet<MoveRequestRow[]>("/api/trainer/cohort-moves").catch(() => [] as MoveRequestRow[]),
     ])
-      .then(([qs, os, pr, cs, rq]) => { setQuals(qs); setOffers(os); setPrep(pr); setCohorts(cs); setRequests(rq); setDown(false); })
+      .then(([qs, os, pr, cs, rq, mv]) => { setQuals(qs); setOffers(os); setPrep(pr); setCohorts(cs); setRequests(rq); setMoves(mv); setDown(false); })
       .catch((e) => setDown({ reasonAr: e instanceof ApiError ? e.message : null })), []);
 
   useEffect(() => { void load(); }, [load]);
@@ -308,6 +313,7 @@ function MyCoursesList() {
               onDeclineCancel={() => setDeclining(null)}
               onReason={setReason}
               run={run}
+              moves={moves}
               onChanged={() => void load()}
             />
           ))}
@@ -318,11 +324,12 @@ function MyCoursesList() {
 }
 
 function CourseRow({
-  row: r, now, busy, declining, reason, onDeclineStart, onDeclineCancel, onReason, run, onChanged,
+  row: r, now, busy, declining, reason, onDeclineStart, onDeclineCancel, onReason, run, moves, onChanged,
 }: {
   row: Row; now: number; busy: boolean; declining: string | null; reason: string;
   onDeclineStart: (offerId: string) => void; onDeclineCancel: () => void; onReason: (v: string) => void;
   run: (work: () => Promise<unknown>, okAr: string) => Promise<void>;
+  moves: MoveRequestRow[];
   onChanged: () => void;
 }) {
   const q = r.qual;
@@ -331,9 +338,13 @@ function CourseRow({
   const lead = open ?? (r.state === "closed" || (r.state === "teaching" && r.cohorts.length === 0) ? r.offers[0] ?? null : null);
   const earlier = r.offers.filter((o) => o !== lead);
   const accepted = r.offers.find((o) => o.status === "accepted" && o.prepDueAt && !o.prepConfirmedAt) ?? null;
-  /* شعبُه فيها — ومن لا يقرأ «شعبي» بعدُ (طورُ الإعداد) تأتيه شعبةُ إعداده من بابها */
+  /* ═══ وما يُعدّ من شعبه يُجهَّز من هنا، والحاليّةُ في «شعبي» (٢٠ أكتوبر ٢٠٢٦، `board-place.ts`) ═══
+     اقتراحُ صاحب المنصّة: «صفحة دوراتي فيها كلّ الدورات ليوافق عليها ويرفضها أو يؤجّلها، وتبقى صفحة شعبي نظيفة».
+     فما لم تُعتمد خطّتُه قطّ يُرى تحت دورته بخطوته التالية، و«جهّزها»، وبابِ تأجيله. ومن لا يقرأ «شعبي» بعدُ
+     (طورُ الإعداد) تأتيه شعبةُ إعداده من بابها. */
+  const preparing = r.cohorts.filter((c) => boardPlace(c) === "courses");
   const links: { id: string; title: string | null }[] = r.cohorts.length > 0
-    ? r.cohorts.map((c) => ({ id: c.id, title: c.title }))
+    ? r.cohorts.filter((c) => boardPlace(c) !== "courses").map((c) => ({ id: c.id, title: c.title }))
     : r.prep?.cohortId && r.prep.state !== "declined" ? [{ id: r.prep.cohortId, title: r.prep.cohortTitle }] : [];
 
   return (
@@ -428,6 +439,28 @@ function CourseRow({
 
       {/* ودورةُ الإعداد بقرارها — «اقبلها وابدأ إعدادها» أو الاعتذارُ بسبب */}
       {!open && r.prep?.state === "to_decide" && <PrepDecision row={r.prep} onChanged={onChanged} />}
+
+      {preparing.map((c) => (
+        <Inset key={c.id} className="mt-3 grid gap-2 p-3">
+          <p className="text-read leading-6">
+            <b className="text-foreground">{c.title}</b>
+            {typeof c.done === "number" && typeof c.total === "number" && c.total > 0 && (
+              <span className="text-muted-foreground"> · تجهيز {c.done} من {c.total}</span>
+            )}
+          </p>
+          {c.next?.labelAr && (
+            <p className="text-read leading-6 text-muted-foreground">
+              {c.next.waiting ? c.next.labelAr : <><span className="font-bold text-foreground">التالي:</span> {c.next.labelAr}</>}
+            </p>
+          )}
+          <div className="flex flex-wrap items-center gap-2">
+            <Button as={Link} to={`/trainer/cohort/${c.id}`} size="sm" icon={PencilLine} tone="confirm">جهّزها</Button>
+          </div>
+          <CohortMoveBox cohortId={c.id} status={c.status} startsAt={c.startsAt ?? null} proposedStartsOn={c.proposedStartsOn ?? null}
+            pending={moves.find((m) => m.cohortId === c.id && m.status === "pending") ?? null}
+            onChange={onChanged} />
+        </Inset>
+      ))}
 
       {/* ═══ شعبُه فيها — تُفتح من صفّ دورتها ═══ */}
       {links.length > 0 && (

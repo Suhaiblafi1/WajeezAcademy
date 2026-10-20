@@ -95,7 +95,13 @@ export interface MyCourseCohort {
   status: string;
   planStatus: string;
   /** «التالي» كما تقرؤه «شعبي» — ومنه `postponed` */
-  next?: { key: string } | null;
+  next?: { key: string; labelAr?: string; waiting?: boolean } | null;
+  /** وما يلزم تجهيزَها من «دوراتي» (٢٠ أكتوبر ٢٠٢٦، `board-place.ts`) */
+  approvedOnce?: boolean;
+  done?: number;
+  total?: number;
+  startsAt?: string | null;
+  proposedStartsOn?: string | null;
 }
 
 export interface MyCourse<O extends MyCourseOffer = MyCourseOffer, P extends MyCoursePrep = MyCoursePrep> {

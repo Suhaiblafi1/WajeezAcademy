@@ -303,7 +303,22 @@ export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: Prisma
     const liveCohorts = await prisma.cohortTrainer.count({
       where: { profileId: profile.id, cohort: { status: { in: ['open', 'full', 'active', 'completed'] } } },
     })
-    return { ...full, pendingGrading, liveCohorts }
+    /* ── وكم دورةً تنتظر قرارَه في «دوراتي» (٢٠ أكتوبر ٢٠٢٦) ──
+       منذ صارت «دوراتي» بابَ القرار والتجهيز (`board-place.ts`) يُرى عددُ ما ينتظره على لسانها، فلا يفوته عرضٌ
+       مهلتُه تجري ولا خطّةٌ رُدّت إليه. والعدُّ بالدورة كما تُعدّ صفوفُها: عرضٌ مفتوح، ودورةٌ لم يقرّر فيها،
+       وشعبةٌ رُدّت خطّتُها ولم تُؤجَّل. */
+    const waitingCourses = new Set<string>()
+    const openOffers = await prisma.trainerAssignmentOffer.findMany({
+      where: { profileId: profile.id, status: 'offered', expiresAt: { gt: new Date() } }, select: { courseId: true },
+    })
+    for (const o of openOffers) waitingCourses.add(o.courseId)
+    for (const r of await prep.coursesOf(profile.id)) if (r.state === 'to_decide') waitingCourses.add(r.courseId)
+    const drafts = await prisma.cohort.findMany({
+      where: { status: 'draft', trainers: { some: { profileId: profile.id } } },
+      select: { courseId: true, plans: { where: { trainerId: { not: null } }, orderBy: { createdAt: 'desc' }, take: 1, select: { status: true, postponedTo: true } } },
+    })
+    for (const d of drafts) if (d.plans[0]?.status === 'changes_requested' && !d.plans[0].postponedTo) waitingCourses.add(d.courseId)
+    return { ...full, pendingGrading, liveCohorts, coursesWaiting: waitingCourses.size }
   })
 
   /* مهام التهيئة تُكمَل من صاحبها.
