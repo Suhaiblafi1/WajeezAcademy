@@ -6,6 +6,7 @@
 import { readableModuleVersion } from './module-version-visibility'
 import { createHash } from 'node:crypto'
 import type { PrismaClient } from '@prisma/client'
+import { SKILL_LINK_ORDER } from './skill-link-order'
 import optionEffectsOverlay from '../../src/data/overlays/option-effects.v2.json'
 import { buildQuestionMeta } from '../../src/application/catalog/overlays/question-meta'
 import { buildSkillLayers } from '../../src/application/catalog/overlays/skill-layers'
@@ -80,7 +81,7 @@ export async function buildSnapshotFromDb(
       /* المشروع الختامي معلَّق على إصدار الدورة — بلا جلبه يخرج
          summative_assessment_ar فارغا من اللقطة بينما نصه محفوظ في القاعدة. */
       versions: { orderBy: { version: 'desc' }, take: 1, include: { project: true } },
-      skillLinks: { include: { skill: true } },
+      skillLinks: { include: { skill: true }, orderBy: SKILL_LINK_ORDER },
       pathwayLinks: { orderBy: { sequence: 'asc' } },
     },
   })

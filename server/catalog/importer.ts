@@ -350,11 +350,12 @@ export async function importCatalog(prisma: PrismaClient): Promise<ImportStats> 
       ...(c.skill_ids ?? []),
       ...(c.skill_slugs ?? []).map((slug) => skillIdBySlug.get(slug)).filter((x): x is string => Boolean(x)),
     ])
-    for (const skillId of skillIds) {
+    /* وترتيبُها ترتيبُ المصدر — الأولى شارةُ الدورة (`SKILL_LINK_ORDER`) */
+    for (const [sequence, skillId] of [...skillIds].entries()) {
       await prisma.courseSkillLink.upsert({
         where: { courseId_skillId: { courseId: c.course_id, skillId } },
-        update: { targetLevel: 3, weight: 1 },
-        create: { courseId: c.course_id, skillId, targetLevel: 3, weight: 1 },
+        update: { targetLevel: 3, weight: 1, sequence },
+        create: { courseId: c.course_id, skillId, targetLevel: 3, weight: 1, sequence },
       })
       links++
     }

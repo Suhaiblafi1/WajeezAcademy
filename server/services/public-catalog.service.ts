@@ -5,6 +5,7 @@ import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { PrismaClient } from '@prisma/client'
 import { readableModuleVersion } from '../catalog/module-version-visibility'
+import { SKILL_LINK_ORDER } from '../catalog/skill-link-order'
 import { AuthError } from './auth.service'
 import { openRegistrationWhere } from './registration-window'
 import { publicTrainerWhere, TRAINER_VISIBILITY_SELECT, trainerPubliclyVisible } from './trainer-visibility'
@@ -308,7 +309,7 @@ export class PublicCatalogService {
             },
           },
           modules: { where: { status: 'published' }, include: { versions: { ...readableModuleVersion(), take: 1 } } },
-          skillLinks: { include: { skill: true } },
+          skillLinks: { include: { skill: true }, orderBy: SKILL_LINK_ORDER },
           pathwayLinks: true,
         },
         orderBy: { id: 'asc' },

@@ -6,6 +6,7 @@ import type { Prisma, PrismaClient } from '@prisma/client'
 import { hoursProblemAr } from '../../src/application/catalog/course-hours'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
+import { SKILL_LINK_ORDER } from '../catalog/skill-link-order'
 import { assessSkillSelection, skillStateOf } from '../../src/application/catalog/skill-measurement'
 import { normalizeAr } from '../../src/application/text/search-ar'
 import { COURSE_DOMAIN_FAMILIES, courseDomain } from '../../src/application/catalog/course-domain'
@@ -79,7 +80,7 @@ export class CatalogAdminService {
       orderBy: { id: 'asc' },
       include: {
         versions: { orderBy: { version: 'desc' }, take: 1 },
-        skillLinks: true,
+        skillLinks: { orderBy: SKILL_LINK_ORDER },
         /* اسمُ المسار لا معرّفُه: مرشِّحُ «المجال» في شاشة الشعب يُبنى منه،
            وكان يقرؤه من الكتالوج المضمَّن — فيخرج فارغا دائما. */
         pathwayLinks: {
@@ -242,7 +243,7 @@ export class CatalogAdminService {
 
     await this.prisma.$transaction(async (tx) => {
       await tx.courseSkillLink.deleteMany({ where: { courseId } })
-      if (unique.length) await tx.courseSkillLink.createMany({ data: unique.map((skillId) => ({ courseId, skillId })) })
+      if (unique.length) await tx.courseSkillLink.createMany({ data: unique.map((skillId, sequence) => ({ courseId, skillId, sequence })) })
     })
 
     /* الأثرُ يقول ما كان وما صار — فمن قرأه بعد شهرٍ عرف ما فُكّ وما رُبط */
@@ -495,7 +496,7 @@ export class CatalogAdminService {
             status: 'draft', createdBy: actorId,
           },
         },
-        skillLinks: { create: input.skillIds.map((skillId) => ({ skillId })) },
+        skillLinks: { create: input.skillIds.map((skillId, sequence) => ({ skillId, sequence })) },
         /* ولا صفَّ ربطٍ لدورةٍ بلا مسار — و`PathwayCourse` مفتاحُها
            `(pathwayId, courseId)`، فصفٌّ بمسارٍ فارغٍ لا يُكتب أصلا. */
         ...(input.pathwayId

@@ -694,6 +694,9 @@ model CourseSkillLink {
   skillId     String
   targetLevel Int    @default(3)
   weight      Float  @default(1)
+  /// ترتيبُ المهارة في دورتها كما في المصدر — والأولى شارةُ الدورة في صفحتها.
+  /// بلا هذا العمود تعيد القاعدةُ الروابطَ كما اتّفق، فتتبدّل الشارةُ بعد كلّ استيراد (`SKILL_LINK_ORDER`)
+  sequence    Int    @default(0)
   course      Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
   skill       Skill  @relation(fields: [skillId], references: [id], onDelete: Cascade)
 
