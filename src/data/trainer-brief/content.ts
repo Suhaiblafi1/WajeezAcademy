@@ -49,7 +49,7 @@ import { FAMILY_INTRO, FEATURE_HERO, FEATURES, PRICE, type FeatureId } from '../
 export const BRIEF_UPDATED_AR = '6 أكتوبر 2026'
 
 /** حجمُ الكتالوج بالتقريب — ويقابله `trainer-brief.test.ts` بالكتالوج نفسِه */
-export const CATALOG_COURSES_ABOUT = 140
+export const CATALOG_COURSES_ABOUT = 160
 export const CATALOG_PATHWAYS = 27
 
 /** مثالُ أجر المتعلّم الواحد بالدولار — نطاقٌ لا سعر */
