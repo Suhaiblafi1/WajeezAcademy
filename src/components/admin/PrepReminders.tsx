@@ -13,7 +13,7 @@ import { Inset } from "@/components/ui/Surface";
 import { controlCls } from "@/components/FormKit";
 
 export interface ReminderRow { profileId: string; name: string; email: string; started: boolean; summaryAr: string }
-interface Preview { to: string; subject: string; text: string; html: string }
+interface Preview { to: string; subject: string; text: string; html: string; due?: string }
 
 const inDays = (n: number) => new Date(Date.now() + n * 86_400_000).toISOString().slice(0, 10);
 
@@ -34,18 +34,22 @@ export default function PrepReminderRow({ row, deadline }: { row: ReminderRow; d
   const [sent, setSent] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  /* ═══ وموعدٌ خاصٌّ لهذا المدرّب — اختياريّ (٢٠ أكتوبر ٢٠٢٦) ═══
+     قرارُ صاحب المنصّة: «دعني أغيّر الموعدَ لكلٍّ وحدَه خيارا، والرسالةُ تتغيّر معه». فارغا يتبع موعدَ الصفحة. */
+  const [own, setOwn] = useState("");
+  const due = own || deadline;
 
   const preview = async () => {
-    if (shown) { setShown(null); return; }
+    if (shown && shown.due === due) { setShown(null); return; }
     setBusy(true); setErr(null);
-    try { setShown(await apiPost<Preview>(`/api/admin/prep-reminders/${row.profileId}/preview`, { deadline })); }
+    try { setShown({ ...(await apiPost<Preview>(`/api/admin/prep-reminders/${row.profileId}/preview`, { deadline: due })), due }); }
     catch (e) { setErr(e instanceof ApiError ? e.message : "تعذرت المعاينة"); }
     finally { setBusy(false); }
   };
   const send = async () => {
     setBusy(true); setErr(null);
     try {
-      const r = await apiPost<{ sent: string; to: string }>(`/api/admin/prep-reminders/${row.profileId}/send`, { deadline });
+      const r = await apiPost<{ sent: string; to: string }>(`/api/admin/prep-reminders/${row.profileId}/send`, { deadline: due });
       setSent(r.sent === "sent" ? `أرسلت إلى ${r.to}` : "لم ترسل — البريد غير مهيأ");
       setShown(null);
     } catch (e) { setErr(e instanceof ApiError ? e.message : "تعذر الإرسال"); }
@@ -62,16 +66,22 @@ export default function PrepReminderRow({ row, deadline }: { row: ReminderRow; d
           <span className="font-bold text-teal-light-ink">{sent}</span>
         ) : (
           <>
+            <label className="flex items-center gap-1.5 text-fine font-bold text-muted-foreground">
+              موعد خاص
+              <input type="date" aria-label="موعد خاص لهذا المدرب" value={own} min={new Date(Date.now() + 86_400_000).toISOString().slice(0, 10)}
+                onChange={(e) => { setOwn(e.target.value); setShown(null); }} className={`${controlCls} w-auto py-1`} />
+            </label>
             <Button tone="secondary" size="sm" type="button" disabled={busy} onClick={() => void preview()}>
-              {shown ? "أخف" : "عاين الرسالة"}
+              {shown && shown.due === due ? "أخف" : "عاين الرسالة"}
             </Button>
-            <Button tone="confirm" size="sm" type="button" loading={busy} disabled={busy || !deadline} onClick={() => void send()}>
+            <Button tone="confirm" size="sm" type="button" loading={busy} disabled={busy || !due} onClick={() => void send()}>
               <Send className="h-3.5 w-3.5" aria-hidden="true" /> أرسل
             </Button>
           </>
         )}
       </div>
-      {shown && (
+      {/* والمعاينةُ لموعدها — إن تغيّر موعدُ الصفحة أو موعدُه الخاصّ بعدها لا تُعرض قديمة */}
+      {shown && shown.due === due && (
         <div className="mt-2">
           <p className="font-bold">إلى: {shown.to}</p>
           <p className="font-bold">العنوان: {shown.subject}</p>

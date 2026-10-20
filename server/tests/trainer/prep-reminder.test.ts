@@ -89,3 +89,13 @@ describe('المعاينة كما يصل البريد', () => {
     expect(box).toMatch(/<iframe title="معاينة الرسالة" srcDoc=\{shown\.html\} sandbox=/)
   })
 })
+
+describe('موعد خاص لكل مدرب', () => {
+  it('اختياري: فارغا يتبع موعد الصفحة، والمعاينة والإرسال بموعده', () => {
+    const box = readFileSync(join(process.cwd(), 'src/components/admin/PrepReminders.tsx'), 'utf8')
+    expect(box).toMatch(/const due = own \|\| deadline;/)
+    expect(box).toMatch(/\/preview`, \{ deadline: due \}\)/)
+    expect(box).toMatch(/\/send`, \{ deadline: due \}\)/)
+    expect(box, 'معاينة قديمة تعرض بعد تغير الموعد').toMatch(/\{shown && shown\.due === due && \(/)
+  })
+})
