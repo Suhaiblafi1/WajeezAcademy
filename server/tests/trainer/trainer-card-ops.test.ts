@@ -6,7 +6,8 @@
    ① شعبٌ مربوطةٌ بـ`CohortTrainer` وحدَه — بلا صفّ إسنادٍ قديم — تظهر بحالها وأوّلِ لقائها وعددِ لقاءاتها
       وحالِ خطّتها، والمؤجَّلةُ بتاريخها، والمنقولةُ منقولة، والملغاةُ لا.
    ② وحفظُ الإدارة يسمّي في أثره ما تغيّر وحدَه — فحفظُ الصورة لا يمحو أنّ النبذةَ كتبها المدرّب.
-   ③ وعقدُه: آخرُ عقدٍ غيرِ مُزاح — يقول من عليه الخطوةُ في سطره المطويّ (`trainer-status.ts`، ٢٠ أكتوبر ٢٠٢٦). */
+   ③ وعقدُه: آخرُ عقدٍ غيرِ مُزاح — يقول من عليه الخطوةُ في سطره المطويّ (`trainer-status.ts`، ٢٠ أكتوبر ٢٠٢٦).
+   ④ ويُعتمَد من بطاقته من لا حسابَ مربوطا بملفّه وله حسابُ متقدّم — ومعه ما ينقص تجهيزَه (٢٠ أكتوبر ٢٠٢٦). */
 
 import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
@@ -149,5 +150,28 @@ describe('③ عقده', () => {
     expect((await me()).contract, 'قرئ المزاح').toEqual({ status: 'sent' })
     await prisma.trainerContract.create({ data: { profileId, title: 'عقد أحدث', status: 'signed', createdAt: at(9) } })
     expect((await me()).contract).toEqual({ status: 'signed' })
+  })
+})
+
+describe('④ يعتمد من بطاقته', () => {
+  it('⚠️ من له حساب متقدم وطلبه حي: يعتمد، ومعه ما ينقصه — ومن لا حساب له أصلا أو طلبه نشط: لا', async () => {
+    const applicant = (await new AuthService(prisma).register(`card-applicant-${STAMP}@test.local`, 'Appl#12345', 'متقدم')).userId
+    const app = await prisma.trainerApplication.create({
+      data: {
+        reference: `TR-CARD2-${STAMP}`, fullName: 'متقدم البطاقة', email: `card-applicant-${STAMP}@test.local`,
+        status: 'conditionally_approved', motivation: 'اختبار', privacyConsentAt: new Date(), userId: applicant,
+      },
+    })
+    const other = (await prisma.trainerProfile.create({ data: { applicationId: app.id } })).id
+    const rows = await review.listForOps() as unknown as { profileId: string; approveBlockersAr: string[] | null }[]
+    const blockers = rows.find((r) => r.profileId === other)!.approveBlockersAr
+    expect(blockers, 'لا زر لمن يعتمد').not.toBeNull()
+    expect(blockers!.some((b) => b.includes('لا عقد وقّعه')), 'لم يقل ما ينقصه قبل الضغط').toBe(true)
+    /* والأولى: طلبها نشط ولا حساب متقدم لها — فالاعتماد يرده الخادم */
+    expect(rows.find((r) => r.profileId === profileId)!.approveBlockersAr).toBeNull()
+    /* وبعد ربط حسابه لا زر */
+    await prisma.trainerProfile.update({ where: { id: other }, data: { userId: applicant } })
+    const after = await review.listForOps() as unknown as { profileId: string; approveBlockersAr: string[] | null }[]
+    expect(after.find((r) => r.profileId === other)!.approveBlockersAr).toBeNull()
   })
 })
