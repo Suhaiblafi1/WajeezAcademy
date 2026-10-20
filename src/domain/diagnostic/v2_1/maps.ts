@@ -33,6 +33,17 @@ export const CAREER_STAGE_LABELS_AR: Record<CareerStage, string> = {
   other_unsure: 'غير ذلك / غير متأكد',
 }
 
+/** شخصية V2 الأساسية → مراحل V2.1 (توسعة مشروعة: الموظف يشمل بداية المسار وذو الخبرة) */
+export const PERSONA_BASE_TO_STAGES: Record<string, CareerStage[]> = {
+  student: ['university_student', 'fresh_graduate'],
+  early_career: ['fresh_graduate', 'early_career'],
+  employee: ['early_career', 'experienced'],
+  manager: ['manager', 'senior_manager'],
+  founder: ['founder'],
+  freelancer: ['freelancer'],
+  trainer: ['trainer_ld'],
+}
+
 /* المراحل التي تُسأل عن حالة العمل.
  *
  * ── لماذا خرجت منها ثلاث، وبقيت خمسٌ بلا نقاش (البند ٣٧) ──
