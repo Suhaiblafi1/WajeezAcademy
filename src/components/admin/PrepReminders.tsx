@@ -12,7 +12,7 @@ import Button from "@/components/ui/Button";
 import { Inset } from "@/components/ui/Surface";
 import { controlCls } from "@/components/FormKit";
 
-export interface ReminderRow { profileId: string; name: string; email: string; items: { titleAr: string; missingAr: string }[] }
+export interface ReminderRow { profileId: string; name: string; email: string; started: boolean; summaryAr: string }
 interface Preview { to: string; subject: string; text: string }
 
 const inDays = (n: number) => new Date(Date.now() + n * 86_400_000).toISOString().slice(0, 10);
@@ -22,7 +22,7 @@ export function ReminderDeadline({ value, onChange, count }: { value: string; on
   return (
     <label className="flex flex-wrap items-center gap-2 text-read font-bold">
       <Mail className="h-4 w-4 text-teal-light-ink" aria-hidden="true" />
-      موعد إكمال الدورات ({count} مدرب بقي عليهم شيء)
+      موعد الرسائل ({count} مدرب)
       <input type="date" value={value} min={inDays(1)} onChange={(e) => onChange(e.target.value)} className={`${controlCls} w-auto`} />
     </label>
   );
@@ -56,7 +56,7 @@ export default function PrepReminderRow({ row, deadline }: { row: ReminderRow; d
     <Inset tone="warn" className="mt-2.5 p-2.5 text-read leading-6">
       <div className="flex flex-wrap items-center gap-2">
         <p className="min-w-0 flex-1 font-bold">
-          بقي عليه {row.items.length === 1 ? "دورة واحدة" : `${row.items.length} دورات`} — رسالة بما بقي وموعد نهائي
+          {row.summaryAr} — رسالة قبل إطلاق الحملة
         </p>
         {sent ? (
           <span className="font-bold text-teal-light-ink">{sent}</span>
