@@ -19,13 +19,12 @@ import { getZoomConfig, updateZoomMeeting, zoomReady } from './zoom.service'
 import { termBounds, termOf } from '../../src/application/terms/season'
 import { fmtDateWith } from '../../src/application/text/format-ar'
 import { ACADEMY_ZONE, asPeriod, periodBounds, realDate } from '../../src/application/trainer/cohort-period'
-import { shiftDay, shiftPlan, type CopyablePlan } from '../../src/application/trainer/plan-copy'
+import { shiftDatesIn, shiftDay, shiftInstant, shiftPlan, type CopyablePlan } from '../../src/application/trainer/plan-copy'
 import {
   moveProblemAr, moveReminderAt, moveShiftMs, shiftDate, termLabelAr, type TermRef,
 } from '../../src/application/trainer/cohort-move'
 import { TRAINING_SEASON_VALUES, type TrainingSeason } from '../../src/application/trainer/application-options'
 import { ensureTerm } from './term-ensure'
-import { APPROVED_PLAN_STATUSES } from './registration-window'
 
 /** من يُبلَّغ بطلبٍ جديد — من يملك قرارَ الشعب */
 export const COHORT_MOVE_STAFF_ROLES = ['super_admin', 'academic_manager', 'operations_manager']
@@ -34,6 +33,20 @@ const isSeason = (s: string | null | undefined): s is TrainingSeason =>
   Boolean(s && (TRAINING_SEASON_VALUES as readonly string[]).includes(s))
 
 const DAY_MS = 86_400_000
+
+/** خطّةٌ بتواريخَ مُزاحةٍ أيّاما — أو `null` حين لا مدّةَ فيها تُزاح منها */
+function shiftedPlan(raw: unknown, days: number): Prisma.InputJsonValue | null {
+  const plan = raw as CopyablePlan | null
+  if (!plan?.startsOn || !plan.endsOn || !Array.isArray(plan.resources)) return null
+  return (shiftPlan(plan, shiftDay(plan.startsOn, days))?.plan ?? null) as Prisma.InputJsonValue | null
+}
+
+/** طلبُ المدرّب على مهمّةٍ بآخر موعدٍ مُزاح — أو `null` حين لا موعدَ فيه (`task-approval.ts`) */
+function shiftedTaskChange(raw: unknown, days: number): Prisma.InputJsonValue | null {
+  const change = raw as { kind?: string; fields?: { dueAt?: unknown } } | null
+  if (change?.kind !== 'edit' || typeof change.fields?.dueAt !== 'string') return null
+  return { ...change, fields: { ...change.fields, dueAt: shiftInstant(change.fields.dueAt, days) } } as Prisma.InputJsonValue
+}
 
 const dayAr = (d: Date) => fmtDateWith(d, { year: 'numeric', month: 'long', day: 'numeric', timeZone: ACADEMY_ZONE })
 
@@ -216,22 +229,61 @@ export class CohortMoveService {
             scheduleWindowEnd: shiftDate(c.scheduleWindowEnd, shiftMs),
           },
         })
-        /* ═══ وخطّتُها التي لم تُعتمد بعدُ تنتقل معها (٢٠ أكتوبر ٢٠٢٦) ═══
-           شعبةُ الإعداد مواعيدُها في خطّتها لا عليها: المدّةُ المقترحة ومواعيدُ المحاور ولحظاتُ فتح المصادر. فلو
-           بقيت لاعتُمدت الخطّةُ بمدّتها القديمة وعادت الشعبةُ إلى فصلها الأوّل (`applyPeriod`). فتُزاح بالأسابيع
-           نفسِها بما يُزاح به النسخُ (`shiftPlan`). والمعتمَدةُ لا تُمسّ: ما اعتُمد يُغيَّر بمراجعةٍ تُعتمد. */
+        /* ═══ وكلُّ موعدٍ فيها ينتقل معها — خطّتُها ومهامُّها (٢٠ أكتوبر ٢٠٢٦) ═══
+
+           كانت تنتقل الشعبةُ ولقاءاتُها وحدَها. وبقي في الفصل القديم:
+           · **خطّتُها** — المدّةُ ومواعيدُ المحاور ولحظاتُ فتح المصادر. ومنها يُحكم متى يُفتح كلُّ شيءٍ
+             للمتعلّم، فشعبةٌ نُقلت ستّةَ أشهرٍ تفتح موادَّها قبل أوّل لقاءٍ بستّة أشهر. وشعبةُ الإعداد خطّتُها
+             مسودّة، فلو بقيت لاعتُمدت بمدّتها القديمة وعادت الشعبةُ إلى فصلها الأوّل (`applyPeriod`).
+           · **ومهامُّها** — آخرُ موعدٍ لكلٍّ، ومعه ما يطلبه المدرّبُ عليها ولم يُعتمد بعد.
+           فسأل صاحبُ المنصّة أن تنتقل كلُّها، فتُزاح بالأسابيع نفسِها بما يُزاح به النسخُ (`shiftPlan`): كلُّ
+           خطّةٍ قائمةٍ — مسودّةً أو معتمدةً — وما رُدّ إلى مدرّبها ليُقابَل به، ومهلةُ تأجيلها. ولا يُمسّ
+           المنسوخُ (`superseded`): سجلُّ ما كان. واعتمادُ الإدارة النقلَ هو اعتمادُ مواعيدها الجديدة. */
         if (shiftMs !== 0) {
-          const plan = await tx.cohortDeliveryPlan.findFirst({
-            where: { cohortId: r.cohortId, trainerId: { not: null } }, orderBy: { createdAt: 'desc' },
-            select: { id: true, status: true, content: true },
+          const days = Math.round(shiftMs / DAY_MS)
+          const plans = await tx.cohortDeliveryPlan.findMany({
+            where: { cohortId: r.cohortId, status: { not: 'superseded' } },
+            select: { id: true, content: true, returnedContent: true, postponedTo: true },
           })
-          const content = plan?.content as CopyablePlan | null | undefined
-          if (plan && !(APPROVED_PLAN_STATUSES as readonly string[]).includes(plan.status)
-            && content?.startsOn && Array.isArray(content.resources)) {
-            const shifted = shiftPlan(content, shiftDay(content.startsOn, Math.round(shiftMs / DAY_MS)))
-            if (shifted) {
-              await tx.cohortDeliveryPlan.update({ where: { id: plan.id }, data: { content: shifted.plan as Prisma.InputJsonValue } })
-            }
+          for (const p of plans) {
+            const content = shiftedPlan(p.content, days)
+            const returned = shiftedPlan(p.returnedContent, days)
+            if (!content && !returned && !p.postponedTo) continue
+            await tx.cohortDeliveryPlan.update({
+              where: { id: p.id },
+              data: {
+                ...(content ? { content } : {}),
+                ...(returned ? { returnedContent: returned } : {}),
+                ...(p.postponedTo ? { postponedTo: shiftDate(p.postponedTo, shiftMs) } : {}),
+              },
+            })
+          }
+          /* ═══ وبطاقاتُ «قبل/بعد» التي لم يُحسم أمرُها (٢٠ أكتوبر ٢٠٢٦) ═══
+             بطاقةٌ تنقل لقاءً إلى موعدٍ في الفصل القديم، إن قبلها المدرّبُ بعد النقل، أعادت لقاءه إليه. ولقطةُ
+             ما كان في موضعها لو بقيت لقرأت كلَّ بطاقةٍ «تغيّر موضعُها بعدك». فسأل صاحبُ المنصّة أن تُصلح، فتُزاح
+             مواعيدُ ما ينتظر الإدارةَ أو المدرّبَ واللقطةُ معها (`shiftDatesIn`). والمحسومُ سجلٌّ لا يُمسّ. */
+          const cards = await tx.planEditSuggestion.findMany({
+            where: { cohortId: r.cohortId, status: { in: ['proposed', 'pending'] } }, select: { id: true, edit: true, before: true },
+          })
+          for (const c of cards) {
+            const edit = shiftDatesIn(c.edit, days)
+            const before = c.before === null ? null : shiftDatesIn(c.before, days)
+            if (JSON.stringify(edit) === JSON.stringify(c.edit) && JSON.stringify(before) === JSON.stringify(c.before)) continue
+            await tx.planEditSuggestion.update({
+              where: { id: c.id },
+              data: { edit: edit as Prisma.InputJsonValue, ...(before !== null ? { before: before as Prisma.InputJsonValue } : {}) },
+            })
+          }
+          const tasks = await tx.cohortAssessment.findMany({
+            where: { cohortId: r.cohortId }, select: { id: true, dueAt: true, pendingChange: true },
+          })
+          for (const t of tasks) {
+            const pending = shiftedTaskChange(t.pendingChange, days)
+            if (!t.dueAt && !pending) continue
+            await tx.cohortAssessment.update({
+              where: { id: t.id },
+              data: { ...(t.dueAt ? { dueAt: shiftDate(t.dueAt, shiftMs) } : {}), ...(pending ? { pendingChange: pending } : {}) },
+            })
           }
         }
         const sessions = await tx.cohortSession.findMany({
