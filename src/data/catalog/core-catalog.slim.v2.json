@@ -5289,6 +5289,399 @@
         "trainer_ld",
         "university_student"
       ]
+    },
+    {
+      "course_id": "C-SCM-108",
+      "pathway_id": "PW-SCM-001",
+      "sequence": 7,
+      "title_ar": "دورة التحضير لشهادة CSCP: من استراتيجية سلسلة الإمداد إلى تحسينها",
+      "subtitle_ar": "محاور الاختبار الثلاثة بحالات عمل · خطة مذاكرة واختبارات تجريبية بتحليل الخطأ",
+      "level_ar": "ممارس",
+      "total_hours": 16,
+      "skill_slugs": [
+        "supply_chain_strategy",
+        "supply_chain_mapping",
+        "demand_forecasting",
+        "supply_planning",
+        "strategic_sourcing",
+        "distribution_planning",
+        "supply_chain_risk",
+        "supply_chain_metrics"
+      ],
+      "skill_ids": [
+        "SK-X-SCM-016",
+        "SK-X-SCM-001",
+        "SK-X-SCM-002",
+        "SK-X-SCM-003",
+        "SK-X-SCM-006",
+        "SK-X-SCM-015",
+        "SK-X-SCM-008",
+        "SK-X-SCM-009"
+      ],
+      "skill_names_ar": [
+        "استراتيجية سلسلة الإمداد وتصميم شبكتها",
+        "رسم سلسلة الإمداد",
+        "التنبؤ بالطلب",
+        "تخطيط التوريد",
+        "التوريد الاستراتيجي",
+        "تخطيط التوزيع",
+        "إدارة مخاطر سلسلة الإمداد",
+        "مؤشرات سلسلة الإمداد"
+      ],
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "operations"
+      ],
+      "diagnostic_stages": [
+        "early_career",
+        "experienced",
+        "manager",
+        "senior_manager"
+      ]
+    },
+    {
+      "course_id": "C-FINM-106",
+      "pathway_id": "PW-FIN-001",
+      "sequence": 6,
+      "title_ar": "دورة مبادئ المحاسبة المالية: من القيد اليومي إلى القوائم المالية",
+      "subtitle_ar": "الدورة المحاسبية كاملة لمنشأة صغيرة · قيود وميزان مراجعة وقوائم تعدها بيدك",
+      "level_ar": "تأسيسي–تطبيقي",
+      "total_hours": 16,
+      "skill_slugs": [
+        "accounting_basics",
+        "journal_entries",
+        "trial_balance_closing",
+        "financial_statements",
+        "decision_making"
+      ],
+      "skill_ids": [
+        "SK-FIN-010",
+        "SK-X-FIN-008",
+        "SK-X-FIN-009",
+        "SK-FIN-011",
+        "SK-COG-006"
+      ],
+      "skill_names_ar": [
+        "أساسيات المحاسبة",
+        "تسجيل القيود اليومية",
+        "ميزان المراجعة وإقفال الحسابات",
+        "قراءة القوائم المالية",
+        "اتخاذ القرار"
+      ],
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "finance_mgmt"
+      ],
+      "diagnostic_stages": [
+        "early_career",
+        "founder",
+        "freelancer",
+        "fresh_graduate",
+        "other_unsure",
+        "university_student"
+      ]
+    },
+    {
+      "course_id": "C-FINM-107",
+      "pathway_id": "PW-FIN-001",
+      "sequence": 7,
+      "title_ar": "دورة الضرائب في الأردن تطبيقيا: ضريبة الدخل والمبيعات من الحساب إلى الإقرار",
+      "subtitle_ar": "حساب ضريبة فرد ومنشأة بالأرقام النافذة · إقرار وفاتورة ضريبية وتقويم امتثال",
+      "level_ar": "تطبيقي",
+      "total_hours": 16,
+      "skill_slugs": [
+        "jordan_income_tax",
+        "jordan_sales_tax",
+        "tax_compliance_records",
+        "accounting_basics",
+        "decision_making"
+      ],
+      "skill_ids": [
+        "SK-X-FIN-010",
+        "SK-X-FIN-011",
+        "SK-X-FIN-012",
+        "SK-FIN-010",
+        "SK-COG-006"
+      ],
+      "skill_names_ar": [
+        "ضريبة الدخل في الأردن: الحساب والإقرار",
+        "الضريبة العامة على المبيعات في الأردن",
+        "السجلات والمواعيد والامتثال الضريبي",
+        "أساسيات المحاسبة",
+        "اتخاذ القرار"
+      ],
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "finance_mgmt",
+        "entrepreneurship"
+      ],
+      "diagnostic_stages": [
+        "early_career",
+        "experienced",
+        "founder",
+        "freelancer",
+        "fresh_graduate"
+      ]
+    },
+    {
+      "course_id": "C-GRPH-107",
+      "pathway_id": "PW-GRPH-001",
+      "sequence": 7,
+      "title_ar": "دورة تصوير المنتجات والأطعمة: بالكاميرا الاحترافية والموبايل",
+      "subtitle_ar": "التعريض والإضاءة والتنسيق خطوة خطوة · ملف صور لمنتج حقيقي جاهز للمتجر والشبكات",
+      "level_ar": "تأسيسي–تطبيقي",
+      "total_hours": 16,
+      "skill_slugs": [
+        "camera_exposure",
+        "photo_lighting",
+        "product_food_styling",
+        "raster_editing",
+        "social_format_adaptation",
+        "digital_content_creation"
+      ],
+      "skill_ids": [
+        "SK-GRPH-024",
+        "SK-GRPH-025",
+        "SK-GRPH-026",
+        "SK-GRPH-013",
+        "SK-GRPH-010",
+        "SK-DIG-011"
+      ],
+      "skill_names_ar": [
+        "ضبط التعريض: فتحة العدسة والغالق والحساسية",
+        "إضاءة التصوير",
+        "تنسيق المنتج والطعام للتصوير",
+        "تحرير الصور النقطية",
+        "تكييف المقاسات الرقمية",
+        "إنشاء المحتوى الرقمي"
+      ],
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "visual_design",
+        "marketing_growth"
+      ],
+      "diagnostic_stages": [
+        "early_career",
+        "founder",
+        "freelancer",
+        "fresh_graduate",
+        "other_unsure",
+        "university_student"
+      ]
+    },
+    {
+      "course_id": "C-GRPH-108",
+      "pathway_id": "PW-GRPH-001",
+      "sequence": 8,
+      "title_ar": "دورة إنتاج الفيديو بالهاتف: من الفكرة إلى فيديو منشور",
+      "subtitle_ar": "تخطيط وتصوير وصوت ومونتاج بالهاتف وحده · ثلاثة فيديوهات قصيرة لجهة حقيقية",
+      "level_ar": "تأسيسي–تطبيقي",
+      "total_hours": 16,
+      "skill_slugs": [
+        "video_shot_planning",
+        "mobile_video_shooting",
+        "video_editing",
+        "digital_content_creation",
+        "social_format_adaptation"
+      ],
+      "skill_ids": [
+        "SK-GRPH-027",
+        "SK-GRPH-028",
+        "SK-GRPH-029",
+        "SK-DIG-011",
+        "SK-GRPH-010"
+      ],
+      "skill_names_ar": [
+        "تخطيط الفيديو واللقطات",
+        "التصوير بالهاتف: الثبات والضوء والصوت",
+        "مونتاج الفيديو",
+        "إنشاء المحتوى الرقمي",
+        "تكييف المقاسات الرقمية"
+      ],
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "visual_design",
+        "marketing_growth"
+      ],
+      "diagnostic_stages": [
+        "early_career",
+        "founder",
+        "freelancer",
+        "fresh_graduate",
+        "other_unsure",
+        "university_student"
+      ]
+    },
+    {
+      "course_id": "C-GRPH-109",
+      "pathway_id": "PW-GRPH-001",
+      "sequence": 9,
+      "title_ar": "دورة إنتاج الفيديو بالذكاء الاصطناعي: من النص إلى فيديو تملك حقه",
+      "subtitle_ar": "توليد اللقطات والصوت والصورة الرمزية · فيديو تعليمي وإعلاني بسجل أدوات وحقوق",
+      "level_ar": "تطبيقي",
+      "total_hours": 16,
+      "skill_slugs": [
+        "ai_video_generation",
+        "video_shot_planning",
+        "video_editing",
+        "ai_output_evaluation",
+        "digital_content_creation"
+      ],
+      "skill_ids": [
+        "SK-GRPH-030",
+        "SK-GRPH-027",
+        "SK-GRPH-029",
+        "SK-AI-004",
+        "SK-DIG-011"
+      ],
+      "skill_names_ar": [
+        "توليد الفيديو بأدوات الذكاء الاصطناعي",
+        "تخطيط الفيديو واللقطات",
+        "مونتاج الفيديو",
+        "تقييم مخرجات الذكاء الاصطناعي",
+        "إنشاء المحتوى الرقمي"
+      ],
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "visual_design",
+        "ai_productivity",
+        "marketing_growth"
+      ],
+      "diagnostic_stages": [
+        "early_career",
+        "experienced",
+        "founder",
+        "freelancer"
+      ]
+    },
+    {
+      "course_id": "C-MKT-107",
+      "pathway_id": "PW-MKT-001",
+      "sequence": 6,
+      "title_ar": "دورة الإعلان والتأثير: من قراءة الإعلان إلى موجز يقنع المصمم والجمهور",
+      "subtitle_ar": "تحليل الإعلانات بأدوات واضحة · رسالة وموجز إبداعي وحملة صغيرة تختبر وتقاس",
+      "level_ar": "تطبيقي",
+      "total_hours": 16,
+      "skill_slugs": [
+        "ad_message_strategy",
+        "creative_brief_writing",
+        "persuasion",
+        "design_brief",
+        "digital_marketing",
+        "campaign_measurement"
+      ],
+      "skill_ids": [
+        "SK-X-MKT-007",
+        "SK-X-MKT-008",
+        "SK-COM-010",
+        "SK-GRPH-020",
+        "SK-BIZ-010",
+        "SK-X-MKT-006"
+      ],
+      "skill_names_ar": [
+        "بناء الرسالة الإعلانية",
+        "كتابة الموجز الإبداعي للإعلان",
+        "الإقناع",
+        "موجز التصميم",
+        "التسويق الرقمي",
+        "قياس الحملات التسويقية"
+      ],
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "marketing_growth",
+        "communication_influence"
+      ],
+      "diagnostic_stages": [
+        "early_career",
+        "experienced",
+        "founder",
+        "freelancer",
+        "manager"
+      ]
+    },
+    {
+      "course_id": "C-MKT-108",
+      "pathway_id": "PW-MKT-001",
+      "sequence": 7,
+      "title_ar": "دورة علم السلوك في رحلة العميل: تصميم تجربة تغير السلوك بلا تلاعب",
+      "subtitle_ar": "تشخيص السلوك بنموذج COM-B · تدخل سلوكي في نقطة واحدة من الرحلة يختبر ويقاس",
+      "level_ar": "تطبيقي",
+      "total_hours": 16,
+      "skill_slugs": [
+        "behavioral_design",
+        "choice_architecture",
+        "behavioral_experiment",
+        "customer_journey_marketing",
+        "design_thinking",
+        "dual_process_thinking"
+      ],
+      "skill_ids": [
+        "SK-X-MKT-009",
+        "SK-X-MKT-010",
+        "SK-X-MKT-011",
+        "SK-X-MKT-003",
+        "SK-COG-013",
+        "SK-PSY-010"
+      ],
+      "skill_names_ar": [
+        "التصميم السلوكي في تجربة العميل",
+        "هندسة الاختيار بلا تلاعب",
+        "اختبار التدخل السلوكي وقياس أثره",
+        "تصميم رحلة العميل التسويقية",
+        "التفكير التصميمي",
+        "النظامان الأول والثاني في التفكير"
+      ],
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "marketing_growth",
+        "product_mgmt"
+      ],
+      "diagnostic_stages": [
+        "early_career",
+        "experienced",
+        "founder",
+        "manager"
+      ]
+    },
+    {
+      "course_id": "C-BIZ-109",
+      "pathway_id": "PW-BIZ-001",
+      "sequence": 8,
+      "title_ar": "دورة عقلية رائد الأعمال: من فكرة تتردد فيها إلى خطة ثلاثين يوما",
+      "subtitle_ar": "مبادئ رواد الأعمال في الغموض · فرص مقيمة بمعايير وخطة أول شهر بإيقاع مراجعة",
+      "level_ar": "تأسيسي",
+      "total_hours": 16,
+      "skill_slugs": [
+        "entrepreneurial_mindset",
+        "opportunity_evaluation",
+        "decision_making",
+        "time_management"
+      ],
+      "skill_ids": [
+        "SK-X-BIZ-003",
+        "SK-X-BIZ-004",
+        "SK-COG-006",
+        "SK-WELL-002"
+      ],
+      "skill_names_ar": [
+        "عقلية رائد الأعمال والتعامل مع الغموض",
+        "توليد الأفكار وتقييم الفرص",
+        "اتخاذ القرار",
+        "إدارة الوقت"
+      ],
+      "recommendable_directly": true,
+      "diagnostic_domains": [
+        "entrepreneurship",
+        "personal_development"
+      ],
+      "diagnostic_stages": [
+        "early_career",
+        "experienced",
+        "founder",
+        "fresh_graduate",
+        "other_unsure",
+        "university_student"
+      ]
     }
   ],
   "skill_extensions": [
@@ -6999,6 +7392,146 @@
       "name_ar": "التخطيط للانقطاع والعودة",
       "family_id": "PSY",
       "family_ar": "علم النفس للفهم"
+    },
+    {
+      "skill_id": "SK-X-SCM-016",
+      "slug": "supply_chain_strategy",
+      "name_ar": "استراتيجية سلسلة الإمداد وتصميم شبكتها",
+      "family_id": "SCM",
+      "family_ar": "سلسلة الإمداد واللوجستيات"
+    },
+    {
+      "skill_id": "SK-X-FIN-008",
+      "slug": "journal_entries",
+      "name_ar": "تسجيل القيود اليومية",
+      "family_id": "FINX",
+      "family_ar": "الإدارة المالية وقرارات الاستثمار"
+    },
+    {
+      "skill_id": "SK-X-FIN-009",
+      "slug": "trial_balance_closing",
+      "name_ar": "ميزان المراجعة وإقفال الحسابات",
+      "family_id": "FINX",
+      "family_ar": "الإدارة المالية وقرارات الاستثمار"
+    },
+    {
+      "skill_id": "SK-X-FIN-010",
+      "slug": "jordan_income_tax",
+      "name_ar": "ضريبة الدخل في الأردن: الحساب والإقرار",
+      "family_id": "FINX",
+      "family_ar": "الإدارة المالية وقرارات الاستثمار"
+    },
+    {
+      "skill_id": "SK-X-FIN-011",
+      "slug": "jordan_sales_tax",
+      "name_ar": "الضريبة العامة على المبيعات في الأردن",
+      "family_id": "FINX",
+      "family_ar": "الإدارة المالية وقرارات الاستثمار"
+    },
+    {
+      "skill_id": "SK-X-FIN-012",
+      "slug": "tax_compliance_records",
+      "name_ar": "السجلات والمواعيد والامتثال الضريبي",
+      "family_id": "FINX",
+      "family_ar": "الإدارة المالية وقرارات الاستثمار"
+    },
+    {
+      "skill_id": "SK-GRPH-024",
+      "slug": "camera_exposure",
+      "name_ar": "ضبط التعريض: فتحة العدسة والغالق والحساسية",
+      "family_id": "GRPH",
+      "family_ar": "التصميم الجرافيكيّ والهويّة البصريّة"
+    },
+    {
+      "skill_id": "SK-GRPH-025",
+      "slug": "photo_lighting",
+      "name_ar": "إضاءة التصوير",
+      "family_id": "GRPH",
+      "family_ar": "التصميم الجرافيكيّ والهويّة البصريّة"
+    },
+    {
+      "skill_id": "SK-GRPH-026",
+      "slug": "product_food_styling",
+      "name_ar": "تنسيق المنتج والطعام للتصوير",
+      "family_id": "GRPH",
+      "family_ar": "التصميم الجرافيكيّ والهويّة البصريّة"
+    },
+    {
+      "skill_id": "SK-GRPH-027",
+      "slug": "video_shot_planning",
+      "name_ar": "تخطيط الفيديو واللقطات",
+      "family_id": "GRPH",
+      "family_ar": "التصميم الجرافيكيّ والهويّة البصريّة"
+    },
+    {
+      "skill_id": "SK-GRPH-028",
+      "slug": "mobile_video_shooting",
+      "name_ar": "التصوير بالهاتف: الثبات والضوء والصوت",
+      "family_id": "GRPH",
+      "family_ar": "التصميم الجرافيكيّ والهويّة البصريّة"
+    },
+    {
+      "skill_id": "SK-GRPH-029",
+      "slug": "video_editing",
+      "name_ar": "مونتاج الفيديو",
+      "family_id": "GRPH",
+      "family_ar": "التصميم الجرافيكيّ والهويّة البصريّة"
+    },
+    {
+      "skill_id": "SK-GRPH-030",
+      "slug": "ai_video_generation",
+      "name_ar": "توليد الفيديو بأدوات الذكاء الاصطناعي",
+      "family_id": "GRPH",
+      "family_ar": "التصميم الجرافيكيّ والهويّة البصريّة"
+    },
+    {
+      "skill_id": "SK-X-MKT-007",
+      "slug": "ad_message_strategy",
+      "name_ar": "بناء الرسالة الإعلانية",
+      "family_id": "MKT",
+      "family_ar": "التسويق ونمو العملاء"
+    },
+    {
+      "skill_id": "SK-X-MKT-008",
+      "slug": "creative_brief_writing",
+      "name_ar": "كتابة الموجز الإبداعي للإعلان",
+      "family_id": "MKT",
+      "family_ar": "التسويق ونمو العملاء"
+    },
+    {
+      "skill_id": "SK-X-MKT-009",
+      "slug": "behavioral_design",
+      "name_ar": "التصميم السلوكي في تجربة العميل",
+      "family_id": "MKT",
+      "family_ar": "التسويق ونمو العملاء"
+    },
+    {
+      "skill_id": "SK-X-MKT-010",
+      "slug": "choice_architecture",
+      "name_ar": "هندسة الاختيار بلا تلاعب",
+      "family_id": "MKT",
+      "family_ar": "التسويق ونمو العملاء"
+    },
+    {
+      "skill_id": "SK-X-MKT-011",
+      "slug": "behavioral_experiment",
+      "name_ar": "اختبار التدخل السلوكي وقياس أثره",
+      "family_id": "MKT",
+      "family_ar": "التسويق ونمو العملاء"
+    },
+    {
+      "skill_id": "SK-X-BIZ-003",
+      "slug": "entrepreneurial_mindset",
+      "name_ar": "عقلية رائد الأعمال والتعامل مع الغموض",
+      "family_id": "BIZ",
+      "family_ar": "الأعمال وريادة المشاريع"
+    },
+    {
+      "skill_id": "SK-X-BIZ-004",
+      "slug": "opportunity_evaluation",
+      "name_ar": "توليد الأفكار وتقييم الفرص",
+      "family_id": "BIZ",
+      "family_ar": "الأعمال وريادة المشاريع"
     }
   ]
 }

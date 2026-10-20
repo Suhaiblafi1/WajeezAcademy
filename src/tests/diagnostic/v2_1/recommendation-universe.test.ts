@@ -89,11 +89,12 @@ describe('فضاء التوصيات الموحد V2.1 — معايير القب�
      و٤٢←٧٣ (2026-10-07): إحدى وثلاثون دورةً قائمةً بنفسها بجمهورها ومجالها
      بقرار صاحب المنصّة دورةً دورة — والمساراتُ والمركّباتُ كما هي.
      و٧٣←٧٥ (2026-10-12): دورتان قائمتان بنفسهما من اقتراحات المدرّبين —
-     النقلُ والتوزيع (C-SCM-107) وبناءُ العادات (C-WEL-102). */
-  it('الفضاء النشط = 75 كيانًا (27 قياسيًا + 15 مركبًا + 33 دورة) — TPL-SMART-OPS-001 موسوم needs_revision بقرار أكاديمي موثق (إغلاق منطق V2.1)', () => {
+     النقلُ والتوزيع (C-SCM-107) وبناءُ العادات (C-WEL-102).
+     و٧٥←٨٤ (2026-10-20): تسعٌ أخرى من اقتراحاتهم — C-SCM-108 · C-FINM-106 · C-FINM-107 · C-GRPH-107 · C-GRPH-108 · C-GRPH-109 · C-MKT-107 · C-MKT-108 · C-BIZ-109. */
+  it('الفضاء النشط = 84 كيانًا (27 قياسيًا + 15 مركبًا + 42 دورة) — TPL-SMART-OPS-001 موسوم needs_revision بقرار أكاديمي موثق (إغلاق منطق V2.1)', () => {
     const universe = recommendationUniverse()
-    expect(universe.active.length).toBe(75)
-    expect(universe.active.filter((e) => e.entity_type === 'course').length).toBe(33)
+    expect(universe.active.length).toBe(84)
+    expect(universe.active.filter((e) => e.entity_type === 'course').length).toBe(42)
     expect(universe.active.filter((e) => e.entity_type === 'standard').length).toBe(27)
     expect(universe.active.filter((e) => e.entity_type === 'composite').length).toBe(15)
     /* القرار الموثق: SMART-OPS لا يفوز من أي شخصية بشرية طبيعية (3520 توليفة +
