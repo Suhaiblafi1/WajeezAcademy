@@ -19,6 +19,7 @@ import { TrainerMaterialsService } from '../../services/trainer-materials.servic
 import { TrainerPrepService } from '../../services/trainer-prep.service'
 import { TrainerPublicTextService } from '../../services/trainer-public-text.service'
 import { TrainerSuggestionService } from '../../services/trainer-suggestion.service'
+import { TrainerDraftingBundleService } from '../../services/trainer-drafting-bundle.service'
 import { TrainerDeclineReplyService } from '../../services/trainer-decline-reply.service'
 import { requirePermission } from '../auth-plugin'
 import { blastRadiusSentenceAr, courseBlastRadius } from '../../services/catalog-impact.service'
@@ -67,6 +68,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
   const review = new TrainerReviewService(prisma)
   const publicText = new TrainerPublicTextService(prisma)
   const suggestions = new TrainerSuggestionService(prisma)
+  const drafting = new TrainerDraftingBundleService(prisma)
   const declineReply = new TrainerDeclineReplyService(prisma)
   const offers = new TrainerOfferService(prisma)
   const bank = new TrainerBankService(prisma)
@@ -1035,6 +1037,20 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     const { profileId } = z.object({ profileId: z.string().uuid() }).parse(req.params)
     const { kind, lines } = z.object({ kind: KIND, lines: z.array(z.string().max(2000)).max(10) }).parse(req.body ?? {})
     return suggestions.propose(profileId, req.auth!.userId, kind, lines)
+  })
+
+  /* وملفّاتُ من لا مسوّدةَ له — ما كتبه وسيرتُه وشهاداتُه في ZIP، لنكتب له (٢٠ أكتوبر ٢٠٢٦).
+     بصلاحيّة قراءة الطلبات وسيرِها في الشاشة: الحزمةُ تُخرج ما يُقرأ هناك (`trainer-drafting-bundle.service.ts`) */
+  app.get('/api/admin/trainers/drafting-bundle', {
+    preHandler: requirePermission('trainer.applications.view'),
+    schema: { tags: ['admin-trainers'], summary: 'ملفّات المدرّبين بلا مسوّدة — ما كتبوه وسيرهم وشهاداتهم، لكتابة اقتراحاتنا' },
+  }, async (req, reply) => {
+    const b = await drafting.build(req.auth!.userId)
+    return reply
+      .header('content-type', 'application/zip')
+      .header('content-disposition', `attachment; filename="trainers-drafting.zip"; filename*=UTF-8''${encodeURIComponent(b.fileName)}`)
+      .header('cache-control', 'no-store')
+      .send(b.zip)
   })
 
   /* وكلُّ المسوّدات معا — بالصلاحيّة نفسِها، فهو الإرسالُ نفسُه مكرَّرا */

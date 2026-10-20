@@ -177,4 +177,13 @@ describe('أرسل كلّ الاقتراحات — ما لم يُرسل وحده
     expect(await svc.sendAllDrafts(ACTOR, drafts())).toEqual({ sent: 0, failed: 0 })
     expect(await prisma.trainerTextSuggestion.count({ where: { profileId: freshId } })).toBe(2)
   })
+
+  it('⚠️ ولا يصل إلّا النشطين ومن نُشرت دوراتُهم — «سأرسل لمن هم اكتف أو نشرت دوراتهم»', async () => {
+    const made = await review.createTrainerDirectly(ACTOR, { fullName: 'مدرّب في التهيئة', email: 'suggest-e@test.local' })
+    await prisma.trainerApplication.update({ where: { id: made.applicationId }, data: { status: 'onboarding' } })
+    const only = { pitch: { [made.profileId]: DRAFT_PITCH }, bio: {} }
+    expect(await svc.sendAllDrafts(ACTOR, only), 'أُرسل لمن ليس نشطا ولا دورة منشورة له').toEqual({ sent: 0, failed: 0 })
+    await giveLiveCourse(prisma, made.profileId)
+    expect(await svc.sendAllDrafts(ACTOR, only), 'لم يُرسل لمن نُشرت دورته').toEqual({ sent: 1, failed: 0 })
+  })
 })

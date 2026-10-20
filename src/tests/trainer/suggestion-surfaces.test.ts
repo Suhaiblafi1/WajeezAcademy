@@ -96,6 +96,20 @@ describe('بطاقة المدرّب: إضافة تعدّل، ونبذة قبل �
     expect(ops, 'العدد لا يقرأ المسوّدتين').toMatch(/\(t\.pitchDraft \? 1 : 0\) \+ \(t\.bioDraft \? 1 : 0\)/)
     expect(ops, 'الزرّ لا يغيب حين لا مسوّدة').toMatch(/\{draftCount > 0 && \(/)
   })
+
+  it('⚠️ والعدد لمن يصله الإرسال وحده — النشطون ومن نُشرت دوراتهم', () => {
+    expect(ops).toMatch(/\.filter\(\(t\) => t\.applicationStatus === "active" \|\| t\.hasLiveCourse\)/)
+  })
+
+  it('⚠️ وملفّات المدرّبين خلف صلاحيّة قراءة الطلبات — في الخادم والشاشة', () => {
+    const path = "/api/admin/trainers/drafting-bundle'"
+    const at = adminRoutes.indexOf(path)
+    expect(at, 'لا مسار').toBeGreaterThan(-1)
+    expect(adminRoutes.slice(at, at + 200), 'بلا حارس قراءة الطلبات').toContain("requirePermission('trainer.applications.view')")
+    expect(ops).toContain('sessionUser?.permissions.includes("trainer.applications.view")')
+    expect(ops, 'الزرّ لا يغيب عمّن لا يقرأ الطلبات').toMatch(/\{canDownloadFiles && \(/)
+    expect(ops).toContain('"/api/admin/trainers/drafting-bundle"')
+  })
 })
 
 describe('المسوّدات تجتاز القواعد نفسها', () => {
