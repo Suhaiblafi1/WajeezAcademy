@@ -29,6 +29,7 @@ export default function CourseCertificate({
   certificates,
   request,
   onChanged,
+  onlyIfEligible = false,
 }: {
   enrollmentId: string;
   courseTitleAr: string;
@@ -36,6 +37,8 @@ export default function CourseCertificate({
   /** الطلبُ القائم إن كان — تقرؤه الصفحةُ مرّةً وتوزّعه، فلا نداءَ لكلّ مرحلة */
   request?: LearnerRequest | null;
   onChanged: () => void;
+  /** قبل آخر الدورة: لا يُعرض إلّا لمن استوفى قواعد إكمالها — فلا قائمةُ «ما يبقى» في منتصفها */
+  onlyIfEligible?: boolean;
 }) {
   const issued = certificates.find((c) => c.status === "active") ?? null;
   const [eligibility, setEligibility] = useState<Eligibility | null>(null);
@@ -87,6 +90,12 @@ export default function CourseCertificate({
       </Card>
     );
   }
+
+  /* ═══ والمستوفي قبل ١٠٠٪ يرى طلبَه (٢٠ أكتوبر ٢٠٢٦) ═══
+     كان المربّعُ يظهر عند ١٠٠٪ وحدَها — والنسبةُ تزن الحضورَ كاملا والمحاورَ والمهامَّ معا، وقاعدةُ
+     الإكمال أقلُّ منها (الافتراضيُّ تكليفٌ واحدٌ مقبول). فمن استوفاها عند ٤٠٪ لا يرى بابَ شهادته
+     حتّى تبلغ النسبةُ ما لا تبلغه. فقبل آخر الدورة يُعرض لمن قال الخادمُ إنّه مستوفٍ — ولا شيءَ لسواه. */
+  if (onlyIfEligible && !eligibility?.eligible) return null;
 
   return (
     <Card className="p-3.5">
