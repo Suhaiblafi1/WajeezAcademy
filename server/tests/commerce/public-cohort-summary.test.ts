@@ -24,11 +24,11 @@ async function listed() {
   return row!
 }
 
-const plan = (status: string, summaryAr: string, minutesAgo: number, trainer = true) =>
+const plan = (status: string, summaryAr: string, minutesAgo: number, trainer = true, extra: Record<string, unknown> = {}) =>
   prisma.cohortDeliveryPlan.create({
     data: {
       cohortId, trainerId: trainer ? profileId : null, status,
-      content: { kind: 'trainer', modules: [], resources: [], summaryAr },
+      content: { kind: 'trainer', modules: [], resources: [], summaryAr, ...extra },
       createdAt: new Date(Date.now() - minutesAgo * 60_000),
     },
   })
@@ -72,5 +72,20 @@ describe('نبذةُ الشعبة قبل الدفع', () => {
   it('والأحدثُ من المعتمَد والمنشور — بلا فراغٍ زائد', async () => {
     await plan('published', '  شعبةٌ عمليّةٌ في ستّة أسابيع.\n\nتخرج منها بخطّةٍ مكتوبة.  ', 1)
     expect((await listed()).summaryAr).toBe('شعبةٌ عمليّةٌ في ستّة أسابيع.\n\nتخرج منها بخطّةٍ مكتوبة.')
+  })
+
+  /* «لمن هذه الدورة» يقرأ مستوى الشعبة ولمن هي (٢٠ أكتوبر ٢٠٢٦) — من الخطّة التي تخرج منها النبذةُ نفسِها */
+  it('⚠️ ومستواها ولمن هي من الخطّة المعتمَدة — لا من مسودّةٍ أحدث، ورمزٌ مخترَعٌ يسقط', async () => {
+    await plan('approved', 'نبذةٌ بمستوى', 0.5, true, {
+      level: { from: 'intermediate', to: 'beginner' },
+      audience: { stages: ['fresh_graduate', 'astronaut'], goals: ['first_job'] },
+    })
+    await plan('draft', 'مسودّةٌ بمستوًى آخر', 0.2, true, {
+      level: { from: 'advanced', to: 'advanced' },
+      audience: { stages: ['manager'], goals: ['promotion'] },
+    })
+    const row = await listed()
+    expect(row.level).toEqual({ from: 'beginner', to: 'intermediate' })
+    expect(row.audience).toEqual({ stages: ['fresh_graduate'], goals: ['first_job'] })
   })
 })
