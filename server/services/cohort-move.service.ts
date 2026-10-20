@@ -10,7 +10,7 @@
      بالجرس والبريد.
    · **الردّ** يُبقي كلَّ شيءٍ كما كان، ويصل المدرّبَ بسببه. */
 
-import type { PrismaClient } from '@prisma/client'
+import type { Prisma, PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { notifyRole, safeNotify } from './notification.service'
@@ -18,18 +18,22 @@ import { SessionInviteService } from './session-invite.service'
 import { getZoomConfig, updateZoomMeeting, zoomReady } from './zoom.service'
 import { termBounds, termOf } from '../../src/application/terms/season'
 import { fmtDateWith } from '../../src/application/text/format-ar'
-import { ACADEMY_ZONE } from '../../src/application/trainer/cohort-period'
+import { ACADEMY_ZONE, asPeriod, periodBounds, realDate } from '../../src/application/trainer/cohort-period'
+import { shiftDay, shiftPlan, type CopyablePlan } from '../../src/application/trainer/plan-copy'
 import {
   moveProblemAr, moveReminderAt, moveShiftMs, shiftDate, termLabelAr, type TermRef,
 } from '../../src/application/trainer/cohort-move'
 import { TRAINING_SEASON_VALUES, type TrainingSeason } from '../../src/application/trainer/application-options'
 import { ensureTerm } from './term-ensure'
+import { APPROVED_PLAN_STATUSES } from './registration-window'
 
 /** من يُبلَّغ بطلبٍ جديد — من يملك قرارَ الشعب */
 export const COHORT_MOVE_STAFF_ROLES = ['super_admin', 'academic_manager', 'operations_manager']
 
 const isSeason = (s: string | null | undefined): s is TrainingSeason =>
   Boolean(s && (TRAINING_SEASON_VALUES as readonly string[]).includes(s))
+
+const DAY_MS = 86_400_000
 
 const dayAr = (d: Date) => fmtDateWith(d, { year: 'numeric', month: 'long', day: 'numeric', timeZone: ACADEMY_ZONE })
 
@@ -39,25 +43,35 @@ export class CohortMoveService {
     this.prisma = prisma
   }
 
-  /** فصلُ الشعبة اليوم وأوّلُ لقاءاتها — من فصلها المربوط، وإلّا من أوّل موعدٍ فيها */
-  async where(cohortId: string): Promise<{ status: string; title: string; current: TermRef | null; firstStartsAt: Date | null }> {
+  /** فصلُ الشعبة اليوم وأوّلُ لقاءاتها — من أوّل موعدٍ فيها، ثمّ بدئها المقترَح، ثمّ فصلها المربوط */
+  async where(cohortId: string): Promise<{
+    status: string; title: string; current: TermRef | null; firstStartsAt: Date | null; proposedStartsAt: Date | null
+  }> {
     const c = await this.prisma.cohort.findUnique({
       where: { id: cohortId },
       select: {
         status: true, title: true, startsAt: true,
         term: { select: { year: true, season: true } },
         sessions: { where: { status: { notIn: ['cancelled'] } }, orderBy: { startsAt: 'asc' }, take: 1, select: { startsAt: true } },
+        plans: { where: { trainerId: { not: null } }, orderBy: { createdAt: 'desc' }, take: 1, select: { content: true } },
       },
     })
     if (!c) throw new AuthError('not_found', 'الشعبة غير موجودة', 404)
     const firstStartsAt = c.sessions[0]?.startsAt ?? c.startsAt ?? null
+    /* ═══ وشعبةُ الإعداد بلا موعدٍ بعد — فصلُها من البدء المقترَح في خطّتها (٢٠ أكتوبر ٢٠٢٦) ═══
+       «انقلها إلى فصل آخر» صار في بطاقة شعبة الإعداد أيضا (`CohortBoard`). وتلك لا بدءَ لها حتّى تُعتمد خطّتُها
+       (`applyPeriod`)، ومدّتُها المقترحةُ في الخطّة. فمنها يُعرف فصلُها وتُحسب الإزاحة — ولا تُعدّ «أوّلَ لقاءٍ
+       مضى»: مقترحٌ قديمٌ في مسودّةٍ لا يمنع نقلَها إلى فصلٍ قادم. */
+    const proposed = asPeriod(c.plans[0]?.content as { startsOn?: string | null; endsOn?: string | null } | null)
+    const proposedStartsAt = proposed && realDate(proposed.startsOn) ? periodBounds(proposed).from : null
     /* ═══ وفصلُها من أوّل لقائها لا من صفّ فصلها (١٩ أكتوبر ٢٠٢٦) ═══
        منه تُحسب الإزاحةُ (`moveShiftMs`) وتُستثنى من الخيارات — وصفُّ الفصل قد يفترق عن المواعيد (التأجيلُ يكتبه
        قبل أن تتحرّك)، فتقع المواعيدُ في غير ما اختير. وبطاقةُ المدرّب تحسبه من أوّل لقاءٍ كذلك (`CohortMoveBox`). */
-    const current: TermRef | null = firstStartsAt
-      ? termOf(firstStartsAt)
+    const anchor = firstStartsAt ?? proposedStartsAt
+    const current: TermRef | null = anchor
+      ? termOf(anchor)
       : c.term && isSeason(c.term.season) ? { year: c.term.year, season: c.term.season } : null
-    return { status: c.status, title: c.title, current, firstStartsAt }
+    return { status: c.status, title: c.title, current, firstStartsAt, proposedStartsAt }
   }
 
   /** يطلب المدرّبُ — ولا يتغيّر شيء */
@@ -74,7 +88,7 @@ export class CohortMoveService {
     const created = await this.prisma.cohortMoveRequest.create({
       data: {
         cohortId, requestedBy: userId,
-        fromYear: w.current?.year ?? null, fromSeason: w.current?.season ?? null, fromStartsAt: w.firstStartsAt,
+        fromYear: w.current?.year ?? null, fromSeason: w.current?.season ?? null, fromStartsAt: w.firstStartsAt ?? w.proposedStartsAt,
         toYear: target.year, toSeason: target.season, reason: input.reason.trim(),
       },
     })
@@ -174,8 +188,9 @@ export class CohortMoveService {
       title = w.title
       const problem = moveProblemAr({ ...w, target, now: new Date(), reason: r.reason })
       if (problem) throw new AuthError('move_refused', problem, 409)
-      if (!w.current) throw new AuthError('move_refused', 'لا موعد للشعبة يقاس منه النقل — حدّد لقاءاتها أولا', 409)
-      shiftMs = moveShiftMs(w.current, target)
+      /* وشعبةٌ لا موعدَ فيها ولا مقترحَ ولا فصلَ — شعبةُ إعدادٍ لم يكتب مدرّبُها مدّتَها بعد — لا شيءَ فيها يُزاح:
+         نقلُها ربطُها بفصلها الجديد وحدَه. وكان يُردّ «حدّد لقاءاتها أولا»، أي يُطلب منه عملٌ قبل أن يؤجّل. */
+      shiftMs = w.current ? moveShiftMs(w.current, target) : 0
     }
 
     const decided = await this.prisma.$transaction(async (tx) => {
@@ -184,7 +199,10 @@ export class CohortMoveService {
         data: { status: input.action === 'approve' ? 'approved' : 'rejected', reviewedBy: reviewerId, reviewedAt: new Date(), reviewerComment: comment },
       })
       if (input.action === 'approve') {
-        const c = await tx.cohort.findUniqueOrThrow({ where: { id: r.cohortId }, select: { startsAt: true, endsAt: true, joinClosesAt: true } })
+        const c = await tx.cohort.findUniqueOrThrow({
+          where: { id: r.cohortId },
+          select: { startsAt: true, endsAt: true, joinClosesAt: true, scheduleWindowStart: true, scheduleWindowEnd: true },
+        })
         /* والفصلُ يُنشأ إن لم يكن — فلا تسقط المنقولةُ إلى «بلا فصل» (`term-ensure.ts`) */
         const term = await ensureTerm(tx, target)
         await tx.cohort.update({
@@ -192,8 +210,30 @@ export class CohortMoveService {
           data: {
             startsAt: shiftDate(c.startsAt, shiftMs), endsAt: shiftDate(c.endsAt, shiftMs),
             joinClosesAt: shiftDate(c.joinClosesAt, shiftMs), termId: term?.id ?? null,
+            /* ونافذةُ جدولة مدرّبها تنتقل معها (٢٠ أكتوبر ٢٠٢٦): بقاؤها في الفصل القديم يمنعه أن يضع
+               لقاءً في مواعيد شعبته الجديدة (`schedule-window.ts`) */
+            scheduleWindowStart: shiftDate(c.scheduleWindowStart, shiftMs),
+            scheduleWindowEnd: shiftDate(c.scheduleWindowEnd, shiftMs),
           },
         })
+        /* ═══ وخطّتُها التي لم تُعتمد بعدُ تنتقل معها (٢٠ أكتوبر ٢٠٢٦) ═══
+           شعبةُ الإعداد مواعيدُها في خطّتها لا عليها: المدّةُ المقترحة ومواعيدُ المحاور ولحظاتُ فتح المصادر. فلو
+           بقيت لاعتُمدت الخطّةُ بمدّتها القديمة وعادت الشعبةُ إلى فصلها الأوّل (`applyPeriod`). فتُزاح بالأسابيع
+           نفسِها بما يُزاح به النسخُ (`shiftPlan`). والمعتمَدةُ لا تُمسّ: ما اعتُمد يُغيَّر بمراجعةٍ تُعتمد. */
+        if (shiftMs !== 0) {
+          const plan = await tx.cohortDeliveryPlan.findFirst({
+            where: { cohortId: r.cohortId, trainerId: { not: null } }, orderBy: { createdAt: 'desc' },
+            select: { id: true, status: true, content: true },
+          })
+          const content = plan?.content as CopyablePlan | null | undefined
+          if (plan && !(APPROVED_PLAN_STATUSES as readonly string[]).includes(plan.status)
+            && content?.startsOn && Array.isArray(content.resources)) {
+            const shifted = shiftPlan(content, shiftDay(content.startsOn, Math.round(shiftMs / DAY_MS)))
+            if (shifted) {
+              await tx.cohortDeliveryPlan.update({ where: { id: plan.id }, data: { content: shifted.plan as Prisma.InputJsonValue } })
+            }
+          }
+        }
         const sessions = await tx.cohortSession.findMany({
           where: { cohortId: r.cohortId, status: { notIn: ['done', 'cancelled'] } }, select: { id: true, startsAt: true, endsAt: true },
         })
@@ -274,7 +314,7 @@ export class CohortMoveService {
     const created = await this.prisma.cohortMoveRequest.create({
       data: {
         cohortId, requestedBy: actorId,
-        fromYear: w.current?.year ?? null, fromSeason: w.current?.season ?? null, fromStartsAt: w.firstStartsAt,
+        fromYear: w.current?.year ?? null, fromSeason: w.current?.season ?? null, fromStartsAt: w.firstStartsAt ?? w.proposedStartsAt,
         toYear: target.year, toSeason: target.season, reason,
       },
     })
