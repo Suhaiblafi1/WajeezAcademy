@@ -84,8 +84,10 @@ export default function TabBar<K extends string>({
       /* ولماذا `inline-flex` لا `flex`: أوّلُ رسمٍ للمعاينة أظهر الحاويَ
          يمتدّ بعرض الصفحة كلِّها والألسنةَ مكوَّمةً في طرفه — حبّةٌ فارغةٌ
          طولُها ألفُ بكسل. فالشريطُ يقيس محتواه، و`max-w-full` يردّه إلى
-         الالتفاف على الضيّق بدل أن يفيض. */
-      className={`inline-flex max-w-full flex-wrap gap-1 rounded-full border border-white/15 p-1 ${className}`.trim()}
+         الالتفاف على الضيّق بدل أن يفيض.
+         ونصفُ قطرِ الزاوية ثابتٌ لا `rounded-full` (٢٠ أكتوبر ٢٠٢٦): الشريطُ الملتفُّ سطرين صار به بيضةً كبيرة
+         (فلاترُ «المدربون» السبعة). و٢٫٢٥rem فوق نصف ارتفاع الشريط ذي السطر الواحد — فيبقى حبّةً كما كان. */
+      className={`inline-flex max-w-full flex-wrap gap-1 rounded-[2.25rem] border border-white/15 p-1 ${className}`.trim()}
     >
       {items.map((t, i) => {
         const on = t.id === value

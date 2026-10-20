@@ -18,6 +18,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { hiddenOnSale } from '@/application/trainer/trainer-card'
+import { TRAINER_STATES, trainerStateOf } from '@/application/trainer/trainer-status'
 
 const SHOWN = { publiclyVisible: true, isVerified: true, suspended: false }
 
@@ -54,15 +55,29 @@ describe('له دورات منشورة واسمه لا يظهر', () => {
   })
 })
 
+/* ═══ وصار الوسمُ حالَ السطر المطويّ (٢٠ أكتوبر ٢٠٢٦، `trainer-status.ts`) ═══
+   «كلُّ مدرّبٍ مضمومٌ مكتوبٌ حالُه». فالوسمُ شارةُ حاله «اسمه لا يظهر» في سطره، والترتيبُ ترتيبُ الحالات —
+   وهي أولاها، قبل «ينتظرك». والقصدُ نفسُه: الغائبُ يُرى بلا قراءة البطاقات، وأوّلَ القائمة. */
 describe('الشاشة تعرض الوسم وترتب به أولا', () => {
   const screen = readFileSync(join(process.cwd(), 'src/pages/admin/TrainerRunOps.tsx'), 'utf8')
+  const hidden = { ...SHOWN, publiclyVisible: false, hasLiveCourse: true }
 
   it('⚠️ الوسم على البطاقة', () => {
-    expect(screen).toMatch(/\{hiddenOnSale\(t\) && \(\s*<Chip[^>]*>له دورات منشورة واسمه لا يظهر<\/Chip>/)
+    expect(trainerStateOf({
+      ...hidden, hasAccount: true, applicationStatus: 'active', photoUrl: '/p.jpg', pendingPhotoUrl: null, pendingText: null,
+      pitchDraft: null, bioDraft: null, pitchLatest: null, bioLatest: null, cohorts: [], contract: null, queue: { requests: 0, toAccept: 0 },
+    })).toBe('hidden')
+    expect(TRAINER_STATES.find((x) => x.id === 'hidden')?.ar).toBe('اسمه لا يظهر')
+    /* وفي السطر المطويّ شارةُ حاله — من `TRAINER_STATES` */
+    expect(screen).toMatch(/const meta = TRAINER_STATES\.find\(\(x\) => x\.id === state\)!;/)
+    expect(screen).toMatch(/aria-expanded=\{isOpen\}[\s\S]{0,600}<Chip tone=\{meta\.tone\}[^>]*>\{meta\.ar\}<\/Chip>/)
   })
 
   it('⚠️ والموسوم أول القائمة — قبل ما ينتظرك', () => {
-    expect(screen).toMatch(/const opsRank = \(t: OpsTrainer\) => \(hiddenOnSale\(t\) \? 2 : t\.pendingText \|\| t\.pendingPhotoUrl \? 1 : 0\)/)
-    expect(screen).toMatch(/\.sort\(\(a, b\) => opsRank\(b\) - opsRank\(a\)\)/)
+    const order = TRAINER_STATES.map((x) => x.id)
+    expect(order.indexOf('hidden')).toBe(0)
+    expect(order.indexOf('hidden')).toBeLessThan(order.indexOf('you'))
+    expect(screen).toMatch(/const STATE_ORDER = Object\.fromEntries\(TRAINER_STATES\.map\(\(x, i\) => \[x\.id, i\]\)\)/)
+    expect(screen).toMatch(/\.sort\(\(a, b\) => STATE_ORDER\[a\.state\] - STATE_ORDER\[b\.state\]/)
   })
 })

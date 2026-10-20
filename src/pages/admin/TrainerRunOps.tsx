@@ -26,7 +26,7 @@
 import PrepReminderRow, { ReminderDeadline, type ReminderRow } from "@/components/admin/PrepReminders";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  BadgeCheck, CheckCircle2, Clock, Download, GraduationCap, ImagePlus, Loader2, Search,
+  BadgeCheck, CheckCircle2, ChevronDown, Clock, Download, GraduationCap, ImagePlus, Loader2, Search,
   Send, ServerOff, ShieldAlert, UserPlus, Users, XCircle,
 } from "lucide-react";
 import { toast, toastError } from "@/components/Toast";
@@ -46,12 +46,16 @@ import { useRealSession } from "@/services/session";
 import { Card, Inset, Panel } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import Chip from "@/components/ui/Chip";
+import TabBar from "@/components/ui/TabBar";
 import { BIO_MAX_WORDS, countWords } from "@/application/trainer/public-text";
 import { PITCH_MAX_CHARS, PITCH_MAX_LINES, PITCH_MAX_WORDS, bioSuggestionProblemAr, cleanPitchLines, pitchHeadingAr, pitchProblemAr } from "@/application/trainer/pitch";
 import {
-  cohortLineAr, cohortsTallyAr, hiddenOnSale, photoTrailAr, planMarkAr, planMarkOf, PLAN_MARK, textTrailAr,
+  cohortLineAr, cohortsTallyAr, photoTrailAr, planMarkAr, planMarkOf, PLAN_MARK, textTrailAr,
   type CardCohort, type ProfileTrail,
 } from "@/application/trainer/trainer-card";
+import {
+  quietLineAr, stepsLineAr, TRAINER_STATES, trainerStateOf, trainerSteps, type TrainerState,
+} from "@/application/trainer/trainer-status";
 interface OpsQualification { courseId: string; courseTitle: string; status: string }
 interface OpsTrainer {
   profileId: string;
@@ -84,11 +88,13 @@ interface OpsTrainer {
   cohorts: CardCohort[];
   /* ومن وضع صورتَه ومن كتب نبذتَه — من الأثر */
   trail: ProfileTrail;
+  /* آخرُ عقدٍ غيرِ مُزاح — من عليه الخطوةُ ما دام طلبُه غيرَ نشط (`trainer-status.ts`) */
+  contract: { status: string } | null;
 }
 
-/** آخرُ ما اقترحناه على بطاقته من نوعٍ — ولا يُقرأ المسحوب */
-/** ترتيبُ البطاقة في القائمة — الأعلى أوّلا */
-const opsRank = (t: OpsTrainer) => (hiddenOnSale(t) ? 2 : t.pendingText || t.pendingPhotoUrl ? 1 : 0);
+/** ترتيبُ الحال في القائمة — ترتيبُ الفلاتر نفسُه */
+const STATE_ORDER = Object.fromEntries(TRAINER_STATES.map((x, i) => [x.id, i])) as Record<TrainerState, number>;
+type TrainerFilter = TrainerState | "all";
 
 interface OpsSuggestion {
   id: string;
@@ -631,6 +637,14 @@ export default function TrainerRunOps() {
   const [offline, setOffline] = useState<string | null>(null);
   const [busy, setBusy] = useState("");
   const [q, setQ] = useState("");
+  /* الفلترُ حالٌ واحدة، والمفتوحُ من البطاقات ما فتحه هو (`trainer-status.ts`) */
+  const [filter, setFilter] = useState<TrainerFilter>("all");
+  const [openIds, setOpenIds] = useState<Set<string>>(new Set());
+  const toggleOpen = (id: string) => setOpenIds((prev) => {
+    const next = new Set(prev);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    return next;
+  });
   const [note, setNote] = useState<Record<string, string>>({});
   const [suspendTarget, setSuspendTarget] = useState<OpsTrainer | null>(null);
   const [prepOpen, setPrepOpen] = useState(false);
@@ -757,12 +771,30 @@ export default function TrainerRunOps() {
     }
   };
 
+  /* ═══ حالُ كلِّ مدرّبٍ وما ينتظره — سطرٌ واحدٌ مطويّ (٢٠ أكتوبر ٢٠٢٦، `trainer-status.ts`) ═══
+     «هذه الصفحةُ طويلةٌ ومعقّدة.. فلاترُ واضحةٌ لكلّ الحالات، وكلُّ مدرّبٍ مضمومٌ مكتوبٌ حالُه وما المطلوبُ منّي
+     أو منه». والطابورُ يقول ما لا تقوله بياناتُه: طلباتُ تأهيلٍ تنتظرك، ودوراتٌ عُرضت عليه لم يقبلها. */
+  const rows = useMemo(() => (trainers ?? []).map((t) => {
+    const input = {
+      ...t,
+      queue: {
+        requests: asks.filter((r) => r.profile.id === t.profileId).length,
+        toAccept: preparing.filter((r) => r.profile.id === t.profileId && (r.prep?.state ?? "to_decide") === "to_decide").length,
+      },
+    };
+    const steps = trainerSteps(input);
+    return { t, steps, state: trainerStateOf(input, steps) };
+  }), [trainers, asks, preparing]);
+  const counts = useMemo(() => {
+    const m: Record<TrainerState, number> = { hidden: 0, you: 0, trainer: 0, ready: 0, idle: 0, suspended: 0 };
+    for (const r of rows) m[r.state] += 1;
+    return m;
+  }, [rows]);
   const shown = useMemo(
-    () => (trainers ?? [])
-      .filter((t) => matchesQuery(q, [t.name, t.email]))
-      /* أوّلا من له دوراتٌ منشورةٌ واسمُه لا يظهر — غائبٌ عن صفحة المدرّبين وشعبه بلا اسم (`hiddenOnSale`)، ثمّ ما ينتظر قرارَك */
-      .sort((a, b) => opsRank(b) - opsRank(a)),
-    [trainers, q],
+    () => rows
+      .filter((r) => (filter === "all" || r.state === filter) && matchesQuery(q, [r.t.name, r.t.email]))
+      .sort((a, b) => STATE_ORDER[a.state] - STATE_ORDER[b.state] || a.t.name.localeCompare(b.t.name, "ar")),
+    [rows, filter, q],
   );
 
   if (offline) {
@@ -941,6 +973,13 @@ export default function TrainerRunOps() {
           </div>
         </div>
 
+        {/* فلاترُ الحال — مجموعُها عددُ المدرّبين، وكلُّ مدرّبٍ في واحدٍ منها */}
+        <TabBar className="mt-3" ariaLabel="حالات المدربين" value={filter} onChange={setFilter}
+          items={[
+            { id: "all" as const, label: `الكل (${rows.length})` },
+            ...TRAINER_STATES.map((x) => ({ id: x.id, label: `${x.ar} (${counts[x.id]})` })),
+          ]} />
+
         {/* ── تعيينُ مدرّبٍ داخليّا ──
 
             لم يكن للمدير طريقٌ إلى هذا أصلا: ملفُّ المدرّب لا يُنشأ إلّا من
@@ -1021,44 +1060,55 @@ export default function TrainerRunOps() {
         {shown.length === 0 ? (
           <Card className="mt-3 p-8 text-center">
             <GraduationCap className="mx-auto h-10 w-10 text-muted-foreground/50" />
-            <p className="mt-3 text-sm font-black">لا مدرّب بعد</p>
-            <p className="mt-1 text-read leading-6 text-muted-foreground">
-              يظهر هنا كل من تقبله في «طلبات المدربين».
-            </p>
+            {rows.length === 0 ? (
+              <>
+                <p className="mt-3 text-sm font-black">لا مدرّب بعد</p>
+                <p className="mt-1 text-read leading-6 text-muted-foreground">
+                  يظهر هنا كل من تقبله في «طلبات المدربين».
+                </p>
+              </>
+            ) : (
+              <p className="mt-3 text-read text-muted-foreground">لا مدرب في هذه الحال.</p>
+            )}
           </Card>
         ) : (
           <ul className="mt-3 space-y-3">
-            {shown.map((t) => {
+            {shown.map(({ t, steps, state }) => {
               const k = (a: string) => `${t.profileId}:${a}`;
+              const meta = TRAINER_STATES.find((x) => x.id === state)!;
+              const isOpen = openIds.has(t.profileId);
+              const yours = stepsLineAr(steps, "you");
+              const his = stepsLineAr(steps, "trainer");
+              const quiet = quietLineAr(state, t.applicationStatus);
               return (
                 <Card as="li" key={t.profileId}>
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="flex flex-wrap items-center gap-x-2 text-sm font-black">
+                  {/* السطرُ المطويّ: اسمُه وحالُه، وما المطلوبُ ومن مَن، وعدّادُ شعبه — ويُفتح للبطاقة كلِّها */}
+                  <button type="button" onClick={() => toggleOpen(t.profileId)} aria-expanded={isOpen}
+                    className="flex w-full cursor-pointer items-start gap-3 rounded-xl text-right focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal focus-visible:ring-offset-2 focus-visible:ring-offset-paper">
+                    <div className="min-w-0 flex-1">
+                      <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-black">
                         {t.name}
-                        {t.suspended && <span className="rounded-full bg-red-500/15 px-2 py-0.5 text-fine font-black text-red-300">موقوف</span>}
-                        {(t.pendingText || t.pendingPhotoUrl) && (
-                          <Chip tone="warn" srPrefixAr="ملفّه العامّ">
-                            {t.pendingText && t.pendingPhotoUrl ? "نبذة وصورة تنتظرانك"
-                              : t.pendingText ? "نبذة تنتظرك" : "صورة تنتظرك"}
-                          </Chip>
-                        )}
-                        {hiddenOnSale(t) && (
-                          <Chip tone="danger" srPrefixAr="ظهوره العامّ">له دورات منشورة واسمه لا يظهر</Chip>
-                        )}
-                        {t.publiclyVisible && t.hasLiveCourse && (
-                          <span className="flex items-center gap-1 rounded-full bg-teal/15 px-2 py-0.5 text-fine font-black text-teal-light-ink">
-                            <BadgeCheck className="h-3 w-3" /> ظاهر للعامّة
-                          </span>
-                        )}
-                        {/* قرارُ ١٩ أكتوبر ٢٠٢٦: لا يظهر للعامّة من لا دورةَ منشورةً له هذا الفصلَ أو بعده */}
-                        {t.publiclyVisible && !t.hasLiveCourse && (
-                          <Chip tone="neutral" srPrefixAr="ظهوره العامّ">معتمد ولا يظهر: لا دورة منشورة له هذا الفصل</Chip>
-                        )}
+                        <Chip tone={meta.tone} srPrefixAr="حاله">{meta.ar}</Chip>
                       </p>
-                      <p dir="ltr" className="mt-0.5 text-right text-read text-muted-foreground">{t.email}</p>
+                      {yours && <p className="mt-1.5 text-read font-bold leading-6 text-gold-ink">{yours}</p>}
+                      {his && <p className="mt-1 text-read leading-6 text-teal-light-ink">{his}</p>}
+                      {quiet && <p className="mt-1.5 text-read leading-6 text-muted-foreground">{quiet}</p>}
+                      <p className="mt-1 text-read text-muted-foreground">{cohortsTallyAr(t.cohorts)}</p>
                     </div>
-                  </div>
+                    <ChevronDown className={`mt-1 h-4 w-4 shrink-0 text-muted-foreground transition ${isOpen ? "rotate-180" : ""}`} aria-hidden="true" />
+                  </button>
+
+                  {isOpen && (<>
+                  <p dir="ltr" className="mt-3 border-t border-white/10 pt-3 text-right text-read text-muted-foreground">{t.email}</p>
+                  {t.publiclyVisible && t.hasLiveCourse && (
+                    <p className="mt-1 flex items-center gap-1 text-read font-bold text-teal-light-ink">
+                      <BadgeCheck className="h-3 w-3" /> ظاهر للعامّة
+                    </p>
+                  )}
+                  {/* قرارُ ١٩ أكتوبر ٢٠٢٦: لا يظهر للعامّة من لا دورةَ منشورةً له هذا الفصلَ أو بعده */}
+                  {t.publiclyVisible && !t.hasLiveCourse && (
+                    <p className="mt-1 text-read text-muted-foreground">معتمد ولا يظهر: لا دورة منشورة له هذا الفصل</p>
+                  )}
 
                   {/* ما يمنع الخطوةَ التالية — يُقال قبل الضغط لا بعده */}
                   {!t.hasAccount && (
@@ -1094,6 +1144,7 @@ export default function TrainerRunOps() {
                       </Button>
                     )}
                   </div>
+                  </>)}
                 </Card>
               );
             })}
