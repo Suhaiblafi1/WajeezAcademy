@@ -32,6 +32,7 @@ import { LEARNER_PLAN_QUERY } from './learner-gate'
 import { LEARNER_SESSION_WHERE } from './session-visibility'
 import { SEATED, SessionInviteService } from './session-invite.service'
 import { cohortTitleAr, nextCohortNumber } from '../../src/application/learning/cohort-title'
+import { MATERIALS_STATUSES } from '../../src/application/trainer/portal-access'
 
 /** ترتيبُ اليوم في الأسبوع — الأحدُ صفر، كما في `Date.getUTCDay` */
 const DAY_INDEX: Record<string, number> = Object.fromEntries(DAY_CODES.map((d, i) => [d, i]))
@@ -76,10 +77,10 @@ export class CohortService {
       orderBy: { createdAt: 'desc' },
       include: {
         course: { include: { versions: { orderBy: { version: 'desc' }, take: 1 } } },
-        trainers: { include: { profile: { include: { application: { select: { fullName: true } } } } } },
+        trainers: { include: { profile: { include: { application: { select: { fullName: true, status: true } } } } } },
         sessions: true,
-        /* خططُ مدرّبها بحالاتها — `PLAN_GATE_SELECT` */
-        plans: { where: { trainerId: { not: null } }, select: { status: true } },
+        /* خططُ مدرّبها بحالاتها — `PLAN_GATE_SELECT`، والأحدثُ أوّلا لما تقوله القائمة */
+        plans: { where: { trainerId: { not: null } }, orderBy: { createdAt: 'desc' }, select: { status: true } },
         _count: { select: { enrollments: { where: { status: 'enrolled' } } } },
         /* آخرُ نقلٍ معتمَدٍ إلى فصلٍ آخر — يُوسَم به رأسُ الشعبة (`cohort-move.ts`) */
         moveRequests: { where: { status: 'approved' }, orderBy: { reviewedAt: 'desc' }, take: 1, select: { toYear: true, toSeason: true } },
@@ -95,7 +96,13 @@ export class CohortService {
       sessionsCount: c.sessions.length,
       /* نافذةُ جدولةِ المدرّب — تُقرأ في الشاشة لتُعرَض مفتوحةً أو مغلقة */
       scheduleWindowStart: c.scheduleWindowStart, scheduleWindowEnd: c.scheduleWindowEnd,
-      trainers: c.trainers.map((t) => ({ profileId: t.profileId, name: t.profile.application.fullName, role: t.role })),
+      /* وموقوفُها يُقال في القائمة (٢٠ أكتوبر ٢٠٢٦، `cohortNextStep`): إيقافٌ إداريٌّ، أو حالٌ لا يفتح له
+         بابَ موادّه (ليس في الإعداد ولا نشطا) — `portal-access.ts` */
+      trainers: c.trainers.map((t) => ({
+        profileId: t.profileId, name: t.profile.application.fullName, role: t.role,
+        suspended: t.profile.suspendedAt !== null || !MATERIALS_STATUSES.includes(t.profile.application.status),
+      })),
+      trainerPlanStatus: c.plans[0]?.status ?? null,
       /* اعتُمدت لمدرّبها خطّة؟ — شرطُ عرضِها وبيعِها (١٢ أكتوبر ٢٠٢٦). تقرؤه الشاشة
          فتقول «مخفيّةٌ عن الموقع» لمفتوحةٍ بلا مدرّبٍ معتمَد، و«تنتظر فتحك» لمسوّدةٍ
          اعتُمدت — فلا تُقرأ «مفتوحة للتسجيل» شعبةٌ يردّها الكتالوجُ والدفع */

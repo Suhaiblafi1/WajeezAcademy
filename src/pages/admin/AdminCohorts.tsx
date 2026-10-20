@@ -9,7 +9,7 @@ import { apiGet, apiPost, apiPut, ApiError } from "@/services/api";
 import { staffControlCls, staffSelectCls } from "@/components/FormKit";
 import { CohortOps, LearningSettings } from "./CohortOps";
 import { COHORT_TABS, type CohortTab } from "./cohort-tabs";
-import { awaitsOpening, COHORT_LISTS, inCohortList, type CohortList } from "./cohort-lists";
+import { cohortNextStep, COHORT_LISTS, inCohortList, type CohortList, type NextTone } from "./cohort-lists";
 import OpenApproved from "@/components/admin/OpenApproved";
 import { tabForGap } from "@/application/learning/open-gaps";
 import CohortReadiness from "./CohortReadiness";
@@ -61,7 +61,9 @@ interface CohortRow {
   registrationOpen: boolean; financialReady: boolean; sessionsCount: number;
   /* نافذةُ جدولةِ المدرّب — الثلاثةُ تُقرأ معا، وغيابُ أيٍّ منها بابٌ مغلَق */
   scheduleWindowStart: string | null; scheduleWindowEnd: string | null;
-  trainers: { profileId: string; name: string; role: string }[];
+  trainers: { profileId: string; name: string; role: string; suspended?: boolean }[];
+  /** حالُ أحدث خطّةٍ لمدرّبها — «تنتظر مراجعتك» أم «تنتظر خطّته» (`cohortNextStep`) */
+  trainerPlanStatus?: string | null;
   /** اعتُمدت لمدرّبها خطّة — شرطُ عرضِها في الموقع وبيعِها (١٢ أكتوبر ٢٠٢٦) */
   trainerPlanApproved: boolean;
   /** نُقلت إلى فصلٍ آخر — آخرُ نقلٍ معتمَد، وأوّلُ لقاءٍ فيها الآن (١٧ أكتوبر ٢٠٢٦) */
@@ -76,6 +78,13 @@ interface CourseOption {
 type Flash = { kind: "ok" | "error"; text: string } | null
 interface SessionOption { id: string; title: string; startsAt: string; hasZoom: boolean }
 interface Checklist { ready: boolean; missing: string[] }
+
+const NEXT_TONE_CLS: Record<NextTone, string> = {
+  warn: "border-gold/50 text-gold-ink",
+  danger: "border-red-500/40 text-red-400",
+  info: "border-teal/50 text-teal-light-ink",
+  ok: "border-teal/50 text-teal-light-ink",
+};
 
 /** عمليات الشعب — API حقيقي: إنشاء، شروط الفتح الستة، جلسات، Zoom يدوي، تسجيل بسعة محروسة */
 export default function AdminCohorts() {
@@ -502,25 +511,19 @@ export default function AdminCohorts() {
                       {c.price ? ` · ${c.price} ${c.currency}` : ""}
                     </p>
                   </div>
-                  {/* الحالةُ وحدَها لا تقول ما يراه الزائر: شعبةٌ «مفتوحة» بلا خطّة مدرّبٍ
-                      معتمَدة لا يعرضها الموقعُ ولا يبيعها، ومسوّدةٌ اعتُمدت خطّتُها تنتظر
-                      قرارَ فتحها. فيُقال الاثنان بجانب الحالة (١٢ أكتوبر ٢٠٢٦) */}
-                  {isLiveCohort(c.status) && !c.trainerPlanApproved && (
-                    <span className="rounded-full border border-gold/50 px-3 py-1 text-fine font-bold text-gold-ink"
-                      title="لا مدرّب معتمد — لا تعرض في الموقع ولا تباع حتّى تعتمد خطّة مدرّبها">
-                      مخفيّة عن الموقع
-                    </span>
-                  )}
+                  {/* ═══ شارةٌ واحدةٌ تقول ما تحتاجه الشعبةُ الآن (٢٠ أكتوبر ٢٠٢٦) — `cohortNextStep` ═══
+                      وكانت هنا شاراتٌ متفرّقة («مخفيّة عن الموقع»، «تنتظر فتحك») لا تقول ما لا مدرّبَ له
+                      ولا ما مدرّبُه موقوف. */}
+                  {(() => {
+                    const next = cohortNextStep(c);
+                    return next && (
+                      <span className={`rounded-full border px-3 py-1 text-fine font-bold ${NEXT_TONE_CLS[next.tone]}`}>{next.label}</span>
+                    );
+                  })()}
                   {/* نُقلت إلى فصلٍ آخر — يُرى بلا فتحها، فلا تُقرأ «تنتظر فتحك» بمواعيدها القديمة */}
                   {c.moved && (
                     <span className="rounded-full border border-gold/50 px-3 py-1 text-fine font-bold text-gold-ink">
                       {movedLabelAr(c.moved)}
-                    </span>
-                  )}
-                  {awaitsOpening(c) && (
-                    <span className="rounded-full border border-teal/50 px-3 py-1 text-fine font-bold text-teal-light-ink"
-                      title="خطّة مدرّبها معتمدة — تعرض وتباع حين تفتحها من «الهُويّة والحالة»">
-                      معتمدة — تنتظر فتحك
                     </span>
                   )}
                   <span className={`rounded-full border px-3 py-1 text-fine font-bold ${meta.cls}`}>{meta.label}</span>
@@ -861,12 +864,17 @@ export default function AdminCohorts() {
         </div>
       )}
 
-      {/* روبرك وقواعد الإكمال */}
-      <LearningSettings
-        courses={courses.map((c) => ({ id: c.id, title: c.title }))}
-        cohorts={rows.map((c) => ({ id: c.id, title: c.title }))}
-        onDone={(msg) => setFlash({ kind: "ok", text: msg })}
-      />
+      {/* ═══ روبرك وقواعد الإكمال — مطويّةٌ تحت القائمة (٢٠ أكتوبر ٢٠٢٦) ═══
+          سأل صاحبُ المنصّة عنهما: «وما هذا في الصفحة؟». أداتا تقييمٍ وشهادةٍ تُستعملان نادرا، وكانتا
+          مفتوحتين تحت كلّ شعبة تزحمان القائمة. فصارتا تحت عنوانٍ يقول ما هما، تُفتحان حين تُطلبان. */}
+      <details className="mt-8">
+        <summary className="cursor-pointer text-read font-bold text-muted-foreground">أدوات التقييم والشهادة — روبرك وقواعد إكمال</summary>
+        <LearningSettings
+          courses={courses.map((c) => ({ id: c.id, title: c.title }))}
+          cohorts={rows.map((c) => ({ id: c.id, title: c.title }))}
+          onDone={(msg) => setFlash({ kind: "ok", text: msg })}
+        />
+      </details>
     </AdminLayout>
   );
 }
