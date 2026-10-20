@@ -20,7 +20,7 @@ export interface PendingIntent {
 }
 
 export interface PendingCheckout {
-  /** صفحةُ القرار — `/pathways/:id` أو `/build/:courseId` أو `/grant/:pathwayId` */
+  /** صفحةُ القرار — `/pathways/:id` أو `/build/:courseId` أو `/grant/build` */
   path: string
   intent: PendingIntent
   /** الشعبةُ التي اختارها لكلّ دورة */
@@ -28,7 +28,7 @@ export interface PendingCheckout {
   at: number
 }
 
-/* و`/grant/:id` مسارُ منحةٍ اختاره من صفحة الحملة (٢٠ أكتوبر ٢٠٢٦، `MemberGrantPage`) */
+/* و`/grant/build` دوراتُ منحةٍ اختارها من صفحة الحملة (٢٠ أكتوبر ٢٠٢٦، `MemberGrantPage`) */
 const PATH_RE = /^\/(pathways|build|grant)\/[A-Za-z0-9_-]{1,80}$/
 const ID_RE = /^[A-Za-z0-9_-]{1,80}$/
 const KINDS = new Set(['pathway', 'course', 'courses'])

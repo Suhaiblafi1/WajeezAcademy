@@ -1,11 +1,11 @@
-/* صفحةُ «منحة أعضاء وجيز» — من النموذج إلى الكود والمسارات (٢٠ أكتوبر ٢٠٢٦).
+/* صفحةُ «منحة أعضاء وجيز» — من النموذج إلى الكود والدورات (٢٠ أكتوبر ٢٠٢٦).
 
    ═══ القرارات ═══
 
-   · «A»: **من يعبّئ النموذج يأخذ الكودَ فورا ويختار مسارَه ويدفع بنفسه**، والمستشارُ لمن يطلبه —
+   · «A»: **من يعبّئ النموذج يأخذ الكودَ فورا ويختار دوراتِه ويدفع بنفسه**، والمستشارُ لمن يطلبه —
      «فبهذه الحركة قد نكون قد أتممنا عمليّة الشراء قبل أن نذهب ونعود بإرسال رسالةٍ له ثانية».
    · **مفتوحةٌ لكلّ من يعبّئه** حتّى تنتهي المنح.
-   · **والحسابُ يُنشأ حين يختار المسار** — النموذجُ أربعُ خاناتٍ لازمة، وسؤالان اختياريّان (مستواه، وما
+   · **والحسابُ يُنشأ حين يدفع** — النموذجُ أربعُ خاناتٍ لازمة، وسؤالان اختياريّان (مستواه، وما
      يريد تطويرَه) أُضيفا بقراره (٢٠ أكتوبر ٢٠٢٦) — «الجديدُ منها اختياريّ»: لا يُسقط نموذجا تُرك فيه.
 
    ═══ ما يقع ═══
@@ -14,7 +14,7 @@
    ٢) **وكودُه في الصفحة وفي بريده.** ومن عبّأه ثانيةً لا يُعرض له الكودُ في الصفحة: يُرسَل ثانيةً إلى
       **البريد المحفوظ** ويُقال له أين — وإلّا كفى أن يكتب أحدٌ رقمَ غيره ليأخذ منحتَه.
    ٣) **والمنحةُ المغلقةُ أو المنتهيةُ لا تُسقط العميل** — يُحفظ ويُقال له السببُ، وزرُّ المستشار قائم.
-   ٤) **والمساراتُ للزائر بلا أجور المدرّبين** — دوراتُها التي تُشترى اليوم، وسعرُها بلا منحةٍ وبها.
+   ٤) **والدوراتُ للزائر بلا أجور المدرّبين** — ما يُشترى في الفصل القادم القريب (`grant-courses.service.ts`).
    ٥) **و«تواصل مع مستشار» حالةٌ واحدة** تُسند تلقائيّا — بمرجعه الذي أخذه من النموذج لا بهاتفٍ يكتبه
       أيُّ أحد.
 
@@ -25,7 +25,7 @@ import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { AdvisorService } from './advisor.service'
 import { GrantService } from './grant.service'
-import { GrantPathwayService } from './grant-pathway.service'
+import { GrantCoursesService } from './grant-courses.service'
 import { enqueueMail } from './outbox.service'
 import { publicSiteUrl } from './site-url'
 import { normalizePhone } from '../../src/application/advisor/guest-contact'
@@ -52,34 +52,20 @@ const OPEN_CASE = { notIn: ['closed', 'enrolled', 'not_interested'] }
 export class GrantLandingService {
   private prisma: PrismaClient
   private grants: GrantService
-  private pathways: GrantPathwayService
+  private courses: GrantCoursesService
   private advisors: AdvisorService
   constructor(prisma: PrismaClient) {
     this.prisma = prisma
     this.grants = new GrantService(prisma)
-    this.pathways = new GrantPathwayService(prisma)
+    this.courses = new GrantCoursesService(prisma)
     this.advisors = new AdvisorService(prisma)
   }
 
-  /** ما تعرضه الصفحة: حالُ المنحة، ومساراتُها بما يُشترى اليوم، والدوراتُ التي يُبدَّل بها */
+  /** ما تعرضه الصفحة: حالُ المنحة، ودوراتُها بفصلها — دوراتٌ فقط، بلا أجور المدرّبين */
   async view(now = new Date()) {
-    const [s, list, open] = await Promise.all([
-      this.grants.settings(now),
-      this.pathways.list({ activeOnly: true, withCosts: false }, now),
-      this.pathways.openCourses(now),
-    ])
-    const pathways = list.pathways
-      .map((p) => {
-        const courses = p.courses.filter((c) => c.cohort !== null).map((c) => ({
-          courseId: c.courseId, titleAr: c.titleAr, cohortId: c.cohort!.cohortId,
-          startsAt: c.cohort!.startsAt, seatsLeft: c.cohort!.seatsLeft, price: c.cohort!.price,
-        }))
-        return { id: p.id, titleAr: p.titleAr, blurbAr: p.blurbAr, courses, listTotal: p.listTotal, grantTotal: p.grantTotal }
-      })
-      .filter((p) => p.courses.length > 0)
+    const [s, open] = await Promise.all([this.grants.settings(now), this.courses.openCourses(now)])
     return {
       campaign: { open: s.open, percentOff: s.percentOff, maxCourses: s.maxCourses, closesAt: s.closesAt, left: s.left },
-      pathways,
       termAr: open.termAr,
       openCourses: open.courses.map((c) => ({
         courseId: c.courseId, titleAr: c.courseTitleAr, cohortId: c.cohortId, startsAt: c.startsAt, price: c.price,

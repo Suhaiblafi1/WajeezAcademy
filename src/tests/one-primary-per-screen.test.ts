@@ -183,7 +183,7 @@ describe('⑦ · رئيسيّ واحد في الشاشة — تقاس بالشا
       why: 'لوح الدفع يفتح بعد النموذج وحده، وذهبيّ النموذج لا يرى معه',
       files: ['src/components/BuyPanel.tsx'],
     },
-    '/grant/:pathwayId': {
+    '/grant/build': {
       why: 'لوح الدفع يفتح بعد النموذج وحده، وذهبيّ النموذج لا يرى معه',
       files: ['src/components/BuyPanel.tsx'],
     },

@@ -215,8 +215,7 @@ export class GrantService {
   }
 
   /** أجرُ مقعدٍ واحدٍ لكلّ شعبة: بالمقعد كما هو، وبنسبة الإيراد على سعر القائمة — هكذا يُحسب الكشف
-      (`computeCohort`). والثابتُ للشعبة لا يُقسم على مقاعدَ لم تُبَع: يُقال مبلغُه وحدَه، وأجرُ مقعده فارغ.
-      ويقرؤه فحصُ الهامش ومساراتُ المنحة معا (`grant-pathway.service.ts`)، فلا يفترق هامشٌ عن هامش. */
+      (`computeCohort`). والثابتُ للشعبة لا يُقسم على مقاعدَ لم تُبَع: يُقال مبلغُه وحدَه، وأجرُ مقعده فارغ. */
   async seatCosts(cohorts: readonly { id: string; courseId: string; price: unknown }[]) {
     const leads = await cohortLeadTrainers(this.prisma, cohorts.map((x) => x.id))
     const out = new Map<string, { ruleType: string | null; ruleRate: number | null; seatCost: number | null }>()

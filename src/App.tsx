@@ -197,7 +197,7 @@ export default function App() {
           <Route path="/calendar" element={<CalendarPage />} />
           <Route path="/pathways/:id" element={<PathwayPage />} />
           <Route path="/grant" element={<MemberGrantPage />} />
-          <Route path="/grant/:pathwayId" element={<MemberGrantPage />} />
+          <Route path="/grant/build" element={<MemberGrantPage />} />
           {/* مسار يبدأ بدورة واحدة — «تفاصيل الدورة» تفتح هذه لا صفحة المسار كاملا */}
           <Route path="/build/:courseId" element={<CoursePathPage />} />
           <Route path="/stories" element={<StoriesPage />} />

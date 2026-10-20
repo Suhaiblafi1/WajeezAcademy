@@ -3,13 +3,13 @@
    قرارُه: «A ويحقّ لي تغيير الـ٦٠٪ كما أشاء». فهنا نسبةُ المنحة وعددُها وآخرُ يومٍ لها وتشغيلُها،
    وما جرى بها. والحفظُ بتأكيدٍ يقول ما يقع بكلّ تغيير — والقرارُ له.
 
-   ثمّ نتائجُ الحملة بالقناة والدفعة (`GrantResults`)، ومن عبّأ النموذج بالأسماء (`GrantRegistrants`)، ثمّ مساراتُ المنحة بهامش كلٍّ منها (`GrantPathways`)، وتحتها فحصُ الهامش: كلُّ شعبةٍ مفتوحةٍ بسعرها بعد المنحة مقابل أجر مقعدها للمدرّب، **بالنسبة التي
+   ثمّ نتائجُ الحملة بالقناة والدفعة (`GrantResults`)، ومن عبّأ النموذج بالأسماء (`GrantRegistrants`)، ثمّ دوراتُ المنحة بفصلها وسعرها بعد المنحة (`GrantCourses`)، وتحتها فحصُ الهامش: كلُّ شعبةٍ مفتوحةٍ بسعرها بعد المنحة مقابل أجر مقعدها للمدرّب، **بالنسبة التي
    في الخانة** لا المحفوظة — فيرى أثرَ النسبة قبل أن يحفظها. والعلّةُ في `server/services/grant.service.ts`. */
 
 import { useCallback, useEffect, useState } from "react";
 import { Loader2, ServerOff } from "lucide-react";
 import AdminLayout from "./AdminLayout";
-import GrantPathways from "./GrantPathways";
+import GrantCourses from "./GrantCourses";
 import GrantResults from "./GrantResults";
 import GrantRegistrants from "./GrantRegistrants";
 import { toast, toastError } from "@/components/Toast";
@@ -156,7 +156,7 @@ export default function AdminMemberGrant() {
       <GrantResults />
       <GrantRegistrants />
 
-      <GrantPathways percentOff={pctOk ? pctNum : null} maxCourses={s.maxCourses} />
+      <GrantCourses percentOff={pctOk ? pctNum : null} />
 
       <h2 className="mt-6 text-lg font-black">فحص الهامش بنسبة {pctOk ? `${pctNum}%` : "—"}</h2>
       <p className="mt-1 text-read text-muted-foreground">

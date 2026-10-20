@@ -22,7 +22,7 @@ const APP = code('src/App.tsx')
 const ROUTES = code('server/http/routes/admin-grant.routes.ts')
 const BUY = code('src/components/BuyPanel.tsx')
 const HTTP = code('server/http/app.ts')
-const PATHS = code('src/pages/admin/GrantPathways.tsx')
+const COURSES = code('src/pages/admin/GrantCourses.tsx')
 const RESULTS = code('src/pages/admin/GrantResults.tsx')
 const REG = code('src/pages/admin/GrantRegistrants.tsx')
 
@@ -46,41 +46,29 @@ describe('شاشة صاحب المنصة', () => {
   })
 })
 
-describe('اقتراحات المنحة', () => {
-  it('⚠️ في شاشة المنحة بالنسبة التي في الخانة — وأبوابها بصلاحية الكوبونات', () => {
-    expect(PAGE).toMatch(/<GrantPathways percentOff=\{pctOk \? pctNum : null\} maxCourses=\{s\.maxCourses\} \/>/)
-    expect(PATHS).toMatch(/apiGet<\{ pathways: Pathway\[\] \}>\(`\/api\/admin\/member-grant\/pathways\?percentOff=\$\{percentOff\}`\)/)
-    for (const [verb, path] of [
-      ['get', '/api/admin/member-grant/pathways'], ['get', '/api/admin/member-grant/open-courses'],
-      ['post', '/api/admin/member-grant/pathways'], ['put', '/api/admin/member-grant/pathways/:id'],
-      ['delete', '/api/admin/member-grant/pathways/:id'],
-    ]) {
-      expect(ROUTES).toMatch(new RegExp(`app\\.${verb}\\('${path.replace(/\//g, '\\/')}', \\{\\s*preHandler: canManage`))
-    }
+describe('دورات المنحة', () => {
+  it('⚠️ في شاشة المنحة بالنسبة التي في الخانة — وبابها بصلاحية الكوبونات، ولا اقتراحات', () => {
+    expect(PAGE).toMatch(/<GrantCourses percentOff=\{pctOk \? pctNum : null\} \/>/)
+    expect(ROUTES).toMatch(/app\.get\('\/api\/admin\/member-grant\/open-courses', \{\s*preHandler: canManage/)
+    expect(ROUTES, 'عادت أبواب الاقتراحات').not.toMatch(/member-grant\/pathways/)
   })
 
-  it('⚠️ الحذف بتأكيد يقول ما يقع — والإخفاء بديله', () => {
-    expect(PATHS).toMatch(/onClick=\{\(\) => setRemoving\(p\)\}>احذف<\/Button>/)
-    expect(PATHS).toMatch(/\{removing && \(\s*<ConfirmAction[\s\S]*?onConfirm=\{\(\) => void remove\(\)\}/)
-    expect(PATHS).toContain('وإن أردت إخفاءه فقط')
-    expect(PATHS, 'يوم الشعبة بمنطقة الأكاديمية').toMatch(/cohortDayAr\(c\.cohort\.startsAt\)/)
-  })
-
-  it('⚠️ ودورات المنحة الافتراضية ظاهرة بفصلها وسعرها بالمنحة — لا جملة تقول «كل الدورات»', () => {
-    expect(PATHS).toMatch(/\.then\(\(r\) => \{ setOpen\(r\.courses\); setTermAr\(r\.termAr\); \}\)/)
-    expect(PATHS).toMatch(/<h2 className="[^"]*">دورات المنحة \(\{open\.length\}\)<\/h2>/)
-    expect(PATHS).toMatch(/\{shown\.rows\.map\(\(c\) => \(\s*<li key=\{c\.courseId\}/)
-    expect(PATHS, 'قائمة تنمو بلا بحث').toMatch(/<ListToolbar q=\{q\} onQ=\{setQ\} onPage=\{setPage\} view=\{shown\}/)
-    expect(PATHS).toMatch(/fmtMoney\(grantPrice\(c\.price, percentOff\), c\.currency\)/)
-    expect(PATHS, 'عاد الوعد بكل الدورات').not.toContain('يختار من كل الدورات المتاحة')
+  it('⚠️ بفصلها وسعرها قبل المنحة وبعدها — ببحث، لا جملة تقول «كل الدورات»', () => {
+    expect(COURSES).toMatch(/\.then\(\(r\) => \{ setOpen\(r\.courses\); setTermAr\(r\.termAr\); \}\)/)
+    expect(COURSES).toMatch(/<h2 className="[^"]*">دورات المنحة \(\{open\.length\}\)<\/h2>/)
+    expect(COURSES).toMatch(/\{shown\.rows\.map\(\(c\) => \(\s*<li key=\{c\.courseId\}/)
+    expect(COURSES, 'قائمة تنمو بلا بحث').toMatch(/<ListToolbar q=\{q\} onQ=\{setQ\} onPage=\{setPage\} view=\{shown\}/)
+    expect(COURSES).toMatch(/fmtMoney\(grantPrice\(c\.price, percentOff\), c\.currency\)/)
+    expect(COURSES, 'يوم الشعبة بمنطقة الأكاديمية').toMatch(/cohortDayAr\(c\.startsAt\)/)
+    expect(COURSES, 'عاد الوعد بكل الدورات').not.toContain('يختار من كل الدورات المتاحة')
   })
 
   it('بلا تشكيل', () => {
-    for (const t of ['اقتراحات المنحة', 'اقتراح جديد', 'اسم الاقتراح', 'لمن يناسب', 'أضف دورة من دورات المنحة', 'يظهر لمن يعبئ النموذج', 'لا تظهر الآن: ليست من دورات المنحة', 'يبقى للأكاديمية', 'احفظ الاقتراح',
-      'كل دورة منشورة لها مدرب منشور وشعبة مفتوحة للتسجيل', 'لا دورة متاحة الآن.']) {
-      expect(PATHS).toContain(t)
+    for (const t of ['دورات المنحة', 'كل دورة منشورة لها مدرب منشور وشعبة مفتوحة للتسجيل', 'قبل المنحة', 'بعد المنحة', 'لا دورة متاحة الآن.', 'لا دورة بهذا الاسم.']) {
+      expect(COURSES).toContain(t)
       expect(t).toBe(plainAr(t))
     }
+    /* وأفعالُ أثر الاقتراحات باقيةٌ في المعجم: ما كُتب منها قبل الحذف يُقرأ باسمه */
     for (const k of ['coupon.grant_pathway_save', 'coupon.grant_pathway_remove']) expect(auditActionAr(k)).not.toBe(k)
   })
 })

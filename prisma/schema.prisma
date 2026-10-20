@@ -4019,27 +4019,8 @@ model GrantCampaign {
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
   codes       GrantCode[]
-  pathways    GrantPathway[]
 }
 
-/// مسارُ منحة — يُعدّه صاحبُ المنصّة من شاشة المنحة (٢٠ أكتوبر ٢٠٢٦): اسمٌ ودوراتٌ لها شعبٌ مفتوحة،
-/// يختار منها من عبّأ نموذج الحملة. والعلّةُ في `grant-pathway.service.ts`.
-model GrantPathway {
-  id         String        @id @default(uuid()) @db.Uuid
-  campaignId String        @db.Uuid
-  titleAr    String
-  /// سطرٌ تحت اسمه: لمن يناسب
-  blurbAr    String?
-  /// دوراتُه بترتيبها — لا تتجاوز حدَّ دورات المنحة
-  courseIds  String[]
-  sortOrder  Int           @default(0)
-  active     Boolean       @default(true)
-  createdAt  DateTime      @default(now())
-  updatedAt  DateTime      @updatedAt
-  campaign   GrantCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-
-  @@index([campaignId, sortOrder])
-}
 
 /// كودُ منحةٍ شخصيّ: يُعطى لمن عبّأ نموذج الحملة، ويُستعمل مرّةً واحدة، ولا يُربط بحساب —
 /// فيُنقل لغيره. ونسبتُه في كوبونه.
