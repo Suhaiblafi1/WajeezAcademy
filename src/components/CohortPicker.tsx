@@ -23,7 +23,7 @@
    وخشيةُ الازدحام التي أخفت البقيّةَ قائمةٌ في طرفها: أكثرُ الدورات شعبةٌ أو اثنتان، ومن له أكثرُ
    من ثلاثٍ تظهر أقربُ ثلاثٍ منها والباقي بطلب. */
 
-import { useId, useState } from "react";
+import { useId, useState, type MouseEvent } from "react";
 import { Link } from "react-router";
 import { CalendarDays, Check, ChevronDown, ChevronLeft, Users } from "lucide-react";
 import type { CohortOption, CohortTrainer } from "@/services/cohort-prices";
@@ -31,6 +31,7 @@ import { daysLabelAr, untilLabelAr } from "@/utils/format";
 import { cohortDayAr } from "@/application/learning/cohort-gate";
 import { initialsOf } from "@/application/text/initials";
 import LiveSessionDates from "@/components/LiveSessionDates";
+import { Inset } from "@/components/ui/Surface";
 
 /** ما يقال تحت دورةٍ لا شعبةَ لها — قرارُ صاحب المنصّة (١٩ أكتوبر ٢٠٢٦)، وشرحُه عند موضعه أدناه */
 const NO_COHORT_AR = "لا شعبة لها بعد";
@@ -189,11 +190,17 @@ export default function CohortPicker({
             </>
           );
           return (
-            <li key={c.id} className={`rounded-xl border transition ${
-              on && many ? "border-teal/50 bg-teal/[0.07]" : "border-white/10 bg-white/[0.02]"
-            }`}>
+            /* سطحُ النظام (`Inset`) لا حدٌّ وانحناءٌ بيده — والمختارةُ بنغمتها. وحشوُه حشوُ السطح، فما
+               يُضغط منه خارجَ اللصيقة يختار كذلك: الصندوقُ كلُّه خيار. */
+            <Inset
+              as="li"
+              key={c.id}
+              tone={on && many ? "accent" : "default"}
+              className={many && !on ? "cursor-pointer" : ""}
+              onClick={many ? (e: MouseEvent<HTMLElement>) => { if (e.target === e.currentTarget) onSelect(c.id); } : undefined}
+            >
               {many ? (
-                <label className="flex cursor-pointer items-start gap-3 rounded-xl p-3 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-teal-light">
+                <label className="flex cursor-pointer items-start gap-3 rounded-lg has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-teal-light">
                   <input
                     type="radio"
                     name={group}
@@ -206,12 +213,12 @@ export default function CohortPicker({
                   {body}
                 </label>
               ) : (
-                <div className="flex items-start gap-3 p-3">{body}</div>
+                <div className="flex items-start gap-3">{body}</div>
               )}
               {/* ونبذةُ خطّتها ومواعيدُ لقاءاتها — للمختارة وحدها، داخل صندوقها: من بدّل الشعبة
                   رأى ما اختاره لا ما كان قبله. والمفتاحُ يعيد حالَ الطيّ مع كلّ شعبة. */}
               {on && (selected.summaryAr || selected.sessions.length > 0) && (
-                <div className="border-t border-white/10 px-3 pb-3 pt-1">
+                <div className="mt-3 border-t border-white/10 pt-1">
                   {/* «سطران يقرؤهما المتعلّم قبل أن يدفع» (١٠ أكتوبر ٢٠٢٦) */}
                   {selected.summaryAr && (
                     <p className="mt-2 whitespace-pre-line text-read leading-6 text-foreground">{selected.summaryAr}</p>
@@ -219,7 +226,7 @@ export default function CohortPicker({
                   <LiveSessionDates key={selected.id} sessions={selected.sessions} defaultOpen={!compact} />
                 </div>
               )}
-            </li>
+            </Inset>
           );
         })}
       </ul>
