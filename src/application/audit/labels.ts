@@ -162,6 +162,8 @@ const PHRASES: Record<string, string> = {
   'advisor_payout.cancel': 'إلغاء كشف عمولة مستشار',
   'coupon.grant_settings': 'تغيير إعدادات منحة أعضاء وجيز',
   'coupon.grant_issue': 'إعطاء كود منحة لمن عبأ نموذج الحملة',
+  'coupon.grant_pathway_save': 'حفظ مسار منحة',
+  'coupon.grant_pathway_remove': 'حذف مسار منحة',
   'advisor.bank.set': 'كتابة المستشار حسابه البنكي أو تبديله',
   'advisor.bank.remove': 'إلغاء المستشار حسابه البنكي',
   'advisor.bank.reveal': 'كشف رقم حساب مستشار لصرف كشف عمولته',

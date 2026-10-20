@@ -8,9 +8,11 @@ import { z } from 'zod'
 import type { PrismaClient } from '@prisma/client'
 import { requirePermission } from '../auth-plugin'
 import { GrantService } from '../../services/grant.service'
+import { GrantPathwayService } from '../../services/grant-pathway.service'
 
 export function registerAdminGrantRoutes(app: FastifyInstance, prisma: PrismaClient) {
   const grants = new GrantService(prisma)
+  const pathways = new GrantPathwayService(prisma)
   const canManage = requirePermission('commerce.manage')
 
   app.get('/api/admin/member-grant', {
@@ -38,5 +40,49 @@ export function registerAdminGrantRoutes(app: FastifyInstance, prisma: PrismaCli
   }, async (req) => {
     const { percentOff } = z.object({ percentOff: z.coerce.number().int().min(1).max(100).optional() }).parse(req.query)
     return grants.margins(percentOff)
+  })
+
+  /* ═══ مساراتُ المنحة — يُعدّها صاحبُ المنصّة من هنا (`grant-pathway.service.ts`) ═══ */
+  const pathwayBody = z.object({
+    titleAr: z.string().trim().min(3).max(120),
+    blurbAr: z.string().trim().max(300).nullable().optional(),
+    courseIds: z.array(z.string().min(1)).min(1).max(20),
+    sortOrder: z.number().int().optional(),
+    active: z.boolean().optional(),
+  })
+
+  app.get('/api/admin/member-grant/pathways', {
+    preHandler: canManage,
+    schema: { tags: ['admin-commerce'], summary: 'مسارات المنحة بدوراتها وهامش كل مسار' },
+  }, async (req) => {
+    const { percentOff } = z.object({ percentOff: z.coerce.number().int().min(1).max(100).optional() }).parse(req.query)
+    return pathways.list({ percentOff })
+  })
+
+  app.get('/api/admin/member-grant/open-courses', {
+    preHandler: canManage,
+    schema: { tags: ['admin-commerce'], summary: 'الدورات التي لها شعبة تشترى اليوم — منها تختار دورات المسار' },
+  }, async () => pathways.openCourses())
+
+  app.post('/api/admin/member-grant/pathways', {
+    preHandler: canManage,
+    schema: { tags: ['admin-commerce'], summary: 'مسار منحة جديد' },
+  }, async (req, reply) => reply.status(201).send(await pathways.save(null, pathwayBody.parse(req.body), req.auth!.userId)))
+
+  app.put('/api/admin/member-grant/pathways/:id', {
+    preHandler: canManage,
+    schema: { tags: ['admin-commerce'], summary: 'تعديل مسار منحة' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return pathways.save(id, pathwayBody.parse(req.body), req.auth!.userId)
+  })
+
+  app.delete('/api/admin/member-grant/pathways/:id', {
+    preHandler: canManage,
+    schema: { tags: ['admin-commerce'], summary: 'حذف مسار منحة' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    await pathways.remove(id, req.auth!.userId)
+    return { ok: true }
   })
 }

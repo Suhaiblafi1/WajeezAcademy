@@ -198,29 +198,37 @@ export class GrantService {
       },
       orderBy: [{ startsAt: 'asc' }, { title: 'asc' }],
     })
-    const leads = await cohortLeadTrainers(this.prisma, cohorts.map((x) => x.id))
-    const rows = await Promise.all(cohorts.map(async (x) => {
+    const costs = await this.seatCosts(cohorts)
+    const rows = cohorts.map((x) => {
       const listPrice = Number(x.price)
       const price = grantPrice(listPrice, pct)
-      const profileId = leads.get(x.id) ?? null
-      const rule = profileId ? await this.earnings.activeRule(profileId, { cohortId: x.id, courseId: x.courseId }) : null
-      /* أجرُ مقعدٍ واحد: بالمقعد كما هو، وبنسبة الإيراد على سعر القائمة — هكذا يُحسب الكشف
-         (`computeCohort`). والثابتُ للشعبة لا يُقسم على مقاعدَ لم تُبَع: يُقال مبلغُه وحدَه. */
-      const seatCost = rule?.type === 'per_seat'
-        ? Number(rule.rate)
-        : rule?.type === 'revenue_share' ? Math.round(listPrice * Number(rule.rate)) / 100 : null
+      const { ruleType, ruleRate, seatCost } = costs.get(x.id)!
       return {
         cohortId: x.id,
         titleAr: `${x.course.versions[0]?.titleAr ?? x.courseId} — ${x.title}`,
         status: x.status, startsAt: x.startsAt, currency: x.currency, capacity: x.capacity,
-        listPrice, price,
-        ruleType: rule?.type ?? null,
-        ruleRate: rule ? Number(rule.rate) : null,
-        seatCost,
+        listPrice, price, ruleType, ruleRate, seatCost,
         margin: seatCost === null ? null : Math.round((price - seatCost) * 100) / 100,
       }
-    }))
+    })
     return { percentOff: pct, rows }
+  }
+
+  /** أجرُ مقعدٍ واحدٍ لكلّ شعبة: بالمقعد كما هو، وبنسبة الإيراد على سعر القائمة — هكذا يُحسب الكشف
+      (`computeCohort`). والثابتُ للشعبة لا يُقسم على مقاعدَ لم تُبَع: يُقال مبلغُه وحدَه، وأجرُ مقعده فارغ.
+      ويقرؤه فحصُ الهامش ومساراتُ المنحة معا (`grant-pathway.service.ts`)، فلا يفترق هامشٌ عن هامش. */
+  async seatCosts(cohorts: readonly { id: string; courseId: string; price: unknown }[]) {
+    const leads = await cohortLeadTrainers(this.prisma, cohorts.map((x) => x.id))
+    const out = new Map<string, { ruleType: string | null; ruleRate: number | null; seatCost: number | null }>()
+    await Promise.all(cohorts.map(async (x) => {
+      const profileId = leads.get(x.id) ?? null
+      const rule = profileId ? await this.earnings.activeRule(profileId, { cohortId: x.id, courseId: x.courseId }) : null
+      const seatCost = rule?.type === 'per_seat'
+        ? Number(rule.rate)
+        : rule?.type === 'revenue_share' ? Math.round(Number(x.price) * Number(rule.rate)) / 100 : null
+      out.set(x.id, { ruleType: rule?.type ?? null, ruleRate: rule ? Number(rule.rate) : null, seatCost })
+    }))
+    return out
   }
 }
 

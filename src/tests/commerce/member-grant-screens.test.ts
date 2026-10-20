@@ -20,6 +20,7 @@ const APP = code('src/App.tsx')
 const ROUTES = code('server/http/routes/admin-grant.routes.ts')
 const BUY = code('src/components/BuyPanel.tsx')
 const HTTP = code('server/http/app.ts')
+const PATHS = code('src/pages/admin/GrantPathways.tsx')
 
 describe('شاشة صاحب المنصة', () => {
   it('⚠️ لها طريق وبند في الشريط — بصلاحية الكوبونات', () => {
@@ -38,6 +39,35 @@ describe('شاشة صاحب المنصة', () => {
     expect(PAGE).toMatch(/\{confirm && \(\s*<ConfirmAction[\s\S]*?onConfirm=\{\(\) => void save\(\)\}/)
     expect(PAGE).toMatch(/apiGet<\{ rows: MarginRow\[\] \}>\(`\/api\/admin\/member-grant\/margins\?percentOff=\$\{pctNum\}`\)/)
     expect(PAGE).toContain('والأكواد التي أعطيت قبله')
+  })
+})
+
+describe('مسارات المنحة', () => {
+  it('⚠️ في شاشة المنحة بالنسبة التي في الخانة — وأبوابها بصلاحية الكوبونات', () => {
+    expect(PAGE).toMatch(/<GrantPathways percentOff=\{pctOk \? pctNum : null\} maxCourses=\{s\.maxCourses\} \/>/)
+    expect(PATHS).toMatch(/apiGet<\{ pathways: Pathway\[\] \}>\(`\/api\/admin\/member-grant\/pathways\?percentOff=\$\{percentOff\}`\)/)
+    for (const [verb, path] of [
+      ['get', '/api/admin/member-grant/pathways'], ['get', '/api/admin/member-grant/open-courses'],
+      ['post', '/api/admin/member-grant/pathways'], ['put', '/api/admin/member-grant/pathways/:id'],
+      ['delete', '/api/admin/member-grant/pathways/:id'],
+    ]) {
+      expect(ROUTES).toMatch(new RegExp(`app\\.${verb}\\('${path.replace(/\//g, '\\/')}', \\{\\s*preHandler: canManage`))
+    }
+  })
+
+  it('⚠️ الحذف بتأكيد يقول ما يقع — والإخفاء بديله', () => {
+    expect(PATHS).toMatch(/onClick=\{\(\) => setRemoving\(p\)\}>احذف<\/Button>/)
+    expect(PATHS).toMatch(/\{removing && \(\s*<ConfirmAction[\s\S]*?onConfirm=\{\(\) => void remove\(\)\}/)
+    expect(PATHS).toContain('وإن أردت إخفاءه فقط')
+    expect(PATHS, 'يوم الشعبة بمنطقة الأكاديمية').toMatch(/cohortDayAr\(c\.cohort\.startsAt\)/)
+  })
+
+  it('بلا تشكيل', () => {
+    for (const t of ['مسارات المنحة', 'مسار جديد', 'اسم المسار', 'لمن يناسب', 'أضف دورة لها شعبة مفتوحة', 'يظهر لمن يعبئ النموذج', 'بلا شعبة مفتوحة الآن', 'يبقى للأكاديمية', 'احفظ المسار']) {
+      expect(PATHS).toContain(t)
+      expect(t).toBe(plainAr(t))
+    }
+    for (const k of ['coupon.grant_pathway_save', 'coupon.grant_pathway_remove']) expect(auditActionAr(k)).not.toBe(k)
   })
 })
 
