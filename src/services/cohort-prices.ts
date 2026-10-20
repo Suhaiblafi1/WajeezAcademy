@@ -12,6 +12,7 @@
    يُطالَب به أحد. تُعرض كما تُفوتَر. */
 
 import { useEffect, useMemo, useState } from 'react'
+import { withRetry } from './retry'
 
 const API_BASE: string = import.meta.env.VITE_API_URL ?? ''
 
@@ -43,10 +44,21 @@ interface PublicCohort {
   seatsLeft?: number | null
   /** أسماءُ المدرّبين المعتمَدِ نشرُهم — الخادمُ يرشّحهم ببوّابة الظهور */
   trainers?: string[] | null
+  /** وجوهُهم: الاسمُ والصورةُ ومعرّفُ بطاقته في صفحة الفريق — بالبوّابة نفسِها */
+  trainerProfiles?: { id?: unknown; name?: unknown; photoUrl?: unknown }[] | null
   /** لقاءاتُها المعتمَدةُ غيرُ المبدئيّة — الخادمُ يرشّحها ويرتّبها */
   sessions?: { startsAt?: unknown; endsAt?: unknown; title?: unknown }[] | null
   /** نبذةُ مدرّبها من خطّتها المعتمَدة — `cohort-summary.ts` */
   summaryAr?: string | null
+}
+
+/** مدرّبُ شعبةٍ كما يُعرض في صندوقها — اسمُه وصورتُه وبابُ نبذته */
+export interface CohortTrainer {
+  /** معرّفُ ملفّه — مرساةُ بطاقته `/trainers#trainer-<id>` */
+  id: string
+  name: string
+  /** صورتُه المعتمَدة، و`null` حين لا صورة — فتُرسم حروفُه */
+  photoUrl: string | null
 }
 
 /** شعبةٌ يستطيع المتعلّم أن يختارها — بموعدها وسعرها ومقاعدها */
@@ -63,6 +75,8 @@ export interface CohortOption {
   seatsLeft: number | null
   /** من يقدّم هذه الشعبة — فارغةٌ حتّى يُعتمَد نشرُ اسمه */
   trainers: string[]
+  /** وهم أنفسُهم بوجوههم — ما يرسمه صندوقُ الشعبة */
+  trainerProfiles: CohortTrainer[]
   /** مواعيدُ لقاءاتها المباشرة — فارغةٌ حتّى يُعتمَد جدولُ مدرّبها */
   sessions: LiveSessionDate[]
   /** «سطران يقرؤهما المتعلّم قبل أن يدفع» — نبذةُ مدرّبها، و`null` إن لم يكتبها */
@@ -89,11 +103,17 @@ export function useCourseCohorts(): { cohorts: Map<string, CohortOption[]>; load
   const [cohorts, setCohorts] = useState<Map<string, CohortOption[]>>(new Map())
   const [loaded, setLoaded] = useState(false)
 
+  /* ═══ والردُّ الخائبُ خطأٌ يُعاد لا «لا شعب» (٢٠ أكتوبر ٢٠٢٦) ═══
+     كان ٥٠٢ أو ٤٢٩ يُقرأ قائمةً فارغة: فتقول كلُّ دورةٍ «لا شعبة لها بعد» ويغيب اسمُ مدرّبها وسعرُها،
+     حتّى يحدّث القارئُ الصفحة. فصار يُعاد بفواصل (`retry.ts`)، ولا يُقال «حُمّل» إلّا بعد جوابٍ أو يأس. */
   useEffect(() => {
     let on = true
-    fetch(`${API_BASE}/api/public/cohorts`)
-      .then((r) => (r.ok ? r.json() : []))
-      .then((rows: unknown) => {
+    withRetry(async () => {
+      const r = await fetch(`${API_BASE}/api/public/cohorts`)
+      if (!r.ok) throw new Error(`cohorts ${r.status}`)
+      return r.json() as Promise<unknown>
+    }, { alive: () => on })
+      .then((rows) => {
         if (!on) return
         setCohorts(cohortOptionsFrom(rows))
       })
@@ -103,6 +123,22 @@ export function useCourseCohorts(): { cohorts: Map<string, CohortOption[]>; load
   }, [])
 
   return { cohorts, loaded }
+}
+
+/* وجوهُ المدرّبين كما وصلت — وما لا معرّفَ له ولا اسمَ يسقط ولا يُختلَق.
+   وإن غاب الحقلُ (خادمٌ أقدمُ من الواجهة) تُبنى الوجوهُ من الأسماء بلا صورةٍ ولا باب. */
+function trainerProfilesOf(raw: PublicCohort['trainerProfiles'], names: PublicCohort['trainers']): CohortTrainer[] {
+  if (!Array.isArray(raw)) return (Array.isArray(names) ? names : []).map((name) => ({ id: '', name, photoUrl: null }))
+  const out: CohortTrainer[] = []
+  for (const t of raw) {
+    if (typeof t?.name !== 'string' || !t.name.trim()) continue
+    out.push({
+      id: typeof t.id === 'string' ? t.id : '',
+      name: t.name.trim(),
+      photoUrl: typeof t.photoUrl === 'string' && t.photoUrl ? t.photoUrl : null,
+    })
+  }
+  return out
 }
 
 /* مواعيدُ لقاءات الشعبة كما وصلت — وما لا لحظةَ له يسقط ولا يُختلَق.
@@ -138,6 +174,7 @@ export function cohortOptionsFrom(rows: unknown): Map<string, CohortOption[]> {
       seatsLeft: typeof c.seatsLeft === 'number' ? c.seatsLeft : null,
       /* الاسمُ كان يصل ولا يُقرأ — فشعبتان لمدرّبَين تختلفان بموعدهما وحدَه */
       trainers: Array.isArray(c.trainers) ? c.trainers : [],
+      trainerProfiles: trainerProfilesOf(c.trainerProfiles, c.trainers),
       sessions: sessionDatesOf(c.sessions),
       summaryAr: typeof c.summaryAr === 'string' && c.summaryAr.trim() ? c.summaryAr.trim() : null,
     })

@@ -15,6 +15,8 @@ import { moveReminderAt, nextTerm } from '../../../src/application/trainer/cohor
 import { termBounds, termOf } from '../../../src/application/terms/season'
 import type { TrainingSeason } from '../../../src/application/trainer/application-options'
 import { forgetZoomToken } from '../../services/zoom.service'
+import { periodBounds } from '../../../src/application/trainer/cohort-period'
+import { daysBetween, shiftDay } from '../../../src/application/trainer/plan-copy'
 
 /* ولا شبكةَ: `fetch` مُلتقَط، وطلباتُ نقل الاجتماع إلى Zoom تُعدّ */
 const SAVED_ENV = { ...process.env }
@@ -180,6 +182,82 @@ describe('②أ فصل الشعبة من أول لقائها', () => {
     await svc.review(adminId, r.id, { action: 'approve' })
     const first = await prisma.cohortSession.findFirstOrThrow({ where: { cohortId }, orderBy: { startsAt: 'asc' } })
     expect(termOf(first.startsAt), 'وقعت المواعيد في غير الفصل المختار').toEqual(target)
+  })
+})
+
+/* ═══ وشعبةُ الإعداد — لا موعدَ عليها، ومدّتُها المقترحةُ في خطّتها (٢٠ أكتوبر ٢٠٢٦) ═══
+   «أين خيار التأجيل للفصول القادمة؟» (صاحب المنصّة) — وكانت بطاقتُها بلا صندوق، والاعتمادُ يُردّ «لا موعد للشعبة
+   يقاس منه النقل». فصار فصلُها من بدئها المقترح، وتنتقل خطّتُها ونافذةُ جدولتها معها.
+   ورُئي ساقطا: أُسقطت إزاحةُ الخطّة فسقط الأوّل، وأُعيد الردُّ بلا موعدٍ فسقط الثاني. */
+describe('②د شعبة الإعداد', () => {
+  async function prep(title: string) {
+    const c = await prisma.cohort.create({ data: { courseId: 'C-BIZ-101', title, status: 'draft', capacity: 20 } })
+    await prisma.cohortTrainer.create({ data: { cohortId: c.id, profileId, role: 'lead' } })
+    return c.id
+  }
+
+  it('⚠️ فصلها من بدئها المقترح — وخطتها ونافذتها تنتقل معها بأسابيع كاملة', async () => {
+    const startsOn = new Date(termBounds(upcoming.year, upcoming.season).startsOn.getTime() + 10 * DAY).toISOString().slice(0, 10)
+    const endsOn = shiftDay(startsOn, 27)
+    const opensAt = new Date(`${shiftDay(startsOn, 7)}T09:00:00.000Z`).toISOString()
+    const cohortId = await prep('شعبة الإعداد المنقولة')
+    const window = periodBounds({ startsOn, endsOn })
+    await prisma.cohort.update({ where: { id: cohortId }, data: { scheduleWindowStart: window.from, scheduleWindowEnd: window.to } })
+    const plan = await prisma.cohortDeliveryPlan.create({
+      data: {
+        cohortId, trainerId: profileId, status: 'draft',
+        content: {
+          kind: 'trainer', modules: [], startsOn, endsOn,
+          slots: [{ startsOn, endsOn: shiftDay(startsOn, 6), moduleIds: ['m-1'] }],
+          resources: [{ title: 'قراءة', opensAt }, { title: 'بلا موعد' }],
+        },
+      },
+    })
+
+    const r = await svc.request(trainerId, cohortId, { toYear: target.year, toSeason: target.season, reason: 'أؤجلها للفصل الذي بعده' })
+    expect(r.fromSeason, 'فصلها لم يقرأ من بدئها المقترح').toBe(upcoming.season)
+    expect(r.fromStartsAt?.toISOString()).toBe(window.from.toISOString())
+    await svc.review(adminId, r.id, { action: 'approve' })
+
+    const content = (await prisma.cohortDeliveryPlan.findUniqueOrThrow({ where: { id: plan.id } })).content as {
+      startsOn: string; endsOn: string; slots: { startsOn: string; endsOn: string }[]; resources: { opensAt?: string }[]
+    }
+    const days = daysBetween(startsOn, content.startsOn)!
+    expect(days, 'الخطة لم تنتقل').toBeGreaterThan(0)
+    expect(days % 7, 'الإزاحة ليست أسابيع كاملة').toBe(0)
+    expect(termOf(new Date(`${content.startsOn}T12:00:00Z`)), 'وقعت في غير الفصل المختار').toEqual(target)
+    expect(content.endsOn).toBe(shiftDay(endsOn, days))
+    expect(content.slots[0]).toMatchObject({ startsOn: shiftDay(startsOn, days), endsOn: shiftDay(startsOn, 6 + days) })
+    expect(new Date(content.resources[0]!.opensAt!).getTime() - new Date(opensAt).getTime()).toBe(days * DAY)
+    expect(content.resources[1]!.opensAt).toBeUndefined()
+
+    const c = await prisma.cohort.findUniqueOrThrow({ where: { id: cohortId }, include: { term: true } })
+    expect(c.term).toMatchObject({ year: target.year, season: target.season })
+    expect(c.startsAt, 'كتب للإعداد بدءا لم يعتمد').toBeNull()
+    expect(c.scheduleWindowStart!.getTime() - window.from.getTime()).toBe(days * DAY)
+    expect(c.scheduleWindowEnd!.getTime() - window.to.getTime()).toBe(days * DAY)
+  })
+
+  it('⚠️ وبلا مدة ولا موعد ولا فصل — تربط بفصلها الجديد وحده، لا ترد', async () => {
+    const cohortId = await prep('شعبة إعداد بلا مدة')
+    const r = await svc.request(trainerId, cohortId, { toYear: target.year, toSeason: target.season, reason: 'أؤجلها للفصل الذي بعده' })
+    expect(r.fromSeason).toBeNull()
+    await svc.review(adminId, r.id, { action: 'approve' })
+    const c = await prisma.cohort.findUniqueOrThrow({ where: { id: cohortId }, include: { term: true } })
+    expect(c.term).toMatchObject({ year: target.year, season: target.season })
+    expect(c.startsAt).toBeNull()
+  })
+
+  it('والخطة المعتمدة لا تمس — ما اعتمد يغيّر بمراجعة', async () => {
+    const cohortId = await mkCohort('شعبة خطتها معتمدة', profileId)
+    const startsOn = '2099-01-04'
+    const plan = await prisma.cohortDeliveryPlan.create({
+      data: { cohortId, trainerId: profileId, status: 'approved', content: { kind: 'trainer', modules: [], resources: [], startsOn, endsOn: '2099-02-01' } },
+    })
+    const r = await svc.request(trainerId, cohortId, { toYear: target.year, toSeason: target.season, reason: 'الطلب قليل هذا الفصل' })
+    await svc.review(adminId, r.id, { action: 'approve' })
+    const content = (await prisma.cohortDeliveryPlan.findUniqueOrThrow({ where: { id: plan.id } })).content as { startsOn: string }
+    expect(content.startsOn).toBe(startsOn)
   })
 })
 

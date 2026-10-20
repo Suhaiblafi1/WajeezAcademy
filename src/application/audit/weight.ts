@@ -270,6 +270,9 @@ const MEDIUM: readonly string[] = [
   'trainer.public_text.approve', 'trainer.public_text.reject',
   /* وما نقترحه على بطاقته (١٩ أكتوبر ٢٠٢٦): نقترحه أو نسحبه أو نعتمد تعديلَه — قرارٌ يصله */
   'trainer.suggestion.propose', 'trainer.suggestion.withdraw', 'trainer.suggestion.approve_edit',
+  /* وتنزيلُ ملفّاتهم لكتابة الاقتراحات (٢٠ أكتوبر ٢٠٢٦) — قراءةٌ، لكنّها تُخرج سيرَهم وشهاداتِهم
+     من المنصّة جملةً، فتُرى في الأثر لا تُطوى مع القراءات */
+  'trainer.drafting_bundle.download',
   'rating.approve', 'rating.reject',
   /* تذكرتُه */
   'support.ticket.assign', 'support.ticket.status',

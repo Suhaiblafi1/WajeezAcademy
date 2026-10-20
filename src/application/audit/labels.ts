@@ -164,6 +164,7 @@ const PHRASES: Record<string, string> = {
   'coupon.grant_issue': 'إعطاء كود منحة لمن عبأ نموذج الحملة',
   'coupon.grant_pathway_save': 'حفظ مسار منحة',
   'coupon.grant_pathway_remove': 'حذف مسار منحة',
+  'coupon.grant_apply': 'تعبئة زائر نموذج منحة أعضاء وجيز',
   'advisor.bank.set': 'كتابة المستشار حسابه البنكي أو تبديله',
   'advisor.bank.remove': 'إلغاء المستشار حسابه البنكي',
   'advisor.bank.reveal': 'كشف رقم حساب مستشار لصرف كشف عمولته',
@@ -335,6 +336,7 @@ const PHRASES: Record<string, string> = {
   'trainer.suggestion.edit': 'تعديل المدرّب «لماذا نفتخر به» — ينتظر اعتمادنا',
   'trainer.suggestion.approve_edit': 'اعتماد تعديل المدرّب على «لماذا نفتخر به»',
   'trainer.suggestion.reject': 'رفض المدرّب اقتراحنا على بطاقته',
+  'trainer.drafting_bundle.download': 'تنزيل ملفّ المدرّب وسيرته وشهاداته لكتابة اقتراحاتنا',
   'account.avatar.upload': 'رفع صاحب الحساب صورته',
   /* إتاحةُ المدرّب (المهمّة ٧١) — تُسجَّل لأنّ الغيابَ **يردُّ إسنادا**:
      فمن سأل «لماذا لم يُسنَد؟» يجد الجوابَ في الأثر لا في واتساب. */
@@ -505,6 +507,7 @@ const PHRASES: Record<string, string> = {
   'worker.enforce_retention': 'تطبيق مدد الحفظ',
   'worker.notify_timeline': 'إخبار المتعلّمين بما فتح على خطّ المحاور',
   'worker.publish_scheduled_changes': 'نشر التغييرات المجدولة',
+  'worker.publish_live_trainers': 'نشر أسماء مدرّبي الشعب المعروضة',
   'worker.reclaim_abandoned_orders': 'استرجاع الطلبات المهجورة',
   'worker.revoke_left_registrants': 'إلغاء تسجيل من ترك شعبته عند Zoom',
   'worker.session_reminders': 'تذكيرات الجلسات',
@@ -524,7 +527,7 @@ const WORDS: Record<string, string> = {
   term: 'فصل دراسيّ', accounts: 'حسابات', platform: 'المنصّة',
   content_change_request: 'طلب تغيير محتوى',
   version: 'إصدار', certificate: 'شهادة', trainer: 'مدرّب', trainer_compensation: 'تعويض مدرّب',
-  trainer_payout: 'مستحقّ مدرّب', advisor_payout: 'كشف عمولة مستشار', grant_campaign: 'حملة منحة', application: 'طلب انضمام', contract: 'عقد', invitation: 'دعوة',
+  trainer_payout: 'مستحقّ مدرّب', advisor_payout: 'كشف عمولة مستشار', grant_campaign: 'حملة منحة', lead: 'عميل محتمل', application: 'طلب انضمام', contract: 'عقد', invitation: 'دعوة',
   profile: 'ملفّ', document: 'وثيقة', interview: 'مقابلة', demo: 'حصّة تجريبيّة', review: 'مراجعة',
   change: 'اقتراح تعديل', course_proposal: 'اقتراح دورة',
   trainer_course_decisions: 'ملفّ قرارات دورات المدرّبين', path: 'مسار', account: 'حساب', enrollment: 'تسجيل', enrollment_request: 'طلب تسجيل',

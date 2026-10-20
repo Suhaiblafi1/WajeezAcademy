@@ -203,7 +203,9 @@ export default function CourseJourney({
                         {s}
                       </span>
                     ))}
-                    <CourseTrainer courseId={c.id} />
+                    {/* وحيث الشعبُ ظاهرةٌ فمدرّبُ كلٍّ في صندوقها — والشارةُ التي تجمعهم («المدرب: أحمد، إيناس»)
+                        كانت تُقرأ شعبةً واحدةً بمدرّبَين (صاحب المنصّة، ٢٠ أكتوبر ٢٠٢٦). فتبقى حيث لا منتقي. */}
+                    {!showSchedule && <CourseTrainer courseId={c.id} />}
                   </div>
                   {reasons?.[c.id] && (
                     <p className="mt-2 text-read leading-relaxed text-muted-foreground">

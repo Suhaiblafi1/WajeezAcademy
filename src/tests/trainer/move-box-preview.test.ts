@@ -15,6 +15,18 @@ describe('صندوق النقل', () => {
   })
 
   it('ويقوله قبل الإرسال', () => {
-    expect(box).toMatch(/\{firstAfter && \([\s\S]*?أول لقاء بعد النقل: \{cohortDayAr\(firstAfter/)
+    expect(box).toMatch(/\{firstAfter && \([\s\S]*?\{begun \? "أول لقاء بعد النقل" : "تبدأ بعد النقل"\}: \{cohortDayAr\(firstAfter/)
+  })
+})
+
+/* ═══ وشعبةُ الإعداد يقاس فصلُها من بدئها المقترح — ولا يعدّ بدءا مضى (٢٠ أكتوبر ٢٠٢٦) ═══
+   رُئي ساقطا: جُعل المقترحُ في شرط «بدأت فلا تنقل»، فسقط الثاني. */
+describe('صندوق النقل في شعبة الإعداد', () => {
+  it('⚠️ الفصل من أول لقائها أو بدئها المقترح', () => {
+    expect(box).toMatch(/const start = begun \?\? \(proposedStartsOn \?/)
+  })
+  it('⚠️ والمقترح لا يخفي الصندوق — «بدأت» من أول لقائها وحده', () => {
+    expect(box).toMatch(/\(begun && begun <= now\)\) return null/)
+    expect(box).not.toMatch(/\(start && start <= now\)/)
   })
 })

@@ -21,6 +21,7 @@ const ROUTES = code('server/http/routes/admin-grant.routes.ts')
 const BUY = code('src/components/BuyPanel.tsx')
 const HTTP = code('server/http/app.ts')
 const PATHS = code('src/pages/admin/GrantPathways.tsx')
+const RESULTS = code('src/pages/admin/GrantResults.tsx')
 
 describe('شاشة صاحب المنصة', () => {
   it('⚠️ لها طريق وبند في الشريط — بصلاحية الكوبونات', () => {
@@ -68,6 +69,18 @@ describe('مسارات المنحة', () => {
       expect(t).toBe(plainAr(t))
     }
     for (const k of ['coupon.grant_pathway_save', 'coupon.grant_pathway_remove']) expect(auditActionAr(k)).not.toBe(k)
+  })
+})
+
+describe('نتائج الحملة', () => {
+  it('⚠️ في شاشة المنحة — وبابها بصلاحية الكوبونات، ونصوصها بلا تشكيل', () => {
+    expect(PAGE).toMatch(/<GrantResults \/>/)
+    expect(RESULTS).toMatch(/apiGet<Results>\("\/api\/admin\/member-grant\/results"\)/)
+    expect(ROUTES).toMatch(/app\.get\('\/api\/admin\/member-grant\/results', \{\s*preHandler: canManage/)
+    for (const t of ['نتائج الحملة', 'عبأ النموذج', 'أخذ كودا', 'اشترى', 'القناة', 'الدفعة', 'مجالات العمل', 'بلا وسم']) {
+      expect(RESULTS).toContain(t)
+      expect(t).toBe(plainAr(t))
+    }
   })
 })
 

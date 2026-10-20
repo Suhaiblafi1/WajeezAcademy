@@ -23,6 +23,7 @@ import { recordAudit } from './audit'
 import { notifyRole, safeNotify } from './notification.service'
 import { bioSuggestionProblemAr, cleanPitchLines, pitchProblemAr } from '../../src/application/trainer/pitch'
 import { BIO_DRAFTS, PITCH_DRAFTS } from './trainer-suggestion-drafts'
+import { liveTrainerWhere } from './trainer-visibility'
 
 export type SuggestionKind = 'pitch' | 'bio'
 
@@ -113,14 +114,18 @@ export class TrainerSuggestionService {
      أو قرّر فيه لا يُسحب ولا يُعاد، والضغطةُ الثانيةُ لا ترسل شيئا.
 
      وكلٌّ يمرّ بـ`propose` نفسِها: بقواعده وأثره وإشعاره. ومن سقط — كنبذةٍ تطابق
-     نبذتَه الآن حرفا — لا يوقف الباقين: يُعدّ ويُقال. والمسوّداتُ تُمرَّر للاختبار. */
+     نبذتَه الآن حرفا — لا يوقف الباقين: يُعدّ ويُقال. والمسوّداتُ تُمرَّر للاختبار.
+
+     ولا يصل إلّا **النشطين ومن نُشرت دوراتُهم** (٢٠ أكتوبر ٢٠٢٦): «اكتب للجميع وسأرسل لمن
+     هم اكتف أو نشرت دوراتهم للموسم». فالمسوّداتُ للجميع، والضغطةُ لمن طلبتُه حالتُه `active`
+     أو له دورةٌ منشورةٌ هذا الفصلَ أو بعده (`liveTrainerWhere`). ومن سواهم يُرسَل إليه من بطاقته. */
   async sendAllDrafts(
     actorId: string,
     drafts: { pitch: Record<string, readonly string[]>; bio: Record<string, string> } = { pitch: PITCH_DRAFTS, bio: BIO_DRAFTS },
   ): Promise<{ sent: number; failed: number }> {
     const ids = [...new Set([...Object.keys(drafts.pitch), ...Object.keys(drafts.bio)])]
     const profiles = await this.prisma.trainerProfile.findMany({
-      where: { id: { in: ids } },
+      where: { id: { in: ids }, OR: [{ application: { status: 'active' } }, liveTrainerWhere()] },
       select: { id: true, pitchLines: true, textSuggestions: { where: { status: { not: 'withdrawn' } }, select: { kind: true } } },
     })
     let sent = 0

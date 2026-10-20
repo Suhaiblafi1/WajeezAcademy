@@ -25,11 +25,11 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  BadgeCheck, CheckCircle2, Clock, GraduationCap, ImagePlus, Loader2, Search,
+  BadgeCheck, CheckCircle2, Clock, Download, GraduationCap, ImagePlus, Loader2, Search,
   Send, ServerOff, ShieldAlert, UserPlus, Users, XCircle,
 } from "lucide-react";
 import { toast, toastError } from "@/components/Toast";
-import { apiGet, apiPost, apiPut, ApiError } from "@/services/api";
+import { apiDownload, apiGet, apiPost, apiPut, ApiError } from "@/services/api";
 import ImageFramer from "@/components/ImageFramer";
 import { PHOTO_OUT_MIME } from "@/lib/prepare-image";
 
@@ -714,9 +714,12 @@ export default function TrainerRunOps() {
   /* ═══ وإرسالُ كلِّ المسوّدات بضغطة (١٩ أكتوبر ٢٠٢٦) ═══
      قرارُ صاحب المنصّة: «أضف زرّ إرسال الكلّ». والعددُ ما تعرضه البطاقاتُ مسوّدةً
      لم تُرسَل، والخادمُ يرسلها كما كُتبت (`sendAllDrafts`) — فما حرّرته في بطاقةٍ ولم
-     ترسله يُرسَل منها لا من هنا. */
+     ترسله يُرسَل منها لا من هنا.
+     ولا يُعدّ إلّا من يصله الإرسالُ (٢٠ أكتوبر ٢٠٢٦): النشطون ومن نُشرت دوراتُهم — شرطُ الخادم نفسُه. */
   const draftCount = useMemo(
-    () => (trainers ?? []).reduce((n, t) => n + (t.pitchDraft ? 1 : 0) + (t.bioDraft ? 1 : 0), 0),
+    () => (trainers ?? [])
+      .filter((t) => t.applicationStatus === "active" || t.hasLiveCourse)
+      .reduce((n, t) => n + (t.pitchDraft ? 1 : 0) + (t.bioDraft ? 1 : 0), 0),
     [trainers],
   );
   const sendAllDrafts = async () => {
@@ -733,10 +736,24 @@ export default function TrainerRunOps() {
     }
   };
 
+  /* ═══ وملفّاتُ من لا مسوّدةَ له — لنكتب له (٢٠ أكتوبر ٢٠٢٦) ═══
+     ZIP فيه ما كتبه كلٌّ وسيرتُه وشهاداتُه (`trainer-drafting-bundle.service.ts`)، بصلاحيّة قراءة الطلبات */
+  const canDownloadFiles = sessionUser?.permissions.includes("trainer.applications.view") ?? false;
+  const downloadDraftingFiles = async () => {
+    setBusy("drafting-files");
+    try {
+      await apiDownload("/api/admin/trainers/drafting-bundle", "ملفات-المدربين-للاقتراحات.zip");
+    } catch (e) {
+      toastError(e instanceof ApiError ? e.message : "تعذر تنزيل الملفات");
+    } finally {
+      setBusy("");
+    }
+  };
+
   const shown = useMemo(
     () => (trainers ?? [])
       .filter((t) => matchesQuery(q, [t.name, t.email]))
-      /* أوّلا من له شعبةٌ تُباع واسمُه لا يظهر — المشتري لا يرى من يدرّسه (`hiddenOnSale`)، ثمّ ما ينتظر قرارَك */
+      /* أوّلا من له دوراتٌ منشورةٌ واسمُه لا يظهر — غائبٌ عن صفحة المدرّبين وشعبه بلا اسم (`hiddenOnSale`)، ثمّ ما ينتظر قرارَك */
       .sort((a, b) => opsRank(b) - opsRank(a)),
     [trainers, q],
   );
@@ -889,7 +906,15 @@ export default function TrainerRunOps() {
                 tone="confirm" icon={Send} loading={busy === "send-drafts"} disabled={busy !== ""}
                 onClick={() => void sendAllDrafts()}
               >
-                أرسل كل الاقتراحات ({draftCount})
+                أرسل للنشطين ومن نشرت دوراتهم ({draftCount})
+              </Button>
+            )}
+            {canDownloadFiles && (
+              <Button
+                icon={Download} loading={busy === "drafting-files"} disabled={busy !== ""}
+                onClick={() => void downloadDraftingFiles()}
+              >
+                نزّل ملفات المدربين للاقتراحات
               </Button>
             )}
             {canAddTrainer && (
@@ -1011,7 +1036,7 @@ export default function TrainerRunOps() {
                           </Chip>
                         )}
                         {hiddenOnSale(t) && (
-                          <Chip tone="danger" srPrefixAr="ظهوره العامّ">له شعبة مفتوحة واسمه لا يظهر</Chip>
+                          <Chip tone="danger" srPrefixAr="ظهوره العامّ">له دورات منشورة واسمه لا يظهر</Chip>
                         )}
                         {t.publiclyVisible && t.hasLiveCourse && (
                           <span className="flex items-center gap-1 rounded-full bg-teal/15 px-2 py-0.5 text-fine font-black text-teal-light-ink">

@@ -1,16 +1,20 @@
-import { Link } from 'react-router'
-import { useEffect, useMemo, useState } from 'react'
+import { Link, useLocation } from 'react-router'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ArrowLeft, BadgeCheck, Check, Sparkles, GraduationCap, ShieldCheck, Search, Star, Clock, ChevronDown, BookOpen, MapPin,
+  Loader2, RefreshCw,
 } from 'lucide-react'
 import { TRAINER_POOLS, TRAINER_PENDING_AR, courseById } from '@/data/courses'
 import { apiGet } from '@/services/api'
+import { withRetry } from '@/services/retry'
+import { useAutoRefresh } from '@/services/useAutoRefresh'
 import { usePublishedContent } from '@/services/public-content'
 import SiteShell from '@/components/SiteShell'
 import SeoHead from '@/components/SeoHead'
 import { seoFor } from '@/application/site/public-pages'
 import { Panel, Card, Inset } from '@/components/ui/Surface'
 import { countAr } from '@/application/text/count-ar'
+import { initialsOf } from '@/application/text/initials'
 import { pitchHeadingAr } from '@/application/trainer/pitch'
 import { NO_NEXT_SEASON_AR, seasonHeadingAr, type SeasonGroup } from '@/application/trainer/next-season'
 
@@ -146,20 +150,6 @@ function TrainerOffer({ groups }: { groups: SeasonGroup[] }) {
    (`trainer-review.service.ts` · `startPhotoUpload`) يردّ ٤٠٤، فيرى الزائرُ
    أيقونةَ صورةٍ مكسورةٍ ونصَّها البديل. فالخطأُ يردّها إلى ما يُعرض لمن لا
    صورةَ له أصلا — حروفُ اسمه على أرضيّة العلامة. */
-
-/* «Reine Metlej» ← «RM»، و«احمد صالح» ← «أ». والعربيّةُ حرفٌ واحد: حرفان
-   منفصلان منها لا يُقرآن اسما. والألفُ المجرّدةُ تُرسم بهمزتها، وإلّا قُرئت
-   خطّا عموديّا أو «I». */
-function initialsOf(name: string): string {
-  const words = name.trim().split(/\s+/).filter(Boolean)
-  const first = words[0] ?? ''
-  if (/^[A-Za-z]/.test(first)) {
-    const last = words.length > 1 ? words[words.length - 1] : ''
-    return (first[0] + (last[0] ?? '')).toUpperCase()
-  }
-  const ch = first.slice(0, 1)
-  return ch === 'ا' ? 'أ' : ch
-}
 
 /* أرضيّةُ الحروف: فيروزيٌّ معمّقٌ بضوءٍ من زاويةٍ ودوائرَ خافتة — لتُقرأ
    مقصودةً بجوار الصور لا مكانا فارغا. والألوانُ من رموز السمة لا حرفيّة. */
@@ -354,8 +344,15 @@ function domainOf(role: string): string {
    public_visibility وبيانات حقيقية. التقييمات والساعات والخريجون
    تُعرض فقط عندما تُسجَّل فعليا — لا أرقام توضيحية. */
 export default function Trainers() {
-  /* المدربون المعتمدون للنشر العام — من API حصرا: active + موثق + public_visibility + موافقة نشر */
-  const [approved, setApproved] = useState<PublicTrainer[]>([])
+  /* المدربون المعتمدون للنشر العام — من API حصرا: active + موثق + public_visibility + موافقة نشر.
+
+     ═══ و«لم يصل بعد» غيرُ «لا أحد» (٢٠ أكتوبر ٢٠٢٦) ═══
+     «لماذا يجب أن أعمل رفرش كلّ مرّة لتظهر أسماءُ المدرّبين؟» (صاحب المنصّة). كانت القائمةُ تبدأ فارغة،
+     وإخفاقُ الطلب يتركها فارغة، والطلبُ لا يُعاد — فكانت الصفحةُ تقول «لم يعتمد نشر اسم مدرّب بعد» وهي
+     تنتظر، وتبقى تقولها إن أخفق الطلبُ مرّة (خادمٌ يُقلع بعد نشر). فصار `null` يعني «لم يصل»، والطلبُ يُعاد
+     بفواصل (`retry.ts`)، ويتجدّد حين يعود القارئُ إلى التبويب. وبيانُ الصفر لا يُقال إلّا عن جوابٍ وصل. */
+  const [approved, setApproved] = useState<PublicTrainer[] | null>(null)
+  const [failed, setFailed] = useState(false)
   const [q, setQ] = useState('')
   const [showAllSpecialties, setShowAllSpecialties] = useState(false)
   /* المفتوحُ من النبذات — أكثرُ من واحدةٍ معا: من يقارن مدرّبَين يفتحهما جنبا إلى جنب */
@@ -367,9 +364,30 @@ export default function Trainers() {
       else next.add(id)
       return next
     })
-  useEffect(() => {
-    apiGet<PublicTrainer[]>('/api/trainers/public').then(setApproved).catch(() => setApproved([]))
+  const alive = useRef(true)
+  useEffect(() => { alive.current = true; return () => { alive.current = false } }, [])
+  const load = useCallback(() => {
+    withRetry(() => apiGet<PublicTrainer[]>('/api/trainers/public'), { alive: () => alive.current })
+      .then((list) => { if (alive.current) { setApproved(list); setFailed(false) } })
+      /* ما وصل قبلُ يبقى — والإخفاقُ يُقال حين لا شيءَ في اليد */
+      .catch(() => { if (alive.current) setFailed(true) })
   }, [])
+  useEffect(() => { load() }, [load])
+  /* ومن ترك التبويبَ مفتوحا ثمّ عاد يرى ما اعتُمد بعدُ — بلا تحديثٍ بيده */
+  useAutoRefresh(load, 5 * 60_000)
+
+  /* ═══ وبابُ النبذة من صندوق الشعبة (٢٠ أكتوبر ٢٠٢٦) ═══
+     اسمُ المدرّب وصورتُه في صندوق شعبته يحملان إلى بطاقته هنا (`/trainers#trainer-<id>`): «ينقله لمكان
+     النبذة عن المدرّب» (صاحب المنصّة). والبطاقاتُ تصل بعد التحميل، فالمرساةُ لا يجدها المتصفّح وحدَه —
+     فنبذتُه مفتوحةٌ افتراضا (وزرُّها يطويها كغيرها)، ويُمرَّر إليها حين تصل — مرّةً لكلّ مرساة. */
+  const { hash } = useLocation()
+  const anchoredId = hash.startsWith('#trainer-') ? hash.slice('#trainer-'.length) : ''
+  const scrolledTo = useRef('')
+  useEffect(() => {
+    if (!anchoredId || scrolledTo.current === hash || !approved?.some((t) => t.id === anchoredId)) return
+    scrolledTo.current = hash
+    requestAnimationFrame(() => document.getElementById(`trainer-${anchoredId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+  }, [hash, anchoredId, approved])
 
   const query = q.trim()
 
@@ -388,6 +406,7 @@ export default function Trainers() {
 
   /* ترشيح المدربين المعتمدين: بالاسم أو التعريف أو التخصص أو اسم دورةٍ يقدّمها */
   const filteredApproved = useMemo(() => {
+    if (!approved) return []
     if (!query) return approved
     const needle = query.toLowerCase()
     return approved.filter((t) =>
@@ -458,7 +477,7 @@ export default function Trainers() {
           </div>
           <div className="mt-6 grid grid-cols-1 items-start gap-5 lg:grid-cols-2">
             {filteredApproved.map((t) => (
-              <TrainerCard key={t.id} t={t} open={expanded.has(t.id)} onToggle={() => toggle(t.id)} />
+              <TrainerCard key={t.id} t={t} open={expanded.has(t.id) !== (t.id === anchoredId)} onToggle={() => toggle(t.id)} />
             ))}
           </div>
         </section>
@@ -478,7 +497,33 @@ export default function Trainers() {
           البطاقات يُفرِغ الصفحة، وتركُها يخالف القرار. فالثالثةُ: تبقى
           التخصّصاتُ **وسوما تُقرأ مجالاتٍ لا أشخاصا**، ويعلو ذلك بيانُ حالٍ
           يقول ما هو واقعٌ فعلا. */}
-      {filteredApproved.length === 0 && !query && (
+      {approved === null && (
+        <Card tone="accent" className="mt-12 text-center">
+          {failed ? (
+            <>
+              <h2 className="text-lg font-black">تعذر تحميل المدربين</h2>
+              <p className="mx-auto mt-2 max-w-xl text-read leading-7 text-muted-foreground">
+                الاتصال بالخادم لم ينجح. أعد المحاولة بعد لحظات.
+              </p>
+              <button
+                type="button"
+                onClick={() => { setFailed(false); load() }}
+                className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-full border border-teal/40 px-5 text-sm font-bold text-teal-light-ink transition hover:bg-teal/10"
+              >
+                <RefreshCw className="h-4 w-4" aria-hidden="true" />
+                أعد المحاولة
+              </button>
+            </>
+          ) : (
+            <p className="flex items-center justify-center gap-2 text-read text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin text-teal-ink" aria-hidden="true" />
+              جار تحميل المدربين…
+            </p>
+          )}
+        </Card>
+      )}
+
+      {approved !== null && filteredApproved.length === 0 && !query && (
         <Card tone="accent" className="mt-12 text-center">
           <h2 className="text-lg font-black">لم يعتمد نشر اسم مدرّب بعد</h2>
           <p className="mx-auto mt-3 max-w-xl text-read leading-7 text-muted-foreground">

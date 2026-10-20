@@ -23,6 +23,7 @@ const PlacementTest = lazy(() => import('./pages/PlacementTest'))
 const SkillCheck = lazy(() => import('./pages/SkillCheck'))
 const Mirror = lazy(() => import('./pages/Mirror'))
 const PathwayPage = lazy(() => import('./pages/Pathway'))
+const MemberGrantPage = lazy(() => import('./pages/MemberGrantPage'))
 const CoursePathPage = lazy(() => import('./pages/CoursePath'))
 const TrainerPublicPage = lazy(() => import('./pages/TrainerPublic'))
 const PathRedirectPage = lazy(() => import('./pages/PathRedirect'))
@@ -195,6 +196,8 @@ export default function App() {
           {/* تقويمُ الفصل — سطحُ أرشفةٍ لمحرّكات البحث كذلك (البند ٥٠) */}
           <Route path="/calendar" element={<CalendarPage />} />
           <Route path="/pathways/:id" element={<PathwayPage />} />
+          <Route path="/grant" element={<MemberGrantPage />} />
+          <Route path="/grant/:pathwayId" element={<MemberGrantPage />} />
           {/* مسار يبدأ بدورة واحدة — «تفاصيل الدورة» تفتح هذه لا صفحة المسار كاملا */}
           <Route path="/build/:courseId" element={<CoursePathPage />} />
           <Route path="/stories" element={<StoriesPage />} />

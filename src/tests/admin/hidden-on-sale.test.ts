@@ -1,4 +1,4 @@
-/* «له شعبة مفتوحة واسمه لا يظهر» — وسمٌ في «تشغيل المدرّبين» يضع صاحبَه أوّلَ القائمة.
+/* «له دورات منشورة واسمه لا يظهر» (كان «له شعبة مفتوحة…» حتّى ٢٠ أكتوبر) — وسمٌ في «تشغيل المدرّبين» يضع صاحبَه أوّلَ القائمة.
 
    ═══ لماذا ═══
 
@@ -20,31 +20,37 @@ import { describe, expect, it } from 'vitest'
 import { hiddenOnSale } from '@/application/trainer/trainer-card'
 
 const SHOWN = { publiclyVisible: true, isVerified: true, suspended: false }
-const open = [{ status: 'open' }]
 
-describe('له شعبة مفتوحة واسمه لا يظهر', () => {
-  it('لم يعتمد ظهوره وله شعبة مفتوحة أو ممتلئة — يوسم', () => {
-    expect(hiddenOnSale({ ...SHOWN, publiclyVisible: false, cohorts: open })).toBe(true)
-    expect(hiddenOnSale({ ...SHOWN, publiclyVisible: false, cohorts: [{ status: 'full' }] })).toBe(true)
+/* ⚠️ والشرطُ شرطُ صفحة المدرّبين (٢٠ أكتوبر ٢٠٢٦): «لماذا حفصة لا تظهر بقائمة المدرّبين؟ لها شعب.. راجع كلَّ
+   المدرّبين بنفس الوضع» (صاحب المنصّة). كان الوسمُ على «مفتوحةٍ أو ممتلئة»، فمن صارت شعبتُه جاريةً غائبٌ عن
+   الصفحة ولا يوسَم. فصار «له دوراتٌ منشورة» (`hasLiveCourse` = `liveTrainerWhere` على الخادم). رُئي ساقطا
+   على الشرط القديم: الجاريةُ وحدَها لم تُوسَم. */
+describe('له دورات منشورة واسمه لا يظهر', () => {
+  it('لم يعتمد ظهوره وله دورات منشورة — يوسم', () => {
+    expect(hiddenOnSale({ ...SHOWN, publiclyVisible: false, hasLiveCourse: true })).toBe(true)
   })
 
   it('⚠️ معتمد الظهور بلا توثيق لا يظهر اسمه — يوسم', () => {
-    expect(hiddenOnSale({ ...SHOWN, isVerified: false, cohorts: open }), 'الخادم يخفيه والوسم يقول ظاهر').toBe(true)
+    expect(hiddenOnSale({ ...SHOWN, isVerified: false, hasLiveCourse: true }), 'الخادم يخفيه والوسم يقول ظاهر').toBe(true)
   })
 
   it('والموقوف لا يظهر اسمه — يوسم', () => {
-    expect(hiddenOnSale({ ...SHOWN, suspended: true, cohorts: open })).toBe(true)
+    expect(hiddenOnSale({ ...SHOWN, suspended: true, hasLiveCourse: true })).toBe(true)
   })
 
   it('واسمه ظاهر — لا وسم', () => {
-    expect(hiddenOnSale({ ...SHOWN, cohorts: open })).toBe(false)
+    expect(hiddenOnSale({ ...SHOWN, hasLiveCourse: true })).toBe(false)
   })
 
-  it('وشعبة لا يختارها المشتري — لا وسم', () => {
-    for (const status of ['draft', 'active', 'completed', 'cancelled']) {
-      expect(hiddenOnSale({ ...SHOWN, publiclyVisible: false, cohorts: [{ status }] }), status).toBe(false)
-    }
-    expect(hiddenOnSale({ ...SHOWN, publiclyVisible: false, cohorts: [] })).toBe(false)
+  it('ولا دورة منشورة له — لا وسم: الصفحة لا تعرضه ولو اعتمد', () => {
+    expect(hiddenOnSale({ ...SHOWN, publiclyVisible: false, hasLiveCourse: false })).toBe(false)
+  })
+
+  it('⚠️ والوسم يقرأ `hasLiveCourse` الخادم — لا حالات الشعب في الواجهة', () => {
+    const fn = readFileSync(join(process.cwd(), 'src/application/trainer/trainer-card.ts'), 'utf8')
+    const body = fn.slice(fn.indexOf('export function hiddenOnSale'), fn.indexOf('/* ─────────── أثرُ الملفّ العامّ'))
+    expect(body, 'عاد الشرط إلى حالات الشعب').not.toMatch(/cohorts|status/)
+    expect(body).toMatch(/t\.hasLiveCourse/)
   })
 })
 
@@ -52,7 +58,7 @@ describe('الشاشة تعرض الوسم وترتب به أولا', () => {
   const screen = readFileSync(join(process.cwd(), 'src/pages/admin/TrainerRunOps.tsx'), 'utf8')
 
   it('⚠️ الوسم على البطاقة', () => {
-    expect(screen).toMatch(/\{hiddenOnSale\(t\) && \(\s*<Chip[^>]*>له شعبة مفتوحة واسمه لا يظهر<\/Chip>/)
+    expect(screen).toMatch(/\{hiddenOnSale\(t\) && \(\s*<Chip[^>]*>له دورات منشورة واسمه لا يظهر<\/Chip>/)
   })
 
   it('⚠️ والموسوم أول القائمة — قبل ما ينتظرك', () => {
