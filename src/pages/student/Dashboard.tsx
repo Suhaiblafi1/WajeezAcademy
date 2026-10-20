@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
 import {
-  Activity, ArrowLeft, Award, Bell, BookOpen, CalendarDays, CalendarPlus, CheckCircle2, Clock3,
-  Loader2, Send, Sparkles, Target, TrendingUp, Video, LifeBuoy,
+  Activity, ArrowLeft, BookOpen, CalendarDays, CalendarPlus, Clock3, Loader2, Target,
 } from "lucide-react";
 import PortalLayout from "./PortalLayout";
 import MyAdvisorCard from "@/components/MyAdvisorCard";
@@ -14,11 +13,13 @@ import {
   KIND_LABEL_AR, NO_STREAK_NOTE, buildMomentum, momentumFactsFrom, sinceLabelAr,
   type EvidenceKind, type Momentum,
 } from "@/application/student/momentum";
-import EmptyState from "@/components/EmptyState";
 import MyDeadlines from "@/components/MyDeadlines";
-import { fmtDate, fmtSession } from "@/application/text/format-ar";
+import type { NowItem } from "@/components/MyDeadlines";
+import { fmtSession } from "@/application/text/format-ar";
+import { countAr, type ArCounts } from "@/application/student/deadlines";
+import Button from "@/components/ui/Button";
 
-import { Card, Inset, Panel } from "@/components/ui/Surface";
+import { Card, Panel } from "@/components/ui/Surface";
 import { cohortDayAr, DAY_NUMERIC } from "@/application/learning/cohort-gate";
 /* حُذفت خريطة ADVISORS هنا كما حُذفت في صفحة المسار: أسماءُ أشخاصٍ مكتوبةٌ في
    الكود تُعرض للطالب الدافع كأنها مستشارُه المعيَّن. والقاعدة أن لا اسم يُعرض
@@ -42,7 +43,11 @@ interface RealEnrollment {
 }
 /* إشاراتُ من لا تسجيلَ له — ثلاثةٌ فوق التسجيلات */
 interface HeldSeatLite { requestId: string; courseTitleAr: string; cohortTitle: string; startsAt: string | null }
-interface OrderLite { id: string; status: string; total: string | number; currency: string }
+interface OrderLite {
+  id: string; status: string; total: string | number; currency: string;
+  /* مهلةُ الدفع من الخادم، والعناصرُ بعناوينها لحظةَ الشراء */
+  payBy?: string | null; items?: { titleAr: string }[];
+}
 interface EmptySignals { held: HeldSeatLite[]; unpaid: OrderLite[]; plan: JourneyPlan | null }
 
 interface RealSessionItem {
@@ -63,6 +68,11 @@ interface EnrollmentDetail {
   submissions: { assessmentId: string; status: string; submittedAt?: string; assessment?: { title?: string } | null }[];
 }
 interface RealNotif { id: string; title: string; body: string; status: string; sentAt: string | null; queuedAt: string }
+
+const DAY_MS = 86_400_000;
+/** لقاءٌ بلا وقتِ نهايةٍ يُعدّ منتهيا بعد ساعتين من بدئه */
+const SESSION_ASSUMED_MS = 2 * 3600_000;
+const AR_MESSAGES: ArCounts = { one: "رسالة", two: "رسالتان", few: "رسائل", many: "رسالة" };
 
 const greeting = () => (new Date().getHours() < 12 ? "صباح الخير" : new Date().getHours() < 17 ? "طاب يومك" : "مساء الخير");
 
@@ -176,11 +186,24 @@ function MomentumCard({ m, className = "" }: { m: Momentum; className?: string }
   );
 }
 
-/* ═══════════ الوضع الحقيقي — شعب وجلسات وواجبات وإشعارات الخادم ═══════════ */
+/* ═══════════ الوضع الحقيقي — شاشةُ يومه (١٩ أكتوبر ٢٠٢٦) ═══════════
+
+   كانت الرئيسيّةُ تسعةَ ألواح: حلقةُ تقدّم، و«مواعيدي»، و«أين أنت»، و«زخمك»، و«التالي الآن»،
+   و«شعبي»، و«جدولي» وفي ذيله «بانتظار تسليمك»، و«أحدث التنبيهات»، وأربعةُ روابطَ سريعة. فاللقاءُ
+   نفسُه يُرى مرّتين، والواجبُ مرّتين، والتقدّمُ مرّتين — وطلبٌ لم يكتمل دفعُه لا يُرى أصلا.
+   و«بانتظار تسليمك» كان يطالب بمهامَّ لم تُفتح بعد (لا يقرأ `locked`).
+
+   فصارت شاشةَ يومه بقرار صاحب المنصّة في خطّة تبسيط جهة المتعلّم (الخطوة ط):
+     ① **ما عليك الآن** — قائمةٌ واحدة، لكلّ سطرٍ زرٌّ واحد (`MyDeadlines`).
+     ② **لقاءاتك القادمة** — بعد يومه، ولكلٍّ دعوةُ تقويم.
+     ③ **أين أنت من رحلتك** — والتقدّمُ فيها وحدَها.
+     ④ مستشارُه، ثمّ «زخمك».
+   وما حُذف له موضعُه في القائمة: الشهاداتُ والمهاراتُ في «خزانتي»، والدعمُ والرسائلُ في
+   قائمة الحساب، والشعبُ في «تعلّمي». */
 function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] }) {
   const [details, setDetails] = useState<EnrollmentDetail[] | null>(null);
   const [notifs, setNotifs] = useState<RealNotif[]>([]);
-  const [certCount, setCertCount] = useState(0);
+  const [unpaid, setUnpaid] = useState<OrderLite[]>([]);
   /* الخطّةُ المعتمَدة — تدخل في بناء المسار كما تدخل في «رحلتي»، فلا تفترق
      اللوحةُ عن الشاشة التي تُحيل إليها. وفشلُ قراءتها لا يُسقط اللوحة. */
   const [plan, setPlan] = useState<JourneyPlan | null>(null);
@@ -191,8 +214,11 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
     let on = true;
     Promise.all(rows.slice(0, 4).map((r) => apiGet<EnrollmentDetail>(`/api/learner/enrollments/${r.id}`).catch(() => null)))
       .then((ds) => { if (on) setDetails(ds.filter((d): d is EnrollmentDetail => d !== null)); });
-    apiGet<RealNotif[]>("/api/learner/notifications?audience=learner").then((n) => on && setNotifs(n.slice(0, 4))).catch(() => undefined);
-    apiGet<unknown[]>("/api/learner/certificates").then((c) => on && setCertCount(c.length)).catch(() => undefined);
+    apiGet<RealNotif[]>("/api/learner/notifications?audience=learner").then((n) => on && setNotifs(n)).catch(() => undefined);
+    /* طلبٌ لم يكتمل دفعُه — ومهلتُه من الخادم (`payBy`)، فما يُقال هو ما يقع */
+    apiGet<OrderLite[]>("/api/learner/orders")
+      .then((o) => on && setUnpaid(o.filter((x) => x.status === "pending_payment")))
+      .catch(() => undefined);
     apiGet<{ plan: JourneyPlan | null }>("/api/learner/plan").then((r) => on && setPlan(r.plan)).catch(() => undefined);
     void (async () => {
       const safe = async <T,>(pr: Promise<T>): Promise<T | null> => pr.then((v) => v).catch(() => null);
@@ -216,53 +242,46 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
     return buildMomentum(facts, extra ? new Date(extra.at) : new Date());
   }, [details, extra]);
 
-  const fmtWhen = (iso: string) => fmtSession(new Date(iso));
+  /* «الآن» يُلتقط مرّةً عند التركيب: قراءةُ `Date.now()` أثناء التصيير استدعاءٌ غيرُ نقيّ
+     يمنعه مصرّفُ React، والذاكرةُ لا تُعاد إلّا بتغيّر details فالوقتُ مجمّدٌ عمليّا على أيّ حال. */
+  const [now] = useState(() => Date.now());
 
-  /* التقدم الكلي: متوسط نِسب الشعب التي لها تقدم محسوب */
-  const withProgress = rows.filter((r) => r.courseProgress);
-  const pct = withProgress.length
-    ? Math.round(withProgress.reduce((s, r) => s + (r.courseProgress?.percent ?? 0), 0) / withProgress.length)
-    : 0;
-  const activeCount = rows.filter((r) => r.status === "enrolled").length;
-
-  /* حدّ «القادمة» يُلتقط مرة عند التركيب. كان Date.now() يُقرأ داخل useMemo —
-     أي أثناء التصيير، وهو استدعاء غير نقي يمنعه مصرّف React. ولا يغيّر
-     الالتقاطُ سلوكا: الذاكرة لا تُعاد إلا بتغيّر details، فالوقت كان مجمّدا
-     عمليا على أي حال. جلسة بدأت قبل ثلاث ساعات تبقى معروضة. */
-  const [upcomingCutoff] = useState(() => Date.now() - 3 * 3600_000);
-
-  /* الجلسات القادمة من كل الشعب — مرتبة زمنيا */
-  const upcoming = useMemo(() =>
+  /* لقاءاتُ شعبه التي لم تنته — ولقاءٌ بلا آخرَ يُعدّ منتهيا بعد ساعتين من بدئه */
+  const sessions = useMemo(() =>
     (details ?? [])
       .flatMap((d) => d.cohort.sessions.map((s) => ({ ...s, cohortTitle: d.cohort.title })))
-      .filter((s) => new Date(s.startsAt).getTime() >= upcomingCutoff)
-      .sort((a, b) => a.startsAt.localeCompare(b.startsAt))
-      .slice(0, 4),
-  [details, upcomingCutoff]);
+      .filter((s) => s.status !== "cancelled" && (s.endsAt ? Date.parse(s.endsAt) : Date.parse(s.startsAt) + SESSION_ASSUMED_MS) > now)
+      .sort((a, b) => a.startsAt.localeCompare(b.startsAt)),
+  [details, now]);
+  const todaySessions = sessions.filter((s) => Date.parse(s.startsAt) <= now + DAY_MS);
+  const nextSessions = sessions.filter((s) => Date.parse(s.startsAt) > now + DAY_MS).slice(0, 3);
 
-  /* واجبات بانتظارك: لم تُسلَّم أو طُلبت إعادتها */
-  const pendingAssessments = useMemo(() =>
-    (details ?? []).flatMap((d) =>
-      d.cohort.assessments
-        .filter((a) => !d.submissions.some((s) => s.assessmentId === a.id && ["submitted", "under_review", "accepted"].includes(s.status)))
-        .map((a) => ({ ...a, enrollId: d.id, cohortTitle: d.cohort.title }))
-    ), [details]);
-
-  /* «التالي الآن» الحقيقي: أقرب جلسة، ثم أقرب واجب، ثم مواصلة أول شعبة */
-  const next = useMemo(() => {
-    if (upcoming[0]) {
-      const s = upcoming[0];
-      return { label: `جلسة «${s.title}» قادمة`, detail: `${s.cohortTitle} · ${fmtWhen(s.startsAt)}`, cta: "ادخل الجلسة", href: s.zoom ? (s.zoom.learnerUrl ?? s.zoom.joinUrl) : "/student/learning", external: !!s.zoom };
-    }
-    if (pendingAssessments[0]) {
-      const a = pendingAssessments[0];
-      return { label: `سلّم «${a.title}»`, detail: `${a.cohortTitle}${a.dueAt ? ` · يستحق ${fmtDate(new Date(a.dueAt))}` : ""}`, cta: "افتح الواجب", href: "/student/learning", external: false };
-    }
-    const first = rows[0];
-    return { label: `تابع «${first.cohort.course.versions[0]?.titleAr ?? first.cohort.title}»`, detail: "جلساتك وموادك وواجباتك في صفحة تعلّمي", cta: "افتح تعلّمي", href: "/student/learning", external: false };
-  }, [upcoming, pendingAssessments, rows]);
-
-  const unread = notifs.filter((n) => n.status !== "read").length;
+  /* ما عليه الآن من خارج التسليمات: المالُ أوّلا (مقعدٌ يُفرَج عنه بعد مهلته)، ثمّ لقاءٌ في يومه */
+  const before: NowItem[] = [
+    ...unpaid.map((o): NowItem => ({
+      key: `order-${o.id}`, kind: "money",
+      titleAr: o.items?.length === 1 ? `لم يكتمل دفع «${o.items[0].titleAr}»` : "طلب لم يكتمل دفعه",
+      detailAr: o.payBy ? `ادفع قبل ${fmtSession(o.payBy)}، وبعدها يفرج عن المقعد لغيرك` : "أتمم الدفع أو ألغ الطلب",
+      action: { labelAr: "افتح فواتيري", to: "/student/billing" },
+    })),
+    ...todaySessions.map((s): NowItem => ({
+      key: `session-${s.id}`, kind: "session",
+      titleAr: s.title,
+      detailAr: `${fmtSession(new Date(s.startsAt))} · ${s.cohortTitle}`,
+      action: s.zoom
+        ? { labelAr: "ادخل اللقاء", href: s.zoom.learnerUrl ?? s.zoom.joinUrl, newTab: true }
+        : { labelAr: "أضفه لتقويمك", href: `/api/calendar/cohort-sessions/${s.id}.ics` },
+    })),
+  ];
+  const unread = notifs.filter((n) => n.status !== "read");
+  const after: NowItem[] = unread.length > 0
+    ? [{
+        key: "inbox", kind: "inbox",
+        titleAr: `${countAr(unread.length, AR_MESSAGES)} لم تقرأها`,
+        detailAr: unread[0].title,
+        action: { labelAr: "افتح الرسائل", to: "/student/inbox" },
+      }]
+    : [];
 
   /* موضعُه من رحلته — من المملوك والخطّة، لا من لقطة تشخيصٍ في المتصفّح.
 
@@ -280,244 +299,53 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
 
   return (
     <PortalLayout title={`${greeting()} يا ${name.split(" ")[0]}`}>
-      {/* شريط التقدم العام الحقيقي */}
-      <Panel as="section">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <p className="text-sm text-muted-foreground">رحلتك الحقيقية</p>
-            <h2 className="mt-1 text-xl font-black">{activeCount} {activeCount === 1 ? "شعبة نشطة" : "شعب نشطة"} · {rows.length} إجمالا</h2>
-            <p className="mt-1 text-read leading-5 text-muted-foreground">
-              {certCount > 0 ? `${certCount} ${certCount === 1 ? "شهادة صادرة" : "شهادات صادرة"} · ` : ""}تقدمك يحسب من حضورك وتسليماتك الفعلية
-            </p>
-          </div>
-          <div className="relative h-24 w-24 shrink-0">
-            <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90" aria-hidden="true">
-              <circle cx="50" cy="50" r="42" fill="none" stroke="rgb(var(--teal-ink) / 0.15)" strokeWidth="9" />
-              <circle
-                cx="50" cy="50" r="42" fill="none" stroke="rgb(var(--teal-ink))" strokeWidth="9" strokeLinecap="round"
-                strokeDasharray={2 * Math.PI * 42}
-                strokeDashoffset={2 * Math.PI * 42 * (1 - pct / 100)}
-                className="transition-all duration-700"
-              />
-            </svg>
-            <span className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-xl font-black text-teal-light-ink">{pct}%</span>
-              <span className="text-fine text-muted-foreground">من شعبك</span>
-            </span>
-          </div>
-        </div>
-        <div className="mt-4 h-3 overflow-hidden rounded-full bg-white/10">
-          <div className="h-full rounded-full bg-gradient-to-l from-teal to-teal-light transition-all" style={{ width: `${Math.max(3, pct)}%` }} />
-        </div>
-      </Panel>
+      {/* ① ما عليك الآن — ينتظر لقاءاتِه كي لا يقول «لا شيء عليك» ولقاؤه بعد ساعة */}
+      {details === null ? (
+        <div className="grid place-items-center py-16"><Loader2 className="h-6 w-6 animate-spin text-teal-ink" /></div>
+      ) : (
+        <MyDeadlines before={before} after={after} />
+      )}
 
-      {/* «مواعيدي» (المهمّة ٧٢) — أعلى الصفحة بعد شريط التقدّم مباشرةً:
-          الموعدُ أعجلُ ما فيها، وكان أسفلَ «زخمك» أي تحت الطيّة. ومن لا موعدَ
-          عليه يقرأ سطرا واحدا لا لوحا — فالمساحةُ تتبع الحاجة. */}
-      <MyDeadlines className="mt-6" />
-
-      {/* «أين أنا من رحلتي؟» — بطاقةٌ تُلخّص وتُحيل، لا خريطةٌ ثانية تُرسم.
-
-          كانت هنا خريطةُ المسار كاملةً، وصارت الرحلةُ شاشةً لها شريطُها —
-          فرسمُها مرّتين يجعل نقرةَ المتعلّم بلا وجهةٍ واضحة. */}
-      {track && track.counts.total > 0 && <JourneyGlance track={track} className="mt-6" />}
-
-      {/* مؤشر الزخم (ط-٥) — بعد «أين أنا» وقبل «ماذا الآن»: ما فعلته فعلا */}
-      {momentum && <MomentumCard m={momentum} className="mt-6" />}
-
-      <div className="mt-6 grid gap-5 [&>*]:min-w-0 lg:grid-cols-3">
-        {/* التالي الآن — حقيقي */}
-        <Panel as="section" tone="accent" className="bg-gradient-to-b from-teal/10 to-transparent lg:col-span-2">
-          <div className="flex items-center gap-2 text-sm font-bold text-teal-light-ink">
-            <Target className="h-4 w-4" /> التالي الآن
-          </div>
-          <h3 className="mt-3 text-2xl font-black leading-snug">{next.label}</h3>
-          <p className="mt-2 text-sm leading-7 text-muted-foreground">{next.detail}</p>
-          {next.external ? (
-            <a href={next.href} target="_blank" rel="noreferrer"
-              className="mt-5 inline-flex items-center gap-2 rounded-full bg-teal px-6 py-3 font-black text-on-teal transition hover:bg-teal-light">
-              {next.cta} <Video className="h-4 w-4" />
-            </a>
-          ) : (
-            <Link to={next.href}
-              className="mt-5 inline-flex items-center gap-2 rounded-full bg-teal px-6 py-3 font-black text-on-teal transition hover:bg-teal-light">
-              {next.cta} <ArrowLeft className="h-4 w-4" />
-            </Link>
-          )}
-        </Panel>
-
-        {/* شعبي — ملخص سريع */}
-        <Panel as="section">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-sm font-bold text-foreground">
-              <BookOpen className="h-4 w-4 text-teal-light-ink" /> شعبي
-            </div>
-            <Link to="/student/learning" className="inline-flex min-h-8 items-center px-2 text-fine font-bold text-teal-light-ink hover:text-foreground">الكل ←</Link>
-          </div>
-          <div className="mt-4 space-y-3">
-            {rows.slice(0, 3).map((r) => (
-              <div key={r.id}>
-                <p className="truncate text-read leading-5 font-bold text-foreground">{r.cohort.course.versions[0]?.titleAr ?? r.cohort.title}</p>
-                <p className="mt-0.5 truncate text-read text-muted-foreground">
-                  {/* الشعبُ تُفتح على الفصل الأوّل والمدرّبون يُسنَدون دفعةً
-                      واحدة، فبينهما فراغٌ يُقال ولا يُترك عنوانا مكرّرا. */}
-                  {r.cohort.trainers.length > 0 ? `المدرب: ${r.cohort.trainers.map((t) => t.profile.application.fullName).join("، ")}` : "سيتم تعيين المدرب قريبا"}
-                </p>
-                {r.courseProgress && (
-                  <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-white/10">
-                    <div className="h-full rounded-full bg-teal" style={{ width: `${r.courseProgress.percent}%` }} />
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </Panel>
-      </div>
-
-      <div className="mt-6 grid gap-5 [&>*]:min-w-0 lg:grid-cols-3">
-        {/* جدولي الحقيقي */}
-        <Panel as="section" className="lg:col-span-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-sm font-bold text-foreground">
-              <CalendarDays className="h-4 w-4 text-gold-ink" /> جدولي — الجلسات القادمة
-            </div>
+      {/* ② لقاءاتك القادمة — بعد يومه. ومن لا لقاءَ له بعدُ يقرأ ذلك سطرا */}
+      {details !== null && (nextSessions.length > 0 || todaySessions.length === 0) && (
+        <Panel as="section" aria-labelledby="next-h" className="mt-6">
+          <div className="flex items-center justify-between gap-3">
+            <h2 id="next-h" className="flex items-center gap-2 text-sm font-bold">
+              <CalendarDays className="h-4 w-4 text-gold-ink" aria-hidden="true" /> لقاءاتك القادمة
+            </h2>
             <Link to="/student/learning" className="inline-flex min-h-8 items-center px-2 text-fine font-bold text-teal-light-ink hover:text-foreground">تعلّمي ←</Link>
           </div>
-          <div className="mt-4 space-y-2.5">
-            {details === null ? (
-              <div className="grid place-items-center py-8"><Loader2 className="h-6 w-6 animate-spin text-teal-ink" /></div>
-            ) : upcoming.length === 0 ? (
-              /* ط-٤ · الإجراءات من حالة هذه الصفحة نفسها: واجبٌ معلَّق يُقترح لأنه
-                 موجود، والشعب المفتوحة دعوةٌ للتصفّح لا زعمٌ بوجود شعبة. */
-              <EmptyState
-                icon={CalendarDays}
-                titleAr="لا جلسات مجدولة قادمة"
-                reasonAr="تظهر جلستك هنا برابطها فور جدولتها. وحتى ذلك الحين:"
-                actions={[
-                  ...(pendingAssessments[0]
-                    ? [{ to: "/student/learning", labelAr: `سلّم «${pendingAssessments[0].title}»`, hintAr: pendingAssessments[0].dueAt ? `يستحق ${fmtDate(new Date(pendingAssessments[0].dueAt))}` : "بانتظار تسليمك" }]
-                    : []),
-                  ...(rows[0]
-                    ? [{ to: "/student/learning", labelAr: `تابع «${rows[0].cohort.course.versions[0]?.titleAr ?? rows[0].cohort.title}»`, hintAr: "الوحدات والمواد" }]
-                    : []),
-                  { to: "/student/review", labelAr: "ثبّت ما تعلّمته", hintAr: "بطاقات تذكّر تعود في موعدها" },
-                  { to: "/student/learning", labelAr: "افتح مسارك", hintAr: "مواعيدك ووحداتك" },
-                ]}
-              />
-            ) : (
-              upcoming.map((s) => (
-                <Card key={s.id} className="flex flex-wrap items-center justify-between gap-3 bg-paper/20 px-4 py-3">
-                  <div className="flex items-center gap-3">
-                    <span className="grid h-9 w-9 place-items-center rounded-xl bg-gold/15 text-gold-ink">
-                      <Video className="h-4 w-4" />
-                    </span>
-                    <div>
-                      <p className="text-sm font-bold">{s.title}</p>
-                      <p className="text-read text-muted-foreground">{s.cohortTitle} · {fmtWhen(s.startsAt)}</p>
-                    </div>
+          {nextSessions.length === 0 ? (
+            <p className="mt-3 text-read leading-6 text-muted-foreground">لا لقاء مجدول بعد. يظهر هنا برابطه فور جدولته.</p>
+          ) : (
+            <ul className="mt-3 space-y-2">
+              {nextSessions.map((s) => (
+                <Card as="li" key={s.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-bold">{s.title}</p>
+                    <p className="text-read text-muted-foreground">{fmtSession(new Date(s.startsAt))} · {s.cohortTitle}</p>
                   </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    {/* دعوةُ تقويم — موعدٌ لا يدخل تقويمَ صاحبه موعدٌ يُنسى.
-                        وهي ملفٌّ معياريّ يفتحه قوقل وآبل وأوتلوك بلا حساب. */}
-                    <a
-                      href={`/api/calendar/cohort-sessions/${s.id}.ics`}
-                      className="flex min-h-9 items-center gap-1.5 rounded-full border border-white/15 px-3.5 py-1.5 text-fine font-bold text-foreground transition hover:border-white/35 hover:text-foreground"
-                    >
-                      <CalendarPlus className="h-3.5 w-3.5" /> أضفها لتقويمك
-                    </a>
-                    {s.zoom ? (
-                      <a href={s.zoom.learnerUrl ?? s.zoom.joinUrl} target="_blank" rel="noreferrer"
-                        className="inline-flex min-h-9 items-center rounded-full border border-teal/40 px-4 py-1.5 text-xs font-bold text-teal-light-ink transition hover:bg-teal hover:text-on-teal">
-                        انضم الآن
-                      </a>
-                    ) : (
-                      <Link to="/student/learning"
-                        className="inline-flex min-h-9 items-center rounded-full border border-teal/40 px-4 py-1.5 text-xs font-bold text-teal-light-ink transition hover:bg-teal hover:text-on-teal">
-                        التفاصيل
-                      </Link>
-                    )}
-                  </div>
+                  {/* دعوةُ تقويم — موعدٌ لا يدخل تقويمَ صاحبه موعدٌ يُنسى.
+                      وهي ملفٌّ معياريّ يفتحه قوقل وآبل وأوتلوك بلا حساب. */}
+                  <Button as="a" size="sm" tone="ghost" icon={CalendarPlus} href={`/api/calendar/cohort-sessions/${s.id}.ics`}>
+                    أضفه لتقويمك
+                  </Button>
                 </Card>
-              ))
-            )}
-          </div>
-
-          {/* واجبات بانتظارك */}
-          {pendingAssessments.length > 0 && (
-            <div className="mt-5 border-t border-white/8 pt-4">
-              <div className="flex items-center gap-2 text-sm font-bold text-foreground">
-                <Send className="h-4 w-4 text-teal-light-ink" /> بانتظار تسليمك ({pendingAssessments.length})
-              </div>
-              <div className="mt-3 space-y-2">
-                {pendingAssessments.slice(0, 3).map((a) => (
-                  <Card as={Link} tone="warn" interactive key={a.id} to="/student/learning" className="flex items-center justify-between gap-3 px-4 py-2.5 transition hover:border-gold/50">
-                    <span className="text-xs font-bold text-foreground">{a.title} <span className="font-normal text-muted-foreground">· {a.cohortTitle}</span></span>
-                    {a.dueAt && <span className="shrink-0 text-fine text-gold-ink">يستحق {fmtDate(new Date(a.dueAt))}</span>}
-                  </Card>
-                ))}
-              </div>
-            </div>
+              ))}
+            </ul>
           )}
         </Panel>
+      )}
 
-        {/* الإشعارات الحقيقية */}
-        <Panel as="section">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-sm font-bold text-foreground">
-              <Bell className="h-4 w-4 text-gold-ink" /> أحدث التنبيهات
-            </div>
-            {unread > 0 && <span className="rounded-full bg-gold px-2 py-0.5 text-fine font-black text-on-gold">{unread} جديد</span>}
-          </div>
-          <div className="mt-4 space-y-2.5">
-            {notifs.length === 0 && <Inset as="p" className="px-3 py-6 text-center text-read leading-5 text-muted-foreground">لا إشعارات بعد</Inset>}
-            {notifs.map((n) => (
-              <Inset as="p" tone={n.status === "read" ? "default" : "accent"} key={n.id} className={`px-3 py-2.5 text-read leading-6 ${n.status === "read" ? "text-muted-foreground" : "text-foreground"}`}>
-                <span className="block font-bold">{n.title}</span>
-                {n.body}
-              </Inset>
-            ))}
-          </div>
-          <Link to="/student/inbox" className="mt-3 flex min-h-9 items-center justify-center text-fine font-bold text-teal-light-ink hover:text-foreground">كلّ الرسائل والتنبيهات ←</Link>
-        </Panel>
-      </div>
+      {/* ③ «أين أنا من رحلتي؟» — بطاقةٌ تُلخّص وتُحيل، لا خريطةٌ ثانية تُرسم.
+          والتقدّمُ هنا وحدَه: كانت فوقه حلقةُ نسبةٍ تقول الشيءَ نفسَه برقمٍ آخر. */}
+      {track && track.counts.total > 0 && <JourneyGlance track={track} className="mt-6" />}
 
-      {/* مستشارُه المسنَد — اسمُه وزرُّ مراسلته (`MyAdvisorCard`) */}
+      {/* ④ مستشارُه المسنَد — اسمُه وزرُّ مراسلته (`MyAdvisorCard`) */}
       <MyAdvisorCard className="mt-6" />
 
-      {/* روابط سريعة */}
-      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Panel as={Link} tone="accent" interactive to="/student/skills" className="block transition hover:border-teal/60">
-          <div className="flex items-center gap-2 text-sm font-bold text-teal-light-ink">
-            <TrendingUp className="h-4 w-4" /> ملف مهاراتي
-          </div>
-          <p className="mt-2 text-read leading-6 text-muted-foreground">فجواتك وما تتقنه، كما قيس فعلا</p>
-        </Panel>
-        <Panel as={Link} tone="accent" interactive to="/student/learning" className="block transition hover:border-teal/60">
-          <div className="flex items-center gap-2 text-sm font-bold text-teal-light-ink">
-            <CalendarDays className="h-4 w-4" /> مسار تعلّمي
-          </div>
-          <p className="mt-2 text-read leading-6 text-muted-foreground">تصفّح الشعب القادمة وسجّل</p>
-        </Panel>
-        <Panel as={Link} interactive to="/student/certificates" className="block transition hover:border-white/30">
-          <div className="flex items-center gap-2 text-sm font-bold text-foreground">
-            <Award className="h-4 w-4 text-gold-ink" /> شهاداتي {certCount > 0 && <span className="rounded-full bg-gold/15 px-2 py-0.5 text-fine text-gold-ink">{certCount}</span>}
-          </div>
-          <p className="mt-2 text-read leading-6 text-muted-foreground">بأرقام تحقق تشاركها مع أي جهة</p>
-        </Panel>
-        <Panel as={Link} interactive to="/student/support" className="block transition hover:border-white/30">
-          <div className="flex items-center gap-2 text-sm font-bold text-foreground">
-            <LifeBuoy className="h-4 w-4" /> الدعم
-          </div>
-          <p className="mt-2 text-read leading-6 text-muted-foreground">تذكرة تصل فريقنا مباشرة</p>
-        </Panel>
-      </div>
-
-      <p className="mt-8 flex items-center justify-center gap-2 text-center text-read text-muted-foreground">
-        <Sparkles className="h-3.5 w-3.5" />
-        <Clock3 className="h-3.5 w-3.5" />
-        تقدمك محفوظ — أكمل من أي جهاز
-        <CheckCircle2 className="h-3.5 w-3.5 text-teal-ink" />
-      </p>
+      {/* مؤشر الزخم (ط-٥) — ما فعله فعلا، في ذيل يومه لا في رأسه */}
+      {momentum && <MomentumCard m={momentum} className="mt-6" />}
     </PortalLayout>
   );
 }

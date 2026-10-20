@@ -17,6 +17,7 @@ import { AuthService } from '../../services/auth.service'
 import { EnrollmentService } from '../../services/enrollment.service'
 import { AssessmentService } from '../../services/assessment.service'
 import { CohortFileService } from '../../services/cohort-file.service'
+import { DeadlinesService } from '../../services/deadlines.service'
 import { zonedDay } from '../../../src/application/trainer/cohort-period'
 
 const DAY = 86_400_000
@@ -224,6 +225,17 @@ describe('① الشعبةُ الجارية — ما فُتح يصل وما لم
       .rejects.toMatchObject({ code: 'not_open_yet', status: 409 })
   })
 
+  /* و«مواعيدي» في الرئيسيّة يتبع الحكمَ نفسَه (١٩ أكتوبر ٢٠٢٦): كان يطالب بمهمّةٍ مقفلةٍ لها
+     موعد، فيفتحها المتعلّمُ فيجدها لم تُفتح بعد */
+  it('⚠️ و«مواعيدي» لا يطالب بمهمّةٍ لم تُفتح — والمفتوحةُ فيه وإن فات موعدُها', async () => {
+    const notYet = (await prisma.cohortAssessment.create({
+      data: { cohortId, moduleId: 'GM3', type: 'assignment', title: 'تطبيقُ الثالث قبل لقائه', maxScore: 10, status: 'published', dueAt: at(10) },
+    })).id
+    const ids = (await new DeadlinesService(prisma).forLearner(me.userId)).items.map((i) => i.assessmentId)
+    expect(ids, 'طالب بمهمّةٍ لم يُعقد لقاءُ محورها').not.toContain(notYet)
+    expect(ids).toEqual(expect.arrayContaining([pastDue, onTime]))
+  })
+
   it('⚠️ والمتأخّرُ يُقبل ويُعلَّم — وفي موعده لا يُعلَّم', async () => {
     const late = await assessments.submitAssignment(me.userId, pastDue, { textAnswer: 'بعد الموعد' })
     expect(late.submission.late, 'تسليمٌ بعد آخر موعده لم يُعلَّم').toBe(true)
@@ -292,11 +304,19 @@ describe('② بعد انتهاء الشعبة: يقرأ ما فُتح ولا ي
       .rejects.toMatchObject({ code: 'cohort_closed', status: 409 })
   })
 
+  it('⚠️ و«مواعيدي» لا يطالب بما لا يُقبل بعد انتهائها', async () => {
+    const ids = (await new DeadlinesService(prisma).forLearner(me.userId)).items.map((i) => i.assessmentId)
+    expect(ids, 'طالب بتسليمٍ يردّه الخادم').not.toContain(task)
+  })
+
   it('⚠️ وإعادةٌ طلبها المدرّبُ تُقبل — ولا تُعلَّم متأخّرة', async () => {
     /* تسليمٌ سبق الانتهاءَ ثمّ طُلبت إعادتُه */
     await prisma.assignmentSubmission.create({
       data: { assessmentId: task, enrollmentId: me.enrollmentId, textAnswer: 'الأوّل', status: 'resubmit_requested', submittedAt: at(-62) },
     })
+    /* وما طلب المدرّبُ إعادتَه يُقبل — فيعود إلى «مواعيدي» */
+    const listed = (await new DeadlinesService(prisma).forLearner(me.userId)).items.map((i) => i.assessmentId)
+    expect(listed, 'إعادةٌ طُلبت ولم تظهر في «مواعيدي»').toContain(task)
     const again = await assessments.resubmit(me.userId, task, { textAnswer: 'بعد الملاحظات' })
     expect(again.submission.late, 'إعادةٌ بطلبٍ عُلّمت متأخّرة').toBe(false)
   })
