@@ -6,7 +6,8 @@
    ④ **وما لا يُقبل يُردّ** — رقمٌ ليس رقما، ومجالٌ من غير القائمة.
    ⑤ **والمساراتُ للزائر بلا أجور المدرّبين** — وما لا يُشترى منها لا يُعرض.
    ⑥ **و«تواصل مع مستشار» حالةٌ واحدة** تُسند — وبمرجعٍ صحيحٍ وحدَه.
-   ⑦ **والوسومُ تُنظَّف** — ما ليس وسما يُترك. */
+   ⑦ **والوسومُ تُنظَّف** — ما ليس وسما يُترك.
+   ⑧ **ونتائجُ الحملة بالقناة والدفعة** — والشراءُ يُنسب إلى قناة صاحب الكود ولو اشترى به غيرُه. */
 
 import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
@@ -14,7 +15,8 @@ import { setupTestDb, testPrisma } from '../helpers/db'
 import { AuthService } from '../../services/auth.service'
 import { GrantService } from '../../services/grant.service'
 import { GrantPathwayService } from '../../services/grant-pathway.service'
-import { GrantLandingService, maskEmail } from '../../services/grant-landing.service'
+import { GrantLandingService, grantResults, maskEmail } from '../../services/grant-landing.service'
+import { CommerceService } from '../../services/commerce.service'
 import { approvedPlanBy } from '../helpers/approved-trainer'
 
 let prisma: PrismaClient
@@ -162,5 +164,30 @@ describe('⑦ والوسوم تنظف', () => {
     const lead = await prisma.lead.findUniqueOrThrow({ where: { id: out.ref } })
     expect(lead.channel).toBe('whatsapp')
     expect(lead.wave).toBeNull()
+  })
+})
+
+describe('⑧ ونتائج الحملة بالقناة والدفعة', () => {
+  it('⚠️ من عبأ ومن أخذ كودا ومن اشترى وبكم — والمهدى يحسب لقناة صاحب الكود', async () => {
+    const ch = `t${STAMP % 1_000_000_000}`
+    const a = await landing.apply(person({ channel: ch, wave: '1', workField: 'الهندسة' }))
+    const b = await landing.apply(person({ channel: ch, wave: '1', workField: 'الهندسة' }))
+    await landing.apply(person({ channel: ch, wave: '2' }))
+    /* صديقٌ اشترى بكود الأوّل */
+    const friend = (await new AuthService(prisma).register(`gl-friend-${STAMP}@test.local`, 'Friend#12345', 'صديق')).userId
+    const commerce = new CommerceService(prisma)
+    const c = await cohort(nextCourse())
+    const out = await commerce.checkout(friend, [c.id], a.grant!.code!)
+    await commerce.payOrder(out.orderId, friend, `gl-${out.orderId}`)
+    /* وآخرُ فتح طلبا بكود الثاني ولم يدفع — لا يُعدّ شراءً */
+    const idle = (await new AuthService(prisma).register(`gl-idle-${STAMP}@test.local`, 'Idle#12345', 'لم يدفع')).userId
+    await commerce.checkout(idle, [(await cohort(nextCourse())).id], b.grant!.code!)
+
+    const r = await grantResults(prisma)
+    const w1 = r.rows.find((x) => x.channel === ch && x.wave === '1')!
+    expect(w1).toMatchObject({ leads: 2, codes: 2, bought: 1, revenue: 60 })
+    expect(r.rows.find((x) => x.channel === ch && x.wave === '2')).toMatchObject({ leads: 1, codes: 1, bought: 0, revenue: 0 })
+    expect(r.fields.find((f) => f.workField === 'الهندسة')!.leads).toBeGreaterThanOrEqual(2)
+    expect(r.totals.leads).toBeGreaterThanOrEqual(3)
   })
 })
