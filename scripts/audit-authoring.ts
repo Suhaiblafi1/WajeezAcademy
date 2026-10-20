@@ -27,6 +27,7 @@
      npx tsx scripts/audit-authoring.ts --update   يحدّث خط الأساس بعد إصلاحٍ مقصود
 */
 
+import { plainAr } from '../src/application/text/plain-ar'
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { validateChecks } from '../src/application/content/module-checks'
@@ -147,8 +148,10 @@ export function auditModule(m: Module, courseSkills: Map<string, string[]>, libr
        جزءٌ مكتوبٌ لا ناقص، والعنوانُ الفرعيُّ فيه تحسينٌ لا مخالفة. وكان
        الشرطُ تطابقا حرفيّا فأنذر بالباطل في أربعين درسا — وقُدِّم الدَّينُ
        ٢٣٠ وهو ١٨٦. فالفحصُ الذي يُنذر بالباطل يُكذّب تقريرَه كلَّه. */
-    for (const part of ['مثالٌ محلول', 'الخطأ الشائع', 'افعل الآن']) {
-      if (!new RegExp(`^###\\s+${part}`, 'm').test(l.body)) {
+    /* والعنوانُ يُطابق بلا تشكيل (٢٠ أكتوبر ٢٠٢٦): صار الكتالوجُ بلا تشكيلٍ إعرابيّ («مثال محلول»)، وما
+       كتبه مدرّبٌ قد يحمله («مثالٌ محلول») — والجزءُ واحدٌ في الحالين (`plainAr`). */
+    for (const part of ['مثال محلول', 'الخطأ الشائع', 'افعل الآن']) {
+      if (!new RegExp(`^###\\s+${part}`, 'm').test(plainAr(l.body))) {
         add('أجزاءُ الدرس', `الدرس ${i + 1} «${l.title || 'بلا عنوان'}» بلا «${part}»`)
       }
     }

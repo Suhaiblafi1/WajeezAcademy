@@ -21,6 +21,7 @@
    دوراتُ المسار نفسِها في مشروعها أو تقييمها. فما لا تنتجه الدورةُ لا يَعِد
    به الكتالوج. */
 
+import { plainAr } from '@/application/text/plain-ar'
 import { describe, expect, it } from 'vitest'
 import { getCoreCatalogRaw } from '../../data/core-catalog-source'
 
@@ -104,7 +105,8 @@ describe('«تتخرّج بـ» صادقٌ — لا يَعِد بما لا تن�
     const silent = raw.launch_pathways
       .filter((p) => {
         const line = p.capstone ?? ''
-        return !WITNESSES.some((w) => namesWitness(line, w)) && !JUDGED.some((j) => line.includes(j))
+        /* بلا تشكيلٍ في الطرفين (٢٠ أكتوبر ٢٠٢٦): صار الكتالوجُ بلا تشكيل («مختبر» لا «مختبَر»)، والكلمةُ واحدة */
+        return !WITNESSES.some((w) => namesWitness(plainAr(line), plainAr(w))) && !JUDGED.some((j) => plainAr(line).includes(plainAr(j)))
       })
       .map((p) => `${p.id}: ${p.capstone}`)
     expect(silent, 'سطرٌ يعدّد المخرَجات ولا يقول كيف حُكم عليها:\n' + silent.join('\n')).toEqual([])
