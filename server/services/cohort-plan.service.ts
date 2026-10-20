@@ -1557,9 +1557,9 @@ export class CohortPlanService {
       prep = await prepSvc.activateOnApproval(qual.ctx, actorId)
         .catch((e: unknown) => ({ activated: false, blockedAr: e instanceof AuthError ? e.message : 'تعذّر التفعيل' }))
     }
-    /* وعقدُ النشط المعتمَدُ كالعقود الجديدة يوقَّع حين تُعتمَد آخرُ خطّةٍ بدأها (١٧ أكتوبر ٢٠٢٦، `sealIfComplete`) */
+    /* وعقدُ النشط المعتمَدُ كالعقود الجديدة يوقَّع بأوّل خطّةٍ تُعتمَد له بعد اعتماد توقيعه (٢٠ أكتوبر ٢٠٢٦، `sealIfDue`) */
     const sealed = plan.trainerId
-      ? await prepSvc.sealIfComplete(plan.trainerId, actorId)
+      ? await prepSvc.sealIfDue(plan.trainerId, actorId)
         .catch((e: unknown) => ({ sealed: false as const, blockedAr: e instanceof AuthError ? e.message : 'تعذّر التوقيع' }))
       : null
     return { status: 'approved' as const, meetings, tasks, prep, sealed }
@@ -1635,7 +1635,7 @@ export class CohortPlanService {
         .catch((e: unknown) => ({ activated: false, blockedAr: e instanceof AuthError ? e.message : 'تعذّر التفعيل' }))
       : null
     const sealed = plan.trainerId
-      ? await prepSvc.sealIfComplete(plan.trainerId, actorId)
+      ? await prepSvc.sealIfDue(plan.trainerId, actorId)
         .catch((e: unknown) => ({ sealed: false as const, blockedAr: e instanceof AuthError ? e.message : 'تعذّر التوقيع' }))
       : null
     return { status: 'postponed' as const, postponedTo: toDay, ...(prep ? { prep } : {}), ...(sealed ? { sealed } : {}) }

@@ -10,6 +10,8 @@
    ③ وللإدارة كيف اعتُمدت كلُّ دورة: تأهيلٌ مباشرٌ بلا شعبة، أو خطّةُ شعبةٍ اعتُمدت — ومن أهّله.
    ⑤ وعدّادُ الشعب بجانب اسمه في «العقود»: كم دورةً أعدّ شعبتَها كاملةً أو جزءا منها (١٨ أكتوبر).
    ⑥ والمؤجّلةُ لا تحبس تفعيلَه ولا توقيعَ عقده («Don't wait»، ١٨ أكتوبر).
+   ⑧ وعقدُ النشط المعتمَدُ كالعقود الجديدة يوقَّع بأوّل دورةٍ تُعتمَد له بعد اعتماد توقيعه (٢٠ أكتوبر ٢٠٢٦،
+      «Also sign active trainers' contracts at first course») — في ④ و⑥، والعاملُ يلحق ما فات.
    ⑦ ثمّ صارت دورةٌ معتمَدةٌ واحدةٌ تكفي لتفعيله (٢٠ أكتوبر ٢٠٢٦، «one cohort is enough for them to be
       active»): التأهيلُ والاعتمادُ وقائمةُ العقود يقولونها، والعاملُ يلحق من بقي في الطور وله معتمَدة،
       وما يمنع التفعيلَ يُقال للإدارة مرّةً في الأسبوع لا في كلّ محاولة.
@@ -182,9 +184,10 @@ describe('③ كيف اعتُمدت كلُّ دورة — للإدارة', () =>
   })
 })
 
-/* ═══ ④ والنشطُ عقدُه المعتمَدُ كالعقود الجديدة — يوقَّع حين تكتمل دوراتُه (١٧ أكتوبر ٢٠٢٦) ═══
+/* ═══ ④ والنشطُ عقدُه المعتمَدُ كالعقود الجديدة — يوقَّع تلقائيّا (١٧ أكتوبر ٢٠٢٦) ═══
    سأل صاحبُ المنصّة عن عقدِ مدرّبةٍ نشطة «اعتُمد توقيعُه كالعقود الجديدة — وقِّعْه حين تعتمد دوراتِه»،
-   واختار «Sign automatically»: يوقَّع حين تُعتمَد آخرُ خطّةٍ بدأها، ويصله بريدُ ذلك. */
+   واختار «Sign automatically»: يوقَّع حين تُعتمَد آخرُ خطّةٍ بدأها، ويصله بريدُ ذلك. ثمّ (٢٠ أكتوبر ٢٠٢٦):
+   «Also sign active trainers' contracts at first course» — بأوّل خطّةٍ تُعتمَد له **بعد** اعتماد توقيعه. */
 describe('④ عقدُ النشط المعتمَدُ كالعقود الجديدة يوقَّع تلقائيّا', () => {
   /** نشطٌ دوراتُه معتمَدة، وعقدُه غيرُ مشروطٍ اعتُمد توقيعُه ولم نوقّعه */
   async function activePlain(courses: string[]) {
@@ -199,22 +202,62 @@ describe('④ عقدُ النشط المعتمَدُ كالعقود الجديد
   })
   const contractOf = (id: string) => prisma.trainerContract.findUniqueOrThrow({ where: { id } })
 
-  it('ما دامت له شعبةٌ تُعَدّ لا يوقَّع — وآخرُ خطّةٍ تُعتمَد توقّعه', async () => {
+  it('⚠️ أوّلُ خطّةٍ تُعتمَد له توقّعه — ولو بقيت أخرى تُعَدّ', async () => {
     const t = await activePlain([C1, C2])
     const one = await prep.accept(t.userId, C1)
     const two = await prep.accept(t.userId, C2)
-    expect(await readyOf(t.contractId), 'شعبتاه تُعَدّان وقيل إنّ دوراته اكتملت').toBe(false)
+    expect(await readyOf(t.contractId), 'لم تُعتمَد له خطّةٌ وقيل جاهز').toBe(false)
 
     const r1 = await plans.decide(adminId, (await submit(one.id, t.profileId)).id, true)
-    expect(r1).toMatchObject({ status: 'approved', sealed: { sealed: false } })
-    expect((await contractOf(t.contractId)).status, 'وُقّع وشعبتُه الثانيةُ تُعَدّ').toBe('signature_approved')
-
-    const r2 = await plans.decide(adminId, (await submit(two.id, t.profileId)).id, true)
-    expect(r2, 'اعتُمدت آخرُ خطّةٍ ولم يُقل إنّه وُقّع').toMatchObject({ status: 'approved', sealed: { sealed: true } })
+    expect(r1, 'اعتُمدت أوّلُ خطّةٍ ولم يُقل إنّه وُقّع').toMatchObject({ status: 'approved', sealed: { sealed: true } })
     const c = await contractOf(t.contractId)
-    expect(c.status, 'اعتُمدت آخرُ خطّةٍ ولم يوقَّع عقدُه').toBe('countersigned')
+    expect(c.status, 'اعتُمدت أوّلُ خطّةٍ ولم يوقَّع عقدُه').toBe('countersigned')
     expect(c.countersignedBy).toBe(adminId)
     expect(await prisma.auditEvent.count({ where: { action: 'trainer.prep.auto_seal', entityId: t.contractId } })).toBe(1)
+
+    /* والثانيةُ لا توقّع ما وُقّع */
+    const r2 = await plans.decide(adminId, (await submit(two.id, t.profileId)).id, true)
+    expect(r2).toMatchObject({ status: 'approved', sealed: null })
+    expect(await prisma.auditEvent.count({ where: { action: 'trainer.prep.auto_seal', entityId: t.contractId } })).toBe(1)
+  })
+
+  /* والنشطُ في يده معتمَداتٌ من قبل: لو عُدّ ما اعتُمد قبل اعتماد توقيعه لوُقّع كلُّ عقدٍ «كالعقود الجديدة»
+     ساعةَ اعتماده — وهو ما اختار المعتمِدُ ألّا يقع */
+  it('⚠️ وما اعتُمد له قبل اعتماد توقيعه لا يوقّعه', async () => {
+    const t = await activePlain([C1, C2])
+    const one = await prep.accept(t.userId, C1)
+    await prep.accept(t.userId, C2)
+    await prisma.cohortDeliveryPlan.create({
+      data: {
+        cohortId: one.id, trainerId: t.profileId, status: 'approved', reviewedBy: adminId,
+        reviewedAt: new Date(Date.now() - 60_000), content: { kind: 'trainer', modules: [], resources: [] },
+      },
+    })
+    await prisma.trainerContract.update({ where: { id: t.contractId }, data: { signatureApprovedAt: new Date() } })
+    expect(await readyOf(t.contractId), 'عُدّ ما اعتُمد قبل اعتماد توقيعه').toBe(false)
+    await prep.sealFirstCourseActive()
+    expect((await contractOf(t.contractId)).status, 'وُقّع بما اعتُمد قبل اعتماد توقيعه').toBe('signature_approved')
+  })
+
+  it('⚠️ والعاملُ يلحق عقدا اعتُمدت له بعد اعتماد توقيعه خطّةٌ ولم يوقَّع — بفاعلِ من اعتمدها', async () => {
+    const t = await activePlain([C1, C2])
+    const one = await prep.accept(t.userId, C1)
+    await prep.accept(t.userId, C2)
+    /* كما بقي قبل هذا اليوم: اعتُمدت خطّتُه الأولى والثانيةُ تُعَدّ — واعتمدها غيرُ من اعتمد توقيعَه */
+    const reviewer = (await auth.register(`qact-reviewer-${Date.now()}@test.local`, 'Admin#12345', 'مراجعُ الخطط')).userId
+    await prisma.cohortDeliveryPlan.create({
+      data: {
+        cohortId: one.id, trainerId: t.profileId, status: 'approved', reviewedBy: reviewer,
+        reviewedAt: new Date(), content: { kind: 'trainer', modules: [], resources: [] },
+      },
+    })
+    expect(await readyOf(t.contractId), 'اعتُمدت له خطّةٌ ولم يقل الخادمُ إنّه جاهز').toBe(true)
+
+    expect((await prep.sealFirstCourseActive()).sealed, 'لم يلحقه العامل').toContain(t.contractId)
+    const c = await contractOf(t.contractId)
+    expect(c.status).toBe('countersigned')
+    expect(c.countersignedBy, 'وُقّع بغير من اعتمد خطّتَه').toBe(reviewer)
+    expect((await prep.sealFirstCourseActive()).sealed, 'وُقّع مرّتين').not.toContain(t.contractId)
   })
 
   it('عقدٌ من قبل هذا اليوم ودوراتُه مكتملة: القائمةُ تقول `coursesReady`', async () => {
@@ -222,7 +265,7 @@ describe('④ عقدُ النشط المعتمَدُ كالعقود الجديد
     expect(await readyOf(t.contractId), 'لا شيءَ يُعَدّ ولم يقل الخادمُ إنّ دوراته اكتملت').toBe(true)
   })
 
-  it('والتأهيلُ المباشرُ لآخر دورةٍ معلّقةٍ يوقّعه كذلك', async () => {
+  it('والتأهيلُ المباشرُ لدورةٍ بعد اعتماد توقيعه يوقّعه كذلك', async () => {
     const t = await activePlain([C1, C2])
     await prisma.trainerCourseQualification.updateMany({ where: { profileId: t.profileId, courseId: C2 }, data: { status: 'pending' } })
     expect(await readyOf(t.contractId), 'له دورةٌ معلّقة').toBe(false)
@@ -314,18 +357,19 @@ describe('⑥ المؤجّلةُ لا تحبس التفعيلَ ولا التو�
     expect(await statusOf(t.applicationId)).toBe('active')
   })
 
-  it('والنشطُ عقدُه كالعقود الجديدة يوقَّع حين تؤجَّل آخرُ ما يُعِدّه', async () => {
+  /* وكان: «يوقَّع حين تؤجَّل آخرُ ما يُعِدّه». ومنذ ٢٠ أكتوبر توقّعه أوّلُ خطّةٍ تُعتمَد، والتأجيلُ ليس اعتمادا */
+  it('والنشطُ عقدُه كالعقود الجديدة لا يوقّعه التأجيل — وأوّلُ خطّةٍ تُعتمَد توقّعه', async () => {
     const t = await onboarding([C1, C2])
     await prisma.trainerCourseQualification.updateMany({ where: { profileId: t.profileId }, data: { status: 'qualified' } })
     await prisma.trainerApplication.update({ where: { id: t.applicationId }, data: { status: 'active' } })
     await prisma.trainerContract.update({ where: { id: t.contractId }, data: { gatesActivation: false, status: 'signature_approved' } })
     const one = await prep.accept(t.userId, C1)
     const two = await prep.accept(t.userId, C2)
-    const r1 = await plans.decide(adminId, (await submit(one.id, t.profileId)).id, true)
-    expect(r1).toMatchObject({ sealed: { sealed: false } })
-
     const r2 = await plans.postpone(adminId, (await submit(two.id, t.profileId)).id, season())
-    expect(r2, 'لم يبقَ إلّا المؤجّلةُ ولم يوقَّع').toMatchObject({ sealed: { sealed: true } })
+    expect(r2, 'وُقّع بالتأجيل والأولى تُعَدّ').toMatchObject({ sealed: { sealed: false } })
+
+    const r1 = await plans.decide(adminId, (await submit(one.id, t.profileId)).id, true)
+    expect(r1, 'اعتُمدت أوّلُ خطّةٍ ولم يوقَّع').toMatchObject({ sealed: { sealed: true } })
     expect((await prisma.trainerContract.findUniqueOrThrow({ where: { id: t.contractId } })).status).toBe('countersigned')
   })
 })
