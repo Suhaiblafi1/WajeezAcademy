@@ -12,6 +12,7 @@
    المتصفّح من صفحة الدفع (`commerce.service.ts`)، وعليه روابطُ التقويم
    والإشعارات ورسائلُ بريدٍ أُرسلت. تغييرُه يكسر ما هو في الطريق الآن. */
 
+import { readPendingCheckout } from "@/services/pending-checkout";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import {
@@ -79,7 +80,8 @@ export default function Journey() {
   const [files, setFiles] = useState<Record<string, File | null>>({});
   const [progress, setProgress] = useState<Record<string, number>>({});
   const [busy, setBusy] = useState<string | null>(null);
-  const [pickedCohort, setPickedCohort] = useState<Record<string, string>>({});
+  /* وما اختاره في صفحة الدورة أو المسار قبل أن يُكمل شراءَه يُقترح هنا أوّلا — لا أقربُ شعبة (الخطوة ل) */
+  const [pickedCohort, setPickedCohort] = useState<Record<string, string>>(() => readPendingCheckout()?.cohortByCourse ?? {});
 
   const { cohorts } = useCourseCohorts();
 

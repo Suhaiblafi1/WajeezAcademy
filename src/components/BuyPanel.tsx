@@ -49,6 +49,7 @@ import LiveSessionDates from "@/components/LiveSessionDates";
 import { usePlatformConfig } from "@/hooks/usePlatformConfig";
 import { apiPost, ApiError } from "@/services/api";
 import { readReferral } from "@/application/commerce/referral";
+import { clearPendingCheckout } from "@/services/pending-checkout";
 import { useCourseCohorts, type CohortOption } from "@/services/cohort-prices";
 import { FIRST_TIME_PROMO } from "@/application/commerce/first-time-promo";
 import { PATHWAY_ONLY_PERKS } from "@/data/pathway-perks";
@@ -274,6 +275,21 @@ export default function BuyPanel({
 
   useEffect(() => { void refresh(applied); }, [refresh, applied]);
 
+  /* ═══ ومن وثّق بريده في تبويبٍ آخر يجد الدفعَ مفتوحا حين يعود (٢٠ أكتوبر ٢٠٢٦، الخطوة ل) ═══
+     رابطُ التوثيق يُفتح في تبويبٍ جديد، وهذا اللوحُ باقٍ على «بريدك غير موثّق» وزرُّ الدفع مطفأ حتّى
+     يُغلَق ويُفتح. فما دام الخادمُ يقول «غير موثّق»، يُعاد التسعيرُ حين يعود إلى هذه النافذة. */
+  const unverified = quote !== null && !quote.emailVerified;
+  useEffect(() => {
+    if (!unverified) return;
+    const again = () => { if (document.visibilityState === "visible") void refresh(applied); };
+    window.addEventListener("focus", again);
+    document.addEventListener("visibilitychange", again);
+    return () => {
+      window.removeEventListener("focus", again);
+      document.removeEventListener("visibilitychange", again);
+    };
+  }, [unverified, refresh, applied]);
+
   /* سببُ الاستبعاد بالشعبة لا بالدورة: من مُنع من شعبةٍ قد تُتاح له أخرى
      من الدورة نفسِها، فيبقى المبدّلُ معروضا ليختار موعدا آخر. */
   const excludedOf = useMemo(
@@ -304,6 +320,8 @@ export default function BuyPanel({
         /* رمزُ دعوة المدرّب إن هبط الزائرُ برابطه — والخادمُ يقرّر قبولَه */
         ...(readReferral() ? { referralCode: readReferral()! } : {}),
       });
+      /* الطلبُ أُنشئ — فلا «أكمل شراءك» بعده على ما صار في «فواتيري» (`pending-checkout.ts`) */
+      clearPendingCheckout();
       const r = await apiPost<PayResult>(`/api/learner/orders/${order.orderId}/pay`, {
         idempotencyKey: `buy-${order.orderId}-${currency}`,
         ...(usd ? { presentment: currency } : {}),
