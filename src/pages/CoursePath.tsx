@@ -16,7 +16,7 @@ import { Link, useParams, useSearchParams } from "react-router";
 import { REFERRAL_KEY } from "@/application/commerce/referral";
 import {
   ArrowRight, BookOpen, CheckCircle2, Clock3, CalendarDays, ClipboardCheck, Headset, Layers, Library, ListChecks,
-  MonitorPlay, Plus, Route as RouteIcon, Save, Target, Trash2, User, Sparkles,
+  MonitorPlay, Plus, Route as RouteIcon, Save, Target, Trash2, User, Sparkles, Flag,
 } from "lucide-react";
 import SeoHead from "@/components/SeoHead";
 import AuthGate from "@/components/AuthGate";
@@ -35,6 +35,7 @@ import { useCourseCohorts, type CohortOption } from "@/services/cohort-prices";
 import { track } from "@/services/analytics";
 import { bundleNudge, pathPricing, suggestNext, MAX_BUILT_COURSES } from "@/application/catalog/course-path";
 import { trainerLineAr, trainerNamesOf } from "@/application/catalog/course-trainers";
+import { courseAudienceView } from "@/application/catalog/course-audience";
 import { DISCOUNT_CATEGORIES } from "@/application/commerce/discount-policy";
 import { FIRST_TIME_PROMO, isFirstTimePromo } from "@/application/commerce/first-time-promo";
 import { savePathDraft } from "@/services/path-drafts";
@@ -236,6 +237,8 @@ function CoursePathPage({ courseId }: { courseId: string }) {
   }
 
   const full = courseFullById(anchor.id);
+  /* «لمن هذه الدورة» من الكتالوج ومن مدرّبي شعبها — `course-audience.ts` */
+  const who = full ? courseAudienceView(full, cohorts.get(anchor.id) ?? []) : null;
   const pickedCourses = picked.map((id) => courseById(id)).filter((c): c is Course => Boolean(c));
   const totalWeeks = pickedCourses.reduce((s, c) => s + c.weeks, 0);
 
@@ -398,7 +401,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
             بعمودين، وسقط «مشروعها العملي» بقراره، ودخل مكانَه «ما يرافق
             الدورة». والبطاقاتُ الثلاثُ تُطبَّق على الدورات كلِّها: القالبُ
             واحد. */}
-        {full && (full.description || full.targetAudience || full.learningOutcomes.length > 0) && (
+        {full && who && (full.description || who.lead || full.learningOutcomes.length > 0) && (
           <Card as="section" className="mt-5">
             {full.description && (
               <>
@@ -407,16 +410,48 @@ function CoursePathPage({ courseId }: { courseId: string }) {
               </>
             )}
             <div className={`grid gap-4 md:grid-cols-2 ${full.description ? "mt-4 border-t border-white/10 pt-4" : ""}`}>
-              {full.targetAudience && (
+              {/* ══ لمن هذه الدورة (٢٠ أكتوبر ٢٠٢٦) ══
+                  كان سطرَ الكتالوج بلونٍ باهت. وصار: وصفُه بارزا، ثمّ من اختارهم مدرّبو شعبها
+                  (المراحلُ والأهداف). ودورةٌ بلا شعبةٍ تقف عند الكتالوج.
+                  وسقط منه المستوى و«قبلها» بقرار صاحب المنصّة (٢٠ أكتوبر ٢٠٢٦): «موجودٌ داخل
+                  تفاصيل الشعبة، ولكي لا يزيد النصّ هنا». */}
+              {who.lead && (
                 <div>
                   <h3 className="flex items-center gap-1.5 text-read font-black text-foreground">
                     <User className="h-3.5 w-3.5 text-teal-light-ink" /> لمن هذه الدورة
                   </h3>
-                  <p className="mt-1.5 text-read leading-relaxed text-muted-foreground">{full.targetAudience}</p>
-                  {full.prerequisites && (
-                    <p className="mt-2 text-read leading-relaxed text-muted-foreground">
-                      <span className="font-bold">تعرفه قبلها: </span>
-                      {full.prerequisites}
+                  <Inset as="p" tone="accent" className="mt-2 px-3 py-2 text-read font-bold leading-relaxed text-foreground">
+                    {who.lead}
+                  </Inset>
+                  {who.stages.length > 0 && (
+                    <div className="mt-3">
+                      <p className="text-read font-bold text-muted-foreground">تناسبك إن كنت</p>
+                      <ul className="mt-1.5 flex flex-wrap gap-1.5">
+                        {who.stages.map((st) => (
+                          <li key={st} className="rounded-full border border-teal/40 bg-teal/10 px-2.5 py-0.5 text-fine font-bold text-teal-light-ink">
+                            {st}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {who.goals.length > 0 && (
+                    <div className="mt-3">
+                      <p className="text-read font-bold text-muted-foreground">وتريد</p>
+                      <ul className="mt-1.5 space-y-1">
+                        {who.goals.map((g) => (
+                          <li key={g} className="flex items-start gap-1.5 text-read leading-relaxed text-foreground">
+                            <Flag className="mt-0.5 h-3.5 w-3.5 shrink-0 text-gold-ink" />
+                            {g}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {(who.stages.length > 0 || who.goals.length > 0) && (
+                    <p className="mt-2 flex items-center gap-1 text-read text-muted-foreground">
+                      <Sparkles className="h-3 w-3 text-gold-ink" />
+                      {who.fromCohorts > 1 ? "من اختيار مدرّبي شعبها" : "من اختيار مدرّب الشعبة"}
                     </p>
                   )}
                 </div>

@@ -13,6 +13,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { withRetry } from './retry'
+import { asAudience, type CohortAudience } from '@/application/trainer/cohort-audience'
 
 const API_BASE: string = import.meta.env.VITE_API_URL ?? ''
 
@@ -50,6 +51,8 @@ interface PublicCohort {
   sessions?: { startsAt?: unknown; endsAt?: unknown; title?: unknown }[] | null
   /** نبذةُ مدرّبها من خطّتها المعتمَدة — `cohort-summary.ts` */
   summaryAr?: string | null
+  /** لمن هي — من الخطّة نفسِها (`course-audience.ts`) */
+  audience?: unknown
 }
 
 /** مدرّبُ شعبةٍ كما يُعرض في صندوقها — اسمُه وصورتُه وبابُ نبذته */
@@ -81,6 +84,8 @@ export interface CohortOption {
   sessions: LiveSessionDate[]
   /** «سطران يقرؤهما المتعلّم قبل أن يدفع» — نبذةُ مدرّبها، و`null` إن لم يكتبها */
   summaryAr: string | null
+  /** لمن هي وماذا يريد متعلّمُها — قائمتان فارغتان إن لم يختر */
+  audience: CohortAudience
 }
 
 /* الحالات التي يستطيع المتعلّم أن يلتحق بها — وهي عينها التي تعدّها
@@ -177,6 +182,8 @@ export function cohortOptionsFrom(rows: unknown): Map<string, CohortOption[]> {
       trainerProfiles: trainerProfilesOf(c.trainerProfiles, c.trainers),
       sessions: sessionDatesOf(c.sessions),
       summaryAr: typeof c.summaryAr === 'string' && c.summaryAr.trim() ? c.summaryAr.trim() : null,
+      /* يُصفّى ثانيةً: خادمٌ أقدمُ لا يرسله، وما وصل يُقرأ بالقاعدة نفسِها لا يُصدَّق */
+      audience: asAudience(c.audience),
     })
     map.set(c.courseId, list)
   }

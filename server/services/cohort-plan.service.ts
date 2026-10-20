@@ -159,7 +159,7 @@ export interface TrainerPlanContent {
   level?: LevelRange | null
   /** ═══ لمن هي وماذا يريد متعلّمُها — برموز التشخيص (٦ أكتوبر ٢٠٢٦) ═══
 
-      يُجمعان ويراهما المدرّبُ والمعتمِد، ولا يُوصَلان بالمطابقة بعد. والقاعدةُ في
+      يُجمعان ويُعرضان في «لمن هذه الدورة» بعد الاعتماد، ولا يُوصَلان بالمطابقة بعد. والقاعدةُ في
       `src/application/trainer/cohort-audience.ts`. */
   audience?: { stages: string[]; goals: string[] } | null
   /* ── وحُذف `proposals` من هنا (د-٦ · ١٤ سبتمبر ٢٠٢٦) ──
