@@ -64,6 +64,7 @@ import {
 import { livePathWhere, liveTrainerWhere, publicTrainerWhere, trainerPubliclyVisible } from './trainer-visibility'
 import { BIO_DRAFTS, PITCH_DRAFTS } from './trainer-suggestion-drafts'
 import { cohortLeadTrainers } from './cohort-lead'
+import { PUBLISH_APPROVED_NOTICE } from './trainer-auto-publish'
 import { cleanProposals, readProposals } from '../../src/application/trainer/teachable-proposals'
 import { pendingKind } from '../../src/application/trainer/pending-kind'
 import { profileTrailOf, TRAIL_ACTIONS, type CardCohort } from '../../src/application/trainer/trainer-card'
@@ -6375,11 +6376,8 @@ export class TrainerReviewService {
        ولا أنّ ما فيه صار يُقرأ. وقاعدةُ المستودَع نفسُها تقول «لا اسمَ
        مدرّبٍ يُعرض قبل اعتماد نشره» — فاللحظةُ التي يقع فيها الاعتمادُ
        أولى اللحظات بأن تبلغه. */
-    await this.notifyTrainerUser(profile.id, {
-      templateKey: 'trainer.publish.approved',
-      title: 'اعتمد ظهورك للعامّة',
-      body: 'صار ملفّك — اسمك وسيرتك ودوراتك — يظهر في صفحة مدرّبي الأكاديمية وفي صفحتك باسمك. راجعه، فما فيه هو ما يقرؤه الناس.',
-    })
+    /* والنصُّ واحدٌ مع النشر الآليّ عند فتح الشعبة (`trainer-auto-publish.ts`) */
+    await this.notifyTrainerUser(profile.id, { ...PUBLISH_APPROVED_NOTICE })
   }
 
   /* ═══ إيقافُ التدريب لا يُسقط الحساب إلّا لمن لا موقعَ له سواه ═══
