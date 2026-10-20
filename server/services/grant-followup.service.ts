@@ -21,6 +21,7 @@ import type { PrismaClient } from '@prisma/client'
 import { recordAudit } from './audit'
 import { AdvisorService } from './advisor.service'
 import { MEMBER_GRANT_SLUG } from '../../src/application/commerce/grant'
+import { leadProfileAr } from '../../src/application/commerce/grant-landing'
 
 /** بعد كم ساعةٍ من النموذج يُتابَع من لم يشترِ */
 export const GRANT_FOLLOWUP_HOURS = 48
@@ -47,7 +48,8 @@ export async function grantRegistrants(prisma: PrismaClient) {
     where: { campaign: MEMBER_GRANT_SLUG, erasedAt: null },
     orderBy: { createdAt: 'desc' },
     select: {
-      id: true, fullName: true, phone: true, email: true, workField: true, channel: true, wave: true, createdAt: true,
+      id: true, fullName: true, phone: true, email: true, workField: true, careerLevel: true, interests: true,
+      channel: true, wave: true, createdAt: true,
       grantCode: { select: { coupon: { select: { code: true, orders: { select: { status: true } } } } } },
       cases: {
         where: { status: { notIn: OPEN_CASE } },
@@ -63,6 +65,7 @@ export async function grantRegistrants(prisma: PrismaClient) {
       : orders.some((o) => o.status === 'pending_payment') ? 'pending' : 'none'
     return {
       id: l.id, fullName: l.fullName, phone: l.phone, email: l.email, workField: l.workField,
+      careerLevel: l.careerLevel, interests: l.interests,
       channel: l.channel, wave: l.wave, createdAt: l.createdAt,
       code: l.grantCode?.coupon.code ?? null, state,
       advisor: l.cases[0] ? (l.cases[0].assignments[0]?.advisor.displayName ?? 'بلا مستشار بعد') : null,
@@ -78,7 +81,7 @@ export async function openGrantFollowups(prisma: PrismaClient, now = new Date())
     orderBy: { createdAt: 'asc' },
     take: FOLLOWUP_BATCH,
     select: {
-      id: true, email: true, workField: true,
+      id: true, email: true, workField: true, careerLevel: true, interests: true,
       grantCode: { select: { coupon: { select: { orders: { where: { status: { in: [...BOUGHT, 'pending_payment'] } }, select: { id: true } } } } } },
     },
   })
@@ -91,7 +94,7 @@ export async function openGrantFollowups(prisma: PrismaClient, now = new Date())
     const kase = await prisma.advisorCase.create({
       data: {
         leadId: lead.id,
-        nextAction: `متابعة — عبأ نموذج المنحة قبل يومين ولم يشتر${lead.workField ? ` · مجاله: ${lead.workField}` : ''}`,
+        nextAction: ['متابعة — عبأ نموذج المنحة قبل يومين ولم يشتر', leadProfileAr(lead)].filter(Boolean).join(' · '),
       },
     })
     await recordAudit(prisma, {

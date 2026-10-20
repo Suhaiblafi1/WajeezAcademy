@@ -2,9 +2,11 @@
 
    من عبّأ النموذجَ ثمّ خرج ليوثّق بريده، أو أغلق الصفحةَ وعاد غدا، يجد كودَه ومساراته — لا نموذجا
    يُعبّأ ثانيةً فيُقال له «أرسلنا كودك إلى بريدك». والتخزينُ المحلّيّ لا الجلسيّ: رابطُ التوثيق يُفتح
-   في تبويبٍ جديد. وما يُقرأ يُفحص: مرجعٌ بشكله، وكودٌ بشكله، وعمرٌ لا يتجاوز ستّين يوما. */
+   في تبويبٍ جديد. وما يُقرأ يُفحص: مرجعٌ بشكله، وكودٌ بشكله، وعمرٌ لا يتجاوز ستّين يوما. ومعه ما قال إنّه
+   يريد تطويرَه، لتُرتَّب به دوراتُه حين يعود. */
 
 import { safeGet, safeRemove, safeSet } from '@/services/safe-storage'
+import { GRANT_MAX_INTERESTS } from '@/application/commerce/grant-landing'
 
 export const GRANT_STORE_KEY = 'wajeez_grant'
 const TTL_MS = 60 * 86_400_000
@@ -15,6 +17,8 @@ export interface StoredGrant {
   sentTo: string | null
   name: string
   email: string
+  /** ما يريد تطويرَه — مجالاتُ دوراتٍ اختارها في النموذج */
+  interests: string[]
   at: number
 }
 
@@ -35,6 +39,9 @@ export function parseStoredGrant(raw: string | null, now = Date.now()): StoredGr
     sentTo: typeof o.sentTo === 'string' ? o.sentTo.slice(0, 200) : null,
     name: typeof o.name === 'string' ? o.name.slice(0, 120) : '',
     email: typeof o.email === 'string' ? o.email.slice(0, 200) : '',
+    interests: Array.isArray(o.interests)
+      ? o.interests.filter((x): x is string => typeof x === 'string').map((x) => x.slice(0, 80)).slice(0, GRANT_MAX_INTERESTS)
+      : [],
   }
 }
 

@@ -3651,6 +3651,10 @@ model Lead {
   wave               String?
   /// مجالُ عمله كما اختاره في نموذج الحملة
   workField          String?
+  /// مستواه الوظيفيّ — اختياريٌّ في نموذج المنحة (`CAREER_LEVELS` في `grant-landing.ts`)
+  careerLevel        String?
+  /// ما يريد تطويرَه — مجالاتُ دوراتٍ اختارها في نموذج المنحة، اختياريّة، وبها تُرتَّب له الدورات
+  interests          String[]      @default([])
   createdAt          DateTime      @default(now())
   user               User?         @relation("LeadUser", fields: [userId], references: [id])
   cases              AdvisorCase[]

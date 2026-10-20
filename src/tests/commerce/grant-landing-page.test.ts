@@ -1,9 +1,9 @@
 /* صفحةُ «منحة أعضاء وجيز» — ما تقوله وما تحفظه (٢٠ أكتوبر ٢٠٢٦).
 
-   الحسابُ في `server/tests/commerce/grant-landing.test.ts`. وهنا: الصفحةُ بطريقيها، والنموذجُ بخاناته
-   الأربع ومصيدته ونصِّ موافقته وما يحثّ على تعبئته، وقائمةُ دوراتٍ واحدةٌ بلا «مسار» واقتراحاتٌ فوقها، والمنحةُ
-   تُقال بالمال، والحسابُ باسمه وبريده من النموذج، ولوحُ الدفع بالكود، والعودةُ بعد التوثيق إلى ما اختاره.
-   والتعليقاتُ تُنزع. */
+   الحسابُ في `server/tests/commerce/grant-landing.test.ts`. وهنا: الصفحةُ بطريقيها، والنبذةُ قبل النموذج،
+   والنموذجُ بخاناته الأربع اللازمة وسؤاليه الاختياريّين ومصيدته ونصِّ موافقته وما يحثّ على تعبئته، وقائمةُ
+   دوراتٍ واحدةٌ بلا «مسار» واقتراحاتٌ فوقها مرتّبةٌ بما يريد تطويرَه، والمنحةُ تُقال بالمال، والحسابُ باسمه
+   وبريده من النموذج، ولوحُ الدفع بالكود، والعودةُ بعد التوثيق إلى ما اختاره. والتعليقاتُ تُنزع. */
 
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
@@ -11,7 +11,11 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { plainAr } from '@/application/text/plain-ar'
 import { auditActionAr } from '@/application/audit/labels'
-import { GRANT_CONSENT_AR, GRANT_PERKS_AR, WORK_FIELDS, campaignParams, campaignTag, grantSavingAr, toggleCourse } from '@/application/commerce/grant-landing'
+import {
+  CAREER_LEVELS, GRANT_CONSENT_AR, GRANT_GAINS_AR, GRANT_INTEREST_DOMAINS, WORK_FIELDS,
+  campaignParams, campaignTag, grantSavingAr, grantStepsAr, leadProfileAr, rankByInterest, toggleCourse,
+} from '@/application/commerce/grant-landing'
+import { courseDomain } from '@/application/catalog/course-domain'
 import { parsePendingCheckout } from '@/application/commerce/pending-checkout'
 import { parseStoredGrant } from '@/services/grant-landing'
 
@@ -34,8 +38,16 @@ describe('الطريق والأبواب', () => {
 })
 
 describe('النموذج', () => {
-  it('⚠️ أربع خانات ومصيدة ونص الموافقة — والقناة والدفعة من الرابط', () => {
-    for (const f of ['fullName', 'phone', 'email', 'workField']) expect(PAGE).toMatch(new RegExp(`value=\\{form\\.${f}\\}`))
+  it('⚠️ أربع خانات لازمة وسؤالان اختياريان ومصيدة ونص الموافقة — والقناة والدفعة من الرابط', () => {
+    for (const f of ['fullName', 'phone', 'email', 'workField', 'careerLevel']) expect(PAGE).toMatch(new RegExp(`value=\\{form\\.${f}\\}`))
+    /* اللازمُ أربعٌ لا ستّ: الجديدُ اختياريّ — قرارُ صاحب المنصّة */
+    const ready = PAGE.match(/const ready = ([^;]+);/)![1]
+    expect(ready).toMatch(/form\.workField !== ""/)
+    expect(ready, 'صار المستوى لازما').not.toMatch(/careerLevel/)
+    expect(ready, 'صار ما يريد تطويره لازما').not.toMatch(/interests/)
+    expect(PAGE).toMatch(/careerLevel: form\.careerLevel \|\| null, interests, \.\.\.campaignParams/)
+    expect(PAGE, 'ما يريد تطويره من مجالات الدورات المفتوحة').toMatch(/const domains = \[\.\.\.new Set\(view\.openCourses\.map\(\(x\) => x\.domainAr\)/)
+    expect(PAGE).toMatch(/toggleCourse\(p, d, GRANT_MAX_INTERESTS\)/)
     expect(PAGE).toMatch(/\{GRANT_CONSENT_AR\}/)
     expect(PAGE).toMatch(/\.\.\.campaignParams\(window\.location\.search\), website: hp\.value/)
     expect(campaignParams('?ch=WhatsApp&w=2')).toEqual({ channel: 'whatsapp', wave: '2' })
@@ -54,7 +66,8 @@ describe('بعد النموذج', () => {
   })
 
   it('⚠️ قائمة دورات واحدة بلا كلمة «مسار» — كل ما يشترى اليوم، فالجديد يظهر وحده', () => {
-    expect(PAGE).toMatch(/\{view\.openCourses\.map\(\(x\) => \{/)
+    expect(PAGE).toMatch(/const courses = rankByInterest\(view\.openCourses, fits\)/)
+    expect(PAGE).toMatch(/\{courses\.map\(\(x\) => \{/)
     expect(PAGE).toMatch(/onChange=\{\(\) => toggle\(x\.courseId\)\}/)
     expect(PAGE, 'يوم الشعبة بمنطقة الأكاديمية').toMatch(/cohortDayAr\(x\.startsAt\)/)
     /* ولا «مسار» في نصٍّ يراه — التعليقاتُ منزوعة */
@@ -63,6 +76,19 @@ describe('بعد النموذج', () => {
 
   it('⚠️ الاقتراحات تختار دوراتها بضغطة — ثم يعدل كما يشاء', () => {
     expect(PAGE).toMatch(/onClick=\{\(\) => setPicked\(p\.courses\.map\(\(x\) => x\.courseId\)\.slice\(0, max\)\)\}>اختر هذه الدورات<\/Button>/)
+  })
+
+  it('⚠️ ما يريد تطويره أولا — الدورات والاقتراحات بعدد ما فيها منه، وكل على ترتيبه', () => {
+    expect(rankByInterest(['a', 'b', 'c', 'd'], (x) => (x === 'c' || x === 'd' ? 1 : 0))).toEqual(['c', 'd', 'a', 'b'])
+    expect(rankByInterest(['a', 'b', 'c'], (x) => ({ a: 1, b: 2, c: 0 })[x]!)).toEqual(['b', 'a', 'c'])
+    expect(rankByInterest(['a', 'b'], () => 0), 'بلا اهتمام يبقى الترتيب').toEqual(['a', 'b'])
+    expect(PAGE).toMatch(/const suggestions = rankByInterest\(view\.pathways,/)
+    expect(PAGE).toMatch(/\{suggestions\.map\(\(p\) => \(/)
+    /* ومجالُ الدورة الذي يعرضه الخادمُ مقبولٌ فيما يريد تطويرَه */
+    expect(GRANT_INTEREST_DOMAINS.has(courseDomain('C-HR-101'))).toBe(true)
+    expect(GRANT_INTEREST_DOMAINS.has('أخرى')).toBe(false)
+    expect(leadProfileAr({ workField: 'الهندسة', careerLevel: 'مدير', interests: ['أ', 'ب'] })).toBe('مجاله: الهندسة · مستواه: مدير · يريد: أ، ب')
+    expect(leadProfileAr({ workField: null, careerLevel: null, interests: [] })).toBe('')
   })
 
   it('⚠️ دورة واحدة أو أكثر حتى الحد — والزائدة ترد بلا أن تمحو ما اختاره', () => {
@@ -74,13 +100,27 @@ describe('بعد النموذج', () => {
 
   it('⚠️ والنموذج يحث على التعبئة — بما هو قائم: عدد المنح الباقي من الخادم', () => {
     expect(PAGE).toMatch(/c\.left !== null \? `: بقي \$\{c\.left\} منحة` : ""/)
-    expect(PAGE).toMatch(/>\{c\.open \? "احجز منحتي الآن" : "أرسل"\}<\/Button>/)
-    expect(PAGE).toMatch(/\{GRANT_PERKS_AR\.map\(/)
+    expect(PAGE).toMatch(/>\{c\.open \? "احجز منحتي الآن" : "سجلني"\}<\/Button>/)
+  })
+
+  it('⚠️ نبذة قبل النموذج — من نحن بنصها، وما يحصل عليه، وكيف تعمل المنحة، وعدد الدورات من الخادم', () => {
+    expect(PAGE, 'نص «من نحن» نفسه لا نسخة تفترق').toMatch(/\{FAMILY_INTRO\.body\}/)
+    expect(PAGE).toMatch(/\{GRANT_GAINS_AR\.map\(\(g\) => \{/)
+    expect(PAGE).toMatch(/\{grantStepsAr\(c\.percentOff, c\.maxCourses\)\.map\(/)
+    expect(PAGE).toMatch(/dualOr\(view\.openCourses\.length,/)
+    /* والنبذةُ قبل النموذج في الصفحة */
+    expect(PAGE.indexOf('{FAMILY_INTRO.body}')).toBeLessThan(PAGE.indexOf('id="grant-form"'))
+    const steps = grantStepsAr(60, 5)
+    expect(steps.map((x) => x.title)).toEqual(['عبئ النموذج', 'اختر دوراتك', 'ادفع 40% فقط'])
+    expect(steps[1].body).toContain('حتى 5 دورات')
   })
 
   it('⚠️ ما يحفظ على الجهاز يفحص — والعودة إلى مسار المنحة مقبولة', () => {
-    const ok = { ref: '11111111-1111-4111-8111-111111111111', code: 'WG-ABCD2345', sentTo: null, name: 'سارة', email: 's@x.co', at: Date.now() }
+    const ok = { ref: '11111111-1111-4111-8111-111111111111', code: 'WG-ABCD2345', sentTo: null, name: 'سارة', email: 's@x.co', interests: ['أ'], at: Date.now() }
     expect(parseStoredGrant(JSON.stringify(ok))?.code).toBe('WG-ABCD2345')
+    expect(parseStoredGrant(JSON.stringify(ok))?.interests).toEqual(['أ'])
+    expect(parseStoredGrant(JSON.stringify({ ...ok, interests: [1, 'ب', 'ج', 'د', 'ه'] }))?.interests, 'اهتمام بغير شكله').toEqual(['ب', 'ج', 'د'])
+    expect(parseStoredGrant(JSON.stringify({ ...ok, interests: undefined }))?.interests, 'حفظ قبل السؤال').toEqual([])
     expect(parseStoredGrant(JSON.stringify({ ...ok, ref: 'x' }))).toBeNull()
     expect(parseStoredGrant(JSON.stringify({ ...ok, code: 'javascript:1' }))?.code).toBeNull()
     expect(parseStoredGrant(JSON.stringify({ ...ok, at: Date.now() - 61 * 86_400_000 }))).toBeNull()
@@ -91,10 +131,15 @@ describe('بعد النموذج', () => {
 
 describe('النصوص', () => {
   it('بلا تشكيل', () => {
-    const texts = [GRANT_CONSENT_AR, ...WORK_FIELDS, ...GRANT_PERKS_AR, 'احجز منحتي الآن', 'رقم واتساب', 'مجال عملك', 'كود منحتك', 'اختر دوراتك',
-      'اقتراحات لك', 'اختر هذه الدورات', 'كل الدورات المتاحة', 'دقيقة واحدة وتأخذ كود منحتك فورا', 'لست متأكدا؟ تواصل مع مستشار', 'اطلب مستشارا', 'ادفع الآن']
-    for (const t of texts) expect(t).toBe(plainAr(t))
-    for (const t of texts.slice(1 + WORK_FIELDS.length + GRANT_PERKS_AR.length)) expect(PAGE).toContain(t)
+    const data = [
+      GRANT_CONSENT_AR, ...WORK_FIELDS, ...CAREER_LEVELS, ...GRANT_GAINS_AR.flatMap((g) => [g.title, g.body]),
+      ...grantStepsAr(60, 4).flatMap((x) => [x.title, x.body]),
+    ]
+    const onPage = ['احجز منحتي الآن', 'الاسم الكامل', 'رقم الواتساب', 'البريد الإلكتروني', 'مجال عملك', 'مستواك الوظيفي', 'ما الذي تريد تطويره؟',
+      'سؤالان اختياريان', 'عن أكاديمية وجيز', 'ماذا تحصل عليه مع كل دورة', 'كيف تعمل المنحة', 'كود منحتك', 'اختر دوراتك',
+      'اقتراحات لك', 'اختر هذه الدورات', 'كل الدورات المتاحة', 'يناسب ما تريد تطويره', 'لست متأكدا؟ تواصل مع مستشار', 'اطلب مستشارا', 'ادفع الآن']
+    for (const t of [...data, ...onPage]) expect(t).toBe(plainAr(t))
+    for (const t of onPage) expect(PAGE).toContain(t)
     expect(auditActionAr('coupon.grant_apply')).not.toBe('coupon.grant_apply')
   })
 })

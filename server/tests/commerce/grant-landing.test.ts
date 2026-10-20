@@ -7,7 +7,9 @@
    ⑤ **والمساراتُ للزائر بلا أجور المدرّبين** — وما لا يُشترى منها لا يُعرض.
    ⑥ **و«تواصل مع مستشار» حالةٌ واحدة** تُسند — وبمرجعٍ صحيحٍ وحدَه.
    ⑦ **والوسومُ تُنظَّف** — ما ليس وسما يُترك.
-   ⑧ **ونتائجُ الحملة بالقناة والدفعة** — والشراءُ يُنسب إلى قناة صاحب الكود ولو اشترى به غيرُه. */
+   ⑧ **ونتائجُ الحملة بالقناة والدفعة** — والشراءُ يُنسب إلى قناة صاحب الكود ولو اشترى به غيرُه.
+   ⑨ **والسؤالان الاختياريّان** — يُحفظان إن أجاب، ولا يُسقطان نموذجا تُركا فيه، وما ليس من القائمة يُردّ؛
+      ومجالُ كلّ دورةٍ مفتوحةٍ في الردّ (منه يُختار)، والمستشارُ يقرأ ما أجاب. */
 
 import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
@@ -18,6 +20,7 @@ import { GrantPathwayService } from '../../services/grant-pathway.service'
 import { GrantLandingService, grantResults, maskEmail } from '../../services/grant-landing.service'
 import { CommerceService } from '../../services/commerce.service'
 import { approvedPlanBy } from '../helpers/approved-trainer'
+import { courseDomain } from '../../../src/application/catalog/course-domain'
 
 let prisma: PrismaClient
 let grants: GrantService
@@ -46,7 +49,9 @@ async function cohort(courseId: string, over: Record<string, unknown> = {}) {
   await prisma.cohortTrainer.create({ data: { cohortId: c.id, profileId, role: 'lead', assignedBy: ownerId } })
   return c
 }
-const person = (over: Partial<{ fullName: string; phone: string; email: string; workField: string; channel: string; wave: string }> = {}) => ({
+const person = (over: Partial<{
+  fullName: string; phone: string; email: string; workField: string; channel: string; wave: string; careerLevel: string | null; interests: string[]
+}> = {}) => ({
   fullName: `عضو وجيز ${++seq}`, phone: `0791${String(500000 + seq)}`, email: `member-${seq}-${STAMP}@test.local`,
   workField: 'الموارد البشرية', ...over,
 })
@@ -189,5 +194,39 @@ describe('⑧ ونتائج الحملة بالقناة والدفعة', () => {
     expect(r.rows.find((x) => x.channel === ch && x.wave === '2')).toMatchObject({ leads: 1, codes: 1, bought: 0, revenue: 0 })
     expect(r.fields.find((f) => f.workField === 'الهندسة')!.leads).toBeGreaterThanOrEqual(2)
     expect(r.totals.leads).toBeGreaterThanOrEqual(3)
+  })
+})
+
+describe('⑨ والسؤالان الاختياريان', () => {
+  it('⚠️ يحفظان إن أجاب، ولا يسقطان نموذجا تركا فيه — وما ليس من القائمة يرد', async () => {
+    const hr = courseDomain('C-HR-101')
+    const mkt = courseDomain('C-MKT-101')
+    const full = await landing.apply(person({ careerLevel: 'مدير', interests: [hr, mkt, hr] }))
+    const lead = await prisma.lead.findUniqueOrThrow({ where: { id: full.ref } })
+    expect(lead.careerLevel).toBe('مدير')
+    expect(lead.interests, 'المكرر يحفظ مرة').toEqual([hr, mkt])
+
+    const bare = await landing.apply(person())
+    expect(bare.grant?.code, 'أسقط نموذجا ترك فيه الاختياري').toMatch(/^WG-/)
+    expect(await prisma.lead.findUniqueOrThrow({ where: { id: bare.ref } })).toMatchObject({ careerLevel: null, interests: [] })
+
+    await expect(landing.apply(person({ careerLevel: 'رئيس الكون' }))).rejects.toMatchObject({ code: 'bad_level' })
+    await expect(landing.apply(person({ interests: ['مجال مختلق'] }))).rejects.toMatchObject({ code: 'bad_interests' })
+    await expect(landing.apply(person({ interests: [hr, mkt, courseDomain('C-AI-101'), courseDomain('C-PM-101')] })))
+      .rejects.toMatchObject({ code: 'bad_interests' })
+  })
+
+  it('⚠️ مجال كل دورة مفتوحة في الرد — والمستشار يقرأ ما أجاب', async () => {
+    const id = nextCourse()
+    await cohort(id)
+    const v = await landing.view()
+    expect(v.openCourses.find((x) => x.courseId === id)?.domainAr).toBe(courseDomain(id))
+
+    const out = await landing.apply(person({ workField: 'الهندسة', careerLevel: 'موظف بخبرة', interests: [courseDomain('C-PM-101')] }))
+    await landing.askAdvisor(out.ref)
+    const kase = await prisma.advisorCase.findFirstOrThrow({ where: { leadId: out.ref } })
+    expect(kase.nextAction).toContain('مجاله: الهندسة')
+    expect(kase.nextAction, 'لم يقرأ المستشار مستواه').toContain('مستواه: موظف بخبرة')
+    expect(kase.nextAction, 'لم يقرأ ما يريد تطويره').toContain(`يريد: ${courseDomain('C-PM-101')}`)
   })
 })
