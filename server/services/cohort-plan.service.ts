@@ -821,8 +821,13 @@ export class CohortPlanService {
   /** موجزُ كلّ شعبةٍ مُسنَدةٍ للمدرّب: حالتُها وما أُنجز من تجهيزها وما يليه */
   async summaries(userId: string) {
     const profile = await this.profileOf(userId)
+    /* ═══ والملغاةُ ليست من شعبه (٢٠ أكتوبر ٢٠٢٦) ═══
+       شعبةُ إعدادٍ لدورةٍ اعتذر عنها تُلغى (`TrainerPrepService.decline`)، وكانت تبقى هنا «في التجهيز» بخطوتها
+       التالية — في «شعبي» وفي «ما عليك الآن» — ولا يظهر فيها «انقلها إلى فصل آخر» لأنّ الملغاةَ لا تُنقل. فسأل
+       صاحبُ المنصّة عنها: «لا يظهر». و«دوراتي» تُسقطها من قبل (`my-courses.ts`). فالموجزُ بلا ملغاة، والسطوحُ
+       الثلاثةُ تقرؤه. */
     const links = await this.prisma.cohortTrainer.findMany({
-      where: { profileId: profile.id },
+      where: { profileId: profile.id, cohort: { status: { not: 'cancelled' } } },
       include: {
         cohort: {
           include: {
