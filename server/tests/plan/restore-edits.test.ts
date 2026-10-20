@@ -4,7 +4,10 @@
    أنّي سحبتها.. كيف أعيدها؟» — واختار زرّا يعيدها. وهنا على قاعدةٍ حقيقيّة:
 
    ١) **تعود كما كانت**: ما اعتمده للمدرّب يصله ثانية، والمسوّدةُ مسوّدة — ويُكتب الأثر.
-   ٢) **ولا تعود فوق ما جاء بعدها** على موضعها: ملفٌّ رُفع ثانيةً، أو مسوّدةٌ استُبدلت — ويعود أحدثُ المسحوب.
+   ٢) **آخرُ سحبٍ بيدك وحدَه** (٢٠ أكتوبر ٢٠٢٦): كان يعيد كلَّ ما سُحب يوما ما، فعادت بعد «ابدأ من جديد» بنودُ
+      الملفّ القديم بجانب الجديد — خمسون بندا وملفُّها خمسةَ عشر. واختار صاحبُ المنصّة أن يعود ما أخذه آخرُ
+      سحبٍ وحدَه فلا يعود مكرّر: فما سُحب قبله لا يعود، وما سحبه رفعُ ملفٍّ أو «احذف المكرر» لا يعود، ولا
+      يعود شيءٌ بعد ملفٍّ رُفع بعد السحب — ويقال لماذا.
    ٣) **ولا يحجبها ما كان قبلها** — مسوّدةٌ حذفها المعتمِدُ ثمّ رفع غيرَها وسحبها.
    ٤) **ولمن يسحب وحدَه، وعلى خطّةٍ مفتوحة** — والمعتمَدةُ لا يعود عليها شيء. */
 
@@ -126,21 +129,65 @@ describe('١ — تعود كما كانت', () => {
   })
 })
 
-describe('٢ — ولا تعود فوق ما جاء بعدها', () => {
-  it('⚠️ ملفّ رفع ثانية بعد السحب: ما يقع عليه يبقى مسحوبا، والباقي يعود', async () => {
+describe('٢ — آخر سحب بيدك وحده', () => {
+  it('⚠️ «ابدأ من جديد» ثمّ «أعد ما سحبته»: لا يعود من الملفّ القديم شيء — ولا يعرض الزرّ عددا', async () => {
+    const { cohortId, planId } = await openPlan()
+    await upload(planId, ITEMS)
+    const rep = await call('POST', `/api/admin/cohort-plans/${planId}/edits/replace-all`, 'admin', {
+      items: [{ kind: 'plan', reasonAr: 'نبذةٌ أوضح', set: { summaryAr: 'نبذةٌ ثانية' } }],
+    })
+    expect(rep.statusCode, rep.body).toBe(201)
+    expect(await countOf(cohortId)).toMatchObject({ count: 0 })
+    const r = await restore(planId)
+    expect(r.statusCode).toBe(409)
+    expect(r.json().error.message_ar).toMatch(/لم يكن بـ«اسحب ما لم يقرر»/)
+    expect(await statuses(planId)).toEqual([
+      'plan:summaryAr=نبذةٌ أولى:withdrawn', 'module:activityAr=تمرينٌ على خريطة الجمهور:withdrawn',
+      'module:outcomeAr=يكتب رسالةً في صفحة:withdrawn', 'plan:summaryAr=نبذةٌ ثانية:proposed',
+    ])
+  })
+
+  it('⚠️ وما سحبه «احذف المكرر» لا يعود — فالمكرّر لا يرجع', async () => {
+    const { cohortId, planId } = await openPlan()
+    await upload(planId, [ITEMS[1]])
+    await upload(planId, [ITEMS[2]])
+    expect((await call('POST', `/api/admin/cohort-plans/${planId}/edits/keep-latest`, 'admin', {})).json()).toMatchObject({ withdrawn: 1 })
+    expect(await countOf(cohortId)).toMatchObject({ count: 0 })
+    expect((await restore(planId)).statusCode).toBe(409)
+    expect(await statuses(planId)).toEqual([
+      'module:activityAr=تمرينٌ على خريطة الجمهور:withdrawn', 'module:outcomeAr=يكتب رسالةً في صفحة:proposed',
+    ])
+  })
+
+  it('⚠️ وما سحب قبل آخر سحب لا يعود — وإن لم يقع على موضعه شيء', async () => {
+    const { cohortId, planId } = await openPlan()
+    await upload(planId, [ITEMS[0]])
+    await withdraw(planId)
+    await upload(planId, [ITEMS[1]])
+    await withdraw(planId)
+    expect(await countOf(cohortId)).toMatchObject({ count: 1 })
+    expect((await restore(planId)).json()).toMatchObject({ restored: 1 })
+    expect(await statuses(planId)).toEqual([
+      'plan:summaryAr=نبذةٌ أولى:withdrawn', 'module:activityAr=تمرينٌ على خريطة الجمهور:proposed',
+    ])
+  })
+
+  it('⚠️ وملفّ رفع بعد السحب: لا يعود شيء بجانبه — ويقال لماذا', async () => {
     const { cohortId, planId } = await openPlan()
     await upload(planId, ITEMS)
     await withdraw(planId)
     await upload(planId, [{ kind: 'plan', reasonAr: 'نبذةٌ أوضح', set: { summaryAr: 'نبذةٌ ثانية' } }])
-    expect(await countOf(cohortId)).toMatchObject({ count: 2, skipped: 1 })
-    expect((await restore(planId)).json()).toMatchObject({ restored: 2, skipped: 1 })
+    expect(await countOf(cohortId)).toMatchObject({ count: 0, skipped: 3 })
+    const r = await restore(planId)
+    expect(r.statusCode).toBe(409)
+    expect(r.json().error.message_ar).toMatch(/رفعت ملفا بعد آخر سحب/)
     expect(await statuses(planId)).toEqual([
-      'plan:summaryAr=نبذةٌ أولى:withdrawn', 'module:activityAr=تمرينٌ على خريطة الجمهور:proposed',
-      'module:outcomeAr=يكتب رسالةً في صفحة:proposed', 'plan:summaryAr=نبذةٌ ثانية:proposed',
+      'plan:summaryAr=نبذةٌ أولى:withdrawn', 'module:activityAr=تمرينٌ على خريطة الجمهور:withdrawn',
+      'module:outcomeAr=يكتب رسالةً في صفحة:withdrawn', 'plan:summaryAr=نبذةٌ ثانية:proposed',
     ])
   })
 
-  it('⚠️ ومسوّدة استبدلت ثمّ سحب بديلها: يعود البديل وحده — لا الاثنان', async () => {
+  it('ومسوّدة استبدلت ثمّ سحب بديلها بيده: يعود البديل وحده', async () => {
     const { planId } = await openPlan()
     await upload(planId, [ITEMS[0]])
     const rep = await call('POST', `/api/admin/cohort-plans/${planId}/edits/replace-drafts`, 'admin', {
@@ -148,18 +195,16 @@ describe('٢ — ولا تعود فوق ما جاء بعدها', () => {
     })
     expect(rep.statusCode, rep.body).toBe(201)
     await withdraw(planId)
-    expect((await restore(planId)).json()).toMatchObject({ restored: 1, skipped: 1 })
+    expect((await restore(planId)).json()).toMatchObject({ restored: 1 })
     expect(await statuses(planId)).toEqual(['plan:summaryAr=نبذةٌ أولى:withdrawn', 'plan:summaryAr=نبذةٌ ثانية:proposed'])
   })
 
-  it('ولا شيء يعود: يقال لماذا', async () => {
+  it('ولا شيء مسحوب: يقال ذلك', async () => {
     const { planId } = await openPlan()
     await upload(planId, [ITEMS[0]])
-    await withdraw(planId)
-    await upload(planId, [{ kind: 'plan', reasonAr: 'نبذةٌ أوضح', set: { summaryAr: 'نبذةٌ ثالثة' } }])
     const r = await restore(planId)
     expect(r.statusCode).toBe(409)
-    expect(r.json().error.message_ar).toMatch(/بنود أحدث/)
+    expect(r.json().error.message_ar).toMatch(/لا شيء مسحوب/)
   })
 })
 
@@ -171,7 +216,7 @@ describe('٣ — ولا يحجبها ما كان قبلها', () => {
     expect((await call('POST', `/api/admin/plan-edits/${first.id}/drop`, 'admin', {})).statusCode).toBe(200)
     await upload(planId, [{ kind: 'plan', reasonAr: 'نبذةٌ أوضح', set: { summaryAr: 'نبذةٌ ثانية' } }])
     await withdraw(planId)
-    expect((await restore(planId)).json()).toMatchObject({ restored: 1, skipped: 0 })
+    expect((await restore(planId)).json()).toMatchObject({ restored: 1 })
     expect(await statuses(planId)).toEqual(['plan:summaryAr=نبذةٌ أولى:dropped', 'plan:summaryAr=نبذةٌ ثانية:proposed'])
   })
 })

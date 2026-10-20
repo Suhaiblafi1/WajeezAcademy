@@ -160,7 +160,7 @@ export function PlanEditsUploader({ planId, cohortId, canUpload: mayUpload, canR
     setBusy(true); setMsg("");
     try {
       setItems(await apiDelete<PlanEditItem[]>(`/api/admin/cohort-plans/${planId}/edits`));
-      setMsg("سحب ما لم يقرّر فيه — وتعيده كما كان بـ«أعد ما سحبته».");
+      setMsg("سحب ما لم يقرّر فيه — وتعيده كما كان بـ«أعد ما سحبته» ما لم ترفع ملفا بعده.");
       await load();
     } catch (e) {
       setMsg(errText(e, "تعذّر السحب"));
@@ -188,11 +188,12 @@ export function PlanEditsUploader({ planId, cohortId, canUpload: mayUpload, canR
 
   /* ═══ «أعِد ما سحبته» — والسحبُ بنقرةٍ واحدةٍ يُردّ بنقرةٍ واحدة (١٢ أكتوبر ٢٠٢٦) ═══
      «أين التعديلات؟ كانت موجودةً وأعتقد أنّي سحبتها.. كيف أعيدها؟» (صاحب المنصّة). فتعود كما كانت:
-     ما اعتمدته للمدرّب يصله ثانية، والمسوّدةُ مسوّدة — وما على موضعه بندٌ أحدث يبقى مسحوبا. */
+     ما اعتمدته للمدرّب يصله ثانية، والمسوّدةُ مسوّدة. ومنذ ٢٠ أكتوبر ٢٠٢٦ يعود آخرُ سحبٍ بـ«اسحب ما لم
+     يقرّر» كلُّه أو لا شيء (`restorable`) — فلا سطرَ لما بقي مسحوبا. */
   const restore = async () => {
     setBusy(true); setMsg("");
     try {
-      const r = await apiPost<{ edits: PlanEditItem[]; restored: number; toTrainer: number; skipped: number }>(
+      const r = await apiPost<{ edits: PlanEditItem[]; restored: number; toTrainer: number }>(
         `/api/admin/cohort-plans/${planId}/edits/restore`, {});
       setItems(r.edits);
       const drafts = r.restored - r.toTrainer;
@@ -200,7 +201,6 @@ export function PlanEditsUploader({ planId, cohortId, canUpload: mayUpload, canR
         `أعاد ${r.restored} كما كانت`,
         r.toTrainer > 0 ? `${r.toTrainer} عند المدرّب` : "",
         drafts > 0 ? `${drafts} مسوّدة تراجعها` : "",
-        r.skipped > 0 ? `وبقي ${r.skipped} مسحوبا: على مواضعها بنود أحدث` : "",
       ].filter(Boolean).join(" · ") + ".");
       await load();
     } catch (e) {
