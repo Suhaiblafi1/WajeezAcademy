@@ -5,6 +5,7 @@ import { useSearchParams } from "react-router";
 import { ChevronRight, LifeBuoy, Loader2, Plus, RefreshCw, Send } from "lucide-react";
 import PortalLayout from "./PortalLayout";
 import { apiGet, apiPost, ApiError } from "@/services/api";
+import { refundInvoiceOf, refundTicketDraft } from "@/application/student/refund-request";
 import { fmtWhen } from "@/utils/format";
 import { toast, toastError } from '@/components/Toast';
 import { FieldError, invalidProps } from "@/components/FormKit";
@@ -36,9 +37,12 @@ export default function StudentSupport() {
      `?topic=refund` يفتح التذكرةَ مصنّفةً «الفواتير والدفع» بعنوانها، ويكتب المتعلّمُ ما يريد. */
   const [params] = useSearchParams();
   const refund = params.get("topic") === "refund";
+  /* ومن زرّ «اطلب استردادا» في «فواتيري» يأتي رقمُ الفاتورة (٢٠ أكتوبر ٢٠٢٦) — فيُكتب في الموضوع ولا
+     يُسأل عنه، ويعرف الفريقُ أيَّ دفعةٍ يردّ. والرقمُ من الرابط فيُقبل بشكله وحدَه */
+  const invoice = refund ? refundInvoiceOf(params.get("invoice")) : null;
   const [createOpen, setCreateOpen] = useState(refund);
-  const [form, setForm] = useState(refund
-    ? { subject: "طلب استرداد", category: "billing", body: "" }
+  const [form, setForm] = useState<{ subject: string; category: string; body: string }>(refund
+    ? refundTicketDraft(invoice)
     : { subject: "", category: "other", body: "" });
   const [reply, setReply] = useState("");
   const [reopenFor, setReopenFor] = useState<string | null>(null);
@@ -125,7 +129,7 @@ export default function StudentSupport() {
                 onChange={(e) => setForm({ ...form, body: e.target.value })}
                 onBlur={() => setTouched((t) => ({ ...t, body: true }))}
                 rows={3}
-                placeholder="اشرح المشكلة بالتفصيل…"
+                placeholder={refund ? "لماذا تطلب الاسترداد؟" : "اشرح المشكلة بالتفصيل…"}
                 className={`${inputCls} ${showError("body") ? "border-red-400/60" : ""}`}
                 {...invalidProps("ticket-body-error", showError("body"))}
               />

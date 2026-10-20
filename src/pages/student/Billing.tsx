@@ -2,12 +2,14 @@
    زر الدفع يتبع المزود الفعال: اختباري = نجاح فوري بلا مال؛ حقيقي = تحويل
    لصفحة دفع مستضافة عند المزود، والتسوية تصل عبر webhook موقَّت لا برجوع المتصفح. */
 import { useCallback, useEffect, useState } from "react";
-import { CircleSlash, CreditCard, Loader2, ReceiptText, RefreshCw, RotateCcw, ShieldCheck } from "lucide-react";
+import { Link } from "react-router";
+import { CircleSlash, CreditCard, LifeBuoy, Loader2, ReceiptText, RefreshCw, RotateCcw, ShieldCheck } from "lucide-react";
 import PortalLayout from "./PortalLayout";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import { fmtWhen } from "@/utils/format";
 import { fmtSession } from "@/application/text/format-ar";
 import { toast, toastError } from '@/components/Toast';
+import { openRefundTicket, refundable, refundRequestHref } from "@/application/student/refund-request";
 
 import { Card, Inset, Panel } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
@@ -24,6 +26,7 @@ interface Order {
   payBy?: string | null;
 }
 interface PaymentProviderInfo { driver: "test" | "manual" | "moyasar" | "stripe" }
+interface TicketLite { id: string; subject: string; status: string }
 
 /* حالاتُ الطلب بأسمائها كما يكتبها الخادم.
 
@@ -64,9 +67,12 @@ export default function Billing() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  /* تذاكرُه — ليُعرف أنّ له طلبَ استردادٍ مفتوحا فلا يُعرض عليه زرٌّ ثانٍ. وفشلُها لا يُسقط الفواتير */
+  const [tickets, setTickets] = useState<TicketLite[]>([]);
 
   const load = useCallback(async () => {
     setLoading(true); setError(null);
+    apiGet<TicketLite[]>("/api/learner/support/tickets").then(setTickets).catch(() => undefined);
     try { setRows(await apiGet<Order[]>("/api/learner/orders")); }
     catch (e) { setError(e instanceof ApiError ? e.message : "تعذر تحميل الفواتير"); }
     finally { setLoading(false); }
@@ -205,6 +211,24 @@ export default function Billing() {
                   )}
                 </Card>
               )}
+
+              {/* ═══ وللمدفوع بابُ استرداد (٢٠ أكتوبر ٢٠٢٦) — تذكرةٌ برقم فاتورته (`refund-request.ts`) ═══ */}
+              {refundable(o.status) && o.invoice && (() => {
+                const open = openRefundTicket(o.invoice.number, tickets);
+                return open ? (
+                  <Inset as="p" tone="warn" className="mt-3 flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 text-read leading-6">
+                    طلب استردادك مفتوح عند الدعم.
+                    <Link to="/student/support" className="font-bold text-teal-light-ink underline">افتح التذكرة</Link>
+                  </Inset>
+                ) : (
+                  <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <Button as={Link} tone="secondary" size="sm" icon={LifeBuoy} to={refundRequestHref(o.invoice.number)}>
+                      اطلب استردادا
+                    </Button>
+                    <Link to="/p/refund" className="text-read text-muted-foreground underline hover:text-foreground">سياسة الاسترداد</Link>
+                  </div>
+                );
+              })()}
             </Panel>
           ))}
         </div>

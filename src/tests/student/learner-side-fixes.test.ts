@@ -14,6 +14,7 @@ import { describe, expect, it } from 'vitest'
 import { buildInbox } from '@/application/student/inbox'
 import { destinationFor } from '@/application/notifications/destinations'
 import { LEARNER_CATEGORY_KEYS } from '@/application/notifications/learner-categories'
+import { refundTicketDraft } from '@/application/student/refund-request'
 
 const code = (p: string) => readFileSync(join(process.cwd(), p), 'utf8')
   .replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '').replace(/^\s*\/\/.*$/gm, '')
@@ -110,7 +111,9 @@ describe('⑤ ما يصله كاملٌ وصادق', () => {
     const acc = code('src/pages/student/Account.tsx')
     expect(acc).toMatch(/to="\/student\/support\?topic=refund"/)
     expect(acc).not.toMatch(/to="\/contact"/)
-    expect(code('src/pages/student/Support.tsx')).toMatch(/\{ subject: "طلب استرداد", category: "billing", body: "" \}/)
+    /* والمسودّةُ صارت دالّةً تحمل رقمَ الفاتورة من «فواتيري» (٢٠ أكتوبر ٢٠٢٦، `refund-request.test.ts`) */
+    expect(code('src/pages/student/Support.tsx')).toMatch(/\? refundTicketDraft\(invoice\)/)
+    expect(refundTicketDraft(null)).toEqual({ subject: 'طلب استرداد', category: 'billing', body: '' })
   })
 
   it('والنسبةُ تقول ما تحسبه', () => {
