@@ -13,7 +13,7 @@ import { Inset } from "@/components/ui/Surface";
 import { controlCls } from "@/components/FormKit";
 
 export interface ReminderRow { profileId: string; name: string; email: string; started: boolean; summaryAr: string }
-interface Preview { to: string; subject: string; text: string }
+interface Preview { to: string; subject: string; text: string; html: string }
 
 const inDays = (n: number) => new Date(Date.now() + n * 86_400_000).toISOString().slice(0, 10);
 
@@ -75,7 +75,9 @@ export default function PrepReminderRow({ row, deadline }: { row: ReminderRow; d
         <div className="mt-2">
           <p className="font-bold">إلى: {shown.to}</p>
           <p className="font-bold">العنوان: {shown.subject}</p>
-          <p className="mt-2 whitespace-pre-wrap">{shown.text}</p>
+          {/* البريدُ كما يصل المدرّبَ — بروابطه التي تُنقر — في إطارٍ معزول (`sandbox`) لا يشغّل شيئا */}
+          <iframe title="معاينة الرسالة" srcDoc={shown.html} sandbox="allow-popups allow-popups-to-escape-sandbox"
+            className="mt-2 h-[32rem] w-full rounded-lg border border-white/10 bg-white" />
         </div>
       )}
       {err && <p role="alert" className="mt-1 text-danger-ink">{err}</p>}

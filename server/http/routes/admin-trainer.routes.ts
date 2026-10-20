@@ -36,6 +36,7 @@ import { RESIGN_BODY_MAX, RESIGN_BODY_MIN, RESIGN_SUBJECT_MAX, RESIGN_SUBJECT_MI
 import { SPECIAL_TERMS_MAX_CHARS } from '../../../src/application/trainer/contract-body'
 import { DEFER_REASON_VALUES } from '../../../src/application/trainer/intake-closed'
 import { PrepReminderService } from '../../services/prep-reminder.service'
+import { renderMail } from '../../services/mail-template'
 
 /* اختياريّةٌ: النقصُ جائزٌ كما في `assertRubric`. وصارمةٌ: المفتاحُ المجهولُ
    يُرَدّ في الحاجز كما يُرَدّ في الخدمة — ولا يُقبل صامتا فيضيع. */
@@ -574,7 +575,8 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     const { profileId } = z.object({ profileId: z.string().uuid() }).parse(req.params)
     const { deadline } = z.object({ deadline: day }).parse(req.body)
     const p = await reminders.preview(profileId, deadline)
-    return { to: p.to, subject: p.subject, text: p.text }
+    /* والبريدُ كما يصل — HTML بروابطه — لا نسختُه النصّيّة وحدَها (٢٠ أكتوبر ٢٠٢٦: «ألا يمكن أن تكون روابطَ تُنقر؟») */
+    return { to: p.to, subject: p.subject, text: p.text, html: renderMail(p.mail.doc).html }
   })
 
   app.post('/api/admin/prep-reminders/:profileId/send', {
