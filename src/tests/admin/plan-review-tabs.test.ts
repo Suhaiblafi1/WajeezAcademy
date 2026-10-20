@@ -87,3 +87,15 @@ describe('④ والصفحة المنفصلة', () => {
     expect(PAGE, 'لا قرار في الصفحة المنفصلة').not.toMatch(/\/decide`|apiPost/)
   })
 })
+
+/* «اعتمد وافتح للتسجيل» — اعتمادٌ ثمّ فتحٌ من بابه بشروطه، بنقرةٍ واحدة (٢٠ أكتوبر ٢٠٢٦) */
+describe('اعتمد وافتح للتسجيل', () => {
+  const src = readFileSync(join(process.cwd(), 'src/components/admin/TrainerPlanReview.tsx'), 'utf8')
+  it('يعتمد ثم يفتح — وما ينقص يقال والاعتماد يبقى', () => {
+    const btn = src.slice(src.indexOf('{!trainerPlan.approvedOnce && (\n                  <Button tone="confirm"'))
+    const body = btn.slice(0, btn.indexOf('اعتمد وافتح للتسجيل'))
+    expect(body.indexOf('/decide`'), 'لا اعتماد').toBeGreaterThan(-1)
+    expect(body.indexOf('/open`'), 'لا فتح بعد الاعتماد').toBeGreaterThan(body.indexOf('/decide`'))
+    expect(body).toMatch(/catch \(e\) \{ openedAr = `ولم تفتح:/)
+  })
+})
