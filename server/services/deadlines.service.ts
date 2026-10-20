@@ -17,6 +17,8 @@
 import type { PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { TRAINER_OWN_SESSION_WHERE } from './session-visibility'
+import { loadLearnerGate } from './learner-gate'
+import { assessmentOpensAt, submitVerdict } from '../../src/application/learning/cohort-gate'
 import {
   AR_CARDS, AR_COHORTS, AR_SESSIONS, AR_SUBMISSIONS,
   DAY_MS, HORIZON_DAYS, countAr, dueLabelAr, urgencyOf,
@@ -80,7 +82,7 @@ export class DeadlinesService {
             course: { select: { versions: { orderBy: { version: 'desc' }, take: 1, select: { titleAr: true } } } },
             assessments: {
               where: { status: 'published', dueAt: { not: null, lte: horizonEnd } },
-              select: { id: true, title: true, type: true, dueAt: true },
+              select: { id: true, title: true, type: true, dueAt: true, moduleId: true },
             },
           },
         },
@@ -89,16 +91,31 @@ export class DeadlinesService {
       },
     })
 
+    /* ═══ وما لا يُقبل تسليمُه الآن ليس عليه (١٩ أكتوبر ٢٠٢٦) ═══
+
+       كان اللوحُ يطالب بكلّ منشورٍ له موعد: مهمّةٌ لم يُعقد لقاءُ محورها بعد كانت تظهر
+       «افتح للتسليم»، فيفتحها فيجدها مقفلةً ويردّ الخادمُ تسليمَه. وكذلك ما فات في شعبةٍ
+       انتهت. فالحكمُ هنا هو حكمُ التسليم نفسُه (`submitVerdict`): ما يقبله الخادمُ الآن
+       يُعرض، وما يردّه لا يُطالَب به — فلا يقول اللوحُ «سلّم» ويقول التسليمُ «لم تفتح». */
+    const gates = new Map(await Promise.all(enrollments.map(async (e) =>
+      [e.cohortId, (await loadLearnerGate(this.prisma, e.cohortId, now))?.gate ?? null] as const)))
+
     const items: LearnerDeadline[] = []
     for (const e of enrollments) {
       /* ما سلّمه لا يُطالَب به — إلّا ما رُدَّ إليه لإعادة التسليم */
       const submitted = new Map(e.submissions.map((s) => [s.assessmentId, s.status]))
       const attempted = new Set(e.attempts.map((a) => a.assessmentId))
+      const gate = gates.get(e.cohortId) ?? null
       for (const a of e.cohort.assessments) {
         if (!a.dueAt) continue
         const sub = submitted.get(a.id)
         const resubmitRequested = sub === 'resubmit_requested'
         if ((sub && !resubmitRequested) || attempted.has(a.id)) continue
+        const verdict = submitVerdict({
+          opensAt: gate ? assessmentOpensAt(gate, a.moduleId) : null,
+          dueAt: a.dueAt, window: gate?.window ?? null, now, resubmitRequested,
+        })
+        if (!verdict.ok) continue
         items.push({
           assessmentId: a.id, title: a.title, type: a.type,
           dueAt: a.dueAt.toISOString(),
