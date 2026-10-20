@@ -344,6 +344,33 @@ describe('جدولُ المدرّب عبر شعبه', () => {
     expect(out.clashing, 'التزاحمُ حُسب على ما بقي بعد الحجب').toBe(2)
   })
 
+  /* ٢٠ أكتوبر ٢٠٢٦: مثالُ الإدارة بجانب لقائه المنتظِر في الشعبة نفسِها كان يُعدّ تزاحما، والتنبيهُ يقول
+     «انقل إحداها» — والمثالُ لا يُنقل. والشعبةُ الملغاةُ لا تُعقد لقاءاتُها فليست من جدوله.
+     ورُئي ساقطا: أُسقط تخطّي الشعبة الواحدة فسقط، وأُسقط شرطُ الملغاة فسقط. */
+  it('⚠️ ولقاءان من شعبة واحدة لا يتزاحمان — ولقاءات الشعبة الملغاة خارج جدوله', async () => {
+    await reset()
+    const a = await mkCohort('شعبةٌ واحدة')
+    const gone = await mkCohort('شعبةٌ ملغاة')
+    await prisma.cohort.update({ where: { id: gone.id }, data: { status: 'cancelled' } })
+    await prisma.cohortTrainer.createMany({ data: [{ cohortId: a.id, profileId }, { cohortId: gone.id, profileId }] })
+    const at = Date.now() + 11 * DAY
+    await prisma.cohortSession.create({
+      data: { cohortId: a.id, title: 'مثال الإدارة', placeholder: true, startsAt: new Date(at), endsAt: new Date(at + 2 * 3_600_000) },
+    })
+    await prisma.cohortSession.create({
+      data: { cohortId: a.id, title: 'لقاؤه المنتظِر', approvalState: 'pending', startsAt: new Date(at + 3_600_000), endsAt: new Date(at + 3 * 3_600_000) },
+    })
+    const sameCohort = await deadlines.forTrainer(trainerUserId)
+    expect(sameCohort.clashing, 'عُدّ لقاءا الشعبة الواحدة تزاحما').toBe(0)
+
+    await prisma.cohortSession.create({
+      data: { cohortId: gone.id, title: 'لقاء شعبة ملغاة', startsAt: new Date(at + 1_800_000), endsAt: new Date(at + 2 * 3_600_000) },
+    })
+    const out = await deadlines.forTrainer(trainerUserId)
+    expect(out.sessions.map((s) => s.title), 'ظهرت لقاءات الشعبة الملغاة').not.toContain('لقاء شعبة ملغاة')
+    expect(out.clashing).toBe(0)
+  })
+
   it('والمردودةُ خارجَ جدوله — خبرُ الردّ في طابور عمله لا في مواعيده', async () => {
     await reset()
     const c = await mkCohort('شعبةُ المردود')

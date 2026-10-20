@@ -299,8 +299,10 @@ describe('④ الشاشتان: نموذج بساعتين ونبذة ومرفق�
       .toContain('ملفّ يرفق باللقاء')
   })
 
-  it('والمدى من الفصل — لا يجدول خارج أشهره', () => {
-    expect(SCHED).toMatch(/min=\{day\(win\.start\)\} max=\{day\(win\.end\)\}/)
+  /* ولا يومَ مضى (٢٠ أكتوبر ٢٠٢٦، «Block it»): أوّلُه اليومُ أو أوّلُ الفصل، أيُّهما بعد */
+  it('والمدى من الفصل — لا يجدول خارج أشهره ولا في يوم مضى', () => {
+    expect(SCHED).toMatch(/const firstDay = day\(win\.start\) > today \? day\(win\.start\) : today;/)
+    expect(SCHED).toMatch(/min=\{firstDay\} max=\{day\(win\.end\)\}/)
   })
 
   it('والحدّ الأدنى يقال قبل ردّ الاعتماد — لقاء لكلّ محور', () => {

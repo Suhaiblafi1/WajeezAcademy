@@ -129,7 +129,14 @@ export function proposeSchedule(input: ScheduleInput): ScheduleProposal {
   let prev: string | null = null
   const moved = new Map<string, { at: number; endAt: number }>()
   const moves: ScheduleMove[] = []
+  /* وما بدأ لا يُنقل، ولا يُنقل شيءٌ إلى وقتٍ مضى (٢٠ أكتوبر ٢٠٢٦) — بابُ النقل يردّهما (`pastTimeProblem`) */
+  const now = (input.now ?? new Date()).getTime()
   for (const s of live) {
+    if (s.at <= now) {
+      moved.set(s.id, { at: s.at, endAt: s.at + s.mins * 60_000 })
+      prev = s.day
+      continue
+    }
     const slot = slots.find((x) => x.moduleIds.some((m) => s.moduleIds.includes(m)))
     let from = slot?.startsOn ?? period?.startsOn ?? s.day
     let to = slot?.endsOn ?? period?.endsOn ?? s.day
@@ -137,7 +144,7 @@ export function proposeSchedule(input: ScheduleInput): ScheduleProposal {
     if (period?.endsOn && to > period.endsOn) to = period.endsOn
     const days: string[] = []
     let d = addDays(from, (target.weekday - weekdayOf(from) + 7) % 7)
-    for (; d <= to; d = addDays(d, 7)) if (!holiday(d) && (!prev || d > prev)) days.push(d)
+    for (; d <= to; d = addDays(d, 7)) if (!holiday(d) && (!prev || d > prev) && zonedAt(d, target.clock).getTime() > now) days.push(d)
     if (days.length === 0) {
       return {
         ok: false,

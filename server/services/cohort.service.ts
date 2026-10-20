@@ -56,6 +56,17 @@ function placeholderNotYours() {
   )
 }
 
+/* ═══ ولا يضع المدرّبُ لقاءً في وقتٍ مضى (٢٠ أكتوبر ٢٠٢٦) ═══
+
+   قرارُ صاحب المنصّة: «Block it». كان المدرّبُ يضيف لقاءً أو ينقله إلى ساعةٍ مضت، فيُعتمد ويصل
+   متعلّميه موعدُه — دعوةً إلى ما فات. فبابُه يردّه بسببه، والإدارةُ وحدَها تسجّل لقاءً مضى
+   (`addSession`). والوقتُ المقصودُ بدايةُ اللقاء الجديدة: لقاءٌ فات ولم يقع يُنقل إلى وقتٍ قادم. */
+export function pastTimeProblem(startsAt: Date, now: Date = new Date()): AuthError | null {
+  return startsAt.getTime() <= now.getTime()
+    ? new AuthError('past_time', 'هذا الوقت مضى — اختر وقتا قادما', 422)
+    : null
+}
+
 /* ═══ محاورُ اللقاء تُكتب معا — والأوّلُ في العمود القديم ═══
 
    `moduleIds` هو الحقّ، و`moduleId` يُكتب أوّلَها لأنّ `progress.service`
@@ -1062,6 +1073,8 @@ export class CohortService {
     if (!(await this.isCohortTrainer(userId, cohortId))) {
       throw new AuthError('forbidden', 'لست مدرّب هذه الشعبة', 403)
     }
+    const past = pastTimeProblem(input.startsAt)
+    if (past) throw past
     await this.assertWithinWindow(cohortId, input)
     /* وفحصُ التعارض هو فحصُ الإدارة نفسُه — `addSession` تحمله */
     /* ═══ وهذا البابُ ينتظر الاعتمادَ كأخيه ═══
@@ -1096,6 +1109,8 @@ export class CohortService {
       throw new AuthError('forbidden', 'لست مدرّب هذه الشعبة', 403)
     }
     if (session.placeholder) throw placeholderNotYours()
+    const past = pastTimeProblem(input.startsAt)
+    if (past) throw past
     /* والنقلُ يُفحص بالمدى — ولا عددَ يُفحص منذ سقط السقف (٤ أكتوبر ٢٠٢٦) */
     await this.assertWithinWindow(session.cohortId, input)
 
@@ -1146,12 +1161,18 @@ export class CohortService {
       now: new Date(), slot,
     })
     const backToPending = wasApproved && !kept
+    /* ═══ والمردودُ يُنقل فيعود إلى الإدارة (٢٠ أكتوبر ٢٠٢٦) ═══
+       الردُّ يكتب `rejected` و`cancelled`، وشاشةُ المدرّب تقول «راجع ملاحظة الإدارة ثمّ انقل موعدها» و«يعود
+       للاعتماد». وكان النقلُ يغيّر الساعةَ وحدَها: يبقى مردودا ملغى، لا يراه طابورُ الإدارة ولا يصل متعلّما —
+       والمدرّبُ يظنّه أُرسل. فنقلُه إرسالٌ جديد: ينتظر الإدارة، وملاحظتُها السابقةُ تُمحى. */
+    const resubmitted = session.approvalState === 'rejected'
     const moved = await this.prisma.cohortSession.update({
       where: { id: sessionId },
       data: {
         startsAt: input.startsAt,
         endsAt: input.endsAt,
-        ...(backToPending ? { approvalState: 'pending', approvedAt: null, approvedBy: null } : {}),
+        ...(backToPending || resubmitted ? { approvalState: 'pending', approvedAt: null, approvedBy: null } : {}),
+        ...(resubmitted ? { status: 'scheduled', reviewNote: null } : {}),
       },
     })
     /* واجتماعُه يُنقل معه — معتمَدا بقي أو منتظِرا: الاعتمادُ يعيد استعمالَ
@@ -1161,12 +1182,16 @@ export class CohortService {
       actorId: userId, action: 'cohort.session.move', entityType: 'cohort_session', entityId: sessionId,
       meta: {
         from: session.startsAt, to: input.startsAt, cohortId: session.cohortId, backToPending, keptApproval: kept,
+        ...(resubmitted ? { resubmitted } : {}),
         ...(zoomMoved === null ? {} : { zoomMoved }),
       },
     })
     /* والإدارةُ تُعلَم أنّ في طابورها صفًّا جديدا — وإلّا بقي اللقاءُ محجوبا
        عن متعلّميه ولا أحدَ يعلم أنّه ينتظر. */
-    if (backToPending) {
+    /* والمردودُ لم يره متعلّمٌ قطّ — فلا يُقال لهم شيءٌ عنه، وتُعلَم الإدارةُ وحدَها */
+    if (resubmitted) {
+      await this.notifyAdminsOfPendingSession(moved.id, session.cohortId, session.title)
+    } else if (backToPending) {
       await this.notifyAdminsOfPendingSession(moved.id, session.cohortId, session.title)
       await this.tellCohortScheduleChanged(session.cohortId, session,
         'نقله مدرّبك ويراجع الآن عند الإدارة. ويصلك موعده الجديد حين يعتمد.')
@@ -1776,6 +1801,8 @@ export class CohortService {
     if (!(await this.isCohortTrainer(userId, cohortId))) {
       throw new AuthError('forbidden', 'لست مدرّب هذه الشعبة', 403)
     }
+    const past = pastTimeProblem(input.startsAt)
+    if (past) throw past
     await this.assertWithinWindow(cohortId, input)
     /* وداخلَ مدّة الشعبة لا يكفي: في وقت محاوره (`assertAxesInTime`) */
     await this.assertAxesInTime(cohortId, input, sessionAxes(input.moduleIds, input.moduleId).moduleIds)

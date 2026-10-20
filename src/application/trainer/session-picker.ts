@@ -154,13 +154,16 @@ export interface SlotDay {
   holidayAr: string | null
 }
 
-/** أيّامُ الموعد من أوّله إلى آخره — وموعدٌ مقلوبٌ أو غيرُ مقروءٍ لا أيّامَ له */
-export function slotDays(slot: Pick<PlanSlot, 'startsOn' | 'endsOn'>): SlotDay[] {
+/** أيّامُ الموعد من أوّله إلى آخره — وموعدٌ مقلوبٌ أو غيرُ مقروءٍ لا أيّامَ له.
+    و`from` يُسقط ما قبله (٢٠ أكتوبر ٢٠٢٦): يومُ اللقاء لا يكون يوما مضى («Block it»، صاحب المنصّة).
+    و«الأنسب» يبقى أوّلَ أيّام الموعد نفسِه، لا أوّلَ ما بقي منه */
+export function slotDays(slot: Pick<PlanSlot, 'startsOn' | 'endsOn'>, from?: string): SlotDay[] {
   const ok = (d: string) => /^\d{4}-\d{2}-\d{2}$/.test(d)
   if (!ok(slot.startsOn) || !ok(slot.endsOn) || slot.endsOn < slot.startsOn) return []
   const out: SlotDay[] = []
-  for (let d = slot.startsOn; d <= slot.endsOn && out.length < 366; d = addDays(d, 1)) {
-    out.push({ date: d, labelAr: `${weekdayAr(d)} ${dayLabelAr(d)}`, early: out.length < EARLY_DAYS, holidayAr: holidayOn(d) })
+  for (let d = slot.startsOn, i = 0; d <= slot.endsOn && i < 366; d = addDays(d, 1), i += 1) {
+    if (from && d < from) continue
+    out.push({ date: d, labelAr: `${weekdayAr(d)} ${dayLabelAr(d)}`, early: i < EARLY_DAYS, holidayAr: holidayOn(d) })
   }
   return out
 }

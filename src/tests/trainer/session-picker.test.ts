@@ -167,6 +167,13 @@ describe('قائمة أيّام الموعد', () => {
     ])
   })
 
+  /* ٢٠ أكتوبر ٢٠٢٦ («Block it»، صاحب المنصّة): يومُ اللقاء لا يكون يوما مضى. ورُئي ساقطا: أُسقط شرطُ `from` */
+  it('⚠️ و«من» يسقط ما قبله — و«الأنسب» يبقى أوّل أيّام الموعد نفسه', () => {
+    const days = slotDays({ startsOn: '2026-12-23', endsOn: '2026-12-27' }, '2026-12-25')
+    expect(days.map((d) => d.date)).toEqual(['2026-12-25', '2026-12-26', '2026-12-27'])
+    expect(days.map((d) => d.early)).toEqual([true, false, false])
+  })
+
   it('وموعد مقلوب أو غير مقروء لا أيّام له', () => {
     expect(slotDays({ startsOn: '2026-12-27', endsOn: '2026-12-23' })).toEqual([])
     expect(slotDays({ startsOn: '', endsOn: '2026-12-23' })).toEqual([])

@@ -220,6 +220,14 @@ describe('متى ينتهي اللقاء فلا يدخل', () => {
     expect(meetingOver(s, reopened, new Date('2027-02-15T18:30:00Z'))).toBe(false)
   })
 
+  /* ٢٠ أكتوبر ٢٠٢٦: «ابدأ مضيفا» يعمل في أيّ وقت، فيجرّبه المدرّبُ قبل أيّام ثمّ يغلقه — وكان ذلك يُنهي
+     اللقاءَ ويُسقط رابطَ متعلّميه. ورُئي ساقطا: أُسقط شرطُ «بعد موعده» من `meetingOver` */
+  it('⚠️ وتجربة أنهيت قبل موعده لا تنهيه — يبقى رابطه في ساعته', () => {
+    const test = { actualStartAt: '2027-02-12T10:00:00Z', actualEndAt: '2027-02-12T10:05:00Z' }
+    expect(meetingOver(s, test, new Date('2027-02-15T15:30:00Z'))).toBe(false)
+    expect(meetingOver(s, test, new Date(end + MEETING_GRACE_MS + 1))).toBe(true)
+  })
+
   it('⚠️ و«بدأ» بلا خبر نهاية لا يبقى مفتوحا أبدا', () => {
     const lost = { actualStartAt: '2027-02-15T15:00:00Z' }
     expect(meetingOver(s, lost, new Date(Date.parse(lost.actualStartAt) + MEETING_MAX_LIVE_MS + 1))).toBe(true)

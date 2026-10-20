@@ -252,14 +252,14 @@ describe('④ اللقاءات — بطاقة لكلّ موعد', () => {
   it('⚠️ واللقاء والجلسة المسجّلة داخل موعدهما — يومهما من قائمة أيّام الموعد لا من تقويم مفتوح', () => {
     expect(SLOT, 'عاد تقويم مفتوح في بطاقة الموعد').not.toMatch(/type="date"/)
     /* اللقاءُ الجديد، وتغييرُ موعد لقاءٍ قائم، ويومُ فتح المسجّلة — كلُّها من أيّام الموعد */
-    expect(SLOT).toMatch(/<SlotDaySelect slot=\{slot\} value=\{form\.date\}[^>]*onChange=\{\(date\) => setForm\(\{ \.\.\.form, date \}\)\} \/>/)
-    expect(SLOT).toMatch(/<SlotDaySelect slot=\{slot\} value=\{move\.date\}/)
+    expect(SLOT).toMatch(/<SlotDaySelect slot=\{slot\} upcoming value=\{form\.date\}[^>]*onChange=\{\(date\) => setForm\(\{ \.\.\.form, date \}\)\} \/>/)
+    expect(SLOT).toMatch(/<SlotDaySelect slot=\{slot\} upcoming value=\{move\.date\}/)
     expect(SLOT).toMatch(/<SlotDaySelect slot=\{slot\} value=\{date\}[^>]*onChange=\{\(d\) => onPatchRecorded\(i, \{ opensAt: at\(d, clock\)\.toISOString\(\) \}\)\} \/>/)
-    expect(code('src/pages/trainer/SlotDaySelect.tsx')).toMatch(/const days = useMemo\(\(\) => slotDays\(slot\), \[slot\]\);/)
+    expect(code('src/pages/trainer/SlotDaySelect.tsx')).toMatch(/const days = useMemo\(\(\) => slotDays\(slot, today\), \[slot, today\]\);/)
     expect(code('src/pages/trainer/SlotDaySelect.tsx'), 'يختار ثانية يوم خارج الموعد').toMatch(/\{foreign && <option value=\{value\} disabled>/)
     const weekly = code('src/pages/trainer/WeeklySessions.tsx')
     expect(weekly, 'عاد تقويم مفتوح في التكرار الأسبوعيّ').not.toMatch(/type="date"/)
-    expect(weekly).toMatch(/<SlotDaySelect slot=\{slot\} value=\{r\.date\}/)
+    expect(weekly).toMatch(/<SlotDaySelect slot=\{slot\} upcoming value=\{r\.date\}/)
     expect(SLOT).toContain('formDay > EARLY_DAYS')
   })
 

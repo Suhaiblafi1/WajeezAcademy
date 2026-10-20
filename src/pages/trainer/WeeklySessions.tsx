@@ -167,7 +167,7 @@ export default function WeeklySessions({
                 <div className="grid gap-2 sm:grid-cols-[12rem_1fr]">
                   {/* من أيّام الموعد وحدَها — لا تقويمٌ مفتوح (١١ أكتوبر ٢٠٢٦، `SlotDaySelect`) */}
                   {slot ? (
-                    <SlotDaySelect slot={slot} value={r.date} disabled={locked || busy}
+                    <SlotDaySelect slot={slot} upcoming value={r.date} disabled={locked || busy}
                       ariaLabel={`يوم اللقاء المقترح في ${unit} ${r.slotIndex + 1}`}
                       onChange={(date) => patch({ date })} />
                   ) : <span className="text-read text-muted-foreground">—</span>}

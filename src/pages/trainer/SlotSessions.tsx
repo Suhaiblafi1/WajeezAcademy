@@ -337,7 +337,7 @@ export default function SlotSessions({
                     <Inset tone="accent" className="grid gap-3">
                       <div className="grid gap-3 sm:grid-cols-3">
                         <StaffField label="اليوم" hint={wholePeriod ? "أيّام الشعبة فقط." : "أيّام هذا الموعد فقط."}>
-                          <SlotDaySelect slot={slot} value={move.date} ariaLabel={`اليوم الجديد لـ«${s.title}»`}
+                          <SlotDaySelect slot={slot} upcoming value={move.date} ariaLabel={`اليوم الجديد لـ«${s.title}»`}
                             onChange={(date) => setMove({ ...move, date })} />
                         </StaffField>
                         <StaffField label="من الساعة" hint="بتوقيت عمّان.">
@@ -453,7 +453,7 @@ export default function SlotSessions({
           </StaffField>
           <div className="grid gap-3 sm:grid-cols-3">
             <StaffField label="اليوم" hint={`${wholePeriod ? "أيّام الشعبة" : "أيّام هذا الموعد"} فقط: من ${dayLabelAr(slot.startsOn)} إلى ${dayLabelAr(slot.endsOn)}.`}>
-              <SlotDaySelect slot={slot} value={form.date} ariaLabel={`يوم اللقاء في الموعد ${index + 1}`}
+              <SlotDaySelect slot={slot} upcoming value={form.date} ariaLabel={`يوم اللقاء في الموعد ${index + 1}`}
                 onChange={(date) => setForm({ ...form, date })} />
             </StaffField>
             <StaffField label="من الساعة" hint="بتوقيت عمّان.">
