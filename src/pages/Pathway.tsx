@@ -29,6 +29,8 @@ import AdvisorContact from "@/components/AdvisorContact";
 import AdvisorBrief from "@/components/AdvisorBrief";
 import AdvisorCallbackForm from "@/components/AdvisorCallbackForm";
 import BuyPanel from "@/components/BuyPanel";
+import ResumeCheckout from "@/components/ResumeCheckout";
+import { resumedCheckoutFor, savePendingCheckout } from "@/services/pending-checkout";
 import CourseJourney from "@/components/CourseJourney";
 import Modal from "@/components/Modal";
 import { pathwayById, pathwayCategory } from "@/data/pathways";
@@ -94,8 +96,11 @@ export default function PathwayPage() {
      كلّ تصيير تُقحم أثرا جانبيّا في جسم المكوّن. */
   const [advisorReferral] = useState(needsAdvisorReferral);
   const [checkout, setCheckout] = useState<CheckoutIntent | null>(null);
+  /* ═══ ومن عاد من رابط التوثيق يجد ما اختاره (٢٠ أكتوبر ٢٠٢٦، الخطوة ل) ═══
+     `?resume=1` مع شراءٍ محفوظٍ لهذا المسار: شعبُه كما تركها، ويُفتح اللوحُ له (`pending-checkout.ts`) */
+  const [resumed] = useState(() => (id ? resumedCheckoutFor(`/pathways/${id}`) : null));
   /* الشعبةُ التي اختارها لكلّ دورةٍ تحت اسمها — تصل نافذةَ الدفع (`CourseJourney`) */
-  const [pickedCohorts, setPickedCohorts] = useState<Record<string, string>>({});
+  const [pickedCohorts, setPickedCohorts] = useState<Record<string, string>>(() => resumed?.cohortByCourse ?? {});
   /* نية شراء معلقة بانتظار تسجيل الدخول — التصفح مفتوح، والتسجيل يُطلب لحظة الدفع فقط */
   const [pendingCheckout, setPendingCheckout] = useState<CheckoutIntent | null>(null);
   const [syncing, setSyncing] = useState(false);
@@ -367,6 +372,13 @@ export default function PathwayPage() {
   };
 
   const startCheckout = (intent: CheckoutIntent) => {
+    /* يُحفظ ما اختاره قبل أن يُطلب منه حساب — فإن خرج ليوثّق بريده عاد إليه (`ResumeCheckout`) */
+    const ids = intent.courseIds ?? courseIds;
+    savePendingCheckout({
+      path: `/pathways/${pathway.id}`,
+      intent: { title: intent.title, amount: intent.amount, kind: intent.kind, courseIds: ids },
+      cohortByCourse: Object.fromEntries(ids.flatMap((cid) => (pickedCohorts[cid] ? [[cid, pickedCohorts[cid]]] : []))),
+    });
     if (!user) { setPendingCheckout(intent); return; }
     if (intent.kind === "pathway") { void goToPlan(intent); return; }
     setCheckout(intent);
@@ -1040,6 +1052,12 @@ export default function PathwayPage() {
           />
         </Modal>
       )}
+
+      {/* العودةُ من رابط التوثيق: اللوحُ يُفتح على ما اختاره */}
+      <ResumeCheckout
+        ready={resumed !== null}
+        onResume={() => resumed && startCheckout({ ...resumed.intent, courseIds: resumed.intent.courseIds })}
+      />
 
       {/* لوحُ الشراء — التسعيرُ والدفعُ في مكان القرار، لا طلبٌ يُراجَع */}
       {checkout && (

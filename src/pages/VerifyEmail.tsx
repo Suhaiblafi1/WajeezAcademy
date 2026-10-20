@@ -11,6 +11,8 @@ import SiteShell from "@/components/SiteShell";
 import SeoHead from "@/components/SeoHead";
 import { apiPost, permissionMessage } from "@/services/api";
 import { homePathForRoles, readRoles } from "@/services/auth";
+import { readPendingCheckout } from "@/services/pending-checkout";
+import { resumeHref } from "@/application/commerce/pending-checkout";
 
 type State = { kind: "working" } | { kind: "done"; message: string } | { kind: "error"; message: string };
 
@@ -21,6 +23,10 @@ export default function VerifyEmail() {
   /* الحارس يمنع النداء مرتين تحت StrictMode — والرمز يُستهلك من أول نداء،
      فالثاني كان يردّ «غير صالح» على توثيق نجح للتوّ. */
   const fired = useRef(false);
+  /* ═══ والشراءُ الذي تركه ليوثّق بريده (٢٠ أكتوبر ٢٠٢٦، الخطوة ل) ═══
+     كان الزرُّ الوحيد «إلى منصّتي» — فيضيع ما اختاره في صفحة الدورة، ويعود يختاره. والمحفوظُ على هذا
+     الجهاز يُقرأ مرّةً (`pending-checkout.ts`)، ومن فتح الرابطَ على جهازٍ آخر يرى الزرَّين كما كانا. */
+  const [pending] = useState(() => readPendingCheckout());
 
   useEffect(() => {
     if (fired.current || !token) return;
@@ -53,13 +59,32 @@ export default function VerifyEmail() {
             <p className="mt-3 text-sm leading-7 text-muted-foreground">
               لم يتغيّر شيء آخر في حسابك — التوثيق يفتح الشراء واستلام الشهادة فقط.
             </p>
+            {/* ومن ترك شراءً ليوثّق بريده يعود إليه أوّلا — بشعبه كما اختارها (الخطوة ل) */}
+            {pending && (
+              <p className="mt-3 text-sm leading-7 text-foreground">
+                ما زال طلبك ينتظرك: <span className="font-bold">{pending.intent.title}</span>
+              </p>
+            )}
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-              <Link to={homePathForRoles(readRoles())} className="rounded-full bg-teal px-6 py-3 font-black text-on-teal hover:bg-teal-light">
-                إلى منصّتي
-              </Link>
-              <Link to="/courses" className="rounded-full border border-white/15 px-6 py-3 font-bold text-muted-foreground hover:border-white/40">
-                تصفّح الدورات
-              </Link>
+              {pending ? (
+                <>
+                  <Link to={resumeHref(pending)} className="rounded-full bg-gold px-6 py-3 font-black text-on-gold hover:bg-gold/90">
+                    أكمل شراءك
+                  </Link>
+                  <Link to={homePathForRoles(readRoles())} className="rounded-full border border-white/15 px-6 py-3 font-bold text-muted-foreground hover:border-white/40">
+                    إلى منصّتي
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link to={homePathForRoles(readRoles())} className="rounded-full bg-teal px-6 py-3 font-black text-on-teal hover:bg-teal-light">
+                    إلى منصّتي
+                  </Link>
+                  <Link to="/courses" className="rounded-full border border-white/15 px-6 py-3 font-bold text-muted-foreground hover:border-white/40">
+                    تصفّح الدورات
+                  </Link>
+                </>
+              )}
             </div>
           </>
         )}

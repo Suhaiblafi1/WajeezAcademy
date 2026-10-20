@@ -22,6 +22,8 @@ import SeoHead from "@/components/SeoHead";
 import AuthGate from "@/components/AuthGate";
 import Modal from "@/components/Modal";
 import BuyPanel from "@/components/BuyPanel";
+import ResumeCheckout from "@/components/ResumeCheckout";
+import { resumedCheckoutFor, savePendingCheckout } from "@/services/pending-checkout";
 import { couponFieldCls } from "@/components/FormKit";
 import CohortPicker from "@/components/CohortPicker";
 import CourseInterestForm from "@/components/CourseInterestForm";
@@ -106,7 +108,11 @@ function CoursePathPage({ courseId }: { courseId: string }) {
   const { cohorts, loaded: pricesLoaded } = useCourseCohorts();
 
   const anchor = courseById(courseId);
-  const [picked, setPicked] = useState<string[]>(courseId ? [courseId] : []);
+  /* ═══ ومن عاد من رابط التوثيق يجد ما اختاره (٢٠ أكتوبر ٢٠٢٦، الخطوة ل) ═══
+     `?resume=1` مع شراءٍ محفوظٍ لهذه الصفحة: دوراتُه وشعبُها كما تركها، ويُفتح اللوحُ له
+     (`pending-checkout.ts`). كان يعود إلى «منصّتي» ويبدأ اختيارَه من جديد. */
+  const [resumed] = useState(() => (courseId ? resumedCheckoutFor(`/build/${courseId}`) : null));
+  const [picked, setPicked] = useState<string[]>(() => resumed?.intent.courseIds ?? (courseId ? [courseId] : []));
   /* الشعبةُ المختارة لكلّ دورة — أقربُ متاحٍ افتراضا، ويبدّلها من شاء.
      وقرارُ صاحب المنصّة: «يختار الشعب المفتوحة للدورة حسب التوفّر». والاختيارُ
      يعيش هنا لا في لوح الشراء: السعرُ المعروض في هذه الصفحة سعرُ الشعبة
@@ -115,6 +121,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
      «سجّل في هذه الشعبة» في صفحة المدرّب والتقويم كان يفتح الدورةَ بلا شعبتها، فتُختار له أقربُ شعبة.
      فصار الرابطُ يحملها (`?cohort=`) وتُختار هنا ابتداءً — وإن لم تعد متاحةً عادت أقربَ شعبةٍ كما كان. */
   const [cohortChoice, setCohortChoice] = useState<Record<string, string>>(() => {
+    if (resumed) return resumed.cohortByCourse;
     const asked = new URLSearchParams(window.location.search).get("cohort");
     return asked && courseId ? { [courseId]: asked } : {};
   });
@@ -295,6 +302,12 @@ function CoursePathPage({ courseId }: { courseId: string }) {
     : 0;
 
   const start = (intent: Intent) => {
+    /* يُحفظ ما اختاره قبل أن يُطلب منه حساب — فإن خرج ليوثّق بريده عاد إليه (`ResumeCheckout`) */
+    savePendingCheckout({
+      path: `/build/${courseId}`,
+      intent: { ...intent, courseIds: picked },
+      cohortByCourse: Object.fromEntries(picked.flatMap((cid) => (cohortOf(cid) ? [[cid, cohortOf(cid)!.id]] : []))),
+    });
     if (user) setCheckout(intent);
     else setPending(intent);
   };
@@ -888,6 +901,9 @@ function CoursePathPage({ courseId }: { courseId: string }) {
           </Inset>
         </Modal>
       )}
+
+      {/* العودةُ من رابط التوثيق: اللوحُ يُفتح على ما اختاره حين تجهز الأسعار */}
+      <ResumeCheckout ready={resumed !== null && pricesLoaded} onResume={buy} />
 
       {/* لوحُ الشراء — التسعيرُ والدفعُ حيث وقع القرار. والكودُ الذي كُتب هنا
           يُمرَّر إليه بدل أن يُعرض ثمّ يُنسى: كانت الواجهة تحسب خصمَه وتُظهره
