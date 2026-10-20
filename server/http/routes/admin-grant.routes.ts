@@ -9,6 +9,7 @@ import type { PrismaClient } from '@prisma/client'
 import { requirePermission } from '../auth-plugin'
 import { GrantService } from '../../services/grant.service'
 import { GrantPathwayService } from '../../services/grant-pathway.service'
+import { grantResults } from '../../services/grant-landing.service'
 
 export function registerAdminGrantRoutes(app: FastifyInstance, prisma: PrismaClient) {
   const grants = new GrantService(prisma)
@@ -41,6 +42,11 @@ export function registerAdminGrantRoutes(app: FastifyInstance, prisma: PrismaCli
     const { percentOff } = z.object({ percentOff: z.coerce.number().int().min(1).max(100).optional() }).parse(req.query)
     return grants.margins(percentOff)
   })
+
+  app.get('/api/admin/member-grant/results', {
+    preHandler: canManage,
+    schema: { tags: ['admin-commerce'], summary: 'نتائج الحملة: من عبأ ومن أخذ كودا ومن اشترى، بالقناة والدفعة ومجال العمل' },
+  }, async () => grantResults(prisma))
 
   /* ═══ مساراتُ المنحة — يُعدّها صاحبُ المنصّة من هنا (`grant-pathway.service.ts`) ═══ */
   const pathwayBody = z.object({

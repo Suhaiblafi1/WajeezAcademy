@@ -165,3 +165,48 @@ export function maskEmail(email: string): string {
   const [name, domain] = email.split('@')
   return domain ? `${name.slice(0, 1)}•••@${domain}` : '•••'
 }
+
+/** ما يُعدّ شراءً بالمنحة — دُفع ولو رُدّ بعضُه */
+const BOUGHT = ['paid', 'partially_refunded']
+
+/** نتائجُ الحملة لصاحب المنصّة: من عبّأ، ومن أخذ كودا، ومن اشترى، وبكم — بالقناة والدفعة، وبمجال العمل.
+    والشراءُ يُنسب إلى قناة **صاحب الكود** لا المشتري: كودٌ أُهدي لصديقٍ فاشترى به جاء من القناة التي
+    أوصلت الكودَ أصلا. والمبلغُ ما دُفع بعملته (الحملةُ بالدولار). */
+export async function grantResults(prisma: PrismaClient) {
+  const campaign = await new GrantService(prisma).campaign()
+  const [leads, fields, codes, cases] = await Promise.all([
+    prisma.lead.groupBy({ by: ['channel', 'wave'], where: { campaign: MEMBER_GRANT_SLUG }, _count: { _all: true } }),
+    prisma.lead.groupBy({ by: ['workField'], where: { campaign: MEMBER_GRANT_SLUG }, _count: { _all: true } }),
+    prisma.grantCode.findMany({
+      where: { campaignId: campaign.id },
+      select: {
+        lead: { select: { channel: true, wave: true } },
+        coupon: { select: { orders: { where: { status: { in: BOUGHT } }, select: { total: true } } } },
+      },
+    }),
+    prisma.advisorCase.count({ where: { lead: { campaign: MEMBER_GRANT_SLUG } } }),
+  ])
+  type Row = { channel: string | null; wave: string | null; leads: number; codes: number; bought: number; revenue: number }
+  const key = (c: string | null, w: string | null) => `${c ?? ''}|${w ?? ''}`
+  const rows = new Map<string, Row>()
+  const row = (c: string | null, w: string | null) => {
+    const k = key(c, w)
+    if (!rows.has(k)) rows.set(k, { channel: c, wave: w, leads: 0, codes: 0, bought: 0, revenue: 0 })
+    return rows.get(k)!
+  }
+  for (const l of leads) row(l.channel, l.wave).leads += l._count._all
+  for (const g of codes) {
+    const r = row(g.lead?.channel ?? null, g.lead?.wave ?? null)
+    r.codes += 1
+    for (const o of g.coupon.orders) { r.bought += 1; r.revenue += Number(o.total) }
+  }
+  const list = [...rows.values()]
+    .map((r) => ({ ...r, revenue: Math.round(r.revenue * 100) / 100 }))
+    .sort((a, b) => b.leads - a.leads)
+  const sum = (k: 'leads' | 'codes' | 'bought' | 'revenue') => Math.round(list.reduce((s, r) => s + r[k], 0) * 100) / 100
+  return {
+    totals: { leads: sum('leads'), codes: sum('codes'), bought: sum('bought'), revenue: sum('revenue'), advisorCases: cases },
+    rows: list,
+    fields: fields.map((f) => ({ workField: f.workField, leads: f._count._all })).sort((a, b) => b.leads - a.leads),
+  }
+}
