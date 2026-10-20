@@ -4,7 +4,7 @@
    ② **ومن عبّأه ثانيةً لا يُعرض له الكود** — يُرسَل إلى البريد المحفوظ ويُقال أين، بلا عميلٍ ثانٍ ولا كودٍ ثانٍ.
    ③ **والمنحةُ المغلقةُ لا تُسقط العميل** — يُحفظ ويُقال السبب.
    ④ **وما لا يُقبل يُردّ** — رقمٌ ليس رقما، ومجالٌ من غير القائمة.
-   ⑤ **والمساراتُ للزائر بلا أجور المدرّبين** — وما لا يُشترى منها لا يُعرض.
+   ⑤ **والدوراتُ للزائر بلا أجور المدرّبين** — دوراتٌ فقط بفصلها، وما لا يُشترى لا يُعرض.
    ⑥ **و«تواصل مع مستشار» حالةٌ واحدة** تُسند — وبمرجعٍ صحيحٍ وحدَه.
    ⑦ **والوسومُ تُنظَّف** — ما ليس وسما يُترك.
    ⑧ **ونتائجُ الحملة بالقناة والدفعة** — والشراءُ يُنسب إلى قناة صاحب الكود ولو اشترى به غيرُه.
@@ -12,14 +12,13 @@
       ومجالُ كلّ دورةٍ مفتوحةٍ في الردّ (منه يُختار)، والمستشارُ يقرأ ما أجاب.
 
    وما يقرأ دوراتِ المنحة يقرؤها بساعة ٢٠٩٩ (`NOW`) وشعبُه بعدها — فالفصلُ فصلُ أقرب شعبةٍ لم تبدأ في القاعدة
-   كلِّها، والعلّةُ في رأس `grant-pathways.test.ts`. */
+   كلِّها، والعلّةُ في رأس `grant-courses.test.ts`. */
 
 import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
 import { setupTestDb, testPrisma } from '../helpers/db'
 import { AuthService } from '../../services/auth.service'
 import { GrantService } from '../../services/grant.service'
-import { GrantPathwayService } from '../../services/grant-pathway.service'
 import { GrantLandingService, grantResults, maskEmail } from '../../services/grant-landing.service'
 import { CommerceService } from '../../services/commerce.service'
 import { approvedPlanBy } from '../helpers/approved-trainer'
@@ -27,7 +26,6 @@ import { courseDomain } from '../../../src/application/catalog/course-domain'
 
 let prisma: PrismaClient
 let grants: GrantService
-let paths: GrantPathwayService
 let landing: GrantLandingService
 let ownerId = ''
 let profileId = ''
@@ -65,7 +63,6 @@ beforeAll(async () => {
   prisma = await testPrisma()
   const auth = new AuthService(prisma)
   grants = new GrantService(prisma)
-  paths = new GrantPathwayService(prisma)
   landing = new GrantLandingService(prisma)
   ownerId = (await auth.register(`gl-owner-${STAMP}@test.local`, 'Owner#12345', 'صاحب المنصة')).userId
   const advisor = (await auth.register(`gl-adv-${STAMP}@test.local`, 'Advisor#12345', 'مستشار الحملة')).userId
@@ -130,39 +127,33 @@ describe('④ وما لا يقبل يرد', () => {
   })
 })
 
-describe('⑤ والمسارات للزائر بلا أجور المدربين', () => {
-  it('⚠️ لا أجر ولا هامش في الرد — وما لا يشترى لا يعرض، والموقوف لا يعرض', async () => {
-    const [a, b, c] = [nextCourse(), nextCourse(), nextCourse()]
+describe('⑤ والدورات للزائر بلا أجور المدربين', () => {
+  it('⚠️ دورات فقط بفصلها — لا أجر ولا هامش ولا اقتراحات في الرد، وما أغلقت شعبته لا يعرض', async () => {
+    const [a, b] = [nextCourse(), nextCourse()]
     await cohort(a)
     const cb = await cohort(b)
-    await cohort(c)
-    const shown = await paths.save(null, { titleAr: 'مسار للزائر', courseIds: [a, b] }, ownerId, NOW)
-    const hidden = await paths.save(null, { titleAr: 'مسار موقوف', courseIds: [c], active: false }, ownerId, NOW)
-    const dead = await paths.save(null, { titleAr: 'مسار أغلقت شعبه', courseIds: [b] }, ownerId, NOW)
     await prisma.cohort.update({ where: { id: cb.id }, data: { registrationOpen: false } })
 
     const v = await landing.view(NOW)
     const json = JSON.stringify(v)
     expect(json, 'خرج أجر المدرب إلى الزائر').not.toMatch(/seatCost|margin|ruleRate|ruleType/)
-    const row = v.pathways.find((p) => p.id === shown.id)!
-    expect(row.courses.map((x) => x.courseId)).toEqual([a])
-    expect(row.listTotal).toBe(150)
-    expect(row.grantTotal).toBe(60)
-    expect(v.pathways.some((p) => p.id === hidden.id), 'عرض مسارا موقوفا').toBe(false)
-    expect(v.pathways.some((p) => p.id === dead.id), 'عرض مسارا لا يشترى منه شيء').toBe(false)
-    expect(v.openCourses.some((x) => x.courseId === c)).toBe(true)
+    expect(Object.keys(v).sort(), 'عاد في الرد غير الدورات').toEqual(['campaign', 'openCourses', 'termAr'])
+    const row = v.openCourses.find((x) => x.courseId === a)!
+    expect(row.price).toBe(150)
+    expect(v.openCourses.some((x) => x.courseId === b), 'عرض دورة أغلقت شعبتها').toBe(false)
+    expect(v.termAr).toBe('موسم الربيع 2099')
   })
 })
 
 describe('⑥ وتواصل مع مستشار حالة واحدة', () => {
   it('⚠️ تسند تلقائيا — والثانية لا تنشئ حالة، والمرجع الخاطئ يرد', async () => {
     const out = await landing.apply(person())
-    await landing.askAdvisor(out.ref, 'أريد أن أعرف أي مسار يناسبني')
+    await landing.askAdvisor(out.ref, 'أريد أن أعرف أي دورة تناسبني')
     await landing.askAdvisor(out.ref)
     const cases = await prisma.advisorCase.findMany({ where: { leadId: out.ref }, include: { assignments: true, contactEvents: true } })
     expect(cases).toHaveLength(1)
     expect(cases[0].assignments.some((x) => x.unassignedAt === null), 'لم تسند').toBe(true)
-    expect(cases[0].contactEvents[0]?.summary).toContain('أي مسار يناسبني')
+    expect(cases[0].contactEvents[0]?.summary).toContain('أي دورة تناسبني')
     await expect(landing.askAdvisor('00000000-0000-4000-8000-000000000000')).rejects.toMatchObject({ code: 'not_found' })
   })
 })

@@ -1,6 +1,6 @@
 /* صفحةُ «منحة أعضاء وجيز» — أبوابُها العامّة (٢٠ أكتوبر ٢٠٢٦). والعلّةُ في `grant-landing.service.ts`.
 
-   بلا حساب: الزائرُ يعبّئ النموذج فيأخذ كودَه ويرى المسارات، والحسابُ حين يختار مسارا. وسقفُ النموذج
+   بلا حساب: الزائرُ يعبّئ النموذج فيأخذ كودَه ويرى الدورات، والحسابُ حين يدفع. وسقفُ النموذج
    خمسٌ لكلّ شبكةٍ في ربع ساعة — تتّسع لمن أخطأ فأعاد، ولا تتّسع لمن يجمع أكوادا بأرقامٍ مختلَقة؛
    وسقفُ «تواصل مع مستشار» ثلاث: كلُّ طلبٍ حالةٌ يقرؤها إنسان. */
 
@@ -14,12 +14,12 @@ export function registerPublicGrantRoutes(app: FastifyInstance, prisma: PrismaCl
   const landing = new GrantLandingService(prisma)
 
   app.get('/api/public/grant', {
-    schema: { tags: ['public'], summary: 'حال منحة أعضاء وجيز ومساراتها بما يشترى اليوم' },
+    schema: { tags: ['public'], summary: 'حال منحة أعضاء وجيز ودوراتها بفصلها' },
   }, async () => landing.view())
 
   app.post('/api/public/grant', {
     config: { rateLimit: { max: 5, timeWindow: '15 minutes' } },
-    schema: { tags: ['public'], summary: 'نموذج المنحة: عميل محتمل وكوده، والمسارات' },
+    schema: { tags: ['public'], summary: 'نموذج المنحة: عميل محتمل وكوده، والدورات' },
   }, async (req, reply) => {
     assertNotBot(req.body)
     const body = z.object({

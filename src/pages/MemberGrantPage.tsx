@@ -3,11 +3,13 @@
    قراراتُ صاحب المنصّة:
    · «A»: من يعبّئ النموذج يأخذ الكودَ فورا ويختار دوراته ويدفع بنفسه — «فبهذه الحركة قد نكون قد أتممنا
      عمليّة الشراء قبل أن نذهب ونعود بإرسال رسالةٍ له ثانية». والمستشارُ لمن يطلبه.
-   · **قائمةُ دوراتٍ واقتراحاتٌ فوقها، بلا كلمة «مسار»** — «بدلا من أن نشتّته بكلمة مسار ومساراتٍ جاهزة»:
-     «اختر الدورات التي تريد أن تربطها بمنحتك»، دورةً واحدةً أو أكثر حتّى حدّ المنحة. والاقتراحاتُ ما أعدّه
-     صاحبُ المنصّة: يضغط أحدَها فتُختار دوراتُه، ثمّ يضيف ويحذف كما يشاء.
-   · ولا يُعرض إلّا ما له شعبةٌ مفتوحةٌ ومدرّبٌ منشور، ويُقرأ ساعةَ الطلب — فالجديدُ يظهر وحدَه
-     (`grant-pathway.service.ts#buyable`).
+   · **دوراتٌ فقط، بسعرها قبل المنحة وبعدها** — «بدلا من أن نشتّته بكلمة مسار ومساراتٍ جاهزة»: «اختر الدورات
+     التي تريد أن تربطها بمنحتك»، من دورةٍ واحدةٍ إلى حدّ المنحة. وكانت فوقها «اقتراحاتٌ» يُعدّها صاحبُ المنصّة،
+     فقال: «ألم نتّفق أن يظهر له دوراتٌ فقط، وتخبره كم السعرُ قبل المنحة وبعدها، ويختار ما شاء منها» — فحُذفت.
+   · ولا يُعرض إلّا ما له شعبةٌ مفتوحةٌ في الفصل القادم القريب ومدرّبٌ منشور، ويُقرأ ساعةَ الطلب — فالجديدُ
+     يظهر وحدَه (`grant-courses.service.ts#pool`).
+   · **وأنّها مباشرةٌ على Zoom** — قرارُه: «يجب أن يقال له إنّها دوراتٌ مباشرةٌ عبر زوم، وكلُّ ما يجب أن يسمعه
+     ليتحمّس بالتسجيل». فيُقال في أوّل الصفحة، وأوّلَ ما يحصل عليه، وفوق القائمة، وفي كلّ دورة.
    · والمنحةُ نسبةٌ تُقال بالمال: «تدفع كذا فقط، ووجيز تتحمّل كذا».
    · والنموذجُ بجملٍ تحثّ على التعبئة — قرارُه: «اجعل فيه جملةً تحفيزيّةً تضمن أنّه سيسجّل». وما يُقال فيها
      حقٌّ في المنصّة: عددُ المنح الباقي من الخادم، والشهادةُ والمدرّبون المعتمدون قائمون.
@@ -15,16 +17,16 @@
      سيحصل». فالصفحةُ قبل النموذج: ما المنحة، ومن نحن (نصُّ «من نحن» نفسُه)، وما يحصل عليه مع كلّ دورة، وكيف
      تعمل المنحة؛ وعددُ الدورات المفتوحة ومجالاتها من الخادم لا رقمٌ يُكتب. والنموذجُ ستُّ خانات: أربعٌ لازمةٌ
      بصياغةٍ وأمثلة، وسؤالان اختياريّان — مستواه، وما يريد تطويرَه من مجالات الدورات المفتوحة — وبالثاني
-     تُرتَّب له الدوراتُ والاقتراحات (`rankByInterest`).
+     تُرتَّب له الدورات (`rankByInterest`).
    · والحسابُ يُنشأ حين يدفع — باسمه وبريده من النموذج.
 
-   خطوتان: النموذج ← الكودُ واختيارُ الدورات، ثمّ لوحُ الدفع والكودُ فيه. و`/grant/:id` يفتح الاختيارَ نفسَه
-   باقتراحٍ مختارٍ سلفا. وما أخذه من النموذج يُحفظ على جهازه (`services/grant-landing.ts`)، فمن خرج ليوثّق
-   بريده عاد إلى دوراته ولوحُه مفتوح (`ResumeCheckout`). والعلّةُ في `server/services/grant-landing.service.ts`. */
+   خطوتان: النموذج ← الكودُ واختيارُ الدورات، ثمّ لوحُ الدفع والكودُ فيه. وما أخذه من النموذج يُحفظ على جهازه
+   (`services/grant-landing.ts`)، فمن خرج ليوثّق بريده عاد إلى `/grant/build` ودوراتُه مختارةٌ ولوحُه مفتوح
+   (`ResumeCheckout`). والعلّةُ في `server/services/grant-landing.service.ts`. */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router";
-import { Award, BookOpen, ClipboardCheck, Copy, Gift, Headphones, Loader2, Users, type LucideIcon } from "lucide-react";
+import { Link } from "react-router";
+import { Award, BookOpen, CirclePlay, ClipboardCheck, Copy, Gift, Headphones, Loader2, Video, type LucideIcon } from "lucide-react";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import { useRealSession } from "@/services/session";
 import { useHoneypot } from "@/components/HoneypotField";
@@ -51,12 +53,10 @@ import { readStoredGrant, saveStoredGrant, type StoredGrant } from "@/services/g
 import { resumedCheckoutFor, savePendingCheckout } from "@/services/pending-checkout";
 
 interface GrantCourse { courseId: string; titleAr: string; cohortId: string; startsAt: string | null; seatsLeft?: number | null; price: number; domainAr?: string }
-interface GrantPathway { id: string; titleAr: string; blurbAr: string | null; courses: GrantCourse[]; listTotal: number; grantTotal: number }
 interface View {
   campaign: { open: boolean; percentOff: number; maxCourses: number; closesAt: string | null; left: number | null };
-  /** فصلُ الدورات المعروضة — الفصلُ القادمُ القريب (`grant-pathway.service.ts#pool`) */
+  /** فصلُ الدورات المعروضة — الفصلُ القادمُ القريب (`grant-courses.service.ts#pool`) */
   termAr: string | null;
-  pathways: GrantPathway[];
   openCourses: GrantCourse[];
 }
 interface ApplyResult extends View {
@@ -75,11 +75,10 @@ const OTHER_DOMAIN = "أخرى";
 /** العددُ بصيغته — والمثنّى بلا رقم: «مجالين» لا «2 مجالين» */
 const dualOr = (n: number, forms: CountForms) => (n === 2 ? forms.two : countAr(n, forms));
 const GAIN_ICON: Record<(typeof GRANT_GAINS_AR)[number]["id"], LucideIcon> = {
-  live: Users, sources: BookOpen, experts: ClipboardCheck, certificate: Award, advisor: Headphones,
+  live: Video, recording: CirclePlay, sources: BookOpen, experts: ClipboardCheck, certificate: Award, advisor: Headphones,
 };
 
 export default function MemberGrantPage() {
-  const { pathwayId } = useParams();
   const { user: session } = useRealSession();
   const hp = useHoneypot();
   const [view, setView] = useState<View | null>(null);
@@ -106,14 +105,13 @@ export default function MemberGrantPage() {
 
   const [resumed] = useState(() => resumedCheckoutFor(PICK_PATH));
 
-  /* الاختيارُ الأوّل مرّةً واحدة: ما تركه قبل أن يخرج ليوثّق بريده، أو اقتراحٌ جاء رابطُه به */
+  /* الاختيارُ الأوّل مرّةً واحدة: ما تركه قبل أن يخرج ليوثّق بريده */
   useEffect(() => {
     if (!view || seeded) return;
     const open = new Set(view.openCourses.map((x) => x.courseId));
-    const from = resumed?.intent.courseIds ?? view.pathways.find((x) => x.id === pathwayId)?.courses.map((x) => x.courseId) ?? [];
-    setPicked(from.filter((id) => open.has(id)).slice(0, view.campaign.maxCourses));
+    setPicked((resumed?.intent.courseIds ?? []).filter((id) => open.has(id)).slice(0, view.campaign.maxCourses));
     setSeeded(true);
-  }, [view, seeded, resumed, pathwayId]);
+  }, [view, seeded, resumed]);
 
   const pct = view?.campaign.percentOff ?? 0;
   const max = view?.campaign.maxCourses ?? 4;
@@ -181,12 +179,10 @@ export default function MemberGrantPage() {
 
   /* ─── الخطوة ٢: الكودُ واختيارُ الدورات ─── */
   if (stored) {
-    /* ما قال إنّه يريد تطويرَه أوّلا — الدوراتُ، والاقتراحاتُ بعدد ما فيها منه */
+    /* ما قال إنّه يريد تطويرَه أوّلا */
     const mine = new Set(stored.interests);
     const fits = (x: GrantCourse) => (x.domainAr && mine.has(x.domainAr) ? 1 : 0);
-    const domainOf = new Map(view.openCourses.map((x) => [x.courseId, x]));
     const courses = rankByInterest(view.openCourses, fits);
-    const suggestions = rankByInterest(view.pathways, (p) => p.courses.reduce((n, x) => n + fits(domainOf.get(x.courseId) ?? x), 0));
     return (
       <Shell>
         <Card tone="accent" className="text-center">
@@ -209,25 +205,15 @@ export default function MemberGrantPage() {
 
         <h2 className="mt-6 text-xl font-black">اختر دوراتك</h2>
         <p className="mt-1 text-read text-muted-foreground">
-          اختر الدورات التي تريد أن تربطها بمنحتك: دورة واحدة أو أكثر، حتى {max} دورات. تدفع {100 - pct}% فقط من سعرها.{lastDay ? ` آخر يوم ${lastDay}.` : ""}
+          اختر الدورات التي تريد أن تربطها بمنحتك: من دورة واحدة إلى {max} دورات. ترى سعر كل دورة قبل المنحة وبعدها.{lastDay ? ` آخر يوم ${lastDay}.` : ""}
         </p>
-
-        {suggestions.length > 0 && (
-          <>
-            <p className="mt-5 font-bold">اقتراحات لك</p>
-            <p className="text-read text-muted-foreground">اضغط اقتراحا لتختار دوراته، ثم أضف أو احذف كما تشاء.</p>
-            <div className="mt-2 grid gap-3 sm:grid-cols-2">
-              {suggestions.map((p) => (
-                <Card key={p.id} className="flex flex-col">
-                  <p className="font-black">{p.titleAr}</p>
-                  {p.blurbAr && <p className="text-read text-muted-foreground">{p.blurbAr}</p>}
-                  <p className="mt-1 flex-1 text-read">{p.courses.map((x) => x.titleAr).join(" · ")}</p>
-                  <Button size="sm" tone="secondary" className="mt-3" onClick={() => setPicked(p.courses.map((x) => x.courseId).slice(0, max))}>اختر هذه الدورات</Button>
-                </Card>
-              ))}
-            </div>
-          </>
-        )}
+        <Inset tone="accent" className="mt-3 flex items-start gap-3">
+          <Video className="mt-0.5 h-5 w-5 shrink-0 text-teal-light-ink" aria-hidden="true" />
+          <span className="text-read">
+            <span className="block font-bold">كل الدورات مباشرة على Zoom</span>
+            <span className="block text-muted-foreground">تلتقي مدربك وزملاءك مباشرة من أي مكان، وتسجيل كل لقاء يصلك بعده.</span>
+          </span>
+        </Inset>
 
         {view.openCourses.length === 0 ? (
           <Card as="p" className="mt-5 text-read text-muted-foreground">لا دورات متاحة الآن. تواصل مع مستشار ليقترح عليك.</Card>
@@ -242,16 +228,20 @@ export default function MemberGrantPage() {
                 const on = picked.includes(x.courseId);
                 const full = !on && picked.length >= max;
                 return (
-                  <Inset as="label" key={x.courseId} tone={on ? "accent" : "default"} interactive={!full} className={`flex cursor-pointer items-start gap-3 ${full ? "opacity-50" : ""}`}>
+                  <Inset
+                    as="label" key={x.courseId} tone={on ? "accent" : "default"} interactive={!full}
+                    className={`grid cursor-pointer grid-cols-[auto_minmax(0,1fr)] items-start gap-x-3 gap-y-1 sm:grid-cols-[auto_minmax(0,1fr)_auto] ${full ? "opacity-50" : ""}`}
+                  >
                     <input type="checkbox" checked={on} disabled={full} onChange={() => toggle(x.courseId)} className="mt-1" />
-                    <span className="flex-1">
+                    <span>
                       <span className="block font-bold">{x.titleAr}</span>
-                      <span className="block text-read text-muted-foreground">{x.domainAr ? `${x.domainAr} · ` : ""}تبدأ {cohortDayAr(x.startsAt)}</span>
+                      <span className="block text-read text-muted-foreground">{x.domainAr ? `${x.domainAr} · ` : ""}تبدأ {cohortDayAr(x.startsAt)} · مباشرة على Zoom</span>
                       {fits(x) > 0 && <Chip tone="accent" className="mt-1">يناسب ما تريد تطويره</Chip>}
                     </span>
-                    <span className="text-end text-read">
-                      <span dir="ltr" className="block text-muted-foreground line-through">{money(x.price)}</span>
-                      <span dir="ltr" className="block font-black">{money(grantPrice(x.price, pct))}</span>
+                    {/* السعرُ تحت العنوان على الهاتف، وبجانبه على الحاسوب — فلا يضيق العنوانُ حتّى يتكسّر */}
+                    <span className="col-start-2 flex flex-wrap gap-x-4 text-read sm:col-start-3 sm:block sm:text-end">
+                      <span className="block text-muted-foreground">قبل المنحة <span dir="ltr" className="line-through">{money(x.price)}</span></span>
+                      <span className="block font-black">بعد المنحة <span dir="ltr">{money(grantPrice(x.price, pct))}</span></span>
                     </span>
                   </Inset>
                 );
@@ -323,7 +313,7 @@ export default function MemberGrantPage() {
         {c.open ? (
           <>
             <p className="mt-3 text-xl font-black">لأنك من أعضاء وجيز، تتحمل وجيز {c.percentOff}% من سعر دوراتك.</p>
-            <p className="mt-1 text-read text-muted-foreground">تختار حتى {c.maxCourses} دورات من الدورات المفتوحة الآن، وتدفع {100 - c.percentOff}% فقط.</p>
+            <p className="mt-1 text-read text-muted-foreground">دورات مباشرة على Zoom مع مدربين معتمدين. تختار من دورة إلى {c.maxCourses} دورات، وتدفع {100 - c.percentOff}% فقط.</p>
             <p className="mt-3">
               <Chip tone="warn">المنح محدودة{c.left !== null ? `: بقي ${c.left} منحة` : ""}{lastDay ? `، وآخر يوم ${lastDay}` : ""}</Chip>
             </p>
