@@ -504,7 +504,8 @@ export default function AdminCohorts() {
               <Panel key={c.id}>
                 <button onClick={() => toggle(c.id)} aria-expanded={isOpen}
                   className="flex w-full cursor-pointer flex-wrap items-center gap-4 rounded-xl text-right focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal focus-visible:ring-offset-2 focus-visible:ring-offset-paper">
-                  <div className="min-w-0 flex-1">
+                  {/* بأساسٍ يُنزل الشاراتِ سطرا إذا ضاق — لا يُعصر الاسمُ كلمةً في كلّ سطرٍ بجانب شارة «نقلت إلى…» */}
+                  <div className="min-w-0 flex-1 basis-72">
                     <p className="font-black">{c.title}</p>
                     <p className="mt-0.5 text-read text-muted-foreground">
                       {c.courseTitle} · {c.trainers.length ? c.trainers.map((t) => t.name).join("، ") : "بلا مدرب"}
