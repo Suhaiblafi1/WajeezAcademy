@@ -19,6 +19,7 @@ import { Card } from "@/components/ui/Surface";
 type State = "bought" | "pending" | "none";
 interface Registrant {
   id: string; fullName: string; phone: string | null; email: string | null; workField: string | null;
+  careerLevel: string | null; interests: string[];
   channel: string | null; wave: string | null; createdAt: string; code: string | null; state: State; advisor: string | null;
 }
 
@@ -33,7 +34,7 @@ export default function GrantRegistrants() {
 
   const matched = useMemo(
     () => (rows ?? []).filter((r) => (!only || r.state === only)
-      && matchesQuery(q, [r.fullName, r.phone, r.email, r.workField, r.code])),
+      && matchesQuery(q, [r.fullName, r.phone, r.email, r.workField, r.careerLevel, ...r.interests, r.code])),
     [rows, q, only],
   );
   if (!rows) return null;
@@ -64,7 +65,7 @@ export default function GrantRegistrants() {
                 <tr className="text-muted-foreground">
                   <th className="p-2 text-start">الاسم</th>
                   <th className="p-2 text-start">التواصل</th>
-                  <th className="p-2 text-start">المجال</th>
+                  <th className="p-2 text-start">المجال والاهتمام</th>
                   <th className="p-2 text-start">من أين</th>
                   <th className="p-2 text-start">الحالة</th>
                   <th className="p-2 text-start">المستشار</th>
@@ -85,7 +86,11 @@ export default function GrantRegistrants() {
                         )}
                         <br /><span dir="ltr" className="text-muted-foreground">{r.email ?? "—"}</span>
                       </td>
-                      <td className="p-2">{r.workField ?? "—"}</td>
+                      <td className="p-2">
+                        {r.workField ?? "—"}
+                        {r.careerLevel && <><br /><span className="text-muted-foreground">{r.careerLevel}</span></>}
+                        {r.interests.length > 0 && <><br /><span className="text-muted-foreground">يريد: {r.interests.join("، ")}</span></>}
+                      </td>
                       <td className="p-2">{[r.channel, r.wave && `دفعة ${r.wave}`].filter(Boolean).join(" · ") || "—"}</td>
                       <td className={`p-2 font-bold ${r.state === "bought" ? "text-teal-light-ink" : ""}`}>{STATE_AR[r.state]}</td>
                       <td className="p-2">{r.advisor ?? "—"}</td>

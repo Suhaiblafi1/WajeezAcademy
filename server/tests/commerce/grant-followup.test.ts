@@ -116,6 +116,7 @@ describe('② و③ من لم يشتر بعد يومين — حالة عند م�
     const cases = await casesOf(late.ref)
     expect(cases, 'لم تفتح حالة لمن لم يشتر بعد يومين').toHaveLength(1)
     expect(cases[0].nextAction).toContain('عبأ نموذج المنحة قبل يومين')
+    expect(cases[0].nextAction, 'لم يقرأ المستشار مجاله').toContain('مجاله: الهندسة')
     expect(cases[0].assignments.some((x) => x.unassignedAt === null), 'لم تسند').toBe(true)
     expect(await prisma.auditEvent.count({ where: { action: 'advisor.case.grant_followup', entityId: cases[0].id } })).toBe(1)
     expect(await casesOf(fresh.ref), 'فتحت قبل يومين').toHaveLength(0)

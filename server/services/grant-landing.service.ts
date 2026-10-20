@@ -5,7 +5,8 @@
    · «A»: **من يعبّئ النموذج يأخذ الكودَ فورا ويختار مسارَه ويدفع بنفسه**، والمستشارُ لمن يطلبه —
      «فبهذه الحركة قد نكون قد أتممنا عمليّة الشراء قبل أن نذهب ونعود بإرسال رسالةٍ له ثانية».
    · **مفتوحةٌ لكلّ من يعبّئه** حتّى تنتهي المنح.
-   · **والحسابُ يُنشأ حين يختار المسار** — النموذجُ أربعُ خانات.
+   · **والحسابُ يُنشأ حين يختار المسار** — النموذجُ أربعُ خاناتٍ لازمة، وسؤالان اختياريّان (مستواه، وما
+     يريد تطويرَه) أُضيفا بقراره (٢٠ أكتوبر ٢٠٢٦) — «الجديدُ منها اختياريّ»: لا يُسقط نموذجا تُرك فيه.
 
    ═══ ما يقع ═══
 
@@ -28,7 +29,10 @@ import { GrantPathwayService } from './grant-pathway.service'
 import { enqueueMail } from './outbox.service'
 import { publicSiteUrl } from './site-url'
 import { normalizePhone } from '../../src/application/advisor/guest-contact'
-import { GRANT_CONSENT_AR, WORK_FIELDS, campaignTag } from '../../src/application/commerce/grant-landing'
+import {
+  CAREER_LEVELS, GRANT_CONSENT_AR, GRANT_INTEREST_DOMAINS, GRANT_MAX_INTERESTS, WORK_FIELDS, campaignTag, leadProfileAr,
+} from '../../src/application/commerce/grant-landing'
+import { courseDomain } from '../../src/application/catalog/course-domain'
 import { MEMBER_GRANT_SLUG } from '../../src/application/commerce/grant'
 import { fmtDate } from '../../src/application/text/format-ar'
 
@@ -37,6 +41,8 @@ export interface GrantApplyInput {
   phone: string
   email: string
   workField: string
+  careerLevel?: string | null
+  interests?: readonly string[]
   channel?: string | null
   wave?: string | null
 }
@@ -74,7 +80,10 @@ export class GrantLandingService {
     return {
       campaign: { open: s.open, percentOff: s.percentOff, maxCourses: s.maxCourses, closesAt: s.closesAt, left: s.left },
       pathways,
-      openCourses: open.map((c) => ({ courseId: c.courseId, titleAr: c.courseTitleAr, cohortId: c.cohortId, startsAt: c.startsAt, price: c.price })),
+      openCourses: open.map((c) => ({
+        courseId: c.courseId, titleAr: c.courseTitleAr, cohortId: c.cohortId, startsAt: c.startsAt, price: c.price,
+        domainAr: courseDomain(c.courseId),
+      })),
     }
   }
 
@@ -86,6 +95,11 @@ export class GrantLandingService {
     if (fullName.length < 2) throw new AuthError('bad_name', 'اكتب اسمك', 400)
     if (!phone) throw new AuthError('bad_phone', 'رقم واتساب غير صحيح، اكتبه بالأرقام', 400)
     if (!WORK_FIELDS.includes(input.workField)) throw new AuthError('bad_field', 'اختر مجال عملك من القائمة', 400)
+    const careerLevel = input.careerLevel?.trim() || null
+    if (careerLevel && !CAREER_LEVELS.includes(careerLevel)) throw new AuthError('bad_level', 'اختر مستواك من القائمة', 400)
+    const interests = [...new Set((input.interests ?? []).map((x) => x.trim()))]
+    if (interests.length > GRANT_MAX_INTERESTS) throw new AuthError('bad_interests', `اختر حتى ${GRANT_MAX_INTERESTS} مجالات`, 400)
+    if (interests.some((x) => !GRANT_INTEREST_DOMAINS.has(x))) throw new AuthError('bad_interests', 'اختر ما تريد تطويره من القائمة', 400)
 
     const had = await this.prisma.lead.findFirst({
       where: { campaign: MEMBER_GRANT_SLUG, erasedAt: null, OR: [{ phone }, { email }] },
@@ -95,6 +109,7 @@ export class GrantLandingService {
       data: {
         fullName, email, phone, source: 'campaign', campaign: MEMBER_GRANT_SLUG, consentAr: GRANT_CONSENT_AR,
         channel: campaignTag(input.channel), wave: campaignTag(input.wave), workField: input.workField,
+        careerLevel, interests,
       },
     })
     if (!had) {
@@ -130,7 +145,7 @@ export class GrantLandingService {
     const kase = await this.prisma.advisorCase.create({
       data: {
         leadId: lead.id,
-        nextAction: `تواصل أول — طلب مستشارا من صفحة المنحة${lead.workField ? ` · مجاله: ${lead.workField}` : ''}`,
+        nextAction: ['تواصل أول — طلب مستشارا من صفحة المنحة', leadProfileAr(lead)].filter(Boolean).join(' · '),
         ...(note ? { contactEvents: { create: { channel: 'in_app', direction: 'in', summary: `كتب: ${note}` } } } : {}),
       },
     })

@@ -27,6 +27,8 @@ export function registerPublicGrantRoutes(app: FastifyInstance, prisma: PrismaCl
       phone: z.string().trim().min(5, 'اكتب رقم واتساب').max(30),
       email: z.string().trim().toLowerCase().email('صيغة البريد غير صحيحة').max(200),
       workField: z.string().trim().min(2).max(60),
+      careerLevel: z.string().trim().max(60).nullable().optional(),
+      interests: z.array(z.string().trim().max(80)).max(10).optional(),
       channel: z.string().max(40).nullable().optional(),
       wave: z.string().max(40).nullable().optional(),
     }).parse(req.body)

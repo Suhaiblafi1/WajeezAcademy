@@ -178,6 +178,15 @@ describe('⑦ · رئيسيّ واحد في الشاشة — تقاس بالشا
       why: 'معالجان يفتح أحدهما بـ`openForm` لا كلاهما، وكلّ منهما خطوة في المرّة',
       files: ['src/components/CourseWizard.tsx', 'src/components/PathwayWizard.tsx'],
     },
+    /* صفحةُ المنحة خطوتان لا تُريان معا: ذهبيُّ الأولى «احجز منحتي الآن»، ولوحُ الدفع لا يُفتح إلّا في الثانية */
+    '/grant': {
+      why: 'لوح الدفع يفتح بعد النموذج وحده، وذهبيّ النموذج لا يرى معه',
+      files: ['src/components/BuyPanel.tsx'],
+    },
+    '/grant/:pathwayId': {
+      why: 'لوح الدفع يفتح بعد النموذج وحده، وذهبيّ النموذج لا يرى معه',
+      files: ['src/components/BuyPanel.tsx'],
+    },
     '/student/learning': {
       why: 'مراحل الرحلة تتعاقب (العرض ثمّ العمل)، و`StageWork` تبويبات — واحد يرى في المرّة',
       files: [
