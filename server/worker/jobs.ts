@@ -1474,20 +1474,26 @@ export async function runEraseIdleGuests(prisma: PrismaClient, now = new Date())
 
 /** اسمُ مدرّب كلّ شعبةٍ معروضةٍ يُنشر — يلحق ما فُتح قبل قرار ٢٠ أكتوبر وما أُضيف بعد الفتح (`trainer-auto-publish.ts`).
     وقبله يُفعَّل من في الطور وله دورةٌ معتمَدة («one cohort is enough»، ٢٠ أكتوبر ٢٠٢٦، `activateQualifiedOnboarding`):
-    النشرُ لا يمسّ من لم ينشط، فلو بقي في الطور بقيت شعبُه تُباع بلا اسمه. والمانعُ يُقال للإدارة مرّةً في الأسبوع. */
+    النشرُ لا يمسّ من لم ينشط، فلو بقي في الطور بقيت شعبُه تُباع بلا اسمه. والمانعُ يُقال للإدارة مرّةً في الأسبوع.
+    ويُوقَّع معه عقدُ النشط المعتمَدُ كالعقود الجديدة وقد اعتُمدت له دورةٌ بعد اعتماد توقيعه («sign active trainers'
+    contracts at first course»، ٢٠ أكتوبر ٢٠٢٦، `sealFirstCourseActive`). */
 export async function runPublishLiveTrainers(prisma: PrismaClient, now = new Date()): Promise<JobResult> {
   const started = Date.now()
   const { TrainerPrepService } = await import('../services/trainer-prep.service')
-  const { activated, blocked } = await new TrainerPrepService(prisma).activateQualifiedOnboarding()
+  const prep = new TrainerPrepService(prisma)
+  const { activated, blocked: notActivated } = await prep.activateQualifiedOnboarding()
+  const { sealed, blocked: notSealed } = await prep.sealFirstCourseActive()
+  const blocked = notActivated + notSealed
   const { publishCohortTrainers } = await import('../services/trainer-auto-publish')
   const { published, notActive } = await publishCohortTrainers(prisma, { actorId: null, now })
   const parts = [published.length === 0 ? 'كل مدربي الشعب المعروضة ظاهرون' : `نشر اسم ${published.length} مدرب`]
+  if (sealed.length > 0) parts.unshift(`وقع عقد ${sealed.length} مدرب نشط اعتمدت له دورة`)
   if (activated.length > 0) parts.unshift(`فعّل ${activated.length} مدرب له دورة معتمدة`)
-  if (blocked > 0) parts.push(`و${blocked} منع تفعيله مانع — أخبرت الإدارة`)
+  if (blocked > 0) parts.push(`و${blocked} منع تفعيله أو توقيع عقده مانع — أخبرت الإدارة`)
   if (notActive > 0) parts.push(`و${notActive} طلبه غير نشط فلم ينشر`)
   return {
     job: 'publish_live_trainers', summaryAr: parts.join(' — '),
-    done: activated.length + published.length, failed: blocked, ms: Date.now() - started,
+    done: activated.length + sealed.length + published.length, failed: blocked, ms: Date.now() - started,
   }
 }
 
@@ -1503,8 +1509,8 @@ export const JOBS = [
   { key: 'verify_reminders', everyMs: HOUR, run: sendVerificationReminders, titleAr: 'تذكير توثيق البريد' },
   { key: 'cohort_status_sync', everyMs: 15 * 60_000, run: syncCohortStatuses, titleAr: 'حالات الشعب بالتواريخ' },
   /* كلَّ ربع ساعة: الفتحُ ينشر بنفسه، وهذه تلحق ما فُتح قبل القرار وما أُضيف مدرّبُه بعد الفتح — وتفعّل قبله
-     من في الطور وله دورةٌ معتمَدة */
-  { key: 'publish_live_trainers', everyMs: 15 * 60_000, run: runPublishLiveTrainers, titleAr: 'تفعيل من اعتمدت له دورة ونشر أسماء مدربي الشعب المعروضة' },
+     من في الطور وله دورةٌ معتمَدة، وتوقّع عقدَ النشط الذي اعتُمدت له دورة */
+  { key: 'publish_live_trainers', everyMs: 15 * 60_000, run: runPublishLiveTrainers, titleAr: 'تفعيل وتوقيع من اعتمدت له دورة ونشر أسماء مدربي الشعب المعروضة' },
   /* كلَّ ساعة: الإسقاطُ والانتقالُ يُلغيان التسجيلَ ساعتَهما — وهذه لما أبى فيه
      Zoom ولمن ترك قبلها. واللقاءُ بعد أيّامٍ في الغالب، فساعةٌ تسبقه */
   { key: 'revoke_left_registrants', everyMs: HOUR, run: revokeLeftRegistrants, titleAr: 'إلغاء تسجيل من ترك شعبته عند Zoom' },

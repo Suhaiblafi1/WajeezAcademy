@@ -572,33 +572,101 @@ export class TrainerPrepService {
     ])
   }
 
-  /** يوقّع عقدَ النشط المعتمَدَ كالعقود الجديدة إن اكتملت دوراتُه — وما يمنع يُقال للإدارة ولا يُسقط ما قبله */
-  async sealIfComplete(profileId: string, actorId: string) {
+  /* ═══ وبأوّل دورةٍ تُعتمَد له بعد اعتماد توقيعه (٢٠ أكتوبر ٢٠٢٦) ═══
+
+     ثمّ قال صاحبُ المنصّة: «Also sign active trainers' contracts at first course» — كما يُفعَّل من في الطور
+     بأوّل دورة (`activateIfQualified`). والنشطُ في يده معتمَداتٌ من عقده السابق، فالأولى هنا أوّلُ ما يُعتمَد
+     له **بعد** اعتماد توقيعه: خطّةُ شعبةٍ اعتُمدت، أو تأهيلٌ مباشر. ولو عُدّ ما قبله لوُقّع كلُّ عقدٍ
+     «كالعقود الجديدة» ساعةَ اعتماده — وهو ما اختار المعتمِدُ ألّا يقع. وما كان يوقّعه («اكتملت دوراتُه») باقٍ. */
+  async firstApprovalSince(profileId: string, since: Date): Promise<{ at: Date; by: string | null } | null> {
+    const [plan, qualify] = await Promise.all([
+      this.prisma.cohortDeliveryPlan.findFirst({
+        where: { trainerId: profileId, status: { in: ['approved', 'published'] }, reviewedAt: { gte: since } },
+        orderBy: { reviewedAt: 'asc' }, select: { reviewedAt: true, reviewedBy: true },
+      }),
+      this.prisma.auditEvent.findFirst({
+        where: { action: 'trainer.qualify', entityType: 'trainer_profile', entityId: profileId, createdAt: { gte: since } },
+        orderBy: { createdAt: 'asc' }, select: { createdAt: true, actorId: true },
+      }),
+    ])
+    const found = [
+      ...(plan?.reviewedAt ? [{ at: plan.reviewedAt, by: plan.reviewedBy }] : []),
+      ...(qualify ? [{ at: qualify.createdAt, by: qualify.actorId }] : []),
+    ].sort((a, b) => a.at.getTime() - b.at.getTime())
+    return found[0] ?? null
+  }
+
+  /** أيوقَّع الآن؟ — اعتُمدت له دورةٌ بعد اعتماد توقيعه، أو اكتملت دوراتُه. ويُقال بأيّهما */
+  async sealDue(profileId: string, signatureApprovedAt: Date | null): Promise<'first_course' | 'prep_done' | null> {
+    if (signatureApprovedAt && await this.firstApprovalSince(profileId, signatureApprovedAt)) return 'first_course'
+    return (await this.prepDone(profileId)) ? 'prep_done' : null
+  }
+
+  /** يوقّع عقدَ النشط المعتمَدَ كالعقود الجديدة إن حان (`sealDue`) — وما يمنع يُقال للإدارة مرّةً في الأسبوع
+      ولا يُسقط ما قبله */
+  async sealIfDue(profileId: string, actorId: string) {
     const contract = await this.prisma.trainerContract.findFirst({
       where: { profileId, status: 'signature_approved', gatesActivation: false },
       orderBy: { signedAt: { sort: 'desc', nulls: 'last' } },
-      select: { id: true },
+      select: { id: true, signatureApprovedAt: true },
     })
     if (!contract) return null
-    if (!(await this.prepDone(profileId))) return { sealed: false as const }
+    const due = await this.sealDue(profileId, contract.signatureApprovedAt)
+    if (!due) return { sealed: false as const }
     const { TrainerReviewService } = await import('./trainer-review.service')
     try {
-      await new TrainerReviewService(this.prisma)
-        .countersignApproved(contract.id, actorId, { noteAr: 'اعتمدت دوراته كلها — وقع تلقائيا' })
+      await new TrainerReviewService(this.prisma).countersignApproved(contract.id, actorId, {
+        noteAr: due === 'first_course' ? 'اعتمدت له دورة — وقع تلقائيا' : 'اكتملت دوراته — وقع تلقائيا',
+      })
       await recordAudit(this.prisma, {
-        actorId, action: 'trainer.prep.auto_seal', entityType: 'trainer_contract', entityId: contract.id, meta: { profileId },
+        actorId, action: 'trainer.prep.auto_seal', entityType: 'trainer_contract', entityId: contract.id, meta: { profileId, due },
       })
       return { sealed: true as const }
     } catch (e) {
       const why = e instanceof AuthError ? e.message : 'خطأ غير متوقّع'
-      await notifyRole(this.prisma, ['academic_manager', 'super_admin'], {
-        channel: 'in_app', templateKey: 'trainer.prep.seal_blocked',
-        title: 'اعتمدت دورات مدرّب كلّها ولم يوقّع عقده',
-        body: `لم يوقّع تلقائيّا: ${why.slice(0, 300)} — وقّعه من صفّه في «العقود».`,
-        data: { profileId, contractId: contract.id },
-      }).catch(() => undefined)
-      return { sealed: false as const, blockedAr: why }
+      const told = await this.prisma.auditEvent.count({
+        where: {
+          action: 'trainer.prep.seal_blocked', entityType: 'trainer_contract', entityId: contract.id,
+          createdAt: { gte: new Date(Date.now() - BLOCKED_NOTICE_EVERY_MS) },
+        },
+      })
+      if (told === 0) {
+        await recordAudit(this.prisma, {
+          actorId, action: 'trainer.prep.seal_blocked', entityType: 'trainer_contract', entityId: contract.id,
+          meta: { profileId, whyAr: why.slice(0, 300) },
+        })
+        await notifyRole(this.prisma, ['academic_manager', 'super_admin'], {
+          channel: 'in_app', templateKey: 'trainer.prep.seal_blocked',
+          title: 'اعتمدت دورة لمدرّب ولم يوقّع عقده',
+          body: `لم يوقّع تلقائيّا: ${why.slice(0, 300)} — وقّعه من صفّه في «العقود».`,
+          data: { profileId, contractId: contract.id },
+        }).catch(() => undefined)
+      }
+      return { sealed: false as const, blockedAr: why, told: told === 0 }
     }
+  }
+
+  /** يلحق عقدَ النشط المعتمَدَ كالعقود الجديدة وقد اعتُمدت له دورةٌ بعد اعتماد توقيعه — من قبل قرار ٢٠ أكتوبر.
+      والفاعلُ من اعتمد تلك الدورة. ولا يلحق «اكتملت دوراتُه» وحدَه: ذاك كان يُقال للإدارة «وقِّعْه الآن» فتركته */
+  async sealFirstCourseActive(): Promise<{ sealed: string[]; blocked: number }> {
+    const contracts = await this.prisma.trainerContract.findMany({
+      where: {
+        status: 'signature_approved', gatesActivation: false, signatureApprovedAt: { not: null },
+        profile: { suspendedAt: null, application: { status: 'active' } },
+      },
+      select: { id: true, profileId: true, signatureApprovedAt: true, signatureApprovedBy: true },
+    })
+    const sealed: string[] = []
+    let blocked = 0
+    for (const c of contracts) {
+      const first = await this.firstApprovalSince(c.profileId, c.signatureApprovedAt!)
+      const actorId = first?.by ?? c.signatureApprovedBy
+      if (!first || !actorId) continue
+      const r = await this.sealIfDue(c.profileId, actorId)
+      if (r?.sealed) sealed.push(c.id)
+      else if (r && 'told' in r && r.told) blocked++
+    }
+    return { sealed, blocked }
   }
 
   /** بعد اعتذارٍ: لا شيءَ ينتظر وفي يده معتمَد — يُقال للإدارة إنّه جاهز.

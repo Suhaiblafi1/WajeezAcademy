@@ -2372,7 +2372,7 @@ export class TrainerReviewService {
      وحالُه تقبل التفعيل — وهو شرطُ `activateIfQualified` نفسُه. وكان معه «لا دورةَ معلّقة»،
      فنُسخ (٢٠ أكتوبر ٢٠٢٦): دورةٌ واحدةٌ معتمَدةٌ تكفي لتفعيله. */
   private async coursesReadyFor(contracts: {
-    id: string; status: string; gatesActivation: boolean; conditionMetAt: Date | null
+    id: string; status: string; gatesActivation: boolean; conditionMetAt: Date | null; signatureApprovedAt: Date | null
     profile: { id: string; application: { status: string } | null } | null
   }[]): Promise<Set<string>> {
     const open = contracts.filter((c) => c.gatesActivation && !c.conditionMetAt
@@ -2387,13 +2387,13 @@ export class TrainerReviewService {
     })
     const hasOne = new Set(qualified.filter((r) => r._count._all > 0).map((r) => r.profileId))
     const ready = new Set(open.filter((c) => hasOne.has(c.profile!.id)).map((c) => c.id))
-    /* وعقدُ النشط المعتمَدُ كالعقود الجديدة: اكتملت دوراتُه إن خلت قائمةُ طوره ممّا يُعَدّ أو ينتظر
-       (`prepDone` — شرطُ توقيعه التلقائيّ نفسُه، ١٧ أكتوبر ٢٠٢٦) */
+    /* وعقدُ النشط المعتمَدُ كالعقود الجديدة: اعتُمدت له دورةٌ بعد اعتماد توقيعه (٢٠ أكتوبر ٢٠٢٦)، أو اكتملت
+       دوراتُه (١٧ أكتوبر) — `sealDue`، شرطُ توقيعه التلقائيّ نفسُه */
     const plain = contracts.filter((c) => !c.gatesActivation && c.status === 'signature_approved' && c.profile)
     if (plain.length > 0) {
       const { TrainerPrepService } = await import('./trainer-prep.service')
       const prep = new TrainerPrepService(this.prisma)
-      for (const c of plain) if (await prep.prepDone(c.profile!.id)) ready.add(c.id)
+      for (const c of plain) if (await prep.sealDue(c.profile!.id, c.signatureApprovedAt)) ready.add(c.id)
     }
     return ready
   }
@@ -5773,8 +5773,8 @@ export class TrainerReviewService {
       await prep.activateIfQualified(profileId, profile.applicationId, actorId)
       return
     }
-    /* والنشطُ عقدُه المعتمَدُ كالعقود الجديدة يوقَّع حين تكتمل دوراتُه (`sealIfComplete`) */
-    if (profile?.application.status === 'active') await prep.sealIfComplete(profileId, actorId)
+    /* والنشطُ عقدُه المعتمَدُ كالعقود الجديدة يوقَّع بأوّل دورةٍ تُعتمَد له بعد اعتماد توقيعه (`sealIfDue`) */
+    if (profile?.application.status === 'active') await prep.sealIfDue(profileId, actorId)
   }
 
   /* ─────────── طلبُ التأهيل من الشعبة ───────────

@@ -438,7 +438,7 @@ const LOW: readonly string[] = [
      يُخبر من يعتمد (`cohort.plan.submit`) */
   'trainer.prep.accept', 'trainer.prep.materials_carried',
   /* وتفعيلٌ منعه مانع: لا يمسّ المدرّبَ شيئا — يُخبر الإدارةَ لتُصلح، مرّةً في الأسبوع (٢٠ أكتوبر ٢٠٢٦) */
-  'trainer.prep.activation_blocked',
+  'trainer.prep.activation_blocked', 'trainer.prep.seal_blocked',
   /* والسؤالُ عن اقتراحٍ وجوابُه: خبرُ عملٍ في الطابور لا خبرُ إنسان. ويصل
      صاحبَه إشعارا في بوّابته على كلّ حال (`trainer.course_proposal.question`
      في صنفٍ لا يُكتم) — وهذا وزنُ الأثر لا وزنُ الإشعار. */
