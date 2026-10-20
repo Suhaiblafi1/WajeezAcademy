@@ -273,6 +273,8 @@ const MEDIUM: readonly string[] = [
   /* وتنزيلُ ملفّاتهم لكتابة الاقتراحات (٢٠ أكتوبر ٢٠٢٦) — قراءةٌ، لكنّها تُخرج سيرَهم وشهاداتِهم
      من المنصّة جملةً، فتُرى في الأثر لا تُطوى مع القراءات */
   'trainer.drafting_bundle.download',
+  /* وحذفُ شعبةٍ بلا مدرّبٍ ولا متعلّم (٢٠ أكتوبر ٢٠٢٦) — لا يمسّ إنسانا، لكنّه لا يُرجَع عنه */
+  'cohort.delete_trainerless',
   'rating.approve', 'rating.reject',
   /* تذكرتُه */
   'support.ticket.assign', 'support.ticket.status',

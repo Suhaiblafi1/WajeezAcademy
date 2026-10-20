@@ -17,6 +17,7 @@ import { CertificateService } from '../../services/certificate.service'
 import { LearnerRequestService } from '../../services/learner-request.service'
 import { CohortPlanService } from '../../services/cohort-plan.service'
 import { PlanReviewBundleService, type ReviewBundle } from '../../services/plan-review-bundle.service'
+import { TrainerlessCohortDeleteService } from '../../services/trainerless-cohort-delete.service'
 import { AuthError } from '../../services/auth.service'
 import { CohortFileService } from '../../services/cohort-file.service'
 import { PlanEditService } from '../../services/plan-edit.service'
@@ -573,6 +574,18 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
     preHandler: requirePermission('cohort.manage'),
     schema: { tags: ['admin-learning'], summary: 'شعب لم يسمّ فصلها بعد — ومن أسند إليها محبوس عن الجدولة' },
   }, async () => cohorts.cohortsWithoutTerm())
+
+  /* ═══ وحذفُ ما لا مدرّبَ له منها — من الصندوق نفسِه (٢٠ أكتوبر ٢٠٢٦) ═══
+     «لماذا ما زالت هنا! احذفها» (صاحب المنصّة). يحذف ما لا متعلّمَ فيه، ويقول لما بقي سببَه
+     (`trainerless-cohort-delete.service.ts`). بصلاحيّة إدارة الشعب كتسمية فصلها. */
+  const trainerless = new TrainerlessCohortDeleteService(prisma)
+  app.post('/api/admin/cohorts/delete-trainerless', {
+    preHandler: requirePermission('cohort.manage'),
+    schema: { tags: ['admin-learning'], summary: 'حذف شعب لا مدرب لها ولا متعلم فيها — وسبب ما لم يحذف' },
+  }, async (req) => {
+    const { cohortIds } = z.object({ cohortIds: z.array(z.string().uuid()).min(1).max(200) }).parse(req.body ?? {})
+    return trainerless.delete(req.auth!.userId, cohortIds)
+  })
 
   /* توليدُ الجلسات من النمط — والافتراضُ عرضٌ لا كتابة */
   app.post('/api/admin/cohorts/:id/sessions/generate', {
