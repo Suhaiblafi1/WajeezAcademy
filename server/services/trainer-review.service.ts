@@ -5929,6 +5929,8 @@ export class TrainerReviewService {
         qualifications: {
           include: { course: { include: { versions: { orderBy: { version: 'desc' }, take: 1, select: { titleAr: true } } } } },
         },
+        /* آخرُ عقدٍ غيرِ مُزاح — يقول من عليه الخطوةُ ما دام طلبُه غيرَ نشط (`trainer-status.ts`) */
+        contracts: { where: { status: { not: 'superseded' } }, orderBy: { createdAt: 'desc' }, take: 1, select: { status: true } },
         assignments: {
           where: { status: 'active' },
           include: {
@@ -6023,6 +6025,7 @@ export class TrainerReviewService {
         moved: c.moveRequests[0] ?? null,
       })),
       trail: trailOf(p.id),
+      contract: p.contracts[0] ? { status: p.contracts[0].status } : null,
       }
     })
   }

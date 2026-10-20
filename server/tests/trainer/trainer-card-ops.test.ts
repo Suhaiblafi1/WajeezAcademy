@@ -5,7 +5,8 @@
 
    ① شعبٌ مربوطةٌ بـ`CohortTrainer` وحدَه — بلا صفّ إسنادٍ قديم — تظهر بحالها وأوّلِ لقائها وعددِ لقاءاتها
       وحالِ خطّتها، والمؤجَّلةُ بتاريخها، والمنقولةُ منقولة، والملغاةُ لا.
-   ② وحفظُ الإدارة يسمّي في أثره ما تغيّر وحدَه — فحفظُ الصورة لا يمحو أنّ النبذةَ كتبها المدرّب. */
+   ② وحفظُ الإدارة يسمّي في أثره ما تغيّر وحدَه — فحفظُ الصورة لا يمحو أنّ النبذةَ كتبها المدرّب.
+   ③ وعقدُه: آخرُ عقدٍ غيرِ مُزاح — يقول من عليه الخطوةُ في سطره المطويّ (`trainer-status.ts`، ٢٠ أكتوبر ٢٠٢٦). */
 
 import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
@@ -23,7 +24,7 @@ let profileId = ''
 let courseId = ''
 const ids: Record<string, string> = {}
 
-type Row = { profileId: string; cohorts: CardCohort[]; trail: ProfileTrail }
+type Row = { profileId: string; cohorts: CardCohort[]; trail: ProfileTrail; contract: { status: string } | null }
 const me = async () => (await review.listForOps() as unknown as Row[]).find((r) => r.profileId === profileId)!
 const byTitle = (cs: CardCohort[], k: string) => cs.find((c) => c.title === `${k} ${STAMP}`)
 
@@ -136,5 +137,17 @@ describe('② أثر الملف العام', () => {
     const t = (await me()).trail
     expect(t.text?.by).toBe('admin')
     expect(t.photo?.by).toBe('admin_link')
+  })
+})
+
+describe('③ عقده', () => {
+  it('⚠️ آخر عقد غير مزاح — ولا عقد: لا شيء', async () => {
+    expect((await me()).contract).toBeNull()
+    const at = (m: number) => new Date(Date.UTC(2026, 9, 20, 10, m))
+    await prisma.trainerContract.create({ data: { profileId, title: 'عقد أول', status: 'sent', createdAt: at(0) } })
+    await prisma.trainerContract.create({ data: { profileId, title: 'عقد أزاحه غيره', status: 'superseded', createdAt: at(5) } })
+    expect((await me()).contract, 'قرئ المزاح').toEqual({ status: 'sent' })
+    await prisma.trainerContract.create({ data: { profileId, title: 'عقد أحدث', status: 'signed', createdAt: at(9) } })
+    expect((await me()).contract).toEqual({ status: 'signed' })
   })
 })
