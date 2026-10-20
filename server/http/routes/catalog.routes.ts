@@ -12,6 +12,8 @@ import { validateVideo } from '../../../src/application/content/module-video'
 import { validateScenario } from '../../../src/application/content/scenario'
 import { requirePermission } from '../auth-plugin'
 import { COURSE_DOMAIN_FAMILIES } from '../../../src/application/catalog/course-domain'
+import { publishSnapshotIfChanged } from '../../services/auto-publish.service'
+import { buildStamp } from '../../build-stamp'
 
 export function registerCatalogRoutes(app: FastifyInstance, prisma: PrismaClient) {
   const admin = new CatalogAdminService(prisma)
@@ -83,6 +85,35 @@ export function registerCatalogRoutes(app: FastifyInstance, prisma: PrismaClient
       stages: z.array(z.string().min(2).max(64)).max(10).default([]),
     }).parse(req.body)
     return admin.setStandaloneRecommendation(courseId, body, req.auth!.userId)
+  })
+
+  /* ═══ أسماءُ الدورات — الدوراتُ التي لها شعب، وأسماءُ شعبها، واقتراحاتُها ═══
+     الشرحُ في `CatalogAdminService.courseNames` و`course-name-suggest.ts`. */
+  app.get('/api/admin/catalog/course-names', {
+    preHandler: requirePermission('catalog.view'),
+    schema: { tags: ['admin-catalog'], summary: 'الدورات التي لها شعب وأسماء شعبها واقتراحات اسم لكل دورة' },
+  }, () => admin.courseNames())
+
+  /* تغييرُ اسم الدورة — يُكتب فورا لحامل `catalog.self_approve`، ولغيره طلبٌ
+     ينتظر مراجعا. وما كُتب يُنشر في الموقع في الحال إن أمكن: النشرُ هو ما يفعله
+     كلُّ نشرٍ للشيفرة أصلا (`deploy.sh` ← `catalog:publish`)، فلا ينتظر الاسمُ
+     دفعةً لا علاقة لها به. وإن تعذّر النشرُ بقي الاسمُ محفوظا ويصل مع النشر التالي. */
+  app.post('/api/admin/catalog/courses/:courseId/rename', {
+    preHandler: requirePermission('catalog.course.edit'),
+    schema: { tags: ['admin-catalog'], summary: 'تغيير اسم دورة — مباشرة لمن يعتمد ما يقدّمه، وطلب مراجعة لغيره' },
+  }, async (req) => {
+    const { courseId } = z.object({ courseId: z.string() }).parse(req.params)
+    const { titleAr } = z.object({ titleAr: z.string().max(400) }).parse(req.body)
+    const out = await admin.renameCourse(courseId, titleAr, req.auth!.userId, req.auth!.permissions)
+    if (!out.applied) return { ...out, published: false }
+    try {
+      /* نُشر الآن، أو كانت اللقطةُ تطابقه أصلا — والموقعُ في الحالين يقرأ الاسمَ الجديد */
+      await publishSnapshotIfChanged(prisma, { commit: buildStamp().commit ?? undefined })
+      return { ...out, published: true }
+    } catch (e) {
+      req.log.warn({ err: e, courseId }, 'تعذّر نشر اللقطة بعد تغيير اسم الدورة — يصل مع النشر التالي')
+      return { ...out, published: false }
+    }
   })
 
   /* ═══ المعرّفُ يُعرض قبل الإنشاء ولا يُكتب ═══

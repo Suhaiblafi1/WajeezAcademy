@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "react-router";
 import {
   BookMarked, CheckCircle2, ChevronDown, FilePlus2, GitPullRequest, Layers,
-  RefreshCw, Route, XCircle,
+  PenLine, RefreshCw, Route, XCircle,
 } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import ListToolbar from "@/components/admin/ListToolbar";
@@ -18,6 +18,8 @@ import { toast } from "@/components/Toast";
 import PathwayWizard from "@/components/PathwayWizard";
 import CourseWizard from "@/components/CourseWizard";
 import SkillPicker from "@/components/SkillPicker";
+import CourseNamesPanel from "@/components/admin/CourseNamesPanel";
+import CoursePicker from "@/components/admin/CoursePicker";
 import { useRealSession } from "@/services/session";
 import { fmtDateTime } from "@/application/text/format-ar";
 
@@ -70,7 +72,7 @@ function TrainerSuggestion({ payload }: { payload: Record<string, unknown> | nul
 type PathwayRow = { id: string; status: string; title: string; courseCount: number };
 type CourseRow = {
   id: string; status: string; title: string; hours: number; skillCount: number;
-  skillIds: string[]; pathways: string[];
+  skillIds: string[]; pathways: string[]; pathwayNames?: string[];
   /* ك-٥: دورةٌ قائمةٌ بنفسها تُرشَّح بمهاراتها — الرمزُ ومجالُه معا */
   recommendableDirectly?: boolean; diagnosticDomains?: string[]; diagnosticStages?: string[];
 };
@@ -140,7 +142,7 @@ export default function CatalogAdmin() {
 
   const [skillForm, setSkillForm] = useState({ id: "", slug: "", nameAr: "", familyId: "" });
   const [crForm, setCrForm] = useState({ entityType: "course", entityId: "", payload: '{\n  "titleAr": "الاسم الجديد"\n}' });
-  const [openForm, setOpenForm] = useState<"skill" | "course" | "pathway" | "cr" | null>(null);
+  const [openForm, setOpenForm] = useState<"names" | "skill" | "course" | "pathway" | "cr" | null>(null);
 
   /* ═══ قادمٌ من اقتراحِ مدرّبٍ صُنِّف «دورةً جديدة» (ح-٤) ═══
 
@@ -577,6 +579,9 @@ export default function CatalogAdmin() {
       <section className="mt-8 space-y-3">
         <h2 className="text-lg font-black">إنشاء وتعديل — كلّها مسودّات تمرّ بالاعتماد</h2>
 
+        <FormHead id="names" icon={PenLine} title="أسماء الدورات" hint="اقتراحات من أسماء الشعب — اختر واعتمد" />
+        {openForm === "names" && <CourseNamesPanel canSelfApprove={canSelfApprove} onRenamed={() => void refresh()} />}
+
         <FormHead id="course" icon={BookMarked} title="دورة جديدة (مسودة)" hint="أربع خطوات: الدورة، وحداتها، مهاراتها، مراجعة" />
         {openForm === "course" && (
           <CourseWizard
@@ -635,15 +640,31 @@ export default function CatalogAdmin() {
               <select value={crForm.entityType} onChange={(e) => setCrForm({ ...crForm, entityType: e.target.value, entityId: "" })} className={selectCls}>
                 {Object.entries(ENTITY_AR).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
               </select>
-              <select value={crForm.entityId} onChange={(e) => setCrForm({ ...crForm, entityId: e.target.value })} className={selectCls}>
-                <option value="">اختر {ENTITY_AR[crForm.entityType]}…</option>
-                {entityOptionsFor(crForm.entityType).map((o) => <option key={o.id} value={o.id}>{o.label} ({o.id})</option>)}
-              </select>
+              {/* الدورةُ تُختار ببحثٍ لا من قائمةٍ منسدلةٍ بمئة سطر */}
+              {crForm.entityType === "course" ? (
+                <CoursePicker
+                  courses={courses.map((c) => ({ id: c.id, title: c.title, pathwayNames: c.pathwayNames, diagnosticDomains: c.diagnosticDomains }))}
+                  value={crForm.entityId}
+                  onChange={(id) => setCrForm({ ...crForm, entityId: id })}
+                />
+              ) : (
+                <select value={crForm.entityId} onChange={(e) => setCrForm({ ...crForm, entityId: e.target.value })} className={selectCls}>
+                  <option value="">اختر {ENTITY_AR[crForm.entityType]}…</option>
+                  {entityOptionsFor(crForm.entityType).map((o) => <option key={o.id} value={o.id}>{o.label} ({o.id})</option>)}
+                </select>
+              )}
             </div>
             <textarea value={crForm.payload} onChange={(e) => setCrForm({ ...crForm, payload: e.target.value })} rows={5}
               dir="ltr" className={`${inputCls} mt-3 font-mono text-xs`} />
             <p className="mt-2 text-read text-muted-foreground">
               أمثلة: titleAr للاسم، objectives للأهداف، skillIds للمهارات — تطبّق في إصدار جديد بعد الاعتماد والنشر.
+              {crForm.entityType === "course" && (
+                <> ولاسم الدورة طريق أسهل:{" "}
+                  <button type="button" onClick={() => setOpenForm("names")} className="cursor-pointer font-bold text-gold-ink underline">
+                    أسماء الدورات
+                  </button>.
+                </>
+              )}
             </p>
             {/* `confirm` لا `primary`: هذا الزرُّ حفظُ **قسمٍ** في صفحةٍ فيها
                 ثلاثةُ أقسامِ إنشاءٍ متوازية (دورة · مسار · طلبُ تعديل) — فليس

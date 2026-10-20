@@ -381,6 +381,14 @@ model Course {
   /// مجموعةُ التزاحم — دوراتٌ لا يُستحسن أن تبدأ متقاربةً ولو اختلفت مجالاتُها.
   /// تُملأ يدويّا عند الحاجة، وفارغةٌ تعني «لا قيدَ زائدٌ على المجال».
   collisionGroup        String?
+  /// ═══ اسمٌ اعتمدته الإدارة — يغلب اسمَ ملفّ الكتالوج (٢٠ أكتوبر ٢٠٢٦) ═══
+  ///
+  /// كلُّ نشرٍ يُعيد استيرادَ `core-catalog.v2.json` فيكتب `titleAr` الإصدار
+  /// الأوّل من الملفّ. فاسمٌ يُغيَّر في القاعدة وحدَها يعيش إلى النشر التالي ثمّ
+  /// يرجع بلا خبر. فيُحفظ هنا، ويكتبه المستوردُ بدل اسم الملفّ ما دام قائما.
+  /// يكتبه `CatalogAdminService.renameCourse`، و`null` تعني «اسمُ الملفّ».
+  renamedTitleAr        String?
+  renamedAt             DateTime?
   createdBy             String?                      @db.Uuid
   createdAt             DateTime                     @default(now())
   updatedAt             DateTime                     @updatedAt
