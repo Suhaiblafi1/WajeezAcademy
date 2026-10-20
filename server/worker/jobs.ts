@@ -1367,8 +1367,12 @@ export async function runAssignMissingTerms(prisma: PrismaClient): Promise<JobRe
 export async function runAdvisorReminders(prisma: PrismaClient, now = new Date()): Promise<JobResult> {
   const started = Date.now()
   const { AdvisorService } = await import('../services/advisor.service')
+  const { AdvisorAwayService } = await import('../services/advisor-away.service')
+  /* الغطاءُ قبل التذكير: من ينتظر أوّلَ تواصلٍ من مستشارٍ في إجازته يُنقل أوّلا، فلا يُذكَّر الغائبُ به */
+  const { moved: covered } = await new AdvisorAwayService(prisma).coverAway(now)
   const { reminded, escalated, followUps } = await new AdvisorService(prisma).remindDue(now)
   const parts = [
+    covered > 0 ? `نقل من مستشار في إجازة: ${covered}` : '',
     reminded > 0 ? `تذكير بالتواصل: ${reminded}` : '',
     escalated > 0 ? `إبلاغ من يسند بحالة بلا تواصل منذ يومين: ${escalated}` : '',
     followUps > 0 ? `تذكير بمتابعة حلّ موعدها: ${followUps}` : '',
@@ -1376,7 +1380,7 @@ export async function runAdvisorReminders(prisma: PrismaClient, now = new Date()
   return {
     job: 'advisor_reminders',
     summaryAr: parts.length === 0 ? 'لا حالة تنتظر تواصلا ولا متابعة حلّ موعدها' : parts.join(' · '),
-    done: reminded + escalated + followUps, failed: 0, ms: Date.now() - started,
+    done: covered + reminded + escalated + followUps, failed: 0, ms: Date.now() - started,
   }
 }
 

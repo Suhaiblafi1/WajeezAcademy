@@ -15,7 +15,8 @@
 
 import { useEffect, useState } from "react";
 import { Merge, Search, Shuffle, UserPlus } from "lucide-react";
-import { apiGet, apiPost, ApiError } from "@/services/api";
+import { apiDelete, apiGet, apiPost, apiPut, ApiError } from "@/services/api";
+import { advisorOptionAr, awayLastDay, awayRange } from "@/application/advisor/away";
 import { toast, toastError } from "@/components/Toast";
 import { fmtDate } from "@/application/text/format-ar";
 import { countAr } from "@/application/text/count-ar";
@@ -32,8 +33,13 @@ interface FoundCase {
   client: { displayName: string; email: string } | null;
   assignments: { advisorId: string; assignedAt: string; advisor: { displayName: string } }[];
 }
-interface AdvisorLoad { id: string; displayName: string; email: string; status: string; openCases: number }
-interface AdvisorOption { id: string; displayName: string; email: string }
+interface AdvisorLoad {
+  id: string; displayName: string; email: string; status: string; openCases: number;
+  /* إجازتُه القائمةُ أو القادمة (`advisor-away.service.ts`) */
+  away: { from: string; until: string; noteAr: string | null } | null;
+}
+interface AdvisorOption { id: string; displayName: string; email: string; awayUntil?: string | null }
+
 
 export default function AdvisorCaseTools({
   advisors,
@@ -55,12 +61,36 @@ export default function AdvisorCaseTools({
   const [merging, setMerging] = useState<string[]>([]);
   const [mergeTo, setMergeTo] = useState("");
   const [confirmMerge, setConfirmMerge] = useState(false);
+  /* إجازةُ مستشار — من يوزّع الحالات يكتبها */
+  const [awayWho, setAwayWho] = useState("");
+  const [awayFrom, setAwayFrom] = useState("");
+  const [awayUntil, setAwayUntil] = useState("");
+  const [confirmAway, setConfirmAway] = useState(false);
 
   const loadLoads = async () => {
     try { setLoads(await apiGet<AdvisorLoad[]>("/api/admin/advisor-cases/advisor-loads")); }
     catch { setLoads([]); }
   };
   useEffect(() => { void loadLoads(); }, []);
+
+  const awayAdvisor = loads.find((l) => l.id === awayWho);
+  const saveAway = async () => {
+    if (!awayAdvisor) return;
+    setBusy(true);
+    try {
+      const out = await apiPut<{ moved: number }>(`/api/admin/advisors/${awayAdvisor.id}/away`, awayRange(awayFrom, awayUntil));
+      toast(out.moved > 0 ? `سجلت الإجازة، ونقل ${out.moved} ممن ينتظرون أول تواصل` : "سجلت الإجازة");
+      setConfirmAway(false); setAwayWho(""); setAwayFrom(""); setAwayUntil("");
+      await loadLoads(); onChanged();
+    } catch (e) { toastError(e instanceof ApiError ? e.message : "تعذر حفظ الإجازة"); }
+    finally { setBusy(false); }
+  };
+  const clearAway = async (id: string) => {
+    setBusy(true);
+    try { await apiDelete(`/api/admin/advisors/${id}/away`); toast("ألغيت الإجازة"); await loadLoads(); onChanged(); }
+    catch (e) { toastError(e instanceof ApiError ? e.message : "تعذر إلغاء الإجازة"); }
+    finally { setBusy(false); }
+  };
 
   const search = async () => {
     const term = q.trim();
@@ -177,7 +207,7 @@ export default function AdvisorCaseTools({
                       onChange={(e) => setPick({ ...pick, [c.id]: e.target.value })} className={`${staffSelectCls} max-w-64`}>
                       <option value="">اختر مستشارا آخر…</option>
                       {advisors.filter((a) => a.id !== current?.advisorId).map((a) => (
-                        <option key={a.id} value={a.id}>{a.displayName} ({a.email})</option>
+                        <option key={a.id} value={a.id}>{advisorOptionAr(a)}</option>
                       ))}
                     </select>
                     <Button tone="secondary" disabled={busy || !choice} onClick={() => void change(c.id)}>
@@ -199,7 +229,7 @@ export default function AdvisorCaseTools({
               <select id="advisor-merge-to" value={mergeTo} onChange={(e) => setMergeTo(e.target.value)}
                 className={`${staffSelectCls} max-w-72`}>
                 <option value="">من يبقى مستشاره…</option>
-                {advisors.map((a) => <option key={a.id} value={a.id}>{a.displayName} ({a.email})</option>)}
+                {advisors.map((a) => <option key={a.id} value={a.id}>{advisorOptionAr(a)}</option>)}
               </select>
               <Button tone="secondary" disabled={busy || !mergeAdvisor} onClick={() => setConfirmMerge(true)}>
                 <Merge className="h-3.5 w-3.5" /> ادمج
@@ -230,6 +260,55 @@ export default function AdvisorCaseTools({
           </Button>
         </div>
       </section>
+
+      <section className="mt-10">
+        <h2 className="text-base font-black">إجازة مستشار</h2>
+        <p className="mt-1 text-read text-muted-foreground">
+          في إجازته لا تسند إليه حالات جديدة، ومن ينتظر أول تواصل منه ينقل لغيره. ومن تواصل معه يبقى عنده.
+        </p>
+        {loads.some((l) => l.away) && (
+          <ul className="mt-3 grid gap-1.5">
+            {loads.filter((l) => l.away).map((l) => (
+              <li key={l.id} className="flex flex-wrap items-center gap-2 text-read">
+                <span className="font-bold">{l.displayName}</span>
+                <span className="text-muted-foreground">من {fmtDate(l.away!.from)} إلى {fmtDate(awayLastDay(l.away!.until))}</span>
+                <Button size="sm" tone="ghost" disabled={busy} onClick={() => void clearAway(l.id)}>ألغ الإجازة</Button>
+              </li>
+            ))}
+          </ul>
+        )}
+        <div className="mt-3 flex flex-wrap items-end gap-2">
+          <label className="sr-only" htmlFor="advisor-away-who">المستشار</label>
+          <select id="advisor-away-who" value={awayWho} onChange={(e) => setAwayWho(e.target.value)}
+            className={`${staffSelectCls} max-w-72`}>
+            <option value="">اختر المستشار…</option>
+            {loads.filter((l) => l.status === "active").map((l) => <option key={l.id} value={l.id}>{l.displayName}</option>)}
+          </select>
+          <label className="grid gap-1 text-read">من
+            <input type="date" value={awayFrom} onChange={(e) => setAwayFrom(e.target.value)} className={staffControlCls} />
+          </label>
+          <label className="grid gap-1 text-read">إلى
+            <input type="date" value={awayUntil} onChange={(e) => setAwayUntil(e.target.value)} className={staffControlCls} />
+          </label>
+          <Button tone="secondary" disabled={busy || !awayAdvisor || !awayFrom || !awayUntil} onClick={() => setConfirmAway(true)}>
+            سجل الإجازة
+          </Button>
+        </div>
+      </section>
+
+      {confirmAway && awayAdvisor && (
+        <ConfirmAction
+          tone="default"
+          titleAr={`إجازة «${awayAdvisor.displayName}»`}
+          confirmLabelAr="سجل الإجازة"
+          busy={busy}
+          onCancel={() => setConfirmAway(false)}
+          onConfirm={() => void saveAway()}
+        >
+          لن تسند إليه حالات جديدة في إجازته. ومن ينتظر أول تواصل منه ينقل لأقل المستشارين الآخرين حالات حين تبدأ،
+          ولا يعود إليه بعدها. ومن تواصل معه يبقى عنده. وعمولة المستشار الجديد تبدأ من أول تواصل يسجله.
+        </ConfirmAction>
+      )}
 
       {confirmMerge && mergeAdvisor && (
         <ConfirmAction

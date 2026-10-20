@@ -15,11 +15,14 @@ import { AdvisorService } from '../../services/advisor.service'
 import { AdvisorRequestService } from '../../services/advisor-request.service'
 import { requirePermission } from '../auth-plugin'
 import { AdvisorBankService } from '../../services/advisor-bank.service'
+import { AdvisorAwayService } from '../../services/advisor-away.service'
 import { BANK_ACCOUNT_KINDS, MAX_ACCOUNT_LEN } from '../../services/trainer-bank.service'
 
 export function registerAdvisorRoutes(app: FastifyInstance, prisma: PrismaClient) {
   const advisors = new AdvisorService(prisma)
   const bank = new AdvisorBankService(prisma)
+  const away = new AdvisorAwayService(prisma)
+  const awayBody = z.object({ from: z.coerce.date(), until: z.coerce.date(), noteAr: z.string().max(300).nullish() })
   const advisorRequests = new AdvisorRequestService(prisma)
 
   /* ════ بوابة المستشار — المسند إليه فقط ════ */
@@ -138,6 +141,22 @@ export function registerAdvisorRoutes(app: FastifyInstance, prisma: PrismaClient
     preHandler: requirePermission('advisor.cases.view'),
     schema: { tags: ['advisor-portal'], summary: 'عمولتي المستحقّة من عملائي الدافعين، وتقييمي' },
   }, async (req) => advisors.myEarnings(req.auth!.userId))
+
+  /* ── إجازتي (١٩ أكتوبر ٢٠٢٦) — لا حالاتٍ جديدةً فيها، ومن ينتظرني يُغطّى. والعلّةُ في `advisor-away.service.ts` ── */
+  app.get('/api/advisor/away', {
+    preHandler: requirePermission('advisor.cases.view'),
+    schema: { tags: ['advisor-portal'], summary: 'إجازتي القائمة أو القادمة' },
+  }, async (req) => away.get(req.auth!.userId))
+
+  app.put('/api/advisor/away', {
+    preHandler: requirePermission('advisor.cases.view'),
+    schema: { tags: ['advisor-portal'], summary: 'كتابة إجازتي — ومن ينتظر أول تواصل مني ينقل لغيري حين تبدأ' },
+  }, async (req) => away.set(req.auth!.userId, awayBody.parse(req.body), req.auth!.userId))
+
+  app.delete('/api/advisor/away', {
+    preHandler: requirePermission('advisor.cases.view'),
+    schema: { tags: ['advisor-portal'], summary: 'إلغاء إجازتي' },
+  }, async (req) => away.clear(req.auth!.userId, req.auth!.userId))
 
   /* ── حسابي البنكيّ لعمولتي (١٩ أكتوبر ٢٠٢٦) — كحساب المدرّب، والعلّةُ في `advisor-bank.service.ts` ── */
   app.get('/api/advisor/bank-account', {
@@ -276,6 +295,23 @@ export function registerAdvisorRoutes(app: FastifyInstance, prisma: PrismaClient
     preHandler: requirePermission('advisor.assign'),
     schema: { tags: ['admin-operations'], summary: 'كم حالة مفتوحة عند كل مستشار — ومنهم الموقوف' },
   }, async () => advisors.advisorLoads())
+
+  /* وإجازةُ مستشارٍ يكتبها من يوزّع الحالات — بالباب نفسِه (`advisor-away.service.ts`) */
+  app.put('/api/admin/advisors/:id/away', {
+    preHandler: requirePermission('advisor.assign'),
+    schema: { tags: ['admin-operations'], summary: 'كتابة إجازة مستشار — ومن ينتظر أول تواصل منه ينقل لغيره حين تبدأ' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return away.set(id, awayBody.parse(req.body), req.auth!.userId)
+  })
+
+  app.delete('/api/admin/advisors/:id/away', {
+    preHandler: requirePermission('advisor.assign'),
+    schema: { tags: ['admin-operations'], summary: 'إلغاء إجازة مستشار' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return away.clear(id, req.auth!.userId)
+  })
 
   /* مستشارٌ غادر أو أُثقل: تُوزَّع حالاتُه المفتوحة على غيره (`redistribute`) */
   app.post('/api/admin/advisor-cases/redistribute', {
