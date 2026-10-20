@@ -19,7 +19,7 @@ import { Panel, Card } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 
 interface Settings {
-  id: string; nameAr: string; percentOff: number; maxCodes: number | null; closesAt: string | null;
+  id: string; nameAr: string; percentOff: number; maxCodes: number | null; maxCourses: number; closesAt: string | null;
   active: boolean; open: boolean; issued: number; used: number; pending: number; left: number | null;
 }
 interface MarginRow {
@@ -39,6 +39,7 @@ export default function AdminMemberGrant() {
   const [offline, setOffline] = useState<string | null>(null);
   const [pct, setPct] = useState("");
   const [max, setMax] = useState("");
+  const [courses, setCourses] = useState("");
   const [lastDay, setLastDay] = useState("");
   const [active, setActive] = useState(false);
   const [rows, setRows] = useState<MarginRow[] | null>(null);
@@ -49,6 +50,7 @@ export default function AdminMemberGrant() {
     setS(x);
     setPct(String(x.percentOff));
     setMax(x.maxCodes === null ? "" : String(x.maxCodes));
+    setCourses(String(x.maxCourses));
     setLastDay(x.closesAt ? grantLastDay(x.closesAt) : "");
     setActive(x.active);
   };
@@ -74,14 +76,16 @@ export default function AdminMemberGrant() {
 
   const maxNum = max.trim() === "" ? null : Number(max);
   const maxOk = maxNum === null || (Number.isInteger(maxNum) && maxNum >= 1);
-  const changed = !!s && (pctNum !== s.percentOff || maxNum !== s.maxCodes
+  const coursesNum = Number(courses);
+  const coursesOk = Number.isInteger(coursesNum) && coursesNum >= 1 && coursesNum <= 20;
+  const changed = !!s && (pctNum !== s.percentOff || maxNum !== s.maxCodes || coursesNum !== s.maxCourses
     || (lastDay || null) !== (s.closesAt ? grantLastDay(s.closesAt) : null) || active !== s.active);
 
   const save = async () => {
     setBusy(true);
     try {
       fill(await apiPut<Settings>("/api/admin/member-grant", {
-        percentOff: pctNum, maxCodes: maxNum, closesAt: lastDay ? grantClosesAt(lastDay) : null, active,
+        percentOff: pctNum, maxCodes: maxNum, maxCourses: coursesNum, closesAt: lastDay ? grantClosesAt(lastDay) : null, active,
       }));
       toast("حفظت إعدادات المنحة");
       setConfirm(false);
@@ -121,7 +125,7 @@ export default function AdminMemberGrant() {
           {s.closesAt ? ` · آخر يوم ${fmtDate(new Date(new Date(s.closesAt).getTime() - 1))}` : ""}
         </p>
         <p className="mt-2 text-read leading-7 text-muted-foreground">
-          من يعبئ نموذج الحملة يأخذ كودا شخصيا. يستعمل مرة واحدة، ويمكن أن يعطيه لغيره. وصاحبه يدفع نسبة ثابتة من سعر الدورات بدل خصم الباقة، أو سعر الباقة إن كان أقل.
+          من يعبئ نموذج الحملة يأخذ كودا شخصيا. يستعمل مرة واحدة، ويمكن أن يعطيه لغيره. وصاحبه يدفع نسبة ثابتة من سعر الدورات بدل خصم الباقة، أو سعر الباقة إن كان أقل. والمنحة على {s.maxCourses} دورات بحد أقصى.
         </p>
       </Card>
 
@@ -133,6 +137,9 @@ export default function AdminMemberGrant() {
         <label className="grid gap-1 text-read">عدد المنح
           <input type="number" min={1} value={max} onChange={(e) => setMax(e.target.value)} placeholder="بلا حد" className={staffControlCls} />
         </label>
+        <label className="grid gap-1 text-read">دورات المنحة
+          <input type="number" min={1} max={20} value={courses} onChange={(e) => setCourses(e.target.value)} className={staffControlCls} />
+        </label>
         <label className="grid gap-1 text-read">آخر يوم
           <input type="date" value={lastDay} onChange={(e) => setLastDay(e.target.value)} className={staffControlCls} />
         </label>
@@ -140,7 +147,7 @@ export default function AdminMemberGrant() {
           <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} />
           مشغلة
         </label>
-        <Button disabled={busy || !changed || !pctOk || !maxOk} onClick={() => setConfirm(true)}>احفظ</Button>
+        <Button disabled={busy || !changed || !pctOk || !maxOk || !coursesOk} onClick={() => setConfirm(true)}>احفظ</Button>
       </Card>
 
       <h2 className="mt-6 text-lg font-black">فحص الهامش بنسبة {pctOk ? `${pctNum}%` : "—"}</h2>
@@ -197,6 +204,7 @@ export default function AdminMemberGrant() {
             {pctNum !== s.percentOff && (
               <li>النسبة الجديدة {pctNum}% على الأكواد التي تعطى بعد الحفظ. والأكواد التي أعطيت قبله ({s.issued}) تبقى بنسبتها.</li>
             )}
+            {coursesNum !== s.maxCourses && <li>المنحة على {coursesNum} دورات بحد أقصى لكل متعلم.</li>}
             {maxNum !== s.maxCodes && <li>{maxNum === null ? "لا حد لعدد المنح." : `يعطى ${maxNum} كودا في المجموع.`}</li>}
             {(lastDay || null) !== (s.closesAt ? grantLastDay(s.closesAt) : null) && (
               <li>{lastDay ? `آخر يوم لإعطاء الأكواد واستعمالها: ${fmtDate(new Date(`${lastDay}T00:00:00`))}. ويسري على كل الأكواد.` : "لا آخر يوم للمنحة."}</li>

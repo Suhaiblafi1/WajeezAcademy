@@ -25,6 +25,7 @@ export function registerAdminGrantRoutes(app: FastifyInstance, prisma: PrismaCli
     const body = z.object({
       percentOff: z.number().int().min(1).max(100).optional(),
       maxCodes: z.number().int().min(1).nullable().optional(),
+      maxCourses: z.number().int().min(1).max(20).optional(),
       closesAt: z.coerce.date().nullable().optional(),
       active: z.boolean().optional(),
     }).parse(req.body ?? {})

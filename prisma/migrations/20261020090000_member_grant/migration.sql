@@ -6,6 +6,7 @@ CREATE TABLE "GrantCampaign" (
     "percentOff" INTEGER NOT NULL DEFAULT 60,
     "maxCodes" INTEGER,
     "issuedCount" INTEGER NOT NULL DEFAULT 0,
+    "maxCourses" INTEGER NOT NULL DEFAULT 4,
     "closesAt" TIMESTAMP(3),
     "active" BOOLEAN NOT NULL DEFAULT false,
     "updatedBy" UUID,
@@ -51,3 +52,4 @@ ALTER TABLE "GrantCode" ADD CONSTRAINT "GrantCode_leadId_fkey" FOREIGN KEY ("lea
 -- النسبةُ بين واحدٍ ومئة، والمُعطى لا يتجاوز العدد — فلا تُنقَص الكمّيّةُ تحت ما أُعطي
 ALTER TABLE "GrantCampaign" ADD CONSTRAINT "GrantCampaign_percent_range" CHECK ("percentOff" BETWEEN 1 AND 100);
 ALTER TABLE "GrantCampaign" ADD CONSTRAINT "GrantCampaign_within_max" CHECK ("maxCodes" IS NULL OR "issuedCount" <= "maxCodes");
+ALTER TABLE "GrantCampaign" ADD CONSTRAINT "GrantCampaign_courses_min" CHECK ("maxCourses" >= 1);

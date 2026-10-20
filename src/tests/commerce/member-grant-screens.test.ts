@@ -45,7 +45,7 @@ describe('لوح الشراء', () => {
   it('⚠️ يسمي المنحة باسمها — ويقول سبب ردها تحت خانة الكود', () => {
     expect(BUY).toMatch(/quote\.grantPct !== null \? `\$\{MEMBER_GRANT_NAME_AR\} — \$\{quote\.grantPct\}٪`/)
     expect(BUY).toMatch(/new Set\(\[[^\]]*\.\.\.GRANT_ERROR_CODES\]\)/)
-    for (const c of ['grant_closed', 'grant_used', 'grant_once', 'grant_pending', 'grant_not_better']) {
+    for (const c of ['grant_closed', 'grant_used', 'grant_once', 'grant_pending', 'grant_not_better', 'grant_max_courses']) {
       expect(GRANT.GRANT_ERROR_CODES as readonly string[]).toContain(c)
     }
   })
@@ -55,9 +55,9 @@ describe('النصوص', () => {
   it('بلا تشكيل إعرابي', () => {
     const texts = [
       GRANT.MEMBER_GRANT_NAME_AR, GRANT.GRANT_CLOSED_AR, GRANT.GRANT_SOLD_OUT_AR, GRANT.GRANT_USED_AR,
-      GRANT.GRANT_ONCE_AR, GRANT.GRANT_PENDING_AR, GRANT.GRANT_NOT_BETTER_AR, GRANT.GRANT_CHECKOUT_ONLY_AR,
+      GRANT.GRANT_ONCE_AR, GRANT.GRANT_PENDING_AR, GRANT.GRANT_NOT_BETTER_AR, GRANT.GRANT_CHECKOUT_ONLY_AR, GRANT.grantMaxCoursesAr(4),
     ]
-    for (const t of ['المنحة مشغلة', 'المنحة موقوفة', 'نسبة المنحة %', 'عدد المنح', 'آخر يوم', 'يبقى للأكاديمية', 'لا قاعدة أتعاب']) {
+    for (const t of ['المنحة مشغلة', 'المنحة موقوفة', 'نسبة المنحة %', 'عدد المنح', 'دورات المنحة', 'آخر يوم', 'يبقى للأكاديمية', 'لا قاعدة أتعاب']) {
       expect(PAGE).toContain(t)
       texts.push(t)
     }

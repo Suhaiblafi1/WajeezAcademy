@@ -3977,6 +3977,8 @@ model GrantCampaign {
   /// كم كودا يُعطى — وفارغٌ بلا حدّ
   maxCodes    Int?
   issuedCount Int         @default(0)
+  /// كم دورةً تقع عليها المنحة في الشراء — «يحقّ لك فقط ٤ دورات»
+  maxCourses  Int         @default(4)
   /// أوّلُ لحظةٍ لا يُعطى فيها كودٌ ولا يُستعمل — تُقرأ عند الاستعمال، فتمديدُها يمدّ كلَّ كود
   closesAt    DateTime?
   active      Boolean     @default(false)

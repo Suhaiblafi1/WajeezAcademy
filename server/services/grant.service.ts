@@ -17,6 +17,8 @@
    ٤) **ومنحةٌ واحدةٌ لكلّ متعلّم** — من جمع أكوادَ غيره لا يشتري بها مرّتين؛ وإلّا صار «محدودُ العدد»
       بابا لمن جمع أكثر.
    ٥) **والحملةُ تُقرأ عند الاستعمال** — إيقافُها يوقف كلَّ كود، وتمديدُ نهايتها يمدّه.
+   ٥ب) **وعلى أربع دوراتٍ بحدٍّ أقصى في الشراء** — «يحقّ لك فقط ٤ دورات». والحدُّ بيد صاحب المنصّة
+      كالنسبة، ومنحةٌ واحدةٌ لكلّ متعلّم تجعله حدَّه في كلّ مشترياته.
    ٦) **وعند الشراء المباشر وحدَه** — بابا الموافقة الإداريّة يردّانه، كما يردّان كودَ المدرّب:
       فيهما لا يُسأل أهو أوّلُ منحةٍ لصاحبه ولا أيُّ السعرين أقلّ.
 
@@ -45,6 +47,7 @@ const MARGIN_STATUSES = ['open', 'full', 'active']
 export interface GrantSettingsInput {
   percentOff?: number
   maxCodes?: number | null
+  maxCourses?: number
   closesAt?: Date | null
   active?: boolean
 }
@@ -54,7 +57,7 @@ export interface GrantCoupon {
   id: string
   usedCount: number
   maxUses: number | null
-  grantCode: { campaign: { id: string; active: boolean; closesAt: Date | null } } | null
+  grantCode: { campaign: { id: string; active: boolean; closesAt: Date | null; maxCourses: number } } | null
 }
 
 const isOpen = (c: { active: boolean; closesAt: Date | null }, now: Date) => c.active && (c.closesAt === null || c.closesAt > now)
@@ -85,7 +88,7 @@ export class GrantService {
       this.prisma.order.count({ where: { ...ofCampaign, status: 'pending_payment' } }),
     ])
     return {
-      id: c.id, nameAr: c.nameAr, percentOff: c.percentOff, maxCodes: c.maxCodes, closesAt: c.closesAt,
+      id: c.id, nameAr: c.nameAr, percentOff: c.percentOff, maxCodes: c.maxCodes, maxCourses: c.maxCourses, closesAt: c.closesAt,
       active: c.active, open: isOpen(c, now), updatedAt: c.updatedAt,
       issued: c.issuedCount, used, pending,
       left: c.maxCodes === null ? null : Math.max(0, c.maxCodes - c.issuedCount),
@@ -101,16 +104,20 @@ export class GrantService {
     if (input.maxCodes != null && !(Number.isInteger(input.maxCodes) && input.maxCodes >= 1)) {
       throw new AuthError('bad_max', 'عدد المنح عدد صحيح موجب', 400)
     }
+    if (input.maxCourses !== undefined && !(Number.isInteger(input.maxCourses) && input.maxCourses >= 1)) {
+      throw new AuthError('bad_courses', 'عدد الدورات عدد صحيح موجب', 400)
+    }
     if (input.maxCodes != null && input.maxCodes < c.issuedCount) {
       throw new AuthError('below_issued', `أعطي ${c.issuedCount} كودا، فلا يقل العدد عنه`, 409)
     }
     const data: Prisma.GrantCampaignUpdateInput = { updatedBy: actorId }
     if (input.percentOff !== undefined) data.percentOff = input.percentOff
     if (input.maxCodes !== undefined) data.maxCodes = input.maxCodes
+    if (input.maxCourses !== undefined) data.maxCourses = input.maxCourses
     if (input.closesAt !== undefined) data.closesAt = input.closesAt
     if (input.active !== undefined) data.active = input.active
     const after = await this.prisma.grantCampaign.update({ where: { id: c.id }, data })
-    const pick = (x: typeof c) => ({ percentOff: x.percentOff, maxCodes: x.maxCodes, closesAt: x.closesAt, active: x.active })
+    const pick = (x: typeof c) => ({ percentOff: x.percentOff, maxCodes: x.maxCodes, maxCourses: x.maxCourses, closesAt: x.closesAt, active: x.active })
     await recordAudit(this.prisma, {
       actorId, action: 'coupon.grant_settings', entityType: 'grant_campaign', entityId: c.id,
       before: pick(c), after: pick(after),

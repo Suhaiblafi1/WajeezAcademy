@@ -11,7 +11,7 @@ export const MEMBER_GRANT_SLUG = 'wajeez-members'
 export const MEMBER_GRANT_NAME_AR = 'منحة أعضاء وجيز'
 
 /** ما تبدأ به الحملةُ قبل أن يغيّره صاحبُ المنصّة — وتبدأ موقوفة حتّى يشغّلها */
-export const GRANT_DEFAULTS = { percentOff: 60, maxCodes: 1000 } as const
+export const GRANT_DEFAULTS = { percentOff: 60, maxCodes: 1000, maxCourses: 4 } as const
 
 /** بادئةُ الكود — تميّزه عن رمز الدعوة (WJ) وكود المدرّب (WD) */
 export const GRANT_CODE_PREFIX = 'WG-'
@@ -26,10 +26,11 @@ export const GRANT_USED_AR = 'استعمل هذا الكود من قبل. كل �
 export const GRANT_ONCE_AR = 'استعملت منحة من قبل. المنحة مرة واحدة لكل متعلم.'
 export const GRANT_PENDING_AR = 'لك طلب لم يكتمل دفعه بهذا الكود. أكمله من «الفواتير».'
 export const GRANT_NOT_BETTER_AR = 'سعر الباقة في سلتك أقل من سعر المنحة، فلا تحتاج الكود. احتفظ به أو أعطه لغيرك.'
+export const grantMaxCoursesAr = (n: number) => `المنحة لـ${n} دورات بحد أقصى. احذف دورة من سلتك.`
 export const GRANT_CHECKOUT_ONLY_AR = 'كود المنحة يستعمل عند الشراء المباشر فقط، لا في موافقة الطلبات'
 
 /** أسبابُ ردّ كود المنحة — يُقال سببُها تحت خانة الكود ويُسعَّر الطلبُ بلا كود (`BuyPanel`) */
-export const GRANT_ERROR_CODES = ['grant_closed', 'grant_used', 'grant_once', 'grant_pending', 'grant_not_better'] as const
+export const GRANT_ERROR_CODES = ['grant_closed', 'grant_used', 'grant_once', 'grant_pending', 'grant_not_better', 'grant_max_courses'] as const
 
 /** «آخر يوم» من خانة تاريخ → أوّلُ اليوم الذي بعده بتوقيت الجهاز، فيبقى الكودُ صالحا يومَه كلَّه */
 export function grantClosesAt(lastDay: string): string {

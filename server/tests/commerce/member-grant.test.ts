@@ -5,6 +5,7 @@
    ③ **ولا يتجاوز المُعطى العدد** — ولا يُنقَص العددُ تحت ما أُعطي.
    ④ **بدلُ الباقة لا فوقها** — أربعُ دوراتٍ بأربعين بالمئة من سعرها، والفاتورةُ هي العرض.
    ⑤ **ويدفع الأقلّ** — سلّةٌ سعرُ باقتها أقلّ يُقال لصاحبها، ولا يُحرق الكود.
+   ⑤ب **وعلى أربع دوراتٍ بحدٍّ أقصى** — والحدُّ بيد صاحب المنصّة.
    ⑥ **يُنقل ويُستعمل مرّة** — يستعمله غيرُ صاحبه، ثمّ لا يستعمله ثالث.
    ⑦ **ومنحةٌ واحدةٌ لكلّ متعلّم** — ولو جمع أكوادَ غيره.
    ⑧ **والحملةُ تُقرأ عند الاستعمال** — إيقافُها أو نهايتُها توقف كلَّ كود.
@@ -80,7 +81,7 @@ beforeAll(async () => {
 describe('① تبدأ موقوفة', () => {
   it('⚠️ بستين وألف — ولا يعطى كود قبل أن تشغل', async () => {
     const s = await grants.settings()
-    expect(s).toMatchObject({ percentOff: 60, maxCodes: 1000, active: false, open: false })
+    expect(s).toMatchObject({ percentOff: 60, maxCodes: 1000, maxCourses: 4, active: false, open: false })
     await expect(grants.issue({ leadId: await lead() })).rejects.toMatchObject({ code: 'grant_closed' })
     expect((await grants.settings()).issued).toBe(0)
   })
@@ -153,6 +154,19 @@ describe('⑤ ويدفع الأقل', () => {
     /* ودورةٌ واحدة بلا سلّم: المنحةُ أكثر فتقع */
     const one = await commerce.quote(u, [(await openCohort()).id], code)
     expect(one.total).toBe(120)
+  })
+})
+
+describe('⑤ب وعلى أربع دورات بحد أقصى', () => {
+  it('⚠️ خمس دورات بالمنحة ترد — والحد بيد صاحب المنصة', async () => {
+    const { code } = await grants.issue({ leadId: await lead() })
+    const u = await learner()
+    const five = await cohorts(5, 100)
+    await expect(commerce.quote(u, five, code)).rejects.toMatchObject({ code: 'grant_max_courses' })
+    expect((await commerce.quote(u, five.slice(0, 4), code)).total).toBe(160)
+    await setGrant({ maxCourses: 5 })
+    expect((await commerce.quote(u, five, code)).total).toBe(200)
+    await setGrant({ maxCourses: 4 })
   })
 })
 
