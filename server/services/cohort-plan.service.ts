@@ -1546,7 +1546,7 @@ export class CohortPlanService {
        يُعلَم (١٢ أكتوبر ٢٠٢٦). والمسوّدةُ لا: تُفتح بقرارٍ منفصل، وهناك يُعلَم */
     await notifyIfPurchasable(this.prisma, plan.cohort.id)
 
-    let prep: { activated: boolean; waiting?: number; blockedAr?: string } | null = null
+    let prep: { activated: boolean; blockedAr?: string } | null = null
     if (qual && 'failedAr' in qual) prep = { activated: false, blockedAr: qual.failedAr }
     else if (qual) {
       prep = await prepSvc.activateOnApproval(qual.ctx, actorId)
@@ -1620,8 +1620,8 @@ export class CohortPlanService {
     await this.tellTrainer(plan.trainer, plan.cohort, { ...msg, ...(waiting.count > 0 ? { step: 'review' as const } : {}) },
       { reports, edits: { count: waiting.count, required: waiting.required } })
     /* ═══ والمؤجّلةُ لا تحبسه (١٨ أكتوبر ٢٠٢٦، «Don't wait») ═══
-       فإن لم يبقَ له ما ينتظر غيرُها فُعِّل أو وُقّع عقدُه الآن — كما يقع حين تُعتمَد آخرُ دوراته.
-       وما يمنع يُقال ولا يُسقط التأجيلَ الذي وقع. */
+       فإن كانت له دورةٌ معتمَدةٌ ولم يُفعَّل فُعِّل الآن (واحدةٌ تكفي منذ ٢٠ أكتوبر)، وإن لم يبقَ له
+       ما يُعِدّه غيرُها وُقّع عقدُه. وما يمنع يُقال ولا يُسقط التأجيلَ الذي وقع. */
     const { TrainerPrepService } = await import('./trainer-prep.service')
     const prepSvc = new TrainerPrepService(this.prisma)
     const ctx = await prepSvc.prepContext(plan.cohort.id)

@@ -17,7 +17,7 @@ export interface PlanDecision {
   tasks?: { applied: number; failed: { id: string; title: string; reason: string }[] }
   /* وشعبةُ الإعداد: ما وقع لمدرّبها بالاعتماد (`trainer-prep.service.ts` ← `qualifyOnApproval` ثمّ `activateOnApproval`).
      `null` لشعبةٍ عاديّة، أو لمدرّبٍ نشطٍ أصلا لا يُفعَّل بها */
-  prep?: { activated: boolean; waiting?: number; blockedAr?: string } | null
+  prep?: { activated: boolean; blockedAr?: string } | null
 }
 
 /** ما يقوله الاعتمادُ لمن نقره — باللقاءات التي اعتُمدت معه، وبما تعذّر باسمه */
@@ -35,35 +35,25 @@ export function approvedMsg(r: PlanDecision): string {
   return `اعتمدت خطّة المدرّب${withMeetings}${withTasks}${failed}${tasksLeft}`
 }
 
-/** ما بقي من دوراته بلا اعتماد — بالعدد كما يُقرأ لا «2 دورتان» */
-function coursesLeftAr(n: number): string {
-  if (n === 1) return 'دورة واحدة'
-  if (n === 2) return 'دورتان'
-  return countAr(n, { one: 'دورة', two: 'دورتان', few: 'دورات', many: 'دورة' })
-}
-
 /* ═══ وما وقع لمدرّب الإعداد — يُقال ولا يُكتشَف (٣ أكتوبر ٢٠٢٦) ═══
 
-   اعتمادُ خطّة شعبة الإعداد يؤهّله لدورتها، واعتمادُ آخرها يفعّله: يصير نشطا،
-   ويُختَم عقدُه المشروطُ إن كان ينتظر ختمَنا، ويصله بريدُ اعتماده. فمن يعتمد
-   خططَه واحدةً واحدةً يحتاج أن يعرف عند كلّ نقرةٍ: أهذه الأخيرة؟ وكم بقي؟
+   اعتمادُ خطّة شعبة الإعداد يؤهّله لدورتها ويفعّله: يصير نشطا، ويُختَم عقدُه
+   المشروطُ إن كان ينتظر ختمَنا، ويصله بريدُ اعتماده. وكان يُفعَّل باعتماد آخرِ
+   دوراته فيُقال عند كلّ نقرةٍ «كم بقي» — ثمّ قرّر صاحبُ المنصّة (٢٠ أكتوبر ٢٠٢٦):
+   «one cohort is enough for them to be active». فأوّلُها يفعّله.
 
-   والخادمُ يقول ثلاثةً لا غير، فتُقال بحرفها:
+   والخادمُ يقول اثنين لا غير، فيُقالان بحرفهما:
    · `activated` — فُعِّل. ولا يُقال «وخُتم عقدُه» جزما: الخَتمُ للعرض المشروط
      وحدَه (`completeConditionalOffer`)، فيُحال إلى «العقود» حيث يُرى حالُه.
-   · `waiting` — دوراتٌ له لم تُعتمَد بعد، ويُفعَّل باعتماد آخرها.
-   · `blockedAr` — اعتُمدت كلُّها ومنع التفعيلَ مانع: يُقال بنصّه، وقد بلغ
-     الإدارةَ جرسا (`trainer.prep.activation_blocked`). */
+   · `blockedAr` — اعتُمدت ومنع التفعيلَ مانع: يُقال بنصّه، وقد بلغ الإدارةَ
+     جرسا (`trainer.prep.activation_blocked`). */
 export function prepOutcomeAr(prep: PlanDecision['prep']): string {
   if (!prep) return ''
   if (prep.activated) {
-    return 'وبها اكتملت دوراته كلّها: فعّل مدرّبا نشطا ووصله خبر اعتماده جرسا وبريدا — وحال عقده في «العقود»، وما بقي عليك أدناه'
+    return 'وبها فعّل مدرّبا نشطا ووصله خبر اعتماده جرسا وبريدا — وحال عقده في «العقود»، وما بقي عليك أدناه'
   }
   if (prep.blockedAr) {
-    return `واعتمدت دوراته كلّها ولم يفعّل: ${prep.blockedAr} — أصلح ذلك ثمّ فعّله من ملفّه`
-  }
-  if (prep.waiting && prep.waiting > 0) {
-    return `وبقيت له ${coursesLeftAr(prep.waiting)} لم تعتمد بعد — يفعّل باعتماد آخرها`
+    return `واعتمدت له دورة ولم يفعّل: ${prep.blockedAr} — أصلح ذلك ثمّ فعّله من ملفّه`
   }
   return ''
 }
@@ -78,21 +68,21 @@ export function planApprovedMsg(r: PlanDecision): string {
 
 /** شعبةُ إعداد؟ — كما يقولها طابورُ الخطط (`CohortPlanService.pending`):
     `qualifies` تأهيلُه لدورتها معلّقٌ فيقع باعتمادها، و`onboarding` هو في
-    الطور فقد يفعّله اعتمادُها إن كانت آخرَ ما ينتظر */
+    الطور فيفعّله اعتمادُها */
 export interface PrepFlags { onboarding: boolean; qualifies: boolean }
 
 /* ═══ ما يُطلقه كلٌّ من الزرّين في شعبة الإعداد — قبل النقر لا بعده ═══
 
    قاعدةُ «لا إجبار» (CLAUDE.md): الخياراتُ وأثرُ كلٍّ، والقرارُ لصاحب المنصّة.
    والجملةُ بما يحكم به الخادم في `TrainerPrepService` (`qualifyOnApproval` · `activateOnApproval` · `returnOnChanges`) حرفا:
-   التأهيلُ إن كان معلّقا، والتفعيلُ حين لا يبقى ما ينتظر، والخَتمُ للعرض
+   التأهيلُ إن كان معلّقا، والتفعيلُ لمن في الطور، والخَتمُ للعرض
    المشروط وحدَه — وفي الردّ تُستأنف المهلةُ إن كانت موقوفةً لمراجعتنا. */
 export function prepNoteAr(p: PrepFlags, many = false): string {
   const approve = p.qualifies
     ? '«اعتمدها» تؤهّل مدرّبها لدورتها'
     : 'دورتها معتمدة لمدرّبها أصلا، و«اعتمدها» تعتمد خطّتها'
   const last = p.onboarding
-    ? '، وإن لم يبق من دوراته ما ينتظر فعّل — ويختم عقده المشروط إن كان ينتظر ختمنا'
+    ? '، وتفعّله مدرّبا نشطا — ويختم عقده المشروط إن كان ينتظر ختمنا'
     : ''
   const back = p.onboarding ? '، ويستأنف عدّ مهلته إن كانت موقوفة لمراجعتنا' : ''
   return `${many ? 'شعب الإعداد' : 'شعبة إعداد'}: ${approve}${last}. و«اطلب تعديلات» تعيدها إليه بملاحظاتك في رأس كلّ خطوة${back}.`

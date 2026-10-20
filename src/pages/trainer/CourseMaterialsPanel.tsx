@@ -73,7 +73,7 @@ export function PrepSetupNote({ rows }: { rows: PrepRow[] }) {
       )}
       {inSetup && underReview && (
         <Inset tone="default" className="p-3 text-sm leading-6">
-          أرسلت شعب دوراتك كلّها للاعتماد — وتفعّل مدرّبا حين نعتمدها.
+          أرسلت شعب دوراتك كلّها للاعتماد — وتفعّل مدرّبا حين نعتمد أوّلها.
         </Inset>
       )}
     </div>

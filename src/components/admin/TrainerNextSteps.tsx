@@ -90,13 +90,13 @@ export default function TrainerNextSteps({ cohortId }: { cohortId: string }) {
   if (nothingLeft) return null;
 
   /* ═══ ولا تُفتح شعبةُ مدرّبٍ لم يفعّل بعد (١٨ أكتوبر ٢٠٢٦) ═══
-     صار اللوحُ يظهر على كلّ خطّةٍ معتمَدة، ومنها خططُ مدرّبٍ في طور الإعداد بقيت له دوراتٌ لم تُعتمد. وعقدُه لا ينفذ
-     حتّى تُعتمد آخرُها (`trainer-prep.service.ts`) — فيُقال ذلك ولا يُعرض فتحٌ ولا ظهور. */
+     صار اللوحُ يظهر على كلّ خطّةٍ معتمَدة، ومنها خططُ مدرّبٍ في طور الإعداد. وأوّلُ دورةٍ تُعتمَد له تفعّله (٢٠ أكتوبر
+     ٢٠٢٦، `trainer-prep.service.ts`) — فلا يبقى هنا إلّا من منع تفعيلَه مانع: يُقال ذلك ولا يُعرض فتحٌ ولا ظهور. */
   if (!steps.trainer.active) {
     return steps.cohorts.length === 0 ? null : (
       <Inset className="mt-3" role="region" aria-label="ما بقي عليك">
         <p className="text-read leading-6 text-muted-foreground">
-          {steps.trainer.name} لم يفعّل بعد. تفتح شعبه المعتمدة بعد تفعيله، حين تعتمد آخر دوراته.
+          {steps.trainer.name} لم يفعّل بعد. تفتح شعبه المعتمدة بعد تفعيله من ملفّه.
         </p>
       </Inset>
     );

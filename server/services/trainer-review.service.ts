@@ -1102,9 +1102,9 @@ export class TrainerReviewService {
           conditionExtensionsUsed: true,
         },
       })
-      /* ودوراتُه كلُّها معتمَدة؟ — فموادُّه حُكم فيها دورةً دورة (١٧ أكتوبر ٢٠٢٦، رأسُ `materialsGateProblemAr`) */
+      /* وله دورةٌ معتمَدة؟ — فموادُّه حُكم فيها (١٧ أكتوبر ٢٠٢٦، رأسُ `materialsGateProblemAr`)، وواحدةٌ تكفي (٢٠ أكتوبر) */
       const materialsProblem = openOffer
-        ? materialsGateProblemAr({ ...openOffer, coursesReady: await this.allCoursesQualified(applicationId), now: new Date() })
+        ? materialsGateProblemAr({ ...openOffer, coursesReady: await this.hasQualifiedCourse(applicationId), now: new Date() })
         : null
       if (materialsProblem) {
         if (!(opts.actorRoles ?? []).includes('super_admin')) {
@@ -2368,8 +2368,9 @@ export class TrainerReviewService {
      سأل صاحبُ المنصّة عن مدرّبٍ دوراتُه الثلاثُ «معتمدة» وعقدُه يقول «لم يستوف الشروط بعد —
      انقضت مهلته». والعلّةُ أنّ الشرطَ لا يتحقّق إلّا بالتفعيل (`completeConditionalOffer`)،
      والتفعيلُ التلقائيُّ كان على مسلك اعتماد الخطّة وحدَه — فمن أُهِّل لدوراته من «التأهيل
-     والإسناد» أو من اللوح القديم بقي عقدُه ينتظر ما وقع. فيُقال للشاشة هنا: لا دورةَ معلّقة،
-     وفي يده معتمَدة، وحالُه تقبل التفعيل — وهو شرطُ `activateIfComplete` نفسُه. */
+     والإسناد» أو من اللوح القديم بقي عقدُه ينتظر ما وقع. فيُقال للشاشة هنا: في يده معتمَدة،
+     وحالُه تقبل التفعيل — وهو شرطُ `activateIfQualified` نفسُه. وكان معه «لا دورةَ معلّقة»،
+     فنُسخ (٢٠ أكتوبر ٢٠٢٦): دورةٌ واحدةٌ معتمَدةٌ تكفي لتفعيله. */
   private async coursesReadyFor(contracts: {
     id: string; status: string; gatesActivation: boolean; conditionMetAt: Date | null
     profile: { id: string; application: { status: string } | null } | null
@@ -2379,23 +2380,13 @@ export class TrainerReviewService {
       && c.profile?.application
       && transitionProblemAr(c.profile.application.status as TrainerStatus, 'active') === null)
     const profileIds = [...new Set(open.map((c) => c.profile!.id))]
-    const rows = profileIds.length === 0 ? [] : await this.prisma.trainerCourseQualification.groupBy({
-      by: ['profileId', 'status'],
-      where: { profileId: { in: profileIds }, status: { in: ['pending', 'qualified'] } },
+    const qualified = profileIds.length === 0 ? [] : await this.prisma.trainerCourseQualification.groupBy({
+      by: ['profileId'],
+      where: { profileId: { in: profileIds }, status: 'qualified' },
       _count: { _all: true },
     })
-    const count = (profileId: string, status: string) =>
-      rows.find((r) => r.profileId === profileId && r.status === status)?._count._all ?? 0
-    const ready = new Set(open
-      .filter((c) => count(c.profile!.id, 'pending') === 0 && count(c.profile!.id, 'qualified') > 0)
-      .map((c) => c.id))
-    /* ومن لم يبقَ له معلّقٌ إلّا ما أُجّل إلى موسمٍ قادم جاهزٌ كذلك (١٨ أكتوبر ٢٠٢٦، `blockingPending`) */
-    const waiting = open.filter((c) => count(c.profile!.id, 'pending') > 0 && count(c.profile!.id, 'qualified') > 0)
-    if (waiting.length > 0) {
-      const { TrainerPrepService } = await import('./trainer-prep.service')
-      const prep = new TrainerPrepService(this.prisma)
-      for (const c of waiting) if (await prep.blockingPending(c.profile!.id) === 0) ready.add(c.id)
-    }
+    const hasOne = new Set(qualified.filter((r) => r._count._all > 0).map((r) => r.profileId))
+    const ready = new Set(open.filter((c) => hasOne.has(c.profile!.id)).map((c) => c.id))
     /* وعقدُ النشط المعتمَدُ كالعقود الجديدة: اكتملت دوراتُه إن خلت قائمةُ طوره ممّا يُعَدّ أو ينتظر
        (`prepDone` — شرطُ توقيعه التلقائيّ نفسُه، ١٧ أكتوبر ٢٠٢٦) */
     const plain = contracts.filter((c) => !c.gatesActivation && c.status === 'signature_approved' && c.profile)
@@ -5757,17 +5748,11 @@ export class TrainerReviewService {
     return q
   }
 
-  /** لا دورةَ معلّقة وفي يده معتمَدة — شرطُ `activateIfComplete` نفسُه */
-  private async allCoursesQualified(applicationId: string): Promise<boolean> {
+  /** في يده دورةٌ معتمَدة — شرطُ `activateIfQualified` نفسُه (٢٠ أكتوبر ٢٠٢٦: واحدةٌ تكفي) */
+  private async hasQualifiedCourse(applicationId: string): Promise<boolean> {
     const profile = await this.prisma.trainerProfile.findUnique({ where: { applicationId }, select: { id: true } })
     if (!profile) return false
-    /* والمؤجّلةُ لا تُعدّ معلّقة (١٨ أكتوبر ٢٠٢٦، `blockingPending`) */
-    const { TrainerPrepService } = await import('./trainer-prep.service')
-    const [pending, qualified] = await Promise.all([
-      new TrainerPrepService(this.prisma).blockingPending(profile.id),
-      this.prisma.trainerCourseQualification.count({ where: { profileId: profile.id, status: 'qualified' } }),
-    ])
-    return pending === 0 && qualified > 0
+    return (await this.prisma.trainerCourseQualification.count({ where: { profileId: profile.id, status: 'qualified' } })) > 0
   }
 
   /* ═══ وآخرُ دوراته يفعّله من أيّ باب اعتُمد (١٧ أكتوبر ٢٠٢٦) ═══
@@ -5776,8 +5761,8 @@ export class TrainerReviewService {
      وحدَه (`activateOnApproval`). فمن أُهِّل لآخر دوراته من «التأهيل والإسناد» أو من اللوح
      القديم بقي في التهيئة، وعقدُه يقول «نوقّعه حين تُعتمَد دوراتُه» وقد اعتُمدت، ومهلتُه
      تنقضي على شرطٍ تحقّق. وهو ما رآه صاحبُ المنصّة في عقد مدرّبٍ دوراتُه الثلاثُ معتمدة.
-     فيُسأل هنا السؤالُ نفسُه (`activateIfComplete`): لا معلّقَ وفي يده معتمَد. ومسلكُ الخطّة
-     يمرّر `activate: false` لأنّه يفعّل بعد خبر الاعتماد بترتيبه. */
+     فيُسأل هنا السؤالُ نفسُه (`activateIfQualified`): في يده معتمَد — وواحدةٌ تكفي منذ ٢٠ أكتوبر.
+     ومسلكُ الخطّة يمرّر `activate: false` لأنّه يفعّل بعد خبر الاعتماد بترتيبه. */
   private async activateWhenCoursesDone(profileId: string, actorId: string) {
     const profile = await this.prisma.trainerProfile.findUnique({
       where: { id: profileId }, select: { applicationId: true, application: { select: { status: true } } },
@@ -5785,7 +5770,7 @@ export class TrainerReviewService {
     const { TrainerPrepService } = await import('./trainer-prep.service')
     const prep = new TrainerPrepService(this.prisma)
     if (profile?.application.status === 'onboarding') {
-      await prep.activateIfComplete(profileId, profile.applicationId, actorId)
+      await prep.activateIfQualified(profileId, profile.applicationId, actorId)
       return
     }
     /* والنشطُ عقدُه المعتمَدُ كالعقود الجديدة يوقَّع حين تكتمل دوراتُه (`sealIfComplete`) */

@@ -140,7 +140,9 @@ describe('③ ما يقال قبل النقر وبعده بما يحكم به ا
   it('شعبة الإعداد: الزرّان وأثر كلّ — لا زرّ واحد يساق إليه', () => {
     const both = prepNoteAr({ onboarding: true, qualifies: true })
     expect(both).toContain('«اعتمدها» تؤهّل مدرّبها لدورتها')
-    expect(both, 'لا يقال أنّ آخرها يفعّله').toContain('وإن لم يبق من دوراته ما ينتظر فعّل')
+    /* وأوّلُ دورةٍ تُعتمَد تفعّله (٢٠ أكتوبر ٢٠٢٦) — فلا «إن لم يبق من دوراته ما ينتظر» */
+    expect(both, 'لا يقال إنّ اعتمادها يفعّله').toContain('وتفعّله مدرّبا نشطا')
+    expect(both, 'يقال إنّه ينتظر آخر دوراته').not.toMatch(/ما ينتظر|آخر/)
     expect(both, 'يجزم بختم العقد ولا ختم لغير المشروط').toContain('إن كان ينتظر ختمنا')
     expect(both, 'لا يقال ما يقع بالردّ').toContain('و«اطلب تعديلات» تعيدها إليه بملاحظاتك')
     expect(both).toContain('ويستأنف عدّ مهلته إن كانت موقوفة لمراجعتنا')
@@ -160,22 +162,21 @@ describe('③ ما يقال قبل النقر وبعده بما يحكم به ا
     const base = { status: 'approved' } as const
     /* شعبةٌ عاديّة: الرسالةُ كما كانت حرفا */
     expect(planApprovedMsg({ ...base, prep: null })).toBe(approvedMsg(base))
-    expect(planApprovedMsg({ ...base, prep: { activated: true } })).toContain('فعّل مدرّبا نشطا')
-    expect(planApprovedMsg({ ...base, prep: { activated: false, waiting: 1 } })).toContain('وبقيت له دورة واحدة لم تعتمد بعد')
-    expect(planApprovedMsg({ ...base, prep: { activated: false, waiting: 2 } })).toContain('وبقيت له دورتان')
-    expect(planApprovedMsg({ ...base, prep: { activated: false, waiting: 11 } })).toContain('وبقيت له 11 دورة')
+    const activated = planApprovedMsg({ ...base, prep: { activated: true } })
+    expect(activated).toContain('فعّل مدرّبا نشطا')
+    expect(activated, 'يقال إنّ دوراته اكتملت وأوّلها يفعّله').not.toContain('كلّها')
     const blocked = planApprovedMsg({ ...base, prep: { activated: false, blockedAr: 'لا حساب له بعد' } })
-    expect(blocked).toContain('ولم يفعّل: لا حساب له بعد')
+    expect(blocked).toContain('واعتمدت له دورة ولم يفعّل: لا حساب له بعد')
   })
 
   it('والجملتان لا تلتحمان بنقطتين — ولو انتهت الأولى بنقطة', () => {
     const msg = planApprovedMsg({
       status: 'approved',
       meetings: { approved: 0, failed: [{ id: 's1', title: 'اللقاء الأوّل', reason: 'تعذّر إنشاء الاجتماع' }] },
-      prep: { activated: false, waiting: 1 },
+      prep: { activated: true },
     })
     expect(msg).not.toContain('..')
-    expect(msg).toContain('أدناه. وبقيت له')
+    expect(msg).toContain('أدناه. وبها فعّل')
   })
 
   it('والطابور يقول الجملة على شعبة الإعداد وحدها، وقبل القرار لا بعده', () => {

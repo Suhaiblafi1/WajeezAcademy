@@ -150,34 +150,34 @@ describe('⑤ خبرٌ واحدٌ لكلّ قرار، وخبرٌ للتفعيل'
     expect((await prisma.trainerContract.findUniqueOrThrow({ where: { id: t.contractId } })).conditionPausedAt).toBeNull()
   })
 
-  it('الاعتمادُ خبرٌ واحدٌ يقول التأهيل — والتفعيلُ خبرُه بعده', async () => {
+  /* وأوّلُ دورةٍ تُعتمَد تفعّله (٢٠ أكتوبر ٢٠٢٦، «one cohort is enough») — فخبرُ التفعيل مع أوّل اعتماد،
+     وما بعده يُعِدّه وهو نشط: خبرٌ واحدٌ لا تفعيلَ معه */
+  it('الاعتمادُ خبرٌ واحدٌ يقول التأهيل — والتفعيلُ خبرُه بعده، من أوّل دورة', async () => {
     const t = await onboarding([C1, C2])
     const one = await prep.accept(t.userId, C1)
     const two = await prep.accept(t.userId, C2)
 
     const s1 = new Date()
     const r1 = await plans.decide(adminId, (await submitted(one.id, t.profileId)).id, true)
-    expect(r1).toMatchObject({ status: 'approved', prep: { activated: false, waiting: 1 } })
+    expect(r1, 'اعتُمدت أوّلُ دوراته ولم يُفعَّل').toMatchObject({ status: 'approved', prep: { activated: true } })
     const b1 = await bellSince(t.userId, s1)
-    expect(b1.map((n) => n.templateKey), 'وصله عن الاعتماد الواحد خبران').toEqual(['cohort.plan.decision'])
+    expect(b1.map((n) => n.templateKey), 'التفعيلُ لا جرسَ له — أو الاعتمادُ خبران')
+      .toEqual(['cohort.plan.decision', 'trainer.activated'])
     expect(b1[0]!.body).toContain('أُضيفت «دورةُ آخرِ المسار» إلى دوراتك')
     /* ① والشعبةُ مسوّدةٌ علمُها منزول — لا «بمن التحق فيها» ولا «وصلت المسجَّلين» */
     expect(b1[0]!.body).toContain('لم تُفتح للتسجيل بعد')
     expect(b1[0]!.body).not.toMatch(/التحق|المسجَّلين/)
-    expect((await prisma.trainerCourseQualification.findFirstOrThrow({ where: { profileId: t.profileId, courseId: C1 } })).status)
-      .toBe('qualified')
-
-    const p2 = await submitted(two.id, t.profileId)
-    await prep.afterSubmit(two.id)
-    const s2 = new Date()
-    const r2 = await plans.decide(adminId, p2.id, true)
-    expect(r2).toMatchObject({ status: 'approved', prep: { activated: true } })
-    const b2 = await bellSince(t.userId, s2)
-    expect(b2.map((n) => n.templateKey), 'التفعيلُ لا جرسَ له — أو الاعتمادُ خبران')
-      .toEqual(['cohort.plan.decision', 'trainer.activated'])
-    expect(b2[1]!.title).toBe('اعتُمدت موادُّك — وتمّ قبولُك')
+    expect(b1[1]!.title).toBe('اعتُمدت موادُّك — وتمّ قبولُك')
     /* والخَتمُ كما وقع: وقّعناه الآن مع التفعيل */
-    expect(b2[1]!.body).toContain('وقّعنا العقدَ من جهتنا')
+    expect(b1[1]!.body).toContain('وقّعنا العقدَ من جهتنا')
+
+    const s2 = new Date()
+    const r2 = await plans.decide(adminId, (await submitted(two.id, t.profileId)).id, true)
+    expect(r2, 'نشطٌ ففُعِّل ثانية').toMatchObject({ status: 'approved', prep: null })
+    expect((await bellSince(t.userId, s2)).map((n) => n.templateKey), 'وصله عن الاعتماد الواحد خبران')
+      .toEqual(['cohort.plan.decision'])
+    expect((await prisma.trainerCourseQualification.findFirstOrThrow({ where: { profileId: t.profileId, courseId: C2 } })).status)
+      .toBe('qualified')
   })
 })
 
