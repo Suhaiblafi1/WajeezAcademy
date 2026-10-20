@@ -20,12 +20,23 @@
 
    لا بريدَ ولا هاتفَ ولا روابطَ حسابات، ولا تقييماتٍ ولا ملاحظاتٍ داخليّة: ما يُكتب في البطاقة
    خبرتُه لا وسيلةُ الوصول إليه. والسيرةُ نفسُها قد تحمل هاتفا — فالحزمةُ خلف صلاحيّةِ من يقرأ
-   الطلباتِ وسيرَها في الشاشة (`trainer.applications.view`)، وكلُّ تنزيلٍ أثرٌ باسم من نزّلها. */
+   الطلباتِ وسيرَها في الشاشة (`trainer.applications.view`)، وكلُّ تنزيلٍ أثرٌ باسم من نزّلها.
+
+   ═══ ولمن له دورةٌ معتمدةٌ وحدَه، وأجزاءً تُرفع (٢٠ أكتوبر ٢٠٢٦) ═══
+
+   نزّلها صاحبُ المنصّة فلم تُرفع إلى المحادثة: «الملفُّ كبيرٌ جدّا.. أهو بسبب السير؟» — وهو كذلك، فالنصُّ
+   كيلوبايتات والسيرُ والشهاداتُ هي الحجم. ثمّ: «فعّل الخاصّيّة تلقائيّا: يُعتمَد دورةٌ واحدةٌ على الأقلّ لكلّ
+   مدرّب». فصارت:
+   · **لمن له دورةٌ معتمدةٌ واحدةٌ على الأقلّ** (`TrainerCourseQualification.status = 'qualified'`) — وهو
+     شرطُ التفعيل نفسُه (`activateIfQualified`)، فلا يُكتب لمن لن يُرسَل إليه؛
+   · **وأجزاءً** لا يجاوز الجزءُ ٢٠MB — يُقسَم المدرّبون بترتيبهم على حجم ملفّاتهم المسجَّل، فلا يُفرَّق
+     مدرّبٌ بين جزأين، وكلُّ جزءٍ ZIP مستقلٌّ بفهرسه. وما جاوز الجزءَ وحدَه يُقال ولا يُسكت عنه. */
 
 import JSZip from 'jszip'
 import type { PrismaClient } from '@prisma/client'
 import { readDocumentContent } from './storage.service'
 import { recordAudit } from './audit'
+import { AuthError } from './auth.service'
 import { liveTrainerWhere } from './trainer-visibility'
 import { BIO_DRAFTS, PITCH_DRAFTS } from './trainer-suggestion-drafts'
 import { safeName } from '../../src/application/trainer/plan-review-bundle'
@@ -39,8 +50,8 @@ import { zonedDay } from '../../src/application/trainer/cohort-period'
 export const DRAFTING_DOC_KINDS = ['cv', 'certificate'] as const
 /** حدُّ الملفّ الواحد — ما فوقه ليس سيرةً تُقرأ */
 export const DRAFTING_FILE_MAX_BYTES = 15 * 1024 * 1024
-/** حدُّ الحزمة كلِّها — ذاكرةُ الحاوية، والملفّاتُ تُقرأ قبل الضغط */
-export const DRAFTING_TOTAL_MAX_BYTES = 120 * 1024 * 1024
+/** حدُّ الجزء — ما يُرفع إلى المحادثة ملفّا واحدا */
+export const DRAFTING_PART_MAX_BYTES = 20 * 1024 * 1024
 
 export interface DraftingTrainer {
   profileId: string
@@ -76,6 +87,8 @@ export interface DraftingBundle {
   fileName: string
   zip: Buffer
   trainers: DraftingTrainer[]
+  part: number
+  parts: number
 }
 
 const str = (v: unknown) => (typeof v === 'string' ? v.trim() : typeof v === 'number' ? String(v) : '')
@@ -95,10 +108,15 @@ export class TrainerDraftingBundleService {
   private prisma: PrismaClient
   constructor(prisma: PrismaClient) { this.prisma = prisma }
 
-  async build(actorId: string, now = new Date()): Promise<DraftingBundle> {
+  /** من يدخلها، وأجزاؤها — بحجم ملفّاتهم المسجَّل، بلا قراءتها */
+  private async plan(partMaxBytes: number) {
     const drafted = new Set([...Object.keys(PITCH_DRAFTS), ...Object.keys(BIO_DRAFTS)])
     const profiles = await this.prisma.trainerProfile.findMany({
-      where: { id: { notIn: [...drafted] }, textSuggestions: { none: { status: { not: 'withdrawn' } } } },
+      where: {
+        id: { notIn: [...drafted] },
+        textSuggestions: { none: { status: { not: 'withdrawn' } } },
+        qualifications: { some: { status: 'qualified' } },
+      },
       orderBy: { createdAt: 'asc' },
       select: {
         id: true, headline: true, bioPublic: true,
@@ -117,6 +135,36 @@ export class TrainerDraftingBundleService {
         },
       },
     })
+    const sizeOf = (p: (typeof profiles)[number]) => p.application.documents
+      .filter((d) => d.sizeBytes <= DRAFTING_FILE_MAX_BYTES).reduce((n, d) => n + d.sizeBytes, 0)
+    const parts: (typeof profiles)[] = []
+    let used = 0
+    for (const p of profiles) {
+      const size = sizeOf(p)
+      if (parts.length === 0 || (used + size > partMaxBytes && parts[parts.length - 1]!.length > 0)) {
+        parts.push([])
+        used = 0
+      }
+      parts[parts.length - 1]!.push(p)
+      used += size
+    }
+    return { profiles, parts }
+  }
+
+  /** كم جزءا، ولكم مدرّبا — لأزرار الشاشة */
+  async parts(partMaxBytes = DRAFTING_PART_MAX_BYTES): Promise<{ parts: number; trainers: number }> {
+    const { profiles, parts } = await this.plan(partMaxBytes)
+    return { parts: Math.max(parts.length, 1), trainers: profiles.length }
+  }
+
+  async build(actorId: string, part = 1, now = new Date(), partMaxBytes = DRAFTING_PART_MAX_BYTES): Promise<DraftingBundle> {
+    const plan = await this.plan(partMaxBytes)
+    const total = Math.max(plan.parts.length, 1)
+    if (!Number.isInteger(part) || part < 1 || part > total) {
+      throw new AuthError('bad_part', `لا جزء ${part} — الأجزاء ${total}`, 400)
+    }
+    const profiles = plan.parts[part - 1] ?? []
+    const offset = plan.parts.slice(0, part - 1).reduce((n, x) => n + x.length, 0)
     const live = new Set((await this.prisma.trainerProfile.findMany({
       where: { id: { in: profiles.map((p) => p.id) }, AND: [liveTrainerWhere(now)] }, select: { id: true },
     })).map((r) => r.id))
@@ -129,7 +177,7 @@ export class TrainerDraftingBundleService {
     const zip = new JSZip()
     let used = 0
     const trainers: DraftingTrainer[] = []
-    let n = 0
+    let n = offset
     for (const p of profiles) {
       n += 1
       const a = p.application
@@ -146,7 +194,7 @@ export class TrainerDraftingBundleService {
           const body = await readDocumentContent(this.prisma, d.storageKey).catch(() => null)
           if (!body) skippedAr = 'غير موجود في المخزن'
           else if (body.length > DRAFTING_FILE_MAX_BYTES) skippedAr = `حجمه ${mb(body.length)} — أكبر من ${mb(DRAFTING_FILE_MAX_BYTES)}`
-          else if (used + body.length > DRAFTING_TOTAL_MAX_BYTES) skippedAr = `امتلأت الحزمة (${mb(DRAFTING_TOTAL_MAX_BYTES)})`
+          else if (used + body.length > partMaxBytes) skippedAr = `امتلأ الجزء (${mb(partMaxBytes)})`
           else {
             used += body.length
             zip.file(path, body)
@@ -183,7 +231,7 @@ export class TrainerDraftingBundleService {
       })
     }
 
-    zip.file('المدربون.md', draftingMarkdown(trainers, now))
+    zip.file('المدربون.md', draftingMarkdown(trainers, now, { part, parts: total }))
     zip.file('trainers.json', JSON.stringify(trainers, null, 2))
     for (const t of trainers) {
       await recordAudit(this.prisma, {
@@ -192,18 +240,25 @@ export class TrainerDraftingBundleService {
       })
     }
     return {
-      fileName: `ملفات-المدربين-للاقتراحات-${zonedDay(now)}.zip`,
+      fileName: total > 1
+        ? `ملفات-المدربين-للاقتراحات-${zonedDay(now)}-الجزء-${part}-من-${total}.zip`
+        : `ملفات-المدربين-للاقتراحات-${zonedDay(now)}.zip`,
       zip: await zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE', compressionOptions: { level: 6 }, platform: 'UNIX' }),
       trainers,
+      part,
+      parts: total,
     }
   }
 }
 
 /** الملفُّ المقروء — كلُّ مدرّبٍ بحاله وما كتبه، وملفّاتُه وما تُرك منها */
-export function draftingMarkdown(trainers: readonly DraftingTrainer[], now: Date): string {
-  const out: string[] = [`# ملفات المدربين لكتابة الاقتراحات — ${zonedDay(now)}`, '']
-  if (trainers.length === 0) out.push('لكل مدرب مسودة أو اقتراح أرسل له. لا أحد ينتظر.')
-  else out.push(`${trainers.length} مدربا بلا مسودة ولا اقتراح. ومن له دورة منشورة هذا الفصل أو بعده موسوم بـ«منشورة».`, '')
+export function draftingMarkdown(
+  trainers: readonly DraftingTrainer[], now: Date, at: { part: number; parts: number } = { part: 1, parts: 1 },
+): string {
+  const partAr = at.parts > 1 ? ` — الجزء ${at.part} من ${at.parts}` : ''
+  const out: string[] = [`# ملفات المدربين لكتابة الاقتراحات — ${zonedDay(now)}${partAr}`, '']
+  if (trainers.length === 0) out.push('لكل مدرب له دورة معتمدة مسودة أو اقتراح أرسل له. لا أحد ينتظر.')
+  else out.push(`${trainers.length} مدربا لهم دورة معتمدة، بلا مسودة ولا اقتراح. ومن له دورة منشورة هذا الفصل أو بعده موسوم بـ«منشورة».`, '')
   const line = (k: string, v: string | null | undefined) => { if (v && v.trim()) out.push(`- **${k}:** ${v.trim()}`) }
   trainers.forEach((t, i) => {
     out.push(`## ${i + 1}. ${t.name}`, '')

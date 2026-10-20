@@ -1071,15 +1071,22 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
      بصلاحيّة قراءة الطلبات وسيرِها في الشاشة: الحزمةُ تُخرج ما يُقرأ هناك (`trainer-drafting-bundle.service.ts`) */
   app.get('/api/admin/trainers/drafting-bundle', {
     preHandler: requirePermission('trainer.applications.view'),
-    schema: { tags: ['admin-trainers'], summary: 'ملفّات المدرّبين بلا مسوّدة — ما كتبوه وسيرهم وشهاداتهم، لكتابة اقتراحاتنا' },
+    schema: { tags: ['admin-trainers'], summary: 'ملفّات المدرّبين بلا مسوّدة ولهم دورة معتمدة — جزءا جزءا، لكتابة اقتراحاتنا' },
   }, async (req, reply) => {
-    const b = await drafting.build(req.auth!.userId)
+    const { part } = z.object({ part: z.coerce.number().int().min(1).max(500).default(1) }).parse(req.query ?? {})
+    const b = await drafting.build(req.auth!.userId, part)
     return reply
       .header('content-type', 'application/zip')
       .header('content-disposition', `attachment; filename="trainers-drafting.zip"; filename*=UTF-8''${encodeURIComponent(b.fileName)}`)
       .header('cache-control', 'no-store')
       .send(b.zip)
   })
+
+  /* وكم جزءا هي — فتعرض الشاشةُ زرّا لكلّ جزء (٢٠ أكتوبر ٢٠٢٦: «الملفّ كبيرٌ جدّا») */
+  app.get('/api/admin/trainers/drafting-bundle/parts', {
+    preHandler: requirePermission('trainer.applications.view'),
+    schema: { tags: ['admin-trainers'], summary: 'عدد أجزاء ملفّات المدرّبين وعدد من فيها' },
+  }, async () => drafting.parts())
 
   /* وكلُّ المسوّدات معا — بالصلاحيّة نفسِها، فهو الإرسالُ نفسُه مكرَّرا */
   app.post('/api/admin/trainers/suggestions/send-drafts', {

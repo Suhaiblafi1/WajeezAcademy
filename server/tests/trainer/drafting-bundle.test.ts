@@ -8,8 +8,12 @@
    ٤) وما جاوز الحدَّ يُقال ولا يُسكت عنه؛
    ٥) ولكلّ مدرّبٍ فيها أثرُ التنزيل باسم من نزّلها.
 
+   ٦) ولمن له دورةٌ معتمدةٌ واحدةٌ على الأقلّ وحدَه، وأجزاءً لا يُفرَّق فيها مدرّبٌ (٢٠ أكتوبر ٢٠٢٦: «الملفّ
+      كبيرٌ جدّا»، و«يُعتمَد دورةٌ واحدةٌ على الأقلّ لكلّ مدرّب»).
+
    ورُئي ساقطا: أُسقط شرطُ «لم يُقترح عليه» فعاد المقترَحُ عليه، وأُدخلت `reference_letter`
-   فدخلت، وأُضيف البريدُ إلى الحقول فظهر. ثمّ أُعيدت. */
+   فدخلت، وأُضيف البريدُ إلى الحقول فظهر، وأُسقط شرطُ الدورة المعتمدة فدخل من لا دورةَ له،
+   وجُمع المدرّبون في جزءٍ واحد فجاوز حدَّه. ثمّ أُعيدت. */
 
 import { beforeAll, describe, expect, it } from 'vitest'
 import JSZip from 'jszip'
@@ -20,6 +24,8 @@ import { TrainerReviewService } from '../../services/trainer-review.service'
 import { TrainerSuggestionService } from '../../services/trainer-suggestion.service'
 import { DRAFTING_FILE_MAX_BYTES, TrainerDraftingBundleService } from '../../services/trainer-drafting-bundle.service'
 
+const COURSE = 'C-BIZ-101'
+
 let prisma: PrismaClient
 let bundles: TrainerDraftingBundleService
 const ACTOR = '00000000-0000-0000-0000-000000000009'
@@ -28,6 +34,8 @@ const PHONE = '791234567'
 let mineId = ''
 let mineApp = ''
 let sentId = ''
+let pendingId = ''
+let secondId = ''
 let built: Awaited<ReturnType<TrainerDraftingBundleService['build']>>
 let zip: JSZip
 
@@ -60,6 +68,9 @@ beforeAll(async () => {
     },
   })
   await giveLiveCourse(prisma, mineId)
+  const qualify = (profileId: string, status = 'qualified') =>
+    prisma.trainerCourseQualification.create({ data: { profileId, courseId: COURSE, status } })
+  await qualify(mineId)
   await doc(mineApp, 'cv', 'سيرتي.pdf', 'CV-BODY')
   await doc(mineApp, 'certificate', 'shrm.pdf', 'CERT-BODY')
   await doc(mineApp, 'reference_letter', 'letter.pdf', 'LETTER-BODY')
@@ -68,7 +79,18 @@ beforeAll(async () => {
   /* ومن اقتُرح عليه شيءٌ لا يعود إلى الحزمة */
   const sent = await review.createTrainerDirectly(ACTOR, { fullName: 'مدرّب وصله اقتراح', email: 'drafting-b@test.local' })
   sentId = sent.profileId
+  await qualify(sentId)
   await new TrainerSuggestionService(prisma).propose(sentId, ACTOR, 'pitch', ['سطر وصله منا'])
+
+  /* ومن لا دورةَ معتمدةً له — طلبُ تأهيله معلّق — لا يدخلها */
+  pendingId = (await review.createTrainerDirectly(ACTOR, { fullName: 'مدرّب ينتظر اعتماد دورته', email: 'drafting-c@test.local' })).profileId
+  await qualify(pendingId, 'pending')
+
+  /* ومدرّبٌ ثانٍ بسيرة — ليُرى التقسيمُ أجزاءً */
+  const second = await review.createTrainerDirectly(ACTOR, { fullName: 'مدرّب ثان', email: 'drafting-d@test.local' })
+  secondId = second.profileId
+  await qualify(secondId)
+  await doc(second.applicationId, 'cv', 'cv2.pdf', 'SECOND-CV')
 
   built = await bundles.build(ACTOR)
   zip = await JSZip.loadAsync(built.zip)
@@ -79,6 +101,10 @@ describe('من فيها', () => {
     const ids = built.trainers.map((t) => t.profileId)
     expect(ids).toContain(mineId)
     expect(ids, 'عاد إلى الحزمة من وصله اقتراح').not.toContain(sentId)
+  })
+
+  it('⚠️ ولمن له دورة معتمدة وحده — المعلّق تأهيلُه لا يدخل', () => {
+    expect(built.trainers.map((t) => t.profileId), 'دخل من لا دورة معتمدة له').not.toContain(pendingId)
   })
 
   it('وحالُه، وأنّ له دورةً منشورة، وما كتبه في طلبه', () => {
@@ -120,5 +146,30 @@ describe('وما ليس فيها', () => {
   it('ولكلّ مدرّب فيها أثر التنزيل', async () => {
     const n = await prisma.auditEvent.count({ where: { action: 'trainer.drafting_bundle.download', entityId: mineId, actorId: ACTOR } })
     expect(n).toBe(1)
+  })
+})
+
+describe('أجزاءً تُرفع', () => {
+  /* حدٌّ صغيرٌ يُمرَّر — فيُرى التقسيمُ بملفّاتٍ من بايتات */
+  const TINY = 12
+
+  it('⚠️ كلُّ مدرّبٍ جاوزت ملفّاتُه الحدَّ في جزءٍ وحدَه — ولا يُفرَّق مدرّب', async () => {
+    expect((await bundles.parts(TINY)).parts, 'جُمع المدرّبون في جزءٍ واحد').toBe(2)
+    const one = await bundles.build(ACTOR, 1, new Date(), TINY)
+    const two = await bundles.build(ACTOR, 2, new Date(), TINY)
+    expect(one.trainers.map((t) => t.profileId)).toEqual([mineId])
+    expect(two.trainers.map((t) => t.profileId)).toEqual([secondId])
+    expect(two.fileName).toMatch(/الجزء-2-من-2\.zip$/)
+  })
+
+  it('وما لا يتّسع له الجزء يُقال', async () => {
+    const one = await bundles.build(ACTOR, 1, new Date(), TINY)
+    const cert = one.trainers[0]!.files.find((f) => f.originalName === 'shrm.pdf')!
+    expect(cert.path).toBeNull()
+    expect(cert.skippedAr).toMatch(/امتلأ الجزء/)
+  })
+
+  it('وجزءٌ لا وجود له يُردّ', async () => {
+    await expect(bundles.build(ACTOR, 9, new Date(), TINY)).rejects.toThrow()
   })
 })
