@@ -43,9 +43,18 @@
    وهو بندٌ رابعٌ مستقلّ (`planCredit`) بعد الباقة والسقف وقبل الكوبون: الكوبونُ
    طبقةٌ فوق سعر الباقة، فلا يُقاصَّ به ما فات من خصمها.
 
+   ═══ وكودُ المنحة بدلُ الباقة لا فوقها (٢٠ أكتوبر ٢٠٢٦) ═══
+
+   «منحة أعضاء وجيز» نسبةٌ من سعر القائمة (٦٠٪ يوم كُتب، ويغيّرها صاحبُ المنصّة متى شاء).
+   وقرارُه («A»): لا تجتمع مع سلّم الباقة — يدفع صاحبُها نسبةً ثابتةً من السعر أيّا كان عددُ
+   الدورات. فإن كان سعرُ الباقة في سلّةٍ أقلَّ من سعر المنحة (سقفُ المبلغ على سلّةٍ كبيرة، أو
+   نسبةُ منحةٍ صغيرة) **دفع الأقلَّ** ولم يُحرق الكود: `grantBeaten` يقوله، والخادمُ يردّه.
+   فلا يدفع أحدٌ بكود المنحة أكثرَ ممّا يدفعه بلا كود.
+
    الحارس: server/tests/commerce/cart-pricing.test.ts
    ونطاقُ الكود: src/tests/commerce/scoped-coupon.test.ts
-   وخصمُ إكمال الخطّة: src/tests/commerce/plan-carry.test.ts */
+   وخصمُ إكمال الخطّة: src/tests/commerce/plan-carry.test.ts
+   وكودُ المنحة: src/tests/commerce/grant-pricing.test.ts */
 
 import { buildDiscountPct, bundleCapDiscount, bundlePayable, money, MAX_BUNDLE_TOTAL_CURRENCY } from './discount-policy'
 
@@ -79,6 +88,9 @@ export interface CartCoupon {
   /** أقصى ما يمنحه بالمئة من وعائه — سقفُ كود المدرّب (٣٠) على وجهَيه، نسبةً
       ومبلغا. وبلا قيمةٍ لا سقفَ غيرُ الوعاء نفسِه، كما كان كلُّ كوبون. */
   maxPercentOfBase?: number | null
+  /** كودُ منحة: نسبتُه من مجموع السلّة بدلَ السلّم والسقف وخصم الإكمال — لا فوقها.
+      ويقع على السلّة كلِّها، ولا يُجمع مع `cohortIds`. */
+  replacesBundle?: boolean
 }
 
 export interface PricedLine extends CartLine {
@@ -106,6 +118,8 @@ export interface CartPricing {
   /** عددُ الدورات المدفوعة التي وقع عليها الكوبون — صفرٌ يعني أنّ الكودَ لا
       يخصّ شيئا في هذه السلّة، فيُقال ذلك للمشتري لا يُقبَل صامتا */
   couponLines: number
+  /** كودُ منحةٍ سعرُ الباقة في هذه السلّة أقلُّ منه — فيدفع سعرَ الباقة ولا يُستعمل الكود */
+  grantBeaten: boolean
   discount: number
   total: number
 }
@@ -137,12 +151,12 @@ export function priceCart(
 
   /* السلّمُ على عدد المدفوع لا على عدد البنود: عدُّ الهديّة يرفع الخصمَ على
      ما يُدفع بسببِ ما لا يُدفع — فيُخصم مرّتين عن شيءٍ واحد. */
-  const bundlePct = buildDiscountPct(paid.length)
-  const bundleDiscount = money((subtotal * bundlePct) / 100)
+  let bundlePct = buildDiscountPct(paid.length)
+  let bundleDiscount = money((subtotal * bundlePct) / 100)
 
   /* سقفُ المبلغ بندٌ ثانٍ مستقلّ لا نسبةٌ ثالثة: «خصم الباقة ٣٠٪» و«حدّ سعر
      المسار» سببان مختلفان يُقرآن في الفاتورة كلٌّ باسمه. */
-  const capDiscount = money(bundleCapDiscount(money(subtotal - bundleDiscount), currency))
+  let capDiscount = money(bundleCapDiscount(money(subtotal - bundleDiscount), currency))
 
   /* خصمُ إكمال الخطّة: ما كانت ستبلغه الخطّةُ (ما اشتُري منها مع ما في السلّة)
      لو اشتُريت معا، ناقصا ما خُصم عن السابق وما يُخصم عن بنودها هنا بالسلّم.
@@ -164,8 +178,24 @@ export function priceCart(
   const afterBundle = money(subtotal - bundleDiscount - capDiscount - planCredit)
 
   let couponDiscount = 0
+  let grantBeaten = false
   const couponed = paid.filter((l) => l.couponApplies)
-  if (coupon && couponed.length > 0) {
+  if (coupon?.replacesBundle) {
+    /* المنحةُ على مجموع السلّة لا على ما بعد الباقة — هي بدلُها. وتغلب حين تُعطي أكثر،
+       فتُصفَّر بنودُ الباقة الثلاثة ويُقرأ في الفاتورة بندٌ واحد باسمها. */
+    if (couponed.length > 0) {
+      const grant = money((subtotal * (coupon.percentOff ?? 0)) / 100)
+      if (grant > money(bundleDiscount + capDiscount + planCredit)) {
+        bundlePct = 0
+        bundleDiscount = 0
+        capDiscount = 0
+        planCredit = 0
+        couponDiscount = Math.min(grant, subtotal)
+      } else {
+        grantBeaten = true
+      }
+    }
+  } else if (coupon && couponed.length > 0) {
     /* وعاءُ الكوبون: ما بقي بعد الباقة والسقف — كلُّه لكوبونٍ عامّ، وحصّةُ
        شعب النطاق منه لكودِ مدرّب. والحصّةُ بنسبة السعر: خصمُ الباقة نسبةٌ
        تقع على كلّ بندٍ بقدره، والسقفُ يُوزَّع كذلك — فلا تتحمّل دورتُه من
@@ -201,6 +231,7 @@ export function priceCart(
     planCredit,
     couponDiscount,
     couponLines: couponed.length,
+    grantBeaten,
     discount,
     total: money(Math.max(0, subtotal - discount)),
   }
