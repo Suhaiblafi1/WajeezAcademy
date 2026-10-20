@@ -81,6 +81,9 @@ const wordKey = (w: string): string => {
 
 const nameKey = (s: string): string => s.split(' ').filter(Boolean).map(wordKey).join(' ')
 
+/** مفتاحُ الاقتراح الذي يُحفظ «رأيتُه» — «القيادة» و«قيادة» واحد، والهمزةُ والتشكيلُ لا يفرّقان */
+export const suggestionKeyAr = (titleAr: string): string => nameKey(cleanSectionNameAr(titleAr))
+
 const STOP_WORDS = new Set(['في', 'من', 'الي', 'علي', 'عن', 'مع', 'و', 'او', 'ل', 'ب', 'لل'].map(normalizeAr))
 
 /** أطولُ تتابعٍ من الكلمات تشترك فيه الأسماءُ كلُّها بترتيبه — بكلمات أوّلها */

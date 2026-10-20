@@ -14,7 +14,7 @@ import { domainsV2 } from '../../src/domain/diagnostic/v2/data'
 import { PERSONA_BASE_TO_STAGES, REACHABLE_LEGACY_GOALS } from '../../src/domain/diagnostic/v2_1/universe'
 import { CAREER_STAGE_LABELS_AR, GOALS_V21 } from '../../src/domain/diagnostic/v2_1/maps'
 import type { PermissionKey } from '../auth/permissions'
-import { suggestCourseNames, tidyCourseTitleAr } from '../../src/application/catalog/course-name-suggest'
+import { suggestCourseNames, suggestionKeyAr, tidyCourseTitleAr } from '../../src/application/catalog/course-name-suggest'
 
 /* حبّةُ استثناء maker-checker — تُكتب مرّةً واحدةً، ونوعُها من فهرس الصلاحيّات
    نفسِه: فإن زالت من الفهرس أو تغيّر حرفٌ في اسمها لم تُترجَم الشيفرةُ أصلا،
@@ -45,6 +45,12 @@ function renameTitleOf(payload: unknown): string | null {
   const p = payload as Record<string, unknown>
   if (p.kind !== undefined && p.kind !== 'course_rename') return null
   return typeof p.titleAr === 'string' ? tidyCourseTitleAr(p.titleAr) : null
+}
+
+/** اقتراحاتُ الاسم من شعب الدورة — والملغاةُ لا يُقترح منها إلّا أن تكون كلُّها ملغاة */
+function suggestionsFromCohorts(titleAr: string, cohorts: readonly { title: string; status: string }[]) {
+  const live = cohorts.filter((k) => k.status !== 'cancelled')
+  return suggestCourseNames(titleAr, (live.length ? live : cohorts).map((k) => k.title))
 }
 
 const isRenameOnly = (payload: unknown): boolean =>
@@ -878,14 +884,18 @@ export class CatalogAdminService {
      واجعل النظامَ يقترح لكلّ دورة». فالقائمةُ دوراتٌ لها شعبةٌ واحدةٌ على الأقلّ،
      ولكلٍّ أسماءُ شعبها واقتراحاتُها (`course-name-suggest.ts`) وطلبُ اسمٍ ينتظر
      الاعتماد إن وُجد. والشعبةُ الملغاةُ تُعرض ولا تُقترح منها — إلّا أن تكون
-     الشعبُ كلُّها ملغاة. */
+     الشعبُ كلُّها ملغاة.
+
+     وكلُّ اقتراحٍ يحمل `isNew`: لم يُرَ بعد (`Course.nameSuggestionsSeen`). والجديدُ وحدَه
+     يصل «ما ينتظرك» — فشعبةٌ تُفتح غدا باسمٍ جديدٍ تأتي بنفسها، وما قيل فيه «أبقِ
+     الاسم» لا يعود. */
   async courseNames() {
     const [rows, pending] = await Promise.all([
       this.prisma.course.findMany({
         where: { cohorts: { some: {} } },
         orderBy: { id: 'asc' },
         select: {
-          id: true, status: true, renamedAt: true,
+          id: true, status: true, renamedAt: true, nameSuggestionsSeen: true,
           versions: { orderBy: { version: 'desc' }, take: 1, select: { titleAr: true, termEn: true, legacyTitleAr: true } },
           cohorts: { orderBy: { createdAt: 'asc' }, select: { id: true, title: true, status: true, startsAt: true } },
         },
@@ -904,15 +914,50 @@ export class CatalogAdminService {
     return rows.map((c) => {
       const v = c.versions[0]
       const titleAr = v?.titleAr ?? c.id
-      const live = c.cohorts.filter((k) => k.status !== 'cancelled')
+      const seen = new Set(c.nameSuggestionsSeen)
+      const suggestions = suggestionsFromCohorts(titleAr, c.cohorts)
+        .map((sg) => ({ ...sg, isNew: !seen.has(suggestionKeyAr(sg.titleAr)) }))
       return {
         id: c.id, status: c.status, titleAr, termEn: v?.termEn ?? null,
         legacyTitleAr: v?.legacyTitleAr ?? null, renamedAt: c.renamedAt,
         cohorts: c.cohorts,
-        suggestions: suggestCourseNames(titleAr, (live.length ? live : c.cohorts).map((k) => k.title)),
+        suggestions,
+        newSuggestions: suggestions.filter((sg) => sg.isNew).length,
         pendingRename: pendingFor.get(c.id) ?? null,
       }
     })
+  }
+
+  /** دوراتٌ فيها اقتراحُ اسمٍ لم يُرَ — بندُ «ما ينتظرك» */
+  async coursesWithNewNameSuggestions() {
+    return (await this.courseNames()).filter((r) => r.newSuggestions > 0 && !r.pendingRename)
+  }
+
+  /* ═══ «أبقِ الاسم الحاليّ» ═══
+
+     الخيارُ الثاني بجانب «اعتمد»: الاسمُ لا يتغيّر، واقتراحاتُ اليوم تُحفظ «رأيتُها»
+     فلا تعود إلى «ما ينتظرك». وشعبةٌ تُفتح بعدُ باسمٍ لم يُرَ تأتي باقتراحٍ جديد. */
+  async keepCourseName(courseId: string, actorId: string) {
+    const course = await this.prisma.course.findUnique({
+      where: { id: courseId },
+      select: {
+        nameSuggestionsSeen: true,
+        versions: { orderBy: { version: 'desc' }, take: 1, select: { titleAr: true } },
+        cohorts: { select: { title: true, status: true } },
+      },
+    })
+    if (!course) throw new AuthError('not_found', 'الدورة غير موجودة', 404)
+    const titleAr = course.versions[0]?.titleAr ?? courseId
+    const keys = suggestionsFromCohorts(titleAr, course.cohorts).map((sg) => suggestionKeyAr(sg.titleAr))
+    const seen = [...new Set([...course.nameSuggestionsSeen, ...keys])]
+    await this.prisma.$transaction(async (tx) => {
+      await tx.course.update({ where: { id: courseId }, data: { nameSuggestionsSeen: seen } })
+      await recordAudit(tx, {
+        actorId, action: 'catalog.course.keep_name', entityType: 'course', entityId: courseId,
+        meta: { titleAr, suggestions: keys.length },
+      })
+    })
+    return { kept: true as const, titleAr }
   }
 
   /* ═══ تغييرُ اسم الدورة ═══
@@ -958,13 +1003,25 @@ export class CatalogAdminService {
   private async applyCourseRename(tx: Prisma.TransactionClient, courseId: string, titleAr: string, actorId: string, changeRequestId?: string) {
     const course = await tx.course.findUnique({
       where: { id: courseId },
-      select: { currentVersion: true, versions: { orderBy: { version: 'desc' }, take: 1, select: { version: true, titleAr: true } } },
+      select: {
+        currentVersion: true, nameSuggestionsSeen: true,
+        versions: { orderBy: { version: 'desc' }, take: 1, select: { version: true, titleAr: true } },
+        cohorts: { select: { title: true, status: true } },
+      },
     })
     if (!course) return
     const latest = course.versions[0]
     const versions = [...new Set([latest?.version ?? course.currentVersion, course.currentVersion])]
+    /* من اختار اسما رأى الاقتراحاتِ كلَّها — فلا يعود ما لم يختره إلى «ما ينتظرك».
+       والاسمُ القديمُ معها: شعبٌ تحمله («— شعبة ١») تقترحه بعد التغيير، وهو ما تُرك للتوّ. */
+    const fromTitleAr = latest?.titleAr ?? courseId
+    const seenNow = [fromTitleAr, titleAr]
+      .flatMap((t) => suggestionsFromCohorts(t, course.cohorts).map((sg) => sg.titleAr))
+      .concat(fromTitleAr, titleAr)
+      .map(suggestionKeyAr)
+    const nameSuggestionsSeen = [...new Set([...course.nameSuggestionsSeen, ...seenNow])]
     await tx.courseVersion.updateMany({ where: { courseId, version: { in: versions } }, data: { titleAr } })
-    await tx.course.update({ where: { id: courseId }, data: { renamedTitleAr: titleAr, renamedAt: new Date() } })
+    await tx.course.update({ where: { id: courseId }, data: { renamedTitleAr: titleAr, renamedAt: new Date(), nameSuggestionsSeen } })
     await recordAudit(tx, {
       actorId, action: 'catalog.course.rename', entityType: 'course', entityId: courseId,
       before: { titleAr: latest?.titleAr ?? null }, after: { titleAr },

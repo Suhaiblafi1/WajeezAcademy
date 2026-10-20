@@ -116,6 +116,15 @@ export function registerCatalogRoutes(app: FastifyInstance, prisma: PrismaClient
     }
   })
 
+  /* «أبقِ الاسم الحاليّ» — اقتراحاتُ اليوم تُحفظ «رأيتُها» ولا تعود إلّا بشعبةٍ باسمٍ جديد */
+  app.post('/api/admin/catalog/courses/:courseId/keep-name', {
+    preHandler: requirePermission('catalog.course.edit'),
+    schema: { tags: ['admin-catalog'], summary: 'إبقاء اسم الدورة — تخفى اقتراحات اليوم حتى تفتح شعبة باسم جديد' },
+  }, async (req) => {
+    const { courseId } = z.object({ courseId: z.string() }).parse(req.params)
+    return admin.keepCourseName(courseId, req.auth!.userId)
+  })
+
   /* ═══ المعرّفُ يُعرض قبل الإنشاء ولا يُكتب ═══
 
      المؤلّفُ يرى ما سيُولَّد لحظةَ اختياره المسارَ الأمّ — لا بعد الحفظ.

@@ -389,6 +389,13 @@ model Course {
   /// يكتبه `CatalogAdminService.renameCourse`، و`null` تعني «اسمُ الملفّ».
   renamedTitleAr        String?
   renamedAt             DateTime?
+  /// ═══ اقتراحاتُ اسمٍ رآها صاحبُ القرار — فلا تعود إلّا بجديد (٢٠ أكتوبر ٢٠٢٦) ═══
+  ///
+  /// «هل سيكون هذا العملُ تلقائيّا لكلّ دورةٍ جديدةٍ يُفتح لها شعبة؟ افعله». فاقتراحُ
+  /// الاسم يصل «ما ينتظرك» وحدَه حين تُفتح شعبةٌ باسمٍ جديد. ومن قال «أبقِ الاسم»
+  /// أو اعتمد اسما لا يُسأل ثانيةً عن الاقتراحات نفسِها: مفاتيحُها المطبَّعة هنا
+  /// (`suggestionKeyAr`)، ولا يعود البندُ إلّا لشعبةٍ تحمل اسما لم يُرَ.
+  nameSuggestionsSeen   String[]                     @default([])
   createdBy             String?                      @db.Uuid
   createdAt             DateTime                     @default(now())
   updatedAt             DateTime                     @updatedAt

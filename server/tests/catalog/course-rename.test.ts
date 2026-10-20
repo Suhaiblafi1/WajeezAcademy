@@ -9,6 +9,9 @@
      · وغيرُه يقدّم طلبا، واعتمادُه يكتب الاسم — وكان الاعتمادُ يرفع الحالةَ ولا
        يكتب `titleAr` الحمولة أبدا.
 
+   وتلقائيّتُه (٢٠ أكتوبر ٢٠٢٦، «افعله»): الاقتراحُ الجديدُ يصل «ما ينتظرك» بنفسه،
+   والمعتمَدُ و«أبقِ الاسم» لا يعودان، وشعبةٌ تُفتح باسمٍ لم يُرَ تُعيده.
+
    ⚠ أُثبت سقوطُه: أُعيد المستوردُ إلى `titleAr: c.title_ar` فسقط حارسُ الاستيراد
    بالاسم القديم، وأُزيل `applyCourseRename` من `decide` فسقط حارسُ الطلب. */
 
@@ -18,6 +21,7 @@ import { setupTestDb, testPrisma } from '../helpers/db'
 import { CatalogAdminService } from '../../services/catalog-admin.service'
 import { importCatalog } from '../../catalog/importer'
 import { cohortTitleAr } from '../../../src/application/learning/cohort-title'
+import { StaffInboxService } from '../../services/staff-inbox.service'
 
 const MAKER = '00000000-0000-0000-0000-0000000000a1'
 const CHECKER = '00000000-0000-0000-0000-0000000000b2'
@@ -58,7 +62,7 @@ beforeAll(async () => {
 afterAll(async () => {
   await prisma.cohort.deleteMany({ where: { id: { in: cohortIds } } })
   for (const [id, o] of [[courseId, original], [otherId, otherOriginal]] as const) {
-    await prisma.course.update({ where: { id }, data: { renamedTitleAr: null, renamedAt: null, status: o.status } })
+    await prisma.course.update({ where: { id }, data: { renamedTitleAr: null, renamedAt: null, nameSuggestionsSeen: [], status: o.status } })
     await prisma.courseVersion.updateMany({ where: { courseId: id }, data: { titleAr: o.titleAr } })
   }
 })
@@ -117,5 +121,42 @@ describe('أسماءُ الدورات', () => {
     const cr = await admin.submitChangeRequest('course', otherId, { titleAr: 'اسم من الطلب العام' }, MAKER)
     await admin.decide(cr.id, 'approve', undefined, CHECKER)
     expect(await titleOf(otherId)).toBe('اسم من الطلب العام')
+  })
+})
+
+describe('الاقتراحُ يأتي وحدَه مع كلّ شعبةٍ باسمٍ جديد', () => {
+  const inboxItem = async () =>
+    (await new StaffInboxService(prisma).forStaff(MAKER, ['catalog.course.edit'])).find((i) => i.key === 'course_names')
+  const newCount = async (id: string) => (await admin.courseNames()).find((r) => r.id === id)?.newSuggestions ?? 0
+
+  it('ما اعتُمد اسمٌ بجانبه لا يعود — ولا الاسمُ القديمُ الذي تحمله شعبةٌ افتراضيّة', async () => {
+    /* `courseId` غُيّر اسمُها في الوصف السابق، وشعبتُها الأولى ما زالت «الاسم القديم — شعبة ١» */
+    expect(await newCount(courseId)).toBe(0)
+    expect((await inboxItem())?.sample.join(' ') ?? '').not.toContain('إدارة المشاريع')
+  })
+
+  it('شعبةٌ تُفتح باسمٍ لم يُرَ تعيد الدورةَ إلى «ما ينتظرك» بنفسها', async () => {
+    const c = await prisma.cohort.create({ data: { courseId, title: 'قيادة المشاريع الرقمية — شعبة ٤' } })
+    cohortIds.push(c.id)
+    expect(await newCount(courseId)).toBe(1)
+    const item = await inboxItem()
+    expect(item?.href).toBe('/admin/catalog?names=1')
+    expect(item?.sample.join(' ')).toContain('قيادة المشاريع الرقمية')
+  })
+
+  it('و«أبقِ الاسم الحاليّ» يُخرجها ولا يغيّر اسمَها', async () => {
+    await admin.keepCourseName(courseId, MAKER)
+    expect(await newCount(courseId)).toBe(0)
+    expect(await titleOf(courseId)).toBe('إدارة المشاريع الاحترافية')
+    expect((await inboxItem())?.sample.join(' ') ?? '').not.toContain('قيادة المشاريع الرقمية')
+    const audit = await prisma.auditEvent.findFirst({ where: { action: 'catalog.course.keep_name', entityId: courseId } })
+    expect(audit).not.toBeNull()
+  })
+
+  it('ولا يرى البندَ من لا يملك تعديلَ الدورة', async () => {
+    const c = await prisma.cohort.create({ data: { courseId, title: 'تخطيط المشاريع الذكي' } })
+    cohortIds.push(c.id)
+    const keys = (await new StaffInboxService(prisma).forStaff(MAKER, ['catalog.view'])).map((i) => i.key)
+    expect(keys).not.toContain('course_names')
   })
 })

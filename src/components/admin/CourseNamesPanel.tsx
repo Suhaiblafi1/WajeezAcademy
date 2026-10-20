@@ -28,7 +28,9 @@ type CourseNameRow = {
   id: string; status: string; titleAr: string; termEn: string | null; legacyTitleAr: string | null
   renamedAt: string | null
   cohorts: { id: string; title: string; status: string; startsAt: string | null }[]
-  suggestions: CourseNameSuggestion[]
+  /** `isNew`: لم يُرَ بعد — ما اعتُمد اسمٌ بجانبه ولا قيل فيه «أبق الاسم» */
+  suggestions: (CourseNameSuggestion & { isNew: boolean })[]
+  newSuggestions: number
   pendingRename: { id: string; titleAr: string } | null
 };
 
@@ -47,7 +49,8 @@ function sourceAr(s: CourseNameSuggestion): string {
   return n <= 10 ? `اسم ${n} شعب` : `اسم ${n} شعبة`;
 }
 
-type Filter = "suggested" | "all" | "pending";
+/* «اقتراح جديد» هو ما يصل «ما ينتظرك» نفسُه — فالرقمان واحد */
+type Filter = "new" | "all" | "pending";
 
 export default function CourseNamesPanel({
   canSelfApprove, onRenamed,
@@ -60,7 +63,7 @@ export default function CourseNamesPanel({
   const [error, setError] = useState<string | null>(null);
   const [q, setQ] = useState("");
   const [page, setPage] = useState(1);
-  const [filter, setFilter] = useState<Filter>("suggested");
+  const [filter, setFilter] = useState<Filter>("new");
   const [drafts, setDrafts] = useState<Record<string, string>>({});
   const [busyId, setBusyId] = useState<string | null>(null);
 
@@ -76,13 +79,13 @@ export default function CourseNamesPanel({
 
   const counts = useMemo(() => ({
     all: rows?.length ?? 0,
-    suggested: rows?.filter((r) => r.suggestions.length > 0).length ?? 0,
+    fresh: rows?.filter((r) => r.newSuggestions > 0).length ?? 0,
     pending: rows?.filter((r) => r.pendingRename).length ?? 0,
   }), [rows]);
 
   const view = paginate(
     (rows ?? []).filter((r) => (
-      filter === "all" || (filter === "pending" ? r.pendingRename : r.suggestions.length > 0)
+      filter === "all" || (filter === "pending" ? r.pendingRename : r.newSuggestions > 0)
     ) && matchesQuery(q, [
       r.id, r.titleAr, r.termEn, r.legacyTitleAr, ...r.cohorts.map((c) => c.title),
       ...r.suggestions.map((s) => s.titleAr),
@@ -91,7 +94,24 @@ export default function CourseNamesPanel({
   );
 
   /* الحقلُ يبدأ بأوّل اقتراح — فمن وافق عليه ضغط زرّا واحدا */
-  const draftOf = (r: CourseNameRow) => drafts[r.id] ?? r.suggestions[0]?.titleAr ?? "";
+  const draftOf = (r: CourseNameRow) =>
+    drafts[r.id] ?? (r.suggestions.find((s) => s.isNew) ?? r.suggestions[0])?.titleAr ?? "";
+
+  /* الخيارُ الثاني: الاسمُ يبقى، واقتراحاتُ اليوم لا تعود إلّا بشعبةٍ باسمٍ جديد */
+  const keep = async (r: CourseNameRow) => {
+    setBusyId(r.id); setError(null);
+    try {
+      await apiPost(`/api/admin/catalog/courses/${r.id}/keep-name`, {});
+      toast(`بقي اسمها «${r.titleAr}»`);
+      setDrafts((d) => { const next = { ...d }; delete next[r.id]; return next; });
+      await load();
+      onRenamed?.();
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "تعذر حفظ القرار");
+    } finally {
+      setBusyId(null);
+    }
+  };
 
   const rename = async (r: CourseNameRow) => {
     const titleAr = tidyCourseTitleAr(draftOf(r));
@@ -123,13 +143,14 @@ export default function CourseNamesPanel({
   return (
     <Card className="border-gold/20">
       <p className="text-read leading-7 text-muted-foreground">
-        الدورات التي لها شعب فقط. لكل دورة أسماء شعبها واقتراحات منها: اختر واحدا أو عدّله، ثم اعتمده.
-        <b className="text-foreground"> يتغير اسم الدورة في كل الشاشات والموقع، وتبقى أسماء الشعب كما هي.</b>
+        الدورات التي لها شعب فقط. كل شعبة تفتح باسم جديد تأتي هنا وحدها، وتصل «ما ينتظرك».
+        <b className="text-foreground"> «اعتمد»: يتغير اسم الدورة في كل الشاشات والموقع. «أبق الحالي»: يبقى الاسم ولا تعود هذه الاقتراحات.</b>
+        {" "}وأسماء الشعب لا تتغير في الحالين.
       </p>
 
       <div className="mt-3 flex flex-wrap gap-2">
         {([
-          ["suggested", `لها اقتراح (${counts.suggested})`],
+          ["new", `اقتراح جديد (${counts.fresh})`],
           ["all", `كل الدورات (${counts.all})`],
           ...(counts.pending > 0 ? [["pending", `تنتظر الاعتماد (${counts.pending})`] as const] : []),
         ] as const).map(([k, label]) => (
@@ -148,8 +169,8 @@ export default function CourseNamesPanel({
 
       {view.total === 0 && (
         <p className="mt-4 text-center text-sm text-muted-foreground">
-          {filter === "suggested" && !q
-            ? "لا اقتراح الآن — أسماء الشعب مثل أسماء دوراتها. افتح «كل الدورات» لتغيير اسم بنفسك."
+          {filter === "new" && !q
+            ? "لا اقتراح جديد — ما يأتي مع الشعب القادمة يظهر هنا. افتح «كل الدورات» لتغيير اسم بنفسك."
             : "لا نتيجة — امسح البحث أو افتح «كل الدورات»."}
         </p>
       )}
@@ -190,7 +211,7 @@ export default function CourseNamesPanel({
                   <OptionGrid
                     cols={2}
                     name={`اسم ${r.titleAr}`}
-                    items={r.suggestions.map((s) => ({ value: s.titleAr, label: `${s.titleAr} — ${sourceAr(s)}` }))}
+                    items={r.suggestions.map((s) => ({ value: s.titleAr, label: `${s.titleAr} — ${sourceAr(s)}${s.isNew ? " · جديد" : ""}` }))}
                     isOn={(v) => draft === v}
                     onToggle={(v) => setDrafts((d) => ({ ...d, [r.id]: v }))}
                   />
@@ -207,6 +228,11 @@ export default function CourseNamesPanel({
                   onClick={() => void rename(r)}>
                   {canSelfApprove ? "اعتمد الاسم" : "قدم للاعتماد"}
                 </Button>
+                {r.newSuggestions > 0 && (
+                  <Button tone="ghost" size="sm" disabled={busyId !== null} onClick={() => void keep(r)}>
+                    أبق الاسم الحالي
+                  </Button>
+                )}
               </div>
               {draft && !tidy && <p className="mt-1 text-read text-muted-foreground">الاسم من ٣ إلى ١٢٠ حرفا.</p>}
             </Inset>
