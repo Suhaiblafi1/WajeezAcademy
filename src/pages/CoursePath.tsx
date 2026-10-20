@@ -420,12 +420,12 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                   <h3 className="flex items-center gap-1.5 text-read font-black text-foreground">
                     <User className="h-3.5 w-3.5 text-teal-light-ink" /> لمن هذه الدورة
                   </h3>
-                  <p className="mt-2 rounded-xl border-s-2 border-teal bg-teal/[0.07] px-3 py-2 text-read font-bold leading-relaxed text-foreground">
+                  <Inset as="p" tone="accent" className="mt-2 px-3 py-2 text-read font-bold leading-relaxed text-foreground">
                     {who.lead}
-                  </p>
+                  </Inset>
                   {who.stages.length > 0 && (
                     <div className="mt-3">
-                      <p className="text-fine font-bold text-muted-foreground">تناسبك إن كنت</p>
+                      <p className="text-read font-bold text-muted-foreground">تناسبك إن كنت</p>
                       <ul className="mt-1.5 flex flex-wrap gap-1.5">
                         {who.stages.map((st) => (
                           <li key={st} className="rounded-full border border-teal/40 bg-teal/10 px-2.5 py-0.5 text-fine font-bold text-teal-light-ink">
@@ -437,7 +437,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                   )}
                   {who.goals.length > 0 && (
                     <div className="mt-3">
-                      <p className="text-fine font-bold text-muted-foreground">وتريد</p>
+                      <p className="text-read font-bold text-muted-foreground">وتريد</p>
                       <ul className="mt-1.5 space-y-1">
                         {who.goals.map((g) => (
                           <li key={g} className="flex items-start gap-1.5 text-read leading-relaxed text-foreground">
@@ -449,7 +449,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                     </div>
                   )}
                   {(who.stages.length > 0 || who.goals.length > 0) && (
-                    <p className="mt-2 flex items-center gap-1 text-fine text-muted-foreground">
+                    <p className="mt-2 flex items-center gap-1 text-read text-muted-foreground">
                       <Sparkles className="h-3 w-3 text-gold-ink" />
                       {who.fromCohorts > 1 ? "من اختيار مدرّبي شعبها" : "من اختيار مدرّب الشعبة"}
                     </p>
