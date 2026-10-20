@@ -335,6 +335,7 @@ const PHRASES: Record<string, string> = {
   'trainer.suggestion.edit': 'تعديل المدرّب «لماذا نفتخر به» — ينتظر اعتمادنا',
   'trainer.suggestion.approve_edit': 'اعتماد تعديل المدرّب على «لماذا نفتخر به»',
   'trainer.suggestion.reject': 'رفض المدرّب اقتراحنا على بطاقته',
+  'trainer.drafting_bundle.download': 'تنزيل ملفّ المدرّب وسيرته وشهاداته لكتابة اقتراحاتنا',
   'account.avatar.upload': 'رفع صاحب الحساب صورته',
   /* إتاحةُ المدرّب (المهمّة ٧١) — تُسجَّل لأنّ الغيابَ **يردُّ إسنادا**:
      فمن سأل «لماذا لم يُسنَد؟» يجد الجوابَ في الأثر لا في واتساب. */
