@@ -80,7 +80,7 @@ describe('ما حُفظ عن التوقيع يُعرَض لصاحبه', () => {
      حاجةً لمعرفة أين وقف عقدُه. */
   it('وما لم يُعتمَد بعد يُقال إنّه ينتظر — لا خانةٌ تُطوى بصمت', () => {
     const html = render({ ...SEALED, countersignedAt: null, academySignatoryName: null, academySignatoryTitle: null })
-    expect(html).toContain('ينتظر اعتمادَنا')
+    expect(html).toContain('ينتظر اعتمادنا')
     expect(html, 'وتوقيعُه هو يبقى معروضا').toContain(SEALED.signerLegalName!)
   })
 
@@ -115,7 +115,7 @@ describe('بصمةُ النصّ — والفراغُ لا يُقرأ تطابق�
 
   it('وما لم تُحفَظ بصمتُه يُقال لصاحبه ولا يُموَّه', () => {
     const html = render({ ...SEALED, signedBodyHash: null })
-    expect(html).toContain('لم تُحفَظ بصمةُ التوقيع')
+    expect(html).toContain('لم تحفظ بصمة التوقيع')
     expect(html, 'ولا يُقال إنّها متطابقةٌ وهي غيرُ محفوظة').not.toContain('بصمتاهما متطابقتان')
   })
 })

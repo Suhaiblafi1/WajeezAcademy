@@ -69,11 +69,10 @@ describe('② الرابط الواسع يقبل على ما يدرّبه صاح
     const fn = svc.slice(svc.indexOf('async acceptAtCheckout'))
     const body = fn.slice(0, fn.indexOf('\n  }'))
     expect(body, 'لا فرع للرابط الواسع').toMatch(/link\.cohortId === null/)
-    /* والقبولُ **مشتقٌّ من الإسناد**: استعلامُ `cohortTrainer` بـ`profileId`
-       صاحبِ الرمز وبما في السلّة. وبلا هذا يصير الرمزُ الواسعُ أجرَ إحالةٍ
-       على شعبةِ زميله. */
+    /* والقبولُ **مشتقٌّ من الإسناد**: من تُحتسب له كلُّ شعبةٍ في السلّة (`cohortLeadTrainers`) هو صاحبُ الرمز.
+       وبلا هذا يصير الرمزُ الواسعُ أجرَ إحالةٍ على شعبةِ زميله — ومنذ ٢٠ أكتوبر ٢٠٢٦ لا على شعبةٍ هو مساعدٌ فيها. */
     expect(body, 'القبول غير مقيّد بإسناد صاحب الرمز').toMatch(
-      /cohortTrainer\.findMany\(\{[\s\S]{0,200}profileId: link\.profileId[\s\S]{0,200}cohortId: \{ in: cohortIds \}/,
+      /const leads = await cohortLeadTrainers\(this\.prisma, cohortIds\)\s*const owned = new Set\(cohortIds\.filter\(\(id\) => leads\.get\(id\) === link\.profileId\)\)/,
     )
     expect(body, 'لا يهمل الرمز حين لا يدرّب شيئا من السلّة').toMatch(/reason: 'not_his_cohort'/)
   })
@@ -83,17 +82,18 @@ describe('② الرابط الواسع يقبل على ما يدرّبه صاح
     const fn = enr.slice(enr.indexOf('private async referralFor'))
     const body = fn.slice(0, fn.indexOf('\n  }'))
     expect(body, 'رمز الشعبة لا يطابق بشعبتها').toMatch(/link\.cohortId === cohortId/)
+    /* ومنذ ٢٠ أكتوبر ٢٠٢٦ لمن تُحتسب له الشعبة (`cohortLeadTrainer`) — لا لمساعدٍ لا يُدفع له عنها */
     expect(body, 'الواسع يختم بلا فحص إسناد').toMatch(
-      /cohortTrainer\.findFirst\(\{[\s\S]{0,160}cohortId[\s\S]{0,160}profileId: link\.profileId/,
+      /\(await cohortLeadTrainer\(this\.prisma, cohortId\)\) === link\.profileId \? \{ profileId: link\.profileId, code: link\.code \} : null/,
     )
-    expect(body, 'الختم لا يتوقّف على الإسناد').toMatch(/teaches \?/)
   })
 
   it('والعدّ على ختم التسجيل لا على النقرات — والمنسحب خارجه', () => {
     const fn = svc.slice(svc.indexOf('async reachOf'))
     const body = fn.slice(0, fn.indexOf('\n  }'))
     expect(body).toMatch(/enrollment\.count\(\{[\s\S]{0,120}referralProfileId: profile\.id/)
-    expect(body, 'المنسحب يعدّ مسجّلا').toMatch(/status: \{ not: 'dropped' \}/)
+    /* والملتحقُ وحدَه منذ ٢٠ أكتوبر ٢٠٢٦ — لا قائمةُ الانتظار */
+    expect(body, 'المنسحب يعدّ مسجّلا').toMatch(/status: \{ in: \['enrolled', 'completed'\] \}/)
   })
 })
 
@@ -160,9 +160,9 @@ describe('الباب ينسب لصاحبه، واللوحة تقول كم دخل
     expect(home).toMatch(/!referral\.publicReady/)
     const svc = code('server/services/referral.service.ts')
     const fn = svc.slice(svc.indexOf('async wideLinkFor'))
-    /* و`publicReady` مشتقٌّ من البوّابة نفسِها لا ثابتا */
+    /* و`publicReady` مشتقٌّ من البوّابة نفسِها لا ثابتا — وبشرط صفحته كلِّه منذ ٢٠ أكتوبر ٢٠٢٦ (`publicTrainerWhere`) */
     expect(fn.slice(0, fn.indexOf('\n  }'))).toMatch(
-      /publicReady: profile\.publicVisibility && profile\.isVerified && profile\.publishApprovedAt !== null/,
+      /publicReady: \(await this\.prisma\.trainerProfile\.count\(\{\s*where: \{ id: profile\.id, \.\.\.publicTrainerWhere\(\), application: \{ status: 'active' \} \},\s*\}\)\) > 0/,
     )
   })
 })

@@ -19,6 +19,7 @@ import { EnrollmentService } from '../../services/enrollment.service'
 import { EarningsService } from '../../services/earnings.service'
 import { makeReadyForApproval } from '../helpers/trainer-ready'
 import { approvedTrainerPlan } from '../helpers/approved-trainer'
+import { PublicCatalogService } from '../../services/public-catalog.service'
 
 let prisma: PrismaClient
 let referrals: ReferralService
@@ -167,5 +168,46 @@ describe('رابطُ دعوة المدرّب', () => {
        فيسقط هذا الحارسُ قبل أن يصل رابطٌ مكسورٌ إلى أحد. */
     const { slug } = await referrals.wideLinkFor(trainerUserId)
     expect(slug, 'دخل المسارَ محرفٌ يكسر العنوان').not.toMatch(/[/?#%\s]/)
+  })
+
+  /* ═══ وما يُقال عن الرابط يصدق (٢٠ أكتوبر ٢٠٢٦) ═══
+     ① «يعمل» بشرط صفحته نفسِه — كان من ثلاثة أعمدة، والصفحةُ تشترط دورةً منشورةً هذا الفصل فتردّ ٤٠٤.
+     ② والرابطُ والختمُ لمن تُحتسب له الشعبة — المساعدُ كان يُوعَد بأجر إحالةٍ لا يُدفع.
+     ③ و«سجّل عبره» لا يعدّ قائمةَ الانتظار.
+     ورُئي ساقطا: أُعيد `publicReady` إلى الأعمدة الثلاثة فسقط ①، وأُعيد الرابطُ لكلّ مدرّبٍ في الشعبة فسقط ②،
+     وأُعيد العدُّ على كلّ غير مُسقَط فسقط ③. */
+  it('⚠️ ① «يعمل» بشرط صفحته — ملفّ معتمد النشر بلا دورة منشورة هذا الفصل لا يعمل رابطه', async () => {
+    /* المدرّبُ الآخرُ بلا شعبةٍ بعدُ — فلا دورةَ منشورةً له، ولو اعتُمد نشرُ ملفّه */
+    await prisma.trainerProfile.updateMany({
+      where: { userId: otherTrainerUserId }, data: { publicVisibility: true, isVerified: true, publishApprovedAt: new Date(), publishApprovedBy: adminId },
+    })
+    const wide = await referrals.wideLinkFor(otherTrainerUserId)
+    const page = await new PublicCatalogService(prisma).trainerPublicPage(wide.slug).then(() => true, () => false)
+    expect(page, 'صفحته تفتح — فالفحص على لا شيء').toBe(false)
+    expect(wide.publicReady, 'قيل «يعمل» وصفحته لا تفتح').toBe(false)
+    /* وصاحبُ الشعبة المفتوحة تفتح صفحتُه ويقال له ذلك */
+    await prisma.trainerProfile.update({
+      where: { id: profileId }, data: { publicVisibility: true, isVerified: true, publishApprovedAt: new Date(), publishApprovedBy: adminId },
+    })
+    const mine = await referrals.wideLinkFor(trainerUserId)
+    expect(mine.publicReady).toBe(await new PublicCatalogService(prisma).trainerPublicPage(mine.slug).then(() => true, () => false))
+  })
+
+  it('⚠️ ② والمساعد لا رابط له في الشعبة ولا يختم رابطه الواسع عليها', async () => {
+    const otherProfile = await prisma.trainerProfile.findFirstOrThrow({ where: { userId: otherTrainerUserId } })
+    await prisma.cohortTrainer.create({ data: { cohortId, profileId: otherProfile.id, role: 'assistant', assignedBy: adminId } })
+    await expect(referrals.linkFor(otherTrainerUserId, cohortId)).rejects.toMatchObject({ code: 'not_your_cohort' })
+    expect((await referrals.cohortLinksFor(otherTrainerUserId)).map((l: { cohortId: string }) => l.cohortId)).not.toContain(cohortId)
+    const wide = await referrals.wideLinkFor(otherTrainerUserId)
+    const buyer = (await new AuthService(prisma).register('buyer-ref-asst@test.local', 'Buyer#12345', 'مشتر عبر المساعد')).userId
+    const e = await enrollments.enroll(cohortId, buyer, null, { referralCode: wide.code })
+    expect((await prisma.enrollment.findUniqueOrThrow({ where: { id: e.id } })).referralProfileId, 'ختم لمساعد لا يدفع له').toBeNull()
+  })
+
+  it('⚠️ ③ و«سجّل عبره» لا يعدّ قائمة الانتظار', async () => {
+    const before = (await referrals.reachOf(trainerUserId)).registered
+    const waiting = (await new AuthService(prisma).register('buyer-ref-wait@test.local', 'Buyer#12345', 'منتظر')).userId
+    await prisma.enrollment.create({ data: { cohortId: otherCohortId, userId: waiting, status: 'waitlisted', referralProfileId: profileId } })
+    expect((await referrals.reachOf(trainerUserId)).registered, 'عدّت قائمة الانتظار').toBe(before)
   })
 })

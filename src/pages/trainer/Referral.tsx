@@ -456,6 +456,8 @@ export default function Referral() {
   const [referral, setReferral] = useState<MyReferral | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [cohortLinks, setCohortLinks] = useState<CohortLink[] | null>(null);
+  /* وإخفاقُها يُقال لا يُقرأ «لا شعبة مفتوحة» (٢٠ أكتوبر ٢٠٢٦) — من له شعبٌ مفتوحةٌ كان يُقال له إنّه لا شعبةَ له */
+  const [linksDown, setLinksDown] = useState(false);
   /* المنسوخُ يُعلَّم بمفتاحه لا برايةٍ واحدة: رايةٌ واحدةٌ لروابطَ كثيرةٍ
      تُضيء «نُسخ» تحت كلّ زرٍّ معا، فلا يدري أيَّها نسخ. */
   const [copied, setCopied] = useState<string | null>(null);
@@ -474,7 +476,7 @@ export default function Referral() {
     /* وروابطُ شعبه: إخفاقُها لا يُعطّل الرابطَ العامّ — ذاك هو البند */
     void apiGet<CohortLink[]>("/api/trainer/me/referral-links")
       .then((r) => { if (alive) setCohortLinks(r); })
-      .catch(() => { if (alive) setCohortLinks([]); });
+      .catch(() => { if (alive) { setCohortLinks([]); setLinksDown(true); } });
     return () => { alive = false };
   }, []);
 
@@ -539,7 +541,7 @@ export default function Referral() {
                 بعد — فيُقال له لمَ ومَن يرفعه، لا يُعطى رابطا يردّ ٤٠٤. */}
             {!referral.publicReady && (
               <Inset as="p" className="mt-3 px-4 py-3 text-read leading-6 text-muted-foreground">
-                صفحتك لا تفتح للعامّة قبل اعتماد الإدارة نشر ملفّك. راجعها، ثمّ يعمل الرابط نفسه.
+                صفحتك لا تفتح للعامّة بعد: تفتح حين تعتمد الإدارة نشر ملفّك وتكون لك دورة منشورة هذا الفصل. ثمّ يعمل الرابط نفسه.
               </Inset>
             )}
           </Panel>
@@ -562,7 +564,11 @@ export default function Referral() {
               <p className="flex items-center gap-2 text-sm font-black">
                 <Link2 className="h-4 w-4 text-teal-light-ink" aria-hidden="true" /> رابط لكلّ شعبة
               </p>
-              {cohortLinks.length === 0 ? (
+              {linksDown ? (
+                <p className="mt-2 text-read leading-7 text-muted-foreground" role="status">
+                  تعذّر جلب روابط شعبك الآن. أعد فتح الصفحة بعد قليل — ورابطك العامّ أعلاه يعمل.
+                </p>
+              ) : cohortLinks.length === 0 ? (
                 <p className="mt-2 text-read leading-7 text-muted-foreground">
                   لا شعبة مفتوحة لك الآن. يظهر رابطها هنا حين تفتح، ورابطك العامّ يبلغها تلقائيّا.
                 </p>

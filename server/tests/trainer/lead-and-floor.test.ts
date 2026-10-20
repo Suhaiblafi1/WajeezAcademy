@@ -29,6 +29,7 @@ let adminId = ''
 let leadUserId = ''
 let leadProfileId = ''
 let assistantProfileId = ''
+let assistantUserId = ''
 let cohortId = ''
 let floorCohortId = ''
 
@@ -77,7 +78,7 @@ describe('الأصيلُ والحدُّ الأدنى — معادلةٌ واحد
     }
     const lead = await mk('trainer-lead@test.local', 'المدرّب الأصيل')
     const assistant = await mk('trainer-assistant@test.local', 'المساعد')
-    leadUserId = lead.userId; leadProfileId = lead.profileId; assistantProfileId = assistant.profileId
+    leadUserId = lead.userId; leadProfileId = lead.profileId; assistantProfileId = assistant.profileId; assistantUserId = assistant.userId
 
     const mkCohort = async (title: string) => (await prisma.cohort.create({
       data: { plans: { create: approvedPlanBy(leadProfileId) }, courseId: 'C-BIZ-101', title, status: 'open', registrationOpen: true, financialReady: true, price: 100, currency: 'USD', capacity: 20 },
@@ -175,5 +176,22 @@ describe('الأصيلُ والحدُّ الأدنى — معادلةٌ واحد
     const row = mine.cohorts.find((c: { cohortId: string }) => c.cohortId === floorCohortId)
     expect(row!.floorApplied, 'لم يُقَل إنّ الأرضيّةَ كُمّلت').toBe(true)
     expect(row!.billedSeats, 'المحتسَبُ عددُ الأرضيّة لا عددُ المسجّلين').toBe(5)
+  })
+
+  /* ═══ ولا متوقَّعَ لشعبةٍ لا تُحتسب له (٢٠ أكتوبر ٢٠٢٦) ═══
+     كان جدولُ «مستحقّاتي» من كلّ إسنادٍ بلا دورٍ ولا حال: المساعدُ يرى متوقّعا بأجره وكشفُ الشعبة لأصيلها،
+     والملغاةُ بمقاعدَ لم تُردّ ولا كشفَ لها أبدا. وهذا مالٌ يُعرض ولا يُدفع. ورُئي ساقطا: أُعيد الجدولُ من كلّ
+     إسنادٍ فسقط. */
+  it('⚠️ والمساعد لا يرى متوقّعا لشعبة كشفها لأصيلها — والملغاة لا تُعرض', async () => {
+    const helper = await earnings.listForTrainer(assistantUserId)
+    expect(helper.cohorts.map((c: { cohortId: string }) => c.cohortId), 'متوقّع لمساعد لا يُدفع له').not.toContain(cohortId)
+    const gone = await prisma.cohort.create({
+      data: { plans: { create: approvedPlanBy(leadProfileId) }, courseId: 'C-BIZ-101', title: 'شعبة ألغيت', status: 'cancelled', price: 100, currency: 'USD', capacity: 20 },
+    })
+    await prisma.cohortTrainer.create({ data: { cohortId: gone.id, profileId: leadProfileId, role: 'lead', assignedBy: adminId } })
+    const lead = await earnings.listForTrainer(leadUserId)
+    const ids = lead.cohorts.map((c: { cohortId: string }) => c.cohortId)
+    expect(ids, 'متوقّع لشعبة ملغاة').not.toContain(gone.id)
+    expect(ids).toEqual(expect.arrayContaining([cohortId, floorCohortId]))
   })
 })

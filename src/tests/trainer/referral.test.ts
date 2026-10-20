@@ -82,7 +82,8 @@ describe('رابط دعوة المدرّب', () => {
     /* والخادمُ يردّ الرمزَ نفسَه لا رمزا جديدا لكلّ فتحة — لو تغيّر ضاع ما نُشر */
     const svc = code('server/services/referral.service.ts')
     expect(svc).toMatch(/async cohortLinksFor\(/)
-    expect(svc, 'روابط الشعب لا تقتصر على المفتوحة').toMatch(/status: \{ in: \['open', 'active', 'full'\] \}/)
+    /* والمفتوحةُ التي تُحتسب له وحدَها منذ ٢٠ أكتوبر ٢٠٢٦ (`leadCohortsOf`) — لا ما هو مساعدٌ فيه */
+    expect(svc, 'روابط الشعب لا تقتصر على المفتوحة').toMatch(/leadCohortsOf\(this\.prisma, profile\.id, \['open', 'active', 'full'\]\)/)
   })
 
   it('والكشف بندان: عامّ وعبر الرابط — وأجر الإحالة يضبط من الإدارة', () => {
