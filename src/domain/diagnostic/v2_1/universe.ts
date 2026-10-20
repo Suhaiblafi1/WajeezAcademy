@@ -24,7 +24,7 @@ import type { CatalogCourse, FactBag } from '../types'
 import { pathwayDomainsV2, layersOfSkill, isDiagnosticSkillActive, functionDomainsV2 } from '../v2/data'
 import { resetFamilyIndex } from './skill-families'
 import type { DomainId } from '../v2/types'
-import { GOALS_V21, NEEDS_V21, type CareerStage } from './maps'
+import { GOALS_V21, NEEDS_V21, PERSONA_BASE_TO_STAGES, type CareerStage } from './maps'
 import { planOf } from './data'
 
 /* ─── أنواع الفضاء ─── */
@@ -117,16 +117,9 @@ export interface RecommendationEntity {
 
 /* ─── خرائط اشتقاق موثقة ─── */
 
-/** شخصية V2 الأساسية → مراحل V2.1 (توسعة مشروعة: الموظف يشمل بداية المسار وذو الخبرة) */
-export const PERSONA_BASE_TO_STAGES: Record<string, CareerStage[]> = {
-  student: ['university_student', 'fresh_graduate'],
-  early_career: ['fresh_graduate', 'early_career'],
-  employee: ['early_career', 'experienced'],
-  manager: ['manager', 'senior_manager'],
-  founder: ['founder'],
-  freelancer: ['freelancer'],
-  trainer: ['trainer_ld'],
-}
+/* شخصية V2 الأساسية → مراحل V2.1 — انتقلت إلى `maps.ts` (٢٠ أكتوبر ٢٠٢٦) ليقرأها قسمُ «لمن هذه الدورة»
+   بلا أن يحمل المحرّكَ كلَّه؛ وتُصدَّر من هنا كما كانت لمن يستوردها. */
+export { PERSONA_BASE_TO_STAGES } from './maps'
 
 /** رموز الأهداف القديمة القابلة للوصول في B2C الحالي — من GOALS_V21 حصرًا */
 export const REACHABLE_LEGACY_GOALS = new Set(GOALS_V21.map((g) => g.legacy_goal))
