@@ -102,3 +102,17 @@ describe('④ الشاشتان', () => {
     expect(admin).toMatch(/\{c\.moved && \([\s\S]{0,200}?movedLabelAr\(c\.moved\)/)
   })
 })
+
+/* ═══ ⑤ وتنقلها الإدارةُ بنفسها — «انقلها إلى موسم آخر» (٢٠ أكتوبر ٢٠٢٦) ═══ */
+describe('⑤ نقل الإدارة بنفسها', () => {
+  const strip = (s: string) => s.replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '').replace(/^\s*\/\/.*$/gm, '')
+  const read = (p: string) => strip(readFileSync(join(process.cwd(), p), 'utf8'))
+  it('الزر في صف الشعبة يرسل إلى باب النقل — والباب ينقل بالنقل نفسه', () => {
+    expect(read('src/components/admin/StaffMoveBox.tsx')).toContain('`/api/admin/cohorts/${cohortId}/move`')
+    expect(read('src/pages/admin/AdminCohorts.tsx')).toMatch(/<StaffMoveBox cohortId=\{c\.id\} status=\{c\.status\} startsAt=\{c\.startsAt\}/)
+    const routes = read('server/http/routes/learning-portal.routes.ts')
+    const at = routes.indexOf("app.post('/api/admin/cohorts/:cohortId/move'")
+    expect(at).toBeGreaterThan(-1)
+    expect(routes.slice(at, at + 700)).toMatch(/moves\.staffMove\(req\.auth!\.userId, cohortId, body\)/)
+  })
+})
