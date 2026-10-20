@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   AlertTriangle,
   CalendarClock, CalendarPlus, CheckCircle2, ChevronDown, CopyPlus, Loader2, Lock, Play, RefreshCw, Sparkles,
-  ServerOff, UserPlus, Users, Video, XCircle,
+  ServerOff, Trash2, UserPlus, Users, Video, XCircle,
 } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import { apiGet, apiPost, apiPut, ApiError } from "@/services/api";
@@ -201,6 +201,32 @@ export default function AdminCohorts() {
       if (expanded) await loadChecklist(expanded);
     } catch (err) {
       setFlash({ kind: "error", text: err instanceof ApiError ? err.message : "تعذر تنفيذ الإجراء" });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  /* ═══ وحذفُ الملغاة التي لا مدرّبَ لها (٢٠ أكتوبر ٢٠٢٦) ═══
+     ألغى صاحبُ المنصّة ستَّ شعبٍ قديمةٍ بلا مدرّب، ثمّ سأل: «هل هناك خاصّيّةُ حذفٍ غيرُ الإلغاء؟»، واختار
+     زرَّ الحذف. بضغطتين، والقاعدةُ قاعدةُ صندوق المواسم نفسُها (`trainerless-cohort-delete.service.ts`):
+     ما فيه ملتحقٌ أو طلبُ تسجيلٍ لا يُحذف، ويُقال سببُه. */
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const deleteCancelled = async (id: string) => {
+    if (busy) return;
+    setBusy(true); setFlash(null);
+    try {
+      const r = await apiPost<{ deleted: { id: string }[]; kept: { reasonAr: string }[] }>(
+        "/api/admin/cohorts/delete-trainerless", { cohortIds: [id] });
+      if (r.deleted.length > 0) {
+        setFlash({ kind: "ok", text: "حذفت الشعبة" });
+        setExpanded(null);
+      } else {
+        setFlash({ kind: "error", text: r.kept[0]?.reasonAr ?? "لم تحذف الشعبة" });
+      }
+      setConfirmDeleteId(null);
+      await load();
+    } catch (err) {
+      setFlash({ kind: "error", text: err instanceof ApiError ? err.message : "تعذر الحذف" });
     } finally {
       setBusy(false);
     }
@@ -608,6 +634,14 @@ export default function AdminCohorts() {
                         <Button tone="danger" disabled={busy} onClick={() => act(() => apiPost(`/api/admin/cohorts/${c.id}/transition`, { to: "cancelled", note: "إلغاء من لوحة الإدارة" }), "ألغيت الشعبة")}>
                           إلغاء
                         </Button>
+                      )}
+                      {c.status === "cancelled" && c.trainers.length === 0 && (
+                        confirmDeleteId === c.id
+                          ? <>
+                              <Button tone="danger" disabled={busy} onClick={() => void deleteCancelled(c.id)}>أكّد الحذف — لا رجعة</Button>
+                              <Button tone="ghost" disabled={busy} onClick={() => setConfirmDeleteId(null)}>تراجع</Button>
+                            </>
+                          : <Button tone="danger" icon={Trash2} disabled={busy} onClick={() => setConfirmDeleteId(c.id)}>احذفها</Button>
                       )}
                     </div>
                     {/* وتنقلها الإدارةُ إلى موسمٍ آخر بنفسها (٢٠ أكتوبر ٢٠٢٦) — `StaffMoveBox` */}

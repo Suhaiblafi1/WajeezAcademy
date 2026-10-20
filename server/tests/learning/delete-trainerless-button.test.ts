@@ -81,6 +81,12 @@ describe('وما فيه أثرُ متعلّمٍ أو مدرّبٍ لا يُحذ�
     expect(await prisma.cohort.findUnique({ where: { id: c.id } })).not.toBeNull()
   })
 
+  it('⚠️ والملغاةُ تُحذف كغيرها — زرُّ «تشغيل الشعب» يحذف ما أُلغي', async () => {
+    const c = await prisma.cohort.create({ data: { courseId: COURSE, title: 'ملغاة بلا مدرب', status: 'cancelled' } })
+    const r = await svc.delete(ACTOR, [c.id])
+    expect(r.deleted.map((d) => d.id), 'لم تحذف الملغاة').toEqual([c.id])
+  })
+
   it('وواحدةٌ تبقى لا توقف حذفَ غيرها', async () => {
     const keep = await cohort('تبقى')
     await prisma.cohortTrainer.create({ data: { cohortId: keep.id, profileId, role: 'lead' } })

@@ -13,6 +13,7 @@ const code = (p: string) =>
 
 const page = code('src/pages/admin/Terms.tsx')
 const routes = code('server/http/routes/admin-learning.routes.ts')
+const cohortsPage = code('src/pages/admin/AdminCohorts.tsx')
 
 describe('زرّ «احذفها»', () => {
   it('⚠️ لما لا مدرّب له وحده — وبضغطتين', () => {
@@ -30,5 +31,17 @@ describe('زرّ «احذفها»', () => {
     expect(at, 'لا مسار').toBeGreaterThan(-1)
     expect(routes.slice(at, at + 200)).toContain("requirePermission('cohort.manage')")
     expect(page).toContain('"/api/admin/cohorts/delete-trainerless"')
+  })
+})
+
+describe('و«احذفها» للملغاة في «تشغيل الشعب» — «هل هناك خاصّيّة حذفٍ غير الإلغاء؟»', () => {
+  it('⚠️ للملغاة التي لا مدرّب لها وحدها — وبضغطتين', () => {
+    expect(cohortsPage, 'الزرّ لغير الملغاة أو لما له مدرّب')
+      .toMatch(/\{c\.status === "cancelled" && c\.trainers\.length === 0 && \(\s*confirmDeleteId === c\.id/)
+    expect(cohortsPage).toContain('void deleteCancelled(c.id)')
+  })
+
+  it('وبالمسار نفسه — فالقاعدة واحدة', () => {
+    expect(cohortsPage).toContain('"/api/admin/cohorts/delete-trainerless", { cohortIds: [id] }')
   })
 })
