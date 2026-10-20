@@ -187,3 +187,49 @@ describe('③ مفتاحُ التخزين لا يخرج — وبابُه محر�
       .rejects.toMatchObject({ status: 404 })
   })
 })
+
+/* ═══ واختبارٌ بلا أسئلةٍ يُجاب كتابةً ويصل الطابور (٢٠ أكتوبر ٢٠٢٦) ═══
+   المدرّبُ يختار «اختبار» ولا محرّرَ أسئلةٍ له بعد — قرارُ صاحب المنصّة «Treat as text». فيُسلَّم نصّا ويقيّمه
+   مدرّبُه في طابوره كأيّ مهمّة. والشاشةُ تعرض نموذجَ النصّ له (`StageWork`، `quiz-as-text.test.ts`). */
+describe('اختبار بلا أسئلة', () => {
+  it('⚠️ يسلّم نصّا ويصل طابور مدرّبه', async () => {
+    const { cohortId } = await prisma.cohortAssessment.findUniqueOrThrow({ where: { id: assessmentId }, select: { cohortId: true } })
+    const quiz = await prisma.cohortAssessment.create({
+      data: { cohortId, type: 'quiz', title: 'اختبار المحور الأول', maxScore: 10, status: 'published' },
+    })
+    await assess.submitAssignment(learnerId, quiz.id, { textAnswer: 'إجابتي على الاختبار' })
+    const q = await assess.trainerQueue(trainerUserId)
+    expect(q.map((s) => s.assessment.title), 'لم يصل الطابور').toContain('اختبار المحور الأول')
+  })
+})
+
+/* ═══ والمرفوضُ لا يغيب — يُعاد فتحُه (٢٠ أكتوبر ٢٠٢٦) ═══
+   يُقال للمتعلّم إنّ مدرّبه يفتح بابَ الإعادة، ولا شاشةَ كانت تعرض المرفوضَ بعد رفضه. ورُئي ساقطا: أُعيدت القائمةُ
+   فارغةً فسقط الأوّل، وأُسقط استثناءُ الأحدث فسقط الثاني. */
+describe('المرفوض لا يغيب', () => {
+  it('⚠️ يظهر في قائمته بعد رفضه — ويخرج حين يطلب المدرّب إعادته', async () => {
+    const { cohortId } = await prisma.cohortAssessment.findUniqueOrThrow({ where: { id: assessmentId }, select: { cohortId: true } })
+    const task = await prisma.cohortAssessment.create({
+      data: { cohortId, type: 'assignment', title: 'مهمة ترفض', maxScore: 10, status: 'published' },
+    })
+    const sub = await prisma.assignmentSubmission.create({ data: { assessmentId: task.id, enrollmentId, textAnswer: 'محاولة', status: 'submitted' } })
+    await assess.reviewSubmission(trainerUserId, sub.id, 'start_review')
+    await assess.reviewSubmission(trainerUserId, sub.id, 'reject', 'لا يجيب عن السؤال')
+    expect((await assess.trainerRejected(trainerUserId)).map((r) => r.id), 'غاب المرفوض').toContain(sub.id)
+    expect((await assess.trainerRejected(otherTrainerUserId)).map((r) => r.id), 'رآه مدرّب لا يدرّب الشعبة').not.toContain(sub.id)
+    await assess.reviewSubmission(trainerUserId, sub.id, 'request_resubmit', 'أجب عن السؤال الثاني')
+    expect((await assess.trainerRejected(trainerUserId)).map((r) => r.id)).not.toContain(sub.id)
+  })
+
+  it('⚠️ ومرفوض بعده تسليم أحدث لا يعرض', async () => {
+    const { cohortId } = await prisma.cohortAssessment.findUniqueOrThrow({ where: { id: assessmentId }, select: { cohortId: true } })
+    const task = await prisma.cohortAssessment.create({
+      data: { cohortId, type: 'assignment', title: 'مهمة أعيد تسليمها', maxScore: 10, status: 'published' },
+    })
+    const old = await prisma.assignmentSubmission.create({
+      data: { assessmentId: task.id, enrollmentId, textAnswer: 'قديم', status: 'rejected', submittedAt: new Date(Date.now() - 3_600_000) },
+    })
+    await prisma.assignmentSubmission.create({ data: { assessmentId: task.id, enrollmentId, textAnswer: 'أحدث', status: 'submitted' } })
+    expect((await assess.trainerRejected(trainerUserId)).map((r) => r.id), 'عرض مرفوضا بعده تسليم أحدث').not.toContain(old.id)
+  })
+})

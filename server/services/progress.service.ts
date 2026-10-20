@@ -76,7 +76,7 @@ export class ProgressService {
           include: {
             sessions: { where: { ...LEARNER_SESSION_WHERE, status: { not: 'cancelled' } } },
             course: { include: { modules: true } },
-            assessments: true,
+            assessments: { include: { _count: { select: { items: true } } } },
           },
         },
         attendance: true,
@@ -158,10 +158,18 @@ export class ProgressService {
     const totalModules = e.cohort.course.modules.length || 1
 
     /* النسبة الكلية: 40٪ وحدات + 30٪ حضور + 30٪ تقييمات مجتازة */
-    const assessmentsTotal = e.cohort.assessments.filter((a) => a.type !== 'assignment').length
-    const assessmentsPassed = passedAttempts.length
-    const assignmentsAccepted = acceptedSubs.length
-    const assignmentsTotal = e.cohort.assessments.filter((a) => a.type === 'assignment' || a.type === 'project').length
+    /* ═══ وكلُّ مهمّةٍ تُعدّ مرّةً في بابها (٢٠ أكتوبر ٢٠٢٦) ═══
+       كان المشروعُ يُعدّ في البابين — في «التقييمات» ولا يُجتاز فيها إلّا بمحاولة اختبار، وفي «التكليفات» — فمن
+       أتمّ كلَّ شيءٍ وفي شعبته مشروعٌ وقف عند ٨٥٪ أبدا، ولا يظهر له ختامُ الدورة. وكانت المسودّةُ تُعدّ (طلبُ مهمّةٍ
+       ينتظر الاعتماد أو رُدّ) فتنقص نسبةُ الجميع بمهمّةٍ لم يرها أحد. فالاختبارُ بأسئلته يُجتاز بمحاولة، وما سواه —
+       الواجبُ والمشروعُ واختبارٌ بلا أسئلة يُجاب كتابة — يُقبل تسليمُه؛ وكلٌّ مرّةً ولو تكرّر تسليمُه أو محاولتُه. */
+    const counted = e.cohort.assessments.filter((a) => a.status !== 'draft')
+    const byAttempt = new Set(counted.filter((a) => a.type === 'quiz' && a._count.items > 0).map((a) => a.id))
+    const bySubmission = new Set(counted.filter((a) => !byAttempt.has(a.id)).map((a) => a.id))
+    const assessmentsTotal = byAttempt.size
+    const assessmentsPassed = new Set(passedAttempts.map((a) => a.assessmentId).filter((id) => byAttempt.has(id))).size
+    const assignmentsAccepted = new Set(acceptedSubs.map((s) => s.assessmentId).filter((id) => bySubmission.has(id))).size
+    const assignmentsTotal = bySubmission.size
 
     const modulePct = Math.round((modulesCompleted / totalModules) * 100)
     const assessPct = assessmentsTotal ? Math.round((assessmentsPassed / assessmentsTotal) * 100) : 100

@@ -30,7 +30,7 @@ const ASSESSMENT_TYPES: Record<string, string> = {
 export interface CohortAssessment {
   id: string; title: string; type: string; maxScore: number;
   dueAt: string | null; status: string;
-  submissions: { id: string; status: string }[];
+  submissions: { id: string; status: string; enrollmentId: string }[];
 }
 
 export default function CohortAssignments({
@@ -68,7 +68,8 @@ export default function CohortAssignments({
                   </span>
                 </div>
                 <p className="mt-1 text-read text-muted-foreground">
-                  سلّم {a.submissions.length} من {learners}
+                  {/* بالمتعلّمين لا بصفوف التسليم (٢٠ أكتوبر ٢٠٢٦) — كلُّ إعادةٍ صفٌّ جديد، فكان يُقرأ «سلّم 13 من 10» */}
+                  سلّم {new Set(a.submissions.map((s) => s.enrollmentId)).size} من {learners}
                   {a.dueAt && <> · يسلّم قبل {fmtDateTimeAr(a.dueAt)}</>}
                   {waiting > 0 && (
                     <>

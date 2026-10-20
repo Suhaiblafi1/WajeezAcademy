@@ -1251,6 +1251,12 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
     schema: { tags: ['trainer-ops'], summary: 'طابور المراجعة — تسليمات شعبي المعلقة فقط' },
   }, async (req) => assessments.trainerQueue(req.auth!.userId))
 
+  /* والمرفوضُ آخرُ تسليمٍ لصاحبه — يُعاد فتحُه منها بـ«اطلب إعادة التسليم» (٢٠ أكتوبر ٢٠٢٦) */
+  app.get('/api/trainer/grading-queue/rejected', {
+    preHandler: requirePermission('trainer.cohort.operate'),
+    schema: { tags: ['trainer-ops'], summary: 'التسليمات المرفوضة التي لم يعد أصحابها بعد — لإعادة فتحها' },
+  }, async (req) => assessments.trainerRejected(req.auth!.userId))
+
   /* ═══ ملفُّ التسليم — بابٌ محروسٌ بدل مفتاحٍ يتسرّب ═══
 
      كان الطابورُ يُرجع `storageKey` خاما إلى شاشة المدرّب ولا مسارَ يفتحه:

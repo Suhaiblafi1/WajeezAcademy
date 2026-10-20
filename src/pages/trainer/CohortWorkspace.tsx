@@ -3218,7 +3218,9 @@ export default function CohortWorkspace() {
                 ) : (
                 <label className="block">
                   <span className="block text-read font-bold text-foreground">النوع</span>
-                    <span className="mt-0.5 mb-2 block text-read leading-6 text-muted-foreground">«واجب» يسلّم مرّة، و«اختبار» له درجة.</span>
+                    {/* ولا أسئلةَ للاختبار بعدُ (٢٠ أكتوبر ٢٠٢٦): يجيبه المتعلّمُ كتابةً أو بملفّ وتقيّمه في الطابور —
+                        قرارُ صاحب المنصّة «Treat as text» حتّى يُبنى محرّرُ الأسئلة */}
+                    <span className="mt-0.5 mb-2 block text-read leading-6 text-muted-foreground">«واجب» و«اختبار» يجيبهما المتعلّم كتابة أو بملف، وتقيّمهما في طابور التقييم.</span>
                   <select aria-label="نوع المهمّة" value={taskForm.type} onChange={(e) => setTaskForm({ ...taskForm, type: e.target.value })} className={`${controlCls} [&>option]:bg-surface`}>
                     {Object.entries(ASSESSMENT_TYPES).filter(([k]) => k !== "project").map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                   </select>

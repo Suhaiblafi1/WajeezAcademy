@@ -128,7 +128,8 @@ describe('المؤلّف يرى ما ألّف', () => {
   it('والقسم يصيّرها ويقول كم سلّم وكم ينتظر تصحيحه', () => {
     const code = readCode(LIST)
     expect(/items\.map\(/.test(code), 'القسم يستقبل التكاليف ولا يصيّرها').toBe(true)
-    expect(code, 'لا عدد تسليمات في القائمة').toContain('a.submissions.length')
+    /* بالمتعلّمين لا بصفوف التسليم منذ ٢٠ أكتوبر ٢٠٢٦ (`grading-dead-ends.test.ts`) */
+    expect(code, 'لا عدد تسليمات في القائمة').toContain('new Set(a.submissions.map((s) => s.enrollmentId)).size')
     expect(
       /submissions\.filter\([\s\S]{0,200}?under_review/.test(code),
       'ما ينتظر التصحيح لا يحسب — والمقبول والمرفوض خرجا من يد المدرّب، '
