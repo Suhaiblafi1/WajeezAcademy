@@ -88,9 +88,10 @@ describe('نشر الواجهة بعد أن يجيب الخادم', () => {
     await run({ WEB_ROOT: web, WEB_DIST: dist, API_PORT: String(port), WEB_PUBLISH_WAIT: '10' }, 'true')
     const published = await until(() => readFileSync(join(web, 'index.html'), 'utf8') === 'الجديد', 10_000)
     expect(published, 'لم تُنشر الواجهة والخادم يجيب').toBe(true)
-    expect(await until(() => !existsSync(join(web, 'stale.txt')), 5_000), 'بقي ملف من إصدار سابق').toBe(true)
+    /* والمسحُ بترتيب `find` لا بترتيبٍ معلوم — فيُنتظر الملفّان معا لا أحدُهما ثمّ يُسأل عن الآخر */
+    const stale = [join(web, 'stale.txt'), join(web, 'assets', 'old-1.js')]
+    expect(await until(() => stale.every((f) => !existsSync(f)), 5_000), 'بقي ملف من إصدار سابق').toBe(true)
     expect(existsSync(join(web, 'assets', 'new-2.js'))).toBe(true)
-    expect(existsSync(join(web, 'assets', 'old-1.js'))).toBe(false)
   }, 20_000)
 
   it('③ والأمر الأصلي يجري فورا — لا ينتظر النشر', async () => {
