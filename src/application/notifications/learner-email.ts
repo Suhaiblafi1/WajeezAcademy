@@ -15,6 +15,8 @@ export const LEARNER_EMAIL_KEYS: ReadonlySet<string> = new Set([
   /* تغيّرُ الشعبة: موعدٌ تحرّك أو أُلغي، وشعبةٌ أُلغيت، وتسجيلٌ أُسقط، ومدرّبٌ رحل */
   'cohort.schedule_changed', 'cohort.cancelled', 'enrollment.dropped',
   'departure.choice', 'departure.resolved',
+  /* وردُّ الدعم على تذكرته (٢٠ أكتوبر ٢٠٢٦) — قرارُ صاحب المنصّة: سأل فينتظر جوابا، فيصله ولو لم يدخل */
+  'support.reply',
 ])
 
 /** أيُكتب مع صفّ الجرس صفُّ بريد؟ للمتعلّم وحدَه، وفي القائمة وحدَها، وما لم يمنعه المُنادي */

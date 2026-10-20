@@ -14,10 +14,11 @@ describe('قائمةُ بريد المتعلّم', () => {
     for (const k of LEARNER_EMAIL_KEYS) expect(categoryForTemplate(k), k).not.toBeNull()
   })
 
-  it('ولا يخرج عن المال وتغيّر الشعبة', () => {
+  /* وأضاف صاحبُ المنصّة ردَّ الدعم (٢٠ أكتوبر ٢٠٢٦): سأل فينتظر جوابا — ولا شيءَ سواه */
+  it('ولا يخرج عن المال وتغيّر الشعبة وردّ الدعم', () => {
     for (const k of LEARNER_EMAIL_KEYS) {
       const cat = categoryForTemplate(k)?.key
-      const ok = cat === 'money' || cat === 'enrollment_change' || k === 'cohort.schedule_changed'
+      const ok = cat === 'money' || cat === 'enrollment_change' || k === 'cohort.schedule_changed' || cat === 'support'
       expect(ok, `${k} (${cat}) خارجَ ما قُرّر`).toBe(true)
     }
   })
