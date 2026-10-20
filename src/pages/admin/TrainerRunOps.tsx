@@ -23,6 +23,7 @@
    كلٍّ منهم **ما يمنع خطوتَه التالية** لا قائمةُ أزرارٍ متساوية: بلا حسابٍ لا
    يُسنَد، وبلا اعتمادِ نشرٍ لا يظهر للعامّة. */
 
+import PrepReminderRow, { inDays, ReminderDeadline, type ReminderRow } from "@/components/admin/PrepReminders";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   BadgeCheck, CheckCircle2, Clock, Download, GraduationCap, ImagePlus, Loader2, Search,
@@ -641,6 +642,9 @@ export default function TrainerRunOps() {
     (sessionUser?.permissions.includes("trainer.applications.decide") ?? false);
   const [addOpen, setAddOpen] = useState(false);
   const [addForm, setAddForm] = useState({ fullName: "", email: "", headline: "" });
+  /* «ما بقي من دوراتك» — من بقي عليه شيء، وموعدٌ واحدٌ لرسائلهم (٢٠ أكتوبر ٢٠٢٦، `PrepReminders.tsx`) */
+  const [reminders, setReminders] = useState<Map<string, ReminderRow>>(new Map());
+  const [deadline, setDeadline] = useState(() => inDays(7));
 
   const load = useCallback(async () => {
     try {
@@ -650,6 +654,9 @@ export default function TrainerRunOps() {
         apiGet<CourseOpt[]>("/api/admin/catalog/courses").catch(() => [] as CourseOpt[]),
       ]);
       setTrainers(ops);
+      /* ومن لا يملك بابَ العقود لا يرى الرسائل — والصفحةُ تعمل بدونها */
+      const rs = await apiGet<ReminderRow[]>("/api/admin/prep-reminders").catch(() => [] as ReminderRow[]);
+      setReminders(new Map(rs.map((r) => [r.profileId, r])));
       setRequests(reqs);
       setCourses(cs);
       setOffline(null);
@@ -892,6 +899,7 @@ export default function TrainerRunOps() {
           <h3 className="flex items-center gap-2 text-sm font-black">
             <Users className="h-4 w-4 text-teal-light-ink" /> المدرّبون ({shown.length})
           </h3>
+          {reminders.size > 0 && <ReminderDeadline value={deadline} onChange={setDeadline} count={reminders.size} />}
           <div className="flex flex-wrap items-center gap-3">
             {pendingPhotos > 0 && (
               <Button
@@ -1061,6 +1069,7 @@ export default function TrainerRunOps() {
                   )}
 
                   <TrainerCourses trainer={t} />
+                  {reminders.has(t.profileId) && <PrepReminderRow row={reminders.get(t.profileId)!} deadline={deadline} />}
 
                   <PublicProfileEditor trainer={t} onSaved={load} />
                   {/* والمفتاحُ يحمل آخرَ اقتراح: كلُّ إرسالٍ أو قرارٍ يبدأ الحقولَ من جديد */}

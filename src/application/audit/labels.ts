@@ -412,6 +412,7 @@ const PHRASES: Record<string, string> = {
   'trainer.prep.materials_carried': 'نقل ما كتبه المدرّب من موادّ إلى شعبة الإعداد',
   'trainer.prep.auto_activate': 'تفعيل المدرّب تلقائيّا باعتماد دوراته كلّها',
   'trainer.prep.auto_seal': 'توقيع عقد المدرّب تلقائيّا باعتماد دوراته كلّها',
+  'trainer.prep.reminder': 'إرسال «ما بقي من دوراتك» للمدرّب بموعد',
   'trainer.marketing.video.set': 'رابط فيديو تعريفيّ من المدرّب',
   'trainer.marketing.video.remove': 'حذف المدرّب فيديو تعريفيّا',
   'trainer.marketing.photo.add': 'صورة للملصقات من المدرّب',
