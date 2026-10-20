@@ -43,6 +43,14 @@ describe('صفحة المدربين — الموسم القادم', () => {
     }
   })
 
+  /* «غيّر كلمة تفاصيل الدورة لـ"التفاصيل"» (صاحب المنصّة، ٢٠ أكتوبر ٢٠٢٦) — السطرُ اسمُ الدورة، فـ«الدورة»
+     بعده تكرار. رُئي ساقطا على البطاقة القديمة. */
+  it('⚠️ وزر كل دورة «التفاصيل» — لا «تفاصيل الدورة»', () => {
+    const list = page.slice(page.indexOf('const list = ('), page.indexOf('return i === 0'))
+    expect(list).toMatch(/>\s*التفاصيل\s*<ArrowLeft/)
+    expect(list).not.toContain('تفاصيل الدورة')
+  })
+
   it('⚠️ وأسماء الدورات أصغر وأخف — لا ١٤ عريضة', () => {
     const row = page.match(/<span className="([^"]*)">\{c\.name\}<\/span>/)
     expect(row, 'سطر اسم الدورة غاب').not.toBeNull()

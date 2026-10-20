@@ -95,7 +95,7 @@ function TrainerOffer({ groups }: { groups: SeasonGroup[] }) {
                 <Inset as={Link} interactive to={`/build/${c.id}`} className="flex items-center justify-between gap-3 px-3.5 py-2.5">
                   <span className="min-w-0 truncate text-fine font-light text-foreground">{c.name}</span>
                   <span className="inline-flex shrink-0 items-center gap-1 text-fine font-normal text-teal-light-ink">
-                    تفاصيل الدورة
+                    التفاصيل
                     <ArrowLeft className="h-3 w-3" />
                   </span>
                 </Inset>
