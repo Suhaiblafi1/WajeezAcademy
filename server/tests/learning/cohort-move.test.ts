@@ -247,17 +247,86 @@ describe('②د شعبة الإعداد', () => {
     expect(c.term).toMatchObject({ year: target.year, season: target.season })
     expect(c.startsAt).toBeNull()
   })
+})
 
-  it('والخطة المعتمدة لا تمس — ما اعتمد يغيّر بمراجعة', async () => {
-    const cohortId = await mkCohort('شعبة خطتها معتمدة', profileId)
-    const startsOn = '2099-01-04'
-    const plan = await prisma.cohortDeliveryPlan.create({
-      data: { cohortId, trainerId: profileId, status: 'approved', content: { kind: 'trainer', modules: [], resources: [], startsOn, endsOn: '2099-02-01' } },
+/* ═══ وكلُّ موعدٍ فيها ينتقل معها — خطّتُها المعتمدةُ ومهامُّها (٢٠ أكتوبر ٢٠٢٦) ═══
+   كانت المعتمدةُ لا تُمسّ ومهامُّها على مواعيدها القديمة: فشعبةٌ نُقلت تفتح موادَّها ويحلّ آخرُ موعدٍ
+   لمهامّها قبل أوّل لقاءٍ فيها بفصل. فسأل صاحبُ المنصّة أن تنتقل كلُّها.
+   ورُئي ساقطا: أُبقيت المعتمدةُ على حالها فسقط الأوّل، وأُسقطت إزاحةُ المهامّ فسقط الثاني. */
+describe('②هـ خطتها المعتمدة ومهامها تنتقل معها', () => {
+  async function moved(title: string) {
+    const cohortId = await mkCohort(title, profileId)
+    const before = await prisma.cohortSession.findFirstOrThrow({ where: { cohortId }, orderBy: { startsAt: 'asc' } })
+    return {
+      cohortId,
+      approve: async () => {
+        const r = await svc.request(trainerId, cohortId, { toYear: target.year, toSeason: target.season, reason: 'الطلب قليل هذا الفصل' })
+        await svc.review(adminId, r.id, { action: 'approve' })
+        const after = await prisma.cohortSession.findFirstOrThrow({ where: { cohortId }, orderBy: { startsAt: 'asc' } })
+        const shift = after.startsAt.getTime() - before.startsAt.getTime()
+        expect(shift).toBeGreaterThan(0)
+        return { shift, days: Math.round(shift / DAY) }
+      },
+    }
+  }
+
+  it('⚠️ الخطة المعتمدة وما رُدّ ومهلة تأجيلها — والمنسوخة سجلٌّ لا يمسّ', async () => {
+    const m = await moved('شعبة خطتها معتمدة')
+    const content = (startsOn: string) => ({
+      kind: 'trainer', modules: [], startsOn, endsOn: shiftDay(startsOn, 27),
+      slots: [{ startsOn, endsOn: shiftDay(startsOn, 6), moduleIds: ['m-1'] }],
+      resources: [{ title: 'تسجيل', opensAt: `${shiftDay(startsOn, 3)}T15:00:00.000Z` }],
     })
-    const r = await svc.request(trainerId, cohortId, { toYear: target.year, toSeason: target.season, reason: 'الطلب قليل هذا الفصل' })
-    await svc.review(adminId, r.id, { action: 'approve' })
-    const content = (await prisma.cohortDeliveryPlan.findUniqueOrThrow({ where: { id: plan.id } })).content as { startsOn: string }
-    expect(content.startsOn).toBe(startsOn)
+    const startsOn = '2099-01-04'
+    const approved = await prisma.cohortDeliveryPlan.create({
+      data: { cohortId: m.cohortId, trainerId: profileId, status: 'approved', content: content(startsOn) },
+    })
+    const old = await prisma.cohortDeliveryPlan.create({
+      data: { cohortId: m.cohortId, trainerId: profileId, status: 'superseded', content: content(startsOn) },
+    })
+    const returned = await prisma.cohortDeliveryPlan.create({
+      data: {
+        cohortId: m.cohortId, trainerId: profileId, status: 'changes_requested', content: content(startsOn),
+        returnedContent: content(startsOn), postponedTo: new Date('2099-02-01T00:00:00.000Z'),
+      },
+    })
+    const { days } = await m.approve()
+
+    const read = async (id: string) => prisma.cohortDeliveryPlan.findUniqueOrThrow({ where: { id } })
+    type C = { startsOn: string; endsOn: string; slots: { startsOn: string }[]; resources: { opensAt: string }[] }
+    const a = (await read(approved.id)).content as C
+    expect(a.startsOn, 'الخطة المعتمدة بقيت في الفصل القديم').toBe(shiftDay(startsOn, days))
+    expect(a.endsOn).toBe(shiftDay(startsOn, 27 + days))
+    expect(a.slots[0]!.startsOn).toBe(shiftDay(startsOn, days))
+    expect(new Date(a.resources[0]!.opensAt).getTime() - new Date(`${shiftDay(startsOn, 3)}T15:00:00.000Z`).getTime()).toBe(days * DAY)
+
+    const back = await read(returned.id)
+    expect((back.content as C).startsOn).toBe(shiftDay(startsOn, days))
+    expect((back.returnedContent as C).startsOn, 'ما رُدّ يقابَل به بقي قديما — فيقرأ تعديلا لم يقع').toBe(shiftDay(startsOn, days))
+    expect(back.postponedTo!.toISOString().slice(0, 10)).toBe(shiftDay('2099-02-01', days))
+
+    expect(((await read(old.id)).content as C).startsOn, 'مُسّ سجلّ المنسوخة').toBe(startsOn)
+  })
+
+  it('⚠️ آخر موعد كل مهمة — وما يطلبه المدرّب عليها ولم يعتمد', async () => {
+    const m = await moved('شعبة مهامها تنتقل')
+    const due = new Date(Date.now() + 40 * DAY)
+    const asked = new Date(Date.now() + 47 * DAY).toISOString()
+    const task = await prisma.cohortAssessment.create({
+      data: {
+        cohortId: m.cohortId, title: 'مهمة المحور الأول', dueAt: due,
+        pendingChange: { kind: 'edit', fields: { dueAt: asked, title: 'عنوان أوضح' }, requestedAt: new Date().toISOString() },
+      },
+    })
+    const open = await prisma.cohortAssessment.create({ data: { cohortId: m.cohortId, title: 'مهمة بلا موعد' } })
+    const { shift } = await m.approve()
+
+    const t = await prisma.cohortAssessment.findUniqueOrThrow({ where: { id: task.id } })
+    expect(t.dueAt!.getTime() - due.getTime(), 'آخر موعد المهمة بقي في الفصل القديم').toBe(shift)
+    const change = t.pendingChange as { fields: { dueAt: string; title: string } }
+    expect(new Date(change.fields.dueAt).getTime() - new Date(asked).getTime()).toBe(shift)
+    expect(change.fields.title).toBe('عنوان أوضح')
+    expect((await prisma.cohortAssessment.findUniqueOrThrow({ where: { id: open.id } })).dueAt).toBeNull()
   })
 })
 
