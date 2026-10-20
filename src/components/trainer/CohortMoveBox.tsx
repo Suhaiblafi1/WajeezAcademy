@@ -20,11 +20,13 @@ import type { TrainingSeason } from "@/application/trainer/application-options";
 
 export interface MoveRequestRow { id: string; cohortId: string; status: string; toYear: number; toSeason: string }
 
-export default function CohortMoveBox({ cohortId, status, startsAt, pending, onChange }: {
+export default function CohortMoveBox({ cohortId, status, startsAt, proposedStartsOn = null, pending, onChange }: {
   cohortId: string;
   status: string;
   /** أوّلُ لقاءٍ في الشعبة — منه يُعرف فصلُها */
   startsAt: string | null;
+  /** بدءُ شعبة الإعداد المقترَحُ في خطّتها (`YYYY-MM-DD`) — فصلُها حتّى تُعتمد، ولا يُعدّ بدءا مضى */
+  proposedStartsOn?: string | null;
   pending: MoveRequestRow | null;
   onChange: () => void;
 }) {
@@ -34,10 +36,12 @@ export default function CohortMoveBox({ cohortId, status, startsAt, pending, onC
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  const start = startsAt ? new Date(startsAt) : null;
+  const begun = startsAt ? new Date(startsAt) : null;
   const now = new Date();
   /* ما بدأ أو انتهى لا يُنقل — والخادمُ يعيد الفحص */
-  if (!(MOVABLE_STATUSES as readonly string[]).includes(status) || (start && start <= now)) return null;
+  if (!(MOVABLE_STATUSES as readonly string[]).includes(status) || (begun && begun <= now)) return null;
+  /* ومنه فصلُها والموعدُ بعد النقل: أوّلُ لقائها، أو بدؤها المقترح وهي في الإعداد — منتصفَ يومه، فلا تنقله المنطقةُ يوما */
+  const start = begun ?? (proposedStartsOn ? new Date(`${proposedStartsOn}T12:00:00Z`) : null);
 
   const run = async (fn: () => Promise<unknown>) => {
     setBusy(true); setErr(null);
@@ -88,7 +92,7 @@ export default function CohortMoveBox({ cohortId, status, startsAt, pending, onC
       </select>
       {firstAfter && (
         <p className="text-read font-bold leading-6">
-          أول لقاء بعد النقل: {cohortDayAr(firstAfter, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+          {begun ? "أول لقاء بعد النقل" : "تبدأ بعد النقل"}: {cohortDayAr(firstAfter, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
         </p>
       )}
       <textarea aria-label="السبب" rows={2} maxLength={500} value={reason} onChange={(e) => setReason(e.target.value)}

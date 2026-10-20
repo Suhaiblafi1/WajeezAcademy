@@ -481,7 +481,7 @@ export default function BuyPanel({
                         >
                           {options.map((o) => (
                             <option key={o.id} value={o.id} className="bg-surface">
-                              {startsLabel(o)}{o.title ? ` — ${o.title}` : ""}{o.trainers.length > 0 ? ` — مع ${o.trainers[0]}` : ""}
+                              {startsLabel(o)}{o.title ? ` — ${o.title}` : ""}{o.trainers.length > 0 ? ` — مع ${o.trainers.join(" و")}` : ""}
                             </option>
                           ))}
                         </select>

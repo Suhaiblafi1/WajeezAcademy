@@ -146,12 +146,12 @@ export default function CohortBoard() {
                     : <span className="font-bold text-teal-light-ink">التجهيز مكتمل — الشعبة في التشغيل.</span>}
                 </p>
 
-                {/* نقلُها إلى فصلٍ آخر — طلبٌ للإدارة لا تغييرٌ من هنا */}
-                {!prepIds.has(c.id) && (
-                  <CohortMoveBox cohortId={c.id} status={c.status} startsAt={c.startsAt}
-                    pending={moves.find((m) => m.cohortId === c.id && m.status === "pending") ?? null}
-                    onChange={() => void load()} />
-                )}
+                {/* نقلُها إلى فصلٍ آخر — طلبٌ للإدارة لا تغييرٌ من هنا. وفي بطاقة كلّ شعبة، والإعدادُ منها
+                    (٢٠ أكتوبر ٢٠٢٦): كانت تُستثنى بلا سبب مكتوب، فسأل صاحبُ المنصّة «أين خيار التأجيل للفصول القادمة؟»
+                    واختار أن يظهر فيها كغيرها. وفصلُها من بدئها المقترح حتّى يُعتمد (`cohort-move.service.ts`). */}
+                <CohortMoveBox cohortId={c.id} status={c.status} startsAt={c.startsAt} proposedStartsOn={c.proposedStartsOn ?? null}
+                  pending={moves.find((m) => m.cohortId === c.id && m.status === "pending") ?? null}
+                  onChange={() => void load()} />
 
                 <Link to={`/trainer/cohort/${c.id}`} className="mt-4 inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-teal-deep px-5 text-sm font-black text-white transition hover:bg-teal-darker">
                   افتح الشعبة

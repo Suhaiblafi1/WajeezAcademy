@@ -94,6 +94,13 @@ describe('④ الشاشتان', () => {
     expect(board).toMatch(/<CohortMoveBox cohortId=\{c\.id\}/)
   })
 
+  /* «أين خيار التأجيل للفصول القادمة؟» (صاحب المنصّة، ٢٠ أكتوبر ٢٠٢٦) — كانت بطاقةُ شعبة الإعداد بلا صندوق.
+     رُئي ساقطا: أُعيد الشرطُ `!prepIds.has(c.id) &&` قبل الصندوق، فسقط. */
+  it('⚠️ وفي بطاقة كل شعبة — والإعداد منها، ببدئها المقترح', () => {
+    expect(board, 'شعبة الإعداد بلا صندوق نقل').not.toMatch(/prepIds\.has\(c\.id\)\s*&&\s*\(\s*<CohortMoveBox/)
+    expect(board).toMatch(/<CohortMoveBox[^>]*proposedStartsOn=\{c\.proposedStartsOn/)
+  })
+
   it('والإدارة تنقل أو تردّ — من صندوق طلبات النقل', () => {
     expect(admin).toContain('`/api/admin/cohort-moves/${id}/review`')
     expect(admin).toMatch(/reviewMove\(m\.id, "approve"\)/)

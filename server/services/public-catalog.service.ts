@@ -108,7 +108,7 @@ export class PublicCatalogService {
       include: {
         course: { include: { versions: { orderBy: { version: 'desc' }, take: 1 } } },
         trainers: {
-          include: { profile: { select: { ...TRAINER_VISIBILITY_SELECT, application: { select: { fullName: true } } } } },
+          include: { profile: { select: { id: true, photoUrl: true, ...TRAINER_VISIBILITY_SELECT, application: { select: { fullName: true } } } } },
         },
         /* ═══ ومواعيدُ لقاءاتها كلُّها — حيث يقع قرارُ الشراء (٢٩ سبتمبر ٢٠٢٦) ═══
 
@@ -153,23 +153,34 @@ export class PublicCatalogService {
       },
       orderBy: { startsAt: 'asc' },
     })
-    return rows.map((c) => ({
-      id: c.id, title: c.title, status: c.status,
-      courseId: c.courseId, courseTitle: c.course.versions[0]?.titleAr ?? '',
-      startsAt: c.startsAt, endsAt: c.endsAt, daysOfWeek: c.daysOfWeek, startTime: c.startTime,
-      timezone: c.timezone, price: c.price, currency: c.currency, language: c.language,
-      deliveryMode: c.deliveryMode,
-      seatsLeft: c.capacity ? Math.max(0, c.capacity - c._count.enrollments - c._count.enrollmentRequests) : null,
-      /* البوّابةُ الواحدة — كان الشرطُ هنا اعتمادَ النشر وحدَه، فالموقوفُ الذي
-         اعتُمد نشرُه قبل إيقافه يبقى اسمُه في بيانات الشعبة. */
-      trainers: c.trainers
-        .filter((t) => trainerPubliclyVisible(t.profile))
-        .map((t) => t.profile.application.fullName),
-      sessions: c.sessions,
-      summaryAr: cohortSummaryAr(c.plans[0]?.content),
-      /* والتالي تالٍ لا أوّل: شعبةٌ جاريةٌ أوّلُ لقاءاتها مضى */
-      nextSession: c.sessions.find((s) => s.startsAt.getTime() >= now.getTime()) ?? null,
-    }))
+    return rows.map((c) => {
+      const shown = c.trainers.filter((t) => trainerPubliclyVisible(t.profile))
+      return {
+        id: c.id, title: c.title, status: c.status,
+        courseId: c.courseId, courseTitle: c.course.versions[0]?.titleAr ?? '',
+        startsAt: c.startsAt, endsAt: c.endsAt, daysOfWeek: c.daysOfWeek, startTime: c.startTime,
+        timezone: c.timezone, price: c.price, currency: c.currency, language: c.language,
+        deliveryMode: c.deliveryMode,
+        seatsLeft: c.capacity ? Math.max(0, c.capacity - c._count.enrollments - c._count.enrollmentRequests) : null,
+        /* البوّابةُ الواحدة — كان الشرطُ هنا اعتمادَ النشر وحدَه، فالموقوفُ الذي
+           اعتُمد نشرُه قبل إيقافه يبقى اسمُه في بيانات الشعبة. */
+        trainers: shown.map((t) => t.profile.application.fullName),
+        /* ═══ ووجهُ مدرّب الشعبة في صندوقها — اسمُه وصورتُه وبابُ نبذته (٢٠ أكتوبر ٢٠٢٦) ═══
+           «يجب أن تظهر كأنّهم شعبتان للدورة، وهو يختار الشعبة المناسبة له توقيتا ومدرّبا.. ويفضّل أن
+           يظهر اسمُ المدرّب بوضوح وصورتُه بنفس صندوق الشعبة» (صاحب المنصّة). فالبوّابةُ نفسُها التي
+           ترشّح الاسمَ ترشّح الصورة — ومن وصل هنا مدرّبُ شعبةٍ منشورة، فهو «له دوراتٌ هذا الفصل».
+           والمعرّفُ مرساةُ بطاقته في صفحة الفريق (`/trainers#trainer-<id>`) حيث نبذتُه. */
+        trainerProfiles: shown.map((t) => ({
+          id: t.profile.id,
+          name: t.profile.application.fullName,
+          photoUrl: photoPublicUrl(t.profile.photoUrl),
+        })),
+        sessions: c.sessions,
+        summaryAr: cohortSummaryAr(c.plans[0]?.content),
+        /* والتالي تالٍ لا أوّل: شعبةٌ جاريةٌ أوّلُ لقاءاتها مضى */
+        nextSession: c.sessions.find((s) => s.startsAt.getTime() >= now.getTime()) ?? null,
+      }
+    })
   }
 
   /* صفحةُ المدرّب العامّة — `/t/<slug>`.
