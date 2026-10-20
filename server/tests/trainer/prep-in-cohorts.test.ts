@@ -10,8 +10,8 @@
    ② وما كتبه في اللوح القديم يُنقل إليها: محاورُه ورابطُه ومصادرُه ومهمّتُه.
    ③ والاعتذارُ يُخرج الدورةَ بسببها، ويُلغي شعبةَ إعدادٍ قامت لها.
    ④ وإرسالُ آخرِ خطّةٍ يُعلن اكتمالَ موادّه (تتجمّد مهلتُه)، والردُّ يُعيدها.
-   ⑤ واعتمادُ الخطّة يعتمد الدورة، واعتمادُ آخرها يفعّله ويوقّع عقدَه — وما
-      دام له دورةٌ تنتظر لا يُفعَّل. */
+   ⑤ واعتمادُ الخطّة يعتمد الدورة، واعتمادُ أوّلها يفعّله ويوقّع عقدَه — وما بقي
+      يُعِدّه وهو نشط (٢٠ أكتوبر ٢٠٢٦، «one cohort is enough»). */
 
 import { beforeAll, describe, expect as vexpect, it } from 'vitest'
 import { plainExpect } from '../helpers/plain-expect'
@@ -179,7 +179,7 @@ describe('شعبةُ الإعداد', () => {
     expect((await prep.mine(t.userId))[0]!.state).toBe('returned')
   })
 
-  it('⑤ اعتمادُ الخطّة يعتمد الدورة، واعتمادُ آخرها يفعّله — لا قبله', async () => {
+  it('⑤ اعتمادُ الخطّة يعتمد الدورة، واعتمادُ أوّلها يفعّله — وما بقي يُعتمَد وهو نشط', async () => {
     const t = await onboarding([C1, C2])
     const one = await prep.accept(t.userId, C1)
     const two = await prep.accept(t.userId, C2)
@@ -188,19 +188,18 @@ describe('شعبةُ الإعداد', () => {
     const r1 = await plans.decide(adminId, p1.id, true)
     expect((await prisma.trainerCourseQualification.findFirstOrThrow({ where: { profileId: t.profileId, courseId: C1 } })).status)
       .toBe('qualified')
+    expect(r1, 'اعتُمدت أوّلُ دوراته ولم يُفعَّل').toMatchObject({ status: 'approved', prep: { activated: true } })
     expect((await prisma.trainerApplication.findUniqueOrThrow({ where: { id: t.applicationId } })).status,
-      'فُعِّل ودورتُه الثانيةُ لم تُعتمَد').toBe('onboarding')
-    expect(r1).toMatchObject({ status: 'approved', prep: { activated: false, waiting: 1 } })
-
-    /* ولتتجمّد مهلتُه قبل التفعيل كما تتجمّد في الواقع بإرسال آخر خطّة */
-    const p2 = await submitted(two.id, t.profileId)
-    await prep.afterSubmit(two.id)
-    const r2 = await plans.decide(adminId, p2.id, true)
-    expect(r2).toMatchObject({ status: 'approved', prep: { activated: true } })
-    expect((await prisma.trainerApplication.findUniqueOrThrow({ where: { id: t.applicationId } })).status).toBe('active')
+      'ينتظر دورتَه الثانية').toBe('active')
     const contract = await prisma.trainerContract.findUniqueOrThrow({ where: { id: t.contractId } })
     expect(contract.status, 'فُعِّل ولم يُوقَّع عقدُه من جهتنا').toBe('countersigned')
     expect(contract.conditionMetAt).not.toBeNull()
+
+    const p2 = await submitted(two.id, t.profileId)
+    const r2 = await plans.decide(adminId, p2.id, true)
+    expect(r2).toMatchObject({ status: 'approved', prep: null })
+    expect((await prisma.trainerCourseQualification.findFirstOrThrow({ where: { profileId: t.profileId, courseId: C2 } })).status,
+      'نشطٌ واعتُمدت خطّتُه ولم تُعتمَد دورتُها').toBe('qualified')
   })
 })
 

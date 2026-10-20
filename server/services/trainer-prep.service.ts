@@ -13,9 +13,10 @@
    ② **يعبّئها ويرسلها للاعتماد** كأيّ شعبة. وإرسالُ آخرِ دوراته يُعلن اكتمالَ
       موادّه بنفسه — فتتجمّد مهلتُه (البند 2-10) بلا زرٍّ ثانٍ.
    ③ **واعتمادُ خطّتها يعتمد الدورة** (`qualified`). وردُّها بملاحظات يُعيد
-      موادَّه إليه وتُستأنف مهلتُه. فإذا اعتُمدت دوراتُه المقبولةُ كلُّها
-      **فُعِّل تلقائيّا** — قرارُ صاحب المنصّة («2-b»): يُوقَّع العقدُ من جهتنا
-      ويصير نشطا، وتصير شعبةُ الإعداد شعبتَه الأولى تُفتح للتسجيل بقرارٍ منفصل.
+      موادَّه إليه وتُستأنف مهلتُه. فإذا اعتُمدت له **دورةٌ واحدة** **فُعِّل
+      تلقائيّا** — قرارُ صاحب المنصّة («2-b»، ثمّ ٢٠ أكتوبر ٢٠٢٦: «one cohort is enough»):
+      يُوقَّع العقدُ من جهتنا ويصير نشطا، وتصير شعبةُ الإعداد شعبتَه الأولى تُفتح
+      للتسجيل بقرارٍ منفصل. وما بقي من دوراته يُعِدّه وهو نشط.
       وما يمنع التفعيلَ (أجرٌ لم يُتّفق عليه مثلا) يُقال للإدارة ولا يُسقط
       اعتمادَ الخطّة.
 
@@ -33,6 +34,9 @@ import { cleanCourseMaterials, type CourseMaterials } from '../../src/applicatio
 import { readContractCourses } from '../../src/application/trainer/contract-body'
 import { PLAN_MAX, PLAN_TITLE_MIN } from '../../src/application/trainer/plan-limits'
 import { prepTallyOf, type PrepTally } from '../../src/application/trainer/prep-tally'
+
+/** جرسُ «اعتمدت دورة لمدرّب ولم يفعّل» مرّةً في الأسبوع للمدرّب الواحد — والمحاولةُ تُعاد في العامل كلَّ ربع ساعة */
+const BLOCKED_NOTICE_EVERY_MS = 7 * 86_400_000
 
 /** حالُ الدورة في طور الإعداد كما تُعرض للمدرّب وللإدارة */
 export type PrepState =
@@ -438,10 +442,10 @@ export class TrainerPrepService {
     return { ctx, qualified: true }
   }
 
-  /** ② ثمّ التفعيلُ حين لا يبقى من دوراته ما ينتظر — لمن في الطور وحدَه */
+  /** ② ثمّ التفعيلُ — أوّلُ دورةٍ تُعتمَد له تكفي (`activateIfQualified`). لمن في الطور وحدَه */
   async activateOnApproval(ctx: PrepContext, actorId: string) {
     if (!ctx.onboarding) return null
-    return this.activateIfComplete(ctx.profileId, ctx.applicationId, actorId)
+    return this.activateIfQualified(ctx.profileId, ctx.applicationId, actorId)
   }
 
   /** وبعد الردّ: تُعاد موادُّه وتُستأنف مهلتُه إن كانت موقوفةً لمراجعتنا — ويُرجَع موعدُها */
@@ -461,31 +465,76 @@ export class TrainerPrepService {
     )
   }
 
-  /** دوراتُه المقبولةُ كلُّها معتمَدة؟ — فيُفعَّل. وإلّا يُقال ما يمنع.
-      وعامّةٌ منذ ١٧ أكتوبر ٢٠٢٦: يناديها التأهيلُ من أيّ باب (`activateWhenCoursesDone`) */
-  async activateIfComplete(profileId: string, applicationId: string, actorId: string) {
-    const [pending, qualified] = await Promise.all([
-      this.blockingPending(profileId),
-      this.prisma.trainerCourseQualification.count({ where: { profileId, status: 'qualified' } }),
-    ])
-    if (pending > 0 || qualified === 0) return { activated: false as const, waiting: pending }
+  /* ═══ دورةٌ واحدةٌ معتمَدةٌ تكفي لتفعيله (٢٠ أكتوبر ٢٠٢٦) ═══
+
+     كان يُفعَّل حين تُعتمَد دوراتُه المقبولةُ كلُّها (١٧–١٨ أكتوبر). فبقيت مدرّبةٌ في الطور وثلاثٌ من
+     شعبها مفتوحةٌ تُباع بلا اسمها — دوراتُها الأخرى تُعَدّ بعدُ، والنشرُ الآليُّ لا يمسّ من لم ينشط
+     (`trainer-auto-publish.ts`). فقال صاحبُ المنصّة: «if any one has at least one approved cohort, then
+     they are live.. they keep adding courses afterward.. one cohort is enough for them to be active».
+
+     فأوّلُ دورةٍ تُعتمَد له — بخطّة شعبتها أو بتأهيلٍ مباشر — تفعّله ويُوقَّع عقدُه، وما بقي يُعِدّه وهو
+     نشط: يُعتمَد بخطّة شعبته كما تُعتمَد دورةٌ أُضيفت لنشط (`prepContext`). وما يمنع التفعيلَ يُقال
+     للإدارة جرسا مرّةً في الأسبوع لا في كلّ محاولة — فالعاملُ يعيدها كلَّ ربع ساعة (`activateQualifiedOnboarding`). */
+  async activateIfQualified(profileId: string, applicationId: string, actorId: string) {
+    const qualified = await this.prisma.trainerCourseQualification.count({ where: { profileId, status: 'qualified' } })
+    if (qualified === 0) return { activated: false as const }
     const { TrainerReviewService } = await import('./trainer-review.service')
     try {
-      await new TrainerReviewService(this.prisma).decide(applicationId, actorId, 'activate', 'اعتمدت دوراته كلّها — فعّل تلقائيّا')
+      await new TrainerReviewService(this.prisma).decide(applicationId, actorId, 'activate', 'اعتمدت له دورة — فعّل تلقائيّا')
       await recordAudit(this.prisma, {
         actorId, action: 'trainer.prep.auto_activate', entityType: 'trainer_profile', entityId: profileId, meta: { qualified },
       })
       return { activated: true as const }
     } catch (e) {
       const why = e instanceof AuthError ? e.message : 'خطأ غير متوقّع'
-      await notifyRole(this.prisma, ['academic_manager', 'super_admin'], {
-        channel: 'in_app', templateKey: 'trainer.prep.activation_blocked',
-        title: 'اعتمدت دورات مدرّب كلّها ولم يفعّل',
-        body: `لم يفعّل تلقائيّا: ${why.slice(0, 300)} — أصلح ذلك ثمّ فعّله من ملفّه.`,
-        data: { profileId, applicationId },
-      }).catch(() => undefined)
-      return { activated: false as const, blockedAr: why }
+      const told = await this.prisma.auditEvent.count({
+        where: {
+          action: 'trainer.prep.activation_blocked', entityType: 'trainer_profile', entityId: profileId,
+          createdAt: { gte: new Date(Date.now() - BLOCKED_NOTICE_EVERY_MS) },
+        },
+      })
+      if (told === 0) {
+        await recordAudit(this.prisma, {
+          actorId, action: 'trainer.prep.activation_blocked', entityType: 'trainer_profile', entityId: profileId,
+          meta: { whyAr: why.slice(0, 300) },
+        })
+        await notifyRole(this.prisma, ['academic_manager', 'super_admin'], {
+          channel: 'in_app', templateKey: 'trainer.prep.activation_blocked',
+          title: 'اعتمدت دورة لمدرّب ولم يفعّل',
+          body: `لم يفعّل تلقائيّا: ${why.slice(0, 300)} — أصلح ذلك ثمّ فعّله من ملفّه.`,
+          data: { profileId, applicationId },
+        }).catch(() => undefined)
+      }
+      return { activated: false as const, blockedAr: why, told: told === 0 }
     }
+  }
+
+  /** يلحق من في الطور وله دورةٌ معتمَدة ولم يُفعَّل — من قبل قرار ٢٠ أكتوبر، أو من منعه مانعٌ ثمّ أُصلح.
+      والفاعلُ مَن اعتمد آخرَ دوراته: هو صاحبُ القرار الذي فعّله. والموقوفُ لا يُمسّ. */
+  async activateQualifiedOnboarding(): Promise<{ activated: string[]; blocked: number }> {
+    const rows = await this.prisma.trainerProfile.findMany({
+      where: {
+        suspendedAt: null,
+        application: { status: 'onboarding' },
+        qualifications: { some: { status: 'qualified', qualifiedBy: { not: null } } },
+      },
+      select: {
+        id: true, applicationId: true,
+        qualifications: {
+          where: { status: 'qualified', qualifiedBy: { not: null } },
+          orderBy: [{ decidedAt: { sort: 'desc', nulls: 'last' } }, { createdAt: 'desc' }],
+          take: 1, select: { qualifiedBy: true },
+        },
+      },
+    })
+    const activated: string[] = []
+    let blocked = 0
+    for (const r of rows) {
+      const r2 = await this.activateIfQualified(r.id, r.applicationId, r.qualifications[0]!.qualifiedBy!)
+      if (r2.activated) activated.push(r.id)
+      else if ('told' in r2 && r2.told) blocked++
+    }
+    return { activated, blocked }
   }
 
   /* ═══ وعقدُ النشط المعتمَدُ كالعقود الجديدة يوقَّع حين تكتمل دوراتُه (١٧ أكتوبر ٢٠٢٦) ═══
@@ -502,18 +551,6 @@ export class TrainerPrepService {
     if (qualified === 0) return false
     const rows = await this.coursesOf(profileId)
     return rows.every((r) => r.state === 'declined' || (r.approved && r.state === 'to_decide') || Boolean(r.postponedTo))
-  }
-
-  /* ═══ والمؤجّلةُ لا تحبس تفعيلَه ولا توقيعَ عقده (١٨ أكتوبر ٢٠٢٦) ═══
-
-     قال صاحبُ المنصّة: «لا تنسَ أنّهم أجّلوا بعضها» — ثمّ اختار «Don't wait»: يُفعَّل ويوقَّع عقدُه
-     حين تُعتمَد كلُّ دورةٍ لم تؤجَّل. وكانت المؤجّلةُ معلّقةً (`pending`) تحبسه إلى موسمها — أشهرا.
-     والمؤجّلةُ تُعتمَد في موسمها بخطّة شعبتها كما تُعتمَد دورةٌ أُضيفت لنشط (`prepContext`). */
-  async blockingPending(profileId: string): Promise<number> {
-    const postponed = (await this.coursesOf(profileId)).filter((r) => r.postponedTo).map((r) => r.courseId)
-    return this.prisma.trainerCourseQualification.count({
-      where: { profileId, status: 'pending', ...(postponed.length ? { courseId: { notIn: postponed } } : {}) },
-    })
   }
 
   /** عدّادُ الشعب بجانب اسمه في «العقود» — من `coursesOf` نفسِها، وما خرج منها بشعبةٍ قائمةٍ يُعدّ معتمَدا
@@ -564,13 +601,15 @@ export class TrainerPrepService {
     }
   }
 
-  /** بعد اعتذارٍ: لا شيءَ ينتظر وفي يده معتمَد — يُقال للإدارة إنّه جاهز */
+  /** بعد اعتذارٍ: لا شيءَ ينتظر وفي يده معتمَد — يُقال للإدارة إنّه جاهز.
+      ولمن في الطور وحدَه: النشطُ يُعِدّ ما بقي له بعد تفعيله (٢٠ أكتوبر ٢٠٢٦)، فلا يُقال عنه «جاهز للتفعيل» */
   private async tellIfReady(profileId: string) {
-    const [pending, qualified] = await Promise.all([
+    const [pending, qualified, profile] = await Promise.all([
       this.prisma.trainerCourseQualification.count({ where: { profileId, status: 'pending' } }),
       this.prisma.trainerCourseQualification.count({ where: { profileId, status: 'qualified' } }),
+      this.prisma.trainerProfile.findUnique({ where: { id: profileId }, select: { application: { select: { status: true } } } }),
     ])
-    if (pending > 0) return
+    if (pending > 0 || profile?.application.status !== 'onboarding') return
     await notifyRole(this.prisma, ['academic_manager', 'super_admin'], {
       channel: 'in_app', templateKey: 'trainer.prep.nothing_pending',
       title: qualified > 0 ? 'مدرّب جاهز للتفعيل' : 'مدرّب اعتذر عن دوراته كلّها',

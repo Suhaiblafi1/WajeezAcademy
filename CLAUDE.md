@@ -19,6 +19,9 @@
   دوراته ولم تنشر». والبوّابةُ واحدة: `publicTrainerWhere()` في `server/services/trainer-visibility.ts`.
   **وفتحُ الشعبة اعتمادٌ لنشر اسم مدرّبها** — قرارُه (٢٠ أكتوبر ٢٠٢٦): يُكتب اعتمادُ النشر آليّا عند الفتح
   وفي العامل لكلّ شعبةٍ معروضة، إلّا الموقوفَ ومن طلبُه غيرُ نشط (`server/services/trainer-auto-publish.ts`).
+  **ودورةٌ معتمَدةٌ واحدةٌ تفعّل المدرّب** — قرارُه (٢٠ أكتوبر ٢٠٢٦): «one cohort is enough for them to be active»،
+  نسخا لـ«يُفعَّل حين تُعتمَد دوراتُه كلُّها». وما بقي من دوراته يُعِدّه وهو نشط (`activateIfQualified` في
+  `server/services/trainer-prep.service.ts`، والعاملُ يلحق من بقي في الطور).
 
 - **لا أسرارَ في Git مطلقا** — `.env` و`deploy/.env.production` و
   `storage/private/` و`.pgdata/` مستثناةٌ دائما. ولا يُنقل مفتاحٌ في محادثة.

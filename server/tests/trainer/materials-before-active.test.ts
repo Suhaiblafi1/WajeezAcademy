@@ -20,6 +20,12 @@
  * حارسٌ يمنع دائما ليس حارسا بل عطب. فيُعلَن اكتمالُ الموادّ ويُقاس أنّ
  * الاعتمادَ **يمرّ** — وهو الوجهُ الآخرُ الذي بلا قياسه لا يُعرف أنّ المنعَ
  * كان بسببه.
+ *
+ * ── ودورةٌ معتمَدةٌ واحدةٌ تكفي (٢٠ أكتوبر ٢٠٢٦) ──
+ *
+ * «one cohort is enough for them to be active». فمن اعتُمدت له دورةٌ قُرئت موادُّه
+ * فيها ويُفعَّل — أعلن الباقي أم لا. فالممنوعُ هنا من **لم تُعتمَد له دورةٌ بعد**
+ * (`approved: false`)، وكان قبل هذا اليوم «له معتمَدةٌ وأخرى معلّقة».
  */
 
 import { beforeAll, describe, expect as vexpect, it } from 'vitest'
@@ -69,6 +75,8 @@ async function freshApplication() {
 async function readyButForMaterials(opts: {
   deadlineDays: number | null
   declared: boolean
+  /** أله دورةٌ معتمَدة؟ — والغائبُ «نعم»، كما تكتبه السقالة */
+  approved?: boolean
 }) {
   const applicationId = await freshApplication()
   const { profileId } = await makeReadyForApproval(prisma, applicationId, adminId)
@@ -86,6 +94,10 @@ async function readyButForMaterials(opts: {
   const other = await prisma.course.findFirst({ where: { id: { notIn: have } }, select: { id: true } })
   if (!other) throw new Error('لا دورةَ ثانيةَ في القاعدة — الفحصُ يقيس الفراغ')
   await prisma.trainerCourseQualification.create({ data: { profileId, courseId: other.id, status: 'pending' } })
+  /* ومن لم تُعتمَد له دورةٌ بعد: ما أهّلته السقالةُ معلّقٌ كالباقي */
+  if (opts.approved === false) {
+    await prisma.trainerCourseQualification.updateMany({ where: { profileId }, data: { status: 'pending' } })
+  }
   await prisma.trainerContract.update({
     where: { id: contract.id },
     data: {
@@ -108,18 +120,24 @@ const statusOf = async (applicationId: string) =>
   (await prisma.trainerApplication.findUniqueOrThrow({ where: { id: applicationId } })).status
 
 describe('البابُ الأوّل: زرُّ شاشة الطلبات', () => {
-  it('يعمل ولم يُعلنْ اكتمالَ موادّه: يُردّ، ويبقى في طور التهيئة', async () => {
-    const t = await readyButForMaterials({ deadlineDays: 5, declared: false })
+  it('لم تُعتمَد له دورةٌ بعد: يُردّ، ويبقى في طور التهيئة', async () => {
+    const t = await readyButForMaterials({ deadlineDays: 5, declared: false, approved: false })
     await expect(review.decide(t.applicationId, adminId, 'activate'))
-      .rejects.toMatchObject({ code: 'materials_pending' })
+      .rejects.toMatchObject({ code: 'not_ready' })
     expect(await statusOf(t.applicationId), 'صار نشطا ولم تُقرأ موادُّه').toBe('onboarding')
   })
 
-  it('انقضت مهلتُه ولم يُعلنْ: يُردّ كذلك', async () => {
-    const t = await readyButForMaterials({ deadlineDays: -2, declared: false })
+  it('انقضت مهلتُه ولم تُعتمَد له دورة: يُردّ كذلك', async () => {
+    const t = await readyButForMaterials({ deadlineDays: -2, declared: false, approved: false })
     await expect(review.decide(t.applicationId, adminId, 'activate'))
-      .rejects.toMatchObject({ code: 'materials_pending' })
+      .rejects.toMatchObject({ code: 'not_ready' })
     expect(await statusOf(t.applicationId)).toBe('onboarding')
+  })
+
+  it('⚠️ ودورةٌ معتمَدةٌ واحدةٌ تكفي — ولو لم يُعلن الباقي (٢٠ أكتوبر ٢٠٢٦)', async () => {
+    const t = await readyButForMaterials({ deadlineDays: 5, declared: false })
+    await review.decide(t.applicationId, adminId, 'activate')
+    expect(await statusOf(t.applicationId), 'اعتُمدت له دورةٌ وحُبس حتّى يُعلن الباقي').toBe('active')
   })
 
   it('وعرضٌ مشروطٌ بلا مهلة: يمرّ — ولا يُحبَس من لا يملك أن يُعلن', async () => {
@@ -162,11 +180,11 @@ describe('البابُ الثاني: زرُّ شاشة العقود — يعتم
     expect(await statusOf(t.applicationId), 'نُشر حسابُه باعتماد توقيعه').toBe('onboarding')
   })
 
-  it('والنشرُ بعده يُردّ ما دامت موادُّه لم تُعرَض', async () => {
-    const t = await readyButForMaterials({ deadlineDays: 5, declared: false })
+  it('والنشرُ بعده يُردّ ما دامت لم تُعتمَد له دورة', async () => {
+    const t = await readyButForMaterials({ deadlineDays: 5, declared: false, approved: false })
     await review.approveSignature(t.contractId, adminId, {})
     await expect(review.decide(t.applicationId, adminId, 'activate'))
-      .rejects.toMatchObject({ code: 'materials_pending' })
+      .rejects.toMatchObject({ code: 'not_ready' })
     expect(await statusOf(t.applicationId), 'نُشر ولم تُقرأ موادُّه').toBe('onboarding')
   })
 
@@ -183,7 +201,7 @@ describe('البابُ الثاني: زرُّ شاشة العقود — يعتم
 
 describe('والمخرجُ يُسمّى من سلكه ولماذا', () => {
   it('المديرُ الأعلى يتجاوز — بسببٍ يُكتب، ولا يتجاوز بلا سبب', async () => {
-    const t = await readyButForMaterials({ deadlineDays: 5, declared: false })
+    const t = await readyButForMaterials({ deadlineDays: 5, declared: false, approved: false })
     /* بلا سببٍ: يُردّ ٤٢٢ لا يُمرَّر */
     await expect(review.decide(t.applicationId, adminId, 'activate', undefined, {
       actorRoles: ['super_admin'],
@@ -198,7 +216,7 @@ describe('والمخرجُ يُسمّى من سلكه ولماذا', () => {
   })
 
   it('والتجاوزُ يُكتب في الأثر بسببه وبما نقص', async () => {
-    const t = await readyButForMaterials({ deadlineDays: 5, declared: false })
+    const t = await readyButForMaterials({ deadlineDays: 5, declared: false, approved: false })
     await review.decide(t.applicationId, adminId, 'activate', undefined, {
       actorRoles: ['super_admin'],
       overrideReasonAr: 'حالةٌ استثنائيّةٌ وثّقتُها في ملفّه الورقيّ',

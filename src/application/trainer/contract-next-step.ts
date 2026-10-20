@@ -30,14 +30,14 @@ export interface NextStepFacts extends ConditionFacts {
 }
 
 /* ═══ وشرطٌ مفتوحٌ الدورُ فيه علينا (١٧ أكتوبر ٢٠٢٦) ═══
-   اعتُمدت دوراتُه كلُّها ولم يُفعَّل: فبالتفعيل نوقّع العقدَ ويتحقّق شرطُه — وكان الوسمُ يقول
+   اعتُمدت له دورةٌ ولم يُفعَّل (وواحدةٌ تكفي منذ ٢٠ أكتوبر): فبالتفعيل نوقّع العقدَ ويتحقّق شرطُه — وكان الوسمُ يقول
    «انقضت مهلتُه — مدِّدْ أو أنهِ» عن شرطٍ تحقّق (سؤالُ صاحب المنصّة عن مدرّبٍ دوراتُه الثلاثُ
    معتمدة). ويصدق على العقد المختوم قبل ١ أكتوبر ٢٠٢٦ وشرطُه مفتوح، فيُسأل في الحالتين. */
 function openCondition(f: NextStepFacts, now: Date): NextStep | null {
   if (!f.gatesActivation) return null
   const phase = conditionPhase({ ...f, now })
   if (phase === 'met') return null
-  if (f.coursesReady) return { textAr: 'اعتمدت دوراته كلها — فعّله ووقّع العقد', who: 'you' }
+  if (f.coursesReady) return { textAr: 'اعتمدت له دورة — فعّله ووقّع العقد', who: 'you' }
   if (phase === 'under_review') return { textAr: 'أرسل شعبَه — راجِعْها واعتمِدْها', who: 'you' }
   if (phase === 'lapsed') return { textAr: 'انقضت مهلتُه — مدِّدْ أو أنهِ', who: 'you' }
   return null

@@ -141,7 +141,7 @@ interface ContractRow {
   conditionExtendedAt: string | null; conditionExtensionsUsed?: number | null;
   conditionMetAt: string | null;
   orientationAt: string | null;
-  /** دوراتُه كلُّها معتمَدةٌ ولم يُفعَّل — فبالتفعيل نوقّع العقد (١٧ أكتوبر ٢٠٢٦، `coursesReadyFor`) */
+  /** له دورةٌ معتمَدةٌ ولم يُفعَّل — فبالتفعيل نوقّع العقد (١٧ أكتوبر ٢٠٢٦، `coursesReadyFor`؛ وواحدةٌ تكفي منذ ٢٠ أكتوبر) */
   coursesReady?: boolean;
   /** عدّادُ الشعب بجانب اسمه — كم دورةً أعدّ شعبتَها كاملةً أو جزءا منها (١٨ أكتوبر ٢٠٢٦، `prepTallyFor`) */
   prepTally?: PrepTally | null;
@@ -392,8 +392,8 @@ const oursOf = (c: ContractRow) => awaitsUs(c.status, nextStepOf(c).who);
 const PLAIN_READY_AR = "واعتمدت دوراته كلها، فوقعه الآن.";
 const PLAIN_AUTO_AR = "ونوقعه تلقائيا حين تعتمد آخر خطة يعدها، ويصله بريد بذلك. ولك أن توقعه الآن.";
 
-/** ما يُقال حين تُعتمَد دوراتُه كلُّها ولم يُفعَّل (`readyBlock`) — نصٌّ قصيرٌ بلا تشكيل */
-const READY_TITLE_AR = "اعتمدت دوراته كلها — بقي تفعيله";
+/** ما يُقال حين تُعتمَد له دورةٌ ولم يُفعَّل (`readyBlock`) — نصٌّ قصيرٌ بلا تشكيل */
+const READY_TITLE_AR = "اعتمدت له دورة — بقي تفعيله";
 const READY_WHAT_AR = "شرطه تحقق، فلا مهلة تمدد. بالتفعيل يصير مدربا نشطا، ونوقع عقده عن الأكاديمية، ويصله بريد بذلك.";
 
 /** وجهةُ خطإ المركِّب — ليست معرّفَ صفٍّ، فلا يلتبس بعقدٍ في القائمة */
@@ -871,7 +871,7 @@ export default function TrainerContracts() {
             <Button tone="confirm" icon={BadgeCheck} loading={busy}
               onClick={() => void run(async () => {
                 await apiPost(`/api/admin/trainer-applications/${appId}/decision`,
-                  { action: "activate", note: "اعتمدت دوراته كلها — فعّل من شاشة العقود" });
+                  { action: "activate", note: "اعتمدت له دورة — فعّل من شاشة العقود" });
                 await load();
               }, "فعّل، ووقّعنا عقده — واكتمل شرطه", c.id)}>
               فعّله ووقّع العقد

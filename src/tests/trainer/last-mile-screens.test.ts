@@ -314,7 +314,9 @@ describe('③أ لوح «ما بقي عليك» يظهر على كلّ خطّة�
     const gate = src.indexOf('if (!steps.trainer.active) {')
     expect(gate, 'لا حدّ لمن لم يفعّل').toBeGreaterThan(0)
     const early = src.slice(gate, src.indexOf('\n  return (', gate + 1))
-    expect(early).toMatch(/لم يفعّل بعد\. تفتح شعبه المعتمدة بعد تفعيله، حين تعتمد آخر دوراته\./)
+    /* وأوّلُ دورةٍ تُعتمَد تفعّله (٢٠ أكتوبر ٢٠٢٦) — فلا «حين تعتمد آخر دوراته»: من بقي هنا منعه مانع */
+    expect(early).toMatch(/لم يفعّل بعد\. تفتح شعبه المعتمدة بعد تفعيله من ملفّه\./)
+    expect(early, 'يقال إنّه ينتظر آخر دوراته').not.toMatch(/آخر دوراته/)
     expect(early, 'عرض فتحا لمن لم يفعّل').not.toMatch(/openCohort|publish\(\)/)
     expect(gate, 'الفتح قبل حدّ التفعيل').toBeLessThan(src.indexOf('افتحها للتسجيل'))
   })
