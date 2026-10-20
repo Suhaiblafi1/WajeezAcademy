@@ -27,6 +27,8 @@ import { liveTrainerWhere } from './trainer-visibility'
 
 export type SuggestionKind = 'pitch' | 'bio'
 
+type Drafts = { pitch: Record<string, readonly string[]>; bio: Record<string, string> }
+
 export interface SuggestionView {
   id: string
   kind: SuggestionKind
@@ -121,30 +123,45 @@ export class TrainerSuggestionService {
      أو له دورةٌ منشورةٌ هذا الفصلَ أو بعده (`liveTrainerWhere`). ومن سواهم يُرسَل إليه من بطاقته. */
   async sendAllDrafts(
     actorId: string,
-    drafts: { pitch: Record<string, readonly string[]>; bio: Record<string, string> } = { pitch: PITCH_DRAFTS, bio: BIO_DRAFTS },
+    drafts: Drafts = { pitch: PITCH_DRAFTS, bio: BIO_DRAFTS },
   ): Promise<{ sent: number; failed: number }> {
-    const ids = [...new Set([...Object.keys(drafts.pitch), ...Object.keys(drafts.bio)])]
-    const profiles = await this.prisma.trainerProfile.findMany({
-      where: { id: { in: ids }, OR: [{ application: { status: 'active' } }, liveTrainerWhere()] },
-      select: { id: true, pitchLines: true, textSuggestions: { where: { status: { not: 'withdrawn' } }, select: { kind: true } } },
-    })
     let sent = 0
     let failed = 0
-    for (const p of profiles) {
-      const has = (kind: SuggestionKind) => p.textSuggestions.some((x) => x.kind === kind)
-      const due: Array<[SuggestionKind, readonly string[]]> = []
-      if (drafts.pitch[p.id] && p.pitchLines.length === 0 && !has('pitch')) due.push(['pitch', drafts.pitch[p.id]])
-      if (drafts.bio[p.id] && !has('bio')) due.push(['bio', [drafts.bio[p.id]]])
-      for (const [kind, lines] of due) {
-        try {
-          await this.propose(p.id, actorId, kind, lines)
-          sent += 1
-        } catch {
-          failed += 1
-        }
+    for (const d of await this.dueDrafts(drafts)) {
+      try {
+        await this.propose(d.profileId, actorId, d.kind, d.lines)
+        sent += 1
+      } catch {
+        failed += 1
       }
     }
     return { sent, failed }
+  }
+
+  /** ما يرسله «أرسل الكلّ» الآن — ويعدّه «ما ينتظرك» بالشرط نفسِه (`staff-inbox.service.ts`) */
+  async unsentDrafts(drafts: Drafts = { pitch: PITCH_DRAFTS, bio: BIO_DRAFTS }): Promise<{ count: number; names: string[] }> {
+    const due = await this.dueDrafts(drafts)
+    return { count: due.length, names: [...new Set(due.map((d) => d.name))] }
+  }
+
+  /** المسوّداتُ المستحقّةُ الإرسال: للنشطين ومن نُشرت دوراتُهم، ولم يُقترح عليهم من نوعها شيء */
+  private async dueDrafts(drafts: Drafts) {
+    const ids = [...new Set([...Object.keys(drafts.pitch), ...Object.keys(drafts.bio)])]
+    const profiles = await this.prisma.trainerProfile.findMany({
+      where: { id: { in: ids }, OR: [{ application: { status: 'active' } }, liveTrainerWhere()] },
+      select: {
+        id: true, pitchLines: true, application: { select: { fullName: true } },
+        textSuggestions: { where: { status: { not: 'withdrawn' } }, select: { kind: true } },
+      },
+    })
+    const due: { profileId: string; name: string; kind: SuggestionKind; lines: readonly string[] }[] = []
+    for (const p of profiles) {
+      const has = (kind: SuggestionKind) => p.textSuggestions.some((x) => x.kind === kind)
+      const name = p.application.fullName
+      if (drafts.pitch[p.id] && p.pitchLines.length === 0 && !has('pitch')) due.push({ profileId: p.id, name, kind: 'pitch', lines: drafts.pitch[p.id] })
+      if (drafts.bio[p.id] && !has('bio')) due.push({ profileId: p.id, name, kind: 'bio', lines: [drafts.bio[p.id]] })
+    }
+    return due
   }
 
   /** سحبُ المعلَّق من نوعٍ — عند المدرّب أو عائدا إلينا بتعديله */

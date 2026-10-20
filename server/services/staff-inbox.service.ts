@@ -17,6 +17,8 @@ import type { PrismaClient } from '@prisma/client'
 import type { TrainerStatus } from './trainer-application.service'
 import { PENDING_PLAN_WHERE } from './cohort-plan.service'
 import { CatalogAdminService } from './catalog-admin.service'
+import { TrainerDraftingBundleService } from './trainer-drafting-bundle.service'
+import { TrainerSuggestionService } from './trainer-suggestion.service'
 
 /* ═══ الحالاتُ التي تنتظرك أنت في طلبات الانضمام (٢٦ سبتمبر ٢٠٢٦) ═══
 
@@ -349,6 +351,36 @@ export class StaffInboxService {
         href: '/admin/catalog?names=1',
         severity: 'info',
         sample: named.slice(0, 3).map((r) => `${r.titleAr} ← ${r.suggestions.find((sg) => sg.isNew)?.titleAr ?? ''}`),
+      })
+    }
+
+    /* ── واقتراحاتُنا على بطاقات المدرّبين — خطوتان تنتظرانه (٢٠ أكتوبر ٢٠٢٦) ──
+       قرارُ صاحب المنصّة: «أبقِ ظاهرا للإدارة أنّ جددا ينتظرونه». فالكتابةُ ليست آليّة (اختار أن يرسل
+       ملفّاتِهم إلى Claude)، ولا شيءَ كان يقول إنّ مدرّبا جديدا اعتُمدت دورتُه ولم يُكتب له، أو إنّ ما كُتب لم
+       يُرسَل. وكلاهما محسوبٌ بشرط شاشته نفسِه: حزمةُ الملفّات (`TrainerDraftingBundleService`) وزرُّ الإرسال
+       (`TrainerSuggestionService.unsentDrafts`) — فالعدّادُ عدُّ الزرّ. */
+    if (can('trainer.applications.view')) {
+      const names = await new TrainerDraftingBundleService(this.prisma).waitingNames()
+      push({
+        key: 'trainer_suggestions_to_write',
+        titleAr: 'مدربون جدد بلا اقتراحات',
+        whyAr: 'لهم دورة معتمدة ولم نكتب لهم «لماذا نفتخر» ولا نبذة — نزّل ملفاتهم من «تشغيل المدربين» لنكتب لهم',
+        count: names.length,
+        href: '/admin/trainer-run',
+        severity: 'info',
+        sample: names.slice(0, 3),
+      })
+    }
+    if (can('trainer.publish')) {
+      const unsent = await new TrainerSuggestionService(this.prisma).unsentDrafts()
+      push({
+        key: 'trainer_suggestions_unsent',
+        titleAr: 'اقتراحات جاهزة لم ترسل للمدربين',
+        whyAr: 'كتبناها وتنتظر ضغطة «أرسل» في «تشغيل المدربين»',
+        count: unsent.count,
+        href: '/admin/trainer-run',
+        severity: 'attention',
+        sample: unsent.names.slice(0, 3),
       })
     }
 

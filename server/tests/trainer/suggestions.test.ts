@@ -165,6 +165,7 @@ describe('أرسل كلّ الاقتراحات — ما لم يُرسل وحده
 
   it('⚠️ يرسل المسوّدات لمن لم يصله شيء — ولا يمسّ ما عند غيره، ولا يتعثّر بملفّ غائب', async () => {
     const before = await prisma.trainerTextSuggestion.findFirstOrThrow({ where: { profileId: busyId, status: 'pending' } })
+    expect((await svc.unsentDrafts(drafts())).count, '«ما ينتظرك» لا يعدّ ما يرسله الزرّ').toBe(2)
     expect(await svc.sendAllDrafts(ACTOR, drafts())).toEqual({ sent: 2, failed: 0 })
     const mine = await svc.mine(freshUser)
     expect(mine.pitch.pending?.lines).toEqual(DRAFT_PITCH)
@@ -175,6 +176,7 @@ describe('أرسل كلّ الاقتراحات — ما لم يُرسل وحده
 
   it('⚠️ والضغطة الثانية لا ترسل شيئا', async () => {
     expect(await svc.sendAllDrafts(ACTOR, drafts())).toEqual({ sent: 0, failed: 0 })
+    expect((await svc.unsentDrafts(drafts())).count, 'بقي في «ما ينتظرك» ما أُرسل').toBe(0)
     expect(await prisma.trainerTextSuggestion.count({ where: { profileId: freshId } })).toBe(2)
   })
 
