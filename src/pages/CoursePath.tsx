@@ -411,7 +411,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
             )}
             <div className={`grid gap-4 md:grid-cols-2 ${full.description ? "mt-4 border-t border-white/10 pt-4" : ""}`}>
               {/* ══ لمن هذه الدورة (٢٠ أكتوبر ٢٠٢٦) ══
-                  كان سطرَ الكتالوج بلونٍ باهت. وصار: وصفُه بارزا، ثمّ من اختارهم مدرّبو شعبها
+                  كان سطرَ الكتالوج بلونٍ باهت. وصار: وصفُه بلون المتن، ثمّ من اختارهم مدرّبو شعبها
                   (المراحلُ والأهداف). ودورةٌ بلا شعبةٍ تقف عند الكتالوج.
                   وسقط منه المستوى و«قبلها» بقرار صاحب المنصّة (٢٠ أكتوبر ٢٠٢٦): «موجودٌ داخل
                   تفاصيل الشعبة، ولكي لا يزيد النصّ هنا». */}
@@ -420,9 +420,8 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                   <h3 className="flex items-center gap-1.5 text-read font-black text-foreground">
                     <User className="h-3.5 w-3.5 text-teal-light-ink" /> لمن هذه الدورة
                   </h3>
-                  <Inset as="p" tone="accent" className="mt-2 px-3 py-2 text-read font-bold leading-relaxed text-foreground">
-                    {who.lead}
-                  </Inset>
+                  {/* بهيئة سطور «ما ستقدر عليه بعدها» جارِه: لا صندوقَ ولا عريض (صاحب المنصّة، ٢٠ أكتوبر ٢٠٢٦) */}
+                  <p className="mt-1.5 text-read leading-relaxed text-foreground">{who.lead}</p>
                   {who.stages.length > 0 && (
                     <div className="mt-3">
                       <p className="text-read font-bold text-muted-foreground">تناسبك إن كنت</p>
