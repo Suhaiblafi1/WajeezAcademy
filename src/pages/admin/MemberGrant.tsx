@@ -3,12 +3,13 @@
    قرارُه: «A ويحقّ لي تغيير الـ٦٠٪ كما أشاء». فهنا نسبةُ المنحة وعددُها وآخرُ يومٍ لها وتشغيلُها،
    وما جرى بها. والحفظُ بتأكيدٍ يقول ما يقع بكلّ تغيير — والقرارُ له.
 
-   وتحتها فحصُ الهامش: كلُّ شعبةٍ مفتوحةٍ بسعرها بعد المنحة مقابل أجر مقعدها للمدرّب، **بالنسبة التي
+   ثمّ مساراتُ المنحة بهامش كلٍّ منها (`GrantPathways`)، وتحتها فحصُ الهامش: كلُّ شعبةٍ مفتوحةٍ بسعرها بعد المنحة مقابل أجر مقعدها للمدرّب، **بالنسبة التي
    في الخانة** لا المحفوظة — فيرى أثرَ النسبة قبل أن يحفظها. والعلّةُ في `server/services/grant.service.ts`. */
 
 import { useCallback, useEffect, useState } from "react";
 import { Loader2, ServerOff } from "lucide-react";
 import AdminLayout from "./AdminLayout";
+import GrantPathways from "./GrantPathways";
 import { toast, toastError } from "@/components/Toast";
 import ConfirmAction from "@/components/ConfirmAction";
 import { apiGet, apiPut, ApiError } from "@/services/api";
@@ -149,6 +150,8 @@ export default function AdminMemberGrant() {
         </label>
         <Button disabled={busy || !changed || !pctOk || !maxOk || !coursesOk} onClick={() => setConfirm(true)}>احفظ</Button>
       </Card>
+
+      <GrantPathways percentOff={pctOk ? pctNum : null} maxCourses={s.maxCourses} />
 
       <h2 className="mt-6 text-lg font-black">فحص الهامش بنسبة {pctOk ? `${pctNum}%` : "—"}</h2>
       <p className="mt-1 text-read text-muted-foreground">

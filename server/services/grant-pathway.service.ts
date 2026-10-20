@@ -1,0 +1,186 @@
+/* مساراتُ المنحة — يُعدّها صاحبُ المنصّة من شاشة المنحة (٢٠ أكتوبر ٢٠٢٦).
+
+   قرارُه: «المسارات التي تحدّثتَ عنها ستكون نحن من أعددناها وتظهر له … اختر إحدى المسارات التالية
+   … يحقّ لك فقط ٤ دورات»، ثمّ اختار أن تُبنى **جديدةً من شاشة المنحة** لا من المسارات المنشورة:
+   اسمٌ ودوراتٌ يختارها، فيرى هامشَ المسار ساعتَها.
+
+   ═══ ما يقع ═══
+
+   ١) **لا دورةَ في مسارٍ بلا شعبةٍ تُشترى اليوم** — يُفحص عند الحفظ: مفتوحةٌ للتسجيل بسعرٍ ومقاعد.
+      وما أُغلقت شعبتُه بعد الحفظ يُقال في الشاشة («بلا شعبة مفتوحة»)، ولا يُعرض للمشتري.
+   ٢) **ولا يتجاوز حدَّ دورات المنحة** (`maxCourses`).
+   ٣) **وهامشُ المسار كلِّه** — أقربُ شعبةٍ لكلّ دورة: سعرُها، وما يدفعه صاحبُ المنحة عن المسار كلِّه،
+      وأجورُ مقاعدها للمدرّبين، والفرق. ومعه سعرُ الباقة بلا منحة ليُرى ما توفّره.
+
+   والحارس: `server/tests/commerce/grant-pathways.test.ts`. */
+
+import type { PrismaClient } from '@prisma/client'
+import { AuthError } from './auth.service'
+import { recordAudit } from './audit'
+import { GrantService } from './grant.service'
+import { cohortAcceptsRegistration, PLAN_GATE_SELECT, TERM_WINDOW_SELECT } from './registration-window'
+import { LEDGER_CURRENCY } from '../../src/application/commerce/presentment'
+import { bundlePayable, money } from '../../src/application/commerce/discount-policy'
+import { grantPrice } from '../../src/application/commerce/grant'
+
+/** أقربُ شعبةٍ تُشترى اليوم لدورة */
+export interface BuyableCohort {
+  cohortId: string
+  courseId: string
+  courseTitleAr: string
+  cohortTitle: string
+  price: number
+  currency: string
+  startsAt: Date | null
+  seatsLeft: number | null
+}
+
+export interface GrantPathwayInput {
+  titleAr: string
+  blurbAr?: string | null
+  courseIds: string[]
+  sortOrder?: number
+  active?: boolean
+}
+
+const r2 = (n: number) => Math.round(n * 100) / 100
+
+export class GrantPathwayService {
+  private prisma: PrismaClient
+  private grants: GrantService
+  constructor(prisma: PrismaClient) {
+    this.prisma = prisma
+    this.grants = new GrantService(prisma)
+  }
+
+  /** أقربُ شعبةٍ تُشترى اليوم لكلّ دورة — بالشروط التي يشتري بها لوحُ الدفع: مفتوحةٌ للتسجيل
+      (`cohortAcceptsRegistration`)، بسعرٍ بعملة الدفتر، وفيها مقعد. وبلا قائمةٍ كلُّ الدورات. */
+  async buyable(courseIds?: readonly string[], now = new Date()): Promise<Map<string, BuyableCohort>> {
+    const cohorts = await this.prisma.cohort.findMany({
+      where: {
+        status: { in: ['open', 'active'] }, price: { gt: 0 }, currency: LEDGER_CURRENCY,
+        ...(courseIds ? { courseId: { in: [...courseIds] } } : {}),
+      },
+      include: {
+        course: { select: { versions: { orderBy: { version: 'desc' }, take: 1, select: { titleAr: true } } } },
+        term: TERM_WINDOW_SELECT,
+        plans: PLAN_GATE_SELECT,
+      },
+      orderBy: [{ startsAt: 'asc' }, { title: 'asc' }],
+    })
+    const open = cohorts.filter((c) => cohortAcceptsRegistration(c, now).open)
+    const ids = open.map((c) => c.id)
+    const [enrolled, held] = await Promise.all([
+      this.prisma.enrollment.groupBy({ by: ['cohortId'], where: { cohortId: { in: ids }, status: 'enrolled' }, _count: true }),
+      this.prisma.enrollmentRequest.groupBy({ by: ['cohortId'], where: { cohortId: { in: ids }, status: 'seat_held' }, _count: true }),
+    ])
+    const taken = new Map<string, number>()
+    for (const g of [...enrolled, ...held]) taken.set(g.cohortId, (taken.get(g.cohortId) ?? 0) + g._count)
+    const out = new Map<string, BuyableCohort>()
+    for (const c of open) {
+      if (out.has(c.courseId)) continue
+      const seatsLeft = c.capacity ? c.capacity - (taken.get(c.id) ?? 0) : null
+      if (seatsLeft !== null && seatsLeft <= 0) continue
+      out.set(c.courseId, {
+        cohortId: c.id, courseId: c.courseId, courseTitleAr: c.course.versions[0]?.titleAr ?? c.courseId,
+        cohortTitle: c.title, price: Number(c.price), currency: c.currency, startsAt: c.startsAt, seatsLeft,
+      })
+    }
+    return out
+  }
+
+  /** الدوراتُ التي تُختار في مسار — ما له شعبةٌ تُشترى اليوم */
+  async openCourses() {
+    return [...(await this.buyable()).values()]
+      .sort((a, b) => a.courseTitleAr.localeCompare(b.courseTitleAr, 'ar'))
+  }
+
+  /** المساراتُ بدوراتها وأقرب شعبةٍ لكلٍّ وهامشِها — بنسبةٍ تُمرَّر لتُجرَّب، وبلا قيمةٍ نسبةُ الحملة */
+  async list(opts: { percentOff?: number; activeOnly?: boolean } = {}, now = new Date()) {
+    const c = await this.grants.campaign()
+    const pct = opts.percentOff ?? c.percentOff
+    const rows = await this.prisma.grantPathway.findMany({
+      where: { campaignId: c.id, ...(opts.activeOnly ? { active: true } : {}) },
+      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+    })
+    const allCourses = [...new Set(rows.flatMap((p) => p.courseIds))]
+    const [buy, titles] = await Promise.all([
+      this.buyable(allCourses, now),
+      this.prisma.courseVersion.findMany({
+        where: { courseId: { in: allCourses } }, orderBy: { version: 'desc' }, select: { courseId: true, titleAr: true },
+      }),
+    ])
+    const titleOf = new Map<string, string>()
+    for (const t of titles) if (!titleOf.has(t.courseId)) titleOf.set(t.courseId, t.titleAr)
+    const cohorts = [...buy.values()]
+    const costs = await this.grants.seatCosts(cohorts.map((b) => ({ id: b.cohortId, courseId: b.courseId, price: b.price })))
+
+    return {
+      percentOff: pct,
+      maxCourses: c.maxCourses,
+      pathways: rows.map((p) => {
+        const courses = p.courseIds.map((courseId) => {
+          const b = buy.get(courseId) ?? null
+          return {
+            courseId, titleAr: b?.courseTitleAr ?? titleOf.get(courseId) ?? courseId, cohort: b,
+            seatCost: b ? costs.get(b.cohortId)?.seatCost ?? null : null,
+          }
+        })
+        const live = courses.filter((x) => x.cohort !== null)
+        const listTotal = money(live.reduce((s, x) => s + x.cohort!.price, 0))
+        const grantTotal = grantPrice(listTotal, pct)
+        const costKnown = live.every((x) => x.seatCost !== null)
+        const seatCostTotal = costKnown ? r2(live.reduce((s, x) => s + (x.seatCost ?? 0), 0)) : null
+        return {
+          id: p.id, titleAr: p.titleAr, blurbAr: p.blurbAr, sortOrder: p.sortOrder, active: p.active,
+          courses,
+          /* دوراتٌ أُغلقت شعبُها بعد الحفظ — تُقال لصاحب المنصّة، ولا تُعرض للمشتري */
+          missing: courses.length - live.length,
+          listTotal,
+          /* ما يدفعه بلا منحة: سلّمُ الباقة وسقفُها — ليُرى ما توفّره المنحة */
+          bundleTotal: bundlePayable(listTotal, live.length),
+          grantTotal,
+          seatCostTotal,
+          margin: seatCostTotal === null ? null : r2(grantTotal - seatCostTotal),
+        }
+      }),
+    }
+  }
+
+  /** يُحفظ مسارٌ جديدٌ أو يُعدَّل — ولا دورةَ فيه بلا شعبةٍ تُشترى اليوم */
+  async save(id: string | null, input: GrantPathwayInput, actorId: string) {
+    const c = await this.grants.campaign()
+    const titleAr = input.titleAr.trim()
+    if (titleAr.length < 3) throw new AuthError('bad_title', 'اكتب اسما للمسار', 400)
+    const courseIds = [...new Set(input.courseIds)]
+    if (courseIds.length === 0) throw new AuthError('no_courses', 'اختر دورة واحدة على الأقل', 400)
+    if (courseIds.length > c.maxCourses) {
+      throw new AuthError('too_many', `المسار ${c.maxCourses} دورات بحد أقصى، مثل حد المنحة`, 400)
+    }
+    const buy = await this.buyable(courseIds)
+    const closed = courseIds.filter((x) => !buy.has(x))
+    if (closed.length > 0) throw new AuthError('no_cohort', `${closed.length} من الدورات بلا شعبة مفتوحة الآن`, 409)
+    const data = {
+      titleAr, blurbAr: input.blurbAr?.trim() || null, courseIds,
+      ...(input.sortOrder !== undefined ? { sortOrder: input.sortOrder } : {}),
+      ...(input.active !== undefined ? { active: input.active } : {}),
+    }
+    const row = id
+      ? await this.prisma.grantPathway.update({ where: { id, campaignId: c.id }, data })
+      : await this.prisma.grantPathway.create({ data: { ...data, campaignId: c.id } })
+    await recordAudit(this.prisma, {
+      actorId, action: 'coupon.grant_pathway_save', entityType: 'grant_campaign', entityId: c.id,
+      meta: { pathwayId: row.id, titleAr, courseIds, active: row.active },
+    })
+    return row
+  }
+
+  async remove(id: string, actorId: string) {
+    const c = await this.grants.campaign()
+    const row = await this.prisma.grantPathway.delete({ where: { id, campaignId: c.id } })
+    await recordAudit(this.prisma, {
+      actorId, action: 'coupon.grant_pathway_remove', entityType: 'grant_campaign', entityId: c.id,
+      meta: { pathwayId: row.id, titleAr: row.titleAr },
+    })
+  }
+}
