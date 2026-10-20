@@ -762,7 +762,12 @@ export function PlanEditsPanel({ cohortId, inHand, approved = false, unsaved, on
               const r = await apiPost<{ accepted: number; skipped: { titleAr: string; problemAr: string }[] }>(
                 `/api/trainer/cohorts/${cohortId}/plan-edits/accept-all`, {},
               );
-              if (r.skipped.length) throw new Error(`قبل ${r.accepted}، وبقي ${r.skipped.length} ينتظر:\n${r.skipped.map((s) => `«${s.titleAr}»: ${s.problemAr}`).join("\n")}`);
+              /* وما قُبل منها كُتب في الخطّة ولو بقي بعضُها (٢٠ أكتوبر ٢٠٢٦) — فالصفحةُ تُعاد قبل أن يُقال ما بقي،
+                 وإلّا بقيت على ما قبل القبول وكتب حفظُها التلقائيُّ القديمَ فوق ما قُبل */
+              if (r.skipped.length) {
+                if (r.accepted > 0) await onApplied();
+                throw new Error(`قبل ${r.accepted}، وبقي ${r.skipped.length} ينتظر:\n${r.skipped.map((s) => `«${s.titleAr}»: ${s.problemAr}`).join("\n")}`);
+              }
             }, "قبلت كلّها وكتبت في خطّتك.", true)}
           >
             اقبلها كلّها ({pending.length})

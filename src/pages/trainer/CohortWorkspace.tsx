@@ -703,7 +703,11 @@ export default function CohortWorkspace() {
      والتلقائيُّ ما زال يُرسل الأقدم — فيصل الأقدمُ أخيرا ويُكتب فوق الأحدث، أو يُحمَّل ما في
      الخادم قبل أن يبلغه التلقائيُّ فيُستبدل به ما كتبه المدرّبُ للتوّ. فيُنتظر أوّلا. */
   const autoFlight = useRef<Promise<void> | null>(null);
-  const load = useCallback(async (first = false): Promise<Workspace | null> => {
+  /* ═══ و`keepEdits`: ما في يده لا يُمحى بلقاءٍ أو مهمّة (٢٠ أكتوبر ٢٠٢٦) ═══
+     إضافةُ لقاءٍ أو نقلُه أو ربطُه، وحفظُ مهمّةٍ أو حذفُها — كلُّها تعيد قراءةَ الصفحة، ولا تكتب في الخطّة.
+     وكانت القراءةُ تضع المحفوظَ مكانَ ما في يده: من كتب وصفا ثمّ أضاف لقاءً ذهب ما كتب بلا كلمة. فبعدها
+     يبقى ما في يده وبصمتُه — المحفوظُ لم يتغيّر — ويُقرأ الباقي. */
+  const load = useCallback(async (first = false, keepEdits = false): Promise<Workspace | null> => {
     if (!id) return null;
     if (autoFlight.current) await autoFlight.current.catch(() => {});
     try {
@@ -730,16 +734,18 @@ export default function CohortWorkspace() {
       /* واسمُ الشعبة الذي وضعته المنصّة يُعرض مثالا باهتا في حقلٍ فارغ — لا قيمةً يمسحها
          (١١ أكتوبر ٢٠٢٦). والفارغُ يُحفظ به كما هو: لا يُجبَر على كتابة اسم */
       const nextIdentity = { title: isDefaultCohortTitle(w.cohort.title, w.course.titleAr) ? "" : w.cohort.title };
-      setContent(nextContent);
-      setIdentity(nextIdentity);
-      /* البصمةُ تُؤخذ ممّا وصل لا ممّا في اليد — فبعد كلّ حفظٍ يعود كلُّ شيءٍ نظيفا */
-      setBaseline({
-        identity: JSON.stringify(nextIdentity) + basicsKey(saved),
-        modules: modulesKey(saved),
-        workbooks: workbooksKey(saved),
-        recorded: recordedKey(saved),
-        resources: resourcesKey(saved),
-      });
+      if (!(keepEdits && dirtyRef.current)) {
+        setContent(nextContent);
+        setIdentity(nextIdentity);
+        /* البصمةُ تُؤخذ ممّا وصل لا ممّا في اليد — فبعد كلّ حفظٍ يعود كلُّ شيءٍ نظيفا */
+        setBaseline({
+          identity: JSON.stringify(nextIdentity) + basicsKey(saved),
+          modules: modulesKey(saved),
+          workbooks: workbooksKey(saved),
+          recorded: recordedKey(saved),
+          resources: resourcesKey(saved),
+        });
+      }
       /* أوّلُ فتح: المعتمَدةُ تُفتح على خطوة الاعتماد (كانت تُفتح على «مركز
          التواصل» حتّى خرج إلى «طلبتي»)، وغيرُها على أوّل مرحلةٍ لم تتمّ —
          وهي أبعدُ ما يُفتح له، فكلُّ ما قبلها تامّ. */
@@ -854,11 +860,12 @@ export default function CohortWorkspace() {
   }, []);
 
 
-  /* والرسالةُ قد تُقرأ ممّا عاد — «أُرسل إلى الإدارة» غيرُ «حُفظ» (٣ج-٣) */
-  const act = async (fn: () => Promise<unknown>, done: string | ((r: unknown) => string)) => {
+  /* والرسالةُ قد تُقرأ ممّا عاد — «أُرسل إلى الإدارة» غيرُ «حُفظ» (٣ج-٣).
+     و`keepEdits` لما لا يكتب في الخطّة — مهمّةٌ أو ربطُ لقاء: ما في يده يبقى (`load`) */
+  const act = async (fn: () => Promise<unknown>, done: string | ((r: unknown) => string), keepEdits = false) => {
     if (busy) return;
     setBusy(true);
-    try { const r = await fn(); toast(typeof done === "function" ? done(r) : done); await load(); }
+    try { const r = await fn(); toast(typeof done === "function" ? done(r) : done); await load(false, keepEdits); }
     catch (e) { toastError(e instanceof ApiError ? e.message : "تعذّر الحفظ"); }
     finally { setBusy(false); }
   };
@@ -1431,18 +1438,19 @@ export default function CohortWorkspace() {
       : await apiPost(`/api/trainer/cohorts/${ws.cohort.id}/assessments`, { ...payload, briefAr: payload.briefAr ?? undefined, dueAt: payload.dueAt ?? undefined, moduleId: payload.moduleId ?? undefined });
     cancelEdit();
     return saved;
-  }, (r) => savedTaskMsg((r as { review?: string } | null)?.review, Boolean(editingId)));
+  }, (r) => savedTaskMsg((r as { review?: string } | null)?.review, Boolean(editingId)), true);
   const deleteAssessment = (a: Workspace["assessments"][number]) => act(async () => {
     const gone = await apiDelete(`/api/trainer/assessments/${a.id}`);
     if (editingId === a.id) cancelEdit();
     return gone;
   }, (r) => ((r as { review?: string } | null)?.review === "remove"
     ? "أرسل طلب حذفها إلى الإدارة — وتبقى عند المسجّلين حتّى تعتمده"
-    : "حذفت المهمّة"));
+    : "حذفت المهمّة"), true);
   /* سحبُ طلبٍ لم تقرّره الإدارةُ بعد — والمعتمَدُ باقٍ كما هو (٣ج-٣) */
   const withdrawChange = (a: Workspace["assessments"][number]) => act(
     () => apiPost(`/api/trainer/assessments/${a.id}/withdraw-change`, {}),
     "سحب طلبك — والمهمّة كما اعتمدت",
+    true,
   );
 
   const setModule = (i: number, patch: Partial<PlanModule>) =>
@@ -2822,7 +2830,7 @@ export default function CohortWorkspace() {
                       locked={locked}
                       approvedOnce={ws.approvedOnce ?? false}
                       beforeWrite={saveSlotsFirst}
-                      onDone={() => void load()}
+                      onDone={() => void load(false, true)}
                     />
                   )}
                 </div>
@@ -2858,7 +2866,7 @@ export default function CohortWorkspace() {
                       recorded={recordedRows.filter(({ r }) => slotIndexOf(sessionSlots, r.moduleId ?? "") === si).map(({ r, i }) => ({ row: r, i }))}
                       locked={locked}
                       approvedOnce={ws.approvedOnce ?? false}
-                      onDone={() => void load()}
+                      onDone={() => void load(false, true)}
                       beforeWrite={saveSlotsFirst}
                       wholePeriod={byMeetings}
                       onAddRecorded={(row) => setContent({
@@ -2899,6 +2907,7 @@ export default function CohortWorkspace() {
                                 onChange={(e) => e.target.value && void act(
                                   () => apiPatch(`/api/trainer/sessions/${x.id}/axes`, { moduleIds: [e.target.value] }),
                                   `ربط «${x.title}» بمحوره`,
+                                  true,
                                 )}
                                 className={`${controlCls} w-auto [&>option]:bg-surface`}>
                                 <option value="">اختر محورا</option>
@@ -2946,7 +2955,7 @@ export default function CohortWorkspace() {
             /* الجدولةُ بيده داخلَ مدّة شعبته، والاعتمادُ بيد الإدارة */
             <TrainerSchedule
               cohortId={ws.cohort.id}
-              onDone={() => void load()}
+              onDone={() => void load(false, true)}
               minSessions={Math.max(1, content.modules.length)}
               haveSessions={ws.sessions.filter((x) => !x.placeholder && x.status !== "cancelled").length}
             />
@@ -3300,12 +3309,13 @@ export default function CohortWorkspace() {
                       onChange={(e) => patchResource(i, { title: e.target.value })} className={controlCls} />
                     <input dir="ltr" value={r.url ?? ""} disabled={locked} placeholder="https://…" aria-label={`رابط الجلسة المسجّلة ${i + 1}`}
                       onChange={(e) => patchResource(i, { url: e.target.value })} className={`${controlCls} text-left`} />
-                    {/* ومتى تُفتح — داخلَ أشهر الفصل، والفارغُ مع أوّل يوم */}
-                    <input type="date" dir="ltr" value={r.opensAt ? r.opensAt.slice(0, 10) : ""} disabled={locked}
+                    {/* ومتى تُفتح — داخلَ أشهر الفصل، والفارغُ مع أوّل يوم. واليومُ يومُ عمّان (٢٠ أكتوبر ٢٠٢٦):
+                        كان يُكتب منتصفَ ليل المتصفّح ويُقرأ بأوّل عشرة أحرفٍ بغرينتش — فيُعرض اليومَ السابق */}
+                    <input type="date" dir="ltr" value={r.opensAt ? zonedDay(r.opensAt) : ""} disabled={locked}
                       min={ws.cohort.term ? ws.cohort.term.startsOn.slice(0, 10) : undefined}
                       max={ws.cohort.term ? ws.cohort.term.endsOn.slice(0, 10) : undefined}
                       aria-label={`متى تفتح الجلسة المسجّلة ${i + 1}`}
-                      onChange={(e) => patchResource(i, { opensAt: e.target.value ? new Date(`${e.target.value}T00:00:00`).toISOString() : null })}
+                      onChange={(e) => patchResource(i, { opensAt: e.target.value ? zonedInstant(e.target.value, [8, 0, 0, 0]).toISOString() : null })}
                       className={`${controlCls} text-left sm:col-span-2`} />
                     <Button tone="ghost" size="sm" icon={Trash2} disabled={locked} aria-label={`احذف الجلسة المسجّلة ${i + 1}`}
                       onClick={() => setContent({ ...content, resources: content.resources.filter((_, j) => j !== i) })} />
@@ -3345,7 +3355,7 @@ export default function CohortWorkspace() {
         >
           <p className="text-read leading-7">
             يرفع «{pendingModule.module.titleAr || `المحور ${pendingModule.index + 1}`}» من خطّة هذه الشعبة،
-            ومعه مخرجه وتطبيقه ومتنه. ولا يقع شيء حتّى تحفظ المحاور.
+            ومعه مخرجه وتطبيقه ومتنه. ويحفظ الحذف تلقائيّا بعد ثوان.
           </p>
           {/* محورُ الكتالوج يبقى في الدورة — والفرقُ يُقال كي لا يُظنَّ محوَه منها */}
           {isCatalogModule(pendingModule.module.moduleId, ws.course.baseModules) && (

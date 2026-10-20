@@ -297,5 +297,14 @@ describe('⑩ و⑫ بطاقةُ «شعبي»: البدءُ المقترَح، �
     expect((await card(t.userId, made.id)).trainerOrdinal, 'الأولى تغيّر ترتيبُها بثانيةٍ بعدها').toBe(1)
     expect(trainerOrdinalNoteAr(cohortTitleAr(titleAr, 5), 2)).toBe('شعبتك الثانية')
     expect((await card(t.userId, elsewhere.id)).trainerOrdinal, 'شعبتُه في دورةٍ أخرى تُعَدّ مع هذه').toBe(1)
+
+    /* ⑫ب والملغاةُ قبلهما لا تُعدّ — في «شعبي» ولا في رأس الصفحة (٢٠ أكتوبر ٢٠٢٦). ورُئي ساقطا: أُسقط شرطُ
+       الملغاة من `workspace` فقال رأسُ الصفحة «الثانية» والبطاقةُ «الأولى» */
+    const gone = await prisma.cohort.create({
+      data: { courseId: C3, title: cohortTitleAr(titleAr, 6), status: 'cancelled', createdAt: new Date(Date.now() - 120_000) },
+    })
+    await prisma.cohortTrainer.create({ data: { cohortId: gone.id, profileId: t.profileId, role: 'lead' } })
+    expect((await card(t.userId, made.id)).trainerOrdinal).toBe(1)
+    expect((await plans.workspace(t.userId, made.id)).cohort.trainerOrdinal, 'عدّ رأس الصفحة شعبة ملغاة').toBe(1)
   })
 })

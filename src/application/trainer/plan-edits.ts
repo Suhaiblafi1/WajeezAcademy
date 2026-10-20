@@ -275,7 +275,7 @@ function resourceProblem(r: Partial<ResourceFields>, c: EditableContent): string
   if (r.title !== undefined && !(typeof r.title === 'string' && r.title.trim().length >= 2)) return 'عنوان المصدر قصير أو فارغ'
   if (typeof r.title === 'string' && r.title.length > PLAN_MAX.resourceTitle) return `عنوان المصدر أطول من ${PLAN_MAX.resourceTitle} حرف`
   if (typeof r.url === 'string' && r.url.length > PLAN_MAX.resourceUrl) return 'الرابط أطول من المسموح'
-  if (typeof r.url === 'string' && r.url.trim() && !/^https?:\/\//i.test(r.url.trim())) return `الرابطُ «${r.url}» لا يبدأ بـhttp`
+  if (typeof r.url === 'string' && r.url.trim() && !/^https?:\/\//i.test(r.url.trim())) return `الرابط «${r.url}» لا يبدأ بـhttp`
   if (r.kind != null && !(RESOURCE_KINDS as readonly string[]).includes(r.kind)) return `نوع المصدر «${r.kind}» ليس من الأنواع`
   if (r.category != null && !(RESOURCE_CATEGORIES as readonly string[]).includes(r.category)) return `صنف المصدر «${r.category}» ليس من الأصناف`
   if (r.moduleId && !hasModule(c, r.moduleId)) return `لا محور «${r.moduleId}» في الخطّة`
@@ -318,7 +318,7 @@ export function contentBefore(edit: PlanEdit, c: EditableContent): Checked<EditS
     }
     case 'workbook_replace': {
       if (!edit.file?.key || !edit.file.name?.trim()) return { ok: false, problemAr: 'الكرّاسة الجديدة بلا ملفّ' }
-      if (edit.file.mime !== 'application/pdf') return { ok: false, problemAr: 'الكرّاسة تُرفع PDF' }
+      if (edit.file.mime !== 'application/pdf') return { ok: false, problemAr: 'الكرّاسة ترفع PDF' }
       const at = workbookAt(c, edit.moduleId)
       if (!at.ok) return at
       return { ok: true, value: pick(at.value.wb as Record<string, unknown>, WORKBOOK_FIELDS) }
