@@ -573,8 +573,8 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
   }, async (req) => {
     const { profileId } = z.object({ profileId: z.string().uuid() }).parse(req.params)
     const { deadline } = z.object({ deadline: day }).parse(req.body)
-    const { row: _row, ...shown } = await reminders.preview(profileId, deadline)
-    return shown
+    const p = await reminders.preview(profileId, deadline)
+    return { to: p.to, subject: p.subject, text: p.text }
   })
 
   app.post('/api/admin/prep-reminders/:profileId/send', {

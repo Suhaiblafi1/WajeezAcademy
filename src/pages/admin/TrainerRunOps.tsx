@@ -23,7 +23,7 @@
    كلٍّ منهم **ما يمنع خطوتَه التالية** لا قائمةُ أزرارٍ متساوية: بلا حسابٍ لا
    يُسنَد، وبلا اعتمادِ نشرٍ لا يظهر للعامّة. */
 
-import PrepReminderRow, { inDays, ReminderDeadline, type ReminderRow } from "@/components/admin/PrepReminders";
+import PrepReminderRow, { ReminderDeadline, type ReminderRow } from "@/components/admin/PrepReminders";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   BadgeCheck, CheckCircle2, Clock, Download, GraduationCap, ImagePlus, Loader2, Search,
@@ -644,7 +644,7 @@ export default function TrainerRunOps() {
   const [addForm, setAddForm] = useState({ fullName: "", email: "", headline: "" });
   /* «ما بقي من دوراتك» — من بقي عليه شيء، وموعدٌ واحدٌ لرسائلهم (٢٠ أكتوبر ٢٠٢٦، `PrepReminders.tsx`) */
   const [reminders, setReminders] = useState<Map<string, ReminderRow>>(new Map());
-  const [deadline, setDeadline] = useState(() => inDays(7));
+  const [deadline, setDeadline] = useState(() => new Date(Date.now() + 7 * 86_400_000).toISOString().slice(0, 10));
 
   const load = useCallback(async () => {
     try {

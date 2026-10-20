@@ -15,7 +15,7 @@ import { controlCls } from "@/components/FormKit";
 export interface ReminderRow { profileId: string; name: string; email: string; items: { titleAr: string; missingAr: string }[] }
 interface Preview { to: string; subject: string; text: string }
 
-export const inDays = (n: number) => new Date(Date.now() + n * 86_400_000).toISOString().slice(0, 10);
+const inDays = (n: number) => new Date(Date.now() + n * 86_400_000).toISOString().slice(0, 10);
 
 /** الموعدُ النهائيّ — واحدٌ لكلّ الرسائل */
 export function ReminderDeadline({ value, onChange, count }: { value: string; onChange: (v: string) => void; count: number }) {
