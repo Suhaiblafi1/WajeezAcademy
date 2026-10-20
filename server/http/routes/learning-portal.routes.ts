@@ -1231,6 +1231,21 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
     return moves.review(req.auth!.userId, id, body)
   })
 
+  /* ═══ وتنقلها الإدارةُ بنفسها — بلا طلبٍ من المدرّب (٢٠ أكتوبر ٢٠٢٦) ═══
+     قرارُ صاحب المنصّة: زرُّ «انقلها إلى موسم آخر» على الشعبة. والنقلُ نفسُه (`staffMove`) بفحصه وأثره. */
+  app.post('/api/admin/cohorts/:cohortId/move', {
+    preHandler: requirePermission('cohort.manage'),
+    schema: { tags: ['admin-cohorts'], summary: 'نقل شعبة إلى موسم آخر بقرار الإدارة' },
+  }, async (req) => {
+    const { cohortId } = z.object({ cohortId: z.string().uuid() }).parse(req.params)
+    const body = z.object({
+      toYear: z.number().int().min(2020).max(2100),
+      toSeason: z.string().min(1).max(20),
+      reason: z.string().min(1).max(500),
+    }).parse(req.body)
+    return moves.staffMove(req.auth!.userId, cohortId, body)
+  })
+
   app.get('/api/trainer/grading-queue', {
     preHandler: requirePermission('trainer.cohort.operate'),
     schema: { tags: ['trainer-ops'], summary: 'طابور المراجعة — تسليمات شعبي المعلقة فقط' },

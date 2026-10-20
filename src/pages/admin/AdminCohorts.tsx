@@ -9,6 +9,7 @@ import { apiGet, apiPost, apiPut, ApiError } from "@/services/api";
 import { staffControlCls, staffSelectCls } from "@/components/FormKit";
 import { CohortOps, LearningSettings } from "./CohortOps";
 import { COHORT_TABS, type CohortTab } from "./cohort-tabs";
+import StaffMoveBox from "@/components/admin/StaffMoveBox";
 import { cohortNextStep, COHORT_LISTS, inCohortList, type CohortList, type NextTone } from "./cohort-lists";
 import OpenApproved from "@/components/admin/OpenApproved";
 import { tabForGap } from "@/application/learning/open-gaps";
@@ -608,6 +609,9 @@ export default function AdminCohorts() {
                         </Button>
                       )}
                     </div>
+                    {/* وتنقلها الإدارةُ إلى موسمٍ آخر بنفسها (٢٠ أكتوبر ٢٠٢٦) — `StaffMoveBox` */}
+                    <StaffMoveBox cohortId={c.id} status={c.status} startsAt={c.startsAt}
+                      onDone={(msg) => { setFlash({ kind: "ok", text: msg }); void load(); }} />
 
                     {c.status === "draft" && openError[c.id] && (
                       <p className="text-read font-bold text-red-300" role="alert">{openError[c.id]}</p>
