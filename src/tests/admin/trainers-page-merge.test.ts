@@ -60,7 +60,7 @@ describe('③ وما لا يقع إلّا فيها باقٍ', () => {
 describe('④ وصفحةُ الشعبة بابُ الإسناد', () => {
   it('⚠️ تطلب التأهيلَ وتقرّر فيه — فتؤهّل وتسند معا', () => {
     const cohort = code('src/pages/admin/CohortOps.tsx')
-    expect(cohort).toMatch(/apiPost\(`\/api\/admin\/cohorts\/\$\{cohort\.id\}\/qualification-requests`/)
+    expect(cohort).toMatch(/apiPost(?:<[^>]*>)?\(`\/api\/admin\/cohorts\/\$\{cohort\.id\}\/qualification-requests`/)
     expect(cohort).toMatch(/apiPost\(`\/api\/admin\/qualification-requests\/\$\{picked\.qualificationId\}\/decide`, \{ approve: true \}\)/)
   })
 })

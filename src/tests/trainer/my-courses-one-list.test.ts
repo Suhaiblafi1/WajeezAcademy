@@ -86,7 +86,7 @@ describe('② الصفحةُ تبني صفوفَها من القائمة الو�
   const PANEL = code('src/pages/trainer/CourseMaterialsPanel.tsx')
 
   it('⚠️ الصفوفُ من `buildMyCourses` ومعها شعبُه من «شعبي»', () => {
-    expect(Q).toMatch(/buildMyCourses\(\{ quals: quals \?\? \[\], offers, prep, cohorts, now \}\)/)
+    expect(Q).toMatch(/buildMyCourses\(\{ quals: quals \?\? \[\], offers, prep, cohorts, requests, now \}\)/)
     expect(Q).toMatch(/apiGet<MyCourseCohort\[\]>\("\/api\/trainer\/cohorts\/summary"\)/)
   })
 
@@ -140,5 +140,55 @@ describe('«دوراتي» حين لا تفتح', () => {
   it('رسالة الخادم تعرض — لا «تعذر الوصول» عن رفض مسمى', () => {
     expect(page).toMatch(/\.catch\(\(e\) => setDown\(\{ reasonAr: e instanceof ApiError \? e\.message : null \}\)\)/)
     expect(page).toMatch(/reasonAr=\{down\.reasonAr \?\?/)
+  })
+})
+
+/* ═══ ④ وطلبُ التأهيل يُقرأ ولا يُقرَّر فيه (٢٠ أكتوبر ٢٠٢٦) ═══
+   طلبه من يجدول شعبةً وقرارُه للإدارة. وكان يُرى «تنتظر قرارك»، وقبولُه يُنشئ شعبةً ثانيةً غيرَ المطلوبة.
+   ورُئي ساقطا: أُسقط فرعُ الطلب من `buildMyCourses` فصار «معتمدة لك»، وأُسقط سطرُه من الصفّ فسقط الثاني. */
+describe('④ طلب التأهيل يقرأ ولا يقرّر فيه', () => {
+  it('⚠️ حاله «بانتظار قرار الإدارة» — لا «تنتظر قرارك»', () => {
+    const rows = buildMyCourses({
+      quals: [], offers: [], prep: [], cohorts: [], now: NOW,
+      requests: [{ courseId: 'ai', titleAr: 'الذكاء الاصطناعي', cohortTitle: 'شعبة 3' }],
+    })
+    expect(rows.map((r) => [r.courseId, r.state, r.labelAr])).toEqual([['ai', 'requested', 'بانتظار قرار الإدارة']])
+    expect(rows[0].request?.cohortTitle).toBe('شعبة 3')
+  })
+
+  it('⚠️ والصفّ يقول لمن القرار — بلا زرّ قبول', () => {
+    const page = code('src/pages/trainer/Qualifications.tsx')
+    expect(page).toContain('apiGet<MyCourseRequest[]>("/api/trainer/qualification-requests")')
+    expect(page).toMatch(/\{r\.state === "requested" && r\.request && \(\s*<p[^>]*>\s*\{r\.request\.cohortTitle \? `طلبت الإدارة إسنادك إلى «\$\{r\.request\.cohortTitle\}»`/)
+  })
+})
+
+/* ═══ ⑤ والمؤجَّلةُ مؤجَّلةٌ لا «ردّت» (٢٠ أكتوبر ٢٠٢٦) ═══
+   التأجيلُ يكتب `changes_requested` ومعه موسمُه، فكانت تُقرأ «ردّت بملاحظات» في «دوراتي» و«طلبت تعديلات» في «شعبي»
+   و«ردّت إليك — أعد الإرسال» في رأس الطابور. ورُئي ساقطا: أُسقط فرعُ التأجيل من `fromCohorts` فسقط الأوّل،
+   ومن الطابور فسقط الثاني. */
+describe('⑤ المؤجّلة مؤجّلة', () => {
+  it('⚠️ في «دوراتي» — من شعبتها ومن دورة إعدادها', () => {
+    const c = { ...cohort('a', 'draft', 'changes_requested'), next: { key: 'postponed' } }
+    expect(build({ cohorts: [c] })[0].labelAr).toBe('مؤجّلة إلى موسم قادم')
+    expect(build({ cohorts: [cohort('a', 'draft', 'changes_requested')] })[0].state).toBe('returned')
+    expect(build({ prep: [{ ...prep('a', 'returned', 'c1'), postponedTo: '2027-02-01' }] })[0].state).toBe('postponed')
+  })
+
+  it('⚠️ وفي الطابور آخرا بلا «أعد الإرسال» — وفي «شعبي» «مؤجّلة»', async () => {
+    const { buildWorkQueue } = await import('@/application/trainer/work-queue')
+    const items = buildWorkQueue([], 0, NOW, [{ id: 'c1', title: 'شعبة 2', planStatus: 'changes_requested', done: 3, total: 5, next: { key: 'postponed', labelAr: 'مؤجّلة إلى 1 فبراير' } }])
+    expect(items.map((i) => i.kind)).toEqual(['plan_postponed'])
+    expect(items[0].detailAr).not.toContain('أعد الإرسال')
+    expect(code('src/pages/trainer/CohortBoard.tsx')).toMatch(/const st = c\.next\?\.key === "postponed" \? PLAN_POSTPONED : PLAN_AR\[c\.planStatus\]/)
+  })
+})
+
+/* ⑥ والطابورُ يُعرض حين فيه بندٌ ولو بلا شعبة (٢٠ أكتوبر ٢٠٢٦): عرضٌ ينتظر جوابَه ومهلتُه تنقضي كان لا يُرى، والسطرُ
+   فوقه «لم تسند إليك شعب بعد». ورُئي ساقطا: أُسقط `work.length > 0` فسقط. */
+describe('⑥ الطابور حين فيه بند', () => {
+  it('⚠️ يعرض بلا شعبة إن كان فيه عرض ينتظر', () => {
+    expect(code('src/pages/trainer/TrainerDashboard.tsx'))
+      .toMatch(/\{\(cohorts\.length > 0 \|\| summary\.length > 0 \|\| work\.length > 0\) && <TrainerWorkQueue items=\{work\}/)
   })
 })

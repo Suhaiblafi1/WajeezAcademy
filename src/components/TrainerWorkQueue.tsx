@@ -2,7 +2,7 @@
    الترتيب بالإلحاح لا بالنوع: الجلسة الجارية قبل التسجيل المنسي قبل التقييم. */
 
 import { Link } from "react-router";
-import { AlertTriangle, CalendarX2, ClipboardCheck, ClipboardList, Handshake, ListChecks, ListTodo, Radio, Send, Undo2, Video, ArrowLeft } from "lucide-react";
+import { AlertTriangle, CalendarClock, CalendarX2, ClipboardCheck, ClipboardList, Handshake, ListChecks, ListTodo, Radio, Send, Undo2, Video, ArrowLeft } from "lucide-react";
 import type { QueueItem, QueueKind } from "@/application/trainer/work-queue";
 
 import WorkHeader from "@/components/admin/WorkHeader";
@@ -14,6 +14,7 @@ const ICON: Record<QueueKind, typeof Video> = {
   not_submitted: AlertTriangle,
   session_rejected: CalendarX2,
   plan_returned: Undo2,
+  plan_postponed: CalendarClock,
   plan_ready_unsent: Send,
   plan_incomplete: ListTodo,
   offer_pending: Handshake,
@@ -31,6 +32,8 @@ const TONE: Record<QueueKind, string> = {
      تفصلك عن التمام. والرابعُ عملٌ طويلٌ لا يُلحّ. */
   session_rejected: "border-gold/40 bg-gold/[0.06]",
   plan_returned: "border-gold/40 bg-gold/[0.06]",
+  /* والمؤجَّلةُ لا تُلحّ — موسمُها قادم (٢٠ أكتوبر ٢٠٢٦) */
+  plan_postponed: "border-white/10 bg-white/[0.03]",
   plan_ready_unsent: "border-gold/40 bg-gold/[0.06]",
   plan_incomplete: "border-white/10 bg-white/[0.03]",
   /* والعرضُ ذهبيٌّ مثلُها: مهلتُه تجري وينتظرك جوابٌ. وأجلُ الإعداد محايدٌ

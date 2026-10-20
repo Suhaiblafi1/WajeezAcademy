@@ -449,4 +449,24 @@ describe('③ الردّ والسحب', () => {
     const again = await svc.request(trainerId, cohortId, { toYear: target.year, toSeason: target.season, reason: 'بعد السحب أطلب ثانية' })
     expect(again.status).toBe('pending')
   })
+
+  /* ٢٠ أكتوبر ٢٠٢٦: كان المساعدُ لا يرى طلبَ الرئيس، فيرى «انقلها» ويُردّ بـ«اسحبه أوّلا» وهو لا يراه. ورُئي ساقطا:
+     أُعيد `mine` إلى طالبه وحدَه فسقط */
+  it('⚠️ وشريكه في الشعبة يرى الطلب المعلّق — ولا يسحبه', async () => {
+    const cohortId = await mkCohort('شعبة الشريكين', profileId)
+    const app2 = await prisma.trainerApplication.create({
+      data: { reference: `TR-MOVE-2-${Date.now()}`, fullName: 'مدرّب آخر', email: 'move-other@test.local', status: 'active', motivation: 'اختبار', privacyConsentAt: new Date() },
+    })
+    const other = await prisma.trainerProfile.upsert({
+      where: { userId: otherTrainerId }, update: {},
+      create: { applicationId: app2.id, userId: otherTrainerId, isVerified: true },
+    })
+    await prisma.cohortTrainer.create({ data: { cohortId, profileId: other.id, role: 'assistant' } })
+    const r = await svc.request(trainerId, cohortId, { toYear: target.year, toSeason: target.season, reason: 'الطلب قليل هذا الفصل' })
+    const seen = (await svc.mine(otherTrainerId)).find((x) => x.id === r.id)
+    expect(seen, 'لم ير الشريك طلب النقل المعلّق').toBeTruthy()
+    expect(seen!.mine).toBe(false)
+    expect((await svc.mine(trainerId)).find((x) => x.id === r.id)?.mine).toBe(true)
+    await expect(svc.withdraw(otherTrainerId, r.id)).rejects.toMatchObject({ status: 404 })
+  })
 })

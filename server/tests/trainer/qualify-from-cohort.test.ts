@@ -234,6 +234,58 @@ describe('بوّابةُ النزاهة: من يطلب ليس من يقرّر', 
   })
 })
 
+/* ═══ ومن جمع الصلاحيّتين يُنفَذ طلبُه لحظتَه — وطلبُ غيره يقرؤه المدرّبُ ولا يقرّر فيه (٢٠ أكتوبر ٢٠٢٦) ═══
+   قرارُ صاحب المنصّة: «Super admin: instant». وكان الطلبُ المعلّقُ يُرى في «دوراتي» دورةً «تنتظر قرارك»، وقبولُه
+   يُنشئ شعبةً ثانيةً غيرَ المطلوبة. ورُئي ساقطا: أُسقط التنفيذُ اللحظيّ فسقط الأوّل، وأُعيد الطلبُ إلى قائمة
+   الإعداد (`coursesOf`) فسقط الثاني، وأُسقط ردُّ القبول فسقط الثالث. */
+describe('طلب من يملك القرار يقع لحظته — وطلب غيره يقرأ ولا يقرّر فيه', () => {
+  let trainerCookie = ''
+  beforeAll(async () => { trainerCookie = await cookieFor('qual-trainer@test.local', 'Trainer#12345') })
+
+  it('⚠️ المدير الأعلى يطلب فيؤهّل ويسند في الفعل نفسه', async () => {
+    await reset()
+    const boss = await auth.register('qual-boss@test.local', 'Boss#12345', 'المدير الأعلى')
+    await auth.setRoles(boss.userId, ['super_admin'])
+    const c = await mkCohort('شعبة الطلب اللحظيّ', new Date(Date.now() + 60 * DAY))
+    const ask = await app.inject({
+      method: 'POST', url: `/api/admin/cohorts/${c.id}/qualification-requests`,
+      headers: { cookie: await cookieFor('qual-boss@test.local', 'Boss#12345') }, payload: { profileId, courseId: COURSE },
+    })
+    expect(ask.statusCode, ask.body).toBe(201)
+    expect(ask.json()).toMatchObject({ instant: true, assigned: true, status: 'qualified' })
+    expect(await prisma.cohortTrainer.count({ where: { cohortId: c.id, profileId } }), 'لم يسند لحظته').toBe(1)
+  })
+
+  it('⚠️ وطلب مدير العمليات ينتظر — ولا يراه المدرّب دورة يقرّر فيها، بل سطرا يقرؤه', async () => {
+    await reset()
+    const c = await mkCohort('شعبة الطلب المنتظر', new Date(Date.now() + 61 * DAY))
+    const ask = await app.inject({
+      method: 'POST', url: `/api/admin/cohorts/${c.id}/qualification-requests`,
+      headers: { cookie: opsCookie }, payload: { profileId, courseId: COURSE },
+    })
+    expect(ask.json()).toMatchObject({ instant: false, status: 'pending' })
+    const prepRows = (await app.inject({ method: 'GET', url: '/api/trainer/prep', headers: { cookie: trainerCookie } })).json() as { courseId: string }[]
+    expect(prepRows.map((r) => r.courseId), 'الطلب دورة «تنتظر قرارك»').not.toContain(COURSE)
+    const requests = await app.inject({ method: 'GET', url: '/api/trainer/qualification-requests', headers: { cookie: trainerCookie } })
+    expect(requests.statusCode, requests.body).toBe(200)
+    expect(requests.json()).toMatchObject([{ courseId: COURSE, cohortTitle: 'شعبة الطلب المنتظر' }])
+  })
+
+  it('⚠️ ولا يقبل المدرّب الطلب ولا يعتذر عنه — ولا تنشأ شعبة ثانية', async () => {
+    const before = await prisma.cohort.count({ where: { courseId: COURSE } })
+    const accept = await app.inject({ method: 'POST', url: `/api/trainer/prep/${COURSE}/accept`, headers: { cookie: trainerCookie } })
+    expect(accept.statusCode, accept.body).toBe(409)
+    expect(accept.json().error.code).toBe('awaiting_admin')
+    const decline = await app.inject({
+      method: 'POST', url: `/api/trainer/prep/${COURSE}/decline`, headers: { cookie: trainerCookie }, payload: { reasonAr: 'لا وقت عندي' },
+    })
+    expect(decline.statusCode, decline.body).toBe(409)
+    expect(await prisma.cohort.count({ where: { courseId: COURSE } }), 'أنشأ القبول شعبة ثانية').toBe(before)
+    const q = await prisma.trainerCourseQualification.findUniqueOrThrow({ where: { profileId_courseId: { profileId, courseId: COURSE } } })
+    expect(q.status).toBe('pending')
+  })
+})
+
 /* ─────────── آخرُ السلسلة: قرارٌ إداريّ ينهي مسار المدرّب ───────────
 
    كانت السلسلةُ تنتهي عند «قبول مشروط»، ولا زرَّ بعده في `DECISIONS[]`. فمن

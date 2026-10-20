@@ -633,11 +633,15 @@ export class EnrollmentService {
   }
 
   /** شعب المدرب — لا يرى شعب غيره أبدا */
-  async trainerCohorts(userId: string) {
+  /* ═══ والملغاةُ ليست من شعبه (٢٠ أكتوبر ٢٠٢٦) ═══
+     «شعبي» تُسقطها من قبل (`summaries`)، وكانت هذه تحملها إلى الرئيسيّة: التحيّةُ تعدّها، و«ما عليك الآن» يطلب
+     تصحيحَ مهامّها، و«متعلّمون يحتاجونك» يعدّ متعلّميها. والشعبةُ الواحدةُ تُفتح ولو أُلغيت (`trainerCohort`) —
+     رابطٌ قديمٌ إليها لا يُردّ بـ«ليست مسندة إليك». */
+  async trainerCohorts(userId: string, opts: { withCancelled?: boolean } = {}) {
     const profile = await this.prisma.trainerProfile.findUnique({ where: { userId } })
     if (!profile || profile.suspendedAt) throw new AuthError('not_trainer', 'لا ملف مدرب نشطا لهذا الحساب', 403)
     const links = await this.prisma.cohortTrainer.findMany({
-      where: { profileId: profile.id },
+      where: { profileId: profile.id, ...(opts.withCancelled ? {} : { cohort: { status: { not: 'cancelled' } } }) },
       include: {
         cohort: {
           include: {
@@ -671,7 +675,7 @@ export class EnrollmentService {
 
   /** شعبةٌ واحدةٌ من شعبه — لصفحة الشعبة، بالشكل نفسِه الذي يعطيه `trainerCohorts` */
   async trainerCohort(userId: string, cohortId: string) {
-    const row = (await this.trainerCohorts(userId)).find((r) => r.cohort.id === cohortId)
+    const row = (await this.trainerCohorts(userId, { withCancelled: true })).find((r) => r.cohort.id === cohortId)
     if (!row) throw new AuthError('not_your_cohort', 'هذه الشعبة ليست مسندة إليك', 403)
     return row
   }
