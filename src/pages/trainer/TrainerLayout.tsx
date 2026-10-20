@@ -24,6 +24,8 @@ interface PortalMe {
   pendingGrading?: number;
   /** شعبُه التي تُشغَّل — من له واحدةٌ لا يُعامَل معاملةَ طور الإعداد */
   liveCohorts?: number;
+  /** دوراتٌ تنتظر قرارَه في «دوراتي» — عرضٌ أو دورةٌ أو خطّةٌ رُدّت (٢٠ أكتوبر ٢٠٢٦) */
+  coursesWaiting?: number;
   contracts?: ConditionContract[];
 }
 
@@ -151,7 +153,7 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
        (٢٧ سبتمبر ٢٠٢٦)، فاسمٌ يَعِد بـ«إتاحتي» يقود إلى ما لا وجودَ له.
        و«عروضي» دخلتها (٢٩ سبتمبر ٢٠٢٦): العرضُ حالُ مؤهَّلٍ يُقرَّر عنده،
        لا بابٌ ثانٍ يُقابَل بالأوّل بالعين. */
-    { to: "/trainer/qualifications", label: "دوراتي", icon: BookCheck },
+    { to: "/trainer/qualifications", label: "دوراتي", icon: BookCheck, count: me?.coursesWaiting ?? 0, countLabel: "تنتظر قرارك: " },
     /* وكانت بعدها «دوراتي المقترحة» و«مساراتي» لسانين — وصارتا قسمين في «دوراتي» (الخطوة F،
        ١٩ أكتوبر ٢٠٢٦): ما أُهِّل له، وما يقترحه، وما يرتّبه في مسار — أسئلةٌ ثلاثةٌ عن دوراته
        في بابٍ واحد. وكانت قبلهما «تعديلاتي على دوراتي» وذهبت (٢٩ سبتمبر ٢٠٢٦). */

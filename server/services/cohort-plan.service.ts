@@ -854,6 +854,12 @@ export class CohortPlanService {
     })
     /* ترتيبُ كلٍّ بين شعبه في دورتها — «شعبتك الأولى» بجانب «شعبة ٤» (⑫، `cohort-title.ts`) */
     const ordinals = trainerOrdinals(links.map((l) => l.cohort))
+    /* واعتُمدت لها خطّةٌ قطّ؟ — منه تُقسَم بين «شعبي» و«دوراتي» (`board-place.ts`، ٢٠ أكتوبر ٢٠٢٦). والأحدثُ وحدَه
+       لا يكفي: مراجعةٌ في يده على خطّةٍ معتمدةٍ أحدثُ منها */
+    const approvedOnce = new Set((await this.prisma.cohortDeliveryPlan.findMany({
+      where: { cohortId: { in: links.map((l) => l.cohort.id) }, trainerId: { not: null }, status: { in: [...APPROVED_PLAN_STATUSES] } },
+      select: { cohortId: true }, distinct: ['cohortId'],
+    })).map((p) => p.cohortId))
     return links.map((l) => {
       const c = l.cohort
       const plan = c.plans[0] ?? null
@@ -890,6 +896,7 @@ export class CohortPlanService {
         learners: c._count.enrollments, sessions: countableSessions(c.sessions).length,
         planStatus, done, total: required.length,
         next,
+        approvedOnce: approvedOnce.has(c.id),
       }
     })
   }

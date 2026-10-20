@@ -284,6 +284,14 @@ describe('طلب من يملك القرار يقع لحظته — وطلب غي�
     const q = await prisma.trainerCourseQualification.findUniqueOrThrow({ where: { profileId_courseId: { profileId, courseId: COURSE } } })
     expect(q.status).toBe('pending')
   })
+
+  /* ٢٠ أكتوبر ٢٠٢٦: لسانُ «دوراتي» يعدّ ما ينتظر قرارَه — والطلبُ ليس منه. ورُئي ساقطا: عُدّ كلُّ صفٍّ معلّق فسقط */
+  it('⚠️ ولسان «دوراتي» يعدّ ما ينتظر قراره — لا طلب الإدارة', async () => {
+    const me = async () => (await app.inject({ method: 'GET', url: '/api/trainer/me', headers: { cookie: trainerCookie } })).json() as { coursesWaiting: number }
+    expect((await me()).coursesWaiting, 'عُدّ طلب الإدارة مما ينتظره').toBe(0)
+    await prisma.trainerCourseQualification.updateMany({ where: { profileId, courseId: COURSE }, data: { requestedCohortId: null } })
+    expect((await me()).coursesWaiting, 'دورة لم يقرّر فيها لا تعدّ').toBe(1)
+  })
 })
 
 /* ─────────── آخرُ السلسلة: قرارٌ إداريّ ينهي مسار المدرّب ───────────

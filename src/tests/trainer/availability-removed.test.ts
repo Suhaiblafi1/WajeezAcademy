@@ -91,6 +91,8 @@ describe('شاشة المؤهّلات — ما بقي منها', () => {
     expect([...new Set(calls)].sort()).toEqual([
       /* وشعبُه في «شعبي» منذ الخطوة F (١٩ أكتوبر ٢٠٢٦): ما أُسند إليه بلا عرضٍ كان لا يُرى هنا، فيقرأ
          المدرّبُ النشطُ «لا دورة بعد» وهو يدرّس. والقراءةُ قراءةُ «شعبي» نفسِها لا نداءٌ جديد. */
+      /* وطلباتُ نقل الشعب منذ ٢٠ أكتوبر ٢٠٢٦ — التأجيلُ من صفّ دورتها (`board-place.ts`) */
+      '/api/trainer/cohort-moves',
       '/api/trainer/cohorts/summary',
       '/api/trainer/me/qualifications',
       '/api/trainer/offers',

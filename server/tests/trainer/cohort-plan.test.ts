@@ -491,6 +491,12 @@ describe('ملكيّةُ الشعبة واعتمادُها', () => {
     const changed = await plans.savePlan(trainerUserId, cohortId, { ...(approved.content as unknown as TrainerPlanContent), summaryAr: 'وصف معدّل بعد الاعتماد يكفي ليقرأ' })
     expect(changed.status).toBe('draft')
     expect(await rows()).toBe(before + 1)
+
+    /* ٢٠ أكتوبر ٢٠٢٦ (`board-place.ts`): ومراجعةٌ في يده على خطّةٍ معتمدةٍ لا تُخرج الشعبةَ من «شعبي» — الموجزُ يقول
+       إنّها اعتُمدت قطّ، والأحدثُ مسودّة. ورُئي ساقطا: قُرئ الأحدثُ وحدَه فسقط */
+    const card = (await plans.summaries(trainerUserId)).find((r) => r.id === cohortId)
+    expect(card?.planStatus).toBe('draft')
+    expect(card?.approvedOnce, 'مراجعة على معتمدة أخرجتها من «شعبي»').toBe(true)
   })
 
 })

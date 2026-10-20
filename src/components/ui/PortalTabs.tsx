@@ -102,6 +102,8 @@ export interface PortalTab {
   icon?: LucideIcon
   end?: boolean
   count?: number
+  /** ما يُقرأ قبل عدد هذا اللسان — حين يعدّ غيرَ ما يعدّه الإطار (`countLabel`) */
+  countLabel?: string
   /** نشاطٌ يقرّره الإطار لا المسار — انظر `NavPill` */
   active?: boolean
 }
@@ -149,6 +151,9 @@ function MoreTabs({ items, look, countLabel }: { items: PortalTab[]; look: PillL
   const { pathname } = useLocation()
   const here = items.some((t) => t.active ?? (pathname === t.to || (!t.end && pathname.startsWith(`${t.to}/`))))
   const waiting = items.reduce((sum, t) => sum + (t.count ?? 0), 0)
+  /* وعدّادان بمعنيين تحت «المزيد» يُقرآن بكلمةٍ تجمعهما (٢٠ أكتوبر ٢٠٢٦) — لا «ينتظر تصحيحك» لغير التصحيح */
+  const said = new Set(items.filter((t) => t.count).map((t) => t.countLabel ?? countLabel))
+  const moreLabel = said.size > 1 ? 'ينتظرك: ' : [...said][0] ?? countLabel
 
   useEffect(() => {
     if (!open) return
@@ -173,7 +178,7 @@ function MoreTabs({ items, look, countLabel }: { items: PortalTab[]; look: PillL
         expanded={open}
         onClick={() => setOpen((v) => !v)}
       >
-        <CountBadge count={waiting} label={countLabel} />
+        <CountBadge count={waiting} label={moreLabel} />
         <ChevronDown className={`h-3 w-3 shrink-0 transition ${open ? 'rotate-180' : ''}`} aria-hidden="true" />
       </NavPillButton>
 
@@ -190,7 +195,7 @@ function MoreTabs({ items, look, countLabel }: { items: PortalTab[]; look: PillL
               label={t.label}
               onClick={() => setOpen(false)}
             >
-              <CountBadge count={t.count} label={countLabel} />
+              <CountBadge count={t.count} label={t.countLabel ?? countLabel} />
             </NavPillMenuItem>
           ))}
         </Inset>
@@ -260,7 +265,7 @@ export function PortalTabs({ tabs, label, look = 'teal', fill = true, countLabel
         <div className={`-m-1 flex min-w-0 items-center overflow-hidden p-1 ${gap} ${fill ? 'flex-1' : ''}`}>
           {visible.map((t) => (
             <NavPill key={t.to} to={t.to} end={t.end} active={t.active} look={look} label={t.label}>
-              <CountBadge count={t.count} label={countLabel} />
+              <CountBadge count={t.count} label={t.countLabel ?? countLabel} />
             </NavPill>
           ))}
         </div>
