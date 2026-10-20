@@ -276,6 +276,19 @@ export default function StageWork({
             />
           </div>
         )}
+        {/* ومن استوفى قواعد الإكمال قبل آخرها يرى طلبَ شهادته — أو طلبَه القائم (`CourseCertificate`) */}
+        {!(detail.status === "completed" || percent >= 100 || detail.certificates.length > 0) && (
+          <div className="mt-4 empty:hidden">
+            <CourseCertificate
+              enrollmentId={detail.id}
+              courseTitleAr={stage.titleAr}
+              certificates={detail.certificates}
+              request={request}
+              onChanged={handlers.onChanged}
+              onlyIfEligible
+            />
+          </div>
+        )}
       </Panel>
 
       {/* ══ صندوقُ المصادر — ما يُرجَع إليه ══ */}
