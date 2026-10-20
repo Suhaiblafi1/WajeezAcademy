@@ -857,6 +857,31 @@ export class AssessmentService {
     return rows.map(withSubmissionFileView)
   }
 
+  /* ═══ والمرفوضُ لا يغيب — يُعاد فتحُه من هنا (٢٠ أكتوبر ٢٠٢٦) ═══
+     يُقال للمتعلّم «وباب الإعادة يفتحه مدرّبك متى راجعته»، والخادمُ يقبل `rejected → resubmit_requested` — ولا شاشةَ
+     كانت تعرض المرفوضَ بعد رفضه: يخرج من الطابور، ويبقى المتعلّمُ ينتظر بابا لا زرَّ له. فهذه قائمتُه: آخرُ تسليمٍ
+     لصاحبه على مهمّته وقد رُفض — وما بعده تسليمٌ أحدثُ لا يُعرض */
+  async trainerRejected(trainerUserId: string) {
+    const profile = await this.prisma.trainerProfile.findUnique({ where: { userId: trainerUserId } })
+    if (!profile) throw new AuthError('not_trainer', 'لا ملف مدرب لهذا الحساب', 403)
+    const rows = await this.prisma.assignmentSubmission.findMany({
+      where: { status: 'rejected', assessment: { cohort: { status: { not: 'cancelled' }, trainers: { some: { profileId: profile.id } } } } },
+      select: {
+        id: true, assessmentId: true, enrollmentId: true, submittedAt: true, reviewNote: true,
+        assessment: { select: { title: true, cohort: { select: { title: true } } } },
+        enrollment: { select: { user: { select: { displayName: true } } } },
+      },
+      orderBy: { submittedAt: 'desc' },
+    })
+    if (rows.length === 0) return []
+    const newer = await this.prisma.assignmentSubmission.findMany({
+      where: { OR: rows.map((r) => ({ assessmentId: r.assessmentId, enrollmentId: r.enrollmentId, submittedAt: { gt: r.submittedAt } })) },
+      select: { assessmentId: true, enrollmentId: true },
+    })
+    const superseded = new Set(newer.map((n) => `${n.assessmentId}:${n.enrollmentId}`))
+    return rows.filter((r) => !superseded.has(`${r.assessmentId}:${r.enrollmentId}`))
+  }
+
   /* ═══ من يقرأ ملفَّ تسليم ═══
 
      صاحبُه، ومدرّبُ شعبته. ولا ثالثَ من هذا الباب: من يعتمد الخطّةَ لا شأنَ

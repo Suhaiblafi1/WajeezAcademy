@@ -986,7 +986,10 @@ function Assessments({ detail, handlers, now }: { detail: EnrollmentDetail; hand
             {canSubmit && a.type === "quiz" && a.items.length > 0 && (
               <QuizAttemptForm items={a.items} busy={busy === a.id} onSubmit={(r) => onSubmitQuiz(a.id, r)} />
             )}
-            {canSubmit && a.type !== "quiz" && (
+            {/* ═══ واختبارٌ بلا أسئلةٍ يُجاب كتابةً (٢٠ أكتوبر ٢٠٢٦) ═══
+                 المدرّبُ يختار «اختبار» ولا محرّرَ أسئلةٍ له بعد، فكانت بطاقتُه بلا نموذجٍ أبدا وتبقى في «ما عليك» —
+                 قرارُ صاحب المنصّة «Treat as text»: يُسلَّم نصّا أو ملفّا ويقيّمه المدرّبُ في طابوره */}
+            {canSubmit && (a.type !== "quiz" || a.items.length === 0) && (
               <div className="mt-3">
                 <textarea
                   value={answers[a.id] ?? ""}

@@ -46,6 +46,15 @@ const SUBMISSION_STATUS: Record<string, string> = {
 };
 
 interface RubricCriterion { id: string; title: string; maxScore: number }
+/** مرفوضٌ هو آخرُ تسليمٍ لصاحبه — يُعاد فتحُه بطلب إعادة (`/api/trainer/grading-queue/rejected`) */
+interface RejectedItem {
+  id: string;
+  submittedAt: string;
+  reviewNote: string | null;
+  assessment: { title: string; cohort: { title: string } };
+  enrollment: { user: { displayName: string | null } | null };
+}
+
 interface QueueItem {
   id: string; status: string; textAnswer: string | null; submittedAt: string; reviewNote: string | null;
   /** سُلّم بعد آخر موعده — «المتأخّرُ يُقبل ويُعلَّم» (٢٧ سبتمبر ٢٠٢٦) */
@@ -88,10 +97,15 @@ export default function GradingQueue() {
      غيره في الطابور نفسِه، ومعرّفُ المعيار وحدَه يخلط بينها. */
   const [rubricForm, setRubricForm] = useState<Record<string, string>>({});
 
+  /* ═══ والمرفوضُ لا يغيب (٢٠ أكتوبر ٢٠٢٦) ═══
+     يُقال للمتعلّم إنّ مدرّبه يفتح بابَ الإعادة متى راجعه — وكان المرفوضُ يخرج من كلّ شاشة، فلا زرَّ يفتحه */
+  const [rejected, setRejected] = useState<RejectedItem[]>([]);
+
   const load = useCallback(async () => {
     setOffline(null);
     try {
       setQueue(await apiGet<QueueItem[]>("/api/trainer/grading-queue"));
+      setRejected(await apiGet<RejectedItem[]>("/api/trainer/grading-queue/rejected").catch(() => [] as RejectedItem[]));
     } catch (err) {
       setOffline(err instanceof ApiError ? err.message : "الخادم غير متصل");
     }
@@ -398,6 +412,33 @@ export default function GradingQueue() {
             </Panel>
           ))}
         </div>
+      )}
+
+      {rejected.length > 0 && (
+        <details className="mt-6">
+          <summary className="cursor-pointer text-read font-bold text-muted-foreground">مرفوضة لم يعد أصحابها ({rejected.length})</summary>
+          <ul className="mt-3 grid gap-3">
+            {rejected.map((r) => (
+              <Panel as="li" key={r.id} className="grid gap-2">
+                <p className="text-read leading-6">
+                  <b className="text-foreground">{r.enrollment.user?.displayName ?? "متعلّم"}</b>
+                  <span className="text-muted-foreground"> · {r.assessment.title} · {r.assessment.cohort.title} · {fmtDateTimeAr(r.submittedAt)}</span>
+                </p>
+                {r.reviewNote && <p className="text-read leading-6 text-muted-foreground">سبب الرفض: {r.reviewNote}</p>}
+                <div className="flex flex-wrap items-center gap-2">
+                  <input value={reviewNote[r.id] ?? ""}
+                    onChange={(e) => setReviewNote((prev) => ({ ...prev, [r.id]: e.target.value }))}
+                    placeholder="ما الذي ينقص؟ يصل المتعلّم"
+                    aria-label={`ما ينقص «${r.assessment.title}»`}
+                    className={`min-w-48 flex-1 ${controlCls}`} />
+                  <Button size="sm" disabled={busy || !(reviewNote[r.id] ?? "").trim()} onClick={() => void reviewAction(r.id, "request_resubmit")}>
+                    اطلب إعادة التسليم
+                  </Button>
+                </div>
+              </Panel>
+            ))}
+          </ul>
+        </details>
       )}
     </TrainerLayout>
   );
