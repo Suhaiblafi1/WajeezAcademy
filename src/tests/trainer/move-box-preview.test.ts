@@ -4,7 +4,10 @@
    بما يحسبه الخادمُ عند الاعتماد (`moveShiftMs` من فصل أوّل لقائها) ويقوله. والتعليقاتُ تُنزع قبل الفحص. */
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { createElement } from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
+import CohortMoveBox from '@/components/trainer/CohortMoveBox'
 
 const box = readFileSync(join(process.cwd(), 'src/components/trainer/CohortMoveBox.tsx'), 'utf8')
   .replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '').replace(/^\s*\/\/.*$/gm, '')
@@ -26,7 +29,28 @@ describe('صندوق النقل في شعبة الإعداد', () => {
     expect(box).toMatch(/const start = begun \?\? \(proposedStartsOn \?/)
   })
   it('⚠️ والمقترح لا يخفي الصندوق — «بدأت» من أول لقائها وحده', () => {
-    expect(box).toMatch(/\(begun && begun <= now\)\) return null/)
+    expect(box).toMatch(/includes\(status\) \|\| \(begun && begun <= now\)\) \{/)
     expect(box).not.toMatch(/\(start && start <= now\)/)
+  })
+})
+
+/* ═══ وحيث لا يُنقل يُقال لماذا — لا يختفي الزرّ صامتا (٢٠ أكتوبر ٢٠٢٦) ═══
+   «لا يظهر» (صاحب المنصّة على بطاقةٍ بلا زرّ). ويُصيَّر الصندوقُ نفسُه لا يُقرأ ملفُّه.
+   ورُئي ساقطا: أُعيد `return null` لكلّ ما لا يُنقل، فسقط الأوّل. */
+describe('صندوق النقل حيث لا ينقل', () => {
+  const box = (status: string, startsAt: string | null = null) => renderToStaticMarkup(createElement(CohortMoveBox, {
+    cohortId: 'c-1', status, startsAt, pending: null, onChange: () => undefined,
+  }))
+
+  it('⚠️ الجارية والتي بدأت تقول لماذا لا تنقل', () => {
+    expect(box('active')).toContain('الشعبة جارية — لا تنقل إلى فصل آخر')
+    expect(box('open', '2000-01-01T10:00:00.000Z')).toContain('بدأت الشعبة — لا تنقل إلى فصل آخر')
+    expect(box('active')).not.toContain('انقلها إلى فصل آخر')
+  })
+
+  it('والقابلة للنقل زرها — والمنتهية والملغاة بلا سطر', () => {
+    expect(box('draft')).toContain('انقلها إلى فصل آخر')
+    expect(box('completed')).toBe('')
+    expect(box('cancelled')).toBe('')
   })
 })

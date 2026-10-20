@@ -373,6 +373,25 @@ describe('②و بطاقات التعديل المنتظرة', () => {
   })
 })
 
+/* ═══ والملغاةُ ليست من «شعبي» (٢٠ أكتوبر ٢٠٢٦) ═══
+   شعبةُ إعدادٍ لدورةٍ اعتذر عنها تُلغى، وكانت تبقى في موجز المدرّب «في التجهيز» بخطوتها التالية — في «شعبي»
+   و«ما عليك الآن» — بلا «انقلها إلى فصل آخر». ورُئي ساقطا: أُعيد الموجزُ بلا شرط الحالة فسقط. */
+describe('②ز الملغاة خارج موجز المدرّب', () => {
+  it('⚠️ الموجز بلا ملغاة — وشعبة الإعداد الحيّة فيه', async () => {
+    const { CohortPlanService } = await import('../../services/cohort-plan.service')
+    const mk = async (title: string, status: string) => {
+      const c = await prisma.cohort.create({ data: { courseId: 'C-BIZ-101', title, status, capacity: 20 } })
+      await prisma.cohortTrainer.create({ data: { cohortId: c.id, profileId, role: 'lead' } })
+      return c.id
+    }
+    const live = await mk('شعبة إعداد حيّة', 'draft')
+    const gone = await mk('شعبة دورة اعتذر عنها', 'cancelled')
+    const ids = (await new CohortPlanService(prisma).summaries(trainerId)).map((r) => r.id)
+    expect(ids).toContain(live)
+    expect(ids, 'الملغاة في «شعبي» تنتظر تجهيزا').not.toContain(gone)
+  })
+})
+
 describe('②ب اجتماعات Zoom', () => {
   it('تنتقل مع لقاءاتها إلى الموعد الجديد — بمدّتها', async () => {
     stubZoom()

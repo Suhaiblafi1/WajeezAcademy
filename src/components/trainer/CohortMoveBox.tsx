@@ -38,8 +38,20 @@ export default function CohortMoveBox({ cohortId, status, startsAt, proposedStar
 
   const begun = startsAt ? new Date(startsAt) : null;
   const now = new Date();
-  /* ما بدأ أو انتهى لا يُنقل — والخادمُ يعيد الفحص */
-  if (!(MOVABLE_STATUSES as readonly string[]).includes(status) || (begun && begun <= now)) return null;
+  /* ما بدأ أو انتهى لا يُنقل — والخادمُ يعيد الفحص.
+
+     ═══ ويُقال لماذا، لا يختفي الزرّ (٢٠ أكتوبر ٢٠٢٦) ═══
+     سأل صاحبُ المنصّة عن بطاقةٍ بلا زرّ: «لا يظهر». فالشعبةُ الجاريةُ أو التي بدأت سطرٌ يقول ذلك — قرارُ
+     ٢ أكتوبر: حيث يقف فعلٌ لسببٍ يُقال السبب. والمنتهيةُ والملغاةُ لا سطرَ لهما: لا يُسأل فيهما عن نقل. */
+  if (!(MOVABLE_STATUSES as readonly string[]).includes(status) || (begun && begun <= now)) {
+    if (status === "completed" || status === "cancelled") return null;
+    return (
+      <p className="mt-2 flex items-center gap-1.5 text-read leading-6 text-muted-foreground">
+        <CalendarClock className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+        {status === "active" ? "الشعبة جارية — لا تنقل إلى فصل آخر" : "بدأت الشعبة — لا تنقل إلى فصل آخر"}
+      </p>
+    );
+  }
   /* ومنه فصلُها والموعدُ بعد النقل: أوّلُ لقائها، أو بدؤها المقترح وهي في الإعداد — منتصفَ يومه، فلا تنقله المنطقةُ يوما */
   const start = begun ?? (proposedStartsOn ? new Date(`${proposedStartsOn}T12:00:00Z`) : null);
 
