@@ -12,6 +12,8 @@ import { CohortService } from '../../services/cohort.service'
 import { StaffInboxService } from '../../services/staff-inbox.service'
 import { CohortPlanService } from '../../services/cohort-plan.service'
 import { ROLE_PERMISSIONS } from '../../auth/permissions'
+import { TrainerReviewService } from '../../services/trainer-review.service'
+import { TrainerSuggestionService } from '../../services/trainer-suggestion.service'
 
 let prisma: PrismaClient
 let inbox: StaffInboxService
@@ -196,5 +198,31 @@ describe('ولا يعرض لأحدٍ ما لا يملك صلاحيّتَه', () 
   it('ومن لا صلاحيّةَ له أصلا يرى مهامَّه المسندةَ وحدَها', async () => {
     const items = await inbox.forStaff(managerId, [])
     expect(items.map((i) => i.key)).toEqual(['my_tasks'])
+  })
+})
+
+/* «أبقِ ظاهرا للإدارة أنّ جددا ينتظرونه» (٢٠ أكتوبر ٢٠٢٦) — والعدُّ عدُّ حزمة الملفّات نفسِها.
+   ورُئي ساقطا حين أُسقط البندُ من اللوح، وحين عُدّ من وصله اقتراح. */
+describe('ومن ينتظر أن نكتب له «لماذا نفتخر» ونبذتَه', () => {
+  const NAME = 'مدرّب ينتظر اقتراحا'
+  let profileId = ''
+
+  beforeAll(async () => {
+    profileId = (await new TrainerReviewService(prisma)
+      .createTrainerDirectly(managerId, { fullName: NAME, email: 'inbox-suggest@test.local' })).profileId
+    await prisma.trainerCourseQualification.create({ data: { profileId, courseId: COURSE, status: 'qualified' } })
+  })
+
+  it('⚠️ مدرّبٌ له دورة معتمدة ولم يُكتب له — يظهر باسمه لمن يقرأ الطلبات وحده', async () => {
+    const item = (await inbox.forStaff(managerId, ['trainer.applications.view'])).find((i) => i.key === 'trainer_suggestions_to_write')
+    expect(item?.sample, 'لا يظهر من ينتظر').toContain(NAME)
+    expect(item?.href).toBe('/admin/trainer-run')
+    expect((await inbox.forStaff(managerId, ['cohort.manage'])).map((i) => i.key)).not.toContain('trainer_suggestions_to_write')
+  })
+
+  it('⚠️ وما إن يُقترح عليه يغيب', async () => {
+    await new TrainerSuggestionService(prisma).propose(profileId, managerId, 'pitch', ['سطر أرسلناه'])
+    const item = (await inbox.forStaff(managerId, ['trainer.applications.view'])).find((i) => i.key === 'trainer_suggestions_to_write')
+    expect(item?.sample ?? [], 'بقي من وصله اقتراح').not.toContain(NAME)
   })
 })

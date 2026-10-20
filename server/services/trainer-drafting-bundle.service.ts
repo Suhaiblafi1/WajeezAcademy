@@ -151,6 +151,12 @@ export class TrainerDraftingBundleService {
     return { profiles, parts }
   }
 
+  /** من ينتظر أن نكتب له — لـ«ما ينتظرك» (`staff-inbox.service.ts`) */
+  async waitingNames(): Promise<string[]> {
+    const { profiles } = await this.plan(DRAFTING_PART_MAX_BYTES)
+    return profiles.map((p) => p.application.fullName)
+  }
+
   /** كم جزءا، ولكم مدرّبا — لأزرار الشاشة */
   async parts(partMaxBytes = DRAFTING_PART_MAX_BYTES): Promise<{ parts: number; trainers: number }> {
     const { profiles, parts } = await this.plan(partMaxBytes)
