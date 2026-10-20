@@ -113,7 +113,7 @@ export default function GrantPathways({ percentOff, maxCourses }: { percentOff: 
           </ol>
           {draft.courseIds.length < maxCourses && (
             <select value="" onChange={(e) => e.target.value && setDraft({ ...draft, courseIds: [...draft.courseIds, e.target.value] })} className={staffSelectCls}>
-              <option value="">أضف دورة لها شعبة مفتوحة</option>
+              <option value="">أضف دورة لها شعبة مفتوحة ومدرب منشور</option>
               {open.filter((c) => !draft.courseIds.includes(c.courseId)).map((c) => (
                 <option key={c.courseId} value={c.courseId}>{c.courseTitleAr} — {fmtMoney(c.price, c.currency)} — تبدأ {cohortDayAr(c.startsAt)}</option>
               ))}
@@ -152,7 +152,7 @@ export default function GrantPathways({ percentOff, maxCourses }: { percentOff: 
                     <span>{c.titleAr}</span>
                     {c.cohort
                       ? <span className="text-muted-foreground">تبدأ {cohortDayAr(c.cohort.startsAt)} · <span dir="ltr">{fmtMoney(c.cohort.price, c.cohort.currency)}</span></span>
-                      : <span className="text-danger-ink">بلا شعبة مفتوحة الآن</span>}
+                      : <span className="text-danger-ink">لا تظهر الآن: لا شعبة مفتوحة بمدرب منشور</span>}
                   </li>
                 ))}
               </ul>
@@ -166,7 +166,7 @@ export default function GrantPathways({ percentOff, maxCourses }: { percentOff: 
                   {p.margin === null ? "—" : fmtMoney(p.margin, USD)}
                 </span>
               </p>
-              {p.missing > 0 && <p className="mt-1 text-read text-danger-ink">{p.missing} من دوراته بلا شعبة مفتوحة، ولا تظهر لمن يعبئ النموذج.</p>}
+              {p.missing > 0 && <p className="mt-1 text-read text-danger-ink">{p.missing} من دوراته لا تظهر لمن يعبئ النموذج: لا شعبة مفتوحة بمدرب منشور.</p>}
             </Card>
           ))}
         </div>

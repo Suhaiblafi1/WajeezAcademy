@@ -8,6 +8,11 @@
 
    ١) **لا دورةَ في مسارٍ بلا شعبةٍ تُشترى اليوم** — يُفحص عند الحفظ: مفتوحةٌ للتسجيل بسعرٍ ومقاعد.
       وما أُغلقت شعبتُه بعد الحفظ يُقال في الشاشة («بلا شعبة مفتوحة»)، ولا يُعرض للمشتري.
+   ١ب) **ولا دورةَ بلا مدرّبٍ منشور، ولا دورةَ غيرُ منشورة** — قرارُ صاحب المنصّة (٢٠ أكتوبر ٢٠٢٦): «لا
+      أريد أن يظهر له أيُّ دورةٍ أو أيُّ مسارٍ لم يكن له مدرّبٌ ومنشور». فالشعبةُ لا تُحسب إلّا ودورتُها
+      منشورةٌ ومدرّبُها (أصيلُها أو إسنادُه النشط) معتمَدُ النشر بالبوّابة نفسِها التي تعرض المدرّبين
+      للعامّة (`PUBLIC_TRAINER_WHERE`). ومنه: «إذا أضفتُ دورةً جديدةً ومدرّبا جديدا يظهر تلقائيّا» — فكلُّ
+      ما يُقرأ هنا يُقرأ ساعةَ الطلب، لا قائمةٌ تُحفظ: شعبةٌ تُفتح تظهر، وشعبةٌ تُغلق تختفي.
    ٢) **ولا يتجاوز حدَّ دورات المنحة** (`maxCourses`).
    ٣) **وهامشُ المسار كلِّه** — أقربُ شعبةٍ لكلّ دورة: سعرُها، وما يدفعه صاحبُ المنحة عن المسار كلِّه،
       وأجورُ مقاعدها للمدرّبين، والفرق. ومعه سعرُ الباقة بلا منحة ليُرى ما توفّره.
@@ -19,6 +24,7 @@ import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { GrantService } from './grant.service'
 import { cohortAcceptsRegistration, PLAN_GATE_SELECT, TERM_WINDOW_SELECT } from './registration-window'
+import { PUBLIC_TRAINER_WHERE } from './trainer-visibility'
 import { LEDGER_CURRENCY } from '../../src/application/commerce/presentment'
 import { bundlePayable, money } from '../../src/application/commerce/discount-policy'
 import { grantPrice } from '../../src/application/commerce/grant'
@@ -59,6 +65,12 @@ export class GrantPathwayService {
     const cohorts = await this.prisma.cohort.findMany({
       where: {
         status: { in: ['open', 'active'] }, price: { gt: 0 }, currency: LEDGER_CURRENCY,
+        course: { status: 'published' },
+        /* ومدرّبُها منشور: أصيلُها، أو إسنادُه النشطُ فيها (قاعدةُ `cohort-lead.ts`) */
+        OR: [
+          { trainers: { some: { role: 'lead', profile: PUBLIC_TRAINER_WHERE } } },
+          { assignments: { some: { status: 'active', profile: PUBLIC_TRAINER_WHERE } } },
+        ],
         ...(courseIds ? { courseId: { in: [...courseIds] } } : {}),
       },
       include: {
@@ -162,7 +174,7 @@ export class GrantPathwayService {
     }
     const buy = await this.buyable(courseIds)
     const closed = courseIds.filter((x) => !buy.has(x))
-    if (closed.length > 0) throw new AuthError('no_cohort', `${closed.length} من الدورات بلا شعبة مفتوحة الآن`, 409)
+    if (closed.length > 0) throw new AuthError('no_cohort', `${closed.length} من الدورات بلا شعبة مفتوحة بمدرب منشور`, 409)
     const data = {
       titleAr, blurbAr: input.blurbAr?.trim() || null, courseIds,
       ...(input.sortOrder !== undefined ? { sortOrder: input.sortOrder } : {}),

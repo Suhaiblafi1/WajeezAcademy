@@ -58,6 +58,12 @@ describe('بعد النموذج', () => {
     expect(PAGE, 'يوم الشعبة بمنطقة الأكاديمية').toMatch(/cohortDayAr\(x\.startsAt\)/)
   })
 
+  it('⚠️ «اختر دوراتك بنفسك» من كل ما يشترى اليوم — فالجديد يظهر وحده', () => {
+    expect(PAGE).toMatch(/onClick=\{\(\) => navigate\(`\/grant\/\$\{BUILD\}`\)\}>اختر دوراتك<\/Button>/)
+    expect(PAGE).toMatch(/const pathway = useMemo<GrantPathway \| null>\(\(\) => \(pathwayId === BUILD/)
+    expect(PAGE, 'خيار البناء مربوط بقائمة ثابتة').toMatch(/\{view\.openCourses\.length > 0 && \(/)
+  })
+
   it('⚠️ ما يحفظ على الجهاز يفحص — والعودة إلى مسار المنحة مقبولة', () => {
     const ok = { ref: '11111111-1111-4111-8111-111111111111', code: 'WG-ABCD2345', sentTo: null, name: 'سارة', email: 's@x.co', at: Date.now() }
     expect(parseStoredGrant(JSON.stringify(ok))?.code).toBe('WG-ABCD2345')
@@ -72,7 +78,7 @@ describe('بعد النموذج', () => {
 describe('النصوص', () => {
   it('بلا تشكيل', () => {
     const texts = [GRANT_CONSENT_AR, ...WORK_FIELDS, 'أعطني كود المنحة', 'رقم واتساب', 'مجال عملك', 'كود منحتك', 'اختر مسارا يناسبك',
-      'اختر هذا المسار', 'لست متأكدا؟ تواصل مع مستشار', 'اطلب مستشارا', 'ادفع الآن', 'أضف دورة لها شعبة مفتوحة']
+      'اختر هذا المسار', 'أو اختر دوراتك بنفسك', 'اختر دوراتك', 'لست متأكدا؟ تواصل مع مستشار', 'اطلب مستشارا', 'ادفع الآن', 'أضف دورة لها شعبة مفتوحة']
     for (const t of texts) expect(t).toBe(plainAr(t))
     for (const t of texts.slice(GRANT_CONSENT_AR ? 1 + WORK_FIELDS.length : 0)) expect(PAGE).toContain(t)
     expect(auditActionAr('coupon.grant_apply')).not.toBe('coupon.grant_apply')

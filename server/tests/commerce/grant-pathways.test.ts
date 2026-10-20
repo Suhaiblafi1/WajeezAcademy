@@ -4,7 +4,8 @@
    ② **ولا يتجاوز حدَّ دورات المنحة** — ولا مسارَ بلا اسمٍ أو بلا دورات.
    ③ **وهامشُ المسار كلِّه** — أقربُ شعبةٍ لكلّ دورة، وما يدفعه بلا منحةٍ وبها، وأجورُ المدرّبين، والفرق.
    ④ **وما أُغلقت شعبتُه بعد الحفظ يُقال** — ولا يدخل السعر.
-   ⑤ **والحذفُ والحفظُ يُكتبان في الأثر.** */
+   ⑤ **والحذفُ والحفظُ يُكتبان في الأثر.**
+   ⑥ **ولا دورةَ بلا مدرّبٍ منشور، ولا دورةَ غيرُ منشورة** — وما يُنشر بعدُ يظهر وحدَه. */
 
 import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
@@ -54,7 +55,7 @@ beforeAll(async () => {
   const app = await prisma.trainerApplication.create({
     data: { reference: `WJ-TR-GP-${STAMP}`, fullName: 'مدرب المسار', email: user.email, status: 'active' },
   })
-  profileId = (await prisma.trainerProfile.create({ data: { userId: user.id, applicationId: app.id } })).id
+  profileId = (await prisma.trainerProfile.create({ data: { userId: user.id, applicationId: app.id, publicVisibility: true, isVerified: true, publishApprovedAt: new Date() } })).id
   await prisma.trainerCompensationRule.create({ data: { profileId, type: 'per_seat', rate: 50, effectiveFrom: new Date(Date.now() - DAY) } })
   /* من آخر القائمة — فلا تلتقي بدورات ملفّات الشراء التي تأخذ من أوّلها */
   pool = (await prisma.course.findMany({ where: { status: 'published' }, select: { id: true }, orderBy: { id: 'desc' } }))
@@ -145,5 +146,36 @@ describe('⑤ والحفظ والحذف يكتبان', () => {
     expect(await prisma.grantPathway.count({ where: { id: p.id } })).toBe(0)
     expect(await prisma.auditEvent.count({ where: { action: 'coupon.grant_pathway_save', meta: { path: ['pathwayId'], equals: p.id } } })).toBe(2)
     expect(await prisma.auditEvent.count({ where: { action: 'coupon.grant_pathway_remove', meta: { path: ['pathwayId'], equals: p.id } } })).toBe(1)
+  })
+})
+
+describe('⑥ ولا دورة بلا مدرب منشور، ولا دورة غير منشورة', () => {
+  it('⚠️ مدرب لم يعتمد نشره، ودورة غير منشورة — لا تعرض ولا تحفظ، وحين ينشر يظهر وحده', async () => {
+    const u = await prisma.user.create({ data: { email: `gp-hidden-${STAMP}@wajeez.test`, displayName: 'مدرب لم ينشر', passwordHash: 'x' } })
+    const app = await prisma.trainerApplication.create({ data: { reference: `WJ-TR-GPH-${STAMP}`, fullName: 'مدرب لم ينشر', email: u.email, status: 'active' } })
+    const hidden = (await prisma.trainerProfile.create({ data: { userId: u.id, applicationId: app.id } })).id
+    const a = nextCourse()
+    const c = await prisma.cohort.create({
+      data: {
+        plans: { create: approvedPlanBy(hidden) }, courseId: a, title: `شعبة مدرب لم ينشر ${++seq}`,
+        status: 'open', registrationOpen: true, financialReady: true, price: 150, currency: 'USD', capacity: 20,
+        startsAt: new Date(Date.now() + 30 * DAY),
+      } as never,
+    })
+    await prisma.cohortTrainer.create({ data: { cohortId: c.id, profileId: hidden, role: 'lead', assignedBy: ownerId } })
+    expect((await paths.openCourses()).some((x) => x.courseId === a), 'ظهرت دورة مدربها لم ينشر').toBe(false)
+    await expect(paths.save(null, { titleAr: 'مسار مرفوض', courseIds: [a] }, ownerId)).rejects.toMatchObject({ code: 'no_cohort' })
+    /* ويُعتمد نشرُه — فتظهر وحدَها بلا شيءٍ يُحفظ */
+    await prisma.trainerProfile.update({ where: { id: hidden }, data: { publicVisibility: true, isVerified: true, publishApprovedAt: new Date() } })
+    expect((await paths.openCourses()).some((x) => x.courseId === a), 'لم تظهر بعد نشر مدربها').toBe(true)
+
+    const b = nextCourse()
+    await cohort(b)
+    await prisma.course.update({ where: { id: b }, data: { status: 'draft' } })
+    try {
+      expect((await paths.openCourses()).some((x) => x.courseId === b), 'ظهرت دورة غير منشورة').toBe(false)
+    } finally {
+      await prisma.course.update({ where: { id: b }, data: { status: 'published' } })
+    }
   })
 })

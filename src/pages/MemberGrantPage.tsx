@@ -8,6 +8,9 @@
    · والحسابُ يُنشأ حين يختار المسار — باسمه وبريده من النموذج.
 
    ثلاثُ خطوات: النموذج ← الكودُ والمسارات ← المسارُ المختار (`/grant/:pathwayId`) ثمّ لوحُ الدفع بالكود.
+   ومعها «اختر دوراتك بنفسك» (`/grant/build`): كلُّ دورةٍ لها شعبةٌ مفتوحةٌ ومدرّبٌ منشور — قرارُ صاحب المنصّة
+   (٢٠ أكتوبر ٢٠٢٦): «إذا أضفتُ دورةً جديدةً ومدرّبا جديدا يظهر تلقائيّا في هذه الحملة». فما يُعرض يُقرأ ساعةَ
+   الطلب، ولا يُعرض ما لا مدرّبَ منشورا له (`grant-pathway.service.ts#buyable`).
    وما أخذه من النموذج يُحفظ على جهازه (`services/grant-landing.ts`)، فمن خرج ليوثّق بريده عاد إلى
    مساره ولوحُه مفتوح (`ResumeCheckout`). والعلّةُ في `server/services/grant-landing.service.ts`. */
 
@@ -47,6 +50,8 @@ interface ApplyResult extends View {
 }
 
 const USD = "USD";
+/** طريقُ «اختر دوراتك بنفسك» */
+const BUILD = "build";
 const money = (n: number) => fmtMoney(n, USD);
 
 export default function MemberGrantPage() {
@@ -74,7 +79,11 @@ export default function MemberGrantPage() {
   }, []);
   useEffect(() => { void load(); }, [load]);
 
-  const pathway = view?.pathways.find((p) => p.id === pathwayId) ?? null;
+  /* «اختر دوراتك بنفسك» مسارٌ بلا دوراتٍ يبدأ فارغا — يختار من كلّ ما يُشترى اليوم */
+  /* محفوظٌ بـ`useMemo`: كائنٌ جديدٌ في كلّ تصييرٍ يُعيد أثرَ «دوراتُ المسار حين يُفتح» فيمحو ما اختاره */
+  const pathway = useMemo<GrantPathway | null>(() => (pathwayId === BUILD
+    ? (view ? { id: BUILD, titleAr: "مسارك", blurbAr: `اختر حتى ${view.campaign.maxCourses} دورات من الدورات المتاحة الآن.`, courses: [], listTotal: 0, grantTotal: 0 } : null)
+    : view?.pathways.find((p) => p.id === pathwayId) ?? null), [view, pathwayId]);
   const path = pathwayId ? `/grant/${pathwayId}` : "/grant";
   const [resumed] = useState(() => (pathwayId ? resumedCheckoutFor(`/grant/${pathwayId}`) : null));
 
@@ -240,7 +249,7 @@ export default function MemberGrantPage() {
         <h2 className="mt-6 text-xl font-black">اختر مسارا يناسبك</h2>
         <p className="mt-1 text-read text-muted-foreground">خصم {c.percentOff}% على مسار حتى {c.maxCourses} دورات.{lastDay ? ` آخر يوم ${lastDay}.` : ""}</p>
         {view.pathways.length === 0 ? (
-          <Card as="p" className="mt-3 text-read text-muted-foreground">لا مسار متاح الآن. تواصل مع مستشار ليقترح عليك.</Card>
+          view.openCourses.length === 0 && <Card as="p" className="mt-3 text-read text-muted-foreground">لا دورات متاحة الآن. تواصل مع مستشار ليقترح عليك.</Card>
         ) : (
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             {view.pathways.map((p) => (
@@ -256,6 +265,14 @@ export default function MemberGrantPage() {
               </Card>
             ))}
           </div>
+        )}
+
+        {view.openCourses.length > 0 && (
+          <Card className="mt-3">
+            <p className="font-bold">أو اختر دوراتك بنفسك</p>
+            <p className="mt-1 text-read text-muted-foreground">{view.openCourses.length} دورة متاحة الآن. اختر حتى {c.maxCourses} دورات.</p>
+            <Button tone="secondary" className="mt-3" onClick={() => navigate(`/grant/${BUILD}`)}>اختر دوراتك</Button>
+          </Card>
         )}
 
         <Card className="mt-6">
