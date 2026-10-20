@@ -106,7 +106,7 @@ describe('وورشة المدرّب تقول ما حكم به الخادم', () 
   })
 
   it('⚠️ ورسالة الحفظ والحذف ممّا عاد — لا «يراه المسجّلون» عن تعديل ينتظر', () => {
-    expect(WORKSPACE).toMatch(/\}, \(r\) => savedTaskMsg\(\(r as \{ review\?: string \} \| null\)\?\.review, Boolean\(editingId\)\)\);/)
+    expect(WORKSPACE).toMatch(/\}, \(r\) => savedTaskMsg\(\(r as \{ review\?: string \} \| null\)\?\.review, Boolean\(editingId\)\), true\);/)
     expect(WORKSPACE, 'بقيت الرسالة الثابتة').not.toMatch(/\}, editingId \? "حفظ التعديل/)
     expect(WORKSPACE).toMatch(/\}, \(r\) => \(\(r as \{ review\?: string \} \| null\)\?\.review === "remove"/)
   })

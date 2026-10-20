@@ -438,7 +438,7 @@ export default function SlotSessions({
           </div>
         )}
         {recorded.length > 0 && (
-          <p className="text-read leading-6 text-muted-foreground">الجلسة المسجّلة تحفظ مع خطّتك بزرّ «احفظ» في أعلى الصفحة.</p>
+          <p className="text-read leading-6 text-muted-foreground">الجلسة المسجّلة تحفظ مع خطّتك تلقائيّا.</p>
         )}
       </div>
 

@@ -475,4 +475,22 @@ describe('ملكيّةُ الشعبة واعتمادُها', () => {
     expect(audit).toBeNull()
   })
 
+  /* ═══ وحفظٌ لا يغيّر المعتمدةَ لا يفتح مراجعة (٢٠ أكتوبر ٢٠٢٦) ═══
+     زرُّ الحفظ يرسل الخطّةَ مع اسم الشعبة، فمن غيّر الاسمَ وحدَه فُتحت له مسودّةٌ بالمحتوى نفسِه.
+     ورُئي ساقطا: أُسقط الردُّ بلا كتابة من `savePlan` فوُلدت مسودّة. */
+  it('⚠️ حفظ المعتمدة كما هي لا يلد مسودة — وتعديلها يلدها', async () => {
+    const approved = await prisma.cohortDeliveryPlan.findFirstOrThrow({ where: { cohortId }, orderBy: { createdAt: 'desc' } })
+    expect(approved.status).toBe('approved')
+    const rows = () => prisma.cohortDeliveryPlan.count({ where: { cohortId } })
+    const before = await rows()
+    const same = await plans.savePlan(trainerUserId, cohortId, approved.content as unknown as TrainerPlanContent)
+    expect(same.id, 'فتح حفظ بلا تغيير مراجعة').toBe(approved.id)
+    expect(await rows()).toBe(before)
+    expect((await prisma.cohortDeliveryPlan.findUniqueOrThrow({ where: { id: approved.id } })).status).toBe('approved')
+
+    const changed = await plans.savePlan(trainerUserId, cohortId, { ...(approved.content as unknown as TrainerPlanContent), summaryAr: 'وصف معدّل بعد الاعتماد يكفي ليقرأ' })
+    expect(changed.status).toBe('draft')
+    expect(await rows()).toBe(before + 1)
+  })
+
 })

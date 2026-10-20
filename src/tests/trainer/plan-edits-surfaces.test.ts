@@ -182,3 +182,13 @@ describe('والكرّاسات المصحّحة تختار مع ملفات ال�
     expect(bulk).toMatch(/apiPost<[^>]*>\(\s*editFilePath\(read\.planId\), \{ mime: "application\/pdf", originalName: n \}\);\s*await putSigned\(up\.uploadUrl, pdf, up\.maxBytes\);\s*keys\[n\] = up\.storageKey;/)
   })
 })
+
+/* ═══ «اقبلها كلّها» وبعضُها بقي — والصفحةُ تُعاد على ما قُبل (٢٠ أكتوبر ٢٠٢٦) ═══
+   كان ما بقي يرمي قبل إعادة التحميل، فتبقى الصفحةُ على ما قبل القبول ويكتب حفظُها التلقائيُّ القديمَ
+   فوق ما قُبل. ورُئي ساقطا: أُعيد الرميُ بلا `onApplied` فسقط. */
+describe('اقبلها كلّها وبقي بعضها', () => {
+  it('⚠️ ما قبل منها يعيد الصفحة قبل أن يقال ما بقي', () => {
+    expect(code('src/components/PlanEdits.tsx'))
+      .toMatch(/if \(r\.skipped\.length\) \{\s*if \(r\.accepted > 0\) await onApplied\(\);\s*throw new Error\(/)
+  })
+})

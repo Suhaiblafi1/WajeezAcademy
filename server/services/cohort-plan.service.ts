@@ -675,9 +675,10 @@ export class CohortPlanService {
       },
     }),
     this.latestTrainerPlan(cohortId),
-    /* وترتيبُها بين شعبه في دورتها — «شعبتك الأولى» في رأس الصفحة (⑫) */
+    /* وترتيبُها بين شعبه في دورتها — «شعبتك الأولى» في رأس الصفحة (⑫). والملغاةُ لا تُعدّ (٢٠ أكتوبر ٢٠٢٦)،
+       كما في «شعبي» (`summaries`) — وإلّا قالت البطاقةُ «الأولى» ورأسُ صفحتها «الثانية» */
     this.prisma.cohortTrainer.findMany({
-      where: { profileId: profile.id, cohort: { course: { cohorts: { some: { id: cohortId } } } } },
+      where: { profileId: profile.id, cohort: { status: { not: 'cancelled' }, course: { cohorts: { some: { id: cohortId } } } } },
       select: { cohort: { select: { id: true, courseId: true, createdAt: true, title: true } } },
     }),
     new CohortFileService(this.prisma).reviewReports(cohortId),
@@ -942,6 +943,12 @@ export class CohortPlanService {
         })
         if (latest?.id === visible.id && samePlanContent(placed, content)) return row
       }
+    }
+    /* ═══ وحفظٌ لا يغيّر الخطّةَ المعتمدة لا يفتح مراجعة (٢٠ أكتوبر ٢٠٢٦) ═══
+       زرُّ الحفظ يرسل الخطّةَ كاملةً مع اسم الشعبة — فمن غيّر الاسمَ وحدَه في خطّةٍ معتمدةٍ فُتحت له مسودّةٌ
+       بالمحتوى نفسِه، وصارت شعبتُه «مراجعةٌ في يدك» لا شيءَ فيها يُقرأ. */
+    if (latest && latest.status !== 'draft' && latest.status !== 'changes_requested' && samePlanContent(latest.content, content)) {
+      return latest
     }
     const data = { content: content as unknown as Prisma.InputJsonValue }
     /* ومراجعةٌ تُفتح على خطّةٍ معتمدةٍ تحمل معها ما بقي عليها من اقتراحات الإدارة (١٧ أكتوبر ٢٠٢٦) —
