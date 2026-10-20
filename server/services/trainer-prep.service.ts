@@ -35,6 +35,9 @@ import { readContractCourses } from '../../src/application/trainer/contract-body
 import { PLAN_MAX, PLAN_TITLE_MIN } from '../../src/application/trainer/plan-limits'
 import { prepTallyOf, type PrepTally } from '../../src/application/trainer/prep-tally'
 
+/** خطّةُ شعبةٍ اعتمدناها — وهي وحدَها ما يفعّل المدرّبَ ويوقّع عقدَه (٢٠ أكتوبر ٢٠٢٦، رأسُ `activateIfQualified`) */
+const APPROVED_PLAN = ['approved', 'published']
+
 /** جرسُ «اعتمدت دورة لمدرّب ولم يفعّل» مرّةً في الأسبوع للمدرّب الواحد — والمحاولةُ تُعاد في العامل كلَّ ربع ساعة */
 const BLOCKED_NOTICE_EVERY_MS = 7 * 86_400_000
 
@@ -474,9 +477,15 @@ export class TrainerPrepService {
 
      فأوّلُ دورةٍ تُعتمَد له — بخطّة شعبتها أو بتأهيلٍ مباشر — تفعّله ويُوقَّع عقدُه، وما بقي يُعِدّه وهو
      نشط: يُعتمَد بخطّة شعبته كما تُعتمَد دورةٌ أُضيفت لنشط (`prepContext`). وما يمنع التفعيلَ يُقال
-     للإدارة جرسا مرّةً في الأسبوع لا في كلّ محاولة — فالعاملُ يعيدها كلَّ ربع ساعة (`activateQualifiedOnboarding`). */
+     للإدارة جرسا مرّةً في الأسبوع لا في كلّ محاولة — فالعاملُ يعيدها كلَّ ربع ساعة (`activateQualifiedOnboarding`).
+
+     ═══ و«المعتمَدةُ» شعبةٌ اعتُمدت خطّتُها، لا تأهيلٌ وحدَه (٢٠ أكتوبر ٢٠٢٦) ═══
+     رأى صاحبُ المنصّة مدرّبين «الشعب: 0 من 3» وبجانبهم «اعتمدت له دورة — فعّله ووقّع العقد»، فسأل: «كنت
+     أقصد أن تكون له دورةٌ معتمدةٌ موادُّها وفُتحت». وكانت «المعتمَدةُ» أيَّ تأهيلٍ قائم — من «التأهيل والإسناد»
+     أو تصنيفِ اقتراحٍ — ولم يُحكم في موادّه بعد، والعاملُ يُمنع عن بعضهم فيُسأل هو. فاختار: «Approved cohort only» —
+     خطّةُ شعبةٍ اعتمدناها (`APPROVED_PLAN`)، ولا يُسأل قبلها شيئا. */
   async activateIfQualified(profileId: string, applicationId: string, actorId: string) {
-    const qualified = await this.prisma.trainerCourseQualification.count({ where: { profileId, status: 'qualified' } })
+    const qualified = await this.approvedPlans(profileId)
     if (qualified === 0) return { activated: false as const }
     const { TrainerReviewService } = await import('./trainer-review.service')
     try {
@@ -509,28 +518,33 @@ export class TrainerPrepService {
     }
   }
 
-  /** يلحق من في الطور وله دورةٌ معتمَدة ولم يُفعَّل — من قبل قرار ٢٠ أكتوبر، أو من منعه مانعٌ ثمّ أُصلح.
-      والفاعلُ مَن اعتمد آخرَ دوراته: هو صاحبُ القرار الذي فعّله. والموقوفُ لا يُمسّ. */
+  /** كم خطّةَ شعبةٍ اعتمدناها له */
+  async approvedPlans(profileId: string): Promise<number> {
+    return this.prisma.cohortDeliveryPlan.count({ where: { trainerId: profileId, status: { in: APPROVED_PLAN } } })
+  }
+
+  /** يلحق من في الطور واعتُمدت له خطّةُ شعبة ولم يُفعَّل — من منعه مانعٌ ثمّ أُصلح.
+      والفاعلُ مَن اعتمد آخرَ خططه: هو صاحبُ القرار الذي فعّله. والموقوفُ لا يُمسّ. */
   async activateQualifiedOnboarding(): Promise<{ activated: string[]; blocked: number }> {
     const rows = await this.prisma.trainerProfile.findMany({
       where: {
         suspendedAt: null,
         application: { status: 'onboarding' },
-        qualifications: { some: { status: 'qualified', qualifiedBy: { not: null } } },
+        cohortPlans: { some: { status: { in: APPROVED_PLAN }, reviewedBy: { not: null } } },
       },
       select: {
         id: true, applicationId: true,
-        qualifications: {
-          where: { status: 'qualified', qualifiedBy: { not: null } },
-          orderBy: [{ decidedAt: { sort: 'desc', nulls: 'last' } }, { createdAt: 'desc' }],
-          take: 1, select: { qualifiedBy: true },
+        cohortPlans: {
+          where: { status: { in: APPROVED_PLAN }, reviewedBy: { not: null } },
+          orderBy: { reviewedAt: { sort: 'desc', nulls: 'last' } },
+          take: 1, select: { reviewedBy: true },
         },
       },
     })
     const activated: string[] = []
     let blocked = 0
     for (const r of rows) {
-      const r2 = await this.activateIfQualified(r.id, r.applicationId, r.qualifications[0]!.qualifiedBy!)
+      const r2 = await this.activateIfQualified(r.id, r.applicationId, r.cohortPlans[0]!.reviewedBy!)
       if (r2.activated) activated.push(r.id)
       else if ('told' in r2 && r2.told) blocked++
     }
@@ -577,28 +591,20 @@ export class TrainerPrepService {
      ثمّ قال صاحبُ المنصّة: «Also sign active trainers' contracts at first course» — كما يُفعَّل من في الطور
      بأوّل دورة (`activateIfQualified`). والنشطُ في يده معتمَداتٌ من عقده السابق، فالأولى هنا أوّلُ ما يُعتمَد
      له **بعد** اعتماد توقيعه: خطّةُ شعبةٍ اعتُمدت، أو تأهيلٌ مباشر. ولو عُدّ ما قبله لوُقّع كلُّ عقدٍ
-     «كالعقود الجديدة» ساعةَ اعتماده — وهو ما اختار المعتمِدُ ألّا يقع. وما كان يوقّعه («اكتملت دوراتُه») باقٍ. */
+     «كالعقود الجديدة» ساعةَ اعتماده — وهو ما اختار المعتمِدُ ألّا يقع. وما كان يوقّعه («اكتملت دوراتُه») باقٍ.
+     والتأهيلُ المباشرُ بلا خطّةٍ لم يعد منها («Approved cohort only»، رأسُ `activateIfQualified`). */
   async firstApprovalSince(profileId: string, since: Date): Promise<{ at: Date; by: string | null } | null> {
-    const [plan, qualify] = await Promise.all([
-      this.prisma.cohortDeliveryPlan.findFirst({
-        where: { trainerId: profileId, status: { in: ['approved', 'published'] }, reviewedAt: { gte: since } },
-        orderBy: { reviewedAt: 'asc' }, select: { reviewedAt: true, reviewedBy: true },
-      }),
-      this.prisma.auditEvent.findFirst({
-        where: { action: 'trainer.qualify', entityType: 'trainer_profile', entityId: profileId, createdAt: { gte: since } },
-        orderBy: { createdAt: 'asc' }, select: { createdAt: true, actorId: true },
-      }),
-    ])
-    const found = [
-      ...(plan?.reviewedAt ? [{ at: plan.reviewedAt, by: plan.reviewedBy }] : []),
-      ...(qualify ? [{ at: qualify.createdAt, by: qualify.actorId }] : []),
-    ].sort((a, b) => a.at.getTime() - b.at.getTime())
-    return found[0] ?? null
+    const plan = await this.prisma.cohortDeliveryPlan.findFirst({
+      where: { trainerId: profileId, status: { in: APPROVED_PLAN }, reviewedAt: { gte: since } },
+      orderBy: { reviewedAt: 'asc' }, select: { reviewedAt: true, reviewedBy: true },
+    })
+    return plan?.reviewedAt ? { at: plan.reviewedAt, by: plan.reviewedBy } : null
   }
 
-  /** أيوقَّع الآن؟ — اعتُمدت له دورةٌ بعد اعتماد توقيعه، أو اكتملت دوراتُه. ويُقال بأيّهما */
+  /** أيوقَّع الآن؟ — اعتُمدت له خطّةُ شعبةٍ بعد اعتماد توقيعه، أو اكتملت دوراتُه وفيها خطّةٌ معتمَدة. ويُقال بأيّهما */
   async sealDue(profileId: string, signatureApprovedAt: Date | null): Promise<'first_course' | 'prep_done' | null> {
     if (signatureApprovedAt && await this.firstApprovalSince(profileId, signatureApprovedAt)) return 'first_course'
+    if (await this.approvedPlans(profileId) === 0) return null
     return (await this.prepDone(profileId)) ? 'prep_done' : null
   }
 
@@ -678,6 +684,8 @@ export class TrainerPrepService {
       this.prisma.trainerProfile.findUnique({ where: { id: profileId }, select: { application: { select: { status: true } } } }),
     ])
     if (pending > 0 || profile?.application.status !== 'onboarding') return
+    /* و«جاهز» لمن اعتُمدت له خطّةُ شعبة («Approved cohort only»): من أُهِّل بلا خطّةٍ يُعِدّ شعبتَه، لا عليك فيه شيء */
+    if (qualified > 0 && await this.approvedPlans(profileId) === 0) return
     await notifyRole(this.prisma, ['academic_manager', 'super_admin'], {
       channel: 'in_app', templateKey: 'trainer.prep.nothing_pending',
       title: qualified > 0 ? 'مدرّب جاهز للتفعيل' : 'مدرّب اعتذر عن دوراته كلّها',

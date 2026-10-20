@@ -134,10 +134,27 @@ describe('البابُ الأوّل: زرُّ شاشة الطلبات', () => {
     expect(await statusOf(t.applicationId)).toBe('onboarding')
   })
 
-  it('⚠️ ودورةٌ معتمَدةٌ واحدةٌ تكفي — ولو لم يُعلن الباقي (٢٠ أكتوبر ٢٠٢٦)', async () => {
+  /* ═══ و«المعتمَدةُ» خطّةُ شعبةٍ اعتمدناها لا تأهيلٌ وحدَه (٢٠ أكتوبر ٢٠٢٦، «Approved cohort only») ═══
+     السقالةُ تؤهّله لدورةٍ بلا شعبة: لم يُحكم في موادّه بعد، فيُردّ. وتُعتمَد له خطّةُ شعبةٍ فيمرّ */
+  it('⚠️ أُهِّل لدورةٍ ولم تُعتمَد له خطّةُ شعبة: يُردّ', async () => {
     const t = await readyButForMaterials({ deadlineDays: 5, declared: false })
+    await expect(review.decide(t.applicationId, adminId, 'activate'))
+      .rejects.toMatchObject({ code: 'materials_pending' })
+    expect(await statusOf(t.applicationId), 'فُعِّل بتأهيلٍ لم تُعتمَد له شعبة').toBe('onboarding')
+  })
+
+  it('⚠️ وخطّةُ شعبةٍ معتمَدةٌ واحدةٌ تكفي — ولو لم يُعلن الباقي (٢٠ أكتوبر ٢٠٢٦)', async () => {
+    const t = await readyButForMaterials({ deadlineDays: 5, declared: false })
+    const q = await prisma.trainerCourseQualification.findFirstOrThrow({ where: { profileId: t.profileId, status: 'qualified' } })
+    const cohort = await prisma.cohort.create({ data: { courseId: q.courseId, title: 'شعبةُ الاختبار' } })
+    await prisma.cohortDeliveryPlan.create({
+      data: {
+        cohortId: cohort.id, trainerId: t.profileId, status: 'approved', reviewedBy: adminId, reviewedAt: new Date(),
+        content: { kind: 'trainer', modules: [], resources: [] },
+      },
+    })
     await review.decide(t.applicationId, adminId, 'activate')
-    expect(await statusOf(t.applicationId), 'اعتُمدت له دورةٌ وحُبس حتّى يُعلن الباقي').toBe('active')
+    expect(await statusOf(t.applicationId), 'اعتُمدت له شعبةٌ وحُبس حتّى يُعلن الباقي').toBe('active')
   })
 
   it('وعرضٌ مشروطٌ بلا مهلة: يمرّ — ولا يُحبَس من لا يملك أن يُعلن', async () => {
