@@ -4,7 +4,10 @@
 import type { PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
-import { notifyRole } from './notification.service'
+import { notifyRole, safeNotify } from './notification.service'
+
+/** ما يُنقل من الردّ إلى الجرس والبريد — والردُّ كاملا في صفحة الدعم */
+const REPLY_EXCERPT = 600
 
 const TICKET_STATUSES = ['open', 'pending', 'resolved', 'closed', 'reopened'] as const
 const TICKET_TRANSITIONS: Record<string, string[]> = {
@@ -118,7 +121,20 @@ export class SupportService {
     const ticket = await this.prisma.supportTicket.findUnique({ where: { id: ticketId } })
     if (!ticket) throw new AuthError('not_found', 'التذكرة غير موجودة', 404)
     if (ticket.status === 'closed') throw new AuthError('closed', 'التذكرة مغلقة', 409)
-    return this.prisma.supportMessage.create({ data: { ticketId, authorId: agentId, body, internal } })
+    const message = await this.prisma.supportMessage.create({ data: { ticketId, authorId: agentId, body, internal } })
+    /* ═══ والردُّ يصل صاحبَ التذكرة — في جرسه وبريده (٢٠ أكتوبر ٢٠٢٦) ═══
+       كان الردُّ يُكتب ثمّ لا يُخبَر به أحد: لا يراه المتعلّمُ حتّى يفتح صفحةَ الدعم بنفسه، وهو ينتظر جوابا
+       سأله. واختار صاحبُ المنصّة الجرسَ والبريدَ معا (`learner-email.ts`)، ولا يُكتَم (صنفُ «ردود الدعم»).
+       والملحوظةُ الداخليّةُ بين الفريق لا تُخبِر أحدا. والإخبارُ لا يُسقط الردَّ إن تعذّر (`safeNotify`). */
+    if (!internal) {
+      await safeNotify(this.prisma, {
+        userId: ticket.userId, channel: 'in_app', audience: 'learner', templateKey: 'support.reply',
+        title: `رد على تذكرتك: ${ticket.subject}`,
+        body: body.length > REPLY_EXCERPT ? `${body.slice(0, REPLY_EXCERPT).trimEnd()}…` : body,
+        data: { ticketId },
+      })
+    }
+    return message
   }
 
   /** انتقال حالة موثق — سجل التغييرات إلزامي */

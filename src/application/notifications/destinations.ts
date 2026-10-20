@@ -74,6 +74,8 @@ const LEARNER: Table = {
   'payment.refunded': { path: '/student/billing', ctaAr: 'افتح كشف فواتيرك' },
   /* والخبرُ يقول «راسل الدعم إن كان لديك ما تضيفه» — فبابُه الدعمُ لا الفاتورة (١٩ أكتوبر ٢٠٢٦) */
   'payment.refund_rejected': { path: '/student/support', ctaAr: 'راسل الدعم' },
+  /* وردُّ الدعم يفتح تذكرتَه — والردُّ كاملا هناك (٢٠ أكتوبر ٢٠٢٦) */
+  'support.reply': { path: '/student/support', ctaAr: 'اقرأ الرد' },
   'certificate.issued': { path: '/student/certificates', ctaAr: 'افتح شهادتك' },
   /* والملغاةُ تبقى معروضةً هناك بحالتها — فالوجهةُ تحمل الخبرَ لا تخفيه */
   'certificate.revoked': { path: '/student/certificates', ctaAr: 'افتح شهاداتك' },

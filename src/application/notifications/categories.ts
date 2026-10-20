@@ -308,6 +308,17 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
     /* و`cohort.cancelled` (١٩ أكتوبر ٢٠٢٦): شعبتُه أُلغيت — مقعدُه ومالُه معلّقان حتّى يقرّر */
     templateKeys: ['departure.choice', 'departure.resolved', 'enrollment.dropped', 'enrollment.switched', 'cohort.cancelled'],
   },
+  /* ═══ ردود الدعم (٢٠ أكتوبر ٢٠٢٦) ═══
+     كان ردُّ الفريق على تذكرة المتعلّم لا يُخبَر به — فيبقى سؤالُه معلّقا في ظنّه وقد أُجيب. وهو جوابٌ
+     طلبه بنفسه، فلا يُعرض عليه مفتاحُ كتمه؛ ويصله بالبريد أيضا بقرار صاحب المنصّة (`learner-email.ts`). */
+  {
+    key: 'support',
+    labelAr: 'ردود الدعم',
+    whatAr: 'رد فريقنا على تذكرة فتحتها',
+    silenceable: false,
+    lockedWhyAr: 'سؤالك ينتظر جوابه — فالرد يصلك دائما.',
+    templateKeys: ['support.reply'],
+  },
   /* ═══ حسابي ووصولي — ي-٣ ═══
 
      قسمةُ صاحب المنصّة في `audit/weight.ts` تقول في أوّل سطرٍ من `high`:
