@@ -108,13 +108,20 @@ const setStatus = (planId: string, kind: string, moduleId: string | null, status
   })
 
 describe('١ — ما عاد فوق الملفّ الجديد يُسحب، ويبقى الجديد وحده', () => {
-  it('⚠️ «ابدأ من جديد» ثمّ «أعد ما سحبته» — والزرّ يسحب ما عاد من الأقدم، وما وصل المدرّب منه يختفي عنده', async () => {
+  it('⚠️ «ابدأ من جديد» ثمّ ما أعاده «أعد ما سحبته» قبل ٢٠ أكتوبر — والزرّ يسحب ما عاد من الأقدم، وما وصل المدرّب منه يختفي عنده', async () => {
     const { cohortId, planId } = await openPlan()
     await upload(planId, ITEMS)
     const m1 = await prisma.planEditSuggestion.findFirstOrThrow({ where: { planId, kind: 'module', edit: { path: ['moduleId'], equals: 'M1' } } })
     expect((await call('POST', `/api/admin/plan-edits/${m1.id}/approve`, 'admin', {})).statusCode).toBe(200)
     expect((await call('POST', `/api/admin/cohort-plans/${planId}/edits/replace-all`, 'admin', { items: B })).statusCode).toBe(201)
-    expect((await restore(planId)).json()).toMatchObject({ restored: 2, skipped: 1 })
+    /* وكان «أعد ما سحبته» يعيد هنا بندَي الملفّ القديم اللذين لم يقع عليهما الجديد. وصار لا يعيدهما (٢٠ أكتوبر
+       ٢٠٢٦، `restore-edits.test.ts`) — وبقي في الخطط ما أعاده قبلها، فيُكتب كما تركه: ما وصل المدرّبَ يعود
+       إليه، والمسوّدةُ مسوّدة */
+    expect((await restore(planId)).statusCode).toBe(409)
+    await prisma.planEditSuggestion.update({ where: { id: m1.id }, data: { status: 'pending', decidedAt: null, decidedBy: null } })
+    await prisma.planEditSuggestion.updateMany({
+      where: { planId, kind: 'module', edit: { path: ['moduleId'], equals: 'M2' } }, data: { status: 'proposed', decidedAt: null, decidedBy: null },
+    })
     expect(await countOf(cohortId)).toMatchObject({ older: 2 })
 
     const r = await keepLatest(planId)

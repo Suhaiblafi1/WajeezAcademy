@@ -4,7 +4,10 @@
    والسلوكُ على قاعدةٍ حقيقيّة في `server/tests/plan/restore-edits.test.ts`؛ وهنا الشاشة:
 
    ① تقرأ كم يعود مع القائمة، ② وتعرض الزرَّ بعدده حين يكون شيءٌ يعود، ③ وتنادي مسارَه وتقول ما عاد،
-   ④ ورسالةُ السحب تدلّ عليه. */
+   ④ ورسالةُ السحب تدلّ عليه وعلى شرطه.
+
+   ومنذ ٢٠ أكتوبر ٢٠٢٦ يعود آخرُ سحبٍ بـ«اسحب ما لم يقرّر» كلُّه أو لا شيء — فلا سطرَ لما بقي مسحوبا،
+   ولا يعيد ما سحبه رفعُ ملفٍّ ولا «احذف المكرر»، ولا يعيد شيئا بعد ملفٍّ رُفع بعده. */
 
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
@@ -24,14 +27,14 @@ describe('«أعد ما سحبته»', () => {
     expect(ui).toMatch(/const restore = async \(\) => \{[\s\S]{0,300}apiPost<[^>]+>\(\s*`\/api\/admin\/cohort-plans\/\$\{planId\}\/edits\/restore`/)
   })
 
-  it('⚠️ ويقول ما عاد وأين — وما بقي مسحوبا ولماذا', () => {
+  it('⚠️ ويقول ما عاد وأين — ولا سطرَ لما بقي مسحوبا: يعود كلّه أو لا شيء', () => {
     const body = ui.slice(ui.indexOf('const restore = async'), ui.indexOf('const restore = async') + 1200)
     expect(body).toMatch(/`أعاد \$\{r\.restored\} كما كانت`/)
     expect(body).toMatch(/`\$\{r\.toTrainer\} عند المدرّب`/)
-    expect(body).toMatch(/`وبقي \$\{r\.skipped\} مسحوبا: على مواضعها بنود أحدث`/)
+    expect(body).not.toMatch(/skipped/)
   })
 
-  it('ورسالة السحب تدلّ عليه — والعدد يقرأ بعده', () => {
-    expect(ui).toMatch(/setMsg\("سحب ما لم يقرّر فيه — وتعيده كما كان بـ«أعد ما سحبته»\."\);\s*await load\(\);/)
+  it('ورسالة السحب تدلّ عليه وعلى شرطه — والعدد يقرأ بعده', () => {
+    expect(ui).toMatch(/setMsg\("سحب ما لم يقرّر فيه — وتعيده كما كان بـ«أعد ما سحبته» ما لم ترفع ملفا بعده\."\);\s*await load\(\);/)
   })
 })

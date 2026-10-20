@@ -69,8 +69,8 @@ const IN_HAND = ['draft', 'changes_requested'] as const
 interface OnApproved { planId: string; by: string | null }
 /** خطّةٌ يُقترح عليها: في يده أو بانتظار القرار */
 const OPEN = ['draft', 'submitted', 'changes_requested'] as const
-/** بندٌ من هذه جاء بعد المسحوب على موضعه يحجبه أن يعود (`restore`) — والمحذوفُ عمدا منها */
-const RESTORE_BLOCKERS: readonly string[] = ['proposed', 'pending', 'accepted', 'rejected', 'dropped']
+/** ما سحب البندَ (`withdrawnVia`): بيده، أو رفعُ ملفٍّ مكانه، أو «احذف المكرر» — والأوّلُ وحدَه يُعاد (`restorable`) */
+const WITHDRAWN_VIA = { manual: 'manual', replace: 'replace', dedupe: 'dedupe' } as const
 /** ما لم يأتِ في ملفٍّ رفعه المعتمِد: ملاحظاتُ الردّ، والجدولُ الذي تبنيه المنصّة — فلا يُعدّ «آخرَ ملفّ» ولا يُسحب مكرّرا */
 const NOT_A_FILE: readonly string[] = ['note', 'schedule']
 
@@ -338,7 +338,7 @@ export class PlanEditService {
       const gone = replace === 'none' ? 0
         : (await tx.planEditSuggestion.updateMany({
           where: { planId, status: { in: replace === 'all' ? ['proposed', 'pending'] : ['proposed'] } },
-          data: { status: 'withdrawn', decidedAt: new Date(), decidedBy: actorId },
+          data: { status: 'withdrawn', decidedAt: new Date(), decidedBy: actorId, withdrawnVia: WITHDRAWN_VIA.replace },
         })).count
       await tx.planEditSuggestion.createMany({
         data: items.map((item, i) => {
@@ -375,7 +375,8 @@ export class PlanEditService {
     const plan = await this.prisma.cohortDeliveryPlan.findUnique({ where: { id: planId }, select: { cohortId: true } })
     if (!plan) throw new AuthError('not_found', 'الخطّة غير موجودة', 404)
     const { count } = await this.prisma.planEditSuggestion.updateMany({
-      where: { planId, status: { in: ['proposed', 'pending'] } }, data: { status: 'withdrawn', decidedAt: new Date(), decidedBy: actorId },
+      where: { planId, status: { in: ['proposed', 'pending'] } },
+      data: { status: 'withdrawn', decidedAt: new Date(), decidedBy: actorId, withdrawnVia: WITHDRAWN_VIA.manual },
     })
     if (count > 0) {
       await recordAudit(this.prisma, {
@@ -392,30 +393,31 @@ export class PlanEditService {
      فاختار زرّا يعيدها كما كانت.
 
      ① **كما كانت**: ما اعتمده للمدرّب (`reviewedAt` مكتوب) يعود `pending`، والمسوّدةُ مسوّدة.
-     ② **ولا يعود ما جاء بعده على موضعه بندٌ** — مسوّدةٌ أو بندٌ عند المدرّب أو ما قرّر فيه أو ما حذفه
-        المعتمِدُ عمدا (`dropped`): فملفٌّ رُفع ثانيةً بعد السحب لا يتكرّر، ومسوّدةٌ استُبدلت لا تعود
-        فوق بديلها. وما سُحب مرّتين على موضعٍ واحدٍ يعود أحدثُه.
-     ③ **وعلى خطّةٍ مفتوحةٍ وحدَها** — المعتمَدةُ لا يُعاد عليها ما سُحب. */
-  private async restorable(planId: string) {
+     ② **وعلى خطّةٍ مفتوحةٍ وحدَها** — المعتمَدةُ لا يُعاد عليها ما سُحب.
+
+     ═══ وآخرُ سحبٍ بيدك وحدَه — لا جولاتٌ أقدم (٢٠ أكتوبر ٢٠٢٦) ═══
+
+     كان يعيد كلَّ ما سُحب على الخطّة يوما ما ولم يقع على موضعه بندٌ أحدث. فرفع صاحبُ المنصّة ملفّا
+     جديدا بـ«ابدأ من جديد» ثمّ ضغطه، فعادت بنودُ رفعاتٍ سابقةٍ بجانب الجديد — خمسون بندا عند مدرّبٍ
+     وملفُّه خمسةَ عشر — وبُني لها «احذف المكرر». واختار بعدها (٢٠ أكتوبر ٢٠٢٦) أن يُسدّ المصدر: يعود
+     ما أخذه آخرُ سحبٍ وحدَه، فلا يعود مكرّر. فالمعاد:
+
+     ③ **آخرُ سحبٍ على الخطّة** — صفوفُه ختمُها واحد (`decidedAt`)، وما سُحب قبله لا يعود أبدا.
+     ④ **وكان بـ«اسحب ما لم يقرّر»** (`withdrawnVia`): ما سحبه رفعُ ملفٍّ مكانه أو «احذف المكرر» استبدالٌ
+        مقصود، وإعادتُه هي المكرّرُ نفسُه. وما سُحب قبل العمود لا يُعرف كيف سُحب، فلا يعود.
+     ⑤ **ولم يُرفع بعده ملفّ** — فلا يعود قديمٌ بجانب جديد. */
+  private async restorable(planId: string): Promise<{ take: { id: string; toTrainer: boolean }[]; held: 'uploaded_after' | 'not_manual' | null; skipped: number }> {
     const rows = await this.prisma.planEditSuggestion.findMany({
       where: { planId },
-      select: { id: true, status: true, edit: true, reviewedAt: true },
-      orderBy: [{ createdAt: 'desc' }, { seq: 'desc' }],
+      select: { id: true, status: true, reviewedAt: true, decidedAt: true, createdAt: true, withdrawnVia: true },
     })
-    /* من الأحدث إلى الأقدم: ما يحجب موضعا هو ما جاء **بعد** المسحوب — رفعٌ جديدٌ أو حذفٌ أو قرار.
-       وما كان قبله لا يحجبه: مسوّدةٌ حذفها المعتمِدُ ثمّ رفع غيرَها وسحبها، تعود الأخيرة */
-    const taken = new Set<string>()
-    const take: { id: string; toTrainer: boolean }[] = []
-    let skipped = 0
-    for (const r of rows) {
-      const keys = openKeysOf(r.edit as unknown as PlanEdit)
-      if (RESTORE_BLOCKERS.includes(r.status)) { for (const k of keys) taken.add(k); continue }
-      if (r.status !== 'withdrawn') continue
-      if (keys.some((k) => taken.has(k))) { skipped++; continue }
-      for (const k of keys) taken.add(k)
-      take.push({ id: r.id, toTrainer: r.reviewedAt !== null })
-    }
-    return { take, skipped }
+    const withdrawn = rows.filter((r) => r.status === 'withdrawn' && r.decidedAt !== null)
+    if (withdrawn.length === 0) return { take: [], held: null, skipped: 0 }
+    const lastAt = Math.max(...withdrawn.map((r) => r.decidedAt!.getTime()))
+    const last = withdrawn.filter((r) => r.decidedAt!.getTime() === lastAt)
+    if (last.some((r) => r.withdrawnVia !== WITHDRAWN_VIA.manual)) return { take: [], held: 'not_manual', skipped: 0 }
+    if (rows.some((r) => r.createdAt.getTime() > lastAt)) return { take: [], held: 'uploaded_after', skipped: last.length }
+    return { take: last.map((r) => ({ id: r.id, toTrainer: r.reviewedAt !== null })), held: null, skipped: 0 }
   }
 
   /** كم يعود لو ضُغط «أعِد ما سحبته» — للزرّ وعددِه. ومعه كم يُسحب بـ«احذف المكرر» (`older`) */
@@ -482,7 +484,7 @@ export class PlanEditService {
     if (ids.length === 0) return 0
     const { count } = await this.prisma.planEditSuggestion.updateMany({
       where: { id: { in: ids }, status: { in: ['proposed', 'pending'] } },
-      data: { status: 'withdrawn', decidedAt: new Date(), decidedBy: actorId },
+      data: { status: 'withdrawn', decidedAt: new Date(), decidedBy: actorId, withdrawnVia: WITHDRAWN_VIA.dedupe },
     })
     if (count > 0) {
       await recordAudit(this.prisma, {
@@ -499,19 +501,21 @@ export class PlanEditService {
     if (!(OPEN as readonly string[]).includes(plan.status)) {
       throw new AuthError('plan_closed', 'اعتمدت هذه الخطّة — ما سحب منها لا يعود عليها', 409)
     }
-    const { take, skipped } = await this.restorable(planId)
+    const { take, held, skipped } = await this.restorable(planId)
     if (take.length === 0) {
-      throw new AuthError('nothing_withdrawn', skipped > 0
-        ? 'ما سحب على مواضعه بنود أحدث — فلا يعود فوقها'
-        : 'لا شيء مسحوب على هذه الخطّة', 409)
+      throw new AuthError('nothing_withdrawn', held === 'uploaded_after'
+        ? 'رفعت ملفا بعد آخر سحب — فما سحبته قبله لا يعود بجانبه'
+        : held === 'not_manual'
+          ? 'آخر سحب لم يكن بـ«اسحب ما لم يقرر» — فلا يعاد'
+          : 'لا شيء مسحوب على هذه الخطّة', 409)
     }
     const back = (toTrainer: boolean) => take.filter((x) => x.toTrainer === toTrainer).map((x) => x.id)
     await this.prisma.$transaction([
       this.prisma.planEditSuggestion.updateMany({
-        where: { id: { in: back(true) }, status: 'withdrawn' }, data: { status: 'pending', decidedAt: null, decidedBy: null },
+        where: { id: { in: back(true) }, status: 'withdrawn' }, data: { status: 'pending', decidedAt: null, decidedBy: null, withdrawnVia: null },
       }),
       this.prisma.planEditSuggestion.updateMany({
-        where: { id: { in: back(false) }, status: 'withdrawn' }, data: { status: 'proposed', decidedAt: null, decidedBy: null },
+        where: { id: { in: back(false) }, status: 'withdrawn' }, data: { status: 'proposed', decidedAt: null, decidedBy: null, withdrawnVia: null },
       }),
     ])
     const toTrainer = back(true).length

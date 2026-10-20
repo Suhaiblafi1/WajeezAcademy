@@ -2828,6 +2828,9 @@ model PlanEditSuggestion {
   reviewedAt DateTime?
   decidedAt DateTime?
   decidedBy String?   @db.Uuid
+  /// وما سحبه حين يُسحب: «اسحب ما لم يقرّر» (`manual`)، أو رفعُ ملفٍّ مكانه (`replace`)، أو «احذف المكرر» (`dedupe`).
+  /// و«أعد ما سحبته» يعيد آخرَ سحبٍ `manual` وحدَه (٢٠ أكتوبر ٢٠٢٦، `restorable` في `plan-edit.service.ts`)
+  withdrawnVia String? // manual | replace | dedupe
   /// كلمةُ المدرّب حين يرفض — اختياريّة
   noteAr    String?
   createdBy String    @db.Uuid

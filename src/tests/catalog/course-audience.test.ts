@@ -5,19 +5,41 @@
    صاحب المنصّة: «موجودٌ داخل تفاصيل الشعبة». */
 
 import { describe, expect, it } from 'vitest'
-import { courseAudienceView, MAX_SHOWN_GOALS, MAX_SHOWN_STAGES } from '@/application/catalog/course-audience'
+import { catalogAudienceOf, courseAudienceView, MAX_SHOWN_GOALS, MAX_SHOWN_STAGES } from '@/application/catalog/course-audience'
 import { cohortOptionsFrom } from '@/services/cohort-prices'
 import { CASE_MARKS } from '@/application/text/plain-ar'
-import { courseFullById } from '@/data/courses'
+import { courseFullById, courses } from '@/data/courses'
+import { courseById as diagnosticCourse } from '@/domain/diagnostic/catalog'
 
-const course = { targetAudience: 'من يتقدّم كثيرا بلا ردّ، أو يصل إلى المقابلةِ ثمّ يرتبك بإجاباتٍ محفوظةٍ لا تُقنع.' }
+const course = { id: 'C-JOB-104', targetAudience: 'من يتقدّم كثيرا بلا ردّ، أو يصل إلى المقابلةِ ثمّ يرتبك بإجاباتٍ محفوظةٍ لا تُقنع.' }
 const none = { stages: [], goals: [] }
 
 describe('لمن هذه الدورة', () => {
-  it('⚠️ بلا شعبة: وصفُ الكتالوج وحدَه، بلا تشكيلٍ إلّا الشدّة', () => {
+  it('⚠️ بلا شعبة: وصفُ الكتالوج بلا تشكيلٍ إلّا الشدّة — ووسومُ جمهوره كما يقرؤه التشخيص', () => {
     const v = courseAudienceView(course, [])
     expect(v.lead).toBe('من يتقدّم كثيرا بلا ردّ، أو يصل إلى المقابلة ثمّ يرتبك بإجابات محفوظة لا تقنع.')
-    expect(v).toMatchObject({ stages: [], goals: [], fromCohorts: 0 })
+    /* مسارُها PW-STU-002: جمهورُه student وearly_career، وأهدافُه first_job وemployment_advancement */
+    expect(v.stages).toEqual(['طالب جامعي', 'خريج حديث', 'موظف في بداية مساره'])
+    expect(v.goals).toEqual(['الحصول على أول وظيفة', 'بناء مهارات عملية يطلبها سوق العمل', 'تحسين أدائي في عملي الحالي'])
+    expect(v.fromCohorts).toBe(0)
+  })
+
+  it('⚠️ «افعلها لكلّ الدورات حتّى بدون شعب»: كلُّ دورةٍ في الموقع لها وسومُ مراحل', () => {
+    const bare = courses.filter((c) => courseAudienceView(courseFullById(c.id)!, []).stages.length === 0).map((c) => c.id)
+    expect(courses.length).toBeGreaterThan(100)
+    expect(bare).toEqual([])
+  })
+
+  it('⚠️ ومراحلُ الدورة المعلَنةُ في الكتالوج تسبق جمهورَ مسارها', () => {
+    const declared = [...diagnosticCourse.values()].find((c) => (c.diagnostic_stages ?? []).length > 0)!
+    expect(catalogAudienceOf(declared.course_id).stages).toEqual(declared.diagnostic_stages!.filter((st) => st !== 'other_unsure'))
+  })
+
+  it('⚠️ وما اختاره المدرّبون يحلّ محلَّ الكتالوج لا يُضاف إليه', () => {
+    const v = courseAudienceView(course, [{ audience: { stages: ['manager'], goals: [] } }])
+    expect(v.stages).toEqual(['مدير / قائد فريق'])
+    expect(v.goals).toEqual([])
+    expect(v.fromCohorts).toBe(1)
   })
 
   it('⚠️ كلُّ دورةٍ في الكتالوج يمتلئ قسمُها بوصفٍ بلا تشكيل', () => {

@@ -447,7 +447,8 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                       </ul>
                     </div>
                   )}
-                  {(who.stages.length > 0 || who.goals.length > 0) && (
+                  {/* «من اختيار المدرّب» حين اختاره مدرّبٌ حقّا — ووسومُ الكتالوج بلا هذا السطر */}
+                  {who.fromCohorts > 0 && (who.stages.length > 0 || who.goals.length > 0) && (
                     <p className="mt-2 flex items-center gap-1 text-read text-muted-foreground">
                       <Sparkles className="h-3 w-3 text-gold-ink" />
                       {who.fromCohorts > 1 ? "من اختيار مدرّبي شعبها" : "من اختيار مدرّب الشعبة"}
