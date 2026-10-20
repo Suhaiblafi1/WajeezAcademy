@@ -1,4 +1,4 @@
-/* صفحةُ المدرّبين: «سيقدم فلان في موسم كذا» — بنيةٌ لا نصّ (١٩ أكتوبر ٢٠٢٦).
+/* صفحةُ المدرّبين: دوراتُه بمواسمها، والرأسُ اسمُ الموسم وحدَه — بنيةٌ لا نصّ (١٩–٢٠ أكتوبر ٢٠٢٦).
 
    «لماذا تظهر كلُّ الدورات للمدرّب وليس للموسم القادم؟» (صاحب المنصّة). فالبطاقةُ تقرأ `offer` بمواسمه من
    الخادم، ولكلّ موسمٍ رأسُه باسم المدرّب. والتعليقاتُ تُنزع قبل الفحص. */
@@ -11,11 +11,11 @@ const page = readFileSync(join(process.cwd(), 'src/pages/Trainers.tsx'), 'utf8')
 
 describe('صفحة المدربين — الموسم القادم', () => {
   it('البطاقة تقرأ ما يقدمه بمواسمه', () => {
-    expect(page).toMatch(/<TrainerOffer name=\{t\.name\} groups=\{t\.offer/)
+    expect(page).toMatch(/<TrainerOffer groups=\{t\.offer/)
   })
 
-  it('ولكل موسم رأسه باسم المدرب — لا «دوراته» عامة', () => {
-    expect(page).toMatch(/seasons\.map\(\(g, i\) =>[\s\S]*?seasonHeadingAr\(name, g\.termAr\)/)
+  it('ولكل موسم رأسه — اسم الموسم، لا «دوراته» عامة', () => {
+    expect(page).toMatch(/seasons\.map\(\(g, i\) =>[\s\S]*?seasonHeadingAr\(g\.termAr\)/)
     expect(page, 'عاد رأس «دوراته» العام').not.toContain('دوراته — تشترى من صفحتها')
   })
 
@@ -26,7 +26,29 @@ describe('صفحة المدربين — الموسم القادم', () => {
   it('⚠️ الموسم الأقرب مفتوح، وما بعده مطوي برأسه وعدد دوراته', () => {
     const block = page.slice(page.indexOf('seasons.map((g, i) =>'))
     expect(block, 'المواسم كلها مفتوحة').toMatch(/return i === 0 \? \(\s*<div[\s\S]*?\) : \(\s*<details/)
-    expect(block, 'المطوي بلا رأسه').toMatch(/<summary[\s\S]*?seasonHeadingAr\(name, g\.termAr\)[\s\S]*?coursesCountAr\(g\.courses\.length\)[\s\S]*?<\/summary>/)
+    expect(block, 'المطوي بلا رأسه').toMatch(/<summary[\s\S]*?seasonHeadingAr\(g\.termAr\)[\s\S]*?coursesCountAr\(g\.courses\.length\)[\s\S]*?<\/summary>/)
+  })
+
+  /* «اجعل خط اسم الموسم أصغر» (صاحب المنصّة، ٢٠ أكتوبر ٢٠٢٦) — ١٢ في الرأس المفتوح والمطويّ معا.
+     رُئي ساقطا على الرأس الذي كان ١٤. */
+  it('⚠️ واسم الموسم ١٢ — مفتوحا ومطويا', () => {
+    const block = page.slice(page.indexOf('seasons.map((g, i) =>'))
+    const open = block.match(/<h4 className="([^"]*)">\s*<BookOpen[^>]*\/>\s*\{seasonHeadingAr\(g\.termAr\)\}/)
+    const folded = block.match(/<summary className="([^"]*)">/)
+    expect(open, 'رأس الموسم المفتوح غاب').not.toBeNull()
+    expect(folded, 'رأس الموسم المطوي غاب').not.toBeNull()
+    for (const cls of [open![1], folded![1]]) {
+      expect(cls.split(/\s+/), cls).toContain('text-fine')
+      expect(cls, cls).not.toMatch(/text-(read|sm|base|lg)\b/)
+    }
+  })
+
+  /* «غيّر كلمة تفاصيل الدورة لـ"التفاصيل"» (صاحب المنصّة، ٢٠ أكتوبر ٢٠٢٦) — السطرُ اسمُ الدورة، فـ«الدورة»
+     بعده تكرار. رُئي ساقطا على البطاقة القديمة. */
+  it('⚠️ وزر كل دورة «التفاصيل» — لا «تفاصيل الدورة»', () => {
+    const list = page.slice(page.indexOf('const list = ('), page.indexOf('return i === 0'))
+    expect(list).toMatch(/>\s*التفاصيل\s*<ArrowLeft/)
+    expect(list).not.toContain('تفاصيل الدورة')
   })
 
   it('⚠️ وأسماء الدورات أصغر وأخف — لا ١٤ عريضة', () => {
