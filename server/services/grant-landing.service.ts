@@ -66,7 +66,7 @@ export class GrantLandingService {
     const [s, list, open] = await Promise.all([
       this.grants.settings(now),
       this.pathways.list({ activeOnly: true, withCosts: false }, now),
-      this.pathways.openCourses(),
+      this.pathways.openCourses(now),
     ])
     const pathways = list.pathways
       .map((p) => {
@@ -80,7 +80,8 @@ export class GrantLandingService {
     return {
       campaign: { open: s.open, percentOff: s.percentOff, maxCourses: s.maxCourses, closesAt: s.closesAt, left: s.left },
       pathways,
-      openCourses: open.map((c) => ({
+      termAr: open.termAr,
+      openCourses: open.courses.map((c) => ({
         courseId: c.courseId, titleAr: c.courseTitleAr, cohortId: c.cohortId, startsAt: c.startsAt, price: c.price,
         domainAr: courseDomain(c.courseId),
       })),

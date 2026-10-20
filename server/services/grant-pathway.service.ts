@@ -13,6 +13,12 @@
       منشورةٌ ومدرّبُها (أصيلُها أو إسنادُه النشط) معتمَدُ النشر بالبوّابة نفسِها التي تعرض المدرّبين
       للعامّة (`PUBLIC_TRAINER_WHERE`). ومنه: «إذا أضفتُ دورةً جديدةً ومدرّبا جديدا يظهر تلقائيّا» — فكلُّ
       ما يُقرأ هنا يُقرأ ساعةَ الطلب، لا قائمةٌ تُحفظ: شعبةٌ تُفتح تظهر، وشعبةٌ تُغلق تختفي.
+   ١ج) **ومن الفصل القادم القريب وحدَه** — قرارُ صاحب المنصّة (٢٠ أكتوبر ٢٠٢٦): «اجعل الافتراضيَّ كلَّ الدورات
+      المفعّلة ولها مدرّبٌ ولها شعبةٌ مفتوحةٌ للفصل القادم القريب». وكانت القائمةُ تخلط شعبا تبدأ من أكتوبر
+      ٢٠٢٦ إلى نوفمبر ٢٠٢٧. فالفصلُ فصلُ أقرب شعبةٍ تُشترى ولم تبدأ بعد، ويُحسب **من يوم بدئها في عمّان**
+      لا من `termId` — فشعبُ الإنتاج كلُّها بلا فصلٍ مربوط (`trainer-visibility.ts`)، وشعبةٌ تبدأ أوّلَ نوفمبر
+      في عمّان تُخزَّن ٣١ أكتوبر بتوقيت غرينتش. ويدخل من ذلك الفصل ما بدأ وما زال يقبل التسجيل. فإن لم تبقَ
+      شعبةٌ لم تبدأ، عُرض ما يُشترى كلُّه لا صفحةٌ فارغة.
    ٢) **ولا يتجاوز حدَّ دورات المنحة** (`maxCourses`).
    ٣) **وهامشُ المسار كلِّه** — أقربُ شعبةٍ لكلّ دورة: سعرُها، وما يدفعه صاحبُ المنحة عن المسار كلِّه،
       وأجورُ مقاعدها للمدرّبين، والفرق. ومعه سعرُ الباقة بلا منحة ليُرى ما توفّره.
@@ -28,6 +34,8 @@ import { PUBLIC_TRAINER_WHERE } from './trainer-visibility'
 import { LEDGER_CURRENCY } from '../../src/application/commerce/presentment'
 import { bundlePayable, money } from '../../src/application/commerce/discount-policy'
 import { grantPrice } from '../../src/application/commerce/grant'
+import { termOf, termTitleAr } from '../../src/application/terms/season'
+import { zonedDay } from '../../src/application/trainer/cohort-period'
 
 /** أقربُ شعبةٍ تُشترى اليوم لدورة */
 export interface BuyableCohort {
@@ -51,6 +59,18 @@ export interface GrantPathwayInput {
 
 const r2 = (n: number) => Math.round(n * 100) / 100
 
+/** فصلُ الشعبة بيوم بدئها في عمّان — مفتاحُه وعنوانُه */
+function termAt(at: Date): { key: string; titleAr: string } {
+  const t = termOf(new Date(`${zonedDay(at)}T00:00:00Z`))
+  return { key: `${t.year}-${t.season}`, titleAr: termTitleAr(t.year, t.season) }
+}
+
+/** ما يُعرض في المنحة: فصلُه، وأقربُ شعبةٍ تُشترى لكلّ دورةٍ فيه */
+export interface GrantPool {
+  termAr: string | null
+  byCourse: Map<string, BuyableCohort>
+}
+
 export class GrantPathwayService {
   private prisma: PrismaClient
   private grants: GrantService
@@ -59,9 +79,10 @@ export class GrantPathwayService {
     this.grants = new GrantService(prisma)
   }
 
-  /** أقربُ شعبةٍ تُشترى اليوم لكلّ دورة — بالشروط التي يشتري بها لوحُ الدفع: مفتوحةٌ للتسجيل
-      (`cohortAcceptsRegistration`)، بسعرٍ بعملة الدفتر، وفيها مقعد. وبلا قائمةٍ كلُّ الدورات. */
-  async buyable(courseIds?: readonly string[], now = new Date()): Promise<Map<string, BuyableCohort>> {
+  /** ما يُعرض في المنحة — كلُّ دورةٍ منشورةٍ لها شعبةٌ تُشترى في الفصل القادم القريب، بالشروط التي يشتري
+      بها لوحُ الدفع: مفتوحةٌ للتسجيل (`cohortAcceptsRegistration`)، بسعرٍ بعملة الدفتر، ومدرّبُها منشور، وفيها
+      مقعد. ويُقرأ كلُّه ساعةَ الطلب: شعبةٌ تُفتح تظهر، وشعبةٌ تُغلق تختفي. */
+  async pool(now = new Date()): Promise<GrantPool> {
     const cohorts = await this.prisma.cohort.findMany({
       where: {
         status: { in: ['open', 'active'] }, price: { gt: 0 }, currency: LEDGER_CURRENCY,
@@ -71,7 +92,6 @@ export class GrantPathwayService {
           { trainers: { some: { role: 'lead', profile: PUBLIC_TRAINER_WHERE } } },
           { assignments: { some: { status: 'active', profile: PUBLIC_TRAINER_WHERE } } },
         ],
-        ...(courseIds ? { courseId: { in: [...courseIds] } } : {}),
       },
       include: {
         course: { select: { versions: { orderBy: { version: 'desc' }, take: 1, select: { titleAr: true } } } },
@@ -88,23 +108,37 @@ export class GrantPathwayService {
     ])
     const taken = new Map<string, number>()
     for (const g of [...enrolled, ...held]) taken.set(g.cohortId, (taken.get(g.cohortId) ?? 0) + g._count)
-    const out = new Map<string, BuyableCohort>()
-    for (const c of open) {
-      if (out.has(c.courseId)) continue
-      const seatsLeft = c.capacity ? c.capacity - (taken.get(c.id) ?? 0) : null
-      if (seatsLeft !== null && seatsLeft <= 0) continue
-      out.set(c.courseId, {
+    const seatsOf = (c: (typeof open)[number]) => (c.capacity ? c.capacity - (taken.get(c.id) ?? 0) : null)
+    const withSeat = open.filter((c) => { const n = seatsOf(c); return n === null || n > 0 })
+
+    /* الفصلُ القادمُ القريب: فصلُ أقرب شعبةٍ لم تبدأ — مرتّبةٌ بيوم بدئها، فأوّلُها أقربُها */
+    const next = withSeat.find((c) => c.startsAt !== null && c.startsAt > now)
+    const term = next ? termAt(next.startsAt!) : null
+    const inTerm = term ? withSeat.filter((c) => c.startsAt !== null && termAt(c.startsAt).key === term.key) : withSeat
+
+    const byCourse = new Map<string, BuyableCohort>()
+    for (const c of inTerm) {
+      if (byCourse.has(c.courseId)) continue
+      byCourse.set(c.courseId, {
         cohortId: c.id, courseId: c.courseId, courseTitleAr: c.course.versions[0]?.titleAr ?? c.courseId,
-        cohortTitle: c.title, price: Number(c.price), currency: c.currency, startsAt: c.startsAt, seatsLeft,
+        cohortTitle: c.title, price: Number(c.price), currency: c.currency, startsAt: c.startsAt, seatsLeft: seatsOf(c),
       })
     }
-    return out
+    return { termAr: term?.titleAr ?? null, byCourse }
   }
 
-  /** الدوراتُ التي تُختار في مسار — ما له شعبةٌ تُشترى اليوم */
-  async openCourses() {
-    return [...(await this.buyable()).values()]
-      .sort((a, b) => a.courseTitleAr.localeCompare(b.courseTitleAr, 'ar'))
+  /** أقربُ شعبةٍ تُشترى في المنحة لكلّ دورة — من `pool`، وبلا قائمةٍ كلُّ دوراته */
+  async buyable(courseIds?: readonly string[], now = new Date()): Promise<Map<string, BuyableCohort>> {
+    const { byCourse } = await this.pool(now)
+    if (!courseIds) return byCourse
+    const want = new Set(courseIds)
+    return new Map([...byCourse].filter(([id]) => want.has(id)))
+  }
+
+  /** الدوراتُ التي تُختار في المنحة وفصلُها — ما له شعبةٌ تُشترى في الفصل القادم القريب */
+  async openCourses(now = new Date()): Promise<{ termAr: string | null; courses: BuyableCohort[] }> {
+    const { termAr, byCourse } = await this.pool(now)
+    return { termAr, courses: [...byCourse.values()].sort((a, b) => a.courseTitleAr.localeCompare(b.courseTitleAr, 'ar')) }
   }
 
   /** المساراتُ بدوراتها وأقرب شعبةٍ لكلٍّ وهامشِها — بنسبةٍ تُمرَّر لتُجرَّب، وبلا قيمةٍ نسبةُ الحملة */
@@ -163,7 +197,7 @@ export class GrantPathwayService {
   }
 
   /** يُحفظ مسارٌ جديدٌ أو يُعدَّل — ولا دورةَ فيه بلا شعبةٍ تُشترى اليوم */
-  async save(id: string | null, input: GrantPathwayInput, actorId: string) {
+  async save(id: string | null, input: GrantPathwayInput, actorId: string, now = new Date()) {
     const c = await this.grants.campaign()
     const titleAr = input.titleAr.trim()
     if (titleAr.length < 3) throw new AuthError('bad_title', 'اكتب اسما للاقتراح', 400)
@@ -172,9 +206,9 @@ export class GrantPathwayService {
     if (courseIds.length > c.maxCourses) {
       throw new AuthError('too_many', `الاقتراح ${c.maxCourses} دورات بحد أقصى، مثل حد المنحة`, 400)
     }
-    const buy = await this.buyable(courseIds)
+    const buy = await this.buyable(courseIds, now)
     const closed = courseIds.filter((x) => !buy.has(x))
-    if (closed.length > 0) throw new AuthError('no_cohort', `${closed.length} من الدورات بلا شعبة مفتوحة بمدرب منشور`, 409)
+    if (closed.length > 0) throw new AuthError('no_cohort', `${closed.length} من الدورات ليست من دورات المنحة: بلا شعبة مفتوحة بمدرب منشور في فصلها`, 409)
     const data = {
       titleAr, blurbAr: input.blurbAr?.trim() || null, courseIds,
       ...(input.sortOrder !== undefined ? { sortOrder: input.sortOrder } : {}),

@@ -2,15 +2,24 @@
 
    قرارُ صاحب المنصّة: تُبنى المساراتُ جديدةً من هنا — اسمٌ ودوراتٌ لها شعبٌ مفتوحة، ولا تتجاوز حدَّ
    دورات المنحة. ولكلّ مسارٍ هامشُه كاملا **بالنسبة التي في خانة الإعدادات**: سعرُه، وما يدفعه بلا منحة،
-   وما يدفعه بها، وأجورُ مقاعد مدرّبيه، وما يبقى للأكاديميّة. والعلّةُ في `server/services/grant-pathway.service.ts`. */
+   وما يدفعه بها، وأجورُ مقاعد مدرّبيه، وما يبقى للأكاديميّة. والعلّةُ في `server/services/grant-pathway.service.ts`.
 
-import { useCallback, useEffect, useState } from "react";
+   وتحتها **دوراتُ المنحة الافتراضيّة** — قرارُه (٢٠ أكتوبر ٢٠٢٦): «اجعل الافتراضيَّ كلَّ الدورات المفعّلة ولها
+   مدرّبٌ ولها شعبةٌ مفتوحةٌ للفصل القادم القريب». فتُعرض هنا بفصلها وسعرها بالمنحة، ليرى ما يختار منه من يعبّئ
+   النموذج بلا أن يفتح الصفحة. */
+
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowDown, ArrowUp, X } from "lucide-react";
 import { toast, toastError } from "@/components/Toast";
 import ConfirmAction from "@/components/ConfirmAction";
 import { apiDelete, apiGet, apiPost, apiPut, ApiError } from "@/services/api";
 import { fmtMoney } from "@/application/text/format-ar";
 import { cohortDayAr } from "@/application/learning/cohort-gate";
+import { grantPrice } from "@/application/commerce/grant";
+import { countAr } from "@/application/text/count-ar";
+import { matchesQuery } from "@/application/text/search-ar";
+import { paginate } from "@/application/admin/paginate";
+import ListToolbar from "@/components/admin/ListToolbar";
 import { staffControlCls, staffSelectCls } from "@/components/FormKit";
 import { Card } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
@@ -25,10 +34,17 @@ interface Pathway {
 interface Draft { id: string | null; titleAr: string; blurbAr: string; courseIds: string[]; active: boolean }
 
 const USD = "USD";
+/** المقاعدُ الباقيةُ بصيغة عددها — والمثنّى بلا رقم */
+const seatsLeftAr = (n: number) => (n === 2 ? "بقي مقعدان" : `بقي ${countAr(n, { one: "مقعد", two: "مقعدان", few: "مقاعد", many: "مقعدا" })}`);
 
 export default function GrantPathways({ percentOff, maxCourses }: { percentOff: number | null; maxCourses: number }) {
   const [list, setList] = useState<Pathway[] | null>(null);
   const [open, setOpen] = useState<OpenCourse[]>([]);
+  const [termAr, setTermAr] = useState<string | null>(null);
+  /* دوراتُ المنحة تنمو بنموّ الكتالوج — فيُبحث فيها ويُقلَّب */
+  const [q, setQ] = useState("");
+  const [page, setPage] = useState(1);
+  const shown = useMemo(() => paginate(open.filter((c) => matchesQuery(q, [c.courseTitleAr])), page, 25), [open, q, page]);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [removing, setRemoving] = useState<Pathway | null>(null);
   const [busy, setBusy] = useState(false);
@@ -45,7 +61,9 @@ export default function GrantPathways({ percentOff, maxCourses }: { percentOff: 
     return () => clearTimeout(t);
   }, [load]);
   useEffect(() => {
-    apiGet<OpenCourse[]>("/api/admin/member-grant/open-courses").then(setOpen).catch(() => setOpen([]));
+    apiGet<{ termAr: string | null; courses: OpenCourse[] }>("/api/admin/member-grant/open-courses")
+      .then((r) => { setOpen(r.courses); setTermAr(r.termAr); })
+      .catch(() => setOpen([]));
   }, []);
 
   const save = async (d: Draft) => {
@@ -113,7 +131,7 @@ export default function GrantPathways({ percentOff, maxCourses }: { percentOff: 
           </ol>
           {draft.courseIds.length < maxCourses && (
             <select value="" onChange={(e) => e.target.value && setDraft({ ...draft, courseIds: [...draft.courseIds, e.target.value] })} className={staffSelectCls}>
-              <option value="">أضف دورة لها شعبة مفتوحة ومدرب منشور</option>
+              <option value="">أضف دورة من دورات المنحة</option>
               {open.filter((c) => !draft.courseIds.includes(c.courseId)).map((c) => (
                 <option key={c.courseId} value={c.courseId}>{c.courseTitleAr} — {fmtMoney(c.price, c.currency)} — تبدأ {cohortDayAr(c.startsAt)}</option>
               ))}
@@ -131,7 +149,7 @@ export default function GrantPathways({ percentOff, maxCourses }: { percentOff: 
       )}
 
       {list === null ? null : list.length === 0 ? (
-        <Card as="p" className="mt-3 text-read text-muted-foreground">لا اقتراح بعد. من يعبئ النموذج يختار من كل الدورات المتاحة.</Card>
+        <Card as="p" className="mt-3 text-read text-muted-foreground">لا اقتراح بعد. من يعبئ النموذج يختار من دورات المنحة أدناه.</Card>
       ) : (
         <div className="mt-3 space-y-3">
           {list.map((p) => (
@@ -152,7 +170,7 @@ export default function GrantPathways({ percentOff, maxCourses }: { percentOff: 
                     <span>{c.titleAr}</span>
                     {c.cohort
                       ? <span className="text-muted-foreground">تبدأ {cohortDayAr(c.cohort.startsAt)} · <span dir="ltr">{fmtMoney(c.cohort.price, c.cohort.currency)}</span></span>
-                      : <span className="text-danger-ink">لا تظهر الآن: لا شعبة مفتوحة بمدرب منشور</span>}
+                      : <span className="text-danger-ink">لا تظهر الآن: ليست من دورات المنحة</span>}
                   </li>
                 ))}
               </ul>
@@ -166,11 +184,36 @@ export default function GrantPathways({ percentOff, maxCourses }: { percentOff: 
                   {p.margin === null ? "—" : fmtMoney(p.margin, USD)}
                 </span>
               </p>
-              {p.missing > 0 && <p className="mt-1 text-read text-danger-ink">{p.missing} من دوراته لا تظهر لمن يعبئ النموذج: لا شعبة مفتوحة بمدرب منشور.</p>}
+              {p.missing > 0 && <p className="mt-1 text-read text-danger-ink">{p.missing} من دوراته لا تظهر لمن يعبئ النموذج: ليست من دورات المنحة.</p>}
             </Card>
           ))}
         </div>
       )}
+
+      <h2 className="mt-6 text-lg font-black">دورات المنحة ({open.length})</h2>
+      <p className="mt-1 text-read text-muted-foreground">
+        {termAr ? `${termAr}: ` : ""}كل دورة منشورة لها مدرب منشور وشعبة مفتوحة للتسجيل. منها يختار من يعبئ النموذج، وتتحدث وحدها حين تفتح شعبة أو تغلق.
+      </p>
+      <Card className="mt-3">
+        <ListToolbar q={q} onQ={setQ} onPage={setPage} view={shown} placeholder="ابحث باسم الدورة" unit="دورة" />
+        {shown.rows.length === 0 ? (
+          <p className="text-read text-muted-foreground">{open.length === 0 ? "لا دورة متاحة الآن." : "لا دورة بهذا الاسم."}</p>
+        ) : (
+          <ul className="divide-y divide-border">
+            {shown.rows.map((c) => (
+              <li key={c.courseId} className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 py-2 text-read">
+                <span className="font-bold">{c.courseTitleAr}</span>
+                <span className="text-muted-foreground">
+                  تبدأ {cohortDayAr(c.startsAt)}
+                  {" · "}<span dir="ltr">{fmtMoney(c.price, c.currency)}</span>
+                  {percentOff !== null && <>{" · "}بالمنحة <span dir="ltr" className="font-bold text-foreground">{fmtMoney(grantPrice(c.price, percentOff), c.currency)}</span></>}
+                  {c.seatsLeft !== null && ` · ${seatsLeftAr(c.seatsLeft)}`}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
 
       {removing && (
         <ConfirmAction

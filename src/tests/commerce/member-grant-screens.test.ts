@@ -66,8 +66,18 @@ describe('اقتراحات المنحة', () => {
     expect(PATHS, 'يوم الشعبة بمنطقة الأكاديمية').toMatch(/cohortDayAr\(c\.cohort\.startsAt\)/)
   })
 
+  it('⚠️ ودورات المنحة الافتراضية ظاهرة بفصلها وسعرها بالمنحة — لا جملة تقول «كل الدورات»', () => {
+    expect(PATHS).toMatch(/\.then\(\(r\) => \{ setOpen\(r\.courses\); setTermAr\(r\.termAr\); \}\)/)
+    expect(PATHS).toMatch(/<h2 className="[^"]*">دورات المنحة \(\{open\.length\}\)<\/h2>/)
+    expect(PATHS).toMatch(/\{shown\.rows\.map\(\(c\) => \(\s*<li key=\{c\.courseId\}/)
+    expect(PATHS, 'قائمة تنمو بلا بحث').toMatch(/<ListToolbar q=\{q\} onQ=\{setQ\} onPage=\{setPage\} view=\{shown\}/)
+    expect(PATHS).toMatch(/fmtMoney\(grantPrice\(c\.price, percentOff\), c\.currency\)/)
+    expect(PATHS, 'عاد الوعد بكل الدورات').not.toContain('يختار من كل الدورات المتاحة')
+  })
+
   it('بلا تشكيل', () => {
-    for (const t of ['اقتراحات المنحة', 'اقتراح جديد', 'اسم الاقتراح', 'لمن يناسب', 'أضف دورة لها شعبة مفتوحة ومدرب منشور', 'يظهر لمن يعبئ النموذج', 'لا تظهر الآن: لا شعبة مفتوحة بمدرب منشور', 'يبقى للأكاديمية', 'احفظ الاقتراح']) {
+    for (const t of ['اقتراحات المنحة', 'اقتراح جديد', 'اسم الاقتراح', 'لمن يناسب', 'أضف دورة من دورات المنحة', 'يظهر لمن يعبئ النموذج', 'لا تظهر الآن: ليست من دورات المنحة', 'يبقى للأكاديمية', 'احفظ الاقتراح',
+      'كل دورة منشورة لها مدرب منشور وشعبة مفتوحة للتسجيل', 'لا دورة متاحة الآن.']) {
       expect(PATHS).toContain(t)
       expect(t).toBe(plainAr(t))
     }

@@ -73,7 +73,7 @@ export function registerAdminGrantRoutes(app: FastifyInstance, prisma: PrismaCli
 
   app.get('/api/admin/member-grant/open-courses', {
     preHandler: canManage,
-    schema: { tags: ['admin-commerce'], summary: 'الدورات التي لها شعبة تشترى اليوم — منها تختار دورات المسار' },
+    schema: { tags: ['admin-commerce'], summary: 'دورات المنحة: ما له شعبة تشترى في الفصل القادم القريب، وفصله — ومنها تختار دورات الاقتراح' },
   }, async () => pathways.openCourses())
 
   app.post('/api/admin/member-grant/pathways', {
