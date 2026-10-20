@@ -27,7 +27,8 @@ async function cohort(key: string, data: { termId: string; status: string; appro
   const c = await prisma.cohort.create({
     data: {
       courseId, title: `${key} ${STAMP}`, status: data.status, termId: data.termId,
-      capacity: data.ready === false ? null : 10, price: 100, financialReady: true,
+      /* وغيرُ الجاهزة بلا إعدادٍ ماليّ — لا بلا سعة: المسعَّرةُ تُعطى ٢٠ ولا تُعدّ ناقصةً سعة (٢٠ أكتوبر ٢٠٢٦) */
+      capacity: 10, price: 100, financialReady: data.ready !== false,
       registrationOpen: data.status !== 'draft',
     },
   })

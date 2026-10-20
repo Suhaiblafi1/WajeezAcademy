@@ -28,6 +28,8 @@ export interface NotificationCategory {
   labelAr: string
   /** ما يقع في هذا الصنف — بلغةِ صاحب الحساب لا بلغةِ المفاتيح */
   whatAr: string
+  /** وما يقع فيه للمتعلّم إن كان في `whatAr` ما لا يصله — فلا يقرأ في إعداداته «مستحقّات مدرّب» */
+  learnerWhatAr?: string
   /** هل يجوز كتمُه؟ */
   silenceable: boolean
   /** سببُ المنع — يُعرض في الشاشة، فلا قفلٌ بلا تفسير */
@@ -128,6 +130,7 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
     key: 'money',
     labelAr: 'المال',
     whatAr: 'إيصال دفع · مقعد محجوز ينتظر الدفع · ردّ مبلغ أو ردّ طلبه · إلغاء طلب لم يكتمل · مستحقّات مدرّب · كشف عمولة مستشار',
+    learnerWhatAr: 'إيصال دفع · مقعد محجوز ينتظر الدفع · ردّ مبلغ أو ردّ طلبه · إلغاء طلب لم يكتمل',
     silenceable: false,
     lockedWhyAr: 'إيصال دفع لا يكتم: هو سجلّك عند الخلاف، وكتمه يجعل «لم يخبرني أحد» صحيحا في الظاهر.',
     /* ═══ والردُّ خبرُ مالٍ كالقبض (ي-٤) ═══

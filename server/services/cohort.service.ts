@@ -7,7 +7,7 @@ const fmtDay = (d: Date) => d.toISOString().slice(0, 10)
    الحالات: draft | open | full | active | completed | cancelled. */
 
 import { notifyIfPurchasable } from './catalog-readiness.service'
-import { OPEN_GAP } from '../../src/application/learning/open-gaps'
+import { DEFAULT_COHORT_CAPACITY, OPEN_GAP } from '../../src/application/learning/open-gaps'
 import type { PrismaClient, Prisma } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
@@ -32,6 +32,7 @@ import { LEARNER_PLAN_QUERY } from './learner-gate'
 import { LEARNER_SESSION_WHERE } from './session-visibility'
 import { SEATED, SessionInviteService } from './session-invite.service'
 import { cohortTitleAr, nextCohortNumber } from '../../src/application/learning/cohort-title'
+import { MATERIALS_STATUSES } from '../../src/application/trainer/portal-access'
 
 /** ترتيبُ اليوم في الأسبوع — الأحدُ صفر، كما في `Date.getUTCDay` */
 const DAY_INDEX: Record<string, number> = Object.fromEntries(DAY_CODES.map((d, i) => [d, i]))
@@ -76,10 +77,10 @@ export class CohortService {
       orderBy: { createdAt: 'desc' },
       include: {
         course: { include: { versions: { orderBy: { version: 'desc' }, take: 1 } } },
-        trainers: { include: { profile: { include: { application: { select: { fullName: true } } } } } },
+        trainers: { include: { profile: { include: { application: { select: { fullName: true, status: true } } } } } },
         sessions: true,
-        /* خططُ مدرّبها بحالاتها — `PLAN_GATE_SELECT` */
-        plans: { where: { trainerId: { not: null } }, select: { status: true } },
+        /* خططُ مدرّبها بحالاتها — `PLAN_GATE_SELECT`، والأحدثُ أوّلا لما تقوله القائمة */
+        plans: { where: { trainerId: { not: null } }, orderBy: { createdAt: 'desc' }, select: { status: true } },
         _count: { select: { enrollments: { where: { status: 'enrolled' } } } },
         /* آخرُ نقلٍ معتمَدٍ إلى فصلٍ آخر — يُوسَم به رأسُ الشعبة (`cohort-move.ts`) */
         moveRequests: { where: { status: 'approved' }, orderBy: { reviewedAt: 'desc' }, take: 1, select: { toYear: true, toSeason: true } },
@@ -95,7 +96,13 @@ export class CohortService {
       sessionsCount: c.sessions.length,
       /* نافذةُ جدولةِ المدرّب — تُقرأ في الشاشة لتُعرَض مفتوحةً أو مغلقة */
       scheduleWindowStart: c.scheduleWindowStart, scheduleWindowEnd: c.scheduleWindowEnd,
-      trainers: c.trainers.map((t) => ({ profileId: t.profileId, name: t.profile.application.fullName, role: t.role })),
+      /* وموقوفُها يُقال في القائمة (٢٠ أكتوبر ٢٠٢٦، `cohortNextStep`): إيقافٌ إداريٌّ، أو حالٌ لا يفتح له
+         بابَ موادّه (ليس في الإعداد ولا نشطا) — `portal-access.ts` */
+      trainers: c.trainers.map((t) => ({
+        profileId: t.profileId, name: t.profile.application.fullName, role: t.role,
+        suspended: t.profile.suspendedAt !== null || !MATERIALS_STATUSES.includes(t.profile.application.status),
+      })),
+      trainerPlanStatus: c.plans[0]?.status ?? null,
       /* اعتُمدت لمدرّبها خطّة؟ — شرطُ عرضِها وبيعِها (١٢ أكتوبر ٢٠٢٦). تقرؤه الشاشة
          فتقول «مخفيّةٌ عن الموقع» لمفتوحةٍ بلا مدرّبٍ معتمَد، و«تنتظر فتحك» لمسوّدةٍ
          اعتُمدت — فلا تُقرأ «مفتوحة للتسجيل» شعبةٌ يردّها الكتالوجُ والدفع */
@@ -428,7 +435,8 @@ export class CohortService {
     const missing: string[] = []
     if (cohort.course.status !== 'published') missing.push('الدورة ليست منشورة')
     if (!cohort.sessions.length) missing.push(OPEN_GAP.schedule)
-    if (!cohort.capacity || cohort.capacity < 1) missing.push(OPEN_GAP.capacity)
+    /* والمسعَّرةُ بلا سعةٍ تُعطى ٢٠ عند الفتح — فلا تُعدّ ناقصة (`DEFAULT_COHORT_CAPACITY`) */
+    if ((!cohort.capacity || cohort.capacity < 1) && cohort.price === null) missing.push(OPEN_GAP.capacity)
     /* خطّةُ مدرّبٍ معتمَدة — والنقصُ يُسمّى بما يُوفى به: شعبةٌ لا مدرّبَ لها غيرُ
        شعبةٍ كتب مدرّبُها ولم يُعتمَد له (٣ج). والقاعدةُ قاعدةُ التسجيل نفسُها */
     const trainerPlans = cohort.plans.filter((p) => p.trainerId !== null)
@@ -507,6 +515,9 @@ export class CohortService {
     }
     /* وما اعتُمد قبل أن تُكتب الأيّامُ من اللقاءات يُكتب هنا — قبل أن تُعرض للعامّة */
     await this.applySessionPattern(cohortId)
+    await this.prisma.cohort.updateMany({
+      where: { id: cohortId, OR: [{ capacity: null }, { capacity: { lt: 1 } }] }, data: { capacity: DEFAULT_COHORT_CAPACITY },
+    })
     await this.transition(cohortId, 'open', actorId, 'فتح الشعبة بعد اكتمال الشروط')
     const opened = await this.prisma.cohort.update({ where: { id: cohortId }, data: { registrationOpen: true } })
     /* والفتحُ هو الطريقُ المعتاد إلى البيع — فمن انتظرها يُعلَم هنا (١٢ أكتوبر ٢٠٢٦) */
@@ -551,23 +562,30 @@ export class CohortService {
     const candidates = await this.prisma.cohort.findMany({
       where: { status: { in: ['open', 'full', 'active'] } },
       select: {
-        id: true, title: true, status: true,
+        id: true, title: true, status: true, startsAt: true,
         sessions: { select: { startsAt: true, endsAt: true }, orderBy: { startsAt: 'asc' } },
       },
     })
     const changes: { cohortId: string; title: string; from: string; to: string; reason: string }[] = []
     for (const c of candidates) {
-      if (c.sessions.length === 0) continue
-      const first = c.sessions[0].startsAt
-      const last = c.sessions.reduce<Date>((max, sn) => {
+      /* ═══ و«جارية» من بدء مدّتها التي أقرّها المدرّب (٢٠ أكتوبر ٢٠٢٦) ═══
+         قرارُ صاحب المنصّة: «المدرّبُ قال من تاريخ كذا لتاريخ كذا — هذه الفترةُ تصبح فيها جاريةً
+         تلقائيّا». ولقاءاتُ الشتاء المباشرةُ قد تتأخّر عن بدء الشعبة، فكانت تبقى «مفتوحة» وقد بدأت.
+         فالبدءُ أسبقُ الاثنين: بدءُ المدّة (`startsAt`) أو أوّلُ لقاء. والانتهاءُ بآخر لقاءٍ كما كان. */
+      const firstSession = c.sessions[0]?.startsAt ?? null
+      const begins = [c.startsAt, firstSession].filter((d): d is Date => d !== null)
+      if (begins.length === 0) continue
+      const first = new Date(Math.min(...begins.map((d) => d.getTime())))
+      const last = c.sessions.length === 0 ? null : c.sessions.reduce<Date>((max, sn) => {
         const end = sn.endsAt ?? sn.startsAt
         return end > max ? end : max
       }, c.sessions[0].endsAt ?? c.sessions[0].startsAt)
 
-      if (last < now) {
+      if (last && last < now) {
         changes.push({ cohortId: c.id, title: c.title, from: c.status, to: 'completed', reason: 'انتهت آخر جلساتها' })
       } else if (first <= now && c.status !== 'active') {
-        changes.push({ cohortId: c.id, title: c.title, from: c.status, to: 'active', reason: 'بدأت أوّل جلساتها' })
+        const byPeriod = c.startsAt !== null && first.getTime() === c.startsAt.getTime()
+        changes.push({ cohortId: c.id, title: c.title, from: c.status, to: 'active', reason: byPeriod ? 'بدأت مدّتها' : 'بدأت أوّل جلساتها' })
       }
     }
     if (options.apply !== true) return { applied: false, changed: 0, changes }

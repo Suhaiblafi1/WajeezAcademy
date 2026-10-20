@@ -133,7 +133,8 @@ describe('ط-١ · رسالة الإشعار', () => {
   })
 
   it('④ ورابط التفضيلات على ما يكتم وحده', () => {
-    const prefs = /student\/notifications/
+    /* التفضيلاتُ في «الملف الشخصي» منذ حُذفت «إشعاراتي» (٢٠ أكتوبر ٢٠٢٦) */
+    const prefs = /student\/account#notifications/
     /* يُكتَم: تذكيرُ جلسةٍ للمتعلّم */
     const silenceable = notificationMailDoc({
       title: 'تذكير جلسة', body: 'جلستك غدا', templateKey: 'session.reminder.24h',
@@ -238,9 +239,9 @@ describe('ط-١ · رسالة الإشعار', () => {
       title: 'تذكير جلسة', body: 'غدا', templateKey: 'session.reminder.24h',
       audience: 'learner', siteUrl: 'https://x.test',
     })
-    expect(html, 'العنوان نصّ لا رابط').toMatch(/<a href="https:\/\/x\.test\/student\/notifications"/)
+    expect(html, 'العنوان نصّ لا رابط').toMatch(/<a href="https:\/\/x\.test\/student\/account#notifications"/)
     /* وفي النصّ الخامّ يبقى عنوانا مكتوبا — إذ لا ضغطَ فيه */
-    expect(text).toContain('https://x.test/student/notifications')
+    expect(text).toContain('https://x.test/student/account#notifications')
   })
 
   it('ومتن فارغ لا يخرج رسالة جوفاء', () => {

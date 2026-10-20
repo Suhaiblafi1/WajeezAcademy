@@ -19,3 +19,16 @@ export const LEARNER_CATEGORY_KEYS: ReadonlySet<string> = new Set(
     .filter((c) => EVERY_ACCOUNT.has(c.key) || c.templateKeys.some((k) => destinationFor(k, 'learner')))
     .map((c) => c.key),
 )
+
+/* ═══ وما يقع في الصنف بلغة المتعلّم (٢٠ أكتوبر ٢٠٢٦) ═══
+
+   الوصفُ واحدٌ للحسابات كلِّها، فكان المتعلّمُ يقرأ في «المال» من إعداداته «مستحقّات مدرّب · كشف عمولة
+   مستشار» — خبران لا يصلانه أبدا. فللصنف وصفٌ للمتعلّم إن كان في وصفه العامّ ما ليس له. */
+const LEARNER_WHAT_AR: ReadonlyMap<string, string> = new Map(
+  NOTIFICATION_CATEGORIES.flatMap((c) => (c.learnerWhatAr ? [[c.key, c.learnerWhatAr] as const] : [])),
+)
+
+/** وصفُ الصنف كما يقرؤه المتعلّم */
+export function learnerWhatAr(key: string, whatAr: string): string {
+  return LEARNER_WHAT_AR.get(key) ?? whatAr
+}

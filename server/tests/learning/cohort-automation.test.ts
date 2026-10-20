@@ -159,3 +159,25 @@ describe('الحالةُ تتبع التواريخ', () => {
     expect(r.changes.map((ch) => ch.cohortId)).not.toContain(bare.id)
   })
 })
+
+/* ═══ و«جارية» من بدء مدّتها، والسعةُ ٢٠ دائما (٢٠ أكتوبر ٢٠٢٦) ═══
+   قرارا صاحب المنصّة: «المدرّبُ قال من تاريخ كذا لتاريخ كذا — هذه الفترةُ تصبح فيها جاريةً تلقائيّا»،
+   و«إذا كانت للشعبة سعرٌ فالسعةُ ٢٠ دائما — لا داعي أن أكتبها». */
+describe('جارية من بدء المدة — والسعة ٢٠', () => {
+  it('شعبة بدأت مدتها ولقاؤها الأول لم يأت تصير جارية', async () => {
+    const c = await scheduled('شعبةٌ بدأت مدّتها')
+    await cohorts.generateSessions(managerId, c.id, { weeks: 2, from: new Date('2026-02-02T00:00:00Z'), apply: true })
+    await prisma.cohort.update({ where: { id: c.id }, data: { status: 'open', registrationOpen: true, startsAt: new Date('2026-01-10T00:00:00Z') } })
+    const r = await cohorts.syncStatusesByDate(managerId, { now: new Date('2026-01-15T00:00:00Z'), apply: true })
+    expect(r.changes.find((ch) => ch.cohortId === c.id)?.reason).toBe('بدأت مدّتها')
+    expect((await prisma.cohort.findUniqueOrThrow({ where: { id: c.id } })).status, 'بقيت مفتوحة وقد بدأت مدتها').toBe('active')
+  })
+
+  it('المسعرة بلا سعة لا تعد ناقصة — والسعة ٢٠ بلا كتابة', async () => {
+    const c = await cohorts.create(managerId, { courseId: COURSE, title: 'شعبةٌ بلا سعة', price: 180 })
+    await prisma.cohort.update({ where: { id: c.id }, data: { capacity: null } })
+    expect((await cohorts.openChecklist(c.id)).missing, 'طلبت السعة من مسعرة').not.toContain('لا سعة محددة')
+    const fresh = await prisma.cohort.create({ data: { courseId: COURSE, title: `افتراض ${Date.now()}` } })
+    expect(fresh.capacity, 'الافتراض ليس ٢٠').toBe(20)
+  })
+})

@@ -452,6 +452,29 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
                   )}>
                   {riding.length > 0 ? `اعتمدها ولقاءاتها (${riding.length})` : "اعتمدها"}{blocked.length > 0 ? " كما هي" : ""}{approveNote.trim() ? " مع كلمتك" : ""}
                 </Button>
+                {/* ═══ واعتمادٌ وفتحٌ بنقرةٍ واحدة (٢٠ أكتوبر ٢٠٢٦) ═══
+                    سأل صاحبُ المنصّة: «لماذا يجب أن أنقر العديدَ من النقرات لأنشر دورةً اعتمدتُها وكلُّ شيءٍ
+                    واضحٌ فيها؟» — واختار زرّا بجانب «اعتمدها» لا فتحا آليّا، فيبقى له أن يعتمد ولا يفتح.
+                    والفتحُ من بابه نفسِه (`/open`) بشروطه: ما ينقص يُقال، والاعتمادُ يبقى. ولأوّل اعتمادٍ وحدَه:
+                    شعبةٌ اعتُمدت قبلُ مفتوحةٌ أو تعمل. */}
+                {!trainerPlan.approvedOnce && (
+                  <Button tone="confirm" size="sm" disabled={busy}
+                    onClick={() => act(
+                      async () => {
+                        const r = await apiPost<PlanDecision>(`/api/admin/cohort-plans/${trainerPlan.id}/decide`, approvalBody(approveNote));
+                        setApproveNote("");
+                        let openedAr = "وفتحت للتسجيل.";
+                        try { await apiPost(`/api/admin/cohorts/${cohortId}/open`); }
+                        catch (e) { openedAr = `ولم تفتح: ${e instanceof ApiError ? e.message : "تعذر الفتح"}`; }
+                        await Promise.all([loadPlan(), loadPendingSessions()]);
+                        decided("approved");
+                        return `${planApprovedMsg(r)} ${openedAr}`;
+                      },
+                      (m) => m as string,
+                    )}>
+                    اعتمد وافتح للتسجيل
+                  </Button>
+                )}
                 {/* والردُّ لما ينتظر قرارك وحدَه — المردودةُ عنده فعلا */}
                 {trainerPlan.status === "submitted" && (
                 <Button tone="danger" size="sm" disabled={busy || editsPending === 0}

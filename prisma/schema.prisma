@@ -2648,7 +2648,7 @@ model Cohort {
   daysOfWeek          String[]                  @default([])
   startTime           String? // مثل 18:00
   timezone            String?
-  capacity            Int?
+  capacity            Int? @default(20)
   price               Decimal?                  @db.Decimal(10, 2)
   currency            String                    @default("USD")
   language            String                    @default("العربية")

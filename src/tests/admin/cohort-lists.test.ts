@@ -10,7 +10,7 @@
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { awaitsOpening, COHORT_LISTS, inCohortList } from '@/pages/admin/cohort-lists'
+import { awaitsOpening, cohortNextStep, COHORT_LISTS, inCohortList } from '@/pages/admin/cohort-lists'
 
 const code = (p: string) => readFileSync(join(process.cwd(), p), 'utf8')
   .replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '').replace(/^\s*\/\/.*$/gm, '')
@@ -40,7 +40,9 @@ describe('② لسان «معتمدة — تنتظر فتحك»', () => {
 
   it('⚠️ والقائمة تصفى باللسان قبل الفلاتر — والشارة واللسان شرط واحد', () => {
     expect(page).toMatch(/const filtered = rows\.filter\(\(c\) => \{\s*if \(!inCohortList\(list, c\)\) return false;/)
-    expect(page).toMatch(/\{awaitsOpening\(c\) && \(\s*<span[^>]*>\s*معتمدة — تنتظر فتحك/)
+    /* والشارةُ صارت شارةَ «ما تحتاجه» الواحدة (٢٠ أكتوبر ٢٠٢٦) — وتسمّي المعتمَدةَ باسم لسانها */
+    expect(page).toMatch(/const next = cohortNextStep\(c\);/)
+    expect(cohortNextStep({ ...draft, trainers: [{}] })?.label).toBe(COHORT_LISTS.find((l) => l.id === 'approved')!.label)
     expect(page).not.toMatch(/c\.status === "draft" && c\.trainerPlanApproved/)
   })
 
@@ -55,5 +57,28 @@ describe('② لسان «معتمدة — تنتظر فتحك»', () => {
 
   it('⚠️ ونصوصه بلا تشكيل إعرابي — اللغة البيضاء', () => {
     expect(COHORT_LISTS.map((l) => l.label).join(' ')).not.toMatch(/[ً-ِْ]/)
+  })
+})
+
+/* ═══ ③ شارةٌ واحدةٌ تقول ما تحتاجه الشعبة (٢٠ أكتوبر ٢٠٢٦) ═══
+   «لا أميّز بين دوراتٍ لها مدرّبٌ ودوراتٍ لا مدرّبَ لها ودوراتٍ مدرّبوها موقوفون» (صاحب المنصّة). */
+describe('③ ما تحتاجه الشعبة', () => {
+  const base = { status: 'draft', trainerPlanApproved: false, trainerPlanStatus: null as string | null, trainers: [{ suspended: false }] }
+  it('بلا مدرب، ثم مدرب موقوف، ثم خطة — بترتيب ما يوقفها', () => {
+    expect(cohortNextStep({ ...base, trainers: [] })?.label).toBe('بلا مدرب')
+    expect(cohortNextStep({ ...base, trainers: [{ suspended: true }] })?.label).toBe('مدربها موقوف')
+    expect(cohortNextStep({ ...base, trainerPlanStatus: 'submitted' })?.label).toBe('خطة تنتظر مراجعتك')
+    expect(cohortNextStep(base)?.label).toBe('تنتظر خطة المدرب')
+  })
+  it('والمفتوحة بلا خطة معتمدة تقال مخفية — والمنتهية لا تحتاج شيئا', () => {
+    expect(cohortNextStep({ ...base, status: 'open', trainers: [] })?.label).toBe('بلا مدرب — مخفية عن الموقع')
+    expect(cohortNextStep({ ...base, status: 'completed', trainers: [] })).toBeNull()
+    expect(cohortNextStep({ ...base, status: 'open', trainerPlanApproved: true })).toBeNull()
+  })
+})
+
+describe('④ أدوات التقييم مطوية', () => {
+  it('الروبرك وقواعد الإكمال تحت عنوان يفتح حين يطلب — لا مفتوحة تحت القائمة', () => {
+    expect(page).toMatch(/<details className="mt-8">\s*<summary[^>]*>أدوات التقييم والشهادة[^<]*<\/summary>\s*<LearningSettings/)
   })
 })

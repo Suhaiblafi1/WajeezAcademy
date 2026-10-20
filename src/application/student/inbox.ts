@@ -6,7 +6,7 @@
    /api/learner/support/tickets و/api/learner/enrollments/:id.
    لا نقطة جديدة ولا تغيير في المخطط. */
 
-import { notificationHref } from '@/application/notifications/destinations'
+import { notificationCtaAr, notificationHref } from '@/application/notifications/destinations'
 
 export type InboxKind = 'notification' | 'trainer_feedback' | 'review_note' | 'support_reply'
 
@@ -17,8 +17,10 @@ export interface InboxItem {
   bodyAr: string
   /** ISO — الترتيب عليه تنازليا */
   at: string
-  /** وجهة داخلية تفتح السياق */
-  href: string
+  /** وجهةٌ داخليّةٌ تفتح السياق — أو `null`: الخبرُ كلُّه في نصّه، ولا صفحةَ تزيد عليه */
+  href: string | null
+  /** ما يجده إن فتحه — فعلٌ يقول وجهتَه («افتح شهادتك») */
+  ctaAr: string | null
   /** غير مقروء — للإشعارات فقط، وغيرها لا حالة قراءة له */
   unread: boolean
 }
@@ -31,6 +33,15 @@ export const KIND_LABEL_AR: Record<InboxKind, string> = {
 }
 
 const str = (v: unknown): string => (typeof v === 'string' ? v : '')
+
+/** وجهةُ الإشعار ونصُّ زرّه — من جدول الوجهات، ثمّ من بياناته إن كانت عن شعبةٍ أو لقاء */
+function notificationTarget(r: RawNotification): { href: string | null; ctaAr: string | null } {
+  const href = notificationHref(r?.templateKey, 'learner', r?.data)
+  if (href) return { href, ctaAr: notificationCtaAr(r?.templateKey, 'learner', r?.data) }
+  const d = (r?.data ?? {}) as Record<string, unknown>
+  if (str(d.cohortId) || str(d.sessionId)) return { href: '/student/learning', ctaAr: 'افتح رحلتك' }
+  return { href: null, ctaAr: null }
+}
 const isoOf = (v: unknown): string | null => {
   const s = str(v)
   if (!s) return null
@@ -82,9 +93,11 @@ export function buildInbox(
       titleAr: str(r?.title) || 'إشعار',
       bodyAr: str(r?.body),
       at,
-      /* والإشعارُ يفتح خبرَه (١٩ أكتوبر ٢٠٢٦): كان كلُّ إشعارٍ يقود إلى «إشعاراتي» وبنودُها لا تُفتح، فيدور
-         المتعلّمُ في حلقة. ووجهتُه هي وجهةُ زرّ بريده (`destinations.ts`) — وما لا وجهةَ له يبقى حيث كان. */
-      href: notificationHref(r?.templateKey, 'learner', r?.data) ?? '/student/notifications',
+      /* والإشعارُ يفتح خبرَه (١٩ أكتوبر ٢٠٢٦): ووجهتُه هي وجهةُ زرّ بريده (`destinations.ts`).
+         وما لا وجهةَ له كان يقود إلى «إشعاراتي» — صفحةٌ تعرض البنودَ نفسَها، فيدور المتعلّمُ في حلقة.
+         وقد صار الصندوقُ بابا واحدا (٢٠ أكتوبر ٢٠٢٦): رسالةٌ عن شعبته أو لقائها بلا مفتاحٍ (رسالةُ المدرّب،
+         ونقلُ جلسة) تفتح «رحلتي» حيث شعبتُه، وما سواها خبرُه كلُّه في نصّه فلا يقود إلى شيء. */
+      ...notificationTarget(r),
       unread: r?.status !== 'read',
     })
   }
@@ -105,6 +118,7 @@ export function buildInbox(
         bodyAr: str(m?.body),
         at,
         href: '/student/support',
+        ctaAr: 'افتح التذكرة',
         unread: false,
       })
     }
@@ -124,6 +138,7 @@ export function buildInbox(
           bodyAr: note,
           at: noteAt,
           href: '/student/learning',
+          ctaAr: 'افتح تسليمك',
           unread: false,
         })
       }
@@ -138,6 +153,7 @@ export function buildInbox(
           bodyAr: str(f?.body),
           at,
           href: '/student/learning',
+          ctaAr: 'افتح تسليمك',
           unread: false,
         })
       }
