@@ -71,9 +71,9 @@ interface MyContract {
 
 /* ولا نوعُ العقد يُخفى: ملحقٌ على نافذٍ ليس عقدا ثانيا، وبديلٌ يحلّ محلَّه */
 const KIND_AR: Record<string, string> = {
-  original: 'العقدُ الأصليّ',
-  annex: 'ملحقٌ على عقدٍ نافذ',
-  replacement: 'عقدٌ بديلٌ يحلّ محلَّ ما قبله',
+  original: 'العقد الأصليّ',
+  annex: 'ملحق على عقد نافذ',
+  replacement: 'عقد بديل يحلّ محلّ ما قبله',
 }
 
 /* ═══ حقوقُ مادّتك — هنا لا في خطوة الكرّاسة (١١ أكتوبر ٢٠٢٦) ═══
@@ -108,7 +108,7 @@ export default function MyContract() {
       .then(setData)
       .catch((e) => {
         if (e instanceof ApiError && e.code === 'no_contract') { setUnsigned(true); return }
-        setErr(e instanceof ApiError ? e.message : 'تعذّر جلبُ عقدك')
+        setErr(e instanceof ApiError ? e.message : 'تعذّر جلب عقدك')
       })
   }, [])
 
@@ -118,15 +118,15 @@ export default function MyContract() {
         <Panel>
           <h2 className="flex items-center gap-2 text-lg font-black text-foreground">
             <FileSignature className="h-5 w-5 shrink-0 text-teal-light-ink" aria-hidden="true" />
-            لا عقدَ موقَّعا في ملفك بعد
+            لا عقد موقّعا في ملفك بعد
           </h2>
           <p className="mt-2 text-read leading-7 text-muted-foreground">
-            يصلك العقدُ رابطا في بريدك لتوقّعه هناك، ثمّ تجده هنا لتطبعه أو تحفظه PDF.
+            يصلك العقد رابطا في بريدك لتوقّعه هناك، ثمّ تجده هنا لتطبعه أو تحفظه PDF.
           </p>
           <Inset as={Link} interactive to="/trainer/earnings"
             className="mt-5 flex items-center gap-3 px-4 py-3 text-read text-muted-foreground">
             <Wallet className="h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" />
-            <span>وكشفُ مستحقّاتك في <b>«مستحقاتي»</b>.</span>
+            <span>وكشف مستحقّاتك في <b>«مستحقاتي»</b>.</span>
           </Inset>
           <MaterialRights />
         </Panel>
@@ -140,7 +140,7 @@ export default function MyContract() {
         <Inset as={Link} interactive to="/trainer/earnings"
           className="mt-4 flex items-center gap-3 px-4 py-3 text-read text-muted-foreground">
           <Wallet className="h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" />
-          <span>العودةُ إلى «مستحقاتي»</span>
+          <span>العودة إلى «مستحقاتي»</span>
         </Inset>
       </>
     )
@@ -177,24 +177,24 @@ export default function MyContract() {
                 فالفسخُ يُسأل أوّلا: هو آخرُ ما وقع، وهو ما يعنيه اليوم. */}
             <p className="mt-2 text-read leading-7 text-muted-foreground">
               {data.terminatedAt
-                ? `وقّعتَ هذه الوثيقةَ في ${fmtDateLong(data.signedAt ?? '')}، وفُسِخت في ${fmtDateLong(data.terminatedAt)} — وتبقى نسختُك منها محفوظةً لك.`
+                ? `وقّعت هذه الوثيقة في ${fmtDateLong(data.signedAt ?? '')}، وفسخت في ${fmtDateLong(data.terminatedAt)} — وتبقى نسختك منها محفوظة لك.`
                 : stage === 'countersigned'
-                  ? `وقّعتَ هذه الوثيقةَ في ${fmtDateLong(data.signedAt ?? '')}، ووقّعتها الأكاديميّةُ من جهتها في ${fmtDateLong(data.countersignedAt ?? '')} — فهي نافذةٌ بين الطرفين.`
+                  ? `وقّعت هذه الوثيقة في ${fmtDateLong(data.signedAt ?? '')}، ووقّعتها الأكاديميّة من جهتها في ${fmtDateLong(data.countersignedAt ?? '')} — فهي نافذة بين الطرفين.`
                   /* ═══ واعتمادُ التوقيع ليس توقيعَنا (١ أكتوبر ٢٠٢٦) ═══
                      العرضُ المشروطُ نوقّعه حين نعتمد دوراتِه — فلا يقرأ هنا
                      «نافذة» قبلها، ويعرف متى تصير. */
                   /* وغيرُ المشروط المعتمَدُ كالعقود الجديدة (٢ أكتوبر ٢٠٢٦) نصُّه غيرُ مشروطٍ من
                      أوّله — فيصير «نافذا» بتوقيعنا، لا «غيرَ مشروط» */
                   : stage === 'approved'
-                    ? `وقّعتَ هذه الوثيقةَ في ${fmtDateLong(data.signedAt ?? '')}، واعتمدنا توقيعَك في ${fmtDateLong(data.signatureApprovedAt ?? '')}. ونوقّعها من جهتنا حين نعتمد دوراتك، ${data.gatesActivation ? 'فتصير عقدا نهائيّا غيرَ مشروط.' : 'فتصير نافذةً بين الطرفين.'}`
-                    : `وقّعتَ هذه الوثيقةَ في ${fmtDateLong(data.signedAt ?? '')}، وهي عند الأكاديميّةِ لاعتماد توقيعك.`}
+                    ? `وقّعت هذه الوثيقة في ${fmtDateLong(data.signedAt ?? '')}، واعتمدنا توقيعك في ${fmtDateLong(data.signatureApprovedAt ?? '')}. ونوقّعها من جهتنا حين نعتمد دوراتك، ${data.gatesActivation ? 'فتصير عقدا نهائيّا غير مشروط.' : 'فتصير نافذة بين الطرفين.'}`
+                    : `وقّعت هذه الوثيقة في ${fmtDateLong(data.signedAt ?? '')}، وهي عند الأكاديميّة لاعتماد توقيعك.`}
             </p>
             {/* وأرضيّةُ المتن أربعةَ عشر لا اثنا عشر (`staff-surface.test.ts`):
                 هذا سطرُ بيانٍ لا شارةَ زينة — «ملحقٌ على عقدٍ نافذ» يغيّر
                 معنى ما يقرؤه، فلا يُصغَّر إلى حجم لصيقة. */}
             <p className="mt-1 text-read text-muted-foreground/75">
               {KIND_AR[data.kind] ?? data.kind}
-              {data.revision > 1 ? ` · النسخةُ ${data.revision}` : ''}
+              {data.revision > 1 ? ` · النسخة ${data.revision}` : ''}
             </p>
             {/* ═══ ورقمُه — به يُسأل عنه ويُحال إليه (١ أكتوبر ٢٠٢٦) ═══
 
@@ -216,7 +216,7 @@ export default function MyContract() {
         <Inset as={Link} interactive to="/trainer/earnings"
           className="mt-5 flex items-center gap-3 px-4 py-3 text-read text-muted-foreground">
           <Wallet className="h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" />
-          <span>وكشفُ ما تستحقّه على أساس هذا العقد في <b>«مستحقاتي»</b>.</span>
+          <span>وكشف ما تستحقّه على أساس هذا العقد في <b>«مستحقاتي»</b>.</span>
         </Inset>
         <MaterialRights />
       </Panel>
@@ -227,7 +227,7 @@ export default function MyContract() {
           ? <ContractDocument doc={parseContractDoc(data.bodyAr!)} />
           : (
             <Card as="p" tone="danger" className="text-sm font-bold text-red-300" role="alert">
-              لا متنَ محفوظا لهذا العقد — راسلِ الأكاديميّةَ لتُرسَل إليك نسختُك.
+              لا متن محفوظا لهذا العقد — راسل الأكاديميّة لترسل إليك نسختك.
             </Card>
           )}
         <ContractExecution seal={data} academyLegalNameAr={data.academyLegalNameAr} />

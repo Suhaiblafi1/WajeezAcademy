@@ -15,7 +15,7 @@ import {
 } from '../../src/application/trainer/counted-seat'
 import { codeFaceAr } from '../../src/application/trainer/trainer-code'
 import { planLedger, type LedgerEntry } from '../../src/application/trainer/trainer-code'
-import { cohortLeadTrainer } from './cohort-lead'
+import { cohortLeadTrainer, leadCohortsOf } from './cohort-lead'
 import { PAYOUT_OBJECTION_DAYS } from '../../src/application/trainer/notice-periods'
 import { cohortIdsOf, payReadiness, payReadinessAr } from '../../src/application/trainer/pay-readiness'
 import { TrainerBankService } from './trainer-bank.service'
@@ -63,10 +63,15 @@ export class EarningsService {
 
          «ليعرف ماذا سيحصل على كلّ طالبٍ عامّ وكلّ طالبٍ من الرابط» — فلا يكفي
          مجموع؛ يرى الأعدادَ والأجرَ لكلّ شعبةٍ قبل أن يُولَّد كشفُها. */
-      this.prisma.cohortTrainer.findMany({
-        where: { profileId: profile.id },
-        include: { cohort: { select: { id: true, title: true, courseId: true, status: true } } },
-      }),
+      /* ═══ والشعبُ التي تُحتسب له وحدَها (٢٠ أكتوبر ٢٠٢٦) ═══
+         كان الجدولُ من كلّ إسنادٍ بلا دورٍ ولا حال: شعبةٌ هو فيها مساعدٌ تُعرض بمتوقّعٍ بأجره — وكشفُها لأصيلها
+         (`generateForCohort`) — والملغاةُ بمقاعدَ لم تُردّ بعد ولا كشفَ لها أبدا. فهي شعبُه التي تُحتسب له
+         بقاعدة الكشف نفسِها (`leadCohortsOf`)، القائمةُ والمكتملة. */
+      leadCohortsOf(this.prisma, profile.id, ['open', 'full', 'active', 'completed']).then((mine) => this.prisma.cohort.findMany({
+        where: { id: { in: mine.map((c) => c.id) } },
+        select: { id: true, title: true, courseId: true, status: true },
+        orderBy: { createdAt: 'asc' },
+      })),
       /* ═══ وخصومُه المنتظِرةُ للحسم — تُقال قبل أن تقع ═══
 
          البند 4-10 يحسمها في «أوّل كشفٍ يُحرَّر بعد ذلك». والمدرّبُ يقرأ
@@ -85,9 +90,9 @@ export class EarningsService {
         orderBy: { paidAt: 'asc' },
       }),
     ])
-    const cohorts = await Promise.all(cohortRows.map(async (ct) => {
-      const rule = await this.activeRule(profile.id, { cohortId: ct.cohort.id, courseId: ct.cohort.courseId })
-      const { referred, general } = await this.seatsBySource(ct.cohort.id, profile.id)
+    const cohorts = await Promise.all(cohortRows.map(async (c) => {
+      const rule = await this.activeRule(profile.id, { cohortId: c.id, courseId: c.courseId })
+      const { referred, general } = await this.seatsBySource(c.id, profile.id)
       const rate = rule && rule.type === 'per_seat' ? Number(rule.rate) : null
       const referralRate = rule && rule.type === 'per_seat' ? (rule.referralRate === null ? rate : Number(rule.referralRate)) : null
       /* والتوقّعُ من المعادلة نفسِها التي يحتسب بها الكشف — كان هنا حسابٌ
@@ -98,10 +103,10 @@ export class EarningsService {
           general, referred, rate,
           referralRate: rule.referralRate === null ? null : Number(rule.referralRate),
           minSeats: rule.minSeats,
-          cohortStarted: cohortStartedForFloor(ct.cohort.status),
+          cohortStarted: cohortStartedForFloor(c.status),
         })
       return {
-        cohortId: ct.cohort.id, title: ct.cohort.title, status: ct.cohort.status,
+        cohortId: c.id, title: c.title, status: c.status,
         general, referred, rate, referralRate, currency: rule?.currency ?? LEDGER_CURRENCY,
         ruleType: rule?.type ?? null,
         billedSeats: breakdown?.billedSeats ?? null,

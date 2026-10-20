@@ -117,18 +117,25 @@ function RealEarningsView() {
               {agreement.minSeats > 0 && <>يحسب لك {agreement.minSeats} مقاعد على الأقلّ ولو سجّل أقلّ. </>}
               سارية منذ {fmtDateAr(agreement.effectiveFrom)}، وعليها تحسب كشوفك.
             </p>
-            {scoped.length > 0 && (
-              <ul className="mt-3 space-y-1 text-read text-muted-foreground">
-                {scoped.map((r) => (
-                  <li key={r.id}>· اتفاق خاصّ {r.cohortId ? "بشعبة بعينها" : "بدورة بعينها"}: {RULE_TYPE_AR[r.type] ?? r.type} — <span dir="ltr" className="font-mono">{Number(r.rate)}</span> {r.currency}</li>
-                ))}
-              </ul>
-            )}
           </>
+        ) : scoped.length > 0 ? (
+          /* ═══ والخاصّةُ وحدَها اتفاقٌ أيضا (٢٠ أكتوبر ٢٠٢٦) ═══
+             كانت تُعرض داخل فرع العامّ وحدَه، فمن ليس له إلّا اتفاقٌ بدورةٍ أو شعبة قرأ «لم تحدّد الإدارة أتعابك»
+             — وجدولُ شعبه أدناه يحسب بها، وكشوفُه تُولَّد بها */
+          <p className="mt-2 text-read leading-6 text-muted-foreground">
+            ليس لك اتفاق عامّ — أتعابك باتفاقات خاصّة بدورات أو شعب بعينها، وعليها تحسب كشوفها.
+          </p>
         ) : (
           <p className="mt-2 text-read leading-6 text-muted-foreground">
             لم تحدّد الإدارة أتعابك بعد، ولا يحسب كشف قبلها.
           </p>
+        )}
+        {scoped.length > 0 && (
+          <ul className="mt-3 space-y-1 text-read text-muted-foreground">
+            {scoped.map((r) => (
+              <li key={r.id}>· اتفاق خاصّ {r.cohortId ? "بشعبة بعينها" : "بدورة بعينها"}: {RULE_TYPE_AR[r.type] ?? r.type} — <span dir="ltr" className="font-mono">{Number(r.rate)}</span> {r.currency}</li>
+            ))}
+          </ul>
         )}
       </Panel>
 

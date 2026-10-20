@@ -52,7 +52,7 @@ export default function ContractExecution({
   return (
     <section className="contract-exec contract-prose" dir="rtl" aria-labelledby="ce-h">
       <header className="ce-head">
-        <p className="ce-kicker">سجلُّ تنفيذٍ — لا نصُّ عقد</p>
+        <p className="ce-kicker">سجلّ تنفيذ — لا نصّ عقد</p>
         <h2 className="ce-title" id="ce-h">التوقيعان</h2>
         <p className="ce-lede">
           {/* ═══ واعتمادُ التوقيع ليس توقيعَنا (١ أكتوبر ٢٠٢٦) ═══
@@ -60,17 +60,17 @@ export default function ContractExecution({
               «نافذةً بين الطرفين» يومَ اعتُمد توقيعُه. وقرارُه أن نوقّع العرضَ
               المشروطَ حين نعتمد دوراتِه، فيُقال هذا هنا بحرفه. */}
           {stage === 'countersigned'
-            ? 'وقّع الطرفان هذه الوثيقةَ إلكترونيّا، فصارت نافذةً بينهما. وهذا سجلُّ التوقيعَين كما حُفظ.'
+            ? 'وقّع الطرفان هذه الوثيقة إلكترونيّا، فصارت نافذة بينهما. وهذا سجلّ التوقيعين كما حفظ.'
             : stage === 'approved'
-              ? 'وقّعتَ هذه الوثيقةَ إلكترونيّا واعتمدنا توقيعَك، وهذا سجلُّ توقيعك كما حُفظ. ولا تنفُذ حتّى توقّعها الأكاديميّةُ من جهتها — وتوقّعها حين تعتمد دوراتك.'
-              : 'وقّعتَ هذه الوثيقةَ إلكترونيّا، وهذا سجلُّ توقيعك كما حُفظ. ولا تنفُذ حتّى توقّعها الأكاديميّةُ من جهتها.'}
+              ? 'وقّعت هذه الوثيقة إلكترونيّا واعتمدنا توقيعك، وهذا سجلّ توقيعك كما حفظ. ولا تنفذ حتّى توقّعها الأكاديميّة من جهتها — وتوقّعها حين تعتمد دوراتك.'
+              : 'وقّعت هذه الوثيقة إلكترونيّا، وهذا سجلّ توقيعك كما حفظ. ولا تنفذ حتّى توقّعها الأكاديميّة من جهتها.'}
         </p>
       </header>
 
       <div className="ce-parties">
         {/* والأكاديميّةُ أوّلا كما في الديباجة — الطرفُ الأوّلُ هو الأوّل */}
         <div className={sealedOnAr ? 'ce-party' : 'ce-party ce-party-wait'}>
-          <p className="ce-role">الطرفُ الأوّل — الأكاديميّة</p>
+          <p className="ce-role">الطرف الأوّل — الأكاديميّة</p>
           {sealedOnAr ? (
             <>
               <p className="ce-name">{seal.academySignatoryName ?? academyLegalNameAr}</p>
@@ -82,7 +82,7 @@ export default function ContractExecution({
                   : `وقّع عن ${academyLegalNameAr}`}
               </p>
               <dl className="ce-rows">
-                <Row labelAr="تاريخُ توقيعها" valueAr={sealedOnAr} />
+                <Row labelAr="تاريخ توقيعها" valueAr={sealedOnAr} />
               </dl>
             </>
           ) : approvedOnAr ? (
@@ -90,30 +90,30 @@ export default function ContractExecution({
               <p className="ce-name ce-pending">توقّعها حين تعتمد دوراتك</p>
               <p className="ce-rule" aria-hidden="true" />
               <p className="ce-how">
-                اعتمدت الأكاديميّةُ توقيعَك وفتحت لك بوّابتَك، ولا توقّع هذه الوثيقةَ من جهتها إلّا حين تعتمد دوراتك — فتصير عقدا نهائيّا غيرَ مشروط.
+                اعتمدت الأكاديميّة توقيعك وفتحت لك بوّابتك، ولا توقّع هذه الوثيقة من جهتها إلّا حين تعتمد دوراتك — فتصير عقدا نهائيّا غير مشروط.
               </p>
               <dl className="ce-rows">
-                <Row labelAr="تاريخُ اعتماد توقيعك" valueAr={approvedOnAr} />
+                <Row labelAr="تاريخ اعتماد توقيعك" valueAr={approvedOnAr} />
               </dl>
             </>
           ) : (
             <>
-              <p className="ce-name ce-pending">ينتظر اعتمادَنا</p>
+              <p className="ce-name ce-pending">ينتظر اعتمادنا</p>
               <p className="ce-rule" aria-hidden="true" />
               <p className="ce-how">
-                تُطابق الأكاديميّةُ اسمَك القانونيَّ بوثيقة هويّتك ثمّ تعتمد توقيعَك، وتصلك رسالةٌ عندها.
+                تطابق الأكاديميّة اسمك القانونيّ بوثيقة هويّتك ثمّ تعتمد توقيعك، وتصلك رسالة عندها.
               </p>
             </>
           )}
         </div>
 
         <div className="ce-party">
-          <p className="ce-role">الطرفُ الثاني — المدرّب</p>
+          <p className="ce-role">الطرف الثاني — المدرّب</p>
           <p className="ce-name">{seal.signerLegalName ?? '—'}</p>
           <p className="ce-rule" aria-hidden="true" />
           <p className="ce-how">وقّع إلكترونيّا بكتابة اسمه القانونيّ بنفسه في صفحة التوقيع</p>
           <dl className="ce-rows">
-            <Row labelAr="تاريخُ التوقيع" valueAr={onAr(seal.signedAt)} />
+            <Row labelAr="تاريخ التوقيع" valueAr={onAr(seal.signedAt)} />
             <Row labelAr="العنوان" valueAr={seal.signerAddressAr ?? null} />
             <Row labelAr="الهاتف" valueAr={seal.signerPhone ?? null} />
           </dl>
@@ -127,7 +127,7 @@ export default function ContractExecution({
           بالنبش في تاريخ Git. وما حُفظ لأجل السؤال يُعرَض لصاحبه. */}
       {acks.length > 0 && (
         <div className="ce-acks">
-          <h3>وأقرَّ المدرّبُ بهذه الجمل واحدةً واحدةً قبل التوقيع</h3>
+          <h3>وأقرّ المدرّب بهذه الجمل واحدة واحدة قبل التوقيع</h3>
           <ol>
             {acks.map((a) => <li key={a.key}>{a.textAr}</li>)}
           </ol>
@@ -136,7 +136,7 @@ export default function ContractExecution({
 
       {seal.consentTextAr && (
         <p className="ce-consent">
-          <b>ونصُّ الإقرار الذي ضغطه:</b> {seal.consentTextAr}
+          <b>ونصّ الإقرار الذي ضغطه:</b> {seal.consentTextAr}
         </p>
       )}
 
@@ -145,15 +145,15 @@ export default function ContractExecution({
           قوّةُ التوقيع الإلكترونيِّ كلُّها في أنّ النصَّ لم يتبدّل بعده. فمن
           وقّع يملك أن يتحقّق بنفسِه — لا أن يُصدّقنا في أنّنا لم نبدّل. */}
       <div className={intact ? 'ce-hash' : 'ce-hash ce-hash-off'}>
-        <h3>بصمةُ النصّ</h3>
+        <h3>بصمة النصّ</h3>
         <p>
           {intact
-            ? 'النصُّ المعروضُ أعلاه هو النصُّ الذي وُقّع عليه حرفا بحرف — بصمتاهما متطابقتان.'
-            : 'لم تُحفَظ بصمةُ التوقيع لهذا العقد (وُقّع قبل أن يُخزَّن هذا الحقل)، فلا تُقابَل ببصمة النصّ آليّا. راجعِ الأكاديميّةَ إن أردتَ تحقّقا.'}
+            ? 'النصّ المعروض أعلاه هو النصّ الذي وقّع عليه حرفا بحرف — بصمتاهما متطابقتان.'
+            : 'لم تحفظ بصمة التوقيع لهذا العقد (وقّع قبل أن يخزّن هذا الحقل)، فلا تقابل ببصمة النصّ آليّا. راجع الأكاديميّة إن أردت تحقّقا.'}
         </p>
         {seal.signedBodyHash && (
           <p className="ce-digest">
-            <span>sha256 لما وُقّع عليه</span>
+            <span>sha256 لما وقّع عليه</span>
             <code dir="ltr">{seal.signedBodyHash}</code>
           </p>
         )}

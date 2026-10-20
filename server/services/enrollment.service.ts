@@ -3,6 +3,7 @@
 
 import type { PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
+import { cohortLeadTrainer } from './cohort-lead'
 import { projectPlanForLearner, PLAN_VISIBLE_STATUSES } from '../../src/application/trainer/plan-overlay'
 import { recordAudit } from './audit'
 import { NotificationService, safeNotify } from './notification.service'
@@ -56,8 +57,8 @@ export class EnrollmentService {
     if (!link) return null
     if (link.cohortId === cohortId) return { profileId: link.profileId, code: link.code }
     if (link.cohortId !== null) return null
-    const teaches = await this.prisma.cohortTrainer.findFirst({ where: { cohortId, profileId: link.profileId }, select: { id: true } })
-    return teaches ? { profileId: link.profileId, code: link.code } : null
+    /* والرابطُ الواسعُ يُختم لمن تُحتسب له الشعبةُ وحدَه (٢٠ أكتوبر ٢٠٢٦) — المساعدُ لا يُدفع له عنها شيء (`referral.service`) */
+    return (await cohortLeadTrainer(this.prisma, cohortId)) === link.profileId ? { profileId: link.profileId, code: link.code } : null
   }
 
   /** تسجيل متعلم — يملأ السعة ثم يحوّل الفائض لقائمة انتظار؛ التجاوز يتطلب override موثقا */

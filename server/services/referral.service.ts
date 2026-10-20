@@ -31,6 +31,8 @@ import { slugifyName, uniqueSlug } from '../../src/application/trainer/public-sl
 import { recordAudit } from './audit'
 import { randomUnambiguousCode } from '../../src/application/text/unambiguous-code'
 import { publicSiteUrl } from './notification.service'
+import { publicTrainerWhere } from './trainer-visibility'
+import { cohortLeadTrainer, cohortLeadTrainers, leadCohortsOf } from './cohort-lead'
 
 /** رمزٌ يُقرأ ويُنسخ: ثمانيةُ أحرفٍ من أبجديّةٍ بلا التباس (لا 0/O ولا 1/I).
 
@@ -50,8 +52,12 @@ export class ReferralService {
   async linkFor(userId: string, cohortId: string): Promise<{ code: string; url: string }> {
     const profile = await this.prisma.trainerProfile.findUnique({ where: { userId } })
     if (!profile || profile.suspendedAt) throw new AuthError('not_trainer', 'لا ملف مدرب نشطا لهذا الحساب', 403)
-    const link = await this.prisma.cohortTrainer.findFirst({ where: { cohortId, profileId: profile.id } })
-    if (!link) throw new AuthError('not_your_cohort', 'هذه الشعبة ليست مسندة إليك', 403)
+    /* ═══ والرابطُ لمن تُحتسب له الشعبة وحدَه (٢٠ أكتوبر ٢٠٢٦) ═══
+       كان لكلّ مدرّبٍ فيها، والمساعدُ يُوعَد «ومن سجّل منه يحسب لك بأجر الإحالة» — وكشفُ الشعبة لأصيلها يعدّ
+       مقعدَه عامّا (`seatsBySource`)، فلا يُدفع له شيء. فهو لمن يُحتسب له، كما في كود المدرّب (`cart.service`) */
+    if ((await cohortLeadTrainer(this.prisma, cohortId)) !== profile.id) {
+      throw new AuthError('not_your_cohort', 'رابط الإحالة لمدرّب الشعبة الأصيل', 403)
+    }
     const cohort = await this.prisma.cohort.findUniqueOrThrow({ where: { id: cohortId }, select: { courseId: true } })
 
     let row = await this.prisma.trainerReferralLink.findUnique({ where: { cohortId_profileId: { cohortId, profileId: profile.id } } })
@@ -79,8 +85,10 @@ export class ReferralService {
      يُدعى إليها أحد — ورابطٌ إلى شعبةٍ لا تقبل تسجيلا يُحرج ناشرَه. */
   async cohortLinksFor(userId: string) {
     const profile = await this.activeProfile(userId)
+    /* وشعبُه التي تُحتسب له وحدَها (٢٠ أكتوبر ٢٠٢٦) — والعلّةُ عند `linkFor` */
+    const paid = await leadCohortsOf(this.prisma, profile.id, ['open', 'active', 'full'])
     const mine = await this.prisma.cohortTrainer.findMany({
-      where: { profileId: profile.id, cohort: { status: { in: ['open', 'active', 'full'] } } },
+      where: { profileId: profile.id, cohortId: { in: paid.map((c) => c.id) } },
       select: {
         cohort: {
           select: {
@@ -201,8 +209,13 @@ export class ReferralService {
          فالشكلان يصلان الطريقَ نفسَه — جُرّبا معا. */
       url: `${publicSiteUrl()}/t/${slug}`,
       /* البوّابةُ الواحدة (`trainer-visibility.ts`): صفحتُه لا تُعرض قبل
-         اعتماد نشر ملفّه — فالرابطُ يُعطى ويُقال متى يعمل، لا يُخفى. */
-      publicReady: profile.publicVisibility && profile.isVerified && profile.publishApprovedAt !== null,
+         اعتماد نشر ملفّه — فالرابطُ يُعطى ويُقال متى يعمل، لا يُخفى.
+         ═══ وبشرط الصفحة نفسِه (٢٠ أكتوبر ٢٠٢٦) ═══
+         كان يُحسب من ثلاثة أعمدة، والصفحةُ (`trainerPublicPage`) تشترط معها دورةً منشورةً هذا الفصل وطلبا نشطا
+         وألّا يكون موقوفا — فيُقال «يعمل» ورابطُه ٤٠٤، ومن سجّل عبره ضاع. فيُسأل بالشرط نفسِه */
+      publicReady: (await this.prisma.trainerProfile.count({
+        where: { id: profile.id, ...publicTrainerWhere(), application: { status: 'active' } },
+      })) > 0,
     }
   }
 
@@ -214,8 +227,10 @@ export class ReferralService {
    */
   async reachOf(userId: string): Promise<{ registered: number }> {
     const profile = await this.activeProfile(userId)
+    /* والملتحقُ وحدَه (٢٠ أكتوبر ٢٠٢٦): كان يعدّ قائمةَ الانتظار — وليست مقعدا (`counted-seat.ts`) — فيُعرض رقمٌ
+       أكبرُ ممّا يُدفع عليه، والتعليقُ أعلاه يَعِد بغيره */
     const registered = await this.prisma.enrollment.count({
-      where: { referralProfileId: profile.id, status: { not: 'dropped' } },
+      where: { referralProfileId: profile.id, status: { in: ['enrolled', 'completed'] } },
     })
     return { registered }
   }
@@ -239,11 +254,9 @@ export class ReferralService {
     /* الرابطُ الواسعُ يُقبل على ما يدرّبه صاحبُه من السلّة وحدَه — لا على
        كلّ ما فيها. والأوّلُ بترتيب السلّة حين درّب أكثرَ من واحدة. */
     if (link.cohortId === null) {
-      const mine = await this.prisma.cohortTrainer.findMany({
-        where: { profileId: link.profileId, cohortId: { in: cohortIds } },
-        select: { cohortId: true },
-      })
-      const owned = new Set(mine.map((m) => m.cohortId))
+      /* وما يُحتسب له منها وحدَه (٢٠ أكتوبر ٢٠٢٦) — لا ما هو مساعدٌ فيه */
+      const leads = await cohortLeadTrainers(this.prisma, cohortIds)
+      const owned = new Set(cohortIds.filter((id) => leads.get(id) === link.profileId))
       const hit = cohortIds.find((id) => owned.has(id)) ?? null
       if (!hit) {
         await recordAudit(this.prisma, { actorId: userId, action: 'checkout.referral_ignored', entityType: 'user', entityId: userId, meta: { code, reason: 'not_his_cohort' } })

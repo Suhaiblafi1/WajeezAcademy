@@ -279,6 +279,16 @@ describe('الاعتمادُ يُنفِذ العقدَ — ويفتح الحسا
     expect(after.signedBodyHash).toBe(before.signedBodyHash)
   })
 
+  /* ٢٠ أكتوبر ٢٠٢٦: والمردودُ ليس «عقدي» — كانت تقول «عند الأكاديمية لاعتماد توقيعك» وتوقيعُه رُدّ.
+     ورُئي ساقطا: أُسقط شرطُ `revoked` من `myContract` فسقط */
+  it('⚠️ والعقد المردود توقيعه لا يعرض في «عقدي» كأنّه ينتظر', async () => {
+    const { contract, userId, profile } = await mkSigned()
+    await prisma.trainerProfile.update({ where: { id: profile.id }, data: { userId } })
+    expect((await review.myContract(userId!)).id).toBe(contract.id)
+    await review.rejectSignature(contract.id, adminId, 'الاسمُ في الهويّة غيرُ الاسم المكتوب')
+    await expect(review.myContract(userId!)).rejects.toMatchObject({ code: 'no_contract' })
+  })
+
   it('ولا رفضَ بلا سبب — يصل صاحبَه نصّا', async () => {
     const { contract } = await mkSigned()
     await expect(review.rejectSignature(contract.id, adminId, ' ')).rejects.toThrow()

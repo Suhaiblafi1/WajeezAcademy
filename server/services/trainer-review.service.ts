@@ -2720,8 +2720,10 @@ export class TrainerReviewService {
       where: { userId }, select: { id: true },
     })
     if (!profile) throw new AuthError('no_profile', 'لا ملف مدرب مرتبطا بهذا الحساب', 404)
+    /* والملغى والمستبدَلُ ليسا عقدَه (٢٠ أكتوبر ٢٠٢٦): ردُّ التوقيع وإعادةُ الإصدار للتوقيع ثانيةً يكتبان `revoked`
+       ويُبقيان `signedAt` — فكانت «عقدي» تقول «عند الأكاديمية لاعتماد توقيعك» وتوقيعُه رُدّ أو ينتظره عقدٌ جديد */
     const c = await this.prisma.trainerContract.findFirst({
-      where: { profileId: profile.id, signedAt: { not: null } },
+      where: { profileId: profile.id, signedAt: { not: null }, status: { notIn: ['revoked', 'superseded'] } },
       orderBy: { signedAt: 'desc' },
       select: {
         id: true, number: true, title: true, status: true, kind: true, revision: true,

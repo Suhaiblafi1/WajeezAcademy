@@ -4,30 +4,15 @@
    وكان في صفحة الشعبة ثلاثةٌ: إشعارُ شعبة الإعداد («شعبةُ إعداد… دورتَك… تُنشَر»)، وخطآ بطاقات «قبل/بعد»
    («الرابطُ» و«تُرفع»). والماسحُ يقرأ النصوصَ بشجرة TypeScript لا بالحرف، فالتعليقاتُ ليست منه.
 
-   ورُئي ساقطا: أُعيد «شعبةُ إعداد» في `usePrepCohorts.ts` فسقط. */
+   ثمّ «عقدي» وسجلُّ تنفيذه وملحقُ اعتماده (٢٠ أكتوبر ٢٠٢٦): نصوصُ الشاشة كانت مشكولةً كلُّها — «العودةُ»
+   و«لا عقدَ موقَّعا» و«فهي نافذةٌ». ومتنُ العقد الموقَّع ليس منها: يصل من الخادم ولا يُمسّ.
+
+   ورُئي ساقطا: أُعيد «شعبةُ إعداد» في `usePrepCohorts.ts` فسقط، وأُعيدت «عقدي» مشكولةً فسقط. */
 
 import { describe, expect, it } from 'vitest'
-import ts from 'typescript'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-
-/** الحركاتُ والتنوينُ والسكون — بلا الشدّة (U+0651) */
-const MARKS = /[ً-ِْ]/
-
-function marked(file: string, src: string): string[] {
-  const sf = ts.createSourceFile(file, src, ts.ScriptTarget.Latest, true, file.endsWith('x') ? ts.ScriptKind.TSX : ts.ScriptKind.TS)
-  const out: string[] = []
-  const visit = (n: ts.Node) => {
-    let texts: string[] = []
-    if (ts.isStringLiteral(n) || ts.isNoSubstitutionTemplateLiteral(n)) texts = [n.text]
-    else if (ts.isTemplateExpression(n)) texts = [n.head.text, ...n.templateSpans.map((s) => s.literal.text)]
-    else if (ts.isJsxText(n)) texts = [n.text]
-    for (const t of texts) if (MARKS.test(t)) out.push(`${file}:${sf.getLineAndCharacterOfPosition(n.getStart()).line + 1} ${t.trim().slice(0, 60)}`)
-    ts.forEachChild(n, visit)
-  }
-  visit(sf)
-  return out
-}
+import { markedTexts as marked } from '../helpers/marked-text'
 
 const FILES = [
   'src/pages/trainer/CohortWorkspace.tsx',
@@ -39,6 +24,10 @@ const FILES = [
   'src/components/PlanEdits.tsx',
   'src/components/trainer/usePrepCohorts.ts',
   'src/application/trainer/plan-edits.ts',
+  /* و«عقدي» وما يعرضه من سجلّ التنفيذ وملحق الاعتماد (٢٠ أكتوبر ٢٠٢٦) — نصوصُ الشاشة لا متنُ العقد الموقَّع */
+  'src/pages/trainer/MyContract.tsx',
+  'src/components/ContractExecution.tsx',
+  'src/components/ContractApproval.tsx',
 ]
 
 describe('صفحة الشعبة بلا تشكيل', () => {
