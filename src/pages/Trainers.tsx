@@ -88,7 +88,7 @@ function TrainerOffer({ name, groups }: { name: string; groups: SeasonGroup[] })
           سطرٌ واحدٌ بعدد دوراته يُفتح بطلب. وأسماءُ الدورات ١٢ بوزنٍ خفيف (٣٠٠ — خطُّ الموقع يحمله). */}
       {seasons.map((g, i) => {
         const list = (
-          <ul className="mt-2.5 grid gap-2">
+          <ul className="mt-2.5 grid grid-cols-1 gap-2">
             {g.courses.map((c) => (
               <li key={c.id}>
                 <Inset as={Link} interactive to={`/build/${c.id}`} className="flex items-center justify-between gap-3 px-3.5 py-2.5">
@@ -453,7 +453,7 @@ export default function Trainers() {
               {countAr(filteredApproved.length, { one: 'مدرب', two: 'مدربان', few: 'مدربين', many: 'مدربا' })}
             </p>
           </div>
-          <div className="mt-6 grid items-start gap-5 lg:grid-cols-2">
+          <div className="mt-6 grid grid-cols-1 items-start gap-5 lg:grid-cols-2">
             {filteredApproved.map((t) => (
               <TrainerCard key={t.id} t={t} open={expanded.has(t.id)} onToggle={() => toggle(t.id)} />
             ))}
