@@ -1460,6 +1460,16 @@ export async function runEraseIdleGuests(prisma: PrismaClient, now = new Date())
   }
 }
 
+/** اسمُ مدرّب كلّ شعبةٍ معروضةٍ يُنشر — يلحق ما فُتح قبل قرار ٢٠ أكتوبر وما أُضيف بعد الفتح (`trainer-auto-publish.ts`) */
+export async function runPublishLiveTrainers(prisma: PrismaClient, now = new Date()): Promise<JobResult> {
+  const started = Date.now()
+  const { publishCohortTrainers } = await import('../services/trainer-auto-publish')
+  const { published, notActive } = await publishCohortTrainers(prisma, { actorId: null, now })
+  const parts = [published.length === 0 ? 'كل مدربي الشعب المعروضة ظاهرون' : `نشر اسم ${published.length} مدرب`]
+  if (notActive > 0) parts.push(`و${notActive} طلبه غير نشط فلم ينشر`)
+  return { job: 'publish_live_trainers', summaryAr: parts.join(' — '), done: published.length, failed: 0, ms: Date.now() - started }
+}
+
 export const JOBS = [
   { key: 'dispatch_notifications', everyMs: 60_000, run: dispatchQueuedNotifications, titleAr: 'إرسال ما في طابور الإشعارات' },
   { key: 'outbox_mail', everyMs: 60_000, run: dispatchOutboxMail, titleAr: 'إرسال ما في طابور البريد' },
@@ -1471,6 +1481,8 @@ export const JOBS = [
      فيه لا تشتري شيئا وتُثقل القاعدةَ باستعلامٍ لا يجد أحدا. */
   { key: 'verify_reminders', everyMs: HOUR, run: sendVerificationReminders, titleAr: 'تذكير توثيق البريد' },
   { key: 'cohort_status_sync', everyMs: 15 * 60_000, run: syncCohortStatuses, titleAr: 'حالات الشعب بالتواريخ' },
+  /* كلَّ ربع ساعة: الفتحُ ينشر بنفسه، وهذه تلحق ما فُتح قبل القرار وما أُضيف مدرّبُه بعد الفتح */
+  { key: 'publish_live_trainers', everyMs: 15 * 60_000, run: runPublishLiveTrainers, titleAr: 'نشر أسماء مدربي الشعب المعروضة' },
   /* كلَّ ساعة: الإسقاطُ والانتقالُ يُلغيان التسجيلَ ساعتَهما — وهذه لما أبى فيه
      Zoom ولمن ترك قبلها. واللقاءُ بعد أيّامٍ في الغالب، فساعةٌ تسبقه */
   { key: 'revoke_left_registrants', everyMs: HOUR, run: revokeLeftRegistrants, titleAr: 'إلغاء تسجيل من ترك شعبته عند Zoom' },

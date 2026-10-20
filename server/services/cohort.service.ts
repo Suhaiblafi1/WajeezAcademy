@@ -33,6 +33,7 @@ import { LEARNER_SESSION_WHERE } from './session-visibility'
 import { SEATED, SessionInviteService } from './session-invite.service'
 import { cohortTitleAr, nextCohortNumber } from '../../src/application/learning/cohort-title'
 import { MATERIALS_STATUSES } from '../../src/application/trainer/portal-access'
+import { publishCohortTrainers } from './trainer-auto-publish'
 
 /** ترتيبُ اليوم في الأسبوع — الأحدُ صفر، كما في `Date.getUTCDay` */
 const DAY_INDEX: Record<string, number> = Object.fromEntries(DAY_CODES.map((d, i) => [d, i]))
@@ -520,6 +521,8 @@ export class CohortService {
     })
     await this.transition(cohortId, 'open', actorId, 'فتح الشعبة بعد اكتمال الشروط')
     const opened = await this.prisma.cohort.update({ where: { id: cohortId }, data: { registrationOpen: true } })
+    /* وفتحُها ينشر اسمَ مدرّبها — قرارُ صاحب المنصّة (٢٠ أكتوبر ٢٠٢٦)، والعلّةُ في `trainer-auto-publish.ts` */
+    await publishCohortTrainers(this.prisma, { cohortIds: [cohortId], actorId })
     /* والفتحُ هو الطريقُ المعتاد إلى البيع — فمن انتظرها يُعلَم هنا (١٢ أكتوبر ٢٠٢٦) */
     await notifyIfPurchasable(this.prisma, cohortId)
     return opened
