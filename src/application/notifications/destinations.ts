@@ -77,7 +77,7 @@ const LEARNER: Table = {
   'certificate.issued': { path: '/student/certificates', ctaAr: 'افتح شهادتك' },
   /* والملغاةُ تبقى معروضةً هناك بحالتها — فالوجهةُ تحمل الخبرَ لا تخفيه */
   'certificate.revoked': { path: '/student/certificates', ctaAr: 'افتح شهاداتك' },
-  'staff.announce': { path: '/student/notifications', ctaAr: 'اقرأ الإعلان' },
+  'staff.announce': { path: '/student/inbox', ctaAr: 'اقرأ الإعلان' },
   /* ن-٩: الخبرُ يحمل ما يجري بعده، و«رحلتي» فيها جدولُه وشعبتُه الجديدة */
   'departure.resolved': { path: '/student/learning', ctaAr: 'افتح رحلتك' },
   /* ي-٤: ومن أُسقط تسجيلُه — الوجهةُ «رحلتي»، وغيابُ الشعبة منها هو الخبر.

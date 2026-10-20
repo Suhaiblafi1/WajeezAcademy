@@ -23,7 +23,8 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '../..')
 const read = (p: string) => readFileSync(join(root, p), 'utf8')
 
 const panel = read('src/components/NotificationPreferences.tsx')
-const screen = read('src/pages/student/Notifications.tsx')
+/* كان في ذيل «إشعاراتي»، وصار في «الملف الشخصي» حين حُذفت (٢٠ أكتوبر ٢٠٢٦) */
+const screen = read('src/pages/student/Account.tsx')
 
 describe('لوح تفضيلات الإشعارات', () => {
   it('يبنى من الخادم: ينادي المسار قراءة وكتابة', () => {
@@ -81,8 +82,13 @@ describe('لوح تفضيلات الإشعارات', () => {
     expect(panel).toMatch(/min-h-\[44px\]/)
   })
 
-  it('واللوح مركّب في شاشة إشعارات المتعلّم — وإلّا فهو مكوّن لا يفتح', () => {
+  it('واللوح مركّب في ملفّ المتعلّم — وإلّا فهو مكوّن لا يفتح', () => {
     expect(screen).toMatch(/import NotificationPreferences from "@\/components\/NotificationPreferences"/)
     expect(screen).toMatch(/<NotificationPreferences \/>/)
+  })
+
+  /* والصفحةُ نفسُها للمدرّب والمستشار والفريق (`PortalFrame`) — وأصنافُ اللوح أصنافُ المتعلّم */
+  it('⚠️ للمتعلّم وحدَه، وفي قسمٍ يفتحه رابطُ البريد', () => {
+    expect(screen).toMatch(/\{learnerFields && mode === "server" && \(\s*<div id="notifications"[^>]*>\s*<NotificationPreferences \/>/)
   })
 })

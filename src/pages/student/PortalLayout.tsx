@@ -3,6 +3,7 @@ import { Link, NavLink, useLocation, useNavigate } from "react-router";
 import { LayoutDashboard, Award, Lock, LogOut, Bell, CheckCheck, UserCircle, ReceiptText, X, LifeBuoy, BookOpen, ChevronDown, Inbox, Library } from "lucide-react";
 import { signOut } from "@/services/auth";
 import { apiGet, apiPost } from "@/services/api";
+import { onInboxRead } from "@/services/inbox-events";
 import { useRealSession } from "@/services/session";
 import { useAutoRefresh } from "@/services/useAutoRefresh";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -42,8 +43,8 @@ interface Section {
    الأوّل. ومعهما جرسٌ في الشريط يعرضها ثالثةً. فثلاثةُ أبوابٍ لشيءٍ واحد،
    واختيارُ البابِ صار قرارا على المتعلّم أن يتّخذه قبل أن يقرأ رسالة.
 
-   فبقي بابٌ واحد. وصفحةُ التنبيهات وحدَها باقيةٌ على مسارها — لا رابطَ
-   يُكسَر — ويقود إليها الجرسُ نفسُه. */
+   فبقي بابٌ واحد: «الرسائل والتنبيهات»، وإليه يقود الجرسُ. ومسارُ صفحة التنبيهات
+   القديمُ تحويلٌ إليه — لا رابطَ في بريدٍ قديمٍ يُكسَر (٢٠ أكتوبر ٢٠٢٦). */
 const ACCOUNT_ITEMS: { to: string; label: string; icon: typeof LayoutDashboard }[] = [
   { to: "/student/account", label: "الملف الشخصي", icon: UserCircle },
   { to: "/student/billing", label: "فواتيري", icon: ReceiptText },
@@ -142,6 +143,11 @@ export default function PortalLayout({ children, title }: { children: React.Reac
   }, []);
   useEffect(() => { refreshUnread(); }, [refreshUnread]);
   useAutoRefresh(refreshUnread, 60_000);
+  /* ومن قرأ في الصندوق تنقص شارتُه الآن — لا بعد دقيقة (`inbox-events.ts`) */
+  useEffect(() => onInboxRead(() => {
+    refreshUnread();
+    apiGet<RealNotif[]>("/api/learner/notifications?audience=learner").then((rows) => setRealNotifs(rows.slice(0, 6))).catch(() => undefined);
+  }), [refreshUnread]);
 
   const unreadCount = serverUnread ?? (realNotifs?.filter((n) => n.status !== "read").length ?? 0);
 
@@ -329,7 +335,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
             {/* جرس الإشعارات */}
             <div ref={bellRef} className="relative">
               <Button tone="secondary" onClick={() => setBellOpen((v) => !v)}
-                aria-label="الإشعارات" className="relative grid h-11 w-11 place-items-center">
+                aria-label="الرسائل والتنبيهات" className="relative grid h-11 w-11 place-items-center">
                 <Bell className="h-3.5 w-3.5" />
                 {unreadCount > 0 && (
                   <span className="absolute -left-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-gold px-1 text-fine font-black text-on-gold">{unreadCount}</span>
@@ -338,7 +344,7 @@ export default function PortalLayout({ children, title }: { children: React.Reac
               {bellOpen && (
                 <Inset tone="solid" className="absolute left-0 top-10 z-50 w-80 max-w-[85vw] shadow-2xl">
                     <div className="flex items-center justify-between px-1 pb-2">
-                      <p className="text-read leading-5 font-black text-foreground">التنبيهات</p>
+                      <p className="text-read leading-5 font-black text-foreground">الرسائل والتنبيهات</p>
                       <button onClick={markAllRead} className="flex cursor-pointer items-center gap-1 text-fine font-bold text-teal-light-ink transition hover:text-foreground">
                         <CheckCheck className="h-3 w-3" /> تعليم الكل كمقروء
                       </button>

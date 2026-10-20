@@ -16,7 +16,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { BellOff, Loader2, Lock } from "lucide-react";
 import { toast, toastError } from "@/components/Toast";
-import { LEARNER_CATEGORY_KEYS } from "@/application/notifications/learner-categories";
+import { LEARNER_CATEGORY_KEYS, learnerWhatAr } from "@/application/notifications/learner-categories";
 import { apiGet, apiPut, ApiError } from "@/services/api";
 
 import { Panel, Card } from "@/components/ui/Surface";
@@ -94,7 +94,7 @@ export default function NotificationPreferences() {
                   {!c.silenceable && <Lock className="h-3.5 w-3.5 shrink-0 text-gold-ink" aria-hidden="true" />}
                   {c.labelAr}
                 </p>
-                <p className="mt-0.5 text-read leading-5 text-muted-foreground">{c.whatAr}</p>
+                <p className="mt-0.5 text-read leading-5 text-muted-foreground">{learnerWhatAr(c.key, c.whatAr)}</p>
               </div>
 
               {c.silenceable ? (
