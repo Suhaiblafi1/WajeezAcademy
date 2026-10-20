@@ -306,8 +306,13 @@ export function meetingOver(
   const t = (v: Date | string | null | undefined) => (v ? new Date(v).getTime() : NaN)
   const started = t(zoom?.actualStartAt)
   const ended = t(zoom?.actualEndAt)
-  /* أنهاه Zoom — ما لم يبدأ بعد انتهائه (أُعيد فتحُ الاجتماع نفسِه) */
-  if (Number.isFinite(ended) && (!Number.isFinite(started) || ended >= started)) return true
+  /* أنهاه Zoom — ما لم يبدأ بعد انتهائه (أُعيد فتحُ الاجتماع نفسِه).
+
+     ═══ ونهايةٌ قبل موعده تجربةٌ لا لقاء (٢٠ أكتوبر ٢٠٢٦) ═══
+     زرُّ «ابدأ اللقاء مضيفا» يعمل في أيّ وقت، فيجرّبه المدرّبُ قبل أيّام ثمّ يغلقه — وكان ذلك
+     يُنهي اللقاءَ ويُسقط رابطَ متعلّميه. فما انتهى قبل ساعته المجدولة لا يُعدّ انتهاءً له. */
+  const scheduled = new Date(s.startsAt).getTime()
+  if (Number.isFinite(ended) && ended >= scheduled && (!Number.isFinite(started) || ended >= started)) return true
   if (Number.isFinite(started) && now.getTime() - started < MEETING_MAX_LIVE_MS) return false
   return now.getTime() > sessionEnd(s).getTime() + MEETING_GRACE_MS
 }

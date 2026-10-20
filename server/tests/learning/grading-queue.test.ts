@@ -135,6 +135,26 @@ describe('② المسطرةُ تُجلَب — وكانت ترقد بلا قا�
       { criterionId: criteria[1].id, score: 3 },
     ])
   })
+
+  /* ٢٠ أكتوبر ٢٠٢٦: كان المجموعُ وحدَه يُفحص — معيارٌ من ٦ يُكتب ٧ وآخرُ ١ والمجموعُ ٨ في حدّه، والمتعلّمُ
+     يقرأ المعاييرَ واحدا واحدا. ورُئي ساقطا: أُسقط فحصُ المعايير من `grade` فسقط. */
+  it('⚠️ ودرجة كلّ معيار في حدّه — ومعيار من مسطرة أخرى يردّ', async () => {
+    const sub = (await assess.trainerQueue(trainerUserId))[0]
+    const [first, second] = sub.assessment.rubric!.criteria
+    const grade = (rubricScores: { criterionId: string; score: number }[]) =>
+      assess.grade(trainerUserId, { submissionId: sub.id, score: 8, maxScore: 10, rubricScores })
+    await expect(grade([{ criterionId: first.id, score: 7 }, { criterionId: second.id, score: 1 }]))
+      .rejects.toMatchObject({ code: 'bad_score', message: 'درجة معيار خارج حده (من 0 إلى 6)' })
+    await expect(grade([{ criterionId: first.id, score: -1 }, { criterionId: second.id, score: 4 }]))
+      .rejects.toMatchObject({ code: 'bad_score' })
+    await expect(grade([{ criterionId: 'not-a-criterion', score: 4 }]))
+      .rejects.toMatchObject({ code: 'bad_rubric' })
+    const g = await prisma.grade.findFirst({ where: { submissionId: sub.id } })
+    expect(g!.rubricScores, 'كتبت درجة مردودة').toEqual([
+      { criterionId: first.id, score: 5 },
+      { criterionId: second.id, score: 3 },
+    ])
+  })
 })
 
 describe('③ مفتاحُ التخزين لا يخرج — وبابُه محروس', () => {

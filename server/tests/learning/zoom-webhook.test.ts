@@ -240,3 +240,48 @@ describe('والحدثُ الموقَّعُ يُكتب في موضعه', () => {
     expect(res.statusCode).toBe(200)
   })
 })
+
+/* ═══ وتجربةٌ قبل الموعد لا تُنهي اللقاء (٢٠ أكتوبر ٢٠٢٦) ═══
+   زرُّ «ابدأ اللقاء مضيفا» يعمل في أيّ وقت. فمن جرّبه قبل موعده بأيّامٍ ثمّ أغلقه كان يختم اللقاءَ `done` —
+   يسقط رابطُه وتختفي أزرارُ المدرّب ويُسجَّل كلُّ متعلّمٍ غائبا. ويُقاس على الخدمة: المسارُ يردّ قبل أن يعمل.
+   ورُئي ساقطا: أُسقط ردُّ «انتهى قبل موعده» فسقط الأوّل، وأُسقطت إعادتُه قادما فسقط الثاني. */
+describe('وتجربة قبل الموعد لا تنهي اللقاء', () => {
+  const approvedAt = async (title: string, meetingId: string, status = 'scheduled') => {
+    const c = await prisma.cohort.findFirstOrThrow({ where: { title: 'شعبةُ الأحداث' }, select: { id: true } })
+    const s = await prisma.cohortSession.create({
+      data: {
+        cohortId: c.id, title, status, approvalState: 'approved',
+        startsAt: new Date('2027-03-10T15:00:00Z'), endsAt: new Date('2027-03-10T17:00:00Z'),
+      },
+    })
+    await prisma.zoomMeeting.create({ data: { sessionId: s.id, provider: 'zoom_api', joinUrl: `https://zoom.us/j/${meetingId}`, meetingId } })
+    return s
+  }
+
+  it('⚠️ بدأ وانتهى قبل موعده بأيّام — يبقى قادما', async () => {
+    const { ZoomEventService } = await import('../../services/zoom-events.service')
+    const svc = new ZoomEventService(prisma)
+    const s = await approvedAt('لقاءٌ جُرّب قبل موعده', '7001')
+    await svc.handle('meeting.started', { id: '7001', start_time: '2027-03-07T10:00:00Z' })
+    await svc.handle('meeting.ended', { id: '7001', end_time: '2027-03-07T10:05:00Z', duration: 5 })
+    const after = await prisma.cohortSession.findUniqueOrThrow({ where: { id: s.id } })
+    expect(after.status, 'ختمت التجربة اللقاء منتهيا').toBe('scheduled')
+    /* والانتهاءُ الحقيقيُّ بعد موعده يختمه — وتقريرُ الحضور لا شبكةَ له هنا */
+    const real = globalThis.fetch
+    globalThis.fetch = (async () => ({ ok: false, status: 503, json: async () => ({}) })) as unknown as typeof fetch
+    try {
+      await svc.handle('meeting.started', { id: '7001', start_time: '2027-03-10T15:02:00Z' })
+      await svc.handle('meeting.ended', { id: '7001', end_time: '2027-03-10T16:55:00Z', duration: 113 })
+    } finally {
+      globalThis.fetch = real
+    }
+    expect((await prisma.cohortSession.findUniqueOrThrow({ where: { id: s.id } })).status).toBe('done')
+  })
+
+  it('⚠️ وما ختمته تجربة قبل الإصلاح يعود قادما حين يفتح في موعده', async () => {
+    const { ZoomEventService } = await import('../../services/zoom-events.service')
+    const s = await approvedAt('لقاءٌ ختمته تجربة', '7002', 'done')
+    await new ZoomEventService(prisma).handle('meeting.started', { id: '7002', start_time: '2027-03-10T15:01:00Z' })
+    expect((await prisma.cohortSession.findUniqueOrThrow({ where: { id: s.id } })).status).toBe('scheduled')
+  })
+})

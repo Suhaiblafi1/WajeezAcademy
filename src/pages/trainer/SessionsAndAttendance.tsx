@@ -302,7 +302,7 @@ export default function SessionsAndAttendance({ cohortId, refresh = "" }: { coho
                   <div className="grid gap-2.5 sm:grid-cols-3">
                     <div>
                       <label htmlFor={`mv-d-${s.id}`} className="mb-1 block text-read font-bold text-muted-foreground">التاريخ</label>
-                      <input id={`mv-d-${s.id}`} type="date" dir="ltr" value={moveForm.date}
+                      <input id={`mv-d-${s.id}`} type="date" dir="ltr" value={moveForm.date} min={zonedDay(new Date())}
                         onChange={(e) => setMoveForm((f) => ({ ...f, date: e.target.value }))} className={`${controlCls} text-left`} />
                     </div>
                     <div>

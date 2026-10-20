@@ -92,3 +92,14 @@ describe('والموضعان يقرآن القاعدة نفسها — لا نس�
     expect(SVC).toMatch(/windowOpen\(/)
   })
 })
+
+/* ═══ و«جدولي» يكتب الساعةَ بتوقيت عمّان (٢٠ أكتوبر ٢٠٢٦) ═══
+   كان يبني اللحظةَ بساعة المتصفّح — مدرّبٌ في دبيّ يختار السادسةَ فتُكتب الخامسة. والموضعان الآخران
+   (`SlotSessions` و`WeeklySessions`) يكتبانها بـ`zonedAt` من قبل. ورُئي ساقطا: أُعيد `new Date(\`${date}T…\`)`. */
+describe('جدولي بساعة عمّان', () => {
+  it('⚠️ اللقاء يرسل بـzonedAt لا بساعة المتصفّح', () => {
+    const page = code('src/pages/trainer/TrainerSchedule.tsx')
+    expect(page).toMatch(/startsAt: zonedAt\(date, form\.from\),\s*endsAt: zonedAt\(date, form\.to\),/)
+    expect(page, 'عادت ساعة المتصفّح').not.toMatch(/new Date\(`\$\{date\}T/)
+  })
+})

@@ -161,7 +161,8 @@ export class DeadlinesService {
     }
     const until = new Date(now.getTime() + days * DAY_MS)
     const links = await this.prisma.cohortTrainer.findMany({
-      where: { profileId: profile.id },
+      /* والملغاةُ ليست من جدوله (٢٠ أكتوبر ٢٠٢٦) — لقاءاتُها لا تُعقد */
+      where: { profileId: profile.id, cohort: { status: { not: 'cancelled' } } },
       select: {
         role: true,
         cohort: {
@@ -204,6 +205,9 @@ export class DeadlinesService {
     for (let i = 0; i < sessions.length; i++) {
       for (let j = i + 1; j < sessions.length; j++) {
         if (Date.parse(sessions[j].startsAt) >= endOf(sessions[i])) break
+        /* ولقاءان من شعبةٍ واحدة ليسا «من شعبتين» (٢٠ أكتوبر ٢٠٢٦): مثالُ الإدارة بجانب لقائه المنتظِر كان
+           يُعدّ تزاحما، والتنبيهُ يقول «انقل إحداها» — والمثالُ لا يُنقل */
+        if (sessions[i].cohortId === sessions[j].cohortId) continue
         sessions[i].clashesWith.push(sessions[j].sessionId)
         sessions[j].clashesWith.push(sessions[i].sessionId)
       }

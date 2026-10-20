@@ -13,6 +13,7 @@
 import type { PrismaClient } from '@prisma/client'
 import { fetchZoomParticipants, getZoomConfig, lockZoomRecordingDownload, zoomReady } from './zoom.service'
 import { pickRecording } from '../../src/application/learning/zoom-recording'
+import { sessionEnd } from '../../src/application/trainer/axis-timeline'
 import { recordAudit } from './audit'
 import { ProgressService } from './progress.service'
 
@@ -62,12 +63,22 @@ export class ZoomEventService {
     if (!meeting) return false
 
     switch (event) {
-      case 'meeting.started':
+      case 'meeting.started': {
+        const startedAt = asDate(object.start_time) ?? new Date()
         await this.prisma.zoomMeeting.update({
           where: { sessionId: meeting.sessionId },
-          data: { actualStartAt: asDate(object.start_time) ?? new Date() },
+          data: { actualStartAt: startedAt },
         })
+        /* وما خُتم خطأً بتجربةٍ قبل موعده (قبل ٢٠ أكتوبر ٢٠٢٦) يعود قادما حين يُفتح قبل نهايته —
+           وحضورُه يُعاد حسابُه عند انتهائه الحقيقيّ */
+        const session = await this.prisma.cohortSession.findUnique({
+          where: { id: meeting.sessionId }, select: { status: true, startsAt: true, endsAt: true },
+        })
+        if (session?.status === 'done' && startedAt.getTime() < sessionEnd(session).getTime()) {
+          await this.prisma.cohortSession.update({ where: { id: meeting.sessionId }, data: { status: 'scheduled' } })
+        }
         return true
+      }
 
       case 'meeting.ended': {
         await this.prisma.zoomMeeting.update({
@@ -82,6 +93,15 @@ export class ZoomEventService {
            فبقي `scheduled` أبدا، وحضورُ كلّ متعلّمٍ صفرا. وتكتبه كذلك دورةُ
            «انتهاءُ اللقاءات» لما لا اجتماعَ له. والمعتمَدُ وحدَه: ما لا يراه
            المتعلّمُ لا يُعدّ عليه. */
+        /* ═══ ونهايةٌ قبل موعده تجربةٌ لا لقاء (٢٠ أكتوبر ٢٠٢٦) ═══
+           زرُّ «ابدأ اللقاء مضيفا» يعمل في أيّ وقت. فمن جرّبه قبل موعده ثمّ أغلقه كان يُنهي اللقاءَ
+           إلى الأبد: يُكتب `done`، ويُسجَّل كلُّ متعلّمٍ غائبا، ويسقط رابطُه، وتختفي أزرارُ المدرّب.
+           فما انتهى قبل ساعته المجدولة لا يُختم ولا يُحسب حضورُه — يبقى لقاءً قادما. */
+        const ended = asDate(object.end_time) ?? new Date()
+        const session = await this.prisma.cohortSession.findUnique({
+          where: { id: meeting.sessionId }, select: { startsAt: true },
+        })
+        if (session && ended.getTime() < session.startsAt.getTime()) return true
         await this.prisma.cohortSession.updateMany({
           where: { id: meeting.sessionId, status: { in: ['scheduled', 'live'] }, approvalState: 'approved' },
           data: { status: 'done' },

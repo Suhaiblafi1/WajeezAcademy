@@ -185,3 +185,23 @@ describe('③ ولا يقترح ما يفسد ولا ما لا حاجة إليه
     if (!r.ok) expect(r.reasonAr).toMatch(/أقلّ من لقاءين/)
   })
 })
+
+/* ═══ ④ وما بدأ لا يُنقل، ولا يُنقل شيءٌ إلى وقتٍ مضى (٢٠ أكتوبر ٢٠٢٦) ═══
+   بابُ النقل يردّ الوقتَ الماضي (`pastTimeProblem`) — فجدولٌ ينقل لقاءً مضى يسقط كلُّه عند قبوله.
+   ورُئي ساقطا: أُسقط تخطّي ما بدأ فنُقل الثاني إلى سبتٍ مضى. */
+describe('④ وما بدأ لا ينقل', () => {
+  it('⚠️ لقاء مضى يبقى في مكانه — وما بعده ينقل إلى وقت قادم وحده', () => {
+    /* الأوّلُ اثنين ١٩:٠٠ مضى، والبقيّةُ قادمة — والموعدُ الأكثرُ السبت ١٨:٠٠ */
+    const base = messy()
+    const starts = [at('2026-12-07', '16:00'), at('2026-12-12'), at('2026-12-19', '16:00'), at('2027-01-02')]
+    const input = {
+      ...base, now: new Date('2026-12-10T09:00:00Z'),
+      sessions: starts.map((s, i) => ({ id: `s${i + 1}`, startsAt: s, endsAt: plus(s, 2), moduleIds: [MODS[i]!] })),
+    }
+    const r = proposeSchedule(input)
+    expect(r.ok, r.ok ? '' : r.reasonAr).toBe(true)
+    if (!r.ok) return
+    expect(r.edit.moves.map((m) => m.sessionId)).toEqual(['s3'])
+    for (const m of r.edit.moves) expect(Date.parse(m.startsAt)).toBeGreaterThan(input.now.getTime())
+  })
+})

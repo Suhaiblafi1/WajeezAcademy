@@ -719,9 +719,11 @@ export class AssessmentService {
     if (input.score < 0 || input.score > input.maxScore) throw new AuthError('bad_score', 'الدرجة خارج النطاق')
 
     let cohortId: string
+    let rubricId: string | null = null
     if (input.submissionId) {
       const s = await this.assertTrainerOfSubmission(trainerUserId, input.submissionId)
       cohortId = s.assessment.cohortId
+      rubricId = s.assessment.rubricId ?? null
       /* الدرجة تتطلب قبولا أو مراجعة قائمة */
       if (!['under_review', 'accepted'].includes(s.status)) {
         throw new AuthError('bad_state', 'راجع التسليم أولا قبل الدرجة', 409)
@@ -731,6 +733,21 @@ export class AssessmentService {
       if (!attempt) throw new AuthError('not_found', 'المحاولة غير موجودة', 404)
       await this.enrollments.assertCohortTrainer(trainerUserId, attempt.assessment.cohortId)
       cohortId = attempt.assessment.cohortId
+      rubricId = attempt.assessment.rubricId ?? null
+    }
+    /* ═══ ودرجةُ كلّ معيارٍ في حدّه (٢٠ أكتوبر ٢٠٢٦) ═══
+       كان المجموعُ وحدَه يُفحص، فمعيارٌ من ١٠ يُكتب ١٥ وآخرُ ٠ — والمجموعُ في حدّه. والمتعلّمُ يقرأ المعاييرَ
+       واحدا واحدا. فكلُّ درجةٍ معيارٌ من مسطرة المهمّة، بين الصفر وحدِّه. */
+    if (input.rubricScores?.length) {
+      const criteria = rubricId
+        ? await this.prisma.rubricCriterion.findMany({ where: { rubricId }, select: { id: true, maxScore: true } })
+        : []
+      const max = new Map(criteria.map((c) => [c.id, c.maxScore]))
+      for (const r of input.rubricScores) {
+        const cap = max.get(r.criterionId)
+        if (cap === undefined) throw new AuthError('bad_rubric', 'معيار ليس من مسطرة هذه المهمة')
+        if (r.score < 0 || r.score > cap) throw new AuthError('bad_score', `درجة معيار خارج حده (من 0 إلى ${cap})`)
+      }
     }
 
     const existing = await this.prisma.grade.findFirst({

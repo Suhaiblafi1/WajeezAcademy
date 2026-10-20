@@ -48,7 +48,7 @@ import { staffControlCls, StaffField } from "@/components/FormKit";
 import { Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import ModuleBodyUpload from "@/components/ModuleBodyUpload";
-import { zonedDay } from "@/application/trainer/cohort-period";
+import { zonedAt, zonedDay } from "@/application/trainer/cohort-period";
 import {
   SHORT_SESSION_AR, firstToFor, fromSlots, sessionTooShort, slotLabelAr, toSlotsFor,
 } from "@/application/trainer/session-length";
@@ -124,6 +124,9 @@ export default function TrainerSchedule({
      في عمّان — أي التاسعةُ مساءَ **أمسه** بغرينتش. فقصُّ السلسلة كان يعرض
      اليومَ السابق ويسمح باختياره ثمّ يردّه الخادم. */
   const day = (iso: string | null) => (iso ? zonedDay(iso) : "");
+  /* ولا يومَ مضى (٢٠ أكتوبر ٢٠٢٦، «Block it»): أوّلُ ما يُختار اليومُ أو أوّلُ النافذة، أيُّهما بعد */
+  const today = zonedDay(new Date());
+  const firstDay = day(win.start) > today ? day(win.start) : today;
 
   /* ═══ نافذةٌ مغلقةٌ تُخبِر ولا تأمر ═══
 
@@ -152,8 +155,10 @@ export default function TrainerSchedule({
     try {
       await apiPost(`/api/trainer/cohorts/${cohortId}/sessions`, {
         title: title.trim(),
-        startsAt: new Date(`${date}T${form.from}:00`),
-        endsAt: new Date(`${date}T${form.to}:00`),
+        /* بساعة الشعبة (عمّان) لا بساعة المتصفّح — مدرّبٌ في دبيّ كان يختار السادسةَ فتُكتب الخامسة
+           (٢٠ أكتوبر ٢٠٢٦)، كما في `SlotSessions` و`WeeklySessions` */
+        startsAt: zonedAt(date, form.from),
+        endsAt: zonedAt(date, form.to),
         noteAr: form.noteAr.trim() || null,
         attachmentKey: withAttachment ? attachment.bodyFileKey ?? null : null,
         attachmentName: withAttachment ? attachment.bodyFileName ?? null : null,
@@ -225,7 +230,7 @@ export default function TrainerSchedule({
           <StaffField label={mode === "series" ? "أوّل يوم ينظر فيه" : "التاريخ واليوم"} hint="داخل مدّة الشعبة وحدها.">
             <input type="date" dir="ltr"
               value={mode === "series" ? rule.startDate : form.date}
-              min={day(win.start)} max={day(win.end)}
+              min={firstDay} max={day(win.end)}
               aria-label="تاريخ اللقاء"
               onChange={(e) => (mode === "series"
                 ? setRule({ ...rule, startDate: e.target.value })
@@ -302,8 +307,8 @@ export default function TrainerSchedule({
                     key: `${r.date}-${i}`,
                     date: r.date,
                     title: `${form.title.trim() || "اللقاء"} — اللقاء ${i + 1}`,
-                    outside: r.outside,
-                    reasonAr: r.reasonAr,
+                    outside: r.outside || r.date < today,
+                    reasonAr: r.date < today ? "مضى" : r.reasonAr,
                   })))}>
                   اعرض المواعيد
                 </Button>
@@ -335,12 +340,13 @@ export default function TrainerSchedule({
                         aria-label={`تاريخ اللقاء ${i + 1}`}
                         onChange={(e) => {
                           const date = e.target.value;
-                          const outside = Boolean(
+                          const past = date < today;
+                          const outside = past || Boolean(
                             (day(win.start) && date < day(win.start))
                             || (day(win.end) && date > day(win.end)),
                           );
                           setRows(rows.map((x) => (x.key === r.key
-                            ? { ...x, date, outside, reasonAr: outside ? "خارج مدّة الشعبة" : "" }
+                            ? { ...x, date, outside, reasonAr: past ? "مضى" : outside ? "خارج مدّة الشعبة" : "" }
                             : x)));
                         }}
                         className={`${staffControlCls} w-auto shrink-0 text-left ${r.outside ? "line-through opacity-70" : ""}`} />
