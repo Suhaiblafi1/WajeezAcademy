@@ -29,6 +29,20 @@ describe('صفحة المدربين — الموسم القادم', () => {
     expect(block, 'المطوي بلا رأسه').toMatch(/<summary[\s\S]*?seasonHeadingAr\(g\.termAr\)[\s\S]*?coursesCountAr\(g\.courses\.length\)[\s\S]*?<\/summary>/)
   })
 
+  /* «اجعل خط اسم الموسم أصغر» (صاحب المنصّة، ٢٠ أكتوبر ٢٠٢٦) — ١٢ في الرأس المفتوح والمطويّ معا.
+     رُئي ساقطا على الرأس الذي كان ١٤. */
+  it('⚠️ واسم الموسم ١٢ — مفتوحا ومطويا', () => {
+    const block = page.slice(page.indexOf('seasons.map((g, i) =>'))
+    const open = block.match(/<h4 className="([^"]*)">\s*<BookOpen[^>]*\/>\s*\{seasonHeadingAr\(g\.termAr\)\}/)
+    const folded = block.match(/<summary className="([^"]*)">/)
+    expect(open, 'رأس الموسم المفتوح غاب').not.toBeNull()
+    expect(folded, 'رأس الموسم المطوي غاب').not.toBeNull()
+    for (const cls of [open![1], folded![1]]) {
+      expect(cls.split(/\s+/), cls).toContain('text-fine')
+      expect(cls, cls).not.toMatch(/text-(read|sm|base|lg)\b/)
+    }
+  })
+
   it('⚠️ وأسماء الدورات أصغر وأخف — لا ١٤ عريضة', () => {
     const row = page.match(/<span className="([^"]*)">\{c\.name\}<\/span>/)
     expect(row, 'سطر اسم الدورة غاب').not.toBeNull()

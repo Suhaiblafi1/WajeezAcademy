@@ -105,18 +105,20 @@ function TrainerOffer({ groups }: { groups: SeasonGroup[] }) {
         )
         return i === 0 ? (
           <div key={g.termAr ?? "later"} className="mt-5">
-            <p className="flex items-center gap-1.5 text-read font-medium text-foreground">
+            {/* اسمُ الموسم ١٢ لا ١٤ — «اجعل خط اسم الموسم أصغر» (صاحب المنصّة، ٢٠ أكتوبر ٢٠٢٦). وهو رأسٌ
+                تحت اسم المدرّب (h3) فـh4، لا فقرةُ متن. */}
+            <h4 className="flex items-center gap-1.5 text-fine font-medium text-foreground">
               <BookOpen className="h-3.5 w-3.5 text-teal-light-ink" />
               {seasonHeadingAr(g.termAr)}
-            </p>
+            </h4>
             {list}
           </div>
         ) : (
           <details key={g.termAr ?? "later"} className="group mt-4 border-t border-white/10 pt-4">
-            <summary className="flex cursor-pointer list-none items-center gap-1.5 text-read font-normal text-muted-foreground transition hover:text-foreground [&::-webkit-details-marker]:hidden">
+            <summary className="flex cursor-pointer list-none items-center gap-1.5 text-fine font-normal text-muted-foreground transition hover:text-foreground [&::-webkit-details-marker]:hidden">
               <BookOpen className="h-3.5 w-3.5 shrink-0 text-teal-light-ink" />
               <span className="min-w-0 flex-1">{seasonHeadingAr(g.termAr)}</span>
-              <span className="shrink-0 text-fine">{coursesCountAr(g.courses.length)}</span>
+              <span className="shrink-0">{coursesCountAr(g.courses.length)}</span>
               <ChevronDown className="h-4 w-4 shrink-0 transition-transform group-open:rotate-180" aria-hidden="true" />
             </summary>
             {list}
