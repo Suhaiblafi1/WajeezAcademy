@@ -156,6 +156,11 @@ export default function CatalogAdmin() {
   useEffect(() => {
     if (fromProposal) setOpenForm("course");
   }, [fromProposal]);
+  /* بندُ «اقتراحات أسماء لدورات» في «ما ينتظرك» يصل هنا ولوحُه مفتوح */
+  const openNames = params.get("names") === "1";
+  useEffect(() => {
+    if (openNames) setOpenForm("names");
+  }, [openNames]);
 
   const refresh = useCallback(async () => {
     try {

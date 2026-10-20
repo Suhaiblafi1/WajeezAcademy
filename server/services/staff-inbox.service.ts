@@ -16,6 +16,7 @@
 import type { PrismaClient } from '@prisma/client'
 import type { TrainerStatus } from './trainer-application.service'
 import { PENDING_PLAN_WHERE } from './cohort-plan.service'
+import { CatalogAdminService } from './catalog-admin.service'
 
 /* ═══ الحالاتُ التي تنتظرك أنت في طلبات الانضمام (٢٦ سبتمبر ٢٠٢٦) ═══
 
@@ -331,6 +332,23 @@ export class StaffInboxService {
         href: '/admin/publishing',
         severity: 'info',
         sample: [],
+      })
+    }
+
+    /* ── اسمُ دورةٍ تقترحه شعبُها (٢٠ أكتوبر ٢٠٢٦) ──
+       «هل سيكون هذا العملُ تلقائيّا لكلّ دورةٍ جديدةٍ يُفتح لها شعبة؟ افعله».
+       فشعبةٌ تُفتح باسمٍ يختلف عن اسم دورتها تأتي هنا بنفسها، وما اعتُمد أو قيل
+       فيه «أبقِ الاسم» لا يعود. الحسابُ في `CatalogAdminService.courseNames`. */
+    if (can('catalog.course.edit')) {
+      const named = await new CatalogAdminService(this.prisma).coursesWithNewNameSuggestions()
+      push({
+        key: 'course_names',
+        titleAr: 'اقتراحات أسماء لدورات',
+        whyAr: 'شعب فتحت بأسماء تختلف عن اسم دورتها — اختر اسما أو أبق الحالي',
+        count: named.length,
+        href: '/admin/catalog?names=1',
+        severity: 'info',
+        sample: named.slice(0, 3).map((r) => `${r.titleAr} ← ${r.suggestions.find((sg) => sg.isNew)?.titleAr ?? ''}`),
       })
     }
 
