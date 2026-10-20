@@ -14,6 +14,7 @@ import { domainsV2 } from '../../src/domain/diagnostic/v2/data'
 import { PERSONA_BASE_TO_STAGES, REACHABLE_LEGACY_GOALS } from '../../src/domain/diagnostic/v2_1/universe'
 import { CAREER_STAGE_LABELS_AR, GOALS_V21 } from '../../src/domain/diagnostic/v2_1/maps'
 import type { PermissionKey } from '../auth/permissions'
+import { suggestCourseNames, tidyCourseTitleAr } from '../../src/application/catalog/course-name-suggest'
 
 /* حبّةُ استثناء maker-checker — تُكتب مرّةً واحدةً، ونوعُها من فهرس الصلاحيّات
    نفسِه: فإن زالت من الفهرس أو تغيّر حرفٌ في اسمها لم تُترجَم الشيفرةُ أصلا،
@@ -36,6 +37,18 @@ export interface PathwayReadiness {
 
 /** مرجع فحص الأثر لمسار — ثابت كي يجد المعالج فحصه ولا يخلطه بغيره */
 export const PATHWAY_IMPACT_REF = (pathwayId: string) => `pathway:${pathwayId}`
+
+/** الاسمُ الجديدُ في حمولة طلب تغيير دورة — طلبُ الاسم، أو الطلبُ العامّ `{ titleAr }`.
+    واقتراحاتُ المدرّبين تحمل `titleAr` لدورةٍ أخرى تولد، فلا تُقرأ اسما لهذه. */
+function renameTitleOf(payload: unknown): string | null {
+  if (!payload || typeof payload !== 'object') return null
+  const p = payload as Record<string, unknown>
+  if (p.kind !== undefined && p.kind !== 'course_rename') return null
+  return typeof p.titleAr === 'string' ? tidyCourseTitleAr(p.titleAr) : null
+}
+
+const isRenameOnly = (payload: unknown): boolean =>
+  Boolean(payload && typeof payload === 'object' && (payload as Record<string, unknown>).kind === 'course_rename')
 
 export class CatalogAdminService {
   private prisma: PrismaClient
@@ -859,6 +872,106 @@ export class CatalogAdminService {
     return { pathwayId, steps, ok: steps.every((s2) => s2.ok) }
   }
 
+  /* ═══ أسماءُ الدورات — من أسماء شعبها (٢٠ أكتوبر ٢٠٢٦) ═══
+
+     قرارُ صاحب المنصّة: «أن يكون العملُ على الدورات التي لها شعبٌ فقط للسهولة،
+     واجعل النظامَ يقترح لكلّ دورة». فالقائمةُ دوراتٌ لها شعبةٌ واحدةٌ على الأقلّ،
+     ولكلٍّ أسماءُ شعبها واقتراحاتُها (`course-name-suggest.ts`) وطلبُ اسمٍ ينتظر
+     الاعتماد إن وُجد. والشعبةُ الملغاةُ تُعرض ولا تُقترح منها — إلّا أن تكون
+     الشعبُ كلُّها ملغاة. */
+  async courseNames() {
+    const [rows, pending] = await Promise.all([
+      this.prisma.course.findMany({
+        where: { cohorts: { some: {} } },
+        orderBy: { id: 'asc' },
+        select: {
+          id: true, status: true, renamedAt: true,
+          versions: { orderBy: { version: 'desc' }, take: 1, select: { titleAr: true, termEn: true, legacyTitleAr: true } },
+          cohorts: { orderBy: { createdAt: 'asc' }, select: { id: true, title: true, status: true, startsAt: true } },
+        },
+      }),
+      this.prisma.contentChangeRequest.findMany({
+        where: { entityType: 'course', status: 'in_review' },
+        orderBy: { createdAt: 'desc' },
+        select: { id: true, entityId: true, payload: true },
+      }),
+    ])
+    const pendingFor = new Map<string, { id: string; titleAr: string }>()
+    for (const cr of pending) {
+      const titleAr = renameTitleOf(cr.payload)
+      if (titleAr && !pendingFor.has(cr.entityId)) pendingFor.set(cr.entityId, { id: cr.id, titleAr })
+    }
+    return rows.map((c) => {
+      const v = c.versions[0]
+      const titleAr = v?.titleAr ?? c.id
+      const live = c.cohorts.filter((k) => k.status !== 'cancelled')
+      return {
+        id: c.id, status: c.status, titleAr, termEn: v?.termEn ?? null,
+        legacyTitleAr: v?.legacyTitleAr ?? null, renamedAt: c.renamedAt,
+        cohorts: c.cohorts,
+        suggestions: suggestCourseNames(titleAr, (live.length ? live : c.cohorts).map((k) => k.title)),
+        pendingRename: pendingFor.get(c.id) ?? null,
+      }
+    })
+  }
+
+  /* ═══ تغييرُ اسم الدورة ═══
+
+     كان البابُ الوحيدُ طلبَ تغييرٍ بحمولة JSON يُكتب باليد (`{"titleAr": …}`) —
+     **واعتمادُه لا يكتب الاسمَ أصلا**: `decide` كانت ترفع الحالةَ وحدَها، والحمولةُ
+     تبقى نصّا في صفٍّ لا يقرؤه أحد. فمن غيّر اسما بها لم يتغيّر شيء.
+
+     فصار للاسم بابٌ واحدٌ يكتبه (`applyCourseRename`) يمرّ منه الطريقان:
+     · **حاملُ `catalog.self_approve`** يعتمد مباشرةً — وهو صاحبُ المنصّة: «وأنا
+       أوافق». ويُكتب الفعلُ في سجلّ الأثر.
+     · **وغيرُه** يقدّم طلبا (`kind: 'course_rename'`) ينتظر مراجعا آخر، واعتمادُه
+       يكتب الاسمَ بالباب نفسِه.
+
+     والاسمُ يُكتب في إصدار الدورة الأحدث (وفي الحاليّ إن اختلفا) — ما تقرؤه
+     الشاشاتُ واللقطة — وفي `Course.renamedTitleAr` كي لا يمحوه استيرادُ الملفّ
+     في النشر التالي. ولا تتغيّر أسماءُ الشعب ولا حالةُ الدورة. */
+  async renameCourse(courseId: string, input: string, actorId: string, permissions: readonly string[] = []) {
+    const titleAr = tidyCourseTitleAr(input)
+    if (!titleAr) throw new AuthError('invalid_title', 'اكتب اسما من ٣ إلى ١٢٠ حرفا', 422)
+    const course = await this.prisma.course.findUnique({
+      where: { id: courseId },
+      select: { id: true, versions: { orderBy: { version: 'desc' }, take: 1, select: { titleAr: true } } },
+    })
+    if (!course) throw new AuthError('not_found', 'الدورة غير موجودة', 404)
+    const fromTitleAr = course.versions[0]?.titleAr ?? ''
+    if (fromTitleAr === titleAr) throw new AuthError('same_title', 'هذا هو اسمها الآن', 409)
+
+    if (!permissions.includes(SELF_APPROVE)) {
+      const cr = await this.prisma.contentChangeRequest.create({
+        data: {
+          entityType: 'course', entityId: courseId, status: 'in_review', createdBy: actorId,
+          payload: { kind: 'course_rename', titleAr, fromTitleAr },
+        },
+      })
+      return { applied: false as const, changeRequestId: cr.id, titleAr }
+    }
+    await this.prisma.$transaction((tx) => this.applyCourseRename(tx, courseId, titleAr, actorId))
+    return { applied: true as const, titleAr }
+  }
+
+  /** البابُ الواحدُ الذي يكتب اسمَ الدورة — داخل معاملة الاعتماد أو التغيير المباشر */
+  private async applyCourseRename(tx: Prisma.TransactionClient, courseId: string, titleAr: string, actorId: string, changeRequestId?: string) {
+    const course = await tx.course.findUnique({
+      where: { id: courseId },
+      select: { currentVersion: true, versions: { orderBy: { version: 'desc' }, take: 1, select: { version: true, titleAr: true } } },
+    })
+    if (!course) return
+    const latest = course.versions[0]
+    const versions = [...new Set([latest?.version ?? course.currentVersion, course.currentVersion])]
+    await tx.courseVersion.updateMany({ where: { courseId, version: { in: versions } }, data: { titleAr } })
+    await tx.course.update({ where: { id: courseId }, data: { renamedTitleAr: titleAr, renamedAt: new Date() } })
+    await recordAudit(tx, {
+      actorId, action: 'catalog.course.rename', entityType: 'course', entityId: courseId,
+      before: { titleAr: latest?.titleAr ?? null }, after: { titleAr },
+      meta: changeRequestId ? { changeRequestId } : undefined,
+    })
+  }
+
   /** تقديم طلب تغيير (maker) — لا يُطبَّق شيء قبل الاعتماد */
   async submitChangeRequest(entityType: string, entityId: string, payload: unknown, actorId: string) {
     if (!['pathway', 'course', 'skill', 'question', 'template'].includes(entityType)) {
@@ -907,8 +1020,12 @@ export class CatalogAdminService {
     return this.prisma.$transaction(async (tx) => {
       await tx.contentApprovalDecision.create({ data: { changeRequestId, actorId, decision, noteAr } })
       const updated = await tx.contentChangeRequest.update({ where: { id: changeRequestId }, data: { status: newStatus, reviewedBy: actorId, reviewedAt: new Date() } })
+      /* والاسمُ في الحمولة يُكتب عند الاعتماد — وكان يُعتمد ولا يُكتب. وطلبُ الاسم
+         وحدَه (`course_rename`) لا يمسّ حالةَ الدورة: منشورةٌ تبقى منشورة. */
+      const renameTo = cr.entityType === 'course' ? renameTitleOf(cr.payload) : null
+      if (decision === 'approve' && renameTo) await this.applyCourseRename(tx, cr.entityId, renameTo, actorId, changeRequestId)
       /* الاعتماد يرفع الكيان المسودة إلى «approved» استعدادا للنشر */
-      if (decision === 'approve') await this.promoteEntity(tx, cr.entityType, cr.entityId, 'draft', 'approved')
+      if (decision === 'approve' && !isRenameOnly(cr.payload)) await this.promoteEntity(tx, cr.entityType, cr.entityId, 'draft', 'approved')
       /* ثمنُ الاستثناء: أن يُقال إنّه وقع.
 
          الاعتمادُ العاديّ يُقرأ من `ContentApprovalDecision`، واعتمادُ الذات

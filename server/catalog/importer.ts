@@ -271,7 +271,7 @@ export async function importCatalog(prisma: PrismaClient): Promise<ImportStats> 
     /* والمفتاحُ مكتوبٌ صريحا لا مختصَرا (`domainAr: domain`): حارسُ تكافؤ
        الـupsert يقرأ `مفتاح:` وحدَه، فالمختصَرُ يمرّ عنه غيرَ مرئيّ */
     const domain = COURSE_DOMAIN_FAMILIES.includes(family) ? courseDomain(c.course_id) : null
-    await prisma.course.upsert({
+    const courseRow = await prisma.course.upsert({
       where: { id: c.course_id },
       /* المسار الأمّ والترتيب من المصدر مباشرةً — لا يُستنتجان من الروابط:
          للدورة روابط مساندة في مسارات أخرى، وبعضها بلا رابط أساسيّ أصلا */
@@ -303,16 +303,19 @@ export async function importCatalog(prisma: PrismaClient): Promise<ImportStats> 
         },
       })
     }
+    /* اسمٌ اعتمدته الإدارةُ يغلب اسمَ الملفّ — وإلّا رجع الاسمُ القديمُ مع كلّ نشر.
+       الشرحُ عند العمود `Course.renamedTitleAr`. */
+    const titleAr = courseRow.renamedTitleAr ?? c.title_ar
     const cv = await prisma.courseVersion.upsert({
       where: { courseId_version: { courseId: c.course_id, version: 1 } },
       update: {
-        titleAr: c.title_ar, termEn: c.title_term_en ?? null, legacyTitleAr: c.legacy_title_ar ?? null,
+        titleAr: titleAr, termEn: c.title_term_en ?? null, legacyTitleAr: c.legacy_title_ar ?? null,
         shortPromiseAr: c.short_promise_ar ?? c.subtitle_ar ?? null, descriptionAr: c.description_ar ?? null,
         audienceAr: c.target_audience_ar ?? null, prerequisitesAr: c.prerequisites_ar ?? null,
         levelAr: c.level_ar ?? null, totalHours: toInt(c.total_hours) ?? 0, status: 'published',
       },
       create: {
-        courseId: c.course_id, version: 1, titleAr: c.title_ar, termEn: c.title_term_en ?? null, legacyTitleAr: c.legacy_title_ar ?? null,
+        courseId: c.course_id, version: 1, titleAr: titleAr, termEn: c.title_term_en ?? null, legacyTitleAr: c.legacy_title_ar ?? null,
         shortPromiseAr: c.short_promise_ar ?? c.subtitle_ar ?? null, descriptionAr: c.description_ar ?? null,
         audienceAr: c.target_audience_ar ?? null, prerequisitesAr: c.prerequisites_ar ?? null,
         levelAr: c.level_ar ?? null, totalHours: toInt(c.total_hours) ?? 0, status: 'published',
