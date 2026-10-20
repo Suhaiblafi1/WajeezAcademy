@@ -736,7 +736,7 @@ export default function TrainerRunOps() {
   const shown = useMemo(
     () => (trainers ?? [])
       .filter((t) => matchesQuery(q, [t.name, t.email]))
-      /* أوّلا من له شعبةٌ تُباع واسمُه لا يظهر — المشتري لا يرى من يدرّسه (`hiddenOnSale`)، ثمّ ما ينتظر قرارَك */
+      /* أوّلا من له دوراتٌ منشورةٌ واسمُه لا يظهر — غائبٌ عن صفحة المدرّبين وشعبه بلا اسم (`hiddenOnSale`)، ثمّ ما ينتظر قرارَك */
       .sort((a, b) => opsRank(b) - opsRank(a)),
     [trainers, q],
   );
@@ -1011,7 +1011,7 @@ export default function TrainerRunOps() {
                           </Chip>
                         )}
                         {hiddenOnSale(t) && (
-                          <Chip tone="danger" srPrefixAr="ظهوره العامّ">له شعبة مفتوحة واسمه لا يظهر</Chip>
+                          <Chip tone="danger" srPrefixAr="ظهوره العامّ">له دورات منشورة واسمه لا يظهر</Chip>
                         )}
                         {t.publiclyVisible && t.hasLiveCourse && (
                           <span className="flex items-center gap-1 rounded-full bg-teal/15 px-2 py-0.5 text-fine font-black text-teal-light-ink">

@@ -98,17 +98,23 @@ export function cohortsTallyAr(cs: Pick<CardCohort, 'plan' | 'postponedTo'>[]): 
 
    والشرطُ شرطُ الخادم في اسم الشعبة (`trainerPubliclyVisible`): ظهورٌ معتمَدٌ وتوثيقٌ ولا إيقاف. و«تُباع»
    ما يختاره المشتري في منتقي الشعبة: مفتوحةٌ أو ممتلئة (`JOINABLE` في `cohort-prices.ts`). */
-const ON_SALE = new Set(['open', 'full'])
+/* ═══ وصار الشرطُ شرطَ صفحة المدرّبين نفسَه (٢٠ أكتوبر ٢٠٢٦) ═══
 
-/** أله شعبةٌ يختارها المشتري واسمُه لا يُعرض عليها؟ */
+   سأل صاحبُ المنصّة: «لماذا حفصة لا تظهر بقائمة المدرّبين؟ لها شعب.. راجع كلَّ المدرّبين بنفس الوضع». وكان
+   الوسمُ على «مفتوحةٍ أو ممتلئة» وحدَهما — فمن بدأت شعبتُه (جارية) أو انتهت هذا الفصل غائبٌ عن الصفحة كغيره
+   ولا يوسَم. فالشرطُ الآن ما يحكم الصفحةَ بعينه: له دوراتٌ منشورةٌ هذا الفصلَ أو بعده (`hasLiveCourse` —
+   `liveTrainerWhere` على الخادم) واسمُه لا يُعرض. فكلُّ موسومٍ غائبٌ عن الصفحة لهذا السبب وحدَه، وكلُّ غائبٍ
+   لهذا السبب موسوم. */
+
+/** أله دوراتٌ منشورةٌ واسمُه لا يُعرض — فهو غائبٌ عن صفحة المدرّبين وعن شعبه؟ */
 export function hiddenOnSale(t: {
   publiclyVisible: boolean
   isVerified: boolean
   suspended: boolean
-  cohorts: Pick<CardCohort, 'status'>[]
+  hasLiveCourse: boolean
 }): boolean {
   const shown = t.publiclyVisible && t.isVerified && !t.suspended
-  return !shown && t.cohorts.some((c) => ON_SALE.has(c.status))
+  return !shown && t.hasLiveCourse
 }
 
 /* ─────────── أثرُ الملفّ العامّ ─────────── */
