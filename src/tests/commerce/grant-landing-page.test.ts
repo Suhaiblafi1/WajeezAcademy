@@ -1,8 +1,9 @@
 /* صفحةُ «منحة أعضاء وجيز» — ما تقوله وما تحفظه (٢٠ أكتوبر ٢٠٢٦).
 
    الحسابُ في `server/tests/commerce/grant-landing.test.ts`. وهنا: الصفحةُ بطريقيها، والنموذجُ بخاناته
-   الأربع ومصيدته ونصِّ موافقته، والمنحةُ تُقال بالمال، والحسابُ يُنشأ حين يختار المسار باسمه وبريده
-   من النموذج، ولوحُ الدفع يُفتح بالكود، والعودةُ بعد التوثيق إلى المسار نفسِه. والتعليقاتُ تُنزع. */
+   الأربع ومصيدته ونصِّ موافقته وما يحثّ على تعبئته، وقائمةُ دوراتٍ واحدةٌ بلا «مسار» واقتراحاتٌ فوقها، والمنحةُ
+   تُقال بالمال، والحسابُ باسمه وبريده من النموذج، ولوحُ الدفع بالكود، والعودةُ بعد التوثيق إلى ما اختاره.
+   والتعليقاتُ تُنزع. */
 
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
@@ -10,7 +11,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { plainAr } from '@/application/text/plain-ar'
 import { auditActionAr } from '@/application/audit/labels'
-import { GRANT_CONSENT_AR, WORK_FIELDS, campaignParams, campaignTag, grantSavingAr } from '@/application/commerce/grant-landing'
+import { GRANT_CONSENT_AR, GRANT_PERKS_AR, WORK_FIELDS, campaignParams, campaignTag, grantSavingAr, toggleCourse } from '@/application/commerce/grant-landing'
 import { parsePendingCheckout } from '@/application/commerce/pending-checkout'
 import { parseStoredGrant } from '@/services/grant-landing'
 
@@ -45,23 +46,36 @@ describe('النموذج', () => {
 describe('بعد النموذج', () => {
   it('⚠️ المنحة تقال بالمال — والحساب باسمه وبريده من النموذج، ولوح الدفع بالكود', () => {
     expect(grantSavingAr('240 USD', '360 USD')).toBe('تدفع 240 USD فقط، ووجيز تتحمل 360 USD')
-    expect(PAGE).toMatch(/grantSavingAr\(money\(p\.grantTotal\), money\(p\.listTotal - p\.grantTotal\)\)/)
-    expect(PAGE).toMatch(/prefill=\{\{ name: stored\?\.name, email: stored\?\.email \}\}/)
-    expect(PAGE).toMatch(/initialCoupon=\{stored\?\.code \?\? ""\}/)
-    expect(PAGE, 'يحفظ ما اختاره قبل أن يطلب منه حساب').toMatch(/savePendingCheckout\(\{\s*path,/)
+    expect(PAGE).toMatch(/grantSavingAr\(money\(payTotal\), money\(listTotal - payTotal\)\)/)
+    expect(PAGE).toMatch(/prefill=\{\{ name: stored\.name, email: stored\.email \}\}/)
+    expect(PAGE).toMatch(/initialCoupon=\{stored\.code \?\? ""\}/)
+    expect(PAGE, 'يحفظ ما اختاره قبل أن يطلب منه حساب').toMatch(/savePendingCheckout\(\{\s*path: PICK_PATH,/)
     expect(PAGE).toMatch(/<ResumeCheckout ready=/)
   })
 
-  it('⚠️ الحذف والإضافة بدورات لها شعب — وحتى الحد', () => {
-    expect(PAGE).toMatch(/\{picked\.length < max && swapOptions\.length > 0 && \(/)
-    expect(PAGE).toMatch(/const swapOptions = \(view\?\.openCourses \?\? \[\]\)\.filter/)
+  it('⚠️ قائمة دورات واحدة بلا كلمة «مسار» — كل ما يشترى اليوم، فالجديد يظهر وحده', () => {
+    expect(PAGE).toMatch(/\{view\.openCourses\.map\(\(x\) => \{/)
+    expect(PAGE).toMatch(/onChange=\{\(\) => toggle\(x\.courseId\)\}/)
     expect(PAGE, 'يوم الشعبة بمنطقة الأكاديمية').toMatch(/cohortDayAr\(x\.startsAt\)/)
+    /* ولا «مسار» في نصٍّ يراه — التعليقاتُ منزوعة */
+    expect(PAGE.match(/مسار/g) ?? [], 'عادت كلمة مسار إلى الصفحة').toEqual([])
   })
 
-  it('⚠️ «اختر دوراتك بنفسك» من كل ما يشترى اليوم — فالجديد يظهر وحده', () => {
-    expect(PAGE).toMatch(/onClick=\{\(\) => navigate\(`\/grant\/\$\{BUILD\}`\)\}>اختر دوراتك<\/Button>/)
-    expect(PAGE).toMatch(/const pathway = useMemo<GrantPathway \| null>\(\(\) => \(pathwayId === BUILD/)
-    expect(PAGE, 'خيار البناء مربوط بقائمة ثابتة').toMatch(/\{view\.openCourses\.length > 0 && \(/)
+  it('⚠️ الاقتراحات تختار دوراتها بضغطة — ثم يعدل كما يشاء', () => {
+    expect(PAGE).toMatch(/onClick=\{\(\) => setPicked\(p\.courses\.map\(\(x\) => x\.courseId\)\.slice\(0, max\)\)\}>اختر هذه الدورات<\/Button>/)
+  })
+
+  it('⚠️ دورة واحدة أو أكثر حتى الحد — والزائدة ترد بلا أن تمحو ما اختاره', () => {
+    expect(toggleCourse([], 'a', 4)).toEqual(['a'])
+    expect(toggleCourse(['a', 'b'], 'a', 4)).toEqual(['b'])
+    expect(toggleCourse(['a', 'b', 'c', 'd'], 'e', 4), 'تجاوز الحد').toEqual(['a', 'b', 'c', 'd'])
+    expect(toggleCourse(['a', 'b', 'c', 'd'], 'd', 4)).toEqual(['a', 'b', 'c'])
+  })
+
+  it('⚠️ والنموذج يحث على التعبئة — بما هو قائم: عدد المنح الباقي من الخادم', () => {
+    expect(PAGE).toMatch(/c\.left !== null \? `: بقي \$\{c\.left\} منحة` : ""/)
+    expect(PAGE).toMatch(/>\{c\.open \? "احجز منحتي الآن" : "أرسل"\}<\/Button>/)
+    expect(PAGE).toMatch(/\{GRANT_PERKS_AR\.map\(/)
   })
 
   it('⚠️ ما يحفظ على الجهاز يفحص — والعودة إلى مسار المنحة مقبولة', () => {
@@ -77,10 +91,10 @@ describe('بعد النموذج', () => {
 
 describe('النصوص', () => {
   it('بلا تشكيل', () => {
-    const texts = [GRANT_CONSENT_AR, ...WORK_FIELDS, 'أعطني كود المنحة', 'رقم واتساب', 'مجال عملك', 'كود منحتك', 'اختر مسارا يناسبك',
-      'اختر هذا المسار', 'أو اختر دوراتك بنفسك', 'اختر دوراتك', 'لست متأكدا؟ تواصل مع مستشار', 'اطلب مستشارا', 'ادفع الآن', 'أضف دورة لها شعبة مفتوحة']
+    const texts = [GRANT_CONSENT_AR, ...WORK_FIELDS, ...GRANT_PERKS_AR, 'احجز منحتي الآن', 'رقم واتساب', 'مجال عملك', 'كود منحتك', 'اختر دوراتك',
+      'اقتراحات لك', 'اختر هذه الدورات', 'كل الدورات المتاحة', 'دقيقة واحدة وتأخذ كود منحتك فورا', 'لست متأكدا؟ تواصل مع مستشار', 'اطلب مستشارا', 'ادفع الآن']
     for (const t of texts) expect(t).toBe(plainAr(t))
-    for (const t of texts.slice(GRANT_CONSENT_AR ? 1 + WORK_FIELDS.length : 0)) expect(PAGE).toContain(t)
+    for (const t of texts.slice(1 + WORK_FIELDS.length + GRANT_PERKS_AR.length)) expect(PAGE).toContain(t)
     expect(auditActionAr('coupon.grant_apply')).not.toBe('coupon.grant_apply')
   })
 })

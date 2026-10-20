@@ -36,4 +36,17 @@ export const grantSavingAr = (pay: string, covers: string) => `تدفع ${pay} �
 
 /** رسالةُ متابعة من عبّأ النموذج ولم يشترِ — تُفتح في واتساب جاهزةً ويرسلها فريقُ الأكاديميّة */
 export const grantFollowupAr = (name: string) =>
-  `مرحبا ${name}، معك أكاديمية وجيز. أخذت كود منحة أعضاء وجيز، هل تحتاج مساعدة في اختيار مسارك؟`
+  `مرحبا ${name}، معك أكاديمية وجيز. أخذت كود منحة أعضاء وجيز، هل تحتاج مساعدة في اختيار دوراتك؟`
+
+/** ما يُقال فوق النموذج ليحثّ على تعبئته — وكلُّه قائمٌ في المنصّة لا وعدٌ يُختلق */
+export const GRANT_PERKS_AR: readonly string[] = [
+  'دورات مباشرة مع مدربين معتمدين',
+  'تختار دوراتك بنفسك',
+  'شهادة من أكاديمية وجيز عند الإكمال',
+]
+
+/** يختار دورةً أو يتركها — ولا يتجاوز حدَّ المنحة: الزائدةُ تُردّ بلا أن تمحو ما اختاره */
+export function toggleCourse(picked: readonly string[], id: string, max: number): string[] {
+  if (picked.includes(id)) return picked.filter((x) => x !== id)
+  return picked.length < max ? [...picked, id] : [...picked]
+}
