@@ -9,7 +9,7 @@ import { renderMail } from '../../services/mail-template'
 
 /* ═══ وأعاد صاحبُ المنصّة كتابتَها (٢٠ أكتوبر ٢٠٢٦): ما لم يقبله ليس عالقا، والرسالةُ على حالين — لم يبدأ، أو له
    شعبة — وكلُّ ما هو عالقٌ رابطٌ إلى صفحته، والموعدُ وإغلاقُ الملفّ لمن لم يبدأ وحدَه ═══ */
-const base: ReminderFacts = { openCohorts: [], courses: [], pendingBio: false, pendingPitch: false, noPhoto: false }
+const base: ReminderFacts = { openCohorts: [], moved: [], courses: [], pendingBio: false, pendingPitch: false, noPhoto: false }
 const course = (state: string, extra: Partial<ReminderFacts['courses'][number]> = {}) =>
   ({ state, postponedTo: null, cohortId: null, cohortTitle: null, titleAr: 'دورة', ...extra }) as ReminderFacts['courses'][number]
 const SITE = 'https://x.test'
@@ -159,4 +159,30 @@ describe('الشعب مرتبة', () => {
     expect(shortCohortTitles(['أ: س — شعبة ١', 'أ: ص — شعبة ١'])).toEqual(['أ: س — شعبة ١', 'أ: ص — شعبة ١'])
     expect(shortCohortTitles(['بلا فرعي'])).toEqual(['بلا فرعي'])
   })
+})
+
+/* ═══ والمنقولةُ إلى موسمٍ قادمٍ ليست مفتوحةً للتسجيل الآن (٢١ أكتوبر ٢٠٢٦): «لماذا يظهر في الإيميلات الدوراتُ التي
+   قام المدرّبُ بنقلها فعلا وكأنّها من دوراته المفتوحة؟» ═══ */
+describe('الشعب المنقولة', () => {
+  const moved: ReminderFacts['moved'] = [
+    { cohortId: 'm1', title: 'دورة استراتيجية التسعير: من التكلفة إلى القيمة — شعبة ٤', termAr: 'موسم الربيع 2027', pending: false },
+    { cohortId: 'm2', title: 'دورة خطة العمل — شعبة ١', termAr: 'موسم الربيع 2027', pending: true },
+  ]
+  it('تسرد وحدها بموسمها لا مع المفتوحة — والطلب المنتظر يقال طلبا', () => {
+    const { t } = text({ ...base, openCohorts: ['دورة أ — شعبة ١'], moved })
+    expect(t).toContain('شعبتك «دورة أ — شعبة ١» مفتوحة للتسجيل الآن')
+    expect(t).toContain('وهذه الشعب نقلتها إلى موسم قادم:\n\n1. دورة استراتيجية التسعير — شعبة ٤ (موسم الربيع 2027)\n2. دورة خطة العمل — شعبة ١ (طلبت نقلها إلى موسم الربيع 2027)')
+  })
+  it('من نقل شعبه كلها بدأ — لا يطلب منه أن يبدأ ولا ينذر بإغلاق ملفه', () => {
+    const f = { ...base, moved }
+    expect(hasStarted(f)).toBe(true)
+    const { t } = text(f)
+    expect(t).not.toMatch(/مفتوحة للتسجيل|إغلاق ملفه|وصلتنا خطة شعبتك/)
+    expect(t).toMatch(/شكرا لك. هذه الشعب نقلتها إلى موسم قادم/)
+  })
+  it('ولا تطلب خطة المنقولة قبل الحملة', () => {
+    const tasks = reminderTasks({ ...base, moved, courses: [course('preparing', { cohortId: 'm1', cohortTitle: 'شعبة أ' }), course('preparing', { cohortId: 'c9', cohortTitle: 'شعبة ب' })] })
+    expect(tasks.map((x) => x.key)).toEqual(['plan:c9'])
+  })
+  /* وأنّ الخدمةَ تخرجها بطلب النقل المعتمَد أو المنتظر — بقاعدةٍ حقيقيّة في `prep-reminder-moved.test.ts` */
 })
