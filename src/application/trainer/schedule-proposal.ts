@@ -36,6 +36,11 @@ export interface ScheduleInput {
   sessions: readonly (ScorecardSession & { id: string })[]
   tasks: readonly (ScorecardTask & { id: string })[]
   now?: Date
+  /** يومٌ وساعةٌ نختارهما نحن — لموعدٍ بلا تعارض (`schedule-clash.ts`). فلا يُستخرج من لقاءاته، ولا يُشترط أن
+      يحسّن الإيقاع: الغايةُ ألّا يتعارض. ويبقى شرطُ «لا يُقترح ما يُفسد» كما هو */
+  target?: { weekday: number; clock: string }
+  /** وسببُه بلغة المدرّب — يحلّ محلّ «ما هو الآن» في سطر البطاقة */
+  whyAr?: string
 }
 
 export interface ScheduleMove { sessionId: string; startsAt: string; endsAt: string }
@@ -96,7 +101,7 @@ export function proposeSchedule(input: ScheduleInput): ScheduleProposal {
   const score = (sessions: ScheduleInput['sessions'], tasks: ScheduleInput['tasks']) =>
     planScorecard({ period: input.period, content: input.content, sessions, assessments: tasks, now: input.now })
   const before = score(input.sessions, input.tasks)
-  if (gapsOf(before, 'rhythm') === 0 && gapsOf(before, 'session_times') === 0) {
+  if (!input.target && gapsOf(before, 'rhythm') === 0 && gapsOf(before, 'session_times') === 0) {
     return { ok: false, reasonAr: 'لقاءاته على يوم وساعة ثابتين وفي وقت مناسب — لا جدول يقترح' }
   }
 
@@ -111,7 +116,12 @@ export function proposeSchedule(input: ScheduleInput): ScheduleProposal {
     tally.set(key, t)
   }
   const ranked = [...tally.values()].sort((a, b) => b.n - a.n || a.first - b.first)
-  let target = ranked.find((t) => fitsTime(t.weekday, t.clock, longest))
+  let target = input.target
+    ? { n: 0, first: 0, ...input.target }
+    : ranked.find((t) => fitsTime(t.weekday, t.clock, longest))
+  if (input.target && !fitsTime(input.target.weekday, input.target.clock, longest)) {
+    return { ok: false, reasonAr: `${WEEKDAY_AR[input.target.weekday]} ${input.target.clock} لا يصلح للقاء بطول ${longest} دقيقة` }
+  }
   if (!target) {
     /* لا موعدَ قائمٌ يصلح: يومُه الأكثرُ تكرارا، وساعةٌ تنتهي فيها أطولُ لقاءاته قبل العاشرة والنصف */
     const weekday = ranked[0]!.weekday
@@ -207,12 +217,13 @@ export function proposeSchedule(input: ScheduleInput): ScheduleProposal {
   const wasBlocked = new Set(before.filter((i) => i.status === 'blocked').map((i) => i.key))
   const newlyBlocked = after.find((i) => i.status === 'blocked' && !wasBlocked.has(i.key))
   if (newlyBlocked) return { ok: false, reasonAr: `جدول ثابت هنا يسقط «${newlyBlocked.labelAr}» — فلا يقترح` }
-  if (gapsOf(after, 'rhythm') + gapsOf(after, 'session_times') >= gapsOf(before, 'rhythm') + gapsOf(before, 'session_times')) {
+  if (!input.target && gapsOf(after, 'rhythm') + gapsOf(after, 'session_times') >= gapsOf(before, 'rhythm') + gapsOf(before, 'session_times')) {
     return { ok: false, reasonAr: 'لا جدول ثابت يحسّن الإيقاع داخل مواعيد المحاور — رتّبها أوّلا' }
   }
 
   /* والسببُ «ما هو الآن ← ما نقترح» (صاحب المنصّة، ١١ أكتوبر ٢٠٢٦): ما في لقاءاته اليومَ أوّلا، ثمّ الجدول */
-  const nowAr = tally.size > MAX_DISTINCT_SLOTS ? `لقاءاتك اليوم على ${tally.size} مواعيد مختلفة`
+  const nowAr = input.whyAr ? input.whyAr
+    : tally.size > MAX_DISTINCT_SLOTS ? `لقاءاتك اليوم على ${tally.size} مواعيد مختلفة`
     : live.some((s) => holiday(s.day)) ? 'من لقاءاتك اليوم ما يقع في عطلة رسميّة'
     : 'من لقاءاتك اليوم ما يقع في وقت غير مناسب'
   const n = taskMoves.length

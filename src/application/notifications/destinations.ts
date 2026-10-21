@@ -110,6 +110,7 @@ const TRAINER: Table = {
   'trainer.assigned': { path: '/trainer/board', ctaAr: 'افتح شعبتك الجديدة' },
   'cohort.plan.submitted': { path: '/trainer/board', ctaAr: 'افتح خطّة شعبتك' },
   'cohort.plan.decision': { path: '/trainer/board', ctaAr: 'اقرأ قرار الخطّة' },
+  'cohort.schedule.proposed': { path: '/trainer/board', ctaAr: 'افتح الاقتراح' },
   /* وقرارُ الإدارة في لقاءاته — وجهتُه لوحُه لا لوحُ الإدارة. و`cohort.session.pending` يصل الإدارةَ، فوجهتُه في
      جدول الفريق أدناه (كانت هنا فخرج إليها بلا زرّ — ١٩ أكتوبر ٢٠٢٦). */
   'cohort.session.approved': { path: '/trainer/board', ctaAr: 'افتح لقاءات شعبتك' },
@@ -226,7 +227,11 @@ const BY_AUDIENCE: Record<MailAudience, Table> = {
    الإشعار)، وعلى خطوتها إن حملت البياناتُ خطوة (`step`: الردُّ على «المراجعة»). والجدولُ أعلاه
    باقٍ وجهةً للبريد ولما لا معرّفَ فيه. */
 const ROUTE_FROM_DATA: Partial<Record<MailAudience, Record<string, { route: string; field: string; ctaAr: string }>>> = {
-  trainer: { 'cohort.plan.decision': { route: '/trainer/cohort/:id', field: 'cohortId', ctaAr: 'افتح شعبتك' } },
+  trainer: {
+    'cohort.plan.decision': { route: '/trainer/cohort/:id', field: 'cohortId', ctaAr: 'افتح شعبتك' },
+    /* والموعدُ المقترحُ بلا تعارض بطاقةٌ في «المراجعة» — والخطوةُ في بياناته (`term-clash.service.ts`) */
+    'cohort.schedule.proposed': { route: '/trainer/cohort/:id', field: 'cohortId', ctaAr: 'افتح الاقتراح' },
+  },
 }
 /** اسمُ الزرّ حين يفتح خطوةً بعينها — يقول ما سيجد */
 const STEP_CTA_AR: Record<string, string> = { review: 'افتح «المراجعة»' }

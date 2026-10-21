@@ -283,7 +283,7 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
        `pending` يصل الإدارةَ كأخويه، و`decision` يصل المدرّبَ — ولا يُكتَم: من
        رُدّ طلبُه ولم يعلم ظنّ متعلّميه يقرؤون ما كتبه. */
     templateKeys: [
-      'cohort.plan.submitted', 'cohort.plan.decision',
+      'cohort.plan.submitted', 'cohort.plan.decision', 'cohort.schedule.proposed',
       'cohort.session.pending', 'cohort.session.approved', 'cohort.session.rejected',
       'cohort.assessment.pending', 'cohort.assessment.decision',
     ],

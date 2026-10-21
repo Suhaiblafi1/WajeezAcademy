@@ -175,6 +175,7 @@ const PHRASES: Record<string, string> = {
   'term.trainer_availability': 'إتاحة مدرّب في فصل',
   'term.plan_open': 'توزيع شعب الفصل وفتح ما استوفى',
   'term.calendar_publish': 'نشر تقويم الفصل',
+  'term.clash.send': 'إرسال مواعيد بلا تعارض إلى المدرّبين',
   /* بابُ الموسم — ثلاثةُ أفعالٍ تُقرأ كثيرا يومَ يُفتح، فعباراتُها كاملة */
   'registration.season.close': 'إيقاف التسجيل حتّى يفتح باب الموسم',
   'registration.season.open': 'فتح باب التسجيل للموسم',

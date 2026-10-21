@@ -10,6 +10,7 @@ import {
 } from './core-catalog-source'
 import { domainsOfPathway } from '@/domain/diagnostic/v2/data'
 import { publicBestsellers, publicPathwayById } from './public-pathways'
+import { familyCategory } from '@/application/catalog/pathway-category'
 
 export interface Pathway {
   id: string
@@ -59,29 +60,7 @@ export function pathwayCategory(id: string): string {
   /* والمسارُ العامُّ فئتُه مكتوبةٌ معه — معرّفُه لا يحمل عائلة (`public-pathways.ts`) */
   const pub = publicPathwayById(id)
   if (pub) return pub.category
-  const fam = id.split('-')[1]
-  switch (fam) {
-    /* العائلاتُ الأربعُ الجديدةُ مع FND/STU لأنّ جمهورَها في ملفّاتِها التعريفيّة
-       هو student · early_career · freelancer وأمثالُهم: التصميمُ الجرافيكيُّ
-       والداخليُّ حرفتانِ يدخلهما الطالبُ والمستقلُّ قبل الموظّف، وفهمُ النفسِ
-       والتعلّمِ يُقصَد لذاتِه لا لترقيةٍ في وظيفة. وENGR وحدَها تسقط إلى
-       «موظفون ومختصون» لأنّ جمهورَها مهندسٌ أو مشرفُ موقعٍ في عملٍ قائم. */
-    case 'FND':
-    case 'STU':
-    case 'GRPH':
-    case 'INTR':
-    case 'PSY':
-    case 'EDU':
-      return 'أفراد ومهن ناشئة'
-    case 'GOV':
-      return 'حكومي'
-    case 'BIZ':
-    case 'AUT':
-    case 'LND':
-      return 'قيادة وريادة الأعمال'
-    default:
-      return 'موظفون ومختصون'
-  }
+  return familyCategory(id)
 }
 
 /* القطاع/المجال — موضوعُ المسار المهنيّ، لا جمهورُه (نفس تمييز courseDomain

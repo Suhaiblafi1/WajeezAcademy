@@ -205,3 +205,35 @@ describe('④ وما بدأ لا ينقل', () => {
     for (const m of r.edit.moves) expect(Date.parse(m.startsAt)).toBeGreaterThan(input.now.getTime())
   })
 })
+
+/* ═══ ويومٌ وساعةٌ نختارهما نحن — لموعدٍ بلا تعارض (٢٢ أكتوبر ٢٠٢٦، `schedule-clash.ts`) ═══
+   الشعبةُ على السبت ١٨:٠٠ كلَّ أسبوع — فلا جدولَ تقترحه المنصّةُ لإيقاعها. لكنّ ساعتَها تتعارض مع دورةٍ قريبة،
+   فنطلب الاثنين ١٩:٠٠: يُبنى بسلسلته كما يُبنى غيرُه، وسببُه سطرُ التعارض لا «ما هو الآن». */
+describe('④ موعد نختاره نحن', () => {
+  const steady = () => {
+    const input = messy()
+    const r = proposeSchedule(input)
+    if (!r.ok) throw new Error(r.reasonAr)
+    return applied(input, r.edit)
+  }
+
+  it('الإيقاع ثابت فلا يقترح شيء — إلّا موعدا نطلبه، فيبنى بسلسلته وسببه', () => {
+    const input = steady()
+    expect(proposeSchedule(input).ok).toBe(false)
+    const r = proposeSchedule({ ...input, target: { weekday: 1, clock: '19:00' }, whyAr: 'موعدها الآن يتعارض مع «دورة X»' })
+    expect(r.ok, r.ok ? '' : r.reasonAr).toBe(true)
+    if (!r.ok) return
+    expect([r.edit.weekday, r.edit.clock]).toEqual([1, '19:00'])
+    expect(r.reasonAr.startsWith('موعدها الآن يتعارض مع «دورة X» — نقترح الاثنين 19:00 كلّ أسبوع')).toBe(true)
+    const after = applied(input, r.edit)
+    expect(after.sessions.every((s) => zonedClock(s.startsAt) === '19:00')).toBe(true)
+    expect(after.sessions.every((s) => new Date(`${zonedDay(s.startsAt)}T12:00:00Z`).getUTCDay() === 1)).toBe(true)
+    /* والمهامّ تتبع لقاءاتها */
+    expect(r.edit.tasks.length).toBeGreaterThan(0)
+  })
+
+  it('وموعد لا يصلح للقاء — في ساعات العمل — لا يبنى', () => {
+    const r = proposeSchedule({ ...steady(), target: { weekday: 1, clock: '10:00' } })
+    expect(r.ok).toBe(false)
+  })
+})
