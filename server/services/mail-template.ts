@@ -98,8 +98,9 @@ export type MailBlock =
   | { kind: 'p'; text: MailRich }
   /** عنوانٌ داخليٌّ يفصل قسما عمّا قبله */
   | { kind: 'h'; text: string }
-  /** قائمةٌ منقّطة */
-  | { kind: 'list'; items: MailRich[] }
+  /** قائمةٌ منقّطة — أو مرقّمةٌ بـ`numbered` لما يُعدّ: شعبُه واحدةً واحدة (٢١ أكتوبر ٢٠٢٦: «مرقّمةً بشكلٍ احترافيّ.
+   *  لا أحدَ يقرأ هذه المعلومات المتراكمة والمتزاحمة») */
+  | { kind: 'list'; items: MailRich[]; numbered?: boolean }
   /** جدولُ حقائق: تسميةٌ وقيمة — لتفاصيل الطلب ونحوها */
   | { kind: 'facts'; rows: { label: string; value: string }[] }
   /** زرُّ الدعوة — واحدٌ في الرسالة.
@@ -171,7 +172,7 @@ function textOf(doc: MailDoc): string {
     switch (b.kind) {
       case 'p': out.push(richText(b.text), ''); break
       case 'h': out.push(`── ${b.text} ──`, ''); break
-      case 'list': out.push(...b.items.map((i) => `· ${richText(i)}`), ''); break
+      case 'list': out.push(...b.items.map((i, n) => `${b.numbered ? `${n + 1}.` : '·'} ${richText(i)}`), ''); break
       case 'facts': out.push(...b.rows.map((r) => `${r.label}: ${r.value}`), ''); break
       case 'steps':
         out.push(...b.items.map((it, i) => {
@@ -273,9 +274,11 @@ function htmlOf(doc: MailDoc): string {
       case 'list':
         parts.push(
           `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 14px;">`
-          + b.items.map((i) =>
+          + b.items.map((i, n) =>
             `<tr>`
-            + `<td width="14" valign="top" style="padding:3px 0 3px 8px;font-size:15px;line-height:1.9;color:${BRAND.teal};">•</td>`
+            + (b.numbered
+              ? `<td width="22" valign="top" style="padding:3px 0 3px 8px;font-size:15px;line-height:1.9;font-weight:700;color:${BRAND.teal};">${n + 1}.</td>`
+              : `<td width="14" valign="top" style="padding:3px 0 3px 8px;font-size:15px;line-height:1.9;color:${BRAND.teal};">•</td>`)
             + `<td style="padding:3px 0;font-size:15px;line-height:1.9;color:${BRAND.ink};">${richHtml(i)}</td>`
             + `</tr>`).join('')
           + `</table>`,
