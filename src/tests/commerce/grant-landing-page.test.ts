@@ -12,8 +12,8 @@ import { fileURLToPath } from 'node:url'
 import { plainAr } from '@/application/text/plain-ar'
 import { auditActionAr } from '@/application/audit/labels'
 import {
-  CAREER_LEVELS, GRANT_ACADEMY_LINE_AR, GRANT_CONSENT_AR, GRANT_GAINS_AR, GRANT_INTEREST_DOMAINS, WORK_FIELDS,
-  campaignParams, campaignTag, grantSavingAr, leadProfileAr, rankByInterest, toggleCourse,
+  CAREER_LEVELS, GRANT_ACADEMY_LINE_AR, GRANT_CONSENT_AR, GRANT_GAINS_AR, GRANT_INTEREST_DOMAINS, GRANT_SUGGESTED_COURSES, WORK_FIELDS,
+  campaignParams, campaignTag, grantSavingAr, leadProfileAr, rankByInterest, suggestCourses, toggleCourse, workFieldDomains,
 } from '@/application/commerce/grant-landing'
 import { courseDomain } from '@/application/catalog/course-domain'
 import { parsePendingCheckout } from '@/application/commerce/pending-checkout'
@@ -67,7 +67,7 @@ describe('بعد النموذج', () => {
   })
 
   it('⚠️ قائمة دورات واحدة بلا كلمة «مسار» — كل ما يشترى اليوم، فالجديد يظهر وحده', () => {
-    expect(PAGE).toMatch(/const courses = rankByInterest\(view\.openCourses, fits\)/)
+    expect(PAGE).toMatch(/const courses = rankByInterest\(view\.openCourses, \(x\) => \(ours\.has\(x\.courseId\) \? 2 \+ suggested\.length - suggested\.indexOf\(x\.courseId\) : fits\(x\)\)\)/)
     expect(PAGE).toMatch(/\{courses\.map\(\(x\) => \{/)
     expect(PAGE).toMatch(/onChange=\{\(\) => toggle\(x\.courseId\)\}/)
     expect(PAGE, 'يوم الشعبة بمنطقة الأكاديمية').toMatch(/cohortDayAr\(x\.startsAt\)/)
@@ -79,7 +79,7 @@ describe('بعد النموذج', () => {
     expect(PAGE, 'عادت الاقتراحات').not.toMatch(/pathways|suggestions|اقتراحات لك|اختر هذه الدورات/)
     expect(PAGE).toMatch(/قبل المنحة <span dir="ltr" className="line-through">\{money\(x\.price\)\}<\/span>/)
     expect(PAGE).toMatch(/بعد المنحة <span dir="ltr">\{money\(grantPrice\(x\.price, pct\)\)\}<\/span>/)
-    expect(PAGE).toContain('من دورة واحدة إلى {max} دورات')
+    expect(PAGE).toContain('اختر من دورة واحدة إلى ${max} دورات.')
   })
 
   it('⚠️ وأنها مباشرة على Zoom — في أول الصفحة، وفيما يحصل عليه، وفوق القائمة، وفي كل دورة', () => {
@@ -99,6 +99,42 @@ describe('بعد النموذج', () => {
     expect(GRANT_INTEREST_DOMAINS.has('أخرى')).toBe(false)
     expect(leadProfileAr({ workField: 'الهندسة', careerLevel: 'مدير', interests: ['أ', 'ب'] })).toBe('مجاله: الهندسة · مستواه: مدير · يريد: أ، ب')
     expect(leadProfileAr({ workField: null, careerLevel: null, interests: [] })).toBe('')
+  })
+
+  it('⚠️ أربع دورات نختارها له سلفا — ما يريد تطويره، ثم مجال عمله، ثم الأقرب موعدا', () => {
+    expect(GRANT_SUGGESTED_COURSES).toBe(4)
+    const hr = courseDomain('C-HR-101'), mkt = courseDomain('C-MKT-101'), ai = courseDomain('C-AI-101')
+    const day = (d: number) => new Date(Date.UTC(2026, 10, d)).toISOString()
+    const pool = [
+      { courseId: 'ai-late', domainAr: ai, startsAt: day(30) },
+      { courseId: 'hr-late', domainAr: hr, startsAt: day(25) },
+      { courseId: 'ai-soon', domainAr: ai, startsAt: day(2) },
+      { courseId: 'mkt', domainAr: mkt, startsAt: day(20) },
+      { courseId: 'hr-soon', domainAr: hr, startsAt: day(9) },
+      { courseId: 'none', domainAr: null, startsAt: null },
+    ]
+    /* مجالُ عمله «الموارد البشرية» واهتمامُه «التسويق»: التسويقُ أوّلا، ثمّ دورتا الموارد البشريّة بموعدهما، ثمّ الأقرب */
+    expect(suggestCourses(pool, [mkt], 'الموارد البشرية', 4)).toEqual(['mkt', 'hr-soon', 'hr-late', 'ai-soon'])
+    /* بلا اهتمامٍ ومجالٍ لا يقابل دورة: الأقربُ موعدا، وبلا موعدٍ آخرا */
+    expect(suggestCourses(pool, [], 'أخرى', 4)).toEqual(['ai-soon', 'hr-soon', 'mkt', 'hr-late'])
+    expect(suggestCourses(pool, [], 'أخرى', 9).at(-1), 'بلا موعد قبل ما له موعد').toBe('none')
+    expect(suggestCourses(pool.slice(0, 2), [mkt], 'الهندسة', 4), 'أكثر مما يشترى').toHaveLength(2)
+    expect(suggestCourses(pool, [], 'أخرى', 0)).toEqual([])
+    /* ولكلّ مجال عملٍ مجالاتُ دوراتٍ قائمة — إلّا «أخرى» */
+    for (const f of WORK_FIELDS) {
+      const ds = workFieldDomains(f)
+      for (const d of ds) expect(GRANT_INTEREST_DOMAINS.has(d), `${f}: ${d}`).toBe(true)
+      if (f !== 'أخرى') expect(ds.length, `بلا مجالات: ${f}`).toBeGreaterThan(0)
+    }
+  })
+
+  it('⚠️ والصفحة تختارها حين يصير له كود — وما تركه قبل توثيق بريده أولى، ولا تتجاوز الحد', () => {
+    const effect = PAGE.slice(PAGE.indexOf('useEffect(() => {\n    if (!view || !stored || seeded) return;'))
+    expect(effect.length, 'الاختيار الأول لا ينتظر الكود').toBeGreaterThan(0)
+    expect(effect).toMatch(/suggestCourses\(view\.openCourses, stored\.interests, stored\.workField, Math\.min\(GRANT_SUGGESTED_COURSES, max\)\)/)
+    expect(effect).toMatch(/setPicked\(resumed \? resumed\.intent\.courseIds\.filter\(\(id\) => open\.has\(id\)\)\.slice\(0, max\) : ours\)/)
+    expect(PAGE, 'لا يحفظ مجال عمله').toMatch(/interests, workField: form\.workField,/)
+    expect(PAGE).toMatch(/ours\.has\(x\.courseId\)\s*\? <Chip tone="accent" className="mt-1">اخترناها لك<\/Chip>/)
   })
 
   it('⚠️ دورة واحدة أو أكثر حتى الحد — والزائدة ترد بلا أن تمحو ما اختاره', () => {
@@ -135,6 +171,8 @@ describe('بعد النموذج', () => {
     const ok = { ref: '11111111-1111-4111-8111-111111111111', code: 'WG-ABCD2345', sentTo: null, name: 'سارة', email: 's@x.co', interests: ['أ'], at: Date.now() }
     expect(parseStoredGrant(JSON.stringify(ok))?.code).toBe('WG-ABCD2345')
     expect(parseStoredGrant(JSON.stringify(ok))?.interests).toEqual(['أ'])
+    expect(parseStoredGrant(JSON.stringify({ ...ok, workField: 'الهندسة' }))?.workField).toBe('الهندسة')
+    expect(parseStoredGrant(JSON.stringify(ok))?.workField, 'حفظ قبل مجال العمل').toBe('')
     expect(parseStoredGrant(JSON.stringify({ ...ok, interests: [1, 'ب', 'ج', 'د', 'ه'] }))?.interests, 'اهتمام بغير شكله').toEqual(['ب', 'ج', 'د'])
     expect(parseStoredGrant(JSON.stringify({ ...ok, interests: undefined }))?.interests, 'حفظ قبل السؤال').toEqual([])
     expect(parseStoredGrant(JSON.stringify({ ...ok, ref: 'x' }))).toBeNull()
@@ -152,7 +190,7 @@ describe('النصوص', () => {
     ]
     const onPage = ['احجز منحتي الآن', 'الاسم الكامل', 'رقم الواتساب', 'البريد الإلكتروني', 'مجال عملك', 'مستواك الوظيفي', 'ما الذي تريد تطويره؟',
       'سؤالان اختياريان لنرتب لك الدورات', 'كود منحتك', 'اختر دوراتك',
-      'كل الدورات المتاحة', 'كل الدورات مباشرة على Zoom', 'قبل المنحة', 'بعد المنحة', 'يناسب ما تريد تطويره', 'لست متأكدا؟ تواصل مع مستشار', 'اطلب مستشارا', 'ادفع الآن']
+      'كل الدورات المتاحة', 'كل الدورات مباشرة على Zoom', 'قبل المنحة', 'بعد المنحة', 'اخترناها لك', 'تناسبك. احذف أو أضف كما تشاء', 'يناسب ما تريد تطويره', 'لست متأكدا؟ تواصل مع مستشار', 'اطلب مستشارا', 'ادفع الآن']
     for (const t of [...data, ...onPage]) expect(t).toBe(plainAr(t))
     for (const t of onPage) expect(PAGE).toContain(t)
     expect(auditActionAr('coupon.grant_apply')).not.toBe('coupon.grant_apply')

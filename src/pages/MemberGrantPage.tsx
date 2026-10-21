@@ -46,8 +46,8 @@ import { fmtDate, fmtMoney } from "@/application/text/format-ar";
 import { cohortDayAr } from "@/application/learning/cohort-gate";
 import { grantPrice, MEMBER_GRANT_NAME_AR } from "@/application/commerce/grant";
 import {
-  CAREER_LEVELS, GRANT_ACADEMY_LINE_AR, GRANT_CONSENT_AR, GRANT_GAINS_AR, GRANT_MAX_INTERESTS, WORK_FIELDS,
-  campaignParams, grantSavingAr, rankByInterest, toggleCourse,
+  CAREER_LEVELS, GRANT_ACADEMY_LINE_AR, GRANT_CONSENT_AR, GRANT_GAINS_AR, GRANT_MAX_INTERESTS, GRANT_SUGGESTED_COURSES, WORK_FIELDS,
+  campaignParams, grantSavingAr, rankByInterest, suggestCourses, toggleCourse,
 } from "@/application/commerce/grant-landing";
 import { readStoredGrant, saveStoredGrant, type StoredGrant } from "@/services/grant-landing";
 import { resumedCheckoutFor, savePendingCheckout } from "@/services/pending-checkout";
@@ -70,6 +70,8 @@ const USD = "USD";
 const PICK_PATH = "/grant/build";
 const BUY_TITLE_AR = "دورات منحتك";
 const money = (n: number) => fmtMoney(n, USD);
+/** «دورة» و«دورتين» بلا رقم، و«4 دورات» */
+const coursesAr = (n: number) => (n === 1 ? "دورة" : n === 2 ? "دورتين" : `${n} دورات`);
 /** مجالُ دورةٍ لم تُسمَّ عائلتُها — لا يُعرض فيما يريد تطويرَه */
 const OTHER_DOMAIN = "أخرى";
 const GAIN_ICON: Record<(typeof GRANT_GAINS_AR)[number]["id"], LucideIcon> = { live: Video, recording: CirclePlay, certificate: Award };
@@ -89,6 +91,8 @@ export default function MemberGrantPage() {
 
   /* الدوراتُ المختارة بترتيب اختيارها — من كلّ ما يُشترى اليوم */
   const [picked, setPicked] = useState<string[]>([]);
+  /* ما اخترناه له سلفا — يبقى أعلى القائمة بشارته وإن حذفه، فلا تقفز الصفوفُ تحت يده */
+  const [suggested, setSuggested] = useState<string[]>([]);
   const [seeded, setSeeded] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const [buyOpen, setBuyOpen] = useState(false);
@@ -101,13 +105,17 @@ export default function MemberGrantPage() {
 
   const [resumed] = useState(() => resumedCheckoutFor(PICK_PATH));
 
-  /* الاختيارُ الأوّل مرّةً واحدة: ما تركه قبل أن يخرج ليوثّق بريده */
+  /* الاختيارُ الأوّل مرّةً واحدةً حين يصير له كود: ما تركه قبل أن يخرج ليوثّق بريده، وإلّا أربعُ دوراتٍ نختارها
+     له بمجاله واهتمامه (`suggestCourses`) — يحذف منها ويضيف كما يشاء حتّى حدّ المنحة */
   useEffect(() => {
-    if (!view || seeded) return;
+    if (!view || !stored || seeded) return;
+    const max = view.campaign.maxCourses;
+    const ours = suggestCourses(view.openCourses, stored.interests, stored.workField, Math.min(GRANT_SUGGESTED_COURSES, max));
     const open = new Set(view.openCourses.map((x) => x.courseId));
-    setPicked((resumed?.intent.courseIds ?? []).filter((id) => open.has(id)).slice(0, view.campaign.maxCourses));
+    setSuggested(ours);
+    setPicked(resumed ? resumed.intent.courseIds.filter((id) => open.has(id)).slice(0, max) : ours);
     setSeeded(true);
-  }, [view, seeded, resumed]);
+  }, [view, stored, seeded, resumed]);
 
   const pct = view?.campaign.percentOff ?? 0;
   const max = view?.campaign.maxCourses ?? 4;
@@ -128,7 +136,7 @@ export default function MemberGrantPage() {
       });
       const g = {
         ref: out.ref, code: out.grant?.code ?? null, sentTo: out.grant?.sentTo ?? null,
-        name: form.fullName.trim(), email: form.email.trim(), interests,
+        name: form.fullName.trim(), email: form.email.trim(), interests, workField: form.workField,
       };
       saveStoredGrant(g);
       setStored({ ...g, at: Date.now() });
@@ -175,10 +183,12 @@ export default function MemberGrantPage() {
 
   /* ─── الخطوة ٢: الكودُ واختيارُ الدورات ─── */
   if (stored) {
-    /* ما قال إنّه يريد تطويرَه أوّلا */
+    /* ما اخترناه له أوّلا، ثمّ ما قال إنّه يريد تطويرَه */
     const mine = new Set(stored.interests);
+    const ours = new Set(suggested);
     const fits = (x: GrantCourse) => (x.domainAr && mine.has(x.domainAr) ? 1 : 0);
-    const courses = rankByInterest(view.openCourses, fits);
+    /* والمختارةُ بترتيب اختيارنا — أنسبُها أوّلا — فوق كلّ ما سواها */
+    const courses = rankByInterest(view.openCourses, (x) => (ours.has(x.courseId) ? 2 + suggested.length - suggested.indexOf(x.courseId) : fits(x)));
     return (
       <Shell>
         <Card tone="accent" className="text-center">
@@ -201,7 +211,8 @@ export default function MemberGrantPage() {
 
         <h2 className="mt-6 text-xl font-black">اختر دوراتك</h2>
         <p className="mt-1 text-read text-muted-foreground">
-          اختر الدورات التي تريد أن تربطها بمنحتك: من دورة واحدة إلى {max} دورات. ترى سعر كل دورة قبل المنحة وبعدها.{lastDay ? ` آخر يوم ${lastDay}.` : ""}
+          {suggested.length > 0 ? `اخترنا لك ${coursesAr(suggested.length)} تناسبك. احذف أو أضف كما تشاء، حتى ${max} دورات.` : `اختر من دورة واحدة إلى ${max} دورات.`}
+          {" "}ترى سعر كل دورة قبل المنحة وبعدها.{lastDay ? ` آخر يوم ${lastDay}.` : ""}
         </p>
         <Inset tone="accent" className="mt-3 flex items-start gap-3">
           <Video className="mt-0.5 h-5 w-5 shrink-0 text-teal-light-ink" aria-hidden="true" />
@@ -232,7 +243,9 @@ export default function MemberGrantPage() {
                     <span>
                       <span className="block font-bold">{x.titleAr}</span>
                       <span className="block text-read text-muted-foreground">{x.domainAr ? `${x.domainAr} · ` : ""}تبدأ {cohortDayAr(x.startsAt)} · مباشرة على Zoom</span>
-                      {fits(x) > 0 && <Chip tone="accent" className="mt-1">يناسب ما تريد تطويره</Chip>}
+                      {ours.has(x.courseId)
+                        ? <Chip tone="accent" className="mt-1">اخترناها لك</Chip>
+                        : fits(x) > 0 && <Chip tone="accent" className="mt-1">يناسب ما تريد تطويره</Chip>}
                     </span>
                     {/* السعرُ تحت العنوان على الهاتف، وبجانبه على الحاسوب — فلا يضيق العنوانُ حتّى يتكسّر */}
                     <span className="col-start-2 flex flex-wrap gap-x-4 text-read sm:col-start-3 sm:block sm:text-end">

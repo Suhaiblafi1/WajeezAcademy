@@ -73,6 +73,54 @@ export const GRANT_GAINS_AR: readonly { id: 'live' | 'recording' | 'certificate'
 /** سطرٌ واحدٌ عن الأكاديمية تحت النموذج — بدل نبذة «من نحن» كاملة، وادّعاؤه منها (`data/about.ts`) */
 export const GRANT_ACADEMY_LINE_AR = 'أكاديمية وجيز من وجيز، التي يعرفها الملايين بتطبيق ملخصات الكتب المسموعة.'
 
+/* ═══ أربعُ دوراتٍ مختارةٌ له سلفا (٢١ أكتوبر ٢٠٢٦) ═══
+
+   قرارُ صاحب المنصّة: «لنعد لفكرة اقتراح ٤ دوراتٍ له، ويمكنه أن يحذف ويستبدل كيفما شاء، وبعدها يدفع، ويضيف
+   للحدّ ٥ فقط». وخُيّر كيف تُختار، فاختار **حسب مجاله واهتمامه**: ما اختاره في «ما الذي تريد تطويره» أوّلا، ثمّ
+   مجالاتُ مجال عمله، ثمّ الأقربُ موعدا يُكمل الأربع. فلكلٍّ اقتراحٌ يناسبه بلا أن يُعدّ صاحبُ المنصّة شيئا. */
+
+/** كم دورةً تُختار له سلفا — ويضيف حتّى حدّ المنحة (`maxCourses`) */
+export const GRANT_SUGGESTED_COURSES = 4
+
+/** مجالاتُ الدورات الأقربُ لكلّ مجال عمل — بعائلات المعرّفات (`course-domain.ts`)، فلا يفترق اسمٌ عن اسم */
+const WORK_FIELD_FAMILIES: Readonly<Record<string, readonly string[]>> = {
+  'الإدارة والقيادة': ['MGR', 'PM', 'OPS', 'PRD'],
+  'الموارد البشرية': ['HR', 'MGR', 'LND'],
+  'المالية والمحاسبة': ['FINM', 'DAT', 'FIN'],
+  'التسويق والمبيعات': ['MKT', 'SAL', 'SVC', 'BIZ'],
+  'خدمة العملاء': ['SVC', 'COMX', 'SAL'],
+  'تقنية المعلومات': ['AI', 'DAT', 'CYB', 'WEB', 'AUT'],
+  'التعليم والتدريب': ['LND', 'EDU', 'COMX'],
+  'الهندسة': ['ENGR', 'PM', 'INTR', 'OPS'],
+  'الصحة': ['PSY', 'WEL', 'COMX'],
+  'طالب جامعي': ['CAR', 'JOB', 'AI', 'COMX'],
+  'أبحث عن عمل': ['JOB', 'CAR', 'COMX'],
+  'أخرى': [],
+}
+
+/** مجالاتُ الدورات الأقربُ لمجال عمله — بأسمائها كما تُعرض */
+export function workFieldDomains(workField: string): string[] {
+  return (WORK_FIELD_FAMILIES[workField] ?? []).map(courseDomainByFamily).filter(Boolean)
+}
+
+/** الدوراتُ المختارةُ له سلفا — ما يريد تطويرَه، ثمّ مجالُ عمله، ثمّ الأقربُ موعدا، حتّى `n` */
+export function suggestCourses(
+  courses: readonly { courseId: string; domainAr?: string | null; startsAt: string | Date | null }[],
+  interests: readonly string[],
+  workField: string,
+  n: number,
+): string[] {
+  const want = new Set(interests)
+  const near = new Set(workFieldDomains(workField))
+  const score = (d: string | null | undefined) => (d && want.has(d) ? 2 : d && near.has(d) ? 1 : 0)
+  const at = (x: string | Date | null) => (x ? new Date(x).getTime() : Number.POSITIVE_INFINITY)
+  return courses
+    .map((c, i) => ({ id: c.courseId, s: score(c.domainAr), t: at(c.startsAt), i }))
+    .sort((a, b) => b.s - a.s || a.t - b.t || a.i - b.i)
+    .slice(0, Math.max(0, n))
+    .map((x) => x.id)
+}
+
 /** ما يريد تطويرَه أوّلا — ترتيبٌ ثابت: ما في اهتمامه قبل غيره، وكلٌّ على ترتيبه */
 export function rankByInterest<T>(items: readonly T[], hits: (x: T) => number): T[] {
   return items.map((x, i) => ({ x, i, h: hits(x) })).sort((a, b) => b.h - a.h || a.i - b.i).map((r) => r.x)
