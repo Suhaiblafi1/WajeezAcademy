@@ -13,7 +13,7 @@ import { plainAr } from '@/application/text/plain-ar'
 import { auditActionAr } from '@/application/audit/labels'
 import {
   CAREER_LEVELS, GRANT_ACADEMY_LINE_AR, GRANT_CONSENT_AR, GRANT_GAINS_AR, GRANT_INTEREST_DOMAINS, GRANT_SUGGESTED_COURSES, WORK_FIELDS,
-  campaignParams, campaignTag, grantSavingAr, grantShareAr, leadProfileAr, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse, workFieldDomains,
+  campaignParams, campaignTag, grantDaysLeftAr, grantSavingAr, grantShareAr, leadProfileAr, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse, workFieldDomains,
 } from '@/application/commerce/grant-landing'
 import { courseDomain } from '@/application/catalog/course-domain'
 import { parsePendingCheckout } from '@/application/commerce/pending-checkout'
@@ -190,6 +190,13 @@ describe('بعد النموذج', () => {
     expect(PAGE).toMatch(/import \{ waShare \} from "@\/application\/site\/whatsapp";/)
     expect(PAGE).toContain('أهد منحة لصديق')
     expect(code('src/pages/admin/GrantResults.tsx'), 'نتائج الحملة تسمي قناتها').toMatch(/share: "من صديق"/)
+  })
+
+  it('⚠️ عنوان تذكير ما قبل انتهاء المنحة — من الأيام الباقية حقا', () => {
+    expect(grantDaysLeftAr(3)).toBe('بقي 3 أيام على منحتك')
+    expect(grantDaysLeftAr(2)).toBe('بقي يومان على منحتك')
+    expect(grantDaysLeftAr(1)).toBe('اليوم آخر يوم لمنحتك')
+    expect(grantDaysLeftAr(0)).toBe('اليوم آخر يوم لمنحتك')
   })
 
   it('⚠️ دورة واحدة أو أكثر حتى الحد — والزائدة ترد بلا أن تمحو ما اختاره', () => {

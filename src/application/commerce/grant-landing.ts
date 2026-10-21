@@ -163,7 +163,8 @@ export function suggestPaths(
 
 /* ═══ وأفكارُ «الاستحواذ على العميل» (٢١ أكتوبر ٢٠٢٦) ═══
 
-   سأل صاحبُ المنصّة: «أيّ أفكارٍ أخرى تساعدنا بالاستحواذ على العميل؟»، واختار أربعا. ثلاثٌ منها هنا:
+   سأل صاحبُ المنصّة: «أيّ أفكارٍ أخرى تساعدنا بالاستحواذ على العميل؟»، واختار أربعا. ثلاثٌ منها هنا،
+   والرابعةُ — تذكيرٌ قبل انتهاء المنحة — في العامل (`sendGrantReminders`) ونصُّ عنوانه هنا (`grantDaysLeftAr`):
    · **«بقي X مقاعد»** — على الشعبة حين تقلّ مقاعدُها عن ستّ، من عددها الحقيقيّ. لا رقمٌ كبيرٌ يقلّل القيمة — وهو
      ما رُدّ في عدد المنح («لا تذكر عدد المنح لأنّ العددَ الكبير قد يقلّل من قيمتها»).
    · **«أهد منحة لصديق»** — رسالةٌ جاهزةٌ في واتساب برابط المنحة ووسم قناته (`?ch=share`)، فيُعرف في
@@ -202,4 +203,11 @@ export function leadProfileAr(l: { workField: string | null; careerLevel: string
 export function toggleCourse(picked: readonly string[], id: string, max: number): string[] {
   if (picked.includes(id)) return picked.filter((x) => x !== id)
   return picked.length < max ? [...picked, id] : [...picked]
+}
+
+/** عنوانُ تذكير ما قبل انتهاء المنحة — من أيّامها الباقية بتقويم عمّان، واليومُ نفسُه منها
+    (`sendGrantReminders` في `grant-followup.service.ts`) */
+export function grantDaysLeftAr(days: number): string {
+  if (days <= 1) return 'اليوم آخر يوم لمنحتك'
+  return days === 2 ? 'بقي يومان على منحتك' : `بقي ${days} أيام على منحتك`
 }
