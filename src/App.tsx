@@ -42,6 +42,7 @@ const AccountPage = lazy(() => import('./pages/student/Account'))
 const StudentBilling = lazy(() => import('./pages/student/Billing'))
 const StudentCv = lazy(() => import('./pages/student/MyCv'))
 const StudentInbox = lazy(() => import('./pages/student/Inbox'))
+const TrainerInbox = lazy(() => import('./pages/trainer/Inbox'))
 const StudentSupport = lazy(() => import('./pages/student/Support'))
 const MyVault = lazy(() => import('./pages/student/MyVault'))
 const StudentLibrary = lazy(() => import('./pages/student/Library'))
@@ -296,6 +297,8 @@ export default function App() {
           <Route element={<RequireRole allow={TRAINER_ROLES} />}>
             <Route path="/trainer" element={<TrainerDashboard />} />
             <Route path="/trainer/account" element={<AccountPage />} />
+            {/* «الرسائل والتنبيهات» — والجرسُ يفتحها (٢١ أكتوبر ٢٠٢٦، `pages/trainer/Inbox.tsx`) */}
+            <Route path="/trainer/inbox" element={<TrainerInbox />} />
             <Route path="/trainer/qualifications" element={<TrainerQualifications />} />
             {/* «عروضي» دخلت «مؤهّلاتي» (٢٩ سبتمبر ٢٠٢٦) — العرضُ حالُ مؤهَّلٍ
                 يُقرَّر عنده. ويبقى المسارُ القديمُ تحويلا: إشعاراتٌ مضت تحمله. */}

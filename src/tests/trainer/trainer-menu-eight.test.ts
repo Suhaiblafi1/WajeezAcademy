@@ -7,6 +7,10 @@
    · «ما قيل عنّي» قسمٌ في «الرئيسية».
    والمساراتُ القديمةُ تُحال إلى مواضعها: رسائلُ مضت تحملها.
 
+   ثمّ صارت تسعة (٢١ أكتوبر ٢٠٢٦): «الرسائل والتنبيهات» — اختار صاحبُ المنصّة «A» من ثلاثة مواضعَ عُرضت
+   بالصور: «صفحةٌ مستقلّةٌ، بندٌ في القائمة». وهو آخرُها، فعلى الهاتف يخرج إلى «المزيد» قبل غيره، والجرسُ
+   يفتحه من كلّ شاشة (`pages/trainer/Inbox.tsx`).
+
    والفحصُ على الشيفرة بلا تعليقاتها. */
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -15,12 +19,12 @@ import { describe, expect, it } from 'vitest'
 const code = (p: string) => readFileSync(join(process.cwd(), p), 'utf8')
   .replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '').replace(/^\s*\/\/.*$/gm, '')
 
-describe('① ثمانيةُ ألسنة', () => {
+describe('① ثمانيةُ ألسنة، والتاسعُ «الرسائل والتنبيهات»', () => {
   it('⚠️ بأسمائها وترتيبها — ولسانُ «اختبار المستوى» لمن مُنحه وحدَه', () => {
     const nav = code('src/pages/trainer/TrainerLayout.tsx')
     const fixed = nav.slice(nav.indexOf('const tabs: PortalTab[] = ['), nav.indexOf('...(user?.permissions.includes("placement.review")'))
     const labels = [...fixed.matchAll(/\{ to: "\/trainer[^"]*", label: "([^"]+)"/g)].map((m) => m[1])
-    expect(labels).toEqual(['الرئيسية', 'شعبي', 'طلبتي', 'طابور التقييم', 'جدولي', 'دوراتي', 'التسويق', 'مستحقاتي'])
+    expect(labels).toEqual(['الرئيسية', 'شعبي', 'طلبتي', 'طابور التقييم', 'جدولي', 'دوراتي', 'التسويق', 'مستحقاتي', 'الرسائل والتنبيهات'])
   })
 })
 

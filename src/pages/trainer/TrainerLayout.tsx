@@ -1,5 +1,5 @@
 import { Link } from "react-router";
-import { BookCheck, BookOpen, CalendarDays, ClipboardCheck, GraduationCap, Languages, LayoutDashboard, Megaphone, Users, Wallet } from "lucide-react";
+import { BookCheck, BookOpen, CalendarDays, ClipboardCheck, GraduationCap, Inbox, Languages, LayoutDashboard, Megaphone, Users, Wallet } from "lucide-react";
 import { PortalTabs, type PortalTab } from "@/components/ui/PortalTabs";
 import NotificationBell from "@/components/NotificationBell";
 import SearchChip from "@/components/SearchChip";
@@ -15,6 +15,7 @@ import { GRADING_CHANGED } from "@/services/grading-signal";
 import { TRAINER_GUIDE_PATH } from "@/application/trainer/trainer-guide";
 import { hasOpenCondition } from "@/application/trainer/conditional-offer";
 import { tabsForStage } from "@/application/trainer/setup-tabs";
+import { useUnreadCount } from "@/services/unread-count";
 import TrainerAnnouncement from "./TrainerAnnouncement";
 
 /* ما يقرؤه الإطارُ من `/api/trainer/me` — لا الملفُّ كلُّه.
@@ -66,6 +67,8 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
   }, [refreshMe]);
   const pending = me?.pendingGrading ?? 0;
   const realTrainer = user?.permissions.includes("trainer.portal") ?? false;
+  /* غيرُ المقروء — المخزنُ نفسُه الذي يقرؤه الجرس، فنداءٌ واحدٌ للاثنين (`unread-count.ts`) */
+  const unread = useUnreadCount("trainer", realTrainer);
 
   /* ═══ ارتفاعُ الشريط يُقاس ويُنشَر — فوق كلّ عودةٍ مبكّرة ═══
 
@@ -164,6 +167,8 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
        القائمةُ ثمانيةُ ألسنةٍ بعد أربعة عشر. وكان «عقدي» لسانا بجانبها بقرار ٢٥ سبتمبر ٢٠٢٦ («الملف
        يكون في منصته ضمن قسم المستحقات والعقد») — فصار فيها كما قال. */
     { to: "/trainer/earnings", label: "مستحقاتي", icon: Wallet },
+    /* «الرسائل والتنبيهات» (٢١ أكتوبر ٢٠٢٦) — والجرسُ يفتحها كذلك، فلا يضيع إن خرج إلى «المزيد» */
+    { to: "/trainer/inbox", label: "الرسائل والتنبيهات", icon: Inbox, count: unread, countLabel: "غير مقروء: " },
     /* مراجعةُ اختبار تحديد المستوى (٨ أكتوبر ٢٠٢٦) — لا تُرى إلّا لمن مُنح
        `placement.review`: مدرّبُ الإنجليزيّة بعينه، لا كلُّ مدرّب. */
     ...(user?.permissions.includes("placement.review")
@@ -259,7 +264,7 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
             className="order-last w-full"
           />
           <div className="flex items-center gap-3">
-            <NotificationBell audience="trainer" />
+            <NotificationBell audience="trainer" href="/trainer/inbox" />
             <ThemeToggle />
             <StaffAccountMenu user={user} />
           </div>
