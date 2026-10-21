@@ -33,6 +33,8 @@ import CourseTitle from "@/components/CourseTitle"
 import { Card } from "@/components/ui/Surface"
 import FavoriteButton from "@/components/FavoriteButton"
 import SectionLabel from "./SectionLabel"
+import { useListedCourses } from "@/services/listed-courses"
+import { listedOnly } from "@/application/catalog/listed-courses"
 
 /* البابان يشتركان في هيئةٍ واحدة، ويفترق لونُهما وحدَه */
 const DOOR = "inline-flex items-center gap-2 rounded-2xl border px-6 py-3 text-sm font-bold transition"
@@ -198,17 +200,20 @@ export function Bestsellers() {
      الكتالوجُ مرتَّبٌ بالمسار ثمّ التسلسل، فأوّلُ ما يقع عليه الإتمامُ دورةٌ
      من المسار الذي أُخذت منه المختارة. فتُقدَّم دورةٌ واحدةٌ من كلّ مسارٍ على
      ثانيةٍ من مسارٍ رُئي — اقتراحٌ يوسّع ما يُرى لا يكرّره. */
+  /* ودوراتُ الرئيسة كقسم الدورات: ما له شعبةٌ أُعلنت ولم تنتهِ (`listed-courses.ts`) — المختاراتُ
+     التحريريّةُ نفسُها تُرشَّح، فلا تُعرض في الواجهة دورةٌ لا تُعرض في قسمها */
+  const listed = useListedCourses()
   const coursePool = useMemo(() => {
     const firsts: typeof courses = []
     const rest: typeof courses = []
     const seen = new Set<string>()
-    for (const c of courses) {
+    for (const c of listedOnly(courses, listed)) {
       if (seen.has(c.pathwayId)) rest.push(c)
       else { firsts.push(c); seen.add(c.pathwayId) }
     }
     return [...firsts, ...rest]
     // eslint-disable-next-line react-hooks/exhaustive-deps -- كما فوقه: الكتالوجُ يُستبدل وقت التشغيل
-  }, [catalogVersion])
+  }, [listed, catalogVersion])
 
   /* والمجالُ لا الفئةُ المستهدفة — كرقاقات صفحة الدورات (صاحب المنصّة، ٨
      سبتمبر ٢٠٢٦: «للدورات أريد البحث يكون بالمجال مثل المسارات وليس الفئة
@@ -216,12 +221,12 @@ export function Bestsellers() {
      «موظفون ومختصون» هنا و«إدارة المشاريع والعمليات» هناك للشيء نفسِه. */
   const courseSource: PickSource<Course> = useMemo(
     () => ({
-      editorial: bestsellerCourses,
+      editorial: listedOnly(bestsellerCourses, listed),
       pool: coursePool,
       idOf: (c) => c.id,
       domainOf: (c) => pathwayDomain(c.pathwayId),
     }),
-    [coursePool],
+    [coursePool, listed],
   )
   const crRows = useMemo(() => filterRows(courseSource), [courseSource])
   const crCounts = useMemo(

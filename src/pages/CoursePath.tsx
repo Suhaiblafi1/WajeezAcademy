@@ -27,6 +27,7 @@ import { resumedCheckoutFor, savePendingCheckout } from "@/services/pending-chec
 import { couponFieldCls } from "@/components/FormKit";
 import CohortPicker from "@/components/CohortPicker";
 import CourseInterestForm from "@/components/CourseInterestForm";
+import { useListedCourses } from "@/services/listed-courses";
 import { useRealSession } from "@/services/session";
 import { apiGet } from "@/services/api";
 import CourseTitle from "@/components/CourseTitle";
@@ -107,6 +108,9 @@ function CoursePathPage({ courseId }: { courseId: string }) {
      مرجعا: خلطُ دينارٍ بريالٍ في مجموعٍ واحد يُخرج رقما لا يُطالَب به أحد،
      فما خالف عملةَ المرجع يُعدّ «غير مسعَّر» ويُقال ذلك نصّا. */
   const { cohorts, loaded: pricesLoaded } = useCourseCohorts();
+  /* دورةٌ معروضةٌ بلا شعبةٍ تُلتحق: شعبتُها اكتملت أو بدأت — فتقول ذلك وتَعِد بالتالية (`listed-courses.ts`) */
+  const listed = useListedCourses();
+  const running = (courseId: string) => listed.state === "ready" && listed.ids.has(courseId);
 
   const anchor = courseById(courseId);
   /* ═══ ومن عاد من رابط التوثيق يجد ما اختاره (٢٠ أكتوبر ٢٠٢٦، الخطوة ل) ═══
@@ -588,10 +592,11 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                         track("cohort_chosen", { course: c.id });
                       }}
                       compact
+                      running={running(c.id)}
                     />
                     {/* ولا شعبةَ لها: «أبلغني» لمن جاء يريدها — بريدٌ واحدٌ بلا حساب (١٢ أكتوبر ٢٠٢٦) */}
                     {pricesLoaded && options.length === 0 && (
-                      <CourseInterestForm courseId={c.id} email={session?.email ?? ""} />
+                      <CourseInterestForm courseId={c.id} email={session?.email ?? ""} next={running(c.id)} />
                     )}
                   </div>
                 </Card>

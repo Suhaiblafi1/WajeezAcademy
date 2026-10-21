@@ -173,6 +173,29 @@ export function openRegistrationWhere(now = new Date()): Prisma.CohortWhereInput
   }
 }
 
+/** شعبةٌ تُبقي دورتَها في قوائم الموقع — من فتح تسجيلها إلى انتهائها.
+
+    قرارُ صاحب المنصّة (٢١ أكتوبر ٢٠٢٦): «أريد أن تظهر هذه الدورات فقط في قسم الدورات في الموقع، وأن
+    تخفى من لا شعبةَ لها.. ويكون الأمرُ تلقائيّا: لأيّ شعبةٍ تتفعّل تظهر في الموقع مباشرةً دورتُها
+    وتفاصيلُها». ثمّ اختار بين ثلاثة: **تظهر حتّى تنتهي شعبتُها** — لا ما دام الالتحاقُ ممكنا وحدَه،
+    فدورةٌ امتلأت شعبتُها أو بدأت لا تغيب في ذروة الإقبال عليها، بل تقول صفحتُها «نخبرك بالشعبة التالية».
+
+    فهي `openRegistrationWhere` بلا ما يُغلق الالتحاقَ ويُبقي الشعبة: إغلاقُ نافذة الفصل، وموعدُ
+    اللقاء الثاني (`joinClosesAt`)، والامتلاءُ والبدءُ (`full` و`active`). ويبقى ما يجعلها شعبةً
+    أُعلنت: خطّةُ مدرّبها معتمَدة، وتسجيلُها مفعَّل، ونافذةُ فصلها فُتحت — فشعبةٌ لفصلٍ لم يُفتح
+    تسجيلُه بعدُ لا تُظهر دورتَها قبل أوانها. وتغيب حين تنتهي (`endsAt`) أو تُكمَل أو تُلغى. */
+export function listedCohortWhere(now = new Date()): Prisma.CohortWhereInput {
+  return {
+    status: { in: ['open', 'full', 'active'] },
+    registrationOpen: true,
+    AND: [
+      { OR: [{ termId: null }, { term: { OR: [{ registrationOpensAt: null }, { registrationOpensAt: { lte: now } }] } }] },
+      APPROVED_TRAINER_PLAN_WHERE,
+      { OR: [{ endsAt: null }, { endsAt: { gt: now } }] },
+    ],
+  }
+}
+
 /** حمولةُ القراءة التي يحتاجها الفحصُ — تُستعمل في `include` فلا يُنسى حقل */
 export const TERM_WINDOW_SELECT = {
   select: { titleAr: true, registrationOpensAt: true, registrationClosesAt: true },

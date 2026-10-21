@@ -26,6 +26,8 @@ import { catalogRank, matchesCatalogQuery } from '@/application/catalog/catalog-
 import { courseTitleAr } from '@/application/catalog/course-title'
 import { usePublishedContent } from '@/services/public-content'
 import { Inset } from '@/components/ui/Surface'
+import { useListedCourses } from '@/services/listed-courses'
+import { listedOnly } from '@/application/catalog/listed-courses'
 
 const MAX_PER_GROUP = 5
 
@@ -33,6 +35,8 @@ interface Hit { id: string; title: string; sub: string; to: string; kind: 'pathw
 
 export default function PublicSearch() {
   const catalogVersion = usePublishedContent()
+  /* والبحثُ لا يجد ما يخفيه قسمُ الدورات — والصفحةُ تبقى لمن يملك رابطَها (`listed-courses.ts`) */
+  const listed = useListedCourses()
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
   const [q, setQ] = useState('')
@@ -85,7 +89,7 @@ export default function PublicSearch() {
         id: row.id, title: row.shortName, sub: `${row.courseCount} دورات · ${row.durationWeeks} أسبوعا`,
         to: `/pathways/${row.id}`, kind: 'pathway',
       }))
-    const cs = courses
+    const cs = listedOnly(courses, listed)
       .filter((c) => matchesCatalogQuery(q, [c.name, c.promise, c.audience, c.pathwayName, ...c.skills]))
       .map((c) => ({ row: c, rank: catalogRank(q, [[c.name], [c.promise, ...c.skills], [c.audience, c.pathwayName]]) }))
       .sort((a, b) => b.rank - a.rank)
@@ -96,7 +100,7 @@ export default function PublicSearch() {
       }))
     return [...pw, ...cs]
   /* eslint-disable-next-line react-hooks/exhaustive-deps -- رقمُ النسخة هو إشارةُ الإبطال الوحيدة: مصفوفاتُ الكتالوج تُملأ في مكانها بـ`splice` فلا تتغيّر هويّتُها، فحذفُ التبعيّة يجمّد أوّلَ لقطة */
-  }, [q, catalogVersion])
+  }, [q, listed, catalogVersion])
 
   const go = useCallback((to: string) => {
     close()

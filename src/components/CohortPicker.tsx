@@ -36,6 +36,9 @@ import { Inset } from "@/components/ui/Surface";
 /** ما يقال تحت دورةٍ لا شعبةَ لها — قرارُ صاحب المنصّة (١٩ أكتوبر ٢٠٢٦)، وشرحُه عند موضعه أدناه */
 const NO_COHORT_AR = "لا شعبة لها بعد";
 
+/** وما يقال تحت دورةٍ شعبتُها اكتملت أو بدأت — تبقى في القائمة حتّى تنتهي (٢١ أكتوبر ٢٠٢٦، `listed-courses.ts`) */
+export const COHORT_RUNNING_AR = "شعبتها الحالية اكتملت أو بدأت";
+
 /** كم شعبةً تظهر قبل «شعب أخرى» — الأقربُ أوّلا */
 const VISIBLE_COHORTS = 3;
 
@@ -123,6 +126,7 @@ export default function CohortPicker({
   selectedId,
   onSelect,
   compact = false,
+  running = false,
 }: {
   cohorts: CohortOption[];
   selectedId: string | null;
@@ -130,6 +134,8 @@ export default function CohortPicker({
   onSelect: (cohortId: string) => void;
   /** في القوائم الطويلة: اللقاءاتُ مطويّة */
   compact?: boolean;
+  /** لها شعبةٌ معروضةٌ لا تُلتحق — اكتملت أو بدأت — فلا يقال «لا شعبة لها بعد» */
+  running?: boolean;
 }) {
   const [showAll, setShowAll] = useState(false);
   const group = useId();
@@ -145,7 +151,7 @@ export default function CohortPicker({
     return (
       <span className="inline-flex items-center gap-1.5 text-fine font-bold text-muted-foreground">
         <CalendarDays className="h-3.5 w-3.5 shrink-0" />
-        {NO_COHORT_AR}
+        {running ? COHORT_RUNNING_AR : NO_COHORT_AR}
       </span>
     );
   }

@@ -7,7 +7,7 @@ import type { PrismaClient } from '@prisma/client'
 import { readableModuleVersion } from '../catalog/module-version-visibility'
 import { SKILL_LINK_ORDER } from '../catalog/skill-link-order'
 import { AuthError } from './auth.service'
-import { openRegistrationWhere } from './registration-window'
+import { listedCohortWhere, openRegistrationWhere } from './registration-window'
 import { publicTrainerWhere, TRAINER_VISIBILITY_SELECT, trainerPubliclyVisible } from './trainer-visibility'
 import { photoPublicUrl } from './storage.service'
 import { LEARNER_SESSION_WHERE } from './session-visibility'
@@ -90,6 +90,18 @@ export class PublicCatalogService {
       id: t.id, version: t.currentVersion,
       name: t.versions[0]?.nameAr ?? '', description: t.versions[0]?.intentAr ?? '',
     }))
+  }
+
+  /** رموزُ الدورات التي تُعرض في قوائم الموقع — ما له شعبةٌ أُعلنت ولم تنتهِ (`listedCohortWhere`).
+      وصفحةُ الدورة نفسُها تبقى لمن يملك رابطَها: الإخفاءُ من القوائم والبحث لا من الموقع. */
+  async listedCourseIds(now = new Date()): Promise<string[]> {
+    const rows = await this.prisma.cohort.findMany({
+      where: listedCohortWhere(now),
+      distinct: ['courseId'],
+      select: { courseId: true },
+      orderBy: { courseId: 'asc' },
+    })
+    return rows.map((r) => r.courseId)
   }
 
   /** الشعب المعروضة للزوار — مفتوحة أو ممتلئة أو جارية: السعر والموعد والمدرب */

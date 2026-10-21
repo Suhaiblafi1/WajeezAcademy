@@ -23,6 +23,8 @@ import {
 import { resolveCatalogRefsAr } from '@/application/catalog/visitor-text'
 import { sortKeyAr } from '@/application/catalog/course-title'
 import { useCourseCohorts } from '@/services/cohort-prices'
+import { useListedCourses } from '@/services/listed-courses'
+import { listedOnly } from '@/application/catalog/listed-courses'
 import { cohortDayAr } from '@/application/learning/cohort-gate'
 
 /* البند ع-١: كانت هذه المجموعتان تُحسبان في نطاق الوحدة — لقطة وقت الاستيراد.
@@ -50,6 +52,9 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
   /* الشعبُ المفتوحةُ لكلّ دورة — لتقول البطاقةُ «تبدأ في كذا» (٨ سبتمبر ٢٠٢٦):
      بطاقةٌ بلا موعدٍ تُقرأ كتالوجا لا دعوة. والمصدرُ نداءٌ واحد مشترك. */
   const { cohorts: openCohorts } = useCourseCohorts()
+  /* ودوراتُ القسم ما له شعبةٌ أُعلنت ولم تنتهِ — قرارُ صاحب المنصّة (٢١ أكتوبر ٢٠٢٦)، والقولُ في
+     `application/catalog/listed-courses.ts`. والمسارُ لا يُرشَّح هنا: قرارُه لاحق. */
+  const listed = useListedCourses()
 
   const q = params.get('q') ?? ''
   /* «الكل» هي الافتراضيّة — والعنوانُ يقول «كلّ الدورات».
@@ -119,7 +124,7 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
        البحث يكون بالمجال مثل المسارات وليس الفئة المستهدفة». والمجالُ يُشتقّ
        من مسار الدورة الأمّ بالدالّة المركزيّة نفسِها التي تصنّف المسارات،
        فالرقاقاتُ السبعُ واحدةٌ في الصفحتين ولا رقاقةَ بلا دورات. */
-    let list = courses.filter(
+    let list = listedOnly(courses, listed).filter(
       (c) =>
         (cat === 'الكل' || pathwayDomain(c.pathwayId) === cat) &&
         matchesCatalogQuery(q, courseSearchFields(c))
@@ -137,7 +142,15 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
     if (q) list = [...list].sort((a, b) => courseRank(b) - courseRank(a))
     return list
   /* eslint-disable-next-line react-hooks/exhaustive-deps -- رقمُ النسخة هو إشارةُ الإبطال الوحيدة: مصفوفاتُ الكتالوج تُملأ في مكانها بـ`splice` فلا تتغيّر هويّتُها، فحذفُ التبعيّة يجمّد أوّلَ لقطة */
-  }, [q, cat, sort, bestsellerCourseIds, catalogVersion])
+  }, [q, cat, sort, bestsellerCourseIds, listed, catalogVersion])
+
+  /* ورقاقاتُ المجال في قسم الدورات ما فيه دورةٌ معروضة — رقاقةٌ تُنقر فلا تُظهر شيئا تُقرأ عطبا */
+  const domainChips = useMemo(() => {
+    if (kind === 'pathways' || listed.state !== 'ready') return pathwayDomains
+    const shown = new Set(listedOnly(courses, listed).map((c) => pathwayDomain(c.pathwayId)))
+    return pathwayDomains.filter((d) => d === 'الكل' || shown.has(d))
+  /* eslint-disable-next-line react-hooks/exhaustive-deps -- رقمُ النسخة هو إشارةُ الإبطال الوحيدة: مصفوفاتُ الكتالوج تُملأ في مكانها بـ`splice` فلا تتغيّر هويّتُها، فحذفُ التبعيّة يجمّد أوّلَ لقطة */
+  }, [kind, listed, catalogVersion])
 
   /* الأسماءُ القصيرةُ بمعرِّفاتها — لفكّ الإحالات الداخليّة في «ليس لك إن…» */
   const nameById = useMemo(
@@ -224,7 +237,7 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
           بطاقةٍ تحت حافّة الشاشة على اللابتوب. فنزل إلى `text-fine` بحشوِ
           ‎10×4‎ مع `min-h-8` تحفظ هدفَ الإصبع. */}
       <div className="mt-3 flex flex-wrap gap-1.5" role="group" aria-label="تصفية حسب المجال">
-        {pathwayDomains.map((c) => (
+        {domainChips.map((c) => (
           <button
             key={c}
             onClick={() => patch('cat', c)}
@@ -267,7 +280,10 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
 
       {/* عدد النتائج — يُعلن لقارئ الشاشة */}
       <p className="mt-6 text-read leading-5 text-muted-foreground" aria-live="polite">
-        {count === 0
+        {!isPathways && listed.state === 'loading'
+          /* قبل أن يُعرف ما له شعبة لا يُقال «لا نتائج» — يُقال إنّه يُحمَّل */
+          ? 'جار تحميل الدورات المفتوحة…'
+          : count === 0
           ? favOnly
             /* «جرّب توسيع البحث» نصيحةٌ لا تصلح هنا: لا بحثَ ضيّقٌ يُوسَّع،
                بل مفضّلةٌ لم يُوضع فيها شيءٌ بعد. */
