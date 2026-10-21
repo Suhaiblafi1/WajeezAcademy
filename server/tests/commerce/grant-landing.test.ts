@@ -138,6 +138,8 @@ describe('⑤ والدورات للزائر بلا أجور المدربين', (
     const json = JSON.stringify(v)
     expect(json, 'خرج أجر المدرب إلى الزائر').not.toMatch(/seatCost|margin|ruleRate|ruleType/)
     expect(Object.keys(v).sort(), 'عاد في الرد غير الدورات').toEqual(['campaign', 'openCourses', 'termAr'])
+    /* ولا عددَ للمنح الباقية — «العددُ الكبير قد يقلّل من قيمتها» (٢١ أكتوبر ٢٠٢٦) */
+    expect(Object.keys(v.campaign).sort(), 'خرج عدد المنح إلى الزائر').toEqual(['closesAt', 'maxCourses', 'open', 'percentOff'])
     const row = v.openCourses.find((x) => x.courseId === a)!
     expect(row.price).toBe(150)
     expect(v.openCourses.some((x) => x.courseId === b), 'عرض دورة أغلقت شعبتها').toBe(false)
