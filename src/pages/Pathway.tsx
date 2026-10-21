@@ -25,6 +25,7 @@ import { Badge } from "@/components/ui/badge";
 import AuthGate from "@/components/AuthGate";
 import FavoriteButton from "@/components/FavoriteButton";
 import ThemeToggle from "@/components/ThemeToggle";
+import SiteFooter from "@/components/SiteFooter";
 import AdvisorContact from "@/components/AdvisorContact";
 import AdvisorBrief from "@/components/AdvisorBrief";
 import AdvisorCallbackForm from "@/components/AdvisorCallbackForm";
@@ -1073,6 +1074,7 @@ export default function PathwayPage() {
         />
       )}
 
+      <SiteFooter />
     </div>
   );
 }

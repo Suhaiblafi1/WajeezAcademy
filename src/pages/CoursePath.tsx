@@ -19,6 +19,7 @@ import {
   MonitorPlay, Plus, Route as RouteIcon, Save, Target, Trash2, User, Sparkles, Flag,
 } from "lucide-react";
 import SeoHead from "@/components/SeoHead";
+import SiteFooter from "@/components/SiteFooter";
 import AuthGate from "@/components/AuthGate";
 import Modal from "@/components/Modal";
 import BuyPanel from "@/components/BuyPanel";
@@ -963,6 +964,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
           onClose={() => setCheckout(null)}
         />
       )}
+      <SiteFooter />
     </div>
   );
 }
