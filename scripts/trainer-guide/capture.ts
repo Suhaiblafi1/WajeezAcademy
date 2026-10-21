@@ -820,15 +820,16 @@ const ACTIVE: Shot[] = [
     async run(e) {
       const p = e.page
       await open(e, '/trainer/account')
-      const up = btn(p, 'ارفع صورة من جهازك')
+      /* بطاقةُ الهويّة في جانب الصفحة (٢١ أكتوبر ٢٠٢٦): الصورةُ وزرُّ رفعها، ولا حقلَ رابط */
+      const id = p.locator('section[aria-label="صورتك وهويتك"]')
+      const up = btn(id, /ارفع صورتك|غيّر الصورة/)
       await shoot(e, {
-        name: 'account', clip: await panel(up, 600), clipPad: 12,
+        name: 'account', clip: id, clipPad: 12,
         marks: [
-          { target: p.getByRole('textbox').first(), n: 1, pad: 5 },
-          { target: up, n: 2, pad: 5 },
+          { target: up, n: 1, pad: 5 },
         ],
       })
-      /* وعنوانُه ونبذتُه في «المدربون» — تحت صورته (٣ أكتوبر ٢٠٢٦) */
+      /* وعنوانُه ونبذتُه في «المدربون» — بعد «بياناتك» (٢١ أكتوبر ٢٠٢٦) */
       const card = p.locator('section[aria-labelledby="public-text-h"]')
       await card.scrollIntoViewIfNeeded()
       await shoot(e, {

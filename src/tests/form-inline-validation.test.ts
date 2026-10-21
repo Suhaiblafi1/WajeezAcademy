@@ -67,7 +67,8 @@ describe('التحقّق الفوريّ في النماذج', () => {
   it('حساب الطالب: حدود الخادم تقاس هنا، والزرّ يضغط ليقول لا ليصمت', () => {
     const src = read(ACCOUNT)
     /* حدودُ `patchSchema` كلُّها مقيسةٌ قبل النداء — لا الاسمُ وحدَه */
-    for (const key of ['displayName', 'avatarUrl', 'phone', 'birthDate', 'careerGoal', 'goalAr']) {
+    /* ورابطُ الصورة خرج من الحقول (٢١ أكتوبر ٢٠٢٦) — الصورةُ تُرفع، والحارسُ أدناه */
+    for (const key of ['displayName', 'phone', 'birthDate', 'careerGoal', 'goalAr']) {
       expect(src, `${key}: لا يقاس قبل الإرسال`).toContain(`${key}:`)
       expect(src, `${key}: لا رسالة عند حقله`).toContain(`errOf("${key}")`)
       expect(src, `${key}: لا وصل لرسالته`).toContain(`bad("${key}"`)
@@ -82,6 +83,20 @@ describe('التحقّق الفوريّ في النماذج', () => {
     /* والاهتمامُ المرفوضُ يقول سببَه — كان يُرفض بصمتٍ في ثلاث حالات */
     expect(src).toContain('مضاف عندك بالفعل')
     expect(src).toContain('الحدّ ١٢ اهتماما')
+  })
+
+  it('⚠️ حساب الطالب: الصورة ترفع ولا تكتب رابطا — ولا حقل مخفيا يمنع الحفظ', () => {
+    /* قرارُ صاحب المنصّة (٢١ أكتوبر ٢٠٢٦): «اجعل الصورَ دائما ترفع وليس من خلال رابط».
+       والفحصُ على الشيفرة لا تعليقاتها: لا حقلَ يكتب `avatarUrl`، ومنتقي الملفّ قائم.
+       ولا قياسَ له في `fieldErrors`: رابطٌ قديمٌ معطوبٌ عند من كتبه كان سيُطفئ «احفظ»
+       برسالةٍ عند حقلٍ لا يراه. */
+    const src = read(ACCOUNT).replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '')
+    expect(src, 'عاد حقل يكتب رابط الصورة').not.toMatch(/set\("avatarUrl"/)
+    expect(src, 'عاد حقل يكتب رابط الصورة').not.toMatch(/value=\{form\.avatarUrl\}/)
+    expect(src, 'لا منتقي ملف للصورة').toMatch(/type="file"\s+accept="image\/jpeg,image\/png,image\/webp"/)
+    const errors = src.slice(src.indexOf('const fieldErrors'), src.indexOf('const errOf'))
+    expect(errors, 'لم يعثر على قياس الحقول — تعطّل الفحص نفسه').toContain('displayName:')
+    expect(errors, 'قياس لحقل لم يعد في الشاشة').not.toContain('avatarUrl:')
   })
 
   it('معالج الشعبة: كلّ شرط يطفئ «التالي» له اسم يقرأ بجانبه', () => {
