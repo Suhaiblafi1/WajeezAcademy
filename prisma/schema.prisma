@@ -1322,6 +1322,9 @@ model TrainerProfile {
   /// (`src/application/trainer/public-text.ts`).
   headlinePending       String?
   bioPending            String?
+  /// واسمُه كما يريد أن يُعرض — يرسله مع عنوانه ونبذته (قرارُ صاحب المنصّة ٢١ أكتوبر ٢٠٢٦، «A»). و`null` =
+  /// لم يطلب تغييرَه. واعتمادُه يكتب `application.fullName`، فهو الاسمُ المعروضُ في كلّ موضع.
+  namePending           String?
   publicTextPendingAt   DateTime?
   /// سببُ ردِّ آخرِ ما أرسله — يقرؤه في حسابه، ويُمحى بإرساله التالي
   publicTextRejectNoteAr String?

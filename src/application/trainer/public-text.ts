@@ -34,3 +34,19 @@ export function publicTextProblemAr(headline: string, bio: string): string | nul
   if (b.length > BIO_MAX_CHARS) return `النبذة أطول من ${BIO_MAX_CHARS} حرف`
   return null
 }
+
+/* ═══ واسمُه المعروض — يرسله معهما (٢١ أكتوبر ٢٠٢٦) ═══
+
+   سأل صاحبُ المنصّة: «لماذا لا يمكن للمدرّب تغييرُ اسمه على الصفحة الرئيسيّة؟». ولم يكن يغيّره أحد: الاسمُ
+   ما كُتب في طلبه. واختار «A»: يرسله المدرّبُ مع عنوانه ونبذته، ويبقى القديمُ ظاهرا حتّى نعتمده — ونعدّله
+   قبل الاعتماد إن شئنا. والحدّان حدّا «عيّنه مدرّبا» في «المدربون». */
+export const NAME_MIN_CHARS = 2
+export const NAME_MAX_CHARS = 120
+
+/** ما يمنع إرسالَ الاسم — `null` حين يصلح */
+export function publicNameProblemAr(name: string): string | null {
+  const n = name.trim()
+  if (n.length < NAME_MIN_CHARS) return 'اكتب اسمك — حرفان على الأقل'
+  if (n.length > NAME_MAX_CHARS) return `الاسم أطول من ${NAME_MAX_CHARS} حرفا`
+  return null
+}

@@ -48,7 +48,7 @@ import { Card, Inset, Panel } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import Chip from "@/components/ui/Chip";
 import TabBar from "@/components/ui/TabBar";
-import { BIO_MAX_WORDS, countWords } from "@/application/trainer/public-text";
+import { BIO_MAX_WORDS, countWords, NAME_MAX_CHARS, publicNameProblemAr } from "@/application/trainer/public-text";
 import { PITCH_MAX_CHARS, PITCH_MAX_LINES, PITCH_MAX_WORDS, bioSuggestionProblemAr, cleanPitchLines, pitchHeadingAr, pitchProblemAr } from "@/application/trainer/pitch";
 import {
   cohortLineAr, cohortsTallyAr, photoTrailAr, planMarkAr, planMarkOf, PLAN_MARK, textTrailAr,
@@ -77,7 +77,8 @@ interface OpsTrainer {
   /* صورةٌ رفعها هو من حسابه وتنتظر قرارَنا — ولا تراها العامّةُ حتّى تُعتمد */
   pendingPhotoUrl: string | null;
   /* وعنوانٌ ونبذةٌ كتبهما هو من حسابه — يُعدَّلان هنا إن شئتَ ثمّ يُعتمَدان */
-  pendingText: { headline: string | null; bio: string | null; at: string } | null;
+  /** و`name` اسمٌ جديدٌ أرسله معهما — `null` = لم يطلب تغييرَ اسمه */
+  pendingText: { headline: string | null; bio: string | null; name: string | null; at: string } | null;
   /* «لماذا نفتخر به»: المعروضُ، وآخرُ اقتراح، ومسوّدتُه الأولى لمن لم يُقترح عليه شيء */
   pitchLines: string[];
   pitchLatest: OpsSuggestion | null;
@@ -566,18 +567,21 @@ function PendingTextReview({
   const p = trainer.pendingText!;
   const [headline, setHeadline] = useState(p.headline ?? "");
   const [bio, setBio] = useState(p.bio ?? "");
+  const [name, setName] = useState(p.name ?? "");
   const [rejecting, setRejecting] = useState(false);
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
   const words = countWords(bio);
-  const edited = headline.trim() !== (p.headline ?? "") || bio.trim() !== (p.bio ?? "");
+  const edited = headline.trim() !== (p.headline ?? "") || bio.trim() !== (p.bio ?? "")
+    || (p.name !== null && name.trim() !== p.name);
+  const nameProblem = p.name !== null ? publicNameProblemAr(name) : null;
 
   const decide = async (approve: boolean) => {
     setBusy(true);
     try {
       if (approve) {
         await apiPost(`/api/admin/trainers/${trainer.profileId}/public-text/approve`,
-          { headline: headline.trim(), bioPublic: bio.trim() });
+          { headline: headline.trim(), bioPublic: bio.trim(), ...(p.name !== null ? { name: name.trim() } : {}) });
         toast(edited ? "اعتمدت بتعديلك — ووصله خبرها" : "اعتمدت كما كتبها — ووصله خبرها");
       } else {
         await apiPost(`/api/admin/trainers/${trainer.profileId}/public-text/reject`, { reasonAr: reason.trim() });
@@ -592,11 +596,20 @@ function PendingTextReview({
   return (
     <Inset tone="warn" className="mt-2.5 p-3">
       <p className="text-read font-black">
-        أرسل عنوانه ونبذته {fmtDateTime(p.at)} — تنتظر اعتمادك
+        {p.name !== null ? "أرسل اسمه الجديد مع عنوانه ونبذته" : "أرسل عنوانه ونبذته"} {fmtDateTime(p.at)} — تنتظر اعتمادك
       </p>
       <p className="mt-0.5 text-read leading-6 text-muted-foreground">
         عدّل الحقلين إن شئت ثمّ اعتمد، فيظهر ما فيهما في صفحة «المدربون». ويبقى المعتمد الحاليّ ظاهرا حتّى تقرّر.
       </p>
+      {/* واسمُه إن طلب تغييرَه (٢١ أكتوبر ٢٠٢٦) — يكتب الاسمَ المعروضَ في كلّ موضع، والقديمُ ظاهرٌ حتّى تعتمد */}
+      {p.name !== null && (<>
+        <label className="mt-2.5 block text-fine font-bold text-muted-foreground" htmlFor={`pname-${trainer.profileId}`}>
+          الاسم — الحالي: {trainer.name}
+        </label>
+        <input id={`pname-${trainer.profileId}`} value={name} maxLength={NAME_MAX_CHARS}
+          onChange={(e) => setName(e.target.value)} className={`${controlCls} mt-1 w-full`} />
+        {nameProblem && <p className="mt-1 text-read text-gold-ink">{nameProblem}</p>}
+      </>)}
       <label className="mt-2.5 block text-fine font-bold text-muted-foreground" htmlFor={`phl-${trainer.profileId}`}>
         العنوان المهنيّ
       </label>
@@ -623,7 +636,7 @@ function PendingTextReview({
         </div>
       ) : (
         <div className="mt-2.5 flex flex-wrap gap-2">
-          <Button size="sm" tone="confirm" icon={CheckCircle2} disabled={busy || headline.trim().length < 3 || bio.trim().length < 3}
+          <Button size="sm" tone="confirm" icon={CheckCircle2} disabled={busy || headline.trim().length < 3 || bio.trim().length < 3 || Boolean(nameProblem)}
             onClick={() => void decide(true)}>
             {edited ? "اعتمدها بتعديلك" : "اعتمدها كما كتبها"}
           </Button>

@@ -114,3 +114,58 @@ describe('والمعتمِدُ يردّ بسبب — أو يعدّل ثمّ يع
     expect(keys).toContain('trainer.public_text.rejected')
   })
 })
+
+/* ═══ واسمُه — يرسله معهما، ونعتمده نحن (قرارُ ٢١ أكتوبر ٢٠٢٦، «A») ═══
+
+   ٥) **الاسمُ وحدَه تغييرٌ يُرسَل**، والمعلَّقُ لا يبلغ العامّة.
+   ٦) **والاعتمادُ يكتب الاسمَ الواحد** (`application.fullName`) بما في حقله — ولا يمسّ اسمَ الهويّة في العقد.
+   ٧) **والردُّ يمحو الاسمَ المعلَّق** ويُبقي المعروض. */
+describe('اسمُه المعروض — يرسله فيعلَّق، ونعتمده فيظهر', () => {
+  const OLD_NAME = 'مدرّبُ النبذة المعلّقة'
+  const shownName = async () => {
+    const list = await review.listPublicTrainers() as unknown as { id: string; name: string }[]
+    return list.find((t) => t.id === profileId)?.name
+  }
+  const current = async () => {
+    const m = await svc.mine(userId)
+    return { headline: m.headline ?? '', bio: m.bioPublic ?? '' }
+  }
+
+  it('الحدودُ في الخادم: اسمٌ من حرفٍ واحد يُردّ', async () => {
+    const c = await current()
+    await expect(svc.submit(userId, { ...c, name: 'م' })).rejects.toMatchObject({ code: 'bad_public_name' })
+  })
+
+  it('⚠️ ٥ الاسمُ وحدَه يُرسَل — والصفحةُ على القديم', async () => {
+    const c = await current()
+    /* ومطابقُ المعروض ليس طلبا */
+    await expect(svc.submit(userId, { ...c, name: OLD_NAME })).rejects.toMatchObject({ code: 'unchanged' })
+    const r = await svc.submit(userId, { ...c, name: 'أحمد الصيفي' })
+    expect(r.namePending).toBe('أحمد الصيفي')
+    expect(r.name).toBe(OLD_NAME)
+    expect(await shownName()).toBe(OLD_NAME)
+  })
+
+  it('⚠️ ٧ الردُّ يمحو الاسمَ المعلَّق ويبقي المعروض', async () => {
+    await svc.reject(profileId, ACTOR, 'اكتب اسمك كاملا')
+    const m = await svc.mine(userId)
+    expect(m.namePending).toBeNull()
+    expect(m.name).toBe(OLD_NAME)
+  })
+
+  it('⚠️ ٦ الاعتمادُ يكتب ما في حقل الاسم — ولا يمسّ اسمَ الهويّة', async () => {
+    const c = await current()
+    await svc.submit(userId, { ...c, name: 'احمد الصيفي' })
+    const r = await svc.approve(profileId, ACTOR, { headline: c.headline, bioPublic: c.bio, name: 'أحمد الصيفي' })
+    expect(r.name).toBe('أحمد الصيفي')
+    expect(r.edited).toBe(true)
+    expect(await shownName()).toBe('أحمد الصيفي')
+    const p = await prisma.trainerProfile.findUniqueOrThrow({ where: { id: profileId }, select: { legalNameAr: true, namePending: true } })
+    expect(p.legalNameAr).toBeNull()
+    expect(p.namePending).toBeNull()
+    const audit = await prisma.auditEvent.findFirst({
+      where: { entityId: profileId, action: 'trainer.public_text.approve' }, orderBy: { createdAt: 'desc' },
+    })
+    expect(audit?.meta).toMatchObject({ nameFrom: OLD_NAME, nameTo: 'أحمد الصيفي' })
+  })
+})

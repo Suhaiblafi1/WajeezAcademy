@@ -175,4 +175,11 @@ describe('حال المدرب وما ينتظره', () => {
     /* وسائرُ الحالات وسمُها اسمُها */
     expect(stateChipAr('trainer', trainerSteps(t({ photoUrl: null })))).toBe('ينتظر المدرب')
   })
+
+  it('واسمه الجديد يقال في خطوة المراجعة، وبابها ملفه', () => {
+    const s = trainerSteps(t({ pendingText: { name: 'أحمد الصيفي', at: 'x' } }))
+    expect(s.filter((x) => x.turn === 'you').map((x) => x.ar)).toEqual(['مراجعة اسمه الجديد ونبذته'])
+    expect(firstActOf(s)?.act).toBe('profile')
+    expect(ars(t({ pendingText: { name: null, at: 'x' } }), 'you')).toEqual(['مراجعة نبذته الجديدة'])
+  })
 })

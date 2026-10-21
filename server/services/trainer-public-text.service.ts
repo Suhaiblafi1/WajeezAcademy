@@ -10,19 +10,30 @@
    · أو يردّه بسبب → يُمحى المعلَّقُ، ويبقى السببُ في حسابه حتّى يرسل ثانية.
 
    والمعتمَدُ قبله يبقى معروضا ما دام الجديدُ معلَّقا: إرسالٌ لم يُقرأ لا يُخلي
-   صفحةَ أحد. */
+   صفحةَ أحد.
+
+   ═══ واسمُه معهما (٢١ أكتوبر ٢٠٢٦، «A») ═══
+
+   يرسل اسمَه كما يريد أن يُعرض فيسكن `namePending`، ويُعتمَد معهما أو يُردّ معهما. والاعتمادُ يكتب
+   `application.fullName` — الاسمَ الواحدَ الذي تقرؤه الصفحاتُ كلُّها. ولا يمسّ `legalNameAr`: ذاك اسمُ
+   هويّته، ووجودُه يُقرأ «موثَّقا» في شاشة التركيب — فلو نُسخ فيه القديمُ لَادّعى توثيقا لم يقع. والعقدُ
+   الموقَّعُ متنُه مجمَّد، والجديدُ يُعرض فيه الاسمُ «من حسابه» ليُطابَق بالهويّة كما كان. والعنوانُ العامّ
+   (`publicSlug`) لا يتغيّر — لئلّا يبطل ما نُشر. */
 
 import type { PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { notifyRole, safeNotify } from './notification.service'
-import { publicTextProblemAr } from '../../src/application/trainer/public-text'
+import { publicNameProblemAr, publicTextProblemAr } from '../../src/application/trainer/public-text'
 
 export interface MyPublicText {
   headline: string | null
   bioPublic: string | null
   headlinePending: string | null
   bioPending: string | null
+  /** اسمُه المعروضُ الآن، وما أرسله منه — `null` = لم يطلب تغييرَه */
+  name: string
+  namePending: string | null
   pendingAt: Date | null
   rejectNoteAr: string | null
   /** أظاهرٌ اسمُه للعامّة الآن — فيُقال له متى يُرى ما يكتب */
@@ -37,7 +48,7 @@ export class TrainerPublicTextService {
     const p = await this.prisma.trainerProfile.findFirst({
       where: { userId },
       select: {
-        id: true, headline: true, bioPublic: true, headlinePending: true, bioPending: true,
+        id: true, headline: true, bioPublic: true, headlinePending: true, bioPending: true, namePending: true,
         publicTextPendingAt: true, publicTextRejectNoteAr: true, publishApprovedAt: true,
         application: { select: { fullName: true } },
       },
@@ -51,25 +62,31 @@ export class TrainerPublicTextService {
     return {
       headline: p.headline, bioPublic: p.bioPublic,
       headlinePending: p.headlinePending, bioPending: p.bioPending,
+      name: p.application.fullName, namePending: p.namePending,
       pendingAt: p.publicTextPendingAt, rejectNoteAr: p.publicTextRejectNoteAr,
       published: p.publishApprovedAt !== null,
     }
   }
 
-  async submit(userId: string, input: { headline: string; bio: string }): Promise<MyPublicText> {
+  async submit(userId: string, input: { headline: string; bio: string; name?: string }): Promise<MyPublicText> {
     const p = await this.profileOf(userId)
     const headline = input.headline.trim()
     const bio = input.bio.trim()
     const problem = publicTextProblemAr(headline, bio)
     if (problem) throw new AuthError('bad_public_text', problem, 422)
+    /* والاسمُ لا يُرسل إلّا إن تغيّر: غيابُه أو مطابقتُه المعروضَ = لا طلب */
+    const name = input.name?.trim() ?? ''
+    const nameProblem = name ? publicNameProblemAr(name) : null
+    if (nameProblem) throw new AuthError('bad_public_name', nameProblem, 422)
+    const namePending = name && name !== p.application.fullName ? name : null
     /* ما يطابق المعتمَدَ حرفا لا يُرسَل: لا جديدَ يُقرأ، وطابورٌ لا شيءَ فيه يكذب */
-    if (headline === (p.headline ?? '') && bio === (p.bioPublic ?? '')) {
+    if (headline === (p.headline ?? '') && bio === (p.bioPublic ?? '') && !namePending) {
       throw new AuthError('unchanged', 'هذا ما هو معتمد لك الآن — غيّر شيئا ثمّ أرسل', 409)
     }
     await this.prisma.trainerProfile.update({
       where: { id: p.id },
       data: {
-        headlinePending: headline, bioPending: bio,
+        headlinePending: headline, bioPending: bio, namePending,
         publicTextPendingAt: new Date(), publicTextRejectNoteAr: null,
       },
     })
@@ -78,18 +95,23 @@ export class TrainerPublicTextService {
     })
     await notifyRole(this.prisma, ['academic_manager', 'super_admin'], {
       channel: 'in_app', templateKey: 'trainer.public_text.submitted',
-      title: 'نبذة مدرّب تنتظر اعتمادك',
-      body: `أرسل ${p.application.fullName} عنوانه المهنيّ ونبذته لصفحة «المدربون» — اقرأهما وعدّلهما إن شئت ثمّ اعتمد.`,
+      title: namePending ? 'اسم مدرب ونبذته ينتظران اعتمادك' : 'نبذة مدرّب تنتظر اعتمادك',
+      body: namePending
+        ? `أرسل ${p.application.fullName} اسمه الجديد «${namePending}» مع عنوانه ونبذته — راجعها وعدّلها إن شئت ثم اعتمد.`
+        : `أرسل ${p.application.fullName} عنوانه المهنيّ ونبذته لصفحة «المدربون» — اقرأهما وعدّلهما إن شئت ثمّ اعتمد.`,
       data: { profileId: p.id },
     }).catch(() => undefined)
     return this.mine(userId)
   }
 
   /** الاعتمادُ بما في الحقلين — كما أرسله، أو كما عدّله المعتمِد */
-  async approve(profileId: string, actorId: string, input: { headline: string; bioPublic: string }) {
+  async approve(profileId: string, actorId: string, input: { headline: string; bioPublic: string; name?: string }) {
     const p = await this.prisma.trainerProfile.findUnique({
       where: { id: profileId },
-      select: { id: true, userId: true, headlinePending: true, bioPending: true, publicTextPendingAt: true },
+      select: {
+        id: true, userId: true, applicationId: true, headlinePending: true, bioPending: true, namePending: true,
+        publicTextPendingAt: true, application: { select: { fullName: true } },
+      },
     })
     if (!p) throw new AuthError('not_found', 'الملفّ غير موجود', 404)
     if (!p.publicTextPendingAt) throw new AuthError('no_pending_text', 'لا نبذة تنتظر الاعتماد', 409)
@@ -100,30 +122,42 @@ export class TrainerPublicTextService {
     if (headline.length < 3 || bioPublic.length < 3) {
       throw new AuthError('empty_public_text', 'العنوان والنبذة لا يعتمدان فارغين — أو ردّهما', 422)
     }
+    /* والاسمُ يُعتمد إن طلبه هو — بما في حقله لحظةَ الضغط، كما أرسله أو كما عُدّل */
+    const name = p.namePending ? (input.name?.trim() || p.namePending) : null
+    const nameProblem = name ? publicNameProblemAr(name) : null
+    if (nameProblem) throw new AuthError('bad_public_name', nameProblem, 422)
+    const oldName = p.application.fullName
+    const renamed = name !== null && name !== oldName
     const edited = headline !== (p.headlinePending ?? '') || bioPublic !== (p.bioPending ?? '')
-    await this.prisma.trainerProfile.update({
-      where: { id: p.id },
-      data: {
-        headline, bioPublic,
-        headlinePending: null, bioPending: null, publicTextPendingAt: null, publicTextRejectNoteAr: null,
-      },
+      || (name !== null && name !== p.namePending)
+    await this.prisma.$transaction(async (tx) => {
+      await tx.trainerProfile.update({
+        where: { id: p.id },
+        data: {
+          headline, bioPublic,
+          headlinePending: null, bioPending: null, namePending: null, publicTextPendingAt: null, publicTextRejectNoteAr: null,
+        },
+      })
+      if (renamed) await tx.trainerApplication.update({ where: { id: p.applicationId }, data: { fullName: name } })
     })
     await recordAudit(this.prisma, {
       actorId, action: 'trainer.public_text.approve', entityType: 'trainer_profile', entityId: p.id,
-      meta: { edited },
+      meta: renamed ? { edited, nameFrom: oldName, nameTo: name } : { edited },
     })
     if (p.userId) {
       await safeNotify(this.prisma, {
         userId: p.userId, channel: 'in_app', audience: 'trainer',
         templateKey: 'trainer.public_text.approved',
-        title: 'اعتمدت نبذتك',
-        body: edited
-          ? 'اعتمدنا عنوانك المهنيّ ونبذتك بعد تحرير يسير — تجدهما كما اعتمدا في «إعدادات الحساب».'
-          : 'اعتمدنا عنوانك المهنيّ ونبذتك كما كتبتهما.',
+        title: renamed ? 'اعتمدنا اسمك ونبذتك' : 'اعتمدت نبذتك',
+        body: renamed
+          ? `اعتمدنا اسمك «${name}» مع عنوانك ونبذتك${edited ? ' بعد تحرير يسير' : ''} — تجدها كما اعتمدت في «إعدادات الحساب».`
+          : edited
+            ? 'اعتمدنا عنوانك المهنيّ ونبذتك بعد تحرير يسير — تجدهما كما اعتمدا في «إعدادات الحساب».'
+            : 'اعتمدنا عنوانك المهنيّ ونبذتك كما كتبتهما.',
         data: { profileId: p.id },
       })
     }
-    return { headline, bioPublic, edited }
+    return { headline, bioPublic, name: renamed ? name : oldName, edited }
   }
 
   async reject(profileId: string, actorId: string, reasonAr: string) {
@@ -137,7 +171,7 @@ export class TrainerPublicTextService {
     await this.prisma.trainerProfile.update({
       where: { id: p.id },
       data: {
-        headlinePending: null, bioPending: null, publicTextPendingAt: null,
+        headlinePending: null, bioPending: null, namePending: null, publicTextPendingAt: null,
         publicTextRejectNoteAr: reason.slice(0, 500),
       },
     })

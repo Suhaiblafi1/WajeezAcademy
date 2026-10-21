@@ -134,7 +134,10 @@ export function trainerSteps(t: StatusInput): TrainerStep[] {
   if (n('returned') > 0) him.push(`تعديل ${plansOf(n('returned'))} رددتها`)
 
   /* ملفُّه العامّ */
-  if (t.pendingText && t.pendingPhotoUrl) mine('مراجعة نبذته وصورته الجديدتين', 'profile')
+  /* واسمُه الجديدُ يُرسل معهما فيُقال أوّلا (٢١ أكتوبر ٢٠٢٦) */
+  const renamed = Boolean((t.pendingText as { name?: string | null } | null)?.name)
+  if (renamed) mine(t.pendingPhotoUrl ? 'مراجعة اسمه الجديد ونبذته وصورته' : 'مراجعة اسمه الجديد ونبذته', 'profile')
+  else if (t.pendingText && t.pendingPhotoUrl) mine('مراجعة نبذته وصورته الجديدتين', 'profile')
   else if (t.pendingText) mine('مراجعة نبذته الجديدة', 'profile')
   else if (t.pendingPhotoUrl) mine('مراجعة صورته الجديدة', 'profile')
   else if (!t.photoUrl) him.push('رفع صورته')
