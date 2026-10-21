@@ -4,6 +4,7 @@
    ② **ولا دورةَ بلا مدرّبٍ منشور، ولا دورةَ غيرُ منشورة** — وما يُنشر بعدُ يظهر وحدَه.
    ③ **وأقربُ شعبةٍ لكلّ دورة** — بسعرها ويوم بدئها.
    ④ **ومن الفصل القادم القريب وحدَه** — بيوم بدء الشعبة في عمّان، وبلا شعبةٍ لم تبدأ يُعرض ما يُشترى كلُّه.
+   ⑤ **ومدرّبُها باسمه وصورته — المنشورُ وحدَه**: أصيلٌ لم يُعتمد نشرُه لا يُعرض اسمُه، ولو بيعت الشعبةُ بإسنادٍ منشور.
 
    وساعةُ الاختبار في ٢٠٩٩ (`NOW`): الفصلُ فصلُ أقرب شعبةٍ لم تبدأ في القاعدة كلِّها، وملفّاتٌ أخرى تُنشئ شعبا
    تبدأ بعد ساعةٍ أو يوم — فلو كانت الساعةُ ساعةَ التشغيل لاختارت تلك فصلا غيرَ فصلنا، ولتبع الاختبارُ يومَ
@@ -146,5 +147,32 @@ describe('④ ومن الفصل القادم القريب وحده', () => {
     const all = await courses.openCourses(new Date(Date.UTC(2100, 0, 1)))
     expect(all.termAr).toBeNull()
     expect(all.courses.map((x) => x.courseId)).toEqual(expect.arrayContaining([near, edge, late]))
+  })
+})
+
+describe('⑤ ومدربها باسمه — المنشور وحده', () => {
+  it('⚠️ الأصيل المنشور باسمه ومعرفه — وأصيل لم ينشر لا يعرض اسمه ولو بيعت الشعبة بإسناد منشور', async () => {
+    const a = nextCourse()
+    await cohort(a)
+    const row = (await courses.openCourses(NOW)).courses.find((x) => x.courseId === a)!
+    expect(row.trainer, 'غاب المدرب المنشور').toMatchObject({ id: profileId, name: 'مدرب المنحة' })
+
+    /* أصيلٌ لم يُعتمد نشرُه، والشعبةُ تُباع بإسنادٍ نشطٍ لمدرّبٍ منشور */
+    const u = await prisma.user.create({ data: { email: `gc-lead-${STAMP}@wajeez.test`, displayName: 'أصيل لم ينشر', passwordHash: 'x' } })
+    const app = await prisma.trainerApplication.create({ data: { reference: `WJ-TR-GCL-${STAMP}`, fullName: 'أصيل لم ينشر', email: u.email, status: 'active' } })
+    const hiddenLead = (await prisma.trainerProfile.create({ data: { userId: u.id, applicationId: app.id } })).id
+    const b = nextCourse()
+    const c = await prisma.cohort.create({
+      data: {
+        plans: { create: approvedPlanBy(hiddenLead) }, courseId: b, title: `شعبة أصيل لم ينشر ${++seq}`,
+        status: 'open', registrationOpen: true, financialReady: true, price: 150, currency: 'USD', capacity: 20,
+        startsAt: new Date(NOW.getTime() + 30 * DAY),
+      } as never,
+    })
+    await prisma.cohortTrainer.create({ data: { cohortId: c.id, profileId: hiddenLead, role: 'lead', assignedBy: ownerId } })
+    await prisma.trainerCourseAssignment.create({ data: { cohortId: c.id, courseId: b, profileId, status: 'active' } })
+    const hidden = (await courses.openCourses(NOW)).courses.find((x) => x.courseId === b)
+    expect(hidden, 'سقطت شعبة تباع بإسناد منشور').toBeTruthy()
+    expect(hidden!.trainer, 'عرض اسم مدرب لم يعتمد نشره').toBeNull()
   })
 })

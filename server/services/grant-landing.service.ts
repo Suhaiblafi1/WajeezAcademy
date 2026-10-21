@@ -71,6 +71,8 @@ export class GrantLandingService {
       openCourses: open.courses.map((c) => ({
         courseId: c.courseId, titleAr: c.courseTitleAr, cohortId: c.cohortId, startsAt: c.startsAt, price: c.price,
         domainAr: courseDomain(c.courseId),
+        /* والمقاعدُ والمدرّبُ لـ«بقي X مقاعد» و«مع مدربك» في صفّ الدورة */
+        seatsLeft: c.seatsLeft, trainer: c.trainer,
       })),
     }
   }
