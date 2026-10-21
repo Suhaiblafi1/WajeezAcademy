@@ -167,6 +167,10 @@ export function registerPublicCatalogRoutes(app: FastifyInstance, prisma: Prisma
     schema: { tags: ['public-catalog'], summary: 'قوالب التوصية المركبة المنشورة' },
   }, async () => catalog.templates())
 
+  app.get('/api/public/listed-courses', {
+    schema: { tags: ['public-catalog'], summary: 'رموز الدورات المعروضة في قوائم الموقع — لها شعبة أعلنت ولم تنته' },
+  }, async () => ({ courseIds: await catalog.listedCourseIds() }))
+
   app.get('/api/public/cohorts', {
     schema: { tags: ['public-catalog'], summary: 'الشعب المفتوحة للتسجيل — سعر وموعد ومقاعد متبقية ومدربون منشورون' },
   }, async () => catalog.cohorts())

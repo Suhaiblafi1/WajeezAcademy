@@ -27,10 +27,13 @@ interface InterestResult { alreadyWaiting: boolean }
 export default function CourseInterestForm({
   courseId,
   email: initialEmail = "",
+  next = false,
 }: {
   courseId: string;
   /** بريدُ من كان داخلا بحسابه — فلا يكتب ما نعرفه */
   email?: string;
+  /** لها شعبةٌ اكتملت أو بدأت — فالوعدُ بالشعبة **التالية** لا بأوّل شعبة (٢١ أكتوبر ٢٠٢٦) */
+  next?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState(initialEmail);
@@ -57,8 +60,8 @@ export default function CourseInterestForm({
       <p className="mt-1.5 flex items-start gap-1.5 text-read leading-5 text-teal-light-ink">
         <Check className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
         {done.alreadyWaiting
-          ? "بريدك مسجّل عندنا لهذه الدورة — تصلك رسالة واحدة حين تفتح شعبتها."
-          : "حفظ بريدك — تصلك رسالة واحدة حين تفتح شعبتها، ولا شيء غيرها."}
+          ? `بريدك مسجّل عندنا لهذه الدورة — تصلك رسالة واحدة حين تفتح ${next ? "شعبتها التالية" : "شعبتها"}.`
+          : `حفظ بريدك — تصلك رسالة واحدة حين تفتح ${next ? "شعبتها التالية" : "شعبتها"}، ولا شيء غيرها.`}
       </p>
     );
   }
@@ -70,7 +73,7 @@ export default function CourseInterestForm({
         onClick={() => setOpen(true)}
         className="mt-1.5 flex items-center gap-1.5 text-read font-bold text-teal-light-ink hover:underline"
       >
-        <BellRing className="h-3.5 w-3.5" aria-hidden="true" /> أبلغني حين تفتح شعبتها
+        <BellRing className="h-3.5 w-3.5" aria-hidden="true" /> {next ? "أبلغني بالشعبة التالية" : "أبلغني حين تفتح شعبتها"}
       </button>
     );
   }
@@ -78,7 +81,9 @@ export default function CourseInterestForm({
   return (
     <div className="mt-2">
       <p className="text-read leading-5 text-muted-foreground">
-        اترك بريدك ونعلمك حين تفتح شعبة لهذه الدورة — رسالة واحدة، ولا شيء غيرها.
+        {next
+          ? "اترك بريدك ونعلمك حين تفتح الشعبة التالية لهذه الدورة — رسالة واحدة، ولا شيء غيرها."
+          : "اترك بريدك ونعلمك حين تفتح شعبة لهذه الدورة — رسالة واحدة، ولا شيء غيرها."}
       </p>
       <div className="mt-2 flex flex-col gap-2 sm:flex-row">
         <label className="min-w-0 flex-1">
