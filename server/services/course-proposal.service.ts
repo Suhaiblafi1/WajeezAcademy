@@ -47,7 +47,7 @@ import { recordAudit } from './audit'
 import { safeNotify } from './notification.service'
 import type { Assigner } from './staff-task.service'
 import { ROLE_PERMISSIONS } from '../auth/permissions'
-import { suggestCourses, type MatchableCourse, type ProposalMatch } from '../../src/application/trainer/proposal-match'
+import { suggestCourses, trainerFamilies, type MatchableCourse, type ProposalMatch } from '../../src/application/trainer/proposal-match'
 import {
   clusterHeadlineAr, clusterProposals, PATH_COURSE_COUNT,
   type UniverseEntity,
@@ -142,16 +142,28 @@ export async function readMatchableCourses(db: Db): Promise<MatchableCourse[]> {
     where: { status: { not: 'archived' } },
     select: {
       id: true, currentVersion: true,
-      versions: { select: { version: true, titleAr: true, shortPromiseAr: true } },
+      versions: {
+        select: {
+          version: true, titleAr: true, termEn: true, shortPromiseAr: true, descriptionAr: true, audienceAr: true,
+          outcomes: { select: { textAr: true } },
+        },
+      },
+      modules: {
+        where: { status: { not: 'archived' } },
+        select: { versions: { orderBy: { version: 'desc' }, take: 1, select: { titleAr: true } } },
+      },
       skillLinks: { select: { skill: { select: { nameAr: true } } } },
     },
   })
+  /* والدورةُ بطبقاتها الثلاث — والقولُ في أوزانها في `proposal-match.ts` */
   return rows.map((c) => {
     const v = c.versions.find((x) => x.version === c.currentVersion)
     return {
       id: c.id,
       titleAr: v?.titleAr ?? c.id,
-      extraAr: [v?.shortPromiseAr, ...c.skillLinks.map((l) => l.skill.nameAr)],
+      termEn: v?.termEn ?? null,
+      skillsAr: [...c.skillLinks.map((l) => l.skill.nameAr), ...c.modules.map((m) => m.versions[0]?.titleAr)],
+      extraAr: [v?.shortPromiseAr, v?.descriptionAr, v?.audienceAr, ...(v?.outcomes.map((o) => o.textAr) ?? [])],
     }
   })
 }
@@ -352,6 +364,34 @@ export class CourseProposalService {
     return readMatchableCourses(this.prisma)
   }
 
+  /** مجالاتُ كلّ مدرّبٍ من إجاباته — بها يُرجَّح ترشيحُ اقتراحاته (`trainerFamilies`).
+      رموزُه: ما اختاره في طلبه، وما أُهِّل له أو طُلب تأهيلُه، وما رُبطت به اقتراحاتُه؛
+      ثمّ أغلبُ اقتراحاته نفسِها. */
+  private async familiesByProfile(profileIds: readonly string[], catalog: readonly MatchableCourse[]) {
+    const out = new Map<string, Set<string>>()
+    if (profileIds.length === 0 || catalog.length === 0) return out
+    const profiles = await this.prisma.trainerProfile.findMany({
+      where: { id: { in: [...new Set(profileIds)] } },
+      select: {
+        id: true,
+        application: { select: { teachableCourseIds: true } },
+        qualifications: { where: { status: { in: ['qualified', 'pending'] } }, select: { courseId: true } },
+        courseProposals: { select: { titleAr: true, summaryAr: true, courseId: true } },
+      },
+    })
+    for (const p of profiles) {
+      out.set(p.id, trainerFamilies({
+        courseIds: [
+          ...p.application.teachableCourseIds,
+          ...p.qualifications.map((q) => q.courseId),
+          ...p.courseProposals.map((x) => x.courseId),
+        ],
+        proposals: p.courseProposals,
+      }, catalog))
+    }
+    return out
+  }
+
   /** طابورُ ما لم يُصنَّف — عبرَ المدرّبين كلِّهم، وهو ما لا يقدر عليه عمودُ JSON.
 
       ويصحب كلَّ اقتراحٍ مفتوحٍ ترشيحُ أقربِ الرموز إليه (`suggestedCourses`):
@@ -375,6 +415,7 @@ export class CourseProposalService {
        والمبتوتُ بتّا نهائيّا (دورةٌ جديدة، أو رفضٌ) لا يُرشَّح له: قد انتهى. */
     const matchable = rows.filter((r) => (QUEUE_VISIBLE as readonly string[]).includes(r.status))
     const catalog = matchable.length > 0 ? await this.matchableCourses() : []
+    const families = await this.familiesByProfile(matchable.map((r) => r.profileId), catalog)
 
     return rows.map((r) => ({
       id: r.id,
@@ -397,7 +438,10 @@ export class CourseProposalService {
       suggestedCourses: (QUEUE_VISIBLE as readonly string[]).includes(r.status)
         /* والمحاورُ والمخرجاتُ والأقربُ بقول صاحبها تدخل المقارنة — هي ما
            كُتبت الأسئلةُ لأجله: أن يُعرف أهي نسخةٌ من دورةٍ قائمة */
-        ? suggestCourses({ titleAr: r.titleAr, summaryAr: proposalMatchText(r.summaryAr, r.details as ProposalDetails | null) }, catalog)
+        ? suggestCourses(
+          { titleAr: r.titleAr, summaryAr: proposalMatchText(r.summaryAr, r.details as ProposalDetails | null) },
+          catalog, 3, { families: families.get(r.profileId) },
+        )
           /* ولا يُرشَّح له ما هو مربوطٌ به أصلا — سطرٌ يقول «اربِطْه بما هو مربوطٌ به» */
           .filter((m) => m.courseId !== r.courseId)
         : ([] as ProposalMatch[]),
@@ -414,7 +458,7 @@ export class CourseProposalService {
       where: { status: { in: [...OPEN_PROPOSAL] } },
       orderBy: [{ createdAt: 'asc' }],
       select: {
-        id: true, status: true, titleAr: true, summaryAr: true, details: true, createdAt: true,
+        id: true, profileId: true, status: true, titleAr: true, summaryAr: true, details: true, createdAt: true,
         questionAr: true, answerAr: true,
         profile: {
           select: {
@@ -426,6 +470,7 @@ export class CourseProposalService {
       },
     })
     const catalog = rows.length > 0 ? await this.matchableCourses() : []
+    const families = await this.familiesByProfile(rows.map((r) => r.profileId), catalog)
 
     return buildDecisionsWorksheet(rows.map((r) => {
       const details = (r.details ?? null) as ProposalDetails | null
@@ -438,7 +483,10 @@ export class CourseProposalService {
         questionAr: r.questionAr,
         answerAr: r.answerAr,
         detailsAr: proposalDetailRows(details),
-        suggested: suggestCourses({ titleAr: r.titleAr, summaryAr: proposalMatchText(r.summaryAr, details) }, catalog),
+        suggested: suggestCourses(
+          { titleAr: r.titleAr, summaryAr: proposalMatchText(r.summaryAr, details) },
+          catalog, 3, { families: families.get(r.profileId) },
+        ),
         trainer: {
           reference: r.profile.application.reference,
           fullName: r.profile.application.fullName,

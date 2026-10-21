@@ -145,8 +145,19 @@ export interface AcceptedTrainerIn {
 export interface CatalogLens {
   /** عنوانُ الإصدار الجاري — و`null` لرمزٍ لا دورةَ به */
   titleOf(courseId: string): string | null
-  /** أقربُ رمزٍ إلى اقتراح — و`null` حين لا يشترك في كلمةٍ من عنوانه */
-  nearest(proposal: { titleAr: string; summaryAr: string | null }): { courseId: string; titleAr: string } | null
+  /** أقربُ رمزٍ إلى اقتراح — و`null` حين لا يشترك في كلمةٍ من عنوانه.
+      و`trainer` صاحبُه بإجاباته: رموزُه واقتراحاتُه، يُرجَّح بمجاله كما في الطابور
+      (`trainerFamilies` في `proposal-match.ts`) */
+  nearest(
+    proposal: { titleAr: string; summaryAr: string | null },
+    trainer: TrainerAnswers,
+  ): { courseId: string; titleAr: string } | null
+}
+
+/** إجاباتُ المدرّب التي يُقرأ منها مجالُه — رموزٌ له، واقتراحاتُه بنصوصها */
+export interface TrainerAnswers {
+  courseIds: readonly string[]
+  proposals: readonly { titleAr: string; summaryAr: string | null }[]
 }
 
 /** صفٌّ في الجدول — وترتيبُ مفاتيحه ترتيبُ أعمدته في العرض والتصدير.
@@ -240,8 +251,20 @@ export function acceptedCourseRows(
       const s = quals.get(id)
       return s ? (QUALIFICATION_LABELS[s] ?? s) : 'غير مؤهّل بعد'
     }
+    /* إجاباتُه كلُّها: ما اختاره، وما أُهِّل له، وما رُبطت به اقتراحاتُه، واقتراحاتُه بنصوصها */
+    const answers: TrainerAnswers = {
+      courseIds: [
+        ...t.teachableCourseIds,
+        ...(t.profile?.qualifications ?? []).map((q) => q.courseId),
+        ...(t.profile?.proposals ?? []).flatMap((p) => (p.courseId ? [p.courseId] : [])),
+      ],
+      proposals: [
+        ...(t.profile?.proposals ?? []).map((p) => ({ titleAr: p.titleAr, summaryAr: p.summaryAr })),
+        ...(t.profile ? [] : readProposals(t.teachableProposals).map((p) => ({ titleAr: p.titleAr, summaryAr: p.summaryAr || null }))),
+      ],
+    }
     const nearestCell = (p: { titleAr: string; summaryAr: string | null }) => {
-      const n = lens.nearest(p)
+      const n = lens.nearest(p, answers)
       return n ? `${n.courseId} — ${n.titleAr}` : DASH
     }
     /* الدوراتُ التي قيل حالُ تأهيله لها في صفٍّ قبلُ — فلا يُعاد التأهيلُ صفّا ثانيا */

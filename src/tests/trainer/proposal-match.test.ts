@@ -11,7 +11,7 @@
    ما خرج. ولذلك يُفحص هنا الطرفان معا. */
 
 import { describe, expect, it } from 'vitest'
-import { suggestCourses, tokensAr } from '@/application/trainer/proposal-match'
+import { suggestCourses, tokensAr, trainerFamilies } from '@/application/trainer/proposal-match'
 
 /** كتالوجٌ مصغَّرٌ يشبه الحقيقيَّ في تنوّعه */
 const CATALOG = [
@@ -102,5 +102,86 @@ describe('الترشيح نفسه', () => {
 
   it('وعنوان لا كلمة مميّزة فيه لا يرشّح له شيء — لا الكتالوج كلّه', () => {
     expect(suggestCourses({ titleAr: 'دورة مهارات' }, CATALOG)).toEqual([])
+  })
+})
+
+/* ═══ حسب إجابات كلّ مدرّب (٢١ أكتوبر ٢٠٢٦) ═══
+
+   طلبُ صاحب المنصّة بعد أن راجع ثلاثةً وخمسين اقتراحا بندا بندا: «اقترح تلقائيّا لكلّ
+   واحدٍ حسب إجاباته، فهي تختلف من شخصٍ لآخر». والقياسُ وأوزانُه في رأس `suggestCourses`.
+   وكلُّ حارسٍ هنا سقط على المرشِّح القديم (كلماتُ العنوان وحدَها) قبل أن يخضرّ. */
+describe('الترشيح يقرأ الدورة كلّها والمدرّب معها', () => {
+  it('⚠️ العنوان الإنجليزيّ يلقى المصطلح الإنجليزيّ — لا يسكت', () => {
+    const out = suggestCourses({ titleAr: 'Design thinking in the customer journey' }, [
+      { id: 'C-SVC-101', titleAr: 'تجربة المستفيد', termEn: 'Customer Journey' },
+      { id: 'C-COM-101', titleAr: 'الخطابة وفنّ الإلقاء' },
+    ])
+    expect(out[0]?.courseId, 'سكت عن عنوانٍ إنجليزيّ له مقابلٌ في الكتالوج').toBe('C-SVC-101')
+  })
+
+  it('⚠️ والجمع والنسبة كلمة واحدة — «المستودعات» تلقى «المستودع»', () => {
+    const out = suggestCourses({ titleAr: 'إدارة المستودعات' }, [
+      { id: 'C-SCM-103', titleAr: 'إدارة المخزون والمستودع' },
+    ])
+    expect(out[0]?.courseId, 'فرّقت لاحقةُ الجمع بين كلمةٍ واحدة').toBe('C-SCM-103')
+  })
+
+  it('⚠️ والكلمة النادرة أثقل من الشائعة — فلا تطفو الدورة لأنّها قالت «تطوير»', () => {
+    const common = Array.from({ length: 8 }, (_, i) => ({ id: `C-GEN-${i}`, titleAr: `تطوير الأداء ${i}` }))
+    const out = suggestCourses({ titleAr: 'تطوير المستودعات' }, [
+      ...common,
+      { id: 'C-SCM-103', titleAr: 'المخزون', skillsAr: ['تشغيل المستودعات'] },
+    ])
+    expect(out[0]?.courseId, 'غلبت كلمةٌ في كلّ دورةٍ كلمةً في دورةٍ واحدة').toBe('C-SCM-103')
+  })
+
+  it('⚠️ ومجال المدرّب يرجّح بين متقاربتين — رائد الأعمال يرى دورة الريادة أوّلا', () => {
+    const twins = [
+      { id: 'C-MKT-101', titleAr: 'تحليل السوق والمنافسين' },
+      { id: 'C-BIZ-101', titleAr: 'تحليل السوق والمنافسين' },
+    ]
+    const bare = suggestCourses({ titleAr: 'تحليل السوق' }, twins)
+    const asFounder = suggestCourses({ titleAr: 'تحليل السوق' }, twins, 3, { families: new Set(['BIZ']) })
+    expect(bare[0]?.courseId).toBe('C-BIZ-101')
+    const asMarketer = suggestCourses({ titleAr: 'تحليل السوق' }, twins, 3, { families: new Set(['MKT']) })
+    expect(asMarketer[0]?.courseId, 'لم يرجّح مجالُ المدرّب').toBe('C-MKT-101')
+    expect(asFounder[0]?.courseId).toBe('C-BIZ-101')
+  })
+
+  it('⚠️ والترجيح لا يحصر — اقتراح خارج مجاله يجد دورته إن قالها لفظه', () => {
+    const out = suggestCourses({ titleAr: 'الخطابة' }, [
+      ...CATALOG,
+      { id: 'C-SCM-101', titleAr: 'أساسيات سلسلة الإمداد' },
+    ], 3, { families: new Set(['SCM']) })
+    expect(out[0]?.courseId).toBe('C-COM-101')
+  })
+})
+
+describe('مجال المدرّب من إجاباته', () => {
+  const courses = [
+    { id: 'C-BIZ-101', titleAr: 'اكتشاف العملاء وعرض القيمة' },
+    { id: 'C-BIZ-103', titleAr: 'نماذج الأعمال واقتصاديات الوحدة' },
+    { id: 'C-MKT-101', titleAr: 'استراتيجية التسويق' },
+  ]
+
+  it('⚠️ ما اختاره من الكتالوج أو أُهِّل له مجالٌ له', () => {
+    expect([...trainerFamilies({ courseIds: ['C-SCM-103', null], proposals: [] }, courses)]).toEqual(['SCM'])
+  })
+
+  it('⚠️ وأغلب اقتراحاته مجالٌ له — وإن لم يختر من الكتالوج شيئا', () => {
+    const f = trainerFamilies({
+      courseIds: [],
+      proposals: [
+        { titleAr: 'اكتشاف العملاء' }, { titleAr: 'عرض القيمة' }, { titleAr: 'نموذج الأعمال' },
+        { titleAr: 'استراتيجية التسويق' },
+      ],
+    }, courses)
+    expect([...f], 'لم يقرأ مجالَه من أغلب اقتراحاته').toContain('BIZ')
+    expect([...f], 'رجّح بمجالٍ وقع فيه اقتراحٌ واحدٌ من أربعة').not.toContain('MKT')
+  })
+
+  it('واقتراحان لا يصنعان مجالا', () => {
+    const f = trainerFamilies({ courseIds: [], proposals: [{ titleAr: 'اكتشاف العملاء' }, { titleAr: 'عرض القيمة' }] }, courses)
+    expect([...f]).toEqual([])
   })
 })
