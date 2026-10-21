@@ -4685,6 +4685,13 @@ export class TrainerReviewService {
     const approvedLikeNew = rule !== 'approve_only' && input.likeNew === true
     const mode: 'seal' | 'approve_only' = rule === 'approve_only' || approvedLikeNew ? 'approve_only' : 'seal'
 
+    /* ═══ ولا يصير نشطا بلا أجرٍ متّفقٍ عليه (٢١ أكتوبر ٢٠٢٦) ═══
+       الاعتمادُ صار يفعّله (③ أدناه)، والتفعيلُ لا يقع بلا أجر — وإلّا كانت «مستحقّاتي» عنده صفرا ولا يُعرف لمَ.
+       ولا يُمنع الاعتمادُ بذلك: تُفتح بوّابتُه كما كانت، ويصير نشطا حين يُضبط أجرُه (`activateSignatureApproved`). */
+    const feesSet = c.gatesActivation
+      ? (await this.readinessFor(c.profileId)).steps.find((x) => x.key === 'compensation')?.done ?? false
+      : false
+
     const note = (input.noteAr ?? '').trim().slice(0, 500)
     const approvedAt = new Date()
     await this.prisma.$transaction(async (tx) => {
@@ -4796,12 +4803,20 @@ export class TrainerReviewService {
           })
         }
 
-        /* ③ والحالةُ تنتقل إلى طور الموادّ. وشرطُه شرعيّةُ النقل من الخريطة
-              نفسِها التي تمنع في `transition` — لا بمِحَكٍّ ثانٍ يفترق عنها. */
-        if (transitionProblemAr(c.profile.application.status as TrainerStatus, 'onboarding') === null) {
+        /* ③ والحالةُ تنتقل إلى «نشط» — لا «تهيئة» (٢١ أكتوبر ٢٠٢٦). وشرطُه شرعيّةُ النقل من الخريطة
+              نفسِها التي تمنع في `transition` — لا بمِحَكٍّ ثانٍ يفترق عنها.
+
+              كانت «تهيئة» طورا بين اعتماد التوقيع والتفعيل، يُفعَّل منه بأوّل شعبةٍ تُعتمَد. فضُغط على من
+              فيها «اقبله داخليّا» فرجع وأُغلقت بوّابتُه، وقالت له «حسابك التدريبي موقوف». فقال صاحبُ المنصّة:
+              «الغِ تهيئة كليا لملفات المدربين.. لا داعي لما هو يحدث تلقائي». فاعتمادُ التوقيع يفعّله، وتوقيعُنا
+              العقدَ يبقى بأوّل شعبةٍ تُعتمَد له (`TrainerPrepService.sealIfDue`)، والمهلةُ وتذكيرُها باقيان («B»).
+              ومن لا حسابَ له أو لا أجرَ مضبوطا يبقى في «تهيئة» وبوّابتُه مفتوحة: النشطُ بلا حسابٍ لا يفتح بوّابتَه،
+              وبلا أجرٍ مستحقّاتُه صفر. ويصير نشطا حين يتمّ ذلك (`activateSignatureApproved`). */
+        const target: TrainerStatus = applicantUserId && feesSet ? 'active' : 'onboarding'
+        if (transitionProblemAr(c.profile.application.status as TrainerStatus, target) === null) {
           await this.apps.transition(
-            c.profile.applicationId, 'onboarding', actorId,
-            'اعتماد التوقيع — وبه يفتح طور الموادّ', tx,
+            c.profile.applicationId, target, actorId,
+            target === 'active' ? 'اعتماد التوقيع — وبه صار نشطا' : 'اعتماد التوقيع — وبه يفتح طور الموادّ', tx,
           )
         }
       }
@@ -4857,6 +4872,18 @@ export class TrainerReviewService {
       countersignedAt: mode === 'seal' ? approvedAt : null,
       readiness, activated: false as const,
     }
+  }
+
+  /* ═══ وتوقيعُنا العرضَ المشروطَ للنشط بأوّل شعبةٍ تُعتمَد له (٢١ أكتوبر ٢٠٢٦) ═══
+     كان يقع في `decide('activate')` حين يخرج من «تهيئة». وذهبت «تهيئة»: اعتمادُ التوقيع يفعّله، فيبقى من
+     ذلك القرار ما لا يقع إلّا بأوّل شعبة — مؤهّلاتُ طلبه، والخَتمُ، وتحقّقُ الشرط، وبريدُه (`completeConditionalOffer`). */
+  async meetConditionalOffer(profileId: string, actorId: string) {
+    const profile = await this.prisma.trainerProfile.findUnique({
+      where: { id: profileId }, include: { application: true },
+    })
+    if (!profile) throw new AuthError('no_profile', 'لا ملف مدرب', 404)
+    await this.syncQualificationsFromApplication(profile.id, actorId)
+    await this.completeConditionalOffer(profile.applicationId, profile.application, actorId)
   }
 
   /* ═══ «وقِّعْه الآن» — توقيعُنا على ما اعتُمد كالعقود الجديدة (٢ أكتوبر ٢٠٢٦) ═══
@@ -6729,7 +6756,8 @@ export class TrainerReviewService {
         conditionPausedAt: null,
         conditionRemindedAt: null,
         conditionDeadlineAt: { not: null },
-        profile: { application: { status: 'onboarding' } },
+        /* والنشطُ معه — اعتمادُ التوقيع صار يفعّله ومهلتُه تجري («B»، ٢١ أكتوبر ٢٠٢٦) */
+        profile: { application: { status: { in: ['onboarding', 'active'] } } },
       },
       select: {
         id: true, conditionDeadlineAt: true, conditionExtendedAt: true,
@@ -6802,7 +6830,7 @@ export class TrainerReviewService {
         conditionMetAt: null,
         conditionPausedAt: null,
         conditionDeadlineAt: { not: null, lt: now },
-        profile: { application: { status: 'onboarding' } },
+        profile: { application: { status: { in: ['onboarding', 'active'] } } },
       },
       select: {
         id: true, conditionDeadlineAt: true,

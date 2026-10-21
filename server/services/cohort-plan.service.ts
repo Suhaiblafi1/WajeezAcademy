@@ -1189,8 +1189,9 @@ export class CohortPlanService {
       /* ومتى رُدّت إليه — للمردودة */
       reviewedAt: p.reviewedAt,
       /* شعبةُ إعداد؟ و`qualifies`: تأهيلُه لدورتها معلّقٌ فيقع باعتمادها،
-         و`onboarding`: مدرّبُها في الطور — فقد يفعّله اعتمادُها إن كانت آخرَ ما ينتظر */
-      prep: contexts[i] ? { onboarding: contexts[i]!.onboarding, qualifies: contexts[i]!.pending } : null,
+         و`onboarding`: مدرّبُها في الطور — مهلةُ عرضه المشروط تجري، فاعتمادُها يوقّع عقدَه. ومن الطور النشطُ
+         الذي اعتُمد توقيعُه منذ أُلغيت «تهيئة» (٢١ أكتوبر ٢٠٢٦، `inPrep`) */
+      prep: contexts[i] ? { onboarding: contexts[i]!.inPrep, qualifies: contexts[i]!.pending } : null,
     }))
   }
 

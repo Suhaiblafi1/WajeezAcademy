@@ -61,7 +61,7 @@ export const BAR_ACTIONS = ["conditionally_approve", "approve", "reject", "undo_
    ثمّ الاعتمادُ لمن جاوز التجهيز، ثمّ ما بقي من السلسلة لمن هو فيها. */
 export const RECOMMENDED_ACTIONS = [
   "undo_reject", "undo_withdraw", "reinstate", "conditionally_approve", "approve",
-  "activate", "move_to_review",
+  "move_to_review",
 ];
 
 /* ═══ ترتيبُ المصفوفة هو ترتيبُ العرض — ورحلةُ الطلب هي ترتيبُها ═══
@@ -133,7 +133,8 @@ export const DECISIONS: Decision[] = [
   /* وكان هنا «ابدأ التهيئة» (`start_onboarding`): يُدخل الطلبَ التهيئةَ بلا عقدٍ موقَّع. وبابُ
      التهيئة اعتمادُ توقيعه في «التجهيز» — فحذفه صاحبُ المنصّة (١٨ أكتوبر ٢٠٢٦). والانتقالُ
      باقٍ في الخادم لمسالكه، لا زرَّ يطلبه. */
-  { action: "activate", label: "فعّله مدرّبا نشطا", from: [...REVIEW_OPEN_STATUSES], tone: "main" },
+  /* وكان هنا «فعّله مدرّبا نشطا» (`activate`). وألغى صاحبُ المنصّة «تهيئة» (٢١ أكتوبر ٢٠٢٦): اعتمادُ التوقيع يفعّله،
+     و«لا داعي لما هو يحدث تلقائي». والقرارُ باقٍ في الخادم لمسالكه، لا زرَّ هنا يطلبه. */
   /* وآخرُ الطريق: يختصر ما فوقه كلَّه من أيّ حالةٍ يقف فيها الطلب */
   {
     action: "approve", label: "اعتمده مدرّبا — بنقرة", from: [...REVIEW_OPEN_STATUSES], tone: "main",

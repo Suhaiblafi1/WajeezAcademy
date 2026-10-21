@@ -37,6 +37,7 @@ import { setupTestDb, testPrisma } from '../helpers/db'
 import { makeReadyForApproval } from '../helpers/trainer-ready'
 import { AuthService } from '../../services/auth.service'
 import { TrainerReviewService } from '../../services/trainer-review.service'
+import { TrainerPrepService } from '../../services/trainer-prep.service'
 
 let prisma: PrismaClient
 let auth: AuthService
@@ -194,15 +195,20 @@ describe('البابُ الثاني: زرُّ شاشة العقود — يعتم
     expect(c.status).toBe('signature_approved')
     expect(c.countersignedAt, 'خُتم العرضُ قبل أن تُعتمَد دوراتُه').toBeNull()
     expect(c.conditionMetAt, 'تحقّق شرطُ موادّه باعتماد توقيعه').toBeNull()
-    expect(await statusOf(t.applicationId), 'نُشر حسابُه باعتماد توقيعه').toBe('onboarding')
+    /* ومنذ أُلغيت «تهيئة» (٢١ أكتوبر ٢٠٢٦) يصير نشطا باعتماد توقيعه — والخَتمُ وتحقّقُ الشرط لأوّل شعبةٍ تُعتمَد */
+    expect(await statusOf(t.applicationId), 'اعتُمد توقيعُه ولم يصر نشطا').toBe('active')
   })
 
-  it('والنشرُ بعده يُردّ ما دامت لم تُعتمَد له دورة', async () => {
+  /* وكان: «والنشرُ بعده يُردّ ما دامت لم تُعتمَد له دورة» — والتفعيلُ صار باعتماد التوقيع (٢١ أكتوبر ٢٠٢٦).
+     فيُقاس ما بقي منه: لا يُختَم عقدُه ولا يتحقّق شرطُه بلا شعبةٍ معتمَدة، والعاملُ لا يوقّعه */
+  it('ولا يُختَم عرضُه ما دامت لم تُعتمَد له شعبة', async () => {
     const t = await readyButForMaterials({ deadlineDays: 5, declared: false, approved: false })
     await review.approveSignature(t.contractId, adminId, {})
-    await expect(review.decide(t.applicationId, adminId, 'activate'))
-      .rejects.toMatchObject({ code: 'not_ready' })
-    expect(await statusOf(t.applicationId), 'نُشر ولم تُقرأ موادُّه').toBe('onboarding')
+    expect(await statusOf(t.applicationId)).toBe('active')
+    await new TrainerPrepService(prisma).sealFirstCourseActive()
+    const c = await prisma.trainerContract.findUniqueOrThrow({ where: { id: t.contractId } })
+    expect(c.status, 'خُتم عرضُه بلا شعبةٍ معتمَدة').toBe('signature_approved')
+    expect(c.conditionMetAt, 'تحقّق شرطُه بلا شعبةٍ معتمَدة').toBeNull()
   })
 
   it('ويمرّ النشرُ بعد إعلانها — فيُكتب تحقّقُ الشرط ويصير نشطا', async () => {

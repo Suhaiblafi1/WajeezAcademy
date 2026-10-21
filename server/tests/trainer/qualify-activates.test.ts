@@ -88,9 +88,6 @@ async function onboarding(courses: string[]) {
   for (const courseId of courses) {
     await prisma.trainerCourseQualification.create({ data: { profileId: profile.id, courseId, status: 'pending' } })
   }
-  await prisma.trainerCompensationRule.create({
-    data: { profileId: profile.id, type: 'per_seat', rate: 25, currency: 'USD', minSeats: 0 },
-  })
   const contract = await prisma.trainerContract.create({
     data: {
       profileId: profile.id, title: `عقدُ ${seq}`, status: 'draft',
@@ -104,6 +101,11 @@ async function onboarding(courses: string[]) {
     phone: '+962790000000', bodyHash: sha256(BODY), acks: contractAcks(true).map((a) => a.key),
   })
   await review.approveSignature(contract.id, adminId)
+  /* والأجرُ بعد اعتماد التوقيع: فيبقى في «تهيئة» — بابُها الباقي لمن لم يُضبط أجرُه حين اعتُمد توقيعُه.
+     ومن ضُبط أجرُه قبله يصير نشطا بالاعتماد (٢١ أكتوبر ٢٠٢٦، `onboarding-removed.test.ts`) */
+  await prisma.trainerCompensationRule.create({
+    data: { profileId: profile.id, type: 'per_seat', rate: 25, currency: 'USD', minSeats: 0 },
+  })
   return { applicationId: application.id, profileId: profile.id, contractId: contract.id, userId: user.userId }
 }
 

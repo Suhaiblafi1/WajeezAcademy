@@ -47,10 +47,9 @@ describe('① الترتيب ترتيب رحلة الطلب', () => {
     const before: [string, string][] = [
       ['move_to_review', 'academic_review'],
       ['academic_review', 'conditionally_approve'],
-      /* و«ابدأ التهيئة» حُذف (١٨ أكتوبر ٢٠٢٦) — والسلسلةُ تُوصَل فوقَه */
-      ['conditionally_approve', 'activate'],
-      /* والاعتمادُ بنقرةٍ آخرُ الطريق — يختصر ما فوقه، فلا يتقدّمه */
-      ['activate', 'approve'],
+      /* و«ابدأ التهيئة» حُذف (١٨ أكتوبر ٢٠٢٦)، و«فعّله مدرّبا نشطا» (٢١ أكتوبر) — والسلسلةُ تُوصَل فوقَهما.
+         والاعتمادُ بنقرةٍ آخرُ الطريق — يختصر ما فوقه، فلا يتقدّمه */
+      ['conditionally_approve', 'approve'],
       ['move_to_review', 'approve'],
     ]
     for (const [first, second] of before) {

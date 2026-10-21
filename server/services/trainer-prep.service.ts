@@ -443,17 +443,21 @@ export class TrainerPrepService {
        (`pending`). فلم يجد زرَّ القبول، ولا كانت شعبتُه تجمّد مهلتَه ولا
        تفعّله. فشعبتُه شعبةُ إعدادٍ ما دام في الطور، معلّقةً دورتُها أو معتمَدة. */
     const onboarding = lead.application.status === 'onboarding'
-    if (qual?.status !== 'pending' && !(onboarding && qual?.status === 'qualified')) return null
+    /* وفي الطور أيضا: نشطٌ مهلةُ عرضه المشروط تجري — اعتمادُ التوقيع صار يفعّله (٢١ أكتوبر ٢٠٢٦) */
+    const inPrep = onboarding || (await this.prisma.trainerContract.count({
+      where: { profileId: lead.id, gatesActivation: true, conditionMetAt: null, conditionDeadlineAt: { not: null }, status: { in: SIGNATURE_APPROVED } },
+    })) > 0
+    if (qual?.status !== 'pending' && !(inPrep && qual?.status === 'qualified')) return null
     return {
       cohortId, courseId: cohort.courseId, profileId: lead.id, userId: lead.userId,
-      applicationId: lead.applicationId, onboarding, pending: qual?.status === 'pending',
+      applicationId: lead.applicationId, onboarding, inPrep, pending: qual?.status === 'pending',
     }
   }
 
   /** بعد إرسال الخطّة: إن لم يبقَ ما ينقص أُعلن اكتمالُ موادّه بنفسه (البند 2-10) */
   async afterSubmit(cohortId: string) {
     const ctx = await this.prepContext(cohortId)
-    if (!ctx?.userId || !ctx.onboarding) return
+    if (!ctx?.userId || !ctx.inPrep) return
     const { TrainerReviewService } = await import('./trainer-review.service')
     await new TrainerReviewService(this.prisma).declareMaterialsComplete(ctx.userId).catch(() => undefined)
   }
@@ -588,25 +592,26 @@ export class TrainerPrepService {
     return { activated, blocked }
   }
 
-  /* ═══ ومن رُدّ عن التهيئة وتوقيعُه معتمَدٌ يعود إليها (٢١ أكتوبر ٢٠٢٦) ═══
+  /* ═══ ومن توقيعُه معتمَدٌ صار نشطا — «تهيئة» أُلغيت (٢١ أكتوبر ٢٠٢٦) ═══
 
-     اعتمادُ التوقيع ينقله إلى «تهيئة» فتُفتح بوّابتُه (`approveSignature`). ثمّ ضُغط على مدرّبةٍ فيها «اقبله
-     داخليّا» — وكان الزرَّ الموصى به — فرجعت «قبولا داخليّا»: أُغلقت بوّابتُها، وقالت لها «دوراتي» «حسابك
-     التدريبي موقوف»، وعقدُها معتمَدُ التوقيع لا يُعتمَد ثانيةً ليعيدها. واختار صاحبُ المنصّة «A for everyone
-     has the same case»: يُعاد كلُّ من هذا حالُه، وأُخفي الزرُّ عمّن في التهيئة (`decisions.ts`).
+     كانت «تهيئة» طورا بين اعتماد التوقيع والتفعيل. فضُغط على مدرّبةٍ فيها «اقبله داخليّا» فرجعت «قبولا داخليّا»:
+     أُغلقت بوّابتُها، وقالت لها «دوراتي» «حسابك التدريبي موقوف». فأُعيد من هذا حالُه إليها أوّلا («A for everyone
+     has the same case»)، ثمّ قال صاحبُ المنصّة: «الغِ تهيئة كليا لملفات المدربين.. بدون أي مخاطرة على الحسابات
+     الفعالة». فاعتمادُ التوقيع صار يفعّله (`approveSignature`)، وهذا يلحق من سبق: من في «تهيئة»، ومن رُدّ عنها.
 
-     وحالُه: طلبُه حيٌّ قبل التهيئة، وآخرُ عقدٍ له غيرُ مُزاحٍ عقدٌ مشروطٌ اعتُمد توقيعُه — فمن أُرسل إليه
-     عقدٌ جديدٌ بعده لا يُمَسّ، وطريقُه توقيعُ الجديد. والموقوفُ لا يُمَسّ. */
-  async restoreSentBackOnboarding(): Promise<string[]> {
-    const before = REVIEW_OPEN_STATUSES.filter((s) => s !== 'onboarding')
+     وحالُه: طلبُه حيٌّ لم ينشط، وآخرُ عقدٍ له غيرُ مُزاحٍ عقدٌ مشروطٌ اعتُمد توقيعُه — فمن أُرسل إليه عقدٌ جديدٌ
+     بعده لا يُمَسّ، وطريقُه توقيعُ الجديد. والموقوفُ لا يُمَسّ، والنشطُ لا يُمَسّ.
+     · وله حسابٌ وأجرٌ متّفقٌ عليه: يصير نشطا. وتوقيعُنا العقدَ بأوّل شعبةٍ تُعتمَد له (`sealIfDue`).
+     · وما سوى ذلك يبقى في «تهيئة» أو يعود إليها — بوّابتُه مفتوحة، ويُقال للإدارة ما ينقصه. */
+  async activateSignatureApproved(): Promise<{ activated: string[]; reopened: string[]; blocked: number }> {
     const rows = await this.prisma.trainerProfile.findMany({
       where: {
         suspendedAt: null,
-        application: { status: { in: [...before] } },
+        application: { status: { in: [...REVIEW_OPEN_STATUSES] } },
         contracts: { some: { gatesActivation: true, status: { in: SIGNATURE_APPROVED }, signatureApprovedAt: { not: null } } },
       },
       select: {
-        id: true, applicationId: true, application: { select: { status: true } },
+        id: true, userId: true, applicationId: true, application: { select: { status: true } },
         contracts: {
           where: { status: { not: 'superseded' } }, orderBy: { createdAt: 'desc' }, take: 1,
           select: { status: true, gatesActivation: true, signatureApprovedAt: true },
@@ -614,15 +619,28 @@ export class TrainerPrepService {
       },
     })
     const apps = new TrainerApplicationService(this.prisma)
-    const restored: string[] = []
+    const { TrainerReviewService } = await import('./trainer-review.service')
+    const review = new TrainerReviewService(this.prisma)
+    const activated: string[] = []
+    const reopened: string[] = []
+    let blocked = 0
     for (const r of rows) {
       const last = r.contracts[0]
       if (!last?.gatesActivation || !last.signatureApprovedAt || !SIGNATURE_APPROVED.includes(last.status)) continue
-      if (transitionProblemAr(r.application.status as TrainerStatus, 'onboarding') !== null) continue
-      await apps.transition(r.applicationId, 'onboarding', null, 'توقيعه معتمد — أعيد إلى التهيئة بعد أن رد عنها')
-      restored.push(r.id)
+      const from = r.application.status as TrainerStatus
+      const fees = (await review.readinessFor(r.id)).steps.find((x) => x.key === 'compensation')?.done ?? false
+      if (r.userId && fees && transitionProblemAr(from, 'active') === null) {
+        await apps.transition(r.applicationId, 'active', null, 'توقيعه معتمد — صار نشطا (ألغيت التهيئة)')
+        activated.push(r.id)
+        continue
+      }
+      blocked++
+      if (from !== 'onboarding' && transitionProblemAr(from, 'onboarding') === null) {
+        await apps.transition(r.applicationId, 'onboarding', null, 'توقيعه معتمد — أعيد إلى التهيئة بعد أن رد عنها')
+        reopened.push(r.id)
+      }
     }
-    return restored
+    return { activated, reopened, blocked }
   }
 
   /* ═══ وعقدُ النشط المعتمَدُ كالعقود الجديدة يوقَّع حين تكتمل دوراتُه (١٧ أكتوبر ٢٠٢٦) ═══
@@ -685,6 +703,28 @@ export class TrainerPrepService {
   /** يوقّع عقدَ النشط المعتمَدَ كالعقود الجديدة إن حان (`sealDue`) — وما يمنع يُقال للإدارة مرّةً في الأسبوع
       ولا يُسقط ما قبله */
   async sealIfDue(profileId: string, actorId: string) {
+    /* والعرضُ المشروطُ للنشط يوقَّع بأوّل شعبةٍ تُعتمَد له — كان يقع بخروجه من «تهيئة»، وذهبت (٢١ أكتوبر ٢٠٢٦) */
+    const conditional = await this.prisma.trainerContract.findFirst({
+      where: {
+        profileId, gatesActivation: true, conditionMetAt: null, signatureApprovedAt: { not: null },
+        status: { in: SIGNATURE_APPROVED }, profile: { application: { status: 'active' } },
+      },
+      select: { id: true },
+    })
+    if (conditional) {
+      if (await this.approvedPlans(profileId) === 0) return { sealed: false as const }
+      const { TrainerReviewService } = await import('./trainer-review.service')
+      try {
+        await new TrainerReviewService(this.prisma).meetConditionalOffer(profileId, actorId)
+        await recordAudit(this.prisma, {
+          actorId, action: 'trainer.prep.auto_seal', entityType: 'trainer_contract', entityId: conditional.id,
+          meta: { profileId, due: 'first_course', conditional: true },
+        })
+        return { sealed: true as const }
+      } catch (e) {
+        return { sealed: false as const, blockedAr: e instanceof AuthError ? e.message : 'خطأ غير متوقّع' }
+      }
+    }
     const contract = await this.prisma.trainerContract.findFirst({
       where: { profileId, status: 'signature_approved', gatesActivation: false },
       orderBy: { signedAt: { sort: 'desc', nulls: 'last' } },
@@ -729,6 +769,33 @@ export class TrainerPrepService {
   /** يلحق عقدَ النشط المعتمَدَ كالعقود الجديدة وقد اعتُمدت له دورةٌ بعد اعتماد توقيعه — من قبل قرار ٢٠ أكتوبر.
       والفاعلُ من اعتمد تلك الدورة. ولا يلحق «اكتملت دوراتُه» وحدَه: ذاك كان يُقال للإدارة «وقِّعْه الآن» فتركته */
   async sealFirstCourseActive(): Promise<{ sealed: string[]; blocked: number }> {
+    /* والعرضُ المشروطُ للنشط وله شعبةٌ معتمَدة — يلحقه العاملُ (٢١ أكتوبر ٢٠٢٦). والفاعلُ من اعتمد آخرَ خططه */
+    const conditional = await this.prisma.trainerProfile.findMany({
+      where: {
+        suspendedAt: null, application: { status: 'active' },
+        contracts: { some: { gatesActivation: true, conditionMetAt: null, signatureApprovedAt: { not: null }, status: { in: SIGNATURE_APPROVED } } },
+        cohortPlans: { some: { status: { in: APPROVED_PLAN }, reviewedBy: { not: null } } },
+      },
+      select: {
+        id: true,
+        cohortPlans: {
+          where: { status: { in: APPROVED_PLAN }, reviewedBy: { not: null } },
+          orderBy: { reviewedAt: { sort: 'desc', nulls: 'last' } }, take: 1, select: { reviewedBy: true },
+        },
+      },
+    })
+    const sealedConditional: string[] = []
+    let blockedConditional = 0
+    for (const p of conditional) {
+      const r = await this.sealIfDue(p.id, p.cohortPlans[0]!.reviewedBy!)
+      if (r?.sealed) sealedConditional.push(p.id)
+      else if (r && 'blockedAr' in r) blockedConditional++
+    }
+    const rest = await this.sealFirstCourseActiveUnconditional()
+    return { sealed: [...sealedConditional, ...rest.sealed], blocked: blockedConditional + rest.blocked }
+  }
+
+  private async sealFirstCourseActiveUnconditional(): Promise<{ sealed: string[]; blocked: number }> {
     const contracts = await this.prisma.trainerContract.findMany({
       where: {
         status: 'signature_approved', gatesActivation: false, signatureApprovedAt: { not: null },

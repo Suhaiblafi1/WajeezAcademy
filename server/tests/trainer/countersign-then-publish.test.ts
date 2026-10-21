@@ -164,8 +164,8 @@ const publish = (applicationId: string) =>
   review.decide(applicationId, adminId, 'activate', 'نشرُ الحساب بعد اعتماد الموادّ',
     { actorRoles: ['academic_manager'] })
 
-describe('الاعتمادُ يفتح طورَ الموادّ ولا ينشر', () => {
-  it('⚠️ يعتمد التوقيعَ ويمنح الدورَ ويربط الملفَّ — ولا يوقّع عنّا ولا يجعله نشطا', async () => {
+describe('الاعتمادُ يفتح بوّابتَه ولا ينشر', () => {
+  it('⚠️ يعتمد التوقيعَ ويمنح الدورَ ويربط الملفَّ ويجعله نشطا — ولا يوقّع عنّا ولا ينشر اسمَه', async () => {
     const { application, contract, userId, email } = await signedOffer({ ready: true })
 
     /* وما خرج قبل الاعتماد (العرضُ وخبرُ التوقيع) لا يُقرأ رسالةَ الاعتماد */
@@ -201,8 +201,10 @@ describe('الاعتمادُ يفتح طورَ الموادّ ولا ينشر', 
 
     /* والغايةُ: بابُه مفتوحٌ فعلا — حالةً ودورا وربطا */
     const app = await prisma.trainerApplication.findUniqueOrThrow({ where: { id: application.id } })
-    expect(app.status, 'اعتُمد توقيعُه ولم يدخل طورَ الموادّ').toBe('onboarding')
-    expect(app.status, 'نُشر حسابُه قبل أن تُقيَّم موادُّه').not.toBe('active')
+    /* ومنذ أُلغيت «تهيئة» (٢١ أكتوبر ٢٠٢٦) يصير نشطا — وتوقيعُنا ونشرُ اسمه باقيان لأوّل شعبةٍ تُعتمَد */
+    expect(app.status, 'اعتُمد توقيعُه وأجرُه مضبوطٌ ولم يصر نشطا').toBe('active')
+    const published = await prisma.trainerProfile.findUniqueOrThrow({ where: { applicationId: application.id } })
+    expect(published.publishApprovedAt, 'نُشر اسمُه قبل أن تُعتمَد له شعبة').toBeNull()
     const profile = await prisma.trainerProfile.findUniqueOrThrow({
       where: { applicationId: application.id },
     })
