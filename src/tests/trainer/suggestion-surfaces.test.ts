@@ -91,10 +91,20 @@ describe('بطاقة المدرّب: إضافة تعدّل، ونبذة قبل �
     expect(ops, 'شاشة الإدارة لا تقترح النبذة').toContain('{ kind: "bio", lines: [text] }')
   })
 
-  it('⚠️ وزرّ «أرسل كل الاقتراحات» يعدّ المسوّدات ويغيب حين لا شيء', () => {
+  it('⚠️ وزرّ «أرسل كل الاقتراحات» يعدّ المدرّبين لا المسوّدات ويغيب حين لا شيء', () => {
     expect(ops).toContain('"/api/admin/trainers/suggestions/send-drafts"')
-    expect(ops, 'العدد لا يقرأ المسوّدتين').toMatch(/\(t\.pitchDraft \? 1 : 0\) \+ \(t\.bioDraft \? 1 : 0\)/)
+    expect(ops, 'العدد لا يعدّ من له مسوّدة').toMatch(/\.filter\(\(t\) => t\.pitchDraft \|\| t\.bioDraft\)\.length/)
     expect(ops, 'الزرّ لا يغيب حين لا مسوّدة').toMatch(/\{draftCount > 0 && \(/)
+  })
+
+  it('⚠️ والضغطةُ تعرض من يصله قبل أن يُرسَل شيء — ويُرسَل لمن عُرض وحدَه', () => {
+    expect(ops, 'الزرّ يرسل بلا تأكيد').toContain('onClick={() => void openSendPreview()}')
+    expect(ops).not.toContain('onClick={() => void sendAllDrafts(')
+    expect(ops, 'التأكيد لا يرسل قائمته').toMatch(/const ids = sendPreview\.map\(\(x\) => x\.profileId\);\s*setSendPreview\(null\);\s*void sendAllDrafts\(ids\);/)
+    expect(ops, 'الإرسال لا يحمل القائمة').toContain('"/api/admin/trainers/suggestions/send-drafts", { profileIds }')
+    const getAt = adminRoutes.indexOf("app.get('/api/admin/trainers/suggestions/send-drafts'")
+    expect(getAt, 'لا مسار لمن يصله').toBeGreaterThan(-1)
+    expect(adminRoutes.slice(getAt, getAt + 200)).toContain("requirePermission('trainer.publish')")
   })
 
   it('⚠️ والعدد لمن يصله الإرسال وحده — النشطون ومن نُشرت دوراتهم', () => {

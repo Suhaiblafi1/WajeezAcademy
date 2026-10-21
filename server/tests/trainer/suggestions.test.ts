@@ -21,7 +21,10 @@
 
    ٦) و«أرسل كلّ الاقتراحات» يرسل ما لم يُرسَل وحدَه: لا يسحب ما عند المدرّب، ولا يعيد
       ما قرّر فيه، والضغطةُ الثانيةُ لا ترسل شيئا. ورُئي ساقطا حين أُسقط شرطُ «لم يُقترح
-      عليه»: سُحب المعلَّقُ وأُرسل غيرُه، وأرسلت الضغطةُ الثانيةُ من جديد. */
+      عليه»: سُحب المعلَّقُ وأُرسل غيرُه، وأرسلت الضغطةُ الثانيةُ من جديد.
+
+   ٧) ويُرسَل لمن عُرض في التأكيد وحدَه (٢١ أكتوبر ٢٠٢٦: «هل يعطيني لمن ستُرسَل أم يرسل مباشرة؟»).
+      ورُئي ساقطا حين أُسقط فرزُ `only`: وصل من لم يُعرض. */
 
 import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
@@ -187,5 +190,15 @@ describe('أرسل كلّ الاقتراحات — ما لم يُرسل وحده
     expect(await svc.sendAllDrafts(ACTOR, only), 'أُرسل لمن ليس نشطا ولا دورة منشورة له').toEqual({ sent: 0, failed: 0 })
     await giveLiveCourse(prisma, made.profileId)
     expect(await svc.sendAllDrafts(ACTOR, only), 'لم يُرسل لمن نُشرت دورته').toEqual({ sent: 1, failed: 0 })
+  })
+
+  it('⚠️ ويُعرض لكلٍّ ما يصله — ويُرسَل لمن عُرض في التأكيد وحدَه', async () => {
+    const shown = (await review.createTrainerDirectly(ACTOR, { fullName: 'مدرّب في التأكيد', email: 'suggest-f@test.local' })).profileId
+    const late = (await review.createTrainerDirectly(ACTOR, { fullName: 'مدرّب لم يعرض', email: 'suggest-g@test.local' })).profileId
+    const both = { pitch: { [shown]: DRAFT_PITCH, [late]: DRAFT_PITCH }, bio: { [shown]: DRAFT_BIO } }
+    const preview = await svc.unsentDrafts(both)
+    expect(preview.trainers.find((t) => t.profileId === shown)).toEqual({ profileId: shown, name: 'مدرّب في التأكيد', kinds: ['pitch', 'bio'] })
+    expect(await svc.sendAllDrafts(ACTOR, both, [shown])).toEqual({ sent: 2, failed: 0 })
+    expect(await prisma.trainerTextSuggestion.count({ where: { profileId: late } }), 'وصل من لم يعرض في التأكيد').toBe(0)
   })
 })

@@ -120,14 +120,20 @@ export class TrainerSuggestionService {
 
      ولا يصل إلّا **النشطين ومن نُشرت دوراتُهم** (٢٠ أكتوبر ٢٠٢٦): «اكتب للجميع وسأرسل لمن
      هم اكتف أو نشرت دوراتهم للموسم». فالمسوّداتُ للجميع، والضغطةُ لمن طلبتُه حالتُه `active`
-     أو له دورةٌ منشورةٌ هذا الفصلَ أو بعده (`liveTrainerWhere`). ومن سواهم يُرسَل إليه من بطاقته. */
+     أو له دورةٌ منشورةٌ هذا الفصلَ أو بعده (`liveTrainerWhere`). ومن سواهم يُرسَل إليه من بطاقته.
+
+     ولا يُرسَل إلّا لمن رآه في التأكيد (٢١ أكتوبر ٢٠٢٦): «هل يعطيني لمن ستُرسَل أم يرسل مباشرة؟» —
+     فالشاشةُ تعرض الأسماءَ أوّلا (`unsentDrafts`) وترسل قائمتَها (`only`)، فمن صار مستحقّا بين العرض
+     والضغط لا يصله شيءٌ لم يره صاحبُ القرار. */
   async sendAllDrafts(
     actorId: string,
     drafts: Drafts = { pitch: PITCH_DRAFTS, bio: BIO_DRAFTS },
+    only?: readonly string[],
   ): Promise<{ sent: number; failed: number }> {
     let sent = 0
     let failed = 0
-    for (const d of await this.dueDrafts(drafts)) {
+    const due = await this.dueDrafts(drafts)
+    for (const d of only ? due.filter((x) => only.includes(x.profileId)) : due) {
       try {
         await this.propose(d.profileId, actorId, d.kind, d.lines)
         sent += 1
@@ -138,10 +144,20 @@ export class TrainerSuggestionService {
     return { sent, failed }
   }
 
-  /** ما يرسله «أرسل الكلّ» الآن — ويعدّه «ما ينتظرك» بالشرط نفسِه (`staff-inbox.service.ts`) */
-  async unsentDrafts(drafts: Drafts = { pitch: PITCH_DRAFTS, bio: BIO_DRAFTS }): Promise<{ count: number; names: string[] }> {
+  /** ما يرسله «أرسل الكلّ» الآن — ويعدّه «ما ينتظرك» بالشرط نفسِه (`staff-inbox.service.ts`)، ويعرضه التأكيدُ لكلّ مدرّب */
+  async unsentDrafts(drafts: Drafts = { pitch: PITCH_DRAFTS, bio: BIO_DRAFTS }): Promise<{
+    count: number
+    names: string[]
+    trainers: { profileId: string; name: string; kinds: SuggestionKind[] }[]
+  }> {
     const due = await this.dueDrafts(drafts)
-    return { count: due.length, names: [...new Set(due.map((d) => d.name))] }
+    const trainers = new Map<string, { profileId: string; name: string; kinds: SuggestionKind[] }>()
+    for (const d of due) {
+      const t = trainers.get(d.profileId) ?? { profileId: d.profileId, name: d.name, kinds: [] }
+      t.kinds.push(d.kind)
+      trainers.set(d.profileId, t)
+    }
+    return { count: due.length, names: [...new Set(due.map((d) => d.name))], trainers: [...trainers.values()] }
   }
 
   /** المسوّداتُ المستحقّةُ الإرسال: للنشطين ومن نُشرت دوراتُهم، ولم يُقترح عليهم من نوعها شيء */
