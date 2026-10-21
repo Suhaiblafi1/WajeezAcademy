@@ -9,6 +9,7 @@ import {
   type CoreCatalogRaw,
 } from './core-catalog-source'
 import { pathwayCategory } from './pathways'
+import { publicPathwayById } from './public-pathways'
 
 export interface Course {
   id: string
@@ -173,13 +174,19 @@ export const pathwaySupportCourses: Record<string, SupportCourse[]> = buildSuppo
 
 /** دورات المسار الجاهز كما تُعرض وتُسعَّر: أربعُ أساسيات ثمّ ثلاثُ مساندات.
     لا يستعملها التشخيص — هناك تُبنى القائمة من نتيجة القياس لا من حزمة. */
-export const readyPathwayCourseIds = (pathwayId: string): string[] => [
-  ...(pathwayCourses[pathwayId] ?? []),
-  ...(pathwaySupportCourses[pathwayId] ?? []).map((s) => s.courseId),
-]
+export const readyPathwayCourseIds = (pathwayId: string): string[] => {
+  /* والمسارُ العامُّ دوراتُه الأربعُ وحدَها — لا مساندةَ له (`public-pathways.ts`) */
+  const pub = publicPathwayById(pathwayId)
+  if (pub) return [...pub.courseIds]
+  return [
+    ...(pathwayCourses[pathwayId] ?? []),
+    ...(pathwaySupportCourses[pathwayId] ?? []).map((s) => s.courseId),
+  ]
+}
 
 /** طريقة تقديم المسار من الكتالوج الموثق — تُعرض ضمن تفاصيل دورات الرحلة */
 export const pathwayDelivery = (pathwayId: string): string | undefined =>
+  publicPathwayById(pathwayId)?.delivery ??
   getCoreCatalogRaw().launch_pathways.find((p) => p.id === pathwayId)?.delivery
 
 /* مختارات وجيز من الدورات — منتقاة تحريريا، الدورة الثانية من كل مسار مختار */

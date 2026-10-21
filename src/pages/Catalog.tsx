@@ -2,6 +2,7 @@ import { useEffect, useMemo, useSyncExternalStore } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { ArrowLeft, BookOpen, Flame, Heart, Route, Search, SlidersHorizontal, Target } from 'lucide-react'
 import { bestsellers, pathwayDomain, pathwayDomains, pathways } from '@/data/pathways'
+import { publicPathways } from '@/data/public-pathways'
 import { bestsellerCourses, courses, pathwaySizeAr } from '@/data/courses'
 import FavoriteButton from '@/components/FavoriteButton'
 import {
@@ -24,7 +25,7 @@ import { resolveCatalogRefsAr } from '@/application/catalog/visitor-text'
 import { sortKeyAr } from '@/application/catalog/course-title'
 import { useCourseCohorts } from '@/services/cohort-prices'
 import { useListedCourses } from '@/services/listed-courses'
-import { listedOnly } from '@/application/catalog/listed-courses'
+import { listedOnly, listedWhole } from '@/application/catalog/listed-courses'
 import { cohortDayAr } from '@/application/learning/cohort-gate'
 
 /* البند ع-١: كانت هذه المجموعتان تُحسبان في نطاق الوحدة — لقطة وقت الاستيراد.
@@ -53,7 +54,8 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
      بطاقةٌ بلا موعدٍ تُقرأ كتالوجا لا دعوة. والمصدرُ نداءٌ واحد مشترك. */
   const { cohorts: openCohorts } = useCourseCohorts()
   /* ودوراتُ القسم ما له شعبةٌ أُعلنت ولم تنتهِ — قرارُ صاحب المنصّة (٢١ أكتوبر ٢٠٢٦)، والقولُ في
-     `application/catalog/listed-courses.ts`. والمسارُ لا يُرشَّح هنا: قرارُه لاحق. */
+     `application/catalog/listed-courses.ts`. ومساراتُه المساراتُ العامّةُ التي لكلّ دوراتها شعبة
+     (`data/public-pathways.ts`) — ومسارُ الكتالوج لا يُعرض هنا، وتبقى صفحتُه لمن يملك رابطَها. */
   const listed = useListedCourses()
 
   const q = params.get('q') ?? ''
@@ -92,8 +94,8 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
   }
 
   const shownPathways = useMemo(() => {
-    const pathwayRank = (p: (typeof pathways)[number]) => catalogRank(q, pathwaySearchLayers(p))
-    let list = pathways.filter(
+    const pathwayRank = (p: (typeof publicPathways)[number]) => catalogRank(q, pathwaySearchLayers(p))
+    let list = listedWhole(publicPathways, listed).filter(
       (p) =>
         (cat === 'الكل' || pathwayDomain(p.id) === cat) &&
         /* الحقولُ كلُّها لا حقلان: الاسمُ القصيرُ والمهاراتُ **والجمهورُ
@@ -110,7 +112,7 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
     if (q) list = [...list].sort((a, b) => pathwayRank(b) - pathwayRank(a))
     return list
   /* eslint-disable-next-line react-hooks/exhaustive-deps -- رقمُ النسخة هو إشارةُ الإبطال الوحيدة: مصفوفاتُ الكتالوج تُملأ في مكانها بـ`splice` فلا تتغيّر هويّتُها، فحذفُ التبعيّة يجمّد أوّلَ لقطة */
-  }, [q, cat, sort, bestsellerIds, catalogVersion])
+  }, [q, cat, sort, bestsellerIds, listed, catalogVersion])
 
   const shownCourses = useMemo(() => {
     /* ع-٨: «يطابق الكلماتِ حيثما كانت — العنوانُ والوعدُ **وعناوينُ
@@ -144,9 +146,13 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
   /* eslint-disable-next-line react-hooks/exhaustive-deps -- رقمُ النسخة هو إشارةُ الإبطال الوحيدة: مصفوفاتُ الكتالوج تُملأ في مكانها بـ`splice` فلا تتغيّر هويّتُها، فحذفُ التبعيّة يجمّد أوّلَ لقطة */
   }, [q, cat, sort, bestsellerCourseIds, listed, catalogVersion])
 
-  /* ورقاقاتُ المجال في قسم الدورات ما فيه دورةٌ معروضة — رقاقةٌ تُنقر فلا تُظهر شيئا تُقرأ عطبا */
+  /* ورقاقاتُ المجال ما فيه دورةٌ أو مسارٌ معروض — رقاقةٌ تُنقر فلا تُظهر شيئا تُقرأ عطبا */
   const domainChips = useMemo(() => {
-    if (kind === 'pathways' || listed.state !== 'ready') return pathwayDomains
+    if (kind === 'pathways') {
+      const shown = new Set(listedWhole(publicPathways, listed).map((p) => p.domain))
+      return pathwayDomains.filter((d) => d === 'الكل' || shown.has(d))
+    }
+    if (listed.state !== 'ready') return pathwayDomains
     const shown = new Set(listedOnly(courses, listed).map((c) => pathwayDomain(c.pathwayId)))
     return pathwayDomains.filter((d) => d === 'الكل' || shown.has(d))
   /* eslint-disable-next-line react-hooks/exhaustive-deps -- رقمُ النسخة هو إشارةُ الإبطال الوحيدة: مصفوفاتُ الكتالوج تُملأ في مكانها بـ`splice` فلا تتغيّر هويّتُها، فحذفُ التبعيّة يجمّد أوّلَ لقطة */
@@ -280,9 +286,12 @@ export default function Catalog({ kind }: { kind: 'pathways' | 'courses' }) {
 
       {/* عدد النتائج — يُعلن لقارئ الشاشة */}
       <p className="mt-6 text-read leading-5 text-muted-foreground" aria-live="polite">
-        {!isPathways && listed.state === 'loading'
+        {listed.state === 'loading'
           /* قبل أن يُعرف ما له شعبة لا يُقال «لا نتائج» — يُقال إنّه يُحمَّل */
-          ? 'جار تحميل الدورات المفتوحة…'
+          ? (isPathways ? 'جار تحميل المسارات المفتوحة…' : 'جار تحميل الدورات المفتوحة…')
+          : isPathways && count === 0 && !q && !favOnly && cat === 'الكل'
+          /* ولا مسارَ لكلّ دوراته شعبةٌ الآن — يُقال ذلك ويُدلّ على الدورات، لا «جرّب توسيع البحث» */
+          ? 'لا مسار مفتوح الآن — الدورات المفتوحة في قسم الدورات'
           : count === 0
           ? favOnly
             /* «جرّب توسيع البحث» نصيحةٌ لا تصلح هنا: لا بحثَ ضيّقٌ يُوسَّع،

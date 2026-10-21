@@ -30,16 +30,18 @@ import { describe, expect, it } from 'vitest'
 import {
   ALL_AR, MAX_PER_FILTER, MIN_PER_FILTER, filterRows, shownFor, type PickSource,
 } from '@/application/catalog/home-picks'
-import { bestsellers, pathwayById, pathwayDomain, pathways, type Pathway } from '@/data/pathways'
+import { bestsellers, pathwayById, pathwayDomain, type Pathway } from '@/data/pathways'
+import { publicPathways } from '@/data/public-pathways'
 import { bestsellerCourses, courses, type Course } from '@/data/courses'
 
 /* المصدران كما تبنيهما الرئيسة — المميّزةُ مستثناةٌ من شريط المسارات لأنّها
-   معروضةٌ فوقه في بطاقتها. */
+   معروضةٌ فوقه في بطاقتها. والمساراتُ هي العامّة (٢١ أكتوبر ٢٠٢٦، `data/public-pathways.ts`)
+   كلُّها معروضة: الحدّان يُقاسان على ما يُعرض حين تكون لكلّ مسارٍ شعبُه. */
 const spotlightId = bestsellers.map((b) => b.id).find((id) => pathwayById(id))!
 
 const pathSource: PickSource<Pathway> = {
   editorial: bestsellers,
-  pool: pathways,
+  pool: publicPathways,
   idOf: (p) => p.id,
   domainOf: (p) => pathwayDomain(p.id),
   exclude: [spotlightId],
@@ -65,7 +67,7 @@ describe('رقاقاتُ الرئيسة — حدّان على ما تُظهره 
   })
 
   it('الكتالوجُ مقروءٌ فعلا — وإلّا خضرَّ ما بعده على الفراغ', () => {
-    expect(pathways.length).toBeGreaterThan(MIN_PER_FILTER)
+    expect(publicPathways.length).toBeGreaterThan(MIN_PER_FILTER)
     expect(courses.length).toBeGreaterThan(MIN_PER_FILTER)
     expect(bestsellers.length).toBeGreaterThan(0)
     expect(bestsellerCourses.length).toBeGreaterThan(0)

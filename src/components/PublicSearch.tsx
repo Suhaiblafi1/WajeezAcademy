@@ -20,14 +20,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { BookOpen, Route, Search, X } from 'lucide-react'
-import { pathways } from '@/data/pathways'
+import { publicPathways } from '@/data/public-pathways'
 import { courses } from '@/data/courses'
 import { catalogRank, matchesCatalogQuery } from '@/application/catalog/catalog-search'
 import { courseTitleAr } from '@/application/catalog/course-title'
 import { usePublishedContent } from '@/services/public-content'
 import { Inset } from '@/components/ui/Surface'
 import { useListedCourses } from '@/services/listed-courses'
-import { listedOnly } from '@/application/catalog/listed-courses'
+import { listedOnly, listedWhole } from '@/application/catalog/listed-courses'
 
 const MAX_PER_GROUP = 5
 
@@ -77,7 +77,8 @@ export default function PublicSearch() {
 
   const hits = useMemo<Hit[]>(() => {
     if (!q.trim()) return []
-    const pw = pathways
+    /* المساراتُ العامّةُ التي لكلّ دوراتها شعبة — كقسم المسارات (`data/public-pathways.ts`) */
+    const pw = listedWhole(publicPathways, listed)
       .filter((p) => matchesCatalogQuery(q, [p.name, p.shortName, p.audience, p.transformation, p.output, ...p.coreSkills]))
       .map((p) => ({
         row: p,

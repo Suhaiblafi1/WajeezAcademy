@@ -25,6 +25,7 @@ import { useMemo, useState, useSyncExternalStore } from "react"
 import { Link } from "react-router"
 import { ArrowLeft, ChevronDown, Compass, Flame, Route, Target } from "lucide-react"
 import { bestsellers, pathwayById, pathwayDomain, pathways, type Pathway } from "@/data/pathways"
+import { publicPathways } from "@/data/public-pathways"
 import { resolveCatalogRefsAr } from "@/application/catalog/visitor-text"
 import { ALL_AR, filterRows, shownFor, type PickSource } from "@/application/catalog/home-picks"
 import { getCatalogVersion, onCoreCatalogInstalled } from "@/data/core-catalog-source"
@@ -34,7 +35,7 @@ import { Card } from "@/components/ui/Surface"
 import FavoriteButton from "@/components/FavoriteButton"
 import SectionLabel from "./SectionLabel"
 import { useListedCourses } from "@/services/listed-courses"
-import { listedOnly } from "@/application/catalog/listed-courses"
+import { listedOnly, listedWhole } from "@/application/catalog/listed-courses"
 
 /* البابان يشتركان في هيئةٍ واحدة، ويفترق لونُهما وحدَه */
 const DOOR = "inline-flex items-center gap-2 rounded-2xl border px-6 py-3 text-sm font-bold transition"
@@ -154,11 +155,18 @@ export function Bestsellers() {
      على مستوى الوحدة يُستبدل وقت التشغيل، فلا يذكر المتغير نصّا — ومن هنا يظنّه
      القاعدة زائدا. وحذفه يحفظ مصفوفات فارغة إلى الأبد في الإنتاج، وهو العطل
      الذي أُضيف الاشتراك أصلا لإصلاحه. نفس النمط في Catalog.tsx. */
-  const picks = useMemo(
-    () => bestsellers.map((b) => ({ ...b, p: pathwayById(b.id)! })).filter((b) => b.p),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- إبطال ذاكرة عند تبديل الكتالوج
-    [catalogVersion],
+  /* والمساراتُ كقسمها: العامّةُ التي لكلّ دوراتها شعبة (`data/public-pathways.ts`) — والمختارُ منها
+     ما عُرض، فلا تُبرز الرئيسةُ مسارا لا يُرى في قسمه */
+  const listed = useListedCourses()
+  const shownPathways = useMemo(
+    () => listedWhole(publicPathways, listed),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- كما تحته: الكتالوجُ يُستبدل وقت التشغيل
+    [listed, catalogVersion],
   )
+  const picks = useMemo(() => {
+    const shown = new Set(shownPathways.map((p) => p.id))
+    return bestsellers.filter((b) => shown.has(b.id)).map((b) => ({ ...b, p: pathwayById(b.id)! })).filter((b) => b.p)
+  }, [shownPathways])
   const spotlight = picks[0]
   const [pwCat, setPwCat] = useState(ALL_AR)
   const [crCat, setCrCat] = useState(ALL_AR)
@@ -176,14 +184,14 @@ export function Bestsellers() {
      البطاقةُ المميّزةُ تُستثنى فلا تُرى مرّتين في قسمٍ واحد. */
   const pathSource: PickSource<Pathway> = useMemo(
     () => ({
+      /* والمختارُ الذي لم يُعرض يسقط وحدَه: لا يُقرأ إلّا ما في `pool` (`home-picks.ts`) */
       editorial: bestsellers,
-      pool: pathways,
+      pool: shownPathways,
       idOf: (p) => p.id,
       domainOf: (p) => pathwayDomain(p.id),
       exclude: spotlight ? [spotlight.id] : [],
     }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- كما فوقه: الكتالوجُ يُستبدل وقت التشغيل
-    [spotlight, catalogVersion],
+    [spotlight, shownPathways],
   )
   const pwRows = useMemo(() => filterRows(pathSource), [pathSource])
   const pwCounts = useMemo(
@@ -202,7 +210,6 @@ export function Bestsellers() {
      ثانيةٍ من مسارٍ رُئي — اقتراحٌ يوسّع ما يُرى لا يكرّره. */
   /* ودوراتُ الرئيسة كقسم الدورات: ما له شعبةٌ أُعلنت ولم تنتهِ (`listed-courses.ts`) — المختاراتُ
      التحريريّةُ نفسُها تُرشَّح، فلا تُعرض في الواجهة دورةٌ لا تُعرض في قسمها */
-  const listed = useListedCourses()
   const coursePool = useMemo(() => {
     const firsts: typeof courses = []
     const rest: typeof courses = []

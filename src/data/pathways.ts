@@ -9,6 +9,7 @@ import {
   type CoreCatalogRaw,
 } from './core-catalog-source'
 import { domainsOfPathway } from '@/domain/diagnostic/v2/data'
+import { publicBestsellers, publicPathwayById } from './public-pathways'
 
 export interface Pathway {
   id: string
@@ -55,6 +56,9 @@ function levelOf(level: string): Pathway['level'] {
    كلّها تصف موظفا يتطوّر في عمله. فأُدمجت إلى ما يفرّقه الزائر فعلا: فردٌ
    يبدأ، موظفٌ يتخصّص أو يقود، صاحبُ عملٍ أو مشروع، أو جهةٌ حكومية. */
 export function pathwayCategory(id: string): string {
+  /* والمسارُ العامُّ فئتُه مكتوبةٌ معه — معرّفُه لا يحمل عائلة (`public-pathways.ts`) */
+  const pub = publicPathwayById(id)
+  if (pub) return pub.category
   const fam = id.split('-')[1]
   switch (fam) {
     /* العائلاتُ الأربعُ الجديدةُ مع FND/STU لأنّ جمهورَها في ملفّاتِها التعريفيّة
@@ -114,6 +118,8 @@ const SECTOR_BY_DOMAIN: Record<string, string> = {
 }
 
 export function pathwayDomain(id: string): string {
+  const pub = publicPathwayById(id)
+  if (pub) return pub.domain
   const [domainId] = domainsOfPathway(id)
   return (domainId && SECTOR_BY_DOMAIN[domainId]) || 'تخصصات أخرى'
 }
@@ -172,28 +178,11 @@ onCoreCatalogInstalled(() => {
   pathways.splice(0, pathways.length, ...buildPathways(getCoreCatalogRaw()))
 })
 
-export const pathwayById = (id: string) => pathways.find((p) => p.id === id)
+/** المسارُ بمعرّفه — العامُّ أوّلا ثمّ مسارُ الكتالوج. وصفحةُ `/pathways/:id` تقرأ الاثنين:
+    العامُّ يُعرض في القوائم، ومسارُ الكتالوج تبقى صفحتُه لمن يملك رابطَها (والتشخيصُ يحيل إليها) */
+export const pathwayById = (id: string): Pathway | undefined =>
+  publicPathwayById(id) ?? pathways.find((p) => p.id === id)
 
-/* مختارات وجيز — انتقاء تحريري صادق بلا ادعاءات مبيعات، 2–3 لكل مجال */
-export const bestsellers: { id: string; note: string }[] = [
-  /* أساسيات */
-  { id: 'PW-FND-003', note: 'اختيار وجيز' },
-  /* طلاب ومهنة */
-  { id: 'PW-STU-002', note: 'الأنسب للخريجين' },
-  { id: 'PW-STU-003', note: 'لمن يستكشف اتجاهه' },
-  /* موظفون */
-  { id: 'PW-EMP-004', note: 'الأنسب للموظفين' },
-  { id: 'PW-EMP-003', note: 'رحلة متوازنة' },
-  { id: 'PW-COM-001', note: 'مهارة يحتاجها الجميع' },
-  /* حكومي */
-  { id: 'PW-GOV-002', note: 'أثر مباشر على الواجهة' },
-  /* أعمال */
-  { id: 'PW-BIZ-001', note: 'الأنسب لرواد الأعمال' },
-  { id: 'PW-AUT-001', note: 'من مختارات وجيز' },
-  /* تخصصات وظيفية */
-  { id: 'PW-MKT-001', note: 'نظام نمو متكامل' },
-  { id: 'PW-FIN-001', note: 'للمدير غير المالي' },
-  /* قيادة */
-  { id: 'PW-EMP-005', note: 'الأنسب للمدراء الجدد' },
-  { id: 'PW-LND-001', note: 'للمدربين ومصممي التعلم' },
-]
+/* مختاراتُ وجيز من المسارات — من المسارات العامّة وحدَها منذ ٢١ أكتوبر ٢٠٢٦: مسارُ الكتالوج لم يعد
+   يُعرض في قائمة، فلا يُختار لقائمة. والانتقاءُ ووسومُه في `catalog/public-pathways.json`. */
+export const bestsellers: { id: string; note: string }[] = publicBestsellers

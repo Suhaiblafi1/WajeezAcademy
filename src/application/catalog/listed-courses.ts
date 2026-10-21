@@ -30,6 +30,19 @@ export function listedOnly<T extends { id: string }>(items: readonly T[], listed
   return items.filter((c) => listed.ids.has(c.id))
 }
 
+/* ═══ والمسارُ: يُعرض حين تكون لكلّ دوراته شعبة (٢١ أكتوبر ٢٠٢٦) ═══
+
+   صاحبُ المنصّة: «ويظهر تلقائيّا إذا كانت كلُّ دوراته تفعّلت لدينا كشُعَب». فالمسارُ لا يُرشَّح
+   بشرطٍ ثانٍ — بالجواب نفسِه: دورةٌ منه بلا شعبةٍ تُخفيه، وحين تُفتح يعود. والمجهولُ كالدورات:
+   لا شيءَ قبل الجواب، والكلُّ إن تعذّر. */
+
+/** المساراتُ التي لكلّ دوراتها شعبةٌ معروضة — والترتيبُ كما جاء */
+export function listedWhole<T extends { courseIds: readonly string[] }>(items: readonly T[], listed: ListedCourses): T[] {
+  if (listed.state === 'loading') return []
+  if (listed.state === 'failed') return [...items]
+  return items.filter((p) => p.courseIds.length > 0 && p.courseIds.every((id) => listed.ids.has(id)))
+}
+
 /** رموزُ الجواب — وما ليس نصّا يسقط ولا يُختلَق */
 export function listedFromResponse(raw: unknown): ReadonlySet<string> | null {
   const ids = (raw as { courseIds?: unknown } | null)?.courseIds
