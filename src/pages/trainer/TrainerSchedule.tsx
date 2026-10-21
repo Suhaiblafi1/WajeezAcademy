@@ -49,7 +49,8 @@ import { Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import ModuleBodyUpload from "@/components/ModuleBodyUpload";
 import { zonedAt, zonedDay } from "@/application/trainer/cohort-period";
-import { NearbyWarn, nearbyHits, useNearbyTimes } from "./NearbyTimes";
+import { NearbyWarn } from "./NearbyTimes";
+import { nearbyHits, useNearbyTimes } from "./nearby-times";
 import {
   SHORT_SESSION_AR, firstToFor, fromSlots, sessionTooShort, slotLabelAr, toSlotsFor,
 } from "@/application/trainer/session-length";

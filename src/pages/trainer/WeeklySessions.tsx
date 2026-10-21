@@ -26,7 +26,8 @@ import {
 } from "@/application/trainer/session-picker";
 import { WEEKDAY_AR } from "@/application/trainer/plan-scorecard";
 import SlotDaySelect from "./SlotDaySelect";
-import { NearbyWarn, nearbyHits, useNearbyTimes } from "./NearbyTimes";
+import { NearbyWarn } from "./NearbyTimes";
+import { nearbyHits, useNearbyTimes } from "./nearby-times";
 
 const at = (date: string, clock: string) => {
   const m = toMinutes(clock) ?? 0;
