@@ -9,15 +9,17 @@
    · ولا يُعرض إلّا ما له شعبةٌ مفتوحةٌ في الفصل القادم القريب ومدرّبٌ منشور، ويُقرأ ساعةَ الطلب — فالجديدُ
      يظهر وحدَه (`grant-courses.service.ts#pool`).
    · **وأنّها مباشرةٌ على Zoom** — قرارُه: «يجب أن يقال له إنّها دوراتٌ مباشرةٌ عبر زوم، وكلُّ ما يجب أن يسمعه
-     ليتحمّس بالتسجيل». فيُقال في أوّل الصفحة، وأوّلَ ما يحصل عليه، وفوق القائمة، وفي كلّ دورة.
+     ليتحمّس بالتسجيل». فيُقال في أوّل الصفحة، وفيما يحصل عليه، وفوق القائمة، وفي كلّ دورة.
    · والمنحةُ نسبةٌ تُقال بالمال: «تدفع كذا فقط، ووجيز تتحمّل كذا».
    · والنموذجُ بجملٍ تحثّ على التعبئة — قرارُه: «اجعل فيه جملةً تحفيزيّةً تضمن أنّه سيسجّل». وما يُقال فيها
-     حقٌّ في المنصّة: عددُ المنح الباقي من الخادم، والشهادةُ والمدرّبون المعتمدون قائمون.
-   · **ونبذةٌ قبله وأسئلةٌ أحترف** — قرارُه: «غير احترافيّة.. يجب أن نعطيه نبذةً عن الأكاديمية وقوّتها وماذا
-     سيحصل». فالصفحةُ قبل النموذج: ما المنحة، ومن نحن (نصُّ «من نحن» نفسُه)، وما يحصل عليه مع كلّ دورة، وكيف
-     تعمل المنحة؛ وعددُ الدورات المفتوحة ومجالاتها من الخادم لا رقمٌ يُكتب. والنموذجُ ستُّ خانات: أربعٌ لازمةٌ
-     بصياغةٍ وأمثلة، وسؤالان اختياريّان — مستواه، وما يريد تطويرَه من مجالات الدورات المفتوحة — وبالثاني
-     تُرتَّب له الدورات (`rankByInterest`).
+     حقٌّ في المنصّة.
+   · **وقليلٌ هادئ** — كانت قبله نبذةٌ طويلة (من نحن، وستُّ بطاقات، وثلاثُ خطوات) بطلبه: «نعطيه نبذةً عن
+     الأكاديمية وقوّتها وماذا سيحصل». فرآها فقال (٢١ أكتوبر ٢٠٢٦): «مكتظّةٌ كثيرا.. قد تنفّر الشخصَ من التعبئة..
+     اجعلها أنعمَ وأقلَّ محتوى وأبسط». فصارت: سطرا المنحة، وثلاثةُ ما يحصل عليه بكلمتين، والنموذج، وسطرٌ عن
+     الأكاديمية تحته. والنموذجُ أربعُ خاناتٍ لازمةٍ بلا شرحٍ تحت كلٍّ (المثالُ في الخانة نفسِها)، والسؤالان
+     الاختياريّان — مستواه، وما يريد تطويرَه — **مطويّان** يفتحهما من شاء، وبالثاني تُرتَّب له الدورات.
+   · **ولا عددَ للمنح** — قرارُه: «لا تذكر عدد المنح لأنّ العددَ الكبير قد يقلّل من قيمتها». فيُقال «المنح
+     محدودة» وآخرُ يوم، والعددُ لا يخرج من الخادم للزائر (`grant-landing.service.ts#view`).
    · والحسابُ يُنشأ حين يدفع — باسمه وبريده من النموذج.
 
    خطوتان: النموذج ← الكودُ واختيارُ الدورات، ثمّ لوحُ الدفع والكودُ فيه. وما أخذه من النموذج يُحفظ على جهازه
@@ -26,7 +28,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
-import { Award, BookOpen, CirclePlay, ClipboardCheck, Copy, Gift, Headphones, Loader2, Video, type LucideIcon } from "lucide-react";
+import { Award, CirclePlay, Copy, Gift, Loader2, Video, type LucideIcon } from "lucide-react";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import { useRealSession } from "@/services/session";
 import { useHoneypot } from "@/components/HoneypotField";
@@ -40,21 +42,19 @@ import { controlCls } from "@/components/FormKit";
 import { Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import Chip from "@/components/ui/Chip";
-import { FAMILY_INTRO } from "@/data/about";
-import { countAr, type CountForms } from "@/application/text/count-ar";
 import { fmtDate, fmtMoney } from "@/application/text/format-ar";
 import { cohortDayAr } from "@/application/learning/cohort-gate";
 import { grantPrice, MEMBER_GRANT_NAME_AR } from "@/application/commerce/grant";
 import {
-  CAREER_LEVELS, GRANT_CONSENT_AR, GRANT_GAINS_AR, GRANT_MAX_INTERESTS, WORK_FIELDS,
-  campaignParams, grantSavingAr, grantStepsAr, rankByInterest, toggleCourse,
+  CAREER_LEVELS, GRANT_ACADEMY_LINE_AR, GRANT_CONSENT_AR, GRANT_GAINS_AR, GRANT_MAX_INTERESTS, WORK_FIELDS,
+  campaignParams, grantSavingAr, rankByInterest, toggleCourse,
 } from "@/application/commerce/grant-landing";
 import { readStoredGrant, saveStoredGrant, type StoredGrant } from "@/services/grant-landing";
 import { resumedCheckoutFor, savePendingCheckout } from "@/services/pending-checkout";
 
 interface GrantCourse { courseId: string; titleAr: string; cohortId: string; startsAt: string | null; seatsLeft?: number | null; price: number; domainAr?: string }
 interface View {
-  campaign: { open: boolean; percentOff: number; maxCourses: number; closesAt: string | null; left: number | null };
+  campaign: { open: boolean; percentOff: number; maxCourses: number; closesAt: string | null };
   /** فصلُ الدورات المعروضة — الفصلُ القادمُ القريب (`grant-courses.service.ts#pool`) */
   termAr: string | null;
   openCourses: GrantCourse[];
@@ -72,11 +72,7 @@ const BUY_TITLE_AR = "دورات منحتك";
 const money = (n: number) => fmtMoney(n, USD);
 /** مجالُ دورةٍ لم تُسمَّ عائلتُها — لا يُعرض فيما يريد تطويرَه */
 const OTHER_DOMAIN = "أخرى";
-/** العددُ بصيغته — والمثنّى بلا رقم: «مجالين» لا «2 مجالين» */
-const dualOr = (n: number, forms: CountForms) => (n === 2 ? forms.two : countAr(n, forms));
-const GAIN_ICON: Record<(typeof GRANT_GAINS_AR)[number]["id"], LucideIcon> = {
-  live: Video, recording: CirclePlay, sources: BookOpen, experts: ClipboardCheck, certificate: Award, advisor: Headphones,
-};
+const GAIN_ICON: Record<(typeof GRANT_GAINS_AR)[number]["id"], LucideIcon> = { live: Video, recording: CirclePlay, certificate: Award };
 
 export default function MemberGrantPage() {
   const { user: session } = useRealSession();
@@ -300,153 +296,103 @@ export default function MemberGrantPage() {
     );
   }
 
-  /* ─── الخطوة ١: نبذةٌ ثمّ النموذج ─── */
+  /* ─── الخطوة ١: النموذج — قليلٌ هادئ ─── */
   const ready = form.fullName.trim().length >= 2 && form.phone.trim().length >= 5 && /\S+@\S+\.\S+/.test(form.email) && form.workField !== "";
   const domains = [...new Set(view.openCourses.map((x) => x.domainAr).filter((d): d is string => !!d && d !== OTHER_DOMAIN))]
     .sort((a, b) => a.localeCompare(b, "ar"));
   const pickInterest = (d: string) => setInterests((p) => toggleCourse(p, d, GRANT_MAX_INTERESTS));
   return (
-    <Shell wide>
-      <Card tone="accent" className="text-center">
-        <Gift className="mx-auto h-10 w-10 text-gold-ink" aria-hidden="true" />
-        <h1 className="mt-2 text-3xl font-black">{MEMBER_GRANT_NAME_AR}</h1>
-        {c.open ? (
-          <>
-            <p className="mt-3 text-xl font-black">لأنك من أعضاء وجيز، تتحمل وجيز {c.percentOff}% من سعر دوراتك.</p>
-            <p className="mt-1 text-read text-muted-foreground">دورات مباشرة على Zoom مع مدربين معتمدين. تختار من دورة إلى {c.maxCourses} دورات، وتدفع {100 - c.percentOff}% فقط.</p>
-            <p className="mt-3">
-              <Chip tone="warn">المنح محدودة{c.left !== null ? `: بقي ${c.left} منحة` : ""}{lastDay ? `، وآخر يوم ${lastDay}` : ""}</Chip>
-            </p>
-          </>
-        ) : (
-          <>
-            <p className="mt-3 text-xl font-black">المنحة غير مفتوحة الآن.</p>
-            <p className="mt-1 text-read text-muted-foreground">سجل بياناتك، ونبلغك أول ما تفتح.</p>
-          </>
-        )}
-        <a href="#grant-form" className="mt-3 inline-block font-bold text-teal-light-ink underline md:hidden">{c.open ? "احجز منحتك" : "سجل بياناتك"}</a>
-      </Card>
-
-      <div className="mt-8 grid gap-8 md:grid-cols-[minmax(0,1fr)_minmax(0,24rem)] md:items-start">
-        <div className="space-y-8">
-          <section>
-            <h2 className="text-xl font-black">عن أكاديمية وجيز</h2>
-            <p className="mt-2 text-read leading-8">{FAMILY_INTRO.body}</p>
-            {view.openCourses.length > 0 && (
-              <p className="mt-2 text-read font-bold">
-                {dualOr(view.openCourses.length, { one: "دورة مفتوحة", two: "دورتان مفتوحتان", few: "دورات مفتوحة", many: "دورة مفتوحة" })} للتسجيل
-                {view.termAr ? ` في ${view.termAr}` : " الآن"}
-                {domains.length > 1 ? `، من ${dualOr(domains.length, { one: "مجال", two: "مجالين", few: "مجالات", many: "مجالا" })}` : ""}.
-              </p>
-            )}
-          </section>
-
-          <section>
-            <h2 className="text-xl font-black">ماذا تحصل عليه مع كل دورة</h2>
-            <ul className="mt-3 grid gap-3 sm:grid-cols-2">
-              {GRANT_GAINS_AR.map((g) => {
-                const Icon = GAIN_ICON[g.id];
-                return (
-                  <Inset as="li" key={g.id} className="flex items-start gap-3">
-                    <Icon className="mt-0.5 h-5 w-5 shrink-0 text-teal-light-ink" aria-hidden="true" />
-                    <span>
-                      <span className="block font-bold">{g.title}</span>
-                      <span className="block text-read text-muted-foreground">{g.body}</span>
-                    </span>
-                  </Inset>
-                );
-              })}
-            </ul>
-          </section>
-
-          <section>
-            <h2 className="text-xl font-black">كيف تعمل المنحة</h2>
-            <ol className="mt-3 space-y-3">
-              {grantStepsAr(c.percentOff, c.maxCourses).map((st, i) => (
-                <li key={st.title} className="flex items-start gap-3">
-                  <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-teal font-black text-on-teal">{i + 1}</span>
-                  <span>
-                    <span className="block font-bold">{st.title}</span>
-                    <span className="block text-read text-muted-foreground">{st.body}</span>
-                  </span>
-                </li>
-              ))}
-            </ol>
-          </section>
+    <Shell>
+      <div className="mx-auto max-w-lg">
+        <div className="text-center">
+          <Gift className="mx-auto h-10 w-10 text-gold-ink" aria-hidden="true" />
+          <h1 className="mt-2 text-3xl font-black">{MEMBER_GRANT_NAME_AR}</h1>
+          {c.open ? (
+            <>
+              <p className="mt-3 text-lg font-bold">لأنك من أعضاء وجيز، تدفع {100 - c.percentOff}% فقط من سعر دوراتك.</p>
+              <p className="mt-1 text-read text-muted-foreground">دورات مباشرة على Zoom، تختار منها حتى {c.maxCourses}.</p>
+              <p className="mt-3"><Chip tone="warn">المنح محدودة{lastDay ? `، وآخر يوم ${lastDay}` : ""}</Chip></p>
+            </>
+          ) : (
+            <p className="mt-3 text-lg font-bold">المنحة غير مفتوحة الآن. سجل بياناتك ونبلغك أول ما تفتح.</p>
+          )}
         </div>
 
-        <Card as="form" id="grant-form" tone="solid" onSubmit={apply} className="space-y-4 md:sticky md:top-6">
-          <div>
-            <h2 className="text-xl font-black">{c.open ? "احجز منحتك" : "سجل بياناتك"}</h2>
-            <p className="text-read text-muted-foreground">{c.open ? "دقيقة واحدة، وتأخذ كود منحتك فورا." : "ونبلغك أول ما تفتح المنحة."}</p>
-          </div>
-          <label className="grid gap-1 text-read"><span className="font-bold">الاسم الكامل</span>
-            <input value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} autoComplete="name" placeholder="مثال: سارة أحمد" className={controlCls} />
-            <span className="text-muted-foreground">كما تريده أن يظهر على شهادتك</span>
+        <ul className="mt-5 flex flex-wrap justify-center gap-x-5 gap-y-2 text-read">
+          {GRANT_GAINS_AR.map((g) => {
+            const Icon = GAIN_ICON[g.id];
+            return <li key={g.id} className="flex items-center gap-1.5"><Icon className="h-4 w-4 text-teal-light-ink" aria-hidden="true" />{g.title}</li>;
+          })}
+        </ul>
+
+        <Card as="form" onSubmit={apply} className="mt-6 space-y-3">
+          <p className="text-center text-read text-muted-foreground">{c.open ? "دقيقة واحدة، وتأخذ كود منحتك فورا." : "نبلغك على بريدك أول ما تفتح."}</p>
+          <label className="grid gap-1 text-read">الاسم الكامل
+            <input value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} autoComplete="name" placeholder="كما تريده على شهادتك" className={controlCls} />
           </label>
-          <label className="grid gap-1 text-read"><span className="font-bold">رقم الواتساب</span>
+          <label className="grid gap-1 text-read">رقم الواتساب
             <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} inputMode="tel" autoComplete="tel" dir="ltr" placeholder="+962 7X XXX XXXX" className={controlCls} />
-            <span className="text-muted-foreground">مع رمز الدولة، لنتواصل معك بخصوص منحتك</span>
           </label>
-          <label className="grid gap-1 text-read"><span className="font-bold">البريد الإلكتروني</span>
+          <label className="grid gap-1 text-read">البريد الإلكتروني
             <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} autoComplete="email" dir="ltr" placeholder="name@example.com" className={controlCls} />
-            <span className="text-muted-foreground">{c.open ? "يصلك عليه كود المنحة" : "نبلغك عليه حين تفتح المنحة"}</span>
           </label>
-          <label className="grid gap-1 text-read"><span className="font-bold">مجال عملك</span>
+          <label className="grid gap-1 text-read">مجال عملك
             <select value={form.workField} onChange={(e) => setForm({ ...form, workField: e.target.value })} className={controlCls}>
               <option value="">اختر مجالك</option>
               {WORK_FIELDS.map((f) => <option key={f} value={f}>{f}</option>)}
             </select>
           </label>
 
-          <div className="border-t border-border pt-4">
-            <p className="font-bold">سؤالان اختياريان</p>
-            <p className="text-read text-muted-foreground">يساعداننا نرتب لك الدورات الأنسب.</p>
-          </div>
-          <label className="grid gap-1 text-read"><span className="font-bold">مستواك الوظيفي <span className="font-normal text-muted-foreground">(اختياري)</span></span>
-            <select value={form.careerLevel} onChange={(e) => setForm({ ...form, careerLevel: e.target.value })} className={controlCls}>
-              <option value="">اختر مستواك</option>
-              {CAREER_LEVELS.map((f) => <option key={f} value={f}>{f}</option>)}
-            </select>
-          </label>
-          {domains.length > 0 && (
-            <fieldset className="text-read">
-              <legend className="font-bold">ما الذي تريد تطويره؟ <span className="font-normal text-muted-foreground">(اختياري)</span></legend>
-              <span className="block text-muted-foreground">اختر حتى {GRANT_MAX_INTERESTS} مجالات.</span>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {domains.map((d) => {
-                  const on = interests.includes(d);
-                  const full = !on && interests.length >= GRANT_MAX_INTERESTS;
-                  return (
-                    <Inset as="label" key={d} tone={on ? "accent" : "default"} interactive={!full} className={`inline-flex items-center gap-2 px-3 py-2 ${full ? "opacity-50" : ""}`}>
-                      <input type="checkbox" checked={on} disabled={full} onChange={() => pickInterest(d)} />
-                      {d}
-                    </Inset>
-                  );
-                })}
-              </div>
-            </fieldset>
-          )}
+          {/* السؤالان الاختياريّان مطويّان — لا يزحمان من يريد أن يبدأ، ويفتحهما من شاء */}
+          <details className="text-read">
+            <summary className="cursor-pointer text-muted-foreground">سؤالان اختياريان لنرتب لك الدورات</summary>
+            <div className="mt-3 space-y-3">
+              <label className="grid gap-1">مستواك الوظيفي
+                <select value={form.careerLevel} onChange={(e) => setForm({ ...form, careerLevel: e.target.value })} className={controlCls}>
+                  <option value="">اختر مستواك</option>
+                  {CAREER_LEVELS.map((f) => <option key={f} value={f}>{f}</option>)}
+                </select>
+              </label>
+              {domains.length > 0 && (
+                <fieldset>
+                  <legend>ما الذي تريد تطويره؟ <span className="text-muted-foreground">حتى {GRANT_MAX_INTERESTS}</span></legend>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {domains.map((d) => {
+                      const on = interests.includes(d);
+                      const full = !on && interests.length >= GRANT_MAX_INTERESTS;
+                      return (
+                        <Inset as="label" key={d} tone={on ? "accent" : "default"} interactive={!full} className={`inline-flex items-center gap-2 px-3 py-1.5 ${full ? "opacity-50" : ""}`}>
+                          <input type="checkbox" checked={on} disabled={full} onChange={() => pickInterest(d)} />
+                          {d}
+                        </Inset>
+                      );
+                    })}
+                  </div>
+                </fieldset>
+              )}
+            </div>
+          </details>
 
           {hp.field}
           <Button type="submit" tone="primary" className="w-full" disabled={busy || !ready}>{c.open ? "احجز منحتي الآن" : "سجلني"}</Button>
           <p className="text-read leading-6 text-muted-foreground">{GRANT_CONSENT_AR}</p>
         </Card>
+        <p className="mt-4 text-center text-read text-muted-foreground">{GRANT_ACADEMY_LINE_AR}</p>
       </div>
     </Shell>
   );
 }
 
-function Shell({ children, wide = false }: { children: React.ReactNode; wide?: boolean }) {
+function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div dir="rtl" className="min-h-screen bg-paper text-foreground">
       <SeoHead title={MEMBER_GRANT_NAME_AR} description="منحة لأعضاء وجيز: دورات تختارها بخصم كبير، والعدد محدود." path="/grant" />
       <header className="border-b border-white/10">
-        <div className={`mx-auto flex h-14 items-center px-5 ${wide ? "max-w-5xl" : "max-w-3xl"}`}>
+        <div className="mx-auto flex h-14 max-w-3xl items-center px-5">
           <Link to="/" className="text-sm font-bold text-foreground">أكاديمية وجيز</Link>
         </div>
       </header>
-      <main className={`mx-auto px-5 py-8 ${wide ? "max-w-5xl" : "max-w-3xl"}`}>{children}</main>
+      <main className="mx-auto max-w-3xl px-5 py-8">{children}</main>
     </div>
   );
 }

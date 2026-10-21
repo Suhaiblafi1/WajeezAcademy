@@ -65,7 +65,8 @@ export class GrantLandingService {
   async view(now = new Date()) {
     const [s, open] = await Promise.all([this.grants.settings(now), this.courses.openCourses(now)])
     return {
-      campaign: { open: s.open, percentOff: s.percentOff, maxCourses: s.maxCourses, closesAt: s.closesAt, left: s.left },
+      /* ولا عددَ للمنح الباقية — قرارُ صاحب المنصّة (٢١ أكتوبر ٢٠٢٦): «العددُ الكبير قد يقلّل من قيمتها» */
+      campaign: { open: s.open, percentOff: s.percentOff, maxCourses: s.maxCourses, closesAt: s.closesAt },
       termAr: open.termAr,
       openCourses: open.courses.map((c) => ({
         courseId: c.courseId, titleAr: c.courseTitleAr, cohortId: c.cohortId, startsAt: c.startsAt, price: c.price,

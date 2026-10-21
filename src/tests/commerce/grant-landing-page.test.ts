@@ -12,8 +12,8 @@ import { fileURLToPath } from 'node:url'
 import { plainAr } from '@/application/text/plain-ar'
 import { auditActionAr } from '@/application/audit/labels'
 import {
-  CAREER_LEVELS, GRANT_CONSENT_AR, GRANT_GAINS_AR, GRANT_INTEREST_DOMAINS, WORK_FIELDS,
-  campaignParams, campaignTag, grantSavingAr, grantStepsAr, leadProfileAr, rankByInterest, toggleCourse,
+  CAREER_LEVELS, GRANT_ACADEMY_LINE_AR, GRANT_CONSENT_AR, GRANT_GAINS_AR, GRANT_INTEREST_DOMAINS, WORK_FIELDS,
+  campaignParams, campaignTag, grantSavingAr, leadProfileAr, rankByInterest, toggleCourse,
 } from '@/application/commerce/grant-landing'
 import { courseDomain } from '@/application/catalog/course-domain'
 import { parsePendingCheckout } from '@/application/commerce/pending-checkout'
@@ -82,13 +82,12 @@ describe('بعد النموذج', () => {
     expect(PAGE).toContain('من دورة واحدة إلى {max} دورات')
   })
 
-  it('⚠️ وأنها مباشرة على Zoom — في أول الصفحة، وأول ما يحصل عليه، وفوق القائمة، وفي كل دورة', () => {
-    expect(PAGE).toContain('دورات مباشرة على Zoom مع مدربين معتمدين')
+  it('⚠️ وأنها مباشرة على Zoom — في أول الصفحة، وفيما يحصل عليه، وفوق القائمة، وفي كل دورة', () => {
+    expect(PAGE).toContain('دورات مباشرة على Zoom، تختار منها حتى {c.maxCourses}.')
     expect(GRANT_GAINS_AR[0]).toMatchObject({ id: 'live', title: 'لقاءات مباشرة على Zoom' })
     expect(GRANT_GAINS_AR.map((g) => g.id)).toContain('recording')
     expect(PAGE).toContain('كل الدورات مباشرة على Zoom')
     expect(PAGE).toMatch(/تبدأ \{cohortDayAr\(x\.startsAt\)\} · مباشرة على Zoom/)
-    expect(grantStepsAr(60, 5)[2].body).toContain('على Zoom')
   })
 
   it('⚠️ ما يريد تطويره أولا — وكل على ترتيبه', () => {
@@ -109,23 +108,27 @@ describe('بعد النموذج', () => {
     expect(toggleCourse(['a', 'b', 'c', 'd'], 'd', 4)).toEqual(['a', 'b', 'c'])
   })
 
-  it('⚠️ والنموذج يحث على التعبئة — بما هو قائم: عدد المنح الباقي من الخادم', () => {
-    expect(PAGE).toMatch(/c\.left !== null \? `: بقي \$\{c\.left\} منحة` : ""/)
+  it('⚠️ ولا عدد للمنح — «المنح محدودة» وآخر يوم وحدهما، والعدد لا يصل الزائر', () => {
+    expect(PAGE).toMatch(/<Chip tone="warn">المنح محدودة\{lastDay \? `، وآخر يوم \$\{lastDay\}` : ""\}<\/Chip>/)
+    expect(PAGE, 'عاد عدد المنح إلى الصفحة').not.toMatch(/\.left\b|بقي \$\{/)
+    expect(PAGE).toMatch(/campaign: \{ open: boolean; percentOff: number; maxCourses: number; closesAt: string \| null \};/)
     expect(PAGE).toMatch(/>\{c\.open \? "احجز منحتي الآن" : "سجلني"\}<\/Button>/)
   })
 
-  it('⚠️ نبذة قبل النموذج — من نحن بنصها، وما يحصل عليه، وكيف تعمل المنحة، وعدد الدورات من الخادم', () => {
-    expect(PAGE, 'نص «من نحن» نفسه لا نسخة تفترق').toMatch(/\{FAMILY_INTRO\.body\}/)
+  it('⚠️ قليل هادئ — ثلاث بكلمتين، وأربع خانات بلا شرح تحتها، والاختياري مطوي، وسطر عن الأكاديمية', () => {
+    expect(GRANT_GAINS_AR, 'عادت بطاقات ما يحصل عليه').toHaveLength(3)
     expect(PAGE).toMatch(/\{GRANT_GAINS_AR\.map\(\(g\) => \{/)
-    expect(PAGE).toMatch(/\{grantStepsAr\(c\.percentOff, c\.maxCourses\)\.map\(/)
-    expect(PAGE).toMatch(/dualOr\(view\.openCourses\.length,/)
-    expect(PAGE, 'فصل الدورات من الخادم').toMatch(/\{view\.termAr \? ` في \$\{view\.termAr\}` : " الآن"\}/)
-    /* والنبذةُ قبل النموذج في الصفحة */
-    expect(PAGE.indexOf('{FAMILY_INTRO.body}')).toBeLessThan(PAGE.indexOf('id="grant-form"'))
-    const steps = grantStepsAr(60, 5)
-    expect(steps.map((x) => x.title)).toEqual(['عبئ النموذج', 'اختر دوراتك', 'ادفع 40% فقط'])
-    expect(steps[1].body).toContain('إلى 5 دورات')
-    expect(steps[1].body).toContain('قبل المنحة وبعدها')
+    expect(PAGE, 'عادت النبذة الطويلة').not.toMatch(/FAMILY_INTRO|grantStepsAr|كيف تعمل المنحة|ماذا تحصل عليه/)
+    /* الاختياريّان داخل <details> مطويّ — لا مفتوحَين فوق الزرّ */
+    const folded = PAGE.match(/<details[^>]*>([\s\S]*?)<\/details>/)
+    expect(folded, 'لا طي للاختياري').not.toBeNull()
+    expect(folded![1]).toMatch(/value=\{form\.careerLevel\}/)
+    expect(folded![1]).toMatch(/toggleCourse\(p, d, GRANT_MAX_INTERESTS\)|pickInterest\(d\)/)
+    expect(PAGE.match(/<details[^>]*>/)![0], 'الاختياري مفتوح').not.toMatch(/\bopen\b/)
+    /* وخانةٌ لازمةٌ بلا سطر شرحٍ تحتها: الوسمُ يُغلق بعد الحقل مباشرة */
+    const form = PAGE.slice(PAGE.indexOf('<Card as="form"'), PAGE.indexOf('<details'))
+    expect(form.match(/<span className="text-muted-foreground">/g) ?? [], 'عاد الشرح تحت الخانات').toEqual([])
+    expect(PAGE).toMatch(/\{GRANT_ACADEMY_LINE_AR\}/)
   })
 
   it('⚠️ ما يحفظ على الجهاز يفحص — والعودة إلى مسار المنحة مقبولة', () => {
@@ -145,11 +148,10 @@ describe('بعد النموذج', () => {
 describe('النصوص', () => {
   it('بلا تشكيل', () => {
     const data = [
-      GRANT_CONSENT_AR, ...WORK_FIELDS, ...CAREER_LEVELS, ...GRANT_GAINS_AR.flatMap((g) => [g.title, g.body]),
-      ...grantStepsAr(60, 4).flatMap((x) => [x.title, x.body]),
+      GRANT_CONSENT_AR, GRANT_ACADEMY_LINE_AR, ...WORK_FIELDS, ...CAREER_LEVELS, ...GRANT_GAINS_AR.map((g) => g.title),
     ]
     const onPage = ['احجز منحتي الآن', 'الاسم الكامل', 'رقم الواتساب', 'البريد الإلكتروني', 'مجال عملك', 'مستواك الوظيفي', 'ما الذي تريد تطويره؟',
-      'سؤالان اختياريان', 'عن أكاديمية وجيز', 'ماذا تحصل عليه مع كل دورة', 'كيف تعمل المنحة', 'كود منحتك', 'اختر دوراتك',
+      'سؤالان اختياريان لنرتب لك الدورات', 'كود منحتك', 'اختر دوراتك',
       'كل الدورات المتاحة', 'كل الدورات مباشرة على Zoom', 'قبل المنحة', 'بعد المنحة', 'يناسب ما تريد تطويره', 'لست متأكدا؟ تواصل مع مستشار', 'اطلب مستشارا', 'ادفع الآن']
     for (const t of [...data, ...onPage]) expect(t).toBe(plainAr(t))
     for (const t of onPage) expect(PAGE).toContain(t)
