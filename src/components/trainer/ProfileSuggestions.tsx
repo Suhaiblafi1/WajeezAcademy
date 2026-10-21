@@ -15,6 +15,7 @@ import { useEffect, useState } from "react";
 import { Check, ExternalLink, Plus, Send, Sparkles, X } from "lucide-react";
 import { Panel, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
+import SectionHead from "@/components/ui/SectionHead";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import { countWords } from "@/application/trainer/public-text";
 import {
@@ -203,15 +204,15 @@ export default function ProfileSuggestions({ inputCls }: { inputCls: string }) {
   const done = (m: Mine, text: string) => { setData(m); setMsg(text); };
 
   return (
-    <Panel as="section" className="mt-6 md:p-8" aria-labelledby="suggestions-h">
-      <h2 id="suggestions-h" className="text-base font-black">اقتراحاتنا لبطاقتك</h2>
-      <p className="mt-2 max-w-3xl text-read leading-7 text-muted-foreground">
-        نكتبها نحن من نبذتك، ولا يتغير شيء في بطاقتك قبل قرارك.
-      </p>
+    <Panel as="section" className="md:p-8" aria-labelledby="suggestions-h">
+      <SectionHead
+        id="suggestions-h" icon={Sparkles} title="اقتراحاتنا لبطاقتك"
+        desc="نكتبها نحن من نبذتك، ولا يتغير شيء في بطاقتك قبل قرارك."
+      />
       {/* «أعطه رابطا لصفحة المدرّبين ليلقي نظرةً أين تظهر» — إلى بطاقته بعينها */}
       <a
         href={`/trainers#trainer-${data.profileId}`} target="_blank" rel="noreferrer"
-        className="mt-2 inline-flex items-center gap-1.5 text-read font-bold text-teal-light-ink underline underline-offset-4"
+        className="mt-3 inline-flex items-center gap-1.5 text-read font-bold text-teal-light-ink underline underline-offset-4 sm:ms-[3.75rem]"
       >
         <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
         شاهد بطاقتك في صفحة المدربين

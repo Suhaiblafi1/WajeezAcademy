@@ -6,9 +6,11 @@
    قبل أن ترسل، لا بعد أن ترى نصّا غيرَ نصّك. */
 
 import { useEffect, useState } from "react";
-import { Send } from "lucide-react";
+import { Clock, Eye, EyeOff, Globe, Send } from "lucide-react";
 import { Panel, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
+import Chip from "@/components/ui/Chip";
+import SectionHead from "@/components/ui/SectionHead";
 import { apiGet, apiPut, ApiError } from "@/services/api";
 import { fmtDateTime } from "@/application/text/format-ar";
 import {
@@ -55,48 +57,64 @@ export default function PublicTextCard({ inputCls }: { inputCls: string }) {
     } finally { setBusy(false); }
   };
 
+  /* حالُ ما يراه الناسُ الآن — شارةٌ في رأس القسم بدل فقرةٍ يُبحث فيها عنه */
+  const status = data.pendingAt
+    ? <Chip tone="warn" icon={Clock}>بانتظار اعتمادنا</Chip>
+    : data.published
+      ? <Chip tone="positive" icon={Eye}>ظاهر للناس</Chip>
+      : <Chip tone="neutral" icon={EyeOff}>لم ينشر بعد</Chip>;
+
   return (
-    <Panel as="section" className="mt-6 md:p-8" aria-labelledby="public-text-h">
-      <h2 id="public-text-h" className="text-base font-black">ما يراه الناس عنك في «المدربون»</h2>
-      <p className="mt-2 max-w-3xl text-read leading-7 text-muted-foreground">
-        يظهران مع صورتك في «المدربون» وصفحتك العامّة. اكتب ما تدرّبه وخبرتك وما يخرج به متعلّمك. نراجعهما قبل النشر وقد نحرّرهما يسيرا.
-        {!data.published && " ولا يظهر اسمك للعامّة حتّى نعتمد نشر ملفّك."}
-      </p>
+    <Panel as="section" className="md:p-8" aria-labelledby="public-text-h">
+      <SectionHead
+        id="public-text-h" icon={Globe} action={status}
+        title="ما يراه الناس عنك في «المدربون»"
+        desc={<>
+          يظهران مع صورتك في «المدربون» وصفحتك العامة. نراجعهما قبل النشر وقد نحرّرهما يسيرا.
+          {!data.published && " ولا يظهر اسمك للعامة حتى نعتمد نشر ملفك."}
+        </>}
+      />
 
       {data.pendingAt && (
-        <Inset tone="accent" className="mt-3 p-3 text-read leading-6">
+        <Inset tone="accent" className="mt-5 p-3 text-read leading-6">
           أرسلتهما {fmtDateTime(data.pendingAt)} — بانتظار اعتمادنا، والمعتمد قبلهما يبقى معروضا.
         </Inset>
       )}
       {data.rejectNoteAr && !data.pendingAt && (
-        <Inset tone="warn" className="mt-3 p-3 text-read leading-6">
+        <Inset tone="warn" className="mt-5 p-3 text-read leading-6">
           لم نعتمد آخر ما أرسلت — السبب: {data.rejectNoteAr}
         </Inset>
       )}
 
-      <div className="mt-4 grid gap-3">
+      <div className="mt-6 grid gap-5">
         <label className="block">
-          <span className="mb-1.5 block text-fine font-bold text-muted-foreground">العنوان المهنيّ</span>
+          <span className="mb-1.5 flex items-baseline justify-between gap-3 text-xs font-bold text-muted-foreground">
+            العنوان المهنيّ
+            <span className="text-fine font-semibold tabular-nums">{headline.length} / {HEADLINE_MAX_CHARS}</span>
+          </span>
           <input value={headline} maxLength={HEADLINE_MAX_CHARS} onChange={(e) => setHeadline(e.target.value)}
             placeholder="مثال: مدرّب تحليل بيانات تطبيقيّ" className={inputCls} />
         </label>
         <label className="block">
-          <span className="mb-1.5 block text-fine font-bold text-muted-foreground">النبذة</span>
-          <textarea rows={5} value={bio} onChange={(e) => setBio(e.target.value)} className={inputCls} />
-          <span className={`mt-1 block text-read ${words > BIO_MAX_WORDS ? "text-gold-ink" : "text-muted-foreground"}`}>
-            {words} / {BIO_MAX_WORDS} كلمة
+          <span className="mb-1.5 flex items-baseline justify-between gap-3 text-xs font-bold text-muted-foreground">
+            النبذة
+            <span className={`text-fine font-semibold tabular-nums ${words > BIO_MAX_WORDS ? "text-gold-ink" : ""}`}>
+              {words} / {BIO_MAX_WORDS} كلمة
+            </span>
           </span>
+          <textarea rows={5} value={bio} onChange={(e) => setBio(e.target.value)}
+            placeholder="ما تدرّبه، وخبرتك، وما يخرج به متعلّمك." className={`${inputCls} leading-7`} />
         </label>
       </div>
 
-      <div className="mt-3 flex flex-wrap items-center gap-3">
-        <Button tone="confirm" icon={Send} loading={busy} disabled={Boolean(problem)} onClick={() => void submit()}>
+      <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-5">
+        <span className="min-w-0 flex-1 text-read text-muted-foreground">{problem ?? ""}</span>
+        <Button tone="confirm" icon={Send} loading={busy} disabled={Boolean(problem)} onClick={() => void submit()} className="shrink-0">
           {data.pendingAt ? "أرسل التعديل للاعتماد" : "أرسلهما للاعتماد"}
         </Button>
-        {problem && <span className="text-read text-muted-foreground">{problem}</span>}
       </div>
       {msg && (
-        <p role="alert" className={`mt-2 text-read font-semibold ${msg.bad ? "text-red-300" : "text-teal-light-ink"}`}>{msg.text}</p>
+        <p role="alert" className={`mt-3 text-read font-semibold ${msg.bad ? "text-red-300" : "text-teal-light-ink"}`}>{msg.text}</p>
       )}
     </Panel>
   );

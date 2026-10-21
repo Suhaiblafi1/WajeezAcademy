@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "react-router";
 import {
-  Award, BookOpen, CheckCircle2, FileText, Loader2, Lock, LogOut,
+  Award, BookOpen, Camera, ChevronLeft, FileText, Loader2, Lock, LogOut,
   ImagePlus, Mail, MessageCircle, Route as RouteIcon, Save, ShieldAlert, KeyRound, User, X } from "lucide-react";
 /* الإطارُ يتبع البوّابةَ التي فُتحت منها الصفحة — لا بوّابةَ المتعلّم دائما.
    والسببُ مشروحٌ في `pages/PortalFrame.tsx`. */
@@ -16,6 +16,8 @@ import ImageFramer from "@/components/ImageFramer";
 import { Card, Inset, Panel } from "@/components/ui/Surface";
 import DateField from "@/components/ui/DateField";
 import Button from "@/components/ui/Button";
+import Chip from "@/components/ui/Chip";
+import SectionHead from "@/components/ui/SectionHead";
 import PublicTextCard from "@/components/trainer/PublicTextCard";
 import ProfileSuggestions from "@/components/trainer/ProfileSuggestions";
 import NotificationPreferences from "@/components/NotificationPreferences";
@@ -77,7 +79,7 @@ interface ServerProfile {
 }
 
 const inputCls =
-  "w-full rounded-xl border border-white/15 bg-paper/30 px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none";
+  "w-full rounded-xl border border-white/15 bg-paper/40 px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/75 transition focus:border-teal focus:outline-none focus:ring-4 focus:ring-teal/10";
 const labelCls = "mb-1.5 block text-xs font-bold text-muted-foreground";
 
 /* الخطأُ يُقال عند الحقل الذي رُفض، لا في ذيل الصفحة.
@@ -86,9 +88,11 @@ const labelCls = "mb-1.5 block text-xs font-bold text-muted-foreground";
    الخادم كما جاء: من كتب رابط صورةٍ أطولَ من الحدّ يقرأ رسالةً عامّةً ثمّ
    يبحث بعينه عن الحقل. فصار لكلّ حقلٍ رسالتُه عنده، موصولةً به لقارئ
    الشاشة بـ`aria-describedby`، ولا تظهر قبل أن يُلمس الحقلُ. */
-function Field({ label, hint, error, name, children }: {
+function Field({ label, hint, error, name, wide, children }: {
   label: string;
   hint?: string;
+  /** يأخذ السطرَ كلَّه في الشبكة — للاسم، وهو أوّلُ ما يُقرأ */
+  wide?: boolean;
   /** رسالةُ هذا الحقل — تُعرض تحته وتُوصَل به */
   error?: string | null;
   /** يُشتقّ منه معرّفُ الرسالة كي يصحّ `aria-describedby` */
@@ -96,7 +100,7 @@ function Field({ label, hint, error, name, children }: {
   children: React.ReactNode;
 }) {
   return (
-    <div>
+    <div className={wide ? "sm:col-span-2" : undefined}>
       {/* label يلف الحقل — ارتباط ضمني صحيح لقارئ الشاشة وأدوات الفحص */}
       <label className="block">
         <span className={labelCls}>{label}</span>
@@ -124,7 +128,8 @@ export default function StudentAccount() {
   const [busy, setBusy] = useState(false);
   const [savedMsg, setSavedMsg] = useState("");
   const [err, setErr] = useState("");
-  /* ما رُفع عندنا — يُعرض ولا يُحرَّر نصّا، والحقلُ يبقى للروابط الخارجيّة */
+  /* ما رُفع عندنا. ولا حقلَ رابطٍ بعد ٢١ أكتوبر ٢٠٢٦ («الصورُ ترفع دائما لا برابط»):
+     `form.avatarUrl` يحمل الرابطَ القديمَ عند من كتبه فيُعرض ويُعاد كما هو حتى يرفع غيره */
   const [storedAvatar, setStoredAvatar] = useState("");
   const [photoBusy, setPhotoBusy] = useState(false);
   /* رسالةُ الرفع تسكن عند الزرّ لا عند زرّ الحفظ.
@@ -231,7 +236,7 @@ export default function StudentAccount() {
 
   /* ── حدودُ الخادم مقروءةً هنا ──
 
-     الحدودُ في `patchSchema` على الخادم (الاسم ٢–٨٠، الرابط ٥٠٠، الهاتف ٢٤،
+     الحدودُ في `patchSchema` على الخادم (الاسم ٢–٨٠، الهاتف ٢٤،
      الهدف ٣٠٠، الاهتمامات ١٢). ومن تجاوزها كان يضغط «حفظ» فيرجع بخطأٍ عامّ
      بعد نداءٍ ذهب هدرا. فصارت تُقاس هنا قبل الإرسال، وبالنصِّ الذي يقول
      الحدَّ لا الذي يقول «تعذّر الحفظ». */
@@ -279,14 +284,8 @@ export default function StudentAccount() {
 
   const fieldErrors = useMemo<Record<string, string | null>>(() => {
     const name = form.displayName.trim();
-    const url = form.avatarUrl.trim();
     return {
       displayName: name.length < 2 ? "اسمك حرفان على الأقلّ" : name.length > 80 ? "الاسم أطول من ٨٠ حرفا" : null,
-      /* الرابطُ يُعرض صورةً في حسابه وشهادته — فرابطٌ بلا بروتوكولٍ صورةٌ مكسورة */
-      avatarUrl: !url ? null
-        : url.length > 500 ? "الرابط أطول من ٥٠٠ حرف"
-        : /^https?:\/\/\S+$/.test(url) ? null
-        : "رابط مباشر للصورة يبدأ بـ https://",
       phone: form.phone.trim().length > 24 ? "الرقم أطول من ٢٤ خانة" : null,
       /* تاريخُ ميلادٍ في المستقبل يُقبله الخادم ويكسر حسابَ العمر في الشهادة */
       birthDate: form.birthDate && form.birthDate > new Date().toISOString().slice(0, 10)
@@ -295,7 +294,7 @@ export default function StudentAccount() {
       careerGoal: form.careerGoal.trim().length > 300 ? "٣٠٠ حرف حدّ هذا الحقل" : null,
       goalAr: form.goalAr.trim().length > 300 ? "٣٠٠ حرف حدّ هذا الحقل" : null,
     };
-  }, [form.displayName, form.avatarUrl, form.phone, form.birthDate, form.careerGoal, form.goalAr]);
+  }, [form.displayName, form.phone, form.birthDate, form.careerGoal, form.goalAr]);
 
   /** رسالةُ الحقل — مكتومةٌ حتى يُلمس، ومعلَنةٌ بعد محاولةِ حفظٍ مرفوضة */
   const errOf = (k: string) => (touched[k] ? fieldErrors[k] ?? null : null);
@@ -381,31 +380,39 @@ export default function StudentAccount() {
     }
   };
 
+  /* ═══ هيئةُ الصفحة (٢١ أكتوبر ٢٠٢٦) ═══
+
+     قال صاحبُ المنصّة: «ليست احترافيّةً ولا تمثّل أكاديميّةً عريقة.. اجعلها أسهلَ
+     وأجمل، والصورُ ترفع دائما لا برابط». فصارت عمودين:
+     · **بطاقةُ الهويّة** في الجانب — الصورةُ كبيرةً تُضغط لتُرفع، والاسمُ والبريد.
+       وثبتت مع النزول، فما يراه الناسُ عنك أمامك وأنت تكتبه.
+     · **الأقسامُ** في المتن، لكلٍّ رأسٌ واحدُ الهيئة (`ui/SectionHead`).
+     وزرُّ الحفظ شريطٌ يلحق صاحبَه ما دام في الحقول التي يحفظها، لا زرٌّ يُبحث عنه
+     تحت آخرها. وحقلُ رابط الصورة ذهب: الصورةُ تُرفع وتُؤطَّر، والرابطُ القديمُ
+     عند من كتبه يبقى معروضا ومحفوظا كما هو حتى يرفع غيره. */
+  const photo = storedAvatar || form.avatarUrl;
+  const isTrainer = !!roles?.includes("trainer");
+  const pickPhoto = () => fileRef.current?.click();
+
   if (mode === "loading") {
     return (
       <PortalFrame title="إعدادات الحساب">
-        {/* هيكل تحميل بنفس شكل البطاقات — أهدأ للعين من السبينر */}
-        <div aria-busy="true" aria-label="جاري تحميل ملفك" className="animate-pulse space-y-6">
-          <Panel className="md:p-8">
-            <div className="flex items-center gap-4">
-              <div className="h-16 w-16 rounded-2xl bg-white/10" />
-              <div className="flex-1 space-y-2">
-                <div className="h-5 w-40 rounded-lg bg-white/10" />
-                <div className="h-3 w-56 rounded-full bg-white/5" />
-              </div>
-            </div>
-            <div className="mt-6 grid gap-4 sm:grid-cols-2">
-              <div className="h-12 rounded-xl bg-white/5" />
-              <div className="h-12 rounded-xl bg-white/5" />
-            </div>
+        {/* هيكل تحميل بنفس شكل الصفحة — أهدأ للعين من السبينر */}
+        <div aria-busy="true" aria-label="جاري تحميل ملفك" className="grid animate-pulse gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
+          <Panel className="flex flex-col items-center gap-3">
+            <div className="h-28 w-28 rounded-3xl bg-white/10" />
+            <div className="h-5 w-40 rounded-lg bg-white/10" />
+            <div className="h-3 w-48 rounded-full bg-white/5" />
+            <div className="mt-2 h-9 w-36 rounded-full bg-white/5" />
           </Panel>
           <Panel className="md:p-8">
-            <div className="h-4 w-32 rounded-full bg-white/10" />
-            <div className="mt-5 grid gap-4 sm:grid-cols-2">
-              <div className="h-12 rounded-xl bg-white/5" />
-              <div className="h-12 rounded-xl bg-white/5" />
-              <div className="h-12 rounded-xl bg-white/5" />
-              <div className="h-12 rounded-xl bg-white/5" />
+            <div className="h-5 w-32 rounded-full bg-white/10" />
+            <div className="mt-6 grid gap-4 sm:grid-cols-2">
+              <div className="h-11 rounded-xl bg-white/5 sm:col-span-2" />
+              <div className="h-11 rounded-xl bg-white/5" />
+              <div className="h-11 rounded-xl bg-white/5" />
+              <div className="h-11 rounded-xl bg-white/5" />
+              <div className="h-11 rounded-xl bg-white/5" />
             </div>
           </Panel>
         </div>
@@ -421,349 +428,378 @@ export default function StudentAccount() {
         </Inset>
       )}
 
-      {/* بطاقة الهوية */}
-      <Panel as="section" className="md:p-8">
-        <div className="flex flex-wrap items-center gap-4">
-          {(storedAvatar || form.avatarUrl) ? (
-            <img src={storedAvatar || form.avatarUrl} alt="صورتك الشخصية" className="h-16 w-16 rounded-2xl border border-white/10 object-cover" />
-          ) : (
-            <span className="grid h-16 w-16 place-items-center rounded-2xl bg-gradient-to-br from-teal to-teal-deep text-2xl font-black text-foreground">
-              {(form.displayName || "م").charAt(0)}
-            </span>
-          )}
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-lg font-black">{form.displayName || "—"}</p>
-            <p className="mt-0.5 flex items-center gap-1.5 text-read leading-5 text-muted-foreground" dir="ltr">
-              <Mail className="h-3.5 w-3.5" /> {email || "—"}
-            </p>
-          </div>
-          {mode === "server" && (
-            <span className="flex items-center gap-1.5 rounded-full border border-teal/40 bg-teal/10 px-3 py-1 text-fine font-bold text-teal-light-ink">
-              <CheckCircle2 className="h-3.5 w-3.5" /> محفوظ في قاعدة البيانات
-            </span>
-          )}
-        </div>
-        <div className="mt-6 grid gap-4 sm:grid-cols-2">
-          <Field label="الاسم الكامل *" name="displayName" error={errOf("displayName")}>
-            <input value={form.displayName} onChange={(e) => set("displayName", e.target.value)} onBlur={touch("displayName")} {...bad("displayName", errOf("displayName"))} className={inputCls} autoComplete="name" />
-          </Field>
-          <Field label="رابط الصورة الشخصية" hint="اختياري — يظهر في حسابك وشهاداتك" name="avatarUrl" error={errOf("avatarUrl")}>
-            <input dir="ltr" value={form.avatarUrl} onChange={(e) => set("avatarUrl", e.target.value)} onBlur={touch("avatarUrl")} {...bad("avatarUrl", errOf("avatarUrl"))} placeholder={storedAvatar ? "صورة مرفوعة عندنا" : "https://…"} className={`${inputCls} text-left`} />
-            <div className="mt-2 flex flex-wrap items-center gap-2">
-              <input
-                ref={fileRef}
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                className="hidden"
-                onChange={(e) => { const f = e.target.files?.[0]; if (f) { setPhotoMsg(null); setFraming(f); } }}
-              />
-              <Button tone="secondary" size="sm" disabled={photoBusy} onClick={() => fileRef.current?.click()}>
-                {photoBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ImagePlus className="h-3.5 w-3.5" />}
-                {photoBusy ? "جار الرفع…" : "ارفع صورة من جهازك"}
-              </Button>
-              <span className="text-fine leading-5 text-muted-foreground">
-                تقتطع مربّعة · أقلّ ضلع ٤٠٠ بكسل · JPEG أو PNG أو WebP
+      <div className="grid items-start gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
+        {/* ═══ بطاقة الهويّة — الصورةُ تُضغط لتُرفع ═══ */}
+        <aside className="lg:sticky lg:top-24">
+          <Panel as="section" tone="solid" aria-label="صورتك وهويتك" className="relative overflow-hidden text-center">
+            <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-teal/15 to-transparent" />
+            <div className="relative mx-auto mt-2 w-fit">
+              <button
+                type="button"
+                onClick={pickPhoto}
+                disabled={photoBusy}
+                /* اختصارٌ للفأرة واللمس — والزرُّ المسمّى تحتها هو وقفةُ لوحة المفاتيح وقارئِ الشاشة،
+                   فلا يُسمع الفعلُ الواحدُ مرّتين */
+                tabIndex={-1}
+                aria-hidden="true"
+                className="group relative block h-28 w-28 overflow-hidden rounded-3xl shadow-lg shadow-black/10 ring-4 ring-paper transition disabled:cursor-wait"
+              >
+                {photo ? (
+                  <img src={photo} alt="صورتك الشخصية" className="h-full w-full object-cover" />
+                ) : (
+                  <span className="grid h-full w-full place-items-center bg-gradient-to-br from-teal to-teal-deep text-4xl font-black text-on-teal">
+                    {(form.displayName || "م").charAt(0)}
+                  </span>
+                )}
+                <span className="absolute inset-0 grid place-items-center bg-black/45 text-white opacity-0 transition group-hover:opacity-100">
+                  {photoBusy ? <Loader2 className="h-6 w-6 animate-spin" /> : <Camera className="h-6 w-6" />}
+                </span>
+              </button>
+              <span aria-hidden="true" className="pointer-events-none absolute -bottom-1.5 -left-1.5 grid h-9 w-9 place-items-center rounded-full bg-teal text-on-teal shadow ring-4 ring-paper">
+                <Camera className="h-4 w-4" />
               </span>
             </div>
+
+            <p className="relative mt-4 text-lg font-black leading-7">{form.displayName || "—"}</p>
+            <p className="mt-1 flex items-center justify-center gap-1.5 text-read leading-5 text-muted-foreground" dir="ltr">
+              <Mail className="h-3.5 w-3.5 shrink-0" /> <span className="truncate">{email || "—"}</span>
+            </p>
+            {isTrainer && <Chip tone="accent" className="mt-3">مدرب في وجيز</Chip>}
+
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="hidden"
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) { setPhotoMsg(null); setFraming(f); } }}
+            />
+            <div className="mt-5 flex justify-center">
+              <Button tone="secondary" size="sm" icon={photoBusy ? undefined : ImagePlus} loading={photoBusy} onClick={pickPhoto}>
+                {photoBusy ? "جار الرفع…" : photo ? "غيّر الصورة" : "ارفع صورتك"}
+              </Button>
+            </div>
+            <p className="mt-2 text-read leading-6 text-muted-foreground">
+              صورة واضحة لوجهك · ٤٠٠ بكسل على الأقل
+              <br />
+              JPEG أو PNG أو WebP · تظهر في حسابك وشهاداتك
+            </p>
             {photoMsg && (
               <p
                 role="alert"
-                className={`mt-2 text-read leading-5 font-semibold ${photoMsg.bad ? "text-red-300" : "text-teal-light-ink"}`}
+                className={`mt-3 text-read leading-5 font-semibold ${photoMsg.bad ? "text-red-300" : "text-teal-light-ink"}`}
               >
                 {photoMsg.text}
               </p>
             )}
             {framing && (
-              <ImageFramer
-                file={framing}
-                onDone={uploadAvatar}
-                onCancel={() => {
-                  setFraming(null);
-                  if (fileRef.current) fileRef.current.value = "";
-                }}
-              />
+              <div className="text-start">
+                <ImageFramer
+                  file={framing}
+                  onDone={uploadAvatar}
+                  onCancel={() => {
+                    setFraming(null);
+                    if (fileRef.current) fileRef.current.value = "";
+                  }}
+                />
+              </div>
             )}
-          </Field>
-        </div>
-      </Panel>
+          </Panel>
+        </aside>
 
-      {/* ═══ وللمدرّب: عنوانُه ونبذتُه في «المدربون» (٣ أكتوبر ٢٠٢٦) ═══
-          تحت صورته لأنّهم يُعرضون معا — والعلّةُ في `PublicTextCard`. */}
-      {mode === "server" && roles?.includes("trainer") && <PublicTextCard inputCls={inputCls} />}
-      {/* واقتراحاتُنا لبطاقته تحتهما: «لماذا نفتخر بك» يعدّله، ونبذتُه بصياغتنا «قبل/بعد» (١٩ أكتوبر ٢٠٢٦) */}
-      {mode === "server" && roles?.includes("trainer") && <ProfileSuggestions inputCls={inputCls} />}
+        <div className="min-w-0 space-y-6">
+          {/* ═══ ما يحفظه «احفظ ملفي» — وشريطُه يلحق صاحبَه ما دام هنا ═══ */}
+          <div className="space-y-6">
+            <Panel as="section" aria-labelledby="basics-h" className="md:p-8">
+              <SectionHead id="basics-h" icon={User} title="بياناتك" desc="اسمك كما يظهر في شهاداتك، وطرق التواصل معك." />
+              <div className="mt-6 grid gap-x-4 gap-y-5 sm:grid-cols-2">
+                <Field label="الاسم الكامل *" name="displayName" error={errOf("displayName")} wide>
+                  <input value={form.displayName} onChange={(e) => set("displayName", e.target.value)} onBlur={touch("displayName")} {...bad("displayName", errOf("displayName"))} className={inputCls} autoComplete="name" />
+                </Field>
+                <Field label="رقم الهاتف (واتساب)" name="phone" error={errOf("phone")}>
+                  <input dir="ltr" type="tel" autoComplete="tel" value={form.phone} onChange={(e) => set("phone", e.target.value)} onBlur={touch("phone")} {...bad("phone", errOf("phone"))} placeholder="+962…" className={`${inputCls} text-left`} />
+                </Field>
+                <Field label="الدولة">
+                  <select value={form.country} onChange={(e) => set("country", e.target.value)} className={`${inputCls} [&>option]:bg-surface`}>
+                    <option value="">اختر دولتك</option>
+                    {ARAB_COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </Field>
+                <Field label="المدينة">
+                  <input value={form.city} onChange={(e) => set("city", e.target.value)} className={inputCls} />
+                </Field>
+                {/* ثلاثُ قوائمَ لا منتقي المتصفّح: العودةُ إلى سنةِ ميلادٍ فيه
+                    تنقّلٌ شهرا شهرا — و`ui/DateField.tsx` يشرح لماذا. */}
+                {/* حقلا قياسٍ لا حقلا حساب: يقرؤهما مؤشّرُ وجيز، فمن ليس
+                    متعلّما لا يُسأل عنهما (ج-٢). والإخفاءُ لا يمسّ المخزون. */}
+                {learnerFields && (<>
+                <Field label="تاريخ الميلاد" hint="اختياري — للشهادات والفرص العمرية فقط" name="birthDate" error={errOf("birthDate")}>
+                  <DateField
+                    value={form.birthDate} onChange={(v) => set("birthDate", v)} onBlur={touch("birthDate")}
+                    fromYear={BIRTH_YEAR_FLOOR} toYear={new Date().getFullYear()} yearOrder="desc"
+                    selectClassName={inputCls} {...bad("birthDate", errOf("birthDate"))}
+                  />
+                </Field>
+                <Field label="الجنس" hint="اختياري">
+                  <select value={form.gender} onChange={(e) => set("gender", e.target.value as ProfileForm["gender"])} className={`${inputCls} [&>option]:bg-surface`}>
+                    <option value="">أفضّل عدم الذكر</option>
+                    <option value="male">ذكر</option>
+                    <option value="female">أنثى</option>
+                  </select>
+                </Field>
+                </>)}
+                <Field label="اللغة المفضلة للتعلم">
+                  <select value={form.preferredLanguage} onChange={(e) => set("preferredLanguage", e.target.value)} className={`${inputCls} [&>option]:bg-surface`}>
+                    <option value="">اختر</option>
+                    {LANGUAGES.map((l) => <option key={l} value={l}>{l}</option>)}
+                  </select>
+                </Field>
+              </div>
+            </Panel>
 
-      {/* المعلومات الشخصية */}
-      <Panel as="section" className="mt-6 md:p-8">
-        <h2 className="flex items-center gap-2 text-base font-black"><User className="h-4 w-4 text-teal-light-ink" /> معلومات شخصية</h2>
-        <div className="mt-5 grid gap-4 sm:grid-cols-2">
-          <Field label="رقم الهاتف (واتساب)" name="phone" error={errOf("phone")}>
-            <input dir="ltr" type="tel" autoComplete="tel" value={form.phone} onChange={(e) => set("phone", e.target.value)} onBlur={touch("phone")} {...bad("phone", errOf("phone"))} placeholder="+962…" className={`${inputCls} text-left`} />
-          </Field>
-          <Field label="الدولة">
-            <select value={form.country} onChange={(e) => set("country", e.target.value)} className={`${inputCls} [&>option]:bg-surface`}>
-              <option value="">اختر دولتك</option>
-              {ARAB_COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
-            </select>
-          </Field>
-          <Field label="المدينة">
-            <input value={form.city} onChange={(e) => set("city", e.target.value)} className={inputCls} />
-          </Field>
-          {/* ثلاثُ قوائمَ لا منتقي المتصفّح: العودةُ إلى سنةِ ميلادٍ فيه
-              تنقّلٌ شهرا شهرا — و`ui/DateField.tsx` يشرح لماذا. */}
-          {/* حقلا قياسٍ لا حقلا حساب: يقرؤهما مؤشّرُ وجيز، فمن ليس
-              متعلّما لا يُسأل عنهما (ج-٢). والإخفاءُ لا يمسّ المخزون. */}
+            {/* ═══ قسمان يخصّان المتعلّمَ وحدَه (ج-٢) ═══
+
+                التعليمُ والحياةُ المهنيّةُ والاهتماماتُ حقولُ **قياس**: يقرؤها
+                مؤشّرُ وجيز ليوصي بمسار. فالمدرّبُ والمديرُ لا يُقاسان بها ولا
+                معنى لسؤالهما عنها — وكانت تُعرض لهما لأنّ الصفحةَ واحدةٌ للبوّابات
+                الأربع ومكتوبةٌ بشكل المتعلّم.
+
+                وتُخفى ولا تُحذف: من حمل الدورَين يراها، والمخزونُ لا يُمسّ —
+                الصفحةُ تحمّل الملفَّ كاملا وتعيده كاملا، فحقلٌ مخفيٌّ يُحفظ كما
+                جاء. */}
+            {learnerFields && (<>
+            <Panel as="section" aria-labelledby="edu-h" className="md:p-8">
+              <SectionHead id="edu-h" icon={BookOpen} title="التعليم" />
+              <div className="mt-6 grid gap-x-4 gap-y-5 sm:grid-cols-3">
+                <Field label="المؤهل العلمي">
+                  <select value={form.education} onChange={(e) => set("education", e.target.value)} className={`${inputCls} [&>option]:bg-surface`}>
+                    <option value="">اختر</option>
+                    {EDUCATION_LEVELS.map((l) => <option key={l} value={l}>{l}</option>)}
+                  </select>
+                </Field>
+                <Field label="الجامعة / المؤسسة التعليمية">
+                  <input value={form.university} onChange={(e) => set("university", e.target.value)} className={inputCls} />
+                </Field>
+                <Field label="التخصص">
+                  <input value={form.major} onChange={(e) => set("major", e.target.value)} className={inputCls} />
+                </Field>
+              </div>
+            </Panel>
+
+            <Panel as="section" aria-labelledby="career-h" className="md:p-8">
+              <SectionHead id="career-h" icon={RouteIcon} title="حياتك المهنية وهدفك" />
+              <div className="mt-6 grid gap-x-4 gap-y-5 sm:grid-cols-3">
+                <Field label="الوظيفة الحالية">
+                  <input value={form.jobTitle} onChange={(e) => set("jobTitle", e.target.value)} className={inputCls} />
+                </Field>
+                <Field label="الشركة / الجهة">
+                  <input value={form.company} onChange={(e) => set("company", e.target.value)} className={inputCls} />
+                </Field>
+                <Field label="سنوات الخبرة">
+                  <select value={form.experienceYears} onChange={(e) => set("experienceYears", e.target.value)} className={`${inputCls} [&>option]:bg-surface`}>
+                    <option value="">اختر النطاق</option>
+                    {EXPERIENCE_RANGES.map((r) => <option key={r} value={r}>{r === "12+" ? "أكثر من ١٢ سنة" : `${r} سنوات`}</option>)}
+                  </select>
+                </Field>
+              </div>
+              <div className="mt-5 grid gap-x-4 gap-y-5 sm:grid-cols-2">
+                <Field label="هدفك المهني" name="careerGoal" error={errOf("careerGoal")}>
+                  <textarea rows={2} maxLength={300} value={form.careerGoal} onChange={(e) => set("careerGoal", e.target.value)} onBlur={touch("careerGoal")} {...bad("careerGoal", errOf("careerGoal"))} placeholder="مثال: أن أقود فريق تسويق خلال سنتين" className={`${inputCls} resize-none`} />
+                </Field>
+                <Field label="هدفك التعلمي" hint="ما تريد إتقانه الآن" name="goalAr" error={errOf("goalAr")}>
+                  <textarea rows={2} maxLength={300} value={form.goalAr} onChange={(e) => set("goalAr", e.target.value)} onBlur={touch("goalAr")} {...bad("goalAr", errOf("goalAr"))} className={`${inputCls} resize-none`} />
+                </Field>
+              </div>
+              <div className="mt-5">
+                <label className="block">
+                  <span className={labelCls}>اهتماماتك</span>
+                  <span className="flex items-center gap-2">
+                    <input
+                      value={interestDraft}
+                      onChange={(e) => { setInterestDraft(e.target.value); setInterestMsg(""); }}
+                      onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addInterest(); } }}
+                      placeholder="اكتب اهتماما ثم Enter — حتى 12"
+                      className={inputCls}
+                    />
+                    <Button tone="secondary" type="button" onClick={addInterest} className="shrink-0">
+                      أضف
+                    </Button>
+                  </span>
+                </label>
+                {interestMsg && (
+                  <p role="alert" className="mt-1.5 text-read font-bold leading-5 text-red-300">{interestMsg}</p>
+                )}
+                {form.interests.length > 0 && (
+                  <div className="mt-2.5 flex flex-wrap gap-1.5">
+                    {form.interests.map((i) => (
+                      <span key={i} className="inline-flex items-center gap-1.5 rounded-full border border-teal/40 bg-teal/10 px-2.5 py-1 text-fine font-bold text-teal-light-ink">
+                        {i}
+                        <Button tone="ghost" type="button" aria-label={`أزل ${i}`} onClick={() => set("interests", form.interests.filter((x) => x !== i))} className="grid h-8 w-8 shrink-0 place-items-center">
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </Panel>
+            </>)}
+
+            {/* ═══ والحفظُ للأدوار كلِّها (٣٠ سبتمبر ٢٠٢٦) ═══
+                كان الزرُّ داخلَ كتلة المتعلّم (ج-٢) فخرج معها: المدرّبُ يرى اسمَه
+                وهاتفَه ودولتَه قابلةً للكتابة ولا زرَّ يحفظها. والحقولُ المشتركةُ
+                للجميع، فزرُّها للجميع. */}
+            <div className="sticky bottom-4 z-10">
+              <Card tone="solid" className="flex flex-wrap items-center justify-between gap-3 py-3.5 shadow-xl shadow-black/10">
+                <div className="min-w-0 flex-1 text-read leading-5">
+                  {err ? <p role="alert" className="font-semibold text-red-300">{err}</p>
+                    : savedMsg ? <p role="status" className="font-bold text-teal-light-ink">{savedMsg}</p>
+                    : <p className="text-muted-foreground">احفظ بعد أي تعديل في بياناتك.</p>}
+                </div>
+                {/* الزرُّ لا يُطفأ على حقلٍ مرفوض: كان مطفأً والسببُ في حقلٍ قد يكون
+                    خارج الشاشة، فتبقى الضغطةُ بلا جواب. فصار يُضغط، ويُظهر الرفضَ
+                    عند حقله، ولا يُرسل نداءً يعرف أنّه مردود. */}
+                <Button tone="primary" onClick={save} disabled={busy} className="shrink-0">
+                  {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                  احفظ ملفي
+                </Button>
+              </Card>
+            </div>
+          </div>
+
+          {/* ═══ وللمدرّب: عنوانُه ونبذتُه في «المدربون» (٣ أكتوبر ٢٠٢٦) ═══
+              بعد بياناته لا بين الصورة والحفظ: لهما زرُّ إرسالٍ للاعتماد غيرُ «احفظ ملفي»،
+              فلا يجاور قسمٌ يُحفظ قسما يُرسَل. والعلّةُ في `PublicTextCard`. */}
+          {mode === "server" && roles?.includes("trainer") && <PublicTextCard inputCls={inputCls} />}
+          {/* واقتراحاتُنا لبطاقته تحتهما: «لماذا نفتخر بك» يعدّله، ونبذتُه بصياغتنا «قبل/بعد» (١٩ أكتوبر ٢٠٢٦) */}
+          {mode === "server" && roles?.includes("trainer") && <ProfileSuggestions inputCls={inputCls} />}
+
           {learnerFields && (<>
-          <Field label="تاريخ الميلاد" hint="اختياري — للشهادات والفرص العمرية فقط" name="birthDate" error={errOf("birthDate")}>
-            <DateField
-              value={form.birthDate} onChange={(v) => set("birthDate", v)} onBlur={touch("birthDate")}
-              fromYear={BIRTH_YEAR_FLOOR} toYear={new Date().getFullYear()} yearOrder="desc"
-              selectClassName={inputCls} {...bad("birthDate", errOf("birthDate"))}
-            />
-          </Field>
-          <Field label="الجنس" hint="اختياري">
-            <select value={form.gender} onChange={(e) => set("gender", e.target.value as ProfileForm["gender"])} className={`${inputCls} [&>option]:bg-surface`}>
-              <option value="">أفضّل عدم الذكر</option>
-              <option value="male">ذكر</option>
-              <option value="female">أنثى</option>
-            </select>
-          </Field>
-          </>)}
-          <Field label="اللغة المفضلة للتعلم">
-            <select value={form.preferredLanguage} onChange={(e) => set("preferredLanguage", e.target.value)} className={`${inputCls} [&>option]:bg-surface`}>
-              <option value="">اختر</option>
-              {LANGUAGES.map((l) => <option key={l} value={l}>{l}</option>)}
-            </select>
-          </Field>
-        </div>
-      </Panel>
-
-      {/* ═══ قسمان يخصّان المتعلّمَ وحدَه (ج-٢) ═══
-
-          التعليمُ والحياةُ المهنيّةُ والاهتماماتُ حقولُ **قياس**: يقرؤها
-          مؤشّرُ وجيز ليوصي بمسار. فالمدرّبُ والمديرُ لا يُقاسان بها ولا
-          معنى لسؤالهما عنها — وكانت تُعرض لهما لأنّ الصفحةَ واحدةٌ للبوّابات
-          الأربع ومكتوبةٌ بشكل المتعلّم.
-
-          وتُخفى ولا تُحذف: من حمل الدورَين يراها، والمخزونُ لا يُمسّ —
-          الصفحةُ تحمّل الملفَّ كاملا وتعيده كاملا، فحقلٌ مخفيٌّ يُحفظ كما
-          جاء. */}
-      {learnerFields && (<>
-      {/* التعليم */}
-      <Panel as="section" className="mt-6 md:p-8">
-        <h2 className="flex items-center gap-2 text-base font-black"><BookOpen className="h-4 w-4 text-teal-light-ink" /> التعليم</h2>
-        <div className="mt-5 grid gap-4 sm:grid-cols-3">
-          <Field label="المؤهل العلمي">
-            <select value={form.education} onChange={(e) => set("education", e.target.value)} className={`${inputCls} [&>option]:bg-surface`}>
-              <option value="">اختر</option>
-              {EDUCATION_LEVELS.map((l) => <option key={l} value={l}>{l}</option>)}
-            </select>
-          </Field>
-          <Field label="الجامعة / المؤسسة التعليمية">
-            <input value={form.university} onChange={(e) => set("university", e.target.value)} className={inputCls} />
-          </Field>
-          <Field label="التخصص">
-            <input value={form.major} onChange={(e) => set("major", e.target.value)} className={inputCls} />
-          </Field>
-        </div>
-      </Panel>
-
-      {/* الحياة المهنية */}
-      <Panel as="section" className="mt-6 md:p-8">
-        <h2 className="flex items-center gap-2 text-base font-black"><RouteIcon className="h-4 w-4 text-teal-light-ink" /> حياتك المهنية وهدفك</h2>
-        <div className="mt-5 grid gap-4 sm:grid-cols-3">
-          <Field label="الوظيفة الحالية">
-            <input value={form.jobTitle} onChange={(e) => set("jobTitle", e.target.value)} className={inputCls} />
-          </Field>
-          <Field label="الشركة / الجهة">
-            <input value={form.company} onChange={(e) => set("company", e.target.value)} className={inputCls} />
-          </Field>
-          <Field label="سنوات الخبرة">
-            <select value={form.experienceYears} onChange={(e) => set("experienceYears", e.target.value)} className={`${inputCls} [&>option]:bg-surface`}>
-              <option value="">اختر النطاق</option>
-              {EXPERIENCE_RANGES.map((r) => <option key={r} value={r}>{r === "12+" ? "أكثر من ١٢ سنة" : `${r} سنوات`}</option>)}
-            </select>
-          </Field>
-        </div>
-        <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          <Field label="هدفك المهني" name="careerGoal" error={errOf("careerGoal")}>
-            <textarea rows={2} maxLength={300} value={form.careerGoal} onChange={(e) => set("careerGoal", e.target.value)} onBlur={touch("careerGoal")} {...bad("careerGoal", errOf("careerGoal"))} placeholder="مثال: أن أقود فريق تسويق خلال سنتين" className={`${inputCls} resize-none`} />
-          </Field>
-          <Field label="هدفك التعلمي" hint="ما تريد إتقانه الآن" name="goalAr" error={errOf("goalAr")}>
-            <textarea rows={2} maxLength={300} value={form.goalAr} onChange={(e) => set("goalAr", e.target.value)} onBlur={touch("goalAr")} {...bad("goalAr", errOf("goalAr"))} className={`${inputCls} resize-none`} />
-          </Field>
-        </div>
-        <div className="mt-4">
-          <label className="block">
-            <span className={labelCls}>اهتماماتك</span>
-            <span className="flex gap-2">
-              <input
-                value={interestDraft}
-                onChange={(e) => { setInterestDraft(e.target.value); setInterestMsg(""); }}
-                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addInterest(); } }}
-                placeholder="اكتب اهتماما ثم Enter — حتى 12"
-                className={inputCls}
-              />
-              <button type="button" onClick={addInterest} className="shrink-0 cursor-pointer rounded-xl border border-teal/50 px-4 text-xs font-bold text-teal-light-ink hover:bg-teal/10">
-                أضف
-              </button>
-            </span>
-          </label>
-          {interestMsg && (
-            <p role="alert" className="mt-1.5 text-read font-bold leading-5 text-red-300">{interestMsg}</p>
-          )}
-          {form.interests.length > 0 && (
-            <div className="mt-2.5 flex flex-wrap gap-1.5">
-              {form.interests.map((i) => (
-                <span key={i} className="inline-flex items-center gap-1.5 rounded-full border border-teal/40 bg-teal/10 px-2.5 py-1 text-fine font-bold text-teal-light-ink">
-                  {i}
-                  <Button tone="ghost" type="button" aria-label={`أزل ${i}`} onClick={() => set("interests", form.interests.filter((x) => x !== i))} className="grid h-8 w-8 shrink-0 place-items-center">
-                    <X className="h-3 w-3" />
-                  </Button>
-                </span>
+          {/* روابط بقية أقسام الملف */}
+          <Panel as="section" aria-labelledby="more-h" className="md:p-8">
+            <SectionHead id="more-h" icon={FileText} title="بقية ملفك" />
+            <div className="mt-6 grid gap-2.5 sm:grid-cols-2">
+              {[
+                /* بأسمائها في الشريط (١٩ أكتوبر ٢٠٢٦): كانت «مساراتي وتقدمي» و«دوراتي وجلساتي» — ولا قسمَ بهذين الاسمين */
+                { to: "/student", icon: RouteIcon, t: "الرئيسية", d: "مسارك النشط ونسبة إنجازه" },
+                { to: "/student/learning", icon: BookOpen, t: "رحلتي", d: "دوراتك ومواعيدها" },
+                { to: "/student/certificates", icon: Award, t: "شهاداتي", d: "شهاداتك وروابط التحقق" },
+                { to: "/student/billing", icon: FileText, t: "فواتيري وطلباتي", d: "فواتيرك ودفعاتك" },
+                { to: "/student/cv", icon: FileText, t: "سيرتي الذاتية", d: "رفع بموافقة صريحة وحذف موثق" },
+                { to: "/diagnostic", icon: MessageCircle, t: "نتائج تشخيصي", d: "آخر نتيجة وتقريرك" },
+              ].map((x) => (
+                <Card as={Link} tone="accent" interactive key={x.t} to={x.to} className="group flex items-start gap-3">
+                  <x.icon className="mt-0.5 h-4 w-4 shrink-0 text-teal-light-ink" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-black">{x.t}</span>
+                    <span className="mt-1 block text-read leading-relaxed text-muted-foreground">{x.d}</span>
+                  </span>
+                  <ChevronLeft className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground transition group-hover:-translate-x-0.5" aria-hidden="true" />
+                </Card>
               ))}
             </div>
+          </Panel>
+
+          {/* بيانات الفوترة والطلبات */}
+          <Panel as="section" aria-labelledby="billing-h" className="md:p-8">
+            <SectionHead id="billing-h" icon={Lock} title="الفوترة والطلبات" desc={<>
+              فواتيرك ودفعاتك في{" "}
+              <Link to="/student/billing" className="font-bold text-teal-light-ink underline-offset-4 hover:underline">فواتيري</Link>.
+              وللاسترداد أو مراجعة فاتورة: <Link to="/student/support?topic=refund" className="font-bold text-teal-light-ink underline-offset-4 hover:underline">افتح تذكرة دعم</Link>.
+            </>} />
+          </Panel>
+          </>)}
+
+          {/* ═══ ما يصلني من رسائل (٢٠ أكتوبر ٢٠٢٦) ═══
+              كان في ذيل «إشعاراتي» — صفحةٌ بلا بندٍ في القائمة صارت «الرسائل والتنبيهات». والتفضيلُ إعدادٌ
+              من إعدادات حسابه فموضعُه هنا، وإليه يقود رابطُ «غيّر تفضيلات رسائلك» في البريد
+              (`#notifications`). وللمتعلّم وحدَه: أصنافُه أصنافُ المتعلّم (`learner-categories.ts`). */}
+          {learnerFields && mode === "server" && (
+            <div id="notifications" className="scroll-mt-24">
+              <NotificationPreferences />
+            </div>
           )}
-        </div>
-      </Panel>
 
-      {/* روابط بقية أقسام الملف */}
-      <Panel as="section" className="mt-8 md:p-8">
-        <h2 className="flex items-center gap-2 text-base font-black"><FileText className="h-4 w-4 text-teal-light-ink" /> بقية ملفك</h2>
-        <div className="mt-5 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
-          {[
-            /* بأسمائها في الشريط (١٩ أكتوبر ٢٠٢٦): كانت «مساراتي وتقدمي» و«دوراتي وجلساتي» — ولا قسمَ بهذين الاسمين */
-            { to: "/student", icon: RouteIcon, t: "الرئيسية", d: "مسارك النشط ونسبة إنجازه" },
-            { to: "/student/learning", icon: BookOpen, t: "رحلتي", d: "دوراتك ومواعيدها" },
-            { to: "/student/certificates", icon: Award, t: "شهاداتي", d: "شهاداتك وروابط التحقق" },
-            { to: "/student/billing", icon: FileText, t: "فواتيري وطلباتي", d: "فواتيرك ودفعاتك" },
-            { to: "/student/cv", icon: FileText, t: "سيرتي الذاتية", d: "رفع بموافقة صريحة وحذف موثق" },
-            { to: "/diagnostic", icon: MessageCircle, t: "نتائج تشخيصي", d: "آخر نتيجة وتقريرك" },
-          ].map((x) => (
-            <Card as={Link} tone="accent" interactive key={x.t} to={x.to} className="transition hover:border-teal/50">
-              <x.icon className="h-4 w-4 text-teal-light-ink" />
-              <p className="mt-2 text-sm font-black">{x.t}</p>
-              <p className="mt-1 text-read leading-relaxed text-muted-foreground">{x.d}</p>
-            </Card>
-          ))}
-        </div>
-      </Panel>
+          {/* الأمان والجلسات — إجراءات حقيقية على الخادم، تظهر فقط مع جلسة فعالة */}
+          {mode === "server" && (
+            <Panel as="section" aria-labelledby="security-h" className="md:p-8">
+              <SectionHead id="security-h" icon={ShieldAlert} title="الأمان والجلسات" />
 
-      {/* بيانات الفوترة والطلبات */}
-      <Panel as="section" className="mt-6 md:p-8">
-        <h2 className="flex items-center gap-2 text-base font-black"><Lock className="h-4 w-4 text-teal-light-ink" /> الفوترة والطلبات</h2>
-        <p className="mt-2 text-sm leading-7 text-muted-foreground">
-          فواتيرك ودفعاتك في{" "}
-          <Link to="/student/billing" className="font-bold text-teal-light-ink underline-offset-4 hover:underline">فواتيري</Link>.
-          وللاسترداد أو مراجعة فاتورة: <Link to="/student/support?topic=refund" className="font-bold text-teal-light-ink underline-offset-4 hover:underline">افتح تذكرة دعم</Link>.
-        </p>
-      </Panel>
-
-      {/* الأمان والجلسات — إجراءات حقيقية على الخادم، تظهر فقط مع جلسة فعالة */}
-      </>)}
-
-      {/* ═══ والحفظُ للأدوار كلِّها (٣٠ سبتمبر ٢٠٢٦) ═══
-          كان الزرُّ داخلَ كتلة المتعلّم (ج-٢) فخرج معها: المدرّبُ يرى اسمَه
-          وهاتفَه ودولتَه قابلةً للكتابة ولا زرَّ يحفظها. والحقولُ المشتركةُ
-          للجميع، فزرُّها للجميع. */}
-      {/* حفظ */}
-      <div className="mt-6 flex flex-col items-center gap-3">
-        {err && <Inset as="p" tone="danger" role="alert" className="px-4 py-2.5 text-read leading-5 font-semibold text-red-300">{err}</Inset>}
-        {savedMsg && <Inset as="p" tone="accent" role="status" className="px-4 py-2.5 text-read leading-5 font-bold text-teal-light-ink">{savedMsg}</Inset>}
-        {/* الزرُّ لا يُطفأ على حقلٍ مرفوض: كان مطفأً والسببُ في حقلٍ قد يكون
-            خارج الشاشة، فتبقى الضغطةُ بلا جواب. فصار يُضغط، ويُظهر الرفضَ
-            عند حقله، ولا يُرسل نداءً يعرف أنّه مردود. */}
-        <Button tone="primary" onClick={save} disabled={busy} className="h-12 disabled:cursor-not-allowed">
-          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-          احفظ ملفي
-        </Button>
-      </div>
-
-      {/* ═══ ما يصلني من رسائل (٢٠ أكتوبر ٢٠٢٦) ═══
-          كان في ذيل «إشعاراتي» — صفحةٌ بلا بندٍ في القائمة صارت «الرسائل والتنبيهات». والتفضيلُ إعدادٌ
-          من إعدادات حسابه فموضعُه هنا، وإليه يقود رابطُ «غيّر تفضيلات رسائلك» في البريد
-          (`#notifications`). وللمتعلّم وحدَه: أصنافُه أصنافُ المتعلّم (`learner-categories.ts`). */}
-      {learnerFields && mode === "server" && (
-        <div id="notifications" className="mt-6 scroll-mt-24">
-          <NotificationPreferences />
-        </div>
-      )}
-
-
-      {mode === "server" && (
-        <Panel as="section" className="mt-6 md:p-8">
-          <h2 className="flex items-center gap-2 text-base font-black"><ShieldAlert className="h-4 w-4 text-teal-light-ink" /> الأمان والجلسات</h2>
-
-          <div className="mt-5 flex flex-wrap items-center justify-between gap-4">
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-bold">الخروج من كل الأجهزة</p>
-              <p className="mt-1 text-read leading-6 text-muted-foreground">
-                ينهي كل جلساتك — وتدخل من جديد هنا أيضا.
-              </p>
-            </div>
-            <Button tone="secondary" type="button" onClick={logoutAll} disabled={!!secBusy} className="shrink-0 disabled:cursor-not-allowed">
-              {secBusy === "logoutAll" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <LogOut className="h-3.5 w-3.5" />}
-              إنهاء كل الجلسات
-            </Button>
-          </div>
-
-          {/* ═══ كلمةُ المرور (٣٠ سبتمبر ٢٠٢٦) ═══
-              قائمةُ الحساب تَعِد بها («الاسم وكلمة المرور والجلسات») ولم يكن
-              في الصفحة سطرٌ عنها. والتغييرُ يمرّ برابطٍ إلى البريد نفسِه —
-              مسارُ الاستعادة القائم — فلا تُغيَّر كلمةٌ من جهازٍ تُرك مفتوحا. */}
-          <div className="mt-5 flex flex-wrap items-center justify-between gap-4">
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-bold">كلمة المرور</p>
-              <p className="mt-1 text-read leading-6 text-muted-foreground">
-                نرسل إلى بريدك رابطا تختار منه كلمة جديدة.
-              </p>
-            </div>
-            <Button tone="secondary" type="button" disabled={!!secBusy || !email} className="shrink-0 disabled:cursor-not-allowed"
-              onClick={async () => {
-                setSecErr(""); setSecMsg("");
-                try {
-                  await apiPost("/api/auth/password/forgot", { email });
-                  setSecMsg(`أرسلنا رابط تغيير كلمة المرور إلى ${email}`);
-                } catch (e) {
-                  setSecErr(e instanceof ApiError ? e.message : "تعذّر الإرسال — حاول بعد قليل");
-                }
-              }}>
-              <KeyRound className="h-3.5 w-3.5" />
-              أرسل رابط تغييرها
-            </Button>
-          </div>
-
-          <Card tone="danger" className="mt-5">
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-bold text-red-300">تعطيل الحساب</p>
-                <p className="mt-1 text-read leading-6 text-muted-foreground">
-                  يوقف حسابك وجلساتك فورا. بياناتك وتقدمك محفوظة، ويعاد التفعيل بالتواصل معنا.
-                </p>
-              </div>
-              {!confirmingDeactivate ? (
-                <Button tone="danger" type="button" onClick={() => setConfirmingDeactivate(true)} disabled={!!secBusy} className="shrink-0 disabled:cursor-not-allowed">
-                  تعطيل حسابي
-                </Button>
-              ) : (
-                <div className="flex shrink-0 items-center gap-2">
-                  <span className="text-fine font-bold text-red-300">متأكد؟ الإجراء فوري</span>
-                  <Button tone="ghost" type="button" onClick={deactivate} disabled={!!secBusy} className="bg-red-500 text-white disabled:cursor-not-allowed">
-                    {secBusy === "deactivate" && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                    نعم، عطّل حسابي
-                  </Button>
-                  <Button tone="secondary" type="button" onClick={() => setConfirmingDeactivate(false)} disabled={!!secBusy} className="disabled:cursor-not-allowed">
-                    تراجع
+              <div className="mt-6">
+                <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-5">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-bold">الخروج من كل الأجهزة</p>
+                    <p className="mt-1 text-read leading-6 text-muted-foreground">
+                      ينهي كل جلساتك — وتدخل من جديد هنا أيضا.
+                    </p>
+                  </div>
+                  <Button tone="secondary" type="button" onClick={logoutAll} disabled={!!secBusy} className="shrink-0">
+                    {secBusy === "logoutAll" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <LogOut className="h-3.5 w-3.5" />}
+                    إنهاء كل الجلسات
                   </Button>
                 </div>
-              )}
-            </div>
-          </Card>
 
-          {secErr && <Inset as="p" tone="danger" role="alert" className="mt-4 px-4 py-2.5 text-read leading-5 font-semibold text-red-300">{secErr}</Inset>}
-          {secMsg && <Inset as="p" tone="accent" role="status" className="mt-4 px-4 py-2.5 text-read leading-5 font-bold text-teal-light-ink">{secMsg}</Inset>}
-        </Panel>
-      )}
+                {/* ═══ كلمةُ المرور (٣٠ سبتمبر ٢٠٢٦) ═══
+                    قائمةُ الحساب تَعِد بها («الاسم وكلمة المرور والجلسات») ولم يكن
+                    في الصفحة سطرٌ عنها. والتغييرُ يمرّ برابطٍ إلى البريد نفسِه —
+                    مسارُ الاستعادة القائم — فلا تُغيَّر كلمةٌ من جهازٍ تُرك مفتوحا. */}
+                <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 py-5">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-bold">كلمة المرور</p>
+                    <p className="mt-1 text-read leading-6 text-muted-foreground">
+                      نرسل إلى بريدك رابطا تختار منه كلمة جديدة.
+                    </p>
+                  </div>
+                  <Button tone="secondary" type="button" disabled={!!secBusy || !email} className="shrink-0"
+                    onClick={async () => {
+                      setSecErr(""); setSecMsg("");
+                      try {
+                        await apiPost("/api/auth/password/forgot", { email });
+                        setSecMsg(`أرسلنا رابط تغيير كلمة المرور إلى ${email}`);
+                      } catch (e) {
+                        setSecErr(e instanceof ApiError ? e.message : "تعذّر الإرسال — حاول بعد قليل");
+                      }
+                    }}>
+                    <KeyRound className="h-3.5 w-3.5" />
+                    أرسل رابط تغييرها
+                  </Button>
+                </div>
+
+                <div className="pt-5">
+                  <Card tone="danger">
+                    <div className="flex flex-wrap items-center justify-between gap-4">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-bold text-red-300">تعطيل الحساب</p>
+                        <p className="mt-1 text-read leading-6 text-muted-foreground">
+                          يوقف حسابك وجلساتك فورا. بياناتك وتقدمك محفوظة، ويعاد التفعيل بالتواصل معنا.
+                        </p>
+                      </div>
+                      {!confirmingDeactivate ? (
+                        <Button tone="danger" type="button" onClick={() => setConfirmingDeactivate(true)} disabled={!!secBusy} className="shrink-0">
+                          تعطيل حسابي
+                        </Button>
+                      ) : (
+                        <div className="flex shrink-0 flex-wrap items-center gap-2">
+                          <span className="text-fine font-bold text-red-300">متأكد؟ الإجراء فوري</span>
+                          <Button tone="ghost" type="button" onClick={deactivate} disabled={!!secBusy} className="bg-red-500 text-white disabled:cursor-not-allowed">
+                            {secBusy === "deactivate" && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                            نعم، عطّل حسابي
+                          </Button>
+                          <Button tone="secondary" type="button" onClick={() => setConfirmingDeactivate(false)} disabled={!!secBusy}>
+                            تراجع
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </Card>
+                </div>
+              </div>
+
+              {secErr && <Inset as="p" tone="danger" role="alert" className="mt-4 px-4 py-2.5 text-read leading-5 font-semibold text-red-300">{secErr}</Inset>}
+              {secMsg && <Inset as="p" tone="accent" role="status" className="mt-4 px-4 py-2.5 text-read leading-5 font-bold text-teal-light-ink">{secMsg}</Inset>}
+            </Panel>
+          )}
+        </div>
+      </div>
     </PortalFrame>
   );
 }
