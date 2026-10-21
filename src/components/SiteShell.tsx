@@ -3,10 +3,9 @@ import { safeGet, safeRemove } from '@/services/safe-storage'
 import { Link } from 'react-router'
 import PublicSearch from './PublicSearch'
 import { LogOut, Menu, Search as SearchIcon, User, X } from 'lucide-react'
-import { CONTACT } from '@/data/stories'
-import { ECOSYSTEM_NOTE } from '@/data/siteContent'
 import ThemeToggle from '@/components/ThemeToggle'
 import SiteAccountMenu from '@/components/SiteAccountMenu'
+import SiteFooter from '@/components/SiteFooter'
 import { homePathForRoles, readRoles, signOut } from '@/services/auth'
 
 import { Inset } from "@/components/ui/Surface";
@@ -64,7 +63,7 @@ function SiteNav() {
     { label: 'مؤشر وجيز', href: '/#diagnostic' },
     { label: 'المسارات', href: '/pathways', route: true },
     { label: 'الدورات', href: '/courses', route: true },
-    { label: 'انضم كمدرب', href: '/join-trainer', route: true },
+    { label: 'المدربون', href: '/trainers', route: true },
   ]
   const renderLink = (l: (typeof links)[number], className: string, onClick?: () => void) =>
     l.route ? (
@@ -192,27 +191,7 @@ export default function SiteShell({ children }: { children: React.ReactNode }) {
     <div dir="rtl" className="min-h-screen bg-paper text-foreground">
       <SiteNav />
       <div className="shell py-12 md:py-16">{children}</div>
-      <footer className="border-t border-white/5 py-8 text-center text-xs leading-6 text-muted-foreground">
-        <div>© 2026 {ECOSYSTEM_NOTE}</div>
-        <div className="mt-1">
-          {CONTACT.email} ·{' '}
-          {CONTACT.locations.map((loc, i) => (
-            <span key={loc.label}>
-              {i > 0 && ' · '}
-              {loc.href ? (
-                <a href={loc.href} target="_blank" rel="noreferrer" className="inline-flex min-h-[24px] items-center py-1 transition hover:text-teal-light-ink">{loc.label}</a>
-              ) : (
-                loc.label
-              )}
-            </span>
-          ))}
-        </div>
-        <div className="mt-2">
-          <Link to="/methodology" className="inline-flex min-h-[24px] items-center py-1 font-semibold text-muted-foreground transition hover:text-teal-light-ink">
-            منهجية وجيز
-          </Link>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   )
 }

@@ -1,10 +1,10 @@
 import { Link, useLocation } from 'react-router'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
-  ArrowLeft, BadgeCheck, Check, Sparkles, GraduationCap, ShieldCheck, Search, Star, Clock, ChevronDown, BookOpen, MapPin,
+  ArrowLeft, BadgeCheck, Check, Sparkles, GraduationCap, Search, Star, Clock, ChevronDown, BookOpen, MapPin,
   Loader2, RefreshCw,
 } from 'lucide-react'
-import { TRAINER_POOLS, TRAINER_PENDING_AR, courseById } from '@/data/courses'
+import { TRAINER_POOLS, courseById } from '@/data/courses'
 import { apiGet } from '@/services/api'
 import { withRetry } from '@/services/retry'
 import { useAutoRefresh } from '@/services/useAutoRefresh'
@@ -442,10 +442,6 @@ export default function Trainers() {
         <p className="mx-auto mt-3 max-w-xl leading-8 text-muted-foreground">
           لكل دورة مدرب متخصص يراجع عملك بنفسه، ولكل مسار مدربان إلى ثلاثة.
         </p>
-        <Card as="p" tone="warn" className="mx-auto mt-3 flex max-w-md items-center justify-center gap-2 px-4 py-2.5 text-read font-bold leading-6 text-gold-ink">
-          <ShieldCheck className="h-4 w-4 shrink-0" />
-          {TRAINER_PENDING_AR} — لا ننشر اسما قبل اعتماده رسميا.
-        </Card>
 
         {/* البحث بالاسم أو المجال أو الدورة */}
         <div className="relative mx-auto mt-6 max-w-md">

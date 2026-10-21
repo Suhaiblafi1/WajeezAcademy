@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router";
 import { ArrowRight, BadgeCheck, Loader2, Search, ServerOff, ShieldX } from "lucide-react";
 import { apiGet, ApiError } from "@/services/api";
 import SeoHead from "@/components/SeoHead";
+import SiteFooter from "@/components/SiteFooter";
 import { seoFor } from "@/application/site/public-pages";
 import { fmtDateLong } from "@/application/text/format-ar";
 
@@ -63,90 +64,93 @@ export default function Verify() {
   }, [number]);
 
   return (
-    <div dir="rtl" className="flex min-h-screen flex-col items-center justify-center bg-paper px-5 py-16 text-foreground">
-      {/* كانت هذه الصفحةُ في خريطة الموقع بلا `SeoHead` — فتُقدَّم للزاحف
-          بعنوان الرئيسة و`canonical` الرئيسة، أي أنّها لا تُفهرس أبدا. */}
-      <SeoHead {...seoFor('/verify')} />
-      <Link to="/" className="flex items-center gap-2 text-muted-foreground transition hover:text-foreground">
-        <ArrowRight className="h-4 w-4" /> أكاديمية وجيز
-      </Link>
-      <Panel className="mt-8 w-full max-w-md p-8">
-        <h1 className="text-center text-2xl font-black">التحقق من شهادة</h1>
-        <p className="mt-2 text-center text-read leading-6 text-muted-foreground">
-          أدخل رقم الشهادة (مثال: WJ-CERT-2026-00001) للتأكد من صحتها — دون كشف بيانات شخصية زائدة.
-        </p>
-        <form
-          className="mt-6 flex gap-2"
-          onSubmit={(e) => { e.preventDefault(); void check(input); }}
-        >
-          <input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="WJ-CERT-2026-…"
-            dir="ltr"
-            aria-label="رقم الشهادة"
-            /* min-w-0: عنصر flex لا ينكمش دون عرض محتواه ما لم يُسمح له،
-               وحقل النص هنا كان يدفع زر البحث خارج الشاشة الضيقة. */
-            className="min-w-0 flex-1 rounded-xl border border-white/15 bg-paper/30 px-4 py-3 font-mono text-sm text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none"
-          />
-          <button
-            type="submit"
-            disabled={state.kind === "loading"}
-            className="grid shrink-0 place-items-center rounded-xl bg-teal px-5 py-3 text-on-teal transition hover:bg-teal-light disabled:opacity-50"
-            aria-label="تحقق"
+    <div dir="rtl" className="flex min-h-screen flex-col bg-paper text-foreground">
+      <div className="flex flex-1 flex-col items-center justify-center px-5 py-16">
+        {/* كانت هذه الصفحةُ في خريطة الموقع بلا `SeoHead` — فتُقدَّم للزاحف
+            بعنوان الرئيسة و`canonical` الرئيسة، أي أنّها لا تُفهرس أبدا. */}
+        <SeoHead {...seoFor('/verify')} />
+        <Link to="/" className="flex items-center gap-2 text-muted-foreground transition hover:text-foreground">
+          <ArrowRight className="h-4 w-4" /> أكاديمية وجيز
+        </Link>
+        <Panel className="mt-8 w-full max-w-md p-8">
+          <h1 className="text-center text-2xl font-black">التحقق من شهادة</h1>
+          <p className="mt-2 text-center text-read leading-6 text-muted-foreground">
+            أدخل رقم الشهادة (مثال: WJ-CERT-2026-00001) للتأكد من صحتها — دون كشف بيانات شخصية زائدة.
+          </p>
+          <form
+            className="mt-6 flex gap-2"
+            onSubmit={(e) => { e.preventDefault(); void check(input); }}
           >
-            {state.kind === "loading" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-          </button>
-        </form>
+            <input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="WJ-CERT-2026-…"
+              dir="ltr"
+              aria-label="رقم الشهادة"
+              /* min-w-0: عنصر flex لا ينكمش دون عرض محتواه ما لم يُسمح له،
+                 وحقل النص هنا كان يدفع زر البحث خارج الشاشة الضيقة. */
+              className="min-w-0 flex-1 rounded-xl border border-white/15 bg-paper/30 px-4 py-3 font-mono text-sm text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none"
+            />
+            <button
+              type="submit"
+              disabled={state.kind === "loading"}
+              className="grid shrink-0 place-items-center rounded-xl bg-teal px-5 py-3 text-on-teal transition hover:bg-teal-light disabled:opacity-50"
+              aria-label="تحقق"
+            >
+              {state.kind === "loading" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+            </button>
+          </form>
 
-        {state.kind === "found" && state.cert.status === "active" && (
-          <Card tone="accent" className="mt-6 text-center">
-            <BadgeCheck className="mx-auto h-10 w-10 text-teal-ink" />
-            <p className="mt-3 font-black text-teal-light-ink">شهادة صحيحة ومعتمدة</p>
-            <div className="mt-3 space-y-1 text-sm text-muted-foreground">
-              <p className="font-bold">{state.cert.learnerName}</p>
-              <p>{state.cert.courseTitle}</p>
-              <p className="text-read leading-5 text-muted-foreground">إصدار المنهج: {state.cert.courseVersion}</p>
-              <p className="text-read leading-5 text-muted-foreground">
-                تاريخ الإصدار: {fmtDateLong(new Date(state.cert.issuedAt))}
-              </p>
-              <p className="font-mono text-read leading-5 text-muted-foreground">{state.cert.number}</p>
-            </div>
-          </Card>
-        )}
-
-        {state.kind === "found" && state.cert.status === "revoked" && (
-          <Card tone="danger" className="mt-6 text-center">
-            <ShieldX className="mx-auto h-10 w-10 text-red-400" />
-            <p className="mt-3 font-black text-red-300">شهادة ملغاة</p>
-            <div className="mt-3 space-y-1 text-sm text-muted-foreground">
-              <p className="font-bold">{state.cert.learnerName}</p>
-              <p>{state.cert.courseTitle}</p>
-              <p className="font-mono text-read leading-5 text-muted-foreground">{state.cert.number}</p>
-              {state.cert.revokedReason && (
-                <p className="mt-2 rounded-xl bg-paper/30 px-3 py-2 text-read leading-6 text-red-200/80">
-                  سبب الإلغاء: {state.cert.revokedReason}
+          {state.kind === "found" && state.cert.status === "active" && (
+            <Card tone="accent" className="mt-6 text-center">
+              <BadgeCheck className="mx-auto h-10 w-10 text-teal-ink" />
+              <p className="mt-3 font-black text-teal-light-ink">شهادة صحيحة ومعتمدة</p>
+              <div className="mt-3 space-y-1 text-sm text-muted-foreground">
+                <p className="font-bold">{state.cert.learnerName}</p>
+                <p>{state.cert.courseTitle}</p>
+                <p className="text-read leading-5 text-muted-foreground">إصدار المنهج: {state.cert.courseVersion}</p>
+                <p className="text-read leading-5 text-muted-foreground">
+                  تاريخ الإصدار: {fmtDateLong(new Date(state.cert.issuedAt))}
                 </p>
-              )}
-            </div>
-          </Card>
-        )}
+                <p className="font-mono text-read leading-5 text-muted-foreground">{state.cert.number}</p>
+              </div>
+            </Card>
+          )}
 
-        {state.kind === "not_found" && (
-          <Card tone="danger" className="mt-6 text-center">
-            <ShieldX className="mx-auto h-10 w-10 text-red-400" />
-            <p className="mt-3 font-black text-red-300">لا توجد شهادة بهذا الرقم</p>
-            <p className="mt-1.5 text-read leading-5 text-muted-foreground">تأكد من الرقم، أو راسلنا إن ظننت أن هناك خطأ.</p>
-          </Card>
-        )}
+          {state.kind === "found" && state.cert.status === "revoked" && (
+            <Card tone="danger" className="mt-6 text-center">
+              <ShieldX className="mx-auto h-10 w-10 text-red-400" />
+              <p className="mt-3 font-black text-red-300">شهادة ملغاة</p>
+              <div className="mt-3 space-y-1 text-sm text-muted-foreground">
+                <p className="font-bold">{state.cert.learnerName}</p>
+                <p>{state.cert.courseTitle}</p>
+                <p className="font-mono text-read leading-5 text-muted-foreground">{state.cert.number}</p>
+                {state.cert.revokedReason && (
+                  <p className="mt-2 rounded-xl bg-paper/30 px-3 py-2 text-read leading-6 text-red-200/80">
+                    سبب الإلغاء: {state.cert.revokedReason}
+                  </p>
+                )}
+              </div>
+            </Card>
+          )}
 
-        {state.kind === "offline" && (
-          <Card className="mt-6 text-center">
-            <ServerOff className="mx-auto h-10 w-10 text-muted-foreground/50" />
-            <p className="mt-3 text-sm font-bold text-muted-foreground">{state.message}</p>
-          </Card>
-        )}
-      </Panel>
+          {state.kind === "not_found" && (
+            <Card tone="danger" className="mt-6 text-center">
+              <ShieldX className="mx-auto h-10 w-10 text-red-400" />
+              <p className="mt-3 font-black text-red-300">لا توجد شهادة بهذا الرقم</p>
+              <p className="mt-1.5 text-read leading-5 text-muted-foreground">تأكد من الرقم، أو راسلنا إن ظننت أن هناك خطأ.</p>
+            </Card>
+          )}
+
+          {state.kind === "offline" && (
+            <Card className="mt-6 text-center">
+              <ServerOff className="mx-auto h-10 w-10 text-muted-foreground/50" />
+              <p className="mt-3 text-sm font-bold text-muted-foreground">{state.message}</p>
+            </Card>
+          )}
+        </Panel>
+      </div>
+      <SiteFooter />
     </div>
   );
 }

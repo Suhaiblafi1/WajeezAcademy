@@ -73,11 +73,39 @@ describe('ورأسا الموقع على روابط واحدة', () => {
     expect(shell[0]).toEqual({ label: 'من نحن', href: '/p/about' })
   })
 
-  it('والمنهجيّة خرجت من الشريط لا من الموقع — تبقى في التذييلين', () => {
+  it('والمنهجيّة خرجت من الشريط لا من الموقع — تبقى في التذييل', () => {
     expect(shell.some((l) => l.href === '/methodology'), 'المنهجيّة عادت إلى الشريط').toBe(false)
-    expect(shellSrc, 'تذييل الصفحات الداخليّة فقد رابط المنهجيّة').toMatch(/<Link to="\/methodology"/)
-    expect(homeSrc, 'تذييل الرئيسة فقد رابط المنهجيّة').toMatch(/\{ label: 'المنهجية', to: '\/methodology' \}/)
+    expect(read('src/components/SiteFooter.tsx'), 'التذييل فقد رابط المنهجيّة').toMatch(/\{ label: 'المنهجية', to: '\/methodology' \}/)
   })
+
+  /* ═══ «المدربون» في الشريط، و«انضم كمدرب» في التذييل (٢١ أكتوبر ٢٠٢٦) ═══
+
+     قرارُ صاحب المنصّة: «ضع صفحة المدربين بدلا من انضم كمدرب، واجعل انضم
+     كمدرب بالفوتر». فالشريطُ للزائر المتعلّم، وبابُ التقديم في خريطة الموقع. */
+  it('⚠️ الشريط يدلّ على صفحة المدربين لا على نموذج التقديم', () => {
+    expect(shell.some((l) => l.href === '/trainers'), 'صفحة المدربين ليست في الشريط').toBe(true)
+    expect(shell.some((l) => l.href === '/join-trainer'), '«انضم كمدرب» عاد إلى الشريط').toBe(false)
+    expect(read('src/components/SiteFooter.tsx'), 'التذييل فقد «انضم كمدرب»')
+      .toMatch(/\{ label: 'انضم كمدرب', to: '\/join-trainer' \}/)
+  })
+})
+
+/* ═══ وتذييلٌ واحدٌ في الرئيسيّة والصفحات الداخليّة (٢١ أكتوبر ٢٠٢٦) ═══
+
+   قرارُ صاحب المنصّة: «ثبّت الفوتر بكافّة الصفحات الداخليّة وليس الرئيسيّة
+   فقط». كان التذييلُ الكاملُ في `Home.tsx` وحدَه، وفي غيرها سطرُ حقوق. فالفحصُ
+   أنّ كلَّ قالبٍ عامّ يرسم `<SiteFooter />` نفسَه، ولا يكتب `<footer` بيده. */
+describe('وتذييل واحد في كل صفحة عامة', () => {
+  for (const path of [
+    'src/pages/Home.tsx', 'src/components/SiteShell.tsx', 'src/pages/Static.tsx',
+    'src/pages/Pathway.tsx', 'src/pages/CoursePath.tsx', 'src/pages/Verify.tsx',
+  ]) {
+    it(`⚠️ ${path} يرسم التذييل المشترك`, () => {
+      const src = read(path)
+      expect(src, 'لا يرسم التذييل المشترك').toMatch(/<SiteFooter \/>/)
+      expect(src, 'تذييل مكتوب باليد بجانب المشترك').not.toMatch(/<footer\b/)
+    })
+  }
 })
 
 /* ═══ ولا عرضَ بلا تنقّل، ولا تبويبَ ينكسر سطرين (٤ أكتوبر ٢٠٢٦) ═══

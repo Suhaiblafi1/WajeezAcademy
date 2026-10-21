@@ -5,6 +5,7 @@ import { staticPageBySlug, faqs } from "@/data/siteContent";
 import SeoHead from "@/components/SeoHead";
 import { publicPageByPath, seoFor } from "@/application/site/public-pages";
 import ThemeToggle from "@/components/ThemeToggle";
+import SiteFooter from "@/components/SiteFooter";
 
 import { Panel, Card } from "@/components/ui/Surface";
 
@@ -34,9 +35,7 @@ function Shell({ children }: { children: React.ReactNode }) {
                 (App.tsx) وهي هدف رابط «تجاوز إلى المحتوى». main متداخلة تجعل
                 التخطي غامضا وتُجبر قارئ الشاشة على الاختيار بين منطقتين. */}
       <div className="mx-auto max-w-3xl px-5 py-12 md:py-16">{children}</div>
-      <footer className="border-t border-white/5 py-8 text-center text-xs text-muted-foreground">
-        © 2026 أكاديمية وجيز — من مجموعة wajeez.com
-      </footer>
+      <SiteFooter />
     </div>
   );
 }
