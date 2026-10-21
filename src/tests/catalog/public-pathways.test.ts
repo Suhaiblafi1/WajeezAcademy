@@ -13,7 +13,7 @@ import bundled from '../../data/catalog/core-catalog.v2.json'
 import { publicBestsellers, publicPathwayById, publicPathways } from '@/data/public-pathways'
 import { bestsellers, pathwayById, pathwayCategory, pathwayDomain, pathwayDomains, pathways } from '@/data/pathways'
 import { courseById, courseCategories, pathwayDelivery, readyPathwayCourseIds } from '@/data/courses'
-import { listedWhole, type ListedCourses } from '@/application/catalog/listed-courses'
+import { listedWhole, shownCounts, type ListedCourses } from '@/application/catalog/listed-courses'
 
 const ready = (ids: string[]): ListedCourses => ({ state: 'ready', ids: new Set(ids) })
 const allCourseIds = [...new Set(publicPathways.flatMap((p) => p.courseIds))]
@@ -125,6 +125,26 @@ describe('القوائمُ العامّة تسرد المساراتِ العام
       const src = readFileSync(new URL(rel, import.meta.url), 'utf8')
       expect(src, 'تسرد مسارَ الكتالوج').not.toMatch(RAW_PASS)
       expect(src).toMatch(/listedWhole\(\s*publicPathways\s*,\s*listed\s*\)/)
+    })
+  }
+})
+
+/* ═══ وحجمُ الكتالوج في «من نحن» و«المنهجيّة»: ما يُعرض، وأنّه دفعةٌ أولى (٢١ أكتوبر ٢٠٢٦) ═══
+   كانتا تقولان «٢٧ مسارا في الكتالوج» والقسمُ يعرض ثمانية. */
+describe('ما يُقال عن حجم الكتالوج', () => {
+  it('⚠️ يُعدّ ما يُعرض — ولا رقمَ قبل الجواب', () => {
+    const someCourses = [{ id: 'C-BIZ-101' }, { id: 'C-X' }]
+    expect(shownCounts(publicPathways, someCourses, { state: 'loading' })).toBeNull()
+    expect(shownCounts(publicPathways, someCourses, ready(publicPathwayById('PP-BIZ')!.courseIds)))
+      .toEqual({ pathways: 1, courses: 1 })
+  })
+
+  for (const rel of ['../../pages/About.tsx', '../../pages/Methodology.tsx']) {
+    it(`⚠️ ${rel.split('/').pop()} تعدّ ما يُعرض وتقول إنّه دفعةٌ أولى`, () => {
+      const src = readFileSync(new URL(rel, import.meta.url), 'utf8')
+      expect(src, 'تعدّ مسارَ الكتالوج').not.toMatch(/(?<![\w.])pathways\.length/)
+      expect(src).toMatch(/shownCounts\(publicPathways, courses,/)
+      expect(src).toContain('TRIAL_NOTE_AR')
     })
   }
 })

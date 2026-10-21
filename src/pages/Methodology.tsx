@@ -5,7 +5,11 @@ import SeoHead from "@/components/SeoHead";
 import { seoFor } from "@/application/site/public-pages";
 import { usePublishedContent } from "@/services/public-content";
 import { publicReferences } from "@/data/methodology";
-import { pathways } from "@/data/pathways";
+import { publicPathways } from "@/data/public-pathways";
+import { courses } from "@/data/courses";
+import { countAr } from "@/application/text/count-ar";
+import { useListedCourses } from "@/services/listed-courses";
+import { TRIAL_NOTE_AR, shownCounts } from "@/application/catalog/listed-courses";
 
 import { Panel, Card } from "@/components/ui/Surface";
 /* «منهجية وجيز» — المراجع المهنية والتعليمية التي استرشدت بها الأكاديمية.
@@ -95,8 +99,11 @@ const SECTIONS: { icon: typeof Compass; q: string; a: string; refs: string[] }[]
   },
 ];
 
+const PATHWAY_FORMS = { one: "مسار", two: "مساران", few: "مسارات", many: "مسارا" };
+
 export default function Methodology() {
   usePublishedContent();
+  const counts = shownCounts(publicPathways, courses, useListedCourses());
   const refs = publicReferences();
   return (
     <SiteShell>
@@ -140,7 +147,10 @@ export default function Methodology() {
             <ArrowLeft className="h-4 w-4" />
           </Link>
           <p className="mt-3 text-read leading-5 text-muted-foreground">
-            {pathways.length} مسارا في الكتالوج، كلها مبنية بهذه المنهجية.
+            {/* ما يُعرض هذا الفصل، ومعه أنّه دفعةٌ أولى (٢١ أكتوبر ٢٠٢٦، `listed-courses.ts`) */}
+            {counts
+              ? `${countAr(counts.pathways, PATHWAY_FORMS)} مفتوحة هذا الفصل، كلها مبنية بهذه المنهجية. ${TRIAL_NOTE_AR}`
+              : TRIAL_NOTE_AR}
           </p>
         </div>
       </div>

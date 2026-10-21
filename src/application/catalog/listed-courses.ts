@@ -43,6 +43,24 @@ export function listedWhole<T extends { courseIds: readonly string[] }>(items: r
   return items.filter((p) => p.courseIds.length > 0 && p.courseIds.every((id) => listed.ids.has(id)))
 }
 
+/* ═══ وما يُقال عن حجم الكتالوج: ما يُعرض، وأنّه دفعةٌ أولى (٢١ أكتوبر ٢٠٢٦) ═══
+
+   كانت «من نحن» و«المنهجيّة» تقولان «في الكتالوج ٢٧ مسارا» والقسمُ يعرض ثمانية. فقرّر صاحبُ المنصّة
+   أن يُعدّ ما يُعرض وحدَه، و«قل إنّها تجربةٌ وإنّ المزيد قادمٌ في الفصول القادمة». */
+
+/** سطرُ الدفعة الأولى — واحدٌ في الصفحتين */
+export const TRIAL_NOTE_AR = 'هذه دفعة أولى تجريبية، ونضيف مسارات ودورات في الفصول القادمة.'
+
+/** عددُ ما يُعرض من المسارات والدورات — و`null` قبل الجواب: رقمٌ يومض ثمّ يتغيّر يُقرأ عطبا */
+export function shownCounts(
+  pathways: readonly { courseIds: readonly string[] }[],
+  courses: readonly { id: string }[],
+  listed: ListedCourses,
+): { pathways: number; courses: number } | null {
+  if (listed.state === 'loading') return null
+  return { pathways: listedWhole(pathways, listed).length, courses: listedOnly(courses, listed).length }
+}
+
 /** رموزُ الجواب — وما ليس نصّا يسقط ولا يُختلَق */
 export function listedFromResponse(raw: unknown): ReadonlySet<string> | null {
   const ids = (raw as { courseIds?: unknown } | null)?.courseIds
