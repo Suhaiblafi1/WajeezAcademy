@@ -47,9 +47,10 @@ import { cohortDayAr } from "@/application/learning/cohort-gate";
 import { grantPrice, MEMBER_GRANT_NAME_AR } from "@/application/commerce/grant";
 import {
   CAREER_LEVELS, GRANT_ACADEMY_LINE_AR, GRANT_CONSENT_AR, GRANT_GAINS_AR, GRANT_MAX_INTERESTS, GRANT_SUGGESTED_COURSES, WORK_FIELDS,
-  campaignParams, grantSavingAr, rankByInterest, suggestCourses, toggleCourse,
+  campaignParams, grantSavingAr, rankByInterest, suggestCourses, suggestPaths, toggleCourse, type GrantPathOption,
 } from "@/application/commerce/grant-landing";
 import { readStoredGrant, saveStoredGrant, type StoredGrant } from "@/services/grant-landing";
+import publicPathsData from "@/data/catalog/public-pathways.json";
 import { resumedCheckoutFor, savePendingCheckout } from "@/services/pending-checkout";
 
 interface GrantCourse { courseId: string; titleAr: string; cohortId: string; startsAt: string | null; seatsLeft?: number | null; price: number; domainAr?: string }
@@ -72,6 +73,11 @@ const BUY_TITLE_AR = "دورات منحتك";
 const money = (n: number) => fmtMoney(n, USD);
 /** «دورة» و«دورتين» بلا رقم، و«4 دورات» */
 const coursesAr = (n: number) => (n === 1 ? "دورة" : n === 2 ? "دورتين" : `${n} دورات`);
+/* المساراتُ العامّةُ بترتيب مختارات صاحب المنصّة — ومنها الرئيسيُّ والبديل (`suggestPaths`) */
+const PICK_RANK = new Map(publicPathsData.picks.map((x, i) => [x.id, i]));
+const GRANT_PATHS: GrantPathOption[] = [...publicPathsData.pathways]
+  .sort((a, b) => (PICK_RANK.get(a.id) ?? Infinity) - (PICK_RANK.get(b.id) ?? Infinity))
+  .map((x) => ({ id: x.id, title: x.title, courseIds: x.course_ids }));
 /** مجالُ دورةٍ لم تُسمَّ عائلتُها — لا يُعرض فيما يريد تطويرَه */
 const OTHER_DOMAIN = "أخرى";
 const GAIN_ICON: Record<(typeof GRANT_GAINS_AR)[number]["id"], LucideIcon> = { live: Video, recording: CirclePlay, certificate: Award };
@@ -93,6 +99,8 @@ export default function MemberGrantPage() {
   const [picked, setPicked] = useState<string[]>([]);
   /* ما اخترناه له سلفا — يبقى أعلى القائمة بشارته وإن حذفه، فلا تقفز الصفوفُ تحت يده */
   const [suggested, setSuggested] = useState<string[]>([]);
+  /* المسارُ الذي اخترنا دوراتِه له، والبديلُ الذي يبدّل إليه بضغطة */
+  const [path, setPath] = useState<{ main: GrantPathOption | null; alt: GrantPathOption | null }>({ main: null, alt: null });
   const [seeded, setSeeded] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const [buyOpen, setBuyOpen] = useState(false);
@@ -105,13 +113,18 @@ export default function MemberGrantPage() {
 
   const [resumed] = useState(() => resumedCheckoutFor(PICK_PATH));
 
-  /* الاختيارُ الأوّل مرّةً واحدةً حين يصير له كود: ما تركه قبل أن يخرج ليوثّق بريده، وإلّا أربعُ دوراتٍ نختارها
-     له بمجاله واهتمامه (`suggestCourses`) — يحذف منها ويضيف كما يشاء حتّى حدّ المنحة */
+  /* الاختيارُ الأوّل مرّةً واحدةً حين يصير له كود: ما تركه قبل أن يخرج ليوثّق بريده، وإلّا دوراتُ المسار الرئيسيّ
+     الذي يناسب مجالَه واهتمامَه (`suggestPaths`)، أو أربعُ دوراتٍ تناسبهما إن لم يناسبه مسار (`suggestCourses`) —
+     يحذف منها ويضيف كما يشاء حتّى حدّ المنحة */
   useEffect(() => {
     if (!view || !stored || seeded) return;
     const max = view.campaign.maxCourses;
-    const ours = suggestCourses(view.openCourses, stored.interests, stored.workField, Math.min(GRANT_SUGGESTED_COURSES, max));
+    const found = suggestPaths(GRANT_PATHS, view.openCourses, stored.interests, stored.workField);
+    const ours = found.main
+      ? found.main.courseIds.slice(0, max)
+      : suggestCourses(view.openCourses, stored.interests, stored.workField, Math.min(GRANT_SUGGESTED_COURSES, max));
     const open = new Set(view.openCourses.map((x) => x.courseId));
+    setPath(found);
     setSuggested(ours);
     setPicked(resumed ? resumed.intent.courseIds.filter((id) => open.has(id)).slice(0, max) : ours);
     setSeeded(true);
@@ -126,6 +139,14 @@ export default function MemberGrantPage() {
   const listTotal = chosen.reduce((sum, x) => sum + x.price, 0);
   const payTotal = grantPrice(listTotal, pct);
   const toggle = (id: string) => setPicked((p) => toggleCourse(p, id, max));
+  /* يبدّل إلى البديل: تُختار دوراتُه، ويصير الرئيسيُّ بديلا يعود إليه */
+  const switchPath = () => {
+    if (!path.alt) return;
+    const ids = path.alt.courseIds.slice(0, max);
+    setPath({ main: path.alt, alt: path.main });
+    setSuggested(ids);
+    setPicked(ids);
+  };
 
   const apply = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -200,7 +221,7 @@ export default function MemberGrantPage() {
                 {stored.code}
                 <button type="button" aria-label="انسخ الكود" onClick={() => void copy(stored.code!)} className="cursor-pointer"><Copy className="h-5 w-5" /></button>
               </p>
-              <p className="mt-1 text-read text-muted-foreground">أرسلناه إلى بريدك أيضا. يستعمل مرة واحدة، ويمكنك أن تهديه لغيرك.</p>
+              <p className="mt-1 text-read text-muted-foreground">أرسلناه إلى بريدك أيضا. يستعمل مرة واحدة، ويمكنك أن تهديه لغيرك.{lastDay ? ` آخر يوم ${lastDay}.` : ""}</p>
             </>
           ) : stored.sentTo ? (
             <p className="mt-2 text-read">لك كود منحة من قبل. أرسلناه إلى {stored.sentTo}.</p>
@@ -210,10 +231,22 @@ export default function MemberGrantPage() {
         </Card>
 
         <h2 className="mt-6 text-xl font-black">اختر دوراتك</h2>
+        {/* بقولٍ واحدٍ سهل — قرارُ صاحب المنصّة (٢١ أكتوبر ٢٠٢٦): «بيّن الأمرَ بشكلٍ سلسٍ وجميلٍ وبسيط.. فقط اختر
+            الدورات من ١-٥ التي تريد أن تندرج ضمن المنحة.. يمكنك استبدالها لاحقا بدوراتٍ أخرى باستشارة مستشارك الخاص» */}
         <p className="mt-1 text-read text-muted-foreground">
-          {suggested.length > 0 ? `اخترنا لك ${coursesAr(suggested.length)} تناسبك. احذف أو أضف كما تشاء، حتى ${max} دورات.` : `اختر من دورة واحدة إلى ${max} دورات.`}
-          {" "}ترى سعر كل دورة قبل المنحة وبعدها.{lastDay ? ` آخر يوم ${lastDay}.` : ""}
+          اختر من دورة إلى {max} دورات تريدها ضمن منحتك. ويمكنك استبدالها لاحقا بدورات أخرى بعد استشارة مستشارك الخاص.
         </p>
+        {suggested.length > 0 && (
+          <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-read">
+            <span>{path.main ? `حددنا لك دورات مسار «${path.main.title}».` : `حددنا لك ${coursesAr(suggested.length)} تناسبك.`}</span>
+            {path.alt && (
+              <>
+                <span className="text-muted-foreground">أو مسار «{path.alt.title}»</span>
+                <Button size="sm" tone="secondary" onClick={switchPath}>بدّل إليه</Button>
+              </>
+            )}
+          </p>
+        )}
         <Inset tone="accent" className="mt-3 flex items-start gap-3">
           <Video className="mt-0.5 h-5 w-5 shrink-0 text-teal-light-ink" aria-hidden="true" />
           <span className="text-read">

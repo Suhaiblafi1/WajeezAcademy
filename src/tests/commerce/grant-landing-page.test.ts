@@ -13,7 +13,7 @@ import { plainAr } from '@/application/text/plain-ar'
 import { auditActionAr } from '@/application/audit/labels'
 import {
   CAREER_LEVELS, GRANT_ACADEMY_LINE_AR, GRANT_CONSENT_AR, GRANT_GAINS_AR, GRANT_INTEREST_DOMAINS, GRANT_SUGGESTED_COURSES, WORK_FIELDS,
-  campaignParams, campaignTag, grantSavingAr, leadProfileAr, rankByInterest, suggestCourses, toggleCourse, workFieldDomains,
+  campaignParams, campaignTag, grantSavingAr, leadProfileAr, rankByInterest, suggestCourses, suggestPaths, toggleCourse, workFieldDomains,
 } from '@/application/commerce/grant-landing'
 import { courseDomain } from '@/application/catalog/course-domain'
 import { parsePendingCheckout } from '@/application/commerce/pending-checkout'
@@ -66,20 +66,21 @@ describe('بعد النموذج', () => {
     expect(PAGE).toMatch(/<ResumeCheckout ready=/)
   })
 
-  it('⚠️ قائمة دورات واحدة بلا كلمة «مسار» — كل ما يشترى اليوم، فالجديد يظهر وحده', () => {
+  it('⚠️ قائمة دورات واحدة — كل ما يشترى اليوم، فالجديد يظهر وحده', () => {
     expect(PAGE).toMatch(/const courses = rankByInterest\(view\.openCourses, \(x\) => \(ours\.has\(x\.courseId\) \? 2 \+ suggested\.length - suggested\.indexOf\(x\.courseId\) : fits\(x\)\)\)/)
     expect(PAGE).toMatch(/\{courses\.map\(\(x\) => \{/)
     expect(PAGE).toMatch(/onChange=\{\(\) => toggle\(x\.courseId\)\}/)
     expect(PAGE, 'يوم الشعبة بمنطقة الأكاديمية').toMatch(/cohortDayAr\(x\.startsAt\)/)
     /* ولا «مسار» في نصٍّ يراه — التعليقاتُ منزوعة */
-    expect(PAGE.match(/مسار/g) ?? [], 'عادت كلمة مسار إلى الصفحة').toEqual([])
+    /* و«مسار» عادت بقرار صاحب المنصّة (٢١ أكتوبر ٢٠٢٦): مسارٌ رئيسيٌّ وبديلٌ من المسارات العامّة — لا
+       مجموعاتٌ يُعدّها هو في شاشة المنحة كما كانت (الاقتراحاتُ المحذوفة) */
   })
 
   it('⚠️ دورات فقط — لا اقتراحات ولا مجموعات، ولكل دورة سعرها قبل المنحة وبعدها', () => {
-    expect(PAGE, 'عادت الاقتراحات').not.toMatch(/pathways|suggestions|اقتراحات لك|اختر هذه الدورات/)
+    expect(PAGE, 'عادت الاقتراحات').not.toMatch(/view\.pathways|\/api\/admin\/member-grant\/pathways|اقتراحات لك|اختر هذه الدورات/)
     expect(PAGE).toMatch(/قبل المنحة <span dir="ltr" className="line-through">\{money\(x\.price\)\}<\/span>/)
     expect(PAGE).toMatch(/بعد المنحة <span dir="ltr">\{money\(grantPrice\(x\.price, pct\)\)\}<\/span>/)
-    expect(PAGE).toContain('اختر من دورة واحدة إلى ${max} دورات.')
+    expect(PAGE).toContain('اختر من دورة إلى {max} دورات تريدها ضمن منحتك. ويمكنك استبدالها لاحقا بدورات أخرى بعد استشارة مستشارك الخاص.')
   })
 
   it('⚠️ وأنها مباشرة على Zoom — في أول الصفحة، وفيما يحصل عليه، وفوق القائمة، وفي كل دورة', () => {
@@ -126,6 +127,33 @@ describe('بعد النموذج', () => {
       for (const d of ds) expect(GRANT_INTEREST_DOMAINS.has(d), `${f}: ${d}`).toBe(true)
       if (f !== 'أخرى') expect(ds.length, `بلا مجالات: ${f}`).toBeGreaterThan(0)
     }
+  })
+
+  it('⚠️ مسار رئيسي وبديل — كل دوراته في المنحة، والأنسب له، ولا رئيسي بلا ملاءمة', () => {
+    const hr = courseDomain('C-HR-101'), mkt = courseDomain('C-MKT-101'), ai = courseDomain('C-AI-101'), cyb = courseDomain('C-CYB-101')
+    const pool = [
+      { courseId: 'H1', domainAr: hr }, { courseId: 'H2', domainAr: hr },
+      { courseId: 'M1', domainAr: mkt }, { courseId: 'M2', domainAr: mkt },
+      { courseId: 'A1', domainAr: ai }, { courseId: 'C1', domainAr: cyb },
+    ]
+    const people = { id: 'P-HR', title: 'الناس', courseIds: ['H1', 'H2', 'M1'] }
+    const market = { id: 'P-MKT', title: 'السوق', courseIds: ['M1', 'M2'] }
+    const half = { id: 'P-HALF', title: 'نصفه مغلق', courseIds: ['H1', 'H9'] }
+    const tech = { id: 'P-TECH', title: 'التقنية', courseIds: ['A1', 'C1'] }
+    /* مجالُ الموارد البشريّة واهتمامُه التسويق: «السوق» ٤ (٢+٢) فوق «الناس» ٤ (١+١+٢)؟ يتعادلان — فالأسبقُ في الترتيب */
+    expect(suggestPaths([people, market, tech], pool, [mkt], 'الموارد البشرية')).toEqual({ main: people, alt: market })
+    expect(suggestPaths([market, people, tech], pool, [mkt], 'الموارد البشرية').main, 'التعادل بترتيب المختارات').toBe(market)
+    /* ولا مسارَ بعضُ دوراته خارج المنحة — ولو كان أنسبَها */
+    expect(suggestPaths([half, tech], pool, [hr], 'الموارد البشرية')).toEqual({ main: null, alt: tech })
+    /* ولا رئيسيَّ بملاءمةٍ صفر: يُعرض أوّلُها بديلا، ودوراتُه الأربع من suggestCourses */
+    expect(suggestPaths([market, tech], pool, [], 'أخرى')).toEqual({ main: null, alt: market })
+    expect(suggestPaths([], pool, [mkt], 'الموارد البشرية')).toEqual({ main: null, alt: null })
+    /* وفي الصفحة: المساراتُ العامّةُ بترتيب المختارات، ودوراتُ الرئيسيّ تُختار، والبديلُ بضغطة */
+    expect(PAGE).toMatch(/import publicPathsData from "@\/data\/catalog\/public-pathways\.json";/)
+    expect(PAGE).toMatch(/const found = suggestPaths\(GRANT_PATHS, view\.openCourses, stored\.interests, stored\.workField\);/)
+    expect(PAGE).toMatch(/const ours = found\.main\s*\? found\.main\.courseIds\.slice\(0, max\)\s*: suggestCourses\(/)
+    expect(PAGE).toMatch(/<Button size="sm" tone="secondary" onClick=\{switchPath\}>/)
+    expect(PAGE).toMatch(/setPath\(\{ main: path\.alt, alt: path\.main \}\);/)
   })
 
   it('⚠️ والصفحة تختارها حين يصير له كود — وما تركه قبل توثيق بريده أولى، ولا تتجاوز الحد', () => {
@@ -190,7 +218,7 @@ describe('النصوص', () => {
     ]
     const onPage = ['احجز منحتي الآن', 'الاسم الكامل', 'رقم الواتساب', 'البريد الإلكتروني', 'مجال عملك', 'مستواك الوظيفي', 'ما الذي تريد تطويره؟',
       'سؤالان اختياريان لنرتب لك الدورات', 'كود منحتك', 'اختر دوراتك',
-      'كل الدورات المتاحة', 'كل الدورات مباشرة على Zoom', 'قبل المنحة', 'بعد المنحة', 'اخترناها لك', 'تناسبك. احذف أو أضف كما تشاء', 'يناسب ما تريد تطويره', 'لست متأكدا؟ تواصل مع مستشار', 'اطلب مستشارا', 'ادفع الآن']
+      'كل الدورات المتاحة', 'كل الدورات مباشرة على Zoom', 'قبل المنحة', 'بعد المنحة', 'اخترناها لك', 'حددنا لك دورات مسار', 'تناسبك.', 'أو مسار', 'بدّل إليه', 'يناسب ما تريد تطويره', 'لست متأكدا؟ تواصل مع مستشار', 'اطلب مستشارا', 'ادفع الآن']
     for (const t of [...data, ...onPage]) expect(t).toBe(plainAr(t))
     for (const t of onPage) expect(PAGE).toContain(t)
     expect(auditActionAr('coupon.grant_apply')).not.toBe('coupon.grant_apply')
