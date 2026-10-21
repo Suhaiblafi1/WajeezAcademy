@@ -123,8 +123,10 @@ describe('بطاقةُ الدورة — وسمان لا وسمٌ ومساحةٌ 
 
   it('وهو الوسمُ نفسُه الذي تعرضه الرقاقاتُ — لا قائمةٌ ثانية', () => {
     /* الرقاقاتُ تُبنى من `pathwayDomains`، والتصفيةُ تقارن بـ`pathwayDomain`.
-       فلو صُنع للبطاقة معجمٌ آخرُ لقرأ الزائرُ اسمين للشيء الواحد. */
-    expect(CATALOG).toContain('pathwayDomains.map(')
+       فلو صُنع للبطاقة معجمٌ آخرُ لقرأ الزائرُ اسمين للشيء الواحد.
+       وفي قسم الدورات تُرشَّح القائمةُ نفسُها إلى ما فيه دورةٌ معروضة (٢١ أكتوبر ٢٠٢٦، `listed-courses.ts`) —
+       ترشيحٌ من المعجم الواحد لا معجمٌ ثانٍ. */
+    expect(CATALOG).toMatch(/pathwayDomains\.(?:map|filter)\(/)
     expect(CATALOG).toContain('pathwayDomain(c.pathwayId) === cat')
   })
 
