@@ -201,13 +201,13 @@ export default function CourseJourney({
                   )}
                   {/* وحيث لا منتقيَ (نتيجةُ التشخيص) سطرٌ واحد: تبدأ متى — أو لم تفتح بعد */}
                   {!showSchedule && cohortsLoaded && (cohorts.get(c.id)?.length ?? 0) > 0 && (
-                    <p className="mt-1.5 flex items-center gap-1.5 text-fine font-bold text-teal-light-ink">
+                    <p className="mt-1.5 flex items-center gap-1.5 text-read font-bold text-teal-light-ink">
                       <CalendarDays className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                       شعبة مفتوحة · تبدأ {cohortDayAr(cohorts.get(c.id)![0].startsAt)}
                     </p>
                   )}
                   {!showSchedule && cohortsLoaded && (cohorts.get(c.id)?.length ?? 0) === 0 && (
-                    <p className="mt-1.5 flex items-center gap-1.5 text-fine font-bold text-muted-foreground">
+                    <p className="mt-1.5 flex items-center gap-1.5 text-read font-bold text-muted-foreground">
                       <CalendarDays className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                       {runningOnly(c.id) ? COHORT_RUNNING_AR : "لم تفتح شعبتها بعد"}
                     </p>
