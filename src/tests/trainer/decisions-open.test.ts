@@ -86,10 +86,12 @@ describe('وكلّ قرار متاح من كلّ حالة حيّة', () => {
     /* والعكسان بابُهما حالتُهما: لا يُتراجَع عن ردٍّ لم يقع، ولا يُرفع إيقافٌ
        عمّن ليس موقوفا. وهما خارجُ هذا الفحص بقصد. */
     const REVERSALS = ['undo_reject', 'undo_withdraw', 'reinstate']
+    /* و«اقبله داخليّا» لا يُعرض على من في «تهيئة» — يغلق بوّابةً فتحها اعتمادُ توقيعه (٢١ أكتوبر ٢٠٢٦) */
+    const CLOSED: Record<string, string> = { conditionally_approve: 'onboarding' }
     for (const d of DECISIONS) {
       if (REVERSALS.includes(d.action)) continue
       for (const st of REVIEW_OPEN_STATUSES) {
-        if (SELF[d.action] === st) {
+        if (SELF[d.action] === st || CLOSED[d.action] === st) {
           expect(d.from, `«${d.action}» يعرض على من هو في ${st} أصلا`).not.toContain(st)
           continue
         }

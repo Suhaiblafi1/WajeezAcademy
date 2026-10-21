@@ -34,9 +34,14 @@ import { cleanCourseMaterials, type CourseMaterials } from '../../src/applicatio
 import { readContractCourses } from '../../src/application/trainer/contract-body'
 import { PLAN_MAX, PLAN_TITLE_MIN } from '../../src/application/trainer/plan-limits'
 import { prepTallyOf, type PrepTally } from '../../src/application/trainer/prep-tally'
+import { REVIEW_OPEN_STATUSES } from '../../src/application/trainer/approval'
+import { TrainerApplicationService, transitionProblemAr, type TrainerStatus } from './trainer-application.service'
 
 /** خطّةُ شعبةٍ اعتمدناها — وهي وحدَها ما يفعّل المدرّبَ ويوقّع عقدَه (٢٠ أكتوبر ٢٠٢٦، رأسُ `activateIfQualified`) */
 const APPROVED_PLAN = ['approved', 'published']
+
+/** عقدٌ اعتُمد توقيعُه — خُتم معه أم لم يُختم بعد */
+const SIGNATURE_APPROVED = ['signature_approved', 'countersigned']
 
 /** جرسُ «اعتمدت دورة لمدرّب ولم يفعّل» مرّةً في الأسبوع للمدرّب الواحد — والمحاولةُ تُعاد في العامل كلَّ ربع ساعة */
 const BLOCKED_NOTICE_EVERY_MS = 7 * 86_400_000
@@ -581,6 +586,43 @@ export class TrainerPrepService {
       else if ('told' in r2 && r2.told) blocked++
     }
     return { activated, blocked }
+  }
+
+  /* ═══ ومن رُدّ عن التهيئة وتوقيعُه معتمَدٌ يعود إليها (٢١ أكتوبر ٢٠٢٦) ═══
+
+     اعتمادُ التوقيع ينقله إلى «تهيئة» فتُفتح بوّابتُه (`approveSignature`). ثمّ ضُغط على مدرّبةٍ فيها «اقبله
+     داخليّا» — وكان الزرَّ الموصى به — فرجعت «قبولا داخليّا»: أُغلقت بوّابتُها، وقالت لها «دوراتي» «حسابك
+     التدريبي موقوف»، وعقدُها معتمَدُ التوقيع لا يُعتمَد ثانيةً ليعيدها. واختار صاحبُ المنصّة «A for everyone
+     has the same case»: يُعاد كلُّ من هذا حالُه، وأُخفي الزرُّ عمّن في التهيئة (`decisions.ts`).
+
+     وحالُه: طلبُه حيٌّ قبل التهيئة، وآخرُ عقدٍ له غيرُ مُزاحٍ عقدٌ مشروطٌ اعتُمد توقيعُه — فمن أُرسل إليه
+     عقدٌ جديدٌ بعده لا يُمَسّ، وطريقُه توقيعُ الجديد. والموقوفُ لا يُمَسّ. */
+  async restoreSentBackOnboarding(): Promise<string[]> {
+    const before = REVIEW_OPEN_STATUSES.filter((s) => s !== 'onboarding')
+    const rows = await this.prisma.trainerProfile.findMany({
+      where: {
+        suspendedAt: null,
+        application: { status: { in: [...before] } },
+        contracts: { some: { gatesActivation: true, status: { in: SIGNATURE_APPROVED }, signatureApprovedAt: { not: null } } },
+      },
+      select: {
+        id: true, applicationId: true, application: { select: { status: true } },
+        contracts: {
+          where: { status: { not: 'superseded' } }, orderBy: { createdAt: 'desc' }, take: 1,
+          select: { status: true, gatesActivation: true, signatureApprovedAt: true },
+        },
+      },
+    })
+    const apps = new TrainerApplicationService(this.prisma)
+    const restored: string[] = []
+    for (const r of rows) {
+      const last = r.contracts[0]
+      if (!last?.gatesActivation || !last.signatureApprovedAt || !SIGNATURE_APPROVED.includes(last.status)) continue
+      if (transitionProblemAr(r.application.status as TrainerStatus, 'onboarding') !== null) continue
+      await apps.transition(r.applicationId, 'onboarding', null, 'توقيعه معتمد — أعيد إلى التهيئة بعد أن رد عنها')
+      restored.push(r.id)
+    }
+    return restored
   }
 
   /* ═══ وعقدُ النشط المعتمَدُ كالعقود الجديدة يوقَّع حين تكتمل دوراتُه (١٧ أكتوبر ٢٠٢٦) ═══
