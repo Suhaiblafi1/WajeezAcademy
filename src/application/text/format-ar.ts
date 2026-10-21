@@ -1,4 +1,5 @@
 import { withCurrencyAr } from '../commerce/presentment'
+import { ACADEMY_ZONE } from '../trainer/cohort-period'
 
 /* تنسيقُ الأرقام والتواريخ — لغةٌ واحدة للرقم في الواجهة كلِّها.
 
@@ -21,6 +22,68 @@ import { withCurrencyAr } from '../commerce/presentment'
 
 /** اللغةُ الوحيدة: عربيّةٌ بأرقامٍ لاتينيّة وتقويمٍ ميلاديّ */
 export const UI_LOCALE = 'ar-u-nu-latn-ca-gregory'
+
+/* ═══ والساعةُ ساعةُ عمّان — ومعها ساعةُ الجهاز إن اختلفت (٢١ أكتوبر ٢٠٢٦) ═══
+
+   كانت المنسّقاتُ هنا بلا منطقة، فتُقرأ كلُّ لحظةٍ بساعة جهاز من يراها. واللقاءُ يُكتب
+   بتوقيت عمّان (`SlotSessions.tsx`) — فاختارت مدرّبةٌ الحاديةَ عشرةَ ليومٍ في ديسمبر،
+   فرأته العاشرة: جهازُها على توقيت بيروت، وبيروت ساعةٌ خلفَ عمّان في الشتاء وحدَه (عمّان
+   على +3 طوالَ السنة منذ ٢٠٢٢). ورسائلُ الخادم كانت تكتبه بساعة الخادم — غرينتش.
+
+   فاختار صاحبُ المنصّة (الخيارَ ٣): الساعةُ بتوقيت عمّان في كلّ موضع، وإن خالفتها ساعةُ
+   الجهاز في تلك اللحظة أُلحقت بها — «11:00 ص بتوقيت عمّان · 10:00 ص بتوقيتك». وما
+   وافقها لا يُلحق به شيء، فمن في الأردن لا يرى زيادة. وعلى الخادم لا جهازَ يُقرأ: عمّان وحدَها.
+
+   واليومُ كذلك يومُ عمّان: بدءُ الشعبة منتصفُ ليلها هناك، وهو بغرينتش مساءُ اليوم السابق.
+   ومن مرّر منطقةً بنفسه (`timeZone`) فقد اختار — تُحترم ولا يُلحق بها شيء. */
+const DISPLAY_ZONE = ACADEMY_ZONE
+
+/** منطقةُ جهاز من يرى — في المتصفّح وحدَه */
+function viewerZone(): string | null {
+  if (typeof window === 'undefined') return null
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || null
+  } catch {
+    return null
+  }
+}
+
+/** ساعةُ الجهاز تُلحق بساعة عمّان حين تخالفها — ويومُه معها إن كان يوما آخر */
+function withViewerClock(d: Date, opts: Intl.DateTimeFormatOptions, text: string): string {
+  const zone = viewerZone()
+  if (!zone || zone === DISPLAY_ZONE) return text
+  const clock: Intl.DateTimeFormatOptions = {
+    hour: opts.hour ?? 'numeric', minute: opts.minute ?? '2-digit',
+    ...(opts.hourCycle ? { hourCycle: opts.hourCycle } : {}),
+  }
+  const here = d.toLocaleTimeString(UI_LOCALE, { ...clock, timeZone: zone })
+  const there = d.toLocaleTimeString(UI_LOCALE, { ...clock, timeZone: DISPLAY_ZONE })
+  const dayHere = d.toLocaleDateString(UI_LOCALE, { weekday: 'long', timeZone: zone })
+  const dayThere = d.toLocaleDateString(UI_LOCALE, { weekday: 'long', timeZone: DISPLAY_ZONE })
+  if (here === there && dayHere === dayThere) return text
+  return `${text} بتوقيت عمّان · ${dayHere === dayThere ? '' : `${dayHere} `}${here} بتوقيتك`
+}
+
+/** تنسيقٌ بمنطقة عمّان — وساعةُ الجهاز معه إن كان فيه ساعة */
+function zoned(d: Date, opts: Intl.DateTimeFormatOptions | undefined, kind: 'date' | 'time' | 'both'): string {
+  if (opts?.timeZone) {
+    return kind === 'date' ? d.toLocaleDateString(UI_LOCALE, opts)
+      : kind === 'time' ? d.toLocaleTimeString(UI_LOCALE, opts)
+        : d.toLocaleString(UI_LOCALE, opts)
+  }
+  const o = { ...(opts ?? {}), timeZone: DISPLAY_ZONE }
+  const text = kind === 'date' ? d.toLocaleDateString(UI_LOCALE, o)
+    : kind === 'time' ? d.toLocaleTimeString(UI_LOCALE, o)
+      : d.toLocaleString(UI_LOCALE, o)
+  const hasClock = kind === 'time' || (opts ? opts.hour !== undefined || opts.timeStyle !== undefined : kind === 'both')
+  return hasClock ? withViewerClock(d, opts ?? {}, text) : text
+}
+
+/** الساعةُ وحدَها بأربعةٍ وعشرين — «14:30» بتوقيت عمّان، وساعةُ الجهاز معها إن خالفتها */
+export function fmtClock24(v: DateLike): string {
+  const d = toDate(v)
+  return d ? zoned(d, { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }, 'time') : '—'
+}
 
 type DateLike = string | number | Date
 
@@ -55,43 +118,43 @@ export function fmtMoney(n: number, currency = 'USD'): string {
  *  ويحرسه `src/tests/text/ltr-dates.test.ts`. والحكمُ نفسُه لـ`fmtDateTime`. */
 export function fmtDate(v: DateLike): string {
   const d = toDate(v)
-  return d ? d.toLocaleDateString(UI_LOCALE) : '—'
+  return d ? zoned(d, undefined, 'date') : '—'
 }
 
 /** تاريخٌ مطوّل: «31 أغسطس 2026» */
 export function fmtDateLong(v: DateLike): string {
   const d = toDate(v)
-  return d ? d.toLocaleDateString(UI_LOCALE, { year: 'numeric', month: 'long', day: 'numeric' }) : '—'
+  return d ? zoned(d, { year: 'numeric', month: 'long', day: 'numeric' }, 'date') : '—'
 }
 
 /** يومٌ وشهر بلا سنة: «31 أغسطس» */
 export function fmtDayMonth(v: DateLike): string {
   const d = toDate(v)
-  return d ? d.toLocaleDateString(UI_LOCALE, { day: 'numeric', month: 'long' }) : '—'
+  return d ? zoned(d, { day: 'numeric', month: 'long' }, 'date') : '—'
 }
 
 /** تاريخٌ ووقت: «31‏/8‏/2026، 6:30 م» */
 export function fmtDateTime(v: DateLike): string {
   const d = toDate(v)
-  return d ? d.toLocaleString(UI_LOCALE) : '—'
+  return d ? zoned(d, undefined, 'both') : '—'
 }
 
 /** وقتٌ وحده: «06:30 م» */
 export function fmtTime(v: DateLike): string {
   const d = toDate(v)
-  return d ? d.toLocaleTimeString(UI_LOCALE, { hour: '2-digit', minute: '2-digit' }) : '—'
+  return d ? zoned(d, { hour: '2-digit', minute: '2-digit' }, 'time') : '—'
 }
 
 /** موعدُ جلسة: «الاثنين، 31 أغسطس، 6:30 م» */
 export function fmtSession(v: DateLike): string {
   const d = toDate(v)
   return d
-    ? d.toLocaleString(UI_LOCALE, { weekday: 'long', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+    ? zoned(d, { weekday: 'long', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }, 'both')
     : '—'
 }
 
 /** تنسيقٌ حرّ حين لا يكفي ما سبق — واللغةُ فيه مثبَّتة */
 export function fmtDateWith(v: DateLike, opts: Intl.DateTimeFormatOptions): string {
   const d = toDate(v)
-  return d ? d.toLocaleString(UI_LOCALE, opts) : '—'
+  return d ? zoned(d, opts, 'both') : '—'
 }

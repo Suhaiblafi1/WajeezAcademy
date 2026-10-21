@@ -1,5 +1,6 @@
 import { isDayCode, type DayCode } from '@/application/schedule/days';
-import { fmtDateWith, fmtSession } from "@/application/text/format-ar";
+import { fmtClock24, fmtDateWith, fmtSession } from "@/application/text/format-ar";
+import { zonedDay } from "@/application/trainer/cohort-period";
 /* ─────────── تنسيق وقت عربي موحد لكل البوابات ───────────
    القريب نسبي («قبل 3 أيام»، «غدا 14:30») والبعيد تاريخ كامل.
    يقبل ISO كاملا أو تاريخا فقط (YYYY-MM-DD) أو الصيغة الناقصة (YYYY-MM-DDTHH:MM). */
@@ -10,12 +11,13 @@ function plural(n: number, one: string, two: string, few: string): string {
   return `${n} ${few}`;
 }
 
+/* والساعةُ واليومُ بتوقيت عمّان — والعلّةُ في رأس `format-ar.ts` (٢١ أكتوبر ٢٠٢٦) */
 function hhmm(d: Date): string {
-  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  return fmtClock24(d);
 }
 
 function fullDate(d: Date): string {
-  return d.toISOString().slice(0, 10);
+  return zonedDay(d);
 }
 
 export function fmtWhen(iso?: string): string {
