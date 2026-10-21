@@ -49,6 +49,8 @@ import { Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import ModuleBodyUpload from "@/components/ModuleBodyUpload";
 import { zonedAt, zonedDay } from "@/application/trainer/cohort-period";
+import { NearbyWarn } from "./NearbyTimes";
+import { nearbyHits, useNearbyTimes } from "./nearby-times";
 import {
   SHORT_SESSION_AR, firstToFor, fromSlots, sessionTooShort, slotLabelAr, toSlotsFor,
 } from "@/application/trainer/session-length";
@@ -103,6 +105,7 @@ export default function TrainerSchedule({
   const [rows, setRows] = useState<PreviewRow[]>([]);
   const [attachment, setAttachment] = useState<Attachment>({});
   const [busy, setBusy] = useState(false);
+  const nearby = useNearbyTimes(cohortId);
 
   const load = useCallback(() => {
     apiGet<ScheduleWindow>(`/api/trainer/cohorts/${cohortId}/schedule-window`)
@@ -263,6 +266,8 @@ export default function TrainerSchedule({
             </select>
           </StaffField>
         </div>
+        {/* ولقاءاتُ الدورات القريبة — ينصح ولا يمنع (`NearbyTimes.tsx`) */}
+        {mode === "single" && <NearbyWarn hits={nearbyHits(nearby, form.date, form.from, form.to)} />}
 
         {mode === "series" && (
           <>
@@ -355,6 +360,9 @@ export default function TrainerSchedule({
                         onChange={(e) => setRows(rows.map((x) => (x.key === r.key ? { ...x, title: e.target.value } : x)))}
                         className={`${staffControlCls} min-w-40 flex-1 ${r.outside ? "line-through opacity-70" : ""}`} />
                       {r.outside && <span className="shrink-0 text-fine font-black text-gold-ink">{r.reasonAr}</span>}
+                      {!r.outside && nearbyHits(nearby, r.date, form.from, form.to).length > 0 && (
+                        <span className="shrink-0 text-fine font-black text-gold-ink">فيه دورة قريبة</span>
+                      )}
                       <Button tone="ghost" size="sm" icon={Trash2} aria-label={`احذف اللقاء ${i + 1}`}
                         onClick={() => setRows(rows.filter((x) => x.key !== r.key))}>
                         أزل
@@ -362,6 +370,7 @@ export default function TrainerSchedule({
                     </li>
                   ))}
                 </ul>
+                <NearbyWarn hits={keep.flatMap((r) => nearbyHits(nearby, r.date, form.from, form.to))} />
               </Inset>
             )}
           </>

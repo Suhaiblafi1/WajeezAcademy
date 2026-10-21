@@ -20,6 +20,7 @@ import { RetrievalService } from '../../services/retrieval.service'
 import { ScenarioService } from '../../services/scenario.service'
 import { MAX_BODY_CHARS } from '../../services/module-authoring.service'
 import { PlanEditService } from '../../services/plan-edit.service'
+import { TermClashService } from '../../services/term-clash.service'
 import { DeadlinesService } from '../../services/deadlines.service'
 import { CohortMessageService } from '../../services/cohort-message.service'
 import { CohortMoveService } from '../../services/cohort-move.service'
@@ -768,6 +769,16 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     return planEdits.forTrainer(req.auth!.userId, id)
+  })
+
+  /* ═══ وأوقاتُ الدورات القريبة من دورتي — أتجنّبها وأنا أختار موعدَ لقائي (٢٢ أكتوبر ٢٠٢٦، `term-clash.service.ts`) ═══ */
+  const clashes = new TermClashService(prisma)
+  app.get('/api/trainer/cohorts/:id/nearby-times', {
+    preHandler: requirePermission('trainer.cohort.plan'),
+    schema: { tags: ['trainer-ops'], summary: 'لقاءات دورات قريبة من دورتي في نافذة جدولتها — لأتجنب التعارض' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return { nearby: await clashes.nearbyFor(req.auth!.userId, id) }
   })
 
   app.post('/api/trainer/plan-edits/:editId/accept', {

@@ -26,6 +26,8 @@ import {
 } from "@/application/trainer/session-picker";
 import { WEEKDAY_AR } from "@/application/trainer/plan-scorecard";
 import SlotDaySelect from "./SlotDaySelect";
+import { NearbyWarn } from "./NearbyTimes";
+import { nearbyHits, useNearbyTimes } from "./nearby-times";
 
 const at = (date: string, clock: string) => {
   const m = toMinutes(clock) ?? 0;
@@ -58,6 +60,8 @@ export default function WeeklySessions({
   /* الصفوفُ المقترحة — تُبنى حين يختار اليوم، ثمّ هي بيده */
   const [rows, setRows] = useState<Row[] | null>(null);
   const [busy, setBusy] = useState(false);
+  /* ولقاءاتُ الدورات القريبة — تُوسم الساعةُ إن وقعت عليها في أيّ أسبوع، ويُنبَّه في صفّها (`NearbyTimes.tsx`) */
+  const nearby = useNearbyTimes(cohortId);
   const FROM = useMemo(() => fromSlots(), []);
   const TO = useMemo(() => toSlotsFor(from), [from]);
 
@@ -130,7 +134,8 @@ export default function WeeklySessions({
             {FROM.map((c) => {
               /* يومُ عملٍ يُعلَّم وقتُ عمله — والعلامةُ من أوّل صفٍّ مقترح، فكلُّها اليومُ نفسُه */
               const note = rows?.[0]?.date ? fromClockNote(rows[0].date, c) : null;
-              return <option key={c} value={c}>{slotLabelAr(c)}{note ? ` · ${note}` : ""}</option>;
+              const near = (rows ?? []).some((r) => nearbyHits(nearby, r.date, c).length > 0);
+              return <option key={c} value={c}>{slotLabelAr(c)}{note ? ` · ${note}` : ""}{near ? " · فيها دورة قريبة" : ""}</option>;
             })}
           </select>
         </StaffField>
@@ -184,6 +189,7 @@ export default function WeeklySessions({
                 {!problem && !weeks && r.date && slot && lateInSlot(r.date, slot) && (
                   <p className="text-read leading-6 text-muted-foreground">بعد أوّل ثلاثة أيّام من الموعد — ولك أن تبقيه.</p>
                 )}
+                {!problem && from && to && <NearbyWarn hits={nearbyHits(nearby, r.date, from, to)} />}
               </Inset>
             );
           })}
