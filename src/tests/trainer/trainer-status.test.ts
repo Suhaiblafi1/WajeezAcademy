@@ -6,7 +6,7 @@
    ④ والغائبُ بطلبٍ غيرِ نشطٍ لا يُطلب اعتمادُ ظهوره — الزرُّ يرفضه — بل يقال طورُ طلبه. */
 
 import { describe, expect, it } from 'vitest'
-import { quietLineAr, stepsLineAr, trainerStateOf, trainerSteps, type StatusInput } from '@/application/trainer/trainer-status'
+import { approvedToAccept, quietLineAr, stepsLineAr, trainerStateOf, trainerSteps, type StatusInput } from '@/application/trainer/trainer-status'
 
 const base: StatusInput = {
   suspended: false, hasAccount: true, applicationStatus: 'active',
@@ -105,6 +105,27 @@ describe('حال المدرب وما ينتظره', () => {
     const x = t({ queue: { requests: 1, toAccept: 3 } })
     expect(ars(x, 'you')).toContain('البت في طلب تأهيل')
     expect(ars(x, 'trainer')).toContain('قبول 3 دورات عرضت عليه')
+  })
+
+  it('⚠️ والمعتمدة بلا شعبة تنتظره هو لا «بلا شعبة» — ومن انتهت شعبته فيها لا يعرض عليه قبولها', () => {
+    const qualifications = [
+      { courseId: 'a', status: 'qualified' },
+      { courseId: 'b', status: 'qualified' },
+      { courseId: 'c', status: 'qualified' },
+      { courseId: 'd', status: 'pending' },
+      { courseId: 'e', status: 'rejected' },
+    ]
+    const cohorts = [
+      { courseId: 'b', status: 'completed' },
+      { courseId: 'c', status: 'cancelled' },
+    ]
+    /* a بلا شعبة، وc شعبتها ملغاة فكأن لا شعبة. وb انتهت شعبتها، والمعلقة والمرفوضة ليستا معتمدتين */
+    expect(approvedToAccept({ qualifications, cohorts })).toBe(2)
+
+    const x = t({ cohorts: [], queue: { requests: 0, toAccept: approvedToAccept({ qualifications: [qualifications[0]], cohorts: [] }) } })
+    expect(ars(x, 'trainer')).toContain('قبول دورة عرضت عليه')
+    expect(trainerStateOf(x)).toBe('trainer')
+    expect(approvedToAccept({ qualifications: [qualifications[1]], cohorts: [cohorts[0]] })).toBe(0)
   })
 
   it('والاقتراحات: المسودة عليك لمن تصله، والمرسل الذي لم يجب عليه', () => {

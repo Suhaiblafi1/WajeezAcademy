@@ -145,6 +145,23 @@ export function stepsLineAr(steps: TrainerStep[], turn: Turn): string | null {
   return `${turn === 'you' ? 'المطلوب منك' : 'المطلوب منه'}: ${mine.join(' · ')}`
 }
 
+/* ═══ والمعتمَدةُ بلا شعبةٍ تنتظره هو (٢١ أكتوبر ٢٠٢٦) ═══
+
+   كان «قبولُ دورةٍ عُرضت عليه» يُعدّ من طابور التأهيل وحدَه — والطابورُ صفوفٌ معلّقة. والدورةُ المعتمَدةُ له
+   بلا شعبةٍ يقبلها هو في «مؤهّلاتي» فتُنشأ مسوّدتُها (قرارُ ٣ أكتوبر «B»، `approvedWithoutCohort`) — فلا تُعدّ.
+   فقالت البطاقةُ لمدرّبٍ نشطٍ ينتظر قبولُه «بلا شعبة — يسند من صفحة الشعبة»، فسأل صاحبُ المنصّة: «لماذا لم تكن
+   تلقائيا كالعادة؟». واختار «A»: يُقال إنّها تنتظره، ويبقى القبولُ قبولَه.
+
+   والقاعدةُ قاعدةُ الخادم: معتمَدةٌ ولا شعبةَ له فيها غيرَ ملغاة. فمن انتهت شعبتُه فيها لا يُعرض عليه قبولُها —
+   الشعبُ الزائدةُ تنشئها الإدارة — ويبقى بلا شعبة. */
+export function approvedToAccept(t: {
+  qualifications: { courseId: string; status: string }[]
+  cohorts: { courseId: string; status: string }[]
+}): number {
+  const held = new Set(t.cohorts.filter((c) => c.status !== 'cancelled').map((c) => c.courseId))
+  return new Set(t.qualifications.filter((q) => q.status === 'qualified' && !held.has(q.courseId)).map((q) => q.courseId)).size
+}
+
 /** ما يقال حين لا ينتظر شيء — والغائبُ بطلبٍ غيرِ نشطٍ يقال طورُ طلبه، فهو ما ينشره حين ينشط */
 export function quietLineAr(state: TrainerState, applicationStatus: string): string | null {
   if (state === 'hidden') {
