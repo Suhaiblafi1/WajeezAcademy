@@ -9,7 +9,7 @@ import { NO_SHOW, interviewHeld } from '../../src/application/trainer/interview-
 import {
   ACCEPTED_TRAINER_STATUSES, ENDED_TRAINER_STATUSES, PAST_TITLE_ACTIONS, acceptedCourseRows, pastTitleFromAudit,
 } from '../../src/application/trainer/accepted-courses'
-import { suggestCourses } from '../../src/application/trainer/proposal-match'
+import { suggestCourses, trainerFamilies } from '../../src/application/trainer/proposal-match'
 import { readMatchableCourses } from './course-proposal.service'
 import { AdvisorService, attributedRevenue } from './advisor.service'
 import { AdvisorPayoutService } from './advisor-payout.service'
@@ -708,6 +708,7 @@ export class ReportsService {
               select: { id: true, currentVersion: true, versions: { select: { version: true, titleAr: true } } },
             }),
           ])
+          const familyCache = new WeakMap<object, Set<string>>()
           const titles = new Map(all.map((c) => [
             c.id, c.versions.find((v) => v.version === c.currentVersion)?.titleAr ?? c.id,
           ]))
@@ -728,8 +729,11 @@ export class ReportsService {
             })),
             {
               titleOf: (id) => titles.get(id) ?? null,
-              nearest: (pr) => {
-                const m = suggestCourses(pr, matchable, 1)[0]
+              /* ومجالُ صاحبه يُحسب مرّةً لكلّ مدرّب — لا لكلّ صفّ */
+              nearest: (pr, trainer) => {
+                let families = familyCache.get(trainer)
+                if (!families) familyCache.set(trainer, families = trainerFamilies(trainer, matchable))
+                const m = suggestCourses(pr, matchable, 1, { families })[0]
                 return m ? { courseId: m.courseId, titleAr: m.titleAr } : null
               },
             },
