@@ -36,3 +36,23 @@ export function listedFromResponse(raw: unknown): ReadonlySet<string> | null {
   if (!Array.isArray(ids)) return null
   return new Set(ids.filter((x): x is string => typeof x === 'string' && x.length > 0))
 }
+
+/* ═══ والتشخيصُ: ما يُشترى الآن أوّلا (٢١ أكتوبر ٢٠٢٦) ═══
+
+   اختار صاحبُ المنصّة للتشخيص: «ما يُشترى أوّلا، والباقي "لم تفتح شعبتُه بعد"» — لا «المعروضُ
+   وحدَه» (يختار من ثلاثين دورةً بدل مئةٍ وتسع وخمسين فتضعف التوصية)، ولا «بلا تغيير». فالمحرّكُ
+   يرشّح كما كان، والعرضُ يقدّم ما له شعبة: في مقترحات الاستبدال والإضافة، وفي سطر كلّ دورة. */
+
+/** ما له شعبةٌ أوّلا — بترتيبه بين المتساويين. والمجهولُ لا يُعاد ترتيبُه */
+export function listedFirst<T extends { id: string }>(items: readonly T[], listed: ListedCourses): T[] {
+  if (listed.state !== 'ready') return [...items]
+  const on = items.filter((c) => listed.ids.has(c.id))
+  const off = items.filter((c) => !listed.ids.has(c.id))
+  return [...on, ...off]
+}
+
+/** سطرُ الحال تحت اقتراحٍ — و`null` حين لا يُعرف */
+export function availabilityNoteAr(courseId: string, listed: ListedCourses): string | null {
+  if (listed.state !== 'ready') return null
+  return listed.ids.has(courseId) ? 'لها شعبة' : 'لم تفتح شعبتها بعد'
+}

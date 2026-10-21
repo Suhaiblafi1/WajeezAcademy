@@ -1,7 +1,10 @@
 import { useCourseCohorts } from "@/services/cohort-prices";
-import CohortPicker from "@/components/CohortPicker";
+import CohortPicker, { COHORT_RUNNING_AR } from "@/components/CohortPicker";
+import CourseInterestForm from "@/components/CourseInterestForm";
+import { useListedCourses } from "@/services/listed-courses";
+import { cohortDayAr } from "@/application/learning/cohort-gate";
 import { useEffect, useState } from "react";
-import { ChevronDown, Clock3, Target, ListChecks, FolderKanban, Award, RefreshCcw, X, Gift, Plus, UserRound, LifeBuoy, Tag, Trophy } from "lucide-react";
+import { CalendarDays, ChevronDown, Clock3, Target, ListChecks, FolderKanban, Award, RefreshCcw, X, Gift, Plus, UserRound, LifeBuoy, Tag, Trophy } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { courseFullById, weeksLabel, MIN_PATHWAY_COURSES, MAX_PATHWAY_COURSES } from "@/data/courses";
 import { apiGet } from "@/services/api";
@@ -90,7 +93,12 @@ export default function CourseJourney({
   onPick?: (courseId: string, cohortId: string) => void;
 }) {
   /* نداءٌ واحد للمواعيد، والاختيار محفوظٌ بالدورة — يُقرأ عند الشراء */
-  const { cohorts } = useCourseCohorts();
+  const { cohorts, loaded: cohortsLoaded } = useCourseCohorts();
+  /* ═══ وحالُ شعبة كلّ دورة — ما يُشترى الآن، وما لم تفتح شعبتُه بعد (٢١ أكتوبر ٢٠٢٦) ═══
+     اختيارُ صاحب المنصّة للتشخيص: «ما يُشترى أوّلا، والباقي "لم تفتح شعبتُه بعد — أخبرني"». فكلُّ دورةٍ
+     بلا شعبةٍ تُلتحق تحمل «أبلغني» في سطرها، والتي اكتملت شعبتُها أو بدأت تَعِد بالتالية (`listed-courses.ts`). */
+  const listed = useListedCourses();
+  const runningOnly = (id: string) => listed.state === "ready" && listed.ids.has(id);
   const [pickedHere, setPickedHere] = useState<Record<string, string>>({});
   const picked = pickedFromParent ?? pickedHere;
   const pick = (courseId: string, cohortId: string) => {
@@ -187,8 +195,25 @@ export default function CourseJourney({
                         cohorts={cohorts.get(c.id) ?? []}
                         selectedId={picked[c.id] ?? null}
                         onSelect={(cid) => pick(c.id, cid)}
+                        running={runningOnly(c.id)}
                       />
                     </div>
+                  )}
+                  {/* وحيث لا منتقيَ (نتيجةُ التشخيص) سطرٌ واحد: تبدأ متى — أو لم تفتح بعد */}
+                  {!showSchedule && cohortsLoaded && (cohorts.get(c.id)?.length ?? 0) > 0 && (
+                    <p className="mt-1.5 flex items-center gap-1.5 text-fine font-bold text-teal-light-ink">
+                      <CalendarDays className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                      شعبة مفتوحة · تبدأ {cohortDayAr(cohorts.get(c.id)![0].startsAt)}
+                    </p>
+                  )}
+                  {!showSchedule && cohortsLoaded && (cohorts.get(c.id)?.length ?? 0) === 0 && (
+                    <p className="mt-1.5 flex items-center gap-1.5 text-fine font-bold text-muted-foreground">
+                      <CalendarDays className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                      {runningOnly(c.id) ? COHORT_RUNNING_AR : "لم تفتح شعبتها بعد"}
+                    </p>
+                  )}
+                  {cohortsLoaded && (cohorts.get(c.id)?.length ?? 0) === 0 && (
+                    <CourseInterestForm courseId={c.id} next={runningOnly(c.id)} />
                   )}
                   <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
                     <span className="flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-0.5 text-fine font-semibold text-muted-foreground">
