@@ -55,7 +55,7 @@ import {
   type CardCohort, type ProfileTrail,
 } from "@/application/trainer/trainer-card";
 import {
-  quietLineAr, stepsLineAr, TRAINER_STATES, trainerStateOf, trainerSteps, type TrainerState,
+  approvedToAccept, quietLineAr, stepsLineAr, TRAINER_STATES, trainerStateOf, trainerSteps, type TrainerState,
 } from "@/application/trainer/trainer-status";
 interface OpsQualification { courseId: string; courseTitle: string; status: string }
 interface OpsTrainer {
@@ -793,7 +793,9 @@ export default function TrainerRunOps() {
       ...t,
       queue: {
         requests: asks.filter((r) => r.profile.id === t.profileId).length,
-        toAccept: preparing.filter((r) => r.profile.id === t.profileId && (r.prep?.state ?? "to_decide") === "to_decide").length,
+        /* ومعها المعتمَدةُ بلا شعبة — يقبلها هو في «مؤهّلاتي» (`approvedToAccept`) */
+        toAccept: preparing.filter((r) => r.profile.id === t.profileId && (r.prep?.state ?? "to_decide") === "to_decide").length
+          + approvedToAccept(t),
       },
     };
     const steps = trainerSteps(input);
