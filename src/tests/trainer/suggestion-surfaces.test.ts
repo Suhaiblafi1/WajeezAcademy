@@ -120,8 +120,9 @@ describe('المسوّدات تجتاز القواعد نفسها', () => {
   /* الحركاتُ والتنوينُ والسكون: U+064B–U+0650 وU+0652. والشدّةُ (U+0651) وحدَها تبقى */
   const HARAKAT = /[ً-ِْ]/
 
-  it('عشر مسوّدات من كلّ نوع — لكلّ مدرّب معتمد اليوم واحدة', () => {
-    expect(Object.keys(PITCH_DRAFTS).length).toBe(10)
+  /* عشرٌ من نبذهم (١٩ أكتوبر)، وستٌّ وعشرون من ملفّاتهم (٢١ أكتوبر) — ولكلّ مدرّبٍ مسوّدتان */
+  it('ستّ وثلاثون مسوّدة من كلّ نوع — لكلّ مدرّب واحدة', () => {
+    expect(Object.keys(PITCH_DRAFTS).length).toBe(36)
     expect(Object.keys(BIO_DRAFTS).sort()).toEqual(Object.keys(PITCH_DRAFTS).sort())
   })
 
