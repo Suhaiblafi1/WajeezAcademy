@@ -16,7 +16,12 @@
    «يجب أن يكون لديّ الخيارُ بأن أحدّد ما هي المحتوياتُ التي أوافق أن ترسلها» — فقد يكون اتّفقَ مع مدرّبٍ ألّا يكمل
    دوراته، فلا يُسأل أن يضيف؛ يُذكَّر بنقلها إلى موسمٍ قادم، أو لا تُذكر الدوراتُ أصلا ويُذكَّر بصورته أو نبذته وحدَهما.
    فصارت أجزاؤها خياراتٍ (`MailChoices`): الدوراتُ ثلاثة (أن يضيف · أن ينقل · لا ذكر)، والشعبةُ المفتوحة، وكلُّ أمرٍ
-   عالقٍ وحدَه، والموعدُ ثلاثة (بإغلاق الملفّ · موعدٌ وحدَه · بلا موعد). والافتراضُ هو الرسالةُ كما كانت. */
+   عالقٍ وحدَه، والموعدُ ثلاثة (بإغلاق الملفّ · موعدٌ وحدَه · بلا موعد). والافتراضُ هو الرسالةُ كما كانت.
+
+   ═══ والمنقولةُ إلى موسمٍ قادمٍ ليست «مفتوحةً للتسجيل الآن» (٢١ أكتوبر ٢٠٢٦) ═══
+   «لماذا يظهر في الإيميلات الدوراتُ التي قام المدرّبُ بنقلها فعلا وكأنّها من دوراته المفتوحة؟». الشعبةُ المنقولةُ
+   تبقى `open` وتُزاح مواعيدُها (`cohort-move.service.ts`)، فكانت تُعدّ مع المفتوحة. فصارت وحدَها (`moved`): ما له
+   طلبُ نقلٍ معتمَدٌ أو ينتظر، تُسرد بموسمها، ولا تُعدّ مفتوحةً، ولا تُطلب خطّتُها الآن. */
 
 import type { PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
@@ -26,6 +31,8 @@ import { publicSiteUrl, sendDirectEmail } from './notification.service'
 import { TrainerPrepService, type PrepCourse } from './trainer-prep.service'
 import { fmtDateWith } from '../../src/application/text/format-ar'
 import { ACADEMY_ZONE } from '../../src/application/trainer/cohort-period'
+import { termLabelAr } from '../../src/application/trainer/cohort-move'
+import { TRAINING_SEASON_VALUES, type TrainingSeason } from '../../src/application/trainer/application-options'
 
 /** ما هو عالقٌ عليه فعلا — ولكلٍّ صفحتُه، ومفتاحٌ ثابتٌ يُختار به في الرسالة أو يُترك */
 export interface ReminderTask { key: string; textAr: string; path: string }
@@ -48,8 +55,10 @@ export function defaultChoices(f: ReminderFacts): MailChoices {
 }
 
 export interface ReminderFacts {
-  /** شعبُه القائمة: مفتوحةٌ أو ممتلئةٌ أو جارية */
+  /** شعبُه القائمة: مفتوحةٌ أو ممتلئةٌ أو جارية — بلا المنقولة */
   openCohorts: string[]
+  /** شعبُه المنقولةُ إلى موسمٍ قادم (نقلٌ معتمَدٌ أو ينتظر) — وموسمُها */
+  moved: { cohortId: string; title: string; termAr: string; pending: boolean }[]
   /** دوراتُه وحالُها — كما تقرؤها «دوراتي» */
   courses: Pick<PrepCourse, 'state' | 'postponedTo' | 'cohortId' | 'cohortTitle' | 'titleAr'>[]
   pendingBio: boolean
@@ -59,12 +68,15 @@ export interface ReminderFacts {
 
 /** لم تقم له شعبةٌ بعد: لا مفتوحة، ولا خطّةٌ أرسلها أو اعتُمدت */
 export function hasStarted(f: ReminderFacts): boolean {
-  return f.openCohorts.length > 0 || f.courses.some((c) => c.state === 'submitted' || c.state === 'approved')
+  return f.openCohorts.length > 0 || f.moved.length > 0 || f.courses.some((c) => c.state === 'submitted' || c.state === 'approved')
 }
 
 export function reminderTasks(f: ReminderFacts): ReminderTask[] {
   const out: ReminderTask[] = []
+  const moved = new Set(f.moved.map((m) => m.cohortId))
   for (const c of f.courses) {
+    /* والمنقولةُ إلى موسمٍ قادمٍ لا تُطلب خطّتُها قبل الحملة */
+    if (c.cohortId && moved.has(c.cohortId)) continue
     const name = c.cohortTitle ?? c.titleAr
     if (c.state === 'preparing' && c.cohortId) out.push({ key: `plan:${c.cohortId}`, textAr: `أكمل خطة «${name}» وأرسلها`, path: `/trainer/cohort/${c.cohortId}` })
     if (c.state === 'returned' && !c.postponedTo && c.cohortId) out.push({ key: `cards:${c.cohortId}`, textAr: `راجع اقتراحاتنا على «${name}» واقبلها أو ارفضها`, path: `/trainer/cohort/${c.cohortId}` })
@@ -111,12 +123,20 @@ export function prepReminderMail(input: { name: string; facts: ReminderFacts; de
   const opening: MailBlock[] = []
   if (started && ch.cohorts) {
     /* والشعبُ قائمةٌ مرقّمة لا جملةٌ واحدة (٢١ أكتوبر ٢٠٢٦): «الإيميلُ مكتظّ… لا أحدَ يقرأ هذه المعلومات المتزاحمة» */
-    if (f.openCohorts.length === 0) opening.push({ kind: 'p', text: 'وصلتنا خطة شعبتك، وهي عندنا الآن. شكرا لك.' })
+    if (f.openCohorts.length === 0 && f.moved.length === 0) opening.push({ kind: 'p', text: 'وصلتنا خطة شعبتك، وهي عندنا الآن. شكرا لك.' })
     else if (f.openCohorts.length === 1) opening.push({ kind: 'p', text: `شعبتك «${shortCohortTitles(f.openCohorts)[0]}» مفتوحة للتسجيل الآن. شكرا لك.` })
-    else opening.push(
+    else if (f.openCohorts.length > 1) opening.push(
       { kind: 'p', text: 'شكرا لك. شعبك هذه مفتوحة للتسجيل الآن:' },
       { kind: 'list', numbered: true, items: shortCohortTitles(f.openCohorts) },
     )
+    if (f.moved.length > 0) {
+      const names = shortCohortTitles(f.moved.map((m) => m.title))
+      opening.push(
+        { kind: 'p', text: `${f.openCohorts.length === 0 ? 'شكرا لك. ' : 'و'}${f.moved.length === 1 ? 'هذه الشعبة نقلتها' : 'هذه الشعب نقلتها'} إلى موسم قادم:` },
+        /* والطلبُ الذي ينتظر قرارَنا يقال طلبا — لا نقلا تمّ */
+        { kind: 'list', numbered: true, items: f.moved.map((m, i) => `${names[i]} (${m.pending ? `طلبت نقلها إلى ${m.termAr}` : m.termAr})`) },
+      )
+    }
   }
   if (ch.courses === 'more' && started) {
     opening.push(
@@ -186,16 +206,33 @@ export class PrepReminderService {
   }
 
   private async factsOf(profileId: string, photo: { photoUrl: string | null; photoPendingKey: string | null }): Promise<ReminderFacts> {
-    const [courses, open, pending] = await Promise.all([
+    const [courses, open, pending, moves] = await Promise.all([
       new TrainerPrepService(this.prisma).coursesOf(profileId),
       this.prisma.cohortTrainer.findMany({
         where: { profileId, role: 'lead', cohort: { status: { in: ['open', 'full', 'active'] } } },
-        select: { cohort: { select: { title: true } } },
+        select: { cohort: { select: { id: true, title: true } } },
       }),
       this.prisma.trainerTextSuggestion.findMany({ where: { profileId, status: 'pending' }, select: { kind: true } }),
+      /* آخرُ طلب نقلٍ قائمٍ لكلّ شعبةٍ يقودها — معتمَدا أو ينتظر، والملغاةُ لا تُعدّ */
+      this.prisma.cohortMoveRequest.findMany({
+        where: { status: { in: ['approved', 'pending'] }, cohort: { status: { not: 'cancelled' }, trainers: { some: { profileId, role: 'lead' } } } },
+        orderBy: { createdAt: 'desc' },
+        select: { cohortId: true, toYear: true, toSeason: true, status: true, cohort: { select: { title: true } } },
+      }),
     ])
+    const moved: ReminderFacts['moved'] = []
+    for (const m of moves) {
+      if (moved.some((x) => x.cohortId === m.cohortId)) continue
+      const season = (TRAINING_SEASON_VALUES as readonly string[]).includes(m.toSeason) ? (m.toSeason as TrainingSeason) : null
+      moved.push({
+        cohortId: m.cohortId, title: m.cohort.title, pending: m.status === 'pending',
+        termAr: season ? termLabelAr({ year: m.toYear, season }) : `${m.toSeason} ${m.toYear}`,
+      })
+    }
+    const movedIds = new Set(moved.map((m) => m.cohortId))
     return {
-      openCohorts: open.map((o) => o.cohort.title),
+      openCohorts: open.filter((o) => !movedIds.has(o.cohort.id)).map((o) => o.cohort.title),
+      moved,
       courses,
       pendingBio: pending.some((p) => p.kind === 'bio'),
       pendingPitch: pending.some((p) => p.kind === 'pitch'),

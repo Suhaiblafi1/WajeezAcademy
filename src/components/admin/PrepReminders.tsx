@@ -16,7 +16,7 @@ import { controlCls } from "@/components/FormKit";
 export interface MailChoices { courses: "more" | "postpone" | "none"; cohorts: boolean; skip: string[]; due: "close" | "date" | "none" }
 export interface ReminderRow {
   profileId: string; name: string; email: string; started: boolean; summaryAr: string;
-  facts: { openCohorts: string[] };
+  facts: { openCohorts: string[]; moved: { title: string; termAr: string }[] };
   tasks: { key: string; textAr: string }[];
   choices: MailChoices;
 }
@@ -82,7 +82,7 @@ function MailParts({ row, value, onChange }: { row: ReminderRow; value: MailChoi
           {row.started && (
             <label className="mt-1 flex items-start gap-2">
               <input type="checkbox" className={radio} checked={value.cohorts} onChange={(e) => set({ cohorts: e.target.checked })} />
-              {row.facts.openCohorts.length > 0 ? "شعبته المفتوحة للتسجيل" : "وصلتنا خطة شعبته"}
+              {row.facts.openCohorts.length > 0 || row.facts.moved.length > 0 ? "شعبه المفتوحة والمنقولة" : "وصلتنا خطة شعبته"}
             </label>
           )}
           {row.tasks.map((t) => (
