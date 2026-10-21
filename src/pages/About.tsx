@@ -9,8 +9,11 @@ import { Panel } from '@/components/ui/Surface'
 import { seoFor } from '@/application/site/public-pages'
 import { countAr } from '@/application/text/count-ar'
 import { usePublishedContent } from '@/services/public-content'
-import { pathways, pathwayDomains } from '@/data/pathways'
+import { pathwayDomain, pathwayDomains } from '@/data/pathways'
+import { publicPathways } from '@/data/public-pathways'
 import { courses } from '@/data/courses'
+import { useListedCourses } from '@/services/listed-courses'
+import { TRIAL_NOTE_AR, listedOnly, listedWhole, shownCounts } from '@/application/catalog/listed-courses'
 import {
   CLOSING, FAMILY_INTRO, FEATURES, FEATURE_HERO, HONESTY_LINE, OUTCOMES, PRICE, SOURCE_KINDS,
   type FeatureId, type Outcome,
@@ -288,6 +291,37 @@ const OUTCOME_ICON: Record<Outcome['id'], LucideIcon> = {
   portfolio: FolderCheck,
 }
 
+/* ما يُعرض هذا الفصل لا ما في الكتالوج — ومعه أنّه دفعةٌ أولى (قرارُ صاحب المنصّة، ٢١ أكتوبر ٢٠٢٦،
+   والقولُ في `application/catalog/listed-courses.ts`). والمجالاتُ ما فيه دورةٌ أو مسارٌ معروض. */
+function TrainingExtras() {
+  const listed = useListedCourses()
+  const counts = shownCounts(publicPathways, courses, listed)
+  const shown = new Set([
+    ...listedWhole(publicPathways, listed).map((p) => p.domain),
+    ...listedOnly(courses, listed).map((c) => pathwayDomain(c.pathwayId)),
+  ])
+  const domains = pathwayDomains.filter((d) => d !== 'الكل' && shown.has(d))
+  return (
+    <>
+      <p className="mt-5 max-w-2xl text-read leading-relaxed text-muted-foreground">
+        {counts
+          ? <>مفتوح للتسجيل هذا الفصل {countAr(counts.pathways, PATHWAY_FORMS)} و{countAr(counts.courses, COURSE_FORMS)}. {TRIAL_NOTE_AR}</>
+          : TRIAL_NOTE_AR}
+      </p>
+      {domains.length > 0 && (
+        <ul className="mt-3 flex max-w-2xl flex-wrap gap-2">
+          {domains.map((d) => <li key={d}><Chip>{d}</Chip></li>)}
+        </ul>
+      )}
+      <div className="mt-6 flex flex-wrap gap-x-6">
+        <Link to="/pathways" className={inline}>تصفّح المسارات</Link>
+        <Link to="/courses" className={inline}>تصفّح الدورات</Link>
+        <Link to="/trainers" className={inline}>تعرّف على الفريق التدريبي</Link>
+      </div>
+    </>
+  )
+}
+
 function Extras({ id }: { id: FeatureId }) {
   switch (id) {
     case 'advisor':
@@ -305,24 +339,8 @@ function Extras({ id }: { id: FeatureId }) {
           ))}
         </ul>
       )
-    case 'training': {
-      const domains = pathwayDomains.filter((d) => d !== 'الكل')
-      return (
-        <>
-          <p className="mt-5 max-w-2xl text-read leading-relaxed text-muted-foreground">
-            في الكتالوج اليوم {countAr(pathways.length, PATHWAY_FORMS)} و{countAr(courses.length, COURSE_FORMS)}:
-          </p>
-          <ul className="mt-3 flex max-w-2xl flex-wrap gap-2">
-            {domains.map((d) => <li key={d}><Chip>{d}</Chip></li>)}
-          </ul>
-          <div className="mt-6 flex flex-wrap gap-x-6">
-            <Link to="/pathways" className={inline}>تصفّح المسارات</Link>
-            <Link to="/courses" className={inline}>تصفّح الدورات</Link>
-            <Link to="/trainers" className={inline}>تعرّف على الفريق التدريبي</Link>
-          </div>
-        </>
-      )
-    }
+    case 'training':
+      return <TrainingExtras />
     case 'graduation':
       return (
         <>
