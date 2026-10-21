@@ -25,8 +25,16 @@ import {
   pathwayDelivery,
 } from "@/data/courses";
 import { pathways, type Pathway } from "@/data/pathways";
+import { useListedCourses } from "@/services/listed-courses";
+import { availabilityNoteAr, listedFirst } from "@/application/catalog/listed-courses";
 
 import { Card, Panel, Inset } from "@/components/ui/Surface";
+/** سطرُ المقترح: مهارتُه ومسارُه، ثمّ حالُ شعبته إن عُرفت */
+function suggestionNoteAr(c: { id: string; skill: string; pathwayName: string }, listed: ReturnType<typeof useListedCourses>): string {
+  const state = availabilityNoteAr(c.id, listed);
+  return `${c.skill} · من مسار ${c.pathwayName}${state ? ` · ${state}` : ""}`;
+}
+
 /* ─────────── الخطة المركّبة قابلة للاستبدال — لا للحذف ولا للإضافة ───────────
 
    كانت الخطة المركّبة تُعرض بلا أي أداة تخصيص، بينما المسار القياسي يُمرَّر إليه
@@ -54,18 +62,21 @@ export function ComposedSwap({
 }) {
   const [chosenIds, setChosenIds] = useState<string[]>(planCourseIds);
   const [swapForId, setSwapForId] = useState<string | null>(null);
+  /* وما يُشترى الآن أوّلا، وكلٌّ بحاله (`listed-courses.ts`) */
+  const listed = useListedCourses();
 
   const pool = useMemo<CourseSuggestion[]>(() => {
     const taken = new Set(chosenIds);
     const inPlan = new Set(pathwayIds);
     const closesGap = (skill: string | undefined) =>
       skill && gaps.some((g) => g.includes(skill.slice(0, 8))) ? 1 : 0;
-    return courses
+    const ranked = courses
       .filter((c) => !taken.has(c.id) && inPlan.has(c.pathwayId))
       .sort((x, y) => closesGap(y.skill) - closesGap(x.skill))
+    return listedFirst(ranked, listed)
       .slice(0, 6)
-      .map((c) => ({ id: c.id, name: c.name, note: `${c.skill} · من مسار ${c.pathwayName}` }));
-  }, [chosenIds, pathwayIds, gaps]);
+      .map((c) => ({ id: c.id, name: c.name, note: suggestionNoteAr(c, listed) }));
+  }, [chosenIds, pathwayIds, gaps, listed]);
 
   const swapPick = (oldId: string, newId: string) => {
     const next = chosenIds.map((i) => (i === oldId ? newId : i));
@@ -128,19 +139,22 @@ export function PlanCourses({
   const category = base[0]?.category ?? "أفراد ومهن ناشئة";
 
   /* مقترحات: من نفس المجال أولا، وأولوية لما يعالج فجوات المستخدم */
+  const listed = useListedCourses();
   const pool = useMemo<CourseSuggestion[]>(() => {
     const chosenSet = new Set(chosenIds);
     if (giftId) chosenSet.add(giftId);
-    return courses
+    const ranked = courses
       .filter((c) => c.category === category && !chosenSet.has(c.id))
       .sort((x, y) => {
         const xm = gaps.some((g) => x.skill && g.includes(x.skill.slice(0, 8))) ? 1 : 0;
         const ym = gaps.some((g) => y.skill && g.includes(y.skill.slice(0, 8))) ? 1 : 0;
         return ym - xm;
       })
+    /* ثمّ ما يُشترى الآن أوّلا — والمحرّكُ رشّح كما كان (`listed-courses.ts`) */
+    return listedFirst(ranked, listed)
       .slice(0, 6)
-      .map((c) => ({ id: c.id, name: c.name, note: `${c.skill} · من مسار ${c.pathwayName}` }));
-  }, [chosenIds, giftId, category, gaps]);
+      .map((c) => ({ id: c.id, name: c.name, note: suggestionNoteAr(c, listed) }));
+  }, [chosenIds, giftId, category, gaps, listed]);
 
   /* كان يكتب هنا سجلّ `wajeez_custom` مع كل تغيير. صار يبلّغ الصفحة فقط:
      الاعتماد هو الكتابة الوحيدة، فلا شكلان للسجلّ ولا قارئان يفترقان. */
@@ -291,7 +305,8 @@ export function ResultPriceCard({ courseIds }: { courseIds: readonly string[] })
       </Inset>
       <p className="mt-3 text-read leading-5 text-muted-foreground">
         يتحدد سعر خطتك بعد اعتمادها، فأنت تختار دوراتها.
-        {cheapest && known < courseIds.length && " وبعض دوراتها لم تفتح لها شعبة بعد."} ولا تدفع شيئا الآن.
+        {/* وكم منها يُشترى الآن — عددٌ لا «بعضُها» (٢١ أكتوبر ٢٠٢٦، `listed-courses.ts`) */}
+        {cheapest && known < courseIds.length && ` ${known} من ${courseIds.length} دورات لها شعبة مفتوحة الآن، والباقي نخبرك حين تفتح شعبته.`} ولا تدفع شيئا الآن.
       </p>
     </Panel>
   );

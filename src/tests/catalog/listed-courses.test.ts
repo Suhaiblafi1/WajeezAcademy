@@ -5,7 +5,7 @@
 
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
-import { listedFromResponse, listedOnly, type ListedCourses } from '@/application/catalog/listed-courses'
+import { availabilityNoteAr, listedFirst, listedFromResponse, listedOnly, type ListedCourses } from '@/application/catalog/listed-courses'
 
 const rows = [{ id: 'C-A' }, { id: 'C-B' }, { id: 'C-C' }]
 const ready = (ids: string[]): ListedCourses => ({ state: 'ready', ids: new Set(ids) })
@@ -45,4 +45,35 @@ describe('القوائمُ العامّة كلُّها بالمرشِّح نفس
       expect(src).toMatch(/listedOnly\(\s*courses\s*,\s*listed\s*\)/)
     })
   }
+})
+
+/* ═══ والتشخيصُ: ما يُشترى الآن أوّلا، والباقي «لم تفتح شعبتُه بعد» (٢١ أكتوبر ٢٠٢٦) ═══
+   المحرّكُ يرشّح كما كان، والعرضُ يقدّم ما له شعبة ويقول حالَ كلٍّ. */
+describe('ما يُشترى أوّلا', () => {
+  it('⚠️ ما له شعبةٌ يتقدّم — وكلٌّ بترتيبه بين أمثاله', () => {
+    expect(listedFirst(rows, ready(['C-C'])).map((r) => r.id)).toEqual(['C-C', 'C-A', 'C-B'])
+  })
+
+  it('والمجهولُ لا يُعاد ترتيبُه — ولا تُقال حالٌ لا تُعرف', () => {
+    expect(listedFirst(rows, { state: 'failed' }).map((r) => r.id)).toEqual(['C-A', 'C-B', 'C-C'])
+    expect(availabilityNoteAr('C-A', { state: 'loading' })).toBeNull()
+    expect(availabilityNoteAr('C-A', ready(['C-A']))).toBe('لها شعبة')
+    expect(availabilityNoteAr('C-B', ready(['C-A']))).toBe('لم تفتح شعبتها بعد')
+  })
+})
+
+describe('نتيجةُ التشخيص تقدّم ما يُشترى وتقول حالَ كلّ دورة', () => {
+  const PLAN = readFileSync(new URL('../../pages/diagnostic/ResultPlanCards.tsx', import.meta.url), 'utf8')
+  const JOURNEY = readFileSync(new URL('../../components/CourseJourney.tsx', import.meta.url), 'utf8')
+
+  it('⚠️ مقترحاتُ الاستبدال والإضافة كلُّها بـ«ما يُشترى أوّلا» قبل أن تُقتطع', () => {
+    /* موضعان يقترحان: المسارُ الجاهز (PlanCourses) والخطّةُ المركّبة (ComposedSwap) */
+    const cut = PLAN.match(/listedFirst\(ranked, listed\)\s*\.slice\(0, 6\)/g) ?? []
+    expect(cut, 'مقترحاتٌ تُقتطع قبل أن يتقدّم ما له شعبة').toHaveLength(2)
+    expect(PLAN, 'مقترحٌ يُقتطع من الكتالوج مباشرة').not.toMatch(/return courses\s*\.filter/)
+  })
+
+  it('⚠️ وكلُّ دورةٍ بلا شعبةٍ في الرحلة تحمل «أبلغني»', () => {
+    expect(JOURNEY).toMatch(/<CourseInterestForm courseId=\{c\.id\} next=\{runningOnly\(c\.id\)\} \/>/)
+  })
 })
