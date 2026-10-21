@@ -39,7 +39,7 @@ export interface PrepRow {
   cohortId: string | null;
   cohortTitle: string | null;
   declineReasonAr: string | null;
-  /** معتمَدةٌ له أصلا — يقبلها ولا يعتذر عنها (٣ أكتوبر ٢٠٢٦) */
+  /** معتمَدةٌ له أصلا (٣ أكتوبر ٢٠٢٦) — ويعتذر عنها كغيرها منذ ٢١ أكتوبر ٢٠٢٦، «A» */
   approved?: boolean;
 }
 
@@ -107,11 +107,10 @@ export function PrepDecision({ row: r, onChanged }: { row: PrepRow; onChanged: (
           onClick={() => void act("accept", {}, "قبلتها — وشعبة إعدادها في «شعبي»")}>
           اقبلها وابدأ إعدادها
         </Button>
-        {!r.approved && (
-          <Button tone="secondary" size="sm" icon={X} disabled={busy} onClick={() => setDeclining(true)}>
-            اعتذر عنها
-          </Button>
-        )}
+        {/* والمعتمَدةُ له يعتذر عنها كذلك (٢١ أكتوبر ٢٠٢٦، «A») — كان تركُها بلا قبولٍ لا يصل أحدا */}
+        <Button tone="secondary" size="sm" icon={X} disabled={busy} onClick={() => setDeclining(true)}>
+          اعتذر عنها
+        </Button>
       </div>
     );
   }

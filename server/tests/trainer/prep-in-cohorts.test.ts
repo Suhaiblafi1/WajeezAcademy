@@ -210,7 +210,9 @@ describe('شعبةُ الإعداد', () => {
    ويقبله فتُنشأ مسوّدتُه — لا ينتظر أن تُنشئها الإدارة. وما يُقاس:
    ⑥ تُعرض المعتمَدةُ بلا شعبةٍ ولا عرض، وتُقبَل فتُنشأ مسوّدةٌ هو قائدُها، ثمّ
       تخرج من القائمة حين تُعتمَد خطّتُها — ولا يُمسّ تأهيلُه ولا حالُه.
-   ⑦ ولا تُعرض ولا تُقبَل ما دام له فيها عرضٌ مفتوحٌ أو شعبةٌ قائمة. */
+   ⑦ ولا تُعرض ولا تُقبَل ما دام له فيها عرضٌ مفتوحٌ أو شعبةٌ قائمة.
+   ⑧ ويعتذر عنها قبل أن يقبلها (٢١ أكتوبر ٢٠٢٦، «A» — نسخا لـ«لا اعتذار» من ٣ أكتوبر): تُطوى معتمَدتُها بسببه،
+      وتُرى «اعتذرت»، ويصلنا السبب. وما قبِله فلا: شعبتُه بابُه. */
 describe('النشطُ يقبل المعتمَدةَ بنفسه', () => {
   async function active(courses: string[]) {
     const t = await onboarding(courses)
@@ -222,9 +224,9 @@ describe('النشطُ يقبل المعتمَدةَ بنفسه', () => {
   it('⑥ تُعرض وتُقبَل، وتخرج حين تُعتمَد خطّتُها', async () => {
     const t = await active([C1])
     expect(await prep.mine(t.userId)).toMatchObject([{ courseId: C1, state: 'to_decide', approved: true }])
-    await expect(prep.decline(t.userId, C1, 'لا أريدها'), 'اعتذر عن دورةٍ معتمَدةٍ له').rejects.toThrow()
 
     const made = await prep.accept(t.userId, C1)
+    await expect(prep.decline(t.userId, C1, 'لا أريدها'), 'اعتذر عن دورةٍ قبلها — وشعبتُها قائمة').rejects.toThrow()
     const cohort = await prisma.cohort.findUniqueOrThrow({ where: { id: made.id }, include: { trainers: true } })
     expect(cohort.status).toBe('draft')
     expect(cohort.trainers).toMatchObject([{ profileId: t.profileId, role: 'lead' }])
@@ -329,5 +331,24 @@ describe('⑩ طابورُ الخطط المرسَلة', () => {
     const made = await prep.accept(t.userId, C1)
     const p = await submitted(made.id, t.profileId)
     expect((await plans.pending()).find((r) => r.id === p.id)?.prep).toEqual({ onboarding: true, qualifies: false })
+  })
+})
+
+describe('⑧ ويعتذر عن المعتمَدة قبل أن يقبلها', () => {
+  it('⚠️ تُطوى بسببه، وتُرى «اعتذرت»، ويصلنا السبب', async () => {
+    const t = await onboarding([C2])
+    await prisma.trainerCourseQualification.updateMany({ where: { profileId: t.profileId }, data: { status: 'qualified' } })
+    await prisma.trainerApplication.update({ where: { id: t.applicationId }, data: { status: 'active' } })
+    expect(await prep.mine(t.userId)).toMatchObject([{ courseId: C2, state: 'to_decide', approved: true }])
+
+    await prep.decline(t.userId, C2, 'لا أدرّسها هذا العام')
+    const q = await prisma.trainerCourseQualification.findFirstOrThrow({ where: { profileId: t.profileId, courseId: C2 } })
+    expect(q.status).toBe('retired')
+    expect(q.note).toBe(`${DECLINED_NOTE_PREFIX}لا أدرّسها هذا العام`)
+    expect(await prep.mine(t.userId)).toMatchObject([{ courseId: C2, state: 'declined', declineReasonAr: 'لا أدرّسها هذا العام' }])
+    const audit = await prisma.auditEvent.findFirst({ where: { entityId: t.profileId, action: 'trainer.prep.decline' }, orderBy: { createdAt: 'desc' } })
+    expect(audit?.meta).toMatchObject({ courseId: C2, wasApproved: true })
+    /* وطلبُه نشطٌ كما كان */
+    expect((await prisma.trainerApplication.findUniqueOrThrow({ where: { id: t.applicationId } })).status).toBe('active')
   })
 })
