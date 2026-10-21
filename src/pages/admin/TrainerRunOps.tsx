@@ -48,6 +48,7 @@ import { Card, Inset, Panel } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import Chip from "@/components/ui/Chip";
 import TabBar from "@/components/ui/TabBar";
+import { draftKindsAr, hasNeed, TRAINER_NEEDS, trainersAr, type TrainerNeed } from "@/application/trainer/trainer-needs";
 import { BIO_MAX_WORDS, countWords, NAME_MAX_CHARS, publicNameProblemAr } from "@/application/trainer/public-text";
 import { PITCH_MAX_CHARS, PITCH_MAX_LINES, PITCH_MAX_WORDS, bioSuggestionProblemAr, cleanPitchLines, pitchHeadingAr, pitchProblemAr } from "@/application/trainer/pitch";
 import {
@@ -656,6 +657,8 @@ export default function TrainerRunOps() {
   const [q, setQ] = useState("");
   /* الفلترُ حالٌ واحدة، والمفتوحُ من البطاقات ما فتحه هو (`trainer-status.ts`) */
   const [filter, setFilter] = useState<TrainerFilter>("all");
+  /* وما ينتظر قرارَك — صورةٌ أو نصٌّ أو اقتراحٌ لم يُرسَل (`trainer-needs.ts`) */
+  const [need, setNeed] = useState<TrainerNeed | "any">("any");
   const [openIds, setOpenIds] = useState<Set<string>>(new Set());
   const toggleOpen = (id: string) => setOpenIds((prev) => {
     const next = new Set(prev);
@@ -757,18 +760,35 @@ export default function TrainerRunOps() {
      قرارُ صاحب المنصّة: «أضف زرّ إرسال الكلّ». والعددُ ما تعرضه البطاقاتُ مسوّدةً
      لم تُرسَل، والخادمُ يرسلها كما كُتبت (`sendAllDrafts`) — فما حرّرته في بطاقةٍ ولم
      ترسله يُرسَل منها لا من هنا.
-     ولا يُعدّ إلّا من يصله الإرسالُ (٢٠ أكتوبر ٢٠٢٦): النشطون ومن نُشرت دوراتُهم — شرطُ الخادم نفسُه. */
+     ولا يُعدّ إلّا من يصله الإرسالُ (٢٠ أكتوبر ٢٠٢٦): النشطون ومن نُشرت دوراتُهم — شرطُ الخادم نفسُه.
+
+     والعددُ عددُ المدرّبين لا المسوّدات، والضغطةُ تعرض من يصله وما يصل كلّا قبل أن يُرسَل شيء (٢١ أكتوبر
+     ٢٠٢٦): «هل يعطيني لمن ستُرسَل أم يرسل مباشرة؟» — واختار التأكيد. ويُرسَل لمن عُرض وحدَه (`profileIds`). */
   const draftCount = useMemo(
     () => (trainers ?? [])
       .filter((t) => t.applicationStatus === "active" || t.hasLiveCourse)
-      .reduce((n, t) => n + (t.pitchDraft ? 1 : 0) + (t.bioDraft ? 1 : 0), 0),
+      .filter((t) => t.pitchDraft || t.bioDraft).length,
     [trainers],
   );
-  const sendAllDrafts = async () => {
+  const [sendPreview, setSendPreview] = useState<{ profileId: string; name: string; kinds: ("pitch" | "bio")[] }[] | null>(null);
+  const openSendPreview = async () => {
     setBusy("send-drafts");
     try {
-      const r = await apiPost<{ sent: number; failed: number }>("/api/admin/trainers/suggestions/send-drafts", {});
-      if (r.failed === 0) toast(`أرسلت الاقتراحات للمدربين: ${r.sent}`);
+      const r = await apiGet<{ trainers: { profileId: string; name: string; kinds: ("pitch" | "bio")[] }[] }>(
+        "/api/admin/trainers/suggestions/send-drafts");
+      if (r.trainers.length === 0) toast("لا اقتراحات جاهزة للإرسال");
+      else setSendPreview(r.trainers);
+    } catch (e) {
+      toastError(e instanceof ApiError ? e.message : "تعذر تحميل القائمة");
+    } finally {
+      setBusy("");
+    }
+  };
+  const sendAllDrafts = async (profileIds: string[]) => {
+    setBusy("send-drafts");
+    try {
+      const r = await apiPost<{ sent: number; failed: number }>("/api/admin/trainers/suggestions/send-drafts", { profileIds });
+      if (r.failed === 0) toast(`أرسلت الاقتراحات إلى ${trainersAr(profileIds.length)}`);
       else toastError(`أرسلت ${r.sent}، وتعذر إرسال ${r.failed}`);
       await load();
     } catch (e) {
@@ -847,10 +867,22 @@ export default function TrainerRunOps() {
   }, [rows]);
   const shown = useMemo(
     () => rows
-      .filter((r) => (filter === "all" || r.state === filter) && matchesQuery(q, [r.t.name, r.t.email]))
+      .filter((r) => (filter === "all" || r.state === filter) && (need === "any" || hasNeed(r.t, need))
+        && matchesQuery(q, [r.t.name, r.t.email]))
       .sort((a, b) => STATE_ORDER[a.state] - STATE_ORDER[b.state] || a.t.name.localeCompare(b.t.name, "ar")),
-    [rows, filter, q],
+    [rows, filter, need, q],
   );
+  const needCounts = useMemo(
+    () => Object.fromEntries(TRAINER_NEEDS.map((n) => [n.id, rows.filter((r) => hasNeed(r.t, n.id)).length])) as Record<TrainerNeed, number>,
+    [rows],
+  );
+  /* واختيارُه يعرض كلَّ من فيه — فيُرفع فلترُ الحال — وتُفتح بطاقاتُهم ليُعتمَد من مكانه بلا فتحٍ واحدةً واحدة */
+  const pickNeed = (next: TrainerNeed | "any") => {
+    setNeed(next);
+    if (next === "any") return;
+    setFilter("all");
+    setOpenIds(new Set(rows.filter((r) => hasNeed(r.t, next)).map((r) => r.t.profileId)));
+  };
 
   if (offline) {
     return (
@@ -999,9 +1031,9 @@ export default function TrainerRunOps() {
             {draftCount > 0 && (
               <Button
                 tone="confirm" icon={Send} loading={busy === "send-drafts"} disabled={busy !== ""}
-                onClick={() => void sendAllDrafts()}
+                onClick={() => void openSendPreview()}
               >
-                أرسل للنشطين ومن نشرت دوراتهم ({draftCount})
+                أرسل للنشطين ومن نشرت دوراتهم ({trainersAr(draftCount)})
               </Button>
             )}
             {canDownloadFiles && draftingParts && draftingParts.trainers > 0 && (
@@ -1035,6 +1067,12 @@ export default function TrainerRunOps() {
           items={[
             { id: "all" as const, label: `الكل (${rows.length})` },
             ...TRAINER_STATES.map((x) => ({ id: x.id, label: `${x.ar} (${counts[x.id]})` })),
+          ]} />
+        {/* وما ينتظر قرارَك — والمدرّبُ في أكثرَ من واحدٍ إن اجتمعت له */}
+        <TabBar className="mt-2" ariaLabel="ما ينتظر قرارك" value={need} onChange={pickNeed}
+          items={[
+            { id: "any" as const, label: "كل المدربين" },
+            ...TRAINER_NEEDS.map((n) => ({ id: n.id, label: `${n.ar} (${needCounts[n.id]})` })),
           ]} />
 
         {/* ── تعيينُ مدرّبٍ داخليّا ──
@@ -1125,7 +1163,7 @@ export default function TrainerRunOps() {
                 </p>
               </>
             ) : (
-              <p className="mt-3 text-read text-muted-foreground">لا مدرب في هذه الحال.</p>
+              <p className="mt-3 text-read text-muted-foreground">{need === "any" ? "لا مدرب في هذه الحال." : "لا شيء ينتظرك هنا."}</p>
             )}
           </Card>
         ) : (
@@ -1319,6 +1357,27 @@ export default function TrainerRunOps() {
           </ConfirmAction>
         );
       })()}
+
+      {/* ولمن تُرسَل الاقتراحات — تُعرض قبل أن يُرسَل شيء، ويُرسَل لمن عُرض وحدَه */}
+      {sendPreview && (
+        <ConfirmAction
+          titleAr={`أرسل الاقتراحات إلى ${trainersAr(sendPreview.length)}؟`}
+          confirmLabelAr="أرسل"
+          tone="default"
+          busy={busy === "send-drafts"}
+          onCancel={() => setSendPreview(null)}
+          onConfirm={() => {
+            const ids = sendPreview.map((x) => x.profileId);
+            setSendPreview(null);
+            void sendAllDrafts(ids);
+          }}
+        >
+          <p>يصل كل واحد تنبيه، ولا يتغير شيء في صفحته قبل أن يقبل.</p>
+          <ul className="mt-2 list-disc space-y-1 pe-5">
+            {sendPreview.map((x) => <li key={x.profileId}>{x.name}: {draftKindsAr(x.kinds)}</li>)}
+          </ul>
+        </ConfirmAction>
+      )}
 
       {/* اعتمادُ دورةٍ قيد الإعداد قبل خطّتها — خيارٌ مفتوح، يقول ما يقع به قبل أن يقع */}
       {skipPlan && (

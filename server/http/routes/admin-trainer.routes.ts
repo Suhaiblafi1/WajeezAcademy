@@ -1104,11 +1104,20 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     schema: { tags: ['admin-trainers'], summary: 'عدد أجزاء ملفّات المدرّبين وعدد من فيها' },
   }, async () => drafting.parts())
 
-  /* وكلُّ المسوّدات معا — بالصلاحيّة نفسِها، فهو الإرسالُ نفسُه مكرَّرا */
+  /* وكلُّ المسوّدات معا — بالصلاحيّة نفسِها، فهو الإرسالُ نفسُه مكرَّرا.
+     ولمن يصله أوّلا، فيراه قبل أن يُرسَل (٢١ أكتوبر ٢٠٢٦) — ويُرسَل لمن رآه وحدَه */
+  app.get('/api/admin/trainers/suggestions/send-drafts', {
+    preHandler: requirePermission('trainer.publish'),
+    schema: { tags: ['admin-trainers'], summary: 'من تصله المسوّداتُ لو أُرسلت الآن، وما يصل كلّا' },
+  }, async () => suggestions.unsentDrafts())
+
   app.post('/api/admin/trainers/suggestions/send-drafts', {
     preHandler: requirePermission('trainer.publish'),
     schema: { tags: ['admin-trainers'], summary: 'إرسال كلّ المسوّدات التي لم تُرسَل — كلٌّ بأثره وإشعاره' },
-  }, async (req) => suggestions.sendAllDrafts(req.auth!.userId))
+  }, async (req) => {
+    const { profileIds } = z.object({ profileIds: z.array(z.string().uuid()).max(500).optional() }).parse(req.body ?? {})
+    return suggestions.sendAllDrafts(req.auth!.userId, undefined, profileIds)
+  })
 
   app.post('/api/admin/trainers/:profileId/suggestions/:kind/withdraw', {
     preHandler: requirePermission('trainer.publish'),
