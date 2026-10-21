@@ -102,6 +102,8 @@ export interface MyCourseCohort {
   total?: number;
   startsAt?: string | null;
   proposedStartsOn?: string | null;
+  /** فصلُها المربوط — منه تُعرف شعبُ الفصول القادمة (`board-place.ts`) */
+  term?: { year: number; season: string } | null;
 }
 
 export interface MyCourse<O extends MyCourseOffer = MyCourseOffer, P extends MyCoursePrep = MyCoursePrep> {
