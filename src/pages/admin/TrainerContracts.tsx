@@ -19,7 +19,8 @@
    الرقم. فما يظهر هنا من أتعابٍ مقروءٌ لا محرَّر: من يتعاقد يرى ما سيُوقَّع
    عليه، ولا يملك تغييرَه من شاشته. */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router";
 import { BadgeCheck, Ban, BellRing, CalendarPlus, ChevronDown, Download, FilePlus2, FileSignature, FileText, Handshake, IdCard, MessageSquareReply, Printer, RefreshCw, Send, Trash2, Undo2, UserMinus, X } from "lucide-react";
 import ConfirmAction from "@/components/ConfirmAction";
 import Modal from "@/components/Modal";
@@ -409,6 +410,7 @@ export default function TrainerContracts() {
     return n;
   });
   const [candidates, setCandidates] = useState<CandidateRow[]>([]);
+  const [loaded, setLoaded] = useState(false);
   const [missingLegal, setMissingLegal] = useState<string[]>([]);
   const [err, setErr] = useState("");
   const [note, setNote] = useState("");
@@ -630,6 +632,7 @@ export default function TrainerContracts() {
         "/api/admin/trainer-contracts",
       );
       setContracts(d.contracts); setCandidates(d.candidates); setMissingLegal(d.missingLegal);
+      setLoaded(true);
     } catch (e) { setErr(permissionMessage(e, "تعذّر تحميل العقود")); }
     /* والعروضُ خلف صلاحيّةٍ أخرى (`trainer.assign`): من يملك العقودَ ولا
        يملكها يرى شاشتَه كاملةً بلا قسمِ العروض، لا نصفَ شاشةٍ بخطإٍ أحمر. */
@@ -667,6 +670,27 @@ export default function TrainerContracts() {
       setOrientationAt(""); setOrientationUrl("");
     } catch (e) { setErr(permissionMessage(e, "تعذّر تجهيز الشاشة")); }
   };
+
+  /* ═══ والقادمُ من بطاقة المدرّب يصل إلى عقده (٢١ أكتوبر ٢٠٢٦) ═══
+
+     زرُّ «جهز عقده» في «المدربون» يأتي بـ`prepare` (رقمُ طلبه) و`q` (اسمُه): فإن كان فيمن ينتظر عقدا فُتحت
+     شاشةُ التركيب له، وإلّا بُحث باسمه في العقود كلِّها. ويُقرأ مرّةً ثمّ يُمحى من العنوان. */
+  const [params, setParams] = useSearchParams();
+  const deepLinked = useRef(false);
+  useEffect(() => {
+    if (!loaded || deepLinked.current) return;
+    const prepare = params.get("prepare");
+    const q = params.get("q");
+    if (!prepare && !q) return;
+    deepLinked.current = true;
+    setParams({}, { replace: true });
+    const scroll = (id: string) => requestAnimationFrame(() =>
+      document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" }));
+    const c = prepare ? candidates.find((x) => x.id === prepare) : undefined;
+    if (c) { void openComposer(c).then(() => scroll("contract-composer")); return; }
+    if (q) { setContractQ(q); setContractTab("all"); setContractPage(1); scroll("contracts-list"); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- يُقرأ مرّةً بعد التحميل
+  }, [loaded]);
 
   const composeBody = useMemo(() => {
     const rate = Number(feeRate);
@@ -1300,6 +1324,7 @@ c.gatesActivation
             واللسانُ من `TabBar` لا مكتوبٌ في مكانه: فيه وقفةٌ واحدةٌ للشريط
             كلِّه وتنقّلٌ بالأسهم يعكس في العربيّة، وأدوارُ `tablist` صريحة —
             وكتابتُه بيدي كانت تُسقط ذلك كلَّه، وأمسكها `staff-surface`. */}
+        <div id="contracts-list" className="scroll-mt-4" />
         {contracts.length > 0 && (
           <TabBar
             className="mb-3"

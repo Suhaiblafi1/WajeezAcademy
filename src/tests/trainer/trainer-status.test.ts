@@ -6,7 +6,9 @@
    ④ والغائبُ بطلبٍ غيرِ نشطٍ لا يُطلب اعتمادُ ظهوره — الزرُّ يرفضه — بل يقال طورُ طلبه. */
 
 import { describe, expect, it } from 'vitest'
-import { approvedToAccept, quietLineAr, stepsLineAr, trainerStateOf, trainerSteps, type StatusInput } from '@/application/trainer/trainer-status'
+import {
+  approvedToAccept, firstActOf, quietLineAr, stateChipAr, stepsLineAr, trainerStateOf, trainerSteps, type StatusInput,
+} from '@/application/trainer/trainer-status'
 
 const base: StatusInput = {
   suspended: false, hasAccount: true, applicationStatus: 'active',
@@ -141,5 +143,36 @@ describe('حال المدرب وما ينتظره', () => {
     expect(stepsLineAr(steps, 'you')).toBe('المطلوب منك: مراجعة نبذته وصورته الجديدتين')
     expect(stepsLineAr(steps, 'trainer')).toBeNull()
     expect(stepsLineAr(trainerSteps(t({ photoUrl: null })), 'trainer')).toBe('المطلوب منه: رفع صورته')
+  })
+
+  /* ⑤ (٢١ أكتوبر ٢٠٢٦) «يجب أن يأخذني الزرُّ للإجراء الذي ينتظرني» — وكان زرُّ البطاقة «اعتمده مدربا» لكلّ من لم
+     ينشط، والمطلوبُ منك تجهيزُ عقده. و«ينتظرك» يحمل المطلوب. */
+  it('⚠️ ⑤ زر البطاقة باب أولى خطواتك، و«ينتظرك» يقول ما ينتظر', () => {
+    /* أحمد: قبل قبولا مشروطا، ولا عقد ولا حساب، وعرضت عليه دورات ولا صورة له */
+    const x = t({
+      applicationStatus: 'conditionally_approved', hasAccount: false, contract: null, photoUrl: null,
+      hasLiveCourse: false, publiclyVisible: false, cohorts: [], queue: { requests: 0, toAccept: 10 },
+    })
+    const steps = trainerSteps(x)
+    expect(trainerStateOf(x, steps)).toBe('you')
+    expect(firstActOf(steps)?.act).toBe('contract_new')
+    expect(stateChipAr('you', steps)).toBe('ينتظرك: تجهيز عقده وإرساله')
+    /* والسطرُ لا يكرّر ما في الوسم */
+    expect(stepsLineAr(steps, 'you', 1)).toBeNull()
+
+    /* ومن لا عقد له يعتمد مدربا — فزرّه الاعتماد، والوسم بلا شرح ما بعد الشرطة */
+    const y = t({ applicationStatus: 'under_review', hasAccount: false, contract: null, hasLiveCourse: false, publiclyVisible: false })
+    const ys = trainerSteps(y)
+    expect(firstActOf(ys)?.act).toBe('approve')
+    expect(stateChipAr('you', ys)).toBe('ينتظرك: اعتماده مدربا')
+
+    /* وخطوتان منك: الأولى في الوسم، والثانية «وأيضا منك» */
+    const z = trainerSteps(t({ pendingPhotoUrl: '/n.jpg', cohorts: [{ status: 'draft', plan: 'submitted', postponedTo: null }] }))
+    expect(stateChipAr('you', z)).toBe('ينتظرك: اعتماد خطة شعبة')
+    expect(firstActOf(z)?.act).toBe('plans')
+    expect(stepsLineAr(z, 'you', 1)).toBe('وأيضا منك: مراجعة صورته الجديدة')
+
+    /* وسائرُ الحالات وسمُها اسمُها */
+    expect(stateChipAr('trainer', trainerSteps(t({ photoUrl: null })))).toBe('ينتظر المدرب')
   })
 })
