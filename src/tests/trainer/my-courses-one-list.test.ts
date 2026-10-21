@@ -86,7 +86,8 @@ describe('② الصفحةُ تبني صفوفَها من القائمة الو�
   const PANEL = code('src/pages/trainer/CourseMaterialsPanel.tsx')
 
   it('⚠️ الصفوفُ من `buildMyCourses` ومعها شعبُه من «شعبي»', () => {
-    expect(Q).toMatch(/buildMyCourses\(\{ quals: quals \?\? \[\], offers, prep, cohorts, requests, now \}\)/)
+    /* وشعبُ الفصول القادمة تُخرَج منها إلى قسمها (٢١ أكتوبر ٢٠٢٦، `board-place.ts`) — والباقي كلُّه منها */
+    expect(Q).toMatch(/buildMyCourses\(\{\s*quals: quals \?\? \[\], offers, requests, now,\s*prep: prep\.filter\([^\n]+\),\s*cohorts: cohorts\.filter\(\(c\) => !away\.has\(c\.id\)\),\s*\}\)/)
     expect(Q).toMatch(/apiGet<MyCourseCohort\[\]>\("\/api\/trainer\/cohorts\/summary"\)/)
   })
 

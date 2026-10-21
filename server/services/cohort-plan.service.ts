@@ -833,6 +833,8 @@ export class CohortPlanService {
         cohort: {
           include: {
             course: { include: { versions: { orderBy: { version: 'desc' }, take: 1, select: { titleAr: true } } } },
+            /* وفصلُها — منه تُعرف شعبُ الفصول القادمة (`board-place.ts`، ٢١ أكتوبر ٢٠٢٦) */
+            term: { select: { year: true, season: true } },
             sessions: {
               select: {
                 id: true, title: true, startsAt: true, endsAt: true, status: true, placeholder: true, moduleIds: true,
@@ -892,6 +894,7 @@ export class CohortPlanService {
         /* ومعرّفُ دورتها — تجمع به «دوراتي» شعبَه إلى دوراته (الخطوة F، ١٩ أكتوبر ٢٠٢٦) */
         id: c.id, title: c.title, courseId: c.courseId, courseTitle: c.course.versions[0]?.titleAr ?? c.course.id, role: l.role,
         status: c.status, startsAt: c.startsAt, endsAt: c.endsAt, proposedStartsOn,
+        term: c.term ? { year: c.term.year, season: c.term.season } : null,
         trainerOrdinal: ordinals.get(c.id) ?? null,
         learners: c._count.enrollments, sessions: countableSessions(c.sessions).length,
         planStatus, done, total: required.length,
@@ -977,16 +980,16 @@ export class CohortPlanService {
        تسمية الفصل. والحدودُ المعلَنةُ (`startsAt` و`endsAt`) لا تُمَسّ هنا —
        يكتبها الاعتمادُ وحدَه.
 
-       ═══ إلّا المراجعة — «وبعد الاعتماد كلُّ تغييرٍ باعتماد» (٣ج) ═══
+       ═══ والمراجعةُ كذلك — نُسخ «تبقى النافذةُ كما اعتُمدت» (٢١ أكتوبر ٢٠٢٦) ═══
 
-       شعبةٌ اعتُمدت لها خطّةٌ قبلُ نافذتُها نافذةُ ما اعتُمد. ومراجعةٌ تمدّ المدّةَ
-       أو تنقلها كانت تنقل النافذةَ لحظةَ حفظها — فيجدول المدرّبُ لقاءاتٍ في مدّةٍ
-       لم يقرأها أحد. فتبقى النافذةُ كما اعتُمدت، ويكتبها اعتمادُ المراجعة
-       (`applyPeriod`). */
-    const approvedBefore = await this.prisma.cohortDeliveryPlan.count({
-      where: { cohortId, trainerId: { not: null }, status: { in: [...APPROVED_PLAN_STATUSES] } },
-    })
-    if (period && approvedBefore === 0) {
+       كانت شعبةٌ اعتُمدت لها خطّةٌ تبقى نافذتُها نافذةَ ما اعتُمد حتّى تُعتمَد المراجعة
+       (٣ج). فقدّمت مدرّبةٌ بدءَ شعبتها من ١٩ ديسمبر، فعرضت لها «اللقاءات» يومَ ٨ ديسمبر
+       — من المدّة التي في يدها — وردّه الخادمُ: «الموعد خارج مدّة الشعبة». فقال صاحبُ
+       المنصّة: «i approve everything at once». واللقاءُ بعد الاعتماد ينتظر الإدارةَ ولا
+       يراه متعلّم (`trainerAddSession`)، واعتمادُ المراجعة يعتمد اللقاءاتِ المنتظِرةَ معها
+       (`decide`) — فلا يصل متعلّما شيءٌ في مدّةٍ لم تُقرأ. والحدودُ المعلَنةُ يكتبها
+       الاعتمادُ وحدَه كما كانت (`applyPeriod`). */
+    if (period) {
       const { from, to } = periodBounds(period)
       await this.prisma.cohort.update({
         where: { id: cohortId },

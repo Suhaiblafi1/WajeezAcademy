@@ -282,8 +282,12 @@ describe('⑦ الاعتمادُ يفتح التسجيلَ ويحدّ الالت
     expect((await new CohortService(prisma).openChecklist(cohortId)).missing).not.toContain('خطّةُ المدرّب لم تُعتمَد بعد — تُفتح الشعبةُ للتسجيل باعتمادها')
   })
 
-  it('⚠️ والمراجعةُ لا تنقل نافذةَ الجدولة قبل اعتمادها — واعتمادُها ينقلها', async () => {
-    const before = await prisma.cohort.findUniqueOrThrow({ where: { id: cohortId }, select: { scheduleWindowEnd: true } })
+  /* ═══ والمراجعةُ تنقل نافذةَ الجدولة لحظةَ حفظها (٢١ أكتوبر ٢٠٢٦) ═══
+     كانت تبقى على ما اعتُمد حتّى تُعتمَد المراجعة — فرُدّ لقاءٌ في مدّةٍ عدّلتها المدرّبة.
+     فقال صاحبُ المنصّة: «i approve everything at once». فاللقاءُ في المدّة الجديدة يُقبل
+     منتظِرا لا يراه متعلّم، والحدودُ المعلَنةُ لا تُمسّ، واعتمادُ المراجعة يعتمدهما معا. */
+  it('⚠️ والمراجعةُ تنقل نافذةَ الجدولة لحظةَ حفظها — واللقاءُ فيها ينتظر اعتمادَها', async () => {
+    const before = await prisma.cohort.findUniqueOrThrow({ where: { id: cohortId }, select: { endsAt: true } })
     /* مراجعةٌ تمدّ المدّةَ أسبوعا — وموعدُها الأخيرُ معها */
     const longer = { ...PERIOD, endsOn: '2027-04-10' }
     const revision: TrainerPlanContent = {
@@ -291,15 +295,27 @@ describe('⑦ الاعتمادُ يفتح التسجيلَ ويحدّ الالت
       slots: SLOTS.map((x, i) => (i === SLOTS.length - 1 ? { ...x, endsOn: longer.endsOn } : x)),
     }
     await plans.savePlan(trainerUserId, cohortId, revision)
-    const saved = await prisma.cohort.findUniqueOrThrow({ where: { id: cohortId }, select: { scheduleWindowEnd: true } })
-    expect(saved.scheduleWindowEnd?.toISOString(), 'نقلت المراجعةُ النافذةَ قبل أن تُقرأ').toBe(before.scheduleWindowEnd?.toISOString())
+    const saved = await prisma.cohort.findUniqueOrThrow({ where: { id: cohortId }, select: { scheduleWindowEnd: true, endsAt: true } })
+    expect(saved.scheduleWindowEnd?.toISOString(), 'بقيت النافذةُ على ما اعتُمد').toBe(periodBounds(longer).to.toISOString())
+    expect(saved.endsAt?.toISOString(), 'نقلت المراجعةُ الحدودَ المعلَنةَ قبل اعتمادها').toBe(before.endsAt?.toISOString())
+
+    /* ولقاءٌ في الأسبوع المضاف — كان يُردّ «خارج مدّة الشعبة» */
+    const { CohortService } = await import('../../services/cohort.service')
+    const added = await new CohortService(prisma).trainerAddSession(trainerUserId, cohortId, {
+      title: 'لقاءٌ في الأسبوع المضاف',
+      startsAt: new Date('2027-04-07T15:00:00.000Z'), endsAt: new Date('2027-04-07T17:00:00.000Z'),
+    })
+    expect(added.approvalState, 'أُعلن لقاءٌ في مدّةٍ لم تُعتمد').toBe('pending')
 
     /* ويُختصر الإرسالُ هنا إلى حاله — قائمتُه محروسةٌ في ⑤ */
     const draft = await prisma.cohortDeliveryPlan.findFirstOrThrow({ where: { cohortId, status: 'draft' }, orderBy: { createdAt: 'desc' } })
     await prisma.cohortDeliveryPlan.update({ where: { id: draft.id }, data: { status: 'submitted' } })
     await plans.decide(adminId, draft.id, true)
-    const approved = await prisma.cohort.findUniqueOrThrow({ where: { id: cohortId }, select: { scheduleWindowEnd: true } })
+    const approved = await prisma.cohort.findUniqueOrThrow({ where: { id: cohortId }, select: { scheduleWindowEnd: true, endsAt: true } })
     expect(approved.scheduleWindowEnd?.toISOString()).toBe(periodBounds(longer).to.toISOString())
+    expect(approved.endsAt?.toISOString()).toBe(periodBounds(longer).to.toISOString())
+    const meeting = await prisma.cohortSession.findUniqueOrThrow({ where: { id: added.id }, select: { approvalState: true } })
+    expect(meeting.approvalState, 'لم يعتمد اعتمادُ المراجعة لقاءَها').toBe('approved')
   })
 })
 

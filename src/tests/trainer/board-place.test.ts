@@ -66,3 +66,31 @@ describe('④ لسان «دوراتي»', () => {
     expect(html).toMatch(/<span[^>]*class="sr-only"[^>]*>تنتظر قرارك: <\/span>1/)
   })
 })
+
+/* ═══ ⑤ الفصول القادمة (٢١ أكتوبر ٢٠٢٦) ═══
+   بلاغُ صاحب المنصّة: شعبتان أُجّلتا بقيتا في «شعبي» بين شعب هذا الفصل. فاختار «إلى دوراتي بقسمٍ منفصل يقول دورات
+   الفصول القادمة». ورُئي ساقطا: أُسقط فحصُ الفصل من القسمة فبقيت المؤجَّلةُ «حاليّة»، وأُعيدت «دوراتي» إلى الشعب
+   كلّها فعادت المؤجَّلةُ تحت دورتها. */
+describe('⑤ الفصول القادمة', () => {
+  const now = new Date('2026-10-21T10:00:00Z')
+  const spring = { year: 2027, season: 'feb_apr' }
+  it('⚠️ ما لم يبدأ وفصله بعد الذي نعمل له — معتمدا أو مؤجّلا أو مفتوحا — للفصول القادمة', () => {
+    expect(boardPlace({ status: 'draft', approvedOnce: true, term: spring }, now), 'معتمدة نقلت إلى الربيع').toBe('later')
+    expect(boardPlace({ status: 'open', term: spring }, now)).toBe('later')
+    /* والمؤجَّلةُ خطّتُها: فصلُها الجديد في صفّه ويومُها المقترحُ من القديم — والصفُّ يحكم */
+    expect(boardPlace({ status: 'draft', term: spring, proposedStartsOn: '2026-11-22' }, now)).toBe('later')
+    expect(boardPlace({ status: 'draft', proposedStartsOn: '2027-03-01' }, now), 'بلا صفّ — من يومها').toBe('later')
+  })
+  it('⚠️ والفصل الذي نعمل له وما بدأ حاليّان — وحين يقترب فصلها تعود', () => {
+    const winter = { year: 2026, season: 'nov_jan' }
+    expect(boardPlace({ status: 'draft', approvedOnce: true, term: winter }, now)).toBe('current')
+    expect(boardPlace({ status: 'active', term: spring }, now), 'جارية').toBe('current')
+    expect(boardPlace({ status: 'draft', approvedOnce: true, term: spring }, new Date('2026-11-02T10:00:00Z')), 'بدأ الشتاء').toBe('current')
+  })
+  it('⚠️ «دوراتي» تخرجها من صفوف الدورات وتعرضها في قسمها', () => {
+    const page = code('src/pages/trainer/Qualifications.tsx')
+    expect(page).toMatch(/cohorts: cohorts\.filter\(\(c\) => !away\.has\(c\.id\)\)/)
+    expect(page).toMatch(/\{later\.length > 0 && <LaterTerms cohorts=\{later\}/)
+    expect(page).toMatch(/دورات الفصول القادمة/)
+  })
+})
