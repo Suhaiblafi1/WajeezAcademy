@@ -846,15 +846,16 @@ const ACTIVE: Shot[] = [
     name: 'bell',
     async run(e) {
       const p = e.page
+      /* الجرسُ يفتح «الرسائل والتنبيهات» (٢١ أكتوبر ٢٠٢٦) — واللقطةُ لسانُ التنبيهات، ولا يُفترض فيه
+         قسمٌ بعينه: ما يحتاج إجراءً في البذر اليومَ قد يُقرأ غدا */
       await open(e, '/trainer')
-      await btn(p.locator('header'), /^الإشعارات/).click()
+      await p.getByRole('link', { name: /^الرسائل والتنبيهات —/ }).click()
       await settle(e)
-      const panel = p.getByText('تعليم الكل كمقروء').first().locator('xpath=ancestor::*[contains(@class,"rounded")][1]')
+      const panel = p.locator('[role="tabpanel"]')
       await shoot(e, {
         name: 'bell', clip: panel, clipPad: 10,
-        marks: [{ target: p.getByText('تعليم الكل كمقروء').first(), n: 1, pad: 4 }],
+        marks: [{ target: panel.getByRole('button').first(), n: 1, pad: 4 }],
       })
-      await p.keyboard.press('Escape')
     },
   },
   {

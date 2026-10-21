@@ -128,8 +128,10 @@ describe('③ ولا يرسل شيء بلا سؤال', () => {
 })
 
 describe('④ والجرس يفتح الإعلان نفسه', () => {
-  it('⚠️ البند يفتح نافذته بالإعلان المسمّى', () => {
-    expect(notificationHref(ANNOUNCEMENT_TEMPLATE_KEY, 'trainer', { announcementId: 'a-1' })).toBe('/trainer?announcement=a-1')
+  /* وكان يفتح نافذتَه (`/trainer?announcement=`)؛ وصار يفتحه في «الرسائل والتنبيهات» حيث يُقرأ ويُردّ عليه
+     (٢١ أكتوبر ٢٠٢٦، `pages/trainer/Inbox.tsx`) — والنافذةُ باقيةٌ لمن جاءها برابطٍ قديم */
+  it('⚠️ البند يفتح الإعلان المسمّى في لسان «الرسائل»', () => {
+    expect(notificationHref(ANNOUNCEMENT_TEMPLATE_KEY, 'trainer', { announcementId: 'a-1' })).toBe('/trainer/inbox?m=a-1')
   })
 
   it('وفي صنف يكتم: الإعلانات — والنافذة لا تمرّ بالتفضيل', () => {

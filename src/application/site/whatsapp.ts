@@ -42,6 +42,12 @@ export const WHATSAPP_SPOTS: WhatsAppSpot[] = [
     labelAr: 'إثبات أهليّة خصم الفئة',
     whereAr: 'صفحة المسار · صفحة الدورة — تحت السعر',
   },
+  /* ردُّ المدرّب على إعلانٍ منّا (٢١ أكتوبر ٢٠٢٦) — وما خلا منه رجع إلى رقم المستشار */
+  {
+    key: 'trainer_reply',
+    labelAr: 'ردّ المدرّبين على رسائلنا',
+    whereAr: 'بوابة المدرب · الرسائل والتنبيهات',
+  },
 ]
 
 export type WhatsAppNumbers = Record<string, string>

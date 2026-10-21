@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router";
+import { useEffect, useRef, useState } from "react";
+import { Link, useNavigate } from "react-router";
 import { Bell, CheckCheck } from "lucide-react";
 import { apiGet, apiPost } from "@/services/api";
 import { useRealSession } from "@/services/session";
 import { fmtDateTime } from "@/application/text/format-ar";
 import { notificationCtaAr, notificationHref } from "@/application/notifications/destinations";
+import { refreshUnread, useUnreadCount } from "@/services/unread-count";
 
 import { Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
@@ -23,32 +24,18 @@ interface InAppNotification {
 export type BellAudience = "learner" | "trainer" | "staff";
 
 /** جرس إشعارات داخل المنصة — يظهر فقط لمن له جلسة حقيقية.
-   يحدّث العدّاد كل 30 ثانية، والقائمة تُجلب عند الفتح، والنقر يعلّم كمقروء. */
-export default function NotificationBell({ audience }: { audience: BellAudience }) {
+   العدّادُ من مخزنٍ يشاركه بندُ القائمة (`unread-count.ts`)، والقائمة تُجلب عند الفتح، والنقر يعلّم كمقروء.
+
+   و`href` يجعله بابا لا قائمة (٢١ أكتوبر ٢٠٢٦): للمدرّب صفحةُ «الرسائل والتنبيهات»، فالجرسُ يفتحها
+   ولا يعرض نصّا في قائمةٍ صغيرة — شكا صاحبُ المنصّة أنّ المدرّب «لا يقرؤها ولا يوجد فيها أكشن»،
+   وكانت على الهاتف تخرج عن حافّة الشاشة. */
+export default function NotificationBell({ audience, href }: { audience: BellAudience; href?: string }) {
   const { user } = useRealSession();
   const navigate = useNavigate();
-  const [unread, setUnread] = useState(0);
+  const unread = useUnreadCount(audience, !!user);
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<InAppNotification[] | null>(null);
   const boxRef = useRef<HTMLDivElement>(null);
-
-  const refreshCount = useCallback(async () => {
-    try {
-      const r = await apiGet<{ unread: number }>(`/api/learner/notifications/unread-count?audience=${audience}`);
-      setUnread(r.unread);
-    } catch { /* بلا جلسة أو خادم غير متاح — الجرس يبقى صامتاً */ }
-  }, [audience]);
-
-  useEffect(() => {
-    if (!user) return;
-    /* استدعاء غير متزامن: لا setState يجري قبل أول await، فالتصيير
-       المتتالي الذي تحذّر منه القاعدة لا يقع هنا. القاعدة لا ترى عبر
-       الحدّ غير المتزامن فتَعُدّ كل دالة تنتهي بـsetState متزامنة. */
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- setState بعد await لا قبله
-    void refreshCount();
-    const t = setInterval(() => void refreshCount(), 30_000);
-    return () => clearInterval(t);
-  }, [user, refreshCount]);
 
   /* إغلاق القائمة عند النقر خارجها */
   useEffect(() => {
@@ -61,6 +48,22 @@ export default function NotificationBell({ audience }: { audience: BellAudience 
   }, [open]);
 
   if (!user) return null;
+
+  const badge = unread > 0 && (
+    <span className="absolute -top-1 -left-1 grid h-4 min-w-4 place-items-center rounded-full bg-gold px-1 text-fine font-black text-on-gold">
+      {unread > 9 ? "9+" : unread}
+    </span>
+  );
+
+  if (href) {
+    return (
+      <Button as={Link} to={href} tone="secondary"
+        aria-label={`الرسائل والتنبيهات — ${unread} غير مقروءة`} className="relative grid h-9 w-9 place-items-center bg-white/[0.03]">
+        <Bell className="h-4 w-4" />
+        {badge}
+      </Button>
+    );
+  }
 
   const toggle = async () => {
     const next = !open;
@@ -76,7 +79,7 @@ export default function NotificationBell({ audience }: { audience: BellAudience 
     try {
       await apiPost(`/api/learner/notifications/${n.id}/read`);
       setItems((prev) => prev?.map((x) => x.id === n.id ? { ...x, status: "read" } : x) ?? null);
-      setUnread((u) => Math.max(0, u - 1));
+      void refreshUnread(audience);
     } catch { /* تبقى غير مقروءة — تُعاد المحاولة عند النقر التالي */ }
   };
 
@@ -97,7 +100,7 @@ export default function NotificationBell({ audience }: { audience: BellAudience 
       try { await apiPost(`/api/learner/notifications/${n.id}/read`); } catch { /* تجاهل الفردي */ }
     }
     setItems((prev) => prev?.map((x) => ({ ...x, status: "read" })) ?? null);
-    setUnread(0);
+    void refreshUnread(audience);
   };
 
   return (
@@ -105,11 +108,7 @@ export default function NotificationBell({ audience }: { audience: BellAudience 
       <Button tone="secondary" onClick={() => void toggle()}
         aria-label={`الإشعارات — ${unread} غير مقروءة`} className="relative grid h-9 w-9 place-items-center bg-white/[0.03]">
         <Bell className="h-4 w-4" />
-        {unread > 0 && (
-          <span className="absolute -top-1 -left-1 grid h-4 min-w-4 place-items-center rounded-full bg-gold px-1 text-fine font-black text-on-gold">
-            {unread > 9 ? "9+" : unread}
-          </span>
-        )}
+        {badge}
       </Button>
 
       {open && (

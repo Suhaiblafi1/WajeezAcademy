@@ -131,9 +131,9 @@ const TRAINER: Table = {
   'trainer.prep.reminder': { path: '/trainer/qualifications', ctaAr: 'أقرّ بجاهزيّتك' },
   /* والملصقُ يُوافَق عليه حيث يُرى — قسمُ التسويق */
   'trainer.poster.submitted': { path: '/trainer/marketing', ctaAr: 'راجع الملصق ووافق عليه' },
-  /* وإعلانُ الإدارة (٤ أكتوبر ٢٠٢٦) — يُفتح في نافذته فوق بوّابته، ولو قرأه من قبل
-     (`?announcement=` أدناه، و`TrainerAnnouncement.tsx`) */
-  'trainer.announcement': { path: '/trainer', ctaAr: 'اقرأ الإعلان' },
+  /* وإعلانُ الإدارة (٤ أكتوبر ٢٠٢٦) — كان يُفتح في نافذته فوق بوّابته (`?announcement=`). وصار يُفتح في
+     لسان «الرسائل» من «الرسائل والتنبيهات» (٢١ أكتوبر ٢٠٢٦): يُقرأ كاملا ويُردّ عليه (`?m=` أدناه) */
+  'trainer.announcement': { path: '/trainer/inbox', ctaAr: 'اقرأ الإعلان' },
   /* وما نقترحه على بطاقته — يُقرَّر في إعدادات حسابه، ويُرى في صفحة المدرّبين حين نعتمد تعديله */
   'trainer.suggestion.proposed': { path: '/trainer/account', ctaAr: 'افتح الاقتراح' },
   'trainer.suggestion.edit_approved': { path: '/trainers', ctaAr: 'شاهد بطاقتك' },
@@ -256,7 +256,7 @@ export function allDestinationPaths(): string[] {
    يُضاف هنا معاملٌ لا مسار. */
 const QUERY_FROM_DATA: Partial<Record<MailAudience, Record<string, { param: string; field: string }>>> = {
   staff: { 'cohort.plan.submitted': { param: 'cohort', field: 'cohortId' } },
-  trainer: { 'trainer.announcement': { param: 'announcement', field: 'announcementId' } },
+  trainer: { 'trainer.announcement': { param: 'm', field: 'announcementId' } },
 }
 
 export function notificationHref(

@@ -13,7 +13,7 @@
    `server/services/trainer-announcement.service.ts`. */
 
 import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router";
+import { useLocation, useSearchParams } from "react-router";
 import { Megaphone } from "lucide-react";
 import Modal from "@/components/Modal";
 import { Inset } from "@/components/ui/Surface";
@@ -59,7 +59,10 @@ export default function TrainerAnnouncement() {
     return () => { alive = false };
   }, [asked]);
 
-  const shown = items
+  /* وفي «الرسائل والتنبيهات» لا نافذة: الصفحةُ تعرض الإعلانَ نفسَه كاملا ومعه «قرأته» (٢١ أكتوبر ٢٠٢٦) —
+     فنافذةٌ فوقها تغطّي ما جاء يقرؤه */
+  const onInbox = useLocation().pathname.startsWith("/trainer/inbox");
+  const shown = items && !onInbox
     ? announcementToShow(items, {
       wanted: asked && !closed.has(asked) ? asked : null,
       deferred: (id) => closed.has(id) || deferredInSession(id),

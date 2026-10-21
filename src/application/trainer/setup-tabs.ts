@@ -16,6 +16,8 @@ export const SETUP_TABS: readonly string[] = [
   '/trainer/qualifications',
   '/trainer/marketing',
   '/trainer/earnings',
+  /* وما يصله منّا — له في طوره ما لغيره (٢١ أكتوبر ٢٠٢٦) */
+  '/trainer/inbox',
   /* ومن مُنح مراجعةَ اختبار المستوى يعمل بها من يومه — ليست من الطور */
   '/trainer/placement-review',
 ]
