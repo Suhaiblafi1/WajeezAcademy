@@ -189,7 +189,9 @@ export class TrainerPrepService {
        عُرضت عليه شعبةٌ يجيب عرضَها، ولا تُنشأ له ثانية.
      · **وما قبِله** يبقى هنا حتّى تُعتمَد خطّتُه، ثمّ يخرج: شعبتُه في «شعبي»
        وتُفتح للتسجيل بقرار الإدارة.
-     · **ولا اعتذار**: الدورةُ معتمَدةٌ له، وتركُها بلا قبولٍ هو الجواب. */
+     · ~~**ولا اعتذار**: الدورةُ معتمَدةٌ له، وتركُها بلا قبولٍ هو الجواب.~~ نُسخ (٢١ أكتوبر ٢٠٢٦): كان تركُها لا
+       يصل أحدا، فتبقى في «ينتظر المدرب: قبول N دورات» على بطاقته أبدا — وقرارُ ٢ أكتوبر «لا إجبار، والخياراتُ
+       بفرقها». فاختار صاحبُ المنصّة «A»: يعتذر عنها بسببٍ كغيرها، فتُطوى معتمَدتُها ويصلنا السبب، ونعيدها إن شئنا. */
   private async approvedWithoutCohort(profileId: string): Promise<PrepCourse[]> {
     const quals = await this.prisma.trainerCourseQualification.findMany({
       where: { profileId, status: 'qualified' },
@@ -327,7 +329,10 @@ export class TrainerPrepService {
         data: { profileId: profile.id, courseId, status: 'pending', note: 'من ملحق العقد (أ)' },
       })
     }
-    if (!qual || qual.status !== 'pending') {
+    /* والمعتمَدةُ له بلا شعبةٍ ولا عرضٍ مفتوحٍ يعتذر عنها كذلك (٢١ أكتوبر ٢٠٢٦) — وما قبِله فشعبتُه بابُه */
+    const wasApproved = qual?.status === 'qualified'
+      && (await this.approvedWithoutCohort(profile.id)).some((c) => c.courseId === courseId && c.state === 'to_decide')
+    if (!qual || (qual.status !== 'pending' && !wasApproved)) {
       throw new AuthError('not_pending', 'هذه الدورة ليست بانتظار قرارك', 409)
     }
     if (qual.requestedCohortId) throw requestNotYours()
@@ -340,12 +345,14 @@ export class TrainerPrepService {
     })
     await recordAudit(this.prisma, {
       actorId: userId, action: 'trainer.prep.decline', entityType: 'trainer_profile', entityId: profile.id,
-      meta: { courseId, reasonAr: reason.slice(0, 500), cohortId: cohort?.id ?? null },
+      meta: { courseId, reasonAr: reason.slice(0, 500), cohortId: cohort?.id ?? null, ...(wasApproved ? { wasApproved: true } : {}) },
     })
     await notifyRole(this.prisma, ['academic_manager', 'super_admin'], {
       channel: 'in_app', templateKey: 'trainer.prep.declined',
       title: 'اعتذر مدرّب عن دورة',
-      body: `اعتذر ${profile.application.fullName} عن دورة اخترناها له — السبب: ${reason.slice(0, 200)}`,
+      body: wasApproved
+        ? `اعتذر ${profile.application.fullName} عن دورة معتمدة له — السبب: ${reason.slice(0, 200)}. تعيدها له من بطاقته إن شئت`
+        : `اعتذر ${profile.application.fullName} عن دورة اخترناها له — السبب: ${reason.slice(0, 200)}`,
       data: { profileId: profile.id, courseId },
     }).catch(() => undefined)
     /* ومن لم يبقَ له ما ينتظر — اعتُمد ما قبِله واعتذر عن الباقي — يُقال
