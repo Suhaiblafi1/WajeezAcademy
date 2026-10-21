@@ -42,6 +42,8 @@ interface CohortSummary {
   planStatus: string; done: number; total: number;
   /* اعتُمدت لها خطّةٌ قطّ — فهي حاليّةٌ ولو لم تُفتح بعد (`board-place.ts`) */
   approvedOnce?: boolean;
+  /* فصلُها — وما بعد الفصل الذي نعمل له في «دوراتي» (`board-place.ts`، ٢١ أكتوبر ٢٠٢٦) */
+  term?: { year: number; season: string } | null;
   /* «التالي» بحال الخطّة والشعبة — و`waiting` انتظارٌ لا فعل (`boardNextStep`) */
   next: { key: string; labelAr: string; waiting?: boolean } | null;
 }
@@ -84,6 +86,7 @@ export default function CohortBoard() {
   const current = rows.filter((c) => boardPlace(c) === "current");
   const finished = rows.filter((c) => boardPlace(c) === "finished");
   const elsewhere = rows.filter((c) => boardPlace(c) === "courses").length;
+  const later = rows.filter((c) => boardPlace(c) === "later").length;
 
   /* بطاقةُ الشعبة — والمنتهيةُ بلا نقل: لا تُنقل إلى فصل */
   const card = (c: CohortSummary, movable: boolean) => {
@@ -186,6 +189,11 @@ export default function CohortBoard() {
                   ما تعدّه في «دوراتي» ({elsewhere})
                 </Button>
               )}
+              {later > 0 && (
+                <Button as={Link} to="/trainer/qualifications#later" tone="secondary" className="mt-4 ms-2">
+                  الفصول القادمة ({later})
+                </Button>
+              )}
             </Panel>
           ) : (
             <div className="grid gap-4 md:grid-cols-2">
@@ -196,6 +204,13 @@ export default function CohortBoard() {
             <p className="mt-4 text-read text-muted-foreground">
               {`و${countAr(elsewhere, COHORT_FORMS)} تعدّها أو تنتظر قرارك في `}
               <Link to="/trainer/qualifications" className="font-bold text-teal-light-ink underline decoration-dotted underline-offset-4">«دوراتي»</Link>.
+            </p>
+          )}
+          {/* والمؤجَّلةُ إلى فصلٍ بعد الذي نعمل له تُعدّ هنا ولا تُعرض — قسمُها في «دوراتي» (٢١ أكتوبر ٢٠٢٦) */}
+          {current.length > 0 && later > 0 && (
+            <p className="mt-2 text-read text-muted-foreground">
+              {`و${countAr(later, COHORT_FORMS)} للفصول القادمة في `}
+              <Link to="/trainer/qualifications#later" className="font-bold text-teal-light-ink underline decoration-dotted underline-offset-4">«دوراتي»</Link>.
             </p>
           )}
           {finished.length > 0 && (

@@ -66,7 +66,10 @@ import { Award, CalendarClock, Check, ChevronDown, ClipboardCheck, Loader2, Penc
 import TrainerLayout from "./TrainerLayout";
 import { PrepDecision, PrepSetupNote, type PrepRow } from "./CourseMaterialsPanel";
 import CohortMoveBox, { type MoveRequestRow } from "@/components/trainer/CohortMoveBox";
-import { boardPlace } from "@/application/trainer/board-place";
+import { boardPlace, cohortTerm } from "@/application/trainer/board-place";
+import { boardStart } from "@/application/trainer/plan-gate";
+import { termLabelAr, type TermRef } from "@/application/trainer/cohort-move";
+import { termBounds } from "@/application/terms/season";
 import CourseProposalsSection from "./MyCourseProposals";
 import MyPathsSection from "./MyPaths";
 import EmptyState from "@/components/EmptyState";
@@ -75,7 +78,7 @@ import { apiGet, apiPost, ApiError } from "@/services/api";
 import { staffControlCls, StaffField } from "@/components/FormKit";
 import { Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
-import Chip from "@/components/ui/Chip";
+import Chip, { type ChipTone } from "@/components/ui/Chip";
 import TabBar from "@/components/ui/TabBar";
 import ListToolbar from "@/components/admin/ListToolbar";
 import { paginate } from "@/application/admin/paginate";
@@ -200,10 +203,20 @@ function MyCoursesList() {
 
   useEffect(() => { void load(); }, [load]);
 
-  const rows = useMemo(
-    () => buildMyCourses({ quals: quals ?? [], offers, prep, cohorts, requests, now }),
-    [quals, offers, prep, cohorts, requests, now],
-  );
+  /* ═══ شعبُ الفصول القادمة في قسمها — لا تحت دوراتها (٢١ أكتوبر ٢٠٢٦، `board-place.ts`) ═══
+     قرارُ صاحب المنصّة: ما أُجّل أو نُقل إلى فصلٍ بعد الذي نعمل له يُرى «بقسمٍ منفصل يقول دورات الفصول القادمة».
+     فيُخرَج من صفوف الدورات — شعبُه وبابُ إعداده معا — ويُعرض تحتها بفصله. */
+  const later = useMemo(() => cohorts.filter((c) => boardPlace(c, new Date(now)) === "later"), [cohorts, now]);
+  const rows = useMemo(() => {
+    const away = new Set(later.map((c) => c.id));
+    const laterCourses = new Set(later.map((c) => c.courseId));
+    /* ودورةٌ لم يبقَ لها هنا إلّا تأهيلُها — وشعبتُها في القسم — لا تُعاد صفّا «معتمدة لك» بلا شعبة */
+    return buildMyCourses({
+      quals: quals ?? [], offers, requests, now,
+      prep: prep.filter((p) => !p.cohortId || !away.has(p.cohortId)),
+      cohorts: cohorts.filter((c) => !away.has(c.id)),
+    }).filter((r) => !(r.state === "ready" && laterCourses.has(r.courseId)));
+  }, [quals, offers, prep, cohorts, requests, now, later]);
   const counts = useMemo(() => {
     const c = {} as Record<MyCourseFilter, number>;
     for (const f of MY_COURSE_FILTERS) c[f.id] = f.states.length === 0 ? rows.length : rows.filter((r) => f.states.includes(r.state)).length;
@@ -235,6 +248,12 @@ function MyCoursesList() {
     }
   }
 
+  /* ورابطُ «شعبي» إلى القسم (`#later`) يصله بعد أن يُرسم */
+  const laterShown = later.length > 0;
+  useEffect(() => {
+    if (laterShown && window.location.hash === "#later") document.getElementById("later")?.scrollIntoView({ block: "start" });
+  }, [laterShown]);
+
   if (down) {
     return (
       <EmptyState
@@ -254,7 +273,7 @@ function MyCoursesList() {
     );
   }
 
-  if (rows.length === 0) {
+  if (rows.length === 0 && later.length === 0) {
     /* وكانت تقول «تُؤهَّل تلقائيّا لكلّ دورةٍ ذكرتَها» — ودوراتُ طلبه قيد
        الإعداد لا مؤهَّلة، فكان النصُّ يَعِد بما لا يراه. فصار يقول أين هي. */
     return (
@@ -319,7 +338,85 @@ function MyCoursesList() {
           ))}
         </ul>
       )}
+
+      {later.length > 0 && <LaterTerms cohorts={later} moves={moves} onChanged={() => void load()} />}
     </>
+  );
+}
+
+/* ═══ «دورات الفصول القادمة» — قسمٌ بفصولها (٢١ أكتوبر ٢٠٢٦) ═══
+   كلُّ فصلٍ عنوانٌ وتحته شعبُه: دورتُها وحالُها ومتى تبدأ، وبابُها، ونقلُها إلى فصلٍ آخر — ومنه إعادتُها. والمؤجَّلةُ
+   خطّتُها لا يُقال يومُ بدئها المقترح: هو من فصلها القديم، وفصلُها الجديد هو ما يُقال. */
+function LaterTerms({ cohorts, moves, onChanged }: { cohorts: MyCourseCohort[]; moves: MoveRequestRow[]; onChanged: () => void }) {
+  const groups = new Map<string, { term: TermRef; cohorts: MyCourseCohort[] }>();
+  for (const c of cohorts) {
+    const t = cohortTerm(c);
+    if (!t) continue;
+    const key = `${t.year}:${t.season}`;
+    const g = groups.get(key) ?? { term: t, cohorts: [] };
+    g.cohorts.push(c);
+    groups.set(key, g);
+  }
+  const ordered = [...groups.values()].sort((a, b) =>
+    termBounds(a.term.year, a.term.season).startsOn.getTime() - termBounds(b.term.year, b.term.season).startsOn.getTime());
+  return (
+    <section id="later" aria-labelledby="later-title" className="mt-8 scroll-mt-24">
+      <h2 id="later-title" className="flex items-center gap-2 text-lg font-black">
+        <CalendarClock className="h-5 w-5 text-gold-ink" aria-hidden="true" />
+        دورات الفصول القادمة
+      </h2>
+      <p className="mt-1 text-read leading-6 text-muted-foreground">
+        أجّلت أو نقلت إلى فصل لاحق، وترجع إلى «شعبي» حين يقترب فصلها.
+      </p>
+      {ordered.map((g) => (
+        <div key={`${g.term.year}:${g.term.season}`} className="mt-4">
+          <h3 className="text-read font-black text-muted-foreground">{termLabelAr(g.term)} ({g.cohorts.length})</h3>
+          <ul className="mt-2 grid gap-2.5">
+            {g.cohorts.map((c) => <LaterCohort key={c.id} c={c} moves={moves} onChanged={onChanged} />)}
+          </ul>
+        </div>
+      ))}
+    </section>
+  );
+}
+
+function laterStateOf(c: MyCourseCohort): { label: string; tone: ChipTone } {
+  if (c.next?.key === "postponed") return { label: "مؤجّلة", tone: "neutral" };
+  if (c.approvedOnce || c.status !== "draft") return { label: "معتمدة", tone: "positive" };
+  if (c.planStatus === "submitted") return { label: "بانتظار الاعتماد", tone: "info" };
+  return { label: "في التجهيز", tone: "neutral" };
+}
+
+function LaterCohort({ c, moves, onChanged }: { c: MyCourseCohort; moves: MoveRequestRow[]; onChanged: () => void }) {
+  const st = laterStateOf(c);
+  const postponed = c.next?.key === "postponed";
+  const start = postponed ? { at: null, proposed: false } : boardStart({ startsAt: c.startsAt ?? null, proposedStartsOn: c.proposedStartsOn });
+  return (
+    <Card as="li" className="p-4">
+      <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1.5">
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-read text-muted-foreground">{c.courseTitle}</p>
+          <h4 className="text-read font-bold leading-6 text-foreground">{c.title}</h4>
+        </div>
+        <Chip tone={st.tone} srPrefixAr="الحال">{st.label}</Chip>
+      </div>
+      {start.at && (
+        <p className="mt-1 text-read leading-6 text-muted-foreground">
+          تبدأ {cohortDayAr(start.at)}{start.proposed && " · مقترح"}
+        </p>
+      )}
+      {c.next?.labelAr && (
+        <p className="mt-1 text-read leading-6 text-muted-foreground">
+          {c.next.waiting ? c.next.labelAr : <><span className="font-bold text-foreground">التالي:</span> {c.next.labelAr}</>}
+        </p>
+      )}
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <Button as={Link} to={`/trainer/cohort/${c.id}`} size="sm" icon={Users} tone="secondary">افتح الشعبة</Button>
+      </div>
+      <CohortMoveBox cohortId={c.id} status={c.status} startsAt={c.startsAt ?? null} proposedStartsOn={c.proposedStartsOn ?? null}
+        pending={moves.find((m) => m.cohortId === c.id && m.status === "pending") ?? null}
+        onChange={onChanged} />
+    </Card>
   );
 }
 

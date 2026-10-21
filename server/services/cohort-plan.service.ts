@@ -833,6 +833,8 @@ export class CohortPlanService {
         cohort: {
           include: {
             course: { include: { versions: { orderBy: { version: 'desc' }, take: 1, select: { titleAr: true } } } },
+            /* وفصلُها — منه تُعرف شعبُ الفصول القادمة (`board-place.ts`، ٢١ أكتوبر ٢٠٢٦) */
+            term: { select: { year: true, season: true } },
             sessions: {
               select: {
                 id: true, title: true, startsAt: true, endsAt: true, status: true, placeholder: true, moduleIds: true,
@@ -892,6 +894,7 @@ export class CohortPlanService {
         /* ومعرّفُ دورتها — تجمع به «دوراتي» شعبَه إلى دوراته (الخطوة F، ١٩ أكتوبر ٢٠٢٦) */
         id: c.id, title: c.title, courseId: c.courseId, courseTitle: c.course.versions[0]?.titleAr ?? c.course.id, role: l.role,
         status: c.status, startsAt: c.startsAt, endsAt: c.endsAt, proposedStartsOn,
+        term: c.term ? { year: c.term.year, season: c.term.season } : null,
         trainerOrdinal: ordinals.get(c.id) ?? null,
         learners: c._count.enrollments, sessions: countableSessions(c.sessions).length,
         planStatus, done, total: required.length,
