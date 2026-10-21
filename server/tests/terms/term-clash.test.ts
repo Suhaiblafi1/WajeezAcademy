@@ -162,3 +162,19 @@ describe('مواعيد الفصل بلا تعارض', () => {
     expect(v.rows.every((row) => row.action === 'keep')).toBe(true)
   })
 })
+
+describe('أوقات الدورات القريبة — يراها المدرب وهو يختار موعده', () => {
+  it('⚠️ يرى لقاءات الدورة المربوطة بدورته باسمها وسببها — لا باسم مدربها', async () => {
+    const r = await call('GET', `/api/trainer/cohorts/${x.cohortId}/nearby-times`, 'a')
+    expect(r.statusCode, r.body).toBe(200)
+    const { nearby } = r.json() as { nearby: { startsAt: string; courseTitleAr: string; whyAr: string }[] }
+    expect(nearby.map((n) => n.startsAt)).toEqual(SUNDAYS.map((d) => new Date(d).toISOString()))
+    expect(nearby.every((n) => n.courseTitleAr === 'دورة التعارض Y' && n.whyAr.includes('للفئة نفسها'))).toBe(true)
+    expect(r.body).not.toContain('مدرّب التعارض b')
+  })
+
+  it('⚠️ ولا يقرأ أوقات شعبة غير مسندة إليه', async () => {
+    expect((await call('GET', `/api/trainer/cohorts/${y.cohortId}/nearby-times`, 'a')).statusCode).toBe(403)
+  })
+})
+

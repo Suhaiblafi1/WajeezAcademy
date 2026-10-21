@@ -320,3 +320,34 @@ export function withRejectReason(note: string, labelAr: string): string {
     .replace(/^\s*[—-]?\s*/, '')
   return rest ? `${labelAr} — ${rest}` : labelAr
 }
+
+/* ─────────── تنبيهُ المدرّب وهو يختار موعدَ لقائه (٢٢ أكتوبر ٢٠٢٦) ─────────── */
+
+/** لقاءٌ لدورةٍ قريبةٍ من دورته — باسم الدورة وسبب الربط، لا باسم مدرّبها */
+export interface NearbyTime { startsAt: string; endsAt: string; courseTitleAr: string; whyAr: string }
+
+/** ما يقع من لقاءات الدورات القريبة على هذا الوقت */
+export function nearbyAt(nearby: readonly NearbyTime[], from: Date, to: Date): NearbyTime[] {
+  const a = from.getTime()
+  const b = to.getTime()
+  return nearby.filter((n) => Date.parse(n.startsAt) < b && a < Date.parse(n.endsAt))
+}
+
+/** لقاءاتُ الدورات القريبة في يومٍ واحدٍ بتوقيت عمّان — يرى ما يتجنّبه قبل أن يختار الساعة */
+export function nearbyOnDay(nearby: readonly NearbyTime[], day: string): NearbyTime[] {
+  return nearby.filter((n) => zonedDay(new Date(n.startsAt)) === day)
+}
+
+/** «19:00–21:00 دورة X» */
+export const nearbySpanAr = (n: NearbyTime) =>
+  `${zonedClock(new Date(n.startsAt))}–${zonedClock(new Date(n.endsAt))} «${n.courseTitleAr}»`
+
+/** سطرُ التنبيه: مع من يتعارض ولماذا، ثمّ الخيار — والقرارُ له */
+export function nearbyWarnAr(hits: readonly NearbyTime[]): string | null {
+  if (hits.length === 0) return null
+  const titles = [...new Set(hits.map((h) => h.courseTitleAr))]
+  const first = hits[0]!
+  const more = titles.length - 1
+  const tail = more === 0 ? '' : more === 1 ? ' ودورة أخرى' : ` و${more} دورات أخرى`
+  return `في هذا الوقت لقاء «${first.courseTitleAr}»${tail} ${first.whyAr}، وقد يريد الطالب الدورتين معا. ننصح بوقت آخر، ولك أن تحفظه كما هو.`
+}

@@ -51,6 +51,7 @@ import { Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import Chip from "@/components/ui/Chip";
 import SlotDaySelect from "./SlotDaySelect";
+import { NearbyDay, NearbyWarn, nearbyHits, nearbyMarkAr, useNearbyTimes } from "./NearbyTimes";
 import { fmtDateTimeAr } from "@/utils/format";
 import { ACADEMY_ZONE, zonedDay, zonedInstant } from "@/application/trainer/cohort-period";
 import { SESSION_DAY_ADVICE_AR, sessionDayAdvice } from "@/application/trainer/start-advice";
@@ -134,6 +135,8 @@ export default function SlotSessions({
   });
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(blank);
+  /* ولقاءاتُ الدورات القريبة من دورته — يتجنّبها أو يبقي اختياره (`NearbyTimes.tsx`) */
+  const nearby = useNearbyTimes(cohortId);
   const [busy, setBusy] = useState(false);
   const FROM = useMemo(() => fromSlots(), []);
   const TO = useMemo(() => toSlotsFor(form.from), [form.from]);
@@ -347,7 +350,7 @@ export default function SlotSessions({
                             <option value="">اختر الساعة</option>
                             {FROM.map((c) => {
                               const note = move.date ? fromClockNote(move.date, c) : null;
-                              return <option key={c} value={c}>{slotLabelAr(c)}{note ? ` · ${note}` : ""}</option>;
+                              return <option key={c} value={c}>{slotLabelAr(c)}{note ? ` · ${note}` : ""}{nearbyMarkAr(nearby, move.date, c)}</option>;
                             })}
                           </select>
                         </StaffField>
@@ -362,6 +365,8 @@ export default function SlotSessions({
                           </select>
                         </StaffField>
                       </div>
+                      <NearbyDay nearby={nearby} day={move.date} />
+                      {moveTimed && <NearbyWarn hits={nearbyHits(nearby, move.date, move.from, move.to)} />}
                       <div className="flex flex-wrap gap-2">
                         <Button tone="confirm" size="sm" loading={busy} disabled={busy || !moveTimed} onClick={() => void saveMove(s)}>
                           احفظ الموعد الجديد
@@ -467,7 +472,7 @@ export default function SlotSessions({
                 <option value="">اختر الساعة</option>
                 {FROM.map((c) => {
                   const note = form.date ? fromClockNote(form.date, c) : null;
-                  return <option key={c} value={c}>{slotLabelAr(c)}{note ? ` · ${note}` : ""}</option>;
+                  return <option key={c} value={c}>{slotLabelAr(c)}{note ? ` · ${note}` : ""}{nearbyMarkAr(nearby, form.date, c)}</option>;
                 })}
               </select>
             </StaffField>
@@ -504,6 +509,7 @@ export default function SlotSessions({
             </p>
           )}
           {tooShort && <p className="text-read font-bold text-gold-ink">{SHORT_SESSION_AR}.</p>}
+          {!outside && (timed ? <NearbyWarn hits={nearbyHits(nearby, form.date, form.from, form.to)} /> : <NearbyDay nearby={nearby} day={form.date} />)}
           {/* ونصيحةُ البدء حين يُختار يومٌ قبل أواخر نوفمبر — ودودةٌ لا تمنع (`start-advice.ts`) */}
           {!outside && sessionDayAdvice(form.date, zonedDay(new Date())) && (
             <p className="flex items-start gap-2 text-read leading-6 text-teal-light-ink">

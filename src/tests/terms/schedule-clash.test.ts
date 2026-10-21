@@ -6,7 +6,8 @@
 
 import { describe, expect, it } from 'vitest'
 import {
-  candidateSlots, clashWhyAr, findClashes, levelRank, linkWhyAr, mainSlot, planClashFree, rejectedScope, withRejectReason,
+  candidateSlots, clashWhyAr, findClashes, levelRank, linkWhyAr, mainSlot, nearbyAt, nearbyOnDay, nearbySpanAr, nearbyWarnAr, planClashFree,
+  rejectedScope, withRejectReason, type NearbyTime,
   SCHEDULE_REJECT_REASONS, type BuildSchedule, type ClashCohort, type ClashCourse, type WeeklySlot,
 } from '@/application/terms/schedule-clash'
 import { clashBellBodyAr, clashBellTitleAr, clashMailAr } from '@/application/terms/clash-message'
@@ -236,3 +237,32 @@ describe('رسالة المدرب', () => {
     expect(mail.ctaAr.startsWith('افتح')).toBe(true)
   })
 })
+
+describe('تنبيه المدرب وهو يختار موعد لقائه', () => {
+  const iso = (day: string, clock: string) => zonedAt(day, clock).toISOString()
+  const nearby: NearbyTime[] = [
+    { startsAt: iso('2026-12-06', '19:00'), endsAt: iso('2026-12-06', '21:00'), courseTitleAr: 'دورة X', whyAr: 'في مسار «Y» نفسه' },
+    { startsAt: iso('2026-12-08', '18:00'), endsAt: iso('2026-12-08', '20:00'), courseTitleAr: 'دورة Z', whyAr: 'للفئة نفسها (أ) وبمستوى قريب' },
+    /* بعد منتصف الليل بعمّان — وهو أمسُه بغرينتش: فاليومُ يُقرأ بعمّان لا بأوّل عشرة أحرف */
+    { startsAt: iso('2026-12-09', '00:30'), endsAt: iso('2026-12-09', '01:30'), courseTitleAr: 'دورة W', whyAr: 'في مسار «Y» نفسه' },
+  ]
+
+  it('ما يقع على الوقت المختار وحده — والمتتالي بلا تداخل لا ينبّه', () => {
+    expect(nearbyAt(nearby, zonedAt('2026-12-06', '20:00'), zonedAt('2026-12-06', '22:00')).map((n) => n.courseTitleAr)).toEqual(['دورة X'])
+    expect(nearbyAt(nearby, zonedAt('2026-12-06', '17:00'), zonedAt('2026-12-06', '19:00'))).toEqual([])
+  })
+
+  it('واليوم بتوقيت عمّان يقول ما فيه قبل أن تختار الساعة', () => {
+    expect(nearbyOnDay(nearby, '2026-12-08').map(nearbySpanAr)).toEqual(['18:00–20:00 «دورة Z»'])
+    expect(nearbyOnDay(nearby, '2026-12-07')).toEqual([])
+  })
+
+  it('والتنبيه يسمّي الدورة وسببها، وينصح ولا يمنع — بلا تشكيل', () => {
+    expect(nearbyWarnAr([])).toBeNull()
+    const t = nearbyWarnAr([nearby[0]!])!
+    expect(t).toContain('«دورة X» في مسار «Y» نفسه')
+    expect(t).toContain('ولك أن تحفظه كما هو')
+    expect(t).not.toMatch(/[\u064B-\u0650\u0652]/)
+  })
+})
+

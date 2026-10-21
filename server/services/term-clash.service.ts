@@ -22,7 +22,7 @@ import { renderMail } from './mail-template'
 import { proposeSchedule, type ScheduleEdit } from '../../src/application/trainer/schedule-proposal'
 import { PLAN_VISIBLE_STATUSES } from '../../src/application/trainer/plan-overlay'
 import {
-  planClashFree, rejectedScope, slotAr, type ClashCohort, type ClashCourse, type ClashInterval, type ClashRow, type RejectedSlot, type WeeklySlot,
+  linkWhyAr, planClashFree, rejectedScope, slotAr, type ClashCohort, type NearbyTime, type ClashCourse, type ClashInterval, type ClashRow, type RejectedSlot, type WeeklySlot,
 } from '../../src/application/terms/schedule-clash'
 import { CLASH_TEMPLATE_KEY, clashBellBodyAr, clashBellTitleAr, clashMailAr } from '../../src/application/terms/clash-message'
 import { courseTitleAr } from '../../src/application/catalog/course-title'
@@ -30,6 +30,33 @@ import { familyCategory } from '../../src/application/catalog/pathway-category'
 import publicPathways from '../../src/data/catalog/public-pathways.json'
 
 const LIVE = ['draft', 'open', 'full', 'active'] as const
+/** ما يُقرأ من الدورة لقاعدة الربط */
+const COURSE_SELECT = {
+  id: true, homePathwayId: true, currentVersion: true, renamedTitleAr: true,
+  versions: { select: { version: true, titleAr: true, levelAr: true } },
+} as const
+
+/** الدورةُ كما تقرؤها القاعدة: مساراتُها العامّة وفئاتُها، ومستواها من إصدارها القائم */
+function clashCourseOf(course: {
+  id: string; homePathwayId: string | null; currentVersion: number; renamedTitleAr: string | null
+  versions: { version: number; titleAr: string; levelAr: string | null }[]
+}): ClashCourse {
+  const v = course.versions.find((x) => x.version === course.currentVersion) ?? course.versions[0]
+  const paths = publicPathways.pathways.filter((p) => p.course_ids.includes(course.id))
+  const audiences = paths.length > 0
+    ? [...new Set(paths.map((p) => p.category))]
+    : course.homePathwayId ? [familyCategory(course.homePathwayId)] : []
+  return {
+    courseId: course.id,
+    titleAr: courseTitleAr(course.renamedTitleAr ?? v?.titleAr ?? course.id),
+    levelAr: v?.levelAr ?? null,
+    pathways: paths.map((p) => ({ id: p.id, titleAr: p.short_title })),
+    audiences,
+  }
+}
+
+/** نافذةٌ بلا حدودٍ مكتوبة — أربعةُ أشهرٍ من اليوم */
+const DEFAULT_WINDOW_DAYS = 120
 const SEATED = ['enrolled', 'waitlisted', 'completed'] as const
 /** لقاءٌ بلا نهايةٍ مكتوبة — ساعتان، كما يقيسه الفحصُ في بقيّة المنصّة */
 const DEFAULT_MINUTES = 120
@@ -90,7 +117,7 @@ export class TermClashService {
       orderBy: [{ startsAt: 'asc' }, { id: 'asc' }],
       select: {
         id: true, title: true, courseId: true, startsAt: true, endsAt: true, scheduleLockedAt: true,
-        course: { select: { id: true, homePathwayId: true, currentVersion: true, renamedTitleAr: true, versions: { select: { version: true, titleAr: true, levelAr: true } } } },
+        course: { select: COURSE_SELECT },
         trainers: { select: { profileId: true, profile: { select: { userId: true, application: { select: { fullName: true, email: true } } } } } },
         sessions: { where: { status: { not: 'cancelled' } }, select: { id: true, startsAt: true, endsAt: true, moduleIds: true, status: true, placeholder: true } },
         assessments: { select: { id: true, title: true, type: true, dueAt: true, moduleId: true, briefAr: true, maxScore: true, status: true } },
@@ -100,23 +127,8 @@ export class TermClashService {
       },
     })
 
-    /* الدوراتُ: مساراتُها العامّة وفئاتُها، ومستواها من إصدارها القائم */
     const courses = new Map<string, ClashCourse>()
-    for (const c of rows) {
-      if (courses.has(c.courseId)) continue
-      const v = c.course.versions.find((x) => x.version === c.course.currentVersion) ?? c.course.versions[0]
-      const paths = publicPathways.pathways.filter((p) => p.course_ids.includes(c.courseId))
-      const audiences = paths.length > 0
-        ? [...new Set(paths.map((p) => p.category))]
-        : c.course.homePathwayId ? [familyCategory(c.course.homePathwayId)] : []
-      courses.set(c.courseId, {
-        courseId: c.courseId,
-        titleAr: courseTitleAr(c.course.renamedTitleAr ?? v?.titleAr ?? c.courseId),
-        levelAr: v?.levelAr ?? null,
-        pathways: paths.map((p) => ({ id: p.id, titleAr: p.short_title })),
-        audiences,
-      })
-    }
+    for (const c of rows) if (!courses.has(c.courseId)) courses.set(c.courseId, clashCourseOf(c.course))
 
     const intervalOf = (s: { startsAt: Date; endsAt: Date | null }): ClashInterval => ({
       startsAt: s.startsAt.getTime(),
@@ -236,6 +248,49 @@ export class TermClashService {
     const clashes = r.clashes.map((x) => ({ cohortId: x.cohortId, titleAr: titleOf(x.cohortId), whyAr: x.whyAr }))
     if (r.action === 'stuck') return { ...base, action: 'stuck', fromAr: slotAr(r.slot), toAr: null, clashes, whyAr: r.whyAr }
     return { ...base, action: 'move', fromAr: slotAr(r.from), toAr: slotAr(r.to), clashes, whyAr: r.payload.reasonAr }
+  }
+
+  /* ═══ أوقاتُ الدورات القريبة — يراها المدرّبُ وهو يختار موعدَ لقائه (٢٢ أكتوبر ٢٠٢٦) ═══
+     قرارُ صاحب المنصّة: «للمدرّبين الجدد: عندما يختار موعدا يُذكر له أنّ هذا الموعدَ اختاره مدرّبٌ آخر لدورةٍ قد
+     تكون متكاملةً مع دورتك، فننصح بتغييره أو نعطيه الخيارَ أن يضيفها على أيّ حال». فهذه لقاءاتُ الشعب المربوطة
+     بشعبته (`linkWhyAr`) داخل نافذة جدولتها — باسم الدورة وسبب الربط، لا باسم مدرّبها. والتنبيهُ لا يمنع. */
+  async nearbyFor(userId: string, cohortId: string, now = new Date()): Promise<NearbyTime[]> {
+    const profile = await this.prisma.trainerProfile.findUnique({ where: { userId }, select: { id: true } })
+    if (!profile) throw new AuthError('not_trainer', 'لا ملف مدرب لهذا الحساب', 403)
+    const link = await this.prisma.cohortTrainer.findFirst({ where: { cohortId, profileId: profile.id }, select: { cohortId: true } })
+    if (!link) throw new AuthError('not_your_cohort', 'هذه الشعبة ليست مسندة إليك', 403)
+    const mine = await this.prisma.cohort.findUniqueOrThrow({
+      where: { id: cohortId },
+      select: { courseId: true, startsAt: true, endsAt: true, scheduleWindowStart: true, scheduleWindowEnd: true, course: { select: COURSE_SELECT } },
+    })
+    const start = mine.scheduleWindowStart ?? mine.startsAt ?? now
+    const from = start > now ? start : now
+    const to = mine.scheduleWindowEnd ?? mine.endsAt ?? new Date(from.getTime() + DEFAULT_WINDOW_DAYS * 86_400_000)
+    if (to <= from) return []
+    const others = await this.prisma.cohort.findMany({
+      where: {
+        id: { not: cohortId }, courseId: { not: mine.courseId }, status: { in: [...LIVE] },
+        /* وشعبُه الأخرى يحرسها الخادمُ عند الحفظ (`trainer_conflict`) — فلا تُعدّ هنا */
+        trainers: { none: { profileId: profile.id } },
+        sessions: { some: { startsAt: { gte: from, lte: to }, status: { not: 'cancelled' }, placeholder: false } },
+      },
+      select: {
+        course: { select: COURSE_SELECT },
+        sessions: { where: { startsAt: { gte: from, lte: to }, status: { not: 'cancelled' }, placeholder: false }, select: { startsAt: true, endsAt: true } },
+      },
+    })
+    const me = clashCourseOf(mine.course)
+    const out: NearbyTime[] = []
+    for (const o of others) {
+      const them = clashCourseOf(o.course)
+      const why = linkWhyAr(me, them)
+      if (!why) continue
+      for (const s of o.sessions) {
+        const end = s.endsAt && s.endsAt > s.startsAt ? s.endsAt : new Date(s.startsAt.getTime() + DEFAULT_MINUTES * 60_000)
+        out.push({ startsAt: s.startsAt.toISOString(), endsAt: end.toISOString(), courseTitleAr: them.titleAr, whyAr: why })
+      }
+    }
+    return out.sort((a, b) => a.startsAt.localeCompare(b.startsAt) || a.courseTitleAr.localeCompare(b.courseTitleAr))
   }
 
   /** يرسل كلَّ نقلٍ بطاقةً إلى مدرّبه، ويخبره بجرسٍ وبريد — ويُعاد الحسابُ الآن لا ممّا عُرض */
