@@ -103,6 +103,13 @@ export function workFieldDomains(workField: string): string[] {
   return (WORK_FIELD_FAMILIES[workField] ?? []).map(courseDomainByFamily).filter(Boolean)
 }
 
+/** ملاءمةُ دورةٍ له: ٢ لما يريد تطويرَه، و١ لمجال عمله، و٠ لغيرهما */
+function courseFit(interests: readonly string[], workField: string): (domainAr: string | null | undefined) => number {
+  const want = new Set(interests)
+  const near = new Set(workFieldDomains(workField))
+  return (d) => (d && want.has(d) ? 2 : d && near.has(d) ? 1 : 0)
+}
+
 /** الدوراتُ المختارةُ له سلفا — ما يريد تطويرَه، ثمّ مجالُ عمله، ثمّ الأقربُ موعدا، حتّى `n` */
 export function suggestCourses(
   courses: readonly { courseId: string; domainAr?: string | null; startsAt: string | Date | null }[],
@@ -110,15 +117,48 @@ export function suggestCourses(
   workField: string,
   n: number,
 ): string[] {
-  const want = new Set(interests)
-  const near = new Set(workFieldDomains(workField))
-  const score = (d: string | null | undefined) => (d && want.has(d) ? 2 : d && near.has(d) ? 1 : 0)
+  const score = courseFit(interests, workField)
   const at = (x: string | Date | null) => (x ? new Date(x).getTime() : Number.POSITIVE_INFINITY)
   return courses
     .map((c, i) => ({ id: c.courseId, s: score(c.domainAr), t: at(c.startsAt), i }))
     .sort((a, b) => b.s - a.s || a.t - b.t || a.i - b.i)
     .slice(0, Math.max(0, n))
     .map((x) => x.id)
+}
+
+/* ═══ ومسارٌ رئيسيٌّ وبديلٌ من المسارات العامّة (٢١ أكتوبر ٢٠٢٦) ═══
+
+   سأل صاحبُ المنصّة لمّا بُنيت المساراتُ العامّةُ الثمانية (`data/catalog/public-pathways.json`، أربعُ دوراتٍ
+   لكلٍّ): «هل نقترح على كلٍّ مسارا رئيسيّا وآخر، أم نعطيه أن يبني مسارَه؟». فاختار **مسارا رئيسيّا وبديلا**:
+   تُختار دوراتُ الرئيسيّ له سلفا، والبديلُ بضغطة، ويحذف ويضيف حتّى الحدّ.
+
+   · **لا يُقترح مسارٌ إلّا وكلُّ دوراته في المنحة** — لها شعبةٌ تُشترى في الفصل القادم القريب. وإلّا لاقترحنا
+     مسارا يدفع نصفَه ويُترك نصفُه بلا شعبة.
+   · **والرئيسيُّ أكثرُها ملاءمةً له** بمجموع ملاءمة دوراته (`courseFit`)، والتعادلُ بترتيب مختارات صاحب المنصّة
+     (يمرّره المنادي). **ولا رئيسيَّ بملاءمةٍ صفر**: مسارٌ لا يمسّ مجالَه ولا اهتمامَه أبعدُ عنه من أربع دوراتٍ
+     تمسّهما (`suggestCourses`) — فيُعرض حينها بديلا لا رئيسيّا.
+   · **والبديلُ** التالي في الترتيب، أو أوّلُ المسارات إن لم يكن رئيسيّ. */
+
+export interface GrantPathOption {
+  id: string
+  title: string
+  courseIds: readonly string[]
+}
+
+export function suggestPaths(
+  paths: readonly GrantPathOption[],
+  courses: readonly { courseId: string; domainAr?: string | null }[],
+  interests: readonly string[],
+  workField: string,
+): { main: GrantPathOption | null; alt: GrantPathOption | null } {
+  const score = courseFit(interests, workField)
+  const domainOf = new Map(courses.map((c) => [c.courseId, c.domainAr ?? null]))
+  const ranked = paths
+    .filter((p) => p.courseIds.length > 0 && p.courseIds.every((id) => domainOf.has(id)))
+    .map((p, i) => ({ p, i, s: p.courseIds.reduce((n, id) => n + score(domainOf.get(id)), 0) }))
+    .sort((a, b) => b.s - a.s || a.i - b.i)
+  const main = ranked[0] && ranked[0].s > 0 ? ranked[0].p : null
+  return { main, alt: (main ? ranked[1] : ranked[0])?.p ?? null }
 }
 
 /** ما يريد تطويرَه أوّلا — ترتيبٌ ثابت: ما في اهتمامه قبل غيره، وكلٌّ على ترتيبه */
