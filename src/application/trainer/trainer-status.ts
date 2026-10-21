@@ -18,7 +18,25 @@ import { STATUS_LABELS } from './application-status'
 import { hiddenOnSale, planMarkOf, type CardCohort } from './trainer-card'
 
 export type Turn = 'you' | 'trainer'
-export interface TrainerStep { turn: Turn; ar: string }
+/* ═══ ولكلّ خطوةٍ منك بابُها (٢١ أكتوبر ٢٠٢٦) ═══
+
+   قال صاحبُ المنصّة وهو ينظر في بطاقةٍ تقول «المطلوب منك: تجهيز عقده وإرساله» وتحتها «اعتمده مدربا»: «لماذا
+   هذا الخيارُ هنا! يجب أن يأخذني الزرُّ للإجراء الذي ينتظرني». فلكلّ خطوةٍ منك فعلُها، وزرُّ البطاقة فعلُ
+   أولاها — والشاشةُ تقرأ الفعلَ وتذهب به (`TrainerRunOps.tsx`). وما لا بابَ له بعدُ لا زرَّ له. */
+export type StepAct = 'contract_new' | 'contract' | 'approve' | 'publish' | 'requests' | 'plans' | 'profile' | 'suggest'
+export interface TrainerStep { turn: Turn; ar: string; act?: StepAct }
+
+/** نصُّ زرّ كلّ فعل */
+export const STEP_ACT_AR: Record<StepAct, string> = {
+  contract_new: 'جهز عقده',
+  contract: 'افتح عقده',
+  approve: 'اعتمده مدربا',
+  publish: 'اعتمد ظهوره',
+  requests: 'افتح طلبات التأهيل',
+  plans: 'راجع الخطة',
+  profile: 'راجع ملفه',
+  suggest: 'افتح الاقتراح',
+}
 
 export type TrainerState = 'hidden' | 'you' | 'trainer' | 'ready' | 'idle' | 'suspended'
 
@@ -66,8 +84,9 @@ const reachable = (t: StatusInput) => t.applicationStatus === 'active' || t.hasL
 /** ما ينتظر أحدا الآن — بترتيب ما يوقف عمله أوّلا */
 export function trainerSteps(t: StatusInput): TrainerStep[] {
   if (t.suspended) return []
-  const you: string[] = []
+  const you: { ar: string; act?: StepAct }[] = []
   const him: string[] = []
+  const mine = (ar: string, act?: StepAct) => you.push({ ar, act })
   const active = t.applicationStatus === 'active'
   const invited = ['contract_pending', 'onboarding'].includes(t.applicationStatus)
 
@@ -75,12 +94,12 @@ export function trainerSteps(t: StatusInput): TrainerStep[] {
   let contractStep: TrainerStep | null = null
   if (!active) {
     const c = t.contract?.status ?? null
-    if (c === 'draft') contractStep = { turn: 'you', ar: 'إرسال عقده' }
-    else if (c === 'amendment_requested') contractStep = { turn: 'you', ar: 'الرد على طلب تعديل عقده' }
-    else if (c === 'signed') contractStep = { turn: 'you', ar: 'اعتماد توقيعه على العقد' }
+    if (c === 'draft') contractStep = { turn: 'you', ar: 'إرسال عقده', act: 'contract' }
+    else if (c === 'amendment_requested') contractStep = { turn: 'you', ar: 'الرد على طلب تعديل عقده', act: 'contract' }
+    else if (c === 'signed') contractStep = { turn: 'you', ar: 'اعتماد توقيعه على العقد', act: 'contract' }
     else if (c === 'sent') contractStep = { turn: 'trainer', ar: 'توقيع عقده' }
-    else if (c === 'declined' || c === 'revoked' || c === 'expired') contractStep = { turn: 'you', ar: 'إرسال عقد جديد له' }
-    else if (c === null && t.applicationStatus === 'conditionally_approved') contractStep = { turn: 'you', ar: 'تجهيز عقده وإرساله' }
+    else if (c === 'declined' || c === 'revoked' || c === 'expired') contractStep = { turn: 'you', ar: 'إرسال عقد جديد له', act: 'contract_new' }
+    else if (c === null && t.applicationStatus === 'conditionally_approved') contractStep = { turn: 'you', ar: 'تجهيز عقده وإرساله', act: 'contract_new' }
   }
 
   /* ═══ حسابُه: بلا حسابٍ لا يدخل بوّابتَه. ومن دُعي فإنشاؤه عليه ═══
@@ -91,42 +110,51 @@ export function trainerSteps(t: StatusInput): TrainerStep[] {
      — وزرُّه في بطاقته (`TrainerRunOps.tsx`). */
   if (!t.hasAccount) {
     if (invited) him.push('إنشاء حسابه من الدعوة')
-    else if (active) you.push('ربط حساب بملفه — لا حساب له')
-    else if (!contractStep) you.push('اعتماده مدربا — لا حساب له بعد')
+    else if (active) mine('ربط حساب بملفه — لا حساب له')
+    else if (!contractStep) mine('اعتماده مدربا — لا حساب له بعد', 'approve')
   }
-  if (contractStep) (contractStep.turn === 'you' ? you : him).push(contractStep.ar)
+  if (contractStep) {
+    if (contractStep.turn === 'you') mine(contractStep.ar, contractStep.act)
+    else him.push(contractStep.ar)
+  }
 
   /* ظهورُه: له دوراتٌ منشورةٌ واسمُه لا يظهر. والزرُّ لا يقبل طلبا غيرَ نشط — فهناك تكفي خطواتُ تفعيله */
-  if (hiddenOnSale(t) && active) you.push('اعتماد ظهوره — له دورات منشورة واسمه لا يظهر')
+  if (hiddenOnSale(t) && active) mine('اعتماد ظهوره — له دورات منشورة واسمه لا يظهر', 'publish')
 
   /* طابورُ التأهيل */
-  if (t.queue.requests > 0) you.push(`البت في ${some(t.queue.requests, ASKS)} تأهيل`)
+  if (t.queue.requests > 0) mine(`البت في ${some(t.queue.requests, ASKS)} تأهيل`, 'requests')
   if (t.queue.toAccept > 0) him.push(`قبول ${some(t.queue.toAccept, COURSES)} عرضت عليه`)
 
   /* خططُ شعبه القائمة */
   const live = t.cohorts.filter((c) => !DONE.includes(c.status))
   const marks = live.map((c) => planMarkOf(c))
   const n = (m: string) => marks.filter((x) => x === m).length
-  if (n('submitted') > 0) you.push(`اعتماد ${plansOf(n('submitted'))}`)
+  if (n('submitted') > 0) mine(`اعتماد ${plansOf(n('submitted'))}`, 'plans')
   if (n('none') + n('draft') > 0) him.push(`كتابة ${plansOf(n('none') + n('draft'))}`)
   if (n('returned') > 0) him.push(`تعديل ${plansOf(n('returned'))} رددتها`)
 
   /* ملفُّه العامّ */
-  if (t.pendingText && t.pendingPhotoUrl) you.push('مراجعة نبذته وصورته الجديدتين')
-  else if (t.pendingText) you.push('مراجعة نبذته الجديدة')
-  else if (t.pendingPhotoUrl) you.push('مراجعة صورته الجديدة')
+  /* واسمُه الجديدُ يُرسل معهما فيُقال أوّلا (٢١ أكتوبر ٢٠٢٦) */
+  const renamed = Boolean((t.pendingText as { name?: string | null } | null)?.name)
+  if (renamed) mine(t.pendingPhotoUrl ? 'مراجعة اسمه الجديد ونبذته وصورته' : 'مراجعة اسمه الجديد ونبذته', 'profile')
+  else if (t.pendingText && t.pendingPhotoUrl) mine('مراجعة نبذته وصورته الجديدتين', 'profile')
+  else if (t.pendingText) mine('مراجعة نبذته الجديدة', 'profile')
+  else if (t.pendingPhotoUrl) mine('مراجعة صورته الجديدة', 'profile')
   else if (!t.photoUrl) him.push('رفع صورته')
 
   /* اقتراحاتُنا على بطاقته: ما لم يُرسل علينا، وما أُرسل ولم يُجب عليه */
   if (reachable(t)) {
-    if (t.pitchDraft && t.bioDraft) you.push('إرسال اقتراحي «لماذا نفتخر به» والنبذة')
-    else if (t.pitchDraft) you.push('إرسال اقتراح «لماذا نفتخر به»')
-    else if (t.bioDraft) you.push('إرسال اقتراح النبذة')
+    if (t.pitchDraft && t.bioDraft) mine('إرسال اقتراحي «لماذا نفتخر به» والنبذة', 'suggest')
+    else if (t.pitchDraft) mine('إرسال اقتراح «لماذا نفتخر به»', 'suggest')
+    else if (t.bioDraft) mine('إرسال اقتراح النبذة', 'suggest')
   }
   const waiting = [t.pitchLatest, t.bioLatest].filter((s) => s?.status === 'pending').length
   if (waiting > 0) him.push(waiting === 2 ? 'الرد على اقتراحينا' : 'الرد على اقتراحنا')
 
-  return [...you.map((ar) => ({ turn: 'you' as const, ar })), ...him.map((ar) => ({ turn: 'trainer' as const, ar }))]
+  return [
+    ...you.map((y) => ({ turn: 'you' as const, ...y })),
+    ...him.map((ar) => ({ turn: 'trainer' as const, ar })),
+  ]
 }
 
 /** حالُه الواحدة — يُفرز بها ويُصفّى */
@@ -138,11 +166,29 @@ export function trainerStateOf(t: StatusInput, steps: TrainerStep[] = trainerSte
   return t.cohorts.some((c) => !DONE.includes(c.status)) ? 'ready' : 'idle'
 }
 
-/** سطرُ الصاحب: «المطلوب منك: اعتماد خطة شعبة · مراجعة صورته الجديدة» — أو لا شيء */
-export function stepsLineAr(steps: TrainerStep[], turn: Turn): string | null {
-  const mine = steps.filter((s) => s.turn === turn).map((s) => s.ar)
+/** سطرُ الصاحب: «المطلوب منك: اعتماد خطة شعبة · مراجعة صورته الجديدة» — أو لا شيء.
+    و`from` يتخطّى ما قيل في الوسم: فيقال الباقي «وأيضا منك» */
+export function stepsLineAr(steps: TrainerStep[], turn: Turn, from = 0): string | null {
+  const mine = steps.filter((s) => s.turn === turn).slice(from).map((s) => s.ar)
   if (mine.length === 0) return null
-  return `${turn === 'you' ? 'المطلوب منك' : 'المطلوب منه'}: ${mine.join(' · ')}`
+  const head = turn === 'trainer' ? 'المطلوب منه' : from > 0 ? 'وأيضا منك' : 'المطلوب منك'
+  return `${head}: ${mine.join(' · ')}`
+}
+
+/* ═══ و«ينتظرك» يقول ما ينتظر (٢١ أكتوبر ٢٠٢٦) ═══
+
+   قال صاحبُ المنصّة: «عند الاسم "ينتظرك" — يجب أن تكون ينتظرك وتضع معها المطلوبَ منّي بصورةٍ واضحة لأميّز
+   ما المطلوبُ بسهولة». فوسمُ «ينتظرك» يحمل أولى خطواتك بلا شرحها بعد الشَّرطة، وسطرُ «المطلوب منك» يقول ما
+   بعدها وحدَه (`stepsLineAr(…, 'you', 1)`). وسائرُ الحالات وسمُها اسمُها. */
+export function stateChipAr(state: TrainerState, steps: TrainerStep[]): string {
+  const name = TRAINER_STATES.find((x) => x.id === state)!.ar
+  const first = state === 'you' ? steps.find((s) => s.turn === 'you') : undefined
+  return first ? `${name}: ${first.ar.split(' — ')[0]}` : name
+}
+
+/** أوّلُ خطوةٍ منك لها باب — وهي زرُّ البطاقة */
+export function firstActOf(steps: TrainerStep[]): TrainerStep | null {
+  return steps.find((s) => s.turn === 'you' && s.act) ?? null
 }
 
 /* ═══ والمعتمَدةُ بلا شعبةٍ تنتظره هو (٢١ أكتوبر ٢٠٢٦) ═══

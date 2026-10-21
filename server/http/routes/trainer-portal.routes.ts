@@ -66,7 +66,7 @@ export function registerTrainerPortalRoutes(app: FastifyInstance, prisma: Prisma
     preHandler: requirePermission('trainer.portal'),
     schema: { tags: ['trainer-portal'], summary: 'أرسل عنواني ونبذتي للاعتماد — لا يظهران قبله' },
   }, async (req) => {
-    const body = z.object({ headline: z.string().max(400), bio: z.string().max(4000) }).parse(req.body ?? {})
+    const body = z.object({ headline: z.string().max(400), bio: z.string().max(4000), name: z.string().max(400).optional() }).parse(req.body ?? {})
     return publicText.submit(req.auth!.userId, body)
   })
 

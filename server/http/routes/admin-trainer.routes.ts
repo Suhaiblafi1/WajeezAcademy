@@ -1136,7 +1136,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     schema: { tags: ['admin-trainers'], summary: 'اعتماد عنوان المدرّب ونبذته — كما أرسلهما أو بعد تحريرهما' },
   }, async (req) => {
     const { profileId } = z.object({ profileId: z.string().uuid() }).parse(req.params)
-    const body = z.object({ headline: z.string().max(160), bioPublic: z.string().max(1200) }).parse(req.body ?? {})
+    const body = z.object({ headline: z.string().max(160), bioPublic: z.string().max(1200), name: z.string().max(120).optional() }).parse(req.body ?? {})
     return publicText.approve(profileId, req.auth!.userId, body)
   })
 

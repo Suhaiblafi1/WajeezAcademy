@@ -6024,7 +6024,7 @@ export class TrainerReviewService {
       pendingPhotoUrl: p.photoPendingKey ? `/api/v1/avatars/${p.photoPendingKey}` : null,
       /* وعنوانٌ ونبذةٌ كتبهما هو وينتظران قرارَنا (`trainer-public-text.service.ts`) */
       pendingText: p.publicTextPendingAt
-        ? { headline: p.headlinePending, bio: p.bioPending, at: p.publicTextPendingAt }
+        ? { headline: p.headlinePending, bio: p.bioPending, name: p.namePending, at: p.publicTextPendingAt }
         : null,
       qualifications: p.qualifications.map((q) => ({
         courseId: q.courseId,

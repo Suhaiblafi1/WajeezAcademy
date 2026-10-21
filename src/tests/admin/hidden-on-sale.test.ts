@@ -18,7 +18,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { hiddenOnSale } from '@/application/trainer/trainer-card'
-import { TRAINER_STATES, trainerStateOf } from '@/application/trainer/trainer-status'
+import { stateChipAr, TRAINER_STATES, trainerStateOf } from '@/application/trainer/trainer-status'
 
 const SHOWN = { publiclyVisible: true, isVerified: true, suspended: false }
 
@@ -68,9 +68,10 @@ describe('الشاشة تعرض الوسم وترتب به أولا', () => {
       pitchDraft: null, bioDraft: null, pitchLatest: null, bioLatest: null, cohorts: [], contract: null, queue: { requests: 0, toAccept: 0 },
     })).toBe('hidden')
     expect(TRAINER_STATES.find((x) => x.id === 'hidden')?.ar).toBe('اسمه لا يظهر')
-    /* وفي السطر المطويّ شارةُ حاله — من `TRAINER_STATES` */
+    /* وفي السطر المطويّ شارةُ حاله — من `TRAINER_STATES`، و«ينتظرك» وحدَها تحمل أولى خطواتك (`stateChipAr`) */
     expect(screen).toMatch(/const meta = TRAINER_STATES\.find\(\(x\) => x\.id === state\)!;/)
-    expect(screen).toMatch(/aria-expanded=\{isOpen\}[\s\S]{0,600}<Chip tone=\{meta\.tone\}[^>]*>\{meta\.ar\}<\/Chip>/)
+    expect(screen).toMatch(/aria-expanded=\{isOpen\}[\s\S]{0,600}<Chip tone=\{meta\.tone\}[^>]*>\{stateChipAr\(state, steps\)\}<\/Chip>/)
+    expect(stateChipAr('hidden', [{ turn: 'you', ar: 'اعتماد ظهوره — له دورات منشورة واسمه لا يظهر', act: 'publish' }])).toBe('اسمه لا يظهر')
   })
 
   it('⚠️ والموسوم أول القائمة — قبل ما ينتظرك', () => {

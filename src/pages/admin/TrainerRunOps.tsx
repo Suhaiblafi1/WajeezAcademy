@@ -26,7 +26,7 @@
 import PrepReminderRow, { ReminderDeadline, type ReminderRow } from "@/components/admin/PrepReminders";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  BadgeCheck, CheckCircle2, ChevronDown, Clock, Download, GraduationCap, ImagePlus, Loader2, Search,
+  ArrowLeft, BadgeCheck, CheckCircle2, ChevronDown, Clock, Download, GraduationCap, ImagePlus, Loader2, Search,
   Send, ServerOff, ShieldAlert, UserPlus, Users, XCircle,
 } from "lucide-react";
 import { toast, toastError } from "@/components/Toast";
@@ -48,14 +48,15 @@ import { Card, Inset, Panel } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import Chip from "@/components/ui/Chip";
 import TabBar from "@/components/ui/TabBar";
-import { BIO_MAX_WORDS, countWords } from "@/application/trainer/public-text";
+import { BIO_MAX_WORDS, countWords, NAME_MAX_CHARS, publicNameProblemAr } from "@/application/trainer/public-text";
 import { PITCH_MAX_CHARS, PITCH_MAX_LINES, PITCH_MAX_WORDS, bioSuggestionProblemAr, cleanPitchLines, pitchHeadingAr, pitchProblemAr } from "@/application/trainer/pitch";
 import {
   cohortLineAr, cohortsTallyAr, photoTrailAr, planMarkAr, planMarkOf, PLAN_MARK, textTrailAr,
   type CardCohort, type ProfileTrail,
 } from "@/application/trainer/trainer-card";
 import {
-  approvedToAccept, quietLineAr, stepsLineAr, TRAINER_STATES, trainerStateOf, trainerSteps, type TrainerState,
+  approvedToAccept, firstActOf, quietLineAr, stateChipAr, STEP_ACT_AR, stepsLineAr, TRAINER_STATES, trainerStateOf,
+  trainerSteps, type StepAct, type TrainerState,
 } from "@/application/trainer/trainer-status";
 interface OpsQualification { courseId: string; courseTitle: string; status: string }
 interface OpsTrainer {
@@ -76,7 +77,8 @@ interface OpsTrainer {
   /* صورةٌ رفعها هو من حسابه وتنتظر قرارَنا — ولا تراها العامّةُ حتّى تُعتمد */
   pendingPhotoUrl: string | null;
   /* وعنوانٌ ونبذةٌ كتبهما هو من حسابه — يُعدَّلان هنا إن شئتَ ثمّ يُعتمَدان */
-  pendingText: { headline: string | null; bio: string | null; at: string } | null;
+  /** و`name` اسمٌ جديدٌ أرسله معهما — `null` = لم يطلب تغييرَ اسمه */
+  pendingText: { headline: string | null; bio: string | null; name: string | null; at: string } | null;
   /* «لماذا نفتخر به»: المعروضُ، وآخرُ اقتراح، ومسوّدتُه الأولى لمن لم يُقترح عليه شيء */
   pitchLines: string[];
   pitchLatest: OpsSuggestion | null;
@@ -565,18 +567,21 @@ function PendingTextReview({
   const p = trainer.pendingText!;
   const [headline, setHeadline] = useState(p.headline ?? "");
   const [bio, setBio] = useState(p.bio ?? "");
+  const [name, setName] = useState(p.name ?? "");
   const [rejecting, setRejecting] = useState(false);
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
   const words = countWords(bio);
-  const edited = headline.trim() !== (p.headline ?? "") || bio.trim() !== (p.bio ?? "");
+  const edited = headline.trim() !== (p.headline ?? "") || bio.trim() !== (p.bio ?? "")
+    || (p.name !== null && name.trim() !== p.name);
+  const nameProblem = p.name !== null ? publicNameProblemAr(name) : null;
 
   const decide = async (approve: boolean) => {
     setBusy(true);
     try {
       if (approve) {
         await apiPost(`/api/admin/trainers/${trainer.profileId}/public-text/approve`,
-          { headline: headline.trim(), bioPublic: bio.trim() });
+          { headline: headline.trim(), bioPublic: bio.trim(), ...(p.name !== null ? { name: name.trim() } : {}) });
         toast(edited ? "اعتمدت بتعديلك — ووصله خبرها" : "اعتمدت كما كتبها — ووصله خبرها");
       } else {
         await apiPost(`/api/admin/trainers/${trainer.profileId}/public-text/reject`, { reasonAr: reason.trim() });
@@ -591,11 +596,20 @@ function PendingTextReview({
   return (
     <Inset tone="warn" className="mt-2.5 p-3">
       <p className="text-read font-black">
-        أرسل عنوانه ونبذته {fmtDateTime(p.at)} — تنتظر اعتمادك
+        {p.name !== null ? "أرسل اسمه الجديد مع عنوانه ونبذته" : "أرسل عنوانه ونبذته"} {fmtDateTime(p.at)} — تنتظر اعتمادك
       </p>
       <p className="mt-0.5 text-read leading-6 text-muted-foreground">
         عدّل الحقلين إن شئت ثمّ اعتمد، فيظهر ما فيهما في صفحة «المدربون». ويبقى المعتمد الحاليّ ظاهرا حتّى تقرّر.
       </p>
+      {/* واسمُه إن طلب تغييرَه (٢١ أكتوبر ٢٠٢٦) — يكتب الاسمَ المعروضَ في كلّ موضع، والقديمُ ظاهرٌ حتّى تعتمد */}
+      {p.name !== null && (<>
+        <label className="mt-2.5 block text-fine font-bold text-muted-foreground" htmlFor={`pname-${trainer.profileId}`}>
+          الاسم — الحالي: {trainer.name}
+        </label>
+        <input id={`pname-${trainer.profileId}`} value={name} maxLength={NAME_MAX_CHARS}
+          onChange={(e) => setName(e.target.value)} className={`${controlCls} mt-1 w-full`} />
+        {nameProblem && <p className="mt-1 text-read text-gold-ink">{nameProblem}</p>}
+      </>)}
       <label className="mt-2.5 block text-fine font-bold text-muted-foreground" htmlFor={`phl-${trainer.profileId}`}>
         العنوان المهنيّ
       </label>
@@ -622,7 +636,7 @@ function PendingTextReview({
         </div>
       ) : (
         <div className="mt-2.5 flex flex-wrap gap-2">
-          <Button size="sm" tone="confirm" icon={CheckCircle2} disabled={busy || headline.trim().length < 3 || bio.trim().length < 3}
+          <Button size="sm" tone="confirm" icon={CheckCircle2} disabled={busy || headline.trim().length < 3 || bio.trim().length < 3 || Boolean(nameProblem)}
             onClick={() => void decide(true)}>
             {edited ? "اعتمدها بتعديلك" : "اعتمدها كما كتبها"}
           </Button>
@@ -785,6 +799,31 @@ export default function TrainerRunOps() {
     }
   };
 
+  /* ═══ زرُّ البطاقة يذهب إلى ما ينتظرك (٢١ أكتوبر ٢٠٢٦) ═══
+     العقدُ في «العقود» مفتوحا عليه، والطلباتُ في طابورها أعلى الصفحة، والخطةُ في شعبتها إن كانت واحدة،
+     وما سوى ذلك في بطاقته نفسِها مفتوحةً على موضعه. */
+  const goTo = (t: OpsTrainer, step: StepAct) => {
+    const openAt = (anchor: string) => {
+      setOpenIds((prev) => new Set(prev).add(t.profileId));
+      requestAnimationFrame(() =>
+        document.getElementById(anchor)?.scrollIntoView({ behavior: "smooth", block: "start" }));
+    };
+    if (step === "contract_new" || step === "contract") {
+      const p = new URLSearchParams({ q: t.name });
+      if (step === "contract_new") p.set("prepare", t.applicationId);
+      navigate(`/admin/trainer-contracts?${p}`);
+    } else if (step === "approve") setApproveTarget(t);
+    else if (step === "publish") {
+      void act(`${t.profileId}:publish`, () => apiPost(`/api/admin/trainers/${t.profileId}/publish-approval`), "اعتمد ظهوره العامّ");
+    } else if (step === "requests") {
+      document.getElementById("qualification-requests")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    } else if (step === "plans") {
+      const waiting = t.cohorts.filter((c) => !["completed", "cancelled"].includes(c.status) && planMarkOf(c) === "submitted");
+      if (waiting.length === 1) navigate(`/admin/cohorts?cohort=${waiting[0].id}`);
+      else openAt(`${t.profileId}-plans`);
+    } else openAt(`${t.profileId}-${step}`);
+  };
+
   /* ═══ حالُ كلِّ مدرّبٍ وما ينتظره — سطرٌ واحدٌ مطويّ (٢٠ أكتوبر ٢٠٢٦، `trainer-status.ts`) ═══
      «هذه الصفحةُ طويلةٌ ومعقّدة.. فلاترُ واضحةٌ لكلّ الحالات، وكلُّ مدرّبٍ مضمومٌ مكتوبٌ حالُه وما المطلوبُ منّي
      أو منه». والطابورُ يقول ما لا تقوله بياناتُه: طلباتُ تأهيلٍ تنتظرك، ودوراتٌ عُرضت عليه لم يقبلها. */
@@ -830,7 +869,7 @@ export default function TrainerRunOps() {
   return (
     <div className="space-y-8">
       {/* ── الطابور: ما ينتظر قرارك من غيرك ── */}
-      <section>
+      <section id="qualification-requests" className="scroll-mt-4">
         <h3 className="flex items-center gap-2 text-sm font-black">
           <Clock className="h-4 w-4 text-gold-ink" />
           طلبات التأهيل المعلّقة
@@ -1095,7 +1134,9 @@ export default function TrainerRunOps() {
               const k = (a: string) => `${t.profileId}:${a}`;
               const meta = TRAINER_STATES.find((x) => x.id === state)!;
               const isOpen = openIds.has(t.profileId);
-              const yours = stepsLineAr(steps, "you");
+              /* في «ينتظرك» أولى خطواتك في الوسم، والسطرُ لما بعدها (`stateChipAr`) */
+              const yours = stepsLineAr(steps, "you", state === "you" ? 1 : 0);
+              const next = firstActOf(steps);
               const his = stepsLineAr(steps, "trainer");
               const quiet = quietLineAr(state, t.applicationStatus);
               return (
@@ -1106,7 +1147,7 @@ export default function TrainerRunOps() {
                     <div className="min-w-0 flex-1">
                       <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-black">
                         {t.name}
-                        <Chip tone={meta.tone} srPrefixAr="حاله">{meta.ar}</Chip>
+                        <Chip tone={meta.tone} srPrefixAr="حاله">{stateChipAr(state, steps)}</Chip>
                       </p>
                       {yours && <p className="mt-1.5 text-read font-bold leading-6 text-gold-ink">{yours}</p>}
                       {his && <p className="mt-1 text-read leading-6 text-teal-light-ink">{his}</p>}
@@ -1115,11 +1156,11 @@ export default function TrainerRunOps() {
                     </div>
                     <ChevronDown className={`mt-1 h-4 w-4 shrink-0 text-muted-foreground transition ${isOpen ? "rotate-180" : ""}`} aria-hidden="true" />
                   </button>
-                  {/* ويُعتمَد من هنا لا من «طلبات المدربين» (٢٠ أكتوبر ٢٠٢٦) — والنافذةُ تقول ما يقع وما ينقص */}
-                  {t.approveBlockersAr && (
-                    <Button tone="confirm" size="sm" type="button" icon={CheckCircle2} className="mt-2"
-                      disabled={busy === k("approve")} onClick={() => setApproveTarget(t)}>
-                      اعتمده مدربا
+                  {/* زرُّ البطاقة بابُ أولى خطواتك (٢١ أكتوبر ٢٠٢٦، `firstActOf`) — لا «اعتمده مدربا» لكلّ من لم ينشط */}
+                  {next?.act && (
+                    <Button tone="confirm" size="sm" type="button" icon={ArrowLeft} className="mt-2"
+                      disabled={busy === k(next.act)} onClick={() => goTo(t, next.act!)}>
+                      {STEP_ACT_AR[next.act]}
                     </Button>
                   )}
 
@@ -1143,16 +1184,26 @@ export default function TrainerRunOps() {
                     </Inset>
                   )}
 
+                  <div id={`${t.profileId}-plans`} className="scroll-mt-4" />
                   <TrainerCourses trainer={t} />
                   {reminders.has(t.profileId) && <PrepReminderRow row={reminders.get(t.profileId)!} deadline={deadline} />}
 
+                  <div id={`${t.profileId}-profile`} className="scroll-mt-4" />
                   <PublicProfileEditor trainer={t} onSaved={load} />
+                  <div id={`${t.profileId}-suggest`} className="scroll-mt-4" />
                   {/* والمفتاحُ يحمل آخرَ اقتراح: كلُّ إرسالٍ أو قرارٍ يبدأ الحقولَ من جديد */}
                   <PitchEditor key={`${t.profileId}:${t.pitchLatest?.id ?? ""}:${t.pitchLatest?.status ?? ""}:${t.pitchLines.join("|")}`} trainer={t} onSaved={load} />
                   <BioSuggestEditor key={`${t.profileId}:bio:${t.bioLatest?.id ?? ""}:${t.bioLatest?.status ?? ""}`} trainer={t} onSaved={load} />
 
                   {/* الإجراءات — والتأهيلُ والإسنادُ من صفحة الشعبة */}
                   <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-white/10 pt-3">
+                    {/* واعتمادُه قبل عقده خيارٌ يبقى هنا لا زرَّ البطاقة — والنافذةُ تقول ما ينقص وما يقع بكلّ خيار */}
+                    {t.approveBlockersAr && next?.act !== "approve" && (
+                      <Button tone="secondary" type="button" icon={CheckCircle2} disabled={busy === k("approve")}
+                        onClick={() => setApproveTarget(t)} className="px-3.5">
+                        اعتمده مدربا
+                      </Button>
+                    )}
                     {!t.publiclyVisible && (
                       <Button tone="secondary" type="button" disabled={busy === k("publish")}
                         onClick={() => void act(k("publish"),

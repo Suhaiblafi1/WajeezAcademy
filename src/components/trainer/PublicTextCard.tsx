@@ -1,9 +1,12 @@
-/* عنوانُك ونبذتُك في «المدربون» — تكتبهما هنا، ونعتمدهما قبل أن يظهرا.
+/* اسمُك وعنوانُك ونبذتُك في «المدربون» — تكتبها هنا، ونعتمدها قبل أن تظهر.
 
    قرارُ صاحب المنصّة (٣ أكتوبر ٢٠٢٦) — والطريقُ كلُّه في
    `server/services/trainer-public-text.service.ts`: ما ترسله ينتظر، والمعتمَدُ
    قبله يبقى معروضا، ومن يعتمده قد يحرّره تحريرا يسيرا — فيُقال لك ذلك هنا
-   قبل أن ترسل، لا بعد أن ترى نصّا غيرَ نصّك. */
+   قبل أن ترسل، لا بعد أن ترى نصّا غيرَ نصّك.
+
+   واسمُك معها (قرارُ ٢١ أكتوبر ٢٠٢٦، «A»): كان الاسمُ ما كُتب في طلبك ولا يغيّره أحد. فصار حقلا هنا،
+   يُرسل إن غيّرته، ويبقى القديمُ ظاهرا حتّى نعتمده. */
 
 import { useEffect, useState } from "react";
 import { Clock, Eye, EyeOff, Globe, Send } from "lucide-react";
@@ -14,12 +17,13 @@ import SectionHead from "@/components/ui/SectionHead";
 import { apiGet, apiPut, ApiError } from "@/services/api";
 import { fmtDateTime } from "@/application/text/format-ar";
 import {
-  BIO_MAX_WORDS, HEADLINE_MAX_CHARS, countWords, publicTextProblemAr,
+  BIO_MAX_WORDS, HEADLINE_MAX_CHARS, NAME_MAX_CHARS, countWords, publicNameProblemAr, publicTextProblemAr,
 } from "@/application/trainer/public-text";
 
 interface MyPublicText {
   headline: string | null; bioPublic: string | null;
   headlinePending: string | null; bioPending: string | null;
+  name: string; namePending: string | null;
   pendingAt: string | null; rejectNoteAr: string | null; published: boolean;
 }
 
@@ -27,6 +31,7 @@ export default function PublicTextCard({ inputCls }: { inputCls: string }) {
   const [data, setData] = useState<MyPublicText | null>(null);
   const [headline, setHeadline] = useState("");
   const [bio, setBio] = useState("");
+  const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ bad: boolean; text: string } | null>(null);
 
@@ -35,6 +40,7 @@ export default function PublicTextCard({ inputCls }: { inputCls: string }) {
     /* الحقلان يبدآن بآخر ما كتبه: المعلَّقُ إن كان، وإلّا المعتمَد */
     setHeadline(d.headlinePending ?? d.headline ?? "");
     setBio(d.bioPending ?? d.bioPublic ?? "");
+    setName(d.namePending ?? d.name);
   };
 
   useEffect(() => {
@@ -45,12 +51,12 @@ export default function PublicTextCard({ inputCls }: { inputCls: string }) {
 
   if (!data) return null;
   const words = countWords(bio);
-  const problem = publicTextProblemAr(headline, bio);
+  const problem = publicNameProblemAr(name) ?? publicTextProblemAr(headline, bio);
 
   const submit = async () => {
     setBusy(true); setMsg(null);
     try {
-      fill(await apiPut<MyPublicText>("/api/trainer/public-text", { headline, bio }));
+      fill(await apiPut<MyPublicText>("/api/trainer/public-text", { headline, bio, name }));
       setMsg({ bad: false, text: "أرسلت — تظهر حين نعتمدها، ويصلك خبر." });
     } catch (e) {
       setMsg({ bad: true, text: e instanceof ApiError ? e.message : "تعذّر الإرسال" });
@@ -70,14 +76,16 @@ export default function PublicTextCard({ inputCls }: { inputCls: string }) {
         id="public-text-h" icon={Globe} action={status}
         title="ما يراه الناس عنك في «المدربون»"
         desc={<>
-          يظهران مع صورتك في «المدربون» وصفحتك العامة. نراجعهما قبل النشر وقد نحرّرهما يسيرا.
+          تظهر مع صورتك في «المدربون» وصفحتك العامة. نراجعها قبل النشر وقد نحرّرها يسيرا.
+          والاسم هنا هو ما يراه الناس، لا اسم حسابك أعلاه.
           {!data.published && " ولا يظهر اسمك للعامة حتى نعتمد نشر ملفك."}
         </>}
       />
 
       {data.pendingAt && (
         <Inset tone="accent" className="mt-5 p-3 text-read leading-6">
-          أرسلتهما {fmtDateTime(data.pendingAt)} — بانتظار اعتمادنا، والمعتمد قبلهما يبقى معروضا.
+          أرسلتها {fmtDateTime(data.pendingAt)} — بانتظار اعتمادنا، والمعتمد قبلها يبقى معروضا.
+          {data.namePending && <> واسمك الجديد «{data.namePending}» يظهر حين نعتمده.</>}
         </Inset>
       )}
       {data.rejectNoteAr && !data.pendingAt && (
@@ -87,6 +95,13 @@ export default function PublicTextCard({ inputCls }: { inputCls: string }) {
       )}
 
       <div className="mt-6 grid gap-5">
+        <label className="block">
+          <span className="mb-1.5 flex items-baseline justify-between gap-3 text-xs font-bold text-muted-foreground">
+            الاسم كما يظهر للناس
+            <span className="text-fine font-semibold tabular-nums">{name.length} / {NAME_MAX_CHARS}</span>
+          </span>
+          <input value={name} maxLength={NAME_MAX_CHARS} onChange={(e) => setName(e.target.value)} className={inputCls} />
+        </label>
         <label className="block">
           <span className="mb-1.5 flex items-baseline justify-between gap-3 text-xs font-bold text-muted-foreground">
             العنوان المهنيّ
@@ -110,7 +125,7 @@ export default function PublicTextCard({ inputCls }: { inputCls: string }) {
       <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-5">
         <span className="min-w-0 flex-1 text-read text-muted-foreground">{problem ?? ""}</span>
         <Button tone="confirm" icon={Send} loading={busy} disabled={Boolean(problem)} onClick={() => void submit()} className="shrink-0">
-          {data.pendingAt ? "أرسل التعديل للاعتماد" : "أرسلهما للاعتماد"}
+          {data.pendingAt ? "أرسل التعديل للاعتماد" : "أرسلها للاعتماد"}
         </Button>
       </div>
       {msg && (
