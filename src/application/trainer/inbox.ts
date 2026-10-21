@@ -26,6 +26,8 @@ export const ACTION_KEYS: ReadonlySet<string> = new Set([
   'submission.queued',
   'cohort.plan.submitted',
   'cohort.plan.decision',
+  /* موعدٌ مقترحٌ بلا تعارض — يقبله أو يرفضه (`schedule-clash.ts`) */
+  'cohort.schedule.proposed',
   'cohort.session.rejected',
   'trainer.offer.received',
   'trainer.prep.reminder',

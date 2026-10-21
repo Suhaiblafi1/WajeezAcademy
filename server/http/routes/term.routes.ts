@@ -10,6 +10,7 @@ import { TermService } from '../../services/term.service'
 import { SeasonSwitchService } from '../../services/season-switch.service'
 import { TermPlanningService } from '../../services/term-planning.service'
 import { TermCalendarService } from '../../services/term-calendar.service'
+import { TermClashService } from '../../services/term-clash.service'
 import { requireAuth } from '../auth-plugin'
 import { recordAudit } from '../../services/audit'
 import { AuthError } from '../../services/auth.service'
@@ -25,6 +26,7 @@ export function registerTermRoutes(app: FastifyInstance, prisma: PrismaClient) {
   const terms = new TermService(prisma)
   const planning = new TermPlanningService(prisma)
   const calendar = new TermCalendarService(prisma)
+  const clashes = new TermClashService(prisma)
   const interest = new RegistrationInterestService(prisma)
 
   /* ─── العامّة: «متى تبدأ؟» صار له جواب (البند ٥٢) ───
@@ -230,5 +232,25 @@ export function registerTermRoutes(app: FastifyInstance, prisma: PrismaClient) {
       capacity: z.number().int().min(1).max(500).optional(),
     }).parse(req.body ?? {})
     return planning.planAndOpen(id, { ...body, actorId: req.auth!.userId })
+  })
+
+  /* ─── مواعيدُ بلا تعارض (٢٢ أكتوبر ٢٠٢٦) ───
+
+     العلّةُ في `term-clash.service.ts`. المعاينةُ تقرأ ولا تكتب، والإرسالُ بطلبٍ صريح — وصلاحيّتُه صلاحيّةُ
+     اعتماد ما يُقترح على خطط المدرّبين: الإرسالُ نفسُه اعتمادٌ للبطاقة. */
+  app.get('/api/admin/terms/:id/clashes', {
+    preHandler: requirePermission('cohort.plan.edits.review'),
+    schema: { tags: ['admin-terms'], summary: 'تعارض مواعيد الفصل — ومن ينتقل ليزول' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return clashes.view(id)
+  })
+
+  app.post('/api/admin/terms/:id/clashes/send', {
+    preHandler: requirePermission('cohort.plan.edits.review'),
+    schema: { tags: ['admin-terms'], summary: 'إرسال المواعيد المقترحة إلى المدربين بطاقات قبول أو رفض' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return clashes.send(req.auth!.userId, id)
   })
 }

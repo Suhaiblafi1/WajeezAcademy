@@ -20,7 +20,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router";
-import { BellRing, CalendarCheck, CalendarPlus, CalendarRange, DoorClosed, DoorOpen, Loader2, Play, Trash2 } from "lucide-react";
+import { BellRing, CalendarCheck, CalendarClock, CalendarPlus, CalendarRange, DoorClosed, DoorOpen, Loader2, Play, Trash2 } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import FlowSteps from "@/components/FlowSteps";
 import { apiGet, apiPost, apiDelete, ApiError, permissionMessage } from "@/services/api";
@@ -494,6 +494,17 @@ export default function Terms() {
                     <Button tone="secondary" disabled={busy !== null} onClick={() => saveWindow(t)}>احفظ النافذة</Button>
                   </div>
                 </Card>
+
+                {/* مواعيدُ بلا تعارض — دورتان يأخذهما الطالبُ نفسُه لا تقعان في ساعةٍ واحدة (٢٢ أكتوبر ٢٠٢٦) */}
+                {t._count.cohorts > 0 && (
+                  <Card as="section" className="mt-4">
+                    <h3 className="text-read font-black">مواعيد بلا تعارض</h3>
+                    <p className="mt-1 text-read leading-6 text-muted-foreground">نرتب مواعيد الشعب حتى لا تتعارض دورتان قد يأخذهما الطالب نفسه. ترى الاقتراح قبل أن يصل المدربين.</p>
+                    <Link to={`/admin/terms/${t.id}/clashes`} className="mt-3 inline-flex items-center gap-1.5 text-read font-bold text-teal-light-ink">
+                      <CalendarClock className="h-4 w-4" aria-hidden="true" /> افتح مواعيد الفصل
+                    </Link>
+                  </Card>
+                )}
 
                 {/* ③ توزيعُ الشعب — معاينةٌ ثمّ تطبيق */}
                 <Card as="section" className="mt-3">

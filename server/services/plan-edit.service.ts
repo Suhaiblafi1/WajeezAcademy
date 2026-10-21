@@ -31,7 +31,7 @@ import { recordAudit } from './audit'
 import { AssessmentService } from './assessment.service'
 import { CohortService } from './cohort.service'
 import { CohortPlanService, resolvePeriod, type PlanStatus, type TrainerPlanContent } from './cohort-plan.service'
-import { proposeSchedule } from '../../src/application/trainer/schedule-proposal'
+import { proposeSchedule, type ScheduleEdit } from '../../src/application/trainer/schedule-proposal'
 import { PLAN_VISIBLE_STATUSES } from '../../src/application/trainer/plan-overlay'
 import {
   applyContentEdit, attachmentSnapshot, attachmentsAfter, contentBefore, editsContent, noteItemsFrom, planEditStep, planEditView, rowEditProblem, sameSnapshot, scheduleChainProblem, schedulePlanContent, scheduleSnapshot,
@@ -218,6 +218,24 @@ export class PlanEditService {
     return this.propose(actorId, planId, [{ ...r.edit, required: false, reasonAr: r.reasonAr }])
   }
 
+  /* ═══ موعدٌ بلا تعارض — ترسله الإدارةُ من «مواعيد بلا تعارض» (٢٢ أكتوبر ٢٠٢٦، `schedule-clash.ts`) ═══
+     الجدولُ نفسُه بسلسلته، لكنّ يومَه وساعتَه اختيرا ليفكّا تعارضا مع دورةٍ قريبة. وإرسالُه من شاشة الفصل هو
+     اعتمادُ الإدارة له، فيصل المدرّبَ مباشرةً (`pending`) — ويصل كذلك خطّتَه المعتمَدة، فيُكتب فيها إن قبله (⑤).
+     ولا يُرسل فوق جدولٍ مقترحٍ لم يُقرَّر فيه، ولا فوق بندٍ على لقاءاته أو مهامّه. */
+  async proposeClashFree(actorId: string, planId: string, edit: ScheduleEdit, reasonAr: string): Promise<void> {
+    const open = (await this.prisma.planEditSuggestion.findMany({
+      where: { planId, status: { in: ['proposed', 'pending'] } }, select: { edit: true },
+    })).map((o) => o.edit as unknown as PlanEdit)
+    if (open.some((o) => o.kind === 'schedule')) {
+      throw new AuthError('schedule_open', 'عليها جدول مقترح لم يقرر فيه', 409)
+    }
+    const taken = new Set(open.flatMap(openKeysOf))
+    if (openKeysOf(edit).some((k) => taken.has(k))) {
+      throw new AuthError('schedule_overlaps', 'على بعض لقاءاتها أو مهامها بند مقترح لم يقرر فيه', 409)
+    }
+    await this.upload(actorId, planId, [{ ...edit, required: false, reasonAr }], 'none', { onApproved: true, reviewed: true })
+  }
+
   /** يرفعه المعتمِد: يُفحص كلُّه، ويُحفظ كلُّه أو يُردّ كلُّه ببنوده */
   async propose(actorId: string, planId: string, items: readonly PlanEditInput[]) {
     const { cohortId } = await this.upload(actorId, planId, items, 'none')
@@ -247,12 +265,16 @@ export class PlanEditService {
   }
 
   /** `none` يُضاف إلى ما هو قائم · `drafts` مكانَ المسوّدات · `all` مكانَ كلِّ ما لم يقرّر فيه المدرّب */
-  private async upload(actorId: string, planId: string, items: readonly PlanEditInput[], replace: 'none' | 'drafts' | 'all') {
+  private async upload(
+    actorId: string, planId: string, items: readonly PlanEditInput[], replace: 'none' | 'drafts' | 'all',
+    opts: { onApproved?: boolean; reviewed?: boolean } = {},
+  ) {
     const plan = await this.prisma.cohortDeliveryPlan.findUnique({
       where: { id: planId }, select: { id: true, cohortId: true, status: true, trainerId: true, content: true },
     })
     if (!plan || !plan.trainerId) throw new AuthError('not_found', 'الخطّة غير موجودة', 404)
-    if (!(OPEN as readonly string[]).includes(plan.status)) {
+    const allowed: readonly string[] = opts.onApproved ? [...IN_HAND, ...PLAN_VISIBLE_STATUSES] : OPEN
+    if (!allowed.includes(plan.status)) {
       throw new AuthError('plan_closed', 'هذه خطّة اعتمدت — التعديلات تقترح على خطّة بانتظار القرار أو في يد مدرّبها', 409)
     }
     if (items.length === 0) throw new AuthError('bad_edits', 'الملفّ بلا تعديلات', 422)
@@ -348,8 +370,9 @@ export class PlanEditService {
             required: item.required === true, reasonAr: item.reasonAr.trim(),
             edit: edit as unknown as Prisma.InputJsonValue,
             before: (snaps[i] ?? undefined) as Prisma.InputJsonValue | undefined,
-            /* مسوّدةٌ لا يراها المدرّبُ حتّى تعتمدها الإدارة (④) */
-            status: 'proposed',
+            /* مسوّدةٌ لا يراها المدرّبُ حتّى تعتمدها الإدارة (④) — إلّا ما اعتمدته وهي ترسله (`reviewed`) */
+            status: opts.reviewed ? 'pending' : 'proposed',
+            ...(opts.reviewed ? { reviewedBy: actorId, reviewedAt: new Date() } : {}),
             createdBy: actorId,
           }
         }),

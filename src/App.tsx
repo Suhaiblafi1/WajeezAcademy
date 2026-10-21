@@ -60,6 +60,7 @@ const Earnings = lazy(() => import('./pages/trainer/Earnings'))
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'))
 const AdminCohorts = lazy(() => import('./pages/admin/AdminCohorts'))
 const AdminTerms = lazy(() => import('./pages/admin/Terms'))
+const AdminTermClashes = lazy(() => import('./pages/admin/TermClashes'))
 const AdminTrainerApps = lazy(() => import('./pages/admin/TrainerApplications'))
 const AdminCourseProposals = lazy(() => import('./pages/admin/CourseProposals'))
 const AdminTrainerPaths = lazy(() => import('./pages/admin/TrainerPaths'))
@@ -339,6 +340,7 @@ export default function App() {
             <Route path="/admin/placement-review" element={<AdminPlacementReview />} />
             <Route path="/admin/cohorts" element={<AdminCohorts />} />
             <Route path="/admin/terms" element={<AdminTerms />} />
+            <Route path="/admin/terms/:id/clashes" element={<AdminTermClashes />} />
             <Route path="/admin/exceptions" element={<Exceptions />} />
             <Route path="/admin/advisor-requests" element={<AdminAdvisorRequests />} />
             <Route path="/admin/learner-requests" element={<AdminLearnerRequests />} />

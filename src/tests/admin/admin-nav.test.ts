@@ -75,6 +75,12 @@ describe('تصنيف اللوحة · لكلّ شاشة مجموعة واحدة',
       link: /to=\{`\/admin\/plans\/\$\{cohortId\}`\}/,
       shownOn: '/admin/pending-plans',
     },
+    /* ومواعيدُ الفصل بلا تعارض لفصلٍ بعينه — تُفتح من بطاقته في «المواسم والتقويم» (٢٢ أكتوبر ٢٠٢٦) */
+    '/admin/terms/:id/clashes': {
+      from: 'src/pages/admin/Terms.tsx',
+      link: /to=\{`\/admin\/terms\/\$\{t\.id\}\/clashes`\}/,
+      shownOn: '/admin/terms',
+    },
   }
 
   it('وصفحة التفصيل يربط إليها ملفّ تعرضه شاشة في مجموعة', () => {

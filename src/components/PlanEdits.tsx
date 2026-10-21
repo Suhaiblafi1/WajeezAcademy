@@ -18,6 +18,7 @@ import type { EditView, PlanEditStatus } from "@/application/trainer/plan-edits"
 import { BULK_MODE_AR, BULK_MODES, bulkSummaryAr, bulkUploadPath, DEDUPE_ALL_AR, dedupeSummaryAr, editFilePath, isPdfName, KEEP_LATEST_ALL_PATH, pdfKey, pickedPdfs, KEEP_LATEST_AR, keepLatestPath, missingWorkbooksAr, withWorkbookKeys, workbookFilesNeeded, keptLatestAr, readEditsFile, replacedLineAr, uploadedLineAr, withdrawnLineAr, type BulkMode } from "@/application/trainer/plan-edits-bulk";
 import { GapList, NoteSubs } from "@/components/LongText";
 import { gapLayout } from "@/application/trainer/text-layout";
+import { SCHEDULE_REJECT_REASONS, withRejectReason } from "@/application/terms/schedule-clash";
 
 export interface PlanEditItem {
   id: string;
@@ -718,6 +719,22 @@ export function PlanEditsPanel({ cohortId, inHand, approved = false, unsaved, on
             )}
             {rejecting === x.id && (
               <div className="mt-2 space-y-2">
+                {/* ═══ وموعدٌ مقترحٌ يُرفض بسببه بنقرة (٢٢ أكتوبر ٢٠٢٦) ═══
+                    «إذا رفض الموعدَ يبلغنا لماذا، لكي نقترح له غيرَه» (صاحب المنصّة). فاليومُ أو الساعةُ أوّلَ السطر،
+                    فلا يُقترح عليه ثانيةً ما رفضه (`rejectedScope` في `schedule-clash.ts`). */}
+                {x.kind === "schedule" && (
+                  <div className="flex flex-wrap gap-2">
+                    {SCHEDULE_REJECT_REASONS.map((r) => (
+                      <Button
+                        key={r.scope} size="sm" tone={note.startsWith(r.labelAr) ? "secondary" : "ghost"}
+                        aria-pressed={note.startsWith(r.labelAr)}
+                        onClick={() => setNote(withRejectReason(note, r.labelAr))}
+                      >
+                        {r.labelAr}
+                      </Button>
+                    ))}
+                  </div>
+                )}
                 <label className="block text-read text-muted-foreground">
                   لماذا؟ (اختياريّ — يقرؤه المعتمد)
                   <textarea
