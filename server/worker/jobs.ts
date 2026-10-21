@@ -1481,6 +1481,9 @@ export async function runPublishLiveTrainers(prisma: PrismaClient, now = new Dat
   const started = Date.now()
   const { TrainerPrepService } = await import('../services/trainer-prep.service')
   const prep = new TrainerPrepService(prisma)
+  /* ومن رُدّ عن التهيئة وتوقيعُه معتمَدٌ يعود إليها أوّلا — فيُفعَّل في الدورة نفسِها إن كانت له معتمَدة
+     (٢١ أكتوبر ٢٠٢٦، `restoreSentBackOnboarding`) */
+  const restored = await prep.restoreSentBackOnboarding()
   const { activated, blocked: notActivated } = await prep.activateQualifiedOnboarding()
   const { sealed, blocked: notSealed } = await prep.sealFirstCourseActive()
   const blocked = notActivated + notSealed
@@ -1489,11 +1492,12 @@ export async function runPublishLiveTrainers(prisma: PrismaClient, now = new Dat
   const parts = [published.length === 0 ? 'كل مدربي الشعب المعروضة ظاهرون' : `نشر اسم ${published.length} مدرب`]
   if (sealed.length > 0) parts.unshift(`وقع عقد ${sealed.length} مدرب نشط اعتمدت له دورة`)
   if (activated.length > 0) parts.unshift(`فعّل ${activated.length} مدرب له دورة معتمدة`)
+  if (restored.length > 0) parts.unshift(`أعاد ${restored.length} مدرب إلى التهيئة — توقيعه معتمد ورد عنها`)
   if (blocked > 0) parts.push(`و${blocked} منع تفعيله أو توقيع عقده مانع — أخبرت الإدارة`)
   if (notActive > 0) parts.push(`و${notActive} طلبه غير نشط فلم ينشر`)
   return {
     job: 'publish_live_trainers', summaryAr: parts.join(' — '),
-    done: activated.length + sealed.length + published.length, failed: blocked, ms: Date.now() - started,
+    done: restored.length + activated.length + sealed.length + published.length, failed: blocked, ms: Date.now() - started,
   }
 }
 
