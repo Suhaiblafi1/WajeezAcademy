@@ -563,6 +563,13 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
   /* ═══ «ما بقي من دوراتك» — يُعاين ويُرسَل مدرّبا مدرّبا (٢٠ أكتوبر ٢٠٢٦، `prep-reminder.service.ts`) ═══ */
   const reminders = new PrepReminderService(prisma)
   const day = z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
+  /* وما تقوله الرسالة يختاره صاحبُ المنصّة (٢١ أكتوبر ٢٠٢٦) — وغيابُه الرسالةُ كما كانت */
+  const choices = z.object({
+    courses: z.enum(['more', 'postpone', 'none']),
+    cohorts: z.boolean(),
+    skip: z.array(z.string().max(80)).max(50),
+    due: z.enum(['close', 'date', 'none']),
+  }).optional()
   app.get('/api/admin/prep-reminders', {
     preHandler: requirePermission('trainer.contract.manage'),
     schema: { tags: ['admin-trainers'], summary: 'المدربون الذين بقي عليهم شيء من دوراتهم' },
@@ -573,8 +580,8 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     schema: { tags: ['admin-trainers'], summary: 'معاينة رسالة «ما بقي من دوراتك»' },
   }, async (req) => {
     const { profileId } = z.object({ profileId: z.string().uuid() }).parse(req.params)
-    const { deadline } = z.object({ deadline: day }).parse(req.body)
-    const p = await reminders.preview(profileId, deadline)
+    const body = z.object({ deadline: day, choices }).parse(req.body)
+    const p = await reminders.preview(profileId, body.deadline, body.choices)
     /* والبريدُ كما يصل — HTML بروابطه — لا نسختُه النصّيّة وحدَها (٢٠ أكتوبر ٢٠٢٦: «ألا يمكن أن تكون روابطَ تُنقر؟») */
     return { to: p.to, subject: p.subject, text: p.text, html: renderMail(p.mail.doc).html }
   })
@@ -584,8 +591,8 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     schema: { tags: ['admin-trainers'], summary: 'إرسال رسالة «ما بقي من دوراتك» لمدرب واحد' },
   }, async (req) => {
     const { profileId } = z.object({ profileId: z.string().uuid() }).parse(req.params)
-    const { deadline } = z.object({ deadline: day }).parse(req.body)
-    return reminders.send(req.auth!.userId, profileId, deadline)
+    const body = z.object({ deadline: day, choices }).parse(req.body)
+    return reminders.send(req.auth!.userId, profileId, body.deadline, body.choices)
   })
 
   app.post('/api/admin/trainer-contracts/:contractId/revoke', {
