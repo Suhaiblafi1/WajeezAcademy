@@ -1,12 +1,17 @@
+import { isUpcoming } from "@/application/learning/upcoming-cohorts";
+
 /* ═══ قوائمُ الصفحة — «كل الشعب» و«معتمدة — تنتظر فتحك» (١٢ أكتوبر ٢٠٢٦) ═══
 
    «اريد تاب خاصة للدورات التي تكون معتمدة» (صاحب المنصّة). والمعتمَدةُ هنا ما تقوله شارتُها في
    البطاقة نفسِها: مسوّدةٌ اعتُمدت خطّةُ مدرّبها ولم تُفتح بعد — فالشارةُ واللسانُ شرطٌ واحد
    (`awaitsOpening`) لا شرطان يفترقان. */
-export type CohortList = "all" | "approved";
+/* و«تبدأ قريبا» (٢٢ أكتوبر ٢٠٢٦): «كيف أعلم أيّ الدورات قريبة وكم فيها تسجيل لأقرّر إيقافها؟» — ما لم
+   يبدأ وأوّلُ لقاءٍ فيه خلال `UPCOMING_MAX_DAYS` يوما، بشرطٍ واحدٍ يقرؤه الخادمُ أيضا (`upcoming-cohorts.ts`). */
+export type CohortList = "all" | "upcoming" | "approved";
 
 export const COHORT_LISTS: { id: CohortList; label: string }[] = [
   { id: "all", label: "كل الشعب" },
+  { id: "upcoming", label: "تبدأ قريبا" },
   { id: "approved", label: "معتمدة — تنتظر فتحك" },
 ];
 
@@ -15,8 +20,14 @@ export function awaitsOpening(c: { status: string; trainerPlanApproved: boolean 
   return c.status === "draft" && c.trainerPlanApproved;
 }
 
-export function inCohortList(list: CohortList, c: { status: string; trainerPlanApproved: boolean }): boolean {
-  return list === "all" || awaitsOpening(c);
+export function inCohortList(
+  list: CohortList,
+  c: { status: string; trainerPlanApproved: boolean; firstAt?: string | null },
+  now: Date = new Date(),
+): boolean {
+  if (list === "all") return true;
+  if (list === "upcoming") return isUpcoming({ status: c.status, firstAt: c.firstAt ?? null }, now);
+  return awaitsOpening(c);
 }
 
 /* ═══ ما تحتاجه الشعبةُ — كلمةٌ واحدةٌ بجانب اسمها (٢٠ أكتوبر ٢٠٢٦) ═══

@@ -22,7 +22,8 @@ const page = code('src/pages/admin/AdminCohorts.tsx')
 describe('① اسمها ما تفعله', () => {
   it('⚠️ «تشغيل الشعب» في القائمة — ووصفها التشغيل لا الفتح', () => {
     const nav = code('src/pages/admin/nav-map.ts')
-    expect(nav).toMatch(/\{ to: "\/admin\/cohorts", label: "تشغيل الشعب", icon: CalendarCog, need: "cohort\.manage",\s*descAr: "اللقاءات والمتعلمون والمواد والشهادات، وإنهاء الشعبة أو إلغاؤها" \}/)
+    /* ووصفُها صار المتابعةَ لا صناعةَ اللقاءات (٢٢ أكتوبر ٢٠٢٦): «اللقاءات يضعها المدرّب لا نحن» */
+    expect(nav).toMatch(/\{ to: "\/admin\/cohorts", label: "تشغيل الشعب", icon: CalendarCog, need: "cohort\.manage",\s*descAr: "متابعة كل شعبة: الحضور والتسليمات ورسائل المدرب، والمال، وما يبدأ قريبا، وإنهاؤها أو إلغاؤها" \}/)
   })
 
   it('⚠️ وعنوانها كذلك — في الحالين', () => {
@@ -49,9 +50,13 @@ describe('② ولا نصّ يسمّيها باسمها القديم', () => {
 
 describe('③ ولم يسقط منها شيء', () => {
   it('⚠️ الانتقال والتشغيل باقيان فيها', () => {
-    for (const to of ['{ to: "active" }', '{ to: "completed" }', '{ to: "cancelled",']) {
+    for (const to of ['{ to: "active" }', '{ to: "completed" }']) {
       expect(page, `سقط ${to}`).toContain(`apiPost(\`/api/admin/cohorts/\${c.id}/transition\`, ${to}`)
     }
+    /* والإلغاءُ صار صندوقا بسببه وأثره (٢٢ أكتوبر ٢٠٢٦) — في البطاقة وفي «تبدأ قريبا» */
+    const box = code('src/components/admin/CancelCohortBox.tsx')
+    expect(box).toContain('apiPost(`/api/admin/cohorts/${cohortId}/transition`, { to: "cancelled",')
+    expect(page).toMatch(/\{!\["completed", "cancelled"\]\.includes\(c\.status\) && \(\s*<CancelCohortBox cohortId=\{c\.id\}/)
     expect(page).toMatch(/<CohortOps cohort=\{c\} tab=\{tab\}/)
   })
 })

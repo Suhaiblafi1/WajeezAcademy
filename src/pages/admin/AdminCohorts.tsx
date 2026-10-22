@@ -2,10 +2,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   AlertTriangle,
   CalendarClock, CalendarPlus, CheckCircle2, ChevronDown, CopyPlus, Loader2, Lock, Play, RefreshCw, Sparkles,
-  ServerOff, Trash2, UserPlus, Users, Video, XCircle,
+  ServerOff, UserPlus, Video, XCircle,
 } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import { apiGet, apiPost, apiPut, ApiError } from "@/services/api";
+import { useRealSession } from "@/services/session";
 import { staffControlCls, staffSelectCls } from "@/components/FormKit";
 import { CohortOps, LearningSettings } from "./CohortOps";
 import { COHORT_TABS, type CohortTab } from "./cohort-tabs";
@@ -18,7 +19,12 @@ import CourseDemand from "./CourseDemand";
 import CohortWizard, { type WizardTerm } from "./CohortWizard";
 import LearnerSearchField, { type LearnerHit } from "@/components/LearnerSearchField";
 import EntityAuditTimeline from "@/components/EntityAuditTimeline";
-import { daysLabelAr, fmtDateTimeAr } from "@/utils/format";
+import { daysLabelAr, fmtDateAr, fmtDateTimeAr } from "@/utils/format";
+import CohortMoney from "@/components/admin/CohortMoney";
+import CancelCohortBox from "@/components/admin/CancelCohortBox";
+import DeleteCancelledBox from "@/components/admin/DeleteCancelledBox";
+import UpcomingCohorts from "@/components/admin/UpcomingCohorts";
+import { CohortLearners, CohortMonitor } from "./CohortMonitor";
 import { isLiveCohort } from "@/application/schedule/cohort-status";
 
 import { Card, Inset, Panel } from "@/components/ui/Surface";
@@ -60,6 +66,8 @@ interface CohortRow {
   timezone: string | null; capacity: number | null; enrolled: number;
   price: string | null; currency: string; language: string; deliveryMode: string;
   registrationOpen: boolean; financialReady: boolean; sessionsCount: number;
+  /** أوّلُ لقاءٍ فيها أو بدايةُ مدّتها — «تبدأ قريبا» (`upcoming-cohorts.ts`) */
+  firstAt: string | null;
   /* نافذةُ جدولةِ المدرّب — الثلاثةُ تُقرأ معا، وغيابُ أيٍّ منها بابٌ مغلَق */
   scheduleWindowStart: string | null; scheduleWindowEnd: string | null;
   trainers: { profileId: string; name: string; role: string; suspended?: boolean }[];
@@ -110,9 +118,15 @@ export default function AdminCohorts() {
      وقتٍ واحد**. ولذلك انفصلت «تعديلُ الشعبة» التي كانت تجمع العنوانَ
      والجدولَ والسعرَ وبوّابتَي الفتح في نموذجٍ واحد — وهي ثلاثةُ أعمالٍ لا
      تُعمل معا ولا يعملها الشخصُ نفسُه. */
-  const [tab, setTab] = useState<CohortTab>("identity");
+  const [tab, setTab] = useState<CohortTab>("overview");
   /* «معتمدة — تنتظر فتحك» لسانٌ في رأس القائمة (١٢ أكتوبر ٢٠٢٦، `cohort-lists.ts`) */
   const [list, setList] = useState<CohortList>("all");
+  /* ═══ والمالُ للمدير الأكاديميّ ومدير النظام وحدَهما (٢٢ أكتوبر ٢٠٢٦) ═══
+     قرارُ صاحب المنصّة: أجرُ المدرّب وما حُصّل لا يراه المنسّقُ ولا مديرُ العمليّات. والحبّةُ `finance.view`
+     مع `cohort.manage` لا تجتمعان إلّا فيهما — والخادمُ يطلبهما معا (`/economics` و`/upcoming`)، وهنا يُخفى
+     ما سيُردّ. و«تبدأ قريبا» معه: هي قائمةُ قرار الإلغاء بماله. */
+  const { user: viewer } = useRealSession();
+  const seesMoney = viewer?.permissions.includes("finance.view") ?? false;
   const [checklist, setChecklist] = useState<Record<string, Checklist>>({});
   /* وما ردّ به الفتحُ — بجانب زرّه لا أعلى الصفحة وحدَه (٣ أكتوبر ٢٠٢٦) */
   const [openError, setOpenError] = useState<Record<string, string>>({});
@@ -164,7 +178,7 @@ export default function AdminCohorts() {
         deepLinked.current = true;
         setQ(row.title);
         setExpanded(row.id);
-        setTab("content");
+        setTab("plan");
         /* ═══ وشروطُ فتحها معها (٣ أكتوبر ٢٠٢٦) ═══
            كان الرابطُ يبسط البطاقةَ ولا يجلب شروطَها — فبقيت «شروط الفتح» دوّامةً
            لا تقف، و«افتح الشعبة» يُنقر فيردّ «لا سعة محددة» أعلى الصفحة. وكلُّ من
@@ -206,31 +220,9 @@ export default function AdminCohorts() {
     }
   };
 
-  /* ═══ وحذفُ الملغاة التي لا مدرّبَ لها (٢٠ أكتوبر ٢٠٢٦) ═══
-     ألغى صاحبُ المنصّة ستَّ شعبٍ قديمةٍ بلا مدرّب، ثمّ سأل: «هل هناك خاصّيّةُ حذفٍ غيرُ الإلغاء؟»، واختار
-     زرَّ الحذف. بضغطتين، والقاعدةُ قاعدةُ صندوق المواسم نفسُها (`trainerless-cohort-delete.service.ts`):
-     ما فيه ملتحقٌ أو طلبُ تسجيلٍ لا يُحذف، ويُقال سببُه. */
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
-  const deleteCancelled = async (id: string) => {
-    if (busy) return;
-    setBusy(true); setFlash(null);
-    try {
-      const r = await apiPost<{ deleted: { id: string }[]; kept: { reasonAr: string }[] }>(
-        "/api/admin/cohorts/delete-trainerless", { cohortIds: [id] });
-      if (r.deleted.length > 0) {
-        setFlash({ kind: "ok", text: "حذفت الشعبة" });
-        setExpanded(null);
-      } else {
-        setFlash({ kind: "error", text: r.kept[0]?.reasonAr ?? "لم تحذف الشعبة" });
-      }
-      setConfirmDeleteId(null);
-      await load();
-    } catch (err) {
-      setFlash({ kind: "error", text: err instanceof ApiError ? err.message : "تعذر الحذف" });
-    } finally {
-      setBusy(false);
-    }
-  };
+  /* ═══ وحذفُ الملغاة صار صندوقا بخيارين (٢٢ أكتوبر ٢٠٢٦) — `DeleteCancelledBox` ═══
+     كان زرُّ «احذفها» هنا للملغاة التي لا مدرّبَ لها وحدَها، فالملغاةُ لقلّة التسجيل — ولها مدرّبٌ دائما —
+     لا بابَ لها. والقاعدةُ في `cancelled-cohort-delete.service.ts`. */
 
   /* قرار الإدارة — والاعتماد وحده يحرّك الموعد عند المتعلّمين */
   const reviewReschedule = (id: string, action: "approve" | "reject") =>
@@ -274,7 +266,7 @@ export default function AdminCohorts() {
     const next = expanded === id ? null : id;
     setExpanded(next);
     /* شعبةٌ جديدةٌ تُفتح على لسانها الأوّل — لا على اللسان الذي تُرك فيه غيرُها */
-    setTab("identity");
+    setTab("overview");
     if (next) void loadChecklist(next);
   };
 
@@ -458,11 +450,11 @@ export default function AdminCohorts() {
       {!loading && rows.length > 0 && (
         <TabBar className="mb-4" ariaLabel="قوائم الشعب" value={list}
           onChange={(next) => { setList(next); setPage(1); }}
-          items={COHORT_LISTS.map((l) => ({ id: l.id, label: `${l.label} (${rows.filter((c) => inCohortList(l.id, c)).length})` }))} />
+          items={COHORT_LISTS.filter((l) => seesMoney || l.id !== "upcoming").map((l) => ({ id: l.id, label: `${l.label} (${rows.filter((c) => inCohortList(l.id, c)).length})` }))} />
       )}
       {/* «افتح المعتمدة كلها» — بمعاينة، وما نقل إلى موسم آخر يبقى (١٩ أكتوبر ٢٠٢٦، `open-approved.service.ts`) */}
       {!loading && list === "approved" && <OpenApproved onDone={() => void load()} />}
-      {!loading && rows.length > 0 && (
+      {!loading && rows.length > 0 && list !== "upcoming" && (
         <Panel className="mb-4">
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
             <label className="text-fine text-muted-foreground">
@@ -506,7 +498,18 @@ export default function AdminCohorts() {
         </Panel>
       )}
 
-      {loading ? (
+      {/* «تبدأ قريبا» قائمتُها — بتاريخ البدء والمال والإلغاء في السطر (`UpcomingCohorts`) */}
+      {!loading && list === "upcoming" ? (
+        <UpcomingCohorts
+          onOpen={(id) => {
+            const row = rows.find((r) => r.id === id);
+            setList("all"); setPage(1); setQ(row?.title ?? ""); setExpanded(id); setTab("overview");
+            void loadChecklist(id);
+          }}
+          onChanged={() => void load()}
+          onFlash={setFlash}
+        />
+      ) : loading ? (
         <div className="grid place-items-center py-16"><Loader2 className="h-8 w-8 animate-spin text-teal-ink" /></div>
       ) : rows.length === 0 ? (
         <Panel as="p" className="py-16 text-center text-sm text-muted-foreground">لا شعب بعد — أنشئ أول شعبة من الأعلى.</Panel>
@@ -535,7 +538,8 @@ export default function AdminCohorts() {
                     <p className="font-black">{c.title}</p>
                     <p className="mt-0.5 text-read text-muted-foreground">
                       {c.courseTitle} · {c.trainers.length ? c.trainers.map((t) => t.name).join("، ") : "بلا مدرب"}
-                      {" · "}{c.enrolled}/{c.capacity ?? "—"} مقعدا · {c.sessionsCount} جلسة
+                      {" · "}{c.firstAt ? `تبدأ ${fmtDateAr(c.firstAt)}` : "بلا موعد"}
+                      {" · "}{c.enrolled}/{c.capacity ?? "—"} مقعدا
                       {c.price ? ` · ${c.price} ${c.currency}` : ""}
                     </p>
                   </div>
@@ -560,7 +564,7 @@ export default function AdminCohorts() {
 
                 {isOpen && (
                   <div className="mt-5 space-y-5 border-t border-white/8 pt-5">
-                    {/* شريطُ الألسنة — الأربعةُ ظاهرةٌ دائما، فيُعرف ما في
+                    {/* شريطُ الألسنة — الخمسةُ ظاهرةٌ دائما، فيُعرف ما في
                         الشعبة بلا فتحِ طيّاتٍ واحدةً واحدة. ووصفُ اللسان تحت
                         اسمه: «الجدول واللقاءات» لا تقول ماذا فيها لمن لم
                         يفتحها من قبل. */}
@@ -577,9 +581,35 @@ export default function AdminCohorts() {
                       {COHORT_TABS.find((t) => t.id === tab)?.hint}
                     </p>
 
-                    {/* ══════ ① الهُويّة والحالة ══════ */}
-                    {tab === "identity" && (<>
-                    {/* شروط الفتح الستة */}
+                    {/* ══════ ① نظرة عامة — أين هي، ومن يدرّسها، ومالُها، وما الفعلُ التالي ══════ */}
+                    {tab === "overview" && (<>
+                    <dl className="grid gap-3 sm:grid-cols-4">
+                      <div>
+                        <dt className="text-fine text-muted-foreground">تبدأ</dt>
+                        <dd className="mt-0.5 text-read font-bold">{c.firstAt ? fmtDateTimeAr(c.firstAt) : "لم تحدد"}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-fine text-muted-foreground">المدرب</dt>
+                        <dd className="mt-0.5 text-read font-bold">
+                          {c.trainers.length ? c.trainers.map((t) => t.name).join("، ") : (
+                            <button type="button" onClick={() => setTab("settings")} className="text-gold-ink underline">بلا مدرب — أسنده</button>
+                          )}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-fine text-muted-foreground">المسجلون</dt>
+                        <dd className="mt-0.5 text-read font-bold">{c.enrolled} من {c.capacity ?? "—"}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-fine text-muted-foreground">الأيام</dt>
+                        <dd className="mt-0.5 text-read font-bold">{c.daysOfWeek.length ? `${daysLabelAr(c.daysOfWeek)}${c.startTime ? ` · ${c.startTime}` : ""}` : "—"}</dd>
+                      </div>
+                    </dl>
+
+                    {seesMoney && <CohortMoney cohortId={c.id} refresh={`${c.status}-${c.enrolled}`} />}
+
+                    {/* شروط الفتح — للمسودّة وحدَها، فما فُتح لا يُسأل عنها */}
+                    {c.status === "draft" && (
                     <div>
                       <p className="mb-2 text-read font-black text-muted-foreground">شروط الفتح</p>
                       {check ? (
@@ -606,15 +636,10 @@ export default function AdminCohorts() {
                         )
                       ) : <Loader2 className="h-4 w-4 animate-spin text-muted-foreground/50" />}
                     </div>
+                    )}
 
-                    {/* ── وكانت هنا «اكتب خطّةَ التقديم» لشعبةٍ بلا خطّة ──
-
-                        سقطت مع شرطها (١٢ أكتوبر ٢٠٢٦): الشعبةُ لا تُفتح إلّا بخطّة
-                        مدرّبٍ معتمَدة، فخطّةٌ أساسيّةٌ يكتبها المديرُ لا تفتح شيئا —
-                        وعرضُها نقصا يُوفى هنا يَعِد بما لا يقع. والسببُ في
-                        `CohortService.openChecklist`. */}
-                    {/* إجراءات الحالة */}
-                    <div className="flex flex-wrap gap-2">
+                    {/* ما يلزم الآن — فعلُ الحالة التالي، والإلغاءُ بسببه وأثره (`CancelCohortBox`) */}
+                    <div className="flex flex-wrap items-start gap-2">
                       {c.status === "draft" && (
                         <Button tone="confirm" disabled={busy} onClick={() => void openCohort(c.id)}>
                           <Play className="h-3.5 w-3.5" /> افتح الشعبة
@@ -631,19 +656,17 @@ export default function AdminCohorts() {
                         </Button>
                       )}
                       {!["completed", "cancelled"].includes(c.status) && (
-                        <Button tone="danger" disabled={busy} onClick={() => act(() => apiPost(`/api/admin/cohorts/${c.id}/transition`, { to: "cancelled", note: "إلغاء من لوحة الإدارة" }), "ألغيت الشعبة")}>
-                          إلغاء
-                        </Button>
-                      )}
-                      {c.status === "cancelled" && c.trainers.length === 0 && (
-                        confirmDeleteId === c.id
-                          ? <>
-                              <Button tone="danger" disabled={busy} onClick={() => void deleteCancelled(c.id)}>أكّد الحذف — لا رجعة</Button>
-                              <Button tone="ghost" disabled={busy} onClick={() => setConfirmDeleteId(null)}>تراجع</Button>
-                            </>
-                          : <Button tone="danger" icon={Trash2} disabled={busy} onClick={() => setConfirmDeleteId(c.id)}>احذفها</Button>
+                        <CancelCohortBox cohortId={c.id} title={c.title} learners={c.enrolled}
+                          started={c.status === "active"} hasTrainer={c.trainers.length > 0}
+                          onDone={(text) => { setFlash({ kind: "ok", text }); void load(); }}
+                          onError={(text) => setFlash({ kind: "error", text })} />
                       )}
                     </div>
+                    {c.status === "cancelled" && (
+                      <DeleteCancelledBox cohortId={c.id} title={c.title}
+                        onDeleted={(text) => { setFlash({ kind: "ok", text }); setExpanded(null); void load(); }}
+                        onError={(text) => setFlash({ kind: "error", text })} />
+                    )}
                     {/* وتنقلها الإدارةُ إلى موسمٍ آخر بنفسها (٢٠ أكتوبر ٢٠٢٦) — `StaffMoveBox` */}
                     <StaffMoveBox cohortId={c.id} status={c.status} startsAt={c.startsAt}
                       onDone={(msg) => { setFlash({ kind: "ok", text: msg }); void load(); }} />
@@ -658,8 +681,96 @@ export default function AdminCohorts() {
                     )}
                     </>)}
 
-                    {/* ══════ ② الجدول واللقاءات ══════ */}
-                    {tab === "schedule" && (<>
+                    {/* ══════ ② المتابعة — تقريرٌ يُقرأ (`CohortMonitor`) ══════ */}
+                    {tab === "monitor" && <CohortMonitor cohortId={c.id} refresh={c.status} />}
+
+                    {/* ══════ ③ المتعلمون — من فيها وأين وصل كلٌّ، ثمّ التسجيلُ والإسقاطُ والشهادات ══════ */}
+                    {tab === "learners" && (<>
+                    <CohortLearners cohortId={c.id} refresh={`${c.enrolled}`} />
+                    {isLiveCohort(c.status) && c.registrationOpen && (
+                      <Card className="bg-paper/20">
+                        <p className="mb-3 flex items-center gap-1.5 text-read font-black text-muted-foreground"><UserPlus className="h-3.5 w-3.5" /> تسجيل متعلم — الفائض يتحول لقائمة انتظار آليا</p>
+                        <div className="flex gap-2">
+                          <LearnerSearchField cohortId={c.id} value={enrollLearner} onChange={setEnrollLearner} disabled={busy} />
+                          <Button tone="confirm" className="shrink-0" disabled={busy || !enrollLearner}
+                            onClick={() => act(async () => {
+                              const res = await apiPost<{ status: string }>(`/api/admin/cohorts/${c.id}/enrollments`, { userId: enrollLearner!.id });
+                              const name = enrollLearner!.displayName;
+                              setEnrollLearner(null);
+                              setFlash({ kind: "ok", text: res.status === "waitlisted" ? `الشعبة ممتلئة — أدرج ${name} في قائمة الانتظار` : `سجل ${name} بنجاح` });
+                            }, "")}>
+                            سجّل
+                          </Button>
+                        </div>
+                      </Card>
+                    )}
+                    </>)}
+
+                    {/* ══════ ⑤ الإعدادات — ما يُضبط نادرا ══════
+                        الاسمُ والسعةُ والسعرُ والجدولُ والمدرّب من `CohortOps`، ونافذةُ الجدولة والتكرارُ هنا.
+                        وأدواتُ المدرّب — لقاءٌ يُضاف بيد، وتوليدٌ، وZoom، وموادُّ ومهامّ — مطويّةٌ في آخره:
+                        «اللقاءات يضعها المدرّب لا نحن» (صاحب المنصّة، ٢٢ أكتوبر ٢٠٢٦). */}
+                    {tab === "settings" && (<>
+                    {/* ── مَن يجدول لقاءات هذه الشعبة؟ ──
+                        الإدارةُ تضع الحدَّ — مدًى بلا سقف (٤ أكتوبر ٢٠٢٦) — ويقرّر المدرّبُ داخله. */}
+                    <ScheduleWindowCard cohort={c} busy={busy} act={act} />
+
+                    <Card className="bg-paper/20">
+                      <p className="mb-3 flex items-center gap-1.5 text-read font-black text-muted-foreground">
+                        <CopyPlus className="h-3.5 w-3.5" /> تكرار الشعبة لفصل قادم
+                      </p>
+                      <div className="grid gap-2 sm:grid-cols-4">
+                        <label className="text-fine text-muted-foreground sm:col-span-2">
+                          عنوان النسخة
+                          <input value={dupForm.title} onChange={(e) => setDupForm({ ...dupForm, title: e.target.value })}
+                            placeholder={`${c.title} — نسخة`}
+                            className={`${staffControlCls} mt-1`} />
+                        </label>
+                        <label className="text-fine text-muted-foreground">
+                          إزاحة الأسابيع
+                          <input type="number" min={0} max={104} value={dupForm.shiftWeeks}
+                            onChange={(e) => setDupForm({ ...dupForm, shiftWeeks: e.target.value })}
+                            className={`${staffControlCls} mt-1`} />
+                        </label>
+                        <div className="flex items-end">
+                          <Button tone="secondary" disabled={busy}
+                            onClick={() => act(async () => {
+                              await apiPost(`/api/admin/cohorts/${c.id}/duplicate`, {
+                                title: dupForm.title.trim() || undefined,
+                                shiftWeeks: Number(dupForm.shiftWeeks) || 0,
+                                withSessions: dupForm.withSessions,
+                                withMaterials: true,
+                                withAssessments: true,
+                              });
+                              setDupForm({ title: "", shiftWeeks: "8", withSessions: true });
+                            }, "أنشئت نسخة مسودّة — بجدولها وموادّها ومهامّها، بلا تسجيلات ولا حضور")}
+                            className="w-full">
+                            كرّرها
+                          </Button>
+                        </div>
+                        <label className="flex cursor-pointer items-center gap-2 text-fine text-muted-foreground sm:col-span-4">
+                          <input type="checkbox" checked={dupForm.withSessions}
+                            onChange={(e) => setDupForm({ ...dupForm, withSessions: e.target.checked })}
+                            className="h-3.5 w-3.5 cursor-pointer accent-teal" />
+                          انسخ الجلسات أيضا مع إزاحة الأسابيع (أو ولّدها لاحقا من الجدول)
+                        </label>
+                      </div>
+                    </Card>
+                    </>)}
+
+                    {/* ══════ ④ خطة المدرب، وأقسامُ «الإعدادات» و«المتعلمون» من `CohortOps` ══════
+                        كلُّ قسمٍ فيها يعرف لسانَه ويصمت في غيره. */}
+                    {/* وما يُحفظ هنا يُعاد معه شروطُ الفتح (١٢ أكتوبر ٢٠٢٦): حُفظت السعةُ والسعر
+                        فصار الرأسُ «0/25 مقعدا · 170» وبقيت الشاراتُ «لا سعة محددة» حتّى تُطوى البطاقة */}
+                    <CohortOps cohort={c} tab={tab} onDone={(msg) => { setFlash({ kind: "ok", text: msg }); void load(); void loadChecklist(c.id); }} />
+
+                    {/* ── أدواتُ المدرّب — عند الحاجة فقط (٢٢ أكتوبر ٢٠٢٦) ──
+                        «اللقاءات يضعها المدرّبُ لا نحن» (صاحب المنصّة). فلا تُرى كلَّ يوم، وتبقى بابا لمن احتاج
+                        أن يتدخّل: لقاءٌ يُضاف بيد، أو توليدٌ من الجدول، أو Zoom يُربط، أو مادّةٌ أو مهمّة. */}
+                    {tab === "settings" && (
+                      <details className="rounded-xl border border-white/10 px-4 py-3">
+                        <summary className="cursor-pointer text-read font-bold text-muted-foreground">أدوات المدرب — للتدخل عند الحاجة فقط</summary>
+                        <div className="mt-4 space-y-4">
                     {/* إضافة جلسة */}
                     {!["completed", "cancelled"].includes(c.status) && (
                       <Card className="bg-paper/20">
@@ -784,59 +895,6 @@ export default function AdminCohorts() {
                       </Card>
                     )}
 
-                    <Card className="bg-paper/20">
-                      <p className="mb-3 flex items-center gap-1.5 text-read font-black text-muted-foreground">
-                        <CopyPlus className="h-3.5 w-3.5" /> تكرار الشعبة لفصل قادم
-                      </p>
-                      <div className="grid gap-2 sm:grid-cols-4">
-                        <label className="text-fine text-muted-foreground sm:col-span-2">
-                          عنوان النسخة
-                          <input value={dupForm.title} onChange={(e) => setDupForm({ ...dupForm, title: e.target.value })}
-                            placeholder={`${c.title} — نسخة`}
-                            className="mt-1 w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none" />
-                        </label>
-                        <label className="text-fine text-muted-foreground">
-                          إزاحة الأسابيع
-                          <input type="number" min={0} max={104} value={dupForm.shiftWeeks}
-                            onChange={(e) => setDupForm({ ...dupForm, shiftWeeks: e.target.value })}
-                            className="mt-1 w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2 text-xs text-foreground focus:border-teal focus:outline-none" />
-                        </label>
-                        <div className="flex items-end">
-                          <Button tone="secondary" disabled={busy}
-                            onClick={() => act(async () => {
-                              await apiPost(`/api/admin/cohorts/${c.id}/duplicate`, {
-                                title: dupForm.title.trim() || undefined,
-                                shiftWeeks: Number(dupForm.shiftWeeks) || 0,
-                                withSessions: dupForm.withSessions,
-                                withMaterials: true,
-                                withAssessments: true,
-                              });
-                              setDupForm({ title: "", shiftWeeks: "8", withSessions: true });
-                            }, "أنشئت نسخة مسودّة — بجدولها وموادّها ومهامّها، بلا تسجيلات ولا حضور")}
-                            className="w-full">
-                            كرّرها
-                          </Button>
-                        </div>
-                        <label className="flex cursor-pointer items-center gap-2 text-fine text-muted-foreground sm:col-span-4">
-                          <input type="checkbox" checked={dupForm.withSessions}
-                            onChange={(e) => setDupForm({ ...dupForm, withSessions: e.target.checked })}
-                            className="h-3.5 w-3.5 cursor-pointer accent-teal" />
-                          انسخ الجلسات أيضا مع إزاحة الأسابيع (أو ولّدها لاحقا من الجدول)
-                        </label>
-                      </div>
-                    </Card>
-
-                    {/* ── مَن يجدول لقاءات هذه الشعبة؟ ──
-
-                        سؤالُ صاحب المنصّة: «لماذا الأدمن يقوم بها؟» وجوابُه
-                        أنّه لا ينبغي. فالمدرّبُ يعرف متى يستطيع، وبوّابتُه
-                        كانت تقول له «الإدارة تضيف الجدول» ولا تعطيه إلّا أن
-                        **يقترح** تأجيلا يُرفع إلى طابور موافقات.
-
-                        فهنا تضع الإدارةُ الحدَّ — مدًى بلا سقف (٤ أكتوبر ٢٠٢٦) —
-                        ويقرّر المدرّبُ داخله. والحدّان يُفتحان معا أو لا يُفتحان. */}
-                    <ScheduleWindowCard cohort={c} busy={busy} act={act} />
-
                     {/* ربط Zoom يدوي لجلسة */}
                     <Card className="bg-paper/20">
                       <p className="mb-3 flex items-center gap-1.5 text-read font-black text-muted-foreground"><Video className="h-3.5 w-3.5" /> ربط اجتماع Zoom يدوي</p>
@@ -853,46 +911,14 @@ export default function AdminCohorts() {
                         }, "ربط اجتماع Zoom بالجلسة")} />
                     </Card>
 
-                    </>)}
-
-                    {/* ══════ ③ التسجيل والمال ══════ */}
-                    {tab === "enrollment" && (<>
-                    {/* تسجيل متعلم */}
-                    {isLiveCohort(c.status) && c.registrationOpen && (
-                      <Card className="bg-paper/20">
-                        <p className="mb-3 flex items-center gap-1.5 text-read font-black text-muted-foreground"><UserPlus className="h-3.5 w-3.5" /> تسجيل متعلم — الفائض يتحول لقائمة انتظار آليا</p>
-                        <div className="flex gap-2">
-                          <LearnerSearchField cohortId={c.id} value={enrollLearner} onChange={setEnrollLearner} disabled={busy} />
-                          <Button tone="confirm" className="shrink-0" disabled={busy || !enrollLearner}
-                            onClick={() => act(async () => {
-                              const res = await apiPost<{ status: string }>(`/api/admin/cohorts/${c.id}/enrollments`, { userId: enrollLearner!.id });
-                              const name = enrollLearner!.displayName;
-                              setEnrollLearner(null);
-                              setFlash({ kind: "ok", text: res.status === "waitlisted" ? `الشعبة ممتلئة — أدرج ${name} في قائمة الانتظار` : `سجل ${name} بنجاح` });
-                            }, "")}>
-                            سجّل
-                          </Button>
+                    <CohortOps cohort={c} tab="tools" onDone={(msg) => { setFlash({ kind: "ok", text: msg }); void load(); }} />
                         </div>
-                      </Card>
+                      </details>
                     )}
-
-                    <p className="flex items-center gap-1.5 text-read text-muted-foreground">
-                      <Users className="h-3 w-3" /> المسجلون الفعليون: {c.enrolled} — السعة {c.capacity ?? "غير محددة"}
-                    </p>
-                    </>)}
-
-                    {/* ══════ ④ المحتوى والشهادات ══════ */}
-
-                    {/* وأقسامُ `CohortOps` تُفرَّق على الألسنة الأربعة — لا
-                        تُعرض كلُّها في كلّ لسان. فهي تعرف لسانَها وتصمت في
-                        غيره. */}
-                    {/* وما يُحفظ هنا يُعاد معه شروطُ الفتح (١٢ أكتوبر ٢٠٢٦): حُفظت السعةُ والسعر
-                        فصار الرأسُ «0/25 مقعدا · 170» وبقيت الشاراتُ «لا سعة محددة» حتّى تُطوى البطاقة */}
-                    <CohortOps cohort={c} tab={tab} onDone={(msg) => { setFlash({ kind: "ok", text: msg }); void load(); void loadChecklist(c.id); }} />
 
                     {/* «من غيّر هذه الشعبة؟» — يُسأل هنا، فيُقرأ هنا. وكان
                         الجوابُ يقتضي فتحَ «سجلّ الأثر» ومعرفةَ معرّفِ الشعبة. */}
-                    {tab === "identity" && (
+                    {tab === "settings" && (
                       <EntityAuditTimeline entityType="cohort" entityId={c.id} labelAr="أثر هذه الشعبة" />
                     )}
                   </div>

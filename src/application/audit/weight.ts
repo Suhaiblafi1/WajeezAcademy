@@ -277,6 +277,8 @@ const MEDIUM: readonly string[] = [
   'trainer.drafting_bundle.download',
   /* وحذفُ شعبةٍ بلا مدرّبٍ ولا متعلّم (٢٠ أكتوبر ٢٠٢٦) — لا يمسّ إنسانا، لكنّه لا يُرجَع عنه */
   'cohort.delete_trainerless',
+  /* وحذفُ الملغاة نهائيّا ولو كان لها مدرّب (٢٢ أكتوبر ٢٠٢٦) — يحذف خطّتَه معها، ولا يُرجَع عنه */
+  'cohort.delete_cancelled',
   'rating.approve', 'rating.reject',
   /* تذكرتُه */
   'support.ticket.assign', 'support.ticket.status',
@@ -311,6 +313,8 @@ const LOW: readonly string[] = [
   'course.interest.notify',
   'cohort.create', 'cohort.update', 'cohort.duplicate', 'cohort.publish',
   'cohort.status', 'cohort.status.sync', 'cohort.delivery_plan.set',
+  /* وسببُ الإلغاء الذي وصل المدرّب (٢٢ أكتوبر ٢٠٢٦) — شرحٌ لـ`cohort.status`، والرسالةُ تصله من الجرس لا من الأثر */
+  'cohort.cancel.reason',
   'cohort.plan.save', 'cohort.plan.submit', 'cohort.message.send',
   /* ونسخُ خطّةٍ من شعبةٍ أخرى له حفظٌ لخطّته كـ`cohort.plan.save` (١١ أكتوبر ٢٠٢٦) */
   'cohort.plan.copy',

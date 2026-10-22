@@ -231,10 +231,10 @@ describe('③ ما بقي بعد الاعتماد الأخير', () => {
     expect(steps!.suggestedCapacity).toBe(20)
     expect(steps!.cohorts.map((c) => c.id).sort()).toEqual([one.id, two.id].sort())
     /* والسعةُ لا تُعدّ ناقصةً لشعبةٍ مسعَّرة — تُعطى ٢٠ عند الفتح (٢٠ أكتوبر ٢٠٢٦: «السعةُ ٢٠ دائما، لا
-       داعي أن أكتبها»). ولسانُها إن نقصت «التسجيل والمال» */
+       داعي أن أكتبها»). ولسانُها إن نقصت «الإعدادات» (٢٢ أكتوبر ٢٠٢٦) */
     for (const c of steps!.cohorts) {
       expect(c.missing).not.toContain(OPEN_GAP.capacity)
-      expect(tabForGap(OPEN_GAP.capacity)).toBe('enrollment')
+      expect(tabForGap(OPEN_GAP.capacity)).toBe('settings')
     }
 
     /* وما فُتح يخرج من اللوح — لا يُعرض قرارا قد وقع */

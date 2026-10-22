@@ -106,6 +106,11 @@ export class CohortService {
       price: c.price, currency: c.currency, language: c.language, deliveryMode: c.deliveryMode,
       registrationOpen: c.registrationOpen, financialReady: c.financialReady,
       sessionsCount: c.sessions.length,
+      /* متى تبدأ فعلا — أوّلُ لقاءٍ معتمَدٍ غيرِ ملغى، وإلّا بدايةُ مدّتها (٢٢ أكتوبر ٢٠٢٦): يُعرض في صفّها
+         ويُبنى عليه «تبدأ قريبا» (`upcoming-cohorts.ts`) */
+      firstAt: c.sessions
+        .filter((s) => s.status !== 'cancelled' && !s.placeholder && s.approvalState === 'approved')
+        .map((s) => s.startsAt).sort((a, b) => a.getTime() - b.getTime())[0] ?? c.startsAt,
       /* نافذةُ جدولةِ المدرّب — تُقرأ في الشاشة لتُعرَض مفتوحةً أو مغلقة */
       scheduleWindowStart: c.scheduleWindowStart, scheduleWindowEnd: c.scheduleWindowEnd,
       /* وموقوفُها يُقال في القائمة (٢٠ أكتوبر ٢٠٢٦، `cohortNextStep`): إيقافٌ إداريٌّ، أو حالٌ لا يفتح له
@@ -620,7 +625,7 @@ export class CohortService {
     return { applied: true, changed, changes }
   }
 
-  async transition(cohortId: string, to: string, actorId: string | null, note?: string) {
+  async transition(cohortId: string, to: string, actorId: string | null, note?: string, opts: { reasonAr?: string } = {}) {
     const cohort = await this.prisma.cohort.findUnique({ where: { id: cohortId } })
     if (!cohort) throw new AuthError('not_found', 'الشعبة غير موجودة', 404)
     if (cohort.status === to) return
@@ -644,6 +649,33 @@ export class CohortService {
           title: `ألغيت شعبة «${cohort.title}»`,
           body: 'لن تعقد لقاءاتها. راسل الدعم لننقلك إلى شعبة أخرى أو نرد ما دفعت عنها.',
           data: { cohortId },
+        })
+      }
+
+      /* ═══ ومدرّبُها يُبلَّغ كذلك، بالسبب (٢٢ أكتوبر ٢٠٢٦) ═══
+         سؤالُ صاحب المنصّة: «أقرّر إيقافَها وأبلغ المدرّب بأنّنا ألغيناها». وكان المدرّبُ لا يصله شيء:
+         تختفي الشعبةُ من «شعبي» ويبقى يجهّزها في ذهنه. فيصله جرسٌ وبريد — والسببُ ما اختارته الإدارة،
+         وقبلَ البدء يُقال له إنّ الحدَّ الأدنى لا يلزم شعبةً لم تبدأ (`cohortStartedForFloor`). */
+      const trainers = await this.prisma.cohortTrainer.findMany({
+        where: { cohortId }, select: { profile: { select: { userId: true } } },
+      })
+      const reason = opts.reasonAr?.trim()
+      const body = `${reason ? `السبب: ${reason}. ` : ''}لن تعقد لقاءاتها، ووصل متعلّميها الخبر.`
+      for (const userId of new Set(trainers.map((t) => t.profile.userId).filter((u): u is string => Boolean(u)))) {
+        for (const channel of ['in_app', 'email'] as const) {
+          await safeNotify(this.prisma, {
+            userId, channel, audience: 'trainer',
+            templateKey: 'cohort.cancelled.trainer',
+            title: `ألغينا شعبة «${cohort.title}»`,
+            body,
+            data: { cohortId },
+          })
+        }
+      }
+      if (reason) {
+        await recordAudit(this.prisma, {
+          actorId, action: 'cohort.cancel.reason', entityType: 'cohort', entityId: cohortId,
+          meta: { reasonAr: reason, trainersTold: trainers.length },
         })
       }
     }
