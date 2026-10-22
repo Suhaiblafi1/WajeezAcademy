@@ -13,9 +13,10 @@ import { plainAr } from '@/application/text/plain-ar'
 import { auditActionAr } from '@/application/audit/labels'
 import {
   CAREER_LEVELS, GRANT_ACADEMY_LINE_AR, GRANT_CONSENT_AR, GRANT_GAINS_AR, GRANT_INTEREST_DOMAINS, GRANT_SUGGESTED_COURSES, WORK_FIELDS,
-  campaignParams, campaignTag, grantDaysLeftAr, grantSavingAr, grantShareAr, leadProfileAr, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse, workFieldDomains,
+  campaignParams, campaignTag, grantCallDueAt, grantDaysLeftAr, grantSavingAr, grantShareAr, leadProfileAr, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse, workFieldDomains,
 } from '@/application/commerce/grant-landing'
 import { courseDomain } from '@/application/catalog/course-domain'
+import { zonedInstant } from '@/application/trainer/cohort-period'
 import { parsePendingCheckout } from '@/application/commerce/pending-checkout'
 import { parseStoredGrant } from '@/services/grant-landing'
 
@@ -190,6 +191,18 @@ describe('بعد النموذج', () => {
     expect(PAGE).toMatch(/import \{ waShare \} from "@\/application\/site\/whatsapp";/)
     expect(PAGE).toContain('أهد منحة لصديق')
     expect(code('src/pages/admin/GrantResults.tsx'), 'نتائج الحملة تسمي قناتها').toMatch(/share: "من صديق"/)
+  })
+
+  it('⚠️ مكالمة المستشار بعد ساعتين من النموذج — في ساعات العمل بتوقيت عمان، ولا موعد في الماضي', () => {
+    const amman = (day: string, h: number, m = 0) => zonedInstant(day, [h, m, 0, 0])
+    const D = '2026-11-03'
+    expect(grantCallDueAt(amman(D, 10), amman(D, 10)).getTime(), 'ساعتان').toBe(amman(D, 12).getTime())
+    expect(grantCallDueAt(amman(D, 18, 59), amman(D, 18, 59)).getTime()).toBe(amman(D, 20, 59).getTime())
+    expect(grantCallDueAt(amman(D, 19), amman(D, 19)).getTime(), 'التاسعة مساء خارجها').toBe(amman('2026-11-04', 10).getTime())
+    expect(grantCallDueAt(amman(D, 23), amman(D, 23)).getTime(), 'بعد منتصف الليل').toBe(amman('2026-11-04', 10).getTime())
+    expect(grantCallDueAt(amman(D, 2), amman(D, 2)).getTime(), 'قبل التاسعة صباحا').toBe(amman(D, 10).getTime())
+    expect(grantCallDueAt(amman(D, 10), amman(D, 15)).getTime(), 'فات موعده فالآن').toBe(amman(D, 15).getTime())
+    expect(grantCallDueAt(amman('2026-12-31', 22), amman('2026-12-31', 22)).getTime(), 'آخر السنة').toBe(amman('2027-01-01', 10).getTime())
   })
 
   it('⚠️ عنوان تذكير ما قبل انتهاء المنحة — من الأيام الباقية حقا', () => {

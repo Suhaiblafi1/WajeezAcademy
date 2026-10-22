@@ -15,6 +15,7 @@
    نفسِها لا من قائمةٍ تُكتب — فبه تُرتَّب له الدورات (`rankByInterest`)، ويقرؤه المستشار. */
 
 import { COURSE_DOMAIN_FAMILIES, courseDomainByFamily } from '../catalog/course-domain'
+import { zonedClock, zonedDay, zonedInstant } from '../trainer/cohort-period'
 
 /** ما يوافق عليه بالإرسال — يُعرض تحت الزرّ ويُحفظ مع العميل المحتمل */
 export const GRANT_CONSENT_AR =
@@ -210,4 +211,27 @@ export function toggleCourse(picked: readonly string[], id: string, max: number)
 export function grantDaysLeftAr(days: number): string {
   if (days <= 1) return 'اليوم آخر يوم لمنحتك'
   return days === 2 ? 'بقي يومان على منحتك' : `بقي ${days} أيام على منحتك`
+}
+
+/* ═══ مكالمةُ المستشار خلال ساعتين (٢٢ أكتوبر ٢٠٢٦) ═══
+
+   سأل صاحبُ المنصّة: «لماذا سيشتري الطالب؟ الخصمُ وحدَه لا يكفي»، واختار من الأفكار «مكالمةَ مستشارٍ خلال
+   ساعتين» بدلَ حالةٍ تُفتح بعد يومين. فمن لم يشترِ بعد ساعةٍ من النموذج تُفتح له حالةٌ عند مستشار، وفيها متابعةٌ
+   هاتفيّةٌ موعدُها ساعتان بعد النموذج — والساعةُ الأولى له يشتري فيها وحدَه فلا يُتّصل بمن اشترى.
+   وفي ساعات العمل بتوقيت عمّان: ما وقع قبل التاسعة صباحا أو بعد التاسعة مساء فالعاشرةُ من صباحه التالي. */
+
+/** بعد كم ساعةٍ من النموذج تكون المكالمة */
+export const GRANT_CALL_HOURS = 2
+/** ساعاتُ الاتّصال بتوقيت عمّان — من التاسعة صباحا إلى التاسعة مساء */
+export const GRANT_CALL_WINDOW: readonly [number, number] = [9, 21]
+
+/** موعدُ مكالمة المستشار — ساعتان بعد النموذج في ساعات العمل، ولا موعدَ في الماضي: من فات موعدُه فالآن */
+export function grantCallDueAt(formAt: Date, now: Date): Date {
+  const due = new Date(Math.max(formAt.getTime() + GRANT_CALL_HOURS * 3_600_000, now.getTime()))
+  const hour = Number(zonedClock(due).slice(0, 2))
+  if (hour >= GRANT_CALL_WINDOW[0] && hour < GRANT_CALL_WINDOW[1]) return due
+  const day = zonedDay(due)
+  const [y, m, d] = day.split('-').map(Number)
+  const morning = hour < GRANT_CALL_WINDOW[0] ? day : new Date(Date.UTC(y, m - 1, d + 1)).toISOString().slice(0, 10)
+  return zonedInstant(morning, [GRANT_CALL_WINDOW[0] + 1, 0, 0, 0])
 }

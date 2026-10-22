@@ -1,4 +1,4 @@
-/* من عبّأ نموذج المنحة ولم يشترِ — قائمةٌ بالأسماء، ومستشارٌ بعد يومين (٢٠ أكتوبر ٢٠٢٦).
+/* من عبّأ نموذج المنحة ولم يشترِ — قائمةٌ بالأسماء، ومستشارٌ يتّصل خلال ساعتين (٢٠ و٢٢ أكتوبر ٢٠٢٦).
 
    ═══ القرار ═══
 
@@ -11,7 +11,10 @@
    ١) **قائمةٌ بكلّ من عبّأ النموذج** (`registrants`) — اسمُه ورقمُه وبريدُه ومجالُه وقناتُه ودفعتُه،
       وما فعل: اشترى، أو ينتظر الدفع، أو لم يشترِ بعد؛ ومستشارُه إن كانت له حالة.
    ٢) **و«اشترى»** = كودُه دُفع به طلبٌ (ولو اشترى به من أهداه إليه)، أو بريدُه بريدُ حسابٍ دفع شيئا.
-   ٣) **ومن لم يشترِ بعد يومين تُفتح له حالةٌ عند مستشار** (`openFollowups`، كلَّ ساعةٍ في العامل) —
+   ٣) **ومن لم يشترِ بعد ساعةٍ تُفتح له حالةٌ عند مستشار، وفيها مكالمةٌ موعدُها ساعتان بعد النموذج**
+      (`openFollowups`، كلَّ ربع ساعةٍ في العامل). كانت بعد يومين، ثمّ اختار صاحبُ المنصّة (٢٢ أكتوبر ٢٠٢٦)
+      «مكالمةَ مستشارٍ خلال ساعتين» — والموعدُ في ساعات العمل بتوقيت عمّان (`grantCallDueAt`)، ويُذكَّر به
+      المستشارُ قبله بربع ساعة كأيّ متابعة (`remindDue`).
       مرّةً واحدةً لكلّ عميل: من كانت له حالةٌ قبلُ (طلب مستشارا بنفسه) لا تُفتح له ثانية. ومن ينتظر
       طلبُه الدفعَ لا يُتابَع وهو في منتصف الدفع؛ فإن هُجر طلبُه لحقته الدورةُ التالية.
    ٤) **وتذكيرٌ قبل انتهاء المنحة** (٢١ أكتوبر ٢٠٢٦) — من أفكار «الاستحواذ على العميل» التي اختارها صاحبُ
@@ -35,12 +38,12 @@ import { liveChannels } from './notification.service'
 import { enqueueMail } from './outbox.service'
 import { publicSiteUrl } from './site-url'
 import { MEMBER_GRANT_SLUG } from '../../src/application/commerce/grant'
-import { grantDaysLeftAr, leadProfileAr } from '../../src/application/commerce/grant-landing'
+import { grantCallDueAt, grantDaysLeftAr, leadProfileAr } from '../../src/application/commerce/grant-landing'
 import { fmtDateLong } from '../../src/application/text/format-ar'
 import { zonedDay } from '../../src/application/trainer/cohort-period'
 
-/** بعد كم ساعةٍ من النموذج يُتابَع من لم يشترِ */
-export const GRANT_FOLLOWUP_HOURS = 48
+/** بعد كم ساعةٍ من النموذج تُفتح حالةُ من لم يشترِ — ساعةٌ يشتري فيها وحدَه، ثمّ مكالمةٌ في الساعة الثانية */
+export const GRANT_FOLLOWUP_HOURS = 1
 /** أقصى ما يُفتح في دورةٍ واحدة — فلا تُغرق دفعةٌ كبيرةٌ المستشارين في ساعة */
 const FOLLOWUP_BATCH = 200
 
@@ -89,7 +92,7 @@ export async function grantRegistrants(prisma: PrismaClient) {
   })
 }
 
-/** من لم يشترِ بعد يومين — حالةٌ عند مستشار، مرّةً لكلّ عميل */
+/** من لم يشترِ بعد ساعة — حالةٌ عند مستشار ومكالمةٌ مجدولة، مرّةً لكلّ عميل */
 export async function openGrantFollowups(prisma: PrismaClient, now = new Date()): Promise<{ opened: number }> {
   const cutoff = new Date(now.getTime() - GRANT_FOLLOWUP_HOURS * 3_600_000)
   const leads = await prisma.lead.findMany({
@@ -97,7 +100,7 @@ export async function openGrantFollowups(prisma: PrismaClient, now = new Date())
     orderBy: { createdAt: 'asc' },
     take: FOLLOWUP_BATCH,
     select: {
-      id: true, email: true, workField: true, careerLevel: true, interests: true,
+      id: true, email: true, workField: true, careerLevel: true, interests: true, createdAt: true,
       grantCode: { select: { coupon: { select: { orders: { where: { status: { in: [...BOUGHT, 'pending_payment'] } }, select: { id: true } } } } } },
     },
   })
@@ -107,10 +110,13 @@ export async function openGrantFollowups(prisma: PrismaClient, now = new Date())
   for (const lead of leads) {
     if ((lead.grantCode?.coupon.orders.length ?? 0) > 0) continue
     if (lead.email && paid.has(lead.email.toLowerCase())) continue
+    const callAt = grantCallDueAt(lead.createdAt, now)
     const kase = await prisma.advisorCase.create({
       data: {
         leadId: lead.id,
-        nextAction: ['متابعة — عبأ نموذج المنحة قبل يومين ولم يشتر', leadProfileAr(lead)].filter(Boolean).join(' · '),
+        nextAction: ['اتصل به — عبأ نموذج المنحة ولم يشتر بعد', leadProfileAr(lead)].filter(Boolean).join(' · '),
+        nextFollowUpAt: callAt,
+        followUps: { create: { scheduledAt: callAt, channel: 'phone', note: 'مكالمة المنحة — خلال ساعتين من النموذج' } },
       },
     })
     await recordAudit(prisma, {
