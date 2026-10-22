@@ -2,7 +2,8 @@
 
    ① **القائمةُ تقول ما فعل كلٌّ** — اشترى (بكوده ولو اشترى به غيرُه، أو ببريده بلا كود)، أو ينتظر الدفع، أو
       لم يشترِ بعد؛ ومستشارُه إن كانت له حالة.
-   ② **ومن لم يشترِ بعد يومين تُفتح له حالةٌ عند مستشار** — مرّةً واحدة، وتُسند، ويُكتب أثرُها.
+   ② **ومن لم يشترِ بعد ساعةٍ تُفتح له حالةٌ عند مستشار، وفيها مكالمةٌ هاتفيّةٌ مجدولةٌ** — موعدُها ساعتان بعد النموذج
+      في ساعات العمل (`grantCallDueAt`)؛ مرّةً واحدة، وتُسند، ويُكتب أثرُها.
    ③ **ولا تُفتح** لمن لم يمضِ عليه يومان، ولا لمن اشترى، ولا لمن ينتظر طلبُه الدفع، ولا لمن له حالةٌ قبلُ.
    ④ **والعاملُ يفتحها.**
    ⑤ **وتذكيرٌ قبل انتهاء المنحة** — بريدٌ قبل ثلاثة أيّامٍ وفي آخر يوم، التاسعةَ صباحا بتوقيت عمّان، مرّةً لكلّ
@@ -18,6 +19,7 @@ import { GrantService } from '../../services/grant.service'
 import { GrantLandingService } from '../../services/grant-landing.service'
 import { GRANT_FOLLOWUP_HOURS, grantRegistrants, openGrantFollowups, sendGrantReminders } from '../../services/grant-followup.service'
 import { zonedDay } from '../../../src/application/trainer/cohort-period'
+import { grantCallDueAt } from '../../../src/application/commerce/grant-landing'
 import { runJob } from '../../worker/jobs'
 import { approvedTrainerPlan } from '../helpers/approved-trainer'
 
@@ -98,10 +100,11 @@ describe('① القائمة تقول ما فعل كل واحد', () => {
   })
 })
 
-describe('② و③ من لم يشتر بعد يومين — حالة عند مستشار، مرة واحدة', () => {
+describe('② و③ من لم يشتر بعد ساعة — حالة عند مستشار ومكالمة مجدولة، مرة واحدة', () => {
   it('⚠️ تفتح وتسند ويكتب أثرها — ولا تفتح للجديد ولا للمشتري ولا لمن ينتظر الدفع ولا لمن له حالة', async () => {
-    const late = await member()
-    const fresh = await member(GRANT_FOLLOWUP_HOURS - 1)
+    /* بالساعات نفسِها لا بالثابت — فعودتُه إلى يومين تسقط هنا */
+    const late = await member(2)
+    const fresh = await member(0.5)
     const bought = await member()
     const buyer = await learner()
     const o = await commerce.checkout(buyer, [(await cohort()).id], bought.code)
@@ -116,14 +119,22 @@ describe('② و③ من لم يشتر بعد يومين — حالة عند م�
     const o3 = await commerce.checkout(me, [(await cohort()).id])
     await commerce.payOrder(o3.orderId, me, `fu-${o3.orderId}`)
 
-    await openGrantFollowups(prisma)
+    const NOW = new Date()
+    await openGrantFollowups(prisma, NOW)
     const cases = await casesOf(late.ref)
-    expect(cases, 'لم تفتح حالة لمن لم يشتر بعد يومين').toHaveLength(1)
-    expect(cases[0].nextAction).toContain('عبأ نموذج المنحة قبل يومين')
+    expect(cases, 'لم تفتح حالة لمن لم يشتر بعد ساعة').toHaveLength(1)
+    expect(cases[0].nextAction).toContain('اتصل به — عبأ نموذج المنحة')
+    /* والمكالمةُ متابعةٌ هاتفيّةٌ موعدُها ساعتان بعد النموذج في ساعات العمل — وبها يُذكَّر المستشار قبلها */
+    const lead = await prisma.lead.findUniqueOrThrow({ where: { id: late.ref }, select: { createdAt: true } })
+    const call = await prisma.followUp.findMany({ where: { caseId: cases[0].id } })
+    expect(call, 'لا مكالمة مجدولة').toHaveLength(1)
+    expect(call[0].channel).toBe('phone')
+    expect(call[0].scheduledAt.getTime()).toBe(grantCallDueAt(lead.createdAt, NOW).getTime())
+    expect(cases[0].nextFollowUpAt?.getTime()).toBe(call[0].scheduledAt.getTime())
     expect(cases[0].nextAction, 'لم يقرأ المستشار مجاله').toContain('مجاله: الهندسة')
     expect(cases[0].assignments.some((x) => x.unassignedAt === null), 'لم تسند').toBe(true)
     expect(await prisma.auditEvent.count({ where: { action: 'advisor.case.grant_followup', entityId: cases[0].id } })).toBe(1)
-    expect(await casesOf(fresh.ref), 'فتحت قبل يومين').toHaveLength(0)
+    expect(await casesOf(fresh.ref), 'فتحت قبل ساعة').toHaveLength(0)
     expect(await casesOf(bought.ref), 'فتحت لمن اشترى').toHaveLength(0)
     expect(await casesOf(direct.ref), 'فتحت لمن اشترى ببريده بلا كود').toHaveLength(0)
     expect(await casesOf(paying.ref), 'فتحت لمن ينتظر طلبه الدفع').toHaveLength(0)

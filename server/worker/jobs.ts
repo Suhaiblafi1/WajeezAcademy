@@ -1396,7 +1396,7 @@ export async function runAdvisorPayouts(prisma: PrismaClient, now = new Date()):
   }
 }
 
-/** من عبّأ نموذج المنحة ولم يشترِ بعد يومين — حالةٌ عند مستشار، مرّةً لكلّ عميل (`grant-followup.service.ts`) */
+/** من عبّأ نموذج المنحة ولم يشترِ بعد ساعة — حالةٌ عند مستشار ومكالمةٌ خلال ساعتين، مرّةً لكلّ عميل (`grant-followup.service.ts`) */
 export async function runGrantFollowups(prisma: PrismaClient, now = new Date()): Promise<JobResult> {
   const started = Date.now()
   const { openGrantFollowups } = await import('../services/grant-followup.service')
@@ -1565,8 +1565,8 @@ export const JOBS = [
   { key: 'advisor_payouts', everyMs: 6 * HOUR, run: runAdvisorPayouts, titleAr: 'كشوف عمولة المستشارين للشهر الذي انتهى' },
   /* مرّةً في اليوم: الأجلُ ستة أشهر، فيومٌ دقّةٌ كافية */
   { key: 'erase_idle_guests', everyMs: 24 * HOUR, run: runEraseIdleGuests, titleAr: 'محو بيانات من لم يسجل بعد ستة أشهر بلا نشاط' },
-  /* كلَّ ساعة: الأجلُ يومان، فساعةٌ دقّةٌ كافية — والدفعةُ محدودةٌ فلا تُغرَق الطوابير */
-  { key: 'grant_followup', everyMs: HOUR, run: runGrantFollowups, titleAr: 'متابعة من عبأ نموذج المنحة ولم يشتر' },
+  /* كلَّ ربع ساعة: المكالمةُ خلال ساعتين من النموذج، فساعةٌ تأكل نصفَها — والدفعةُ محدودةٌ فلا تُغرَق الطوابير */
+  { key: 'grant_followup', everyMs: 15 * 60_000, run: runGrantFollowups, titleAr: 'متابعة من عبأ نموذج المنحة ولم يشتر' },
   /* كلَّ ساعة: التذكيرُ التاسعةَ صباحا، فساعةٌ دقّةٌ كافية — ومن ذُكِّر في مرحلته يُتخطّى */
   { key: 'grant_reminders', everyMs: HOUR, run: runGrantReminders, titleAr: 'تذكير من لم يشتر قبل انتهاء المنحة' },
   /* كلَّ ساعة: يقع مرّةً لكلّ شعبة ثمّ لا يجد شيئا — وشرطُه موعدُها لا عدّاد */

@@ -526,7 +526,7 @@ const PHRASES: Record<string, string> = {
   'worker.advisor_reminders': 'تذكير المستشارين بحالات بلا تواصل ومتابعات حلّ موعدها',
   'worker.erase_idle_guests': 'محو بيانات من لم يسجل بعد ستة أشهر بلا نشاط',
   'worker.advisor_payouts': 'توليد كشوف عمولة المستشارين للشهر الذي انتهى',
-  'worker.grant_followup': 'متابعة من عبأ نموذج المنحة ولم يشتر — حالة عند مستشار بعد يومين',
+  'worker.grant_followup': 'متابعة من عبأ نموذج المنحة ولم يشتر — حالة عند مستشار ومكالمة خلال ساعتين',
   'worker.grant_reminders': 'تذكير من لم يشتر قبل انتهاء المنحة — قبل ثلاثة أيام وفي آخر يوم',
   'worker.cohort_corrections': 'تصحيح مواعيد شعب بقرار صاحب المنصة',
 }
