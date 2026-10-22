@@ -174,6 +174,8 @@ const HIGH: readonly string[] = [
   'advisor_payout.generate', 'advisor_payout.approve', 'advisor_payout.pay', 'advisor_payout.cancel',
   /* شهادتُه — دعوى مستقلّةٌ على صاحبها */
   'certificate.issue', 'certificate.revoke',
+  /* وخطابُ التوصية معها — يُضاف إلى سجلّه ويُتحقَّق منه برقمه (`endorsement.service.ts`) */
+  'certificate.endorse',
   /* خطّةُ شعبته: اعتُمدت أو رُدّت أو أُجّلت إلى موسمٍ قادم */
   'cohort.plan.approve', 'cohort.plan.changes_requested', 'cohort.plan.postpone',
   /* رابطُ اللقاء نُشر، والجلسةُ تحرّكت */

@@ -107,6 +107,7 @@ const PHRASES: Record<string, string> = {
   'attendance.mark': 'تسجيل حضور',
   'certificate.issue': 'إصدار شهادة',
   'certificate.revoke': 'إلغاء شهادة',
+  'certificate.endorse': 'إصدار خطاب توصية مع الشهادة لمن حضر وأنجز مهامه',
   'enrollment.create': 'تسجيل متعلّم في شعبة',
   'enrollment.drop': 'إسقاط تسجيل',
   'enrollment.switch_cohort': 'نقل متعلّم إلى شعبة أخرى',
