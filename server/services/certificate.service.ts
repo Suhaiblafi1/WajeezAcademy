@@ -7,6 +7,7 @@ import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { safeNotify } from './notification.service'
 import { ProgressService } from './progress.service'
+import { EndorsementService } from './endorsement.service'
 
 export class CertificateService {
   private prisma: PrismaClient
@@ -141,6 +142,8 @@ export class CertificateService {
       templateKey: 'certificate.issued',
       data: { certificateId: cert.id, number },
     })
+    /* وخطابُ التوصية بعدها لمن استحقّه، بخبره (`endorsement.service.ts`) — وسقوطُه لا يُسقط شهادةً صدرت: يلحقه في «شهاداتي» */
+    try { await new EndorsementService(this.prisma).issueIfEarned(cert.id) } catch { /* يلحقه في «شهاداتي» */ }
     return cert
   }
 
@@ -234,10 +237,19 @@ export class CertificateService {
   async myCertificates(userId: string) {
     const rows = await this.prisma.certificate.findMany({
       where: { enrollment: { userId } },
-      include: { revocation: true },
+      include: { revocation: true, endorsement: { select: { number: true } } },
       orderBy: { issuedAt: 'desc' },
     })
     if (rows.length === 0) return []
+    /* وما صدر قبل خطاب التوصية يلحقه هنا إن استحقّه — بالأرقام التي فُحصت بها شهادتُه (`endorsement.service.ts`) */
+    const endorsements = new EndorsementService(this.prisma)
+    for (const c of rows) {
+      if (c.status !== 'active' || c.endorsement) continue
+      try {
+        const n = await endorsements.issueIfEarned(c.id)
+        if (n) c.endorsement = { number: n }
+      } catch { /* يُعاد في الفتح التالي */ }
+    }
     const wanted = new Map(rows.map((c) => [`${c.courseId}@${c.courseVersion}`, { courseId: c.courseId, version: c.courseVersion }]))
     const versions = await this.prisma.courseVersion.findMany({
       where: { OR: [...wanted.values()] },
@@ -247,6 +259,7 @@ export class CertificateService {
     return rows.map((c) => ({
       ...c,
       courseTitle: titles.get(`${c.courseId}@${c.courseVersion}`) ?? c.courseId,
+      endorsementNumber: c.status === 'active' ? (c.endorsement?.number ?? null) : null,
     }))
   }
 }

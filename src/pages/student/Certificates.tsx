@@ -5,12 +5,13 @@
    دعوة للقياس — ولا نلفّق رقما لتزيين ورقة. */
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router";
-import { Award, BadgeCheck, Loader2, RefreshCw, Ruler, ShieldOff } from "lucide-react";
+import { Award, BadgeCheck, FileText, Loader2, RefreshCw, Ruler, ShieldOff } from "lucide-react";
 import PortalLayout from "./PortalLayout";
 import { apiGet, ApiError } from "@/services/api";
 import { buildGrowthSummary, type CourseGrowth, type RemeasureRecord } from "@/application/student/skill-growth";
 import EmptyState from "@/components/EmptyState";
 import { fmtDate } from "@/application/text/format-ar";
+import { endorsementPath } from "@/application/learning/endorsement";
 
 import { Card, Inset, Panel } from "@/components/ui/Surface";
 interface Cert {
@@ -19,6 +20,8 @@ interface Cert {
   courseTitle: string;
   enrollmentId: string;
   issuedAt: string; status: string; revocation: { reason: string; createdAt?: string } | null;
+  /** خطابُ توصيةٍ من الأكاديمية إن استحقّه — بحضوره ومهامّه (`endorsement.ts`) */
+  endorsementNumber?: string | null;
 }
 
 /** شريط النمو المقيس تحت الشهادة — أرقام محفوظة أو دعوة للقياس، لا شيء بينهما */
@@ -120,6 +123,13 @@ export default function Certificates() {
                   </Link>
                 )}
               </div>
+              {c.status !== "revoked" && c.endorsementNumber && (
+                <Card as={Link} tone="accent" interactive to={endorsementPath(c.endorsementNumber)} target="_blank" rel="noopener"
+                  className="mt-3 flex items-center gap-2 px-3 py-2 text-read font-bold text-teal-light-ink">
+                  <FileText className="h-4 w-4 shrink-0" aria-hidden="true" />
+                  خطاب توصية من الأكاديمية — اطبعه أو أرسل رابطه لصاحب العمل
+                </Card>
+              )}
               {c.status !== "revoked" && (
                 <GrowthStrip growth={growthByCourse[c.courseId] ?? null} enrollmentId={c.enrollmentId} />
               )}

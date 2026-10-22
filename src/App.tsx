@@ -24,6 +24,7 @@ const SkillCheck = lazy(() => import('./pages/SkillCheck'))
 const Mirror = lazy(() => import('./pages/Mirror'))
 const PathwayPage = lazy(() => import('./pages/Pathway'))
 const MemberGrantPage = lazy(() => import('./pages/MemberGrantPage'))
+const EndorsementLetter = lazy(() => import('./pages/EndorsementLetter'))
 const CoursePathPage = lazy(() => import('./pages/CoursePath'))
 const TrainerPublicPage = lazy(() => import('./pages/TrainerPublic'))
 const PathRedirectPage = lazy(() => import('./pages/PathRedirect'))
@@ -240,6 +241,7 @@ export default function App() {
           <Route path="/auth/reset" element={<ResetPassword />} />
           <Route path="/verify" element={<Verify />} />
           <Route path="/verify/:number" element={<Verify />} />
+          <Route path="/letter/:number" element={<EndorsementLetter />} />
           <Route path="/p/:slug" element={<StaticPage />} />
           {/* بوابةُ المتعلّم — محروسةٌ كسائر البوابات.
 

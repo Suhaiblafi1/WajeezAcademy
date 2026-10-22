@@ -14,6 +14,7 @@ import { EnrollmentService } from '../../services/enrollment.service'
 import { AssessmentService } from '../../services/assessment.service'
 import { ProgressService } from '../../services/progress.service'
 import { CertificateService } from '../../services/certificate.service'
+import { EndorsementService } from '../../services/endorsement.service'
 import { LearnerRequestService, LEARNER_REQUEST_KINDS } from '../../services/learner-request.service'
 import { SkillGrowthService } from '../../services/skill-growth.service'
 import { RetrievalService } from '../../services/retrieval.service'
@@ -139,6 +140,7 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
   const assessments = new AssessmentService(prisma)
   const progress = new ProgressService(prisma)
   const certificates = new CertificateService(prisma)
+  const endorsements = new EndorsementService(prisma)
   const learnerRequests = new LearnerRequestService(prisma)
   const skillGrowth = new SkillGrowthService(prisma)
   const retrieval = new RetrievalService(prisma)
@@ -1337,5 +1339,13 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
   }, async (req) => {
     const { number } = z.object({ number: z.string().min(6).max(40) }).parse(req.params)
     return certificates.verify(number, req.ip)
+  })
+
+  /* وخطابُ التوصية برقمه — صفحتُه العامّة يفتحها صاحبُ العمل (`endorsement.service.ts`) */
+  app.get('/api/v1/letters/:number', {
+    schema: { tags: ['public'], summary: 'خطاب توصية من الأكاديمية برقمه — ويسجل تحققا من شهادته' },
+  }, async (req) => {
+    const { number } = z.object({ number: z.string().min(6).max(40) }).parse(req.params)
+    return endorsements.view(number, req.ip)
   })
 }

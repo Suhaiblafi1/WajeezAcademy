@@ -162,7 +162,7 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
     /* والسببُ المكتوب فوق يقع على السحب أشدَّ ممّا يقع على الإصدار: صفحةُ
        التحقّق العامّة تبدأ تعرضها «ملغاة» لمن يحمل رقمَها في اللحظة نفسِها
        (`certificate.service.ts` — `verify`). فمن يسأل عنها يعرف قبل صاحبها. */
-    templateKeys: ['certificate.issued', 'certificate.revoked'],
+    templateKeys: ['certificate.issued', 'certificate.revoked', 'certificate.endorsed'],
   },
   {
     key: 'work',

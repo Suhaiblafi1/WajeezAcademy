@@ -77,6 +77,8 @@ const LEARNER: Table = {
   /* وردُّ الدعم يفتح تذكرتَه — والردُّ كاملا هناك (٢٠ أكتوبر ٢٠٢٦) */
   'support.reply': { path: '/student/support', ctaAr: 'اقرأ الرد' },
   'certificate.issued': { path: '/student/certificates', ctaAr: 'افتح شهادتك' },
+  /* وخطابُ التوصية تحت شهادته هناك، ومنه يفتحه ويطبعه (٢٢ أكتوبر ٢٠٢٦) */
+  'certificate.endorsed': { path: '/student/certificates', ctaAr: 'افتح خطابك' },
   /* والملغاةُ تبقى معروضةً هناك بحالتها — فالوجهةُ تحمل الخبرَ لا تخفيه */
   'certificate.revoked': { path: '/student/certificates', ctaAr: 'افتح شهاداتك' },
   'staff.announce': { path: '/student/inbox', ctaAr: 'اقرأ الإعلان' },

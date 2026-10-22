@@ -3474,8 +3474,30 @@ model Certificate {
   enrollment    Enrollment                @relation(fields: [enrollmentId], references: [id], onDelete: Restrict)
   verifications CertificateVerification[]
   revocation    CertificateRevocation?
+  /// خطابُ توصيةٍ من الأكاديمية إن استحقّه بحضوره ومهامّه (`endorsement.service.ts`)
+  endorsement   EndorsementLetter?
 
   @@index([enrollmentId])
+}
+
+/**
+ * خطابُ توصيةٍ من الأكاديمية — يُستحقّ ولا يُعطى لكلّ متخرّج (٢٢ أكتوبر ٢٠٢٦).
+ * يصدر مع الشهادة لمن حضر ٨٠٪ فأكثر وأنجز مهامّه كلَّها، وأرقامُه لقطةُ يوم الإصدار لا تتبدّل بعده.
+ * ورقمُه عشوائيٌّ لا متسلسل: فيه حضورُ صاحبه، فلا يُعدَّد بالتخمين كما تُعدَّد الشهادات.
+ * ويتبع شهادتَه: تُسحب فيُقال إنّه ملغى معها، وتُمحى فيُمحى (`purgeAccountWithHistory`).
+ */
+model EndorsementLetter {
+  id            String      @id @default(uuid()) @db.Uuid
+  number        String      @unique // WJ-REC-XXXX-XXXX
+  certificateId String      @unique @db.Uuid
+  attendancePct Int
+  tasksDone     Int
+  tasksTotal    Int
+  /// مهاراتُ الدورة يومَ الإصدار — والروابطُ بلا إصدار، فتُلتقط
+  skills        String[]
+  totalHours    Int?
+  issuedAt      DateTime    @default(now())
+  certificate   Certificate @relation(fields: [certificateId], references: [id], onDelete: Cascade)
 }
 
 /**
