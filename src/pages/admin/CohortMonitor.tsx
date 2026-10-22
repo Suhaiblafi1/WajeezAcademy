@@ -160,7 +160,7 @@ export function CohortMonitor({ cohortId, refresh }: { cohortId: string; refresh
             {r.messages.map((m) => (
               <li key={m.id}>
                 <Inset className="px-3 py-2">
-                  <p className="text-fine text-muted-foreground">
+                  <p className="text-read text-muted-foreground">
                     {fmtShortDateTimeAr(m.at)} · {m.author}{m.byTrainer ? "" : " (ليس المدرب)"} · {m.toName ? `إلى ${m.toName}` : AUDIENCE_AR[m.audience] ?? m.audience}
                     {m.recipients > 1 ? ` · وصلت ${m.recipients}` : ""}
                   </p>
