@@ -18,6 +18,10 @@ import { LearnerRequestService } from '../../services/learner-request.service'
 import { CohortPlanService } from '../../services/cohort-plan.service'
 import { PlanReviewBundleService, type ReviewBundle } from '../../services/plan-review-bundle.service'
 import { TrainerlessCohortDeleteService } from '../../services/trainerless-cohort-delete.service'
+import { CancelledCohortDeleteService } from '../../services/cancelled-cohort-delete.service'
+import { CohortEconomicsService } from '../../services/cohort-economics.service'
+import { CohortMonitorService } from '../../services/cohort-monitor.service'
+import { UPCOMING_MAX_DAYS } from '../../../src/application/learning/upcoming-cohorts'
 import { AuthError } from '../../services/auth.service'
 import { CohortFileService } from '../../services/cohort-file.service'
 import { PlanEditService } from '../../services/plan-edit.service'
@@ -699,9 +703,62 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
     schema: { tags: ['admin-learning'], summary: 'انتقال حالة الشعبة — active/completed/cancelled' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
-    const body = z.object({ to: z.enum(['active', 'completed', 'cancelled', 'open']), note: z.string().optional() }).parse(req.body)
-    await cohorts.transition(id, body.to, req.auth!.userId, body.note)
+    const body = z.object({
+      to: z.enum(['active', 'completed', 'cancelled', 'open']), note: z.string().optional(),
+      /* سببُ الإلغاء الذي يصل المدرّب (٢٢ أكتوبر ٢٠٢٦) */
+      reasonAr: z.string().trim().max(500).optional(),
+    }).parse(req.body)
+    await cohorts.transition(id, body.to, req.auth!.userId, body.note, { reasonAr: body.reasonAr })
     return { ok: true }
+  })
+
+  /* ═══ مالُ الشعبة، و«تبدأ قريبا»، و«المتابعة»، وحذفُ الملغاة (٢٢ أكتوبر ٢٠٢٦) ═══
+     «أحتاج لافتةً تقول كم الحدُّ الأدنى للمدرّب وكم حصّلنا» · «أيّ الدورات قريبة وكم فيها تسجيل» ·
+     «وصولٌ لمجريات العمل لديه كتقارير» · «اجعل خيارَ الحذف واضحا» — صاحب المنصّة. والقرارُ في كلٍّ
+     بصلاحيّة إدارة الشعب نفسِها التي يُلغى بها. */
+  const economics = new CohortEconomicsService(prisma)
+  const monitor = new CohortMonitorService(prisma)
+  const cancelledDelete = new CancelledCohortDeleteService(prisma)
+
+  app.get('/api/admin/cohorts/upcoming', {
+    preHandler: requirePermission('cohort.manage'),
+    schema: { tags: ['admin-learning'], summary: 'شعب تبدأ خلال أيام ولم تبدأ — بأقربها أولا، ومعها حد المدرب الأدنى وما حصل' },
+  }, async (req) => {
+    const { days } = z.object({ days: z.coerce.number().int().min(1).max(UPCOMING_MAX_DAYS).optional() }).parse(req.query ?? {})
+    return economics.upcoming(days)
+  })
+
+  app.get('/api/admin/cohorts/:id/economics', {
+    preHandler: requirePermission('cohort.manage'),
+    schema: { tags: ['admin-learning'], summary: 'مال الشعبة — حد المدرب الأدنى، وما ندفعه لو انعقدت، وما حصل' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return economics.forCohort(id)
+  })
+
+  app.get('/api/admin/cohorts/:id/monitor', {
+    preHandler: requirePermission('cohort.manage'),
+    schema: { tags: ['admin-learning'], summary: 'متابعة الشعبة — الحضور والتسليمات ومشروع التخرج ورسائل المدرب، للقراءة' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return monitor.report(id)
+  })
+
+  app.get('/api/admin/cohorts/:id/delete-preview', {
+    preHandler: requirePermission('cohort.manage'),
+    schema: { tags: ['admin-learning'], summary: 'ما يحذف مع الشعبة الملغاة — وما يمنع حذفها' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return cancelledDelete.preview(id)
+  })
+
+  app.post('/api/admin/cohorts/:id/delete-cancelled', {
+    preHandler: requirePermission('cohort.manage'),
+    schema: { tags: ['admin-learning'], summary: 'حذف شعبة ملغاة نهائيا — ولما له مدرب باختيار صريح مع خطته' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const { withTrainerPlan } = z.object({ withTrainerPlan: z.boolean().default(false) }).parse(req.body ?? {})
+    return cancelledDelete.delete(req.auth!.userId, id, { withTrainerPlan })
   })
 
   /* ── الجلسات وZoom ── */

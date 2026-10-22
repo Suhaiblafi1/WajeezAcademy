@@ -916,7 +916,7 @@ export class EarningsService {
       لا يحمل بندَ الشعبة باسمها. ومن جاء بلا طلبٍ (بيد الإدارة) يُحتسب.
 
    والشعبُ صغيرة (بسعتها)، فتُقرأ صفوفُها مرّةً ويُحكَم عليها في الذاكرة. */
-async function countedSeats(db: Db, cohortId: string) {
+export async function countedSeats(db: Db, cohortId: string) {
   const rows = await db.enrollment.findMany({
     where: { cohortId, status: { in: [...SEAT_STATUSES] } },
     select: { id: true, userId: true, status: true, referralProfileId: true },

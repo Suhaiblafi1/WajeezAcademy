@@ -158,10 +158,12 @@ describe('② «التالي» في بطاقة «شعبي» يتبع حال ال
 /* ─────────── ③أ شروطُ الفتح ─────────── */
 
 describe('③أ شروط الفتح تقول أين توفى — ويجلبها الرابط معه', () => {
-  it('السعة والمال في «التسجيل والمال»، والجدول في «الجدول واللقاءات»', () => {
-    expect(tabForGap(OPEN_GAP.capacity)).toBe('enrollment')
-    expect(tabForGap(OPEN_GAP.financial)).toBe('enrollment')
-    expect(tabForGap(OPEN_GAP.schedule)).toBe('schedule')
+  /* والثلاثةُ في «الإعدادات» منذ صارت الألسنةُ واجباتِ الإدارة، وخطّةُ المدرّب في لسانها (٢٢ أكتوبر ٢٠٢٦) */
+  it('السعة والمال والجدول في «الإعدادات»، وخطة المدرب في لسانها', () => {
+    expect(tabForGap(OPEN_GAP.capacity)).toBe('settings')
+    expect(tabForGap(OPEN_GAP.financial)).toBe('settings')
+    expect(tabForGap(OPEN_GAP.schedule)).toBe('settings')
+    expect(tabForGap(OPEN_GAP.trainerPlan)).toBe('plan')
     expect(tabForGap('خطّة المدرّب لم تعتمد بعد')).toBeNull()
   })
 

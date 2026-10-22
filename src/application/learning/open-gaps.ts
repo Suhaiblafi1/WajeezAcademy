@@ -24,9 +24,12 @@ export const OPEN_GAP = {
   trainerPlan: 'خطّة المدرّب لم تعتمد بعد — تفتح الشعبة للتسجيل باعتمادها',
 } as const
 
-/** لسانُ البطاقة الذي يُوفى فيه هذا النقص — أو `null` لما لا لسانَ له */
-export function tabForGap(gap: string): 'schedule' | 'enrollment' | null {
-  if (gap === OPEN_GAP.schedule) return 'schedule'
-  if (gap === OPEN_GAP.capacity || gap === OPEN_GAP.financial) return 'enrollment'
+/** لسانُ البطاقة الذي يُوفى فيه هذا النقص — أو `null` لما لا لسانَ له.
+ *
+ *  والجدولُ والسعةُ والمالُ كلُّها في «الإعدادات» منذ صارت الألسنةُ واجباتِ الإدارة (٢٢ أكتوبر ٢٠٢٦،
+ *  `cohort-tabs.ts`). وخطّةُ المدرّب في لسانها. */
+export function tabForGap(gap: string): 'settings' | 'plan' | null {
+  if (gap === OPEN_GAP.schedule || gap === OPEN_GAP.capacity || gap === OPEN_GAP.financial) return 'settings'
+  if (gap === OPEN_GAP.trainerPlan) return 'plan'
   return null
 }

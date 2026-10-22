@@ -32,7 +32,7 @@ describe('② لسان «معتمدة — تنتظر فتحك»', () => {
   })
 
   it('⚠️ «كل الشعب» يعرض كل شيء، والمعتمدة وحدها في لسانها', () => {
-    expect(COHORT_LISTS.map((l) => l.id)).toEqual(['all', 'approved'])
+    expect(COHORT_LISTS.map((l) => l.id)).toEqual(['all', 'upcoming', 'approved'])
     expect(inCohortList('all', { status: 'open', trainerPlanApproved: false })).toBe(true)
     expect(inCohortList('approved', { status: 'open', trainerPlanApproved: true })).toBe(false)
     expect(inCohortList('approved', draft)).toBe(true)
@@ -80,5 +80,31 @@ describe('③ ما تحتاجه الشعبة', () => {
 describe('④ أدوات التقييم مطوية', () => {
   it('الروبرك وقواعد الإكمال تحت عنوان يفتح حين يطلب — لا مفتوحة تحت القائمة', () => {
     expect(page).toMatch(/<details className="mt-8">\s*<summary[^>]*>أدوات التقييم والشهادة[^<]*<\/summary>\s*<LearningSettings/)
+  })
+})
+
+/* ═══ ⑤ «تبدأ قريبا» (٢٢ أكتوبر ٢٠٢٦) ═══
+   «كيف أعلم أيّ الدورات قريبة وكم فيها تسجيل لأقرّر إيقافها؟» (صاحب المنصّة). */
+describe('⑤ تبدأ قريبا', () => {
+  const now = new Date('2026-10-22T10:00:00Z')
+  const inDays = (d: number) => new Date(now.getTime() + d * 86_400_000).toISOString()
+  const base = { trainerPlanApproved: true }
+
+  it('⚠️ ما لم يبدأ وأول لقاء فيه خلال المدى — لا ما مضى ولا ما بدأ ولا ما بلا موعد', () => {
+    expect(inCohortList('upcoming', { ...base, status: 'open', firstAt: inDays(5) }, now)).toBe(true)
+    expect(inCohortList('upcoming', { ...base, status: 'draft', firstAt: inDays(30) }, now)).toBe(true)
+    expect(inCohortList('upcoming', { ...base, status: 'open', firstAt: inDays(-1) }, now)).toBe(false)
+    expect(inCohortList('upcoming', { ...base, status: 'active', firstAt: inDays(5) }, now)).toBe(false)
+    expect(inCohortList('upcoming', { ...base, status: 'cancelled', firstAt: inDays(5) }, now)).toBe(false)
+    expect(inCohortList('upcoming', { ...base, status: 'open', firstAt: null }, now)).toBe(false)
+    expect(inCohortList('upcoming', { ...base, status: 'open', firstAt: inDays(90) }, now)).toBe(false)
+  })
+
+  it('⚠️ ولسانه يعرض قائمته لا البطاقات — وفيها المال والإلغاء', () => {
+    expect(page).toMatch(/!loading && list === "upcoming" \? \(\s*<UpcomingCohorts/)
+    const list = code('src/components/admin/UpcomingCohorts.tsx')
+    expect(list).toMatch(/apiGet<UpcomingRow\[\]>\(`\/api\/admin\/cohorts\/upcoming\?days=\$\{UPCOMING_MAX_DAYS\}`\)/)
+    expect(list).toMatch(/<CohortMoneyLine m=\{r\.money\} \/>/)
+    expect(list).toMatch(/<CancelCohortBox compact cohortId=\{r\.id\}/)
   })
 })

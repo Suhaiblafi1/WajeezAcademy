@@ -224,6 +224,8 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
       /* التأهيلُ والإسنادُ خبرا عملٍ لا مجاملة: من أُسنِد إلى شعبةٍ عليه أن
          يحضر، ومن أُهِّل لدورةٍ صار يُنتظَر منه تدريسُها. */
       'trainer.qualified', 'trainer.qualify.rejected', 'trainer.assigned',
+      /* وإلغاءُ شعبته مثلُ إسنادها (٢٢ أكتوبر ٢٠٢٦): من كتمه بقي يجهّز شعبةً لن تنعقد */
+      'cohort.cancelled.trainer',
       /* والتفعيلُ مثلُهما (٣ أكتوبر ٢٠٢٦): من صار نشطا صار يُنتظَر منه عملُه — ساعاتُه
          وحسابُه البنكيُّ وشعبُه. وكان يصله بريدا وحدَه. */
       'trainer.activated',

@@ -67,7 +67,13 @@ function Section({ icon: Icon, title, children }: {
   );
 }
 
-export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: CohortTab; onDone: Done }) {
+/* ═══ وأدواتُ المدرّب «عند الحاجة» — `tools` لا لسانٌ يُرى (٢٢ أكتوبر ٢٠٢٦) ═══
+   «لماذا صفحةُ الشعبة فيها تفاصيلُ كثيرةٌ لن أستخدمها… وهي يضعها المدرّبُ لا نحن» (صاحب المنصّة).
+   فالمادّةُ والتقييمُ والتسجيلُ عملُ المدرّب، وتبقى للإدارة بابا مطويّا في «الإعدادات» — تتدخّل به
+   إن تعطّل شيء، ولا تراه كلَّ يوم. */
+export type OpsSlot = CohortTab | "tools";
+
+export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: OpsSlot; onDone: Done }) {
   const [busy, setBusy] = useState(false);
   const [localMsg, setLocalMsg] = useState("");
   /* المدرّبون بحالِ تأهيل كلٍّ منهم لدورة **هذه الشعبة** — لا قائمةُ المعلَنين.
@@ -129,7 +135,7 @@ export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: Co
 
           وبوّابةُ نزاهة التأهيل باقية: هذا الزرُّ **يطلب** ولا يقرّر. يبتّ
           فيه المديرُ الأكاديميّ، وموافقتُه تؤهّل وتُسند في فعلٍ واحد. */}
-      {tab === "identity" && (
+      {tab === "settings" && (
       <Section icon={UserPlus} title="مدرّب الشعبة — إسناد مباشر للمؤهّل، وطلب تأهيل لغيره">
         <div className="flex flex-wrap gap-2">
           <select value={assignForm.profileId} onChange={(e) => setAssignForm({ ...assignForm, profileId: e.target.value })} className={`${selectCls} flex-1`}>
@@ -225,7 +231,7 @@ export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: Co
           والحفظُ الآن جزئيّ: كلُّ نموذجٍ يُرسل حقولَه وحدَها. */}
 
       {/* ① الاسم — الهُويّة */}
-      {editable && tab === "identity" && (
+      {editable && tab === "settings" && (
         <Section icon={Pencil} title="اسم الشعبة">
           <div className="flex flex-wrap gap-2">
             <input value={editForm.title} aria-label="اسم الشعبة"
@@ -242,7 +248,7 @@ export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: Co
       )}
 
       {/* ② الجدول الأسبوعيّ — منه تُولَّد اللقاءات */}
-      {editable && tab === "schedule" && (
+      {editable && tab === "settings" && (
         <Section icon={Pencil} title="الجدول الأسبوعيّ — الأيّام والوقت">
           <p className="mb-3 text-read leading-6 text-muted-foreground">
             تغيير الجدول لا ينقل اللقاءات الموجودة، بل يطبّق على ما يولّد بعده.
@@ -267,7 +273,7 @@ export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: Co
       )}
 
       {/* ③ السعة والسعر وبوّابتا الفتح — التسجيل والمال */}
-      {editable && tab === "enrollment" && (
+      {editable && tab === "settings" && (
         <Section icon={Pencil} title="السعة والسعر وبوّابتا الفتح">
           <div className="grid gap-2 sm:grid-cols-2">
             <label className="text-fine text-muted-foreground">
@@ -313,7 +319,7 @@ export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: Co
           قرارُ صاحب المنصّة (٨ سبتمبر ٢٠٢٦): المدرّبُ يجهّز شعبتَه ويقول «أوافق»،
           والأكاديميُّ أو الأعلى يعتمد — أيُّهما سبق. وهنا يُقرأ ما أرسله ويُقرَّر
           فيه، ويُذكَّر إن تأخّر. */}
-      {tab === "content" && (
+      {tab === "plan" && (
       <Section icon={BookOpen} title="خطّة المدرّب — تجهيز الشعبة واعتمادها">
         {/* والمراجعةُ نفسُها في «خططٌ تنتظر اعتمادك» — مكوّنٌ واحدٌ للبابين
             (`TrainerPlanReview`)، فلا يُعتمَد من أحدهما ما لم يُقرأ في الآخر */}
@@ -321,7 +327,7 @@ export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: Co
       </Section>
       )}
 
-      {tab === "content" && (
+      {tab === "tools" && (
       <Section icon={FilePlus2} title="مادة تعليمية — رابط خارجي أو ملف خاص برفع موقّع">
         <div className="grid gap-2 sm:grid-cols-4">
           <input value={materialForm.title} onChange={(e) => setMaterialForm({ ...materialForm, title: e.target.value })} placeholder="عنوان المادة" className={inputCls} />
@@ -358,7 +364,7 @@ export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: Co
       )}
 
       {/* تقييم جديد */}
-      {editable && tab === "content" && (
+      {editable && tab === "tools" && (
         <Section icon={BookOpen} title="تقييم جديد — واجب / اختبار / مشروع مع بنود">
           <div className="grid gap-2 sm:grid-cols-5">
             <input value={assessForm.title} onChange={(e) => setAssessForm({ ...assessForm, title: e.target.value })} placeholder="عنوان التقييم" className={`${inputCls} sm:col-span-2`} />
@@ -421,14 +427,14 @@ export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: Co
           واحدٍ ولا يعملهما الشخصُ نفسُه، فافترقا إلى لسانَيهما. */}
 
       {/* إسقاطُ تسجيل — التسجيلُ والمال */}
-      {tab === "enrollment" && (
+      {tab === "learners" && (
         <Section icon={UserMinus} title="إسقاط تسجيل متعلّم">
           <DropEnrollment cohortId={cohort.id} busy={busy} form={dropForm} onForm={setDropForm} act={act} />
         </Section>
       )}
 
       {/* الشهادات — المحتوى وما يُسلَّم */}
-      {tab === "content" && (
+      {tab === "learners" && (
         <Section icon={Award} title="الشهادات — إصدار لمن أنهى، وإلغاء بسبب يبقى">
           {/* ─────────── الشهادات: قائمةٌ لا معرّفاتٌ تُلصق ───────────
 
@@ -445,7 +451,7 @@ export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: Co
       )}
 
       {/* تسجيلات الجلسات وأرشفة المحتوى */}
-      {tab === "content" && (
+      {tab === "tools" && (
       <Section icon={BookOpen} title="تسجيلات اللقاءات وأرشفة المحتوى — ملفات خاصة موقعة">
         <p className="mb-2 text-read font-bold text-muted-foreground">أضف تسجيل جلسة (يرتبط بالجلسة وبوحدة اختياريّا):</p>
         <div className="grid gap-2 sm:grid-cols-3">
@@ -490,8 +496,8 @@ export function CohortOps({ cohort, tab, onDone }: { cohort: CohortLite; tab: Co
       </Section>
       )}
 
-      {/* نشر عام — فعلُ حالةٍ لا فعلُ محتوًى، فمكانُه لسانُ الهُويّة */}
-      {tab === "identity" && cohort.status === "open" && (
+      {/* نشر عام — فعلُ حالةٍ لا فعلُ محتوًى، فمكانُه «نظرة عامة» */}
+      {tab === "overview" && cohort.status === "open" && (
         <Button tone="confirm" disabled={busy}
           onClick={() => act(() => apiPost(`/api/admin/cohorts/${cohort.id}/publish`), "نشرت الشعبة — إسنادات المدربين ظاهرة للعامة")} className="text-gold-ink">
           <Globe className="h-3.5 w-3.5" /> نشر عام لإسنادات المدربين

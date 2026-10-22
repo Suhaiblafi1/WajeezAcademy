@@ -269,11 +269,11 @@ describe('بطاقة الشعبة · كلّ قسم في لسانه', () => {
   const list = readFileSync(join(root, 'src/pages/admin/AdminCohorts.tsx'), 'utf8')
   const tabsFile = readFileSync(join(root, 'src/pages/admin/cohort-tabs.ts'), 'utf8')
 
-  it('الألسنة أربعة معرّفة في موضع واحد، والاتّحاد يطابق القائمة', () => {
-    const union = [...tabsFile.matchAll(/"(identity|schedule|enrollment|content)"/g)].map((m) => m[1])
-    /* أربعةٌ في الاتّحاد وأربعةٌ في القائمة = ثمانيةُ ورودات */
-    expect(new Set(union).size).toBe(4)
-    expect((tabsFile.match(/\{ id: "/g) ?? []).length).toBe(4)
+  /* وصارت خمسةً بواجبات الإدارة لا بشكل الجدول (٢٢ أكتوبر ٢٠٢٦، `cohort-tabs.ts`) */
+  it('الألسنة خمسة معرّفة في موضع واحد، والاتّحاد يطابق القائمة', () => {
+    const union = [...tabsFile.matchAll(/"(overview|monitor|learners|plan|settings)"/g)].map((m) => m[1])
+    expect(new Set(union).size).toBe(5)
+    expect((tabsFile.match(/\{ id: "/g) ?? []).length).toBe(5)
   })
 
   it('لا قسم بلا لسان — كلّ `<Section` مسبوق ببوّابة لسانه', () => {
@@ -305,11 +305,19 @@ describe('بطاقة الشعبة · كلّ قسم في لسانه', () => {
   })
 
   it('ولكلّ لسان ما يملؤه — لا لسان يفتح على فراغ', () => {
-    for (const t of ['identity', 'schedule', 'enrollment', 'content']) {
+    for (const t of ['overview', 'monitor', 'learners', 'plan', 'settings']) {
       const inOps = (ops.match(new RegExp(`tab === "${t}"`, 'g')) ?? []).length
       const inList = (list.match(new RegExp(`tab === "${t}"`, 'g')) ?? []).length
       expect(inOps + inList, `اللسان «${t}» بلا محتوى`).toBeGreaterThan(0)
     }
+  })
+
+  /* وأدواتُ المدرّب (`tools`) ليست لسانا يُرى: تُرسَم مطويّةً في «الإعدادات» وحدَها */
+  it('وأدوات المدرب في «الإعدادات» مطوية — لا في لسان يرى كل يوم', () => {
+    const at = list.indexOf('<CohortOps cohort={c} tab="tools"')
+    expect(at, 'لا موضع لأدوات المدرب').toBeGreaterThan(-1)
+    const before = list.slice(list.lastIndexOf('{tab === "settings" && (', at), at)
+    expect(before, 'أدوات المدرب خارج «الإعدادات» أو بلا طي').toMatch(/<details[^>]*>\s*<summary[^>]*>أدوات المدرب/)
   })
 
   it('ولا طيّ داخل لسان — `MiniCard` أزيلت فلا تعود', () => {

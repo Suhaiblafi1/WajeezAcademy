@@ -110,6 +110,8 @@ const TRAINER: Table = {
   'trainer.course_proposal.question': { path: '/trainer/course-proposals', ctaAr: 'أجب عن السؤال' },
   'trainer.qualify.rejected': { path: '/trainer/qualifications', ctaAr: 'افتح دوراتك' },
   'trainer.assigned': { path: '/trainer/board', ctaAr: 'افتح شعبتك الجديدة' },
+  /* والملغاةُ تسقط من «شعبي» — فالوجهةُ ما بقي له من شعب (٢٢ أكتوبر ٢٠٢٦) */
+  'cohort.cancelled.trainer': { path: '/trainer/board', ctaAr: 'افتح شعبك' },
   'cohort.plan.submitted': { path: '/trainer/board', ctaAr: 'افتح خطّة شعبتك' },
   'cohort.plan.decision': { path: '/trainer/board', ctaAr: 'اقرأ قرار الخطّة' },
   'cohort.schedule.proposed': { path: '/trainer/board', ctaAr: 'افتح الاقتراح' },

@@ -44,14 +44,14 @@ const QUEUE = bare('src/pages/admin/PendingPlans.tsx')
 const REVIEW = bare('src/components/admin/TrainerPlanReview.tsx')
 
 describe('① المراجعة واحدة في البابين', () => {
-  it('بطاقة الشعبة تعرض المكوّن في لسان المحتوى — لا نسخة منه', () => {
+  it('بطاقة الشعبة تعرض المكوّن في لسان «خطة المدرب» — لا نسخة منه', () => {
     const at = OPS.indexOf('<TrainerPlanReview cohortId={cohort.id}')
     expect(at, 'سقطت مراجعة الخطّة من بطاقة الشعبة').toBeGreaterThan(-1)
     /* وفي قسم الخطّة المحروس بلسانه: لا `</Section>` بين رأس القسم والمكوّن */
     const head = OPS.lastIndexOf('<Section icon={BookOpen} title="خطّة المدرّب', at)
     expect(head, 'المكوّن خارج قسم الخطّة').toBeGreaterThan(-1)
     expect(OPS.slice(head, at)).not.toContain('</Section>')
-    expect(OPS.slice(OPS.lastIndexOf('</Section>', head), head), 'قسم الخطّة بلا بوّابة لسانه').toContain('tab === "content"')
+    expect(OPS.slice(OPS.lastIndexOf('</Section>', head), head), 'قسم الخطّة بلا بوّابة لسانه').toContain('tab === "plan"')
     /* ولا قرارَ ولا قراءةَ للخطّة في البطاقة نفسِها — تلك نسخةٌ ثانيةٌ تفترق */
     expect(OPS, 'عادت نسخة من القرار إلى البطاقة').not.toMatch(/cohort-plans\/\$\{/)
     expect(OPS).not.toContain('/trainer-plan`')

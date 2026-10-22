@@ -54,6 +54,9 @@ const PHRASES: Record<string, string> = {
   'order.settle_partial': 'تسوية جزئيّة لطلب',
   'cohort.create': 'إنشاء شعبة',
   'cohort.delete_trainerless': 'حذف شعبة بلا مدرّب ولا متعلّم',
+  /* ٢٢ أكتوبر ٢٠٢٦: حذفُ ملغاةٍ لها مدرّب باختيارٍ صريح، وسببُ الإلغاء الذي وصل مدرّبَها */
+  'cohort.delete_cancelled': 'حذف شعبة ملغاة نهائيّا',
+  'cohort.cancel.reason': 'سبب إلغاء شعبة — وصل مدرّبها',
   'cohort.update': 'تعديل شعبة',
   'cohort.duplicate': 'تكرار شعبة',
   'cohort.publish': 'فتح شعبة للتسجيل',
