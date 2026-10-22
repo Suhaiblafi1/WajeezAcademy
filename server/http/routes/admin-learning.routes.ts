@@ -715,13 +715,15 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
   /* ═══ مالُ الشعبة، و«تبدأ قريبا»، و«المتابعة»، وحذفُ الملغاة (٢٢ أكتوبر ٢٠٢٦) ═══
      «أحتاج لافتةً تقول كم الحدُّ الأدنى للمدرّب وكم حصّلنا» · «أيّ الدورات قريبة وكم فيها تسجيل» ·
      «وصولٌ لمجريات العمل لديه كتقارير» · «اجعل خيارَ الحذف واضحا» — صاحب المنصّة. والقرارُ في كلٍّ
-     بصلاحيّة إدارة الشعب نفسِها التي يُلغى بها. */
+     بصلاحيّة إدارة الشعب نفسِها التي يُلغى بها — والمالُ ومعه «تبدأ قريبا» بـ`finance.view` أيضا. */
   const economics = new CohortEconomicsService(prisma)
   const monitor = new CohortMonitorService(prisma)
   const cancelledDelete = new CancelledCohortDeleteService(prisma)
 
   app.get('/api/admin/cohorts/upcoming', {
-    preHandler: requirePermission('cohort.manage'),
+    /* والمالُ للمدير الأكاديميّ ومدير النظام وحدَهما (٢٢ أكتوبر ٢٠٢٦، قرارُ صاحب المنصّة): أجرُ المدرّب
+       لا يراه المنسّقُ ولا مديرُ العمليّات. والحبّتان معا لا تجتمعان إلّا فيهما */
+    preHandler: [requirePermission('cohort.manage'), requirePermission('finance.view')],
     schema: { tags: ['admin-learning'], summary: 'شعب تبدأ خلال أيام ولم تبدأ — بأقربها أولا، ومعها حد المدرب الأدنى وما حصل' },
   }, async (req) => {
     const { days } = z.object({ days: z.coerce.number().int().min(1).max(UPCOMING_MAX_DAYS).optional() }).parse(req.query ?? {})
@@ -729,7 +731,9 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
   })
 
   app.get('/api/admin/cohorts/:id/economics', {
-    preHandler: requirePermission('cohort.manage'),
+    /* والمالُ للمدير الأكاديميّ ومدير النظام وحدَهما (٢٢ أكتوبر ٢٠٢٦، قرارُ صاحب المنصّة): أجرُ المدرّب
+       لا يراه المنسّقُ ولا مديرُ العمليّات. والحبّتان معا لا تجتمعان إلّا فيهما */
+    preHandler: [requirePermission('cohort.manage'), requirePermission('finance.view')],
     schema: { tags: ['admin-learning'], summary: 'مال الشعبة — حد المدرب الأدنى، وما ندفعه لو انعقدت، وما حصل' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)

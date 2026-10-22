@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import { apiGet, apiPost, apiPut, ApiError } from "@/services/api";
+import { useRealSession } from "@/services/session";
 import { staffControlCls, staffSelectCls } from "@/components/FormKit";
 import { CohortOps, LearningSettings } from "./CohortOps";
 import { COHORT_TABS, type CohortTab } from "./cohort-tabs";
@@ -120,6 +121,12 @@ export default function AdminCohorts() {
   const [tab, setTab] = useState<CohortTab>("overview");
   /* «معتمدة — تنتظر فتحك» لسانٌ في رأس القائمة (١٢ أكتوبر ٢٠٢٦، `cohort-lists.ts`) */
   const [list, setList] = useState<CohortList>("all");
+  /* ═══ والمالُ للمدير الأكاديميّ ومدير النظام وحدَهما (٢٢ أكتوبر ٢٠٢٦) ═══
+     قرارُ صاحب المنصّة: أجرُ المدرّب وما حُصّل لا يراه المنسّقُ ولا مديرُ العمليّات. والحبّةُ `finance.view`
+     مع `cohort.manage` لا تجتمعان إلّا فيهما — والخادمُ يطلبهما معا (`/economics` و`/upcoming`)، وهنا يُخفى
+     ما سيُردّ. و«تبدأ قريبا» معه: هي قائمةُ قرار الإلغاء بماله. */
+  const { user: viewer } = useRealSession();
+  const seesMoney = viewer?.permissions.includes("finance.view") ?? false;
   const [checklist, setChecklist] = useState<Record<string, Checklist>>({});
   /* وما ردّ به الفتحُ — بجانب زرّه لا أعلى الصفحة وحدَه (٣ أكتوبر ٢٠٢٦) */
   const [openError, setOpenError] = useState<Record<string, string>>({});
@@ -443,7 +450,7 @@ export default function AdminCohorts() {
       {!loading && rows.length > 0 && (
         <TabBar className="mb-4" ariaLabel="قوائم الشعب" value={list}
           onChange={(next) => { setList(next); setPage(1); }}
-          items={COHORT_LISTS.map((l) => ({ id: l.id, label: `${l.label} (${rows.filter((c) => inCohortList(l.id, c)).length})` }))} />
+          items={COHORT_LISTS.filter((l) => seesMoney || l.id !== "upcoming").map((l) => ({ id: l.id, label: `${l.label} (${rows.filter((c) => inCohortList(l.id, c)).length})` }))} />
       )}
       {/* «افتح المعتمدة كلها» — بمعاينة، وما نقل إلى موسم آخر يبقى (١٩ أكتوبر ٢٠٢٦، `open-approved.service.ts`) */}
       {!loading && list === "approved" && <OpenApproved onDone={() => void load()} />}
@@ -599,7 +606,7 @@ export default function AdminCohorts() {
                       </div>
                     </dl>
 
-                    <CohortMoney cohortId={c.id} refresh={`${c.status}-${c.enrolled}`} />
+                    {seesMoney && <CohortMoney cohortId={c.id} refresh={`${c.status}-${c.enrolled}`} />}
 
                     {/* شروط الفتح — للمسودّة وحدَها، فما فُتح لا يُسأل عنها */}
                     {c.status === "draft" && (

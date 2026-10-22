@@ -48,7 +48,8 @@ describe('② لسان «معتمدة — تنتظر فتحك»', () => {
 
   it('⚠️ والشريط بعدد كل لسان، والتبديل يعود إلى الصفحة الأولى', () => {
     expect(page).toMatch(/<TabBar className="mb-4" ariaLabel="قوائم الشعب" value=\{list\}\s*onChange=\{\(next\) => \{ setList\(next\); setPage\(1\); \}\}/)
-    expect(page).toMatch(/items=\{COHORT_LISTS\.map\(\(l\) => \(\{ id: l\.id, label: `\$\{l\.label\} \(\$\{rows\.filter\(\(c\) => inCohortList\(l\.id, c\)\)\.length\}\)` \}\)\)\}/)
+    /* و«تبدأ قريبا» لمن يرى المال وحدَه (٢٢ أكتوبر ٢٠٢٦) */
+    expect(page).toMatch(/items=\{COHORT_LISTS\.filter\(\(l\) => seesMoney \|\| l\.id !== "upcoming"\)\.map\(\(l\) => \(\{ id: l\.id, label: `\$\{l\.label\} \(\$\{rows\.filter\(\(c\) => inCohortList\(l\.id, c\)\)\.length\}\)` \}\)\)\}/)
   })
 
   it('واللسان الفارغ يقول إنه لا شيء ينتظر — لا «وسع الفلاتر»', () => {
@@ -106,5 +107,32 @@ describe('⑤ تبدأ قريبا', () => {
     expect(list).toMatch(/apiGet<UpcomingRow\[\]>\(`\/api\/admin\/cohorts\/upcoming\?days=\$\{UPCOMING_MAX_DAYS\}`\)/)
     expect(list).toMatch(/<CohortMoneyLine m=\{r\.money\} \/>/)
     expect(list).toMatch(/<CancelCohortBox compact cohortId=\{r\.id\}/)
+  })
+})
+
+/* ═══ ⑥ والمال للمدير الأكاديمي ومدير النظام وحدهما (٢٢ أكتوبر ٢٠٢٦) ═══
+   قرار صاحب المنصّة: «مدير الأكاديمية والسوبر أدمن». */
+describe('⑥ من يرى المال', () => {
+  const routes = code('server/http/routes/admin-learning.routes.ts')
+  const gate = (path: string) => {
+    const at = routes.indexOf(`app.get('${path}'`)
+    expect(at, `لا مسار ${path}`).toBeGreaterThan(-1)
+    return routes.slice(at, routes.indexOf('}, async', at))
+  }
+  it('⚠️ المساران يطلبان إدارة الشعب وعرض المالية معا', () => {
+    for (const p of ['/api/admin/cohorts/upcoming', '/api/admin/cohorts/:id/economics']) {
+      expect(gate(p)).toContain("preHandler: [requirePermission('cohort.manage'), requirePermission('finance.view')]")
+    }
+  })
+  it('⚠️ والحبتان معا لا تجتمعان إلا في المدير الأكاديمي ومدير النظام', async () => {
+    const { ROLE_PERMISSIONS } = await import('../../../server/auth/permissions')
+    const both = Object.entries(ROLE_PERMISSIONS)
+      .filter(([, keys]) => (keys as readonly string[]).includes('cohort.manage') && (keys as readonly string[]).includes('finance.view'))
+      .map(([role]) => role).sort()
+    expect(both).toEqual(['academic_manager', 'super_admin'])
+  })
+  it('⚠️ والشاشة تخفي اللافتة عمن لا يراها', () => {
+    expect(page).toMatch(/\{seesMoney && <CohortMoney cohortId=\{c\.id\}/)
+    expect(page).toMatch(/const seesMoney = viewer\?\.permissions\.includes\("finance\.view"\) \?\? false;/)
   })
 })
