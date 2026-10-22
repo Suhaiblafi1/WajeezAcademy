@@ -16,7 +16,7 @@ interface Results {
   fields: { workField: string | null; leads: number }[];
 }
 
-const CHANNEL_AR: Record<string, string> = { whatsapp: "واتساب", email: "البريد" };
+const CHANNEL_AR: Record<string, string> = { whatsapp: "واتساب", email: "البريد", share: "من صديق" };
 const channelAr = (c: string | null) => (c ? CHANNEL_AR[c] ?? c : "بلا وسم");
 
 export default function GrantResults() {

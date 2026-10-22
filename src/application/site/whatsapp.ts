@@ -97,3 +97,8 @@ export function waToPerson(phone: string | null | undefined, text: string): stri
   else if (/^07[789]\d{7}$/.test(raw)) digits = `962${raw.slice(1)}`
   return digits ? `https://wa.me/${digits}?text=${encodeURIComponent(text)}` : null
 }
+
+/** رابطُ مشاركةٍ في واتساب **بلا رقم** — يختار صاحبُه لمن يرسله. «أهد منحة لصديق» في صفحة المنحة (٢١ أكتوبر ٢٠٢٦) */
+export function waShare(text: string): string {
+  return `https://wa.me/?text=${encodeURIComponent(text)}`
+}

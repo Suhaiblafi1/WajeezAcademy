@@ -13,7 +13,7 @@ import { plainAr } from '@/application/text/plain-ar'
 import { auditActionAr } from '@/application/audit/labels'
 import {
   CAREER_LEVELS, GRANT_ACADEMY_LINE_AR, GRANT_CONSENT_AR, GRANT_GAINS_AR, GRANT_INTEREST_DOMAINS, GRANT_SUGGESTED_COURSES, WORK_FIELDS,
-  campaignParams, campaignTag, grantSavingAr, leadProfileAr, rankByInterest, suggestCourses, suggestPaths, toggleCourse, workFieldDomains,
+  campaignParams, campaignTag, grantDaysLeftAr, grantSavingAr, grantShareAr, leadProfileAr, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse, workFieldDomains,
 } from '@/application/commerce/grant-landing'
 import { courseDomain } from '@/application/catalog/course-domain'
 import { parsePendingCheckout } from '@/application/commerce/pending-checkout'
@@ -163,6 +163,40 @@ describe('بعد النموذج', () => {
     expect(effect).toMatch(/setPicked\(resumed \? resumed\.intent\.courseIds\.filter\(\(id\) => open\.has\(id\)\)\.slice\(0, max\) : ours\)/)
     expect(PAGE, 'لا يحفظ مجال عمله').toMatch(/interests, workField: form\.workField,/)
     expect(PAGE).toMatch(/ours\.has\(x\.courseId\)\s*\? <Chip tone="accent" className="mt-1">اخترناها لك<\/Chip>/)
+  })
+
+  it('⚠️ «بقي X مقاعد» حين تقل وحدها — والمدرب المنشور وتفاصيل الدورة في نافذة جديدة', () => {
+    expect(seatsLeftAr(3)).toBe('بقي 3 مقاعد')
+    expect(seatsLeftAr(2)).toBe('بقي مقعدان')
+    expect(seatsLeftAr(1)).toBe('بقي مقعد واحد')
+    expect(seatsLeftAr(5)).toBe('بقي 5 مقاعد')
+    expect(seatsLeftAr(6), 'رقم كبير يقلل القيمة').toBeNull()
+    expect(seatsLeftAr(0)).toBeNull()
+    expect(seatsLeftAr(null), 'بلا سعة').toBeNull()
+    expect(PAGE).toMatch(/\{seatsLeftAr\(x\.seatsLeft\) && <Chip tone="warn"/)
+    /* والمدرّبُ من الخادم وحدَه — لا اسمَ يُكتب في الصفحة — وإلى بطاقته في صفحة الفريق */
+    expect(PAGE).toMatch(/\{x\.trainer && \(\s*<a href=\{`\/trainers#trainer-\$\{encodeURIComponent\(x\.trainer\.id\)\}`\} target="_blank"/)
+    expect(PAGE).toMatch(/<a href=\{`\/build\/\$\{encodeURIComponent\(x\.courseId\)\}`\} target="_blank"[^>]*>تفاصيل الدورة<\/a>/)
+  })
+
+  it('⚠️ «أهد منحة لصديق» — رسالة جاهزة برابط المنحة ووسم قناتها، وواتساب من بابه الواحد', () => {
+    const m = grantShareAr('https://www.wajeezacademy.com', 60, '2026/10/31')
+    expect(m).toContain('https://www.wajeezacademy.com/grant?ch=share')
+    expect(m).toContain('بخصم 60%')
+    expect(m).toContain('قبل 2026/10/31')
+    expect(grantShareAr('https://x.co', 60, null)).not.toContain('قبل')
+    expect(campaignParams('?ch=share').channel, 'وسم القناة لا يقرأ').toBe('share')
+    expect(PAGE).toMatch(/href=\{waShare\(grantShareAr\(window\.location\.origin, pct, lastDay\)\)\}/)
+    expect(PAGE).toMatch(/import \{ waShare \} from "@\/application\/site\/whatsapp";/)
+    expect(PAGE).toContain('أهد منحة لصديق')
+    expect(code('src/pages/admin/GrantResults.tsx'), 'نتائج الحملة تسمي قناتها').toMatch(/share: "من صديق"/)
+  })
+
+  it('⚠️ عنوان تذكير ما قبل انتهاء المنحة — من الأيام الباقية حقا', () => {
+    expect(grantDaysLeftAr(3)).toBe('بقي 3 أيام على منحتك')
+    expect(grantDaysLeftAr(2)).toBe('بقي يومان على منحتك')
+    expect(grantDaysLeftAr(1)).toBe('اليوم آخر يوم لمنحتك')
+    expect(grantDaysLeftAr(0)).toBe('اليوم آخر يوم لمنحتك')
   })
 
   it('⚠️ دورة واحدة أو أكثر حتى الحد — والزائدة ترد بلا أن تمحو ما اختاره', () => {

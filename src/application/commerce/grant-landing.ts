@@ -161,6 +161,30 @@ export function suggestPaths(
   return { main, alt: (main ? ranked[1] : ranked[0])?.p ?? null }
 }
 
+/* ═══ وأفكارُ «الاستحواذ على العميل» (٢١ أكتوبر ٢٠٢٦) ═══
+
+   سأل صاحبُ المنصّة: «أيّ أفكارٍ أخرى تساعدنا بالاستحواذ على العميل؟»، واختار أربعا. ثلاثٌ منها هنا،
+   والرابعةُ — تذكيرٌ قبل انتهاء المنحة — في العامل (`sendGrantReminders`) ونصُّ عنوانه هنا (`grantDaysLeftAr`):
+   · **«بقي X مقاعد»** — على الشعبة حين تقلّ مقاعدُها عن ستّ، من عددها الحقيقيّ. لا رقمٌ كبيرٌ يقلّل القيمة — وهو
+     ما رُدّ في عدد المنح («لا تذكر عدد المنح لأنّ العددَ الكبير قد يقلّل من قيمتها»).
+   · **«أهد منحة لصديق»** — رسالةٌ جاهزةٌ في واتساب برابط المنحة ووسم قناته (`?ch=share`)، فيُعرف في
+     النتائج من جاء بها. والمنحةُ مفتوحةٌ لكلّ من يعبّئ النموذج، فالصديقُ يأخذ منحتَه لا كودَ صاحبه.
+   · **المدرّبُ على كلّ دورة** — يأتي من الخادم ببوّابة النشر (`grant-courses.service.ts`). */
+
+/** من كم مقعدا فأقلّ يُقال «بقي X مقاعد» */
+export const GRANT_LOW_SEATS = 5
+
+/** «بقي 3 مقاعد» — والمثنّى والمفرد بلا رقم. وما فوق الحدّ لا يُقال */
+export function seatsLeftAr(n: number | null | undefined): string | null {
+  if (n == null || n <= 0 || n > GRANT_LOW_SEATS) return null
+  return n === 1 ? 'بقي مقعد واحد' : n === 2 ? 'بقي مقعدان' : `بقي ${n} مقاعد`
+}
+
+/** رسالةُ «أهد منحة لصديق» — برابط المنحة ووسم قناتها */
+export function grantShareAr(siteUrl: string, percentOff: number, lastDay: string | null): string {
+  return `حصلت على منحة أعضاء وجيز: دورات مباشرة على Zoom بخصم ${percentOff}%. احجز منحتك${lastDay ? ` قبل ${lastDay}` : ''}: ${siteUrl}/grant?ch=share`
+}
+
 /** ما يريد تطويرَه أوّلا — ترتيبٌ ثابت: ما في اهتمامه قبل غيره، وكلٌّ على ترتيبه */
 export function rankByInterest<T>(items: readonly T[], hits: (x: T) => number): T[] {
   return items.map((x, i) => ({ x, i, h: hits(x) })).sort((a, b) => b.h - a.h || a.i - b.i).map((r) => r.x)
@@ -179,4 +203,11 @@ export function leadProfileAr(l: { workField: string | null; careerLevel: string
 export function toggleCourse(picked: readonly string[], id: string, max: number): string[] {
   if (picked.includes(id)) return picked.filter((x) => x !== id)
   return picked.length < max ? [...picked, id] : [...picked]
+}
+
+/** عنوانُ تذكير ما قبل انتهاء المنحة — من أيّامها الباقية بتقويم عمّان، واليومُ نفسُه منها
+    (`sendGrantReminders` في `grant-followup.service.ts`) */
+export function grantDaysLeftAr(days: number): string {
+  if (days <= 1) return 'اليوم آخر يوم لمنحتك'
+  return days === 2 ? 'بقي يومان على منحتك' : `بقي ${days} أيام على منحتك`
 }

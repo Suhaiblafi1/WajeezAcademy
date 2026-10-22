@@ -1408,6 +1408,20 @@ export async function runGrantFollowups(prisma: PrismaClient, now = new Date()):
   }
 }
 
+/** من أخذ كود المنحة ولم يشترِ — بريدٌ قبل انتهائها بثلاثة أيّامٍ وفي آخر يوم، مرّةً لكلٍّ (`grant-followup.service.ts`) */
+export async function runGrantReminders(prisma: PrismaClient, now = new Date()): Promise<JobResult> {
+  const started = Date.now()
+  const { sendGrantReminders } = await import('../services/grant-followup.service')
+  const { sent, stage, mailOff } = await sendGrantReminders(prisma, now)
+  return {
+    job: 'grant_reminders',
+    summaryAr: mailOff
+      ? 'حلّ تذكير المنحة وقناة البريد غير موصولة — لا يذكّر أحد حتى توصل'
+      : sent === 0 ? 'لا تذكير منحة مستحق' : `ذكّر ${sent} ممن لم يشتر بأن المنحة تنتهي (${stage === '1d' ? 'آخر يوم' : 'قبل ثلاثة أيام'})`,
+    done: sent, failed: 0, ms: Date.now() - started,
+  }
+}
+
 /* ═══ تصحيحُ شعبٍ بقرار صاحب المنصّة — مرّةً واحدة لكلٍّ (١٩ أكتوبر ٢٠٢٦) ═══
 
    «استراتيجية التسعير — شعبة ٤» نُقلت إلى «موسم الشتاء 2027» — وكان الاسمُ يعني نوفمبر 2027 إلى يناير 2028 ويُقرأ
@@ -1553,6 +1567,8 @@ export const JOBS = [
   { key: 'erase_idle_guests', everyMs: 24 * HOUR, run: runEraseIdleGuests, titleAr: 'محو بيانات من لم يسجل بعد ستة أشهر بلا نشاط' },
   /* كلَّ ساعة: الأجلُ يومان، فساعةٌ دقّةٌ كافية — والدفعةُ محدودةٌ فلا تُغرَق الطوابير */
   { key: 'grant_followup', everyMs: HOUR, run: runGrantFollowups, titleAr: 'متابعة من عبأ نموذج المنحة ولم يشتر' },
+  /* كلَّ ساعة: التذكيرُ التاسعةَ صباحا، فساعةٌ دقّةٌ كافية — ومن ذُكِّر في مرحلته يُتخطّى */
+  { key: 'grant_reminders', everyMs: HOUR, run: runGrantReminders, titleAr: 'تذكير من لم يشتر قبل انتهاء المنحة' },
   /* كلَّ ساعة: يقع مرّةً لكلّ شعبة ثمّ لا يجد شيئا — وشرطُه موعدُها لا عدّاد */
   { key: 'cohort_corrections', everyMs: HOUR, run: runCohortCorrections, titleAr: 'تصحيح مواعيد شعب بقرار صاحب المنصة' },
 ] as const

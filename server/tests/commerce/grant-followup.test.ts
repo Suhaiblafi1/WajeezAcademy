@@ -4,16 +4,20 @@
       لم يشترِ بعد؛ ومستشارُه إن كانت له حالة.
    ② **ومن لم يشترِ بعد يومين تُفتح له حالةٌ عند مستشار** — مرّةً واحدة، وتُسند، ويُكتب أثرُها.
    ③ **ولا تُفتح** لمن لم يمضِ عليه يومان، ولا لمن اشترى، ولا لمن ينتظر طلبُه الدفع، ولا لمن له حالةٌ قبلُ.
-   ④ **والعاملُ يفتحها.** */
+   ④ **والعاملُ يفتحها.**
+   ⑤ **وتذكيرٌ قبل انتهاء المنحة** — بريدٌ قبل ثلاثة أيّامٍ وفي آخر يوم، التاسعةَ صباحا بتوقيت عمّان، مرّةً لكلّ
+      مرحلة، والأحدثُ وحدَها لمن فاتته الأولى؛ ولا يصل من اشترى ولا من ينتظر طلبُه الدفع ولا من أخذ كودَه للتوّ،
+      ولا يُكتب شيءٌ وقناةُ البريد مفصولة. */
 
-import { beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
 import { setupTestDb, testPrisma } from '../helpers/db'
 import { AuthService } from '../../services/auth.service'
 import { CommerceService } from '../../services/commerce.service'
 import { GrantService } from '../../services/grant.service'
 import { GrantLandingService } from '../../services/grant-landing.service'
-import { GRANT_FOLLOWUP_HOURS, grantRegistrants, openGrantFollowups } from '../../services/grant-followup.service'
+import { GRANT_FOLLOWUP_HOURS, grantRegistrants, openGrantFollowups, sendGrantReminders } from '../../services/grant-followup.service'
+import { zonedDay } from '../../../src/application/trainer/cohort-period'
 import { runJob } from '../../worker/jobs'
 import { approvedTrainerPlan } from '../helpers/approved-trainer'
 
@@ -135,5 +139,95 @@ describe('④ والعامل يفتحها', () => {
     const late = await member()
     await runJob(prisma, 'grant_followup')
     expect(await casesOf(late.ref)).toHaveLength(1)
+  })
+})
+
+describe('⑤ تذكير قبل انتهاء المنحة', () => {
+  /* نهايةُ المنحة أوّلَ يومٍ بتوقيت عمّان كما تحفظها شاشتُها — بعد عشرة أيّام */
+  const T = new Date(`${zonedDay(new Date(Date.now() + 10 * 24 * HOUR))}T00:00:00+03:00`)
+  const at = (hoursBefore: number) => new Date(T.getTime() - hoursBefore * HOUR)
+  const mails = (to: string) => prisma.outboxMail.findMany({ where: { to, purpose: 'grant.reminder' }, orderBy: { createdAt: 'asc' } })
+  const mailChannel = (enabled: boolean) => prisma.integrationSetting.upsert({
+    where: { provider: 'email' },
+    update: { enabled, config: { apiKey: 'test-key', fromEmail: 'no-reply@test.local' } },
+    create: { provider: 'email', enabled, config: { apiKey: 'test-key', fromEmail: 'no-reply@test.local' } },
+  })
+  let had: { enabled: boolean; config: unknown } | null = null
+
+  beforeAll(async () => {
+    had = await prisma.integrationSetting.findUnique({ where: { provider: 'email' }, select: { enabled: true, config: true } })
+    await new GrantService(prisma).update({ closesAt: T }, ownerId)
+  })
+  afterAll(async () => {
+    if (had) await prisma.integrationSetting.update({ where: { provider: 'email' }, data: { enabled: had.enabled, config: had.config as never } })
+    else await prisma.integrationSetting.delete({ where: { provider: 'email' } })
+    await new GrantService(prisma).update({ closesAt: null }, ownerId)
+  })
+
+  it('⚠️ قبل ثلاثة أيام ثم في آخر يوم، مرة لكل مرحلة — ولا يصل من اشترى أو ينتظر الدفع أو أخذ كوده للتو', async () => {
+    const idle = await member()
+    const bought = await member()
+    const buyer = await learner()
+    const o = await commerce.checkout(buyer, [(await cohort()).id], bought.code)
+    await commerce.payOrder(o.orderId, buyer, `fu-${o.orderId}`)
+    const paying = await member()
+    await commerce.checkout(await learner(), [(await cohort()).id], paying.code)
+    const direct = await member()
+    const me = await learner(direct.email)
+    const o3 = await commerce.checkout(me, [(await cohort()).id])
+    await commerce.payOrder(o3.orderId, me, `fu-${o3.orderId}`)
+    /* عبّأ النموذجَ بعد بدء المرحلة الأولى — أخذ كودَه للتوّ */
+    const late = await member()
+    await prisma.lead.update({ where: { id: late.ref }, data: { createdAt: at(62) } })
+    /* والقناةُ بعد الشراء: موصولةً يُطلب توثيقُ البريد قبل الدفع */
+    await mailChannel(true)
+
+    expect((await sendGrantReminders(prisma, at(64))).stage, 'ذكر قبل موعده').toBeNull()
+    expect(await mails(idle.email)).toHaveLength(0)
+
+    const first = await sendGrantReminders(prisma, at(62.9))
+    expect(first.stage).toBe('3d')
+    const m1 = await mails(idle.email)
+    expect(m1, 'لم يذكر من لم يشتر').toHaveLength(1)
+    expect(m1[0].subject).toBe('بقي 3 أيام على منحتك')
+    expect(m1[0].text).toContain(idle.code)
+    expect(m1[0].text).toContain('/grant')
+    expect(await prisma.auditEvent.count({ where: { action: 'coupon.grant_reminder', entityId: idle.ref } })).toBe(1)
+    expect(await mails(bought.email), 'ذكر من اشترى بكوده').toHaveLength(0)
+    expect(await mails(direct.email), 'ذكر من اشترى ببريده').toHaveLength(0)
+    expect(await mails(paying.email), 'ذكر من ينتظر طلبه الدفع').toHaveLength(0)
+    expect(await mails(late.email), 'ذكر من أخذ كوده للتو').toHaveLength(0)
+
+    await sendGrantReminders(prisma, at(40))
+    expect(await mails(idle.email), 'ذكر مرتين في مرحلة').toHaveLength(1)
+
+    await sendGrantReminders(prisma, at(14.9))
+    const m2 = await mails(idle.email)
+    expect(m2, 'لم يذكر في آخر يوم').toHaveLength(2)
+    expect(m2[1].subject).toBe('اليوم آخر يوم لمنحتك')
+    expect(m2[1].text, 'كرر آخر يوم في يومه').not.toContain('آخر يوم:')
+    expect(m1[0].text, 'لم يقل آخر يوم').toContain('آخر يوم:')
+    const lateMails = await mails(late.email)
+    expect(lateMails, 'من فاتته الأولى يصله الأخير وحده').toHaveLength(1)
+    expect(lateMails[0].subject).toBe('اليوم آخر يوم لمنحتك')
+  })
+
+  it('⚠️ وقناة البريد مفصولة — لا بريد ولا أثر، فيذكر حين توصل لا بعد انتهاء المنحة', async () => {
+    const idle = await member()
+    await mailChannel(false)
+    const out = await sendGrantReminders(prisma, at(14.9))
+    expect(out.mailOff).toBe(true)
+    expect(await mails(idle.email)).toHaveLength(0)
+    expect(await prisma.auditEvent.count({ where: { action: 'coupon.grant_reminder', entityId: idle.ref } })).toBe(0)
+    await mailChannel(true)
+    expect((await sendGrantReminders(prisma, new Date(T.getTime() + HOUR))).stage, 'ذكر بعد انتهاء المنحة').toBeNull()
+    expect(await mails(idle.email)).toHaveLength(0)
+  })
+
+  it('⚠️ وظيفة grant_reminders', async () => {
+    await mailChannel(true)
+    const idle = await member()
+    await runJob(prisma, 'grant_reminders', at(14.9))
+    expect(await mails(idle.email)).toHaveLength(1)
   })
 })

@@ -15,12 +15,16 @@
      فصلٍ مربوط (`trainer-visibility.ts`)، وشعبةٌ تبدأ أوّلَ نوفمبر في عمّان تُخزَّن ٣١ أكتوبر بتوقيت غرينتش.
      ويدخل من ذلك الفصل ما بدأ وما زال يقبل التسجيل. فإن لم تبقَ شعبةٌ لم تبدأ، عُرض ما يُشترى كلُّه لا صفحةٌ
      فارغة.
+   · **ومدرّبُها باسمه وصورته** — قرارُ صاحب المنصّة (٢١ أكتوبر ٢٠٢٦) في أفكار «الاستحواذ على العميل»: «المدرّب على كلّ
+     دورة». والبوّابةُ بوّابةُ صندوق الشعبة في الكتالوج نفسُها (`trainerPubliclyVisible` على مدرّبها الأصيل،
+     `public-catalog.service.ts#openCohorts`) — فلا اسمَ ولا صورةَ إلّا لمن اعتُمد نشرُه ولم يوقَف.
 
    والحارس: `server/tests/commerce/grant-courses.test.ts`. */
 
 import type { PrismaClient } from '@prisma/client'
 import { cohortAcceptsRegistration, PLAN_GATE_SELECT, TERM_WINDOW_SELECT } from './registration-window'
-import { PUBLIC_TRAINER_WHERE } from './trainer-visibility'
+import { PUBLIC_TRAINER_WHERE, TRAINER_VISIBILITY_SELECT, trainerPubliclyVisible } from './trainer-visibility'
+import { photoPublicUrl } from './storage.service'
 import { LEDGER_CURRENCY } from '../../src/application/commerce/presentment'
 import { termOf, termTitleAr } from '../../src/application/terms/season'
 import { zonedDay } from '../../src/application/trainer/cohort-period'
@@ -35,6 +39,8 @@ export interface BuyableCohort {
   currency: string
   startsAt: Date | null
   seatsLeft: number | null
+  /** مدرّبُها الأصيلُ المنشور — اسمُه وصورتُه ومعرّفُه (مرساةُ بطاقته في `/trainers`) */
+  trainer: { id: string; name: string; photoUrl: string | null } | null
 }
 
 /** فصلُ الشعبة بيوم بدئها في عمّان — مفتاحُه وعنوانُه */
@@ -71,6 +77,10 @@ export class GrantCoursesService {
       },
       include: {
         course: { select: { versions: { orderBy: { version: 'desc' }, take: 1, select: { titleAr: true } } } },
+        trainers: {
+          where: { role: 'lead' },
+          select: { profile: { select: { id: true, photoUrl: true, ...TRAINER_VISIBILITY_SELECT, application: { select: { fullName: true } } } } },
+        },
         term: TERM_WINDOW_SELECT,
         plans: PLAN_GATE_SELECT,
       },
@@ -95,9 +105,11 @@ export class GrantCoursesService {
     const byCourse = new Map<string, BuyableCohort>()
     for (const c of inTerm) {
       if (byCourse.has(c.courseId)) continue
+      const lead = c.trainers.map((t) => t.profile).find(trainerPubliclyVisible)
       byCourse.set(c.courseId, {
         cohortId: c.id, courseId: c.courseId, courseTitleAr: c.course.versions[0]?.titleAr ?? c.courseId,
         cohortTitle: c.title, price: Number(c.price), currency: c.currency, startsAt: c.startsAt, seatsLeft: seatsOf(c),
+        trainer: lead ? { id: lead.id, name: lead.application.fullName, photoUrl: photoPublicUrl(lead.photoUrl) } : null,
       })
     }
     return { termAr: term?.titleAr ?? null, byCourse }

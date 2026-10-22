@@ -28,7 +28,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
-import { Award, CirclePlay, Copy, Gift, Loader2, Video, type LucideIcon } from "lucide-react";
+import { Award, CirclePlay, Copy, Gift, Loader2, Share2, UserRound, Video, type LucideIcon } from "lucide-react";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import { useRealSession } from "@/services/session";
 import { useHoneypot } from "@/components/HoneypotField";
@@ -47,13 +47,18 @@ import { cohortDayAr } from "@/application/learning/cohort-gate";
 import { grantPrice, MEMBER_GRANT_NAME_AR } from "@/application/commerce/grant";
 import {
   CAREER_LEVELS, GRANT_ACADEMY_LINE_AR, GRANT_CONSENT_AR, GRANT_GAINS_AR, GRANT_MAX_INTERESTS, GRANT_SUGGESTED_COURSES, WORK_FIELDS,
-  campaignParams, grantSavingAr, rankByInterest, suggestCourses, suggestPaths, toggleCourse, type GrantPathOption,
+  campaignParams, grantSavingAr, grantShareAr, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse, type GrantPathOption,
 } from "@/application/commerce/grant-landing";
 import { readStoredGrant, saveStoredGrant, type StoredGrant } from "@/services/grant-landing";
 import publicPathsData from "@/data/catalog/public-pathways.json";
+import { waShare } from "@/application/site/whatsapp";
 import { resumedCheckoutFor, savePendingCheckout } from "@/services/pending-checkout";
 
-interface GrantCourse { courseId: string; titleAr: string; cohortId: string; startsAt: string | null; seatsLeft?: number | null; price: number; domainAr?: string }
+interface GrantCourse {
+  courseId: string; titleAr: string; cohortId: string; startsAt: string | null; seatsLeft?: number | null; price: number; domainAr?: string;
+  /** مدرّبُها المنشور — ببوّابة النشر في الخادم (`grant-courses.service.ts`) */
+  trainer?: { id: string; name: string; photoUrl: string | null } | null;
+}
 interface View {
   campaign: { open: boolean; percentOff: number; maxCourses: number; closesAt: string | null };
   /** فصلُ الدورات المعروضة — الفصلُ القادمُ القريب (`grant-courses.service.ts#pool`) */
@@ -228,6 +233,15 @@ export default function MemberGrantPage() {
           ) : (
             <p className="mt-2 text-read">{reasonAr ?? (c.open ? "" : "المنحة مغلقة الآن")}</p>
           )}
+          {/* «أهد منحة لصديق» — رسالةٌ جاهزة برابط المنحة ووسم قناتها، فالصديقُ يأخذ منحتَه لا كودَك */}
+          {c.open && (
+            <a
+              href={waShare(grantShareAr(window.location.origin, pct, lastDay))} target="_blank" rel="noreferrer"
+              className="mt-3 inline-flex items-center gap-1.5 font-bold text-teal-light-ink underline"
+            >
+              <Share2 className="h-4 w-4" aria-hidden="true" /> أهد منحة لصديق
+            </a>
+          )}
         </Card>
 
         <h2 className="mt-6 text-xl font-black">اختر دوراتك</h2>
@@ -276,6 +290,19 @@ export default function MemberGrantPage() {
                     <span>
                       <span className="block font-bold">{x.titleAr}</span>
                       <span className="block text-read text-muted-foreground">{x.domainAr ? `${x.domainAr} · ` : ""}تبدأ {cohortDayAr(x.startsAt)} · مباشرة على Zoom</span>
+                      {/* المدرّبُ ببوّابة النشر، وتفاصيلُ الدورة — في نافذةٍ جديدة فلا يضيع ما اختاره */}
+                      <span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-read">
+                        {x.trainer && (
+                          <a href={`/trainers#trainer-${encodeURIComponent(x.trainer.id)}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 font-bold text-teal-light-ink">
+                            {x.trainer.photoUrl
+                              ? <img src={x.trainer.photoUrl} alt="" className="h-6 w-6 rounded-full object-cover" />
+                              : <UserRound className="h-5 w-5" aria-hidden="true" />}
+                            مع {x.trainer.name}
+                          </a>
+                        )}
+                        <a href={`/build/${encodeURIComponent(x.courseId)}`} target="_blank" rel="noreferrer" className="text-muted-foreground underline">تفاصيل الدورة</a>
+                      </span>
+                      {seatsLeftAr(x.seatsLeft) && <Chip tone="warn" className="mt-1 me-1">{seatsLeftAr(x.seatsLeft)}</Chip>}
                       {ours.has(x.courseId)
                         ? <Chip tone="accent" className="mt-1">اخترناها لك</Chip>
                         : fits(x) > 0 && <Chip tone="accent" className="mt-1">يناسب ما تريد تطويره</Chip>}

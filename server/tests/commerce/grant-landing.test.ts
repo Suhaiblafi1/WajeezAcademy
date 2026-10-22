@@ -142,6 +142,9 @@ describe('⑤ والدورات للزائر بلا أجور المدربين', (
     expect(Object.keys(v.campaign).sort(), 'خرج عدد المنح إلى الزائر').toEqual(['closesAt', 'maxCourses', 'open', 'percentOff'])
     const row = v.openCourses.find((x) => x.courseId === a)!
     expect(row.price).toBe(150)
+    /* والمقاعدُ والمدرّبُ لصفّ الدورة — والمدرّبُ اسمُه وصورتُه ومعرّفُه وحدها */
+    expect(row.seatsLeft).toBe(20)
+    expect(Object.keys(row.trainer ?? {}).sort(), 'خرج من ملف المدرب غير اسمه وصورته').toEqual(['id', 'name', 'photoUrl'])
     expect(v.openCourses.some((x) => x.courseId === b), 'عرض دورة أغلقت شعبتها').toBe(false)
     expect(v.termAr).toBe('موسم الربيع 2099')
   })
