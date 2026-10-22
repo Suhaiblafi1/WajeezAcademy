@@ -151,7 +151,11 @@ export class CohortMonitorService {
       alerts,
       sessions,
       upcoming: upcoming.slice(0, 3).map((s) => ({ id: s.id, title: s.title, startsAt: s.startsAt })),
-      tasks: tasks.map(({ missingIds: _ids, ...t }) => t),
+      tasks: tasks.map((t) => ({
+        id: t.id, title: t.title, type: t.type, isProject: t.isProject, dueAt: t.dueAt, overdue: t.overdue,
+        submitted: t.submitted, accepted: t.accepted, waiting: t.waiting, total: t.total,
+        oldestWaitingAt: t.oldestWaitingAt, missingNames: t.missingNames,
+      })),
       learners,
       messages,
     }

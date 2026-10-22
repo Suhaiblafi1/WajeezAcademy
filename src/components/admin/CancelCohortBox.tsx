@@ -11,7 +11,7 @@ import { Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import { staffControlCls } from "@/components/FormKit";
 
-export const CANCEL_REASONS = [
+const CANCEL_REASONS = [
   { id: "low", label: "قلة التسجيل — لم يكتمل الحد الأدنى" },
   { id: "trainer", label: "بطلب المدرب" },
   { id: "other", label: "سبب آخر" },

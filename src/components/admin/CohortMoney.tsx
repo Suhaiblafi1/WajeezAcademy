@@ -28,7 +28,7 @@ export interface CohortMoneyView {
 const money = (n: number, cur: string) => `${Number.isInteger(n) ? n : n.toFixed(2)} ${cur}`;
 
 /** الحكمُ بكلمة — ونبرتُها */
-export function verdictAr(m: CohortMoneyView): { label: string; tone: "ok" | "warn" | "muted" } {
+function verdictAr(m: CohortMoneyView): { label: string; tone: "ok" | "warn" | "muted" } {
   if (m.verdict === "no_trainer") return { label: "بلا مدرب — لا كلفة", tone: "muted" };
   if (m.verdict === "no_rule") return { label: "لا أجر محدد للمدرب", tone: "warn" };
   if (m.verdict === "covered") return { label: "مغطاة", tone: "ok" };
