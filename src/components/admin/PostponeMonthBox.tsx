@@ -187,14 +187,14 @@ export default function PostponeMonthBox({ onChanged, onFlash }: {
 
           <div className="flex flex-wrap items-center gap-2">
             {!confirming ? (
-              <Button tone="primary" disabled={chosen.length === 0 || Boolean(problem) || !reason.trim() || busy}
+              <Button tone="confirm" disabled={chosen.length === 0 || Boolean(problem) || !reason.trim() || busy}
                 onClick={() => setConfirming(true)}>
                 أرسل الاقتراح لمدربي {chosen.length} شعبة
               </Button>
             ) : (
               <>
                 <span className="text-read font-bold">يصل كل مدرب جرس وبريد الآن. متأكد؟</span>
-                <Button tone="primary" loading={busy} onClick={send}>نعم، أرسل</Button>
+                <Button tone="confirm" loading={busy} onClick={send}>نعم، أرسل</Button>
                 <Button tone="secondary" disabled={busy} onClick={() => setConfirming(false)}>تراجع</Button>
               </>
             )}

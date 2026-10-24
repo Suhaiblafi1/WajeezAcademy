@@ -59,7 +59,7 @@ describe('شاشة الإدارة — تعاين ثم ترسل، وتقول ما
     expect(box).toContain('`/api/admin/cohort-postpones/preview?year=${month.year}&month=${month.month}`')
     expect(box).toContain('cohortIds: chosen.map((c) => c.cohortId), deadlineAt: deadlineAt.toISOString(), reasonAr: reason.trim()')
     expect(box).toMatch(/!confirming \? \(\s*<Button[\s\S]*?onClick=\{\(\) => setConfirming\(true\)\}/)
-    expect(box).toMatch(/<Button tone="primary" loading=\{busy\} onClick=\{send\}>/)
+    expect(box).toMatch(/<Button tone="confirm" loading=\{busy\} onClick=\{send\}>/)
   })
   it('⚠️ الخيارات الثلاثة قبل الزر — والسبب يحرر', () => {
     for (const t of ['<b>يقبل:</b>', '<b>لا يقبل:</b>', '<b>لا يرد حتى المهلة:</b> تتوقف الشعبة تلقائيا.']) expect(box).toContain(t)
