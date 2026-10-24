@@ -235,9 +235,8 @@ export class CohortMoveService {
       meta: { requestId: id, to: `${target.season}-${target.year}`, shiftDays: Math.round(shiftMs / 86_400_000) },
     })
 
-    let zoom = { moved: 0, failed: 0 }
     if (input.action === 'approve') {
-      zoom = await this.afterShift(reviewerId, r.cohortId, {
+      await this.afterShift(reviewerId, r.cohortId, {
         title, auditMeta: { requestId: id },
         noticeAr: (first) => `نقلت الشعبة إلى ${termLabelAr(target)}${first ? `، وأول لقاء فيها ${dayAr(first)}` : ''}. راجع جدولك.`,
       })
