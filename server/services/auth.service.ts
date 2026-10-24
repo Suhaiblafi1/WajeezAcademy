@@ -28,6 +28,8 @@ export class AuthError extends Error {
 }
 
 const SESSION_TTL_DAYS = Number(process.env.SESSION_TTL_DAYS ?? 30)
+/** كم يمضي قبل أن يُكتب آخرُ نشاطٍ للجلسة ثانيةً — `touch` */
+const LAST_SEEN_EVERY_MS = 5 * 60_000
 
 /* ═══ سقوفُ الدخول (المهمّة ١٧) — ثلاثةٌ لا واحد ═══
    كانت القاعدةُ سقفا واحدا بمفتاحٍ «البريد **أو** الشبكة»: خمسُ إخفاقاتٍ من
@@ -203,7 +205,7 @@ export class AuthService {
     const token = newToken()
     const expiresAt = new Date(Date.now() + SESSION_TTL_DAYS * 86400_000)
     await this.prisma.session.create({
-      data: { userId: user.id, tokenHash: sha256(token), expiresAt, ip, userAgent },
+      data: { userId: user.id, tokenHash: sha256(token), expiresAt, ip, userAgent, lastSeenAt: new Date() },
     })
     return { token, expiresAt }
   }
@@ -224,6 +226,7 @@ export class AuthService {
     })
     if (!session || session.revokedAt || session.expiresAt < new Date()) return null
     if (session.user.status !== 'active') return null
+    await this.touch(session.id, session.lastSeenAt)
     const permissions = new Set<string>()
     const roles: string[] = []
     for (const ur of session.user.roles) {
@@ -245,6 +248,21 @@ export class AuthService {
       userId: session.user.id, email: session.user.email, displayName: session.user.displayName,
       roles, permissions: [...permissions], emailVerified: session.user.emailVerifiedAt != null,
     }
+  }
+
+  /* ═══ آخرُ نشاطٍ للجلسة — كتابةٌ كلَّ خمس دقائقَ على الأكثر (٢٤ أكتوبر ٢٠٢٦) ═══
+     «متى آخرُ دخولٍ لكلّ مدرّبٍ لمنصّته» (صاحب المنصّة) — والجلسةُ تبقى ثلاثين يوما، فوقتُ إنشائها لا
+     يقول من يعمل اليوم. ولا تُكتب في كلّ طلب: الشرطُ في `where` نفسِه، فطلبان متزامنان لا يكتبان مرّتين.
+     وإخفاقُها لا يُسقط الطلب: النشاطُ مؤشّرٌ لا حارس. */
+  private async touch(sessionId: string, lastSeenAt: Date | null): Promise<void> {
+    const now = new Date()
+    if (lastSeenAt && now.getTime() - lastSeenAt.getTime() < LAST_SEEN_EVERY_MS) return
+    try {
+      await this.prisma.session.updateMany({
+        where: { id: sessionId, OR: [{ lastSeenAt: null }, { lastSeenAt: { lt: new Date(now.getTime() - LAST_SEEN_EVERY_MS) } }] },
+        data: { lastSeenAt: now },
+      })
+    } catch { /* مؤشّرٌ لا حارس */ }
   }
 
   async logout(token: string): Promise<void> {

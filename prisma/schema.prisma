@@ -137,6 +137,9 @@ model Session {
   createdAt DateTime  @default(now())
   expiresAt DateTime
   revokedAt DateTime?
+  /// آخرُ ما استُعملت فيه الجلسة — كلَّ خمس دقائقَ على الأكثر (`AuthService.resolve`). منه «آخرُ نشاطٍ»
+  /// للمدرّب في «المدربون» (٢٤ أكتوبر ٢٠٢٦، `last-seen.ts`): الجلسةُ تبقى ثلاثين يوما، فوقتُ الدخول وحدَه يكذب.
+  lastSeenAt DateTime?
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])

@@ -5994,6 +5994,18 @@ export class TrainerReviewService {
       && (REVIEW_OPEN_STATUSES as readonly string[]).includes(p.application.status))
     const blockersOf = new Map<string, string[]>()
     for (const p of approvable) blockersOf.set(p.id, (await this.readinessFor(p.id)).blockersAr)
+    /* ═══ وآخرُ نشاطٍ له في منصّته (٢٤ أكتوبر ٢٠٢٦، `last-seen.ts`) ═══
+       «لأعلمَ من منهم فعّالٌ ومنهم اختفى» (صاحب المنصّة). أحدثُ ما استُعملت فيه جلسةٌ من جلساته — ووقتُ
+       الدخول لجلسةٍ قديمةٍ لم يُكتب لها نشاط. بنداءٍ واحدٍ للكلّ. */
+    const userIds = profiles.map((p) => p.userId).filter((u): u is string => Boolean(u))
+    const seenRows = userIds.length === 0 ? [] : await this.prisma.session.groupBy({
+      by: ['userId'], where: { userId: { in: userIds } }, _max: { lastSeenAt: true, createdAt: true },
+    })
+    const lastSeenOf = new Map(seenRows.map((r) => {
+      const a = r._max.lastSeenAt?.getTime() ?? 0
+      const c = r._max.createdAt?.getTime() ?? 0
+      return [r.userId, Math.max(a, c) > 0 ? new Date(Math.max(a, c)) : null] as const
+    }))
     return profiles.map((p) => {
       const latest = (kind: string) => p.textSuggestions.find((x) => x.kind === kind) ?? null
       return {
@@ -6004,6 +6016,8 @@ export class TrainerReviewService {
       applicationStatus: p.application.status,
       /* حسابٌ مربوطٌ أم لا: «نشطٌ» بلا حسابٍ لا يفتح بوّابتَه ولا يُسنَد إليه */
       hasAccount: Boolean(p.userId),
+      /* آخرُ نشاطٍ له في منصّته — `null` = لم يدخل قطّ أو لا حسابَ له */
+      lastSeenAt: p.userId ? lastSeenOf.get(p.userId) ?? null : null,
       suspended: Boolean(p.suspendedAt),
       publiclyVisible: p.publicVisibility && Boolean(p.publishApprovedAt),
       hasLiveCourse: live.has(p.id),
