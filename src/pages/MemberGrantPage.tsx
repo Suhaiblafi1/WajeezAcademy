@@ -107,13 +107,19 @@ const GRANT_PATHS: GrantPathOption[] = [...publicPathsData.pathways]
 const OTHER_DOMAIN = "أخرى";
 const GAIN_ICON: Record<(typeof GRANT_GAINS_AR)[number]["id"], LucideIcon> = { live: Video, practice: PencilRuler, certificate: Award };
 
-/** ما يحصل عليه — شريطٌ واحدٌ في النموذج وفوق قائمة الدورات (`GRANT_GAINS_AR`) */
+/** ما يحصل عليه — في النموذج وفي صندوق الكود (`GRANT_GAINS_AR`). قائمةٌ مرتّبةٌ بأيقونةٍ لكلّ بند، كتلةٌ في الوسط وبنودُها
+    على سطرٍ واحد — قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦): «ضعهم في الصندوق الأعلى بطريقةٍ مرتّبةٍ مع أيقونات» */
 function GrantGains({ className = "" }: { className?: string }) {
   return (
-    <ul className={`flex flex-wrap gap-x-5 gap-y-2 text-read ${className}`}>
+    <ul className={`mx-auto grid w-fit gap-2.5 text-start text-read ${className}`}>
       {GRANT_GAINS_AR.map((g) => {
         const Icon = GAIN_ICON[g.id];
-        return <li key={g.id} className="flex items-center gap-1.5"><Icon className="h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" />{g.title}</li>;
+        return (
+          <li key={g.id} className="flex items-center gap-2.5">
+            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-teal/10"><Icon className="h-4 w-4 text-teal-light-ink" aria-hidden="true" /></span>
+            {g.title}
+          </li>
+        );
       })}
     </ul>
   );
@@ -136,8 +142,9 @@ export default function MemberGrantPage() {
   const [picked, setPicked] = useState<string[]>([]);
   /* ما اخترناه له سلفا — يبقى أعلى القائمة بشارته وإن حذفه، فلا تقفز الصفوفُ تحت يده */
   const [suggested, setSuggested] = useState<string[]>([]);
-  /* المسارُ الذي اخترنا دوراتِه له، والبديلُ الذي يبدّل إليه بضغطة */
-  const [path, setPath] = useState<{ main: GrantPathOption | null; alt: GrantPathOption | null }>({ main: null, alt: null });
+  /* المسارُ الذي اخترنا دوراتِه له. وكان معه بديلٌ يبدّل إليه بضغطة، فحُذف بقرار صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦): «لا داعي
+     لخيار بدّل للمسار لأنّه غير مفهوم» — ومن أراد غيرَ ما اقترحناه يجده في أقسام المجالات تحته */
+  const [mainPath, setMainPath] = useState<GrantPathOption | null>(null);
   const [seeded, setSeeded] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const [buyOpen, setBuyOpen] = useState(false);
@@ -162,7 +169,7 @@ export default function MemberGrantPage() {
       ? found.main.courseIds.slice(0, max)
       : suggestCourses(view.openCourses, stored.interests, stored.workField, Math.min(GRANT_SUGGESTED_COURSES, max));
     const open = new Set(view.openCourses.map((x) => x.courseId));
-    setPath(found);
+    setMainPath(found.main);
     setSuggested(ours);
     setPicked(resumed ? resumed.intent.courseIds.filter((id) => open.has(id)).slice(0, max) : []);
     setSeeded(true);
@@ -177,12 +184,6 @@ export default function MemberGrantPage() {
   const listTotal = chosen.reduce((sum, x) => sum + x.price, 0);
   const payTotal = grantPrice(listTotal, pct);
   const toggle = (id: string) => setPicked((p) => toggleCourse(p, id, max));
-  /* يبدّل إلى البديل: تُقترح دوراتُه أعلى القائمة، ويصير الرئيسيُّ بديلا يعود إليه — وما اختاره يبقى كما هو */
-  const switchPath = () => {
-    if (!path.alt) return;
-    setPath({ main: path.alt, alt: path.main });
-    setSuggested(path.alt.courseIds.slice(0, max));
-  };
 
   const apply = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -309,24 +310,16 @@ export default function MemberGrantPage() {
           {c.open && c.closesAt && <GrantCountdown closesAt={c.closesAt} className="mt-4" />}
           {/* وحدُّها جملةٌ واحدةٌ تحت «آخر يوم» — قرارُه (٢٤ أكتوبر ٢٠٢٦). وهو حدٌّ يحرس قيمتَها: «اختر ٤ دوراتٍ بحدٍّ أقصى» */}
           {c.open && <p className="mt-0.5 text-read text-muted-foreground">{grantLimitAr(max)}</p>}
+          {/* وما يحصل عليه داخلَ هذا الصندوق — قرارُه (٢٤ أكتوبر ٢٠٢٦): «ضعهم في الصندوق الأعلى» */}
+          <div className="mt-4 border-t border-border pt-4"><GrantGains /></div>
         </Card>
 
         <h2 className="mt-6 text-xl font-black">
           اختر دوراتك{view.termAr && <span className="text-read font-normal text-muted-foreground"> · {view.termAr}</span>}
         </h2>
         {suggested.length > 0 && (
-          <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-read">
-            <span>{path.main ? `نقترح لك دورات مسار «${path.main.title}».` : `نقترح لك ${coursesAr(suggested.length)} تناسبك.`}</span>
-            {path.alt && (
-              <>
-                <span className="text-muted-foreground">أو مسار «{path.alt.title}»</span>
-                <Button size="sm" tone="secondary" onClick={switchPath}>بدّل إليه</Button>
-              </>
-            )}
-          </p>
+          <p className="mt-2 text-read">{mainPath ? `نقترح لك دورات مسار «${mainPath.title}».` : `نقترح لك ${coursesAr(suggested.length)} تناسبك.`}</p>
         )}
-        {/* وما يحصل عليه شريطُ النموذج نفسُه — بدل صندوق Zoom الكبير (قرارُه، ٢٤ أكتوبر ٢٠٢٦) */}
-        <GrantGains className="mt-3" />
 
         {view.openCourses.length === 0 ? (
           <Card as="p" className="mt-5 text-read text-muted-foreground">لا دورات متاحة الآن. تواصل مع مستشار ليقترح عليك.</Card>
@@ -454,7 +447,7 @@ export default function MemberGrantPage() {
           )}
         </div>
 
-        <GrantGains className="mt-5 justify-center" />
+        <GrantGains className="mt-5" />
 
         <Card as="form" onSubmit={apply} className="mt-6 space-y-3">
           <p className="text-center text-read text-muted-foreground">{c.open ? "دقيقة واحدة، وتأخذ كود منحتك فورا." : "نبلغك على بريدك أول ما تفتح."}</p>

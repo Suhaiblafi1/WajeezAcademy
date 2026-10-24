@@ -99,7 +99,7 @@ describe('بعد النموذج', () => {
       'اختر حتى 4 دورات، ويمكنك استبدالها لاحقا مع مستشارك.',
     ])
     const card = PAGE.slice(PAGE.indexOf('<Card tone="accent" className="text-center">'), PAGE.indexOf('<h2 className="mt-6'))
-    expect(card).toMatch(/<GrantCountdown closesAt=\{c\.closesAt\} className="mt-4" \/>\}\s*\{c\.open && <p className="mt-0\.5 text-read text-muted-foreground">\{grantLimitAr\(max\)\}<\/p>\}\s*<\/Card>/)
+    expect(card).toMatch(/<GrantCountdown closesAt=\{c\.closesAt\} className="mt-4" \/>\}\s*\{c\.open && <p className="mt-0\.5 text-read text-muted-foreground">\{grantLimitAr\(max\)\}<\/p>\}/)
     expect(PAGE.match(/grantLimitAr\(/g)?.length, 'الحد يقال مرتين').toBe(1)
     expect(PAGE, 'عادت فقرة الحد الطويلة').not.toMatch(/وهذا أقصى ما تغطيه منحتك|بعد استشارة مستشارك الخاص/)
   })
@@ -112,10 +112,17 @@ describe('بعد النموذج', () => {
       ['practice', 'تطبيقات عملية'],
       ['certificate', 'شهادة ورسالة توصية لمن يلتزم'],
     ])
-    /* والشريطُ نفسُه في النموذج وفوق قائمة الدورات — بدل صندوق Zoom الكبير */
-    expect(PAGE.match(/<GrantGains /g)?.length, 'الشريط في الصفحتين').toBe(2)
+    /* وهو نفسُه في النموذج وفي صندوق الكود أعلى الصفحة الثانية، بعد سطر الحدّ — بدل صندوق Zoom الكبير. قرارُ صاحب المنصّة
+       (٢٤ أكتوبر ٢٠٢٦): «ضعهم في الصندوق الأعلى بطريقةٍ مرتّبةٍ مع أيقونات» */
+    expect(PAGE.match(/<GrantGains\b/g)?.length, 'الشريط في الصفحتين').toBe(2)
+    const card = PAGE.slice(PAGE.indexOf('<Card tone="accent" className="text-center">'), PAGE.indexOf('<h2 className="mt-6'))
+    expect(card).toMatch(/\{grantLimitAr\(max\)\}<\/p>\}\s*<div className="mt-4 border-t border-border pt-4"><GrantGains \/><\/div>\s*<\/Card>/)
     const picker = PAGE.slice(PAGE.indexOf('<h2 className="mt-6'), PAGE.indexOf('view.openCourses.length === 0'))
-    expect(picker).toContain('<GrantGains className="mt-3" />')
+    expect(picker, 'الشريط تحت العنوان لا في الصندوق').not.toContain('GrantGains')
+    /* مرتّبٌ: قائمةٌ عموديّةٌ كتلتُها في الوسط، وأيقونةُ كلِّ بندٍ في دائرة */
+    const gains = PAGE.slice(PAGE.indexOf('function GrantGains'), PAGE.indexOf('export default function'))
+    expect(gains).toMatch(/<ul className=\{`mx-auto grid w-fit gap-2\.5 text-start text-read \$\{className\}`\}>/)
+    expect(gains).toMatch(/<span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-teal\/10"><Icon /)
     expect(PAGE, 'عاد صندوق Zoom الكبير').not.toMatch(/كل الدورات مباشرة على Zoom|تسجيل كل لقاء/)
     expect(PAGE).toMatch(/تبدأ \{cohortDayAr\(x\.startsAt\)\} · مباشرة على Zoom/)
   })
@@ -181,8 +188,9 @@ describe('بعد النموذج', () => {
     expect(PAGE).toMatch(/import publicPathsData from "@\/data\/catalog\/public-pathways\.json";/)
     expect(PAGE).toMatch(/const found = suggestPaths\(GRANT_PATHS, view\.openCourses, stored\.interests, stored\.workField\);/)
     expect(PAGE).toMatch(/const ours = found\.main\s*\? found\.main\.courseIds\.slice\(0, max\)\s*: suggestCourses\(/)
-    expect(PAGE).toMatch(/<Button size="sm" tone="secondary" onClick=\{switchPath\}>/)
-    expect(PAGE).toMatch(/setPath\(\{ main: path\.alt, alt: path\.main \}\);/)
+    expect(PAGE).toMatch(/setMainPath\(found\.main\);/)
+    /* ولا خيارَ «بدّل» إلى البديل — قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦): «لا داعي لخيار بدّل للمسار لأنّه غير مفهوم» */
+    expect(PAGE, 'عاد خيار بدّل المسار').not.toMatch(/switchPath|بدّل إليه|أو مسار|\.alt\b/)
   })
 
   it('⚠️ نقترحها ولا نختارها عنه — وما تركه قبل توثيق بريده يعود مختارا، ولا تتجاوز الحد', () => {
@@ -190,7 +198,6 @@ describe('بعد النموذج', () => {
     expect(effect.length, 'الاختيار الأول لا ينتظر الكود').toBeGreaterThan(0)
     expect(effect).toMatch(/suggestCourses\(view\.openCourses, stored\.interests, stored\.workField, Math\.min\(GRANT_SUGGESTED_COURSES, max\)\)/)
     expect(effect, 'اختارها عنه').toMatch(/setPicked\(resumed \? resumed\.intent\.courseIds\.filter\(\(id\) => open\.has\(id\)\)\.slice\(0, max\) : \[\]\)/)
-    expect(PAGE.slice(PAGE.indexOf('const switchPath = () => {')).split('};')[0], 'البديل يختار عنه').not.toMatch(/setPicked/)
     expect(PAGE, 'لا يحفظ مجال عمله').toMatch(/interests, workField: form\.workField,/)
     /* وسمٌ نصّيٌّ أعلى البطاقة لا قرصٌ يشبه الزرّ — قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦) */
     expect(PAGE).toMatch(/const tag = ours\.has\(x\.courseId\) \? "نقترحها لك" : fits\(x\) > 0 \? "يناسب ما تريد تطويره" : null;/)
@@ -384,7 +391,7 @@ describe('النصوص', () => {
     ]
     const onPage = ['احجز منحتي الآن', 'الاسم الكامل', 'رقم الواتساب', 'البريد الإلكتروني', 'مجال عملك', 'مستواك الوظيفي', 'ما الذي تريد تطويره؟',
       'سؤالان اختياريان لنرتب لك الدورات', 'كود منحتك', 'اختر دوراتك',
-      'نقترحها لك', 'نقترح لك دورات مسار', 'تناسبك.', 'أو مسار', 'بدّل إليه', 'يناسب ما تريد تطويره', 'تحتاج مساعدة في الاختيار؟', 'مستشارك الخاص يرد عليك مباشرة على واتساب.', 'راسل مستشارك', 'احصل على المنحة', 'برسالة جاهزة ترسلها بضغطة.', 'تنتهي المنحة بعد', 'آخر يوم:', 'ويمكنك اختيار دورات أخرى من المجالات التالية', 'أرسلناه إلى بريدك أيضا.', 'تفاصيل الدورة']
+      'نقترحها لك', 'نقترح لك دورات مسار', 'تناسبك.', 'يناسب ما تريد تطويره', 'تحتاج مساعدة في الاختيار؟', 'مستشارك الخاص يرد عليك مباشرة على واتساب.', 'راسل مستشارك', 'احصل على المنحة', 'برسالة جاهزة ترسلها بضغطة.', 'تنتهي المنحة بعد', 'آخر يوم:', 'ويمكنك اختيار دورات أخرى من المجالات التالية', 'أرسلناه إلى بريدك أيضا.', 'تفاصيل الدورة']
     for (const t of [...data, ...onPage]) expect(t).toBe(plainAr(t))
     for (const t of onPage) expect(PAGE).toContain(t)
     expect(auditActionAr('coupon.grant_apply')).not.toBe('coupon.grant_apply')
