@@ -42,7 +42,7 @@ export default function ScreenDirectory({ className = "" }: { className?: string
       <p className="mt-1 text-read leading-6 text-muted-foreground">
         {/* العددُ يُقال لأنّه جوابُ «ما الذي عندي» — والمعروضُ ما تملكه أنت لا ما في المنصّة */}
         <span className="tabular-nums">{total}</span> شاشة تملكها، موزّعة على{" "}
-        <span className="tabular-nums">{sections.length}</span> مجموعات — وما لا تملكه لا يعرض.
+        <span className="tabular-nums">{sections.length}</span> أقسام — وما لا تملكه لا يعرض.
       </p>
 
       {/* ═══ ولماذا عمودان لا ثلاثة ═══

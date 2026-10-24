@@ -26,7 +26,7 @@ const ops = code('src/pages/admin/TrainerRunOps.tsx')
 describe('① بابٌ واحدٌ في القائمة', () => {
   it('⚠️ «المدربون» بصلاحيّة أوّلِ ما تقرؤه — ولا بابَ لـ«إسناد من المدرب»', () => {
     const nav = code('src/pages/admin/nav-map.ts')
-    expect(nav).toMatch(/\{ to: "\/admin\/trainer-run", label: "المدربون", icon: GraduationCap, need: "trainer\.qualify",/)
+    expect(nav).toMatch(/\{ to: "\/admin\/trainer-run", label: "المدربون", tab: "المدربون", icon: GraduationCap, need: "trainer\.qualify",/)
     expect(nav).not.toContain('/admin/assign-by-trainer')
   })
 

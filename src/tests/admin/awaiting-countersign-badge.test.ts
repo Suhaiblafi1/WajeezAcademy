@@ -13,6 +13,7 @@ import Fastify from 'fastify'
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { allSections, waitingCounts } from '@/pages/admin/nav-map'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '../../..')
 const read = (p: string) => readFileSync(join(root, p), 'utf8')
@@ -91,23 +92,34 @@ describe('والشارة تعرض حيث ينتظر العمل', () => {
     expect((nav.match(/badge: "awaitingCountersign"/g) ?? []).length, 'الشارة على أكثر من بند').toBe(1)
   })
 
-  it('والإطار يجلب العدد ويعرضه', () => {
+  /* ═══ والعددُ على لسان «العقود» وعلى قسم «المدربون» معا (٢٤ أكتوبر ٢٠٢٦) ═══
+     صارت الشاشاتُ ألسنةً في أقسامٍ سبعة (`nav-map.ts`)، فالشارةُ تمرّ بحسابٍ واحد (`waitingCounts`) إلى
+     اللسان وإلى القسم الذي في الشريط. وكان الفحصُ هنا `/t\.badge/` — فطابق «it.badge» بعد الترحيل
+     وبقي أخضرَ لسببٍ خاطئ؛ فصار يقيس العددَ نفسَه. */
+  it('والإطار يجلب العدد ويعرضه على اللسان وعلى قسمه', () => {
     expect(layout, 'لا يجلب العدد').toContain('awaiting-countersign-count')
-    expect(layout, 'لا تعرض الشارة في البند').toMatch(/t\.badge/)
+    expect(layout).toMatch(/setBadges\(\(b\) => \(\{ \.\.\.b, awaitingCountersign: r\.count \}\)\)/)
+    expect(layout, 'العدد لا يمرّ إلى الحساب').toMatch(/waitingCounts\(sections, \{ badges, inbox \}\)/)
+    const { byTab, bySection } = waitingCounts(allSections, { badges: { awaitingCountersign: 3 }, inbox: [] })
+    expect(byTab['/admin/trainer-contracts'], 'لسان العقود بلا عدده').toBe(3)
+    expect(bySection['المدربون'], 'قسم المدربين بلا عدد عقوده').toBe(3)
   })
 
   /* ═══ والصفرُ لا يُعرَض ═══
      شارةٌ تقول «٠» تُقرأ عملا ينتظر، ومن رآها فتح الشاشةَ فلم يجد شيئا.
      ومن تكرّر عليه ذلك كفّ عن النظر إليها — فتموت وهي حيّة. */
   it('ولا شارة عند الصفر', () => {
-    expect(layout, 'تعرض الشارة ولو كان العدد صفرا')
-      .toMatch(/badges\[t\.badge\]\s*>\s*0/)
+    expect(layout, 'يمرّ الصفر إلى اللسان عددا').toMatch(/count: waiting\.byTab\[it\.to\] \|\| undefined/)
+    expect(layout, 'يمرّ الصفر إلى القسم عددا').toMatch(/count: waiting\.bySection\[s\.title\] \|\| undefined/)
+    expect(layout, 'قسم الشريط يعرض صفره').toMatch(/\{n > 0 && \(/)
+    expect(bare('src/components/ui/PortalTabs.tsx'), 'اللسان يعرض صفره').toMatch(/if \(!count\) return null/)
   })
 
   /* ورقمٌ عارٍ لا يقول ماذا يعدّ لمن يسمعه بقارئ شاشة */
   it('ويقرأ بلسانه لا رقما عاريا', () => {
     expect(layout, 'الشارة رقم بلا نصّ يقرؤه قارئ الشاشة').toContain('sr-only')
-    expect(layout, 'لا يقال ماذا ينتظر').toMatch(/ينتظر ختمك/)
+    expect(layout, 'لا يقال ماذا ينتظر').toMatch(/awaitingCountersign: "عقود موقّعة تنتظر ختمك: "/)
+    expect(layout, 'لسان العقود يقرأ بغير لسانه').toMatch(/countLabel: COUNT_LABEL_AR\[it\.badge \?\? "inbox"\]/)
   })
 
   /* ولا يسقط الإطارُ كلُّه لمن لا صلاحيّةَ له: نداؤه يُردّ، فتُبتلَع */

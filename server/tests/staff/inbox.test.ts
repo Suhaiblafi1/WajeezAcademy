@@ -262,3 +262,33 @@ describe('كلّ بند يفتح شاشة يراها صاحبه', () => {
     }
   })
 })
+
+/* ═══ وعقودٌ وقّعها أصحابُها تنتظر ختمَك (٢٤ أكتوبر ٢٠٢٦) ═══
+
+   كانت شارةً على «العقود» وحدَها ولا بندَ لها هنا. فلمّا صار عددُ «اليوم» في سكّة الإدارة يجمع ما
+   ينتظرك كلَّه، قال اللوحُ عددا وقالت السكّةُ غيرَه بعدد العقود. والعدُّ عدُّ الشارة نفسِه. */
+describe('وعقود موقعة تنتظر ختمك', () => {
+  beforeAll(async () => {
+    const email = `inbox-signed-${Date.now()}@test.local`
+    const user = await prisma.user.create({ data: { email, displayName: 'مدرب وقع', passwordHash: 'x' } })
+    const application = await prisma.trainerApplication.create({
+      data: { reference: `TR-INBOX-${Date.now()}`, fullName: 'مدرب وقع', email, status: 'contract_pending', userId: user.id },
+    })
+    const profile = await prisma.trainerProfile.create({ data: { applicationId: application.id, userId: user.id } })
+    await prisma.trainerContract.create({ data: { profileId: profile.id, title: 'عقد ينتظر الختم', status: 'signed' } })
+  })
+
+  it('⚠️ تعدّ كما تعدّها شارة «العقود» — وتفتح «العقود»', async () => {
+    const item = (await inbox.forStaff(managerId, permsOf('academic_manager'))).find((i) => i.key === 'contracts_to_countersign')
+    const badge = await new TrainerReviewService(prisma).countAwaitingCountersign()
+    expect(badge.count).toBeGreaterThan(0)
+    expect(item?.count, 'لا بند للعقود الموقعة — أو عدده غير عدد الشارة').toBe(badge.count)
+    expect(item?.href).toBe('/admin/trainer-contracts')
+    expect(item?.sample.some((s) => s.startsWith('مدرب وقع — '))).toBe(true)
+  })
+
+  it('ولا يراها من لا يملك العقود', async () => {
+    const items = await inbox.forStaff(managerId, permsOf('academic_coordinator'))
+    expect(items.some((i) => i.key === 'contracts_to_countersign')).toBe(false)
+  })
+})
