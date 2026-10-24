@@ -23,6 +23,7 @@ import { daysLabelAr, fmtDateAr, fmtDateTimeAr } from "@/utils/format";
 import CohortMoney from "@/components/admin/CohortMoney";
 import CancelCohortBox from "@/components/admin/CancelCohortBox";
 import DeleteCancelledBox from "@/components/admin/DeleteCancelledBox";
+import ReopenCancelledBox from "@/components/admin/ReopenCancelledBox";
 import UpcomingCohorts from "@/components/admin/UpcomingCohorts";
 import { CohortLearners, CohortMonitor } from "./CohortMonitor";
 import { isLiveCohort } from "@/application/schedule/cohort-status";
@@ -35,6 +36,9 @@ import { matchesQuery } from "@/application/text/search-ar";
 import TabBar from "@/components/ui/TabBar";
 import { movedLabelAr as movedLabel } from "@/application/trainer/cohort-move";
 import { cohortDayAr as movedDayAr } from "@/application/learning/cohort-gate";
+
+/** لم يأت موعدُها بعد — فالملغاةُ تُعاد (`ReopenCancelledBox`) */
+const notStartedYet = (startsAt: string | null) => !startsAt || new Date(startsAt).getTime() > Date.now();
 /** وسمُ الشعبة المنقولة — بيومها بتوقيت الأكاديميّة */
 const movedLabelAr = (m: { toYear: number; toSeason: string; firstAt: string | null }) => movedLabel(m, movedDayAr);
 const STATUS_META: Record<string, { label: string; cls: string }> = {
@@ -662,6 +666,12 @@ export default function AdminCohorts() {
                           onError={(text) => setFlash({ kind: "error", text })} />
                       )}
                     </div>
+                    {/* والتراجعُ عن الإلغاء ما لم يمض موعدُها (٢٤ أكتوبر ٢٠٢٦) — `ReopenCancelledBox` */}
+                    {c.status === "cancelled" && notStartedYet(c.startsAt) && (
+                      <ReopenCancelledBox cohortId={c.id} title={c.title}
+                        onDone={(text) => { setFlash({ kind: "ok", text }); void load(); }}
+                        onError={(text) => setFlash({ kind: "error", text })} />
+                    )}
                     {c.status === "cancelled" && (
                       <DeleteCancelledBox cohortId={c.id} title={c.title}
                         onDeleted={(text) => { setFlash({ kind: "ok", text }); setExpanded(null); void load(); }}

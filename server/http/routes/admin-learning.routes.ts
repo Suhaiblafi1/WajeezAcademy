@@ -712,6 +712,15 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
     return { ok: true }
   })
 
+  /* وإعادةُ فتح الملغاة — إلى حالها قبل الإلغاء، ويُخبَر مدرّبُها ومتعلّموها (٢٤ أكتوبر ٢٠٢٦) */
+  app.post('/api/admin/cohorts/:id/reopen', {
+    preHandler: requirePermission('cohort.manage'),
+    schema: { tags: ['admin-learning'], summary: 'إعادة فتح شعبة ملغاة لم يمض موعدها' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return cohorts.reopen(id, req.auth!.userId)
+  })
+
   /* ═══ مالُ الشعبة، و«تبدأ قريبا»، و«المتابعة»، وحذفُ الملغاة (٢٢ أكتوبر ٢٠٢٦) ═══
      «أحتاج لافتةً تقول كم الحدُّ الأدنى للمدرّب وكم حصّلنا» · «أيّ الدورات قريبة وكم فيها تسجيل» ·
      «وصولٌ لمجريات العمل لديه كتقارير» · «اجعل خيارَ الحذف واضحا» — صاحب المنصّة. والقرارُ في كلٍّ

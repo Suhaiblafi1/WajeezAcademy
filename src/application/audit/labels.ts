@@ -57,6 +57,7 @@ const PHRASES: Record<string, string> = {
   /* ٢٢ أكتوبر ٢٠٢٦: حذفُ ملغاةٍ لها مدرّب باختيارٍ صريح، وسببُ الإلغاء الذي وصل مدرّبَها */
   'cohort.delete_cancelled': 'حذف شعبة ملغاة نهائيّا',
   'cohort.cancel.reason': 'سبب إلغاء شعبة — وصل مدرّبها',
+  'cohort.reopen': 'إعادة فتح شعبة ملغاة',
   'cohort.update': 'تعديل شعبة',
   'cohort.duplicate': 'تكرار شعبة',
   'cohort.publish': 'فتح شعبة للتسجيل',

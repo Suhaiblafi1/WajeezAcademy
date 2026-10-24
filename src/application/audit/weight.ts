@@ -183,6 +183,8 @@ const HIGH: readonly string[] = [
   'session.reschedule.approve', 'session.reschedule.reject',
   /* والشعبةُ كلُّها نُقلت إلى فصلٍ آخر، أو رُدّ طلبُ نقلها */
   'cohort.move.approve', 'cohort.move.reject',
+  /* وملغاةٌ أُعيد فتحُها (٢٤ أكتوبر ٢٠٢٦) — تعود تُباع، ويصل مدرّبَها ومتعلّميها أنّها عادت */
+  'cohort.reopen',
   /* وتأجيلُ شعب نوفمبر: قبله مدرّبُها فتحرّكت مواعيدُها، أو لم يقبله فأوقفت (٢٤ أكتوبر ٢٠٢٦) */
   'cohort.postpone.accept', 'cohort.postpone.decline', 'cohort.postpone.expire',
   /* ═══ وعملُه قُرئ وقُوّم — والمنصّةُ قرّرت هذا قبلنا ═══

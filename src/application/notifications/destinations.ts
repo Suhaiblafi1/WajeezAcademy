@@ -90,6 +90,8 @@ const LEARNER: Table = {
   'enrollment.dropped': { path: '/student/learning', ctaAr: 'افتح رحلتك' },
   /* والشعبةُ الملغاةُ بابُها الدعم: النقلُ أو الردُّ يقرّره إنسان (١٩ أكتوبر ٢٠٢٦) */
   'cohort.cancelled': { path: '/student/support', ctaAr: 'راسل الدعم' },
+  /* وعادت بعد إلغائها — موعدُها في «رحلتي» (٢٤ أكتوبر ٢٠٢٦) */
+  'cohort.reopened': { path: '/student/learning', ctaAr: 'افتح رحلتك' },
   /* والاختيارُ يُنقر في بوّابته لا في البريد: البلاغُ يحمل الخيارَين ليُقرآ،
      والقرارُ يُكتب حيث تُعرف هويّةُ صاحبه. */
   'departure.choice': { path: '/student/learning', ctaAr: 'اختر ما يناسبك' },
@@ -112,6 +114,7 @@ const TRAINER: Table = {
   'trainer.assigned': { path: '/trainer/board', ctaAr: 'افتح شعبتك الجديدة' },
   /* والملغاةُ تسقط من «شعبي» — فالوجهةُ ما بقي له من شعب (٢٢ أكتوبر ٢٠٢٦) */
   'cohort.cancelled.trainer': { path: '/trainer/board', ctaAr: 'افتح شعبك' },
+  'cohort.reopened.trainer': { path: '/trainer/board', ctaAr: 'افتح شعبك' },
   /* واقتراحُ التأجيل بطاقةٌ في «شعبي» يقبلها أو لا (٢٤ أكتوبر ٢٠٢٦) */
   'cohort.postpone.proposed': { path: '/trainer/board', ctaAr: 'افتح الاقتراح' },
   'cohort.plan.submitted': { path: '/trainer/board', ctaAr: 'افتح خطّة شعبتك' },

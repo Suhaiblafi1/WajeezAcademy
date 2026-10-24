@@ -694,6 +694,57 @@ export class CohortService {
     }
   }
 
+  /* ═══ إعادةُ فتح الملغاة — قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦) ═══
+     سأل: «ماذا لو أردت أن أتراجع عن الإلغاء؟». وكان الإلغاءُ نهائيّا (`COHORT_TRANSITIONS.cancelled` فارغة)، والإلغاءُ
+     لا يُسقط تسجيلا ولا يردّ مالا — فخُيّر واختار زرّا يعيدها. فتعود إلى حالها قبل الإلغاء (من أثر `cohort.status`)،
+     بمواعيدها ومتعلّميها، ويصل مدرّبَها ومتعلّميها أنّها عادت. ولا تُعاد ما مضى أوّلُ لقاءٍ فيها: تُكرَّر بموعدٍ جديد. */
+  async reopen(cohortId: string, actorId: string, now = new Date()) {
+    const c = await this.prisma.cohort.findUnique({
+      where: { id: cohortId },
+      select: {
+        status: true, title: true, startsAt: true,
+        sessions: { where: { status: { not: 'cancelled' } }, orderBy: { startsAt: 'asc' }, take: 1, select: { startsAt: true } },
+      },
+    })
+    if (!c) throw new AuthError('not_found', 'الشعبة غير موجودة', 404)
+    if (c.status !== 'cancelled') throw new AuthError('not_cancelled', 'هذه الشعبة ليست ملغاة', 409)
+    const times = [c.sessions[0]?.startsAt, c.startsAt].filter((d): d is Date => Boolean(d))
+    const firstAt = times.length ? new Date(Math.min(...times.map((d) => d.getTime()))) : null
+    if (firstAt && firstAt.getTime() <= now.getTime()) {
+      throw new AuthError('already_started', 'مضى موعد أول لقاء فيها — كررها بموعد جديد بدل إعادتها', 409)
+    }
+    const cancel = await this.prisma.auditEvent.findFirst({
+      where: { action: 'cohort.status', entityType: 'cohort', entityId: cohortId },
+      orderBy: { createdAt: 'desc' }, select: { meta: true },
+    })
+    const from = (cancel?.meta as { from?: string } | null)?.from
+    const to = from && ['draft', 'open', 'full'].includes(from) ? from : 'open'
+    await this.prisma.cohort.update({ where: { id: cohortId }, data: { status: to } })
+    await recordAudit(this.prisma, { actorId, action: 'cohort.reopen', entityType: 'cohort', entityId: cohortId, meta: { to } })
+
+    const trainers = await this.prisma.cohortTrainer.findMany({ where: { cohortId }, select: { profile: { select: { userId: true } } } })
+    for (const userId of new Set(trainers.map((t) => t.profile.userId).filter((u): u is string => Boolean(u)))) {
+      for (const channel of ['in_app', 'email'] as const) {
+        await safeNotify(this.prisma, {
+          userId, channel, audience: 'trainer', templateKey: 'cohort.reopened.trainer',
+          title: `أعدنا فتح شعبة «${c.title}»`,
+          body: 'لم تعد ملغاة. عادت بمواعيدها ومتعلميها كما كانت.',
+          data: { cohortId },
+        })
+      }
+    }
+    const learners = await this.prisma.enrollment.findMany({ where: { cohortId, status: { not: 'dropped' } }, select: { userId: true } })
+    for (const l of learners) {
+      await safeNotify(this.prisma, {
+        userId: l.userId, channel: 'in_app', audience: 'learner', templateKey: 'cohort.reopened',
+        title: `عادت شعبة «${c.title}»`,
+        body: 'لم تعد ملغاة، ومقعدك فيها كما كان. راجع موعدها في رحلتك.',
+        data: { cohortId },
+      })
+    }
+    return { status: to, trainersTold: trainers.length, learnersTold: learners.length }
+  }
+
   /* ── الجلسات وZoom اليدوي ── */
 
   async addSession(actorId: string, cohortId: string, input: {
