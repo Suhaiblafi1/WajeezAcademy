@@ -89,11 +89,22 @@ function TrainerOffer({ groups }: { groups: SeasonGroup[] }) {
     <div>
       {/* ═══ الأقربُ مفتوحٌ وما بعده يُطوى — بمسافةٍ وخطٍّ أصغرَ وأخفّ (١٩ أكتوبر ٢٠٢٦) ═══
           «الكلام مكتظ.. يجب أن تنسدل دورات الفصول الأخرى، واترك مسافات، وخفّف حجم الخط واجعله لايت»
-          (صاحب المنصّة، على بطاقةٍ بثماني دوراتٍ في ثلاثة مواسم). فالموسمُ القادمُ ظاهر، وكلُّ موسمٍ بعده
-          سطرٌ واحدٌ بعدد دوراته يُفتح بطلب. وأسماءُ الدورات ١٢ بوزنٍ خفيف (٣٠٠ — خطُّ الموقع يحمله). */}
-      {seasons.map((g, i) => {
-        const list = (
-          <ul className="mt-2.5 grid grid-cols-1 gap-2">
+          (صاحب المنصّة، على بطاقةٍ بثماني دوراتٍ في ثلاثة مواسم). وأسماءُ الدورات ١٢ بوزنٍ خفيف (٣٠٠).
+
+          ═══ ورأسُ الموسم شريطٌ ينسدل — لا سطرٌ كالدورات (٢٤ أكتوبر ٢٠٢٦) ═══
+          «ميّز عناوين الفصول عن الدورات. اجعل عناوين الفصول بطريقة تبدو وكأنها عنوانٌ له انسدال» (صاحب المنصّة).
+          عُرضت عليه ثلاثُ هيئاتٍ صورا فاختار «شريطا ملوّنا»: كلُّ موسمٍ شريطٌ فيروزيٌّ فاتح، اسمُه ١٤ عريضٌ وعددُ
+          دوراته وسهمٌ ينقلب، ودوراتُه تحته بإزاحةٍ يسيرة. والأقربُ مفتوحٌ وما بعده مطويّ — وكلاهما يُفتح ويُطوى.
+          ونُسخ به «اجعل خط اسم الموسم أصغر» (٢٠ أكتوبر): الرأسُ صار شريطا لا سطرا يزاحم الدورات. */}
+      {seasons.map((g, i) => (
+        <details key={g.termAr ?? "later"} open={i === 0} className={`group ${i === 0 ? "mt-5" : "mt-2.5"}`}>
+          <summary className="flex cursor-pointer list-none items-center gap-2 rounded-2xl bg-[#38A7B4]/10 px-4 py-3 text-read font-bold text-teal-light-ink transition hover:bg-[#38A7B4]/15 [&::-webkit-details-marker]:hidden">
+            <BookOpen className="h-4 w-4 shrink-0" />
+            <span className="min-w-0 flex-1">{seasonHeadingAr(g.termAr)}</span>
+            <span className="shrink-0 text-fine font-medium text-muted-foreground">{coursesCountAr(g.courses.length)}</span>
+            <ChevronDown className="h-4 w-4 shrink-0 transition-transform group-open:rotate-180" aria-hidden="true" />
+          </summary>
+          <ul className="mt-2.5 grid grid-cols-1 gap-2 ps-3">
             {g.courses.map((c) => (
               <li key={c.id}>
                 <Inset as={Link} interactive to={`/build/${c.id}`} className="flex items-center justify-between gap-3 px-3.5 py-2.5">
@@ -106,29 +117,8 @@ function TrainerOffer({ groups }: { groups: SeasonGroup[] }) {
               </li>
             ))}
           </ul>
-        )
-        return i === 0 ? (
-          <div key={g.termAr ?? "later"} className="mt-5">
-            {/* اسمُ الموسم ١٢ لا ١٤ — «اجعل خط اسم الموسم أصغر» (صاحب المنصّة، ٢٠ أكتوبر ٢٠٢٦). وهو رأسٌ
-                تحت اسم المدرّب (h3) فـh4، لا فقرةُ متن. */}
-            <h4 className="flex items-center gap-1.5 text-fine font-medium text-foreground">
-              <BookOpen className="h-3.5 w-3.5 text-teal-light-ink" />
-              {seasonHeadingAr(g.termAr)}
-            </h4>
-            {list}
-          </div>
-        ) : (
-          <details key={g.termAr ?? "later"} className="group mt-4 border-t border-white/10 pt-4">
-            <summary className="flex cursor-pointer list-none items-center gap-1.5 text-fine font-normal text-muted-foreground transition hover:text-foreground [&::-webkit-details-marker]:hidden">
-              <BookOpen className="h-3.5 w-3.5 shrink-0 text-teal-light-ink" />
-              <span className="min-w-0 flex-1">{seasonHeadingAr(g.termAr)}</span>
-              <span className="shrink-0">{coursesCountAr(g.courses.length)}</span>
-              <ChevronDown className="h-4 w-4 shrink-0 transition-transform group-open:rotate-180" aria-hidden="true" />
-            </summary>
-            {list}
-          </details>
-        )
-      })}
+        </details>
+      ))}
     </div>
   )
 }
