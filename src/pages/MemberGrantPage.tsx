@@ -28,7 +28,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
-import { Award, ChevronDown, CirclePlay, Copy, Gift, Loader2, Share2, UserRound, Video, type LucideIcon } from "lucide-react";
+import { Award, ChevronDown, CirclePlay, Copy, Gift, Loader2, Mail, Share2, UserRound, Video, type LucideIcon } from "lucide-react";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import { useRealSession } from "@/services/session";
 import { useHoneypot } from "@/components/HoneypotField";
@@ -42,12 +42,12 @@ import { controlCls } from "@/components/FormKit";
 import { Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import Chip from "@/components/ui/Chip";
-import { fmtDate, fmtDateLong, fmtMoney } from "@/application/text/format-ar";
+import { fmtDateLong, fmtMoney } from "@/application/text/format-ar";
 import { cohortDayAr } from "@/application/learning/cohort-gate";
 import { grantPrice, MEMBER_GRANT_NAME_AR } from "@/application/commerce/grant";
 import {
   CAREER_LEVELS, GRANT_ACADEMY_LINE_AR, GRANT_CONSENT_AR, GRANT_GAINS_AR, GRANT_MAX_INTERESTS, GRANT_SUGGESTED_COURSES, WORK_FIELDS,
-  GRANT_VALUE_AR, campaignParams, grantCountAr, grantCountdown, grantSections, grantShareAr, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse,
+  GRANT_VALUE_AR, campaignParams, grantCountAr, grantCountdown, grantSections, grantShareAr, grantShareMailto, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse,
   type GrantPathOption,
 } from "@/application/commerce/grant-landing";
 import { readStoredGrant, saveStoredGrant, type StoredGrant } from "@/services/grant-landing";
@@ -81,7 +81,7 @@ const money = (n: number) => fmtMoney(n, USD);
 const coursesAr = (n: number) => (n === 1 ? "دورة" : n === 2 ? "دورتين" : `${n} دورات`);
 
 /** عدّادُ انتهاء المنحة وآخرُ يومٍ لها — كلُّ رقمٍ في خانته وتحته اسمُه (`grantCountdown`) */
-function GrantCountdown({ closesAt, className = "" }: { closesAt: string; className?: string }) {
+function GrantCountdown({ closesAt, compact = false, className = "" }: { closesAt: string; compact?: boolean; className?: string }) {
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 1000);
@@ -91,6 +91,20 @@ function GrantCountdown({ closesAt, className = "" }: { closesAt: string; classN
   if (!left) return <p className={`text-read font-bold ${className}`}>انتهت المنحة</p>;
   const pad = (n: number) => String(n).padStart(2, "0");
   const cells: [string, string][] = [[String(left.days), "يوم"], [pad(left.hours), "ساعة"], [pad(left.minutes), "دقيقة"], [pad(left.seconds), "ثانية"]];
+  /* وتحت زرّ «احصل على المنحة» سطرٌ واحدٌ صغير — اللوحُ ثابتٌ أسفلَ الشاشة فلا يُثقل */
+  if (compact) {
+    return (
+      <div className={`flex items-center justify-center gap-3 ${className}`} role="timer">
+        <span className="text-read text-muted-foreground">تنتهي المنحة بعد</span>
+        {cells.map(([n, label]) => (
+          <span key={label} className="grid leading-tight">
+            <span className="font-black tabular-nums">{n}</span>
+            <span className="text-fine text-muted-foreground">{label}</span>
+          </span>
+        ))}
+      </div>
+    );
+  }
   return (
     <div className={className} role="timer">
       <p className="text-read font-bold">تنتهي المنحة بعد</p>
@@ -233,7 +247,9 @@ export default function MemberGrantPage() {
   }
 
   const c = view.campaign;
-  const lastDay = c.closesAt ? fmtDate(new Date(new Date(c.closesAt).getTime() - 1)) : null;
+  /* آخرُ يومٍ بتاريخه الطويل — في رسالة الهديّة («30 أكتوبر 2026») */
+  const lastDayLong = c.closesAt ? fmtDateLong(new Date(new Date(c.closesAt).getTime() - 1)) : null;
+  const shareText = grantShareAr(window.location.origin, pct, lastDayLong);
 
   /* ─── الخطوة ٢: الكودُ واختيارُ الدورات ─── */
   if (stored) {
@@ -303,15 +319,6 @@ export default function MemberGrantPage() {
             <p className="mt-2 text-read">{reasonAr ?? (c.open ? "" : "المنحة مغلقة الآن")}</p>
           )}
           {c.open && c.closesAt && <GrantCountdown closesAt={c.closesAt} className="mt-4" />}
-          {/* «أهد منحة لصديق» — رسالةٌ جاهزة برابط المنحة ووسم قناتها، فالصديقُ يأخذ منحتَه لا كودَك */}
-          {c.open && (
-            <a
-              href={waShare(grantShareAr(window.location.origin, pct, lastDay))} target="_blank" rel="noreferrer"
-              className="mt-3 inline-flex items-center gap-1.5 font-bold text-teal-light-ink underline"
-            >
-              <Share2 className="h-4 w-4" aria-hidden="true" /> أهد منحة لصديق
-            </a>
-          )}
         </Card>
 
         <h2 className="mt-6 text-xl font-black">اختر دوراتك</h2>
@@ -382,10 +389,26 @@ export default function MemberGrantPage() {
             <p className="mt-1 text-read text-muted-foreground">
               {grantCountAr(chosen.length)} بـ<bdi dir="ltr">{money(payTotal)}</bdi> بدل <bdi dir="ltr" className="line-through">{money(listTotal)}</bdi>
             </p>
-            <Button tone="confirm" className="mt-3 w-full" onClick={pay}>ادفع الآن</Button>
+            {/* «احصل على المنحة» لا «ادفع»، وتحته عدّادُ انتهائها — قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦) */}
+            <Button tone="confirm" className="mt-3 w-full" onClick={pay}>احصل على المنحة</Button>
+            {c.open && c.closesAt && <GrantCountdown closesAt={c.closesAt} compact className="mt-2" />}
             {stored.code
               ? <p className="mt-2 text-read text-muted-foreground">كودك {stored.code} يوضع تلقائيا.</p>
               : <p className="mt-2 text-read text-muted-foreground">اكتب كود منحتك في لوح الدفع. أرسلناه إلى بريدك.</p>}
+            {/* وآخرُه «أهدها لثلاثة أصدقاء» — رسالةٌ جاهزةٌ في واتساب والبريد، فالصديقُ يأخذ منحتَه لا كودَك (`grantShareAr`) */}
+            {c.open && (
+              <div className="mt-3 border-t border-border pt-3 text-read">
+                <p className="flex items-center justify-center gap-1.5 font-bold"><Gift className="h-4 w-4 text-gold-ink" aria-hidden="true" /> أهدها لثلاثة أصدقاء على الأقل</p>
+                <p className="mt-1 flex justify-center gap-6">
+                  <a href={waShare(shareText)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-bold text-teal-light-ink underline">
+                    <Share2 className="h-4 w-4" aria-hidden="true" /> واتساب
+                  </a>
+                  <a href={grantShareMailto(window.location.origin, pct, lastDayLong)} className="inline-flex items-center gap-1 font-bold text-teal-light-ink underline">
+                    <Mail className="h-4 w-4" aria-hidden="true" /> البريد
+                  </a>
+                </p>
+              </div>
+            )}
           </Card>
         )}
 

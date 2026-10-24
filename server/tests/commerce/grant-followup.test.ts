@@ -17,7 +17,7 @@ import { AuthService } from '../../services/auth.service'
 import { CommerceService } from '../../services/commerce.service'
 import { GrantService } from '../../services/grant.service'
 import { GrantLandingService } from '../../services/grant-landing.service'
-import { GRANT_FOLLOWUP_HOURS, grantRegistrants, openGrantFollowups, sendGrantReminders } from '../../services/grant-followup.service'
+import { GRANT_CLOSE_FIX, GRANT_FOLLOWUP_HOURS, applyGrantCloseFix, grantRegistrants, openGrantFollowups, sendGrantReminders } from '../../services/grant-followup.service'
 import { zonedDay } from '../../../src/application/trainer/cohort-period'
 import { grantCallDueAt } from '../../../src/application/commerce/grant-landing'
 import { runJob } from '../../worker/jobs'
@@ -240,5 +240,31 @@ describe('⑤ تذكير قبل انتهاء المنحة', () => {
     const idle = await member()
     await runJob(prisma, 'grant_reminders', at(14.9))
     expect(await mails(idle.email)).toHaveLength(1)
+  })
+})
+
+describe('⑥ آخر يوم للمنحة 30 أكتوبر — بقرار صاحب المنصة، مرة واحدة', () => {
+  const closesAt = async () => (await prisma.grantCampaign.findUniqueOrThrow({ where: { slug: 'wajeez-members' }, select: { closesAt: true } })).closesAt?.toISOString() ?? null
+
+  it('⚠️ من نهاية 31 أكتوبر إلى 30 — بأثر مكتوب، ولا يمس تاريخا غيره أحد بعده', async () => {
+    const g = new GrantService(prisma)
+    await g.update({ closesAt: new Date(GRANT_CLOSE_FIX.from) }, ownerId)
+    expect(await applyGrantCloseFix(prisma)).toBe(true)
+    expect(await closesAt()).toBe(GRANT_CLOSE_FIX.to)
+    expect(GRANT_CLOSE_FIX.to, 'أول 31 أكتوبر بتوقيت عمان').toBe('2026-10-30T21:00:00.000Z')
+    expect(await prisma.auditEvent.count({ where: { action: 'coupon.grant_settings', actorId: null, reason: { contains: '30 أكتوبر' } } })).toBeGreaterThanOrEqual(1)
+    expect(await applyGrantCloseFix(prisma), 'وقع مرتين').toBe(false)
+
+    /* غيّرها صاحبُ المنصّة من شاشتها بعدُ — لا تُمسّ */
+    const other = '2026-11-05T21:00:00.000Z'
+    await g.update({ closesAt: new Date(other) }, ownerId)
+    expect(await applyGrantCloseFix(prisma)).toBe(false)
+    expect(await closesAt()).toBe(other)
+
+    /* والعاملُ يطبّقه قبل التذكير */
+    await g.update({ closesAt: new Date(GRANT_CLOSE_FIX.from) }, ownerId)
+    await runJob(prisma, 'grant_reminders')
+    expect(await closesAt()).toBe(GRANT_CLOSE_FIX.to)
+    await g.update({ closesAt: null }, ownerId)
   })
 })

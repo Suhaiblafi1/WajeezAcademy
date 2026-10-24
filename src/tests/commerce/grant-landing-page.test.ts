@@ -13,7 +13,7 @@ import { plainAr } from '@/application/text/plain-ar'
 import { auditActionAr } from '@/application/audit/labels'
 import {
   CAREER_LEVELS, GRANT_ACADEMY_LINE_AR, GRANT_CONSENT_AR, GRANT_GAINS_AR, GRANT_INTEREST_DOMAINS, GRANT_SUGGESTED_COURSES, WORK_FIELDS,
-  GRANT_VALUE_AR, campaignParams, campaignTag, grantCallDueAt, grantCountAr, grantCountdown, grantDaysLeftAr, grantSections, grantShareAr, leadProfileAr, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse, workFieldDomains,
+  GRANT_VALUE_AR, campaignParams, campaignTag, grantCallDueAt, grantCountAr, grantCountdown, grantDaysLeftAr, grantSections, grantShareAr, grantShareMailto, GRANT_SHARE_MIN, leadProfileAr, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse, workFieldDomains,
 } from '@/application/commerce/grant-landing'
 import { courseDomain } from '@/application/catalog/course-domain'
 import { zonedInstant } from '@/application/trainer/cohort-period'
@@ -183,16 +183,33 @@ describe('بعد النموذج', () => {
     expect(PAGE).toMatch(/<a href=\{`\/build\/\$\{encodeURIComponent\(x\.courseId\)\}`\} target="_blank"[^>]*>تفاصيل الدورة<\/a>/)
   })
 
-  it('⚠️ «أهد منحة لصديق» — رسالة جاهزة برابط المنحة ووسم قناتها، وواتساب من بابه الواحد', () => {
-    const m = grantShareAr('https://www.wajeezacademy.com', 60, '2026/10/31')
+  it('⚠️ «أهدها لثلاثة أصدقاء على الأقل» — رسالة جميلة جاهزة في واتساب والبريد، برابط المنحة ووسم قناتها', () => {
+    const m = grantShareAr('https://www.wajeezacademy.com', 60, '30 أكتوبر 2026')
+    expect(m.split('\n')[0]).toBe('أهديك منحة من أكاديمية وجيز 🎁')
+    expect(m).toContain('تغطي 60% من سعر دورات مباشرة على Zoom، مع مدربين وشهادة لكل دورة.')
+    expect(m).toContain('آخر يوم لها: 30 أكتوبر 2026')
     expect(m).toContain('https://www.wajeezacademy.com/grant?ch=share')
-    expect(m).toContain('بخصم 60%')
-    expect(m).toContain('قبل 2026/10/31')
-    expect(grantShareAr('https://x.co', 60, null)).not.toContain('قبل')
+    expect(grantShareAr('https://x.co', 60, null)).not.toContain('آخر يوم')
+    for (const line of m.split('\n')) expect(plainAr(line), line).toBe(line)
+    const mail = grantShareMailto('https://www.wajeezacademy.com', 60, '30 أكتوبر 2026')
+    expect(mail.startsWith('mailto:?subject=')).toBe(true)
+    expect(decodeURIComponent(mail.split('subject=')[1].split('&')[0])).toBe('أهديك منحة من أكاديمية وجيز')
+    expect(decodeURIComponent(mail.split('body=')[1])).toContain(m)
     expect(campaignParams('?ch=share').channel, 'وسم القناة لا يقرأ').toBe('share')
-    expect(PAGE).toMatch(/href=\{waShare\(grantShareAr\(window\.location\.origin, pct, lastDay\)\)\}/)
+    expect(GRANT_SHARE_MIN).toBe(3)
+    /* آخرُ ما في لوح الدفع — بعد الزرّ والعدّاد */
+    expect(PAGE).toMatch(/const shareText = grantShareAr\(window\.location\.origin, pct, lastDayLong\);/)
+    expect(PAGE).toMatch(/href=\{waShare\(shareText\)\}/)
+    expect(PAGE).toMatch(/href=\{grantShareMailto\(window\.location\.origin, pct, lastDayLong\)\}/)
     expect(PAGE).toMatch(/import \{ waShare \} from "@\/application\/site\/whatsapp";/)
-    expect(PAGE).toContain('أهد منحة لصديق')
+    expect(PAGE).toContain('أهدها لثلاثة أصدقاء على الأقل')
+    const panel = PAGE.slice(PAGE.indexOf('<Card tone="solid" className="sticky'))
+    const at = (t: string) => panel.indexOf(t)
+    expect(at('احصل على المنحة'), 'الزر').toBeGreaterThan(-1)
+    expect(at('<GrantCountdown closesAt={c.closesAt} compact'), 'العداد تحت الزر').toBeGreaterThan(at('احصل على المنحة'))
+    expect(at('أهدها لثلاثة أصدقاء على الأقل'), 'الهدية آخرا').toBeGreaterThan(at('<GrantCountdown closesAt={c.closesAt} compact'))
+    expect(at('أهدها لثلاثة أصدقاء على الأقل')).toBeLessThan(panel.indexOf('</Card>'))
+    expect(PAGE, 'عادت «ادفع الآن»').not.toContain('ادفع الآن')
     expect(code('src/pages/admin/GrantResults.tsx'), 'نتائج الحملة تسمي قناتها').toMatch(/share: "من صديق"/)
   })
 
@@ -294,7 +311,7 @@ describe('النصوص', () => {
     ]
     const onPage = ['احجز منحتي الآن', 'الاسم الكامل', 'رقم الواتساب', 'البريد الإلكتروني', 'مجال عملك', 'مستواك الوظيفي', 'ما الذي تريد تطويره؟',
       'سؤالان اختياريان لنرتب لك الدورات', 'كود منحتك', 'اختر دوراتك',
-      'كل الدورات المتاحة', 'كل الدورات مباشرة على Zoom', 'قبل المنحة', 'بعد المنحة', 'اخترناها لك', 'حددنا لك دورات مسار', 'تناسبك.', 'أو مسار', 'بدّل إليه', 'يناسب ما تريد تطويره', 'لست متأكدا؟ تواصل مع مستشار', 'اطلب مستشارا', 'ادفع الآن']
+      'كل الدورات المتاحة', 'كل الدورات مباشرة على Zoom', 'قبل المنحة', 'بعد المنحة', 'اخترناها لك', 'حددنا لك دورات مسار', 'تناسبك.', 'أو مسار', 'بدّل إليه', 'يناسب ما تريد تطويره', 'لست متأكدا؟ تواصل مع مستشار', 'اطلب مستشارا', 'احصل على المنحة', 'أهدها لثلاثة أصدقاء على الأقل', 'تنتهي المنحة بعد', 'آخر يوم لاستعمال المنحة:', 'دورات أخرى حسب المجال']
     for (const t of [...data, ...onPage]) expect(t).toBe(plainAr(t))
     for (const t of onPage) expect(PAGE).toContain(t)
     expect(auditActionAr('coupon.grant_apply')).not.toBe('coupon.grant_apply')

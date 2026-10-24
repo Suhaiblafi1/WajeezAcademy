@@ -195,9 +195,29 @@ export function seatsLeftAr(n: number | null | undefined): string | null {
   return n === 1 ? 'بقي مقعد واحد' : n === 2 ? 'بقي مقعدان' : `بقي ${n} مقاعد`
 }
 
-/** رسالةُ «أهد منحة لصديق» — برابط المنحة ووسم قناتها */
+/* ═══ «أهدها لثلاثة أصدقاء على الأقل» — واتساب والبريد (٢٤ أكتوبر ٢٠٢٦) ═══
+
+   قال صاحبُ المنصّة: «آخرُ شيءٍ أهدِ لصديقٍ بحدٍّ أدنى لثلاثة أشخاص، وأعطهم رسالةً جميلةً تظهر تلقائيّا عندما يستعملون
+   واتساب لإرسالها لأصدقائهم، أو الإيميل». فالدعوةُ تطلب ثلاثةً ولا تُلزم بهم — لا يُعرف من أُرسلت إليه، ولا يُحجب شيءٌ
+   عمّن لم يرسل (قرارُه: «لا إجبار على فعل»). والرسالةُ واحدةٌ في البابين، برابط المنحة ووسم قناتها (`?ch=share`). */
+
+/** كم صديقا تدعو إليهم الصفحة */
+export const GRANT_SHARE_MIN = 3
+
+/** نصُّ الهديّة — سطورٌ قصيرة: ما هي، وما فيها، وآخرُ يوم، والرابط */
 export function grantShareAr(siteUrl: string, percentOff: number, lastDay: string | null): string {
-  return `حصلت على منحة أعضاء وجيز: دورات مباشرة على Zoom بخصم ${percentOff}%. احجز منحتك${lastDay ? ` قبل ${lastDay}` : ''}: ${siteUrl}/grant?ch=share`
+  return [
+    'أهديك منحة من أكاديمية وجيز 🎁',
+    `تغطي ${percentOff}% من سعر دورات مباشرة على Zoom، مع مدربين وشهادة لكل دورة.`,
+    ...(lastDay ? [`آخر يوم لها: ${lastDay}`] : []),
+    `احجز منحتك من هنا: ${siteUrl}/grant?ch=share`,
+  ].join('\n')
+}
+
+/** الهديّةُ بالبريد — رابطٌ يفتح بريدَه برسالةٍ جاهزةٍ يختار لمن يرسلها */
+export function grantShareMailto(siteUrl: string, percentOff: number, lastDay: string | null): string {
+  const body = ['مرحبا،', '', grantShareAr(siteUrl, percentOff, lastDay), '', 'أتمنى أن تفيدك.'].join('\n')
+  return `mailto:?subject=${encodeURIComponent('أهديك منحة من أكاديمية وجيز')}&body=${encodeURIComponent(body)}`
 }
 
 /** ما يريد تطويرَه أوّلا — ترتيبٌ ثابت: ما في اهتمامه قبل غيره، وكلٌّ على ترتيبه */
