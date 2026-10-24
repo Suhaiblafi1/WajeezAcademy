@@ -685,7 +685,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                   value={promoInput}
                   onChange={(e) => { setPromoInput(e.target.value.toUpperCase()); setPendingCode(null); setPromoRefused(null); }}
                   onKeyDown={(e) => { if (e.key === "Enter") void applyPromo(); }}
-                  placeholder={`كود الخصم — مثال ${FIRST_TIME_PROMO.code}`}
+                  placeholder="كود الخصم"
                   aria-label="كود الخصم"
                   dir="ltr"
                   maxLength={24}
@@ -718,15 +718,11 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                 <summary className="cursor-pointer list-none text-fine font-bold text-muted-foreground underline underline-offset-4 transition group-hover:text-teal-light-ink [&::-webkit-details-marker]:hidden">
                   اطّلع على الفئات وتحقّق من أهليتك
                 </summary>
-                {/* خصمُ أوّل شراء أوّلَ القائمة وكودُه معلَنٌ بجانبه: لكلّ أحدٍ
-                    في أوّل مرّة، فلا إثباتَ له ولا سرَّ فيه. */}
+                {/* خصمُ أوّل شراء أوّلَ القائمة — بلا كوده: قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦) «سرّيٌّ نعطيه
+                    فقط لمن نريد»، نسخا لإعلانه هنا لكلّ أحد. */}
                 <ul className="mt-2 space-y-1.5 border-r-2 border-white/10 ps-3">
                   <li className="flex flex-wrap items-center gap-x-2 gap-y-1 text-read leading-5">
                     <span className="font-bold text-foreground">خصم أول عملية شراء — {FIRST_TIME_PROMO.percentOff}٪</span>
-                    <code dir="ltr" className="rounded-md border border-gold/40 bg-gold/10 px-1.5 py-0.5 font-mono text-fine font-black text-gold-ink">
-                      {FIRST_TIME_PROMO.code}
-                    </code>
-                    <span className="text-muted-foreground">· بلا إثبات</span>
                   </li>
                   {DISCOUNT_CATEGORIES.map((cat) => (
                     <li key={cat.id} className="text-read leading-5 text-muted-foreground">

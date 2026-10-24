@@ -15,7 +15,7 @@
        لأنّ مجموعا ناقصا يُقرأ كاملا. */
 
 import { describe, expect, it } from 'vitest'
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { pathwayOffer, formatOfferPrice, PATHWAY_BUNDLE_MAX_PCT } from '../../application/commerce/pathway-offer'
 import { FIRST_TIME_PROMO } from '../../application/commerce/first-time-promo'
@@ -196,14 +196,24 @@ describe('بوّابة النتيجة وصندوق البريد — كلاهما
      إلى الإدارة صارت تحتاج `useWhatsAppNumbers()` في كلتَيهما — فجُمعت في
      `DiscountProofLink`. فالحارسُ ينتقل معها: يبقى على أنّ **كلَّ صفحةٍ
      تعرضها**، ولا يشترط أن تكون مكتوبةً فيها. */
-  it('كود أوّل الشراء معلن في بطاقتي الفئات — لا مخفيّا وراء بريد', () => {
+  /* ٢٤ أكتوبر ٢٠٢٦: وكودُ أوّل الشراء لا يُعلَن في شاشةٍ أصلا — قرارُ صاحب المنصّة: «سرّيٌّ نعطيه فقط لمن نريد»، واختار
+     إخفاءه في كلّ موضع. فيبقى سطرُ العرض بنسبته في بطاقتي الفئات، والكودُ لا يُكتب في صفحةٍ ولا مكوّنٍ ولا مثالِ خانة.
+     والفحصُ على الشيفرة بلا تعليقاتها: التعليقُ يروي القرارَ ولا يعرض شيئا. */
+  it('كود أوّل الشراء لا تعرضه شاشة — والعرض بنسبته باق في بطاقتي الفئات', () => {
     const link = readFileSync(join(process.cwd(), 'src/components/DiscountProofLink.tsx'), 'utf8')
     expect(link, 'الجملة الجديدة').toMatch(/لمعرفة الكود للطلبة وموظفي الحكومة/)
     for (const f of ['src/pages/Pathway.tsx', 'src/pages/CoursePath.tsx']) {
       const src = readFileSync(join(process.cwd(), f), 'utf8')
-      expect(src, f).toMatch(/FIRST_TIME_PROMO\.code/)
+      expect(src, `${f}: سطر العرض بنسبته`).toMatch(/خصم أول عملية شراء — \{FIRST_TIME_PROMO\.percentOff\}٪/)
       expect(src, `${f}: لا تعرض رابط إثبات الخصم`).toMatch(/<DiscountProofLink\s*\/>/)
     }
+    const ui = (dir: string): string[] => readdirSync(join(process.cwd(), dir), { withFileTypes: true }).flatMap((e) =>
+      e.isDirectory() ? ui(`${dir}/${e.name}`) : /\.tsx?$/.test(e.name) ? [`${dir}/${e.name}`] : [])
+    const shown = [...ui('src/pages'), ...ui('src/components')].filter((f) => {
+      const src = readFileSync(join(process.cwd(), f), 'utf8').replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '')
+      return /FIRST_TIME_PROMO\.code|WA2026/.test(src)
+    })
+    expect(shown, 'شاشة تعرض كود أول الشراء').toEqual([])
   })
 
   it('الكود نفسه مصدر واحد — لا رقم مكرّر في المكوّن', () => {
