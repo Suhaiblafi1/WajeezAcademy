@@ -160,6 +160,12 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
     return rows.map((r) => ({ ...r, cohort: { ...r.cohort } }))
   })
 
+  /* لقاءاتي الآتية — يُقابَل بها ما يختاره من شعبٍ قبل أن يدفع (`cohort-overlap.ts`) */
+  app.get('/api/learner/my-sessions', {
+    preHandler: requirePermission('learner.portal'),
+    schema: { tags: ['learner-portal'], summary: 'لقاءات شعبي الآتية — ليقال لي إن اخترت شعبة تتعارض معها' },
+  }, async (req) => ({ cohorts: await enrollments.myUpcomingSessions(req.auth!.userId) }))
+
   /* مواعيدي — والبياناتُ موجودةٌ منذ زمنٍ ولا شاشةَ تجمعها بالوقت:
      من له ثلاثةُ تسجيلاتٍ يفتح كلَّ واحدٍ على حدةٍ ليرى واجباته. */
   app.get('/api/learner/deadlines', {

@@ -1,6 +1,7 @@
 /* خدمة التسجيل — إلحاق المتعلمين بالشعب مع حراسة السعة والوصول.
    القاعدة الذهبية: لا يرى المتعلم محتوى شعبة غير مسجل فيها. */
 
+import { courseTitleAr } from '../../src/application/catalog/course-title'
 import type { PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { cohortLeadTrainer } from './cohort-lead'
@@ -631,6 +632,33 @@ export class EnrollmentService {
       },
       orderBy: { createdAt: 'asc' },
     })
+  }
+
+  /* ═══ لقاءاتي الآتية — ليُقال للطالب إن اختار شعبةً تقع عليها (٢٤ أكتوبر ٢٠٢٦، `cohort-overlap.ts`) ═══
+     ما سجّل فيه ولم ينسحب منه، في شعبةٍ لم تنتهِ ولم تُلغَ — لقاءاتُها المعتمدةُ الآتيةُ وحدَها، بموعدها لا أكثر. */
+  async myUpcomingSessions(userId: string, now = new Date()) {
+    const rows = await this.prisma.enrollment.findMany({
+      where: { userId, status: { in: ['enrolled', 'waitlisted'] }, cohort: { status: { notIn: ['completed', 'cancelled'] } } },
+      select: {
+        cohort: {
+          select: {
+            id: true, courseId: true,
+            course: { select: { renamedTitleAr: true, versions: { orderBy: { version: 'desc' }, take: 1, select: { titleAr: true } } } },
+            sessions: {
+              where: { startsAt: { gt: now }, status: { not: 'cancelled' }, placeholder: false, approvalState: 'approved' },
+              orderBy: { startsAt: 'asc' },
+              select: { startsAt: true, endsAt: true },
+            },
+          },
+        },
+      },
+    })
+    return rows.map(({ cohort: c }) => ({
+      cohortId: c.id,
+      courseId: c.courseId,
+      titleAr: courseTitleAr(c.course.renamedTitleAr ?? c.course.versions[0]?.titleAr ?? c.courseId),
+      sessions: c.sessions.map((x) => ({ startsAt: x.startsAt.toISOString(), endsAt: x.endsAt?.toISOString() ?? null })),
+    }))
   }
 
   /** شعب المدرب — لا يرى شعب غيره أبدا */

@@ -40,7 +40,7 @@
    المتصفّح ليس دليلا. */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { CalendarDays, ChevronDown, CreditCard, Gift, Info, Loader2, Route as RouteIcon, Tag } from "lucide-react";
+import { CalendarDays, ChevronDown, CreditCard, Gift, Info, Loader2, Route as RouteIcon, Tag, TriangleAlert } from "lucide-react";
 import Modal from "@/components/Modal";
 import { couponFieldCls } from "@/components/FormKit";
 import VerifyEmailNotice from "@/components/VerifyEmailNotice";
@@ -51,6 +51,8 @@ import { apiPost, ApiError } from "@/services/api";
 import { readReferral } from "@/application/commerce/referral";
 import { clearPendingCheckout } from "@/services/pending-checkout";
 import { useCourseCohorts, type CohortOption } from "@/services/cohort-prices";
+import { useMySessions } from "@/services/my-sessions";
+import { clashWarnAr, clashesOf, freeAlternative, type TimedCohort } from "@/application/learning/cohort-overlap";
 import { FIRST_TIME_PROMO } from "@/application/commerce/first-time-promo";
 import { GRANT_ERROR_CODES, MEMBER_GRANT_NAME_AR } from "@/application/commerce/grant";
 import { PATHWAY_ONLY_PERKS } from "@/data/pathway-perks";
@@ -247,6 +249,17 @@ export default function BuyPanel({
       .map(({ line }) => chosen[line.courseId]).filter(Boolean),
     [buyable, chosen, giftHeld, giftCourseId],
   );
+
+  /* ما يقابَل به كلُّ بندٍ ليُقال التعارض: شعبُ البنود الأخرى كما اختارها، ولقاءاتُه ممّا سجّل فيه */
+  const mine = useMySessions();
+  const timedOf = (line: BuyLine, o: CohortOption): TimedCohort => ({ cohortId: o.id, courseId: line.courseId, titleAr: line.name, sessions: o.sessions });
+  const busyBesides = (courseId: string): TimedCohort[] => [
+    ...mine,
+    ...buyable.filter(({ line }) => line.courseId !== courseId).flatMap(({ line, options }) => {
+      const o = options.find((x) => x.id === chosen[line.courseId]) ?? options[0];
+      return o ? [timedOf(line, o)] : [];
+    }),
+  ];
 
   /* خصمُ الخطّة كاملةً — بعدد دوراتها المدفوعة (بلا الهديّة)، يُقال لمن يشتري بعضَها */
   const planPct = buildDiscountPct(lines.filter((l) => l.courseId !== giftCourseId).length);
@@ -490,6 +503,28 @@ export default function BuyPanel({
                     {/* ومواعيدُ لقاءاتها قبل الدفع لا بعده — مطويّةً، فاللوحُ قائمةُ
                         بنودٍ ومجموع. والمستبعَدُ لا تُعرض لقاءاتُه: لن يُشترى. */}
                     {!out && <LiveSessionDates key={picked.id} sessions={picked.sessions} />}
+                    {/* ═══ وشعبةٌ تقع لقاءاتُها على أخرى في الطلب أو ممّا سجّل فيه — قبل الدفع (٢٤ أكتوبر ٢٠٢٦) ═══
+                        يُقال مع أيّها وكم لقاءً، ويُدلّ على موعدٍ لا يتعارض إن وُجد. ولا يمنع الدفع (`cohort-overlap.ts`) */}
+                    {!out && (() => {
+                      const clashes = clashesOf(timedOf(line, picked), busyBesides(line.courseId));
+                      if (clashes.length === 0) return null;
+                      const alt = freeAlternative(options.map((o) => timedOf(line, o)), busyBesides(line.courseId));
+                      const altOption = alt ? options.find((o) => o.id === alt.cohortId) : undefined;
+                      return (
+                        <div className="mt-2 grid gap-1.5">
+                          <p className="flex items-start gap-1.5 text-read font-bold leading-6 text-gold-ink">
+                            <TriangleAlert className="mt-1 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                            <span>{clashWarnAr(clashes, Boolean(altOption))}</span>
+                          </p>
+                          {altOption && (
+                            <button type="button" onClick={() => setChosen({ ...chosen, [line.courseId]: altOption.id })}
+                              className="w-fit text-read font-bold text-teal-light-ink underline-offset-4 hover:underline">
+                              بدّل إلى {startsLabel(altOption)}
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </li>
                 );
               })}

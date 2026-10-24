@@ -25,13 +25,15 @@
 
 import { useId, useState, type MouseEvent } from "react";
 import { Link } from "react-router";
-import { CalendarDays, Check, ChevronDown, ChevronLeft, Users } from "lucide-react";
+import { CalendarDays, Check, ChevronDown, ChevronLeft, TriangleAlert, Users } from "lucide-react";
 import type { CohortOption, CohortTrainer } from "@/services/cohort-prices";
 import { daysLabelAr, untilLabelAr } from "@/utils/format";
 import { cohortDayAr } from "@/application/learning/cohort-gate";
 import { initialsOf } from "@/application/text/initials";
 import LiveSessionDates from "@/components/LiveSessionDates";
 import { Inset } from "@/components/ui/Surface";
+import { clashLineAr, clashesOf, freeAlternative, type TimedCohort } from "@/application/learning/cohort-overlap";
+import { useMySessions } from "@/services/my-sessions";
 
 /** ما يقال تحت دورةٍ لا شعبةَ لها — قرارُ صاحب المنصّة (١٩ أكتوبر ٢٠٢٦)، وشرحُه عند موضعه أدناه */
 const NO_COHORT_AR = "لا شعبة لها بعد";
@@ -136,9 +138,17 @@ export default function CohortPicker({
   compact?: boolean;
   /** لها شعبةٌ معروضةٌ لا تُلتحق — اكتملت أو بدأت — فلا يقال «لا شعبة لها بعد» */
   running?: boolean;
+  /** شعبٌ اختارها معها في الطلب نفسِه — دوراتُ مسارٍ يشتريه — فيُقال إن وقعت هذه عليها */
+  others?: readonly TimedCohort[];
 }) {
   const [showAll, setShowAll] = useState(false);
   const group = useId();
+  /* ═══ وشعبةٌ تقع لقاءاتُها على لقاءاتٍ أخرى له — يُقال قبل أن يدفع (٢٤ أكتوبر ٢٠٢٦) ═══
+     ممّا سجّل فيه من قبل، وممّا اختاره معها. والتنبيهُ لا يمنع، ويدلّ على موعدٍ لا يتعارض إن وُجد
+     (`application/learning/cohort-overlap.ts`). */
+  const mine = useMySessions();
+  const busy = [...mine, ...(others ?? [])];
+  const timed = (c: CohortOption): TimedCohort => ({ cohortId: c.id, courseId: c.courseId, titleAr: c.title, sessions: c.sessions });
 
   /* ═══ لا شعبة = «لا شعبة لها بعد» — لا موسمٌ ولا «التسجيل مفتوح» (١٩ أكتوبر ٢٠٢٦) ═══
 
@@ -192,6 +202,12 @@ export default function CohortPicker({
                 {c.title && <span className="block truncate text-fine leading-4 text-muted-foreground">{c.title}</span>}
                 {/* تحت الموعد لا بجانب الاسم — على الهاتف كانت تقصّ اسمَ المدرّب */}
                 <Seats c={c} />
+                {clashesOf(timed(c), busy).slice(0, 2).map((x) => (
+                  <span key={x.with.cohortId} className="flex items-start gap-1.5 text-fine font-bold leading-5 text-gold-ink">
+                    <TriangleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                    {clashLineAr(x)}
+                  </span>
+                ))}
               </span>
             </>
           );
@@ -223,6 +239,16 @@ export default function CohortPicker({
               )}
               {/* ونبذةُ خطّتها ومواعيدُ لقاءاتها — للمختارة وحدها، داخل صندوقها: من بدّل الشعبة
                   رأى ما اختاره لا ما كان قبله. والمفتاحُ يعيد حالَ الطيّ مع كلّ شعبة. */}
+              {/* والمختارةُ تتعارض ولدورتها موعدٌ لا يتعارض — يُدلّ عليه بنقرة، والقرارُ له */}
+              {on && clashesOf(timed(c), busy).length > 0 && (() => {
+                const alt = freeAlternative(cohorts.map(timed), busy);
+                return alt && (
+                  <button type="button" onClick={() => onSelect(alt.cohortId)}
+                    className="mt-2 text-read font-bold text-teal-light-ink underline-offset-4 hover:underline">
+                    اختر موعدا لا يتعارض: {cohortDayAr(cohorts.find((o) => o.id === alt.cohortId)?.startsAt ?? null)}
+                  </button>
+                );
+              })()}
               {on && (selected.summaryAr || selected.sessions.length > 0) && (
                 <div className="mt-3 border-t border-white/10 pt-1">
                   {/* «سطران يقرؤهما المتعلّم قبل أن يدفع» (١٠ أكتوبر ٢٠٢٦) */}
