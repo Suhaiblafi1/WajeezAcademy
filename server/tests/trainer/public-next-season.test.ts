@@ -3,7 +3,8 @@
    «لماذا تظهر كلُّ الدورات للمدرّب وليس للموسم القادم؟» (صاحب المنصّة).
    ① المفتوحةُ للتسجيل والممتلئةُ تُعرض تحت موسمها، والأقربُ أوّلا.
    ② ولا تُعرض: الجاريةُ والمنتهيةُ والمسوّدة، ولا إسنادٌ بلا شعبةٍ تُباع، ولا مسارٌ منشورٌ بلا موسم.
-   ③ ومسارُه المنشورُ لموسمٍ مسمّى يُعرض في موسمه. */
+   ③ ومسارُه المنشورُ لموسمٍ مسمّى يُعرض في موسمه.
+   ④ والجاريةُ التي لم تبدأ تُعرض — أُجريت بضغطةٍ قبل أوانها، فالحكمُ بتاريخها لا بوسمها (٢٤ أكتوبر ٢٠٢٦). */
 
 import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
@@ -23,7 +24,7 @@ beforeAll(async () => {
   await setupTestDb()
   prisma = await testPrisma()
   review = new TrainerReviewService(prisma)
-  c = (await prisma.course.findMany({ where: { status: 'published' }, take: 9, orderBy: { id: 'asc' }, select: { id: true } })).map((x) => x.id)
+  c = (await prisma.course.findMany({ where: { status: 'published' }, take: 10, orderBy: { id: 'asc' }, select: { id: true } })).map((x) => x.id)
   profileId = (await review.createTrainerDirectly(ACTOR, { fullName: 'مدربة المواسم', email: 'next-season@test.local' })).profileId
   await review.approvePublicVisibility(profileId, ACTOR)
 
@@ -39,7 +40,10 @@ beforeAll(async () => {
   }
   await lead(0, 'open', winter.id, '2096-11-05')
   await lead(1, 'full', spring.id, '2097-02-10')
-  await lead(2, 'active', winter.id, '2096-11-03')
+  /* جاريةٌ بدأت فعلا — والتاريخُ ماضٍ وإن قال صفُّ فصلها الشتاء */
+  await lead(2, 'active', winter.id, '2026-01-03')
+  /* وجاريةٌ بالوسم وأوّلُ يومها في الربيع */
+  await lead(9, 'active', spring.id, '2097-02-12')
   await lead(3, 'completed', winter.id, '2096-11-02')
   await lead(4, 'draft', winter.id, '2096-11-04')
   /* وصفُّ فصلها يقول الشتاء ومواعيدُها في الربيع — يراها المشتري في الربيع */
@@ -70,6 +74,11 @@ describe('بطاقة المدرب العامة — الموسم القادم و�
     const o = (await card()).offer
     expect(o.find((g) => g.termAr === 'موسم الربيع 2097')?.courseIds, 'قرئ الموسم من صف الفصل').toContain(c[8])
     expect(o[0]!.courseIds).not.toContain(c[8])
+  })
+
+  it('⚠️ ④ والجارية التي لم تبدأ تعرض في موسمها', async () => {
+    const o = (await card()).offer
+    expect(o.find((g) => g.termAr === 'موسم الربيع 2097')?.courseIds, 'أسقطت البطاقة جارية لم تبدأ').toContain(c[9])
   })
 
   it('③ ومساره المنشور لموسم مسمى في موسمه', async () => {

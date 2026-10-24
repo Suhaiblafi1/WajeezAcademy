@@ -73,6 +73,7 @@ import { cleanProposals, readProposals } from '../../src/application/trainer/tea
 import { pendingKind } from '../../src/application/trainer/pending-kind'
 import { profileTrailOf, TRAIL_ACTIONS, type CardCohort } from '../../src/application/trainer/trainer-card'
 import { cohortSeason, groupBySeason } from '../../src/application/trainer/next-season'
+import { notStartedCohortWhere } from './cohort-start'
 import type { PrepTally } from '../../src/application/trainer/prep-tally'
 import type { PrepCourse } from './trainer-prep.service'
 import {
@@ -6585,7 +6586,12 @@ export class TrainerReviewService {
        للتسجيل أو الممتلئة، ومسارَه المنشورَ لموسمٍ مسمّى — والبوّابةُ التي تُظهره باقيةٌ كما هي.
        والعلّةُ في `src/application/trainer/next-season.ts`. */
     const now = new Date()
-    const onSale: Prisma.CohortWhereInput = { status: { in: ['open', 'full'] } }
+    /* ═══ والجاريةُ التي لم تبدأ تُباع (٢٤ أكتوبر ٢٠٢٦) ═══
+       «لماذا لا تظهر شعبته هنا؟» (صاحب المنصّة): شعبةٌ أُجريت بضغطةٍ قبل أوّل لقاءٍ فيها، فأظهرته البوّابةُ
+       وأسقطتها البطاقة. فالحكمُ بالتاريخ لا بالوسم — والعلّةُ في `cohort-start.ts`. */
+    const onSale: Prisma.CohortWhereInput = {
+      OR: [{ status: { in: ['open', 'full'] } }, { status: 'active', ...notStartedCohortWhere(now) }],
+    }
     /* وموسمُ الشعبة من أوّل لقاءٍ قائمٍ فيها — ما يراه المشتري (`cohortSeason`) */
     const seasonOf = {
       startsAt: true, term: { select: { year: true, season: true } },
