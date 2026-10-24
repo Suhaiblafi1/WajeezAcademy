@@ -201,3 +201,25 @@ export async function sendGrantReminders(prisma: PrismaClient, now = new Date())
   }
   return { sent, stage: due.stage, mailOff: false }
 }
+
+/* ═══ آخرُ يومٍ للمنحة ٣٠ أكتوبر — بقرار صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦) ═══
+
+   قال: «لا تنسَ: مدّةُ الانتهاء تكون ٣٠ أكتوبر لاستغلال المنحة». وكانت نهايتُها المحفوظةُ أوّلَ ١ نوفمبر بتوقيت عمّان
+   (آخرُ يومٍ ٣١ أكتوبر)، فتصير أوّلَ ٣١ أكتوبر — كما تحفظها شاشتُها (`grantClosesAt`). وتذكيرا ما قبل الانتهاء يتبعانها.
+
+   ولا يقع إلّا مرّة: يُشترط أن تكون النهايةُ ما زالت التي قبل القرار. فإن غيّرها أحدٌ من شاشتها بعدُ لم تُمسّ. */
+export const GRANT_CLOSE_FIX = { from: '2026-10-31T21:00:00.000Z', to: '2026-10-30T21:00:00.000Z' } as const
+
+export async function applyGrantCloseFix(prisma: PrismaClient, fix: { from: string; to: string } = GRANT_CLOSE_FIX): Promise<boolean> {
+  const c = await prisma.grantCampaign.findUnique({ where: { slug: MEMBER_GRANT_SLUG }, select: { id: true, closesAt: true } })
+  if (!c?.closesAt || c.closesAt.toISOString() !== fix.from) return false
+  await prisma.$transaction(async (tx) => {
+    await tx.grantCampaign.update({ where: { id: c.id }, data: { closesAt: new Date(fix.to) } })
+    await recordAudit(tx, {
+      actorId: null, action: 'coupon.grant_settings', entityType: 'grant_campaign', entityId: c.id,
+      before: { closesAt: fix.from }, after: { closesAt: fix.to },
+      reason: 'قرار صاحب المنصة (24 أكتوبر 2026): آخر يوم للمنحة 30 أكتوبر',
+    })
+  })
+  return true
+}

@@ -41,8 +41,21 @@ export function campaignParams(search: string): { channel: string | null; wave: 
   return { channel: campaignTag(q.get('ch')), wave: campaignTag(q.get('w')) }
 }
 
-/** ما توفّره المنحةُ على مسار — يُقال للزائر بالمال لا بالنسبة: «تدفع كذا، ووجيز تتحمّل كذا» */
-export const grantSavingAr = (pay: string, covers: string) => `تدفع ${pay} فقط، ووجيز تتحمل ${covers}`
+/* ═══ سطرُ السعر فوق زرّ الدفع (٢٤ أكتوبر ٢٠٢٦) ═══
+
+   كان «تدفع كذا فقط، ووجيز تتحمّل كذا»، فقال صاحبُ المنصّة: «غيرُ تسويقيّ». وخُيّر بين أربعة، فاختار أن يبدأ بما
+   يكسبه — «لكن بدلَ "وفّرت": "قيمة المنحة"». فالكبيرُ «قيمة المنحة $321.00»، وتحته صغيرا «4 دورات بـ$214.00 بدل
+   $535.00». والمبالغُ تُعزَل في الصفحة (`bdi`) فلا ينقلب «$321.00» إلى «321.00$» آخرَ السطر. */
+
+/** عنوانُ السطر الكبير — يتبعه المبلغ */
+export const GRANT_VALUE_AR = 'قيمة المنحة'
+
+/** «دورة واحدة» و«دورتان» و«4 دورات» و«11 دورة» — العددُ مع معدوده */
+export function grantCountAr(n: number): string {
+  if (n === 1) return 'دورة واحدة'
+  if (n === 2) return 'دورتان'
+  return n >= 3 && n <= 10 ? `${n} دورات` : `${n} دورة`
+}
 
 /** رسالةُ متابعة من عبّأ النموذج ولم يشترِ — تُفتح في واتساب جاهزةً ويرسلها فريقُ الأكاديميّة */
 export const grantFollowupAr = (name: string) =>
@@ -182,9 +195,29 @@ export function seatsLeftAr(n: number | null | undefined): string | null {
   return n === 1 ? 'بقي مقعد واحد' : n === 2 ? 'بقي مقعدان' : `بقي ${n} مقاعد`
 }
 
-/** رسالةُ «أهد منحة لصديق» — برابط المنحة ووسم قناتها */
+/* ═══ «أهدها لثلاثة أصدقاء على الأقل» — واتساب والبريد (٢٤ أكتوبر ٢٠٢٦) ═══
+
+   قال صاحبُ المنصّة: «آخرُ شيءٍ أهدِ لصديقٍ بحدٍّ أدنى لثلاثة أشخاص، وأعطهم رسالةً جميلةً تظهر تلقائيّا عندما يستعملون
+   واتساب لإرسالها لأصدقائهم، أو الإيميل». فالدعوةُ تطلب ثلاثةً ولا تُلزم بهم — لا يُعرف من أُرسلت إليه، ولا يُحجب شيءٌ
+   عمّن لم يرسل (قرارُه: «لا إجبار على فعل»). والرسالةُ واحدةٌ في البابين، برابط المنحة ووسم قناتها (`?ch=share`). */
+
+/** كم صديقا تدعو إليهم الصفحة */
+export const GRANT_SHARE_MIN = 3
+
+/** نصُّ الهديّة — سطورٌ قصيرة: ما هي، وما فيها، وآخرُ يوم، والرابط */
 export function grantShareAr(siteUrl: string, percentOff: number, lastDay: string | null): string {
-  return `حصلت على منحة أعضاء وجيز: دورات مباشرة على Zoom بخصم ${percentOff}%. احجز منحتك${lastDay ? ` قبل ${lastDay}` : ''}: ${siteUrl}/grant?ch=share`
+  return [
+    'أهديك منحة من أكاديمية وجيز 🎁',
+    `تغطي ${percentOff}% من سعر دورات مباشرة على Zoom، مع مدربين وشهادة لكل دورة.`,
+    ...(lastDay ? [`آخر يوم لها: ${lastDay}`] : []),
+    `احجز منحتك من هنا: ${siteUrl}/grant?ch=share`,
+  ].join('\n')
+}
+
+/** الهديّةُ بالبريد — رابطٌ يفتح بريدَه برسالةٍ جاهزةٍ يختار لمن يرسلها */
+export function grantShareMailto(siteUrl: string, percentOff: number, lastDay: string | null): string {
+  const body = ['مرحبا،', '', grantShareAr(siteUrl, percentOff, lastDay), '', 'أتمنى أن تفيدك.'].join('\n')
+  return `mailto:?subject=${encodeURIComponent('أهديك منحة من أكاديمية وجيز')}&body=${encodeURIComponent(body)}`
 }
 
 /** ما يريد تطويرَه أوّلا — ترتيبٌ ثابت: ما في اهتمامه قبل غيره، وكلٌّ على ترتيبه */
@@ -235,4 +268,38 @@ export function grantCallDueAt(formAt: Date, now: Date): Date {
   const [y, m, d] = day.split('-').map(Number)
   const morning = hour < GRANT_CALL_WINDOW[0] ? day : new Date(Date.UTC(y, m - 1, d + 1)).toISOString().slice(0, 10)
   return zonedInstant(morning, [GRANT_CALL_WINDOW[0] + 1, 0, 0, 0])
+}
+
+/* ═══ الدوراتُ: ما اخترناه له فوق، والباقي أقسامٌ مطويّةٌ بمجالها (٢٤ أكتوبر ٢٠٢٦) ═══
+
+   قال صاحبُ المنصّة: «الدوراتُ كثيرةٌ وتحيّر الشخص». وخُيّر بين أربعة (مختاراتُه وأقسامٌ مطويّة، أو بطاقاتُ المسارات
+   أوّلا، أو تصفيةٌ بالمجال، أو ثمانٍ وزرُّ «المزيد») — فاختار **مختاراتِه فوق، والباقي أقسامًا مطويّةً بمجالها**: يرى
+   أربعَ بطاقاتٍ وستّةَ أسطرٍ بدلَ خمسٍ وعشرين بطاقة، ويبقى الاختيارُ له. */
+
+/** الدوراتُ الباقيةُ أقساما بمجالها — ما يريد تطويرَه أوّلا، ثمّ الأكثرُ دورات، و«أخرى» آخرا */
+export function grantSections<T extends { domainAr?: string | null }>(
+  courses: readonly T[], interests: readonly string[], other: string,
+): { domain: string; items: T[] }[] {
+  const by = new Map<string, T[]>()
+  for (const c of courses) {
+    const d = c.domainAr || other
+    by.set(d, [...(by.get(d) ?? []), c])
+  }
+  const rank = (d: string) => (d === other ? 2 : interests.includes(d) ? 0 : 1)
+  return [...by.entries()]
+    .map(([domain, items]) => ({ domain, items }))
+    .sort((a, b) => rank(a.domain) - rank(b.domain) || b.items.length - a.items.length || a.domain.localeCompare(b.domain, 'ar'))
+}
+
+/* ═══ عدّادُ انتهاء المنحة (٢٤ أكتوبر ٢٠٢٦) ═══
+
+   قال صاحبُ المنصّة: «ضع عدّادا لانتهاء المنحة وآخرَ موعدٍ لاستغلالها». فالعدّادُ أيّامٌ وساعاتٌ ودقائقُ وثوانٍ حتّى
+   نهايتها المحفوظة (`closesAt`)، وتحته آخرُ يومٍ بتاريخه. وكلُّ رقمٍ في خانته وتحته اسمُه — فلا يُعالَج تمييزُ العدد. */
+
+/** ما بقي حتّى نهاية المنحة — أو `null` إن انتهت أو بلا نهاية */
+export function grantCountdown(closesAt: string | Date | null, now: Date): { days: number; hours: number; minutes: number; seconds: number } | null {
+  if (!closesAt) return null
+  const left = Math.floor((new Date(closesAt).getTime() - now.getTime()) / 1000)
+  if (left <= 0) return null
+  return { days: Math.floor(left / 86_400), hours: Math.floor((left % 86_400) / 3600), minutes: Math.floor((left % 3600) / 60), seconds: left % 60 }
 }
