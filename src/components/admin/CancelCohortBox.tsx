@@ -2,7 +2,12 @@
 
    «أقرّر إيقافَها وأبلغ المدرّب بأنّنا ألغيناها كي لا نتحمّل أيّ كلفة» (صاحب المنصّة). وكان الزرُّ
    «إلغاء» يقع بضغطةٍ واحدة، ولا يصل المدرّبَ شيء. فصار خطوتين: يُختار السبب ويُقرأ ما سيقع، ثمّ يؤكَّد.
-   والسببُ خيارٌ لا نصٌّ يُكتب في كلّ مرّة — وأوّلُه ما يُلغى له أكثرُ الشعب. */
+   والسببُ خيارٌ لا نصٌّ يُكتب في كلّ مرّة — وأوّلُه ما يُلغى له أكثرُ الشعب.
+
+   ═══ ويُحرَّر قبل أن يُرسَل (٢٤ أكتوبر ٢٠٢٦) ═══
+   سأل صاحبُ المنصّة: «إذا أردتُ أن ألغي شعبة، هل أستطيع تحريرَ السبب؟». وكان النصُّ يُكتب في «سبب آخر»
+   وحدَه، والسببان الآخران ثابتان. فصار كلُّ خيارٍ يملأ صندوقَ النصّ، والصندوقُ يُحرَّر دائما — وما فيه هو
+   ما يصل المدرّب. و«سبب آخر» يفرغه ليُكتب من أوّله. */
 
 import { useState } from "react";
 import { Ban } from "lucide-react";
@@ -32,10 +37,14 @@ export default function CancelCohortBox({ cohortId, title, learners, started, ha
 }) {
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState<ReasonId>("low");
-  const [other, setOther] = useState("");
+  const [text, setText] = useState<string>(CANCEL_REASONS[0].label);
   const [busy, setBusy] = useState(false);
 
-  const reasonAr = reason === "other" ? other.trim() : CANCEL_REASONS.find((r) => r.id === reason)!.label;
+  const reasonAr = text.trim();
+  const pick = (id: ReasonId) => {
+    setReason(id);
+    setText(id === "other" ? "" : CANCEL_REASONS.find((r) => r.id === id)!.label);
+  };
 
   const cancel = async () => {
     if (busy || !reasonAr) return;
@@ -62,17 +71,15 @@ export default function CancelCohortBox({ cohortId, title, learners, started, ha
     <Inset tone="danger" className="w-full px-4 py-3">
       <p className="text-read font-black text-foreground">إلغاء «{title}»</p>
       <fieldset className="mt-2 space-y-1.5">
-        <legend className="text-fine text-muted-foreground">السبب — يصل المدرب كما هو</legend>
+        <legend className="text-fine text-muted-foreground">السبب — اختر ثم عدله كما تشاء، ويصل المدرب كما تكتبه</legend>
         {CANCEL_REASONS.map((r) => (
           <label key={r.id} className="flex cursor-pointer items-center gap-2 text-read">
-            <input type="radio" name={`reason-${cohortId}`} checked={reason === r.id} onChange={() => setReason(r.id)} className="accent-teal" />
+            <input type="radio" name={`reason-${cohortId}`} checked={reason === r.id} onChange={() => pick(r.id)} className="accent-teal" />
             {r.label}
           </label>
         ))}
-        {reason === "other" && (
-          <input value={other} onChange={(e) => setOther(e.target.value)} maxLength={500}
-            aria-label="السبب" placeholder="اكتب السبب" className={`${staffControlCls} mt-1`} />
-        )}
+        <textarea value={text} onChange={(e) => setText(e.target.value)} maxLength={500} rows={2}
+          aria-label="نص السبب" placeholder="اكتب السبب" className={`${staffControlCls} mt-1`} />
       </fieldset>
       <ul className="mt-3 list-disc space-y-1 pr-5 text-read leading-6 text-muted-foreground">
         <li>تختفي من الموقع ولا تقبل تسجيلا.</li>

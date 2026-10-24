@@ -46,7 +46,8 @@ import { useRealSession } from "@/services/session";
 
 import { Card, Inset, Panel } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
-import Chip from "@/components/ui/Chip";
+import Chip, { type ChipTone } from "@/components/ui/Chip";
+import { ACTIVITY_LABELS, activityOf, lastSeenAr, type Activity } from "@/application/trainer/last-seen";
 import TabBar from "@/components/ui/TabBar";
 import { draftKindsAr, hasNeed, TRAINER_NEEDS, trainersAr, type TrainerNeed } from "@/application/trainer/trainer-needs";
 import { BIO_MAX_WORDS, countWords, NAME_MAX_CHARS, publicNameProblemAr } from "@/application/trainer/public-text";
@@ -67,6 +68,8 @@ interface OpsTrainer {
   email: string;
   applicationStatus: string;
   hasAccount: boolean;
+  /** آخرُ نشاطٍ له في منصّته — `null` = لم يدخل قطّ (`last-seen.ts`) */
+  lastSeenAt: string | null;
   suspended: boolean;
   publiclyVisible: boolean;
   /** له دورةٌ منشورةٌ هذا الفصلَ أو بعده — وإلّا فلا يظهر ولو اعتُمد نشرُه */
@@ -140,6 +143,9 @@ interface PendingRequest {
    ولا «ارفض» عليها هنا: من يعتذر عنها هو المدرّب في «دوراتي»، وما يُسحب منه
    يُسحب من شاشة العقود حيث عقدُه. */
 type PrepState = "to_decide" | "preparing" | "submitted" | "returned" | "approved" | "declined";
+
+/* نبرةُ آخر نشاطه — الغائبُ يُرى قبل غيره (`last-seen.ts`) */
+const SEEN_TONE: Record<Activity, ChipTone> = { active: "positive", quiet: "warn", gone: "danger" };
 
 const PREP_AR: Record<PrepState, { label: string; tone: "warn" | "info" | "positive" | "neutral" | "accent" }> = {
   to_decide: { label: "لم يقبلها بعد", tone: "neutral" },
@@ -660,6 +666,8 @@ export default function TrainerRunOps() {
   /* وما ينتظر قرارَك — صورةٌ أو نصٌّ أو اقتراحٌ لم يُرسَل (`trainer-needs.ts`) */
   const [need, setNeed] = useState<TrainerNeed | "any">("any");
   const [openIds, setOpenIds] = useState<Set<string>>(new Set());
+  /* «من منهم فعّالٌ ومنهم اختفى» (صاحب المنصّة، ٢٤ أكتوبر ٢٠٢٦) — فلترٌ ثالثٌ بآخر نشاطه (`last-seen.ts`) */
+  const [activity, setActivity] = useState<Activity | "any">("any");
   const toggleOpen = (id: string) => setOpenIds((prev) => {
     const next = new Set(prev);
     if (next.has(id)) next.delete(id); else next.add(id);
@@ -858,8 +866,13 @@ export default function TrainerRunOps() {
       },
     };
     const steps = trainerSteps(input);
-    return { t, steps, state: trainerStateOf(input, steps) };
+    return { t, steps, state: trainerStateOf(input, steps), seen: activityOf(t.lastSeenAt, new Date()) };
   }), [trainers, asks, preparing]);
+  const activityCounts = useMemo(() => {
+    const m: Record<Activity, number> = { active: 0, quiet: 0, gone: 0 };
+    for (const r of rows) m[r.seen] += 1;
+    return m;
+  }, [rows]);
   const counts = useMemo(() => {
     const m: Record<TrainerState, number> = { hidden: 0, you: 0, trainer: 0, ready: 0, idle: 0, suspended: 0 };
     for (const r of rows) m[r.state] += 1;
@@ -868,9 +881,10 @@ export default function TrainerRunOps() {
   const shown = useMemo(
     () => rows
       .filter((r) => (filter === "all" || r.state === filter) && (need === "any" || hasNeed(r.t, need))
+        && (activity === "any" || r.seen === activity)
         && matchesQuery(q, [r.t.name, r.t.email]))
       .sort((a, b) => STATE_ORDER[a.state] - STATE_ORDER[b.state] || a.t.name.localeCompare(b.t.name, "ar")),
-    [rows, filter, need, q],
+    [rows, filter, need, activity, q],
   );
   const needCounts = useMemo(
     () => Object.fromEntries(TRAINER_NEEDS.map((n) => [n.id, rows.filter((r) => hasNeed(r.t, n.id)).length])) as Record<TrainerNeed, number>,
@@ -1074,6 +1088,12 @@ export default function TrainerRunOps() {
             { id: "any" as const, label: "كل المدربين" },
             ...TRAINER_NEEDS.map((n) => ({ id: n.id, label: `${n.ar} (${needCounts[n.id]})` })),
           ]} />
+        {/* وآخرُ نشاطه — من فعّالٌ ومن اختفى */}
+        <TabBar className="mt-2" ariaLabel="آخر نشاط المدربين" value={activity} onChange={setActivity}
+          items={[
+            { id: "any" as const, label: "أي نشاط" },
+            ...ACTIVITY_LABELS.map((a) => ({ id: a.id, label: `${a.ar} (${activityCounts[a.id]})` })),
+          ]} />
 
         {/* ── تعيينُ مدرّبٍ داخليّا ──
 
@@ -1168,7 +1188,7 @@ export default function TrainerRunOps() {
           </Card>
         ) : (
           <ul className="mt-3 space-y-3">
-            {shown.map(({ t, steps, state }) => {
+            {shown.map(({ t, steps, state, seen }) => {
               const k = (a: string) => `${t.profileId}:${a}`;
               const meta = TRAINER_STATES.find((x) => x.id === state)!;
               const isOpen = openIds.has(t.profileId);
@@ -1191,6 +1211,7 @@ export default function TrainerRunOps() {
                       {his && <p className="mt-1 text-read leading-6 text-teal-light-ink">{his}</p>}
                       {quiet && <p className="mt-1.5 text-read leading-6 text-muted-foreground">{quiet}</p>}
                       <p className="mt-1 text-read text-muted-foreground">{cohortsTallyAr(t.cohorts)}</p>
+                      <p className="mt-1.5"><Chip tone={SEEN_TONE[seen]} srPrefixAr="نشاطه">{lastSeenAr(t.lastSeenAt, new Date())}</Chip></p>
                     </div>
                     <ChevronDown className={`mt-1 h-4 w-4 shrink-0 text-muted-foreground transition ${isOpen ? "rotate-180" : ""}`} aria-hidden="true" />
                   </button>
