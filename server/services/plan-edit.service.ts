@@ -804,6 +804,8 @@ export class PlanEditService {
     const done: (() => Promise<unknown>)[] = []
     const preApproved = onApproved !== null
     let tell: Parameters<CohortService['tellLearnersScheduleMoved']>[1] | null = null
+    /** ما رجع من المنقول إلى مراجعة الإدارة — يُقال في الرسالة الواحدة */
+    let pending = 0
     try {
       /* وحدودُ الخطّة أوّلا — آخرُ يومٍ في المدّة ومواعيدُ المحاور (`schedulePlanContent`): حفظُها يمدّ نافذةَ
          الجدولة معها (`savePlan`)، فيصحّ النقلُ بعدها. وتعود الخطّةُ كما كانت إن سقط شيء */
@@ -817,7 +819,6 @@ export class PlanEditService {
         await this.cohorts.assertTrainerMove(userId, m.sessionId, { startsAt: new Date(m.startsAt), endsAt: new Date(m.endsAt) })
       }
       /* بهدوء: لا يُخبَر المتعلّمون بكلّ لقاءٍ وحدَه — يُخبَرون بالجدول كلِّه مرّةً بعده (٢٤ أكتوبر ٢٠٢٦) */
-      let pending = 0
       for (const m of edit.moves) {
         const was = r.sessions.find((x) => x.id === m.sessionId)!
         const moved = await this.cohorts.trainerMoveSession(userId, m.sessionId, { startsAt: new Date(m.startsAt), endsAt: new Date(m.endsAt) }, { preApproved, quiet: true })
