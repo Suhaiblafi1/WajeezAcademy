@@ -16,7 +16,7 @@ const WS = 'src/pages/trainer/CohortWorkspace.tsx'
 describe('ورشة الشعبة', () => {
   it('لها مسار يبلغها من «شعبي» — لا تحويل إلى الرئيسيّة', () => {
     const app = code('src/App.tsx')
-    expect(app).toMatch(/path="\/trainer\/cohort\/:id" element=\{<CohortWorkspace \/>\}/)
+    expect(app).toMatch(/path="\/trainer\/cohort\/:id" element=\{<KeyedByParam><CohortWorkspace \/><\/KeyedByParam>\}/)
     expect(code('src/pages/trainer/CohortBoard.tsx')).toContain('/trainer/cohort/${c.id}')
   })
 
