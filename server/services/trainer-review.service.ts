@@ -4,6 +4,7 @@
    مبدأ الفصل: قبول الطلب ≠ إنشاء الحساب ≠ تفعيل الدور ≠ التأهيل ≠ التعيين ≠ النشر.
    المتقدم لا يمنح نفسه دور trainer أبدا — الحساب يُنشأ فقط عبر دعوة إدارية. */
 
+import { lastActivityOf } from './last-activity'
 import { ACADEMY_EMAILS, getCalendlyConfig } from './integrations.service'
 import { createHash, randomBytes } from 'node:crypto'
 import bcrypt from 'bcryptjs'
@@ -5995,17 +5996,14 @@ export class TrainerReviewService {
     const blockersOf = new Map<string, string[]>()
     for (const p of approvable) blockersOf.set(p.id, (await this.readinessFor(p.id)).blockersAr)
     /* ═══ وآخرُ نشاطٍ له في منصّته (٢٤ أكتوبر ٢٠٢٦، `last-seen.ts`) ═══
-       «لأعلمَ من منهم فعّالٌ ومنهم اختفى» (صاحب المنصّة). أحدثُ ما استُعملت فيه جلسةٌ من جلساته — ووقتُ
-       الدخول لجلسةٍ قديمةٍ لم يُكتب لها نشاط. بنداءٍ واحدٍ للكلّ. */
-    const userIds = profiles.map((p) => p.userId).filter((u): u is string => Boolean(u))
-    const seenRows = userIds.length === 0 ? [] : await this.prisma.session.groupBy({
-      by: ['userId'], where: { userId: { in: userIds } }, _max: { lastSeenAt: true, createdAt: true },
-    })
-    const lastSeenOf = new Map(seenRows.map((r) => {
-      const a = r._max.lastSeenAt?.getTime() ?? 0
-      const c = r._max.createdAt?.getTime() ?? 0
-      return [r.userId, Math.max(a, c) > 0 ? new Date(Math.max(a, c)) : null] as const
-    }))
+       «لأعلمَ من منهم فعّالٌ ومنهم اختفى» (صاحب المنصّة). أحدثُ أثرٍ تركه في المنصّة — جلسةً أو فعلا أو
+       رسالةً أو قراءة — من حسابه ومن حساب تقديمه معا (`last-activity.ts`). وكان من الجلسة وحدَها فكذب:
+       «تواصلوا معنا من المنصّة وتقول إنّهم لم يفتحوا منذ مدّة». بنداءٍ واحدٍ لكلّ مصدرٍ للكلّ. */
+    const lastSeenOf = await lastActivityOf(this.prisma, profiles.map((p) => ({
+      key: p.id,
+      userIds: [p.userId, p.application.userId].filter((u): u is string => Boolean(u)),
+      email: p.application.email,
+    })))
     return profiles.map((p) => {
       const latest = (kind: string) => p.textSuggestions.find((x) => x.kind === kind) ?? null
       return {
@@ -6016,8 +6014,8 @@ export class TrainerReviewService {
       applicationStatus: p.application.status,
       /* حسابٌ مربوطٌ أم لا: «نشطٌ» بلا حسابٍ لا يفتح بوّابتَه ولا يُسنَد إليه */
       hasAccount: Boolean(p.userId),
-      /* آخرُ نشاطٍ له في منصّته — `null` = لم يدخل قطّ أو لا حسابَ له */
-      lastSeenAt: p.userId ? lastSeenOf.get(p.userId) ?? null : null,
+      /* آخرُ نشاطٍ له في منصّته — `null` = لا أثرَ له فيها قطّ */
+      lastSeenAt: lastSeenOf.get(p.id) ?? null,
       suspended: Boolean(p.suspendedAt),
       publiclyVisible: p.publicVisibility && Boolean(p.publishApprovedAt),
       hasLiveCourse: live.has(p.id),

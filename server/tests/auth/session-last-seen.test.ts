@@ -3,7 +3,9 @@
    «أعطني مؤشّرا لمتى آخرُ دخولٍ لكلّ مدرّبٍ لمنصّته، لأعلمَ من منهم فعّالٌ ومنهم اختفى» (صاحب المنصّة).
    والجلسةُ تبقى ثلاثين يوما، فيُحرس:
    ١) أنّ الدخولَ يكتب النشاط، وأنّ الطلبَ يجدّده إن مضت خمسُ دقائق — ولا يكتب في كلّ طلب؛
-   ٢) وأنّ «المدربون» تقرأ أحدثَ جلساته، ومن لا حسابَ له `null`. */
+   ٢) وأنّ «المدربون» تقرأ أحدثَ جلساته، ومن لا حسابَ له `null`؛
+   ٣) وأنّ «آخرَ نشاطٍ» أحدثُ أثرٍ تركه لا جلستُه وحدَها — «تواصلوا معنا من المنصّة وتقول إنّهم لم يفتحوا
+      منذ مدّة» (صاحب المنصّة): فعلٌ في الأثر، وحسابُ تقديمه، ونموذجُ التواصل ببريده. */
 
 import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
@@ -55,5 +57,34 @@ describe('② «المدربون» تقرأ آخر نشاطه', () => {
     const rows = await review.listForOps()
     expect(rows.find((r) => r.profileId === seen.profileId)!.lastSeenAt!.getTime()).toBe(at.getTime())
     expect(rows.find((r) => r.profileId === quiet.profileId)!.lastSeenAt).toBeNull()
+  })
+})
+
+describe('③ آخر نشاط أحدث أثر تركه — لا جلسته وحدها', () => {
+  const review = () => new TrainerReviewService(prisma)
+  const row = async (profileId: string) => (await review().listForOps()).find((r) => r.profileId === profileId)!
+  const day = 86_400_000
+
+  it('⚠️ فعل في الأثر يغلب دخولا قديما', async () => {
+    const t = await review().createTrainerDirectly(ACTOR, { fullName: 'مدرب يعمل', email: 'acts.trainer@test.local' })
+    const userId = (await prisma.trainerProfile.findUniqueOrThrow({ where: { id: t.profileId } })).userId!
+    await prisma.session.create({ data: { userId, tokenHash: 'h-acts', expiresAt: new Date(Date.now() + day), createdAt: new Date(Date.now() - 25 * day), lastSeenAt: new Date(Date.now() - 25 * day) } })
+    const acted = new Date(Date.now() - 2 * day)
+    await prisma.auditEvent.create({ data: { actorId: userId, action: 'cohort.plan.save', entityType: 'cohort', entityId: 'x', createdAt: acted } })
+    expect((await row(t.profileId)).lastSeenAt!.getTime()).toBe(acted.getTime())
+  })
+
+  it('⚠️ ومن حساب تقديمه — ومن نموذج التواصل ببريده', async () => {
+    const t = await review().createTrainerDirectly(ACTOR, { fullName: 'مدرب يكتب من حساب آخر', email: 'Other.Account@test.local' })
+    const profile = await prisma.trainerProfile.findUniqueOrThrow({ where: { id: t.profileId }, select: { applicationId: true } })
+    const applicant = await auth.register('applicant.account@test.local', 'Pass#12345678', 'حساب التقديم')
+    await prisma.trainerApplication.update({ where: { id: profile.applicationId }, data: { userId: applicant.userId } })
+    const wrote = new Date(Date.now() - 4 * day)
+    await prisma.supportTicket.create({ data: { userId: applicant.userId, subject: 'سؤال', createdAt: wrote } as never })
+    expect((await row(t.profileId)).lastSeenAt!.getTime()).toBeGreaterThanOrEqual(wrote.getTime())
+
+    const contacted = new Date(Date.now() + 1000)
+    await prisma.contactMessage.create({ data: { reference: 'C-LAST-1', name: 'م', email: 'other.account@TEST.local', topic: 't', message: 'm', createdAt: contacted } })
+    expect((await row(t.profileId)).lastSeenAt!.getTime()).toBe(contacted.getTime())
   })
 })
