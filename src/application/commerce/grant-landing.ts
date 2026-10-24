@@ -47,8 +47,21 @@ export function campaignParams(search: string): { channel: string | null; wave: 
    يكسبه — «لكن بدلَ "وفّرت": "قيمة المنحة"». فالكبيرُ «قيمة المنحة $321.00»، وتحته صغيرا «4 دورات بـ$214.00 بدل
    $535.00». والمبالغُ تُعزَل في الصفحة (`bdi`) فلا ينقلب «$321.00» إلى «321.00$» آخرَ السطر. */
 
-/** عنوانُ السطر الكبير — يتبعه المبلغ */
-export const GRANT_VALUE_AR = 'قيمة المنحة'
+/* ثمّ قال (٢٤ أكتوبر ٢٠٢٦): «قيمةُ المنحة تظهر وكأنّها السعر.. يجب أن تكون بخطٍّ أصغر، و٣٢٠ هي الواضحة أكثر —
+   كأنّنا نقول له ستحصل على ٤ دوراتٍ بـ٣٢٠$ بدلا من ٨٠٠، وبخطٍّ صغيرٍ قيمةُ المنحة لك ٤٨٠$ تدفعها الأكاديميّةُ عنك».
+   فالكبيرُ ما يدفعه: «4 دورات بـ$320.00 بدل $800.00»، وتحته صغيرا: «قيمة منحتك $480.00 تدفعها الأكاديمية عنك». */
+
+/** ما بقي له ضمن منحته — «بقي لك دورتان ضمن منحتك»، وإذا اكتملت «استعملت منحتك كاملة» */
+export function grantRemainingAr(picked: number, max: number): string {
+  const left = max - picked
+  if (left <= 0) return 'استعملت منحتك كاملة'
+  if (left === 1) return 'بقيت لك دورة واحدة ضمن منحتك'
+  return left === 2 ? 'بقي لك دورتان ضمن منحتك' : `بقي لك ${left} دورات ضمن منحتك`
+}
+
+/** السطرُ الصغير تحت ما يدفعه — يحيط بالمبلغ */
+export const GRANT_VALUE_AR = 'قيمة منحتك'
+export const GRANT_VALUE_PAID_AR = 'تدفعها الأكاديمية عنك'
 
 /** «دورة واحدة» و«دورتان» و«4 دورات» و«11 دورة» — العددُ مع معدوده */
 export function grantCountAr(n: number): string {
@@ -295,6 +308,19 @@ export function grantSections<T extends { domainAr?: string | null }>(
 
    قال صاحبُ المنصّة: «ضع عدّادا لانتهاء المنحة وآخرَ موعدٍ لاستغلالها». فالعدّادُ أيّامٌ وساعاتٌ ودقائقُ وثوانٍ حتّى
    نهايتها المحفوظة (`closesAt`)، وتحته آخرُ يومٍ بتاريخه. وكلُّ رقمٍ في خانته وتحته اسمُه — فلا يُعالَج تمييزُ العدد. */
+
+/* ثمّ قال (٢٤ أكتوبر ٢٠٢٦): «لا داعي للدقيقة والساعة والثانية، فقط اجعلها يوما، وإن قلّت عن يومٍ تصبح ساعة.. وابقِه
+   بالأعلى وحدَه». فسطرٌ واحد: «تنتهي المنحة بعد 6 أيام»، وتحت اليوم «بعد 9 ساعات» (`grantLeftAr`). */
+
+/** «6 أيام» — وتحت اليوم «9 ساعات» — والعددُ مع معدوده */
+export function grantLeftAr(left: { days: number; hours: number } | null): string | null {
+  if (!left) return null
+  const count = (n: number, one: string, two: string, few: string, many: string) =>
+    n === 1 ? one : n === 2 ? two : n <= 10 ? `${n} ${few}` : `${n} ${many}`
+  if (left.days >= 1) return count(left.days, 'يوم واحد', 'يومين', 'أيام', 'يوما')
+  if (left.hours >= 1) return count(left.hours, 'ساعة واحدة', 'ساعتين', 'ساعات', 'ساعة')
+  return 'أقل من ساعة'
+}
 
 /** ما بقي حتّى نهاية المنحة — أو `null` إن انتهت أو بلا نهاية */
 export function grantCountdown(closesAt: string | Date | null, now: Date): { days: number; hours: number; minutes: number; seconds: number } | null {

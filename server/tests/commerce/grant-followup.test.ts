@@ -17,7 +17,7 @@ import { AuthService } from '../../services/auth.service'
 import { CommerceService } from '../../services/commerce.service'
 import { GrantService } from '../../services/grant.service'
 import { GrantLandingService } from '../../services/grant-landing.service'
-import { GRANT_CLOSE_FIX, GRANT_FOLLOWUP_HOURS, applyGrantCloseFix, grantRegistrants, openGrantFollowups, sendGrantReminders } from '../../services/grant-followup.service'
+import { GRANT_CLOSE_FIX, GRANT_COURSES_FIX, GRANT_FOLLOWUP_HOURS, applyGrantCloseFix, applyGrantCoursesFix, grantRegistrants, openGrantFollowups, sendGrantReminders } from '../../services/grant-followup.service'
 import { zonedDay } from '../../../src/application/trainer/cohort-period'
 import { grantCallDueAt } from '../../../src/application/commerce/grant-landing'
 import { runJob } from '../../worker/jobs'
@@ -266,5 +266,29 @@ describe('⑥ آخر يوم للمنحة 30 أكتوبر — بقرار صاحب
     await runJob(prisma, 'grant_reminders')
     expect(await closesAt()).toBe(GRANT_CLOSE_FIX.to)
     await g.update({ closesAt: null }, ownerId)
+  })
+})
+
+describe('⑦ والمنحة تغطي 4 دورات بحد أقصى — بقرار صاحب المنصة، مرة واحدة', () => {
+  const maxCourses = async () => (await prisma.grantCampaign.findUniqueOrThrow({ where: { slug: 'wajeez-members' }, select: { maxCourses: true } })).maxCourses
+
+  it('⚠️ من 5 إلى 4 — بأثر مكتوب، ولا يمس حدا غيره أحد بعده، والعامل يطبقه', async () => {
+    const g = new GrantService(prisma)
+    const before = await maxCourses()
+    expect(GRANT_COURSES_FIX).toEqual({ from: 5, to: 4 })
+    await g.update({ maxCourses: 5 }, ownerId)
+    expect(await applyGrantCoursesFix(prisma)).toBe(true)
+    expect(await maxCourses()).toBe(4)
+    expect(await prisma.auditEvent.count({ where: { action: 'coupon.grant_settings', actorId: null, reason: { contains: '4 دورات' } } })).toBeGreaterThanOrEqual(1)
+    expect(await applyGrantCoursesFix(prisma), 'وقع مرتين').toBe(false)
+
+    await g.update({ maxCourses: 6 }, ownerId)
+    expect(await applyGrantCoursesFix(prisma), 'مس حدا غيره أحد').toBe(false)
+    expect(await maxCourses()).toBe(6)
+
+    await g.update({ maxCourses: 5 }, ownerId)
+    await runJob(prisma, 'grant_reminders')
+    expect(await maxCourses()).toBe(4)
+    await g.update({ maxCourses: before }, ownerId)
   })
 })

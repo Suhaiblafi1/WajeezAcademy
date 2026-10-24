@@ -28,7 +28,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
-import { Award, ChevronDown, CirclePlay, Copy, Gift, Loader2, Mail, Share2, UserRound, Video, type LucideIcon } from "lucide-react";
+import { Award, ChevronDown, CirclePlay, Clock, Copy, Gift, Loader2, Mail, Share2, UserRound, Video, type LucideIcon } from "lucide-react";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import { useRealSession } from "@/services/session";
 import { useHoneypot } from "@/components/HoneypotField";
@@ -47,7 +47,7 @@ import { cohortDayAr } from "@/application/learning/cohort-gate";
 import { grantPrice, MEMBER_GRANT_NAME_AR } from "@/application/commerce/grant";
 import {
   CAREER_LEVELS, GRANT_ACADEMY_LINE_AR, GRANT_CONSENT_AR, GRANT_GAINS_AR, GRANT_MAX_INTERESTS, GRANT_SUGGESTED_COURSES, WORK_FIELDS,
-  GRANT_VALUE_AR, campaignParams, grantCountAr, grantCountdown, grantSections, grantShareAr, grantShareMailto, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse,
+  GRANT_VALUE_AR, GRANT_VALUE_PAID_AR, campaignParams, grantCountAr, grantCountdown, grantLeftAr, grantRemainingAr, grantSections, grantShareAr, grantShareMailto, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse,
   type GrantPathOption,
 } from "@/application/commerce/grant-landing";
 import { readStoredGrant, saveStoredGrant, type StoredGrant } from "@/services/grant-landing";
@@ -80,43 +80,19 @@ const money = (n: number) => fmtMoney(n, USD);
 /** «دورة» و«دورتين» بلا رقم، و«4 دورات» */
 const coursesAr = (n: number) => (n === 1 ? "دورة" : n === 2 ? "دورتين" : `${n} دورات`);
 
-/** عدّادُ انتهاء المنحة وآخرُ يومٍ لها — كلُّ رقمٍ في خانته وتحته اسمُه (`grantCountdown`) */
-function GrantCountdown({ closesAt, compact = false, className = "" }: { closesAt: string; compact?: boolean; className?: string }) {
+/** عدّادُ انتهاء المنحة وآخرُ يومٍ لها — سطرٌ واحدٌ بالأيّام، وتحت اليوم بالساعات (`grantLeftAr`) */
+function GrantCountdown({ closesAt, className = "" }: { closesAt: string; className?: string }) {
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
-    const t = setInterval(() => setNow(new Date()), 1000);
+    const t = setInterval(() => setNow(new Date()), 60_000);
     return () => clearInterval(t);
   }, []);
-  const left = grantCountdown(closesAt, now);
+  const left = grantLeftAr(grantCountdown(closesAt, now));
   if (!left) return <p className={`text-read font-bold ${className}`}>انتهت المنحة</p>;
-  const pad = (n: number) => String(n).padStart(2, "0");
-  const cells: [string, string][] = [[String(left.days), "يوم"], [pad(left.hours), "ساعة"], [pad(left.minutes), "دقيقة"], [pad(left.seconds), "ثانية"]];
-  /* وتحت زرّ «احصل على المنحة» سطرٌ واحدٌ صغير — اللوحُ ثابتٌ أسفلَ الشاشة فلا يُثقل */
-  if (compact) {
-    return (
-      <div className={`flex items-center justify-center gap-3 ${className}`} role="timer">
-        <span className="text-read text-muted-foreground">تنتهي المنحة بعد</span>
-        {cells.map(([n, label]) => (
-          <span key={label} className="grid leading-tight">
-            <span className="font-black tabular-nums">{n}</span>
-            <span className="text-fine text-muted-foreground">{label}</span>
-          </span>
-        ))}
-      </div>
-    );
-  }
   return (
     <div className={className} role="timer">
-      <p className="text-read font-bold">تنتهي المنحة بعد</p>
-      <div className="mt-2 flex justify-center gap-2">
-        {cells.map(([n, label]) => (
-          <Inset as="span" tone="warn" key={label} className="grid w-16 px-1 py-1.5">
-            <span className="text-2xl font-black tabular-nums">{n}</span>
-            <span className="text-read text-muted-foreground">{label}</span>
-          </Inset>
-        ))}
-      </div>
-      <p className="mt-2 text-read text-muted-foreground">آخر يوم لاستعمال المنحة: {fmtDateLong(new Date(new Date(closesAt).getTime() - 1))}</p>
+      <p className="inline-flex items-center gap-1.5 font-black"><Clock className="h-4 w-4 text-gold-ink" aria-hidden="true" /> تنتهي المنحة بعد {left}</p>
+      <p className="mt-0.5 text-read text-muted-foreground">آخر يوم: {fmtDateLong(new Date(new Date(closesAt).getTime() - 1))}</p>
     </div>
   );
 }
@@ -160,9 +136,10 @@ export default function MemberGrantPage() {
 
   const [resumed] = useState(() => resumedCheckoutFor(PICK_PATH));
 
-  /* الاختيارُ الأوّل مرّةً واحدةً حين يصير له كود: ما تركه قبل أن يخرج ليوثّق بريده، وإلّا دوراتُ المسار الرئيسيّ
-     الذي يناسب مجالَه واهتمامَه (`suggestPaths`)، أو أربعُ دوراتٍ تناسبهما إن لم يناسبه مسار (`suggestCourses`) —
-     يحذف منها ويضيف كما يشاء حتّى حدّ المنحة */
+  /* ما نقترحه مرّةً واحدةً حين يصير له كود: دوراتُ المسار الرئيسيّ الذي يناسب مجالَه واهتمامَه (`suggestPaths`)، أو
+     أربعُ دوراتٍ تناسبهما إن لم يناسبه مسار (`suggestCourses`) — تُعرض أوّلا بشارة «نقترحها لك» **ولا تُختار عنه**:
+     قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦) «لا تختر عنه أنت، فقط اكتب له بخطٍّ صغير: نقترحها لك». ويعود ما تركه قبل أن
+     يخرج ليوثّق بريده مختارا كما كان */
   useEffect(() => {
     if (!view || !stored || seeded) return;
     const max = view.campaign.maxCourses;
@@ -173,7 +150,7 @@ export default function MemberGrantPage() {
     const open = new Set(view.openCourses.map((x) => x.courseId));
     setPath(found);
     setSuggested(ours);
-    setPicked(resumed ? resumed.intent.courseIds.filter((id) => open.has(id)).slice(0, max) : ours);
+    setPicked(resumed ? resumed.intent.courseIds.filter((id) => open.has(id)).slice(0, max) : []);
     setSeeded(true);
   }, [view, stored, seeded, resumed]);
 
@@ -186,13 +163,11 @@ export default function MemberGrantPage() {
   const listTotal = chosen.reduce((sum, x) => sum + x.price, 0);
   const payTotal = grantPrice(listTotal, pct);
   const toggle = (id: string) => setPicked((p) => toggleCourse(p, id, max));
-  /* يبدّل إلى البديل: تُختار دوراتُه، ويصير الرئيسيُّ بديلا يعود إليه */
+  /* يبدّل إلى البديل: تُقترح دوراتُه أعلى القائمة، ويصير الرئيسيُّ بديلا يعود إليه — وما اختاره يبقى كما هو */
   const switchPath = () => {
     if (!path.alt) return;
-    const ids = path.alt.courseIds.slice(0, max);
     setPath({ main: path.alt, alt: path.main });
-    setSuggested(ids);
-    setPicked(ids);
+    setSuggested(path.alt.courseIds.slice(0, max));
   };
 
   const apply = async (e: React.FormEvent) => {
@@ -289,7 +264,7 @@ export default function MemberGrantPage() {
             </span>
             {seatsLeftAr(x.seatsLeft) && <Chip tone="warn" className="mt-1 me-1">{seatsLeftAr(x.seatsLeft)}</Chip>}
             {ours.has(x.courseId)
-              ? <Chip tone="accent" className="mt-1">اخترناها لك</Chip>
+              ? <Chip tone="accent" className="mt-1">نقترحها لك</Chip>
               : fits(x) > 0 && <Chip tone="accent" className="mt-1">يناسب ما تريد تطويره</Chip>}
           </span>
           {/* السعرُ تحت العنوان على الهاتف، وبجانبه على الحاسوب — فلا يضيق العنوانُ حتّى يتكسّر */}
@@ -311,25 +286,28 @@ export default function MemberGrantPage() {
                 {stored.code}
                 <button type="button" aria-label="انسخ الكود" onClick={() => void copy(stored.code!)} className="cursor-pointer"><Copy className="h-5 w-5" /></button>
               </p>
-              <p className="mt-1 text-read text-muted-foreground">أرسلناه إلى بريدك أيضا. يستعمل مرة واحدة، ويمكنك أن تهديه لغيرك.</p>
+              <p className="mt-1 text-read text-muted-foreground">أرسلناه إلى بريدك أيضا.</p>
             </>
           ) : stored.sentTo ? (
-            <p className="mt-2 text-read">لك كود منحة من قبل. أرسلناه إلى {stored.sentTo}.</p>
+            <p className="mt-2 text-read">لك كود منحة من قبل. أرسلناه إلى {stored.sentTo}، واكتبه عند الدفع.</p>
           ) : (
             <p className="mt-2 text-read">{reasonAr ?? (c.open ? "" : "المنحة مغلقة الآن")}</p>
           )}
           {c.open && c.closesAt && <GrantCountdown closesAt={c.closesAt} className="mt-4" />}
         </Card>
 
-        <h2 className="mt-6 text-xl font-black">اختر دوراتك</h2>
+        <h2 className="mt-6 text-xl font-black">
+          اختر دوراتك{view.termAr && <span className="text-read font-normal text-muted-foreground"> · {view.termAr}</span>}
+        </h2>
         {/* بقولٍ واحدٍ سهل — قرارُ صاحب المنصّة (٢١ أكتوبر ٢٠٢٦): «بيّن الأمرَ بشكلٍ سلسٍ وجميلٍ وبسيط.. فقط اختر
             الدورات من ١-٥ التي تريد أن تندرج ضمن المنحة.. يمكنك استبدالها لاحقا بدوراتٍ أخرى باستشارة مستشارك الخاص» */}
+        {/* وحدُّها يُقال حدّا يحرس قيمتَها — قرارُه (٢٤ أكتوبر ٢٠٢٦): «اختر ٤ دوراتٍ بحدٍّ أقصى، لكي يشعر أنّ المنحةَ عظيمة» */}
         <p className="mt-1 text-read text-muted-foreground">
-          اختر من دورة إلى {max} دورات تريدها ضمن منحتك. ويمكنك استبدالها لاحقا بدورات أخرى بعد استشارة مستشارك الخاص.
+          اختر حتى {max} دورات، وهذا أقصى ما تغطيه منحتك. ويمكنك استبدالها لاحقا بعد استشارة مستشارك الخاص.
         </p>
         {suggested.length > 0 && (
           <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-read">
-            <span>{path.main ? `حددنا لك دورات مسار «${path.main.title}».` : `حددنا لك ${coursesAr(suggested.length)} تناسبك.`}</span>
+            <span>{path.main ? `نقترح لك دورات مسار «${path.main.title}».` : `نقترح لك ${coursesAr(suggested.length)} تناسبك.`}</span>
             {path.alt && (
               <>
                 <span className="text-muted-foreground">أو مسار «{path.alt.title}»</span>
@@ -350,11 +328,7 @@ export default function MemberGrantPage() {
           <Card as="p" className="mt-5 text-read text-muted-foreground">لا دورات متاحة الآن. تواصل مع مستشار ليقترح عليك.</Card>
         ) : (
           <>
-            <p className="mt-6 font-bold">
-              كل الدورات المتاحة ({view.openCourses.length})
-              {view.termAr && <span className="font-normal text-muted-foreground"> · {view.termAr}</span>}
-            </p>
-            {top.length > 0 && <div className="mt-2 space-y-2">{top.map((x) => row(x))}</div>}
+            {top.length > 0 && <div className="mt-5 space-y-2">{top.map((x) => row(x))}</div>}
             {/* والباقي أقسامٌ مطويّةٌ بمجالها — قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦): «الدوراتُ كثيرةٌ وتحيّر الشخص» */}
             {sections.length > 0 && (
               <>
@@ -384,21 +358,19 @@ export default function MemberGrantPage() {
 
         {chosen.length > 0 && (
           <Card tone="solid" className="sticky bottom-3 mt-4 text-center shadow-lg">
-            {/* قيمةُ المنحة أوّلا، وتحتها ما يدفعه وما كانت — قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦). والمبالغُ معزولةٌ فلا تنقلب */}
-            <p className="text-lg font-black">{GRANT_VALUE_AR} <bdi dir="ltr">{money(listTotal - payTotal)}</bdi></p>
-            <p className="mt-1 text-read text-muted-foreground">
-              {grantCountAr(chosen.length)} بـ<bdi dir="ltr">{money(payTotal)}</bdi> بدل <bdi dir="ltr" className="line-through">{money(listTotal)}</bdi>
+            {/* ما يدفعه كبيرا، وقيمةُ منحته صغيرةً تحته — قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦). والمبالغُ معزولةٌ فلا تنقلب */}
+            <p className="text-lg font-black">
+              {grantCountAr(chosen.length)} بـ<bdi dir="ltr">{money(payTotal)}</bdi>{" "}
+              <span className="text-read font-normal text-muted-foreground">بدل <bdi dir="ltr" className="line-through">{money(listTotal)}</bdi></span>
             </p>
-            {/* «احصل على المنحة» لا «ادفع»، وتحته عدّادُ انتهائها — قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦) */}
+            <p className="mt-0.5 text-read text-muted-foreground">{GRANT_VALUE_AR} <bdi dir="ltr">{money(listTotal - payTotal)}</bdi> {GRANT_VALUE_PAID_AR}</p>
+            {/* وما بقي له ضمن منحته — فلا يترك منها شيئا (قرارُه: «اختر ٤ دوراتٍ بحدٍّ أقصى») */}
+            <p className="mt-1 text-read font-bold text-gold-ink">{grantRemainingAr(chosen.length, max)}</p>
             <Button tone="confirm" className="mt-3 w-full" onClick={pay}>احصل على المنحة</Button>
-            {c.open && c.closesAt && <GrantCountdown closesAt={c.closesAt} compact className="mt-2" />}
-            {stored.code
-              ? <p className="mt-2 text-read text-muted-foreground">كودك {stored.code} يوضع تلقائيا.</p>
-              : <p className="mt-2 text-read text-muted-foreground">اكتب كود منحتك في لوح الدفع. أرسلناه إلى بريدك.</p>}
-            {/* وآخرُه «أهدها لثلاثة أصدقاء» — رسالةٌ جاهزةٌ في واتساب والبريد، فالصديقُ يأخذ منحتَه لا كودَك (`grantShareAr`) */}
+            {/* وآخرُه «أهدها لأصدقائك» — رسالةٌ جاهزةٌ في واتساب والبريد، فالصديقُ يأخذ منحتَه لا كودَك (`grantShareAr`) */}
             {c.open && (
               <div className="mt-3 border-t border-border pt-3 text-read">
-                <p className="flex items-center justify-center gap-1.5 font-bold"><Gift className="h-4 w-4 text-gold-ink" aria-hidden="true" /> أهدها لثلاثة أصدقاء على الأقل</p>
+                <p className="flex items-center justify-center gap-1.5 font-bold"><Gift className="h-4 w-4 text-gold-ink" aria-hidden="true" /> أهدها لأصدقائك</p>
                 <p className="mt-1 flex justify-center gap-6">
                   <a href={waShare(shareText)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-bold text-teal-light-ink underline">
                     <Share2 className="h-4 w-4" aria-hidden="true" /> واتساب
