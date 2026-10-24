@@ -34,6 +34,7 @@ import ListToolbar from "@/components/admin/ListToolbar";
 import { paginate } from "@/application/admin/paginate";
 import { matchesQuery } from "@/application/text/search-ar";
 import TabBar from "@/components/ui/TabBar";
+import { useTabParam } from "@/hooks/useTabParam";
 import { movedLabelAr as movedLabel } from "@/application/trainer/cohort-move";
 import { cohortDayAr as movedDayAr } from "@/application/learning/cohort-gate";
 
@@ -123,14 +124,16 @@ export default function AdminCohorts() {
      والجدولَ والسعرَ وبوّابتَي الفتح في نموذجٍ واحد — وهي ثلاثةُ أعمالٍ لا
      تُعمل معا ولا يعملها الشخصُ نفسُه. */
   const [tab, setTab] = useState<CohortTab>("overview");
-  /* «معتمدة — تنتظر فتحك» لسانٌ في رأس القائمة (١٢ أكتوبر ٢٠٢٦، `cohort-lists.ts`) */
-  const [list, setList] = useState<CohortList>("all");
   /* ═══ والمالُ للمدير الأكاديميّ ومدير النظام وحدَهما (٢٢ أكتوبر ٢٠٢٦) ═══
      قرارُ صاحب المنصّة: أجرُ المدرّب وما حُصّل لا يراه المنسّقُ ولا مديرُ العمليّات. والحبّةُ `finance.view`
      مع `cohort.manage` لا تجتمعان إلّا فيهما — والخادمُ يطلبهما معا (`/economics` و`/upcoming`)، وهنا يُخفى
      ما سيُردّ. و«تبدأ قريبا» معه: هي قائمةُ قرار الإلغاء بماله. */
   const { user: viewer } = useRealSession();
   const seesMoney = viewer?.permissions.includes("finance.view") ?? false;
+  /* «معتمدة — تنتظر فتحك» لسانٌ في رأس القائمة (١٢ أكتوبر ٢٠٢٦، `cohort-lists.ts`). وفي العنوان (`useTabParam`):
+     رابطُه يفتحه و«رجوع» يعود إليه. و«تبدأ قريبا» لمن يرى المال وحدَه، كما في الشريط أدناه */
+  const [list, setList] = useTabParam<CohortList>(
+    COHORT_LISTS.filter((l) => seesMoney || l.id !== "upcoming").map((l) => l.id), "all");
   const [checklist, setChecklist] = useState<Record<string, Checklist>>({});
   /* وما ردّ به الفتحُ — بجانب زرّه لا أعلى الصفحة وحدَه (٣ أكتوبر ٢٠٢٦) */
   const [openError, setOpenError] = useState<Record<string, string>>({});

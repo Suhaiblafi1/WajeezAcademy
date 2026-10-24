@@ -246,8 +246,14 @@ export function planClashFree<T>(input: {
     degree.set(p.b, (degree.get(p.b) ?? 0) + 1)
   }
   const pinned = (c: ClashCohort) => c.fixedAr !== null || Boolean(c.proposed)
+  /* ═══ وما لا يُنقل يوضع أوّلا — فيتحرّك غيرُه حوله (٢٤ أكتوبر ٢٠٢٦) ═══
+     سؤالُ صاحب المنصّة: «لماذا لم تحلّ المتعارضين؟» — ١٨ تعارضا ولا شعبةَ تُنقل. كانت الشعبةُ التي تلتقي أكثرَ من
+     مرّةٍ في الأسبوع تأتي في ترتيبها، فتجد قرينتَها قد ثبتت قبلها، فتعلق هي ولا تتحرّك قرينتُها وهي تقبل النقل.
+     فما لا يُنقل — ثابتٌ أو لقاءاتُه أكثرُ من مرّةٍ في الأسبوع — يُوضع قبل غيره */
+  const immovable = (c: ClashCohort) => pinned(c) || twiceWeekly(c.proposed ?? c.sessions)
   const order = [...cohorts].sort((x, y) =>
     Number(pinned(y)) - Number(pinned(x))
+    || Number(immovable(y)) - Number(immovable(x))
     || y.learners - x.learners
     || (degree.get(x.cohortId) ?? 0) - (degree.get(y.cohortId) ?? 0)
     || (x.sessions[0]?.startsAt ?? 0) - (y.sessions[0]?.startsAt ?? 0)
@@ -290,10 +296,13 @@ export function planClashFree<T>(input: {
     const why = clashWhyAr(clashes.map((x) => ({ courseTitleAr: titleOf(x.cohortId), whyAr: x.whyAr })))
     let chosen: { to: WeeklySlot; sessions: readonly ClashInterval[]; payload: T } | null = null
     let lastFail: string | null = null
+    /* وإن صلح موعدٌ وتعارض لم يُقل سببُ آخرِ ما لم يصلح — فذاك أبعدُ المواعيد لا سببُ العلوق */
+    let built = false
     for (const to of slot ? candidateSlots(slot, longest, c.rejected ?? []) : []) {
       if (slot && to.weekday === slot.weekday && to.clock === slot.clock) continue
       const r = build(c.cohortId, to, why)
       if (!r.ok) { lastFail = r.reasonAr; continue }
+      built = true
       if (clashesOf(c, r.sessions).length > 0) continue
       chosen = { to, sessions: r.sessions, payload: r.payload }
       break
@@ -302,7 +311,7 @@ export function planClashFree<T>(input: {
       placed.set(c.cohortId, now)
       rows.push({
         cohortId: c.cohortId, action: 'stuck', slot, clashes,
-        whyAr: lastFail ? `لا موعد بلا تعارض يصلح لها — ${lastFail}` : 'لا موعد بلا تعارض يصلح لها',
+        whyAr: lastFail && !built ? `لا موعد بلا تعارض يصلح لها — ${lastFail}` : 'لا موعد بلا تعارض يصلح لها',
       })
       continue
     }

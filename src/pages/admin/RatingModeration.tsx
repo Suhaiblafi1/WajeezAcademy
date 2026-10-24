@@ -20,6 +20,7 @@ import { revealRow } from "@/components/admin/reveal";
 import { paginate } from "@/application/admin/paginate";
 import { matchesQuery } from "@/application/text/search-ar";
 import TabBar from "@/components/ui/TabBar";
+import { useTabParam } from "@/hooks/useTabParam";
 interface QueueItem {
   id: string;
   subjectType: "trainer" | "advisor" | "course";
@@ -45,7 +46,8 @@ const TABS: { key: string; label: string }[] = [
 ];
 
 export default function RatingModeration() {
-  const [status, setStatus] = useState("pending");
+  /* والحالُ في العنوان (`useTabParam`): رابطُ «محجوبة» يفتحها، و«رجوع» يعود إلى ما قبلها */
+  const [status, setStatus] = useTabParam(TABS.map((t) => t.key), "pending");
   const [rows, setRows] = useState<QueueItem[]>([]);
   /* الحالةُ تُرشِّح، والبحثُ يجد: خانةٌ فيها مئةُ تعليقٍ لا يُبلَغ فيها
      تعليقٌ بعينه إلّا بالتمرير. */

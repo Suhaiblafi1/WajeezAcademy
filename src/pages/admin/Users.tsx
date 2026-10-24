@@ -20,6 +20,7 @@ import ConfirmAction from "@/components/ConfirmAction";
 import { Panel, Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import TabBar from "@/components/ui/TabBar";
+import { useTabParam } from "@/hooks/useTabParam";
 const ROLE_NAMES_AR: Record<string, string> = {
   super_admin: "مدير النظام الأعلى", academic_manager: "المدير الأكاديمي",
   academic_coordinator: "منسّق أكاديميّ",
@@ -98,7 +99,9 @@ export default function Users() {
      تزيينا: الموقوفُ لا يُدار كالنشط، وأفعالُه ضدُّ أفعاله (رفعُ إيقافٍ
      وحذفٌ نهائيّ لا إيقافٌ وأدوار)، وخلطُهما في قائمةٍ واحدة يجعل زرَّ
      الإيقاف يقع بجوار حسابٍ موقوفٍ أصلا. */
-  const [box, setBox] = useState<"active" | "invited" | "suspended" | "archived">("active");
+  /* والخانةُ في العنوان (`useTabParam`): رابطُ «الموقوفة» يفتحها، و«رجوع» يعود إلى ما قبلها */
+  const [box, setBox] = useTabParam<"active" | "invited" | "suspended" | "archived">(
+    ["active", "invited", "suspended", "archived"], "active");
   /** نوعُ الحساب المرشَّح — و`null` تعني كلَّ الأنواع (ع-٩) */
   const [kind, setKind] = useState<AccountKind | null>(null);
   const [loading, setLoading] = useState(true);
