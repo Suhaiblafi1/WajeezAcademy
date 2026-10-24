@@ -89,7 +89,7 @@ describe('② الإرسال والقبول', () => {
     expect(after.sessions.map((s) => s.startsAt.getTime())).toEqual([0, 1, 2].map((i) => first.getTime() + shift + i * 7 * DAY))
     expect(after.status).toBe('open')
     expect(after.termId, 'التأجيل غير الفصل').toBe(term.termId)
-    expect(await prisma.notification.count({ where: { userId: learnerId, templateKey: 'cohort.schedule_changed' } })).toBe(1)
+    expect(await prisma.notification.count({ where: { userId: learnerId, channel: 'in_app', templateKey: 'cohort.schedule_changed' } })).toBe(1)
     expect(await prisma.auditEvent.count({ where: { action: 'cohort.postpone.accept', entityId: c.id } })).toBe(1)
 
     await expect(svc().decide(trainerUserId, offer.id, 'decline', NOW)).rejects.toThrow(/حسم/)
@@ -112,7 +112,7 @@ describe('③ من لم يقبل تتوقف شعبته', () => {
     await svc().decide(trainerUserId, offer.id, 'decline', NOW)
     expect((await prisma.cohort.findUniqueOrThrow({ where: { id: c.id } })).status).toBe('cancelled')
     expect((await prisma.cohortPostponeOffer.findUniqueOrThrow({ where: { id: offer.id } })).status).toBe('declined')
-    expect(await prisma.notification.count({ where: { userId: learnerId, templateKey: 'cohort.cancelled' } })).toBe(1)
+    expect(await prisma.notification.count({ where: { userId: learnerId, channel: 'in_app', templateKey: 'cohort.cancelled' } })).toBe(1)
   })
 
   it('⚠️ والسكوت حتى المهلة يوقفها العامل — وقبلها لا', async () => {
