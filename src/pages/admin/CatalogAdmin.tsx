@@ -14,6 +14,7 @@ import { matchesQuery } from "@/application/text/search-ar";
 import { paginate } from "@/application/admin/paginate";
 import { apiGet, apiPost, apiPut, ApiError } from "@/services/api";
 import type { SkillMeasureState } from "@/application/catalog/skill-measurement";
+import { CHANGE_REQUEST_EXAMPLE } from "@/application/catalog/change-request-example";
 import { toast } from "@/components/Toast";
 import PathwayWizard from "@/components/PathwayWizard";
 import CourseWizard from "@/components/CourseWizard";
@@ -141,7 +142,9 @@ export default function CatalogAdmin() {
   const [pathPick, setPathPick] = useState("");
 
   const [skillForm, setSkillForm] = useState({ id: "", slug: "", nameAr: "", familyId: "" });
-  const [crForm, setCrForm] = useState({ entityType: "course", entityId: "", payload: '{\n  "titleAr": "الاسم الجديد"\n}' });
+  /* والخانةُ تُفتح فارغة والمثالُ يُرى فيها ولا يُرسَل — كان قيمتَها، فمن لم يمسّها سمّى الدورةَ «الاسم الجديد»
+     (`change-request-example.ts`) */
+  const [crForm, setCrForm] = useState({ entityType: "course", entityId: "", payload: "" });
   const [openForm, setOpenForm] = useState<"names" | "skill" | "course" | "pathway" | "cr" | null>(null);
 
   /* ═══ قادمٌ من اقتراحِ مدرّبٍ صُنِّف «دورةً جديدة» (ح-٤) ═══
@@ -199,16 +202,20 @@ export default function CatalogAdmin() {
     toast("قدّم طلب المهارة للمراجعة");
   };
 
-  const submitChangeRequest = () => act(async () => {
+  /* ويُفحص قبل `act` لا داخلها: الرجوعُ من داخلها يُتبَع برسالة «قُدّم» فوق الخطأ */
+  const submitChangeRequest = () => {
+    if (crForm.payload.trim() === "") { setError("اكتب التعديل الذي تريده في الخانة"); return; }
     let payload: Record<string, unknown>;
     try { payload = JSON.parse(crForm.payload) as Record<string, unknown>; }
     catch { setError("صيغة JSON غير صالحة في حقل التعديلات"); return; }
-    await apiPost("/api/admin/catalog/change-requests", {
-      entityType: crForm.entityType, entityId: crForm.entityId.trim(), payload,
-    });
-    setCrForm({ ...crForm, entityId: "" });
-    setOpenForm(null);
-  }, "قدم طلب التغيير — ينتظر اعتماد مراجع آخر (maker-checker)");
+    void act(async () => {
+      await apiPost("/api/admin/catalog/change-requests", {
+        entityType: crForm.entityType, entityId: crForm.entityId.trim(), payload,
+      });
+      setCrForm({ ...crForm, entityId: "" });
+      setOpenForm(null);
+    }, "قدم طلب التغيير — ينتظر اعتماد مراجع آخر (maker-checker)");
+  };
 
   /* لا يُطلب معرّفٌ يُنسخ من قائمةٍ أعلاه — يُختار بالاسم من هنا مباشرة */
   const entityOptionsFor = (t: string): { id: string; label: string }[] => {
@@ -660,7 +667,8 @@ export default function CatalogAdmin() {
               )}
             </div>
             <textarea value={crForm.payload} onChange={(e) => setCrForm({ ...crForm, payload: e.target.value })} rows={5}
-              dir="ltr" className={`${inputCls} mt-3 font-mono text-xs`} />
+              dir="ltr" placeholder={CHANGE_REQUEST_EXAMPLE} aria-label="التعديلات المطلوبة"
+              className={`${inputCls} mt-3 font-mono text-xs`} />
             <p className="mt-2 text-read text-muted-foreground">
               أمثلة: titleAr للاسم، objectives للأهداف، skillIds للمهارات — تطبّق في إصدار جديد بعد الاعتماد والنشر.
               {crForm.entityType === "course" && (
