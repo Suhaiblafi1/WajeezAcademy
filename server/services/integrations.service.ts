@@ -621,6 +621,40 @@ export async function saveWhatsAppNumbers(
   return row
 }
 
+/* ═══ رقمُ مستشار المنحة — يُكتب مرّةً بقرار صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦) ═══
+
+   قال: «التواصلُ مع المستشار فاشلة لا تمثّل وسيلةً احترافيّة، اجعلها واتساب مباشرة 00971544993700». فالرقمُ موضعٌ
+   في السجلّ (`grant_advisor`) يُغيَّر من شاشة الربط لا حرفٌ في الشيفرة، ويُكتب هنا مرّةً واحدة: إن خلا الموضعُ ولم
+   يُكتب قبلُ — فمن غيّره أو محاه من شاشته بعدُ لا يرجع إليه. والعلامةُ سببُه في سجلّ الأثر. */
+export const GRANT_ADVISOR_SEED = {
+  key: 'grant_advisor', number: '971544993700',
+  reason: 'قرار صاحب المنصة (24 أكتوبر 2026): مستشار المنحة على واتساب مباشرة',
+} as const
+
+export async function seedGrantAdvisorWhatsApp(
+  prisma: PrismaClient, seed: { key: string; number: string; reason: string } = GRANT_ADVISOR_SEED,
+): Promise<boolean> {
+  const current = await getWhatsAppNumbers(prisma)
+  if (current[seed.key]) return false
+  const once = await prisma.auditEvent.findFirst({
+    where: { action: 'integration.whatsapp.save', entityId: 'whatsapp', reason: seed.reason }, select: { id: true },
+  })
+  if (once) return false
+  const numbers = { ...current, [seed.key]: seed.number }
+  await prisma.$transaction(async (tx) => {
+    await tx.integrationSetting.upsert({
+      where: { provider: 'whatsapp' },
+      update: { config: { numbers } as Prisma.InputJsonValue, enabled: true },
+      create: { provider: 'whatsapp', config: { numbers } as Prisma.InputJsonValue, enabled: true },
+    })
+    await recordAudit(tx, {
+      actorId: null, action: 'integration.whatsapp.save', entityType: 'integration_setting', entityId: 'whatsapp',
+      meta: { spots: [seed.key] }, reason: seed.reason,
+    })
+  })
+  return true
+}
+
 /* ═══ ربطُ منصّة محادثات واتساب — رمزٌ يحرس بابَ «تواصلَ المستشار» (١٩ أكتوبر ٢٠٢٦) ═══
 
    منصّةُ التوزيع تُخبرنا حين يراسل مستشارٌ طالبا، فيُسجَّل التواصلُ في حالته وحدَه

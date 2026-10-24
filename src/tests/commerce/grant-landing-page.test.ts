@@ -12,13 +12,14 @@ import { fileURLToPath } from 'node:url'
 import { plainAr } from '@/application/text/plain-ar'
 import { auditActionAr } from '@/application/audit/labels'
 import {
-  CAREER_LEVELS, GRANT_ACADEMY_LINE_AR, GRANT_CONSENT_AR, GRANT_GAINS_AR, GRANT_INTEREST_DOMAINS, GRANT_SUGGESTED_COURSES, WORK_FIELDS,
-  GRANT_VALUE_AR, GRANT_VALUE_PAID_AR, campaignParams, campaignTag, grantLeftAr, grantRemainingAr, grantCallDueAt, grantCountAr, grantCountdown, grantDaysLeftAr, grantSections, grantShareAr, grantShareMailto, GRANT_SHARE_MIN, leadProfileAr, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse, workFieldDomains,
+  CAREER_LEVELS, GRANT_ACADEMY_LINE_AR, GRANT_CONSENT_AR, GRANT_GAINS_AR, GRANT_GIFT_AR, GRANT_GIFT_MAX, GRANT_INTEREST_DOMAINS, GRANT_SUGGESTED_COURSES, WORK_FIELDS,
+  GRANT_VALUE_AR, GRANT_VALUE_PAID_AR, campaignParams, campaignTag, grantAdvisorTextAr, grantLeftAr, grantLimitAr, grantRemainingAr, grantCallDueAt, grantCountAr, grantCountdown, grantDaysLeftAr, grantSections, grantShareAr, grantShareMailto, leadProfileAr, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse, workFieldDomains,
 } from '@/application/commerce/grant-landing'
 import { courseDomain } from '@/application/catalog/course-domain'
 import { zonedInstant } from '@/application/trainer/cohort-period'
 import { parsePendingCheckout } from '@/application/commerce/pending-checkout'
 import { parseStoredGrant } from '@/services/grant-landing'
+import { WHATSAPP_SPOTS } from '@/application/site/whatsapp'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '../../..')
 const code = (p: string) => readFileSync(join(root, p), 'utf8').replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '')
@@ -84,18 +85,38 @@ describe('بعد النموذج', () => {
        مجموعاتٌ يُعدّها هو في شاشة المنحة كما كانت (الاقتراحاتُ المحذوفة) */
   })
 
-  it('⚠️ دورات فقط — لا اقتراحات ولا مجموعات، ولكل دورة سعرها قبل المنحة وبعدها', () => {
+  it('⚠️ دورات فقط — لا اقتراحات ولا مجموعات، ولكل دورة سعرها قيمتين بلا «قبل المنحة/بعد المنحة»', () => {
     expect(PAGE, 'عادت الاقتراحات').not.toMatch(/view\.pathways|\/api\/admin\/member-grant\/pathways|اقتراحات لك|اختر هذه الدورات/)
-    expect(PAGE).toMatch(/قبل المنحة <span dir="ltr" className="line-through">\{money\(x\.price\)\}<\/span>/)
-    expect(PAGE).toMatch(/بعد المنحة <span dir="ltr">\{money\(grantPrice\(x\.price, pct\)\)\}<\/span>/)
-    expect(PAGE, 'الحد يقال حدا يحرس قيمتها').toContain('اختر حتى {max} دورات، وهذا أقصى ما تغطيه منحتك. ويمكنك استبدالها لاحقا بعد استشارة مستشارك الخاص.')
+    /* ما يدفعه كبيرا وأصلُه مشطوبا بعده — قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦): «فقط السعرُ قبل وبعد كقيم» */
+    expect(PAGE).toMatch(/<bdi dir="ltr" className="text-lg font-black">\{money\(grantPrice\(x\.price, pct\)\)\}<\/bdi>\s*<bdi dir="ltr" className="text-read text-muted-foreground line-through">\{money\(x\.price\)\}<\/bdi>/)
+    expect(PAGE, 'عادت «قبل المنحة/بعد المنحة»').not.toMatch(/قبل المنحة|بعد المنحة/)
   })
 
-  it('⚠️ وأنها مباشرة على Zoom — في أول الصفحة، وفيما يحصل عليه، وفوق القائمة، وفي كل دورة', () => {
+  it('⚠️ الحد جملة واحدة تحت «آخر يوم» في بطاقة الكود — لا فقرة تحت العنوان', () => {
+    expect([1, 2, 4].map(grantLimitAr)).toEqual([
+      'اختر حتى دورة واحدة، ويمكنك استبدالها لاحقا مع مستشارك.',
+      'اختر حتى دورتين، ويمكنك استبدالها لاحقا مع مستشارك.',
+      'اختر حتى 4 دورات، ويمكنك استبدالها لاحقا مع مستشارك.',
+    ])
+    const card = PAGE.slice(PAGE.indexOf('<Card tone="accent" className="text-center">'), PAGE.indexOf('<h2 className="mt-6'))
+    expect(card).toMatch(/<GrantCountdown closesAt=\{c\.closesAt\} className="mt-4" \/>\}\s*\{c\.open && <p className="mt-0\.5 text-read text-muted-foreground">\{grantLimitAr\(max\)\}<\/p>\}\s*<\/Card>/)
+    expect(PAGE.match(/grantLimitAr\(/g)?.length, 'الحد يقال مرتين').toBe(1)
+    expect(PAGE, 'عادت فقرة الحد الطويلة').not.toMatch(/وهذا أقصى ما تغطيه منحتك|بعد استشارة مستشارك الخاص/)
+  })
+
+  it('⚠️ وأنها مباشرة على Zoom — في أول الصفحة، وفي الشريط في الصفحتين، وفي كل دورة', () => {
     expect(PAGE).toContain('دورات مباشرة على Zoom، تختار منها حتى {c.maxCourses}.')
-    expect(GRANT_GAINS_AR[0]).toMatchObject({ id: 'live', title: 'لقاءات مباشرة على Zoom' })
-    expect(GRANT_GAINS_AR.map((g) => g.id)).toContain('recording')
-    expect(PAGE).toContain('كل الدورات مباشرة على Zoom')
+    /* الشريطُ بقرار صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦): مع مدرّبٍ معتمد، وتطبيقاتٌ عمليّة، ورسالةُ توصية */
+    expect(GRANT_GAINS_AR.map((g) => [g.id, g.title])).toEqual([
+      ['live', 'لقاءات مباشرة على Zoom مع مدرب معتمد لدينا'],
+      ['practice', 'تطبيقات عملية'],
+      ['certificate', 'شهادة ورسالة توصية لمن يلتزم'],
+    ])
+    /* والشريطُ نفسُه في النموذج وفوق قائمة الدورات — بدل صندوق Zoom الكبير */
+    expect(PAGE.match(/<GrantGains /g)?.length, 'الشريط في الصفحتين').toBe(2)
+    const picker = PAGE.slice(PAGE.indexOf('<h2 className="mt-6'), PAGE.indexOf('view.openCourses.length === 0'))
+    expect(picker).toContain('<GrantGains className="mt-3" />')
+    expect(PAGE, 'عاد صندوق Zoom الكبير').not.toMatch(/كل الدورات مباشرة على Zoom|تسجيل كل لقاء/)
     expect(PAGE).toMatch(/تبدأ \{cohortDayAr\(x\.startsAt\)\} · مباشرة على Zoom/)
   })
 
@@ -171,7 +192,12 @@ describe('بعد النموذج', () => {
     expect(effect, 'اختارها عنه').toMatch(/setPicked\(resumed \? resumed\.intent\.courseIds\.filter\(\(id\) => open\.has\(id\)\)\.slice\(0, max\) : \[\]\)/)
     expect(PAGE.slice(PAGE.indexOf('const switchPath = () => {')).split('};')[0], 'البديل يختار عنه').not.toMatch(/setPicked/)
     expect(PAGE, 'لا يحفظ مجال عمله').toMatch(/interests, workField: form\.workField,/)
-    expect(PAGE).toMatch(/ours\.has\(x\.courseId\)\s*\? <Chip tone="accent" className="mt-1">نقترحها لك<\/Chip>/)
+    /* وسمٌ نصّيٌّ أعلى البطاقة لا قرصٌ يشبه الزرّ — قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦) */
+    expect(PAGE).toMatch(/const tag = ours\.has\(x\.courseId\) \? "نقترحها لك" : fits\(x\) > 0 \? "يناسب ما تريد تطويره" : null;/)
+    const card = PAGE.slice(PAGE.indexOf('const row = '), PAGE.indexOf('<Card tone="accent" className="text-center">'))
+    expect(card, 'الوسم قرص').not.toMatch(/<Chip/)
+    expect(card.indexOf('{tag && <span'), 'الوسم أعلى البطاقة').toBeGreaterThan(-1)
+    expect(card.indexOf('{tag && <span'), 'الوسم تحت العنوان').toBeLessThan(card.indexOf('<span className="block font-bold leading-6">{x.titleAr}'))
     expect(PAGE, 'عاد «اخترناها لك» أو «حددنا لك»').not.toMatch(/اخترناها لك|حددنا لك/)
   })
 
@@ -183,13 +209,20 @@ describe('بعد النموذج', () => {
     expect(seatsLeftAr(6), 'رقم كبير يقلل القيمة').toBeNull()
     expect(seatsLeftAr(0)).toBeNull()
     expect(seatsLeftAr(null), 'بلا سعة').toBeNull()
-    expect(PAGE).toMatch(/\{seatsLeftAr\(x\.seatsLeft\) && <Chip tone="warn"/)
+    expect(PAGE).toMatch(/const seats = seatsLeftAr\(x\.seatsLeft\);/)
+    expect(PAGE).toMatch(/\{seats && <span className="inline-flex items-center gap-1 text-red-300">/)
+    /* وصورةُ المدرّب أوّلُ ما في البطاقة وبكبرها — وبلا صورةٍ مربّعٌ بحجمها فلا تتفاوت البطاقات */
+    const card = PAGE.slice(PAGE.indexOf('const row = '), PAGE.indexOf('<Card tone="accent" className="text-center">'))
+    expect(card).toMatch(/<img src=\{x\.trainer\.photoUrl\} alt="" loading="lazy" className="h-24 w-24 rounded-2xl object-cover/)
+    expect(card).toMatch(/: <span className="grid h-24 w-24 place-items-center rounded-2xl/)
+    expect(card.indexOf('x.trainer?.photoUrl'), 'الصورة قبل العنوان').toBeLessThan(card.indexOf('<span className="block font-bold leading-6">{x.titleAr}'))
+    expect(card, 'عادت الصورة الصغيرة').not.toMatch(/h-6 w-6 rounded-full/)
     /* والمدرّبُ من الخادم وحدَه — لا اسمَ يُكتب في الصفحة — وإلى بطاقته في صفحة الفريق */
     expect(PAGE).toMatch(/\{x\.trainer && \(\s*<a href=\{`\/trainers#trainer-\$\{encodeURIComponent\(x\.trainer\.id\)\}`\} target="_blank"/)
     expect(PAGE).toMatch(/<a href=\{`\/build\/\$\{encodeURIComponent\(x\.courseId\)\}`\} target="_blank"[^>]*>تفاصيل الدورة<\/a>/)
   })
 
-  it('⚠️ «أهدها لأصدقائك» — رسالة جميلة جاهزة في واتساب والبريد، برابط المنحة ووسم قناتها', () => {
+  it('⚠️ «يحق لك أن تهدي هذه المنحة لأصدقائك» — صندوق وحده خارج لوح الدفع، برسالة جاهزة في واتساب والبريد', () => {
     const m = grantShareAr('https://www.wajeezacademy.com', 60, '30 أكتوبر 2026')
     expect(m.split('\n')[0]).toBe('أهديك منحة من أكاديمية وجيز 🎁')
     expect(m).toContain('تغطي 60% من سعر دورات مباشرة على Zoom، مع مدربين وشهادة لكل دورة.')
@@ -202,18 +235,22 @@ describe('بعد النموذج', () => {
     expect(decodeURIComponent(mail.split('subject=')[1].split('&')[0])).toBe('أهديك منحة من أكاديمية وجيز')
     expect(decodeURIComponent(mail.split('body=')[1])).toContain(m)
     expect(campaignParams('?ch=share').channel, 'وسم القناة لا يقرأ').toBe('share')
-    expect(GRANT_SHARE_MIN).toBe(3)
-    /* آخرُ ما في لوح الدفع — بعد الزرّ والعدّاد */
+    /* والحدُّ أعلى يُقال ولا يُحصى — الرابطُ عامّ */
+    expect(GRANT_GIFT_MAX).toBe(3)
+    expect(GRANT_GIFT_AR).toEqual({ title: 'يحق لك أن تهدي هذه المنحة لأصدقائك', limit: 'بحد أعلى 3 أصدقاء' })
     expect(PAGE).toMatch(/const shareText = grantShareAr\(window\.location\.origin, pct, lastDayLong\);/)
     expect(PAGE).toMatch(/href=\{waShare\(shareText\)\}/)
     expect(PAGE).toMatch(/href=\{grantShareMailto\(window\.location\.origin, pct, lastDayLong\)\}/)
-    expect(PAGE).toMatch(/import \{ waShare \} from "@\/application\/site\/whatsapp";/)
-    expect(PAGE).toContain('أهدها لأصدقائك')
+    expect(PAGE).toMatch(/import \{ waHref, waShare \} from "@\/application\/site\/whatsapp";/)
     expect(PAGE, 'عاد «ثلاثة أصدقاء»').not.toContain('ثلاثة أصدقاء')
-    const panel = PAGE.slice(PAGE.indexOf('<Card tone="solid" className="sticky'), PAGE.indexOf('<Card className="mt-6">'))
-    const at = (t: string) => panel.indexOf(t)
-    expect(at('احصل على المنحة'), 'الزر').toBeGreaterThan(-1)
-    expect(at('أهدها لأصدقائك'), 'الهدية آخرا').toBeGreaterThan(at('احصل على المنحة'))
+    /* خارجَ لوح الدفع وبعده — قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦): «صندوقُ الإهداء يكون خارجَ صندوق الدفع» */
+    const from = PAGE.indexOf('<Card tone="solid" className="sticky')
+    const panel = PAGE.slice(from, PAGE.indexOf('</Card>', from))
+    expect(panel, 'الزر').toContain('احصل على المنحة')
+    expect(panel, 'عادت الهدية في لوح الدفع').not.toMatch(/waShare|grantShareMailto|GRANT_GIFT_AR|أهدها/)
+    const gift = PAGE.indexOf('{GRANT_GIFT_AR.title}')
+    expect(gift, 'صندوق الهدية').toBeGreaterThan(from + panel.length)
+    expect(PAGE.slice(gift)).toMatch(/^\{GRANT_GIFT_AR\.title\}<\/span>\s*<span className="block text-read text-muted-foreground">\{GRANT_GIFT_AR\.limit\}/)
     /* والكودُ ظاهرٌ فوق، والعدّادُ فوق وحدَه — لا يُعادان في اللوح */
     expect(panel, 'عاد سطر الكود في اللوح').not.toMatch(/يوضع تلقائيا|stored\.code/)
     expect(panel, 'عاد العداد في اللوح').not.toContain('GrantCountdown')
@@ -221,6 +258,15 @@ describe('بعد النموذج', () => {
     expect(PAGE).toContain('أرسلناه إلى بريدك أيضا.')
     expect(PAGE, 'عادت «ادفع الآن»').not.toContain('ادفع الآن')
     expect(code('src/pages/admin/GrantResults.tsx'), 'نتائج الحملة تسمي قناتها').toMatch(/share: "من صديق"/)
+  })
+
+  it('⚠️ المستشار على واتساب مباشرة — برقم موضعه في شاشة الربط، ورسالة فيها اسمه وكوده', () => {
+    expect(WHATSAPP_SPOTS.map((s) => s.key)).toContain('grant_advisor')
+    expect(PAGE).toMatch(/const advisorHref = waHref\(numbers, "grant_advisor", CONTACT\.whatsapp, grantAdvisorTextAr\(stored\.name, stored\.code\)\);/)
+    expect(PAGE).toMatch(/<Button as="a" href=\{advisorHref\} target="_blank"/)
+    expect(grantAdvisorTextAr('سارة', 'WG-ABCD2345')).toBe('مرحبا، أنا سارة. عندي سؤال عن منحة أعضاء وجيز. كود منحتي: WG-ABCD2345')
+    expect(grantAdvisorTextAr(' ', null)).toBe('مرحبا، عندي سؤال عن منحة أعضاء وجيز.')
+    expect(PAGE, 'عاد الطلب المكتوب').not.toMatch(/\/api\/public\/grant\/advisor|<textarea|اطلب مستشارا/)
   })
 
   it('⚠️ مكالمة المستشار بعد ساعتين من النموذج — في ساعات العمل بتوقيت عمان، ولا موعد في الماضي', () => {
@@ -256,7 +302,10 @@ describe('بعد النموذج', () => {
     expect(secs[1].items.map((x) => x.id)).toEqual(['a', 'c'])
     expect(PAGE).toMatch(/const top = courses\.filter\(\(x\) => ours\.has\(x\.courseId\)\);/)
     expect(PAGE).toMatch(/grantSections\(courses\.filter\(\(x\) => !ours\.has\(x\.courseId\)\), stored\.interests, OTHER_DOMAIN\)/)
-    expect(PAGE).toMatch(/\{top\.length > 0 && <div className="mt-5 space-y-2">\{top\.map\(\(x\) => row\(x\)\)\}<\/div>\}/)
+    expect(PAGE).toMatch(/\{top\.length > 0 && <div className="mt-5 space-y-3">\{top\.map\(\(x\) => row\(x\)\)\}<\/div>\}/)
+    /* وعنوانُ الأقسام بقرار صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦): «دوراتٌ أخرى حسب المجال.. عنوانٌ فاشل» */
+    expect(PAGE).toMatch(/\{top\.length > 0 && <p className="mt-6 font-bold">ويمكنك اختيار دورات أخرى من المجالات التالية<\/p>\}/)
+    expect(PAGE).not.toContain('دورات أخرى حسب المجال')
     expect(PAGE, 'عاد «كل الدورات المتاحة»').not.toContain('كل الدورات المتاحة')
     expect(PAGE).toMatch(/اختر دوراتك\{view\.termAr && <span className="text-read font-normal text-muted-foreground"> · \{view\.termAr\}<\/span>\}/)
     expect(PAGE, 'الأقسام مطوية بلا فتح').toMatch(/<Inset as="details" key=\{sec\.domain\} className="group">/)
@@ -331,10 +380,11 @@ describe('النصوص', () => {
   it('بلا تشكيل', () => {
     const data = [
       GRANT_CONSENT_AR, GRANT_ACADEMY_LINE_AR, ...WORK_FIELDS, ...CAREER_LEVELS, ...GRANT_GAINS_AR.map((g) => g.title),
+      GRANT_GIFT_AR.title, GRANT_GIFT_AR.limit, grantLimitAr(4), grantAdvisorTextAr('سارة', 'WG-ABCD2345'),
     ]
     const onPage = ['احجز منحتي الآن', 'الاسم الكامل', 'رقم الواتساب', 'البريد الإلكتروني', 'مجال عملك', 'مستواك الوظيفي', 'ما الذي تريد تطويره؟',
       'سؤالان اختياريان لنرتب لك الدورات', 'كود منحتك', 'اختر دوراتك',
-      'كل الدورات مباشرة على Zoom', 'قبل المنحة', 'بعد المنحة', 'نقترحها لك', 'نقترح لك دورات مسار', 'تناسبك.', 'أو مسار', 'بدّل إليه', 'يناسب ما تريد تطويره', 'لست متأكدا؟ تواصل مع مستشار', 'اطلب مستشارا', 'احصل على المنحة', 'أهدها لأصدقائك', 'تنتهي المنحة بعد', 'آخر يوم:', 'دورات أخرى حسب المجال', 'أرسلناه إلى بريدك أيضا.', 'وهذا أقصى ما تغطيه منحتك']
+      'نقترحها لك', 'نقترح لك دورات مسار', 'تناسبك.', 'أو مسار', 'بدّل إليه', 'يناسب ما تريد تطويره', 'تحتاج مساعدة في الاختيار؟', 'مستشارك الخاص يرد عليك مباشرة على واتساب.', 'راسل مستشارك', 'احصل على المنحة', 'برسالة جاهزة ترسلها بضغطة.', 'تنتهي المنحة بعد', 'آخر يوم:', 'ويمكنك اختيار دورات أخرى من المجالات التالية', 'أرسلناه إلى بريدك أيضا.', 'تفاصيل الدورة']
     for (const t of [...data, ...onPage]) expect(t).toBe(plainAr(t))
     for (const t of onPage) expect(PAGE).toContain(t)
     expect(auditActionAr('coupon.grant_apply')).not.toBe('coupon.grant_apply')

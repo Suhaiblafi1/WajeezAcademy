@@ -83,7 +83,8 @@ describe('صفحته ومواضع ذكره', () => {
   it('⚠️ في «شهاداتي» رابطه للشهادة السارية — وفي صفحة المنحة والأسئلة الشائعة', () => {
     expect(CERTS).toMatch(/c\.status !== "revoked" && c\.endorsementNumber && \(/)
     expect(CERTS).toMatch(/to=\{endorsementPath\(c\.endorsementNumber\)\}/)
-    expect(GRANT_GAINS_AR.find((g) => g.id === 'certificate')?.title).toContain('خطاب توصية')
+    /* وفي صفحة المنحة «رسالة توصية» — قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦): «استبدل كلمةَ خطابٍ إلى رسالة» */
+    expect(GRANT_GAINS_AR.find((g) => g.id === 'certificate')?.title).toContain('رسالة توصية')
     expect(faqs.some((f) => f.q.includes('خطاب توصية') && f.a.includes('80%'))).toBe(true)
   })
 })

@@ -18,7 +18,7 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
 import { setupTestDb, testPrisma } from '../helpers/db'
-import { getWhatsAppNumbers, saveWhatsAppNumbers } from '../../services/integrations.service'
+import { GRANT_ADVISOR_SEED, getWhatsAppNumbers, saveWhatsAppNumbers, seedGrantAdvisorWhatsApp } from '../../services/integrations.service'
 
 let prisma: PrismaClient
 const ACTOR = '00000000-0000-0000-0000-000000000001'
@@ -84,5 +84,31 @@ describe('أرقامُ واتساب في جدول الإعدادات', () => {
     const meta = JSON.stringify(last!.meta ?? {})
     expect(meta).toContain('advisor')
     expect(meta, 'الرقمُ مكتوبٌ في السجلّ').not.toContain('962771052222')
+  })
+})
+
+describe('رقم مستشار المنحة — يكتب مرة بقرار صاحب المنصة (24 أكتوبر 2026)', () => {
+  it('يكتب في موضعه إن خلا، ولا يمس غيره، ويسجل بسببه', async () => {
+    expect(GRANT_ADVISOR_SEED).toMatchObject({ key: 'grant_advisor', number: '971544993700' })
+    expect(await seedGrantAdvisorWhatsApp(prisma)).toBe(true)
+    const n = await getWhatsAppNumbers(prisma)
+    expect(n.grant_advisor).toBe('971544993700')
+    expect(n.advisor, 'مس رقما غيره').toBe('962771052222')
+    const a = await prisma.auditEvent.findFirst({ where: { action: 'integration.whatsapp.save', reason: GRANT_ADVISOR_SEED.reason } })
+    expect(a?.actorId, 'بلا فاعل: النظام').toBeNull()
+    expect(a?.meta).toEqual({ spots: ['grant_advisor'] })
+  })
+
+  it('ولا يقع ثانية — ولا يعود إن محاه أحد من شاشته', async () => {
+    expect(await seedGrantAdvisorWhatsApp(prisma), 'كتبه مرتين').toBe(false)
+    await saveWhatsAppNumbers(prisma, ACTOR, { grant_advisor: '' })
+    expect(await seedGrantAdvisorWhatsApp(prisma), 'عاد بعد أن محي').toBe(false)
+    expect('grant_advisor' in (await getWhatsAppNumbers(prisma))).toBe(false)
+  })
+
+  it('ولا يكتب فوق رقم ضبطه أحد قبله', async () => {
+    await saveWhatsAppNumbers(prisma, ACTOR, { grant_advisor: '962799999999' })
+    expect(await seedGrantAdvisorWhatsApp(prisma, { key: 'grant_advisor', number: '971500000000', reason: 'سبب لم يكتب قبل' })).toBe(false)
+    expect((await getWhatsAppNumbers(prisma)).grant_advisor).toBe('962799999999')
   })
 })
