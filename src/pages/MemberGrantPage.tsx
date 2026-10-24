@@ -28,7 +28,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
-import { Award, CirclePlay, Copy, Gift, Loader2, Share2, UserRound, Video, type LucideIcon } from "lucide-react";
+import { Award, ChevronDown, CirclePlay, Copy, Gift, Loader2, Share2, UserRound, Video, type LucideIcon } from "lucide-react";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import { useRealSession } from "@/services/session";
 import { useHoneypot } from "@/components/HoneypotField";
@@ -42,12 +42,13 @@ import { controlCls } from "@/components/FormKit";
 import { Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import Chip from "@/components/ui/Chip";
-import { fmtDate, fmtMoney } from "@/application/text/format-ar";
+import { fmtDate, fmtDateLong, fmtMoney } from "@/application/text/format-ar";
 import { cohortDayAr } from "@/application/learning/cohort-gate";
 import { grantPrice, MEMBER_GRANT_NAME_AR } from "@/application/commerce/grant";
 import {
   CAREER_LEVELS, GRANT_ACADEMY_LINE_AR, GRANT_CONSENT_AR, GRANT_GAINS_AR, GRANT_MAX_INTERESTS, GRANT_SUGGESTED_COURSES, WORK_FIELDS,
-  campaignParams, grantSavingAr, grantShareAr, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse, type GrantPathOption,
+  GRANT_VALUE_AR, campaignParams, grantCountAr, grantCountdown, grantSections, grantShareAr, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse,
+  type GrantPathOption,
 } from "@/application/commerce/grant-landing";
 import { readStoredGrant, saveStoredGrant, type StoredGrant } from "@/services/grant-landing";
 import publicPathsData from "@/data/catalog/public-pathways.json";
@@ -78,6 +79,33 @@ const BUY_TITLE_AR = "دورات منحتك";
 const money = (n: number) => fmtMoney(n, USD);
 /** «دورة» و«دورتين» بلا رقم، و«4 دورات» */
 const coursesAr = (n: number) => (n === 1 ? "دورة" : n === 2 ? "دورتين" : `${n} دورات`);
+
+/** عدّادُ انتهاء المنحة وآخرُ يومٍ لها — كلُّ رقمٍ في خانته وتحته اسمُه (`grantCountdown`) */
+function GrantCountdown({ closesAt, className = "" }: { closesAt: string; className?: string }) {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(t);
+  }, []);
+  const left = grantCountdown(closesAt, now);
+  if (!left) return <p className={`text-read font-bold ${className}`}>انتهت المنحة</p>;
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const cells: [string, string][] = [[String(left.days), "يوم"], [pad(left.hours), "ساعة"], [pad(left.minutes), "دقيقة"], [pad(left.seconds), "ثانية"]];
+  return (
+    <div className={className} role="timer">
+      <p className="text-read font-bold">تنتهي المنحة بعد</p>
+      <div className="mt-2 flex justify-center gap-2">
+        {cells.map(([n, label]) => (
+          <Inset as="span" tone="warn" key={label} className="grid w-16 px-1 py-1.5">
+            <span className="text-2xl font-black tabular-nums">{n}</span>
+            <span className="text-read text-muted-foreground">{label}</span>
+          </Inset>
+        ))}
+      </div>
+      <p className="mt-2 text-read text-muted-foreground">آخر يوم لاستعمال المنحة: {fmtDateLong(new Date(new Date(closesAt).getTime() - 1))}</p>
+    </div>
+  );
+}
 /* المساراتُ العامّةُ بترتيب مختارات صاحب المنصّة — ومنها الرئيسيُّ والبديل (`suggestPaths`) */
 const PICK_RANK = new Map(publicPathsData.picks.map((x, i) => [x.id, i]));
 const GRANT_PATHS: GrantPathOption[] = [...publicPathsData.pathways]
@@ -215,6 +243,47 @@ export default function MemberGrantPage() {
     const fits = (x: GrantCourse) => (x.domainAr && mine.has(x.domainAr) ? 1 : 0);
     /* والمختارةُ بترتيب اختيارنا — أنسبُها أوّلا — فوق كلّ ما سواها */
     const courses = rankByInterest(view.openCourses, (x) => (ours.has(x.courseId) ? 2 + suggested.length - suggested.indexOf(x.courseId) : fits(x)));
+    /* ما اخترناه له فوقُ مفتوحا، والباقي أقسامٌ مطويّةٌ بمجالها — ما يريد تطويرَه أوّلا (`grantSections`) */
+    const top = courses.filter((x) => ours.has(x.courseId));
+    const sections = grantSections(courses.filter((x) => !ours.has(x.courseId)), stored.interests, OTHER_DOMAIN);
+    /* سطرُ الدورة — في المختارات فوق وفي أقسام المجالات تحتها، ولا يُعاد اسمُ المجال تحت قسمه */
+    const row = (x: GrantCourse, inSection = false) => {
+      const on = picked.includes(x.courseId);
+      const full = !on && picked.length >= max;
+      return (
+        <Inset
+          as="label" key={x.courseId} tone={on ? "accent" : "default"} interactive={!full}
+          className={`grid cursor-pointer grid-cols-[auto_minmax(0,1fr)] items-start gap-x-3 gap-y-1 sm:grid-cols-[auto_minmax(0,1fr)_auto] ${full ? "opacity-50" : ""}`}
+        >
+          <input type="checkbox" checked={on} disabled={full} onChange={() => toggle(x.courseId)} className="mt-1" />
+          <span>
+            <span className="block font-bold">{x.titleAr}</span>
+            <span className="block text-read text-muted-foreground">{x.domainAr && !inSection ? `${x.domainAr} · ` : ""}تبدأ {cohortDayAr(x.startsAt)} · مباشرة على Zoom</span>
+            {/* المدرّبُ ببوّابة النشر، وتفاصيلُ الدورة — في نافذةٍ جديدة فلا يضيع ما اختاره */}
+            <span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-read">
+              {x.trainer && (
+                <a href={`/trainers#trainer-${encodeURIComponent(x.trainer.id)}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 font-bold text-teal-light-ink">
+                  {x.trainer.photoUrl
+                    ? <img src={x.trainer.photoUrl} alt="" className="h-6 w-6 rounded-full object-cover" />
+                    : <UserRound className="h-5 w-5" aria-hidden="true" />}
+                  مع {x.trainer.name}
+                </a>
+              )}
+              <a href={`/build/${encodeURIComponent(x.courseId)}`} target="_blank" rel="noreferrer" className="text-muted-foreground underline">تفاصيل الدورة</a>
+            </span>
+            {seatsLeftAr(x.seatsLeft) && <Chip tone="warn" className="mt-1 me-1">{seatsLeftAr(x.seatsLeft)}</Chip>}
+            {ours.has(x.courseId)
+              ? <Chip tone="accent" className="mt-1">اخترناها لك</Chip>
+              : fits(x) > 0 && <Chip tone="accent" className="mt-1">يناسب ما تريد تطويره</Chip>}
+          </span>
+          {/* السعرُ تحت العنوان على الهاتف، وبجانبه على الحاسوب — فلا يضيق العنوانُ حتّى يتكسّر */}
+          <span className="col-start-2 flex flex-wrap gap-x-4 text-read sm:col-start-3 sm:block sm:text-end">
+            <span className="block text-muted-foreground">قبل المنحة <span dir="ltr" className="line-through">{money(x.price)}</span></span>
+            <span className="block font-black">بعد المنحة <span dir="ltr">{money(grantPrice(x.price, pct))}</span></span>
+          </span>
+        </Inset>
+      );
+    };
     return (
       <Shell>
         <Card tone="accent" className="text-center">
@@ -226,13 +295,14 @@ export default function MemberGrantPage() {
                 {stored.code}
                 <button type="button" aria-label="انسخ الكود" onClick={() => void copy(stored.code!)} className="cursor-pointer"><Copy className="h-5 w-5" /></button>
               </p>
-              <p className="mt-1 text-read text-muted-foreground">أرسلناه إلى بريدك أيضا. يستعمل مرة واحدة، ويمكنك أن تهديه لغيرك.{lastDay ? ` آخر يوم ${lastDay}.` : ""}</p>
+              <p className="mt-1 text-read text-muted-foreground">أرسلناه إلى بريدك أيضا. يستعمل مرة واحدة، ويمكنك أن تهديه لغيرك.</p>
             </>
           ) : stored.sentTo ? (
             <p className="mt-2 text-read">لك كود منحة من قبل. أرسلناه إلى {stored.sentTo}.</p>
           ) : (
             <p className="mt-2 text-read">{reasonAr ?? (c.open ? "" : "المنحة مغلقة الآن")}</p>
           )}
+          {c.open && c.closesAt && <GrantCountdown closesAt={c.closesAt} className="mt-4" />}
           {/* «أهد منحة لصديق» — رسالةٌ جاهزة برابط المنحة ووسم قناتها، فالصديقُ يأخذ منحتَه لا كودَك */}
           {c.open && (
             <a
@@ -277,53 +347,41 @@ export default function MemberGrantPage() {
               كل الدورات المتاحة ({view.openCourses.length})
               {view.termAr && <span className="font-normal text-muted-foreground"> · {view.termAr}</span>}
             </p>
-            <div className="mt-2 space-y-2">
-              {courses.map((x) => {
-                const on = picked.includes(x.courseId);
-                const full = !on && picked.length >= max;
-                return (
-                  <Inset
-                    as="label" key={x.courseId} tone={on ? "accent" : "default"} interactive={!full}
-                    className={`grid cursor-pointer grid-cols-[auto_minmax(0,1fr)] items-start gap-x-3 gap-y-1 sm:grid-cols-[auto_minmax(0,1fr)_auto] ${full ? "opacity-50" : ""}`}
-                  >
-                    <input type="checkbox" checked={on} disabled={full} onChange={() => toggle(x.courseId)} className="mt-1" />
-                    <span>
-                      <span className="block font-bold">{x.titleAr}</span>
-                      <span className="block text-read text-muted-foreground">{x.domainAr ? `${x.domainAr} · ` : ""}تبدأ {cohortDayAr(x.startsAt)} · مباشرة على Zoom</span>
-                      {/* المدرّبُ ببوّابة النشر، وتفاصيلُ الدورة — في نافذةٍ جديدة فلا يضيع ما اختاره */}
-                      <span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-read">
-                        {x.trainer && (
-                          <a href={`/trainers#trainer-${encodeURIComponent(x.trainer.id)}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 font-bold text-teal-light-ink">
-                            {x.trainer.photoUrl
-                              ? <img src={x.trainer.photoUrl} alt="" className="h-6 w-6 rounded-full object-cover" />
-                              : <UserRound className="h-5 w-5" aria-hidden="true" />}
-                            مع {x.trainer.name}
-                          </a>
-                        )}
-                        <a href={`/build/${encodeURIComponent(x.courseId)}`} target="_blank" rel="noreferrer" className="text-muted-foreground underline">تفاصيل الدورة</a>
-                      </span>
-                      {seatsLeftAr(x.seatsLeft) && <Chip tone="warn" className="mt-1 me-1">{seatsLeftAr(x.seatsLeft)}</Chip>}
-                      {ours.has(x.courseId)
-                        ? <Chip tone="accent" className="mt-1">اخترناها لك</Chip>
-                        : fits(x) > 0 && <Chip tone="accent" className="mt-1">يناسب ما تريد تطويره</Chip>}
-                    </span>
-                    {/* السعرُ تحت العنوان على الهاتف، وبجانبه على الحاسوب — فلا يضيق العنوانُ حتّى يتكسّر */}
-                    <span className="col-start-2 flex flex-wrap gap-x-4 text-read sm:col-start-3 sm:block sm:text-end">
-                      <span className="block text-muted-foreground">قبل المنحة <span dir="ltr" className="line-through">{money(x.price)}</span></span>
-                      <span className="block font-black">بعد المنحة <span dir="ltr">{money(grantPrice(x.price, pct))}</span></span>
-                    </span>
-                  </Inset>
-                );
-              })}
-            </div>
+            {top.length > 0 && <div className="mt-2 space-y-2">{top.map((x) => row(x))}</div>}
+            {/* والباقي أقسامٌ مطويّةٌ بمجالها — قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦): «الدوراتُ كثيرةٌ وتحيّر الشخص» */}
+            {sections.length > 0 && (
+              <>
+                {top.length > 0 && <p className="mt-5 font-bold">دورات أخرى حسب المجال</p>}
+                <div className="mt-2 space-y-2">
+                  {sections.map((sec) => {
+                    const mineHere = sec.items.filter((x) => picked.includes(x.courseId)).length;
+                    return (
+                      <Inset as="details" key={sec.domain} className="group">
+                        <summary className="flex cursor-pointer list-none items-center justify-between gap-3">
+                          <span className="font-bold">{sec.domain}</span>
+                          <span className="flex shrink-0 items-center gap-2 text-read text-muted-foreground">
+                            {grantCountAr(sec.items.length)}{mineHere > 0 && <Chip tone="accent">اخترت {mineHere}</Chip>}
+                            <ChevronDown className="h-4 w-4 transition group-open:rotate-180" aria-hidden="true" />
+                          </span>
+                        </summary>
+                        <div className="mt-3 space-y-2">{sec.items.map((x) => row(x, true))}</div>
+                      </Inset>
+                    );
+                  })}
+                </div>
+              </>
+            )}
             {picked.length >= max && <p className="mt-2 text-read text-muted-foreground">وصلت الحد: {max} دورات. احذف دورة لتضيف غيرها.</p>}
           </>
         )}
 
         {chosen.length > 0 && (
           <Card tone="solid" className="sticky bottom-3 mt-4 text-center shadow-lg">
-            <p className="text-read text-muted-foreground">اخترت {chosen.length} {chosen.length === 1 ? "دورة" : "دورات"} · قيمتها <span dir="ltr" className="line-through">{money(listTotal)}</span></p>
-            <p className="mt-1 text-lg font-black">{grantSavingAr(money(payTotal), money(listTotal - payTotal))}</p>
+            {/* قيمةُ المنحة أوّلا، وتحتها ما يدفعه وما كانت — قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦). والمبالغُ معزولةٌ فلا تنقلب */}
+            <p className="text-lg font-black">{GRANT_VALUE_AR} <bdi dir="ltr">{money(listTotal - payTotal)}</bdi></p>
+            <p className="mt-1 text-read text-muted-foreground">
+              {grantCountAr(chosen.length)} بـ<bdi dir="ltr">{money(payTotal)}</bdi> بدل <bdi dir="ltr" className="line-through">{money(listTotal)}</bdi>
+            </p>
             <Button tone="confirm" className="mt-3 w-full" onClick={pay}>ادفع الآن</Button>
             {stored.code
               ? <p className="mt-2 text-read text-muted-foreground">كودك {stored.code} يوضع تلقائيا.</p>
@@ -384,7 +442,9 @@ export default function MemberGrantPage() {
             <>
               <p className="mt-3 text-lg font-bold">لأنك من أعضاء وجيز، تدفع {100 - c.percentOff}% فقط من سعر دوراتك.</p>
               <p className="mt-1 text-read text-muted-foreground">دورات مباشرة على Zoom، تختار منها حتى {c.maxCourses}.</p>
-              <p className="mt-3"><Chip tone="warn">المنح محدودة{lastDay ? `، وآخر يوم ${lastDay}` : ""}</Chip></p>
+              {c.closesAt
+                ? <GrantCountdown closesAt={c.closesAt} className="mt-4" />
+                : <p className="mt-3"><Chip tone="warn">المنح محدودة</Chip></p>}
             </>
           ) : (
             <p className="mt-3 text-lg font-bold">المنحة غير مفتوحة الآن. سجل بياناتك ونبلغك أول ما تفتح.</p>
