@@ -20,7 +20,13 @@
    ② **وتُحسب من الطابور بأعدادها، ويُسقَط ما خلا منه** — في دالّةٍ واحدة.
    ③ **وبُعدان يجتمعان بالواو** — لا يُلغي أحدُهما الآخر.
    ④ **والطابورُ يُجلَب كلُّه** — فلا يُعَدّ ما لم يصل.
-   ⑤ **ومفتاحُ النتيجة من الشارات نفسِها** — فلا مرشِّحٌ يُخرج ما يخالفه. */
+   ⑤ **ومفتاحُ النتيجة من الشارات نفسِها** — فلا مرشِّحٌ يُخرج ما يخالفه.
+
+   ═══ واللّيبلُ الرئيسيُّ صار المحطّة (٢٤ أكتوبر ٢٠٢٦) ═══
+
+   المرحلةُ الثالثةُ من مقترح لوحة الإدارة: شاراتُ الحالة الخمسَ عشرةَ صارت محطّاتِ الانضمام — «الطلب ·
+   المقابلة · الاتفاقية» و«لاحقا» و«مغلق» جانبا (`joining.ts`) — والحالةُ الدقيقةُ باقيةٌ في قائمتها المنسدلة.
+   والحكمُ نفسُه: تُحسب بـ`facetsOf` من الطابور، وما خلا لا يُعرض، وعلى كلٍّ عددُها. */
 
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
@@ -100,15 +106,17 @@ describe('② والشاشة تحسبها من الطابور', () => {
   it('وصفّا الشاشة كلاهما يبنيان بها — فلا حساب ثالث ينحرف', () => {
     const screen = code(SCREEN)
     expect(screen.match(/facetsOf\(/g) ?? [], 'صفّ يحسب شاراته بيده').toHaveLength(2)
-    expect(screen, 'شارات الحالة لا تحسب من الصفوف')
-      .toMatch(/statusFacets = facetsOf\(Object\.keys\(STATUS_LABELS\), apps,/)
+    expect(screen, 'شارات المحطة لا تحسب من الصفوف')
+      .toMatch(/stopFacets = facetsOf\(JOINING_STOPS\.map\(\(s\) => s\.id\), apps,/)
     expect(screen, 'شارات النتيجة لا تحسب من الصفوف')
       .toMatch(/resultFacets = facetsOf\(/)
   })
 
   it('وعدد كلّ مكتوب عليها — فيعرف ما تخرجه قبل نقرها', () => {
     const screen = code(SCREEN)
-    expect(screen, 'شارة حالة بلا عدد').toMatch(/statusFacets\.map\(\(f\) =>[\s\S]{0,600}?\{f\.n\}/)
+    /* والمحطّاتُ صفّان: الخطُّ الرئيسيُّ و«لاحقا» و«مغلق» جانبا — ولكلٍّ عددُه */
+    const stopRows = screen.match(/stopFacets\.filter\(\(f\) => !?f\.aside\)\.map\(\([^)]*\) =>[\s\S]{0,700}?\{f\.n\}/g) ?? []
+    expect(stopRows, 'شارة محطة بلا عدد').toHaveLength(2)
     expect(screen, 'شارة نتيجة بلا عدد').toMatch(/resultFacets\.map\(\(f\) =>[\s\S]{0,600}?\{f\.n\}/)
   })
 })
@@ -127,7 +135,7 @@ describe('③ وبعدان يجتمعان بالواو', () => {
   })
 
   it('وكلّ منهما ينقر ثانية فيفرج عنه', () => {
-    expect(screen).toContain('setFilter(filter === f.key ? "" : f.key)')
+    expect(screen).toContain('setStop(stop === f.id ? "" : f.id)')
     expect(screen).toContain('setResultFilter(resultFilter === f.key ? "" : f.key)')
   })
 })
