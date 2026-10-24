@@ -242,7 +242,7 @@ export default function MemberGrantPage() {
     /* ما اخترناه له فوقُ مفتوحا، والباقي أقسامٌ مطويّةٌ بمجالها — ما يريد تطويرَه أوّلا (`grantSections`) */
     const top = courses.filter((x) => ours.has(x.courseId));
     const sections = grantSections(courses.filter((x) => !ours.has(x.courseId)), stored.interests, OTHER_DOMAIN);
-    const advisorHref = waHref(numbers, "grant_advisor", CONTACT.whatsapp, grantAdvisorTextAr(stored.name, stored.code));
+    const advisorHref = waHref(numbers, "grant_advisor", CONTACT.whatsapp, grantAdvisorTextAr(stored.name, stored.code, chosen.map((x) => x.titleAr)));
     /* بطاقةُ الدورة — في المختارات فوق وفي أقسام المجالات تحتها، ولا يُعاد اسمُ المجال تحت قسمه. وصورةُ مدرّبها أوّلُ ما يُرى، وبكبرها — قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦): «اجعل صورةَ المدرّب
        هي الشيءَ الذي يراه الشخص، بتصميمٍ يبيّن الصورةَ بحجمٍ كبيرٍ عصريّ». والشاراتُ وسومٌ نصّيّةٌ أعلاها لا أقراصٌ تُشبه
        الأزرار («نقترحها لك يبدو زرّا»)، والسعرُ قيمتان بلا «قبل المنحة/بعد المنحة»: ما يدفعه كبيرا، وأصلُه مشطوبا */

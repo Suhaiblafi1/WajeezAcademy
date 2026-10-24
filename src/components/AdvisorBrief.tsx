@@ -24,7 +24,7 @@
    بما يُعرف (المسارُ المعروضُ وحدَه)، ولا يُخترع لها محتوى. */
 
 import { useEffect, useMemo } from "react";
-import { FileText, MessageCircle, Printer, X } from "lucide-react";
+import { FileText, MessageCircle, Paperclip, Printer, X } from "lucide-react";
 import Modal from "@/components/Modal";
 import Button from "@/components/ui/Button";
 import { Card, Inset } from "@/components/ui/Surface";
@@ -34,6 +34,7 @@ import { CONTACT } from "@/data/stories";
 import { fmtDateLong } from "@/application/text/format-ar";
 import { waHref as buildWaHref } from "@/application/site/whatsapp";
 import { useWhatsAppNumbers } from "@/services/whatsapp";
+import { advisorBriefTextAr } from "@/application/advisor/brief-message";
 
 /** ما يُطلب من المرسِل — مكتوبٌ مرّةً ويُقرأ في الورقة وفي الرسالة معا */
 export const BRIEF_ATTACH_NOTE_AR =
@@ -42,6 +43,8 @@ export const BRIEF_ATTACH_NOTE_AR =
 export interface AdvisorBriefProps {
   /** اسمُ المسار المرشَّح — كما يُعرض في صفحته */
   pathwayName: string;
+  /** رابطُ صفحة المسار — يُكتب في الرسالة فيصل المسارُ ولو لم تُرفق الورقة */
+  pathwayUrl: string;
   /** الدوراتُ التي في خطّته الآن، بأسمائها */
   courseNames: string[];
   /** نصُّ رسالة واتساب الأساسيّ — من الصفحة، فلا يُكتب مرّتين */
@@ -52,7 +55,7 @@ export interface AdvisorBriefProps {
 /* حدُّ ما يُعرض من كلّ قائمة: ورقةٌ لمكالمةٍ مدّتُها نصفُ ساعة، لا تقرير. */
 const MAX_ROWS = 6;
 
-export default function AdvisorBrief({ pathwayName, courseNames, message, onClose }: AdvisorBriefProps) {
+export default function AdvisorBrief({ pathwayName, pathwayUrl, courseNames, message, onClose }: AdvisorBriefProps) {
   /* النتيجةُ من مخزن التشخيص لا من الصفحة: هي مصدرُها الوحيد، ومن لم
      يُشخَّص يعود `null` فتُطبع ورقةُ المسار وحدَها بلا اختلاق. */
   const result = useMemo(() => loadLastResult<DiagResult>(), []);
@@ -63,7 +66,9 @@ export default function AdvisorBrief({ pathwayName, courseNames, message, onClos
 
   /* رقمُ «مستشار قبل الدفع» من الإدارة، و`CONTACT.whatsapp` رجوعٌ حتّى يُضبط */
   const numbers = useWhatsAppNumbers();
-  const waHref = buildWaHref(numbers, "advisor_brief", CONTACT.whatsapp, `${message}\n\n${BRIEF_ATTACH_NOTE_AR}`);
+  /* والرسالةُ تحمل المسارَ ورابطَه ودوراتِه — فلا يتوقّف وصولُها على ورقةٍ تُرفق باليد (`brief-message.ts`) */
+  const text = advisorBriefTextAr({ message, pathwayUrl, courseNames, attachNote: BRIEF_ATTACH_NOTE_AR });
+  const waHref = buildWaHref(numbers, "advisor_brief", CONTACT.whatsapp, text);
 
   /* وسمُ الجسد يحكم الطباعة: بوجوده يُخفى `#root` فلا تُطبع الصفحةُ خلف
      النافذة. ويُرفع عند الإغلاق مهما كان سببُه — وإلّا بقيت كلُّ طباعةٍ
@@ -87,10 +92,10 @@ export default function AdvisorBrief({ pathwayName, courseNames, message, onClos
               <FileText className="h-4 w-4 shrink-0 text-teal-light-ink" />
               ملخّصك لمستشار وجيز
             </h2>
-            {/* الخطوتان مكتوبتان قبل الزرّين لا بعدهما: من لا يعرف أنّ عليه
-                إرفاقَ الملفّ بيده يضغط «واتساب» ويرسل بلا شيء. */}
+            {/* الرسالةُ تحمل المسارَ ودوراتِه وحدَها، والورقةُ زيادةٌ لمن أرادها — فلا يُقال
+                «احفظ ثمّ أرفق» كأنّ المستشارَ لا يعرف شيئا بدونها. */}
             <p className="mt-1 text-read leading-6 text-muted-foreground">
-              احفظ الورقة أدناه ملفّا (PDF)، ثمّ افتح واتساب وأرفقها في المحادثة.
+              رسالة واتساب تحمل مسارك ودوراتك. ويمكنك إرفاق هذا الملخص PDF أيضا.
             </p>
           </div>
           <Button tone="ghost" icon={X} onClick={onClose} aria-label="أغلق" className="shrink-0" />
@@ -147,9 +152,17 @@ export default function AdvisorBrief({ pathwayName, courseNames, message, onClos
             </p>
           )}
 
-          <p className="mt-5 border-t border-white/10 pt-3 text-read leading-6 text-muted-foreground">
-            {BRIEF_ATTACH_NOTE_AR}
-          </p>
+          {/* طلبُ السيرة صندوقٌ مضاءٌ لا سطرٌ باهتٌ في الذيل — قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦):
+              «يجب أن تكون مضاءةً بشكلٍ أقوى وأفضل». والحدُّ يُطبع حيث لا تُطبع الخلفيّة */}
+          <Inset
+            as="p"
+            tone="warn"
+            data-testid="brief-attach-note"
+            className="mt-5 flex items-start gap-2.5 text-sm font-bold leading-6 text-foreground"
+          >
+            <Paperclip className="mt-1 h-4 w-4 shrink-0 text-gold-ink" aria-hidden="true" />
+            <span>{BRIEF_ATTACH_NOTE_AR}</span>
+          </Inset>
         </Inset>
 
         <div className="mt-4 flex flex-wrap items-center gap-2.5 print:hidden">

@@ -60,6 +60,7 @@ import { couponFieldCls } from "@/components/FormKit";
 import Button from "@/components/ui/Button";
 import { Card, Inset, Panel } from "@/components/ui/Surface";
 import DiscountProofLink from '@/components/DiscountProofLink'
+import { siteOrigin } from "@/application/site/origin";
 /* اسم المستخدم — يدعم الصيغتين: JSON الجديدة والنص القديم، ويحترم انتهاء الجلسة */
 function readUserName(): string | null {
   const raw = safeGet("wajeez_user");
@@ -556,6 +557,7 @@ export default function PathwayPage() {
           {briefOpen && (
             <AdvisorBrief
               pathwayName={pathway.name}
+              pathwayUrl={`${siteOrigin()}/pathways/${pathway.id}`}
               courseNames={pathwayCoursesList.map((c) => c.name)}
               message={advisorMsg}
               onClose={() => setBriefOpen(false)}
