@@ -187,7 +187,8 @@ export class StaffInboxService {
         titleAr: 'طلبات تسجيل تنتظر مراجعة',
         whyAr: 'مقعد محجوز لا يثبّت حتّى تراجع',
         count: pending,
-        href: '/admin/exceptions',
+        /* لسانُها الأوّلُ «طلبات التسجيل» — وكان يفتح «حالات بلا مستشار» بصلاحيّة `advisor.assign` (٢٤ أكتوبر ٢٠٢٦) */
+        href: '/admin/finance',
         severity: 'attention',
         sample: [],
       })

@@ -14,6 +14,7 @@ import { CohortPlanService } from '../../services/cohort-plan.service'
 import { ROLE_PERMISSIONS } from '../../auth/permissions'
 import { TrainerReviewService } from '../../services/trainer-review.service'
 import { TrainerSuggestionService } from '../../services/trainer-suggestion.service'
+import { allSections, sectionsFor } from '../../../src/pages/admin/nav-map'
 
 let prisma: PrismaClient
 let inbox: StaffInboxService
@@ -224,5 +225,40 @@ describe('ومن ينتظر أن نكتب له «لماذا نفتخر» ونب�
     await new TrainerSuggestionService(prisma).propose(profileId, managerId, 'pitch', ['سطر أرسلناه'])
     const item = (await inbox.forStaff(managerId, ['trainer.applications.view'])).find((i) => i.key === 'trainer_suggestions_to_write')
     expect(item?.sample ?? [], 'بقي من وصله اقتراح').not.toContain(NAME)
+  })
+})
+
+/* ═══ وكلُّ بندٍ يفتح شاشةً يراها صاحبُه — بصلاحيّاته هو (٢٤ أكتوبر ٢٠٢٦) ═══
+
+   كان «طلبات تسجيل تنتظر مراجعة» يفتح «حالات بلا مستشار» (`/admin/exceptions`، وصلاحيّتُها `advisor.assign`): فالمنسّقُ
+   الأكاديميُّ يصل شاشةً تردّه، ومديرُ العمليّات يصل طابورا غيرَ طابوره. والطابورُ لسانُ «طلبات التسجيل» في
+   `/admin/finance` — وإليها يذهب عدّادُ الرئيسية. ظهر في دراسة لوحة الإدارة.
+
+   والحارسُ عامٌّ لا للبند وحدَه: ما يظهر لدورٍ يفتح شاشةً في قائمته هو (`sectionsFor`). */
+describe('كلّ بند يفتح شاشة يراها صاحبه', () => {
+  const STAFF = ['academic_manager', 'academic_coordinator', 'operations_manager', 'diagnostic_manager', 'finance', 'support']
+
+  beforeAll(async () => {
+    const cohort = await prisma.cohort.create({ data: { courseId: COURSE, title: 'شعبة طلبات التسجيل' } })
+    await prisma.enrollmentRequest.create({ data: { userId: learnerId, cohortId: cohort.id, status: 'pending' } })
+  })
+
+  it('⚠️ طلبات التسجيل تفتح الشاشة التي تحرسها صلاحيتها', async () => {
+    const item = (await inbox.forStaff(managerId, permsOf('academic_coordinator'))).find((i) => i.key === 'enrollment_requests')
+    expect(item, 'لا يظهر طلب التسجيل للمنسق').toBeTruthy()
+    const screen = allSections.flatMap((s) => s.items).find((s) => s.to === item!.href.split('?')[0])
+    expect(screen, `${item!.href} ليست شاشة في القائمة`).toBeTruthy()
+    expect([screen!.need].flat(), `${item!.href} لا تحرسها صلاحية طلبات التسجيل`).toContain('enrollment.request.review')
+  })
+
+  it('⚠️ ولكل دور: ما يظهر له يفتح شاشة في قائمته', async () => {
+    for (const role of STAFF) {
+      const perms = permsOf(role)
+      const reachable = new Set(sectionsFor(perms).flatMap((s) => s.items.map((i) => i.to)))
+      for (const item of await inbox.forStaff(managerId, perms)) {
+        const path = item.href.split('?')[0]
+        expect(reachable.has(path), `${role}: «${item.titleAr}» يفتح ${path} وليست في قائمته`).toBe(true)
+      }
+    }
   })
 })
