@@ -16,8 +16,8 @@ import { staffAreaCls, staffControlCls, staffSelectCls } from "@/components/Form
 import { fmtDateTimeAr } from "@/utils/format";
 import { zonedAt, zonedClock, zonedDay } from "@/application/trainer/cohort-period";
 import {
-  DEFAULT_POSTPONE_REASON_AR, POSTPONE_STATUS_AR, academyMonth, deadlineProblemAr, defaultDeadline, nextMonth,
-  type PostponeStatus,
+  DEFAULT_POSTPONE_REASON_AR, NOT_ON_SITE_AR, POSTPONE_STATUS_AR, academyMonth, deadlineProblemAr, defaultDeadline,
+  isOnSite, nextMonth, prePicked, type PostponeStatus,
 } from "@/application/trainer/postpone-offer";
 
 interface Candidate {
@@ -67,8 +67,9 @@ export default function PostponeMonthBox({ onChanged, onFlash }: {
     apiGet<Candidate[]>(`/api/admin/cohort-postpones/preview?year=${month.year}&month=${month.month}`)
       .then((r) => {
         setRows(r);
-        setPicked(new Set(r.filter((c) => !c.blockedAr).map((c) => c.cohortId)));
-        const first = r.find((c) => !c.blockedAr);
+        const pre = prePicked(r);
+        setPicked(new Set(pre));
+        const first = r.find((c) => c.cohortId === pre[0]) ?? r.find((c) => !c.blockedAr);
         setDeadline(first ? toLocal(defaultDeadline(new Date(), new Date(first.fromFirstAt))) : "");
         setConfirming(false);
       })
@@ -143,6 +144,11 @@ export default function PostponeMonthBox({ onChanged, onFlash }: {
         <p className="py-4 text-center text-read text-muted-foreground">لا شعبة لم تبدأ وأول لقاء فيها في {monthAr(month)}.</p>
       ) : (
         <>
+          {rows.some((c) => !isOnSite(c.status)) && (
+            <p className="text-read text-muted-foreground">
+              الشعب غير المنشورة لا تظهر على الموقع، ولم نخترها. اخترها إن أردت أن يصل مدربها الاقتراح.
+            </p>
+          )}
           <ul className="space-y-2">
             {rows.map((c) => (
               <li key={c.cohortId}>
@@ -150,7 +156,10 @@ export default function PostponeMonthBox({ onChanged, onFlash }: {
                   <input type="checkbox" className="mt-1 accent-teal" disabled={Boolean(c.blockedAr)}
                     checked={picked.has(c.cohortId)} onChange={() => toggle(c.cohortId)} />
                   <span className="min-w-0 flex-1">
-                    <span className="block font-bold">{c.title}</span>
+                    <span className="flex flex-wrap items-center gap-2">
+                      <span className="font-bold">{c.title}</span>
+                      {!isOnSite(c.status) && <Chip tone="neutral">{NOT_ON_SITE_AR}</Chip>}
+                    </span>
                     <span className="block text-read text-muted-foreground">
                       {c.trainersAr.join("، ") || "بلا مدرب"} · المسجلون {c.enrolled}
                     </span>

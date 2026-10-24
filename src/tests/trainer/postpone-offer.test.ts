@@ -8,7 +8,7 @@ import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import {
-  academyMonth, deadlineProblemAr, defaultDeadline, shiftByWeeks, weeksToNextMonth,
+  NOT_ON_SITE_AR, academyMonth, deadlineProblemAr, defaultDeadline, isOnSite, prePicked, shiftByWeeks, weeksToNextMonth,
 } from '@/application/trainer/postpone-offer'
 
 const code = (p: string) => readFileSync(join(process.cwd(), p), 'utf8')
@@ -64,6 +64,19 @@ describe('شاشة الإدارة — تعاين ثم ترسل، وتقول ما
   it('⚠️ الخيارات الثلاثة قبل الزر — والسبب يحرر', () => {
     for (const t of ['<b>يقبل:</b>', '<b>لا يقبل:</b>', '<b>لا يرد حتى المهلة:</b> تتوقف الشعبة تلقائيا.']) expect(box).toContain(t)
     expect(box).toMatch(/<textarea value=\{reason\} onChange=/)
+  })
+  it('⚠️ والمسودة ليست على الموقع: توسم «غير منشورة» ولا تختار سلفا — ويختارها هو إن أراد', () => {
+    expect(isOnSite('open')).toBe(true)
+    expect(isOnSite('full')).toBe(true)
+    expect(isOnSite('draft')).toBe(false)
+    const row = (cohortId: string, status: string, blockedAr: string | null = null) => ({ cohortId, status, blockedAr })
+    expect(prePicked([row('a', 'open'), row('b', 'draft'), row('c', 'full'), row('d', 'open', 'أرسل لها اقتراح ينتظر الرد')]))
+      .toEqual(['a', 'c'])
+    expect(box).toMatch(/const pre = prePicked\(r\);\s*setPicked\(new Set\(pre\)\);/)
+    expect(box).toMatch(/\{!isOnSite\(c\.status\) && <Chip tone="neutral">\{NOT_ON_SITE_AR\}<\/Chip>\}/)
+    /* والمسوّدةُ تُختار باليد: لا يُعطَّل صندوقُها إلّا بما يمنع الإرسال */
+    expect(box).toContain('disabled={Boolean(c.blockedAr)}')
+    expect(NOT_ON_SITE_AR).toBe('غير منشورة')
   })
   it('⚠️ وهي في «تبدأ قريبا»', () => {
     expect(code('src/components/admin/UpcomingCohorts.tsx')).toMatch(/<PostponeMonthBox onChanged=/)

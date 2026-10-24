@@ -76,3 +76,16 @@ export const DEFAULT_POSTPONE_REASON_AR = 'بدأنا التسويق لهذا ا
 /** سببُ الإيقاف الذي يصل المدرّبَ والمتعلّمين */
 export const declinedReasonAr = 'لم يقبل المدرب تأجيلها'
 export const expiredReasonAr = 'لم يقبل المدرب تأجيلها قبل الموعد المحدد'
+
+/* ═══ والمسوّدةُ ليست على الموقع — تُوسَم ولا تُختار سلفا (٢٤ أكتوبر ٢٠٢٦) ═══
+   سؤالُ صاحب المنصّة عن شعبةٍ في القائمة: «لم أنشر هذه الدورة.. أما زالت موجودةً في الموقع؟». والموقعُ لا يعرض
+   إلّا المفتوحةَ والممتلئة، والقائمةُ تجمع معهما المسوّدة بلا فرق. فاختار: تبقى فيها موسومةً «غير منشورة»، ولا
+   تُختار سلفا — فلا يصل مدرّبَها اقتراحٌ إلّا إن اختارها هو. */
+export const ON_SITE_STATUSES = ['open', 'full'] as const
+export const NOT_ON_SITE_AR = 'غير منشورة'
+export const isOnSite = (status: string) => (ON_SITE_STATUSES as readonly string[]).includes(status)
+
+/** ما يُختار سلفا: ما يُرسل له وهو على الموقع */
+export function prePicked(rows: readonly { cohortId: string; status: string; blockedAr: string | null }[]): string[] {
+  return rows.filter((c) => !c.blockedAr && isOnSite(c.status)).map((c) => c.cohortId)
+}
