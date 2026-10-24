@@ -71,10 +71,14 @@ async function cohortOf(tag: string, who: string, courseId: string) {
 
 interface View {
   clashesBefore: number
-  rows: { cohortId: string; action: string; fromAr: string; toAr: string | null; sent: { status: string; noteAr: string | null } | null }[]
+  rows: {
+    cohortId: string; action: string; fromAr: string; toAr: string | null; held: boolean
+    sent: { status: string; noteAr: string | null } | null
+    mail: { to: string | null; subject: string; text: string; bellAr: string } | null
+  }[]
 }
-const view = async () => {
-  const r = await call('GET', `/api/admin/terms/${termId}/clashes`, 'admin')
+const view = async (hold: string[] = []) => {
+  const r = await call('GET', `/api/admin/terms/${termId}/clashes${hold.length ? `?hold=${hold.join(',')}` : ''}`, 'admin')
   expect(r.statusCode, r.body).toBe(200)
   return r.json() as View
 }
@@ -122,6 +126,22 @@ describe('مواعيد الفصل بلا تعارض', () => {
     const ry = v.rows.find((r) => r.cohortId === y.cohortId)!
     expect([ry.action, rx.action]).toEqual(['keep', 'move'])
     expect([rx.fromAr, rx.toAr]).toEqual(['الأحد 19:00', 'الأحد 17:00'])
+    expect(await prisma.planEditSuggestion.count({ where: { cohortId: { in: [x.cohortId, y.cohortId] } } }), 'كتبت المعاينة').toBe(0)
+  })
+
+  it('⚠️ والمعاينة تعرض البريد بنصه كما يرسل — ومن أبقيته خارج الإرسال يبقى، ويحسب ما حوله عليه', async () => {
+    const rx = (await view()).rows.find((r) => r.cohortId === x.cohortId)!
+    expect(rx.mail?.to).toBe(`tc-a-${STAMP}@test.local`)
+    expect(rx.mail?.subject).toContain('موعد مقترح لشعبتك')
+    expect(rx.mail?.text).toContain('الأحد 17:00 كل أسبوع')
+    expect(rx.mail?.text).toContain('مدرّب التعارض a')
+    expect(rx.mail?.bellAr).toContain('الأحد 17:00')
+    expect((await view()).rows.find((r) => r.cohortId === y.cohortId)!.mail, 'بريد لمن لا ينتقل').toBeNull()
+    /* أبقى س — فتنتقل ص بدلها، والمعاينةُ تقول ذلك قبل الإرسال */
+    const held = await view([x.cohortId])
+    const hx = held.rows.find((r) => r.cohortId === x.cohortId)!
+    const hy = held.rows.find((r) => r.cohortId === y.cohortId)!
+    expect([hx.held, hx.action, hy.action]).toEqual([true, 'keep', 'move'])
     expect(await prisma.planEditSuggestion.count({ where: { cohortId: { in: [x.cohortId, y.cohortId] } } }), 'كتبت المعاينة').toBe(0)
   })
 

@@ -55,6 +55,9 @@ function clashCourseOf(course: {
   }
 }
 
+/** سببُ ما أبقاه صاحبُ المنصّة من الإرسال — ويُعرف به في الصفّ */
+const HELD_AR = 'أبقيتها على موعدها — لن يصل مدربها شيء'
+
 /** نافذةٌ بلا حدودٍ مكتوبة — أربعةُ أشهرٍ من اليوم */
 const DEFAULT_WINDOW_DAYS = 120
 const SEATED = ['enrolled', 'waitlisted', 'completed'] as const
@@ -74,6 +77,10 @@ export interface ClashViewRow {
   whyAr: string | null
   /** حالُ آخر اقتراحٍ أُرسل لها — وسببُ الرفض إن رُفض */
   sent: { status: string; toAr: string; noteAr: string | null; at: string } | null
+  /** أبقاها صاحبُ المنصّة خارج هذا الإرسال — فلا تنتقل ولا يصل مدرّبَها شيء */
+  held: boolean
+  /** ما يصل مدرّبَها إن أُرسل: البريدُ بنصّه كما يُرسَل، وسطرُ الجرس — للمنتقلة وحدَها */
+  mail: { to: string | null; subject: string; text: string; bellAr: string } | null
 }
 
 export interface ClashView {
@@ -109,7 +116,8 @@ export class TermClashService {
     this.edits = new PlanEditService(prisma)
   }
 
-  private async load(termId: string, now = new Date()): Promise<Loaded> {
+  /** `hold`: شعبٌ أبقاها صاحبُ المنصّة على موعدها في هذا الإرسال — تُحسب ثابتةً، فيُبنى ما حولها عليها */
+  private async load(termId: string, hold: ReadonlySet<string> = new Set(), now = new Date()): Promise<Loaded> {
     const term = await this.prisma.term.findUnique({ where: { id: termId }, select: { id: true, titleAr: true } })
     if (!term) throw new AuthError('not_found', 'الفصل غير موجود', 404)
     const rows = await this.prisma.cohort.findMany({
@@ -168,6 +176,7 @@ export class TermClashService {
         : !plan ? 'لا خطة مدرب لها بعد'
         : plan.status === 'submitted' ? 'خطتها تنتظر قرارك — قرر فيها أولا'
         : ![...PLAN_VISIBLE_STATUSES, 'draft', 'changes_requested'].includes(plan.status as never) ? 'خطتها ليست في يد مدربها ولا معتمدة'
+        : hold.has(c.id) ? HELD_AR
         : null
 
       cohorts.push({
@@ -220,8 +229,8 @@ export class TermClashService {
     return planClashFree({ cohorts: l.cohorts, courses: l.courses, build: l.build })
   }
 
-  async view(termId: string): Promise<ClashView> {
-    const l = await this.load(termId)
+  async view(termId: string, hold: ReadonlySet<string> = new Set()): Promise<ClashView> {
+    const l = await this.load(termId, hold)
     const p = this.plan(l)
     const titleOf = (id: string) => l.meta.get(id)?.courseTitleAr ?? ''
     const rows: ClashViewRow[] = p.rows.map((r) => this.viewRow(l, r, titleOf))
@@ -243,11 +252,18 @@ export class TermClashService {
     const c = l.cohorts.find((x) => x.cohortId === r.cohortId)!
     const base = {
       cohortId: r.cohortId, title: m.title, courseTitleAr: m.courseTitleAr, trainerAr: m.trainerAr, learners: c.learners, sent: m.sent,
+      held: c.fixedAr === HELD_AR, mail: null,
     }
     if (r.action === 'keep') return { ...base, action: 'keep', fromAr: slotAr(r.slot), toAr: null, clashes: [], whyAr: null }
     const clashes = r.clashes.map((x) => ({ cohortId: x.cohortId, titleAr: titleOf(x.cohortId), whyAr: x.whyAr }))
     if (r.action === 'stuck') return { ...base, action: 'stuck', fromAr: slotAr(r.slot), toAr: null, clashes, whyAr: r.whyAr }
-    return { ...base, action: 'move', fromAr: slotAr(r.from), toAr: slotAr(r.to), clashes, whyAr: r.payload.reasonAr }
+    /* والبريدُ بنصّه كما يُرسَل — يُبنى بالدالّة نفسِها التي يُرسَل بها، فلا تفترق المعاينةُ عن المرسَل */
+    const msg = { cohortTitle: m.title, courseTitleAr: m.courseTitleAr, fromAr: slotAr(r.from), toAr: slotAr(r.to) }
+    const mail = this.mailOf(m.trainer?.fullName ?? '', r.cohortId, msg)
+    return {
+      ...base, action: 'move', fromAr: msg.fromAr, toAr: msg.toAr, clashes, whyAr: r.payload.reasonAr,
+      mail: { to: m.trainer?.email ?? null, subject: mail.subject, text: mail.text, bellAr: `${clashBellTitleAr(msg)} — ${clashBellBodyAr(msg)}` },
+    }
   }
 
   /* ═══ أوقاتُ الدورات القريبة — يراها المدرّبُ وهو يختار موعدَ لقائه (٢٢ أكتوبر ٢٠٢٦) ═══
@@ -294,8 +310,8 @@ export class TermClashService {
   }
 
   /** يرسل كلَّ نقلٍ بطاقةً إلى مدرّبه، ويخبره بجرسٍ وبريد — ويُعاد الحسابُ الآن لا ممّا عُرض */
-  async send(actorId: string, termId: string) {
-    const l = await this.load(termId)
+  async send(actorId: string, termId: string, hold: ReadonlySet<string> = new Set()) {
+    const l = await this.load(termId, hold)
     const p = this.plan(l)
     let sent = 0
     const skipped: { titleAr: string; whyAr: string }[] = []
@@ -316,9 +332,9 @@ export class TermClashService {
     }
     await recordAudit(this.prisma, {
       actorId, action: 'term.clash.send', entityType: 'term', entityId: termId,
-      meta: { sent, skipped: skipped.length, clashesBefore: p.before.length },
+      meta: { sent, skipped: skipped.length, clashesBefore: p.before.length, ...(hold.size ? { held: hold.size } : {}) },
     })
-    return { sent, skipped, view: await this.view(termId) }
+    return { sent, skipped, view: await this.view(termId, hold) }
   }
 
   private async tellTrainer(
@@ -334,12 +350,17 @@ export class TermClashService {
         templateKey: CLASH_TEMPLATE_KEY, data: { cohortId: cohort.id, step: 'review' },
       })
     }
+    const mail = this.mailOf(trainer.fullName, cohort.id, m)
+    await sendDirectEmail(this.prisma, { to: trainer.email, subject: mail.subject, text: mail.text, html: mail.html })
+  }
+
+  /** البريدُ كما يُرسَل — ومنه المعاينةُ في الشاشة */
+  private mailOf(fullName: string, cohortId: string, m: Parameters<typeof clashMailAr>[0]) {
     const mail = clashMailAr(m)
-    await sendDirectEmail(this.prisma, {
-      to: trainer.email,
+    return {
       subject: `${mail.subject} — أكاديمية وجيز`,
       ...renderMail({
-        greetingName: trainer.fullName,
+        greetingName: fullName,
         preheader: `${m.toAr} كل أسبوع بدل ${m.fromAr}`,
         heading: mail.heading,
         blocks: [
@@ -347,9 +368,9 @@ export class TermClashService {
           { kind: 'p', text: mail.solutionAr },
           { kind: 'facts', rows: mail.facts },
           { kind: 'callout', text: mail.nextAr },
-          { kind: 'cta', label: mail.ctaAr, href: `${publicSiteUrl()}/trainer/cohort/${cohort.id}?step=review` },
+          { kind: 'cta', label: mail.ctaAr, href: `${publicSiteUrl()}/trainer/cohort/${cohortId}?step=review` },
         ],
       }),
-    })
+    }
   }
 }

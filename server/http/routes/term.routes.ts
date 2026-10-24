@@ -243,7 +243,9 @@ export function registerTermRoutes(app: FastifyInstance, prisma: PrismaClient) {
     schema: { tags: ['admin-terms'], summary: 'تعارض مواعيد الفصل — ومن ينتقل ليزول' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
-    return clashes.view(id)
+    /* وما أبقاه من الإرسال — فتُحسب المعاينةُ بما سيُرسَل فعلا */
+    const { hold } = z.object({ hold: z.string().max(4000).optional() }).parse(req.query)
+    return clashes.view(id, holdSet(hold?.split(',')))
   })
 
   app.post('/api/admin/terms/:id/clashes/send', {
@@ -251,6 +253,12 @@ export function registerTermRoutes(app: FastifyInstance, prisma: PrismaClient) {
     schema: { tags: ['admin-terms'], summary: 'إرسال المواعيد المقترحة إلى المدربين بطاقات قبول أو رفض' },
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
-    return clashes.send(req.auth!.userId, id)
+    const { hold } = z.object({ hold: z.array(z.string().uuid()).max(500).optional() }).parse(req.body ?? {})
+    return clashes.send(req.auth!.userId, id, holdSet(hold))
   })
+}
+
+/** الشعبُ التي أبقاها صاحبُ المنصّة من الإرسال — معرّفاتٌ صحيحةٌ وحدَها */
+function holdSet(ids: readonly string[] | undefined): Set<string> {
+  return new Set((ids ?? []).filter((x) => z.string().uuid().safeParse(x).success))
 }
