@@ -34,6 +34,8 @@ export interface UpcomingCohort {
   firstAt: string
   capacity: number | null
   money: CohortMoney
+  /** مدرّبُها موقوفٌ وأُبقيت الشعبةُ لبديل — تُرى بشارتها حتّى يُسنَد غيرُه أو تُلغى (٢٤ أكتوبر ٢٠٢٦) */
+  trainerSuspended: boolean
 }
 
 export class CohortEconomicsService {
@@ -137,6 +139,7 @@ export class CohortEconomicsService {
       where: { status: { in: [...UPCOMING_STATUSES] } },
       select: {
         id: true, title: true, status: true, startsAt: true, capacity: true,
+        trainers: { select: { profile: { select: { suspendedAt: true } } } },
         course: { select: { versions: { orderBy: { version: 'desc' }, take: 1, select: { titleAr: true } } } },
         sessions: {
           where: { status: { not: 'cancelled' }, placeholder: false, approvalState: 'approved' },
@@ -155,6 +158,7 @@ export class CohortEconomicsService {
       firstAt: c.firstAt!.toISOString(),
       capacity: c.capacity,
       money: money.get(c.id)!,
+      trainerSuspended: c.trainers.some((t) => t.profile.suspendedAt !== null),
     }))
   }
 }

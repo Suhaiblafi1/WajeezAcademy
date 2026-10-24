@@ -40,6 +40,7 @@ import { controlCls, staffAreaCls } from "@/components/FormKit";
 import { matchesQuery } from "@/application/text/search-ar";
 import { fmtDate, fmtDateTime } from "@/application/text/format-ar";
 import ConfirmAction from "@/components/ConfirmAction";
+import SuspendCohortsChoice from "@/components/admin/SuspendCohortsChoice";
 import { Link, useNavigate } from "react-router";
 import { OVERRIDE_MIN_REASON } from "@/application/trainer/readiness";
 import { useRealSession } from "@/services/session";
@@ -675,6 +676,8 @@ export default function TrainerRunOps() {
   });
   const [note, setNote] = useState<Record<string, string>>({});
   const [suspendTarget, setSuspendTarget] = useState<OpsTrainer | null>(null);
+  /* ما اختير إلغاؤه من شعبه التي لم تبدأ — والافتراضُ لا شيء (`SuspendCohortsChoice`) */
+  const [suspendCancel, setSuspendCancel] = useState<Set<string>>(new Set());
   const [approveTarget, setApproveTarget] = useState<OpsTrainer | null>(null);
   const [prepOpen, setPrepOpen] = useState(false);
   const [skipPlan, setSkipPlan] = useState<PendingRequest | null>(null);
@@ -1279,7 +1282,7 @@ export default function TrainerRunOps() {
 
                     {!t.suspended && (
                       <Button tone="danger" type="button" disabled={busy === k("suspend")}
-                        onClick={() => setSuspendTarget(t)} className="px-3.5">
+                        onClick={() => { setSuspendCancel(new Set()); setSuspendTarget(t); }} className="px-3.5">
                         <XCircle className="h-3.5 w-3.5" /> أوقفه
                       </Button>
                     )}
@@ -1305,12 +1308,15 @@ export default function TrainerRunOps() {
             const target = suspendTarget;
             setSuspendTarget(null);
             void act(`${target.profileId}:suspend`,
-              () => apiPost(`/api/admin/trainers/${target.profileId}/suspend`, { note: reason?.trim() || undefined }),
-              "أوقف المدرّب");
+              () => apiPost(`/api/admin/trainers/${target.profileId}/suspend`, {
+                note: reason?.trim() || undefined, cancelCohortIds: [...suspendCancel],
+              }),
+              suspendCancel.size > 0 ? `أوقف المدرب، وألغيت ${suspendCancel.size} من شعبه` : "أوقف المدرب");
           }}
         >
-          يخفى فورا من الصفحات العامّة، وتلغى جلساته القادمة، ويوقف حسابه.
-          وترفع الإيقاف من ملفه في «طلبات المدربين».
+          {/* كانت تقول «وتلغى جلساته القادمة» ولا يقع ذلك: شعبُه تبقى ما لم تختر إلغاءها أدناه (٢٤ أكتوبر ٢٠٢٦) */}
+          يخفى فورا من الصفحات العامة، ويوقف حسابه. وترفع الإيقاف من ملفه في «طلبات المدربين».
+          <SuspendCohortsChoice profileId={suspendTarget.profileId} cancelIds={suspendCancel} onChange={setSuspendCancel} />
         </ConfirmAction>
       )}
 

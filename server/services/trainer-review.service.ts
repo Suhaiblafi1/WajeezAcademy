@@ -44,6 +44,7 @@ import { nextTrainerApplicationReference } from './trainer-application-reference
 import { sendDirectEmail, notifyRole, safeNotify, publicSiteUrl, type DirectMailStatus } from './notification.service'
 import { sendStaffInviteEmail } from './account-mail'
 import { CohortService } from './cohort.service'
+import { UPCOMING_STATUSES } from '../../src/application/learning/upcoming-cohorts'
 import { fmtDateWith } from '../../src/application/text/format-ar'
 import { TRAINER_GUIDE_PATH } from '../../src/application/trainer/trainer-guide'
 import { TrainerMaterialsService } from './trainer-materials.service'
@@ -6435,7 +6436,31 @@ export class TrainerReviewService {
      والقاعدة: يُوقَف الدخولُ لمن **قيامُه على المنصّة تدريبُه** — فبوّابتُه هي
      دخولُه، وتركُه داخلا إلى لا شيءٍ عبث. ومن له موقعٌ فوقَ التدريب يبقى
      دخولُه: أُوقف تدريبُه لا هو. */
-  async suspendTrainer(profileId: string, actorId: string, note?: string) {
+  /* ═══ وشعبُه التي لم تبدأ — يُختار لكلٍّ منها في نافذة الإيقاف (٢٤ أكتوبر ٢٠٢٦) ═══
+     أوقف صاحبُ المنصّة مدرّبا فبقيت شعبتُه «مفتوحة» تُباع: الإيقافُ يمسّ بوّابتَه وظهورَه لا شعبَه. فخيّر واختار:
+     تُعرض شعبُه التي لم تبدأ في نافذة الإيقاف بعدد المسجّلين، ولكلٍّ منها خيار — تُلغى، أو تبقى لمدرّبٍ بديل.
+     ولا يقع شيءٌ بلا اختياره، والافتراضُ «تبقى». */
+  async suspendPreview(profileId: string) {
+    const rows = await this.prisma.cohort.findMany({
+      where: { status: { in: [...UPCOMING_STATUSES] }, trainers: { some: { profileId } } },
+      orderBy: { startsAt: 'asc' },
+      select: {
+        id: true, title: true, status: true, startsAt: true,
+        trainers: { select: { profileId: true, role: true } },
+        sessions: { where: { status: { notIn: ['cancelled', 'done'] } }, orderBy: { startsAt: 'asc' }, take: 1, select: { startsAt: true } },
+        _count: { select: { enrollments: { where: { status: { not: 'dropped' } } } } },
+      },
+    })
+    return rows.map((c) => ({
+      id: c.id, title: c.title, status: c.status,
+      firstAt: (c.sessions[0]?.startsAt ?? c.startsAt)?.toISOString() ?? null,
+      enrolled: c._count.enrollments,
+      role: c.trainers.find((t) => t.profileId === profileId)?.role ?? 'lead',
+      otherTrainers: c.trainers.filter((t) => t.profileId !== profileId).length,
+    }))
+  }
+
+  async suspendTrainer(profileId: string, actorId: string, note?: string, opts: { cancelCohortIds?: string[] } = {}) {
     const profile = await this.prisma.trainerProfile.findUnique({
       where: { id: profileId },
       include: { application: true, user: { select: { roles: { select: { roleId: true } } } } },
@@ -6506,6 +6531,18 @@ export class TrainerReviewService {
     if (profile.application.status === 'active') {
       await this.apps.transition(profile.applicationId, 'suspended', actorId, note ?? 'إيقاف المدرب')
     }
+
+    /* وما اختير إلغاؤه من شعبه التي لم تبدأ — من شعبه وحدَها، والإلغاءُ نفسُه الذي تفعله الإدارة: يصل متعلّميها
+       الخبر. وما لم يُختر يبقى كما هو لمدرّبٍ بديل. */
+    const mine = new Set((await this.suspendPreview(profileId)).map((c) => c.id))
+    const cohorts = new CohortService(this.prisma)
+    let cancelled = 0
+    for (const id of new Set(opts.cancelCohortIds ?? [])) {
+      if (!mine.has(id)) continue
+      await cohorts.transition(id, 'cancelled', actorId, 'إيقاف مدربها', { reasonAr: 'أوقفنا تدريب مدربها' })
+      cancelled += 1
+    }
+    return { cancelled }
   }
 
   /** القائمة العامة — بوّابةُ الظهور الواحدة (`trainer-visibility.ts`) + طلبٌ نشط */
