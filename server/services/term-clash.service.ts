@@ -21,8 +21,9 @@ import { publicSiteUrl, safeNotify, sendDirectEmail } from './notification.servi
 import { renderMail } from './mail-template'
 import { proposeSchedule, type ScheduleEdit } from '../../src/application/trainer/schedule-proposal'
 import { PLAN_VISIBLE_STATUSES } from '../../src/application/trainer/plan-overlay'
+import { scheduleChainProblem, type PlanEdit } from '../../src/application/trainer/plan-edits'
 import {
-  linkWhyAr, planClashFree, rejectedScope, slotAr, type ClashCohort, type NearbyTime, type ClashCourse, type ClashInterval, type ClashRow, type RejectedSlot, type WeeklySlot,
+  CLASH_REASON_PREFIX, linkWhyAr, planClashFree, rejectedScope, slotAr, type ClashCohort, type NearbyTime, type ClashCourse, type ClashInterval, type ClashRow, type RejectedSlot, type WeeklySlot,
 } from '../../src/application/terms/schedule-clash'
 import { CLASH_TEMPLATE_KEY, clashBellBodyAr, clashBellTitleAr, clashMailAr } from '../../src/application/terms/clash-message'
 import { courseTitleAr } from '../../src/application/catalog/course-title'
@@ -52,6 +53,15 @@ function clashCourseOf(course: {
     levelAr: v?.levelAr ?? null,
     pathways: paths.map((p) => ({ id: p.id, titleAr: p.short_title })),
     audiences,
+  }
+}
+
+/** بندٌ يقع على مواعيد اللقاءات أو المهامّ — والجدولُ لا يُرفع فوقه (`openKeysOf` في الرفع) */
+function touchesSchedule(edit: PlanEdit): boolean {
+  switch (edit.kind) {
+    case 'schedule': case 'session_move': case 'session_remove': case 'task_remove': return true
+    case 'task_change': return 'dueAt' in edit.set
+    default: return false
   }
 }
 
@@ -130,7 +140,7 @@ export class TermClashService {
         sessions: { where: { status: { not: 'cancelled' } }, select: { id: true, startsAt: true, endsAt: true, moduleIds: true, status: true, placeholder: true } },
         assessments: { select: { id: true, title: true, type: true, dueAt: true, moduleId: true, briefAr: true, maxScore: true, status: true } },
         plans: { where: { trainerId: { not: null } }, orderBy: { createdAt: 'desc' }, take: 1, select: { id: true, status: true, content: true } },
-        planEdits: { where: { kind: 'schedule' }, orderBy: { createdAt: 'desc' }, select: { status: true, edit: true, noteAr: true, createdAt: true, decidedAt: true } },
+        planEdits: { orderBy: { createdAt: 'desc' }, select: { planId: true, kind: true, status: true, edit: true, reasonAr: true, noteAr: true, createdAt: true, decidedAt: true } },
         _count: { select: { enrollments: { where: { status: { in: [...SEATED] } } } } },
       },
     })
@@ -148,6 +158,8 @@ export class TermClashService {
     const inputs = new Map<string, Parameters<typeof proposeSchedule>[0]>()
     /** لقاءاتُ كلّ شعبةٍ الآتية — ما يُقاس عليه التعارضُ بعد النقل */
     const futures = new Map<string, { id: string; startsAt: Date; endsAt: Date | null }[]>()
+    /** لقاءاتُها ومهامُّها كما يقرؤها فحصُ السلسلة في الرفع (`scheduleChainProblem`) */
+    const chainRows = new Map<string, { sessions: { id: string; startsAt: Date; endsAt: Date | null; moduleIds: string[] }[]; tasks: { id: string; title: string; type: string; dueAt: Date | null; moduleId: string | null }[] }>()
     for (const c of rows) {
       const live = c.sessions.filter((s) => !s.placeholder)
       const future = live.filter((s) => s.startsAt.getTime() > now.getTime())
@@ -155,16 +167,23 @@ export class TermClashService {
       const plan = c.plans[0] ?? null
       const lead = c.trainers[0]?.profile ?? null
 
-      /* اقتراحٌ قائمٌ لم يُقرَّر فيه: تُوضع الشعبةُ على ما يقترحه. ومرفوضٌ: لا يُقترح ثانية */
-      const open = c.planEdits.find((e) => e.status === 'pending' || e.status === 'proposed')
+      /* ═══ وما أرسلته هذه الشاشةُ وحدَه — على خطّتها القائمة (٢٤ أكتوبر ٢٠٢٦) ═══
+         كانت تقرأ كلَّ جدولٍ مقترحٍ لها: مسوّدةَ «جهّز جدولا» القديمة، وما بقي على خطّةٍ سبقت مراجعتَها — فتثبّت الشعبةَ
+         على موعدٍ لن يقع، وتعرض رفضا ليس منها. فالبطاقةُ بطاقتُها إن كانت على خطّتها القائمة وسببُها سطرُ التعارض. */
+      const onPlan = c.planEdits.filter((e) => plan && e.planId === plan.id)
+      const mine = onPlan.filter((e) => e.kind === 'schedule' && e.reasonAr.startsWith(CLASH_REASON_PREFIX))
+      /* اقتراحٌ وصل مدرّبَها ولم يقرّر فيه: تُوضع الشعبةُ على ما يقترحه. ومرفوضٌ: لا يُقترح ثانية */
+      const open = mine.find((e) => e.status === 'pending')
       const openEdit = open ? (open.edit as unknown as ScheduleEdit) : null
+      /* وبندٌ آخرُ لم يُقرَّر فيه على لقاءاتها أو مواعيد مهامّها — يردّ الإرسالُ جدولا فوقه، فلا يُقترح */
+      const touching = onPlan.some((e) => (e.status === 'pending' || e.status === 'proposed') && touchesSchedule(e.edit as unknown as PlanEdit))
       const proposed = openEdit
         ? future.map((s) => {
           const m = openEdit.moves.find((x) => x.sessionId === s.id)
           return m ? { startsAt: Date.parse(m.startsAt), endsAt: Date.parse(m.endsAt) } : intervalOf(s)
         })
         : null
-      const rejected: RejectedSlot[] = c.planEdits
+      const rejected: RejectedSlot[] = mine
         .filter((e) => e.status === 'rejected')
         .map((e) => {
           const ed = e.edit as unknown as ScheduleEdit
@@ -176,6 +195,7 @@ export class TermClashService {
         : !plan ? 'لا خطة مدرب لها بعد'
         : plan.status === 'submitted' ? 'خطتها تنتظر قرارك — قرر فيها أولا'
         : ![...PLAN_VISIBLE_STATUSES, 'draft', 'changes_requested'].includes(plan.status as never) ? 'خطتها ليست في يد مدربها ولا معتمدة'
+        : !openEdit && touching ? 'عليها بنود مقترحة على لقاءاتها أو مهامها لم يقرر فيها مدربها'
         : hold.has(c.id) ? HELD_AR
         : null
 
@@ -187,7 +207,7 @@ export class TermClashService {
         fixedAr, proposed, rejected,
       })
 
-      const last = c.planEdits[0]
+      const last = mine[0]
       const lastEdit = last ? (last.edit as unknown as ScheduleEdit) : null
       meta.set(c.id, {
         title: c.title,
@@ -200,6 +220,7 @@ export class TermClashService {
           : null,
       })
       if (plan) {
+        chainRows.set(c.id, { sessions: live, tasks: c.assessments })
         inputs.set(c.id, {
           period: resolvePeriod(plan.content as TrainerPlanContent | null, c, plan.status as PlanStatus),
           content: plan.content,
@@ -215,6 +236,9 @@ export class TermClashService {
       if (!input) return { ok: false, reasonAr: 'لا خطة مدرب لها' }
       const r = proposeSchedule({ ...input, target: slot, whyAr })
       if (!r.ok) return r
+      /* وما يردّه الرفعُ يُردّ هنا — فلا تَعِد المعاينةُ بنقلٍ يرفضه الإرسال */
+      const chain = scheduleChainProblem(r.edit, chainRows.get(cohortId)?.sessions ?? [], chainRows.get(cohortId)?.tasks ?? [])
+      if (chain) return { ok: false, reasonAr: chain }
       const sessions = (futures.get(cohortId) ?? []).map((s) => {
         const m = r.edit.moves.find((x) => x.sessionId === s.id)
         return m ? { startsAt: Date.parse(m.startsAt), endsAt: Date.parse(m.endsAt) } : intervalOf(s)
