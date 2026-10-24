@@ -55,11 +55,11 @@ describe('والشاشة تفرز به', () => {
     .replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '').replace(/^\s*\/\/.*$/gm, '')
 
   it('⚠️ القائمة لا تعرض إلّا من في الفلتر', () => {
-    expect(ops, 'القائمة لا تفرز بما ينتظرك').toMatch(/\.filter\(\(r\) => \(filter === "all" \|\| r\.state === filter\) && \(need === "any" \|\| hasNeed\(r\.t, need\)\)/)
+    expect(ops, 'القائمة لا تفرز بما ينتظرك').toMatch(/\.filter\(\(r\) => \(filter === "all" \|\| r\.state === filter\) && \(stage === "all" \|\| r\.stage === stage\)\s*&& \(need === "any" \|\| hasNeed\(r\.t, need\)\)/)
   })
 
-  it('⚠️ واختياره يرفع فلتر الحال ويفتح بطاقات من فيه', () => {
-    expect(ops).toMatch(/const pickNeed = [\s\S]*?setFilter\("all"\);\s*setOpenIds\(new Set\(rows\.filter\(\(r\) => hasNeed\(r\.t, next\)\)/)
+  it('⚠️ واختياره يرفع فلتري الحال والمرحلة ويفتح بطاقات من فيه', () => {
+    expect(ops).toMatch(/const pickNeed = [\s\S]*?setFilter\("all"\);\s*setStage\("all"\);\s*setOpenIds\(new Set\(rows\.filter\(\(r\) => hasNeed\(r\.t, next\)\)/)
     expect(ops).toContain('ariaLabel="ما ينتظر قرارك" value={need} onChange={pickNeed}')
   })
 })

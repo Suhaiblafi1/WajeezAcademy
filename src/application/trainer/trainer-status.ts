@@ -7,8 +7,9 @@
    فلكلّ مدرّبٍ هنا:
    · **خطواتٌ** — ما ينتظر أحدا الآن، ولكلٍّ صاحبُها: «منك» (الإدارة) أو «منه» (المدرّب). تُقرأ من بياناته وحدَها:
      حسابُه، وعقدُه ما دام طلبُه غيرَ نشط، وظهورُه، وخططُ شعبه، وملفُّه العامّ، والاقتراحاتُ، ودوراتٌ عُرضت عليه.
-   · **وحالٌ واحدة** يُفرز بها: موقوف، ثمّ اسمُه لا يظهر وله دوراتٌ منشورة، ثمّ ينتظرك، ثمّ ينتظره، ثمّ جاهز،
-     ثمّ بلا شعبة. والحالُ مفردةٌ فمجموعُ الفلاتر عددُ المدرّبين.
+   · **وحالٌ واحدة** يُفرز بها: موقوف، ثمّ اسمُه لا يظهر وله دوراتٌ منشورة، ثمّ ينتظرك، ثمّ ينتظره، ثمّ لا شيء
+     ينتظر. والحالُ مفردةٌ فمجموعُ الفلاتر عددُ المدرّبين.
+   · **ومرحلةٌ واحدة** على سلّم دوراته (`trainerStageOf`، ٢٤ أكتوبر ٢٠٢٦) — فلترٌ ثانٍ مستقلٌّ عن الحال.
 
    والدوالُّ نقيّةٌ تقرؤها الشاشة (`TrainerRunOps.tsx`). */
 
@@ -38,16 +39,58 @@ export const STEP_ACT_AR: Record<StepAct, string> = {
   suggest: 'افتح الاقتراح',
 }
 
-export type TrainerState = 'hidden' | 'you' | 'trainer' | 'ready' | 'idle' | 'suspended'
+/* ═══ «جاهز» و«بلا شعبة» خرجتا من الحال إلى المرحلة (٢٤ أكتوبر ٢٠٢٦) ═══
+
+   كانت الحالُ مفردةً بترتيب: من ينتظر أحدا يقع في «ينتظرك» أو «ينتظر المدرب» أوّلا، و«بلا شعبة» لمن لا ينتظر شيئا
+   ولا شعبةَ له. فمن لا شعبةَ له وينقصه رفعُ صورةٍ أو قبولُ دورةٍ — وهم أكثرُهم — كان في «ينتظر المدرب»، فقالت الصفحةُ
+   «بلا شعبة (0)» وتحتها كثيرون بلا شعبة. فسأل صاحبُ المنصّة: «هناك العديد بلا شعبة ولا يظهروا في الفلتر!!!».
+   فالحالُ الآن من ينتظر وحدَها، وما بقي «لا شيء ينتظر»؛ والشعبةُ في المرحلة (`trainerStageOf`) — فلترٌ مستقلٌّ يرى
+   كلَّ من بلا شعبةٍ ولو كان ينتظر شيئا. */
+export type TrainerState = 'hidden' | 'you' | 'trainer' | 'quiet' | 'suspended'
 
 export const TRAINER_STATES: { id: TrainerState; ar: string; tone: 'danger' | 'accent' | 'info' | 'positive' | 'neutral' }[] = [
   { id: 'hidden', ar: 'اسمه لا يظهر', tone: 'danger' },
   { id: 'you', ar: 'ينتظرك', tone: 'accent' },
   { id: 'trainer', ar: 'ينتظر المدرب', tone: 'info' },
-  { id: 'ready', ar: 'جاهز', tone: 'positive' },
-  { id: 'idle', ar: 'بلا شعبة', tone: 'neutral' },
+  { id: 'quiet', ar: 'لا شيء ينتظر', tone: 'neutral' },
   { id: 'suspended', ar: 'موقوف', tone: 'neutral' },
 ]
+
+/* ═══ سلّمُ المدرّب مع دوراته — أربعُ كلماتٍ لا تتشابه (٢٤ أكتوبر ٢٠٢٦) ═══
+
+   قال صاحبُ المنصّة: «أنت تقول لديه دورة معتمدة.. معتمدة تعني أنا اعتمدتها رسميا». وكانت «معتمدة» تُقال لثلاثة:
+   دورةٍ اخترناها له، ودورةٍ قبِلها هو، وخطّةٍ اعتمدناها. فصار لكلٍّ كلمتُه، كما رتّبها هو:
+   · **مؤهل لها** — دورةٌ اخترناها له (`pending` أو `qualified`)، أجّلها أو لم يبدأ بها أو لم يوافق عليها بعد. فإن
+     اعتذر عنها (`retired`) أو رُفض تأهيلُه (`rejected`) فليس مؤهلا لها. وطلبُ تأهيلٍ ينتظر قرارَك ليس تأهيلا بعد.
+   · **وافق وفتح شعبة** — قبِل دورةً فأُنشئت له شعبتُها، أو أُسند إلى شعبة. والموافقةُ وفتحُ الشعبة فعلٌ واحدٌ في
+     المنصّة: القبولُ في «مؤهّلاتي» يُنشئ الشعبة (`TrainerPrepService.accept`) — فهما مرحلةٌ واحدة.
+   · **جاهز** — اعتمدتَ خطّةَ شعبةٍ له. و«معتمدة» لا تُقال إلّا لهذا.
+   والمرحلةُ أعلى ما بلغه في شعبةٍ قائمة؛ والمنتهيةُ وراءه لا تجعله جاهزا لفصلٍ قادم. */
+export type TrainerStage = 'none' | 'eligible' | 'opened' | 'ready'
+
+export const TRAINER_STAGES: { id: TrainerStage; ar: string; tone: 'positive' | 'info' | 'neutral' }[] = [
+  { id: 'none', ar: 'لا دورة مؤهل لها', tone: 'neutral' },
+  { id: 'eligible', ar: 'مؤهل ولم يوافق', tone: 'neutral' },
+  { id: 'opened', ar: 'وافق وفتح شعبة', tone: 'info' },
+  { id: 'ready', ar: 'جاهز', tone: 'positive' },
+]
+
+export interface StageQualification { status: string; requested?: boolean }
+
+/** أمؤهلٌ لها — اخترناها له ولم يعتذر عنها ولم يُرفض، وليست طلبا ينتظر قرارك */
+export const isEligible = (q: StageQualification): boolean =>
+  (q.status === 'pending' && !q.requested) || q.status === 'qualified'
+
+/** مرحلتُه — أعلى ما بلغه في شعبةٍ قائمة، وإلّا أهو مؤهلٌ لدورة */
+export function trainerStageOf(t: {
+  qualifications: StageQualification[]
+  cohorts: Pick<CardCohort, 'status' | 'plan' | 'postponedTo'>[]
+}): TrainerStage {
+  const live = t.cohorts.filter((c) => !DONE.includes(c.status))
+  if (live.some((c) => planMarkOf(c) === 'approved')) return 'ready'
+  if (live.length > 0) return 'opened'
+  return t.qualifications.some(isEligible) ? 'eligible' : 'none'
+}
 
 export interface StatusInput {
   suspended: boolean
@@ -123,7 +166,7 @@ export function trainerSteps(t: StatusInput): TrainerStep[] {
 
   /* طابورُ التأهيل */
   if (t.queue.requests > 0) mine(`البت في ${some(t.queue.requests, ASKS)} تأهيل`, 'requests')
-  if (t.queue.toAccept > 0) him.push(`قبول ${some(t.queue.toAccept, COURSES)} عرضت عليه`)
+  if (t.queue.toAccept > 0) him.push(`الموافقة على ${some(t.queue.toAccept, COURSES)} مؤهل لها`)
 
   /* خططُ شعبه القائمة */
   const live = t.cohorts.filter((c) => !DONE.includes(c.status))
@@ -163,7 +206,7 @@ export function trainerStateOf(t: StatusInput, steps: TrainerStep[] = trainerSte
   if (hiddenOnSale(t)) return 'hidden'
   if (steps.some((s) => s.turn === 'you')) return 'you'
   if (steps.some((s) => s.turn === 'trainer')) return 'trainer'
-  return t.cohorts.some((c) => !DONE.includes(c.status)) ? 'ready' : 'idle'
+  return 'quiet'
 }
 
 /** سطرُ الصاحب: «المطلوب منك: اعتماد خطة شعبة · مراجعة صورته الجديدة» — أو لا شيء.
@@ -209,12 +252,15 @@ export function approvedToAccept(t: {
 }
 
 /** ما يقال حين لا ينتظر شيء — والغائبُ بطلبٍ غيرِ نشطٍ يقال طورُ طلبه، فهو ما ينشره حين ينشط */
-export function quietLineAr(state: TrainerState, applicationStatus: string): string | null {
+export function quietLineAr(state: TrainerState, applicationStatus: string, stage: TrainerStage): string | null {
   if (state === 'hidden') {
     return applicationStatus === 'active' ? null : `يظهر حين ينشط طلبه — طلبه الآن: ${plainAr(STATUS_LABELS[applicationStatus] ?? applicationStatus)}`
   }
-  if (state === 'ready') return 'لا شيء ينتظر — شعبه معتمدة'
-  if (state === 'idle') return 'لا شيء ينتظر — لا شعبة قادمة له. يسند من صفحة الشعبة'
+  if (state === 'quiet') {
+    if (stage === 'ready') return 'لا شيء ينتظر — اعتمدت خطة شعبته'
+    if (stage === 'opened') return 'لا شيء ينتظر'
+    return 'لا شيء ينتظر — لا شعبة قادمة له. يسند من صفحة الشعبة'
+  }
   if (state === 'suspended') return 'موقوف — يرفع الإيقاف من ملفه في «طلبات المدربين»'
   return null
 }

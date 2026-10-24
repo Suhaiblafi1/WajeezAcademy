@@ -176,16 +176,38 @@ describe('الحلّ: أقلّ ما يمكن من تغيير', () => {
     if (moved.action === 'move') expect(moved.to.weekday).not.toBe(0)
   })
 
-  it('وما يلتقي أكثر من مرّة في الأسبوع لا يضغط إلى يوم واحد — يقال سببه ويبقى', () => {
+  it('⚠️ وما يلتقي أكثر من مرّة في الأسبوع لا يضغط إلى يوم واحد — يبقى، وتنتقل قرينته ولو كان فيها طلبة', () => {
+    /* «لماذا لم تحلّ المتعارضين؟» (٢٤ أكتوبر ٢٠٢٦): كانت تعلق هي وتبقى قرينتُها — فلا يحلّ شيء */
     const cohorts = [
       cohort('1', 'A', [...weekly('2026-12-06', '19:00'), ...weekly('2026-12-08', '19:00')]),
       cohort('2', 'B', weekly('2026-12-06', '19:00'), { learners: 3 }),
     ]
     const build = fakeBuild(cohorts)
-    const row = planClashFree({ cohorts, courses, build }).rows.find((r) => r.cohortId === '1')!
+    const rows = planClashFree({ cohorts, courses, build }).rows
+    expect(rows.find((r) => r.cohortId === '1')!.action).toBe('keep')
+    expect(rows.find((r) => r.cohortId === '2')!.action).toBe('move')
+    expect(build.calls.map((c) => c.id), 'بني لها جدول أسبوعيّ واحد').not.toContain('1')
+  })
+
+  it('⚠️ وشعبتان كلتاهما أكثر من مرّة في الأسبوع — تعلق الثانية ويقال سببه', () => {
+    const twice = (a: string, b: string) => [...weekly(a, '19:00'), ...weekly(b, '19:00')]
+    const cohorts = [cohort('1', 'A', twice('2026-12-06', '2026-12-08')), cohort('2', 'B', twice('2026-12-06', '2026-12-09'))]
+    const build = fakeBuild(cohorts)
+    const stuck = planClashFree({ cohorts, courses, build }).rows.filter((r) => r.action === 'stuck')
+    expect(stuck).toHaveLength(1)
+    if (stuck[0]!.action === 'stuck') expect(stuck[0]!.whyAr).toContain('أكثر من مرة في الأسبوع')
+    expect(build.calls).toEqual([])
+  })
+
+  it('⚠️ وإن صلحت مواعيد وتعارضت كلّها لا يقال سبب آخر ما لم يصلح', () => {
+    /* كان يقال «لا الجمعة في موعد» — وهو سببُ أبعد موعدٍ جُرّب، لا سببُ العلوق */
+    const cohorts = [cohort('1', 'A', weekly('2026-12-06', '19:00')), cohort('2', 'B', weekly('2026-12-06', '19:00'), { learners: 1 })]
+    const same: BuildSchedule<WeeklySlot> = (id, slot) => slot.weekday === 5
+      ? { ok: false, reasonAr: 'لا الجمعة في موعد' }
+      : { ok: true, sessions: cohorts.find((c) => c.cohortId === id)!.sessions, payload: slot }
+    const row = planClashFree({ cohorts, courses, build: same }).rows.find((r) => r.cohortId === '1')!
     expect(row.action).toBe('stuck')
-    if (row.action === 'stuck') expect(row.whyAr).toContain('أكثر من مرة في الأسبوع')
-    expect(build.calls, 'بني له جدول أسبوعيّ واحد').toEqual([])
+    if (row.action === 'stuck') expect(row.whyAr).toBe('لا موعد بلا تعارض يصلح لها')
   })
 
   it('وما لا يبنى له جدول يقال بسببه ولا يسقط صامتا', () => {

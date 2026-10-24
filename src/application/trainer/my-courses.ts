@@ -39,7 +39,7 @@ export const MY_COURSE_STATE: Record<MyCourseState, { label: string; tone: MyCou
   postponed: { label: "مؤجّلة إلى موسم قادم", tone: "neutral" },
   requested: { label: "بانتظار قرار الإدارة", tone: "info" },
   teaching: { label: "تدرّسها", tone: "positive" },
-  ready: { label: "معتمدة لك", tone: "positive" },
+  ready: { label: "مؤهل لها", tone: "positive" },
   taught: { label: "درّستها", tone: "neutral" },
   closed: { label: "سابقة", tone: "neutral" },
 };

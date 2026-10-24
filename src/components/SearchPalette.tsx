@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
-import { Banknote, BookMarked, CalendarCog, LifeBuoy, Search, UserPlus, Users } from "lucide-react";
+import { Banknote, BookMarked, CalendarCog, LayoutGrid, LifeBuoy, Search, UserPlus, Users } from "lucide-react";
 import { apiGet } from "@/services/api";
 import { useRealSession } from "@/services/session";
+import { sectionsFor } from "@/pages/admin/nav-map";
+import { matchesQuery } from "@/application/text/search-ar";
 
 import { Inset } from "@/components/ui/Surface";
 interface SearchHit { id: string; title: string; sub: string; to: string }
@@ -17,7 +19,15 @@ const GROUP_META: { key: keyof Groups; label: string; icon: typeof Search }[] = 
   { key: "payouts", label: "كشوف المستحقات", icon: Banknote },
 ];
 
-/** لوحة بحث الإدارة — Cmd/Ctrl+K من أي شاشة إدارية. كل مجموعة نتائج مفلترة بصلاحياتها من الخادم. */
+/** لوحة بحث الإدارة — Cmd/Ctrl+K من أي شاشة إدارية. كل مجموعة نتائج مفلترة بصلاحياتها من الخادم.
+
+    ═══ والشاشاتُ أوّلُ ما يُوجد (٢٤ أكتوبر ٢٠٢٦) ═══
+
+    كان فوق مجموعات الشريط الجانبيّ مرشِّحٌ يبحث في أسماء الشاشات، وهذه اللوحةُ في البيانات — خانتان
+    لسؤالين متجاورين. فلمّا صار الشريطُ سكّةَ أقسامٍ (`AdminLayout.tsx`) انتقل المرشِّحُ إلى هنا: أسماءُ
+    الشاشات من `sectionsFor` نفسِها — ما يملكه صاحبُ الجلسة وحدَه — تُطابَق في المتصفّح بلا نداء، فتُرى
+    قبل أن يصل جوابُ الخادم، ولو لم يصل. والمطابقةُ بمطابِق المنصّة (`matchesQuery`): «مدرّب» يجد
+    «طلبات المدربين». */
 export default function SearchPalette() {
   const { user } = useRealSession();
   const navigate = useNavigate();
@@ -28,6 +38,13 @@ export default function SearchPalette() {
   const [cursor, setCursor] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const staff = user?.permissions.some((p) => !p.startsWith("learner.")) ?? false;
+  const screens = useMemo<SearchHit[]>(() => {
+    const term = q.trim();
+    if (!term) return [];
+    return sectionsFor(user?.permissions).flatMap((s) => s.items
+      .filter((it) => matchesQuery(term, [it.label, it.tab, it.descAr, s.title]))
+      .map((it) => ({ id: it.to, title: it.label, sub: `${s.title} › ${it.tab}`, to: it.to })));
+  }, [q, user?.permissions]);
 
   /* فتح بلوحة المفاتيح أو بحدث مخصص من زر الواجهة */
   useEffect(() => {
@@ -66,10 +83,10 @@ export default function SearchPalette() {
     return () => clearTimeout(t);
   }, [q, open]);
 
-  const flat = useMemo(() => {
-    if (!groups) return [];
-    return GROUP_META.flatMap((g) => (groups[g.key] ?? []).map((h) => ({ ...h, group: g.key })));
-  }, [groups]);
+  const flat = useMemo(() => [
+    ...screens,
+    ...(groups ? GROUP_META.flatMap((g) => (groups[g.key] ?? []).map((h) => ({ ...h, group: g.key }))) : []),
+  ], [screens, groups]);
 
   const go = useCallback((hit: SearchHit) => {
     setOpen(false);
@@ -95,7 +112,7 @@ export default function SearchPalette() {
             value={q}
             onChange={(e) => { setQ(e.target.value); setCursor(0); }}
             onKeyDown={onInputKey}
-            placeholder="ابحث: مدرب، شعبة، دورة، مستخدم، تذكرة، كشف…"
+            placeholder="ابحث: شاشة، مدرب، شعبة، دورة، مستخدم، تذكرة، كشف…"
             className="w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground/75 focus:outline-none"
           />
           <kbd className="rounded-md border border-white/15 px-2 py-0.5 text-fine text-muted-foreground">Esc</kbd>
@@ -104,8 +121,35 @@ export default function SearchPalette() {
         <div className="max-h-[55vh] overflow-y-auto p-2">
           {q.trim() === "" && (
             <p className="px-4 py-8 text-center text-read leading-6 text-muted-foreground">
-              اكتب للبحث الفوري عبر كل كيانات الإدارة —<br />الأسهم ↑↓ للتنقل و Enter للقفز
+              اكتب للبحث في الشاشات وكل كيانات الإدارة —<br />الأسهم ↑↓ للتنقل و Enter للقفز
             </p>
+          )}
+          {screens.length > 0 && (
+            <div className="mb-1">
+              <p className="flex items-center gap-2 px-3 pb-1 pt-2 text-read font-black text-muted-foreground">
+                <LayoutGrid className="h-3 w-3" /> الشاشات
+              </p>
+              {screens.map((h) => {
+                rowIndex += 1;
+                const idx = rowIndex;
+                return (
+                  <button
+                    key={`screen-${h.id}`}
+                    onClick={() => go(h)}
+                    onMouseEnter={() => setCursor(idx)}
+                    className={`flex w-full cursor-pointer items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-right transition ${
+                      cursor === idx ? "bg-teal/15" : "hover:bg-white/[0.04]"
+                    }`}
+                  >
+                    <span className="min-w-0">
+                      <span className="block truncate text-xs font-black text-foreground">{h.title}</span>
+                      <span className="block truncate text-fine text-muted-foreground">{h.sub}</span>
+                    </span>
+                    <span className="shrink-0 text-fine font-bold text-teal-light-ink">Enter ↵</span>
+                  </button>
+                );
+              })}
+            </div>
           )}
           {searching && <p className="px-4 py-6 text-center text-read text-muted-foreground">يبحث…</p>}
           {!searching && groups && flat.length === 0 && (

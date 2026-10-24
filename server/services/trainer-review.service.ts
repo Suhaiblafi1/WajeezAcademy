@@ -6065,6 +6065,8 @@ export class TrainerReviewService {
         courseId: q.courseId,
         courseTitle: q.course.versions[0]?.titleAr ?? q.courseId,
         status: q.status,
+        /* طلبُ تأهيلٍ لشعبةٍ ينتظر قرارَك — ليس تأهيلا بعد (`isEligible`) */
+        requested: q.status === 'pending' && Boolean(q.requestedCohortId),
       })),
       assignments: p.assignments.map((a) => ({
         courseId: a.courseId,

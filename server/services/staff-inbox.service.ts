@@ -234,6 +234,29 @@ export class StaffInboxService {
       })
     }
 
+    /* ── عقودٌ وقّعها أصحابُها وتنتظر ختمَنا (٢٤ أكتوبر ٢٠٢٦) ──
+       كانت شارةً على «العقود» وحدَها ولا بندَ لها هنا. فلمّا صار عددُ «اليوم» في سكّة الإدارة يجمع
+       ما ينتظرك كلَّه (`waitingCounts` في `nav-map.ts`)، قال اللوحُ عددا وقالت السكّةُ غيرَه بعدد العقود.
+       وبالختم يُفعَّل المدرّب. والعدُّ عدُّ الشارة نفسِه (`countAwaitingCountersign`: الحالةُ `signed`)
+       لا نسخةٌ منه، وبصلاحيّتها نفسِها. */
+    if (can('trainer.contract.manage')) {
+      const signed = await this.prisma.trainerContract.findMany({
+        where: { status: 'signed' },
+        orderBy: { signedAt: 'asc' },
+        take: 5,
+        select: { number: true, profile: { select: { application: { select: { fullName: true } } } } },
+      })
+      push({
+        key: 'contracts_to_countersign',
+        titleAr: 'عقود موقّعة تنتظر ختمك',
+        whyAr: 'بختمك يفعّل المدرّب ويبدأ إعداد دوراته',
+        count: await this.prisma.trainerContract.count({ where: { status: 'signed' } }),
+        href: '/admin/trainer-contracts',
+        severity: 'attention',
+        sample: signed.map((c) => `${c.profile.application.fullName} — ${c.number}`),
+      })
+    }
+
     /* ── خططُ شعبٍ أرسلها مدرّبوها وأكّدوها (٣ أكتوبر ٢٠٢٦) ──
        كانت تُعتمَد من بطاقة كلّ شعبةٍ وحدَها، ولا بندَ هنا يقول إنّ أحدا
        ينتظر: لا يُفتح تسجيلُ الشعبة قبل اعتمادها، ومدرّبُ الإعداد لا يُفعَّل
@@ -365,7 +388,7 @@ export class StaffInboxService {
       push({
         key: 'trainer_suggestions_to_write',
         titleAr: 'مدربون جدد بلا اقتراحات',
-        whyAr: 'لهم دورة معتمدة ولم نكتب لهم «لماذا نفتخر» ولا نبذة — نزّل ملفاتهم من «تشغيل المدربين» لنكتب لهم',
+        whyAr: 'مؤهلون لدورة ولم نكتب لهم «لماذا نفتخر» ولا نبذة — نزّل ملفاتهم من «تشغيل المدربين» لنكتب لهم',
         count: names.length,
         href: '/admin/trainer-run',
         severity: 'info',

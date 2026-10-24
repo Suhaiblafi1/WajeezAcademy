@@ -263,8 +263,8 @@ export function draftingMarkdown(
 ): string {
   const partAr = at.parts > 1 ? ` — الجزء ${at.part} من ${at.parts}` : ''
   const out: string[] = [`# ملفات المدربين لكتابة الاقتراحات — ${zonedDay(now)}${partAr}`, '']
-  if (trainers.length === 0) out.push('لكل مدرب له دورة معتمدة مسودة أو اقتراح أرسل له. لا أحد ينتظر.')
-  else out.push(`${trainers.length} مدربا لهم دورة معتمدة، بلا مسودة ولا اقتراح. ومن له دورة منشورة هذا الفصل أو بعده موسوم بـ«منشورة».`, '')
+  if (trainers.length === 0) out.push('لكل مدرب مؤهل لدورة مسودة أو اقتراح أرسل له. لا أحد ينتظر.')
+  else out.push(`${trainers.length} مدربا مؤهلين لدورة، بلا مسودة ولا اقتراح. ومن له دورة منشورة هذا الفصل أو بعده موسوم بـ«منشورة».`, '')
   const line = (k: string, v: string | null | undefined) => { if (v && v.trim()) out.push(`- **${k}:** ${v.trim()}`) }
   trainers.forEach((t, i) => {
     out.push(`## ${i + 1}. ${t.name}`, '')

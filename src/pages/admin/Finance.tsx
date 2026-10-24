@@ -11,6 +11,7 @@ import AdminLayout from "./AdminLayout";
 import ListToolbar from "@/components/admin/ListToolbar";
 import WorkHeader from "@/components/admin/WorkHeader";
 import TabBar from "@/components/ui/TabBar";
+import { useTabParam } from "@/hooks/useTabParam";
 import { revealRow } from "@/components/admin/reveal";
 import EmptyState from "@/components/EmptyState";
 import { Panel, Card, Inset } from "@/components/ui/Surface";
@@ -78,7 +79,13 @@ export default function Finance() {
   const canViewMoney = can("finance.view");
   const readOnly = canViewMoney && !canRecordPayment && !canRefund && !canCommerce;
 
-  const [tab, setTab] = useState<Tab>("requests");
+  /* واللسانُ في العنوان (`useTabParam`): رابطُ «الاستردادات» يفتحها، و«رجوع» يعود إلى ما قبلها.
+     والألسنةُ ما يملكه صاحبُ الجلسة — كما في `tabs` أدناه — فرابطٌ إلى ما لا يملكه يفتح الأوّل. */
+  const [tab, setTab] = useTabParam<Tab>([
+    "requests",
+    ...(canViewMoney ? (["invoices", "refunds"] as const) : []),
+    ...(canCommerce ? (["coupons"] as const) : []),
+  ], "requests");
   /* بحثٌ وترقيمٌ للتبويبين اللذين يطولان بالعمل: الطلبات والفواتير.
      والاستردادُ والكوبونُ محدودان بطبيعتهما فلا يُثقلان بشريط. */
   const [q, setQ] = useState("");

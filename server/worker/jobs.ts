@@ -1596,8 +1596,8 @@ export async function runPublishLiveTrainers(prisma: PrismaClient, now = new Dat
   const { publishCohortTrainers } = await import('../services/trainer-auto-publish')
   const { published, notActive } = await publishCohortTrainers(prisma, { actorId: null, now })
   const parts = [published.length === 0 ? 'كل مدربي الشعب المعروضة ظاهرون' : `نشر اسم ${published.length} مدرب`]
-  if (sealed.length > 0) parts.unshift(`وقع عقد ${sealed.length} مدرب نشط اعتمدت له دورة`)
-  if (activated.length > 0) parts.unshift(`فعّل ${activated.length} مدرب له دورة معتمدة`)
+  if (sealed.length > 0) parts.unshift(`وقع عقد ${sealed.length} مدرب نشط اعتمدت خطة شعبته`)
+  if (activated.length > 0) parts.unshift(`فعّل ${activated.length} مدرب اعتمدت خطة شعبته`)
   if (moved.reopened.length > 0) parts.unshift(`أعاد ${moved.reopened.length} مدرب إلى التهيئة — توقيعه معتمد وينقصه حساب أو أجر`)
   if (moved.activated.length > 0) parts.unshift(`فعّل ${moved.activated.length} مدرب توقيعه معتمد — ألغيت التهيئة`)
   if (blocked > 0) parts.push(`و${blocked} منع تفعيله أو توقيع عقده مانع — أخبرت الإدارة`)
@@ -1621,7 +1621,7 @@ export const JOBS = [
   { key: 'cohort_status_sync', everyMs: 15 * 60_000, run: syncCohortStatuses, titleAr: 'حالات الشعب بالتواريخ' },
   /* كلَّ ربع ساعة: الفتحُ ينشر بنفسه، وهذه تلحق ما فُتح قبل القرار وما أُضيف مدرّبُه بعد الفتح — وتفعّل قبله
      من في الطور وله دورةٌ معتمَدة، وتوقّع عقدَ النشط الذي اعتُمدت له دورة */
-  { key: 'publish_live_trainers', everyMs: 15 * 60_000, run: runPublishLiveTrainers, titleAr: 'تفعيل وتوقيع من اعتمدت له دورة ونشر أسماء مدربي الشعب المعروضة' },
+  { key: 'publish_live_trainers', everyMs: 15 * 60_000, run: runPublishLiveTrainers, titleAr: 'تفعيل وتوقيع من اعتمدت خطة شعبته ونشر أسماء مدربي الشعب المعروضة' },
   /* كلَّ ساعة: الإسقاطُ والانتقالُ يُلغيان التسجيلَ ساعتَهما — وهذه لما أبى فيه
      Zoom ولمن ترك قبلها. واللقاءُ بعد أيّامٍ في الغالب، فساعةٌ تسبقه */
   { key: 'revoke_left_registrants', everyMs: HOUR, run: revokeLeftRegistrants, titleAr: 'إلغاء تسجيل من ترك شعبته عند Zoom' },

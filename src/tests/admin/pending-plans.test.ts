@@ -78,9 +78,10 @@ describe('② والطابور يبلغ', () => {
   const item = allSections.flatMap((s) => s.items.map((i) => ({ ...i, section: s.title })))
     .find((i) => i.to === '/admin/pending-plans')
 
-  it('بند تحت «المدرّبون — الانضمام والتعاقد» بصلاحيّة الاعتماد نفسها، وبشارة عدد', () => {
+  /* وصار لسانا في قسم «المدربون» بعد أن جُمعت مجموعتاه (٢٤ أكتوبر ٢٠٢٦، `nav-map.ts`) */
+  it('لسان في قسم «المدربون» بصلاحيّة الاعتماد نفسها، وبشارة عدد', () => {
     expect(item, 'لا بند للطابور في القائمة').toBeDefined()
-    expect(item!.section).toBe('المدرّبون — الانضمام والتعاقد')
+    expect(item!.section).toBe('المدربون')
     expect(item!.need).toBe('cohort.plan.approve')
     expect(item!.badge).toBe('awaitingPlans')
   })
@@ -149,7 +150,7 @@ describe('③ ما يقال قبل النقر وبعده بما يحكم به ا
 
     /* ودورتُه معتمَدةٌ أصلا (`qualifies: false`): لا يُقال «تؤهّله» */
     const qualified = prepNoteAr({ onboarding: true, qualifies: false })
-    expect(qualified).toContain('دورتها معتمدة لمدرّبها أصلا')
+    expect(qualified).toContain('مدرّبها مؤهل لدورتها أصلا')
     expect(qualified).not.toContain('تؤهّل')
 
     /* والنشطُ لا يُفعَّل بها ولا مهلةَ له: لا يُقال ما لا يقع */
@@ -166,7 +167,7 @@ describe('③ ما يقال قبل النقر وبعده بما يحكم به ا
     expect(activated).toContain('فعّل مدرّبا نشطا')
     expect(activated, 'يقال إنّ دوراته اكتملت وأوّلها يفعّله').not.toContain('كلّها')
     const blocked = planApprovedMsg({ ...base, prep: { activated: false, blockedAr: 'لا حساب له بعد' } })
-    expect(blocked).toContain('واعتمدت له دورة ولم يفعّل: لا حساب له بعد')
+    expect(blocked).toContain('واعتمدت خطة شعبته ولم يفعّل: لا حساب له بعد')
   })
 
   it('والجملتان لا تلتحمان بنقطتين — ولو انتهت الأولى بنقطة', () => {

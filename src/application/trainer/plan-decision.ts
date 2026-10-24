@@ -53,7 +53,7 @@ export function prepOutcomeAr(prep: PlanDecision['prep']): string {
     return 'وبها فعّل مدرّبا نشطا ووصله خبر اعتماده جرسا وبريدا — وحال عقده في «العقود»، وما بقي عليك أدناه'
   }
   if (prep.blockedAr) {
-    return `واعتمدت له دورة ولم يفعّل: ${prep.blockedAr} — أصلح ذلك ثمّ فعّله من ملفّه`
+    return `واعتمدت خطة شعبته ولم يفعّل: ${prep.blockedAr} — أصلح ذلك ثمّ فعّله من ملفّه`
   }
   return ''
 }
@@ -80,7 +80,7 @@ export interface PrepFlags { onboarding: boolean; qualifies: boolean }
 export function prepNoteAr(p: PrepFlags, many = false): string {
   const approve = p.qualifies
     ? '«اعتمدها» تؤهّل مدرّبها لدورتها'
-    : 'دورتها معتمدة لمدرّبها أصلا، و«اعتمدها» تعتمد خطّتها'
+    : 'مدرّبها مؤهل لدورتها أصلا، و«اعتمدها» تعتمد خطّتها'
   const last = p.onboarding
     ? '، وتفعّله مدرّبا نشطا — ويختم عقده المشروط إن كان ينتظر ختمنا'
     : ''
