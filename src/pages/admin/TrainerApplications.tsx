@@ -20,9 +20,10 @@ import { OptionGrid, staffAreaCls, staffSelectCls } from "@/components/FormKit";
 import { paginate } from "@/application/admin/paginate";
 import { SORT_OPTIONS, sortApplications, type SortDir, type SortKey } from "@/application/trainer/application-sort";
 import type { SyncTrust } from "@/application/trainer/interview-sync-trust";
-import FlowSteps from "@/components/FlowSteps";
 import { apiGet, apiPost, apiDelete, ApiError } from "@/services/api";
-import { useSearchParams } from "react-router";
+import { useNavigate, useSearchParams } from "react-router";
+import { useTabParam } from "@/hooks/useTabParam";
+import { JOINING_ACT_AR, JOINING_STOPS, joiningNextOf, joiningStopOf, type JoiningAct, type JoiningFacts, type JoiningStop, type JoiningTurn } from "@/application/trainer/joining";
 import { useRealSession } from "@/services/session";
 import { useAutoRefresh } from "@/services/useAutoRefresh";
 import { TrainerDetailOps, TrainerChangeRequests, type TrainerSummary } from "./TrainerOps";
@@ -370,7 +371,20 @@ interface AppRow {
   waitingSince: string;
   /** آخرُ مراسَلةٍ ننتظر بها ردَّه — `null` لمن لم يُراسَل قطّ */
   lastOutreach: LastOutreach | null;
+  /** متى خرجت إليه دعوةُ الحجز — من الأثر، و`null` لمن لم تخرج إليه (`interview-invitation.ts`) */
+  interviewInvitedAt?: string | null;
+  /** عبر إلى «المدربون» — اعتمدنا توقيعَه أو عمل (`OPERATING_TRAINER_WHERE`، ٢٤ أكتوبر ٢٠٢٦) */
+  operating: boolean;
+  /** آخرُ عقدٍ له غيرُ مُزاح — لمحطّة «الاتفاقية» وخطوتها (`joining.ts`) */
+  contract: JoiningFacts["contract"];
 }
+
+/* ═══ من عليه الدورُ — بلونه، كسطرَي بطاقة «المدربون» (`trainer-status.ts`) ═══
+   ما عليك ذهبيٌّ يُلفت، وما عليه فيروزيٌّ يُقرأ ولا يُلحّ، وما لا دورَ فيه هادئ. */
+const TURN_AR: Record<JoiningTurn, string> = { you: "منك: ", them: "منه: ", none: "" };
+const TURN_TONE: Record<JoiningTurn, string> = {
+  you: "text-gold-ink", them: "text-teal-light-ink", none: "text-muted-foreground",
+};
 
 interface AppDetail extends Record<string, unknown> {
   id: string; reference: string; status: string; fullName: string; email: string;
@@ -525,6 +539,16 @@ export default function TrainerApplications() {
   const [searchParams, setSearchParams] = useSearchParams();
   const openApp = searchParams.get("app");
   const [apps, setApps] = useState<AppRow[]>([]);
+  /* ═══ المحطّاتُ هي الفرزُ الأوّل — وفي العنوان (٢٤ أكتوبر ٢٠٢٦) ═══
+
+     المرحلةُ الثالثةُ من مقترح لوحة الإدارة: «الطلب · المقابلة · الاتفاقية»، و«لاحقا» و«مغلق» جانبا (`joining.ts`).
+     وهي «اللّيبلُ الرئيسيّ» الذي طلبه صاحبُ المنصّة (٢١ سبتمبر ٢٠٢٦: «واحدٌ للّيبل الرئيسيّ… والثاني لنتيجة
+     التقييم»)، والحالةُ الدقيقةُ باقيةٌ في قائمتها. ومن عبر إلى «المدربون» لا يُعدّ في الخطّ: «عندما يقوم المدرب
+     بتوقيع عقد هنا يصبح مدربا في قسم التشغيل» — وتبقى ملفّاتُهم بلسانٍ جانبيٍّ حتّى يصير لكلّ مدرّبٍ ملفُّه.
+     والمحطّةُ في العنوان (`useTabParam`): رابطُ «الاتفاقية» يفتحها، و«رجوع» يعود إليها. */
+  const [stop, setStop] = useTabParam<JoiningStop | "crossed" | "">(
+    ["", ...JOINING_STOPS.map((s) => s.id), "crossed"], "", "stop");
+  const navigate = useNavigate();
   const [filter, setFilter] = useState("");
   /* ومرشِّحُ النتيجة — بُعدٌ ثانٍ لا بديلٌ عن الأوّل: «واحدٌ للّيبل الرئيسيّ
      وهو نشط أو مرفوض، والثاني لنتيجة التقييم». ويجتمعان بالواو لا بالأو. */
@@ -834,9 +858,13 @@ export default function TrainerApplications() {
      الطابور، وبقيت شارةٌ تُعرض لحالةٍ لا أحدَ فيها. فصارت تُحسب: ما وُجد
      عُرض بعدده، وما خلا لم يُعرض أصلا.
 
-     وترتيبُها ترتيبُ `STATUS_LABELS` — دورةُ حياة الطلب — لا الأكثرَ عددا:
-     شارةٌ تقفز من موضعها كلّما تبدّل رقمٌ تُفقد اليدَ موضعَها. */
-  const statusFacets = facetsOf(Object.keys(STATUS_LABELS), apps, (a) => a.status);
+     وترتيبُها ترتيبُ المحطّات — دورةُ حياة الطلب — لا الأكثرَ عددا:
+     شارةٌ تقفز من موضعها كلّما تبدّل رقمٌ تُفقد اليدَ موضعَها.
+
+     وصارت الشاراتُ محطّاتٍ لا حالاتٍ (٢٤ أكتوبر ٢٠٢٦، المرحلةُ الثالثة) — بالحساب نفسِه: ما خلا لا يُعرض. */
+  const stopFacets = facetsOf(JOINING_STOPS.map((s) => s.id), apps, (a) => joiningStopOf(a) ?? "")
+    .map((f) => ({ ...JOINING_STOPS.find((s) => s.id === f.key)!, n: f.n }));
+  const crossedCount = apps.filter((a) => a.operating).length;
 
   /* والنتيجةُ بُعدٌ ثانٍ: «هو نشطٌ وتقييمُنا يقول اجتاز — وهما شيئان» */
   const resultFacets = facetsOf(
@@ -852,6 +880,7 @@ export default function TrainerApplications() {
      ويُحدَّد منه «الكلّ». ولو رُشّح مرّتين لَحدّد «الكلُّ» غيرَ ما يُعرض. */
   const matching = sortApplications(
     apps
+      .filter((a) => (stop === "crossed" ? a.operating : stop ? joiningStopOf(a) === stop : !a.operating))
       .filter((a) => !filter || a.status === filter)
       .filter((a) => !resultFilter || resultKey(a) === resultFilter)
       .filter((a) => !onlyUnbooked || canRemind(a))
@@ -909,19 +938,24 @@ export default function TrainerApplications() {
   const allows = (action: string, status: string) =>
     DECISIONS.some((d) => d.action === action && d.from.includes(status));
 
+  /* ═══ زرُّ الصفّ — بأفعال قائمته نفسِها لا بنسخةٍ منها (٢٤ أكتوبر ٢٠٢٦) ═══
+     التذكيرُ وفتحُ الملفّ هما بندا القائمة ⋮ بعينهما، فلا يفترق الزرُّ عن البند في شرطٍ أو رسالة. والعقدُ في
+     «العقود» بالرابط الذي تفتحه بطاقةُ «المدربون» (`?q=` و`?prepare=`). */
+  const runJoiningAct = (a: AppRow, act: JoiningAct) => {
+    if (act === "contract_new") { navigate(`/admin/trainer-contracts?q=${encodeURIComponent(a.fullName)}&prepare=${a.id}`); return; }
+    if (act === "contract") { navigate(`/admin/trainer-contracts?q=${encodeURIComponent(a.fullName)}`); return; }
+    const key = act === "remind_booking" ? "remind-booking" : act === "remind_draft" ? "remind-draft" : "open";
+    rowActions(a).find((i) => i.key === key)?.run();
+  };
+
   const rowActions = (a: AppRow): RowAction[] => {
     const items: RowAction[] = [
       { key: "open", label: "افتح الملفّ", icon: FileText, run: () => void openDetail(a.id) },
     ];
-    if (allows("approve", a.status)) {
-      items.push({
-        key: "approve", label: "اعتمده مدرّبا — بنقرة", icon: CheckCircle2,
-        run: () => void act(
-          () => apiPost(`/api/admin/trainer-applications/${a.id}/decision`, { action: "approve" }),
-          "اعتمد مدرّبا — وأبلغ بذلك",
-        ),
-      });
-    }
+    /* ═══ ولا «اعتمده مدرّبا — بنقرة» في الصفّ (٢٤ أكتوبر ٢٠٢٦) ═══
+       كان يرسل الاعتمادَ بلا تأكيدٍ ولا قراءةٍ لجاهزيّته، فيردّه الخادمُ لمن لم يكتمل تجهيزُه، ويردّه لمدير
+       النظام لأنّه لا يحمل سببَ تجاوز. وهو أحدُ أبواب التفعيل المكرّرة التي يُسقطها المقترح: اعتمادُ التوقيع
+       يفعّله، والاعتمادُ باليد في ملفّه بموانعه وسبب تجاوزه. */
     /* والتذكيرُ بالحجز لمن يُقبل حجزُه ولم يحجز — وخبرُه يتبع حالَ بريده */
     if (canRemind(a)) {
       items.push({
@@ -1933,13 +1967,9 @@ export default function TrainerApplications() {
   /* ── القائمة ── */
   return (
     <AdminLayout title="طلبات انضمام المدربين">
-      <FlowSteps steps={[
-        { label: "تقديم الطلب", actor: "المدرب" },
-        { label: "فرز أولي", actor: "أنت هنا" },
-        { label: "مقابلة", actor: "اللجنة الأكاديمية" },
-        { label: "درس تجريبي وتقييمه", actor: "اللجنة الأكاديمية" },
-        { label: "اعتماد أو اعتذار", actor: "أنت — ويبلّغ تلقائيا" },
-      ]} />
+      {/* ═══ ولا شريطَ خطواتٍ ثانيًا فوق المحطّات (٢٤ أكتوبر ٢٠٢٦) ═══
+          كان هنا خمسُ خطواتٍ بأسماءَ غيرِ أسماء المحطّات («فرز أولي… اعتماد أو اعتذار») — خطّان للرحلة نفسِها
+          في شاشةٍ واحدة. والخطُّ الآن واحد: المحطّاتُ بأعدادها (`JOINING_STOPS`)، ومن عليه الدورُ في كلّ صفّ. */}
       {/* ── العملُ قبل الألسنة ──
 
           كانت الشاشةُ تفتح بأربعة ألسنةٍ ثمّ قائمةٍ طويلة، وما ينتظر الفرزَ
@@ -1973,14 +2003,15 @@ export default function TrainerApplications() {
         </Card>
       )}
 
-      {shown === "apps" && filter === "" && (
+      {/* ورأسُ الفرز لمحطّة «الطلب» — فمن اختار «الاتفاقية» لا يُدعى إلى فرزٍ أوّليٍّ ليس فيها */}
+      {shown === "apps" && filter === "" && (stop === "" || stop === "application") && (
         <WorkHeader
           loading={loading}
           icon={ClipboardList}
           count={triage.length}
           forms={APP_FORMS}
           waitingAr="تنتظر الفرز الأوّليّ"
-          stats={[`${apps.length} في الطابور كلّه`, `${apps.filter((a) => a.interviewsCount > 0).length} أجريت مقابلته`]}
+          stats={[`${apps.filter((a) => !a.operating).length} في الطابور كلّه`, `${apps.filter((a) => !a.operating && a.interviewsCount > 0).length} أجريت مقابلته`]}
           actionAr="ابدأ بأقدمها"
           onAction={() => { if (triage[0]) void openDetail(triage[0].id); }}
           doneAr="لا طلب ينتظر الفرز الأوّليّ — وما يصل منها يظهر هنا فورا."
@@ -2028,18 +2059,45 @@ export default function TrainerApplications() {
                 والصفّان يجتمعان بالواو: «نشط» ثمّ «غير مناسب» نقرتان تُخرجان
                 من هو نشطٌ ولم يُوصَ به — وهو السؤالُ الذي لم يكن له باب. */}
             <div className="flex w-full flex-col gap-1.5">
+              {/* ═══ المحطّاتُ بعددها — والخطُّ قصير (٢٤ أكتوبر ٢٠٢٦) ═══
+                  الثلاثُ على خطٍّ واحدٍ بسهمٍ بينها، و«لاحقا» و«مغلق» جانبا. وما خلا لم يُعرض كما كانت شاراتُ
+                  الحالة (قرارُ ٢١ سبتمبر: «تخرج ممّا استعملناه فعلا»). و«في المدربون» لمن عبر — ملفّاتُهم هنا
+                  حتّى يصير لكلّ مدرّبٍ ملفُّه. */}
               <div className="flex flex-wrap items-center gap-1.5">
-                <span className="ml-1 text-fine text-muted-foreground">الحالة</span>
-                {statusFacets.map((f) => (
-                  <Button key={f.key}
-                    size="sm"
-                    tone={filter === f.key ? "confirm" : "secondary"}
-                    aria-pressed={filter === f.key}
-                    onClick={() => { setFilter(filter === f.key ? "" : f.key); setPage(1); }}>
-                    {STATUS_LABELS[f.key] ?? f.key}
+                <span className="ml-1 text-fine text-muted-foreground">المحطة</span>
+                {stopFacets.filter((f) => !f.aside).map((f, i) => (
+                  <span key={f.id} className="flex items-center gap-1.5">
+                    {i > 0 && <span aria-hidden="true" className="text-muted-foreground">←</span>}
+                    <Button size="sm"
+                      tone={stop === f.id ? "confirm" : "secondary"}
+                      aria-pressed={stop === f.id}
+                      onClick={() => { setStop(stop === f.id ? "" : f.id); setPage(1); }}>
+                      {f.ar}
+                      <span className="mr-1 font-mono opacity-70">{f.n}</span>
+                    </Button>
+                  </span>
+                ))}
+                {(stopFacets.some((f) => f.aside) || crossedCount > 0) && (
+                  <span aria-hidden="true" className="mx-1 h-5 w-px bg-white/15" />
+                )}
+                {stopFacets.filter((f) => f.aside).map((f) => (
+                  <Button key={f.id} size="sm"
+                    tone={stop === f.id ? "confirm" : "secondary"}
+                    aria-pressed={stop === f.id}
+                    onClick={() => { setStop(stop === f.id ? "" : f.id); setPage(1); }}>
+                    {f.ar}
                     <span className="mr-1 font-mono opacity-70">{f.n}</span>
                   </Button>
                 ))}
+                {crossedCount > 0 && (
+                  <Button size="sm"
+                    tone={stop === "crossed" ? "confirm" : "secondary"}
+                    aria-pressed={stop === "crossed"}
+                    onClick={() => { setStop(stop === "crossed" ? "" : "crossed"); setPage(1); }}>
+                    في «المدربون»
+                    <span className="mr-1 font-mono opacity-70">{crossedCount}</span>
+                  </Button>
+                )}
               </div>
               <div className="flex flex-wrap items-center gap-1.5">
                 <span className="ml-1 text-fine text-muted-foreground">نتيجة التقييم</span>
@@ -2248,7 +2306,7 @@ export default function TrainerApplications() {
               className="flex flex-1 cursor-pointer flex-wrap items-center justify-between gap-3 text-right"
             >
               <p className="font-black">
-                {a.fullName} <span className="mr-2 font-mono text-fine text-muted-foreground" dir="ltr">{a.reference}</span>
+                {a.fullName} <span className="mr-2 whitespace-nowrap font-mono text-fine text-muted-foreground" dir="ltr">{a.reference}</span>
               </p>
               <span className="flex flex-wrap items-center gap-2">
                 {/* ═══ ولا شارةَ عمرٍ هنا — حُذفت نهائيّا (٢٠ سبتمبر ٢٠٢٦) ═══
@@ -2334,7 +2392,33 @@ export default function TrainerApplications() {
                 <FollowUpBadge status={a.status} at={a.deferredFollowUpAt} askedAt={a.deferredInterestAskedAt} now={renderedAt} />
                 <OutreachBadge app={a} now={renderedAt} />
               </span>
+              {/* ═══ ومن عليه الدور، وما هو — سطرٌ واحد (٢٤ أكتوبر ٢٠٢٦، `joining.ts`) ═══
+                  «كلُّ صفٍّ يقول من يفعل الآن وماذا، وله زرٌّ واحد» — المقترح. */}
+              {/* وما لا دورَ فيه لأحد لا سطرَ له: الموعدُ والتأجيلُ والحالةُ مقولةٌ في شاراته — وسطرٌ يعيدها تكرار. */}
+              {(() => {
+                const next = joiningNextOf(a, renderedAt);
+                return next && next.turn !== "none" ? (
+                  <span className={`w-full text-read font-bold ${TURN_TONE[next.turn]}`}>
+                    {TURN_AR[next.turn]}{next.ar}
+                  </span>
+                ) : null;
+              })()}
             </button>
+            {(() => {
+              /* زرٌّ واحدٌ لما ينتظر: يفتح ملفَّه حين يكون القرارُ عندك، ويذكّره حين يكون عليه، ويذهب إلى عقده.
+                 وما لا فعلَ فيه — ينتظر ولا يُذكَّر، أو لا دورَ لأحد — لا زرَّ له: الصفُّ نفسُه يفتح ملفَّه. */
+              const next = joiningNextOf(a, renderedAt);
+              if (!next || (next.act === "open" && next.turn !== "you")) return null;
+              return (
+                /* وعلى الهاتف تحت الصفّ لا بجانبه: بجانبه يعصر الاسمَ والشاراتِ كلمةً في كلّ سطر */
+                <div className="order-last flex basis-full ps-11 sm:order-none sm:basis-auto sm:ps-0">
+                  <Button size="sm" tone={next.turn === "you" ? "confirm" : "secondary"} disabled={busy}
+                    onClick={() => runJoiningAct(a, next.act)}>
+                    {JOINING_ACT_AR[next.act]}
+                  </Button>
+                </div>
+              );
+            })()}
             <RowActions label={a.fullName} items={rowActions(a)} />
             </Card>
           ))}

@@ -383,8 +383,30 @@ export class TrainerReviewService {
           select: { verdict: true, reviewerName: true },
         },
         _count: { select: { documents: true, reviews: true, demoEvaluations: true, interviews: { where: LIVE_INTERVIEW } } },
+        /* ═══ وعقدُه — لمحطّة «الاتفاقية» وخطوتها (٢٤ أكتوبر ٢٠٢٦، `joining.ts`) ═══
+           آخرُ عقدٍ غيرُ مُزاح، كما تقرؤه بطاقةُ «المدربون» (`listForOps`). والاسمان لمطابقة التوقيع
+           (`nameMatch`): ما في الوثيقة وما وقّع به. */
+        profile: {
+          select: {
+            legalNameAr: true,
+            contracts: {
+              where: { status: { not: 'superseded' } },
+              orderBy: { createdAt: 'desc' },
+              take: 1,
+              select: { status: true, tokenExpiresAt: true, gatesActivation: true, signerLegalName: true },
+            },
+          },
+        },
       },
     })
+
+    /* ═══ ومن عبر إلى «المدربون» — بالبوّابة نفسِها لا بنسخةٍ منها (٢٤ أكتوبر ٢٠٢٦) ═══
+       «عندما يقوم المدرب بتوقيع عقد هنا يصبح مدربا في قسم التشغيل» (صاحب المنصّة). فالانضمامُ يُخفي من عبر،
+       والحكمُ حكمُ «المدربون» نفسُه (`OPERATING_TRAINER_WHERE`) — فلا يقع أحدٌ في القائمتين ولا يسقط منهما. */
+    const operating = new Set(rows.length === 0 ? [] : (await this.prisma.trainerProfile.findMany({
+      where: { AND: [OPERATING_TRAINER_WHERE, { applicationId: { in: rows.map((a) => a.id) } }] },
+      select: { applicationId: true },
+    })).map((p) => p.applicationId))
 
     /* ═══ وآخرُ ما بعثناه إليه — من الأثر، لا من عمودٍ يُكتب مرّتين ═══
 
@@ -486,6 +508,16 @@ export class TrainerReviewService {
       /* آخرُ مراسَلةٍ ننتظر بها ردَّه — و`null` لمن لم يُراسَل قطّ، وهو خبرٌ
          كالخبر: الحالةُ لا تفرّق بين من ذُكّر أمسِ ومن لم يُذكَّر أصلا. */
       lastOutreach: outreach.get(a.id) ?? null,
+      operating: operating.has(a.id),
+      contract: a.profile?.contracts[0]
+        ? {
+            status: a.profile.contracts[0].status,
+            tokenExpiresAt: a.profile.contracts[0].tokenExpiresAt,
+            gatesActivation: a.profile.contracts[0].gatesActivation,
+            documentNameAr: a.profile.legalNameAr ?? a.fullName,
+            signedNameAr: a.profile.contracts[0].signerLegalName,
+          }
+        : null,
     }))
   }
 
