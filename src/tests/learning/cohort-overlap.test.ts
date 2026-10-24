@@ -37,6 +37,8 @@ describe('شعبتان متعارضتان', () => {
     const options = [cohort('a1', 'A', '2026-12-06T16:00:00Z'), cohort('a2', 'A', '2026-12-06T17:00:00Z'), cohort('a3', 'A', '2026-12-08T16:00:00Z')]
     expect(freeAlternative(options, busy)?.cohortId).toBe('a3')
     expect(freeAlternative(options.slice(0, 2), busy)).toBeNull()
+    /* وشعبةٌ لم يُعتمد جدولُها لا لقاءاتِ لها تُقاس — فلا يقال إنّها لا تتعارض */
+    expect(freeAlternative([{ ...options[2]!, sessions: [] }], busy)).toBeNull()
   })
 
   it('والنص يسمّي الدورة وعدد اللقاءات وأوّلها بتوقيت عمّان، وينصح ولا يمنع — بلا تشكيل', () => {

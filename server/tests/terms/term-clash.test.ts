@@ -7,6 +7,7 @@
    ٣) **ورفضُه بسببٍ يعود** — «هذا اليوم لا يناسبني» فلا يُقترح عليه الأحدُ ثانية.
    ٤) **وقبولُه يُكتب في خطّته المعتمدة** — فلا يبقى تعارض. */
 
+import { randomUUID } from 'node:crypto'
 import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
 import type { FastifyInstance } from 'fastify'
@@ -120,12 +121,23 @@ beforeAll(async () => {
 
 describe('مواعيد الفصل بلا تعارض', () => {
   it('⚠️ ١) المعاينة تقول التعارض ولا تكتب شيئا — والتي بلا طلبة تنتقل في يومها', async () => {
+    /* وجدولٌ مرفوضٌ من «جهّز جدولا» القديم ليس من هذه الشاشة: لا يُعرض «أرسل قبل»، ولا يُسقط موعدَه من المرشّحات */
+    await prisma.planEditSuggestion.create({
+      data: {
+        cohortId: x.cohortId, planId: x.planId, batchId: randomUUID(), seq: 1, kind: 'schedule', step: 'sessions',
+        reasonAr: 'لقاءاتك اليوم على 4 مواعيد مختلفة — نقترح الأحد 17:00 كلّ أسبوع',
+        edit: { kind: 'schedule', weekday: 0, clock: '17:00', moves: [], tasks: [] }, status: 'rejected',
+        noteAr: 'هذا اليوم لا يناسبني', createdBy: users.a!.userId,
+      },
+    })
     const v = await view()
     expect(v.clashesBefore).toBe(1)
     const rx = v.rows.find((r) => r.cohortId === x.cohortId)!
     const ry = v.rows.find((r) => r.cohortId === y.cohortId)!
     expect([ry.action, rx.action]).toEqual(['keep', 'move'])
     expect([rx.fromAr, rx.toAr]).toEqual(['الأحد 19:00', 'الأحد 17:00'])
+    expect(rx.sent, 'عرض جدول المسار القديم كأنّه من هذه الشاشة').toBeNull()
+    await prisma.planEditSuggestion.deleteMany({ where: { cohortId: x.cohortId } })
     expect(await prisma.planEditSuggestion.count({ where: { cohortId: { in: [x.cohortId, y.cohortId] } } }), 'كتبت المعاينة').toBe(0)
   })
 

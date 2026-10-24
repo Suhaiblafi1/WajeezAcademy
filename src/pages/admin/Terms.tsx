@@ -35,6 +35,7 @@ import { toast, toastError } from "@/components/Toast";
 import { TERM_STATUS_AR, TERM_STATUS_EFFECT_AR, nextStatuses, type TermStatus } from "@/application/terms/lifecycle";
 import { cohortDayAr } from "@/application/learning/cohort-gate";
 import SeasonSwitch from "@/components/admin/SeasonSwitch";
+import { useRealSession } from "@/services/session";
 
 interface Term {
   id: string; year: number; season: string; titleAr: string;
@@ -67,6 +68,9 @@ interface TermlessCohort {
 }
 
 export default function Terms() {
+  /* «مواعيد بلا تعارض» لمن يعتمد ما يُقترح على خطط المدرّبين — صلاحيّةُ بابها نفسُها، فلا رابطَ يُفتح على «لا تملك» */
+  const { user } = useRealSession();
+  const canClash = user?.permissions.includes("cohort.plan.edits.review") ?? false;
   const [terms, setTerms] = useState<Term[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -478,7 +482,7 @@ export default function Terms() {
                 </Card>
 
                 {/* مواعيدُ بلا تعارض — دورتان يأخذهما الطالبُ نفسُه لا تقعان في ساعةٍ واحدة (٢٢ أكتوبر ٢٠٢٦) */}
-                {t._count.cohorts > 0 && (
+                {t._count.cohorts > 0 && canClash && (
                   <Card as="section" className="mt-4">
                     <h3 className="text-read font-black">مواعيد بلا تعارض</h3>
                     <p className="mt-1 text-read leading-6 text-muted-foreground">نرتب مواعيد الشعب حتى لا تتعارض دورتان قد يأخذهما الطالب نفسه. ترى الاقتراح قبل أن يصل المدربين.</p>

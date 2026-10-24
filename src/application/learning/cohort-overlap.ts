@@ -80,7 +80,8 @@ export function clashWarnAr(clashes: readonly CohortClash[], hasAlternative: boo
   return `${clashes.map(clashLineAr).join('، و')}. ${tail}`
 }
 
-/** أوّلُ شعبةٍ من الدورة نفسِها لا تتعارض مع ما معها — بترتيبها كما عُرضت. والمختارةُ تتعارض، فلا تكون هي */
+/** أوّلُ شعبةٍ من الدورة نفسِها لا تتعارض مع ما معها — بترتيبها كما عُرضت. والمختارةُ تتعارض، فلا تكون هي.
+    وشعبةٌ لم يُعتمد جدولُها بعدُ لا لقاءاتِ لها تُقاس — فلا يُقال إنّها لا تتعارض */
 export function freeAlternative<T extends TimedCohort>(options: readonly T[], others: readonly TimedCohort[]): T | null {
-  return options.find((o) => clashesOf(o, others).length === 0) ?? null
+  return options.find((o) => o.sessions.length > 0 && clashesOf(o, others).length === 0) ?? null
 }

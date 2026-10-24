@@ -64,6 +64,7 @@ import {
   type ContractClosedView, type ContractLinkPurpose,
 } from '../../src/application/trainer/contract-link-state'
 import { livePathWhere, liveTrainerWhere, publicTrainerWhere, trainerPubliclyVisible } from './trainer-visibility'
+import { OPERATING_TRAINER_WHERE } from './trainer-operating'
 import { BIO_DRAFTS, PITCH_DRAFTS } from './trainer-suggestion-drafts'
 import { cohortLeadTrainers } from './cohort-lead'
 import { PUBLISH_APPROVED_NOTICE } from './trainer-auto-publish'
@@ -5875,7 +5876,8 @@ export class TrainerReviewService {
   /** طلباتُ التأهيل المعلّقة — لمن يملك البتّ فيها */
   async pendingQualifications() {
     const rows = await this.prisma.trainerCourseQualification.findMany({
-      where: { status: 'pending' },
+      /* وطلبُ الشعبة يبقى لكلّ مدرّب، ودورةٌ يعدّها لمن وقّع وحدَه (`trainer-operating.ts`) */
+      where: { status: 'pending', OR: [{ requestedCohortId: { not: null } }, { profile: OPERATING_TRAINER_WHERE }] },
       include: {
         profile: { include: { application: { select: { fullName: true, status: true } } } },
         course: { include: { versions: { orderBy: { version: 'desc' }, take: 1, select: { titleAr: true } } } },
@@ -5936,6 +5938,8 @@ export class TrainerReviewService {
      مبالغَ ولا قواعدَ تعويض. */
   async listForOps() {
     const profiles = await this.prisma.trainerProfile.findMany({
+      /* من وقّع عقدَه وحدَه — وما قبله في «طلبات المدربين» و«العقود» (`trainer-operating.ts`) */
+      where: OPERATING_TRAINER_WHERE,
       include: {
         application: { select: { fullName: true, email: true, status: true, userId: true } },
         /* ما اقترحناه على بطاقته — يُقرأ آخرُ كلِّ نوعٍ منه (`trainer-suggestion.service.ts`) */
@@ -6330,8 +6334,9 @@ export class TrainerReviewService {
      كما في الاعتماد الفرديّ. ومن سقط اعتمادُه — كأن ردّها أحدٌ في اللحظة نفسِها
      — لا يوقف الباقين: يُعدّ ويُقال. */
   async approveAllPendingPhotos(actorId: string) {
+    /* ما تعدّه الشاشةُ على الزرّ وحدَه: صورُ من في «المدربون» (`trainer-operating.ts`) */
     const pending = await this.prisma.trainerProfile.findMany({
-      where: { photoPendingKey: { not: null } }, select: { id: true },
+      where: { AND: [{ photoPendingKey: { not: null } }, OPERATING_TRAINER_WHERE] }, select: { id: true },
     })
     let approved = 0
     let failed = 0
