@@ -290,10 +290,14 @@ describe('بعد النموذج', () => {
 
   it('⚠️ المستشار على واتساب مباشرة — برقم موضعه في شاشة الربط، ورسالة فيها اسمه وكوده', () => {
     expect(WHATSAPP_SPOTS.map((s) => s.key)).toContain('grant_advisor')
-    expect(PAGE).toMatch(/const advisorHref = waHref\(numbers, "grant_advisor", CONTACT\.whatsapp, grantAdvisorTextAr\(stored\.name, stored\.code\)\);/)
+    expect(PAGE).toMatch(/const advisorHref = waHref\(numbers, "grant_advisor", CONTACT\.whatsapp, grantAdvisorTextAr\(stored\.name, stored\.code, chosen\.map\(\(x\) => x\.titleAr\)\)\);/)
     expect(PAGE).toMatch(/<Button as="a" href=\{advisorHref\} target="_blank"/)
     expect(grantAdvisorTextAr('سارة', 'WG-ABCD2345')).toBe('مرحبا، أنا سارة. عندي سؤال عن منحة أعضاء وجيز. كود منحتي: WG-ABCD2345')
     expect(grantAdvisorTextAr(' ', null)).toBe('مرحبا، عندي سؤال عن منحة أعضاء وجيز.')
+    /* والدوراتُ التي اختارها نصّا في الرسالة — فيعرف المستشارُ ما اختاره بلا سؤال */
+    expect(grantAdvisorTextAr('سارة', 'WG-ABCD2345', ['تحليل البيانات', 'إدارة المشاريع'])).toBe(
+      'مرحبا، أنا سارة. عندي سؤال عن منحة أعضاء وجيز. كود منحتي: WG-ABCD2345\n\nالدورات التي اخترتها:\n- تحليل البيانات\n- إدارة المشاريع',
+    )
     expect(PAGE, 'عاد الطلب المكتوب').not.toMatch(/\/api\/public\/grant\/advisor|<textarea|اطلب مستشارا/)
   })
 
@@ -408,7 +412,7 @@ describe('النصوص', () => {
   it('بلا تشكيل', () => {
     const data = [
       GRANT_CONSENT_AR, GRANT_ACADEMY_LINE_AR, ...WORK_FIELDS, ...CAREER_LEVELS, ...GRANT_GAINS_AR.map((g) => g.title),
-      GRANT_GIFT_AR.title, GRANT_GIFT_AR.limit, grantLimitAr(4), grantAdvisorTextAr('سارة', 'WG-ABCD2345'),
+      GRANT_GIFT_AR.title, GRANT_GIFT_AR.limit, grantLimitAr(4), grantAdvisorTextAr('سارة', 'WG-ABCD2345'), grantAdvisorTextAr('سارة', null, ['دورة']),
     ]
     const onPage = ['احجز منحتي الآن', 'الاسم الكامل', 'رقم الواتساب', 'البريد الإلكتروني', 'مجال عملك', 'مستواك الوظيفي', 'ما الذي تريد تطويره؟',
       'سؤالان اختياريان لنرتب لك الدورات', 'كود منحتك', 'اختر دوراتك',
