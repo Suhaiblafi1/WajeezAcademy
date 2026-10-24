@@ -1,5 +1,6 @@
 import { useCourseCohorts } from "@/services/cohort-prices";
 import CohortPicker, { COHORT_RUNNING_AR } from "@/components/CohortPicker";
+import type { TimedCohort } from "@/application/learning/cohort-overlap";
 import CourseInterestForm from "@/components/CourseInterestForm";
 import { useListedCourses } from "@/services/listed-courses";
 import { cohortDayAr } from "@/application/learning/cohort-gate";
@@ -111,6 +112,14 @@ export default function CourseJourney({
     .map((id) => courseFullById(id))
     .filter((c): c is NonNullable<typeof c> => Boolean(c));
   if (list.length === 0) return null;
+  /* ═══ وما اختاره لدوراتها الأخرى — فتُقال شعبةٌ تقع لقاءاتُها عليه (٢٤ أكتوبر ٢٠٢٦، `cohort-overlap.ts`) ═══
+     والدورةُ التي لم يختر لها بعدُ تُحسب بأوّل شعبها — وهي ما يشتريه إن لم يبدّل */
+  const othersOf = (courseId: string): TimedCohort[] => list.flatMap((o) => {
+    if (o.id === courseId) return [];
+    const options = cohorts.get(o.id) ?? [];
+    const opt = options.find((x) => x.id === picked[o.id]) ?? options[0];
+    return opt ? [{ cohortId: opt.id, courseId: o.id, titleAr: o.title, sessions: opt.sessions }] : [];
+  });
   const isSupportId = (id: string) => Boolean(supportReasons?.[id]);
   const firstSupport = list.findIndex((c) => isSupportId(c.id));
   const coreCount = firstSupport === -1 ? list.length : firstSupport;
@@ -196,6 +205,7 @@ export default function CourseJourney({
                         selectedId={picked[c.id] ?? null}
                         onSelect={(cid) => pick(c.id, cid)}
                         running={runningOnly(c.id)}
+                        others={othersOf(c.id)}
                       />
                     </div>
                   )}
