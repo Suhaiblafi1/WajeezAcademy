@@ -223,3 +223,24 @@ export async function applyGrantCloseFix(prisma: PrismaClient, fix: { from: stri
   })
   return true
 }
+
+/* ═══ والمنحةُ تغطّي ٤ دوراتٍ بحدٍّ أقصى — بقرار صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦) ═══
+
+   قال: «ضعها له وكأنّك تقول اختر ٤ دوراتٍ بحدٍّ أقصى، لكي يشعر أنّ المنحةَ عظيمة»، واختار تغييرَ الحدّ من ٥ إلى ٤ لا
+   القولَ وحدَه — فلا تقول الصفحةُ ٤ وتقبل ٥. والحدُّ نفسُه يُفحص عند الدفع (`maxCourses` في `grant.service.ts`).
+   ولا يقع إلّا مرّة: يُشترط أن يكون الحدُّ ما زال ٥. فإن غيّره أحدٌ من شاشته بعدُ لم يُمسّ. */
+export const GRANT_COURSES_FIX = { from: 5, to: 4 } as const
+
+export async function applyGrantCoursesFix(prisma: PrismaClient, fix: { from: number; to: number } = GRANT_COURSES_FIX): Promise<boolean> {
+  const c = await prisma.grantCampaign.findUnique({ where: { slug: MEMBER_GRANT_SLUG }, select: { id: true, maxCourses: true } })
+  if (!c || c.maxCourses !== fix.from) return false
+  await prisma.$transaction(async (tx) => {
+    await tx.grantCampaign.update({ where: { id: c.id }, data: { maxCourses: fix.to } })
+    await recordAudit(tx, {
+      actorId: null, action: 'coupon.grant_settings', entityType: 'grant_campaign', entityId: c.id,
+      before: { maxCourses: fix.from }, after: { maxCourses: fix.to },
+      reason: 'قرار صاحب المنصة (24 أكتوبر 2026): المنحة تغطي 4 دورات بحد أقصى',
+    })
+  })
+  return true
+}

@@ -13,7 +13,7 @@ import { plainAr } from '@/application/text/plain-ar'
 import { auditActionAr } from '@/application/audit/labels'
 import {
   CAREER_LEVELS, GRANT_ACADEMY_LINE_AR, GRANT_CONSENT_AR, GRANT_GAINS_AR, GRANT_INTEREST_DOMAINS, GRANT_SUGGESTED_COURSES, WORK_FIELDS,
-  GRANT_VALUE_AR, campaignParams, campaignTag, grantCallDueAt, grantCountAr, grantCountdown, grantDaysLeftAr, grantSections, grantShareAr, grantShareMailto, GRANT_SHARE_MIN, leadProfileAr, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse, workFieldDomains,
+  GRANT_VALUE_AR, GRANT_VALUE_PAID_AR, campaignParams, campaignTag, grantLeftAr, grantRemainingAr, grantCallDueAt, grantCountAr, grantCountdown, grantDaysLeftAr, grantSections, grantShareAr, grantShareMailto, GRANT_SHARE_MIN, leadProfileAr, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse, workFieldDomains,
 } from '@/application/commerce/grant-landing'
 import { courseDomain } from '@/application/catalog/course-domain'
 import { zonedInstant } from '@/application/trainer/cohort-period'
@@ -58,10 +58,14 @@ describe('النموذج', () => {
 })
 
 describe('بعد النموذج', () => {
-  it('⚠️ «قيمة المنحة» بالمال كبيرا، وتحته ما يدفعه وما كانت — والمبالغ معزولة فلا تنقلب', () => {
-    expect(GRANT_VALUE_AR).toBe('قيمة المنحة')
-    expect(PAGE).toMatch(/\{GRANT_VALUE_AR\} <bdi dir="ltr">\{money\(listTotal - payTotal\)\}<\/bdi>/)
-    expect(PAGE).toMatch(/\{grantCountAr\(chosen\.length\)\} بـ<bdi dir="ltr">\{money\(payTotal\)\}<\/bdi> بدل <bdi dir="ltr" className="line-through">\{money\(listTotal\)\}<\/bdi>/)
+  it('⚠️ ما يدفعه كبيرا «4 دورات بـ$320 بدل $800»، وقيمة منحته صغيرة تحته — والمبالغ معزولة فلا تنقلب', () => {
+    expect(`${GRANT_VALUE_AR} $480 ${GRANT_VALUE_PAID_AR}`).toBe('قيمة منحتك $480 تدفعها الأكاديمية عنك')
+    const panel = PAGE.slice(PAGE.indexOf('<Card tone="solid" className="sticky'))
+    const big = panel.indexOf('<p className="text-lg font-black">')
+    expect(big, 'السطر الكبير').toBeGreaterThan(-1)
+    expect(panel.slice(big)).toMatch(/^<p className="text-lg font-black">\s*\{grantCountAr\(chosen\.length\)\} بـ<bdi dir="ltr">\{money\(payTotal\)\}<\/bdi>/)
+    expect(panel).toMatch(/بدل <bdi dir="ltr" className="line-through">\{money\(listTotal\)\}<\/bdi>/)
+    expect(panel, 'قيمة المنحة بخط صغير').toMatch(/<p className="mt-0\.5 text-read text-muted-foreground">\{GRANT_VALUE_AR\} <bdi dir="ltr">\{money\(listTotal - payTotal\)\}<\/bdi> \{GRANT_VALUE_PAID_AR\}<\/p>/)
     expect(PAGE, 'عاد «ووجيز تتحمل»').not.toMatch(/تتحمل|grantSavingAr/)
     expect([1, 2, 4, 10, 11].map(grantCountAr)).toEqual(['دورة واحدة', 'دورتان', '4 دورات', '10 دورات', '11 دورة'])
     expect(PAGE).toMatch(/prefill=\{\{ name: stored\.name, email: stored\.email \}\}/)
@@ -84,7 +88,7 @@ describe('بعد النموذج', () => {
     expect(PAGE, 'عادت الاقتراحات').not.toMatch(/view\.pathways|\/api\/admin\/member-grant\/pathways|اقتراحات لك|اختر هذه الدورات/)
     expect(PAGE).toMatch(/قبل المنحة <span dir="ltr" className="line-through">\{money\(x\.price\)\}<\/span>/)
     expect(PAGE).toMatch(/بعد المنحة <span dir="ltr">\{money\(grantPrice\(x\.price, pct\)\)\}<\/span>/)
-    expect(PAGE).toContain('اختر من دورة إلى {max} دورات تريدها ضمن منحتك. ويمكنك استبدالها لاحقا بدورات أخرى بعد استشارة مستشارك الخاص.')
+    expect(PAGE, 'الحد يقال حدا يحرس قيمتها').toContain('اختر حتى {max} دورات، وهذا أقصى ما تغطيه منحتك. ويمكنك استبدالها لاحقا بعد استشارة مستشارك الخاص.')
   })
 
   it('⚠️ وأنها مباشرة على Zoom — في أول الصفحة، وفيما يحصل عليه، وفوق القائمة، وفي كل دورة', () => {
@@ -160,13 +164,15 @@ describe('بعد النموذج', () => {
     expect(PAGE).toMatch(/setPath\(\{ main: path\.alt, alt: path\.main \}\);/)
   })
 
-  it('⚠️ والصفحة تختارها حين يصير له كود — وما تركه قبل توثيق بريده أولى، ولا تتجاوز الحد', () => {
+  it('⚠️ نقترحها ولا نختارها عنه — وما تركه قبل توثيق بريده يعود مختارا، ولا تتجاوز الحد', () => {
     const effect = PAGE.slice(PAGE.indexOf('useEffect(() => {\n    if (!view || !stored || seeded) return;'))
     expect(effect.length, 'الاختيار الأول لا ينتظر الكود').toBeGreaterThan(0)
     expect(effect).toMatch(/suggestCourses\(view\.openCourses, stored\.interests, stored\.workField, Math\.min\(GRANT_SUGGESTED_COURSES, max\)\)/)
-    expect(effect).toMatch(/setPicked\(resumed \? resumed\.intent\.courseIds\.filter\(\(id\) => open\.has\(id\)\)\.slice\(0, max\) : ours\)/)
+    expect(effect, 'اختارها عنه').toMatch(/setPicked\(resumed \? resumed\.intent\.courseIds\.filter\(\(id\) => open\.has\(id\)\)\.slice\(0, max\) : \[\]\)/)
+    expect(PAGE.slice(PAGE.indexOf('const switchPath = () => {')).split('};')[0], 'البديل يختار عنه').not.toMatch(/setPicked/)
     expect(PAGE, 'لا يحفظ مجال عمله').toMatch(/interests, workField: form\.workField,/)
-    expect(PAGE).toMatch(/ours\.has\(x\.courseId\)\s*\? <Chip tone="accent" className="mt-1">اخترناها لك<\/Chip>/)
+    expect(PAGE).toMatch(/ours\.has\(x\.courseId\)\s*\? <Chip tone="accent" className="mt-1">نقترحها لك<\/Chip>/)
+    expect(PAGE, 'عاد «اخترناها لك» أو «حددنا لك»').not.toMatch(/اخترناها لك|حددنا لك/)
   })
 
   it('⚠️ «بقي X مقاعد» حين تقل وحدها — والمدرب المنشور وتفاصيل الدورة في نافذة جديدة', () => {
@@ -183,7 +189,7 @@ describe('بعد النموذج', () => {
     expect(PAGE).toMatch(/<a href=\{`\/build\/\$\{encodeURIComponent\(x\.courseId\)\}`\} target="_blank"[^>]*>تفاصيل الدورة<\/a>/)
   })
 
-  it('⚠️ «أهدها لثلاثة أصدقاء على الأقل» — رسالة جميلة جاهزة في واتساب والبريد، برابط المنحة ووسم قناتها', () => {
+  it('⚠️ «أهدها لأصدقائك» — رسالة جميلة جاهزة في واتساب والبريد، برابط المنحة ووسم قناتها', () => {
     const m = grantShareAr('https://www.wajeezacademy.com', 60, '30 أكتوبر 2026')
     expect(m.split('\n')[0]).toBe('أهديك منحة من أكاديمية وجيز 🎁')
     expect(m).toContain('تغطي 60% من سعر دورات مباشرة على Zoom، مع مدربين وشهادة لكل دورة.')
@@ -202,13 +208,17 @@ describe('بعد النموذج', () => {
     expect(PAGE).toMatch(/href=\{waShare\(shareText\)\}/)
     expect(PAGE).toMatch(/href=\{grantShareMailto\(window\.location\.origin, pct, lastDayLong\)\}/)
     expect(PAGE).toMatch(/import \{ waShare \} from "@\/application\/site\/whatsapp";/)
-    expect(PAGE).toContain('أهدها لثلاثة أصدقاء على الأقل')
-    const panel = PAGE.slice(PAGE.indexOf('<Card tone="solid" className="sticky'))
+    expect(PAGE).toContain('أهدها لأصدقائك')
+    expect(PAGE, 'عاد «ثلاثة أصدقاء»').not.toContain('ثلاثة أصدقاء')
+    const panel = PAGE.slice(PAGE.indexOf('<Card tone="solid" className="sticky'), PAGE.indexOf('<Card className="mt-6">'))
     const at = (t: string) => panel.indexOf(t)
     expect(at('احصل على المنحة'), 'الزر').toBeGreaterThan(-1)
-    expect(at('<GrantCountdown closesAt={c.closesAt} compact'), 'العداد تحت الزر').toBeGreaterThan(at('احصل على المنحة'))
-    expect(at('أهدها لثلاثة أصدقاء على الأقل'), 'الهدية آخرا').toBeGreaterThan(at('<GrantCountdown closesAt={c.closesAt} compact'))
-    expect(at('أهدها لثلاثة أصدقاء على الأقل')).toBeLessThan(panel.indexOf('</Card>'))
+    expect(at('أهدها لأصدقائك'), 'الهدية آخرا').toBeGreaterThan(at('احصل على المنحة'))
+    /* والكودُ ظاهرٌ فوق، والعدّادُ فوق وحدَه — لا يُعادان في اللوح */
+    expect(panel, 'عاد سطر الكود في اللوح').not.toMatch(/يوضع تلقائيا|stored\.code/)
+    expect(panel, 'عاد العداد في اللوح').not.toContain('GrantCountdown')
+    expect(PAGE, 'عاد شرح الكود الطويل').not.toContain('يستعمل مرة واحدة')
+    expect(PAGE).toContain('أرسلناه إلى بريدك أيضا.')
     expect(PAGE, 'عادت «ادفع الآن»').not.toContain('ادفع الآن')
     expect(code('src/pages/admin/GrantResults.tsx'), 'نتائج الحملة تسمي قناتها').toMatch(/share: "من صديق"/)
   })
@@ -246,23 +256,36 @@ describe('بعد النموذج', () => {
     expect(secs[1].items.map((x) => x.id)).toEqual(['a', 'c'])
     expect(PAGE).toMatch(/const top = courses\.filter\(\(x\) => ours\.has\(x\.courseId\)\);/)
     expect(PAGE).toMatch(/grantSections\(courses\.filter\(\(x\) => !ours\.has\(x\.courseId\)\), stored\.interests, OTHER_DOMAIN\)/)
-    expect(PAGE).toMatch(/\{top\.length > 0 && <div className="mt-2 space-y-2">\{top\.map\(\(x\) => row\(x\)\)\}<\/div>\}/)
+    expect(PAGE).toMatch(/\{top\.length > 0 && <div className="mt-5 space-y-2">\{top\.map\(\(x\) => row\(x\)\)\}<\/div>\}/)
+    expect(PAGE, 'عاد «كل الدورات المتاحة»').not.toContain('كل الدورات المتاحة')
+    expect(PAGE).toMatch(/اختر دوراتك\{view\.termAr && <span className="text-read font-normal text-muted-foreground"> · \{view\.termAr\}<\/span>\}/)
     expect(PAGE, 'الأقسام مطوية بلا فتح').toMatch(/<Inset as="details" key=\{sec\.domain\} className="group">/)
     expect(PAGE, 'يعيد اسم المجال تحت قسمه').toMatch(/\{sec\.items\.map\(\(x\) => row\(x, true\)\)\}/)
     expect(PAGE).toMatch(/\{x\.domainAr && !inSection \? `\$\{x\.domainAr\} · ` : ""\}/)
     expect(PAGE, 'لا تقول كم اختار في القسم المطوي').toMatch(/mineHere > 0 && <Chip tone="accent">اخترت \{mineHere\}<\/Chip>/)
   })
 
-  it('⚠️ عداد انتهاء المنحة — أيام وساعات ودقائق وثوان، وآخر يوم بتاريخه، وفي النموذج وتحت الكود', () => {
+  it('⚠️ عداد انتهاء المنحة — بالأيام، وتحت اليوم بالساعات، وفوق وحده — وآخر يوم بتاريخه', () => {
     const end = '2026-11-01T21:00:00.000Z'
     expect(grantCountdown(end, new Date('2026-10-30T19:58:57.000Z'))).toEqual({ days: 2, hours: 1, minutes: 1, seconds: 3 })
     expect(grantCountdown(end, new Date(end)), 'انتهت').toBeNull()
     expect(grantCountdown(null, new Date())).toBeNull()
-    expect(PAGE).toMatch(/const left = grantCountdown\(closesAt, now\);/)
-    expect(PAGE).toMatch(/setInterval\(\(\) => setNow\(new Date\(\)\), 1000\)/)
-    expect(PAGE).toMatch(/\[String\(left\.days\), "يوم"\], \[pad\(left\.hours\), "ساعة"\], \[pad\(left\.minutes\), "دقيقة"\], \[pad\(left\.seconds\), "ثانية"\]/)
-    expect(PAGE).toContain('آخر يوم لاستعمال المنحة: {fmtDateLong(')
+    expect([1, 2, 6, 11].map((days) => grantLeftAr({ days, hours: 5 }))).toEqual(['يوم واحد', 'يومين', '6 أيام', '11 يوما'])
+    expect([1, 2, 9, 23].map((hours) => grantLeftAr({ days: 0, hours }))).toEqual(['ساعة واحدة', 'ساعتين', '9 ساعات', '23 ساعة'])
+    expect(grantLeftAr({ days: 0, hours: 0 })).toBe('أقل من ساعة')
+    expect(grantLeftAr(null)).toBeNull()
+    expect(PAGE).toMatch(/const left = grantLeftAr\(grantCountdown\(closesAt, now\)\);/)
+    expect(PAGE, 'لا ثوان ولا دقائق').toMatch(/setInterval\(\(\) => setNow\(new Date\(\)\), 60_000\)/)
+    expect(PAGE).not.toMatch(/"دقيقة"|"ثانية"/)
+    expect(PAGE).toContain('تنتهي المنحة بعد {left}')
+    expect(PAGE).toContain('آخر يوم: {fmtDateLong(')
     expect(PAGE).toMatch(/\{c\.open && c\.closesAt && <GrantCountdown closesAt=\{c\.closesAt\} className="mt-4" \/>\}/)
+    expect(PAGE.match(/<GrantCountdown /g)?.length, 'العداد في النموذج وتحت الكود وحدهما').toBe(2)
+  })
+
+  it('⚠️ حد المنحة يقال حدا — «بقي لك دورتان ضمن منحتك» حتى يكتمل', () => {
+    expect([0, 2, 3, 4].map((n) => grantRemainingAr(n, 4))).toEqual(['بقي لك 4 دورات ضمن منحتك', 'بقي لك دورتان ضمن منحتك', 'بقيت لك دورة واحدة ضمن منحتك', 'استعملت منحتك كاملة'])
+    expect(PAGE).toMatch(/\{grantRemainingAr\(chosen\.length, max\)\}/)
   })
 
   it('⚠️ ولا عدد للمنح — العداد وآخر يوم وحدهما، والعدد لا يصل الزائر', () => {
@@ -311,7 +334,7 @@ describe('النصوص', () => {
     ]
     const onPage = ['احجز منحتي الآن', 'الاسم الكامل', 'رقم الواتساب', 'البريد الإلكتروني', 'مجال عملك', 'مستواك الوظيفي', 'ما الذي تريد تطويره؟',
       'سؤالان اختياريان لنرتب لك الدورات', 'كود منحتك', 'اختر دوراتك',
-      'كل الدورات المتاحة', 'كل الدورات مباشرة على Zoom', 'قبل المنحة', 'بعد المنحة', 'اخترناها لك', 'حددنا لك دورات مسار', 'تناسبك.', 'أو مسار', 'بدّل إليه', 'يناسب ما تريد تطويره', 'لست متأكدا؟ تواصل مع مستشار', 'اطلب مستشارا', 'احصل على المنحة', 'أهدها لثلاثة أصدقاء على الأقل', 'تنتهي المنحة بعد', 'آخر يوم لاستعمال المنحة:', 'دورات أخرى حسب المجال']
+      'كل الدورات مباشرة على Zoom', 'قبل المنحة', 'بعد المنحة', 'نقترحها لك', 'نقترح لك دورات مسار', 'تناسبك.', 'أو مسار', 'بدّل إليه', 'يناسب ما تريد تطويره', 'لست متأكدا؟ تواصل مع مستشار', 'اطلب مستشارا', 'احصل على المنحة', 'أهدها لأصدقائك', 'تنتهي المنحة بعد', 'آخر يوم:', 'دورات أخرى حسب المجال', 'أرسلناه إلى بريدك أيضا.', 'وهذا أقصى ما تغطيه منحتك']
     for (const t of [...data, ...onPage]) expect(t).toBe(plainAr(t))
     for (const t of onPage) expect(PAGE).toContain(t)
     expect(auditActionAr('coupon.grant_apply')).not.toBe('coupon.grant_apply')
