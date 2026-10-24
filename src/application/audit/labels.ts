@@ -490,6 +490,11 @@ const PHRASES: Record<string, string> = {
   'cohort.move.reject': 'ردّ طلب نقل شعبة',
   'cohort.move.zoom': 'نقل اجتماعات Zoom مع شعبة نقلت',
   'cohort.move.remind': 'تذكير مدرّبي شعبة نقلت قبل فصلها الجديد',
+  'cohort.postpone.propose': 'اقتراح تأجيل شعبة إلى الشهر التالي — أرسل لمدرّبها',
+  'cohort.postpone.accept': 'قبل المدرّب تأجيل شعبته إلى الشهر التالي',
+  'cohort.postpone.decline': 'لم يقبل المدرّب تأجيل شعبته — أوقفت',
+  'cohort.postpone.expire': 'لم يرد المدرّب على التأجيل في موعده — أوقفت الشعبة',
+  'cohort.postpone.withdraw': 'سحب اقتراح تأجيل شعبة',
   'session.reschedule.reject': 'ردّ اقتراح تأجيل جلسة',
 
   /* طلبُ مستشار — `advisor-request.service.ts:165` */

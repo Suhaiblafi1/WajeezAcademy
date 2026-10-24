@@ -1765,6 +1765,31 @@ model TrainerTextSuggestion {
   @@index([profileId, kind, status])
 }
 
+/**
+ * ── اقتراحُ تأجيل الشعبة إلى الشهر التالي — نقترحه نحن، ويقبله المدرّبُ أو تتوقّف (٢٤ أكتوبر ٢٠٢٦) ──
+ * قرارُ صاحب المنصّة لشعب نوفمبر: «اقترح تأجيلا لها وأرسلها للمدرّب مع إعلامه بأنّه سيتمّ توقيفُ الشعبة
+ * تلقائيّا». بأسابيعَ كاملة (`shiftDays`) داخلَ الفصل، وبمهلةٍ (`deadlineAt`): يقبل فتنتقل مواعيدُها، أو يرفض
+ * فتتوقّف، أو تمضي المهلةُ فتتوقّف تلقائيّا (العامل). والعلّةُ في `src/application/trainer/postpone-offer.ts`.
+ */
+model CohortPostponeOffer {
+  id          String    @id @default(uuid()) @db.Uuid
+  cohortId    String    @db.Uuid
+  proposedBy  String    @db.Uuid
+  shiftDays   Int
+  fromFirstAt DateTime
+  toFirstAt   DateTime
+  reasonAr    String
+  deadlineAt  DateTime
+  status      String    @default("pending") // pending | accepted | declined | expired | withdrawn
+  decidedBy   String?   @db.Uuid
+  decidedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  cohort      Cohort    @relation(fields: [cohortId], references: [id], onDelete: Cascade)
+
+  @@index([status, deadlineAt])
+  @@index([cohortId, createdAt])
+}
+
 model CohortMoveRequest {
   id              String    @id @default(uuid()) @db.Uuid
   cohortId        String    @db.Uuid
@@ -2729,6 +2754,7 @@ model Cohort {
   departureCases      DepartureCase[]
   files               CohortFile[]
   moveRequests        CohortMoveRequest[]
+  postponeOffers      CohortPostponeOffer[]
 
   @@index([courseId, status])
 }

@@ -25,6 +25,7 @@ import { TermClashService } from '../../services/term-clash.service'
 import { DeadlinesService } from '../../services/deadlines.service'
 import { CohortMessageService } from '../../services/cohort-message.service'
 import { CohortMoveService } from '../../services/cohort-move.service'
+import { CohortPostponeService } from '../../services/cohort-postpone.service'
 import { CohortPlanService, TRAINER_EDITABLE_COHORT_FIELDS } from '../../services/cohort-plan.service'
 import { PLAN_MAX, PLAN_TITLE_MIN } from '../../../src/application/trainer/plan-limits'
 import { ReferralService } from '../../services/referral.service'
@@ -137,6 +138,7 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
   const enrollments = new EnrollmentService(prisma)
   const messages = new CohortMessageService(prisma)
   const moves = new CohortMoveService(prisma)
+  const postpones = new CohortPostponeService(prisma)
   const assessments = new AssessmentService(prisma)
   const progress = new ProgressService(prisma)
   const certificates = new CertificateService(prisma)
@@ -1257,6 +1259,55 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
       reason: z.string().min(1).max(500),
     }).parse(req.body)
     return moves.staffMove(req.auth!.userId, cohortId, body)
+  })
+
+  /* ═══ تأجيلُ شعب الشهر إلى الشهر التالي — نقترحه ويقبله المدرّبُ أو تتوقّف (٢٤ أكتوبر ٢٠٢٦) ═══
+     قرارُ صاحب المنصّة لهذا الفصل: «بدأنا متأخّرين نوعا ما بالتسويق». والأثرُ في `cohort-postpone.service.ts`. */
+  app.get('/api/admin/cohort-postpones/preview', {
+    preHandler: requirePermission('cohort.manage'),
+    schema: { tags: ['admin-cohorts'], summary: 'شعب الشهر التي لم تبدأ وموعدها بعد التأجيل — لا يرسل شيء' },
+  }, async (req) => {
+    const q = z.object({ year: z.coerce.number().int().min(2020).max(2100), month: z.coerce.number().int().min(1).max(12) }).parse(req.query)
+    return postpones.preview(q.year, q.month)
+  })
+
+  app.post('/api/admin/cohort-postpones', {
+    preHandler: requirePermission('cohort.manage'),
+    schema: { tags: ['admin-cohorts'], summary: 'إرسال اقتراح التأجيل لمدربي الشعب المختارة' },
+  }, async (req, reply) => {
+    const body = z.object({
+      cohortIds: z.array(z.string().uuid()).min(1).max(200),
+      deadlineAt: z.coerce.date(),
+      reasonAr: z.string().min(1).max(500),
+    }).parse(req.body)
+    return reply.status(201).send(await postpones.send(req.auth!.userId, body))
+  })
+
+  app.get('/api/admin/cohort-postpones', {
+    preHandler: requirePermission('cohort.manage'),
+    schema: { tags: ['admin-cohorts'], summary: 'اقتراحات التأجيل وأين وقفت' },
+  }, async () => postpones.list())
+
+  app.post('/api/admin/cohort-postpones/:id/withdraw', {
+    preHandler: requirePermission('cohort.manage'),
+    schema: { tags: ['admin-cohorts'], summary: 'سحب اقتراح تأجيل لم يحسم — تبقى الشعبة في موعدها' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return postpones.withdraw(req.auth!.userId, id)
+  })
+
+  app.get('/api/trainer/cohort-postpones', {
+    preHandler: requirePermission('trainer.cohort.operate'),
+    schema: { tags: ['trainer-ops'], summary: 'اقتراحات تأجيل شعبي التي تنتظر ردي' },
+  }, async (req) => postpones.mine(req.auth!.userId))
+
+  app.post('/api/trainer/cohort-postpones/:id/decide', {
+    preHandler: requirePermission('trainer.cohort.operate'),
+    schema: { tags: ['trainer-ops'], summary: 'قبول تأجيل شعبتي — أو عدم قبوله فتتوقف' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const body = z.object({ action: z.enum(['accept', 'decline']) }).parse(req.body)
+    return postpones.decide(req.auth!.userId, id, body.action)
   })
 
   app.get('/api/trainer/grading-queue', {
