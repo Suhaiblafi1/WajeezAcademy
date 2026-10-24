@@ -129,6 +129,7 @@ export default function CohortPicker({
   onSelect,
   compact = false,
   running = false,
+  others,
 }: {
   cohorts: CohortOption[];
   selectedId: string | null;
