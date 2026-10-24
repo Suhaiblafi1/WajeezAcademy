@@ -25,6 +25,7 @@ import { ACADEMY_ZONE } from '../../src/application/trainer/cohort-period'
 import { windowOpen } from '../../src/application/trainer/schedule-window'
 import { cohortDayAr, learnerPeriod, meetingOver, whenAr } from '../../src/application/learning/cohort-gate'
 import { keepsApprovalOnMove } from '../../src/application/trainer/postpone'
+import { scheduleMovedBodyAr } from '../../src/application/terms/clash-message'
 import {
   axisTimeProblem, meetingOrderProblem, planSlots, sessionEnd, slotIndexOf, timedByMeetings, type PlanSlot,
 } from '../../src/application/trainer/axis-timeline'
@@ -1214,7 +1215,8 @@ export class CohortService {
 
   /** المدرّبُ ينقل لقاءَه — لا يقترح نقله. و`preApproved` نقلٌ في بطاقةٍ اعتمدتها الإدارةُ قبل أن يقبلها
       (١٧ أكتوبر ٢٠٢٦، `PlanEditService.accept`): المعتمَدُ يبقى معتمَدا ولو خرج عن موعد محوره */
-  async trainerMoveSession(userId: string, sessionId: string, input: { startsAt: Date; endsAt?: Date }, opts: { preApproved?: boolean } = {}) {
+  /** `quiet`: لا يُخبَر المتعلّمون بهذا اللقاء وحدَه — ينقل جدولا كاملا يُخبرهم به مرّةً بعده (`tellLearnersScheduleMoved`) */
+  async trainerMoveSession(userId: string, sessionId: string, input: { startsAt: Date; endsAt?: Date }, opts: { preApproved?: boolean; quiet?: boolean } = {}) {
     const session = await this.assertTrainerMove(userId, sessionId, input)
     /* ═══ والمنقولُ داخلَ موعد محوره يبقى معتمَدا (٢٩ سبتمبر ٢٠٢٦) ═══
 
@@ -1276,8 +1278,10 @@ export class CohortService {
       await this.notifyAdminsOfPendingSession(moved.id, session.cohortId, session.title)
     } else if (backToPending) {
       await this.notifyAdminsOfPendingSession(moved.id, session.cohortId, session.title)
-      await this.tellCohortScheduleChanged(session.cohortId, session,
-        'نقله مدرّبك ويراجع الآن عند الإدارة. ويصلك موعده الجديد حين يعتمد.')
+      if (!opts.quiet) {
+        await this.tellCohortScheduleChanged(session.cohortId, session,
+          'نقله مدرّبك ويراجع الآن عند الإدارة. ويصلك موعده الجديد حين يعتمد.')
+      }
       /* ويُرفع من تقاويمهم بموعده القديم — فلا يحضر أحدٌ ساعةً لم يعد فيها لقاء */
       await this.inviteSafely('move-out', () => this.invites.withdraw(
         {
@@ -1292,8 +1296,10 @@ export class CohortService {
       /* والمنقولُ معتمَدٌ في تقاويمهم — فيُقال لهم موعدُه الجديد لا «يُراجَع»،
          وأنّه أُخّر أو قُدّم: التقديمُ أشدُّ على من رتّب يومَه، فلا يُسمّى تأجيلا */
       const verb = moved.startsAt.getTime() < session.startsAt.getTime() ? 'قدّمه' : 'أجّله'
-      await this.tellCohortScheduleChanged(session.cohortId, session,
-        `${verb} مدرّبك إلى ${whenAr(moved.startsAt)} — ورابط الانضمام نفسه.`)
+      if (!opts.quiet) {
+        await this.tellCohortScheduleChanged(session.cohortId, session,
+          `${verb} مدرّبك إلى ${whenAr(moved.startsAt)} — ورابط الانضمام نفسه.`)
+      }
     }
     return moved
   }
@@ -1463,6 +1469,23 @@ export class CohortService {
         title: `تغيّر موعد في ${cohort?.title ?? 'شعبتك'}`,
         body: `${session.title} — ${whyAr}`,
         data: { cohortId, sessionId: session.id },
+      })
+    }
+    return recipients.length
+  }
+
+  /* ═══ جدولٌ كاملٌ انتقل — يُخبَر به المتعلّمون مرّةً واحدة (٢٤ أكتوبر ٢٠٢٦) ═══
+     قرارُ صاحب المنصّة: رسالةٌ واحدةٌ بدلَ رسالةٍ لكلّ لقاء. كان قبولُ جدولٍ ينقل أربعةَ لقاءاتٍ يرسل أربعةَ
+     أجراسٍ وأربعةَ بُرُد. فالجدولُ يُنقل بهدوء (`quiet`)، ثمّ يقال لهم: اليومُ والساعةُ الجديدان، وأوّلُ لقاءٍ بهما. */
+  async tellLearnersScheduleMoved(cohortId: string, input: { weekday: number; clock: string; firstAt: Date | null; pending: number }) {
+    const cohort = await this.prisma.cohort.findUnique({ where: { id: cohortId }, select: { title: true } })
+    const recipients = await this.prisma.enrollment.findMany({ where: { cohortId, status: { not: 'dropped' } }, select: { userId: true } })
+    const title = `تغير موعد شعبتك «${cohort?.title ?? ''}»`
+    const body = scheduleMovedBodyAr({ ...input, firstAtAr: input.firstAt ? whenAr(input.firstAt) : null })
+    for (const r of recipients) {
+      await safeNotify(this.prisma, {
+        userId: r.userId, channel: 'in_app', audience: 'learner', templateKey: 'cohort.schedule_changed',
+        title, body, data: { cohortId },
       })
     }
     return recipients.length

@@ -803,6 +803,7 @@ export class PlanEditService {
   private async applySchedule(userId: string, cohortId: string, edit: Extract<PlanEdit, { kind: 'schedule' }>, r: Rows, onApproved: OnApproved | null) {
     const done: (() => Promise<unknown>)[] = []
     const preApproved = onApproved !== null
+    let tell: Parameters<CohortService['tellLearnersScheduleMoved']>[1] | null = null
     try {
       /* وحدودُ الخطّة أوّلا — آخرُ يومٍ في المدّة ومواعيدُ المحاور (`schedulePlanContent`): حفظُها يمدّ نافذةَ
          الجدولة معها (`savePlan`)، فيصحّ النقلُ بعدها. وتعود الخطّةُ كما كانت إن سقط شيء */
@@ -815,12 +816,19 @@ export class PlanEditService {
       for (const m of edit.moves) {
         await this.cohorts.assertTrainerMove(userId, m.sessionId, { startsAt: new Date(m.startsAt), endsAt: new Date(m.endsAt) })
       }
+      /* بهدوء: لا يُخبَر المتعلّمون بكلّ لقاءٍ وحدَه — يُخبَرون بالجدول كلِّه مرّةً بعده (٢٤ أكتوبر ٢٠٢٦) */
+      let pending = 0
       for (const m of edit.moves) {
         const was = r.sessions.find((x) => x.id === m.sessionId)!
-        await this.cohorts.trainerMoveSession(userId, m.sessionId, { startsAt: new Date(m.startsAt), endsAt: new Date(m.endsAt) }, { preApproved })
+        const moved = await this.cohorts.trainerMoveSession(userId, m.sessionId, { startsAt: new Date(m.startsAt), endsAt: new Date(m.endsAt) }, { preApproved, quiet: true })
+        if (moved.approvalState !== 'approved') pending += 1
         done.push(() => this.cohorts.trainerMoveSession(userId, m.sessionId, {
           startsAt: new Date(was.startsAt), ...(was.endsAt ? { endsAt: new Date(was.endsAt) } : {}),
-        }, { preApproved }))
+        }, { preApproved, quiet: true }))
+      }
+      tell = edit.moves.length === 0 ? null : {
+        weekday: edit.weekday, clock: edit.clock, pending,
+        firstAt: new Date(Math.min(...edit.moves.map((m) => Date.parse(m.startsAt)))),
       }
       for (const t of edit.tasks) {
         const was = r.tasks.find((x) => x.id === t.assessmentId)!
@@ -833,6 +841,8 @@ export class PlanEditService {
         ? new AuthError(e.code, `لم ينقل شيء من الجدول — ${e.message}`, e.status)
         : e
     }
+    /* وانتقل الجدولُ كلُّه — فيُخبَر متعلّموه مرّةً واحدة */
+    if (tell) await this.cohorts.tellLearnersScheduleMoved(cohortId, tell)
   }
 
   /** يرفضه — وله أن يقول لماذا */
