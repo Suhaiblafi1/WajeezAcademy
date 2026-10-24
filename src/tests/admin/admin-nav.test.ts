@@ -76,6 +76,12 @@ describe('تصنيف اللوحة · لكلّ شاشة مجموعة واحدة',
       link: /to=\{`\/admin\/plans\/\$\{cohortId\}`\}/,
       shownOn: '/admin/pending-plans',
     },
+    /* وملفُّ المدرّب — يُفتح من صفّه في «الطلبات» ومن بطاقته في «المدربون» (٢٤ أكتوبر ٢٠٢٦، المرحلة الثالثة) */
+    '/admin/trainers/:id': {
+      from: 'src/pages/admin/TrainerRunOps.tsx',
+      link: /to=\{`\/admin\/trainers\/\$\{t\.applicationId\}`\}/,
+      shownOn: '/admin/trainer-run',
+    },
     /* ومواعيدُ الفصل بلا تعارض لفصلٍ بعينه — تُفتح من بطاقته في «المواسم والتقويم» (٢٢ أكتوبر ٢٠٢٦) */
     '/admin/terms/:id/clashes': {
       from: 'src/pages/admin/Terms.tsx',

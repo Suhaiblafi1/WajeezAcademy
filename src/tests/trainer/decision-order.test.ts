@@ -107,16 +107,30 @@ describe('③④ وواحد ذهبيّ لكلّ حالة', () => {
   const actionable = Object.keys(STATUS_LABELS)
     .filter((st) => DECISIONS.some((d) => d.from.includes(st)))
 
+  /* ═══ إلّا محطّةَ «الاتفاقية» (٢٤ أكتوبر ٢٠٢٦) ═══
+     الخطوةُ فيها عقدٌ لا قرار، ويقولها رأسُ ملفّ المدرّب بزرّه. وذهبيُّها كان يردّ من وقّع إلى ما قبل عقده
+     (حادثةُ ٢١ أكتوبر في «تهيئة») أو يتجاوز التوقيع — والعلّةُ عند `recommendedFor`. */
+  const AGREEMENT_STOP = ['conditionally_approved', 'contract_pending']
+
   it('لكلّ حالة فيها أزرار موصى به — ولا واحدة بلا دليل', () => {
     expect(actionable.length, 'لا حالة فيها أزرار أصلا — تعطّل الفحص نفسه')
       .toBeGreaterThan(5)
-    for (const st of actionable) {
+    for (const st of actionable.filter((s) => !AGREEMENT_STOP.includes(s))) {
       expect(recommendedFor(st), `«${st}»: أزرار بلا واحد يوصى به`).not.toBeNull()
     }
   })
 
+  it('⚠️ وفي محطة الاتفاقية لا ذهبيّ — والرأس يقول الخطوة، ولا يردّ الشريط من وقّع إلى ما قبل عقده', () => {
+    for (const st of AGREEMENT_STOP) {
+      expect(DECISIONS.some((d) => d.from.includes(st)), `«${st}» بلا أزرار — تعطّل الفحص`).toBe(true)
+      expect(recommendedFor(st), `«${st}»: ذهبيّ في محطة خطوتها عقد`).toBeNull()
+    }
+    /* والردُّ إلى التجهيز باقٍ لمن في «بانتظار العقد» — خيارٌ لا دعوة (٢٢ سبتمبر ٢٠٢٦) */
+    expect(DECISIONS.find((d) => d.action === 'conditionally_approve')!.from).toContain('contract_pending')
+  })
+
   it('والموصى به متاح في حالته — لا يضاء زرّ لا يعرض', () => {
-    for (const st of actionable) {
+    for (const st of actionable.filter((s) => !AGREEMENT_STOP.includes(s))) {
       const rec = recommendedFor(st)!
       expect(DECISIONS.some((d) => d.action === rec && d.from.includes(st)),
         `«${st}»: يوصى بـ«${rec}» وهو غير متاح فيها`).toBe(true)

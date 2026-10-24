@@ -22,7 +22,14 @@
    هذه سلوكُ متصفّحٍ لا سلوكُ دالّة: لا يُمسك بنداءٍ يُختبَر جوابُه. فيُفحَص
    ما يجعله ممكنا — أن يكون العنوانُ هو المصدر: منه يُقرأ المعرّف، وإليه
    يُكتب عند الفتح، ومنه يُمحى عند الإغلاق. ومن أعاد `setSelected` مصدرا
-   ثانيا أسقط هذه. */
+   ثانيا أسقط هذه.
+
+   ═══ وصار الملفُّ عنوانا لا مُعامِلا (٢٤ أكتوبر ٢٠٢٦) ═══
+
+   المرحلةُ الثالثةُ من مقترح لوحة الإدارة: ملفُّ كلِّ مدرّبٍ صفحتُه — `/admin/trainers/:id` لا `?app=` على عنوان
+   الطابور. والحكمُ هو هو بقوّةٍ أكبر: الفتحُ ينتقل إلى عنوانه فيُسجَّل موضعا، و«رجوع» يعود إلى الطابور، و«الطلبات»
+   في الدرب تعود إليه بمحطّته وبحثه. والرابطُ القديمُ `?app=` يُقرأ ويُحوَّل إلى عنوانه — بلا موضعٍ في التاريخ،
+   وإلّا أعاد «رجوع» صاحبَه إلى رابطٍ يحوّله ثانيةً فلا يخرج. */
 
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -32,27 +39,31 @@ const SCREEN = 'src/pages/admin/TrainerApplications.tsx'
 const code = readFileSync(join(process.cwd(), SCREEN), 'utf8')
 
 describe('الملفّ المفتوح في العنوان', () => {
-  it('والشاشة تقرأ العنوان بخطّاف الموجّه لا بحالة عندها', () => {
-    expect(code, 'لا تستورد `useSearchParams` — فالعنوان لا يقرأ ولا يكتب')
-      .toContain('useSearchParams')
-    expect(code, 'لا تقرأ المعامل `app` من العنوان')
-      .toMatch(/searchParams\.get\(["']app["']\)/)
+  it('والشاشة تقرأ الملفّ من العنوان — من مساره لا من حالة عندها', () => {
+    expect(code, 'لا تقرأ معرّف الملفّ من المسار').toContain('const { id: recordId } = useParams<{ id: string }>();')
+    expect(code, 'الملفّ المفتوح ليس ما يقوله المسار').toContain('const openApp = recordId ?? null;')
   })
 
-  it('و«افتح» تكتب في العنوان — لا في `setSelected` رأسا', () => {
-    const open = /const openDetail = \([\s\S]*?\n {2}\};/.exec(code)?.[0] ?? ''
+  it('و«افتح» تنتقل إلى عنوان الملفّ — لا تكتب في `setSelected` رأسا', () => {
+    const open = /const openDetail = .*/.exec(code)?.[0] ?? ''
     expect(open, 'لم يعثر على `openDetail`').toBeTruthy()
-    expect(open, 'تفتح بلا أن تمسّ العنوان — فلا موضع يرجع إليه')
-      .toContain('setSearchParams')
-    expect(open, 'تكتب في الحالة رأسا — فيفترق العنوان عمّا يعرض')
-      .not.toContain('setSelected')
+    expect(open, 'تفتح بلا أن تنتقل — فلا موضع يرجع إليه').toContain('navigate(`/admin/trainers/${id}`)')
+    expect(open, 'تكتب في الحالة رأسا — فيفترق العنوان عمّا يعرض').not.toContain('setSelected')
   })
 
-  it('و«أغلق» تمحو المعامل — فيعود العنوان إلى القائمة', () => {
-    const close = /const closeDetail = \([\s\S]*?\n {2}\};/.exec(code)?.[0] ?? ''
+  it('و«أغلق» تعود إلى الطابور بمحطّته وبحثه', () => {
+    const close = /const closeDetail = .*/.exec(code)?.[0] ?? ''
     expect(close, 'لم يعثر على `closeDetail`').toBeTruthy()
-    expect(close, 'تغلق بلا أن تمحو المعامل — فالرجوع يفتحه ثانية')
-      .toMatch(/delete\(["']app["']\)/)
+    expect(close, 'تغلق إلى غير الطابور').toContain('navigate(`/admin/trainers${listSearch.current}`)')
+    expect(code, 'لا يحفظ ما كان عليه الطابور').toContain('if (!openApp && !legacyApp) listSearch.current = location.search;')
+  })
+
+  it('⚠️ والرابط القديم `?app=` يحوَّل إلى عنوانه — بلا موضع في التاريخ', () => {
+    expect(code, 'لا يقرأ الرابط القديم').toMatch(/searchParams\.get\(["']app["']\)/)
+    const redirect = /if \(!legacyApp\) return;[\s\S]*?\}, \[legacyApp, searchParams, navigate\]\);/.exec(code)?.[0] ?? ''
+    expect(redirect, 'لا تحويل للرابط القديم').toContain('navigate(`/admin/trainers/${legacyApp}')
+    expect(redirect, 'يحوّل بموضع في التاريخ — فرجوع يعيده إلى ما يحوّله ثانية').toContain('{ replace: true }')
+    expect(redirect, 'يسقط ما في الرابط سوى الملفّ').toContain('rest.delete("app")')
   })
 
   /* ═══ وهذا هو الحارسُ الذي من أجله كُتب الملفّ ═══

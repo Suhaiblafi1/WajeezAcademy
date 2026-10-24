@@ -3,13 +3,14 @@
    ① المحطّة: الطلبُ ثمّ المقابلةُ ثمّ الاتفاقية، و«لاحقا» و«مغلق» جانبا — ومن عبر إلى «المدربون» لا محطّةَ له هنا.
    ② والخطوة: من عليه الدور، وما هي، وزرُّها — من مصادرها (الدعوةُ وخطوةُ العقد) لا نسخةٍ ثانية.
    ③ والعدد: مجموعُ المحطّات عددُ من لم يعبر. والنصوصُ بلا تشكيلٍ إلّا الشدّة.
-   ④ والشاشة: كلُّ صفٍّ يقول خطوتَه من الدالّة، وزرُّه بندُ قائمته نفسُه — ومن عبر لا يُعدّ إلّا بلسانه. */
+   ④ والشاشة: كلُّ صفٍّ يقول خطوتَه من الدالّة، وزرُّه بندُ قائمته نفسُه — ومن عبر لا يُعدّ إلّا بلسانه.
+   ⑤ وخطُّ الملفّ: ما مضى بتاريخه، والتي هو فيها «الآن» — ولو بلغ ما بعدها ثمّ رُدّ — و«لاحقا» و«مغلق» جانبه. */
 
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
-import { joiningCounts, joiningNextOf, joiningStopOf, JOINING_ACT_AR, type JoiningFacts } from '@/application/trainer/joining'
+import { joiningCounts, joiningLineOf, joiningNextOf, joiningStopOf, JOINING_ACT_AR, type JoiningFacts, type LineFacts } from '@/application/trainer/joining'
 import { plainAr } from '@/application/text/plain-ar'
 
 const NOW = new Date('2026-10-24T12:00:00Z')
@@ -54,7 +55,7 @@ describe('② الخطوة التالية', () => {
   const next = (over: Partial<JoiningFacts>) => joiningNextOf(at(over), NOW)!
 
   it('⚠️ الطلب: منك أن تقرأه وتقرر — ومنه إكمال المسودة أو ما طلبته', () => {
-    expect(next({ status: 'submitted' })).toEqual({ turn: 'you', ar: 'اقرأ طلبه وقرر', act: 'open' })
+    expect(next({ status: 'submitted' })).toEqual({ turn: 'you', ar: 'اقرأ طلبه وقرر', act: 'open', focus: 'decision' })
     expect(next({ status: 'draft' })).toMatchObject({ turn: 'them', act: 'remind_draft' })
     expect(next({ status: 'information_requested' })).toMatchObject({ turn: 'them', ar: 'يرسل ما طلبته' })
   })
@@ -65,9 +66,9 @@ describe('② الخطوة التالية', () => {
     expect(next({ status: 'interview_scheduled', interviewsCount: 1, pendingInterviewAt: '2026-10-26T10:00:00Z' }))
       .toMatchObject({ turn: 'none', act: 'open' })
     expect(next({ status: 'interview_scheduled', interviewsCount: 1, pendingInterviewAt: '2026-10-22T10:00:00Z' }))
-      .toEqual({ turn: 'you', ar: 'سجل نتيجة المقابلة', act: 'open' })
+      .toEqual({ turn: 'you', ar: 'سجل نتيجة المقابلة', act: 'open', focus: 'interviews' })
     expect(next({ status: 'under_review', interviewsCount: 1, interviewOutcome: 'pass' }))
-      .toEqual({ turn: 'you', ar: 'قرر بعد المقابلة', act: 'open' })
+      .toEqual({ turn: 'you', ar: 'قرر بعد المقابلة', act: 'open', focus: 'decision' })
     expect(next({ status: 'under_review', interviewsCount: 1, interviewOutcome: 'no_show' }))
       .toMatchObject({ turn: 'you', act: 'open' })
   })
@@ -83,6 +84,19 @@ describe('② الخطوة التالية', () => {
     expect(next({ status: 'contract_pending', contract: contract('signed', { signedNameAr: 'سارة الخطيب' }) }))
       .toMatchObject({ turn: 'you', act: 'contract' })
     expect(next({ status: 'contract_pending', contract: contract('amendment_requested') })).toMatchObject({ turn: 'you' })
+  })
+
+  it('⚠️ وكل ما عليك بلا باب غير الملف يقول أين يعمل فيه — القرار أو المقابلات', () => {
+    const yours: Partial<JoiningFacts>[] = [
+      { status: 'submitted' }, { status: 'under_review', interviewsCount: 1, interviewOutcome: 'passed' },
+      { status: 'under_review', interviewsCount: 1, interviewOutcome: 'no_show' },
+      { status: 'interview_scheduled', interviewsCount: 1, pendingInterviewAt: '2026-10-22T10:00:00Z' },
+    ]
+    for (const f of yours) {
+      const n = next(f)
+      expect(n.act, n.ar).toBe('open')
+      expect(n.focus, n.ar).toBeDefined()
+    }
   })
 
   it('لاحقا ومغلق: لا دور — إلا مؤجلا سألناه عن اهتمامه', () => {
@@ -154,5 +168,85 @@ describe('④ والشاشة', () => {
     expect(screen, 'من عبر عاد إلى الطابور')
       .toContain('stop === "crossed" ? a.operating : stop ? joiningStopOf(a) === stop : !a.operating')
     expect(screen, 'المحطة ليست في العنوان').toMatch(/useTabParam<JoiningStop \| "crossed" \| "">\([\s\S]{0,120}?"stop"\)/)
+  })
+})
+
+describe('⑤ خط الملف', () => {
+  const SUBMITTED = '2026-10-02T09:00:00Z'
+  const line = (over: Partial<LineFacts>) => joiningLineOf({ ...base, submittedAt: SUBMITTED, history: [], ...over })
+  const states = (over: Partial<LineFacts>) => line(over).stops.map((s) => `${s.id}:${s.state}`)
+
+  it('⚠️ طلب وصل: الطلب الآن بتاريخ تقديمه، وما بعده بلا تاريخ', () => {
+    const l = line({ status: 'submitted' })
+    expect(l.stops.map((s) => s.state)).toEqual(['now', 'ahead', 'ahead', 'ahead'])
+    expect(l.stops[0].at).toBe(SUBMITTED)
+    expect(l.stops.slice(1).every((s) => s.at === null)).toBe(true)
+    expect(l.aside).toBeNull()
+  })
+
+  it('⚠️ ومن دعوناه: المقابلة الآن منذ دعوته', () => {
+    const l = line({ status: 'under_review', interviewInvitedAt: '2026-10-05T00:00:00Z' })
+    expect(l.stops.map((s) => s.state)).toEqual(['done', 'now', 'ahead', 'ahead'])
+    expect(l.stops[1].at).toBe('2026-10-05T00:00:00Z')
+    /* وإن حجز بعدها فدخولُه المحطّةَ يومَ دعوناه لا يومَ حجز */
+    const booked = line({
+      status: 'interview_scheduled', interviewsCount: 1, interviewInvitedAt: '2026-10-05T00:00:00Z',
+      history: [{ toStatus: 'interview_scheduled', createdAt: '2026-10-08T00:00:00Z' }],
+    })
+    expect(booked.stops[1].at).toBe('2026-10-05T00:00:00Z')
+  })
+
+  it('⚠️ والاتفاقية بتاريخ القبول الداخلي — والمقابلة بتاريخ أول موعد', () => {
+    const l = line({
+      status: 'contract_pending', interviewsCount: 1, interviewOutcome: 'passed',
+      history: [
+        { toStatus: 'interview_scheduled', createdAt: '2026-10-09T00:00:00Z' },
+        { toStatus: 'conditionally_approved', createdAt: '2026-10-21T00:00:00Z' },
+        { toStatus: 'contract_pending', createdAt: '2026-10-22T00:00:00Z' },
+      ],
+    })
+    expect(l.stops.map((s) => s.state)).toEqual(['done', 'done', 'now', 'ahead'])
+    expect(l.stops.map((s) => s.at)).toEqual([SUBMITTED, '2026-10-09T00:00:00Z', '2026-10-21T00:00:00Z', null])
+  })
+
+  it('⚠️ ومن قبل بلا مقابلة لا يقال إنه قوبل', () => {
+    expect(states({ status: 'conditionally_approved', history: [{ toStatus: 'conditionally_approved', createdAt: '2026-10-21T00:00:00Z' }] }))
+      .toEqual(['application:done', 'interview:skipped', 'agreement:now', 'trainers:ahead'])
+  })
+
+  it('⚠️ ومن رد إلى المقابلة بعد قبوله: الآن حيث هو لا أبعد ما بلغ', () => {
+    expect(states({
+      status: 'under_review', interviewsCount: 1, interviewOutcome: 'passed',
+      history: [{ toStatus: 'conditionally_approved', createdAt: '2026-10-21T00:00:00Z' }, { toStatus: 'under_review', createdAt: '2026-10-23T00:00:00Z' }],
+    })).toEqual(['application:done', 'interview:now', 'agreement:ahead', 'trainers:ahead'])
+  })
+
+  it('⚠️ ومن رفض بعد مقابلته: جانبا بتاريخ رفضه، والخط يقول أين بلغ', () => {
+    const l = line({
+      status: 'rejected', interviewsCount: 1, interviewOutcome: 'failed',
+      history: [{ toStatus: 'interview_scheduled', createdAt: '2026-10-09T00:00:00Z' }, { toStatus: 'rejected', createdAt: '2026-10-12T00:00:00Z' }],
+    })
+    expect(l.aside).toEqual({ stop: 'closed', ar: plainAr('مرفوض'), at: '2026-10-12T00:00:00Z' })
+    expect(l.stops.map((s) => s.state)).toEqual(['done', 'done', 'ahead', 'ahead'])
+    expect(l.stops.some((s) => s.state === 'now'), 'جانبا وعلى الخط معا').toBe(false)
+  })
+
+  it('⚠️ ومن عبر: المدربون الآن بتاريخ عبوره', () => {
+    const l = line({
+      status: 'active', operating: true, interviewsCount: 1,
+      history: [
+        { toStatus: 'interview_scheduled', createdAt: '2026-10-09T00:00:00Z' },
+        { toStatus: 'conditionally_approved', createdAt: '2026-10-21T00:00:00Z' },
+        { toStatus: 'active', createdAt: '2026-10-23T00:00:00Z' },
+      ],
+    })
+    expect(l.stops.map((s) => s.state)).toEqual(['done', 'done', 'done', 'now'])
+    expect(l.stops[3].at).toBe('2026-10-23T00:00:00Z')
+  })
+
+  it('والأسماء أسماء المحطات بلا تشكيل', () => {
+    const l = line({ status: 'deferred', history: [{ toStatus: 'deferred', createdAt: '2026-10-12T00:00:00Z' }] })
+    expect(l.stops.map((s) => s.ar)).toEqual(['الطلب', 'المقابلة', 'الاتفاقية', 'المدربون'])
+    expect(l.aside!.ar).toBe(plainAr(l.aside!.ar))
   })
 })

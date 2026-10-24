@@ -47,7 +47,7 @@ import { matchesQuery } from "@/application/text/search-ar";
 import { fmtDate, fmtDateTime } from "@/application/text/format-ar";
 import ConfirmAction from "@/components/ConfirmAction";
 import SuspendCohortsChoice from "@/components/admin/SuspendCohortsChoice";
-import { Link, useNavigate } from "react-router";
+import { Link, useNavigate, useSearchParams } from "react-router";
 import { OVERRIDE_MIN_REASON } from "@/application/trainer/readiness";
 import { useRealSession } from "@/services/session";
 
@@ -675,7 +675,9 @@ export default function TrainerRunOps() {
   const [courses, setCourses] = useState<CourseOpt[]>([]);
   const [offline, setOffline] = useState<string | null>(null);
   const [busy, setBusy] = useState("");
-  const [q, setQ] = useState("");
+  /* والبحثُ يُفتح من العنوان (`?q=`، ٢٤ أكتوبر ٢٠٢٦): ملفُّ المدرّب يفتح بطاقتَه هنا ببريده */
+  const [params] = useSearchParams();
+  const [q, setQ] = useState(() => params.get("q") ?? "");
   /* الفلترُ حالٌ واحدة، والمفتوحُ من البطاقات ما فتحه هو (`trainer-status.ts`) */
   const [filter, setFilter] = useState<TrainerFilter>("all");
   /* ومرحلتُه على سلّم دوراته — مستقلّةٌ عن الحال، فيُرى كلُّ من بلا شعبةٍ ولو انتظر شيئا (`trainerStageOf`) */
@@ -828,6 +830,8 @@ export default function TrainerRunOps() {
   /* ═══ وملفّاتُ من لا مسوّدةَ له — لنكتب له (٢٠ أكتوبر ٢٠٢٦) ═══
      ZIP فيه ما كتبه كلٌّ وسيرتُه وشهاداتُه (`trainer-drafting-bundle.service.ts`)، بصلاحيّة قراءة الطلبات */
   const canDownloadFiles = sessionUser?.permissions.includes("trainer.applications.view") ?? false;
+  /* وفتحُ ملفّ المدرّب بالصلاحيّة نفسِها: قراءةُ الطلبات — فلا يُعرض بابٌ يردّه الخادم */
+  const canOpenRecord = canDownloadFiles;
   /* وأجزاءً لا يجاوز الجزءُ ٢٠MB — «الملفّ كبيرٌ جدّا» (٢٠ أكتوبر ٢٠٢٦)، ولمن له دورةٌ معتمدةٌ وحدَه */
   const [draftingParts, setDraftingParts] = useState<{ parts: number; trainers: number } | null>(null);
   useEffect(() => {
@@ -1271,6 +1275,15 @@ export default function TrainerRunOps() {
                       disabled={busy === k(next.act)} onClick={() => goTo(t, next.act!)}>
                       {STEP_ACT_AR[next.act]}
                     </Button>
+                  )}
+                  {/* ═══ وملفُّه — بابٌ لم يكن (٢٤ أكتوبر ٢٠٢٦) ═══
+                      كانت البطاقةُ لا تفتح ملفَّ صاحبها: طلبُه ومقابلتُه واتفاقيّتُه وسجلُّه في «الطلبات» يُبحث عنه بالاسم.
+                      والمرحلةُ الثالثةُ من المقترح: «كلُّ قائمةٍ تفتح ملفَّ المدرّب». ولمن يملك قراءةَ الطلبات وحدَه. */}
+                  {canOpenRecord && (
+                    <Link to={`/admin/trainers/${t.applicationId}`}
+                      className="mt-2 ms-3 inline-flex items-center gap-1 text-read font-bold text-teal-light-ink underline-offset-2 hover:underline">
+                      افتح ملفه
+                    </Link>
                   )}
 
                   {isOpen && (<>

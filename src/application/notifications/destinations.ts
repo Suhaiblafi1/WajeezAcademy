@@ -171,7 +171,8 @@ const STAFF: Table = {
   /* والمؤجَّلُ إلى الفصول القادمة — حلّ موعدُه أو أجاب: الطابورُ وفيه شارتُه */
   'admin.trainer_deferral': { path: '/admin/trainers', ctaAr: 'افتح طابور الطلبات' },
   'admin.learner_request': { path: '/admin/learner-requests', ctaAr: 'افتح طلب المتعلّم' },
-  'trainer.qualify.request': { path: '/admin/trainers', ctaAr: 'افتح طلب التأهيل' },
+  /* وطلبُ التأهيل يُبتّ فيه في «المدربون» (`TrainerRunOps`) — لا في «الطلبات» التي كان يفتحها (٢٤ أكتوبر ٢٠٢٦) */
+  'trainer.qualify.request': { path: '/admin/trainer-run', ctaAr: 'افتح طلب التأهيل' },
   /* والعقدُ وُقّع أو اعتُذر عنه — وكلاهما ينتظر عملا في شاشة العقود:
      الموقَّعُ يُراجَع توقيعُه ويُفعَّل حسابُه، والمعتذَرُ عنه يُبحَث سببُه. */
   'trainer.contract.signed': { path: '/admin/trainer-contracts', ctaAr: 'راجع التوقيع وفعّل حسابه' },
@@ -236,6 +237,13 @@ const BY_AUDIENCE: Record<MailAudience, Table> = {
    الإشعار)، وعلى خطوتها إن حملت البياناتُ خطوة (`step`: الردُّ على «المراجعة»). والجدولُ أعلاه
    باقٍ وجهةً للبريد ولما لا معرّفَ فيه. */
 const ROUTE_FROM_DATA: Partial<Record<MailAudience, Record<string, { route: string; field: string; ctaAr: string }>>> = {
+  /* ═══ وخبرُ طلب الانضمام يفتح ملفَّ صاحبه (٢٤ أكتوبر ٢٠٢٦) ═══
+     «طلبُ انضمامٍ جديد» و«حلّ موعدُ التواصل مع مؤجَّل» يحملان معرّفَ الطلب — فالجرسُ يفتح ملفَّه
+     (`/admin/trainers/:id`) لا أوّلَ الطابور. والبريدُ على الجدول كما كان. */
+  staff: {
+    'admin.trainer_application': { route: '/admin/trainers/:id', field: 'applicationId', ctaAr: 'افتح ملفه' },
+    'admin.trainer_deferral': { route: '/admin/trainers/:id', field: 'applicationId', ctaAr: 'افتح ملفه' },
+  },
   trainer: {
     'cohort.plan.decision': { route: '/trainer/cohort/:id', field: 'cohortId', ctaAr: 'افتح شعبتك' },
     /* والموعدُ المقترحُ بلا تعارض بطاقةٌ في «المراجعة» — والخطوةُ في بياناته (`term-clash.service.ts`) */
