@@ -95,6 +95,44 @@ describe('٢) شعبتان لمدرّبين = صندوقان يختار بينه
   })
 })
 
+describe('٢ب) صورة المدرب كبيرة في صندوق الشعبة — في كل شراء من الموقع (٢٤ أكتوبر ٢٠٢٦)', () => {
+  /* قرارُ صاحب المنصّة: «اجعل صورةَ المدرّب أكبر عندما يقوم الزائرُ بشراء دورةٍ أو مسارٍ من الموقع… سواءً بعد تشخيصٍ أو
+     مساراتٍ جاهزةٍ أو دوراتٍ جاهزة. أبدع في التصميم». والمنتقي واحدٌ في المواضع كلّها — فالحارسُ عليه وعلى أنّها تناديه. */
+  const one = render(cohortOptionsFrom([row()]).get('C-1') ?? [])
+
+  it('⚠️ مدرب واحد: صورته كبيرة في إطار متدرج، وشارة «مباشر»، و«مدربك» واسمه وباب نبذته بجانبها', () => {
+    expect(one).toMatch(/<img [^>]*src="\/api\/v1\/trainer-photos\/ahmad\.webp"[^>]*class="grid h-24 w-24 [^"]*rounded-2xl sm:h-28 sm:w-28/)
+    expect(one, 'الإطار المتدرج').toMatch(/bg-gradient-to-br from-gold via-teal-light to-teal-deep p-\[3px\]/)
+    expect(one).toContain('مباشر')
+    expect(one).toContain('مدربك')
+    expect(one).toContain('href="/trainers#trainer-p-ahmad"')
+    /* والصورةُ ليست رابطا: الضغطُ عليها في صندوق الاختيار لا ينقله عن صفحة الشراء */
+    expect(one, 'الصورة داخل رابط').not.toMatch(/<a [^>]*>(?:(?!<\/a>)[\s\S])*<img /)
+    expect(one, 'عاد الوجه الصغير').not.toMatch(/h-11 w-11/)
+  })
+
+  it('⚠️ وبلا صورة: حروف اسمه بحجم الصورة نفسه — فلا تتفاوت الصناديق', () => {
+    const html = render(cohortOptionsFrom([ines]).get('C-1') ?? [])
+    expect(html).toMatch(/<span [^>]*aria-hidden="true" class="grid h-24 w-24 [^"]*sm:h-28 sm:w-28 bg-teal-deep [^"]*">أ<\/span>/)
+  })
+
+  it('⚠️ ومدربان في شعبة: وجهان أصغر جنبا إلى جنب لا صورتان كبيرتان', () => {
+    const two = row({ trainerProfiles: [
+      { id: 'p-ahmad', name: 'احمد صالح الطيار', photoUrl: '/api/v1/trainer-photos/ahmad.webp' },
+      { id: 'p-ines', name: 'ايناس عاهد ذيب', photoUrl: null },
+    ], trainers: ['احمد صالح الطيار', 'ايناس عاهد ذيب'] })
+    const html = render(cohortOptionsFrom([two]).get('C-1') ?? [])
+    expect(html).not.toContain('from-gold via-teal-light')
+    expect(html.match(/h-14 w-14/g)?.length).toBe(2)
+  })
+
+  it('⚠️ والمنتقي نفسه في صفحة الدورة ورحلة المسار وعرض التشخيص', () => {
+    expect(code('src/pages/CoursePath.tsx')).toMatch(/<CohortPicker\b/)
+    expect(code('src/components/CourseJourney.tsx')).toMatch(/<CohortPicker\b/)
+    expect(code('src/components/journey/StageOffer.tsx')).toMatch(/<CohortPicker\b/)
+  })
+})
+
 describe('٣) ورحلة الدورات لا تجمعهم في شارة واحدة', () => {
   it('⚠️ شارة «المدرب: …» لا تظهر حيث المنتقي ظاهر', () => {
     expect(code('src/components/CourseJourney.tsx')).toMatch(/\{!showSchedule && <CourseTrainer courseId=\{c\.id\} \/>\}/)
