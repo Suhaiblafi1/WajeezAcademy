@@ -1348,6 +1348,20 @@ export async function runCohortMoveReminders(prisma: PrismaClient, now = new Dat
   }
 }
 
+/* ═══ اقتراحُ تأجيلٍ مضت مهلتُه بلا ردّ — توقف شعبتُه (٢٤ أكتوبر ٢٠٢٦) ═══
+   «مع إعلامه بأنّه سيتمّ توقيفُ الشعبة تلقائيّا» (صاحب المنصّة). العلّةُ في `cohort-postpone.service.ts`. */
+export async function runCohortPostponeExpire(prisma: PrismaClient, now = new Date()): Promise<JobResult> {
+  const started = Date.now()
+  const { CohortPostponeService } = await import('../services/cohort-postpone.service')
+  const { expired, withdrawn } = await new CohortPostponeService(prisma).expireDue(now)
+  return {
+    job: 'cohort_postpone_expire',
+    summaryAr: expired + withdrawn === 0 ? 'لا اقتراح تأجيل مضت مهلته'
+      : `أوقف ${expired} شعبة لم يرد مدربها على التأجيل${withdrawn ? `، وسحب ${withdrawn} اقتراحا بدأت شعبته أو ألغيت` : ''}`,
+    done: expired + withdrawn, failed: 0, ms: Date.now() - started,
+  }
+}
+
 /* ═══ فصولُ الشعب التي سقطت «بلا فصل» (١٨ أكتوبر ٢٠٢٦) ═══
    العلّةُ في `server/services/term-ensure.ts`. يملأ ما سقط قبل الإصلاح، ويلتقط ما يفلت بعده. */
 export async function runAssignMissingTerms(prisma: PrismaClient): Promise<JobResult> {
@@ -1628,6 +1642,8 @@ export const JOBS = [
   { key: 'deferral_followups', everyMs: HOUR, run: runDeferralFollowups, titleAr: 'متابعة المؤجّلين إلى الفصول القادمة' },
   /* كلَّ ساعة: الموعدُ شهرٌ قبل الفصل، فساعةٌ دقّةٌ كافية */
   { key: 'cohort_move_reminders', everyMs: HOUR, run: runCohortMoveReminders, titleAr: 'تذكير مدرّبي الشعب المنقولة قبل فصلها' },
+  /* كلَّ ربع ساعة: المهلةُ ساعةٌ ودقيقة، ومن لم يقبل لا ينتظر ساعةً بعدها ليعلم */
+  { key: 'cohort_postpone_expire', everyMs: 15 * 60_000, run: runCohortPostponeExpire, titleAr: 'إيقاف الشعب التي لم يقبل مدربها التأجيل في موعده' },
   { key: 'assign_missing_terms', everyMs: HOUR, run: runAssignMissingTerms, titleAr: 'تسمية فصل الشعب التي بلا فصل' },
   /* كلَّ ربع ساعة: المتابعةُ موعدٌ بالدقيقة، فتُذكَّر قبله بدورة (`FOLLOW_UP_LEAD_MINUTES`) */
   { key: 'advisor_reminders', everyMs: 15 * 60_000, run: runAdvisorReminders, titleAr: 'تذكير المستشارين بالتواصل والمتابعات' },

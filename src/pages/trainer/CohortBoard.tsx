@@ -28,6 +28,7 @@ import Button from "@/components/ui/Button";
 import ProgressRing from "@/components/ui/ProgressRing";
 import { usePrepCohorts } from "@/components/trainer/usePrepCohorts";
 import CohortMoveBox, { type MoveRequestRow } from "@/components/trainer/CohortMoveBox";
+import PostponeOfferCards from "@/components/trainer/PostponeOfferCards";
 import { boardPlace } from "@/application/trainer/board-place";
 import { countAr } from "@/application/text/count-ar";
 
@@ -160,6 +161,8 @@ export default function CohortBoard() {
 
   return (
     <TrainerLayout title="شعبي">
+      {/* اقتراحُ تأجيل شعبه — في الرأس لكلّ شعبة، والإعدادُ منها (٢٤ أكتوبر ٢٠٢٦) */}
+      {!offline && <PostponeOfferCards onDecided={() => void load()} />}
       {offline ? (
         <Panel className="grid place-items-center py-20 text-center">
           <ServerOff className="h-12 w-12 text-muted-foreground/50" />

@@ -226,6 +226,8 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
       'trainer.qualified', 'trainer.qualify.rejected', 'trainer.assigned',
       /* وإلغاءُ شعبته مثلُ إسنادها (٢٢ أكتوبر ٢٠٢٦): من كتمه بقي يجهّز شعبةً لن تنعقد */
       'cohort.cancelled.trainer',
+      /* واقتراحُ تأجيلها بمهلة (٢٤ أكتوبر ٢٠٢٦): من كتمه سكت حتّى تتوقّف شعبتُه وهو لا يعلم */
+      'cohort.postpone.proposed',
       /* والتفعيلُ مثلُهما (٣ أكتوبر ٢٠٢٦): من صار نشطا صار يُنتظَر منه عملُه — ساعاتُه
          وحسابُه البنكيُّ وشعبُه. وكان يصله بريدا وحدَه. */
       'trainer.activated',

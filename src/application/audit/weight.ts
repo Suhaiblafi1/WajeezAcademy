@@ -183,6 +183,8 @@ const HIGH: readonly string[] = [
   'session.reschedule.approve', 'session.reschedule.reject',
   /* والشعبةُ كلُّها نُقلت إلى فصلٍ آخر، أو رُدّ طلبُ نقلها */
   'cohort.move.approve', 'cohort.move.reject',
+  /* وتأجيلُ شعب نوفمبر: قبله مدرّبُها فتحرّكت مواعيدُها، أو لم يقبله فأوقفت (٢٤ أكتوبر ٢٠٢٦) */
+  'cohort.postpone.accept', 'cohort.postpone.decline', 'cohort.postpone.expire',
   /* ═══ وعملُه قُرئ وقُوّم — والمنصّةُ قرّرت هذا قبلنا ═══
 
      قسمةُ صاحب المنصّة لم تسمّ التصحيحَ في العالية، وكنتُ صنّفتُه متوسّطا
@@ -253,6 +255,8 @@ const MEDIUM: readonly string[] = [
   'session.reschedule.propose',
   /* وطلبُ نقل الشعبة كلّها ينتظر قرارا */
   'cohort.move.request', 'cohort.move.withdraw', 'cohort.move.zoom', 'cohort.move.remind',
+  /* واقتراحُ تأجيلٍ أرسلناه للمدرّب ينتظر قراره، أو سحبناه */
+  'cohort.postpone.propose', 'cohort.postpone.withdraw',
   'term.season_switch', 'cohort.open_approved',
   /* بريدُه وُثّق بيدِ موظّف */
   'admin.user.verify_email', 'trainer.application.verify_email',

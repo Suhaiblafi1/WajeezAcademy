@@ -112,6 +112,8 @@ const TRAINER: Table = {
   'trainer.assigned': { path: '/trainer/board', ctaAr: 'افتح شعبتك الجديدة' },
   /* والملغاةُ تسقط من «شعبي» — فالوجهةُ ما بقي له من شعب (٢٢ أكتوبر ٢٠٢٦) */
   'cohort.cancelled.trainer': { path: '/trainer/board', ctaAr: 'افتح شعبك' },
+  /* واقتراحُ التأجيل بطاقةٌ في «شعبي» يقبلها أو لا (٢٤ أكتوبر ٢٠٢٦) */
+  'cohort.postpone.proposed': { path: '/trainer/board', ctaAr: 'افتح الاقتراح' },
   'cohort.plan.submitted': { path: '/trainer/board', ctaAr: 'افتح خطّة شعبتك' },
   'cohort.plan.decision': { path: '/trainer/board', ctaAr: 'اقرأ قرار الخطّة' },
   'cohort.schedule.proposed': { path: '/trainer/board', ctaAr: 'افتح الاقتراح' },
