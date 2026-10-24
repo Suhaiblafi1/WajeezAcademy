@@ -125,9 +125,9 @@ describe('الحلّ: أقلّ ما يمكن من تغيير', () => {
       cohort('1', 'A', weekly('2026-12-06', '19:00')),
       cohort('2', 'B', weekly('2026-12-07', '19:00')),
       cohort('3', 'C', weekly('2026-12-08', '19:00')),
-      /* أربعة لقاءات أسبوعيّة لا تقع إلّا على واحد في الأسبوع — فنمدّها بلقاءات في الأيّام الثلاثة */
-      /* ومعرّفُها أسبقُ وأوّلُ لقاءاتها أسبق — فلا يرتّبها شيءٌ بعد غيرها إلّا كثرةُ تعارضها */
-      cohort('0', 'D', [...weekly('2026-12-06', '19:00', 1), ...weekly('2026-12-07', '19:00', 1), ...weekly('2026-12-08', '19:00', 1)]),
+      /* لقاءٌ في كلّ أسبوع على يومٍ من أيّام الثلاث — فيقع على كلٍّ منها مرّة.
+         ومعرّفُها أسبقُ وأوّلُ لقاءاتها أسبق — فلا يرتّبها شيءٌ بعد غيرها إلّا كثرةُ تعارضها */
+      cohort('0', 'D', [...weekly('2026-12-06', '19:00', 1), ...weekly('2026-12-14', '19:00', 1), ...weekly('2026-12-22', '19:00', 1)]),
     ]
     const p = planClashFree({ cohorts, courses, build: fakeBuild(cohorts) })
     expect(p.before).toHaveLength(3)
@@ -174,6 +174,18 @@ describe('الحلّ: أقلّ ما يمكن من تغيير', () => {
     const moved = p.rows.find((r) => r.cohortId === '1')!
     expect(moved.action).toBe('move')
     if (moved.action === 'move') expect(moved.to.weekday).not.toBe(0)
+  })
+
+  it('وما يلتقي أكثر من مرّة في الأسبوع لا يضغط إلى يوم واحد — يقال سببه ويبقى', () => {
+    const cohorts = [
+      cohort('1', 'A', [...weekly('2026-12-06', '19:00'), ...weekly('2026-12-08', '19:00')]),
+      cohort('2', 'B', weekly('2026-12-06', '19:00'), { learners: 3 }),
+    ]
+    const build = fakeBuild(cohorts)
+    const row = planClashFree({ cohorts, courses, build }).rows.find((r) => r.cohortId === '1')!
+    expect(row.action).toBe('stuck')
+    if (row.action === 'stuck') expect(row.whyAr).toContain('أكثر من مرة في الأسبوع')
+    expect(build.calls, 'بني له جدول أسبوعيّ واحد').toEqual([])
   })
 
   it('وما لا يبنى له جدول يقال بسببه ولا يسقط صامتا', () => {

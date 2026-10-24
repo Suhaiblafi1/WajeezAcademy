@@ -202,6 +202,12 @@ export function candidateSlots(from: WeeklySlot, minutes: number, rejected: read
 
 /* ─────────── الحلّ ─────────── */
 
+/** لقاءان بينهما أقلُّ من ستّة أيّام — أي أكثرُ من لقاءٍ في الأسبوع */
+export function twiceWeekly(sessions: readonly ClashInterval[]): boolean {
+  const starts = sessions.map((s) => s.startsAt).sort((a, b) => a - b)
+  return starts.some((t, i) => i > 0 && t - starts[i - 1]! < 6 * 24 * 3_600_000)
+}
+
 export type ClashRow<T> =
   | { cohortId: string; action: 'keep'; slot: WeeklySlot | null }
   /** يُنقل: من موعده إلى موعدٍ لا يتعارض، ومع من كان يتعارض ولماذا */
@@ -215,13 +221,16 @@ export interface ClashPlan<T> {
   before: ClashPair[]
 }
 
+/** أوّلُ سطر «لماذا» في بطاقات هذه الشاشة — به تُعرف بطاقتُها من جداول المسارات الأخرى */
+export const CLASH_REASON_PREFIX = 'موعدها الآن يتعارض'
+
 /** سطرُ «لماذا» في البطاقة — بلغة المدرّب، وبأسماء الدورات لا المدرّبين */
 export function clashWhyAr(clashes: readonly { courseTitleAr: string; whyAr: string }[]): string {
-  if (clashes.length === 0) return 'موعدها الآن يتعارض مع دورة قريبة منها'
+  if (clashes.length === 0) return `${CLASH_REASON_PREFIX} مع دورة قريبة منها`
   const first = clashes[0]!
   const more = clashes.length - 1
   const tail = more === 0 ? '' : more === 1 ? ' ودورة أخرى' : more === 2 ? ' ودورتين أخريين' : ` و${more} دورات أخرى`
-  return `موعدها الآن يتعارض مع «${first.courseTitleAr}»${tail} ${first.whyAr}، والطالب نفسه قد يريد الدورتين`
+  return `${CLASH_REASON_PREFIX} مع «${first.courseTitleAr}»${tail} ${first.whyAr}، والطالب نفسه قد يريد الدورتين`
 }
 
 export function planClashFree<T>(input: {
@@ -267,6 +276,14 @@ export function planClashFree<T>(input: {
       rows.push(clashes.length === 0
         ? { cohortId: c.cohortId, action: 'keep', slot }
         : { cohortId: c.cohortId, action: 'stuck', slot, clashes, whyAr: c.fixedAr ?? 'عليها اقتراح موعد لم يقرر فيه مدرّبها' })
+      continue
+    }
+    /* ═══ وما يلتقي أكثرَ من مرّةٍ في الأسبوع لا يُنقل إلى يومٍ واحد (٢٤ أكتوبر ٢٠٢٦) ═══
+       الجدولُ المقترحُ يومٌ وساعةٌ كلَّ أسبوع، فكان يضغط لقاءين أسبوعيّين إلى لقاءٍ ويؤخّر آخرَها. فيُقال سببُه
+       ويُرتَّب بيد مدرّبه */
+    if (twiceWeekly(now)) {
+      placed.set(c.cohortId, now)
+      rows.push({ cohortId: c.cohortId, action: 'stuck', slot, clashes, whyAr: 'لقاءاتها أكثر من مرة في الأسبوع — لا موعد أسبوعي واحد يحملها' })
       continue
     }
     const longest = Math.max(...now.map((s) => Math.round((s.endsAt - s.startsAt) / 60_000)))

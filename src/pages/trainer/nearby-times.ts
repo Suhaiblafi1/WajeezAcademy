@@ -17,10 +17,13 @@ export function useNearbyTimes(cohortId: string): NearbyTime[] {
     let p = cache.get(cohortId);
     if (!p) {
       /* وإن تعذّرت القراءةُ فلا تنبيه — لا يقف اختيارُ الموعد عليها */
-      p = apiGet<{ nearby: NearbyTime[] }>(`/api/trainer/cohorts/${cohortId}/nearby-times`).then((r) => r.nearby).catch(() => []);
+      p = apiGet<{ nearby: NearbyTime[] }>(`/api/trainer/cohorts/${cohortId}/nearby-times`).then((r) => r.nearby);
       cache.set(cohortId, p);
+      /* وما تعذّر لا يُحفظ فارغا — يُسأل من جديد في الفتحة التالية */
+      const failed = p;
+      failed.catch(() => { if (cache.get(cohortId) === failed) cache.delete(cohortId); });
     }
-    void p.then((x) => { if (alive) setList(x); });
+    void p.then((x) => { if (alive) setList(x); }, () => undefined);
     return () => { alive = false; };
   }, [cohortId]);
   return list;

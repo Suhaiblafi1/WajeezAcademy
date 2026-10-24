@@ -253,13 +253,6 @@ export default function BuyPanel({
   /* ما يقابَل به كلُّ بندٍ ليُقال التعارض: شعبُ البنود الأخرى كما اختارها، ولقاءاتُه ممّا سجّل فيه */
   const mine = useMySessions();
   const timedOf = (line: BuyLine, o: CohortOption): TimedCohort => ({ cohortId: o.id, courseId: line.courseId, titleAr: line.name, sessions: o.sessions });
-  const busyBesides = (courseId: string): TimedCohort[] => [
-    ...mine,
-    ...buyable.filter(({ line }) => line.courseId !== courseId).flatMap(({ line, options }) => {
-      const o = options.find((x) => x.id === chosen[line.courseId]) ?? options[0];
-      return o ? [timedOf(line, o)] : [];
-    }),
-  ];
 
   /* خصمُ الخطّة كاملةً — بعدد دوراتها المدفوعة (بلا الهديّة)، يُقال لمن يشتري بعضَها */
   const planPct = buildDiscountPct(lines.filter((l) => l.courseId !== giftCourseId).length);
@@ -316,6 +309,17 @@ export default function BuyPanel({
      يُرسَل إلى `checkout` بندٌ يرفضه، وهو صارمٌ بحقّ: طلبٌ فوق مقعدٍ مملوك
      يعني فاتورةً بغير ما ضغط عليه المشتري. */
   const payableIds = useMemo(() => (quote?.items ?? []).map((i) => i.cohortId), [quote]);
+  /* وما يُقابَل به: بنودٌ ستُشترى فعلا — لا مستبعَدٌ ولا هديّةٌ محبوسةٌ عن هذه الدفعة — ولقاءاتُه ممّا سجّل فيه.
+     والشعبةُ المسجَّلُ فيها لا تُعدّ مرّتين إن كانت في الطلب أيضا */
+  const busyBesides = (courseId: string): TimedCohort[] => {
+    const lines = buyable
+      .filter(({ line }) => line.courseId !== courseId && !(giftHeld && line.courseId === giftCourseId))
+      .flatMap(({ line, options }) => {
+        const o = options.find((x) => x.id === chosen[line.courseId]) ?? options[0];
+        return o && !excludedOf.has(o.id) ? [timedOf(line, o)] : [];
+      });
+    return [...mine.filter((m) => !lines.some((l) => l.cohortId === m.cohortId)), ...lines];
+  };
   const nothingLeft = !!quote && payableIds.length === 0;
 
   const usd = quote?.currency === "USD";
