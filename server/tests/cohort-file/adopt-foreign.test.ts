@@ -113,7 +113,7 @@ describe('④ مرفقُ المهمّة', () => {
     const target = await newCohort('شعبةُ المهمّة')
     const task = await new AssessmentService(prisma).createAssessment(userId, {
       cohortId: target, title: 'مهمّةُ المحور الأوّل', type: 'assignment', moduleId: 'AD-M1',
-      attachments: [{ title: 'نموذجُ التسليم', kind: 'file', bodyFileKey: keyA, bodyFileName: 'كرّاسة.pdf', bodyFileMime: 'application/pdf' }],
+      attachments: [{ title: 'نموذجُ التسليم', url: '', kind: 'file', bodyFileKey: keyA, bodyFileName: 'كرّاسة.pdf', bodyFileMime: 'application/pdf' }],
     }, { byTrainer: true })
     const [att] = task.attachments as unknown as { bodyFileKey: string }[]
     expect(att!.bodyFileKey).toBe(adoptedKey(keyA, target))
