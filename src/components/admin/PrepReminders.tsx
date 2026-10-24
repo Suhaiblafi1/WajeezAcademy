@@ -6,11 +6,12 @@
    (`prep-reminder.service.ts`)، فما يُعاين هو ما يُرسَل. */
 
 import { useEffect, useState } from "react";
-import { Mail, Send } from "lucide-react";
+import { CheckCircle2, Circle, Mail, Send } from "lucide-react";
 import { apiPost, ApiError } from "@/services/api";
 import Button from "@/components/ui/Button";
 import { Inset } from "@/components/ui/Surface";
 import { controlCls } from "@/components/FormKit";
+import { fmtDate } from "@/application/text/format-ar";
 
 /** ما تقوله الرسالة — يطابق `MailChoices` في الخادم */
 export interface MailChoices { courses: "more" | "postpone" | "none"; cohorts: boolean; skip: string[]; due: "close" | "date" | "none" }
@@ -19,7 +20,13 @@ export interface ReminderRow {
   facts: { openCohorts: string[]; moved: { title: string; termAr: string }[] };
   tasks: { key: string; textAr: string }[];
   choices: MailChoices;
+  /** بقي عليه شيء — وإلّا فالسطرُ لما أرسلناه وحدَه */
+  needs: boolean;
+  /** ما أرسلناه له من قبل، الأحدثُ أوّلا — وكلُّ ما طُلب بحاله الآن (`reminderHistory`) */
+  history: ReminderHistory[];
 }
+/** `done`: نفّذه · `false`: لم ينفّذه بعد · `null`: سؤالٌ لا يُحكم عليه */
+export interface ReminderHistory { at: string; sent: boolean; deadline: string | null; items: { textAr: string; done: boolean | null }[]; unknownAr: string | null }
 interface Preview { to: string; subject: string; text: string; html: string; key?: string }
 
 const inDays = (n: number) => new Date(Date.now() + n * 86_400_000).toISOString().slice(0, 10);
@@ -98,8 +105,50 @@ function MailParts({ row, value, onChange }: { row: ReminderRow; value: MailChoi
   );
 }
 
-/** ما بقي على هذا المدرّب — يختار ما تقوله الرسالة، ويعاين ويرسل */
-export default function PrepReminderRow({ row, deadline }: { row: ReminderRow; deadline: string }) {
+/* ═══ ما أرسلناه له من قبل، وهل نفّذه (٢٤ أكتوبر ٢٠٢٦) ═══
+   «ضع تاريخَ المراسلات إن أرسلنا للمدرّب سابقا، وهل قام بتنفيذ المطلوب». لكلّ رسالةٍ تاريخُها وموعدُها، وتحتها ما
+   طُلب فيها: ✓ نفّذه، أو لم ينفّذه بعد — والحكمُ من حاله الآن في الخادم (`reminderHistory`). */
+function SentHistory({ history }: { history: ReminderHistory[] }) {
+  if (history.length === 0) return <p className="mt-1 text-muted-foreground">لم نرسل له رسالة من قبل.</p>;
+  return (
+    <ul className="mt-1.5 space-y-1.5" aria-label="ما أرسلناه له من قبل">
+      {history.map((h) => {
+        const asked = h.items.filter((i) => i.done !== null);
+        const done = asked.filter((i) => i.done).length;
+        return (
+          <li key={h.at}>
+            <p className="font-bold">
+              {h.sent ? `أرسلنا له ${fmtDate(h.at)}` : `حاولنا ${fmtDate(h.at)} — لم ترسل`}
+              {h.deadline && <span className="font-normal text-muted-foreground"> · الموعد {fmtDate(h.deadline)}</span>}
+              {asked.length > 0 && (
+                <span className={done === asked.length ? "text-teal-light-ink" : "text-gold-ink"}>
+                  {" "}· {done === asked.length ? "نفذ كل ما طلبناه" : `نفذ ${done} من ${asked.length}`}
+                </span>
+              )}
+            </p>
+            <ul className="ps-4">
+              {h.items.map((i) => (
+                <li key={i.textAr} className="flex items-start gap-1.5">
+                  {i.done
+                    ? <CheckCircle2 className="mt-1 h-3.5 w-3.5 shrink-0 text-teal-light-ink" aria-label="نفذه" />
+                    : <Circle className="mt-1 h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-label={i.done === false ? "لم ينفذه بعد" : "سؤال"} />}
+                  <span>
+                    {i.textAr}
+                    {i.done === false && <span className="text-gold-ink"> — لم ينفذه بعد</span>}
+                  </span>
+                </li>
+              ))}
+              {h.unknownAr && <li className="text-muted-foreground">{h.unknownAr}</li>}
+            </ul>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+/** ما بقي على هذا المدرّب — يختار ما تقوله الرسالة، ويعاين ويرسل. و`onSent` يعيد قراءةَ ما أرسلناه */
+export default function PrepReminderRow({ row, deadline, onSent }: { row: ReminderRow; deadline: string; onSent?: () => void }) {
   const [open, setOpen] = useState(false);
   const [shown, setShown] = useState<Preview | null>(null);
   const [sent, setSent] = useState<string | null>(null);
@@ -130,17 +179,18 @@ export default function PrepReminderRow({ row, deadline }: { row: ReminderRow; d
       const r = await apiPost<{ sent: string; to: string }>(`/api/admin/prep-reminders/${row.profileId}/send`, { deadline: due, choices });
       setSent(r.sent === "sent" ? `أرسلت إلى ${r.to}` : "لم ترسل — البريد غير مهيأ");
       setOpen(false);
+      onSent?.();
     } catch (e) { setErr(e instanceof ApiError ? e.message : "تعذر الإرسال"); }
     finally { setBusy(false); }
   };
 
   return (
-    <Inset tone="warn" className="mt-2.5 p-2.5 text-read leading-6">
+    <Inset tone={row.needs ? "warn" : "default"} className="mt-2.5 p-2.5 text-read leading-6">
       <div className="flex flex-wrap items-center gap-2">
         <p className="min-w-0 flex-1 font-bold">
           {row.summaryAr} — رسالة قبل إطلاق الحملة
         </p>
-        {sent ? (
+        {!row.needs ? null : sent ? (
           <span className="font-bold text-teal-light-ink">{sent}</span>
         ) : (
           <>
@@ -169,6 +219,7 @@ export default function PrepReminderRow({ row, deadline }: { row: ReminderRow; d
         </div>
       )}
       {err && <p role="alert" className="mt-1 text-danger-ink">{err}</p>}
+      <SentHistory history={row.history} />
     </Inset>
   );
 }

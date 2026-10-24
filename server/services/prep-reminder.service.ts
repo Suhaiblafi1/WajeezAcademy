@@ -196,6 +196,99 @@ export function prepReminderMail(input: { name: string; facts: ReminderFacts; de
   }
 }
 
+/* ═══ ما أرسلناه له من قبل، وهل نفّذه (٢٤ أكتوبر ٢٠٢٦) ═══
+
+   قال صاحبُ المنصّة وهو ينظر في سطر الرسالة على بطاقة مدرّبة: «ضع تاريخَ المراسلات إن أرسلنا للمدرّب سابقا، وهل
+   قام بتنفيذ المطلوب». وكان الإرسالُ يُكتب في الأثر (`trainer.prep.reminder`) بعددِ ما طُلب لا بأعيانه، والسطرُ ينسى
+   الإرسالَ إذا أُعيد تحميلُ الصفحة — فيُرسَل مرّتين ولا يُعرف أيُّ الطلبات تمّ.
+
+   فصار الإرسالُ يحفظ ما طلبه بعينه (`asked`)، ويُقرأ كلُّ إرسالٍ سابقٍ بحال المدرّب الآن: الأمرُ العالقُ تمّ إن لم
+   يعد عالقا (`reminderTasks`)، و«ابدأ بدورة» تمّت إن بدأ (`hasStarted`)، و«انقل دوراتك» تمّت إن لم تبقَ له دورةٌ
+   لم يقرّر فيها. والسؤالُ «أتضيف دورة؟» سؤالٌ لا طلب — فلا يُحكم عليه. وما أُرسل قبل حفظ الأعيان يُقال عددُه كما هو،
+   ولا يُدّعى أنّه تمّ أو لم يتمّ. */
+
+/** ما يُقرأ من أثر إرسالٍ سابق */
+export interface SentReminder {
+  at: Date
+  status: string | null
+  deadline: string | null
+  started: boolean | null
+  choices: MailChoices | null
+  /** ما طُلب بعينه — `null` لما أُرسل قبل ٢٤ أكتوبر ٢٠٢٦ */
+  asked: { key: string; textAr: string }[] | null
+  /** عددُ العالق يومَها — وحدَه ما بقي من الإرسال القديم */
+  tasks: number | null
+}
+
+/** بندٌ طُلب منه — و`done` = نفّذه، `false` = لم ينفّذه بعد، `null` = سؤالٌ لا يُحكم عليه */
+export interface AskedItem { textAr: string; done: boolean | null }
+
+export interface ReminderHistory {
+  at: string
+  sent: boolean
+  deadline: string | null
+  items: AskedItem[]
+  /** ما لا تُعرف أعيانُه من إرسالٍ قديم */
+  unknownAr: string | null
+}
+
+/** ما طُلب في رسالةٍ بخياراتها — يُحفظ مع الإرسال بعينه */
+export function askedOf(f: ReminderFacts, choices: MailChoices): { key: string; textAr: string }[] {
+  const started = hasStarted(f)
+  const out: { key: string; textAr: string }[] = []
+  if (choices.courses === 'more') out.push(started ? { key: 'add', textAr: 'سألناه هل يضيف دورة' } : { key: 'start', textAr: 'أن يبدأ بدورة' })
+  else if (choices.courses === 'postpone') out.push({ key: 'postpone', textAr: 'أن ينقل دوراته إلى موسم قادم' })
+  for (const t of reminderTasks(f)) if (!choices.skip.includes(t.key)) out.push({ key: t.key, textAr: t.textAr })
+  return out
+}
+
+/** حالُ كلّ ما طُلب الآن */
+function doneNow(key: string, now: ReminderFacts, open: Set<string>): boolean | null {
+  if (key === 'add') return null
+  if (key === 'start') return hasStarted(now)
+  if (key === 'postpone') return !now.courses.some((c) => c.state === 'to_decide')
+  return !open.has(key)
+}
+
+/** ما أرسلناه له من قبل — الأحدثُ أوّلا — وكلُّ ما طُلب فيه بحاله الآن */
+export function reminderHistory(sends: SentReminder[], now: ReminderFacts): ReminderHistory[] {
+  const open = new Set(reminderTasks(now).map((t) => t.key))
+  return [...sends].sort((a, b) => b.at.getTime() - a.at.getTime()).map((s) => {
+    let items: AskedItem[]
+    let unknownAr: string | null = null
+    if (s.asked) items = s.asked.map((a) => ({ textAr: a.textAr, done: doneNow(a.key, now, open) }))
+    else {
+      /* إرسالٌ قبل حفظ الأعيان: الدوراتُ تُعرف من خياراتها ومن «بدأ» يومَها، والعالقُ عددٌ وحدَه */
+      const courses = s.choices?.courses ?? 'more'
+      items = []
+      if (courses === 'more' && s.started === false) items.push({ textAr: 'أن يبدأ بدورة', done: hasStarted(now) })
+      else if (courses === 'more' && s.started) items.push({ textAr: 'سألناه هل يضيف دورة', done: null })
+      else if (courses === 'postpone') items.push({ textAr: 'أن ينقل دوراته إلى موسم قادم', done: doneNow('postpone', now, open) })
+      const n = s.tasks ?? 0
+      if (n > 0) unknownAr = `و${n === 1 ? 'أمر واحد عالق' : n === 2 ? 'أمران عالقان' : `${n} أمور عالقة`} — أرسلت قبل حفظ تفاصيلها`
+    }
+    return { at: s.at.toISOString(), sent: s.status === 'sent', deadline: s.deadline, items, unknownAr }
+  })
+}
+
+/** أثرُ الإرسال كما كُتب — وما لا يُقرأ منه يبقى `null` */
+function sentOf(e: { createdAt: Date; meta: unknown }): SentReminder {
+  const m = (e.meta ?? {}) as Record<string, unknown>
+  const asked = Array.isArray(m.asked)
+    ? (m.asked as unknown[]).filter((a): a is { key: string; textAr: string } =>
+      typeof a === 'object' && a !== null && typeof (a as { key?: unknown }).key === 'string' && typeof (a as { textAr?: unknown }).textAr === 'string')
+    : null
+  return {
+    at: e.createdAt,
+    status: typeof m.status === 'string' ? m.status : null,
+    deadline: typeof m.deadline === 'string' ? m.deadline : null,
+    started: typeof m.started === 'boolean' ? m.started : null,
+    choices: typeof m.choices === 'object' && m.choices !== null ? (m.choices as MailChoices) : null,
+    asked,
+    tasks: typeof m.tasks === 'number' ? m.tasks : null,
+  }
+}
+
 const deadlineAr = (day: string) =>
   fmtDateWith(new Date(`${day}T12:00:00.000Z`), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: ACADEMY_ZONE })
 
@@ -240,7 +333,7 @@ export class PrepReminderService {
     }
   }
 
-  /** من يستحقّ الرسالة — وخلاصةُ حاله لسطره في الصفحة */
+  /** من يستحقّ الرسالة، ومن أرسلنا له من قبل ولو لم يبقَ عليه شيء (`needs`) — وخلاصةُ حاله وما أرسلناه */
   async list() {
     const profiles = await this.prisma.trainerProfile.findMany({
       where: {
@@ -250,23 +343,34 @@ export class PrepReminderService {
       },
       select: { id: true, photoUrl: true, photoPendingKey: true, application: { select: { fullName: true, email: true } } },
     })
-    const out: { profileId: string; name: string; email: string; started: boolean; summaryAr: string; facts: ReminderFacts; tasks: ReminderTask[]; choices: MailChoices }[] = []
+    const sends = await this.prisma.auditEvent.findMany({
+      where: { action: 'trainer.prep.reminder', entityType: 'trainer_profile', entityId: { in: profiles.map((p) => p.id) } },
+      select: { entityId: true, createdAt: true, meta: true },
+    })
+    const out: {
+      profileId: string; name: string; email: string; started: boolean; summaryAr: string; facts: ReminderFacts; tasks: ReminderTask[]
+      choices: MailChoices; needs: boolean; history: ReminderHistory[]
+    }[] = []
     for (const p of profiles) {
       const facts = await this.factsOf(p.id, p)
-      if (!needsReminder(facts)) continue
+      const needs = needsReminder(facts)
+      const mine = sends.filter((e) => e.entityId === p.id).map(sentOf)
+      if (!needs && mine.length === 0) continue
       out.push({
-        profileId: p.id, name: p.application.fullName, email: p.application.email, started: hasStarted(facts), summaryAr: reminderSummaryAr(facts), facts,
+        profileId: p.id, name: p.application.fullName, email: p.application.email, started: hasStarted(facts),
+        summaryAr: needs ? reminderSummaryAr(facts) : 'لم يبق عليه شيء', facts,
         /* وما يُختار في الرسالة: كلُّ عالقٍ بمفتاحه، والافتراضُ هو الرسالةُ كما كانت */
         tasks: reminderTasks(facts), choices: defaultChoices(facts),
+        needs, history: reminderHistory(mine, facts),
       })
     }
-    /* من لم يبدأ أوّلا — هو الأهمّ */
-    return out.sort((a, b) => Number(a.started) - Number(b.started))
+    /* من لم يبدأ أوّلا — هو الأهمّ — ومن لم يبقَ عليه شيءٌ آخرا */
+    return out.sort((a, b) => Number(!a.needs) - Number(!b.needs) || Number(a.started) - Number(b.started))
   }
 
   /** المعاينة — ما يُرسَل بحرفه */
   async preview(profileId: string, deadline: string, choices?: MailChoices) {
-    const row = (await this.list()).find((r) => r.profileId === profileId)
+    const row = (await this.list()).find((r) => r.profileId === profileId && r.needs)
     if (!row) throw new AuthError('nothing_missing', 'لم يبق على هذا المدرب شيء', 404)
     const mail = prepReminderMail({ name: row.name, facts: row.facts, deadlineAr: deadlineAr(deadline), siteUrl: publicSiteUrl(), choices })
     return { to: row.email, subject: mail.subject, text: renderMail(mail.doc).text, mail, row }
@@ -275,9 +379,14 @@ export class PrepReminderService {
   async send(actorId: string, profileId: string, deadline: string, choices?: MailChoices) {
     const p = await this.preview(profileId, deadline, choices)
     const res = await sendDirectEmail(this.prisma, { to: p.to, subject: p.mail.subject, ...renderMail(p.mail.doc) })
+    const used = choices ?? defaultChoices(p.row.facts)
     await recordAudit(this.prisma, {
       actorId, action: 'trainer.prep.reminder', entityType: 'trainer_profile', entityId: profileId,
-      meta: { deadline, started: p.row.started, tasks: reminderTasks(p.row.facts).length, choices: choices ?? defaultChoices(p.row.facts), status: res.status },
+      meta: {
+        deadline: used.due === 'none' ? null : deadline, started: p.row.started, tasks: reminderTasks(p.row.facts).length, choices: used, status: res.status,
+        /* وما طُلب بعينه — ليُعرف بعدُ أنفّذه (`reminderHistory`) */
+        asked: askedOf(p.row.facts, used),
+      },
     })
     return { sent: res.status, to: p.to }
   }

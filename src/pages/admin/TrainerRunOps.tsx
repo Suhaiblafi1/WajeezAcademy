@@ -1062,7 +1062,10 @@ export default function TrainerRunOps() {
           <h3 className="flex items-center gap-2 text-sm font-black">
             <Users className="h-4 w-4 text-teal-light-ink" /> المدرّبون ({shown.length})
           </h3>
-          {reminders.size > 0 && <ReminderDeadline value={deadline} onChange={setDeadline} count={reminders.size} />}
+          {/* والعدُّ لمن بقي عليه شيء — ومن نفّذ كلَّ ما طلبناه يبقى سطرُه لما أرسلناه وحدَه */}
+          {[...reminders.values()].some((r) => r.needs) && (
+            <ReminderDeadline value={deadline} onChange={setDeadline} count={[...reminders.values()].filter((r) => r.needs).length} />
+          )}
           <div className="flex flex-wrap items-center gap-3">
             {pendingPhotos > 0 && (
               <Button
@@ -1292,7 +1295,7 @@ export default function TrainerRunOps() {
 
                   <div id={`${t.profileId}-plans`} className="scroll-mt-4" />
                   <TrainerCourses trainer={t} />
-                  {reminders.has(t.profileId) && <PrepReminderRow row={reminders.get(t.profileId)!} deadline={deadline} />}
+                  {reminders.has(t.profileId) && <PrepReminderRow row={reminders.get(t.profileId)!} deadline={deadline} onSent={() => void load()} />}
 
                   <div id={`${t.profileId}-profile`} className="scroll-mt-4" />
                   <PublicProfileEditor trainer={t} onSaved={load} />
