@@ -1188,9 +1188,21 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     schema: { tags: ['admin-trainers'], summary: 'إيقاف مدرب — يبطل جلساته ويخفيه فورا' },
   }, async (req) => {
     const { profileId } = z.object({ profileId: z.string().uuid() }).parse(req.params)
-    const body = z.object({ note: z.string().max(500).optional() }).parse(req.body ?? {})
-    await review.suspendTrainer(profileId, req.auth!.userId, body.note)
-    return { ok: true }
+    const body = z.object({
+      note: z.string().max(500).optional(),
+      /* ما اختير إلغاؤه من شعبه التي لم تبدأ — وما سواها يبقى لمدرّبٍ بديل */
+      cancelCohortIds: z.array(z.string().uuid()).max(100).optional(),
+    }).parse(req.body ?? {})
+    const r = await review.suspendTrainer(profileId, req.auth!.userId, body.note, { cancelCohortIds: body.cancelCohortIds })
+    return { ok: true, cancelled: r.cancelled }
+  })
+
+  app.get('/api/admin/trainers/:profileId/suspend-preview', {
+    preHandler: requirePermission('trainer.suspend'),
+    schema: { tags: ['admin-trainers'], summary: 'شعب المدرب التي لم تبدأ — يختار لكل منها قبل إيقافه' },
+  }, async (req) => {
+    const { profileId } = z.object({ profileId: z.string().uuid() }).parse(req.params)
+    return review.suspendPreview(profileId)
   })
 
   /* ═══ رحيلُ مدرّب — شيءٌ واحدٌ يُتتبَّع (ن-٩ · ن-١٠) ═══

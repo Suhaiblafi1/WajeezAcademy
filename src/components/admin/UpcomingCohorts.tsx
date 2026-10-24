@@ -8,6 +8,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
+import Chip from "@/components/ui/Chip";
 import { apiGet } from "@/services/api";
 import { Card, Panel } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
@@ -21,6 +22,7 @@ import PostponeMonthBox from "./PostponeMonthBox";
 interface UpcomingRow {
   id: string; title: string; courseTitle: string; status: string; firstAt: string; capacity: number | null;
   money: CohortMoneyView;
+  trainerSuspended?: boolean;
 }
 
 const STATUS_AR: Record<string, string> = { draft: "مسودة", open: "مفتوحة", full: "ممتلئة" };
@@ -80,7 +82,11 @@ export default function UpcomingCohorts({ onOpen, onChanged, onFlash }: {
               </p>
               <p className="mt-1"><CohortMoneyLine m={r.money} /></p>
             </div>
-            <VerdictChip m={r.money} />
+            <div className="flex flex-wrap items-center gap-2">
+              {/* أُوقف مدرّبُها وأُبقيت لبديل — لا تُنسى «مفتوحة» تُباع بلا مدرّب (٢٤ أكتوبر ٢٠٢٦) */}
+              {r.trainerSuspended && <Chip tone="danger">مدربها موقوف — أسند بديلا أو ألغها</Chip>}
+              <VerdictChip m={r.money} />
+            </div>
           </div>
           <div className="mt-3 flex flex-wrap items-start gap-2">
             <Button tone="secondary" size="sm" onClick={() => onOpen(r.id)}>افتح بطاقتها</Button>
