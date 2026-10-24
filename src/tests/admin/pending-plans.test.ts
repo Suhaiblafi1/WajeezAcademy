@@ -78,9 +78,10 @@ describe('② والطابور يبلغ', () => {
   const item = allSections.flatMap((s) => s.items.map((i) => ({ ...i, section: s.title })))
     .find((i) => i.to === '/admin/pending-plans')
 
-  it('بند تحت «المدرّبون — الانضمام والتعاقد» بصلاحيّة الاعتماد نفسها، وبشارة عدد', () => {
+  /* وصار لسانا في قسم «المدربون» بعد أن جُمعت مجموعتاه (٢٤ أكتوبر ٢٠٢٦، `nav-map.ts`) */
+  it('لسان في قسم «المدربون» بصلاحيّة الاعتماد نفسها، وبشارة عدد', () => {
     expect(item, 'لا بند للطابور في القائمة').toBeDefined()
-    expect(item!.section).toBe('المدرّبون — الانضمام والتعاقد')
+    expect(item!.section).toBe('المدربون')
     expect(item!.need).toBe('cohort.plan.approve')
     expect(item!.badge).toBe('awaitingPlans')
   })
