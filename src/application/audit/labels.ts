@@ -528,7 +528,7 @@ const PHRASES: Record<string, string> = {
   'worker.enforce_retention': 'تطبيق مدد الحفظ',
   'worker.notify_timeline': 'إخبار المتعلّمين بما فتح على خطّ المحاور',
   'worker.publish_scheduled_changes': 'نشر التغييرات المجدولة',
-  'worker.publish_live_trainers': 'تفعيل وتوقيع من اعتمدت له دورة ونشر أسماء مدرّبي الشعب المعروضة',
+  'worker.publish_live_trainers': 'تفعيل وتوقيع من اعتمدت خطة شعبته ونشر أسماء مدرّبي الشعب المعروضة',
   'worker.reclaim_abandoned_orders': 'استرجاع الطلبات المهجورة',
   'worker.revoke_left_registrants': 'إلغاء تسجيل من ترك شعبته عند Zoom',
   'worker.session_reminders': 'تذكيرات الجلسات',

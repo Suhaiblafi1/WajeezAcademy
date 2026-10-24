@@ -64,10 +64,11 @@ import {
   type CardCohort, type ProfileTrail,
 } from "@/application/trainer/trainer-card";
 import {
-  approvedToAccept, firstActOf, quietLineAr, stateChipAr, STEP_ACT_AR, stepsLineAr, TRAINER_STATES, trainerStateOf,
-  trainerSteps, type StepAct, type TrainerState,
+  approvedToAccept, firstActOf, quietLineAr, stateChipAr, STEP_ACT_AR, stepsLineAr, TRAINER_STAGES, TRAINER_STATES,
+  trainerStageOf, trainerStateOf, trainerSteps, type StepAct, type TrainerStage, type TrainerState,
 } from "@/application/trainer/trainer-status";
-interface OpsQualification { courseId: string; courseTitle: string; status: string }
+/** و`requested` طلبُ تأهيلٍ لشعبةٍ ينتظر قرارَك — ليس تأهيلا بعد */
+interface OpsQualification { courseId: string; courseTitle: string; status: string; requested?: boolean }
 interface OpsTrainer {
   profileId: string;
   applicationId: string;
@@ -154,29 +155,37 @@ type PrepState = "to_decide" | "preparing" | "submitted" | "returned" | "approve
 /* نبرةُ آخر نشاطه — الغائبُ يُرى قبل غيره (`last-seen.ts`) */
 const SEEN_TONE: Record<Activity, ChipTone> = { active: "positive", quiet: "warn", gone: "danger" };
 
+/* بكلمات سلّم المدرّب (`TRAINER_STAGES`): مؤهل لها · وافق وفتح شعبة · اعتمدت خطتها */
 const PREP_AR: Record<PrepState, { label: string; tone: "warn" | "info" | "positive" | "neutral" | "accent" }> = {
-  to_decide: { label: "لم يقبلها بعد", tone: "neutral" },
-  preparing: { label: "يعدها في «شعبي»", tone: "info" },
+  to_decide: { label: "مؤهل لها — لم يوافق بعد", tone: "neutral" },
+  preparing: { label: "وافق — يكتب خطتها", tone: "info" },
   returned: { label: "ردت إليه بملاحظات", tone: "warn" },
   submitted: { label: "خطتها تنتظر قرارك", tone: "accent" },
-  approved: { label: "معتمدة", tone: "positive" },
+  approved: { label: "اعتمدت خطتها", tone: "positive" },
   declined: { label: "اعتذر عنها", tone: "neutral" },
 };
 
 interface CourseOpt { id: string; titleAr?: string; title?: string }
 
-const QUAL_LABEL: Record<string, string> = {
-  qualified: "مؤهّل", pending: "طلب معلّق", rejected: "مرفوض", retired: "متقاعد",
-};
+/* ═══ حالُه في كلّ دورةٍ بكلمات سلّمه (٢٤ أكتوبر ٢٠٢٦، `TRAINER_STAGES`) ═══
+   كان `pending` يُقرأ «طلب معلّق» وأكثرُه دوراتٌ اخترناها له من طلبه، و`retired` «متقاعد» وهو اعتذارُه عنها.
+   وشعبتُه فيها تحتها بحال خطّتها — فـ«اعتمدت خطتها» هناك لا هنا. */
+function courseMarkAr(q: { status: string | null; requested?: boolean }, hasCohort: boolean): { ar: string; on: boolean } {
+  if (q.status === "retired") return { ar: "اعتذر عنها — غير مؤهل لها", on: false };
+  if (q.status === "rejected") return { ar: "رفض تأهيله لها", on: false };
+  if (q.status === "pending" && q.requested) return { ar: "طلب تأهيل ينتظرك", on: false };
+  if (hasCohort) return { ar: "وافق وفتح شعبة", on: true };
+  return { ar: "مؤهل لها — لم يوافق بعد", on: false };
+}
 
 /* دوراتُه وشعبُه — كلُّ دورةٍ بتأهيله فيها، وتحتها شعبُه: حالُها، وأوّلُ لقاء، وحالُ خطّته.
    وكان هنا عمودُ «مسند إلى» يقرأ جدولَ الإسناد القديم، فيقول «لا إسناد نشط» لمن له شعبٌ قائمة.
    والعلّةُ في `src/application/trainer/trainer-card.ts`. */
 function TrainerCourses({ trainer: t }: { trainer: OpsTrainer }) {
   const courses = [
-    ...t.qualifications.map((q) => ({ courseId: q.courseId, title: q.courseTitle, status: q.status as string | null })),
+    ...t.qualifications.map((q) => ({ courseId: q.courseId, title: q.courseTitle, status: q.status as string | null, requested: q.requested })),
     ...[...new Map(t.cohorts.filter((c) => !t.qualifications.some((q) => q.courseId === c.courseId))
-      .map((c) => [c.courseId, { courseId: c.courseId, title: c.courseTitle, status: null as string | null }])).values()],
+      .map((c) => [c.courseId, { courseId: c.courseId, title: c.courseTitle, status: null as string | null, requested: false }])).values()],
   ];
   return (
     <div className="mt-2.5">
@@ -189,12 +198,11 @@ function TrainerCourses({ trainer: t }: { trainer: OpsTrainer }) {
         <ul className="mt-1 space-y-1.5 text-fine leading-6">
           {courses.map((x) => {
             const mine = t.cohorts.filter((c) => c.courseId === x.courseId);
+            const mark = courseMarkAr(x, mine.length > 0);
             return (
               <li key={x.courseId}>
                 <span className="font-bold">{x.title}</span>
-                {x.status && (
-                  <span className={x.status === "qualified" ? "text-teal-light-ink" : "text-muted-foreground"}> · {QUAL_LABEL[x.status] ?? x.status}</span>
-                )}
+                <span className={mark.on ? "text-teal-light-ink" : "text-muted-foreground"}> · {mark.ar}</span>
                 {mine.length === 0 ? (
                   <p className="ps-4 text-muted-foreground">لا شعبة له فيها بعد.</p>
                 ) : (
@@ -670,6 +678,8 @@ export default function TrainerRunOps() {
   const [q, setQ] = useState("");
   /* الفلترُ حالٌ واحدة، والمفتوحُ من البطاقات ما فتحه هو (`trainer-status.ts`) */
   const [filter, setFilter] = useState<TrainerFilter>("all");
+  /* ومرحلتُه على سلّم دوراته — مستقلّةٌ عن الحال، فيُرى كلُّ من بلا شعبةٍ ولو انتظر شيئا (`trainerStageOf`) */
+  const [stage, setStage] = useState<TrainerStage | "all">("all");
   /* وما ينتظر قرارَك — صورةٌ أو نصٌّ أو اقتراحٌ لم يُرسَل (`trainer-needs.ts`) */
   const [need, setNeed] = useState<TrainerNeed | "any">("any");
   const [openIds, setOpenIds] = useState<Set<string>>(new Set());
@@ -876,7 +886,10 @@ export default function TrainerRunOps() {
     };
     const steps = trainerSteps(input);
     /* ومن لم يوقّع عقدَه لا نشاطَ يُقاس له — لم يدخل المنصّةَ أصلا (`tracksActivity`) */
-    return { t, steps, state: trainerStateOf(input, steps), seen: tracksActivity(t) ? activityOf(t.lastSeenAt, new Date()) : null };
+    return {
+      t, steps, state: trainerStateOf(input, steps), stage: trainerStageOf(t),
+      seen: tracksActivity(t) ? activityOf(t.lastSeenAt, new Date()) : null,
+    };
   }), [trainers, asks, preparing]);
   const activityCounts = useMemo(() => {
     const m: Record<Activity, number> = { active: 0, quiet: 0, gone: 0 };
@@ -884,17 +897,23 @@ export default function TrainerRunOps() {
     return m;
   }, [rows]);
   const counts = useMemo(() => {
-    const m: Record<TrainerState, number> = { hidden: 0, you: 0, trainer: 0, ready: 0, idle: 0, suspended: 0 };
+    const m: Record<TrainerState, number> = { hidden: 0, you: 0, trainer: 0, quiet: 0, suspended: 0 };
     for (const r of rows) m[r.state] += 1;
+    return m;
+  }, [rows]);
+  const stageCounts = useMemo(() => {
+    const m: Record<TrainerStage, number> = { none: 0, eligible: 0, opened: 0, ready: 0 };
+    for (const r of rows) m[r.stage] += 1;
     return m;
   }, [rows]);
   const shown = useMemo(
     () => rows
-      .filter((r) => (filter === "all" || r.state === filter) && (need === "any" || hasNeed(r.t, need))
+      .filter((r) => (filter === "all" || r.state === filter) && (stage === "all" || r.stage === stage)
+        && (need === "any" || hasNeed(r.t, need))
         && (activity === "any" || r.seen === activity)
         && matchesQuery(q, [r.t.name, r.t.email]))
       .sort((a, b) => STATE_ORDER[a.state] - STATE_ORDER[b.state] || a.t.name.localeCompare(b.t.name, "ar")),
-    [rows, filter, need, activity, q],
+    [rows, filter, stage, need, activity, q],
   );
   const needCounts = useMemo(
     () => Object.fromEntries(TRAINER_NEEDS.map((n) => [n.id, rows.filter((r) => hasNeed(r.t, n.id)).length])) as Record<TrainerNeed, number>,
@@ -905,6 +924,7 @@ export default function TrainerRunOps() {
     setNeed(next);
     if (next === "any") return;
     setFilter("all");
+    setStage("all");
     setOpenIds(new Set(rows.filter((r) => hasNeed(r.t, next)).map((r) => r.t.profileId)));
   };
 
@@ -1092,6 +1112,17 @@ export default function TrainerRunOps() {
             { id: "all" as const, label: `الكل (${rows.length})` },
             ...TRAINER_STATES.map((x) => ({ id: x.id, label: `${x.ar} (${counts[x.id]})` })),
           ]} />
+        {/* ومرحلتُه مع دوراته — مجموعُها عددُ المدرّبين كذلك، وكلماتُها مشروحةٌ تحتها فلا تتشابه */}
+        <TabBar className="mt-2" ariaLabel="مرحلة المدربين" value={stage} onChange={setStage}
+          items={[
+            { id: "all" as const, label: "كل المراحل" },
+            ...TRAINER_STAGES.map((x) => ({ id: x.id, label: `${x.ar} (${stageCounts[x.id]})` })),
+          ]} />
+        <p className="mt-1.5 text-read leading-6 text-muted-foreground">
+          <b className="text-foreground">مؤهل</b>: دورة اخترناها له ولم يعتذر عنها
+          · <b className="text-foreground">وافق وفتح شعبة</b>: قبلها ففتحت له شعبتها
+          · <b className="text-foreground">جاهز</b>: اعتمدت خطة شعبته
+        </p>
         {/* وما ينتظر قرارَك — والمدرّبُ في أكثرَ من واحدٍ إن اجتمعت له */}
         <TabBar className="mt-2" ariaLabel="ما ينتظر قرارك" value={need} onChange={pickNeed}
           items={[
@@ -1198,7 +1229,7 @@ export default function TrainerRunOps() {
           </Card>
         ) : (
           <ul className="mt-3 space-y-3">
-            {shown.map(({ t, steps, state, seen }) => {
+            {shown.map(({ t, steps, state, stage: st, seen }) => {
               const k = (a: string) => `${t.profileId}:${a}`;
               const meta = TRAINER_STATES.find((x) => x.id === state)!;
               const isOpen = openIds.has(t.profileId);
@@ -1206,7 +1237,8 @@ export default function TrainerRunOps() {
               const yours = stepsLineAr(steps, "you", state === "you" ? 1 : 0);
               const next = firstActOf(steps);
               const his = stepsLineAr(steps, "trainer");
-              const quiet = quietLineAr(state, t.applicationStatus);
+              const quiet = quietLineAr(state, t.applicationStatus, st);
+              const stageMeta = TRAINER_STAGES.find((x) => x.id === st)!;
               return (
                 <Card as="li" key={t.profileId}>
                   {/* السطرُ المطويّ: اسمُه وحالُه، وما المطلوبُ ومن مَن، وعدّادُ شعبه — ويُفتح للبطاقة كلِّها */}
@@ -1216,6 +1248,7 @@ export default function TrainerRunOps() {
                       <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-black">
                         {t.name}
                         <Chip tone={meta.tone} srPrefixAr="حاله">{stateChipAr(state, steps)}</Chip>
+                        <Chip tone={stageMeta.tone} srPrefixAr="مرحلته">{stageMeta.ar}</Chip>
                       </p>
                       {yours && <p className="mt-1.5 text-read font-bold leading-6 text-gold-ink">{yours}</p>}
                       {his && <p className="mt-1 text-read leading-6 text-teal-light-ink">{his}</p>}
@@ -1246,7 +1279,7 @@ export default function TrainerRunOps() {
                   )}
                   {/* قرارُ ١٩ أكتوبر ٢٠٢٦: لا يظهر للعامّة من لا دورةَ منشورةً له هذا الفصلَ أو بعده */}
                   {t.publiclyVisible && !t.hasLiveCourse && (
-                    <p className="mt-1 text-read text-muted-foreground">معتمد ولا يظهر: لا دورة منشورة له هذا الفصل</p>
+                    <p className="mt-1 text-read text-muted-foreground">اعتمدت ظهوره ولا يظهر: لا دورة منشورة له هذا الفصل</p>
                   )}
 
                   {/* ما يمنع الخطوةَ التالية — يُقال قبل الضغط لا بعده */}

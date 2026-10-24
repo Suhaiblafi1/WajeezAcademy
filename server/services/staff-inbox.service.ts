@@ -365,7 +365,7 @@ export class StaffInboxService {
       push({
         key: 'trainer_suggestions_to_write',
         titleAr: 'مدربون جدد بلا اقتراحات',
-        whyAr: 'لهم دورة معتمدة ولم نكتب لهم «لماذا نفتخر» ولا نبذة — نزّل ملفاتهم من «تشغيل المدربين» لنكتب لهم',
+        whyAr: 'مؤهلون لدورة ولم نكتب لهم «لماذا نفتخر» ولا نبذة — نزّل ملفاتهم من «تشغيل المدربين» لنكتب لهم',
         count: names.length,
         href: '/admin/trainer-run',
         severity: 'info',

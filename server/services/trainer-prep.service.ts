@@ -351,7 +351,7 @@ export class TrainerPrepService {
       channel: 'in_app', templateKey: 'trainer.prep.declined',
       title: 'اعتذر مدرّب عن دورة',
       body: wasApproved
-        ? `اعتذر ${profile.application.fullName} عن دورة معتمدة له — السبب: ${reason.slice(0, 200)}. تعيدها له من بطاقته إن شئت`
+        ? `اعتذر ${profile.application.fullName} عن دورة مؤهل لها — السبب: ${reason.slice(0, 200)}. تعيدها له من بطاقته إن شئت`
         : `اعتذر ${profile.application.fullName} عن دورة اخترناها له — السبب: ${reason.slice(0, 200)}`,
       data: { profileId: profile.id, courseId },
     }).catch(() => undefined)
@@ -537,7 +537,7 @@ export class TrainerPrepService {
     if (qualified === 0) return { activated: false as const }
     const { TrainerReviewService } = await import('./trainer-review.service')
     try {
-      await new TrainerReviewService(this.prisma).decide(applicationId, actorId, 'activate', 'اعتمدت له دورة — فعّل تلقائيّا')
+      await new TrainerReviewService(this.prisma).decide(applicationId, actorId, 'activate', 'اعتمدت خطة شعبته — فعّل تلقائيّا')
       await recordAudit(this.prisma, {
         actorId, action: 'trainer.prep.auto_activate', entityType: 'trainer_profile', entityId: profileId, meta: { qualified },
       })
@@ -743,7 +743,7 @@ export class TrainerPrepService {
     const { TrainerReviewService } = await import('./trainer-review.service')
     try {
       await new TrainerReviewService(this.prisma).countersignApproved(contract.id, actorId, {
-        noteAr: due === 'first_course' ? 'اعتمدت له دورة — وقع تلقائيا' : 'اكتملت دوراته — وقع تلقائيا',
+        noteAr: due === 'first_course' ? 'اعتمدت خطة شعبته — وقع تلقائيا' : 'اكتملت دوراته — وقع تلقائيا',
       })
       await recordAudit(this.prisma, {
         actorId, action: 'trainer.prep.auto_seal', entityType: 'trainer_contract', entityId: contract.id, meta: { profileId, due },

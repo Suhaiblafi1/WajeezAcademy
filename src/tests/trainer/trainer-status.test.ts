@@ -1,13 +1,15 @@
 /* حالُ المدرّب وما ينتظره في «المدربون» (٢٠ أكتوبر ٢٠٢٦) — `trainer-status.ts`.
 
    ① لكلّ خطوةٍ صاحبُها: ما على الإدارة «منك»، وما على المدرّب «منه».
-   ② وحالٌ واحدةٌ بترتيبٍ ثابت: موقوف، ثمّ اسمُه لا يظهر، ثمّ ينتظرك، ثمّ ينتظره، ثمّ جاهز، ثمّ بلا شعبة.
+   ② وحالٌ واحدةٌ بترتيبٍ ثابت: موقوف، ثمّ اسمُه لا يظهر، ثمّ ينتظرك، ثمّ ينتظره، ثمّ لا شيء ينتظر.
+   ⑤ ومرحلةٌ مستقلّةٌ على سلّم دوراته (٢٤ أكتوبر ٢٠٢٦): لا دورة مؤهل لها · مؤهل ولم يوافق · وافق وفتح شعبة · جاهز.
    ③ والعقدُ لا يُقرأ لمن طلبُه نشط — والدعوةُ لمن لا حسابَ له عليه هو.
    ④ والغائبُ بطلبٍ غيرِ نشطٍ لا يُطلب اعتمادُ ظهوره — الزرُّ يرفضه — بل يقال طورُ طلبه. */
 
 import { describe, expect, it } from 'vitest'
 import {
-  approvedToAccept, firstActOf, quietLineAr, stateChipAr, stepsLineAr, trainerStateOf, trainerSteps, type StatusInput,
+  approvedToAccept, firstActOf, quietLineAr, stateChipAr, stepsLineAr, TRAINER_STAGES, TRAINER_STATES, trainerStageOf,
+  trainerStateOf, trainerSteps, type StatusInput,
 } from '@/application/trainer/trainer-status'
 
 const base: StatusInput = {
@@ -42,7 +44,7 @@ describe('حال المدرب وما ينتظره', () => {
       { status: 'cancelled', plan: 'submitted', postponedTo: null },
     ] })
     expect(trainerSteps(x)).toEqual([])
-    expect(trainerStateOf(x)).toBe('ready')
+    expect(trainerStateOf(x)).toBe('quiet')
   })
 
   it('⚠️ ② الحال بترتيبها: موقوف قبل كل شيء، ثم اسمه لا يظهر، ثم ينتظرك، ثم ينتظره', () => {
@@ -52,8 +54,8 @@ describe('حال المدرب وما ينتظره', () => {
     expect(trainerStateOf(t({ ...busy, publiclyVisible: false }))).toBe('hidden')
     expect(trainerStateOf(t(busy))).toBe('you')
     expect(trainerStateOf(t({ cohorts: busy.cohorts }))).toBe('trainer')
-    expect(trainerStateOf(t({}))).toBe('ready')
-    expect(trainerStateOf(t({ cohorts: [] }))).toBe('idle')
+    expect(trainerStateOf(t({}))).toBe('quiet')
+    expect(trainerStateOf(t({ cohorts: [] }))).toBe('quiet')
   })
 
   it('⚠️ ③ العقد يقرأ لمن طلبه غير نشط وحده، ولكل حال صاحبها', () => {
@@ -95,18 +97,18 @@ describe('حال المدرب وما ينتظره', () => {
   it('⚠️ ④ الغائب بطلب نشط: اعتماد ظهوره عليك — وبطلب غير نشط يقال طور طلبه', () => {
     const hiddenActive = t({ publiclyVisible: false })
     expect(ars(hiddenActive, 'you')[0]).toMatch(/^اعتماد ظهوره/)
-    expect(quietLineAr('hidden', 'active')).toBeNull()
+    expect(quietLineAr('hidden', 'active', 'ready')).toBeNull()
 
     const hiddenOnboarding = t({ publiclyVisible: false, applicationStatus: 'onboarding', contract: { status: 'signature_approved' } })
     expect(ars(hiddenOnboarding, 'you').some((a) => a.startsWith('اعتماد ظهوره'))).toBe(false)
     expect(trainerStateOf(hiddenOnboarding)).toBe('hidden')
-    expect(quietLineAr('hidden', 'onboarding')).toBe('يظهر حين ينشط طلبه — طلبه الآن: تهيئة')
+    expect(quietLineAr('hidden', 'onboarding', 'eligible')).toBe('يظهر حين ينشط طلبه — طلبه الآن: تهيئة')
   })
 
   it('والطابور: طلبات التأهيل عليك، والدورات التي لم يقبلها عليه', () => {
     const x = t({ queue: { requests: 1, toAccept: 3 } })
     expect(ars(x, 'you')).toContain('البت في طلب تأهيل')
-    expect(ars(x, 'trainer')).toContain('قبول 3 دورات عرضت عليه')
+    expect(ars(x, 'trainer')).toContain('الموافقة على 3 دورات مؤهل لها')
   })
 
   it('⚠️ والمعتمدة بلا شعبة تنتظره هو لا «بلا شعبة» — ومن انتهت شعبته فيها لا يعرض عليه قبولها', () => {
@@ -125,7 +127,7 @@ describe('حال المدرب وما ينتظره', () => {
     expect(approvedToAccept({ qualifications, cohorts })).toBe(2)
 
     const x = t({ cohorts: [], queue: { requests: 0, toAccept: approvedToAccept({ qualifications: [qualifications[0]], cohorts: [] }) } })
-    expect(ars(x, 'trainer')).toContain('قبول دورة عرضت عليه')
+    expect(ars(x, 'trainer')).toContain('الموافقة على دورة مؤهل لها')
     expect(trainerStateOf(x)).toBe('trainer')
     expect(approvedToAccept({ qualifications: [qualifications[1]], cohorts: [cohorts[0]] })).toBe(0)
   })
@@ -174,6 +176,48 @@ describe('حال المدرب وما ينتظره', () => {
 
     /* وسائرُ الحالات وسمُها اسمُها */
     expect(stateChipAr('trainer', trainerSteps(t({ photoUrl: null })))).toBe('ينتظر المدرب')
+  })
+
+  /* ⑤ «هناك العديد بلا شعبة ولا يظهروا في الفلتر!!!» (صاحب المنصّة، ٢٤ أكتوبر ٢٠٢٦): كان «بلا شعبة» حالا يأخذ
+     من لا ينتظر شيئا وحدَه، فمن بلا شعبةٍ وينقصه رفعُ صورةٍ أو موافقةٌ على دورةٍ كان في «ينتظر المدرب». */
+  it('⚠️ ⑤ من بلا شعبة يرى في مرحلته ولو كان ينتظر شيئا — والمرحلة لا تتبع الحال', () => {
+    const quals = [{ status: 'pending' }]
+    const noCohort = t({ cohorts: [], photoUrl: null, queue: { requests: 0, toAccept: 1 } })
+    expect(trainerStateOf(noCohort)).toBe('trainer')
+    expect(trainerStageOf({ qualifications: quals, cohorts: noCohort.cohorts })).toBe('eligible')
+    /* والحالُ لا تحمل مرحلةً بعد: لا «جاهز» ولا «بلا شعبة» فيها، فلا يقع مدرّبٌ في غير مكانه */
+    expect(TRAINER_STATES.map((x) => x.id)).toEqual(['hidden', 'you', 'trainer', 'quiet', 'suspended'])
+    expect(TRAINER_STAGES.map((x) => x.ar)).toEqual(['لا دورة مؤهل لها', 'مؤهل ولم يوافق', 'وافق وفتح شعبة', 'جاهز'])
+  })
+
+  it('⚠️ ⑤ السلم: مؤهل لها ما لم يعتذر أو يرفض · وافق = له شعبة قائمة · جاهز = اعتمدت خطتها', () => {
+    const stage = (qualifications: { status: string; requested?: boolean }[], cohorts: StatusInput['cohorts']) =>
+      trainerStageOf({ qualifications, cohorts })
+    /* المؤهل لها: اخترناها له — أجّلها أو لم يبدأ أو لم يوافق. والاعتذار والرفض وطلب التأهيل المعلق ليست تأهيلا */
+    expect(stage([{ status: 'pending' }], [])).toBe('eligible')
+    expect(stage([{ status: 'qualified' }], [])).toBe('eligible')
+    expect(stage([{ status: 'retired' }, { status: 'rejected' }, { status: 'pending', requested: true }], [])).toBe('none')
+    /* وافق وفتح شعبة: شعبة قائمة خطتها لم تعتمد — والمؤجلة منها، فالتأجيل لا يسحب موافقته */
+    expect(stage([], [{ status: 'draft', plan: null, postponedTo: null }])).toBe('opened')
+    expect(stage([], [{ status: 'draft', plan: 'submitted', postponedTo: null }])).toBe('opened')
+    expect(stage([], [{ status: 'draft', plan: 'changes_requested', postponedTo: '2027-02-01' }])).toBe('opened')
+    /* جاهز: اعتمدت خطة شعبة قائمة له — ولو كانت له غيرها لم تعتمد */
+    expect(stage([], [
+      { status: 'open', plan: 'approved', postponedTo: null },
+      { status: 'draft', plan: 'draft', postponedTo: null },
+    ])).toBe('ready')
+    expect(stage([], [{ status: 'active', plan: 'published', postponedTo: null }])).toBe('ready')
+    /* والمنتهية والملغاة وراءه: لا تجعله جاهزا ولا موافقا لفصل قادم */
+    expect(stage([{ status: 'qualified' }], [
+      { status: 'completed', plan: 'approved', postponedTo: null },
+      { status: 'cancelled', plan: 'draft', postponedTo: null },
+    ])).toBe('eligible')
+  })
+
+  it('وسطر «لا شيء ينتظر» يقول مرحلته', () => {
+    expect(quietLineAr('quiet', 'active', 'ready')).toBe('لا شيء ينتظر — اعتمدت خطة شعبته')
+    expect(quietLineAr('quiet', 'active', 'eligible')).toBe('لا شيء ينتظر — لا شعبة قادمة له. يسند من صفحة الشعبة')
+    expect(quietLineAr('you', 'active', 'eligible')).toBeNull()
   })
 
   it('واسمه الجديد يقال في خطوة المراجعة، وبابها ملفه', () => {

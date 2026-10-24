@@ -37,7 +37,7 @@ describe('① صفٌّ لكلّ دورة، وحالٌ واحدة', () => {
 
   it('والتي انتهت شعبُها كلُّها — «درّستها»، والملغاةُ لا تُعدّ', () => {
     expect(build({ cohorts: [cohort('a', 'completed')] })[0].labelAr).toBe('درّستها')
-    expect(build({ quals: [qual('b')], cohorts: [cohort('b', 'cancelled')] })[0].labelAr).toBe('معتمدة لك')
+    expect(build({ quals: [qual('b')], cohorts: [cohort('b', 'cancelled')] })[0].labelAr).toBe('مؤهل لها')
   })
 
   it('والمسوّدةُ بحال خطّتها: تعدّها · أرسلت · ردّت', () => {

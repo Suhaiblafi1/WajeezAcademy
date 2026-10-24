@@ -59,11 +59,11 @@ function approvalLineAr(a: NonNullable<MaterialsRow["approval"]>): string {
 }
 
 const STATE_AR: Record<PrepState, { label: string; tone: "warn" | "info" | "positive" | "neutral" | "accent" }> = {
-  to_decide: { label: "لم يقرّر بعد", tone: "neutral" },
-  preparing: { label: "يعدّها في «شعبي»", tone: "info" },
+  to_decide: { label: "مؤهل لها — لم يوافق بعد", tone: "neutral" },
+  preparing: { label: "وافق — يكتب خطتها", tone: "info" },
   returned: { label: "ردّت إليه بملاحظات", tone: "warn" },
   submitted: { label: "أرسلت — تنتظر قرارك", tone: "accent" },
-  approved: { label: "معتمدة", tone: "positive" },
+  approved: { label: "اعتمدت خطتها", tone: "positive" },
   declined: { label: "اعتذر عنها", tone: "neutral" },
 };
 
@@ -111,7 +111,7 @@ export default function MaterialsReview({ profileId }: { profileId: string }) {
   const inPrep = new Set(shown.map((r) => r.courseId));
   const qualified = legacy.filter((r) => r.status === "qualified" && !inPrep.has(r.courseId));
   if (shown.length === 0 && qualified.length === 0) {
-    return <p className="mt-2 text-read text-muted-foreground">لا دورة قيد الإعداد ولا معتمدة لهذا المدرّب.</p>;
+    return <p className="mt-2 text-read text-muted-foreground">هذا المدرب غير مؤهل لأي دورة بعد.</p>;
   }
 
   /* ═══ وخططُه المرسَلةُ معا (٣ أكتوبر ٢٠٢٦) ═══
@@ -183,7 +183,7 @@ export default function MaterialsReview({ profileId }: { profileId: string }) {
             <Inset tone="default" className="p-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="min-w-0 flex-1 text-read font-bold">{r.titleAr}</p>
-                <Chip tone="positive" srPrefixAr="الحال">معتمدة</Chip>
+                <Chip tone="positive" srPrefixAr="الحال">مؤهل لها</Chip>
               </div>
               {r.approval && (
                 <div className="mt-1 flex flex-wrap items-center gap-2">

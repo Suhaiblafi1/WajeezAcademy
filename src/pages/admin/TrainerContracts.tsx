@@ -391,11 +391,11 @@ const oursOf = (c: ContractRow) => awaitsUs(c.status, nextStepOf(c).who);
 
 /* وغيرُ المشروط المعتمَدُ كالعقود الجديدة يوقَّع تلقائيّا بأوّل دورةٍ تُعتمَد له بعد اعتماد توقيعه (٢٠ أكتوبر ٢٠٢٦، `sealIfDue`).
    والزرُّ باقٍ في الحالَين: لا يُسَدّ البابُ على من أراد التوقيعَ قبل ذلك (قرارُ ٢ أكتوبر). */
-const PLAIN_READY_AR = "واعتمدت له دورة، فوقعه الآن.";
+const PLAIN_READY_AR = "واعتمدت خطة شعبته، فوقعه الآن.";
 const PLAIN_AUTO_AR = "ونوقعه تلقائيا مع أول خطة تعتمدها له، ويصله بريد بذلك. ولك أن توقعه الآن.";
 
 /** ما يُقال حين تُعتمَد له دورةٌ ولم يُفعَّل (`readyBlock`) — نصٌّ قصيرٌ بلا تشكيل */
-const READY_TITLE_AR = "اعتمدت له دورة — بقي تفعيله";
+const READY_TITLE_AR = "اعتمدت خطة شعبته — بقي تفعيله";
 const READY_WHAT_AR = "شرطه تحقق، فلا مهلة تمدد. بالتفعيل يصير مدربا نشطا، ونوقع عقده عن الأكاديمية، ويصله بريد بذلك.";
 
 /** وجهةُ خطإ المركِّب — ليست معرّفَ صفٍّ، فلا يلتبس بعقدٍ في القائمة */
@@ -891,7 +891,7 @@ export default function TrainerContracts() {
             <Button tone="confirm" icon={BadgeCheck} loading={busy}
               onClick={() => void run(async () => {
                 await apiPost(`/api/admin/trainer-applications/${appId}/decision`,
-                  { action: "activate", note: "اعتمدت له دورة — فعّل من شاشة العقود" });
+                  { action: "activate", note: "اعتمدت خطة شعبته — فعّل من شاشة العقود" });
                 await load();
               }, "فعّل، ووقّعنا عقده — واكتمل شرطه", c.id)}>
               فعّله ووقّع العقد
