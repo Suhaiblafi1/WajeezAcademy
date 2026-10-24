@@ -251,6 +251,50 @@ export function approvedToAccept(t: {
   return new Set(t.qualifications.filter((q) => q.status === 'qualified' && !held.has(q.courseId)).map((q) => q.courseId)).size
 }
 
+/* ═══ وما ينتظر في طابور التأهيل — يُعدّ لبطاقته ولملفّه بحكمٍ واحد (٢٤ أكتوبر ٢٠٢٦) ═══
+
+   طلباتُ تأهيلٍ تنتظر قرارَك، ودوراتٌ عُرضت عليه لم يوافق عليها — ومعها المعتمَدةُ بلا شعبة (`approvedToAccept`).
+   وكان يُحسب في «المدربون» وحدَها، ثمّ صار ملفُّ المدرّب يقول خطوتَه كبطاقته: فلو حسبه كلٌّ بيده لقالت البطاقةُ
+   «ينتظرك: البت في طلب تأهيل» والملفُّ «لا شيء ينتظر». */
+export interface QueueRequest {
+  profile: { id: string }
+  /** طلبٌ من جدولة شعبة، أم دورةٌ يعدّها (`pending-kind.ts`) */
+  kind: 'request' | 'preparing'
+  prep?: { state: string } | null
+}
+
+export function queueOf(
+  t: { profileId: string } & Parameters<typeof approvedToAccept>[0],
+  requests: readonly QueueRequest[],
+): StatusInput['queue'] {
+  const mine = requests.filter((r) => r.profile.id === t.profileId)
+  return {
+    requests: mine.filter((r) => r.kind !== 'preparing').length,
+    toAccept: mine.filter((r) => r.kind === 'preparing' && (r.prep?.state ?? 'to_decide') === 'to_decide').length
+      + approvedToAccept(t),
+  }
+}
+
+/* ═══ وسلّمُه في خطّ ملفّه — بعد «الاتفاقية» (٢٤ أكتوبر ٢٠٢٦) ═══
+
+   من عبر إلى «المدربون» يكمل خطُّه بكلمات صاحب المنصّة لا بمحطّاتٍ أخرى («keep them»): مؤهل ولم يوافق ← وافق
+   وفتح شعبة ← جاهز. وما بلغه منها مضى، والتي هو فيها الآن، وما بعدها لم يبلغه. و«لا دورة مؤهل لها» و«متوقف»
+   جانبَ الخطّ لا عليه — كـ«لاحقا» و«مغلق» قبل التوقيع. */
+export interface LadderStep { id: Exclude<TrainerStage, 'none'>; ar: string; state: 'done' | 'now' | 'ahead' }
+
+export function ladderOf(stage: TrainerStage, suspended: boolean): { steps: LadderStep[]; aside: string | null } {
+  const rungs = TRAINER_STAGES.filter((x) => x.id !== 'none') as { id: LadderStep['id']; ar: string }[]
+  const at = rungs.findIndex((x) => x.id === stage)
+  return {
+    steps: rungs.map((x, i) => {
+      const state: LadderStep['state'] = at < 0 || i > at ? 'ahead' : i === at ? 'now' : 'done'
+      /* و«مؤهل ولم يوافق» إذا جاوزه صار «مؤهل لها» — كلمةُ صاحب المنصّة لها (CLAUDE.md): وافق فلم يبقَ «لم يوافق» */
+      return { id: x.id, ar: x.id === 'eligible' && state === 'done' ? 'مؤهل لها' : x.ar, state }
+    }),
+    aside: suspended ? 'متوقف' : stage === 'none' ? TRAINER_STAGES.find((x) => x.id === 'none')!.ar : null,
+  }
+}
+
 /** ما يقال حين لا ينتظر شيء — والغائبُ بطلبٍ غيرِ نشطٍ يقال طورُ طلبه، فهو ما ينشره حين ينشط */
 export function quietLineAr(state: TrainerState, applicationStatus: string, stage: TrainerStage): string | null {
   if (state === 'hidden') {

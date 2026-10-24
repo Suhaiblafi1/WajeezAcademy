@@ -6023,10 +6023,12 @@ export class TrainerReviewService {
 
      فهذه قائمةٌ بصلاحيةِ التأهيل، وحمولتُها ما يلزم القرارَ لا أكثر: لا
      مبالغَ ولا قواعدَ تعويض. */
-  async listForOps() {
+  /* ومدرّبٌ واحدٌ بالحكم نفسِه (`only`، ٢٤ أكتوبر ٢٠٢٦): ملفُّه (`/admin/trainers/:id`) يقرأ بطاقتَه — فلا تُجلب
+     القائمةُ كلُّها لصفحة واحد، ولا تُكتب بطاقةٌ ثانيةٌ تفترق عن الأولى. */
+  async listForOps(only?: { profileId: string }) {
     const profiles = await this.prisma.trainerProfile.findMany({
       /* من وقّع عقدَه وحدَه — وما قبله في «طلبات المدربين» و«العقود» (`trainer-operating.ts`) */
-      where: OPERATING_TRAINER_WHERE,
+      where: only ? { AND: [OPERATING_TRAINER_WHERE, { id: only.profileId }] } : OPERATING_TRAINER_WHERE,
       include: {
         application: { select: { fullName: true, email: true, status: true, userId: true } },
         /* ما اقترحناه على بطاقته — يُقرأ آخرُ كلِّ نوعٍ منه (`trainer-suggestion.service.ts`) */

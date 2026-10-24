@@ -4,12 +4,13 @@
    ② وحالٌ واحدةٌ بترتيبٍ ثابت: موقوف، ثمّ اسمُه لا يظهر، ثمّ ينتظرك، ثمّ ينتظره، ثمّ لا شيء ينتظر.
    ⑤ ومرحلةٌ مستقلّةٌ على سلّم دوراته (٢٤ أكتوبر ٢٠٢٦): لا دورة مؤهل لها · مؤهل ولم يوافق · وافق وفتح شعبة · جاهز.
    ③ والعقدُ لا يُقرأ لمن طلبُه نشط — والدعوةُ لمن لا حسابَ له عليه هو.
-   ④ والغائبُ بطلبٍ غيرِ نشطٍ لا يُطلب اعتمادُ ظهوره — الزرُّ يرفضه — بل يقال طورُ طلبه. */
+   ④ والغائبُ بطلبٍ غيرِ نشطٍ لا يُطلب اعتمادُ ظهوره — الزرُّ يرفضه — بل يقال طورُ طلبه.
+   ⑥ وما ينتظر في طابور التأهيل يُعدّ بدالّةٍ واحدةٍ لبطاقته وملفّه (`queueOf`)، وسلّمُه في خطّ ملفّه (`ladderOf`). */
 
 import { describe, expect, it } from 'vitest'
 import {
-  approvedToAccept, firstActOf, quietLineAr, stateChipAr, stepsLineAr, TRAINER_STAGES, TRAINER_STATES, trainerStageOf,
-  trainerStateOf, trainerSteps, type StatusInput,
+  approvedToAccept, firstActOf, ladderOf, queueOf, quietLineAr, stateChipAr, stepsLineAr, TRAINER_STAGES, TRAINER_STATES,
+  trainerStageOf, trainerStateOf, trainerSteps, type QueueRequest, type StatusInput,
 } from '@/application/trainer/trainer-status'
 
 const base: StatusInput = {
@@ -225,5 +226,41 @@ describe('حال المدرب وما ينتظره', () => {
     expect(s.filter((x) => x.turn === 'you').map((x) => x.ar)).toEqual(['مراجعة اسمه الجديد ونبذته'])
     expect(firstActOf(s)?.act).toBe('profile')
     expect(ars(t({ pendingText: { name: null, at: 'x' } }), 'you')).toEqual(['مراجعة نبذته الجديدة'])
+  })
+})
+
+describe('⑥ طابور التأهيل وسلّمه', () => {
+  const P = 'p-1'
+  const req = (kind: QueueRequest['kind'], profile = P, state?: string): QueueRequest =>
+    ({ kind, profile: { id: profile }, prep: state ? { state } : null })
+
+  it('⚠️ طلباته وحده — والدورة التي يعدها ليست طلبا', () => {
+    const q = queueOf({ profileId: P, qualifications: [], cohorts: [] },
+      [req('request'), req('request'), req('request', 'p-2'), req('preparing', P, 'preparing')])
+    expect(q.requests).toBe(2)
+  })
+
+  it('⚠️ وما عرض عليه ولم يوافق: إعداد لم يبدأ — ومعتمدة بلا شعبة', () => {
+    const q = queueOf(
+      { profileId: P, qualifications: [{ courseId: 'c1', status: 'qualified' }], cohorts: [] },
+      [req('preparing', P, 'to_decide'), req('preparing', P), req('preparing', P, 'submitted'), req('preparing', 'p-2', 'to_decide')],
+    )
+    expect(q.toAccept, 'إعدادان لم يوافق عليهما ودورة معتمدة بلا شعبة').toBe(3)
+  })
+
+  it('⚠️ سلّمه: ما بلغه مضى، والذي هو فيه الآن، وما بعده لم يبلغه', () => {
+    expect(ladderOf('opened', false).steps.map((x) => `${x.ar}:${x.state}`))
+      .toEqual(['مؤهل لها:done', 'وافق وفتح شعبة:now', 'جاهز:ahead'])
+    /* و«مؤهل ولم يوافق» ما دام فيها — فإذا جاوزها وافق، فلا يقال «لم يوافق» بعلامة «تم» */
+    expect(ladderOf('eligible', false).steps[0]).toMatchObject({ ar: 'مؤهل ولم يوافق', state: 'now' })
+    expect(ladderOf('ready', false).steps.map((x) => x.state)).toEqual(['done', 'done', 'now'])
+    expect(ladderOf('eligible', false).aside).toBeNull()
+  })
+
+  it('⚠️ و«لا دورة مؤهل لها» و«متوقف» جانبه لا عليه', () => {
+    const none = ladderOf('none', false)
+    expect(none.steps.every((x) => x.state === 'ahead')).toBe(true)
+    expect(none.aside).toBe('لا دورة مؤهل لها')
+    expect(ladderOf('ready', true).aside).toBe('متوقف')
   })
 })

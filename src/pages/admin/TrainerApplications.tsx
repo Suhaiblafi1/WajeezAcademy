@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { ComponentType } from "react";
+import type { ComponentType, ReactNode } from "react";
 import { toast, toastError } from "@/components/Toast";
 import {
   ArrowDownWideNarrow, ArrowUpNarrowWide,
@@ -28,6 +28,12 @@ import EntityAuditTimeline from "@/components/EntityAuditTimeline";
 import { useRealSession } from "@/services/session";
 import { useAutoRefresh } from "@/services/useAutoRefresh";
 import { TrainerDetailOps, TrainerChangeRequests, type TrainerSummary } from "./TrainerOps";
+import { BioSuggestEditor, PitchEditor, PublicProfileEditor, TrainerCourses, type OpsTrainer, type PendingRequest } from "./TrainerRunOps";
+import {
+  firstActOf, ladderOf, queueOf, quietLineAr, STEP_ACT_AR, stepsLineAr, trainerStageOf, trainerStateOf, trainerSteps,
+  type LadderStep, type StepAct, type TrainerStage, type TrainerState, type TrainerStep,
+} from "@/application/trainer/trainer-status";
+import { planMarkOf } from "@/application/trainer/trainer-card";
 import ApplicationDossier, { type Dossier } from "./ApplicationDossier";
 import ProposalsEditor from "./ProposalsEditor";
 import { teachableCountAr } from "@/application/trainer/teachable-proposals";
@@ -313,8 +319,9 @@ function RowActions({ items, label }: { items: RowAction[]; label: string }) {
 /* ═══ ألسنةُ ملفّ المدرّب — بأسماء المقترح، وفي العنوان (٢٤ أكتوبر ٢٠٢٦) ═══
    «الطلب والمقابلة · الاتفاقية · الدورات · السجل». و«الاتفاقية» هي «التجهيز» نفسُه: الأجرُ والدوراتُ والعقد.
    و«السجل» سجلُّ الحالة وأثرُ ما وقع على الطلب. واللسانُ في العنوان (`?tab=`): رابطُ «الاتفاقية» يفتحها. */
-type DetailTab = "dossier" | "agreement" | "courses" | "log";
-const DETAIL_TABS: DetailTab[] = ["dossier", "agreement", "courses", "log"];
+type DetailTab = "dossier" | "agreement" | "courses" | "profile" | "log";
+/* و«الظهور» لمن عبر إلى «المدربون» وحدَه — «الألسنةُ تكبر مع المحطّة» (المقترح): ملفُّه العامّ واقتراحاتُنا عليه */
+const DETAIL_TABS: DetailTab[] = ["dossier", "agreement", "courses", "profile", "log"];
 
 /* ═══ وموعدُ التواصل مع المؤجَّل — بجانب حالته (٦ أكتوبر ٢٠٢٦) ═══
 
@@ -401,10 +408,19 @@ const LINE_TONE: Record<JoiningLine["stops"][number]["state"], "accent" | "warn"
   ahead: "default",
 };
 
-function RecordLine({ line }: { line: JoiningLine }) {
+/* ═══ ومن عبر يكمل خطُّه بسلّمه (`ladderOf`، ٢٤ أكتوبر ٢٠٢٦) ═══
+   «المدربون» بابٌ لا محطّة: فمن عبر تحلّ محلَّه كلماتُ صاحب المنصّة — مؤهل ولم يوافق ← وافق وفتح شعبة ← جاهز —
+   و«لا دورة مؤهل لها» و«متوقف» جانبَه. ومن لم تُقرأ بطاقتُه (لا صلاحيّةَ له) يبقى خطُّه ببابه كما كان. */
+function RecordLine({ line, ladder }: { line: JoiningLine; ladder?: { steps: LadderStep[]; aside: string | null } | null }) {
+  const stops: { id: string; ar: string; state: JoiningLine["stops"][number]["state"]; at: JoiningLine["stops"][number]["at"] }[] = ladder
+    ? [...line.stops.filter((st) => st.id !== "trainers"), ...ladder.steps.map((st) => ({ ...st, at: null }))]
+    : line.stops;
+  const aside = ladder?.aside
+    ? { stop: "later" as const, ar: ladder.aside, at: null }
+    : line.aside;
   return (
     <ol aria-label="خط المدرب" className="flex flex-wrap items-center gap-1.5">
-      {line.stops.map((st, i) => (
+      {stops.map((st, i) => (
         <li key={st.id} className="flex items-center gap-1.5">
           {i > 0 && <ChevronLeft aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-muted-foreground/50" />}
           <Inset as="span" tone={LINE_TONE[st.state]} aria-current={st.state === "now" ? "step" : undefined}
@@ -423,11 +439,11 @@ function RecordLine({ line }: { line: JoiningLine }) {
         </li>
       ))}
       {/* و«لاحقا» و«مغلق» جانبَ الخطّ لا عليه — والخطُّ يقول أين بلغ قبلهما */}
-      {line.aside && (
+      {aside && (
         <li className="ms-2">
-          <Inset as="span" tone={line.aside.stop === "closed" ? "danger" : "default"} className="block !px-3 !py-1.5 text-center">
-            <span className="block text-read font-black text-foreground">{line.aside.ar}</span>
-            <span className="mt-0.5 block text-fine text-muted-foreground">{line.aside.at ? fmtDate(line.aside.at) : "—"}</span>
+          <Inset as="span" tone={aside.stop === "closed" ? "danger" : "default"} className="block !px-3 !py-1.5 text-center">
+            <span className="block text-read font-black text-foreground">{aside.ar}</span>
+            <span className="mt-0.5 block text-fine text-muted-foreground">{aside.at ? fmtDate(aside.at) : "—"}</span>
           </Inset>
         </li>
       )}
@@ -494,7 +510,10 @@ interface AppDetail extends Record<string, unknown> {
    وأرقامُه من الخادم لا من الشاشة (`getApplication#summary`): من يبتّ في حالةٍ
    ينظر إلى أثرها — من له ثلاثُ شعبٍ جارية ليس كمن لا شعبةَ له، والقرارُ فيهما
    ليس واحدا. وحسابُها هنا يعني رقمين لشيءٍ واحد. */
-function TrainerCoursesTab({ summary }: { summary?: TrainerSummary }) {
+/* ═══ ولمن عبر إلى «المدربون»: دوراتُه وشعبُه من بطاقته (`ops`، ٢٤ أكتوبر ٢٠٢٦) ═══
+   بطاقتُه تقول كلَّ دورةٍ بكلمات سلّمه وتحتها شعبُها بحال خطّتها — وهو ما يُعرف به «جاهز». فتحلّ محلّ القائمتين
+   أسفلَ الملخّص، ولا تُكتب الدوراتُ والشعبُ مرّتين في لسانٍ واحد. والملخّصُ (الأعدادُ والتقييمُ وأقربُ جلسة) باقٍ. */
+function TrainerCoursesTab({ summary, ops }: { summary?: TrainerSummary; ops?: ReactNode }) {
   if (!summary) {
     return (
       <Panel as="article" className="text-xs leading-6 text-muted-foreground">
@@ -531,6 +550,8 @@ function TrainerCoursesTab({ summary }: { summary?: TrainerSummary }) {
         )}
       </Panel>
 
+      {ops ? <Panel as="article">{ops}</Panel> : (
+      <>
       <Panel as="article">
         <h4 className="text-sm font-black">الدورات المؤهّل لها</h4>
         {summary.qualifiedCourses.length === 0 ? (
@@ -581,6 +602,8 @@ function TrainerCoursesTab({ summary }: { summary?: TrainerSummary }) {
           </ul>
         )}
       </Panel>
+      </>
+      )}
     </div>
   );
 }
@@ -679,6 +702,25 @@ export default function TrainerApplications() {
   const [busy, setBusy] = useState(false);
   const [tab, setTab] = useTabParam<DetailTab>(DETAIL_TABS, "dossier");
   const { user } = useRealSession();
+  /* ═══ وبطاقتُه في «المدربون» لمن عبر — يقرؤها ملفُّه (٢٤ أكتوبر ٢٠٢٦) ═══
+     بالمسار نفسِه الذي تقرأ منه القائمةُ (`/api/admin/trainers/:profileId/ops`) وطابورِ التأهيل نفسِه — فيقول الملفُّ
+     خطواتِه وسلّمَه كما تقولها بطاقتُه، وتُحرَّر فيه دوراتُه وظهورُه بأجزاء البطاقة نفسِها. ولمن يملك التأهيلَ وحدَه. */
+  const canQualify = user?.permissions?.includes("trainer.qualify") ?? false;
+  const [ops, setOps] = useState<{ t: OpsTrainer; requests: PendingRequest[] } | null>(null);
+  const opsProfileId = selected?.joining.operating && canQualify ? selected.profile?.id ?? null : null;
+  const loadOps = useCallback(async () => {
+    if (!opsProfileId) { setOps(null); return; }
+    try {
+      const [t, requests] = await Promise.all([
+        apiGet<OpsTrainer>(`/api/admin/trainers/${opsProfileId}/ops`),
+        apiGet<PendingRequest[]>("/api/admin/qualification-requests"),
+      ]);
+      setOps({ t, requests });
+    } catch {
+      setOps(null);
+    }
+  }, [opsProfileId]);
+  useEffect(() => { void loadOps(); }, [loadOps]);
   /* المحوُ للمدير الأعلى وحدَه — ومن لا يملك حبّتَه لا يرى البابَ أصلا */
   const canPurge = user?.permissions?.includes("trainer.applications.purge") ?? false;
   const [purging, setPurging] = useState<AppDetail | null>(null);
@@ -1267,6 +1309,38 @@ export default function TrainerApplications() {
       setTab("dossier");
       setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
     };
+    /* ═══ ومن عبر: خطواتُه من بطاقته، وزرُّها بابُ أولاها كما في «المدربون» (`goTo` هناك) ═══
+       العقدُ في «العقود»، والخطّةُ في شعبتها إن كانت واحدة وإلّا «الدورات» هنا، وظهورُه واقتراحاتُنا في «الظهور» هنا،
+       واعتمادُ ظهوره بنقرته — وما يُبتّ فيه في «المدربون» (طابورُ التأهيل، واعتمادُه بلا حساب) يُفتح هناك على بطاقته. */
+    const goOps = (step: StepAct) => {
+      const t = ops!.t;
+      if (step === "contract_new" || step === "contract") navigate(contractsHref({ id: a.id, fullName: t.name }, step));
+      else if (step === "publish") {
+        void act(() => apiPost(`/api/admin/trainers/${t.profileId}/publish-approval`), "اعتمد ظهوره العامّ").then(loadOps);
+      } else if (step === "plans") {
+        const waiting = t.cohorts.filter((c) => !["completed", "cancelled"].includes(c.status) && planMarkOf(c) === "submitted");
+        if (waiting.length === 1) navigate(`/admin/cohorts?cohort=${waiting[0].id}`); else setTab("courses");
+      } else if (step === "profile" || step === "suggest") setTab("profile");
+      else navigate(`/admin/trainer-run?q=${encodeURIComponent(t.email)}`);
+    };
+    const recordOpsNext = (view: { steps: TrainerStep[]; state: TrainerState; stage: TrainerStage }) => {
+      const first = firstActOf(view.steps);
+      const yours = stepsLineAr(view.steps, "you");
+      const his = stepsLineAr(view.steps, "trainer");
+      const quiet = quietLineAr(view.state, ops!.t.applicationStatus, view.stage);
+      return (
+        <Card tone="accent" className="flex flex-wrap items-center justify-between gap-3 !px-4 !py-3">
+          <div className="min-w-0 space-y-1">
+            {yours && <p className="text-read font-bold text-gold-ink">{yours}</p>}
+            {his && <p className="text-read text-teal-light-ink">{his}</p>}
+            {!yours && !his && quiet && <p className="text-read text-muted-foreground">{quiet}</p>}
+          </div>
+          {first?.act && (
+            <Button size="sm" tone="confirm" disabled={busy} onClick={() => goOps(first.act!)}>{STEP_ACT_AR[first.act]}</Button>
+          )}
+        </Card>
+      );
+    };
     const recordNext = (next: JoiningNext | null) => {
       if (!next) {
         /* عبر إلى «المدربون» — وما ينتظره في بطاقته هناك حتّى يصير هنا (المرحلةُ التالية) */
@@ -1319,9 +1393,22 @@ export default function TrainerApplications() {
           const stopNow = joiningStopOf(facts);
           const stopAr = stopNow ? JOINING_STOPS.find((st) => st.id === stopNow)!.ar : null;
           const next = joiningNextOf(facts);
+          /* ومن عبر وقُرئت بطاقتُه: سلّمُه وخطواتُه منها — بالدوالّ التي تقرؤها بطاقتُه نفسُها */
+          const opsView = ops && a.joining.operating ? (() => {
+            const input = { ...ops.t, queue: queueOf(ops.t, ops.requests) };
+            const steps = trainerSteps(input);
+            return { steps, state: trainerStateOf(input, steps), stage: trainerStageOf(ops.t) };
+          })() : null;
           return (
             <header className="mb-4 space-y-3">
               <nav aria-label="مسار الوصول" className="flex flex-wrap items-center gap-1.5 text-fine">
+                {/* ومن عبر أصلُه «المدربون» — يعود الدربُ إلى بطاقته هناك، لمن يملك فتحها */}
+                {a.joining.operating && canQualify ? (
+                  <Button tone="ghost" icon={ChevronLeft} onClick={() => navigate(`/admin/trainer-run?q=${encodeURIComponent(a.email)}`)}
+                    className="text-teal-light-ink hover:text-teal-ink">
+                    المدربون
+                  </Button>
+                ) : (<>
                 <Button tone="ghost" icon={ChevronLeft} onClick={closeDetail}
                   className="text-teal-light-ink hover:text-teal-ink">
                   الطلبات
@@ -1335,13 +1422,17 @@ export default function TrainerApplications() {
                 ) : (
                   <span className="font-bold text-muted-foreground">في «المدربون»</span>
                 )}
+                </>)}
                 <span aria-hidden className="text-muted-foreground/50">·</span>
                 <span className="font-mono text-muted-foreground" dir="ltr">{a.reference}</span>
                 {a.jobTitle && <span className="text-muted-foreground">· {a.jobTitle}</span>}
               </nav>
-              <RecordLine line={joiningLineOf({ ...facts, submittedAt: a.phase2CompletedAt ?? a.createdAt, history: a.statusHistory })} />
+              <RecordLine
+                line={joiningLineOf({ ...facts, submittedAt: a.phase2CompletedAt ?? a.createdAt, history: a.statusHistory })}
+                ladder={opsView ? ladderOf(opsView.stage, ops!.t.suspended) : null}
+              />
               {/* ومن أُغلق طلبُه لا دورَ فيه لأحد — وحالُه بتاريخها جانبَ الخطّ، فسطرٌ يعيدها تكرار */}
-              {!(stopNow === "closed" && next?.turn === "none") && recordNext(next)}
+              {opsView ? recordOpsNext(opsView) : !(stopNow === "closed" && next?.turn === "none") && recordNext(next)}
             </header>
           );
         })()}
@@ -1386,14 +1477,14 @@ export default function TrainerApplications() {
             البطاقة لمضى معها بعد بضع مئاتٍ من البكسلات. فالبطاقةُ الخارجيّةُ بلا
             صندوقٍ على الحاسوب (`lg:contents`) والقطعتان بطاقتان بنفسيهما، وعلى الهاتف
             العكسُ (`max-lg:contents`): بطاقةٌ واحدةٌ كما كانت. */}
+        {/* ولا شريطَ فارغا: من لا قرارَ في حاله (نشطٌ يعمل معنا) خطوتُه في الرأس، و«لا إجراءات متاحة» تحتها ضجيج */}
+        {available.length > 0 && (
         <Card className="-mx-1 mb-4 !px-4 !py-3 lg:contents">
           <Card tone="solid" className="max-lg:contents lg:sticky lg:top-16 lg:z-20 lg:-mx-1 lg:mb-3 lg:!px-4 lg:!py-2">
             {/* والاسمُ ورقمُ الطلب في رأس الملفّ فوقه (٢٤ أكتوبر ٢٠٢٦) — وكانا هنا على الهاتف وحدَه */}
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex flex-wrap items-center gap-2">
-                {available.length === 0
-                  ? <span className="text-read text-muted-foreground">لا إجراءات متاحة في هذه الحالة.</span>
-                  : barActions.map((d) => barButton(d))}
+                {barActions.map((d) => barButton(d))}
                 {/* ⑦ «اطلب معلومات إضافية» يفتح خانةً تقول ما المطلوب — وكانت
                     تُرسَل بلا سؤالٍ أصلا، فيقرأ المتقدّمُ اسمَ حالةٍ لا طلبا. */}
                 {available.some((d) => d.action === "request_info") && (
@@ -1458,6 +1549,7 @@ export default function TrainerApplications() {
             </Card>
           )}
         </Card>
+        )}
 
         {/* ═══ ترويسةُ المطبوع ذهبت مع زرّ الطباعة (١٤ سبتمبر ٢٠٢٦) ═══
 
@@ -1503,6 +1595,7 @@ export default function TrainerApplications() {
                 { id: "dossier", label: "الطلب والمقابلة" },
                 { id: "agreement", label: "الاتفاقية" },
                 { id: "courses", label: "الدورات" },
+                ...(ops ? [{ id: "profile" as const, label: "الظهور" }] : []),
                 { id: "log", label: "السجل" },
               ]}
             />
@@ -1558,7 +1651,29 @@ export default function TrainerApplications() {
                 onChanged={() => loadDetail(a.id)}
               />
             ) : tab === "courses" ? (
-              <TrainerCoursesTab summary={a.summary} />
+              <TrainerCoursesTab summary={a.summary} ops={ops ? <TrainerCourses trainer={ops.t} /> : undefined} />
+            ) : tab === "profile" && ops ? (
+              /* ═══ «الظهور» — ملفُّه العامّ واقتراحاتُنا عليه، بأجزاء بطاقته في «المدربون» نفسِها (٢٤ أكتوبر ٢٠٢٦) ═══
+                 والمفتاحان كمفتاحَيهما هناك: كلُّ إرسالٍ أو قرارٍ يبدأ الحقولَ من جديد. */
+              <Panel as="article">
+                {ops.t.publiclyVisible && ops.t.hasLiveCourse && (
+                  <p className="text-read font-bold text-teal-light-ink">ظاهر للعامّة</p>
+                )}
+                {ops.t.publiclyVisible && !ops.t.hasLiveCourse && (
+                  <p className="text-read text-muted-foreground">اعتمدت ظهوره ولا يظهر: لا دورة منشورة له هذا الفصل</p>
+                )}
+                {!ops.t.publiclyVisible && (
+                  <Button tone="secondary" size="sm" disabled={busy}
+                    onClick={() => void act(() => apiPost(`/api/admin/trainers/${ops.t.profileId}/publish-approval`), "اعتمد ظهوره العامّ").then(loadOps)}>
+                    اعتمد ظهوره العامّ
+                  </Button>
+                )}
+                <PublicProfileEditor trainer={ops.t} onSaved={loadOps} />
+                <PitchEditor key={`${ops.t.profileId}:${ops.t.pitchLatest?.id ?? ""}:${ops.t.pitchLatest?.status ?? ""}:${ops.t.pitchLines.join("|")}`}
+                  trainer={ops.t} onSaved={loadOps} />
+                <BioSuggestEditor key={`${ops.t.profileId}:bio:${ops.t.bioLatest?.id ?? ""}:${ops.t.bioLatest?.status ?? ""}`}
+                  trainer={ops.t} onSaved={loadOps} />
+              </Panel>
             ) : tab === "log" ? (
               /* ═══ «السجل» — سجلُّ الحالة وأثرُ ما وقع على الطلب (٢٤ أكتوبر ٢٠٢٦) ═══
                  كان سجلُّ الحالة في ذيل «الملفّ والمعلومات» بطلب صاحب المنصّة (١٣ سبتمبر ٢٠٢٦): «من يجلس إلى المتقدّم
@@ -1776,6 +1891,10 @@ export default function TrainerApplications() {
             )}
           </div>
 
+          {/* ═══ والقرّاءُ والروبركُ والقرار في «الطلب والمقابلة» وحدَه (٢٤ أكتوبر ٢٠٢٦) ═══
+              كانت تحت كلّ لسان — فيُقرأ تحت «الظهور» و«السجل» روابطُ قرّاءٍ وروبركٌ لا شأنَ لهما بهما. وهي حكمُ الطلب
+              بعد قراءته: موضعُها لسانُه. وشريطُ القرار اللاصقُ فوق الألسنة كلِّها باقٍ في متناول اليد. */}
+          {tab === "dossier" && (<>
           {/* روابطُ القُرّاء — قبل الحكم، فمنها يأتي ما يُحكَم به */}
           <div className="mt-4">
             <ReviewerLinks applicationId={a.id} />
@@ -1943,6 +2062,7 @@ export default function TrainerApplications() {
               )}
             </Panel>
           </div>
+          </>)}
 
         </div>
 

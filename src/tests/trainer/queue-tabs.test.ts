@@ -70,8 +70,14 @@ describe('① ولا لسان بلا شرط', () => {
     expect(list, 'اللسان بلا عدد مكتوب').toContain('${openChanges}')
     /* وعاد «التأهيل والإسناد» لسانا بعد أن صار شاشةً — والسؤالُ يعود معه */
     expect(list, 'عاد لسان التأهيل إلى شاشة الطلبات').not.toContain('key: "run"')
-    expect(screen, 'شاشة الطلبات ما زالت تصيّر سلسلة التشغيل')
-      .not.toContain('TrainerRunOps')
+    /* ═══ وأجزاءُ بطاقة المدرّب في ملفّه — لا سلسلةُ التشغيل (٢٤ أكتوبر ٢٠٢٦) ═══
+       خرجت السلسلةُ لأنّ بابَها `trainer.qualify` وبابَ هذه الشاشة `trainer.applications.view` — فكان يراها من لا
+       يملكها ويُردّ عند تحميلها. وملفُّ المدرّب يقرأ بطاقتَه الواحدة وأجزاءَها (دوراتُه وظهورُه) بالحبّة نفسِها لا غيرها. */
+    expect(screen, 'شاشة الطلبات ما زالت تصيّر سلسلة التشغيل').not.toMatch(/<TrainerRunOps\b/)
+    expect(screen, 'بطاقة المدرب تقرأ بلا حبّة التأهيل')
+      .toContain('const canQualify = user?.permissions?.includes("trainer.qualify") ?? false;')
+    expect(screen, 'بطاقة المدرب تقرأ لغير من عبر أو بلا الحبّة')
+      .toContain('const opsProfileId = selected?.joining.operating && canQualify ? selected.profile?.id ?? null : null;')
   })
 })
 
