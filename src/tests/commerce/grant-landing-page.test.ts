@@ -24,6 +24,8 @@ import { WHATSAPP_SPOTS } from '@/application/site/whatsapp'
 const root = join(dirname(fileURLToPath(import.meta.url)), '../../..')
 const code = (p: string) => readFileSync(join(root, p), 'utf8').replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '')
 const PAGE = code('src/pages/MemberGrantPage.tsx')
+/** صندوقُ الكود أعلى الصفحة الثانية — بدايتُه، تُقطع منها الشيفرةُ في الحرّاس */
+const TOP_CARD = '<Card tone="accent" className="grid gap-4'
 const APP = code('src/App.tsx')
 const ROUTES = code('server/http/routes/public-grant.routes.ts')
 const HTTP = code('server/http/app.ts')
@@ -98,8 +100,8 @@ describe('بعد النموذج', () => {
       'اختر حتى دورتين، ويمكنك استبدالها لاحقا مع مستشارك.',
       'اختر حتى 4 دورات، ويمكنك استبدالها لاحقا مع مستشارك.',
     ])
-    const card = PAGE.slice(PAGE.indexOf('<Card tone="accent" className="text-center">'), PAGE.indexOf('<h2 className="mt-6'))
-    expect(card).toMatch(/<GrantCountdown closesAt=\{c\.closesAt\} className="mt-4" \/>\}\s*\{c\.open && <p className="mt-0\.5 text-read text-muted-foreground">\{grantLimitAr\(max\)\}<\/p>\}/)
+    const card = PAGE.slice(PAGE.indexOf(TOP_CARD), PAGE.indexOf('<h2 className="mt-6'))
+    expect(card).toMatch(/<GrantCountdown closesAt=\{c\.closesAt\} className="mt-3" \/>\}\s*\{c\.open && <p className="mt-0\.5 text-read text-muted-foreground">\{grantLimitAr\(max\)\}<\/p>\}/)
     expect(PAGE.match(/grantLimitAr\(/g)?.length, 'الحد يقال مرتين').toBe(1)
     expect(PAGE, 'عادت فقرة الحد الطويلة').not.toMatch(/وهذا أقصى ما تغطيه منحتك|بعد استشارة مستشارك الخاص/)
   })
@@ -115,8 +117,13 @@ describe('بعد النموذج', () => {
     /* وهو نفسُه في النموذج وفي صندوق الكود أعلى الصفحة الثانية، بعد سطر الحدّ — بدل صندوق Zoom الكبير. قرارُ صاحب المنصّة
        (٢٤ أكتوبر ٢٠٢٦): «ضعهم في الصندوق الأعلى بطريقةٍ مرتّبةٍ مع أيقونات» */
     expect(PAGE.match(/<GrantGains\b/g)?.length, 'الشريط في الصفحتين').toBe(2)
-    const card = PAGE.slice(PAGE.indexOf('<Card tone="accent" className="text-center">'), PAGE.indexOf('<h2 className="mt-6'))
-    expect(card).toMatch(/\{grantLimitAr\(max\)\}<\/p>\}\s*<div className="mt-4 border-t border-border pt-4"><GrantGains \/><\/div>\s*<\/Card>/)
+    const card = PAGE.slice(PAGE.indexOf(TOP_CARD), PAGE.indexOf('<h2 className="mt-6'))
+    expect(card).toMatch(/\{grantLimitAr\(max\)\}<\/p>\}\s*<\/div>\s*<div className="border-t border-border pt-4 sm:border-s sm:border-t-0 sm:ps-8 sm:pt-0"><GrantGains \/><\/div>\s*<\/Card>/)
+    /* وصغيرٌ مرتّب — قرارُه (٢٤ أكتوبر ٢٠٢٦): «لم يستغلّ البوكس.. من الممكن أن يكون أصغر وأرتب»: عمودان على الحاسوب،
+       والكودُ والعدّادُ والحدُّ في الأوّل، وما يحصل عليه في الثاني. ولا أيقونةُ هديّةٍ وحدَها سطرا */
+    expect(card).toMatch(/^<Card tone="accent" className="grid gap-4 sm:grid-cols-\[minmax\(0,1fr\)_auto\] sm:items-center sm:gap-8">\s*<div className="text-center sm:text-start">/)
+    expect(card, 'عادت أيقونة الهدية سطرا وحدها').not.toMatch(/<Gift className="mx-auto/)
+    expect(card, 'فقرة فارغة حين لا شيء يقال').toMatch(/topNote && <p className="text-read">\{topNote\}<\/p>/)
     const picker = PAGE.slice(PAGE.indexOf('<h2 className="mt-6'), PAGE.indexOf('view.openCourses.length === 0'))
     expect(picker, 'الشريط تحت العنوان لا في الصندوق').not.toContain('GrantGains')
     /* مرتّبٌ: قائمةٌ عموديّةٌ كتلتُها في الوسط، وأيقونةُ كلِّ بندٍ في دائرة */
@@ -201,7 +208,7 @@ describe('بعد النموذج', () => {
     expect(PAGE, 'لا يحفظ مجال عمله').toMatch(/interests, workField: form\.workField,/)
     /* وسمٌ نصّيٌّ أعلى البطاقة لا قرصٌ يشبه الزرّ — قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦) */
     expect(PAGE).toMatch(/const tag = ours\.has\(x\.courseId\) \? "نقترحها لك" : fits\(x\) > 0 \? "يناسب ما تريد تطويره" : null;/)
-    const card = PAGE.slice(PAGE.indexOf('const row = '), PAGE.indexOf('<Card tone="accent" className="text-center">'))
+    const card = PAGE.slice(PAGE.indexOf('const row = '), PAGE.indexOf(TOP_CARD))
     expect(card, 'الوسم قرص').not.toMatch(/<Chip/)
     expect(card.indexOf('{tag && <span'), 'الوسم أعلى البطاقة').toBeGreaterThan(-1)
     expect(card.indexOf('{tag && <span'), 'الوسم تحت العنوان').toBeLessThan(card.indexOf('<span className="block font-bold leading-6">{x.titleAr}'))
@@ -219,7 +226,7 @@ describe('بعد النموذج', () => {
     expect(PAGE).toMatch(/const seats = seatsLeftAr\(x\.seatsLeft\);/)
     expect(PAGE).toMatch(/\{seats && <span className="inline-flex items-center gap-1 text-red-300">/)
     /* وصورةُ المدرّب أوّلُ ما في البطاقة وبكبرها — وبلا صورةٍ مربّعٌ بحجمها فلا تتفاوت البطاقات */
-    const card = PAGE.slice(PAGE.indexOf('const row = '), PAGE.indexOf('<Card tone="accent" className="text-center">'))
+    const card = PAGE.slice(PAGE.indexOf('const row = '), PAGE.indexOf(TOP_CARD))
     expect(card).toMatch(/<img src=\{x\.trainer\.photoUrl\} alt="" loading="lazy" className="h-24 w-24 rounded-2xl object-cover/)
     expect(card).toMatch(/: <span className="grid h-24 w-24 place-items-center rounded-2xl/)
     expect(card.indexOf('x.trainer?.photoUrl'), 'الصورة قبل العنوان').toBeLessThan(card.indexOf('<span className="block font-bold leading-6">{x.titleAr}'))
@@ -360,7 +367,7 @@ describe('بعد النموذج', () => {
     expect(PAGE).not.toMatch(/"دقيقة"|"ثانية"/)
     expect(PAGE).toContain('تنتهي المنحة بعد {left}')
     expect(PAGE).toContain('آخر يوم: {fmtDateLong(')
-    expect(PAGE).toMatch(/\{c\.open && c\.closesAt && <GrantCountdown closesAt=\{c\.closesAt\} className="mt-4" \/>\}/)
+    expect(PAGE).toMatch(/\{c\.open && c\.closesAt && <GrantCountdown closesAt=\{c\.closesAt\} className="mt-3" \/>\}/)
     expect(PAGE.match(/<GrantCountdown /g)?.length, 'العداد في النموذج وتحت الكود وحدهما').toBe(2)
   })
 
