@@ -12,6 +12,7 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
 import { setupTestDb, testPrisma } from '../helpers/db'
+import { makeAdvisor } from '../helpers/advisor'
 import { AuthService } from '../../services/auth.service'
 import { AdvisorService } from '../../services/advisor.service'
 import { AdvisorAwayService, MAX_AWAY_DAYS } from '../../services/advisor-away.service'
@@ -30,7 +31,7 @@ const at = (ms: number) => new Date(Date.now() + ms)
 
 async function advisor() {
   const { userId } = await auth.register(`away-adv-${++seq}@test.local`, 'Advisor#12345', `مستشار الإجازة ${seq}`)
-  await auth.setRoles(userId, ['advisor'])
+  await makeAdvisor(prisma, auth, userId)
   return userId
 }
 /** حالةٌ عند `advisorId` أُسندت قبل `daysAgo` يوما */

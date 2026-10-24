@@ -10,6 +10,7 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
 import { setupTestDb, testPrisma } from '../helpers/db'
+import { makeAdvisor } from '../helpers/advisor'
 import { AuthService } from '../../services/auth.service'
 import { AdvisorService } from '../../services/advisor.service'
 import { CommerceService } from '../../services/commerce.service'
@@ -59,7 +60,7 @@ beforeAll(async () => {
   advA = (await auth.register('flow-adv-a@test.local', 'Advisor#12345', 'مستشار أ')).userId
   advB = (await auth.register('flow-adv-b@test.local', 'Advisor#12345', 'مستشار ب')).userId
   advOff = (await auth.register('flow-adv-off@test.local', 'Advisor#12345', 'مستشار موقوف')).userId
-  for (const id of [advA, advB, advOff]) await auth.setRoles(id, ['advisor'])
+  for (const id of [advA, advB, advOff]) await makeAdvisor(prisma, auth, id)
   await prisma.user.update({ where: { id: advOff }, data: { status: 'suspended' } })
   /* مستشارو البذر — إن وُجدوا — خارج هذا القياس: الحسابُ على أ وب وحدَهما */
   await prisma.user.updateMany({

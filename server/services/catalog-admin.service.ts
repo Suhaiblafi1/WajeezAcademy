@@ -14,6 +14,7 @@ import { domainsV2 } from '../../src/domain/diagnostic/v2/data'
 import { PERSONA_BASE_TO_STAGES, REACHABLE_LEGACY_GOALS } from '../../src/domain/diagnostic/v2_1/universe'
 import { CAREER_STAGE_LABELS_AR, GOALS_V21 } from '../../src/domain/diagnostic/v2_1/maps'
 import type { PermissionKey } from '../auth/permissions'
+import { carriesExampleTitle } from '../../src/application/catalog/change-request-example'
 import { suggestCourseNames, suggestionKeyAr, tidyCourseTitleAr } from '../../src/application/catalog/course-name-suggest'
 
 /* حبّةُ استثناء maker-checker — تُكتب مرّةً واحدةً، ونوعُها من فهرس الصلاحيّات
@@ -1034,6 +1035,10 @@ export class CatalogAdminService {
     if (!['pathway', 'course', 'skill', 'question', 'template'].includes(entityType)) {
       throw new AuthError('invalid_entity', 'نوع كيان غير مدعوم')
     }
+    /* والمثالُ لا يُقدَّم اسما — كان قيمةَ الخانة فيُرسَل كما هو (`change-request-example.ts`) */
+    if (carriesExampleTitle(payload)) {
+      throw new AuthError('example_title', '«الاسم الجديد» مثال وليس اسما. اكتب الاسم الذي تريده.', 422)
+    }
     return this.prisma.contentChangeRequest.create({
       data: { entityType, entityId, payload: payload as object, status: 'in_review', createdBy: actorId },
     })
@@ -1071,6 +1076,10 @@ export class CatalogAdminService {
     const isSelf = cr.createdBy === actorId
     if (isSelf && !permissions.includes(SELF_APPROVE)) {
       throw new AuthError('maker_checker', 'لا يجوز اعتماد طلب أنشأته بنفسك (maker-checker)', 403)
+    }
+    /* وما قُدّم بالمثال قبل أن يُردّ تقديمُه لا يُعتمَد — يُردّ أو يُطلب تعديلُه (`change-request-example.ts`) */
+    if (decision === 'approve' && carriesExampleTitle(cr.payload)) {
+      throw new AuthError('example_title', 'هذا الطلب يسمي الكيان «الاسم الجديد»، وهو المثال. ارفضه أو اطلب تعديله.', 409)
     }
 
     const newStatus = decision === 'approve' ? 'approved' : decision === 'reject' ? 'rejected' : 'changes_requested'

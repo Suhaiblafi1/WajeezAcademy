@@ -39,6 +39,7 @@ import {
 import { apiDelete, apiGet, apiPost, permissionMessage } from "@/services/api";
 import { fmtDate, fmtDateTime } from "@/application/text/format-ar";
 import { RULE_TYPE_AR } from "@/application/trainer/compensation-labels";
+import { composerFeeInput, FEE_FIELDS_AR, feeFormOf, feeTypeOf } from "@/application/trainer/contract-fee";
 /* وطورُ الشرط من موضعه الواحد لا مشتقًّا هنا — ورأسُ `conditional-offer.ts`
    يقول إنّ هذه التسمياتَ لـ«صفّ الطابور» كذلك، ولم تكن تصله. */
 import {
@@ -663,10 +664,12 @@ export default function TrainerContracts() {
       setHoursNoteAr(""); setWaivedAr("");
       setSpecialTermsAr(p.lastSpecialTermsAr ?? "");
       /* وتُملأ خاناتُ الأتعاب بالقاعدة القائمة إن كانت — فالموظّفُ يعدّل
-         رقما قائما لا يكتبه من فراغٍ فينسى أحدَها. */
-      setFeeRate(p.compensation?.rate ?? "");
-      setFeeReferralRate(p.compensation?.referralRate ?? "");
-      setFeeMinSeats(p.compensation?.minSeats != null ? String(p.compensation.minSeats) : "");
+         رقما قائما لا يكتبه من فراغٍ فينسى أحدَها. وبنوعها: مقعدُ الرابط
+         للمقعد وحدَه (`contract-fee.ts`). */
+      const fee = feeFormOf(p.compensation);
+      setFeeRate(fee.rate);
+      setFeeReferralRate(fee.referralRate);
+      setFeeMinSeats(fee.minSeats);
       setOrientationAt(""); setOrientationUrl("");
     } catch (e) { setErr(permissionMessage(e, "تعذّر تجهيز الشاشة")); }
   };
@@ -693,18 +696,11 @@ export default function TrainerContracts() {
   }, [loaded]);
 
   const composeBody = useMemo(() => {
-    const rate = Number(feeRate);
-    const referral = feeReferralRate.trim() === "" ? null : Number(feeReferralRate);
-    /* ولا تُرسَل قاعدةٌ إلّا إن كُتب سعرٌ صالح: الخانةُ الفارغةُ تعني «اتركِ
-       القاعدةَ القائمةَ كما هي»، لا «اجعلها صفرا». */
-    const compensation = feeRate.trim() !== "" && Number.isFinite(rate) && rate > 0
-      ? {
-          type: "per_seat" as const,
-          rate,
-          minSeats: feeMinSeats.trim() === "" ? undefined : Number(feeMinSeats),
-          referralRate: referral !== null && Number.isFinite(referral) && referral > 0 ? referral : null,
-        }
-      : null;
+    /* ولا تُرسَل قاعدةٌ إلّا إن تغيّر فيها رقم، وبنوع القاعدة السارية — وكانت تُرسَل
+       «بالمقعد» دائما، فيصير أجرُ الشعبة أجرا لكلّ متعلّم (`contract-fee.ts`). والخانةُ
+       الفارغةُ تعني «اتركِ القاعدةَ القائمةَ كما هي»، لا «اجعلها صفرا». */
+    const compensation = composerFeeInput(prefill?.compensation ?? null,
+      { rate: feeRate, referralRate: feeReferralRate, minSeats: feeMinSeats });
     return {
       title,
       trainerLegalNameAr: legalNameAr.trim() || null,
@@ -718,7 +714,7 @@ export default function TrainerContracts() {
       specialTermsAr: specialTermsAr.trim() || null,
     };
   }, [title, legalNameAr, picked, docs, hoursNoteAr, waivedAr, feeRate, feeReferralRate, feeMinSeats,
-      orientationAt, orientationUrl, specialTermsAr]);
+      orientationAt, orientationUrl, specialTermsAr, prefill]);
 
   /* ═══ وخطأُ الصفّ يُرسَم في الصفّ (٢٦ سبتمبر ٢٠٢٦) ═══
 
@@ -1070,7 +1066,7 @@ c.gatesActivation
               {" — "}<b>{prefill.compensation.rate} {prefill.compensation.currency}</b>
               {prefill.compensation.minSeats ? ` · حدٌّ أدنى ${prefill.compensation.minSeats} مقعدا` : ""}
               {prefill.compensation.referralRate ? ` · مقعدُ الإحالة ${prefill.compensation.referralRate}` : ""}
-              <span className="block opacity-70">تُضبط من «أتعاب المدربين» — وتُقرأ هنا ولا تُحرَّر.</span>
+              <span className="block opacity-70">هذه القاعدة السارية. أرقامها تعدل أدناه، ونوعها من «أتعاب المدربين».</span>
             </Inset>
           ) : (
             <Panel tone="warn" className="mb-4 p-3 text-sm">
@@ -1147,31 +1143,37 @@ c.gatesActivation
           {/* ═══ الأتعاب — تُضبَط هنا ثمّ يُركَّب العقد ═══ */}
           <Inset className="mb-4">
             <h4 className="mb-1 font-black">الأتعاب</h4>
+            {/* وخاناتُها بنوع القاعدة السارية — وكانت «بالمقعد» لكلّ نوع (`contract-fee.ts`) */}
             <p className="mb-3 text-read opacity-70">
-              تُضبَط هنا ثمّ يُركَّب العقد — فلا شاشةَ ثانية. والكتابةُ تمرّ
-              بمسلك قاعدة الأتعاب نفسِه، فيبقى كاتبُ القاعدة واحدا. واتركِ
-              الخاناتِ كما هي إن لم ترد تغييرَ القاعدة القائمة.
+              إن غيرت رقما هنا تحفظ قاعدة جديدة بالنوع نفسه. اتركها كما هي لتبقى القاعدة السارية.
             </p>
-            <div className="grid gap-3 sm:grid-cols-3">
-              <label className="block">
-                <span className="mb-1 block text-sm font-bold">سعرُ المقعد عبر رابطه</span>
-                <input inputMode="decimal" value={feeReferralRate}
-                  onChange={(e) => setFeeReferralRate(e.target.value)}
-                  className={`${areaCls} w-full`} placeholder="45" />
-              </label>
-              <label className="block">
-                <span className="mb-1 block text-sm font-bold">سعرُ المقعد العامّ</span>
-                <input inputMode="decimal" value={feeRate}
-                  onChange={(e) => setFeeRate(e.target.value)}
-                  className={`${areaCls} w-full`} placeholder="30" />
-              </label>
-              <label className="block">
-                <span className="mb-1 block text-sm font-bold">الحدُّ الأدنى للمقاعد</span>
-                <input inputMode="numeric" value={feeMinSeats}
-                  onChange={(e) => setFeeMinSeats(e.target.value)}
-                  className={`${areaCls} w-full`} placeholder="8" />
-              </label>
-            </div>
+            {(() => {
+              const fields = FEE_FIELDS_AR[feeTypeOf(prefill.compensation)];
+              return (
+                <div className={`grid gap-3 ${fields.referral ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>
+                  {fields.referral && (
+                    <label className="block">
+                      <span className="mb-1 block text-sm font-bold">{fields.referral}</span>
+                      <input inputMode="decimal" value={feeReferralRate}
+                        onChange={(e) => setFeeReferralRate(e.target.value)}
+                        className={`${areaCls} w-full`} placeholder="45" />
+                    </label>
+                  )}
+                  <label className="block">
+                    <span className="mb-1 block text-sm font-bold">{fields.rate}</span>
+                    <input inputMode="decimal" value={feeRate}
+                      onChange={(e) => setFeeRate(e.target.value)}
+                      className={`${areaCls} w-full`} placeholder="30" />
+                  </label>
+                  <label className="block">
+                    <span className="mb-1 block text-sm font-bold">{fields.minSeats}</span>
+                    <input inputMode="numeric" value={feeMinSeats}
+                      onChange={(e) => setFeeMinSeats(e.target.value)}
+                      className={`${areaCls} w-full`} placeholder="8" />
+                  </label>
+                </div>
+              );
+            })()}
           </Inset>
 
           {/* ═══ جلسةُ التهيئة — ومنها تبدأ المهلة ═══ */}

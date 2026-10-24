@@ -10,6 +10,7 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
 import { setupTestDb, testPrisma } from '../helpers/db'
+import { makeAdvisor } from '../helpers/advisor'
 import { AuthService } from '../../services/auth.service'
 import { AdvisorService } from '../../services/advisor.service'
 import { runJob } from '../../worker/jobs'
@@ -54,7 +55,7 @@ beforeAll(async () => {
   await auth.setRoles(managerId, ['operations_manager'])
   advA = (await auth.register('remind-a@test.local', 'Advisor#12345', 'مستشار أ')).userId
   advB = (await auth.register('remind-b@test.local', 'Advisor#12345', 'مستشار ب')).userId
-  for (const id of [advA, advB]) await auth.setRoles(id, ['advisor'])
+  for (const id of [advA, advB]) await makeAdvisor(prisma, auth, id)
   await prisma.user.updateMany({
     where: { roles: { some: { roleId: 'advisor' } }, id: { notIn: [advA, advB] } },
     data: { status: 'suspended' },

@@ -65,6 +65,7 @@ import {
 } from '../../src/application/trainer/contract-link-state'
 import { livePathWhere, liveTrainerWhere, publicTrainerWhere, trainerPubliclyVisible } from './trainer-visibility'
 import { OPERATING_TRAINER_WHERE } from './trainer-operating'
+import { feeTypeChangeAr, sameFeeAsRule } from '../../src/application/trainer/contract-fee'
 import { BIO_DRAFTS, PITCH_DRAFTS } from './trainer-suggestion-drafts'
 import { cohortLeadTrainers } from './cohort-lead'
 import { PUBLISH_APPROVED_NOTICE } from './trainer-auto-publish'
@@ -199,6 +200,22 @@ function effectiveCompensation(
         referralRate: current.referralRate,
       }
     : null
+}
+
+/* ═══ وما يصل من شاشة التركيب: بنوع القاعدة السارية، ولا قاعدةَ ثانيةً بأرقامها (٢٤ أكتوبر ٢٠٢٦) ═══
+
+   كانت الشاشةُ ترسل `per_seat` دائما، فيُكتب أجرُ «400 لكلّ شعبة» أجرا «400 لكلّ متعلّم» ويُطبَع في المتن، ويُكتب لمن
+   أجرُه بالمقعد قاعدةٌ ثانيةٌ بالأرقام نفسِها مع كلّ عقد. والعلّةُ والقاعدةُ في `contract-fee.ts`. والخادمُ يقيس بالمقياس
+   نفسِه فلا تمرّ صفحةٌ قديمةٌ في متصفّح أحد: تبديلُ النوع يُردّ ويقال أين يُبدَّل، والأرقامُ نفسُها تُسقَط فتبقى القاعدةُ
+   السارية ومعرّفُها في العقد. */
+function typedFeeFor(
+  current: Parameters<typeof effectiveCompensation>[0],
+  typed: ContractComposeInput['compensation'],
+): ContractComposeInput['compensation'] {
+  if (!typed) return null
+  const problem = feeTypeChangeAr(current, typed)
+  if (problem) throw new AuthError('fee_type_changed', problem, 409)
+  return current && sameFeeAsRule(current, typed) ? null : typed
 }
 
 const sha256 = (s: string) => createHash('sha256').update(s).digest('hex')
@@ -2627,7 +2644,7 @@ export class TrainerReviewService {
       gatesActivation: pre.gatesActivation,
       orientationAt: input.orientationAt ? new Date(input.orientationAt) : null,
       compensation: (() => {
-        const e = effectiveCompensation(pre.compensation, input.compensation)
+        const e = effectiveCompensation(pre.compensation, typedFeeFor(pre.compensation, input.compensation))
         return e
           ? { type: e.type, rate: e.rate, currency: e.currency, minSeats: e.minSeats, referralRate: e.referralRate }
           : null
@@ -2989,7 +3006,8 @@ export class TrainerReviewService {
        الاثنين، ولَخرج عقدٌ يقول رقما وتقول القاعدةُ غيرَه بعد ثوانٍ.
 
        فتُبنى هنا الصورةُ النافذةُ مرّةً، ويقرؤها المتنُ واللقطةُ معا. */
-    const effective = effectiveCompensation(pre.compensation, input.compensation)
+    const typedFee = typedFeeFor(pre.compensation, input.compensation)
+    const effective = effectiveCompensation(pre.compensation, typedFee)
     const specialTermsAr = cleanSpecialTermsAr(input.specialTermsAr)
 
     if (!effective && !input.rateWaivedReasonAr?.trim()) {
@@ -3050,13 +3068,13 @@ export class TrainerReviewService {
       /* في المعاملة نفسِها: فإن ردَّ التركيبُ بعدها لم تبقَ قاعدةُ أتعابٍ
          جديدةٌ على مدرّبٍ بلا عقدٍ يفسّرها. */
       let ruleId = effective?.ruleId ?? null
-      if (input.compensation) {
+      if (typedFee) {
         const rule = await new EarningsService(tx as unknown as PrismaClient).setRule(actorId, {
           profileId: pre.profileId,
-          type: input.compensation.type,
-          rate: input.compensation.rate,
-          minSeats: input.compensation.minSeats,
-          referralRate: input.compensation.referralRate ?? undefined,
+          type: typedFee.type,
+          rate: typedFee.rate,
+          minSeats: typedFee.minSeats,
+          referralRate: typedFee.referralRate ?? undefined,
         })
         /* ويُحفَظ معرّفُ القاعدة المولودةِ هنا لا `null`: العمودُ للتتبّع
            («من أيّ قاعدةٍ نُقلت هذه الأرقام؟»)، وقاعدةٌ بلا أثرٍ تصل إليها

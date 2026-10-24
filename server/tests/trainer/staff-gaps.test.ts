@@ -20,6 +20,7 @@ const expect = plainExpect(vexpect)
 import type { PrismaClient } from '@prisma/client'
 import type { FastifyInstance } from 'fastify'
 import { setupTestDb, testPrisma } from '../helpers/db'
+import { makeAdvisor } from '../helpers/advisor'
 import { AuthService } from '../../services/auth.service'
 import { AdvisorService } from '../../services/advisor.service'
 import { TrainerReviewService } from '../../services/trainer-review.service'
@@ -70,7 +71,7 @@ beforeAll(async () => {
   opsCookie = await cookieFor('gaps-ops@test.local', 'Ops#12345')
 
   const adv = await auth.register('gaps-advisor@test.local', 'Advisor#12345', 'مستشار')
-  await auth.setRoles(adv.userId, ['advisor'])
+  await makeAdvisor(prisma, auth, adv.userId)
   advisorId = adv.userId
 }, 240_000)
 

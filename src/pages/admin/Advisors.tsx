@@ -136,6 +136,8 @@ export default function Advisors() {
                         </span>
                         <span>{r.activeCases} حالة مسندة</span>
                         {r.status !== "active" && <span className="text-red-400">موقوف</span>}
+                        {/* بلا عمولةٍ محفوظةٍ لا ملفَّ له، فلا تُفتح بوّابتُه ولا يُسند إليه (`assign`، ٢٤ أكتوبر ٢٠٢٦) */}
+                        {r.status === "active" && r.commissionPct === null && <span>لا تصله حالات حتى تحفظ عمولته</span>}
                       </p>
                       {r.notesAr && <p className="mt-1.5 text-read leading-6 text-muted-foreground">{r.notesAr}</p>}
                     </div>
