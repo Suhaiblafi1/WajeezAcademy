@@ -243,6 +243,8 @@ export default function MemberGrantPage() {
     const top = courses.filter((x) => ours.has(x.courseId));
     const sections = grantSections(courses.filter((x) => !ours.has(x.courseId)), stored.interests, OTHER_DOMAIN);
     const advisorHref = waHref(numbers, "grant_advisor", CONTACT.whatsapp, grantAdvisorTextAr(stored.name, stored.code));
+    /* سطرُ الصندوق حين لا كود ولا بريد — سببُ الخادم، أو أنّها مغلقة. ولا فقرةٌ فارغةٌ حين لا شيء يقال */
+    const topNote = reasonAr ?? (c.open ? null : "المنحة مغلقة الآن");
     /* بطاقةُ الدورة — في المختارات فوق وفي أقسام المجالات تحتها، ولا يُعاد اسمُ المجال تحت قسمه. وصورةُ مدرّبها أوّلُ ما يُرى، وبكبرها — قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦): «اجعل صورةَ المدرّب
        هي الشيءَ الذي يراه الشخص، بتصميمٍ يبيّن الصورةَ بحجمٍ كبيرٍ عصريّ». والشاراتُ وسومٌ نصّيّةٌ أعلاها لا أقراصٌ تُشبه
        الأزرار («نقترحها لك يبدو زرّا»)، والسعرُ قيمتان بلا «قبل المنحة/بعد المنحة»: ما يدفعه كبيرا، وأصلُه مشطوبا */
@@ -291,27 +293,34 @@ export default function MemberGrantPage() {
     };
     return (
       <Shell>
-        <Card tone="accent" className="text-center">
-          <Gift className="mx-auto h-8 w-8 text-gold-ink" aria-hidden="true" />
-          {stored.code ? (
-            <>
-              <p className="mt-2 text-read">كود منحتك</p>
-              <p className="mt-1 flex items-center justify-center gap-2 text-2xl font-black" dir="ltr">
-                {stored.code}
-                <button type="button" aria-label="انسخ الكود" onClick={() => void copy(stored.code!)} className="cursor-pointer"><Copy className="h-5 w-5" /></button>
-              </p>
-              <p className="mt-1 text-read text-muted-foreground">أرسلناه إلى بريدك أيضا.</p>
-            </>
-          ) : stored.sentTo ? (
-            <p className="mt-2 text-read">لك كود منحة من قبل. أرسلناه إلى {stored.sentTo}، واكتبه عند الدفع.</p>
-          ) : (
-            <p className="mt-2 text-read">{reasonAr ?? (c.open ? "" : "المنحة مغلقة الآن")}</p>
-          )}
-          {c.open && c.closesAt && <GrantCountdown closesAt={c.closesAt} className="mt-4" />}
-          {/* وحدُّها جملةٌ واحدةٌ تحت «آخر يوم» — قرارُه (٢٤ أكتوبر ٢٠٢٦). وهو حدٌّ يحرس قيمتَها: «اختر ٤ دوراتٍ بحدٍّ أقصى» */}
-          {c.open && <p className="mt-0.5 text-read text-muted-foreground">{grantLimitAr(max)}</p>}
+        {/* صندوقُ الكود — عمودان على الحاسوب: الكودُ والعدّادُ والحدّ، وبجانبها ما يحصل عليه؛ وعلى الهاتف عمودٌ واحد.
+            قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦): «لم يستغلّ البوكس.. من الممكن أن يكون أصغر وأرتب». وكان كلُّه في الوسط
+            سطرا تحت سطر، وأيقونةُ الهديّة وحدَها سطر */}
+        <Card tone="accent" className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:gap-8">
+          <div className="text-center sm:text-start">
+            {stored.code ? (
+              <>
+                <p className="flex items-center justify-center gap-1.5 text-read text-muted-foreground sm:justify-start">
+                  <Gift className="h-4 w-4 text-gold-ink" aria-hidden="true" /> كود منحتك
+                </p>
+                {/* الكودُ بخطٍّ لاتينيّ من اليسار، فطرفُه في الحاسوب طرفُ العمود الأيمن (`justify-end` في `ltr`) */}
+                <p className="mt-1 flex items-center justify-center gap-2 text-2xl font-black sm:justify-end" dir="ltr">
+                  {stored.code}
+                  <button type="button" aria-label="انسخ الكود" onClick={() => void copy(stored.code!)} className="cursor-pointer"><Copy className="h-5 w-5" /></button>
+                </p>
+                <p className="mt-0.5 text-read text-muted-foreground">أرسلناه إلى بريدك أيضا.</p>
+              </>
+            ) : stored.sentTo ? (
+              <p className="text-read">لك كود منحة من قبل. أرسلناه إلى {stored.sentTo}، واكتبه عند الدفع.</p>
+            ) : (
+              topNote && <p className="text-read">{topNote}</p>
+            )}
+            {c.open && c.closesAt && <GrantCountdown closesAt={c.closesAt} className="mt-3" />}
+            {/* وحدُّها جملةٌ واحدةٌ تحت «آخر يوم» — قرارُه (٢٤ أكتوبر ٢٠٢٦). وهو حدٌّ يحرس قيمتَها: «اختر ٤ دوراتٍ بحدٍّ أقصى» */}
+            {c.open && <p className="mt-0.5 text-read text-muted-foreground">{grantLimitAr(max)}</p>}
+          </div>
           {/* وما يحصل عليه داخلَ هذا الصندوق — قرارُه (٢٤ أكتوبر ٢٠٢٦): «ضعهم في الصندوق الأعلى» */}
-          <div className="mt-4 border-t border-border pt-4"><GrantGains /></div>
+          <div className="border-t border-border pt-4 sm:border-s sm:border-t-0 sm:ps-8 sm:pt-0"><GrantGains /></div>
         </Card>
 
         <h2 className="mt-6 text-xl font-black">
