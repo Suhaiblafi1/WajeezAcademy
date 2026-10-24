@@ -97,6 +97,8 @@ export interface JoiningNext {
   turn: JoiningTurn
   ar: string
   act: JoiningAct
+  /** وفي الملفّ نفسِه: أين يُعمل ما عليك — القرارُ أو المقابلات (`open` منك وحدَه) */
+  focus?: 'decision' | 'interviews'
 }
 
 /** ما يقف الآن، وعند من، وزرُّه — و`null` لمن عبر إلى «المدربون» */
@@ -131,10 +133,10 @@ export function joiningNextOf(f: JoiningFacts, now: Date = new Date()): JoiningN
       if (f.pendingInterviewAt) {
         return new Date(f.pendingInterviewAt).getTime() > now.getTime()
           ? { turn: 'none', ar: `مقابلته ${fmtDate(f.pendingInterviewAt)}`, act: 'open' }
-          : { turn: 'you', ar: 'سجل نتيجة المقابلة', act: 'open' }
+          : { turn: 'you', ar: 'سجل نتيجة المقابلة', act: 'open', focus: 'interviews' }
       }
-      if (f.interviewOutcome === NO_SHOW) return { turn: 'you', ar: 'لم يحضر — تابع غيابه أو قرر', act: 'open' }
-      if (f.interviewOutcome) return { turn: 'you', ar: 'قرر بعد المقابلة', act: 'open' }
+      if (f.interviewOutcome === NO_SHOW) return { turn: 'you', ar: 'لم يحضر — تابع غيابه أو قرر', act: 'open', focus: 'decision' }
+      if (f.interviewOutcome) return { turn: 'you', ar: 'قرر بعد المقابلة', act: 'open', focus: 'decision' }
       /* دعوناه ولم يحجز — والتذكيرُ مِحَكُّه مِحَكُّ الإرسال في الخادم نفسُه */
       return canRemindToBook({ status: f.status, liveInterviews: f.interviewsCount })
         ? { turn: 'them', ar: 'يحجز موعد المقابلة', act: 'remind_booking' }
@@ -143,7 +145,7 @@ export function joiningNextOf(f: JoiningFacts, now: Date = new Date()): JoiningN
     case 'application':
       if (f.status === 'draft') return { turn: 'them', ar: 'يكمل طلبه', act: 'remind_draft' }
       if (f.status === 'information_requested') return { turn: 'them', ar: 'يرسل ما طلبته', act: 'open' }
-      return { turn: 'you', ar: 'اقرأ طلبه وقرر', act: 'open' }
+      return { turn: 'you', ar: 'اقرأ طلبه وقرر', act: 'open', focus: 'decision' }
   }
 }
 
@@ -155,4 +157,86 @@ export function joiningCounts(rows: readonly JoiningFacts[]): Record<JoiningStop
     if (s) out[s] += 1
   }
   return out
+}
+
+/* ═══ خطُّ الملفّ — المحطّاتُ بتواريخها (٢٤ أكتوبر ٢٠٢٦) ═══
+
+   في رأس ملفّ كلّ مدرّب: «ترى أين هو بلا أن تفتح شيئا آخر» (المقترح). المحطّاتُ الثلاثُ ثمّ «المدربون»: ما
+   مضى بتاريخ دخوله، والتي هو فيها «منذ» تاريخها، وما بعدها بلا تاريخ. و«لاحقا» و«مغلق» ليستا على الخطّ — تُقالان
+   جانبه بتاريخهما، والخطُّ يقول أين بلغ قبلهما.
+
+   وهو يجيب ما طلبه صاحبُ المنصّة لسجلّ الحالة (١٣ سبتمبر ٢٠٢٦): «من يجلس إلى المتقدّم يحتاج أن يعرف متى قدّم
+   وأين وقف» — في رأس كلّ لسانٍ لا في ذيل لسانٍ واحد. */
+export type LineState = 'done' | 'skipped' | 'now' | 'ahead'
+
+export interface LineStop {
+  id: 'application' | 'interview' | 'agreement' | 'trainers'
+  ar: string
+  state: LineState
+  /** متى دخلها — و`null` لما لم يبلغه أو لا أثرَ لدخوله */
+  at: DateLike
+}
+
+export interface JoiningLine {
+  stops: LineStop[]
+  /** «لاحقا» أو «مغلق» بحالته وتاريخها — و`null` لمن هو على الخطّ */
+  aside: { stop: 'later' | 'closed'; ar: string; at: DateLike } | null
+}
+
+export interface LineFacts extends JoiningFacts {
+  /** متى قدّم: إتمامُ طلبه، وإلّا إنشاؤه */
+  submittedAt: DateLike
+  /** سجلُّ حالاته صاعدا */
+  history: readonly { toStatus: string; createdAt: DateLike }[]
+}
+
+const LINE: { id: LineStop['id']; ar: string }[] = [
+  { id: 'application', ar: 'الطلب' },
+  { id: 'interview', ar: 'المقابلة' },
+  { id: 'agreement', ar: 'الاتفاقية' },
+  { id: 'trainers', ar: 'المدربون' },
+]
+
+const time = (d: DateLike): number => (d ? new Date(d).getTime() : Number.POSITIVE_INFINITY)
+
+/** أين هو على الخطّ، ومتى دخل كلَّ محطّة */
+export function joiningLineOf(f: LineFacts): JoiningLine {
+  const stop = joiningStopOf(f)
+  const firstAt = (statuses: readonly string[]): DateLike =>
+    f.history.find((h) => statuses.includes(h.toStatus))?.createdAt ?? null
+  const invitedOrBooked = [f.interviewInvitedAt ?? null, firstAt(['interview_scheduled'])]
+    .filter((d): d is NonNullable<DateLike> => !!d)
+    .sort((x, y) => time(x) - time(y))[0] ?? null
+  const dates: Record<LineStop['id'], DateLike> = {
+    application: f.submittedAt,
+    interview: invitedOrBooked,
+    agreement: firstAt(AGREEMENT),
+    trainers: firstAt(['onboarding', 'active']),
+  }
+  const met = !!dates.interview || f.interviewsCount > 0 || !!f.interviewOutcome
+
+  /* أين بلغ: من عبر في آخر الخطّ، ومن على الخطّ في محطّته الآن — ولو بلغ ما بعدها ثمّ رُدّ إليها — ومن خرج إلى
+     «لاحقا» أو «مغلق» فأبعدُ ما بلغه قبل خروجه */
+  const aside = stop === 'later' || stop === 'closed'
+    ? {
+        stop,
+        ar: plainAr(STATUS_LABELS[f.status] ?? f.status),
+        at: [...f.history].reverse().find((h) => h.toStatus === f.status)?.createdAt ?? null,
+      }
+    : null
+  const reached = stop === null ? 3
+    : aside ? (dates.agreement ? 2 : met ? 1 : 0)
+    : LINE.findIndex((s) => s.id === stop)
+
+  return {
+    aside,
+    stops: LINE.map((s, i) => {
+      const state: LineState = i > reached ? 'ahead'
+        : i === reached && !aside ? 'now'
+        /* ومن جاوز المقابلةَ بلا لقاءٍ ولا دعوة لا يُقال إنّه قوبل */
+        : s.id === 'interview' && !met ? 'skipped'
+        : 'done'
+      return { id: s.id, ar: s.ar, state, at: state === 'ahead' || state === 'skipped' ? null : dates[s.id] }
+    }),
+  }
 }

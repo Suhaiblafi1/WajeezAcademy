@@ -3,7 +3,7 @@ import type { ComponentType } from "react";
 import { toast, toastError } from "@/components/Toast";
 import {
   ArrowDownWideNarrow, ArrowUpNarrowWide,
-  CalendarCheck, CalendarClock, CalendarPlus, CalendarX2, CheckCircle2, ChevronDown, ChevronLeft, ClipboardList, FileText, History,
+  CalendarCheck, CalendarClock, CalendarPlus, CalendarX2, Check, CheckCircle2, ChevronDown, ChevronLeft, ClipboardList, FileText, History,
   KeyRound, Loader2, MailCheck, MoreVertical, RefreshCw, RotateCcw, Send, ServerOff,
   Star, Trash2, UserPlus, XCircle,
 } from "lucide-react";
@@ -21,9 +21,10 @@ import { paginate } from "@/application/admin/paginate";
 import { SORT_OPTIONS, sortApplications, type SortDir, type SortKey } from "@/application/trainer/application-sort";
 import type { SyncTrust } from "@/application/trainer/interview-sync-trust";
 import { apiGet, apiPost, apiDelete, ApiError } from "@/services/api";
-import { useNavigate, useSearchParams } from "react-router";
+import { useLocation, useNavigate, useParams, useSearchParams } from "react-router";
 import { useTabParam } from "@/hooks/useTabParam";
-import { JOINING_ACT_AR, JOINING_STOPS, joiningNextOf, joiningStopOf, type JoiningAct, type JoiningFacts, type JoiningStop, type JoiningTurn } from "@/application/trainer/joining";
+import { JOINING_ACT_AR, JOINING_STOPS, joiningLineOf, joiningNextOf, joiningStopOf, type JoiningAct, type JoiningFacts, type JoiningLine, type JoiningNext, type JoiningStop, type JoiningTurn } from "@/application/trainer/joining";
+import EntityAuditTimeline from "@/components/EntityAuditTimeline";
 import { useRealSession } from "@/services/session";
 import { useAutoRefresh } from "@/services/useAutoRefresh";
 import { TrainerDetailOps, TrainerChangeRequests, type TrainerSummary } from "./TrainerOps";
@@ -39,7 +40,7 @@ import {
 } from "@/application/trainer/no-show-followup";
 import { mailBatchOutcomeAr, mailOutcomeAr } from "@/application/notifications/delivery";
 import { MAIL_LINK_WINDOW_AR } from "@/application/links/mail-link-window";
-import { fmtDateLong, fmtDateTime } from "@/application/text/format-ar";
+import { fmtDate, fmtDateLong, fmtDateTime } from "@/application/text/format-ar";
 import { DEFERRED, deferredFollowUpAt, followUpDue, followUpTermAr } from "@/application/trainer/deferral";
 import { deferReasonsNow, intakeFollowUpAt, TRAINER_INTAKE_CLOSED, type DeferReason } from "@/application/trainer/intake-closed";
 import ConfirmAction from "@/components/ConfirmAction";
@@ -230,7 +231,6 @@ const APP_FORMS = { one: "طلب", two: "طلبان", few: "طلبات", many: "
 const DOSSIER_SECTIONS: { id: string; label: string }[] = [
   { id: "sec-profile", label: "المتقدّم وملفّه" },
   { id: "sec-docs", label: "الوثائق" },
-  { id: "sec-history", label: "سجلّ الحالة" },
   { id: "sec-questions", label: "أسئلة المقابلة" },
   { id: "sec-interviews", label: "المقابلات" },
   { id: "sec-rubric", label: "الروبرك والقرار" },
@@ -310,7 +310,11 @@ function RowActions({ items, label }: { items: RowAction[]; label: string }) {
 /** تبويبا الملفّ: من هو، وماذا يُدرّس — لا شاشةٌ واحدة تُقرأ عمودا طويلا */
 /* و«التجهيز» ثالثُها منذ ٢٠ سبتمبر ٢٠٢٦: الأتعابُ والدوراتُ والعقدُ في
    موضعٍ واحدٍ داخل ملفّ صاحبها — لا في ثلاث شاشاتٍ يُجمَع منها. */
-type DetailTab = "dossier" | "courses" | "prep";
+/* ═══ ألسنةُ ملفّ المدرّب — بأسماء المقترح، وفي العنوان (٢٤ أكتوبر ٢٠٢٦) ═══
+   «الطلب والمقابلة · الاتفاقية · الدورات · السجل». و«الاتفاقية» هي «التجهيز» نفسُه: الأجرُ والدوراتُ والعقد.
+   و«السجل» سجلُّ الحالة وأثرُ ما وقع على الطلب. واللسانُ في العنوان (`?tab=`): رابطُ «الاتفاقية» يفتحها. */
+type DetailTab = "dossier" | "agreement" | "courses" | "log";
+const DETAIL_TABS: DetailTab[] = ["dossier", "agreement", "courses", "log"];
 
 /* ═══ وموعدُ التواصل مع المؤجَّل — بجانب حالته (٦ أكتوبر ٢٠٢٦) ═══
 
@@ -386,6 +390,51 @@ const TURN_TONE: Record<JoiningTurn, string> = {
   you: "text-gold-ink", them: "text-teal-light-ink", none: "text-muted-foreground",
 };
 
+/* ═══ خطُّ الملفّ — بألوان شريط «سير العمل» (`FlowSteps`) ويلتفّ ولا يمرَّر (٢٤ أكتوبر ٢٠٢٦) ═══
+   ما مضى فيروزيٌّ بعلامةٍ وتاريخ، والذي هو فيه ذهبيٌّ «منذ» تاريخه، وما بعده خافتٌ بلا تاريخ. والشريطُ هناك
+   يمرَّر أفقيّا على الهاتف — وقرارُ ١٨ سبتمبر: «لا تمريرَ أفقيٌّ مخفيّ» — فهذا يلتفّ سطرين. وأسطحُه `Inset`
+   بنغمات السلّم لا حوافَّ مكتوبةً بيدها. */
+const LINE_TONE: Record<JoiningLine["stops"][number]["state"], "accent" | "warn" | "default"> = {
+  done: "accent",
+  skipped: "default",
+  now: "warn",
+  ahead: "default",
+};
+
+function RecordLine({ line }: { line: JoiningLine }) {
+  return (
+    <ol aria-label="خط المدرب" className="flex flex-wrap items-center gap-1.5">
+      {line.stops.map((st, i) => (
+        <li key={st.id} className="flex items-center gap-1.5">
+          {i > 0 && <ChevronLeft aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-muted-foreground/50" />}
+          <Inset as="span" tone={LINE_TONE[st.state]} aria-current={st.state === "now" ? "step" : undefined}
+            className={`block !px-3 !py-1.5 text-center ${st.state === "skipped" ? "opacity-70" : ""}`}>
+            <span className={`flex items-center justify-center gap-1 text-read font-black ${
+              st.state === "now" ? "text-gold-ink" : st.state === "ahead" ? "text-muted-foreground" : "text-foreground"}`}>
+              {st.state === "done" && <Check aria-hidden="true" className="h-3.5 w-3.5 text-teal-light-ink" />}
+              {st.ar}
+            </span>
+            <span className="mt-0.5 block text-fine text-muted-foreground">
+              {st.state === "now" ? (st.at ? `منذ ${fmtDate(st.at)}` : "الآن")
+                : st.state === "done" ? (st.at ? fmtDate(st.at) : "تم")
+                : st.state === "skipped" ? "بلا مقابلة" : "—"}
+            </span>
+          </Inset>
+        </li>
+      ))}
+      {/* و«لاحقا» و«مغلق» جانبَ الخطّ لا عليه — والخطُّ يقول أين بلغ قبلهما */}
+      {line.aside && (
+        <li className="ms-2">
+          <Inset as="span" tone={line.aside.stop === "closed" ? "danger" : "default"} className="block !px-3 !py-1.5 text-center">
+            <span className="block text-read font-black text-foreground">{line.aside.ar}</span>
+            <span className="mt-0.5 block text-fine text-muted-foreground">{line.aside.at ? fmtDate(line.aside.at) : "—"}</span>
+          </Inset>
+        </li>
+      )}
+    </ol>
+  );
+}
+
 interface AppDetail extends Record<string, unknown> {
   id: string; reference: string; status: string; fullName: string; email: string;
   /** موعدُ التواصل مع المؤجَّل — يُقرأ بجانب حالته في الملفّ كما في الصفّ */
@@ -426,6 +475,10 @@ interface AppDetail extends Record<string, unknown> {
   userId: string | null;
   /** وقتُ التقديم — يُرسله الخادمُ دائما، ويُقرأ في ترويسة المطبوع */
   createdAt: string;
+  /** إتمامُ طلبه — به يبدأ خطُّ الملفّ، وإلّا فإنشاؤه */
+  phase2CompletedAt?: string | null;
+  /** حقائقُ الانضمام بحكم صفّه في الطابور نفسِه (`getApplication().joining`، ٢٤ أكتوبر ٢٠٢٦) */
+  joining: Omit<JoiningFacts, "status" | "deferredFollowUpAt" | "deferredInterestAskedAt">;
   /** فقرةُ الطلبات التي سبقت السجلّات (أ-٣) — تبقى تُقرأ وتُربط */
   teachableOther: string | null;
   /** سجلّاتُ ما يقترحه: عنوانٌ ولمن هو — تُربط واحدةً تلو الأخرى */
@@ -536,8 +589,17 @@ function TrainerCoursesTab({ summary }: { summary?: TrainerSummary }) {
 export default function TrainerApplications() {
   /* `?app=<id>` — الملفُّ المفتوحُ موضعٌ في التاريخ لا حالةٌ في الذاكرة.
      تفصيلُه عند `openDetail` أسفلُ. */
-  const [searchParams, setSearchParams] = useSearchParams();
-  const openApp = searchParams.get("app");
+  const [searchParams] = useSearchParams();
+  /* ═══ ملفُّ كلِّ مدرّبٍ عنوانُه: `/admin/trainers/:id` (٢٤ أكتوبر ٢٠٢٦) ═══
+     المرحلةُ الثالثةُ من المقترح: «كلُّ قائمةٍ تفتح هذه الصفحة». وكان الملفُّ `?app=` على عنوان الطابور — فبقي
+     يُقرأ ويُحوَّل إلى عنوانه، فلا يسقط رابطٌ قديم. */
+  const { id: recordId } = useParams<{ id: string }>();
+  const openApp = recordId ?? null;
+  const legacyApp = searchParams.get("app");
+  const location = useLocation();
+  /* وما كان عليه الطابورُ حين فُتح الملفّ — يعود إليه «الطلبات» في دربه بمحطّته وبحثه */
+  const listSearch = useRef("");
+  if (!openApp && !legacyApp) listSearch.current = location.search;
   const [apps, setApps] = useState<AppRow[]>([]);
   /* ═══ المحطّاتُ هي الفرزُ الأوّل — وفي العنوان (٢٤ أكتوبر ٢٠٢٦) ═══
 
@@ -615,7 +677,7 @@ export default function TrainerApplications() {
   /* والحذفُ مطويٌّ افتراضا — ليس عملا يوميّا، ولا يُجاور أزرارَ القرار */
   const [purgeOpen, setPurgeOpen] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [tab, setTab] = useState<DetailTab>("dossier");
+  const [tab, setTab] = useTabParam<DetailTab>(DETAIL_TABS, "dossier");
   const { user } = useRealSession();
   /* المحوُ للمدير الأعلى وحدَه — ومن لا يملك حبّتَه لا يرى البابَ أصلا */
   const canPurge = user?.permissions?.includes("trainer.applications.purge") ?? false;
@@ -722,21 +784,18 @@ export default function TrainerApplications() {
 
      و«افتحْ» غيرُ «أعِدْ قراءتَه»: الأولى تنقل — تكتب في العنوان ويتبعها
      الجلبُ — والثانيةُ تجلب وحدَها بعد فعلٍ غيّر الملفَّ ومعرّفُه هو هو. */
-  const openDetail = (id: string) => {
-    setSearchParams((prev: URLSearchParams) => {
-      const next = new URLSearchParams(prev);
-      next.set("app", id);
-      return next;
-    });
-  };
+  const openDetail = (id: string) => navigate(`/admin/trainers/${id}`);
 
-  const closeDetail = () => {
-    setSearchParams((prev: URLSearchParams) => {
-      const next = new URLSearchParams(prev);
-      next.delete("app");
-      return next;
-    });
-  };
+  const closeDetail = () => navigate(`/admin/trainers${listSearch.current}`);
+
+  /* والرابطُ القديمُ يُحوَّل إلى عنوانه — بلا موضعٍ في التاريخ، فـ«رجوع» لا يعيده إليه */
+  useEffect(() => {
+    if (!legacyApp) return;
+    const rest = new URLSearchParams(searchParams);
+    rest.delete("app");
+    const q = rest.toString();
+    navigate(`/admin/trainers/${legacyApp}${q ? `?${q}` : ""}`, { replace: true });
+  }, [legacyApp, searchParams, navigate]);
 
   const loadDetail = useCallback(async (id: string) => {
     try {
@@ -747,13 +806,9 @@ export default function TrainerApplications() {
       toastError(err instanceof ApiError ? err.message : "تعذر فتح الطلب");
       /* وما لا يُفتح لا يبقى في العنوان: معرّفٌ محذوفٌ أو لا صلاحيّةَ عليه
          يُبقي الشاشةَ فارغةً كلَّما رجع إليها صاحبُها. */
-      setSearchParams((prev: URLSearchParams) => {
-        const next = new URLSearchParams(prev);
-        next.delete("app");
-        return next;
-      });
+      navigate("/admin/trainers", { replace: true });
     }
-  }, [setSearchParams]);
+  }, [navigate]);
 
   /* والعنوانُ هو المصدر: منه يُجلب الملفُّ، وبمحوه يُغلَق. فلا موضعَ ثانٍ
      للحقيقة يفترق عن الأوّل. */
@@ -942,11 +997,29 @@ export default function TrainerApplications() {
      التذكيرُ وفتحُ الملفّ هما بندا القائمة ⋮ بعينهما، فلا يفترق الزرُّ عن البند في شرطٍ أو رسالة. والعقدُ في
      «العقود» بالرابط الذي تفتحه بطاقةُ «المدربون» (`?q=` و`?prepare=`). */
   const runJoiningAct = (a: AppRow, act: JoiningAct) => {
-    if (act === "contract_new") { navigate(`/admin/trainer-contracts?q=${encodeURIComponent(a.fullName)}&prepare=${a.id}`); return; }
-    if (act === "contract") { navigate(`/admin/trainer-contracts?q=${encodeURIComponent(a.fullName)}`); return; }
+    if (act === "contract_new" || act === "contract") { navigate(contractsHref(a, act)); return; }
     const key = act === "remind_booking" ? "remind-booking" : act === "remind_draft" ? "remind-draft" : "open";
     rowActions(a).find((i) => i.key === key)?.run();
   };
+
+  /* ═══ التذكيران وبابُ العقد — يُنادَون من قائمة الصفّ وزرِّه ومن رأس الملفّ (٢٤ أكتوبر ٢٠٢٦) ═══
+     بنصٍّ واحدٍ ومسارٍ واحد: لو كُتب كلٌّ في موضعه لافترقت رسالةُ الزرّ عن رسالة البند. */
+  const remindBooking = (id: string) => act(
+    () => apiPost<{ emailDelivery?: string }>(`/api/admin/trainer-applications/${id}/booking-reminder`, {}),
+    (result) => mailOutcomeAr(
+      "أرسل إليه طلب تحديد الموعد",
+      (result as { emailDelivery?: string } | null)?.emailDelivery,
+    ),
+  );
+  const remindDraft = (id: string) => act(
+    () => apiPost<{ emailDelivery?: string }>(`/api/admin/trainer-applications/${id}/draft-reminder`, {}),
+    (result) => mailOutcomeAr(
+      "أرسل إليه تذكير بإكمال طلبه",
+      (result as { emailDelivery?: string } | null)?.emailDelivery,
+    ),
+  );
+  const contractsHref = (a: { id: string; fullName: string }, act: "contract_new" | "contract") =>
+    `/admin/trainer-contracts?q=${encodeURIComponent(a.fullName)}${act === "contract_new" ? `&prepare=${a.id}` : ""}`;
 
   const rowActions = (a: AppRow): RowAction[] => {
     const items: RowAction[] = [
@@ -960,13 +1033,7 @@ export default function TrainerApplications() {
     if (canRemind(a)) {
       items.push({
         key: "remind-booking", label: "اطلب منه تحديد موعد المقابلة", icon: CalendarCheck,
-        run: () => void act(
-          () => apiPost<{ emailDelivery?: string }>(`/api/admin/trainer-applications/${a.id}/booking-reminder`, {}),
-          (result) => mailOutcomeAr(
-            "أرسل إليه طلب تحديد الموعد",
-            (result as { emailDelivery?: string } | null)?.emailDelivery,
-          ),
-        ),
+        run: () => void remindBooking(a.id),
       });
     }
     /* ═══ ومتابعةُ من لم يحضر — بالمِحَكّ المشترك لا بشرطٍ يُكتب هنا ═══
@@ -1006,13 +1073,7 @@ export default function TrainerApplications() {
     if (a.status === "draft") {
       items.push({
         key: "remind-draft", label: "ذكّره بإكمال طلبه", icon: Send,
-        run: () => void act(
-          () => apiPost<{ emailDelivery?: string }>(`/api/admin/trainer-applications/${a.id}/draft-reminder`, {}),
-          (result) => mailOutcomeAr(
-            "أرسل إليه تذكير بإكمال طلبه",
-            (result as { emailDelivery?: string } | null)?.emailDelivery,
-          ),
-        ),
+        run: () => void remindDraft(a.id),
       });
     }
     /* ═══ وطلبُ المعلومات يُفتح من الطابور (٢١ سبتمبر ٢٠٢٦) ═══
@@ -1197,18 +1258,93 @@ export default function TrainerApplications() {
         {d.label}
       </Button>
     );
-    return (
-      <AdminLayout title={`الطلب ${a.reference}`}>
-        {/* ودربُ الوصول مكتوبٌ لا زرٌّ وحدَه: من دخل ملفّا بعد ملفٍّ نسي من
-            أين جاء، و«كل الطلبات» تقول الوجهةَ ولا تقول الموضع. */}
-        <nav aria-label="مسار الوصول" className="mb-4 flex flex-wrap items-center gap-1.5 text-fine">
-          <Button tone="ghost" icon={ChevronLeft} onClick={closeDetail}
-            className="text-teal-light-ink hover:text-teal-ink">
-            طلبات المدربين
+    /* ═══ والخطوةُ التالية في الملفّ — من `joiningNextOf` نفسِها التي يقرؤها صفُّه (٢٤ أكتوبر ٢٠٢٦) ═══
+
+       وزرُّها هنا بابُ الفعل في الملفّ لا «افتح ملفه»: القرارُ أسفلَ «الطلب والمقابلة» بروبركه، ونتيجةُ اللقاء في
+       «المقابلات»، والتذكيرُ يُرسَل من مكانه، والعقدُ في «العقود» كما يذهب إليه زرُّ الصفّ. وما لا فعلَ لنا فيه
+       يُقال بلا زرّ. والذهبيُّ لقرار الشريط وحدَه («واحدٌ في الشاشة لا اثنان») — فهذا فيروزيّ. */
+    const goToSection = (id: string) => {
+      setTab("dossier");
+      setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
+    };
+    const recordNext = (next: JoiningNext | null) => {
+      if (!next) {
+        /* عبر إلى «المدربون» — وما ينتظره في بطاقته هناك حتّى يصير هنا (المرحلةُ التالية) */
+        return (
+          <Card tone="accent" className="flex flex-wrap items-center justify-between gap-3 !px-4 !py-3">
+            <p className="text-read font-bold text-teal-light-ink">عبر إلى «المدربون» — وما ينتظره في بطاقته هناك</p>
+            {user?.permissions?.includes("trainer.qualify") && (
+              <Button size="sm" tone="secondary" onClick={() => navigate(`/admin/trainer-run?q=${encodeURIComponent(a.email)}`)}>
+                افتح بطاقته
+              </Button>
+            )}
+          </Card>
+        );
+      }
+      const tone = next.turn === "you" ? "confirm" : "secondary";
+      const button =
+        next.act === "remind_booking" ? (
+          <Button size="sm" tone={tone} disabled={busy} onClick={() => void remindBooking(a.id)}>{JOINING_ACT_AR.remind_booking}</Button>
+        ) : next.act === "remind_draft" ? (
+          <Button size="sm" tone={tone} disabled={busy} onClick={() => void remindDraft(a.id)}>{JOINING_ACT_AR.remind_draft}</Button>
+        ) : next.act === "contract_new" || next.act === "contract" ? (
+          <Button size="sm" tone={tone} onClick={() => navigate(contractsHref(a, next.act as "contract_new" | "contract"))}>
+            {JOINING_ACT_AR[next.act]}
           </Button>
-          <span aria-hidden className="text-muted-foreground/50">›</span>
-          <span className="font-bold text-muted-foreground">{a.fullName}</span>
-        </nav>
+        ) : next.focus ? (
+          <Button size="sm" tone="confirm" onClick={() => goToSection(next.focus === "decision" ? "sec-rubric" : "sec-interviews")}>
+            {next.focus === "decision" ? "اذهب إلى القرار" : "اذهب إلى المقابلات"}
+          </Button>
+        ) : null;
+      return (
+        <Card tone="accent" className="flex flex-wrap items-center justify-between gap-3 !px-4 !py-3">
+          <p className={`text-read font-bold ${TURN_TONE[next.turn]}`}>{TURN_AR[next.turn]}{next.ar}</p>
+          {button}
+        </Card>
+      );
+    };
+    return (
+      <AdminLayout title={a.fullName}>
+        {/* ═══ رأسُ ملفّ المدرّب — أين هو، ومتى، وما التالي (٢٤ أكتوبر ٢٠٢٦) ═══
+
+            المرحلةُ الثالثةُ من مقترح لوحة الإدارة (3b): «أين هو، وما التالي، وكلُّ شيءٍ عنه» — صفحةٌ لكلّ مدرّب،
+            عنوانُها اسمُه. ثلاثةُ أسطر: دربُ الوصول برقم طلبه، وخطُّه بتواريخه، وخطوتُه التالية بزرّها.
+            ودربُ الوصول مكتوبٌ لا زرٌّ وحدَه: من دخل ملفّا بعد ملفٍّ نسي من أين جاء — و«الطلبات» تعيده إلى الطابور
+            بمحطّته وبحثه، والمحطّةُ تفتح الطابورَ عليها. */}
+        {(() => {
+          const facts: JoiningFacts = {
+            status: a.status, deferredFollowUpAt: a.deferredFollowUpAt,
+            deferredInterestAskedAt: a.deferredInterestAskedAt, ...a.joining,
+          };
+          const stopNow = joiningStopOf(facts);
+          const stopAr = stopNow ? JOINING_STOPS.find((st) => st.id === stopNow)!.ar : null;
+          const next = joiningNextOf(facts);
+          return (
+            <header className="mb-4 space-y-3">
+              <nav aria-label="مسار الوصول" className="flex flex-wrap items-center gap-1.5 text-fine">
+                <Button tone="ghost" icon={ChevronLeft} onClick={closeDetail}
+                  className="text-teal-light-ink hover:text-teal-ink">
+                  الطلبات
+                </Button>
+                <span aria-hidden className="text-muted-foreground/50">›</span>
+                {stopNow ? (
+                  <Button tone="ghost" onClick={() => navigate(`/admin/trainers?stop=${stopNow}`)}
+                    className="text-teal-light-ink hover:text-teal-ink">
+                    {stopAr}
+                  </Button>
+                ) : (
+                  <span className="font-bold text-muted-foreground">في «المدربون»</span>
+                )}
+                <span aria-hidden className="text-muted-foreground/50">·</span>
+                <span className="font-mono text-muted-foreground" dir="ltr">{a.reference}</span>
+                {a.jobTitle && <span className="text-muted-foreground">· {a.jobTitle}</span>}
+              </nav>
+              <RecordLine line={joiningLineOf({ ...facts, submittedAt: a.phase2CompletedAt ?? a.createdAt, history: a.statusHistory })} />
+              {/* ومن أُغلق طلبُه لا دورَ فيه لأحد — وحالُه بتاريخها جانبَ الخطّ، فسطرٌ يعيدها تكرار */}
+              {!(stopNow === "closed" && next?.turn === "none") && recordNext(next)}
+            </header>
+          );
+        })()}
 
         {/* ═══ شريطُ القرار — لاصقٌ أعلى الشاشة ═══
 
@@ -1252,11 +1388,8 @@ export default function TrainerApplications() {
             العكسُ (`max-lg:contents`): بطاقةٌ واحدةٌ كما كانت. */}
         <Card className="-mx-1 mb-4 !px-4 !py-3 lg:contents">
           <Card tone="solid" className="max-lg:contents lg:sticky lg:top-16 lg:z-20 lg:-mx-1 lg:mb-3 lg:!px-4 lg:!py-2">
+            {/* والاسمُ ورقمُ الطلب في رأس الملفّ فوقه (٢٤ أكتوبر ٢٠٢٦) — وكانا هنا على الهاتف وحدَه */}
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="min-w-0 lg:hidden">
-                <p className="truncate text-sm font-black">{a.fullName}</p>
-                <p className="truncate font-mono text-read text-muted-foreground" dir="ltr">{a.reference}</p>
-              </div>
               <div className="flex flex-wrap items-center gap-2">
                 {available.length === 0
                   ? <span className="text-read text-muted-foreground">لا إجراءات متاحة في هذه الحالة.</span>
@@ -1313,8 +1446,8 @@ export default function TrainerApplications() {
                 <span className="text-read leading-6 text-gold-ink">
                   لا يعتمد نهائيّا قبل إكمال تجهيزه — <b>{missingAr.join(" · ")}</b>
                 </span>
-                <Button tone="secondary" size="sm" onClick={() => setTab("prep")}>
-                  افتح «التجهيز»
+                <Button tone="secondary" size="sm" onClick={() => setTab("agreement")}>
+                  افتح «الاتفاقية»
                 </Button>
                 {canOverride && (
                   <span className="text-fine leading-5 text-muted-foreground">
@@ -1367,9 +1500,10 @@ export default function TrainerApplications() {
               value={tab}
               onChange={setTab}
               items={[
-                { id: "dossier", label: "الملفّ والمعلومات" },
-                { id: "prep", label: "التجهيز" },
-                { id: "courses", label: "الدورات والشعب" },
+                { id: "dossier", label: "الطلب والمقابلة" },
+                { id: "agreement", label: "الاتفاقية" },
+                { id: "courses", label: "الدورات" },
+                { id: "log", label: "السجل" },
               ]}
             />
 
@@ -1411,7 +1545,7 @@ export default function TrainerApplications() {
               </nav>
             )}
 
-            {tab === "prep" ? (
+            {tab === "agreement" ? (
               <PreparationSteps
                 applicationId={a.id}
                 profileId={a.profile?.id ?? null}
@@ -1425,6 +1559,27 @@ export default function TrainerApplications() {
               />
             ) : tab === "courses" ? (
               <TrainerCoursesTab summary={a.summary} />
+            ) : tab === "log" ? (
+              /* ═══ «السجل» — سجلُّ الحالة وأثرُ ما وقع على الطلب (٢٤ أكتوبر ٢٠٢٦) ═══
+                 كان سجلُّ الحالة في ذيل «الملفّ والمعلومات» بطلب صاحب المنصّة (١٣ سبتمبر ٢٠٢٦): «من يجلس إلى المتقدّم
+                 يحتاج أن يعرف متى قدّم وأين وقف». وذاك صار خطَّ الملفّ في رأس كلّ لسان، وتفصيلُه هنا بملاحظاته — ومعه
+                 أثرُ ما وقع على الطلب: من فعل ماذا ومتى. */
+              <>
+                <Panel as="article">
+                  <h4 id="sec-history" className="flex scroll-mt-28 items-center gap-2 text-sm font-black"><ClipboardList className="h-4 w-4 text-teal-light-ink" /> سجل الحالة</h4>
+                  <ol className="mt-3 space-y-2">
+                    {a.statusHistory.map((h, i) => (
+                      <li key={i} className="flex items-center gap-2 text-read text-muted-foreground">
+                        <span className="h-1.5 w-1.5 rounded-full bg-teal" />
+                        <b className="text-foreground">{STATUS_LABELS[h.toStatus] ?? h.toStatus}</b>
+                        {h.note && <span>— {h.note}</span>}
+                        <span className="mr-auto text-muted-foreground/50">{fmtDateTime(new Date(h.createdAt))}</span>
+                      </li>
+                    ))}
+                  </ol>
+                  <EntityAuditTimeline entityType="trainer_application" entityId={a.id} labelAr="أثر هذا الطلب" />
+                </Panel>
+              </>
             ) : (
             <>
             <Panel as="article" id="sec-profile" className="scroll-mt-28">
@@ -1572,22 +1727,6 @@ export default function TrainerApplications() {
                 </ol>
               </Panel>
             )}
-
-            {/* سجل الحالات — ويُطبع بطلب صاحب المنصّة (١٣ سبتمبر ٢٠٢٦) بعد أن
-                قُطع: من يجلس إلى المتقدّم يحتاج أن يعرف متى قدّم وأين وقف. */}
-            <Panel as="article">
-              <h4 id="sec-history" className="flex scroll-mt-28 items-center gap-2 text-sm font-black"><ClipboardList className="h-4 w-4 text-teal-light-ink" /> سجل الحالة</h4>
-              <ol className="mt-3 space-y-2">
-                {a.statusHistory.map((h, i) => (
-                  <li key={i} className="flex items-center gap-2 text-read text-muted-foreground">
-                    <span className="h-1.5 w-1.5 rounded-full bg-teal" />
-                    <b className="text-foreground">{STATUS_LABELS[h.toStatus] ?? h.toStatus}</b>
-                    {h.note && <span>— {h.note}</span>}
-                    <span className="mr-auto text-muted-foreground/50">{fmtDateTime(new Date(h.createdAt))}</span>
-                  </li>
-                ))}
-              </ol>
-            </Panel>
 
             {/* ورقةُ المقابلة: ما يُسأل وما يُملأ — تُقرأ على الشاشة وتُطبع */}
             <InterviewSheet a={a as unknown as Dossier} />

@@ -352,6 +352,8 @@ export default function App() {
                 `data/admin`. سير المحتوى الحقيقي في «الكتالوج» و«النشر والإصدارات». */}
             <Route path="/admin/content" element={<Navigate to="/admin/publishing" replace />} />
             <Route path="/admin/trainers" element={<AdminTrainerApps />} />
+            {/* ملفُّ كلِّ مدرّبٍ عنوانُه (٢٤ أكتوبر ٢٠٢٦) — والصفحةُ نفسُها: الطابورُ وملفُّه */}
+            <Route path="/admin/trainers/:id" element={<AdminTrainerApps />} />
             {/* ج-١: بابٌ ثانٍ للإسناد يبدأ من المدرّب — وإسنادُ الشعبة يبقى في صفحتها */}
             {/* «إسنادٌ من المدرّب» ضُمّت إلى «المدربون» (١٨ أكتوبر ٢٠٢٦) — ورابطُها القديمُ يصل إليها */}
             <Route path="/admin/assign-by-trainer" element={<Navigate to="/admin/trainer-run" replace />} />

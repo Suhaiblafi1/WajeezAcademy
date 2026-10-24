@@ -2,12 +2,14 @@
 
    ① من اعتمدنا توقيعَه، أو نشط، يُعلَّم «عبر» — بالبوّابة نفسِها التي يقرؤها «المدربون» (`OPERATING_TRAINER_WHERE`).
    ② ومن لم يعبر يحمل آخرَ عقدٍ له غيرَ مُزاح، باسمَي مطابقة التوقيع — فتقول محطّةُ «الاتفاقية» خطوتَه.
-   ③ ومن لا ملفَّ له لا عقدَ له ولم يعبر. */
+   ③ ومن لا ملفَّ له لا عقدَ له ولم يعبر.
+   ④ وملفُّه يقول ما يقوله صفُّه (`getApplication().joining`) — فلا يقول الصفُّ «منه: يحجز موعده» والملفُّ غيرَه. */
 
 import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
 import { setupTestDb, testPrisma } from '../helpers/db'
 import { TrainerReviewService } from '../../services/trainer-review.service'
+import { INVITATION_ACTION } from '../../../src/application/trainer/interview-invitation'
 
 let prisma: PrismaClient
 let review: TrainerReviewService
@@ -70,5 +72,40 @@ describe('③ ومن لا ملف له', () => {
     const row = await rowOf(await applicant('submitted'))
     expect(row.contract).toBeNull()
     expect(row.operating).toBe(false)
+  })
+})
+
+describe('④ وملفه يقول ما يقوله صفه', () => {
+  it('⚠️ حقائق الانضمام في الملف هي حقائق الصف — عقدا ولقاءات ودعوة وعبورا', async () => {
+    const day = 86_400_000
+    const signed = await applicant('contract_pending', ['signed', 'superseded'], 'الاسم في الوثيقة')
+    const crossed = await applicant('contract_pending', ['signature_approved'])
+    const fresh = await applicant('submitted')
+    /* وله لقاءٌ مضى بنتيجته، وغيابٌ، وموعدٌ قادم — ومن كلٍّ يُقرأ شيء: النتيجةُ والعددُ والمعلَّق */
+    const met = await applicant('interview_scheduled')
+    await prisma.trainerInterview.createMany({ data: [
+      { applicationId: met, scheduledAt: new Date(Date.now() - 6 * day), outcome: 'no_show' },
+      { applicationId: met, scheduledAt: new Date(Date.now() - 3 * day), outcome: 'passed' },
+      { applicationId: met, scheduledAt: new Date(Date.now() + 2 * day) },
+      { applicationId: met, scheduledAt: new Date(Date.now() + 5 * day), canceledAt: new Date() },
+    ] })
+    /* ومن دعوناه إلى الحجز ولم يحجز — ودعوتُه في الأثر لا في عمود */
+    const invited = await applicant('under_review')
+    await prisma.auditEvent.create({ data: { action: INVITATION_ACTION, entityType: 'trainer_application', entityId: invited } })
+
+    for (const id of [signed, crossed, fresh, met, invited]) {
+      const row = await rowOf(id)
+      const { joining } = await review.getApplication(id)
+      expect(joining, id).toEqual({
+        operating: row.operating, interviewsCount: row.interviewsCount, interviewInvitedAt: row.interviewInvitedAt,
+        pendingInterviewAt: row.pendingInterviewAt, interviewOutcome: row.interviewOutcome, contract: row.contract,
+      })
+    }
+    /* وشرطُ صحّة الفحص: الحقائقُ ليست فارغةً كلُّها — وإلّا تطابق فراغان */
+    const metRow = await rowOf(met)
+    expect(metRow.interviewOutcome).toBe('passed')
+    expect(metRow.interviewsCount).toBe(2)
+    expect(metRow.pendingInterviewAt).not.toBeNull()
+    expect((await rowOf(invited)).interviewInvitedAt).not.toBeNull()
   })
 })

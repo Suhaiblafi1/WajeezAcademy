@@ -86,6 +86,8 @@ interface PreviousCourse {
 const strings = (v: unknown): string[] => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : [])
 
 export interface DossierApplication {
+  /** معرّفُه — به يُفتح ملفُّه في الإدارة (`/admin/trainers/:id`) */
+  id?: string
   reference: string
   status: string
   fullName: string
@@ -313,7 +315,7 @@ ${section('أدلّته وما سبق له', evidence)}
 ${app.motivation ? section('لماذا وجيز — بقلمه', `<p class="prose quote">${para(app.motivation)}</p>`) : ''}
 <footer>
   السيرة الذاتيّة مرفقة بهذه الرسالة ملفّا منفصلا إن رفعها.
-  ولتفاصيل الطلب كلّها وسجلّ حالاته: ${esc(publicSiteUrl())}/admin/trainer-applications
+  ولتفاصيل الطلب كلّها وسجلّ حالاته: ${esc(publicSiteUrl())}/admin/trainers${app.id ? `/${esc(app.id)}` : ''}
 </footer>
 </body></html>`
 }
@@ -381,7 +383,10 @@ export async function sendInterviewDossier(
      مكتوبٌ في آخر سطرٍ عاريا. وهي تصل المُقابِلين من الأكاديمية نفسِها —
      ومن كتب «بكافّة أنواعها» في شكواه أرادها معها. والقالبُ يولّد النصَّ
      الخامَّ من الوصف نفسِه، فلا يخسر قارئُ النصّ شيئا. */
-  const appsUrl = `${publicSiteUrl()}/admin/trainer-applications`
+  /* ═══ وزرُّها يفتح ملفَّه (٢٤ أكتوبر ٢٠٢٦) ═══
+     كان يفتح `/admin/trainer-applications` — ولا شاشةَ بهذا العنوان منذ صارت «طلبات المدربين» `/admin/trainers`:
+     فكان المُقابِلُ يضغط الزرَّ إلى لوحةٍ لا خبرَ فيها. والآن ملفُّ صاحب المقابلة نفسُه. */
+  const appsUrl = `${publicSiteUrl()}/admin/trainers/${app.id}`
   const mail = renderMail({
     heading: `حجز ${app.fullName} مقابلته عبر Calendly`,
     preheader: `${when} — الطلب ${app.reference}`,
@@ -398,7 +403,7 @@ export async function sendInterviewDossier(
       { kind: 'p', text: cvBytes
         ? `وسيرته الذاتيّة مرفقة ملفّا منفصلا: ${cv?.originalName}`
         : 'ولم يرفع سيرة ذاتيّة.' },
-      { kind: 'cta', label: 'افتح شاشة طلبات المدربين', href: appsUrl },
+      { kind: 'cta', label: 'افتح ملفه', href: appsUrl },
     ],
   })
 

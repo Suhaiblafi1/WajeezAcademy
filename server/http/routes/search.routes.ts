@@ -6,6 +6,8 @@ import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import type { PrismaClient } from '@prisma/client'
 import { requireAuth, requirePermission } from '../auth-plugin'
+import { STATUS_LABELS } from '../../../src/application/trainer/application-status'
+import { plainAr } from '../../../src/application/text/plain-ar'
 
 export function registerSearchRoutes(app: FastifyInstance, prisma: PrismaClient) {
   app.get('/api/admin/search', {
@@ -56,8 +58,11 @@ export function registerSearchRoutes(app: FastifyInstance, prisma: PrismaClient)
     return {
       q,
       groups: {
+        /* ═══ ونتيجةُ المدرّب تفتح ملفَّه — بحالته بالعربيّة (٢٤ أكتوبر ٢٠٢٦) ═══
+           كانت تفتح «الطلبات» من أوّلها فيُبحث عنه ثانيةً، وتقول حالتَه بمفتاحها (`contract_pending`). */
         applications: applications.map((a) => ({
-          id: a.id, title: a.fullName, sub: `${a.reference} · ${a.status}`, to: '/admin/trainers',
+          id: a.id, title: a.fullName, sub: `${a.reference} · ${plainAr(STATUS_LABELS[a.status] ?? a.status)}`,
+          to: `/admin/trainers/${a.id}`,
         })),
         users: users.map((u) => ({
           id: u.id, title: u.displayName, sub: u.email, to: '/admin/users',
@@ -73,7 +78,8 @@ export function registerSearchRoutes(app: FastifyInstance, prisma: PrismaClient)
         })),
         payouts: payouts.map((p) => ({
           id: p.id, title: `${p.profile.application?.fullName ?? 'مدرب'} — ${p.period}`,
-          sub: `كشف · ${p.status} · ${Number(p.total)} ${p.currency}`, to: '/admin/trainers',
+          /* والكشفُ في «الأتعاب» حيث يُقرأ — لا في «الطلبات» التي كان يفتحها */
+          sub: `كشف · ${p.status} · ${Number(p.total)} ${p.currency}`, to: '/admin/trainer-compensation',
         })),
       },
     }

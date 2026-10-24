@@ -612,9 +612,45 @@ export class TrainerReviewService {
       ? await new EarningsService(this.prisma).activeRule(app.profile.id)
       : null
 
+    /* ═══ وحقائقُ الانضمام — بحكم الطابور نفسِه، فيقول الملفُّ ما يقوله صفُّه (٢٤ أكتوبر ٢٠٢٦) ═══
+
+       رأسُ الملفّ يقول محطّتَه وخطوتَه التالية (`joining.ts`) من الحقائق التي يقرؤها صفُّه في الطابور
+       (`listApplications`): من عبر إلى «المدربون» بالبوّابة نفسِها، ومتى دُعي إلى الحجز (من الأثر)، وموعدُه
+       المعلَّق ونتيجةُ آخر لقاء، وآخرُ عقدٍ له غيرُ مُزاح. ولو حُسبت هنا بحكمٍ آخر لقال الصفُّ «منه: يحجز موعده»
+       والملفُّ غيرَه — فتطابقُهما محروسٌ في `joining-list.test.ts`. */
+    const liveInterviews = app.interviews
+      .filter((iv) => !iv.canceledAt)
+      .sort((x, y) => y.scheduledAt.getTime() - x.scheduledAt.getTime())
+    const [operatingCount, invitation] = await Promise.all([
+      app.profile
+        ? this.prisma.trainerProfile.count({ where: { AND: [OPERATING_TRAINER_WHERE, { id: app.profile.id }] } })
+        : Promise.resolve(0),
+      this.prisma.auditEvent.findFirst({
+        where: { entityType: 'trainer_application', entityId: app.id, action: INVITATION_ACTION },
+        orderBy: { createdAt: 'desc' }, select: { createdAt: true },
+      }),
+    ])
+    const lastContract = (app.profile?.contracts ?? [])
+      .filter((c) => c.status !== 'superseded')
+      .sort((x, y) => y.createdAt.getTime() - x.createdAt.getTime())[0] ?? null
+
     return {
       ...app,
       readiness,
+      joining: {
+        operating: operatingCount > 0,
+        interviewsCount: liveInterviews.filter((iv) => iv.outcome !== NO_SHOW).length,
+        interviewInvitedAt: invitation?.createdAt ?? null,
+        pendingInterviewAt: pendingInterview(app.interviews, now),
+        interviewOutcome: liveInterviews.find((iv) => iv.outcome !== null)?.outcome ?? null,
+        contract: lastContract && {
+          status: lastContract.status,
+          tokenExpiresAt: lastContract.tokenExpiresAt,
+          gatesActivation: lastContract.gatesActivation,
+          documentNameAr: app.profile?.legalNameAr ?? app.fullName,
+          signedNameAr: lastContract.signerLegalName,
+        },
+      },
       activeCompensationRule: activeRule && {
         id: activeRule.id, type: activeRule.type, rate: activeRule.rate.toString(),
         currency: activeRule.currency, minSeats: activeRule.minSeats,
