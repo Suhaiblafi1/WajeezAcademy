@@ -30,6 +30,7 @@ const IMPORTER = read('server/catalog/importer.ts')
 const SCHEMA = read('prisma/schema.prisma')
 const FE_TYPE = read('src/data/core-catalog-source.ts')
 const FE_MAP = read('src/data/courses.ts')
+const AUTHORING_SCREEN = read('src/pages/admin/Authoring.tsx')
 
 /** مصدرُ الحقيقة: أجزاءُ المتن كما تعرفها حاكميّةُ الإصدارات */
 function contentFields(): string[] {
@@ -81,6 +82,24 @@ describe('أجزاء متن الوحدة — تكافؤ السلسلة', () => {
       expect(body, `${jsonKeyOf(f)} غائب عن /api/public/core-catalog — لن يصل المتعلّم`)
         .toContain(`{ ${jsonKeyOf(f)}: v.${f} }`)
     }
+  })
+
+  /* ═══ والحلقةُ الأولى: شاشةُ «تأليف المتون» حين تحفظ (٢٤ أكتوبر ٢٠٢٦) ═══
+     كان «حفظ المسوّدة» يرسل أربعةَ أجزاء، ولسانا «النشاط» و«الروبرك» يُكتبان ولا يُرسَلان — فيضيع ما فيهما بلا
+     رسالة، والخادمُ يقبل الستّةَ منذ ٢ سبتمبر. ظهر في دراسة لوحة الإدارة. */
+  it('شاشة التأليف تحفظ كلّ جزء تكتبه', () => {
+    const at = AUTHORING_SCREEN.indexOf('apiPut(`${base}/draft`, {')
+    expect(at, 'لم يعثر على نداء حفظ المسوّدة في Authoring.tsx').toBeGreaterThan(-1)
+    const body = AUTHORING_SCREEN.slice(at, AUTHORING_SCREEN.indexOf('});', at))
+    for (const f of FIELDS) {
+      expect(body, `${f} يكتب في الشاشة ولا يرسل حين تحفظ المسوّدة`).toContain(`${f}: draft.${f}`)
+    }
+  })
+
+  it('ولكلّ جزء لسان في الشاشة — ولا لسان لغير جزء', () => {
+    const block = AUTHORING_SCREEN.match(/const TABS:[\s\S]*?\n\];/)?.[0] ?? ''
+    const tabs = [...block.matchAll(/field: "(\w+)"/g)].map((m) => m[1])
+    expect(tabs.sort()).toEqual([...FIELDS].sort())
   })
 
   it('نوع الواجهة ومحوّلها يقرآن كلّ جزء', () => {

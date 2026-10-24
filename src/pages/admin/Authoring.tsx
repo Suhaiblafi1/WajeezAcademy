@@ -184,8 +184,10 @@ export default function Authoring() {
     try {
       const base = `/api/admin/authoring/${selected.moduleId}`;
       if (kind === "save") {
+        /* والأجزاءُ الستّةُ كلُّها — وكان «النشاط» و«الروبرك» يُكتبان ولا يُرسَلان (`module-content-parity.test.ts`) */
         await apiPut(`${base}/draft`, {
           bodyAr: draft.bodyAr, checksAr: draft.checksAr, videoAr: draft.videoAr, scenarioAr: draft.scenarioAr,
+          practiceAr: draft.practiceAr, rubricAr: draft.rubricAr,
         });
         setNotice("حفظت المسوّدة — ولا يراها متعلّم حتى تنشر.");
       } else if (kind === "submit") {
