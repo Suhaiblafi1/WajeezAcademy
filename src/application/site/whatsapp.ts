@@ -48,6 +48,13 @@ export const WHATSAPP_SPOTS: WhatsAppSpot[] = [
     labelAr: 'ردّ المدرّبين على رسائلنا',
     whereAr: 'بوابة المدرب · الرسائل والتنبيهات',
   },
+  /* مستشارُ المنحة على واتساب مباشرة (٢٤ أكتوبر ٢٠٢٦) — بدل طلبٍ يُكتب ويُنتظر ردُّه.
+     وكُتب رقمُه مرّةً بقرار صاحب المنصّة (`seedGrantAdvisorWhatsApp`) */
+  {
+    key: 'grant_advisor',
+    labelAr: 'مستشار منحة أعضاء وجيز',
+    whereAr: 'صفحة المنحة · بعد النموذج',
+  },
 ]
 
 export type WhatsAppNumbers = Record<string, string>

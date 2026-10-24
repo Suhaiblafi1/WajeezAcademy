@@ -28,7 +28,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
-import { Award, ChevronDown, CirclePlay, Clock, Copy, Gift, Loader2, Mail, Share2, UserRound, Video, type LucideIcon } from "lucide-react";
+import { Award, ChevronDown, Clock, Copy, Flame, Gift, Loader2, Mail, MessageCircle, PencilRuler, Share2, Sparkles, UserRound, Video, type LucideIcon } from "lucide-react";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import { useRealSession } from "@/services/session";
 import { useHoneypot } from "@/components/HoneypotField";
@@ -46,13 +46,15 @@ import { fmtDateLong, fmtMoney } from "@/application/text/format-ar";
 import { cohortDayAr } from "@/application/learning/cohort-gate";
 import { grantPrice, MEMBER_GRANT_NAME_AR } from "@/application/commerce/grant";
 import {
-  CAREER_LEVELS, GRANT_ACADEMY_LINE_AR, GRANT_CONSENT_AR, GRANT_GAINS_AR, GRANT_MAX_INTERESTS, GRANT_SUGGESTED_COURSES, WORK_FIELDS,
-  GRANT_VALUE_AR, GRANT_VALUE_PAID_AR, campaignParams, grantCountAr, grantCountdown, grantLeftAr, grantRemainingAr, grantSections, grantShareAr, grantShareMailto, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse,
+  CAREER_LEVELS, GRANT_ACADEMY_LINE_AR, GRANT_CONSENT_AR, GRANT_GAINS_AR, GRANT_GIFT_AR, GRANT_MAX_INTERESTS, GRANT_SUGGESTED_COURSES, WORK_FIELDS,
+  GRANT_VALUE_AR, GRANT_VALUE_PAID_AR, campaignParams, grantAdvisorTextAr, grantCountAr, grantCountdown, grantLeftAr, grantLimitAr, grantRemainingAr, grantSections, grantShareAr, grantShareMailto, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse,
   type GrantPathOption,
 } from "@/application/commerce/grant-landing";
 import { readStoredGrant, saveStoredGrant, type StoredGrant } from "@/services/grant-landing";
 import publicPathsData from "@/data/catalog/public-pathways.json";
-import { waShare } from "@/application/site/whatsapp";
+import { waHref, waShare } from "@/application/site/whatsapp";
+import { useWhatsAppNumbers } from "@/services/whatsapp";
+import { CONTACT } from "@/data/stories";
 import { resumedCheckoutFor, savePendingCheckout } from "@/services/pending-checkout";
 
 interface GrantCourse {
@@ -103,7 +105,19 @@ const GRANT_PATHS: GrantPathOption[] = [...publicPathsData.pathways]
   .map((x) => ({ id: x.id, title: x.title, courseIds: x.course_ids }));
 /** مجالُ دورةٍ لم تُسمَّ عائلتُها — لا يُعرض فيما يريد تطويرَه */
 const OTHER_DOMAIN = "أخرى";
-const GAIN_ICON: Record<(typeof GRANT_GAINS_AR)[number]["id"], LucideIcon> = { live: Video, recording: CirclePlay, certificate: Award };
+const GAIN_ICON: Record<(typeof GRANT_GAINS_AR)[number]["id"], LucideIcon> = { live: Video, practice: PencilRuler, certificate: Award };
+
+/** ما يحصل عليه — شريطٌ واحدٌ في النموذج وفوق قائمة الدورات (`GRANT_GAINS_AR`) */
+function GrantGains({ className = "" }: { className?: string }) {
+  return (
+    <ul className={`flex flex-wrap gap-x-5 gap-y-2 text-read ${className}`}>
+      {GRANT_GAINS_AR.map((g) => {
+        const Icon = GAIN_ICON[g.id];
+        return <li key={g.id} className="flex items-center gap-1.5"><Icon className="h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" />{g.title}</li>;
+      })}
+    </ul>
+  );
+}
 
 export default function MemberGrantPage() {
   const { user: session } = useRealSession();
@@ -115,8 +129,8 @@ export default function MemberGrantPage() {
   const [form, setForm] = useState({ fullName: "", phone: "", email: "", workField: "", careerLevel: "" });
   const [interests, setInterests] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
-  const [advisorAsked, setAdvisorAsked] = useState(false);
-  const [note, setNote] = useState("");
+  /* رقمُ مستشار المنحة من شاشة الربط (`grant_advisor`) — لا حرفٌ في الشيفرة */
+  const numbers = useWhatsAppNumbers();
 
   /* الدوراتُ المختارة بترتيب اختيارها — من كلّ ما يُشترى اليوم */
   const [picked, setPicked] = useState<string[]>([]);
@@ -190,16 +204,6 @@ export default function MemberGrantPage() {
     finally { setBusy(false); }
   };
 
-  const askAdvisor = async () => {
-    if (!stored) return;
-    setBusy(true);
-    try {
-      await apiPost("/api/public/grant/advisor", { ref: stored.ref, noteAr: note.trim() || null, website: hp.value });
-      setAdvisorAsked(true);
-    } catch (err) { toastError(err instanceof ApiError ? err.message : "تعذر الإرسال"); }
-    finally { setBusy(false); }
-  };
-
   const pay = () => {
     if (chosen.length === 0) return;
     savePendingCheckout({
@@ -237,40 +241,49 @@ export default function MemberGrantPage() {
     /* ما اخترناه له فوقُ مفتوحا، والباقي أقسامٌ مطويّةٌ بمجالها — ما يريد تطويرَه أوّلا (`grantSections`) */
     const top = courses.filter((x) => ours.has(x.courseId));
     const sections = grantSections(courses.filter((x) => !ours.has(x.courseId)), stored.interests, OTHER_DOMAIN);
-    /* سطرُ الدورة — في المختارات فوق وفي أقسام المجالات تحتها، ولا يُعاد اسمُ المجال تحت قسمه */
+    const advisorHref = waHref(numbers, "grant_advisor", CONTACT.whatsapp, grantAdvisorTextAr(stored.name, stored.code));
+    /* بطاقةُ الدورة — في المختارات فوق وفي أقسام المجالات تحتها، ولا يُعاد اسمُ المجال تحت قسمه. وصورةُ مدرّبها أوّلُ ما يُرى، وبكبرها — قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦): «اجعل صورةَ المدرّب
+       هي الشيءَ الذي يراه الشخص، بتصميمٍ يبيّن الصورةَ بحجمٍ كبيرٍ عصريّ». والشاراتُ وسومٌ نصّيّةٌ أعلاها لا أقراصٌ تُشبه
+       الأزرار («نقترحها لك يبدو زرّا»)، والسعرُ قيمتان بلا «قبل المنحة/بعد المنحة»: ما يدفعه كبيرا، وأصلُه مشطوبا */
     const row = (x: GrantCourse, inSection = false) => {
       const on = picked.includes(x.courseId);
       const full = !on && picked.length >= max;
+      const seats = seatsLeftAr(x.seatsLeft);
+      const tag = ours.has(x.courseId) ? "نقترحها لك" : fits(x) > 0 ? "يناسب ما تريد تطويره" : null;
       return (
         <Inset
           as="label" key={x.courseId} tone={on ? "accent" : "default"} interactive={!full}
-          className={`grid cursor-pointer grid-cols-[auto_minmax(0,1fr)] items-start gap-x-3 gap-y-1 sm:grid-cols-[auto_minmax(0,1fr)_auto] ${full ? "opacity-50" : ""}`}
+          className={`flex cursor-pointer items-start gap-4 ${full ? "opacity-50" : ""}`}
         >
-          <input type="checkbox" checked={on} disabled={full} onChange={() => toggle(x.courseId)} className="mt-1" />
-          <span>
-            <span className="block font-bold">{x.titleAr}</span>
-            <span className="block text-read text-muted-foreground">{x.domainAr && !inSection ? `${x.domainAr} · ` : ""}تبدأ {cohortDayAr(x.startsAt)} · مباشرة على Zoom</span>
-            {/* المدرّبُ ببوّابة النشر، وتفاصيلُ الدورة — في نافذةٍ جديدة فلا يضيع ما اختاره */}
-            <span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-read">
-              {x.trainer && (
-                <a href={`/trainers#trainer-${encodeURIComponent(x.trainer.id)}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 font-bold text-teal-light-ink">
-                  {x.trainer.photoUrl
-                    ? <img src={x.trainer.photoUrl} alt="" className="h-6 w-6 rounded-full object-cover" />
-                    : <UserRound className="h-5 w-5" aria-hidden="true" />}
-                  مع {x.trainer.name}
-                </a>
-              )}
-              <a href={`/build/${encodeURIComponent(x.courseId)}`} target="_blank" rel="noreferrer" className="text-muted-foreground underline">تفاصيل الدورة</a>
-            </span>
-            {seatsLeftAr(x.seatsLeft) && <Chip tone="warn" className="mt-1 me-1">{seatsLeftAr(x.seatsLeft)}</Chip>}
-            {ours.has(x.courseId)
-              ? <Chip tone="accent" className="mt-1">نقترحها لك</Chip>
-              : fits(x) > 0 && <Chip tone="accent" className="mt-1">يناسب ما تريد تطويره</Chip>}
+          {/* والاختيارُ على الصورة نفسِها — يُرى ويُضغط معها */}
+          <span className="relative shrink-0">
+            {x.trainer?.photoUrl
+              ? <img src={x.trainer.photoUrl} alt="" loading="lazy" className="h-24 w-24 rounded-2xl object-cover shadow-lg sm:h-28 sm:w-28" />
+              : <span className="grid h-24 w-24 place-items-center rounded-2xl bg-teal/10 text-teal-light-ink sm:h-28 sm:w-28"><UserRound className="h-10 w-10" aria-hidden="true" /></span>}
+            <input type="checkbox" checked={on} disabled={full} onChange={() => toggle(x.courseId)} aria-label={x.titleAr} className="absolute start-2 top-2 h-5 w-5 shadow" />
           </span>
-          {/* السعرُ تحت العنوان على الهاتف، وبجانبه على الحاسوب — فلا يضيق العنوانُ حتّى يتكسّر */}
-          <span className="col-start-2 flex flex-wrap gap-x-4 text-read sm:col-start-3 sm:block sm:text-end">
-            <span className="block text-muted-foreground">قبل المنحة <span dir="ltr" className="line-through">{money(x.price)}</span></span>
-            <span className="block font-black">بعد المنحة <span dir="ltr">{money(grantPrice(x.price, pct))}</span></span>
+          <span className="min-w-0 flex-1">
+            {(tag || seats) && (
+              <span className="mb-1 flex flex-wrap items-center gap-x-3 text-read font-bold">
+                {tag && <span className="inline-flex items-center gap-1 text-gold-ink"><Sparkles className="h-3.5 w-3.5" aria-hidden="true" />{tag}</span>}
+                {seats && <span className="inline-flex items-center gap-1 text-red-300"><Flame className="h-3.5 w-3.5" aria-hidden="true" />{seats}</span>}
+              </span>
+            )}
+            <span className="block font-bold leading-6">{x.titleAr}</span>
+            {/* المدرّبُ ببوّابة النشر، وتفاصيلُ الدورة — في نافذةٍ جديدة فلا يضيع ما اختاره */}
+            {x.trainer && (
+              <a href={`/trainers#trainer-${encodeURIComponent(x.trainer.id)}`} target="_blank" rel="noreferrer" className="mt-0.5 block text-read font-bold text-teal-light-ink">
+                مع {x.trainer.name}
+              </a>
+            )}
+            <span className="mt-0.5 block text-read text-muted-foreground">{x.domainAr && !inSection ? `${x.domainAr} · ` : ""}تبدأ {cohortDayAr(x.startsAt)} · مباشرة على Zoom</span>
+            <span className="mt-2 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+              <span className="flex items-baseline gap-2">
+                <bdi dir="ltr" className="text-lg font-black">{money(grantPrice(x.price, pct))}</bdi>
+                <bdi dir="ltr" className="text-read text-muted-foreground line-through">{money(x.price)}</bdi>
+              </span>
+              <a href={`/build/${encodeURIComponent(x.courseId)}`} target="_blank" rel="noreferrer" className="text-read text-muted-foreground underline">تفاصيل الدورة</a>
+            </span>
           </span>
         </Inset>
       );
@@ -294,17 +307,13 @@ export default function MemberGrantPage() {
             <p className="mt-2 text-read">{reasonAr ?? (c.open ? "" : "المنحة مغلقة الآن")}</p>
           )}
           {c.open && c.closesAt && <GrantCountdown closesAt={c.closesAt} className="mt-4" />}
+          {/* وحدُّها جملةٌ واحدةٌ تحت «آخر يوم» — قرارُه (٢٤ أكتوبر ٢٠٢٦). وهو حدٌّ يحرس قيمتَها: «اختر ٤ دوراتٍ بحدٍّ أقصى» */}
+          {c.open && <p className="mt-0.5 text-read text-muted-foreground">{grantLimitAr(max)}</p>}
         </Card>
 
         <h2 className="mt-6 text-xl font-black">
           اختر دوراتك{view.termAr && <span className="text-read font-normal text-muted-foreground"> · {view.termAr}</span>}
         </h2>
-        {/* بقولٍ واحدٍ سهل — قرارُ صاحب المنصّة (٢١ أكتوبر ٢٠٢٦): «بيّن الأمرَ بشكلٍ سلسٍ وجميلٍ وبسيط.. فقط اختر
-            الدورات من ١-٥ التي تريد أن تندرج ضمن المنحة.. يمكنك استبدالها لاحقا بدوراتٍ أخرى باستشارة مستشارك الخاص» */}
-        {/* وحدُّها يُقال حدّا يحرس قيمتَها — قرارُه (٢٤ أكتوبر ٢٠٢٦): «اختر ٤ دوراتٍ بحدٍّ أقصى، لكي يشعر أنّ المنحةَ عظيمة» */}
-        <p className="mt-1 text-read text-muted-foreground">
-          اختر حتى {max} دورات، وهذا أقصى ما تغطيه منحتك. ويمكنك استبدالها لاحقا بعد استشارة مستشارك الخاص.
-        </p>
         {suggested.length > 0 && (
           <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-read">
             <span>{path.main ? `نقترح لك دورات مسار «${path.main.title}».` : `نقترح لك ${coursesAr(suggested.length)} تناسبك.`}</span>
@@ -316,23 +325,18 @@ export default function MemberGrantPage() {
             )}
           </p>
         )}
-        <Inset tone="accent" className="mt-3 flex items-start gap-3">
-          <Video className="mt-0.5 h-5 w-5 shrink-0 text-teal-light-ink" aria-hidden="true" />
-          <span className="text-read">
-            <span className="block font-bold">كل الدورات مباشرة على Zoom</span>
-            <span className="block text-muted-foreground">تلتقي مدربك وزملاءك مباشرة من أي مكان، وتسجيل كل لقاء يصلك بعده.</span>
-          </span>
-        </Inset>
+        {/* وما يحصل عليه شريطُ النموذج نفسُه — بدل صندوق Zoom الكبير (قرارُه، ٢٤ أكتوبر ٢٠٢٦) */}
+        <GrantGains className="mt-3" />
 
         {view.openCourses.length === 0 ? (
           <Card as="p" className="mt-5 text-read text-muted-foreground">لا دورات متاحة الآن. تواصل مع مستشار ليقترح عليك.</Card>
         ) : (
           <>
-            {top.length > 0 && <div className="mt-5 space-y-2">{top.map((x) => row(x))}</div>}
+            {top.length > 0 && <div className="mt-5 space-y-3">{top.map((x) => row(x))}</div>}
             {/* والباقي أقسامٌ مطويّةٌ بمجالها — قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦): «الدوراتُ كثيرةٌ وتحيّر الشخص» */}
             {sections.length > 0 && (
               <>
-                {top.length > 0 && <p className="mt-5 font-bold">دورات أخرى حسب المجال</p>}
+                {top.length > 0 && <p className="mt-6 font-bold">ويمكنك اختيار دورات أخرى من المجالات التالية</p>}
                 <div className="mt-2 space-y-2">
                   {sections.map((sec) => {
                     const mineHere = sec.items.filter((x) => picked.includes(x.courseId)).length;
@@ -345,7 +349,7 @@ export default function MemberGrantPage() {
                             <ChevronDown className="h-4 w-4 transition group-open:rotate-180" aria-hidden="true" />
                           </span>
                         </summary>
-                        <div className="mt-3 space-y-2">{sec.items.map((x) => row(x, true))}</div>
+                        <div className="mt-3 space-y-3">{sec.items.map((x) => row(x, true))}</div>
                       </Inset>
                     );
                   })}
@@ -367,35 +371,39 @@ export default function MemberGrantPage() {
             {/* وما بقي له ضمن منحته — فلا يترك منها شيئا (قرارُه: «اختر ٤ دوراتٍ بحدٍّ أقصى») */}
             <p className="mt-1 text-read font-bold text-gold-ink">{grantRemainingAr(chosen.length, max)}</p>
             <Button tone="confirm" className="mt-3 w-full" onClick={pay}>احصل على المنحة</Button>
-            {/* وآخرُه «أهدها لأصدقائك» — رسالةٌ جاهزةٌ في واتساب والبريد، فالصديقُ يأخذ منحتَه لا كودَك (`grantShareAr`) */}
-            {c.open && (
-              <div className="mt-3 border-t border-border pt-3 text-read">
-                <p className="flex items-center justify-center gap-1.5 font-bold"><Gift className="h-4 w-4 text-gold-ink" aria-hidden="true" /> أهدها لأصدقائك</p>
-                <p className="mt-1 flex justify-center gap-6">
-                  <a href={waShare(shareText)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-bold text-teal-light-ink underline">
-                    <Share2 className="h-4 w-4" aria-hidden="true" /> واتساب
-                  </a>
-                  <a href={grantShareMailto(window.location.origin, pct, lastDayLong)} className="inline-flex items-center gap-1 font-bold text-teal-light-ink underline">
-                    <Mail className="h-4 w-4" aria-hidden="true" /> البريد
-                  </a>
-                </p>
-              </div>
-            )}
           </Card>
         )}
 
-        <Card className="mt-6">
-          <p className="font-bold">لست متأكدا؟ تواصل مع مستشار</p>
-          {advisorAsked ? (
-            <p className="mt-1 text-read text-muted-foreground">وصل طلبك. سيتواصل معك مستشار قريبا.</p>
-          ) : (
-            <>
-              <textarea value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} rows={2} placeholder="اكتب ما تريد أن تعرفه (اختياري)" className={`${controlCls} mt-2 h-auto py-2`} />
-              {hp.field}
-              <Button tone="secondary" className="mt-2" disabled={busy} onClick={() => void askAdvisor()}>اطلب مستشارا</Button>
-            </>
-          )}
-        </Card>
+        {/* الإهداءُ صندوقٌ وحدَه خارجَ لوح الدفع — قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦): «صندوقُ الإهداء يكون خارجَ صندوق
+            الدفع، واجعل الكلمة: يحقّ لك أن تهدي هذه المنحة لأصدقائك (بحدٍّ أعلى ٣)». رسالةٌ جاهزةٌ في واتساب والبريد، فالصديقُ
+            يأخذ منحتَه لا كودَك (`grantShareAr`) */}
+        {c.open && (
+          <Card className="mt-6 flex flex-col items-center gap-4 text-center sm:flex-row sm:text-start">
+            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-gold/10"><Gift className="h-6 w-6 text-gold-ink" aria-hidden="true" /></span>
+            <span className="min-w-0 flex-1">
+              <span className="block font-black">{GRANT_GIFT_AR.title}</span>
+              <span className="block text-read text-muted-foreground">{GRANT_GIFT_AR.limit}، برسالة جاهزة ترسلها بضغطة.</span>
+            </span>
+            <span className="flex shrink-0 gap-2">
+              <Button as="a" href={waShare(shareText)} target="_blank" rel="noreferrer" icon={Share2}>واتساب</Button>
+              <Button as="a" href={grantShareMailto(window.location.origin, pct, lastDayLong)} icon={Mail}>البريد</Button>
+            </span>
+          </Card>
+        )}
+
+        {/* والمستشارُ على واتساب مباشرة — قرارُه (٢٤ أكتوبر ٢٠٢٦): «التواصلُ مع المستشار فاشلة لا تمثّل وسيلةً احترافيّة،
+            اجعلها واتساب مباشرة». برسالةٍ فيها اسمُه وكودُه، والرقمُ موضعُه في شاشة الربط (`grant_advisor`).
+            وطلبُ المستشار المكتوب (`/api/public/grant/advisor`) بقي في الخادم ولا تناديه الصفحة: مكالمةُ الساعتين تُفتح وحدَها */}
+        {advisorHref && (
+          <Card className="mt-4 flex flex-col items-center gap-4 text-center sm:flex-row sm:text-start">
+            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-teal/10"><MessageCircle className="h-6 w-6 text-teal-light-ink" aria-hidden="true" /></span>
+            <span className="min-w-0 flex-1">
+              <span className="block font-black">تحتاج مساعدة في الاختيار؟</span>
+              <span className="block text-read text-muted-foreground">مستشارك الخاص يرد عليك مباشرة على واتساب.</span>
+            </span>
+            <Button as="a" href={advisorHref} target="_blank" rel="noreferrer" icon={MessageCircle} className="shrink-0">راسل مستشارك</Button>
+          </Card>
+        )}
 
         {authOpen && (
           <Modal onClose={() => setAuthOpen(false)} label="أنشئ حسابك لتدفع" panelClassName="w-full max-w-md">
@@ -446,12 +454,7 @@ export default function MemberGrantPage() {
           )}
         </div>
 
-        <ul className="mt-5 flex flex-wrap justify-center gap-x-5 gap-y-2 text-read">
-          {GRANT_GAINS_AR.map((g) => {
-            const Icon = GAIN_ICON[g.id];
-            return <li key={g.id} className="flex items-center gap-1.5"><Icon className="h-4 w-4 text-teal-light-ink" aria-hidden="true" />{g.title}</li>;
-          })}
-        </ul>
+        <GrantGains className="mt-5 justify-center" />
 
         <Card as="form" onSubmit={apply} className="mt-6 space-y-3">
           <p className="text-center text-read text-muted-foreground">{c.open ? "دقيقة واحدة، وتأخذ كود منحتك فورا." : "نبلغك على بريدك أول ما تفتح."}</p>
