@@ -4,7 +4,10 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { defaultChoices, hasStarted, needsReminder, prepReminderMail, reminderTasks, shortCohortTitles, type MailChoices, type ReminderFacts } from '../../services/prep-reminder.service'
+import {
+  askedOf, defaultChoices, hasStarted, needsReminder, prepReminderMail, reminderHistory, reminderTasks, shortCohortTitles,
+  type MailChoices, type ReminderFacts, type SentReminder,
+} from '../../services/prep-reminder.service'
 import { renderMail } from '../../services/mail-template'
 
 /* ═══ وأعاد صاحبُ المنصّة كتابتَها (٢٠ أكتوبر ٢٠٢٦): ما لم يقبله ليس عالقا، والرسالةُ على حالين — لم يبدأ، أو له
@@ -75,8 +78,8 @@ describe('الرسالة', () => {
 
 describe('في صفحة المدربين لا في العقود', () => {
   const page = readFileSync(join(process.cwd(), 'src/pages/admin/TrainerRunOps.tsx'), 'utf8')
-  it('سطر في بطاقة كل مدرب بقي عليه شيء، وموعد واحد أعلى الصفحة', () => {
-    expect(page).toMatch(/<TrainerCourses trainer=\{t\} \/>\s*\{reminders\.has\(t\.profileId\) && <PrepReminderRow row=\{reminders\.get\(t\.profileId\)!\} deadline=\{deadline\} \/>\}/)
+  it('سطر في بطاقة كل مدرب بقي عليه شيء أو أرسلنا له، وموعد واحد أعلى الصفحة — والإرسال يعيد قراءة ما أرسلناه', () => {
+    expect(page).toMatch(/<TrainerCourses trainer=\{t\} \/>\s*\{reminders\.has\(t\.profileId\) && <PrepReminderRow row=\{reminders\.get\(t\.profileId\)!\} deadline=\{deadline\} onSent=\{\(\) => void load\(\)\} \/>\}/)
     expect(page).toMatch(/<ReminderDeadline value=\{deadline\} onChange=\{setDeadline\}/)
   })
 })
@@ -185,4 +188,63 @@ describe('الشعب المنقولة', () => {
     expect(tasks.map((x) => x.key)).toEqual(['plan:c9'])
   })
   /* وأنّ الخدمةَ تخرجها بطلب النقل المعتمَد أو المنتظر — بقاعدةٍ حقيقيّة في `prep-reminder-moved.test.ts` */
+})
+
+/* ═══ «ضع تاريخَ المراسلات إن أرسلنا للمدرّب سابقا، وهل قام بتنفيذ المطلوب» (صاحب المنصّة، ٢٤ أكتوبر ٢٠٢٦) ═══
+   كلُّ إرسالٍ يحفظ ما طلبه بعينه، ويُقرأ بحال المدرّب الآن. والسؤالُ لا يُحكم عليه، والقديمُ لا يُدّعى عليه. */
+describe('ما أرسلناه له من قبل، وهل نفذه', () => {
+  const at = (d: string) => new Date(`${d}T09:00:00.000Z`)
+  const then: ReminderFacts = {
+    ...base, noPhoto: true, pendingBio: true,
+    courses: [course('preparing', { cohortId: 'c1', cohortTitle: 'شعبة أ' })],
+  }
+  const sentWith = (facts: ReminderFacts, choices: MailChoices, day = '2026-10-21'): SentReminder => ({
+    at: at(day), status: 'sent', deadline: '2026-10-31', started: hasStarted(facts), choices, asked: askedOf(facts, choices), tasks: reminderTasks(facts).length,
+  })
+
+  it('⚠️ ما طلبناه يحفظ بعينه — وما تركه صاحب المنصة لا يحفظ', () => {
+    const asked = askedOf(then, { ...defaultChoices(then), skip: ['bio'] })
+    expect(asked.map((a) => a.key)).toEqual(['start', 'plan:c1', 'photo'])
+    expect(askedOf({ ...base, openCohorts: ['أ'] }, defaultChoices({ ...base, openCohorts: ['أ'] })).map((a) => a.key)).toEqual(['add'])
+  })
+
+  it('⚠️ ولكل ما طلبناه حاله الآن: نفذه إن لم يعد عالقا، وابدأ تمت إن بدأ', () => {
+    const send = sentWith(then, defaultChoices(then))
+    /* رفع صورته وأرسل خطته — فبدأ. والنبذة ما تزال تنتظره */
+    const now: ReminderFacts = { ...then, noPhoto: false, courses: [course('submitted', { cohortId: 'c1', cohortTitle: 'شعبة أ' })] }
+    const [h] = reminderHistory([send], now)
+    expect(h.sent).toBe(true)
+    expect(h.deadline).toBe('2026-10-31')
+    expect(h.items.map((i) => [i.textAr, i.done])).toEqual([
+      ['أن يبدأ بدورة', true],
+      ['أكمل خطة «شعبة أ» وأرسلها', true],
+      ['وافق على نبذتك أو عدلها', false],
+      ['أضف صورتك', true],
+    ])
+    /* ولم يفعل شيئا: كلها لم تتم */
+    expect(reminderHistory([send], then)[0].items.every((i) => i.done === false)).toBe(true)
+  })
+
+  it('والسؤال «هل تضيف دورة» لا يحكم عليه، و«انقل دوراتك» تمت إن لم يبق ما لم يقرر فيه', () => {
+    const started: ReminderFacts = { ...base, openCohorts: ['أ'], courses: [course('to_decide')] }
+    expect(reminderHistory([sentWith(started, defaultChoices(started))], started)[0].items).toEqual([{ textAr: 'سألناه هل يضيف دورة', done: null }])
+    const post = sentWith(started, { ...defaultChoices(started), courses: 'postpone' })
+    expect(reminderHistory([post], started)[0].items[0].done).toBe(false)
+    expect(reminderHistory([post], { ...started, courses: [course('declined')] })[0].items[0].done).toBe(true)
+  })
+
+  it('⚠️ والإرسال القديم بلا أعيان يقال عدده — ولا يدعى أنه تم', () => {
+    const old: SentReminder = { at: at('2026-10-20'), status: 'sent', deadline: '2026-10-27', started: false, choices: null, asked: null, tasks: 3 }
+    const [h] = reminderHistory([old], then)
+    expect(h.items).toEqual([{ textAr: 'أن يبدأ بدورة', done: false }])
+    expect(h.unknownAr).toBe('و3 أمور عالقة — أرسلت قبل حفظ تفاصيلها')
+  })
+
+  it('الأحدث أولا، والذي لم يرسل يقال', () => {
+    const a = sentWith(then, defaultChoices(then), '2026-10-20')
+    const b = { ...sentWith(then, defaultChoices(then), '2026-10-23'), status: 'skipped' }
+    const hs = reminderHistory([a, b], then)
+    expect(hs.map((h) => h.at.slice(0, 10))).toEqual(['2026-10-23', '2026-10-20'])
+    expect(hs.map((h) => h.sent)).toEqual([false, true])
+  })
 })
