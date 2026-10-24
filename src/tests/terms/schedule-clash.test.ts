@@ -10,7 +10,7 @@ import {
   rejectedScope, withRejectReason, type NearbyTime,
   SCHEDULE_REJECT_REASONS, type BuildSchedule, type ClashCohort, type ClashCourse, type WeeklySlot,
 } from '@/application/terms/schedule-clash'
-import { clashBellBodyAr, clashBellTitleAr, clashMailAr } from '@/application/terms/clash-message'
+import { clashBellBodyAr, clashBellTitleAr, clashMailAr, scheduleMovedBodyAr } from '@/application/terms/clash-message'
 import { zonedAt, zonedDay } from '@/application/trainer/cohort-period'
 
 const course = (courseId: string, o: Partial<ClashCourse> = {}): ClashCourse => ({
@@ -275,6 +275,19 @@ describe('تنبيه المدرب وهو يختار موعد لقائه', () => 
     expect(t).toContain('«دورة X» في مسار «Y» نفسه')
     expect(t).toContain('ولك أن تحفظه كما هو')
     expect(t).not.toMatch(/[\u064B-\u0650\u0652]/)
+  })
+})
+
+describe('رسالة المتعلّمين حين ينتقل الجدول — واحدة', () => {
+  it('اليوم والساعة وأوّل لقاء، ورابط الانضمام نفسه — بلا تشكيل', () => {
+    const t = scheduleMovedBodyAr({ weekday: 2, clock: '19:00', firstAtAr: 'الثلاثاء 8 ديسمبر 19:00', pending: 0 })
+    expect(t).toBe('صارت لقاءات شعبتك الثلاثاء 19:00 كل أسبوع وأول لقاء بموعده الجديد الثلاثاء 8 ديسمبر 19:00. ورابط الانضمام نفسه.')
+    expect(t).not.toMatch(/[\u064B-\u0650\u0652]/)
+  })
+
+  it('وما رجع إلى مراجعة الإدارة يقال', () => {
+    expect(scheduleMovedBodyAr({ weekday: 1, clock: '18:00', firstAtAr: null, pending: 1 })).toContain('ولقاء واحد منها يراجع عند الإدارة')
+    expect(scheduleMovedBodyAr({ weekday: 1, clock: '18:00', firstAtAr: null, pending: 3 })).toContain('وبعضها يراجع عند الإدارة')
   })
 })
 

@@ -185,8 +185,14 @@ describe('مواعيد الفصل بلا تعارض', () => {
   it('⚠️ ٤) وقبوله يكتب في خطّته المعتمدة — فلا يبقى تعارض', async () => {
     expect((await call('POST', `/api/admin/terms/${termId}/clashes/send`, 'admin', {})).statusCode).toBe(200)
     const card = await prisma.planEditSuggestion.findFirstOrThrow({ where: { cohortId: x.cohortId, status: 'pending' } })
+    /* وطالبٌ في س — يُخبَر بالجدول كلِّه مرّةً واحدة، لا بكلّ لقاءٍ من الأربعة */
+    const learner = await auth.register(`tc-learner-x-${STAMP}@test.local`, PASS, 'طالب س')
+    await prisma.enrollment.create({ data: { cohortId: x.cohortId, userId: learner.userId, status: 'enrolled' } })
     const r = await call('POST', `/api/trainer/plan-edits/${card.id}/accept`, 'a', {})
     expect(r.statusCode, r.body).toBe(200)
+    const told = await prisma.notification.findMany({ where: { userId: learner.userId, templateKey: 'cohort.schedule_changed', channel: 'in_app' } })
+    expect(told, 'رسالة لكلّ لقاء').toHaveLength(1)
+    expect(told[0]!.body).toContain('الاثنين 19:00 كل أسبوع')
     const plan = await prisma.cohortDeliveryPlan.findUniqueOrThrow({ where: { id: x.planId } })
     expect(plan.status).toBe('approved')
     const v = await view()

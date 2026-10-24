@@ -15,6 +15,8 @@ export interface ClashMessageInput {
   toAr: string
 }
 
+import { WEEKDAYS_AR } from '../calendar/month-grid'
+
 export const CLASH_TEMPLATE_KEY = 'cohort.schedule.proposed'
 
 export const clashBellTitleAr = (m: ClashMessageInput) => `موعد مقترح لشعبتك «${m.cohortTitle}»`
@@ -36,4 +38,16 @@ export function clashMailAr(m: ClashMessageInput) {
     nextAr: 'افتح الاقتراح، ثم اقبله أو ارفضه. إن قبلته تنتقل لقاءاتك ومواعيد مهامها معا. وإن لم يناسبك فارفضه واكتب لنا السبب، ونقترح عليك موعدا آخر.',
     ctaAr: 'افتح الاقتراح',
   }
+}
+
+/* ═══ وما يصل المتعلّمين حين يقبل مدرّبُهم الجدول — رسالةٌ واحدة (٢٤ أكتوبر ٢٠٢٦) ═══
+   كان لكلّ لقاءٍ يُنقل جرسٌ وبريد. فصارت رسالةً تقول اليومَ والساعةَ الجديدين وأوّلَ لقاءٍ بهما، وأنّ رابطَ الانضمام
+   كما هو. وما رجع منها إلى مراجعة الإدارة يُقال — فلا ينتظر أحدٌ موعدا لم يُعتمد بعد. */
+export function scheduleMovedBodyAr(input: { weekday: number; clock: string; firstAtAr: string | null; pending: number }): string {
+  const when = `${WEEKDAYS_AR[input.weekday] ?? ''} ${input.clock}`.trim()
+  const first = input.firstAtAr ? ` وأول لقاء بموعده الجديد ${input.firstAtAr}.` : '.'
+  const pending = input.pending === 0 ? ''
+    : input.pending === 1 ? ' ولقاء واحد منها يراجع عند الإدارة، ويصلك موعده حين يعتمد.'
+    : ' وبعضها يراجع عند الإدارة، ويصلك موعدها حين يعتمد.'
+  return `صارت لقاءات شعبتك ${when} كل أسبوع${first} ورابط الانضمام نفسه.${pending}`
 }
