@@ -51,3 +51,20 @@ export function lastSeenAr(lastSeenAt: string | Date | null, now: Date): string 
   if (d <= 10) return `آخر نشاط: قبل ${d} أيام`
   return `آخر نشاط: قبل ${d} يوما`
 }
+
+/* ═══ ولا مؤشّرَ لمن لم يوقّع عقدَه (٢٤ أكتوبر ٢٠٢٦) ═══
+   قولُ صاحب المنصّة: «لا تشمل من لم يوقّع العقد، فهو لم يدخل أصلا للمنصّة». فمن لم يوقّع بعدُ لا يُقال عنه
+   «اختفى» — لم يُطلب منه أن يحضر شيئا — ولا يُعدّ في فلتر النشاط. ويُقال حالُه بدل المؤشّر.
+
+   ومن له المؤشّر: النشطُ دائما، ومن وقّع (وقّع · اعتُمد توقيعُه · وُقّع من الطرفين · انتهى عقدُه بعد أن عمل)، ومن له
+   حسابٌ مربوطٌ بلا عقدٍ أصلا — من عُيّن مدرّبا مباشرةً فدخل بوّابتَه بلا عقد. */
+export const SIGNED_CONTRACT_STATUSES = ['signed', 'signature_approved', 'countersigned', 'terminated'] as const
+
+export function tracksActivity(t: { contract: { status: string } | null; hasAccount: boolean; applicationStatus: string }): boolean {
+  /* والنشطُ نشطٌ ولو أُعيد له عقدٌ للتوقيع: آخرُ عقدٍ «مُرسَل» لا يُخرج من عمل قبله */
+  if (t.applicationStatus === 'active') return true
+  if (t.contract) return (SIGNED_CONTRACT_STATUSES as readonly string[]).includes(t.contract.status)
+  return t.hasAccount
+}
+
+export const NOT_SIGNED_AR = 'لم يوقع العقد بعد'

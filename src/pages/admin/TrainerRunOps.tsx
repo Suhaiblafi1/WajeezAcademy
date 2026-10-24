@@ -47,7 +47,7 @@ import { useRealSession } from "@/services/session";
 import { Card, Inset, Panel } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import Chip, { type ChipTone } from "@/components/ui/Chip";
-import { ACTIVITY_LABELS, activityOf, lastSeenAr, type Activity } from "@/application/trainer/last-seen";
+import { ACTIVITY_LABELS, NOT_SIGNED_AR, activityOf, lastSeenAr, tracksActivity, type Activity } from "@/application/trainer/last-seen";
 import TabBar from "@/components/ui/TabBar";
 import { draftKindsAr, hasNeed, TRAINER_NEEDS, trainersAr, type TrainerNeed } from "@/application/trainer/trainer-needs";
 import { BIO_MAX_WORDS, countWords, NAME_MAX_CHARS, publicNameProblemAr } from "@/application/trainer/public-text";
@@ -866,11 +866,12 @@ export default function TrainerRunOps() {
       },
     };
     const steps = trainerSteps(input);
-    return { t, steps, state: trainerStateOf(input, steps), seen: activityOf(t.lastSeenAt, new Date()) };
+    /* ومن لم يوقّع عقدَه لا نشاطَ يُقاس له — لم يدخل المنصّةَ أصلا (`tracksActivity`) */
+    return { t, steps, state: trainerStateOf(input, steps), seen: tracksActivity(t) ? activityOf(t.lastSeenAt, new Date()) : null };
   }), [trainers, asks, preparing]);
   const activityCounts = useMemo(() => {
     const m: Record<Activity, number> = { active: 0, quiet: 0, gone: 0 };
-    for (const r of rows) m[r.seen] += 1;
+    for (const r of rows) if (r.seen) m[r.seen] += 1;
     return m;
   }, [rows]);
   const counts = useMemo(() => {
@@ -1211,7 +1212,11 @@ export default function TrainerRunOps() {
                       {his && <p className="mt-1 text-read leading-6 text-teal-light-ink">{his}</p>}
                       {quiet && <p className="mt-1.5 text-read leading-6 text-muted-foreground">{quiet}</p>}
                       <p className="mt-1 text-read text-muted-foreground">{cohortsTallyAr(t.cohorts)}</p>
-                      <p className="mt-1.5"><Chip tone={SEEN_TONE[seen]} srPrefixAr="نشاطه">{lastSeenAr(t.lastSeenAt, new Date())}</Chip></p>
+                      <p className="mt-1.5">
+                        {seen
+                          ? <Chip tone={SEEN_TONE[seen]} srPrefixAr="نشاطه">{lastSeenAr(t.lastSeenAt, new Date())}</Chip>
+                          : <Chip tone="neutral" srPrefixAr="نشاطه">{NOT_SIGNED_AR}</Chip>}
+                      </p>
                     </div>
                     <ChevronDown className={`mt-1 h-4 w-4 shrink-0 text-muted-foreground transition ${isOpen ? "rotate-180" : ""}`} aria-hidden="true" />
                   </button>
