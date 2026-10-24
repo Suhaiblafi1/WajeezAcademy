@@ -64,12 +64,13 @@ import {
   type CardCohort, type ProfileTrail,
 } from "@/application/trainer/trainer-card";
 import {
-  approvedToAccept, firstActOf, quietLineAr, stateChipAr, STEP_ACT_AR, stepsLineAr, TRAINER_STAGES, TRAINER_STATES,
+  firstActOf, queueOf, quietLineAr, stateChipAr, STEP_ACT_AR, stepsLineAr, TRAINER_STAGES, TRAINER_STATES,
   trainerStageOf, trainerStateOf, trainerSteps, type StepAct, type TrainerStage, type TrainerState,
 } from "@/application/trainer/trainer-status";
 /** و`requested` طلبُ تأهيلٍ لشعبةٍ ينتظر قرارَك — ليس تأهيلا بعد */
 interface OpsQualification { courseId: string; courseTitle: string; status: string; requested?: boolean }
-interface OpsTrainer {
+/* وتُقرأ في ملفّ المدرّب كذلك (`TrainerApplications.tsx`، ٢٤ أكتوبر ٢٠٢٦): بطاقتُه وأجزاؤها من هنا لا نسخةٌ هناك */
+export interface OpsTrainer {
   profileId: string;
   applicationId: string;
   name: string;
@@ -123,7 +124,7 @@ interface OpsSuggestion {
   decidedAt: string | null;
 }
 
-interface PendingRequest {
+export interface PendingRequest {
   id: string;
   courseId: string;
   note: string | null;
@@ -181,7 +182,7 @@ function courseMarkAr(q: { status: string | null; requested?: boolean }, hasCoho
 /* دوراتُه وشعبُه — كلُّ دورةٍ بتأهيله فيها، وتحتها شعبُه: حالُها، وأوّلُ لقاء، وحالُ خطّته.
    وكان هنا عمودُ «مسند إلى» يقرأ جدولَ الإسناد القديم، فيقول «لا إسناد نشط» لمن له شعبٌ قائمة.
    والعلّةُ في `src/application/trainer/trainer-card.ts`. */
-function TrainerCourses({ trainer: t }: { trainer: OpsTrainer }) {
+export function TrainerCourses({ trainer: t }: { trainer: OpsTrainer }) {
   const courses = [
     ...t.qualifications.map((q) => ({ courseId: q.courseId, title: q.courseTitle, status: q.status as string | null, requested: q.requested })),
     ...[...new Map(t.cohorts.filter((c) => !t.qualifications.some((q) => q.courseId === c.courseId))
@@ -271,7 +272,7 @@ function useRun(onSaved: () => Promise<void> | void) {
   return { busy, run };
 }
 
-function PitchEditor({ trainer, onSaved }: { trainer: OpsTrainer; onSaved: () => Promise<void> | void }) {
+export function PitchEditor({ trainer, onSaved }: { trainer: OpsTrainer; onSaved: () => Promise<void> | void }) {
   const latest = trainer.pitchLatest;
   const open = latest?.status === "pending" || latest?.status === "edited" ? latest : null;
   const edited = latest?.status === "edited" ? latest : null;
@@ -349,7 +350,7 @@ function PitchEditor({ trainer, onSaved }: { trainer: OpsTrainer; onSaved: () =>
 
 /* والنبذةُ بصياغتنا — تصله «قبل/بعد». وهي غيرُ «حفظ الملفّ العامّ» أعلاه: ذاك يكتب النبذةَ
    مباشرةً، وهذا يقترحها عليه فلا تتغيّر إلّا بقبوله. */
-function BioSuggestEditor({ trainer, onSaved }: { trainer: OpsTrainer; onSaved: () => Promise<void> | void }) {
+export function BioSuggestEditor({ trainer, onSaved }: { trainer: OpsTrainer; onSaved: () => Promise<void> | void }) {
   const latest = trainer.bioLatest;
   const pending = latest?.status === "pending" ? latest : null;
   const start = latest && latest.status !== "accepted" ? latest.lines[0] ?? "" : trainer.bioDraft ?? "";
@@ -390,7 +391,7 @@ function BioSuggestEditor({ trainer, onSaved }: { trainer: OpsTrainer; onSaved: 
   );
 }
 
-function PublicProfileEditor({
+export function PublicProfileEditor({
   trainer, onSaved,
 }: {
   trainer: OpsTrainer
@@ -879,22 +880,15 @@ export default function TrainerRunOps() {
      «هذه الصفحةُ طويلةٌ ومعقّدة.. فلاترُ واضحةٌ لكلّ الحالات، وكلُّ مدرّبٍ مضمومٌ مكتوبٌ حالُه وما المطلوبُ منّي
      أو منه». والطابورُ يقول ما لا تقوله بياناتُه: طلباتُ تأهيلٍ تنتظرك، ودوراتٌ عُرضت عليه لم يقبلها. */
   const rows = useMemo(() => (trainers ?? []).map((t) => {
-    const input = {
-      ...t,
-      queue: {
-        requests: asks.filter((r) => r.profile.id === t.profileId).length,
-        /* ومعها المعتمَدةُ بلا شعبة — يقبلها هو في «مؤهّلاتي» (`approvedToAccept`) */
-        toAccept: preparing.filter((r) => r.profile.id === t.profileId && (r.prep?.state ?? "to_decide") === "to_decide").length
-          + approvedToAccept(t),
-      },
-    };
+    /* وعدُّه بالدالّة التي يقرؤها ملفُّه (`queueOf`) — ومعها المعتمَدةُ بلا شعبة يقبلها هو في «مؤهّلاتي» */
+    const input = { ...t, queue: queueOf(t, requests) };
     const steps = trainerSteps(input);
     /* ومن لم يوقّع عقدَه لا نشاطَ يُقاس له — لم يدخل المنصّةَ أصلا (`tracksActivity`) */
     return {
       t, steps, state: trainerStateOf(input, steps), stage: trainerStageOf(t),
       seen: tracksActivity(t) ? activityOf(t.lastSeenAt, new Date()) : null,
     };
-  }), [trainers, asks, preparing]);
+  }), [trainers, requests]);
   const activityCounts = useMemo(() => {
     const m: Record<Activity, number> = { active: 0, quiet: 0, gone: 0 };
     for (const r of rows) if (r.seen) m[r.seen] += 1;

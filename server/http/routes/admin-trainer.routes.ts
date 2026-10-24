@@ -978,6 +978,18 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     schema: { tags: ['admin-trainers'], summary: 'المدرّبون وحالاتهم التشغيلية — تأهيلا وإسنادا وظهورا' },
   }, async () => review.listForOps())
 
+  /* ═══ وبطاقةُ مدرّبٍ واحد — يقرؤها ملفُّه (٢٤ أكتوبر ٢٠٢٦) ═══
+     بالصلاحيّة نفسِها والحكم نفسِه (`listForOps`). ومن لم يعبر إلى «المدربون» لا بطاقةَ له: ٤٠٤ لا قائمةٌ فارغة. */
+  app.get('/api/admin/trainers/:profileId/ops', {
+    preHandler: requirePermission('trainer.qualify'),
+    schema: { tags: ['admin-trainers'], summary: 'بطاقة مدرب واحد في «المدربون» — يقرؤها ملفه' },
+  }, async (req, reply) => {
+    const { profileId } = z.object({ profileId: z.string().uuid() }).parse(req.params)
+    const [one] = await review.listForOps({ profileId })
+    if (!one) return reply.status(404).send({ error: 'not_operating', message: 'لم يعبر إلى «المدربون» بعد' })
+    return one
+  })
+
   app.get('/api/admin/qualification-requests', {
     preHandler: requirePermission('trainer.qualify'),
     schema: { tags: ['admin-trainers'], summary: 'طلبات التأهيل المعلّقة — بانتظار قرار المدير الأكاديميّ' },

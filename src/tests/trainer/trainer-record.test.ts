@@ -5,7 +5,9 @@
 
    ① **عنوانُه** — مسارٌ في `App.tsx`، وتفتحه بطاقتُه في «المدربون» والجرسُ ونتيجةُ البحث.
    ② **ورأسُه** — خطُّه بتواريخه وخطوتُه التالية من حقائق صفّه نفسِها (`a.joining`)، وزرُّها بأفعال الطابور نفسِها.
-   ③ **وألسنتُه** — «الطلب والمقابلة · الاتفاقية · الدورات · السجل» في العنوان، و«السجل» سجلُّ الحالة وأثرُ الطلب. */
+   ③ **وألسنتُه** — «الطلب والمقابلة · الاتفاقية · الدورات · السجل» في العنوان، و«السجل» سجلُّ الحالة وأثرُ الطلب.
+   ④ **ومن عبر إلى «المدربون»** — يقرأ ملفُّه بطاقتَه هناك: سلّمُه في خطّه، وخطواتُه منها، و«الدورات» بدوراته وخططه،
+      و«الظهور» بأجزاء بطاقته نفسِها — لا نسخةٌ ثانية. */
 
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -57,12 +59,12 @@ describe('② رأسه', () => {
   })
 
   it('⚠️ وخطه بتواريخه: يبدأ من إتمام طلبه، ويقرأ سجل حالاته', () => {
-    expect(SCREEN).toContain('<RecordLine line={joiningLineOf({ ...facts, submittedAt: a.phase2CompletedAt ?? a.createdAt, history: a.statusHistory })} />')
+    expect(SCREEN).toContain('line={joiningLineOf({ ...facts, submittedAt: a.phase2CompletedAt ?? a.createdAt, history: a.statusHistory })}')
   })
 
   it('⚠️ وخطوته التالية من الدالة نفسها التي يقرؤها صفه', () => {
     expect(SCREEN).toContain('const next = joiningNextOf(facts);')
-    expect(SCREEN).toContain('{!(stopNow === "closed" && next?.turn === "none") && recordNext(next)}')
+    expect(SCREEN).toContain('{opsView ? recordOpsNext(opsView) : !(stopNow === "closed" && next?.turn === "none") && recordNext(next)}')
   })
 
   it('⚠️ وزرها بأفعال الطابور نفسها — لا نسخة ترسل بنفسها', () => {
@@ -84,11 +86,12 @@ describe('② رأسه', () => {
 })
 
 describe('③ ألسنته', () => {
-  it('⚠️ أربعة بأسماء المقترح وترتيبه — وفي العنوان', () => {
-    expect(SCREEN).toContain('const DETAIL_TABS: DetailTab[] = ["dossier", "agreement", "courses", "log"];')
+  it('⚠️ بأسماء المقترح وترتيبه — وفي العنوان، و«الظهور» لمن عبر وحده', () => {
+    expect(SCREEN).toContain('const DETAIL_TABS: DetailTab[] = ["dossier", "agreement", "courses", "profile", "log"];')
     expect(SCREEN).toContain('const [tab, setTab] = useTabParam<DetailTab>(DETAIL_TABS, "dossier");')
     const bar = /<TabBar\s+ariaLabel="أقسام الملفّ"[\s\S]*?\/>/.exec(SCREEN)?.[0] ?? ''
-    expect([...bar.matchAll(/label: "([^"]+)"/g)].map((m) => m[1])).toEqual(['الطلب والمقابلة', 'الاتفاقية', 'الدورات', 'السجل'])
+    expect([...bar.matchAll(/label: "([^"]+)"/g)].map((m) => m[1])).toEqual(['الطلب والمقابلة', 'الاتفاقية', 'الدورات', 'الظهور', 'السجل'])
+    expect(bar, '«الظهور» لمن لم يعبر').toContain('...(ops ? [{ id: "profile" as const, label: "الظهور" }] : [])')
   })
 
   it('⚠️ و«السجل» سجل الحالة وأثر الطلب — وسجل الحالة ليس في «الطلب والمقابلة» ثانية', () => {
@@ -96,5 +99,30 @@ describe('③ ألسنته', () => {
     expect(log, 'لسان السجل مفقود').toContain('id="sec-history"')
     expect(log).toContain('<EntityAuditTimeline entityType="trainer_application" entityId={a.id}')
     expect(SCREEN.match(/id="sec-history"/g), 'سجل الحالة في موضعين').toHaveLength(1)
+  })
+})
+
+describe('④ ومن عبر إلى «المدربون»', () => {
+  it('⚠️ يقرأ بطاقته الواحدة وطابور التأهيل — بمسارَي «المدربون» نفسيهما', () => {
+    expect(SCREEN).toContain('apiGet<OpsTrainer>(`/api/admin/trainers/${opsProfileId}/ops`)')
+    expect(SCREEN).toContain('apiGet<PendingRequest[]>("/api/admin/qualification-requests")')
+  })
+
+  it('⚠️ وخطواته وسلّمه بدوالّ بطاقته — لا حكم ثان', () => {
+    expect(SCREEN).toMatch(/const input = \{ \.\.\.ops\.t, queue: queueOf\(ops\.t, ops\.requests\) \};\s*const steps = trainerSteps\(input\);/)
+    expect(SCREEN).toContain('ladder={opsView ? ladderOf(opsView.stage, ops!.t.suspended) : null}')
+    /* والبطاقةُ هناك تعدّ طابورَها بالدالّة نفسِها */
+    expect(code('src/pages/admin/TrainerRunOps.tsx')).toContain('const input = { ...t, queue: queueOf(t, requests) };')
+  })
+
+  it('⚠️ و«الدورات» و«الظهور» بأجزاء بطاقته نفسها — مستوردة لا منسوخة', () => {
+    expect(SCREEN).toMatch(/import \{ BioSuggestEditor, PitchEditor, PublicProfileEditor, TrainerCourses, type OpsTrainer, type PendingRequest \} from "\.\/TrainerRunOps";/)
+    expect(SCREEN).toContain('ops={ops ? <TrainerCourses trainer={ops.t} /> : undefined}')
+    const profile = /tab === "profile" && ops \? \([\s\S]*?\) : tab === "log"/.exec(SCREEN)?.[0] ?? ''
+    for (const part of ['<PublicProfileEditor trainer={ops.t}', '<PitchEditor', '<BioSuggestEditor']) {
+      expect(profile, `«الظهور» بلا ${part}`).toContain(part)
+    }
+    /* ولا تُكتب في الملفّ نسخةٌ منها */
+    expect(SCREEN).not.toMatch(/function (TrainerCourses|PublicProfileEditor|PitchEditor|BioSuggestEditor)\b/)
   })
 })
