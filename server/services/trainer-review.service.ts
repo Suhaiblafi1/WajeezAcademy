@@ -72,7 +72,7 @@ import { PUBLISH_APPROVED_NOTICE } from './trainer-auto-publish'
 import { cleanProposals, readProposals } from '../../src/application/trainer/teachable-proposals'
 import { pendingKind } from '../../src/application/trainer/pending-kind'
 import { profileTrailOf, TRAIL_ACTIONS, type CardCohort } from '../../src/application/trainer/trainer-card'
-import { cohortSeason, groupBySeason } from '../../src/application/trainer/next-season'
+import { cohortSeason, groupBySeason, upcomingOffer } from '../../src/application/trainer/next-season'
 import { notStartedCohortWhere } from './cohort-start'
 import type { PrepTally } from '../../src/application/trainer/prep-tally'
 import type { PrepCourse } from './trainer-prep.service'
@@ -6638,11 +6638,12 @@ export class TrainerReviewService {
       const first = c.sessions[0]?.startsAt ?? c.startsAt
       return { term: cohortSeason(first, c.term), at: first }
     }
-    const offerOf = (p: (typeof profiles)[number]) => groupBySeason([
+    /* وما بعد الأقرب «المواسم القادمة» بلا أسمائها — يُطوى هنا لا في الصفحة (`upcomingOffer`) */
+    const offerOf = (p: (typeof profiles)[number]) => upcomingOffer(groupBySeason([
       ...p.cohortTrainers.map((t) => ({ courseId: t.cohort.courseId, ...seasoned(t.cohort) })),
       ...p.assignments.flatMap((a) => a.cohort ? [{ courseId: a.courseId, ...seasoned(a.cohort) }] : []),
       ...p.paths.flatMap((path) => path.courses.map((c) => ({ courseId: c.courseId, term: path.term }))),
-    ])
+    ]))
 
     return profiles.map((p) => {
       const offer = offerOf(p)
