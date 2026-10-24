@@ -533,6 +533,7 @@ const PHRASES: Record<string, string> = {
   'worker.grant_followup': 'متابعة من عبأ نموذج المنحة ولم يشتر — حالة عند مستشار ومكالمة خلال ساعتين',
   'worker.grant_reminders': 'تذكير من لم يشتر قبل انتهاء المنحة — قبل ثلاثة أيام وفي آخر يوم',
   'worker.cohort_corrections': 'تصحيح مواعيد شعب بقرار صاحب المنصة',
+  'worker.adopt_foreign_files': 'نسخ ملفات الخطط والمهام إلى شعبها',
 }
 
 /** معجمُ المقاطع — نطاقاتٌ وأشياءٌ وأفعال */

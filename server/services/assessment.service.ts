@@ -3,6 +3,7 @@
 
 import { Prisma, type CohortAssessment, type PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
+import { adoptCohortFiles } from './cohort-file-adopt'
 import type { TypedLink } from '../../src/application/trainer/plan-overlay'
 import { recordAudit } from './audit'
 import { EnrollmentService } from './enrollment.service'
@@ -134,6 +135,15 @@ export class AssessmentService {
     })
   }
 
+  /** مرفقاتُ المهمّة بملفّات شعبتها — وما كان من شعبةٍ لا يدرّسها صاحبُ الحفظ يُردّ باسمه */
+  private async ownAttachments(actorId: string, cohortId: string, attachments: TypedLink[]): Promise<TypedLink[]> {
+    const own = await adoptCohortFiles(this.prisma, cohortId, attachments, { userId: actorId })
+    if (own.refused.length) {
+      throw new AuthError('foreign_file', `في مرفقات المهمة ملف من شعبة لا تدرّسها: ${own.refused.join('، ')}`, 400)
+    }
+    return own.value
+  }
+
   /* ── إنشاء الواجبات/التقييمات (إدارة أو مدرب الشعبة) ── */
 
   async createAssessment(actorId: string, input: {
@@ -148,6 +158,8 @@ export class AssessmentService {
       const rubric = await this.prisma.gradingRubric.findUnique({ where: { id: input.rubricId } })
       if (!rubric || rubric.status !== 'active') throw new AuthError('unknown_rubric', 'الروبرك غير موجود أو مؤرشف', 404)
     }
+    /* ومرفقٌ من شعبةٍ أخرى يُنسخ إليها — كملفّات الخطّة (`cohort-file-adopt.ts`) */
+    if (input.attachments) input = { ...input, attachments: await this.ownAttachments(actorId, input.cohortId, input.attachments) }
     const dueAt = input.dueAt ?? (await this.slotDueAt(input.cohortId, input.moduleId)) ?? undefined
     /* ومهمّةٌ يضيفها المدرّبُ بعد اعتماد خطّته تُنشأ مسودّةً تنتظر الإدارة (٣ج-٣) —
        والإدارةُ إن أنشأت نشرت: هي المعتمِد. و`preApproved` بطاقةٌ اعتمدتها الإدارةُ قبل أن يقبلها المدرّب
@@ -202,6 +214,7 @@ export class AssessmentService {
     moduleId?: string | null
   }, opts: { preApproved?: boolean } = {}) {
     const before = await this.assertAssessmentTrainer(actorId, assessmentId)
+    if (patch.attachments) patch = { ...patch, attachments: await this.ownAttachments(actorId, before.cohortId, patch.attachments) }
     /* ═══ وبعد الاعتماد: تعديلُ المنشورة طلبٌ ينتظر الإدارة (٣ج-٣) ═══
 
        المتعلّمون يقرؤون الصفَّ نفسَه — فلا يُكتب فيه ما لم يُعتمَد. والطلبُ

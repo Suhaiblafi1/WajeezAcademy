@@ -13,6 +13,7 @@ import Auth from './pages/Auth'
 import NotFound from './pages/NotFound'
 import RequireRole, { ADMIN_ROLES, ADVISOR_ROLES, APPLICANT_ROLES, LEARNER_ROLES, TRAINER_ROLES } from './components/RequireRole'
 import ToastHost from './components/Toast'
+import { KeyedByParam } from './components/KeyedByParam'
 
 /* مبدل أدوار الديمو — يُحمَّل كقطعة منفصلة ولا يُجلب ولا يظهر إلا في بناء الديمو */
 
@@ -321,7 +322,8 @@ export default function App() {
             <Route path="/trainer/learners" element={<TrainerMyLearners />} />
             {/* ورشةُ الشعبة — ملكُ مدرّبها: يجهّزها ويقول «أوافق» وتعتمدها الإدارة.
                 قرارُ صاحب المنصّة (٨ سبتمبر ٢٠٢٦). */}
-            <Route path="/trainer/cohort/:id" element={<CohortWorkspace />} />
+            {/* وتُبنى لكلّ شعبةٍ من جديد — فلا تحمل خطّةَ شعبةٍ إلى أخرى (`KeyedByParam`) */}
+            <Route path="/trainer/cohort/:id" element={<KeyedByParam><CohortWorkspace /></KeyedByParam>} />
             <Route path="/trainer/earnings" element={<Earnings />} />
             {/* «عقدي» و«دعوتي» قسمان في «مستحقاتي»، و«ما قيل عنّي» قسمٌ في «الرئيسية» (الخطوة G، ١٩
                 أكتوبر ٢٠٢٦) — وقرارُ ٢٥ سبتمبر قبلها: «الملف يكون في منصته ضمن قسم المستحقات والعقد».

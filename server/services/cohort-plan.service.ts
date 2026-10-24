@@ -42,6 +42,7 @@ import {
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { CohortFileService } from './cohort-file.service'
+import { adoptCohortFiles } from './cohort-file-adopt'
 import { CohortService } from './cohort.service'
 import { notifyRole, safeNotify, sendDirectEmail, publicSiteUrl } from './notification.service'
 import { cohortDayAr, whenAr } from '../../src/application/learning/cohort-gate'
@@ -913,6 +914,13 @@ export class CohortPlanService {
     if (latest?.status === 'submitted') {
       throw new AuthError('plan_submitted', 'خطّتك بانتظار الاعتماد — انتظر القرار، أو اطلب من الإدارة ردّها إليك لتعديلها', 409)
     }
+    /* ═══ وملفٌّ من شعبةٍ أخرى له يُنسخ إليها — لا يُحفظ مفتاحا لا يفتحه متعلّموها (٢٤ أكتوبر ٢٠٢٦) ═══
+       والعلّةُ كاملةً في `cohort-file-adopt.ts`: صفحةُ الشعبة كانت تحمل خطّةَ شعبةٍ إلى أخرى */
+    const own = await adoptCohortFiles(this.prisma, cohortId, content, { userId })
+    if (own.refused.length) {
+      throw new AuthError('foreign_file', `في الخطة ملف من شعبة لا تدرّسها: ${own.refused.join('، ')}`, 400)
+    }
+    content = own.value
     /* ═══ المدّةُ تُفحص عند الحفظ — والناقصُ لا يُحفظ نصفا ═══
 
        من كتب طرفا واحدا لم يحدّد مدّة، ومن كتب نهايةً قبل البداية لم يحدّد
@@ -1000,6 +1008,7 @@ export class CohortPlanService {
       actorId: userId, action: 'cohort.plan.save', entityType: 'cohort', entityId: cohortId,
       meta: {
         planId: plan.id, modules: content.modules.length, resources: content.resources.length,
+        ...(own.adopted ? { adoptedFiles: own.adopted } : {}),
         ...(period ? { period } : {}),
       },
     })

@@ -22,7 +22,7 @@
    ٣) **تُخبر بالعربيّة بما فعلت.** لا سجلٌّ لاتينيٌّ يقرؤه مبرمجٌ وحدَه:
       صفحةُ صحّةِ النظام والسجلُّ يقرآن هذه الجملة. */
 
-import type { PrismaClient } from '@prisma/client'
+import type { Prisma, PrismaClient } from '@prisma/client'
 import { NotificationService, liveChannels } from '../services/notification.service'
 import { AuthService } from '../services/auth.service'
 import { sendVerifyReminderEmail } from '../services/account-mail'
@@ -1474,6 +1474,77 @@ export async function applyCohortCorrections(prisma: PrismaClient, list: CohortC
   }
 }
 
+/* ═══ ملفٌّ من شعبةٍ أخرى في خطّةٍ أو مهمّة — يُنسخ إلى شعبته (٢٤ أكتوبر ٢٠٢٦) ═══
+   الحفظُ يسأل لمن الملفُّ منذ اليوم (`cohort-file-adopt.ts`)، وهذه لما كُتب قبله: خطّةٌ في أيّ حال — مسودّةً
+   أو بانتظار القرار أو معتمَدة — ومهمّةٌ ومرفقاتُها وما طُلب عليها. وتُعاد بلا ضرر: النسخةُ بمفتاحٍ مشتقّ،
+   فدورةٌ ثانيةٌ تجد كلَّ شيءٍ في شعبته ولا تعمل شيئا. */
+export const ADOPT_BATCH = 50
+
+export async function runAdoptForeignFiles(prisma: PrismaClient): Promise<JobResult> {
+  const started = Date.now()
+  const { adoptCohortFiles } = await import('../services/cohort-file-adopt')
+  const { planFileKeys } = await import('../../src/application/trainer/plan-copy')
+  const [plans, tasks] = await Promise.all([
+    prisma.cohortDeliveryPlan.findMany({
+      where: { trainerId: { not: null }, status: { not: 'superseded' } },
+      select: { id: true, cohortId: true, content: true, returnedContent: true },
+    }),
+    prisma.cohortAssessment.findMany({ select: { id: true, cohortId: true, attachments: true, pendingChange: true } }),
+  ])
+  const rows = [
+    ...plans.map((p) => ({ kind: 'plan' as const, id: p.id, cohortId: p.cohortId, keys: planFileKeys({ a: p.content, b: p.returnedContent }) })),
+    ...tasks.map((t) => ({ kind: 'task' as const, id: t.id, cohortId: t.cohortId, keys: planFileKeys({ a: t.attachments, b: t.pendingChange }) })),
+  ].filter((r) => r.keys.length > 0)
+  const owners = new Map((await prisma.cohortFile.findMany({
+    where: { storageKey: { in: [...new Set(rows.flatMap((r) => r.keys))] } }, select: { storageKey: true, cohortId: true },
+  })).map((f) => [f.storageKey, f.cohortId]))
+  const astray = rows.filter((r) => r.keys.some((k) => owners.has(k) && owners.get(k) !== r.cohortId)).slice(0, ADOPT_BATCH)
+
+  let files = 0
+  let fixed = 0
+  let failed = 0
+  for (const r of astray) {
+    try {
+      if (r.kind === 'plan') {
+        const p = plans.find((x) => x.id === r.id)!
+        const a = await adoptCohortFiles(prisma, r.cohortId, p.content, 'system')
+        const b = await adoptCohortFiles(prisma, r.cohortId, p.returnedContent, 'system')
+        if (a.adopted + b.adopted === 0) continue
+        await prisma.cohortDeliveryPlan.update({
+          where: { id: r.id },
+          data: {
+            ...(a.adopted ? { content: a.value as Prisma.InputJsonValue } : {}),
+            ...(b.adopted ? { returnedContent: b.value as Prisma.InputJsonValue } : {}),
+          },
+        })
+        files += a.adopted + b.adopted
+      } else {
+        const t = tasks.find((x) => x.id === r.id)!
+        const a = await adoptCohortFiles(prisma, r.cohortId, t.attachments, 'system')
+        const b = await adoptCohortFiles(prisma, r.cohortId, t.pendingChange, 'system')
+        if (a.adopted + b.adopted === 0) continue
+        await prisma.cohortAssessment.update({
+          where: { id: r.id },
+          data: {
+            ...(a.adopted ? { attachments: a.value as Prisma.InputJsonValue } : {}),
+            ...(b.adopted ? { pendingChange: b.value as Prisma.InputJsonValue } : {}),
+          },
+        })
+        files += a.adopted + b.adopted
+      }
+      fixed += 1
+    } catch (e) {
+      console.error('[adopt_foreign_files] تعذر نسخ ملفات', r.kind, r.id, e)
+      failed += 1
+    }
+  }
+  return {
+    job: 'adopt_foreign_files',
+    summaryAr: fixed === 0 && failed === 0 ? 'كل ملفات الخطط والمهام في شعبها' : `نسخ ${files} ملف إلى شعبته في ${fixed} خطة أو مهمة${failed ? `، وتعذر ${failed}` : ''}`,
+    done: fixed, failed, ms: Date.now() - started,
+  }
+}
+
 /** بياناتُ من لم يسجّل تُمحى بعد ستة أشهر بلا نشاط — والعلّةُ في `guest-erasure.service.ts` */
 export async function runEraseIdleGuests(prisma: PrismaClient, now = new Date()): Promise<JobResult> {
   const started = Date.now()
@@ -1571,6 +1642,8 @@ export const JOBS = [
   { key: 'grant_reminders', everyMs: HOUR, run: runGrantReminders, titleAr: 'تذكير من لم يشتر قبل انتهاء المنحة' },
   /* كلَّ ساعة: يقع مرّةً لكلّ شعبة ثمّ لا يجد شيئا — وشرطُه موعدُها لا عدّاد */
   { key: 'cohort_corrections', everyMs: HOUR, run: runCohortCorrections, titleAr: 'تصحيح مواعيد شعب بقرار صاحب المنصة' },
+  /* كلَّ ساعة: الحفظُ يسأل منذ اليوم، وهذه تلحق ما كُتب قبله — ثمّ لا تجد شيئا */
+  { key: 'adopt_foreign_files', everyMs: HOUR, run: runAdoptForeignFiles, titleAr: 'نسخ ملفات الخطط والمهام إلى شعبها' },
 ] as const
 
 /** دورةٌ واحدةٌ لوظيفةٍ واحدة، بأثرها المسجَّل — لا عملَ صامت */
