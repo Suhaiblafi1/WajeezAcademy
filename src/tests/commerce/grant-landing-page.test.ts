@@ -267,6 +267,25 @@ describe('بعد النموذج', () => {
     expect(code('src/pages/admin/GrantResults.tsx'), 'نتائج الحملة تسمي قناتها').toMatch(/share: "من صديق"/)
   })
 
+  it('⚠️ لوح الدفع من صفحة المنحة: التفصيل مفتوح — كم كانت الدورة وكم المنحة — ومن لم يكتب كوده يقال له ما يصير إليه', () => {
+    /* قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦): «هنا يجب أن يكون تفصيلُ كم كانت الدورة، وبعد المنحة» */
+    const BUY = code('src/components/BuyPanel.tsx')
+    expect(PAGE).toMatch(/initialCoupon=\{stored\.code \?\? ""\}\s*grantPayTotal=\{payTotal\}/)
+    expect(BUY).toMatch(/<details className="group" open=\{grantPayTotal !== undefined\}>/)
+    expect(BUY).toMatch(/\{grantPayTotal !== undefined && quote && quote\.grantPct === null && !couponError && !nothingLeft && \(/)
+    expect(BUY).toContain('اكتب كود منحتك ليصير المبلغ <bdi dir="ltr">{money(grantPayTotal, quote.currency)}</bdi>. تجده في بريدك.')
+    for (const t of ['اكتب كود منحتك ليصير المبلغ', 'تجده في بريدك.']) expect(plainAr(t)).toBe(t)
+  })
+
+  it('⚠️ ولا كود يكتب مثالا في خانة الكود — سري نعطيه لمن نريد', () => {
+    /* قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦): «لا تضع داخل الكود مثالا لأنّه سرّي، نعطيه فقط لمن نريد» */
+    for (const f of ['src/components/BuyPanel.tsx', 'src/pages/Pathway.tsx']) {
+      const holders = code(f).match(/placeholder=(\{[^}]*\}|"[^"]*")/g) ?? []
+      expect(holders.filter((h) => /FIRST_TIME_PROMO|WA2026|مثال/.test(h)), f).toEqual([])
+    }
+    expect(code('src/components/BuyPanel.tsx')).toContain('placeholder="كود الخصم"')
+  })
+
   it('⚠️ المستشار على واتساب مباشرة — برقم موضعه في شاشة الربط، ورسالة فيها اسمه وكوده', () => {
     expect(WHATSAPP_SPOTS.map((s) => s.key)).toContain('grant_advisor')
     expect(PAGE).toMatch(/const advisorHref = waHref\(numbers, "grant_advisor", CONTACT\.whatsapp, grantAdvisorTextAr\(stored\.name, stored\.code\)\);/)

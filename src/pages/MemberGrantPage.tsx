@@ -415,6 +415,7 @@ export default function MemberGrantPage() {
             email={session?.email ?? stored.email}
             kind="courses"
             initialCoupon={stored.code ?? ""}
+            grantPayTotal={payTotal}
             lines={chosen.map((x) => ({ courseId: x.courseId, name: x.titleAr, cohortId: x.cohortId }))}
             onClose={() => setBuyOpen(false)}
           />

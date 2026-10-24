@@ -53,7 +53,6 @@ import { clearPendingCheckout } from "@/services/pending-checkout";
 import { useCourseCohorts, type CohortOption } from "@/services/cohort-prices";
 import { useMySessions } from "@/services/my-sessions";
 import { clashWarnAr, clashesOf, freeAlternative, type TimedCohort } from "@/application/learning/cohort-overlap";
-import { FIRST_TIME_PROMO } from "@/application/commerce/first-time-promo";
 import { GRANT_ERROR_CODES, MEMBER_GRANT_NAME_AR } from "@/application/commerce/grant";
 import { PATHWAY_ONLY_PERKS } from "@/data/pathway-perks";
 import {
@@ -155,6 +154,7 @@ export default function BuyPanel({
   initialCoupon = "",
   kind,
   giftCourseId = null,
+  grantPayTotal,
   onClose,
 }: {
   title: string;
@@ -168,6 +168,9 @@ export default function BuyPanel({
   kind?: "pathway" | "course" | "courses";
   /** هديّةُ الخطّة — تُحبَس عن دفعةٍ لا تُكمل الخطّة، فتُضاف مجّانا مع آخرها */
   giftCourseId?: string | null;
+  /** ما يدفعه بعد المنحة كما قالته صفحة المنحة — يفتح تفصيلَ الحساب، ويقول ما يصير إليه المبلغ إن لم يُكتب الكود.
+      قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦): «هنا يجب أن يكون تفصيلُ كم كانت الدورة، وبعد المنحة» */
+  grantPayTotal?: number;
   onClose: () => void;
 }) {
   const { cohorts, loaded } = useCourseCohorts();
@@ -565,7 +568,7 @@ export default function BuyPanel({
               <input
                 value={coupon}
                 onChange={(e) => { setCoupon(e.target.value.toUpperCase()); setCouponError(null); }}
-                placeholder={`كود الخصم — مثال ${FIRST_TIME_PROMO.code}`}
+                placeholder="كود الخصم"
                 aria-label="كود الخصم"
                 dir="ltr"
                 className={`${couponFieldCls} ${couponError ? "border-gold/60" : "border-white/12"} focus:border-gold/50`}
@@ -579,6 +582,13 @@ export default function BuyPanel({
               </button>
             </div>
             {couponError && <p className="mt-1.5 text-read leading-6 text-gold-ink">{couponError}</p>}
+            {/* ومن جاء من صفحة المنحة بلا كودٍ مكتوب (عاد بعد أن أخذه، فأُرسل إلى بريده ولم يُعرض) — يُقال له ما يصير
+                إليه المبلغ بكوده، لا يُترك أمام سعرٍ كاملٍ يظنّه سعرَ المنحة */}
+            {grantPayTotal !== undefined && quote && quote.grantPct === null && !couponError && !nothingLeft && (
+              <p className="mt-1.5 text-read leading-6 text-gold-ink">
+                اكتب كود منحتك ليصير المبلغ <bdi dir="ltr">{money(grantPayTotal, quote.currency)}</bdi>. تجده في بريدك.
+              </p>
+            )}
             {/* كودٌ وقع على بعض الدورات دون بعض — كودُ المدرّب على دوراته وحدَها،
                 فيُسمّى ما خصمه، ولا يُظنّ أنّه خصم الطلبَ كلَّه */}
             {quote && quote.couponDiscount > 0 && quote.items.some((i) => !i.isGift && i.couponApplies === false) && (
@@ -612,7 +622,8 @@ export default function BuyPanel({
                 فسطرُ «تفصيل الحساب» هو بابُه الوحيد إليه. */}
             {quote && !nothingLeft && (
               <Card className="mt-4 space-y-1.5 text-xs">
-                <details className="group">
+                {/* ومن صفحة المنحة مفتوحٌ: كم كانت الدورة، وكم المنحة، وما يبقى — قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦) */}
+                <details className="group" open={grantPayTotal !== undefined}>
                   {/* `text-read` لا `text-fine`: هذا البابُ الوحيدُ إلى بنود
                       الفاتورة لمن جاء من صفحة الدورة المفردة، وبابٌ بحجم
                       الحاشية يُقرأ حاشيةً فلا يُفتح. */}

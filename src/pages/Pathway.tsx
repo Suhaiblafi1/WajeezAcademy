@@ -783,7 +783,7 @@ export default function PathwayPage() {
                       <input
                         value={coupon}
                         onChange={(e) => setCoupon(e.target.value.toUpperCase())}
-                        placeholder={`كود الخصم — مثال ${FIRST_TIME_PROMO.code}`}
+                        placeholder="كود الخصم"
                         aria-label="كود الخصم"
                         dir="ltr"
                         className={`${couponFieldCls} border-white/12 focus:border-gold/50`}
