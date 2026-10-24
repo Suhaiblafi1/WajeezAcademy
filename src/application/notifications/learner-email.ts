@@ -13,7 +13,7 @@ export const LEARNER_EMAIL_KEYS: ReadonlySet<string> = new Set([
   'payment.succeeded', 'payment.refunded', 'payment.refund_rejected',
   'order.seats_held', 'plan.seats_held', 'order.cancelled_abandoned',
   /* تغيّرُ الشعبة: موعدٌ تحرّك أو أُلغي، وشعبةٌ أُلغيت، وتسجيلٌ أُسقط، ومدرّبٌ رحل */
-  'cohort.schedule_changed', 'cohort.cancelled', 'enrollment.dropped',
+  'cohort.schedule_changed', 'cohort.cancelled', 'cohort.reopened', 'enrollment.dropped',
   'departure.choice', 'departure.resolved',
   /* وردُّ الدعم على تذكرته (٢٠ أكتوبر ٢٠٢٦) — قرارُ صاحب المنصّة: سأل فينتظر جوابا، فيصله ولو لم يدخل */
   'support.reply',

@@ -226,6 +226,8 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
       'trainer.qualified', 'trainer.qualify.rejected', 'trainer.assigned',
       /* وإلغاءُ شعبته مثلُ إسنادها (٢٢ أكتوبر ٢٠٢٦): من كتمه بقي يجهّز شعبةً لن تنعقد */
       'cohort.cancelled.trainer',
+      /* وإعادةُ فتحها بعد إلغائها (٢٤ أكتوبر ٢٠٢٦): من كتمه ظنّها ملغاةً وهي تُباع */
+      'cohort.reopened.trainer',
       /* واقتراحُ تأجيلها بمهلة (٢٤ أكتوبر ٢٠٢٦): من كتمه سكت حتّى تتوقّف شعبتُه وهو لا يعلم */
       'cohort.postpone.proposed',
       /* والتفعيلُ مثلُهما (٣ أكتوبر ٢٠٢٦): من صار نشطا صار يُنتظَر منه عملُه — ساعاتُه
@@ -310,7 +312,8 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
     /* و`enrollment.switched` معها: المقعدُ والموعدُ تحرّكا، وهو ما يصفه
        عنوانُ الصنف حرفا — وإن كان صاحبُه هو من طلبه. */
     /* و`cohort.cancelled` (١٩ أكتوبر ٢٠٢٦): شعبتُه أُلغيت — مقعدُه ومالُه معلّقان حتّى يقرّر */
-    templateKeys: ['departure.choice', 'departure.resolved', 'enrollment.dropped', 'enrollment.switched', 'cohort.cancelled'],
+    /* و`cohort.reopened` (٢٤ أكتوبر ٢٠٢٦): عادت بعد إلغائها — من صدّق الإلغاءَ يحتاج أن يعلم أنّه لم يعد */
+    templateKeys: ['departure.choice', 'departure.resolved', 'enrollment.dropped', 'enrollment.switched', 'cohort.cancelled', 'cohort.reopened'],
   },
   /* ═══ ردود الدعم (٢٠ أكتوبر ٢٠٢٦) ═══
      كان ردُّ الفريق على تذكرة المتعلّم لا يُخبَر به — فيبقى سؤالُه معلّقا في ظنّه وقد أُجيب. وهو جوابٌ
