@@ -2,7 +2,7 @@
 
    نظامُ الفصول كان كاملا في الخادم بلا شاشةٍ تناديه، فبقي التقويمُ العامّ
    فارغا وسأل صاحبُ المنصّة إن كان «يمتلئ بكلّ دورةٍ نُشرت». الشاشةُ تمشي
-   الخطواتِ الأربع (إنشاءٌ · نافذةُ تسجيل · توزيعٌ بمعاينةٍ ثمّ تطبيق · نشر)،
+   الخطواتِ الأربع (إنشاءٌ · نافذةُ تسجيل · مواعيدُ بلا تعارض · نشر — وذهب «التوزيعُ» ٢٤ أكتوبر ٢٠٢٦)،
    والذهبيُّ الواحدُ للنشر. وبطاقةُ الدورة في الكتالوج تقول متى تبدأ أقربُ
    شعبةٍ مفتوحة. (٨ سبتمبر ٢٠٢٦) */
 import { readFileSync } from 'node:fs'
@@ -27,15 +27,17 @@ describe('شاشة المواسم', () => {
     for (const path of [
       '/api/admin/terms?all=true', '"/api/admin/terms"',
       '/api/admin/terms/${t.id}/registration-window',
-      '/api/admin/terms/${t.id}/plan', '/api/admin/terms/${t.id}/publish-calendar',
+      '/api/admin/terms/${t.id}/publish-calendar',
     ]) expect(screen, `لا تنادي: ${path}`).toContain(path)
     /* و«من المتاحُ للتدريس؟» ذهب مع الإتاحة كلِّها (٢٧ سبتمبر ٢٠٢٦) */
     expect(screen).not.toContain('/available-trainers')
   })
 
-  it('والتوزيع معاينة أوّلا وتطبيق بطلب صريح — والتواريخ لا تكتب باليد', () => {
-    expect(screen).toContain('{ apply: false }')
-    expect(screen).toContain('{ apply: true }')
+  /* ═══ وذهب «توزيعُ شعب الموسم» بقرار صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦) ═══
+     كان يفتح بنقرةٍ شعبةً بلا مدرّبٍ لكلّ دورةٍ لا شعبةَ لها — ٩١ شعبة. فلا يعود زرُّه، ولا نداؤه */
+  it('ولا توزيع يفتح شعبا بلا مدرّب — والتواريخ لا تكتب باليد', () => {
+    expect(screen, 'عاد نداء التوزيع').not.toContain('/api/admin/terms/${t.id}/plan')
+    expect(screen, 'عاد زرّ التطبيق').not.toContain('apply: true')
     expect(screen, 'حقل تاريخ للموسم — الحدود تحسب من الموسم').not.toMatch(/<input[^>]*(startsOn|endsOn)/)
     expect(screen).toMatch(/season: form\.season/)
   })

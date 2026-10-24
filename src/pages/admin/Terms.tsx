@@ -13,14 +13,14 @@
    شاشةٌ واحدةٌ تمشي الخطواتِ الأربع بترتيبها، لكلّ موسم:
      ① أنشئ الموسم (سنةٌ وموسم — والتواريخُ تُحسب)
      ② نافذةُ التسجيل
-     ③ وزّع الشعب — معاينةٌ أوّلا، ثمّ تطبيقٌ بطلبٍ صريح
+     ③ مواعيدُ بلا تعارض — مكانَ «وزّع الشعب» الذي ذهب (٢٤ أكتوبر ٢٠٢٦)
      ④ انشر التقويم — فيراه الزائرُ في `/calendar`، وتقول الدورةُ متى تُفتح.
 
    والذهبيُّ الواحدُ للنشر: هو ما يُخرج الموسمَ إلى الناس. */
 
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router";
-import { BellRing, CalendarCheck, CalendarClock, CalendarPlus, CalendarRange, DoorClosed, DoorOpen, Loader2, Play, Trash2 } from "lucide-react";
+import { BellRing, CalendarCheck, CalendarClock, CalendarPlus, CalendarRange, DoorClosed, DoorOpen, Loader2, Trash2 } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import FlowSteps from "@/components/FlowSteps";
 import { apiGet, apiPost, apiDelete, ApiError, permissionMessage } from "@/services/api";
@@ -42,13 +42,6 @@ interface Term {
   registrationOpensAt: string | null; registrationClosesAt: string | null;
   calendarPublishedAt: string | null;
   _count: { cohorts: number };
-}
-interface PlanResult {
-  applied: boolean; termTitleAr: string; opened: number; prepared: number;
-  rows: { courseId: string; titleAr: string; week: number; startsAt: string; monthWithinTerm: number }[];
-  unplaced: { courseId: string; titleAr: string; whyAr: string }[];
-  skipped: { courseId: string; titleAr: string; whyAr: string }[];
-  loadByMonth: Record<number, number>;
 }
 
 /** بابُ الموسم كما يقرؤه الخادم — العلّةُ في `server/services/registration-window.ts` */
@@ -79,7 +72,6 @@ export default function Terms() {
   const [busy, setBusy] = useState<string | null>(null);
   const [form, setForm] = useState({ year: new Date().getFullYear(), season: "nov_jan" });
   const [windows, setWindows] = useState<Record<string, { opensAt: string; closesAt: string }>>({});
-  const [plans, setPlans] = useState<Record<string, PlanResult>>({});
   const [showAllTerms, setShowAllTerms] = useState(false);
   /* الحذفُ بضغطتين: الأولى تكشف زرَّ التأكيد، والثانية تحذف — لا حوارَ متصفّح */
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
@@ -233,15 +225,6 @@ export default function Terms() {
       closesAt: w.closesAt ? new Date(w.closesAt).toISOString() : null,
     }), "حفظت نافذة التسجيل");
   };
-  const preview = (t: Term) => act(`preview-${t.id}`, async () => {
-    setPlans((p) => ({ ...p, [t.id]: undefined as unknown as PlanResult }));
-    const r = await apiPost<PlanResult>(`/api/admin/terms/${t.id}/plan`, { apply: false });
-    setPlans((p) => ({ ...p, [t.id]: r }));
-  }, "هذه معاينة — لم يفتح شيء بعد");
-  const apply = (t: Term) => act(`apply-${t.id}`, async () => {
-    const r = await apiPost<PlanResult>(`/api/admin/terms/${t.id}/plan`, { apply: true });
-    setPlans((p) => ({ ...p, [t.id]: r }));
-  }, "وزّعت شعب الموسم وفتحت");
   /* نقلُ حالة الفصل — والزرُّ يقول أثرَه لا اسمَه وحدَه (`TERM_STATUS_EFFECT_AR`) */
   const moveStatus = (t: Term, to: TermStatus) => act(
     `status-${t.id}`,
@@ -273,7 +256,7 @@ export default function Terms() {
       <FlowSteps steps={[
         { label: "أنشئ الموسم", actor: "سنة وموسم — والتواريخ تحسب" },
         { label: "نافذة التسجيل", actor: "متى يفتح ومتى يغلق" },
-        { label: "وزّع الشعب", actor: "معاينة ثمّ تطبيق" },
+        { label: "مواعيد بلا تعارض", actor: "معاينة ثمّ إرسال للمدربين" },
         { label: "انشر التقويم", actor: "فيراه الزائر" },
       ]} />
 
@@ -430,7 +413,6 @@ export default function Terms() {
       ) : (
         <div className="space-y-5">
           {listed.map((t) => {
-            const plan = plans[t.id];
             const w = windows[t.id] ?? { opensAt: "", closesAt: "" };
             const published = Boolean(t.calendarPublishedAt);
             return (
@@ -506,47 +488,10 @@ export default function Terms() {
                   </Card>
                 )}
 
-                {/* ③ توزيعُ الشعب — معاينةٌ ثمّ تطبيق */}
-                <Card as="section" className="mt-3">
-                  <h3 className="text-read font-black">توزيع شعب الموسم</h3>
-                  <p className="mt-1 text-read leading-6 text-muted-foreground">
-                    شعبة لكل دورة منشورة لها سعر، موزّعة على أسابيع الموسم بلا تزاحم في المسار الواحد. المعاينة لا تفتح شيئا، والتطبيق يفتح.
-                  </p>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <Button tone="secondary" disabled={busy !== null} onClick={() => preview(t)}><Play className="h-3.5 w-3.5" /> عاين التوزيع</Button>
-                    {plan && !plan.applied && plan.rows.length > 0 && (
-                      <Button tone="confirm" disabled={busy !== null} onClick={() => apply(t)}>طبّق التوزيع — افتح {plan.rows.length} شعبة</Button>
-                    )}
-                  </div>
-                  {plan && (
-                    <Inset className="mt-3">
-                      <p className="text-read font-bold text-foreground">
-                        {plan.applied ? `فتحت ${plan.opened} شعبة وهيّئت ${plan.prepared}` : `${plan.rows.length} شعبة تقترح`}
-                        {" · "}بالشهر: {[1, 2, 3].map((m) => `${m}: ${plan.loadByMonth[m] ?? 0}`).join(" · ")}
-                      </p>
-                      {plan.rows.length > 0 && (
-                        <ul className="mt-2 grid gap-1 sm:grid-cols-2">
-                          {plan.rows.slice(0, 12).map((r) => (
-                            <li key={r.courseId} className="text-read text-muted-foreground">{r.titleAr} — الأسبوع {r.week + 1} · {cohortDayAr(r.startsAt)}</li>
-                          ))}
-                          {plan.rows.length > 12 && <li className="text-read text-muted-foreground">… و{plan.rows.length - 12} غيرها</li>}
-                        </ul>
-                      )}
-                      {plan.unplaced.length > 0 && (
-                        <p className="mt-2 text-read leading-6 text-gold-ink">لم توضع: {plan.unplaced.map((u) => `${u.titleAr} (${u.whyAr})`).join("، ")}</p>
-                      )}
-                      {plan.skipped.length > 0 && (
-                        <p className="mt-2 text-read leading-6 text-muted-foreground">تركت: {plan.skipped.length} دورة — لها شعبة قائمة أو بلا سعر.</p>
-                      )}
-                    </Inset>
-                  )}
-                  {/* ═══ وذهب «من المتاحُ للتدريس؟» (٢٧ سبتمبر ٢٠٢٦) ═══
-
-                      كان زرًّا يقرأ من أعلن إتاحتَه لهذا الموسم. وذهبت الإتاحةُ
-                      بقرار صاحب المنصّة: المدرّبُ يجدول لقاءاتِه بيده داخلَ مدّة
-                      شعبته، فلا إعلانَ وقتٍ يُقرأ هنا. ومن يصلح للتدريس يُعرف
-                      بتأهيله للدورة عند إسناد الشعبة. */}
-                </Card>
+                {/* ═══ وذهب «توزيعُ شعب الموسم» (٢٤ أكتوبر ٢٠٢٦) ═══
+                    كان يقترح شعبةً بلا مدرّبٍ لكلّ دورةٍ منشورةٍ لا شعبةَ لها — ٩١ شعبة — ويفتحها بنقرة «طبّق».
+                    وهو من زمنٍ قبل أن يحدّد المدرّبُ مدّةَ شعبته بنفسه، وصاحبُ المنصّة كان قد حذف شعبا بلا مدرّب.
+                    فسأل: «ما هذه الـ٩١ شعبة؟» — واختار حذفَه. ومواعيدُ ما فُتح في «مواعيد بلا تعارض» أعلاه. */}
 
                 {/* ④ النشر — الذهبيُّ الواحد */}
                 <div className="mt-4 flex flex-wrap items-center gap-3">
@@ -555,7 +500,7 @@ export default function Terms() {
                       <CalendarCheck className="h-4 w-4" /> انشر التقويم
                     </Button>
                   )}
-                  {!published && t._count.cohorts === 0 && <span className="text-read text-muted-foreground">وزّع الشعب أوّلا — تقويم بلا شعب لا ينشر.</span>}
+                  {!published && t._count.cohorts === 0 && <span className="text-read text-muted-foreground">لا شعب في هذا الموسم بعد — تقويم بلا شعب لا ينشر.</span>}
                   {/* الحذفُ لما لم يُنشر ولا شعبَ فيه — والخادمُ يحرس الشرطين أيضا */}
                   {!published && t._count.cohorts === 0 && (
                     confirmDelete === t.id
