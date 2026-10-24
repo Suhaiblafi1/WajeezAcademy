@@ -35,6 +35,7 @@ import { SEATED, SessionInviteService } from './session-invite.service'
 import { cohortTitleAr, nextCohortNumber } from '../../src/application/learning/cohort-title'
 import { MATERIALS_STATUSES } from '../../src/application/trainer/portal-access'
 import { publishCohortTrainers } from './trainer-auto-publish'
+import { cohortBeginsAt } from './cohort-start'
 
 /** ترتيبُ اليوم في الأسبوع — الأحدُ صفر، كما في `Date.getUTCDay` */
 const DAY_INDEX: Record<string, number> = Object.fromEntries(DAY_CODES.map((d, i) => [d, i]))
@@ -43,7 +44,8 @@ const COHORT_TRANSITIONS: Record<string, string[]> = {
   draft: ['open', 'cancelled'],
   open: ['full', 'active', 'cancelled'],
   full: ['active', 'open', 'cancelled'], // open للتراجع إن أُلغي تسجيل
-  active: ['completed', 'cancelled'],
+  /* و«جاريةٌ» قبل أوانها تعود مفتوحةً أو ممتلئة — بشرط ألّا تكون بدأت (`transition`، ٢٤ أكتوبر ٢٠٢٦) */
+  active: ['completed', 'cancelled', 'open', 'full'],
   completed: [],
   cancelled: [],
 }
@@ -575,15 +577,17 @@ export class CohortService {
      «منتهية». فهذه الدالّةُ تُصلح ما تأخّر، وتُنادى من الشاشة الآن ومن
      العامل الخلفيّ يومَ يوجد (المهمّة ٥٤ في خطّة التنفيذ).
 
-     وما لا تفعله بقصد: لا تفتح شعبةً — الفتحُ يمرّ بشروطه الخمسة وبقرار
-     إنسان؛ ولا تلمس ملغاةً؛ ولا تُنهي شعبةً بلا جلسة. */
+     وما لا تفعله بقصد: لا تفتح مسودّةً — الفتحُ يمرّ بشروطه الخمسة وبقرار
+     إنسان؛ ولا تلمس ملغاةً؛ ولا تُنهي شعبةً بلا جلسة. وما تُرجعه إلى «مفتوحة»
+     جاريةٌ لم تبدأ — كانت مفتوحةً قبل الضغطة (٢٤ أكتوبر ٢٠٢٦، `cohort-start.ts`). */
   async syncStatusesByDate(actorId: string | null, options: { apply?: boolean; now?: Date } = {}) {
     const now = options.now ?? new Date()
     const candidates = await this.prisma.cohort.findMany({
       where: { status: { in: ['open', 'full', 'active'] } },
       select: {
-        id: true, title: true, status: true, startsAt: true,
-        sessions: { select: { startsAt: true, endsAt: true }, orderBy: { startsAt: 'asc' } },
+        id: true, title: true, status: true, startsAt: true, capacity: true,
+        sessions: { select: { startsAt: true, endsAt: true, status: true }, orderBy: { startsAt: 'asc' } },
+        _count: { select: { enrollments: { where: { status: 'enrolled' } } } },
       },
     })
     const changes: { cohortId: string; title: string; from: string; to: string; reason: string }[] = []
@@ -592,10 +596,9 @@ export class CohortService {
          قرارُ صاحب المنصّة: «المدرّبُ قال من تاريخ كذا لتاريخ كذا — هذه الفترةُ تصبح فيها جاريةً
          تلقائيّا». ولقاءاتُ الشتاء المباشرةُ قد تتأخّر عن بدء الشعبة، فكانت تبقى «مفتوحة» وقد بدأت.
          فالبدءُ أسبقُ الاثنين: بدءُ المدّة (`startsAt`) أو أوّلُ لقاء. والانتهاءُ بآخر لقاءٍ كما كان. */
-      const firstSession = c.sessions[0]?.startsAt ?? null
-      const begins = [c.startsAt, firstSession].filter((d): d is Date => d !== null)
-      if (begins.length === 0) continue
-      const first = new Date(Math.min(...begins.map((d) => d.getTime())))
+      /* والبدءُ من لقاءٍ قائمٍ لا ملغى — والعلّةُ في `cohort-start.ts` */
+      const first = cohortBeginsAt(c.startsAt, c.sessions)
+      if (!first) continue
       const last = c.sessions.length === 0 ? null : c.sessions.reduce<Date>((max, sn) => {
         const end = sn.endsAt ?? sn.startsAt
         return end > max ? end : max
@@ -606,6 +609,12 @@ export class CohortService {
       } else if (first <= now && c.status !== 'active') {
         const byPeriod = c.startsAt !== null && first.getTime() === c.startsAt.getTime()
         changes.push({ cohortId: c.id, title: c.title, from: c.status, to: 'active', reason: byPeriod ? 'بدأت مدّتها' : 'بدأت أوّل جلساتها' })
+      } else if (first > now && c.status === 'active') {
+        /* ═══ و«جاريةٌ» لم تبدأ تعود إلى البيع (٢٤ أكتوبر ٢٠٢٦) ═══
+           زرُّ «ابدأ التقديم» كان يُجريها بضغطةٍ قبل أوّل لقاء، فتسقط من بطاقة مدرّبها ومن النقل إليها، ولا
+           طريقَ إلى رجوعها. فالتاريخُ يُرجعها كما يُجريها — ممتلئةً إن بلغت سعتَها، وإلّا مفتوحة. */
+        const full = (c.capacity ?? 0) > 0 && c._count.enrollments >= (c.capacity ?? 0)
+        changes.push({ cohortId: c.id, title: c.title, from: c.status, to: full ? 'full' : 'open', reason: 'لم تبدأ بعد' })
       }
     }
     if (options.apply !== true) return { applied: false, changed: 0, changes }
@@ -613,7 +622,7 @@ export class CohortService {
     let changed = 0
     for (const ch of changes) {
       try {
-        await this.transition(ch.cohortId, ch.to, actorId, `آليّا: ${ch.reason}`)
+        await this.transition(ch.cohortId, ch.to, actorId, `آليّا: ${ch.reason}`, { now })
         changed += 1
       } catch {
         /* انتقالٌ غيرُ مسموحٍ لشعبةٍ بعينها لا يوقف الباقي — ويظهر في القائمة بلا تطبيق */
@@ -626,12 +635,20 @@ export class CohortService {
     return { applied: true, changed, changes }
   }
 
-  async transition(cohortId: string, to: string, actorId: string | null, note?: string, opts: { reasonAr?: string } = {}) {
+  async transition(cohortId: string, to: string, actorId: string | null, note?: string, opts: { reasonAr?: string; now?: Date } = {}) {
     const cohort = await this.prisma.cohort.findUnique({ where: { id: cohortId } })
     if (!cohort) throw new AuthError('not_found', 'الشعبة غير موجودة', 404)
     if (cohort.status === to) return
     if (!COHORT_TRANSITIONS[cohort.status]?.includes(to)) {
       throw new AuthError('bad_transition', `لا يمكن الانتقال من «${cohort.status}» إلى «${to}»`, 409)
+    }
+    /* والرجوعُ من «جارية» لما لم يبدأ وحدَه — ما بدأ لا يُعاد إلى البيع */
+    if (cohort.status === 'active' && ['open', 'full'].includes(to)) {
+      const sessions = await this.prisma.cohortSession.findMany({ where: { cohortId }, select: { startsAt: true, status: true } })
+      const first = cohortBeginsAt(cohort.startsAt, sessions)
+      if (!first || first <= (opts.now ?? new Date())) {
+        throw new AuthError('already_started', 'بدأت الشعبة — لا تعود مفتوحة', 409)
+      }
     }
     await this.prisma.cohort.update({ where: { id: cohortId }, data: { status: to } })
     await recordAudit(this.prisma, { actorId, action: 'cohort.status', entityType: 'cohort', entityId: cohortId, meta: { from: cohort.status, to, note } })

@@ -649,11 +649,15 @@ export default function AdminCohorts() {
                           <Play className="h-3.5 w-3.5" /> افتح الشعبة
                         </Button>
                       )}
-                      {["open", "full"].includes(c.status) && (
+                      {/* و«ابدأ التقديم» بعد بدئها وحدَه — قبلَه كان يُجريها بضغطةٍ فتسقط من بطاقة مدرّبها، وهي
+                          تصير جاريةً وحدها في موعدها (٢٤ أكتوبر ٢٠٢٦، `server/services/cohort-start.ts`) */}
+                      {["open", "full"].includes(c.status) && (notStartedYet(c.startsAt) ? (
+                        <span className="self-center text-fine text-muted-foreground">تصير جارية وحدها يوم تبدأ</span>
+                      ) : (
                         <Button tone="confirm" disabled={busy} onClick={() => act(() => apiPost(`/api/admin/cohorts/${c.id}/transition`, { to: "active" }), "الشعبة جارية الآن")} className="text-teal-light-ink">
                           ابدأ التقديم
                         </Button>
-                      )}
+                      ))}
                       {c.status === "active" && (
                         <Button tone="secondary" disabled={busy} onClick={() => act(() => apiPost(`/api/admin/cohorts/${c.id}/transition`, { to: "completed" }), "اكتملت الشعبة")}>
                           اختتم الشعبة

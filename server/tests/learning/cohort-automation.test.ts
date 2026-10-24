@@ -181,3 +181,41 @@ describe('جارية من بدء المدة — والسعة ٢٠', () => {
     expect(fresh.capacity, 'الافتراض ليس ٢٠').toBe(20)
   })
 })
+
+/* ═══ و«جاريةٌ» لم تبدأ تعود إلى البيع (٢٤ أكتوبر ٢٠٢٦) ═══
+   «لماذا لا تظهر شعبته هنا؟» (صاحب المنصّة): شعبةٌ أُجريت بزرّ «ابدأ التقديم» قبل أوّل لقاءٍ فيها، فسقطت من
+   بطاقة مدرّبها. فالتاريخُ يُرجعها كما يُجريها — والعلّةُ في `server/services/cohort-start.ts`. */
+describe('جارية لم تبدأ تعود مفتوحة', () => {
+  const now = new Date('2026-03-01T00:00:00Z')
+
+  it('⚠️ جارية أول لقاء فيها بعد الآن تعود مفتوحة — واللقاء الملغى ليس بدءا', async () => {
+    const c = await scheduled('شعبةٌ أُجريت قبل أوانها')
+    await cohorts.generateSessions(managerId, c.id, { weeks: 2, from: new Date('2026-04-05T00:00:00Z'), apply: true })
+    await prisma.cohortSession.create({
+      data: { cohortId: c.id, title: 'لقاءٌ ألغي', status: 'cancelled', startsAt: new Date('2026-02-01T18:00:00Z') },
+    })
+    await prisma.cohort.update({ where: { id: c.id }, data: { status: 'active', registrationOpen: true } })
+    const r = await cohorts.syncStatusesByDate(managerId, { now, apply: true })
+    expect(r.changes.find((ch) => ch.cohortId === c.id)?.to).toBe('open')
+    expect((await prisma.cohort.findUniqueOrThrow({ where: { id: c.id } })).status, 'بقيت جارية ولم تبدأ').toBe('open')
+  })
+
+  it('وتعود ممتلئة إن بلغت سعتها', async () => {
+    const c = await cohorts.create(managerId, { courseId: COURSE, title: 'شعبةٌ ممتلئةٌ أُجريت', capacity: 1, price: 50 })
+    await prisma.cohort.update({ where: { id: c.id }, data: { status: 'active', startsAt: new Date('2026-04-01T00:00:00Z') } })
+    const u = await new AuthService(prisma).register('early-active@test.local', 'Learner#12345', 'متعلّمٌ مبكّر')
+    await prisma.enrollment.create({ data: { userId: u.userId, cohortId: c.id, status: 'enrolled' } })
+    await cohorts.syncStatusesByDate(managerId, { now, apply: true })
+    expect((await prisma.cohort.findUniqueOrThrow({ where: { id: c.id } })).status).toBe('full')
+  })
+
+  it('⚠️ وما بدأ لا يعود مفتوحا — لا بالتاريخ ولا باليد', async () => {
+    const c = await scheduled('شعبةٌ بدأت حقّا')
+    await cohorts.generateSessions(managerId, c.id, { weeks: 4, from: new Date('2026-02-20T00:00:00Z'), apply: true })
+    await prisma.cohort.update({ where: { id: c.id }, data: { status: 'active' } })
+    const r = await cohorts.syncStatusesByDate(managerId, { now, apply: true })
+    expect(r.changes.map((ch) => ch.cohortId)).not.toContain(c.id)
+    await expect(cohorts.transition(c.id, 'open', managerId, undefined, { now }))
+      .rejects.toMatchObject({ code: 'already_started' })
+  })
+})
