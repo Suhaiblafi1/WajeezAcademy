@@ -12,6 +12,7 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
 import { setupTestDb, testPrisma } from '../helpers/db'
+import { makeAdvisor } from '../helpers/advisor'
 import { AuthService } from '../../services/auth.service'
 import { AdvisorService } from '../../services/advisor.service'
 import { LearnersService } from '../../services/learners.service'
@@ -42,7 +43,7 @@ beforeAll(async () => {
   await auth.setRoles(managerId, ['operations_manager'])
   const a = await auth.register('link-advisor@test.local', 'Advisor#12345', 'مستشار الربط')
   advisorId = a.userId
-  await auth.setRoles(advisorId, ['advisor'])
+  await makeAdvisor(prisma, auth, advisorId)
 }, 240_000)
 
 describe('① التسجيلُ وحدَه لا يربط', () => {

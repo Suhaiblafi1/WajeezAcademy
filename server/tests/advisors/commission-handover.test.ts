@@ -6,6 +6,7 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
 import { setupTestDb, testPrisma } from '../helpers/db'
+import { makeAdvisor } from '../helpers/advisor'
 import { AuthService } from '../../services/auth.service'
 import { AdvisorService, attributedRevenue } from '../../services/advisor.service'
 
@@ -20,7 +21,7 @@ const ago = (days: number) => new Date(Date.now() - days * DAY)
 
 async function advisor() {
   const { userId } = await auth.register(`handover-adv-${++seq}@test.local`, 'Advisor#12345', `مستشار ${seq}`)
-  await auth.setRoles(userId, ['advisor'])
+  await makeAdvisor(prisma, auth, userId)
   return userId
 }
 async function client() {

@@ -10,7 +10,7 @@ import { RefreshCw, ServerOff, ShieldAlert, UserPlus } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import FlowSteps from "@/components/FlowSteps";
 import { apiGet, apiPost, ApiError, permissionMessage } from "@/services/api";
-import { advisorOptionAr } from "@/application/advisor/away";
+import { advisorOptionAr, canTakeCases } from "@/application/advisor/away";
 import { fmtDate } from "@/application/text/format-ar";
 
 import { Panel, Card } from "@/components/ui/Surface";
@@ -43,7 +43,7 @@ interface AutoAssignedCase extends UnassignedCase {
   assignments: { advisorId: string; assignedAt: string; advisor: { displayName: string } }[];
 }
 /** مستشارٌ متاحٌ للإسناد — الخادمُ يرشّح بالدور، فلا تُقرأ الأدوارُ هنا */
-interface AdvisorOption { id: string; displayName: string; email: string; awayUntil?: string | null }
+interface AdvisorOption { id: string; displayName: string; email: string; awayUntil?: string | null; hasProfile?: boolean }
 
 export default function Exceptions() {
   const [rows, setRows] = useState<UnassignedCase[]>([]);
@@ -91,6 +91,8 @@ export default function Exceptions() {
     c.client?.displayName, c.client?.email, c.lead?.fullName, c.lead?.email, c.lead?.phone,
   ]));
   const view = paginate(matched, page, 20);
+  /* ومن لا ملفَّ له يُرى في القائمة ولا يُختار — فإن لم يبق غيرُه فلا أحدَ يُسنَد إليه */
+  const ready = advisors.filter(canTakeCases);
 
   const assign = async (caseId: string) => {
     const advisorId = (pick[caseId] ?? "").trim();
@@ -140,8 +142,8 @@ export default function Exceptions() {
         /* والعجزُ يُقال في موضعه: قائمةٌ فارغةٌ من المستشارين تعني أنّ لا
            أحدَ نشطٌ يُسنَد إليه — وهو سببٌ يُعالَج في شاشةٍ أخرى، فلا يُترك
            الزرُّ باهتا بلا كلمة. */
-        disabledReasonAr={advisors.length === 0
-          ? "لا مستشار نشط للإسناد — فعّل مستشارا في «المستشارون» أوّلا."
+        disabledReasonAr={ready.length === 0
+          ? "لا مستشار جاهز للإسناد. احفظ عمولة مستشار في «المستشارون والعمولة» أولا."
           : rows.length > 0 && view.total === 0
             ? "بحثك لا يطابق أيّ حالة — امسحه لتبدأ."
             : undefined}
@@ -180,10 +182,10 @@ export default function Exceptions() {
                 {/* والفراغُ يُقال ولا يُلتفّ عليه بحقلِ لصق: قائمةٌ فارغةٌ
                     تعني أن لا مستشارَ نشطا، ومعرّفٌ يُكتب يدا لا يُنشئ واحدا. */}
                 <label className="sr-only" htmlFor={`advisor-${c.id}`}>المستشار المسند إليه</label>
-                <select id={`advisor-${c.id}`} value={pick[c.id] ?? ""} disabled={advisors.length === 0}
+                <select id={`advisor-${c.id}`} value={pick[c.id] ?? ""} disabled={ready.length === 0}
                   onChange={(e) => setPick({ ...pick, [c.id]: e.target.value })} className={`${staffSelectCls} max-w-64`}>
-                  <option value="">{advisors.length === 0 ? "لا مستشارين نشطين" : "اختر مستشارا…"}</option>
-                  {advisors.map((a) => <option key={a.id} value={a.id}>{advisorOptionAr(a)}</option>)}
+                  <option value="">{ready.length === 0 ? "لا مستشار جاهز" : "اختر مستشارا…"}</option>
+                  {advisors.map((a) => <option key={a.id} value={a.id} disabled={!canTakeCases(a)}>{advisorOptionAr(a)}</option>)}
                 </select>
                 <Button tone="confirm" disabled={busy || !(pick[c.id] ?? "").trim()} onClick={() => void assign(c.id)}>
                   <UserPlus className="h-3.5 w-3.5" /> إسناد
@@ -229,7 +231,7 @@ export default function Exceptions() {
                       onChange={(e) => setPick({ ...pick, [c.id]: e.target.value })} className={`${staffSelectCls} max-w-64`}>
                       <option value="">اختر مستشارا آخر…</option>
                       {advisors.filter((a) => a.id !== current?.advisorId).map((a) => (
-                        <option key={a.id} value={a.id}>{advisorOptionAr(a)}</option>
+                        <option key={a.id} value={a.id} disabled={!canTakeCases(a)}>{advisorOptionAr(a)}</option>
                       ))}
                     </select>
                     <Button tone="secondary" disabled={busy || !choice} onClick={() => void assign(c.id)}>
@@ -277,7 +279,7 @@ export default function Exceptions() {
                       onChange={(e) => setPick({ ...pick, [c.id]: e.target.value })} className={`${staffSelectCls} max-w-64`}>
                       <option value="">اختر مستشارا آخر…</option>
                       {advisors.filter((a) => a.id !== current?.advisorId).map((a) => (
-                        <option key={a.id} value={a.id}>{advisorOptionAr(a)}</option>
+                        <option key={a.id} value={a.id} disabled={!canTakeCases(a)}>{advisorOptionAr(a)}</option>
                       ))}
                     </select>
                     <Button tone="secondary" disabled={busy || !choice} onClick={() => void assign(c.id)}>

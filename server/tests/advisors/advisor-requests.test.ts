@@ -17,6 +17,7 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
 import { setupTestDb, testPrisma } from '../helpers/db'
+import { makeAdvisor } from '../helpers/advisor'
 import { AuthService } from '../../services/auth.service'
 import { AdvisorService } from '../../services/advisor.service'
 import { AdvisorRequestService } from '../../services/advisor-request.service'
@@ -44,11 +45,11 @@ beforeAll(async () => {
 
   const a = await auth.register('req-advisor@test.local', 'Advisor#12345', 'مستشارة')
   advisorId = a.userId
-  await auth.setRoles(advisorId, ['advisor'])
+  await makeAdvisor(prisma, auth, advisorId)
 
   const o = await auth.register('req-other@test.local', 'Advisor#12345', 'مستشار آخر')
   otherAdvisorId = o.userId
-  await auth.setRoles(otherAdvisorId, ['advisor'])
+  await makeAdvisor(prisma, auth, otherAdvisorId)
 
   const l = await auth.register('req-learner@test.local', 'Learner#12345', 'متعلّمة')
   learnerId = l.userId

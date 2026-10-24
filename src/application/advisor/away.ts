@@ -17,7 +17,14 @@ export function awayRange(fromDay: string, untilDay: string): { from: string; un
 /** آخرُ يومٍ في الإجازة — النهايةُ تُحفظ أوّلَ اليوم الذي بعده، فيُقال اليومُ الذي قبلها */
 export const awayLastDay = (until: string | Date): Date => new Date(new Date(until).getTime() - 1)
 
-/** اسمُ المستشار في قوائم الإسناد — ومن في إجازته يُقال، فيُختار عن علم */
-export function advisorOptionAr(a: { displayName: string; email: string; awayUntil?: string | null }): string {
-  return `${a.displayName} (${a.email})${a.awayUntil ? ` — في إجازة حتى ${fmtDate(awayLastDay(a.awayUntil))}` : ''}`
+/** من تُسند إليه حالة: له ملفُّ مستشار — بلاه لا تُفتح بوّابتُه، والخادمُ يردّ الإسناد (`assign`، ٢٤ أكتوبر ٢٠٢٦).
+    والملفُّ يولد حين تُحفَظ عمولتُه في «المستشارون والعمولة». وغيابُ الخبر لا يمنع: الخادمُ يقرّر */
+export const canTakeCases = (a: { hasProfile?: boolean }): boolean => a.hasProfile !== false
+
+/** اسمُ المستشار في قوائم الإسناد — ومن في إجازته يُقال، فيُختار عن علم. ومن لا ملفَّ له يُقال لماذا لا يُختار */
+export function advisorOptionAr(a: { displayName: string; email: string; awayUntil?: string | null; hasProfile?: boolean }): string {
+  const note = !canTakeCases(a)
+    ? ' — بلا ملف مستشار، احفظ عمولته أولا'
+    : a.awayUntil ? ` — في إجازة حتى ${fmtDate(awayLastDay(a.awayUntil))}` : ''
+  return `${a.displayName} (${a.email})${note}`
 }

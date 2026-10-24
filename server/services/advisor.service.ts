@@ -117,8 +117,23 @@ function guestSnapshot(raw: unknown): object | null {
    فلكلّ إسنادٍ نوبة: من بدايته (أو أوّلِ تواصلٍ إن كان تلقائيّا) إلى رفعه أو إلى إسنادِ الطالب
    نفسِه لمستشارٍ غيره في أيّ حالة — أيُّهما أسبق. وما بين النقل وأوّلِ تواصلِ الجديد في إسنادٍ
    تلقائيّ لا يُحسب لأحد. والحالةُ المغلقةُ بلا نقلٍ تبقى نوبتُها مفتوحة: إتمامُ العمل لا يمحو أجرَه. */
-/** من هو في إجازته الآن — شرطٌ على المستخدم (`advisor-away.service.ts`) */
-export const awayNowWhere = (now: Date) => ({ advisorProfile: { is: { awayFrom: { lte: now }, awayUntil: { gt: now } } } })
+/** الردُّ حين يُختار للحالة من لا ملفَّ له — ويقول الخيارين */
+const NO_PROFILE_AR = 'لا ملف مستشار لهذا الحساب، فلا يفتح الحالة. احفظ عمولته في «المستشارون والعمولة»، أو اختر مستشارا آخر.'
+
+/** من يُسند إليه الآن: له ملفُّ مستشار، وليس في إجازته — شرطٌ موجبٌ على المستخدم (`advisor-away.service.ts`).
+
+    ═══ وكان سالبا فانقلب (٢٤ أكتوبر ٢٠٢٦) ═══
+
+    كُتب `NOT: { advisorProfile: { is: { awayFrom ≤ الآن، awayUntil > الآن } } }`. وفي SQL مقارنةُ الفارغ لا صدقٌ ولا كذب،
+    فمن له ملفٌّ ولم يكتب إجازةً قطّ (التاريخان فارغان) سقط من الإسناد التلقائيّ كلِّه — وبقي فيه من لا ملفَّ له، وهو
+    لا يفتح ما يُسند إليه (بوّابتُه لا تُفتح بلا ملفّ، والملفُّ يولد حين تُحفَظ عمولتُه). فانقلب القصد: يتخطّى الإسنادُ
+    من يعمل، ويعطي من لا يستطيع. قِيس على قاعدةٍ حقيقيّة (`advisor-assign-profile.test.ts`). والشرطُ هنا موجبٌ لا يمرّ
+    عليه فراغ: ملفٌّ لا إجازةَ فيه، أو إجازتُه لم تبدأ أو انتهت. */
+export const availableNowWhere = (now: Date) => ({
+  advisorProfile: {
+    is: { OR: [{ awayFrom: null }, { awayUntil: null }, { awayFrom: { gt: now } }, { awayUntil: { lte: now } }] },
+  },
+})
 
 export async function attributedRevenue(prisma: PrismaClient, advisorId: string): Promise<number> {
   const orders = await attributedOrders(prisma, advisorId)
@@ -292,9 +307,14 @@ export class AdvisorService {
   async assign(caseId: string, advisorId: string, actorId: string | null, opts: { automatic?: boolean } = {}) {
     const kase = await this.prisma.advisorCase.findUnique({ where: { id: caseId } })
     if (!kase) throw new AuthError('not_found', 'الحالة غير موجودة', 404)
-    const advisor = await this.prisma.user.findUnique({ where: { id: advisorId }, include: { roles: true } })
+    const advisor = await this.prisma.user.findUnique({ where: { id: advisorId }, include: { roles: true, advisorProfile: { select: { id: true } } } })
     if (!advisor || !advisor.roles.some((r) => r.roleId === 'advisor')) {
       throw new AuthError('not_advisor', 'المستخدم ليس مستشارا', 409)
+    }
+    /* ولا تُسنَد حالةٌ لمن لا يفتحها: بوّابتُه لا تُفتح بلا ملفّ، والملفُّ يولد حين تُحفَظ عمولتُه (٢٤ أكتوبر ٢٠٢٦).
+       و«لم تُتّفق العمولة بعد» غيرُ «صفر» (`admin-advisors.routes.ts`) — فلا يُنشأ له ملفٌّ هنا بعمولةٍ لم يقرّرها أحد. */
+    if (!advisor.advisorProfile) {
+      throw new AuthError('no_advisor_profile', NO_PROFILE_AR, 409)
     }
     /* إلغاء الإسنادات السابقة ثم إسناد جديد — تاريخ الإسناد يبقى */
     await this.prisma.advisorAssignment.updateMany({
@@ -342,10 +362,12 @@ export class AdvisorService {
       orderBy: { displayName: 'asc' },
       select: { id: true, displayName: true, email: true, advisorProfile: { select: { awayFrom: true, awayUntil: true } } },
     })
-    /* ومن في إجازته الآن يُقال — يُختار إن أراده من يُسند، ولا ينقل الغطاءُ ما أُسند إليه في إجازته */
+    /* ومن في إجازته الآن يُقال — يُختار إن أراده من يُسند، ولا ينقل الغطاءُ ما أُسند إليه في إجازته.
+       ومن لا ملفَّ له يُقال ولا يُختار: `assign` يردّه (٢٤ أكتوبر ٢٠٢٦) */
     const now = new Date()
     return rows.map(({ advisorProfile: p, ...a }) => ({
       ...a, awayUntil: p?.awayFrom && p.awayUntil && p.awayFrom <= now && p.awayUntil > now ? p.awayUntil : null,
+      hasProfile: p !== null,
     }))
   }
 
@@ -372,8 +394,8 @@ export class AdvisorService {
     const advisors = await this.prisma.user.findMany({
       where: {
         status: 'active', roles: { some: { roleId: 'advisor' } },
-        /* ومن في إجازته لا يُسند إليه (١٩ أكتوبر ٢٠٢٦) — والعلّةُ في `advisor-away.service.ts` */
-        NOT: awayNowWhere(new Date()),
+        /* له ملفٌّ — بلاه لا تُفتح بوّابتُه (٢٤ أكتوبر ٢٠٢٦) — وليس في إجازته (١٩ أكتوبر ٢٠٢٦، `advisor-away.service.ts`) */
+        ...availableNowWhere(new Date()),
         ...(opts.exclude?.length ? { id: { notIn: opts.exclude } } : {}),
       },
       select: { id: true },
@@ -428,7 +450,7 @@ export class AdvisorService {
       channel: 'in_app',
       templateKey: 'advisor.case.no_advisor',
       title: 'حالة تنتظر مستشارا',
-      body: 'وصلت حالة جديدة ولا مستشار نشط يستلمها. فعّل مستشارا أو أسندها من «حالات بلا مستشار».',
+      body: 'وصلت حالة جديدة ولا مستشار جاهز يستلمها. احفظ عمولة مستشار في «المستشارون والعمولة»، أو أسندها من «حالات بلا مستشار».',
       data: { caseId },
     })
   }
@@ -530,9 +552,12 @@ export class AdvisorService {
   async mergeCases(caseIds: [string, string], advisorId: string, actorId: string): Promise<{ keptId: string; closedId: string }> {
     if (caseIds[0] === caseIds[1]) throw new AuthError('same_case', 'اختر حالتين مختلفتين', 409)
     const advisor = await this.prisma.user.findFirst({
-      where: { id: advisorId, status: 'active', roles: { some: { roleId: 'advisor' } } }, select: { id: true },
+      where: { id: advisorId, status: 'active', roles: { some: { roleId: 'advisor' } } },
+      select: { id: true, advisorProfile: { select: { id: true } } },
     })
     if (!advisor) throw new AuthError('not_advisor', 'اختر مستشارا نشطا', 409)
+    /* ومن تبقى الحالةُ عنده يفتحها — كما في `assign` (٢٤ أكتوبر ٢٠٢٦) */
+    if (!advisor.advisorProfile) throw new AuthError('no_advisor_profile', NO_PROFILE_AR, 409)
     const cases = await this.prisma.advisorCase.findMany({
       where: { id: { in: caseIds } },
       include: { lead: true, assignments: { where: { unassignedAt: null } } },

@@ -13,6 +13,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
 import { setupTestDb, testPrisma } from '../helpers/db'
+import { makeAdvisor } from '../helpers/advisor'
 import { AuthService } from '../../services/auth.service'
 import { CommerceService } from '../../services/commerce.service'
 import { GrantService } from '../../services/grant.service'
@@ -66,7 +67,7 @@ beforeAll(async () => {
   landing = new GrantLandingService(prisma)
   ownerId = (await auth.register(`fu-owner-${STAMP}@test.local`, 'Owner#12345', 'صاحب المنصة')).userId
   const adv = (await auth.register(`fu-adv-${STAMP}@test.local`, 'Advisor#12345', 'مستشار المتابعة')).userId
-  await auth.setRoles(adv, ['advisor'])
+  await makeAdvisor(prisma, auth, adv)
   pool = (await prisma.course.findMany({ where: { status: 'published' }, select: { id: true }, orderBy: { id: 'asc' } })).map((c) => c.id)
   await new GrantService(prisma).update({ active: true, percentOff: 60, maxCodes: null, maxCourses: 4, closesAt: null }, ownerId)
 }, 240_000)

@@ -6,6 +6,7 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
 import { setupTestDb, testPrisma } from '../helpers/db'
+import { makeAdvisor } from '../helpers/advisor'
 import { AuthService } from '../../services/auth.service'
 import { AdvisorService } from '../../services/advisor.service'
 
@@ -34,7 +35,7 @@ beforeAll(async () => {
   await auth.setRoles(managerId, ['operations_manager'])
   advA = (await auth.register('my-advisor-a@test.local', 'Advisor#12345', 'سارة المستشارة')).userId
   advB = (await auth.register('my-advisor-b@test.local', 'Advisor#12345', 'خالد المستشار')).userId
-  for (const id of [advA, advB]) await auth.setRoles(id, ['advisor'])
+  for (const id of [advA, advB]) await makeAdvisor(prisma, auth, id)
 }, 240_000)
 
 describe('مستشارُ الطالب', () => {

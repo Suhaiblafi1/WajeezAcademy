@@ -17,6 +17,7 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
 import { setupTestDb, testPrisma } from '../helpers/db'
+import { makeAdvisor } from '../helpers/advisor'
 import { AuthService } from '../../services/auth.service'
 import { GrantService } from '../../services/grant.service'
 import { GrantLandingService, grantResults, maskEmail } from '../../services/grant-landing.service'
@@ -66,7 +67,7 @@ beforeAll(async () => {
   landing = new GrantLandingService(prisma)
   ownerId = (await auth.register(`gl-owner-${STAMP}@test.local`, 'Owner#12345', 'صاحب المنصة')).userId
   const advisor = (await auth.register(`gl-adv-${STAMP}@test.local`, 'Advisor#12345', 'مستشار الحملة')).userId
-  await auth.setRoles(advisor, ['advisor'])
+  await makeAdvisor(prisma, auth, advisor)
   const user = await prisma.user.create({ data: { email: `gl-tr-${STAMP}@wajeez.test`, displayName: 'مدرب', passwordHash: 'x' } })
   const app = await prisma.trainerApplication.create({ data: { reference: `WJ-TR-GL-${STAMP}`, fullName: 'مدرب', email: user.email, status: 'active' } })
   profileId = (await prisma.trainerProfile.create({ data: { userId: user.id, applicationId: app.id, publicVisibility: true, isVerified: true, publishApprovedAt: new Date() } })).id

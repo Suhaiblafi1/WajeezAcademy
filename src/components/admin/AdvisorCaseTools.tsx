@@ -16,7 +16,7 @@
 import { useEffect, useState } from "react";
 import { Merge, Search, Shuffle, UserPlus } from "lucide-react";
 import { apiDelete, apiGet, apiPost, apiPut, ApiError } from "@/services/api";
-import { advisorOptionAr, awayLastDay, awayRange } from "@/application/advisor/away";
+import { advisorOptionAr, awayLastDay, awayRange, canTakeCases } from "@/application/advisor/away";
 import { toast, toastError } from "@/components/Toast";
 import { fmtDate } from "@/application/text/format-ar";
 import { countAr } from "@/application/text/count-ar";
@@ -38,7 +38,7 @@ interface AdvisorLoad {
   /* إجازتُه القائمةُ أو القادمة (`advisor-away.service.ts`) */
   away: { from: string; until: string; noteAr: string | null } | null;
 }
-interface AdvisorOption { id: string; displayName: string; email: string; awayUntil?: string | null }
+interface AdvisorOption { id: string; displayName: string; email: string; awayUntil?: string | null; hasProfile?: boolean }
 
 
 export default function AdvisorCaseTools({
@@ -207,7 +207,7 @@ export default function AdvisorCaseTools({
                       onChange={(e) => setPick({ ...pick, [c.id]: e.target.value })} className={`${staffSelectCls} max-w-64`}>
                       <option value="">اختر مستشارا آخر…</option>
                       {advisors.filter((a) => a.id !== current?.advisorId).map((a) => (
-                        <option key={a.id} value={a.id}>{advisorOptionAr(a)}</option>
+                        <option key={a.id} value={a.id} disabled={!canTakeCases(a)}>{advisorOptionAr(a)}</option>
                       ))}
                     </select>
                     <Button tone="secondary" disabled={busy || !choice} onClick={() => void change(c.id)}>
@@ -229,7 +229,7 @@ export default function AdvisorCaseTools({
               <select id="advisor-merge-to" value={mergeTo} onChange={(e) => setMergeTo(e.target.value)}
                 className={`${staffSelectCls} max-w-72`}>
                 <option value="">من يبقى مستشاره…</option>
-                {advisors.map((a) => <option key={a.id} value={a.id}>{advisorOptionAr(a)}</option>)}
+                {advisors.map((a) => <option key={a.id} value={a.id} disabled={!canTakeCases(a)}>{advisorOptionAr(a)}</option>)}
               </select>
               <Button tone="secondary" disabled={busy || !mergeAdvisor} onClick={() => setConfirmMerge(true)}>
                 <Merge className="h-3.5 w-3.5" /> ادمج
