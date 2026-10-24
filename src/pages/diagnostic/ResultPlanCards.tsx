@@ -14,7 +14,6 @@
 import { useMemo, useState } from "react";
 import { CheckCircle2, FileText, Gauge, Sparkles } from "lucide-react";
 import { useCoursePrices, cheapestOf, pricedCount, formatCohortPrice } from "@/services/cohort-prices";
-import { FIRST_TIME_PROMO } from "@/application/commerce/first-time-promo";
 import CourseJourney, { type CourseSuggestion } from "@/components/CourseJourney";
 import {
   courseById,
@@ -293,16 +292,8 @@ export function ResultPriceCard({ courseIds }: { courseIds: readonly string[] })
           {loaded ? "يعلن السعر مع فتح الشعبة" : "يقرأ السعر…"}
         </p>
       )}
-      {/* وكان هنا صندوقٌ يطلب بريدا مقابل الكود. وقرارُ صاحب المنصّة: لا داعي
-          له — البريدُ يُكتب عند الشراء أصلا، فطلبُه مرّتين حاجزٌ بلا مقابل.
-          والكودُ يُقال سطرا واحدا: هو لأوّل شراءٍ لكلّ أحد. */}
-      <Inset as="p" tone="warn" className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 px-3.5 py-2.5 text-read leading-5">
-        <span className="font-bold text-gold-ink">خصم {FIRST_TIME_PROMO.percentOff}٪ لأول عملية شراء بالكود</span>
-        <code dir="ltr" className="rounded-md border border-gold/40 bg-gold/10 px-1.5 py-0.5 font-mono text-fine font-black text-gold-ink">
-          {FIRST_TIME_PROMO.code}
-        </code>
-        <span className="text-muted-foreground">— يكتب في صفحة الدفع.</span>
-      </Inset>
+      {/* وكان هنا سطرُ «خصم ١٠٪ لأوّل عملية شراء بالكود …» يعلنه لكلّ أحد. فحُذف بقرار صاحب المنصّة (٢٤ أكتوبر
+          ٢٠٢٦): الكودُ «سرّيٌّ نعطيه فقط لمن نريد» — ولا معنى للسطر بلا كوده. */}
       <p className="mt-3 text-read leading-5 text-muted-foreground">
         يتحدد سعر خطتك بعد اعتمادها، فأنت تختار دوراتها.
         {/* وكم منها يُشترى الآن — عددٌ لا «بعضُها» (٢١ أكتوبر ٢٠٢٦، `listed-courses.ts`) */}
