@@ -67,13 +67,60 @@ const bioHref = (t: CohortTrainer) => `/trainers#trainer-${encodeURIComponent(t.
 /** وجهُ المدرّب — صورتُه المعتمَدة، أو حروفُ اسمه حين لا صورة أو لم تصل */
 function Face({ t }: { t: CohortTrainer }) {
   const [failed, setFailed] = useState(false);
-  const box = "grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-full ring-2 ring-paper";
+  const box = "grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-full ring-2 ring-paper";
   return t.photoUrl && !failed ? (
-    <img src={t.photoUrl} alt="" width={44} height={44} loading="lazy" decoding="async"
+    <img src={t.photoUrl} alt="" width={56} height={56} loading="lazy" decoding="async"
       onError={() => setFailed(true)} className={`${box} object-cover object-[50%_30%]`} />
   ) : (
     /* `bg-teal-deep` مع `text-white` يبقى أبيضَ في المظهر النهاريّ — كبطاقة الفريق */
-    <span aria-hidden="true" className={`${box} bg-teal-deep text-sm font-black text-white`}>{initialsOf(t.name)}</span>
+    <span aria-hidden="true" className={`${box} bg-teal-deep text-base font-black text-white`}>{initialsOf(t.name)}</span>
+  );
+}
+
+/* ═══ صورةُ مدرّب الشعبة كبيرةً — أوّلُ ما يُرى في صندوقها (٢٤ أكتوبر ٢٠٢٦) ═══
+
+   قرارُ صاحب المنصّة: «اجعل صورةَ المدرّب أكبر عندما يقوم الزائرُ بشراء دورةٍ أو مسارٍ من الموقع… سواءً بعد
+   تشخيصٍ أو مساراتٍ جاهزةٍ أو دوراتٍ جاهزة. أبدع في التصميم». وكان وجها بحجم ٤٤ بكسلا بجانب الاسم.
+
+   فصار صورةً بحجم ٩٦–١١٢ في إطارٍ متدرّجٍ من الذهبيّ إلى الفيروزيّ (لونَي العلامة)، وتحتها شارةُ «مباشر»:
+   الوجهُ يقول من يعلّمه، والشارةُ تقول كيف. وبجانبها «مدربك» واسمُه بخطٍّ كبير وبابُ نبذته. والصورةُ نفسُها ليست
+   رابطا: في صندوق الاختيار يختار الضغطُ عليها الشعبةَ ولا ينقله عن صفحة الشراء — والنبذةُ بابُها اسمُه.
+   ولشعبةٍ بمدرّبَين الوجهان الأصغران جنبا إلى جنب (`Trainers`)، فصورتان كبيرتان في صندوقٍ واحدٍ زحام. */
+function Portrait({ t }: { t: CohortTrainer }) {
+  const [failed, setFailed] = useState(false);
+  const box = "grid h-24 w-24 place-items-center overflow-hidden rounded-2xl sm:h-28 sm:w-28";
+  return (
+    <span className="relative shrink-0 pb-2">
+      <span className="block rounded-[1.2rem] bg-gradient-to-br from-gold via-teal-light to-teal-deep p-[3px] shadow-lg">
+        {t.photoUrl && !failed ? (
+          <img src={t.photoUrl} alt="" width={112} height={112} loading="lazy" decoding="async"
+            onError={() => setFailed(true)} className={`${box} bg-paper object-cover object-[50%_25%]`} />
+        ) : (
+          <span aria-hidden="true" className={`${box} bg-teal-deep text-2xl font-black text-white`}>{initialsOf(t.name)}</span>
+        )}
+      </span>
+      <span className="absolute bottom-0 left-1/2 inline-flex -translate-x-1/2 items-center gap-1 whitespace-nowrap rounded-full bg-paper px-2 py-0.5 text-fine font-black leading-4 text-foreground shadow-md">
+        <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-red-400 motion-safe:animate-pulse" />
+        مباشر
+      </span>
+    </span>
+  );
+}
+
+/** «مدربك» واسمُه كبيرا وبابُ نبذته — بجانب صورته */
+function Lead({ t }: { t: CohortTrainer }) {
+  return (
+    <span className="grid min-w-0 content-center gap-0.5">
+      <span className="text-fine font-bold leading-4 text-muted-foreground">مدربك</span>
+      <span className="text-base font-black leading-6 text-foreground sm:text-lg">{t.name}</span>
+      {t.id && (
+        <Link to={bioHref(t)} aria-label={`نبذة المدرب ${t.name}`}
+          className="inline-flex w-fit items-center gap-0.5 text-read font-bold leading-6 text-teal-light-ink underline-offset-4 hover:underline">
+          نبذة المدرب
+          <ChevronLeft className="h-3.5 w-3.5" aria-hidden="true" />
+        </Link>
+      )}
+    </span>
   );
 }
 
@@ -195,8 +242,14 @@ export default function CohortPicker({
                 </span>
               )}
               <span className="grid min-w-0 flex-1 gap-1.5">
-                {/* ومن لم يُعتمد نشرُ اسمه لا يُقال عنه شيء — لا اسمَ ولا وعدٌ بموعد إعلانه */}
-                <Trainers c={c} />
+                {/* ومن لم يُعتمد نشرُ اسمه لا يُقال عنه شيء — لا اسمَ ولا وعدٌ بموعد إعلانه. ومدرّبٌ واحدٌ صورتُه
+                    كبيرةٌ واسمُه بجانبها (`Portrait`)، وأكثرُ من واحدٍ وجوهٌ أصغرُ جنبا إلى جنب */}
+                {c.trainerProfiles.length === 1 ? (
+                  <span className="mb-1 flex min-w-0 items-center gap-3 sm:gap-4">
+                    <Portrait t={c.trainerProfiles[0]} />
+                    <Lead t={c.trainerProfiles[0]} />
+                  </span>
+                ) : <Trainers c={c} />}
                 <When c={c} />
                 {/* الاسمُ يفرّق شعبتين تبدآن في اليوم نفسِه (صباحيّةً ومسائيّة) — كانتا سطرين
                     متطابقين حرفا بحرف، فالاختيارُ بينهما رجمٌ بالغيب. */}
