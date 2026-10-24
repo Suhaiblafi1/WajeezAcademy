@@ -1118,7 +1118,7 @@ export default function TrainerRunOps() {
             { id: "all" as const, label: "كل المراحل" },
             ...TRAINER_STAGES.map((x) => ({ id: x.id, label: `${x.ar} (${stageCounts[x.id]})` })),
           ]} />
-        <p className="mt-1.5 text-fine leading-6 text-muted-foreground">
+        <p className="mt-1.5 text-read leading-6 text-muted-foreground">
           <b className="text-foreground">مؤهل</b>: دورة اخترناها له ولم يعتذر عنها
           · <b className="text-foreground">وافق وفتح شعبة</b>: قبلها ففتحت له شعبتها
           · <b className="text-foreground">جاهز</b>: اعتمدت خطة شعبته
