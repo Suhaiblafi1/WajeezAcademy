@@ -37,7 +37,7 @@ function openCondition(f: NextStepFacts, now: Date): NextStep | null {
   if (!f.gatesActivation) return null
   const phase = conditionPhase({ ...f, now })
   if (phase === 'met') return null
-  if (f.coursesReady) return { textAr: 'اعتمدت له دورة — فعّله ووقّع العقد', who: 'you' }
+  if (f.coursesReady) return { textAr: 'اعتمدت خطة شعبته — فعّله ووقّع العقد', who: 'you' }
   if (phase === 'under_review') return { textAr: 'أرسل شعبَه — راجِعْها واعتمِدْها', who: 'you' }
   if (phase === 'lapsed') return { textAr: 'انقضت مهلتُه — مدِّدْ أو أنهِ', who: 'you' }
   return null
@@ -67,7 +67,7 @@ export function contractNextStep(f: NextStepFacts): NextStep {
          قبل هذا اليوم) فالدورُ عليك؛ وإلّا فهو يُعِدّ — وكان «وقِّعْه حين تعتمد دوراتِه» عليك دائما ولو لم يرسل شيئا */
       if (!f.gatesActivation) {
         return f.coursesReady
-          ? { textAr: 'اعتمدت له دورة — وقّعه الآن', who: 'you' }
+          ? { textAr: 'اعتمدت خطة شعبته — وقّعه الآن', who: 'you' }
           : { textAr: 'يعد شعب دوراته — ونوقعه تلقائيا مع أول خطة تعتمدها له', who: 'them' }
       }
       const open = openCondition(f, now)

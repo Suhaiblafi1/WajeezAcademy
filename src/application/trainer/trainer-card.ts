@@ -75,13 +75,14 @@ export function cohortLineAr(c: CardCohort, day: Day): string {
   return parts.join(' · ')
 }
 
-/** عدّادُ البطاقة: «7 شعب: 4 معتمدة · 1 تنتظرك · 2 مؤجلة» — ما عددُه صفرٌ لا يُذكر */
+/** عدّادُ البطاقة: «7 شعب: 4 اعتمدت خطتها · 1 تنتظرك · 2 مؤجلة» — ما عددُه صفرٌ لا يُذكر.
+    و«معتمدة» وحدَها كانت تُقرأ «دورةٌ مؤهلٌ لها»، فصارت تقول من اعتمد ماذا (٢٤ أكتوبر ٢٠٢٦، `TRAINER_STAGES`) */
 export function cohortsTallyAr(cs: Pick<CardCohort, 'plan' | 'postponedTo'>[]): string {
   if (cs.length === 0) return 'لا شعبة له بعد'
   const n: Record<PlanMark, number> = { none: 0, draft: 0, submitted: 0, returned: 0, postponed: 0, approved: 0 }
   for (const c of cs) n[planMarkOf(c)] += 1
   const parts = [
-    n.approved && `${n.approved} معتمدة`,
+    n.approved && `${n.approved} اعتمدت خطتها`,
     n.submitted && `${n.submitted} تنتظرك`,
     n.returned && `${n.returned} ردت بتعديلات`,
     n.postponed && `${n.postponed} مؤجلة`,

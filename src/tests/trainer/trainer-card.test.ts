@@ -49,9 +49,9 @@ describe('② سطر الشعبة والعداد', () => {
       { plan: 'approved', postponedTo: null }, { plan: 'published', postponedTo: null },
       { plan: 'changes_requested', postponedTo: '2027-02-01' }, { plan: 'submitted', postponedTo: null }, { plan: null, postponedTo: null },
     ]
-    expect(cohortsTallyAr(cs)).toBe('5 شعب: 2 معتمدة · 1 تنتظرك · 1 مؤجلة · 1 لم ترسل بعد')
+    expect(cohortsTallyAr(cs)).toBe('5 شعب: 2 اعتمدت خطتها · 1 تنتظرك · 1 مؤجلة · 1 لم ترسل بعد')
     expect(cohortsTallyAr([])).toBe('لا شعبة له بعد')
-    expect(cohortsTallyAr(cs.slice(0, 2))).toBe('شعبتان: 2 معتمدة')
+    expect(cohortsTallyAr(cs.slice(0, 2))).toBe('شعبتان: 2 اعتمدت خطتها')
   })
 })
 

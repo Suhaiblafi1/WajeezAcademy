@@ -167,7 +167,7 @@ describe('② «اعتُمدت له دورةٌ ولم يُفعَّل» — في 
     expect(await readyOf(t.contractId), 'له خطّةٌ معتمَدة ولم يقل الخادمُ إنّه جاهز').toBe(true)
 
     /* والتفعيلُ من الشاشة يختم العقدَ — فلا يبقى «جاهزا»، ودورتُه الثانيةُ معلّقةٌ بعدُ */
-    await review.decide(t.applicationId, adminId, 'activate', 'اعتمدت له دورة — فعّل من شاشة العقود')
+    await review.decide(t.applicationId, adminId, 'activate', 'اعتمدت خطة شعبته — فعّل من شاشة العقود')
     const contract = await prisma.trainerContract.findUniqueOrThrow({ where: { id: t.contractId } })
     expect(contract.conditionMetAt).not.toBeNull()
     expect(await readyOf(t.contractId), 'فُعِّل وبقي «جاهزا»').toBe(false)
