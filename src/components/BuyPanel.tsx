@@ -327,6 +327,10 @@ export default function BuyPanel({
       ? formatPresentment(convertFromUsd(quote.total, currency), currency)
       : money(quote.total, quote.currency)
     : "—";
+  /* وما يصير إليه المبلغ بكود المنحة — بصيغة المجموع نفسِها («$60.00» لا «60 USD») */
+  const shownGrant = quote && grantPayTotal !== undefined
+    ? usd ? formatPresentment(convertFromUsd(grantPayTotal, currency), currency) : money(grantPayTotal, quote.currency)
+    : null;
 
   const pay = async () => {
     if (!quote || payableIds.length === 0) return;
@@ -586,7 +590,7 @@ export default function BuyPanel({
                 إليه المبلغ بكوده، لا يُترك أمام سعرٍ كاملٍ يظنّه سعرَ المنحة */}
             {grantPayTotal !== undefined && quote && quote.grantPct === null && !couponError && !nothingLeft && (
               <p className="mt-1.5 text-read leading-6 text-gold-ink">
-                اكتب كود منحتك ليصير المبلغ <bdi dir="ltr">{money(grantPayTotal, quote.currency)}</bdi>. تجده في بريدك.
+                اكتب كود منحتك ليصير المبلغ <bdi dir="ltr">{shownGrant}</bdi>. تجده في بريدك.
               </p>
             )}
             {/* كودٌ وقع على بعض الدورات دون بعض — كودُ المدرّب على دوراته وحدَها،

@@ -273,7 +273,9 @@ describe('بعد النموذج', () => {
     expect(PAGE).toMatch(/initialCoupon=\{stored\.code \?\? ""\}\s*grantPayTotal=\{payTotal\}/)
     expect(BUY).toMatch(/<details className="group" open=\{grantPayTotal !== undefined\}>/)
     expect(BUY).toMatch(/\{grantPayTotal !== undefined && quote && quote\.grantPct === null && !couponError && !nothingLeft && \(/)
-    expect(BUY).toContain('اكتب كود منحتك ليصير المبلغ <bdi dir="ltr">{money(grantPayTotal, quote.currency)}</bdi>. تجده في بريدك.')
+    expect(BUY).toContain('اكتب كود منحتك ليصير المبلغ <bdi dir="ltr">{shownGrant}</bdi>. تجده في بريدك.')
+    /* بصيغة المجموع نفسِها، وبعملة البطاقة إن بدّلها */
+    expect(BUY).toMatch(/const shownGrant = quote && grantPayTotal !== undefined\s*\? usd \? formatPresentment\(convertFromUsd\(grantPayTotal, currency\), currency\) : money\(grantPayTotal, quote\.currency\)/)
     for (const t of ['اكتب كود منحتك ليصير المبلغ', 'تجده في بريدك.']) expect(plainAr(t)).toBe(t)
   })
 
