@@ -106,7 +106,7 @@ describe('بعد النموذج', () => {
     expect(PAGE, 'عادت فقرة الحد الطويلة').not.toMatch(/وهذا أقصى ما تغطيه منحتك|بعد استشارة مستشارك الخاص/)
   })
 
-  it('⚠️ وأنها مباشرة على Zoom — في أول الصفحة، وفي الشريط في الصفحتين، وفي كل دورة', () => {
+  it('⚠️ وأنها مباشرة على Zoom — في أول الصفحة، وفي الشريط في صندوق الكود، وفي كل دورة', () => {
     expect(PAGE).toContain('دورات مباشرة على Zoom، تختار منها حتى {c.maxCourses}.')
     /* الشريطُ بقرار صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦): مع مدرّبٍ معتمد، وتطبيقاتٌ عمليّة، ورسالةُ توصية */
     expect(GRANT_GAINS_AR.map((g) => [g.id, g.title])).toEqual([
@@ -116,7 +116,11 @@ describe('بعد النموذج', () => {
     ])
     /* وهو نفسُه في النموذج وفي صندوق الكود أعلى الصفحة الثانية، بعد سطر الحدّ — بدل صندوق Zoom الكبير. قرارُ صاحب المنصّة
        (٢٤ أكتوبر ٢٠٢٦): «ضعهم في الصندوق الأعلى بطريقةٍ مرتّبةٍ مع أيقونات» */
-    expect(PAGE.match(/<GrantGains\b/g)?.length, 'الشريط في الصفحتين').toBe(2)
+    /* وفي صندوق الكود وحدَه — حُذف من الصفحة الأولى بقراره (٢٥ أكتوبر ٢٠٢٦): «احذفها من الصفحة الأولى» */
+    expect(PAGE.match(/<GrantGains\b/g)?.length, 'الشريط في غير صندوق الكود').toBe(1)
+    const formAt = PAGE.indexOf('const ready = form.fullName')
+    expect(formAt, 'الصفحة الأولى لم توجد').toBeGreaterThan(0)
+    expect(PAGE.slice(formAt), 'عاد الشريط إلى الصفحة الأولى').not.toMatch(/GrantGains|GRANT_GAINS_AR/)
     const card = PAGE.slice(PAGE.indexOf(TOP_CARD), PAGE.indexOf('<h2 className="mt-6'))
     expect(card).toMatch(/\{grantLimitAr\(max\)\}<\/p>\}\s*<\/div>\s*<div className="border-t border-border pt-4 sm:border-s sm:border-t-0 sm:ps-8 sm:pt-0"><GrantGains \/><\/div>\s*<\/Card>/)
     /* وصغيرٌ مرتّب — قرارُه (٢٤ أكتوبر ٢٠٢٦): «لم يستغلّ البوكس.. من الممكن أن يكون أصغر وأرتب»: عمودان على الحاسوب،

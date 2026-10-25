@@ -107,7 +107,7 @@ const GRANT_PATHS: GrantPathOption[] = [...publicPathsData.pathways]
 const OTHER_DOMAIN = "أخرى";
 const GAIN_ICON: Record<(typeof GRANT_GAINS_AR)[number]["id"], LucideIcon> = { live: Video, practice: PencilRuler, certificate: Award };
 
-/** ما يحصل عليه — في النموذج وفي صندوق الكود (`GRANT_GAINS_AR`). قائمةٌ مرتّبةٌ بأيقونةٍ لكلّ بند، كتلةٌ في الوسط وبنودُها
+/** ما يحصل عليه — في صندوق الكود بعد النموذج (`GRANT_GAINS_AR`)، لا في الصفحة الأولى. قائمةٌ مرتّبةٌ بأيقونةٍ لكلّ بند، كتلةٌ في الوسط وبنودُها
     على سطرٍ واحد — قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦): «ضعهم في الصندوق الأعلى بطريقةٍ مرتّبةٍ مع أيقونات» */
 function GrantGains({ className = "" }: { className?: string }) {
   return (
@@ -457,8 +457,8 @@ export default function MemberGrantPage() {
           )}
         </div>
 
-        <GrantGains className="mt-5" />
-
+        {/* وما يحصل عليه في صندوق الكود بعد النموذج وحدَه — قرارُ صاحب المنصّة (٢٥ أكتوبر ٢٠٢٦): «احذفها من الصفحة
+            الأولى». فالنموذجُ يبدأ بعد سطرَي المنحة والعدّاد */}
         <Card as="form" onSubmit={apply} className="mt-6 space-y-3">
           <p className="text-center text-read text-muted-foreground">{c.open ? "دقيقة واحدة، وتأخذ كود منحتك فورا." : "نبلغك على بريدك أول ما تفتح."}</p>
           <label className="grid gap-1 text-read">الاسم الكامل
