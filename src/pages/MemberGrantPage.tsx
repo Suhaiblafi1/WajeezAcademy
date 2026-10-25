@@ -47,7 +47,7 @@ import { cohortDayAr } from "@/application/learning/cohort-gate";
 import { grantPrice, MEMBER_GRANT_NAME_AR } from "@/application/commerce/grant";
 import {
   CAREER_LEVELS, GRANT_ACADEMY_LINE_AR, GRANT_CONSENT_AR, GRANT_GAINS_AR, GRANT_GIFT_AR, GRANT_MAX_INTERESTS, GRANT_SUGGESTED_COURSES, WORK_FIELDS,
-  GRANT_VALUE_AR, GRANT_VALUE_PAID_AR, campaignParams, grantAdvisorTextAr, grantCountAr, grantCountdown, grantLeftAr, grantLimitAr, grantRemainingAr, grantSections, grantShareAr, grantShareMailto, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse,
+  GRANT_VALUE_AR, GRANT_VALUE_PAID_AR, campaignParams, grantAdvisorTextAr, grantCountAr, grantTrainerFaces, grantTrainersAr, grantCountdown, grantLeftAr, grantLimitAr, grantRemainingAr, grantSections, grantShareAr, grantShareMailto, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse,
   type GrantPathOption,
 } from "@/application/commerce/grant-landing";
 import { readStoredGrant, saveStoredGrant, type StoredGrant } from "@/services/grant-landing";
@@ -438,6 +438,7 @@ export default function MemberGrantPage() {
   const domains = [...new Set(view.openCourses.map((x) => x.domainAr).filter((d): d is string => !!d && d !== OTHER_DOMAIN))]
     .sort((a, b) => a.localeCompare(b, "ar"));
   const pickInterest = (d: string) => setInterests((p) => toggleCourse(p, d, GRANT_MAX_INTERESTS));
+  const trainers = grantTrainerFaces(view.openCourses);
   return (
     <Shell>
       <div className="mx-auto max-w-lg">
@@ -513,6 +514,24 @@ export default function MemberGrantPage() {
           <Button type="submit" tone="primary" className="w-full" disabled={busy || !ready}>{c.open ? "احجز منحتي الآن" : "سجلني"}</Button>
           <p className="text-read leading-6 text-muted-foreground">{GRANT_CONSENT_AR}</p>
         </Card>
+        {/* وجوهُ مدرّبي الموسم تحت النموذج — قرارُ صاحب المنصّة (٢٥ أكتوبر ٢٠٢٦)، والعلّةُ عند `grantTrainerFaces` */}
+        {trainers.faces.length >= 3 && (
+          <div className="mt-6 text-center">
+            <div className="flex justify-center -space-x-3 rtl:space-x-reverse">
+              {trainers.faces.map((t) => (
+                <img key={t.id} src={t.photoUrl} alt={t.name} title={t.name} width={44} height={44} loading="lazy" decoding="async"
+                  className="h-11 w-11 rounded-full bg-paper object-cover object-[50%_25%] ring-2 ring-paper" />
+              ))}
+              {trainers.total > trainers.faces.length && (
+                <span className="grid h-11 w-11 place-items-center rounded-full bg-teal-deep text-read font-black text-white ring-2 ring-paper" dir="ltr">
+                  +{trainers.total - trainers.faces.length}
+                </span>
+              )}
+            </div>
+            <p className="mt-2 font-bold">تتعلم مع مدربين معتمدين لدينا</p>
+            <p className="text-read text-muted-foreground">{grantTrainersAr(trainers.total)} · {grantCountAr(view.openCourses.length)} مباشرة على Zoom</p>
+          </div>
+        )}
         <p className="mt-4 text-center text-read text-muted-foreground">{GRANT_ACADEMY_LINE_AR}</p>
       </div>
     </Shell>

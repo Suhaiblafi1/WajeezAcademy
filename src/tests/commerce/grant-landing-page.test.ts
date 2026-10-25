@@ -13,7 +13,7 @@ import { plainAr } from '@/application/text/plain-ar'
 import { auditActionAr } from '@/application/audit/labels'
 import {
   CAREER_LEVELS, GRANT_ACADEMY_LINE_AR, GRANT_CONSENT_AR, GRANT_GAINS_AR, GRANT_GIFT_AR, GRANT_GIFT_MAX, GRANT_INTEREST_DOMAINS, GRANT_SUGGESTED_COURSES, WORK_FIELDS,
-  GRANT_VALUE_AR, GRANT_VALUE_PAID_AR, campaignParams, campaignTag, grantAdvisorTextAr, grantLeftAr, grantLimitAr, grantRemainingAr, grantCallDueAt, grantCountAr, grantCountdown, grantDaysLeftAr, grantSections, grantShareAr, grantShareMailto, leadProfileAr, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse, workFieldDomains,
+  GRANT_VALUE_AR, GRANT_VALUE_PAID_AR, GRANT_FACES_MAX, grantTrainerFaces, grantTrainersAr, campaignParams, campaignTag, grantAdvisorTextAr, grantLeftAr, grantLimitAr, grantRemainingAr, grantCallDueAt, grantCountAr, grantCountdown, grantDaysLeftAr, grantSections, grantShareAr, grantShareMailto, leadProfileAr, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse, workFieldDomains,
 } from '@/application/commerce/grant-landing'
 import { courseDomain } from '@/application/catalog/course-domain'
 import { zonedInstant } from '@/application/trainer/cohort-period'
@@ -104,6 +104,25 @@ describe('بعد النموذج', () => {
     expect(card).toMatch(/<GrantCountdown closesAt=\{c\.closesAt\} className="mt-3" \/>\}\s*\{c\.open && <p className="mt-0\.5 text-read text-muted-foreground">\{grantLimitAr\(max\)\}<\/p>\}/)
     expect(PAGE.match(/grantLimitAr\(/g)?.length, 'الحد يقال مرتين').toBe(1)
     expect(PAGE, 'عادت فقرة الحد الطويلة').not.toMatch(/وهذا أقصى ما تغطيه منحتك|بعد استشارة مستشارك الخاص/)
+  })
+
+  it('⚠️ وجوه مدربي الموسم تحت النموذج — من دورات المنحة، من له صورة، بلا تكرار، والعدد لكلهم', () => {
+    /* قرارُ صاحب المنصّة (٢٥ أكتوبر ٢٠٢٦): «كيف نقنع العميل أكثر؟ ماذا نضيف أسفل طلب التسجيل؟» — فاختار وجوهَ المدرّبين */
+    const t = (id: string, photo: boolean) => ({ trainer: { id, name: `مدرب ${id}`, photoUrl: photo ? `/p/${id}` : null } })
+    const out = grantTrainerFaces([t('a', true), t('a', true), t('b', false), t('c', true), { trainer: null }, t('d', true)])
+    expect(out.total, 'العدد لكل المدربين بلا تكرار').toBe(4)
+    expect(out.faces.map((f) => f.id), 'من له صورة وحده').toEqual(['a', 'c', 'd'])
+    expect(grantTrainerFaces(Array.from({ length: 20 }, (_, i) => t(`x${i}`, true))).faces).toHaveLength(GRANT_FACES_MAX)
+    expect(GRANT_FACES_MAX).toBe(9)
+    expect([1, 2, 5, 10, 15].map(grantTrainersAr)).toEqual(['مدرب واحد', 'مدربان', '5 مدربين', '10 مدربين', '15 مدربا'])
+    /* وفي الصفحة: بعد النموذج وقبل سطر الأكاديمية، من الدورات المعروضة نفسِها، وثلاثةُ وجوهٍ على الأقلّ */
+    expect(PAGE).toMatch(/const trainers = grantTrainerFaces\(view\.openCourses\);/)
+    const after = PAGE.slice(PAGE.indexOf('{GRANT_CONSENT_AR}</p>\n        </Card>'))
+    expect(after.indexOf('{trainers.faces.length >= 3 && ('), 'الوجوه ليست بعد النموذج').toBeGreaterThan(0)
+    expect(after.indexOf('{trainers.faces.length >= 3 && ('), 'الوجوه بعد سطر الأكاديمية').toBeLessThan(after.indexOf('{GRANT_ACADEMY_LINE_AR}'))
+    expect(after).toMatch(/\{grantTrainersAr\(trainers\.total\)\} · \{grantCountAr\(view\.openCourses\.length\)\} مباشرة على Zoom/)
+    expect(after).toMatch(/\+\{trainers\.total - trainers\.faces\.length\}/)
+    for (const x of ['تتعلم مع مدربين معتمدين لدينا', 'مباشرة على Zoom']) { expect(plainAr(x)).toBe(x); expect(PAGE).toContain(x) }
   })
 
   it('⚠️ المنحة بنسبتها «تصل إلى 60%» لا «تدفع 40% فقط» — في الصفحة الأولى وبريد الكود وبريد التذكير', () => {

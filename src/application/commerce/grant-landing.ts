@@ -70,6 +70,31 @@ export function grantCountAr(n: number): string {
   return n >= 3 && n <= 10 ? `${n} دورات` : `${n} دورة`
 }
 
+/** «15 مدربا» — العددُ ومعدودُه: مفردٌ ومثنّى، و٣–١٠ جمعا، وما فوقها مفردا منصوبا */
+export function grantTrainersAr(n: number): string {
+  if (n === 1) return 'مدرب واحد'
+  if (n === 2) return 'مدربان'
+  return n >= 3 && n <= 10 ? `${n} مدربين` : `${n} مدربا`
+}
+
+/** كم وجها يظهر تحت النموذج — تسعةٌ وبعدها «+N»، فيتّسع لها سطرٌ واحدٌ على الهاتف */
+export const GRANT_FACES_MAX = 9
+
+/* ═══ وجوهُ المدرّبين تحت النموذج (٢٥ أكتوبر ٢٠٢٦) ═══
+
+   سأل صاحبُ المنصّة: «كيف نقنع العميلَ أكثر؟ ماذا يجب أن نضيف أسفل طلب التسجيل؟»، وخُيّر بين وجوه المدرّبين وسطر
+   الاسترداد وأسئلةٍ مطويّةٍ ومعاينة الشهادة، فاختار **وجوهَ المدرّبين**. وهي من دورات المنحة نفسِها — فمدرّبوها
+   منشورون ببوّابة النشر (`grant-courses.service.ts#pool`)، ولا يظهر وجهٌ لم يُعتمد. ومن له صورةٌ وحدَه، بلا تكرار،
+   والعددُ لكلّهم. ولا قصّةَ نجاحٍ ولا رقمَ مختلَق: ما يُعرض هو ما في الموسم. */
+export function grantTrainerFaces<T extends { trainer?: { id: string; name: string; photoUrl: string | null } | null }>(
+  courses: readonly T[], max: number = GRANT_FACES_MAX,
+): { faces: { id: string; name: string; photoUrl: string }[]; total: number } {
+  const all = new Map<string, { id: string; name: string; photoUrl: string | null }>()
+  for (const c of courses) if (c.trainer && !all.has(c.trainer.id)) all.set(c.trainer.id, c.trainer)
+  const faces = [...all.values()].flatMap((t) => (t.photoUrl ? [{ ...t, photoUrl: t.photoUrl }] : [])).slice(0, max)
+  return { faces, total: all.size }
+}
+
 /** رسالةُ متابعة من عبّأ النموذج ولم يشترِ — تُفتح في واتساب جاهزةً ويرسلها فريقُ الأكاديميّة */
 export const grantFollowupAr = (name: string) =>
   `مرحبا ${name}، معك أكاديمية وجيز. أخذت كود منحة أعضاء وجيز، هل تحتاج مساعدة في اختيار دوراتك؟`
