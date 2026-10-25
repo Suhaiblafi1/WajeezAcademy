@@ -106,6 +106,17 @@ describe('بعد النموذج', () => {
     expect(PAGE, 'عادت فقرة الحد الطويلة').not.toMatch(/وهذا أقصى ما تغطيه منحتك|بعد استشارة مستشارك الخاص/)
   })
 
+  it('⚠️ المنحة بنسبتها «تصل إلى 60%» لا «تدفع 40% فقط» — في الصفحة الأولى وبريد الكود وبريد التذكير', () => {
+    /* قرارُ صاحب المنصّة (٢٥ أكتوبر ٢٠٢٦): «نقول إنّ المنحة تصل لـ٦٠٪ أفضل من أنّك تدفع ٤٠٪» */
+    expect(PAGE).toContain('لأنك من أعضاء وجيز، منحتك تصل إلى {c.percentOff}% من سعر دوراتك.')
+    expect(code('server/services/grant-landing.service.ts')).toContain('`منحتك تصل إلى ${percentOff}% من سعر الدورات.`')
+    expect(code('server/services/grant-followup.service.ts')).toContain('`منحتك تصل إلى ${pct}% من سعر دورات مباشرة على Zoom.`')
+    for (const f of ['src/pages/MemberGrantPage.tsx', 'server/services/grant-landing.service.ts', 'server/services/grant-followup.service.ts']) {
+      expect(code(f), `${f}: عاد «تدفع …% فقط»`).not.toMatch(/تدفع \$?\{100 - |% فقط من سعر/)
+    }
+    for (const t of ['لأنك من أعضاء وجيز، منحتك تصل إلى', 'من سعر دوراتك.']) expect(plainAr(t)).toBe(t)
+  })
+
   it('⚠️ وأنها مباشرة على Zoom — في أول الصفحة، وفي الشريط في صندوق الكود، وفي كل دورة', () => {
     expect(PAGE).toContain('دورات مباشرة على Zoom، تختار منها حتى {c.maxCourses}.')
     /* الشريطُ بقرار صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦): مع مدرّبٍ معتمد، وتطبيقاتٌ عمليّة، ورسالةُ توصية */

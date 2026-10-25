@@ -446,7 +446,9 @@ export default function MemberGrantPage() {
           <h1 className="mt-2 text-3xl font-black">{MEMBER_GRANT_NAME_AR}</h1>
           {c.open ? (
             <>
-              <p className="mt-3 text-lg font-bold">لأنك من أعضاء وجيز، تدفع {100 - c.percentOff}% فقط من سعر دوراتك.</p>
+              {/* المنحةُ بنسبتها لا بما يبقى عليه — قرارُ صاحب المنصّة (٢٥ أكتوبر ٢٠٢٦): «نقول إنّ المنحة تصل لـ٦٠٪ أفضل من
+                  أنّك تدفع ٤٠٪». وكذلك في بريد الكود وبريد التذكير */}
+              <p className="mt-3 text-lg font-bold">لأنك من أعضاء وجيز، منحتك تصل إلى {c.percentOff}% من سعر دوراتك.</p>
               <p className="mt-1 text-read text-muted-foreground">دورات مباشرة على Zoom، تختار منها حتى {c.maxCourses}.</p>
               {c.closesAt
                 ? <GrantCountdown closesAt={c.closesAt} className="mt-4" />

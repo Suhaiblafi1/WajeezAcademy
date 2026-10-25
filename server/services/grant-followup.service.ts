@@ -191,7 +191,8 @@ export async function sendGrantReminders(prisma: PrismaClient, now = new Date())
           `مرحبا ${lead.fullName}،`, '',
           days <= 1 ? `${subject}.` : `${subject}. آخر يوم: ${fmtDateLong(lastDay)}.`,
           `كود منحتك: ${coupon.code}`,
-          `تدفع ${100 - pct}% فقط من سعر دورات مباشرة على Zoom.`,
+          /* المنحةُ بنسبتها لا بما يبقى — قرارُ صاحب المنصّة (٢٥ أكتوبر ٢٠٢٦)، كسطر الصفحة الأولى */
+          `منحتك تصل إلى ${pct}% من سعر دورات مباشرة على Zoom.`,
           '', `اختر دوراتك: ${publicSiteUrl()}/grant`, '',
           'وإن لم تحتجه فيمكنك أن تهديه لغيرك.',
         ].join('\n'),
