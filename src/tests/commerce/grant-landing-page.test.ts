@@ -349,7 +349,7 @@ describe('بعد النموذج', () => {
 
   it('⚠️ المستشار على واتساب مباشرة — برقم موضعه في شاشة الربط، ورسالة فيها اسمه وكوده', () => {
     expect(WHATSAPP_SPOTS.map((s) => s.key)).toContain('grant_advisor')
-    expect(PAGE).toMatch(/const advisorHref = waHref\(numbers, "grant_advisor", CONTACT\.whatsapp, grantAdvisorTextAr\(stored\.name, stored\.code, chosen\.map\(\(x\) => x\.titleAr\), `\$\{window\.location\.origin\}\/grant`\)\);/)
+    expect(PAGE).toMatch(/const advisorHref = waHref\(numbers, "grant_advisor", CONTACT\.whatsapp, grantAdvisorTextAr\(stored\.name, stored\.code, chosen\.map\(\(x\) => x\.titleAr\), grantRecordLink\(BARE_HOST, stored\.code \?\? stored\.ref\)\)\);/)
     expect(PAGE).toMatch(/<Button as="a" href=\{advisorHref\} target="_blank"/)
     expect(grantAdvisorTextAr('سارة', 'WG-ABCD2345')).toBe('مرحبا، أنا سارة. عندي سؤال عن منحة أعضاء وجيز. كود منحتي: WG-ABCD2345')
     expect(grantAdvisorTextAr(' ', null)).toBe('مرحبا، عندي سؤال عن منحة أعضاء وجيز.')
@@ -357,11 +357,11 @@ describe('بعد النموذج', () => {
     expect(grantAdvisorTextAr('سارة', 'WG-ABCD2345', ['تحليل البيانات', 'إدارة المشاريع'])).toBe(
       'مرحبا، أنا سارة. عندي سؤال عن منحة أعضاء وجيز. كود منحتي: WG-ABCD2345\n\nالدورات التي اخترتها:\n- تحليل البيانات\n- إدارة المشاريع',
     )
-    /* ورابطُ صفحة المنحة آخرَها — مع الدورات وبدونها */
-    expect(grantAdvisorTextAr('سارة', 'WG-ABCD2345', ['تحليل البيانات'], 'https://x.test/grant')).toBe(
-      'مرحبا، أنا سارة. عندي سؤال عن منحة أعضاء وجيز. كود منحتي: WG-ABCD2345\n\nالدورات التي اخترتها:\n- تحليل البيانات\n\nرابط المنحة: https://x.test/grant',
+    /* ورابطُ ملفّه القصيرُ آخرَها — مع الدورات وبدونها */
+    expect(grantAdvisorTextAr('سارة', 'WG-ABCD2345', ['تحليل البيانات'], 'x.test/g/WG-ABCD2345')).toBe(
+      'مرحبا، أنا سارة. عندي سؤال عن منحة أعضاء وجيز. كود منحتي: WG-ABCD2345\n\nالدورات التي اخترتها:\n- تحليل البيانات\n\nرابط ملفي: x.test/g/WG-ABCD2345',
     )
-    expect(grantAdvisorTextAr('سارة', null, [], 'https://x.test/grant')).toBe('مرحبا، أنا سارة. عندي سؤال عن منحة أعضاء وجيز.\n\nرابط المنحة: https://x.test/grant')
+    expect(grantAdvisorTextAr('سارة', null, [], 'x.test/g/u')).toBe('مرحبا، أنا سارة. عندي سؤال عن منحة أعضاء وجيز.\n\nرابط ملفي: x.test/g/u')
     expect(PAGE, 'عاد الطلب المكتوب').not.toMatch(/\/api\/public\/grant\/advisor|<textarea|اطلب مستشارا/)
   })
 
