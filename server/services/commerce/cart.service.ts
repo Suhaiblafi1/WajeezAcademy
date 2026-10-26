@@ -305,7 +305,7 @@ export class CartService {
       include: {
         trainerCode: { select: { id: true, profileId: true, percentOff: true, amountOff: true } },
         trainerShareCode: { select: { profileId: true } },
-        grantCode: { select: { campaign: { select: { id: true, active: true, closesAt: true, maxCourses: true } } } },
+        grantCode: { select: { campaign: { select: { id: true, active: true, closesAt: true, maxCourses: true, nameAr: true } } } },
       },
     })
     /* كودُ المنحة يُسأل قبل الفحص العامّ — فيُقال سببُ ردّه بلغة المنحة («استعمل من قبل»)
@@ -419,6 +419,8 @@ export class CartService {
       couponMaxUses: coupon?.maxUses ?? null,
       /* نسبةُ المنحة إن كان الكودُ كودَها — ليُسمّى بندُها في اللوح باسمها */
       grantPct: coupon?.grantCode ? coupon.percentOff : null,
+      /* واسمُ حملته — «منحة وجيز» أو «منحة مؤثرين وجيز» */
+      grantNameAr: coupon?.grantCode?.campaign.nameAr ?? null,
       trainerCode: trainerCode ? { id: trainerCode.id, profileId: trainerCode.profileId } : null,
       /* ومن اشترى بكود «شارك دوراتك» يُحسب لصاحبه بأجر الإحالة (`share-code.ts`) */
       shareProfileId: shareCode?.profileId ?? null,

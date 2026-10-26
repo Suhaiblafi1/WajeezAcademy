@@ -11,7 +11,7 @@ import Trainers from './pages/Trainers'
 import Contact from './pages/Contact'
 import Auth from './pages/Auth'
 import NotFound from './pages/NotFound'
-import RequireRole, { ADMIN_ROLES, ADVISOR_ROLES, APPLICANT_ROLES, LEARNER_ROLES, TRAINER_ROLES } from './components/RequireRole'
+import RequireRole, { ADMIN_ROLES, ADVISOR_ROLES, APPLICANT_ROLES, INFLUENCER_ROLES, LEARNER_ROLES, TRAINER_ROLES } from './components/RequireRole'
 import ToastHost from './components/Toast'
 import { KeyedByParam } from './components/KeyedByParam'
 
@@ -25,6 +25,7 @@ const SkillCheck = lazy(() => import('./pages/SkillCheck'))
 const Mirror = lazy(() => import('./pages/Mirror'))
 const PathwayPage = lazy(() => import('./pages/Pathway'))
 const MemberGrantPage = lazy(() => import('./pages/MemberGrantPage'))
+const InfluencerHome = lazy(() => import('./pages/InfluencerHome'))
 const EndorsementLetter = lazy(() => import('./pages/EndorsementLetter'))
 const CoursePathPage = lazy(() => import('./pages/CoursePath'))
 const TrainerPublicPage = lazy(() => import('./pages/TrainerPublic'))
@@ -204,6 +205,10 @@ export default function App() {
           <Route path="/pathways/:id" element={<PathwayPage />} />
           <Route path="/grant" element={<MemberGrantPage />} />
           <Route path="/grant/build" element={<MemberGrantPage />} />
+          {/* «منحة مؤثرين وجيز» — صفحتُها برابط المؤثّر وكودُه مكتوب، غيرُ `/grant` (٢٦ أكتوبر ٢٠٢٦) */}
+          <Route path="/grant/i" element={<MemberGrantPage variant="influencer" />} />
+          <Route path="/grant/i/:code" element={<MemberGrantPage variant="influencer" />} />
+          <Route path="/grant/i/:code/build" element={<MemberGrantPage variant="influencer" />} />
           {/* مسار يبدأ بدورة واحدة — «تفاصيل الدورة» تفتح هذه لا صفحة المسار كاملا */}
           <Route path="/build/:courseId" element={<CoursePathPage />} />
           <Route path="/stories" element={<StoriesPage />} />
@@ -302,6 +307,10 @@ export default function App() {
             <Route path="/advisor/ratings" element={<AdvisorMyRatings />} />
             <Route path="/advisor/earnings" element={<AdvisorEarnings />} />
           </Route>
+          {/* حسابُ المؤثّر — كشفُه في منحة المؤثّرين */}
+          <Route element={<RequireRole allow={INFLUENCER_ROLES} />}>
+            <Route path="/influencer" element={<InfluencerHome />} />
+          </Route>
           <Route element={<RequireRole allow={TRAINER_ROLES} />}>
             <Route path="/trainer" element={<TrainerDashboard />} />
             <Route path="/trainer/account" element={<AccountPage />} />
@@ -396,6 +405,7 @@ export default function App() {
             <Route path="/admin/advisors" element={<AdminAdvisors />} />
             <Route path="/admin/advisor-payouts" element={<AdminAdvisorPayouts />} />
             <Route path="/admin/member-grant" element={<AdminMemberGrant />} />
+            <Route path="/admin/influencer-grant" element={<AdminMemberGrant variant="influencer" />} />
             <Route path="/admin/audit" element={<AdminAuditLog />} />
             <Route path="/admin/system-health" element={<AdminSystemHealth />} />
             <Route path="/admin/reports" element={<AdminReports />} />

@@ -222,10 +222,13 @@ export const allSections: AdminNavSection[] = [
     items: [
       { to: "/admin/finance", label: "الطلبات والفواتير", tab: "التسجيل والفواتير", icon: Wallet, need: ["finance.view", "enrollment.request.review"],
         descAr: "طابورُ طلبات التسجيل، والفواتيرُ والاستردادات" },
-      /* «منحة أعضاء وجيز» (٢٠ أكتوبر ٢٠٢٦): نسبتُها بيد صاحب المنصّة يغيّرها متى شاء، وفحصُ الهامش
+      /* «منحة وجيز» (٢٠ أكتوبر ٢٠٢٦، وكانت «منحة أعضاء وجيز»): نسبتُها بيد صاحب المنصّة يغيّرها متى شاء، وفحصُ الهامش
          تحتها — بصلاحيّة الكوبونات، فالمنحةُ كوبونٌ بحملة. */
-      { to: "/admin/member-grant", label: "منحة أعضاء وجيز", tab: "المنحة", icon: Gift, need: "commerce.manage",
+      { to: "/admin/member-grant", label: "منحة وجيز", tab: "المنحة", icon: Gift, need: "commerce.manage",
         descAr: "نسبة المنحة وعددها وآخر يوم لها، وهامش كل شعبة بعدها" },
+      /* «منحة مؤثرين وجيز» (٢٦ أكتوبر ٢٠٢٦): إعداداتُها، والمؤثّرون بأكوادهم وعمولاتهم وما دُفع لهم */
+      { to: "/admin/influencer-grant", label: "منحة مؤثرين وجيز", tab: "منحة المؤثرين", icon: Megaphone, need: "commerce.manage",
+        descAr: "نسبة منحة المؤثرين، والمؤثرون بأكوادهم وعمولاتهم وما دفع لهم" },
       { to: "/admin/reports", label: "التقارير والتصدير", tab: "التقارير", icon: BarChart3, need: "reports.view",
         descAr: "أرقامُ المنصّة مفصَّلةً، وتصديرُها إلى ملفّ" },
     ],

@@ -41,7 +41,9 @@ describe('شاشة صاحب المنصة', () => {
   it('⚠️ الحفظ بتأكيد يقول ما يقع — والهامش بالنسبة التي في الخانة', () => {
     expect(PAGE).toMatch(/onClick=\{\(\) => setConfirm\(true\)\}>احفظ<\/Button>/)
     expect(PAGE).toMatch(/\{confirm && \(\s*<ConfirmAction[\s\S]*?onConfirm=\{\(\) => void save\(\)\}/)
-    expect(PAGE).toMatch(/apiGet<\{ rows: MarginRow\[\] \}>\(`\/api\/admin\/member-grant\/margins\?percentOff=\$\{pctNum\}`\)/)
+    /* والشاشةُ نفسُها لمنحة المؤثّرين ببابها (٢٦ أكتوبر ٢٠٢٦) */
+    expect(PAGE).toMatch(/const api = forInfluencer \? "\/api\/admin\/influencer-grant" : "\/api\/admin\/member-grant";/)
+    expect(PAGE).toMatch(/apiGet<\{ rows: MarginRow\[\]; commissionPercent\?: number \}>\(`\$\{api\}\/margins\?percentOff=\$\{pctNum\}`\)/)
     expect(PAGE).toContain('والأكواد التي أعطيت قبله')
   })
 })
@@ -108,7 +110,7 @@ describe('من عبأ النموذج', () => {
 
 describe('لوح الشراء', () => {
   it('⚠️ يسمي المنحة باسمها — ويقول سبب ردها تحت خانة الكود', () => {
-    expect(BUY).toMatch(/quote\.grantPct !== null \? `\$\{MEMBER_GRANT_NAME_AR\} — \$\{quote\.grantPct\}٪`/)
+    expect(BUY).toMatch(/quote\.grantPct !== null \? `\$\{quote\.grantNameAr \?\? MEMBER_GRANT_NAME_AR\} — \$\{quote\.grantPct\}٪`/)
     expect(BUY).toMatch(/new Set\(\[[^\]]*\.\.\.GRANT_ERROR_CODES\]\)/)
     for (const c of ['grant_closed', 'grant_used', 'grant_once', 'grant_pending', 'grant_not_better', 'grant_max_courses']) {
       expect(GRANT.GRANT_ERROR_CODES as readonly string[]).toContain(c)

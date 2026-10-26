@@ -38,7 +38,9 @@ describe('الطريق والأبواب', () => {
     expect(HTTP).toMatch(/registerPublicGrantRoutes\(app, prisma\)/)
     expect(ROUTES).toMatch(/app\.post\('\/api\/public\/grant', \{\s*config: \{ rateLimit: \{ max: 5, timeWindow: '15 minutes' \} \}/)
     expect(ROUTES).toMatch(/app\.post\('\/api\/public\/grant\/advisor', \{\s*config: \{ rateLimit: \{ max: 3, timeWindow: '15 minutes' \} \}/)
-    expect((ROUTES.match(/assertNotBot\(req\.body\)/g) ?? []).length, 'باب بلا مصيدة').toBe(2)
+    /* وباب منحة المؤثّرين ثالثُها، بالسقف نفسِه (٢٦ أكتوبر ٢٠٢٦) */
+    expect(ROUTES).toMatch(/app\.post\('\/api\/public\/grant\/influencer', \{\s*config: \{ rateLimit: \{ max: 5, timeWindow: '15 minutes' \} \}/)
+    expect((ROUTES.match(/assertNotBot\(req\.body\)/g) ?? []).length, 'باب بلا مصيدة').toBe(3)
   })
 })
 
@@ -73,7 +75,7 @@ describe('بعد النموذج', () => {
     expect([1, 2, 4, 10, 11].map(grantCountAr)).toEqual(['دورة واحدة', 'دورتان', '4 دورات', '10 دورات', '11 دورة'])
     expect(PAGE).toMatch(/prefill=\{\{ name: stored\.name, email: stored\.email \}\}/)
     expect(PAGE).toMatch(/initialCoupon=\{stored\.code \?\? ""\}/)
-    expect(PAGE, 'يحفظ ما اختاره قبل أن يطلب منه حساب').toMatch(/savePendingCheckout\(\{\s*path: PICK_PATH,/)
+    expect(PAGE, 'يحفظ ما اختاره قبل أن يطلب منه حساب').toMatch(/savePendingCheckout\(\{\s*path: pickPath \?\? PICK_PATH,/)
     expect(PAGE).toMatch(/<ResumeCheckout ready=/)
   })
 
@@ -145,13 +147,15 @@ describe('بعد النموذج', () => {
 
   it('⚠️ المنحة بنسبتها «تصل إلى 60%» لا «تدفع 40% فقط» — في الصفحة الأولى وبريد الكود وبريد التذكير', () => {
     /* قرارُ صاحب المنصّة (٢٥ أكتوبر ٢٠٢٦): «نقول إنّ المنحة تصل لـ٦٠٪ أفضل من أنّك تدفع ٤٠٪» */
-    expect(PAGE).toContain('لأنك من أعضاء وجيز، منحتك تصل إلى {c.percentOff}% من سعر دوراتك.')
+    expect(PAGE).toContain('`لأنك من أعضاء وجيز، منحتك تصل إلى ${c.percentOff}% من سعر دوراتك.`')
+    /* وفي منحة المؤثّرين باسم المؤثّر إن جاء برابطه (٢٦ أكتوبر ٢٠٢٦) */
+    expect(PAGE).toContain('`بدعوة من ${view.influencer.nameAr}، منحتك تصل إلى ${c.percentOff}% من سعر دوراتك.`')
     expect(code('server/services/grant-landing.service.ts')).toContain('`منحتك تصل إلى ${percentOff}% من سعر الدورات.`')
     expect(code('server/services/grant-followup.service.ts')).toContain('`منحتك تصل إلى ${pct}% من سعر دورات مباشرة على Zoom.`')
     for (const f of ['src/pages/MemberGrantPage.tsx', 'server/services/grant-landing.service.ts', 'server/services/grant-followup.service.ts']) {
       expect(code(f), `${f}: عاد «تدفع …% فقط»`).not.toMatch(/تدفع \$?\{100 - |% فقط من سعر/)
     }
-    for (const t of ['لأنك من أعضاء وجيز، منحتك تصل إلى', 'من سعر دوراتك.']) expect(plainAr(t)).toBe(t)
+    for (const t of ['لأنك من أعضاء وجيز، منحتك تصل إلى', 'من سعر دوراتك.', 'بدعوة من']) expect(plainAr(t)).toBe(t)
   })
 
   it('⚠️ وأنها مباشرة على Zoom — في أول الصفحة، وفي الشريط في صندوق الكود، وفي كل دورة', () => {
@@ -304,9 +308,12 @@ describe('بعد النموذج', () => {
     /* والحدُّ أعلى يُقال ولا يُحصى — الرابطُ عامّ */
     expect(GRANT_GIFT_MAX).toBe(3)
     expect(GRANT_GIFT_AR).toEqual({ title: 'يحق لك أن تهدي هذه المنحة لأصدقائك', limit: 'بحد أعلى 3 أصدقاء' })
-    expect(PAGE).toMatch(/const shareText = grantShareAr\(window\.location\.origin, pct, lastDayLong\);/)
+    expect(PAGE).toMatch(/const shareText = grantShareAr\(window\.location\.origin, pct, lastDayLong, sharePath\);/)
+    /* ومنحةُ المؤثّرين تُهدى برابط مؤثّرها — والأولى بـ`/grant` كما كانت */
+    expect(PAGE).toMatch(/const sharePath = forInfluencer && creditedCode \? `\$\{INFLUENCER_GRANT_PATH\}\/\$\{creditedCode\}` : undefined;/)
+    expect(grantShareAr('https://x.test', 45, null, '/grant/i/SARA')).toContain('احجز منحتك من هنا: https://x.test/grant/i/SARA')
     expect(PAGE).toMatch(/href=\{waShare\(shareText\)\}/)
-    expect(PAGE).toMatch(/href=\{grantShareMailto\(window\.location\.origin, pct, lastDayLong\)\}/)
+    expect(PAGE).toMatch(/href=\{grantShareMailto\(window\.location\.origin, pct, lastDayLong, sharePath\)\}/)
     expect(PAGE).toMatch(/import \{ waHref, waShare \} from "@\/application\/site\/whatsapp";/)
     expect(PAGE, 'عاد «ثلاثة أصدقاء»').not.toContain('ثلاثة أصدقاء')
     /* خارجَ لوح الدفع وبعده — قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦): «صندوقُ الإهداء يكون خارجَ صندوق الدفع» */
@@ -349,19 +356,21 @@ describe('بعد النموذج', () => {
 
   it('⚠️ المستشار على واتساب مباشرة — برقم موضعه في شاشة الربط، ورسالة فيها اسمه وكوده', () => {
     expect(WHATSAPP_SPOTS.map((s) => s.key)).toContain('grant_advisor')
-    expect(PAGE).toMatch(/const advisorHref = waHref\(numbers, "grant_advisor", CONTACT\.whatsapp, grantAdvisorTextAr\(stored\.name, stored\.code, chosen\.map\(\(x\) => x\.titleAr\), grantRecordLink\(BARE_HOST, stored\.code \?\? stored\.ref\)\)\);/)
+    expect(PAGE).toMatch(/const advisorHref = waHref\(numbers, "grant_advisor", CONTACT\.whatsapp, grantAdvisorTextAr\(stored\.name, stored\.code, chosen\.map\(\(x\) => x\.titleAr\), grantRecordLink\(BARE_HOST, stored\.code \?\? stored\.ref\), nameAr\)\);/)
     expect(PAGE).toMatch(/<Button as="a" href=\{advisorHref\} target="_blank"/)
-    expect(grantAdvisorTextAr('سارة', 'WG-ABCD2345')).toBe('مرحبا، أنا سارة. عندي سؤال عن منحة أعضاء وجيز. كود منحتي: WG-ABCD2345')
-    expect(grantAdvisorTextAr(' ', null)).toBe('مرحبا، عندي سؤال عن منحة أعضاء وجيز.')
+    expect(grantAdvisorTextAr('سارة', 'WG-ABCD2345')).toBe('مرحبا، أنا سارة. عندي سؤال عن منحة وجيز. كود منحتي: WG-ABCD2345')
+    expect(grantAdvisorTextAr(' ', null)).toBe('مرحبا، عندي سؤال عن منحة وجيز.')
+    /* ومنحةُ المؤثّرين باسمها (٢٦ أكتوبر ٢٠٢٦) */
+    expect(grantAdvisorTextAr('سارة', null, [], null, 'منحة مؤثرين وجيز')).toBe('مرحبا، أنا سارة. عندي سؤال عن منحة مؤثرين وجيز.')
     /* والدوراتُ التي اختارها نصّا في الرسالة — فيعرف المستشارُ ما اختاره بلا سؤال */
     expect(grantAdvisorTextAr('سارة', 'WG-ABCD2345', ['تحليل البيانات', 'إدارة المشاريع'])).toBe(
-      'مرحبا، أنا سارة. عندي سؤال عن منحة أعضاء وجيز. كود منحتي: WG-ABCD2345\n\nالدورات التي اخترتها:\n- تحليل البيانات\n- إدارة المشاريع',
+      'مرحبا، أنا سارة. عندي سؤال عن منحة وجيز. كود منحتي: WG-ABCD2345\n\nالدورات التي اخترتها:\n- تحليل البيانات\n- إدارة المشاريع',
     )
     /* ورابطُ ملفّه القصيرُ آخرَها — مع الدورات وبدونها */
     expect(grantAdvisorTextAr('سارة', 'WG-ABCD2345', ['تحليل البيانات'], 'x.test/g/WG-ABCD2345')).toBe(
-      'مرحبا، أنا سارة. عندي سؤال عن منحة أعضاء وجيز. كود منحتي: WG-ABCD2345\n\nالدورات التي اخترتها:\n- تحليل البيانات\n\nرابط ملفي: x.test/g/WG-ABCD2345',
+      'مرحبا، أنا سارة. عندي سؤال عن منحة وجيز. كود منحتي: WG-ABCD2345\n\nالدورات التي اخترتها:\n- تحليل البيانات\n\nرابط ملفي: x.test/g/WG-ABCD2345',
     )
-    expect(grantAdvisorTextAr('سارة', null, [], 'x.test/g/u')).toBe('مرحبا، أنا سارة. عندي سؤال عن منحة أعضاء وجيز.\n\nرابط ملفي: x.test/g/u')
+    expect(grantAdvisorTextAr('سارة', null, [], 'x.test/g/u')).toBe('مرحبا، أنا سارة. عندي سؤال عن منحة وجيز.\n\nرابط ملفي: x.test/g/u')
     expect(PAGE, 'عاد الطلب المكتوب').not.toMatch(/\/api\/public\/grant\/advisor|<textarea|اطلب مستشارا/)
   })
 

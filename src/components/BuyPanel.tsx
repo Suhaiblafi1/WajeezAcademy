@@ -116,6 +116,8 @@ interface Quote {
   couponDiscount: number;
   /** نسبةُ منحة أعضاء وجيز إن كان الكودُ كودَها — وهي بدلُ خصم الباقة (٢٠ أكتوبر ٢٠٢٦) */
   grantPct: number | null;
+  /** واسمُ حملتها — «منحة وجيز» أو «منحة مؤثرين وجيز» (٢٦ أكتوبر ٢٠٢٦) */
+  grantNameAr?: string | null;
   discount: number;
   total: number;
   items: QuoteItem[];
@@ -635,7 +637,7 @@ export default function BuyPanel({
                 )}
                 {quote.couponDiscount > 0 && (
                   <div className="flex items-center justify-between text-gold-ink">
-                    <span>{quote.grantPct !== null ? `${MEMBER_GRANT_NAME_AR} — ${quote.grantPct}٪` : `الكود ${quote.couponCode}`}</span>
+                    <span>{quote.grantPct !== null ? `${quote.grantNameAr ?? MEMBER_GRANT_NAME_AR} — ${quote.grantPct}٪` : `الكود ${quote.couponCode}`}</span>
                     <span dir="ltr">−{money(quote.couponDiscount, quote.currency)}</span>
                   </div>
                 )}

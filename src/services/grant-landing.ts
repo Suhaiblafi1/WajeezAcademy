@@ -7,8 +7,11 @@
 
 import { safeGet, safeRemove, safeSet } from '@/services/safe-storage'
 import { GRANT_MAX_INTERESTS } from '@/application/commerce/grant-landing'
+import { INFLUENCER_CODE_RE } from '@/application/commerce/influencer'
 
 export const GRANT_STORE_KEY = 'wajeez_grant'
+/** وما أخذه من «منحة مؤثرين وجيز» في مفتاحٍ وحدَه — فلا تعرض إحدى الصفحتين كودَ الأخرى (٢٦ أكتوبر ٢٠٢٦) */
+export const INFLUENCER_GRANT_STORE_KEY = 'wajeez_grant_influencer'
 const TTL_MS = 60 * 86_400_000
 
 export interface StoredGrant {
@@ -21,6 +24,8 @@ export interface StoredGrant {
   interests: string[]
   /** مجالُ عمله كما اختاره — وما حُفظ قبله فارغ */
   workField: string
+  /** كودُ المؤثّر الذي حُسب له — في منحة المؤثّرين وحدَها */
+  influencer?: string | null
   at: number
 }
 
@@ -42,12 +47,13 @@ export function parseStoredGrant(raw: string | null, now = Date.now()): StoredGr
     name: typeof o.name === 'string' ? o.name.slice(0, 120) : '',
     email: typeof o.email === 'string' ? o.email.slice(0, 200) : '',
     workField: typeof o.workField === 'string' ? o.workField.slice(0, 60) : '',
+    influencer: typeof o.influencer === 'string' && INFLUENCER_CODE_RE.test(o.influencer) ? o.influencer : null,
     interests: Array.isArray(o.interests)
       ? o.interests.filter((x): x is string => typeof x === 'string').map((x) => x.slice(0, 80)).slice(0, GRANT_MAX_INTERESTS)
       : [],
   }
 }
 
-export const readStoredGrant = (): StoredGrant | null => parseStoredGrant(safeGet(GRANT_STORE_KEY))
-export const saveStoredGrant = (g: Omit<StoredGrant, 'at'>): void => { safeSet(GRANT_STORE_KEY, JSON.stringify({ ...g, at: Date.now() })) }
-export const clearStoredGrant = (): void => safeRemove(GRANT_STORE_KEY)
+export const readStoredGrant = (key = GRANT_STORE_KEY): StoredGrant | null => parseStoredGrant(safeGet(key))
+export const saveStoredGrant = (g: Omit<StoredGrant, 'at'>, key = GRANT_STORE_KEY): void => { safeSet(key, JSON.stringify({ ...g, at: Date.now() })) }
+export const clearStoredGrant = (key = GRANT_STORE_KEY): void => safeRemove(key)

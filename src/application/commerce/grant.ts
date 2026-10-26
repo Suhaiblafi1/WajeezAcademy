@@ -1,4 +1,4 @@
-/* «منحة أعضاء وجيز» — ما تشترك فيه الشاشةُ والخادم (٢٠ أكتوبر ٢٠٢٦).
+/* «منحة وجيز» و«منحة مؤثرين وجيز» — ما تشترك فيه الشاشةُ والخادم (٢٠ أكتوبر ٢٠٢٦).
 
    قرارُ صاحب المنصّة: خصمٌ بالنسبة لأعضاء وجيز، محدودُ العدد، يُنقل لغيره، و«يحقّ لي تغيير
    الـ٦٠٪ كما أشاء» — وهو بدلُ خصم الباقة لا فوقه («A»). والعلّةُ في `server/services/grant.service.ts`،
@@ -6,12 +6,30 @@
 
 import { money } from './discount-policy'
 
-/** الحملةُ الوحيدةُ اليوم — وبها يُقرأ صفُّها، ويُنشأ أوّلَ مرّة بإعداداتٍ افتراضيّة */
+/** الحملةُ الأولى — وبها يُقرأ صفُّها، ويُنشأ أوّلَ مرّة بإعداداتٍ افتراضيّة. واسمُها «منحة وجيز» بقرار صاحب
+    المنصّة (٢٦ أكتوبر ٢٠٢٦)، وكان «منحة أعضاء وجيز» — والمعرّفُ باقٍ: به حُفظ كلُّ من عبّأ نموذجها */
 export const MEMBER_GRANT_SLUG = 'wajeez-members'
-export const MEMBER_GRANT_NAME_AR = 'منحة أعضاء وجيز'
+export const MEMBER_GRANT_NAME_AR = 'منحة وجيز'
 
 /** ما تبدأ به الحملةُ قبل أن يغيّره صاحبُ المنصّة — وتبدأ موقوفة حتّى يشغّلها */
 export const GRANT_DEFAULTS = { percentOff: 60, maxCodes: 1000, maxCourses: 4 } as const
+
+/* ═══ والثانية: «منحة مؤثرين وجيز» (٢٦ أكتوبر ٢٠٢٦) ═══
+
+   قرارُ صاحب المنصّة: منحةٌ بخصمٍ أقلّ ينشرها المؤثّرون، ولكلّ مؤثّرٍ كودٌ يكتبه متابعُه في نموذجها، وعمولتُه من سعر
+   الدورات العامّ. وصفحتُها غيرُ صفحة الأولى («A»): رابطُ المؤثّر يفتحها بنسبتها وكودُه مكتوب، و`/grant` تبقى للأولى.
+   والعلّةُ في `server/services/influencer.service.ts`. */
+export const INFLUENCER_GRANT_SLUG = 'wajeez-influencers'
+export const INFLUENCER_GRANT_NAME_AR = 'منحة مؤثرين وجيز'
+export const INFLUENCER_GRANT_DEFAULTS = { percentOff: 45, maxCodes: 1000, maxCourses: 4 } as const
+
+export type GrantSlug = typeof MEMBER_GRANT_SLUG | typeof INFLUENCER_GRANT_SLUG
+
+/** الحملتان باسمَيهما وما تبدأ به كلٌّ منهما */
+export const GRANT_CAMPAIGNS: Record<GrantSlug, { nameAr: string; defaults: { percentOff: number; maxCodes: number; maxCourses: number } }> = {
+  [MEMBER_GRANT_SLUG]: { nameAr: MEMBER_GRANT_NAME_AR, defaults: GRANT_DEFAULTS },
+  [INFLUENCER_GRANT_SLUG]: { nameAr: INFLUENCER_GRANT_NAME_AR, defaults: INFLUENCER_GRANT_DEFAULTS },
+}
 
 /** بادئةُ الكود — تميّزه عن رمز الدعوة (WJ) وكود المدرّب (WD) */
 export const GRANT_CODE_PREFIX = 'WG-'
