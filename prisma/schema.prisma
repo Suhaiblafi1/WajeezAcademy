@@ -193,7 +193,7 @@ model LoginAttempt {
 model SignupSource {
   id           String    @id @default(uuid()) @db.Uuid
   userId       String    @unique @db.Uuid
-  /// كيف أُنشئ الحساب: self (سجّل بنفسه) | admin (أضافه مدير)
+  /// كيف أُنشئ الحساب: self (سجّل بنفسه) | admin (أضافه مدير) | trainer_application (نموذج التقدّم للتدريب)
   via          String
   utmSource    String?
   utmMedium    String?

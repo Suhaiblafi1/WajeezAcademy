@@ -95,6 +95,8 @@ export function registerTrainerApplicationRoutes(app: FastifyInstance, prisma: P
          يُكتبان يكفيان للتمييز، والسقف يمنع سيرةً ذاتية ثانية في حقل نصّ. */
       motivation: z.string().trim().min(75).max(500),
       privacyConsent: z.literal(true),
+      /* من أين جاء — اختياريّ، ويُنظَّف عند الكتابة (`signup-source.service.ts`) */
+      source: z.unknown().optional(),
     }).parse(req.body)
     const result = await svc.submitPhase1({
       ...body,

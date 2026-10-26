@@ -159,6 +159,7 @@ export class InfluencerService {
     } else {
       /* كلمةٌ عشوائيّةٌ لا يعرفها أحد — والدخولُ يبدأ بتعيينِ صاحبه كلمتَه من الدعوة (`admin-users.routes.ts`) */
       userId = (await this.auth.register(email, randomBytes(24).toString('hex'), inf.nameAr)).userId
+      await this.auth.recordSignupSource(userId, 'admin')
       await this.prisma.userRole.createMany({ data: [{ userId, roleId: INFLUENCER_ROLE }], skipDuplicates: true })
       await this.prisma.user.update({ where: { id: userId }, data: { status: 'invited' } })
       created = true

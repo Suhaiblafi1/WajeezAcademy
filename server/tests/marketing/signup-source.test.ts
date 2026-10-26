@@ -3,7 +3,9 @@
    سؤالُ صاحب المنصّة: «كيف أعلم هذا المتعلّم من أين وصل وكيف وصل؟». والمقيس:
    ① **التسجيلُ يحفظه** — ما أرسله المتصفّح، منظَّفا.
    ② **وما ليس وسما لا يُكتب**، وغيابُه لا يُسقط التسجيل.
-   ③ **وقائمةُ المستخدمين تسمّيه** — ورابطُ المدرّب بصاحبه، ومن أضافه مدير يُقال. */
+   ③ **وقائمةُ المستخدمين تسمّيه** — ورابطُ المدرّب بصاحبه، ومن أضافه مدير يُقال.
+   ④ **والمتقدّمُ للتدريب كذلك** (٢٦ أكتوبر ٢٠٢٦: «تتبع حسابات المتقدمين للتدريب أيضا») — حسابُه
+      الجديدُ يُحفظ مصدرُه مع طلبه، ومن كان له حسابٌ قبلُ يبقى مصدرُه الأوّل. */
 
 import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
@@ -86,5 +88,35 @@ describe('③ القائمةُ تسمّيه', () => {
     })
     expect(res.statusCode).toBeLessThan(300)
     expect((await listed(email))?.source.labelAr).toBe('أضافه مدير')
+  })
+})
+
+describe('④ المتقدّمُ للتدريب', () => {
+  const apply = (email: string, source: unknown) => app.inject({
+    method: 'POST', url: '/api/v1/trainer-applications',
+    payload: {
+      fullName: 'متقدم للتدريب', email, password: PASS, country: 'الأردن', timezone: 'Asia/Amman',
+      specialties: ['تحليل البيانات والمالية'], domainYears: '8-12', trainingYears: 'formal_teaching',
+      trainingLanguages: ['العربية'], deliveryMode: 'both',
+      motivation: 'أريد الانضمام إلى وجيز لأنني درّبت فرقا حقيقية في بيئات عمل عربية، وأعرف الفرق بين من يعرف المادة ومن يستطيع تعليمها.',
+      privacyConsent: true, source,
+    },
+  })
+
+  it('⚠️ حسابُه الجديد يُحفظ مصدرُه من نموذج التقدّم', async () => {
+    const email = `ss-tr-${S}@example.com`
+    const res = await apply(email, { utmSource: 'linkedin', utmCampaign: 'trainers', landingPath: '/join-trainer' })
+    expect(res.statusCode).toBe(201)
+    const row = await prisma.signupSource.findFirst({ where: { user: { email } } })
+    expect(row).toMatchObject({ via: 'trainer_application', utmSource: 'linkedin', utmCampaign: 'trainers' })
+    expect((await listed(email))?.source.labelAr).toBe('لينكدإن')
+  })
+
+  it('ومتعلّمٌ تقدّم بعدُ: مصدرُه الأوّل يبقى', async () => {
+    const email = `ss-tr-learner-${S}@example.com`
+    expect((await register(email, { utmSource: 'facebook' })).statusCode).toBe(201)
+    expect((await apply(email, { utmSource: 'linkedin' })).statusCode).toBe(201)
+    const rows = await prisma.signupSource.findMany({ where: { user: { email } } })
+    expect(rows.map((r) => [r.via, r.utmSource])).toEqual([['self', 'facebook']])
   })
 })
