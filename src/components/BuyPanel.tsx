@@ -604,16 +604,19 @@ export default function BuyPanel({
 
                 ⚠ والطيُّ **مغلقٌ افتراضا ولا يُقفَل**: لوحُ الدفع يُفتح من
                 صفحة الدورة المفردة أيضا، ومن جاء منها لم يرَ حسابا قبلَه —
-                فسطرُ «تفصيل الحساب» هو بابُه الوحيد إليه. */}
+                فسطرُ «تفصيل السعر» هو بابُه الوحيد إليه. */}
             {quote && !nothingLeft && (
               <Card className="mt-4 space-y-1.5 text-xs">
-                {/* ومن صفحة المنحة مفتوحٌ: كم كانت الدورة، وكم المنحة، وما يبقى — قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦) */}
-                <details className="group" open={grantPayTotal !== undefined}>
+                {/* ═══ مطويٌّ للجميع، واسمُه «تفصيل السعر» (٢٦ أكتوبر ٢٠٢٦) ═══
+                    كان مفتوحا من صفحة المنحة (٢٤ أكتوبر). ثمّ قال صاحبُ المنصّة: «اجعل تفصيلَ الحساب مطويّا افتراضيّا..
+                    أيُّ حسابٍ تقصد؟ الدورات؟» — فـ«الحساب» تُقرأ حسابَ المستخدم. فصار مطويّا، وسُمّي بما فيه: السعرُ وخصمُه.
+                    والمبلغُ تحته ظاهرٌ دائما، وفي زرّ الدفع. */}
+                <details className="group">
                   {/* `text-read` لا `text-fine`: هذا البابُ الوحيدُ إلى بنود
                       الفاتورة لمن جاء من صفحة الدورة المفردة، وبابٌ بحجم
                       الحاشية يُقرأ حاشيةً فلا يُفتح. */}
                   <summary className="flex cursor-pointer list-none items-center gap-1 text-read font-bold leading-6 text-muted-foreground transition hover:text-teal-light-ink [&::-webkit-details-marker]:hidden">
-                    تفصيل الحساب
+                    تفصيل السعر
                     <ChevronDown className="h-3 w-3 transition-transform group-open:rotate-180" aria-hidden="true" />
                   </summary>
                   <div className="mt-1.5 space-y-1.5">

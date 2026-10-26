@@ -333,11 +333,16 @@ describe('بعد النموذج', () => {
     expect(code('src/pages/admin/GrantResults.tsx'), 'نتائج الحملة تسمي قناتها').toMatch(/share: "من صديق"/)
   })
 
-  it('⚠️ لوح الدفع من صفحة المنحة: التفصيل مفتوح — كم كانت الدورة وكم المنحة — ومن لم يكتب كوده يقال له ما يصير إليه', () => {
-    /* قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦): «هنا يجب أن يكون تفصيلُ كم كانت الدورة، وبعد المنحة» */
+  it('⚠️ لوح الدفع من صفحة المنحة: «تفصيل السعر» مطوي — والمبلغ ظاهر — ومن لم يكتب كوده يقال له ما يصير إليه', () => {
+    /* قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦): «هنا يجب أن يكون تفصيلُ كم كانت الدورة، وبعد المنحة». ثمّ (٢٦ أكتوبر):
+       «اجعل تفصيلَ الحساب مطويّا افتراضيّا.. أيُّ حسابٍ تقصد؟» — فطُوي للجميع وسُمّي «تفصيل السعر» */
     const BUY = code('src/components/BuyPanel.tsx')
     expect(PAGE).toMatch(/initialCoupon=\{stored\.code \?\? ""\}\s*grantPayTotal=\{payTotal\}/)
-    expect(BUY).toMatch(/<details className="group" open=\{grantPayTotal !== undefined\}>/)
+    const fold = BUY.slice(BUY.lastIndexOf('<details', BUY.indexOf('تفصيل السعر')), BUY.indexOf('</details>', BUY.indexOf('تفصيل السعر')))
+    expect(fold.match(/<details[^>]*>/)?.[0], 'التفصيل مفتوح افتراضا').toBe('<details className="group">')
+    expect(fold, 'التفصيل بلا بند المنحة').toContain('quote.couponDiscount > 0')
+    expect(BUY, 'عاد اسم «تفصيل الحساب» — يقرأ حساب المستخدم').not.toContain('تفصيل الحساب')
+    expect(BUY.slice(BUY.indexOf('</details>', BUY.indexOf('تفصيل السعر'))), 'المبلغ طوي مع تفصيله').toMatch(/^<\/details>\s*<div[^>]*>\s*<span[^>]*>ما تدفعه الآن<\/span>/)
     expect(BUY).toMatch(/\{grantPayTotal !== undefined && quote && quote\.grantPct === null && !couponError && !nothingLeft && \(/)
     expect(BUY).toContain('اكتب كود منحتك ليصير المبلغ <bdi dir="ltr">{shownGrant}</bdi>. تجده في بريدك.')
     /* بصيغة المجموع نفسِها، وبعملة البطاقة إن بدّلها */
