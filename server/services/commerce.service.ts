@@ -66,26 +66,17 @@ export class CommerceService {
   /* ── طلب التسجيل وحجز المقعد ── */
 
   async requestEnrollment(userId: string, cohortId: string, note?: string) {
-    /* بابُ الموسم أوّلا — يعلو شروطَ الشعبة وشرطَ البريد معا. فمن لم يوثّق
-       بريدَه والبابُ مغلق لا يُقال له «وثّق بريدك» ثمّ يُردّ بعد أن يوثّقه:
-       يُقال له ما يمنعه حقّا من أوّل نداء. */
+    /* بابُ الموسم أوّلا — يعلو شروطَ الشعبة كلَّها، فيُقال ما يمنع حقّا من أوّل نداء. */
     assertSeasonOpen(await readSeasonGate(this.prisma))
 
-    /* حاجز توثيق البريد (١هـ). المال والمواعيد والفاتورة كلها تُرسل إلى عنوان
-       لم يُثبت أنه يصل صاحبه — فالتوثيق شرطٌ قبل بدء الشراء لا بعده.
+    /* ═══ ولا ينتظر الشراءُ توثيقَ البريد (٢٦ أكتوبر ٢٠٢٦) ═══
 
-       واستثناءٌ واحد مقصود: حين تكون قناة البريد غير مفعّلة أصلا، فالحاجز
-       قفلٌ لا مفتاح له — لا أحد يستطيع أن يوثّق فلا أحد يستطيع أن يشتري أبدا.
-       وهذا بعينه ما وقع في مسار المدرب فوقف كل متقدّم عند «بانتظار تحقق
-       البريد». فيمضي الطلب حينها بأثرٍ صريح يقرؤه المراجع قبل الموافقة، ولا
-       يُكتب emailVerifiedAt: لم يتحقّق شيء. */
+       كان التوثيقُ شرطا قبل الشراء: الفاتورةُ والمواعيدُ تُرسل إلى عنوانٍ لم يُثبت أنّه يصل صاحبه. ثمّ سأل صاحبُ
+       المنصّة: «هل من الضروري أن يقوم الشخص بتوثيق بريده؟»، وخُيّر بين إبقائه ورمزٍ في الصفحة نفسِها والدفعِ أوّلا،
+       فاختار **الدفعَ أوّلا والتوثيقَ بعده**: من ترك الصفحةَ ليفتح بريدَه قد لا يعود. فالشراءُ لا يسأل عن البريد،
+       والشهادةُ وحدَها تنتظره (`certificate.service` · `issue`)، ومن أخطأ عنوانَه يصله مستشارُه على واتساب.
+       ويبقى في أثر الطلب أنّه اشترى بلا بريدٍ موثَّق — يقرؤه من يتابعه. */
     const verified = await this.cart.emailVerified(userId)
-    if (!verified) {
-      const channelUp = await this.cart.emailChannelEnabled()
-      if (channelUp) {
-        throw new AuthError('email_unverified', 'وثّق بريدك أولا — اطلب رابط التوثيق من الشريط أعلى الصفحة، والشراء يفتح بمجرّد فتحه', 403)
-      }
-    }
 
     const cohort = await this.prisma.cohort.findUnique({
       where: { id: cohortId },
@@ -106,7 +97,7 @@ export class CommerceService {
       : await this.prisma.enrollmentRequest.create({ data: { userId, cohortId, note } })
     await recordAudit(this.prisma, {
       actorId: userId, action: 'enrollment_request.create', entityType: 'enrollment_request', entityId: req.id,
-      meta: { cohortId, ...(verified ? {} : { emailUnverified: true, reason: 'قناة البريد غير مفعّلة — مرّ الطلب بلا توثيق' }) },
+      meta: { cohortId, ...(verified ? {} : { emailUnverified: true }) },
     })
     await this.openBuyerCase(userId)
     return req
@@ -123,11 +114,8 @@ export class CommerceService {
 
   async requestPlanEnrollment(userId: string) {
     assertSeasonOpen(await readSeasonGate(this.prisma))
+    /* ولا توثيقَ قبل شراء الخطّة كذلك — الدفعُ أوّلا (٢٦ أكتوبر ٢٠٢٦، `requestEnrollment`)، ويبقى في الأثر */
     const verified = await this.cart.emailVerified(userId)
-    if (!verified && (await this.cart.emailChannelEnabled())) {
-      throw new AuthError('email_unverified', 'وثّق بريدك أولا — اطلب رابط التوثيق من الشريط أعلى الصفحة، والشراء يفتح بمجرّد فتحه', 403)
-    }
-
     const plan = await new PlanService(this.prisma).active(userId)
     if (!plan) throw new AuthError('no_plan', 'لا خطّة فعّالة — اعتمد خطّتك أولا', 404)
 
@@ -332,17 +320,11 @@ export class CommerceService {
     /* الباقةُ والهديّةُ والكوبونُ على المشتراة وحدَها — وهي بعينها ما
        سيُرسَل إلى `checkout`، فالمعروضُ هو المُصدَر */
     const { pricing, couponCode: code, grantPct } = await this.cart.priceFor(userId, buyable, couponCode, currency)
-    const emailOk = (await this.cart.emailVerified(userId)) || !(await this.cart.emailChannelEnabled())
     return {
       currency,
       couponCode: code,
       /* ما استُبعد يُقال باسمه وسببه — لا يُسقَط صامتا ولا يُسقِط أخواته */
       excluded,
-      /* حاجزُ التوثيق يُقال هنا لا يُرمى: اللوحُ يعرض السعرَ ويطلب التوثيق
-         في مكانه — و`VerifyEmailNotice` لا يُعرض خارج بوابة المتعلّم أصلا،
-         فرميُ 403 هنا كان يترك المشتريَ أمام رسالةٍ تحيله إلى شريطٍ لا وجودَ
-         له في هذه الصفحة. */
-      emailVerified: emailOk,
       subtotal: pricing.subtotal,
       listTotal: pricing.listTotal,
       bundlePct: pricing.bundlePct,
@@ -382,7 +364,7 @@ export class CommerceService {
        يردّ من لم يُخفَ عنه — من فتح تبويبَه قبل الإغلاق، ومن ينادي المسارَ
        بلا شاشةٍ أصلا. */
     assertSeasonOpen(await readSeasonGate(this.prisma))
-    const { unique, cohorts, currency } = await this.cart.validatedCart(userId, cohortIds, true)
+    const { unique, cohorts, currency } = await this.cart.validatedCart(userId, cohortIds)
     /* رمزُ دعوة المدرّب — يُقبل إن خصّ شعبةً من المشتراة، وإلّا يُهمَل ولا يوقف الدفع */
     const referral = await this.referrals.acceptAtCheckout(userId, unique, referralCode)
     const { pricing, couponId, couponMaxUses, trainerCode, shareProfileId, trainerPurchase } = await this.cart.priceFor(userId, cohorts, couponCode, currency)

@@ -249,7 +249,7 @@ export class SystemHealthService {
       this.prisma.paymentWebhookEvent.findFirst({ where: { processedAt: null }, orderBy: { createdAt: 'asc' }, select: { createdAt: true, provider: true } }),
       this.prisma.refund.count({ where: { status: 'requested' } }),
       this.prisma.invoice.count({ where: { status: 'issued' } }),
-      /* من يمنعه حاجزُ التوثيق من الشراء اليوم — نشِطون بلا بريدٍ موثَّق */
+      /* نشِطون بلا بريدٍ موثَّق — شهاداتُهم تنتظره، والشراءُ لا ينتظره (٢٦ أكتوبر ٢٠٢٦) */
       this.prisma.user.count({ where: { status: 'active', emailVerifiedAt: null } }),
     ])
     const driver = (payment?.config as { driver?: string } | null)?.driver ?? 'test'
@@ -275,28 +275,24 @@ export class SystemHealthService {
         titleAr: 'قناة البريد',
         valueAr: email?.enabled ? `موصولة (${emailDriver ?? 'مزوّد محدّد'})` : 'غير موصولة',
         level: email?.enabled ? 'ok' : 'broken',
-        meaningAr: 'بلا بريد: لا توثيق عنوان، ولا استعادة كلمة مرور، ولا دعوة موظّف تصل. وتوثيق البريد شرط لشراء شعبة واستلام شهادة.',
+        meaningAr: 'بلا بريد: لا توثيق عنوان، ولا استعادة كلمة مرور، ولا دعوة موظّف تصل. وتوثيق البريد شرط لاستلام الشهادة.',
         actionAr: email?.enabled ? undefined : 'وصل مزوّد بريد من شاشة التكاملات — أو زرّ «وثّق البريد يدويّا» للموظّف حتّى ذلك الحين.',
         href: '/admin/integrations',
       },
-      /* ── من أيقظه وصلُ البريد (البند ٦٧) ──
+      /* ── من لم يوثّق بريدَه (البند ٦٧) ──
 
-         حواجزُ الشراء والشهادة الأربعةُ مشروطةٌ بـ`emailChannelEnabled()`:
-         تسقط والقناةُ مغلقة، وتعمل يومَ تُوصَل. فوصلُ البريد ليس فتحَ ميزةٍ
-         فحسب — هو **تفعيلُ حاجزٍ على من كان يشتري بلا مانع**.
-
-         والرقمُ يُعرض هنا لا في استعلامٍ يكتبه المالكُ بيده: تغييرٌ صامتٌ في
-         سلوك الإنتاج يجب أن يكون له عددٌ على شاشة. */
+         كان التوثيقُ حاجزَ شراءٍ يعمل بوصل القناة، فكان هذا الصفُّ يعدّ من يمنعه. ثمّ صار الدفعُ أوّلا (٢٦ أكتوبر
+         ٢٠٢٦، `commerce.service` · `requestEnrollment`): فالعددُ اليومَ من تنتظر شهادتُه توثيقَه، لا من يُردّ عن الشراء. */
       {
         key: 'unverified_blocked',
         titleAr: 'حسابات نشطة بلا بريد موثّق',
         valueAr: unverified === 0
           ? 'لا شيء'
           : email?.enabled
-            ? `${unverified} — ممنوعون من الشراء الآن`
-            : `${unverified} — والحاجز ساقط ما دامت القناة مغلقة`,
+            ? `${unverified} — شهاداتهم تنتظر التوثيق`
+            : `${unverified} — ولا يصلهم رابط التوثيق ما دامت القناة مغلقة`,
         level: unverified === 0 || !email?.enabled ? 'ok' : 'attention',
-        meaningAr: 'حاجز التوثيق يعمل بوصل قناة البريد وحدها. فمن كان يشتري أمس بلا مانع قد يردّ اليوم حتّى يفتح رابط التوثيق — والشريط في بوّابته يعرض زرّ الإرسال تلقائيّا.',
+        meaningAr: 'الشراء لا ينتظر التوثيق، والشهادة وحدها تنتظره. والشريط في بوّابة المتعلم يعرض زرّ الإرسال تلقائيّا.',
         actionAr: unverified === 0 || !email?.enabled
           ? undefined
           : 'لا إجراء لازم: من يدخل بوّابته يرى الشريط ويطلب الرابط. وراقب أن ينزل العدد — بقاؤه عاليا يعني أنّ الرسائل لا تصل.',

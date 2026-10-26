@@ -80,19 +80,6 @@ function jsxTags(p: string): string[] {
   return out
 }
 
-/** النداءاتُ بمُناداها ونصِّ أوّلِ معطياتها */
-function calls(p: string): { callee: string; firstArg: string | null }[] {
-  const sf = parse(p)
-  const out: { callee: string; firstArg: string | null }[] = []
-  walk(sf, (n) => {
-    if (ts.isCallExpression(n)) {
-      const a = n.arguments[0]
-      out.push({ callee: n.expression.getText(sf), firstArg: a && ts.isStringLiteralLike(a) ? a.text : null })
-    }
-  })
-  return out
-}
-
 /** ما يُنادى داخل دالّةٍ مسمّاة (`const name = …`) */
 function calleesIn(p: string, name: string): string[] {
   const sf = parse(p)
@@ -118,11 +105,11 @@ describe('② وهو مركّبٌ حيث يُحتاج', () => {
     expect(callees('src/pages/VerifyEmail.tsx')).toEqual(expect.arrayContaining(['readPendingCheckout', 'resumeHref']))
   })
 
-  it('⚠️ واللوحُ يمحوه حين يُنشأ الطلب — ويعيد التسعيرَ حين يعود صاحبُه', () => {
+  it('⚠️ واللوحُ يمحوه حين يُنشأ الطلب', () => {
+    /* وكان يعيد التسعيرَ حين يعود صاحبُه من تبويب التوثيق ليفتح زرَّ الدفع. ثمّ صار الدفعُ أوّلا (٢٦ أكتوبر ٢٠٢٦،
+       `pay-first.test.ts`): الزرُّ لا ينتظر البريد، فلا شيءَ يُعاد له التسعير — وسقط السماعُ معه. */
     const pay = calleesIn('src/components/BuyPanel.tsx', 'pay')
     expect(pay, 'لا يُمحى بالطلب').toContain('clearPendingCheckout')
-    const listens = calls('src/components/BuyPanel.tsx').filter((c) => /addEventListener$/.test(c.callee)).map((c) => c.firstArg)
-    expect(listens, 'لا يعيد التسعيرَ حين يعود').toEqual(expect.arrayContaining(['focus', 'visibilitychange']))
   })
 
   it('و«رحلتي» تقترح الشعبةَ التي اختارها لا أقربَ شعبة', () => {

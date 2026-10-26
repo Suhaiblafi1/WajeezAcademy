@@ -43,7 +43,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { CalendarDays, ChevronDown, CreditCard, Info, Loader2, Route as RouteIcon, Tag, TriangleAlert } from "lucide-react";
 import Modal from "@/components/Modal";
 import { couponFieldCls } from "@/components/FormKit";
-import VerifyEmailNotice from "@/components/VerifyEmailNotice";
 import RegistrationClosedNotice from "@/components/RegistrationClosedNotice";
 import LiveSessionDates from "@/components/LiveSessionDates";
 import { usePlatformConfig } from "@/hooks/usePlatformConfig";
@@ -105,7 +104,6 @@ interface ExcludedLine {
 interface Quote {
   currency: string;
   couponCode: string | null;
-  emailVerified: boolean;
   excluded: ExcludedLine[];
   subtotal: number;
   listTotal: number;
@@ -273,21 +271,6 @@ export default function BuyPanel({
   }, [cohortIds]);
 
   useEffect(() => { void refresh(applied); }, [refresh, applied]);
-
-  /* ═══ ومن وثّق بريده في تبويبٍ آخر يجد الدفعَ مفتوحا حين يعود (٢٠ أكتوبر ٢٠٢٦، الخطوة ل) ═══
-     رابطُ التوثيق يُفتح في تبويبٍ جديد، وهذا اللوحُ باقٍ على «بريدك غير موثّق» وزرُّ الدفع مطفأ حتّى
-     يُغلَق ويُفتح. فما دام الخادمُ يقول «غير موثّق»، يُعاد التسعيرُ حين يعود إلى هذه النافذة. */
-  const unverified = quote !== null && !quote.emailVerified;
-  useEffect(() => {
-    if (!unverified) return;
-    const again = () => { if (document.visibilityState === "visible") void refresh(applied); };
-    window.addEventListener("focus", again);
-    document.addEventListener("visibilitychange", again);
-    return () => {
-      window.removeEventListener("focus", again);
-      document.removeEventListener("visibilitychange", again);
-    };
-  }, [unverified, refresh, applied]);
 
   /* سببُ الاستبعاد بالشعبة لا بالدورة: من مُنع من شعبةٍ قد تُتاح له أخرى
      من الدورة نفسِها، فيبقى المبدّلُ معروضا ليختار موعدا آخر. */
@@ -699,13 +682,7 @@ export default function BuyPanel({
               </div>
             )}
 
-            {quote && !quote.emailVerified && !nothingLeft && (
-              /* الحاجزُ يُقال في موضعه: `VerifyEmailNotice` لا يُعرض خارج
-                 بوابة المتعلّم، فرسالةُ الخادم كانت تحيل إلى شريطٍ لا وجودَ له
-                 في هذه الصفحة — طريقٌ مسدود بلا مخرج. */
-              <VerifyEmailNotice email={email} className="mt-4" />
-            )}
-
+            {/* ولا «وثّق بريدك» هنا: الدفعُ أوّلا والتوثيقُ بعده في بوّابته (٢٦ أكتوبر ٢٠٢٦، `commerce.service`) */}
             {error && (
               <Inset as="p" tone="danger" className="mt-3 px-3 py-2 text-read leading-5 text-red-200">
                 {error}
@@ -728,7 +705,7 @@ export default function BuyPanel({
             {!nothingLeft && !closedAr && (
               <>
                 <Button tone="primary" onClick={() => void pay()}
-                  disabled={paying || quoting || !quote || !quote.emailVerified || payableIds.length === 0} className="mt-5 w-full disabled:opacity-50">
+                  disabled={paying || quoting || !quote || payableIds.length === 0} className="mt-5 w-full disabled:opacity-50">
                   {paying || quoting ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}
                   {paying ? "نحوّلك إلى صفحة الدفع…" : <>ادفع الآن · <span dir="ltr">{shownTotal}</span></>}
                 </Button>

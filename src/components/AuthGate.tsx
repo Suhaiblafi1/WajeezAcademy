@@ -65,10 +65,12 @@ const LABEL_CLS = "mb-1.5 block text-xs font-bold text-muted-foreground";
 /** بوابة الدخول والتسجيل — نموذج حقيقي، تحقق آمن، ورسائل عربية لا تكشف شيئا.
     initialMode: الوضع الابتدائي (بوابة النتيجة تبدأ بـ«حساب جديد»).
     source: وسم تحليلات اختياري يميّز مصدر التسجيل (مثل result_gate). */
-export default function AuthGate({ onDone, message, initialMode = "login", source, prefill }: {
+export default function AuthGate({ onDone, message, initialMode = "login", source, prefill, verifyLater = false }: {
   onDone: () => void; message?: string; initialMode?: "login" | "signup"; source?: string
   /** اسمٌ وبريدٌ كتبهما قبلُ في الصفحة — نموذجُ المنحة — فلا يكتبهما مرّتين */
   prefill?: { name?: string; email?: string }
+  /** لحظةُ الدفع: بلا شاشة «تفقّد بريدك» بعد التسجيل — يدفع أوّلا ويوثّق بعده (٢٦ أكتوبر ٢٠٢٦) */
+  verifyLater?: boolean
 }) {
   const hp = useHoneypot();
   const [mode, setMode] = useState<"login" | "signup">(initialMode);
@@ -129,7 +131,8 @@ export default function AuthGate({ onDone, message, initialMode = "login", sourc
            كانت تُعرض لكلّ من سجّل — وقناةُ البريد قد تكون مغلقةً بقرار — فينتهي
            أوّلُ لقاءٍ لكلّ مستخدمٍ جديدٍ بانتظارِ رسالةٍ لن تصل، وزرُّه الرئيسُ
            «أعد الإرسال». والخادمُ يقول في ردّ التسجيل هل خرجت الرسالةُ فعلا. */
-        if (result.verificationSent) {
+        /* وفي لحظة الدفع يمضي إلى الدفع: الشراءُ لا ينتظر التوثيق، ورسالتُه في بريده وبلاغُه في بوّابته */
+        if (result.verificationSent && !verifyLater) {
           setView("verify");
           setResent(null);
         } else {
