@@ -67,7 +67,7 @@ describe('الرفع دفعة واحدة — «خطط تنتظر اعتمادك�
   })
 
   it('⚠️ كلّ ملفّ إلى خطّته بمسلك البطاقة نفسه — فيفحص كما يفحص هناك', () => {
-    expect(box).toContain('await apiPost(`/api/admin/cohort-plans/${read.planId}/edits`, needed.length ? withWorkbookKeys(read.body, keys) : read.body);')
+    expect(box).toMatch(/await apiPost<PlanEditsUploadCounts>\(\s*`\/api\/admin\/cohort-plans\/\$\{read\.planId\}\/edits`, needed\.length \? withWorkbookKeys\(read\.body, keys\) : read\.body\);/)
     expect(code('src/components/PlanEdits.tsx'), 'البطاقة لا ترفع إلى المسلك نفسه').toContain('`/api/admin/cohort-plans/${planId}/edits`, body)')
     expect(box).toMatch(/<input[\s\S]{0,80}type="file"\s*multiple/)
   })
@@ -126,19 +126,32 @@ describe('صفحة المدرّب', () => {
   })
 })
 
-describe('«احذف المكرر» — على البطاقة (١٢ أكتوبر ٢٠٢٦)', () => {
+/* ═══ الرفعُ يتجاهل المكرّر — فلا «احذف المكرر» ولا «أعد ما سحبته» (٢٦ أكتوبر ٢٠٢٦) ═══
+   بُنيا لما تكرّر حين كانت إعادةُ الملفّ تُردّ أو تُرفع فوق ما قبلها (١٢ أكتوبر). وصار الرفعُ يتجاهل البطاقةَ نفسَها
+   ويضع الأحدثَ مكانَ ما لم يُقرَّر فيه (`upload` في `plan-edit.service.ts`) — والخادمُ يحرسه `server/tests/plan/plan-edits.test.ts`. */
+describe('الرفع يتجاهل المكرّر — والبطاقة بلا أدوات التنظيف', () => {
   const page = code('src/pages/admin/PendingPlans.tsx')
   const panel = code('src/components/PlanEdits.tsx')
   const card = panel.slice(panel.indexOf('export function PlanEditsUploader'), panel.indexOf('export function PlanEditsPanel'))
+  const box = code('src/components/admin/ReviewUpload.tsx')
 
-  it('⚠️ البطاقة تقرأ عدده مع «أعد ما سحبته» — ولا يظهر الزرّ إلّا وفيها مكرر', () => {
-    expect(card).toMatch(/setWithdrawn\(w\.count\); setOlder\(w\.older \?\? 0\);/)
-    expect(card).toMatch(/\{older > 0 && \(\s*<Button[^>]*onClick=\{\(\) => void keepLatest\(\)\}>\s*\{KEEP_LATEST_AR\.labelAr\} \(\{older\}\)/)
-    expect(card).toMatch(/apiPost<[^>]*>\(keepLatestPath\(planId\), \{\}\)/)
+  it('⚠️ لا «احذف المكرر» ولا «أعد ما سحبته» في البطاقة — ولا ما يقرأ عددهما', () => {
+    expect(card.length, 'لم تقرأ البطاقة').toBeGreaterThan(1000)
+    expect(card).not.toMatch(/keepLatest|keep-latest|edits\/restore|plan-edits\/withdrawn|احذف المكرر|أعد ما سحبته/)
   })
 
-  it('⚠️ وما يقع به يقال تحت الأزرار حين يظهر', () => {
-    expect(card).toMatch(/\{canUpload && older > 0 && <p[^>]*>\{KEEP_LATEST_AR\.whatAr\}<\/p>\}/)
+  it('⚠️ والبطاقة تقول ما وقع بالرفع من عدّ الخادم — لا من عدّ الملفّ', () => {
+    expect(card).toMatch(/const r = await apiPost<\{ edits: PlanEditItem\[\] \} & PlanEditsUploadCounts>\(`\/api\/admin\/cohort-plans\/\$\{planId\}\/edits`, body\);\s*setItems\(r\.edits\);\s*setMsg\(`«\$\{file\.name\}»: \$\{uploadedLineAr\(r\)\}`\);/)
+  })
+
+  it('⚠️ و«اسحب ما لم يقرّر» باق — ويقول كيف يعود ما سحب', () => {
+    expect(card).toMatch(/setItems\(await apiDelete<PlanEditItem\[\]>\(`\/api\/admin\/cohort-plans\/\$\{planId\}\/edits`\)\);\s*setMsg\("سحب ما لم يقرّر فيه\. ولتعيده ارفع ملفه من جديد\."\);/)
+  })
+
+  it('⚠️ وصندوق الرفع: ملف كله مرفوع من قبل «مرفوع» لا «رفع» — والسطر من عدّ الخادم', () => {
+    expect(box).toMatch(/const r = await apiPost<PlanEditsUploadCounts>\(/)
+    expect(box).toMatch(/state: r\.added > 0 \? "done" : "already", noteAr: uploadedLineAr\(r\)/)
+    expect(box).not.toMatch(/uploadedLineAr\(read\./)
   })
 
   /* وكان للخطط كلِّها زرٌّ في «خطط تنتظر اعتمادك» — وذهب بقول صاحب المنصّة «فقط تحميل ورفع» (٢٦ أكتوبر ٢٠٢٦) */

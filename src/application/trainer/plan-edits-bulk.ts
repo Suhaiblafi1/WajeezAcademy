@@ -9,6 +9,7 @@
    يُحكم هنا على البنود — ذلك للخادم وحدَه، على الخطّة كما هي ساعةَ الرفع. */
 
 import { countAr } from '@/application/text/count-ar'
+import type { PlanEditsUploadCounts } from '@/application/trainer/plan-edits'
 
 export type BulkFile =
   | { name: string; ok: true; planId: string; titleAr: string | null; body: unknown; count: number; required: number }
@@ -34,29 +35,17 @@ export function readEditsFile(name: string, text: string): BulkFile {
 
 const ITEM_FORMS = { one: 'بند', two: 'بندان', few: 'بنود', many: 'بندا' }
 
-/** «رُفع مسوّدةً: 19 بندا، 3 منها مطلوبة» */
-export function uploadedLineAr(count: number, required: number): string {
-  return `رفع مسوّدة: ${countAr(count, ITEM_FORMS)}${required > 0 ? `، ${required} منها ${required === 1 ? 'مطلوب' : 'مطلوبة'}` : ''}`
-}
-
-/* ═══ «احذف المكرر» — يبقى آخرُ ملفٍّ رُفع على الخطّة (١٢ أكتوبر ٢٠٢٦، `keepLatest` في `plan-edit.service.ts`) ═══
-   «give me a button to remove duplication» (صاحب المنصّة): أعادت «أعد ما سحبته» بنودَ رفعاتٍ سابقةٍ فوق
-   الملفّ الجديد. فزرٌّ على البطاقة لخطّتها. وكان معه زرٌّ للخطط كلِّها في «خططٌ تنتظر اعتمادك» — وذهب بقول صاحب
-   المنصّة «فقط تحميل ورفع» (٢٦ أكتوبر ٢٠٢٦).
-   ومنذ ٢٠ أكتوبر ٢٠٢٦ لا يعيد «أعد ما سحبته» ما سحبه رفعُ ملفٍّ أو هذا الزرّ — فلا تقول نصوصُها إنّه يعيده
-   (`restorable` في `plan-edit.service.ts`). */
-export const KEEP_LATEST_AR = {
-  labelAr: 'احذف المكرر',
-  whatAr: 'في الخطة بنود من ملفات أقدم لم يقرر فيها المدرب. «احذف المكرر» يبقي آخر ملف رفعته فقط، ويسحب الأقدم من صفحة المدرب. وما قرر فيه لا يمس.',
-} as const
-
-export function keepLatestPath(planId: string): string {
-  return `/api/admin/cohort-plans/${planId}/edits/keep-latest`
-}
-
-/** «سحب 35 بندا من ملفات أقدم…» — بعد الزرّ على البطاقة */
-export function keptLatestAr(withdrawn: number): string {
-  return `سحب ${countAr(withdrawn, ITEM_FORMS)} من ملفات أقدم، وبقي آخر ملف رفعته.`
+/* ═══ ما وقع بالرفع — يقوله الخادمُ عدّا، ويُقرأ هنا سطرا (٢٦ أكتوبر ٢٠٢٦، `upload` في `plan-edit.service.ts`) ═══
+   كانت إعادةُ الملفّ تُردّ كلُّها إن وقع بندٌ منه على ما رُفع، وبُني لما تكرّر «احذف المكرر» و«أعد ما سحبته». فصار
+   الرفعُ يتجاهل البطاقةَ نفسَها، ويضع الأحدثَ مكانَ ما لم يُقرَّر فيه — والسطرُ يقول ذلك، فلا يُظنّ أنّ شيئا ضاع. */
+export function uploadedLineAr(c: PlanEditsUploadCounts): string {
+  if (c.added === 0) return `كله مرفوع من قبل، فلم يتكرر شيء (${countAr(c.repeated, ITEM_FORMS)}).`
+  return [
+    `رفع مسوّدة: ${countAr(c.added, ITEM_FORMS)}${c.required > 0 ? `، ${c.required} منها ${c.required === 1 ? 'مطلوب' : 'مطلوبة'}` : ''}`,
+    c.repeated > 0 ? `مرفوع من قبل فلم يتكرر: ${countAr(c.repeated, ITEM_FORMS)}` : '',
+    c.replaced > 0 ? `حلّ محلّ مسوّدة أقدم: ${countAr(c.replaced, ITEM_FORMS)}` : '',
+    c.fromTrainer > 0 ? `حلّ محلّ ما كان عند المدرب: ${countAr(c.fromTrainer, ITEM_FORMS)}، ويصله الجديد حين تعتمده` : '',
+  ].filter(Boolean).join(' · ')
 }
 
 /* ═══ والكرّاساتُ المصحّحةُ تُختار مع ملفّات التعديلات (١٢ أكتوبر ٢٠٢٦، `workbook_replace`) ═══

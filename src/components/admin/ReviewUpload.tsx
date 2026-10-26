@@ -5,7 +5,8 @@
 
    وكان صندوقين — للتعديلات بثلاث طرقٍ («أضف» و«استبدل المسودات» و«ابدأ من جديد»)، وللتقارير بخانة «استبدل
    التقارير السابقة» — وبينهما زرُّ «احذف المكرر من كل الخطط». وكلُّ ذلك «كان لحلّ مشكلةٍ ظهرت في وقتها». فالرفعُ هنا
-   الرفعُ العاديّ وحدَه: لا يُستبدل شيءٌ ولا يُسحب، وما يُراجَع بندا بندا ففي بطاقة خطّته. */
+   الرفعُ العاديّ وحدَه، وما يُراجَع بندا بندا ففي بطاقة خطّته. وهو يقضي فيما رُفع قبلُ وحدَه (٢٦ أكتوبر ٢٠٢٦، `upload`):
+   البطاقةُ نفسُها تُتجاهَل، والأحدثُ يحلّ محلّ ما لم يُقرَّر فيه — ويقول السطرُ ما وقع. */
 
 import { useRef, useState } from "react";
 import { ExternalLink, Files } from "lucide-react";
@@ -21,6 +22,7 @@ import {
 import { matchReportFile, type ReportPlan } from "@/application/trainer/review-reports-bulk";
 import { expandReportFiles, skippedLineAr } from "@/application/trainer/review-reports-zip";
 import { isEditsFile, reviewUploadSummaryAr, splitReviewFiles } from "@/application/trainer/review-upload";
+import type { PlanEditsUploadCounts } from "@/application/trainer/plan-edits";
 import { REVIEW_REPORT_MIMES } from "@/application/trainer/module-body";
 
 type Row = {
@@ -71,7 +73,7 @@ export default function ReviewUpload({ editPlans, reportPlans, openable, onUploa
     );
     const pdfs = pickedPdfs(workbooks);
 
-    /* ② التعديلات إلى خطّتها مسوّداتٍ — بالرفع العاديّ: لا يُستبدل ما قبلها ولا يُسحب */
+    /* ② التعديلات إلى خطّتها مسوّداتٍ — بالرفع العاديّ: ما رُفع قبلُ يُتجاهَل، و«مرفوع» إن لم يكن فيه جديد */
     for (const [i, { file, read }] of reads.entries()) {
       setProgress(`يرفع التعديلات ${i + 1} من ${reads.length}`);
       if (!read.ok) {
@@ -90,9 +92,10 @@ export default function ReviewUpload({ editPlans, reportPlans, openable, onUploa
           await putSigned(up.uploadUrl, pdfs.get(pdfKey(n))!, up.maxBytes);
           keys[n] = up.storageKey;
         }
-        await apiPost(`/api/admin/cohort-plans/${read.planId}/edits`, needed.length ? withWorkbookKeys(read.body, keys) : read.body);
-        push({ name: file.name, kind: "edits", planId: read.planId, labelAr, state: "done", noteAr: uploadedLineAr(read.count, read.required) });
-        onUploaded(read.planId);
+        const r = await apiPost<PlanEditsUploadCounts>(
+          `/api/admin/cohort-plans/${read.planId}/edits`, needed.length ? withWorkbookKeys(read.body, keys) : read.body);
+        push({ name: file.name, kind: "edits", planId: read.planId, labelAr, state: r.added > 0 ? "done" : "already", noteAr: uploadedLineAr(r) });
+        if (r.added > 0) onUploaded(read.planId);
       } catch (e) {
         push({ name: file.name, kind: "edits", planId: read.planId, labelAr, state: "failed", noteAr: errText(e, "تعذّر الرفع") });
       }

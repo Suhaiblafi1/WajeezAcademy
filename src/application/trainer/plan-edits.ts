@@ -32,6 +32,7 @@ import { kindForCategory, RESOURCE_CATEGORIES, RESOURCE_KINDS, type ResourceCate
 import { whenAr } from '../learning/cohort-gate'
 import { fmtDateWith } from '../text/format-ar'
 import { ACADEMY_ZONE } from './cohort-period'
+import { samePlanContent } from './recorded-links'
 
 /* ─────────── ما يُعدَّل ─────────── */
 
@@ -646,6 +647,26 @@ export function schedulePlanContent<C extends EditableContent>(c: C, edit: Pick<
     slots[at] = { ...slots[at]!, startsOn: s.startsOn, endsOn: s.endsOn }
   }
   return { ok: true, value: { ...cur, ...(plan.endsOn !== undefined ? { endsOn: plan.endsOn } : {}), ...(plan.slots ? { slots } : {}) } }
+}
+
+/** البطاقةُ نفسُها؟ — التعديلُ بحقوله وقيمه، لا بترتيب مفاتيحه (`jsonb` يعيد ترتيبها). وسببُه و«أمطلوب»
+    ليسا منه (`editOf`): ما يقع على الخطّة واحد، فهي هي (٢٦ أكتوبر ٢٠٢٦، «الرفعُ يتجاهل المكرّر») */
+export function sameEdit(a: PlanEdit, b: PlanEdit): boolean {
+  return samePlanContent(a, b)
+}
+
+/** ما وقع برفع ملفّ التعديلات (٢٦ أكتوبر ٢٠٢٦، `upload` في `plan-edit.service.ts`) */
+export interface PlanEditsUploadCounts {
+  /** كُتب جديدا — مسوّداتٍ تراجعها */
+  added: number
+  /** وكم منها مطلوب */
+  required: number
+  /** البطاقةُ نفسُها على الخطّة — لم يُقرَّر فيها أو قُضي فيها — فلم تُكتب ثانية */
+  repeated: number
+  /** مسوّداتٌ لم تعتمدها حلّت محلَّها نسخةٌ أحدث */
+  replaced: number
+  /** بطاقاتٌ كانت عند المدرّب حلّت محلَّها نسخةٌ أحدث — غابت عنه حتّى تعتمد الجديدة */
+  fromTrainer: number
 }
 
 /** أتغيّر الموضعُ منذ الاقتراح؟ — والمقارنةُ على القيم لا على ترتيب المفاتيح */

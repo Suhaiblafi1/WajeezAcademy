@@ -183,7 +183,7 @@ describe('الجدولُ الثابتُ بسلسلته', () => {
     }
     const up = await call('POST', `/api/admin/cohort-plans/${d.planId}/edits`, 'admin', { format: 'wajeez.plan-edits/1', planId: d.planId, items: [schedule] })
     expect(up.statusCode, up.body).toBe(201)
-    const id = (up.json() as Item[])[0]!.id
+    const id = (up.json() as { edits: Item[] }).edits[0]!.id
     expect((await call('POST', `/api/admin/plan-edits/${id}/approve`, 'admin', {})).statusCode).toBe(200)
     expect((await call('POST', `/api/admin/cohort-plans/${d.planId}/decide`, 'admin', { approve: false })).statusCode).toBe(200)
     const r = await call('POST', `/api/trainer/plan-edits/${id}/accept`, 'c', {})
@@ -208,7 +208,7 @@ describe('⑤ والجدولُ يحمل حدودَ الخطّة التي يحت�
   const acceptOne = async (d: Awaited<ReturnType<typeof messyCohort>>, who: string, item: Record<string, unknown>) => {
     const up = await call('POST', `/api/admin/cohort-plans/${d.planId}/edits`, 'admin', { format: 'wajeez.plan-edits/1', planId: d.planId, items: [item] })
     expect(up.statusCode, up.body).toBe(201)
-    const id = (up.json() as Item[])[0]!.id
+    const id = (up.json() as { edits: Item[] }).edits[0]!.id
     expect((await call('POST', `/api/admin/plan-edits/${id}/approve`, 'admin', {})).statusCode).toBe(200)
     expect((await call('POST', `/api/admin/cohort-plans/${d.planId}/decide`, 'admin', { approve: false })).statusCode).toBe(200)
     return { id, r: await call('POST', `/api/trainer/plan-edits/${id}/accept`, who, {}) }
