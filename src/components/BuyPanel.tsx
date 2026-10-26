@@ -415,15 +415,23 @@ export default function BuyPanel({
               aria-controls="buy-lines"
               /* ولا يُطفأ الزرُّ حين يُقسَر الفتح: زرٌّ معطَّلٌ لا يقول لماذا.
                  بل يُقال في متنه إنّ فيها ما يستحقّ النظر. */
-              /* صفٌّ لا صندوق: القائمةُ تحته محاطةٌ أصلا، وصندوقان متلاصقان
-                 يضاعفان الحدودَ بلا معنى — ويزيدان سقفَ الصيغ المكتوبة بيدها. */
-              className="mt-3 flex w-full items-center justify-between gap-3 py-1.5 text-right text-muted-foreground transition hover:text-foreground"
+              /* ═══ زرٌّ يُرى زرّا (٢٦ أكتوبر ٢٠٢٦) ═══
+                 كان صفّا بلا إطار، فقال صاحبُ المنصّة: «الدورات ومواعيدها لا تبدو أنّها زرٌّ للنقر.. اجعلها بإطارٍ
+                 مميّز». فصار حبّةَ المعجم الفيروزيّة (`btn-outline-brand`) بعرض اللوح، وبتعبئةٍ خفيفة، ويقول فعلَه
+                 «عرض» أو «إخفاء» — لا سهما وحدَه. والحبّةُ لا صندوقٌ مكتوبٌ باليد، فلا تزيد سقفَ الصيغ. */
+              className="btn-outline-brand mt-3 h-auto min-h-11 w-full justify-between gap-3 bg-teal/[0.06] px-4 py-2 text-right"
             >
-              <span className="text-sm font-bold">
-                {buyable.length === 1 ? "الدورة وموعدها" : `الدورات ومواعيدها (${buyable.length})`}
-                {hasExcluded && <span className="text-gold-ink"> — فيها ما استبعد</span>}
+              <span className="flex min-w-0 items-center gap-2">
+                <CalendarDays className="h-4 w-4 shrink-0" aria-hidden="true" />
+                <span>
+                  {buyable.length === 1 ? "الدورة وموعدها" : `الدورات ومواعيدها (${buyable.length})`}
+                  {hasExcluded && <span className="text-gold-ink"> — فيها ما استبعد</span>}
+                </span>
               </span>
-              <ChevronDown className={`h-4 w-4 shrink-0 text-muted-foreground transition ${listShown ? "rotate-180" : ""}`} />
+              <span className="flex shrink-0 items-center gap-1 text-fine">
+                {listShown ? "إخفاء" : "عرض"}
+                <ChevronDown className={`h-4 w-4 transition ${listShown ? "rotate-180" : ""}`} aria-hidden="true" />
+              </span>
             </button>
 
             <ul
