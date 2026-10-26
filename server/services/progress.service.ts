@@ -5,6 +5,7 @@
 import type { PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { resolveCompletionRules } from '../../src/application/learning/completion-rules'
+import { planModuleIds, PLAN_VISIBLE_STATUSES } from '../../src/application/trainer/plan-overlay'
 import { recordAudit } from './audit'
 import { EnrollmentService } from './enrollment.service'
 import { LEARNER_SESSION_WHERE } from './session-visibility'
@@ -77,6 +78,13 @@ export class ProgressService {
             sessions: { where: { ...LEARNER_SESSION_WHERE, status: { not: 'cancelled' } } },
             course: { include: { modules: true } },
             assessments: { include: { _count: { select: { items: true } } } },
+            /* خطّتُها المعتمَدة — بالانتقاء نفسِه الذي يقرؤها به المتعلّم (`enrollment.service.ts`) */
+            plans: {
+              where: { trainerId: { not: null }, status: { in: [...PLAN_VISIBLE_STATUSES] } },
+              orderBy: { createdAt: 'desc' },
+              take: 1,
+              select: { status: true, content: true },
+            },
           },
         },
         attendance: true,
@@ -132,30 +140,35 @@ export class ProgressService {
        لا «أحدُهما» كما كان. فمن قرأ الصفَّ بعد سنةٍ عرف على أيِّ شيءٍ تمَّ.
 
        ولا يُنقض ما مضى: الصفوفُ لا تُردّ من «مكتمل»، والحسابُ على ما يأتي. */
+    /* ═══ محاورُ الخطّة لا محاورُ الكتالوج (٢٦ أكتوبر ٢٠٢٦) ═══
+       قرارُ صاحب المنصّة: «count only plan units». فالتقدّمُ يُقاس على ما في خطّة
+       الشعبة المعتمَدة — ما يراه المتعلّمُ في طريقه — وبلا خطّةٍ على الكتالوج. */
+    const axes = planModuleIds(e.cohort.plans[0]) ?? e.cohort.course.modules.map((m) => m.id)
     const publishedFor = (moduleId: string) =>
       e.cohort.assessments.some((a) => a.moduleId === moduleId && a.status !== 'draft')
-    for (const m of e.cohort.course.modules) {
-      const byWork = acceptedSubs.some((s) => e.cohort.assessments.find((a) => a.id === s.assessmentId)?.moduleId === m.id)
-      const byAssessment = passedAttempts.some((a) => a.assessment.moduleId === m.id)
+    for (const moduleId of axes) {
+      const byWork = acceptedSubs.some((s) => e.cohort.assessments.find((a) => a.id === s.assessmentId)?.moduleId === moduleId)
+      const byAssessment = passedAttempts.some((a) => a.assessment.moduleId === moduleId)
       const attended = e.attendance.some((att) => {
         const session = e.cohort.sessions.find((s) => s.id === att.sessionId)
-        return session !== undefined && sessionAxes(session).includes(m.id) && ['present', 'late'].includes(att.status)
+        return session !== undefined && sessionAxes(session).includes(moduleId) && ['present', 'late'].includes(att.status)
       })
       const via = byWork ? 'submission'
         : byAssessment ? 'assessment'
-        : attended && !publishedFor(m.id) ? 'attendance'
+        : attended && !publishedFor(moduleId) ? 'attendance'
         : null
-      const current = e.moduleProgress.find((mp) => mp.moduleId === m.id)
+      const current = e.moduleProgress.find((mp) => mp.moduleId === moduleId)
       if (via && (!current || current.status !== 'completed')) {
         await this.prisma.moduleProgress.upsert({
-          where: { enrollmentId_moduleId: { enrollmentId, moduleId: m.id } },
+          where: { enrollmentId_moduleId: { enrollmentId, moduleId: moduleId } },
           update: { status: 'completed', completedAt: new Date(), evidence: { via } },
-          create: { enrollmentId, moduleId: m.id, status: 'completed', completedAt: new Date(), evidence: { via } },
+          create: { enrollmentId, moduleId: moduleId, status: 'completed', completedAt: new Date(), evidence: { via } },
         })
       }
     }
-    const modulesCompleted = await this.prisma.moduleProgress.count({ where: { enrollmentId, status: 'completed' } })
-    const totalModules = e.cohort.course.modules.length || 1
+    /* وما اكتمل خارجها لا يُعدّ — محورٌ تركه المدرّبُ لا يرفع نسبةً ولا يفي بشرط */
+    const modulesCompleted = await this.prisma.moduleProgress.count({ where: { enrollmentId, status: 'completed', moduleId: { in: axes } } })
+    const totalModules = axes.length || 1
 
     /* النسبة الكلية: 40٪ وحدات + 30٪ حضور + 30٪ تقييمات مجتازة */
     /* ═══ وكلُّ مهمّةٍ تُعدّ مرّةً في بابها (٢٠ أكتوبر ٢٠٢٦) ═══

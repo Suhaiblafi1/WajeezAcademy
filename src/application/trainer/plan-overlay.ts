@@ -28,12 +28,14 @@
    ② **الفارغُ لا يمحو.** حقلٌ تركه المدرّبُ فارغا يعني «لم أكتب» لا
       «امحُ ما في الكتالوج». وإلّا لأفرغ محورا كاملا بحذفِ سطر.
 
-   ③ **لا يُخفى محورُ كتالوج.** للمدرّب أن يحذف محورا من خطّته، لكنّ
-      `ModuleProgress` مفاتيحُه مفاتيحُ الكتالوج و`totalModules` عددُ وحداته
-      (`progress.service.ts`). فإخفاءُ محذوفٍ يجعل المائةَ في المائة **غيرَ
-      بالغة** — ويُحبَس المتعلّمُ دون شهادته بلا أن يعرف لماذا. فالمحذوفُ
-      يبقى بمتنِ الكتالوج حتّى يصير التقدّمُ واعيا بالخطّة، وذلك تغييرٌ
-      يمسّ أرقاما رآها الناسُ فلا يُركَب هنا. */
+   ③ **هذه الدالّةُ لا تُخفي محورَ كتالوج — والإخفاءُ بعدها.** كان المحذوفُ
+      من الخطّة يبقى بمتنِ الكتالوج لأنّ `totalModules` كان عددَ وحدات
+      الكتالوج، فإخفاؤه يجعل المائةَ غيرَ بالغة. ثمّ قرّر صاحبُ المنصّة
+      (٢٦ أكتوبر ٢٠٢٦) الأمرين معا: «hide them» و«count only plan units».
+      فصار التقدّمُ يُقاس على محاور الخطّة (`planModuleIds` أدناه، يقرؤها
+      `progress.service.ts`)، وشاشةُ المتعلّم تُسقط ما ليس فيها (`inPlanOnly`
+      في `student/stage-path.ts`). والدالّةُ هنا باقيةٌ على الكتالوج كلِّه:
+      شاشاتُ المدرّب والإدارة تقرؤها وترى المحذوفَ فيها. */
 
 import { workbookDone, workbookWhere, type CohortWorkbook } from './axis-timeline'
 import { workbookGroups, workbookModeOf, type ModuleWorkbook } from './cohort-workbooks'
@@ -288,6 +290,26 @@ export const PLAN_VISIBLE_STATUSES = ['approved', 'published'] as const
 
 export function planIsVisible(status: string | null | undefined): boolean {
   return (PLAN_VISIBLE_STATUSES as readonly string[]).includes(status ?? '')
+}
+
+/* ═══ محاورُ الشعبة كما اعتُمدت — ما يُقاس عليه تقدّمُ متعلّميها (٢٦ أكتوبر ٢٠٢٦) ═══
+
+   قرارُ صاحب المنصّة: «count only plan units». كان `totalModules` عددَ وحدات
+   الكتالوج: محورٌ تركه المدرّبُ يُعدّ ولا يُبلغ أبدا، ومحورٌ كتبه هو لا يُعدّ
+   أصلا — فشعبةٌ من محورِ كتالوجٍ وسبعةٍ للمدرّب لا تتجاوز وحداتُها ثُمنَها.
+   وبلا خطّةٍ ظاهرةٍ بمحاور: `null`، والمستدعي يعود إلى الكتالوج. */
+export function planModuleIds(
+  plan: { status: string | null | undefined; content: unknown } | null | undefined,
+): string[] | null {
+  if (!plan || !planIsVisible(plan.status)) return null
+  const mods = (plan.content as { modules?: unknown } | null)?.modules
+  if (!Array.isArray(mods)) return null
+  const ids = [...new Set(
+    mods
+      .map((m) => (m as { moduleId?: unknown } | null)?.moduleId)
+      .filter((id): id is string => typeof id === 'string' && id.trim() !== ''),
+  )]
+  return ids.length > 0 ? ids : null
 }
 
 

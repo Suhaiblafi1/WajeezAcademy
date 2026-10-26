@@ -282,11 +282,14 @@ describe('«رحلتي» — باب واحد', () => {
     expect(page).toContain('next.set("stage", id)')
   })
 
-  it('٢٥) وعمل المرحلة صندوقان: دروس وجلسات وواجبات، والمصادر منفصلة', () => {
+  it('٢٥) وعمل المرحلة صندوقان: طريق محطّات يعلوه «خطوتك التالية»، والمصادر منفصلة', () => {
+    /* كان الصندوقُ ثلاثةَ تبويبات (الدروس · الجلسات · الواجبات) تكرّر الشيءَ نفسَه،
+       فصار طريقا (٢٦ أكتوبر ٢٠٢٦) — `stage-path.test.ts` يحرس حسابَه ورسمَه */
     const work = read('src/components/journey/StageWork.tsx')
-    expect(work, 'التبويبات الثلاثة').toContain('label: "الدروس"')
-    expect(work).toContain('label: "الجلسات"')
-    expect(work).toContain('label: "الواجبات"')
+    expect(work, 'الطريق لا يبنى من حسابه').toMatch(/buildStagePath\(/)
+    expect(work, 'لا خطوة تالية').toContain('<NextStepCard')
+    expect(work, 'المحطّات لا ترسم').toContain('<StopItem')
+    expect(work, 'عادت التبويبات').not.toMatch(/role="tablist"/)
     expect(work, 'صندوق المصادر لم يفصل').toContain('مصادر هذه المرحلة')
     /* وشهادةُ الدورة في آخرها لا في خزانةٍ بعيدة */
     expect(work).toContain('<CourseCertificate')

@@ -75,8 +75,13 @@ describe('خطّ المواعيد في «الدروس»', () => {
   })
 
   it('⚠️ ومهمّة المحور المحجوب تذكر بموعد فتحها تحت موعدها', () => {
-    expect(html).toContain('اختبار المحجوب')
-    expect(html).toContain('بعد لقاء محورها')
+    /* تحت موعدها بنيةً لا ورودا: بعد محطّة الموعد الثاني وقبل آخر الطريق */
+    const stop = html.indexOf('id="slot-1"')
+    const task = html.indexOf('اختبار المحجوب')
+    expect(stop, 'لا محطّة للموعد الثاني').toBeGreaterThan(-1)
+    expect(task, 'المهمّة ليست في محطّة موعدها').toBeGreaterThan(stop)
+    expect(task).toBeLessThan(html.indexOf('href="#certificate"'))
+    expect(html).toContain('تفتح بعد انتهاء أوّل لقاء لمحورها')
   })
 })
 

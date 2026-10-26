@@ -201,7 +201,7 @@ describe('⑦ · رئيسيّ واحد في الشاشة — تقاس بالشا
       files: ['src/components/BuyPanel.tsx'],
     },
     '/student/learning': {
-      why: 'مراحل الرحلة تتعاقب (العرض ثمّ العمل)، و`StageWork` تبويبات — واحد يرى في المرّة',
+      why: 'مراحل الرحلة تتعاقب (العرض ثمّ العمل)، وذهبيّ `StageWork` نموذج اختبار في محطّته، وطلب الشهادة آخر الطريق بعد المحطّات',
       files: [
         'src/components/BuyCohort.tsx',
         'src/components/journey/StageWork.tsx',
