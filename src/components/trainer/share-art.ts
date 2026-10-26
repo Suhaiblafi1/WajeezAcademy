@@ -340,15 +340,15 @@ export async function drawArt(kind: ArtKind, d: ArtData, index = 0): Promise<HTM
   const many = d.courses.length > 1
 
   if (kind === 'link') {
-    /* المعاينةُ عريضة: صورتُه يمينا وعنوانُ الموقع تحتها، ودوراتُه والخصمُ يسارا */
-    portrait(ctx, photo, d.name, w - 250, 315, 150)
-    ctx.fillStyle = C.muted
-    ctx.font = font(500, 26)
-    ctx.fillText(d.host, w - 250, 540)
+    /* المعاينةُ عريضة: صورتُه يمينا واسمُه تحتها — «الاسمُ أسفلَ الصورة أفضل» (صاحب المنصّة) — ودوراتُه والخصمُ يسارا */
+    portrait(ctx, photo, d.name, w - 250, 290, 140)
+    nameBlock(ctx, d, w - 250, 500, 42, 400)
     const left = 440
-    const below = nameBlock(ctx, d, left, 205, 46, 700)
-    courseList(ctx, d, d.courses.slice(0, 3), left, below + 16, 470, 700, 44)
-    codePill(ctx, d.code, left, 496, 28)
+    courseList(ctx, d, d.courses.slice(0, 3), left, 160, 450, 700, 44)
+    codePill(ctx, d.code, left, 470, 28)
+    ctx.fillStyle = C.muted
+    ctx.font = font(500, 24)
+    ctx.fillText(d.host, left, 588)
   } else if (kind === 'post') {
     const r = 108
     portrait(ctx, photo, d.name, cx, 262, r)

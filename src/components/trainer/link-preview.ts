@@ -12,7 +12,7 @@ import { apiUpload } from "@/services/api";
 import { drawArt, type ArtData } from "./share-art";
 
 /** نسخةُ تصميم المعاينة — تُرفع إذا تغيّرت فتتجدّد الصورُ القديمةُ كلُّها */
-export const LINK_ART_VERSION = 1;
+export const LINK_ART_VERSION = 2;
 
 export interface LinkToPreview {
   /** الرابطُ القصير كاملا — `…/s/XXXXXX` */
