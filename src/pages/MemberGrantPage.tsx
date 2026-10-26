@@ -51,7 +51,7 @@ import Chip from "@/components/ui/Chip";
 import { fmtDateLong, fmtMoney } from "@/application/text/format-ar";
 import { cohortDayAr } from "@/application/learning/cohort-gate";
 import { grantPrice, INFLUENCER_GRANT_NAME_AR, MEMBER_GRANT_NAME_AR } from "@/application/commerce/grant";
-import { INFLUENCER_GRANT_PATH, normalizeInfluencerCode } from "@/application/commerce/influencer";
+import { INFLUENCER_GRANT_PATH, influencerCodeLabelAr, normalizeInfluencerCode } from "@/application/commerce/influencer";
 import {
   CAREER_LEVELS, GRANT_ACADEMY_LINE_AR, GRANT_CONSENT_AR, GRANT_GAINS_AR, GRANT_GIFT_AR, GRANT_MAX_INTERESTS, GRANT_SUGGESTED_COURSES, WORK_FIELDS,
   GRANT_FACES_PHONE, GRANT_VALUE_AR, GRANT_VALUE_PAID_AR, campaignParams, grantAdvisorTextAr, grantRecordLink, grantCountAr, grantTrainerFaces, grantTrainersAr, grantCountdown, grantLeftAr, grantLimitAr, grantRemainingAr, grantSections, grantShareAr, grantShareMailto, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse,
@@ -504,7 +504,7 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
           <p className="text-center text-read text-muted-foreground">{c.open ? "دقيقة واحدة، وتأخذ كود منحتك فورا." : "نبلغك على بريدك أول ما تفتح."}</p>
           {/* كودُ المؤثّر أوّلَ النموذج في منحة المؤثّرين — مكتوبٌ من رابطه، ولازمٌ لمن جاء بلا رابط */}
           {forInfluencer && (
-            <label className="grid gap-1 text-read">كود المؤثر
+            <label className="grid gap-1 text-read">{influencerCodeLabelAr(view.influencer?.nameAr)}
               <input value={influencerCode} onChange={(e) => setInfluencerCode(e.target.value.toUpperCase())} autoComplete="off" dir="ltr" placeholder="مثلا SARA" className={controlCls} />
             </label>
           )}

@@ -9,6 +9,7 @@ import PortalFrame from "../PortalFrame";
 import { apiGet, apiPatch, apiPost, ApiError } from "@/services/api";
 import { fetchMe } from "@/services/me";
 import { showsLearnerFields } from "@/application/site/account-fields";
+import { portalPrefixFor } from "@/application/site/portal-paths";
 import { clearLocalSession, readSession } from "@/services/auth";
 import { ImageConditionError, PHOTO_OUT_MIME } from "@/lib/prepare-image";
 import ImageFramer from "@/components/ImageFramer";
@@ -158,7 +159,10 @@ export default function StudentAccount() {
     void fetchMe().then((m) => { if (alive) setRoles(m.user?.roles ?? []); }).catch(() => { if (alive) setRoles([]); });
     return () => { alive = false };
   }, []);
-  const learnerFields = showsLearnerFields(roles);
+  /* ومن إعدادات المؤثّر (`/influencer/account`): بياناتُه وأمانُ حسابه وحدَها — لا أقسامُ المتعلّم ولا بطاقاتُ
+     المدرّب، ولو كان حسابُه متعلّما أو مدرّبا أيضا: لكلّ وجهٍ إعداداتُه من بابه (٢٦ أكتوبر ٢٠٢٦) */
+  const inInfluencer = portalPrefixFor(useLocation().pathname) === "/influencer";
+  const learnerFields = !inInfluencer && showsLearnerFields(roles);
   /* رابطُ البريد «غيّر تفضيلات رسائلك» يحمل `#notifications` — والقسمُ يُرسم بعد تحميل الملفّ، فلا يجده
      المتصفّحُ ساعةَ الفتح. فيُقصد حين يُرسم */
   const { hash } = useLocation();
@@ -391,7 +395,7 @@ export default function StudentAccount() {
      تحت آخرها. وحقلُ رابط الصورة ذهب: الصورةُ تُرفع وتُؤطَّر، والرابطُ القديمُ
      عند من كتبه يبقى معروضا ومحفوظا كما هو حتى يرفع غيره. */
   const photo = storedAvatar || form.avatarUrl;
-  const isTrainer = !!roles?.includes("trainer");
+  const isTrainer = !inInfluencer && !!roles?.includes("trainer");
   const pickPhoto = () => fileRef.current?.click();
 
   if (mode === "loading") {
@@ -465,6 +469,7 @@ export default function StudentAccount() {
               <Mail className="h-3.5 w-3.5 shrink-0" /> <span className="truncate">{email || "—"}</span>
             </p>
             {isTrainer && <Chip tone="accent" className="mt-3">مدرب في وجيز</Chip>}
+            {inInfluencer && <Chip tone="accent" className="mt-3">مؤثر في وجيز</Chip>}
 
             <input
               ref={fileRef}
@@ -669,9 +674,9 @@ export default function StudentAccount() {
           {/* ═══ وللمدرّب: عنوانُه ونبذتُه في «المدربون» (٣ أكتوبر ٢٠٢٦) ═══
               بعد بياناته لا بين الصورة والحفظ: لهما زرُّ إرسالٍ للاعتماد غيرُ «احفظ ملفي»،
               فلا يجاور قسمٌ يُحفظ قسما يُرسَل. والعلّةُ في `PublicTextCard`. */}
-          {mode === "server" && roles?.includes("trainer") && <PublicTextCard inputCls={inputCls} />}
+          {mode === "server" && isTrainer && <PublicTextCard inputCls={inputCls} />}
           {/* واقتراحاتُنا لبطاقته تحتهما: «لماذا نفتخر بك» يعدّله، ونبذتُه بصياغتنا «قبل/بعد» (١٩ أكتوبر ٢٠٢٦) */}
-          {mode === "server" && roles?.includes("trainer") && <ProfileSuggestions inputCls={inputCls} />}
+          {mode === "server" && isTrainer && <ProfileSuggestions inputCls={inputCls} />}
 
           {learnerFields && (<>
           {/* روابط بقية أقسام الملف */}

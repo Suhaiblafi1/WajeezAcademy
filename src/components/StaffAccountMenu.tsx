@@ -33,6 +33,7 @@ const ROLE_NAMES_AR: Record<string, string> = {
   finance: 'المالية',
   support: 'الدعم',
   learner: 'متعلم',
+  influencer: 'مؤثر',
 }
 
 export default function StaffAccountMenu({ user }: { user: SessionUser | null }) {

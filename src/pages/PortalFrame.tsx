@@ -28,6 +28,7 @@ import AdminLayout from './admin/AdminLayout'
 import AdvisorLayout from './advisor/AdvisorLayout'
 import TrainerLayout from './trainer/TrainerLayout'
 import PortalLayout from './student/PortalLayout'
+import InfluencerLayout from './influencer/InfluencerLayout'
 
 /* والاختيارُ صريحٌ لا جدولَ مكوّناتٍ يُقرأ في التصيير: مكوّنٌ يُنتقى في
    متغيّرٍ أثناء التصيير يفقد حالتَه كلَّما تغيّر المتغيّر — ويُحمِّر
@@ -37,5 +38,6 @@ export default function PortalFrame({ children, title }: { children: React.React
   if (prefix === '/admin') return <AdminLayout title={title}>{children}</AdminLayout>
   if (prefix === '/trainer') return <TrainerLayout title={title}>{children}</TrainerLayout>
   if (prefix === '/advisor') return <AdvisorLayout title={title}>{children}</AdvisorLayout>
+  if (prefix === '/influencer') return <InfluencerLayout title={title}>{children}</InfluencerLayout>
   return <PortalLayout title={title}>{children}</PortalLayout>
 }

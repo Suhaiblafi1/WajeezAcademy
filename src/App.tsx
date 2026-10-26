@@ -310,6 +310,7 @@ export default function App() {
           {/* حسابُ المؤثّر — كشفُه في منحة المؤثّرين */}
           <Route element={<RequireRole allow={INFLUENCER_ROLES} />}>
             <Route path="/influencer" element={<InfluencerHome />} />
+            <Route path="/influencer/account" element={<AccountPage />} />
           </Route>
           <Route element={<RequireRole allow={TRAINER_ROLES} />}>
             <Route path="/trainer" element={<TrainerDashboard />} />

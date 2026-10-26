@@ -68,7 +68,9 @@ describe('بطاقة المدرّب: إضافة تعدّل، ونبذة قبل �
   })
 
   it('وتظهر في إعدادات حساب المدرّب', () => {
-    expect(account).toMatch(/roles\?\.includes\("trainer"\) && <ProfileSuggestions/)
+    /* بـ`isTrainer` — المدرّبُ وحدَه، ولا تظهر من إعدادات المؤثّر (٢٦ أكتوبر ٢٠٢٦) */
+    expect(account).toMatch(/isTrainer && <ProfileSuggestions/)
+    expect(account).toMatch(/const isTrainer = !inInfluencer && !!roles\?\.includes\("trainer"\);/)
   })
 
   it('والمسارات خلف صلاحيّاتها — النشر لما نقترح ونعتمد، والبوّابة لقراره', () => {

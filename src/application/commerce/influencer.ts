@@ -42,6 +42,13 @@ export function commissionStateAr(orderStatus: string): string {
   return 'مستحقة'
 }
 
+/** اسمُ خانة الكود في نموذج المنحة — باسم المؤثّر إن جاء برابطه: قرارُ صاحب المنصّة (٢٦ أكتوبر ٢٠٢٦): «كود المؤثّر
+    استبدلها بـ"الكود الخاصّ بـ" ضع اسم المؤثّر». ومن جاء بلا رابطٍ لا يُعرف مؤثّرُه بعد، فيُقال «بالمؤثّر» */
+export function influencerCodeLabelAr(nameAr: string | null | undefined): string {
+  const name = nameAr?.trim()
+  return name ? `الكود الخاص بـ${name}` : 'الكود الخاص بالمؤثر'
+}
+
 export const INFLUENCER_CODE_BAD_AR = 'كود المؤثر غير صحيح. اكتبه كما وصلك'
 export const INFLUENCER_CODE_TAKEN_AR = 'هذا الكود لمؤثر آخر. اختر كودا غيره'
 export const INFLUENCER_CODE_FORMAT_AR = 'الكود حروف إنجليزية وأرقام فقط، من 3 إلى 20'

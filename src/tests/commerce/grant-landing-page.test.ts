@@ -10,6 +10,7 @@ import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { plainAr } from '@/application/text/plain-ar'
+import { influencerCodeLabelAr } from '@/application/commerce/influencer'
 import { auditActionAr } from '@/application/audit/labels'
 import {
   CAREER_LEVELS, GRANT_ACADEMY_LINE_AR, GRANT_CONSENT_AR, GRANT_GAINS_AR, GRANT_GIFT_AR, GRANT_GIFT_MAX, GRANT_INTEREST_DOMAINS, GRANT_SUGGESTED_COURSES, WORK_FIELDS,
@@ -150,6 +151,12 @@ describe('بعد النموذج', () => {
     expect(PAGE).toContain('`لأنك من أعضاء وجيز، منحتك تصل إلى ${c.percentOff}% من سعر دوراتك.`')
     /* وفي منحة المؤثّرين باسم المؤثّر إن جاء برابطه (٢٦ أكتوبر ٢٠٢٦) */
     expect(PAGE).toContain('`بدعوة من ${view.influencer.nameAr}، منحتك تصل إلى ${c.percentOff}% من سعر دوراتك.`')
+    /* وخانةُ الكود باسم المؤثّر لا «كود المؤثّر» — قرارُ صاحب المنصّة (٢٦ أكتوبر ٢٠٢٦) */
+    expect(PAGE).toMatch(/<label className="grid gap-1 text-read">\{influencerCodeLabelAr\(view\.influencer\?\.nameAr\)\}/)
+    expect(PAGE, 'عاد «كود المؤثر» اسما للخانة').not.toMatch(/text-read">كود المؤثر\s*</)
+    expect(influencerCodeLabelAr('سارة')).toBe('الكود الخاص بـسارة')
+    expect(influencerCodeLabelAr(' ')).toBe('الكود الخاص بالمؤثر')
+    expect(influencerCodeLabelAr(null)).toBe('الكود الخاص بالمؤثر')
     expect(code('server/services/grant-landing.service.ts')).toContain('`منحتك تصل إلى ${percentOff}% من سعر الدورات.`')
     expect(code('server/services/grant-followup.service.ts')).toContain('`منحتك تصل إلى ${pct}% من سعر دورات مباشرة على Zoom.`')
     for (const f of ['src/pages/MemberGrantPage.tsx', 'server/services/grant-landing.service.ts', 'server/services/grant-followup.service.ts']) {
