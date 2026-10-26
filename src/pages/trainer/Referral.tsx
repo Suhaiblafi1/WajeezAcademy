@@ -36,6 +36,8 @@ import { staffControlCls, StaffField } from "@/components/FormKit";
 import { countAr } from "@/application/text/count-ar";
 import { fmtDateAr } from "@/utils/format";
 import ShareKit from "@/components/trainer/ShareKit";
+import { syncLinkPreviews } from "@/components/trainer/link-preview";
+import { fmtDayMonth } from "@/application/text/format-ar";
 import { bestCode } from "@/application/trainer/share-kit";
 import {
   MAX_TRAINER_CODE_AMOUNT, MAX_TRAINER_CODE_PERCENT, MIN_TRAINER_CODE_PERCENT, codeBlockerAr, codeFaceAr,
@@ -75,6 +77,10 @@ const USE_FORMS = { one: "استعمال", two: "استعمالين", few: "اس
 interface ShareKitData {
   code: string; percentOff: number; name: string; headline: string | null; photoUrl: string | null
   hisCodes: { code: string; percentOff: number | null }[]
+  /** روابطُه قصيرةً لما يُنشر — وإن غاب رابطٌ قصيرٌ نُشر الطويل */
+  short: { wide: string | null; cohorts: Record<string, string> }
+  /** بصمةُ معاينة كلّ رابطٍ قصيرٍ برمزه — وما تغيّر يُرسم ويُرفع (`link-preview.ts`) */
+  previews?: Record<string, string | null>
 }
 
 /** رابطُ شعبةٍ بعينها — يُنشَر وحدَه لمن يدعو إلى دفعةٍ لا إلى كلّ ما يدرّب */
@@ -500,6 +506,21 @@ export default function Referral() {
     return () => { alive = false };
   }, []);
 
+  /* ومعاينةُ روابطه حين تُلصق في واتساب وفيسبوك: تُرسم هنا وتُرفع إن تغيّر ما رُسمت منه (`link-preview.ts`) */
+  useEffect(() => {
+    if (!kit || !cohortLinks || cohortLinks.length === 0) return;
+    const courses = (cs: CohortLink[]) => cs.map((c) => ({ courseTitle: c.courseTitle, startsAt: c.startsAt }))
+      .sort((a, b) => (a.startsAt ?? "9").localeCompare(b.startsAt ?? "9"));
+    const links = [
+      ...(kit.short.wide ? [{ url: kit.short.wide, courses: courses(cohortLinks) }] : []),
+      ...cohortLinks.flatMap((c) => (kit.short.cohorts[c.cohortId] ? [{ url: kit.short.cohorts[c.cohortId], courses: courses([c]) }] : [])),
+    ];
+    void syncLinkPreviews({
+      name: kit.name, headline: kit.headline, photoUrl: kit.photoUrl, code: shareCodeOf(kit),
+      dayAr: (iso: string) => fmtDayMonth(iso), host: window.location.host,
+    }, links, kit.previews ?? {});
+  }, [kit, cohortLinks]);
+
   return (
     /* قسمٌ في «مستحقاتي» لا شاشةٌ بلسانها (الخطوة G، ١٩ أكتوبر ٢٠٢٦) — والإطارُ إطارُها */
     <>
@@ -573,7 +594,7 @@ export default function Referral() {
                 صورة بسيطة فيها صورتك ودوراتك والكود، ونص جاهز لكل منصة. ولكل شعبة زر «شارك» تحت.
               </p>
               {sharing === "all" && (
-                <ShareKit face={kit} fileStem="wajeez-courses" url={referral.url} code={shareCodeOf(kit)}
+                <ShareKit face={kit} fileStem="wajeez-courses" url={kit.short.wide ?? referral.url} code={shareCodeOf(kit)}
                   courses={cohortLinks.map((c) => ({ courseTitle: c.courseTitle, startsAt: c.startsAt, url: c.url }))} />
               )}
             </Panel>
@@ -592,12 +613,14 @@ export default function Referral() {
             {/* الرابطُ يُعرض كما يُقرأ: `referral.service` لا يرمّز المسارَ،
                 فاسمُه العربيُّ يبقى عربيّا في خانة النسخ كما في العنوان. */}
             <div className="mt-3 flex flex-wrap items-center gap-2">
+              {/* والرابطُ المعروضُ قصيرٌ إن كان (٢٦ أكتوبر ٢٠٢٦): «هل يمكن أن تكون الروابطُ أقصرَ وأكثرَ احترافيّة؟» —
+                  ‎/s/XXXXXX يحمل إلى الرابط نفسِه، فما يُنسخ هو ما يُنشر (`short` في `share-kit`) */}
               <input
-                readOnly dir="ltr" value={referral.url} aria-label="رابطي العامّ"
+                readOnly dir="ltr" value={kit?.short.wide ?? referral.url} aria-label="رابطي العامّ"
                 onFocus={(e) => e.currentTarget.select()}
                 className={`${staffControlCls} min-w-0 flex-1 text-left`}
               />
-              <Button tone="secondary" onClick={() => copy("wide", referral.url)}>
+              <Button tone="secondary" onClick={() => copy("wide", kit?.short.wide ?? referral.url)}>
                 {copied === "wide" ? "نسخ" : "انسخ الرابط"}
               </Button>
               <a href={referral.url} target="_blank" rel="noreferrer" className="text-read font-bold text-teal-light-ink hover:text-foreground">عاينها</a>
@@ -661,11 +684,11 @@ export default function Referral() {
                         )}
                         <div className="mt-2 flex flex-wrap items-center gap-2">
                           <input
-                            readOnly dir="ltr" value={c.url} aria-label={`رابط دعوتي إلى ${c.title}`}
+                            readOnly dir="ltr" value={kit?.short.cohorts[c.cohortId] ?? c.url} aria-label={`رابط دعوتي إلى ${c.title}`}
                             onFocus={(e) => e.currentTarget.select()}
                             className={`${staffControlCls} min-w-0 flex-1 text-left`}
                           />
-                          <Button tone="secondary" size="sm" onClick={() => copy(c.cohortId, c.url)}>
+                          <Button tone="secondary" size="sm" onClick={() => copy(c.cohortId, kit?.short.cohorts[c.cohortId] ?? c.url)}>
                             {copied === c.cohortId ? "نسخ" : "انسخ الرابط"}
                           </Button>
                           {kit && (
@@ -677,7 +700,7 @@ export default function Referral() {
                           )}
                         </div>
                         {kit && sharing === c.cohortId && (
-                          <ShareKit face={kit} fileStem={`wajeez-${c.code}`} url={c.url} code={shareCodeOf(kit)}
+                          <ShareKit face={kit} fileStem={`wajeez-${c.code}`} url={kit.short.cohorts[c.cohortId] ?? c.url} code={shareCodeOf(kit)}
                             courses={[{ courseTitle: c.courseTitle, startsAt: c.startsAt, url: c.url }]} />
                         )}
                       </Inset>

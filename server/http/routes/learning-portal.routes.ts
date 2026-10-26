@@ -32,6 +32,7 @@ import { ReferralService } from '../../services/referral.service'
 import { TrainerDiscountService } from '../../services/trainer-discount.service'
 import { TrainerCodeService } from '../../services/trainer-code.service'
 import { TrainerShareCodeService } from '../../services/trainer-share-code.service'
+import { PREVIEW_MAX_BYTES } from '../../services/link-preview'
 import { MAX_TRAINER_CODE_AMOUNT, MAX_TRAINER_CODE_PERCENT, MAX_TRAINER_CODE_USES, MIN_TRAINER_CODE_PERCENT } from '../../../src/application/trainer/trainer-code'
 import { RESOURCE_KINDS, RESOURCE_CATEGORIES } from '../../../src/application/trainer/plan-overlay'
 import { SHORT_SESSION_AR, sessionTooShort } from '../../../src/application/trainer/session-length'
@@ -472,6 +473,19 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
     preHandler: requirePermission('trainer.cohort.plan'),
     schema: { tags: ['trainer-ops'], summary: 'كود الأكاديمية على دوراتي، وما يصمم منه منشوري' },
   }, async (req) => new TrainerShareCodeService(prisma).kit(req.auth!.userId))
+
+  /* ومعاينةُ رابطٍ من روابطه حين يُلصق في واتساب وفيسبوك: صورتُه كما رسمتها صفحتُه (`link-preview.ts`) */
+  app.put('/api/trainer/me/share-kit/preview/:code', {
+    preHandler: requirePermission('trainer.cohort.plan'),
+    bodyLimit: PREVIEW_MAX_BYTES,
+    schema: { tags: ['trainer-ops'], summary: 'صورة معاينة رابطي القصير — JPEG 1200×630' },
+  }, async (req) => {
+    const { code } = z.object({ code: z.string().min(1).max(32) }).parse(req.params)
+    const { sig } = z.object({ sig: z.string().min(1).max(64) }).parse(req.query)
+    const body = Buffer.isBuffer(req.body) ? req.body : Buffer.alloc(0)
+    await new TrainerShareCodeService(prisma).savePreview(req.auth!.userId, code, body, sig)
+    return { ok: true }
+  })
 
   /* ═══ أكوادُه — تُصدَر من «دعوتي» وتُحسم من «مستحقّاتي» (٢٧ سبتمبر ٢٠٢٦) ═══
 

@@ -15,7 +15,7 @@
 
 import { waShare } from '../site/whatsapp'
 
-export type SharePlatform = 'whatsapp' | 'linkedin' | 'facebook' | 'x' | 'instagram' | 'tiktok'
+export type SharePlatform = 'whatsapp' | 'linkedin' | 'facebook' | 'x' | 'instagram' | 'tiktok' | 'email'
 
 export const SHARE_PLATFORMS: { id: SharePlatform; ar: string; opens: boolean }[] = [
   { id: 'whatsapp', ar: 'واتساب', opens: true },
@@ -24,6 +24,9 @@ export const SHARE_PLATFORMS: { id: SharePlatform; ar: string; opens: boolean }[
   { id: 'x', ar: 'إكس', opens: true },
   { id: 'instagram', ar: 'إنستغرام', opens: false },
   { id: 'tiktok', ar: 'تيك توك', opens: false },
+  /* والبريدُ (٢٦ أكتوبر ٢٠٢٦): «أضف إيميلا كدعاية يستخدمها المدرّب إن أراد أن يرسل الدعاية عبر الإيميل» —
+     يُفتح بريدُه برسالةٍ جاهزةٍ بعنوانها، ويختار هو لمن يرسلها */
+  { id: 'email', ar: 'البريد', opens: true },
 ]
 
 export interface ShareCourse { courseTitle: string; startsAt: string | null; url: string }
@@ -36,6 +39,8 @@ export interface ShareInput {
   code: { code: string; percentOff: number } | null
   /** «31 أكتوبر» — يمرّره من يملك المنطقةَ الزمنيّة */
   dayAr: (iso: string) => string
+  /** توقيعُ البريد — اسمُه */
+  signature?: string
 }
 
 /** أعلى الخصمين — خصمُنا أو كودُه — ويغلب كودُه إن ساواه: هو اختاره لجمهوره */
@@ -51,43 +56,124 @@ export function bestCode(
   return best
 }
 
-const startsAr = (c: ShareCourse, dayAr: ShareInput['dayAr']) => (c.startsAt ? `، تبدأ ${dayAr(c.startsAt)}` : '')
+/* ═══ ونصٌّ يُقرأ ويُغري — لا سطرٌ مكتظّ (٢٦ أكتوبر ٢٠٢٦) ═══
+
+   رأى صاحبُ المنصّة الرسالةَ في واتساب: عناوينُ طويلةٌ بعناوينها الفرعيّة ملصوقةٌ بالتاريخ، ونقاطٌ صغيرة، والكودُ
+   والرابطُ في ذيلها — فقال: «لا تبدو احترافيّة.. يجب أن تكون سهلةَ القراءة وممتعةً ومحفّزةً للشراء». فصار:
+   · **اسمُ الدورة قصيرا** — ما قبل النقطتين — وما بعدهما سطرُ وعدٍ تحته في الدورة الواحدة («من … إلى …»).
+   · **كلُّ دورةٍ في سطرين**: اسمُها، وموعدُها تحته — بترتيب ما يبدأ أوّلا، ورقمٌ لكلٍّ إن كثرت.
+   · **والكودُ سطرٌ وحدَه** بهديّته، **والدعوةُ قبل الرابط** — والرابطُ قصيرٌ يُقرأ (`short` في «شارك دوراتك»).
+   · **ولكلّ منصّةٍ نبرتُها**: واتساب قريبٌ ويُغلظ الاسمَ والكود (`*…*`)، ولينكدإن وفيسبوك مهنيّان بلا تغليظٍ لا يقرآنه،
+     وإنستغرام وتيك توك «الرابط في البايو» ووسومٌ، وإكس قصيرٌ يسعه سطرُه.
+   و«٪» العربيّةُ لا «%»: اللاتينيّةُ تنقلب في السطر العربيّ. */
+
+const KEYCAPS = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣']
+
+/** «تمويل المشاريع: من … إلى …» ← الاسمُ ووعدُه */
+export function splitTitle(title: string): { name: string; promise: string | null } {
+  const at = title.indexOf(':')
+  if (at < 0) return { name: title.trim(), promise: null }
+  const promise = title.slice(at + 1).trim()
+  return { name: title.slice(0, at).trim(), promise: promise || null }
+}
+
+/** ما يبدأ أوّلا أوّلا، وما لا موعدَ له آخرا */
+const byStart = (cs: ShareCourse[]) =>
+  [...cs].sort((a, b) => (a.startsAt ?? '\uffff').localeCompare(b.startsAt ?? '\uffff'))
 
 /** النصُّ لكلّ منصّة */
 export function shareText(platform: SharePlatform, x: ShareInput): string {
-  const one = x.courses.length === 1 ? x.courses[0] : null
-  const code = x.code ? `خصم ${x.code.percentOff}% بالكود ${x.code.code}` : null
-  const list = x.courses.map((c) => `· ${c.courseTitle}${startsAr(c, x.dayAr)}`)
+  const courses = byStart(x.courses)
+  const one = courses.length === 1 ? courses[0] : null
+  const wa = platform === 'whatsapp'
+  const b = (t: string) => (wa ? `*${t}*` : t)
+  const when = (c: ShareCourse) => (c.startsAt ? `🗓 تبدأ ${x.dayAr(c.startsAt)}` : '🗓 موعدها قريبا')
   const social = platform === 'instagram' || platform === 'tiktok'
+  const gift = x.code ? `🎁 خصم ${x.code.percentOff}٪ ${wa ? 'لك' : 'لمن يتابعني'} بالكود: ${b(x.code.code)}` : null
 
-  if (platform === 'whatsapp' || platform === 'x') {
-    return [
-      one ? `أقدم دورة «${one.courseTitle}» في أكاديمية وجيز${startsAr(one, x.dayAr)}.` : 'دوراتي في أكاديمية وجيز هذا الموسم:',
-      ...(one ? [] : list),
-      ...(code ? [code] : []),
-      `سجل من هنا: ${x.url}`,
-    ].join('\n')
+  /* إكس: سطرٌ يسعه — الاسمُ والموعدُ والخصمُ والرابط */
+  if (platform === 'x') {
+    const head = one
+      ? `دورتي «${splitTitle(one.courseTitle).name}» مع أكاديمية وجيز${one.startsAt ? `، تبدأ ${x.dayAr(one.startsAt)}` : ''} 🎓`
+      : `دوراتي مع أكاديمية وجيز هذا الموسم 🎓`
+    return [head, ...(x.code ? [`🎁 خصم ${x.code.percentOff}٪ بالكود ${x.code.code}`] : []), `سجل 👇`, x.url].join('\n')
   }
-  if (social) {
+
+  const body: string[] = []
+  if (one) {
+    const { name, promise } = splitTitle(one.courseTitle)
+    body.push(`📘 ${b(name)}`)
+    if (promise) body.push(promise)
+    body.push('', when(one))
+  } else {
+    courses.slice(0, KEYCAPS.length).forEach((c, i) => {
+      if (i > 0) body.push('')
+      body.push(`${KEYCAPS[i]} ${b(splitTitle(c.courseTitle).name)}`, when(c))
+    })
+  }
+
+  /* البريد: رسالةٌ بتحيّةٍ وتوقيعٍ باسمه — لا وسومَ ولا تغليظ */
+  if (platform === 'email') {
     return [
-      one ? `أقدم دورة «${one.courseTitle}» في أكاديمية وجيز${startsAr(one, x.dayAr)}.` : 'دوراتي في أكاديمية وجيز هذا الموسم:',
-      ...(one ? [] : list),
-      'لقاءات مباشرة على Zoom.',
-      ...(code ? [`${code} 🎁`] : []),
-      'الرابط في البايو.',
+      'مرحبا،',
       '',
-      '#أكاديمية_وجيز #تعلم #تطوير_الذات',
+      one ? 'يسعدني أن أدعوك إلى دورتي القادمة مع أكاديمية وجيز:' : 'يسعدني أن أدعوك إلى دوراتي هذا الموسم مع أكاديمية وجيز:',
+      '',
+      ...body,
+      ...(one ? [] : ['']),
+      '💻 لقاءات مباشرة على Zoom، وتسجيل كل لقاء، وشهادة موثقة — والمقاعد محدودة.',
+      ...(x.code ? ['', `🎁 ولك خصم ${x.code.percentOff}٪ بالكود: ${x.code.code}`] : []),
+      '',
+      one ? 'التفاصيل والتسجيل:' : 'اختر دورتك وسجل:',
+      x.url,
+      '',
+      'يسعدني أن أراك معنا،',
+      ...(x.signature ? [x.signature] : []),
     ].join('\n')
   }
-  /* لينكدإن وفيسبوك */
+
+  const opener = wa
+    ? ['مرحبا 👋', one ? 'أقدم دورة جديدة مع أكاديمية وجيز:' : 'هذه دوراتي مع أكاديمية وجيز هذا الموسم:']
+    : [one ? 'يسعدني أن أعلن عن دورتي القادمة مع أكاديمية وجيز 🎓' : 'يسعدني أن أشارككم دوراتي هذا الموسم مع أكاديمية وجيز 🎓']
+  const cta = one ? 'سجل الآن 👇' : 'اختر دورتك وسجل 👇'
+
   return [
-    one ? `يسعدني أن أقدم دورة «${one.courseTitle}» مع أكاديمية وجيز${startsAr(one, x.dayAr)}.` : 'يسعدني أن أقدم هذه الدورات مع أكاديمية وجيز هذا الموسم:',
-    ...(one ? [] : list),
-    'لقاءات مباشرة على Zoom، ومقاعد محدودة.',
-    ...(code ? [`ولمن يتابعني ${code}.`] : []),
+    ...opener,
     '',
-    `التفاصيل والتسجيل: ${x.url}`,
+    ...body,
+    ...(one ? [] : ['']),
+    '💻 لقاءات مباشرة على Zoom — والمقاعد محدودة',
+    ...(gift ? ['', gift] : []),
+    '',
+    ...(social ? ['🔗 الرابط في البايو'] : [cta, x.url]),
+    ...(social ? ['', '#أكاديمية_وجيز #تعلم #تطوير_الذات'] : platform === 'linkedin' ? ['', '#أكاديمية_وجيز #تطوير_مهني'] : []),
   ].join('\n')
+}
+
+/* ═══ وما يفعله بيده يُقال قبل الضغط لا بعده (٢٦ أكتوبر ٢٠٢٦) ═══
+
+   «للوسائل التي لا تسمح بالنشر المباشر يجب إبلاغ المدرّب أنّه يقوم بها يدويّا»، ثمّ: «هل يمكن أن تُرفق الصورةُ
+   تلقائيّا عند النشر؟». والجوابُ على الجهاز لا على المنصّة:
+   · **الهاتف** يقبل مشاركةَ الصور (`navigator.canShare({ files })`): تُفتح قائمةُ المشاركة فيختار المنصّة، وتصلها
+     الصورةُ والنصُّ معا — واتساب ولينكدإن وفيسبوك وإنستغرام وتيك توك والبريد سواء.
+   · **الحاسوب** لا: لا تقبل منصّةٌ صورةً من موقعٍ آخر في رابط مشاركتها. فيُفتح المنشورُ بنصّه، وتُنزَّل الصورةُ
+     ليرفقها. وإنستغرام وتيك توك لا رابطَ لهما أصلا — يدويّان. */
+export function manualNoteAr(platform: SharePlatform, canAttach = false): string | null {
+  const app = SHARE_PLATFORMS.find((p) => p.id === platform)!.ar
+  if (canAttach) return `تفتح قائمة المشاركة في هاتفك: اختر ${app}، فتصله الصورة والنص معا.`
+  if (platform === 'instagram' || platform === 'tiktok') {
+    return `${app} لا يسمح بالنشر المباشر من موقع آخر، فالنشر عليه يدوي: ننزل لك الصور وننسخ النص، ثم تفتح ${app} وتنشرها وتلصق النص. ومن الهاتف ترفق الصورة تلقائيا.`
+  }
+  if (platform === 'facebook') return 'فيسبوك يأخذ الرابط وحده من الحاسوب: ننسخ النص فالصقه، وننزل الصورة فأرفقها. ومن الهاتف ترفق تلقائيا.'
+  if (platform === 'email') return 'نفتح بريدك برسالة جاهزة، وننزل الصورة فأرفقها. ومن الهاتف ترفق تلقائيا.'
+  return `${app} لا يقبل صورة من موقع آخر على الحاسوب: نفتح المنشور بالنص، وننزل الصورة فأرفقها. ومن الهاتف ترفق تلقائيا.`
+}
+
+/** عنوانُ البريد */
+export function emailSubject(x: ShareInput): string {
+  const one = x.courses.length === 1 ? x.courses[0] : null
+  const head = one ? `دعوة إلى دورة «${splitTitle(one.courseTitle).name}»` : 'دعوة إلى دوراتي هذا الموسم'
+  return x.code ? `${head} — وخصم ${x.code.percentOff}٪ لك` : head
 }
 
 /** بابُ المنصّة — أو `null` لما لا بابَ له من موقع (إنستغرام وتيك توك) */
@@ -97,5 +183,6 @@ export function shareUrl(platform: SharePlatform, x: ShareInput): string | null 
   if (platform === 'linkedin') return `https://www.linkedin.com/feed/?shareActive=true&text=${e(shareText('linkedin', x))}`
   if (platform === 'facebook') return `https://www.facebook.com/sharer/sharer.php?u=${e(x.url)}`
   if (platform === 'x') return `https://x.com/intent/post?text=${e(shareText('x', x))}`
+  if (platform === 'email') return `mailto:?subject=${e(emailSubject(x))}&body=${e(shareText('email', x))}`
   return null
 }

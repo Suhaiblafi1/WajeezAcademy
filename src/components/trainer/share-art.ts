@@ -7,14 +7,29 @@
    · **ستوري** ١٠٨٠×١٩٢٠ — إنستغرام وتيك توك وحالة واتساب.
    · **كاروسيل** شرائحُ ١٠٨٠×١٣٥٠ — غلافٌ بصورته، وشريحةٌ لكلّ دورة، وشريحةٌ للخصم.
 
+   ═══ التصميمُ الأوّلُ باقٍ، والمحتوى جديد (٢٦ أكتوبر ٢٠٢٦) ═══
+
+   قال صاحبُ المنصّة عن الصور: «نصوصُ الدورات مقصوصة.. أضف أنّ الدورات بثٌّ مباشر وبعضَ الأمور التسويقيّة». فجُرّب
+   تصميمٌ داكن، فقال: «لم تعجبني تصاميمُك الجديدة.. أبقِ القديمة وغيّر المحتوى فقط، وآليّةَ عرض الدورات وباقي المحتوى
+   الجديد». فالشكلُ شكلُه الأوّل — أرضيّةُ الورق، والشريطُ الفيروزيّ، وشارةُ وجيز، والصورةُ بحلقتها الفيروزيّة،
+   وشارةُ الخصم الذهبيّة — وما فيه جديد:
+   · **الدوراتُ قائمةٌ مرقّمة** بخطٍّ واحدٍ صغير، وموعدُ كلِّ دورةٍ بجانبها؛ والواحدةُ في إطارٍ متقطّعٍ وموعدُها فوقها (`courseList`).
+   · **«بث مباشر»** شارةً حمراءَ في الرأس، و**ثلاثُ مزايا صادقة** (`ART_PERKS`): بثٌّ مباشرٌ على Zoom، وتسجيلُ كلّ
+     لقاء، وشهادةٌ موثّقة — ممّا تقدّمه المنصّة فعلا — و**«المقاعد محدودة»**.
+
    ولمَ في المتصفّح لا في الخادم: الخطُّ العربيُّ للمنصّة محمَّلٌ فيه أصلا، والحرفُ يُشكَّل ويُوصَل كما في الصفحة؛
    والخادمُ بلا محرّكِ رسمٍ يُضاف له. والصورةُ من مسار المنصّة نفسِها (`photoPublicUrl`) فلا تُلوِّث اللوحَ — وإن
    تعذّرت رُسم الحرفُ الأوّلُ من اسمه في دائرة. وكلُّ صورةٍ ملفُّ PNG يُنزَّل أو يُشارَك من الهاتف. */
 
-export type ArtKind = 'post' | 'story' | 'cover' | 'course' | 'offer'
+import { splitTitle } from '@/application/trainer/share-kit'
+
+/** و`link` معاينةُ رابطه حين يُلصق في واتساب وفيسبوك (١٢٠٠×٦٣٠) — تُرفع ولا تُنزَّل (`link-preview.ts`) */
+export type ArtKind = 'post' | 'story' | 'cover' | 'course' | 'offer' | 'link'
 
 export interface ArtData {
   name: string
+  /** مسمّاه المهنيّ — سطرٌ تحت اسمه إن كان */
+  headline?: string | null
   photoUrl: string | null
   courses: { courseTitle: string; startsAt: string | null }[]
   code: { code: string; percentOff: number } | null
@@ -25,12 +40,15 @@ export interface ArtData {
 }
 
 const SIZE: Record<ArtKind, [number, number]> = {
-  post: [1080, 1080], story: [1080, 1920], cover: [1080, 1350], course: [1080, 1350], offer: [1080, 1350],
+  post: [1080, 1080], story: [1080, 1920], cover: [1080, 1350], course: [1080, 1350], offer: [1080, 1350], link: [1200, 630],
 }
 
-const C = { paper: '#F5F3EE', ink: '#1F2A2E', muted: '#5C6B70', teal: '#38A7B4', tealInk: '#1A5C64', gold: '#FABC05', white: '#FFFFFF' }
+const C = { paper: '#F5F3EE', ink: '#1F2A2E', muted: '#5C6B70', teal: '#38A7B4', tealInk: '#1A5C64', gold: '#FABC05', white: '#FFFFFF', live: '#E5484D' }
 const FONT = '"Avenir Arabic", "IBM Plex Sans Arabic", "Neo Sans Arabic", system-ui, sans-serif'
 const font = (weight: number, px: number) => `${weight} ${px}px ${FONT}`
+
+/** المزايا — ممّا تقدّمه المنصّةُ فعلا: البثُّ على Zoom، والتسجيلُ في «مصادر هذه المرحلة»، والشهادةُ الموثّقةُ بشروط إنجاز */
+export const ART_PERKS = ['بث مباشر على Zoom', 'تسجيل كل لقاء', 'شهادة موثقة'] as const
 
 function loadImage(src: string): Promise<HTMLImageElement | null> {
   return new Promise((resolve) => {
@@ -42,29 +60,36 @@ function loadImage(src: string): Promise<HTMLImageElement | null> {
   })
 }
 
-/** يلفّ النصَّ على عرضٍ — ولا يتجاوز سطورا بعينها، وآخرُها ينتهي بنقاط إن طال */
-function wrap(ctx: CanvasRenderingContext2D, text: string, width: number, maxLines: number): string[] {
-  const words = text.split(/\s+/).filter(Boolean)
+/** يلفّ النصَّ على عرضٍ بالخطّ المضبوط */
+function wrapAt(ctx: CanvasRenderingContext2D, text: string, width: number): string[] {
   const lines: string[] = []
   let line = ''
-  for (const w of words) {
+  for (const w of text.split(/\s+/).filter(Boolean)) {
     const next = line ? `${line} ${w}` : w
     if (ctx.measureText(next).width <= width || !line) line = next
     else { lines.push(line); line = w }
   }
   if (line) lines.push(line)
-  if (lines.length <= maxLines) return lines
-  /* ويُقطع على كلمةٍ تامّة لا وسطَها — «لتدريب الأطفال…» لا «لتدريب الأطفال ع…» */
-  const kept = lines.slice(0, maxLines)
-  const words2 = kept[maxLines - 1].split(' ')
-  while (words2.length > 1 && ctx.measureText(`${words2.join(' ')}…`).width > width) words2.pop()
-  kept[maxLines - 1] = `${words2.join(' ')}…`
-  return kept
+  return lines
 }
 
-function centered(ctx: CanvasRenderingContext2D, lines: string[], x: number, y: number, lineHeight: number): number {
-  lines.forEach((l, i) => ctx.fillText(l, x, y + i * lineHeight))
-  return y + lines.length * lineHeight
+/** النصُّ كاملا في سطورٍ لا تزيد — يصغر الخطُّ حتّى يسعه، ولا يُقصّ إلّا إن لم يسعه أصغرُ خطّ */
+export function fitLines(
+  ctx: CanvasRenderingContext2D, text: string, width: number, maxLines: number, maxPx: number, minPx: number, weight = 700,
+): { px: number; lines: string[] } {
+  for (let px = Math.round(maxPx); px >= minPx; px -= 2) {
+    ctx.font = font(weight, px)
+    const lines = wrapAt(ctx, text, width)
+    if (lines.length <= maxLines) return { px, lines }
+  }
+  ctx.font = font(weight, minPx)
+  const lines = wrapAt(ctx, text, width)
+  /* وما لم يسعه أصغرُ خطٍّ يُقطع على كلمةٍ تامّة */
+  const kept = lines.slice(0, maxLines)
+  const words = kept[maxLines - 1].split(' ')
+  while (words.length > 1 && ctx.measureText(`${words.join(' ')}…`).width > width) words.pop()
+  kept[maxLines - 1] = `${words.join(' ')}…`
+  return { px: minPx, lines: kept }
 }
 
 function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
@@ -88,38 +113,78 @@ function portrait(ctx: CanvasRenderingContext2D, img: HTMLImageElement | null, n
   ctx.arc(cx, cy, r, 0, Math.PI * 2)
   ctx.clip()
   if (img) {
-    /* تُقصّ من وسطها على مربّع — لا تُمطّ */
+    /* تُقصّ على مربّع، وأعلى الصورة الطويلة أولى بالبقاء — فيه الوجه */
     const side = Math.min(img.naturalWidth, img.naturalHeight)
-    ctx.drawImage(img, (img.naturalWidth - side) / 2, (img.naturalHeight - side) / 2, side, side, cx - r, cy - r, r * 2, r * 2)
+    const sy = img.naturalHeight > img.naturalWidth ? (img.naturalHeight - side) * 0.2 : (img.naturalHeight - side) / 2
+    ctx.drawImage(img, (img.naturalWidth - side) / 2, sy, side, side, cx - r, cy - r, r * 2, r * 2)
   } else {
     ctx.fillStyle = C.tealInk
     ctx.fillRect(cx - r, cy - r, r * 2, r * 2)
     ctx.fillStyle = C.white
     ctx.font = font(700, r)
+    ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
     ctx.fillText(name.trim().charAt(0), cx, cy)
   }
   ctx.restore()
 }
 
-/** شارةُ الخصم الذهبيّة: «خصم 30% · WJ30-ABCDEF» */
+interface PillStyle { px: number; bg?: string; fg: string; border?: string; dot?: string; weight?: number }
+
+function pillWidth(ctx: CanvasRenderingContext2D, text: string, o: PillStyle): number {
+  ctx.font = font(o.weight ?? 700, o.px)
+  return ctx.measureText(text).width + o.px * 1.6 + (o.dot ? o.px * 0.9 : 0)
+}
+
+/** شارةٌ مستديرة، و`right` حافّتُها اليمنى */
+function pill(ctx: CanvasRenderingContext2D, text: string, right: number, y: number, o: PillStyle) {
+  const w = pillWidth(ctx, text, o)
+  const pad = o.px * 0.8
+  const h = o.px * 1.9
+  const left = right - w
+  roundRect(ctx, left, y, w, h, h / 2)
+  if (o.bg) { ctx.fillStyle = o.bg; ctx.fill() }
+  if (o.border) { ctx.strokeStyle = o.border; ctx.lineWidth = 2.5; ctx.stroke() }
+  if (o.dot) {
+    ctx.fillStyle = o.dot
+    ctx.beginPath(); ctx.arc(right - pad - o.px * 0.3, y + h / 2, o.px * 0.28, 0, Math.PI * 2); ctx.fill()
+  }
+  ctx.font = font(o.weight ?? 700, o.px)
+  ctx.fillStyle = o.fg
+  ctx.textAlign = 'right'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(text, right - pad - (o.dot ? o.px * 0.9 : 0), y + h / 2 + o.px * 0.06)
+  ctx.textBaseline = 'alphabetic'
+}
+
+/** المزايا شاراتٌ بإطارٍ فيروزيٍّ في صفٍّ وسطَ عرضه */
+function perks(ctx: CanvasRenderingContext2D, cx: number, y: number, px: number) {
+  const style: PillStyle = { px, fg: C.tealInk, border: C.teal, dot: C.gold, weight: 500 }
+  const widths = ART_PERKS.map((t) => pillWidth(ctx, t, style))
+  const gap = px * 0.6
+  let right = cx + (widths.reduce((a, b) => a + b, 0) + gap * (widths.length - 1)) / 2
+  ART_PERKS.forEach((t, i) => { pill(ctx, t, right, y, style); right -= widths[i] + gap })
+  ctx.textAlign = 'center'
+}
+
+/** شارةُ الخصم الذهبيّة: «خصم 30٪ بالكود WJ30-ABCDEF» — أو «المقاعد محدودة» بلا خصم */
 function codePill(ctx: CanvasRenderingContext2D, code: ArtData['code'], cx: number, y: number, px: number) {
-  if (!code) return
   ctx.font = font(700, px)
   /* و«٪» العربيّةُ لا «%»: اللاتينيّةُ تنقلب في السطر العربيّ فتُقرأ «%30» مرّةً و«30%» مرّة */
-  const text = `خصم ${code.percentOff}٪ بالكود ${code.code}`
+  const text = code ? `خصم ${code.percentOff}٪ بالكود ${code.code}` : 'سجل الآن — المقاعد محدودة'
   const w = ctx.measureText(text).width + px * 1.6
   const h = px * 2
   roundRect(ctx, cx - w / 2, y, w, h, h / 2)
   ctx.fillStyle = C.gold
   ctx.fill()
   ctx.fillStyle = C.ink
+  ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
   ctx.fillText(text, cx, y + h / 2 + px * 0.05)
   ctx.textBaseline = 'alphabetic'
 }
 
-/** الرأس: علامةُ وجيز واسمُها — والذيل: عنوانُ الموقع */
+/** الرأس: علامةُ وجيز واسمُها، و«بث مباشر» حمراءُ يسارا — والذيل: عنوانُ الموقع */
 function frame(ctx: CanvasRenderingContext2D, logo: HTMLImageElement | null, w: number, h: number, host: string) {
   ctx.fillStyle = C.paper
   ctx.fillRect(0, 0, w, h)
@@ -130,13 +195,130 @@ function frame(ctx: CanvasRenderingContext2D, logo: HTMLImageElement | null, w: 
   ctx.font = font(700, 38)
   ctx.textAlign = 'right'
   ctx.fillText('أكاديمية وجيز', w - 160, 112)
+  const live: PillStyle = { px: 30, bg: C.live, fg: C.white, dot: C.white }
+  pill(ctx, 'بث مباشر', 56 + pillWidth(ctx, 'بث مباشر', live), 70, live)
   ctx.textAlign = 'center'
   ctx.fillStyle = C.muted
   ctx.font = font(500, 32)
   ctx.fillText(host, w / 2, h - 60)
 }
 
-const datedAr = (c: ArtData['courses'][number], dayAr: ArtData['dayAr']) => (c.startsAt ? `تبدأ ${dayAr(c.startsAt)}` : 'مقاعد محدودة')
+const startsAr = (c: ArtData['courses'][number], dayAr: ArtData['dayAr']) => (c.startsAt ? `تبدأ ${dayAr(c.startsAt)}` : 'موعدها قريبا')
+
+/* ═══ آليّةُ عرض الدورات — قائمةٌ مرقّمةٌ بخطٍّ واحد (٢٦ أكتوبر ٢٠٢٦) ═══
+   قال صاحبُ المنصّة عن الأسماء الكبيرة التي يصغر خطُّها بطولها: «لم يعجبني.. صغّر أسماءَ الدورات لتكون مرقّمةً بشكلٍ
+   أرتب»، ثمّ: «تبدأ يجب أن تكون بجانب اسم الدورة، وإن كانت واحدةً ضعها فوقها وإطارا مربّعا متقطّعا». فـ:
+   · **الدوراتُ الكثيرة** صفوف: رقمُها في دائرةٍ فيروزيّةٍ يمينا، واسمُها (ما قبل النقطتين) بخطٍّ واحدٍ للكلّ، وموعدُها
+     بجانبه في آخر سطره. والصفوفُ على حافّةٍ يمنى واحدة وسطَ الصورة.
+   · **والدورةُ الواحدة** في إطارٍ متقطّع: موعدُها فوقها، واسمُها تحته.
+   وإن لم يسع الكلَّ ما بين `top` و`bottom` صغُر كلُّه معا. */
+function courseList(
+  ctx: CanvasRenderingContext2D, d: ArtData, courses: ArtData['courses'], cx: number, top: number, bottom: number,
+  width: number, base: number,
+) {
+  if (courses.length === 1) return singleCourse(ctx, d, courses[0], cx, top, bottom, width, base)
+  const layout = (s: number) => {
+    const namePx = Math.round(base * 0.62 * s)
+    const datePx = Math.round(base * 0.44 * s)
+    const r = namePx * 0.62
+    const gap = namePx * 0.55
+    ctx.font = font(500, datePx)
+    const dateW = Math.max(...courses.map((c) => ctx.measureText(startsAr(c, d.dayAr)).width))
+    const textW = width - r * 2 - gap - dateW - gap
+    const rows = courses.map((c) => ({ c, ...fitLines(ctx, splitTitle(c.courseTitle).name, textW, 2, namePx, namePx - 4) }))
+    const rowH = (n: number, px: number) => n * px * 1.3
+    const rowGap = base * 0.42 * s
+    const total = rows.reduce((a, x) => a + rowH(x.lines.length, x.px), 0) + rowGap * (rows.length - 1)
+    return { datePx, r, gap, rows, rowH, rowGap, total }
+  }
+  let L = layout(1)
+  for (let s = 0.95; s >= 0.6 && L.total > bottom - top; s -= 0.05) L = layout(s)
+  /* عرضُ الصفّ: الرقمُ والاسمُ وموعدُه — وأطولُها يقف وسطَ الصورة */
+  const widthOf = (x: (typeof L.rows)[number]) => {
+    ctx.font = font(700, x.px)
+    const name = Math.max(...x.lines.map((l) => ctx.measureText(l).width))
+    const last = ctx.measureText(x.lines[x.lines.length - 1]).width
+    ctx.font = font(500, L.datePx)
+    return Math.max(name, last + L.gap + ctx.measureText(startsAr(x.c, d.dayAr)).width)
+  }
+  const longest = Math.max(...L.rows.map(widthOf))
+  const right = cx + (longest + L.r * 2 + L.gap) / 2
+  const textX = right - L.r * 2 - L.gap
+  let y = top + Math.max(0, (bottom - top - L.total) / 2)
+  L.rows.forEach((x, i) => {
+    ctx.fillStyle = C.teal
+    ctx.beginPath(); ctx.arc(right - L.r, y + x.px * 0.62, L.r, 0, Math.PI * 2); ctx.fill()
+    ctx.fillStyle = C.white
+    ctx.font = font(700, L.r * 1.1)
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillText(String(i + 1), right - L.r, y + x.px * 0.62 + L.r * 0.06)
+    ctx.textBaseline = 'alphabetic'
+    ctx.textAlign = 'right'
+    ctx.fillStyle = C.tealInk
+    ctx.font = font(700, x.px)
+    x.lines.forEach((l, k) => ctx.fillText(l, textX, y + x.px * (1 + k * 1.3)))
+    /* وموعدُها بجانب آخر سطرٍ من اسمها */
+    const k = x.lines.length - 1
+    const lastW = ctx.measureText(x.lines[k]).width
+    ctx.fillStyle = C.muted
+    ctx.font = font(500, L.datePx)
+    ctx.fillText(startsAr(x.c, d.dayAr), textX - lastW - L.gap, y + x.px * (1 + k * 1.3))
+    y += L.rowH(x.lines.length, x.px) + L.rowGap
+  })
+  ctx.textAlign = 'center'
+}
+
+/** الدورةُ الواحدة: إطارٌ متقطّع، موعدُها فوق، واسمُها تحته */
+function singleCourse(
+  ctx: CanvasRenderingContext2D, d: ArtData, c: ArtData['courses'][number], cx: number, top: number, bottom: number,
+  width: number, base: number,
+) {
+  const pad = base * 0.55
+  const layout = (s: number) => {
+    const datePx = Math.round(base * 0.52 * s)
+    const t = fitLines(ctx, splitTitle(c.courseTitle).name, width - pad * 2, 2, Math.round(base * 0.85 * s), Math.round(base * 0.85 * s) - 6)
+    const inner = datePx * 1.2 + base * 0.3 * s + t.lines.length * t.px * 1.3
+    return { datePx, t, inner, total: inner + pad * 2 }
+  }
+  let L = layout(1)
+  for (let s = 0.95; s >= 0.6 && L.total > bottom - top; s -= 0.05) L = layout(s)
+  ctx.font = font(700, L.t.px)
+  const textW = Math.max(...L.t.lines.map((l) => ctx.measureText(l).width))
+  ctx.font = font(500, L.datePx)
+  const boxW = Math.min(width, Math.max(textW, ctx.measureText(startsAr(c, d.dayAr)).width) + pad * 2)
+  const y0 = top + Math.max(0, (bottom - top - L.total) / 2)
+  ctx.save()
+  ctx.setLineDash([14, 10])
+  ctx.lineWidth = 3
+  ctx.strokeStyle = C.teal
+  roundRect(ctx, cx - boxW / 2, y0, boxW, L.total, 18)
+  ctx.stroke()
+  ctx.restore()
+  ctx.textAlign = 'center'
+  let y = y0 + pad + L.datePx
+  ctx.fillStyle = C.muted
+  ctx.fillText(startsAr(c, d.dayAr), cx, y)
+  y += L.datePx * 0.2 + base * 0.3
+  ctx.fillStyle = C.tealInk
+  ctx.font = font(700, L.t.px)
+  L.t.lines.forEach((l) => { y += L.t.px * 1.1; ctx.fillText(l, cx, y); y += L.t.px * 0.2 })
+}
+
+/** اسمُه ومسمّاه — ويُرجع أسفلَهما */
+function nameBlock(ctx: CanvasRenderingContext2D, d: ArtData, cx: number, y: number, px: number, width: number): number {
+  ctx.textAlign = 'center'
+  ctx.fillStyle = C.ink
+  const n = fitLines(ctx, d.name, width, 1, px, px - 14)
+  ctx.font = font(700, n.px)
+  ctx.fillText(n.lines[0], cx, y)
+  if (!d.headline) return y
+  const hl = fitLines(ctx, d.headline, width, 1, px * 0.56, px * 0.44, 500)
+  ctx.font = font(500, hl.px)
+  ctx.fillStyle = C.muted
+  ctx.fillText(hl.lines[0], cx, y + hl.px * 1.5)
+  return y + hl.px * 1.5
+}
 
 /** يرسم صورةً بعينها — وللكاروسيل `index` الدورةُ التي تُرسم شريحتُها */
 export async function drawArt(kind: ArtKind, d: ArtData, index = 0): Promise<HTMLCanvasElement> {
@@ -148,95 +330,109 @@ export async function drawArt(kind: ArtKind, d: ArtData, index = 0): Promise<HTM
   await Promise.all([document.fonts.load(font(700, 40)), document.fonts.load(font(500, 40))]).catch(() => undefined)
   const [logo, photo] = await Promise.all([
     loadImage('/logo-mark.png'),
-    d.photoUrl && (kind === 'post' || kind === 'story' || kind === 'cover') ? loadImage(d.photoUrl) : Promise.resolve(null),
+    d.photoUrl && (kind === 'post' || kind === 'story' || kind === 'cover' || kind === 'link') ? loadImage(d.photoUrl) : Promise.resolve(null),
   ])
   ctx.direction = 'rtl'
-  frame(ctx, logo, w, h, d.host)
+  frame(ctx, logo, w, h, kind === 'link' ? '' : d.host)
   ctx.textAlign = 'center'
+  const cx = w / 2
   const one = d.courses[index] ?? d.courses[0]
+  const many = d.courses.length > 1
 
-  if (kind === 'post' || kind === 'story') {
-    const tall = kind === 'story'
-    /* والمربّعُ ضيّق: الصورةُ أصغر، وكلُّ سطرٍ تحت سابقه بقياسه — فلا يركب التاريخُ شارةَ الخصم */
-    const r = tall ? 210 : 118
-    const cy = tall ? 520 : 290
-    portrait(ctx, photo, d.name, w / 2, cy, r)
-    ctx.fillStyle = C.ink
-    ctx.font = font(700, tall ? 60 : 50)
-    let y = cy + r + (tall ? 120 : 82)
-    ctx.fillText(d.name, w / 2, y)
+  if (kind === 'link') {
+    /* المعاينةُ عريضة: صورتُه يمينا واسمُه تحتها — «الاسمُ أسفلَ الصورة أفضل» (صاحب المنصّة) — ودوراتُه والخصمُ يسارا */
+    portrait(ctx, photo, d.name, w - 250, 290, 140)
+    nameBlock(ctx, d, w - 250, 500, 42, 400)
+    const left = 440
+    courseList(ctx, d, d.courses.slice(0, 3), left, 160, 450, 700, 44)
+    codePill(ctx, d.code, left, 470, 28)
     ctx.fillStyle = C.muted
-    ctx.font = font(500, tall ? 40 : 34)
-    y += tall ? 70 : 52
-    ctx.fillText(d.courses.length > 1 ? 'دوراتي في أكاديمية وجيز' : 'أقدم دورة', w / 2, y)
-    ctx.fillStyle = C.tealInk
-    ctx.font = font(700, tall ? 72 : 58)
-    /* وفي القائمة اسمُ الدورة بلا عنوانها الفرعيّ: «التحضير لشهادة CPIM» لا ما بعد النقطتين */
-    const titles = d.courses.length > 1
-      ? d.courses.slice(0, tall ? 5 : 3).map((c) => c.courseTitle.split(':')[0].trim())
-      : [one.courseTitle]
-    y += tall ? 110 : 80
-    if (d.courses.length > 1) {
-      ctx.font = font(700, tall ? 50 : 40)
-      for (const t of titles) y = centered(ctx, wrap(ctx, t, w - 180, 1), w / 2, y, tall ? 76 : 56)
-    } else {
-      y = centered(ctx, wrap(ctx, one.courseTitle, w - 160, tall ? 3 : 2), w / 2, y, tall ? 92 : 70)
-      ctx.fillStyle = C.muted
-      ctx.font = font(500, tall ? 42 : 34)
-      ctx.fillText(datedAr(one, d.dayAr), w / 2, y + (tall ? 20 : 0))
-      y += tall ? 20 : 0
-    }
-    codePill(ctx, d.code, w / 2, tall ? h - 420 : Math.max(y + 34, h - 250), tall ? 44 : 36)
-    if (tall) {
-      ctx.fillStyle = C.ink
-      ctx.font = font(700, 46)
-      ctx.fillText('سجل الآن — الرابط في البايو', w / 2, h - 230)
-    }
-  } else if (kind === 'cover') {
-    portrait(ctx, photo, d.name, w / 2, 470, 230)
+    ctx.font = font(500, 24)
+    ctx.fillText(d.host, left, 588)
+  } else if (kind === 'post') {
+    const r = 108
+    portrait(ctx, photo, d.name, cx, 262, r)
+    const below = nameBlock(ctx, d, cx, 262 + r + 72, 48, w - 200)
+    ctx.fillStyle = C.teal
+    ctx.font = font(700, 30)
+    ctx.fillText(many ? 'دوراتي بث مباشر هذا الموسم' : 'أقدم دورة بث مباشر', cx, below + 50)
+    courseList(ctx, d, d.courses.slice(0, 3), cx, below + 64, h - 282, w - 180, 48)
+    perks(ctx, cx, h - 268, 22)
+    codePill(ctx, d.code, cx, h - 196, 32)
+  } else if (kind === 'story') {
+    const r = 190
+    portrait(ctx, photo, d.name, cx, 440, r)
+    const below = nameBlock(ctx, d, cx, 440 + r + 100, 60, w - 200)
+    ctx.fillStyle = C.teal
+    ctx.font = font(700, 40)
+    ctx.fillText(many ? 'دوراتي بث مباشر هذا الموسم' : 'أقدم دورة بث مباشر', cx, below + 76)
+    courseList(ctx, d, d.courses.slice(0, 5), cx, below + 96, h - 560, w - 160, 66)
+    perks(ctx, cx, h - 520, 28)
+    codePill(ctx, d.code, cx, h - 420, 44)
     ctx.fillStyle = C.ink
-    ctx.font = font(700, 64)
-    ctx.fillText(d.name, w / 2, 830)
+    ctx.font = font(700, 46)
+    ctx.fillText('سجل الآن — الرابط في البايو', cx, h - 230)
+    ctx.fillStyle = C.muted
+    ctx.font = font(500, 34)
+    ctx.fillText('المقاعد محدودة', cx, h - 165)
+  } else if (kind === 'cover') {
+    portrait(ctx, photo, d.name, cx, 470, 230)
+    const below = nameBlock(ctx, d, cx, 830, 64, w - 200)
     ctx.fillStyle = C.tealInk
     ctx.font = font(700, 52)
-    ctx.fillText(d.courses.length > 1 ? `${d.courses.length} دورات هذا الموسم` : 'دورتي هذا الموسم', w / 2, 920)
+    ctx.fillText(many ? `${d.courses.length} دورات بث مباشر هذا الموسم` : 'دورتي بث مباشر هذا الموسم', cx, below + 90)
+    perks(ctx, cx, below + 130, 26)
     ctx.fillStyle = C.muted
     ctx.font = font(500, 38)
-    ctx.fillText('اسحب للتفاصيل ←', w / 2, 1060)
+    ctx.fillText('اسحب للتفاصيل ←', cx, h - 150)
   } else if (kind === 'course') {
     ctx.fillStyle = C.teal
     roundRect(ctx, 90, 230, w - 180, 760, 48)
     ctx.fill()
     ctx.fillStyle = C.white
     ctx.font = font(500, 40)
-    ctx.fillText(d.courses.length > 1 ? `دورة ${index + 1} من ${d.courses.length}` : 'دورة', w / 2, 340)
-    ctx.font = font(700, 72)
-    const end = centered(ctx, wrap(ctx, one.courseTitle, w - 300, 4), w / 2, 480, 96)
-    ctx.font = font(500, 44)
-    ctx.fillText(datedAr(one, d.dayAr), w / 2, Math.max(end + 40, 880))
-    ctx.fillStyle = C.ink
+    ctx.fillText(many ? `دورة ${index + 1} من ${d.courses.length} · بث مباشر` : 'دورة بث مباشر', cx, 330)
+    /* اسمُها كاملا ووعدُها تحته، يصغران حتّى تسعهما البطاقة — وموعدُها في أسفلها */
+    const { name, promise } = splitTitle(one.courseTitle)
+    const t = fitLines(ctx, name, w - 300, 3, 72, 48)
+    ctx.font = font(700, t.px)
+    let y = 450
+    t.lines.forEach((l) => { ctx.fillText(l, cx, y); y += t.px * 1.3 })
+    if (promise) {
+      const p = fitLines(ctx, promise, w - 320, 3, 40, 30, 500)
+      ctx.font = font(500, p.px)
+      y += 10
+      p.lines.forEach((l) => { ctx.fillText(l, cx, y); y += p.px * 1.45 })
+    }
     ctx.font = font(700, 44)
-    ctx.fillText('لقاءات مباشرة على Zoom', w / 2, 1120)
+    ctx.fillText(startsAr(one, d.dayAr), cx, Math.max(y + 30, 920))
+    perks(ctx, cx, 1050, 28)
+    ctx.fillStyle = C.ink
+    ctx.font = font(700, 42)
+    ctx.fillText('المقاعد محدودة — احجز مكانك', cx, 1200)
   } else {
     ctx.fillStyle = C.ink
     ctx.font = font(700, 60)
-    ctx.fillText(d.code ? 'هدية لمن يتابعني' : 'سجل الآن', w / 2, 360)
+    ctx.fillText(d.code ? 'هدية لمن يتابعني' : 'سجل الآن', cx, 360)
     if (d.code) {
       ctx.fillStyle = C.gold
       ctx.font = font(700, 260)
-      ctx.fillText(`${d.code.percentOff}٪`, w / 2, 660)
+      ctx.fillText(`${d.code.percentOff}٪`, cx, 660)
       ctx.fillStyle = C.ink
       ctx.font = font(700, 54)
-      ctx.fillText('خصم بالكود', w / 2, 780)
+      ctx.fillText('خصم بالكود', cx, 780)
       ctx.fillStyle = C.tealInk
       ctx.font = font(700, 76)
       ctx.direction = 'ltr'
-      ctx.fillText(d.code.code, w / 2, 900)
+      ctx.fillText(d.code.code, cx, 900)
       ctx.direction = 'rtl'
     }
     ctx.fillStyle = C.ink
     ctx.font = font(700, 48)
-    ctx.fillText('الرابط في البايو', w / 2, 1100)
+    ctx.fillText('الرابط في البايو', cx, 1080)
+    ctx.fillStyle = C.muted
+    ctx.font = font(500, 36)
+    ctx.fillText('المقاعد محدودة', cx, 1150)
   }
   return canvas
 }
