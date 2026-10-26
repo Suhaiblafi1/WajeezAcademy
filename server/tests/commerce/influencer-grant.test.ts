@@ -9,7 +9,8 @@
    ⑦ **ومنحةٌ واحدةٌ لكلّ متعلّم على الحملتين معا.**
    ⑧ **والرصيدُ ما استحقّه ناقصا ما دُفع له** — ويراه المؤثّرُ في حسابه وحدَه.
    ⑨ **وحسابُه بدعوة** — بريدٌ جديدٌ يُنشأ له حسابٌ بدوره، وقائمٌ يُربط ويُضاف له الدور.
-   ⑩ **وفحصُ الهامش يطرح عمولتَه.** */
+   ⑩ **وفحصُ الهامش يطرح عمولتَه.**
+   ⑪ **والمتابعةُ والتذكيرُ كالأولى** — حالةٌ عند مستشارٍ تقول كودَ المؤثّر، وتذكيرٌ بنهايتها هي يعيد إلى رابط مؤثّره. */
 
 import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
@@ -19,6 +20,7 @@ import { CommerceService } from '../../services/commerce.service'
 import { GrantService } from '../../services/grant.service'
 import { GrantLandingService } from '../../services/grant-landing.service'
 import { InfluencerService } from '../../services/influencer.service'
+import { openGrantFollowups, sendGrantReminders } from '../../services/grant-followup.service'
 import { approvedTrainerPlan } from '../helpers/approved-trainer'
 import { INFLUENCER_GRANT_SLUG } from '../../../src/application/commerce/grant'
 
@@ -248,5 +250,46 @@ describe('⑩ فحص الهامش يطرح عمولته', () => {
     expect(row).toMatchObject({ listPrice: 100, price: 55, commission: 15 })
     if (row.seatCost !== null) expect(row.margin).toBe(Math.round((55 - row.seatCost - 15) * 100) / 100)
     expect((await members.margins(60)).rows.find((x) => x.cohortId === cohortId)!.commission, 'طرح عمولة في منحة وجيز').toBe(0)
+  })
+})
+
+describe('⑪ المتابعة والتذكير كالأولى', () => {
+  it('⚠️ من لم يشتر بعد ساعة: حالة عند مستشار بكود مؤثره', async () => {
+    await addInfluencer('FOLLOW')
+    const out = await landing.apply(person({ influencerCode: 'FOLLOW' }))
+    await prisma.lead.update({ where: { id: out.ref }, data: { createdAt: new Date(Date.now() - 2 * 3_600_000) } })
+    await openGrantFollowups(prisma)
+    const kase = await prisma.advisorCase.findFirst({ where: { leadId: out.ref } })
+    expect(kase, 'لم تفتح له حالة').not.toBeNull()
+    expect(kase!.nextAction).toContain('منحة المؤثرين بكود FOLLOW')
+  })
+
+  it('⚠️ تذكير بنهايتها هي — ببريد يعيده إلى رابط مؤثره، ولا يذكره تذكير الأولى', async () => {
+    const HOUR = 3_600_000
+    const T = new Date(Date.now() + 5 * 24 * HOUR)
+    const at = (hoursBefore: number) => new Date(T.getTime() - hoursBefore * HOUR)
+    const had = await prisma.integrationSetting.findUnique({ where: { provider: 'email' }, select: { enabled: true, config: true } })
+    const cfg = { apiKey: 'test-key', fromEmail: 'no-reply@test.local' }
+    await prisma.integrationSetting.upsert({ where: { provider: 'email' }, update: { enabled: true, config: cfg }, create: { provider: 'email', enabled: true, config: cfg } })
+    try {
+      await grant.update({ closesAt: T }, ownerId)
+      await addInfluencer('REMIND')
+      const p = person({ influencerCode: 'REMIND' })
+      const out = await landing.apply(p)
+      const mails = () => prisma.outboxMail.findMany({ where: { to: p.email, purpose: 'grant.reminder' } })
+      expect((await sendGrantReminders(prisma, at(62.9))).sent, 'ذكره تذكير منحة وجيز').toBe(0)
+      expect(await mails()).toHaveLength(0)
+      const r = await sendGrantReminders(prisma, at(62.9), INFLUENCER_GRANT_SLUG)
+      expect(r.stage).toBe('3d')
+      const m = await mails()
+      expect(m, 'لم يذكر من لم يشتر').toHaveLength(1)
+      expect(m[0].text).toContain(out.grant!.code!)
+      expect(m[0].text).toContain('/grant/i/REMIND')
+      expect(m[0].text).toContain('45%')
+    } finally {
+      await grant.update({ closesAt: null }, ownerId)
+      if (had) await prisma.integrationSetting.update({ where: { provider: 'email' }, data: { enabled: had.enabled, config: had.config as never } })
+      else await prisma.integrationSetting.delete({ where: { provider: 'email' } })
+    }
   })
 })
