@@ -44,6 +44,7 @@ import { recordAudit } from './audit'
 import { CohortFileService } from './cohort-file.service'
 import { adoptCohortFiles } from './cohort-file-adopt'
 import { CohortService } from './cohort.service'
+import { COHORT_POSTPONED_AR, SessionInviteService } from './session-invite.service'
 import { notifyRole, safeNotify, sendDirectEmail, publicSiteUrl } from './notification.service'
 import { cohortDayAr, whenAr } from '../../src/application/learning/cohort-gate'
 import { trainerOrdinals } from '../../src/application/learning/cohort-title'
@@ -1648,6 +1649,9 @@ export class CohortPlanService {
       actorId, action: 'cohort.plan.postpone', entityType: 'cohort', entityId: plan.cohort.id,
       meta: { planId, from, to, postponedTo: toDay, note: said },
     })
+    /* ولقاءاتُها في موسمها القديم تُرفع من التقاويم — لن تعقد في مواعيدها (`SessionInviteService.withdrawCohort`) */
+    await new SessionInviteService(this.prisma).withdrawCohort(plan.cohort.id, COHORT_POSTPONED_AR)
+      .catch((e: unknown) => console.error('[invite] تعذّر رفع لقاءات الشعبة المؤجّلة من التقاويم', e))
     const waiting = await this.pendingEdits(planId)
     await this.tellTrainer(plan.trainer, plan.cohort, { ...msg, ...(waiting.count > 0 ? { step: 'review' as const } : {}) },
       { reports, edits: { count: waiting.count, required: waiting.required } })

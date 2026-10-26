@@ -175,12 +175,20 @@ export class DeadlinesService {
               where: { ...TRAINER_OWN_SESSION_WHERE, startsAt: { gte: now, lte: until }, status: { notIn: ['cancelled'] } },
               select: { id: true, title: true, startsAt: true, endsAt: true, status: true, approvalState: true },
             },
+            plans: { where: { trainerId: { not: null } }, orderBy: { createdAt: 'desc' }, take: 1, select: { status: true, postponedTo: true } },
           },
         },
       },
     })
 
-    const sessions = links.flatMap((l) => l.cohort.sessions.map((s) => ({
+    /* ═══ والمؤجَّلةُ لا تبقى في جدوله بموسمها القديم (٢٦ أكتوبر ٢٠٢٦) ═══
+       أُجّلت خطّتُها إلى موسمٍ قادم (`postponedTo`) ولم تُعتمَد بعد: ما قبل أوّل يومٍ فيه لن يُعقد،
+       ورُفع من التقاويم (`SessionInviteService.withdrawCohort`) — فلا يبقى في تقويمه هنا */
+    const live = (l: (typeof links)[number], s: { startsAt: Date }) => {
+      const latest = l.cohort.plans[0]
+      return !(latest?.postponedTo && latest.status !== 'approved' && s.startsAt < latest.postponedTo)
+    }
+    const sessions = links.flatMap((l) => l.cohort.sessions.filter((s) => live(l, s)).map((s) => ({
       sessionId: s.id, title: s.title,
       startsAt: s.startsAt.toISOString(),
       endsAt: s.endsAt ? s.endsAt.toISOString() : null,

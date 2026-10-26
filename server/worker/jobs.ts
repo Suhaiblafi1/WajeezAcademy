@@ -1380,6 +1380,19 @@ export async function runCohortPostponeExpire(prisma: PrismaClient, now = new Da
   }
 }
 
+/* ═══ لقاءاتُ الشعب الملغاة والمؤجَّلة تُرفع من التقاويم (٢٦ أكتوبر ٢٠٢٦) ═══
+   العلّةُ في `SessionInviteService.withdrawCohort`. يرفع ما أُلغي قبل الإصلاح، وما أُلغي بغير بابه. */
+export async function runVoidedSessionInvites(prisma: PrismaClient, now = new Date()): Promise<JobResult> {
+  const started = Date.now()
+  const { SessionInviteService } = await import('../services/session-invite.service')
+  const { cohorts, sessions } = await new SessionInviteService(prisma).sweepVoided(now)
+  return {
+    job: 'voided_session_invites',
+    summaryAr: sessions === 0 ? 'لا لقاء ملغى باق في التقاويم' : `رفع ${sessions} لقاء من التقاويم في ${cohorts} شعبة ملغاة أو مؤجلة`,
+    done: sessions, failed: 0, ms: Date.now() - started,
+  }
+}
+
 /* ═══ فصولُ الشعب التي سقطت «بلا فصل» (١٨ أكتوبر ٢٠٢٦) ═══
    العلّةُ في `server/services/term-ensure.ts`. يملأ ما سقط قبل الإصلاح، ويلتقط ما يفلت بعده. */
 export async function runAssignMissingTerms(prisma: PrismaClient): Promise<JobResult> {
@@ -1672,6 +1685,8 @@ export const JOBS = [
   { key: 'cohort_move_reminders', everyMs: HOUR, run: runCohortMoveReminders, titleAr: 'تذكير مدرّبي الشعب المنقولة قبل فصلها' },
   /* كلَّ ربع ساعة: المهلةُ ساعةٌ ودقيقة، ومن لم يقبل لا ينتظر ساعةً بعدها ليعلم */
   { key: 'cohort_postpone_expire', everyMs: 15 * 60_000, run: runCohortPostponeExpire, titleAr: 'إيقاف الشعب التي لم يقبل مدربها التأجيل في موعده' },
+  /* كلَّ ربع ساعة: لقاءٌ ملغى في تقويم إنسانٍ قد يحضره — والرفعُ لا يتكرّر */
+  { key: 'voided_session_invites', everyMs: 15 * 60_000, run: runVoidedSessionInvites, titleAr: 'رفع لقاءات الشعب الملغاة والمؤجلة من التقاويم' },
   { key: 'assign_missing_terms', everyMs: HOUR, run: runAssignMissingTerms, titleAr: 'تسمية فصل الشعب التي بلا فصل' },
   /* كلَّ ربع ساعة: المتابعةُ موعدٌ بالدقيقة، فتُذكَّر قبله بدورة (`FOLLOW_UP_LEAD_MINUTES`) */
   { key: 'advisor_reminders', everyMs: 15 * 60_000, run: runAdvisorReminders, titleAr: 'تذكير المستشارين بالتواصل والمتابعات' },
