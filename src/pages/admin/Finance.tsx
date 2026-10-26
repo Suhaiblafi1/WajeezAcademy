@@ -1,20 +1,22 @@
 /* المالية — API حقيقي: طلبات التسجيل (موافقة بكوبون/رفض)، فواتير ودفعات يدوية
-   واستردادات، كوبونات، خطط اشتراك. */
+   واستردادات، وكوبونات (`CouponsPanel.tsx`). وذهب صندوقُ «خطة اشتراك جديدة» (٢٦ أكتوبر ٢٠٢٦): لا تقرأ خططَه صفحةٌ
+   في الموقع، فكان يسأل صاحبَ المنصّة «ما معنى اشتراكات؟» ولا يفعل شيئا. */
 import { useCallback, useEffect, useState } from "react";
 import { toast, toastError } from "@/components/Toast";
 import {
-  BadgePercent, CheckCircle2, CreditCard, FileText, Loader2, RefreshCw,
+  CheckCircle2, CreditCard, Loader2, RefreshCw,
   RotateCcw, ServerOff, Wallet, XCircle,
   Inbox, Receipt, Undo2,
 } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import ListToolbar from "@/components/admin/ListToolbar";
 import WorkHeader from "@/components/admin/WorkHeader";
+import CouponsPanel, { type AdminCoupon } from "@/components/admin/CouponsPanel";
 import TabBar from "@/components/ui/TabBar";
 import { useTabParam } from "@/hooks/useTabParam";
 import { revealRow } from "@/components/admin/reveal";
 import EmptyState from "@/components/EmptyState";
-import { Panel, Card, Inset } from "@/components/ui/Surface";
+import { Card, Inset } from "@/components/ui/Surface";
 import Chip from "@/components/ui/Chip";
 import BulkBar from "@/components/admin/BulkBar";
 import { bulkMessage, runBulk } from "@/application/admin/bulk";
@@ -22,7 +24,6 @@ import { matchesQuery } from "@/application/text/search-ar";
 import { paginate } from "@/application/admin/paginate";
 import FlowSteps from "@/components/FlowSteps";
 import { apiGet, apiPost, ApiError, permissionMessage } from "@/services/api";
-import { LEDGER_CURRENCY } from "@/application/commerce/presentment";
 import { useAutoRefresh } from "@/services/useAutoRefresh";
 import { useRealSession } from "@/services/session";
 import { fmtDate, fmtDateTime } from "@/application/text/format-ar";
@@ -42,12 +43,7 @@ interface Invoice {
   payments: { id: string; amount: string; status: string; method?: string | null; refunds: { id: string }[] }[];
 }
 interface Refund { id: string; status: string; amount: string; reason: string; createdAt: string; payment: { id: string; invoice: { id: string } } }
-interface Coupon {
-  id: string; code: string; percentOff: number | null; amountOff: string | null; currency: string; maxUses: number | null; usedCount?: number; active: boolean; expiresAt: string | null
-  /** كودُ مدرّبٍ بالنسبة، أو خصمُه القديمُ بالمبلغ — يُحسم ما يمنحه من مستحقّاته لا من إيرادنا */
-  trainerCode?: { percentOff: number | null; amountOff: string | null; status: string } | null
-  trainerDiscount?: { status: string } | null
-}
+type Coupon = AdminCoupon
 
 /* «١ طلبٌ» و«٢ طلبان» و«٣ طلبات» و«١١ طلبا» — والعددُ يُقرأ لا يُحسب */
 const REQ_FORMS = { one: "طلب تسجيل", two: "طلبا تسجيل", few: "طلبات تسجيل", many: "طلب تسجيل" };
@@ -105,8 +101,6 @@ export default function Finance() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [refunds, setRefunds] = useState<Refund[]>([]);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
-  const [couponForm, setCouponForm] = useState({ code: "", percentOff: "", amountOff: "", maxUses: "", expiresAt: "" });
-  const [planForm, setPlanForm] = useState({ code: "", nameAr: "", price: "", intervalMonths: "1", features: "" });
   const [couponFor, setCouponFor] = useState<Record<string, string>>({});
   const [payForm, setPayForm] = useState<Record<string, string>>({});
   const [refundForm, setRefundForm] = useState<Record<string, { amount: string; reason: string }>>({});
@@ -164,7 +158,7 @@ export default function Finance() {
       ["refunds", "الاستردادات", refunds.filter((r) => r.status === "requested").length],
     ] as [Tab, string, number][]) : []),
     /* الكوبوناتُ والخططُ بندٌ ماليّ — لا تُعرض لمن لا يملك `commerce.manage` */
-    ...(canCommerce ? [["coupons", "الكوبونات والخطط", coupons.length] as [Tab, string, number]] : []),
+    ...(canCommerce ? [["coupons", "الكوبونات", coupons.length] as [Tab, string, number]] : []),
   ];
 
     /* الجماعيُّ على المعلَّق وحدَه.
@@ -434,73 +428,8 @@ export default function Finance() {
         </div>
       )}
 
-      {/* الكوبونات والخطط */}
-      {!loading && tab === "coupons" && (
-        <div className="grid gap-5 lg:grid-cols-2">
-          <Panel as="section">
-            <h3 className="flex items-center gap-2 text-sm font-black"><BadgePercent className="h-4 w-4 text-gold-ink" /> كوبون جديد</h3>
-            <div className="mt-3 grid gap-2 sm:grid-cols-2">
-              <input value={couponForm.code} onChange={(e) => setCouponForm({ ...couponForm, code: e.target.value.toUpperCase() })} placeholder="الرمز — WAJEEZ20" dir="ltr" className={`${inputCls} font-mono`} />
-              <input type="number" min={1} max={100} value={couponForm.percentOff} onChange={(e) => setCouponForm({ ...couponForm, percentOff: e.target.value })} placeholder="خصم %" className={inputCls} />
-              <input type="number" min={0.5} value={couponForm.amountOff} onChange={(e) => setCouponForm({ ...couponForm, amountOff: e.target.value })} placeholder={`أو مبلغ ثابت (${LEDGER_CURRENCY})`} className={inputCls} />
-              <input type="number" min={1} value={couponForm.maxUses} onChange={(e) => setCouponForm({ ...couponForm, maxUses: e.target.value })} placeholder="أقصى استخدام" className={inputCls} />
-              <input type="date" value={couponForm.expiresAt} onChange={(e) => setCouponForm({ ...couponForm, expiresAt: e.target.value })} className={inputCls} />
-            </div>
-            <Button tone="confirm" disabled={busy || couponForm.code.length < 3 || (!couponForm.percentOff && !couponForm.amountOff)}
-              onClick={() => act(async () => {
-                await apiPost("/api/admin/coupons", {
-                  code: couponForm.code,
-                  percentOff: couponForm.percentOff ? Number(couponForm.percentOff) : undefined,
-                  amountOff: couponForm.amountOff ? Number(couponForm.amountOff) : undefined,
-                  maxUses: couponForm.maxUses ? Number(couponForm.maxUses) : undefined,
-                  expiresAt: couponForm.expiresAt ? new Date(couponForm.expiresAt) : undefined,
-                });
-                setCouponForm({ code: "", percentOff: "", amountOff: "", maxUses: "", expiresAt: "" });
-              }, "أنشئ الكوبون")} className="mt-3">
-              أنشئ الكوبون
-            </Button>
-            <ul className="mt-4 space-y-2">
-              {coupons.map((c) => (
-                <Inset as="li" key={c.id} className="flex items-center gap-3 px-3 py-2 text-xs">
-                  <span className="font-mono font-bold text-gold-ink" dir="ltr">{c.code}</span>
-                  <span className="text-muted-foreground">{c.percentOff ? `${c.percentOff}%` : `${c.amountOff} ${c.currency}`}</span>
-                  <span className="text-muted-foreground">{c.usedCount ?? 0}/{c.maxUses ?? "∞"}</span>
-                  {/* كوبونُ المدرّب يُسمّى: ما يمنحه يُحسم منه لا منّا (البند 4-10)،
-                      فلا يُقرأ حملةً من حملاتنا في القائمة نفسِها */}
-                  {c.trainerCode && <Chip tone="accent">كود مدرّب — على دوراته</Chip>}
-                  {c.trainerDiscount && <Chip>خصم مدرّب بالمبلغ</Chip>}
-                  {!c.active && <Chip tone="danger">{c.trainerCode?.status === "paused" ? "أوقفه مدرّبه" : "معطّل"}</Chip>}
-                </Inset>
-              ))}
-            </ul>
-          </Panel>
-
-          <Panel as="section">
-            <h3 className="flex items-center gap-2 text-sm font-black"><Wallet className="h-4 w-4 text-gold-ink" /> خطة اشتراك جديدة</h3>
-            <div className="mt-3 grid gap-2 sm:grid-cols-2">
-              <input value={planForm.code} onChange={(e) => setPlanForm({ ...planForm, code: e.target.value })} placeholder="الرمز — monthly" dir="ltr" className={`${inputCls} font-mono`} />
-              <input value={planForm.nameAr} onChange={(e) => setPlanForm({ ...planForm, nameAr: e.target.value })} placeholder="اسم الخطة" className={inputCls} />
-              <input type="number" min={0} value={planForm.price} onChange={(e) => setPlanForm({ ...planForm, price: e.target.value })} placeholder={`السعر (${LEDGER_CURRENCY})`} className={inputCls} />
-              <input type="number" min={1} value={planForm.intervalMonths} onChange={(e) => setPlanForm({ ...planForm, intervalMonths: e.target.value })} placeholder="كل كم شهر" className={inputCls} />
-              <input value={planForm.features} onChange={(e) => setPlanForm({ ...planForm, features: e.target.value })} placeholder="مزايا مفصولة بفاصلة" className={`${inputCls} sm:col-span-2`} />
-            </div>
-            <Button tone="confirm" disabled={busy || planForm.code.length < 2 || planForm.nameAr.length < 3 || !planForm.price}
-              onClick={() => act(async () => {
-                await apiPost("/api/admin/subscription-plans", {
-                  code: planForm.code, nameAr: planForm.nameAr, price: Number(planForm.price),
-                  intervalMonths: Number(planForm.intervalMonths) || 1,
-                  features: planForm.features ? planForm.features.split(/[،,]/).map((f) => f.trim()).filter(Boolean) : undefined,
-                });
-                setPlanForm({ code: "", nameAr: "", price: "", intervalMonths: "1", features: "" });
-              }, "أنشئت الخطة وأصبحت عامة فورا")} className="mt-3">
-              أنشئ الخطة
-            </Button>
-            <p className="mt-3 flex items-center gap-1.5 text-read text-muted-foreground">
-              <FileText className="h-3 w-3" /> الخطط الفعّالة تظهر للجميع عبر /api/public/subscription-plans
-            </p>
-          </Panel>
-        </div>
-      )}
+      {/* الكوبونات — جدولٌ يُعدَّل في مكانه، والعلّةُ في `CouponsPanel.tsx` */}
+      {!loading && tab === "coupons" && <CouponsPanel coupons={coupons} busy={busy} act={act} />}
       {bulkConfirm === "approve" && (
         <ConfirmAction
           tone="default"

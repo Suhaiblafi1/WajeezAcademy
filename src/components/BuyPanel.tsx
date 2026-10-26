@@ -40,7 +40,8 @@
    المتصفّح ليس دليلا. */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { CalendarDays, ChevronDown, CreditCard, Info, Loader2, Route as RouteIcon, Tag, TriangleAlert } from "lucide-react";
+import { Link } from "react-router";
+import { BookOpen, CalendarDays, ChevronDown, CreditCard, Info, Loader2, Route as RouteIcon, Tag, TriangleAlert } from "lucide-react";
 import Modal from "@/components/Modal";
 import { couponFieldCls } from "@/components/FormKit";
 import RegistrationClosedNotice from "@/components/RegistrationClosedNotice";
@@ -567,10 +568,16 @@ export default function BuyPanel({
 
             {/* لا شيء يُشترى: كلُّه مملوكٌ أو محجوز — يُقال صراحةً بدل صفٍّ
                 من الأصفار وزرِّ دفعٍ لا يفعل شيئا. */}
+            {/* ═══ وزرٌّ إلى «تعلّمي» لا اسمُها وحدَه (٢٦ أكتوبر ٢٠٢٦) ═══
+                «لماذا لا يوجد هنا زرّ يأخذه إلى تعلّمي مباشرة؟ بدلا من أن يسأل أين تعلّمي وما هي» (صاحب المنصّة). */}
             {nothingLeft && (
-              <Card as="p" tone="accent" className="mt-4 text-read leading-6 text-teal-light-ink">
-                كلّ ما في هذا الطلب لك بالفعل — لا شيء يدفع ثمنه مرّة أخرى.
-                تجد شعبك ومقاعدك المحجوزة في «تعلّمي».
+              <Card tone="accent" className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                <p className="min-w-0 flex-1 text-read leading-6 text-teal-light-ink">
+                  كلّ ما في هذا الطلب لك بالفعل — لا شيء يدفع ثمنه مرّة أخرى.
+                </p>
+                <Button as={Link} to="/student/learning" tone="confirm" size="sm" icon={BookOpen} onClick={onClose}>
+                  افتح «تعلّمي»
+                </Button>
               </Card>
             )}
 

@@ -166,6 +166,30 @@ export function registerCommerceRoutes(app: FastifyInstance, prisma: PrismaClien
     schema: { tags: ['admin-commerce'], summary: 'كل الكوبونات' },
   }, async () => commerce.listCoupons())
 
+  /* تعديلُ الكوبون وإيقافُه وحذفُه (٢٦ أكتوبر ٢٠٢٦) — والعلّةُ في `commerce.service.ts#updateCoupon` */
+  app.patch('/api/admin/coupons/:id', {
+    preHandler: requirePermission('commerce.manage'),
+    schema: { tags: ['admin-commerce'], summary: 'تعديل كوبون أو إيقافه' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const body = z.object({
+      percentOff: z.number().int().min(1).max(100).nullable().optional(),
+      amountOff: z.number().min(0.5).nullable().optional(),
+      maxUses: z.number().int().min(1).nullable().optional(),
+      expiresAt: z.coerce.date().nullable().optional(),
+      active: z.boolean().optional(),
+    }).parse(req.body)
+    return commerce.updateCoupon(req.auth!.userId, id, body)
+  })
+
+  app.delete('/api/admin/coupons/:id', {
+    preHandler: requirePermission('commerce.manage'),
+    schema: { tags: ['admin-commerce'], summary: 'حذف كوبون لم يستعمل' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return commerce.deleteCoupon(req.auth!.userId, id)
+  })
+
   app.post('/api/admin/subscription-plans', {
     preHandler: requirePermission('commerce.manage'),
     schema: { tags: ['admin-commerce'], summary: 'إنشاء خطة اشتراك' },

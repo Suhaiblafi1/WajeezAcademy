@@ -35,7 +35,7 @@ import CourseTitle from "@/components/CourseTitle";
 import { usePublishedContent } from "@/services/public-content";
 import { useCourseCohorts, type CohortOption } from "@/services/cohort-prices";
 import { track } from "@/services/analytics";
-import { bundleNudge, pathPricing, suggestNext, MAX_BUILT_COURSES } from "@/application/catalog/course-path";
+import { bundleNudge, pathPricing, suggestBuyable, MAX_BUILT_COURSES } from "@/application/catalog/course-path";
 import { trainerLineAr, trainerNamesOf } from "@/application/catalog/course-trainers";
 import { courseAudienceView } from "@/application/catalog/course-audience";
 import { DISCOUNT_CATEGORIES } from "@/application/commerce/discount-policy";
@@ -67,10 +67,10 @@ const ORDINAL_AR: readonly string[] = ["", "أولى", "ثانية", "ثالثة
 /** ما يرافق كلَّ دورة — الأربعةُ التي اختارها صاحبُ المنصّة (٨ سبتمبر ٢٠٢٦)
     من «منظومة كاملة» في صفحة المسار، وحلّت محلَّ بطاقة «مشروعها العملي». */
 const COURSE_COMPANIONS = [
-  { icon: MonitorPlay, t: "وحدات مسجّلة وجلسات مباشرة", d: "فيديو لكلّ وحدة، وجلسة حيّة مع المدرّب، ومهمّة تطبيقيّة." },
-  { icon: ClipboardCheck, t: "واجبات يراجعها مدرّب بشري", d: "يقرأ عملك ويرد بملاحظات عملية — لا تصحيحا آليا." },
-  { icon: Library, t: "ملخّصات وجيز", d: "ملخّصات من مكتبة المنصّة تكمل موضوع الدورة." },
-  { icon: Headset, t: "مستشار تراسله", d: "قبل الشراء وبعده — يجيب أسئلتك ويرشدك لخطوتك التالية." },
+  { icon: MonitorPlay, t: "وحدات مسجّلة وجلسات مباشرة" },
+  { icon: ClipboardCheck, t: "واجبات يراجعها مدرّب" },
+  { icon: Library, t: "ملخّصات وجيز" },
+  { icon: Headset, t: "مستشار تراسله" },
 ] as const;
 
 function CoursePriceTag({ amount, money, className }: { amount: number | null; money: (n: number) => string; className: string }) {
@@ -169,11 +169,13 @@ function CoursePathPage({ courseId }: { courseId: string }) {
     if (anchor) track("course_path_opened", { course: anchor.id, pathway: anchor.pathwayId });
   }, [anchor]);
 
+  /* ما له شعبةٌ مفتوحةٌ وحدَه، وأربعٌ — والعلّةُ في `suggestBuyable`. ولا شيءَ قبل وصول الشعب: قائمةٌ تنكمش أمامه أسوأ */
   const suggestions = useMemo(() => {
     /* الكتالوج يصل بعد أول رسم — فإعادة الحساب معلَّقة على إصداره */
     void catalogVersion;
-    return suggestNext(picked, 8);
-  }, [picked, catalogVersion]);
+    if (!pricesLoaded) return [];
+    return suggestBuyable(picked, (id) => (cohorts.get(id)?.length ?? 0) > 0);
+  }, [picked, catalogVersion, pricesLoaded, cohorts]);
   /* شعبةُ الدورة المعتبَرة: ما اختاره إن كان ما زال متاحا، وإلّا أقربُ
      شعبةٍ مفتوحة. والقائمةُ مرتّبةٌ بالبدء في مصدرها، فأوّلُها أقربُها. */
   const cohortOf = useCallback(
@@ -501,25 +503,20 @@ function CoursePathPage({ courseId }: { courseId: string }) {
           </Card>
         )}
 
-        {/* ══ ما يرافق الدورة ══ — الأربعةُ ثابتةٌ لكلّ دورة، فلا شرطَ عليها */}
-        <Card as="section" tone="accent" className="mt-3">
-          <h2 className="flex items-center gap-2 text-sm font-black text-foreground">
-            <Sparkles className="h-4 w-4 text-gold-ink" /> ما يرافق الدورة
-          </h2>
-          <div className="mt-2.5 grid gap-2 sm:grid-cols-2">
-            {COURSE_COMPANIONS.map((b) => (
-              <Inset key={b.t} className="flex items-start gap-2.5 p-2.5">
-                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-teal/15">
-                  <b.icon className="h-3.5 w-3.5 text-teal-light-ink" />
-                </span>
-                <span className="min-w-0">
-                  <span className="block text-read font-bold text-foreground">{b.t}</span>
-                  <span className="mt-0.5 block text-fine leading-relaxed text-muted-foreground">{b.d}</span>
-                </span>
-              </Inset>
-            ))}
-          </div>
-        </Card>
+        {/* ══ ما يرافق الدورة ══ — الأربعةُ ثابتةٌ لكلّ دورة، فلا شرطَ عليها.
+
+            ═══ سطرٌ واحدٌ بأربع نقاط، لا صندوقٌ بأربع بطاقات (٢٦ أكتوبر ٢٠٢٦) ═══
+            «هذا النصّ غير مهمّ جدّا ليأخذ هذه المساحة. فاجعله بنقاطٍ في سطرٍ واحد، أربع نقاطٍ أساسيّةٍ بجانب بعضها،
+            أقلّ أهميّةً من غيرها، وأصغر كبوكس» (صاحب المنصّة). فذهب العنوانُ والشرحُ تحت كلّ نقطة: أيقونةٌ واسمٌ ١٢ باهتٌ
+            في شريطٍ رقيق، يلتفّ على الهاتف ولا يكبر. */}
+        <Inset as="ul" aria-label="ما يرافق الدورة" className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 px-3 py-2">
+          {COURSE_COMPANIONS.map((b) => (
+            <li key={b.t} className="flex items-center gap-1.5">
+              <b.icon className="h-3.5 w-3.5 shrink-0 text-teal-light-ink" aria-hidden="true" />
+              <span className="text-fine text-muted-foreground">{b.t}</span>
+            </li>
+          ))}
+        </Inset>
 
         {/* ══ مسارك حتى الآن ══
 
