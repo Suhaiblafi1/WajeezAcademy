@@ -88,12 +88,12 @@ function Face({ t }: { t: CohortTrainer }) {
    ولشعبةٍ بمدرّبَين الوجهان الأصغران جنبا إلى جنب (`Trainers`)، فصورتان كبيرتان في صندوقٍ واحدٍ زحام. */
 function Portrait({ t }: { t: CohortTrainer }) {
   const [failed, setFailed] = useState(false);
-  const box = "grid h-24 w-24 place-items-center overflow-hidden rounded-2xl sm:h-28 sm:w-28";
+  const box = "grid h-20 w-20 place-items-center overflow-hidden rounded-2xl sm:h-24 sm:w-24";
   return (
     <span className="relative shrink-0 pb-2">
       <span className="block rounded-[1.2rem] bg-gradient-to-br from-gold via-teal-light to-teal-deep p-[3px] shadow-lg">
         {t.photoUrl && !failed ? (
-          <img src={t.photoUrl} alt="" width={112} height={112} loading="lazy" decoding="async"
+          <img src={t.photoUrl} alt="" width={96} height={96} loading="lazy" decoding="async"
             onError={() => setFailed(true)} className={`${box} bg-paper object-cover object-[50%_25%]`} />
         ) : (
           <span aria-hidden="true" className={`${box} bg-teal-deep text-2xl font-black text-white`}>{initialsOf(t.name)}</span>
@@ -112,7 +112,7 @@ function Lead({ t }: { t: CohortTrainer }) {
   return (
     <span className="grid min-w-0 content-center gap-0.5">
       <span className="text-fine font-bold leading-4 text-muted-foreground">مدربك</span>
-      <span className="text-base font-black leading-6 text-foreground sm:text-lg">{t.name}</span>
+      <span className="text-base font-black leading-6 text-foreground">{t.name}</span>
       {t.id && (
         <Link to={bioHref(t)} aria-label={`نبذة المدرب ${t.name}`}
           className="inline-flex w-fit items-center gap-0.5 text-read font-bold leading-6 text-teal-light-ink underline-offset-4 hover:underline">
@@ -235,13 +235,19 @@ export default function CohortPicker({
           const body = (
             <>
               {many && (
-                <span aria-hidden="true" className={`mt-3 grid h-4 w-4 shrink-0 place-items-center rounded-full border-2 transition ${
+                <span aria-hidden="true" className={`mt-1.5 grid h-4 w-4 shrink-0 place-items-center rounded-full border-2 transition ${
                   on ? "border-teal-light bg-teal-light" : "border-white/30"
                 }`}>
                   {on && <Check className="h-2.5 w-2.5 text-paper" strokeWidth={4} />}
                 </span>
               )}
               <span className="grid min-w-0 flex-1 gap-1.5">
+                {/* ═══ واسمُ الشعبة أوّلُ ما يُقرأ — أكبرُ من اسم المدرّب (٢٦ أكتوبر ٢٠٢٦) ═══
+                    قرارُ صاحب المنصّة: «لكافّة الدورات.. يجب أن يكون عنوانُ الدورة ظاهرا فهو أهمُّ من المدرّب واسمه»،
+                    و«لا تصغّر الصورةَ كثيرا ولكن أريد أن يتّضح اسمُ الشعبة فهو الأكثرُ أهمّيّة». وكان سطرا رماديّا
+                    صغيرا مقصوصا تحت الموعد. فصار أعلى الصندوق بخطٍّ أكبرَ من اسم المدرّب، كاملا بلا قصّ، والصورةُ
+                    من ٩٦–١١٢ إلى ٨٠–٩٦. ويبقى يفرّق شعبتين تبدآن في اليوم نفسِه (صباحيّةً ومسائيّة) */}
+                {c.title && <span className="block text-lg font-black leading-7 text-foreground sm:text-xl">{c.title}</span>}
                 {/* ومن لم يُعتمد نشرُ اسمه لا يُقال عنه شيء — لا اسمَ ولا وعدٌ بموعد إعلانه. ومدرّبٌ واحدٌ صورتُه
                     كبيرةٌ واسمُه بجانبها (`Portrait`)، وأكثرُ من واحدٍ وجوهٌ أصغرُ جنبا إلى جنب */}
                 {c.trainerProfiles.length === 1 ? (
@@ -251,9 +257,6 @@ export default function CohortPicker({
                   </span>
                 ) : <Trainers c={c} />}
                 <When c={c} />
-                {/* الاسمُ يفرّق شعبتين تبدآن في اليوم نفسِه (صباحيّةً ومسائيّة) — كانتا سطرين
-                    متطابقين حرفا بحرف، فالاختيارُ بينهما رجمٌ بالغيب. */}
-                {c.title && <span className="block truncate text-fine leading-4 text-muted-foreground">{c.title}</span>}
                 {/* تحت الموعد لا بجانب الاسم — على الهاتف كانت تقصّ اسمَ المدرّب */}
                 <Seats c={c} />
                 {clashesOf(timed(c), busy).slice(0, 2).map((x) => (

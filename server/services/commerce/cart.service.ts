@@ -25,6 +25,7 @@ import { LEDGER_CURRENCY } from '../../../src/application/commerce/presentment'
 import { assertCouponUsable, cartTitleOf, num, type CartCohort } from './cart-types'
 import { CODE_USE_COUNTS, CODE_USED_AR } from './coupon-ledger'
 import { assertFirstPurchase } from './first-purchase'
+import { FIRST_TIME_PROMO } from '../../../src/application/commerce/first-time-promo'
 import { cohortLeadTrainers } from '../cohort-lead'
 import { TrainerCodeBudgetService, type PurchaseLine } from '../trainer-code-budget'
 import { budgetCovers, CODE_UNAVAILABLE_AR, MAX_TRAINER_CODE_PERCENT } from '../../../src/application/trainer/trainer-code'
@@ -383,6 +384,8 @@ export class CartService {
               percentOff: coupon.percentOff, amountOff: coupon.amountOff === null ? null : num(coupon.amountOff),
               /* وكودُ المنحة بدلُ الباقة لا فوقها — قرارُ صاحب المنصّة («A») */
               replacesBundle: coupon.grantCode !== null,
+              /* وكودُ أوّل شراء على الدورة الأعلى سعرا وحدَها — قرارُه (٢٦ أكتوبر ٢٠٢٦) */
+              topLineOnly: coupon.code === FIRST_TIME_PROMO.code,
             }
         : null,
       cartCurrency,

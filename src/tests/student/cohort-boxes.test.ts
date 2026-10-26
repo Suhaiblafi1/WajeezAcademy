@@ -101,7 +101,7 @@ describe('٢ب) صورة المدرب كبيرة في صندوق الشعبة �
   const one = render(cohortOptionsFrom([row()]).get('C-1') ?? [])
 
   it('⚠️ مدرب واحد: صورته كبيرة في إطار متدرج، وشارة «مباشر»، و«مدربك» واسمه وباب نبذته بجانبها', () => {
-    expect(one).toMatch(/<img [^>]*src="\/api\/v1\/trainer-photos\/ahmad\.webp"[^>]*class="grid h-24 w-24 [^"]*rounded-2xl sm:h-28 sm:w-28/)
+    expect(one).toMatch(/<img [^>]*src="\/api\/v1\/trainer-photos\/ahmad\.webp"[^>]*class="grid h-20 w-20 [^"]*rounded-2xl sm:h-24 sm:w-24/)
     expect(one, 'الإطار المتدرج').toMatch(/bg-gradient-to-br from-gold via-teal-light to-teal-deep p-\[3px\]/)
     expect(one).toContain('مباشر')
     expect(one).toContain('مدربك')
@@ -111,9 +111,25 @@ describe('٢ب) صورة المدرب كبيرة في صندوق الشعبة �
     expect(one, 'عاد الوجه الصغير').not.toMatch(/h-11 w-11/)
   })
 
+  it('⚠️ واسم الشعبة أول ما في الصندوق — أكبر من اسم المدرب وكاملا بلا قص (٢٦ أكتوبر ٢٠٢٦)', () => {
+    /* «يجب أن يكون عنوانُ الدورة ظاهرا فهو أهمُّ من المدرّب واسمه» (صاحب المنصّة) */
+    const at = one.indexOf('شعبة 1')
+    expect(at, `اسم الشعبة غائب: ${one.slice(0, 1200)}`).toBeGreaterThan(-1)
+    /* وسمُ العنصر الذي يحمله — آخرُ «<span» قبله */
+    const tag = one.slice(one.lastIndexOf('<span', at), at)
+    expect(tag).toContain('text-lg')
+    expect(tag, 'مقصوص').not.toContain('truncate')
+    expect(at, 'قبل الصورة').toBeLessThan(one.indexOf('<img '))
+    const nameAt = one.indexOf('احمد صالح الطيار')
+    expect(nameAt).toBeGreaterThan(at)
+    const nameTag = one.slice(one.lastIndexOf('<span', nameAt), nameAt)
+    expect(nameTag, 'اسم المدرب أكبر من اسم الشعبة').not.toMatch(/text-(lg|xl)/)
+    expect(nameTag).toContain('text-base')
+  })
+
   it('⚠️ وبلا صورة: حروف اسمه بحجم الصورة نفسه — فلا تتفاوت الصناديق', () => {
     const html = render(cohortOptionsFrom([ines]).get('C-1') ?? [])
-    expect(html).toMatch(/<span [^>]*aria-hidden="true" class="grid h-24 w-24 [^"]*sm:h-28 sm:w-28 bg-teal-deep [^"]*">أ<\/span>/)
+    expect(html).toMatch(/<span [^>]*aria-hidden="true" class="grid h-20 w-20 [^"]*sm:h-24 sm:w-24 bg-teal-deep [^"]*">أ<\/span>/)
   })
 
   it('⚠️ ومدربان في شعبة: وجهان أصغر جنبا إلى جنب لا صورتان كبيرتان', () => {
