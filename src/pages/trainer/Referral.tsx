@@ -516,7 +516,7 @@ export default function Referral() {
     ];
     void syncLinkPreviews({
       name: kit.name, headline: kit.headline, photoUrl: kit.photoUrl, code: shareCodeOf(kit),
-      dayAr: (iso: string) => fmtDayMonth(iso), host: window.location.host,
+      dayAr: (iso: string) => fmtDayMonth(iso),
     }, links, kit.previews ?? {});
   }, [kit, cohortLinks]);
 

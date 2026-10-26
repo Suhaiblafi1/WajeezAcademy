@@ -35,8 +35,6 @@ export interface ArtData {
   code: { code: string; percentOff: number } | null
   /** «31 أكتوبر» */
   dayAr: (iso: string) => string
-  /** «www.wajeezacademy.com» */
-  host: string
 }
 
 const SIZE: Record<ArtKind, [number, number]> = {
@@ -184,8 +182,11 @@ function codePill(ctx: CanvasRenderingContext2D, code: ArtData['code'], cx: numb
   ctx.textBaseline = 'alphabetic'
 }
 
-/** الرأس: علامةُ وجيز واسمُها، و«بث مباشر» حمراءُ يسارا — والذيل: عنوانُ الموقع */
-function frame(ctx: CanvasRenderingContext2D, logo: HTMLImageElement | null, w: number, h: number, host: string) {
+/** الرأس: علامةُ وجيز واسمُها، و«بث مباشر» حمراءُ يسارا.
+    ═══ وبلا عنوان الموقع في الذيل (٢٦ أكتوبر ٢٠٢٦) ═══
+    قال صاحبُ المنصّة: «لا داعيَ للرابط لأنّه لا يمكن نسخُه أو نقرُه داخل التصميم». فالرابطُ في النصّ المرافق
+    يُنقر، وفي الصورة حروفٌ لا تفتح شيئا. */
+function frame(ctx: CanvasRenderingContext2D, logo: HTMLImageElement | null, w: number, h: number) {
   ctx.fillStyle = C.paper
   ctx.fillRect(0, 0, w, h)
   ctx.fillStyle = C.teal
@@ -197,10 +198,6 @@ function frame(ctx: CanvasRenderingContext2D, logo: HTMLImageElement | null, w: 
   ctx.fillText('أكاديمية وجيز', w - 160, 112)
   const live: PillStyle = { px: 30, bg: C.live, fg: C.white, dot: C.white }
   pill(ctx, 'بث مباشر', 56 + pillWidth(ctx, 'بث مباشر', live), 70, live)
-  ctx.textAlign = 'center'
-  ctx.fillStyle = C.muted
-  ctx.font = font(500, 32)
-  ctx.fillText(host, w / 2, h - 60)
 }
 
 const startsAr = (c: ArtData['courses'][number], dayAr: ArtData['dayAr']) => (c.startsAt ? `تبدأ ${dayAr(c.startsAt)}` : 'موعدها قريبا')
@@ -333,7 +330,7 @@ export async function drawArt(kind: ArtKind, d: ArtData, index = 0): Promise<HTM
     d.photoUrl && (kind === 'post' || kind === 'story' || kind === 'cover' || kind === 'link') ? loadImage(d.photoUrl) : Promise.resolve(null),
   ])
   ctx.direction = 'rtl'
-  frame(ctx, logo, w, h, kind === 'link' ? '' : d.host)
+  frame(ctx, logo, w, h)
   ctx.textAlign = 'center'
   const cx = w / 2
   const one = d.courses[index] ?? d.courses[0]
@@ -346,9 +343,6 @@ export async function drawArt(kind: ArtKind, d: ArtData, index = 0): Promise<HTM
     const left = 440
     courseList(ctx, d, d.courses.slice(0, 3), left, 160, 450, 700, 44)
     codePill(ctx, d.code, left, 470, 28)
-    ctx.fillStyle = C.muted
-    ctx.font = font(500, 24)
-    ctx.fillText(d.host, left, 588)
   } else if (kind === 'post') {
     const r = 108
     portrait(ctx, photo, d.name, cx, 262, r)

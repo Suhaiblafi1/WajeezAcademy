@@ -61,7 +61,7 @@ export default function ShareKit({ face, courses, url, code, fileStem }: {
   }, []);
   const art: ArtData = useMemo(() => ({
     name: face.name, headline: face.headline ?? null, photoUrl: face.photoUrl, courses, code,
-    dayAr: (iso: string) => fmtDayMonth(iso), host: window.location.host,
+    dayAr: (iso: string) => fmtDayMonth(iso),
   }), [face, courses, code]);
   const text = shareText(platform, input);
   const plan = artPlan(format, courses.length);

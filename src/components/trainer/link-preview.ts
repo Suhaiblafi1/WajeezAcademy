@@ -11,8 +11,8 @@
 import { apiUpload } from "@/services/api";
 import { drawArt, type ArtData } from "./share-art";
 
-/** نسخةُ تصميم المعاينة — تُرفع إذا تغيّرت فتتجدّد الصورُ القديمةُ كلُّها */
-export const LINK_ART_VERSION = 2;
+/** نسخةُ تصميم المعاينة — تُرفع إذا تغيّرت فتتجدّد الصورُ القديمةُ كلُّها (٣: بلا عنوان الموقع، ٢٦ أكتوبر ٢٠٢٦) */
+export const LINK_ART_VERSION = 3;
 
 export interface LinkToPreview {
   /** الرابطُ القصير كاملا — `…/s/XXXXXX` */
