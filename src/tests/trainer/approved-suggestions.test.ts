@@ -42,7 +42,7 @@ describe('② زرُّ «اعتمدها» وبطاقةُ الخطّة', () => {
     expect(card).toMatch(/\{editsDrafts > 0 && <> والمسودات التي لم تعتمدها له \(\{editsDrafts\}\) لا تصله/)
     /* والعددُ من حال التعديلات الواحد (`usePlanEdits`، ٢٦ أكتوبر ٢٠٢٦) — لا عدّادٌ يُبلَّغ من صندوق */
     expect(card).toMatch(/const editsDrafts = edits\.drafts\.length;/)
-    expect(panel).toMatch(/const drafts = items\.filter\(\(x\) => x\.status === "proposed"\);[\s\S]{0,400}return \{ items, drafts,/)
+    expect(code('src/hooks/usePlanEdits.ts')).toMatch(/const drafts = items\.filter\(\(x\) => x\.status === "proposed"\);[\s\S]{0,400}return \{ items, drafts,/)
   })
 
   /* وفي مساحة المراجعة (٢٦ أكتوبر ٢٠٢٦): المعتمَدةُ تُفتح على «بطاقات للمدرب»، ولا رفعَ ولا مراجعةَ بعدها */

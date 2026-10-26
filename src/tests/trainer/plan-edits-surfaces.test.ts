@@ -28,7 +28,7 @@ describe('بطاقة المراجعة', () => {
     expect(src).toMatch(/disabled=\{busy \|\| editsPending === 0\}/)
     expect(src).toMatch(/editsPending === 0 && \(\s*<p[^>]*>\s*لا بطاقة تنتظر المدرّب بعد/)
     /* والعددُ بطاقاتٌ لا ملاحظات — كما يعدّها الخادم (`pendingEdits`) */
-    expect(code('src/components/PlanEdits.tsx')).toMatch(/const pendingCards = items\.filter\(\(x\) => x\.status === "pending" && x\.kind !== "note"\)\.length;\s*return \{ items, drafts, pendingCards,/)
+    expect(code('src/hooks/usePlanEdits.ts')).toMatch(/const pendingCards = items\.filter\(\(x\) => x\.status === "pending" && x\.kind !== "note"\)\.length;\s*return \{ items, drafts, pendingCards,/)
   })
 })
 
@@ -70,7 +70,7 @@ describe('الرفع دفعة واحدة — «خطط تنتظر اعتمادك�
 
   it('⚠️ كلّ ملفّ إلى خطّته بمسلك البطاقة نفسه — فيفحص كما يفحص هناك', () => {
     expect(box).toMatch(/await apiPost<PlanEditsUploadCounts>\(\s*`\/api\/admin\/cohort-plans\/\$\{read\.planId\}\/edits`, needed\.length \? withWorkbookKeys\(read\.body, keys\) : read\.body\);/)
-    expect(code('src/components/PlanEdits.tsx'), 'البطاقة لا ترفع إلى المسلك نفسه').toContain('`/api/admin/cohort-plans/${planId}/edits`, body)')
+    expect(code('src/hooks/usePlanEdits.ts'), 'البطاقة لا ترفع إلى المسلك نفسه').toContain('`/api/admin/cohort-plans/${planId}/edits`, body)')
     expect(box).toMatch(/<input[\s\S]{0,80}type="file"\s*multiple/)
   })
 
@@ -134,7 +134,8 @@ describe('صفحة المدرّب', () => {
 describe('الرفع يتجاهل المكرّر — والبطاقة بلا أدوات التنظيف', () => {
   const page = code('src/pages/admin/PendingPlans.tsx')
   const panel = code('src/components/PlanEdits.tsx')
-  const card = panel.slice(panel.indexOf('export function usePlanEdits'), panel.indexOf('export function PlanEditsPanel'))
+  /* والبطاقةُ حالُها في خطّافها ولسانُها في `PlanEdits.tsx` (٢٦ أكتوبر ٢٠٢٦) */
+  const card = code('src/hooks/usePlanEdits.ts') + panel.slice(panel.indexOf('export function PlanEditsDrafts'), panel.indexOf('export function PlanEditsPanel'))
   const box = code('src/components/admin/ReviewUpload.tsx')
 
   it('⚠️ لا «احذف المكرر» ولا «أعد ما سحبته» في البطاقة — ولا ما يقرأ عددهما', () => {

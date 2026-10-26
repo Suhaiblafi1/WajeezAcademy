@@ -207,8 +207,7 @@ describe('⑤ والإدارة تطلبه بزرّ — والقاعدة تتّس
   })
 
   it('⚠️ زرّ «جهّز جدولا ثابتا مقترحا» يطلب مسلكه — ويظهر حين يكون في الإيقاع أو الأوقات نصيحة', () => {
-    const ui = code('src/components/PlanEdits.tsx')
-    expect(ui).toMatch(/apiPost<PlanEditItem\[\]>\(`\/api\/admin\/cohort-plans\/\$\{planId\}\/edits\/schedule`, \{\}\)/)
+    expect(code('src/hooks/usePlanEdits.ts')).toMatch(/apiPost<PlanEditItem\[\]>\(`\/api\/admin\/cohort-plans\/\$\{planId\}\/edits\/schedule`, \{\}\)/)
     /* والزرُّ في «أدوات Claude» (٢٦ أكتوبر ٢٠٢٦، المرحلة الخامسة) */
     const card = code('src/components/admin/TrainerPlanReview.tsx')
     expect(card).toMatch(/\{canUploadEdits && offerSchedule && \(\s*<Button[^>]*onClick=\{\(\) => void edits\.schedule\(\)[^}]*\}>\s*جهّز جدولا ثابتا مقترحا/)
