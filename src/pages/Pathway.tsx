@@ -220,7 +220,7 @@ export default function PathwayPage() {
   }, [courseIds, catalogVersion]);
 
   const { prices, cohorts, loaded: pricesLoaded } = useCoursePrices();
-  /* الثلاثُ المقترحة: من المسار نفسِه ثمّ فئتِه، وما له شعبةٌ أوّلا (`pathwayExtraOptions`) — والمختارةُ تبقى فيها لتُبدَّل */
+  /* الثلاثُ المقترحة: من المسار نفسِه ثمّ الأقربِ إليه موضوعا، وما له شعبةٌ أوّلا (`pathwayExtraOptions`) — والمختارةُ تبقى فيها لتُبدَّل */
   const extraOptions = useMemo(() => {
     void catalogVersion;
     if (!pricesLoaded || !pathway) return [];

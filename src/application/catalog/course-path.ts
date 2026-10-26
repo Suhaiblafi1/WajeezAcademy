@@ -20,6 +20,7 @@
    منطق خالص بلا React ليُختبر وحده. */
 
 import { courseById, pathwayCourses, pathwaySupportCourses, courses, type Course } from '../../data/courses'
+import { pathwayDomain } from '../../data/pathways'
 import { MAX_BUILT_COURSES, buildDiscountPct, bundlePayable, nextBuildStep } from '../commerce/discount-policy'
 
 /* من أين يأتي سعر الدورة؟ من الشعبة — تُمرَّر الدالة ولا تُستورَد.
@@ -185,13 +186,23 @@ export const BUYABLE_SUGGESTIONS = 4
    «اسمح لمن يشتري مسارا أن يضيف دورةً واحدةً فقط، واقترح له ثلاثَ دوراتٍ ليختار منها» (صاحب المنصّة). */
 export const PATHWAY_EXTRA_OPTIONS = 3
 
-/* ═══ ومن أين الثلاث: المسارُ نفسُه، ثمّ الفئةُ — وما له شعبةٌ أوّلا (٢٦ أكتوبر ٢٠٢٦) ═══
+/* ═══ ومن أين الثلاث: المسارُ نفسُه، ثمّ الأقربُ إليه — وما له شعبةٌ أوّلا (٢٦ أكتوبر ٢٠٢٦) ═══
 
    «اقترح من دورات المسار نفسه أو الأقرب للفئة، وحاول أن تكون الدورات المقترحة لها شعبٌ مفتوحة» (صاحب المنصّة).
-   وكانت من `suggestNext`، وهو يمدّ إلى مساراتٍ أخرى بالمهارة («يوسّع خطّتك خارج مجالك الأوّل»).
-   · الطبقةُ الأولى: دوراتُ المسار نفسِه ومساندتُه — ما لم يدخل مسارَه الجاهز.
-   · والثانية: دوراتُ فئته (`category`) من مساراتها الأخرى.
-   · وفي الطبقتين ما له شعبةٌ مفتوحةٌ أوّلا. و«حاول»: فإن قلّ عن ثلاث أُكمل بما لم تُفتح شعبتُه، بترتيبه. */
+
+   وكانت الطبقةُ الثانيةُ «فئة» الدورة (`category`) — وهي جمهورُها لا موضوعُها، أربعٌ في الكتالوج كلّه. فمسارُ
+   الأسرة والتربية (دوراتُه كلُّها في مساره الجاهز أصلا) اقتُرح له العلاقاتُ العامّةُ والإقناع «من فئة موظفون
+   ومختصون» — قريبةٌ في الجمهور بعيدةٌ في الموضوع. فسأل صاحبُ المنصّة: «نعم افحصها وأصلحها».
+
+   فالقربُ الآن بالموضوع، أربعُ طبقات:
+   · ٠ دوراتُ المسار نفسِه ومساندتُه — ما لم يدخل مسارَه الجاهز.
+   · ١ مساراتٌ قريبةٌ منه: ما اختار الكتالوجُ منها مساندةً له، وما شاركه مجالَه (`pathwayDomain`).
+   · ٢ دوراتٌ تشاركه مهارةً من مهارات دوراته — والنادرةُ أثقل، وما حملته أكثرُ من خمس دوراتٍ لا يُعدّ قربا.
+   · ٣ وجمهورُه (`category`) آخرَ الكلّ — لا يُبلغ إلّا إن قلّ ما قبله عن ثلاث.
+   وما له شعبةٌ مفتوحةٌ أوّلا داخل القريب (٠–٢)، ثمّ القريبُ بلا شعبة، ثمّ البعيد: فالقربُ شرطٌ، والشعبةُ «حاول». */
+/** مهارةٌ تحملها دوراتٌ أكثرُ من هذا شائعةٌ لا تدلّ على قرب */
+const COMMON_SKILL_CARRIERS = 5
+
 export function pathwayExtraOptions(
   pathwayId: string,
   baseIds: readonly string[],
@@ -199,12 +210,19 @@ export function pathwayExtraOptions(
   limit = PATHWAY_EXTRA_OPTIONS,
 ): CourseSuggestion[] {
   const taken = new Set(baseIds)
+  const supports = (pathwaySupportCourses[pathwayId] ?? []).map((x) => x.courseId)
   const own = [
     ...(pathwayCourses[pathwayId] ?? []),
-    ...(pathwaySupportCourses[pathwayId] ?? []).map((x) => x.courseId),
+    ...supports,
     ...courses.filter((c) => c.pathwayId === pathwayId).map((c) => c.id),
   ]
-  const category = courseById(own[0] ?? baseIds[0] ?? '')?.category
+  const ownCourses = [...own, ...baseIds].map(courseById).filter((c): c is Course => Boolean(c))
+  const skills = new Set(ownCourses.flatMap((c) => c.skills))
+  const domain = pathwayDomain(pathwayId)
+  const near = new Set(
+    supports.map((id) => courseById(id)?.pathwayId).filter((id): id is string => Boolean(id) && id !== pathwayId),
+  )
+
   const ranked: CourseSuggestion[] = []
   const seen = new Set<string>()
   const push = (id: string, rank: number, reason_ar: string) => {
@@ -213,13 +231,35 @@ export function pathwayExtraOptions(
     ranked.push({ courseId: id, rank, reason_ar })
   }
   for (const id of own) push(id, 0, 'من دورات مسارك نفسه')
-  if (category) {
-    for (const c of courses) if (c.category === category) push(c.id, 1, `من فئة «${category}» نفسها`)
+  for (const c of courses) {
+    if (c.pathwayId === pathwayId) continue
+    if (near.has(c.pathwayId)) push(c.id, 1, `من مسار «${c.pathwayName}» القريب من مسارك`)
+    else if (domain !== 'تخصصات أخرى' && pathwayDomain(c.pathwayId) === domain) push(c.id, 1, `من مجال «${domain}» نفسه`)
   }
-  /* ما له شعبةٌ أوّلا، ثمّ الطبقة — والترتيبُ داخلهما كما رُتّب */
-  const open = ranked.filter((s) => hasCohort(s.courseId))
-  const closed = ranked.filter((s) => !hasCohort(s.courseId))
-  return [...open, ...closed].slice(0, limit)
+  /* والمهارةُ بندرتها: «الإصغاء الفعّال» في ثلاث عشرةَ دورةً لا تقول قربا، و«تنظيم الانفعال» في أربعٍ تقوله */
+  const carriers = new Map<string, number>()
+  for (const c of courses) for (const x of c.skills) carriers.set(x, (carriers.get(x) ?? 0) + 1)
+  const telling = (x: string) => skills.has(x) && (carriers.get(x) ?? 0) <= COMMON_SKILL_CARRIERS
+  const shared = courses
+    .map((c) => {
+      const common = c.skills.filter(telling).sort((a, b) => carriers.get(a)! - carriers.get(b)!)
+      return { c, common, weight: common.reduce((w, x) => w + 1 / carriers.get(x)!, 0) }
+    })
+    .filter((x) => x.common.length > 0)
+    .sort((a, b) => b.weight - a.weight)
+  for (const { c, common } of shared) push(c.id, 2, `تشارك مسارك مهارة «${common[0]}»`)
+  const category = ownCourses[0]?.category
+  if (category) for (const c of courses) if (c.category === category) push(c.id, 3, 'لجمهور مسارك نفسه')
+
+  const byRank = (a: { rank: number }, b: { rank: number }) => a.rank - b.rank
+  const close = ranked.filter((s) => s.rank < 3).sort(byRank)
+  const far = ranked.filter((s) => s.rank === 3)
+  return [
+    ...close.filter((s) => hasCohort(s.courseId)),
+    ...close.filter((s) => !hasCohort(s.courseId)),
+    ...far.filter((s) => hasCohort(s.courseId)),
+    ...far.filter((s) => !hasCohort(s.courseId)),
+  ].slice(0, limit)
 }
 
 export function suggestBuyable(
