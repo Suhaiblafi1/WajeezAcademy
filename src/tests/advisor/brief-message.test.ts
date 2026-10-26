@@ -16,7 +16,7 @@ describe('رسالة ملخص المستشار', () => {
   it('⚠️ تحمل المسار ورابطه ودوراته وطلب السيرة — فتصل ولو لم يرفق PDF', () => {
     expect(
       advisorBriefTextAr({ message: 'مرحبا', pathwayUrl: 'https://x.test/pathways/P-1', courseNames: ['أ', 'ب'], attachNote: 'أرفق سيرتك' }),
-    ).toBe('مرحبا\n\nرابط المسار: https://x.test/pathways/P-1\n\nالدورات في خطتي:\n- أ\n- ب\n\nأرفق سيرتك')
+    ).toBe('مرحبا\n\nرابط المسار: https://x.test/pathways/P-1\n\nالدورات في خطتي:\n1. أ\n2. ب\n\nأرفق سيرتك')
     /* ومن لا دورات في خطّته لا يُكتب له عنوانٌ فارغ */
     expect(advisorBriefTextAr({ message: 'مرحبا', pathwayUrl: 'u', courseNames: [], attachNote: 'ن' })).toBe('مرحبا\n\nرابط المسار: u\n\nن')
   })

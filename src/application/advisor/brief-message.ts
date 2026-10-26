@@ -7,6 +7,8 @@
    والدوراتُ نصٌّ لا رابطٌ وحدَه: الخطّةُ المخصّصة محفوظةٌ في متصفّح صاحبها، فرابطُ المسار يفتح
    على دوراته الأصليّة لا على ما اختار. */
 
+import { courseLinesAr } from '../text/course-lines'
+
 export function advisorBriefTextAr({
   message,
   pathwayUrl,
@@ -25,7 +27,7 @@ export function advisorBriefTextAr({
   return [
     message,
     `رابط المسار: ${pathwayUrl}`,
-    ...(courseNames.length > 0 ? [['الدورات في خطتي:', ...courseNames.map((n) => `- ${n}`)].join('\n')] : []),
+    ...(courseNames.length > 0 ? [`الدورات في خطتي:\n${courseLinesAr(courseNames)}`] : []),
     attachNote,
   ].join('\n\n')
 }
