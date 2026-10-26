@@ -45,7 +45,6 @@ export default function StageOffer({
       <p className="mt-0.5 text-read text-muted-foreground">
         {stage.hours > 0 && `${stage.hours} ساعة · `}
         {stage.weeks} {stage.weeks === 1 ? "أسبوع" : "أسابيع"}
-        {stage.isGift && " · هديّتك في الخطّة"}
       </p>
 
       {heldSeat ? (

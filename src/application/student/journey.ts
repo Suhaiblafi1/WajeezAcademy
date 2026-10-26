@@ -77,7 +77,6 @@ export interface JourneyRow {
 export interface JourneyPlanItem {
   courseId: string
   sequence: number
-  isGift?: boolean
   state: 'enrolled' | 'schedulable' | 'awaiting_cohort'
   requestPending?: boolean
   cohort?: { id: string; title: string; startsAt: string | null; seatsLeft: number | null } | null
@@ -105,7 +104,6 @@ export interface JourneyStage {
   enrollmentId: string | null
   cohortTitle: string | null
   certificate: { id: string; number: string; status: string } | null
-  isGift: boolean
   inPlan: boolean
   requestPending: boolean
   planCohort: JourneyPlanItem['cohort']
@@ -193,7 +191,6 @@ function stageOf(courseId: string, fact: Fact | undefined, item: JourneyPlanItem
     enrollmentId: fact?.enrollmentId ?? null,
     cohortTitle: fact?.cohortTitle ?? null,
     certificate: fact?.certificate ?? null,
-    isGift: item?.isGift === true,
     inPlan: item !== null,
     requestPending: item?.requestPending === true,
     planCohort: item?.cohort ?? null,

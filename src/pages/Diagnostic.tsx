@@ -19,7 +19,6 @@ import {
   Route as RouteIcon,
   Gauge,
   AlertCircle,
-  Gift,
   Wand2,
   BookOpen,
   BrainCircuit,
@@ -457,14 +456,14 @@ export default function Diagnostic() {
 
   /* آخر قائمة عرضها التبديل — في ref لا في state: قراءتها عند الاعتماد فقط،
      فلا داعي لإعادة تصيير عند كل تبديل. */
-  const shownPlanRef = useRef<{ courseIds: string[]; giftId: string | null } | null>(null);
+  const shownPlanRef = useRef<{ courseIds: string[] } | null>(null);
 
   /* الاعتماد مشتقٌّ من النتيجة لا من حالة React.
 
      كان يقرأ `topPathway` و`planCourseIds` من الحالة، فلا يصلح نداؤه من
      `finish()`: الحالة هناك لم تستقرّ بعد. وصار يُنادى من موضعين — من
      `finish` بالنتيجة الطازجة، ومن الزرّ بما على الشاشة. */
-  const adoptFromResult = (res: DiagResult, shown?: { courseIds: string[]; giftId: string | null } | null) => {
+  const adoptFromResult = (res: DiagResult, shown?: { courseIds: string[] } | null) => {
     const top = res.top;
     if (!top) return;
     const c = (res.resultJson.composite as CompositeView | null) ?? null;
@@ -474,7 +473,6 @@ export default function Diagnostic() {
       : top.id;
     /* ما رآه المتعلّم فعلا — بتبديلاته إن بدّل */
     const courseIds = shown?.courseIds ?? planCourseIdsOf(res, hostId);
-    const giftId = shown?.giftId ?? null;
     const topPathway = top;
     const adoptedPlan = {
       hostPathwayId: hostId,
@@ -483,7 +481,6 @@ export default function Diagnostic() {
          باسمه هي ما جعل المتعلّم يظنّ أننا غيّرنا خطّته. */
       nameAr: composed ? PERSONAL_PLAN_NAME_AR : topPathway.name,
       courseIds,
-      giftId,
     };
     saveAdoptedPlan(adoptedPlan);
     /* وإلى الخادم أيضا لمن له حساب — فلا تموت الخطّة بإغلاق التبويب.
@@ -1537,7 +1534,7 @@ export default function Diagnostic() {
                     <p className="text-sm font-black text-teal-light-ink">اطمئن — بقي مسارك هو نفسه بعد التدقيق</p>
                     <p className="mt-1 text-read leading-relaxed text-muted-foreground">
                       {cmp.note_ar} وإن حسّنا دورة في مسارك أو اقترحنا إضافة فستجدها في خطتك أدناه،
-                      ويمكنك تعديلها: استبدالا أو حذفا أو هدية مجانية.
+                      ويمكنك تعديلها: استبدالا أو حذفا.
                     </p>
                   </div>
                 </Card>
@@ -1653,7 +1650,6 @@ export default function Diagnostic() {
                     { icon: FileText, label: "مشروع تطبيقي", hint: "يقيّم ويعتمد" },
                     { icon: BrainCircuit, label: "ملخصات كتب وجيز", hint: "تسمعها وتختبر فيها" },
                     { icon: ShieldCheck, label: "شهادة إتمام", hint: "بمخرج يثبت جاهزيتك" },
-                    { icon: Gift, label: "دورة إضافية مجانية", hint: "هدية فوق مسارك" },
                   ].map((f) => (
                     <Inset key={f.label}>
                       <f.icon className="h-4 w-4 text-teal-light-ink" />
@@ -1729,7 +1725,7 @@ export default function Diagnostic() {
                   pathwayIds={compositeView.represented_pathway_ids}
                   gaps={result.gaps}
                   delivery={pathwayDelivery(topPathway.id)}
-                  onChange={(ids) => { shownPlanRef.current = { courseIds: ids, giftId: null }; }}
+                  onChange={(ids) => { shownPlanRef.current = { courseIds: ids }; }}
                 />
               );
             }
@@ -1743,7 +1739,7 @@ export default function Diagnostic() {
                   pathwayIds={[...new Set(cp.courses.map((c) => c.pathwayId))]}
                   gaps={result.gaps}
                   delivery={pathwayDelivery(topPathway.id)}
-                  onChange={(ids) => { shownPlanRef.current = { courseIds: ids, giftId: null }; }}
+                  onChange={(ids) => { shownPlanRef.current = { courseIds: ids }; }}
                 />
               );
             }
@@ -1753,7 +1749,7 @@ export default function Diagnostic() {
                 pathway={topPathway}
                 gaps={result.gaps}
                 resetKey={swapCount}
-                onChange={(ids, gift) => { shownPlanRef.current = { courseIds: ids, giftId: gift }; }}
+                onChange={(ids) => { shownPlanRef.current = { courseIds: ids }; }}
               />
             );
           })()}

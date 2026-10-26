@@ -15,28 +15,28 @@ import { describe, expect, it } from 'vitest'
 
 const SRC = readFileSync(join(process.cwd(), 'src/components/CourseJourney.tsx'), 'utf8')
 
-/** كتلة الهديّة والإضافة أسفل الرحلة — لا قوائم التبديل داخل البطاقات.
+/** كتلة الإضافة أسفل الرحلة — لا قوائم التبديل داخل البطاقات (والهديّةُ أُلغيت، ٢٦ أكتوبر ٢٠٢٦).
 
     الحدّ الأدنى كان `SRC.indexOf('{edit.minReached')`، وهو يطابق
     `disabled={edit.minReached}` في موضعٍ أعلى الملفّ — فتنقلب الشريحة وتفرغ.
     فالنهاية من `lastIndexOf` لا `indexOf`. */
-const START = SRC.indexOf('{/* الهدية والإضافة')
+const START = SRC.indexOf('{/* الإضافة — أسفل الرحلة')
 const END = SRC.lastIndexOf('{edit.minReached && !edit.swapOnly')
 const BLOCK = SRC.slice(START, END)
 
 describe('قائمة الدورات المقترحة', () => {
   it('٠) الشريحة المفحوصة ليست فارغة — حارس على الحارس', () => {
-    expect(START, 'لم تعثر كتلة الهديّة والإضافة').toBeGreaterThan(-1)
+    expect(START, 'لم تعثر كتلة الإضافة').toBeGreaterThan(-1)
     expect(END, 'لم يعثر حدّها الأدنى').toBeGreaterThan(START)
     expect(BLOCK.length).toBeGreaterThan(400)
   })
 
-  it('١) تصيّر مرّة واحدة في كتلة الهديّة والإضافة', () => {
+  it('١) تصيّر مرّة واحدة في كتلة الإضافة', () => {
     const renders = BLOCK.split('edit.pool.map(').length - 1
     expect(renders, 'القائمة تصيّر أكثر من مرّة — هذا هو التبعثر').toBe(1)
   })
 
-  it('٢) الفعل الباقي: إضافة بالسعر — الهديّة لم تعد تختار من هنا', () => {
+  it('٢) الفعل الباقي: إضافة بالسعر — لا هديّة', () => {
     expect(BLOCK).toContain('edit.onAdd(p.id)')
     expect(BLOCK).not.toContain('edit.onGiftToggle(p.id)')
   })

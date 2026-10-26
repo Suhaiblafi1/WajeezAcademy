@@ -5,14 +5,14 @@ import CourseInterestForm from "@/components/CourseInterestForm";
 import { useListedCourses } from "@/services/listed-courses";
 import { cohortDayAr } from "@/application/learning/cohort-gate";
 import { useEffect, useState } from "react";
-import { CalendarDays, ChevronDown, Clock3, Target, ListChecks, FolderKanban, Award, RefreshCcw, X, Gift, Plus, UserRound, LifeBuoy, Tag, Trophy } from "lucide-react";
+import { CalendarDays, ChevronDown, Clock3, Target, ListChecks, FolderKanban, Award, RefreshCcw, X, Plus, UserRound, LifeBuoy, Tag, Trophy } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { courseFullById, weeksLabel, MIN_PATHWAY_COURSES, MAX_PATHWAY_COURSES } from "@/data/courses";
 import { apiGet } from "@/services/api";
 
 import { Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
-/** مقترح استبدال/إضافة/هدية — يحسبه المحرك من مجال المسار وفجوات المتعلم */
+/** مقترح استبدال/إضافة — يحسبه المحرك من مجال المسار وفجوات المتعلم */
 export interface CourseSuggestion {
   id: string;
   name: string;
@@ -21,16 +21,14 @@ export interface CourseSuggestion {
 
 /** وضع التخصيص داخل رحلة الدورات — يُمرَّر فقط لمن يملك حسابا، وللمسارات الأساسية */
 export interface CourseJourneyEdit {
-  /** دورة الهدية المجانية إن اختيرت — تظهر آخر القائمة بشارة ولا تُحتسب في العدد */
-  giftId: string | null;
   /** الدورة المفتوحة بدائلها حاليا */
   swapForId: string | null;
-  /** مقترحات مفلترة: خارج المختارة والهدية، مرتبة بأولوية معالجة الفجوات */
+  /** مقترحات مفلترة: خارج المختارة، مرتبة بأولوية معالجة الفجوات */
   pool: CourseSuggestion[];
   minReached: boolean;
   maxReached: boolean;
   /* التبديل وحده — للخطة المركّبة: يستبدل المتعلم دورة بأخرى تناسب احتياجه،
-     ولا يحذف ولا يضيف ولا يختار هدية. والسبب أن عدد الدورات هو ما يحدد السعر،
+     ولا يحذف ولا يضيف. والسبب أن عدد الدورات هو ما يحدد السعر،
      فتثبيته يُبقي السعر ثابتا ويفتح الاختيار في الوقت نفسه. */
   swapOnly?: boolean;
   /** لماذا يضيف بدل أن يكتفي — جملةٌ يكتبها النداء بأرقامه هو.
@@ -42,20 +40,22 @@ export interface CourseJourneyEdit {
   onSwapPick: (oldId: string, newId: string) => void;
   onRemove: (id: string) => void;
   onAdd: (id: string) => void;
-  onGiftToggle: (id: string) => void;
 }
 
 /* «ماذا ستحقق من خلال خطتك؟» — الدورات رحلة متتابعة لا بطاقات متفرقة.
    تفاصيل كل دورة تُفتح بـAccordion داخل الصفحة نفسها — لا نوافذ منبثقة هنا.
    وعند تمرير edit تصبح الرحلة نفسها قابلة للتخصيص: استبدال في المكان بكل
-   التفاصيل، حذف حتى النواة، إضافة حتى السقف، وهدية مجانية فوق العدد. */
+   التفاصيل، حذف حتى النواة، إضافة حتى السقف.
+
+   ═══ ولا «هدية مجانية» (٢٦ أكتوبر ٢٠٢٦) ═══
+   كانت شارةً ذهبيّةً على سادسة المسار، والدفعُ يحاسبها بسعرها — فسأل صاحبُ المنصّة «لماذا تظهر وكأنّها هديّة
+   ولا تطبَّق على الدفع؟.. أرجو إلغاءها لأنّنا أعطينا خصوماتٍ عالية». فأُلغيت الهديّةُ كلُّها (`cart.service.ts`). */
 export default function CourseJourney({
   courseIds,
   reasons,
   delivery,
   headingLevel: Heading = "h3",
   edit,
-  giftId,
   supportReasons,
   showSchedule = false,
   graduationProjectAr,
@@ -71,8 +71,6 @@ export default function CourseJourney({
   graduationProjectAr?: string | null;
   headingLevel?: "h2" | "h3";
   edit?: CourseJourneyEdit;
-  /** شارة «هدية مجانية» بلا أدوات تخصيص — للعرض فقط كصفحة المسار */
-  giftId?: string | null;
   /* موعدُ كلّ دورة تحت اسمها — قرارُ صاحب المنتج: «يجب أن يكون هناك تاريخ
      لأقرب شعبة لكلّ دورة بالمسار، ويحقّ له اختيار الشعبة التي يريد».
 
@@ -135,7 +133,7 @@ export default function CourseJourney({
           ? "رحلة تعليمية مرتبة تنقلك من احتياجك الحالي إلى نتائج عملية يمكنك استخدامها في عملك وحياتك."
           : edit.swapOnly
             ? "خطة مبنية لك من أكثر من مجال — وكل دورة فيها قابلة للاستبدال بأخرى تناسب احتياجك. العدد ثابت، فالسعر لا يتغير."
-            : `رحلتك مرتبة من احتياجك إلى نتيجة عملية — وكل دورة فيها قابلة للاستبدال أو الحذف (بين ${MIN_PATHWAY_COURSES} و${MAX_PATHWAY_COURSES})، والهدية المجانية فوقها.`}
+            : `رحلتك مرتبة من احتياجك إلى نتيجة عملية — وكل دورة فيها قابلة للاستبدال أو الحذف (بين ${MIN_PATHWAY_COURSES} و${MAX_PATHWAY_COURSES}).`}
       </p>
 
       {/* سياسة المدربين تُقال مرة واحدة هنا بدل أن تتكرر شارةً على كل بطاقة —
@@ -147,7 +145,6 @@ export default function CourseJourney({
 
       <ol className="mt-6">
         {list.map((c, i) => {
-          const isGift = edit ? edit.giftId === c.id : giftId === c.id;
           const swapOpen = edit?.swapForId === c.id;
           const isSupport = isSupportId(c.id);
           return (
@@ -166,16 +163,10 @@ export default function CourseJourney({
             {i < list.length - 1 && !(isSupportId(list[i + 1].id) && i + 1 === firstSupport) && (
               <span aria-hidden className="absolute right-[15px] top-10 h-[calc(100%-32px)] w-px bg-white/10" />
             )}
-            {/* الهديّةُ تُعرَف بشارتها لا بإطارٍ ذهبيّ يميّز بطاقتها كلَّها —
-                بطاقةٌ عاديّة كسائر البطاقات، وشارة واحدة تكفي. */}
             <Collapsible className="rounded-2xl border border-white/10 bg-white/[0.03] transition-colors data-[state=open]:border-teal/40 data-[state=open]:bg-teal/[0.05]">
               <div className="flex items-start gap-3 p-4">
-                <span className={`z-10 grid h-8 w-8 shrink-0 place-items-center rounded-full border text-xs font-black ${
-                  isGift
-                    ? "border-[#FABC05]/60 bg-[#FABC05] text-[#0D0D0D]"
-                    : "border-[#38A7B4]/50 bg-paper text-[#6EC7D1]"
-                }`}>
-                  {isGift ? <Gift className="h-3.5 w-3.5" /> : isSupport ? <LifeBuoy className="h-3.5 w-3.5" /> : i + 1}
+                <span className="z-10 grid h-8 w-8 shrink-0 place-items-center rounded-full border border-[#38A7B4]/50 bg-paper text-xs font-black text-[#6EC7D1]">
+                  {isSupport ? <LifeBuoy className="h-3.5 w-3.5" /> : i + 1}
                 </span>
                 <div className="min-w-0 flex-1">
                   <CollapsibleTrigger
@@ -185,11 +176,6 @@ export default function CourseJourney({
                     <span className="flex items-center justify-between gap-2">
                       <span className="text-sm font-black leading-snug text-foreground">
                         {c.title}
-                        {isGift && (
-                          <span className="mr-2 rounded-full bg-gold px-2 py-0.5 align-middle text-fine font-black text-on-gold">
-                            هدية مجانية
-                          </span>
-                        )}
                       </span>
                       <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-300 group-data-[state=open]:rotate-180 group-data-[state=open]:text-teal-light-ink" />
                     </span>
@@ -254,8 +240,7 @@ export default function CourseJourney({
                       {supportReasons[c.id]}
                     </p>
                   )}
-                  {/* أدوات التخصيص — داخل البطاقة نفسها، والهديّة تُستبدل كغيرها
-                      (فتنتقل الصفة لبديلتها) لا تُقفَل. */}
+                  {/* أدوات التخصيص — داخل البطاقة نفسها */}
                   {edit && (
                     <div className="mt-3 flex flex-wrap items-center gap-2">
                       <button
@@ -280,17 +265,6 @@ export default function CourseJourney({
                         حذفها
                       </button>
                       )}
-                    </div>
-                  )}
-                  {edit && !edit.swapOnly && isGift && (
-                    <div className="mt-3">
-                      <button
-                        onClick={() => edit.onGiftToggle(c.id)}
-                        className="flex items-center gap-1 rounded-full border border-gold/40 px-2.5 py-1 text-fine font-bold text-gold-ink transition hover:bg-gold/10"
-                      >
-                        <X className="h-3 w-3" />
-                        إلغاء الهدية
-                      </button>
                     </div>
                   )}
 
@@ -453,10 +427,7 @@ export default function CourseJourney({
         )}
       </ol>
 
-      {/* الهدية والإضافة — أسفل الرحلة مباشرة.
-          ولا شيء منهما في وضع التبديل: الهدية تزيد العدد والإضافة كذلك، وكلاهما
-          يمسّ السعر. وقبل هذا الشرط كانت بطاقة الهدية تظهر في الخطة المركّبة
-          وأزرارها موصولة بدالة فارغة — عرضٌ لخيار لا يعمل. */}
+      {/* الإضافة — أسفل الرحلة مباشرة. ولا شيء منها في وضع التبديل: الإضافة تزيد العدد فتمسّ السعر. */}
       {edit && !edit.swapOnly && (
         <div className="mt-5 space-y-3 border-t border-white/10 pt-5">
           {/* قائمةٌ واحدة لا قائمتان.
@@ -467,9 +438,7 @@ export default function CourseJourney({
               القارئ أن يكتشف بنفسه أنّ الصفّين شيءٌ واحد باحتمالين.
 
               فصارت الدورة سطرا واحدا في شبكة: اسمُها، وإلى جانبه ما يمكن
-              فعله بها. والهديّةُ لم تعد تُختار من هنا: هي سادسة الخطّة
-              افتراضا، واستبدالُها من بطاقتها في الرحلة نفسِها — لا صندوقٌ
-              يعرض دوراتٍ خارج الخطّة كأنها هديّةٌ ممكنة ثم لا تدخلها. */}
+              فعله بها. */}
           {/* الصندوقُ مطويٌّ افتراضا — سطرٌ يُغري بالفتح لا شبكةٌ تبتلع الشاشة.
 
               كان مفتوحا دائما بستّ دورات في شبكةٍ من عمودين، فيأخذ على الهاتف

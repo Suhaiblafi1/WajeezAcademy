@@ -36,7 +36,6 @@ interface Snapshot {
     id: string
     nameAr: string
     hostPathwayId: string | null
-    giftCourseId: string | null
     items: { courseId: string; sequence: number }[]
   } | null
   diagnostic: {
@@ -143,7 +142,6 @@ export default function LearnerPanel({ caseId }: { caseId: string }) {
                 <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-teal-ink" />
                 <span className="min-w-0">
                   {courseById(it.courseId)?.name ?? it.courseId}
-                  {snap.plan!.giftCourseId === it.courseId && <span className="ms-2 text-gold-ink">· هديّة</span>}
                 </span>
               </li>
             ))}
