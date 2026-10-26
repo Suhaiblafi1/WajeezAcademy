@@ -373,6 +373,7 @@ export class CartService {
       where: { code: couponCode.trim().toUpperCase() },
       include: {
         trainerCode: { select: { id: true, profileId: true, percentOff: true, amountOff: true } },
+        trainerShareCode: { select: { profileId: true } },
         grantCode: { select: { campaign: { select: { id: true, active: true, closesAt: true, maxCourses: true } } } },
       },
     })
@@ -409,6 +410,8 @@ export class CartService {
     const gift = await this.giftFor(userId, new Set(cohorts.map((c) => c.courseId)))
     const coupon = await this.couponFor(userId, couponCode)
     const trainerCode = coupon?.trainerCode ?? null
+    /* وكودُ «شارك دوراتك»: خصمُنا على دوراته — نطاقُه نطاقُ كوده، ولا يُحسم منه (`share-code.ts`) */
+    const shareCode = coupon?.trainerShareCode ?? null
     /* ═══ كودُ المدرّب على دوراته وحدَها ═══
 
        و«دوراتُه» هي الشعبُ التي تُحتسب له أتعابُها (`cohort-lead.ts`) — فلا يقع
@@ -425,6 +428,9 @@ export class CartService {
       if (trainerCode.amountOff !== null && cartCurrency !== LEDGER_CURRENCY) {
         throw new AuthError('code_currency', `هذا الكود مبلغ بـ${LEDGER_CURRENCY}، والسلّة بعملة أخرى`, 409)
       }
+    } else if (shareCode) {
+      const leads = await cohortLeadTrainers(this.prisma, cohorts.map((c) => c.id))
+      scope = cohorts.filter((c) => leads.get(c.id) === shareCode.profileId).map((c) => c.id)
     }
     const pricing = priceCart(
       cohorts.map((c) => ({
@@ -440,11 +446,14 @@ export class CartService {
             cohortIds: scope,
             maxPercentOfBase: MAX_TRAINER_CODE_PERCENT,
           }
-          : {
-            percentOff: coupon.percentOff, amountOff: coupon.amountOff === null ? null : num(coupon.amountOff),
-            /* وكودُ المنحة بدلُ الباقة لا فوقها — قرارُ صاحب المنصّة («A») */
-            replacesBundle: coupon.grantCode !== null,
-          }
+          : shareCode
+            /* نسبتُه من كوبونه، على شعب مدرّبه وحدَها، فوق الباقة كأيّ كود */
+            ? { percentOff: coupon.percentOff, amountOff: null, cohortIds: scope }
+            : {
+              percentOff: coupon.percentOff, amountOff: coupon.amountOff === null ? null : num(coupon.amountOff),
+              /* وكودُ المنحة بدلُ الباقة لا فوقها — قرارُ صاحب المنصّة («A») */
+              replacesBundle: coupon.grantCode !== null,
+            }
         : null,
       cartCurrency,
       await this.planCarryFor(userId, cohorts, cartCurrency),
@@ -452,7 +461,7 @@ export class CartService {
     /* كودٌ لا يخصّ شيئا في السلّة يُقال لصاحبه — لا يُقبَل صامتا بخصمِ صفر،
        فيظنّ أنّ الكودَ عطِب أو أنّه خُصم له ما لم يُخصم. ولا يُسمّى المدرّب:
        اسمُه لا يُعرض قبل اعتماد نشره (قواعدُ المستودَع). */
-    if (trainerCode && pricing.couponLines === 0) {
+    if ((trainerCode || shareCode) && pricing.couponLines === 0) {
       throw new AuthError('code_not_applicable', 'هذا الكود لدورات مدرّب بعينه، وليس في سلّتك دورة مدفوعة منها', 409)
     }
     /* وكودُ منحةٍ سعرُ الباقة أقلُّ منه يُقال لصاحبه ولا يُحرق — فيحتفظ به أو يعطيه غيرَه */

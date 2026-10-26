@@ -214,12 +214,13 @@ export class CommerceService {
     let couponId: string | undefined
     let couponMaxUses: number | null = null
     if (couponCode) {
-      const coupon = await this.prisma.coupon.findUnique({ where: { code: couponCode.trim().toUpperCase() }, include: { trainerCode: { select: { id: true } }, grantCode: { select: { id: true } } } })
+      const coupon = await this.prisma.coupon.findUnique({ where: { code: couponCode.trim().toUpperCase() }, include: { trainerCode: { select: { id: true } }, trainerShareCode: { select: { id: true } }, grantCode: { select: { id: true } } } })
       assertCouponUsable(coupon, userId)
       /* الفحصُ يرمي عند الغياب — فما بعده كوبونٌ موجود */
       if (!coupon) throw new AuthError('bad_coupon', 'الكوبون غير صالح')
       await assertFirstPurchase(this.prisma, coupon, userId)
-      if (coupon.trainerCode) throw new AuthError('trainer_code_checkout_only', TRAINER_CODE_CHECKOUT_ONLY_AR, 409)
+      /* وكودُ «شارك دوراتك» مثلُه: يقع على شعب مدرّبه وحدَها، وهذا البابُ يخصم من الطلب كلِّه (`share-code.ts`) */
+      if (coupon.trainerCode || coupon.trainerShareCode) throw new AuthError('trainer_code_checkout_only', TRAINER_CODE_CHECKOUT_ONLY_AR, 409)
       /* وكودُ المنحة كذلك: هنا لا يُسأل أهو أوّلُ منحةٍ لصاحبه ولا أيُّ السعرين أقلّ (`grant.service.ts`) */
       if (coupon.grantCode) throw new AuthError('grant_checkout_only', GRANT_CHECKOUT_ONLY_AR, 409)
       couponMaxUses = coupon.maxUses
@@ -514,14 +515,15 @@ export class CommerceService {
     let couponId: string | undefined
     let couponMaxUses: number | null = null
     if (couponCode) {
-      const coupon = await this.prisma.coupon.findUnique({ where: { code: couponCode.trim().toUpperCase() }, include: { trainerCode: { select: { id: true } }, grantCode: { select: { id: true } } } })
+      const coupon = await this.prisma.coupon.findUnique({ where: { code: couponCode.trim().toUpperCase() }, include: { trainerCode: { select: { id: true } }, trainerShareCode: { select: { id: true } }, grantCode: { select: { id: true } } } })
       /* المشتري صاحبُ الطلب لا الإداريُّ المعتمِد — والكوبونُ المقصور
          يُقاس على من تُصدَر له الفاتورة. */
       assertCouponUsable(coupon, req.userId)
       /* الفحصُ يرمي عند الغياب — فما بعده كوبونٌ موجود */
       if (!coupon) throw new AuthError('bad_coupon', 'الكوبون غير صالح')
       await assertFirstPurchase(this.prisma, coupon, req.userId)
-      if (coupon.trainerCode) throw new AuthError('trainer_code_checkout_only', TRAINER_CODE_CHECKOUT_ONLY_AR, 409)
+      /* وكودُ «شارك دوراتك» مثلُه: يقع على شعب مدرّبه وحدَها، وهذا البابُ يخصم من الطلب كلِّه (`share-code.ts`) */
+      if (coupon.trainerCode || coupon.trainerShareCode) throw new AuthError('trainer_code_checkout_only', TRAINER_CODE_CHECKOUT_ONLY_AR, 409)
       /* وكودُ المنحة كذلك: هنا لا يُسأل أهو أوّلُ منحةٍ لصاحبه ولا أيُّ السعرين أقلّ (`grant.service.ts`) */
       if (coupon.grantCode) throw new AuthError('grant_checkout_only', GRANT_CHECKOUT_ONLY_AR, 409)
       couponMaxUses = coupon.maxUses

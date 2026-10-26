@@ -1401,6 +1401,7 @@ model TrainerProfile {
   issuedDiscounts       TrainerIssuedDiscount[]
   codes                 TrainerCode[]
   codeRedemptions       TrainerCodeRedemption[]
+  shareCode             TrainerShareCode?
 }
 
 model TrainerSkill {
@@ -2593,6 +2594,21 @@ model TrainerCode {
   redemptions TrainerCodeRedemption[]
 
   @@index([profileId, status])
+}
+
+/// كودُ «شارك دوراتك» — خصمُ الأكاديميّة على دورات مدرّبٍ بعينه، ينشره هو (٢٦ أكتوبر ٢٠٢٦).
+///
+/// قرارُ صاحب المنصّة: «نعطي خصومات للدورات التي يسوّقها المدرّبون ولا تنقص من حسابهم، بل فقط هذه منّا نحن» —
+/// ثلاثون بالمئة. واحدٌ لكلّ مدرّب، يقع على شعبه وحدَها كما يقع كودُه هو، ولا صفَّ استعمالٍ يُحسم منه: خصمُ
+/// الأكاديميّة لا يتحمّل المدرّبُ منه شيئا (البند 4-9). والنسبةُ في كوبونه، والعلّةُ في `src/application/trainer/share-code.ts`.
+model TrainerShareCode {
+  id        String   @id @default(uuid()) @db.Uuid
+  profileId String   @unique @db.Uuid
+  couponId  String   @unique @db.Uuid
+  createdAt DateTime @default(now())
+
+  profile TrainerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  coupon  Coupon         @relation(fields: [couponId], references: [id], onDelete: Cascade)
 }
 
 /// استعمالُ كود المدرّب في طلب — ومنه وحدَه يُحسب ما يُحسم (البند 4-10).
@@ -4047,6 +4063,8 @@ model Coupon {
   trainerCode     TrainerCode?
   /// وكودُ المنحة إن كان هذا الكوبونُ وجهَه — واحدٌ لواحد (`grant.service.ts`)
   grantCode       GrantCode?
+  /// وكودُ «شارك دوراتك» إن كان هذا الكوبونُ وجهَه — خصمٌ منّا على دورات مدرّبٍ بعينه (`share-code.ts`)
+  trainerShareCode TrainerShareCode?
 
   @@index([restrictedToUserId])
 }

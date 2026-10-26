@@ -31,6 +31,7 @@ import { PLAN_MAX, PLAN_TITLE_MIN } from '../../../src/application/trainer/plan-
 import { ReferralService } from '../../services/referral.service'
 import { TrainerDiscountService } from '../../services/trainer-discount.service'
 import { TrainerCodeService } from '../../services/trainer-code.service'
+import { TrainerShareCodeService } from '../../services/trainer-share-code.service'
 import { MAX_TRAINER_CODE_AMOUNT, MAX_TRAINER_CODE_PERCENT, MAX_TRAINER_CODE_USES, MIN_TRAINER_CODE_PERCENT } from '../../../src/application/trainer/trainer-code'
 import { RESOURCE_KINDS, RESOURCE_CATEGORIES } from '../../../src/application/trainer/plan-overlay'
 import { SHORT_SESSION_AR, sessionTooShort } from '../../../src/application/trainer/session-length'
@@ -465,6 +466,12 @@ export function registerLearningPortalRoutes(app: FastifyInstance, prisma: Prism
     ])
     return { ...link, ...reach }
   })
+
+  /* «شارك دوراتك»: كودُنا ٣٠٪ على دوراته (يُنشأ أوّلَ مرّة)، ووجهُه وأكوادُه — لما يُصمَّم ويُنشر (`share-kit.ts`) */
+  app.get('/api/trainer/me/share-kit', {
+    preHandler: requirePermission('trainer.cohort.plan'),
+    schema: { tags: ['trainer-ops'], summary: 'كود الأكاديمية على دوراتي، وما يصمم منه منشوري' },
+  }, async (req) => new TrainerShareCodeService(prisma).kit(req.auth!.userId))
 
   /* ═══ أكوادُه — تُصدَر من «دعوتي» وتُحسم من «مستحقّاتي» (٢٧ سبتمبر ٢٠٢٦) ═══
 
