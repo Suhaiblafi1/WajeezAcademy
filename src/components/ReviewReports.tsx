@@ -4,12 +4,12 @@
    وتذكره رسالةُ القرار جرسا وبريدا، ويبقى في الصفحة يُفتح بعد البريد. لا مرفقا في بريدٍ
    يُرسَل من خارجها.
 
-   والوجهان هنا: `ReviewReportUploader` لبطاقة المراجعة (يرفع ويحذف قبل القرار)،
+   والوجهان هنا: لمساحة المراجعة رفعُه وحذفُه قبل القرار (`useReviewReports`) وما رُفع (`ReviewReportFiles`)،
    و`ReviewReportList` لصفحة المدرّب (يقرأ). والقراءةُ بالمسار المحروس نفسِه لملفّات
    الشعبة (`/api/v1/cohort-files/…`): مدرّبُها والإدارةُ وحدَهم. */
 
-import { useRef, useState } from "react";
-import { FileText, Upload } from "lucide-react";
+import { useState } from "react";
+import { FileText } from "lucide-react";
 import { apiDelete, apiPost, ApiError } from "@/services/api";
 import { putSigned } from "@/services/signed-upload";
 import { Inset } from "@/components/ui/Surface";
@@ -36,18 +36,17 @@ function mimeOf(file: File): string {
   return "";
 }
 
-/** لبطاقة المراجعة — يُرفع ويُحذف والخطّةُ بانتظار القرار */
-export function ReviewReportUploader({ planId, reports, onChange }: {
-  planId: string;
-  reports: readonly ReviewReport[];
-  onChange: () => void | Promise<void>;
-}) {
-  const input = useRef<HTMLInputElement>(null);
+/* ═══ والرفعُ في «أدوات Claude»، وما رُفع في «بطاقات للمدرب» (٢٦ أكتوبر ٢٠٢٦، المرحلة الخامسة) ═══
+   كان صندوقا واحدا يرفع ويعرض (`ReviewReportUploader`). وفي مساحة المراجعة (خطّة لوحة الإدارة، ٣د) صار الرفعُ في القائمة
+   الواحدة، وما رُفع مع ما يصل المدرّبَ من بطاقاتك — فهو يصله مع قرارك. والرسالةُ في سطر الأدوات (`say`). */
+
+/** رفعُ تقرير المراجعة وحذفُه قبل القرار — والخطّةُ بانتظاره */
+export function useReviewReports(planId: string | null, onChange: () => void | Promise<void>, say: (msg: string) => void) {
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState("");
 
   const upload = async (file: File) => {
-    setBusy(true); setMsg("");
+    if (!planId) return;
+    setBusy(true); say("");
     try {
       const r = await apiPost<{ uploadUrl: string; maxBytes: number }>(
         `/api/admin/cohort-plans/${planId}/review-report`,
@@ -55,65 +54,60 @@ export function ReviewReportUploader({ planId, reports, onChange }: {
       );
       await putSigned(r.uploadUrl, file, r.maxBytes);
       await onChange();
-      setMsg(`رفع «${file.name}» — تذكره رسالة قرارك، ويجده المدرّب في صفحة شعبته.`);
+      say(`رفع «${file.name}» — تذكره رسالة قرارك، ويجده المدرّب في صفحة شعبته.`);
     } catch (e) {
-      setMsg(e instanceof ApiError || e instanceof Error ? e.message : "تعذّر الرفع");
+      say(e instanceof ApiError || e instanceof Error ? e.message : "تعذّر الرفع");
     } finally {
       setBusy(false);
-      if (input.current) input.current.value = "";
     }
   };
 
   const remove = async (key: string, name: string) => {
-    setBusy(true); setMsg("");
+    if (!planId) return;
+    setBusy(true); say("");
     try {
       await apiDelete(`/api/admin/cohort-plans/${planId}/review-report/${encodeURIComponent(key)}`);
       await onChange();
-      setMsg(`حذف «${name}».`);
+      say(`حذف «${name}».`);
     } catch (e) {
-      setMsg(e instanceof ApiError ? e.message : "تعذّر الحذف");
+      say(e instanceof ApiError ? e.message : "تعذّر الحذف");
     } finally {
       setBusy(false);
     }
   };
 
+  return { busy, upload, remove };
+}
+
+/** ما يُختار في «ارفع تقرير المراجعة» — PDF أو Word */
+export const REVIEW_REPORT_ACCEPT = [...REVIEW_REPORT_MIMES, ".pdf", ".docx"].join(",");
+
+/** «بطاقات للمدرب» — تقريرُ المراجعة يصله مع قرارك. و`onRemove` لمن يرفعه والخطّةُ بانتظار القرار */
+export function ReviewReportFiles({ reports, busy, onRemove }: {
+  reports: readonly ReviewReport[];
+  busy: boolean;
+  onRemove?: (key: string, name: string) => void;
+}) {
+  if (reports.length === 0) return null;
   return (
-    <Inset className="mt-3" role="region" aria-label="تقرير المراجعة">
-      <p className="text-read font-black text-foreground">تقرير المراجعة (اختياريّ)</p>
-      <p className="mt-1 text-read leading-6 text-muted-foreground">
-        ارفعه PDF أو Word قبل قرارك: يحفظ مع الخطّة، وتذكره رسالة القرار للمدرّب جرسا وبريدا،
-        ويجده في صفحة شعبته تحت «تقرير المراجعة».
-      </p>
-      {reports.length > 0 && (
-        <ul className="mt-2 space-y-1.5">
-          {reports.map((r) => (
-            <li key={r.storageKey} className="flex flex-wrap items-center gap-x-3 gap-y-1 text-read">
-              <FileText className="h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" />
-              <a href={fileHref(r.storageKey)} target="_blank" rel="noreferrer" className="font-bold text-teal-light-ink underline">
-                {r.originalName}
-              </a>
-              <Button tone="ghost" size="sm" disabled={busy} onClick={() => void remove(r.storageKey, r.originalName)}>
+    <div className="mt-3" role="region" aria-label="تقرير المراجعة">
+      <p className="text-read font-black text-foreground">تقرير المراجعة — يصله مع قرارك</p>
+      <ul className="mt-2 space-y-1.5">
+        {reports.map((r) => (
+          <li key={r.storageKey} className="flex flex-wrap items-center gap-x-3 gap-y-1 text-read">
+            <FileText className="h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" />
+            <a href={fileHref(r.storageKey)} target="_blank" rel="noreferrer" className="font-bold text-teal-light-ink underline">
+              {r.originalName}
+            </a>
+            {onRemove && (
+              <Button tone="ghost" size="sm" disabled={busy} onClick={() => onRemove(r.storageKey, r.originalName)}>
                 احذفه
               </Button>
-            </li>
-          ))}
-        </ul>
-      )}
-      <div className="mt-2">
-        <input
-          ref={input}
-          type="file"
-          className="sr-only"
-          aria-label="ملفّ تقرير المراجعة"
-          accept={[...REVIEW_REPORT_MIMES, ".pdf", ".docx"].join(",")}
-          onChange={(e) => { const f = e.target.files?.[0]; if (f) void upload(f); }}
-        />
-        <Button tone="secondary" size="sm" icon={Upload} disabled={busy} onClick={() => input.current?.click()}>
-          {busy ? "يرفع…" : reports.length > 0 ? "ارفع تقريرا آخر" : "ارفع التقرير"}
-        </Button>
-      </div>
-      {msg && <p className="mt-2 text-read font-bold text-teal-light-ink" role="status">{msg}</p>}
-    </Inset>
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 

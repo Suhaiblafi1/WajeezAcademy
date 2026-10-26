@@ -10,7 +10,7 @@
    الباب. فلا يُعتمَد من الطابور منهجٌ أقصرُ ممّا يُعتمَد من البطاقة — المنهجُ
    كاملا، وما تغيّر عن المعتمَد، وملاحظاتُ الردّ السابق، واللقاءاتُ والمهامُّ
    التي تُعتمَد معها. */
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { apiDownload, apiGet, apiPost, ApiError } from "@/services/api";
 import { useRealSession } from "@/services/session";
 import { fmtDateAr, fmtDateTimeAr } from "@/utils/format";
@@ -25,8 +25,8 @@ import { PlanDiffList, SinceReturnList } from "@/components/PlanDiff";
 import { planDiff, sinceReturn } from "@/application/trainer/plan-diff";
 import { REVIEW_NOTE_MAX, hasReviewNotes, type ReviewNotes } from "@/application/trainer/review-notes";
 import { StaffField, staffAreaCls } from "@/components/FormKit";
-import { ReviewReportUploader, type ReviewReport } from "@/components/ReviewReports";
-import { PlanEditsUploader } from "@/components/PlanEdits";
+import { REVIEW_REPORT_ACCEPT, ReviewReportFiles, useReviewReports, type ReviewReport } from "@/components/ReviewReports";
+import { PlanEditsDrafts, PlanEditsSent, PlanEditsSetAside, usePlanEdits } from "@/components/PlanEdits";
 import { curriculumView, type CurriculumInput } from "@/application/trainer/curriculum-view";
 import { PLAN_AR, approvalBody, planApprovedMsg, taskDecisionMsg, type PlanDecision } from "@/application/trainer/plan-decision";
 import { adminRegistrationLine } from "@/application/learning/registration-state";
@@ -34,7 +34,7 @@ import TrainerNextSteps from "@/components/admin/TrainerNextSteps";
 import { signalPlansChanged } from "@/services/plans-signal";
 import { Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
-import { Download, ExternalLink } from "lucide-react";
+import { CalendarClock, ChevronDown, Download, ExternalLink, FileJson, Upload, Wrench } from "lucide-react";
 import { Link } from "react-router";
 import TabBar from "@/components/ui/TabBar";
 import PlanTimeline from "@/components/admin/PlanTimeline";
@@ -43,6 +43,7 @@ import { ownMaterialLabels, type WorkbookContent } from "@/application/trainer/c
 import PlanScorecard from "@/components/PlanScorecard";
 import { postponeChoices, postponedLineAr, seasonAr, seasonStart, type Season } from "@/application/trainer/plan-postpone";
 import { blockedItems, planScorecard } from "@/application/trainer/plan-scorecard";
+import { WORKSPACE_TABS, cardTally, cardsLineAr, draftsLineAr, planSizeAr, scoreLineAr, workspaceTabAr, type WorkspaceTab } from "@/application/trainer/plan-workspace";
 
 export interface TrainerPlan {
   id: string; status: string; reviewerNote: string | null; trainerName: string | null;
@@ -103,8 +104,8 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
   onPlanDecided?: (outcome: PlanOutcome) => void;
 }) {
   const [busy, setBusy] = useState(false);
-  /* أيُّ اللسانين يُعرض — الإدارةُ أوّلا: ما ينتظر قرارك (١١ أكتوبر ٢٠٢٦) */
-  const [tab, setTab] = useState<"admin" | "plan">("admin");
+  /* أيُّ الألسنة الثلاثة اختير — وقبل الاختيار يُحسب من حال الخطّة (`tab` أدناه) */
+  const [tabPick, setTab] = useState<WorkspaceTab | null>(null);
   const [msg, setMsg] = useState("");
   /* خطّةُ المدرّب لهذه الشعبة — يعتمدها من يملك `cohort.plan.approve` (الأكاديميُّ
      والأعلى)، ويذكّره بها من يدير الشعبة. */
@@ -154,9 +155,10 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
      يعملها بيده — وهي ما نسخه قرارُ «قبل/بعد» (١٢ أكتوبر). ثمّ اختار صاحبُ المنصّة: «No text notes» — يردّها بما
      ينتظره من بطاقات، وسطرٍ واحدٍ تكتبه المنصّةُ بعددها (`suggestedEditsLineAr`). ولا بطاقةَ تنتظر: لا ردّ، ويُقال
      لماذا وما الخيارات. */
-  const [editsPending, setEditsPending] = useState(0);
+  const edits = usePlanEdits(trainerPlan?.id ?? null, cohortId);
+  const editsPending = edits.pendingCards;
   /* ومسوّداتٌ لم تُعتمد للمدرّب — «اعتمدها» يقول إنّها لا تصله (١٧ أكتوبر ٢٠٢٦) */
-  const [editsDrafts, setEditsDrafts] = useState(0);
+  const editsDrafts = edits.drafts.length;
   /* ═══ والتأجيلُ إلى موسمٍ قادم — قرارٌ ثالث (٨ أكتوبر ٢٠٢٦) ═══
      «أختار أفضلَ اثنتين أو ثلاث… وأقول لهم أن يؤجّلوا الباقية — ويجب أن يعرفوا أنّي لا
      أقبلها لهذا الفصل». يُختار الموسمُ (التالي مقترَحا)، وكلمةٌ اختياريّة. */
@@ -170,6 +172,35 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
      بعدها لمدرّبٍ نشطٍ لا تُفتح إلّا من «الشعب». واختار صاحبُ المنصّة («All, in order»، الخطوة A): يظهر على كلّ خطّةٍ
      معتمَدة، والخادمُ يقول ما بقي (مسوّداتُه المعتمَدة)، واللوحُ لا يفتح لمدرّبٍ لم يفعّل بعد. */
   const planApproved = trainerPlan?.status === "approved" || trainerPlan?.status === "published";
+  /* ═══ مساحةُ المراجعة: اللسانُ والأدواتُ والأسطرُ الثلاثة (٢٦ أكتوبر ٢٠٢٦، المرحلة الخامسة) ═══
+     يُفتح على «اقتراحات Claude» — ما ينتظر قرارك — والمعتمَدةُ على «بطاقات للمدرب»: لا مسوّداتٍ بعد الاعتماد، وما بقي
+     عنده يُقرأ. والرفعُ لمن يعتمد والخطّةُ لم تُعتمد، وتقريرُ المراجعة والخطّةُ بانتظار قرارك (كما كانا في صندوقيهما). */
+  const tab: WorkspaceTab = tabPick ?? (planApproved ? "trainer" : "claude");
+  const [toolsOpen, setToolsOpen] = useState(false);
+  const editsFile = useRef<HTMLInputElement>(null);
+  const reportFile = useRef<HTMLInputElement>(null);
+  const canUploadEdits = canApprovePlan && !!trainerPlan && !planApproved;
+  const canUploadReport = trainerPlan?.status === "submitted" && canApprovePlan;
+  const reports = useReviewReports(trainerPlan?.id ?? null, loadPlan, edits.say);
+  /* وجدولٌ ثابتٌ مقترحٌ حين تنصح البطاقةُ في الإيقاع أو أوقات اللقاءات (١١ أكتوبر ٢٠٢٦) */
+  const offerSchedule = scorecard.some((i) => (i.key === "rhythm" || i.key === "session_times") && i.status !== "ok");
+  /* ═══ بطاقةُ المعايير تُفتح بنقرة — والمطلوبُ الساقطُ يُقرأ باسمه في سطرها (٢٦ أكتوبر ٢٠٢٦) ═══
+     كانت تُفتح وحدَها إن سقط مطلوب (١١ أكتوبر) كي لا يخفى — فدفعت الألسنةَ تحت عشرين سطرا. وصار سطرُها يسمّي ما سقط
+     («المطلوب: …» كما في خطّة لوحة الإدارة، ٣د)، وتحذيرُ القرار يسمّيه قبل الاعتماد: فلا يخفى، وتبقى مطويّة. */
+  const [cardShown, setCardOpen] = useState(false);
+  /* وحجمُ الخطّة كما يعدّه المنهاجُ نفسُه (`curriculumView`) — لا عدٌّ ثانٍ يخالفه */
+  const planSize = (() => {
+    if (!trainerPlan) return { meetings: 0, tasks: 0, workbooks: 0 };
+    const v = curriculumView({
+      title: trainerPlan.cohortTitle || cohortTitle, period: trainerPlan.period, content: trainerPlan.content,
+      sessions: trainerPlan.sessions, assessments: trainerPlan.assessments, approvedOnce: trainerPlan.approvedOnce,
+    });
+    return {
+      meetings: v.counts.meetings,
+      tasks: v.counts.tasks,
+      workbooks: (v.workbook?.url || v.workbook?.fileKey ? 1 : 0) + v.moduleWorkbooks.filter((w) => w.done).length,
+    };
+  })();
   /* وتأجيلُ آخرِ ما يُعِدّه يفعّله (#547) — فيظهر اللوحُ لشعبه المعتمَدة وإن لم تكن هذه منها */
   const [activated, setActivated] = useState(false);
   /* القضاءُ في الخطّة يُبلَّغ مرّتين: البابُ الذي فُتحت منه (الطابورُ يعلّمها)،
@@ -179,15 +210,16 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
   /* ═══ وتُنزَّل للمراجعة خارجَ المنصّة (٧ أكتوبر ٢٠٢٦) ═══
      قرارُ صاحب المنصّة: زرُّ تنزيل. ZIP فيه المنهجُ نصّا مقروءا وكلُّ ملفٍّ رفعه
      المدرّب (`plan-review-bundle.ts`). ليس قرارا في الخطّة — فلا يمرّ بـ`act` ولا
-     يُبلَّغ به البابُ الذي فُتحت منه، ولا يحبس أزرارَ القرار وهو يُنزَّل. */
+     يُبلَّغ به البابُ الذي فُتحت منه، ولا يحبس أزرارَ القرار وهو يُنزَّل. وصار في «أدوات Claude»،
+     فرسالتُه في سطرها (٢٦ أكتوبر ٢٠٢٦). */
   const [downloading, setDownloading] = useState(false);
   const downloadBundle = async () => {
     if (downloading) return;
-    setDownloading(true); setMsg("");
+    setDownloading(true); edits.say("");
     try {
       const name = await apiDownload(`/api/admin/cohorts/${cohortId}/trainer-plan/review-bundle`, "خطة-الشعبة.zip");
-      setMsg(`نزّلت «${name}» — فيها المنهج وملفّات المدرّب. ولم تتغيّر الخطّة.`);
-    } catch (e) { setMsg(e instanceof ApiError ? e.message : "تعذّر التنزيل"); }
+      edits.say(`نزّلت «${name}» — فيها المنهج وملفّات المدرّب. ولم تتغيّر الخطّة.`);
+    } catch (e) { edits.say(e instanceof ApiError ? e.message : "تعذّر التنزيل"); }
     finally { setDownloading(false); }
   };
 
@@ -215,73 +247,203 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
           </p>
           {/* متى أُرسلت ومتى رُدّت وما قرّره في البطاقات — للإدارة وحدَها (١٧ أكتوبر ٢٠٢٦) */}
           <PlanTimeline planId={trainerPlan.id} />
-          {/* ═══ لسانان: «الإدارة» لما تقرّره، و«المنهاج» لما أرسله المدرّب (١١ أكتوبر ٢٠٢٦) ═══
-              «كثيرُ الكلام.. اجعله على شكل تابات». فالمنهجُ — أطولُ ما في البطاقة — في لسانه،
-              ولا يمرّ عليه من جاء ليعتمد تعديلاتٍ أو يرفع تقريرا. والإدارةُ أوّلا: ما ينتظر قرارك. */}
-          <TabBar
-            className="mt-3"
-            ariaLabel="أقسام الخطّة"
-            items={[{ id: "admin", label: "الإدارة" }, { id: "plan", label: "المنهاج" }]}
-            value={tab}
-            onChange={setTab}
-          />
-        </>
-      )}
-      {trainerPlan && tab === "plan" && (
-        <div role="tabpanel" aria-label="المنهاج" className="mt-3">
-          <div className="flex flex-wrap gap-2">
-            <Button as={Link} to={`/admin/plans/${cohortId}`} target="_blank" rel="noreferrer" tone="secondary" size="sm" icon={ExternalLink}>
-              افتحه في صفحة منفصلة
-            </Button>
-        <Button tone="secondary" size="sm" icon={Download} disabled={downloading} onClick={() => void downloadBundle()}>
-          {downloading ? "يجهّز التنزيل…" : "نزّل الخطّة للمراجعة"}
-        </Button>
-          </div>
-          <div className="mt-3">
-            <PlanCurriculum trainerPlan={trainerPlan} cohortTitle={cohortTitle} />
-          </div>
-        </div>
-      )}
-      {(!trainerPlan || tab === "admin") && (
-        <div role="tabpanel" aria-label="الإدارة">
-          {trainerPlan && (
-            <>
-              {/* ═══ ومتى يُفتح التسجيل — لا يُفتح قبل الاعتماد وإن رُفع علمُه (٣ج) ═══
+          {/* ═══ ومتى يُفتح التسجيل — لا يُفتح قبل الاعتماد وإن رُفع علمُه (٣ج) ═══
 
-                  «التسجيلُ يُفتح بعد الاعتماد، ويُغلق يومَ البدء، والالتحاقُ المتأخّرُ حتّى
-                  الموعد الثاني» (صاحب المنصّة). فيُقال للمعتمِد ما يحكم به الخادم: علمٌ
-                  مرفوعٌ على خطّةٍ لم تُعتمَد لا يُدخل أحدا — وكان يُقرأ «مفتوحا». */}
-              {/* ═══ وعلمُ الشعبة قبل الاعتماد وبعده (٣ أكتوبر ٢٠٢٦) ═══
-                  كان يقول «يُفتح باعتمادك» و«الالتحاقُ مفتوح» لكلّ شعبة — وشعبةُ الإعداد
-                  مسوّدةٌ علمُها منزولٌ لا يرفعه الاعتماد. فالجملةُ من حالها كما يحكم
-                  الخادم (`registration-state.ts`)، وتقول أين تُفتح إن كانت مغلقة. */}
-              {(() => {
-                const r = trainerPlan.registration;
-                const line = r ? adminRegistrationLine({ ...r, registrationOpen: r.registrationOpen ?? true }, new Date()) : null;
-                return line ? (
-                  <p className="mt-2 text-read leading-6 text-muted-foreground">
-                    {line.lead}{line.date && <b className="text-foreground">{line.date}</b>}{line.tail}
-                  </p>
-                ) : null;
-              })()}
+              «التسجيلُ يُفتح بعد الاعتماد، ويُغلق يومَ البدء، والالتحاقُ المتأخّرُ حتّى
+              الموعد الثاني» (صاحب المنصّة). فيُقال للمعتمِد ما يحكم به الخادم: علمٌ
+              مرفوعٌ على خطّةٍ لم تُعتمَد لا يُدخل أحدا — وكان يُقرأ «مفتوحا». */}
+          {/* ═══ وعلمُ الشعبة قبل الاعتماد وبعده (٣ أكتوبر ٢٠٢٦) ═══
+              كان يقول «يُفتح باعتمادك» و«الالتحاقُ مفتوح» لكلّ شعبة — وشعبةُ الإعداد
+              مسوّدةٌ علمُها منزولٌ لا يرفعه الاعتماد. فالجملةُ من حالها كما يحكم
+              الخادم (`registration-state.ts`)، وتقول أين تُفتح إن كانت مغلقة. */}
+          {(() => {
+            const r = trainerPlan.registration;
+            const line = r ? adminRegistrationLine({ ...r, registrationOpen: r.registrationOpen ?? true }, new Date()) : null;
+            return line ? (
+              <p className="mt-2 text-read leading-6 text-muted-foreground">
+                {line.lead}{line.date && <b className="text-foreground">{line.date}</b>}{line.tail}
+              </p>
+            ) : null;
+          })()}
+          {trainerPlan.postponedTo && (
+            <Inset tone="warn" className="mt-3" role="status">
+              <p className="text-read font-black text-gold-ink">
+                {postponedLineAr(trainerPlan.postponedTo)} — لم تقبل للفصل الذي أرسلت له
+              </p>
+              <p className="mt-1 text-read leading-6 text-muted-foreground">
+                {trainerPlan.status === "submitted"
+                  ? `أعاد المدرّب إرسالها لموسمها: يجب أن تبدأ في ${cohortDayAr(trainerPlan.postponedTo)} أو بعده.`
+                  : `المدرّب يعدّلها، ولا يرسلها إلّا إذا بدأت في ${cohortDayAr(trainerPlan.postponedTo)} أو بعده.`}
+              </p>
+            </Inset>
+          )}
+
+          {/* ═══ ثلاثةُ أسطرٍ فوق الألسنة (٢٦ أكتوبر ٢٠٢٦، المرحلة الخامسة) ═══
+              «خطّة لوحة الإدارة» (٣د): بطاقةُ المعايير بعدّها، وما فعله المدرّبُ ببطاقاتك، والخطّةُ بحجمها — تُقرأ قبل أن
+              يُفتح لسان، ولكلٍّ بابُه. والحسابُ في `plan-workspace.ts`. */}
+          <div className="mt-3 grid gap-2 sm:grid-cols-3" role="group" aria-label="الخطة في ثلاثة أسطر">
+            {/* بطاقةُ المعايير سطرٌ بعدّها يفتحها، ومفتوحةٌ إن سقط مطلوب («كثيرُ الكلام»، ١١ أكتوبر ٢٠٢٦) */}
+            <Inset className="flex flex-col gap-1 px-3 py-2.5">
+              <span className="text-fine font-black text-muted-foreground">بطاقة المعايير</span>
+              <p className="text-read font-bold text-foreground">
+                {scoreLineAr({ ok: scorecard.filter((i) => i.status === "ok").length, advice: scorecard.filter((i) => i.status === "advice").length, required: blocked.length })}
+              </p>
+              {blocked.length > 0 && <p className="text-read leading-6 text-gold-ink">المطلوب: {blocked.map((b) => b.labelAr).join(" · ")}</p>}
+              <button type="button" className="mt-auto w-fit cursor-pointer text-read font-bold text-teal-light-ink underline" aria-expanded={cardShown} onClick={() => setCardOpen(!cardShown)}>
+                {cardShown ? "اطوها" : "افتحها"}
+              </button>
+            </Inset>
+            {/* وما فعله المدرّبُ ببطاقاتك — أو ما ينتظرك منها إن لم يصله شيء */}
+            <Inset className="flex flex-col gap-1 px-3 py-2.5">
+              <span className="text-fine font-black text-muted-foreground">{trainerPlan.returned ? "ما تغير منذ ردك" : "بطاقاتك"}</span>
+              <p className="text-read font-bold text-foreground">{cardsLineAr(cardTally(edits.items)) ?? draftsLineAr(editsDrafts)}</p>
+              {trainerPlan.returned && trainerPlan.status === "submitted" && (
+                <button type="button" className="mt-auto w-fit cursor-pointer text-read font-bold text-teal-light-ink underline" onClick={() => setTab("plan")}>
+                  اقرأ ما عدّله في الخطة
+                </button>
+              )}
+            </Inset>
+            {/* والخطّةُ بحجمها — ولسانُها بنقرة */}
+            <Inset className="flex flex-col gap-1 px-3 py-2.5">
+              <span className="text-fine font-black text-muted-foreground">الخطة</span>
+              <p className="text-read font-bold text-foreground">{planSizeAr(planSize)}</p>
+              {trainerPlan.status === "submitted" && trainerPlan.approvedPlan && (
+                <p className="text-read leading-6 text-gold-ink">مراجعة لخطة معتمدة</p>
+              )}
+              <button type="button" className="mt-auto w-fit cursor-pointer text-read font-bold text-teal-light-ink underline" onClick={() => setTab("plan")}>
+                افتح المنهاج
+              </button>
+            </Inset>
+          </div>
+          {cardShown && (
+            <PlanScorecard
+              items={scorecard}
+              heading="بطاقة المعايير"
+              intro="تحسبها المنصّة من الخطّة، ورآها المدرّب قبل الإرسال. «مطلوب» يمنع الإرسال، و«نصيحة» قراره."
+            />
+          )}
+
+          {/* ═══ ثلاثةُ ألسنةٍ بترتيب العمل، و«أدوات Claude» قائمةٌ واحدة (٢٦ أكتوبر ٢٠٢٦، المرحلة الخامسة) ═══
+              «خطّة لوحة الإدارة» (٣د): «تعديلاتُ Claude تصل بطاقات، تُبقي كلًّا أو تحذفه، والمدرّبُ يقبل أو يرفض» — فلسانٌ لما
+              اقترحه Claude ولم تقرّر فيه، ولسانٌ لما اعتمدته للمدرّب، ولسانٌ للمنهاج كما أرسله. وأدواتُ الجملة صارت قائمةً
+              واحدة: تنزيلُ الخطّة لـClaude، ورفعُ ما يرجع منه، وتقريرُ المراجعة. وكان لسانان «الإدارة» و«المنهاج» (١١ أكتوبر). */}
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
+            <TabBar
+              ariaLabel="أقسام الخطّة"
+              items={WORKSPACE_TABS.map((id) => ({ id, label: workspaceTabAr(id, id === "claude" ? editsDrafts : id === "trainer" ? editsPending : 0) }))}
+              value={tab}
+              onChange={setTab}
+            />
+            <Button tone="secondary" size="sm" icon={Wrench} aria-expanded={toolsOpen} aria-controls={`claude-tools-${cohortId}`} onClick={() => setToolsOpen((v) => !v)}>
+              أدوات Claude
+              <ChevronDown aria-hidden="true" className={`h-3.5 w-3.5 transition ${toolsOpen ? "rotate-180" : ""}`} />
+            </Button>
+          </div>
+          {toolsOpen && (
+            <Inset id={`claude-tools-${cohortId}`} className="mt-2 flex flex-wrap gap-2 px-3 py-2.5" role="group" aria-label="أدوات Claude">
+              {/* وتُنزَّل للمراجعة خارجَ المنصّة — المنهجُ نصّا وملفّاتُ المدرّب (٧ أكتوبر ٢٠٢٦) */}
+              <Button tone="secondary" size="sm" icon={Download} disabled={downloading} onClick={() => void downloadBundle()}>
+                {downloading ? "يجهّز التنزيل…" : "نزّل الخطّة للمراجعة"}
+              </Button>
+              {/* ويرجع منه ملفُّ التعديلات — مسوّداتٌ لا يراها المدرّب حتّى تعتمدها له (٨ أكتوبر ٢٠٢٦) */}
+              {canUploadEdits && (
+                <>
+                  <input
+                    ref={editsFile}
+                    type="file"
+                    className="sr-only"
+                    aria-label="ملفّ التعديلات المقترحة"
+                    accept="application/json,.json"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) void edits.upload(f).then(() => { setTab("claude"); if (editsFile.current) editsFile.current.value = ""; });
+                    }}
+                  />
+                  <Button tone="secondary" size="sm" icon={FileJson} disabled={edits.busy} onClick={() => editsFile.current?.click()}>
+                    {edits.busy ? "يفحص…" : "ارفع ملفّ التعديلات"}
+                  </Button>
+                </>
+              )}
+              {/* وتقريرُ المراجعة يُرفع قبل القرار ويُحفظ مع الخطّة — يرافع القرارَ أيًّا كان (٨ أكتوبر ٢٠٢٦) */}
+              {canUploadReport && (
+                <>
+                  <input
+                    ref={reportFile}
+                    type="file"
+                    className="sr-only"
+                    aria-label="ملفّ تقرير المراجعة"
+                    accept={REVIEW_REPORT_ACCEPT}
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) void reports.upload(f).then(() => { if (reportFile.current) reportFile.current.value = ""; });
+                    }}
+                  />
+                  <Button tone="secondary" size="sm" icon={Upload} disabled={reports.busy} onClick={() => reportFile.current?.click()}>
+                    {reports.busy ? "يرفع…" : "ارفع تقرير المراجعة"}
+                  </Button>
+                </>
+              )}
+              {/* وجدولٌ ثابتٌ بسلسلته حين تنصح البطاقةُ في الإيقاع أو الأوقات (١١ أكتوبر ٢٠٢٦) */}
+              {canUploadEdits && offerSchedule && (
+                <Button tone="secondary" size="sm" icon={CalendarClock} disabled={edits.busy} onClick={() => void edits.schedule().then(() => setTab("claude"))}>
+                  جهّز جدولا ثابتا مقترحا
+                </Button>
+              )}
+              {canUploadEdits && edits.open > 0 && (
+                <Button tone="ghost" size="sm" disabled={edits.busy} onClick={() => void edits.withdraw()}>
+                  اسحب ما لم يقرّر ({edits.open})
+                </Button>
+              )}
+            </Inset>
+          )}
+          {/* وما قالته الأدواتُ والبطاقاتُ سطرٌ واحد تحت الألسنة — والقرارُ سطرُه عند أزراره */}
+          {edits.msg && <p className="mt-2 whitespace-pre-wrap text-read font-bold text-teal-light-ink" role="status">{edits.msg}</p>}
+
+          {tab === "claude" && (
+            <div role="tabpanel" aria-label="اقتراحات Claude" className="mt-3">
+              {editsDrafts > 0 ? (
+                <PlanEditsDrafts edits={edits} planId={trainerPlan.id} canReview={canReviewEdits && !planApproved} />
+              ) : (
+                <p className="text-read leading-6 text-muted-foreground">
+                  {planApproved
+                    ? "الخطة معتمدة، فلا مسوّدات بعدها."
+                    : "لا اقتراحات تنتظرك. نزّل الخطة من «أدوات Claude» لمراجعتها، ثمّ ارفع ملف التعديلات الذي يرجع: تصل هنا مسوّدات لا يراها المدرّب حتّى تعتمدها له."}
+                </p>
+              )}
+              <PlanEditsSetAside edits={edits} />
+            </div>
+          )}
+          {tab === "trainer" && (
+            <div role="tabpanel" aria-label="بطاقات للمدرب" className="mt-3">
+              <p className="mb-2 text-read leading-6 text-muted-foreground">
+                {planApproved
+                  ? "الخطة معتمدة: ما اعتمدته له بقي عنده اقتراحات اختيارية، وما يقبله يدخل الخطة مباشرة."
+                  : "ما اعتمدته له. يصله بـ«اطلب تعديلات» فيقبل كلّا أو يرفضه، أو يبقى عنده اقتراحات اختيارية إن اعتمدت الخطة."}
+              </p>
+              <PlanEditsSent edits={edits} />
+              <ReviewReportFiles reports={trainerPlan.reviewReports ?? []} busy={reports.busy} onRemove={canUploadReport ? (key, name) => void reports.remove(key, name) : undefined} />
+            </div>
+          )}
+          {tab === "plan" && (
+            <div role="tabpanel" aria-label="المنهاج" className="mt-3">
               {/* ═══ وما تغيّر عن المعتمَد — مراجعةٌ لخطّةٍ معتمَدة (٣ج-٤) ═══
 
-                  المنهجُ أدناه كما سيكون، ولا يقول ما الذي تغيّر: فإمّا يقرأ المعتمِدُ
-                  عشرين موعدا ليجد التعديلَ الواحد، وإمّا يعتمد ما لم يره. فيُقال هنا
-                  بخطوات المدرّب — حيث يكتب ملاحظتَه إن ردّ. */}
+                  المنهجُ تحته كما سيكون، ولا يقول ما الذي تغيّر: فإمّا يقرأ المعتمِدُ
+                  عشرين موعدا ليجد التعديلَ الواحد، وإمّا يعتمد ما لم يره. فيُقال أوّلَ اللسان
+                  بخطوات المدرّب. */}
               {trainerPlan.status === "submitted" && trainerPlan.approvedPlan && (
-                <Inset className="mt-3" role="region" aria-label="ما تغيّر عن المعتمد">
+                <Inset className="mb-3" role="region" aria-label="ما تغيّر عن المعتمد">
                   <p className="text-read font-black text-foreground">
                     ما تغيّر عن المعتمد
                     {trainerPlan.approvedPlan.reviewedAt && <span className="font-normal text-muted-foreground"> — اعتمدت {fmtDateAr(trainerPlan.approvedPlan.reviewedAt)}</span>}
                   </p>
                   <p className="mt-1 text-read leading-6 text-muted-foreground">
-                    هذه خطّة معتمدة سابقا، وهنا ما غيّره المدرّب. والمنهج بعد اعتمادك في تبويب «المنهاج».
+                    هذه خطّة معتمدة سابقا، وهنا ما غيّره المدرّب. والمنهج بعد اعتمادك تحته.
                   </p>
                   <div className="mt-2">
                     <PlanDiffList
                       sections={planDiff(trainerPlan.approvedPlan.content, trainerPlan.content, { date: cohortDayAr })}
-                      emptyText="لم تتغيّر الخطّة نفسها — واللقاءات والمهامّ التي تعتمد معها أدناه."
+                      emptyText="لم تتغيّر الخطّة نفسها — واللقاءات والمهامّ التي تعتمد معها تحت."
                     />
                   </div>
                 </Inset>
@@ -295,7 +457,7 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
                 const notes: ReviewNotes = trainerPlan.reviewerNotes ?? (trainerPlan.reviewerNote ? { general: trainerPlan.reviewerNote } : {});
                 const since = sinceReturn(trainerPlan.returned.content, trainerPlan.content, notes, { date: cohortDayAr });
                 return (
-                  <Inset className="mt-3" role="region" aria-label="ما تغيّر منذ ردّك">
+                  <Inset className="mb-3" role="region" aria-label="ما تغيّر منذ ردّك">
                     <p className="text-read font-black text-foreground">
                       ما تغيّر منذ ردّك
                       {trainerPlan.returned.at && <span className="font-normal text-muted-foreground"> — ردّت {fmtDateAr(trainerPlan.returned.at)}</span>}
@@ -309,47 +471,18 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
                   </Inset>
                 );
               })()}
-              {/* ═══ بطاقةُ المعايير (٨ أكتوبر ٢٠٢٦) ═══
-                  «أضف معاييرَ أخرى لتقييم العمل… اقترح أخرى وأنا أوافقك». ما تحسبه المنصّةُ
-                  من الخطّة — ساعاتُ اللقاء، والفاصلُ بينها وأوقاتُها، والتطبيقاتُ والمهامّ
-                  والمصادر — يُقرأ هنا قبل المنهج، والمدرّبُ رأى البطاقةَ نفسَها قبل أن يرسل. */}
-              {trainerPlan.postponedTo && (
-                <Inset tone="warn" className="mt-3" role="status">
-                  <p className="text-read font-black text-gold-ink">
-                    {postponedLineAr(trainerPlan.postponedTo)} — لم تقبل للفصل الذي أرسلت له
-                  </p>
-                  <p className="mt-1 text-read leading-6 text-muted-foreground">
-                    {trainerPlan.status === "submitted"
-                      ? `أعاد المدرّب إرسالها لموسمها: يجب أن تبدأ في ${cohortDayAr(trainerPlan.postponedTo)} أو بعده.`
-                      : `المدرّب يعدّلها، ولا يرسلها إلّا إذا بدأت في ${cohortDayAr(trainerPlan.postponedTo)} أو بعده.`}
-                  </p>
-                </Inset>
-              )}
-              {/* سطرٌ واحدٌ بعدّها، وتُفتح بنقرة — ومفتوحةً إن سقط مطلوب («كثيرُ الكلام»، ١١ أكتوبر ٢٠٢٦) */}
-              <details className="mt-3" open={blocked.length > 0}>
-                <summary className="cursor-pointer text-read font-bold text-teal-light-ink">
-                  بطاقة المعايير — {scorecard.filter((i) => i.status === "ok").length} تحقّق
-                  {" · "}{scorecard.filter((i) => i.status === "advice").length} نصيحة
-                  {" · "}{blocked.length} مطلوب
-                </summary>
-                <PlanScorecard
-                  items={scorecard}
-                  heading="بطاقة المعايير"
-                  intro="تحسبها المنصّة من الخطّة، ورآها المدرّب قبل الإرسال. «مطلوب» يمنع الإرسال، و«نصيحة» قراره."
-                />
-              </details>
               {/* وما طُلب منه يُقرأ بأقسامه — وبعد إعادة الإرسال «ما طلبتَه» ليُقابَل
-                  بما عُدّل في المنهج أعلاه، لا ليُتذكَّر من الذاكرة */}
+                  بما عُدّل في المنهج تحته، لا ليُتذكَّر من الذاكرة */}
               {(() => {
                 const notes: ReviewNotes = trainerPlan.reviewerNotes ?? (trainerPlan.reviewerNote ? { general: trainerPlan.reviewerNote } : {});
                 if (!hasReviewNotes(notes)) return null;
-                /* وقيلت في «ما تغيّر منذ ردّك» أعلاه بجانب ما تغيّر — فلا تُكرَّر هنا (⑦) */
+                /* وقيلت في «ما تغيّر منذ ردّك» بجانب ما تغيّر — فلا تُكرَّر (⑦) */
                 if (trainerPlan.status === "submitted" && trainerPlan.returned) return null;
                 const heading = trainerPlan.status === "submitted"
                   ? "ما طلبته في الردّ السابق — قابله بما عدّل"
                   : trainerPlan.status === "changes_requested" ? "ما طلب منه" : "ملاحظة القرار";
                 return (
-                  <Inset tone="warn" className="mt-2">
+                  <Inset tone="warn" className="mb-3">
                     <p className="text-read font-black text-gold-ink">{heading}</p>
                     <ReviewNotesList notes={notes} />
                   </Inset>
@@ -358,31 +491,17 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
               {/* وسقط هنا صندوقُ «يقترح المدرّبُ اسما آخر» (د-٦): اعتمادُ خطّةٍ
                   لا يُعيد تسميةَ دورةٍ في الكتالوج. واقتراحُ الاسم يصل الإدارةَ
                   في طابور اقتراحات المدرّبين، ويُعتمَد فيصير إصدارا جديدا (ح-٣). */}
-            </>
+              <Button as={Link} to={`/admin/plans/${cohortId}`} target="_blank" rel="noreferrer" tone="secondary" size="sm" icon={ExternalLink}>
+                افتحه في صفحة منفصلة
+              </Button>
+              <div className="mt-3">
+                <PlanCurriculum trainerPlan={trainerPlan} cohortTitle={cohortTitle} />
+              </div>
+            </div>
           )}
-          {/* ═══ وتقريرُ المراجعة — يُرفع قبل القرار ويُحفظ مع الخطّة (٨ أكتوبر ٢٠٢٦) ═══
-              يُرى مع «اعتمدها» ومع «اطلب تعديلات» معا: التقريرُ يرافع القرارَ أيًّا كان */}
-          {trainerPlan?.status === "submitted" && canApprovePlan && (
-            <ReviewReportUploader planId={trainerPlan.id} reports={trainerPlan.reviewReports ?? []} onChange={loadPlan} />
-          )}
-          {/* ═══ وتعديلاتٌ مقترحةٌ يقبل المدرّبُ كلًّا أو يرفضه (٨ أكتوبر ٢٠٢٦) ═══
-              تُرفع والخطّةُ بانتظار القرار أو في يده، ويُرى حالُ كلّ بندٍ بعدها. وبعد الاعتماد تُقرأ وحدَها:
-              ما اعتمدته للمدرّب بقي عنده اقتراحا (١٧ أكتوبر ٢٠٢٦) */}
-          {trainerPlan && (
-            <PlanEditsUploader
-              planId={trainerPlan.id}
-              cohortId={cohortId}
-              canUpload={canApprovePlan}
-              canReview={canReviewEdits}
-              closed={trainerPlan.status === "approved" || trainerPlan.status === "published"}
-              onPending={setEditsPending}
-              onDrafts={setEditsDrafts}
-              offerSchedule={scorecard.some((i) => (i.key === "rhythm" || i.key === "session_times") && i.status !== "ok")}
-            />
-          )}
-        </div>
+        </>
       )}
-      {/* ═══ والقرارُ تحت اللسانين — لا يُطوى بلسان «المنهاج» (٢٦ أكتوبر ٢٠٢٦، المرحلة الخامسة) ═══
+      {/* ═══ والقرارُ تحت الألسنة — لا يُطوى بلسان (٢٦ أكتوبر ٢٠٢٦، المرحلة الخامسة) ═══
           «الجولةُ ووقتُ الانتظار في الأعلى… وأزرارُ القرار في الأسفل» (خطّة لوحة الإدارة، ٣د). كان القرارُ في لسان «الإدارة»
           وحدَه: من قرأ المنهاجَ في لسانه رجع ليعتمد. فصار تحت اللسانين معا — وما يقوله قبل النقر معه. */}
       <div>
@@ -515,7 +634,7 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
               <Inset tone="warn" className="mt-3" role="group" aria-label="تأجيل الشعبة إلى موسم قادم">
                 <p className="text-read font-black text-gold-ink">أجّلها إلى موسم قادم — لم تقبل لهذا الفصل</p>
                 <ul className="mt-2 list-disc space-y-1 ps-5 text-read leading-6 text-foreground">
-                  <li>يصل المدرّب جرس وبريد يقولان صراحة إنّها <b>لم تقبل لهذا الفصل</b> وأجّلت إلى {seasonAr(to)} — ومعهما تقرير المراجعة إن رفعته في «الإدارة».</li>
+                  <li>يصل المدرّب جرس وبريد يقولان صراحة إنّها <b>لم تقبل لهذا الفصل</b> وأجّلت إلى {seasonAr(to)} — ومعهما تقرير المراجعة إن رفعته من «أدوات Claude».</li>
                   <li>تخرج من قائمتك، ولا تفتح للتسجيل هذا الفصل، وتنتقل الشعبة إلى ذلك الموسم.</li>
                   <li>تبقى خطّته ويعدّلها متى شاء — ولا يرسلها إلّا إذا بدأت في {cohortDayAr(seasonStart(to))} أو بعده.</li>
                 </ul>
@@ -563,12 +682,12 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
           {approvable && editsPending > 0 && (
             <p className="mt-2 text-read leading-6 text-muted-foreground">
               «اعتمدها» يبقي البطاقات التي اعتمدتها له ({editsPending}) عنده اقتراحات اختيارية: ما يقبله يدخل الخطة المعتمدة مباشرة، وما يرفضه لا يغير شيئا.
-              {editsDrafts > 0 && <> والمسودات التي لم تعتمدها له ({editsDrafts}) لا تصله — اعتمدها في «الإدارة» أولا إن أردت أن تصله.</>}
+              {editsDrafts > 0 && <> والمسودات التي لم تعتمدها له ({editsDrafts}) لا تصله — اعتمدها في «اقتراحات Claude» أولا إن أردت أن تصله.</>}
             </p>
           )}
           {trainerPlan?.status === "submitted" && canApprovePlan && editsPending === 0 && (
             <p className="mt-2 text-read text-muted-foreground">
-              لا بطاقة تنتظر المدرّب بعد، فلا ردّ. لك أن ترفع التعديلات أو تعتمد مسوّداتها في «الإدارة» فيصير الزرّ يردّها بها، أو تعتمدها كما هي، أو تؤجّلها.
+              لا بطاقة تنتظر المدرّب بعد، فلا ردّ. لك أن ترفع التعديلات أو تعتمد مسوّداتها في «اقتراحات Claude» فيصير الزرّ يردّها بها، أو تعتمدها كما هي، أو تؤجّلها.
             </p>
           )}
           {/* وما قاله الفعلُ يُقرأ حيث نُقر — لا أعلى البطاقة بعد منهجٍ طويل */}

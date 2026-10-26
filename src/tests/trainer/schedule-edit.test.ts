@@ -209,9 +209,10 @@ describe('⑤ والإدارة تطلبه بزرّ — والقاعدة تتّس
   it('⚠️ زرّ «جهّز جدولا ثابتا مقترحا» يطلب مسلكه — ويظهر حين يكون في الإيقاع أو الأوقات نصيحة', () => {
     const ui = code('src/components/PlanEdits.tsx')
     expect(ui).toMatch(/apiPost<PlanEditItem\[\]>\(`\/api\/admin\/cohort-plans\/\$\{planId\}\/edits\/schedule`, \{\}\)/)
-    expect(ui).toMatch(/\{offerSchedule && \(\s*<Button[^>]*onClick=\{\(\) => void schedule\(\)\}>\s*جهّز جدولا ثابتا مقترحا/)
-    expect(code('src/components/admin/TrainerPlanReview.tsx'))
-      .toMatch(/offerSchedule=\{scorecard\.some\(\(i\) => \(i\.key === "rhythm" \|\| i\.key === "session_times"\) && i\.status !== "ok"\)\}/)
+    /* والزرُّ في «أدوات Claude» (٢٦ أكتوبر ٢٠٢٦، المرحلة الخامسة) */
+    const card = code('src/components/admin/TrainerPlanReview.tsx')
+    expect(card).toMatch(/\{canUploadEdits && offerSchedule && \(\s*<Button[^>]*onClick=\{\(\) => void edits\.schedule\(\)[^}]*\}>\s*جهّز جدولا ثابتا مقترحا/)
+    expect(card).toMatch(/const offerSchedule = scorecard\.some\(\(i\) => \(i\.key === "rhythm" \|\| i\.key === "session_times"\) && i\.status !== "ok"\);/)
     expect(code('server/http/routes/admin-learning.routes.ts'))
       .toMatch(/app\.post\('\/api\/admin\/cohort-plans\/:id\/edits\/schedule', \{\s*preHandler: requirePermission\('cohort\.plan\.approve'\)/)
   })
