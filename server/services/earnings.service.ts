@@ -488,6 +488,30 @@ export class EarningsService {
     })
   }
 
+  /* ═══ سجلُّ أجر مدرّبٍ واحد — بمن ضبط كلَّ قاعدة (٢٦ أكتوبر ٢٠٢٦) ═══
+     الأحدثُ سريانا أوّلا، ولكلٍّ اسمُ من ضبطها (`createdBy`) — فيُقرأ في ملفّه من غيّر الرقمَ ومتى، ومن أيّ باب:
+     خطوة الأجر، أو العقد حين يُركَّب بأجرٍ جديد، أو «الأتعاب». و`null` لقاعدةٍ لا يُعرف كاتبُها (قديمةٌ أو من النظام). */
+  async feeHistory(profileId: string) {
+    const rules = await this.prisma.trainerCompensationRule.findMany({
+      where: { profileId },
+      orderBy: [{ effectiveFrom: 'desc' }, { createdAt: 'desc' }],
+      select: {
+        id: true, type: true, rate: true, currency: true, minSeats: true, referralRate: true,
+        courseId: true, cohortId: true, effectiveFrom: true, effectiveTo: true, createdBy: true, createdAt: true,
+      },
+    })
+    const ids = [...new Set(rules.map((r) => r.createdBy).filter((x): x is string => !!x))]
+    const names = new Map((ids.length === 0 ? [] : await this.prisma.user.findMany({
+      where: { id: { in: ids } }, select: { id: true, displayName: true },
+    })).map((u) => [u.id, u.displayName]))
+    return rules.map((r) => ({
+      ...r,
+      rate: r.rate.toString(),
+      referralRate: r.referralRate?.toString() ?? null,
+      createdByName: r.createdBy ? names.get(r.createdBy) ?? null : null,
+    }))
+  }
+
   /* القاعدة السارية لمدرب الآن — بدقة النطاق: شعبة محددة ← دورة محددة ← عامة، والأحدث سرياناً */
   async activeRule(profileId: string, scope: { cohortId?: string; courseId?: string } = {}, at = new Date(), db: Db = this.prisma) {
     const latest = (extra: Record<string, unknown>) =>

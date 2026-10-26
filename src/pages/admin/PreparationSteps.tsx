@@ -22,7 +22,13 @@
    المالية تملك `trainer.compensation.manage` ولا تملك `trainer.applications.view`،
    ولا تلتقيان إلّا في المدير الأعلى. فكلُّ خطوةٍ هنا تُعرض بصلاحيّتها
    وحدَها: من لا يملكها يقرأ «تمّ / لم يتمّ» ولا يرى الرقمَ ولا النموذج.
-   ولا يُفتح بابٌ جديدٌ على بياناتٍ لم تكن مفتوحةً قبل هذا الملفّ. */
+   ولا يُفتح بابٌ جديدٌ على بياناتٍ لم تكن مفتوحةً قبل هذا الملفّ.
+
+   ─────────── والأجرُ لأيٍّ من المدير الأكاديميّ والماليّة (٢٦ أكتوبر ٢٠٢٦) ───────────
+
+   كانت خطوةُ الأجر مقفلةً إلّا على `trainer.compensation.manage`، والمديرُ الأكاديميُّ يضبط الرقمَ نفسَه في مُركِّب
+   العقد (قرارُ ١ أكتوبر: «all can change»). فسُئل صاحبُ المنصّة فقال «C»: أيٌّ منهما، والأثرُ يقول من فعل. فصارت
+   تُفتح لأيٍّ من الحبّتين، وتحتها سجلُّ أجره بمن ضبط كلَّ قاعدةٍ ومتى (`fee-history`). */
 
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -54,6 +60,12 @@ export interface PrepRule {
   id: string; type: string; rate: string | number; currency: string;
   minSeats: number; referralRate: string | number | null;
   effectiveFrom: string;
+}
+
+/** قاعدةٌ من سجلّ أجره — بمن ضبطها (`GET /api/admin/trainers/:profileId/fee-history`) */
+interface FeeHistoryRow {
+  id: string; type: string; rate: string; currency: string;
+  effectiveFrom: string; effectiveTo: string | null; createdByName: string | null;
 }
 
 export interface PrepProposal {
@@ -178,6 +190,15 @@ function FeeStep({
   const [rate, setRate] = useState("");
   const [minSeats, setMinSeats] = useState("");
   const [referralRate, setReferralRate] = useState("");
+  /* ═══ وسجلُّ أجره — من ضبط كلَّ قاعدةٍ ومتى (قرارُ «C»، ٢٦ أكتوبر ٢٠٢٦) ═══
+     يضبطه المديرُ الأكاديميُّ أو الماليّة، «والأثرُ يقول من فعل» — فيُقرأ هنا تحت الرقم لا في شاشةٍ أخرى. */
+  const [history, setHistory] = useState<FeeHistoryRow[] | null>(null);
+  const loadHistory = useCallback(() => {
+    apiGet<FeeHistoryRow[]>(`/api/admin/trainers/${profileId}/fee-history`)
+      .then(setHistory)
+      .catch(() => setHistory(null));
+  }, [profileId]);
+  useEffect(() => { loadHistory(); }, [loadHistory]);
 
   const save = () =>
     run(async () => {
@@ -191,6 +212,7 @@ function FeeStep({
       setRate("");
       setMinSeats("");
       setReferralRate("");
+      loadHistory();
       await onChanged();
     }, "ضبط الاتفاق الماليّ");
 
@@ -265,6 +287,24 @@ function FeeStep({
           </p>
         )}
       </div>
+
+      {history && history.length > 0 && (
+        <div>
+          <p className="text-read font-bold text-muted-foreground">سجل أجره</p>
+          <ol className="mt-1.5 grid gap-1">
+            {history.map((h) => (
+              <li key={h.id} className="text-read leading-6 text-muted-foreground">
+                <b className={h.effectiveTo ? "text-muted-foreground" : "text-foreground"}>
+                  {RULE_TYPE_AR[h.type] ?? h.type}{" "}
+                  <span className="tabular-nums" dir="ltr">{h.rate} {h.type === "revenue_share" ? "%" : h.currency}</span>
+                </b>
+                {" — "}{h.createdByName ? `ضبطه ${h.createdByName}` : "لا يعرف من ضبطه"} · {fmtDateLong(h.effectiveFrom)}
+                {h.effectiveTo ? <> · أغلق {fmtDateLong(h.effectiveTo)}</> : <> · السارية</>}
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
     </div>
   );
 }
@@ -883,10 +923,11 @@ export default function PreparationSteps({
         <h4 className="flex items-center gap-2 text-sm font-black text-foreground">
           <CircleDashed className="h-4 w-4" aria-hidden="true" /> تجهيزه قبل القبول الكامل
         </h4>
+        {/* وكان يقول «وحين تتمّ يفتح زرّ «اعتمده نهائيّا» في شريط القرار» — وذاك بابُ تجاوز منذ ٢١ أكتوبر ٢٠٢٦:
+            اعتمادُ توقيعه يفعّله (`approveSignature`) */}
         <p className="mt-2 text-read leading-7 text-muted-foreground">
-          ثلاث خطوات تنجزها من هنا. وحين تتمّ يفتح
-          زرّ <b className="text-foreground">«اعتمده نهائيّا»</b> في شريط القرار، وعندها فقط
-          يصله خبر اعتماده وتفتح بوّابته.
+          ثلاث خطوات تنجزها من هنا: الأجر، ثمّ دوراته، ثمّ عقده. وحين يوقّع
+          وتعتمد توقيعه <b className="text-foreground">يعبر إلى «المدربون»</b> ويصله خبر اعتماده وتفتح بوّابته.
         </p>
         {readiness && (
           <ol className="mt-3 grid gap-1.5">
@@ -908,7 +949,7 @@ export default function PreparationSteps({
         n={1} stepKey="compensation" icon={Coins}
         done={stepOf("compensation")?.done ?? false}
         blockerAr={stepOf("compensation")?.blockerAr ?? null}
-        locked={!can("trainer.compensation.manage")}
+        locked={!can("trainer.compensation.manage") && !can("trainer.contract.manage")}
       >
         <FeeStep profileId={profileId} live={activeRule} onChanged={onChanged} busy={busy} run={run} />
       </Step>
