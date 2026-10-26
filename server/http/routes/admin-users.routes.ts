@@ -7,6 +7,7 @@ import { AuthService } from '../../services/auth.service'
 import { requirePermission } from '../auth-plugin'
 import { recordAudit } from '../../services/audit'
 import { randomBytes } from 'node:crypto'
+import { sourceLabelAr, storedSource } from '../../../src/application/marketing/signup-source'
 import {
   PERMISSIONS, ROLE_NAMES_AR, ROLE_PERMISSIONS, ROLE_RANK, refuseDelegation, refuseRoleAssignment, rankOf,
   DELEGATABLE_FAMILIES, type PermissionKey,
@@ -65,11 +66,20 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
             take: 1,
             select: { expiresAt: true },
           },
+          signupSource: true,
         },
       })
+      /* ورابطُ المدرّب يُسمّى بصاحبه — نداءٌ واحدٌ للقائمة كلّها لا نداءٌ لكلّ حساب */
+      const refCodes = [...new Set(users.map((u) => u.signupSource?.refCode).filter((c): c is string => Boolean(c)))]
+      const refLinks = refCodes.length === 0 ? [] : await prisma.trainerReferralLink.findMany({
+        where: { code: { in: refCodes } },
+        select: { code: true, profile: { select: { application: { select: { fullName: true } }, user: { select: { displayName: true } } } } },
+      })
+      const refName = new Map(refLinks.map((l) => [l.code, l.profile.application.fullName || l.profile.user?.displayName || null]))
       const now = new Date()
       return users.map((u) => {
         const invite = u.resetTokens[0]
+        const src = u.signupSource
         return {
           id: u.id, email: u.email, displayName: u.displayName, status: u.status,
           createdAt: u.createdAt, roles: u.roles.map((r) => ({ id: r.roleId, nameAr: ROLE_NAMES_AR[r.roleId] ?? r.roleId })),
@@ -84,6 +94,8 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
           emailVerified: u.emailVerifiedAt != null,
           /* ومفتاحُ «حساب تجريبي» — وما يُعرف تجريبيّا من نفسه يُحسب في الشاشة (`test-account.ts`) */
           isTestAccount: u.isTestAccount,
+          /* من أين جاء — اسمُه وتفصيلُه (`signup-source.ts`) */
+          source: sourceLabelAr(storedSource(src), src?.refCode ? refName.get(src.refCode) ?? null : null),
         }
       })
     })
@@ -250,6 +262,7 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
 
     /* كلمةٌ عشوائيّة لا يعرفها أحد — الدخولُ يبدأ بتعيينِ صاحبه كلمتَه */
     const { userId } = await auth.register(body.email, randomBytes(24).toString('hex'), body.displayName)
+    await auth.recordSignupSource(userId, 'admin')
     await auth.setRoles(userId, body.roleIds)
     /* «مدعوّ» لا «نشط»: الحسابُ موجودٌ ولم يدخله صاحبُه بعد، وهذا فرقٌ
        يُقرأ في القائمة — فمن أُنشئ حسابُه ولم يُفعّله لا يُحسب فريقا عاملا. */
@@ -371,6 +384,7 @@ export function registerAdminUserRoutes(app: FastifyInstance, prisma: PrismaClie
           continue
         }
         const { userId } = await auth.register(email, randomBytes(24).toString('hex'), row.displayName)
+        await auth.recordSignupSource(userId, 'admin')
         await auth.setRoles(userId, body.roleIds)
         await prisma.user.update({ where: { id: userId }, data: { status: 'invited' } })
         const { token } = await auth.issueInvite(userId)
