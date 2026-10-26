@@ -181,6 +181,10 @@ export function suggestNext(courseIds: readonly string[], limit = 8): CourseSugg
    فالترتيبُ هو هو (`suggestNext`)، ثمّ يُبقى ما له شعبةٌ مفتوحة، ثمّ أوّلُ أربع. */
 export const BUYABLE_SUGGESTIONS = 4
 
+/* ═══ ومشتري المسار يضيف دورةً واحدة، من ثلاث (٢٦ أكتوبر ٢٠٢٦) ═══
+   «اسمح لمن يشتري مسارا أن يضيف دورةً واحدةً فقط، واقترح له ثلاثَ دوراتٍ ليختار منها» (صاحب المنصّة). */
+export const PATHWAY_EXTRA_OPTIONS = 3
+
 export function suggestBuyable(
   courseIds: readonly string[],
   hasCohort: (courseId: string) => boolean,

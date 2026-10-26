@@ -53,3 +53,10 @@ describe('③ زر إلى «تعلمي»', () => {
     expect(box).toMatch(/<Button as=\{Link\} to="\/student\/learning"/)
   })
 })
+
+describe('④ مشتري المسار: ثلاثة مقترحات', () => {
+  it('⚠️ ثلاث لا أكثر', async () => {
+    const { PATHWAY_EXTRA_OPTIONS } = await import('@/application/catalog/course-path')
+    expect(PATHWAY_EXTRA_OPTIONS).toBe(3)
+  })
+})

@@ -123,16 +123,27 @@ describe('عرض السعر — مرحلة الإقناع', () => {
 })
 
 describe('حدود التخصيص', () => {
-  it('الحدّان من مصدر الكتالوج لا أرقاما مكتوبة في الصفحة', () => {
+  it('الحد الأدنى من مصدر الكتالوج لا رقما مكتوبا في الصفحة', () => {
     expect(PATHWAY).toMatch(/MIN_PATHWAY_COURSES/)
-    expect(PATHWAY).toMatch(/MAX_PATHWAY_COURSES/)
-    expect(PATHWAY).toMatch(/minReached:\s*courseIds\.length\s*<=\s*MIN_PATHWAY_COURSES/)
-    expect(PATHWAY).toMatch(/maxReached:\s*courseIds\.length\s*>=\s*MAX_PATHWAY_COURSES/)
+    expect(PATHWAY).toMatch(/minReached:\s*baseIds\.length\s*<=\s*MIN_PATHWAY_COURSES/)
   })
 
-  it('الحذف والإضافة يحترمان الحدّ داخل المعالج أيضا — لا في التعطيل وحده', () => {
+  it('والحذف يحترم الحد داخل المعالج أيضا — لا في التعطيل وحده', () => {
     /* زرٌّ معطَّل ليس حارسا: لوحة المفاتيح وأدوات المطوّر تتجاوزه */
-    expect(PATHWAY).toMatch(/if \(courseIds\.length <= MIN_PATHWAY_COURSES\) return/)
-    expect(PATHWAY).toMatch(/if \(courseIds\.length >= MAX_PATHWAY_COURSES\) return/)
+    expect(PATHWAY).toMatch(/if \(baseIds\.length <= MIN_PATHWAY_COURSES\) return/)
+  })
+
+  /* ═══ والإضافةُ دورةٌ واحدةٌ فوق المسار، من ثلاث (٢٦ أكتوبر ٢٠٢٦) ═══
+     «اسمح لمن يشتري مسارا أن يضيف دورةً واحدةً فقط، واقترح له ثلاثَ دوراتٍ ليختار منها» (صاحب المنصّة).
+     نُسخ به «حتّى ستّ» في المحرّر. والواحدةُ بنيةٌ لا شرط: مكانٌ واحدٌ (`extraId`) يُبدَّل ولا يُضاف إليه. */
+  it('⚠️ دورة واحدة فوق المسار — مكان واحد يبدل، والمحرر لا يضيف', () => {
+    expect(PATHWAY).toMatch(/const \[extraId, setExtraId\] = useState<string \| null>\(null\)/)
+    expect(PATHWAY).toMatch(/extraId && !baseIds\.includes\(extraId\) \? \[\.\.\.baseIds, extraId\] : baseIds/)
+    expect(PATHWAY).toMatch(/maxReached: true/)
+    expect(PATHWAY, 'عادت الإضافة إلى قائمة المحرر').not.toMatch(/commit\(\[\.\.\.(?:base|course)Ids, id\]\)/)
+  })
+
+  it('⚠️ وثلاثة مقترحات لها شعب', () => {
+    expect(PATHWAY).toMatch(/suggestBuyable\(baseIds, \(id\) => prices\.has\(id\), PATHWAY_EXTRA_OPTIONS\)/)
   })
 })

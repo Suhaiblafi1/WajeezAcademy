@@ -17,6 +17,8 @@ import {
   BadgeCheck,
   Briefcase,
   Tag,
+  Plus,
+  Check,
 } from "lucide-react";
 import { PATHWAY_ONLY_PERKS } from "@/data/pathway-perks";
 import FreeNowPerks from "@/components/FreeNowPerks";
@@ -38,7 +40,7 @@ import { pathwayById, pathwayCategory } from "@/data/pathways";
 import { hasCoreCatalog } from "@/data/core-catalog-source";
 import { readAdoptedPlan, saveAdoptedPlan, syncAdoptedPlan, PERSONAL_PLAN_NAME_AR } from "@/application/plan/adopted-plan";
 import { useCoursePrices, formatCohortPrice, totalOf } from "@/services/cohort-prices";
-import { courseById, courses, pathwaySupportCourses, readyPathwayCourseIds, pathwayDelivery, courseTrainer, weeksLabel, TRAINER_PENDING_AR, MIN_PATHWAY_COURSES, MAX_PATHWAY_COURSES, type Course } from "@/data/courses";
+import { courseById, courses, pathwaySupportCourses, readyPathwayCourseIds, pathwayDelivery, courseTrainer, weeksLabel, TRAINER_PENDING_AR, MIN_PATHWAY_COURSES, type Course } from "@/data/courses";
 import { pathwayTeam, trainerLineAr, trainerNamesOf } from "@/application/catalog/course-trainers";
 import { track } from "@/services/analytics";
 import { useRealSession } from "@/services/session";
@@ -46,6 +48,7 @@ import { usePublishedContent } from "@/services/public-content";
 import SeoHead from "@/components/SeoHead";
 import EcosystemNote from "@/components/EcosystemNote";
 import { pathwayOffer, readyPathwayPrice } from "@/application/commerce/pathway-offer";
+import { suggestBuyable, PATHWAY_EXTRA_OPTIONS } from "@/application/catalog/course-path";
 import { needsAdvisorReferral } from "@/application/plan/advisor-referral";
 import { whyPathwayFacts, whyResultForPathway } from "@/application/plan/why-pathway";
 import { loadLastResult } from "@/application/diagnostic/session-store";
@@ -145,9 +148,18 @@ export default function PathwayPage() {
   const editable = Boolean(adopted);
   /* المسار الجاهز = أربعُ أساسيات + ثلاثُ مساندات. أمّا الخطّة المعتمَدة من
      التشخيص فتبقى كما اعتُمدت: هناك تُبنى من القياس لا من حزمةٍ جاهزة. */
-  const courseIds = useMemo(
+  const baseIds = useMemo(
     () => edits?.courseIds ?? custom?.chosenIds ?? (pathway ? readyPathwayCourseIds(pathway.id) : []),
     [edits, custom, pathway],
+  );
+  /* ═══ ودورةٌ واحدةٌ يضيفها فوق مساره، يختارها من ثلاث (٢٦ أكتوبر ٢٠٢٦) ═══
+     «اسمح لمن يشتري مسارا أن يضيف دورةً واحدةً فقط، واقترح له ثلاثَ دوراتٍ ليختار منها» (صاحب المنصّة).
+     فكان «أضف دورة» لمن له خطّةٌ من التشخيص وحدَه، حتّى ستٍّ — والمسارُ الجاهزُ ستٌّ أصلا فلا يُضاف إليه شيء.
+     فصار لكلّ مشترٍ: إضافةٌ واحدةٌ فوق مساره (`extraId`) من ثلاثٍ لها شعبٌ مفتوحة، تدخل السعرَ والدفعَ معه. */
+  const [extraId, setExtraId] = useState<string | null>(null);
+  const courseIds = useMemo(
+    () => (extraId && !baseIds.includes(extraId) ? [...baseIds, extraId] : baseIds),
+    [baseIds, extraId],
   );
   /* أيّ المعروضات مساندة — للوسم في الرحلة. المساندة تبقى مساندةً حتّى بعد
      تخصيصٍ يحذف غيرها، فالوسم من الكتالوج لا من موضعها في القائمة. */
@@ -208,6 +220,14 @@ export default function PathwayPage() {
   }, [courseIds, catalogVersion]);
 
   const { prices, cohorts, loaded: pricesLoaded } = useCoursePrices();
+  /* الثلاثُ المقترحة: بترتيب `suggestNext` من دورات المسار، ولها شعبٌ مفتوحة — والمختارةُ منها تبقى فيها لتُبدَّل */
+  const extraOptions = useMemo(() => {
+    void catalogVersion;
+    if (!pricesLoaded) return [];
+    return suggestBuyable(baseIds, (id) => prices.has(id), PATHWAY_EXTRA_OPTIONS)
+      .map((s) => ({ ...s, course: courseById(s.courseId) }))
+      .filter((s): s is typeof s & { course: NonNullable<typeof s.course> } => Boolean(s.course));
+  }, [baseIds, prices, pricesLoaded, catalogVersion]);
   /* مدرّبُ الدورة من شعبها المفتوحة لا من تخصّصٍ ساكن — `course-trainers.ts` */
   const trainerLine = (c: Course) => trainerLineAr(trainerNamesOf(cohorts.get(c.id)), TRAINER_PENDING_AR);
   /* سعرُ المسار كاملا — أو null إن نقص سعرُ دورةٍ واحدة، فلا مجموعَ ناقصا */
@@ -493,25 +513,61 @@ export default function PathwayPage() {
                     /* الرقمُ من عرض المسار نفسِه (pathwayOffer) لا من ثابتٍ
                        مكتوب: سلّمُ المسار الجاهز غير سلّم البناء الحرّ. */
                     addReason: `دورات مسارك تشترى معا بخصم يصل إلى ${offer.bundleMaxPct}٪ — والدورة وحدها بسعرها كاملا.`,
-                    minReached: courseIds.length <= MIN_PATHWAY_COURSES,
-                    maxReached: courseIds.length >= MAX_PATHWAY_COURSES,
+                    minReached: baseIds.length <= MIN_PATHWAY_COURSES,
+                    /* الإضافةُ من صندوق «أضف دورة واحدة» تحت الرحلة — لا من قائمة المحرّر */
+                    maxReached: true,
                     onSwapToggle: setSwapForId,
                     onSwapPick: (oldId, newId) => {
-                      commit(courseIds.map((i) => (i === oldId ? newId : i)));
+                      if (oldId === extraId) setExtraId(newId);
+                      else commit(baseIds.map((i) => (i === oldId ? newId : i)));
                       setSwapForId(null);
                     },
                     onRemove: (id) => {
-                      if (courseIds.length <= MIN_PATHWAY_COURSES) return;
-                      commit(courseIds.filter((i) => i !== id));
+                      if (id === extraId) { setExtraId(null); return; }
+                      if (baseIds.length <= MIN_PATHWAY_COURSES) return;
+                      commit(baseIds.filter((i) => i !== id));
                     },
-                    onAdd: (id) => {
-                      if (courseIds.length >= MAX_PATHWAY_COURSES) return;
-                      commit([...courseIds, id]);
-                    },
+                    onAdd: (id) => setExtraId(id),
                   }
                 : undefined
             }
           />
+
+          {/* ═══ أضف دورة واحدة — من ثلاث (٢٦ أكتوبر ٢٠٢٦) ═══ — والعلّةُ عند `extraId` أعلاه */}
+          {extraOptions.length > 0 && (
+            <Card as="section" aria-labelledby="extra-course" className="mt-4">
+              <h2 id="extra-course" className="flex items-center gap-2 text-sm font-black text-foreground">
+                <Plus className="h-4 w-4 text-teal-light-ink" /> أضف دورة واحدة إلى مسارك
+              </h2>
+              <p className="mt-1 text-read text-muted-foreground">اختر واحدة من ثلاث. تدخل خصم المسار معه.</p>
+              <ul className="mt-3 grid gap-2 md:grid-cols-3">
+                {extraOptions.map((s) => {
+                  const chosen = extraId === s.courseId;
+                  const price = prices.get(s.courseId);
+                  return (
+                    <li key={s.courseId}>
+                      <Inset tone={chosen ? "accent" : "default"} className="flex h-full flex-col gap-2 p-3">
+                        <span className="text-read font-bold leading-snug text-foreground">{s.course.name}</span>
+                        <span className="text-fine leading-relaxed text-muted-foreground">{s.reason_ar}</span>
+                        <span className="mt-auto flex items-center justify-between gap-2">
+                          {price ? <span dir="ltr" className="text-read font-black">{formatCohortPrice(price)}</span> : <span />}
+                          {chosen ? (
+                            <Button tone="ghost" size="sm" onClick={() => setExtraId(null)} aria-label={`أزل «${s.course.name}» من مسارك`}>
+                              <Check className="h-3.5 w-3.5" /> أضيفت · إزالة
+                            </Button>
+                          ) : (
+                            <Button tone="secondary" size="sm" onClick={() => setExtraId(s.courseId)} aria-label={`أضف «${s.course.name}» إلى مسارك`}>
+                              <Plus className="h-3.5 w-3.5" /> {extraId ? "بدّلها" : "أضفها"}
+                            </Button>
+                          )}
+                        </span>
+                      </Inset>
+                    </li>
+                  );
+                })}
+              </ul>
+            </Card>
+          )}
 
           {/* مشروع التخرّج انتقل إلى داخل «ماذا ستحقق من خلال خطتك؟» نفسها —
               سطرٌ أخير في رحلة الدورات (CourseJourney عبر graduationProjectAr)،
