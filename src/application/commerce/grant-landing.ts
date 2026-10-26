@@ -261,15 +261,27 @@ export const GRANT_GIFT_AR = { title: 'يحق لك أن تهدي هذه المن
     وقد اختار مجموعةً من الدورات تظهر لنا في رسالة الواتساب ما هي الدورات التي اختارها… يُفضّل نصّا».
     ومن لم يختر شيئا بعدُ تبقى رسالتُه كما كانت.
 
-    ورابطُ صفحة المنحة آخرَها (٢٦ أكتوبر ٢٠٢٦) — قرارُه: «اكتب في رسالة المنحة رابطَ الصفحة أيضا». */
-export function grantAdvisorTextAr(name: string, code: string | null, courses: string[] = [], pageUrl: string | null = null): string {
+    ورابطُ ملفّه عندنا آخرَها (٢٦ أكتوبر ٢٠٢٦) — كان رابطَ صفحة المنحة العامّة، وهي واحدةٌ للجميع لا تفيد المستشار.
+    فقرارُ صاحب المنصّة: «٢ — make the link shorter»: رابطٌ قصيرٌ يفتح صفَّه في قائمة المنحة (`grantRecordLink`). */
+export function grantAdvisorTextAr(name: string, code: string | null, courses: string[] = [], recordLink: string | null = null): string {
   const who = name.trim() ? `مرحبا، أنا ${name.trim()}.` : 'مرحبا،'
   const ask = `${who} عندي سؤال عن منحة أعضاء وجيز.${code ? ` كود منحتي: ${code}` : ''}`
   return [
     ask,
     ...(courses.length > 0 ? [`الدورات التي اخترتها:\n${courses.map((c) => `- ${c}`).join('\n')}`] : []),
-    ...(pageUrl ? [`رابط المنحة: ${pageUrl}`] : []),
+    ...(recordLink ? [`رابط ملفي: ${recordLink}`] : []),
   ].join('\n\n')
+}
+
+/** طريقُ ملفّ صاحب المنحة — `/g/<كوده>` يفتح صفَّه في قائمة المنحة للإدارة (`pages/GrantRecordLink.tsx`) */
+export const GRANT_RECORD_PATH = '/g'
+
+/** ما يُعرف به صاحبُ المنحة في الرابط: كودُه، أو رقمُ طلبه إن لم يُصدَر له كود */
+export const GRANT_RECORD_KEY_RE = /^(WG-[A-Z0-9]{8}|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i
+
+/** الرابطُ القصيرُ لملفّه — بلا `https://` ولا `www`، وواتساب يجعله رابطا */
+export function grantRecordLink(host: string, key: string): string {
+  return `${host}${GRANT_RECORD_PATH}/${key}`
 }
 
 /** نصُّ الهديّة — سطورٌ قصيرة: ما هي، وما فيها، وآخرُ يوم، والرابط */

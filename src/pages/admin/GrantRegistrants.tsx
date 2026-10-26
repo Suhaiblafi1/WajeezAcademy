@@ -5,6 +5,7 @@
    ومن لم يشترِ بعد، ومستشارُه إن كانت له حالة. وزرُّ واتساب يفتح المحادثةَ ورسالةُ المتابعة فيها جاهزة. */
 
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router";
 import { MessageCircle } from "lucide-react";
 import { apiGet } from "@/services/api";
 import { fmtDate } from "@/application/text/format-ar";
@@ -27,14 +28,20 @@ const STATE_AR: Record<State, string> = { bought: "اشترى", pending: "ينت
 
 export default function GrantRegistrants() {
   const [rows, setRows] = useState<Registrant[] | null>(null);
-  const [q, setQ] = useState("");
+  /* من جاء من رابط ملفّ صاحب المنحة (`/g/<كوده>`) تُفتح له القائمةُ مبحوثا فيها بكوده، ويُنزل إليها */
+  const [params] = useSearchParams();
+  const fromLink = params.get("q") ?? "";
+  const [q, setQ] = useState(fromLink);
   const [page, setPage] = useState(1);
   const [only, setOnly] = useState<"" | State>("");
   useEffect(() => { apiGet<Registrant[]>("/api/admin/member-grant/registrants").then(setRows).catch(() => setRows(null)); }, []);
+  useEffect(() => {
+    if (rows && fromLink) document.getElementById("grant-registrants")?.scrollIntoView({ block: "start" });
+  }, [rows, fromLink]);
 
   const matched = useMemo(
     () => (rows ?? []).filter((r) => (!only || r.state === only)
-      && matchesQuery(q, [r.fullName, r.phone, r.email, r.workField, r.careerLevel, ...r.interests, r.code])),
+      && matchesQuery(q, [r.fullName, r.phone, r.email, r.workField, r.careerLevel, ...r.interests, r.code, r.id])),
     [rows, q, only],
   );
   if (!rows) return null;
@@ -42,7 +49,7 @@ export default function GrantRegistrants() {
 
   return (
     <>
-      <h2 className="mt-6 text-lg font-black">من عبأ النموذج</h2>
+      <h2 id="grant-registrants" className="mt-6 scroll-mt-24 text-lg font-black">من عبأ النموذج</h2>
       <p className="mt-1 text-read text-muted-foreground">
         من لم يشتر بعد ساعة تفتح له حالة عند مستشار يتصل به خلال ساعتين. وزر واتساب يفتح المحادثة ورسالة المتابعة جاهزة.
       </p>

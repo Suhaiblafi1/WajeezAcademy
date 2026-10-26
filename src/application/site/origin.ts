@@ -27,9 +27,13 @@
 /** النطاق الحيّ للموقع — يُعلن هنا مرة واحدة */
 export const CANONICAL_ORIGIN = 'https://www.wajeezacademy.com'
 
+/** النطاقُ بلا `https://` ولا `www` — أقصرُ صورةٍ لرابطٍ يُكتب في رسالة. وCaddy يحوّله إلى
+    النطاق الحيّ بمساره كاملا (`deploy/Caddyfile`، كتلةُ `SITE_ALT_DOMAIN`) */
+export const BARE_HOST = CANONICAL_ORIGIN.replace(/^https?:\/\/(www\.)?/, '')
+
 /** نطاقُ البريد — نطاقُ الموقع بلا `www`. وهو **النطاقُ الذي يُوثَّق في
     Resend**، ومزوّدُ البريد يرفض كلَّ رسالةٍ من سواه. */
-export const EMAIL_DOMAIN = CANONICAL_ORIGIN.replace(/^https?:\/\/(www\.)?/, '')
+export const EMAIL_DOMAIN = BARE_HOST
 
 /** بريدُ المُرسِل الافتراضيّ — يطابق `ACADEMY_EMAIL` على الخادم.
 
