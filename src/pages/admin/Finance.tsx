@@ -6,7 +6,7 @@ import { toast, toastError } from "@/components/Toast";
 import {
   CheckCircle2, CreditCard, Loader2, RefreshCw,
   RotateCcw, ServerOff, Wallet, XCircle,
-  Inbox, Receipt, Undo2,
+  Inbox, Receipt, Undo2, Archive,
 } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import ListToolbar from "@/components/admin/ListToolbar";
@@ -31,6 +31,7 @@ import ConfirmAction from "@/components/ConfirmAction";
 
 import Button from "@/components/ui/Button";
 import { staffControlCls as inputCls } from "@/components/FormKit";
+import { ARCHIVED_INV, ARCHIVED_REQ, PAY_STATUS, REFUND_AWAITING, RF_STATUS } from "@/application/commerce/finance-status";
 
 interface EnrollReq {
   id: string; status: string; note: string | null; createdAt: string;
@@ -38,20 +39,18 @@ interface EnrollReq {
   cohort: { id: string; title: string; price: string | null; currency: string; course: { versions: { titleAr: string }[] } };
 }
 interface Invoice {
-  id: string; status: string; total: string; currency: string; issuedAt: string;
+  id: string; number: string; status: string; amount: string; currency: string; issuedAt: string;
   order: { user: { displayName: string; email: string }; items: { title?: string; titleAr?: string }[] };
   payments: { id: string; amount: string; status: string; method?: string | null; refunds: { id: string }[] }[];
 }
-interface Refund { id: string; status: string; amount: string; reason: string; createdAt: string; payment: { id: string; invoice: { id: string } } }
+interface Refund { id: string; status: string; amount: string; reason: string; createdAt: string; payment: { id: string; currency: string; invoice: { id: string; number: string } } }
 type Coupon = AdminCoupon
 
 /* «١ طلبٌ» و«٢ طلبان» و«٣ طلبات» و«١١ طلبا» — والعددُ يُقرأ لا يُحسب */
 const REQ_FORMS = { one: "طلب تسجيل", two: "طلبا تسجيل", few: "طلبات تسجيل", many: "طلب تسجيل" };
 
-const ER_STATUS: Record<string, string> = { pending: "بانتظار المراجعة", seat_held: "مقعد محجوز", approved: "موافق عليه", converted: "تحوّل إلى تسجيل ✓", rejected: "مرفوض", expired: "منتهي" };
+const ER_STATUS: Record<string, string> = { pending: "بانتظار المراجعة", seat_held: "مقعد محجوز", approved: "موافق عليه", converted: "تحوّل إلى تسجيل ✓", rejected: "مرفوض", expired: "منتهي", cancelled: "ملغى" };
 const INV_STATUS: Record<string, string> = { issued: "صادرة", paid: "مدفوعة", partially_refunded: "مستردة جزئيا", refunded: "مستردة", void: "ملغاة" };
-const RF_STATUS: Record<string, string> = { requested: "مطلوب", approved: "منفذ", rejected: "مرفوض" };
-
 type Tab = "requests" | "invoices" | "refunds" | "coupons";
 
 export default function Finance() {
@@ -104,6 +103,7 @@ export default function Finance() {
   const [couponFor, setCouponFor] = useState<Record<string, string>>({});
   const [payForm, setPayForm] = useState<Record<string, string>>({});
   const [refundForm, setRefundForm] = useState<Record<string, { amount: string; reason: string }>>({});
+  const [showArchived, setShowArchived] = useState(false);
 
   const load = useCallback(async (silent = false) => {
     if (!silent) { setLoading(true); setOffline(null); }
@@ -155,7 +155,7 @@ export default function Finance() {
     ["requests", "طلبات التسجيل", requests.filter((r) => r.status === "pending").length],
     ...(canViewMoney ? ([
       ["invoices", "الفواتير", invoices.length],
-      ["refunds", "الاستردادات", refunds.filter((r) => r.status === "requested").length],
+      ["refunds", "الاستردادات", refunds.filter((r) => r.status === REFUND_AWAITING).length],
     ] as [Tab, string, number][]) : []),
     /* الكوبوناتُ والخططُ بندٌ ماليّ — لا تُعرض لمن لا يملك `commerce.manage` */
     ...(canCommerce ? [["coupons", "الكوبونات", coupons.length] as [Tab, string, number]] : []),
@@ -192,12 +192,24 @@ export default function Finance() {
     await load();
   };
 
+  const archivedReqs = requests.filter((r) => ARCHIVED_REQ.has(r.status)).length;
+  const archivedInvs = invoices.filter((inv) => ARCHIVED_INV.has(inv.status)).length;
   const reqView = paginate(
-    requests.filter((r) => matchesQuery(q, [r.user.displayName, r.user.email, r.cohort.title, r.cohort.course.versions[0]?.titleAr])),
+    requests
+      .filter((r) => showArchived || !ARCHIVED_REQ.has(r.status))
+      .filter((r) => matchesQuery(q, [r.user.displayName, r.user.email, r.cohort.title, r.cohort.course.versions[0]?.titleAr])),
     page, 20);
   const invView = paginate(
-    invoices.filter((inv) => matchesQuery(q, [inv.order.user.displayName, inv.order.user.email, inv.id, inv.total])),
+    invoices
+      .filter((inv) => showArchived || !ARCHIVED_INV.has(inv.status))
+      .filter((inv) => matchesQuery(q, [inv.order.user.displayName, inv.order.user.email, inv.id, inv.number, inv.amount])),
     page, 20);
+  /* زرُّ الأرشيف — يقول كم أُخفي، ويعيده بنقرة */
+  const archiveToggle = (n: number, unitAr: string) => n > 0 && (
+    <Button tone="secondary" size="sm" onClick={() => { setShowArchived((v) => !v); setPage(1); }}>
+      <Archive className="h-3.5 w-3.5" /> {showArchived ? `أخف ${unitAr} (${n})` : `اعرض ${unitAr} (${n})`}
+    </Button>
+  );
 
   return (
     <AdminLayout title="المالية — طلبات وفواتير واستردادات وكوبونات">
@@ -221,8 +233,8 @@ export default function Finance() {
         forms={REQ_FORMS}
         waitingAr="تنتظر مراجعتك"
         stats={canViewMoney
-          ? [`${invoices.filter((i) => i.status !== "paid").length} فاتورة غير مدفوعة`,
-             `${refunds.filter((r) => r.status === "requested").length} استرداد ينتظر التنفيذ`]
+          ? [`${invoices.filter((i) => i.status === "issued").length} فاتورة غير مدفوعة`,
+             `${refunds.filter((r) => r.status === REFUND_AWAITING).length} استرداد ينتظر التنفيذ`]
           : []}
         actionAr={tab === "requests" ? "ابدأ بأوّلها" : "اعرضها"}
         /* والسببُ يُقال: البحثُ قد يُخفي الطابورَ كلَّه، فيبهت الزرُّ بلا
@@ -243,7 +255,7 @@ export default function Finance() {
         <TabBar
           ariaLabel="أقسام المالية"
           value={tab}
-          onChange={(k) => { setTab(k); setQ(""); setPage(1); setSel(new Set()); }}
+          onChange={(k) => { setTab(k); setQ(""); setPage(1); setSel(new Set()); setShowArchived(false); }}
           items={tabs.map(([k, label, n]) => ({
             id: k,
             label: <>{label} {n > 0 && <span className="mr-1 opacity-70">({n})</span>}</>,
@@ -279,6 +291,7 @@ export default function Finance() {
             <ListToolbar q={q} onQ={setQ} onPage={setPage} view={reqView} unit="طلبا"
               placeholder="ابحث باسم طالب أو بريد أو شعبة…" />
           )}
+          {archiveToggle(archivedReqs, "الملغاة والمرفوضة")}
           {selectable.length > 0 && (
             <div className="flex items-center gap-2 text-fine text-muted-foreground">
               <input type="checkbox"
@@ -352,6 +365,7 @@ export default function Finance() {
             <ListToolbar q={q} onQ={setQ} onPage={setPage} view={invView} unit="فاتورة"
               placeholder="ابحث باسم مشتر أو بريد أو رقم فاتورة…" />
           )}
+          {archiveToggle(archivedInvs, "الملغاة")}
           {invoices.length > 0 && invView.total === 0 && (
             <EmptyState icon={Receipt} titleAr="لا فاتورة تطابق بحثك" tone="filter"
               reasonAr={`لا نتائج لـ«${q.trim()}» في أسماء المشترين أو بريدهم أو أرقام الفواتير.`}
@@ -361,7 +375,8 @@ export default function Finance() {
             <Card key={inv.id}>
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <p className="font-black">{inv.total} {inv.currency} <span className="mr-2 font-mono text-fine font-normal text-muted-foreground" dir="ltr">{inv.id.slice(0, 8)}…</span></p>
+                  {/* المبلغُ `amount` كما في الجدول — كان يُقرأ `total` فيُعرض «USD» بلا رقم */}
+                  <p className="font-black">{inv.amount} {inv.currency} <span className="mr-2 font-mono text-fine font-normal text-muted-foreground" dir="ltr">{inv.number}</span></p>
                   <p className="mt-1 text-read text-muted-foreground">{inv.order.user.displayName} · {fmtDate(new Date(inv.issuedAt))}</p>
                 </div>
                 <Chip tone="accent" srPrefixAr="حالة الفاتورة">{INV_STATUS[inv.status] ?? inv.status}</Chip>
@@ -376,13 +391,26 @@ export default function Finance() {
                   </Button>
                 </div>
               )}
-              {inv.payments.filter((p) => p.status === "succeeded").map((p) => (
+              {/* صفحةُ دفعٍ ببطاقة لم يصل خبرُها — يُسأل المزوّدُ نفسُه (`confirmWithProvider`) */}
+              {canRecordPayment && inv.status !== "paid" && inv.payments.some((p) => p.status === "pending") && (
+                <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-white/8 pt-3 text-fine text-muted-foreground">
+                  <span className="flex-1">بدأ الدفع ببطاقة ولم يصلنا تأكيده.</span>
+                  <Button tone="secondary" size="sm" disabled={busy}
+                    onClick={() => act(async () => {
+                      const r = await apiPost<{ state: string }>(`/api/admin/invoices/${inv.id}/confirm-payment`, {});
+                      if (r.state !== "paid") throw new ApiError("not_paid", r.state === "unpaid" ? "المزود يقول: لم يدفع بعد" : "لا دفعة ببطاقة نسأل عنها", 409);
+                    }, "أكد المزود الدفع وسجلت")}>
+                    <CreditCard className="h-3.5 w-3.5" /> تحقق عند مزود الدفع
+                  </Button>
+                </div>
+              )}
+              {inv.payments.filter((p) => p.status in PAY_STATUS).map((p) => (
                 <Inset key={p.id} tone="positive" className="mt-2 flex flex-wrap items-center gap-2 text-xs">
-                  <span className="font-bold text-emerald-300">دفعة ناجحة {p.amount} {inv.currency}</span>
+                  <span className="font-bold text-emerald-300">{PAY_STATUS[p.status]} {p.amount} {inv.currency}</span>
                   <span className="text-muted-foreground">{p.refunds.length} استرداد</span>
-                  {canRefund && (<>
+                  {canRefund && p.status !== "refunded" && (<>
                   <input value={refundForm[p.id]?.amount ?? ""} onChange={(e) => setRefundForm({ ...refundForm, [p.id]: { ...refundForm[p.id], amount: e.target.value, reason: refundForm[p.id]?.reason ?? "" } })}
-                    placeholder="مبلغ" type="number" className={`${inputCls} w-24`} />
+                    placeholder={`المبلغ (حتى ${p.amount})`} type="number" className={`${inputCls} w-32`} />
                   <input value={refundForm[p.id]?.reason ?? ""} onChange={(e) => setRefundForm({ ...refundForm, [p.id]: { ...refundForm[p.id], reason: e.target.value, amount: refundForm[p.id]?.amount ?? "" } })}
                     placeholder="سبب موثق (5+ أحرف)" className={`${inputCls} flex-1`} />
                   <Button tone="secondary" size="sm" disabled={busy || (refundForm[p.id]?.reason ?? "").length < 5 || !Number(refundForm[p.id]?.amount)}
@@ -402,17 +430,17 @@ export default function Finance() {
         <div className="space-y-3">
           {refunds.length === 0 && (
             <EmptyState icon={Undo2} titleAr="لا طلبات استرداد تنتظر"
-              reasonAr="يقدّم طلب الاسترداد من بوّابة المتعلّم، ويظهر هنا لحظة تقديمه." tone="done" />
+              reasonAr="لرد مبلغ: افتح «الفواتير»، واكتب المبلغ والسبب تحت الدفعة، ثم «طلب استرداد». يظهر الطلب هنا لتنفذه." tone="done" />
           )}
           {refunds.map((rf) => (
             <Card key={rf.id} className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p className="font-black">{rf.amount} <span className="text-xs font-normal text-muted-foreground">— {rf.reason}</span></p>
-                <p className="mt-1 text-read text-muted-foreground">{fmtDateTime(new Date(rf.createdAt))}</p>
+                <p className="font-black">{rf.amount} {rf.payment.currency} <span className="text-xs font-normal text-muted-foreground">— {rf.reason}</span></p>
+                <p className="mt-1 text-read text-muted-foreground"><span dir="ltr" className="font-mono">{rf.payment.invoice.number}</span> · {fmtDateTime(new Date(rf.createdAt))}</p>
               </div>
               <div className="flex items-center gap-2">
                 <Chip tone="accent" srPrefixAr="حالة الطلب">{RF_STATUS[rf.status] ?? rf.status}</Chip>
-                {rf.status === "requested" && canRefund && (
+                {rf.status === REFUND_AWAITING && canRefund && (
                   <>
                     <Button tone="secondary" size="sm" disabled={busy} onClick={() => act(() => apiPost(`/api/admin/refunds/${rf.id}/process`, { approve: true }), "نفذ الاسترداد وحدثت الدفعة والطلب")} className="bg-emerald-500/20">
                       تنفيذ
