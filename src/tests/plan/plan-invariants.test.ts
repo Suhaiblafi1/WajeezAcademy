@@ -143,7 +143,7 @@ describe('حدود التخصيص', () => {
     expect(PATHWAY, 'عادت الإضافة إلى قائمة المحرر').not.toMatch(/commit\(\[\.\.\.(?:base|course)Ids, id\]\)/)
   })
 
-  it('⚠️ وثلاثة مقترحات لها شعب', () => {
-    expect(PATHWAY).toMatch(/suggestBuyable\(baseIds, \(id\) => prices\.has\(id\), PATHWAY_EXTRA_OPTIONS\)/)
+  it('⚠️ وثلاثة مقترحات من المسار ثم فئته، وما له شعبة أولا', () => {
+    expect(PATHWAY).toMatch(/pathwayExtraOptions\(pathway\.id, baseIds, \(id\) => prices\.has\(id\), PATHWAY_EXTRA_OPTIONS\)/)
   })
 })

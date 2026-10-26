@@ -48,7 +48,7 @@ import { usePublishedContent } from "@/services/public-content";
 import SeoHead from "@/components/SeoHead";
 import EcosystemNote from "@/components/EcosystemNote";
 import { pathwayOffer, readyPathwayPrice } from "@/application/commerce/pathway-offer";
-import { suggestBuyable, PATHWAY_EXTRA_OPTIONS } from "@/application/catalog/course-path";
+import { pathwayExtraOptions, PATHWAY_EXTRA_OPTIONS } from "@/application/catalog/course-path";
 import { needsAdvisorReferral } from "@/application/plan/advisor-referral";
 import { whyPathwayFacts, whyResultForPathway } from "@/application/plan/why-pathway";
 import { loadLastResult } from "@/application/diagnostic/session-store";
@@ -220,14 +220,14 @@ export default function PathwayPage() {
   }, [courseIds, catalogVersion]);
 
   const { prices, cohorts, loaded: pricesLoaded } = useCoursePrices();
-  /* الثلاثُ المقترحة: بترتيب `suggestNext` من دورات المسار، ولها شعبٌ مفتوحة — والمختارةُ منها تبقى فيها لتُبدَّل */
+  /* الثلاثُ المقترحة: من المسار نفسِه ثمّ فئتِه، وما له شعبةٌ أوّلا (`pathwayExtraOptions`) — والمختارةُ تبقى فيها لتُبدَّل */
   const extraOptions = useMemo(() => {
     void catalogVersion;
-    if (!pricesLoaded) return [];
-    return suggestBuyable(baseIds, (id) => prices.has(id), PATHWAY_EXTRA_OPTIONS)
+    if (!pricesLoaded || !pathway) return [];
+    return pathwayExtraOptions(pathway.id, baseIds, (id) => prices.has(id), PATHWAY_EXTRA_OPTIONS)
       .map((s) => ({ ...s, course: courseById(s.courseId) }))
       .filter((s): s is typeof s & { course: NonNullable<typeof s.course> } => Boolean(s.course));
-  }, [baseIds, prices, pricesLoaded, catalogVersion]);
+  }, [baseIds, prices, pricesLoaded, catalogVersion, pathway]);
   /* مدرّبُ الدورة من شعبها المفتوحة لا من تخصّصٍ ساكن — `course-trainers.ts` */
   const trainerLine = (c: Course) => trainerLineAr(trainerNamesOf(cohorts.get(c.id)), TRAINER_PENDING_AR);
   /* سعرُ المسار كاملا — أو null إن نقص سعرُ دورةٍ واحدة، فلا مجموعَ ناقصا */
@@ -550,7 +550,8 @@ export default function PathwayPage() {
                         <span className="text-read font-bold leading-snug text-foreground">{s.course.name}</span>
                         <span className="text-fine leading-relaxed text-muted-foreground">{s.reason_ar}</span>
                         <span className="mt-auto flex items-center justify-between gap-2">
-                          {price ? <span dir="ltr" className="text-read font-black">{formatCohortPrice(price)}</span> : <span />}
+                          {price ? <span dir="ltr" className="text-read font-black">{formatCohortPrice(price)}</span>
+                            : <span className="text-fine text-muted-foreground">لم تفتح شعبتها بعد</span>}
                           {chosen ? (
                             <Button tone="ghost" size="sm" onClick={() => setExtraId(null)} aria-label={`أزل «${s.course.name}» من مسارك`}>
                               <Check className="h-3.5 w-3.5" /> أضيفت · إزالة
