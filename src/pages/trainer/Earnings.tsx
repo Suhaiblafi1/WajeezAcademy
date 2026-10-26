@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router";
+import { Link, Navigate, useSearchParams } from "react-router";
 import { Banknote, CheckCircle2, Clock3, Loader2, ShieldCheck, TicketPercent, XCircle } from "lucide-react";
 import TrainerLayout from "./TrainerLayout";
 import MyContract from "./MyContract";
-import Referral from "./Referral";
 import TabBar from "@/components/ui/TabBar";
 import { apiGet, ApiError } from "@/services/api";
 import { fmtDateAr } from "@/utils/format";
@@ -244,12 +243,12 @@ function RealEarningsView() {
       <Inset
         as={Link}
         interactive
-        to="/trainer/referral"
+        to="/trainer/share"
         className="mb-6 flex items-center gap-3 px-4 py-3 text-read text-muted-foreground"
       >
         <TicketPercent className="h-4 w-4 shrink-0 text-gold-ink" aria-hidden="true" />
         <span>
-          أكوادك تدار في <b className="text-foreground">«دعوتي»</b>، وخصوماتها تحسم من كشفك هنا (البند 4-10).
+          أكوادك تدار في <b className="text-foreground">«شارك دوراتك»</b>، وخصوماتها تحسم من كشفك هنا (البند 4-10).
         </span>
       </Inset>
 
@@ -327,16 +326,17 @@ function RealEarningsView() {
    فدخلت «عقدي» و«دعوتي» هنا — وقرارُه قبلها (٢٥ سبتمبر ٢٠٢٦): «الملف يكون في منصته ضمن قسم المستحقات
    والعقد». ما يستحقّه، والوثيقةُ التي يستحقّه بها، والرابطُ الذي يزيده — بابٌ واحد. ومساراتُها القديمة
    تُحال إلى أقسامها (`App.tsx`). */
+/* و«دعوتي» خرجت لسانا بنفسها: «شارك دوراتك» (٢٦ أكتوبر ٢٠٢٦، `Share.tsx`) — ورابطُها القديمُ يُحال إليها */
 const SECTIONS = [
   { id: "earnings", label: "مستحقاتي" },
   { id: "contract", label: "عقدي" },
-  { id: "referral", label: "دعوتي" },
 ] as const;
 type Section = (typeof SECTIONS)[number]["id"];
 
 export default function Earnings() {
   const [params, setParams] = useSearchParams();
   const asked = params.get("tab");
+  if (asked === "referral") return <Navigate to="/trainer/share" replace />;
   const section: Section = SECTIONS.some((s) => s.id === asked) ? (asked as Section) : "earnings";
   return (
     <TrainerLayout title="مستحقاتي">
@@ -349,7 +349,6 @@ export default function Earnings() {
       />
       {section === "earnings" && <RealEarningsView />}
       {section === "contract" && <MyContract />}
-      {section === "referral" && <Referral />}
     </TrainerLayout>
   );
 }

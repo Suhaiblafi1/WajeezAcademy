@@ -24,15 +24,18 @@ describe('«دعوتي» لها تبويبها', () => {
      درس صاحبُ المنصّة جانبَ المدرّب واختار القائمةَ ثمانيةَ ألسنة: «دعوتي» و«عقدي» في «مستحقاتي»،
      و«ما قيل عنّي» في «الرئيسية». فنُسخ «بعد «ما قيل عنّي» مباشرةً» (١٣ سبتمبر) بقرارٍ أحدث. والمحروسُ
      الباقي هو هو: بابٌ يبلغه، ومسارُه القديمُ لا يقود إلى «لا شيء»، ونُقل ولم يُنسخ، ولا رقمَ فيه. */
-  it('⚠️ قسمٌ في «مستحقاتي» يبلغه لسانُها', () => {
-    const earnings = code('src/pages/trainer/Earnings.tsx')
-    expect(earnings).toMatch(/\{ id: "referral", label: "دعوتي" \}/)
-    expect(earnings).toMatch(/section === "referral" && <Referral \/>/)
-    expect(code('src/pages/trainer/TrainerLayout.tsx')).toMatch(/to: "\/trainer\/earnings", label: "مستحقاتي"/)
+  /* ═══ ثمّ خرجت لسانا: «شارك دوراتك» (٢٦ أكتوبر ٢٠٢٦) ═══
+     قال صاحبُ المنصّة: «خانة دعوتي يجب أن تكون بالخارج، واسمها شارك دوراتك». */
+  it('⚠️ لسانٌ بنفسه «شارك دوراتك» — يعرض محتواها، ويقول إنّها «دعوتي» في الاتفاقية', () => {
+    expect(code('src/pages/trainer/TrainerLayout.tsx')).toMatch(/\{ to: "\/trainer\/share", label: "شارك دوراتك"/)
+    const share = code('src/pages/trainer/Share.tsx')
+    expect(share).toMatch(/<TrainerLayout title="شارك دوراتك">[\s\S]*<Referral \/>/)
+    expect(share).toContain('«دعوتي» التي تذكرها الاتفاقية')
+    expect(code('src/App.tsx')).toMatch(/path="\/trainer\/share" element=\{<TrainerShare \/>\}/)
   })
 
   it('⚠️ والمسار القديم يُحال إلى قسمه — وإلّا فرابطٌ في رسالةٍ يقود إلى «لا شيء»', () => {
-    expect(code('src/App.tsx')).toMatch(/path="\/trainer\/referral" element=\{<Navigate to="\/trainer\/earnings\?tab=referral" replace \/>\}/)
+    expect(code('src/App.tsx')).toMatch(/path="\/trainer\/referral" element=\{<Navigate to="\/trainer\/share" replace \/>\}/)
   })
 
   it('⚠️ ونقل ولم ينسخ — لا بطاقة رابط ثانية في «الرئيسية»', () => {

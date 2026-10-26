@@ -138,10 +138,11 @@ describe('ومستحقّاتي تدلّ على دعوتي', () => {
   const page = bare('src/pages/trainer/Earnings.tsx')
 
   it('سطر يدلّ على موضع الإصدار', () => {
-    expect(page, 'لا دلالة على «دعوتي»').toContain('«دعوتي»')
-    expect(page, 'الدلالة بلا رابط ينقر').toContain('to="/trainer/referral"')
+    /* و«دعوتي» صارت «شارك دوراتك» لسانا بنفسها (٢٦ أكتوبر ٢٠٢٦) */
+    expect(page, 'لا دلالة على «شارك دوراتك»').toContain('«شارك دوراتك»')
+    expect(page, 'الدلالة بلا رابط ينقر').toContain('to="/trainer/share"')
     /* ومن سطوح المنصّة لا بصيغٍ مكتوبةٍ بيدها — وإلّا زاد دَينُ التلويم */
-    expect(page, 'رسم السطح باليد لا بـ`Inset`').toMatch(/<Inset[\s\S]{0,120}to="\/trainer\/referral"/)
+    expect(page, 'رسم السطح باليد لا بـ`Inset`').toMatch(/<Inset[\s\S]{0,120}to="\/trainer\/share"/)
   })
 
   /* ═══ وأهمُّ ما فيه: أن يبقى ═══
@@ -156,7 +157,7 @@ describe('ومستحقّاتي تدلّ على دعوتي', () => {
   it('ولا يعلّق على وجود خصم ينتظر', () => {
     /* والسطحُ المقصودُ لا أوّلَ سطحٍ في الملفّ: `Inset` مستعمَلةٌ في هذه
        الشاشة قبله، فـ`indexOf` يقع على غيره ويُفحَص ما ليس المقصود. */
-    const link = page.indexOf('to="/trainer/referral"')
+    const link = page.indexOf('to="/trainer/share"')
     expect(link, 'لا رابط للدلالة').toBeGreaterThan(-1)
     const at = page.lastIndexOf('<Inset', link)
     expect(at, 'الرابط ليس على سطح من سطوح المنصّة').toBeGreaterThan(-1)
@@ -167,7 +168,7 @@ describe('ومستحقّاتي تدلّ على دعوتي', () => {
   })
 
   it('ويقول أين يحسم كما يقول أين يصدر', () => {
-    const at = page.indexOf('to="/trainer/referral"')
+    const at = page.indexOf('to="/trainer/share"')
     const block = page.slice(at, at + 700)
     expect(block, 'لا يقال أين يحسم').toMatch(/تحسم من كشفك/)
     expect(block, 'لا إحالة إلى بند العقد').toContain('4-10')
