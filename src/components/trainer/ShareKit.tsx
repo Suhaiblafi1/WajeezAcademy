@@ -133,8 +133,10 @@ export default function ShareKit({ face, courses, url, code, fileStem }: {
 
   return (
     <div className="mt-3 grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
-      {/* المعاينة — كما تُنشر */}
-      <div>
+      {/* المعاينة — كما تُنشر.
+          و`min-w-0` على العمودين (٢٦ أكتوبر ٢٠٢٦): عمودُ الشبكة يتّسع لأعرض ما فيه، فشرائحُ الكاروسيل
+          وصفُّ المنصّات كانت تدفع اللوحةَ خارجَ شاشة الهاتف — وصارت مفتوحةً أوّلَ الصفحة فتُرى. */}
+      <div className="min-w-0">
         <TabBar ariaLabel="صيغة الصورة" value={format} onChange={setFormat}
           items={FORMATS.map((f) => ({ id: f.id, label: f.label }))} />
         <div className={`mt-3 flex gap-2 overflow-x-auto ${format === "story" ? "max-w-[16rem]" : ""}`}>
@@ -148,7 +150,7 @@ export default function ShareKit({ face, courses, url, code, fileStem }: {
       </div>
 
       {/* المنصّة والنصّ */}
-      <div>
+      <div className="min-w-0">
         <p className="text-read font-bold">أين تنشر؟</p>
         <div className="mt-2 flex flex-wrap gap-2" role="group" aria-label="المنصة">
           {SHARE_PLATFORMS.map((p) => (
