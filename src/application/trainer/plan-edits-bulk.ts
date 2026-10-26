@@ -39,13 +39,19 @@ const ITEM_FORMS = { one: 'بند', two: 'بندان', few: 'بنود', many: '�
    كانت إعادةُ الملفّ تُردّ كلُّها إن وقع بندٌ منه على ما رُفع، وبُني لما تكرّر «احذف المكرر» و«أعد ما سحبته». فصار
    الرفعُ يتجاهل البطاقةَ نفسَها، ويضع الأحدثَ مكانَ ما لم يُقرَّر فيه — والسطرُ يقول ذلك، فلا يُظنّ أنّ شيئا ضاع. */
 export function uploadedLineAr(c: PlanEditsUploadCounts): string {
-  if (c.added === 0) return `كله مرفوع من قبل، فلم يتكرر شيء (${countAr(c.repeated, ITEM_FORMS)}).`
+  if (c.added === 0) return `كله مرفوع من قبل، فلم يتكرر شيء (${itemsAr(c.repeated)}).`
+  const required = c.required === 1 ? '، منها واحد مطلوب' : c.required === 2 ? '، منها اثنان مطلوبان' : c.required > 0 ? `، ${c.required} منها مطلوبة` : ''
   return [
-    `رفع مسوّدة: ${countAr(c.added, ITEM_FORMS)}${c.required > 0 ? `، ${c.required} منها ${c.required === 1 ? 'مطلوب' : 'مطلوبة'}` : ''}`,
-    c.repeated > 0 ? `مرفوع من قبل فلم يتكرر: ${countAr(c.repeated, ITEM_FORMS)}` : '',
-    c.replaced > 0 ? `حلّ محلّ مسوّدة أقدم: ${countAr(c.replaced, ITEM_FORMS)}` : '',
-    c.fromTrainer > 0 ? `حلّ محلّ ما كان عند المدرب: ${countAr(c.fromTrainer, ITEM_FORMS)}، ويصله الجديد حين تعتمده` : '',
+    `رفع مسوّدة: ${itemsAr(c.added)}${required}`,
+    c.repeated > 0 ? `مرفوع من قبل فلم يتكرر: ${itemsAr(c.repeated)}` : '',
+    c.replaced > 0 ? `حلّ محلّ مسوّدة أقدم: ${itemsAr(c.replaced)}` : '',
+    c.fromTrainer > 0 ? `حلّ محلّ ما كان عند المدرب: ${itemsAr(c.fromTrainer)}، ويصله الجديد حين تعتمده` : '',
   ].filter(Boolean).join(' · ')
+}
+
+/** «بند واحد» و«بندان» لا «1 بند» و«2 بندان» — المفردُ والمثنّى يُقرآن بلا رقمهما (`grantCountAr`) */
+function itemsAr(n: number): string {
+  return n === 1 ? 'بند واحد' : n === 2 ? 'بندان' : countAr(n, ITEM_FORMS)
 }
 
 /* ═══ والكرّاساتُ المصحّحةُ تُختار مع ملفّات التعديلات (١٢ أكتوبر ٢٠٢٦، `workbook_replace`) ═══
