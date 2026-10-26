@@ -237,3 +237,18 @@ describe('الصورة بلا رابط', () => {
     expect(LINK_ART_VERSION).toBeGreaterThanOrEqual(3)
   })
 })
+
+/* ═══ «لا تكرّر المباشر في التصميم.. ألغِ جملة دوراتي بث مباشر هذا الموسم» (صاحب المنصّة، ٢٦ أكتوبر ٢٠٢٦) ═══
+   شارةُ الرأس وحدَها تقول «بث مباشر»؛ والجملةُ والميزةُ وذيلُ شريحة الدورة كانت تكرّرها في الصورة الواحدة. */
+describe('«مباشر» مرة واحدة في الصورة', () => {
+  const art = readFileSync(join(process.cwd(), 'src/components/trainer/share-art.ts'), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
+  it('⚠️ لا يرسم «مباشر» إلا شارة الرأس', () => {
+    const lines = art.split('\n').filter((l) => /مباشر/.test(l))
+    expect(lines, 'تكرّر «مباشر» في الرسم').toHaveLength(1)
+    expect(lines[0]).toMatch(/pill\(ctx, 'بث مباشر'/)
+  })
+  it('⚠️ ولا جملة «هذا الموسم» في الصورة', () => {
+    expect(art).not.toContain('هذا الموسم')
+  })
+})
