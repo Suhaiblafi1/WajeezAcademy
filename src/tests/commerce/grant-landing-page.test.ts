@@ -13,7 +13,7 @@ import { plainAr } from '@/application/text/plain-ar'
 import { auditActionAr } from '@/application/audit/labels'
 import {
   CAREER_LEVELS, GRANT_ACADEMY_LINE_AR, GRANT_CONSENT_AR, GRANT_GAINS_AR, GRANT_GIFT_AR, GRANT_GIFT_MAX, GRANT_INTEREST_DOMAINS, GRANT_SUGGESTED_COURSES, WORK_FIELDS,
-  GRANT_VALUE_AR, GRANT_VALUE_PAID_AR, GRANT_FACES_MAX, grantTrainerFaces, grantTrainersAr, campaignParams, campaignTag, grantAdvisorTextAr, grantLeftAr, grantLimitAr, grantRemainingAr, grantCallDueAt, grantCountAr, grantCountdown, grantDaysLeftAr, grantSections, grantShareAr, grantShareMailto, leadProfileAr, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse, workFieldDomains,
+  GRANT_VALUE_AR, GRANT_VALUE_PAID_AR, GRANT_FACES_MAX, GRANT_FACES_PHONE, grantTrainerFaces, grantTrainersAr, campaignParams, campaignTag, grantAdvisorTextAr, grantLeftAr, grantLimitAr, grantRemainingAr, grantCallDueAt, grantCountAr, grantCountdown, grantDaysLeftAr, grantSections, grantShareAr, grantShareMailto, leadProfileAr, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse, workFieldDomains,
 } from '@/application/commerce/grant-landing'
 import { courseDomain } from '@/application/catalog/course-domain'
 import { zonedInstant } from '@/application/trainer/cohort-period'
@@ -123,6 +123,24 @@ describe('بعد النموذج', () => {
     expect(after).toMatch(/\{grantTrainersAr\(trainers\.total\)\} · \{grantCountAr\(view\.openCourses\.length\)\} مباشرة على Zoom/)
     expect(after).toMatch(/\+\{trainers\.total - trainers\.faces\.length\}/)
     for (const x of ['تتعلم مع مدربين معتمدين لدينا', 'مباشرة على Zoom']) { expect(plainAr(x)).toBe(x); expect(PAGE).toContain(x) }
+  })
+
+  it('⚠️ وجوه المدربين أكبر قليلا — ولا تنضغط، وما على الهاتف يتسع لهاتف بعرض 360', () => {
+    /* قرارُ صاحب المنصّة (٢٦ أكتوبر ٢٠٢٦): «اجعل صور المدربين أكبر قليلا». والمقاسُ يُقرأ من الصنف نفسِه ويُحسب، لا يُنسخ رقما */
+    const row = PAGE.slice(PAGE.indexOf('{trainers.faces.length >= 3 && ('), PAGE.indexOf('تتعلم مع مدربين معتمدين لدينا'))
+    const imgCls = row.match(/<img key=\{t\.id\}[^>]*className=\{`([^`]*)`\}/)?.[1] ?? ''
+    const img = imgCls.split(/\s+/)
+    const size = (re: RegExp) => Number(img.find((c) => re.test(c))?.match(re)?.[1] ?? 0) * 4
+    const phone = size(/^h-(\d+)$/), wide = size(/^sm:h-(\d+)$/), overlap = Number(row.match(/-space-x-(\d+)/)?.[1] ?? 0) * 4
+    expect(phone, 'الوجه على الهاتف ليس أكبر من 44').toBeGreaterThan(44)
+    expect(wide, 'الوجه على الواسعة ليس أكبر منه على الهاتف').toBeGreaterThan(phone)
+    expect(img, 'وجه بلا عرض أو بلا ثبات — ينضغط فيصير بيضاويا').toEqual(expect.arrayContaining([`w-${phone / 4}`, `sm:w-${wide / 4}`, 'shrink-0']))
+    expect((GRANT_FACES_PHONE + 1) * phone - GRANT_FACES_PHONE * overlap, 'صف الهاتف لا يتسع لهاتف بعرض 360').toBeLessThanOrEqual(320)
+    expect(GRANT_FACES_PHONE).toBeLessThan(GRANT_FACES_MAX)
+    /* وما بعد ستّةٍ يختفي على الهاتف، ولكلّ شاشةٍ «+N» بعددها وبمقاس وجوهها */
+    expect(imgCls).toContain('${i < GRANT_FACES_PHONE ? "" : "hidden sm:block"}')
+    expect(row).toMatch(new RegExp(`h-${phone / 4} w-${phone / 4} shrink-0 [^"]*sm:hidden" dir="ltr">\\s*\\+\\{trainers\\.total - Math\\.min\\(trainers\\.faces\\.length, GRANT_FACES_PHONE\\)\\}`))
+    expect(row).toMatch(new RegExp(`h-${wide / 4} w-${wide / 4} shrink-0 [^"]*sm:grid" dir="ltr">\\s*\\+\\{trainers\\.total - trainers\\.faces\\.length\\}`))
   })
 
   it('⚠️ المنحة بنسبتها «تصل إلى 60%» لا «تدفع 40% فقط» — في الصفحة الأولى وبريد الكود وبريد التذكير', () => {

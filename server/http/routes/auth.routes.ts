@@ -171,7 +171,7 @@ export function registerAuthRoutes(app: FastifyInstance, auth: AuthService, pris
   }, async (req) => {
     const body = z.object({ token: z.string().min(10) }).parse(req.body)
     const { alreadyVerified } = await auth.verifyEmail(body.token)
-    return { ok: true, alreadyVerified, message: alreadyVerified ? 'بريدك موثّق أصلا' : 'وثّق بريدك — الشراء والشهادة مفتوحان الآن' }
+    return { ok: true, alreadyVerified, message: alreadyVerified ? 'بريدك موثّق أصلا' : 'تم توثيق بريدك' }
   })
 
   /* حارسُ كلّ بوّابةٍ في الواجهة ينادي هذا المسار عند كلّ انتقال، فوقوعُه

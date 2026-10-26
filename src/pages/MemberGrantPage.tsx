@@ -47,7 +47,7 @@ import { cohortDayAr } from "@/application/learning/cohort-gate";
 import { grantPrice, MEMBER_GRANT_NAME_AR } from "@/application/commerce/grant";
 import {
   CAREER_LEVELS, GRANT_ACADEMY_LINE_AR, GRANT_CONSENT_AR, GRANT_GAINS_AR, GRANT_GIFT_AR, GRANT_MAX_INTERESTS, GRANT_SUGGESTED_COURSES, WORK_FIELDS,
-  GRANT_VALUE_AR, GRANT_VALUE_PAID_AR, campaignParams, grantAdvisorTextAr, grantRecordLink, grantCountAr, grantTrainerFaces, grantTrainersAr, grantCountdown, grantLeftAr, grantLimitAr, grantRemainingAr, grantSections, grantShareAr, grantShareMailto, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse,
+  GRANT_FACES_PHONE, GRANT_VALUE_AR, GRANT_VALUE_PAID_AR, campaignParams, grantAdvisorTextAr, grantRecordLink, grantCountAr, grantTrainerFaces, grantTrainersAr, grantCountdown, grantLeftAr, grantLimitAr, grantRemainingAr, grantSections, grantShareAr, grantShareMailto, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse,
   type GrantPathOption,
 } from "@/application/commerce/grant-landing";
 import { readStoredGrant, saveStoredGrant, type StoredGrant } from "@/services/grant-landing";
@@ -411,7 +411,7 @@ export default function MemberGrantPage() {
         {authOpen && (
           <Modal onClose={() => setAuthOpen(false)} label="أنشئ حسابك لتدفع" panelClassName="w-full max-w-md">
             <AuthGate
-              initialMode="signup" source="grant_checkout"
+              initialMode="signup" source="grant_checkout" verifyLater
               message="أنشئ حسابك لتدفع. فيه تجد دوراتك ومواعيدها."
               prefill={{ name: stored.name, email: stored.email }}
               onDone={() => { setAuthOpen(false); setBuyOpen(true); }}
@@ -518,13 +518,18 @@ export default function MemberGrantPage() {
         {/* وجوهُ مدرّبي الموسم تحت النموذج — قرارُ صاحب المنصّة (٢٥ أكتوبر ٢٠٢٦)، والعلّةُ عند `grantTrainerFaces` */}
         {trainers.faces.length >= 3 && (
           <div className="mt-6 text-center">
-            <div className="flex justify-center -space-x-3 rtl:space-x-reverse">
-              {trainers.faces.map((t) => (
-                <img key={t.id} src={t.photoUrl} alt={t.name} title={t.name} width={44} height={44} loading="lazy" decoding="async"
-                  className="h-11 w-11 rounded-full bg-paper object-cover object-[50%_25%] ring-2 ring-paper" />
+            <div className="flex justify-center -space-x-4 rtl:space-x-reverse">
+              {trainers.faces.map((t, i) => (
+                <img key={t.id} src={t.photoUrl} alt={t.name} title={t.name} width={64} height={64} loading="lazy" decoding="async"
+                  className={`h-14 w-14 shrink-0 rounded-full bg-paper object-cover object-[50%_25%] ring-2 ring-paper sm:h-16 sm:w-16 ${i < GRANT_FACES_PHONE ? "" : "hidden sm:block"}`} />
               ))}
+              {trainers.total > Math.min(trainers.faces.length, GRANT_FACES_PHONE) && (
+                <span className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-teal-deep font-black text-white ring-2 ring-paper sm:hidden" dir="ltr">
+                  +{trainers.total - Math.min(trainers.faces.length, GRANT_FACES_PHONE)}
+                </span>
+              )}
               {trainers.total > trainers.faces.length && (
-                <span className="grid h-11 w-11 place-items-center rounded-full bg-teal-deep text-read font-black text-white ring-2 ring-paper" dir="ltr">
+                <span className="hidden h-16 w-16 shrink-0 place-items-center rounded-full bg-teal-deep text-lg font-black text-white ring-2 ring-paper sm:grid" dir="ltr">
                   +{trainers.total - trainers.faces.length}
                 </span>
               )}

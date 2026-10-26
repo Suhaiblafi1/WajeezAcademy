@@ -30,7 +30,7 @@ export interface SessionUser {
   displayName: string
   roles: string[]
   permissions: string[]
-  /* توثيق البريد (١هـ) — يحجب الشراء والشهادة فقط، لا الدخول ولا التصفّح */
+  /* توثيق البريد (١هـ) — يحجب الشهادةَ وحدَها، لا الدخولَ ولا الشراء (الدفعُ أوّلا، ٢٦ أكتوبر ٢٠٢٦) */
   emailVerified: boolean
 }
 

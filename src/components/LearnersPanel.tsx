@@ -240,11 +240,11 @@ function EditLearner({ row, busy, onClose, onSave, onEnroll }: {
         <label className="mt-3 block text-fine font-bold text-muted-foreground">
           البريد
           <input value={email} onChange={(e) => setEmail(e.target.value)} dir="ltr" className={`${field} mt-1 text-left`} />
-          {/* يُقال قبل الحفظ لا بعده: تبديلُ البريد يُسقط توثيقَه، والشراءُ
-              والشهادةُ موقوفان على التوثيق. */}
+          {/* يُقال قبل الحفظ لا بعده: تبديلُ البريد يُسقط توثيقَه، والشهادةُ
+              موقوفةٌ على التوثيق (والشراءُ لا، منذ ٢٦ أكتوبر ٢٠٢٦). */}
           {email !== row.user.email && (
             <span className="mt-1 block text-fine font-normal leading-5 text-gold-ink">
-              تبديل البريد يسقط توثيقه؛ ويلزم توثيق الجديد قبل الشراء والشهادة.
+              تبديل البريد يسقط توثيقه؛ ويلزم توثيق الجديد قبل الشهادة.
             </span>
           )}
         </label>

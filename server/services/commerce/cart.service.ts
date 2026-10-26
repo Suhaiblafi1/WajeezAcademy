@@ -22,7 +22,6 @@ import type { Prisma, PrismaClient } from '@prisma/client'
 import { AuthError } from '../auth.service'
 import { priceCart, type PlanCarry } from '../../../src/application/commerce/cart-pricing'
 import { LEDGER_CURRENCY } from '../../../src/application/commerce/presentment'
-import { getEmailConfig } from '../integrations.service'
 import { assertCouponUsable, cartTitleOf, num, type CartCohort } from './cart-types'
 import { CODE_USE_COUNTS, CODE_USED_AR } from './coupon-ledger'
 import { assertFirstPurchase } from './first-purchase'
@@ -54,12 +53,6 @@ export class CartService {
   async emailVerified(userId: string): Promise<boolean> {
     const u = await this.prisma.user.findUnique({ where: { id: userId }, select: { emailVerifiedAt: true } })
     return u?.emailVerifiedAt != null
-  }
-
-  /** هل تستطيع المنصّة إرسال بريد أصلا؟ — بها وحدها يصير الحاجز قفلا له مفتاح */
-  async emailChannelEnabled(): Promise<boolean> {
-    const cfg = await getEmailConfig(this.prisma)
-    return Boolean(cfg.enabled && cfg.apiKey && cfg.fromEmail)
   }
 
   /* ── الخطّة كاملةً: طلبٌ واحد، وفاتورةٌ واحدة (التوصيتان ٢ و٣) ── */
@@ -188,18 +181,8 @@ export class CartService {
      `checkout` يبقى صارما: أيُّ مانعٍ في أيّ شعبةٍ يرمي قبل أيّ كتابة. فهو
      ما يمنع طلبا ثانيا فوق مقعدٍ دُفع ثمنُه — والاستبعادُ الصامت هنا يعني
      فاتورةً بغير ما ضغط عليه المشتري. */
-  async validatedCart(userId: string, cohortIds: string[], requireVerifiedEmail: boolean) {
-    /* حاجز توثيق البريد — نفسه الذي في `requestEnrollment`، ولنفس السبب:
-       الفاتورة والمواعيد تُرسل إلى عنوان. ويسقط حين تكون قناة البريد معطّلة،
-       وإلّا صار قفلا بلا مفتاح.
-
-       ولا يُرفع عند التسعير: من لم يوثّق بريده يرى سعرَه كاملا ثمّ يُطالَب
-       بالتوثيق في اللوح نفسِه. ومنعُه من **رؤية** الرقم يجعل الحاجزَ يبدو
-       عطبا — وهو شرطٌ مفهومٌ حين يُقال في موضعه. */
-    if (requireVerifiedEmail && !(await this.emailVerified(userId)) && (await this.emailChannelEnabled())) {
-      throw new AuthError('email_unverified', 'وثّق بريدك أولا — الشراء يفتح بمجرّد فتح رابط التوثيق', 403)
-    }
-
+  async validatedCart(userId: string, cohortIds: string[]) {
+    /* ولا يسأل عن توثيق البريد: الدفعُ أوّلا والتوثيقُ بعده (٢٦ أكتوبر ٢٠٢٦، `requestEnrollment`) */
     const { unique, cohorts, buyable, excluded } = await this.classifyCart(userId, cohortIds)
     if (excluded.length > 0) {
       const first = excluded[0]

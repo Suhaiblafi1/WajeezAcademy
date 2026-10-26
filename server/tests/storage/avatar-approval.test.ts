@@ -107,6 +107,23 @@ describe('المعلّقةُ لا تبلغ الصفحةَ العامّة', () =>
     const owner = await resolveStorageOwner(prisma, PENDING_KEY)
     expect(owner?.kind).toBe('trainer_photo')
   })
+  /* ═══ والإدارةُ تراها لتقرّر (٢٦ أكتوبر ٢٠٢٦) ═══
+     «لماذا لا تظهر لي صورة المدرب الذي يريد أن يضعها؟» (صاحب المنصّة): بطاقةُ «تنتظر اعتمادك» تقرؤها من مسار صور
+     الحسابات، وكان لا يعرف إلّا صفَّ الحساب — وهذا المدرّبُ لا صفَّ له، فكانت مكسورة. رُئي ساقطا على المسار القديم. */
+  it('⚠️ والإدارة تراها من مسار صور الحسابات — ولو لم يكن له صف حساب', async () => {
+    const res = await app.inject({ method: 'GET', url: `/api/v1/avatars/${PENDING_KEY}` })
+    expect(res.statusCode, 'صورة معلقة لا تراها الإدارة').toBe(200)
+    expect(res.headers['content-type']).toBe('image/png')
+  })
+
+  it('⚠️ وبطاقته تقول أوصل ملفها أم لم يكتمل رفعه', async () => {
+    const [mine] = await review.listForOps({ profileId }) as unknown as { pendingPhotoArrived: boolean }[]
+    expect(mine!.pendingPhotoArrived).toBe(true)
+    await prisma.trainerProfile.update({ where: { id: profileId }, data: { photoPendingKey: 'pending-photo-never-uploaded-01' } })
+    const [after] = await review.listForOps({ profileId }) as unknown as { pendingPhotoArrived: boolean }[]
+    expect(after!.pendingPhotoArrived, 'رفع لم يكتمل قيل وصل').toBe(false)
+    await prisma.trainerProfile.update({ where: { id: profileId }, data: { photoPendingKey: PENDING_KEY } })
+  })
 })
 
 describe('البايتاتُ تُسأل لا الترويسة', () => {

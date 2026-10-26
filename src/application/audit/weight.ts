@@ -285,6 +285,9 @@ const MEDIUM: readonly string[] = [
   'cohort.delete_trainerless',
   /* وحذفُ الملغاة نهائيّا ولو كان لها مدرّب (٢٢ أكتوبر ٢٠٢٦) — يحذف خطّتَه معها، ولا يُرجَع عنه */
   'cohort.delete_cancelled',
+  /* ونقلُ الشعبة إلى دورةٍ أخرى قبل أن يلتحق بها أحد (٢٦ أكتوبر ٢٠٢٦) — لا متعلّمَ فيها، لكنّه يكتب
+     لمدرّبها تأهيلا في الدورة الجديدة وينقل قاعدةَ أجرها معها */
+  'cohort.course_move',
   'rating.approve', 'rating.reject',
   /* تذكرتُه */
   'support.ticket.assign', 'support.ticket.status',

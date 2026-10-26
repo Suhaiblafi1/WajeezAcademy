@@ -58,6 +58,8 @@ const PHRASES: Record<string, string> = {
   'cohort.delete_cancelled': 'حذف شعبة ملغاة نهائيّا',
   'cohort.cancel.reason': 'سبب إلغاء شعبة — وصل مدرّبها',
   'cohort.reopen': 'إعادة فتح شعبة ملغاة',
+  /* ٢٦ أكتوبر ٢٠٢٦: شعبةٌ فُتحت على الدورة الخطأ تُنقل إلى دورتها قبل أن يلتحق بها أحد */
+  'cohort.course_move': 'نقل شعبة إلى دورة أخرى',
   'cohort.update': 'تعديل شعبة',
   'cohort.duplicate': 'تكرار شعبة',
   'cohort.publish': 'فتح شعبة للتسجيل',
@@ -166,6 +168,8 @@ const PHRASES: Record<string, string> = {
   'advisor_payout.approve': 'اعتماد كشف عمولة مستشار',
   'advisor_payout.pay': 'تأكيد صرف كشف عمولة مستشار',
   'advisor_payout.cancel': 'إلغاء كشف عمولة مستشار',
+  'coupon.update': 'تعديل كوبون أو إيقافه',
+  'coupon.delete': 'حذف كوبون لم يستعمل',
   'coupon.grant_settings': 'تغيير إعدادات منحة أعضاء وجيز',
   'coupon.grant_issue': 'إعطاء كود منحة لمن عبأ نموذج الحملة',
   'coupon.grant_pathway_save': 'حفظ مسار منحة',

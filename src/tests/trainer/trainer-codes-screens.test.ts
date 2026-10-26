@@ -126,8 +126,9 @@ describe('④ «مستحقّاتي» والماليّة', () => {
   })
 
   it('⚠️ وكود المدرّب يسمّى في قائمة الكوبونات — لا يقرأ حملة منّا', () => {
-    const finance = code('src/pages/admin/Finance.tsx')
-    expect(finance).toMatch(/\{c\.trainerCode && <Chip/)
+    /* والقائمةُ صارت جدولا في `CouponsPanel.tsx` (٢٦ أكتوبر ٢٠٢٦): نوعُ الكود يُقرأ من وجهه ويُسمّى بشارة */
+    expect(code('src/application/admin/coupons.ts')).toMatch(/if \(c\.trainerCode \|\| c\.trainerDiscount \|\| c\.trainerShareCode\) return "trainer"/)
+    expect(code('src/components/admin/CouponsPanel.tsx')).toMatch(/\{k !== "ours" && <Chip tone="accent">/)
     /* ووجهُه نسبةً أو مبلغا (١ أكتوبر ٢٠٢٦) — فقائمةُ الإدارة تحمل الاثنين */
     expect(code('server/services/commerce.service.ts')).toMatch(/trainerCode: \{ select: \{ percentOff: true, amountOff: true, status: true \} \}/)
   })

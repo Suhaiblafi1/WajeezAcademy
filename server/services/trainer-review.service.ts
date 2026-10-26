@@ -81,7 +81,7 @@ import {
   MAX_PHOTO_BYTES, PHOTO_KEY_PREFIX, PHOTO_MIMES, SIGNED_URL_TTL_MS,
   assertFileUploadsEnabled, newStorageKey, photoPublicUrl, photoStorageKey, releasePhotoObject, signKey,
 } from './storage.service'
-import { deleteObject } from './object-store'
+import { deleteObject, objectExists } from './object-store'
 import { EarningsService } from './earnings.service'
 import { LEDGER_CURRENCY } from '../../src/application/commerce/presentment'
 import {
@@ -6098,6 +6098,9 @@ export class TrainerReviewService {
       userIds: [p.userId, p.application.userId].filter((u): u is string => Boolean(u)),
       email: p.application.email,
     })))
+    /* وملفُّ الصورة المعلّقة: أوصل أم لم يكتمل رفعُه؟ — فلا تعرض البطاقةُ صورةً مكسورة (٢٦ أكتوبر ٢٠٢٦) */
+    const photoArrived = new Map<string, boolean>()
+    for (const p of profiles) if (p.photoPendingKey) photoArrived.set(p.id, await objectExists(p.photoPendingKey))
     return profiles.map((p) => {
       const latest = (kind: string) => p.textSuggestions.find((x) => x.kind === kind) ?? null
       return {
@@ -6128,6 +6131,8 @@ export class TrainerReviewService {
       /* وصورةٌ رفعها هو وتنتظر قرارَنا — تُقرأ من مسار صور الحسابات لا من
          مسار الصور العامّة، فالعامُّ لا يخدم ما لم يُعتمد بعد. */
       pendingPhotoUrl: p.photoPendingKey ? `/api/v1/avatars/${p.photoPendingKey}` : null,
+      /* ملفُّها وصل؟ — `false` رفعٌ بدأ ولم يكتمل: لا صورةَ تُعرض، والقرارُ باقٍ */
+      pendingPhotoArrived: p.photoPendingKey ? photoArrived.get(p.id) === true : false,
       /* وعنوانٌ ونبذةٌ كتبهما هو وينتظران قرارَنا (`trainer-public-text.service.ts`) */
       pendingText: p.publicTextPendingAt
         ? { headline: p.headlinePending, bio: p.bioPending, name: p.namePending, at: p.publicTextPendingAt }

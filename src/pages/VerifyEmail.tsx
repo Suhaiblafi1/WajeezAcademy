@@ -57,7 +57,7 @@ export default function VerifyEmail() {
             <CheckCircle2 className="mx-auto h-12 w-12 text-emerald-400" />
             <h1 className="mt-5 text-2xl font-black">{state.message}</h1>
             <p className="mt-3 text-sm leading-7 text-muted-foreground">
-              لم يتغيّر شيء آخر في حسابك — التوثيق يفتح الشراء واستلام الشهادة فقط.
+              لم يتغيّر شيء آخر في حسابك. التوثيق شرط لاستلام الشهادة فقط.
             </p>
             {/* ومن ترك شراءً ليوثّق بريده يعود إليه أوّلا — بشعبه كما اختارها (الخطوة ل) */}
             {pending && (

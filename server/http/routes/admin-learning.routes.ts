@@ -19,6 +19,7 @@ import { CohortPlanService } from '../../services/cohort-plan.service'
 import { PlanReviewBundleService, type ReviewBundle } from '../../services/plan-review-bundle.service'
 import { TrainerlessCohortDeleteService } from '../../services/trainerless-cohort-delete.service'
 import { CancelledCohortDeleteService } from '../../services/cancelled-cohort-delete.service'
+import { CohortCourseMoveService } from '../../services/cohort-course-move.service'
 import { CohortEconomicsService } from '../../services/cohort-economics.service'
 import { CohortMonitorService } from '../../services/cohort-monitor.service'
 import { UPCOMING_MAX_DAYS } from '../../../src/application/learning/upcoming-cohorts'
@@ -772,6 +773,27 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const { withTrainerPlan } = z.object({ withTrainerPlan: z.boolean().default(false) }).parse(req.body ?? {})
     return cancelledDelete.delete(req.auth!.userId, id, { withTrainerPlan })
+  })
+
+  /* ── ونقلُها إلى دورةٍ أخرى قبل أن يلتحق بها أحد (٢٦ أكتوبر ٢٠٢٦، `cohort-course-move.service.ts`) ── */
+  const courseMove = new CohortCourseMoveService(prisma)
+
+  app.get('/api/admin/cohorts/:id/course-move-preview', {
+    preHandler: requirePermission('cohort.manage'),
+    schema: { tags: ['admin-learning'], summary: 'ما ينتقل مع الشعبة إلى دورة أخرى — وما يمنع نقلها' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const { to } = z.object({ to: z.string().trim().min(3).max(40) }).parse(req.query)
+    return courseMove.preview(id, to)
+  })
+
+  app.post('/api/admin/cohorts/:id/course-move', {
+    preHandler: requirePermission('cohort.manage'),
+    schema: { tags: ['admin-learning'], summary: 'نقل شعبة بلا متعلمين إلى دورة أخرى في الكتالوج' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const { toCourseId } = z.object({ toCourseId: z.string().trim().min(3).max(40) }).parse(req.body)
+    return courseMove.move(req.auth!.userId, id, toCourseId)
   })
 
   /* ── الجلسات وZoom ── */
