@@ -22,12 +22,10 @@ import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { notifyRole, safeNotify } from './notification.service'
 import { bioSuggestionProblemAr, cleanPitchLines, pitchProblemAr } from '../../src/application/trainer/pitch'
-import { BIO_DRAFTS, PITCH_DRAFTS } from './trainer-suggestion-drafts'
+import { TrainerDraftsService, type Drafts } from './trainer-drafts.service'
 import { liveTrainerWhere } from './trainer-visibility'
 
 export type SuggestionKind = 'pitch' | 'bio'
-
-type Drafts = { pitch: Record<string, readonly string[]>; bio: Record<string, string> }
 
 export interface SuggestionView {
   id: string
@@ -127,12 +125,12 @@ export class TrainerSuggestionService {
      والضغط لا يصله شيءٌ لم يره صاحبُ القرار. */
   async sendAllDrafts(
     actorId: string,
-    drafts: Drafts = { pitch: PITCH_DRAFTS, bio: BIO_DRAFTS },
+    drafts?: Drafts,
     only?: readonly string[],
   ): Promise<{ sent: number; failed: number }> {
     let sent = 0
     let failed = 0
-    const due = await this.dueDrafts(drafts)
+    const due = await this.dueDrafts(drafts ?? await this.currentDrafts())
     for (const d of only ? due.filter((x) => only.includes(x.profileId)) : due) {
       try {
         await this.propose(d.profileId, actorId, d.kind, d.lines)
@@ -145,12 +143,12 @@ export class TrainerSuggestionService {
   }
 
   /** ما يرسله «أرسل الكلّ» الآن — ويعدّه «ما ينتظرك» بالشرط نفسِه (`staff-inbox.service.ts`)، ويعرضه التأكيدُ لكلّ مدرّب */
-  async unsentDrafts(drafts: Drafts = { pitch: PITCH_DRAFTS, bio: BIO_DRAFTS }): Promise<{
+  async unsentDrafts(drafts?: Drafts): Promise<{
     count: number
     names: string[]
     trainers: { profileId: string; name: string; kinds: SuggestionKind[] }[]
   }> {
-    const due = await this.dueDrafts(drafts)
+    const due = await this.dueDrafts(drafts ?? await this.currentDrafts())
     const trainers = new Map<string, { profileId: string; name: string; kinds: SuggestionKind[] }>()
     for (const d of due) {
       const t = trainers.get(d.profileId) ?? { profileId: d.profileId, name: d.name, kinds: [] }
@@ -158,6 +156,11 @@ export class TrainerSuggestionService {
       trainers.set(d.profileId, t)
     }
     return { count: due.length, names: [...new Set(due.map((d) => d.name))], trainers: [...trainers.values()] }
+  }
+
+  /** ما في الشيفرة وفوقه ما رُفع من الشاشة (٢٦ أكتوبر ٢٠٢٦، `trainer-drafts.service.ts`) */
+  private currentDrafts(): Promise<Drafts> {
+    return new TrainerDraftsService(this.prisma).drafts()
   }
 
   /** المسوّداتُ المستحقّةُ الإرسال: للنشطين ومن نُشرت دوراتُهم، ولم يُقترح عليهم من نوعها شيء */

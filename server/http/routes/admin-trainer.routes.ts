@@ -20,6 +20,7 @@ import { TrainerPrepService } from '../../services/trainer-prep.service'
 import { TrainerPublicTextService } from '../../services/trainer-public-text.service'
 import { TrainerSuggestionService } from '../../services/trainer-suggestion.service'
 import { TrainerDraftingBundleService } from '../../services/trainer-drafting-bundle.service'
+import { TrainerDraftsService } from '../../services/trainer-drafts.service'
 import { TrainerDeclineReplyService } from '../../services/trainer-decline-reply.service'
 import { requireAnyPermission, requirePermission } from '../auth-plugin'
 import { blastRadiusSentenceAr, courseBlastRadius } from '../../services/catalog-impact.service'
@@ -73,6 +74,7 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
   const publicText = new TrainerPublicTextService(prisma)
   const suggestions = new TrainerSuggestionService(prisma)
   const drafting = new TrainerDraftingBundleService(prisma)
+  const drafts = new TrainerDraftsService(prisma)
   const declineReply = new TrainerDeclineReplyService(prisma)
   const offers = new TrainerOfferService(prisma)
   const bank = new TrainerBankService(prisma)
@@ -1142,6 +1144,21 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
   }, async (req) => {
     const { profileIds } = z.object({ profileIds: z.array(z.string().uuid()).max(500).optional() }).parse(req.body ?? {})
     return suggestions.sendAllDrafts(req.auth!.userId, undefined, profileIds)
+  })
+
+  /* ═══ ومسوّداتُها تُرفع من الشاشة — لا تُكتب في الشيفرة (٢٦ أكتوبر ٢٠٢٦، `trainer-drafts.service.ts`) ═══
+     بصلاحيّة الإرسال نفسِها: ما يُرفع هنا يُرسَل بضغطة. والطولُ والصيغةُ يُحكمان في الخدمة، وهنا حدُّ الملفّ الخام. */
+  app.post('/api/admin/trainers/suggestions/drafts', {
+    preHandler: requirePermission('trainer.publish'),
+    schema: { tags: ['admin-trainers'], summary: 'رفع مسوّدات «لماذا نفتخر به» والنبذة ملفّا — يحفظ كلّه أو يردّ كلّه' },
+  }, async (req, reply) => {
+    const file = z.object({
+      format: z.string().max(80).optional(),
+      pitch: z.record(z.string().max(64), z.array(z.string().max(400)).max(10)).optional(),
+      bio: z.record(z.string().max(64), z.string().max(2000)).optional(),
+    }).refine((f) => Object.keys(f.pitch ?? {}).length + Object.keys(f.bio ?? {}).length <= 1000, 'الملف أكبر من ١٠٠٠ مسوّدة — قسّمه')
+      .parse(req.body ?? {})
+    return reply.status(201).send(await drafts.upload(req.auth!.userId, file))
   })
 
   app.post('/api/admin/trainers/:profileId/suggestions/:kind/withdraw', {
