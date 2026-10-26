@@ -161,9 +161,11 @@ describe('تذكرةُ اللقاء بعد انتهائه وقبل اعتماد�
   beforeAll(async () => {
     cohortId = (await prisma.cohortSession.findUniqueOrThrow({ where: { id: sessionId } })).cohortId
   })
+  /* رقمُ الاجتماع عشرُ خاناتٍ دائما. كان `9${Date.now() % 1e9}` فيقصر عن تسعٍ حين يكون الباقي أقلَّ من عشرة ملايين —
+     نحو ثلاث ساعاتٍ كلَّ أحدَ عشرَ يوما ونصف — فيردّه `signMeetingSdkJwt` («رقم الاجتماع غير صالح») ويسقط الملفُّ بلا عطب. */
   const meeting = async (title: string, over: { startsAt: Date; endsAt: Date; approvalState?: string }, zoom: { actualStartAt?: Date; actualEndAt?: Date } = {}) => {
     const s = await prisma.cohortSession.create({ data: { cohortId, title, status: 'scheduled', ...over } })
-    await prisma.zoomMeeting.create({ data: { sessionId: s.id, joinUrl: 'https://zoom.us/j/9', meetingId: `9${Date.now() % 1e9}`, ...zoom } })
+    await prisma.zoomMeeting.create({ data: { sessionId: s.id, joinUrl: 'https://zoom.us/j/9', meetingId: `9${String(Date.now() % 1e9).padStart(9, '0')}`, ...zoom } })
     return s.id
   }
 
