@@ -1649,6 +1649,7 @@ export default function TrainerApplications() {
                 qualifications={a.profile?.qualifications ?? []}
                 permissions={user?.permissions ?? []}
                 onChanged={() => loadDetail(a.id)}
+                contractsHref={contractsHref(a, "contract")}
               />
             ) : tab === "courses" ? (
               <TrainerCoursesTab summary={a.summary} ops={ops ? <TrainerCourses trainer={ops.t} /> : undefined} />

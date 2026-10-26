@@ -6,11 +6,14 @@
 
    ① تُفتح الخطوةُ لأيٍّ من الحبّتين — وتحفظ بالمسار الذي فتحه الخادمُ لكلتيهما.
    ② وتحت الرقم سجلُّه: من مسار سجلّ أجره، وكلُّ سطرٍ باسم من ضبط، ويُعاد بعد الحفظ.
-   ③ وشرحُها لا يَعِد بزرٍّ لا وجودَ له («اعتمده نهائيّا») — يعبر حين نعتمد توقيعَه. */
+   ③ وشرحُها لا يَعِد بزرٍّ لا وجودَ له («اعتمده نهائيّا») — يعبر حين نعتمد توقيعَه.
+   ④ وإن خرج له عقدٌ لم ينفذ قيل قبل الحفظ إنّ نصَّه لا يتغيّر به، والخياران: هنا وحدَه، أو مع العقد في «العقود».
+      فالخطوةُ تكتب القاعدةَ وحدَها، والتركيبُ والإعادةُ يكتبان الاثنين — وبلا هذا يوقّع على رقمٍ ويُحسب له غيرُه. */
 
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { outContractOf } from '@/application/trainer/contract-fee'
 
 /* بلا التعليقات: ذِكرُ ما كان في شرحٍ ليس عودةً له */
 const code = (p: string) => readFileSync(join(process.cwd(), p), 'utf8').replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '')
@@ -51,5 +54,48 @@ describe('③ وشرحها لا يعد بزر لا وجود له', () => {
   it('لا «اعتمده نهائيا» — يعبر إلى «المدربون» حين نعتمد توقيعه', () => {
     expect(PREP).not.toContain('اعتمده نهائيّا')
     expect(PREP).toContain('وتعتمد توقيعه <b className="text-foreground">يعبر إلى «المدربون»</b>')
+  })
+})
+
+describe('④ وعقد خرج ولم ينفذ يقال قبل الحفظ', () => {
+  const c = (status: string, createdAt = '2026-10-20T10:00:00Z', fee: Record<string, string | null> = {}) => ({
+    title: `عقد ${status}`, status, createdAt,
+    compensationType: 'per_seat', compensationRate: '30', currency: 'JOD', ...fee,
+  })
+
+  it('⚠️ ما خرج ولم ينفذ وحده — المسودة والمرسل والموقع وطلب التعديل', () => {
+    for (const status of ['draft', 'sent', 'signed', 'amendment_requested']) {
+      expect(outContractOf([c(status)]), status).not.toBeNull()
+    }
+    /* والنافذ يغير أجره بالقاعدة، والمغلق لا نص له يفترق */
+    for (const status of ['signature_approved', 'countersigned', 'revoked', 'declined', 'expired', 'terminated', 'superseded']) {
+      expect(outContractOf([c(status)]), status).toBeNull()
+    }
+  })
+
+  it('⚠️ أحدثها — بأجره كما في نصه', () => {
+    const out = outContractOf([
+      c('revoked', '2026-10-01T10:00:00Z'),
+      c('sent', '2026-10-05T10:00:00Z', { compensationRate: '25' }),
+      c('signed', '2026-10-20T10:00:00Z', { compensationType: 'fixed_per_cohort', compensationRate: '400' }),
+    ])
+    expect(out?.contract.status).toBe('signed')
+    expect(out?.phraseAr).toBe('وقعه وينتظر اعتمادك')
+    expect(out?.feeAr).toBe('بأجر ثابت لكل شعبة 400 JOD')
+    expect(outContractOf([c('sent', undefined, { compensationType: 'revenue_share', compensationRate: '40' })])?.feeAr)
+      .toBe('بأجر نسبة من الإيراد 40 %')
+    expect(outContractOf([c('sent', undefined, { compensationType: null })])?.feeAr).toBe('بلا أجر')
+  })
+
+  it('⚠️ والخطوة تقوله بخيارين — «العقود» لمن يركّب العقد وحده', () => {
+    expect(FEE).toContain('const out = outContractOf(contracts);')
+    const note = /\{out && \(\s*<Inset[\s\S]*?<\/Inset>/.exec(FEE)?.[0] ?? ''
+    expect(note, 'لا يقال شيء').toContain('{out.feeAr}')
+    expect(note).toContain('الحفظ هنا يغيّر القاعدة وحدها')
+    expect(FEE).toContain('{out ? "غيّره هنا وحده" : live ? "استبدل القاعدة السارية" : "اضبط الاتفاق الماليّ"}')
+    expect(FEE).toMatch(/\{out && contractsHref && \(\s*<Button as=\{Link\} to=\{contractsHref\}/)
+    expect(PREP).toContain('contractsHref={can("trainer.contract.manage") ? contractsHref : undefined}')
+    expect(PREP).toMatch(/profileId=\{profileId\} live=\{activeRule\} contracts=\{contracts\}/)
+    expect(code('src/pages/admin/TrainerApplications.tsx')).toContain('contractsHref={contractsHref(a, "contract")}')
   })
 })

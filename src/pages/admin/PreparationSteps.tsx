@@ -31,6 +31,7 @@
    تُفتح لأيٍّ من الحبّتين، وتحتها سجلُّ أجره بمن ضبط كلَّ قاعدةٍ ومتى (`fee-history`). */
 
 import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router";
 import {
   BadgeCheck, BookPlus, Check, ChevronDown, ChevronUp, CircleDashed, Coins, FileSignature,
   Link2, Link2Off, Pencil, Send, Trash2,
@@ -42,6 +43,7 @@ import Button from "@/components/ui/Button";
 import CoursePicker from "@/components/admin/CoursePicker";
 import { staffControlCls as inputCls, staffAreaCls as areaCls } from "@/components/FormKit";
 import { RULE_TYPE_AR } from "@/application/trainer/compensation-labels";
+import { outContractOf } from "@/application/trainer/contract-fee";
 import { foldProposals } from "@/application/trainer/proposal-fold";
 import { fmtDateLong } from "@/application/text/format-ar";
 import {
@@ -79,6 +81,8 @@ export interface PrepContract {
   id: string; title: string; status: string; revision: number;
   signerLegalName: string | null; signedAt: string | null; countersignedAt: string | null;
   declineReasonAr?: string | null; gatesActivation?: boolean;
+  /** أجرُ العقد كما جُمِّد في نصّه — يقارَن بخطوة الأجر (`outContractOf`) */
+  createdAt?: string; compensationType?: string | null; compensationRate?: string | null; currency?: string | null;
 }
 
 export interface PrepQualification {
@@ -124,6 +128,8 @@ export interface PreparationProps {
   permissions: string[];
   /** يُعاد تحميلُ الملفّ بعد كلّ فعلٍ يغيّر شيئا */
   onChanged: () => void | Promise<void>;
+  /** عقودُه في «العقود» — حيث يُغيَّر الأجرُ مع العقد */
+  contractsHref?: string;
 }
 
 const courseTitle = (c?: { versions: { titleAr: string }[] } | null, fallback = "") =>
@@ -181,9 +187,13 @@ function Step({
 /* ═══════════ الخطوةُ الأولى — الاتفاقُ الماليّ ═══════════ */
 
 function FeeStep({
-  profileId, live, onChanged, busy, run,
+  profileId, live, contracts, contractsHref, onChanged, busy, run,
 }: {
   profileId: string; live: PrepRule | null; onChanged: () => void | Promise<void>;
+  /** عقودُه — فإن خرج له عقدٌ لم ينفذ قيل قبل الحفظ إنّ نصَّه لا يتغيّر به */
+  contracts: PrepContract[];
+  /** «العقود» لهذا المدرّب — لمن يملك تركيبَ العقد وحدَه */
+  contractsHref?: string;
   busy: boolean; run: (work: () => Promise<unknown>, okAr: string) => Promise<void>;
 }) {
   const [type, setType] = useState("per_seat");
@@ -199,6 +209,10 @@ function FeeStep({
       .catch(() => setHistory(null));
   }, [profileId]);
   useEffect(() => { loadHistory(); }, [loadHistory]);
+  /* ═══ وعقدٌ خرج ولم ينفذ — نصُّه لا يتغيّر بهذا الحفظ (٢٦ أكتوبر ٢٠٢٦) ═══
+     التركيبُ والإعادةُ في «العقود» يكتبان القاعدةَ والعقدَ معا، وهذا يكتب القاعدةَ وحدَها. فيُقال الفرقُ قبل الحفظ،
+     والخياران بأثر كلٍّ منهما — لا بابٌ يُسدّ (`outContractOf`). */
+  const out = outContractOf(contracts);
 
   const save = () =>
     run(async () => {
@@ -273,14 +287,28 @@ function FeeStep({
         )}
       </div>
 
+      {out && (
+        <Inset as="p" tone="warn" className="px-3.5 py-2.5 text-read leading-6">
+          عقده «{out.contract.title}» {out.phraseAr}، {out.feeAr}. الحفظ هنا يغيّر القاعدة وحدها: يبقى نصّ
+          العقد بأجره، ويحسب له الأجر الجديد.
+        </Inset>
+      )}
+
       <div>
-        <Button
-          tone="confirm" size="sm" icon={Coins} loading={busy}
-          disabled={!(Number(rate) > 0)}
-          onClick={() => void save()}
-        >
-          {live ? "استبدل القاعدة السارية" : "اضبط الاتفاق الماليّ"}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            tone="confirm" size="sm" icon={Coins} loading={busy}
+            disabled={!(Number(rate) > 0)}
+            onClick={() => void save()}
+          >
+            {out ? "غيّره هنا وحده" : live ? "استبدل القاعدة السارية" : "اضبط الاتفاق الماليّ"}
+          </Button>
+          {out && contractsHref && (
+            <Button as={Link} to={contractsHref} tone="secondary" size="sm" icon={FileSignature}>
+              غيّره مع العقد في «العقود»
+            </Button>
+          )}
+        </div>
         {live && (
           <p className="mt-1.5 text-read leading-5 text-muted-foreground">
             القاعدة السابقة تغلق بتاريخها ولا تحذف، فيبقى ما حسب عليها واضحا.
@@ -873,7 +901,7 @@ function ContractStep({
 
 export default function PreparationSteps({
   applicationId, profileId, readiness, activeRule, proposals, contracts,
-  qualifications, permissions, onChanged,
+  qualifications, permissions, onChanged, contractsHref,
 }: PreparationProps) {
   const [busy, setBusy] = useState(false);
   const [courses, setCourses] = useState<CourseOption[]>([]);
@@ -951,7 +979,10 @@ export default function PreparationSteps({
         blockerAr={stepOf("compensation")?.blockerAr ?? null}
         locked={!can("trainer.compensation.manage") && !can("trainer.contract.manage")}
       >
-        <FeeStep profileId={profileId} live={activeRule} onChanged={onChanged} busy={busy} run={run} />
+        <FeeStep
+          profileId={profileId} live={activeRule} contracts={contracts} onChanged={onChanged} busy={busy} run={run}
+          contractsHref={can("trainer.contract.manage") ? contractsHref : undefined}
+        />
       </Step>
 
       <Step
