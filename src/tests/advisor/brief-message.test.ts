@@ -6,6 +6,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { advisorBriefTextAr } from '@/application/advisor/brief-message'
 import { plainAr } from '@/application/text/plain-ar'
+import { BRIEF_ATTACH_MSG_AR } from '@/components/AdvisorBrief'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '../../..')
 const code = (p: string) => readFileSync(join(root, p), 'utf8').replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '')
@@ -22,7 +23,8 @@ describe('رسالة ملخص المستشار', () => {
   })
 
   it('⚠️ زر واتساب يبني رسالته من المسار ودوراته، والصفحة تمرّر رابط المسار', () => {
-    expect(BRIEF).toContain('const text = advisorBriefTextAr({ message, pathwayUrl, courseNames, attachNote: BRIEF_ATTACH_NOTE_AR });')
+    /* وآخرُ الرسالة بلسان مرسلها لا سطرُ الورقة — وإلّا قرأه المستشارُ طلبا منه هو */
+    expect(BRIEF).toContain('const text = advisorBriefTextAr({ message, pathwayUrl, courseNames, attachNote: BRIEF_ATTACH_MSG_AR });')
     expect(BRIEF).toContain('buildWaHref(numbers, "advisor_brief", CONTACT.whatsapp, text)')
     expect(PATHWAY).toMatch(/<AdvisorBrief[\s\S]*?pathwayUrl=\{`\$\{siteOrigin\(\)\}\/pathways\/\$\{pathway\.id\}`\}/)
   })
@@ -37,6 +39,8 @@ describe('رسالة ملخص المستشار', () => {
   })
 
   it('النصوص بلا تشكيل', () => {
+    expect(BRIEF_ATTACH_MSG_AR).toBe(plainAr(BRIEF_ATTACH_MSG_AR))
+    expect(BRIEF_ATTACH_MSG_AR).toMatch(/^سأرسل سيرتي/)
     for (const t of ['رابط المسار:', 'الدورات في خطتي:', 'رسالة واتساب تحمل مسارك ودوراتك. ويمكنك إرفاق هذا الملخص PDF أيضا.']) {
       expect(t).toBe(plainAr(t))
     }

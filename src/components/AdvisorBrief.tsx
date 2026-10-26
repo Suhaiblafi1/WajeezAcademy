@@ -36,9 +36,13 @@ import { waHref as buildWaHref } from "@/application/site/whatsapp";
 import { useWhatsAppNumbers } from "@/services/whatsapp";
 import { advisorBriefTextAr } from "@/application/advisor/brief-message";
 
-/** ما يُطلب من المرسِل — مكتوبٌ مرّةً ويُقرأ في الورقة وفي الرسالة معا */
+/** ما يُطلب من المرسِل — في الورقة وحدَها، والرسالةُ تقوله بلسانه (`BRIEF_ATTACH_MSG_AR`) */
 export const BRIEF_ATTACH_NOTE_AR =
   "أرجو إرفاق سيرتك الذاتية أو رابط حسابك على لينكدإن ليعرف مستشار المسار المهني عنك أكثر.";
+
+/** وفي الرسالة يقوله صاحبُها لا الورقة — قرارُ صاحب المنصّة (٢٦ أكتوبر ٢٠٢٦): «1». كان سطرُ الورقة نفسُه آخرَ الرسالة،
+    فيقرؤه المستشارُ طلبا منه هو أن يُرفق سيرتَه. فصار وعدا بلسان المرسِل يذكّره أن يرسلها في المحادثة. */
+export const BRIEF_ATTACH_MSG_AR = "سأرسل سيرتي الذاتية أو رابط حسابي على لينكدإن في هذه المحادثة.";
 
 export interface AdvisorBriefProps {
   /** اسمُ المسار المرشَّح — كما يُعرض في صفحته */
@@ -67,7 +71,7 @@ export default function AdvisorBrief({ pathwayName, pathwayUrl, courseNames, mes
   /* رقمُ «مستشار قبل الدفع» من الإدارة، و`CONTACT.whatsapp` رجوعٌ حتّى يُضبط */
   const numbers = useWhatsAppNumbers();
   /* والرسالةُ تحمل المسارَ ورابطَه ودوراتِه — فلا يتوقّف وصولُها على ورقةٍ تُرفق باليد (`brief-message.ts`) */
-  const text = advisorBriefTextAr({ message, pathwayUrl, courseNames, attachNote: BRIEF_ATTACH_NOTE_AR });
+  const text = advisorBriefTextAr({ message, pathwayUrl, courseNames, attachNote: BRIEF_ATTACH_MSG_AR });
   const waHref = buildWaHref(numbers, "advisor_brief", CONTACT.whatsapp, text);
 
   /* وسمُ الجسد يحكم الطباعة: بوجوده يُخفى `#root` فلا تُطبع الصفحةُ خلف
