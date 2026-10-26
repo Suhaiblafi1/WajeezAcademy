@@ -2,14 +2,15 @@
 
    ① كلُّ ملفٍّ يُعرف موضعُه من معرّف خطّته في اسمه — وما لا يُعرف يُردّ بسببه ولا يُخمَّن.
    ② والصندوقُ في «خططٌ تنتظر اعتمادك» لمن يعتمد، يرفع بمسلك البطاقة نفسِه، وما كان مرفوعا
-      يُقال «كان مرفوعا» لا «رُدّ». ويُحفظ باسمٍ بلا معرّف الخطّة — فلا يراه المدرّب.
+      يُقال «كان مرفوعا» لا «رُدّ». ويُحفظ باسمٍ بلا معرّف الخطّة — فلا يراه المدرّب. وصار صندوقَ الرفع الواحد
+      لما رجع كلِّه (٢٦ أكتوبر ٢٠٢٦، «فقط تحميل ورفع») — بلا «استبدل التقارير السابقة».
 
    والفحصُ على الشيفرة بلا تعليقاتها. */
 
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { clearReportsPath, matchReportFile, nameTokens, REPLACE_REPORTS_AR, replacedReportsAr, reportDisplayName, reportMime, reportsSummaryAr } from '@/application/trainer/review-reports-bulk'
+import { matchReportFile, nameTokens, reportDisplayName, reportMime } from '@/application/trainer/review-reports-bulk'
 
 const code = (p: string) => readFileSync(join(process.cwd(), p), 'utf8')
   .replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '').replace(/^\s*\/\/.*$/gm, '')
@@ -49,11 +50,7 @@ describe('① أيّ خطّة هذا الملفّ', () => {
     expect(reportDisplayName(`2026 — خطة [${A}].pdf`)).toBe('2026 — خطة.pdf')
   })
 
-  it('والخلاصة تقول ما رفع وما كان مرفوعا وما ردّ — ولا تقول «يراه المدرّب» وفي الدفعة ما ردّ', () => {
-    expect(reportsSummaryAr(42, 0, 0)).toBe('رفع 42 — يراها كلّ مدرّب في صفحة شعبته من الآن، وتذكرها رسالة قرارك.')
-    expect(reportsSummaryAr(40, 2, 0)).toMatch(/^رفع 40، وكان 2 مرفوعا من قبل فلم يكرّر — يراها/)
-    expect(reportsSummaryAr(41, 0, 1)).toBe('رفع 41، وردّ 1 بسببه أدناه.')
-  })
+  /* وخلاصةُ الدفعة صارت للصندوق الواحد (`reviewUploadSummaryAr`) — في `review-upload.test.ts` */
 })
 
 describe('①ب وبلا معرّف: باسم المدرّب واسم الشعبة (١١ أكتوبر ٢٠٢٦)', () => {
@@ -106,41 +103,36 @@ describe('①ب وبلا معرّف: باسم المدرّب واسم الشعب
 describe('② الصندوق في «خطط تنتظر اعتمادك»', () => {
   const page = code('src/pages/admin/PendingPlans.tsx')
   const comp = code('src/components/ReviewReports.tsx')
-  const bulk = comp.slice(comp.indexOf('export function ReviewReportsBulkUpload'), comp.indexOf('export function ReviewReportList'))
+  const box = code('src/components/admin/ReviewUpload.tsx')
 
   it('⚠️ لمن يعتمد وحده — كالرفع في البطاقة', () => {
-    expect(page).toMatch(/\{rows !== null && canUploadEdits && \(\s*<ReviewReportsBulkUpload/)
+    expect(page).toMatch(/\{rows !== null && canUploadEdits && \(\s*<ReviewUpload/)
   })
 
   it('⚠️ والقائمة تحمل اسم المدرّب وعنوان الشعبة — بهما يطابق الاسم بلا معرّف', () => {
-    const box = page.slice(page.indexOf('<ReviewReportsBulkUpload'))
-    const prop = box.slice(box.indexOf('plans={'), box.indexOf('onUploaded='))
-    expect(prop).toMatch(/^plans=\{scoped\.map\(\(r\) => \(\{ id: r\.id, /)
+    const tag = page.slice(page.indexOf('<ReviewUpload'))
+    const prop = tag.slice(tag.indexOf('reportPlans={'), tag.indexOf('openable='))
+    expect(prop).toMatch(/^reportPlans=\{scoped\.map\(\(r\) => \(\{ id: r\.id, /)
     expect(prop).toMatch(/, trainerName: r\.trainerName, cohortTitle: r\.cohort\.title \}\)\)\}\s*$/)
   })
 
-  it('⚠️ يرفع إلى خطّة الملفّ بمسلك البطاقة نفسه — ويقول قبل الرفع إنّ المدرّب يراه من الآن', () => {
-    expect(bulk).toMatch(/const m = matchReportFile\(file\.name, file\.type, plans\)/)
-    expect(bulk).toMatch(/apiPost<\{ uploadUrl: string; maxBytes: number \}>\(\s*`\/api\/admin\/cohort-plans\/\$\{m\.planId\}\/review-report`/)
-    expect(bulk).toMatch(/await putSigned\(r\.uploadUrl, file, r\.maxBytes\)/)
-    expect(bulk, 'يحفظ باسمه الذي فيه معرّف الخطّة فيراه المدرّب').toMatch(/originalName: m\.storedName \}/)
-    expect(bulk).toMatch(/<input[\s\S]{0,80}type="file"\s*multiple/)
-    expect(bulk).toContain('ويراه المدرّب في صفحة')
+  it('⚠️ يرفع إلى خطّة الملفّ بمسلك البطاقة نفسه — ويقول قبل الرفع إنّ المدرّب يراه من لحظة رفعه', () => {
+    expect(box).toMatch(/const m = matchReportFile\(file\.name, file\.type, reportPlans\)/)
+    expect(box).toMatch(/apiPost<\{ uploadUrl: string; maxBytes: number \}>\(\s*`\/api\/admin\/cohort-plans\/\$\{m\.planId\}\/review-report`/)
+    expect(box).toMatch(/await putSigned\(r\.uploadUrl, file, r\.maxBytes\)/)
+    expect(box, 'يحفظ باسمه الذي فيه معرّف الخطّة فيراه المدرّب').toMatch(/originalName: m\.storedName \}/)
+    expect(box).toMatch(/<input[\s\S]{0,80}type="file"\s*multiple/)
+    expect(box).toContain('والتقرير يراه في صفحة شعبته من لحظة رفعه')
   })
 
   it('⚠️ وما كان مرفوعا يقال «كان مرفوعا» — لا «ردّ»', () => {
-    expect(bulk).toMatch(/const already = e instanceof ApiError && e\.code === "report_exists"/)
-    expect(bulk).toMatch(/state: already \? "already" : "failed"/)
+    expect(box).toMatch(/const already = e instanceof ApiError && e\.code === "report_exists"/)
+    expect(box).toMatch(/state: already \? "already" : "failed"/)
   })
 
-  it('⚠️ «استبدل التقارير السابقة» يختاره المعتمد ولا يفترض — ويحذف مرّة لكلّ خطّة قبل أوّل رفع إليها', () => {
-    expect(bulk).toMatch(/const \[replace, setReplace\] = useState\(false\)/)
-    expect(bulk).toMatch(/<input type="checkbox"[^>]*checked=\{replace\}/)
-    expect(bulk).toMatch(/const cleared = new Map</)
-    const branch = bulk.slice(bulk.indexOf('if (replace) {'), bulk.indexOf('`/api/admin/cohort-plans/${m.planId}/review-report`'))
-    expect(branch).toMatch(/if \(!cleared\.has\(m\.planId\)\)/)
-    expect(branch).toMatch(/apiDelete<\{ removed: number \}>\(clearReportsPath\(m\.planId\)\)/)
-    expect(branch, 'وإن تعذّر الحذف لا يرفع إليها — لا يجتمع القديم والجديد').toMatch(/if \("problemAr" in c\) throw/)
+  /* وكان «استبدل التقارير السابقة» يحذفها قبل الرفع (١٢ أكتوبر) — وذهب بقول صاحب المنصّة «فقط تحميل ورفع» */
+  it('⚠️ ولا يحذف ما رفع قبله', () => {
+    expect(box, 'عاد حذف التقارير السابقة').not.toMatch(/apiDelete|review-reports`|type="checkbox"/)
   })
 
   it('⚠️ وبطاقة المدرّب لا تقول «مع ردّها» — يراها والخطّة ما تزال تنتظر القرار', () => {
@@ -150,22 +142,8 @@ describe('② الصندوق في «خطط تنتظر اعتمادك»', () => {
   })
 
   it('⚠️ وما ردّ لا يوقف ما بعده', () => {
-    const loop = bulk.slice(bulk.indexOf('for (const [i, file] of files.entries())'))
+    const loop = box.slice(box.indexOf('for (const [i, file] of expanded.files.entries())'))
     expect(loop.indexOf('try {')).toBeGreaterThan(0)
     expect(loop.indexOf('try {'), 'الاعتراض داخل الحلقة لا حولها').toBeLessThan(loop.indexOf('setProgress(null)'))
-  })
-})
-
-describe('③ استبدال التقارير السابقة (١٢ أكتوبر ٢٠٢٦)', () => {
-  it('المسار والنصّ — بلا تشكيل إعرابيّ', () => {
-    expect(clearReportsPath('p1')).toBe('/api/admin/cohort-plans/p1/review-reports')
-    expect(REPLACE_REPORTS_AR.whatAr).toMatch(/لا تمس/)
-    expect(`${REPLACE_REPORTS_AR.labelAr} ${REPLACE_REPORTS_AR.whatAr}`).not.toMatch(/[\u064B-\u0650\u0652]/)
-  })
-  it('وسطر الرفع يقول كم حذف — ولا شيء إن لم يكن قبله تقرير', () => {
-    expect(replacedReportsAr(0)).toBe('رفع إلى خطته')
-    expect(replacedReportsAr(1)).toBe('رفع إلى خطته، مكان تقرير سابق')
-    expect(replacedReportsAr(2)).toBe('رفع إلى خطته، مكان تقريرين سابقين')
-    expect(replacedReportsAr(4)).toBe('رفع إلى خطته، مكان 4 تقارير سابقة')
   })
 })

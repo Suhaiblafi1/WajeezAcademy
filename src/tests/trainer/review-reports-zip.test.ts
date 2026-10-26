@@ -6,7 +6,8 @@
    ① ما في الحزمة يخرج ملفّاتٍ بأسمائها — بلا مجلّداتها — ويمرّ بالمطابقة نفسِها.
    ② وما ليس تقريرا يُترك ويُعَدّ، ونسخةُ Word لـPDF فيها تُترك، وبقايا ماك ليست ملفّات.
    ③ وحزمةٌ لا تُفتح تُقال بسببها ولا توقف ما بعدها.
-   ④ والصندوقُ يفتح ما اختير قبل المطابقة، ويقبل zip في نافذة الاختيار.
+   ④ والصندوقُ يفتح ما اختير قبل المطابقة، ويقبل zip في نافذة الاختيار. وصار صندوقَ الرفع الواحد لما رجع كلِّه
+      (٢٦ أكتوبر ٢٠٢٦، «فقط تحميل ورفع») — والتقاريرُ فيه ما بقي بعد ملفّات التعديلات وكرّاساتها.
 
    والفحصُ على الشيفرة بلا تعليقاتها. */
 
@@ -92,24 +93,24 @@ describe('③ حزمة لا تفتح', () => {
 
 describe('④ الصندوق', () => {
   const comp = code('src/components/ReviewReports.tsx')
-  const bulk = comp.slice(comp.indexOf('export function ReviewReportsBulkUpload'), comp.indexOf('export function ReviewReportList'))
+  const box = code('src/components/admin/ReviewUpload.tsx')
 
   it('⚠️ يفتح ما اختير قبل المطابقة — والمطابقة على ما خرج لا على ما اختير', () => {
-    const open = bulk.indexOf('const expanded = await expandReportFiles(picked)')
+    const open = box.indexOf('const expanded = await expandReportFiles(reports);')
     expect(open).toBeGreaterThan(0)
-    expect(bulk).toMatch(/const files = expanded\.files;/)
-    expect(open).toBeLessThan(bulk.indexOf('for (const [i, file] of files.entries())'))
+    expect(open).toBeLessThan(box.indexOf('for (const [i, file] of expanded.files.entries())'))
+    expect(box).toMatch(/const m = matchReportFile\(file\.name, file\.type, reportPlans\)/)
   })
 
   it('⚠️ وما لم يفتح يقال في نتائجه، وما ترك يقال سطرا', () => {
-    expect(bulk).toMatch(/const out: ReportResult\[\] = expanded\.problems\.map\(/)
-    expect(bulk).toMatch(/setSkippedAr\(skippedLineAr\(expanded\.skipped\)\)/)
-    expect(bulk).toMatch(/\{skippedAr && <p/)
+    expect(box).toMatch(/for \(const p of expanded\.problems\) \{\s*push\(\{ name: p\.name, kind: "report", planId: null, labelAr: null, state: "failed", noteAr: p\.problemAr \}\);/)
+    expect(box).toMatch(/setSkippedAr\(skippedLineAr\(expanded\.skipped\)\)/)
+    expect(box).toMatch(/\{skippedAr && <p/)
   })
 
   it('⚠️ ونافذة الاختيار تقبل zip — وبطاقة الخطّة الواحدة لا', () => {
-    expect(bulk).toMatch(/accept=\{\[\.\.\.REVIEW_REPORT_MIMES, "\.pdf", "\.docx", "\.zip", "application\/zip"\]/)
-    const card = comp.slice(0, comp.indexOf('export function ReviewReportsBulkUpload'))
-    expect(card).not.toContain('.zip')
+    expect(box).toMatch(/const ACCEPT = \[[\s\S]*?"\.zip", "application\/zip", \.\.\.REVIEW_REPORT_MIMES,\s*\]\.join\(","\);/)
+    expect(box).toContain('accept={ACCEPT}')
+    expect(comp).not.toContain('.zip')
   })
 })

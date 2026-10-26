@@ -2,7 +2,7 @@
    وكم بندا فيه. وما لا يُقرأ يعود بسببه لا يرمي — فلا يوقف ما بعده من الدفعة. */
 
 import { describe, expect, it } from 'vitest'
-import { BULK_MODE_AR, BULK_MODES, bulkSummaryAr, bulkUploadPath, DEDUPE_ALL_AR, dedupeSummaryAr, editFilePath, isPdfName, KEEP_LATEST_ALL_PATH, pdfKey, pickedPdfs, KEEP_LATEST_AR, keepLatestPath, missingWorkbooksAr, withWorkbookKeys, workbookFilesNeeded, keptLatestAr, readEditsFile, replacedLineAr, uploadedLineAr, withdrawnLineAr } from '@/application/trainer/plan-edits-bulk'
+import { editFilePath, isPdfName, pdfKey, pickedPdfs, KEEP_LATEST_AR, keepLatestPath, missingWorkbooksAr, withWorkbookKeys, workbookFilesNeeded, keptLatestAr, readEditsFile, uploadedLineAr } from '@/application/trainer/plan-edits-bulk'
 
 const PLAN = '7c1a3a52-2a7e-4a36-9a43-0d1d2b6b8f10'
 const file = (over: Record<string, unknown> = {}) => JSON.stringify({
@@ -48,63 +48,19 @@ describe('ما يقال بعد الرفع', () => {
     expect(uploadedLineAr(13, 0)).toBe('رفع مسوّدة: 13 بندا')
   })
 
-  it('وما استبدل يقال بعدده — ولا شيء إن لم يكن قبله شيء', () => {
-    expect(replacedLineAr(19)).toBe('، مكان 19 مسودة سابقة')
-    expect(replacedLineAr(3)).toBe('، مكان 3 مسودات سابقة')
-    expect(replacedLineAr(0)).toBe('')
-  })
-
-  it('⚠️ ولا يقال «كلّها» وفي الدفعة ما ردّ', () => {
-    expect(bulkSummaryAr(8, 0)).toMatch(/^رفعت الملفّات كلّها \(8\)/)
-    expect(bulkSummaryAr(7, 1)).toBe('رفع 7 من 8 — وردّ 1 بسببه أدناه، وما ردّ لم يحفظ منه شيء.')
-    expect(bulkSummaryAr(0, 2)).toMatch(/^لم يرفع شيء/)
-  })
+  /* وكانت هنا سطورُ الاستبدال والسحب وخلاصةُ الدفعة وطرقُ الرفع الثلاث (١٠ و١٢ أكتوبر). وذهبت بقول صاحب المنصّة
+     «فقط تحميل ورفع» (٢٦ أكتوبر ٢٠٢٦) — وخلاصةُ الصندوق الواحد في \`review-upload.test.ts\`. */
 })
 
-describe('«ابدأ من جديد» — الطريقة الثالثة (١٢ أكتوبر ٢٠٢٦)', () => {
-  it('⚠️ لكلّ طريقةٍ مسلكُها — و«أضف» هي الرفع العاديّ نفسه', () => {
-    expect(BULK_MODES.map((m) => bulkUploadPath(PLAN, m))).toEqual([
-      `/api/admin/cohort-plans/${PLAN}/edits`,
-      `/api/admin/cohort-plans/${PLAN}/edits/replace-drafts`,
-      `/api/admin/cohort-plans/${PLAN}/edits/replace-all`,
-    ])
-  })
-
-  /* والمسحوبُ بـ«ابدأ من جديد» لا يعود منذ ٢٠ أكتوبر ٢٠٢٦ (`restore-edits.test.ts`) — فالنصُّ يقوله قبل الضغط */
-  it('⚠️ وكلّ طريقة تقول ما يقع بها — والثالثة أنّ ما قرّر فيه المدرّب لا يمسّ وأنّ المسحوب لا يعود', () => {
-    for (const m of BULK_MODES) expect(BULK_MODE_AR[m].whatAr.length, m).toBeGreaterThan(20)
-    expect(BULK_MODE_AR.all.whatAr).toMatch(/ولا يعود — «أعد ما سحبته» لا يعيده/)
-    expect(BULK_MODE_AR.all.whatAr).toMatch(/لا يمس/)
-    expect(BULK_MODE_AR.drafts.whatAr).toMatch(/يبقى كما هو/)
-  })
-
-  it('وسطر الرفع يقول كم سحب — ولا شيء إن لم يسحب', () => {
-    expect(withdrawnLineAr(0)).toBe('')
-    expect(withdrawnLineAr(1)).toBe('، وسحب 1 بند لم يقرر فيها المدرب')
-    expect(withdrawnLineAr(5)).toBe('، وسحب 5 بنود لم يقرر فيها المدرب')
-  })
-
-  it('⚠️ ونصوصها بلا تشكيل إعرابيّ — اللغة البيضاء', () => {
-    const all = [...Object.values(BULK_MODE_AR).flatMap((x) => [x.labelAr, x.whatAr]), withdrawnLineAr(5)].join(' ')
-    expect(all).not.toMatch(/[\u064B-\u0650\u0652]/)
-  })
-})
-
-describe('«احذف المكرر» — يبقى آخر ملف رفع (١٢ أكتوبر ٢٠٢٦)', () => {
-  it('⚠️ مسلكه مسلك الخادم — للخطة، وللخطط المفتوحة كلها', () => {
+describe('«احذف المكرر» في بطاقة الخطة — يبقى آخر ملف رفع (١٢ أكتوبر ٢٠٢٦)', () => {
+  /* وكان معه زرٌّ للخطط كلِّها في «خطط تنتظر اعتمادك» — وذهب بقول صاحب المنصّة «فقط تحميل ورفع» (٢٦ أكتوبر ٢٠٢٦) */
+  it('⚠️ مسلكه مسلك الخادم — للخطة', () => {
     expect(keepLatestPath(PLAN)).toBe(`/api/admin/cohort-plans/${PLAN}/edits/keep-latest`)
-    expect(KEEP_LATEST_ALL_PATH).toBe('/api/admin/plan-edits/keep-latest-all')
-  })
-
-  it('⚠️ وزرّ الخطط كلها يقول إنه يشمل ما رُدّ إلى مدربه — لا ما ينتظر اعتمادك وحده', () => {
-    expect(DEDUPE_ALL_AR.whatAr).toMatch(/ما ينتظر اعتمادك وما رددته إلى مدربه/)
   })
 
   it('⚠️ ويقول ما يقع به: يبقى آخر ملف، وما قرّر فيه المدرّب لا يمسّ', () => {
-    for (const t of [KEEP_LATEST_AR.whatAr, DEDUPE_ALL_AR.whatAr]) {
-      expect(t).toMatch(/آخر ملف رفعته/)
-      expect(t).toMatch(/لا يمس/)
-    }
+    expect(KEEP_LATEST_AR.whatAr).toMatch(/آخر ملف رفعته/)
+    expect(KEEP_LATEST_AR.whatAr).toMatch(/لا يمس/)
   })
 
   it('وسطر البطاقة يقول كم سحب بصيغة عدده — ولا يعد بإعادة لا تقع', () => {
@@ -112,16 +68,8 @@ describe('«احذف المكرر» — يبقى آخر ملف رفع (١٢ أك
     expect(keptLatestAr(35)).toMatch(/^سحب 35 بندا من ملفات أقدم/)
   })
 
-  it('⚠️ والخلاصة لكل الخطط: كم سحب ومن كم خطة، وكم بلا مكرر، وما تعذّر — ولا «لا مكرر» وفيها ما تعذّر', () => {
-    expect(dedupeSummaryAr({ cleaned: 12, withdrawn: 230, clean: 16, failed: 0 })).toBe('سحب 230 بندا من 12 خطة، و16 خطة بلا مكرر.')
-    expect(dedupeSummaryAr({ cleaned: 2, withdrawn: 5, clean: 0, failed: 1 })).toBe('سحب 5 بنود من 2 خطتين، وتعذر 1 خطة — أسبابها أدناه.')
-    expect(dedupeSummaryAr({ cleaned: 0, withdrawn: 0, clean: 28, failed: 0 })).toMatch(/^لا مكرر في أي خطة/)
-    expect(dedupeSummaryAr({ cleaned: 0, withdrawn: 0, clean: 27, failed: 1 })).not.toMatch(/لا مكرر في أي خطة/)
-  })
-
   it('⚠️ ونصوصه بلا تشكيل إعرابيّ — اللغة البيضاء', () => {
-    const all = [KEEP_LATEST_AR.labelAr, KEEP_LATEST_AR.whatAr, DEDUPE_ALL_AR.labelAr, DEDUPE_ALL_AR.whatAr, keptLatestAr(5),
-      dedupeSummaryAr({ cleaned: 2, withdrawn: 5, clean: 3, failed: 1 })].join(' ')
+    const all = [KEEP_LATEST_AR.labelAr, KEEP_LATEST_AR.whatAr, keptLatestAr(5)].join(' ')
     expect(all).not.toMatch(/[\u064B-\u0650\u0652]/)
   })
 })

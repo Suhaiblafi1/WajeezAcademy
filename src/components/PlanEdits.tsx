@@ -8,14 +8,13 @@
    تعرضان ما يحسبه الخادمُ منها، لا تحسبان. */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { CalendarClock, Check, CopyX, ExternalLink, FileJson, Files, PencilLine, Undo2, X } from "lucide-react";
+import { CalendarClock, Check, CopyX, FileJson, PencilLine, Undo2, X } from "lucide-react";
 import { apiDelete, apiGet, apiPost, ApiError } from "@/services/api";
-import { putSigned } from "@/services/signed-upload";
 import { Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import Chip from "@/components/ui/Chip";
 import type { EditView, PlanEditStatus } from "@/application/trainer/plan-edits";
-import { BULK_MODE_AR, BULK_MODES, bulkSummaryAr, bulkUploadPath, DEDUPE_ALL_AR, dedupeSummaryAr, editFilePath, isPdfName, KEEP_LATEST_ALL_PATH, pdfKey, pickedPdfs, KEEP_LATEST_AR, keepLatestPath, missingWorkbooksAr, withWorkbookKeys, workbookFilesNeeded, keptLatestAr, readEditsFile, replacedLineAr, uploadedLineAr, withdrawnLineAr, type BulkMode } from "@/application/trainer/plan-edits-bulk";
+import { KEEP_LATEST_AR, keepLatestPath, keptLatestAr } from "@/application/trainer/plan-edits-bulk";
 import { GapList, NoteSubs } from "@/components/LongText";
 import { gapLayout } from "@/application/trainer/text-layout";
 import { SCHEDULE_REJECT_REASONS, withRejectReason } from "@/application/terms/schedule-clash";
@@ -368,181 +367,8 @@ export function PlanEditsUploader({ planId, cohortId, canUpload: mayUpload, canR
   );
 }
 
-/* ═══════════ دفعةً واحدة — «خططٌ تنتظر اعتمادك» (١٠ أكتوبر ٢٠٢٦) ═══════════
-   «I need one place to upload all of them same time!» (صاحب المنصّة). كلُّ ملفٍّ يحمل خطّتَه
-   فيُرفع إليها بالمسلك الذي في البطاقة نفسِه — واحدا بعد واحد، وما رُدّ منها لا يوقف ما بعده. */
-
-interface BulkResult {
-  name: string;
-  planId: string | null;
-  labelAr: string | null;
-  okAr: string | null;
-  problemAr: string | null;
-}
-
-/* ═══ «احذف المكرر من كل الخطط» — نقرةٌ واحدةٌ للخطط المفتوحة كلِّها (١٢ أكتوبر ٢٠٢٦) ═══
-   «give me a button to remove duplication» (صاحب المنصّة). وكان يمرّ على خطط هذه الصفحة وحدَها —
-   المرسَلةِ بانتظار القرار — فقال «لا مكرر» وفي الخطط التي رُدّت إلى مدرّبيها كثير. فصار طلبا واحدا
-   يمرّ فيه الخادمُ على كلّ خطّةٍ مفتوحة (`keepLatestAll`)، وبطاقةُ ما نظف في الصفحة تُعاد. */
-export function PlanEditsDedupeAll({ onCleaned }: { onCleaned: (planId: string) => void }) {
-  const [busy, setBusy] = useState(false);
-  const [summary, setSummary] = useState("");
-  const [error, setError] = useState("");
-
-  const run = async () => {
-    setBusy(true); setSummary(""); setError("");
-    try {
-      const r = await apiPost<{ checked: number; cleaned: string[]; withdrawn: number }>(KEEP_LATEST_ALL_PATH, {});
-      for (const id of r.cleaned) onCleaned(id);
-      setSummary(dedupeSummaryAr({ cleaned: r.cleaned.length, withdrawn: r.withdrawn, clean: r.checked - r.cleaned.length, failed: 0 }));
-    } catch (e) {
-      setError(errText(e, "تعذّر السحب"));
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <Inset className="mb-4 space-y-2 px-4 py-3">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="max-w-2xl text-read leading-6 text-muted-foreground">{DEDUPE_ALL_AR.whatAr}</p>
-        <Button size="sm" tone="secondary" icon={CopyX} disabled={busy} onClick={() => void run()}>
-          {busy ? "يسحب المكرر…" : DEDUPE_ALL_AR.labelAr}
-        </Button>
-      </div>
-      {summary && <p className="text-read font-bold text-teal-light-ink" role="status">{summary}</p>}
-      {error && <p className="text-read leading-6 text-danger-ink" role="alert">{error}</p>}
-    </Inset>
-  );
-}
-
-/** `plans` الخططُ المنتظِرة — لتُسمّى كلُّ نتيجةٍ بشعبتها ومدرّبها، ويُفتح ما فيها.
-    `onUploaded` يُقال لكلّ خطّةٍ رُفع إليها — فتُعاد بطاقتُها إن كانت مفتوحة.
-    `onOpen` يفتح بطاقتَها في الصفحة نفسِها لتُراجَع بنودُها. */
-export function PlanEditsBulkUpload({ plans, onUploaded, onOpen }: {
-  plans: readonly { id: string; labelAr: string }[];
-  onUploaded: (planId: string) => void;
-  onOpen: (planId: string) => void;
-}) {
-  const input = useRef<HTMLInputElement>(null);
-  const [progress, setProgress] = useState<string | null>(null);
-  const [results, setResults] = useState<BulkResult[]>([]);
-  const [summary, setSummary] = useState("");
-  const [over, setOver] = useState(false);
-  /* وطريقةُ الرفع يختارها المعتمِد، ولا تُفترض — «أضف» ما لم يختر غيرَها (`BULK_MODE_AR`) */
-  const [mode, setMode] = useState<BulkMode>("add");
-
-  const run = async (picked: readonly File[]) => {
-    if (progress || picked.length === 0) return;
-    setResults([]); setSummary("");
-    const out: BulkResult[] = [];
-    /* والكرّاساتُ المصحّحةُ (PDF) تُختار معها — لا تُعدّ ملفّاتٍ تُرفع وحدَها، بل تُرفع مع بندها (`workbookFilesNeeded`) */
-    const pdfs = pickedPdfs(picked);
-    const files = picked.filter((f) => !isPdfName(f.name));
-    for (const [i, file] of files.entries()) {
-      setProgress(`${i + 1} من ${files.length}`);
-      const read = readEditsFile(file.name, await file.text());
-      if (!read.ok) {
-        out.push({ name: file.name, planId: null, labelAr: null, okAr: null, problemAr: read.problemAr });
-      } else {
-        const labelAr = plans.find((p) => p.id === read.planId)?.labelAr ?? read.titleAr;
-        try {
-          let okAr = uploadedLineAr(read.count, read.required);
-          const needed = workbookFilesNeeded(read.body);
-          const missing = needed.filter((n) => !pdfs.has(pdfKey(n)));
-          if (missing.length) throw new Error(missingWorkbooksAr(missing));
-          const keys: Record<string, string> = {};
-          for (const n of needed) {
-            const pdf = pdfs.get(pdfKey(n))!;
-            const up = await apiPost<{ storageKey: string; uploadUrl: string; maxBytes: number }>(
-              editFilePath(read.planId), { mime: "application/pdf", originalName: n });
-            await putSigned(up.uploadUrl, pdf, up.maxBytes);
-            keys[n] = up.storageKey;
-          }
-          const body = needed.length ? withWorkbookKeys(read.body, keys) : read.body;
-          const r = await apiPost<{ replacedDrafts?: number; withdrawn?: number }>(bulkUploadPath(read.planId, mode), body);
-          if (mode === "drafts") okAr += replacedLineAr(r.replacedDrafts ?? 0);
-          if (mode === "all") okAr += withdrawnLineAr(r.withdrawn ?? 0);
-          out.push({ name: file.name, planId: read.planId, labelAr, okAr, problemAr: null });
-          onUploaded(read.planId);
-        } catch (e) {
-          out.push({ name: file.name, planId: read.planId, labelAr, okAr: null, problemAr: errText(e, "تعذّر الرفع") });
-        }
-      }
-      setResults([...out]);
-    }
-    setProgress(null);
-    setSummary(bulkSummaryAr(out.filter((r) => r.okAr).length, out.filter((r) => !r.okAr).length));
-    if (input.current) input.current.value = "";
-  };
-
-  return (
-    <Inset className="mb-4 px-4 py-3" role="region" aria-label="ملفّات التعديلات دفعة واحدة">
-      <p className="text-read font-black text-foreground">ارفع ملفّات التعديلات المقترحة كلّها دفعة واحدة</p>
-      <p className="mt-1 max-w-3xl text-read leading-6 text-muted-foreground">
-        كلّ ملفّ يعرف خطّته فيرفع إليها وحده، ويفحص كما يفحص في بطاقتها: يرفع كلّه أو يردّ كلّه بسببه. وترفع
-        مسوّدات لا يراها المدرّبون — تراجع بنود كلّ خطّة في بطاقتها فتعتمدها أو تحذفها. ومعها الكراسات المصححة
-        (PDF) إن سمّاها ملف: اخترها معه دفعة واحدة.
-      </p>
-      <div
-        className={`mt-3 flex flex-wrap items-center gap-3 rounded-lg border-2 border-dashed p-4 ${over ? "border-teal-light-ink bg-teal-light-ink/5" : "border-border"}`}
-        onDragOver={(e) => { e.preventDefault(); setOver(true); }}
-        onDragLeave={() => setOver(false)}
-        onDrop={(e) => { e.preventDefault(); setOver(false); void run(Array.from(e.dataTransfer.files)); }}
-      >
-        <input
-          ref={input}
-          type="file"
-          multiple
-          className="sr-only"
-          aria-label="ملفّات التعديلات المقترحة"
-          accept="application/json,.json,application/pdf,.pdf"
-          onChange={(e) => void run(Array.from(e.target.files ?? []))}
-        />
-        <Button tone="secondary" size="sm" icon={Files} disabled={progress !== null} onClick={() => input.current?.click()}>
-          {progress ? `يرفع ${progress}…` : "اختر الملفّات"}
-        </Button>
-        <span className="text-read text-muted-foreground">أو اسحبها كلّها إلى هنا وأفلتها.</span>
-      </div>
-      <fieldset className="mt-3 space-y-2" disabled={progress !== null}>
-        <legend className="text-read font-bold text-foreground">طريقة الرفع</legend>
-        {BULK_MODES.map((m) => (
-          <label key={m} className="flex items-start gap-2 text-read leading-6">
-            <input type="radio" name="bulk-mode" className="mt-1.5" value={m} checked={mode === m} onChange={() => setMode(m)} />
-            <span>
-              <span className="font-bold text-foreground">{BULK_MODE_AR[m].labelAr}</span>
-              <span className="block text-muted-foreground">{BULK_MODE_AR[m].whatAr}</span>
-            </span>
-          </label>
-        ))}
-      </fieldset>
-      {summary && <p className="mt-3 text-read font-bold text-teal-light-ink" role="status">{summary}</p>}
-      {results.length > 0 && (
-        <ol className="mt-2 space-y-2">
-          {results.map((r, i) => {
-            const here = r.okAr && r.planId && plans.some((p) => p.id === r.planId);
-            return (
-              <li key={`${i}-${r.name}`} className="rounded-lg border border-border/60 p-3">
-                <div className="flex flex-wrap items-center gap-2">
-                  <Chip tone={r.okAr ? "positive" : "danger"}>{r.okAr ? "رفع" : "ردّ"}</Chip>
-                  <span className="text-read font-bold text-foreground" dir="auto">{r.labelAr ?? r.name}</span>
-                </div>
-                {r.labelAr && <p className="mt-1 text-read text-muted-foreground" dir="auto">{r.name}</p>}
-                {r.okAr && <p className="mt-1 text-read text-foreground">{r.okAr}</p>}
-                {r.problemAr && <p className="mt-1 whitespace-pre-wrap text-read leading-6 text-danger-ink">{r.problemAr}</p>}
-                {here && (
-                  <Button className="mt-2" tone="ghost" size="sm" icon={ExternalLink} onClick={() => onOpen(r.planId!)}>
-                    افتح خطّته وراجع بنودها
-                  </Button>
-                )}
-              </li>
-            );
-          })}
-        </ol>
-      )}
-    </Inset>
-  );
-}
+/* وكانت هنا أدواتُ الجملة لـ«خططٌ تنتظر اعتمادك»: رفعُ ملفّات التعديلات بثلاث طرق، و«احذف المكرر من كل الخطط».
+   وقال صاحبُ المنصّة (٢٦ أكتوبر ٢٠٢٦): «فقط تحميل ورفع» — فصار صندوقا واحدا لما رجع كلِّه (`ReviewUpload.tsx`). */
 
 /* ═══════════ صفحةُ المدرّب ═══════════ */
 
