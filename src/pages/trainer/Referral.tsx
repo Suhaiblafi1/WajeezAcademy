@@ -28,10 +28,11 @@
    يوما، والمسارُ عقدٌ على متعلّمٍ لا شاشةُ عرض. */
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router";
-import { Gift, Link2, Loader2, Share2, TicketPercent, UserPlus, Wallet } from "lucide-react";
+import { Copy, ExternalLink, Gift, Link2, Loader2, Share2, TicketPercent, UserPlus, Wallet } from "lucide-react";
 import { apiGet, apiPost, ApiError, permissionMessage } from "@/services/api";
-import { Panel, Inset } from "@/components/ui/Surface";
+import { Panel, Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
+import Chip from "@/components/ui/Chip";
 import { staffControlCls, StaffField } from "@/components/FormKit";
 import { countAr } from "@/application/text/count-ar";
 import { fmtDateAr } from "@/utils/format";
@@ -181,9 +182,7 @@ function MyCodes() {
         كود خصم <b className="text-foreground">بنسبة أو بمبلغ تحدّده</b> تنشره لمن تشاء. يقع على
         <b className="text-foreground"> دوراتك وحدها</b> بعد خصوم الأكاديميّة، مرّة لكلّ متعلّم، ولا يتجاوز
         <b className="text-foreground"> {MAX_TRAINER_CODE_PERCENT}٪ من سعر الدورة</b>. وترى قيمته بالدولار قبل إصداره.
-      </p>
-      <p className="mt-2 text-read leading-7 text-muted-foreground">
-        ما يمنحه فعلا في كلّ شراء مدفوع يحسم <b className="text-foreground">من مستحقّاتك</b> في أوّل كشف لك، وينقص
+        {" "}ما يمنحه فعلا في كلّ شراء مدفوع يحسم <b className="text-foreground">من مستحقّاتك</b> في أوّل كشف لك، وينقص
         الحسم بقدر ما ردّ من ثمن (البند 4-10). وخصوم الأكاديميّة لا تنقص أتعابك (البند 4-9).
       </p>
 
@@ -478,7 +477,7 @@ export default function Referral() {
   /* وإخفاقُها يُقال لا يُقرأ «لا شعبة مفتوحة» (٢٠ أكتوبر ٢٠٢٦) — من له شعبٌ مفتوحةٌ كان يُقال له إنّه لا شعبةَ له */
   const [linksDown, setLinksDown] = useState(false);
   const [kit, setKit] = useState<ShareKitData | null>(null);
-  /* لوحةُ المشاركة المفتوحة: «all» لدوراته كلِّها، أو معرّفُ شعبة */
+  /* لوحةُ مشاركة الشعبة المفتوحة: معرّفُها — ولوحةُ دوراته كلِّها مفتوحةٌ دائما */
   const [sharing, setSharing] = useState<string | null>(null);
   /* المنسوخُ يُعلَّم بمفتاحه لا برايةٍ واحدة: رايةٌ واحدةٌ لروابطَ كثيرةٍ
      تُضيء «نُسخ» تحت كلّ زرٍّ معا، فلا يدري أيَّها نسخ. */
@@ -526,14 +525,20 @@ export default function Referral() {
     <>
       {error && <Inset as="p" tone="danger" className="mb-4 px-4 py-3 text-read leading-6 text-red-200">{error}</Inset>}
 
-      {/* ف-١: تُفتتح بسؤالٍ عمّا يوصي به، لا بشرحِ آليّةِ الرابط */}
-      <Panel as="section" className="mb-6">
+      {/* ف-١: تُفتتح بسؤالٍ عمّا يوصي به، لا بشرحِ آليّةِ الرابط.
+          ═══ وبلا لوحةٍ حولها (٢٦ أكتوبر ٢٠٢٦) ═══
+          «المربّعات تأخذ حجما أكبر من قيمتها بالصفحة ولا نستغلّ المساحات» (صاحب المنصّة). فالسؤالُ عنوانُ الصفحة
+          لا لوحةٌ بنفسها، ولوحةُ «ولم يعنيك أن يسجّلوا من رابطك» صارت سطرا تحته يحيل إلى «مستحقاتي» —
+          يُقال إنّ الإحالةَ أعلى ولا يُكتب رقمُها هنا: رقمٌ منسوخٌ في صفحتين يفترق عن أصله يوما. */}
+      <div className="mb-5">
         <h2 className="text-lg font-black">ما الذي توصي به من يتابعك؟</h2>
-        <p className="mt-2 text-read leading-7 text-muted-foreground">
-          رابط لصفحتك بكلّ شعبك المفتوحة، ورابط لكلّ شعبة. من سجّل من أيّهما تراه بعلامة «عبر رابطك»
-          في طلبتك، وبأجر الإحالة في «مستحقاتي».
+        <p className="mt-1 text-read leading-7 text-muted-foreground">
+          من سجّل من رابطك تراه بعلامة «عبر رابطك» في طلبتك، وأجرك عنه أعلى —{" "}
+          <Link to="/trainer/earnings" className="inline-flex items-center gap-1 font-bold text-teal-light-ink hover:text-foreground">
+            <Wallet className="h-4 w-4" aria-hidden="true" /> رقمه في «مستحقاتي»
+          </Link>
         </p>
-      </Panel>
+      </div>
 
       {/* ═══ ومساراتُه خرجت من هنا (١٥ سبتمبر ٢٠٢٦) ═══
 
@@ -555,84 +560,100 @@ export default function Referral() {
 
       {referral && (
         <>
-          {/* ═══ كودُنا على دوراته — أوّلَ ما يرى (٢٦ أكتوبر ٢٠٢٦، `share-code.ts`) ═══
-              «نعطي خصومات للدورات التي يسوّقها المدرّبون ولا تنقص من حسابهم — بل فقط هذه منّا نحن». */}
+          {/* ═══ «صمّم منشورك» أوّلا، ومفتوحا للجميع (٢٦ أكتوبر ٢٠٢٦) ═══
+              قال صاحبُ المنصّة: «صمّم منشورك هو الأهمّ، اتركها مفتوحة للجميع». فكانت زرّا يُفتح في لوحةٍ ثالثة،
+              وصارت أوّلَ ما في الصفحة مفتوحةً بلا نقرة — بدوراته كلِّها ورابطه العامّ، وكاروسيلٌ بشريحةٍ لكلّ دورة.
+              ومن لا شعبةَ مفتوحةً له يرى اللوحةَ ويُقال له متى يظهر منشوره: منشورٌ بلا دورةٍ لا يُرسم. */}
           {kit && (
-            <Panel as="section" tone="accent" className="mb-6">
-              <p className="flex items-center gap-2 text-sm font-black">
-                <Gift className="h-4 w-4 text-gold-ink" aria-hidden="true" /> خصم منا لمتابعيك
-              </p>
-              <p className="mt-2 text-read leading-7 text-muted-foreground">
-                {kit.percentOff}% على دوراتك وحدها، <b className="text-foreground">ولا يحسم منك شيء</b>. ومن اشترى به يحسب لك بأجر الإحالة، ولو لم يدخل من رابطك.
-              </p>
-              <div className="mt-3 flex flex-wrap items-center gap-2">
-                <input
-                  readOnly dir="ltr" value={kit.code} aria-label="كود الخصم لمتابعيك"
-                  onFocus={(e) => e.currentTarget.select()}
-                  className={`${staffControlCls} w-48 text-center font-mono font-black tracking-wider`}
-                />
-                <Button tone="secondary" onClick={() => copy("share-code", kit.code)}>
-                  {copied === "share-code" ? "نسخ" : "انسخ الكود"}
-                </Button>
-              </div>
-            </Panel>
-          )}
-
-          {/* ═══ شارك دوراتك كلَّها — برابطك العامّ، وكاروسيلٌ بشريحةٍ لكلّ دورة (٢٦ أكتوبر ٢٠٢٦) ═══ */}
-          {kit && cohortLinks && cohortLinks.length > 0 && (
             <Panel as="section" className="mb-6">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="flex items-center gap-2 text-sm font-black">
-                  <Share2 className="h-4 w-4 text-teal-light-ink" aria-hidden="true" /> شارك كل دوراتك
-                </p>
-                <Button tone={sharing === "all" ? "confirm" : "secondary"} size="sm" aria-expanded={sharing === "all"}
-                  onClick={() => setSharing((s) => (s === "all" ? null : "all"))}>
-                  {sharing === "all" ? "أخف" : "صمم منشورك"}
-                </Button>
+              <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                <h2 className="flex items-center gap-2 text-lg font-black">
+                  <Share2 className="h-5 w-5 text-teal-light-ink" aria-hidden="true" /> صمم منشورك
+                </h2>
+                <p className="text-read text-muted-foreground">صورة فيها صورتك ودوراتك والكود، ونص جاهز لكل منصة.</p>
               </div>
-              <p className="mt-2 text-read leading-7 text-muted-foreground">
-                صورة بسيطة فيها صورتك ودوراتك والكود، ونص جاهز لكل منصة. ولكل شعبة زر «شارك» تحت.
-              </p>
-              {sharing === "all" && (
+              {cohortLinks === null ? (
+                <div className="grid place-items-center py-10">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground/50" aria-label="جار التحميل" />
+                </div>
+              ) : cohortLinks.length > 0 ? (
                 <ShareKit face={kit} fileStem="wajeez-courses" url={kit.short.wide ?? referral.url} code={shareCodeOf(kit)}
                   courses={cohortLinks.map((c) => ({ courseTitle: c.courseTitle, startsAt: c.startsAt, url: c.url }))} />
+              ) : (
+                <Inset as="p" className="mt-3 px-4 py-3 text-read leading-6 text-muted-foreground">
+                  {linksDown ? "تعذّر جلب شعبك الآن. أعد فتح الصفحة بعد قليل." : "يظهر منشورك هنا حين تفتح لك شعبة."}
+                </Inset>
               )}
             </Panel>
           )}
 
-          <Panel as="section" className="mb-6">
-            <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <p className="flex items-center gap-2 text-sm font-black">
-                <Link2 className="h-4 w-4 text-teal-light-ink" aria-hidden="true" /> رابطي العامّ
-              </p>
-              <span className="flex items-center gap-1.5 text-read font-bold text-teal-light-ink">
-                <UserPlus className="h-4 w-4" aria-hidden="true" />
-                {referral.registered > 0 ? `سجّل عبره ${countAr(referral.registered, REGISTERED_FORMS)}` : "لم يسجّل أحد عبره بعد"}
-              </span>
-            </div>
-            {/* الرابطُ يُعرض كما يُقرأ: `referral.service` لا يرمّز المسارَ،
-                فاسمُه العربيُّ يبقى عربيّا في خانة النسخ كما في العنوان. */}
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              {/* والرابطُ المعروضُ قصيرٌ إن كان (٢٦ أكتوبر ٢٠٢٦): «هل يمكن أن تكون الروابطُ أقصرَ وأكثرَ احترافيّة؟» —
-                  ‎/s/XXXXXX يحمل إلى الرابط نفسِه، فما يُنسخ هو ما يُنشر (`short` في `share-kit`) */}
-              <input
-                readOnly dir="ltr" value={kit?.short.wide ?? referral.url} aria-label="رابطي العامّ"
-                onFocus={(e) => e.currentTarget.select()}
-                className={`${staffControlCls} min-w-0 flex-1 text-left`}
-              />
-              <Button tone="secondary" onClick={() => copy("wide", kit?.short.wide ?? referral.url)}>
-                {copied === "wide" ? "نسخ" : "انسخ الرابط"}
-              </Button>
-              <a href={referral.url} target="_blank" rel="noreferrer" className="text-read font-bold text-teal-light-ink hover:text-foreground">عاينها</a>
-            </div>
-            {/* البوّابةُ تُقال لا تُخفى: من لم يُعتمد نشرُ ملفّه رابطُه لا يفتح
-                بعد — فيُقال له لمَ ومَن يرفعه، لا يُعطى رابطا يردّ ٤٠٤. */}
-            {!referral.publicReady && (
-              <Inset as="p" className="mt-3 px-4 py-3 text-read leading-6 text-muted-foreground">
-                صفحتك لا تفتح للعامّة بعد: تفتح حين تعتمد الإدارة نشر ملفّك وتكون لك دورة منشورة هذا الفصل. ثمّ يعمل الرابط نفسه.
-              </Inset>
+          {/* ═══ الكودُ والرابطُ جنبا إلى جنب (٢٦ أكتوبر ٢٠٢٦) ═══
+              كانا لوحتين بعرض الصفحة لسطرٍ واحدٍ في كلٍّ منهما. فصارا عمودين في صفٍّ واحد — وعلى الهاتف واحدا فوق الآخر. */}
+          <div className="mb-6 grid gap-4 lg:grid-cols-2">
+            {/* ═══ كودُنا على دوراته (`share-code.ts`) ═══
+                «نعطي خصومات للدورات التي يسوّقها المدرّبون ولا تنقص من حسابهم — بل فقط هذه منّا نحن». */}
+            {kit && (
+              <Card as="section" tone="accent">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="flex items-center gap-2 text-sm font-black">
+                    <Gift className="h-4 w-4 text-gold-ink" aria-hidden="true" /> خصم منا لمتابعيك
+                  </p>
+                  <Chip tone="accent"><span dir="ltr">{kit.percentOff}%</span></Chip>
+                </div>
+                <p className="mt-1.5 text-read leading-6 text-muted-foreground">
+                  على دوراتك وحدها، <b className="text-foreground">ولا يحسم منك شيء</b>. ومن اشترى به يحسب لك بأجر الإحالة، ولو لم يدخل من رابطك.
+                </p>
+                <div className="mt-3 flex items-center gap-2">
+                  <input
+                    readOnly dir="ltr" value={kit.code} aria-label="كود الخصم لمتابعيك"
+                    onFocus={(e) => e.currentTarget.select()}
+                    className={`${staffControlCls} min-w-0 flex-1 text-center font-mono font-black tracking-wider`}
+                  />
+                  <Button tone="secondary" size="sm" icon={Copy} onClick={() => copy("share-code", kit.code)}>
+                    {copied === "share-code" ? "نسخ" : "انسخ الكود"}
+                  </Button>
+                </div>
+              </Card>
             )}
-          </Panel>
+
+            <Card as="section" className={kit ? undefined : "lg:col-span-2"}>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="flex items-center gap-2 text-sm font-black">
+                  <Link2 className="h-4 w-4 text-teal-light-ink" aria-hidden="true" /> رابطي العامّ
+                </p>
+                <span className="flex items-center gap-1.5 text-read font-bold text-teal-light-ink">
+                  <UserPlus className="h-4 w-4" aria-hidden="true" />
+                  {referral.registered > 0 ? `سجّل عبره ${countAr(referral.registered, REGISTERED_FORMS)}` : "لم يسجّل أحد عبره بعد"}
+                </span>
+              </div>
+              <p className="mt-1.5 text-read leading-6 text-muted-foreground">صفحتك بكلّ شعبك المفتوحة.</p>
+              {/* الرابطُ يُعرض كما يُقرأ: `referral.service` لا يرمّز المسارَ،
+                  فاسمُه العربيُّ يبقى عربيّا في خانة النسخ كما في العنوان. */}
+              <div className="mt-3 flex items-center gap-2">
+                {/* والرابطُ المعروضُ قصيرٌ إن كان (٢٦ أكتوبر ٢٠٢٦): «هل يمكن أن تكون الروابطُ أقصرَ وأكثرَ احترافيّة؟» —
+                    ‎/s/XXXXXX يحمل إلى الرابط نفسِه، فما يُنسخ هو ما يُنشر (`short` في `share-kit`) */}
+                <input
+                  readOnly dir="ltr" value={kit?.short.wide ?? referral.url} aria-label="رابطي العامّ"
+                  onFocus={(e) => e.currentTarget.select()}
+                  className={`${staffControlCls} min-w-0 flex-1 text-left`}
+                />
+                <Button tone="secondary" size="sm" icon={Copy} onClick={() => copy("wide", kit?.short.wide ?? referral.url)}>
+                  {copied === "wide" ? "نسخ" : "انسخ الرابط"}
+                </Button>
+                <a href={referral.url} target="_blank" rel="noreferrer" aria-label="عاين صفحتك"
+                  className="inline-flex shrink-0 items-center gap-1 text-read font-bold text-teal-light-ink hover:text-foreground">
+                  <ExternalLink className="h-4 w-4" aria-hidden="true" /> عاينها
+                </a>
+              </div>
+              {/* البوّابةُ تُقال لا تُخفى: من لم يُعتمد نشرُ ملفّه رابطُه لا يفتح
+                  بعد — فيُقال له لمَ ومَن يرفعه، لا يُعطى رابطا يردّ ٤٠٤. */}
+              {!referral.publicReady && (
+                <Inset as="p" className="mt-3 px-4 py-3 text-read leading-6 text-muted-foreground">
+                  صفحتك لا تفتح للعامّة بعد: تفتح حين تعتمد الإدارة نشر ملفّك وتكون لك دورة منشورة هذا الفصل. ثمّ يعمل الرابط نفسه.
+                </Inset>
+              )}
+            </Card>
+          </div>
 
           {/* ═══ رابطٌ لكلّ شعبةٍ مفتوحة — نُقل إلى هنا (١٥ سبتمبر ٢٠٢٦) ═══
 
@@ -646,12 +667,20 @@ export default function Referral() {
               برابطٍ منفصل».
 
               والمفتوحةُ وحدَها: رابطٌ إلى مسودّةٍ أو إلى شعبةٍ انتهت يُحرج
-              ناشرَه ويردّ من فتحه إلى صفحةٍ لا تقبل تسجيلا. */}
+              ناشرَه ويردّ من فتحه إلى صفحةٍ لا تقبل تسجيلا.
+
+              وصارت صفوفا تفصلها خطوطٌ لا صناديقَ داخل صندوق (٢٦ أكتوبر ٢٠٢٦): اسمُ الدورة وحالُها في سطر،
+              والرابطُ وأزرارُه في سطرٍ تحته. */}
           {cohortLinks !== null && (
             <Panel as="section" className="mb-6">
-              <p className="flex items-center gap-2 text-sm font-black">
-                <Link2 className="h-4 w-4 text-teal-light-ink" aria-hidden="true" /> رابط لكلّ شعبة
-              </p>
+              <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                <p className="flex items-center gap-2 text-sm font-black">
+                  <Link2 className="h-4 w-4 text-teal-light-ink" aria-hidden="true" /> رابط لكلّ شعبة
+                </p>
+                {!linksDown && cohortLinks.length > 0 && (
+                  <p className="text-read text-muted-foreground">كلّ رابط لشعبته وحدها، ومن سجّل منه يحسب لك بأجر الإحالة.</p>
+                )}
+              </div>
               {linksDown ? (
                 <p className="mt-2 text-read leading-7 text-muted-foreground" role="status">
                   تعذّر جلب روابط شعبك الآن. أعد فتح الصفحة بعد قليل — ورابطك العامّ أعلاه يعمل.
@@ -661,73 +690,53 @@ export default function Referral() {
                   لا شعبة مفتوحة لك الآن. يظهر رابطها هنا حين تفتح، ورابطك العامّ يبلغها تلقائيّا.
                 </p>
               ) : (
-                <>
-                  <p className="mt-2 text-read leading-7 text-muted-foreground">
-                    كلّ رابط لشعبته وحدها، ومن سجّل منه يحسب لك بأجر الإحالة.
-                  </p>
-                  <ul className="mt-3 space-y-3">
-                    {cohortLinks.map((c) => (
-                      <Inset as="li" key={c.cohortId} className="px-4 py-3">
-                        <div className="flex flex-wrap items-baseline justify-between gap-2">
-                          <span className="text-read font-bold text-foreground">{c.courseTitle}</span>
-                          <span className="text-read text-muted-foreground">
-                            {c.termTitleAr ? `${c.termTitleAr} · ` : ""}
-                            {c.learners > 0 ? countAr(c.learners, REGISTERED_FORMS) : "لم يسجّل أحد بعد"}
-                          </span>
-                        </div>
-                        {/* وحالةُ التسجيل تُقال: رابطٌ إلى شعبةٍ أُغلق تسجيلُها
-                            يعمل ولا يُسجَّل منه أحد، فيُظنُّ الرابطُ عاطلا. */}
-                        {!c.registrationOpen && (
-                          <p className="mt-1 text-read leading-6 text-gold-ink">
-                            التسجيل مغلق حتّى تفتحه الإدارة — الرابط يعمل.
-                          </p>
-                        )}
-                        <div className="mt-2 flex flex-wrap items-center gap-2">
-                          <input
-                            readOnly dir="ltr" value={kit?.short.cohorts[c.cohortId] ?? c.url} aria-label={`رابط دعوتي إلى ${c.title}`}
-                            onFocus={(e) => e.currentTarget.select()}
-                            className={`${staffControlCls} min-w-0 flex-1 text-left`}
-                          />
-                          <Button tone="secondary" size="sm" onClick={() => copy(c.cohortId, kit?.short.cohorts[c.cohortId] ?? c.url)}>
-                            {copied === c.cohortId ? "نسخ" : "انسخ الرابط"}
+                <ul className="mt-2 divide-y divide-white/8">
+                  {cohortLinks.map((c) => (
+                    <li key={c.cohortId} className="py-3 last:pb-0">
+                      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
+                        <span className="text-read font-bold text-foreground">{c.courseTitle}</span>
+                        <span className="text-read text-muted-foreground">
+                          {c.termTitleAr ? `${c.termTitleAr} · ` : ""}
+                          {c.learners > 0 ? countAr(c.learners, REGISTERED_FORMS) : "لم يسجّل أحد بعد"}
+                        </span>
+                      </div>
+                      {/* وحالةُ التسجيل تُقال: رابطٌ إلى شعبةٍ أُغلق تسجيلُها
+                          يعمل ولا يُسجَّل منه أحد، فيُظنُّ الرابطُ عاطلا. */}
+                      {!c.registrationOpen && (
+                        <p className="mt-1 text-read leading-6 text-gold-ink">
+                          التسجيل مغلق حتّى تفتحه الإدارة — الرابط يعمل.
+                        </p>
+                      )}
+                      <div className="mt-2 flex items-center gap-2">
+                        <input
+                          readOnly dir="ltr" value={kit?.short.cohorts[c.cohortId] ?? c.url} aria-label={`رابط دعوتي إلى ${c.title}`}
+                          onFocus={(e) => e.currentTarget.select()}
+                          className={`${staffControlCls} min-w-0 flex-1 text-left`}
+                        />
+                        <Button tone="secondary" size="sm" icon={Copy} onClick={() => copy(c.cohortId, kit?.short.cohorts[c.cohortId] ?? c.url)}>
+                          {copied === c.cohortId ? "نسخ" : "انسخ الرابط"}
+                        </Button>
+                        {kit && (
+                          <Button tone={sharing === c.cohortId ? "confirm" : "secondary"} size="sm" icon={Share2}
+                            aria-expanded={sharing === c.cohortId}
+                            onClick={() => setSharing((s) => (s === c.cohortId ? null : c.cohortId))}>
+                            {sharing === c.cohortId ? "أخف" : "شارك"}
                           </Button>
-                          {kit && (
-                            <Button tone={sharing === c.cohortId ? "confirm" : "secondary"} size="sm" icon={Share2}
-                              aria-expanded={sharing === c.cohortId}
-                              onClick={() => setSharing((s) => (s === c.cohortId ? null : c.cohortId))}>
-                              شارك
-                            </Button>
-                          )}
-                        </div>
-                        {kit && sharing === c.cohortId && (
-                          <ShareKit face={kit} fileStem={`wajeez-${c.code}`} url={kit.short.cohorts[c.cohortId] ?? c.url} code={shareCodeOf(kit)}
-                            courses={[{ courseTitle: c.courseTitle, startsAt: c.startsAt, url: c.url }]} />
                         )}
-                      </Inset>
-                    ))}
-                  </ul>
-                </>
+                      </div>
+                      {kit && sharing === c.cohortId && (
+                        <ShareKit face={kit} fileStem={`wajeez-${c.code}`} url={kit.short.cohorts[c.cohortId] ?? c.url} code={shareCodeOf(kit)}
+                          courses={[{ courseTitle: c.courseTitle, startsAt: c.startsAt, url: c.url }]} />
+                      )}
+                    </li>
+                  ))}
+                </ul>
               )}
             </Panel>
           )}
 
           <MyCodes />
           <LegacyDiscounts />
-
-          {/* ف-١: يُقال إنّ الإحالةَ أعلى، ولا يُكتب رقمُها هنا — مصدرُه
-              «مستحقاتي» حيث يُعرض أجرُ الإحالة لكلّ شعبةٍ بعينها. ورقمٌ
-              منسوخٌ في صفحتين يفترق عن أصله يوما، ويُقرأ وعدا لا يُوفى. */}
-          <Panel as="section">
-            <h2 className="flex items-center gap-2 text-sm font-black">
-              <Wallet className="h-4 w-4 text-gold-ink" aria-hidden="true" /> ولم يعنيك أن يسجّلوا من رابطك
-            </h2>
-            <p className="mt-2 text-read leading-7 text-muted-foreground">
-              أجرك عمّن جاء عبر رابطك أعلى ممّن سجّل عامّا — ورقمه لكلّ شعبة في «مستحقاتي».
-            </p>
-            <Button as={Link} to="/trainer/earnings" tone="secondary" size="sm" className="mt-3">
-              افتح مستحقاتي
-            </Button>
-          </Panel>
         </>
       )}
     </>

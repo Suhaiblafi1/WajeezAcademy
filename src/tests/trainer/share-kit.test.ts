@@ -99,8 +99,20 @@ describe('في صفحة «شارك دوراتك»', () => {
   it('⚠️ لكل شعبة زر «شارك»، ولدوراته كلها لوحة برابطه العام — والكود أعلى الخصمين', () => {
     /* والرابطُ المنشورُ قصيرٌ إن كان — وإلّا الطويل */
     expect(page).toMatch(/sharing === c\.cohortId && \([\s\S]{0,80}<ShareKit [^>]*url=\{kit\.short\.cohorts\[c\.cohortId\] \?\? c\.url\} code=\{shareCodeOf\(kit\)\}/)
-    expect(page).toMatch(/sharing === "all" && \([\s\S]{0,80}<ShareKit [^>]*url=\{kit\.short\.wide \?\? referral\.url\} code=\{shareCodeOf\(kit\)\}/)
     expect(page).toMatch(/const shareCodeOf = \(k: ShareKitData\) => bestCode\(/)
+  })
+
+  /* ═══ «صمّم منشورك هو الأهمّ، اتركها مفتوحة للجميع» (صاحب المنصّة، ٢٦ أكتوبر ٢٠٢٦) ═══
+     كانت زرّا يفتحها (`sharing === "all"`)؛ وصارت مفتوحةً بلا نقرة، وأوّلَ ما في الصفحة قبل الكود والرابط. */
+  it('⚠️ لوحة دوراته كلها مفتوحة بلا زر، وأول ما في الصفحة — برابطه العام', () => {
+    const body = page.replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '')
+    const main = body.slice(body.indexOf('export default function Referral'))
+    expect(main, 'عادت اللوحة خلف زرّ').not.toContain('sharing === "all"')
+    expect(main).toMatch(/cohortLinks\.length > 0 \? \(\s*<ShareKit [^>]*url=\{kit\.short\.wide \?\? referral\.url\} code=\{shareCodeOf\(kit\)\}/)
+    const designer = main.indexOf('صمم منشورك')
+    expect(designer, 'لا عنوان «صمم منشورك»').toBeGreaterThan(-1)
+    expect(designer, 'اللوحة بعد الكود').toBeLessThan(main.indexOf('خصم منا لمتابعيك'))
+    expect(designer, 'اللوحة بعد الرابط العامّ').toBeLessThan(main.indexOf('رابطي العامّ'))
   })
 })
 
