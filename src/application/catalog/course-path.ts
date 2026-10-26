@@ -19,7 +19,7 @@
 
    منطق خالص بلا React ليُختبر وحده. */
 
-import { courseById, pathwayCourses, courses, type Course } from '../../data/courses'
+import { courseById, pathwayCourses, pathwaySupportCourses, courses, type Course } from '../../data/courses'
 import { MAX_BUILT_COURSES, buildDiscountPct, bundlePayable, nextBuildStep } from '../commerce/discount-policy'
 
 /* من أين يأتي سعر الدورة؟ من الشعبة — تُمرَّر الدالة ولا تُستورَد.
@@ -180,6 +180,47 @@ export function suggestNext(courseIds: readonly string[], limit = 8): CourseSugg
    بشكلٍ احترافيّ» (صاحب المنصّة). وكانت ثماني بطاقاتٍ أكثرُها «مع الشعبة» — دورةٌ لا شعبةَ لها تُضاف ولا تُشترى.
    فالترتيبُ هو هو (`suggestNext`)، ثمّ يُبقى ما له شعبةٌ مفتوحة، ثمّ أوّلُ أربع. */
 export const BUYABLE_SUGGESTIONS = 4
+
+/* ═══ ومشتري المسار يضيف دورةً واحدة، من ثلاث (٢٦ أكتوبر ٢٠٢٦) ═══
+   «اسمح لمن يشتري مسارا أن يضيف دورةً واحدةً فقط، واقترح له ثلاثَ دوراتٍ ليختار منها» (صاحب المنصّة). */
+export const PATHWAY_EXTRA_OPTIONS = 3
+
+/* ═══ ومن أين الثلاث: المسارُ نفسُه، ثمّ الفئةُ — وما له شعبةٌ أوّلا (٢٦ أكتوبر ٢٠٢٦) ═══
+
+   «اقترح من دورات المسار نفسه أو الأقرب للفئة، وحاول أن تكون الدورات المقترحة لها شعبٌ مفتوحة» (صاحب المنصّة).
+   وكانت من `suggestNext`، وهو يمدّ إلى مساراتٍ أخرى بالمهارة («يوسّع خطّتك خارج مجالك الأوّل»).
+   · الطبقةُ الأولى: دوراتُ المسار نفسِه ومساندتُه — ما لم يدخل مسارَه الجاهز.
+   · والثانية: دوراتُ فئته (`category`) من مساراتها الأخرى.
+   · وفي الطبقتين ما له شعبةٌ مفتوحةٌ أوّلا. و«حاول»: فإن قلّ عن ثلاث أُكمل بما لم تُفتح شعبتُه، بترتيبه. */
+export function pathwayExtraOptions(
+  pathwayId: string,
+  baseIds: readonly string[],
+  hasCohort: (courseId: string) => boolean,
+  limit = PATHWAY_EXTRA_OPTIONS,
+): CourseSuggestion[] {
+  const taken = new Set(baseIds)
+  const own = [
+    ...(pathwayCourses[pathwayId] ?? []),
+    ...(pathwaySupportCourses[pathwayId] ?? []).map((x) => x.courseId),
+    ...courses.filter((c) => c.pathwayId === pathwayId).map((c) => c.id),
+  ]
+  const category = courseById(own[0] ?? baseIds[0] ?? '')?.category
+  const ranked: CourseSuggestion[] = []
+  const seen = new Set<string>()
+  const push = (id: string, rank: number, reason_ar: string) => {
+    if (taken.has(id) || seen.has(id) || !courseById(id)) return
+    seen.add(id)
+    ranked.push({ courseId: id, rank, reason_ar })
+  }
+  for (const id of own) push(id, 0, 'من دورات مسارك نفسه')
+  if (category) {
+    for (const c of courses) if (c.category === category) push(c.id, 1, `من فئة «${category}» نفسها`)
+  }
+  /* ما له شعبةٌ أوّلا، ثمّ الطبقة — والترتيبُ داخلهما كما رُتّب */
+  const open = ranked.filter((s) => hasCohort(s.courseId))
+  const closed = ranked.filter((s) => !hasCohort(s.courseId))
+  return [...open, ...closed].slice(0, limit)
+}
 
 export function suggestBuyable(
   courseIds: readonly string[],
