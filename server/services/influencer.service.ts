@@ -32,6 +32,7 @@ import { recordAudit } from './audit'
 import { GrantService } from './grant.service'
 import { sendStaffInviteEmail } from './account-mail'
 import { publicSiteUrl } from './site-url'
+import { photoStorageKey } from './storage.service'
 import { enqueueMail } from './outbox.service'
 import { fmtMoney } from '../../src/application/text/format-ar'
 import { PERMISSIONS, ROLE_NAMES_AR, ROLE_PERMISSIONS } from '../auth/permissions'
@@ -272,11 +273,18 @@ export class InfluencerService {
   async portal(userId: string) {
     const inf = await this.prisma.influencer.findUnique({ where: { userId } })
     if (!inf) throw new AuthError('not_influencer', 'لا ملف مؤثر لهذا الحساب', 404)
-    const [st, s] = await Promise.all([this.statement(inf.id), new GrantService(this.prisma, INFLUENCER_GRANT_SLUG).settings()])
+    const [st, s, learner] = await Promise.all([
+      this.statement(inf.id),
+      new GrantService(this.prisma, INFLUENCER_GRANT_SLUG).settings(),
+      this.prisma.learnerProfile.findUnique({ where: { userId }, select: { avatarUrl: true } }),
+    ])
+    /* صورةُ حسابه لتصاميم «صمم منشورك» — بعنوانها الذي يفتح كما تعطيه صفحةُ حسابه (`profile.service.ts`) */
+    const key = photoStorageKey(learner?.avatarUrl)
     return {
       nameAr: inf.nameAr, code: inf.code, active: inf.active, commissionPercent: inf.commissionPercent,
       link: influencerLink(publicSiteUrl(), inf.code),
-      grant: { nameAr: s.nameAr, open: s.open, percentOff: s.percentOff, closesAt: s.closesAt },
+      photoUrl: key ? `/api/v1/avatars/${key}` : learner?.avatarUrl ?? null,
+      grant: { nameAr: s.nameAr, open: s.open, percentOff: s.percentOff, maxCourses: s.maxCourses, closesAt: s.closesAt },
       ...st,
     }
   }
