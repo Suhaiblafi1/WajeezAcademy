@@ -86,3 +86,15 @@ export function trainerOrdinalNoteAr(title: string, ordinal: number | null | und
   if (n === null || n === ordinal) return null
   return `شعبتك ${ORDINAL_FEM_AR[ordinal] ?? `رقم ${toArabicDigits(ordinal)}`}`
 }
+
+/* ═══ والمتعلّمُ لا يرى رقمَ الشعبة (٢٦ أكتوبر ٢٠٢٦) ═══
+   قرارُ صاحب المنصّة: «Remove "- شعبة 2" from the class titles». الرقمُ يفرّق الشعبَ في يد المدرّب والإدارة،
+   وعند المشتري لا يقول شيئا — يفرّقها موعدُها ومدرّبُها. فيُنزع ذيلُه من العرض العامّ وحدَه، والاسمُ المحفوظُ
+   كما هو: «— شعبة ٢» و«- شعبة 2» و«(شعبة ٢)». واسمٌ ليس فيه إلّا الرقمُ يبقى كما هو — لا يصير صندوقٌ بلا اسم. */
+const NUMBER_TAIL = new RegExp(`\\s*(?:[-—–|:،]\\s*${COHORT_WORD_AR}\\s*[٠-٩0-9]+|\\(\\s*${COHORT_WORD_AR}\\s*[٠-٩0-9]+\\s*\\))\\s*$`)
+
+/** اسمُ الشعبة كما يراه المتعلّم — بلا رقمها */
+export function publicCohortTitleAr(title: string): string {
+  const out = title.replace(NUMBER_TAIL, '').trim()
+  return out || title.trim()
+}

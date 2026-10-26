@@ -14,6 +14,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { withRetry } from './retry'
 import { asAudience, type CohortAudience } from '@/application/trainer/cohort-audience'
+import { publicCohortTitleAr } from '@/application/learning/cohort-title'
 
 const API_BASE: string = import.meta.env.VITE_API_URL ?? ''
 
@@ -171,7 +172,7 @@ export function cohortOptionsFrom(rows: unknown): Map<string, CohortOption[]> {
     if (typeof c.seatsLeft === 'number' && c.seatsLeft <= 0) continue
     const list = map.get(c.courseId) ?? []
     list.push({
-      id: c.id, courseId: c.courseId, title: c.title ?? '',
+      id: c.id, courseId: c.courseId, title: publicCohortTitleAr(c.title ?? ''),
       startsAt: c.startsAt ?? null,
       daysOfWeek: Array.isArray(c.daysOfWeek) ? c.daysOfWeek : [],
       startTime: c.startTime ?? null, timezone: c.timezone ?? null,
