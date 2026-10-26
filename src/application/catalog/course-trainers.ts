@@ -59,3 +59,35 @@ export function pathwayTeam(courses: readonly TeamCourse[], pendingAr: string): 
     ...[...pendingRoles].map((role) => ({ key: `r:${role}`, title: role, detail: pendingAr, announced: false })),
   ]
 }
+
+/* ═══ ووجوهُهم في بطاقات الرئيسة — دوائرُ متراصّة كصفحة المنحة (٢٦ أكتوبر ٢٠٢٦) ═══
+
+   صاحبُ المنصّة: «ضع صور المدربين داخل مربعات المسارات والدورات بطريقةٍ بسيطةٍ على شكل دوائرَ متراصّة
+   مثل ما قمت في صفحة المنحة» — ثمّ: «فقط للصندوق الخارجي واترك الداخلي كما هو»، أي بطاقاتُ الرئيسة لا
+   صفحتا الكتالوج. والمصدرُ شعبُ الدورة المفتوحة نفسُها، فلا وجهَ إلّا لمن اعتُمد نشرُه (`trainer-visibility.ts`).
+   ومن لا صورةَ له يُعدّ في «+N» ولا يُرسم: دائرةُ حروفٍ في صفّ وجوهٍ تُقرأ نقصا. */
+
+/** أقصى ما يُرسم من الوجوه في بطاقة — وما زاد «+N» */
+export const CARD_FACES_MAX = 4
+
+/** وجهُ مدرّبٍ له صورة */
+export interface TrainerFace { id: string; name: string; photoUrl: string }
+
+/** وجوهُ مدرّبي دوراتٍ من شعبها — بلا تكرار، بترتيب الدورات ثمّ الشعب. و`total` كلُّ من يقدّمها، بصورةٍ أو بلا */
+export function trainerFacesOf(
+  courseIds: readonly string[],
+  cohorts: ReadonlyMap<string, readonly { trainerProfiles: readonly { id: string; name: string; photoUrl: string | null }[] }[]>,
+  max: number = CARD_FACES_MAX,
+): { faces: TrainerFace[]; total: number } {
+  const all = new Map<string, { id: string; name: string; photoUrl: string | null }>()
+  for (const id of courseIds) {
+    for (const c of cohorts.get(id) ?? []) {
+      for (const t of c.trainerProfiles) {
+        const key = t.id || `n:${t.name}`
+        if (!all.has(key)) all.set(key, t)
+      }
+    }
+  }
+  const faces = [...all.values()].flatMap((t) => (t.photoUrl ? [{ id: t.id, name: t.name, photoUrl: t.photoUrl }] : [])).slice(0, max)
+  return { faces, total: all.size }
+}

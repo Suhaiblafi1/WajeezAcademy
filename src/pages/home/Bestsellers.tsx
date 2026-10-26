@@ -24,8 +24,8 @@
 import { useMemo, useState, useSyncExternalStore } from "react"
 import { Link } from "react-router"
 import { ArrowLeft, ChevronDown, Compass, Flame, Route, Target } from "lucide-react"
-import { bestsellers, pathwayById, pathwayDomain, pathways, type Pathway } from "@/data/pathways"
-import { publicPathways } from "@/data/public-pathways"
+import { bestsellers, pathwayById, pathwayDomain, pathways } from "@/data/pathways"
+import { publicPathways, type PublicPathway } from "@/data/public-pathways"
 import { resolveCatalogRefsAr } from "@/application/catalog/visitor-text"
 import { ALL_AR, filterRows, shownFor, type PickSource } from "@/application/catalog/home-picks"
 import { getCatalogVersion, onCoreCatalogInstalled } from "@/data/core-catalog-source"
@@ -35,6 +35,9 @@ import { Card } from "@/components/ui/Surface"
 import FavoriteButton from "@/components/FavoriteButton"
 import SectionLabel from "./SectionLabel"
 import { useListedCourses } from "@/services/listed-courses"
+import { useCourseCohorts } from "@/services/cohort-prices"
+import { trainerFacesOf } from "@/application/catalog/course-trainers"
+import TrainerFaces from "@/components/TrainerFaces"
 import { listedOnly, listedWhole } from "@/application/catalog/listed-courses"
 
 /* البابان يشتركان في هيئةٍ واحدة، ويفترق لونُهما وحدَه */
@@ -158,6 +161,8 @@ export function Bestsellers() {
   /* والمساراتُ كقسمها: العامّةُ التي لكلّ دوراتها شعبة (`data/public-pathways.ts`) — والمختارُ منها
      ما عُرض، فلا تُبرز الرئيسةُ مسارا لا يُرى في قسمه */
   const listed = useListedCourses()
+  /* ووجوهُ المدرّبين من الشعب المفتوحة — نداءٌ واحدٌ للشريطين (`trainerFacesOf`) */
+  const { cohorts } = useCourseCohorts()
   const shownPathways = useMemo(
     () => listedWhole(publicPathways, listed),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- كما تحته: الكتالوجُ يُستبدل وقت التشغيل
@@ -182,7 +187,7 @@ export function Bestsellers() {
 
   /* ── شريطُ المسارات: مختاراتٌ يُتمّها الكتالوجُ إلى ثلاثة، وسقفُها أربعة ──
      البطاقةُ المميّزةُ تُستثنى فلا تُرى مرّتين في قسمٍ واحد. */
-  const pathSource: PickSource<Pathway> = useMemo(
+  const pathSource: PickSource<PublicPathway> = useMemo(
     () => ({
       /* والمختارُ الذي لم يُعرض يسقط وحدَه: لا يُقرأ إلّا ما في `pool` (`home-picks.ts`) */
       editorial: bestsellers,
@@ -401,7 +406,11 @@ export function Bestsellers() {
                       واللافتةُ خافتةٌ بالحجم لا بالشفافيّة: `text-teal-light-ink/75`
                       أسقط التباينَ إلى ٣٫٨:١ على الورق الفاتح (فحصُ الإتاحة في
                       CI)، والحبرُ كاملا ينقلب إلى `#1F6E77` هناك فيبلغ ٤٫٥:١. */}
-                  <span className="mt-auto block pt-2 text-fine text-muted-foreground">{pathwaySizeAr(b.item)}</span>
+                  {/* ووجوهُ مدرّبيه فوق الحجم — يهبطان معا إلى الذيل (`trainerFacesOf`) */}
+                  <span className="mt-auto grid gap-2.5 pt-2">
+                    <TrainerFaces {...trainerFacesOf(b.item.courseIds, cohorts)} />
+                    <span className="block text-fine text-muted-foreground">{pathwaySizeAr(b.item)}</span>
+                  </span>
                   <span className="flex items-center text-fine">
                     <span className="inline-flex items-center gap-1 font-semibold text-teal-light-ink transition group-hover:underline group-hover:underline-offset-4">
                       تفاصيل المسار
@@ -467,13 +476,17 @@ export function Bestsellers() {
                   <span className="w-fit rounded-full border border-teal/25 bg-teal/10 px-2.5 py-1 text-fine text-teal-light-ink">
                     {b.item.skill}
                   </span>
-                  <span className="mt-auto flex items-center justify-between gap-2">
-                    <span className="text-read text-muted-foreground">
-                      {b.item.weeks} {b.item.weeks === 1 ? 'أسبوع' : 'أسابيع'}
-                    </span>
-                    <span className="inline-flex shrink-0 items-center gap-1 text-fine font-semibold text-teal-light-ink transition group-hover:underline group-hover:underline-offset-4">
-                      تفاصيل الدورة
-                      <ArrowLeft className="h-3 w-3 transition group-hover:-translate-x-0.5" />
+                  {/* ووجوهُ مدرّبيها فوق الذيل — يهبطان معا (`trainerFacesOf`) */}
+                  <span className="mt-auto grid gap-3">
+                    <TrainerFaces {...trainerFacesOf([b.item.id], cohorts)} />
+                    <span className="flex items-center justify-between gap-2">
+                      <span className="text-read text-muted-foreground">
+                        {b.item.weeks} {b.item.weeks === 1 ? 'أسبوع' : 'أسابيع'}
+                      </span>
+                      <span className="inline-flex shrink-0 items-center gap-1 text-fine font-semibold text-teal-light-ink transition group-hover:underline group-hover:underline-offset-4">
+                        تفاصيل الدورة
+                        <ArrowLeft className="h-3 w-3 transition group-hover:-translate-x-0.5" />
+                      </span>
                     </span>
                   </span>
                 </Card>
