@@ -8,6 +8,7 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { bestCode, emailSubject, manualNoteAr, SHARE_PLATFORMS, shareText, shareUrl, splitTitle, type ShareInput } from '@/application/trainer/share-kit'
 import { artPlan } from '@/components/trainer/share-art'
+import { previewSig } from '@/components/trainer/link-preview'
 
 const URL_ONE = 'https://www.wajeezacademy.com/build/C-1?ref=WJ-AAAA'
 const one: ShareInput = {
@@ -177,5 +178,34 @@ describe('البريد', () => {
     const q = new URLSearchParams(door.slice('mailto:?'.length))
     expect(q.get('subject')).toBe(emailSubject(x))
     expect(q.get('body')).toBe(shareText('email', x))
+  })
+})
+
+/* «أضف معاينة، نعم» (صاحب المنصّة، ٢٦ أكتوبر ٢٠٢٦): رابطُه إذا لُصق ظهرت صورتُه المصمَّمة. والعلّةُ في
+   `server/services/link-preview.ts`، وما يقع في القاعدة يحرسه `server/tests/commerce/trainer-share-code.test.ts`. */
+describe('معاينة الرابط حين يلصق', () => {
+  const face = { name: 'صهيب لافي', headline: null, photoUrl: null, code: { code: 'WJ30-K7Q2MX', percentOff: 30 } }
+  const courses = [{ courseTitle: 'مهارة الخطابة', startsAt: '2026-12-01T15:00:00Z' }]
+
+  it('⚠️ البصمة ثابتة لما لم يتغير، وتتغير بتغير الموعد أو الكود — فلا ترفع كل زيارة ولا تبقى قديمة', () => {
+    const sig = previewSig(face, courses)
+    expect(previewSig(face, courses)).toBe(sig)
+    expect(previewSig(face, [{ ...courses[0], startsAt: '2026-12-02T15:00:00Z' }])).not.toBe(sig)
+    expect(previewSig({ ...face, code: null }, courses)).not.toBe(sig)
+    expect(sig.length, 'البصمة أطول مما يحفظه الخادم').toBeLessThanOrEqual(64)
+  })
+
+  it('⚠️ وCaddy يمرر الرابط القصير إلى الخادم قبل الواجهة — وإلا قرأ الزاحف وسوم الرئيسة', () => {
+    const caddy = readFileSync(join(process.cwd(), 'deploy/Caddyfile'), 'utf8')
+    const short = caddy.search(/handle \/s\/\* \{\s*reverse_proxy app:7101/)
+    const spa = caddy.search(/try_files \{path\} \{path\}\.html \/index\.html/)
+    expect(short, 'لا كتلة للروابط القصيرة إلى الخادم').toBeGreaterThan(-1)
+    expect(short, 'كتلة الروابط القصيرة بعد الواجهة فلا تبلغ').toBeLessThan(spa)
+  })
+
+  it('وصفحته ترسم المعاينة وترفعها لروابطه', () => {
+    const page = readFileSync(join(process.cwd(), 'src/pages/trainer/Referral.tsx'), 'utf8')
+    expect(page).toMatch(/void syncLinkPreviews\(\{[\s\S]{0,300}\}, links, kit\.previews \?\? \{\}\)/)
+    expect(artPlan('post', 3).some((p) => p.kind === 'link'), 'المعاينة صارت تنزل مع المنشور').toBe(false)
   })
 })

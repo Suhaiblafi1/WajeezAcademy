@@ -151,6 +151,11 @@ export default defineConfig({
         target: "http://localhost:7101",
         changeOrigin: true,
       },
+      /* الرابطُ القصيرُ يجيبه الخادم — بمعاينته (`server/services/link-preview.ts`) */
+      "^/s/": {
+        target: "http://localhost:7101",
+        changeOrigin: true,
+      },
     },
   },
   test: {

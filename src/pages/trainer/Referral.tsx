@@ -36,6 +36,8 @@ import { staffControlCls, StaffField } from "@/components/FormKit";
 import { countAr } from "@/application/text/count-ar";
 import { fmtDateAr } from "@/utils/format";
 import ShareKit from "@/components/trainer/ShareKit";
+import { syncLinkPreviews } from "@/components/trainer/link-preview";
+import { fmtDayMonth } from "@/application/text/format-ar";
 import { bestCode } from "@/application/trainer/share-kit";
 import {
   MAX_TRAINER_CODE_AMOUNT, MAX_TRAINER_CODE_PERCENT, MIN_TRAINER_CODE_PERCENT, codeBlockerAr, codeFaceAr,
@@ -77,6 +79,8 @@ interface ShareKitData {
   hisCodes: { code: string; percentOff: number | null }[]
   /** روابطُه قصيرةً لما يُنشر — وإن غاب رابطٌ قصيرٌ نُشر الطويل */
   short: { wide: string | null; cohorts: Record<string, string> }
+  /** بصمةُ معاينة كلّ رابطٍ قصيرٍ برمزه — وما تغيّر يُرسم ويُرفع (`link-preview.ts`) */
+  previews?: Record<string, string | null>
 }
 
 /** رابطُ شعبةٍ بعينها — يُنشَر وحدَه لمن يدعو إلى دفعةٍ لا إلى كلّ ما يدرّب */
@@ -501,6 +505,21 @@ export default function Referral() {
       .catch(() => undefined);
     return () => { alive = false };
   }, []);
+
+  /* ومعاينةُ روابطه حين تُلصق في واتساب وفيسبوك: تُرسم هنا وتُرفع إن تغيّر ما رُسمت منه (`link-preview.ts`) */
+  useEffect(() => {
+    if (!kit || !cohortLinks || cohortLinks.length === 0) return;
+    const courses = (cs: CohortLink[]) => cs.map((c) => ({ courseTitle: c.courseTitle, startsAt: c.startsAt }))
+      .sort((a, b) => (a.startsAt ?? "9").localeCompare(b.startsAt ?? "9"));
+    const links = [
+      ...(kit.short.wide ? [{ url: kit.short.wide, courses: courses(cohortLinks) }] : []),
+      ...cohortLinks.flatMap((c) => (kit.short.cohorts[c.cohortId] ? [{ url: kit.short.cohorts[c.cohortId], courses: courses([c]) }] : [])),
+    ];
+    void syncLinkPreviews({
+      name: kit.name, headline: kit.headline, photoUrl: kit.photoUrl, code: shareCodeOf(kit),
+      dayAr: (iso: string) => fmtDayMonth(iso), host: window.location.host,
+    }, links, kit.previews ?? {});
+  }, [kit, cohortLinks]);
 
   return (
     /* قسمٌ في «مستحقاتي» لا شاشةٌ بلسانها (الخطوة G، ١٩ أكتوبر ٢٠٢٦) — والإطارُ إطارُها */

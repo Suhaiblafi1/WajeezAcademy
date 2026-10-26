@@ -9,6 +9,8 @@ import { SHARE_CODE_PERCENT, SHARE_CODE_PREFIX, SHARE_CODE_TAIL } from '../../sr
 import { photoPublicUrl } from './storage.service'
 import { ReferralService } from './referral.service'
 import { ShortLinkService } from './short-link.service'
+import { isJpeg, PREVIEW_MAX_BYTES, previewCopy } from './link-preview'
+import { bestCode } from '../../src/application/trainer/share-kit'
 
 export interface ShareCode { code: string; percentOff: number }
 
@@ -21,7 +23,12 @@ export interface ShareKit extends ShareCode {
   hisCodes: { code: string; percentOff: number | null }[]
   /** روابطُه قصيرةً — `‎/s/XXXXXX` بدل «‎/t/صهيب-احمد-لافي» المرمَّز في لينكدإن: رابطُه العامّ، ولكلّ شعبةٍ رابطُها */
   short: { wide: string | null; cohorts: Record<string, string> }
+  /** بصمةُ معاينة كلّ رابطٍ قصيرٍ برمزه — وما لا معاينةَ له `null` فترسمها صفحتُه وترفعها (`link-preview.ts`) */
+  previews: Record<string, string | null>
 }
+
+/** رابطٌ من روابطه القصيرة، والدوراتُ التي يدعو إليها */
+interface MyLink { url: string; code: string; courses: { courseTitle: string; startsAt: string | null }[] }
 
 /** غرضُ روابط «شارك دوراتك» القصيرة — به يُعاد ما سُكّ */
 const SHORT_PURPOSE = 'share-kit'
@@ -40,24 +47,58 @@ export class TrainerShareCodeService {
         codes: { where: { status: 'live', coupon: { active: true } }, select: { percentOff: true, coupon: { select: { code: true } } } },
       },
     })
-    /* ═══ والرابطُ قصيرٌ يُقرأ (٢٦ أكتوبر ٢٠٢٦) ═══
-       «لا تبدو احترافيّة.. يجب أن تكون سهلةَ القراءة» — وكان الرابطُ العامُّ اسمَه بالعربيّة، يصير في لينكدإن
-       وفيسبوك حروفا مرمّزةً تملأ سطرين. فلكلّ رابطٍ قصيرٌ ثابت: يُسكّ مرّةً ويُعاد، فما نُشر لا يتغيّر. */
-    const referrals = new ReferralService(this.prisma)
-    const [wide, cohortLinks] = await Promise.all([
-      referrals.wideLinkFor(userId).catch(() => null),
-      referrals.cohortLinksFor(userId).catch(() => []),
-    ])
+    const links = await this.myLinks(userId)
     const cohorts: Record<string, string> = {}
-    for (const c of cohortLinks) cohorts[c.cohortId] = await this.shortOf(c.url, userId)
+    for (const [id, l] of Object.entries(links.cohorts)) cohorts[id] = l.url
+    const all = [links.wide, ...Object.values(links.cohorts)].filter((l): l is MyLink => l !== null)
+    const rows = await this.prisma.shortLink.findMany({ where: { code: { in: all.map((l) => l.code) } }, select: { code: true, previewSig: true } })
     return {
       ...ours,
-      short: { wide: wide?.publicReady ? await this.shortOf(wide.url, userId) : null, cohorts },
+      short: { wide: links.wide?.url ?? null, cohorts },
+      previews: Object.fromEntries(rows.map((r) => [r.code, r.previewSig])),
       name: profile.application.fullName,
       headline: profile.headline,
       photoUrl: photoPublicUrl(profile.photoUrl),
       hisCodes: profile.codes.map((c) => ({ code: c.coupon.code, percentOff: c.percentOff })),
     }
+  }
+
+  /* ═══ والرابطُ قصيرٌ يُقرأ (٢٦ أكتوبر ٢٠٢٦) ═══
+     «لا تبدو احترافيّة.. يجب أن تكون سهلةَ القراءة» — وكان الرابطُ العامُّ اسمَه بالعربيّة، يصير في لينكدإن
+     وفيسبوك حروفا مرمّزةً تملأ سطرين. فلكلّ رابطٍ قصيرٌ ثابت: يُسكّ مرّةً ويُعاد، فما نُشر لا يتغيّر. */
+  private async myLinks(userId: string): Promise<{ wide: MyLink | null; cohorts: Record<string, MyLink> }> {
+    const referrals = new ReferralService(this.prisma)
+    const [wide, cohortLinks] = await Promise.all([
+      referrals.wideLinkFor(userId).catch(() => null),
+      referrals.cohortLinksFor(userId).catch(() => []),
+    ])
+    const link = async (url: string, courses: MyLink['courses']): Promise<MyLink> => {
+      const short = await this.shortOf(url, userId)
+      return { url: short, code: new URL(short).pathname.split('/').pop() ?? '', courses }
+    }
+    const cohorts: Record<string, MyLink> = {}
+    for (const c of cohortLinks) cohorts[c.cohortId] = await link(c.url, [{ courseTitle: c.courseTitle, startsAt: c.startsAt }])
+    const everything = cohortLinks.map((c) => ({ courseTitle: c.courseTitle, startsAt: c.startsAt }))
+    return { wide: wide?.publicReady ? await link(wide.url, everything) : null, cohorts }
+  }
+
+  /** معاينةُ رابطٍ من روابطه — صورتُه كما رسمتها صفحتُه، والعنوانُ والوصفُ من دوراته هنا */
+  async savePreview(userId: string, code: string, image: Buffer, sig: string): Promise<void> {
+    if (!isJpeg(image) || image.length > PREVIEW_MAX_BYTES) {
+      throw new AuthError('bad_preview', 'صورة المعاينة ليست JPEG أو أكبر من المسموح', 400)
+    }
+    const kit = await this.kit(userId)
+    const links = await this.myLinks(userId)
+    const hit = [links.wide, ...Object.values(links.cohorts)].find((l) => l?.code === code)
+    if (!hit) throw new AuthError('not_found', 'لا رابط بهذا الرمز لك', 404)
+    const copy = previewCopy({
+      name: kit.name, courses: hit.courses, wide: hit === links.wide,
+      code: bestCode({ code: kit.code, percentOff: kit.percentOff }, kit.hisCodes),
+    })
+    await this.prisma.shortLink.update({
+      where: { code },
+      data: { previewImage: new Uint8Array(image), previewTitle: copy.title, previewText: copy.text, previewSig: sig.slice(0, 64), previewAt: new Date() },
+    })
   }
 
   /** رابطٌ قصيرٌ ثابتٌ لعنوانٍ من عناويننا — يُعاد إن سُكّ له من قبل */

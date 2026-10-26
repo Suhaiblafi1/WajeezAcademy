@@ -23,7 +23,8 @@
 
 import { splitTitle } from '@/application/trainer/share-kit'
 
-export type ArtKind = 'post' | 'story' | 'cover' | 'course' | 'offer'
+/** و`link` معاينةُ رابطه حين يُلصق في واتساب وفيسبوك (١٢٠٠×٦٣٠) — تُرفع ولا تُنزَّل (`link-preview.ts`) */
+export type ArtKind = 'post' | 'story' | 'cover' | 'course' | 'offer' | 'link'
 
 export interface ArtData {
   name: string
@@ -39,7 +40,7 @@ export interface ArtData {
 }
 
 const SIZE: Record<ArtKind, [number, number]> = {
-  post: [1080, 1080], story: [1080, 1920], cover: [1080, 1350], course: [1080, 1350], offer: [1080, 1350],
+  post: [1080, 1080], story: [1080, 1920], cover: [1080, 1350], course: [1080, 1350], offer: [1080, 1350], link: [1200, 630],
 }
 
 const C = { paper: '#F5F3EE', ink: '#1F2A2E', muted: '#5C6B70', teal: '#38A7B4', tealInk: '#1A5C64', gold: '#FABC05', white: '#FFFFFF', live: '#E5484D' }
@@ -329,16 +330,26 @@ export async function drawArt(kind: ArtKind, d: ArtData, index = 0): Promise<HTM
   await Promise.all([document.fonts.load(font(700, 40)), document.fonts.load(font(500, 40))]).catch(() => undefined)
   const [logo, photo] = await Promise.all([
     loadImage('/logo-mark.png'),
-    d.photoUrl && (kind === 'post' || kind === 'story' || kind === 'cover') ? loadImage(d.photoUrl) : Promise.resolve(null),
+    d.photoUrl && (kind === 'post' || kind === 'story' || kind === 'cover' || kind === 'link') ? loadImage(d.photoUrl) : Promise.resolve(null),
   ])
   ctx.direction = 'rtl'
-  frame(ctx, logo, w, h, d.host)
+  frame(ctx, logo, w, h, kind === 'link' ? '' : d.host)
   ctx.textAlign = 'center'
   const cx = w / 2
   const one = d.courses[index] ?? d.courses[0]
   const many = d.courses.length > 1
 
-  if (kind === 'post') {
+  if (kind === 'link') {
+    /* المعاينةُ عريضة: صورتُه يمينا وعنوانُ الموقع تحتها، ودوراتُه والخصمُ يسارا */
+    portrait(ctx, photo, d.name, w - 250, 315, 150)
+    ctx.fillStyle = C.muted
+    ctx.font = font(500, 26)
+    ctx.fillText(d.host, w - 250, 540)
+    const left = 440
+    const below = nameBlock(ctx, d, left, 205, 46, 700)
+    courseList(ctx, d, d.courses.slice(0, 3), left, below + 16, 470, 700, 44)
+    codePill(ctx, d.code, left, 496, 28)
+  } else if (kind === 'post') {
     const r = 108
     portrait(ctx, photo, d.name, cx, 262, r)
     const below = nameBlock(ctx, d, cx, 262 + r + 72, 48, w - 200)
