@@ -63,36 +63,47 @@ describe('④ مشتري المسار: ثلاثة مقترحات', () => {
 
 /* ═══ ⑤ ومن أين الثلاث (٢٦ أكتوبر ٢٠٢٦) ═══
    «اقترح من دورات المسار نفسه أو الأقرب للفئة، وحاول أن تكون المقترحة لها شعبٌ مفتوحة» (صاحب المنصّة).
-   رُئي ساقطا على `suggestBuyable` القديم: يمدّ إلى مساراتٍ أخرى بالمهارة. */
-describe('⑤ مقترحات المسار: المسار ثم فئته، وما له شعبة أولا', async () => {
+   ثمّ رأى في مسار الأسرة والتربية العلاقاتِ العامّةَ والإقناعَ «من فئة موظفون ومختصون» — والفئةُ جمهورٌ لا
+   موضوع — فقال: «نعم افحصها وأصلحها». فالقربُ بالموضوع، والجمهورُ آخرَ الكلّ.
+   رُئي ساقطا على الصيغة السابقة: الحالةُ الأولى بعينها، والمهارةُ الشائعة تُعدّ قربا. */
+describe('⑤ مقترحات المسار: المسار ثم الأقرب موضوعا، وما له شعبة أولا', async () => {
   const { pathwayExtraOptions } = await import('@/application/catalog/course-path')
-  const { pathwayCourses, pathwaySupportCourses, readyPathwayCourseIds, courseById, courses: all } = await import('@/data/courses')
-  const pid = Object.keys(pathwayCourses).find((id) => (pathwaySupportCourses[id] ?? []).length > 0 && all.some((c) => c.pathwayId !== id && c.category === courseById(pathwayCourses[id]![0]!)?.category))!
-  const base = readyPathwayCourseIds(pid)
-  const category = courseById(pathwayCourses[pid]![0]!)!.category
-  const own = new Set([...(pathwayCourses[pid] ?? []), ...(pathwaySupportCourses[pid] ?? []).map((s) => s.courseId), ...all.filter((c) => c.pathwayId === pid).map((c) => c.id)])
+  const { pathwayCourses, pathwaySupportCourses, readyPathwayCourseIds, courses: all } = await import('@/data/courses')
+  const FAM = 'PW-FAM-001'
+  const famBase = readyPathwayCourseIds(FAM)
+  const ownOf = (pid: string) => new Set([...(pathwayCourses[pid] ?? []), ...(pathwaySupportCourses[pid] ?? []).map((s) => s.courseId), ...all.filter((c) => c.pathwayId === pid).map((c) => c.id)])
 
-  it('⚠️ من المسار نفسه أو فئته وحدهما — ولا شيء مما في المسار', () => {
+  it('⚠️ الحالة كما رئيت: الأسرة لا يقترح لها العلاقات العامة والإقناع وإن فتحت شعبهما', () => {
+    const open = new Set(['C-COMX-104', 'C-COMX-108', 'C-PSY-109'])
+    const out = pathwayExtraOptions(FAM, famBase, (id) => open.has(id)).map((s) => s.courseId)
+    expect(out[0]).toBe('C-PSY-109')
+    expect(out).toHaveLength(3)
+    expect(out).not.toContain('C-COMX-104')
+    expect(out).not.toContain('C-COMX-108')
+  })
+
+  it('⚠️ والمهارة الشائعة لا تعد قربا — «الإصغاء الفعال» في دورات كثيرة', () => {
+    const out = pathwayExtraOptions(FAM, famBase, (id) => id === 'C-BIZ-101').map((s) => s.courseId)
+    expect(out).toHaveLength(3)
+    expect(out).not.toContain('C-BIZ-101')
+  })
+
+  it('⚠️ ولا شيء مما في المسار — ودورات المسار نفسه قبل غيرها', () => {
+    const pid = Object.keys(pathwayCourses).find((id) => all.some((c) => c.pathwayId === id && !readyPathwayCourseIds(id).includes(c.id)))!
+    const base = readyPathwayCourseIds(pid)
+    const own = ownOf(pid)
     const out = pathwayExtraOptions(pid, base, () => true, 50)
     expect(out.length).toBeGreaterThan(0)
-    for (const s of out) {
-      expect(base, s.courseId).not.toContain(s.courseId)
-      expect(own.has(s.courseId) || courseById(s.courseId)?.category === category, `${s.courseId} من خارج المسار وفئته`).toBe(true)
-    }
-  })
-
-  it('⚠️ دورات المسار نفسه قبل فئته', () => {
-    const out = pathwayExtraOptions(pid, base, () => true, 50)
-    const firstCategory = out.findIndex((s) => !own.has(s.courseId))
+    for (const s of out) expect(base, s.courseId).not.toContain(s.courseId)
+    const firstOther = out.findIndex((s) => !own.has(s.courseId))
     const lastOwn = out.map((s) => own.has(s.courseId)).lastIndexOf(true)
-    if (firstCategory >= 0 && lastOwn >= 0) expect(lastOwn).toBeLessThan(firstCategory)
+    expect(lastOwn).toBeGreaterThanOrEqual(0)
+    if (firstOther >= 0) expect(lastOwn).toBeLessThan(firstOther)
   })
 
-  it('⚠️ وما له شعبة أولا — ولو كان من الفئة', () => {
-    const out = pathwayExtraOptions(pid, base, () => true, 50)
-    const categoryOne = out.find((s) => !own.has(s.courseId))!
-    const pick = pathwayExtraOptions(pid, base, (id) => id === categoryOne.courseId)
-    expect(pick[0]!.courseId).toBe(categoryOne.courseId)
-    expect(pick).toHaveLength(3)
+  it('⚠️ وما له شعبة أولا بين القريب', () => {
+    const near = pathwayExtraOptions(FAM, famBase, () => false, 50).filter((s) => !s.reason_ar.startsWith('لجمهور'))
+    const last = near[near.length - 1]!
+    expect(pathwayExtraOptions(FAM, famBase, (id) => id === last.courseId)[0]!.courseId).toBe(last.courseId)
   })
 })
