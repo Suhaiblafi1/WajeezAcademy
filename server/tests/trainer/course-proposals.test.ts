@@ -641,3 +641,28 @@ describe('أسئلةُ الفورم — من المدرّب إلى الطابو�
     expect(fromTopics.length, 'المحاورُ لم تدخل الترشيح').toBeGreaterThan(0)
   })
 })
+
+/* ═══ ومدرّبٌ واحد — يُقرَّر في اقتراحه من ملفّه (قرارُ «A»، ٢٦ أكتوبر ٢٠٢٦) ═══
+   «الاتفاقية» في ملفّ المدرّب تقرأ اقتراحاتِه من الطابور نفسِه بترشيحها (`profileId`)، والقائمةُ عبرَ المدرّبين
+   تفتح ملفَّ صاحب كلِّ صفٍّ برقم طلبه (`applicationId`). */
+describe('ومدرّب واحد — لملفّه', () => {
+  it('⚠️ اقتراحاته وحده بترشيحها — وكل صف برقم طلب صاحبه', async () => {
+    const stamp = Date.now()
+    const a = await approvedTrainer(`one-a-${stamp}@test.local`, 'مدرّب الأتمتة أ', [
+      { titleAr: 'أتمتة الفواتير', summaryAr: 'أتمتة إصدار الفواتير وتتبّعها' },
+    ])
+    const b = await approvedTrainer(`one-b-${stamp}@test.local`, 'مدرّب الأتمتة ب', [
+      { titleAr: 'أتمتة المخازن', summaryAr: 'أتمتة جرد المخازن' },
+    ])
+    const mine = await proposals.queue('all', a.profileId)
+    expect(mine.length, 'لا اقتراح له — تعطّل الفحص').toBeGreaterThan(0)
+    expect(mine.every((r) => r.profileId === a.profileId), 'تسرّب اقتراح غيره').toBe(true)
+    expect(mine.every((r) => r.applicationId === a.applicationId)).toBe(true)
+    /* والترشيحُ نفسُه — لا حسابٌ ثانٍ لملفّه */
+    expect(mine[0]!.suggestedCourses).toEqual((await proposals.queue('all')).find((r) => r.id === mine[0]!.id)!.suggestedCourses)
+    /* وبلا مدرّبٍ الطابورُ كلُّه كما كان */
+    const all = await proposals.queue('all')
+    expect(all.some((r) => r.profileId === b.profileId)).toBe(true)
+    expect(all.find((r) => r.profileId === b.profileId)!.applicationId).toBe(b.applicationId)
+  })
+})

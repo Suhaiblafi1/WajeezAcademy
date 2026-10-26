@@ -13,7 +13,8 @@
       الإصدار آليّا يضع في فم المدرّب عنوانا ومحاورَ لم يكتبها.
    ⑤ **والرفضُ بسببٍ يلزم في الخادم** — لا في الشاشة وحدَها.
    ⑥ **ولا نموذجَ إنشاءٍ ثانٍ** — الدورةُ الجديدةُ تُنشأ في `CourseWizard`
-      نفسِه، فلا تتخلّف نسخةٌ أنحفُ عنه.
+      نفسِه، فلا تتخلّف نسخةٌ أنحفُ عنه. وبابُها في ملفّ المدرّب منذ قرار «A»
+      (٢٦ أكتوبر ٢٠٢٦)، وكان في الطابور؛ وما يحرس الموضعَ `course-ideas-in-record.test.ts`.
 
    والفحصُ **بنيويٌّ لا نصّيّ**: على الشرط الذي يمنع البذرَ الثاني، وعلى
    المجموعة التي تحكم ما يُعدَّل، وعلى ما تكتبه دالّةُ الربط فعلا. */
@@ -22,6 +23,7 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { DECIDED_PROPOSAL, OPEN_PROPOSAL } from '../../../server/services/course-proposal.service'
+import { newCourseHref } from '@/application/trainer/idea-links'
 
 const root = process.cwd()
 const raw = (p: string) => readFileSync(join(root, p), 'utf8')
@@ -31,6 +33,8 @@ const code = (p: string) =>
 const SVC = 'server/services/course-proposal.service.ts'
 const REVIEW = 'server/services/trainer-review.service.ts'
 const QUEUE = 'src/pages/admin/CourseProposals.tsx'
+/* وفيه يُقرَّر الاقتراح — الخطوةُ الثانية من «الاتفاقية» (قرارُ «A»، ٢٦ أكتوبر ٢٠٢٦) */
+const RECORD = 'src/pages/admin/PreparationSteps.tsx'
 const MINE = 'src/pages/trainer/MyCourseProposals.tsx'
 
 describe('ح-٢ · ح-٤ — الاقتراح يصير سجلّا ثمّ يصنّف', () => {
@@ -101,10 +105,14 @@ describe('ح-٢ · ح-٤ — الاقتراح يصير سجلّا ثمّ يصن�
     expect(rej).toMatch(/status:\s*'rejected'/)
   })
 
-  it('⑥ ولا نموذج إنشاء ثان في شاشة الطابور — بل إحالة إلى القائم', () => {
-    const q = code(QUEUE)
-    expect(q, 'الطابور ينشئ الدورة بنفسه').not.toMatch(/apiPost\(\s*["'`]\/api\/admin\/catalog\/courses/)
-    expect(q, 'لا إحالة إلى نموذج الكتالوج').toMatch(/\/admin\/catalog\?proposalId=/)
+  it('⑥ ولا نموذج إنشاء ثان — «دورة جديدة» في ملفّ المدرّب إحالة إلى القائم', () => {
+    for (const f of [QUEUE, RECORD]) {
+      expect(code(f), `${f} ينشئ الدورة بنفسه`).not.toMatch(/apiPost\(\s*["'`]\/api\/admin\/catalog\/courses/)
+    }
+    /* والإحالةُ دالّةٌ واحدةٌ يناديها الزرّ — فيُفحص ما تُخرجه، لا نصُّها */
+    expect(code(RECORD), 'لا إحالة إلى نموذج الكتالوج').toMatch(/<Button as=\{Link\} to=\{newCourseHref\(p, here\)\}/)
+    expect(newCourseHref({ id: 'p1', titleAr: 'دورة' }, { pathname: '/admin/trainers/a1', search: '' }))
+      .toMatch(/^\/admin\/catalog\?proposalId=p1&/)
     /* ويعود النموذجُ فيربط ما أُنشئ — وإلّا بقي الاقتراحُ معلّقا بلا دورة */
     expect(code('src/pages/admin/CatalogAdmin.tsx')).toMatch(/course-proposals\/\$\{fromProposal\}\/became-course/)
     /* والربطُ بعد التمام لا قبله: `courseId` شرطٌ لا زينة */
@@ -161,13 +169,14 @@ describe('ح-٢ · ح-٤ — الاقتراح يصير سجلّا ثمّ يصن�
     expect(gate, 'نداء الجواب خارج بوّابته').toBeLessThan(call)
   })
 
-  it('⑧ وطابور الإدارة يفتح باب السؤال ويعرض ترشيح أقرب رمز', () => {
-    const q = code(QUEUE)
-    expect(q, 'لا باب لسؤال المدرّب من الطابور').toMatch(/course-proposals\/\$\{r\.id\}\/ask/)
-    /* والترشيحُ يُقرأ من الحمولة لا يُحسب في المتصفّح: حسابُه هنا يعني تحميلَ
-       الكتالوج كلِّه إلى كلّ من يفتح الشاشة. */
-    expect(q, 'الطابور لا يعرض ترشيحا').toMatch(/r\.suggestedCourses/)
-    expect(q, 'رشّح بلا سبب يعرض').toMatch(/sharedAr/)
+  it('⑧ وملفّ المدرّب يفتح باب السؤال ويعرض ترشيح أقرب رمز', () => {
+    const rec = code(RECORD)
+    expect(rec, 'لا باب لسؤال المدرّب من ملفّه').toMatch(/course-proposals\/\$\{p\.id\}\/ask/)
+    /* والترشيحُ يُقرأ من حمولة الطابور لا يُحسب في المتصفّح: حسابُه هنا يعني تحميلَ
+       الكتالوج كلِّه إلى كلّ من يفتح الملفّ. فهو الطابورُ نفسُه لمدرّبٍ واحد. */
+    expect(rec, 'الترشيح لا يقرأ من الطابور').toContain('/api/admin/course-proposals?scope=all&profileId=${profileId}')
+    expect(rec, 'الملفّ لا يعرض ترشيحا').toMatch(/idea\.suggestedCourses\.map/)
+    expect(rec, 'رشّح بلا سبب يعرض').toMatch(/sug\.sharedAr/)
   })
 
   it('وتقول له إنّ اقتراحه ليس دورة بعد — فلا ينتظر طلّابا لا يأتون', () => {
@@ -185,7 +194,7 @@ describe('ح-٢ · ح-٤ — الاقتراح يصير سجلّا ثمّ يصن�
     const routes = code('server/http/routes/admin-trainer.routes.ts')
     const seg = routes.slice(routes.indexOf("'/api/admin/course-proposals'"))
     expect(seg.slice(0, 400)).toContain("requirePermission('trainer.change.review')")
-    for (const door of ['link', 'became-course', 'reject']) {
+    for (const door of ['link', 'became-course', 'unlink', 'ask', 'reject']) {
       const at = routes.indexOf(`/api/admin/course-proposals/:id/${door}`)
       expect(at, `لا مسار لـ${door}`).toBeGreaterThan(0)
       expect(routes.slice(at, at + 300), `باب ${door} بلا حارس`)

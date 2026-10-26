@@ -31,10 +31,10 @@
    تُفتح لأيٍّ من الحبّتين، وتحتها سجلُّ أجره بمن ضبط كلَّ قاعدةٍ ومتى (`fee-history`). */
 
 import { useCallback, useEffect, useState } from "react";
-import { Link } from "react-router";
+import { Link, useLocation, useSearchParams } from "react-router";
 import {
   BadgeCheck, BookPlus, Check, ChevronDown, ChevronUp, CircleDashed, Coins, FileSignature, FileText,
-  Link2, Link2Off, Pencil, Send, Trash2,
+  Link2, Link2Off, MessageCircleQuestion, Pencil, Send, Sparkles, Trash2,
 } from "lucide-react";
 import { apiGet, apiPost, apiPatch, ApiError } from "@/services/api";
 import { toast, toastError } from "@/components/Toast";
@@ -45,6 +45,9 @@ import { staffControlCls as inputCls, staffAreaCls as areaCls } from "@/componen
 import { RULE_TYPE_AR } from "@/application/trainer/compensation-labels";
 import { outContractOf } from "@/application/trainer/contract-fee";
 import { foldProposals } from "@/application/trainer/proposal-fold";
+import { proposalDetailRows, type ProposalDetails } from "@/application/trainer/proposal-details";
+import { IDEA_PARAM, newCourseHref } from "@/application/trainer/idea-links";
+import { revealRow } from "@/components/admin/reveal";
 import { fmtDateLong, fmtDayMonth } from "@/application/text/format-ar";
 import { amendmentLinesOf, contractStoryOf } from "@/application/trainer/contract-story";
 import { parseContractDoc } from "@/application/trainer/contract-sections";
@@ -79,6 +82,15 @@ export interface PrepProposal {
   courseId: string | null;
   course?: { id: string; versions: { titleAr: string }[] } | null;
   decisionNoteAr?: string | null;
+}
+
+/** اقتراحُه كما يردّه الطابورُ لمدرّبٍ واحد (`?profileId=`) — أجوبةُ الفورم والسؤالُ وجوابُه وأقربُ الرموز إليه */
+interface IdeaFacts {
+  id: string;
+  details: ProposalDetails | null;
+  questionAr: string | null; questionAt: string | null;
+  answerAr: string | null; answeredAt: string | null;
+  suggestedCourses: { courseId: string; titleAr: string; sharedAr: string[] }[];
 }
 
 export interface PrepContract {
@@ -337,14 +349,26 @@ const PROPOSAL_STATUS_AR: Record<string, string> = {
   linked: "ربطت برمز قائم", became_course: "صارت دورة", rejected: "ردّت",
 };
 
+/* ═══ ويُقرَّر في الاقتراح هنا — قرارُ صاحب المنصّة «A» (٢٦ أكتوبر ٢٠٢٦) ═══
+
+   سُئل: أين تُقرَّر دوراتٌ يقترحها المدرّب؟ في ملفّه بجانب أجره ودوراته، أم في «دوراتٌ مقترحة»؟ فقال «A»: في ملفّه.
+   فهنا الأبوابُ الأربعة كلُّها: نسخةٌ من رمزٍ قائم (بأقرب الرموز إليه)، ودورةٌ جديدة (نموذجُ الكتالوج نفسُه، ثمّ يعود
+   إلى هنا)، واسأله، وليس الآن (ردٌّ بسبب). ومعها ما يُقرَّر به: أجوبةُ فورمه، والسؤالُ وجوابُه. والترشيحُ من الطابور
+   نفسِه لمدرّبٍ واحد (`?profileId=`) — لا حسابٌ ثانٍ في المتصفّح. و«دوراتٌ مقترحة» قائمةٌ عبرَ المدرّبين تفتح ملفَّ صاحبها. */
 function CoursesStep({
-  profileId, proposals, qualifications, courses, canQualify, canClassify, busy, run, onChanged,
+  profileId, proposals, qualifications, courses, canQualify, canClassify, canCreateCourse, busy, run, onChanged,
 }: {
   profileId: string; proposals: PrepProposal[]; qualifications: PrepQualification[];
   courses: CourseOption[]; canQualify: boolean; canClassify: boolean;
+  /** إنشاءُ دورةٍ في الكتالوج — «دورة جديدة» لمن يملكه وحدَه */
+  canCreateCourse: boolean;
   busy: boolean; run: (work: () => Promise<unknown>, okAr: string) => Promise<void>;
   onChanged: () => void | Promise<void>;
 }) {
+  const here = useLocation();
+  /* ومن جاء من «دوراتٌ مقترحة» أو عاد من الكتالوج يُفتح على الاقتراح نفسِه — ولو كان مطويّا فيما بُتّ فيه */
+  const [params] = useSearchParams();
+  const focusIdea = params.get(IDEA_PARAM);
   const [qualifyCourse, setQualifyCourse] = useState("");
   const [linkFor, setLinkFor] = useState<string | null>(null);
   const [linkCourse, setLinkCourse] = useState("");
@@ -353,7 +377,21 @@ function CoursesStep({
   const [editSummary, setEditSummary] = useState("");
   const [rejectFor, setRejectFor] = useState<string | null>(null);
   const [rejectNote, setRejectNote] = useState("");
-  const [showDecided, setShowDecided] = useState(false);
+  const [askFor, setAskFor] = useState<string | null>(null);
+  const [askText, setAskText] = useState("");
+  const [showDecided, setShowDecided] = useState(
+    () => !!focusIdea && foldProposals(proposals).decided.some((p) => p.id === focusIdea),
+  );
+  useEffect(() => {
+    if (focusIdea) revealRow(`idea-${focusIdea}`);
+  }, [focusIdea]);
+  const [ideas, setIdeas] = useState<Record<string, IdeaFacts>>({});
+  useEffect(() => {
+    if (!canClassify) return;
+    apiGet<IdeaFacts[]>(`/api/admin/course-proposals?scope=all&profileId=${profileId}`)
+      .then((rows) => setIdeas(Object.fromEntries(rows.map((r) => [r.id, r]))))
+      .catch(() => setIdeas({}));
+  }, [canClassify, profileId, proposals]);
 
   const qualified = qualifications.filter((q) => q.status === "qualified");
   /* المفتوحُ بطاقاتٌ، والمبتوتُ سطرٌ يُفتح — والعلّةُ في `proposal-fold.ts` */
@@ -363,13 +401,17 @@ function CoursesStep({
     setLinkFor(null); setLinkCourse("");
     setEditFor(null); setEditTitle(""); setEditSummary("");
     setRejectFor(null); setRejectNote("");
+    setAskFor(null); setAskText("");
   };
 
   /* بطاقةُ اقتراحٍ واحد — مفتوحا كان أو مبتوتا. وما صار دورةً أو رُدّ يُقرأ ولا
      يُعمل فيه من هنا؛ والمربوطُ يبقى ببابَي رجوعه (اربِطْها بغيرها · انقُضِ الربط). */
-  const renderProposal = (p: PrepProposal) => (
-    <li key={p.id}>
-      <Card className="bg-paper/20 p-3.5">
+  const renderProposal = (p: PrepProposal) => {
+    const idea = ideas[p.id];
+    const details = proposalDetailRows(idea?.details ?? null);
+    return (
+    <li key={p.id} id={`idea-${p.id}`} tabIndex={-1} className="scroll-mt-28 rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-teal/60">
+      <Card className={`bg-paper/20 p-3.5 ${focusIdea === p.id ? "ring-1 ring-teal/50" : ""}`}>
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div className="min-w-[12rem] flex-1">
             <div className="text-read font-bold text-foreground">{p.titleAr}</div>
@@ -377,6 +419,28 @@ function CoursesStep({
               <p className="mt-1 whitespace-pre-wrap text-read leading-6 text-muted-foreground">
                 {p.summaryAr}
               </p>
+            )}
+            {details.length > 0 && (
+              <dl className="mt-2 grid gap-x-5 gap-y-1 text-read sm:grid-cols-2">
+                {details.map((d) => (
+                  <div key={d.labelAr} className="min-w-0">
+                    <dt className="inline font-bold text-foreground">{d.labelAr}: </dt>
+                    <dd className="inline whitespace-pre-wrap text-muted-foreground">{d.valueAr}</dd>
+                  </div>
+                ))}
+              </dl>
+            )}
+            {idea?.questionAr && (
+              <Inset className="mt-2 grid gap-1.5 px-3.5 py-2.5 text-read leading-6">
+                <p className="whitespace-pre-wrap">
+                  <b className="text-foreground">سألناه</b>{idea.questionAt && <> {fmtDateLong(idea.questionAt)}</>}: {idea.questionAr}
+                </p>
+                <p className="whitespace-pre-wrap text-muted-foreground">
+                  {idea.answerAr
+                    ? <><b className="text-foreground">فأجاب</b>{idea.answeredAt && <> {fmtDateLong(idea.answeredAt)}</>}: {idea.answerAr}</>
+                    : "ولم يجب بعد."}
+                </p>
+              </Inset>
             )}
             {p.status === "linked" && (
               /* ولا يختفي المربوطُ: الربطُ حكمُ تشابهٍ يُراجَع */
@@ -419,6 +483,20 @@ function CoursesStep({
                 انقض الربط
               </Button>
             )}
+            {p.status !== "linked" && canCreateCourse && (
+              /* نموذجُ الكتالوج نفسُه بعنوانها، يربطها حين تنشأ ثمّ يعود إلى هنا عليها (`idea-links.ts`) */
+              <Button as={Link} to={newCourseHref(p, here)} tone="secondary" size="sm" icon={BookPlus}>
+                دورة جديدة
+              </Button>
+            )}
+            {p.status !== "linked" && (
+              <Button
+                tone="ghost" size="sm" icon={MessageCircleQuestion}
+                onClick={() => { close(); setAskFor(p.id); }}
+              >
+                اسأل المدرب
+              </Button>
+            )}
             <Button
               tone="ghost" size="sm" icon={Pencil}
               onClick={() => {
@@ -433,33 +511,76 @@ function CoursesStep({
                 tone="danger" size="sm" icon={Trash2}
                 onClick={() => { close(); setRejectFor(p.id); }}
               >
-                ردّها
+                ليس الآن
               </Button>
             )}
           </div>
         )}
 
+        {linkFor === p.id && idea && idea.suggestedCourses.length > 0 && (
+          /* أقربُ ما عندنا إليها، ولماذا — من لا يحفظ الكتالوجَ أنشأ ثانيةً لما هو موجود */
+          <div className="mt-2.5 grid gap-2">
+            <p className="flex items-center gap-1.5 text-read font-bold text-foreground">
+              <Sparkles className="h-4 w-4 text-teal" aria-hidden="true" /> أقرب ما عندنا إليها
+            </p>
+            {idea.suggestedCourses.map((sug) => (
+              <button
+                key={sug.courseId} type="button" onClick={() => setLinkCourse(sug.courseId)}
+                aria-pressed={linkCourse === sug.courseId}
+                className={`rounded-xl border px-3 py-2 text-right transition ${linkCourse === sug.courseId ? "border-teal/60 bg-teal/10" : "border-white/10 bg-white/[0.03] hover:border-teal/40"}`}
+              >
+                <span className="block text-read font-bold text-foreground">{sug.titleAr}</span>
+                <span className="block text-fine text-muted-foreground">تشترك في: {sug.sharedAr.join("، ")}</span>
+              </button>
+            ))}
+          </div>
+        )}
+
         {linkFor === p.id && (
-          <div className="mt-2.5 flex flex-wrap gap-2">
+          /* والزرّان تحت المختار لا بجانبه: كانا في صفّه فامتدّا بطوله عمودَين */
+          <div className="mt-2.5 grid gap-2">
             <label className="sr-only" htmlFor={`link-${p.id}`}>الرمز الذي تربط به</label>
-            <div className="min-w-[16rem] flex-1">
-              <CoursePicker
-                id={`link-${p.id}`} courses={courses}
-                value={linkCourse} onChange={setLinkCourse}
-                labelAr="الرمز الذي تربط به"
-              />
+            <CoursePicker
+              id={`link-${p.id}`} courses={courses}
+              value={linkCourse} onChange={setLinkCourse}
+              labelAr="الرمز الذي تربط به"
+            />
+            <div className="flex flex-wrap gap-2">
+              <Button
+                tone="confirm" size="sm" loading={busy} disabled={!linkCourse}
+                onClick={() => void run(async () => {
+                  await apiPost(`/api/admin/course-proposals/${p.id}/link`, { courseId: linkCourse });
+                  close();
+                  await onChanged();
+                }, "ربط الاقتراح بالرمز")}
+              >
+                اربط
+              </Button>
+              <Button tone="ghost" size="sm" onClick={close}>تراجع</Button>
             </div>
-            <Button
-              tone="confirm" size="sm" loading={busy} disabled={!linkCourse}
-              onClick={() => void run(async () => {
-                await apiPost(`/api/admin/course-proposals/${p.id}/link`, { courseId: linkCourse });
-                close();
-                await onChanged();
-              }, "ربط الاقتراح بالرمز")}
-            >
-              اربط
-            </Button>
-            <Button tone="ghost" size="sm" onClick={close}>تراجع</Button>
+          </div>
+        )}
+
+        {askFor === p.id && (
+          <div className="mt-2.5 grid gap-2">
+            <textarea
+              value={askText} onChange={(e) => setAskText(e.target.value)}
+              rows={2} maxLength={2000} className={areaCls}
+              placeholder="ما الذي تريد أن تعرفه عنها؟ يصله في «دوراتي المقترحة»، ويعود إليك بجوابه"
+            />
+            <div className="flex flex-wrap gap-2">
+              <Button
+                tone="confirm" size="sm" icon={Send} loading={busy} disabled={askText.trim().length < 5}
+                onClick={() => void run(async () => {
+                  await apiPost(`/api/admin/course-proposals/${p.id}/ask`, { questionAr: askText.trim() });
+                  close();
+                  await onChanged();
+                }, "وصل السؤال صاحبها")}
+              >
+                أرسل السؤال
+              </Button>
+              <Button tone="ghost" size="sm" onClick={close}>تراجع</Button>
+            </div>
           </div>
         )}
 
@@ -500,7 +621,7 @@ function CoursesStep({
             <textarea
               value={rejectNote} onChange={(e) => setRejectNote(e.target.value)}
               rows={2} maxLength={2000} className={areaCls}
-              placeholder="سبب الرفض — يصل صاحبها، وبلا سبب يعيدها كما هي"
+              placeholder="لماذا ليس الآن؟ يصل صاحبها، وبلا سبب يعيدها كما هي"
             />
             <div className="flex flex-wrap gap-2">
               <Button
@@ -519,7 +640,8 @@ function CoursesStep({
         )}
       </Card>
     </li>
-  );
+    );
+  };
 
   return (
     <div className="grid gap-4">
@@ -572,11 +694,12 @@ function CoursesStep({
 
       {/* ── دوراتٌ يقترحها هو: المفتوحُ بطاقاتٌ، والمبتوتُ سطرٌ يُفتح (`proposal-fold.ts`) ── */}
       <div className="border-t border-white/10 pt-3.5">
-        <h5 className="text-read font-black text-foreground">
-          دورات يقترحها — {proposals.length}
+        {/* والعددان منفصلان بفجوةٍ لا بهامش: «4» ملاصقةٌ لشارة «2 …» كانت تُقرأ «42» */}
+        <h5 className="flex flex-wrap items-center gap-x-3 gap-y-1 text-read font-black text-foreground">
+          <span>دورات يقترحها — {proposals.length}</span>
           {open.length > 0 && (
-            <span className="ms-2 rounded-full bg-amber-500/15 px-2.5 py-0.5 text-fine font-bold text-amber-300">
-              {open.length} بانتظار التصنيف
+            <span className="rounded-full bg-amber-500/15 px-2.5 py-0.5 text-fine font-bold text-amber-300">
+              {open.length} لم تقرّر فيها بعد
             </span>
           )}
         </h5>
@@ -610,8 +733,7 @@ function CoursesStep({
         )}
 
         <p className="mt-2.5 text-read leading-5 text-muted-foreground">
-          و«الدورة الجديدة» تنشأ في شاشة الكتالوج بكامل بياناتها (المهارات والساعات)،
-          ثمّ تربط من طابور الاقتراحات. ولا تنشأ من هنا حتّى لا ينسب إليه ما لم يكتبه.
+          و«دورة جديدة» تفتح نموذج الكتالوج كاملا بعنوانها، فتنشأ بمهاراتها وساعاتها، وتربط بها ثمّ تعود إلى هنا.
         </p>
       </div>
     </div>
@@ -938,6 +1060,7 @@ export default function PreparationSteps({
         <CoursesStep
           profileId={profileId} proposals={proposals} qualifications={qualifications}
           courses={courses} canQualify={can("trainer.qualify")} canClassify={can("trainer.change.review")}
+          canCreateCourse={can("catalog.course.create")}
           busy={busy} run={run} onChanged={onChanged}
         />
       </Step>
