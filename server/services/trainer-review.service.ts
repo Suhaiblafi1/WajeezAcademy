@@ -66,7 +66,7 @@ import {
 import { livePathWhere, liveTrainerWhere, publicTrainerWhere, trainerPubliclyVisible } from './trainer-visibility'
 import { OPERATING_TRAINER_WHERE } from './trainer-operating'
 import { feeTypeChangeAr, sameFeeAsRule } from '../../src/application/trainer/contract-fee'
-import { BIO_DRAFTS, PITCH_DRAFTS } from './trainer-suggestion-drafts'
+import { TrainerDraftsService } from './trainer-drafts.service'
 import { cohortLeadTrainers } from './cohort-lead'
 import { PUBLISH_APPROVED_NOTICE } from './trainer-auto-publish'
 import { cleanProposals, readProposals } from '../../src/application/trainer/teachable-proposals'
@@ -6184,6 +6184,8 @@ export class TrainerReviewService {
     /* وملفُّ الصورة المعلّقة: أوصل أم لم يكتمل رفعُه؟ — فلا تعرض البطاقةُ صورةً مكسورة (٢٦ أكتوبر ٢٠٢٦) */
     const photoArrived = new Map<string, boolean>()
     for (const p of profiles) if (p.photoPendingKey) photoArrived.set(p.id, await objectExists(p.photoPendingKey))
+    /* والمسوّداتُ ما في الشيفرة وفوقه ما رُفع من الشاشة (٢٦ أكتوبر ٢٠٢٦، `trainer-drafts.service.ts`) */
+    const drafts = await new TrainerDraftsService(this.prisma).drafts()
     return profiles.map((p) => {
       const latest = (kind: string) => p.textSuggestions.find((x) => x.kind === kind) ?? null
       return {
@@ -6203,9 +6205,9 @@ export class TrainerReviewService {
          يُقترح عليه منه شيءٌ بعد */
       pitchLines: p.pitchLines,
       pitchLatest: latest('pitch'),
-      pitchDraft: p.pitchLines.length === 0 && !latest('pitch') ? PITCH_DRAFTS[p.id] ?? null : null,
+      pitchDraft: p.pitchLines.length === 0 && !latest('pitch') ? drafts.pitch[p.id] ?? null : null,
       bioLatest: latest('bio'),
-      bioDraft: latest('bio') ? null : BIO_DRAFTS[p.id] ?? null,
+      bioDraft: latest('bio') ? null : drafts.bio[p.id] ?? null,
       isVerified: p.isVerified,
       /* ما تعرضه صفحةُ الفريق — يُقرأ هنا ليُحرَّر هنا */
       headline: p.headline,

@@ -1398,6 +1398,7 @@ model TrainerProfile {
   marketingPhotos       TrainerMarketingPhoto[]
   posters               TrainerPoster[]
   textSuggestions       TrainerTextSuggestion[]
+  textDrafts            TrainerTextDraft[]
   issuedDiscounts       TrainerIssuedDiscount[]
   codes                 TrainerCode[]
   codeRedemptions       TrainerCodeRedemption[]
@@ -1738,6 +1739,24 @@ model CohortMessage {
  * الاعتماد تُزاح مواعيدُ الشعبة كلُّها بأسابيعَ كاملة. والعلّةُ في
  * `src/application/trainer/cohort-move.ts`.
  */
+/**
+ * ── مسوّدةُ ما نقترحه على بطاقة المدرّب — تُرفع من الشاشة، لا تُكتب في الشيفرة (٢٦ أكتوبر ٢٠٢٦) ──
+ * كانت مسوّداتُ «لماذا نفتخر به» والنبذةِ ثابتةً في `trainer-suggestion-drafts.ts`، فكلُّ جولةٍ نشرُ شيفرة.
+ * فصارت تُرفع ملفّا (`wajeez.trainer-drafts/1`) من «المدربون»، والأحدثُ لكلّ مدرّبٍ ونوعٍ مكانَ ما قبله.
+ * وما في الشيفرة يبقى مسوّدةً أولى لمن لم يُرفع له شيء (`trainer-drafts.service.ts`).
+ */
+model TrainerTextDraft {
+  id         String         @id @default(uuid()) @db.Uuid
+  profileId  String         @db.Uuid
+  kind       String         // pitch | bio
+  lines      String[]
+  uploadedBy String         @db.Uuid
+  uploadedAt DateTime       @default(now())
+  profile    TrainerProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, kind])
+}
+
 /**
  * ── ما نقترحه نحن على بطاقة المدرّب — يقبله أو يرفضه (١٩ أكتوبر ٢٠٢٦) ──
  * نوعان، وقرارُ صاحب المنصّة في كلٍّ:

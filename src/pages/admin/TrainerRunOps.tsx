@@ -32,7 +32,7 @@
 import PrepReminderRow, { ReminderDeadline, type ReminderRow } from "@/components/admin/PrepReminders";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  ArrowLeft, BadgeCheck, CheckCircle2, ChevronDown, Clock, Download, GraduationCap, ImagePlus, Loader2, Search,
+  ArrowLeft, BadgeCheck, CheckCircle2, ChevronDown, Clock, Download, FileJson, GraduationCap, ImagePlus, Loader2, Search,
   Send, ServerOff, ShieldAlert, UserPlus, Users, XCircle,
 } from "lucide-react";
 import { toast, toastError } from "@/components/Toast";
@@ -57,6 +57,7 @@ import Chip, { type ChipTone } from "@/components/ui/Chip";
 import { ACTIVITY_LABELS, NOT_SIGNED_AR, activityOf, lastSeenAr, tracksActivity, type Activity } from "@/application/trainer/last-seen";
 import TabBar from "@/components/ui/TabBar";
 import { draftKindsAr, hasNeed, TRAINER_NEEDS, trainersAr, type TrainerNeed } from "@/application/trainer/trainer-needs";
+import { draftsUploadedAr, type DraftsUploaded } from "@/application/trainer/text-drafts";
 import { BIO_MAX_WORDS, countWords, NAME_MAX_CHARS, publicNameProblemAr } from "@/application/trainer/public-text";
 import { PITCH_MAX_CHARS, PITCH_MAX_LINES, PITCH_MAX_WORDS, bioSuggestionProblemAr, cleanPitchLines, pitchHeadingAr, pitchProblemAr } from "@/application/trainer/pitch";
 import {
@@ -872,6 +873,29 @@ export default function TrainerRunOps() {
     }
   };
 
+  /* ═══ ومسوّداتُهم تعود ملفّا يُرفع هنا — لا شيفرةً تُنشر (٢٦ أكتوبر ٢٠٢٦، `trainer-drafts.service.ts`) ═══
+     بجانب تنزيل ملفّاتهم: «فقط تحميل ورفع». وبصلاحيّة الإرسال نفسِها، فما يُرفع يُرسَل بضغطة. والردُّ يسمّي كلَّ
+     مدرّبٍ وسببَه في سطور — فسطرٌ تحت الأزرار لا إشعارٌ يُقطع. */
+  const canSendDrafts = sessionUser?.permissions.includes("trainer.publish") ?? false;
+  const draftsInput = useRef<HTMLInputElement>(null);
+  const [draftsMsg, setDraftsMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const uploadDrafts = async (file: File) => {
+    setBusy("upload-drafts"); setDraftsMsg(null);
+    try {
+      let body: unknown;
+      try { body = JSON.parse(await file.text()); }
+      catch { throw new Error(`«${file.name}» ليس ملف JSON مقروءا`); }
+      const r = await apiPost<DraftsUploaded>("/api/admin/trainers/suggestions/drafts", body);
+      setDraftsMsg({ ok: true, text: draftsUploadedAr(r) });
+      await load();
+    } catch (e) {
+      setDraftsMsg({ ok: false, text: e instanceof ApiError || e instanceof Error ? e.message : "تعذر رفع المسوّدات" });
+    } finally {
+      setBusy("");
+      if (draftsInput.current) draftsInput.current.value = "";
+    }
+  };
+
   /* ═══ زرُّ البطاقة يذهب إلى ما ينتظرك (٢١ أكتوبر ٢٠٢٦) ═══
      العقدُ في «العقود» مفتوحا عليه، والطلباتُ في طابورها أعلى الصفحة، والخطةُ في شعبتها إن كانت واحدة،
      وما سوى ذلك في بطاقته نفسِها مفتوحةً على موضعه. */
@@ -1112,6 +1136,21 @@ export default function TrainerRunOps() {
                 </Button>
               ))
             )}
+            {canSendDrafts && (
+              <>
+                <input
+                  ref={draftsInput}
+                  type="file"
+                  className="sr-only"
+                  aria-label="ملف المسوّدات"
+                  accept="application/json,.json"
+                  onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadDrafts(f); }}
+                />
+                <Button icon={FileJson} loading={busy === "upload-drafts"} disabled={busy !== ""} onClick={() => draftsInput.current?.click()}>
+                  ارفع المسوّدات
+                </Button>
+              </>
+            )}
             {canAddTrainer && (
               <Button onClick={() => setAddOpen((v) => !v)} icon={UserPlus} className="text-teal-light-ink">
                 {addOpen ? "أغلق" : "أضف مدرّبا"}
@@ -1127,6 +1166,11 @@ export default function TrainerRunOps() {
             </label>
           </div>
         </div>
+        {draftsMsg && (
+          <p role="status" className={`mt-2 whitespace-pre-wrap text-read leading-6 ${draftsMsg.ok ? "font-bold text-teal-light-ink" : "text-danger-ink"}`}>
+            {draftsMsg.text}
+          </p>
+        )}
 
         {/* فلاترُ الحال — مجموعُها عددُ المدرّبين، وكلُّ مدرّبٍ في واحدٍ منها */}
         <TabBar className="mt-3" ariaLabel="حالات المدربين" value={filter} onChange={setFilter}

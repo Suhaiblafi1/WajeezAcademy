@@ -38,7 +38,9 @@ import { readDocumentContent } from './storage.service'
 import { recordAudit } from './audit'
 import { AuthError } from './auth.service'
 import { liveTrainerWhere } from './trainer-visibility'
-import { BIO_DRAFTS, PITCH_DRAFTS } from './trainer-suggestion-drafts'
+import { DRAFTS_FORMAT, TrainerDraftsService } from './trainer-drafts.service'
+import { PITCH_MAX_CHARS, PITCH_MAX_LINES, PITCH_MAX_WORDS } from '../../src/application/trainer/pitch'
+import { BIO_MAX_CHARS, BIO_MAX_WORDS, BIO_MIN_WORDS } from '../../src/application/trainer/public-text'
 import { safeName } from '../../src/application/trainer/plan-review-bundle'
 import { proposalLine, readProposals } from '../../src/application/trainer/teachable-proposals'
 import {
@@ -110,7 +112,8 @@ export class TrainerDraftingBundleService {
 
   /** من يدخلها، وأجزاؤها — بحجم ملفّاتهم المسجَّل، بلا قراءتها */
   private async plan(partMaxBytes: number) {
-    const drafted = new Set([...Object.keys(PITCH_DRAFTS), ...Object.keys(BIO_DRAFTS)])
+    const { pitch, bio } = await new TrainerDraftsService(this.prisma).drafts()
+    const drafted = new Set([...Object.keys(pitch), ...Object.keys(bio)])
     const profiles = await this.prisma.trainerProfile.findMany({
       where: {
         id: { notIn: [...drafted] },
@@ -258,6 +261,24 @@ export class TrainerDraftingBundleService {
 }
 
 /** الملفُّ المقروء — كلُّ مدرّبٍ بحاله وما كتبه، وملفّاتُه وما تُرك منها */
+/** كيف تعود المسوّدات: ملفٌّ واحدٌ بصيغته يُرفع من «ارفع المسوّدات» — بحدود البطاقة نفسِها (`pitch.ts`) */
+export function draftsFormatMd(): string[] {
+  const example = { format: DRAFTS_FORMAT, pitch: { '<profileId>': ['سطر', 'سطر', 'سطر'] }, bio: { '<profileId>': 'النبذة في فقرة واحدة' } }
+  return [
+    '## كيف ترجع المسودات',
+    '',
+    'ملف JSON واحد يرفع من «ارفع المسوّدات» في «المدربون» — لا ينشر بها شيء حتى ترسلها. والمعرّف `profileId` من `trainers.json`:',
+    '',
+    '```json',
+    JSON.stringify(example, null, 2),
+    '```',
+    '',
+    `- «لماذا نفتخر به»: ${PITCH_MAX_LINES} أسطر على الأكثر، والسطر ${PITCH_MAX_WORDS} كلمة و${PITCH_MAX_CHARS} حرفا على الأكثر.`,
+    `- النبذة: من ${BIO_MIN_WORDS} إلى ${BIO_MAX_WORDS} كلمة، و${BIO_MAX_CHARS} حرفا على الأكثر.`,
+    '- بلا تشكيل. ويرد الملف كله إن خالف مدرب واحد، ولا يحفظ منه شيء.',
+  ]
+}
+
 export function draftingMarkdown(
   trainers: readonly DraftingTrainer[], now: Date, at: { part: number; parts: number } = { part: 1, parts: 1 },
 ): string {
@@ -265,6 +286,8 @@ export function draftingMarkdown(
   const out: string[] = [`# ملفات المدربين لكتابة الاقتراحات — ${zonedDay(now)}${partAr}`, '']
   if (trainers.length === 0) out.push('لكل مدرب مؤهل لدورة مسودة أو اقتراح أرسل له. لا أحد ينتظر.')
   else out.push(`${trainers.length} مدربا مؤهلين لدورة، بلا مسودة ولا اقتراح. ومن له دورة منشورة هذا الفصل أو بعده موسوم بـ«منشورة».`, '')
+  /* وكيف تعود المسوّدات — ملفٌّ يُرفع من الشاشة لا شيفرةٌ تُنشر (٢٦ أكتوبر ٢٠٢٦، `trainer-drafts.service.ts`) */
+  if (trainers.length > 0) out.push(...draftsFormatMd(), '')
   const line = (k: string, v: string | null | undefined) => { if (v && v.trim()) out.push(`- **${k}:** ${v.trim()}`) }
   trainers.forEach((t, i) => {
     out.push(`## ${i + 1}. ${t.name}`, '')
