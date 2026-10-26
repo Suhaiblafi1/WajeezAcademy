@@ -24,10 +24,16 @@
 
    خطوتان: النموذج ← الكودُ واختيارُ الدورات، ثمّ لوحُ الدفع والكودُ فيه. وما أخذه من النموذج يُحفظ على جهازه
    (`services/grant-landing.ts`)، فمن خرج ليوثّق بريده عاد إلى `/grant/build` ودوراتُه مختارةٌ ولوحُه مفتوح
-   (`ResumeCheckout`). والعلّةُ في `server/services/grant-landing.service.ts`. */
+   (`ResumeCheckout`). والعلّةُ في `server/services/grant-landing.service.ts`.
+
+   ═══ وهي صفحةُ «منحة مؤثرين وجيز» أيضا (٢٦ أكتوبر ٢٠٢٦) ═══
+
+   `/grant/i/<كود المؤثّر>` — قرارُ صاحب المنصّة («A»): صفحتُها غيرُ `/grant`، برابط المؤثّر وكودُه مكتوبٌ في النموذج،
+   ونسبتُها نسبتُها. والفرقُ خانةُ كود المؤثّر (لازمة)، وسطرُ المنحة باسمه («بدعوة من …»)، وما يُحفظ على الجهاز في
+   مفتاحٍ وحدَه، والإهداءُ برابط المؤثّر نفسِه — فالصديقُ يأخذ منحتَها ويُحسب لمن جاء به. */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link } from "react-router";
+import { Link, useParams } from "react-router";
 import { Award, ChevronDown, Clock, Copy, Flame, Gift, Loader2, Mail, MessageCircle, PencilRuler, Share2, Sparkles, UserRound, Video, type LucideIcon } from "lucide-react";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import { useRealSession } from "@/services/session";
@@ -44,13 +50,14 @@ import Button from "@/components/ui/Button";
 import Chip from "@/components/ui/Chip";
 import { fmtDateLong, fmtMoney } from "@/application/text/format-ar";
 import { cohortDayAr } from "@/application/learning/cohort-gate";
-import { grantPrice, MEMBER_GRANT_NAME_AR } from "@/application/commerce/grant";
+import { grantPrice, INFLUENCER_GRANT_NAME_AR, MEMBER_GRANT_NAME_AR } from "@/application/commerce/grant";
+import { INFLUENCER_GRANT_PATH, normalizeInfluencerCode } from "@/application/commerce/influencer";
 import {
   CAREER_LEVELS, GRANT_ACADEMY_LINE_AR, GRANT_CONSENT_AR, GRANT_GAINS_AR, GRANT_GIFT_AR, GRANT_MAX_INTERESTS, GRANT_SUGGESTED_COURSES, WORK_FIELDS,
   GRANT_FACES_PHONE, GRANT_VALUE_AR, GRANT_VALUE_PAID_AR, campaignParams, grantAdvisorTextAr, grantRecordLink, grantCountAr, grantTrainerFaces, grantTrainersAr, grantCountdown, grantLeftAr, grantLimitAr, grantRemainingAr, grantSections, grantShareAr, grantShareMailto, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse,
   type GrantPathOption,
 } from "@/application/commerce/grant-landing";
-import { readStoredGrant, saveStoredGrant, type StoredGrant } from "@/services/grant-landing";
+import { GRANT_STORE_KEY, INFLUENCER_GRANT_STORE_KEY, readStoredGrant, saveStoredGrant, type StoredGrant } from "@/services/grant-landing";
 import publicPathsData from "@/data/catalog/public-pathways.json";
 import { BARE_HOST } from "@/application/site/origin";
 import { waHref, waShare } from "@/application/site/whatsapp";
@@ -68,6 +75,8 @@ interface View {
   /** فصلُ الدورات المعروضة — الفصلُ القادمُ القريب (`grant-courses.service.ts#pool`) */
   termAr: string | null;
   openCourses: GrantCourse[];
+  /** مؤثّرُ الرابط في منحة المؤثّرين — إن كان كودُه صحيحا */
+  influencer?: { nameAr: string; code: string } | null;
 }
 interface ApplyResult extends View {
   ref: string;
@@ -78,6 +87,7 @@ interface ApplyResult extends View {
 const USD = "USD";
 /** طريقُ العودة بعد توثيق البريد — اختيارُه محفوظٌ على الجهاز، والصفحةُ تعيده (`pending-checkout.ts`) */
 const PICK_PATH = "/grant/build";
+const influencerPickPath = (code: string) => `${INFLUENCER_GRANT_PATH}/${code}/build`;
 const BUY_TITLE_AR = "دورات منحتك";
 const money = (n: number) => fmtMoney(n, USD);
 /** «دورة» و«دورتين» بلا رقم، و«4 دورات» */
@@ -126,14 +136,27 @@ function GrantGains({ className = "" }: { className?: string }) {
   );
 }
 
-export default function MemberGrantPage() {
+export default function MemberGrantPage({ variant = "members" }: { variant?: "members" | "influencer" }) {
+  const forInfluencer = variant === "influencer";
+  const nameAr = forInfluencer ? INFLUENCER_GRANT_NAME_AR : MEMBER_GRANT_NAME_AR;
+  const storeKey = forInfluencer ? INFLUENCER_GRANT_STORE_KEY : GRANT_STORE_KEY;
+  const params = useParams();
+  const urlCode = forInfluencer ? normalizeInfluencerCode(params.code) : null;
   const { user: session } = useRealSession();
   const hp = useHoneypot();
   const [view, setView] = useState<View | null>(null);
   const [failed, setFailed] = useState<string | null>(null);
-  const [stored, setStored] = useState<StoredGrant | null>(readStoredGrant);
+  const [stored, setStored] = useState<StoredGrant | null>(() => readStoredGrant(storeKey));
   const [reasonAr, setReasonAr] = useState<string | null>(null);
   const [form, setForm] = useState({ fullName: "", phone: "", email: "", workField: "", careerLevel: "" });
+  /* كودُ المؤثّر — من رابطه، ويكتبه من جاء بلا رابط */
+  const [influencerCode, setInfluencerCode] = useState(urlCode ?? "");
+  /* ومن حُسب له: مؤثّرُ ما حُفظ إن أخذ كودا، وإلّا مؤثّرُ الرابط */
+  const creditedCode = stored?.influencer ?? urlCode;
+  const pickPath = forInfluencer ? (creditedCode ? influencerPickPath(creditedCode) : null) : PICK_PATH;
+  const shell = forInfluencer
+    ? { title: nameAr, path: `${INFLUENCER_GRANT_PATH}${urlCode ? `/${urlCode}` : ""}`, description: "منحة من أكاديمية وجيز: دورات مباشرة تختارها بخصم كبير، والعدد محدود." }
+    : {};
   const [interests, setInterests] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   /* رقمُ مستشار المنحة من شاشة الربط (`grant_advisor`) — لا حرفٌ في الشيفرة */
@@ -151,12 +174,15 @@ export default function MemberGrantPage() {
   const [buyOpen, setBuyOpen] = useState(false);
 
   const load = useCallback(async () => {
-    try { setView(await apiGet<View>("/api/public/grant")); }
+    const url = forInfluencer
+      ? `/api/public/grant/influencer${urlCode ? `?code=${encodeURIComponent(urlCode)}` : ""}`
+      : "/api/public/grant";
+    try { setView(await apiGet<View>(url)); }
     catch (e) { setFailed(e instanceof ApiError ? e.message : "تعذر تحميل الصفحة"); }
-  }, []);
+  }, [forInfluencer, urlCode]);
   useEffect(() => { void load(); }, [load]);
 
-  const [resumed] = useState(() => resumedCheckoutFor(PICK_PATH));
+  const [resumed] = useState(() => (pickPath ? resumedCheckoutFor(pickPath) : null));
 
   /* ما نقترحه مرّةً واحدةً حين يصير له كود: دوراتُ المسار الرئيسيّ الذي يناسب مجالَه واهتمامَه (`suggestPaths`)، أو
      أربعُ دوراتٍ تناسبهما إن لم يناسبه مسار (`suggestCourses`) — تُعرض أوّلا بشارة «نقترحها لك» **ولا تُختار عنه**:
@@ -190,14 +216,16 @@ export default function MemberGrantPage() {
     e.preventDefault();
     setBusy(true);
     try {
-      const out = await apiPost<ApplyResult>("/api/public/grant", {
+      const out = await apiPost<ApplyResult>(forInfluencer ? "/api/public/grant/influencer" : "/api/public/grant", {
         ...form, careerLevel: form.careerLevel || null, interests, ...campaignParams(window.location.search), website: hp.value,
+        ...(forInfluencer ? { influencerCode: influencerCode.trim() } : {}),
       });
       const g = {
         ref: out.ref, code: out.grant?.code ?? null, sentTo: out.grant?.sentTo ?? null,
         name: form.fullName.trim(), email: form.email.trim(), interests, workField: form.workField,
+        influencer: out.influencer?.code ?? null,
       };
-      saveStoredGrant(g);
+      saveStoredGrant(g, storeKey);
       setStored({ ...g, at: Date.now() });
       setReasonAr(out.reasonAr);
       setView(out);
@@ -209,7 +237,7 @@ export default function MemberGrantPage() {
   const pay = () => {
     if (chosen.length === 0) return;
     savePendingCheckout({
-      path: PICK_PATH, intent: { title: BUY_TITLE_AR, amount: payTotal, kind: "courses", courseIds: chosen.map((x) => x.courseId) },
+      path: pickPath ?? PICK_PATH, intent: { title: BUY_TITLE_AR, amount: payTotal, kind: "courses", courseIds: chosen.map((x) => x.courseId) },
       cohortByCourse: Object.fromEntries(chosen.map((x) => [x.courseId, x.cohortId])),
     });
     if (!session) { setAuthOpen(true); return; }
@@ -221,16 +249,18 @@ export default function MemberGrantPage() {
   };
 
   if (failed) {
-    return <Shell><Card as="p" className="text-read">{failed}</Card></Shell>;
+    return <Shell {...shell}><Card as="p" className="text-read">{failed}</Card></Shell>;
   }
   if (!view) {
-    return <Shell><div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-teal-light-ink" /></div></Shell>;
+    return <Shell {...shell}><div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-teal-light-ink" /></div></Shell>;
   }
 
   const c = view.campaign;
   /* آخرُ يومٍ بتاريخه الطويل — في رسالة الهديّة («30 أكتوبر 2026») */
   const lastDayLong = c.closesAt ? fmtDateLong(new Date(new Date(c.closesAt).getTime() - 1)) : null;
-  const shareText = grantShareAr(window.location.origin, pct, lastDayLong);
+  /* ومنحةُ المؤثّرين تُهدى برابط مؤثّرها — فالصديقُ يأخذ منحتَها، ويُحسب للمؤثّر */
+  const sharePath = forInfluencer && creditedCode ? `${INFLUENCER_GRANT_PATH}/${creditedCode}` : undefined;
+  const shareText = grantShareAr(window.location.origin, pct, lastDayLong, sharePath);
 
   /* ─── الخطوة ٢: الكودُ واختيارُ الدورات ─── */
   if (stored) {
@@ -243,7 +273,7 @@ export default function MemberGrantPage() {
     /* ما اخترناه له فوقُ مفتوحا، والباقي أقسامٌ مطويّةٌ بمجالها — ما يريد تطويرَه أوّلا (`grantSections`) */
     const top = courses.filter((x) => ours.has(x.courseId));
     const sections = grantSections(courses.filter((x) => !ours.has(x.courseId)), stored.interests, OTHER_DOMAIN);
-    const advisorHref = waHref(numbers, "grant_advisor", CONTACT.whatsapp, grantAdvisorTextAr(stored.name, stored.code, chosen.map((x) => x.titleAr), grantRecordLink(BARE_HOST, stored.code ?? stored.ref)));
+    const advisorHref = waHref(numbers, "grant_advisor", CONTACT.whatsapp, grantAdvisorTextAr(stored.name, stored.code, chosen.map((x) => x.titleAr), grantRecordLink(BARE_HOST, stored.code ?? stored.ref), nameAr));
     /* سطرُ الصندوق حين لا كود ولا بريد — سببُ الخادم، أو أنّها مغلقة. ولا فقرةٌ فارغةٌ حين لا شيء يقال */
     const topNote = reasonAr ?? (c.open ? null : "المنحة مغلقة الآن");
     /* بطاقةُ الدورة — في المختارات فوق وفي أقسام المجالات تحتها، ولا يُعاد اسمُ المجال تحت قسمه. وصورةُ مدرّبها أوّلُ ما يُرى، وبكبرها — قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦): «اجعل صورةَ المدرّب
@@ -293,7 +323,7 @@ export default function MemberGrantPage() {
       );
     };
     return (
-      <Shell>
+      <Shell {...shell}>
         {/* صندوقُ الكود — عمودان على الحاسوب: الكودُ والعدّادُ والحدّ، وبجانبها ما يحصل عليه؛ وعلى الهاتف عمودٌ واحد.
             قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦): «لم يستغلّ البوكس.. من الممكن أن يكون أصغر وأرتب». وكان كلُّه في الوسط
             سطرا تحت سطر، وأيقونةُ الهديّة وحدَها سطر */}
@@ -389,7 +419,7 @@ export default function MemberGrantPage() {
             </span>
             <span className="flex shrink-0 gap-2">
               <Button as="a" href={waShare(shareText)} target="_blank" rel="noreferrer" icon={Share2}>واتساب</Button>
-              <Button as="a" href={grantShareMailto(window.location.origin, pct, lastDayLong)} icon={Mail}>البريد</Button>
+              <Button as="a" href={grantShareMailto(window.location.origin, pct, lastDayLong, sharePath)} icon={Mail}>البريد</Button>
             </span>
           </Card>
         )}
@@ -435,22 +465,29 @@ export default function MemberGrantPage() {
   }
 
   /* ─── الخطوة ١: النموذج — قليلٌ هادئ ─── */
-  const ready = form.fullName.trim().length >= 2 && form.phone.trim().length >= 5 && /\S+@\S+\.\S+/.test(form.email) && form.workField !== "";
+  const ready = form.fullName.trim().length >= 2 && form.phone.trim().length >= 5 && /\S+@\S+\.\S+/.test(form.email) && form.workField !== ""
+    && (!forInfluencer || normalizeInfluencerCode(influencerCode) !== null);
   const domains = [...new Set(view.openCourses.map((x) => x.domainAr).filter((d): d is string => !!d && d !== OTHER_DOMAIN))]
     .sort((a, b) => a.localeCompare(b, "ar"));
   const pickInterest = (d: string) => setInterests((p) => toggleCourse(p, d, GRANT_MAX_INTERESTS));
   const trainers = grantTrainerFaces(view.openCourses);
   return (
-    <Shell>
+    <Shell {...shell}>
       <div className="mx-auto max-w-lg">
         <div className="text-center">
           <Gift className="mx-auto h-10 w-10 text-gold-ink" aria-hidden="true" />
-          <h1 className="mt-2 text-3xl font-black">{MEMBER_GRANT_NAME_AR}</h1>
+          <h1 className="mt-2 text-3xl font-black">{nameAr}</h1>
           {c.open ? (
             <>
               {/* المنحةُ بنسبتها لا بما يبقى عليه — قرارُ صاحب المنصّة (٢٥ أكتوبر ٢٠٢٦): «نقول إنّ المنحة تصل لـ٦٠٪ أفضل من
                   أنّك تدفع ٤٠٪». وكذلك في بريد الكود وبريد التذكير */}
-              <p className="mt-3 text-lg font-bold">لأنك من أعضاء وجيز، منحتك تصل إلى {c.percentOff}% من سعر دوراتك.</p>
+              <p className="mt-3 text-lg font-bold">
+                {!forInfluencer
+                  ? `لأنك من أعضاء وجيز، منحتك تصل إلى ${c.percentOff}% من سعر دوراتك.`
+                  : view.influencer
+                    ? `بدعوة من ${view.influencer.nameAr}، منحتك تصل إلى ${c.percentOff}% من سعر دوراتك.`
+                    : `منحتك تصل إلى ${c.percentOff}% من سعر دوراتك.`}
+              </p>
               <p className="mt-1 text-read text-muted-foreground">دورات مباشرة على Zoom، تختار منها حتى {c.maxCourses}.</p>
               {c.closesAt
                 ? <GrantCountdown closesAt={c.closesAt} className="mt-4" />
@@ -465,6 +502,12 @@ export default function MemberGrantPage() {
             الأولى». فالنموذجُ يبدأ بعد سطرَي المنحة والعدّاد */}
         <Card as="form" onSubmit={apply} className="mt-6 space-y-3">
           <p className="text-center text-read text-muted-foreground">{c.open ? "دقيقة واحدة، وتأخذ كود منحتك فورا." : "نبلغك على بريدك أول ما تفتح."}</p>
+          {/* كودُ المؤثّر أوّلَ النموذج في منحة المؤثّرين — مكتوبٌ من رابطه، ولازمٌ لمن جاء بلا رابط */}
+          {forInfluencer && (
+            <label className="grid gap-1 text-read">كود المؤثر
+              <input value={influencerCode} onChange={(e) => setInfluencerCode(e.target.value.toUpperCase())} autoComplete="off" dir="ltr" placeholder="مثلا SARA" className={controlCls} />
+            </label>
+          )}
           <label className="grid gap-1 text-read">الاسم الكامل
             <input value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} autoComplete="name" placeholder="كما تريده على شهادتك" className={controlCls} />
           </label>
@@ -544,10 +587,12 @@ export default function MemberGrantPage() {
   );
 }
 
-function Shell({ children }: { children: React.ReactNode }) {
+function Shell({
+  children, title = MEMBER_GRANT_NAME_AR, path = "/grant", description = "منحة لأعضاء وجيز: دورات تختارها بخصم كبير، والعدد محدود.",
+}: { children: React.ReactNode; title?: string; path?: string; description?: string }) {
   return (
     <div dir="rtl" className="min-h-screen bg-paper text-foreground">
-      <SeoHead title={MEMBER_GRANT_NAME_AR} description="منحة لأعضاء وجيز: دورات تختارها بخصم كبير، والعدد محدود." path="/grant" />
+      <SeoHead title={title} description={description} path={path} />
       <header className="border-b border-white/10">
         <div className="mx-auto flex h-14 max-w-3xl items-center px-5">
           <Link to="/" className="text-sm font-bold text-foreground">أكاديمية وجيز</Link>

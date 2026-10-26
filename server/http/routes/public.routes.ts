@@ -9,6 +9,8 @@ import { fileUploadsEnabled } from '../../services/storage.service'
 import { TrainerPathService } from '../../services/trainer-path.service'
 import { getCalendlyConfig } from '../../services/integrations.service'
 import { ShortLinkService } from '../../services/short-link.service'
+import { deadLinkPage, previewPage } from '../../services/link-preview'
+import { publicSiteUrl } from '../../services/site-url'
 import { readSeasonGate } from '../../services/registration-window'
 import { RegistrationInterestService, INTEREST_CONSENT_AR, INTEREST_SOURCES } from '../../services/registration-interest.service'
 import { CourseInterestService, COURSE_INTEREST_CONSENT_AR } from '../../services/course-interest.service'
@@ -200,6 +202,29 @@ export function registerPublicCatalogRoutes(app: FastifyInstance, prisma: Prisma
   }, async (req) => {
     const { code } = z.object({ code: z.string().min(1).max(32) }).parse(req.params)
     return shortLinks.resolve(code)
+  })
+
+  /* ═══ الرابطُ القصيرُ نفسُه — يُجاب من هنا لا من الواجهة (٢٦ أكتوبر ٢٠٢٦) ═══
+     ليقرأ زاحفُ واتساب وفيسبوك معاينتَه: ما له صورةٌ صفحةُ وسومٍ تحوّل فورا، وما لا صورةَ له ٣٠٢ كما كان.
+     والعلّةُ في `link-preview.ts`. */
+  app.get('/s/:code', { schema: { hide: true } }, async (req, reply) => {
+    const { code } = z.object({ code: z.string().min(1).max(32) }).parse(req.params)
+    const origin = publicSiteUrl()
+    const target = await shortLinks.resolve(code).then((t) => t.target, () => null)
+    if (!target) return reply.status(404).type('text/html; charset=utf-8').send(deadLinkPage(origin))
+    const row = await prisma.shortLink.findUnique({ where: { code }, select: { previewSig: true, previewTitle: true, previewText: true } })
+    if (!row?.previewSig || !row.previewTitle) return reply.redirect(`${origin}${target}`, 302)
+    return reply.header('cache-control', 'public, max-age=300').type('text/html; charset=utf-8')
+      .send(previewPage({ origin, code, target, title: row.previewTitle, text: row.previewText ?? '', sig: row.previewSig }))
+  })
+
+  app.get('/api/public/links/:code/preview.jpg', {
+    schema: { tags: ['public-catalog'], summary: 'صورة معاينة رابط قصير' },
+  }, async (req, reply) => {
+    const { code } = z.object({ code: z.string().min(1).max(32) }).parse(req.params)
+    const row = await prisma.shortLink.findUnique({ where: { code }, select: { previewImage: true, revokedAt: true } })
+    if (!row?.previewImage || row.revokedAt) return reply.status(404).send({ error: { code: 'not_found', message_ar: 'لا معاينة لهذا الرابط' } })
+    return reply.header('cache-control', 'public, max-age=86400').type('image/jpeg').send(Buffer.from(row.previewImage))
   })
 
   app.get('/api/public/methodology', {

@@ -29,7 +29,8 @@ export interface PendingCheckout {
 }
 
 /* و`/grant/build` دوراتُ منحةٍ اختارها من صفحة الحملة (٢٠ أكتوبر ٢٠٢٦، `MemberGrantPage`) */
-const PATH_RE = /^\/(pathways|build|grant)\/[A-Za-z0-9_-]{1,80}$/
+/* و`/grant/i/<كود المؤثّر>/build` دوراتُ «منحة مؤثرين وجيز» (٢٦ أكتوبر ٢٠٢٦) */
+const PATH_RE = /^\/(pathways|build|grant)\/[A-Za-z0-9_-]{1,80}$|^\/grant\/i\/[A-Z0-9]{3,20}\/build$/
 const ID_RE = /^[A-Za-z0-9_-]{1,80}$/
 const KINDS = new Set(['pathway', 'course', 'courses'])
 

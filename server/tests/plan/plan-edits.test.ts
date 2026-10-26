@@ -165,25 +165,26 @@ describe('١ — الرفعُ للمعتمِد، ويُقبل كلُّه أو ي
     expect(await prisma.auditEvent.count({ where: { action: 'cohort.plan.edits.propose', entityId: cohortId } })).toBe(1)
   })
 
-  /* الرفعُ دفعةً واحدةً (١٠ أكتوبر ٢٠٢٦) يجعل إعادةَ الملفّ نفسِه أيسر */
-  it('⚠️ وإعادةُ رفعه وبنودُه لم يُقرَّر فيها تُردّ بسطرٍ واحد — فلا تتكرّر على المعتمِد ولا على المدرّب', async () => {
+  /* الرفعُ دفعةً واحدةً (١٠ أكتوبر ٢٠٢٦) يجعل إعادةَ الملفّ نفسِه أيسر — فلا يتكرّر ولا يُردّ (٢٦ أكتوبر ٢٠٢٦، ٨) */
+  it('⚠️ وإعادةُ رفعه لا تكرّر بنودَه على المعتمِد ولا على المدرّب — ويُقال إنّه مرفوعٌ قبلُ', async () => {
     const r = await call('POST', `/api/admin/cohort-plans/${planId}/edits`, 'admin', goodFile())
-    expect(r.statusCode).toBe(409)
-    expect(r.json().error.message_ar).toMatch(/^رُفع هذا الملفُّ قبلُ ولم يُقرَّر في بنوده/)
+    expect(r.statusCode, r.body).toBe(201)
+    expect(r.json()).toMatchObject({ added: 0, repeated: 5, replaced: 0, fromTrainer: 0 })
     expect(await prisma.planEditSuggestion.count({ where: { planId } })).toBe(5)
+    expect(await prisma.auditEvent.count({ where: { action: 'cohort.plan.edits.propose', entityId: cohortId } }), 'ولا أثرَ لرفعٍ لم يكتب شيئا').toBe(1)
   })
 
-  it('⚠️ وما وقع منه على ما رُفع يُسمّى ببنده — والمهمّةُ الجديدةُ (ولا موضعَ لها قبل أن تُقبل) باسمها', async () => {
+  it('⚠️ وما رُفع منه قبلُ يُتجاهَل وحدَه — والجديدُ يُرفع، والمهمّةُ الجديدةُ (ولا موضعَ لها قبل أن تُقبل) باسمها', async () => {
     const task = { kind: 'task_add', reasonAr: 'مهمّةٌ للمحور 2', task: { title: 'رسالةٌ في صفحة', type: 'assignment', moduleId: 'M2' } }
     expect((await call('POST', `/api/admin/cohort-plans/${planId}/edits`, 'admin', { items: [task] })).statusCode).toBe(201)
     const mixed = { items: [task, { kind: 'plan', reasonAr: 'نبذةٌ أوضح', set: { summaryAr: 'نبذةٌ جديدة' } }] }
     const again = await call('POST', `/api/admin/cohort-plans/${planId}/edits`, 'admin', mixed)
-    expect(again.statusCode).toBe(422)
-    expect(again.json().error.message_ar, 'ولا يُقال ما يُصنع').toMatch(/البند 1: نسختُها السابقة مسوّدةٌ لم تعتمدها بعد — اختر «استبدل المسودات التي لم تعتمدها بعد»/)
-    expect(again.json().error.message_ar).not.toMatch(/البند 2/)
-    expect(await prisma.planEditSuggestion.count({ where: { planId, kind: 'plan' } }), 'ولا يُحفظ منه شيء').toBe(0)
+    expect(again.statusCode, again.body).toBe(201)
+    expect(again.json()).toMatchObject({ added: 1, repeated: 1 })
+    expect(await prisma.planEditSuggestion.count({ where: { planId, kind: 'task_add' } }), 'تكرّرت المهمّة').toBe(1)
+    expect(await prisma.planEditSuggestion.count({ where: { planId, kind: 'plan' } })).toBe(1)
     /* ولا تبقى لما بعدها — الأقسامُ التالية تعدّ بنودَ الملفّ السليم */
-    await prisma.planEditSuggestion.deleteMany({ where: { planId, kind: 'task_add' } })
+    await prisma.planEditSuggestion.deleteMany({ where: { planId, kind: { in: ['task_add', 'plan'] } } })
   })
 })
 
@@ -349,106 +350,25 @@ describe('٦ — السحبُ والاعتماد يُسقطان ما لم يُق
   })
 })
 
-/* ═══ ٨ — ملفٌّ جديدٌ مكانَ مسوّداتٍ لم تُعتمد (١٠ أكتوبر ٢٠٢٦) ═══
-   الصيغةُ الجديدةُ لملفّات التعديلات تُرفع من صندوق الرفع دفعةً والقديمةُ ما زالت مسوّدات. */
-describe('٨ — الاستبدالُ يسحب المسوّداتِ وحدَها، وفي معاملةٍ واحدة', () => {
+/* ═══ ٨ — الرفعُ يتجاهل المكرّر، والأحدثُ مكانَ ما لم يُقرَّر فيه (٢٦ أكتوبر ٢٠٢٦) ═══
+   «فقط تحميل ورفع» (صاحب المنصّة). وكان الملفُّ يُردّ كلُّه إن وقع بندٌ منه على ما رُفع، ويُدلّ على «استبدل المسودات»
+   و«ابدأ من جديد» — ثمّ بُني لما تكرّر «احذف المكرر» و«أعد ما سحبته». فصار الرفعُ العاديُّ يقضي في ذلك وحدَه،
+   وذهبت تلك الأبواب. */
+describe('٨ — الرفعُ يتجاهل المكرّر، والأحدثُ مكانَ ما لم يُقرَّر فيه', () => {
   let p = ''
-  const url = () => `/api/admin/cohort-plans/${p}/edits/replace-drafts`
+  let c = ''
+  const up = (items: unknown[]) => call('POST', `/api/admin/cohort-plans/${p}/edits`, 'admin', { items })
   const statuses = async () => (await prisma.planEditSuggestion.findMany({ where: { planId: p }, orderBy: [{ createdAt: 'asc' }, { seq: 'asc' }], select: { kind: true, status: true, edit: true } }))
-    .map((x) => `${x.kind}:${Object.keys((x.edit as { set?: object }).set ?? {}).join(',')}:${x.status}`)
+    .map((x) => `${x.kind}:${Object.values((x.edit as { set?: Record<string, string> }).set ?? {}).join(',')}:${x.status}`)
+  const first = [
+    { kind: 'plan', reasonAr: 'نبذةٌ أوضح', set: { summaryAr: 'نبذةٌ أولى' } },
+    { kind: 'module', moduleId: 'M1', reasonAr: 'تطبيقٌ أوضح', set: { activityAr: 'تمرينٌ على خريطة الجمهور' } },
+    { kind: 'module', moduleId: 'M2', reasonAr: 'مخرجٌ أوضح', set: { artifactAr: 'رسالةٌ في صفحة' } },
+  ]
 
   beforeAll(async () => {
-    ;({ planId: p } = await submittedPlan())
-    const first = { items: [
-      { kind: 'plan', reasonAr: 'نبذةٌ أوضح', set: { summaryAr: 'نبذةٌ أولى' } },
-      { kind: 'module', moduleId: 'M1', reasonAr: 'تطبيقٌ أوضح', set: { activityAr: 'تمرينٌ على خريطة الجمهور' } },
-    ] }
-    expect((await call('POST', `/api/admin/cohort-plans/${p}/edits`, 'admin', first)).statusCode).toBe(201)
-    /* ويُعتمد بندُ المحور 1 للمدرّب — فلا يُمسّ */
-    const m1 = await prisma.planEditSuggestion.findFirstOrThrow({ where: { planId: p, kind: 'module' } })
-    expect((await call('POST', `/api/admin/plan-edits/${m1.id}/approve`, 'admin', {})).statusCode).toBe(200)
-  })
-
-  it('⚠️ لمن يعتمد وحدَه', async () => {
-    expect((await call('POST', url(), 'a', { items: [{ kind: 'plan', reasonAr: 'س', set: { summaryAr: 'ن' } }] })).statusCode).toBe(403)
-  })
-
-  it('⚠️ ملفٌّ يُردّ لا يسحب شيئا', async () => {
-    const r = await call('POST', url(), 'admin', { items: [{ kind: 'module', moduleId: 'M9', reasonAr: 'مجهول', set: { activityAr: 'x' } }] })
-    expect(r.statusCode).toBe(422)
-    expect(await statuses()).toEqual(['plan:summaryAr:proposed', 'module:activityAr:pending'])
-  })
-
-  it('⚠️ وما اعتُمد للمدرّب لا يُستبدل — يُردّ الملفُّ الواقعُ عليه', async () => {
-    const r = await call('POST', url(), 'admin', { items: [{ kind: 'module', moduleId: 'M1', reasonAr: 'مرّةً ثانية', set: { activityAr: 'غيرُه' } }] })
-    expect(r.statusCode).toBe(409)
-    expect(r.json().error.message_ar).toMatch(/واعتُمدت بنودُه للمدرّب/)
-    expect(await statuses()).toEqual(['plan:summaryAr:proposed', 'module:activityAr:pending'])
-  })
-
-  it('⚠️ وما وصل المدرّبَ يُقال بسببه وعلاجِه — والبنودُ على سببٍ واحدٍ في سطرٍ واحد', async () => {
-    const r = await call('POST', url(), 'admin', { items: [
-      { kind: 'module', moduleId: 'M1', reasonAr: 'مرّةً ثانية', set: { activityAr: 'غيرُه' } },
-      { kind: 'module', moduleId: 'M2', reasonAr: 'جديد', set: { artifactAr: 'رسالةٌ في صفحة' } },
-    ] })
-    expect(r.statusCode).toBe(422)
-    const msg: string = r.json().error.message_ar
-    expect(msg).toMatch(/البند 1: نسختُها السابقة اعتمدتَها فوصلت المدرّبَ ولم يقرّر فيها بعد — فلا تُستبدل\. إن أردتَ الجديدةَ فاسحب القديمة بـ«اسحب ما لم يُقرَّر»/)
-    expect(msg, 'البندُ الجديدُ لا يُردّ بسبب غيره').not.toMatch(/البند 2|البنود/)
-    expect(await statuses()).toEqual(['plan:summaryAr:proposed', 'module:activityAr:pending'])
-  })
-
-  it('⚠️ وبلا استبدالٍ: المسوّداتُ بسطرٍ واحدٍ يدلّ على الاستبدال، وما وصل المدرّبَ بسطره', async () => {
-    const r = await call('POST', `/api/admin/cohort-plans/${p}/edits`, 'admin', { items: [
-      { kind: 'plan', reasonAr: 'نبذةٌ أوضح', set: { summaryAr: 'نبذةٌ ثالثة' } },
-      { kind: 'module', moduleId: 'M1', reasonAr: 'مرّةً ثانية', set: { activityAr: 'غيرُه' } },
-      { kind: 'module', moduleId: 'M2', reasonAr: 'جديد', set: { artifactAr: 'رسالةٌ في صفحة' } },
-    ] })
-    expect(r.statusCode).toBe(422)
-    const lines = (r.json().error.message_ar as string).split('\n').slice(1)
-    expect(lines).toEqual([
-      'البند 1: نسختُها السابقة مسوّدةٌ لم تعتمدها بعد — اختر «استبدل المسودات التي لم تعتمدها بعد» وارفع الملفَّ من جديد',
-      'البند 2: نسختُها السابقة اعتمدتَها فوصلت المدرّبَ ولم يقرّر فيها بعد — فلا تُستبدل. إن أردتَ الجديدةَ فاسحب القديمة بـ«اسحب ما لم يُقرَّر» في بطاقة الخطّة ثمّ ارفع الملفّ',
-    ])
-  })
-
-  it('يسحب المسوّدةَ ويرفع الجديدَ مكانها — ويبقى المعتمَد، ويُكتب الأثر', async () => {
-    const next = { items: [
-      { kind: 'plan', reasonAr: 'نبذةٌ أوضح', set: { summaryAr: 'نبذةٌ ثانية' } },
-      { kind: 'module', moduleId: 'M2', reasonAr: 'مخرجٌ يُرى', set: { outcomeAr: 'يكتب رسالةً في صفحة' } },
-    ] }
-    const r = await call('POST', url(), 'admin', next)
-    expect(r.statusCode, r.body).toBe(201)
-    expect(r.json().replacedDrafts).toBe(1)
-    expect(await statuses()).toEqual([
-      'plan:summaryAr:withdrawn', 'module:activityAr:pending', 'plan:summaryAr:proposed', 'module:outcomeAr:proposed',
-    ])
-    const audit = await prisma.auditEvent.findMany({ where: { action: 'cohort.plan.edits.withdraw' }, select: { meta: true } })
-    expect(audit.some((a) => (a.meta as { planId?: string; replacedBy?: string }).planId === p && (a.meta as { replacedBy?: string }).replacedBy)).toBe(true)
-  })
-
-  it('⚠️ والرفعُ العاديُّ بلا استبدالٍ ما زال يردّ الملفَّ المرفوعَ نفسَه', async () => {
-    const r = await call('POST', `/api/admin/cohort-plans/${p}/edits`, 'admin', { items: [{ kind: 'plan', reasonAr: 'نبذةٌ أوضح', set: { summaryAr: 'نبذةٌ ثانية' } }] })
-    expect(r.statusCode).toBe(409)
-  })
-})
-
-/* ═══ ٩ — «ابدأ من جديد»: الملفُّ مكانَ كلِّ ما لم يقرّر فيه المدرّب (١٢ أكتوبر ٢٠٢٦) ═══
-   «أريد أن أعيد كلَّ شيءٍ من البداية.. اسحب كلَّ شيءٍ وارفق كلَّ شيءٍ من جديد» (صاحب المنصّة). */
-describe('٩ — ابدأ من جديد: يسحب المسوّداتِ وما وصل المدرّب، ويرفع الجديد، في معاملةٍ واحدة', () => {
-  let p = ''
-  const url = () => `/api/admin/cohort-plans/${p}/edits/replace-all`
-  const statuses = async () => (await prisma.planEditSuggestion.findMany({ where: { planId: p }, orderBy: [{ createdAt: 'asc' }, { seq: 'asc' }], select: { kind: true, status: true, edit: true } }))
-    .map((x) => `${x.kind}:${Object.keys((x.edit as { set?: object }).set ?? {}).join(',')}:${x.status}`)
-
-  beforeAll(async () => {
-    ;({ planId: p } = await submittedPlan())
-    const first = { items: [
-      { kind: 'plan', reasonAr: 'نبذةٌ أوضح', set: { summaryAr: 'نبذةٌ أولى' } },
-      { kind: 'module', moduleId: 'M1', reasonAr: 'تطبيقٌ أوضح', set: { activityAr: 'تمرينٌ على خريطة الجمهور' } },
-      { kind: 'module', moduleId: 'M2', reasonAr: 'مخرجٌ أوضح', set: { artifactAr: 'رسالةٌ في صفحة' } },
-    ] }
-    expect((await call('POST', `/api/admin/cohort-plans/${p}/edits`, 'admin', first)).statusCode).toBe(201)
+    ;({ planId: p, cohortId: c } = await submittedPlan())
+    expect((await up(first)).statusCode).toBe(201)
     /* بندُ المحور 1 يصل المدرّب ولا يقرّر فيه، وبندُ المحور 2 يصله فيرفضه */
     for (const id of ['M1', 'M2']) {
       const row = (await prisma.planEditSuggestion.findMany({ where: { planId: p, kind: 'module' } }))
@@ -460,45 +380,77 @@ describe('٩ — ابدأ من جديد: يسحب المسوّداتِ وما و
     await prisma.planEditSuggestion.update({ where: { id: m2.id }, data: { status: 'rejected', decidedAt: new Date() } })
   })
 
-  it('⚠️ لمن يعتمد وحدَه', async () => {
-    expect((await call('POST', url(), 'a', { items: [{ kind: 'plan', reasonAr: 'س', set: { summaryAr: 'ن' } }] })).statusCode).toBe(403)
+  it('⚠️ الملفُّ نفسُه ثانيةً لا يكتب شيئا — وما رفضه المدرّبُ لا يعود إليه بعينه', async () => {
+    const r = await up(first)
+    expect(r.statusCode, r.body).toBe(201)
+    expect(r.json()).toMatchObject({ added: 0, required: 0, repeated: 3, replaced: 0, fromTrainer: 0 })
+    expect(await statuses()).toEqual(['plan:نبذةٌ أولى:proposed', 'module:تمرينٌ على خريطة الجمهور:pending', 'module:رسالةٌ في صفحة:rejected'])
   })
 
-  it('⚠️ ملفٌّ يُردّ لا يسحب شيئا', async () => {
-    const r = await call('POST', url(), 'admin', { items: [{ kind: 'module', moduleId: 'M9', reasonAr: 'مجهول', set: { activityAr: 'x' } }] })
+  it('⚠️ ملفٌّ يُردّ لا يسحب شيئا — وبندٌ مرفوعٌ قبلُ لا يجعل ما فيه من خطأ مقبولا', async () => {
+    const r = await up([first[0], { kind: 'module', moduleId: 'M9', reasonAr: 'مجهول', set: { activityAr: 'x' } }])
     expect(r.statusCode).toBe(422)
-    expect(await statuses()).toEqual(['plan:summaryAr:proposed', 'module:activityAr:pending', 'module:artifactAr:rejected'])
+    expect(r.json().error.message_ar).toMatch(/البند 2: /)
+    expect(await statuses()).toEqual(['plan:نبذةٌ أولى:proposed', 'module:تمرينٌ على خريطة الجمهور:pending', 'module:رسالةٌ في صفحة:rejected'])
   })
 
-  it('يسحب المسوّدةَ وما وصل المدرّب ولم يقرّر فيه، ويرفع الجديدَ — حتّى على موضع ما وصله', async () => {
-    const next = { items: [
-      { kind: 'plan', reasonAr: 'نبذةٌ أوضح', set: { summaryAr: 'نبذةٌ ثانية' } },
-      { kind: 'module', moduleId: 'M1', reasonAr: 'تطبيقٌ أوضح', set: { activityAr: 'تمرينٌ ثانٍ على خريطة الجمهور' } },
-    ] }
-    const r = await call('POST', url(), 'admin', next)
+  it('⚠️ وبندان في الملفّ على موضعٍ واحدٍ يُردّان — ولو كان أحدُهما مرفوعا قبلُ', async () => {
+    const r = await up([first[0], { kind: 'plan', reasonAr: 'نبذةٌ أوضح', set: { summaryAr: 'غيرُها' } }])
+    expect(r.statusCode).toBe(422)
+    expect(r.json().error.message_ar).toMatch(/البند 2: يقع على ما يقع عليه البند 1/)
+  })
+
+  it('⚠️ ونسخةٌ أحدثُ مكانَ مسوّدةٍ لم تعتمدها تحلّ محلّها — في معاملةٍ واحدة، ويُكتب الأثر', async () => {
+    const r = await up([{ kind: 'plan', reasonAr: 'نبذةٌ أوضح', set: { summaryAr: 'نبذةٌ ثانية' } }])
     expect(r.statusCode, r.body).toBe(201)
-    expect(r.json().withdrawn).toBe(2)
-    expect(await statuses(), 'وما رفضه المدرّبُ قرارُه — لا يُمسّ').toEqual([
-      'plan:summaryAr:withdrawn', 'module:activityAr:withdrawn', 'module:artifactAr:rejected',
-      'plan:summaryAr:proposed', 'module:activityAr:proposed',
+    expect(r.json()).toMatchObject({ added: 1, repeated: 0, replaced: 1, fromTrainer: 0 })
+    expect(await statuses()).toEqual([
+      'plan:نبذةٌ أولى:withdrawn', 'module:تمرينٌ على خريطة الجمهور:pending', 'module:رسالةٌ في صفحة:rejected', 'plan:نبذةٌ ثانية:proposed',
     ])
-    const audit = await prisma.auditEvent.findMany({ where: { action: 'cohort.plan.edits.withdraw' }, select: { meta: true } })
-    expect(audit.some((a) => (a.meta as { planId?: string; count?: number; replacedBy?: string }).planId === p
-      && (a.meta as { count?: number }).count === 2 && (a.meta as { replacedBy?: string }).replacedBy)).toBe(true)
+    const audit = await prisma.auditEvent.findMany({ where: { action: 'cohort.plan.edits.withdraw', entityId: c }, select: { meta: true } })
+    expect(audit.some((a) => (a.meta as { replacedBy?: string; count?: number }).replacedBy && (a.meta as { count?: number }).count === 1)).toBe(true)
   })
 
-  it('⚠️ والملفُّ نفسُه يُرفع ثانيةً بـ«ابدأ من جديد» — يسحب ما رفعه قبله', async () => {
-    const again = { items: [{ kind: 'plan', reasonAr: 'نبذةٌ أوضح', set: { summaryAr: 'نبذةٌ ثالثة' } }] }
-    const r = await call('POST', url(), 'admin', again)
+  it('⚠️ ونسخةٌ أحدثُ مكانَ بطاقةٍ عند المدرّب لم يقرّر فيها: تغيب عنه، وتصله الأحدثُ حين تعتمدها', async () => {
+    const r = await up([{ kind: 'module', moduleId: 'M1', reasonAr: 'تطبيقٌ أوضح', set: { activityAr: 'تمرينٌ ثانٍ' } }])
     expect(r.statusCode, r.body).toBe(201)
-    expect(r.json().withdrawn).toBe(2)
+    expect(r.json()).toMatchObject({ added: 1, replaced: 0, fromTrainer: 1 })
+    const mine = (await call('GET', `/api/trainer/cohorts/${c}/plan-edits`, 'a')).json() as { kind: string; status: string; view: { rows: { afterAr: string | null }[] } }[]
+    expect(mine.some((x) => x.status === 'pending'), 'بقيت القديمةُ عنده').toBe(false)
+    const fresh = await prisma.planEditSuggestion.findFirstOrThrow({ where: { planId: p, status: 'proposed', kind: 'module' } })
+    expect((await call('POST', `/api/admin/plan-edits/${fresh.id}/approve`, 'admin', {})).statusCode).toBe(200)
+    const after = (await call('GET', `/api/trainer/cohorts/${c}/plan-edits`, 'a')).json() as { status: string; view: { rows: { afterAr: string | null }[] } }[]
+    expect(after.filter((x) => x.status === 'pending').flatMap((x) => x.view.rows.map((row) => row.afterAr))).toEqual(['تمرينٌ ثانٍ'])
+  })
+
+  it('⚠️ وما قرّر فيه المدرّبُ لا يُمسّ ولا يحجب — ونسخةٌ غيرُه تُرفع بجانبه', async () => {
+    const r = await up([{ kind: 'module', moduleId: 'M2', reasonAr: 'مخرجٌ أوضح', set: { artifactAr: 'رسالةٌ في سطرين' } }])
+    expect(r.statusCode, r.body).toBe(201)
+    expect(r.json()).toMatchObject({ added: 1, replaced: 0, fromTrainer: 0 })
+    expect((await statuses()).filter((x) => x.startsWith('module:رسالة'))).toEqual(['module:رسالةٌ في صفحة:rejected', 'module:رسالةٌ في سطرين:proposed'])
+  })
+
+  it('⚠️ وما سحبتَه بيدك يعود برفع ملفّه — مسوّداتٍ تراجعها', async () => {
+    expect((await call('DELETE', `/api/admin/cohort-plans/${p}/edits`, 'admin')).statusCode).toBe(200)
+    const r = await up([{ kind: 'plan', reasonAr: 'نبذةٌ أوضح', set: { summaryAr: 'نبذةٌ ثانية' } }])
+    expect(r.statusCode, r.body).toBe(201)
+    expect(r.json()).toMatchObject({ added: 1, repeated: 0 })
+    expect((await statuses()).at(-1)).toBe('plan:نبذةٌ ثانية:proposed')
+  })
+
+  it('⚠️ ولا أبوابَ للاستبدال ولا للتنظيف بعد اليوم', async () => {
+    const body = { items: [{ kind: 'plan', reasonAr: 'س', set: { summaryAr: 'ن' } }] }
+    for (const path of ['replace-drafts', 'replace-all', 'keep-latest', 'restore']) {
+      expect((await call('POST', `/api/admin/cohort-plans/${p}/edits/${path}`, 'admin', body)).statusCode, path).toBe(404)
+    }
+    expect((await call('POST', '/api/admin/plan-edits/keep-latest-all', 'admin', {})).statusCode).toBe(404)
+    expect((await call('GET', `/api/admin/cohorts/${c}/plan-edits/withdrawn`, 'admin')).statusCode).toBe(404)
   })
 
   it('⚠️ ولا على خطّةٍ اعتُمدت', async () => {
     await prisma.cohortDeliveryPlan.update({ where: { id: p }, data: { status: 'approved' } })
-    const r = await call('POST', url(), 'admin', { items: [{ kind: 'plan', reasonAr: 'نبذةٌ أوضح', set: { summaryAr: 'نبذةٌ رابعة' } }] })
+    const r = await up([{ kind: 'plan', reasonAr: 'نبذةٌ أوضح', set: { summaryAr: 'نبذةٌ رابعة' } }])
     expect(r.statusCode, r.body).toBe(409)
-    expect(await prisma.planEditSuggestion.count({ where: { planId: p, status: { in: ['proposed', 'pending'] } } }), 'ولا يسحب شيئا').toBe(1)
     await prisma.cohortDeliveryPlan.update({ where: { id: p }, data: { status: 'submitted' } })
   })
 })

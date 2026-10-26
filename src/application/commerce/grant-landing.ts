@@ -17,6 +17,7 @@
 import { COURSE_DOMAIN_FAMILIES, courseDomainByFamily } from '../catalog/course-domain'
 import { zonedClock, zonedDay, zonedInstant } from '../trainer/cohort-period'
 import { courseLinesAr } from '../text/course-lines'
+import { MEMBER_GRANT_NAME_AR } from './grant'
 
 /** ما يوافق عليه بالإرسال — يُعرض تحت الزرّ ويُحفظ مع العميل المحتمل */
 export const GRANT_CONSENT_AR =
@@ -269,9 +270,11 @@ export const GRANT_GIFT_AR = { title: 'يحق لك أن تهدي هذه المن
 
     ورابطُ ملفّه عندنا آخرَها (٢٦ أكتوبر ٢٠٢٦) — كان رابطَ صفحة المنحة العامّة، وهي واحدةٌ للجميع لا تفيد المستشار.
     فقرارُ صاحب المنصّة: «٢ — make the link shorter»: رابطٌ قصيرٌ يفتح صفَّه في قائمة المنحة (`grantRecordLink`). */
-export function grantAdvisorTextAr(name: string, code: string | null, courses: string[] = [], recordLink: string | null = null): string {
+export function grantAdvisorTextAr(
+  name: string, code: string | null, courses: string[] = [], recordLink: string | null = null, grantNameAr: string = MEMBER_GRANT_NAME_AR,
+): string {
   const who = name.trim() ? `مرحبا، أنا ${name.trim()}.` : 'مرحبا،'
-  const ask = `${who} عندي سؤال عن منحة أعضاء وجيز.${code ? ` كود منحتي: ${code}` : ''}`
+  const ask = `${who} عندي سؤال عن ${grantNameAr}.${code ? ` كود منحتي: ${code}` : ''}`
   return [
     ask,
     ...(courses.length > 0 ? [`الدورات التي اخترتها:\n${courseLinesAr(courses)}`] : []),
@@ -291,18 +294,20 @@ export function grantRecordLink(host: string, key: string): string {
 }
 
 /** نصُّ الهديّة — سطورٌ قصيرة: ما هي، وما فيها، وآخرُ يوم، والرابط */
-export function grantShareAr(siteUrl: string, percentOff: number, lastDay: string | null): string {
+/* وصفحةُ منحة المؤثّرين تُهدي برابط مؤثّرها (`/grant/i/<كوده>`) لا بـ`/grant` — فالصديقُ يأخذ منحتَها هي، ويُحسب
+   للمؤثّر الذي جاء به صاحبُها (٢٦ أكتوبر ٢٠٢٦) */
+export function grantShareAr(siteUrl: string, percentOff: number, lastDay: string | null, path = '/grant?ch=share'): string {
   return [
     'أهديك منحة من أكاديمية وجيز 🎁',
     `تغطي ${percentOff}% من سعر دورات مباشرة على Zoom، مع مدربين وشهادة لكل دورة.`,
     ...(lastDay ? [`آخر يوم لها: ${lastDay}`] : []),
-    `احجز منحتك من هنا: ${siteUrl}/grant?ch=share`,
+    `احجز منحتك من هنا: ${siteUrl}${path}`,
   ].join('\n')
 }
 
 /** الهديّةُ بالبريد — رابطٌ يفتح بريدَه برسالةٍ جاهزةٍ يختار لمن يرسلها */
-export function grantShareMailto(siteUrl: string, percentOff: number, lastDay: string | null): string {
-  const body = ['مرحبا،', '', grantShareAr(siteUrl, percentOff, lastDay), '', 'أتمنى أن تفيدك.'].join('\n')
+export function grantShareMailto(siteUrl: string, percentOff: number, lastDay: string | null, path?: string): string {
+  const body = ['مرحبا،', '', grantShareAr(siteUrl, percentOff, lastDay, path), '', 'أتمنى أن تفيدك.'].join('\n')
   return `mailto:?subject=${encodeURIComponent('أهديك منحة من أكاديمية وجيز')}&body=${encodeURIComponent(body)}`
 }
 

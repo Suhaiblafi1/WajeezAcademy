@@ -219,7 +219,7 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
 
   app.post('/api/admin/cohort-plans/:id/edits', {
     preHandler: requirePermission('cohort.plan.approve'),
-    schema: { tags: ['admin-cohorts'], summary: 'رفع تعديلات مقترحة على خطّة مدرّب — ملفّ يفحص كلّه أو يردّ كلّه' },
+    schema: { tags: ['admin-cohorts'], summary: 'رفع تعديلات مقترحة على خطّة مدرّب — ملفّ يفحص كلّه أو يردّ كلّه، وما رفع قبل يتجاهل والأحدث يحلّ محلّ ما لم يقرّر فيه' },
   }, async (req, reply) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const file = planEditsFile.parse(req.body)
@@ -236,34 +236,6 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
   }, async (req, reply) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     return reply.status(201).send(await planEdits.proposeSchedule(req.auth!.userId, id))
-  })
-
-  /* ═══ والملفُّ الجديدُ مكانَ المسوّدات التي لم تُعتمد (١٠ أكتوبر ٢٠٢٦) ═══
-     من صندوق الرفع دفعةً: يُفحص الجديدُ كلُّه، ثمّ تُسحب المسوّداتُ ويُحفظ هو في معاملةٍ واحدة. */
-  app.post('/api/admin/cohort-plans/:id/edits/replace-drafts', {
-    preHandler: requirePermission('cohort.plan.approve'),
-    schema: { tags: ['admin-cohorts'], summary: 'رفع ملفّ تعديلات مكان مسوّدات لم تعتمد — وما اعتمد للمدرّب يبقى' },
-  }, async (req, reply) => {
-    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
-    const file = planEditsFile.parse(req.body)
-    if (file.planId && file.planId !== id) {
-      throw new AuthError('wrong_plan', 'هذا الملفّ كتب لخطّة أخرى — افتح بطاقة خطّته وارفعه هناك', 422)
-    }
-    return reply.status(201).send(await planEdits.replaceDrafts(req.auth!.userId, id, file.items))
-  })
-
-  /* ═══ «ابدأ من جديد»: الملفُّ الجديدُ مكانَ كلِّ ما لم يقرّر فيه المدرّب (١٢ أكتوبر ٢٠٢٦) ═══
-     صلاحيّةُ السحب نفسُها — يسحب المسوّداتِ وما وصل المدرّبَ ويرفع الجديد في معاملةٍ واحدة. */
-  app.post('/api/admin/cohort-plans/:id/edits/replace-all', {
-    preHandler: requirePermission('cohort.plan.approve'),
-    schema: { tags: ['admin-cohorts'], summary: 'رفع ملفّ تعديلات مكان كلّ ما لم يقرّر فيه المدرّب — المسودات وما وصله' },
-  }, async (req, reply) => {
-    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
-    const file = planEditsFile.parse(req.body)
-    if (file.planId && file.planId !== id) {
-      throw new AuthError('wrong_plan', 'هذا الملفّ كتب لخطّة أخرى — افتح بطاقة خطّته وارفعه هناك', 422)
-    }
-    return reply.status(201).send(await planEdits.replaceAll(req.auth!.userId, id, file.items))
   })
 
   /* ═══ وكلُّ بندٍ يُعتمَد للمدرّب أو يُحذف قبل أن يصله (١٠ أكتوبر ٢٠٢٦) ═══
@@ -292,39 +264,6 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     return planEdits.reviewAll(req.auth!.userId, id)
   })
-
-  /* ═══ وما سُحب يُعاد كما كان — «أعِد ما سحبته» (١٢ أكتوبر ٢٠٢٦) ═══
-     صلاحيّتُه صلاحيّةُ السحب نفسِه: من يسحب يُعيد. */
-  app.get('/api/admin/cohorts/:cohortId/plan-edits/withdrawn', {
-    preHandler: requirePermission('cohort.manage'),
-    schema: { tags: ['admin-cohorts'], summary: 'كم تعديلا مسحوبا يعود على آخر خطّةٍ للشعبة' },
-  }, async (req) => {
-    const { cohortId } = z.object({ cohortId: z.string().uuid() }).parse(req.params)
-    return planEdits.withdrawnFor(cohortId)
-  })
-
-  app.post('/api/admin/cohort-plans/:id/edits/restore', {
-    preHandler: requirePermission('cohort.plan.approve'),
-    schema: { tags: ['admin-cohorts'], summary: 'إعادةُ ما سُحب من التعديلات المقترحة كما كان — مسوّدةً أو عند المدرّب' },
-  }, async (req) => {
-    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
-    return planEdits.restore(req.auth!.userId, id)
-  })
-
-  /* ═══ «احذف المكرر» — يبقى آخرُ ملفٍّ رُفع، وما لم يقرّر فيه من الأقدم يُسحب (١٢ أكتوبر ٢٠٢٦، `keepLatest`) ═══ */
-  app.post('/api/admin/cohort-plans/:id/edits/keep-latest', {
-    preHandler: requirePermission('cohort.plan.approve'),
-    schema: { tags: ['admin-cohorts'], summary: 'سحب المكرر: ما لم يقرر فيه من ملفات أقدم من آخر ملف رفع' },
-  }, async (req) => {
-    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
-    return planEdits.keepLatest(req.auth!.userId, id)
-  })
-
-  /* وللخطط المفتوحة كلِّها — المرسَلةِ وما رُدّ إلى مدرّبه (`keepLatestAll`) */
-  app.post('/api/admin/plan-edits/keep-latest-all', {
-    preHandler: requirePermission('cohort.plan.approve'),
-    schema: { tags: ['admin-cohorts'], summary: 'سحب المكرر من كل خطة مفتوحة: ما لم يقرر فيه من ملفات أقدم من آخر ملف رفع' },
-  }, async (req) => planEdits.keepLatestAll(req.auth!.userId))
 
   app.delete('/api/admin/cohort-plans/:id/edits', {
     preHandler: requirePermission('cohort.plan.approve'),

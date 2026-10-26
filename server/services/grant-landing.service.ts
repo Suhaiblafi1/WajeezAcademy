@@ -18,7 +18,14 @@
    ٥) **و«تواصل مع مستشار» حالةٌ واحدة** تُسند تلقائيّا — بمرجعه الذي أخذه من النموذج لا بهاتفٍ يكتبه
       أيُّ أحد.
 
-   والحارس: `server/tests/commerce/grant-landing.test.ts`. */
+   ═══ وصفحةُ «منحة مؤثرين وجيز» بالخدمة نفسِها (٢٦ أكتوبر ٢٠٢٦) ═══
+
+   النموذجُ واحدٌ وفرقُه خانةٌ: **كودُ المؤثّر**، لازمٌ فيها — يكتبه المتابعُ أو يأتي مكتوبا في رابط المؤثّر. وكودٌ لا
+   يطابق مؤثّرا نشطا يُردّ بسببه ولا يُحفظ صاحبُه: منحتُها لمن جاء بكود. والعميلُ يحمل مؤثّرَه، وكودُ منحته يحمل مؤثّرَه
+   وعمولتَه يومَ أُعطي (`grant.service.ts#issue`). **والأوّلُ يبقى**: من عبّأها بكود مؤثّرٍ ثمّ بكود غيره يُحسب للأوّل —
+   كما يأخذ كودَه الأوّل نفسَه. والقناةُ كودُ المؤثّر بحروفٍ صغيرة، فتُقرأ نتائجُها بالقناة كما تُقرأ نتائجُ الأولى.
+
+   والحارس: `server/tests/commerce/grant-landing.test.ts` و`influencer-grant.test.ts`. */
 
 import type { PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
@@ -33,7 +40,8 @@ import {
   CAREER_LEVELS, GRANT_CONSENT_AR, GRANT_INTEREST_DOMAINS, GRANT_MAX_INTERESTS, WORK_FIELDS, campaignTag, leadProfileAr,
 } from '../../src/application/commerce/grant-landing'
 import { courseDomain } from '../../src/application/catalog/course-domain'
-import { MEMBER_GRANT_SLUG } from '../../src/application/commerce/grant'
+import { INFLUENCER_GRANT_SLUG, MEMBER_GRANT_SLUG, type GrantSlug } from '../../src/application/commerce/grant'
+import { INFLUENCER_CODE_BAD_AR, influencerLink, normalizeInfluencerCode } from '../../src/application/commerce/influencer'
 import { fmtDate } from '../../src/application/text/format-ar'
 
 export interface GrantApplyInput {
@@ -45,20 +53,42 @@ export interface GrantApplyInput {
   interests?: readonly string[]
   channel?: string | null
   wave?: string | null
+  /** كودُ المؤثّر — لازمٌ في منحة المؤثّرين، ولا يُقرأ في الأولى */
+  influencerCode?: string | null
 }
 
 const OPEN_CASE = { notIn: ['closed', 'enrolled', 'not_interested'] }
+
+/** الحملتان — بهما يُقبل طلبُ المستشار ممّن عبّأ أيَّهما */
+const GRANT_SLUGS: GrantSlug[] = [MEMBER_GRANT_SLUG, INFLUENCER_GRANT_SLUG]
 
 export class GrantLandingService {
   private prisma: PrismaClient
   private grants: GrantService
   private courses: GrantCoursesService
   private advisors: AdvisorService
-  constructor(prisma: PrismaClient) {
+  readonly slug: GrantSlug
+  constructor(prisma: PrismaClient, slug: GrantSlug = MEMBER_GRANT_SLUG) {
     this.prisma = prisma
-    this.grants = new GrantService(prisma)
+    this.slug = slug
+    this.grants = new GrantService(prisma, slug)
     this.courses = new GrantCoursesService(prisma)
     this.advisors = new AdvisorService(prisma)
+  }
+
+  /** المؤثّرُ النشطُ بكوده — أو لا أحد */
+  async influencerByCode(raw: string | null | undefined) {
+    const code = normalizeInfluencerCode(raw)
+    if (!code) return null
+    return this.prisma.influencer.findFirst({
+      where: { code, active: true }, select: { id: true, nameAr: true, code: true, commissionPercent: true },
+    })
+  }
+
+  /** صفحةُ منحة المؤثّرين: حالُها ودوراتُها، واسمُ المؤثّر إن كان كودُه في الرابط صحيحا */
+  async influencerView(raw: string | null | undefined, now = new Date()) {
+    const found = await this.influencerByCode(raw)
+    return { influencer: found ? { nameAr: found.nameAr, code: found.code } : null, ...(await this.view(now)) }
   }
 
   /** ما تعرضه الصفحة: حالُ المنحة، ودوراتُها بفصلها — دوراتٌ فقط، بلا أجور المدرّبين */
@@ -90,31 +120,38 @@ export class GrantLandingService {
     const interests = [...new Set((input.interests ?? []).map((x) => x.trim()))]
     if (interests.length > GRANT_MAX_INTERESTS) throw new AuthError('bad_interests', `اختر حتى ${GRANT_MAX_INTERESTS} مجالات`, 400)
     if (interests.some((x) => !GRANT_INTEREST_DOMAINS.has(x))) throw new AuthError('bad_interests', 'اختر ما تريد تطويره من القائمة', 400)
+    const forInfluencer = this.slug === INFLUENCER_GRANT_SLUG
+    const named = forInfluencer ? await this.influencerByCode(input.influencerCode) : null
+    if (forInfluencer && !named) throw new AuthError('bad_influencer_code', INFLUENCER_CODE_BAD_AR, 400)
 
     const had = await this.prisma.lead.findFirst({
-      where: { campaign: MEMBER_GRANT_SLUG, erasedAt: null, OR: [{ phone }, { email }] },
+      where: { campaign: this.slug, erasedAt: null, OR: [{ phone }, { email }] },
       orderBy: { createdAt: 'asc' },
     })
     const lead = had ?? await this.prisma.lead.create({
       data: {
-        fullName, email, phone, source: 'campaign', campaign: MEMBER_GRANT_SLUG, consentAr: GRANT_CONSENT_AR,
-        channel: campaignTag(input.channel), wave: campaignTag(input.wave), workField: input.workField,
-        careerLevel, interests,
+        fullName, email, phone, source: 'campaign', campaign: this.slug, consentAr: GRANT_CONSENT_AR,
+        channel: named ? campaignTag(named.code) : campaignTag(input.channel), wave: campaignTag(input.wave), workField: input.workField,
+        careerLevel, interests, influencerId: named?.id ?? null,
       },
     })
     if (!had) {
       await recordAudit(this.prisma, {
         action: 'coupon.grant_apply', entityType: 'lead', entityId: lead.id, ip,
-        meta: { leadId: lead.id, channel: lead.channel, wave: lead.wave },
+        meta: { leadId: lead.id, channel: lead.channel, wave: lead.wave, campaign: this.slug, influencerId: lead.influencerId },
       })
     }
+    /* المؤثّرُ الذي يُحسب له: من جاء بكوده أوّلَ مرّة — وعمولتُه كما هي اليوم، تُكتب في كوده إن أُعطي الآن */
+    const credited = !forInfluencer ? null
+      : !lead.influencerId || lead.influencerId === named!.id ? named
+        : await this.prisma.influencer.findUnique({ where: { id: lead.influencerId }, select: { id: true, nameAr: true, code: true, commissionPercent: true } })
 
     let grant: { code: string | null; sentTo: string | null; percentOff: number; closesAt: Date | null } | null = null
     let reasonAr: string | null = null
     try {
-      const g = await this.grants.issue({ leadId: lead.id }, now)
+      const g = await this.grants.issue({ leadId: lead.id, influencer: credited ? { id: credited.id, commissionPercent: credited.commissionPercent } : null }, now)
       const to = lead.email ?? email
-      await this.mailCode(to, lead.fullName, g.code, g.percentOff, g.closesAt)
+      await this.mailCode(to, lead.fullName, g.code, g.percentOff, g.closesAt, credited?.code ?? null)
       grant = g.reused
         ? { code: null, sentTo: maskEmail(to), percentOff: g.percentOff, closesAt: g.closesAt }
         : { code: g.code, sentTo: null, percentOff: g.percentOff, closesAt: g.closesAt }
@@ -122,12 +159,16 @@ export class GrantLandingService {
       if (!(e instanceof AuthError) || !['grant_closed', 'grant_sold_out'].includes(e.code)) throw e
       reasonAr = e.message
     }
-    return { ref: lead.id, grant, reasonAr, ...(await this.view(now)) }
+    return {
+      ref: lead.id, grant, reasonAr,
+      ...(forInfluencer ? { influencer: credited ? { nameAr: credited.nameAr, code: credited.code } : null } : {}),
+      ...(await this.view(now)),
+    }
   }
 
   /** «تواصل مع مستشار» — حالةٌ واحدةٌ لصاحب المرجع، تُسند تلقائيّا */
   async askAdvisor(ref: string, noteAr?: string | null, ip?: string) {
-    const lead = await this.prisma.lead.findFirst({ where: { id: ref, campaign: MEMBER_GRANT_SLUG, erasedAt: null } })
+    const lead = await this.prisma.lead.findFirst({ where: { id: ref, campaign: { in: GRANT_SLUGS }, erasedAt: null } })
     if (!lead) throw new AuthError('not_found', 'عبئ النموذج أولا', 404)
     const open = await this.prisma.advisorCase.findFirst({ where: { leadId: lead.id, status: OPEN_CASE }, select: { id: true } })
     if (open) return { ok: true as const }
@@ -141,14 +182,15 @@ export class GrantLandingService {
     })
     await recordAudit(this.prisma, {
       action: 'advisor.case.guest_request', entityType: 'advisor_case', entityId: kase.id, ip,
-      meta: { leadId: lead.id, campaign: MEMBER_GRANT_SLUG },
+      meta: { leadId: lead.id, campaign: lead.campaign },
     })
     try { await this.advisors.autoAssign(kase.id) } catch { /* بلا مستشارٍ متاح: تبقى في «حالات بلا مستشار» */ }
     return { ok: true as const }
   }
 
-  private async mailCode(to: string, name: string, code: string, percentOff: number, closesAt: Date | null) {
-    const url = `${publicSiteUrl()}/grant`
+  private async mailCode(to: string, name: string, code: string, percentOff: number, closesAt: Date | null, influencerCode: string | null = null) {
+    /* ومن جاء بكود مؤثّرٍ يعود إلى صفحة منحته هي — فيها نسبتُه ودوراتُها */
+    const url = influencerCode ? influencerLink(publicSiteUrl(), influencerCode) : `${publicSiteUrl()}/grant`
     const last = closesAt ? fmtDate(new Date(closesAt.getTime() - 1)) : null
     await enqueueMail(this.prisma, {
       to, purpose: 'grant.code',

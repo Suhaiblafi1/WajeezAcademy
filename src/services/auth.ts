@@ -51,6 +51,8 @@ const ROLE_HOME: Record<string, string> = {
   trainer: "/trainer",
   /* متقدّمٌ للتدريب: لا بوّابةَ متعلّم ولا مدرّب — صفحةُ حالة طلبه */
   trainer_applicant: "/join-trainer/status",
+  /* المؤثّرُ إلى كشفه — من جاء بكوده وعمولتُه (`pages/InfluencerHome.tsx`) */
+  influencer: "/influencer",
 };
 
 /** مسار البوابة الأنسب لأقوى دور يحمله المستخدم — الافتراضي بوابة المتعلم.

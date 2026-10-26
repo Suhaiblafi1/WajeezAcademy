@@ -172,6 +172,8 @@ const HIGH: readonly string[] = [
   'trainer_payout.create', 'trainer_payout.generate',
   'trainer_payout.approve', 'trainer_payout.pay', 'trainer_payout.cancel',
   'advisor_payout.generate', 'advisor_payout.approve', 'advisor_payout.pay', 'advisor_payout.cancel',
+  /* وعمولةُ المؤثّر: دفعةٌ دُفعت له، وعمولتُه أو إيقافُ كوده، وحسابُه يُنشأ أو يُربط (٢٦ أكتوبر ٢٠٢٦) */
+  'influencer.payout', 'influencer.update', 'influencer.account',
   /* شهادتُه — دعوى مستقلّةٌ على صاحبها */
   'certificate.issue', 'certificate.revoke',
   /* وخطابُ التوصية معها — يُضاف إلى سجلّه ويُتحقَّق منه برقمه (`endorsement.service.ts`) */
@@ -315,6 +317,8 @@ const LOW_FAMILIES: readonly string[] = [
 
 /* وأفعالٌ مفردةٌ وزنُها منخفضٌ وإن كانت عائلتُها أثقل */
 const LOW: readonly string[] = [
+  /* وإضافةُ مؤثّرٍ بكوده: صفٌّ في المنتَج — وحسابُه إن كان له يُكتب بفعلٍ وحدَه (`influencer.account`) */
+  'influencer.create',
   /* وتعليمُ حسابٍ تجريبيّا: لا يمسّ وصولَه ولا ما يملك — يُخرج طلبَه من عدّ الإدارة وحدَه (١٧ أكتوبر ٢٠٢٦) */
   'admin.user.test_account',
   /* وإبلاغُ من ترك بريدَه لدورةٍ أنّ شعبتَها فُتحت — كبابِ الموسم: بريدُه يصله من

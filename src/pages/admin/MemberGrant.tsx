@@ -4,7 +4,12 @@
    وما جرى بها. والحفظُ بتأكيدٍ يقول ما يقع بكلّ تغيير — والقرارُ له.
 
    ثمّ نتائجُ الحملة بالقناة والدفعة (`GrantResults`)، ومن عبّأ النموذج بالأسماء (`GrantRegistrants`)، ثمّ دوراتُ المنحة بفصلها وسعرها بعد المنحة (`GrantCourses`)، وتحتها فحصُ الهامش: كلُّ شعبةٍ مفتوحةٍ بسعرها بعد المنحة مقابل أجر مقعدها للمدرّب، **بالنسبة التي
-   في الخانة** لا المحفوظة — فيرى أثرَ النسبة قبل أن يحفظها. والعلّةُ في `server/services/grant.service.ts`. */
+   في الخانة** لا المحفوظة — فيرى أثرَ النسبة قبل أن يحفظها. والعلّةُ في `server/services/grant.service.ts`.
+
+   ═══ وهي شاشةُ «منحة مؤثرين وجيز» أيضا (٢٦ أكتوبر ٢٠٢٦) ═══
+
+   `variant="influencer"`: إعداداتُ صفّها هي، وتحتها المؤثّرون بأكوادهم وعمولاتهم وما دُفع لهم (`InfluencersPanel`)
+   بدل نتائج الأولى ومن عبّأ نموذجها. والهامشُ فيها يطرح عمولةَ المؤثّر أيضا. */
 
 import { useCallback, useEffect, useState } from "react";
 import { Loader2, ServerOff } from "lucide-react";
@@ -12,11 +17,12 @@ import AdminLayout from "./AdminLayout";
 import GrantCourses from "./GrantCourses";
 import GrantResults from "./GrantResults";
 import GrantRegistrants from "./GrantRegistrants";
+import InfluencersPanel from "./InfluencersPanel";
 import { toast, toastError } from "@/components/Toast";
 import ConfirmAction from "@/components/ConfirmAction";
 import { apiGet, apiPut, ApiError } from "@/services/api";
 import { fmtDate, fmtMoney } from "@/application/text/format-ar";
-import { grantClosesAt, grantLastDay, MEMBER_GRANT_NAME_AR } from "@/application/commerce/grant";
+import { grantClosesAt, grantLastDay, INFLUENCER_GRANT_NAME_AR, MEMBER_GRANT_NAME_AR } from "@/application/commerce/grant";
 import { staffControlCls } from "@/components/FormKit";
 import { Panel, Card } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
@@ -29,6 +35,8 @@ interface MarginRow {
   cohortId: string; titleAr: string; status: string; startsAt: string | null; currency: string;
   listPrice: number; price: number; ruleType: string | null; ruleRate: number | null;
   seatCost: number | null; margin: number | null;
+  /** عمولةُ المؤثّر عن المقعد — في منحة المؤثّرين وحدَها */
+  commission?: number;
 }
 
 const RULE_AR: Record<string, string> = {
@@ -37,7 +45,11 @@ const RULE_AR: Record<string, string> = {
   fixed_per_cohort: "مبلغ ثابت للشعبة",
 };
 
-export default function AdminMemberGrant() {
+export default function AdminMemberGrant({ variant = "members" }: { variant?: "members" | "influencer" }) {
+  const forInfluencer = variant === "influencer";
+  const api = forInfluencer ? "/api/admin/influencer-grant" : "/api/admin/member-grant";
+  const nameAr = forInfluencer ? INFLUENCER_GRANT_NAME_AR : MEMBER_GRANT_NAME_AR;
+  const [commissionPct, setCommissionPct] = useState(0);
   const [s, setS] = useState<Settings | null>(null);
   const [offline, setOffline] = useState<string | null>(null);
   const [pct, setPct] = useState("");
@@ -59,9 +71,9 @@ export default function AdminMemberGrant() {
   };
 
   const load = useCallback(async () => {
-    try { fill(await apiGet<Settings>("/api/admin/member-grant")); }
+    try { fill(await apiGet<Settings>(api)); }
     catch (e) { setOffline(e instanceof ApiError ? e.message : "الخادم غير متصل"); }
-  }, []);
+  }, [api]);
   useEffect(() => { void load(); }, [load]);
 
   /* الهامشُ بالنسبة التي في الخانة — يتبعها وهي تُكتب */
@@ -70,12 +82,12 @@ export default function AdminMemberGrant() {
   useEffect(() => {
     if (!pctOk) return;
     const t = setTimeout(() => {
-      apiGet<{ rows: MarginRow[] }>(`/api/admin/member-grant/margins?percentOff=${pctNum}`)
-        .then((r) => setRows(r.rows))
+      apiGet<{ rows: MarginRow[]; commissionPercent?: number }>(`${api}/margins?percentOff=${pctNum}`)
+        .then((r) => { setRows(r.rows); setCommissionPct(r.commissionPercent ?? 0); })
         .catch(() => setRows(null));
     }, 300);
     return () => clearTimeout(t);
-  }, [pctNum, pctOk]);
+  }, [pctNum, pctOk, api]);
 
   const maxNum = max.trim() === "" ? null : Number(max);
   const maxOk = maxNum === null || (Number.isInteger(maxNum) && maxNum >= 1);
@@ -87,7 +99,7 @@ export default function AdminMemberGrant() {
   const save = async () => {
     setBusy(true);
     try {
-      fill(await apiPut<Settings>("/api/admin/member-grant", {
+      fill(await apiPut<Settings>(api, {
         percentOff: pctNum, maxCodes: maxNum, maxCourses: coursesNum, closesAt: lastDay ? grantClosesAt(lastDay) : null, active,
       }));
       toast("حفظت إعدادات المنحة");
@@ -98,7 +110,7 @@ export default function AdminMemberGrant() {
 
   if (offline) {
     return (
-      <AdminLayout title={MEMBER_GRANT_NAME_AR}>
+      <AdminLayout title={nameAr}>
         <Panel className="grid place-items-center py-16 text-center">
           <ServerOff className="h-10 w-10 text-muted-foreground/50" />
           <p className="mt-3 max-w-md text-sm leading-7 text-muted-foreground">{offline}</p>
@@ -108,7 +120,7 @@ export default function AdminMemberGrant() {
   }
   if (!s) {
     return (
-      <AdminLayout title={MEMBER_GRANT_NAME_AR}>
+      <AdminLayout title={nameAr}>
         <div className="grid place-items-center py-20"><Loader2 className="h-8 w-8 animate-spin text-teal-light-ink" /></div>
       </AdminLayout>
     );
@@ -117,7 +129,7 @@ export default function AdminMemberGrant() {
   const losing = (rows ?? []).filter((r) => r.margin !== null && r.margin < 0).length;
 
   return (
-    <AdminLayout title={MEMBER_GRANT_NAME_AR}>
+    <AdminLayout title={nameAr}>
       <Card>
         <p className="text-read font-bold">
           {s.open ? "المنحة مشغلة" : s.active ? "المنحة انتهت" : "المنحة موقوفة"}
@@ -128,6 +140,7 @@ export default function AdminMemberGrant() {
           {s.closesAt ? ` · آخر يوم ${fmtDate(new Date(new Date(s.closesAt).getTime() - 1))}` : ""}
         </p>
         <p className="mt-2 text-read leading-7 text-muted-foreground">
+          {forInfluencer && "صفحتها برابط كل مؤثر، وكوده لازم في نموذجها. "}
           من يعبئ نموذج الحملة يأخذ كودا شخصيا. يستعمل مرة واحدة، ويمكن أن يعطيه لغيره. وصاحبه يدفع نسبة ثابتة من سعر الدورات بدل خصم الباقة، أو سعر الباقة إن كان أقل. والمنحة على {s.maxCourses} دورات بحد أقصى.
         </p>
       </Card>
@@ -153,14 +166,13 @@ export default function AdminMemberGrant() {
         <Button disabled={busy || !changed || !pctOk || !maxOk || !coursesOk} onClick={() => setConfirm(true)}>احفظ</Button>
       </Card>
 
-      <GrantResults />
-      <GrantRegistrants />
+      {forInfluencer ? <InfluencersPanel /> : <><GrantResults /><GrantRegistrants /></>}
 
       <GrantCourses percentOff={pctOk ? pctNum : null} />
 
       <h2 className="mt-6 text-lg font-black">فحص الهامش بنسبة {pctOk ? `${pctNum}%` : "—"}</h2>
       <p className="mt-1 text-read text-muted-foreground">
-        سعر كل شعبة مفتوحة بعد المنحة، وما يأخذه المدرب عن كل مقعد. الخصم كله من حصة الأكاديمية.
+        سعر كل شعبة مفتوحة بعد المنحة، وما يأخذه المدرب عن كل مقعد{commissionPct > 0 ? `، وعمولة المؤثر ${commissionPct}% من السعر (أعلى عمولة لمؤثر نشط)` : ""}. الخصم كله من حصة الأكاديمية.
         {losing > 0 ? ` ${losing} شعبة تخسر بهذه النسبة.` : ""}
       </p>
       {rows === null ? (
@@ -176,6 +188,7 @@ export default function AdminMemberGrant() {
                 <th className="p-2 text-start">السعر</th>
                 <th className="p-2 text-start">بعد المنحة</th>
                 <th className="p-2 text-start">للمدرب عن المقعد</th>
+                {commissionPct > 0 && <th className="p-2 text-start">للمؤثر</th>}
                 <th className="p-2 text-start">يبقى للأكاديمية</th>
               </tr>
             </thead>
@@ -193,6 +206,7 @@ export default function AdminMemberGrant() {
                         : "لا قاعدة أتعاب"}
                     {r.ruleType === "revenue_share" && r.ruleRate !== null ? ` (${r.ruleRate}% ${RULE_AR.revenue_share})` : ""}
                   </td>
+                  {commissionPct > 0 && <td className="p-2" dir="ltr">{fmtMoney(r.commission ?? 0, r.currency)}</td>}
                   <td className={`p-2 font-bold ${r.margin !== null && r.margin < 0 ? "text-danger-ink" : ""}`} dir="ltr">
                     {r.margin === null ? "—" : fmtMoney(r.margin, r.currency)}
                   </td>

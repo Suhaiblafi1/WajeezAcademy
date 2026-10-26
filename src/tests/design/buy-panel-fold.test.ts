@@ -39,6 +39,16 @@ describe('لوح الشراء · البنود تطوى ولا يطوى تحذي�
     expect(code, 'زرّ الكشف يعطّل').not.toMatch(/aria-controls="buy-lines"[\s\S]{0,200}disabled/)
   })
 
+  it('⚠️ والزرّ يرى زرّا: بإطار المعجم المميز، ويقول فعله «عرض» أو «إخفاء»', () => {
+    /* قرارُ صاحب المنصّة (٢٦ أكتوبر ٢٠٢٦): «الدورات ومواعيدها لا تبدو أنّها زرٌّ للنقر.. اجعلها بإطارٍ مميّز» */
+    const at = code.indexOf('aria-controls="buy-lines"')
+    expect(at, 'زر الكشف لم يوجد').toBeGreaterThan(0)
+    const toggle = code.slice(code.lastIndexOf('<button', at), code.indexOf('</button>', at))
+    const cls = toggle.match(/className="([^"]*)"/)?.[1].split(/\s+/) ?? []
+    expect(cls, 'زر الكشف بلا إطار مميز').toEqual(expect.arrayContaining(['btn-outline-brand', 'w-full']))
+    expect(toggle, 'زر الكشف لا يقول فعله').toMatch(/\{listShown \? "إخفاء" : "عرض"\}/)
+  })
+
   it('ويبقى معلنا لقارئ الشاشة — لا طيّ صامت', () => {
     expect(code).toMatch(/aria-expanded=\{listShown\}/)
     expect(code).toMatch(/aria-controls="buy-lines"/)

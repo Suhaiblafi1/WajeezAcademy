@@ -153,6 +153,9 @@ export const PERMISSIONS = [
   { key: 'trainer.cohort.plan', description: 'تجهيز الشعبة: محتواها ومواعيدها ومصادرها وتسجيلاتها، وإرسالها للاعتماد — كلّ شيء عدا السعر' },
   // المتعلم
   { key: 'learner.portal', description: 'دخول بوابة المتعلم وعرض مساره وتقدمه' },
+  /* حسابُ المؤثّر (٢٦ أكتوبر ٢٠٢٦): يرى من جاء بكوده في «منحة مؤثرين وجيز» وعمولتَه عنهم — كشفَه هو لا غيرَه
+     (`influencer.service.ts`) */
+  { key: 'influencer.portal', description: 'رؤية من سجل بكودك في منحة المؤثرين، وعمولتك عن كل منهم' },
   { key: 'learner.submit', description: 'تسليم الواجبات ومحاولات التقييم' },
   // المستشارون — الحالات المسندة فقط
   { key: 'advisor.cases.view', description: 'عرض حالات العملاء المسندة إلى المستشار فقط' },
@@ -326,6 +329,7 @@ export const ROLE_PERMISSIONS: Record<string, PermissionKey[]> = {
   finance: ['trainer.compensation.manage', 'advisor.payout.manage', 'trainer.contract.manage', 'commerce.manage', 'finance.view', 'finance.payment.record', 'finance.refund.process', 'finance.bank.reveal', 'reports.view', 'reports.export'],
   support: ['catalog.view', 'support.operate'],
   learner: ['learner.portal', 'learner.submit', 'cv.upload', 'enrollment.request', 'rating.submit'],
+  influencer: ['influencer.portal'],
 }
 
 /* ═══════════ تفويض الصلاحيات — من يمنح لمن، وماذا ═══════════
@@ -355,6 +359,8 @@ export const ROLE_RANK: Record<string, number> = {
   advisor: 40,
   trainer: 30,
   trainer_applicant: 20,
+  /* فوق المتعلّم ودون المتقدّم: حسابٌ يرى كشفَه وحدَه، ولا يُدير أحدا */
+  influencer: 15,
   learner: 10,
 }
 
@@ -525,4 +531,5 @@ export const ROLE_NAMES_AR: Record<string, string> = {
   finance: 'المالية',
   support: 'الدعم',
   learner: 'متعلم',
+  influencer: 'مؤثر',
 }

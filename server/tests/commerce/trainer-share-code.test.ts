@@ -10,8 +10,11 @@
    ⑤ **ومن اشترى به يُحسب لصاحبه بأجر الإحالة** — قرارُ صاحب المنصّة (٢٦ أكتوبر ٢٠٢٦): «نعم، احسبه بأجر الإحالة».
       وما ختمه رابطٌ صريحٌ يبقى، ودورةُ غيره في الطلب نفسِه لا تُختم له. */
 
-import { beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
+import type { FastifyInstance } from 'fastify'
+import { buildApp } from '../../http/app'
+import { ShortLinkService } from '../../services/short-link.service'
 import { setupTestDb, testPrisma } from '../helpers/db'
 import { AuthService } from '../../services/auth.service'
 import { CommerceService } from '../../services/commerce.service'
@@ -143,5 +146,77 @@ describe('⑤ ومن اشترى به يُحسب لصاحبه بأجر الإحا
     const order = await commerce.checkout(l, [cohort.A1])
     await pay(order.orderId)
     expect((await prisma.enrollment.findFirstOrThrow({ where: { userId: l, cohortId: cohort.A1 } })).referralProfileId).toBeNull()
+  })
+})
+
+/* ═══ والرابطُ المنشورُ قصيرٌ ثابت (٢٦ أكتوبر ٢٠٢٦) ═══
+   «لا تبدو احترافيّة» — وكان الرابطُ اسمَه بالعربيّة يصير حروفا مرمّزةً في لينكدإن. فلكلّ شعبةٍ رابطٌ قصير،
+   يُسكّ مرّةً ويُعاد: ما نُشر لا يتغيّر. */
+describe('⑥ روابط «شارك دوراتك» القصيرة', () => {
+  it('⚠️ لكل شعبة له رابط قصير إلى رابط إحالتها — والثاني هو الأول', async () => {
+    const first = await shares.kit(A.userId)
+    const short = first.short.cohorts[cohort.A1]
+    expect(short, 'لا رابط قصير لشعبته').toMatch(/\/s\/[A-Z0-9]{6}$/)
+    const code = short.slice(short.lastIndexOf('/') + 1)
+    const row = await prisma.shortLink.findUniqueOrThrow({ where: { code } })
+    expect(row.target, 'الرابط القصير لا يحمل رمز الإحالة').toMatch(/\?ref=/)
+    const again = await shares.kit(A.userId)
+    expect(again.short.cohorts[cohort.A1], 'تغير الرابط فضاع ما نشر').toBe(short)
+    expect(first.short.cohorts[cohort.B1], 'رابط لشعبة غيره').toBeUndefined()
+  })
+})
+
+/* ⑦ معاينةُ روابطه — قرارُ صاحب المنصّة (٢٦ أكتوبر ٢٠٢٦): «أضف معاينة، نعم». فرابطُه القصيرُ إذا لُصق في واتساب
+   وفيسبوك قرأ زاحفُهما صورتَه المصمَّمة ودوراتِه، لا وسومَ الرئيسة. والعلّةُ في `server/services/link-preview.ts`. */
+describe('⑦ معاينة روابطه حين تلصق', () => {
+  const JPEG = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3, 4])
+  const codeOf = (url: string) => url.slice(url.lastIndexOf('/') + 1)
+  let app: FastifyInstance
+
+  beforeAll(async () => { app = await buildApp(prisma) }, 120_000)
+  afterAll(async () => { await app?.close() })
+
+  it('⚠️ تحفظ صورته وبصمتها، والعنوان والوصف يكتبهما الخادم من دورته', async () => {
+    const kit = await shares.kit(A.userId)
+    const code = codeOf(kit.short.cohorts[cohort.A1])
+    expect(kit.previews[code], 'معاينة قبل أن ترفع').toBeNull()
+    await shares.savePreview(A.userId, code, JPEG, 'v1-abc')
+    const row = await prisma.shortLink.findUniqueOrThrow({ where: { code } })
+    expect(Buffer.from(row.previewImage!).equals(JPEG)).toBe(true)
+    expect(row.previewTitle, 'العنوان لا يسمي المدرب').toContain('مدرّب A')
+    expect(row.previewText, 'الوصف لا يقول البث المباشر').toContain('بث مباشر')
+    expect(row.previewText, 'الوصف بلا الكود').toContain(kit.code)
+    expect((await shares.kit(A.userId)).previews[code], 'البصمة لا تعود للصفحة فتعيد الرفع كل زيارة').toBe('v1-abc')
+  })
+
+  it('ولا تقبل ما ليس JPEG، ولا رابط غيره', async () => {
+    const mine = codeOf((await shares.kit(A.userId)).short.cohorts[cohort.A1])
+    const his = codeOf((await shares.kit(B.userId)).short.cohorts[cohort.B1])
+    await expect(shares.savePreview(A.userId, mine, Buffer.from('<svg/>'), 'x')).rejects.toMatchObject({ code: 'bad_preview' })
+    await expect(shares.savePreview(A.userId, his, JPEG, 'x'), 'رفع معاينة لرابط مدرب آخر').rejects.toMatchObject({ status: 404 })
+  })
+
+  it('⚠️ والرابط القصير يجيب الزاحف بوسوم المعاينة ثم يحول — وما لا معاينة له 302', async () => {
+    const kit = await shares.kit(A.userId)
+    const code = codeOf(kit.short.cohorts[cohort.A1])
+    const page = await app.inject({ method: 'GET', url: `/s/${code}` })
+    expect(page.statusCode).toBe(200)
+    expect(page.headers['content-type']).toMatch(/text\/html/)
+    expect(page.body, 'لا صورة معاينة للزاحف').toMatch(new RegExp(`og:image" content="[^"]*/api/public/links/${code}/preview\\.jpg\\?v=v1-abc"`))
+    expect(page.body).toMatch(/twitter:card" content="summary_large_image"/)
+    const row = await prisma.shortLink.findUniqueOrThrow({ where: { code } })
+    expect(page.body, 'لا تحويل إلى وجهة الرابط').toMatch(new RegExp(`location\\.replace\\("[^"]*${row.target.replace(/[?.]/g, '\\$&')}"\\)`))
+
+    const img = await app.inject({ method: 'GET', url: `/api/public/links/${code}/preview.jpg` })
+    expect(img.statusCode).toBe(200)
+    expect(img.headers['content-type']).toBe('image/jpeg')
+
+    const plain = await new ShortLinkService(prisma).mint('/student/learning', null)
+    const bare = await app.inject({ method: 'GET', url: `/s/${plain.code}` })
+    expect(bare.statusCode, 'رابط بلا معاينة لم يعد يحول').toBe(302)
+    expect(bare.headers.location).toMatch(/\/student\/learning$/)
+
+    const dead = await app.inject({ method: 'GET', url: '/s/ZZZZZZ' })
+    expect(dead.statusCode).toBe(404)
   })
 })

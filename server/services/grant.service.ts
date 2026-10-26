@@ -34,9 +34,10 @@ import { EarningsService } from './earnings.service'
 import { cohortLeadTrainers } from './cohort-lead'
 import { randomUnambiguousCode } from '../../src/application/text/unambiguous-code'
 import {
-  GRANT_CLOSED_AR, GRANT_CODE_PREFIX, GRANT_DEFAULTS, GRANT_ONCE_AR, GRANT_PENDING_AR, GRANT_SOLD_OUT_AR,
-  GRANT_USED_AR, MEMBER_GRANT_NAME_AR, MEMBER_GRANT_SLUG, grantPrice,
+  GRANT_CAMPAIGNS, GRANT_CLOSED_AR, GRANT_CODE_PREFIX, GRANT_ONCE_AR, GRANT_PENDING_AR, GRANT_SOLD_OUT_AR,
+  GRANT_USED_AR, MEMBER_GRANT_SLUG, grantPrice, type GrantSlug,
 } from '../../src/application/commerce/grant'
+import { influencerCommission } from '../../src/application/commerce/influencer'
 
 /** ما يحسب منحةً مستعملة: طلبٌ ينتظر الدفعَ بها أو دُفع — والمردودُ كلُّه يُعيدها */
 const GRANT_HOLDS = ['pending_payment', 'paid', 'partially_refunded']
@@ -62,19 +63,27 @@ export interface GrantCoupon {
 
 const isOpen = (c: { active: boolean; closesAt: Date | null }, now: Date) => c.active && (c.closesAt === null || c.closesAt > now)
 
+/* ═══ وحملتان لا واحدة (٢٦ أكتوبر ٢٠٢٦) ═══
+
+   «منحة وجيز» بلا كود، و«منحة مؤثرين وجيز» بكود المؤثّر — قرارُ صاحب المنصّة. والقواعدُ أعلاه واحدةٌ فيهما، ولكلٍّ
+   صفُّه بنسبته وعدده ونهايته. وفرقان: كودُ الثانية يحمل مؤثّرَه وعمولتَه يومَ أُعطي (`issue`)، و«منحةٌ واحدةٌ لكلّ
+   متعلّم» على الحملتين معا — من اشترى بإحداهما لا يشتري بالأخرى (`assertUsable`). */
 export class GrantService {
   private prisma: PrismaClient
   private earnings: EarningsService
-  constructor(prisma: PrismaClient) {
+  readonly slug: GrantSlug
+  constructor(prisma: PrismaClient, slug: GrantSlug = MEMBER_GRANT_SLUG) {
     this.prisma = prisma
     this.earnings = new EarningsService(prisma)
+    this.slug = slug
   }
 
   /** صفُّ الحملة — يُنشأ أوّلَ مرّةٍ موقوفا بإعداداته الافتراضيّة، فلا يُعطى كودٌ قبل أن تُشغَّل */
   campaign() {
+    const { nameAr, defaults } = GRANT_CAMPAIGNS[this.slug]
     return this.prisma.grantCampaign.upsert({
-      where: { slug: MEMBER_GRANT_SLUG },
-      create: { slug: MEMBER_GRANT_SLUG, nameAr: MEMBER_GRANT_NAME_AR, ...GRANT_DEFAULTS, active: false },
+      where: { slug: this.slug },
+      create: { slug: this.slug, nameAr, ...defaults, active: false },
       update: {},
     })
   }
@@ -125,8 +134,11 @@ export class GrantService {
     return this.settings(now)
   }
 
-  /** كودُ من عبّأ النموذج — وكودُه نفسُه إن عبّأه من قبل */
-  async issue(input: { leadId?: string | null } = {}, now = new Date()): Promise<{ code: string; percentOff: number; closesAt: Date | null; reused: boolean }> {
+  /** كودُ من عبّأ النموذج — وكودُه نفسُه إن عبّأه من قبل. ومعه مؤثّرُه وعمولتُه إن جاء بكود مؤثّر */
+  async issue(
+    input: { leadId?: string | null; influencer?: { id: string; commissionPercent: number } | null } = {},
+    now = new Date(),
+  ): Promise<{ code: string; percentOff: number; closesAt: Date | null; reused: boolean }> {
     const c = await this.campaign()
     for (let attempt = 0; attempt < 3; attempt += 1) {
       if (input.leadId) {
@@ -153,10 +165,15 @@ export class GrantService {
           const percentOff = rows[0].percentOff
           const code = `${GRANT_CODE_PREFIX}${randomUnambiguousCode(8)}`
           const coupon = await tx.coupon.create({ data: { code, percentOff, maxUses: 1, active: true } })
-          const row = await tx.grantCode.create({ data: { campaignId: c.id, couponId: coupon.id, leadId: input.leadId ?? null } })
+          const row = await tx.grantCode.create({
+            data: {
+              campaignId: c.id, couponId: coupon.id, leadId: input.leadId ?? null,
+              influencerId: input.influencer?.id ?? null, commissionPercent: input.influencer?.commissionPercent ?? null,
+            },
+          })
           await recordAudit(tx, {
             actorId: null, action: 'coupon.grant_issue', entityType: 'grant_campaign', entityId: c.id,
-            meta: { grantCodeId: row.id, code, percentOff, leadId: input.leadId ?? null },
+            meta: { grantCodeId: row.id, code, percentOff, leadId: input.leadId ?? null, influencerId: input.influencer?.id ?? null },
           })
           return { code, percentOff, closesAt: c.closesAt, reused: false }
         })
@@ -178,16 +195,18 @@ export class GrantService {
     })
     if (mine) throw new AuthError('grant_pending', GRANT_PENDING_AR, 409)
     if (coupon.maxUses !== null && coupon.usedCount >= coupon.maxUses) throw new AuthError('grant_used', GRANT_USED_AR, 409)
+    /* على الحملتين معا — من اشترى بمنحة وجيز لا يأخذ فوقها منحةَ المؤثّرين، ولا العكس */
     const once = await this.prisma.order.findFirst({
-      where: { userId, status: { in: GRANT_HOLDS }, coupon: { grantCode: { campaignId: campaign.id } } },
+      where: { userId, status: { in: GRANT_HOLDS }, coupon: { grantCode: { isNot: null } } },
       select: { id: true },
     })
     if (once) throw new AuthError('grant_once', GRANT_ONCE_AR, 409)
   }
 
   /** فحصُ الهامش: كلُّ شعبةٍ تُشترى بسعرها بعد المنحة، وأجرُ مقعدها للمدرّب، والفرقُ بينهما.
-      وبنسبةٍ تُمرَّر لتُجرَّب قبل أن تُحفظ — وبلا قيمةٍ نسبةُ الحملة. */
-  async margins(percentOff?: number) {
+      وبنسبةٍ تُمرَّر لتُجرَّب قبل أن تُحفظ — وبلا قيمةٍ نسبةُ الحملة. وفي منحة المؤثّرين تُطرح عمولتُه أيضا:
+      نسبتُها من سعر القائمة، فما يبقى للأكاديميّة سعرُها بعد المنحة ناقصا أجرَ المقعد وعمولتَه. */
+  async margins(percentOff?: number, commissionPercent = 0) {
     const c = await this.campaign()
     const pct = percentOff ?? c.percentOff
     const cohorts = await this.prisma.cohort.findMany({
@@ -203,15 +222,16 @@ export class GrantService {
       const listPrice = Number(x.price)
       const price = grantPrice(listPrice, pct)
       const { ruleType, ruleRate, seatCost } = costs.get(x.id)!
+      const commission = influencerCommission(listPrice, commissionPercent)
       return {
         cohortId: x.id,
         titleAr: `${x.course.versions[0]?.titleAr ?? x.courseId} — ${x.title}`,
         status: x.status, startsAt: x.startsAt, currency: x.currency, capacity: x.capacity,
-        listPrice, price, ruleType, ruleRate, seatCost,
-        margin: seatCost === null ? null : Math.round((price - seatCost) * 100) / 100,
+        listPrice, price, ruleType, ruleRate, seatCost, commission,
+        margin: seatCost === null ? null : Math.round((price - seatCost - commission) * 100) / 100,
       }
     })
-    return { percentOff: pct, rows }
+    return { percentOff: pct, commissionPercent, rows }
   }
 
   /** أجرُ مقعدٍ واحدٍ لكلّ شعبة: بالمقعد كما هو، وبنسبة الإيراد على سعر القائمة — هكذا يُحسب الكشف

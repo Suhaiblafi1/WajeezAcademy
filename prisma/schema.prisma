@@ -64,6 +64,8 @@ model User {
   advisorBankAccounts  AdvisorBankAccount[]
   advisorRequestsRuled AdvisorRequest[]           @relation("AdvisorRequestDecidedBy")
   couponsRestricted    Coupon[]                   @relation("CouponRestrictedTo")
+  /// حسابُ المؤثّر إن كان هذا الحسابُ حسابَه (`influencer.service.ts`)
+  influencer           Influencer?
   skillRemeasures      SkillRemeasure[]           @relation("SkillRemeasureUser")
   retrievalCards       RetrievalCard[]            @relation("RetrievalCardUser")
   scenarioRuns         ScenarioRun[]              @relation("ScenarioRunUser")
@@ -3740,6 +3742,9 @@ model Lead {
   cases              AdvisorCase[]
   /// كودُ منحته إن عبّأ نموذج الحملة (`grant.service.ts`)
   grantCode          GrantCode?
+  /// المؤثّرُ الذي جاء بكوده — في «منحة مؤثرين وجيز» (`grant-landing.service.ts`)
+  influencerId       String?       @db.Uuid
+  influencer         Influencer?   @relation(fields: [influencerId], references: [id], onDelete: SetNull)
 
   @@index([status, createdAt])
   @@index([campaign, createdAt])
@@ -4103,11 +4108,56 @@ model GrantCode {
   /// لمن أُعطي — والكودُ يُنقل، فمن يستعمله قد يكون غيرَه
   leadId     String?       @unique @db.Uuid
   createdAt  DateTime      @default(now())
+  /// المؤثّرُ الذي جاء الكودُ بكوده — في «منحة مؤثرين وجيز» وحدَها (`influencer.service.ts`)
+  influencerId      String?     @db.Uuid
+  /// عمولتُه على هذا الكود يومَ أُعطي — نسبةٌ من سعر الدورات قبل المنحة، فتغييرُها بعده لا يمسّه
+  commissionPercent Int?
   campaign   GrantCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
   coupon     Coupon        @relation(fields: [couponId], references: [id], onDelete: Cascade)
   lead       Lead?         @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  influencer Influencer?   @relation(fields: [influencerId], references: [id], onDelete: SetNull)
 
   @@index([campaignId, createdAt])
+  @@index([influencerId])
+}
+
+/// مؤثّرٌ ينشر «منحة مؤثرين وجيز» بكوده (٢٦ أكتوبر ٢٠٢٦).
+///
+/// قرارُ صاحب المنصّة: منحةٌ ثانيةٌ بخصمٍ أقلّ (٤٥٪)، ولكلّ مؤثّرٍ كودٌ يكتبه متابعُه في نموذجها، وعمولتُه ١٥٪
+/// **من سعر الدورات العامّ** («A»: «لأنّه هو يعطي الخصمَ الأكبرَ منه»). وله حسابٌ يرى فيه من جاء بكوده وما له.
+/// والعلّةُ في `server/services/influencer.service.ts`.
+model Influencer {
+  id                String   @id @default(uuid()) @db.Uuid
+  nameAr            String
+  /// كودُه — حروفٌ لاتينيّةٌ كبيرةٌ وأرقام، يُكتب في النموذج ويُطبع في رابطه، فلا يتغيّر
+  code              String   @unique
+  /// عمولتُه من سعر الدورات قبل المنحة — على ما يُعطى من أكوادٍ بعد اليوم
+  commissionPercent Int      @default(15)
+  /// حسابُه الذي يرى فيه مستحقّاته
+  userId            String?  @unique @db.Uuid
+  active            Boolean  @default(true)
+  createdBy         String?  @db.Uuid
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user       User?              @relation(fields: [userId], references: [id], onDelete: SetNull)
+  grantCodes GrantCode[]
+  leads      Lead[]
+  payouts    InfluencerPayout[]
+}
+
+/// ما دُفع للمؤثّر من عمولته — والرصيدُ ما استحقّه ناقصا ما دُفع (`influencer.service.ts`)
+model InfluencerPayout {
+  id           String     @id @default(uuid()) @db.Uuid
+  influencerId String     @db.Uuid
+  amount       Decimal    @db.Decimal(10, 2)
+  currency     String     @default("USD")
+  noteAr       String?
+  recordedBy   String?    @db.Uuid
+  paidAt       DateTime   @default(now())
+  influencer   Influencer @relation(fields: [influencerId], references: [id], onDelete: Cascade)
+
+  @@index([influencerId, paidAt])
 }
 
 /// طلبُ مستشارٍ يحتاج قرارَ الإدارة — خصمٌ أو تعديلُ خطّة.
@@ -4702,6 +4752,14 @@ model ShortLink {
   createdAt DateTime  @default(now())
   /// يُبطَل ولا يُحذف: رابطٌ طُبع لا يُستعاد، ومحوُه يجعله «غيرَ موجود» لا «مسحوبا»
   revokedAt DateTime?
+  /// معاينتُه حين يُلصق في واتساب وفيسبوك — صورةُ المدرّب المصمَّمة (JPEG ١٢٠٠×٦٣٠) ترسمها صفحتُه وترفعها
+  previewImage Bytes?
+  /// عنوانُ المعاينة ووصفُها — يكتبهما الخادمُ من دورات المدرّب لا ممّا يرسله المتصفّح
+  previewTitle String?
+  previewText  String?
+  /// بصمةُ ما رُسمت منه الصورة — فلا تُرفع ثانيةً إلّا إن تغيّر
+  previewSig   String?
+  previewAt    DateTime?
 }
 
 /// بريدُ من جاء ليشتري فوجد البابَ مغلقا (قرارُ صاحب المنصّة ١٨ سبتمبر ٢٠٢٦).

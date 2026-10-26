@@ -187,6 +187,19 @@ describe('⑦ · رئيسيّ واحد في الشاشة — تقاس بالشا
       why: 'لوح الدفع يفتح بعد النموذج وحده، وذهبيّ النموذج لا يرى معه',
       files: ['src/components/BuyPanel.tsx'],
     },
+    /* وصفحةُ منحة المؤثّرين هي نفسُها بخطوتيها (٢٦ أكتوبر ٢٠٢٦) */
+    '/grant/i': {
+      why: 'لوح الدفع يفتح بعد النموذج وحده، وذهبيّ النموذج لا يرى معه',
+      files: ['src/components/BuyPanel.tsx'],
+    },
+    '/grant/i/:code': {
+      why: 'لوح الدفع يفتح بعد النموذج وحده، وذهبيّ النموذج لا يرى معه',
+      files: ['src/components/BuyPanel.tsx'],
+    },
+    '/grant/i/:code/build': {
+      why: 'لوح الدفع يفتح بعد النموذج وحده، وذهبيّ النموذج لا يرى معه',
+      files: ['src/components/BuyPanel.tsx'],
+    },
     '/student/learning': {
       why: 'مراحل الرحلة تتعاقب (العرض ثمّ العمل)، و`StageWork` تبويبات — واحد يرى في المرّة',
       files: [
