@@ -38,8 +38,8 @@ describe('① الاقتراح يشترى', () => {
 describe('② ما يرافق الدورة سطر واحد', () => {
   it('⚠️ قائمة نقاط في شريط رقيق — لا بطاقة ولا شرح تحت كل نقطة', () => {
     const page = code('src/pages/CoursePath.tsx')
-    expect(page).toMatch(/<ul aria-label="ما يرافق الدورة" className="[^"]*flex flex-wrap[^"]*">/)
-    const block = page.slice(page.indexOf('aria-label="ما يرافق الدورة"'), page.indexOf('</ul>', page.indexOf('aria-label="ما يرافق الدورة"')))
+    expect(page).toMatch(/<Inset as="ul" aria-label="ما يرافق الدورة" className="[^"]*flex flex-wrap[^"]*">/)
+    const block = page.slice(page.indexOf('aria-label="ما يرافق الدورة"'), page.indexOf('</Inset>', page.indexOf('aria-label="ما يرافق الدورة"')))
     expect(block).toContain('text-fine')
     expect(block, 'عاد الشرح تحت كل نقطة').not.toMatch(/b\.d\b/)
     expect(page, 'عاد صندوق العنوان').not.toMatch(/<Sparkles[^>]*\/> ما يرافق الدورة/)

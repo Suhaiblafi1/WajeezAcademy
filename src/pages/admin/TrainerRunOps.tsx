@@ -524,9 +524,9 @@ export function PublicProfileEditor({
               «لماذا لا تظهر لي صورة المدرب الذي يريد أن يضعها؟» (صاحب المنصّة): كانت دائرةً بعلامة صورةٍ مكسورة.
               فصارت كبيرةً تُقارَن بها الحاليّة، وتُفتح بحجمها، وإن بدأ رفعُها ولم يكتمل قيل ذلك بدل الكسر. */}
           {trainer.pendingPhotoArrived === false ? (
-            <span className="grid h-24 w-24 shrink-0 place-items-center rounded-2xl border border-dashed border-amber-400/60 px-2 text-center text-fine text-muted-foreground">
+            <Inset as="span" tone="warn" className="grid h-24 w-24 shrink-0 place-items-center px-2 text-center text-fine text-muted-foreground">
               لم يصل ملف الصورة
-            </span>
+            </Inset>
           ) : (
             <a href={trainer.pendingPhotoUrl} target="_blank" rel="noreferrer" className="shrink-0" title="افتح الصورة بحجمها">
               <img

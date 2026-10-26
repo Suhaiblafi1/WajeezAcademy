@@ -10,7 +10,8 @@
    (`commerce.service.ts#updateCoupon`). */
 import { useMemo, useState } from "react";
 import { BadgePercent, Pencil, Plus, Trash2, X } from "lucide-react";
-import { Panel } from "@/components/ui/Surface";
+import { Card, Inset, Panel } from "@/components/ui/Surface";
+import TabBar from "@/components/ui/TabBar";
 import Chip from "@/components/ui/Chip";
 import Button from "@/components/ui/Button";
 import ConfirmAction from "@/components/ConfirmAction";
@@ -88,7 +89,7 @@ export default function CouponsPanel({
       </div>
 
       {creating && (
-        <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+        <Inset className="mt-4">
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
             <label className="text-fine text-muted-foreground">الكود
               <input value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value.toUpperCase() })} placeholder="WAJEEZ20" dir="ltr" className={`${inputCls} mt-1 w-full font-mono`} />
@@ -120,22 +121,23 @@ export default function CouponsPanel({
             }, "أنشئ الكوبون")}>
             أنشئ الكوبون
           </Button>
-        </div>
+        </Inset>
       )}
 
       {/* مرشِّحُ الأنواع — وما خلا لا يُعرض */}
-      <div className="mt-4 flex flex-wrap gap-2" role="tablist" aria-label="نوع الكود">
-        {(["all", "ours", "trainer", "grant"] as const).filter((k) => k === "all" || counts[k] > 0).map((k) => (
-          <button key={k} role="tab" aria-selected={kind === k} onClick={() => setKind(k)}
-            className={`rounded-full border px-3 py-1 text-fine font-bold transition ${
-              kind === k ? "border-teal-light bg-teal/15 text-teal-light-ink" : "border-white/10 text-muted-foreground hover:text-foreground"}`}>
-            {k === "all" ? `الكل ${coupons.length}` : `${KIND_AR[k]} ${counts[k]}`}
-          </button>
-        ))}
-      </div>
+      <TabBar
+        className="mt-4"
+        ariaLabel="نوع الكود"
+        value={kind}
+        onChange={setKind}
+        items={(["all", "ours", "trainer", "grant"] as const).filter((k) => k === "all" || counts[k] > 0).map((k) => ({
+          id: k,
+          label: k === "all" ? `الكل ${coupons.length}` : `${KIND_AR[k]} ${counts[k]}`,
+        }))}
+      />
 
       {/* الجدول — أعمدةٌ مسمّاة على الحاسوب، وبطاقةٌ لكلّ كودٍ على الهاتف */}
-      <div className="mt-3 overflow-hidden rounded-2xl border border-white/10">
+      <Card className="mt-3 overflow-hidden px-0 py-0">
         <div className="hidden grid-cols-[1.4fr_0.8fr_0.8fr_0.9fr_1.2fr_auto] gap-3 bg-white/[0.04] px-4 py-2.5 text-fine font-bold text-muted-foreground md:grid">
           <span>الكود</span><span>الخصم</span><span>الاستعمال</span><span>ينتهي</span><span>الحالة</span><span className="w-40 text-left">الإجراء</span>
         </div>
@@ -174,12 +176,12 @@ export default function CouponsPanel({
                   </span>
                 </div>
                 {!editableHere(c) && (
-                  <p className="mt-1 text-fine text-muted-foreground">
+                  <p className="mt-1 text-read text-muted-foreground">
                     {k === "grant" ? "نسبته من إعدادات المنحة." : "نسبته من صفحة المدرب."} هنا إيقافه فقط.
                   </p>
                 )}
                 {isEditing && (
-                  <div className="mt-3 grid gap-3 rounded-2xl border border-teal/30 bg-teal/[0.05] p-3 sm:grid-cols-2 lg:grid-cols-5">
+                  <Inset tone="accent" className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
                     <label className="text-fine text-muted-foreground">نسبة الخصم %
                       <input type="number" min={1} max={100} value={draft.percentOff} onChange={(e) => setDraft({ ...draft, percentOff: e.target.value, amountOff: "" })} className={`${inputCls} mt-1 w-full`} />
                     </label>
@@ -196,14 +198,14 @@ export default function CouponsPanel({
                       <Button tone="confirm" size="sm" disabled={busy || !draftOk} onClick={() => void saveEdit(c)}>حفظ</Button>
                       <Button tone="ghost" size="sm" onClick={() => setEditing(null)}>إلغاء</Button>
                     </span>
-                  </div>
+                  </Inset>
                 )}
               </li>
             );
           })}
           {shown.length === 0 && <li className="px-4 py-6 text-center text-read text-muted-foreground">لا أكواد هنا بعد.</li>}
         </ul>
-      </div>
+      </Card>
 
       {deleting && (
         <ConfirmAction

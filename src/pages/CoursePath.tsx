@@ -509,14 +509,14 @@ function CoursePathPage({ courseId }: { courseId: string }) {
             «هذا النصّ غير مهمّ جدّا ليأخذ هذه المساحة. فاجعله بنقاطٍ في سطرٍ واحد، أربع نقاطٍ أساسيّةٍ بجانب بعضها،
             أقلّ أهميّةً من غيرها، وأصغر كبوكس» (صاحب المنصّة). فذهب العنوانُ والشرحُ تحت كلّ نقطة: أيقونةٌ واسمٌ ١٢ باهتٌ
             في شريطٍ رقيق، يلتفّ على الهاتف ولا يكبر. */}
-        <ul aria-label="ما يرافق الدورة" className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded-xl border border-white/8 bg-white/[0.02] px-3 py-2">
+        <Inset as="ul" aria-label="ما يرافق الدورة" className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 px-3 py-2">
           {COURSE_COMPANIONS.map((b) => (
-            <li key={b.t} className="flex items-center gap-1.5 text-fine text-muted-foreground">
+            <li key={b.t} className="flex items-center gap-1.5">
               <b.icon className="h-3.5 w-3.5 shrink-0 text-teal-light-ink" aria-hidden="true" />
-              {b.t}
+              <span className="text-fine text-muted-foreground">{b.t}</span>
             </li>
           ))}
-        </ul>
+        </Inset>
 
         {/* ══ مسارك حتى الآن ══
 
