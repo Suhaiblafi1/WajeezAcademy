@@ -113,11 +113,13 @@ describe('٢ب) صورة المدرب كبيرة في صندوق الشعبة �
 
   it('⚠️ واسم الشعبة أول ما في الصندوق — أكبر من اسم المدرب وكاملا بلا قص (٢٦ أكتوبر ٢٠٢٦)', () => {
     /* «يجب أن يكون عنوانُ الدورة ظاهرا فهو أهمُّ من المدرّب واسمه» (صاحب المنصّة) */
-    const title = one.match(/<span class="([^"]*)">شعبة 1<\/span>/)
-    expect(title, 'اسم الشعبة').not.toBeNull()
-    expect(title![1]).toContain('text-lg')
-    expect(title![1], 'مقصوص').not.toContain('truncate')
-    expect(one.indexOf('>شعبة 1<'), 'قبل الصورة').toBeLessThan(one.indexOf('<img '))
+    const at = one.indexOf('شعبة 1')
+    expect(at, `اسم الشعبة غائب: ${one.slice(0, 1200)}`).toBeGreaterThan(-1)
+    /* وسمُ العنصر الذي يحمله — آخرُ «<span» قبله */
+    const tag = one.slice(one.lastIndexOf('<span', at), at)
+    expect(tag).toContain('text-lg')
+    expect(tag, 'مقصوص').not.toContain('truncate')
+    expect(at, 'قبل الصورة').toBeLessThan(one.indexOf('<img '))
     const name = one.match(/<span class="([^"]*)">احمد صالح الطيار<\/span>/)
     expect(name![1], 'اسم المدرب أكبر من اسم الشعبة').not.toMatch(/text-(lg|xl)/)
   })
