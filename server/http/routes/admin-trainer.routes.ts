@@ -62,6 +62,8 @@ const reissueBody = z.object({
     minSeats: z.number().int().min(0).optional(),
     referralRate: z.number().positive().nullish(),
   }).optional(),
+  /* وأجرُ «الاتفاقية» الساري بدل أجر العقد القديم — والشاشةُ ترسل هذا لا `compensation` (قرارُ «a»، ٢٦ أكتوبر ٢٠٢٦) */
+  feeFromRule: z.boolean().optional(),
   courseIds: z.array(z.string()).min(1).max(100).optional(),
   specialTermsAr: z.string().max(SPECIAL_TERMS_MAX_CHARS * 2).nullish(),
 })

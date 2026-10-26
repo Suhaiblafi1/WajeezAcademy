@@ -234,8 +234,9 @@ function FeeStep({
   }, [profileId]);
   useEffect(() => { loadHistory(); }, [loadHistory]);
   /* ═══ وعقدٌ خرج ولم ينفذ — نصُّه لا يتغيّر بهذا الحفظ (٢٦ أكتوبر ٢٠٢٦) ═══
-     التركيبُ والإعادةُ في «العقود» يكتبان القاعدةَ والعقدَ معا، وهذا يكتب القاعدةَ وحدَها. فيُقال الفرقُ قبل الحفظ،
-     والخياران بأثر كلٍّ منهما — لا بابٌ يُسدّ (`outContractOf`). */
+     هذا يكتب القاعدةَ وحدَها، ونصُّ عقدٍ خرج مجمَّدٌ بأجره. فيُقال الفرقُ قبل الحفظ، والخياران بأثر كلٍّ منهما — لا
+     بابٌ يُسدّ (`outContractOf`): يُحفظ هنا ويبقى نصُّه، أو يُحفظ ثمّ يحمله نصُّه بإعادة إصداره من «العقود» — والطريقُ
+     بحاله (`howAr`). ولم يعد يُغيَّر «مع العقد» هناك: الأجرُ يُضبط هنا وحدَه (قرارُ «a»، ٢٦ أكتوبر ٢٠٢٦). */
   const out = outContractOf(contracts);
 
   const save = () =>
@@ -337,8 +338,8 @@ function FeeStep({
 
       {out && !scope && (
         <Inset as="p" tone="warn" className="px-3.5 py-2.5 text-read leading-6">
-          عقده «{out.contract.title}» {out.phraseAr}، {out.feeAr}. الحفظ هنا يغيّر القاعدة وحدها: يبقى نصّ
-          العقد بأجره، ويحسب له الأجر الجديد.
+          عقده «{out.contract.title}» {out.phraseAr}، {out.feeAr}. الحفظ هنا يغيّر الأجر الذي يحسب له، ويبقى نصّ
+          عقده بأجره. {out.howAr}
         </Inset>
       )}
 
@@ -349,11 +350,11 @@ function FeeStep({
             disabled={!(Number(rate) > 0)}
             onClick={() => void save()}
           >
-            {scope ? "اضبطه لهذه الشعبة" : out ? "غيّره هنا وحده" : live ? "استبدل القاعدة السارية" : "اضبط الاتفاق الماليّ"}
+            {scope ? "اضبطه لهذه الشعبة" : out ? "احفظه هنا" : live ? "استبدل القاعدة السارية" : "اضبط الاتفاق الماليّ"}
           </Button>
           {out && !scope && contractsHref && (
             <Button as={Link} to={contractsHref} tone="secondary" size="sm" icon={FileSignature}>
-              غيّره مع العقد في «العقود»
+              افتح عقده في «العقود»
             </Button>
           )}
         </div>

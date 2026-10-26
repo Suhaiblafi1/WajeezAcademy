@@ -20,7 +20,7 @@
    عليه، ولا يملك تغييرَه من شاشته. */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "react-router";
+import { Link, useSearchParams } from "react-router";
 import { BadgeCheck, Ban, BellRing, CalendarPlus, ChevronDown, Download, FilePlus2, FileSignature, FileText, Handshake, IdCard, MessageSquareReply, Printer, RefreshCw, Send, Trash2, Undo2, UserMinus, X } from "lucide-react";
 import ConfirmAction from "@/components/ConfirmAction";
 import Modal from "@/components/Modal";
@@ -39,7 +39,8 @@ import {
 import { apiDelete, apiGet, apiPost, permissionMessage } from "@/services/api";
 import { fmtDate, fmtDateTime } from "@/application/text/format-ar";
 import { RULE_TYPE_AR } from "@/application/trainer/compensation-labels";
-import { composerFeeInput, FEE_FIELDS_AR, feeFormOf, feeTypeOf } from "@/application/trainer/contract-fee";
+import { agreementHref } from "@/application/trainer/record-links";
+import { feeLineAr } from "@/application/trainer/contract-fee";
 /* وطورُ الشرط من موضعه الواحد لا مشتقًّا هنا — ورأسُ `conditional-offer.ts`
    يقول إنّ هذه التسمياتَ لـ«صفّ الطابور» كذلك، ولم تكن تصله. */
 import {
@@ -433,9 +434,6 @@ export default function TrainerContracts() {
   /* البند 21 — بنودٌ مُلزِمةٌ لهذا المدرّب وحده (١ أكتوبر ٢٠٢٦) */
   const [specialTermsAr, setSpecialTermsAr] = useState("");
   /* الأتعابُ وجلسةُ التهيئة في هذه الشاشة — لا شاشةَ ثانية */
-  const [feeRate, setFeeRate] = useState("");
-  const [feeReferralRate, setFeeReferralRate] = useState("");
-  const [feeMinSeats, setFeeMinSeats] = useState("");
   const [orientationAt, setOrientationAt] = useState("");
   const [orientationUrl, setOrientationUrl] = useState("");
   const [waivedAr, setWaivedAr] = useState("");
@@ -507,7 +505,11 @@ export default function TrainerContracts() {
        تُملأ بما في عقده الموقَّع، فما لم يُمَسّ لا يُرسَل ويُنسَخ كما هو.
        و`available` دوراتُه المؤهَّلُ لها اليوم — تُقرأ من التعبئة عند الفتح. */
     editTerms: boolean
-    rate: string; minSeats: string; referralRate: string
+    /* ═══ وأجرُه: يبقى أجرَ عقده، أو يأخذ أجرَ «الاتفاقية» (قرارُ «a»، ٢٦ أكتوبر ٢٠٢٦) ═══
+       لا خاناتِ أجرٍ هنا: يُضبط في «الاتفاقية» وحدَها. و`ruleFee` أجرُها الساري يُقرأ من التعبئة عند الفتح (`undefined`
+       ما لم يُقرأ)، و`takeRuleFee` الاختيارُ حين يفترقان — وأجرُ «الاتفاقية» أوّلُهما، فهي موضعُه. */
+    ruleFee?: ContractCompensation | null
+    takeRuleFee: boolean
     picked: Set<string>
     available: { courseId: string; titleAr: string }[] | null
     specialTermsAr: string
@@ -663,13 +665,6 @@ export default function TrainerContracts() {
       setDocs(DEFAULT_REQUIRED_DOCUMENTS);
       setHoursNoteAr(""); setWaivedAr("");
       setSpecialTermsAr(p.lastSpecialTermsAr ?? "");
-      /* وتُملأ خاناتُ الأتعاب بالقاعدة القائمة إن كانت — فالموظّفُ يعدّل
-         رقما قائما لا يكتبه من فراغٍ فينسى أحدَها. وبنوعها: مقعدُ الرابط
-         للمقعد وحدَه (`contract-fee.ts`). */
-      const fee = feeFormOf(p.compensation);
-      setFeeRate(fee.rate);
-      setFeeReferralRate(fee.referralRate);
-      setFeeMinSeats(fee.minSeats);
       setOrientationAt(""); setOrientationUrl("");
     } catch (e) { setErr(permissionMessage(e, "تعذّر تجهيز الشاشة")); }
   };
@@ -696,11 +691,9 @@ export default function TrainerContracts() {
   }, [loaded]);
 
   const composeBody = useMemo(() => {
-    /* ولا تُرسَل قاعدةٌ إلّا إن تغيّر فيها رقم، وبنوع القاعدة السارية — وكانت تُرسَل
-       «بالمقعد» دائما، فيصير أجرُ الشعبة أجرا لكلّ متعلّم (`contract-fee.ts`). والخانةُ
-       الفارغةُ تعني «اتركِ القاعدةَ القائمةَ كما هي»، لا «اجعلها صفرا». */
-    const compensation = composerFeeInput(prefill?.compensation ?? null,
-      { rate: feeRate, referralRate: feeReferralRate, minSeats: feeMinSeats });
+    /* ═══ ولا أجرَ يُرسَل: العقدُ يأخذ القاعدةَ السارية (قرارُ «a»، ٢٦ أكتوبر ٢٠٢٦) ═══
+       كانت هنا خاناتُ الأجر تكتب قاعدةً مع العقد — بابٌ ثانٍ لرقمٍ يُضبط في «الاتفاقية» وحدَها. فلا `compensation`،
+       والخادمُ يطبع القاعدةَ السارية في المتن ويحفظ معرّفَها (`effectiveCompensation`). */
     return {
       title,
       trainerLegalNameAr: legalNameAr.trim() || null,
@@ -708,13 +701,12 @@ export default function TrainerContracts() {
       requiredDocuments: docs,
       hoursNoteAr: hoursNoteAr.trim() || null,
       rateWaivedReasonAr: waivedAr.trim() || null,
-      compensation,
       orientationAt: orientationAt.trim() === "" ? null : new Date(orientationAt).toISOString(),
       orientationUrl: orientationUrl.trim() || null,
       specialTermsAr: specialTermsAr.trim() || null,
     };
-  }, [title, legalNameAr, picked, docs, hoursNoteAr, waivedAr, feeRate, feeReferralRate, feeMinSeats,
-      orientationAt, orientationUrl, specialTermsAr, prefill]);
+  }, [title, legalNameAr, picked, docs, hoursNoteAr, waivedAr,
+      orientationAt, orientationUrl, specialTermsAr]);
 
   /* ═══ وخطأُ الصفّ يُرسَم في الصفّ (٢٦ سبتمبر ٢٠٢٦) ═══
 
@@ -754,8 +746,7 @@ export default function TrainerContracts() {
         : defaultResignBodyAr(c.title, changeGroupsBetween(c.bodyVersion, CONTRACT_BODY_VERSION, { conditional: c.gatesActivation }).length > 0),
       /* ومن قبِل تعديلا فأغلبُ ظنّه أنّه سيغيّر شرطا — فتُفتح الشروطُ له */
       editTerms: mode === "amendment",
-      rate: c.compensationRate ?? "", minSeats: c.compensationMinSeats != null ? String(c.compensationMinSeats) : "",
-      referralRate: c.compensationReferralRate ?? "",
+      takeRuleFee: true,
       picked: new Set((c.qualifiedSnapshot ?? []).map((q) => q.courseId)),
       available: null,
       specialTermsAr: c.specialTermsAr ?? "",
@@ -764,7 +755,13 @@ export default function TrainerContracts() {
     if (!appId) return;
     try {
       const p = await apiGet<Prefill>(`/api/admin/trainer-applications/${appId}/contract-prefill`);
-      setResign((r) => (r && r.row.id === c.id ? { ...r, available: p.courses } : r));
+      setResign((r) => (r && r.row.id === c.id ? {
+        ...r, available: p.courses,
+        ruleFee: p.compensation && {
+          type: p.compensation.type, rate: p.compensation.rate, currency: p.compensation.currency,
+          minSeats: p.compensation.minSeats, referralRate: p.compensation.referralRate,
+        },
+      } : r));
     } catch { /* تبقى دوراتُ عقده وحدَها — والخادمُ يحكم على ما يُختار */ }
   };
 
@@ -1066,11 +1063,18 @@ c.gatesActivation
               {" — "}<b>{prefill.compensation.rate} {prefill.compensation.currency}</b>
               {prefill.compensation.minSeats ? ` · حدٌّ أدنى ${prefill.compensation.minSeats} مقعدا` : ""}
               {prefill.compensation.referralRate ? ` · مقعدُ الإحالة ${prefill.compensation.referralRate}` : ""}
-              <span className="block opacity-70">هذه القاعدة السارية. أرقامها تعدل أدناه، ونوعها من «أتعاب المدربين».</span>
+              <span className="block opacity-70">
+                هذه القاعدة السارية، ويأخذها العقد كما هي. تضبط في{" "}
+                <Link to={agreementHref(openFor.id)} className="font-bold underline-offset-2 hover:underline">«الاتفاقية» من ملفه</Link>.
+              </span>
             </Inset>
           ) : (
             <Panel tone="warn" className="mb-4 p-3 text-sm">
-              <p className="mb-2">لا قاعدةَ أتعابٍ لهذا المدرّب. تضبطها الماليّةُ من «أتعاب المدربين»، أو يُكتب سببُ الإرسال بلا أجرٍ متّفقٍ عليه:</p>
+              <p className="mb-2">
+                لا قاعدة أتعاب لهذا المدرب. اضبطها في{" "}
+                <Link to={agreementHref(openFor.id)} className="font-bold underline-offset-2 hover:underline">«الاتفاقية» من ملفه</Link>،
+                {" "}أو اكتب سبب الإرسال بلا أجر متفق عليه:
+              </p>
               <label className="sr-only" htmlFor="waived">سببُ الإرسال بلا أجر</label>
               <input id="waived" value={waivedAr} onChange={(e) => setWaivedAr(e.target.value)}
                 placeholder="يُحدَّد قبل أوّل إسناد باتفاقٍ مكتوب" className={`${inputCls} w-full`} />
@@ -1138,42 +1142,6 @@ c.gatesActivation
             <p className="mt-2 text-read opacity-70">
               وثيقةُ هويّةٍ واحدةٌ على الأقلّ — البند 15 يُقرّ باسمه القانونيّ، ولا إقرارَ بلا ما يقابله.
             </p>
-          </Inset>
-
-          {/* ═══ الأتعاب — تُضبَط هنا ثمّ يُركَّب العقد ═══ */}
-          <Inset className="mb-4">
-            <h4 className="mb-1 font-black">الأتعاب</h4>
-            {/* وخاناتُها بنوع القاعدة السارية — وكانت «بالمقعد» لكلّ نوع (`contract-fee.ts`) */}
-            <p className="mb-3 text-read opacity-70">
-              إن غيرت رقما هنا تحفظ قاعدة جديدة بالنوع نفسه. اتركها كما هي لتبقى القاعدة السارية.
-            </p>
-            {(() => {
-              const fields = FEE_FIELDS_AR[feeTypeOf(prefill.compensation)];
-              return (
-                <div className={`grid gap-3 ${fields.referral ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>
-                  {fields.referral && (
-                    <label className="block">
-                      <span className="mb-1 block text-sm font-bold">{fields.referral}</span>
-                      <input inputMode="decimal" value={feeReferralRate}
-                        onChange={(e) => setFeeReferralRate(e.target.value)}
-                        className={`${areaCls} w-full`} placeholder="45" />
-                    </label>
-                  )}
-                  <label className="block">
-                    <span className="mb-1 block text-sm font-bold">{fields.rate}</span>
-                    <input inputMode="decimal" value={feeRate}
-                      onChange={(e) => setFeeRate(e.target.value)}
-                      className={`${areaCls} w-full`} placeholder="30" />
-                  </label>
-                  <label className="block">
-                    <span className="mb-1 block text-sm font-bold">{fields.minSeats}</span>
-                    <input inputMode="numeric" value={feeMinSeats}
-                      onChange={(e) => setFeeMinSeats(e.target.value)}
-                      className={`${areaCls} w-full`} placeholder="8" />
-                  </label>
-                </div>
-              );
-            })()}
           </Inset>
 
           {/* ═══ جلسةُ التهيئة — ومنها تبدأ المهلة ═══ */}
@@ -2535,21 +2503,19 @@ c.gatesActivation
         const body = r.bodyAr.trim();
         /* ═══ ما تغيّر في شروطه — يُحسب بالدالّة التي يحسب بها الخادم ═══
            (`personalChangesAr`)، فما يُعايَن هنا هو ما يُرسَل في الرسالة. */
-        const active = r.row.profile?.application?.status === "active";
         const rowFee: ContractCompensation | null = r.row.compensationType
           ? { type: r.row.compensationType, rate: r.row.compensationRate ?? "0", currency: r.row.currency,
               minSeats: r.row.compensationMinSeats, referralRate: r.row.compensationReferralRate }
           : null;
-        const num = (t: string) => (t.trim() === "" ? null : Number(t));
-        const typedRate = num(r.rate);
-        const typedFee: ContractCompensation | null = typedRate !== null && Number.isFinite(typedRate) && typedRate > 0
-          ? { type: r.row.compensationType ?? "per_seat", rate: String(typedRate), currency: r.row.currency,
-              minSeats: num(r.minSeats), referralRate: num(r.referralRate) === null ? null : String(num(r.referralRate)) }
-          : rowFee;
-        const feeChanged = !active && personalChangesAr(
+        /* وأجرُ «الاتفاقية» إن افترق عن أجر عقده — بالدالّة التي يقيس بها الخادمُ ما تغيّر */
+        const ruleFee = r.ruleFee ?? null;
+        const feeDiffers = ruleFee !== null && personalChangesAr(
           { compensation: rowFee, courses: [], specialTermsAr: null },
-          { compensation: typedFee, courses: [], specialTermsAr: null },
+          { compensation: ruleFee, courses: [], specialTermsAr: null },
         ).length > 0;
+        const feeChanged = feeDiffers && r.takeRuleFee;
+        const typedFee = feeChanged ? ruleFee : rowFee;
+        const appId = r.row.profile?.application?.id ?? null;
         const snapshot = r.row.qualifiedSnapshot ?? [];
         const pool = r.available ?? snapshot;
         const chosen = pool.filter((c) => r.picked.has(c.courseId));
@@ -2627,30 +2593,32 @@ c.gatesActivation
                   {amend ? "شروطُه في العقد المصحَّح — غيّرْ ما قبلتَه منها" : "وغيّرْ شروطَه قبل الإعادة (اختياريّ)"}
                 </summary>
                 <Inset className="mt-2 grid gap-3 p-3">
-                  {active ? (
-                    <p className="text-read leading-6 opacity-80">
-                      <b>الأتعابُ لا تُغيَّر من هنا:</b> مدرّبٌ نشط، وتغييرُها يسري على ما يُحسب له من اليوم
-                      قبل أن يوقّع. غيّرْها من شاشة الأتعاب بتاريخ سريان.
-                    </p>
-                  ) : (
-                    <div className="grid gap-2 sm:grid-cols-3">
-                      <label className="block">
-                        <span className={LABEL}>سعرُ المقعد العامّ</span>
-                        <input inputMode="decimal" className={FIELD} value={r.rate}
-                          onChange={(e) => setResign({ ...r, rate: e.target.value })} />
-                      </label>
-                      <label className="block">
-                        <span className={LABEL}>الحدُّ الأدنى للمقاعد</span>
-                        <input inputMode="numeric" className={FIELD} value={r.minSeats}
-                          onChange={(e) => setResign({ ...r, minSeats: e.target.value })} />
-                      </label>
-                      <label className="block">
-                        <span className={LABEL}>سعرُ مقعد رابط الدعوة</span>
-                        <input inputMode="decimal" className={FIELD} value={r.referralRate}
-                          onChange={(e) => setResign({ ...r, referralRate: e.target.value })} />
-                      </label>
-                    </div>
-                  )}
+                  {/* ═══ والأجرُ لا يُكتب هنا — يُضبط في «الاتفاقية» (قرارُ «a»، ٢٦ أكتوبر ٢٠٢٦) ═══
+                      فإن افترق أجرُها عن أجر عقده قيل الفرقُ والخياران بأثر كلٍّ منهما، لا خانةٌ تكتب رقما ثالثا. */}
+                  <fieldset>
+                    <legend className={LABEL}>أجره في العقد الجديد</legend>
+                    {feeDiffers ? (
+                      <div className="grid gap-1.5 text-sm">
+                        <label className="flex items-start gap-2">
+                          <input type="radio" name="resign-fee" checked={r.takeRuleFee}
+                            onChange={() => setResign({ ...r, takeRuleFee: true })} />
+                          <span>أجر «الاتفاقية» الآن: <b>{feeLineAr(ruleFee)}</b> — يحمله نصه، ويقوله البريد</span>
+                        </label>
+                        <label className="flex items-start gap-2">
+                          <input type="radio" name="resign-fee" checked={!r.takeRuleFee}
+                            onChange={() => setResign({ ...r, takeRuleFee: false })} />
+                          <span>أجر عقده كما هو: <b>{feeLineAr(rowFee)}</b> — ويحسب له أجر «الاتفاقية»</span>
+                        </label>
+                      </div>
+                    ) : (
+                      <p className="text-sm opacity-80">{feeLineAr(rowFee)} — كما في «الاتفاقية».</p>
+                    )}
+                    {appId && (
+                      <Link to={agreementHref(appId)} className="mt-1 inline-block text-read font-bold underline-offset-2 hover:underline">
+                        غيّره في «الاتفاقية»
+                      </Link>
+                    )}
+                  </fieldset>
                   <fieldset>
                     <legend className={LABEL}>الدوراتُ المؤهَّلُ لها (الملحق أ)</legend>
                     <ul className="space-y-1 text-sm">
@@ -2710,13 +2678,7 @@ c.gatesActivation
                     /* وما لم يُمَسّ لا يُرسَل — فيُنسَخ من عقده كما هو في الخادم */
                     await apiPost(`/api/admin/trainer-contracts/${r.row.id}/${amend ? "amendment-reissue" : "resign-request"}`, {
                       subjectAr: subject, bodyAr: body,
-                      ...(feeChanged && typedFee ? {
-                        compensation: {
-                          type: typedFee.type, rate: Number(typedFee.rate),
-                          ...(typedFee.minSeats != null ? { minSeats: typedFee.minSeats } : {}),
-                          referralRate: typedFee.referralRate === null ? null : Number(typedFee.referralRate),
-                        },
-                      } : {}),
+                      ...(feeChanged ? { feeFromRule: true } : {}),
                       ...(coursesChanged ? { courseIds: chosen.map((c) => c.courseId) } : {}),
                       ...(termsChanged ? { specialTermsAr: norm(r.specialTermsAr) || null } : {}),
                     });
