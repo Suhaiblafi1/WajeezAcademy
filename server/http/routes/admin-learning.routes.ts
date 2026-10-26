@@ -550,15 +550,8 @@ export function registerAdminLearningRoutes(app: FastifyInstance, prisma: Prisma
   })
 
   /* تكرارُ شعبةٍ من فصلٍ سابق — بلا تسجيلاتٍ ولا حضورٍ ولا اجتماعات */
-  /* مزامنةُ الحالات بالتواريخ — عرضٌ أوّلا، ثمّ تطبيقٌ بطلبٍ صريح.
-     ويُنادى الآن من الشاشة، ومن العامل الخلفيّ يومَ يوجد. */
-  app.post('/api/admin/cohorts/sync-statuses', {
-    preHandler: requirePermission('cohort.manage'),
-    schema: { tags: ['admin-learning'], summary: 'يصلح حالات الشعب المتأخّرة عن تواريخها — apply=false يعرض أوّلا' },
-  }, async (req) => {
-    const body = z.object({ apply: z.boolean().default(false) }).parse(req.body ?? {})
-    return cohorts.syncStatusesByDate(req.auth!.userId, { apply: body.apply })
-  })
+  /* وكان هنا بابُ «حالات متأخّرة عن تواريخها» بزرّ (`sync-statuses`) — وذهب (٢٦ أكتوبر ٢٠٢٦، المرحلة السادسة):
+     العاملُ يُجريها كلَّ ربع ساعة (`cohort_status_sync` في `server/worker/jobs.ts`)، فالزرُّ يعيد ما فُعل. */
 
   app.post('/api/admin/cohorts/:id/duplicate', {
     preHandler: requirePermission('cohort.manage'),

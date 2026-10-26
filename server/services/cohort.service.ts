@@ -118,8 +118,9 @@ export class CohortService {
       scheduleWindowStart: c.scheduleWindowStart, scheduleWindowEnd: c.scheduleWindowEnd,
       /* وموقوفُها يُقال في القائمة (٢٠ أكتوبر ٢٠٢٦، `cohortNextStep`): إيقافٌ إداريٌّ، أو حالٌ لا يفتح له
          بابَ موادّه (ليس في الإعداد ولا نشطا) — `portal-access.ts` */
+      /* ومعرّفُ طلبه — ملفُّه في الإدارة به (`/admin/trainers/:id`)، فاسمُه في بطاقة الشعبة رابطٌ إليه (المرحلة السادسة) */
       trainers: c.trainers.map((t) => ({
-        profileId: t.profileId, name: t.profile.application.fullName, role: t.role,
+        profileId: t.profileId, applicationId: t.profile.applicationId, name: t.profile.application.fullName, role: t.role,
         suspended: t.profile.suspendedAt !== null || !MATERIALS_STATUSES.includes(t.profile.application.status),
       })),
       trainerPlanStatus: c.plans[0]?.status ?? null,
@@ -574,8 +575,8 @@ export class CohortService {
      تُولَّد (فهي تُولَّد عند الإكمال)، ولوحاتُ التقارير تعدّ ما انتهى جاريا.
 
      والحقيقةُ في الجلسات: شعبةٌ بدأت أوّلُ جلساتها «جارية»، وانتهت آخرُها
-     «منتهية». فهذه الدالّةُ تُصلح ما تأخّر، وتُنادى من الشاشة الآن ومن
-     العامل الخلفيّ يومَ يوجد (المهمّة ٥٤ في خطّة التنفيذ).
+     «منتهية». فهذه الدالّةُ تُصلح ما تأخّر، ويُناديها العاملُ كلَّ ربع ساعة
+     (`cohort_status_sync`) — وكان لها زرٌّ في «الشعب» وذهب (٢٦ أكتوبر ٢٠٢٦).
 
      وما لا تفعله بقصد: لا تفتح مسودّةً — الفتحُ يمرّ بشروطه الخمسة وبقرار
      إنسان؛ ولا تلمس ملغاةً؛ ولا تُنهي شعبةً بلا جلسة. وما تُرجعه إلى «مفتوحة»
