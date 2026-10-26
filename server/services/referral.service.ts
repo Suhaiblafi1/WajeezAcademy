@@ -247,6 +247,17 @@ export class ReferralService {
     return this.prisma.trainerReferralLink.findUnique({ where: { code: c }, select: { cohortId: true, profileId: true, code: true } })
   }
 
+  /** رمزُه الواسع — يُنشأ إن لم يكن. يختمه كودُ «شارك دوراتك» على شعبه عند الدفع (`share-code.ts`) */
+  async wideCodeOf(profileId: string): Promise<string> {
+    const row = await this.prisma.trainerReferralLink.findFirst({ where: { profileId, cohortId: null }, select: { code: true } })
+    if (row) return row.code
+    const made = await this.prisma.trainerReferralLink.create({ data: { cohortId: null, profileId, code: newCode() } })
+    await recordAudit(this.prisma, {
+      actorId: null, action: 'referral.link.create', entityType: 'trainer_profile', entityId: profileId, meta: { code: made.code, scope: 'wide', via: 'share_code' },
+    })
+    return made.code
+  }
+
   /** عند الدفع: الرمزُ يُقبل إن خصّ شعبةً من المشتراة — وإلّا يُهمَل بأثرٍ لا بخطأ */
   async acceptAtCheckout(userId: string, cohortIds: string[], code: string | null | undefined): Promise<{ cohortId: string; code: string } | null> {
     const link = await this.resolve(code)

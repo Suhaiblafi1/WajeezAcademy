@@ -437,6 +437,8 @@ export class CartService {
       /* نسبةُ المنحة إن كان الكودُ كودَها — ليُسمّى بندُها في اللوح باسمها */
       grantPct: coupon?.grantCode ? coupon.percentOff : null,
       trainerCode: trainerCode ? { id: trainerCode.id, profileId: trainerCode.profileId } : null,
+      /* ومن اشترى بكود «شارك دوراتك» يُحسب لصاحبه بأجر الإحالة (`share-code.ts`) */
+      shareProfileId: shareCode?.profileId ?? null,
       trainerPurchase: purchase,
     }
   }

@@ -6,7 +6,9 @@
    ① **واحدٌ لكلّ مدرّب**، بنسبته، ويُعاد كما هو.
    ② **على شعبه وحدَها، فوق الباقة** — ويُردّ حيث لا دورةَ له في السلّة.
    ③ **ولا يُحسم منه شيء**: لا صفَّ استعمالٍ يقع عليه.
-   ④ **وموافقةُ الطلبات تردّه** — تخصم من الطلب كلِّه بلا نطاق. */
+   ④ **وموافقةُ الطلبات تردّه** — تخصم من الطلب كلِّه بلا نطاق.
+   ⑤ **ومن اشترى به يُحسب لصاحبه بأجر الإحالة** — قرارُ صاحب المنصّة (٢٦ أكتوبر ٢٠٢٦): «نعم، احسبه بأجر الإحالة».
+      وما ختمه رابطٌ صريحٌ يبقى، ودورةُ غيره في الطلب نفسِه لا تُختم له. */
 
 import { beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
@@ -49,6 +51,7 @@ async function openCohort(key: string, courseId: string, price: number, lead: st
 const learner = async (tag: string) => (await auth.register(`tsc-l-${tag}-${STAMP}@test.local`, 'Learner#12345', `متعلّم ${tag}`)).userId
 
 let A: { userId: string; profileId: string }
+let B: { userId: string; profileId: string }
 let codeA = ''
 
 beforeAll(async () => {
@@ -60,7 +63,7 @@ beforeAll(async () => {
   adminId = (await auth.register(`tsc-admin-${STAMP}@test.local`, 'Admin#12345', 'المالية')).userId
   await auth.setRoles(adminId, ['academic_manager'])
   A = await trainer('A')
-  const B = await trainer('B')
+  B = await trainer('B')
   const courses = await prisma.course.findMany({ take: 2, select: { id: true }, orderBy: { id: 'asc' } })
   await openCohort('A1', courses[0].id, 100, A.profileId)
   await openCohort('B1', courses[1].id, 200, B.profileId)
@@ -107,5 +110,38 @@ describe('④ وموافقةُ الطلبات تردّه', () => {
     const req = await prisma.enrollmentRequest.create({ data: { userId: l, cohortId: cohort.B1, status: 'pending' } })
     await expect(commerce.approveEnrollmentRequest(req.id, adminId, codeA))
       .rejects.toMatchObject({ code: 'trainer_code_checkout_only' })
+  })
+})
+
+async function pay(orderId: string) {
+  const invoice = await prisma.invoice.findFirstOrThrow({ where: { orderId } })
+  if (invoice.status !== 'paid') await commerce.recordManualPayment(invoice.id, adminId, { methodNote: 'تحويل بنكي اختباري' })
+}
+
+describe('⑤ ومن اشترى به يُحسب لصاحبه بأجر الإحالة', () => {
+  it('⚠️ يُختم تسجيلُه في شعبته لصاحب الكود — ودورةُ غيره في الطلب نفسِه عامّة', async () => {
+    const l = await learner('5')
+    const order = await commerce.checkout(l, [cohort.A1, cohort.B1], codeA)
+    await pay(order.orderId)
+    const mine = await prisma.enrollment.findFirstOrThrow({ where: { userId: l, cohortId: cohort.A1 } })
+    expect(mine.referralProfileId, 'من اشترى بكوده لم يُحسب له').toBe(A.profileId)
+    const other = await prisma.enrollment.findFirstOrThrow({ where: { userId: l, cohortId: cohort.B1 } })
+    expect(other.referralProfileId, 'خُتمت دورةُ مدرّبٍ آخر لصاحب الكود').toBeNull()
+  })
+
+  it('⚠️ وما ختمه رابطٌ صريحٌ يبقى كما هو', async () => {
+    const link = await prisma.trainerReferralLink.create({ data: { cohortId: cohort.B1, profileId: B.profileId, code: `WJ-TSC-B-${STAMP}` } })
+    const l = await learner('6')
+    const order = await commerce.checkout(l, [cohort.A1, cohort.B1], codeA, link.code)
+    await pay(order.orderId)
+    expect((await prisma.enrollment.findFirstOrThrow({ where: { userId: l, cohortId: cohort.B1 } })).referralProfileId).toBe(B.profileId)
+    expect((await prisma.enrollment.findFirstOrThrow({ where: { userId: l, cohortId: cohort.A1 } })).referralProfileId).toBe(A.profileId)
+  })
+
+  it('وبلا الكود لا يُختم شيء — الشراءُ العامّ عامّ', async () => {
+    const l = await learner('7')
+    const order = await commerce.checkout(l, [cohort.A1])
+    await pay(order.orderId)
+    expect((await prisma.enrollment.findFirstOrThrow({ where: { userId: l, cohortId: cohort.A1 } })).referralProfileId).toBeNull()
   })
 })
