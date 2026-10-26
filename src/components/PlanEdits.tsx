@@ -2,19 +2,18 @@
 
    قرارُ صاحب المنصّة: «التعديلُ يطول على المدرّب — نكتبه نحن ويختار هو». والوجهان هنا:
    `PlanEditsUploader` لبطاقة المراجعة (يُرفع الملفّ، ويُرى حالُ كلّ بند، ويُسحب ما لم
-   يُقرَّر)، و`PlanEditsBulkUpload` لـ«خططٌ تنتظر اعتمادك» (ملفّاتٌ كثيرةٌ دفعةً واحدة، كلٌّ
-   إلى خطّته)، و`PlanEditsPanel` لصفحة المدرّب (يقرأ كلَّ تعديلٍ بما قبله وما بعده، ويقبله
-   أو يرفضه). والقاعدةُ والعرضُ في `application/trainer/plan-edits.ts` — والشاشتان
-   تعرضان ما يحسبه الخادمُ منها، لا تحسبان. */
+   يُقرَّر)، و`PlanEditsPanel` لصفحة المدرّب (يقرأ كلَّ تعديلٍ بما قبله وما بعده، ويقبله
+   أو يرفضه). والرفعُ دفعةً من «خططٌ تنتظر اعتمادك» في `ReviewUpload.tsx`. والقاعدةُ والعرضُ في
+   `application/trainer/plan-edits.ts` — والشاشتان تعرضان ما يحسبه الخادمُ منها، لا تحسبان. */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { CalendarClock, Check, CopyX, FileJson, PencilLine, Undo2, X } from "lucide-react";
+import { CalendarClock, Check, FileJson, PencilLine, X } from "lucide-react";
 import { apiDelete, apiGet, apiPost, ApiError } from "@/services/api";
 import { Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import Chip from "@/components/ui/Chip";
-import type { EditView, PlanEditStatus } from "@/application/trainer/plan-edits";
-import { KEEP_LATEST_AR, keepLatestPath, keptLatestAr } from "@/application/trainer/plan-edits-bulk";
+import type { EditView, PlanEditStatus, PlanEditsUploadCounts } from "@/application/trainer/plan-edits";
+import { uploadedLineAr } from "@/application/trainer/plan-edits-bulk";
 import { GapList, NoteSubs } from "@/components/LongText";
 import { gapLayout } from "@/application/trainer/text-layout";
 import { SCHEDULE_REJECT_REASONS, withRejectReason } from "@/application/terms/schedule-clash";
@@ -110,18 +109,10 @@ export function PlanEditsUploader({ planId, cohortId, canUpload: mayUpload, canR
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
   const [reviewing, setReviewing] = useState<string | null>(null);
-  /* كم يعود بـ«أعِد ما سحبته» — يُقرأ مع القائمة (١٢ أكتوبر ٢٠٢٦، `restore` في `plan-edit.service.ts`) */
-  const [withdrawn, setWithdrawn] = useState(0);
-  /* وكم يسحب «احذف المكرر» — بنود ملفات أقدم من آخر ملف رفع ولم يقرر فيها المدرب (`keepLatest`) */
-  const [older, setOlder] = useState(0);
 
   const load = useCallback(async () => {
     try { setItems(await apiGet<PlanEditItem[]>(`/api/admin/cohorts/${cohortId}/plan-edits`)); }
     catch { /* البطاقةُ تُقرأ بلا القائمة */ }
-    try {
-      const w = await apiGet<{ count: number; older?: number }>(`/api/admin/cohorts/${cohortId}/plan-edits/withdrawn`);
-      setWithdrawn(w.count); setOlder(w.older ?? 0);
-    } catch { setWithdrawn(0); setOlder(0); }
   }, [cohortId]);
   useEffect(() => { void load(); }, [load]);
 
@@ -131,8 +122,10 @@ export function PlanEditsUploader({ planId, cohortId, canUpload: mayUpload, canR
       let body: unknown;
       try { body = JSON.parse(await file.text()); }
       catch { throw new Error(`«${file.name}» ليس ملفّ JSON مقروءا`); }
-      setItems(await apiPost<PlanEditItem[]>(`/api/admin/cohort-plans/${planId}/edits`, body));
-      setMsg(`رفع «${file.name}» مسوّدة — لا يراه المدرّب حتّى تعتمد كلّ بند أدناه أو تحذفه.`);
+      /* وما رُفع قبلُ يُتجاهَل، والأحدثُ يحلّ محلّ ما لم يُقرَّر فيه — ويُقال ما وقع (٢٦ أكتوبر ٢٠٢٦، `upload`) */
+      const r = await apiPost<{ edits: PlanEditItem[] } & PlanEditsUploadCounts>(`/api/admin/cohort-plans/${planId}/edits`, body);
+      setItems(r.edits);
+      setMsg(`«${file.name}»: ${uploadedLineAr(r)}`);
     } catch (e) {
       setMsg(errText(e, "تعذّر الرفع"));
     } finally {
@@ -160,51 +153,9 @@ export function PlanEditsUploader({ planId, cohortId, canUpload: mayUpload, canR
     setBusy(true); setMsg("");
     try {
       setItems(await apiDelete<PlanEditItem[]>(`/api/admin/cohort-plans/${planId}/edits`));
-      setMsg("سحب ما لم يقرّر فيه — وتعيده كما كان بـ«أعد ما سحبته» ما لم ترفع ملفا بعده.");
-      await load();
+      setMsg("سحب ما لم يقرّر فيه. ولتعيده ارفع ملفه من جديد.");
     } catch (e) {
       setMsg(errText(e, "تعذّر السحب"));
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  /* ═══ «احذف المكرر» — يبقى آخرُ ملفٍّ رفعه، ويُسحب ما لم يقرّر فيه من الأقدم (١٢ أكتوبر ٢٠٢٦) ═══
-     «give me a button to remove duplication» (صاحب المنصّة) — بعد أن أعادت «أعد ما سحبته» بنودَ
-     رفعاتٍ سابقةٍ فوق الملفّ الجديد. */
-  const keepLatest = async () => {
-    setBusy(true); setMsg("");
-    try {
-      const r = await apiPost<{ edits: PlanEditItem[]; withdrawn: number }>(keepLatestPath(planId), {});
-      setItems(r.edits);
-      setMsg(keptLatestAr(r.withdrawn));
-      await load();
-    } catch (e) {
-      setMsg(errText(e, "تعذّر السحب"));
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  /* ═══ «أعِد ما سحبته» — والسحبُ بنقرةٍ واحدةٍ يُردّ بنقرةٍ واحدة (١٢ أكتوبر ٢٠٢٦) ═══
-     «أين التعديلات؟ كانت موجودةً وأعتقد أنّي سحبتها.. كيف أعيدها؟» (صاحب المنصّة). فتعود كما كانت:
-     ما اعتمدته للمدرّب يصله ثانية، والمسوّدةُ مسوّدة. ومنذ ٢٠ أكتوبر ٢٠٢٦ يعود آخرُ سحبٍ بـ«اسحب ما لم
-     يقرّر» كلُّه أو لا شيء (`restorable`) — فلا سطرَ لما بقي مسحوبا. */
-  const restore = async () => {
-    setBusy(true); setMsg("");
-    try {
-      const r = await apiPost<{ edits: PlanEditItem[]; restored: number; toTrainer: number }>(
-        `/api/admin/cohort-plans/${planId}/edits/restore`, {});
-      setItems(r.edits);
-      const drafts = r.restored - r.toTrainer;
-      setMsg([
-        `أعاد ${r.restored} كما كانت`,
-        r.toTrainer > 0 ? `${r.toTrainer} عند المدرّب` : "",
-        drafts > 0 ? `${drafts} مسوّدة تراجعها` : "",
-      ].filter(Boolean).join(" · ") + ".");
-      await load();
-    } catch (e) {
-      setMsg(errText(e, "تعذّرت الإعادة"));
     } finally {
       setBusy(false);
     }
@@ -344,24 +295,13 @@ export function PlanEditsUploader({ planId, cohortId, canUpload: mayUpload, canR
               جهّز جدولا ثابتا مقترحا
             </Button>
           )}
-          {older > 0 && (
-            <Button tone="secondary" size="sm" icon={CopyX} disabled={busy} onClick={() => void keepLatest()}>
-              {KEEP_LATEST_AR.labelAr} ({older})
-            </Button>
-          )}
           {open > 0 && (
             <Button tone="ghost" size="sm" disabled={busy} onClick={() => void withdraw()}>
               اسحب ما لم يقرّر ({open})
             </Button>
           )}
-          {withdrawn > 0 && (
-            <Button tone="secondary" size="sm" icon={Undo2} disabled={busy} onClick={() => void restore()}>
-              أعد ما سحبته ({withdrawn})
-            </Button>
-          )}
         </div>
       )}
-      {canUpload && older > 0 && <p className="mt-2 text-read leading-6 text-muted-foreground">{KEEP_LATEST_AR.whatAr}</p>}
       {msg && <p className="mt-2 whitespace-pre-wrap text-read font-bold text-teal-light-ink" role="status">{msg}</p>}
     </Inset>
   );

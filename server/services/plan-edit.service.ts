@@ -12,7 +12,8 @@
    ② **لا يُكتب فوق ما كتبه بيده بلا علمه.** يُحفظ مع كلّ بندٍ ما كان في موضعه لحظةَ
       الرفع؛ فإن تغيّر قيل له، ويختار: يقبله فوقه أو يرفضه (قرارُ ٢ أكتوبر: لا إجبار).
    ③ **لا يُقبل نصفُ ملفّ.** يُفحص الملفُّ كلُّه لحظةَ الرفع، فإن سقط بندٌ رُدّ كلُّه
-      ببنوده وأسبابها — لا يصل المدرّبَ تعديلٌ لا يقع.
+      ببنوده وأسبابها — لا يصل المدرّبَ تعديلٌ لا يقع. وما رُفع قبلُ بعينه ليس ساقطا: يُتجاهَل،
+      والأحدثُ يحلّ محلّ ما لم يُقرَّر فيه (٢٦ أكتوبر ٢٠٢٦، `upload`).
    ④ **ولا يصل المدرّبَ ما لم تعتمده الإدارة (١٠ أكتوبر ٢٠٢٦).** المرفوعُ مسوّدةٌ
       (`proposed`) يراجعها من يملك `cohort.plan.edits.review` — المديرُ والمديرُ
       الأكاديميّ — فيعتمد كلَّ بندٍ للمدرّب أو يحذفه. والمدرّبُ لا يرى المسوّدةَ ولا
@@ -34,10 +35,10 @@ import { CohortPlanService, resolvePeriod, type PlanStatus, type TrainerPlanCont
 import { proposeSchedule, type ScheduleEdit } from '../../src/application/trainer/schedule-proposal'
 import { PLAN_VISIBLE_STATUSES } from '../../src/application/trainer/plan-overlay'
 import {
-  applyContentEdit, attachmentSnapshot, attachmentsAfter, contentBefore, editsContent, noteItemsFrom, planEditStep, planEditView, rowEditProblem, sameSnapshot, scheduleChainProblem, schedulePlanContent, scheduleSnapshot,
+  applyContentEdit, attachmentSnapshot, attachmentsAfter, contentBefore, editsContent, noteItemsFrom, planEditStep, planEditView, rowEditProblem, sameEdit, sameSnapshot, scheduleChainProblem, schedulePlanContent, scheduleSnapshot,
   sessionMoveChainProblem,
   sessionSnapshot, taskSnapshot, type Checked, type EditContext, type EditSnapshot, type EditView, type PlanEdit,
-  type PlanEditStatus, PLAN_EDITS_MAX, TASK_EDIT_FIELDS, TRAINER_VISIBLE_EDIT_STATUSES,
+  type PlanEditStatus, type PlanEditsUploadCounts, PLAN_EDITS_MAX, TASK_EDIT_FIELDS, TRAINER_VISIBLE_EDIT_STATUSES,
 } from '../../src/application/trainer/plan-edits'
 
 /** بندٌ في الملفّ المرفوع: التعديلُ نفسُه، ولماذا، وأمطلوبٌ هو */
@@ -69,10 +70,8 @@ const IN_HAND = ['draft', 'changes_requested'] as const
 interface OnApproved { planId: string; by: string | null }
 /** خطّةٌ يُقترح عليها: في يده أو بانتظار القرار */
 const OPEN = ['draft', 'submitted', 'changes_requested'] as const
-/** ما سحب البندَ (`withdrawnVia`): بيده، أو رفعُ ملفٍّ مكانه، أو «احذف المكرر» — والأوّلُ وحدَه يُعاد (`restorable`) */
-const WITHDRAWN_VIA = { manual: 'manual', replace: 'replace', dedupe: 'dedupe' } as const
-/** ما لم يأتِ في ملفٍّ رفعه المعتمِد: ملاحظاتُ الردّ، والجدولُ الذي تبنيه المنصّة — فلا يُعدّ «آخرَ ملفّ» ولا يُسحب مكرّرا */
-const NOT_A_FILE: readonly string[] = ['note', 'schedule']
+/** ما سحب البندَ (`withdrawnVia`): بيده، أو نسخةٌ أحدثُ رُفعت على موضعه */
+const WITHDRAWN_VIA = { manual: 'manual', replace: 'replace' } as const
 
 interface Rows {
   content: TrainerPlanContent
@@ -215,7 +214,7 @@ export class PlanEditService {
     if (openKeysOf(r.edit).some((k) => taken.has(k))) {
       throw new AuthError('schedule_overlaps', 'على بعض هذه اللقاءات أو المهامّ بند مقترح لم يقرّر فيه — قرّر فيه أو احذفه أوّلا، ثمّ جهّز الجدول', 409)
     }
-    return this.propose(actorId, planId, [{ ...r.edit, required: false, reasonAr: r.reasonAr }])
+    return (await this.propose(actorId, planId, [{ ...r.edit, required: false, reasonAr: r.reasonAr }])).edits
   }
 
   /* ═══ موعدٌ بلا تعارض — ترسله الإدارةُ من «مواعيد بلا تعارض» (٢٢ أكتوبر ٢٠٢٦، `schedule-clash.ts`) ═══
@@ -233,42 +232,33 @@ export class PlanEditService {
     if (openKeysOf(edit).some((k) => taken.has(k))) {
       throw new AuthError('schedule_overlaps', 'على بعض لقاءاتها أو مهامها بند مقترح لم يقرر فيه', 409)
     }
-    await this.upload(actorId, planId, [{ ...edit, required: false, reasonAr }], 'none', { onApproved: true, reviewed: true })
+    await this.upload(actorId, planId, [{ ...edit, required: false, reasonAr }], { onApproved: true, reviewed: true })
   }
 
-  /** يرفعه المعتمِد: يُفحص كلُّه، ويُحفظ كلُّه أو يُردّ كلُّه ببنوده */
-  async propose(actorId: string, planId: string, items: readonly PlanEditInput[]) {
-    const { cohortId } = await this.upload(actorId, planId, items, 'none')
-    return this.forCohort(cohortId)
+  /** يرفعه المعتمِد: يُفحص كلُّه، ويُحفظ جديدُه أو يُردّ كلُّه ببنوده — ويُقال ما وقع بالرفع (`upload`) */
+  async propose(actorId: string, planId: string, items: readonly PlanEditInput[]): Promise<{ edits: PlanEditItem[] } & PlanEditsUploadCounts> {
+    const { cohortId, ...counts } = await this.upload(actorId, planId, items)
+    return { edits: await this.forCohort(cohortId), ...counts }
   }
 
-  /* ═══ ويُرفع ملفٌّ جديدٌ مكانَ مسوّداتٍ لم تُعتمد (١٠ أكتوبر ٢٠٢٦) ═══
-     قرارُ صاحب المنصّة: صيغةٌ جديدةٌ لملفّات التعديلات تُرفع مرّةً واحدةً من صندوق الرفع دفعةً،
-     والقديمةُ ما زالت مسوّداتٍ عليها. فيُفحص الجديدُ كلُّه أوّلا، ثمّ تُسحب المسوّداتُ ويُحفظ الجديدُ في
-     معاملةٍ واحدة: إن رُدّ الملفُّ بقيت المسوّداتُ كما هي. وما اعتُمد للمدرّب (`pending`) لا يُمسّ —
-     وبندٌ جديدٌ على موضعه يُردّ كما يُردّ في كلّ رفع. */
-  async replaceDrafts(actorId: string, planId: string, items: readonly PlanEditInput[]) {
-    const { cohortId, replaced } = await this.upload(actorId, planId, items, 'drafts')
-    return { edits: await this.forCohort(cohortId), replacedDrafts: replaced }
-  }
+  /* ═══ وما رُفع قبلُ لا يُرفع ثانية، والأحدثُ مكانَ ما لم يُقرَّر فيه (٢٦ أكتوبر ٢٠٢٦) ═══
 
-  /* ═══ «ابدأ من جديد»: يُسحب كلُّ ما لم يقرّر فيه المدرّب ويُرفع الملفُّ مكانه (١٢ أكتوبر ٢٠٢٦) ═══
-     قال صاحبُ المنصّة وقد رُدّت ملفّاتُه لأنّ نسخَها السابقة وصلت المدرّبين: «أريد أن أعيد كلَّ شيءٍ من
-     البداية.. اسحب كلَّ شيءٍ وارفق كلَّ شيءٍ من جديد، وساعدني أن أفعل هذا بسهولة». وكان طريقُه بطاقةً
-     بطاقة: «اسحب ما لم يقرّر» ثمّ الرفع — تسعٌ وعشرون مرّة. فالاستبدالُ الثالث يسحب المسوّداتِ وما
-     وصل المدرّبَ ولم يقرّر فيه معا، ويرفع الجديدَ مكانها، في معاملةٍ واحدة: إن رُدّ الملفُّ لم يُسحب شيء.
-     وما قرّر فيه المدرّبُ (قبله أو رفضه) لا يُمسّ — ذلك قرارُه. وما سُحب يُعاد بـ«أعد ما سحبته» ما لم
-     يقع على موضعه بندٌ جديد (`restore`). */
-  async replaceAll(actorId: string, planId: string, items: readonly PlanEditInput[]) {
-    const { cohortId, replaced } = await this.upload(actorId, planId, items, 'all')
-    return { edits: await this.forCohort(cohortId), withdrawn: replaced }
-  }
+     قال صاحبُ المنصّة في «خطط تنتظر اعتمادك»: «فقط تحميل ورفع.. باقي الأمور كانت لحلّ مشكلةٍ ظهرت في وقتها».
+     وكان الملفُّ يُردّ كلُّه إن وقع بندٌ منه على بندٍ لم يُقرَّر فيه، ويُدلّ على «استبدل المسودات» و«ابدأ من جديد»
+     و«اسحب ما لم يقرّر» — ثمّ بُني لما تكرّر «احذف المكرر» و«أعد ما سحبته». فصار الرفعُ يقضي في ذلك وحدَه:
 
-  /** `none` يُضاف إلى ما هو قائم · `drafts` مكانَ المسوّدات · `all` مكانَ كلِّ ما لم يقرّر فيه المدرّب */
+     ① **البطاقةُ نفسُها** (`sameEdit`) على الخطّة تُتجاهَل قبل كلّ فحص — لم يُقرَّر فيها بعد، أو قُضي فيها: قبلها
+        المدرّبُ أو رفضها، أو حذفتَها قبل أن تصله. لا تُكتب ثانيةً ولا يُردّ لها الملفّ، فالملفُّ نفسُه يُرفع مرّتين
+        بلا أثر. وما سحبتَه بيدك ليس منها: يعود برفع ملفّه (`withdraw`).
+     ② **ونسخةٌ أحدثُ على موضعه** تحلّ محلّه: يُسحب القديمُ (`replace`) ويُكتب الجديدُ مسوّدةً، في معاملةٍ واحدة.
+        والقديمُ عند المدرّب يغيب عنه كذلك، وتصله الأحدثُ حين تعتمدها — فآخرُ مراجعةٍ هي ما يراه.
+     ③ **وما قرّر فيه المدرّبُ** — قبله أو رفضه — لا يُمسّ ولا يحجب: ذلك قرارُه.
+
+     وما يُردّ له الملفُّ كلُّه باقٍ (③ في رأس الملفّ): بندٌ لا يقع، أو بندان فيه على موضعٍ واحد. */
   private async upload(
-    actorId: string, planId: string, items: readonly PlanEditInput[], replace: 'none' | 'drafts' | 'all',
+    actorId: string, planId: string, items: readonly PlanEditInput[],
     opts: { onApproved?: boolean; reviewed?: boolean } = {},
-  ) {
+  ): Promise<PlanEditsUploadCounts & { cohortId: string }> {
     const plan = await this.prisma.cohortDeliveryPlan.findUnique({
       where: { id: planId }, select: { id: true, cohortId: true, status: true, trainerId: true, content: true },
     })
@@ -281,44 +271,39 @@ export class PlanEditService {
     if (items.length > PLAN_EDITS_MAX) throw new AuthError('bad_edits', `في الملفّ ${items.length} تعديلا — الحدّ ${PLAN_EDITS_MAX}. قسّمه ملفّين`, 422)
 
     const r = await this.rows(plan.cohortId, plan.content)
-    /* ═══ ولا يُرفع ما رُفع ولم يُقرَّر فيه (١٠ أكتوبر ٢٠٢٦) ═══
-       الرفعُ دفعةً واحدةً من «خططٌ تنتظر اعتمادك» يجعل إعادةَ الملفّ نفسِه أيسرَ — فتتكرّر
-       بنودُه على المعتمِد ثمّ على المدرّب. فما وقع على موضعِ بندٍ لم يُقرَّر فيه يُردّ،
-       كما يُردّ بندان على موضعٍ واحدٍ في ملفٍّ واحد. */
-    /* وفي «ابدأ من جديد» لا قائمَ يُحسب: كلُّ ما لم يقرّر فيه يُسحب مع الرفع */
-    const open = replace === 'all' ? [] : await this.prisma.planEditSuggestion.findMany({
-      where: { planId, status: { in: replace === 'drafts' ? ['pending'] : ['proposed', 'pending'] } }, select: { edit: true, status: true },
-    })
-    /* ولكلّ موضعٍ حالُ ما عليه: مسوّدةٌ لم تُعتمد، أو بندٌ وصل المدرّب — والعلاجُ غيرُ العلاج */
-    const takenBy = new Map<string, string>()
-    for (const o of open) {
-      for (const k of openKeysOf(o.edit as unknown as PlanEdit)) if (takenBy.get(k) !== 'pending') takenBy.set(k, o.status)
-    }
-    const taken = new Set(takenBy.keys())
-    /* والملفُّ كلُّه مرفوعٌ من قبل — سطرٌ واحدٌ يقول ذلك، لا سطرٌ لكلّ بند */
-    if (taken.size > 0 && items.every((item) => openKeysOf(editOf(item)).some((k) => taken.has(k)))) {
-      throw new AuthError('edits_already_uploaded', replace === 'drafts'
-        ? 'رفع هذا الملفّ قبل واعتمدت بنوده للمدرّب — فلا يستبدل ما اعتمد. اسحبه من بطاقة خطّته أوّلا إن أردت'
-        : 'رفع هذا الملفّ قبل ولم يقرّر في بنوده — فلا يرفع مرّتين. وإن أردت رفعه من جديد فاختر استبدال المسوّدات عند الرفع، أو اسحبها من بطاقة خطّته أوّلا', 409)
-    }
+    /* بطاقاتُ الخطّة: ما لم يُقرَّر فيه — مسوّدةٌ لم تُعتمد (`proposed`) أو بطاقةٌ عند المدرّب (`pending`) — وما قُضي فيه */
+    const cards = (await this.prisma.planEditSuggestion.findMany({
+      where: { planId, status: { in: ['proposed', 'pending', 'accepted', 'rejected', 'dropped'] } }, select: { id: true, edit: true, status: true },
+    })).map((o) => ({ id: o.id, status: o.status, edit: o.edit as unknown as PlanEdit }))
+    const open = cards.filter((o) => o.status === 'proposed' || o.status === 'pending')
     const problems: string[] = []
-    const onDraft: number[] = []
-    const onTrainer: number[] = []
+    /* وبندان على موضعٍ واحدٍ لا يُرفعان معا — ولو كان أحدُهما مرفوعا قبلُ: قبولُ أحدهما يجعل «قبل» الآخر غيرَ ما فيه */
     const seen = new Map<string, number>()
+    items.forEach((item, i) => {
+      for (const key of targetsOf(editOf(item))) {
+        const prior = seen.get(key)
+        if (prior !== undefined) problems.push(`البند ${i + 1}: يقع على ما يقع عليه البند ${prior + 1} — اجمعهما بندا واحدا`)
+        else seen.set(key, i)
+      }
+    })
+    /* ① والبطاقةُ نفسُها تُتجاهَل قبل فحصها — ما رُفع قبلُ لا يُردّ له الملفّ */
+    const fresh = items.map((item, i) => ({ item, i, edit: editOf(item) }))
+      .filter((x) => !cards.some((o) => sameEdit(o.edit, x.edit)))
     /* ═══ والكرّاسةُ الجديدةُ ملفُّ هذه الشعبة — رُفع لها وبقيت بايتاتُه (١٢ أكتوبر ٢٠٢٦) ═══
        المفتاحُ في البند نصٌّ؛ فلو قُبل مفتاحٌ لملفّ شعبةٍ أخرى لصار بابا يُقرأ به ملفُّها. والمرفقُ الجديدُ كذلك
        (١٧ أكتوبر ٢٠٢٦، `task_attachment`): يُرفع مع الملفّ من الباب نفسِه (`/edit-files`) */
     const fileOf = (x: PlanEditInput) => (x.kind === 'workbook_replace' || x.kind === 'task_attachment' ? x.file : undefined)
-    const wbKeys = items.flatMap((x) => (fileOf(x)?.key ? [fileOf(x)!.key] : []))
+    const wbKeys = fresh.flatMap(({ item }) => (fileOf(item)?.key ? [fileOf(item)!.key] : []))
     const owned = new Set(wbKeys.length === 0 ? [] : (await this.prisma.cohortFile.findMany({
       where: { cohortId: plan.cohortId, purpose: 'workbook', storageKey: { in: wbKeys } }, select: { storageKey: true },
     })).map((f) => f.storageKey))
-    items.forEach((x, i) => {
+    fresh.forEach(({ item: x, i }) => {
       if (x.kind === 'workbook_replace' && !owned.has(x.file?.key)) problems.push(`البند ${i + 1}: ملفّ الكرّاسة لم يرفع لهذه الشعبة — ارفعه مع الملفّ دفعة واحدة`)
       if (x.kind === 'task_attachment' && x.file !== undefined && !owned.has(x.file?.key)) problems.push(`البند ${i + 1}: ملفّ المرفق لم يرفع لهذه الشعبة — ارفعه مع الملفّ دفعة واحدة`)
     })
-    const snaps = items.map((item, i) => {
-      const edit = editOf(item)
+    /* ② وما وقع الجديدُ على موضعه ممّا لم يُقرَّر فيه يحلّ محلَّه */
+    const replace = new Set<string>()
+    const snaps = fresh.map(({ item, i, edit }) => {
       const snap = this.snapshotNow(edit, r)
       if (!snap.ok) { problems.push(`البند ${i + 1}: ${snap.problemAr}`); return null }
       /* ═══ ولا يُكتب على خطّةٍ تغيّرت بعد أن نُزّلت (١٢ أكتوبر ٢٠٢٦) ═══
@@ -337,63 +322,55 @@ export class PlanEditService {
         const chain = scheduleChainProblem(edit, r.sessions.filter((x) => !x.placeholder), r.tasks)
         if (chain) problems.push(`البند ${i + 1}: الجدول لا يكتمل بسلسلته — ${chain}`)
       }
-      /* وبندان على موضعٍ واحدٍ لا يُرفعان معا: قبولُ أحدهما يجعل «قبل» الآخر غيرَ ما فيه */
-      for (const key of targetsOf(edit)) {
-        const prior = seen.get(key)
-        if (prior !== undefined) problems.push(`البند ${i + 1}: يقع على ما يقع عليه البند ${prior + 1} — اجمعهما بندا واحدا`)
-        else seen.set(key, i)
-      }
-      const hits = openKeysOf(edit).map((k) => takenBy.get(k)).filter((x): x is string => x !== undefined)
-      if (hits.includes('pending')) onTrainer.push(i + 1)
-      else if (hits.length) onDraft.push(i + 1)
+      const keys = new Set(openKeysOf(edit))
+      for (const o of open) if (openKeysOf(o.edit).some((k) => keys.has(k))) replace.add(o.id)
       return snap.value
     })
-    /* ═══ وما وقع على نسخةٍ سابقةٍ يُقال بسببه — لا سطرٌ واحدٌ يتكرّر لكلّ بند (١٠ أكتوبر ٢٠٢٦) ═══
-       رُدّت ملفّاتُ صاحب المنصّة الثمانية بثلاثة عشر سطرا متطابقا لكلّ ملفّ، ولا يُعرف منها
-       أهي مسوّداتٌ لم يعتمدها (فيكفي الاستبدال) أم بنودٌ وصلت المدرّبين (فتُسحب أوّلا). */
-    if (onDraft.length) problems.push(`${itemsAr(onDraft)}: نسختها السابقة مسوّدة لم تعتمدها بعد — اختر «استبدل المسودات التي لم تعتمدها بعد» وارفع الملفّ من جديد`)
-    if (onTrainer.length) problems.push(`${itemsAr(onTrainer)}: نسختها السابقة اعتمدتها فوصلت المدرّب ولم يقرّر فيها بعد — فلا تستبدل. إن أردت الجديدة فاسحب القديمة بـ«اسحب ما لم يقرّر» في بطاقة الخطّة ثمّ ارفع الملفّ`)
     if (problems.length) throw new AuthError('bad_edits', `لم يرفع شيء — في الملفّ ما لا يقع:\n${problems.join('\n')}`, 422)
 
+    const repeated = items.length - fresh.length
+    if (fresh.length === 0) return { cohortId: plan.cohortId, added: 0, required: 0, repeated, replaced: 0, fromTrainer: 0 }
+    const gone = open.filter((o) => replace.has(o.id))
     const batchId = randomUUID()
-    const replaced = await this.prisma.$transaction(async (tx) => {
-      const gone = replace === 'none' ? 0
-        : (await tx.planEditSuggestion.updateMany({
-          where: { planId, status: { in: replace === 'all' ? ['proposed', 'pending'] : ['proposed'] } },
-          data: { status: 'withdrawn', decidedAt: new Date(), decidedBy: actorId, withdrawnVia: WITHDRAWN_VIA.replace },
-        })).count
+    const withdrawn = await this.prisma.$transaction(async (tx) => {
+      const n = gone.length === 0 ? 0 : (await tx.planEditSuggestion.updateMany({
+        where: { id: { in: gone.map((o) => o.id) }, status: { in: ['proposed', 'pending'] } },
+        data: { status: 'withdrawn', decidedAt: new Date(), decidedBy: actorId, withdrawnVia: WITHDRAWN_VIA.replace },
+      })).count
       await tx.planEditSuggestion.createMany({
-        data: items.map((item, i) => {
-          const edit = editOf(item)
-          return {
-            cohortId: plan.cohortId, planId, batchId, seq: i + 1, kind: edit.kind, step: planEditStep(edit),
-            required: item.required === true, reasonAr: item.reasonAr.trim(),
-            edit: edit as unknown as Prisma.InputJsonValue,
-            before: (snaps[i] ?? undefined) as Prisma.InputJsonValue | undefined,
-            /* مسوّدةٌ لا يراها المدرّبُ حتّى تعتمدها الإدارة (④) — إلّا ما اعتمدته وهي ترسله (`reviewed`) */
-            status: opts.reviewed ? 'pending' : 'proposed',
-            ...(opts.reviewed ? { reviewedBy: actorId, reviewedAt: new Date() } : {}),
-            createdBy: actorId,
-          }
-        }),
+        data: fresh.map(({ item, i, edit }, at) => ({
+          cohortId: plan.cohortId, planId, batchId, seq: i + 1, kind: edit.kind, step: planEditStep(edit),
+          required: item.required === true, reasonAr: item.reasonAr.trim(),
+          edit: edit as unknown as Prisma.InputJsonValue,
+          before: (snaps[at] ?? undefined) as Prisma.InputJsonValue | undefined,
+          /* مسوّدةٌ لا يراها المدرّبُ حتّى تعتمدها الإدارة (④) — إلّا ما اعتمدته وهي ترسله (`reviewed`) */
+          status: opts.reviewed ? 'pending' : 'proposed',
+          ...(opts.reviewed ? { reviewedBy: actorId, reviewedAt: new Date() } : {}),
+          createdBy: actorId,
+        })),
       })
-      return gone
+      return n
     })
-    if (replaced > 0) {
+    if (withdrawn > 0) {
       await recordAudit(this.prisma, {
         actorId, action: 'cohort.plan.edits.withdraw', entityType: 'cohort', entityId: plan.cohortId,
-        meta: { planId, count: replaced, replacedBy: batchId },
+        meta: { planId, count: withdrawn, replacedBy: batchId },
       })
     }
-    const required = items.filter((x) => x.required === true).length
+    const required = fresh.filter(({ item }) => item.required === true).length
     await recordAudit(this.prisma, {
       actorId, action: 'cohort.plan.edits.propose', entityType: 'cohort', entityId: plan.cohortId,
-      meta: { planId, batchId, count: items.length, required },
+      meta: { planId, batchId, count: fresh.length, required, ...(repeated > 0 ? { repeated } : {}) },
     })
-    return { cohortId: plan.cohortId, replaced }
+    return {
+      cohortId: plan.cohortId, added: fresh.length, required, repeated,
+      replaced: gone.filter((o) => o.status === 'proposed').length,
+      fromTrainer: gone.filter((o) => o.status === 'pending').length,
+    }
   }
 
-  /** يسحب المعتمِدُ ما لم يُقرَّر بعد — ملفٌّ رُفع خطأً لا يبقى ينتظر المدرّب */
+  /** يسحب المعتمِدُ ما لم يُقرَّر بعد — ملفٌّ رُفع خطأً لا يبقى ينتظر المدرّب. ويعود برفع ملفّه ثانية: المسحوبُ
+      ليس ممّا لم يُقرَّر فيه، فيُكتب من جديد مسوّداتٍ تراجعها (`upload` ①) */
   async withdraw(actorId: string, planId: string) {
     const plan = await this.prisma.cohortDeliveryPlan.findUnique({ where: { id: planId }, select: { cohortId: true } })
     if (!plan) throw new AuthError('not_found', 'الخطّة غير موجودة', 404)
@@ -407,146 +384,6 @@ export class PlanEditService {
       })
     }
     return this.forCohort(plan.cohortId)
-  }
-
-  /* ═══ وما سُحب يُعاد كما كان — «أعِد ما سحبته» (١٢ أكتوبر ٢٠٢٦) ═══
-
-     سحب صاحبُ المنصّة تعديلاتِ خطّةٍ بـ«اسحب ما لم يقرّر» ثمّ سأل: «أين التعديلات؟ كانت موجودةً
-     وأعتقد أنّي سحبتها.. كيف أعيدها؟». ولم يكن لها بابُ رجعة: `withdrawn` تخفى من البطاقة ومن المدرّب.
-     فاختار زرّا يعيدها كما كانت.
-
-     ① **كما كانت**: ما اعتمده للمدرّب (`reviewedAt` مكتوب) يعود `pending`، والمسوّدةُ مسوّدة.
-     ② **وعلى خطّةٍ مفتوحةٍ وحدَها** — المعتمَدةُ لا يُعاد عليها ما سُحب.
-
-     ═══ وآخرُ سحبٍ بيدك وحدَه — لا جولاتٌ أقدم (٢٠ أكتوبر ٢٠٢٦) ═══
-
-     كان يعيد كلَّ ما سُحب على الخطّة يوما ما ولم يقع على موضعه بندٌ أحدث. فرفع صاحبُ المنصّة ملفّا
-     جديدا بـ«ابدأ من جديد» ثمّ ضغطه، فعادت بنودُ رفعاتٍ سابقةٍ بجانب الجديد — خمسون بندا عند مدرّبٍ
-     وملفُّه خمسةَ عشر — وبُني لها «احذف المكرر». واختار بعدها (٢٠ أكتوبر ٢٠٢٦) أن يُسدّ المصدر: يعود
-     ما أخذه آخرُ سحبٍ وحدَه، فلا يعود مكرّر. فالمعاد:
-
-     ③ **آخرُ سحبٍ على الخطّة** — صفوفُه ختمُها واحد (`decidedAt`)، وما سُحب قبله لا يعود أبدا.
-     ④ **وكان بـ«اسحب ما لم يقرّر»** (`withdrawnVia`): ما سحبه رفعُ ملفٍّ مكانه أو «احذف المكرر» استبدالٌ
-        مقصود، وإعادتُه هي المكرّرُ نفسُه. وما سُحب قبل العمود لا يُعرف كيف سُحب، فلا يعود.
-     ⑤ **ولم يُرفع بعده ملفّ** — فلا يعود قديمٌ بجانب جديد. */
-  private async restorable(planId: string): Promise<{ take: { id: string; toTrainer: boolean }[]; held: 'uploaded_after' | 'not_manual' | null; skipped: number }> {
-    const rows = await this.prisma.planEditSuggestion.findMany({
-      where: { planId },
-      select: { id: true, status: true, reviewedAt: true, decidedAt: true, createdAt: true, withdrawnVia: true },
-    })
-    const withdrawn = rows.filter((r) => r.status === 'withdrawn' && r.decidedAt !== null)
-    if (withdrawn.length === 0) return { take: [], held: null, skipped: 0 }
-    const lastAt = Math.max(...withdrawn.map((r) => r.decidedAt!.getTime()))
-    const last = withdrawn.filter((r) => r.decidedAt!.getTime() === lastAt)
-    if (last.some((r) => r.withdrawnVia !== WITHDRAWN_VIA.manual)) return { take: [], held: 'not_manual', skipped: 0 }
-    if (rows.some((r) => r.createdAt.getTime() > lastAt)) return { take: [], held: 'uploaded_after', skipped: last.length }
-    return { take: last.map((r) => ({ id: r.id, toTrainer: r.reviewedAt !== null })), held: null, skipped: 0 }
-  }
-
-  /** كم يعود لو ضُغط «أعِد ما سحبته» — للزرّ وعددِه. ومعه كم يُسحب بـ«احذف المكرر» (`older`) */
-  async withdrawnFor(cohortId: string) {
-    const latest = await this.latestTrainerPlan(cohortId)
-    if (!latest || !(OPEN as readonly string[]).includes(latest.status)) return { planId: latest?.id ?? null, count: 0, skipped: 0, older: 0 }
-    const { take, skipped } = await this.restorable(latest.id)
-    return { planId: latest.id, count: take.length, skipped, older: (await this.olderCopies(latest.id)).length }
-  }
-
-  /* ═══ «احذف المكرر» — يبقى آخرُ ملفٍّ رُفع، ويُسحب ما بقي من الأقدم (١٢ أكتوبر ٢٠٢٦) ═══
-
-     رفع صاحبُ المنصّة الملفَّ الجديد ثمّ ضغط «أعد ما سحبته»، فعادت بنودٌ من رفعاتٍ سابقةٍ لم يقع عليها
-     الجديد — وصارت خطّةٌ بخمسين بندا عند مدرّبها وملفُّها خمسةَ عشر. وقال: «give me a button to remove
-     duplication». فالمكرّرُ **ما لم يقرّر فيه المدرّبُ من ملفٍّ أقدمَ من آخر ملفٍّ رُفع على الخطّة**:
-     ① وآخرُ ملفٍّ أحدثُ رفعةٍ بقي منها بند — قرّر فيه المدرّبُ أو لم يقرّر. والمسحوبةُ كلُّها والمحذوفةُ
-        ليست «آخرَ ملفّ».
-     ② وملاحظاتُ الردّ والجدولُ الذي تبنيه المنصّة (`NOT_A_FILE`) ليست ملفّا: لا تُعدّ ولا تُسحب.
-     ③ والسحبُ سحب: ما قرّر فيه المدرّبُ لا يُمسّ، والمسحوبُ يعود بـ«أعد ما سحبته». */
-  private async olderCopies(planId: string): Promise<string[]> {
-    const rows = await this.prisma.planEditSuggestion.findMany({
-      where: { planId, kind: { notIn: [...NOT_A_FILE] }, status: { in: ['proposed', 'pending', 'accepted', 'rejected'] } },
-      select: { id: true, batchId: true, status: true },
-      orderBy: [{ createdAt: 'desc' }, { seq: 'desc' }],
-    })
-    const latest = rows[0]?.batchId
-    return rows.filter((r) => r.batchId !== latest && (r.status === 'proposed' || r.status === 'pending')).map((r) => r.id)
-  }
-
-  async keepLatest(actorId: string, planId: string) {
-    const plan = await this.prisma.cohortDeliveryPlan.findUnique({ where: { id: planId }, select: { cohortId: true, status: true } })
-    if (!plan) throw new AuthError('not_found', 'الخطّة غير موجودة', 404)
-    if (!(OPEN as readonly string[]).includes(plan.status)) {
-      throw new AuthError('plan_closed', 'اعتمدت هذه الخطّة — لا يسحب منها شيء', 409)
-    }
-    const count = await this.withdrawOlder(actorId, planId, plan.cohortId)
-    if (count === 0) throw new AuthError('no_duplicates', 'لا مكرر على هذه الخطة — كل ما لم يقرر فيه من آخر ملف رفعته', 409)
-    return { edits: await this.forCohort(plan.cohortId), withdrawn: count }
-  }
-
-  /* ═══ وللخطط كلِّها — في الخادم، لا من قائمة «خططٌ تنتظر اعتمادك» (١٢ أكتوبر ٢٠٢٦) ═══
-     ضغط صاحبُ المنصّة «احذف المكرر من كل الخطط» فقيل «لا مكرر في أي خطة» — «there was too many!!».
-     كان الزرُّ يمرّ على خطط تلك القائمة وحدَها، وهي المرسَلةُ بانتظار القرار؛ وما رُدّ إلى مدرّبه بـ«اطلب
-     تعديلات» — وفيه تصل التعديلاتُ المدرّبين — ليس فيها. فصار يمرّ على كلّ خطّةٍ مفتوحةٍ فيها ما لم يُقرَّر. */
-  async keepLatestAll(actorId: string) {
-    const open = await this.prisma.planEditSuggestion.findMany({
-      where: { status: { in: ['proposed', 'pending'] } }, select: { planId: true }, distinct: ['planId'],
-    })
-    const plans = await this.prisma.cohortDeliveryPlan.findMany({
-      where: { id: { in: open.map((x) => x.planId) }, status: { in: [...OPEN] } },
-      select: { id: true, cohortId: true },
-    })
-    const cleaned: string[] = []
-    let withdrawn = 0
-    for (const p of plans) {
-      const count = await this.withdrawOlder(actorId, p.id, p.cohortId)
-      if (count > 0) { cleaned.push(p.id); withdrawn += count }
-    }
-    return { checked: plans.length, cleaned, withdrawn }
-  }
-
-  private async withdrawOlder(actorId: string, planId: string, cohortId: string): Promise<number> {
-    const ids = await this.olderCopies(planId)
-    if (ids.length === 0) return 0
-    const { count } = await this.prisma.planEditSuggestion.updateMany({
-      where: { id: { in: ids }, status: { in: ['proposed', 'pending'] } },
-      data: { status: 'withdrawn', decidedAt: new Date(), decidedBy: actorId, withdrawnVia: WITHDRAWN_VIA.dedupe },
-    })
-    if (count > 0) {
-      await recordAudit(this.prisma, {
-        actorId, action: 'cohort.plan.edits.withdraw', entityType: 'cohort', entityId: cohortId,
-        meta: { planId, count, older: true },
-      })
-    }
-    return count
-  }
-
-  async restore(actorId: string, planId: string) {
-    const plan = await this.prisma.cohortDeliveryPlan.findUnique({ where: { id: planId }, select: { cohortId: true, status: true } })
-    if (!plan) throw new AuthError('not_found', 'الخطّة غير موجودة', 404)
-    if (!(OPEN as readonly string[]).includes(plan.status)) {
-      throw new AuthError('plan_closed', 'اعتمدت هذه الخطّة — ما سحب منها لا يعود عليها', 409)
-    }
-    const { take, held, skipped } = await this.restorable(planId)
-    if (take.length === 0) {
-      throw new AuthError('nothing_withdrawn', held === 'uploaded_after'
-        ? 'رفعت ملفا بعد آخر سحب — فما سحبته قبله لا يعود بجانبه'
-        : held === 'not_manual'
-          ? 'آخر سحب لم يكن بـ«اسحب ما لم يقرر» — فلا يعاد'
-          : 'لا شيء مسحوب على هذه الخطّة', 409)
-    }
-    const back = (toTrainer: boolean) => take.filter((x) => x.toTrainer === toTrainer).map((x) => x.id)
-    await this.prisma.$transaction([
-      this.prisma.planEditSuggestion.updateMany({
-        where: { id: { in: back(true) }, status: 'withdrawn' }, data: { status: 'pending', decidedAt: null, decidedBy: null, withdrawnVia: null },
-      }),
-      this.prisma.planEditSuggestion.updateMany({
-        where: { id: { in: back(false) }, status: 'withdrawn' }, data: { status: 'proposed', decidedAt: null, decidedBy: null, withdrawnVia: null },
-      }),
-    ])
-    const toTrainer = back(true).length
-    await recordAudit(this.prisma, {
-      actorId, action: 'cohort.plan.edits.restore', entityType: 'cohort', entityId: plan.cohortId,
-      meta: { planId, count: take.length, toTrainer, drafts: take.length - toTrainer, skipped },
-    })
-    return { edits: await this.forCohort(plan.cohortId), restored: take.length, toTrainer, skipped }
   }
 
   /* ─────────── الإدارة: تعتمد كلَّ بندٍ للمدرّب أو تحذفه (④) ─────────── */
@@ -889,11 +726,6 @@ function editOf(item: PlanEditInput): PlanEdit {
 }
 
 /** ما يقع عليه البندُ ممّا رُفع قبلُ — مواضعُه، والمهمّةُ الجديدةُ باسمها (فلا موضعَ لها قبل أن تُقبل) */
-/** «البند 3» أو «البنود 1، 2، 5» — أرقامُ الملفّ كما يراها رافعُه */
-function itemsAr(nums: readonly number[]): string {
-  return nums.length === 1 ? `البند ${nums[0]}` : `البنود ${nums.join('، ')}`
-}
-
 function openKeysOf(edit: PlanEdit): string[] {
   if (edit.kind === 'task_add') return [`task_new:${edit.task.title.trim()}`]
   if (edit.kind === 'session_add') return [`session_new:${edit.session.startsAt}`]

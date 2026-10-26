@@ -2,7 +2,7 @@
    وكم بندا فيه. وما لا يُقرأ يعود بسببه لا يرمي — فلا يوقف ما بعده من الدفعة. */
 
 import { describe, expect, it } from 'vitest'
-import { editFilePath, isPdfName, pdfKey, pickedPdfs, KEEP_LATEST_AR, keepLatestPath, missingWorkbooksAr, withWorkbookKeys, workbookFilesNeeded, keptLatestAr, readEditsFile, uploadedLineAr } from '@/application/trainer/plan-edits-bulk'
+import { editFilePath, isPdfName, pdfKey, pickedPdfs, missingWorkbooksAr, withWorkbookKeys, workbookFilesNeeded, readEditsFile, uploadedLineAr } from '@/application/trainer/plan-edits-bulk'
 
 const PLAN = '7c1a3a52-2a7e-4a36-9a43-0d1d2b6b8f10'
 const file = (over: Record<string, unknown> = {}) => JSON.stringify({
@@ -41,37 +41,35 @@ describe('قراءة الملفّ', () => {
   })
 })
 
+/* ═══ ما يقال بعد الرفع — بعدِّ الخادم لا بعدِّ الملفّ (٢٦ أكتوبر ٢٠٢٦، `upload`) ═══
+   الرفعُ يتجاهل البطاقةَ نفسَها ويضع الأحدثَ مكانَ ما لم يُقرَّر فيه، فعددُ بنود الملفّ لم يعد ما رُفع. */
 describe('ما يقال بعد الرفع', () => {
+  const none = { added: 0, required: 0, repeated: 0, replaced: 0, fromTrainer: 0 }
+
   it('العدد بصيغته العربيّة، والمطلوب إن وجد', () => {
-    expect(uploadedLineAr(19, 3)).toBe('رفع مسوّدة: 19 بندا، 3 منها مطلوبة')
-    expect(uploadedLineAr(5, 1)).toBe('رفع مسوّدة: 5 بنود، 1 منها مطلوب')
-    expect(uploadedLineAr(13, 0)).toBe('رفع مسوّدة: 13 بندا')
+    expect(uploadedLineAr({ ...none, added: 19, required: 3 })).toBe('رفع مسوّدة: 19 بندا، 3 منها مطلوبة')
+    expect(uploadedLineAr({ ...none, added: 5, required: 1 })).toBe('رفع مسوّدة: 5 بنود، منها واحد مطلوب')
+    expect(uploadedLineAr({ ...none, added: 4, required: 2 })).toBe('رفع مسوّدة: 4 بنود، منها اثنان مطلوبان')
+    expect(uploadedLineAr({ ...none, added: 13 })).toBe('رفع مسوّدة: 13 بندا')
   })
 
-  /* وكانت هنا سطورُ الاستبدال والسحب وخلاصةُ الدفعة وطرقُ الرفع الثلاث (١٠ و١٢ أكتوبر). وذهبت بقول صاحب المنصّة
-     «فقط تحميل ورفع» (٢٦ أكتوبر ٢٠٢٦) — وخلاصةُ الصندوق الواحد في \`review-upload.test.ts\`. */
-})
-
-describe('«احذف المكرر» في بطاقة الخطة — يبقى آخر ملف رفع (١٢ أكتوبر ٢٠٢٦)', () => {
-  /* وكان معه زرٌّ للخطط كلِّها في «خطط تنتظر اعتمادك» — وذهب بقول صاحب المنصّة «فقط تحميل ورفع» (٢٦ أكتوبر ٢٠٢٦) */
-  it('⚠️ مسلكه مسلك الخادم — للخطة', () => {
-    expect(keepLatestPath(PLAN)).toBe(`/api/admin/cohort-plans/${PLAN}/edits/keep-latest`)
+  it('⚠️ وما تجاهله وما حلّ محلّه يقال — فلا يظنّ أنّ بندا ضاع', () => {
+    expect(uploadedLineAr({ ...none, added: 2, repeated: 4, replaced: 1, fromTrainer: 2 })).toBe(
+      'رفع مسوّدة: بندان · مرفوع من قبل فلم يتكرر: 4 بنود · حلّ محلّ مسوّدة أقدم: بند واحد · حلّ محلّ ما كان عند المدرب: بندان، ويصله الجديد حين تعتمده',
+    )
   })
 
-  it('⚠️ ويقول ما يقع به: يبقى آخر ملف، وما قرّر فيه المدرّب لا يمسّ', () => {
-    expect(KEEP_LATEST_AR.whatAr).toMatch(/آخر ملف رفعته/)
-    expect(KEEP_LATEST_AR.whatAr).toMatch(/لا يمس/)
-  })
-
-  it('وسطر البطاقة يقول كم سحب بصيغة عدده — ولا يعد بإعادة لا تقع', () => {
-    expect(keptLatestAr(1)).toBe('سحب 1 بند من ملفات أقدم، وبقي آخر ملف رفعته.')
-    expect(keptLatestAr(35)).toMatch(/^سحب 35 بندا من ملفات أقدم/)
+  it('⚠️ والملفّ المرفوع كلّه من قبل يقال كذلك — لا «رفع» بلا شيء', () => {
+    expect(uploadedLineAr({ ...none, repeated: 12 })).toBe('كله مرفوع من قبل، فلم يتكرر شيء (12 بندا).')
   })
 
   it('⚠️ ونصوصه بلا تشكيل إعرابيّ — اللغة البيضاء', () => {
-    const all = [KEEP_LATEST_AR.labelAr, KEEP_LATEST_AR.whatAr, keptLatestAr(5)].join(' ')
+    const all = [uploadedLineAr({ added: 3, required: 2, repeated: 3, replaced: 3, fromTrainer: 3 }), uploadedLineAr({ ...none, repeated: 1 })].join(' ')
     expect(all).not.toMatch(/[\u064B-\u0650\u0652]/)
   })
+
+  /* وكانت هنا سطورُ الاستبدال والسحب وخلاصةُ الدفعة وطرقُ الرفع الثلاث (١٠ و١٢ أكتوبر)، ثمّ سطورُ «احذف المكرر».
+     وذهبت بقول صاحب المنصّة «فقط تحميل ورفع» (٢٦ أكتوبر ٢٠٢٦) — وخلاصةُ الصندوق الواحد في \`review-upload.test.ts\`. */
 })
 
 describe('الكرّاسات المصحّحة مع ملف التعديلات (١٢ أكتوبر ٢٠٢٦)', () => {
