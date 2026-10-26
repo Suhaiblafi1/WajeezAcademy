@@ -28,13 +28,15 @@
    يوما، والمسارُ عقدٌ على متعلّمٍ لا شاشةُ عرض. */
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router";
-import { Link2, Loader2, TicketPercent, UserPlus, Wallet } from "lucide-react";
+import { Gift, Link2, Loader2, Share2, TicketPercent, UserPlus, Wallet } from "lucide-react";
 import { apiGet, apiPost, ApiError, permissionMessage } from "@/services/api";
 import { Panel, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import { staffControlCls, StaffField } from "@/components/FormKit";
 import { countAr } from "@/application/text/count-ar";
 import { fmtDateAr } from "@/utils/format";
+import ShareKit from "@/components/trainer/ShareKit";
+import { bestCode } from "@/application/trainer/share-kit";
 import {
   MAX_TRAINER_CODE_AMOUNT, MAX_TRAINER_CODE_PERCENT, MIN_TRAINER_CODE_PERCENT, codeBlockerAr, codeFaceAr,
   codeQuoteFor, codeValueRows, type CodePricingCourse,
@@ -69,10 +71,18 @@ const EMPTY_CODE_FORM = { mode: "percent" as CodeMode, percentOff: "", amountOff
 const EXAMPLE_PRICE = 100;
 const PURCHASE_FORMS = { one: "شراء مدفوع", two: "شراءين مدفوعين", few: "مشتريات مدفوعة", many: "شراء مدفوعا" } as const;
 const USE_FORMS = { one: "استعمال", two: "استعمالين", few: "استعمالات", many: "استعمالا" } as const;
+/** «شارك دوراتك»: كودُنا على دوراته (لا يُحسم منه، `share-code.ts`)، ووجهُه وأكوادُه — لما يُصمَّم ويُنشر */
+interface ShareKitData {
+  code: string; percentOff: number; name: string; headline: string | null; photoUrl: string | null
+  hisCodes: { code: string; percentOff: number | null }[]
+}
+
 /** رابطُ شعبةٍ بعينها — يُنشَر وحدَه لمن يدعو إلى دفعةٍ لا إلى كلّ ما يدرّب */
 interface CohortLink {
   cohortId: string; title: string; termTitleAr: string | null; status: string
   registrationOpen: boolean; learners: number; code: string; url: string
+  /** اسمُ الدورة وأوّلُ لقاء — لما يُنشر عنها */
+  courseTitle: string; startsAt: string | null
 }
 const REGISTERED_FORMS = { one: "متعلّم واحد", two: "متعلّمان", few: "متعلّمين", many: "متعلّما" } as const;
 
@@ -452,12 +462,18 @@ function LegacyDiscounts() {
   );
 }
 
+/** الكودُ الذي يظهر في منشوره: أعلى الخصمين، وكودُه إن ساوى خصمَنا (`bestCode`) */
+const shareCodeOf = (k: ShareKitData) => bestCode({ code: k.code, percentOff: k.percentOff }, k.hisCodes);
+
 export default function Referral() {
   const [referral, setReferral] = useState<MyReferral | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [cohortLinks, setCohortLinks] = useState<CohortLink[] | null>(null);
   /* وإخفاقُها يُقال لا يُقرأ «لا شعبة مفتوحة» (٢٠ أكتوبر ٢٠٢٦) — من له شعبٌ مفتوحةٌ كان يُقال له إنّه لا شعبةَ له */
   const [linksDown, setLinksDown] = useState(false);
+  const [kit, setKit] = useState<ShareKitData | null>(null);
+  /* لوحةُ المشاركة المفتوحة: «all» لدوراته كلِّها، أو معرّفُ شعبة */
+  const [sharing, setSharing] = useState<string | null>(null);
   /* المنسوخُ يُعلَّم بمفتاحه لا برايةٍ واحدة: رايةٌ واحدةٌ لروابطَ كثيرةٍ
      تُضيء «نُسخ» تحت كلّ زرٍّ معا، فلا يدري أيَّها نسخ. */
   const [copied, setCopied] = useState<string | null>(null);
@@ -477,6 +493,10 @@ export default function Referral() {
     void apiGet<CohortLink[]>("/api/trainer/me/referral-links")
       .then((r) => { if (alive) setCohortLinks(r); })
       .catch(() => { if (alive) { setCohortLinks([]); setLinksDown(true); } });
+    /* وكودُنا على دوراته: إخفاقُه لا يُعطّل الروابط — تُعرض بلا لوحته */
+    void apiGet<ShareKitData>("/api/trainer/me/share-kit")
+      .then((r) => { if (alive) setKit(r); })
+      .catch(() => undefined);
     return () => { alive = false };
   }, []);
 
@@ -514,6 +534,51 @@ export default function Referral() {
 
       {referral && (
         <>
+          {/* ═══ كودُنا على دوراته — أوّلَ ما يرى (٢٦ أكتوبر ٢٠٢٦، `share-code.ts`) ═══
+              «نعطي خصومات للدورات التي يسوّقها المدرّبون ولا تنقص من حسابهم — بل فقط هذه منّا نحن». */}
+          {kit && (
+            <Panel as="section" tone="accent" className="mb-6">
+              <p className="flex items-center gap-2 text-sm font-black">
+                <Gift className="h-4 w-4 text-gold-ink" aria-hidden="true" /> خصم منا لمتابعيك
+              </p>
+              <p className="mt-2 text-read leading-7 text-muted-foreground">
+                {kit.percentOff}% على دوراتك وحدها، <b className="text-foreground">ولا يحسم منك شيء</b>. انشره مع رابطك.
+              </p>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <input
+                  readOnly dir="ltr" value={kit.code} aria-label="كود الخصم لمتابعيك"
+                  onFocus={(e) => e.currentTarget.select()}
+                  className={`${staffControlCls} w-48 text-center font-mono font-black tracking-wider`}
+                />
+                <Button tone="secondary" onClick={() => copy("share-code", kit.code)}>
+                  {copied === "share-code" ? "نسخ" : "انسخ الكود"}
+                </Button>
+              </div>
+            </Panel>
+          )}
+
+          {/* ═══ شارك دوراتك كلَّها — برابطك العامّ، وكاروسيلٌ بشريحةٍ لكلّ دورة (٢٦ أكتوبر ٢٠٢٦) ═══ */}
+          {kit && cohortLinks && cohortLinks.length > 0 && (
+            <Panel as="section" className="mb-6">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="flex items-center gap-2 text-sm font-black">
+                  <Share2 className="h-4 w-4 text-teal-light-ink" aria-hidden="true" /> شارك كل دوراتك
+                </p>
+                <Button tone={sharing === "all" ? "confirm" : "secondary"} size="sm" aria-expanded={sharing === "all"}
+                  onClick={() => setSharing((s) => (s === "all" ? null : "all"))}>
+                  {sharing === "all" ? "أخف" : "صمم منشورك"}
+                </Button>
+              </div>
+              <p className="mt-2 text-read leading-7 text-muted-foreground">
+                صورة بسيطة فيها صورتك ودوراتك والكود، ونص جاهز لكل منصة. ولكل شعبة زر «شارك» تحت.
+              </p>
+              {sharing === "all" && (
+                <ShareKit face={kit} fileStem="wajeez-courses" url={referral.url} code={shareCodeOf(kit)}
+                  courses={cohortLinks.map((c) => ({ courseTitle: c.courseTitle, startsAt: c.startsAt, url: c.url }))} />
+              )}
+            </Panel>
+          )}
+
           <Panel as="section" className="mb-6">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <p className="flex items-center gap-2 text-sm font-black">
@@ -581,7 +646,7 @@ export default function Referral() {
                     {cohortLinks.map((c) => (
                       <Inset as="li" key={c.cohortId} className="px-4 py-3">
                         <div className="flex flex-wrap items-baseline justify-between gap-2">
-                          <span className="text-read font-bold text-foreground">{c.title}</span>
+                          <span className="text-read font-bold text-foreground">{c.courseTitle}</span>
                           <span className="text-read text-muted-foreground">
                             {c.termTitleAr ? `${c.termTitleAr} · ` : ""}
                             {c.learners > 0 ? countAr(c.learners, REGISTERED_FORMS) : "لم يسجّل أحد بعد"}
@@ -603,7 +668,18 @@ export default function Referral() {
                           <Button tone="secondary" size="sm" onClick={() => copy(c.cohortId, c.url)}>
                             {copied === c.cohortId ? "نسخ" : "انسخ الرابط"}
                           </Button>
+                          {kit && (
+                            <Button tone={sharing === c.cohortId ? "confirm" : "secondary"} size="sm" icon={Share2}
+                              aria-expanded={sharing === c.cohortId}
+                              onClick={() => setSharing((s) => (s === c.cohortId ? null : c.cohortId))}>
+                              شارك
+                            </Button>
+                          )}
                         </div>
+                        {kit && sharing === c.cohortId && (
+                          <ShareKit face={kit} fileStem={`wajeez-${c.code}`} url={c.url} code={shareCodeOf(kit)}
+                            courses={[{ courseTitle: c.courseTitle, startsAt: c.startsAt, url: c.url }]} />
+                        )}
                       </Inset>
                     ))}
                   </ul>

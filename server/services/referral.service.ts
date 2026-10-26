@@ -95,6 +95,9 @@ export class ReferralService {
             id: true, title: true, status: true, courseId: true, startsAt: true,
             registrationOpen: true,
             term: { select: { titleAr: true } },
+            /* واسمُ دورتها وأوّلُ لقاءٍ فيها — لما يُنشر عنها في «شارك دوراتك» (`share-kit.ts`) */
+            course: { select: { currentVersion: true, versions: { select: { version: true, titleAr: true } } } },
+            sessions: { where: { status: { not: 'cancelled' } }, orderBy: { startsAt: 'asc' }, take: 1, select: { startsAt: true } },
             _count: { select: { enrollments: { where: { status: { not: 'dropped' } } } } },
           },
         },
@@ -129,6 +132,8 @@ export class ReferralService {
       return {
         cohortId: c.id,
         title: c.title,
+        courseTitle: c.course.versions.find((v) => v.version === c.course.currentVersion)?.titleAr ?? c.title,
+        startsAt: (c.sessions[0]?.startsAt ?? c.startsAt)?.toISOString() ?? null,
         termTitleAr: c.term?.titleAr ?? null,
         status: c.status,
         registrationOpen: c.registrationOpen,
