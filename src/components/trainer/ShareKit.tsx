@@ -8,7 +8,13 @@
    · **إنستغرام وتيك توك** لا بابَ لهما من موقع: على الهاتف تُشارَك الصورُ من قائمة الهاتف نفسِها (`navigator.share`)
      فيختارهما منها؛ وعلى الحاسوب تُنزَّل الصورُ ويُنسخ النصّ. ويُقال له ما جرى في كلٍّ — لا يُترك يخمّن.
 
-   والنصُّ والأبوابُ محضةٌ في `share-kit.ts`، والرسمُ في `share-art.ts`. */
+   والنصُّ والأبوابُ محضةٌ في `share-kit.ts`، والرسمُ في `share-art.ts`.
+
+   ═══ واللوحةُ نفسُها للمؤثّر (٢٦ أكتوبر ٢٠٢٦) ═══
+
+   «امنح المؤثّرَ تصاميمَ يشاركها… كما فعلنا للمدرّب» (صاحب المنصّة). فالأبوابُ والصيغُ وما يُقال قبل الضغط واحدة،
+   ويتغيّر المحتوى وحدَه: `content` يمرّر نصَّ المنحة وصورَها (`influencer-share.ts` و`influencer/grant-art.ts`)،
+   وبلا `content` محتوى المدرّب كما كان. */
 
 import { useEffect, useMemo, useState } from "react";
 import { Copy, Download, Share2 } from "lucide-react";
@@ -18,9 +24,9 @@ import { staffControlCls } from "@/components/FormKit";
 import TabBar from "@/components/ui/TabBar";
 import { fmtDayMonth } from "@/application/text/format-ar";
 import { emailSubject, manualNoteAr, SHARE_PLATFORMS, shareText, shareUrl, type ShareCourse, type SharePlatform } from "@/application/trainer/share-kit";
-import { artPlan, drawArt, toFile, type ArtData } from "./share-art";
+import { artPlan, drawArt, toFile, type ArtData, type ArtKind } from "./share-art";
 
-type Format = "post" | "story" | "carousel";
+export type Format = "post" | "story" | "carousel";
 const FORMATS: { id: Format; label: string }[] = [
   { id: "post", label: "منشور" },
   { id: "story", label: "ستوري" },
@@ -34,13 +40,25 @@ const FORMAT_OF: Record<SharePlatform, Format> = {
 
 export interface ShareFace { name: string; headline?: string | null; photoUrl: string | null }
 
-export default function ShareKit({ face, courses, url, code, fileStem }: {
+/** محتوى غيرُ دورات المدرّب — نصُّه لكلّ منصّة، وعنوانُ بريده، وبابُ كلّ منصّة، وصورُه لكلّ صيغة */
+export interface ShareContent {
+  text: (p: SharePlatform) => string;
+  subject: () => string;
+  door: (p: SharePlatform) => string | null;
+  plan: (f: Format) => { kind: string; index: number }[];
+  draw: (kind: string, index: number) => Promise<HTMLCanvasElement>;
+  /** ما يتغيّر الرسمُ بتغيّره */
+  key: string;
+}
+
+export default function ShareKit({ face, courses, url, code, fileStem, content }: {
   face: ShareFace;
   courses: ShareCourse[];
   url: string;
   code: { code: string; percentOff: number } | null;
   /** اسمُ الملفّات المنزَّلة */
   fileStem: string;
+  content?: ShareContent;
 }) {
   const [platform, setPlatform] = useState<SharePlatform>("whatsapp");
   const [format, setFormat] = useState<Format>("post");
@@ -63,21 +81,24 @@ export default function ShareKit({ face, courses, url, code, fileStem }: {
     name: face.name, headline: face.headline ?? null, photoUrl: face.photoUrl, courses, code,
     dayAr: (iso: string) => fmtDayMonth(iso),
   }), [face, courses, code]);
-  const text = shareText(platform, input);
-  const plan = artPlan(format, courses.length);
+  const text = content ? content.text(platform) : shareText(platform, input);
+  const plan: { kind: string; index: number }[] = content ? content.plan(format) : artPlan(format, courses.length);
+  const draw = (kind: string, index: number) => (content ? content.draw(kind, index) : drawArt(kind as ArtKind, art, index));
+  const subject = () => (content ? content.subject() : emailSubject(input));
+  const door = (p: SharePlatform) => (content ? content.door(p) : shareUrl(p, input));
 
   /* المعاينةُ تُرسم لكلّ صيغة — والكاروسيلُ شرائحُه كلُّها */
   useEffect(() => {
     let live = true;
-    void Promise.all(plan.map((p) => drawArt(p.kind, art, p.index)))
+    void Promise.all(plan.map((p) => draw(p.kind, p.index)))
       .then((cs) => { if (live) setPreviews(cs.map((c) => c.toDataURL("image/png"))); })
       .catch(() => { if (live) setPreviews([]); });
     return () => { live = false; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- الخطّةُ تُشتقّ من الصيغة وعدد الدورات
-  }, [format, art]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- الخطّةُ والرسمُ يُشتقّان من الصيغة والمحتوى
+  }, [format, art, content?.key]);
 
   const files = async () => Promise.all(plan.map(async (p, i) =>
-    toFile(await drawArt(p.kind, art, p.index), `${fileStem}-${format}${plan.length > 1 ? `-${i + 1}` : ""}.png`)));
+    toFile(await draw(p.kind, p.index), `${fileStem}-${format}${plan.length > 1 ? `-${i + 1}` : ""}.png`)));
 
   const copyText = async () => { await navigator.clipboard?.writeText(text).catch(() => undefined); };
 
@@ -106,17 +127,17 @@ export default function ShareKit({ face, courses, url, code, fileStem }: {
       /* الهاتف: قائمةُ المشاركة تحمل الصورةَ والنصَّ معا إلى المنصّة التي يختارها */
       if (canAttach && navigator.canShare?.({ files: fs })) {
         await copyText();
-        await navigator.share({ files: fs, text, title: platform === "email" ? emailSubject(input) : undefined }).catch(() => undefined);
+        await navigator.share({ files: fs, text, title: platform === "email" ? subject() : undefined }).catch(() => undefined);
         setNote(`اختر ${app} من القائمة — والنص منسوخ أيضا إن احتجته`);
         return;
       }
       /* الحاسوب: المنشورُ يُفتح بنصّه، والصورةُ تُنزَّل ليرفقها — فلا منصّةَ تقبلها من موقعٍ آخر */
-      const door = shareUrl(platform, input);
+      const opens = door(platform);
       await download();
-      if (door) {
+      if (opens) {
         if (platform === "facebook") await copyText();
-        if (platform === "email") window.location.href = door;
-        else window.open(door, "_blank", "noopener");
+        if (platform === "email") window.location.href = opens;
+        else window.open(opens, "_blank", "noopener");
         setNote(platform === "facebook"
           ? "نزلنا الصورة ونسخنا النص — أرفق الصورة والصق النص في المنشور"
           : `نزلنا ${fs.length > 1 ? "الصور" : "الصورة"} — أرفقها في ${platform === "email" ? "الرسالة" : "المنشور"}`);
@@ -166,7 +187,7 @@ export default function ShareKit({ face, courses, url, code, fileStem }: {
           <Inset as="p" tone={canAttach ? "default" : "warn"} className="mt-3 px-3 py-2 text-read leading-6">{manualNoteAr(platform, canAttach)}</Inset>
         )}
         {platform === "email" && (
-          <p className="mt-3 text-read"><b>العنوان:</b> {emailSubject(input)}</p>
+          <p className="mt-3 text-read"><b>العنوان:</b> {subject()}</p>
         )}
         <label className="mt-3 block text-read font-bold" htmlFor={`${fileStem}-text`}>{platform === "email" ? "نص الرسالة" : `النص الجاهز لـ${platformAr}`}</label>
         <textarea id={`${fileStem}-text`} readOnly value={text} rows={7}

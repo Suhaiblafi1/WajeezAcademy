@@ -2,9 +2,15 @@
 
    قرارُ صاحب المنصّة: «كيف يدخل لحساب مؤثّرٍ يرى فيه مستحقّاته لكلّ شخصٍ استخدم رابط المنحة الخاصّ به». فهنا شاشةٌ
    واحدة: الكودُ والرابطُ يُنسخان، ثمّ الأرقام (من سجّل، من اشترى، كم له، كم دُفع، كم بقي)، ثمّ كلُّ طلبٍ بعمولته،
-   ثمّ ما دُفع له. والمشتري باسمه الأوّل وحدَه. والعلّةُ في `server/services/influencer.service.ts`. */
+   ثمّ ما دُفع له. والمشتري باسمه الأوّل وحدَه. والعلّةُ في `server/services/influencer.service.ts`.
 
-import { useEffect, useState } from "react";
+   ═══ و«صمم منشورك» أوّلَ الصفحة (٢٦ أكتوبر ٢٠٢٦) ═══
+
+   «امنح المؤثّرَ تصاميمَ يشاركها مع عملائه ليمثّل المنحةَ والتقديمَ عبر الرابط الذي يُرفقه بالنصّ، كما فعلنا للمدرّب»
+   (صاحب المنصّة). فاللوحةُ لوحةُ المدرّب (`ShareKit`) بمحتوى المنحة: صورُها (`influencer/grant-art.ts`) ونصُّها لكلّ
+   منصّة برابط صفحته (`influencer-share.ts`). ومفتوحةٌ أوّلَ الصفحة كما قال للمدرّب: «صمم منشورك هو الأهمّ». */
+
+import { useEffect, useMemo, useState } from "react";
 import { Copy, Loader2, Megaphone, ServerOff, Share2 } from "lucide-react";
 import { apiGet, ApiError } from "@/services/api";
 import { toast } from "@/components/Toast";
@@ -12,16 +18,51 @@ import InfluencerLayout from "./influencer/InfluencerLayout";
 import { Card, Panel } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import Chip from "@/components/ui/Chip";
-import { fmtDate, fmtMoney } from "@/application/text/format-ar";
+import { fmtDate, fmtDayMonth, fmtMoney } from "@/application/text/format-ar";
+import ShareKit, { type ShareContent } from "@/components/trainer/ShareKit";
+import { drawGrantArt, grantArtPlan, type GrantArtKind } from "@/components/influencer/grant-art";
+import { grantEmailSubject, grantShareText, grantShareUrl, type GrantShareInput } from "@/application/commerce/influencer-share";
 import { waShare } from "@/application/site/whatsapp";
 
 interface Row { orderId: string; at: string; buyerAr: string; courses: number; listTotal: number; percent: number; commission: number; stateAr: string; refunded: boolean }
 interface Me {
   nameAr: string; code: string; active: boolean; commissionPercent: number; link: string; currency: string;
-  grant: { nameAr: string; open: boolean; percentOff: number; closesAt: string | null };
+  photoUrl: string | null;
+  grant: { nameAr: string; open: boolean; percentOff: number; maxCourses: number; closesAt: string | null };
   totals: { signups: number; codes: number; buyers: number; sales: number; earned: number; paid: number; balance: number };
   rows: Row[];
   payouts: { id: string; amount: number; currency: string; noteAr: string | null; paidAt: string }[];
+}
+
+/** «صمم منشورك» — صورُ المنحة ونصُّها لكلّ منصّة، برابط صفحته وكوده */
+function GrantShare({ me }: { me: Me }) {
+  const content = useMemo<ShareContent>(() => {
+    const lastDayAr = me.grant.closesAt ? fmtDayMonth(new Date(new Date(me.grant.closesAt).getTime() - 1).toISOString()) : null;
+    const g: GrantShareInput = {
+      nameAr: me.nameAr, code: me.code, percentOff: me.grant.percentOff, maxCourses: me.grant.maxCourses, lastDayAr, url: me.link,
+    };
+    const art = { name: me.nameAr, photoUrl: me.photoUrl, percentOff: g.percentOff, maxCourses: g.maxCourses, code: g.code, lastDayAr };
+    return {
+      text: (p) => grantShareText(p, g),
+      subject: () => grantEmailSubject(g),
+      door: (p) => grantShareUrl(p, g),
+      plan: (f) => grantArtPlan(f),
+      draw: (kind) => drawGrantArt(kind as GrantArtKind, art),
+      key: JSON.stringify(art),
+    };
+  }, [me]);
+  return (
+    <Panel as="section" className="mt-5">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+        <h2 className="flex items-center gap-2 text-lg font-black">
+          <Share2 className="h-5 w-5 text-teal-light-ink" aria-hidden="true" /> صمم منشورك
+        </h2>
+        <p className="text-read text-muted-foreground">صورة فيها صورتك والمنحة وكودك، ونص جاهز لكل منصة برابطك.</p>
+      </div>
+      <ShareKit face={{ name: me.nameAr, photoUrl: me.photoUrl }} courses={[]} url={me.link}
+        code={{ code: me.code, percentOff: me.grant.percentOff }} fileStem="wajeez-grant" content={content} />
+    </Panel>
+  );
 }
 
 export default function InfluencerHome() {
@@ -54,6 +95,8 @@ export default function InfluencerHome() {
           </p>
           {!me.grant.open && <p className="mt-2"><Chip tone="warn">المنحة غير مفتوحة الآن</Chip></p>}
           {!me.active && <p className="mt-2"><Chip tone="warn">كودك موقوف الآن. تواصل مع الأكاديمية</Chip></p>}
+
+          <GrantShare me={me} />
 
           <Card tone="accent" className="mt-5 grid gap-4 sm:grid-cols-2">
             <div>

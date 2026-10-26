@@ -19,7 +19,10 @@
 
    ولمَ في المتصفّح لا في الخادم: الخطُّ العربيُّ للمنصّة محمَّلٌ فيه أصلا، والحرفُ يُشكَّل ويُوصَل كما في الصفحة؛
    والخادمُ بلا محرّكِ رسمٍ يُضاف له. والصورةُ من مسار المنصّة نفسِها (`photoPublicUrl`) فلا تُلوِّث اللوحَ — وإن
-   تعذّرت رُسم الحرفُ الأوّلُ من اسمه في دائرة. وكلُّ صورةٍ ملفُّ PNG يُنزَّل أو يُشارَك من الهاتف. */
+   تعذّرت رُسم الحرفُ الأوّلُ من اسمه في دائرة. وكلُّ صورةٍ ملفُّ PNG يُنزَّل أو يُشارَك من الهاتف.
+
+   وأدواتُ الرسم (الإطارُ والصورةُ والشارات) مصدَّرةٌ لصور «منحة مؤثرين وجيز» (`components/influencer/grant-art.ts`):
+   هيئةٌ واحدةٌ لما ينشره المدرّبُ والمؤثّر، فلا يفترق شكلاهما. */
 
 import { splitTitle } from '@/application/trainer/share-kit'
 
@@ -41,14 +44,14 @@ const SIZE: Record<ArtKind, [number, number]> = {
   post: [1080, 1080], story: [1080, 1920], cover: [1080, 1350], course: [1080, 1350], offer: [1080, 1350], link: [1200, 630],
 }
 
-const C = { paper: '#F5F3EE', ink: '#1F2A2E', muted: '#5C6B70', teal: '#38A7B4', tealInk: '#1A5C64', gold: '#FABC05', white: '#FFFFFF', live: '#E5484D' }
+export const C = { paper: '#F5F3EE', ink: '#1F2A2E', muted: '#5C6B70', teal: '#38A7B4', tealInk: '#1A5C64', gold: '#FABC05', white: '#FFFFFF', live: '#E5484D' }
 const FONT = '"Avenir Arabic", "IBM Plex Sans Arabic", "Neo Sans Arabic", system-ui, sans-serif'
-const font = (weight: number, px: number) => `${weight} ${px}px ${FONT}`
+export const font = (weight: number, px: number) => `${weight} ${px}px ${FONT}`
 
 /** المزايا — ممّا تقدّمه المنصّةُ فعلا: البثُّ على Zoom، والتسجيلُ في «مصادر هذه المرحلة»، والشهادةُ الموثّقةُ بشروط إنجاز */
 export const ART_PERKS = ['لقاءات على Zoom', 'تسجيل كل لقاء', 'شهادة موثقة'] as const
 
-function loadImage(src: string): Promise<HTMLImageElement | null> {
+export function loadImage(src: string): Promise<HTMLImageElement | null> {
   return new Promise((resolve) => {
     const img = new Image()
     img.crossOrigin = 'anonymous'
@@ -90,7 +93,7 @@ export function fitLines(
   return { px: minPx, lines: kept }
 }
 
-function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+export function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
   ctx.beginPath()
   ctx.moveTo(x + r, y)
   ctx.arcTo(x + w, y, x + w, y + h, r)
@@ -101,7 +104,7 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
 }
 
 /** صورتُه في دائرةٍ بحلقةٍ فيروزيّة — أو حرفُه الأوّل إن لم تكن */
-function portrait(ctx: CanvasRenderingContext2D, img: HTMLImageElement | null, name: string, cx: number, cy: number, r: number) {
+export function portrait(ctx: CanvasRenderingContext2D, img: HTMLImageElement | null, name: string, cx: number, cy: number, r: number) {
   ctx.save()
   ctx.beginPath()
   ctx.arc(cx, cy, r + 12, 0, Math.PI * 2)
@@ -127,15 +130,15 @@ function portrait(ctx: CanvasRenderingContext2D, img: HTMLImageElement | null, n
   ctx.restore()
 }
 
-interface PillStyle { px: number; bg?: string; fg: string; border?: string; dot?: string; weight?: number }
+export interface PillStyle { px: number; bg?: string; fg: string; border?: string; dot?: string; weight?: number }
 
-function pillWidth(ctx: CanvasRenderingContext2D, text: string, o: PillStyle): number {
+export function pillWidth(ctx: CanvasRenderingContext2D, text: string, o: PillStyle): number {
   ctx.font = font(o.weight ?? 700, o.px)
   return ctx.measureText(text).width + o.px * 1.6 + (o.dot ? o.px * 0.9 : 0)
 }
 
 /** شارةٌ مستديرة، و`right` حافّتُها اليمنى */
-function pill(ctx: CanvasRenderingContext2D, text: string, right: number, y: number, o: PillStyle) {
+export function pill(ctx: CanvasRenderingContext2D, text: string, right: number, y: number, o: PillStyle) {
   const w = pillWidth(ctx, text, o)
   const pad = o.px * 0.8
   const h = o.px * 1.9
@@ -156,7 +159,7 @@ function pill(ctx: CanvasRenderingContext2D, text: string, right: number, y: num
 }
 
 /** المزايا شاراتٌ بإطارٍ فيروزيٍّ في صفٍّ وسطَ عرضه */
-function perks(ctx: CanvasRenderingContext2D, cx: number, y: number, px: number) {
+export function perks(ctx: CanvasRenderingContext2D, cx: number, y: number, px: number) {
   const style: PillStyle = { px, fg: C.tealInk, border: C.teal, dot: C.gold, weight: 500 }
   const widths = ART_PERKS.map((t) => pillWidth(ctx, t, style))
   const gap = px * 0.6
@@ -188,7 +191,7 @@ function codePill(ctx: CanvasRenderingContext2D, code: ArtData['code'], cx: numb
     ═══ وبلا عنوان الموقع في الذيل (٢٦ أكتوبر ٢٠٢٦) ═══
     قال صاحبُ المنصّة: «لا داعيَ للرابط لأنّه لا يمكن نسخُه أو نقرُه داخل التصميم». فالرابطُ في النصّ المرافق
     يُنقر، وفي الصورة حروفٌ لا تفتح شيئا. */
-function frame(ctx: CanvasRenderingContext2D, logo: HTMLImageElement | null, w: number, h: number) {
+export function frame(ctx: CanvasRenderingContext2D, logo: HTMLImageElement | null, w: number, h: number) {
   ctx.fillStyle = C.paper
   ctx.fillRect(0, 0, w, h)
   ctx.fillStyle = C.teal
