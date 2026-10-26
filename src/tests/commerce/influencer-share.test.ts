@@ -9,6 +9,7 @@ import { join } from 'node:path'
 import { grantEmailSubject, grantShareText, grantShareUrl, type GrantShareInput } from '@/application/commerce/influencer-share'
 import { SHARE_PLATFORMS } from '@/application/trainer/share-kit'
 import { plainAr } from '@/application/text/plain-ar'
+import { coursesAr, grantArtPlan, grantDesigns, parseGrantKind, shortTitle, ACADEMY_FEATURES, MIN_FACES } from '@/components/influencer/grant-art'
 
 const code = (p: string) => readFileSync(join(process.cwd(), p), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
 const URL = 'https://www.wajeezacademy.com/grant/i/SARA'
@@ -73,7 +74,10 @@ describe('الصور واللوحة', () => {
     const page = code('src/pages/InfluencerHome.tsx')
     expect(page).toMatch(/<ShareKit [^>]*content=\{content\} \/>/)
     expect(page).toMatch(/text: \(p\) => grantShareText\(p, g\)/)
-    expect(page).toMatch(/draw: \(kind\) => drawGrantArt\(kind as GrantArtKind, art\)/)
+    expect(page).toMatch(/draw: \(kind\) => \{ const k = parseGrantKind\(kind\); return drawGrantArt\(k\.design, k\.size, art\); \}/)
+    /* وبلا صورته: وجهُ اللوحة بلا صورة، وصورُ المدرّبين من صفحة المنحة نفسِها */
+    expect(page).toMatch(/face=\{\{ name: me\.nameAr, photoUrl: null \}\}/)
+    expect(page).toMatch(/apiGet<GrantView>\(`\/api\/public\/grant\/influencer\?code=/)
     expect(page, 'اللوحة بعد الكود والأرقام').toMatch(/<GrantShare me=\{me\} \/>[\s\S]*كودك/)
   })
 
@@ -89,5 +93,40 @@ describe('الصور واللوحة', () => {
     expect(art, 'يرسم عنوانا').not.toMatch(/fillText\([^)]*(url|link|wajeez|\.com)/i)
     const data = art.slice(art.indexOf('export interface GrantArtData'), art.indexOf('}', art.indexOf('export interface GrantArtData')))
     expect(data, 'عنوان الموقع في بيانات الرسم').not.toMatch(/\burl\b|\blink\b/i)
+  })
+})
+
+/* «أضف تصاميم أخرى تدل على الأكاديمية ودوراتها ومدربيها… لا داعي لوجود صورة صاحب المنحة… اذكرها مع الكود كاسمه»
+   (صاحب المنصة، ٢٦ أكتوبر ٢٠٢٦) */
+describe('أربعة تصاميم بلا صورة المؤثر', () => {
+  const face = { name: 'م', photoUrl: '/x.jpg' }
+  it('⚠️ وجوه المدربين بثلاثة فأكثر، والدورات بواحدة فأكثر — والمنحة والأكاديمية دائما', () => {
+    expect(grantDesigns({ trainers: [face, face, face], courses: [{ title: 'أ', startsAt: null }] })).toEqual(['offer', 'trainers', 'courses', 'academy'])
+    expect(grantDesigns({ trainers: [face, face], courses: [] }), 'وجهان لا يقولان «مدربون»').toEqual(['offer', 'academy'])
+    expect(MIN_FACES).toBe(3)
+  })
+  it('⚠️ المنشور والستوري للتصميم المختار، والكاروسيل كلها ثم «كيف تحجز»', () => {
+    expect(grantArtPlan('post', 'trainers', ['offer', 'trainers'])).toEqual([{ kind: 'trainers:post', index: 0 }])
+    expect(grantArtPlan('carousel', 'offer', ['offer', 'trainers', 'academy']).map((x) => x.kind))
+      .toEqual(['offer:slide', 'trainers:slide', 'academy:slide', 'steps:slide'])
+    expect(parseGrantKind('courses:story')).toEqual({ design: 'courses', size: 'story' })
+  })
+  it('⚠️ لا صورة له في بيانات الرسم — واسمه مع الكود في كل تصميم', () => {
+    const art = code('src/components/influencer/grant-art.ts')
+    const data = art.slice(art.indexOf('export interface GrantArtData'), art.indexOf('\n}', art.indexOf('export interface GrantArtData')))
+    expect(data, 'عادت صورة المؤثر إلى بيانات الرسم').not.toMatch(/^\s*photoUrl/m)
+    expect(art).toMatch(/const text = `\$\{influencerCodeLabelAr\(d\.name\)\}: \$\{d\.code\}`/)
+    expect(art, 'الكود لا يرسم في ذيل كل تصميم').toMatch(/codePill\(ctx, d, cx, m\.pillY,/)
+  })
+  it('والعدد فوق العشرة بالمفرد، واسم الدورة بلا ما بين القوسين', () => {
+    expect(coursesAr(4)).toBe('4 دورات')
+    expect(coursesAr(24)).toBe('24 دورة')
+    expect(coursesAr(2)).toBe('دورتين')
+    expect(shortTitle('أساسيات التخطيط الاستراتيجي (من فهم الواقع إلى تحديد الاتجاه)')).toBe('أساسيات التخطيط الاستراتيجي')
+    expect(shortTitle('تمويل المشاريع: من الفكرة إلى التمويل')).toBe('تمويل المشاريع')
+  })
+  it('ومزايا الأكاديمية مما تعده صفحة المنحة لا غيره', () => {
+    expect(ACADEMY_FEATURES).toEqual(['لقاءات مباشرة على Zoom مع مدرب معتمد', 'تطبيقات عملية في كل دورة', 'تسجيل كل لقاء تعود إليه', 'شهادة موثقة ورسالة توصية لمن يلتزم'])
+    for (const f of ACADEMY_FEATURES) expect(plainAr(f)).toBe(f)
   })
 })
