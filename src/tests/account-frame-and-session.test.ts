@@ -24,6 +24,9 @@ describe('إطار «حسابي» يتبع البوّابة التي فتح من
     expect(accountPathForPortal('/admin/cohorts')).toBe('/admin/account')
     expect(accountPathForPortal('/trainer/schedule')).toBe('/trainer/account')
     expect(accountPathForPortal('/advisor')).toBe('/advisor/account')
+    /* والمؤثّرُ بابٌ رابع: «حسابي» منه إعداداتُه بإطاره، لا إعداداتُ المتعلّم (٢٦ أكتوبر ٢٠٢٦) */
+    expect(accountPathForPortal('/influencer')).toBe('/influencer/account')
+    expect(portalPrefixFor('/influencers')).toBeNull()
   })
 
   it('وبوّابة المتعلّم هي الأصل لمن ليس في بوّابة عاملين', () => {
@@ -47,7 +50,7 @@ describe('إطار «حسابي» يتبع البوّابة التي فتح من
     const frame = code('src/pages/PortalFrame.tsx')
     const paths = code('src/application/site/portal-paths.ts')
     expect(frame, 'الإطار يطابق المسار بنفسه').toContain('portalPrefixFor')
-    for (const layout of ['AdminLayout', 'TrainerLayout', 'AdvisorLayout', 'PortalLayout']) {
+    for (const layout of ['AdminLayout', 'TrainerLayout', 'AdvisorLayout', 'InfluencerLayout', 'PortalLayout']) {
       expect(frame, `إطار لا يعرف ${layout}`).toContain(`<${layout} title=`)
     }
     expect(frame, 'مطابقة ثانية في الإطار تفترق عن الأولى').not.toMatch(/startsWith/)
@@ -56,7 +59,7 @@ describe('إطار «حسابي» يتبع البوّابة التي فتح من
 
   it('⚠️ ولكلّ بوّابة مسار حساب مسجّل خلف حارسها — وإلّا فالرابط إلى لا شيء', () => {
     const app = code('src/App.tsx')
-    for (const path of ['/admin/account', '/trainer/account', '/advisor/account', '/student/account']) {
+    for (const path of ['/admin/account', '/trainer/account', '/advisor/account', '/influencer/account', '/student/account']) {
       expect(app, `مسار غير مسجّل: ${path}`).toContain(`path="${path}"`)
     }
   })
@@ -181,5 +184,18 @@ describe('الخروج من ترويسة الموقع العامّ', () => {
     /* الترتيبُ شرط: لو بُدّلت الترويسةُ أوّلا قيل له «خرجت» والكوكي حيّ */
     expect(menu.indexOf('await signOut()')).toBeLessThan(menu.indexOf('onSignedOut()'))
     expect(menu, 'لا باب إلى البوّابة من القائمة').toContain('portalHome')
+  })
+})
+
+describe('إعدادات المؤثر — بياناته وأمان حسابه وحدها (٢٦ أكتوبر ٢٠٢٦)', () => {
+  it('⚠️ لا أقسام المتعلّم ولا بطاقات المدرّب من بابه — ولو كان حسابه مدرّبا', () => {
+    const page = code('src/pages/student/Account.tsx')
+    expect(page).toMatch(/const inInfluencer = portalPrefixFor\(useLocation\(\)\.pathname\) === "\/influencer";/)
+    expect(page).toMatch(/const learnerFields = !inInfluencer && showsLearnerFields\(roles\);/)
+    expect(page).toMatch(/const isTrainer = !inInfluencer && !!roles\?\.includes\("trainer"\);/)
+    /* وبطاقتا المدرّب بـ`isTrainer` لا بالدور مباشرة — وإلّا ظهرتا للمؤثّر المدرّب */
+    expect(page, 'بطاقة مدرّب تقرأ الدور مباشرة').not.toMatch(/roles\?\.includes\("trainer"\) && <(PublicTextCard|ProfileSuggestions)/)
+    expect(page).toMatch(/isTrainer && <PublicTextCard/)
+    expect(page).toMatch(/isTrainer && <ProfileSuggestions/)
   })
 })

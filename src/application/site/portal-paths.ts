@@ -10,7 +10,8 @@
    Node كسائر قرارات هذا المستودَع. */
 
 /** بوّاباتُ العاملين ببوادئ مساراتها — وما عداها بوّابةُ المتعلّم */
-export const PORTAL_PREFIXES = ['/admin', '/trainer', '/advisor'] as const
+/* وحسابُ المؤثّر بابٌ رابع (٢٦ أكتوبر ٢٠٢٦): «حسابي» منه تفتح إعداداتِه بإطاره، لا إعداداتِ المتعلّم */
+export const PORTAL_PREFIXES = ['/admin', '/trainer', '/advisor', '/influencer'] as const
 
 /** بادئةُ بوّابةِ هذا المسار، و`null` لما ليس بوّابةَ عاملين.
 
