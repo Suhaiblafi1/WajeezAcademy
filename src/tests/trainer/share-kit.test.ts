@@ -6,7 +6,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { bestCode, manualNoteAr, SHARE_PLATFORMS, shareText, shareUrl, splitTitle, type ShareInput } from '@/application/trainer/share-kit'
+import { bestCode, emailSubject, manualNoteAr, SHARE_PLATFORMS, shareText, shareUrl, splitTitle, type ShareInput } from '@/application/trainer/share-kit'
 import { artPlan } from '@/components/trainer/share-art'
 
 const URL_ONE = 'https://www.wajeezacademy.com/build/C-1?ref=WJ-AAAA'
@@ -30,7 +30,7 @@ describe('النص لكل منصة', () => {
       expect(t, `${p.id} بلا كود`).toContain('WJ30-K7Q2MX')
       expect(t, `${p.id} بلا موعد`).toContain('15 نوفمبر')
     }
-    for (const p of ['whatsapp', 'linkedin', 'facebook', 'x'] as const) expect(shareText(p, one)).toContain(URL_ONE)
+    for (const p of ['whatsapp', 'linkedin', 'facebook', 'x', 'email'] as const) expect(shareText(p, one)).toContain(URL_ONE)
   })
 
   it('⚠️ وإنستغرام وتيك توك لا رابط ينقر فيهما — «الرابط في البايو»', () => {
@@ -134,16 +134,48 @@ describe('نص يقرأ ويغري', () => {
 })
 
 describe('ما لا ينشر مباشرة يقال قبل الضغط', () => {
-  it('⚠️ إنستغرام وتيك توك يدويان ويقال لماذا — وفيسبوك يلصق النص — وما يفتح جاهزا بلا تنبيه', () => {
+  it('⚠️ من الحاسوب: إنستغرام وتيك توك يدويان ويقال لماذا، وفيسبوك يلصق النص، وكل منصة ترفق الصورة بيده', () => {
     expect(manualNoteAr('instagram')).toMatch(/إنستغرام لا يسمح بالنشر المباشر.*يدوي/)
     expect(manualNoteAr('tiktok')).toMatch(/تيك توك لا يسمح بالنشر المباشر.*يدوي/)
     expect(manualNoteAr('facebook')).toMatch(/الصقه/)
-    for (const p of ['whatsapp', 'linkedin', 'x'] as const) expect(manualNoteAr(p), p).toBeNull()
+    for (const p of ['whatsapp', 'linkedin', 'x', 'email'] as const) expect(manualNoteAr(p), p).toMatch(/فأرفقها/)
+  })
+  /* «هل يمكن أن تُرفق الصورةُ تلقائيّا عند النشر؟» (صاحب المنصّة، ٢٦ أكتوبر ٢٠٢٦) — نعم من الهاتف، لكلّ منصّة */
+  it('⚠️ ومن الهاتف ترفق الصورة والنص معا لكل منصة — بلا «يدوي»', () => {
+    for (const p of SHARE_PLATFORMS) {
+      const n = manualNoteAr(p.id, true)
+      expect(n, p.id).toContain('الصورة والنص معا')
+      expect(n, p.id).not.toContain('يدوي')
+    }
   })
   it('⚠️ والتنبيه في اللوحة نفسها قبل زر النشر', () => {
     const kit = readFileSync(join(process.cwd(), 'src/components/trainer/ShareKit.tsx'), 'utf8')
-    const note = kit.indexOf('{manualNoteAr(platform) && (')
+    const note = kit.indexOf('{manualNoteAr(platform, canAttach) && (')
     expect(note, 'لا تنبيه في اللوحة').toBeGreaterThan(-1)
-    expect(note, 'التنبيه بعد زر النشر').toBeLessThan(kit.indexOf('انشر على {platformAr}'))
+    expect(note, 'التنبيه بعد زر النشر').toBeLessThan(kit.indexOf('`انشر على ${platformAr}`'))
+    /* والهاتفُ يشارك الصورَ مع النصّ قبل أيّ رابط */
+    expect(kit).toMatch(/if \(canAttach && navigator\.canShare\?\.\(\{ files: fs \}\)\) \{[\s\S]{0,120}navigator\.share\(\{ files: fs, text/)
+  })
+})
+
+/* «أضف إيميلا كدعاية يستخدمها المدرّب إن أراد أن يرسل الدعاية عبر الإيميل» (صاحب المنصّة، ٢٦ أكتوبر ٢٠٢٦) */
+describe('البريد', () => {
+  const x = { ...one, signature: 'صهيب لافي' }
+  it('⚠️ رسالة بتحية ودعوة وتوقيع باسمه، وعنوان يقول الدورة والخصم', () => {
+    const t = shareText('email', x)
+    expect(t.startsWith('مرحبا،')).toBe(true)
+    expect(t).toContain('مهارة الخطابة')
+    expect(t).toContain('WJ30-K7Q2MX')
+    expect(t).toContain(URL_ONE)
+    expect(t.trim().endsWith('صهيب لافي'), 'بلا توقيع').toBe(true)
+    expect(t, 'وسوم في بريد').not.toContain('#')
+    expect(emailSubject(x)).toBe('دعوة إلى دورة «مهارة الخطابة» — وخصم 30٪ لك')
+  })
+  it('⚠️ وبابه بريده برسالته جاهزة — يختار هو لمن يرسلها', () => {
+    const door = shareUrl('email', x)!
+    expect(door.startsWith('mailto:?')).toBe(true)
+    const q = new URLSearchParams(door.slice('mailto:?'.length))
+    expect(q.get('subject')).toBe(emailSubject(x))
+    expect(q.get('body')).toBe(shareText('email', x))
   })
 })

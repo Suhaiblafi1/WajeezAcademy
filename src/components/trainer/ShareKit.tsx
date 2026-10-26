@@ -17,7 +17,7 @@ import { Inset } from "@/components/ui/Surface";
 import { staffControlCls } from "@/components/FormKit";
 import TabBar from "@/components/ui/TabBar";
 import { fmtDayMonth } from "@/application/text/format-ar";
-import { manualNoteAr, SHARE_PLATFORMS, shareText, shareUrl, type ShareCourse, type SharePlatform } from "@/application/trainer/share-kit";
+import { emailSubject, manualNoteAr, SHARE_PLATFORMS, shareText, shareUrl, type ShareCourse, type SharePlatform } from "@/application/trainer/share-kit";
 import { artPlan, drawArt, toFile, type ArtData } from "./share-art";
 
 type Format = "post" | "story" | "carousel";
@@ -29,7 +29,7 @@ const FORMATS: { id: Format; label: string }[] = [
 
 /** الصيغةُ التي تناسب كلَّ منصّة إن اختارها قبل أن يختار صيغة */
 const FORMAT_OF: Record<SharePlatform, Format> = {
-  whatsapp: "post", linkedin: "post", facebook: "post", x: "post", instagram: "carousel", tiktok: "story",
+  whatsapp: "post", linkedin: "post", facebook: "post", x: "post", instagram: "carousel", tiktok: "story", email: "post",
 };
 
 export interface ShareFace { name: string; headline?: string | null; photoUrl: string | null }
@@ -48,7 +48,17 @@ export default function ShareKit({ face, courses, url, code, fileStem }: {
   const [note, setNote] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const input = useMemo(() => ({ courses, url, code, dayAr: (iso: string) => fmtDayMonth(iso) }), [courses, url, code]);
+  const input = useMemo(() => ({ courses, url, code, dayAr: (iso: string) => fmtDayMonth(iso), signature: face.name }), [courses, url, code, face.name]);
+  /* ═══ أيرفق جهازُه الصورةَ بنفسه؟ (٢٦ أكتوبر ٢٠٢٦) ═══
+     «هل يمكن أن تُرفق الصورةُ تلقائيّا عند النشر؟» — نعم حيث يقبل الجهازُ مشاركةَ الصور (الهاتف): قائمةُ المشاركة
+     تحملها مع النصّ إلى أيّ منصّة. ويُسأل الجهازُ مرّةً بصورةٍ صغيرة (`manualNoteAr`) */
+  const [canAttach, setCanAttach] = useState(false);
+  useEffect(() => {
+    try {
+      const probe = new File([new Blob(["x"], { type: "image/png" })], "p.png", { type: "image/png" });
+      setCanAttach(Boolean(navigator.canShare?.({ files: [probe] })));
+    } catch { setCanAttach(false); }
+  }, []);
   const art: ArtData = useMemo(() => ({
     name: face.name, headline: face.headline ?? null, photoUrl: face.photoUrl, courses, code,
     dayAr: (iso: string) => fmtDayMonth(iso), host: window.location.host,
@@ -91,25 +101,29 @@ export default function ShareKit({ face, courses, url, code, fileStem }: {
     setBusy(true);
     setNote(null);
     try {
-      const door = shareUrl(platform, input);
-      if (door) {
-        /* فيسبوك يقبل الرابطَ وحدَه — فالنصُّ في الحافظة قبل فتحه */
-        if (platform === "facebook") await copyText();
-        window.open(door, "_blank", "noopener");
-        setNote(platform === "facebook" ? "نسخنا النص — الصقه في المنشور" : null);
+      const fs = await files();
+      const app = SHARE_PLATFORMS.find((p) => p.id === platform)!.ar;
+      /* الهاتف: قائمةُ المشاركة تحمل الصورةَ والنصَّ معا إلى المنصّة التي يختارها */
+      if (canAttach && navigator.canShare?.({ files: fs })) {
+        await copyText();
+        await navigator.share({ files: fs, text, title: platform === "email" ? emailSubject(input) : undefined }).catch(() => undefined);
+        setNote(`اختر ${app} من القائمة — والنص منسوخ أيضا إن احتجته`);
         return;
       }
-      /* إنستغرام وتيك توك: من قائمة الهاتف إن قبلت الصور، وإلّا تنزيلٌ ونسخ */
-      const fs = await files();
-      if (navigator.canShare?.({ files: fs })) {
-        await copyText();
-        await navigator.share({ files: fs, text }).catch(() => undefined);
-        setNote("نسخنا النص — الصقه تحت الصورة");
-      } else {
-        await download();
-        await copyText();
-        setNote(`نزلنا ${fs.length > 1 ? "الصور" : "الصورة"} ونسخنا النص — افتح ${platform === "instagram" ? "إنستغرام" : "تيك توك"} وانشرها`);
+      /* الحاسوب: المنشورُ يُفتح بنصّه، والصورةُ تُنزَّل ليرفقها — فلا منصّةَ تقبلها من موقعٍ آخر */
+      const door = shareUrl(platform, input);
+      await download();
+      if (door) {
+        if (platform === "facebook") await copyText();
+        if (platform === "email") window.location.href = door;
+        else window.open(door, "_blank", "noopener");
+        setNote(platform === "facebook"
+          ? "نزلنا الصورة ونسخنا النص — أرفق الصورة والصق النص في المنشور"
+          : `نزلنا ${fs.length > 1 ? "الصور" : "الصورة"} — أرفقها في ${platform === "email" ? "الرسالة" : "المنشور"}`);
+        return;
       }
+      await copyText();
+      setNote(`نزلنا ${fs.length > 1 ? "الصور" : "الصورة"} ونسخنا النص — افتح ${app} وانشرها`);
     } finally {
       setBusy(false);
     }
@@ -146,15 +160,18 @@ export default function ShareKit({ face, courses, url, code, fileStem }: {
         </div>
         {/* ═══ وما لا يُنشر منه مباشرةً يُقال قبل الضغط (٢٦ أكتوبر ٢٠٢٦) ═══
             «للوسائل التي لا تسمح بالنشر المباشر يجب إبلاغ المدرّب أنّه يقوم بها يدويّا» (صاحب المنصّة). */}
-        {manualNoteAr(platform) && (
-          <Inset as="p" tone="warn" className="mt-3 px-3 py-2 text-read leading-6">{manualNoteAr(platform)}</Inset>
+        {manualNoteAr(platform, canAttach) && (
+          <Inset as="p" tone={canAttach ? "default" : "warn"} className="mt-3 px-3 py-2 text-read leading-6">{manualNoteAr(platform, canAttach)}</Inset>
         )}
-        <label className="mt-3 block text-read font-bold" htmlFor={`${fileStem}-text`}>النص الجاهز لـ{platformAr}</label>
+        {platform === "email" && (
+          <p className="mt-3 text-read"><b>العنوان:</b> {emailSubject(input)}</p>
+        )}
+        <label className="mt-3 block text-read font-bold" htmlFor={`${fileStem}-text`}>{platform === "email" ? "نص الرسالة" : `النص الجاهز لـ${platformAr}`}</label>
         <textarea id={`${fileStem}-text`} readOnly value={text} rows={7}
           className={`${staffControlCls} mt-1 w-full text-read leading-7`} />
         <div className="mt-2 flex flex-wrap gap-2">
           <Button tone="confirm" type="button" icon={Share2} loading={busy} onClick={() => void share()}>
-            انشر على {platformAr}
+            {platform === "email" ? "افتح بريدي" : `انشر على ${platformAr}`}
           </Button>
           <Button tone="secondary" type="button" icon={Copy} onClick={() => { void copyText(); setNote("نسخنا النص"); }}>
             انسخ النص

@@ -594,12 +594,14 @@ export default function Referral() {
             {/* الرابطُ يُعرض كما يُقرأ: `referral.service` لا يرمّز المسارَ،
                 فاسمُه العربيُّ يبقى عربيّا في خانة النسخ كما في العنوان. */}
             <div className="mt-3 flex flex-wrap items-center gap-2">
+              {/* والرابطُ المعروضُ قصيرٌ إن كان (٢٦ أكتوبر ٢٠٢٦): «هل يمكن أن تكون الروابطُ أقصرَ وأكثرَ احترافيّة؟» —
+                  ‎/s/XXXXXX يحمل إلى الرابط نفسِه، فما يُنسخ هو ما يُنشر (`short` في `share-kit`) */}
               <input
-                readOnly dir="ltr" value={referral.url} aria-label="رابطي العامّ"
+                readOnly dir="ltr" value={kit?.short.wide ?? referral.url} aria-label="رابطي العامّ"
                 onFocus={(e) => e.currentTarget.select()}
                 className={`${staffControlCls} min-w-0 flex-1 text-left`}
               />
-              <Button tone="secondary" onClick={() => copy("wide", referral.url)}>
+              <Button tone="secondary" onClick={() => copy("wide", kit?.short.wide ?? referral.url)}>
                 {copied === "wide" ? "نسخ" : "انسخ الرابط"}
               </Button>
               <a href={referral.url} target="_blank" rel="noreferrer" className="text-read font-bold text-teal-light-ink hover:text-foreground">عاينها</a>
@@ -663,11 +665,11 @@ export default function Referral() {
                         )}
                         <div className="mt-2 flex flex-wrap items-center gap-2">
                           <input
-                            readOnly dir="ltr" value={c.url} aria-label={`رابط دعوتي إلى ${c.title}`}
+                            readOnly dir="ltr" value={kit?.short.cohorts[c.cohortId] ?? c.url} aria-label={`رابط دعوتي إلى ${c.title}`}
                             onFocus={(e) => e.currentTarget.select()}
                             className={`${staffControlCls} min-w-0 flex-1 text-left`}
                           />
-                          <Button tone="secondary" size="sm" onClick={() => copy(c.cohortId, c.url)}>
+                          <Button tone="secondary" size="sm" onClick={() => copy(c.cohortId, kit?.short.cohorts[c.cohortId] ?? c.url)}>
                             {copied === c.cohortId ? "نسخ" : "انسخ الرابط"}
                           </Button>
                           {kit && (

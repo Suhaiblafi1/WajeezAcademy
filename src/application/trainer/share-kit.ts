@@ -15,7 +15,7 @@
 
 import { waShare } from '../site/whatsapp'
 
-export type SharePlatform = 'whatsapp' | 'linkedin' | 'facebook' | 'x' | 'instagram' | 'tiktok'
+export type SharePlatform = 'whatsapp' | 'linkedin' | 'facebook' | 'x' | 'instagram' | 'tiktok' | 'email'
 
 export const SHARE_PLATFORMS: { id: SharePlatform; ar: string; opens: boolean }[] = [
   { id: 'whatsapp', ar: 'واتساب', opens: true },
@@ -24,6 +24,9 @@ export const SHARE_PLATFORMS: { id: SharePlatform; ar: string; opens: boolean }[
   { id: 'x', ar: 'إكس', opens: true },
   { id: 'instagram', ar: 'إنستغرام', opens: false },
   { id: 'tiktok', ar: 'تيك توك', opens: false },
+  /* والبريدُ (٢٦ أكتوبر ٢٠٢٦): «أضف إيميلا كدعاية يستخدمها المدرّب إن أراد أن يرسل الدعاية عبر الإيميل» —
+     يُفتح بريدُه برسالةٍ جاهزةٍ بعنوانها، ويختار هو لمن يرسلها */
+  { id: 'email', ar: 'البريد', opens: true },
 ]
 
 export interface ShareCourse { courseTitle: string; startsAt: string | null; url: string }
@@ -36,6 +39,8 @@ export interface ShareInput {
   code: { code: string; percentOff: number } | null
   /** «31 أكتوبر» — يمرّره من يملك المنطقةَ الزمنيّة */
   dayAr: (iso: string) => string
+  /** توقيعُ البريد — اسمُه */
+  signature?: string
 }
 
 /** أعلى الخصمين — خصمُنا أو كودُه — ويغلب كودُه إن ساواه: هو اختاره لجمهوره */
@@ -107,6 +112,26 @@ export function shareText(platform: SharePlatform, x: ShareInput): string {
     })
   }
 
+  /* البريد: رسالةٌ بتحيّةٍ وتوقيعٍ باسمه — لا وسومَ ولا تغليظ */
+  if (platform === 'email') {
+    return [
+      'مرحبا،',
+      '',
+      one ? 'يسعدني أن أدعوك إلى دورتي القادمة مع أكاديمية وجيز:' : 'يسعدني أن أدعوك إلى دوراتي هذا الموسم مع أكاديمية وجيز:',
+      '',
+      ...body,
+      ...(one ? [] : ['']),
+      '💻 لقاءات مباشرة على Zoom، وتسجيل كل لقاء، وشهادة موثقة — والمقاعد محدودة.',
+      ...(x.code ? ['', `🎁 ولك خصم ${x.code.percentOff}٪ بالكود: ${x.code.code}`] : []),
+      '',
+      one ? 'التفاصيل والتسجيل:' : 'اختر دورتك وسجل:',
+      x.url,
+      '',
+      'يسعدني أن أراك معنا،',
+      ...(x.signature ? [x.signature] : []),
+    ].join('\n')
+  }
+
   const opener = wa
     ? ['مرحبا 👋', one ? 'أقدم دورة جديدة مع أكاديمية وجيز:' : 'هذه دوراتي مع أكاديمية وجيز هذا الموسم:']
     : [one ? 'يسعدني أن أعلن عن دورتي القادمة مع أكاديمية وجيز 🎓' : 'يسعدني أن أشارككم دوراتي هذا الموسم مع أكاديمية وجيز 🎓']
@@ -125,15 +150,30 @@ export function shareText(platform: SharePlatform, x: ShareInput): string {
   ].join('\n')
 }
 
-/** ما يفعله بيده حيث لا نشرَ مباشر — يُقال قبل الضغط لا بعده (٢٦ أكتوبر ٢٠٢٦): «يجب إبلاغ المدرّب أنّه يقوم بها
-    يدويّا لأنّ إنستغرام لا يسمح مباشرة». و`null` حيث يُفتح المنشورُ جاهزا */
-export function manualNoteAr(platform: SharePlatform): string | null {
+/* ═══ وما يفعله بيده يُقال قبل الضغط لا بعده (٢٦ أكتوبر ٢٠٢٦) ═══
+
+   «للوسائل التي لا تسمح بالنشر المباشر يجب إبلاغ المدرّب أنّه يقوم بها يدويّا»، ثمّ: «هل يمكن أن تُرفق الصورةُ
+   تلقائيّا عند النشر؟». والجوابُ على الجهاز لا على المنصّة:
+   · **الهاتف** يقبل مشاركةَ الصور (`navigator.canShare({ files })`): تُفتح قائمةُ المشاركة فيختار المنصّة، وتصلها
+     الصورةُ والنصُّ معا — واتساب ولينكدإن وفيسبوك وإنستغرام وتيك توك والبريد سواء.
+   · **الحاسوب** لا: لا تقبل منصّةٌ صورةً من موقعٍ آخر في رابط مشاركتها. فيُفتح المنشورُ بنصّه، وتُنزَّل الصورةُ
+     ليرفقها. وإنستغرام وتيك توك لا رابطَ لهما أصلا — يدويّان. */
+export function manualNoteAr(platform: SharePlatform, canAttach = false): string | null {
+  const app = SHARE_PLATFORMS.find((p) => p.id === platform)!.ar
+  if (canAttach) return `تفتح قائمة المشاركة في هاتفك: اختر ${app}، فتصله الصورة والنص معا.`
   if (platform === 'instagram' || platform === 'tiktok') {
-    const app = platform === 'instagram' ? 'إنستغرام' : 'تيك توك'
-    return `${app} لا يسمح بالنشر المباشر من موقع آخر، فالنشر عليه يدوي: ننزل لك الصور وننسخ النص، ثم تفتح ${app} وتنشرها وتلصق النص. وعلى الهاتف تختار ${app} من قائمة المشاركة.`
+    return `${app} لا يسمح بالنشر المباشر من موقع آخر، فالنشر عليه يدوي: ننزل لك الصور وننسخ النص، ثم تفتح ${app} وتنشرها وتلصق النص. ومن الهاتف ترفق الصورة تلقائيا.`
   }
-  if (platform === 'facebook') return 'فيسبوك يأخذ الرابط وحده: ننسخ النص، فالصقه في المنشور قبل أن تنشر.'
-  return null
+  if (platform === 'facebook') return 'فيسبوك يأخذ الرابط وحده من الحاسوب: ننسخ النص فالصقه، وننزل الصورة فأرفقها. ومن الهاتف ترفق تلقائيا.'
+  if (platform === 'email') return 'نفتح بريدك برسالة جاهزة، وننزل الصورة فأرفقها. ومن الهاتف ترفق تلقائيا.'
+  return `${app} لا يقبل صورة من موقع آخر على الحاسوب: نفتح المنشور بالنص، وننزل الصورة فأرفقها. ومن الهاتف ترفق تلقائيا.`
+}
+
+/** عنوانُ البريد */
+export function emailSubject(x: ShareInput): string {
+  const one = x.courses.length === 1 ? x.courses[0] : null
+  const head = one ? `دعوة إلى دورة «${splitTitle(one.courseTitle).name}»` : 'دعوة إلى دوراتي هذا الموسم'
+  return x.code ? `${head} — وخصم ${x.code.percentOff}٪ لك` : head
 }
 
 /** بابُ المنصّة — أو `null` لما لا بابَ له من موقع (إنستغرام وتيك توك) */
@@ -143,5 +183,6 @@ export function shareUrl(platform: SharePlatform, x: ShareInput): string | null 
   if (platform === 'linkedin') return `https://www.linkedin.com/feed/?shareActive=true&text=${e(shareText('linkedin', x))}`
   if (platform === 'facebook') return `https://www.facebook.com/sharer/sharer.php?u=${e(x.url)}`
   if (platform === 'x') return `https://x.com/intent/post?text=${e(shareText('x', x))}`
+  if (platform === 'email') return `mailto:?subject=${e(emailSubject(x))}&body=${e(shareText('email', x))}`
   return null
 }
