@@ -59,6 +59,7 @@ const AdvisorCases = lazy(() => import('./pages/advisor/Cases'))
 const TrainerDashboard = lazy(() => import('./pages/trainer/TrainerDashboard'))
 const GradingQueue = lazy(() => import('./pages/trainer/GradingQueue'))
 const Earnings = lazy(() => import('./pages/trainer/Earnings'))
+const TrainerShare = lazy(() => import('./pages/trainer/Share'))
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'))
 const AdminCohorts = lazy(() => import('./pages/admin/AdminCohorts'))
 const AdminTerms = lazy(() => import('./pages/admin/Terms'))
@@ -333,7 +334,9 @@ export default function App() {
             <Route path="/trainer/proposals" element={<Navigate to="/trainer/board" replace />} />
             <Route path="/trainer/board" element={<CohortBoard />} />
             <Route path="/trainer/ratings" element={<Navigate to="/trainer#ratings" replace />} />
-            <Route path="/trainer/referral" element={<Navigate to="/trainer/earnings?tab=referral" replace />} />
+            {/* «شارك دوراتك» — كانت «دعوتي» قسما في «مستحقاتي» (٢٦ أكتوبر ٢٠٢٦) */}
+            <Route path="/trainer/share" element={<TrainerShare />} />
+            <Route path="/trainer/referral" element={<Navigate to="/trainer/share" replace />} />
             {/* مراجعةُ اختبار تحديد المستوى — لمن مُنح `placement.review` (٨ أكتوبر ٢٠٢٦) */}
             <Route path="/trainer/placement-review" element={<TrainerPlacementReview />} />
           </Route>

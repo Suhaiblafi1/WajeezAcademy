@@ -1,5 +1,5 @@
 import { Link } from "react-router";
-import { BookCheck, BookOpen, CalendarDays, ClipboardCheck, GraduationCap, Inbox, Languages, LayoutDashboard, Megaphone, Users, Wallet } from "lucide-react";
+import { BookCheck, BookOpen, CalendarDays, ClipboardCheck, GraduationCap, Inbox, Languages, LayoutDashboard, Megaphone, Share2, Users, Wallet } from "lucide-react";
 import { PortalTabs, type PortalTab } from "@/components/ui/PortalTabs";
 import NotificationBell from "@/components/NotificationBell";
 import SearchChip from "@/components/SearchChip";
@@ -160,10 +160,14 @@ export default function TrainerLayout({ children, title }: { children: React.Rea
     /* وكانت بعدها «دوراتي المقترحة» و«مساراتي» لسانين — وصارتا قسمين في «دوراتي» (الخطوة F،
        ١٩ أكتوبر ٢٠٢٦): ما أُهِّل له، وما يقترحه، وما يرتّبه في مسار — أسئلةٌ ثلاثةٌ عن دوراته
        في بابٍ واحد. وكانت قبلهما «تعديلاتي على دوراتي» وذهبت (٢٩ سبتمبر ٢٠٢٦). */
-    /* وبعدها «التسويق» (٢٩ سبتمبر ٢٠٢٦): التعريفُ بدوراته ومساراته وملصقاتُها —
-       فهو جارُ ما يُسوَّق له. */
-    { to: "/trainer/marketing", label: "التسويق", icon: Megaphone },
-    /* و«عقدي» و«دعوتي» قسمان فيها، و«ما قيل عنّي» قسمٌ في «الرئيسية» (الخطوة G، ١٩ أكتوبر ٢٠٢٦):
+    /* ═══ «شارك دوراتك» بعدها — كانت «دعوتي» قسما في «مستحقاتي» (٢٦ أكتوبر ٢٠٢٦) ═══
+       قال صاحبُ المنصّة: «خانة دعوتي يجب أن تكون بالخارج، واسمها شارك دوراتك». روابطُه وأكوادُه — ما ينشره
+       هو باسمه — جارُ دوراته. */
+    { to: "/trainer/share", label: "شارك دوراتك", icon: Share2 },
+    /* وبعدها «موادك الإعلانية» — وكانت «التسويق» (٢٩ سبتمبر ٢٠٢٦). قال صاحبُ المنصّة (٢٦ أكتوبر ٢٠٢٦): «لا يجب
+       أن يكون تسويق لأنّه غير تسويق، هو materials نحتاجها لغايات التسويق لدينا». فيديوهاتُه وصورُه وملصقاتُها. */
+    { to: "/trainer/marketing", label: "موادك الإعلانية", icon: Megaphone },
+    /* و«عقدي» قسمٌ فيها (و«دعوتي» كانت معه حتّى خرجت «شارك دوراتك»)، و«ما قيل عنّي» قسمٌ في «الرئيسية» (الخطوة G، ١٩ أكتوبر ٢٠٢٦):
        القائمةُ ثمانيةُ ألسنةٍ بعد أربعة عشر. وكان «عقدي» لسانا بجانبها بقرار ٢٥ سبتمبر ٢٠٢٦ («الملف
        يكون في منصته ضمن قسم المستحقات والعقد») — فصار فيها كما قال. */
     { to: "/trainer/earnings", label: "مستحقاتي", icon: Wallet },

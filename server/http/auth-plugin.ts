@@ -45,6 +45,28 @@ export function requirePermission(key: PermissionKey) {
   }
 }
 
+/* ═══ وحارسُ «أيٍّ منهما» — لفعلٍ واحدٍ يملكه دوران بحبّتين مختلفتين (٢٦ أكتوبر ٢٠٢٦) ═══
+
+   أوّلُ ما احتاجه: أجرُ المدرّب. قال صاحبُ المنصّة «C»: يضبطه المديرُ الأكاديميّ (`trainer.contract.manage`) أو
+   الماليّة (`trainer.compensation.manage`)، والأثرُ يقول من فعل. ولا تُمنح إحداهما الحبّةَ الأخرى: تلك تفتح عليها
+   ما ليس من شأنها. والردُّ يسمّي الحبّتين ومن يملك كلّا منهما، كما يسمّي `requirePermission` حبّتَه. */
+export function requireAnyPermission(...keys: PermissionKey[]) {
+  return async (req: FastifyRequest, reply: FastifyReply) => {
+    if (!req.auth) {
+      return reply.status(401).send({ error: { code: 'unauthenticated', message_ar: 'سجّل الدخول أولا' } })
+    }
+    if (!keys.some((k) => req.auth!.permissions.includes(k))) {
+      const each = keys.map((k) => {
+        const what = permissionDescriptionAr(k) ?? k
+        const who = rolesWithPermissionAr(k)
+        return `«${what}»${who.length ? ` (يملكها: ${who.join('، ')})` : ''}`
+      })
+      const message_ar = `هذا الإجراء يتطلّب إحدى صلاحيّتين: ${each.join(' أو ')}.`
+      return reply.status(403).send({ error: { code: 'forbidden', message_ar, required: keys } })
+    }
+  }
+}
+
 /** حارس دخول فقط — أي مستخدم موثق */
 export async function requireAuth(req: FastifyRequest, reply: FastifyReply) {
   if (!req.auth) {
