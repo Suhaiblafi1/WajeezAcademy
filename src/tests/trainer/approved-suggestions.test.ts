@@ -40,14 +40,20 @@ describe('② زرُّ «اعتمدها» وبطاقةُ الخطّة', () => {
     /* ويُقال على كلّ خطّةٍ تُعتمد — المنتظِرةِ والمردودةِ إليه (١٧ أكتوبر ٢٠٢٦، `approvable`) */
     expect(card).toMatch(/\{approvable && editsPending > 0 && \(\s*<p[^>]*>\s*«اعتمدها» يبقي البطاقات التي اعتمدتها له \(\{editsPending\}\) عنده اقتراحات اختيارية/)
     expect(card).toMatch(/\{editsDrafts > 0 && <> والمسودات التي لم تعتمدها له \(\{editsDrafts\}\) لا تصله/)
-    expect(card).toMatch(/onDrafts=\{setEditsDrafts\}/)
-    expect(panel).toMatch(/useEffect\(\(\) => \{ onDrafts\?\.\(drafts\.length\); \}/)
+    /* والعددُ من حال التعديلات الواحد (`usePlanEdits`، ٢٦ أكتوبر ٢٠٢٦) — لا عدّادٌ يُبلَّغ من صندوق */
+    expect(card).toMatch(/const editsDrafts = edits\.drafts\.length;/)
+    expect(code('src/hooks/usePlanEdits.ts')).toMatch(/const drafts = items\.filter\(\(x\) => x\.status === "proposed"\);[\s\S]{0,400}return \{ items, drafts,/)
   })
 
+  /* وفي مساحة المراجعة (٢٦ أكتوبر ٢٠٢٦): المعتمَدةُ تُفتح على «بطاقات للمدرب»، ولا رفعَ ولا مراجعةَ بعدها */
   it('⚠️ وتُقرأ البطاقاتُ بعد الاعتماد — بلا رفعٍ ولا مراجعة', () => {
-    expect(card).toMatch(/\{trainerPlan && \(\s*<PlanEditsUploader/)
-    expect(card).toMatch(/closed=\{trainerPlan\.status === "approved" \|\| trainerPlan\.status === "published"\}/)
-    expect(panel).toMatch(/const canUpload = mayUpload && !closed;\s*const canReview = mayReview && !closed;/)
+    expect(card).toMatch(/const planApproved = trainerPlan\?\.status === "approved" \|\| trainerPlan\?\.status === "published";/)
+    expect(card).toMatch(/const tab: WorkspaceTab = tabPick \?\? \(planApproved \? "trainer" : "claude"\);/)
+    const trainerTab = card.slice(card.indexOf('{tab === "trainer" && ('), card.indexOf('{tab === "plan" && ('))
+    expect(trainerTab).toMatch(/<PlanEditsSent edits=\{edits\} \/>/)
+    expect(card).toMatch(/const canUploadEdits = canApprovePlan && !!trainerPlan && !planApproved;/)
+    expect(card).toMatch(/canReview=\{canReviewEdits && !planApproved\}/)
+    expect(panel, 'لا تعدّ «بطاقات للمدرب» ما بقي عنده').toMatch(/const SENT: readonly PlanEditStatus\[\] = \["pending", "rejected", "accepted", "lapsed"\];/)
   })
 })
 

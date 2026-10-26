@@ -17,16 +17,18 @@ const code = (p: string) => readFileSync(join(process.cwd(), p), 'utf8')
 describe('بطاقة المراجعة', () => {
   const src = code('src/components/admin/TrainerPlanReview.tsx')
 
+  /* وصار الرفعُ في «أدوات Claude» والحالُ في `usePlanEdits` (٢٦ أكتوبر ٢٠٢٦، المرحلة الخامسة) */
   it('ترفع ملفّ التعديلات — ولمن يعتمد وحده', () => {
-    expect(src).toMatch(/<PlanEditsUploader[\s\S]{0,200}canUpload=\{canApprovePlan\}/)
+    expect(src).toMatch(/const canUploadEdits = canApprovePlan && !!trainerPlan && !planApproved;/)
+    expect(src).toMatch(/\{canUploadEdits && \(\s*<>\s*<input\s+ref=\{editsFile\}[\s\S]{0,400}void edits\.upload\(f\)/)
   })
 
   it('⚠️ والتعديلات المنتظرة هي «اطلب تعديلات» — بلا بطاقة تنتظر لا ردّ، ويقال لماذا', () => {
-    expect(src).toMatch(/onPending=\{setEditsPending\}/)
+    expect(src).toMatch(/const editsPending = edits\.pendingCards;/)
     expect(src).toMatch(/disabled=\{busy \|\| editsPending === 0\}/)
     expect(src).toMatch(/editsPending === 0 && \(\s*<p[^>]*>\s*لا بطاقة تنتظر المدرّب بعد/)
     /* والعددُ بطاقاتٌ لا ملاحظات — كما يعدّها الخادم (`pendingEdits`) */
-    expect(code('src/components/PlanEdits.tsx')).toMatch(/const pendingCards = items\.filter\(\(x\) => x\.status === "pending" && x\.kind !== "note"\)\.length;\s*useEffect\(\(\) => \{ onPending\?\.\(pendingCards\); \}/)
+    expect(code('src/hooks/usePlanEdits.ts')).toMatch(/const pendingCards = items\.filter\(\(x\) => x\.status === "pending" && x\.kind !== "note"\)\.length;\s*return \{ items, drafts, pendingCards,/)
   })
 })
 
@@ -36,7 +38,7 @@ describe('مراجعة الإدارة قبل المدرّب (١٠ أكتوبر �
 
   it('⚠️ زرّا المراجعة لمن يملك صلاحيّتها وحده', () => {
     expect(card).toMatch(/const canReviewEdits = viewer\?\.permissions\.includes\("cohort\.plan\.edits\.review"\)/)
-    expect(card).toMatch(/<PlanEditsUploader[\s\S]{0,300}canReview=\{canReviewEdits\}/)
+    expect(card).toMatch(/<PlanEditsDrafts edits=\{edits\} planId=\{trainerPlan\.id\} canReview=\{canReviewEdits && !planApproved\} \/>/)
     expect(panel).toMatch(/\{canReview && \(\s*<div[\s\S]{0,700}\/api\/admin\/plan-edits\/\$\{x\.id\}\/approve/)
     expect(panel).toMatch(/\/api\/admin\/plan-edits\/\$\{x\.id\}\/drop/)
   })
@@ -68,7 +70,7 @@ describe('الرفع دفعة واحدة — «خطط تنتظر اعتمادك�
 
   it('⚠️ كلّ ملفّ إلى خطّته بمسلك البطاقة نفسه — فيفحص كما يفحص هناك', () => {
     expect(box).toMatch(/await apiPost<PlanEditsUploadCounts>\(\s*`\/api\/admin\/cohort-plans\/\$\{read\.planId\}\/edits`, needed\.length \? withWorkbookKeys\(read\.body, keys\) : read\.body\);/)
-    expect(code('src/components/PlanEdits.tsx'), 'البطاقة لا ترفع إلى المسلك نفسه').toContain('`/api/admin/cohort-plans/${planId}/edits`, body)')
+    expect(code('src/hooks/usePlanEdits.ts'), 'البطاقة لا ترفع إلى المسلك نفسه').toContain('`/api/admin/cohort-plans/${planId}/edits`, body)')
     expect(box).toMatch(/<input[\s\S]{0,80}type="file"\s*multiple/)
   })
 
@@ -132,7 +134,8 @@ describe('صفحة المدرّب', () => {
 describe('الرفع يتجاهل المكرّر — والبطاقة بلا أدوات التنظيف', () => {
   const page = code('src/pages/admin/PendingPlans.tsx')
   const panel = code('src/components/PlanEdits.tsx')
-  const card = panel.slice(panel.indexOf('export function PlanEditsUploader'), panel.indexOf('export function PlanEditsPanel'))
+  /* والبطاقةُ حالُها في خطّافها ولسانُها في `PlanEdits.tsx` (٢٦ أكتوبر ٢٠٢٦) */
+  const card = code('src/hooks/usePlanEdits.ts') + panel.slice(panel.indexOf('export function PlanEditsDrafts'), panel.indexOf('export function PlanEditsPanel'))
   const box = code('src/components/admin/ReviewUpload.tsx')
 
   it('⚠️ لا «احذف المكرر» ولا «أعد ما سحبته» في البطاقة — ولا ما يقرأ عددهما', () => {

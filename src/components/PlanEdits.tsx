@@ -1,19 +1,20 @@
 /* تعديلاتٌ تقترحها الإدارةُ على خطّة المدرّب — يقبل كلًّا أو يرفضه (٨ أكتوبر ٢٠٢٦).
 
    قرارُ صاحب المنصّة: «التعديلُ يطول على المدرّب — نكتبه نحن ويختار هو». والوجهان هنا:
-   `PlanEditsUploader` لبطاقة المراجعة (يُرفع الملفّ، ويُرى حالُ كلّ بند، ويُسحب ما لم
-   يُقرَّر)، و`PlanEditsPanel` لصفحة المدرّب (يقرأ كلَّ تعديلٍ بما قبله وما بعده، ويقبله
-   أو يرفضه). والرفعُ دفعةً من «خططٌ تنتظر اعتمادك» في `ReviewUpload.tsx`. والقاعدةُ والعرضُ في
+   لمساحة المراجعة حالُها (`hooks/usePlanEdits.ts`) ولسانا «اقتراحات Claude» (`PlanEditsDrafts`) و«بطاقات للمدرب»
+   (`PlanEditsSent`)، والرفعُ والسحبُ في «أدوات Claude» (`TrainerPlanReview.tsx`)؛ و`PlanEditsPanel` لصفحة
+   المدرّب (يقرأ كلَّ تعديلٍ بما قبله وما بعده، ويقبله أو يرفضه). والرفعُ دفعةً من «خططٌ تنتظر اعتمادك» في `ReviewUpload.tsx`. والقاعدةُ والعرضُ في
    `application/trainer/plan-edits.ts` — والشاشتان تعرضان ما يحسبه الخادمُ منها، لا تحسبان. */
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { CalendarClock, Check, FileJson, PencilLine, X } from "lucide-react";
-import { apiDelete, apiGet, apiPost, ApiError } from "@/services/api";
+import { useCallback, useEffect, useState } from "react";
+import { Check, PencilLine, X } from "lucide-react";
+import { apiGet, apiPost, ApiError } from "@/services/api";
 import { Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import Chip from "@/components/ui/Chip";
-import type { EditView, PlanEditStatus, PlanEditsUploadCounts } from "@/application/trainer/plan-edits";
-import { uploadedLineAr } from "@/application/trainer/plan-edits-bulk";
+import type { EditView, PlanEditStatus } from "@/application/trainer/plan-edits";
+import { draftsWaitingAr } from "@/application/trainer/plan-workspace";
+import type { PlanEditsState } from "@/hooks/usePlanEdits";
 import { GapList, NoteSubs } from "@/components/LongText";
 import { gapLayout } from "@/application/trainer/text-layout";
 import { SCHEDULE_REJECT_REASONS, withRejectReason } from "@/application/terms/schedule-clash";
@@ -84,100 +85,11 @@ function Value({ text, href, long, muted }: { text: string | null; href?: string
     : body;
 }
 
-/* ═══════════ بطاقةُ المراجعة ═══════════ */
+/* ═══════════ مساحةُ المراجعة ═══════════ */
 
-/** لبطاقة المراجعة — يُرفع الملفّ والخطّةُ بانتظار القرار أو في يد مدرّبها */
-export function PlanEditsUploader({ planId, cohortId, canUpload: mayUpload, canReview: mayReview, closed = false, onPending, onDrafts, offerSchedule = false }: {
-  planId: string;
-  cohortId: string;
-  canUpload: boolean;
-  /** خطّةٌ معتمدة: يُقرأ حالُ ما بقي عند المدرّب ولا يُرفع ولا يُراجع (١٧ أكتوبر ٢٠٢٦) */
-  closed?: boolean;
-  /** كم مسوّدةً لم تُعتمد للمدرّب — يقول زرُّ «اعتمدها» إنّها لا تصله */
-  onDrafts?: (n: number) => void;
-  /** في بطاقة المعايير نصيحةٌ في الإيقاع أو أوقات اللقاءات — فتبني المنصّةُ جدولا ثابتا بسلسلته (١١ أكتوبر ٢٠٢٦) */
-  offerSchedule?: boolean;
-  /** يعتمد كلَّ بندٍ للمدرّب أو يحذفه — `cohort.plan.edits.review` (١٠ أكتوبر ٢٠٢٦) */
-  canReview: boolean;
-  /** كم ينتظر المدرّبَ — تقرؤه البطاقةُ فيكفي سببا لـ«اطلب تعديلات» */
-  onPending?: (n: number) => void;
-}) {
-  const canUpload = mayUpload && !closed;
-  const canReview = mayReview && !closed;
-  const input = useRef<HTMLInputElement>(null);
-  const [items, setItems] = useState<PlanEditItem[]>([]);
-  const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState("");
-  const [reviewing, setReviewing] = useState<string | null>(null);
-
-  const load = useCallback(async () => {
-    try { setItems(await apiGet<PlanEditItem[]>(`/api/admin/cohorts/${cohortId}/plan-edits`)); }
-    catch { /* البطاقةُ تُقرأ بلا القائمة */ }
-  }, [cohortId]);
-  useEffect(() => { void load(); }, [load]);
-
-  const upload = async (file: File) => {
-    setBusy(true); setMsg("");
-    try {
-      let body: unknown;
-      try { body = JSON.parse(await file.text()); }
-      catch { throw new Error(`«${file.name}» ليس ملفّ JSON مقروءا`); }
-      /* وما رُفع قبلُ يُتجاهَل، والأحدثُ يحلّ محلّ ما لم يُقرَّر فيه — ويُقال ما وقع (٢٦ أكتوبر ٢٠٢٦، `upload`) */
-      const r = await apiPost<{ edits: PlanEditItem[] } & PlanEditsUploadCounts>(`/api/admin/cohort-plans/${planId}/edits`, body);
-      setItems(r.edits);
-      setMsg(`«${file.name}»: ${uploadedLineAr(r)}`);
-    } catch (e) {
-      setMsg(errText(e, "تعذّر الرفع"));
-    } finally {
-      setBusy(false);
-      if (input.current) input.current.value = "";
-    }
-  };
-
-  /* ═══ جدولٌ ثابتٌ بسلسلته تبنيه المنصّة (١١ أكتوبر ٢٠٢٦) ═══
-     «في حال قمنا بتعديل شيءٍ قد يؤثّر على توقيتاتٍ أخرى يجب أن يكون التعديلُ كاملا بسلسلة» (صاحب
-     المنصّة). فبندٌ واحدٌ باللقاءات ومواعيد المهامّ التي تتبعها — مسوّدةً تراجعها قبل المدرّب. */
-  const schedule = async () => {
-    setBusy(true); setMsg("");
-    try {
-      setItems(await apiPost<PlanEditItem[]>(`/api/admin/cohort-plans/${planId}/edits/schedule`, {}));
-      setMsg("جهّز الجدول مسوّدة — راجعه أدناه: كلّ لقاء بموعده قبل وبعد، ومعه مواعيد المهامّ التي تتبعه.");
-    } catch (e) {
-      setMsg(errText(e, "تعذّر تجهيز الجدول"));
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const withdraw = async () => {
-    setBusy(true); setMsg("");
-    try {
-      setItems(await apiDelete<PlanEditItem[]>(`/api/admin/cohort-plans/${planId}/edits`));
-      setMsg("سحب ما لم يقرّر فيه. ولتعيده ارفع ملفه من جديد.");
-    } catch (e) {
-      setMsg(errText(e, "تعذّر السحب"));
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  /* ═══ ولا يصل المدرّبَ ما لم تعتمده الإدارة (١٠ أكتوبر ٢٠٢٦) ═══
-     «كلُّ ما يُطلب من المدرّب قبولُه يقبله المديرُ أو المديرُ الأكاديميُّ أو مديرُ المحتوى
-     أوّلا» (صاحب المنصّة). فالمسوّدةُ تُعرض هنا كاملةً بما قبلها وما بعدها، ولكلٍّ زرّان. */
-  const review = async (key: string, run: () => Promise<PlanEditItem[]>, done: string) => {
-    setBusy(true); setMsg(""); setReviewing(key);
-    try {
-      setItems(await run());
-      setMsg(done);
-    } catch (e) {
-      setMsg(errText(e, "تعذّر"));
-      await load();
-    } finally {
-      setBusy(false); setReviewing(null);
-    }
-  };
-
-  const drafts = items.filter((x) => x.status === "proposed");
+/** «اقتراحات Claude» — كلُّ مسوّدةٍ كما سيراها المدرّب، بما قبلها وما بعدها، وزرّا المراجعة */
+export function PlanEditsDrafts({ edits, planId, canReview }: { edits: PlanEditsState; planId: string; canReview: boolean }) {
+  const { drafts, busy, reviewing, review } = edits;
   /* البندُ كما سيراه المدرّب — بما قبله وما بعده، وزرّا المراجعة */
   const draftItem = (x: PlanEditItem) => (
     <li key={x.id} className="rounded-lg border border-border/60 p-3">
@@ -207,103 +119,69 @@ export function PlanEditsUploader({ planId, cohortId, canUpload: mayUpload, canR
       )}
     </li>
   );
-  const pending = items.filter((x) => x.status === "pending").length;
-  const open = drafts.length + pending;
-  /* وما يُعدّ للردّ بطاقاتٌ لا ملاحظات — كما يعدّها الخادم (`pendingEdits`) */
-  const pendingCards = items.filter((x) => x.status === "pending" && x.kind !== "note").length;
-  useEffect(() => { onPending?.(pendingCards); }, [pendingCards, onPending]);
-  useEffect(() => { onDrafts?.(drafts.length); }, [drafts.length, onDrafts]);
-  const counts = (["proposed", "pending", "accepted", "rejected", "dropped"] as const)
-    .map((s) => [s, items.filter((x) => x.status === s).length] as const)
-    .filter(([, n]) => n > 0);
-
-  /* والمعتمدةُ بلا بطاقةٍ لا صندوقَ لها — لا شيءَ يُقرأ فيه */
-  if (closed && items.length === 0) return null;
-
+  if (drafts.length === 0) return null;
   return (
-    <Inset className="mt-3" role="region" aria-label="تعديلات مقترحة">
-      <p className="text-read font-black text-foreground">تعديلات مقترحة على الخطّة (اختياريّ)</p>
-      {/* سطرٌ واحد — «كثيرُ الكلام» (صاحب المنصّة، ١١ أكتوبر ٢٠٢٦) */}
-      <p className="mt-1 text-read leading-6 text-muted-foreground">
-        {closed
-          ? "الخطة معتمدة: ما اعتمدته للمدرب بقي عنده اقتراحات اختيارية، وما يقبله يدخل الخطة مباشرة."
-          : "ترفع مسوّدة لا يراها المدرّب حتّى تعتمد بنودها، ثمّ «اطلب تعديلات» فيقبل كلّا أو يرفضه."}
+    <div className="space-y-3" role="group" aria-label="مسوّدات تنتظر مراجعتك">
+      <p className="text-read font-bold text-gold-ink">
+        {draftsWaitingAr(drafts.length)}
+        {" "}<span className="font-normal text-muted-foreground">— مطلوب {drafts.filter((x) => x.required).length} · مقترح {drafts.filter((x) => !x.required).length}</span>
       </p>
-      {counts.length > 0 && (
-        <div className="mt-2 flex flex-wrap gap-2">
-          {counts.map(([s, n]) => <Chip key={s} tone={STATUS_AR[s].tone}>{STATUS_AR[s].label}: {n}</Chip>)}
-        </div>
+      {canReview && drafts.length > 1 && (
+        <Button
+          tone="confirm" size="sm" icon={Check} disabled={busy}
+          onClick={() => void review("all", () => apiPost<PlanEditItem[]>(`/api/admin/cohort-plans/${planId}/edits/approve-all`, {}), "اعتمدت كلّها للمدرّب.")}
+        >
+          اعتمدها كلّها للمدرّب ({drafts.length})
+        </Button>
       )}
-      {drafts.length > 0 && (
-        <div className="mt-3 space-y-3" role="group" aria-label="مسوّدات تنتظر مراجعتك">
-          <p className="text-read font-bold text-gold-ink">
-            {drafts.length} {drafts.length === 1 ? "بند ينتظر" : "بنود تنتظر"} مراجعتك
-            {" "}<span className="font-normal text-muted-foreground">— مطلوب {drafts.filter((x) => x.required).length} · مقترح {drafts.filter((x) => !x.required).length}</span>
-          </p>
-          {canReview && drafts.length > 1 && (
-            <Button
-              tone="confirm" size="sm" icon={Check} disabled={busy}
-              onClick={() => void review("all", () => apiPost<PlanEditItem[]>(`/api/admin/cohort-plans/${planId}/edits/approve-all`, {}), "اعتمدت كلّها للمدرّب.")}
-            >
-              اعتمدها كلّها للمدرّب ({drafts.length})
-            </Button>
-          )}
-          {/* في مجموعتين تُفتحان بنقرة — المطلوبُ مفتوحٌ والمقترحُ مطويّ («كثيرُ الكلام»، ١١ أكتوبر ٢٠٢٦)،
-              إلّا أن يكون فيه جدولٌ ثابت: جهّزه المعتمِدُ بزرّه الآن، فيراه بلا نقرةٍ ثانية */}
-          {([["required", "المطلوب"], ["suggested", "المقترح"]] as const).map(([kind, label]) => {
-            const list = drafts.filter((x) => x.required === (kind === "required"));
-            return list.length > 0 && (
-              <details key={kind} className="rounded-lg border border-border/60 p-3" open={kind === "required" || list.some((x) => x.kind === "schedule")}>
-                <summary className="cursor-pointer text-read font-bold text-teal-light-ink">{label} ({list.length})</summary>
-                <ol className="mt-3 space-y-3">{list.map((x) => draftItem(x))}</ol>
-              </details>
-            );
-          })}
-        </div>
-      )}
-      {items.length > drafts.length && (
-        <details className="mt-2">
-          <summary className="cursor-pointer text-read font-bold text-teal-light-ink">ما روجع ({items.length - drafts.length})</summary>
-          <ol className="mt-2 space-y-2">
-            {items.filter((x) => x.status !== "proposed").map((x) => (
-              <li key={x.id} className="text-read leading-6">
-                <span className="font-bold text-foreground">{x.view.titleAr}</span>
-                {" "}· <span className="text-muted-foreground">{x.view.stepAr}</span>
-                {" "}· <Chip tone={STATUS_AR[x.status].tone}>{isNote(x) ? NOTE_STATUS_AR[x.status] ?? STATUS_AR[x.status].label : STATUS_AR[x.status].label}</Chip>
-                {x.required && <> · <Chip tone="danger">مطلوب</Chip></>}
-                {x.status === "rejected" && x.noteAr && <p className="text-muted-foreground">كلمته: {x.noteAr}</p>}
-              </li>
-            ))}
-          </ol>
-        </details>
-      )}
-      {canUpload && (
-        <div className="mt-2 flex flex-wrap gap-2">
-          <input
-            ref={input}
-            type="file"
-            className="sr-only"
-            aria-label="ملفّ التعديلات المقترحة"
-            accept="application/json,.json"
-            onChange={(e) => { const f = e.target.files?.[0]; if (f) void upload(f); }}
-          />
-          <Button tone="secondary" size="sm" icon={FileJson} disabled={busy} onClick={() => input.current?.click()}>
-            {busy ? "يفحص…" : "ارفع ملفّ التعديلات"}
-          </Button>
-          {offerSchedule && (
-            <Button tone="secondary" size="sm" icon={CalendarClock} disabled={busy} onClick={() => void schedule()}>
-              جهّز جدولا ثابتا مقترحا
-            </Button>
-          )}
-          {open > 0 && (
-            <Button tone="ghost" size="sm" disabled={busy} onClick={() => void withdraw()}>
-              اسحب ما لم يقرّر ({open})
-            </Button>
-          )}
-        </div>
-      )}
-      {msg && <p className="mt-2 whitespace-pre-wrap text-read font-bold text-teal-light-ink" role="status">{msg}</p>}
-    </Inset>
+      {/* في مجموعتين تُفتحان بنقرة — المطلوبُ مفتوحٌ والمقترحُ مطويّ («كثيرُ الكلام»، ١١ أكتوبر ٢٠٢٦)،
+          إلّا أن يكون فيه جدولٌ ثابت: جهّزه المعتمِدُ بزرّه الآن، فيراه بلا نقرةٍ ثانية */}
+      {([["required", "المطلوب"], ["suggested", "المقترح"]] as const).map(([kind, label]) => {
+        const list = drafts.filter((x) => x.required === (kind === "required"));
+        return list.length > 0 && (
+          <details key={kind} className="rounded-lg border border-border/60 p-3" open={kind === "required" || list.some((x) => x.kind === "schedule")}>
+            <summary className="cursor-pointer text-read font-bold text-teal-light-ink">{label} ({list.length})</summary>
+            <ol className="mt-3 space-y-3">{list.map((x) => draftItem(x))}</ol>
+          </details>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ═══ وما مرّ من بين يديك: «بطاقات للمدرب» ما وصله، وما حذفته أو سحبته قبل أن يصله تحت «اقتراحات Claude» ═══
+   الحالُ نفسُه بلسانين: ما عنده ينتظر قرارَه، وما قبله أو رفضه بكلمته، وما سقط باعتماد الخطّة. */
+const SENT: readonly PlanEditStatus[] = ["pending", "rejected", "accepted", "lapsed"];
+
+function EditRow({ x }: { x: PlanEditItem }) {
+  return (
+    <li className="text-read leading-6">
+      <span className="font-bold text-foreground">{x.view.titleAr}</span>
+      {" "}· <span className="text-muted-foreground">{x.view.stepAr}</span>
+      {" "}· <Chip tone={STATUS_AR[x.status].tone}>{isNote(x) ? NOTE_STATUS_AR[x.status] ?? STATUS_AR[x.status].label : STATUS_AR[x.status].label}</Chip>
+      {x.required && <> · <Chip tone="danger">مطلوب</Chip></>}
+      {x.status === "rejected" && x.noteAr && <p className="text-muted-foreground">كلمته: {x.noteAr}</p>}
+    </li>
+  );
+}
+
+/** «بطاقات للمدرب» — ما اعتمدته له، ما عنده أوّلا ثمّ ما رفضه بكلمته ثمّ ما قبله */
+export function PlanEditsSent({ edits }: { edits: PlanEditsState }) {
+  const sent = edits.items.filter((x) => SENT.includes(x.status))
+    .sort((a, b) => SENT.indexOf(a.status) - SENT.indexOf(b.status));
+  if (sent.length === 0) return null;
+  return <ol className="space-y-2">{sent.map((x) => <EditRow key={x.id} x={x} />)}</ol>;
+}
+
+/** وما حذفته أو سحبته قبل أن يصله — مطويٌّ تحت «اقتراحات Claude»، يعود برفع ملفّه */
+export function PlanEditsSetAside({ edits }: { edits: PlanEditsState }) {
+  const aside = edits.items.filter((x) => x.status === "dropped" || x.status === "withdrawn");
+  if (aside.length === 0) return null;
+  return (
+    <details className="mt-3">
+      <summary className="cursor-pointer text-read font-bold text-teal-light-ink">ما حذفته أو سحبته ({aside.length})</summary>
+      <ol className="mt-2 space-y-2">{aside.map((x) => <EditRow key={x.id} x={x} />)}</ol>
+    </details>
   );
 }
 

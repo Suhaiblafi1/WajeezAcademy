@@ -22,6 +22,8 @@ const FILES = [
   'src/pages/trainer/TrainerSchedule.tsx',
   'src/pages/trainer/SessionsAndAttendance.tsx',
   'src/components/PlanEdits.tsx',
+  /* وحالُ بطاقاتها انتقل إلى خطّافه برسائله (٢٦ أكتوبر ٢٠٢٦) — فلا تخرج من الفحص بنقلها */
+  'src/hooks/usePlanEdits.ts',
   'src/components/trainer/usePrepCohorts.ts',
   'src/application/trainer/plan-edits.ts',
   /* و«عقدي» وما يعرضه من سجلّ التنفيذ وملحق الاعتماد (٢٠ أكتوبر ٢٠٢٦) — نصوصُ الشاشة لا متنُ العقد الموقَّع */

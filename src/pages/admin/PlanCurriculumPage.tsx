@@ -3,7 +3,7 @@
    قرارُ صاحب المنصّة: «أو على الأقلّ يمكن فتحُ منهاجه منفصلا وتنزيلُه إذا رغبتُ أنا». فالصفحةُ
    تقرأ الخطّةَ من المسار نفسِه الذي تقرأ منه بطاقتُها (`/api/admin/cohorts/:id/trainer-plan`)،
    وتعرضها بالمكوّن نفسِه (`PlanCurriculum`) — فلا يختلف ما يُقرأ هنا عمّا يُقرأ في اللسان. ولا
-   قرارَ فيها: القرارُ في لسان «الإدارة». */
+   قرارَ فيها: القرارُ في بطاقة الخطّة تحت ألسنتها (٢٦ أكتوبر ٢٠٢٦). */
 import { useEffect, useState } from "react";
 import { useParams } from "react-router";
 import { Download, Printer } from "lucide-react";

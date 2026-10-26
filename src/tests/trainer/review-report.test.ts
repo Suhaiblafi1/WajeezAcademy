@@ -39,9 +39,12 @@ describe('رسالة القرار تذكر التقرير وموضعه', () => {
 })
 
 describe('والشاشتان تحملان وجهيهما', () => {
+  /* والرفعُ في «أدوات Claude»، وما رُفع في «بطاقات للمدرب» يُحذف قبل القرار (٢٦ أكتوبر ٢٠٢٦، المرحلة الخامسة) */
   it('بطاقة المراجعة ترفع التقرير والخطّة بانتظار القرار', () => {
-    expect(code('src/components/admin/TrainerPlanReview.tsx'))
-      .toMatch(/status === "submitted" && canApprovePlan && \(\s*<ReviewReportUploader planId=\{trainerPlan\.id\}/)
+    const card = code('src/components/admin/TrainerPlanReview.tsx')
+    expect(card).toMatch(/const canUploadReport = trainerPlan\?\.status === "submitted" && canApprovePlan;/)
+    expect(card).toMatch(/\{canUploadReport && \(\s*<>\s*<input\s+ref=\{reportFile\}[\s\S]{0,400}void reports\.upload\(f\)/)
+    expect(card).toMatch(/<ReviewReportFiles reports=\{trainerPlan\.reviewReports \?\? \[\]\} busy=\{reports\.busy\} onRemove=\{canUploadReport \?/)
   })
 
   /* وصار في «المراجعة» مع بنودها، للقراءة إن شاء (١١ أكتوبر ٢٠٢٦) — كان في الرأس مع الملاحظة */
