@@ -467,6 +467,9 @@ function LegacyDiscounts() {
   );
 }
 
+/** الرابطُ كما يُعرض في خانته: بلا «https://» — فيسع آخرُه، وهو ما يميّزه، خانةَ الهاتف. وما يُنسخ بالزرّ الرابطُ كاملا */
+const bare = (url: string) => url.replace(/^https?:\/\//, "");
+
 /** الكودُ الذي يظهر في منشوره: أعلى الخصمين، وكودُه إن ساوى خصمَنا (`bestCode`) */
 const shareCodeOf = (k: ShareKitData) => bestCode({ code: k.code, percentOff: k.percentOff }, k.hisCodes);
 
@@ -629,13 +632,16 @@ export default function Referral() {
               <p className="mt-1.5 text-read leading-6 text-muted-foreground">صفحتك بكلّ شعبك المفتوحة.</p>
               {/* الرابطُ يُعرض كما يُقرأ: `referral.service` لا يرمّز المسارَ،
                   فاسمُه العربيُّ يبقى عربيّا في خانة النسخ كما في العنوان. */}
-              <div className="mt-3 flex items-center gap-2">
+              {/* ═══ والرابطُ سطرٌ بنفسه، والأزرارُ تحته (٢٦ أكتوبر ٢٠٢٦) ═══
+                  في نصف العرض وعلى الهاتف كانت الخانةُ تضيق بجانب زرّيها فلا يُرى من الرابط إلّا أوّلُه
+                  («https://www.waj…»)، وآخرُه هو ما يميّزه. فصارت الخانةُ بعرض البطاقة. */}
+              <div className="mt-3 flex flex-wrap items-center gap-2">
                 {/* والرابطُ المعروضُ قصيرٌ إن كان (٢٦ أكتوبر ٢٠٢٦): «هل يمكن أن تكون الروابطُ أقصرَ وأكثرَ احترافيّة؟» —
                     ‎/s/XXXXXX يحمل إلى الرابط نفسِه، فما يُنسخ هو ما يُنشر (`short` في `share-kit`) */}
                 <input
-                  readOnly dir="ltr" value={kit?.short.wide ?? referral.url} aria-label="رابطي العامّ"
+                  readOnly dir="ltr" value={bare(kit?.short.wide ?? referral.url)} aria-label="رابطي العامّ"
                   onFocus={(e) => e.currentTarget.select()}
-                  className={`${staffControlCls} min-w-0 flex-1 text-left`}
+                  className={`${staffControlCls} min-w-0 basis-full text-left`}
                 />
                 <Button tone="secondary" size="sm" icon={Copy} onClick={() => copy("wide", kit?.short.wide ?? referral.url)}>
                   {copied === "wide" ? "نسخ" : "انسخ الرابط"}
@@ -707,11 +713,12 @@ export default function Referral() {
                           التسجيل مغلق حتّى تفتحه الإدارة — الرابط يعمل.
                         </p>
                       )}
-                      <div className="mt-2 flex items-center gap-2">
+                      {/* وعلى الهاتف سطرٌ بنفسه كالرابط العامّ — وعلى الشاشة الأعرض بجانب زرّيه */}
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
                         <input
-                          readOnly dir="ltr" value={kit?.short.cohorts[c.cohortId] ?? c.url} aria-label={`رابط دعوتي إلى ${c.title}`}
+                          readOnly dir="ltr" value={bare(kit?.short.cohorts[c.cohortId] ?? c.url)} aria-label={`رابط دعوتي إلى ${c.title}`}
                           onFocus={(e) => e.currentTarget.select()}
-                          className={`${staffControlCls} min-w-0 flex-1 text-left`}
+                          className={`${staffControlCls} min-w-0 basis-full text-left sm:basis-0 sm:flex-1`}
                         />
                         <Button tone="secondary" size="sm" icon={Copy} onClick={() => copy(c.cohortId, kit?.short.cohorts[c.cohortId] ?? c.url)}>
                           {copied === c.cohortId ? "نسخ" : "انسخ الرابط"}
