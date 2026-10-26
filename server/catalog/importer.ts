@@ -292,8 +292,11 @@ export async function importCatalog(prisma: PrismaClient): Promise<ImportStats> 
        اثنتان وثلاثون دورةً قائمةً بنفسها لا يرشّحها التشخيص. فقرّر صاحبُ
        المنصّة جمهورَ كلٍّ منها ومجالَها دورةً دورة، فصار يُكتب في الملفّ ويحمله
        كلُّ نشر. والسكوتُ لا يُطفئ: دورةٌ لم يذكرها الملفُّ يبقى فيها ما علّمته
-       اللوحة. */
-    if (c.recommendable_directly !== undefined) {
+       اللوحة.
+
+       وما ضبطته اللوحةُ بعدها يغلب الملفّ (٢٦ أكتوبر ٢٠٢٦، المرحلة الثامنة): كان كلُّ نشرٍ يكتب قولَ الملفّ فوقه
+       فيرجع بلا خبر. فدورةٌ لها `standaloneSetAt` تُترك كما يُترك اسمٌ اعتمدته الإدارة. */
+    if (c.recommendable_directly !== undefined && !courseRow.standaloneSetAt) {
       await prisma.course.update({
         where: { id: c.course_id },
         data: {
@@ -348,23 +351,26 @@ export async function importCatalog(prisma: PrismaClient): Promise<ImportStats> 
     } else {
       await prisma.practicalProject.deleteMany({ where: { courseVersionId: cv.id } })
     }
-    /* روابط المهارات — بمعرفات SK الثابتة، مع جسر slug عند الحاجة */
-    const skillIds = new Set<string>([
-      ...(c.skill_ids ?? []),
-      ...(c.skill_slugs ?? []).map((slug) => skillIdBySlug.get(slug)).filter((x): x is string => Boolean(x)),
-    ])
-    /* وترتيبُها ترتيبُ المصدر — الأولى شارةُ الدورة (`SKILL_LINK_ORDER`) */
-    for (const [sequence, skillId] of [...skillIds].entries()) {
-      await prisma.courseSkillLink.upsert({
-        where: { courseId_skillId: { courseId: c.course_id, skillId } },
-        update: { targetLevel: 3, weight: 1, sequence },
-        create: { courseId: c.course_id, skillId, targetLevel: 3, weight: 1, sequence },
+    /* روابط المهارات — بمعرفات SK الثابتة، مع جسر slug عند الحاجة.
+       وما ضبطته اللوحةُ (`skillsSetAt`) يبقى بترتيبه — كان كلُّ نشرٍ يعيد روابطَ الملفّ ويحذف ما سواها (٢٦ أكتوبر ٢٠٢٦) */
+    if (!courseRow.skillsSetAt) {
+      const skillIds = new Set<string>([
+        ...(c.skill_ids ?? []),
+        ...(c.skill_slugs ?? []).map((slug) => skillIdBySlug.get(slug)).filter((x): x is string => Boolean(x)),
+      ])
+      /* وترتيبُها ترتيبُ المصدر — الأولى شارةُ الدورة (`SKILL_LINK_ORDER`) */
+      for (const [sequence, skillId] of [...skillIds].entries()) {
+        await prisma.courseSkillLink.upsert({
+          where: { courseId_skillId: { courseId: c.course_id, skillId } },
+          update: { targetLevel: 3, weight: 1, sequence },
+          create: { courseId: c.course_id, skillId, targetLevel: 3, weight: 1, sequence },
+        })
+        links++
+      }
+      await prisma.courseSkillLink.deleteMany({
+        where: { courseId: c.course_id, skillId: { notIn: noneIfEmpty([...skillIds]) } },
       })
-      links++
     }
-    await prisma.courseSkillLink.deleteMany({
-      where: { courseId: c.course_id, skillId: { notIn: noneIfEmpty([...skillIds]) } },
-    })
   }
 
   /* 3أ) ما زال من المستودع يُؤرشف — لا يُحذف.

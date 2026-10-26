@@ -261,9 +261,11 @@ export class CatalogAdminService {
       where: { courseId }, select: { skillId: true },
     })).map((l) => l.skillId).sort()
 
+    /* ووقتُ الضبط مع الروابط في معاملةٍ واحدة — به يتركها استيرادُ الملفّ في النشر التالي (`Course.skillsSetAt`) */
     await this.prisma.$transaction(async (tx) => {
       await tx.courseSkillLink.deleteMany({ where: { courseId } })
       if (unique.length) await tx.courseSkillLink.createMany({ data: unique.map((skillId, sequence) => ({ courseId, skillId, sequence })) })
+      await tx.course.update({ where: { id: courseId }, data: { skillsSetAt: new Date() } })
     })
 
     /* الأثرُ يقول ما كان وما صار — فمن قرأه بعد شهرٍ عرف ما فُكّ وما رُبط */
@@ -336,7 +338,8 @@ export class CatalogAdminService {
 
     const updated = await this.prisma.course.update({
       where: { id: courseId },
-      data: { recommendableDirectly: input.recommendable, diagnosticDomains: domains, diagnosticStages: stages },
+      /* ووقتُ الضبط — به يتركه استيرادُ الملفّ في النشر التالي (`Course.standaloneSetAt`) */
+      data: { recommendableDirectly: input.recommendable, diagnosticDomains: domains, diagnosticStages: stages, standaloneSetAt: new Date() },
       select: { id: true, recommendableDirectly: true, diagnosticDomains: true, diagnosticStages: true },
     })
     await recordAudit(this.prisma, {
