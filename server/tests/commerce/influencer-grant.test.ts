@@ -208,6 +208,13 @@ describe('⑧ الرصيد وحساب المؤثر', () => {
     expect(me.link).toMatch(/\/grant\/i\/PAYME$/)
     expect(me.totals.balance).toBe(5)
     expect(me.payouts[0]).toMatchObject({ amount: 10, noteAr: 'تحويل بنكي' })
+    /* وما يمسّ مالَه يصله بريدا — بعد أن صار له حساب */
+    await influencers.recordPayout(id, { amount: 5 }, ownerId)
+    await influencers.update(id, { commissionPercent: 18 }, ownerId)
+    const mails = await prisma.outboxMail.findMany({ where: { to: `payme-${STAMP}@test.local`, purpose: 'influencer.notice' }, orderBy: { createdAt: 'asc' } })
+    expect(mails.map((m) => m.subject)).toEqual(['سجلنا دفعة من عمولتك — أكاديمية وجيز', 'تغيير في كودك أو عمولتك — أكاديمية وجيز'])
+    expect(mails[0].text).toContain('رصيدك الآن:')
+    expect(mails[1].text).toContain('عمولتك صارت 18%')
     await expect(influencers.portal(await learner())).rejects.toMatchObject({ code: 'not_influencer' })
   })
 })

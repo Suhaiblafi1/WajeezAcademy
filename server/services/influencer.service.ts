@@ -20,6 +20,8 @@
    ٥) **والرصيدُ ما استحقّه ناقصا ما دُفع له** — والدفعُ يُسجَّل بمبلغه وتاريخه ومن سجّله. فطلبٌ يُردّ بعد أن دُفعت
       عمولتُه ينقص من رصيده التالي، ولا يُطلب منه مالٌ يردّه.
    ٦) **والمؤثّرُ يرى متابعيه بأسمائهم الأولى وحدَها** (`buyerNameAr`) — يعرف أنّهم جاؤوا منه ولا يُكشف له أكثر.
+   ٧) **وما يمسّ مالَه يصله بريدا** (`tellInfluencer`): دفعةٌ سُجّلت له، وعمولتُه تغيّرت، وكودُه أُوقف أو عاد. ومن لا
+      حسابَ له بعدُ لا بريدَ له عندنا، فيُقال له حين يُربط حسابُه — والكشفُ في حسابه يقول ما وقع كلَّه.
 
    والحارس: `server/tests/commerce/influencer-grant.test.ts`. */
 
@@ -30,6 +32,8 @@ import { recordAudit } from './audit'
 import { GrantService } from './grant.service'
 import { sendStaffInviteEmail } from './account-mail'
 import { publicSiteUrl } from './site-url'
+import { enqueueMail } from './outbox.service'
+import { fmtMoney } from '../../src/application/text/format-ar'
 import { PERMISSIONS, ROLE_NAMES_AR, ROLE_PERMISSIONS } from '../auth/permissions'
 import { INFLUENCER_GRANT_SLUG } from '../../src/application/commerce/grant'
 import {
@@ -121,6 +125,17 @@ export class InfluencerService {
     await recordAudit(this.prisma, {
       actorId, action: 'influencer.update', entityType: 'influencer', entityId: id, before: pick(before), after: pick(after),
     })
+    const told = [
+      ...(after.commissionPercent !== before.commissionPercent
+        ? [`عمولتك صارت ${after.commissionPercent}% من سعر الدورات، على من يأخذ كود المنحة بكودك من اليوم. ومن أخذه قبل ذلك تبقى عمولته ${before.commissionPercent}%.`]
+        : []),
+      ...(after.active !== before.active
+        ? [after.active
+            ? `عاد كودك ${after.code} يعمل، ويأخذ متابعوك كود المنحة به.`
+            : `أوقفنا كودك ${after.code}: لا يأخذ أحد كود منحة جديدا به. وعمولة من أخذ كودا قبل ذلك محسوبة لك.`]
+        : []),
+    ]
+    if (told.length > 0) await this.tellInfluencer(id, 'تغيير في كودك أو عمولتك — أكاديمية وجيز', told)
     return { ok: true as const }
   }
 
@@ -181,7 +196,22 @@ export class InfluencerService {
       actorId, action: 'influencer.payout', entityType: 'influencer', entityId: id,
       meta: { payoutId: row.id, amount, currency: row.currency },
     })
-    return this.statement(id)
+    const st = await this.statement(id)
+    await this.tellInfluencer(id, 'سجلنا دفعة من عمولتك — أكاديمية وجيز', [
+      `سجلنا دفعة ${fmtMoney(amount, row.currency)} من عمولتك${row.noteAr ? ` (${row.noteAr})` : ''}.`,
+      `رصيدك الآن: ${fmtMoney(st.totals.balance, st.currency)}.`,
+    ])
+    return st
+  }
+
+  /** بريدٌ إلى المؤثّر بما يمسّ مالَه — إن كان له حساب، ويُكتب في الطابور فيُعاد حتّى يصل */
+  private async tellInfluencer(id: string, subject: string, lines: string[]) {
+    const inf = await this.prisma.influencer.findUnique({ where: { id }, select: { nameAr: true, user: { select: { email: true } } } })
+    if (!inf?.user?.email) return
+    await enqueueMail(this.prisma, {
+      to: inf.user.email, purpose: 'influencer.notice', subject,
+      text: [`مرحبا ${inf.nameAr}،`, '', ...lines, '', `التفاصيل في حسابك: ${publicSiteUrl()}/influencer`].join('\n'),
+    })
   }
 
   /** كشفُه: من عبّأ النموذج بكوده، ومن اشترى، وعمولةُ كلّ طلب، وما دُفع له، والرصيد */
