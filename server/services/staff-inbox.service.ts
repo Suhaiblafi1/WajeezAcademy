@@ -16,6 +16,7 @@
 import type { PrismaClient } from '@prisma/client'
 import type { TrainerStatus } from './trainer-application.service'
 import { PENDING_PLAN_WHERE } from './cohort-plan.service'
+import { SLOW_REVIEW_DAYS, waitingAr, waitingDays } from '../../src/application/trainer/plan-timeline'
 import { CatalogAdminService } from './catalog-admin.service'
 import { TrainerDraftingBundleService } from './trainer-drafting-bundle.service'
 import { TrainerSuggestionService } from './trainer-suggestion.service'
@@ -271,16 +272,26 @@ export class StaffInboxService {
         where: PENDING_PLAN_WHERE,
         orderBy: { submittedAt: 'asc' },
         take: 5,
-        select: { cohort: { select: { title: true } }, trainer: { select: { application: { select: { fullName: true } } } } },
+        select: { submittedAt: true, cohort: { select: { title: true } }, trainer: { select: { application: { select: { fullName: true } } } } },
       })
+      /* ═══ وكم تنتظر — والبطيئةُ تعلو (٢٦ أكتوبر ٢٠٢٦، المرحلة الخامسة) ═══
+         «الجولةُ ووقتُ الانتظار في الأعلى، فتظهر المراجعةُ البطيئةُ في «اليوم»» (خطّة لوحة الإدارة، ٣د). فكلُّ سطرٍ
+         بانتظاره، والبندُ عاجلٌ حين ينتظر أقدمُها ثلاثةَ أيّامٍ فأكثر (`SLOW_REVIEW_DAYS`) — وسببُه يقول كم. */
+      const oldest = plans[0]?.submittedAt ?? null
+      const slow = oldest !== null && waitingDays(oldest, now) >= SLOW_REVIEW_DAYS
       push({
         key: 'cohort_plans',
         titleAr: 'خطط شعب تنتظر اعتمادك',
-        whyAr: 'لا يفتح تسجيل الشعبة قبلها — ومدرّب الإعداد لا يفعّل حتّى تعتمد خططه',
+        whyAr: slow
+          ? `أقدمها ${waitingAr(oldest!, now)} — ولا يفتح تسجيل الشعبة قبلها`
+          : 'لا يفتح تسجيل الشعبة قبلها — ومدرّب الإعداد لا يفعّل حتّى تعتمد خططه',
         count: await this.prisma.cohortDeliveryPlan.count({ where: PENDING_PLAN_WHERE }),
         href: '/admin/pending-plans',
-        severity: 'attention',
-        sample: plans.map((p) => `${p.cohort.title} — ${p.trainer?.application.fullName ?? '—'}`),
+        severity: slow ? 'urgent' : 'attention',
+        sample: plans.map((p) => [
+          `${p.cohort.title} — ${p.trainer?.application.fullName ?? '—'}`,
+          ...(p.submittedAt ? [waitingAr(p.submittedAt, now)] : []),
+        ].join(' · ')),
       })
     }
 

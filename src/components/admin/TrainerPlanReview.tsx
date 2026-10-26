@@ -237,7 +237,6 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
           {downloading ? "يجهّز التنزيل…" : "نزّل الخطّة للمراجعة"}
         </Button>
           </div>
-          {msg && <p className="mt-3 text-read font-bold text-teal-light-ink" role="status">{msg}</p>}
           <div className="mt-3">
             <PlanCurriculum trainerPlan={trainerPlan} cohortTitle={cohortTitle} />
           </div>
@@ -361,25 +360,6 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
                   في طابور اقتراحات المدرّبين، ويُعتمَد فيصير إصدارا جديدا (ح-٣). */}
             </>
           )}
-          {/* والاعتمادُ يقول ما يُطلقه قبل النقر: اللقاءاتُ المنتظِرةُ تُعتمَد معه،
-              ولكلٍّ اجتماعُه وإعلانُه (`decide` ← `decideSession`) */}
-          {approvable && riding.length > 0 && (
-            <p className="mt-3 text-read leading-6 text-muted-foreground">
-              باعتمادها {riding.length === 1 ? "يعتمد لقاؤها المنتظر معها" : `تعتمد لقاءاتها المنتظرة (${riding.length}) معها`}:
-              {" "}ينشأ لكل لقاء اجتماع Zoom، ويصل المسجّلين بالبريد — وأوّلها يزيل الجدول المبدئيّ إن وجد.
-            </p>
-          )}
-          {/* ومهامُّها المنتظِرةُ كذلك — الاعتمادُ واحد (٣ج-٣) */}
-          {approvable && waitingTasks.length > 0 && (
-            <p className="mt-2 text-read leading-6 text-muted-foreground">
-              {waitingTasks.length === 1
-                ? "وتعتمد معها المهمّة المنتظرة أدناه، كما في تبويب «المنهاج»."
-                : `وتعتمد معها المهامّ المنتظرة (${waitingTasks.length}) أدناه، كما في تبويب «المنهاج».`}
-            </p>
-          )}
-          {/* ═══ وكلمةٌ تصله مع الاعتماد (٧ أكتوبر ٢٠٢٦) ═══
-              الخطّةُ التي ليس عليها إلّا مقترحاتٌ تُعتمَد ولا تُردّ، وتصل مقترحاتُها في خبر
-              اعتمادها «وكلمةُ الإدارة: …». وما يُطلب قبل الاعتماد مكانُه «اطلب تعديلات». */}
           {/* ═══ وتقريرُ المراجعة — يُرفع قبل القرار ويُحفظ مع الخطّة (٨ أكتوبر ٢٠٢٦) ═══
               يُرى مع «اعتمدها» ومع «اطلب تعديلات» معا: التقريرُ يرافع القرارَ أيًّا كان */}
           {trainerPlan?.status === "submitted" && canApprovePlan && (
@@ -400,6 +380,31 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
               offerSchedule={scorecard.some((i) => (i.key === "rhythm" || i.key === "session_times") && i.status !== "ok")}
             />
           )}
+        </div>
+      )}
+      {/* ═══ والقرارُ تحت اللسانين — لا يُطوى بلسان «المنهاج» (٢٦ أكتوبر ٢٠٢٦، المرحلة الخامسة) ═══
+          «الجولةُ ووقتُ الانتظار في الأعلى… وأزرارُ القرار في الأسفل» (خطّة لوحة الإدارة، ٣د). كان القرارُ في لسان «الإدارة»
+          وحدَه: من قرأ المنهاجَ في لسانه رجع ليعتمد. فصار تحت اللسانين معا — وما يقوله قبل النقر معه. */}
+      <div>
+          {/* والاعتمادُ يقول ما يُطلقه قبل النقر: اللقاءاتُ المنتظِرةُ تُعتمَد معه،
+              ولكلٍّ اجتماعُه وإعلانُه (`decide` ← `decideSession`) */}
+          {approvable && riding.length > 0 && (
+            <p className="mt-3 text-read leading-6 text-muted-foreground">
+              باعتمادها {riding.length === 1 ? "يعتمد لقاؤها المنتظر معها" : `تعتمد لقاءاتها المنتظرة (${riding.length}) معها`}:
+              {" "}ينشأ لكل لقاء اجتماع Zoom، ويصل المسجّلين بالبريد — وأوّلها يزيل الجدول المبدئيّ إن وجد.
+            </p>
+          )}
+          {/* ومهامُّها المنتظِرةُ كذلك — الاعتمادُ واحد (٣ج-٣) */}
+          {approvable && waitingTasks.length > 0 && (
+            <p className="mt-2 text-read leading-6 text-muted-foreground">
+              {waitingTasks.length === 1
+                ? "وتعتمد معها المهمّة المنتظرة أدناه، كما في تبويب «المنهاج»."
+                : `وتعتمد معها المهامّ المنتظرة (${waitingTasks.length}) أدناه، كما في تبويب «المنهاج».`}
+            </p>
+          )}
+          {/* ═══ وكلمةٌ تصله مع الاعتماد (٧ أكتوبر ٢٠٢٦) ═══
+              الخطّةُ التي ليس عليها إلّا مقترحاتٌ تُعتمَد ولا تُردّ، وتصل مقترحاتُها في خبر
+              اعتمادها «وكلمةُ الإدارة: …». وما يُطلب قبل الاعتماد مكانُه «اطلب تعديلات». */}
           {approvable && (
             <details className="mt-3" open={approveNote.length > 0}>
               <summary className="cursor-pointer text-read font-bold text-teal-light-ink">أضف كلمة تصله مع الاعتماد (اختياريّ)</summary>
@@ -510,7 +515,7 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
               <Inset tone="warn" className="mt-3" role="group" aria-label="تأجيل الشعبة إلى موسم قادم">
                 <p className="text-read font-black text-gold-ink">أجّلها إلى موسم قادم — لم تقبل لهذا الفصل</p>
                 <ul className="mt-2 list-disc space-y-1 ps-5 text-read leading-6 text-foreground">
-                  <li>يصل المدرّب جرس وبريد يقولان صراحة إنّها <b>لم تقبل لهذا الفصل</b> وأجّلت إلى {seasonAr(to)} — ومعهما تقرير المراجعة إن رفعته أعلاه.</li>
+                  <li>يصل المدرّب جرس وبريد يقولان صراحة إنّها <b>لم تقبل لهذا الفصل</b> وأجّلت إلى {seasonAr(to)} — ومعهما تقرير المراجعة إن رفعته في «الإدارة».</li>
                   <li>تخرج من قائمتك، ولا تفتح للتسجيل هذا الفصل، وتنتقل الشعبة إلى ذلك الموسم.</li>
                   <li>تبقى خطّته ويعدّلها متى شاء — ولا يرسلها إلّا إذا بدأت في {cohortDayAr(seasonStart(to))} أو بعده.</li>
                 </ul>
@@ -558,12 +563,12 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
           {approvable && editsPending > 0 && (
             <p className="mt-2 text-read leading-6 text-muted-foreground">
               «اعتمدها» يبقي البطاقات التي اعتمدتها له ({editsPending}) عنده اقتراحات اختيارية: ما يقبله يدخل الخطة المعتمدة مباشرة، وما يرفضه لا يغير شيئا.
-              {editsDrafts > 0 && <> والمسودات التي لم تعتمدها له ({editsDrafts}) لا تصله — اعتمدها أعلاه أولا إن أردت أن تصله.</>}
+              {editsDrafts > 0 && <> والمسودات التي لم تعتمدها له ({editsDrafts}) لا تصله — اعتمدها في «الإدارة» أولا إن أردت أن تصله.</>}
             </p>
           )}
           {trainerPlan?.status === "submitted" && canApprovePlan && editsPending === 0 && (
             <p className="mt-2 text-read text-muted-foreground">
-              لا بطاقة تنتظر المدرّب بعد، فلا ردّ. لك أن ترفع التعديلات أو تعتمد مسوّداتها أعلاه فيصير الزرّ يردّها بها، أو تعتمدها كما هي، أو تؤجّلها.
+              لا بطاقة تنتظر المدرّب بعد، فلا ردّ. لك أن ترفع التعديلات أو تعتمد مسوّداتها في «الإدارة» فيصير الزرّ يردّها بها، أو تعتمدها كما هي، أو تؤجّلها.
             </p>
           )}
           {/* وما قاله الفعلُ يُقرأ حيث نُقر — لا أعلى البطاقة بعد منهجٍ طويل */}
@@ -647,8 +652,7 @@ export default function TrainerPlanReview({ cohortId, cohortTitle, onDone, onPla
               </ul>
             </div>
           )}
-        </div>
-      )}
+      </div>
     </>
   );
 }
