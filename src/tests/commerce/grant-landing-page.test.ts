@@ -14,13 +14,14 @@ import { influencerCodeLabelAr } from '@/application/commerce/influencer'
 import { auditActionAr } from '@/application/audit/labels'
 import {
   CAREER_LEVELS, GRANT_ACADEMY_LINE_AR, GRANT_CONSENT_AR, GRANT_GAINS_AR, GRANT_GIFT_AR, GRANT_GIFT_MAX, GRANT_INTEREST_DOMAINS, GRANT_SUGGESTED_COURSES, WORK_FIELDS,
-  GRANT_VALUE_AR, GRANT_VALUE_PAID_AR, GRANT_FACES_MAX, GRANT_FACES_PHONE, grantTrainerFaces, grantTrainersAr, campaignParams, campaignTag, grantAdvisorTextAr, grantLeftAr, grantLimitAr, grantRemainingAr, grantCallDueAt, grantCountAr, grantCountdown, grantDaysLeftAr, grantSections, grantShareAr, grantShareMailto, leadProfileAr, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse, workFieldDomains,
+  GRANT_VALUE_AR, GRANT_VALUE_PAID_AR, GRANT_FACES_MAX, GRANT_FACES_PHONE, GRANT_FAQ_AR, grantTrainerFaces, grantTrainersAr, campaignParams, campaignTag, grantAdvisorTextAr, grantLeftAr, grantLimitAr, grantRemainingAr, grantCallDueAt, grantCountAr, grantCountdown, grantDaysLeftAr, grantSections, grantShareAr, grantShareMailto, leadProfileAr, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse, workFieldDomains,
 } from '@/application/commerce/grant-landing'
 import { courseDomain } from '@/application/catalog/course-domain'
 import { zonedInstant } from '@/application/trainer/cohort-period'
 import { parsePendingCheckout } from '@/application/commerce/pending-checkout'
 import { parseStoredGrant } from '@/services/grant-landing'
 import { WHATSAPP_SPOTS } from '@/application/site/whatsapp'
+import { ENDORSEMENT_MIN_ATTENDANCE } from '@/application/learning/endorsement'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '../../..')
 const code = (p: string) => readFileSync(join(root, p), 'utf8').replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '')
@@ -126,6 +127,22 @@ describe('بعد النموذج', () => {
     expect(after).toMatch(/\{grantTrainersAr\(trainers\.total\)\} · \{grantCountAr\(view\.openCourses\.length\)\} مباشرة على Zoom/)
     expect(after).toMatch(/\+\{trainers\.total - trainers\.faces\.length\}/)
     for (const x of ['تتعلم مع مدربين معتمدين لدينا', 'مباشرة على Zoom']) { expect(plainAr(x)).toBe(x); expect(PAGE).toContain(x) }
+  })
+
+  it('⚠️ أسئلة سريعة تحت النموذج — أربعة مطوية، وأجوبتها مما في المنصة لا وعد يختلق', () => {
+    /* قرارُ صاحب المنصّة (٢٦ أكتوبر ٢٠٢٦): اختار «أسئلةٌ قصيرةٌ مطويّة» تحت النموذج */
+    expect(GRANT_FAQ_AR).toHaveLength(4)
+    for (const f of GRANT_FAQ_AR) { expect(plainAr(f.q)).toBe(f.q); expect(plainAr(f.a)).toBe(f.a) }
+    const answers = GRANT_FAQ_AR.map((f) => f.a).join(' ')
+    expect(answers, 'حد رسالة التوصية ليس من مصدره').toContain(`حضر ${ENDORSEMENT_MIN_ATTENDANCE}% من اللقاءات وأنجز كل مهامه`)
+    expect(answers, 'وعد بتسجيل اللقاءات — استبدله صاحب المنصة بتطبيقات عملية').not.toMatch(/تسجيل|مسجلة/)
+    expect(code('src/components/BuyPanel.tsx'), 'الجواب يقول ما لم يعد يقوله لوح الدفع').toContain('لا نحفظ بيانات بطاقتك')
+    expect(grantLimitAr(4), 'الاستبدال مع المستشار لم يعد قول الصفحة').toContain('مع مستشارك')
+    const after = PAGE.slice(PAGE.indexOf('{GRANT_CONSENT_AR}</p>\n        </Card>'))
+    const at = after.indexOf('{GRANT_FAQ_AR.map((f) => (')
+    expect(at, 'الأسئلة ليست بعد النموذج').toBeGreaterThan(0)
+    expect(at, 'الأسئلة بعد سطر الأكاديمية').toBeLessThan(after.indexOf('{GRANT_ACADEMY_LINE_AR}'))
+    expect(after.slice(at), 'الأسئلة مفتوحة أو بلا طي').toMatch(/^\{GRANT_FAQ_AR\.map\(\(f\) => \(\s*<Inset as="details" key=\{f\.q\} className="group">/)
   })
 
   it('⚠️ وجوه المدربين أكبر قليلا — ولا تنضغط، وما على الهاتف يتسع لهاتف بعرض 360', () => {
