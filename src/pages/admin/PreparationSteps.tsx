@@ -524,14 +524,20 @@ function CoursesStep({
               <Sparkles className="h-4 w-4 text-teal" aria-hidden="true" /> أقرب ما عندنا إليها
             </p>
             {idea.suggestedCourses.map((sug) => (
-              <button
-                key={sug.courseId} type="button" onClick={() => setLinkCourse(sug.courseId)}
+              /* سطحٌ يُضغط من السلّم (`interactive`) لا صيغةٌ مكتوبةٌ باليد — والمختارُ بنغمته وبـ`aria-pressed` */
+              <Inset
+                as="button" type="button" interactive key={sug.courseId}
+                tone={linkCourse === sug.courseId ? "accent" : "default"}
                 aria-pressed={linkCourse === sug.courseId}
-                className={`rounded-xl border px-3 py-2 text-right transition ${linkCourse === sug.courseId ? "border-teal/60 bg-teal/10" : "border-white/10 bg-white/[0.03] hover:border-teal/40"}`}
+                onClick={() => setLinkCourse(sug.courseId)}
+                className="px-3 py-2"
               >
-                <span className="block text-read font-bold text-foreground">{sug.titleAr}</span>
+                <span className="flex items-center gap-1.5 text-read font-bold text-foreground">
+                  {linkCourse === sug.courseId && <Check className="h-4 w-4 shrink-0 text-teal-ink" aria-hidden="true" />}
+                  {sug.titleAr}
+                </span>
                 <span className="block text-fine text-muted-foreground">تشترك في: {sug.sharedAr.join("، ")}</span>
-              </button>
+              </Inset>
             ))}
           </div>
         )}
