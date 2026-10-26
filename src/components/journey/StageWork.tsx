@@ -3,25 +3,26 @@
    بكلام صاحب المنصّة: «وينجز ما هو مطلوب من دروس وحلقات وواجبات وقراءات
    ومصادر… كلُّ ما يتعلق بالدورة في خانتها والمصادرُ في خانةٍ منفصلة».
 
-   وكان كلُّ هذا في عمودٍ واحدٍ داخل بطاقةٍ مطويّة في «دوراتي»: جلساتٌ ثمّ
-   موادٌّ ثمّ واجباتٌ ثمّ شهاداتٌ تنهال بلا فاصلٍ ولا أولويّة — فمن دخل ليسلّم
-   واجبا مرّ على ستّ جلساتٍ وأربع موادّ قبل أن يجده.
-
-   فصار الصندوقان:
-
-   • **صندوقُ الدورة** — ما يُنجَز: دروسُها وجلساتُها وواجباتُها، بتبويبٍ
-     واحدٍ يُختار منه. والتبويبُ يفتح على ما ينقصه: واجبٌ لم يُسلَّم أوّلا،
-     وإلّا الدروس. فالشاشةُ تبدأ من عمله لا من فهرسها.
+   • **صندوقُ الدورة** — ما يُنجَز، **طريقا من محطّات** (٢٦ أكتوبر ٢٠٢٦).
+     كان ثلاثةَ تبويباتٍ (الدروس · الجلسات · الواجبات) فوقها صندوقُ الكرّاسة
+     وتحتها مواعيدُ تكرّر صفحاتِها، فقال صاحبُ المنصّة: «غيرُ مفهومةٍ ومكتظّةٌ
+     وغيرُ احترافيّة… تسلسلا للمراحل من أين يبدأ وماذا يقرأ… حتّى يتخرّج»،
+     واختار المزيجَ «وأبقِه احترافيّا». فصار من أعلى إلى أسفل:
+       ١) «خطوتك التالية» — فعلٌ واحدٌ يفتح عليه
+       ٢) المحطّاتُ بترتيبها — في كلٍّ ما يُقرأ وما يُحضَر وما يُسلَّم، ونجومُها
+       ٣) «حصادك» — ما قبله مدرّبُه من عمله
+       ٤) الشهادةُ آخرَ الطريق
+     والحسابُ كلُّه في `src/application/student/stage-path.ts`، وهنا رسمُه.
 
    • **صندوقُ المصادر** — ما يُرجَع إليه: موادُّ المدرّب وتسجيلاتُ الجلسات
      ومراجعُ الدورة العلميّة. مفصولٌ لأنّه لا «يُنجَز»: خلطُه بالعمل يجعل
-     قائمةَ المهامّ تبدو أطولَ مما هي. */
+     الطريقَ يبدو أطولَ ممّا هو. */
 
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
 import {
-  Award, BookMarked, BookOpen, CalendarDays, CalendarPlus, CheckCircle2, Circle, ExternalLink,
-  FileText, Library, Loader2, Lock, PenLine, Play, PlayCircle, Ruler, Send, Video,
+  ArrowLeft, Award, BookMarked, BookOpen, CalendarDays, CalendarPlus, Check, CheckCircle2, ChevronDown, Circle,
+  Clock3, ExternalLink, FileText, Hourglass, Library, Loader2, Lock, PenLine, Play, PlayCircle, Ruler, Send, Star, Video,
 } from "lucide-react";
 import SubmissionFeedback from "@/components/SubmissionFeedback";
 import { SubmissionFilePick, SubmittedWork, UploadProgress } from "@/components/journey/SubmissionFile";
@@ -34,12 +35,14 @@ import { readUserName } from "@/services/auth";
 import { openableRecordings } from "@/application/learning/recording-href";
 import { splitLessons } from "@/application/content/lesson-split";
 import { parseChecks } from "@/application/content/module-checks";
-import { fmtDate, fmtDateTime } from "@/application/text/format-ar";
+import { fmtDate, fmtSession } from "@/application/text/format-ar";
+import { westernDigits } from "@/application/text/date-parts";
 import { referencesByIds } from "@/data/methodology";
-import { overlayModules, readTypedLinks, resourceKind, type LearnerCohortWorkbook, type LearnerModuleWorkbook, type LearnerSlot, type LearnerWorkbook } from "@/application/trainer/plan-overlay";
+import { overlayModules, readTypedLinks, resourceKind, type LearnerCohortWorkbook, type LearnerModuleWorkbook, type LearnerWorkbook } from "@/application/trainer/plan-overlay";
 import { groupLabelAr } from "@/application/trainer/cohort-workbooks";
 import { dayLabelAr } from "@/application/trainer/axis-timeline";
 import { whenAr } from "@/application/learning/cohort-gate";
+import { buildStagePath, nextStep, type NextStep, type PathStop, type StagePath } from "@/application/student/stage-path";
 import { RESOURCE_META } from "@/components/resource-kind-meta";
 import type { CourseFull } from "@/data/courses";
 import type { JourneyStage } from "@/application/student/journey";
@@ -47,8 +50,8 @@ import type { LearnerRequest } from "@/services/learner-requests";
 import { Panel, Card } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
 import {
-  canSubmitNow, latestSubmission, pendingAssessmentCount,
-  type CohortAssessment, type EnrollmentDetail,
+  canSubmitNow, latestSubmission,
+  type CohortAssessment, type CohortSession, type EnrollmentDetail, type MySubmission,
 } from "@/services/enrollment-detail";
 import { BriefView } from '@/components/LongText'
 
@@ -62,7 +65,6 @@ const SUBMISSION_STATUS: Record<string, { label: string; cls: string }> = {
 const ASSESSMENT_TYPE: Record<string, string> = { assignment: "واجب", quiz: "اختبار", project: "مشروع" };
 const ATTENDANCE_LABEL: Record<string, string> = { present: "حاضر", late: "متأخر", absent: "غائب", excused: "معذور" };
 
-type Tab = "lessons" | "sessions" | "work";
 
 export interface StageWorkHandlers {
   answers: Record<string, string>;
@@ -101,9 +103,6 @@ export default function StageWork({
     const t = setInterval(() => setNow(Date.now()), 60_000);
     return () => clearInterval(t);
   }, []);
-  const pending = pendingAssessmentCount(detail, new Date(now));
-  /* التبويبُ الأوّل ما ينقصه: واجبٌ معلَّق قبل قراءةٍ لم تُطلب منه */
-  const [tab, setTab] = useState<Tab>(pending > 0 ? "work" : "lessons");
 
   const doneModules = useMemo(
     () => new Set(detail.moduleProgress.filter((m) => m.status === "completed").map((m) => m.moduleId)),
@@ -117,13 +116,11 @@ export default function StageWork({
     () => overlayModules(full?.modules ?? [], detail.cohort.trainerPlan),
     [full?.modules, detail.cohort.trainerPlan],
   );
-  /* «ابدأ من هنا» على أوّل ما لم يُنجَز **ممّا فُتح** — لا على محورٍ ينتظر موعدَه */
-  const nextModuleIndex = modules.findIndex((m) => !doneModules.has(m.id) && !m.locked);
   const percent = detail.courseProgress?.percent ?? stage.percent ?? 0;
   const trainers = detail.cohort.trainers.map((t) => t.profile.application.fullName);
   /* ٢(ب-٢): وقتُه في الشعبة، ومواعيدُ محاورها إن كانت لها مواعيد */
   const access = detail.access?.state ?? "open";
-  const slots = detail.cohort.trainerPlan?.slots ?? [];
+  const slots = useMemo(() => detail.cohort.trainerPlan?.slots ?? [], [detail.cohort.trainerPlan]);
   const cohortWorkbook = detail.cohort.trainerPlan?.workbook ?? null;
   /* أو كرّاساتُ المحاور — كلٌّ بموعد أسبق محاورها (٦ أكتوبر ٢٠٢٦) */
   const moduleWorkbooks = detail.cohort.trainerPlan?.moduleWorkbooks ?? [];
@@ -135,17 +132,80 @@ export default function StageWork({
   const hasResources =
     detail.cohort.materials.length > 0 || recordings.length > 0 || references.length > 0 || planResources.length > 0;
 
-  const TABS: { id: Tab; label: string; count: number; icon: typeof BookOpen }[] = [
-    { id: "lessons", label: "الدروس", count: modules.length, icon: BookOpen },
-    { id: "sessions", label: "الجلسات", count: detail.cohort.sessions.length, icon: CalendarDays },
-    { id: "work", label: "الواجبات", count: detail.cohort.assessments.length, icon: Send },
-  ];
+  /* ═══ الطريق — أثرٌ مسجَّلٌ لا ضغطة ═══ */
+  const latest = useMemo(
+    () => new Map(detail.cohort.assessments.map((a) => [a.id, latestSubmission(detail, a.id)])),
+    [detail],
+  );
+  const attended = useMemo(
+    () => new Set(detail.attendance.filter((a) => a.status === "present" || a.status === "late").map((a) => a.sessionId)),
+    [detail.attendance],
+  );
+  const accepted = useMemo(
+    () => new Set([...latest].filter(([, s]) => s?.status === "accepted").map(([id]) => id)),
+    [latest],
+  );
+  /* المقروءُ: مفتوحٌ له متنٌ أو ملفّ — وما «يُكتب الآن» لا يُدعى إليه */
+  const readable = useMemo(
+    () => new Set(
+      modules
+        .filter((m) => !m.locked && (splitLessons(m.body).length > 0 || Boolean((m.bodyFileKey ?? "").trim())))
+        .map((m) => m.id),
+    ),
+    [modules],
+  );
+  const path = useMemo(
+    () => buildStagePath({
+      modules, slots, sessions: detail.cohort.sessions, assessments: detail.cohort.assessments,
+      doneModules, attended, accepted,
+    }),
+    [modules, slots, detail.cohort.sessions, detail.cohort.assessments, doneModules, attended, accepted],
+  );
+  const at = new Date(now);
+  const submittable = new Set(detail.cohort.assessments.filter((a) => canSubmitNow(detail, a, at)).map((a) => a.id));
+  const step = nextStep({
+    path,
+    modules,
+    sessions: detail.cohort.sessions,
+    assessments: detail.cohort.assessments,
+    submittable,
+    resubmit: new Set([...submittable].filter((id) => latest.get(id)?.status === "resubmit_requested")),
+    inReview: new Set([...latest].filter(([, s]) => s?.status === "submitted" || s?.status === "under_review").map(([id]) => id)),
+    readable,
+    doneModules,
+    now,
+  });
+  /* «ابدأ من هنا» على المحور الذي تدعو إليه البطاقةُ نفسُه — حقيقةٌ واحدة لا اثنتان */
+  const nextModuleId = step?.kind === "read" ? step.moduleId : null;
+
+  /* المحطّةُ الحاليّةُ مفتوحةٌ أوّلَ ما يدخل، والباقي مطويّ يُفتح بنقرة */
+  const [openStops, setOpenStops] = useState<Set<string>>(
+    () => new Set(path.currentIndex >= 0 ? [path.stops[path.currentIndex].key] : []),
+  );
+  const toggleStop = (key: string, open: boolean) =>
+    setOpenStops((cur) => {
+      if (cur.has(key) === open) return cur;
+      const next = new Set(cur);
+      if (open) next.add(key);
+      else next.delete(key);
+      return next;
+    });
+  /* زرُّ البطاقة يفتح محطّتَه ثمّ ينزل إلى ما يدعو إليه */
+  const reveal = (stopKey: string | null, targetId: string) => {
+    if (stopKey) toggleStop(stopKey, true);
+    window.setTimeout(() => {
+      const still = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+      document.getElementById(targetId)?.scrollIntoView({ behavior: still ? "auto" : "smooth", block: "start" });
+    }, 60);
+  };
+
+  const finished = detail.status === "completed" || percent >= 100 || detail.certificates.length > 0;
 
   return (
     <div className="space-y-4">
       {/* ══ صندوقُ الدورة — ما يُنجَز ══ */}
       <Panel as="section" className="sm:p-5">
-        <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
+        <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
           <div className="min-w-0">
             <h3 className="text-base font-black leading-snug">{stage.titleAr}</h3>
             <p className="mt-0.5 text-read leading-5 text-muted-foreground">
@@ -154,14 +214,7 @@ export default function StageWork({
               {stage.hours > 0 && ` · ${stage.hours} ساعة`}
             </p>
           </div>
-          <div className="w-full max-w-[11rem]">
-            <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
-              <div className="h-full rounded-full bg-teal transition-all" style={{ width: `${Math.max(2, percent)}%` }} />
-            </div>
-            {/* والنسبةُ ليست دروسا وحدَها: ٤٠٪ دروس و٣٠٪ حضور و٣٠٪ واجبات واختبارات (`progress.service.ts`).
-                وكانت تُقرأ «من دروسها مكتملة» فيرى من أتمّ دروسَه كلَّها ٧٠٪ ولا يدري لماذا (١٩ أكتوبر ٢٠٢٦) */}
-            <p className="mt-1 text-read text-muted-foreground" title="من الدروس والحضور والواجبات">تقدمك {percent}٪</p>
-          </div>
+          <PathProgress path={path} percent={percent} />
         </div>
 
         {/* ونبذةُ المدرّب عن شعبته — كما قرأها المتعلّمُ قبل أن يدفع (١٠ أكتوبر ٢٠٢٦) */}
@@ -193,102 +246,107 @@ export default function StageWork({
           </Card>
         )}
 
-        <div role="tablist" aria-label="عمل هذه المرحلة" className="-mx-1 mt-4 flex gap-1.5 overflow-x-auto px-1 pb-1">
-          {TABS.map((t) => {
-            const on = tab === t.id;
-            const nudge = t.id === "work" && pending > 0;
-            return (
-              <button
-                key={t.id}
-                role="tab"
-                aria-selected={on}
-                onClick={() => setTab(t.id)}
-                className={`flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-bold transition ${
-                  on ? "border-teal bg-teal/15 text-teal-light-ink" : "border-white/10 bg-white/[0.03] text-muted-foreground hover:border-white/30"
-                }`}
-              >
-                <t.icon className="h-3.5 w-3.5" />
-                {t.label}
-                {t.count > 0 && <span className="tabular-nums text-muted-foreground">{t.count}</span>}
-                {nudge && <span className="h-1.5 w-1.5 rounded-full bg-gold" aria-label="بانتظارك" />}
-              </button>
-            );
-          })}
-        </div>
+        <NextStepCard
+          step={step}
+          sessions={detail.cohort.sessions}
+          courseId={stage.courseId}
+          enrollmentId={detail.id}
+          onReveal={reveal}
+        />
 
-        <div className="mt-4">
-          {tab === "lessons" && cohortWorkbook && <CohortWorkbookCard wb={cohortWorkbook} modules={modules} />}
-          {tab === "lessons" && slots.length === 0 && moduleWorkbooks.length > 0 && (
-            <ModuleWorkbooksCard list={moduleWorkbooks} modules={modules} />
+        {/* كرّاسةُ الدورة مرّةً واحدة — وموضعُ كلّ محطّةٍ منها داخلَ المحطّة */}
+        {cohortWorkbook && <CohortWorkbookCard wb={cohortWorkbook} />}
+        {slots.length === 0 && moduleWorkbooks.length > 0 && (
+          <ModuleWorkbooksCard list={moduleWorkbooks} modules={modules} />
+        )}
+
+        {path.stops.length === 0 ? (
+          <Card as="p" className="mt-4 border-dashed px-4 py-6 text-center text-read leading-6 text-muted-foreground">
+            لم يكتب متن هذه الدورة بعد. يظهر هنا فور كتابته.
+          </Card>
+        ) : (
+          <ol aria-label="محطات الدورة" className="relative mt-5 space-y-3 before:absolute before:inset-y-6 before:start-[17px] before:w-0.5 before:rounded-full before:bg-foreground/15">
+            {path.stops.map((s) => (
+              <StopItem
+                key={s.key}
+                stop={s}
+                open={openStops.has(s.key)}
+                onToggle={(o) => toggleStop(s.key, o)}
+                modules={modules}
+                doneModules={doneModules}
+                nextModuleId={nextModuleId}
+                courseId={stage.courseId}
+                enrollmentId={detail.id}
+                workbook={cohortWorkbook}
+                moduleWorkbooks={moduleWorkbooks}
+                detail={detail}
+                handlers={handlers}
+                now={now}
+              />
+            ))}
+            <FinishStop path={path} finished={finished} />
+          </ol>
+        )}
+
+        <Elsewhere
+          path={path}
+          modules={modules}
+          doneModules={doneModules}
+          nextModuleId={nextModuleId}
+          courseId={stage.courseId}
+          enrollmentId={detail.id}
+          detail={detail}
+          handlers={handlers}
+          now={now}
+          hasSlots={slots.length > 0}
+        />
+
+        <p className="mt-4 text-read leading-5 text-muted-foreground">{EVIDENCE_NOTE}</p>
+        <ProjectCard project={full?.practicalProject ?? null} />
+
+        <Harvest detail={detail} latest={latest} />
+
+        {/* آخرُ الطريق: قياسُ النمو ثمّ شهادتُها — بهذا الترتيب لا العكس */}
+        <div id="certificate" className="mt-4 scroll-mt-4">
+          {finished && (
+            <div className="space-y-3 border-t border-white/10 pt-4">
+              <Card tone="accent" className="flex flex-wrap items-center justify-between gap-3 bg-teal-ink/[0.06] p-3.5">
+                <p className="min-w-0 text-read leading-5 text-foreground">
+                  <span className="flex items-center gap-1.5 font-black text-foreground">
+                    <Ruler className="h-3.5 w-3.5 text-teal-light-ink" /> قس نموّك في مهارات هذه الدورة
+                  </span>
+                  بالسلّم نفسه الذي قاسك قبلها — فيظهر الفرق مقيسا. مرّة واحدة لكلّ دورة.
+                </p>
+                <Link
+                  to={`/student/remeasure/${detail.id}`}
+                  className="shrink-0 rounded-full border border-teal/50 px-4 py-2 text-xs font-black text-teal-light-ink transition hover:bg-teal/10"
+                >
+                  افتح القياس
+                </Link>
+              </Card>
+              <CourseCertificate
+                enrollmentId={detail.id}
+                courseTitleAr={stage.titleAr}
+                certificates={detail.certificates}
+                request={request}
+                onChanged={handlers.onChanged}
+              />
+            </div>
           )}
-          {tab === "lessons" && (slots.length > 0 ? (
-            <Timeline
-              workbook={cohortWorkbook}
-              moduleWorkbooks={moduleWorkbooks}
-              slots={slots}
-              modules={modules}
-              doneModules={doneModules}
-              nextIndex={nextModuleIndex}
-              courseId={stage.courseId}
-              enrollmentId={detail.id}
-              project={full?.practicalProject ?? null}
-              detail={detail}
-              now={now}
-              onOpenWork={() => setTab("work")}
-            />
-          ) : (
-            <Lessons
-              modules={modules}
-              doneModules={doneModules}
-              nextIndex={nextModuleIndex}
-              courseId={stage.courseId}
-              enrollmentId={detail.id}
-              project={full?.practicalProject ?? null}
-            />
-          ))}
-          {tab === "sessions" && <Sessions detail={detail} />}
-          {tab === "work" && <Assessments detail={detail} handlers={handlers} now={now} />}
+          {/* ومن استوفى قواعد الإكمال قبل آخرها يرى طلبَ شهادته — أو طلبَه القائم (`CourseCertificate`) */}
+          {!finished && (
+            <div className="empty:hidden">
+              <CourseCertificate
+                enrollmentId={detail.id}
+                courseTitleAr={stage.titleAr}
+                certificates={detail.certificates}
+                request={request}
+                onChanged={handlers.onChanged}
+                onlyIfEligible
+              />
+            </div>
+          )}
         </div>
-
-        {/* آخرُ الدورة: قياسُ النمو ثمّ شهادتُها — بهذا الترتيب لا العكس */}
-        {(detail.status === "completed" || percent >= 100 || detail.certificates.length > 0) && (
-          <div className="mt-4 space-y-3 border-t border-white/10 pt-4">
-            <Card tone="accent" className="flex flex-wrap items-center justify-between gap-3 bg-teal-ink/[0.06] p-3.5">
-              <p className="min-w-0 text-read leading-5 text-foreground">
-                <span className="flex items-center gap-1.5 font-black text-foreground">
-                  <Ruler className="h-3.5 w-3.5 text-teal-light-ink" /> قس نموّك في مهارات هذه الدورة
-                </span>
-                بالسلّم نفسه الذي قاسك قبلها — فيظهر الفرق مقيسا. مرّة واحدة لكلّ دورة.
-              </p>
-              <Link
-                to={`/student/remeasure/${detail.id}`}
-                className="shrink-0 rounded-full border border-teal/50 px-4 py-2 text-xs font-black text-teal-light-ink transition hover:bg-teal/10"
-              >
-                افتح القياس
-              </Link>
-            </Card>
-            <CourseCertificate
-              enrollmentId={detail.id}
-              courseTitleAr={stage.titleAr}
-              certificates={detail.certificates}
-              request={request}
-              onChanged={handlers.onChanged}
-            />
-          </div>
-        )}
-        {/* ومن استوفى قواعد الإكمال قبل آخرها يرى طلبَ شهادته — أو طلبَه القائم (`CourseCertificate`) */}
-        {!(detail.status === "completed" || percent >= 100 || detail.certificates.length > 0) && (
-          <div className="mt-4 empty:hidden">
-            <CourseCertificate
-              enrollmentId={detail.id}
-              courseTitleAr={stage.titleAr}
-              certificates={detail.certificates}
-              request={request}
-              onChanged={handlers.onChanged}
-              onlyIfEligible
-            />
-          </div>
-        )}
       </Panel>
 
       {/* ══ صندوقُ المصادر — ما يُرجَع إليه ══ */}
@@ -415,17 +473,16 @@ type LessonModule = CourseFull["modules"][number] & {
   opensAt?: string | null;
 };
 
-/** سطرُ محورٍ — يقرؤه العرضان: قائمةُ الدروس وخطُّ المواعيد */
+/** سطرُ محورٍ في محطّته. بلا رقم: الرقمُ للمحطّة، ورقمُ المحور في القائمة كان
+    يقفز «١ ثمّ ٩» حين تكون محاورُ الشعبة من مدرّبها بعد محاور الكتالوج (٢٦ أكتوبر ٢٠٢٦) */
 function LessonRow({
   m,
-  index,
   done,
   next,
   courseId,
   enrollmentId,
 }: {
   m: LessonModule;
-  index: number;
   done: boolean;
   next: boolean;
   courseId: string;
@@ -451,9 +508,9 @@ function LessonRow({
             done ? "bg-teal text-on-teal" : next && !m.locked ? "bg-teal/20 text-teal-light-ink" : "bg-white/5 text-muted-foreground"
           }`}
         >
-          {done ? <CheckCircle2 className="h-4 w-4" /> : index + 1}
+          {done ? <CheckCircle2 className="h-4 w-4" /> : <BookOpen className="h-3.5 w-3.5" aria-hidden="true" />}
         </span>
-        <span className="min-w-0 flex-1">
+        <span className="min-w-0 flex-1 basis-[10rem]">
           <span className={`block text-xs font-bold leading-snug ${done || next ? "" : "text-foreground"}`}>
             {m.title}
           </span>
@@ -528,49 +585,6 @@ function ProjectCard({ project }: { project: string | null }) {
 
 const EVIDENCE_NOTE = "الدرس يكتمل بدليل — تسليم يقبله مدرّبك، أو تقييم تجتازه، أو حضور جلسته. لا يعلّم مكتملا بضغطة.";
 
-function Lessons({
-  modules,
-  doneModules,
-  nextIndex,
-  courseId,
-  enrollmentId,
-  project,
-}: {
-  modules: LessonModule[];
-  doneModules: Set<string>;
-  nextIndex: number;
-  courseId: string;
-  enrollmentId: string;
-  project: string | null;
-}) {
-  if (modules.length === 0) {
-    return (
-      <Card as="p" className="border-dashed px-4 py-6 text-center text-read leading-6 text-muted-foreground">
-        لم يكتب متن هذه الدورة بعد. جلساتها وواجباتها في تبويبيهما، ويظهر المتن هنا فور كتابته.
-      </Card>
-    );
-  }
-  return (
-    <>
-      <ol className="space-y-2">
-        {modules.map((m, i) => (
-          <LessonRow
-            key={m.id}
-            m={m}
-            index={i}
-            done={doneModules.has(m.id)}
-            next={i === nextIndex}
-            courseId={courseId}
-            enrollmentId={enrollmentId}
-          />
-        ))}
-      </ol>
-      <p className="mt-3 text-read leading-5 text-muted-foreground">{EVIDENCE_NOTE}</p>
-      <ProjectCard project={project} />
-    </>
-  );
-}
-
 /* ─────────── خطُّ المواعيد ───────────
 
    قرارُ صاحب المنصّة (٢٧ سبتمبر ٢٠٢٦): «إذا حدّد المحورَ الأوّل للأسبوع الأوّل
@@ -601,37 +615,25 @@ function WorkbookLink({ wb, labelAr = "كرّاسة الموعد" }: { wb: Learn
 
    قرارُ صاحب المنصّة: «اجعل الكرّاسةَ واحدةً فقط… على أن تكون كاملةً لكلّ
    المحاور، وأن يتأكّد أن تكون سهلةً على الطالب يتبعها محورا محورا». فالبطاقةُ
-   تحمل الكرّاسةَ مرّةً واحدة، وتحتها خريطتُها بترتيب المحاور: أين يبدأ كلٌّ
-   منها. وفي كلّ موعدٍ سطرٌ يقول أين محاورُه فيها — فيفتحها على موضعه. */
-function CohortWorkbookCard({ wb, modules }: { wb: LearnerCohortWorkbook; modules: LessonModule[] }) {
-  const no = new Map(modules.map((m, i) => [m.id, i + 1]));
-  const title = new Map(modules.map((m) => [m.id, m.title]));
+   تحمل الكرّاسةَ مرّةً واحدة، وفي كلّ محطّةٍ سطرٌ يقول أين محاورُها فيها.
+   وكانت تحتها خريطتُها كاملةً أيضا — فتُقرأ الصفحاتُ مرّتين في الشاشة نفسِها،
+   وهو أوّلُ ما سُمّي «مكتظّا» (٢٦ أكتوبر ٢٠٢٦). فبقيت الخريطةُ في المحطّات وحدَها. */
+function CohortWorkbookCard({ wb }: { wb: LearnerCohortWorkbook }) {
   return (
-    <Card tone="accent" className="mb-3 p-3">
-      <p className="flex items-center gap-1.5 text-read font-black text-foreground">
-        <BookMarked className="h-4 w-4 text-teal-light-ink" aria-hidden="true" /> كرّاسة الدورة
-      </p>
-      <p className="mt-0.5 text-read leading-6 text-muted-foreground">
-        كرّاسة واحدة فيها المحاور كلّها بترتيبها — اتبعها محورا محورا مع مواعيدك.
+    <Card tone="accent" className="mt-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 p-3">
+      <p className="min-w-0 text-read leading-6">
+        <span className="flex items-center gap-1.5 font-black text-foreground">
+          <BookMarked className="h-4 w-4 text-teal-light-ink" aria-hidden="true" /> كرّاسة الدورة
+        </span>
+        <span className="text-muted-foreground">كرّاسة واحدة لكل المحطات. كل محطة تقول صفحاتها.</span>
       </p>
       {wb.file ? (
         <WorkbookLink wb={wb.file} labelAr="افتح كرّاسة الدورة" />
       ) : wb.locked && wb.opensAt ? (
-        <p className="mt-2 flex items-center gap-1.5 text-read text-muted-foreground">
-          <Lock className="h-3.5 w-3.5" aria-hidden="true" /> تفتح {whenAr(wb.opensAt)} — أوّل يوم في الشعبة
+        <p className="flex items-center gap-1.5 text-read text-muted-foreground">
+          <Lock className="h-3.5 w-3.5" aria-hidden="true" /> تفتح {whenAr(wb.opensAt)}
         </p>
       ) : null}
-      {wb.parts.length > 0 && (
-        <ol className="mt-2 grid gap-1 text-read leading-6">
-          {wb.parts.map((p) => (
-            <li key={p.moduleId} className="flex flex-wrap gap-x-1.5">
-              <span className="font-bold text-teal-light-ink tabular-nums">المحور {no.get(p.moduleId) ?? "؟"}</span>
-              <span className="text-muted-foreground">· {title.get(p.moduleId) ?? ""}</span>
-              <span className="font-bold text-foreground">— {p.whereAr}</span>
-            </li>
-          ))}
-        </ol>
-      )}
     </Card>
   );
 }
@@ -667,353 +669,684 @@ function ModuleWorkbooksCard({ list, modules }: { list: LearnerModuleWorkbook[];
   );
 }
 
-function Timeline({
-  workbook,
-  moduleWorkbooks,
-  slots,
-  modules,
-  doneModules,
-  nextIndex,
-  courseId,
-  enrollmentId,
-  project,
-  detail,
-  now,
-  onOpenWork,
-}: {
-  workbook: LearnerCohortWorkbook | null;
-  moduleWorkbooks: LearnerModuleWorkbook[];
-  slots: LearnerSlot[];
-  modules: LessonModule[];
-  doneModules: Set<string>;
-  nextIndex: number;
-  courseId: string;
-  enrollmentId: string;
-  project: string | null;
-  detail: EnrollmentDetail;
-  now: number;
-  onOpenWork: () => void;
-}) {
-  const at = new Map(modules.map((m, i) => [m.id, i]));
-  const inSlots = new Set(slots.flatMap((s) => s.moduleIds));
-  const loose = modules.filter((m) => !inSlots.has(m.id));
-  const row = (id: string) => {
-    const i = at.get(id);
-    if (i === undefined) return null;
-    const m = modules[i];
-    return (
-      <LessonRow key={m.id} m={m} index={i} done={doneModules.has(m.id)} next={i === nextIndex} courseId={courseId} enrollmentId={enrollmentId} />
-    );
-  };
+/* ─────────── التقدّمُ في رأس الصندوق ───────────
+
+   «المحطّة ن من م» وشريطٌ مقطَّعٌ بعدد المحطّات — يرى أين هو من الطريق كلِّه
+   لا نسبةً وحدَها. والنسبةُ باقيةٌ تحته: هي ما يحكم به الإكمال. */
+function PathProgress({ path, percent }: { path: StagePath; percent: number }) {
+  const n = path.stops.length;
+  const done = path.stops.filter((s) => s.state === "done").length;
   return (
-    <>
-      <ol className="space-y-3">
-        {slots.map((s, si) => {
-          const past = now > Date.parse(s.closesAt);
-          const tasks = detail.cohort.assessments.filter((a) => a.moduleId && s.moduleIds.includes(a.moduleId));
-          return (
-            <Card as="li" key={`${s.startsOn}-${si}`} tone={s.locked || past ? "default" : "accent"} className="p-3">
-              <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-                <p className="text-read font-black text-foreground">
-                  الموعد {si + 1}
-                  <span className="font-bold text-muted-foreground"> · {dayLabelAr(s.startsOn)} – {dayLabelAr(s.endsOn)}</span>
-                </p>
-                <span className={`flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-fine font-bold ${s.locked ? "border-white/15 text-muted-foreground" : past ? "border-white/15 text-muted-foreground" : "border-teal/50 text-teal-light-ink"}`}>
-                  {s.locked && <Lock className="h-2.5 w-2.5" aria-hidden="true" />}
-                  {s.locked ? `يفتح ${whenAr(s.opensAt)}` : past ? "مضى" : "جار الآن"}
-                </span>
-              </div>
-              {s.workbook ? (
-                <WorkbookLink wb={s.workbook} />
-              ) : s.hasWorkbook && s.locked ? (
-                <p className="mt-2 flex items-center gap-1.5 text-read text-muted-foreground">
-                  <BookMarked className="h-3.5 w-3.5" aria-hidden="true" /> كرّاسته تفتح أوّل يوم في موعده
-                </p>
-              ) : null}
-              {/* كرّاساتُ محاوره — والممتدّةُ على موعدين تُذكر في كليهما */}
-              {moduleWorkbooks
-                .filter((w) => w.moduleIds.some((id) => s.moduleIds.includes(id)))
-                .map((w) => <ModuleWorkbookLine key={w.moduleIds.join("+")} w={w} ids={modules.map((m) => m.id)} />)}
-              <ul className="mt-2 space-y-2">{s.moduleIds.map(row)}</ul>
-              {/* أين محاورُ هذا الموعد في كرّاسة الدورة — ويفتحها من هنا متى فُتحت */}
-              {workbook && s.moduleIds.some((id) => workbook.parts.some((p) => p.moduleId === id)) && (
-                <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
-                  <p className="flex items-center gap-1.5 text-read text-muted-foreground">
-                    <BookMarked className="h-3.5 w-3.5" aria-hidden="true" />
-                    في الكرّاسة:{" "}
-                    {s.moduleIds
-                      .map((id) => {
-                        const where = workbook.parts.find((p) => p.moduleId === id)?.whereAr;
-                        const n = (at.get(id) ?? -1) + 1;
-                        return where ? `المحور ${n} ${where}` : null;
-                      })
-                      .filter(Boolean)
-                      .join(" · ")}
-                  </p>
-                  {!s.locked && workbook.file && <WorkbookLink wb={workbook.file} labelAr="افتح الكرّاسة" />}
-                </div>
-              )}
-              {tasks.length > 0 && (
-                <div className="mt-2 border-t border-white/[0.06] pt-2">
-                  <ul className="space-y-1">
-                    {tasks.map((a) => {
-                      const mine = latestSubmission(detail, a.id);
-                      return (
-                        <li key={a.id} className="flex flex-wrap items-center gap-x-2 text-read leading-6 text-muted-foreground">
-                          <Send className="h-3 w-3 shrink-0" aria-hidden="true" />
-                          <span className="font-bold text-foreground">{a.title}</span>
-                          <span>
-                            {a.locked
-                              ? a.opensAt ? `· تفتح ${whenAr(a.opensAt)} بعد لقاء محورها` : "· طويت"
-                              : mine ? `· ${SUBMISSION_STATUS[mine.status]?.label ?? "سلّمتها"}`
-                              : a.dueAt ? `· آخر موعدها ${fmtDate(a.dueAt)}` : "· مفتوحة"}
-                          </span>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                  <button type="button" onClick={onOpenWork} className="mt-1.5 cursor-pointer text-read font-bold text-teal-light-ink hover:underline">
-                    إلى الواجبات
-                  </button>
-                </div>
-              )}
-            </Card>
-          );
-        })}
-      </ol>
-      {loose.length > 0 && (
-        <div className="mt-4">
-          <p className="text-read font-bold text-muted-foreground">محاور أخرى</p>
-          <ul className="mt-2 space-y-2">{loose.map((m) => row(m.id))}</ul>
+    <div className="w-full sm:max-w-[15rem]">
+      {n > 0 && (
+        <div className="mb-1.5 flex items-center justify-between gap-3 text-read">
+          <span className="font-bold text-foreground tabular-nums">
+            {path.currentIndex >= 0 ? `المحطة ${path.currentIndex + 1} من ${n}` : `أنجزت ${done} من ${n}`}
+          </span>
+          {path.stars.total > 0 && (
+            <span className="flex items-center gap-1 font-bold tabular-nums text-gold-ink" aria-label={`نجومك ${path.stars.earned} من ${path.stars.total}`}>
+              <Star className="h-3.5 w-3.5 fill-gold text-gold" aria-hidden="true" />
+              {path.stars.earned}/{path.stars.total}
+            </span>
+          )}
         </div>
       )}
-      <p className="mt-3 text-read leading-5 text-muted-foreground">{EVIDENCE_NOTE}</p>
-      <ProjectCard project={project} />
-    </>
-  );
-}
-
-/* ─────────── الجلسات ─────────── */
-
-function Sessions({ detail }: { detail: EnrollmentDetail }) {
-  /* قبل الخروج المبكّر: خطّافٌ بعد `return` يكسر ترتيبَ الخطّافات */
-  const [openHere, setOpenHere] = useState<string | null>(null);
-  if (detail.cohort.sessions.length === 0) {
-    return <p className="text-read leading-6 text-muted-foreground">لم تجدول جلسات هذه الشعبة بعد — تظهر هنا بمواعيدها فور جدولتها.</p>;
-  }
-  return (
-    <div className="space-y-2">
-      {detail.cohort.sessions.map((s) => {
-        const mine = detail.attendance.find((a) => a.sessionId === s.id);
-        /* ٢(ب-١): اللقاءُ الذي انتهى يُكتب «انعقد» — ورابطُه لا يصل أصلا
-           (الخادمُ يُسقطه). فلا «أضِفها لتقويمك» على ما مضى. */
-        const held = s.status === "done";
-        return (
-          <Card key={s.id} className="bg-paper/20 p-3.5">
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-              <div className="min-w-0 flex-1">
-                <p className="text-read font-bold leading-snug">{s.title}</p>
-                <p className="mt-0.5 text-read text-muted-foreground">{fmtDateTime(new Date(s.startsAt))}</p>
-              </div>
-              {held && (
-                <span className="shrink-0 rounded-full border border-white/15 px-2.5 py-0.5 text-fine font-bold text-muted-foreground">
-                  انعقد
-                </span>
-              )}
-              {mine && (
-                <span className="shrink-0 rounded-full border border-white/15 px-2.5 py-0.5 text-fine font-bold text-muted-foreground">
-                  {ATTENDANCE_LABEL[mine.status] ?? mine.status}
-                </span>
-              )}
-              {!held && (
-                <a
-                  href={`/api/calendar/cohort-sessions/${s.id}.ics`}
-                  className="flex min-h-9 shrink-0 items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-fine font-bold text-muted-foreground transition hover:border-white/35 hover:text-foreground"
-                >
-                  <CalendarPlus className="h-3 w-3" /> أضفها لتقويمك
-                </a>
-              )}
-              {s.zoom && (
-                <a
-                  href={s.zoom.learnerUrl ?? s.zoom.joinUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex min-h-9 shrink-0 items-center gap-1.5 rounded-full bg-teal px-4 py-1.5 text-fine font-black text-on-teal transition hover:bg-teal-light"
-                >
-                  <Video className="h-3 w-3" /> ادخل الجلسة
-                </a>
-              )}
-              {/* «هنا» إضافةٌ هادئةٌ بجانب الفعل لا بديلٌ عنه: من ضغطها بقيَ في
-                  صفحته، ومن لم يضغطها فتطبيقُ Zoom كما كان. ولا تظهر لجلسةٍ
-                  بلا رقمِ اجتماعٍ لأنّ التضمينَ يحتاج الرقمَ لا الرابط. */}
-              {s.zoom?.meetingId && (
-                <Button
-                  tone="secondary"
-                  size="sm"
-                  icon={Video}
-                  onClick={() => setOpenHere((cur) => (cur === s.id ? null : s.id))}
-                  aria-expanded={openHere === s.id}
-                  className="min-h-9 shrink-0"
-                >
-                  {openHere === s.id ? "أغلق هنا" : "افتح هنا"}
-                </Button>
-              )}
-            </div>
-            {s.zoom?.passcode && (
-              <p className="mt-2 text-read text-muted-foreground">
-                رمز المرور: <span className="font-mono text-foreground" dir="ltr">{s.zoom.passcode}</span>
-              </p>
-            )}
-            {openHere === s.id && (
-              <SessionEmbed
-                sessionId={s.id}
-                userName={readUserName() ?? "متعلم وجيز"}
-                onClose={() => setOpenHere(null)}
-              />
-            )}
-          </Card>
-        );
-      })}
+      {n > 0 ? (
+        <div className="flex gap-1" aria-hidden="true">
+          {path.stops.map((s) => (
+            <span
+              key={s.key}
+              className={`h-1.5 flex-1 rounded-full ${s.state === "done" ? "bg-teal" : s.state === "current" ? "bg-gold" : "bg-foreground/10"}`}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="h-1.5 overflow-hidden rounded-full bg-foreground/10">
+          <div className="h-full rounded-full bg-teal transition-all" style={{ width: `${Math.max(2, percent)}%` }} />
+        </div>
+      )}
+      {/* والنسبةُ ليست دروسا وحدَها: ٤٠٪ دروس و٣٠٪ حضور و٣٠٪ واجبات واختبارات (`progress.service.ts`).
+          وكانت تُقرأ «من دروسها مكتملة» فيرى من أتمّ دروسَه كلَّها ٧٠٪ ولا يدري لماذا (١٩ أكتوبر ٢٠٢٦) */}
+      <p className="mt-1 text-read text-muted-foreground" title="من الدروس والحضور والواجبات">تقدمك {percent}٪</p>
     </div>
   );
 }
 
-/* ─────────── الواجبات ─────────── */
+/* ─────────── «خطوتك التالية» ───────────
 
-function Assessments({ detail, handlers, now }: { detail: EnrollmentDetail; handlers: StageWorkHandlers; now: number }) {
+   فعلٌ واحدٌ بزرٍّ واحد، والحكمُ في `nextStep`. والزرُّ فيروزيّ لا ذهبيّ:
+   الذهبيُّ في هذه الشاشة لنموذج الاختبار (`one-primary-per-screen.test.ts`). */
+/* عنوانٌ فيه «» لا يُلفّ بها ثانية — «بطاقة «فكرة»» قراءةٌ متعثّرة */
+const quoted = (s: string) => (s.includes("«") ? s : `«${s}»`);
+
+const STEP_BTN =
+  "flex min-h-10 shrink-0 items-center gap-1.5 rounded-full bg-teal px-4 py-2 text-xs font-black text-on-teal transition hover:bg-teal-light";
+
+function NextStepCard({
+  step,
+  sessions,
+  courseId,
+  enrollmentId,
+  onReveal,
+}: {
+  step: NextStep | null;
+  sessions: CohortSession[];
+  courseId: string;
+  enrollmentId: string;
+  onReveal: (stopKey: string | null, targetId: string) => void;
+}) {
+  if (!step) return null;
+  let icon = Play;
+  let title = "";
+  let meta: string | null = null;
+  let action: React.ReactNode = null;
+  const reveal = (stopKey: string | null, target: string, label: string) => (
+    <button type="button" onClick={() => onReveal(stopKey, target)} className={`${STEP_BTN} cursor-pointer`}>
+      {label} <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
+    </button>
+  );
+
+  switch (step.kind) {
+    case "live": {
+      const s = sessions.find((x) => x.id === step.sessionId);
+      icon = Video;
+      title = `الجلسة الآن: ${step.title}`;
+      meta = s ? fmtSession(s.startsAt) : null;
+      action = s?.zoom ? (
+        <a href={s.zoom.learnerUrl ?? s.zoom.joinUrl} target="_blank" rel="noreferrer" className={STEP_BTN}>
+          <Video className="h-3.5 w-3.5" aria-hidden="true" /> ادخل الجلسة
+        </a>
+      ) : null;
+      break;
+    }
+    case "resubmit":
+      icon = Send;
+      title = `أعد تسليم ${quoted(step.title)}`;
+      meta = "طلب مدرّبك تعديله";
+      action = reveal(step.stopKey, `task-${step.assessmentId}`, "افتح المهمة");
+      break;
+    case "submit":
+      icon = Send;
+      title = `سلّم ${quoted(step.title)}`;
+      meta = step.dueAt ? `آخر موعد ${fmtDate(step.dueAt)}` : null;
+      action = reveal(step.stopKey, `task-${step.assessmentId}`, "افتح المهمة");
+      break;
+    case "read":
+      icon = BookOpen;
+      title = `اقرأ ${quoted(step.title)}`;
+      action = (
+        <Link to={`/student/course/${courseId}/module/${step.moduleId}?e=${encodeURIComponent(enrollmentId)}`} className={STEP_BTN}>
+          ابدأ القراءة <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
+        </Link>
+      );
+      break;
+    case "session":
+      icon = CalendarDays;
+      title = `جلستك القادمة: ${step.title}`;
+      meta = fmtSession(step.startsAt);
+      action = (
+        <a href={`/api/calendar/cohort-sessions/${step.sessionId}.ics`} className={STEP_BTN}>
+          <CalendarPlus className="h-3.5 w-3.5" aria-hidden="true" /> أضفها لتقويمك
+        </a>
+      );
+      break;
+    case "review":
+      icon = Hourglass;
+      title = `عملك ${quoted(step.title)} عند مدرّبك`;
+      meta = "يصلك رده هنا.";
+      break;
+    case "wait":
+      icon = Clock3;
+      title = `المحطة التالية: ${step.title}`;
+      meta = step.opensAt ? `تفتح ${whenAr(step.opensAt)}` : null;
+      break;
+    case "finish":
+      icon = Award;
+      title = "أتممت محطات الدورة";
+      meta = "شهادتك في آخر الطريق.";
+      action = reveal(null, "certificate", "إلى الشهادة");
+      break;
+  }
+  const Icon = icon;
+  return (
+    <section
+      aria-label="خطوتك التالية"
+      className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-3 rounded-2xl border border-teal/40 bg-teal/[0.07] p-4"
+    >
+      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-teal text-on-teal">
+        <Icon className="h-5 w-5" aria-hidden="true" />
+      </span>
+      <div className="min-w-0 flex-1 basis-[12rem]">
+        <p className="text-fine font-bold text-teal-light-ink">خطوتك التالية</p>
+        <p className="mt-0.5 text-sm font-black leading-snug text-foreground">{title}</p>
+        {meta && <p className="mt-0.5 text-read text-muted-foreground">{meta}</p>}
+      </div>
+      {action}
+    </section>
+  );
+}
+
+/* ─────────── المحطّة ───────────
+
+   عقدةٌ على الخطّ تقول حالَها بشكلها لا بلونها وحدَه — علامةٌ لما أُنجز، ورقمٌ
+   لما هو مفتوح، وقفلٌ لما ينتظر موعدَه — ومعها تسميةٌ نصّيّةٌ دائما. والمحطّةُ
+   `<details>`: تُطوى وتُفتح بلا شيفرة، وما فيها في الصفحة وإن طُويت. */
+function StopNode({ stop }: { stop: PathStop }) {
+  const base = "absolute start-0 top-3 z-[1] grid h-9 w-9 place-items-center rounded-full text-xs font-black tabular-nums ring-4 ring-background";
+  if (stop.state === "done") {
+    return <span className={`${base} bg-teal text-on-teal`} aria-hidden="true"><Check className="h-4 w-4" /></span>;
+  }
+  if (stop.state === "current") {
+    return <span className={`${base} bg-gold text-on-gold`} aria-hidden="true">{stop.seq}</span>;
+  }
+  if (stop.state === "locked") {
+    return <span className={`${base} border border-foreground/15 bg-background text-muted-foreground`} aria-hidden="true"><Lock className="h-3.5 w-3.5" /></span>;
+  }
+  return <span className={`${base} border-2 border-teal/60 bg-background text-teal-light-ink`} aria-hidden="true">{stop.seq}</span>;
+}
+
+function StopChip({ stop }: { stop: PathStop }) {
+  if (stop.state === "done") {
+    return <span className="shrink-0 rounded-full border border-teal/50 px-2.5 py-0.5 text-fine font-bold text-teal-light-ink">أنجزتها</span>;
+  }
+  if (stop.state === "current") {
+    return <span className="shrink-0 rounded-full bg-teal px-2.5 py-0.5 text-fine font-black text-on-teal">أنت هنا</span>;
+  }
+  if (stop.state === "locked") {
+    return (
+      <span className="flex shrink-0 items-center gap-1 rounded-full border border-foreground/15 px-2.5 py-0.5 text-fine font-bold text-muted-foreground">
+        <Lock className="h-2.5 w-2.5" aria-hidden="true" /> {stop.opensAt ? `يفتح ${whenAr(stop.opensAt)}` : "لم يفتح بعد"}
+      </span>
+    );
+  }
+  return <span className="shrink-0 rounded-full border border-foreground/15 px-2.5 py-0.5 text-fine font-bold text-muted-foreground">مفتوحة</span>;
+}
+
+/* نجمةٌ لكلّ نوعٍ في المحطّة: قرأ · حضر · قُبل عملُه — `stage-path.ts` */
+function Stars({ stars }: { stars: { earned: number; total: number } }) {
+  if (stars.total === 0) return null;
+  return (
+    <span
+      className="flex shrink-0 items-center gap-0.5"
+      role="img"
+      aria-label={`${stars.earned} من ${stars.total} نجوم`}
+      title="نجمة للقراءة، ونجمة للحضور، ونجمة حين يقبل عملك"
+    >
+      {Array.from({ length: stars.total }, (_, i) => (
+        <Star
+          key={i}
+          aria-hidden="true"
+          className={`h-3.5 w-3.5 ${i < stars.earned ? "fill-gold text-gold" : "text-muted-foreground/40"}`}
+        />
+      ))}
+    </span>
+  );
+}
+
+function StopPart({
+  icon: Icon,
+  label,
+  done,
+  children,
+}: {
+  icon: typeof BookOpen;
+  label: string;
+  done: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <p className="mb-2 flex items-center gap-1.5 text-read font-black text-foreground">
+        <Icon className="h-3.5 w-3.5 text-teal-light-ink" aria-hidden="true" /> {label}
+        {done && <CheckCircle2 className="h-3.5 w-3.5 text-teal-light-ink" aria-label="تم" />}
+      </p>
+      {children}
+    </div>
+  );
+}
+
+function StopItem({
+  stop: s,
+  open,
+  onToggle,
+  modules,
+  doneModules,
+  nextModuleId,
+  courseId,
+  enrollmentId,
+  workbook,
+  moduleWorkbooks,
+  detail,
+  handlers,
+  now,
+}: {
+  stop: PathStop;
+  open: boolean;
+  onToggle: (open: boolean) => void;
+  modules: LessonModule[];
+  doneModules: Set<string>;
+  nextModuleId: string | null;
+  courseId: string;
+  enrollmentId: string;
+  workbook: LearnerCohortWorkbook | null;
+  moduleWorkbooks: LearnerModuleWorkbook[];
+  detail: EnrollmentDetail;
+  handlers: StageWorkHandlers;
+  now: number;
+}) {
+  const byId = new Map(modules.map((m) => [m.id, m]));
+  const sessions = s.sessionIds.map((id) => detail.cohort.sessions.find((x) => x.id === id)).filter((x): x is CohortSession => Boolean(x));
+  const tasks = s.assessmentIds.map((id) => detail.cohort.assessments.find((x) => x.id === id)).filter((x): x is CohortAssessment => Boolean(x));
+  /* أين محاورُ هذه المحطّة في كرّاسة الدورة — مرّةً هنا لا في بطاقةٍ ثانيةٍ فوقها.
+     والأرقامُ غربيّةٌ كسائر الشاشة: «ص ١٣–٢٠» بجانب «1 ديسمبر» رقمان في سطر. */
+  const pages = workbook
+    ? s.moduleIds.map((id) => workbook.parts.find((p) => p.moduleId === id)?.whereAr).filter((w): w is string => Boolean(w)).map(westernDigits)
+    : [];
+  return (
+    <li className="relative ps-11 sm:ps-12">
+      <StopNode stop={s} />
+      <details
+        id={s.key}
+        open={open}
+        onToggle={(e) => onToggle((e.currentTarget as HTMLDetailsElement).open)}
+        className={`group scroll-mt-4 rounded-2xl border transition ${
+          s.state === "current" ? "border-teal/50 bg-teal/[0.03]" : "border-foreground/10 bg-foreground/[0.015]"
+        }`}
+      >
+        <summary className="flex cursor-pointer list-none flex-wrap items-center gap-x-3 gap-y-1.5 p-3.5 [&::-webkit-details-marker]:hidden">
+          <span className="min-w-0 flex-1 basis-[13rem]">
+            <span className={`block text-sm font-black leading-snug ${s.state === "locked" ? "text-muted-foreground" : "text-foreground"}`}>
+              {s.title}
+            </span>
+            <span className="mt-0.5 block text-read text-muted-foreground">
+              {s.slot ? `الموعد ${s.seq} · ${dayLabelAr(s.slot.startsOn)} – ${dayLabelAr(s.slot.endsOn)}` : `المحطة ${s.seq}`}
+            </span>
+          </span>
+          <span className="flex shrink-0 items-center gap-2">
+            <Stars stars={s.stars} />
+            <StopChip stop={s} />
+          </span>
+          <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition group-open:rotate-180" aria-hidden="true" />
+        </summary>
+
+        <div className="space-y-4 border-t border-foreground/[0.06] p-3.5">
+          <StopPart icon={BookOpen} label="اقرأ" done={s.marks.read === "done"}>
+            {s.slot?.workbook ? (
+              <WorkbookLink wb={s.slot.workbook} />
+            ) : s.slot?.hasWorkbook && s.slot.locked ? (
+              <p className="mb-2 flex items-center gap-1.5 text-read text-muted-foreground">
+                <BookMarked className="h-3.5 w-3.5" aria-hidden="true" /> كرّاسته تفتح أوّل يوم في موعده
+              </p>
+            ) : null}
+            {/* كرّاساتُ محاوره — والممتدّةُ على موعدين تُذكر في كليهما */}
+            {s.slot && moduleWorkbooks
+              .filter((w) => w.moduleIds.some((id) => s.moduleIds.includes(id)))
+              .map((w) => <ModuleWorkbookLine key={w.moduleIds.join("+")} w={w} ids={modules.map((m) => m.id)} />)}
+            <ul className="mt-2 space-y-2">
+              {s.moduleIds.map((id) => {
+                const m = byId.get(id);
+                return m ? (
+                  <LessonRow key={m.id} m={m} done={doneModules.has(m.id)} next={m.id === nextModuleId} courseId={courseId} enrollmentId={enrollmentId} />
+                ) : null;
+              })}
+            </ul>
+            {pages.length > 0 && workbook && (
+              <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+                <p className="flex items-center gap-1.5 text-read text-muted-foreground">
+                  <BookMarked className="h-3.5 w-3.5" aria-hidden="true" /> في الكرّاسة: {pages.join(" · ")}
+                </p>
+                {!s.locked && workbook.file && <WorkbookLink wb={workbook.file} labelAr="افتح الكرّاسة" />}
+              </div>
+            )}
+          </StopPart>
+
+          {sessions.length > 0 && (
+            <StopPart icon={CalendarDays} label="احضر" done={s.marks.attend === "done"}>
+              <div className="space-y-2">
+                {sessions.map((x) => <SessionCard key={x.id} s={x} detail={detail} />)}
+              </div>
+            </StopPart>
+          )}
+
+          {tasks.length > 0 && (
+            <StopPart icon={Send} label="سلّم" done={s.marks.submit === "done"}>
+              <div className="space-y-3">
+                {tasks.map((a) => <AssessmentCard key={a.id} a={a} detail={detail} handlers={handlers} now={now} />)}
+              </div>
+            </StopPart>
+          )}
+        </div>
+      </details>
+    </li>
+  );
+}
+
+/* آخرُ الطريق — الشهادةُ عقدةٌ مميّزةُ الشكل لا محطّةٌ أخرى */
+function FinishStop({ path, finished }: { path: StagePath; finished: boolean }) {
+  const left = path.stops.filter((s) => s.state !== "done").length;
+  return (
+    <li className="relative ps-11 sm:ps-12">
+      <span
+        className={`absolute start-0 top-1.5 z-[1] grid h-9 w-9 place-items-center rounded-full ring-4 ring-background ${
+          finished ? "bg-gold text-on-gold" : "border border-foreground/15 bg-background text-gold-ink"
+        }`}
+        aria-hidden="true"
+      >
+        <Award className="h-4 w-4" />
+      </span>
+      <a href="#certificate" className="block rounded-2xl px-1 py-2 transition hover:text-teal-light-ink">
+        <span className="block text-sm font-black text-foreground">الشهادة</span>
+        <span className="block text-read text-muted-foreground">
+          {finished ? "أتممت الطريق. شهادتك في الأسفل." : `تصدر بعد آخر محطة · باقي ${left} من ${path.stops.length}`}
+        </span>
+      </a>
+    </li>
+  );
+}
+
+/* ─────────── ما لا محطّةَ له ───────────
+
+   محاورُ ليست في موعدٍ من خطّة الشعبة، وجلساتٌ خارج مواعيدها، ومهامُّ بلا محور.
+   تُعرض بعد الطريق كما هي — لا تُخفى، ولا تُحسب في نجومه. */
+function Elsewhere({
+  path,
+  modules,
+  doneModules,
+  nextModuleId,
+  courseId,
+  enrollmentId,
+  detail,
+  handlers,
+  now,
+  hasSlots,
+}: {
+  path: StagePath;
+  modules: LessonModule[];
+  doneModules: Set<string>;
+  nextModuleId: string | null;
+  courseId: string;
+  enrollmentId: string;
+  detail: EnrollmentDetail;
+  handlers: StageWorkHandlers;
+  now: number;
+  hasSlots: boolean;
+}) {
+  const loose = modules.filter((m) => path.looseModuleIds.includes(m.id));
+  const sessions = detail.cohort.sessions.filter((s) => path.looseSessionIds.includes(s.id));
+  const tasks = detail.cohort.assessments.filter((a) => path.looseAssessmentIds.includes(a.id));
+  const noSessions = detail.cohort.sessions.length === 0;
+  if (loose.length === 0 && sessions.length === 0 && tasks.length === 0 && !noSessions) return null;
+  return (
+    <div className="mt-5 space-y-4 border-t border-foreground/10 pt-4">
+      {loose.length > 0 && (
+        <StopPart icon={BookOpen} label="محاور أخرى" done={false}>
+          <ul className="space-y-2">
+            {loose.map((m) => (
+              <LessonRow key={m.id} m={m} done={doneModules.has(m.id)} next={m.id === nextModuleId} courseId={courseId} enrollmentId={enrollmentId} />
+            ))}
+          </ul>
+        </StopPart>
+      )}
+      {sessions.length > 0 && (
+        <StopPart icon={CalendarDays} label={hasSlots ? "جلسات أخرى" : "جلسات الدورة"} done={false}>
+          <div className="space-y-2">
+            {sessions.map((x) => <SessionCard key={x.id} s={x} detail={detail} />)}
+          </div>
+        </StopPart>
+      )}
+      {noSessions && (
+        <p className="text-read leading-6 text-muted-foreground">لم تجدول جلسات هذه الشعبة بعد — تظهر هنا بمواعيدها فور جدولتها.</p>
+      )}
+      {tasks.length > 0 && (
+        <StopPart icon={Send} label="مهام عامة" done={false}>
+          <div className="space-y-3">
+            {tasks.map((a) => <AssessmentCard key={a.id} a={a} detail={detail} handlers={handlers} now={now} />)}
+          </div>
+        </StopPart>
+      )}
+    </div>
+  );
+}
+
+/* ─────────── «حصادك» ───────────
+
+   ما قبله مدرّبُه من عمله، يُجمع محطّةً محطّة — فيرى في آخر الدورة ما صنعه
+   لا نسبةً عنه. والمقبولُ وحدَه: ما ينتظر المراجعةَ ليس حصادا بعد. */
+function Harvest({ detail, latest }: { detail: EnrollmentDetail; latest: Map<string, MySubmission | null> }) {
+  if (detail.cohort.assessments.length === 0) return null;
+  const items = detail.cohort.assessments
+    .map((a) => ({ a, s: latest.get(a.id) ?? null }))
+    .filter((x): x is { a: CohortAssessment; s: MySubmission } => x.s?.status === "accepted");
+  return (
+    <section aria-label="حصادك" className="mt-4 rounded-2xl border border-foreground/10 p-3.5">
+      <p className="flex items-center gap-1.5 text-read font-black text-foreground">
+        <Award className="h-4 w-4 text-gold-ink" aria-hidden="true" /> حصادك
+        <span className="font-bold text-muted-foreground tabular-nums">· {items.length} من {detail.cohort.assessments.length}</span>
+      </p>
+      {items.length === 0 ? (
+        <p className="mt-1 text-read leading-6 text-muted-foreground">كل عمل يقبله مدرّبك يجمع هنا، فترى في آخر الدورة ما أنجزته.</p>
+      ) : (
+        <ul className="mt-2 divide-y divide-foreground/[0.06]">
+          {items.map(({ a, s }) => (
+            <li key={a.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2 text-read">
+              <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-teal-light-ink" aria-hidden="true" />
+              <span className="min-w-0 flex-1 basis-[10rem] font-bold text-foreground">{a.title}</span>
+              <span className="text-muted-foreground">{fmtDate(s.submittedAt)}</span>
+              {s.grades[0] && (
+                <span className="rounded-full bg-teal/15 px-2.5 py-0.5 text-fine font-black tabular-nums text-teal-light-ink">
+                  {Number(s.grades[0].score)}/{Number(s.grades[0].maxScore)}
+                </span>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+/* ─────────── الجلسة ─────────── */
+
+function SessionCard({ s, detail }: { s: CohortSession; detail: EnrollmentDetail }) {
+  const [here, setHere] = useState(false);
+  const mine = detail.attendance.find((a) => a.sessionId === s.id);
+  /* ٢(ب-١): اللقاءُ الذي انتهى يُكتب «انعقد» — ورابطُه لا يصل أصلا
+     (الخادمُ يُسقطه). فلا «أضِفها لتقويمك» على ما مضى. */
+  const held = s.status === "done";
+  return (
+    <Card className="bg-paper/20 p-3.5">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <div className="min-w-0 flex-1 basis-[11rem]">
+          <p className="text-read font-bold leading-snug">{s.title}</p>
+          <p className="mt-0.5 text-read text-muted-foreground">{fmtSession(s.startsAt)}</p>
+        </div>
+        {held && (
+          <span className="shrink-0 rounded-full border border-white/15 px-2.5 py-0.5 text-fine font-bold text-muted-foreground">
+            انعقد
+          </span>
+        )}
+        {mine && (
+          <span className="shrink-0 rounded-full border border-white/15 px-2.5 py-0.5 text-fine font-bold text-muted-foreground">
+            {ATTENDANCE_LABEL[mine.status] ?? mine.status}
+          </span>
+        )}
+        {!held && (
+          <a
+            href={`/api/calendar/cohort-sessions/${s.id}.ics`}
+            className="flex min-h-9 shrink-0 items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-fine font-bold text-muted-foreground transition hover:border-white/35 hover:text-foreground"
+          >
+            <CalendarPlus className="h-3 w-3" /> أضفها لتقويمك
+          </a>
+        )}
+        {s.zoom && (
+          <a
+            href={s.zoom.learnerUrl ?? s.zoom.joinUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="flex min-h-9 shrink-0 items-center gap-1.5 rounded-full bg-teal px-4 py-1.5 text-fine font-black text-on-teal transition hover:bg-teal-light"
+          >
+            <Video className="h-3 w-3" /> ادخل الجلسة
+          </a>
+        )}
+        {/* «هنا» إضافةٌ هادئةٌ بجانب الفعل لا بديلٌ عنه: من ضغطها بقيَ في
+            صفحته، ومن لم يضغطها فتطبيقُ Zoom كما كان. ولا تظهر لجلسةٍ
+            بلا رقمِ اجتماعٍ لأنّ التضمينَ يحتاج الرقمَ لا الرابط. */}
+        {s.zoom?.meetingId && (
+          <Button
+            tone="secondary"
+            size="sm"
+            icon={Video}
+            onClick={() => setHere((v) => !v)}
+            aria-expanded={here}
+            className="min-h-9 shrink-0"
+          >
+            {here ? "أغلق هنا" : "افتح هنا"}
+          </Button>
+        )}
+      </div>
+      {s.zoom?.passcode && (
+        <p className="mt-2 text-read text-muted-foreground">
+          رمز المرور: <span className="font-mono text-foreground" dir="ltr">{s.zoom.passcode}</span>
+        </p>
+      )}
+      {here && (
+        <SessionEmbed
+          sessionId={s.id}
+          userName={readUserName() ?? "متعلم وجيز"}
+          onClose={() => setHere(false)}
+        />
+      )}
+    </Card>
+  );
+}
+
+/* ─────────── المهمّة ─────────── */
+
+function AssessmentCard({ a, detail, handlers, now }: { a: CohortAssessment; detail: EnrollmentDetail; handlers: StageWorkHandlers; now: number }) {
   const { answers, setAnswers, busy, onSubmit, onSubmitQuiz, files = {}, setFiles, progress = {}, onRetryFile } = handlers;
   const { fileUploads } = usePlatformConfig();
-  if (detail.cohort.assessments.length === 0) {
-    return <p className="text-read leading-6 text-muted-foreground">لا واجبات على هذه الشعبة بعد — ما يسنده مدرّبك يظهر هنا بموعد استحقاقه.</p>;
+  const mine = latestSubmission(detail, a.id);
+  const meta = mine ? SUBMISSION_STATUS[mine.status] : null;
+  /* ٢(ب-٢): يحكم بها `submitVerdict` نفسُها التي يحكم بها الخادم —
+     مهمّةٌ لم تُفتح، أو شعبةٌ انتهت، لا نموذجَ لها */
+  const canSubmit = canSubmitNow(detail, a, new Date(now));
+  const closed = !a.locked && !canSubmit && (!mine || mine.status === "resubmit_requested");
+  const overdue = canSubmit && !mine && a.dueAt !== null && Date.parse(a.dueAt) < now;
+  if (a.locked) {
+    return (
+      <Card id={`task-${a.id}`} className="scroll-mt-4 border-dashed bg-paper/10 p-3.5">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          <div className="min-w-0 flex-1">
+            <p className="text-read font-bold leading-snug text-muted-foreground">{a.title}</p>
+            <p className="mt-0.5 text-read text-muted-foreground">
+              {ASSESSMENT_TYPE[a.type] ?? a.type}
+              {a.dueAt && ` · يستحق ${fmtDate(a.dueAt)}`}
+            </p>
+          </div>
+          <span className="flex shrink-0 items-center gap-1 rounded-full border border-white/15 px-2.5 py-0.5 text-fine font-bold text-muted-foreground">
+            <Lock className="h-2.5 w-2.5" aria-hidden="true" />
+            {a.opensAt ? `تفتح ${whenAr(a.opensAt)}` : "طويت"}
+          </span>
+        </div>
+        {a.opensAt && (
+          <p className="mt-2 text-read leading-6 text-muted-foreground">تفتح بعد انتهاء أوّل لقاء لمحورها — وتعليماتها معها.</p>
+        )}
+      </Card>
+    );
   }
   return (
-    <div className="space-y-3">
-      {detail.cohort.assessments.map((a: CohortAssessment) => {
-        const mine = latestSubmission(detail, a.id);
-        const meta = mine ? SUBMISSION_STATUS[mine.status] : null;
-        /* ٢(ب-٢): يحكم بها `submitVerdict` نفسُها التي يحكم بها الخادم —
-           مهمّةٌ لم تُفتح، أو شعبةٌ انتهت، لا نموذجَ لها */
-        const canSubmit = canSubmitNow(detail, a, new Date(now));
-        const closed = !a.locked && !canSubmit && (!mine || mine.status === "resubmit_requested");
-        const overdue = canSubmit && !mine && a.dueAt !== null && Date.parse(a.dueAt) < now;
-        if (a.locked) {
-          return (
-            <Card key={a.id} className="border-dashed bg-paper/10 p-3.5">
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-                <div className="min-w-0 flex-1">
-                  <p className="text-read font-bold leading-snug text-muted-foreground">{a.title}</p>
-                  <p className="mt-0.5 text-read text-muted-foreground">
-                    {ASSESSMENT_TYPE[a.type] ?? a.type}
-                    {a.dueAt && ` · يستحق ${fmtDate(a.dueAt)}`}
-                  </p>
-                </div>
-                <span className="flex shrink-0 items-center gap-1 rounded-full border border-white/15 px-2.5 py-0.5 text-fine font-bold text-muted-foreground">
-                  <Lock className="h-2.5 w-2.5" aria-hidden="true" />
-                  {a.opensAt ? `تفتح ${whenAr(a.opensAt)}` : "طويت"}
-                </span>
-              </div>
-              {a.opensAt && (
-                <p className="mt-2 text-read leading-6 text-muted-foreground">تفتح بعد انتهاء أوّل لقاء لمحورها — وتعليماتها معها.</p>
-              )}
-            </Card>
-          );
-        }
-        return (
-          <Card key={a.id} className="bg-paper/20 p-3.5">
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-              <div className="min-w-0 flex-1">
-                <p className="text-read font-bold leading-snug">{a.title}</p>
-                <p className="mt-0.5 text-read text-muted-foreground">
-                  {ASSESSMENT_TYPE[a.type] ?? a.type} · من {a.maxScore}
-                  {a.dueAt && ` · يستحق ${fmtDate(a.dueAt)}`}
-                </p>
-              </div>
-              {meta && <span className={`shrink-0 rounded-full border px-2.5 py-0.5 text-fine font-bold ${meta.cls}`}>{meta.label}</span>}
-              {/* «المتأخّرُ يُقبل ويُعلَّم» — والعلامةُ كُتبت لحظةَ التسليم */}
-              {mine?.late && (
-                <span className="shrink-0 rounded-full border border-gold/40 px-2.5 py-0.5 text-fine font-bold text-gold-ink">سلّم متأخّرا</span>
-              )}
-              {mine?.grades[0] && (
-                <span className="shrink-0 rounded-full bg-teal/15 px-2.5 py-0.5 text-fine font-black text-teal-light-ink">
-                  {Number(mine.grades[0].score)}/{Number(mine.grades[0].maxScore)}
-                </span>
-              )}
-            </div>
-            {/* ═══ التعليماتُ والمرفقات ═══
+    <Card id={`task-${a.id}`} className="scroll-mt-4 bg-paper/20 p-3.5">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <div className="min-w-0 flex-1">
+          <p className="text-read font-bold leading-snug">{a.title}</p>
+          <p className="mt-0.5 text-read text-muted-foreground">
+            {ASSESSMENT_TYPE[a.type] ?? a.type} · من {a.maxScore}
+            {a.dueAt && ` · يستحق ${fmtDate(a.dueAt)}`}
+          </p>
+        </div>
+        {meta && <span className={`shrink-0 rounded-full border px-2.5 py-0.5 text-fine font-bold ${meta.cls}`}>{meta.label}</span>}
+        {/* «المتأخّرُ يُقبل ويُعلَّم» — والعلامةُ كُتبت لحظةَ التسليم */}
+        {mine?.late && (
+          <span className="shrink-0 rounded-full border border-gold/40 px-2.5 py-0.5 text-fine font-bold text-gold-ink">سلّم متأخّرا</span>
+        )}
+        {mine?.grades[0] && (
+          <span className="shrink-0 rounded-full bg-teal/15 px-2.5 py-0.5 text-fine font-black text-teal-light-ink">
+            {Number(mine.grades[0].score)}/{Number(mine.grades[0].maxScore)}
+          </span>
+        )}
+      </div>
+      {/* ═══ التعليماتُ والمرفقات ═══
 
-                كان المتعلّمُ يُطالَب بتسليمٍ ويرى عنوانا ودرجةً وموعدا لا
-                غير: `briefAr` — ما يكتبه مدرّبُه من تعليمات — لم يكن يُعرض
-                له أصلا. فهو يُسأل عملا بلا أن يُقال له ما المطلوب.
+          كان المتعلّمُ يُطالَب بتسليمٍ ويرى عنوانا ودرجةً وموعدا لا
+          غير: `briefAr` — ما يكتبه مدرّبُه من تعليمات — لم يكن يُعرض
+          له أصلا. فهو يُسأل عملا بلا أن يُقال له ما المطلوب.
 
-                والتعليماتُ نصٌّ كما كُتبت لا Markdown مصيَّرا: هذه الشاشةُ
-                خريطةٌ لا مشغّل، وحارسُ `lesson-split.test.ts` يمنع تفريغَ
-                المتن فيها — وهو محقّ، فالجدارُ الذي شُكي منه عاد منه. وهي
-                تُعرض كما يراها مدرّبُها في شاشته حرفا بحرف. */}
-            {a.briefAr && <BriefView text={a.briefAr} className="mt-3" />}
-            {readTypedLinks(a.attachments).length > 0 && (
-              <ul className="mt-3 flex flex-wrap gap-2">
-                {readTypedLinks(a.attachments).map((att, i) => {
-                  const meta = RESOURCE_META[resourceKind(att.kind)];
-                  /* والمرفقُ المرفوعُ من المسار المحروس — يُقرأ بعد فتح مهمّته وحدَه */
-                  const key = (att.bodyFileKey ?? "").trim();
-                  return (
-                    <li key={`${key || att.url}-${i}`}>
-                      <a
-                        href={key ? `/api/v1/cohort-files/${encodeURIComponent(key)}` : att.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="flex min-h-9 items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-read font-bold text-foreground transition hover:border-teal/50 hover:text-teal-light-ink"
-                      >
-                        <meta.icon className="h-3.5 w-3.5 text-teal-light-ink" aria-hidden="true" /> {att.title}
-                      </a>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-            {mine && (
-              <SubmittedWork submission={mine} kept={files[a.id] ?? null} busy={busy === a.id}
-                onRetry={onRetryFile ? (f) => onRetryFile(a.id, mine.id, f) : undefined} />
-            )}
-            {busy === a.id && progress[a.id] !== undefined && <UploadProgress pct={progress[a.id]} />}
-            {mine && <SubmissionFeedback submission={mine} criteria={a.rubric?.criteria} className="mt-3" />}
-            {closed && (
-              <p className="mt-3 text-read leading-6 text-muted-foreground">انتهت الشعبة — والتسليم يتوقّف بانتهائها.</p>
-            )}
-            {overdue && (
-              <p className="mt-3 text-read leading-6 text-gold-ink">فات موعدها — وما زال التسليم يقبل، ويعلّم متأخّرا.</p>
-            )}
-            {canSubmit && a.type === "quiz" && a.items.length > 0 && (
-              <QuizAttemptForm items={a.items} busy={busy === a.id} onSubmit={(r) => onSubmitQuiz(a.id, r)} />
-            )}
-            {/* ═══ واختبارٌ بلا أسئلةٍ يُجاب كتابةً (٢٠ أكتوبر ٢٠٢٦) ═══
-                 المدرّبُ يختار «اختبار» ولا محرّرَ أسئلةٍ له بعد، فكانت بطاقتُه بلا نموذجٍ أبدا وتبقى في «ما عليك» —
-                 قرارُ صاحب المنصّة «Treat as text»: يُسلَّم نصّا أو ملفّا ويقيّمه المدرّبُ في طابوره */}
-            {canSubmit && (a.type !== "quiz" || a.items.length === 0) && (
-              <div className="mt-3">
-                <textarea
-                  value={answers[a.id] ?? ""}
-                  onChange={(e) => setAnswers((prev) => ({ ...prev, [a.id]: e.target.value }))}
-                  placeholder={mine?.status === "resubmit_requested" ? "أعد التسليم بعد معالجة الملاحظات…" : "اكتب إجابتك هنا…"}
-                  rows={3}
-                  className="w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none"
-                />
-                {/* والملفُّ مع النصّ أو وحدَه — لا يُطلب من المتعلّم رابطٌ مكانَ ملفّه */}
-                {fileUploads && setFiles && (
-                  <SubmissionFilePick file={files[a.id] ?? null} disabled={busy === a.id}
-                    onPick={(f) => setFiles((prev) => ({ ...prev, [a.id]: f }))} />
-                )}
-                <Button tone="confirm" disabled={busy === a.id || !readyToSubmit(answers[a.id], fileUploads ? files[a.id] : null)}
-                  onClick={() => onSubmit(a.id, mine?.status === "resubmit_requested")} className="mt-2">
-                  {busy === a.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
-                  {mine?.status === "resubmit_requested" ? "أعد التسليم" : "سلّم الواجب"}
-                </Button>
-              </div>
-            )}
-          </Card>
-        );
-      })}
-    </div>
+          والتعليماتُ نصٌّ كما كُتبت لا Markdown مصيَّرا: هذه الشاشةُ
+          خريطةٌ لا مشغّل، وحارسُ `lesson-split.test.ts` يمنع تفريغَ
+          المتن فيها — وهو محقّ، فالجدارُ الذي شُكي منه عاد منه. وهي
+          تُعرض كما يراها مدرّبُها في شاشته حرفا بحرف. */}
+      {a.briefAr && <BriefView text={a.briefAr} className="mt-3" />}
+      {readTypedLinks(a.attachments).length > 0 && (
+        <ul className="mt-3 flex flex-wrap gap-2">
+          {readTypedLinks(a.attachments).map((att, i) => {
+            const meta = RESOURCE_META[resourceKind(att.kind)];
+            /* والمرفقُ المرفوعُ من المسار المحروس — يُقرأ بعد فتح مهمّته وحدَه */
+            const key = (att.bodyFileKey ?? "").trim();
+            return (
+              <li key={`${key || att.url}-${i}`}>
+                <a
+                  href={key ? `/api/v1/cohort-files/${encodeURIComponent(key)}` : att.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex min-h-9 items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-read font-bold text-foreground transition hover:border-teal/50 hover:text-teal-light-ink"
+                >
+                  <meta.icon className="h-3.5 w-3.5 text-teal-light-ink" aria-hidden="true" /> {att.title}
+                </a>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      {mine && (
+        <SubmittedWork submission={mine} kept={files[a.id] ?? null} busy={busy === a.id}
+          onRetry={onRetryFile ? (f) => onRetryFile(a.id, mine.id, f) : undefined} />
+      )}
+      {busy === a.id && progress[a.id] !== undefined && <UploadProgress pct={progress[a.id]} />}
+      {mine && <SubmissionFeedback submission={mine} criteria={a.rubric?.criteria} className="mt-3" />}
+      {closed && (
+        <p className="mt-3 text-read leading-6 text-muted-foreground">انتهت الشعبة — والتسليم يتوقّف بانتهائها.</p>
+      )}
+      {overdue && (
+        <p className="mt-3 text-read leading-6 text-gold-ink">فات موعدها — وما زال التسليم يقبل، ويعلّم متأخّرا.</p>
+      )}
+      {canSubmit && a.type === "quiz" && a.items.length > 0 && (
+        <QuizAttemptForm items={a.items} busy={busy === a.id} onSubmit={(r) => onSubmitQuiz(a.id, r)} />
+      )}
+      {/* ═══ واختبارٌ بلا أسئلةٍ يُجاب كتابةً (٢٠ أكتوبر ٢٠٢٦) ═══
+           المدرّبُ يختار «اختبار» ولا محرّرَ أسئلةٍ له بعد، فكانت بطاقتُه بلا نموذجٍ أبدا وتبقى في «ما عليك» —
+           قرارُ صاحب المنصّة «Treat as text»: يُسلَّم نصّا أو ملفّا ويقيّمه المدرّبُ في طابوره */}
+      {canSubmit && (a.type !== "quiz" || a.items.length === 0) && (
+        <div className="mt-3">
+          <textarea
+            value={answers[a.id] ?? ""}
+            onChange={(e) => setAnswers((prev) => ({ ...prev, [a.id]: e.target.value }))}
+            placeholder={mine?.status === "resubmit_requested" ? "أعد التسليم بعد معالجة الملاحظات…" : "اكتب إجابتك هنا…"}
+            rows={3}
+            className="w-full rounded-xl border border-white/15 bg-paper/30 px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/75 focus:border-teal focus:outline-none"
+          />
+          {/* والملفُّ مع النصّ أو وحدَه — لا يُطلب من المتعلّم رابطٌ مكانَ ملفّه */}
+          {fileUploads && setFiles && (
+            <SubmissionFilePick file={files[a.id] ?? null} disabled={busy === a.id}
+              onPick={(f) => setFiles((prev) => ({ ...prev, [a.id]: f }))} />
+          )}
+          <Button tone="confirm" disabled={busy === a.id || !readyToSubmit(answers[a.id], fileUploads ? files[a.id] : null)}
+            onClick={() => onSubmit(a.id, mine?.status === "resubmit_requested")} className="mt-2">
+            {busy === a.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
+            {mine?.status === "resubmit_requested" ? "أعد التسليم" : "سلّم الواجب"}
+          </Button>
+        </div>
+      )}
+    </Card>
   );
 }
 
