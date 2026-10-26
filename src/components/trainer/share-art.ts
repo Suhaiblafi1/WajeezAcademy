@@ -13,8 +13,7 @@
    تصميمٌ داكن، فقال: «لم تعجبني تصاميمُك الجديدة.. أبقِ القديمة وغيّر المحتوى فقط، وآليّةَ عرض الدورات وباقي المحتوى
    الجديد». فالشكلُ شكلُه الأوّل — أرضيّةُ الورق، والشريطُ الفيروزيّ، وشارةُ وجيز، والصورةُ بحلقتها الفيروزيّة،
    وشارةُ الخصم الذهبيّة — وما فيه جديد:
-   · **أسماءُ الدورات كاملة** — يصغر الخطُّ حتّى يسعها ولا يُقصّ (`fitLines`)، ويصغر المحتوى كلُّه معا إن ضاق
-     (`courseBlock`). ووعدُ الدورة الواحدة تحت اسمها، وموعدُ كلِّ دورةٍ تحتها.
+   · **الدوراتُ قائمةٌ مرقّمة** بخطٍّ واحدٍ صغير، وموعدُ كلِّ دورةٍ تحتها (`courseList`).
    · **«بث مباشر»** شارةً حمراءَ في الرأس، و**ثلاثُ مزايا صادقة** (`ART_PERKS`): بثٌّ مباشرٌ على Zoom، وتسجيلُ كلّ
      لقاء، وشهادةٌ موثّقة — ممّا تقدّمه المنصّة فعلا — و**«المقاعد محدودة»**.
 
@@ -205,46 +204,62 @@ function frame(ctx: CanvasRenderingContext2D, logo: HTMLImageElement | null, w: 
 
 const startsAr = (c: ArtData['courses'][number], dayAr: ArtData['dayAr']) => (c.startsAt ? `تبدأ ${dayAr(c.startsAt)}` : 'موعدها قريبا')
 
-/* ═══ آليّةُ عرض الدورات — كاملةً بين حدّين ═══
-   الدورةُ الواحدة: اسمُها كبيرا، ووعدُها تحته، وموعدُها. والدوراتُ الكثيرة: اسمُ كلٍّ (ما قبل النقطتين) وموعدُها تحته.
-   ويُقاس الكلُّ أوّلا: فإن لم يسعه ما بين `top` و`bottom` صغُر كلُّه معا — لا يُقصّ اسمٌ ليتّسع غيرُه. */
-function courseBlock(
+/* ═══ آليّةُ عرض الدورات — قائمةٌ مرقّمةٌ بخطٍّ واحد (٢٦ أكتوبر ٢٠٢٦) ═══
+   قال صاحبُ المنصّة عن الأسماء الكبيرة التي يصغر خطُّها بطولها: «لم يعجبني.. صغّر أسماءَ الدورات لتكون مرقّمةً بشكلٍ
+   أرتب». فكلُّ دورةٍ صفٌّ واحد: رقمُها في دائرةٍ فيروزيّةٍ يمينا، واسمُها (ما قبل النقطتين) بخطٍّ واحدٍ للكلّ، وموعدُها
+   تحته. والأعمدةُ على حافّةٍ يمنى واحدة وسطَ الصورة. وإن لم يسع الكلَّ ما بين `top` و`bottom` صغُر كلُّه معا.
+   والدورةُ الواحدةُ بلا رقم: اسمُها وموعدُها في الوسط. */
+function courseList(
   ctx: CanvasRenderingContext2D, d: ArtData, courses: ArtData['courses'], cx: number, top: number, bottom: number,
   width: number, base: number,
 ) {
-  type Line = { text: string; px: number; weight: number; color: string; gap: number }
-  const build = (s: number): Line[] => {
-    const out: Line[] = []
-    if (courses.length === 1) {
-      const { name, promise } = splitTitle(courses[0].courseTitle)
-      const t = fitLines(ctx, name, width, 3, base * 1.15 * s, base * 0.75 * s)
-      t.lines.forEach((l) => out.push({ text: l, px: t.px, weight: 700, color: C.tealInk, gap: t.px * 1.3 }))
-      if (promise) {
-        const p = fitLines(ctx, promise, width, 3, base * 0.62 * s, base * 0.5 * s, 500)
-        p.lines.forEach((l, i) => out.push({ text: l, px: p.px, weight: 500, color: C.ink, gap: p.px * 1.45 + (i === 0 ? base * 0.2 * s : 0) }))
-      }
-      out.push({ text: startsAr(courses[0], d.dayAr), px: base * 0.62 * s, weight: 500, color: C.muted, gap: base * 0.62 * s * 1.6 + base * 0.3 * s })
-    } else {
-      courses.forEach((c, i) => {
-        const t = fitLines(ctx, splitTitle(c.courseTitle).name, width, 2, base * 0.78 * s, base * 0.56 * s)
-        t.lines.forEach((l, k) => out.push({ text: l, px: t.px, weight: 700, color: C.tealInk, gap: t.px * 1.28 + (i > 0 && k === 0 ? base * 0.4 * s : 0) }))
-        out.push({ text: startsAr(c, d.dayAr), px: base * 0.5 * s, weight: 500, color: C.muted, gap: base * 0.5 * s * 1.5 })
-      })
+  const numbered = courses.length > 1
+  const layout = (s: number) => {
+    const namePx = Math.round(base * (numbered ? 0.62 : 0.9) * s)
+    const datePx = Math.round(base * (numbered ? 0.44 : 0.56) * s)
+    const r = namePx * 0.62
+    const gap = namePx * 0.55
+    const textW = width - (numbered ? r * 2 + gap : 0)
+    const rows = courses.map((c) => ({ c, ...fitLines(ctx, splitTitle(c.courseTitle).name, textW, 2, namePx, namePx - 4) }))
+    const rowH = (n: number, px: number) => n * px * 1.3 + datePx * 1.5
+    const rowGap = base * 0.38 * s
+    const total = rows.reduce((a, x) => a + rowH(x.lines.length, x.px), 0) + rowGap * (rows.length - 1)
+    return { namePx, datePx, r, gap, rows, rowH, rowGap, total }
+  }
+  let L = layout(1)
+  for (let s = 0.95; s >= 0.6 && L.total > bottom - top; s -= 0.05) L = layout(s)
+  /* عرضُ العمود أطولُ سطرٍ فيه — فيقف وسطَ الصورة ولا يلتصق بحافّتها */
+  let longest = 0
+  for (const x of L.rows) {
+    ctx.font = font(700, x.px)
+    for (const l of x.lines) longest = Math.max(longest, ctx.measureText(l).width)
+  }
+  ctx.font = font(500, L.datePx)
+  for (const x of L.rows) longest = Math.max(longest, ctx.measureText(startsAr(x.c, d.dayAr)).width)
+  const right = cx + (longest + (numbered ? L.r * 2 + L.gap : 0)) / 2
+  const textX = numbered ? right - L.r * 2 - L.gap : cx
+  let y = top + Math.max(0, (bottom - top - L.total) / 2)
+  L.rows.forEach((x, i) => {
+    if (numbered) {
+      ctx.fillStyle = C.teal
+      ctx.beginPath(); ctx.arc(right - L.r, y + x.px * 0.62, L.r, 0, Math.PI * 2); ctx.fill()
+      ctx.fillStyle = C.white
+      ctx.font = font(700, L.r * 1.1)
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+      ctx.fillText(String(i + 1), right - L.r, y + x.px * 0.62 + L.r * 0.06)
+      ctx.textBaseline = 'alphabetic'
     }
-    return out
-  }
-  const total = (ls: Line[]) => ls.reduce((a, l) => a + l.gap, 0)
-  let lines = build(1)
-  for (let s = 0.95; s >= 0.6 && total(lines) > bottom - top; s -= 0.05) lines = build(s)
-  /* وسطَ ما بين الحدّين — فلا فراغَ كبيرٌ تحته */
-  let y = top + Math.max(0, (bottom - top - total(lines)) / 2)
+    ctx.textAlign = numbered ? 'right' : 'center'
+    ctx.fillStyle = C.tealInk
+    ctx.font = font(700, x.px)
+    x.lines.forEach((l, k) => ctx.fillText(l, textX, y + x.px * (1 + k * 1.3)))
+    ctx.fillStyle = C.muted
+    ctx.font = font(500, L.datePx)
+    ctx.fillText(startsAr(x.c, d.dayAr), textX, y + x.lines.length * x.px * 1.3 + L.datePx * 1.05)
+    y += L.rowH(x.lines.length, x.px) + L.rowGap
+  })
   ctx.textAlign = 'center'
-  for (const l of lines) {
-    y += l.gap
-    ctx.font = font(l.weight, l.px)
-    ctx.fillStyle = l.color
-    ctx.fillText(l.text, cx, y - l.gap * 0.22)
-  }
 }
 
 /** اسمُه ومسمّاه — ويُرجع أسفلَهما */
@@ -288,7 +303,7 @@ export async function drawArt(kind: ArtKind, d: ArtData, index = 0): Promise<HTM
     ctx.fillStyle = C.teal
     ctx.font = font(700, 30)
     ctx.fillText(many ? 'دوراتي بث مباشر هذا الموسم' : 'أقدم دورة بث مباشر', cx, below + 50)
-    courseBlock(ctx, d, d.courses.slice(0, 3), cx, below + 64, h - 282, w - 180, 48)
+    courseList(ctx, d, d.courses.slice(0, 3), cx, below + 64, h - 282, w - 180, 48)
     perks(ctx, cx, h - 268, 22)
     codePill(ctx, d.code, cx, h - 196, 32)
   } else if (kind === 'story') {
@@ -298,7 +313,7 @@ export async function drawArt(kind: ArtKind, d: ArtData, index = 0): Promise<HTM
     ctx.fillStyle = C.teal
     ctx.font = font(700, 40)
     ctx.fillText(many ? 'دوراتي بث مباشر هذا الموسم' : 'أقدم دورة بث مباشر', cx, below + 76)
-    courseBlock(ctx, d, d.courses.slice(0, 5), cx, below + 96, h - 560, w - 160, 66)
+    courseList(ctx, d, d.courses.slice(0, 5), cx, below + 96, h - 560, w - 160, 66)
     perks(ctx, cx, h - 520, 28)
     codePill(ctx, d.code, cx, h - 420, 44)
     ctx.fillStyle = C.ink
