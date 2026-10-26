@@ -221,3 +221,19 @@ describe('معاينة الرابط حين يلصق', () => {
     expect(artPlan('post', 3).some((p) => p.kind === 'link'), 'المعاينة صارت تنزل مع المنشور').toBe(false)
   })
 })
+
+/* ═══ «لا داعيَ للرابط لأنّه لا يمكن نسخُه أو نقرُه داخل التصميم» (صاحب المنصّة، ٢٦ أكتوبر ٢٠٢٦) ═══
+   كان عنوانُ الموقع يُرسم في ذيل كلّ صورةٍ وفي معاينة الرابط. والرابطُ في النصّ المرافق يُنقر؛ وفي الصورة لا. */
+describe('الصورة بلا رابط', () => {
+  const art = readFileSync(join(process.cwd(), 'src/components/trainer/share-art.ts'), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
+  it('⚠️ لا عنوان موقع في بيانات الرسم ولا في ما يرسم', () => {
+    const data = art.slice(art.indexOf('export interface ArtData'), art.indexOf('}', art.indexOf('export interface ArtData')))
+    expect(data, 'عاد عنوان الموقع إلى بيانات الرسم').not.toMatch(/\bhost\b|\burl\b/i)
+    expect(art, 'يرسم عنوانا').not.toMatch(/fillText\([^)]*(host|url|wajeez|\.com)/i)
+  })
+  it('ومعاينات الروابط القديمة تتجدّد — نسخة تصميمها رفعت', async () => {
+    const { LINK_ART_VERSION } = await import('@/components/trainer/link-preview')
+    expect(LINK_ART_VERSION).toBeGreaterThanOrEqual(3)
+  })
+})
