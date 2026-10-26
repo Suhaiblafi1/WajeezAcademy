@@ -242,7 +242,7 @@ export default function MemberGrantPage() {
     /* ما اخترناه له فوقُ مفتوحا، والباقي أقسامٌ مطويّةٌ بمجالها — ما يريد تطويرَه أوّلا (`grantSections`) */
     const top = courses.filter((x) => ours.has(x.courseId));
     const sections = grantSections(courses.filter((x) => !ours.has(x.courseId)), stored.interests, OTHER_DOMAIN);
-    const advisorHref = waHref(numbers, "grant_advisor", CONTACT.whatsapp, grantAdvisorTextAr(stored.name, stored.code, chosen.map((x) => x.titleAr)));
+    const advisorHref = waHref(numbers, "grant_advisor", CONTACT.whatsapp, grantAdvisorTextAr(stored.name, stored.code, chosen.map((x) => x.titleAr), `${window.location.origin}/grant`));
     /* سطرُ الصندوق حين لا كود ولا بريد — سببُ الخادم، أو أنّها مغلقة. ولا فقرةٌ فارغةٌ حين لا شيء يقال */
     const topNote = reasonAr ?? (c.open ? null : "المنحة مغلقة الآن");
     /* بطاقةُ الدورة — في المختارات فوق وفي أقسام المجالات تحتها، ولا يُعاد اسمُ المجال تحت قسمه. وصورةُ مدرّبها أوّلُ ما يُرى، وبكبرها — قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦): «اجعل صورةَ المدرّب

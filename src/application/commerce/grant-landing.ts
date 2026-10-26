@@ -259,11 +259,17 @@ export const GRANT_GIFT_AR = { title: 'يحق لك أن تهدي هذه المن
 
     والدوراتُ التي اختارها بأسمائها نصّا (٢٤ أكتوبر ٢٠٢٦) — قال صاحبُ المنصّة: «عندما يقوم شخصٌ بالتواصل معنا
     وقد اختار مجموعةً من الدورات تظهر لنا في رسالة الواتساب ما هي الدورات التي اختارها… يُفضّل نصّا».
-    ومن لم يختر شيئا بعدُ تبقى رسالتُه كما كانت. */
-export function grantAdvisorTextAr(name: string, code: string | null, courses: string[] = []): string {
+    ومن لم يختر شيئا بعدُ تبقى رسالتُه كما كانت.
+
+    ورابطُ صفحة المنحة آخرَها (٢٦ أكتوبر ٢٠٢٦) — قرارُه: «اكتب في رسالة المنحة رابطَ الصفحة أيضا». */
+export function grantAdvisorTextAr(name: string, code: string | null, courses: string[] = [], pageUrl: string | null = null): string {
   const who = name.trim() ? `مرحبا، أنا ${name.trim()}.` : 'مرحبا،'
   const ask = `${who} عندي سؤال عن منحة أعضاء وجيز.${code ? ` كود منحتي: ${code}` : ''}`
-  return courses.length > 0 ? `${ask}\n\nالدورات التي اخترتها:\n${courses.map((c) => `- ${c}`).join('\n')}` : ask
+  return [
+    ask,
+    ...(courses.length > 0 ? [`الدورات التي اخترتها:\n${courses.map((c) => `- ${c}`).join('\n')}`] : []),
+    ...(pageUrl ? [`رابط المنحة: ${pageUrl}`] : []),
+  ].join('\n\n')
 }
 
 /** نصُّ الهديّة — سطورٌ قصيرة: ما هي، وما فيها، وآخرُ يوم، والرابط */
