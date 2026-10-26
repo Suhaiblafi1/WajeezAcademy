@@ -385,8 +385,18 @@ export class CommerceService {
     const { unique, cohorts, currency } = await this.cart.validatedCart(userId, cohortIds, true)
     /* رمزُ دعوة المدرّب — يُقبل إن خصّ شعبةً من المشتراة، وإلّا يُهمَل ولا يوقف الدفع */
     const referral = await this.referrals.acceptAtCheckout(userId, unique, referralCode)
-    const { pricing, couponId, couponMaxUses, trainerCode, trainerPurchase } = await this.cart.priceFor(userId, cohorts, couponCode, currency)
+    const { pricing, couponId, couponMaxUses, trainerCode, shareProfileId, trainerPurchase } = await this.cart.priceFor(userId, cohorts, couponCode, currency)
     const { subtotal, discount, total } = pricing
+    /* ═══ ومن اشترى بكود «شارك دوراتك» يُحسب لصاحبه بأجر الإحالة (٢٦ أكتوبر ٢٠٢٦) ═══
+       قرارُ صاحب المنصّة: «نعم، احسبه بأجر الإحالة» — من كتب الكودَ ولم يدخل من رابطه جاء بالمدرّب كمن دخل.
+       فكلُّ شعبةٍ له خصمها الكودُ تُختم برمزه الواسع، وما ختمه رابطٌ صريحٌ يبقى كما هو. والختمُ يُفحص ثانيةً عند
+       التسوية (`enrollment.service` · `referralFor`): لا يُختم إلّا لمن تُحتسب له الشعبة. */
+    const stamps = new Map<string, string>()
+    if (referral) stamps.set(referral.cohortId, referral.code)
+    if (shareProfileId) {
+      const wide = await this.referrals.wideCodeOf(shareProfileId)
+      for (const l of pricing.lines) if (l.couponApplies && !stamps.has(l.cohortId)) stamps.set(l.cohortId, wide)
+    }
 
     const order = await this.prisma.$transaction(async (tx) => {
       const o = await tx.order.create({
@@ -423,7 +433,7 @@ export class CommerceService {
       }
       /* حجزُ المقعد فورا — لا حالة `pending` تنتظر بشرا */
       for (const c of cohorts) {
-        const referralCode = referral?.cohortId === c.id ? referral.code : undefined
+        const referralCode = stamps.get(c.id)
         await tx.enrollmentRequest.upsert({
           where: { userId_cohortId: { userId, cohortId: c.id } },
           update: { status: 'seat_held', orderId: o.id, decidedBy: null, decidedAt: new Date(), ...(referralCode ? { referralCode } : {}) },

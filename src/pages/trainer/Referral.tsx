@@ -542,7 +542,7 @@ export default function Referral() {
                 <Gift className="h-4 w-4 text-gold-ink" aria-hidden="true" /> خصم منا لمتابعيك
               </p>
               <p className="mt-2 text-read leading-7 text-muted-foreground">
-                {kit.percentOff}% على دوراتك وحدها، <b className="text-foreground">ولا يحسم منك شيء</b>. انشره مع رابطك.
+                {kit.percentOff}% على دوراتك وحدها، <b className="text-foreground">ولا يحسم منك شيء</b>. ومن اشترى به يحسب لك بأجر الإحالة، ولو لم يدخل من رابطك.
               </p>
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 <input
