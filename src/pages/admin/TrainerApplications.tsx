@@ -1640,7 +1640,6 @@ export default function TrainerApplications() {
 
             {tab === "agreement" ? (
               <PreparationSteps
-                applicationId={a.id}
                 profileId={a.profile?.id ?? null}
                 readiness={a.readiness}
                 activeRule={a.activeCompensationRule ?? null}
@@ -1650,6 +1649,7 @@ export default function TrainerApplications() {
                 permissions={user?.permissions ?? []}
                 onChanged={() => loadDetail(a.id)}
                 contractsHref={contractsHref(a, "contract")}
+                composeHref={contractsHref(a, "contract_new")}
               />
             ) : tab === "courses" ? (
               <TrainerCoursesTab summary={a.summary} ops={ops ? <TrainerCourses trainer={ops.t} /> : undefined} />

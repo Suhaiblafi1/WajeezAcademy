@@ -119,9 +119,13 @@ describe('④ والشاشتان تقرآن الحكمَ ولا تعيدانه',
     expect(screen, 'المركِّبُ يُضغط وفيه ما يمنعه').toContain('Boolean(prefill.blockedAr)')
   })
 
-  it('وخطواتُ التجهيز تقول المنعَ وتُطفئ الزرّ', () => {
+  /* وكانت «خطواتُ التجهيز» شاشةً ثانيةً تركّب، فتقرأ الحكمَ وتُطفئ زرَّها. ومنذ ٢٦ أكتوبر ٢٠٢٦ (3c: «يذهب المُركِّبُ
+     الثاني») لا تركّب: زرُّها يفتح مركِّبَ «العقود» لصاحبه، فالحكمُ يُقرأ في موضعٍ واحدٍ قبل الضغط — أعلاه. */
+  it('وخطواتُ التجهيز لا تركّب — تفتح المركِّبَ الواحدَ لصاحبه', () => {
     const prep = code('src/pages/admin/PreparationSteps.tsx')
-    expect(prep, 'المنعُ لا يُعرض قبل الضغط').toContain('{prefill.blockedAr}')
-    expect(prep, 'زرُّ «ركِّبْ وأرسِلْ» يُضغط وفيه ما يمنعه').toContain('Boolean(prefill.blockedAr)')
+    expect(prep, 'عاد المركِّبُ الثاني — يركّب بلا حكم المنع').not.toContain('/contracts/compose`')
+    expect(prep, 'ويقرأ ما يُركَّب منه').not.toContain('/contract-prefill`')
+    expect(prep).toMatch(/<Button\s+as=\{Link\} to=\{composeHref\}/)
+    expect(code('src/pages/admin/TrainerApplications.tsx')).toContain('composeHref={contractsHref(a, "contract_new")}')
   })
 })
