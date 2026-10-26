@@ -131,7 +131,7 @@ describe('اللوحُ يقول ما ينتظر فعلا', () => {
     const plans = items.find((i) => i.key === 'cohort_plans')
     expect(plans?.count).toBe(1)
     expect(plans?.href).toBe('/admin/pending-plans')
-    expect(plans?.sample).toEqual(['شعبةُ الخطّة المرسَلة — مدرّبُ اللوح'])
+    expect(plans?.sample).toEqual(['شعبةُ الخطّة المرسَلة — مدرّبُ اللوح · أرسلت اليوم'])
   })
 
   /* ═══ وما لا صاحبَ له لا يُعدّ (٣ أكتوبر ٢٠٢٦) ═══
@@ -161,7 +161,21 @@ describe('اللوحُ يقول ما ينتظر فعلا', () => {
     const plans = (await inbox.forStaff(managerId, permsOf('academic_manager'))).find((i) => i.key === 'cohort_plans')
     expect(plans?.count).toBe(await new CohortPlanService(prisma).pendingCount())
     expect(plans?.count).toBe(1)
-    expect(plans?.sample).toEqual(['شعبةُ الخطّة المرسَلة — مدرّبُ اللوح'])
+    expect(plans?.sample).toEqual(['شعبةُ الخطّة المرسَلة — مدرّبُ اللوح · أرسلت اليوم'])
+  })
+
+  /* ═══ وكم تنتظر — والبطيئةُ تعلو (٢٦ أكتوبر ٢٠٢٦، المرحلة الخامسة، `waitingAr`) ═══
+     «الجولةُ ووقتُ الانتظار في الأعلى، فتظهر المراجعةُ البطيئةُ في «اليوم»» (خطّة لوحة الإدارة، ٣د). والوقتُ يُقدَّم
+     بالساعة لا بخطّةٍ أقدم — فلا تتغيّر أعدادُ ما قبله. */
+  it('⚠️ كلُّ سطرٍ بانتظاره — وأقدمُها ثلاثةَ أيّامٍ فأكثر يجعل البندَ عاجلا ويقول كم', async () => {
+    const at = (days: number) => new Date(Date.now() + days * 86_400_000)
+    const slow = (await inbox.forStaff(managerId, permsOf('academic_manager'), at(5))).find((i) => i.key === 'cohort_plans')!
+    expect(slow.severity).toBe('urgent')
+    expect(slow.whyAr).toMatch(/^أقدمها تنتظر منذ 5 أيام/)
+    expect(slow.sample).toEqual(['شعبةُ الخطّة المرسَلة — مدرّبُ اللوح · تنتظر منذ 5 أيام'])
+    const fresh = (await inbox.forStaff(managerId, permsOf('academic_manager'), at(2))).find((i) => i.key === 'cohort_plans')!
+    expect(fresh.severity, 'يومان ليسا بطيئين').toBe('attention')
+    expect(fresh.sample).toEqual(['شعبةُ الخطّة المرسَلة — مدرّبُ اللوح · تنتظر منذ يومين'])
   })
 
   it('والأعجلُ أوّلا — ترتيبُ القائمة هو ترتيبُ العمل', async () => {

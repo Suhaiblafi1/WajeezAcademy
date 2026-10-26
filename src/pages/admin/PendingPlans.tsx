@@ -44,7 +44,7 @@ import ReviewUpload from "@/components/admin/ReviewUpload";
 import { REVIEW_BUNDLE } from "@/application/trainer/review-bundle-scopes";
 import { useRealSession } from "@/services/session";
 import { courseLineNeeded, prepNoteAr, sharedPrepNote, type PrepFlags } from "@/application/trainer/plan-decision";
-import { roundLabelAr } from "@/application/trainer/plan-timeline";
+import { roundLabelAr, SLOW_REVIEW_DAYS, waitingAr, waitingDays } from "@/application/trainer/plan-timeline";
 
 /** خطّةٌ تنتظر — كما يردّها `CohortPlanService.pending` */
 interface PendingPlan {
@@ -374,6 +374,12 @@ export default function PendingPlans() {
                                     {/* جديدةٌ أم أعادها بعد ردّها — يُرى قبل الفتح (١٧ أكتوبر ٢٠٢٦) */}
                                     {r.returns !== undefined && (
                                       <Chip tone={r.returns === 0 ? "info" : "warn"} srPrefixAr="جولتها">{roundLabelAr(r.returns)}</Chip>
+                                    )}
+                                    {/* وكم تنتظر قرارك — والبطيئةُ تُعلَّم (٢٦ أكتوبر ٢٠٢٦، `waitingAr`) */}
+                                    {r.submittedAt && !done && (
+                                      <Chip tone={waitingDays(r.submittedAt) >= SLOW_REVIEW_DAYS ? "warn" : "neutral"} srPrefixAr="انتظارها">
+                                        {waitingAr(r.submittedAt)}
+                                      </Chip>
                                     )}
                                     {r.prep && <Chip tone="accent" srPrefixAr="نوعها">شعبة إعداد</Chip>}
                                     {done && <Chip tone={OUTCOME_AR[done].tone} srPrefixAr="القرار">{OUTCOME_AR[done].label}</Chip>}

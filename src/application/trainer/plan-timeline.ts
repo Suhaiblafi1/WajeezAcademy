@@ -9,6 +9,8 @@
    واحدا («قبل ٥ ورفض ٢») — فخطّةٌ بثلاثين بطاقةً لا تصير ثلاثين سطرا. وحفظُ المسوّدة والتنزيلُ
    ومراجعةُ البطاقة قبل وصولها ليست تواصلا فلا تُعرض. */
 
+import { countAr } from '../text/count-ar'
+
 export interface PlanEvent {
   action: string
   at: Date | string
@@ -36,6 +38,27 @@ export function planReturns(events: readonly Pick<PlanEvent, 'action'>[]): numbe
 /** وسمُ الخطّة في الطابور: جديدةٌ أم أعادها بعد ردّها — ورقمُ جولتها */
 export function roundLabelAr(returns: number): string {
   return returns === 0 ? 'جديدة' : `أعادها بعد التعديلات · الجولة ${returns + 1}`
+}
+
+/* ═══ وكم تنتظر قرارك — في الطابور وفي «اليوم» (٢٦ أكتوبر ٢٠٢٦، المرحلة الخامسة) ═══
+   «الجولةُ ووقتُ الانتظار في الأعلى، فتظهر المراجعةُ البطيئةُ في «اليوم»» (خطّة لوحة الإدارة، ٣د). والتاريخُ
+   المكتوبُ يُطرح بالعين من تاريخ اليوم — فيُقال بالأيّام. والمستقبلُ (ساعةٌ متقدّمة) «اليوم» لا «منذ -١». */
+const DAY_FORMS = { one: 'يوم', two: 'يومين', few: 'أيام', many: 'يوما' }
+
+/** ثلاثةُ أيّامٍ فأكثر بلا قرار — بطيئةٌ: تُعلَّم في الطابور، وتعلو في «اليوم» */
+export const SLOW_REVIEW_DAYS = 3
+
+/** كم يوما مضى منذ أُرسلت — صفرٌ لليوم */
+export function waitingDays(submittedAt: Date | string, now: Date = new Date()): number {
+  return Math.max(0, Math.floor((now.getTime() - new Date(submittedAt).getTime()) / 86_400_000))
+}
+
+/** «أرسلت اليوم» · «أرسلت أمس» · «تنتظر منذ يومين» · «تنتظر منذ 4 أيام» */
+export function waitingAr(submittedAt: Date | string, now: Date = new Date()): string {
+  const d = waitingDays(submittedAt, now)
+  if (d === 0) return 'أرسلت اليوم'
+  if (d === 1) return 'أرسلت أمس'
+  return `تنتظر منذ ${d === 2 ? 'يومين' : countAr(d, DAY_FORMS)}`
 }
 
 export function planTimeline(events: readonly PlanEvent[]): TimelineEntry[] {
