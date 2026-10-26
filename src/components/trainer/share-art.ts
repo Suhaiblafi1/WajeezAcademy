@@ -14,7 +14,7 @@
    الجديد». فالشكلُ شكلُه الأوّل — أرضيّةُ الورق، والشريطُ الفيروزيّ، وشارةُ وجيز، والصورةُ بحلقتها الفيروزيّة،
    وشارةُ الخصم الذهبيّة — وما فيه جديد:
    · **الدوراتُ قائمةٌ مرقّمة** بخطٍّ واحدٍ صغير، وموعدُ كلِّ دورةٍ بجانبها؛ والواحدةُ في إطارٍ متقطّعٍ وموعدُها فوقها (`courseList`).
-   · **«بث مباشر»** شارةً حمراءَ في الرأس، و**ثلاثُ مزايا صادقة** (`ART_PERKS`): بثٌّ مباشرٌ على Zoom، وتسجيلُ كلّ
+   · **«بث مباشر»** شارةً حمراءَ في الرأس، و**ثلاثُ مزايا صادقة** (`ART_PERKS`): لقاءاتٌ على Zoom، وتسجيلُ كلّ
      لقاء، وشهادةٌ موثّقة — ممّا تقدّمه المنصّة فعلا — و**«المقاعد محدودة»**.
 
    ولمَ في المتصفّح لا في الخادم: الخطُّ العربيُّ للمنصّة محمَّلٌ فيه أصلا، والحرفُ يُشكَّل ويُوصَل كما في الصفحة؛
@@ -46,7 +46,7 @@ const FONT = '"Avenir Arabic", "IBM Plex Sans Arabic", "Neo Sans Arabic", system
 const font = (weight: number, px: number) => `${weight} ${px}px ${FONT}`
 
 /** المزايا — ممّا تقدّمه المنصّةُ فعلا: البثُّ على Zoom، والتسجيلُ في «مصادر هذه المرحلة»، والشهادةُ الموثّقةُ بشروط إنجاز */
-export const ART_PERKS = ['بث مباشر على Zoom', 'تسجيل كل لقاء', 'شهادة موثقة'] as const
+export const ART_PERKS = ['لقاءات على Zoom', 'تسجيل كل لقاء', 'شهادة موثقة'] as const
 
 function loadImage(src: string): Promise<HTMLImageElement | null> {
   return new Promise((resolve) => {
@@ -182,7 +182,9 @@ function codePill(ctx: CanvasRenderingContext2D, code: ArtData['code'], cx: numb
   ctx.textBaseline = 'alphabetic'
 }
 
-/** الرأس: علامةُ وجيز واسمُها، و«بث مباشر» حمراءُ يسارا.
+/** الرأس: علامةُ وجيز واسمُها، و«بث مباشر» حمراءُ يسارا — **وهي وحدَها تقول «مباشر» في الصورة** (٢٦ أكتوبر ٢٠٢٦):
+    قال صاحبُ المنصّة: «لا تكرّر المباشر في التصميم.. ألغِ جملة دوراتي بث مباشر هذا الموسم». فسقطت الجملةُ من المنشور
+    والستوري وغلافِ الكاروسيل، و«· بث مباشر» من شريحة الدورة، وصارت الميزةُ الأولى «لقاءات على Zoom».
     ═══ وبلا عنوان الموقع في الذيل (٢٦ أكتوبر ٢٠٢٦) ═══
     قال صاحبُ المنصّة: «لا داعيَ للرابط لأنّه لا يمكن نسخُه أو نقرُه داخل التصميم». فالرابطُ في النصّ المرافق
     يُنقر، وفي الصورة حروفٌ لا تفتح شيئا. */
@@ -347,22 +349,16 @@ export async function drawArt(kind: ArtKind, d: ArtData, index = 0): Promise<HTM
     const r = 108
     portrait(ctx, photo, d.name, cx, 262, r)
     const below = nameBlock(ctx, d, cx, 262 + r + 72, 48, w - 200)
-    ctx.fillStyle = C.teal
-    ctx.font = font(700, 30)
-    ctx.fillText(many ? 'دوراتي بث مباشر هذا الموسم' : 'أقدم دورة بث مباشر', cx, below + 50)
     /* والمزايا والكود في أسفل المربّع (٢٦ أكتوبر ٢٠٢٦): بقي تحتهما فراغٌ بعد أن خرج عنوانُ الموقع من الذيل،
        فنزلا إليه — والدوراتُ تتوسّط ما بقي فوقهما */
-    courseList(ctx, d, d.courses.slice(0, 3), cx, below + 64, h - 222, w - 180, 48)
+    courseList(ctx, d, d.courses.slice(0, 3), cx, below + 24, h - 222, w - 180, 48)
     perks(ctx, cx, h - 208, 22)
     codePill(ctx, d.code, cx, h - 136, 32)
   } else if (kind === 'story') {
     const r = 190
     portrait(ctx, photo, d.name, cx, 440, r)
     const below = nameBlock(ctx, d, cx, 440 + r + 100, 60, w - 200)
-    ctx.fillStyle = C.teal
-    ctx.font = font(700, 40)
-    ctx.fillText(many ? 'دوراتي بث مباشر هذا الموسم' : 'أقدم دورة بث مباشر', cx, below + 76)
-    courseList(ctx, d, d.courses.slice(0, 5), cx, below + 96, h - 560, w - 160, 66)
+    courseList(ctx, d, d.courses.slice(0, 5), cx, below + 36, h - 560, w - 160, 66)
     perks(ctx, cx, h - 520, 28)
     codePill(ctx, d.code, cx, h - 420, 44)
     ctx.fillStyle = C.ink
@@ -374,10 +370,7 @@ export async function drawArt(kind: ArtKind, d: ArtData, index = 0): Promise<HTM
   } else if (kind === 'cover') {
     portrait(ctx, photo, d.name, cx, 470, 230)
     const below = nameBlock(ctx, d, cx, 830, 64, w - 200)
-    ctx.fillStyle = C.tealInk
-    ctx.font = font(700, 52)
-    ctx.fillText(many ? `${d.courses.length} دورات بث مباشر هذا الموسم` : 'دورتي بث مباشر هذا الموسم', cx, below + 90)
-    perks(ctx, cx, below + 130, 26)
+    perks(ctx, cx, below + 70, 26)
     ctx.fillStyle = C.muted
     ctx.font = font(500, 38)
     ctx.fillText('اسحب للتفاصيل ←', cx, h - 150)
@@ -387,7 +380,7 @@ export async function drawArt(kind: ArtKind, d: ArtData, index = 0): Promise<HTM
     ctx.fill()
     ctx.fillStyle = C.white
     ctx.font = font(500, 40)
-    ctx.fillText(many ? `دورة ${index + 1} من ${d.courses.length} · بث مباشر` : 'دورة بث مباشر', cx, 330)
+    if (many) ctx.fillText(`دورة ${index + 1} من ${d.courses.length}`, cx, 330)
     /* اسمُها كاملا ووعدُها تحته، يصغران حتّى تسعهما البطاقة — وموعدُها في أسفلها */
     const { name, promise } = splitTitle(one.courseTitle)
     const t = fitLines(ctx, name, w - 300, 3, 72, 48)
