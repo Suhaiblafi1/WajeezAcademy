@@ -1048,6 +1048,72 @@ export class CommerceService {
     return coupon
   }
 
+  /* ═══ تعديلُ الكوبون وإيقافُه وحذفُه (٢٦ أكتوبر ٢٠٢٦) ═══
+
+     «لماذا لا أستطيع أن أعدّل أو أحذف كودا معيّنا؟» (صاحب المنصّة). وكان الكوبونُ يُنشأ ولا يُمسّ بعدها.
+     · يُعدَّل كوبونُنا العامُّ وحدَه: نسبتُه أو مبلغُه، وسقفُ استعماله، وانتهاؤه، وتشغيلُه. وكودُ المدرّب
+       والمنحة و«شارك دوراتك» تُدار من صفحاتها — نسبتُها شرطٌ في عقدٍ أو حملة لا رقمٌ يُبدَّل هنا.
+     · ويُوقَف أيُّ كوبونٍ أو يُعاد تشغيلُه.
+     · ويُحذف ما لم يُستعمل قطّ؛ وما استُعمل يُوقَف ولا يُحذف — طلباتُه تحمله، ومحوُه يمحو سببَ خصمها. */
+  private linkedCoupon(c: { trainerCode: unknown; trainerDiscount: unknown; grantCode: unknown; trainerShareCode: unknown }) {
+    if (c.trainerCode || c.trainerDiscount) return 'كود مدرّب — يُدار من صفحة المدرّب'
+    if (c.grantCode) return 'كود منحة — يُدار من صفحة المنحة'
+    if (c.trainerShareCode) return 'كود «شارك دوراتك» — يُدار من بوّابة المدرّب'
+    return null
+  }
+
+  async updateCoupon(actorId: string, id: string, input: { percentOff?: number | null; amountOff?: number | null; maxUses?: number | null; expiresAt?: Date | null; active?: boolean }) {
+    const c = await this.prisma.coupon.findUnique({
+      where: { id }, include: { trainerCode: true, trainerDiscount: true, grantCode: true, trainerShareCode: true },
+    })
+    if (!c) throw new AuthError('not_found', 'الكوبون غير موجود', 404)
+    const terms = input.percentOff !== undefined || input.amountOff !== undefined || input.maxUses !== undefined || input.expiresAt !== undefined
+    const linked = this.linkedCoupon(c)
+    if (terms && linked) throw new AuthError('coupon_linked', linked, 409)
+    const percentOff = input.percentOff !== undefined ? input.percentOff : c.percentOff
+    const amountOff = input.amountOff !== undefined ? input.amountOff : c.amountOff
+    if (!percentOff && !amountOff) throw new AuthError('bad_coupon', 'حدد نسبة أو مبلغ خصم')
+    if (percentOff && amountOff) throw new AuthError('bad_coupon', 'نسبة أو مبلغ — لا الاثنان')
+    if (percentOff && (percentOff < 1 || percentOff > 100)) throw new AuthError('bad_coupon', 'نسبة الخصم خارج النطاق')
+    if (input.maxUses != null && input.maxUses < c.usedCount) {
+      throw new AuthError('bad_coupon', `استُعمل ${c.usedCount} مرّة — السقف لا يقلّ عن ذلك`)
+    }
+    const updated = await this.prisma.coupon.update({
+      where: { id },
+      data: {
+        ...(input.percentOff !== undefined ? { percentOff: input.percentOff } : {}),
+        ...(input.amountOff !== undefined ? { amountOff: input.amountOff } : {}),
+        ...(input.maxUses !== undefined ? { maxUses: input.maxUses } : {}),
+        ...(input.expiresAt !== undefined ? { expiresAt: input.expiresAt } : {}),
+        ...(input.active !== undefined ? { active: input.active } : {}),
+      },
+    })
+    await recordAudit(this.prisma, {
+      actorId, action: 'coupon.update', entityType: 'coupon', entityId: id,
+      meta: { code: c.code, before: { percentOff: c.percentOff, amountOff: c.amountOff, maxUses: c.maxUses, expiresAt: c.expiresAt, active: c.active }, changed: Object.keys(input) },
+    })
+    return updated
+  }
+
+  async deleteCoupon(actorId: string, id: string) {
+    const c = await this.prisma.coupon.findUnique({
+      where: { id },
+      include: {
+        trainerCode: true, trainerDiscount: true, grantCode: true, trainerShareCode: true,
+        _count: { select: { orders: true, advisorRequests: true } },
+      },
+    })
+    if (!c) throw new AuthError('not_found', 'الكوبون غير موجود', 404)
+    const linked = this.linkedCoupon(c)
+    if (linked) throw new AuthError('coupon_linked', linked, 409)
+    if (c.usedCount > 0 || c._count.orders > 0 || c._count.advisorRequests > 0) {
+      throw new AuthError('coupon_used', 'استُعمل هذا الكود — أوقفه بدل حذفه، فطلباته تحمله', 409)
+    }
+    await this.prisma.coupon.delete({ where: { id } })
+    await recordAudit(this.prisma, { actorId, action: 'coupon.delete', entityType: 'coupon', entityId: id, meta: { code: c.code } })
+    return { deleted: true }
+  }
+
   async listCoupons() {
     /* ومعها من يتحمّلها إن كانت لمدرّب — فلا يُقرأ كودُه حملةً من حملاتنا */
     return this.prisma.coupon.findMany({
@@ -1055,6 +1121,10 @@ export class CommerceService {
       include: {
         trainerCode: { select: { percentOff: true, amountOff: true, status: true } },
         trainerDiscount: { select: { status: true } },
+        /* وما يُدار من غير هذه الصفحة يُسمّى — فلا يُعرض له تعديلٌ يُردّ */
+        grantCode: { select: { id: true } },
+        trainerShareCode: { select: { id: true } },
+        _count: { select: { orders: true } },
       },
     })
   }

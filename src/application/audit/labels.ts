@@ -166,6 +166,8 @@ const PHRASES: Record<string, string> = {
   'advisor_payout.approve': 'اعتماد كشف عمولة مستشار',
   'advisor_payout.pay': 'تأكيد صرف كشف عمولة مستشار',
   'advisor_payout.cancel': 'إلغاء كشف عمولة مستشار',
+  'coupon.update': 'تعديل كوبون أو إيقافه',
+  'coupon.delete': 'حذف كوبون لم يستعمل',
   'coupon.grant_settings': 'تغيير إعدادات منحة أعضاء وجيز',
   'coupon.grant_issue': 'إعطاء كود منحة لمن عبأ نموذج الحملة',
   'coupon.grant_pathway_save': 'حفظ مسار منحة',
