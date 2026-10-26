@@ -1,4 +1,4 @@
-/* جاهزيّة العرض — محاذاةُ أسعار الشعب، وحالاتٌ متأخّرةٌ عن تواريخها، بزرّ.
+/* جاهزيّة العرض — محاذاةُ أسعار الشعب، بزرّ.
 
    السعر لا يُقرأ من الكتالوج بل من الشعب: رقمٌ لا تسنده شعبةٌ قابلة للتسجيل
    وعدٌ يفترق عن الفاتورة. فما لا شعبةَ له لا سعرَ له.
@@ -7,11 +7,14 @@
    لا تُعرض شعبةٌ ولا تُباع إلّا باعتماد خطّة مدرّبها، فزرٌّ يفتح شعبا بلا مدرّبٍ
    لم يعد يفتح شيئا. والسببُ في رأس `catalog-readiness.service.ts`.
 
+   وكان معها «حالات متأخّرة عن تواريخها» بزرّ — وذهبت (٢٦ أكتوبر ٢٠٢٦، المرحلة السادسة): العاملُ يُجريها
+   كلَّ ربع ساعة (`cohort_status_sync`)، فالزرُّ يعيد ما فُعل.
+
    والعرضُ يسبق التنفيذ دائما: لا زرَّ ينفّذ قبل أن تُعرض النتيجة، لأنّه
    يكتب في قاعدةٍ حيّة فيها مدفوعات. */
 
 import { useState } from "react";
-import { AlertTriangle, CalendarCheck, CheckCircle2, Tags, Wallet } from "lucide-react";
+import { AlertTriangle, Tags, Wallet } from "lucide-react";
 import { apiPost, ApiError } from "@/services/api";
 
 import { Card, Panel, Inset } from "@/components/ui/Surface";
@@ -22,34 +25,16 @@ interface AlignResult {
   rows: { cohortId: string; courseId: string; title: string; from: string; to: string; blocked?: string }[];
 }
 
-/** حالاتُ الشعبة بالعربيّة — الرموزُ في القاعدة، والعرضُ للناس */
-const STATUS_AR: Record<string, string> = {
-  draft: "مسودّة", open: "مفتوحة", full: "ممتلئة", active: "جارية", completed: "منتهية", cancelled: "ملغاة",
-};
-
-interface SyncResult {
-  applied: boolean; changed: number;
-  changes: { cohortId: string; title: string; from: string; to: string; reason: string }[];
-}
-
 export default function CohortReadiness({ onApplied }: { onApplied?: () => void }) {
   const [align, setAlign] = useState<AlignResult | null>(null);
-  const [sync, setSync] = useState<SyncResult | null>(null);
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
 
-  const run = async (
-    what: "align" | "sync",
-    apply: boolean,
-  ) => {
+  const run = async (what: "align", apply: boolean) => {
     setBusy(`${what}-${apply ? "apply" : "preview"}`);
     setError("");
     try {
-      if (what === "align") {
-        setAlign(await apiPost<AlignResult>("/api/admin/cohorts/align-prices", { apply }));
-      } else {
-        setSync(await apiPost<SyncResult>("/api/admin/cohorts/sync-statuses", { apply }));
-      }
+      setAlign(await apiPost<AlignResult>("/api/admin/cohorts/align-prices", { apply }));
       if (apply) onApplied?.();
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "تعذّر تنفيذ الإجراء");
@@ -75,7 +60,7 @@ export default function CohortReadiness({ onApplied }: { onApplied?: () => void 
         </Inset>
       )}
 
-      <div className="mt-4 grid gap-4 lg:grid-cols-2">
+      <div className="mt-4">
         {/* ── محاذاة الأسعار ── */}
         <Card className="bg-paper/25">
           <p className="flex items-center gap-1.5 text-read font-black">
@@ -124,52 +109,6 @@ export default function CohortReadiness({ onApplied }: { onApplied?: () => void 
                     ))}
                   </ul>
                 </details>
-              )}
-            </Inset>
-          )}
-        </Card>
-        {/* ── الحالةُ تتبع التواريخ ── */}
-        <Card className="bg-paper/25 lg:col-span-2">
-          <p className="flex items-center gap-1.5 text-read font-black">
-            <CalendarCheck className="h-3.5 w-3.5 text-teal" /> حالات متأخّرة عن تواريخها
-          </p>
-          <p className="mt-1 text-read leading-5 text-muted-foreground">
-            الشعبة تصير «جارية» حين تبدأ جلساتها، و«منتهية» بعد آخر جلسة. ومستحقّات
-            المدرّب تحسب عند الإكمال، فتأخّر الحالة يؤخّرها. ولا تفتح شعبة تلقائيّا: الفتح بشروطه وبقرارك.
-          </p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <Button tone="secondary" size="sm" type="button"
-              onClick={() => void run("sync", false)}
-              disabled={busy !== ""} loading={busy === "sync-preview"}>
-              اعرض ما سيتغيّر
-            </Button>
-            {sync && !sync.applied && sync.changes.length > 0 && (
-              <Button tone="confirm" size="sm" type="button"
-                onClick={() => void run("sync", true)}
-                disabled={busy !== ""} loading={busy === "sync-apply"}>
-                {`حرّك ${sync.changes.length} شعبة`}
-              </Button>
-            )}
-          </div>
-          {sync && (
-            <Inset className="mt-3">
-              {sync.changes.length === 0 ? (
-                <p className="flex items-center gap-1.5 text-read font-bold text-teal-light-ink">
-                  <CheckCircle2 className="h-3 w-3" /> كلّ الحالات مطابقة لتواريخها.
-                </p>
-              ) : (
-                <>
-                  <p className="text-read text-foreground">
-                    {sync.applied ? "حرّكت" : "ستحرّك"} <b className="tabular-nums text-teal-light-ink">{sync.applied ? sync.changed : sync.changes.length}</b> شعبة
-                  </p>
-                  <ul className="mt-2 space-y-1">
-                    {sync.changes.slice(0, 12).map((ch) => (
-                      <li key={ch.cohortId} className="text-read leading-5 text-muted-foreground">
-                        <b className="text-foreground">{ch.title}</b> — {STATUS_AR[ch.from] ?? ch.from} ← {STATUS_AR[ch.to] ?? ch.to} · {ch.reason}
-                      </li>
-                    ))}
-                  </ul>
-                </>
               )}
             </Inset>
           )}

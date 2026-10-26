@@ -21,7 +21,7 @@ import { paginate } from "@/application/admin/paginate";
 import { SORT_OPTIONS, sortApplications, type SortDir, type SortKey } from "@/application/trainer/application-sort";
 import type { SyncTrust } from "@/application/trainer/interview-sync-trust";
 import { apiGet, apiPost, apiDelete, ApiError } from "@/services/api";
-import { useLocation, useNavigate, useParams, useSearchParams } from "react-router";
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router";
 import { useTabParam } from "@/hooks/useTabParam";
 import { JOINING_ACT_AR, JOINING_STOPS, joiningLineOf, joiningNextOf, joiningStopOf, type JoiningAct, type JoiningFacts, type JoiningLine, type JoiningNext, type JoiningStop, type JoiningTurn } from "@/application/trainer/joining";
 import EntityAuditTimeline from "@/components/EntityAuditTimeline";
@@ -515,7 +515,10 @@ interface AppDetail extends Record<string, unknown> {
 /* ═══ ولمن عبر إلى «المدربون»: دوراتُه وشعبُه من بطاقته (`ops`، ٢٤ أكتوبر ٢٠٢٦) ═══
    بطاقتُه تقول كلَّ دورةٍ بكلمات سلّمه وتحتها شعبُها بحال خطّتها — وهو ما يُعرف به «جاهز». فتحلّ محلّ القائمتين
    أسفلَ الملخّص، ولا تُكتب الدوراتُ والشعبُ مرّتين في لسانٍ واحد. والملخّصُ (الأعدادُ والتقييمُ وأقربُ جلسة) باقٍ. */
-function TrainerCoursesTab({ summary, ops }: { summary?: TrainerSummary; ops?: ReactNode }) {
+/* ═══ وشعبُه روابطُ إلى بطاقاتها — والإسنادُ هناك لا هنا (٢٦ أكتوبر ٢٠٢٦، المرحلة السادسة) ═══
+   «ملفُّ المدرّب يعرض شعبَه روابط، والشعبةُ تعرض مدرّبَها رابطا، ولا يحرّر أحدُهما الآخر» (خطّة لوحة الإدارة، ٠٥).
+   والرابطُ لمن يفتح «الشعب» (`cohort.manage`) — وإلّا بقي الاسمُ نصّا. */
+function TrainerCoursesTab({ summary, ops, opensCohorts = false }: { summary?: TrainerSummary; ops?: ReactNode; opensCohorts?: boolean }) {
   if (!summary) {
     return (
       <Panel as="article" className="text-xs leading-6 text-muted-foreground">
@@ -591,7 +594,9 @@ function TrainerCoursesTab({ summary, ops }: { summary?: TrainerSummary; ops?: R
             {summary.cohorts.map((c) => (
               <Inset as="li" key={c.id} className="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2.5">
                 <span className="min-w-0">
-                  <span className="block text-xs font-bold text-foreground">{c.title}</span>
+                  {opensCohorts
+                    ? <Link to={`/admin/cohorts?cohort=${c.id}`} className="block text-xs font-bold text-teal-light-ink underline">{c.title}</Link>
+                    : <span className="block text-xs font-bold text-foreground">{c.title}</span>}
                   <span className="text-fine text-muted-foreground">
                     {c.courseTitle} · {c.role === "lead" ? "رئيسي" : "مساعد"} · {c.enrolled} متعلّم
                   </span>
@@ -1664,7 +1669,8 @@ function TrainerApplicationsPage() {
                 composeHref={contractsHref(a, "contract_new")}
               />
             ) : tab === "courses" ? (
-              <TrainerCoursesTab summary={a.summary} ops={ops ? <TrainerCourses trainer={ops.t} /> : undefined} />
+              <TrainerCoursesTab summary={a.summary} ops={ops ? <TrainerCourses trainer={ops.t} /> : undefined}
+                opensCohorts={user?.permissions.includes("cohort.manage") ?? false} />
             ) : tab === "profile" && ops ? (
               /* ═══ «الظهور» — ملفُّه العامّ واقتراحاتُنا عليه، بأجزاء بطاقته في «المدربون» نفسِها (٢٤ أكتوبر ٢٠٢٦) ═══
                  والمفتاحان كمفتاحَيهما هناك: كلُّ إرسالٍ أو قرارٍ يبدأ الحقولَ من جديد. */

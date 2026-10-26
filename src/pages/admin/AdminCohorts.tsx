@@ -4,6 +4,7 @@ import {
   CalendarClock, CalendarPlus, CheckCircle2, ChevronDown, CopyPlus, Loader2, Lock, Play, RefreshCw, Sparkles,
   ServerOff, UserPlus, Video, XCircle,
 } from "lucide-react";
+import { Link } from "react-router";
 import AdminLayout from "./AdminLayout";
 import { apiGet, apiPost, apiPut, ApiError } from "@/services/api";
 import { useRealSession } from "@/services/session";
@@ -76,7 +77,7 @@ interface CohortRow {
   firstAt: string | null;
   /* نافذةُ جدولةِ المدرّب — الثلاثةُ تُقرأ معا، وغيابُ أيٍّ منها بابٌ مغلَق */
   scheduleWindowStart: string | null; scheduleWindowEnd: string | null;
-  trainers: { profileId: string; name: string; role: string; suspended?: boolean }[];
+  trainers: { profileId: string; applicationId?: string; name: string; role: string; suspended?: boolean }[];
   /** حالُ أحدث خطّةٍ لمدرّبها — «تنتظر مراجعتك» أم «تنتظر خطّته» (`cohortNextStep`) */
   trainerPlanStatus?: string | null;
   /** اعتُمدت لمدرّبها خطّة — شرطُ عرضِها في الموقع وبيعِها (١٢ أكتوبر ٢٠٢٦) */
@@ -131,6 +132,10 @@ export default function AdminCohorts() {
      ما سيُردّ. و«تبدأ قريبا» معه: هي قائمةُ قرار الإلغاء بماله. */
   const { user: viewer } = useRealSession();
   const seesMoney = viewer?.permissions.includes("finance.view") ?? false;
+  /* ═══ واسمُ المدرّب رابطٌ إلى ملفّه — والإسنادُ في الشعبة وحدَها (٢٦ أكتوبر ٢٠٢٦، المرحلة السادسة) ═══
+     «خطّة لوحة الإدارة» (٠٥): «ملفُّ المدرّب يعرض شعبَه روابط، والشعبةُ تعرض مدرّبَها رابطا، ولا يحرّر أحدُهما الآخر».
+     ولمن يفتح الملفّاتِ وحدَه — وإلّا بقي نصّا. */
+  const opensRecords = viewer?.permissions.includes("trainer.applications.view") ?? false;
   /* «معتمدة — تنتظر فتحك» لسانٌ في رأس القائمة (١٢ أكتوبر ٢٠٢٦، `cohort-lists.ts`). وفي العنوان (`useTabParam`):
      رابطُه يفتحه و«رجوع» يعود إليه. و«تبدأ قريبا» لمن يرى المال وحدَه، كما في الشريط أدناه */
   const [list, setList] = useTabParam<CohortList>(
@@ -599,7 +604,14 @@ export default function AdminCohorts() {
                       <div>
                         <dt className="text-fine text-muted-foreground">المدرب</dt>
                         <dd className="mt-0.5 text-read font-bold">
-                          {c.trainers.length ? c.trainers.map((t) => t.name).join("، ") : (
+                          {c.trainers.length ? c.trainers.map((t, i) => (
+                            <span key={t.profileId}>
+                              {i > 0 && "، "}
+                              {opensRecords && t.applicationId
+                                ? <Link to={`/admin/trainers/${t.applicationId}`} className="text-teal-light-ink underline">{t.name}</Link>
+                                : t.name}
+                            </span>
+                          )) : (
                             <button type="button" onClick={() => setTab("settings")} className="text-gold-ink underline">بلا مدرب — أسنده</button>
                           )}
                         </dd>
