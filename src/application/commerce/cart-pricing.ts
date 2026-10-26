@@ -53,6 +53,7 @@
 
    الحارس: server/tests/commerce/cart-pricing.test.ts
    ونطاقُ الكود: src/tests/commerce/scoped-coupon.test.ts
+   وكودُ أوّل شراء على أغلى دورة: src/tests/commerce/first-purchase-top-line.test.ts
    وخصمُ إكمال الخطّة: src/tests/commerce/plan-carry.test.ts
    وكودُ المنحة: src/tests/commerce/grant-pricing.test.ts */
 
@@ -91,6 +92,9 @@ export interface CartCoupon {
   /** كودُ منحة: نسبتُه من مجموع السلّة بدلَ السلّم والسقف وخصم الإكمال — لا فوقها.
       ويقع على السلّة كلِّها، ولا يُجمع مع `cohortIds`. */
   replacesBundle?: boolean
+  /** يقع على الدورة الأعلى سعرا وحدَها — كودُ أوّل شراء. ويُجمع مع الباقة كأيّ كود،
+      لكنّ وعاءَه حصّةُ تلك الدورة ممّا بقي بعدها لا السلّةُ كلُّها. */
+  topLineOnly?: boolean
 }
 
 export interface PricedLine extends CartLine {
@@ -137,7 +141,17 @@ export function priceCart(
   /* الهديّةُ بندٌ بصفر لا بندٌ محذوف: تبقى في الفاتورة ليقرأ المشتري أنّه
      أخذها، ويقرأ الخادمُ أنّه استحقّها. وحذفُها من البنود يُخفي الوعدَ عن
      الورقة الوحيدة التي تُحفظ منه. */
-  const scope = coupon?.cohortIds ? new Set(coupon.cohortIds) : null
+  let scope: Set<string> | null = coupon?.cohortIds ? new Set(coupon.cohortIds) : null
+  /* ═══ وكودُ أوّل شراء على الدورة الأعلى سعرا وحدَها (٢٦ أكتوبر ٢٠٢٦) ═══
+     قرارُ صاحب المنصّة: «يخصم من الدورة الأعلى سعرا فقط» إن اختار أكثر من دورة. فيصير نطاقُه
+     شعبةً واحدة — أغلى المدفوع، وأوّلُها عند التساوي — ويُحسب وعاؤه كما يُحسب لكود المدرّب:
+     حصّتُها ممّا بقي بعد الباقة والسقف. */
+  if (coupon?.topLineOnly) {
+    const top = lines
+      .filter((l) => (giftCourseId === null || l.courseId !== giftCourseId) && (scope === null || scope.has(l.cohortId)))
+      .reduce<CartLine | null>((best, l) => (best === null || l.listPrice > best.listPrice ? l : best), null)
+    scope = new Set(top ? [top.cohortId] : [])
+  }
   const priced: PricedLine[] = lines.map((l) => {
     const isGift = giftCourseId !== null && l.courseId === giftCourseId
     /* الهديّةُ لا يقع عليها كوبون: سعرُها صفرٌ فلا شيءَ يُخصم منه */
@@ -203,9 +217,10 @@ export function priceCart(
 
        والعامُّ يأخذ `afterBundle` نفسَه لا حاصلَ ضربٍ وقسمة: `x·s/s` قد يفترق
        عن `x` في آخر منزلة، فيقلب تقريبَ قرشٍ في كوبونٍ لم يتغيّر فيه شيء. */
-    const base = scope === null
+    const scoped = money(couponed.reduce((s, l) => s + l.unitPrice, 0))
+    const base = scope === null || scoped === subtotal
       ? afterBundle
-      : subtotal > 0 ? (afterBundle * couponed.reduce((s, l) => s + l.unitPrice, 0)) / subtotal : 0
+      : subtotal > 0 ? (afterBundle * scoped) / subtotal : 0
     couponDiscount = coupon.percentOff
       ? money((base * coupon.percentOff) / 100)
       : money(coupon.amountOff ?? 0)

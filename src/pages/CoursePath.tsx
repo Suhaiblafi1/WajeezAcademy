@@ -39,7 +39,7 @@ import { bundleNudge, pathPricing, suggestBuyable, MAX_BUILT_COURSES } from "@/a
 import { trainerLineAr, trainerNamesOf } from "@/application/catalog/course-trainers";
 import { courseAudienceView } from "@/application/catalog/course-audience";
 import { DISCOUNT_CATEGORIES } from "@/application/commerce/discount-policy";
-import { FIRST_TIME_PROMO, isFirstTimePromo } from "@/application/commerce/first-time-promo";
+import { FIRST_TIME_PROMO, isFirstTimePromo, promoDiscountOn } from "@/application/commerce/first-time-promo";
 import { savePathDraft } from "@/services/path-drafts";
 import {
   courseById, courseFullById,
@@ -301,7 +301,12 @@ function CoursePathPage({ courseId }: { courseId: string }) {
     setPendingCode(code);
   };
   const promoPct = promoApplied ? FIRST_TIME_PROMO.percentOff : 0;
-  const finalPayable = Math.round(pricing.payable * (1 - promoPct / 100));
+  /* والكودُ على الدورة الأعلى سعرا وحدَها — كما تحسبه الفوترة (`promoDiscountOn`) */
+  const pickedPrices = picked.map(priceOf).filter((p): p is number => p !== null);
+  const promoOnTop = promoPct > 0 && pickedPrices.length > 1;
+  const finalPayable = Math.round(
+    pricing.payable - (promoPct > 0 ? promoDiscountOn(pricing.payable, pickedPrices) : 0),
+  );
   /* هل هناك ما يُفصَّل أصلا؟ بلا خصمِ بناءٍ ولا كود، «سعر الدورة» و«ما تدفعه»
      رقمٌ واحدٌ مكتوبٌ مرّتين — سطرٌ زائدٌ يُكبّر الصندوق ولا يُضيف علما. */
   const hasBreakdown = pricing.discountPct > 0 || promoPct > 0;
@@ -623,7 +628,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                     )}
                     {promoPct > 0 && (
                       <div className="flex items-baseline justify-between gap-3">
-                        <dt className="text-teal-light-ink">كود {promoApplied} — {promoPct}٪</dt>
+                        <dt className="text-teal-light-ink">كود {promoApplied} — {promoPct}٪{promoOnTop ? ` ${FIRST_TIME_PROMO.topLineAr}` : ""}</dt>
                         <dd dir="ltr" className="font-bold text-teal-light-ink">−{money(pricing.payable - finalPayable)}</dd>
                       </div>
                     )}
@@ -698,7 +703,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
                 </Button>
               </div>
               {promoApplied && (
-                <p className="mt-1.5 text-read font-bold text-teal-light-ink">طبّق خصم {promoPct}٪ {FIRST_TIME_PROMO.labelAr}.</p>
+                <p className="mt-1.5 text-read font-bold text-teal-light-ink">طبّق خصم {promoPct}٪ {FIRST_TIME_PROMO.labelAr}{promoOnTop ? ` ${FIRST_TIME_PROMO.topLineAr}` : ""}.</p>
               )}
               {promoRefused && <p className="mt-1.5 text-read leading-6 text-gold-ink">{promoRefused}</p>}
               {pendingCode && (
