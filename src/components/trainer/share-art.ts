@@ -350,9 +350,11 @@ export async function drawArt(kind: ArtKind, d: ArtData, index = 0): Promise<HTM
     ctx.fillStyle = C.teal
     ctx.font = font(700, 30)
     ctx.fillText(many ? 'دوراتي بث مباشر هذا الموسم' : 'أقدم دورة بث مباشر', cx, below + 50)
-    courseList(ctx, d, d.courses.slice(0, 3), cx, below + 64, h - 282, w - 180, 48)
-    perks(ctx, cx, h - 268, 22)
-    codePill(ctx, d.code, cx, h - 196, 32)
+    /* والمزايا والكود في أسفل المربّع (٢٦ أكتوبر ٢٠٢٦): بقي تحتهما فراغٌ بعد أن خرج عنوانُ الموقع من الذيل،
+       فنزلا إليه — والدوراتُ تتوسّط ما بقي فوقهما */
+    courseList(ctx, d, d.courses.slice(0, 3), cx, below + 64, h - 222, w - 180, 48)
+    perks(ctx, cx, h - 208, 22)
+    codePill(ctx, d.code, cx, h - 136, 32)
   } else if (kind === 'story') {
     const r = 190
     portrait(ctx, photo, d.name, cx, 440, r)
