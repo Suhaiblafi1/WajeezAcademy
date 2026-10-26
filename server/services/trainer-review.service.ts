@@ -320,6 +320,10 @@ export interface ReissueForSigningInput {
      ما غاب منها يُنسَخ من العقد القديم كما هو. و`specialTermsAr: null`
      يرفع بنودَه الخاصّة، وغيابُ المفتاح يُبقيها. */
   compensation?: ContractComposeInput['compensation']
+  /* ═══ أو أجرُ «الاتفاقية» كما هو الآن (قرارُ «a»، ٢٦ أكتوبر ٢٠٢٦) ═══
+     الأجرُ يُضبط في «الاتفاقية» وحدَها، فلا تكتبه الشاشاتُ هنا (`compensation`). فإن تغيّر هناك بعد خروج العقد،
+     اختار من يعيده: يُبقي أجرَ عقده، أو يأخذ أجرَ «الاتفاقية» — بلا قاعدةٍ تُكتب، فهي قائمةٌ ساريةٌ أصلا. */
+  feeFromRule?: boolean
   courseIds?: string[]
   specialTermsAr?: string | null
 }
@@ -5335,6 +5339,19 @@ export class TrainerReviewService {
     return { ...sent, ok: true as const, contractId: created.id, revision: created.revision }
   }
 
+  /** أجرُ «الاتفاقية» الساري — العامُّ لا قاعدةُ شعبة، ومعرّفُه فيُعرف من أيّ قاعدةٍ نُقل.
+   *  ولا أجرَ يُخترع: من لا قاعدةَ له يُقال له أين تُضبط. */
+  private async agreementFeeOf(profileId: string) {
+    const rule = await new EarningsService(this.prisma).activeRule(profileId)
+    if (!rule) {
+      throw new AuthError('no_rule', 'لا أجر في «الاتفاقية» بعد — اضبطه في ملفه أوّلا، أو أبق أجر عقده', 409)
+    }
+    return {
+      ruleId: rule.id as string | null, type: rule.type, rate: rule.rate.toString(), currency: rule.currency,
+      minSeats: rule.minSeats as number | null, referralRate: rule.referralRate?.toString() ?? null,
+    }
+  }
+
   /** يُركَّب بديلُ عقدٍ قائمٍ على الإصدار الحاضر من المتن — صفٌّ جاهزٌ للإنشاء.
    *
    *  مشتركٌ بين بابَين: تصحيحِ الاسم (`reissueWithCorrectedName`)، وإعادةِ
@@ -5511,12 +5528,17 @@ export class TrainerReviewService {
         referralRate: old.compensationReferralRate == null ? null : String(old.compensationReferralRate),
       }
       : null
+    if (input.compensation && input.feeFromRule) {
+      throw new AuthError('fee_twice', 'أجر واحد: اكتبه، أو خذه من «الاتفاقية» — لا الاثنين', 422)
+    }
     const newFee = input.compensation
       ? effectiveCompensation(
         oldFee && { ruleId: old.compensationRuleId ?? '', ...oldFee },
         input.compensation,
       )
-      : undefined
+      : input.feeFromRule
+        ? await this.agreementFeeOf(old.profileId)
+        : undefined
 
     const issuedOn = new Date()
     const replacement = await this.composeReplacement(old, name, actorId, issuedOn, {

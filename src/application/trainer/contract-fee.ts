@@ -14,7 +14,13 @@
    · وما لم يتغيّر رقمٌ فيه لا يُرسَل، ولا يكتب الخادمُ قاعدةً ثانيةً بالأرقام نفسِها (`sameFeeAsRule`).
 
    وإعادةُ العقد للتوقيع وقبولُ التعديل كانا على هذا من قبل: يُبقيان نوعَ الصفّ ولا يرسلان إلّا ما تغيّر
-   (`TrainerContracts.tsx`، `personalChangesAr`). فصار التركيبُ مثلَهما. */
+   (`TrainerContracts.tsx`، `personalChangesAr`). فصار التركيبُ مثلَهما.
+
+   ═══ ثمّ لم تعد الشاشاتُ تكتب أجرا هنا (قرارُ «a»، ٢٦ أكتوبر ٢٠٢٦) ═══
+
+   الأجرُ يُضبط في «الاتفاقية» من ملفّ المدرّب وحدَها. فذهبت خاناتُ الأجر من التركيب والإعادة ومعها ما كان يملؤها
+   ويقيسها في المتصفّح: التركيبُ يأخذ القاعدةَ السارية، والإعادةُ تُبقي أجرَ العقد أو تأخذ أجرَ «الاتفاقية» (`feeFromRule`).
+   وبقي ما يقيس به الخادمُ أجرا يصله مكتوبا من غير الشاشات (`sameFeeAsRule` و`feeTypeChangeAr`). */
 
 import { RULE_TYPE_AR } from './compensation-labels'
 import { CONTRACT_AMENDMENT_REQUESTED } from './contract-endings'
@@ -37,25 +43,12 @@ export interface FeeInput {
   referralRate?: number | null
 }
 
-/** خاناتُ الشاشة كما تُكتب */
-export interface FeeForm { rate: string; referralRate: string; minSeats: string }
-
-/** أسماءُ الخانات بنوع القاعدة — ومقعدُ الرابط للمقعد وحدَه، فلا خانةَ له في غيره */
-export const FEE_FIELDS_AR: Record<FeeType, { rate: string; referral: string | null; minSeats: string }> = {
-  per_seat: { rate: 'سعر المقعد العام', referral: 'سعر المقعد عبر رابطه', minSeats: 'الحد الأدنى للمقاعد' },
-  fixed_per_cohort: { rate: 'أجر الشعبة الواحدة', referral: null, minSeats: 'الحد الأدنى للمقاعد' },
-  revenue_share: { rate: 'النسبة من الإيراد %', referral: null, minSeats: 'الحد الأدنى للمقاعد' },
-}
-
 const asNumber = (v: string | number | null | undefined): number | null => {
   if (v === null || v === undefined) return null
   if (typeof v === 'string' && v.trim() === '') return null
   const n = Number(v)
   return Number.isFinite(n) ? n : null
 }
-
-export const feeTypeOf = (rule: Pick<FeeRuleLike, 'type'> | null): FeeType =>
-  (rule && rule.type in FEE_FIELDS_AR ? rule.type : 'per_seat') as FeeType
 
 /** هل يقول المُرسَلُ ما تقوله القاعدةُ السارية؟ — بمقياس `setRule` نفسِه: الحدُّ الغائبُ صفر،
     ومقعدُ الرابط للمقعد وحدَه */
@@ -71,33 +64,21 @@ export function sameFeeAsRule(rule: FeeRuleLike, input: FeeInput): boolean {
 export function feeTypeChangeAr(rule: Pick<FeeRuleLike, 'type'> | null, input: Pick<FeeInput, 'type'> | null | undefined): string | null {
   if (!rule || !input || rule.type === input.type) return null
   const now = RULE_TYPE_AR[rule.type] ?? rule.type
-  return `نوع الأجر الحالي «${now}». غيّره من «أتعاب المدربين» أولا، أو اترك خانات الأجر كما هي.`
+  return `نوع الأجر الحالي «${now}». غيّره في «الاتفاقية» من ملفه أولا.`
 }
 
-/** خاناتُ الشاشة من القاعدة السارية — بأرقامها ونوعها */
-export function feeFormOf(rule: FeeRuleLike | null): FeeForm {
-  if (!rule) return { rate: '', referralRate: '', minSeats: '' }
-  return {
-    rate: String(rule.rate),
-    referralRate: rule.type === 'per_seat' && rule.referralRate !== null ? String(rule.referralRate) : '',
-    minSeats: rule.minSeats !== null ? String(rule.minSeats) : '',
-  }
-}
-
-/** ما يُرسَل مع العقد من الخانات: بنوع القاعدة السارية، ولا شيءَ إن لم يتغيّر رقم.
-    والسعرُ الفارغُ أو غيرُ الموجب يعني «اترك القاعدةَ كما هي» لا «اجعلها صفرا». */
-export function composerFeeInput(rule: FeeRuleLike | null, form: FeeForm): FeeInput | null {
-  const type = feeTypeOf(rule)
-  const rate = asNumber(form.rate)
-  if (rate === null || !(rate > 0)) return null
-  const referral = type === 'per_seat' ? asNumber(form.referralRate) : null
-  const input: FeeInput = {
-    type,
-    rate,
-    minSeats: form.minSeats.trim() === '' ? undefined : Number(form.minSeats),
-    referralRate: referral !== null && referral > 0 ? referral : null,
-  }
-  return rule && sameFeeAsRule(rule, input) ? null : input
+/** الأجرُ في سطرٍ يُقرأ — نوعُه ورقمُه، والحدُّ الأدنى ومقعدُ الرابط إن كانا. و«بلا أجر» لعقدٍ بلا أجر.
+    تقرؤه نافذةُ الإعادة حين تقول أجرَ عقده وأجرَ «الاتفاقية» — فلا تكتب كلٌّ منهما الأجرَ بصيغتها. */
+export function feeLineAr(fee: {
+  type: string; rate: string | number; currency?: string | null
+  minSeats?: number | null; referralRate?: string | number | null
+} | null): string {
+  if (!fee) return 'بلا أجر'
+  const unit = fee.type === 'revenue_share' ? '%' : fee.currency ?? ''
+  const parts = [`${RULE_TYPE_AR[fee.type] ?? fee.type} ${String(fee.rate)} ${unit}`.trim()]
+  if (fee.minSeats) parts.push(`حد أدنى ${fee.minSeats} مقعدا`)
+  if (fee.type === 'per_seat' && asNumber(fee.referralRate ?? null) !== null) parts.push(`بالإحالة ${String(fee.referralRate)}`)
+  return parts.join(' · ')
 }
 
 /* ═══ وعقدٌ خرج ولم ينفذ — نصُّه مجمَّدٌ بأجره (٢٦ أكتوبر ٢٠٢٦) ═══
@@ -107,12 +88,26 @@ export function composerFeeInput(rule: FeeRuleLike | null, form: FeeForm): FeeIn
    وحدَها، فصارت للمدير الأكاديميّ معها (قرارُ «C») — وهو من يركّب العقد. فما دام له عقدٌ خرج ولم ينفذ يُقال ذلك قبل
    الحفظ، والخياران: هنا وحدَه، أو مع العقد في «العقود».
 
-   والنافذُ ليس منه: أجرُ النشط يُغيَّر بالقاعدة، والعقدُ لا يُعاد بأجرٍ جديدٍ له (`fee_active_trainer`). */
+   والنافذُ ليس منه: أجرُ النشط يُغيَّر بالقاعدة، والعقدُ لا يُعاد بأجرٍ جديدٍ له (`fee_active_trainer`).
+
+   ── ثمّ صار الأجرُ في «الاتفاقية» وحدَها (قرارُ «a»، ٢٦ أكتوبر ٢٠٢٦) ──
+
+   فلا يُغيَّر «مع العقد في «العقود»» بعدُ: يُحفظ هنا، ثمّ يحمله نصُّه إن أُعيد إصدارُه — وطريقُه بحاله (`HOW_AR`):
+   المفتوحُ يُلغى ويُركَّب غيرُه فيأخذ القاعدة، والموقَّعُ يُعاد للتوقيع، وطالبُ التعديل يُقبل طلبُه — وفي الأخيرين
+   يُختار أجرُ «الاتفاقية». و«ينتظر اعتمادك» صار «ينتظر اعتماد توقيعه»: تقرؤه الماليّةُ ولا تعتمد. */
 const OUT_PHRASE_AR: Record<string, string> = {
   draft: 'جاهز ولم يرسل',
   sent: 'أرسل ولم يوقعه',
-  signed: 'وقعه وينتظر اعتمادك',
+  signed: 'وقعه وينتظر اعتماد توقيعه',
   [CONTRACT_AMENDMENT_REQUESTED]: 'طلب تعديله',
+}
+
+/** كيف يحمل نصُّه الأجرَ الجديد — بحاله، من «العقود» */
+const HOW_AR: Record<string, string> = {
+  draft: 'ولتحمله نصه: ألغه في «العقود» وجهّز غيره، فيأخذ الجديد أجر «الاتفاقية».',
+  sent: 'ولتحمله نصه: ألغه في «العقود» وجهّز غيره، فيأخذ الجديد أجر «الاتفاقية».',
+  signed: 'ولتحمله نصه: أعده للتوقيع من «العقود» واختر أجر «الاتفاقية».',
+  [CONTRACT_AMENDMENT_REQUESTED]: 'ولتحمله نصه: اقبل طلب تعديله من «العقود» واختر أجر «الاتفاقية».',
 }
 
 export interface OutContractLike {
@@ -125,7 +120,7 @@ export interface OutContractLike {
 }
 
 /** أحدثُ عقدٍ خرج ولم ينفذ — بحاله وأجره كما في نصّه. و`null` = لا عقدَ يفترق عن القاعدة بحفظها */
-export function outContractOf<T extends OutContractLike>(contracts: readonly T[]): { contract: T; phraseAr: string; feeAr: string } | null {
+export function outContractOf<T extends OutContractLike>(contracts: readonly T[]): { contract: T; phraseAr: string; feeAr: string; howAr: string } | null {
   const time = (c: T) => (c.createdAt ? new Date(c.createdAt).getTime() : 0)
   const contract = contracts.filter((c) => Object.hasOwn(OUT_PHRASE_AR, c.status)).sort((a, b) => time(b) - time(a))[0]
   if (!contract) return null
@@ -133,5 +128,5 @@ export function outContractOf<T extends OutContractLike>(contracts: readonly T[]
   const feeAr = type
     ? `بأجر ${RULE_TYPE_AR[type] ?? type} ${String(contract.compensationRate ?? 0)} ${type === 'revenue_share' ? '%' : contract.currency ?? ''}`.trim()
     : 'بلا أجر'
-  return { contract, phraseAr: OUT_PHRASE_AR[contract.status], feeAr }
+  return { contract, phraseAr: OUT_PHRASE_AR[contract.status], feeAr, howAr: HOW_AR[contract.status] }
 }

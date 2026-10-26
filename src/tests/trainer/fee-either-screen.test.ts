@@ -7,8 +7,9 @@
    ① تُفتح الخطوةُ لأيٍّ من الحبّتين — وتحفظ بالمسار الذي فتحه الخادمُ لكلتيهما.
    ② وتحت الرقم سجلُّه: من مسار سجلّ أجره، وكلُّ سطرٍ باسم من ضبط، ويُعاد بعد الحفظ.
    ③ وشرحُها لا يَعِد بزرٍّ لا وجودَ له («اعتمده نهائيّا») — يعبر حين نعتمد توقيعَه.
-   ④ وإن خرج له عقدٌ لم ينفذ قيل قبل الحفظ إنّ نصَّه لا يتغيّر به، والخياران: هنا وحدَه، أو مع العقد في «العقود».
-      فالخطوةُ تكتب القاعدةَ وحدَها، والتركيبُ والإعادةُ يكتبان الاثنين — وبلا هذا يوقّع على رقمٍ ويُحسب له غيرُه.
+   ④ وإن خرج له عقدٌ لم ينفذ قيل قبل الحفظ إنّ نصَّه لا يتغيّر به، والخياران: هنا وحدَه، أو يُحفظ ثمّ يحمله نصُّه
+      بإعادة إصداره من «العقود» — والطريقُ بحاله. وبلا هذا يوقّع على رقمٍ ويُحسب له غيرُه. (وكان الثاني «مع العقد في
+      «العقود»» حين كان التركيبُ والإعادةُ يكتبان الأجر؛ ثمّ صار يُضبط هنا وحدَه — قرارُ «a»، ٢٦ أكتوبر ٢٠٢٦.)
       وذلك للأجر العامّ وحدَه: قاعدةُ شعبةٍ واحدة (قرارُ «a»، ٢٦ أكتوبر ٢٠٢٦) لا تمسّ نصَّ العقد. */
 
 import { readFileSync } from 'node:fs'
@@ -81,7 +82,8 @@ describe('④ وعقد خرج ولم ينفذ يقال قبل الحفظ', () =>
       c('signed', '2026-10-20T10:00:00Z', { compensationType: 'fixed_per_cohort', compensationRate: '400' }),
     ])
     expect(out?.contract.status).toBe('signed')
-    expect(out?.phraseAr).toBe('وقعه وينتظر اعتمادك')
+    expect(out?.phraseAr).toBe('وقعه وينتظر اعتماد توقيعه')
+    expect(out?.howAr).toBe('ولتحمله نصه: أعده للتوقيع من «العقود» واختر أجر «الاتفاقية».')
     expect(out?.feeAr).toBe('بأجر ثابت لكل شعبة 400 JOD')
     expect(outContractOf([c('sent', undefined, { compensationType: 'revenue_share', compensationRate: '40' })])?.feeAr)
       .toBe('بأجر نسبة من الإيراد 40 %')
@@ -92,8 +94,9 @@ describe('④ وعقد خرج ولم ينفذ يقال قبل الحفظ', () =>
     expect(FEE).toContain('const out = outContractOf(contracts);')
     const note = /\{out && !scope && \(\s*<Inset[\s\S]*?<\/Inset>/.exec(FEE)?.[0] ?? ''
     expect(note, 'لا يقال شيء').toContain('{out.feeAr}')
-    expect(note).toContain('الحفظ هنا يغيّر القاعدة وحدها')
-    expect(FEE).toContain('{scope ? "اضبطه لهذه الشعبة" : out ? "غيّره هنا وحده" : live ? "استبدل القاعدة السارية" : "اضبط الاتفاق الماليّ"}')
+    expect(note).toContain('الحفظ هنا يغيّر الأجر الذي يحسب له، ويبقى نصّ')
+    expect(note, 'لا يقال كيف يحمله نصه').toContain('{out.howAr}')
+    expect(FEE).toContain('{scope ? "اضبطه لهذه الشعبة" : out ? "احفظه هنا" : live ? "استبدل القاعدة السارية" : "اضبط الاتفاق الماليّ"}')
     expect(FEE).toMatch(/\{out && !scope && contractsHref && \(\s*<Button as=\{Link\} to=\{contractsHref\}/)
     expect(PREP).toContain('contractsHref={can("trainer.contract.manage") ? contractsHref : undefined}')
     expect(PREP).toMatch(/profileId=\{profileId\} live=\{activeRule\} contracts=\{contracts\}/)
