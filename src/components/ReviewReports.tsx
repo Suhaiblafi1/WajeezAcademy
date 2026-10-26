@@ -9,14 +9,12 @@
    الشعبة (`/api/v1/cohort-files/…`): مدرّبُها والإدارةُ وحدَهم. */
 
 import { useRef, useState } from "react";
-import { ExternalLink, FileText, Files, Upload } from "lucide-react";
+import { FileText, Upload } from "lucide-react";
 import { apiDelete, apiPost, ApiError } from "@/services/api";
 import { putSigned } from "@/services/signed-upload";
 import { Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
-import Chip from "@/components/ui/Chip";
-import { clearReportsPath, matchReportFile, REPLACE_REPORTS_AR, replacedReportsAr, reportTitleAr, reportsSummaryAr, type ReportPlan } from "@/application/trainer/review-reports-bulk";
-import { expandReportFiles, skippedLineAr } from "@/application/trainer/review-reports-zip";
+import { reportTitleAr } from "@/application/trainer/review-reports-bulk";
 import { fmtDateTimeAr } from "@/utils/format";
 import { REVIEW_REPORT_MIMES } from "@/application/trainer/module-body";
 
@@ -119,144 +117,8 @@ export function ReviewReportUploader({ planId, reports, onChange }: {
   );
 }
 
-/* ═══ التقاريرُ كلُّها دفعةً واحدة — «خططٌ تنتظر اعتمادك» (١١ أكتوبر ٢٠٢٦) ═══
-
-   قرارُ صاحب المنصّة: «اريد ان ارفع كل شي مره واحده!». كلُّ ملفٍّ يحمل في اسمه معرّفَ خطّته
-   (`review-reports-bulk.ts`) فيُرفع إليها بمسلك البطاقة نفسِه، وما رُفع قبلُ لا يتكرّر (٤٠٩ من
-   الخادم يُقال «كان مرفوعا»). ويُقال قبل الرفع ما يقع به: يراه المدرّبُ من الآن.
-   والملفُّ المضغوطُ يُسقط فيه كما هو ويُفتح هنا (`review-reports-zip.ts`) — ردّت أداةُ الفكّ
-   في جهاز صاحب المنصّة حزمتَه بأسمائها العربيّة. */
-type ReportResult = { name: string; planId: string | null; labelAr: string | null; state: "done" | "already" | "failed"; noteAr: string };
-
-export function ReviewReportsBulkUpload({ plans, onUploaded, onOpen }: {
-  plans: readonly ReportPlan[];
-  onUploaded: (planId: string) => void;
-  onOpen: (planId: string) => void;
-}) {
-  const input = useRef<HTMLInputElement>(null);
-  const [progress, setProgress] = useState<string | null>(null);
-  const [results, setResults] = useState<ReportResult[]>([]);
-  const [summary, setSummary] = useState("");
-  const [skippedAr, setSkippedAr] = useState("");
-  const [over, setOver] = useState(false);
-  /* ويُستبدل ما رُفع قبلُ لكلّ خطّةٍ في الدفعة — يختاره المعتمِد ولا يُفترض (`REPLACE_REPORTS_AR`) */
-  const [replace, setReplace] = useState(false);
-
-  const run = async (picked: readonly File[]) => {
-    if (progress || picked.length === 0) return;
-    /* لكلّ خطّةٍ مرّةً واحدة: ما حُذف منها قبل أوّل ملفّ، أو سببُ تعذّر الحذف فلا يُرفع إليها شيء */
-    const cleared = new Map<string, { removed: number } | { problemAr: string }>();
-    setResults([]); setSummary(""); setSkippedAr("");
-    setProgress("يفتح ما اخترت");
-    const expanded = await expandReportFiles(picked);
-    const files = expanded.files;
-    setSkippedAr(skippedLineAr(expanded.skipped));
-    const out: ReportResult[] = expanded.problems.map((p) => ({ name: p.name, planId: null, labelAr: null, state: "failed", noteAr: p.problemAr }));
-    for (const [i, file] of files.entries()) {
-      setProgress(`يرفع ${i + 1} من ${files.length}`);
-      const m = matchReportFile(file.name, file.type, plans);
-      if (!m.ok) {
-        out.push({ name: file.name, planId: null, labelAr: null, state: "failed", noteAr: m.problemAr });
-      } else {
-        try {
-          let removed = 0;
-          if (replace) {
-            if (!cleared.has(m.planId)) {
-              try {
-                cleared.set(m.planId, await apiDelete<{ removed: number }>(clearReportsPath(m.planId)));
-              } catch (e) {
-                cleared.set(m.planId, { problemAr: e instanceof Error ? e.message : "تعذّر حذف التقارير السابقة" });
-              }
-            }
-            const c = cleared.get(m.planId)!;
-            if ("problemAr" in c) throw new Error(`لم يرفع — ${c.problemAr}`);
-            removed = c.removed;
-            /* والملفّ الثاني للخطّة نفسها لا يقول ما حُذف مرّة ثانية */
-            cleared.set(m.planId, { removed: 0 });
-          }
-          const r = await apiPost<{ uploadUrl: string; maxBytes: number }>(
-            `/api/admin/cohort-plans/${m.planId}/review-report`, { mime: m.mime, originalName: m.storedName },
-          );
-          await putSigned(r.uploadUrl, file, r.maxBytes);
-          out.push({ name: file.name, planId: m.planId, labelAr: m.labelAr, state: "done", noteAr: replacedReportsAr(removed) });
-          onUploaded(m.planId);
-        } catch (e) {
-          const already = e instanceof ApiError && e.code === "report_exists";
-          out.push({
-            name: file.name, planId: m.planId, labelAr: m.labelAr, state: already ? "already" : "failed",
-            noteAr: already ? "كان مرفوعا من قبل — لم يكرّر" : e instanceof ApiError || e instanceof Error ? e.message : "تعذّر الرفع",
-          });
-        }
-      }
-      setResults([...out]);
-    }
-    setProgress(null);
-    setSummary(reportsSummaryAr(
-      out.filter((r) => r.state === "done").length, out.filter((r) => r.state === "already").length,
-      out.filter((r) => r.state === "failed").length,
-    ));
-    if (input.current) input.current.value = "";
-  };
-
-  return (
-    <Inset className="mb-4 px-4 py-3" role="region" aria-label="تقارير المراجعة دفعة واحدة">
-      <p className="text-read font-black text-foreground">ارفع تقارير المراجعة وملاحقها كلّها دفعة واحدة</p>
-      <p className="mt-1 max-w-3xl text-read leading-6 text-muted-foreground">
-        كلّ ملفّ يذكر خطّته في اسمه (اسم المدرّب واسم الشعبة) فيرفع إلى بطاقتها وحدها، وما رفع من قبل لا يتكرّر. ويراه المدرّب في صفحة
-        شعبته من لحظة رفعه — باسمه بلا معرّف الخطّة — وتذكره رسالة قرارك حين تقرّر. PDF أو Word، أو الملفّ
-        المضغوط (zip) كما هو بلا أن تفتحه.
-      </p>
-      <div
-        className={`mt-3 flex flex-wrap items-center gap-3 rounded-lg border-2 border-dashed p-4 ${over ? "border-teal-light-ink bg-teal-light-ink/5" : "border-border"}`}
-        onDragOver={(e) => { e.preventDefault(); setOver(true); }}
-        onDragLeave={() => setOver(false)}
-        onDrop={(e) => { e.preventDefault(); setOver(false); void run(Array.from(e.dataTransfer.files)); }}
-      >
-        <input
-          ref={input}
-          type="file"
-          multiple
-          className="sr-only"
-          aria-label="ملفّات تقارير المراجعة"
-          accept={[...REVIEW_REPORT_MIMES, ".pdf", ".docx", ".zip", "application/zip"].join(",")}
-          onChange={(e) => void run(Array.from(e.target.files ?? []))}
-        />
-        <Button tone="secondary" size="sm" icon={Files} disabled={progress !== null} onClick={() => input.current?.click()}>
-          {progress ? `${progress}…` : "اختر الملفّات"}
-        </Button>
-        <span className="text-read text-muted-foreground">أو اسحبها كلّها إلى هنا وأفلتها.</span>
-      </div>
-      <label className="mt-3 flex items-start gap-2 text-read leading-6">
-        <input type="checkbox" className="mt-1.5" checked={replace} disabled={progress !== null} onChange={(e) => setReplace(e.target.checked)} />
-        <span>
-          <span className="font-bold text-foreground">{REPLACE_REPORTS_AR.labelAr}</span>
-          <span className="block text-muted-foreground">{REPLACE_REPORTS_AR.whatAr}</span>
-        </span>
-      </label>
-      {summary && <p className="mt-3 text-read font-bold text-teal-light-ink" role="status">{summary}</p>}
-      {skippedAr && <p className="mt-1 text-read text-muted-foreground">{skippedAr}</p>}
-      {results.length > 0 && (
-        <ol className="mt-2 space-y-2">
-          {results.map((r, i) => (
-            <li key={`${i}-${r.name}`} className="rounded-lg border border-border/60 p-3">
-              <div className="flex flex-wrap items-center gap-2">
-                <Chip tone={r.state === "failed" ? "danger" : "positive"}>{r.state === "done" ? "رفع" : r.state === "already" ? "مرفوع" : "ردّ"}</Chip>
-                <span className="text-read font-bold text-foreground" dir="auto">{r.labelAr ?? r.name}</span>
-              </div>
-              {r.labelAr && <p className="mt-1 text-read text-muted-foreground" dir="auto">{r.name}</p>}
-              <p className={`mt-1 text-read leading-6 ${r.state === "failed" ? "text-danger-ink" : "text-foreground"}`}>{r.noteAr}</p>
-              {r.planId && r.state !== "failed" && (
-                <Button className="mt-2" tone="ghost" size="sm" icon={ExternalLink} onClick={() => onOpen(r.planId!)}>
-                  افتح خطّته
-                </Button>
-              )}
-            </li>
-          ))}
-        </ol>
-      )}
-    </Inset>
-  );
-}
+/* وكان هنا صندوقُ «ارفع تقارير المراجعة وملاحقها كلّها دفعة واحدة» بخانة «استبدل التقارير السابقة». وقال صاحبُ
+   المنصّة (٢٦ أكتوبر ٢٠٢٦): «فقط تحميل ورفع» — فصار صندوقا واحدا لما رجع كلِّه (`ReviewUpload.tsx`). */
 
 /** لصفحة المدرّب — ما رفعته الإدارةُ مع قراراتها، أحدثُه أوّلا */
 export function ReviewReportList({ reports }: { reports: readonly ReviewReport[] }) {
