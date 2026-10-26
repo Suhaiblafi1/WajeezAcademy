@@ -1395,8 +1395,12 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     preHandler: requirePermission('trainer.change.review'),
     schema: { tags: ['admin-trainers'], summary: 'دورات اقترحها المدرّبون — طابور التصنيف (ح-٤)' },
   }, async (req) => {
-    const { scope } = z.object({ scope: z.enum(['open', 'all']).optional() }).parse(req.query)
-    return proposals.queue(scope ?? 'open')
+    /* و`profileId` لملفّ مدرّبٍ واحد — يُقرَّر في اقتراحه هناك (قرارُ «A»، ٢٦ أكتوبر ٢٠٢٦) */
+    const { scope, profileId } = z.object({
+      scope: z.enum(['open', 'all']).optional(),
+      profileId: z.string().uuid().optional(),
+    }).parse(req.query)
+    return proposals.queue(scope ?? 'open', profileId)
   })
 
   /* ═══ تقريرُ التجميع — يُقرأ في الشاشة لا في طرفيّة (٢٢ سبتمبر ٢٠٢٦) ═══

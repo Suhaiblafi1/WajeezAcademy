@@ -1,9 +1,9 @@
 /* لوحة إدارة الكتالوج — عدادات الحالات، استعراض الكيانات، إنشاء مسودات
    (مهارة/دورة/مسار)، تقديم طلبات تغيير، وقرارات maker-checker */
 import { useCallback, useEffect, useState } from "react";
-import { useSearchParams } from "react-router";
+import { Link, useNavigate, useSearchParams } from "react-router";
 import {
-  BookMarked, CheckCircle2, ChevronDown, FilePlus2, GitPullRequest, Layers,
+  ArrowRight, BookMarked, CheckCircle2, ChevronDown, FilePlus2, GitPullRequest, Layers,
   PenLine, RefreshCw, Route, XCircle,
 } from "lucide-react";
 import AdminLayout from "./AdminLayout";
@@ -23,6 +23,7 @@ import CourseNamesPanel from "@/components/admin/CourseNamesPanel";
 import CoursePicker from "@/components/admin/CoursePicker";
 import { useRealSession } from "@/services/session";
 import { fmtDateTime } from "@/application/text/format-ar";
+import { safeAdminBack } from "@/application/trainer/idea-links";
 
 import { Card, Inset } from "@/components/ui/Surface";
 import Button from "@/components/ui/Button";
@@ -156,6 +157,10 @@ export default function CatalogAdmin() {
   const [params, setParams] = useSearchParams();
   const fromProposal = params.get("proposalId");
   const seedTitleAr = params.get("titleAr") ?? undefined;
+  /* ويُقرَّر الاقتراحُ في ملفّ صاحبه (قرارُ «A»، ٢٦ أكتوبر ٢٠٢٦) — فيعود إليه بعد الربط، على الاقتراح نفسِه.
+     والوجهةُ مسارٌ في الإدارة وحدَها (`safeAdminBack`): رابطٌ يحمل `back` لا يُحوِّل إلى خارجها */
+  const backTo = safeAdminBack(params.get("back"));
+  const navigate = useNavigate();
   useEffect(() => {
     if (fromProposal) setOpenForm("course");
   }, [fromProposal]);
@@ -595,6 +600,18 @@ export default function CatalogAdmin() {
         {openForm === "names" && <CourseNamesPanel canSelfApprove={canSelfApprove} onRenamed={() => void refresh()} />}
 
         <FormHead id="course" icon={BookMarked} title="دورة جديدة (مسودة)" hint="أربع خطوات: الدورة، وحداتها، مهاراتها، مراجعة" />
+        {openForm === "course" && fromProposal && (
+          /* يُقال من أين جاء وإلى أين يعود — ومن غيّر رأيه رجع بلا دورة */
+          <Inset className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm leading-6">
+            <span>
+              من اقتراح مدرب{seedTitleAr && <>: <b className="text-foreground">«{seedTitleAr}»</b></>}.
+              {" "}تربط به حين تنشأ{backTo ? "، ثم تعود إلى ملفه." : "."}
+            </span>
+            {backTo && (
+              <Button as={Link} to={backTo} tone="ghost" size="sm" icon={ArrowRight}>ارجع دون إنشاء</Button>
+            )}
+          </Inset>
+        )}
         {openForm === "course" && (
           <CourseWizard
             pathways={pathways.map((p) => ({ id: p.id, title: p.title }))}
@@ -608,8 +625,12 @@ export default function CatalogAdmin() {
               if (fromProposal && courseId) {
                 void apiPost(`/api/admin/course-proposals/${fromProposal}/became-course`, { courseId })
                   .then(() => toast("ربط اقتراح المدرّب بالدورة الجديدة"))
-                  .catch(() => toast("أنشئت الدورة ولم يربط الاقتراح بها — اربطه من طابور الاقتراحات"))
-                  .finally(() => { params.delete("proposalId"); params.delete("titleAr"); setParams(params, { replace: true }); });
+                  .catch(() => toast("أنشئت الدورة ولم يربط الاقتراح بها — اربطه بها من ملف المدرب", "error"))
+                  .finally(() => {
+                    if (backTo) { navigate(backTo); return; }
+                    params.delete("proposalId"); params.delete("titleAr"); params.delete("back");
+                    setParams(params, { replace: true });
+                  });
               }
               void refresh();
             }}

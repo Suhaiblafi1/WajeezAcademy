@@ -396,16 +396,24 @@ export class CourseProposalService {
 
       ويصحب كلَّ اقتراحٍ مفتوحٍ ترشيحُ أقربِ الرموز إليه (`suggestedCourses`):
       من يصنّف لا يحفظ الكتالوجَ بظهر قلب، ومن لم يُرشَّح له شيءٌ أنشأ ثانيةً
-      لما هو موجود. والمصنَّفُ لا يُرشَّح له: قد بُتّ فيه. */
-  async queue(scope: 'open' | 'all' = 'open') {
+      لما هو موجود. والمصنَّفُ لا يُرشَّح له: قد بُتّ فيه.
+
+      ═══ ومدرّبٌ واحد — لملفّه (٢٦ أكتوبر ٢٠٢٦) ═══
+      قرارُ صاحب المنصّة «A»: يُقرَّر في الاقتراح من ملفّ صاحبه، «الاتفاقية»، بجانب أجره ودوراته. فيقرأ الملفُّ
+      اقتراحاتِه من هنا بترشيحها نفسِه (`profileId`) — لا حسابٌ ثانٍ في الشاشة. وكلُّ صفٍّ يحمل رقمَ طلبه
+      (`applicationId`): به تفتح القائمةُ عبرَ المدرّبين ملفَّ صاحبه. */
+  async queue(scope: 'open' | 'all' = 'open', profileId?: string) {
     const rows = await this.prisma.trainerCourseProposal.findMany({
-      where: scope === 'open' ? { status: { in: [...QUEUE_VISIBLE] } } : {},
+      where: {
+        ...(scope === 'open' ? { status: { in: [...QUEUE_VISIBLE] } } : {}),
+        ...(profileId ? { profileId } : {}),
+      },
       orderBy: [{ createdAt: 'asc' }],
       include: {
         course: COURSE_LOOKUP,
         profile: {
           select: {
-            id: true, userId: true,
+            id: true, userId: true, applicationId: true,
             application: { select: { fullName: true, email: true } },
           },
         },
@@ -420,6 +428,7 @@ export class CourseProposalService {
     return rows.map((r) => ({
       id: r.id,
       profileId: r.profileId,
+      applicationId: r.profile.applicationId,
       trainerName: r.profile.application.fullName,
       trainerEmail: r.profile.application.email,
       titleAr: r.titleAr,
