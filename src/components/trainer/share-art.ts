@@ -7,16 +7,16 @@
    · **ستوري** ١٠٨٠×١٩٢٠ — إنستغرام وتيك توك وحالة واتساب.
    · **كاروسيل** شرائحُ ١٠٨٠×١٣٥٠ — غلافٌ بصورته، وشريحةٌ لكلّ دورة، وشريحةٌ للخصم.
 
-   ═══ ثمّ أُعيد تصميمُها (٢٦ أكتوبر ٢٠٢٦) ═══
+   ═══ التصميمُ الأوّلُ باقٍ، والمحتوى جديد (٢٦ أكتوبر ٢٠٢٦) ═══
 
-   رآها صاحبُ المنصّة فقال: «تبدو نصوصا لا أكثر، غيرَ ملفتة.. ونصوصُ الدورات مقصوصة.. أضف أنّ الدورات بثٌّ مباشر
-   وبعضَ الأمور التسويقيّة التي تجذب للشراء». فصارت:
-   · **أرضيّةً فيروزيّةً داكنة** بلون العلامة ودوائرَ خفيفة — تُرى بين منشوراتٍ بيضاء.
-   · **شارةَ «بث مباشر» حمراء** أعلاها، وصورتَه بحلقةٍ ذهبيّة، واسمَه ومسمّاه.
-   · **الدوراتِ في بطاقةٍ فاتحةٍ باسمها كاملا** — يصغر الخطُّ حتّى يسعها ولا يُقصّ (`fitLines`)، ووعدُها تحتها في
-     الدورة الواحدة، وموعدُها في شارة.
-   · **ثلاثَ مزايا صادقة** (`ART_PERKS`): بثٌّ مباشرٌ على Zoom، وتسجيلُ كلّ لقاء، وشهادةٌ موثّقة — ممّا تقدّمه المنصّة فعلا.
-   · **وقسيمةَ خصمٍ ذهبيّة** بنسبتها والكود في إطارٍ متقطّع، و«المقاعد محدودة».
+   قال صاحبُ المنصّة عن الصور: «نصوصُ الدورات مقصوصة.. أضف أنّ الدورات بثٌّ مباشر وبعضَ الأمور التسويقيّة». فجُرّب
+   تصميمٌ داكن، فقال: «لم تعجبني تصاميمُك الجديدة.. أبقِ القديمة وغيّر المحتوى فقط، وآليّةَ عرض الدورات وباقي المحتوى
+   الجديد». فالشكلُ شكلُه الأوّل — أرضيّةُ الورق، والشريطُ الفيروزيّ، وشارةُ وجيز، والصورةُ بحلقتها الفيروزيّة،
+   وشارةُ الخصم الذهبيّة — وما فيه جديد:
+   · **أسماءُ الدورات كاملة** — يصغر الخطُّ حتّى يسعها ولا يُقصّ (`fitLines`)، ويصغر المحتوى كلُّه معا إن ضاق
+     (`courseBlock`). ووعدُ الدورة الواحدة تحت اسمها، وموعدُ كلِّ دورةٍ تحتها.
+   · **«بث مباشر»** شارةً حمراءَ في الرأس، و**ثلاثُ مزايا صادقة** (`ART_PERKS`): بثٌّ مباشرٌ على Zoom، وتسجيلُ كلّ
+     لقاء، وشهادةٌ موثّقة — ممّا تقدّمه المنصّة فعلا — و**«المقاعد محدودة»**.
 
    ولمَ في المتصفّح لا في الخادم: الخطُّ العربيُّ للمنصّة محمَّلٌ فيه أصلا، والحرفُ يُشكَّل ويُوصَل كما في الصفحة؛
    والخادمُ بلا محرّكِ رسمٍ يُضاف له. والصورةُ من مسار المنصّة نفسِها (`photoPublicUrl`) فلا تُلوِّث اللوحَ — وإن
@@ -43,11 +43,7 @@ const SIZE: Record<ArtKind, [number, number]> = {
   post: [1080, 1080], story: [1080, 1920], cover: [1080, 1350], course: [1080, 1350], offer: [1080, 1350],
 }
 
-const C = {
-  deep: '#0B3338', deep2: '#17565E', teal: '#38A7B4', tealSoft: '#A9E0E6', tealInk: '#1A5C64',
-  gold: '#FABC05', ink: '#14262A', muted: '#5C6B70', white: '#FFFFFF', paper: '#F5F3EE', line: '#E6E2D9',
-  chip: '#E7F5F6', live: '#E5484D',
-}
+const C = { paper: '#F5F3EE', ink: '#1F2A2E', muted: '#5C6B70', teal: '#38A7B4', tealInk: '#1A5C64', gold: '#FABC05', white: '#FFFFFF', live: '#E5484D' }
 const FONT = '"Avenir Arabic", "IBM Plex Sans Arabic", "Neo Sans Arabic", system-ui, sans-serif'
 const font = (weight: number, px: number) => `${weight} ${px}px ${FONT}`
 
@@ -81,7 +77,7 @@ function wrapAt(ctx: CanvasRenderingContext2D, text: string, width: number): str
 export function fitLines(
   ctx: CanvasRenderingContext2D, text: string, width: number, maxLines: number, maxPx: number, minPx: number, weight = 700,
 ): { px: number; lines: string[] } {
-  for (let px = maxPx; px >= minPx; px -= 2) {
+  for (let px = Math.round(maxPx); px >= minPx; px -= 2) {
     ctx.font = font(weight, px)
     const lines = wrapAt(ctx, text, width)
     if (lines.length <= maxLines) return { px, lines }
@@ -106,243 +102,164 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
   ctx.closePath()
 }
 
-/** الأرضيّة: فيروزيٌّ داكنٌ متدرّج، ودوائرُ خفيفةٌ في زاويتين */
-function backdrop(ctx: CanvasRenderingContext2D, w: number, h: number) {
-  const g = ctx.createLinearGradient(0, 0, w, h)
-  g.addColorStop(0, C.deep2)
-  g.addColorStop(1, C.deep)
-  ctx.fillStyle = g
-  ctx.fillRect(0, 0, w, h)
-  ctx.save()
-  ctx.globalAlpha = 0.12
-  ctx.fillStyle = C.teal
-  ctx.beginPath(); ctx.arc(w - 40, 120, 300, 0, Math.PI * 2); ctx.fill()
-  ctx.beginPath(); ctx.arc(60, h - 80, 240, 0, Math.PI * 2); ctx.fill()
-  ctx.globalAlpha = 0.2
-  ctx.strokeStyle = C.gold
-  ctx.lineWidth = 3
-  ctx.beginPath(); ctx.arc(150, 300, 64, 0, Math.PI * 2); ctx.stroke()
-  ctx.restore()
-}
-
-interface PillStyle { px: number; bg?: string; fg: string; border?: string; dot?: string; center?: boolean; weight?: number }
-
-function pillWidth(ctx: CanvasRenderingContext2D, text: string, o: PillStyle): number {
-  ctx.font = font(o.weight ?? 700, o.px)
-  return ctx.measureText(text).width + o.px * 1.6 + (o.dot ? o.px * 0.9 : 0)
-}
-
-/** شارةٌ مستديرة. و`x` حافّتُها اليمنى، أو وسطُها إن `center` */
-function pill(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, o: PillStyle) {
-  const w = pillWidth(ctx, text, o)
-  const pad = o.px * 0.8
-  const h = o.px * 1.9
-  const left = o.center ? x - w / 2 : x - w
-  roundRect(ctx, left, y, w, h, h / 2)
-  if (o.bg) { ctx.fillStyle = o.bg; ctx.fill() }
-  if (o.border) { ctx.strokeStyle = o.border; ctx.lineWidth = 2.5; ctx.stroke() }
-  if (o.dot) {
-    ctx.fillStyle = o.dot
-    ctx.beginPath(); ctx.arc(left + w - pad - o.px * 0.3, y + h / 2, o.px * 0.28, 0, Math.PI * 2); ctx.fill()
-  }
-  ctx.font = font(o.weight ?? 700, o.px)
-  ctx.fillStyle = o.fg
-  ctx.textAlign = 'right'
-  ctx.textBaseline = 'middle'
-  ctx.fillText(text, left + w - pad - (o.dot ? o.px * 0.9 : 0), y + h / 2 + o.px * 0.06)
-  ctx.textBaseline = 'alphabetic'
-}
-
-/** صورتُه في دائرةٍ بحلقةٍ ذهبيّة — أو حرفُه الأوّل إن لم تكن */
+/** صورتُه في دائرةٍ بحلقةٍ فيروزيّة — أو حرفُه الأوّل إن لم تكن */
 function portrait(ctx: CanvasRenderingContext2D, img: HTMLImageElement | null, name: string, cx: number, cy: number, r: number) {
   ctx.save()
-  ctx.beginPath(); ctx.arc(cx, cy, r + 10, 0, Math.PI * 2)
-  ctx.fillStyle = C.gold; ctx.fill()
-  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2)
+  ctx.beginPath()
+  ctx.arc(cx, cy, r + 12, 0, Math.PI * 2)
+  ctx.fillStyle = C.teal
+  ctx.fill()
+  ctx.beginPath()
+  ctx.arc(cx, cy, r, 0, Math.PI * 2)
   ctx.clip()
   if (img) {
     /* تُقصّ على مربّع، وأعلى الصورة الطويلة أولى بالبقاء — فيه الوجه */
     const side = Math.min(img.naturalWidth, img.naturalHeight)
-    const sy = img.naturalHeight > img.naturalWidth ? (img.naturalHeight - side) * 0.2 : 0
+    const sy = img.naturalHeight > img.naturalWidth ? (img.naturalHeight - side) * 0.2 : (img.naturalHeight - side) / 2
     ctx.drawImage(img, (img.naturalWidth - side) / 2, sy, side, side, cx - r, cy - r, r * 2, r * 2)
   } else {
-    ctx.fillStyle = C.teal
+    ctx.fillStyle = C.tealInk
     ctx.fillRect(cx - r, cy - r, r * 2, r * 2)
     ctx.fillStyle = C.white
     ctx.font = font(700, r)
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
     ctx.fillText(name.trim().charAt(0), cx, cy)
-    ctx.textBaseline = 'alphabetic'
   }
   ctx.restore()
 }
 
-/** الرأس: شارةُ وجيز يمينا، و«بث مباشر» حمراءُ يسارا */
-function header(ctx: CanvasRenderingContext2D, logo: HTMLImageElement | null, w: number, top = 56) {
-  ctx.fillStyle = C.white
-  roundRect(ctx, w - 136, top, 80, 80, 20); ctx.fill()
-  if (logo) ctx.drawImage(logo, w - 128, top + 8, 64, 64)
-  ctx.fillStyle = C.white
-  ctx.font = font(700, 36)
-  ctx.textAlign = 'right'
-  ctx.fillText('أكاديمية وجيز', w - 156, top + 54)
-  const live: PillStyle = { px: 30, bg: C.live, fg: C.white, dot: C.white }
-  pill(ctx, 'بث مباشر', 56 + pillWidth(ctx, 'بث مباشر', live), top + 12, live)
+interface PillStyle { px: number; bg?: string; fg: string; border?: string; dot?: string; weight?: number }
+
+function pillWidth(ctx: CanvasRenderingContext2D, text: string, o: PillStyle): number {
+  ctx.font = font(o.weight ?? 700, o.px)
+  return ctx.measureText(text).width + o.px * 1.6 + (o.dot ? o.px * 0.9 : 0)
 }
 
-/** المزايا شاراتٌ في صفٍّ وسطَ عرضه — أو بعضُها تحت بعض إن ضاق. ويُرجع أسفلَها */
-function perks(ctx: CanvasRenderingContext2D, cx: number, y: number, width: number, px: number): number {
-  const style: PillStyle = { px, fg: C.white, border: C.tealSoft, dot: C.gold, weight: 500 }
+/** شارةٌ مستديرة، و`right` حافّتُها اليمنى */
+function pill(ctx: CanvasRenderingContext2D, text: string, right: number, y: number, o: PillStyle) {
+  const w = pillWidth(ctx, text, o)
+  const pad = o.px * 0.8
+  const h = o.px * 1.9
+  const left = right - w
+  roundRect(ctx, left, y, w, h, h / 2)
+  if (o.bg) { ctx.fillStyle = o.bg; ctx.fill() }
+  if (o.border) { ctx.strokeStyle = o.border; ctx.lineWidth = 2.5; ctx.stroke() }
+  if (o.dot) {
+    ctx.fillStyle = o.dot
+    ctx.beginPath(); ctx.arc(right - pad - o.px * 0.3, y + h / 2, o.px * 0.28, 0, Math.PI * 2); ctx.fill()
+  }
+  ctx.font = font(o.weight ?? 700, o.px)
+  ctx.fillStyle = o.fg
+  ctx.textAlign = 'right'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(text, right - pad - (o.dot ? o.px * 0.9 : 0), y + h / 2 + o.px * 0.06)
+  ctx.textBaseline = 'alphabetic'
+}
+
+/** المزايا شاراتٌ بإطارٍ فيروزيٍّ في صفٍّ وسطَ عرضه */
+function perks(ctx: CanvasRenderingContext2D, cx: number, y: number, px: number) {
+  const style: PillStyle = { px, fg: C.tealInk, border: C.teal, dot: C.gold, weight: 500 }
   const widths = ART_PERKS.map((t) => pillWidth(ctx, t, style))
   const gap = px * 0.6
-  const total = widths.reduce((a, b) => a + b, 0) + gap * (widths.length - 1)
-  const h = px * 1.9
-  if (total <= width) {
-    let right = cx + total / 2
-    ART_PERKS.forEach((t, i) => { pill(ctx, t, right, y, style); right -= widths[i] + gap })
-    return y + h
-  }
-  ART_PERKS.forEach((t, i) => pill(ctx, t, cx, y + i * (h + gap), { ...style, center: true }))
-  return y + ART_PERKS.length * (h + gap) - gap
+  let right = cx + (widths.reduce((a, b) => a + b, 0) + gap * (widths.length - 1)) / 2
+  ART_PERKS.forEach((t, i) => { pill(ctx, t, right, y, style); right -= widths[i] + gap })
+  ctx.textAlign = 'center'
 }
 
-/** قسيمةُ الخصم الذهبيّة: النسبةُ يمينا والكودُ في إطارٍ متقطّع يسارا — أو دعوةٌ بلا خصم */
-function coupon(ctx: CanvasRenderingContext2D, code: ArtData['code'], x: number, y: number, w: number, h: number) {
-  roundRect(ctx, x, y, w, h, 28)
+/** شارةُ الخصم الذهبيّة: «خصم 30٪ بالكود WJ30-ABCDEF» — أو «المقاعد محدودة» بلا خصم */
+function codePill(ctx: CanvasRenderingContext2D, code: ArtData['code'], cx: number, y: number, px: number) {
+  ctx.font = font(700, px)
+  /* و«٪» العربيّةُ لا «%»: اللاتينيّةُ تنقلب في السطر العربيّ فتُقرأ «%30» مرّةً و«30%» مرّة */
+  const text = code ? `خصم ${code.percentOff}٪ بالكود ${code.code}` : 'سجل الآن — المقاعد محدودة'
+  const w = ctx.measureText(text).width + px * 1.6
+  const h = px * 2
+  roundRect(ctx, cx - w / 2, y, w, h, h / 2)
   ctx.fillStyle = C.gold
   ctx.fill()
   ctx.fillStyle = C.ink
-  ctx.textBaseline = 'middle'
-  if (!code) {
-    ctx.font = font(700, h * 0.32)
-    ctx.textAlign = 'center'
-    ctx.fillText('سجل الآن — المقاعد محدودة', x + w / 2, y + h / 2)
-    ctx.textBaseline = 'alphabetic'
-    return
-  }
-  ctx.textAlign = 'right'
-  ctx.font = font(700, h * 0.38)
-  ctx.fillText(`خصم ${code.percentOff}٪`, x + w - 36, y + h * 0.4)
-  ctx.font = font(500, h * 0.18)
-  ctx.fillText('لمن يتابعني', x + w - 36, y + h * 0.77)
-  /* والكودُ في إطارٍ متقطّعٍ كقسيمةٍ تُقصّ */
-  ctx.font = font(700, h * 0.26)
-  const cw = ctx.measureText(code.code).width + 56
-  const bh = h * 0.56
-  const bx = x + 28
-  const by = y + (h - bh) / 2
-  ctx.save()
-  ctx.setLineDash([12, 9])
-  ctx.strokeStyle = C.ink
-  ctx.lineWidth = 3
-  roundRect(ctx, bx, by, cw, bh, 16)
-  ctx.stroke()
-  ctx.restore()
   ctx.textAlign = 'center'
-  ctx.direction = 'ltr'
-  ctx.fillText(code.code, bx + cw / 2, by + bh / 2 + 2)
-  ctx.direction = 'rtl'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(text, cx, y + h / 2 + px * 0.05)
   ctx.textBaseline = 'alphabetic'
+}
+
+/** الرأس: علامةُ وجيز واسمُها، و«بث مباشر» حمراءُ يسارا — والذيل: عنوانُ الموقع */
+function frame(ctx: CanvasRenderingContext2D, logo: HTMLImageElement | null, w: number, h: number, host: string) {
+  ctx.fillStyle = C.paper
+  ctx.fillRect(0, 0, w, h)
+  ctx.fillStyle = C.teal
+  ctx.fillRect(0, 0, w, 14)
+  if (logo) ctx.drawImage(logo, w - 140, 56, 84, 84)
+  ctx.fillStyle = C.tealInk
+  ctx.font = font(700, 38)
+  ctx.textAlign = 'right'
+  ctx.fillText('أكاديمية وجيز', w - 160, 112)
+  const live: PillStyle = { px: 30, bg: C.live, fg: C.white, dot: C.white }
+  pill(ctx, 'بث مباشر', 56 + pillWidth(ctx, 'بث مباشر', live), 70, live)
+  ctx.textAlign = 'center'
+  ctx.fillStyle = C.muted
+  ctx.font = font(500, 32)
+  ctx.fillText(host, w / 2, h - 60)
 }
 
 const startsAr = (c: ArtData['courses'][number], dayAr: ArtData['dayAr']) => (c.startsAt ? `تبدأ ${dayAr(c.startsAt)}` : 'موعدها قريبا')
 
-/** بطاقةُ الدورات — دورةٌ واحدةٌ باسمها كاملا ووعدِها، أو قائمةٌ مرقّمة. يُقاس المحتوى ثمّ تُرسم بقدره، وتُرجع أسفلَها */
-function courseCard(
-  ctx: CanvasRenderingContext2D, d: ArtData, courses: ArtData['courses'], x: number, y: number, w: number,
-  o: { big: boolean; label: string },
-): number {
-  const pad = o.big ? 52 : 40
-  const inner = w - pad * 2
-  const right = x + w - pad
-  const draws: (() => void)[] = []
-  let cy = y + pad
-  if (courses.length === 1) {
-    const { name, promise } = splitTitle(courses[0].courseTitle)
-    const lpx = o.big ? 30 : 26
-    const ly = cy
-    draws.push(() => pill(ctx, o.label, right, ly, { px: lpx, bg: C.teal, fg: C.white }))
-    cy += lpx * 1.9 + 24
-    const t = fitLines(ctx, name, inner, o.big ? 4 : 3, o.big ? 72 : 58, o.big ? 42 : 34)
-    const ty = cy
-    draws.push(() => {
-      ctx.font = font(700, t.px); ctx.fillStyle = C.ink; ctx.textAlign = 'right'; ctx.textBaseline = 'top'
-      t.lines.forEach((l, i) => ctx.fillText(l, right, ty + i * t.px * 1.32))
-      ctx.textBaseline = 'alphabetic'
-    })
-    cy += t.lines.length * t.px * 1.32 + 12
-    if (promise) {
-      const p = fitLines(ctx, promise, inner, 3, o.big ? 36 : 30, o.big ? 28 : 24, 500)
-      const py = cy
-      draws.push(() => {
-        ctx.font = font(500, p.px); ctx.fillStyle = C.muted; ctx.textAlign = 'right'; ctx.textBaseline = 'top'
-        p.lines.forEach((l, i) => ctx.fillText(l, right, py + i * p.px * 1.45))
-        ctx.textBaseline = 'alphabetic'
-      })
-      cy += p.lines.length * p.px * 1.45 + 8
-    }
-    const dpx = o.big ? 32 : 26
-    const dy = cy + 12
-    draws.push(() => pill(ctx, startsAr(courses[0], d.dayAr), right, dy, { px: dpx, bg: C.chip, fg: C.tealInk, dot: C.teal }))
-    cy = dy + dpx * 1.9
-  } else {
-    const rowPx = o.big ? 42 : 32
-    const num = o.big ? 60 : 50
-    courses.forEach((c, i) => {
-      if (i > 0) {
-        const sy = cy + 2
-        draws.push(() => { ctx.fillStyle = C.line; ctx.fillRect(x + pad, sy, inner, 2) })
-        cy += 22
+/* ═══ آليّةُ عرض الدورات — كاملةً بين حدّين ═══
+   الدورةُ الواحدة: اسمُها كبيرا، ووعدُها تحته، وموعدُها. والدوراتُ الكثيرة: اسمُ كلٍّ (ما قبل النقطتين) وموعدُها تحته.
+   ويُقاس الكلُّ أوّلا: فإن لم يسعه ما بين `top` و`bottom` صغُر كلُّه معا — لا يُقصّ اسمٌ ليتّسع غيرُه. */
+function courseBlock(
+  ctx: CanvasRenderingContext2D, d: ArtData, courses: ArtData['courses'], cx: number, top: number, bottom: number,
+  width: number, base: number,
+) {
+  type Line = { text: string; px: number; weight: number; color: string; gap: number }
+  const build = (s: number): Line[] => {
+    const out: Line[] = []
+    if (courses.length === 1) {
+      const { name, promise } = splitTitle(courses[0].courseTitle)
+      const t = fitLines(ctx, name, width, 3, base * 1.15 * s, base * 0.75 * s)
+      t.lines.forEach((l) => out.push({ text: l, px: t.px, weight: 700, color: C.tealInk, gap: t.px * 1.3 }))
+      if (promise) {
+        const p = fitLines(ctx, promise, width, 3, base * 0.62 * s, base * 0.5 * s, 500)
+        p.lines.forEach((l, i) => out.push({ text: l, px: p.px, weight: 500, color: C.ink, gap: p.px * 1.45 + (i === 0 ? base * 0.2 * s : 0) }))
       }
-      const ny = cy
-      draws.push(() => {
-        ctx.fillStyle = C.teal
-        ctx.beginPath(); ctx.arc(right - num / 2, ny + num / 2, num / 2, 0, Math.PI * 2); ctx.fill()
-        ctx.fillStyle = C.white; ctx.font = font(700, num * 0.5); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
-        ctx.fillText(String(i + 1), right - num / 2, ny + num / 2 + 2)
-        ctx.textBaseline = 'alphabetic'
+      out.push({ text: startsAr(courses[0], d.dayAr), px: base * 0.62 * s, weight: 500, color: C.muted, gap: base * 0.62 * s * 1.6 + base * 0.3 * s })
+    } else {
+      courses.forEach((c, i) => {
+        const t = fitLines(ctx, splitTitle(c.courseTitle).name, width, 2, base * 0.78 * s, base * 0.56 * s)
+        t.lines.forEach((l, k) => out.push({ text: l, px: t.px, weight: 700, color: C.tealInk, gap: t.px * 1.28 + (i > 0 && k === 0 ? base * 0.4 * s : 0) }))
+        out.push({ text: startsAr(c, d.dayAr), px: base * 0.5 * s, weight: 500, color: C.muted, gap: base * 0.5 * s * 1.5 })
       })
-      const tx = right - num - 22
-      const t = fitLines(ctx, splitTitle(c.courseTitle).name, inner - num - 22, 2, rowPx, rowPx - 10)
-      const ty = cy
-      const sub = rowPx * 0.68
-      draws.push(() => {
-        ctx.font = font(700, t.px); ctx.fillStyle = C.ink; ctx.textAlign = 'right'; ctx.textBaseline = 'top'
-        t.lines.forEach((l, k) => ctx.fillText(l, tx, ty + k * t.px * 1.3))
-        ctx.font = font(500, sub); ctx.fillStyle = C.tealInk
-        ctx.fillText(startsAr(c, d.dayAr), tx, ty + t.lines.length * t.px * 1.3 + 4)
-        ctx.textBaseline = 'alphabetic'
-      })
-      cy += Math.max(num, t.lines.length * t.px * 1.3 + sub + 8)
-    })
+    }
+    return out
   }
-  const h = cy + pad - y
-  ctx.save()
-  ctx.shadowColor = 'rgba(0,0,0,0.28)'
-  ctx.shadowBlur = 32
-  ctx.shadowOffsetY = 10
-  roundRect(ctx, x, y, w, h, 36)
-  ctx.fillStyle = C.paper
-  ctx.fill()
-  ctx.restore()
-  draws.forEach((f) => f())
-  return y + h
+  const total = (ls: Line[]) => ls.reduce((a, l) => a + l.gap, 0)
+  let lines = build(1)
+  for (let s = 0.95; s >= 0.6 && total(lines) > bottom - top; s -= 0.05) lines = build(s)
+  /* وسطَ ما بين الحدّين — فلا فراغَ كبيرٌ تحته */
+  let y = top + Math.max(0, (bottom - top - total(lines)) / 2)
+  ctx.textAlign = 'center'
+  for (const l of lines) {
+    y += l.gap
+    ctx.font = font(l.weight, l.px)
+    ctx.fillStyle = l.color
+    ctx.fillText(l.text, cx, y - l.gap * 0.22)
+  }
 }
 
-/** الاسمُ والمسمّى وسطَ العرض — ويُرجع أسفلَهما */
+/** اسمُه ومسمّاه — ويُرجع أسفلَهما */
 function nameBlock(ctx: CanvasRenderingContext2D, d: ArtData, cx: number, y: number, px: number, width: number): number {
   ctx.textAlign = 'center'
-  ctx.fillStyle = C.white
-  const n = fitLines(ctx, d.name, width, 1, px, px - 16)
+  ctx.fillStyle = C.ink
+  const n = fitLines(ctx, d.name, width, 1, px, px - 14)
   ctx.font = font(700, n.px)
   ctx.fillText(n.lines[0], cx, y)
-  if (!d.headline) return y + 12
-  const hl = fitLines(ctx, d.headline, width, 2, Math.round(px * 0.5), Math.round(px * 0.4), 500)
+  if (!d.headline) return y
+  const hl = fitLines(ctx, d.headline, width, 1, px * 0.56, px * 0.44, 500)
   ctx.font = font(500, hl.px)
-  ctx.fillStyle = C.tealSoft
-  hl.lines.forEach((l, i) => ctx.fillText(l, cx, y + px * 0.9 + i * hl.px * 1.35))
-  return y + px * 0.9 + (hl.lines.length - 1) * hl.px * 1.35 + 12
+  ctx.fillStyle = C.muted
+  ctx.fillText(hl.lines[0], cx, y + hl.px * 1.5)
+  return y + hl.px * 1.5
 }
 
 /** يرسم صورةً بعينها — وللكاروسيل `index` الدورةُ التي تُرسم شريحتُها */
@@ -355,98 +272,99 @@ export async function drawArt(kind: ArtKind, d: ArtData, index = 0): Promise<HTM
   await Promise.all([document.fonts.load(font(700, 40)), document.fonts.load(font(500, 40))]).catch(() => undefined)
   const [logo, photo] = await Promise.all([
     loadImage('/logo-mark.png'),
-    d.photoUrl && kind !== 'course' && kind !== 'offer' ? loadImage(d.photoUrl) : Promise.resolve(null),
+    d.photoUrl && (kind === 'post' || kind === 'story' || kind === 'cover') ? loadImage(d.photoUrl) : Promise.resolve(null),
   ])
   ctx.direction = 'rtl'
-  backdrop(ctx, w, h)
-  header(ctx, logo, w)
+  frame(ctx, logo, w, h, d.host)
+  ctx.textAlign = 'center'
   const cx = w / 2
   const one = d.courses[index] ?? d.courses[0]
-  const label = d.courses.length > 1 ? 'دوراتي بث مباشر' : 'أقدم دورة بث مباشر'
-  const footer = (text: string, y: number) => {
-    ctx.textAlign = 'center'; ctx.fillStyle = C.tealSoft; ctx.font = font(500, 30)
-    ctx.fillText(text, cx, y)
-  }
+  const many = d.courses.length > 1
 
   if (kind === 'post') {
-    /* المربّع: صورتُه يمينا واسمُه بجانبها، ثمّ البطاقة، ثمّ المزايا والقسيمة */
-    const r = 84
-    const pcx = w - 64 - r
-    const pcy = 180 + r
-    portrait(ctx, photo, d.name, pcx, pcy, r)
-    const textRight = pcx - r - 34
-    const textW = textRight - 56
-    ctx.textAlign = 'right'
-    ctx.fillStyle = C.white
-    const n = fitLines(ctx, d.name, textW, 1, 52, 38)
-    ctx.font = font(700, n.px)
-    ctx.fillText(n.lines[0], textRight, pcy + (d.headline ? -4 : 16))
-    if (d.headline) {
-      const hl = fitLines(ctx, d.headline, textW, 1, 30, 24, 500)
-      ctx.font = font(500, hl.px); ctx.fillStyle = C.tealSoft
-      ctx.fillText(hl.lines[0], textRight, pcy + 44)
-    }
-    const shown = d.courses.slice(0, 3)
-    const end = courseCard(ctx, d, shown, 56, 396, w - 112, { big: false, label })
-    if (d.courses.length > 3) footer(`و${d.courses.length - 3} غيرها في الرابط`, end + 40)
-    perks(ctx, cx, Math.min(end + (d.courses.length > 3 ? 64 : 30), 840), w - 112, 26)
-    coupon(ctx, d.code, 56, 926, w - 112, 112)
+    const r = 108
+    portrait(ctx, photo, d.name, cx, 262, r)
+    const below = nameBlock(ctx, d, cx, 262 + r + 72, 48, w - 200)
+    ctx.fillStyle = C.teal
+    ctx.font = font(700, 30)
+    ctx.fillText(many ? 'دوراتي بث مباشر هذا الموسم' : 'أقدم دورة بث مباشر', cx, below + 50)
+    courseBlock(ctx, d, d.courses.slice(0, 3), cx, below + 64, h - 282, w - 180, 48)
+    perks(ctx, cx, h - 268, 22)
+    codePill(ctx, d.code, cx, h - 196, 32)
   } else if (kind === 'story') {
-    portrait(ctx, photo, d.name, cx, 360, 150)
-    const below = nameBlock(ctx, d, cx, 600, 64, w - 160)
-    const end = courseCard(ctx, d, d.courses.slice(0, 4), 70, below + 46, w - 140, { big: true, label })
-    const py = perks(ctx, cx, end + 44, w - 140, 30)
-    coupon(ctx, d.code, 70, Math.max(py + 44, h - 400), w - 140, 150)
-    ctx.textAlign = 'center'; ctx.fillStyle = C.white; ctx.font = font(700, 46)
-    ctx.fillText('سجل الآن — الرابط في البايو', cx, h - 160)
-    footer(`المقاعد محدودة · ${d.host}`, h - 96)
+    const r = 190
+    portrait(ctx, photo, d.name, cx, 440, r)
+    const below = nameBlock(ctx, d, cx, 440 + r + 100, 60, w - 200)
+    ctx.fillStyle = C.teal
+    ctx.font = font(700, 40)
+    ctx.fillText(many ? 'دوراتي بث مباشر هذا الموسم' : 'أقدم دورة بث مباشر', cx, below + 76)
+    courseBlock(ctx, d, d.courses.slice(0, 5), cx, below + 96, h - 560, w - 160, 66)
+    perks(ctx, cx, h - 520, 28)
+    codePill(ctx, d.code, cx, h - 420, 44)
+    ctx.fillStyle = C.ink
+    ctx.font = font(700, 46)
+    ctx.fillText('سجل الآن — الرابط في البايو', cx, h - 230)
+    ctx.fillStyle = C.muted
+    ctx.font = font(500, 34)
+    ctx.fillText('المقاعد محدودة', cx, h - 165)
   } else if (kind === 'cover') {
-    portrait(ctx, photo, d.name, cx, 450, 200)
-    const below = nameBlock(ctx, d, cx, 770, 70, w - 160)
-    ctx.textAlign = 'center'; ctx.fillStyle = C.gold; ctx.font = font(700, 52)
-    ctx.fillText(d.courses.length > 1 ? `${d.courses.length} دورات بث مباشر هذا الموسم` : 'دورتي القادمة بث مباشر', cx, below + 86)
-    perks(ctx, cx, below + 136, w - 140, 28)
-    footer('اسحب للتفاصيل ←', h - 80)
+    portrait(ctx, photo, d.name, cx, 470, 230)
+    const below = nameBlock(ctx, d, cx, 830, 64, w - 200)
+    ctx.fillStyle = C.tealInk
+    ctx.font = font(700, 52)
+    ctx.fillText(many ? `${d.courses.length} دورات بث مباشر هذا الموسم` : 'دورتي بث مباشر هذا الموسم', cx, below + 90)
+    perks(ctx, cx, below + 130, 26)
+    ctx.fillStyle = C.muted
+    ctx.font = font(500, 38)
+    ctx.fillText('اسحب للتفاصيل ←', cx, h - 150)
   } else if (kind === 'course') {
-    const tag = d.courses.length > 1 ? `دورة ${index + 1} من ${d.courses.length} · بث مباشر` : 'دورة بث مباشر'
-    const end = courseCard(ctx, d, [one], 64, 210, w - 128, { big: true, label: tag })
-    perks(ctx, cx, end + 50, w - 128, 28)
-    ctx.textAlign = 'center'; ctx.fillStyle = C.white; ctx.font = font(700, 44)
-    ctx.fillText('المقاعد محدودة — احجز مكانك', cx, h - 160)
-    footer(d.host, h - 90)
-  } else {
-    ctx.textAlign = 'center'
+    ctx.fillStyle = C.teal
+    roundRect(ctx, 90, 230, w - 180, 760, 48)
+    ctx.fill()
     ctx.fillStyle = C.white
-    ctx.font = font(700, 62)
-    ctx.fillText(d.code ? 'هدية لمن يتابعني' : 'سجل الآن', cx, 330)
+    ctx.font = font(500, 40)
+    ctx.fillText(many ? `دورة ${index + 1} من ${d.courses.length} · بث مباشر` : 'دورة بث مباشر', cx, 330)
+    /* اسمُها كاملا ووعدُها تحته، يصغران حتّى تسعهما البطاقة — وموعدُها في أسفلها */
+    const { name, promise } = splitTitle(one.courseTitle)
+    const t = fitLines(ctx, name, w - 300, 3, 72, 48)
+    ctx.font = font(700, t.px)
+    let y = 450
+    t.lines.forEach((l) => { ctx.fillText(l, cx, y); y += t.px * 1.3 })
+    if (promise) {
+      const p = fitLines(ctx, promise, w - 320, 3, 40, 30, 500)
+      ctx.font = font(500, p.px)
+      y += 10
+      p.lines.forEach((l) => { ctx.fillText(l, cx, y); y += p.px * 1.45 })
+    }
+    ctx.font = font(700, 44)
+    ctx.fillText(startsAr(one, d.dayAr), cx, Math.max(y + 30, 920))
+    perks(ctx, cx, 1050, 28)
+    ctx.fillStyle = C.ink
+    ctx.font = font(700, 42)
+    ctx.fillText('المقاعد محدودة — احجز مكانك', cx, 1200)
+  } else {
+    ctx.fillStyle = C.ink
+    ctx.font = font(700, 60)
+    ctx.fillText(d.code ? 'هدية لمن يتابعني' : 'سجل الآن', cx, 360)
     if (d.code) {
       ctx.fillStyle = C.gold
-      ctx.font = font(700, 280)
-      ctx.fillText(`${d.code.percentOff}٪`, cx, 640)
-      ctx.fillStyle = C.white
-      ctx.font = font(500, 46)
-      ctx.fillText('خصم على دوراتي بالكود', cx, 740)
-      /* والنسبةُ قيلت كبيرةً فوقه — فالكودُ وحدَه في إطاره المتقطّع، لا قسيمةٌ تعيدها */
+      ctx.font = font(700, 260)
+      ctx.fillText(`${d.code.percentOff}٪`, cx, 660)
+      ctx.fillStyle = C.ink
+      ctx.font = font(700, 54)
+      ctx.fillText('خصم بالكود', cx, 780)
+      ctx.fillStyle = C.tealInk
       ctx.font = font(700, 76)
-      const cw = ctx.measureText(d.code.code).width + 110
-      roundRect(ctx, cx - cw / 2, 800, cw, 150, 28)
-      ctx.fillStyle = C.gold
-      ctx.fill()
-      ctx.save()
-      ctx.setLineDash([16, 12]); ctx.strokeStyle = C.ink; ctx.lineWidth = 4
-      roundRect(ctx, cx - cw / 2 + 18, 818, cw - 36, 114, 18)
-      ctx.stroke()
-      ctx.restore()
-      ctx.fillStyle = C.ink; ctx.textBaseline = 'middle'; ctx.direction = 'ltr'
-      ctx.fillText(d.code.code, cx, 878)
-      ctx.direction = 'rtl'; ctx.textBaseline = 'alphabetic'
-    } else {
-      coupon(ctx, null, 120, 600, w - 240, 150)
+      ctx.direction = 'ltr'
+      ctx.fillText(d.code.code, cx, 900)
+      ctx.direction = 'rtl'
     }
-    ctx.fillStyle = C.white
+    ctx.fillStyle = C.ink
     ctx.font = font(700, 48)
     ctx.fillText('الرابط في البايو', cx, 1080)
-    footer(`المقاعد محدودة · ${d.host}`, h - 80)
+    ctx.fillStyle = C.muted
+    ctx.font = font(500, 36)
+    ctx.fillText('المقاعد محدودة', cx, 1150)
   }
   return canvas
 }
