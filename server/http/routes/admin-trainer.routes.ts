@@ -21,7 +21,7 @@ import { TrainerPublicTextService } from '../../services/trainer-public-text.ser
 import { TrainerSuggestionService } from '../../services/trainer-suggestion.service'
 import { TrainerDraftingBundleService } from '../../services/trainer-drafting-bundle.service'
 import { TrainerDeclineReplyService } from '../../services/trainer-decline-reply.service'
-import { requirePermission } from '../auth-plugin'
+import { requireAnyPermission, requirePermission } from '../auth-plugin'
 import { blastRadiusSentenceAr, courseBlastRadius } from '../../services/catalog-impact.service'
 import { analyzeImpact } from '../../services/impact.service'
 import { COURSE_PREP_MIN_DAYS } from '../../../src/application/trainer/notice-periods'
@@ -1706,8 +1706,11 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     return earnings.listRules(profileId)
   })
 
+  /* ═══ ومن يضبط الأجر: المديرُ الأكاديميّ أو الماليّة — «C» (٢٦ أكتوبر ٢٠٢٦) ═══
+     وكان للماليّة وحدَها هنا، والمديرُ الأكاديميُّ يضبطه من مُركِّب العقد ولا يضبطه من «الاتفاقية» في ملفّ المدرّب —
+     بابان لرقمٍ واحدٍ بحبّتين. فصار لأيٍّ منهما، و`createdBy` وأثرُ `trainer_compensation.set_rule` يقولان من فعل. */
   app.post('/api/admin/trainer-compensation-rules', {
-    preHandler: requirePermission('trainer.compensation.manage'),
+    preHandler: requireAnyPermission('trainer.compensation.manage', 'trainer.contract.manage'),
     schema: { tags: ['admin-trainers'], summary: 'تعيين قاعدة أتعاب — تغلق السارية الحالية تلقائيا' },
   }, async (req, reply) => {
     const body = z.object({
@@ -1723,6 +1726,16 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     }).parse(req.body)
     const rule = await earnings.setRule(req.auth!.userId, body)
     return reply.status(201).send(rule)
+  })
+
+  /* ═══ وسجلُّ أجره — كلُّ قاعدةٍ بمن ضبطها ومتى (٢٦ أكتوبر ٢٠٢٦) ═══
+     «والأثرُ يقول من فعل» (قرارُ «C»): يُقرأ في خطوة الأجر من «الاتفاقية» في ملفّ المدرّب. وبحبّتَي ضبطه نفسِهما. */
+  app.get('/api/admin/trainers/:profileId/fee-history', {
+    preHandler: requireAnyPermission('trainer.compensation.manage', 'trainer.contract.manage'),
+    schema: { tags: ['admin-trainers'], summary: 'قواعد أجر مدرب واحد — الأحدث أولا، بمن ضبط كلا منها' },
+  }, async (req) => {
+    const { profileId } = z.object({ profileId: z.string().uuid() }).parse(req.params)
+    return earnings.feeHistory(profileId)
   })
 
   app.get('/api/admin/trainer-payouts/preview-cohort/:cohortId', {

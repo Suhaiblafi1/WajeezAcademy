@@ -17,6 +17,7 @@
    (`TrainerContracts.tsx`، `personalChangesAr`). فصار التركيبُ مثلَهما. */
 
 import { RULE_TYPE_AR } from './compensation-labels'
+import { CONTRACT_AMENDMENT_REQUESTED } from './contract-endings'
 
 export type FeeType = 'per_seat' | 'fixed_per_cohort' | 'revenue_share'
 
@@ -97,4 +98,40 @@ export function composerFeeInput(rule: FeeRuleLike | null, form: FeeForm): FeeIn
     referralRate: referral !== null && referral > 0 ? referral : null,
   }
   return rule && sameFeeAsRule(rule, input) ? null : input
+}
+
+/* ═══ وعقدٌ خرج ولم ينفذ — نصُّه مجمَّدٌ بأجره (٢٦ أكتوبر ٢٠٢٦) ═══
+
+   خطوةُ الأجر في «الاتفاقية» تكتب القاعدةَ وحدَها، ونصُّ عقدٍ خرج لا يتغيّر بها: يوقّع المدرّبُ على ما فيه ويُحسب له
+   ما في القاعدة. وتركيبُ العقد وإعادتُه يكتبان الاثنين معا (`setRule` في المعاملة نفسِها). وكانت الخطوةُ للماليّة
+   وحدَها، فصارت للمدير الأكاديميّ معها (قرارُ «C») — وهو من يركّب العقد. فما دام له عقدٌ خرج ولم ينفذ يُقال ذلك قبل
+   الحفظ، والخياران: هنا وحدَه، أو مع العقد في «العقود».
+
+   والنافذُ ليس منه: أجرُ النشط يُغيَّر بالقاعدة، والعقدُ لا يُعاد بأجرٍ جديدٍ له (`fee_active_trainer`). */
+const OUT_PHRASE_AR: Record<string, string> = {
+  draft: 'جاهز ولم يرسل',
+  sent: 'أرسل ولم يوقعه',
+  signed: 'وقعه وينتظر اعتمادك',
+  [CONTRACT_AMENDMENT_REQUESTED]: 'طلب تعديله',
+}
+
+export interface OutContractLike {
+  title: string
+  status: string
+  createdAt?: string | Date | null
+  compensationType?: string | null
+  compensationRate?: string | number | null
+  currency?: string | null
+}
+
+/** أحدثُ عقدٍ خرج ولم ينفذ — بحاله وأجره كما في نصّه. و`null` = لا عقدَ يفترق عن القاعدة بحفظها */
+export function outContractOf<T extends OutContractLike>(contracts: readonly T[]): { contract: T; phraseAr: string; feeAr: string } | null {
+  const time = (c: T) => (c.createdAt ? new Date(c.createdAt).getTime() : 0)
+  const contract = contracts.filter((c) => Object.hasOwn(OUT_PHRASE_AR, c.status)).sort((a, b) => time(b) - time(a))[0]
+  if (!contract) return null
+  const type = contract.compensationType
+  const feeAr = type
+    ? `بأجر ${RULE_TYPE_AR[type] ?? type} ${String(contract.compensationRate ?? 0)} ${type === 'revenue_share' ? '%' : contract.currency ?? ''}`.trim()
+    : 'بلا أجر'
+  return { contract, phraseAr: OUT_PHRASE_AR[contract.status], feeAr }
 }
