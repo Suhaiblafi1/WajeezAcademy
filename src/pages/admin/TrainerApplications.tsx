@@ -26,6 +26,8 @@ import { useTabParam } from "@/hooks/useTabParam";
 import { JOINING_ACT_AR, JOINING_STOPS, joiningLineOf, joiningNextOf, joiningStopOf, type JoiningAct, type JoiningFacts, type JoiningLine, type JoiningNext, type JoiningStop, type JoiningTurn } from "@/application/trainer/joining";
 import EntityAuditTimeline from "@/components/EntityAuditTimeline";
 import { useRealSession } from "@/services/session";
+import { contractsHref, opensAgreementOnly } from "@/application/trainer/record-links";
+import TrainerAgreementOnly from "./TrainerAgreementOnly";
 import { useAutoRefresh } from "@/services/useAutoRefresh";
 import { TrainerDetailOps, TrainerChangeRequests, type TrainerSummary } from "./TrainerOps";
 import { BioSuggestEditor, PitchEditor, PublicProfileEditor, TrainerCourses, type OpsTrainer, type PendingRequest } from "./TrainerRunOps";
@@ -609,7 +611,20 @@ function TrainerCoursesTab({ summary, ops }: { summary?: TrainerSummary; ops?: R
 }
 
 /** إدارة طلبات انضمام المدربين — API حقيقي: مراجعة بشرية، قرارات، عقد، دعوة آمنة */
+/* ═══ ومن يضبط الأجرَ ولا يقرأ الطلبات يفتح «الاتفاقية» وحدَها (قرارُ «a»، ٢٦ أكتوبر ٢٠٢٦) ═══
+
+   الأجرُ يُضبط في «الاتفاقية» من ملفّ المدرّب وحدَها، والماليّةُ تضبطه ولا تقرأ الطلبات. فملفُّه لها «الاتفاقية» وحدَها
+   (`opensAgreementOnly`). ويُنتظر جوابُ الجلسة قبل أن يُختار: لو صُيّر الملفُّ كلُّه قبله لنادى الطلبَ فرُدّ، ثمّ نقلها
+   ردُّه إلى قائمةٍ لا تفتحها. */
 export default function TrainerApplications() {
+  const { user, checked } = useRealSession();
+  const { id } = useParams<{ id: string }>();
+  if (!checked) return <AdminLayout title="المدربون"><span /></AdminLayout>;
+  if (id && opensAgreementOnly(user?.permissions ?? [])) return <TrainerAgreementOnly id={id} />;
+  return <TrainerApplicationsPage />;
+}
+
+function TrainerApplicationsPage() {
   /* `?app=<id>` — الملفُّ المفتوحُ موضعٌ في التاريخ لا حالةٌ في الذاكرة.
      تفصيلُه عند `openDetail` أسفلُ. */
   const [searchParams] = useSearchParams();
@@ -1060,9 +1075,6 @@ export default function TrainerApplications() {
       (result as { emailDelivery?: string } | null)?.emailDelivery,
     ),
   );
-  const contractsHref = (a: { id: string; fullName: string }, act: "contract_new" | "contract") =>
-    `/admin/trainer-contracts?q=${encodeURIComponent(a.fullName)}${act === "contract_new" ? `&prepare=${a.id}` : ""}`;
-
   const rowActions = (a: AppRow): RowAction[] => {
     const items: RowAction[] = [
       { key: "open", label: "افتح الملفّ", icon: FileText, run: () => void openDetail(a.id) },

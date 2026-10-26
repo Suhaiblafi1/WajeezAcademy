@@ -214,8 +214,10 @@ export class EarningsService {
       include: { application: { select: { fullName: true, reference: true, status: true } } },
       orderBy: { createdAt: 'asc' },
     })
+    /* و`applicationId` عنوانُ ملفّه — يفتح منه «الأتعاب» «الاتفاقيةَ» حيث يُضبط أجرُه (قرارُ «a»، ٢٦ أكتوبر ٢٠٢٦) */
     return profiles.map((p) => ({
-      id: p.id, fullName: p.application.fullName, reference: p.application.reference, status: p.application.status,
+      id: p.id, applicationId: p.applicationId,
+      fullName: p.application.fullName, reference: p.application.reference, status: p.application.status,
     }))
   }
 
@@ -504,12 +506,53 @@ export class EarningsService {
     const names = new Map((ids.length === 0 ? [] : await this.prisma.user.findMany({
       where: { id: { in: ids } }, select: { id: true, displayName: true },
     })).map((u) => [u.id, u.displayName]))
+    /* وقاعدةُ الشعبة باسم شعبتها — فلا يُقرأ «30 د.أ» عامّا وهو لشعبةٍ واحدة (قرارُ «a»، ٢٦ أكتوبر ٢٠٢٦) */
+    const cohortIds = [...new Set(rules.map((r) => r.cohortId).filter((x): x is string => !!x))]
+    const cohorts = new Map((cohortIds.length === 0 ? [] : await this.prisma.cohort.findMany({
+      where: { id: { in: cohortIds } }, select: { id: true, title: true },
+    })).map((c) => [c.id, c.title]))
     return rules.map((r) => ({
       ...r,
       rate: r.rate.toString(),
       referralRate: r.referralRate?.toString() ?? null,
       createdByName: r.createdBy ? names.get(r.createdBy) ?? null : null,
+      cohortTitle: r.cohortId ? cohorts.get(r.cohortId) ?? null : null,
     }))
+  }
+
+  /* ═══ شعبُه — لقصر أجره على شعبةٍ واحدة من «الاتفاقية» (قرارُ «a»، ٢٦ أكتوبر ٢٠٢٦) ═══
+
+     كان القصرُ في «الأتعاب» من قائمة الشعب كلِّها (`listCohortOptions`). وصار الأجرُ يُضبط في «الاتفاقية» وحدَها،
+     فيُقصر على شعبةٍ يدرّسها هو: قاعدةُ شعبةٍ لا يدرّسها لا يُحسب عليها شيء. ومع كلٍّ ما سرى عليها من قاعدةٍ خاصّة،
+     فتُقرأ بجانب العامّة — والخاصّةُ تتقدّمها (`activeRule`). والملغاةُ لا تُعرض: لا كشفَ لها. */
+  async feeCohorts(profileId: string) {
+    const links = await this.prisma.cohortTrainer.findMany({
+      where: { profileId, cohort: { status: { not: 'cancelled' } } },
+      select: { cohort: { select: { id: true, title: true, status: true, startsAt: true } } },
+      orderBy: { createdAt: 'desc' },
+    })
+    return Promise.all(links.map(async ({ cohort: c }) => {
+      const own = await this.activeCohortRule(profileId, c.id)
+      return {
+        id: c.id, title: c.title, status: c.status, startsAt: c.startsAt,
+        rule: own && {
+          type: own.type, rate: own.rate.toString(), currency: own.currency,
+          minSeats: own.minSeats, referralRate: own.referralRate?.toString() ?? null,
+        },
+      }
+    }))
+  }
+
+  /** قاعدةُ الشعبة الخاصّةُ وحدَها إن سرت — بلا رجوعٍ إلى العامّة كما يرجع `activeRule` */
+  private activeCohortRule(profileId: string, cohortId: string, at = new Date()) {
+    return this.prisma.trainerCompensationRule.findFirst({
+      where: {
+        profileId, cohortId,
+        effectiveFrom: { lte: at },
+        OR: [{ effectiveTo: null }, { effectiveTo: { gt: at } }],
+      },
+      orderBy: { effectiveFrom: 'desc' },
+    })
   }
 
   /* القاعدة السارية لمدرب الآن — بدقة النطاق: شعبة محددة ← دورة محددة ← عامة، والأحدث سرياناً */

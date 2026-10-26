@@ -8,7 +8,8 @@
    ② وتحت الرقم سجلُّه: من مسار سجلّ أجره، وكلُّ سطرٍ باسم من ضبط، ويُعاد بعد الحفظ.
    ③ وشرحُها لا يَعِد بزرٍّ لا وجودَ له («اعتمده نهائيّا») — يعبر حين نعتمد توقيعَه.
    ④ وإن خرج له عقدٌ لم ينفذ قيل قبل الحفظ إنّ نصَّه لا يتغيّر به، والخياران: هنا وحدَه، أو مع العقد في «العقود».
-      فالخطوةُ تكتب القاعدةَ وحدَها، والتركيبُ والإعادةُ يكتبان الاثنين — وبلا هذا يوقّع على رقمٍ ويُحسب له غيرُه. */
+      فالخطوةُ تكتب القاعدةَ وحدَها، والتركيبُ والإعادةُ يكتبان الاثنين — وبلا هذا يوقّع على رقمٍ ويُحسب له غيرُه.
+      وذلك للأجر العامّ وحدَه: قاعدةُ شعبةٍ واحدة (قرارُ «a»، ٢٦ أكتوبر ٢٠٢٦) لا تمسّ نصَّ العقد. */
 
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -89,11 +90,11 @@ describe('④ وعقد خرج ولم ينفذ يقال قبل الحفظ', () =>
 
   it('⚠️ والخطوة تقوله بخيارين — «العقود» لمن يركّب العقد وحده', () => {
     expect(FEE).toContain('const out = outContractOf(contracts);')
-    const note = /\{out && \(\s*<Inset[\s\S]*?<\/Inset>/.exec(FEE)?.[0] ?? ''
+    const note = /\{out && !scope && \(\s*<Inset[\s\S]*?<\/Inset>/.exec(FEE)?.[0] ?? ''
     expect(note, 'لا يقال شيء').toContain('{out.feeAr}')
     expect(note).toContain('الحفظ هنا يغيّر القاعدة وحدها')
-    expect(FEE).toContain('{out ? "غيّره هنا وحده" : live ? "استبدل القاعدة السارية" : "اضبط الاتفاق الماليّ"}')
-    expect(FEE).toMatch(/\{out && contractsHref && \(\s*<Button as=\{Link\} to=\{contractsHref\}/)
+    expect(FEE).toContain('{scope ? "اضبطه لهذه الشعبة" : out ? "غيّره هنا وحده" : live ? "استبدل القاعدة السارية" : "اضبط الاتفاق الماليّ"}')
+    expect(FEE).toMatch(/\{out && !scope && contractsHref && \(\s*<Button as=\{Link\} to=\{contractsHref\}/)
     expect(PREP).toContain('contractsHref={can("trainer.contract.manage") ? contractsHref : undefined}')
     expect(PREP).toMatch(/profileId=\{profileId\} live=\{activeRule\} contracts=\{contracts\}/)
     expect(code('src/pages/admin/TrainerApplications.tsx')).toContain('contractsHref={contractsHref(a, "contract")}')

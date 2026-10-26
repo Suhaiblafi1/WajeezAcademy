@@ -61,7 +61,8 @@ export function requireAnyPermission(...keys: PermissionKey[]) {
         const who = rolesWithPermissionAr(k)
         return `«${what}»${who.length ? ` (يملكها: ${who.join('، ')})` : ''}`
       })
-      const message_ar = `هذا الإجراء يتطلّب إحدى صلاحيّتين: ${each.join(' أو ')}.`
+      /* والعددُ يُقال كما هو: «إحدى صلاحيّتين» لاثنتين، و«إحدى هذه الصلاحيّات» لما زاد */
+      const message_ar = `هذا الإجراء يتطلّب ${keys.length === 2 ? 'إحدى صلاحيّتين' : 'إحدى هذه الصلاحيّات'}: ${each.join(' أو ')}.`
       return reply.status(403).send({ error: { code: 'forbidden', message_ar, required: keys } })
     }
   }
