@@ -17,11 +17,24 @@ export const FIRST_TIME_PROMO = {
   percentOff: 10,
   /** لمن لم يشترِ من قبل — القيد يُطبَّق عند الفوترة لا في العرض (`server/services/commerce/first-purchase.ts`) */
   labelAr: 'لأول عملية شراء',
+  /** ومن اختار أكثر من دورة: يقع على أغلاها وحدَها (`promoDiscountOn`) */
+  topLineAr: 'على الدورة الأعلى سعرا',
 } as const
 
 /** السعر بعد الكود — تقريب إلى أقرب صحيح كما تفعل الفوترة */
 export function priceAfterPromo(amount: number): number {
   return Math.round(amount * (1 - FIRST_TIME_PROMO.percentOff / 100))
+}
+
+/** ما يخصمه الكودُ من سلّة — من الدورة الأعلى سعرا وحدَها (قرارُ صاحب المنصّة، ٢٦ أكتوبر ٢٠٢٦).
+    وعاؤه حصّتُها ممّا يدفعه بعد الباقة، بنسبة سعرها من المجموع — كما تحسبه الفوترة
+    (`topLineOnly` في `cart-pricing.ts`)، فلا تَعِد الصفحةُ بأكثر ممّا يُخصم. */
+export function promoDiscountOn(payable: number, prices: readonly number[]): number {
+  const sum = prices.reduce((s, p) => s + p, 0)
+  if (sum <= 0 || payable <= 0) return 0
+  const top = Math.max(...prices)
+  const base = top === sum ? payable : (payable * top) / sum
+  return Math.round(base * FIRST_TIME_PROMO.percentOff) / 100
 }
 
 /** هل الرمز الذي كتبه المستخدم هو رمز التشجيع؟ — بلا حساسية لحالة الأحرف ولا للفراغات */
