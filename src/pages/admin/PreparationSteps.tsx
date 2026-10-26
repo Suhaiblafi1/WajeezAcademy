@@ -71,10 +71,17 @@ export interface PrepRule {
   effectiveFrom: string;
 }
 
-/** قاعدةٌ من سجلّ أجره — بمن ضبطها (`GET /api/admin/trainers/:profileId/fee-history`) */
+/** قاعدةٌ من سجلّ أجره — بمن ضبطها، وبشعبتها إن قُصرت عليها (`GET /api/admin/trainers/:profileId/fee-history`) */
 interface FeeHistoryRow {
   id: string; type: string; rate: string; currency: string;
   effectiveFrom: string; effectiveTo: string | null; createdByName: string | null;
+  cohortTitle?: string | null;
+}
+
+/** شعبةٌ يدرّسها — وقاعدتُها الخاصّةُ إن سرت (`GET /api/admin/trainers/:profileId/fee-cohorts`) */
+interface FeeCohort {
+  id: string; title: string; status: string;
+  rule: { type: string; rate: string; currency: string; minSeats: number; referralRate: string | null } | null;
 }
 
 export interface PrepProposal {
@@ -205,6 +212,18 @@ function FeeStep({
   const [rate, setRate] = useState("");
   const [minSeats, setMinSeats] = useState("");
   const [referralRate, setReferralRate] = useState("");
+  /* ═══ ولشعبةٍ واحدةٍ من شعبه — كما كان في «الأتعاب» (قرارُ «a»، ٢٦ أكتوبر ٢٠٢٦) ═══
+     صار الأجرُ يُضبط هنا وحدَه، وكان في «الأتعاب» قصرُه على شعبة: قاعدتُها تتقدّم العامّة (`activeRule`). فلا يُفقد
+     ذلك بانتقاله: «يسري على» شعبه كلّها، أو شعبةٍ يدرّسها. و`""` العامّة. */
+  const [scope, setScope] = useState("");
+  const [cohorts, setCohorts] = useState<FeeCohort[]>([]);
+  const loadCohorts = useCallback(() => {
+    apiGet<FeeCohort[]>(`/api/admin/trainers/${profileId}/fee-cohorts`)
+      .then(setCohorts)
+      .catch(() => setCohorts([]));
+  }, [profileId]);
+  useEffect(() => { loadCohorts(); }, [loadCohorts]);
+  const own = cohorts.filter((c) => c.rule);
   /* ═══ وسجلُّ أجره — من ضبط كلَّ قاعدةٍ ومتى (قرارُ «C»، ٢٦ أكتوبر ٢٠٢٦) ═══
      يضبطه المديرُ الأكاديميُّ أو الماليّة، «والأثرُ يقول من فعل» — فيُقرأ هنا تحت الرقم لا في شاشةٍ أخرى. */
   const [history, setHistory] = useState<FeeHistoryRow[] | null>(null);
@@ -227,11 +246,13 @@ function FeeStep({
         rate: Number(rate),
         ...(minSeats.trim() ? { minSeats: Number(minSeats) } : {}),
         ...(type === "per_seat" && referralRate.trim() ? { referralRate: Number(referralRate) } : {}),
+        ...(scope ? { cohortId: scope } : {}),
       });
       setRate("");
       setMinSeats("");
       setReferralRate("");
       loadHistory();
+      loadCohorts();
       await onChanged();
     }, "ضبط الاتفاق الماليّ");
 
@@ -255,8 +276,30 @@ function FeeStep({
           عنده صفرا.
         </p>
       )}
+      {own.length > 0 && (
+        <ul className="grid gap-1">
+          {own.map((c) => (
+            <li key={c.id} className="text-read leading-6 text-muted-foreground">
+              ولشعبة «{c.title}»: <b className="text-foreground">{RULE_TYPE_AR[c.rule!.type] ?? c.rule!.type}</b>{" "}
+              <span className="tabular-nums" dir="ltr">
+                {c.rule!.rate} {c.rule!.type === "revenue_share" ? "%" : c.rule!.currency}
+              </span>
+              {" "}— تتقدّم العامّة في هذه الشعبة
+            </li>
+          ))}
+        </ul>
+      )}
 
       <div className="grid gap-2 sm:grid-cols-2">
+        {cohorts.length > 0 && (
+          <label className="grid gap-1 text-read text-muted-foreground sm:col-span-2">
+            يسري على
+            <select value={scope} onChange={(e) => setScope(e.target.value)} className={inputCls}>
+              <option value="">شعبه كلّها</option>
+              {cohorts.map((c) => <option key={c.id} value={c.id}>شعبة «{c.title}» وحدها</option>)}
+            </select>
+          </label>
+        )}
         <label className="grid gap-1 text-read text-muted-foreground">
           نموذج الأجر
           <select value={type} onChange={(e) => setType(e.target.value)} className={inputCls}>
@@ -292,7 +335,7 @@ function FeeStep({
         )}
       </div>
 
-      {out && (
+      {out && !scope && (
         <Inset as="p" tone="warn" className="px-3.5 py-2.5 text-read leading-6">
           عقده «{out.contract.title}» {out.phraseAr}، {out.feeAr}. الحفظ هنا يغيّر القاعدة وحدها: يبقى نصّ
           العقد بأجره، ويحسب له الأجر الجديد.
@@ -306,9 +349,9 @@ function FeeStep({
             disabled={!(Number(rate) > 0)}
             onClick={() => void save()}
           >
-            {out ? "غيّره هنا وحده" : live ? "استبدل القاعدة السارية" : "اضبط الاتفاق الماليّ"}
+            {scope ? "اضبطه لهذه الشعبة" : out ? "غيّره هنا وحده" : live ? "استبدل القاعدة السارية" : "اضبط الاتفاق الماليّ"}
           </Button>
-          {out && contractsHref && (
+          {out && !scope && contractsHref && (
             <Button as={Link} to={contractsHref} tone="secondary" size="sm" icon={FileSignature}>
               غيّره مع العقد في «العقود»
             </Button>
@@ -331,6 +374,7 @@ function FeeStep({
                   {RULE_TYPE_AR[h.type] ?? h.type}{" "}
                   <span className="tabular-nums" dir="ltr">{h.rate} {h.type === "revenue_share" ? "%" : h.currency}</span>
                 </b>
+                {h.cohortTitle && <> لشعبة «{h.cohortTitle}»</>}
                 {" — "}{h.createdByName ? `ضبطه ${h.createdByName}` : "لا يعرف من ضبطه"} · {fmtDateLong(h.effectiveFrom)}
                 {h.effectiveTo ? <> · أغلق {fmtDateLong(h.effectiveTo)}</> : <> · السارية</>}
               </li>
@@ -770,9 +814,11 @@ const CONTRACT_STATUS_AR: Record<string, string> = {
 const PAST_STATUSES = new Set(["revoked", "superseded"]);
 
 function ContractStep({
-  contracts, canManage, busy, run, onChanged, composeHref,
+  contracts, canManage, canApprove, busy, run, onChanged, composeHref,
 }: {
   contracts: PrepContract[]; canManage: boolean;
+  /** اعتمادُ التوقيع يفتح حسابا ويمنح دورا — فيحتاج قرارَ المدرّبين مع العقود (`requireDecideToo`) */
+  canApprove: boolean;
   busy: boolean; run: (work: () => Promise<unknown>, okAr: string) => Promise<void>;
   onChanged: () => void | Promise<void>;
   /** مُركِّبُ «العقود» لهذا المدرّب — المُركِّبُ الواحد */
@@ -877,8 +923,13 @@ function ContractStep({
 
       {!canManage ? null : (
         <>
-          {/* ── اعتمادُ التوقيع ── */}
-          {awaitingCountersign && (
+          {/* ── اعتمادُ التوقيع ── وللماليّة سطرٌ لا زرّ: الخادمُ يردّ اعتمادَها (قرارُ «a»، ٢٦ أكتوبر ٢٠٢٦) */}
+          {awaitingCountersign && !canApprove && (
+            <p className="text-read leading-6 text-muted-foreground">
+              وقّعه وينتظر اعتماد توقيعه — يعتمده من يقرّر في المدربين.
+            </p>
+          )}
+          {awaitingCountersign && canApprove && (
             signOff === awaitingCountersign.id ? (
               <div className="grid gap-2">
                 <textarea
@@ -1079,7 +1130,8 @@ export default function PreparationSteps({
       >
         <ContractStep
           contracts={contracts} composeHref={composeHref}
-          canManage={can("trainer.contract.manage")} busy={busy} run={run} onChanged={onChanged}
+          canManage={can("trainer.contract.manage")} canApprove={can("trainer.applications.decide")}
+          busy={busy} run={run} onChanged={onChanged}
         />
       </Step>
     </div>

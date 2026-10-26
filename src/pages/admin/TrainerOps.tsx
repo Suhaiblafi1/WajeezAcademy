@@ -1,19 +1,20 @@
 /* عمليات إدارة المدربين المتقدمة — مقابلات ونتائجها، والدورات المؤهَّل لها، ومراجعة اقتراحات
    تعديل الدورات. كلها API حقيقي من admin-trainer.routes. والعقدُ في «التجهيز» (`PreparationSteps`). */
 import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router";
 import {
   Wallet,
   Activity, AlertTriangle, BadgeCheck, Banknote, Briefcase, CalendarCheck, CheckCircle2, ChevronDown,
-  Globe, Info, Loader2, Settings2, Star, XCircle, Zap,
+  Globe, Info, Loader2, Star, XCircle, Zap,
 } from "lucide-react";
 import { apiGet, apiPost, ApiError } from "@/services/api";
 import { fmtDate, fmtDateTime } from "@/application/text/format-ar";
 import { MANUAL_PAYOUT_AR } from "@/application/trainer/pay-readiness";
 import { PAYOUT_OBJECTION_DAYS } from "@/application/trainer/notice-periods";
 import ConfirmAction from "@/components/ConfirmAction";
-import { LEDGER_CURRENCY } from "@/application/commerce/presentment"
 
 import { RULE_TYPE_AR } from "@/application/trainer/compensation-labels";
+import { agreementHref } from "@/application/trainer/record-links";
 import { canRemindToBook } from "@/application/trainer/application-options";
 import { mailOutcomeAr } from "@/application/notifications/delivery";
 import { Card, Inset, Panel } from "@/components/ui/Surface";
@@ -608,18 +609,12 @@ interface PayoutRow {
 }
 interface ProfileOpt { id: string; fullName: string; reference: string; status?: string }
 interface TrainerSummaryRow {
-  id: string; fullName: string; reference: string; status: string;
+  id: string; applicationId: string; fullName: string; reference: string; status: string;
   rule: { type: string; rate: number; currency: string; minSeats: number; referralRate: number | null } | null;
   pending: number; approved: number; paid: number; currency: string;
 }
 
 
-interface RuleRow {
-  id: string; profileId: string; type: string; rate: string | number; currency: string;
-  minSeats: number; courseId?: string | null; cohortId?: string | null;
-  effectiveFrom: string; effectiveTo?: string | null;
-  profile: { application?: { fullName: string } | null };
-}
 interface CohortOpt { id: string; title: string; courseTitle: string; status: string; endsAt?: string | null }
 interface CohortPreview {
   cohort: { id: string; title: string; status: string; courseTitle: string };
@@ -633,7 +628,6 @@ interface CohortPreview {
 export function TrainerPayouts() {
   const [rows, setRows] = useState<PayoutRow[]>([]);
   const [profiles, setProfiles] = useState<ProfileOpt[]>([]);
-  const [rules, setRules] = useState<RuleRow[]>([]);
   const [allCohorts, setAllCohorts] = useState<CohortOpt[]>([]);
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState("");
@@ -651,7 +645,6 @@ export function TrainerPayouts() {
     { description: "", amount: "", sourceRef: "" },
   ]);
   /* قواعد الأتعاب والتوليد */
-  const [ruleForm, setRuleForm] = useState({ profileId: "", type: "per_seat", rate: "", minSeats: "", referralRate: "", cohortId: "" });
   /* سطرٌ لكلّ مدرّب: قاعدتُه وما يُنتظر له وما اعتُمد وما دُفع — كان الاسمُ
      يختفي بعد تأكيد التكلفة لأنّ لا موضعَ يجمعه بحالته الماليّة. */
   const [summary, setSummary] = useState<TrainerSummaryRow[]>([]);
@@ -662,17 +655,16 @@ export function TrainerPayouts() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [p, profs, r, sum, cohorts] = await Promise.all([
+      const [p, profs, sum, cohorts] = await Promise.all([
         apiGet<PayoutRow[]>(`/api/admin/trainer-payouts${filter ? `?status=${filter}` : ""}`),
         apiGet<ProfileOpt[]>("/api/admin/trainer-profiles"),
-        apiGet<RuleRow[]>("/api/admin/trainer-compensation-rules"),
         apiGet<TrainerSummaryRow[]>("/api/admin/trainer-compensation/summary").catch(() => [] as TrainerSummaryRow[]),
         /* لا `‎/api/admin/cohorts`: هي وراء `cohort.manage` ولا تملكها
            المالية، فكان `Promise.all` يسقط كلُّه بـ٤٠٣ — فتموت الشاشةُ
            بتمامها لا حقلُ الشعب وحدَه. وهذه وراء صلاحيّة الأتعاب نفسِها. */
         apiGet<CohortOpt[]>("/api/admin/trainer-payouts/cohort-options"),
       ]);
-      setRows(p); setProfiles(profs); setRules(r); setAllCohorts(cohorts); setSummary(sum);
+      setRows(p); setProfiles(profs); setAllCohorts(cohorts); setSummary(sum);
     } catch (e) { setMsg(e instanceof ApiError ? e.message : "تعذر تحميل الكشوف"); }
     finally { setLoading(false); }
   }, [filter]);
@@ -687,16 +679,6 @@ export function TrainerPayouts() {
     finally { setBusy(false); }
   };
 
-  const saveRule = () => act(async () => {
-    await apiPost("/api/admin/trainer-compensation-rules", {
-      profileId: ruleForm.profileId, type: ruleForm.type, rate: Number(ruleForm.rate),
-      minSeats: ruleForm.type === "per_seat" && ruleForm.minSeats !== "" ? Number(ruleForm.minSeats) : undefined,
-      /* أجرُ المقعد الذي جاء عبر رابط المدرّب — للمقعد وحدَه، والسعرُ على الطالب واحد */
-      referralRate: ruleForm.type === "per_seat" && ruleForm.referralRate !== "" ? Number(ruleForm.referralRate) : undefined,
-      cohortId: ruleForm.cohortId || undefined,
-    });
-    setRuleForm({ ...ruleForm, rate: "", minSeats: "", referralRate: "", cohortId: "" });
-  }, "حفظت القاعدة — صارت سارية من الآن");
 
   const doPreview = async () => {
     setBusy(true); setMsg(""); setPreview(null); setBatchResult(null);
@@ -787,7 +769,14 @@ export function TrainerPayouts() {
                     <td className="py-2.5 pl-3">
                       {t.rule
                         ? <>{RULE_TYPE_AR[t.rule.type] ?? t.rule.type} · <b dir="ltr" className="font-mono">{t.rule.rate}</b> {t.rule.currency}{t.rule.minSeats > 0 ? ` · حدّ أدنى ${t.rule.minSeats}` : ""}{t.rule.referralRate != null ? <> · عبر رابطه <b dir="ltr" className="font-mono">{t.rule.referralRate}</b></> : ""}</>
-                        : <span className="font-bold text-gold-ink">لا قاعدة — عيّنها أدناه</span>}
+                        : <span className="font-bold text-gold-ink">لا قاعدة</span>}
+                      {/* ═══ والأجرُ يُضبط في «الاتفاقية» من ملفّه وحدَها (قرارُ «a»، ٢٦ أكتوبر ٢٠٢٦) ═══
+                          كان هنا نموذجُ القاعدة — بابٌ ثانٍ لرقمٍ واحد. فصار كلُّ سطرٍ يفتح «الاتفاقية» في ملفّه، وتفتحها
+                          الماليّةُ وحدَها (`opensAgreementOnly`): الأجرُ لشعبه كلّها أو لشعبةٍ منها، بسجلّه ومن ضبطه. */}
+                      {" · "}
+                      <Link to={agreementHref(t.applicationId)} className="font-bold text-teal-light-ink underline-offset-2 hover:underline">
+                        {t.rule ? "غيّره في «الاتفاقية»" : "اضبطه في «الاتفاقية»"}
+                      </Link>
                     </td>
                     <td className="py-2.5 pl-3 tabular-nums" dir="ltr">{t.pending.toLocaleString("en-US")} {t.currency}</td>
                     <td className="py-2.5 pl-3 tabular-nums" dir="ltr">{t.approved.toLocaleString("en-US")} {t.currency}</td>
@@ -799,60 +788,6 @@ export function TrainerPayouts() {
           </div>
         )}
       </Panel>
-
-      {/* قاعدة الأتعاب — تحدد كيف تُحسب مستحقات كل مدرب تلقائياً */}
-      <FoldSection icon={Settings2} title="قواعد الأتعاب — كيف يحسب أجر كل مدرب">
-        <div className="space-y-3">
-          <div className="flex flex-wrap gap-2">
-            <select value={ruleForm.profileId} onChange={(e) => setRuleForm({ ...ruleForm, profileId: e.target.value })} className={`${selectCls} flex-1`}>
-              <option value="">اختر المدرب…</option>
-              {profiles.map((p) => <option key={p.id} value={p.id}>{p.fullName} — {p.reference}</option>)}
-            </select>
-            <select value={ruleForm.type} onChange={(e) => setRuleForm({ ...ruleForm, type: e.target.value })} className={`${selectCls} w-44`}>
-              {Object.entries(RULE_TYPE_AR).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-            </select>
-            <input value={ruleForm.rate} onChange={(e) => setRuleForm({ ...ruleForm, rate: e.target.value })}
-              placeholder={ruleForm.type === "revenue_share" ? "النسبة ٪" : `المبلغ ${LEDGER_CURRENCY}`} dir="ltr" inputMode="decimal"
-              className={`${inputCls} w-28 font-mono`} />
-            {ruleForm.type === "per_seat" && (
-              <input value={ruleForm.minSeats} onChange={(e) => setRuleForm({ ...ruleForm, minSeats: e.target.value })}
-                placeholder="حد أدنى للمقاعد" dir="ltr" inputMode="numeric" title="يحاسب المدرب على هذا العدد حتى لو قلّ التسجيل الفعلي"
-                className={`${inputCls} w-32 font-mono`} />
-            )}
-            {ruleForm.type === "per_seat" && (
-              <input value={ruleForm.referralRate} onChange={(e) => setRuleForm({ ...ruleForm, referralRate: e.target.value })}
-                placeholder="أجر المقعد عبر رابطه" dir="ltr" inputMode="decimal" title="ما يقبضه عن كلّ متعلّم جاء عبر رابط دعوته — والسعر على الطالب واحد"
-                className={`${inputCls} w-40 font-mono`} />
-            )}
-            <select value={ruleForm.cohortId} onChange={(e) => setRuleForm({ ...ruleForm, cohortId: e.target.value })}
-              title="اتركها «عامة» لتسري على كل الشعب، أو خصصها لشعبة واحدة" className={`${selectCls} w-48`}>
-              <option value="">عامة — كل الشعب</option>
-              {allCohorts.map((c) => <option key={c.id} value={c.id}>خاصة: {c.title}</option>)}
-            </select>
-            <Button tone="confirm" size="sm" disabled={busy || !ruleForm.profileId || !(Number(ruleForm.rate) > 0)} onClick={saveRule}>
-              حفظ القاعدة
-            </Button>
-          </div>
-          {ruleForm.profileId && (() => {
-            const active = rules.find((r) => r.profileId === ruleForm.profileId && !r.effectiveTo
-              && !r.cohortId && !r.courseId && !ruleForm.cohortId)
-              ?? rules.find((r) => r.profileId === ruleForm.profileId && !r.effectiveTo && r.cohortId === ruleForm.cohortId && ruleForm.cohortId);
-            return (
-              <Inset as="p" className="px-3 py-2 text-read text-muted-foreground">
-                {active
-                  ? <>القاعدة السارية{active.cohortId ? " لهذه الشعبة" : " (العامة)"}: <b className="text-foreground">{RULE_TYPE_AR[active.type]}</b> بمعدل <b dir="ltr" className="font-mono text-foreground">{Number(active.rate)}</b> {active.currency}
-                      {active.type === "per_seat" && active.minSeats > 0 ? <> · حد أدنى <b className="text-foreground">{active.minSeats}</b> مقاعد</> : null}
-                      {" "}— حفظ قاعدة جديدة بالنطاق نفسه يغلقها تلقائيا ويحفظ تاريخها.</>
-                  : "لا قاعدة سارية بهذا النطاق بعد — بدونها لن يولّد أي كشف تلقائي."}
-              </Inset>
-            );
-          })()}
-          <p className="text-read leading-5 text-muted-foreground">
-            قاعدة الشعبة الخاصّة تتقدّم على العامّة. والحدّ الأدنى للمقاعد: يدفع للمدرب عن هذا العدد حتى لو سجّل أقلّ —
-            مثال: معدل 40 وحد أدنى 5، سجّل 3 ← يحتسب 5 × 40.
-          </p>
-        </div>
-      </FoldSection>
 
       {/* التوليد التلقائي من الشعب المكتملة */}
       <FoldSection icon={Zap} title="توليد تلقائي من شعبة مكتملة">

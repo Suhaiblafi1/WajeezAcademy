@@ -200,6 +200,17 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
     return review.getApplication(id)
   })
 
+  /* ═══ «الاتفاقية» وحدَها — لمن يضبط الأجرَ ولا يفتح الملفَّ كلَّه (قرارُ «a»، ٢٦ أكتوبر ٢٠٢٦) ═══
+     الأجرُ يُضبط في «الاتفاقية» وحدَها، والماليّةُ لا تملك `trainer.applications.view`. فهذا بابُها: الأجرُ والعقودُ
+     بلا طلبٍ ولا مقابلةٍ ولا وثائق (`agreementOf`). ولمن يقرأ الملفَّ كلَّه كذلك — هي بعضُه. */
+  app.get('/api/admin/trainer-applications/:id/agreement', {
+    preHandler: requireAnyPermission('trainer.applications.view', 'trainer.compensation.manage', 'trainer.contract.manage'),
+    schema: { tags: ['admin-trainers'], summary: '«الاتفاقية» من ملف المدرب وحدها — الأجر والعقود، بلا طلب ولا مقابلة ولا وثائق' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    return review.agreementOf(id, req.auth!.permissions)
+  })
+
   app.post('/api/admin/trainer-applications/:id/reviews', {
     preHandler: requirePermission('trainer.applications.review'),
     schema: { tags: ['admin-trainers'], summary: 'تسجيل تقييم روبرك بشري — تسعة محاور من 1 إلى 5' },
@@ -1740,6 +1751,16 @@ export function registerAdminTrainerRoutes(app: FastifyInstance, prisma: PrismaC
   }, async (req) => {
     const { profileId } = z.object({ profileId: z.string().uuid() }).parse(req.params)
     return earnings.feeHistory(profileId)
+  })
+
+  /* ═══ وشعبُه — لقصر أجره على شعبةٍ منها في «الاتفاقية» (قرارُ «a»، ٢٦ أكتوبر ٢٠٢٦) ═══
+     بحبّتَي ضبط الأجر نفسِهما: من يضبطه يقصره. و`cohort-options` تبقى لتوليد الكشوف في «الأتعاب». */
+  app.get('/api/admin/trainers/:profileId/fee-cohorts', {
+    preHandler: requireAnyPermission('trainer.compensation.manage', 'trainer.contract.manage'),
+    schema: { tags: ['admin-trainers'], summary: 'شعب المدرب غير الملغاة — ومع كل منها قاعدتها الخاصة إن سرت' },
+  }, async (req) => {
+    const { profileId } = z.object({ profileId: z.string().uuid() }).parse(req.params)
+    return earnings.feeCohorts(profileId)
   })
 
   app.get('/api/admin/trainer-payouts/preview-cohort/:cohortId', {

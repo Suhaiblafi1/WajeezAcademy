@@ -324,6 +324,29 @@ export interface ReissueForSigningInput {
   specialTermsAr?: string | null
 }
 
+/* ═══ ما تقرؤه «الاتفاقية» من عقوده — قصّتُه وأجرُه، لا رمزُه ولا ما وقّع به من عنوانٍ وهاتف ═══
+   وهو ما يقرؤه `PrepContract` في `PreparationSteps.tsx` حرفا بحرف: الحالُ والأجرُ المجمَّدُ في نصّه، وتواريخُ قصّته
+   (`contract-story.ts`)، وطلبُ التعديل وجوابُه، والبصمةُ التي تقول إنّ له نصّا يُفتح. */
+const AGREEMENT_CONTRACT_FIELDS = {
+  id: true, title: true, status: true, revision: true, createdAt: true, gatesActivation: true,
+  compensationType: true, compensationRate: true, currency: true,
+  signerLegalName: true, signedAt: true, countersignedAt: true, signatureApprovedAt: true,
+  sentAt: true, firstOpenedAt: true, revokedAt: true, replacesContractId: true,
+  declinedAt: true, declineReasonAr: true, declineReplyAr: true,
+  amendmentRequestAr: true, amendmentRequestedAt: true, amendmentReplyAr: true, amendmentRepliedAt: true,
+  bodyHash: true,
+} satisfies Prisma.TrainerContractSelect
+
+/** القاعدةُ السارية كما تقرؤها الشاشة — صورةٌ واحدةٌ للملفّ كلِّه ولـ«الاتفاقية» وحدَها */
+function ruleView(rule: Awaited<ReturnType<EarningsService['activeRule']>>) {
+  return rule && {
+    id: rule.id, type: rule.type, rate: rule.rate.toString(),
+    currency: rule.currency, minSeats: rule.minSeats,
+    referralRate: rule.referralRate?.toString() ?? null,
+    effectiveFrom: rule.effectiveFrom,
+  }
+}
+
 export class TrainerReviewService {
   private prisma: PrismaClient
   private apps: TrainerApplicationService
@@ -651,12 +674,7 @@ export class TrainerReviewService {
           signedNameAr: lastContract.signerLegalName,
         },
       },
-      activeCompensationRule: activeRule && {
-        id: activeRule.id, type: activeRule.type, rate: activeRule.rate.toString(),
-        currency: activeRule.currency, minSeats: activeRule.minSeats,
-        referralRate: activeRule.referralRate?.toString() ?? null,
-        effectiveFrom: activeRule.effectiveFrom,
-      },
+      activeCompensationRule: ruleView(activeRule),
       accessTokenHash: undefined, emailVerifyTokenHash: undefined,
       /* وهاشُ رمزِ جواب المؤجَّل كذلك — لا يُقرأ في الشاشة ولا يلزمها (٦ أكتوبر ٢٠٢٦) */
       deferredInterestTokenHash: undefined,
@@ -691,6 +709,49 @@ export class TrainerReviewService {
         publicVisibility: app.profile?.publicVisibility ?? false,
         suspendedAt: app.profile?.suspendedAt ?? null,
       },
+    }
+  }
+
+  /* ═══ «الاتفاقية» وحدَها — بابُ الماليّة إلى أجر المدرّب (قرارُ «a»، ٢٦ أكتوبر ٢٠٢٦) ═══
+
+     يُضبط الأجرُ في «الاتفاقية» من ملفّ المدرّب وحدَها، ويضبطه المديرُ الأكاديميُّ أو الماليّة (قرارُ «C»). والماليّةُ
+     لا تفتح الملفَّ كلَّه: فيه طلبُه ومقابلتُه ووثائقُه، وبابُه `trainer.applications.view`. فسُئل صاحبُ المنصّة: أين
+     تغيّر الماليّةُ أجرا؟ فقال «a»: تفتح «الاتفاقية» وحدَها. فهذه حمولتُها وحدَها — الاسمُ والجاهزيّةُ والقاعدةُ السارية
+     والعقودُ بقصّتها — بلا وثيقةٍ ولا مقابلةٍ ولا سيرة، ولا رمزِ توقيع. والدوراتُ واقتراحاتُه لمن يعمل فيها وحدَه:
+     خطوتُها مقفلةٌ على غيره، فلا يُرسَل ما لا يُعرض. */
+  async agreementOf(applicationId: string, permissions: readonly string[]) {
+    const seesCourses = permissions.includes('trainer.qualify') || permissions.includes('trainer.change.review')
+    const titled = { include: { versions: { orderBy: { version: 'desc' as const }, take: 1, select: { titleAr: true } } } }
+    const app = await this.prisma.trainerApplication.findUnique({
+      where: { id: applicationId },
+      select: {
+        id: true, fullName: true, reference: true, status: true,
+        profile: {
+          select: {
+            id: true, legalNameAr: true, suspendedAt: true,
+            contracts: { select: AGREEMENT_CONTRACT_FIELDS, orderBy: { createdAt: 'asc' } },
+            qualifications: { include: { course: titled } },
+            courseProposals: { orderBy: { createdAt: 'asc' }, include: { course: titled } },
+          },
+        },
+      },
+    })
+    if (!app) throw new AuthError('not_found', 'الطلب غير موجود', 404)
+    const profile = app.profile
+    const [readiness, activeRule] = await Promise.all([
+      this.readinessFor(profile?.id ?? null),
+      profile ? new EarningsService(this.prisma).activeRule(profile.id) : Promise.resolve(null),
+    ])
+    return {
+      id: app.id, fullName: app.fullName, reference: app.reference, status: app.status,
+      profile: profile && {
+        id: profile.id, legalNameAr: profile.legalNameAr, suspendedAt: profile.suspendedAt,
+        contracts: profile.contracts,
+        qualifications: seesCourses ? profile.qualifications : [],
+        courseProposals: seesCourses ? profile.courseProposals : [],
+      },
+      readiness,
+      activeCompensationRule: ruleView(activeRule),
     }
   }
 
