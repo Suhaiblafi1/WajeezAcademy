@@ -100,6 +100,7 @@ import {
   CONTRACT_DOCUMENT_KINDS, DEFAULT_REQUIRED_DOCUMENTS,
   hasRequiredIdentityDocument, readRequiredDocuments, type RequiredDocument, requiredDocumentLabelsAr } from '../../src/application/trainer/contract-documents'
 import { CONTRACT_SIGNING_LINK_DAYS, FINAL_REMINDER_DAYS } from '../../src/application/trainer/notice-periods'
+import { recordSignupSource } from './signup-source.service'
 import {
   computeReadiness, overrideReasonProblemAr, readinessBlockMessageAr, type Readiness,
 } from '../../src/application/trainer/readiness'
@@ -2313,6 +2314,8 @@ export class TrainerReviewService {
         : (await tx.user.create({
             data: { email, displayName: fullName, passwordHash: passwordHash!, status: 'invited' },
           })).id
+      /* حسابٌ أنشأه مديرٌ لا صاحبُه — ويُقال ذلك في قائمة المستخدمين (`signup-source.ts`) */
+      if (!existingUser) await recordSignupSource(tx, userId, 'admin')
 
       /* المرجعُ من المولّد المشترك لا من عدد الصفوف: العدُّ ينقص بالحذف
          النهائيّ فيتصادم — `trainer-application-reference.ts` */

@@ -27,6 +27,7 @@ import { PURGEABLE_STATUSES as SHARED_PURGEABLE } from '../../src/application/tr
 import { MAIL_LINK_TTL_MS, MAIL_LINK_WINDOW_AR } from '../../src/application/links/mail-link-window'
 import { INVITATION_ACTION } from '../../src/application/trainer/interview-invitation'
 import { nextTrainerApplicationReference, isReferenceCollision, REFERENCE_ATTEMPTS } from './trainer-application-reference'
+import { recordSignupSource } from './signup-source.service'
 /* مُنسّقُ التاريخ من مصدرِ اللغة الواحد — لا `Intl` جديدٌ يُسمّي لغةً بنفسه:
    موضعان يسمّيانها يفترقان في التقويم أو الأرقام يوما ما. */
 import { fmtDateLong } from '../../src/application/text/format-ar'
@@ -296,6 +297,8 @@ const VERIFY_TTL_MS = MAIL_LINK_TTL_MS
 
 export interface Phase1Input {
   fullName: string
+  /** من أين جاء — كما أرسله المتصفّح، ويُنظَّف عند الكتابة (`signup-source.service.ts`) */
+  source?: unknown
   email: string
   phoneCountryCode?: string
   phone?: string
@@ -444,6 +447,8 @@ export class TrainerApplicationService {
           },
         })
         userId = created.id
+        /* ومن أين جاء — مع حسابه في المعاملة نفسِها. ومن كان له حسابٌ قبلُ فمصدرُه مصدرُ حسابه */
+        await recordSignupSource(tx, userId, 'trainer_application', input.source)
       }
 
       if (existing) {

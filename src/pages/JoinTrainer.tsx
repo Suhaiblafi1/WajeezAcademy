@@ -79,6 +79,7 @@ import {
   type UploadState,
 } from "./join-trainer/options";
 import { HONEYPOT_FIELD, useHoneypot } from "@/components/HoneypotField";
+import { firstTouch } from "@/services/first-touch";
 import { fmtDateTime } from "@/application/text/format-ar";
 
 import { Card, Inset } from "@/components/ui/Surface";
@@ -768,6 +769,8 @@ export default function JoinTrainer() {
       const res = await apiPost<SubmitResponse>("/api/v1/trainer-applications", {
         ...(hp.value ? { [HONEYPOT_FIELD]: hp.value } : {}),
         fullName: form.fullName, email: form.email.trim().toLowerCase(), password,
+        /* من أين جاء — يُحفظ مع حسابه إن كان جديدا (`signup-source.ts`) */
+        ...(firstTouch() ? { source: firstTouch() } : {}),
         phoneCountryCode: form.phone ? form.phoneCountryCode || undefined : undefined,
         phone: normalizeDigits(form.phone) || undefined,
         country: form.country || undefined, timezone: timezoneOf(form.country),
