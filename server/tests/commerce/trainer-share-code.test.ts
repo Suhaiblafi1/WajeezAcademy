@@ -145,3 +145,20 @@ describe('⑤ ومن اشترى به يُحسب لصاحبه بأجر الإحا
     expect((await prisma.enrollment.findFirstOrThrow({ where: { userId: l, cohortId: cohort.A1 } })).referralProfileId).toBeNull()
   })
 })
+
+/* ═══ والرابطُ المنشورُ قصيرٌ ثابت (٢٦ أكتوبر ٢٠٢٦) ═══
+   «لا تبدو احترافيّة» — وكان الرابطُ اسمَه بالعربيّة يصير حروفا مرمّزةً في لينكدإن. فلكلّ شعبةٍ رابطٌ قصير،
+   يُسكّ مرّةً ويُعاد: ما نُشر لا يتغيّر. */
+describe('⑥ روابط «شارك دوراتك» القصيرة', () => {
+  it('⚠️ لكل شعبة له رابط قصير إلى رابط إحالتها — والثاني هو الأول', async () => {
+    const first = await shares.kit(A.userId)
+    const short = first.short.cohorts[cohort.A1]
+    expect(short, 'لا رابط قصير لشعبته').toMatch(/\/s\/[A-Z0-9]{6}$/)
+    const code = short.slice(short.lastIndexOf('/') + 1)
+    const row = await prisma.shortLink.findUniqueOrThrow({ where: { code } })
+    expect(row.target, 'الرابط القصير لا يحمل رمز الإحالة').toMatch(/\?ref=/)
+    const again = await shares.kit(A.userId)
+    expect(again.short.cohorts[cohort.A1], 'تغير الرابط فضاع ما نشر').toBe(short)
+    expect(first.short.cohorts[cohort.B1], 'رابط لشعبة غيره').toBeUndefined()
+  })
+})

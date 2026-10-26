@@ -17,7 +17,7 @@ import { Inset } from "@/components/ui/Surface";
 import { staffControlCls } from "@/components/FormKit";
 import TabBar from "@/components/ui/TabBar";
 import { fmtDayMonth } from "@/application/text/format-ar";
-import { SHARE_PLATFORMS, shareText, shareUrl, type ShareCourse, type SharePlatform } from "@/application/trainer/share-kit";
+import { manualNoteAr, SHARE_PLATFORMS, shareText, shareUrl, type ShareCourse, type SharePlatform } from "@/application/trainer/share-kit";
 import { artPlan, drawArt, toFile, type ArtData } from "./share-art";
 
 type Format = "post" | "story" | "carousel";
@@ -32,7 +32,7 @@ const FORMAT_OF: Record<SharePlatform, Format> = {
   whatsapp: "post", linkedin: "post", facebook: "post", x: "post", instagram: "carousel", tiktok: "story",
 };
 
-export interface ShareFace { name: string; photoUrl: string | null }
+export interface ShareFace { name: string; headline?: string | null; photoUrl: string | null }
 
 export default function ShareKit({ face, courses, url, code, fileStem }: {
   face: ShareFace;
@@ -50,7 +50,7 @@ export default function ShareKit({ face, courses, url, code, fileStem }: {
 
   const input = useMemo(() => ({ courses, url, code, dayAr: (iso: string) => fmtDayMonth(iso) }), [courses, url, code]);
   const art: ArtData = useMemo(() => ({
-    name: face.name, photoUrl: face.photoUrl, courses, code,
+    name: face.name, headline: face.headline ?? null, photoUrl: face.photoUrl, courses, code,
     dayAr: (iso: string) => fmtDayMonth(iso), host: window.location.host,
   }), [face, courses, code]);
   const text = shareText(platform, input);
@@ -144,6 +144,11 @@ export default function ShareKit({ face, courses, url, code, fileStem }: {
             </Button>
           ))}
         </div>
+        {/* ═══ وما لا يُنشر منه مباشرةً يُقال قبل الضغط (٢٦ أكتوبر ٢٠٢٦) ═══
+            «للوسائل التي لا تسمح بالنشر المباشر يجب إبلاغ المدرّب أنّه يقوم بها يدويّا» (صاحب المنصّة). */}
+        {manualNoteAr(platform) && (
+          <Inset as="p" tone="warn" className="mt-3 px-3 py-2 text-read leading-6">{manualNoteAr(platform)}</Inset>
+        )}
         <label className="mt-3 block text-read font-bold" htmlFor={`${fileStem}-text`}>النص الجاهز لـ{platformAr}</label>
         <textarea id={`${fileStem}-text`} readOnly value={text} rows={7}
           className={`${staffControlCls} mt-1 w-full text-read leading-7`} />

@@ -75,6 +75,8 @@ const USE_FORMS = { one: "استعمال", two: "استعمالين", few: "اس
 interface ShareKitData {
   code: string; percentOff: number; name: string; headline: string | null; photoUrl: string | null
   hisCodes: { code: string; percentOff: number | null }[]
+  /** روابطُه قصيرةً لما يُنشر — وإن غاب رابطٌ قصيرٌ نُشر الطويل */
+  short: { wide: string | null; cohorts: Record<string, string> }
 }
 
 /** رابطُ شعبةٍ بعينها — يُنشَر وحدَه لمن يدعو إلى دفعةٍ لا إلى كلّ ما يدرّب */
@@ -573,7 +575,7 @@ export default function Referral() {
                 صورة بسيطة فيها صورتك ودوراتك والكود، ونص جاهز لكل منصة. ولكل شعبة زر «شارك» تحت.
               </p>
               {sharing === "all" && (
-                <ShareKit face={kit} fileStem="wajeez-courses" url={referral.url} code={shareCodeOf(kit)}
+                <ShareKit face={kit} fileStem="wajeez-courses" url={kit.short.wide ?? referral.url} code={shareCodeOf(kit)}
                   courses={cohortLinks.map((c) => ({ courseTitle: c.courseTitle, startsAt: c.startsAt, url: c.url }))} />
               )}
             </Panel>
@@ -677,7 +679,7 @@ export default function Referral() {
                           )}
                         </div>
                         {kit && sharing === c.cohortId && (
-                          <ShareKit face={kit} fileStem={`wajeez-${c.code}`} url={c.url} code={shareCodeOf(kit)}
+                          <ShareKit face={kit} fileStem={`wajeez-${c.code}`} url={kit.short.cohorts[c.cohortId] ?? c.url} code={shareCodeOf(kit)}
                             courses={[{ courseTitle: c.courseTitle, startsAt: c.startsAt, url: c.url }]} />
                         )}
                       </Inset>

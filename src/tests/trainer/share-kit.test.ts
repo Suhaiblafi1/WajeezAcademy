@@ -6,7 +6,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { bestCode, SHARE_PLATFORMS, shareText, shareUrl, type ShareInput } from '@/application/trainer/share-kit'
+import { bestCode, manualNoteAr, SHARE_PLATFORMS, shareText, shareUrl, splitTitle, type ShareInput } from '@/application/trainer/share-kit'
 import { artPlan } from '@/components/trainer/share-art'
 
 const URL_ONE = 'https://www.wajeezacademy.com/build/C-1?ref=WJ-AAAA'
@@ -42,8 +42,8 @@ describe('النص لكل منصة', () => {
 
   it('ودوراته كلها قائمة برابطه العام — وبلا كود لا يذكر خصم', () => {
     const t = shareText('linkedin', all)
-    expect(t).toContain('· مهارة الخطابة')
-    expect(t).toContain('· إدارة المخزون')
+    expect(t).toContain('1️⃣ مهارة الخطابة')
+    expect(t).toContain('2️⃣ إدارة المخزون')
     expect(t).toContain(all.url)
     expect(shareText('whatsapp', { ...one, code: null })).not.toContain('خصم')
   })
@@ -96,8 +96,54 @@ describe('الصور لكل صيغة', () => {
 describe('في صفحة «شارك دوراتك»', () => {
   const page = readFileSync(join(process.cwd(), 'src/pages/trainer/Referral.tsx'), 'utf8')
   it('⚠️ لكل شعبة زر «شارك»، ولدوراته كلها لوحة برابطه العام — والكود أعلى الخصمين', () => {
-    expect(page).toMatch(/sharing === c\.cohortId && \([\s\S]{0,80}<ShareKit [^>]*url=\{c\.url\} code=\{shareCodeOf\(kit\)\}/)
-    expect(page).toMatch(/sharing === "all" && \([\s\S]{0,80}<ShareKit [^>]*url=\{referral\.url\} code=\{shareCodeOf\(kit\)\}/)
+    /* والرابطُ المنشورُ قصيرٌ إن كان — وإلّا الطويل */
+    expect(page).toMatch(/sharing === c\.cohortId && \([\s\S]{0,80}<ShareKit [^>]*url=\{kit\.short\.cohorts\[c\.cohortId\] \?\? c\.url\} code=\{shareCodeOf\(kit\)\}/)
+    expect(page).toMatch(/sharing === "all" && \([\s\S]{0,80}<ShareKit [^>]*url=\{kit\.short\.wide \?\? referral\.url\} code=\{shareCodeOf\(kit\)\}/)
     expect(page).toMatch(/const shareCodeOf = \(k: ShareKitData\) => bestCode\(/)
+  })
+})
+
+/* ═══ «لا تبدو احترافيّة.. سهلةَ القراءة وممتعةً ومحفّزةً للشراء» (صاحب المنصّة، ٢٦ أكتوبر ٢٠٢٦) ═══ */
+describe('نص يقرأ ويغري', () => {
+  const funding = 'تمويل المشاريع الصغيرة: من مراحل التمويل إلى إقناع الممول'
+  it('⚠️ الاسم قصير قبل النقطتين، ووعده سطر تحته في الدورة الواحدة — لا عنوان ملصوق بموعده', () => {
+    expect(splitTitle(funding)).toEqual({ name: 'تمويل المشاريع الصغيرة', promise: 'من مراحل التمويل إلى إقناع الممول' })
+    const t = shareText('whatsapp', { ...one, courses: [{ ...one.courses[0], courseTitle: funding }] })
+    expect(t).toContain('📘 *تمويل المشاريع الصغيرة*\nمن مراحل التمويل إلى إقناع الممول')
+    expect(t, 'الموعد ملصوق بالعنوان').not.toMatch(/الصغيرة، تبدأ/)
+  })
+  it('⚠️ والدورات بترتيب ما يبدأ أولا، وما لا موعد له آخرا', () => {
+    const t = shareText('linkedin', {
+      ...all,
+      courses: [
+        { courseTitle: 'ج', startsAt: null, url: 'x' },
+        { courseTitle: 'ب', startsAt: '2026-12-06T00:00:00Z', url: 'x' },
+        { courseTitle: 'أ', startsAt: '2026-12-01T00:00:00Z', url: 'x' },
+      ],
+    })
+    expect(t.indexOf('1️⃣ أ')).toBeGreaterThan(-1)
+    expect(t.indexOf('2️⃣ ب')).toBeGreaterThan(t.indexOf('1️⃣ أ'))
+    expect(t.indexOf('3️⃣ ج')).toBeGreaterThan(t.indexOf('2️⃣ ب'))
+  })
+  it('والكود سطر وحده بهديته، والدعوة قبل الرابط، والنسبة بـ«٪» العربية', () => {
+    const t = shareText('linkedin', one)
+    expect(t).toMatch(/\n🎁 خصم 30٪ لمن يتابعني بالكود: WJ30-K7Q2MX\n/)
+    expect(t).toMatch(/سجل الآن 👇\nhttps:/)
+    expect(t).not.toContain('30%')
+  })
+})
+
+describe('ما لا ينشر مباشرة يقال قبل الضغط', () => {
+  it('⚠️ إنستغرام وتيك توك يدويان ويقال لماذا — وفيسبوك يلصق النص — وما يفتح جاهزا بلا تنبيه', () => {
+    expect(manualNoteAr('instagram')).toMatch(/إنستغرام لا يسمح بالنشر المباشر.*يدوي/)
+    expect(manualNoteAr('tiktok')).toMatch(/تيك توك لا يسمح بالنشر المباشر.*يدوي/)
+    expect(manualNoteAr('facebook')).toMatch(/الصقه/)
+    for (const p of ['whatsapp', 'linkedin', 'x'] as const) expect(manualNoteAr(p), p).toBeNull()
+  })
+  it('⚠️ والتنبيه في اللوحة نفسها قبل زر النشر', () => {
+    const kit = readFileSync(join(process.cwd(), 'src/components/trainer/ShareKit.tsx'), 'utf8')
+    const note = kit.indexOf('{manualNoteAr(platform) && (')
+    expect(note, 'لا تنبيه في اللوحة').toBeGreaterThan(-1)
+    expect(note, 'التنبيه بعد زر النشر').toBeLessThan(kit.indexOf('انشر على {platformAr}'))
   })
 })

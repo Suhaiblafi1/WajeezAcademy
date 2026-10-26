@@ -4,8 +4,11 @@ import type { PrismaClient } from '@prisma/client'
 import { AuthError } from './auth.service'
 import { recordAudit } from './audit'
 import { randomUnambiguousCode } from '../../src/application/text/unambiguous-code'
+import { shortLinkPath } from '../../src/application/links/short-link'
 import { SHARE_CODE_PERCENT, SHARE_CODE_PREFIX, SHARE_CODE_TAIL } from '../../src/application/trainer/share-code'
 import { photoPublicUrl } from './storage.service'
+import { ReferralService } from './referral.service'
+import { ShortLinkService } from './short-link.service'
 
 export interface ShareCode { code: string; percentOff: number }
 
@@ -16,7 +19,12 @@ export interface ShareKit extends ShareCode {
   /** صورتُه المعتمدة من مسار المنصّة نفسِها — فتُرسم في المتصفّح بلا حاجزِ مصدر */
   photoUrl: string | null
   hisCodes: { code: string; percentOff: number | null }[]
+  /** روابطُه قصيرةً — `‎/s/XXXXXX` بدل «‎/t/صهيب-احمد-لافي» المرمَّز في لينكدإن: رابطُه العامّ، ولكلّ شعبةٍ رابطُها */
+  short: { wide: string | null; cohorts: Record<string, string> }
 }
+
+/** غرضُ روابط «شارك دوراتك» القصيرة — به يُعاد ما سُكّ */
+const SHORT_PURPOSE = 'share-kit'
 
 export class TrainerShareCodeService {
   private prisma: PrismaClient
@@ -32,13 +40,33 @@ export class TrainerShareCodeService {
         codes: { where: { status: 'live', coupon: { active: true } }, select: { percentOff: true, coupon: { select: { code: true } } } },
       },
     })
+    /* ═══ والرابطُ قصيرٌ يُقرأ (٢٦ أكتوبر ٢٠٢٦) ═══
+       «لا تبدو احترافيّة.. يجب أن تكون سهلةَ القراءة» — وكان الرابطُ العامُّ اسمَه بالعربيّة، يصير في لينكدإن
+       وفيسبوك حروفا مرمّزةً تملأ سطرين. فلكلّ رابطٍ قصيرٌ ثابت: يُسكّ مرّةً ويُعاد، فما نُشر لا يتغيّر. */
+    const referrals = new ReferralService(this.prisma)
+    const [wide, cohortLinks] = await Promise.all([
+      referrals.wideLinkFor(userId).catch(() => null),
+      referrals.cohortLinksFor(userId).catch(() => []),
+    ])
+    const cohorts: Record<string, string> = {}
+    for (const c of cohortLinks) cohorts[c.cohortId] = await this.shortOf(c.url, userId)
     return {
       ...ours,
+      short: { wide: wide?.publicReady ? await this.shortOf(wide.url, userId) : null, cohorts },
       name: profile.application.fullName,
       headline: profile.headline,
       photoUrl: photoPublicUrl(profile.photoUrl),
       hisCodes: profile.codes.map((c) => ({ code: c.coupon.code, percentOff: c.percentOff })),
     }
+  }
+
+  /** رابطٌ قصيرٌ ثابتٌ لعنوانٍ من عناويننا — يُعاد إن سُكّ له من قبل */
+  private async shortOf(url: string, userId: string): Promise<string> {
+    const u = new URL(url)
+    const target = `${u.pathname}${u.search}`
+    const have = await this.prisma.shortLink.findFirst({ where: { target, purpose: SHORT_PURPOSE, revokedAt: null }, select: { code: true } })
+    if (have) return `${u.origin}${shortLinkPath(have.code)}`
+    return (await new ShortLinkService(this.prisma).mint(target, userId, SHORT_PURPOSE)).url
   }
 
   /** كودُه — يُنشأ مرّةً ثمّ يُعاد. والموقوفُ لا يُعطى كودا */
