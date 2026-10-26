@@ -1,6 +1,7 @@
 import { StrictMode } from 'react'
 import { loadPlatformConfig } from './services/platform-config'
 import { initTheme } from './services/theme'
+import { captureFirstTouch } from './services/first-touch'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router'
 import './index.css'
@@ -12,6 +13,10 @@ import App from './App.tsx'
    لم يختر بيده. ولولاه لبقي الموقعُ على مظهر لحظةِ الفتح حتى تُحدَّث
    الصفحة. */
 initTheme()
+
+/* من أين جاء الزائر — يُلتقط قبل أوّل تنقّلٍ داخل الموقع يمحو استعلامَ الرابط
+   (`src/application/marketing/signup-source.ts`) */
+captureFirstTouch()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

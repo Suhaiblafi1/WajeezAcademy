@@ -14,6 +14,7 @@ import { syncPendingPlan } from "@/application/plan/adopted-plan";
 import { syncPendingDiagnostic } from "@/application/diagnostic/session-store";
 import { HONEYPOT_FIELD } from "../components/HoneypotField";
 import { safeGet, safeSet, safeRemove } from "./safe-storage";
+import { firstTouch } from "./first-touch";
 
 export const OAUTH_READY = false; // أزرار قوقل ولينكدإن مخفية حتى يكتمل ربط OAuth الحقيقي
 
@@ -221,6 +222,8 @@ export async function signUp(
       email: email.trim().toLowerCase(),
       password: pass,
       displayName: name.trim(),
+      /* من أين جاء — يُحفظ مع حسابه (`signup-source.ts`) */
+      ...(firstTouch() ? { source: firstTouch() } : {}),
       ...(honeypot ? { [HONEYPOT_FIELD]: honeypot } : {}),
     });
     verificationSent = res?.verificationSent === true;

@@ -69,6 +69,8 @@ model User {
   scenarioRuns         ScenarioRun[]              @relation("ScenarioRunUser")
   favorites            Favorite[]                 @relation("FavoriteUser")
   trainerAnnouncements TrainerAnnouncementRecipient[]
+  /// من أين جاء حين أنشأ حسابه (`src/application/marketing/signup-source.ts`)
+  signupSource         SignupSource?
 }
 
 model Role {
@@ -184,6 +186,35 @@ model LoginAttempt {
  * بريدٍ عرف أيُّها له حسابٌ عندنا.
  * ولا يُخزَّن البريدُ المُجرَّب: قائمةُ أهدافِ من يُحصي بريدَنا لا تُحفظ عندنا.
  */
+/// مصدرُ التسجيل — أوّلُ زيارةٍ جاء فيها بإشارة، كما التقطها المتصفّح ونظّفها الخادم
+/// (`src/application/marketing/signup-source.ts`). ومن سجّل قبل ٢٦ أكتوبر ٢٠٢٦ لا صفَّ له.
+model SignupSource {
+  id           String    @id @default(uuid()) @db.Uuid
+  userId       String    @unique @db.Uuid
+  /// كيف أُنشئ الحساب: self (سجّل بنفسه) | admin (أضافه مدير)
+  via          String
+  utmSource    String?
+  utmMedium    String?
+  utmCampaign  String?
+  utmContent   String?
+  utmTerm      String?
+  /// قناةُ رابط الحملة `?ch=` ودفعتُها `?w=`
+  channel      String?
+  wave         String?
+  /// رمزُ رابط المدرّب `?ref=` (`TrainerReferralLink.code`)
+  refCode      String?
+  /// اسمُ الموقع المُحيل وحدَه، بلا مسار
+  referrerHost String?
+  /// أوّلُ صفحةٍ فتحها، بلا استعلام
+  landingPath  String?
+  /// متى كانت تلك الزيارة
+  firstSeenAt  DateTime?
+  createdAt    DateTime  @default(now())
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+}
+
 model RegistrationAttempt {
   id        String   @id @default(uuid()) @db.Uuid
   ip        String?

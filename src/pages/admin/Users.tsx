@@ -41,6 +41,8 @@ interface UserRow {
   emailVerified: boolean;
   /** مفتاحُ «حساب تجريبي» — لا يُعدّ طلبُه في «من ينتظر دورة بلا شعبة» (`test-account.ts`) */
   isTestAccount: boolean;
+  /** من أين جاء حين أنشأ حسابه — اسمُه وتفصيلُه من الخادم (`signup-source.ts`) */
+  source?: { labelAr: string; detailAr: string | null };
 }
 
 /* ═══ الحذفُ جملةً: الشاشةُ تعرض قسمةَ الخادم ولا تحسبها (القسم ل) ═══
@@ -533,6 +535,13 @@ export default function Users() {
                       <span className="rounded-full border border-white/25 px-2.5 py-0.5 text-fine font-bold text-muted-foreground">حساب تجريبي</span>
                     )}
                   </div>
+                  {/* من أين جاء — سؤالُ صاحب المنصّة عن متعلّمٍ لا يُعرف طريقُه (٢٦ أكتوبر ٢٠٢٦) */}
+                  {u.source && (
+                    <p className="mt-1.5 text-read text-muted-foreground">
+                      جاء من: <span className="font-bold text-foreground">{u.source.labelAr}</span>
+                      {u.source.detailAr && <span dir="auto"> · {u.source.detailAr}</span>}
+                    </p>
+                  )}
                 </div>
                 </div>
                 <div className="flex gap-2">

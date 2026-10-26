@@ -43,13 +43,19 @@ export function registerAuthRoutes(app: FastifyInstance, auth: AuthService, pris
       tags: ['auth'], summary: 'إنشاء حساب متعلم',
       body: {
         type: 'object', required: ['email', 'password'],
-        properties: { email: { type: 'string', format: 'email' }, password: { type: 'string', minLength: 8 }, displayName: { type: 'string' } },
+        properties: {
+          email: { type: 'string', format: 'email' }, password: { type: 'string', minLength: 8 }, displayName: { type: 'string' },
+          /* من أين جاء — اختياريّ، ويُنظَّف في `recordSignupSource` */
+          source: { type: 'object' },
+        },
       },
     },
   }, async (req, reply) => {
     assertNotBot(req.body)
     const body = z.object({ email, password, displayName: z.string().trim().max(80).optional() }).parse(req.body)
-    const { userId } = await auth.registerSelf(body.email, body.password, body.displayName ?? '', req.ip)
+    const { userId } = await auth.registerSelf(
+      body.email, body.password, body.displayName ?? '', req.ip, (req.body as { source?: unknown }).source,
+    )
     /* رابط التوثيق يُرسل مع الإنشاء لا بعده بخطوة يدوية — ولا يُسقط التسجيل
        عند تعذّر الإرسال: الحساب أُنشئ فعلا، وردٌّ بخطأ يجعل المستخدم يظنّ أنه
        لم يُنشأ فيعيد المحاولة فيصطدم بـ«هذا البريد مسجل». */

@@ -8,6 +8,7 @@ import bcrypt from 'bcryptjs'
 import type { PrismaClient } from '@prisma/client'
 import { MAIL_LINK_TTL_MS, RESET_LINK_TTL_MS } from '../../src/application/links/mail-link-window'
 import { linkLeadsAfterVerification } from './lead-link'
+import { cleanTouch } from '../../src/application/marketing/signup-source'
 
 /** الدور الأرضيّ لكلّ حساب — يُمنح عند التسجيل ولا يُنزع بترقية */
 const LEARNER_ROLE = 'learner'
@@ -123,11 +124,14 @@ export class AuthService {
     password: string,
     displayName: string,
     ip?: string,
+    /* من أين جاء — كما أرسله المتصفّح، ويُنظَّف هنا (`signup-source.ts`) */
+    source?: unknown,
   ): Promise<{ userId: string }> {
     await this.assertSignupAllowed(ip)
     try {
       const out = await this.register(email, password, displayName)
       await this.prisma.registrationAttempt.create({ data: { ip, outcome: 'created' } })
+      await this.recordSignupSource(out.userId, 'self', source)
       return out
     } catch (e) {
       /* «البريدُ مسجَّل» وحدَه يُسجَّل: هو إشارةُ الإحصاء. وصيغةٌ خاطئةٌ أو
@@ -136,6 +140,26 @@ export class AuthService {
         await this.prisma.registrationAttempt.create({ data: { ip, outcome: 'taken' } })
       }
       throw e
+    }
+  }
+
+  /** مصدرُ التسجيل — يُكتب مرّةً مع إنشاء الحساب. وتعذّرُه لا يُسقط الإنشاء: حسابٌ بلا مصدرٍ
+      خيرٌ من متعلّمٍ يُردّ لأنّ وسمَ حملته لم يُحفظ (`src/application/marketing/signup-source.ts`) */
+  async recordSignupSource(userId: string, via: 'self' | 'admin', source?: unknown): Promise<void> {
+    const t = cleanTouch(source)
+    try {
+      await this.prisma.signupSource.create({
+        data: {
+          userId, via,
+          utmSource: t?.utmSource, utmMedium: t?.utmMedium, utmCampaign: t?.utmCampaign,
+          utmContent: t?.utmContent, utmTerm: t?.utmTerm,
+          channel: t?.channel, wave: t?.wave, refCode: t?.refCode,
+          referrerHost: t?.referrerHost, landingPath: t?.landingPath,
+          firstSeenAt: t?.at ? new Date(t.at) : null,
+        },
+      })
+    } catch {
+      /* أفضلُ جهد — والحسابُ قد أُنشئ */
     }
   }
 
