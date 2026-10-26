@@ -53,7 +53,7 @@ import { cohortDayAr } from "@/application/learning/cohort-gate";
 import { grantPrice, INFLUENCER_GRANT_NAME_AR, MEMBER_GRANT_NAME_AR } from "@/application/commerce/grant";
 import { INFLUENCER_GRANT_PATH, influencerCodeLabelAr, normalizeInfluencerCode } from "@/application/commerce/influencer";
 import {
-  CAREER_LEVELS, GRANT_ACADEMY_LINE_AR, GRANT_CONSENT_AR, GRANT_GAINS_AR, GRANT_GIFT_AR, GRANT_MAX_INTERESTS, GRANT_SUGGESTED_COURSES, WORK_FIELDS,
+  CAREER_LEVELS, GRANT_ACADEMY_LINE_AR, GRANT_CONSENT_AR, GRANT_FAQ_AR, GRANT_GAINS_AR, GRANT_GIFT_AR, GRANT_MAX_INTERESTS, GRANT_SUGGESTED_COURSES, WORK_FIELDS,
   GRANT_FACES_PHONE, GRANT_VALUE_AR, GRANT_VALUE_PAID_AR, campaignParams, grantAdvisorTextAr, grantRecordLink, grantCountAr, grantTrainerFaces, grantTrainersAr, grantCountdown, grantLeftAr, grantLimitAr, grantRemainingAr, grantSections, grantShareAr, grantShareMailto, rankByInterest, seatsLeftAr, suggestCourses, suggestPaths, toggleCourse,
   type GrantPathOption,
 } from "@/application/commerce/grant-landing";
@@ -581,7 +581,22 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
             <p className="text-read text-muted-foreground">{grantTrainersAr(trainers.total)} · {grantCountAr(view.openCourses.length)} مباشرة على Zoom</p>
           </div>
         )}
-        <p className="mt-4 text-center text-read text-muted-foreground">{GRANT_ACADEMY_LINE_AR}</p>
+        {/* أسئلةٌ سريعةٌ مطويّة — قرارُ صاحب المنصّة (٢٦ أكتوبر ٢٠٢٦)، والعلّةُ عند `GRANT_FAQ_AR` */}
+        <div className="mt-8">
+          <h2 className="mb-3 text-center font-bold">أسئلة سريعة</h2>
+          <div className="space-y-2">
+            {GRANT_FAQ_AR.map((f) => (
+              <Inset as="details" key={f.q} className="group">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 font-bold [&::-webkit-details-marker]:hidden">
+                  {f.q}
+                  <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition group-open:rotate-180" aria-hidden="true" />
+                </summary>
+                <p className="mt-2 text-read leading-6 text-muted-foreground">{f.a}</p>
+              </Inset>
+            ))}
+          </div>
+        </div>
+        <p className="mt-6 text-center text-read text-muted-foreground">{GRANT_ACADEMY_LINE_AR}</p>
       </div>
     </Shell>
   );

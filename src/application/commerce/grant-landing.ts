@@ -18,6 +18,7 @@ import { COURSE_DOMAIN_FAMILIES, courseDomainByFamily } from '../catalog/course-
 import { zonedClock, zonedDay, zonedInstant } from '../trainer/cohort-period'
 import { courseLinesAr } from '../text/course-lines'
 import { MEMBER_GRANT_NAME_AR } from './grant'
+import { ENDORSEMENT_MIN_ATTENDANCE } from '../learning/endorsement'
 
 /** ما يوافق عليه بالإرسال — يُعرض تحت الزرّ ويُحفظ مع العميل المحتمل */
 export const GRANT_CONSENT_AR =
@@ -139,6 +140,19 @@ export function grantLimitAr(max: number): string {
   const n = max === 1 ? 'دورة واحدة' : max === 2 ? 'دورتين' : `${max} دورات`
   return `اختر حتى ${n}، ويمكنك استبدالها لاحقا مع مستشارك.`
 }
+
+/* ═══ أسئلةٌ سريعةٌ تحت النموذج (٢٦ أكتوبر ٢٠٢٦) ═══
+
+   خُيّر صاحبُ المنصّة فيما يُضاف تحت النموذج بعد وجوه المدرّبين، فاختار «أسئلةٌ قصيرةٌ مطويّة». وكلُّ جوابٍ قائمٌ في
+   المنصّة لا وعدٌ يُختلق: المباشرُ على Zoom مع مدرّبٍ معتمد (`GRANT_GAINS_AR`)، والاستبدالُ مع المستشار
+   (`grantLimitAr`)، وحدُّ رسالة التوصية من `endorsement.ts` نفسِه لا رقمٌ منسوخ، و«لا نحفظ بيانات بطاقتك» قولُ لوح
+   الدفع. ولا وعدَ بتسجيل اللقاءات: استبدله صاحبُ المنصّة بـ«تطبيقات عملية» (٢٤ أكتوبر). */
+export const GRANT_FAQ_AR: readonly { q: string; a: string }[] = [
+  { q: 'هل الدورات مسجلة؟', a: 'لا، هي لقاءات مباشرة على Zoom مع مدرب معتمد لدينا. ولكل دورة مواعيد ثابتة تراها قبل الدفع.' },
+  { q: 'هل أستطيع تغيير دوراتي لاحقا؟', a: 'نعم، مع مستشارك الخاص.' },
+  { q: 'متى آخذ الشهادة ورسالة التوصية؟', a: `الشهادة حين تكمل دورتك. ورسالة التوصية لمن حضر ${ENDORSEMENT_MIN_ATTENDANCE}% من اللقاءات وأنجز كل مهامه.` },
+  { q: 'كيف أدفع؟', a: 'ببطاقتك على صفحة دفع آمنة، ولا نحفظ بيانات بطاقتك.' },
+]
 
 /** سطرٌ واحدٌ عن الأكاديمية تحت النموذج — بدل نبذة «من نحن» كاملة، وادّعاؤه منها (`data/about.ts`) */
 export const GRANT_ACADEMY_LINE_AR = 'أكاديمية وجيز من وجيز، التي يعرفها الملايين بتطبيق ملخصات الكتب المسموعة.'
