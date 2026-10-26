@@ -89,6 +89,8 @@ export interface OpsTrainer {
   photoUrl: string | null;
   /* صورةٌ رفعها هو من حسابه وتنتظر قرارَنا — ولا تراها العامّةُ حتّى تُعتمد */
   pendingPhotoUrl: string | null;
+  /** ملفُّ الصورة المعلّقة وصل؟ — `false` رفعٌ لم يكتمل (٢٦ أكتوبر ٢٠٢٦) */
+  pendingPhotoArrived?: boolean;
   /* وعنوانٌ ونبذةٌ كتبهما هو من حسابه — يُعدَّلان هنا إن شئتَ ثمّ يُعتمَدان */
   /** و`name` اسمٌ جديدٌ أرسله معهما — `null` = لم يطلب تغييرَ اسمه */
   pendingText: { headline: string | null; bio: string | null; name: string | null; at: string } | null;
@@ -518,21 +520,40 @@ export function PublicProfileEditor({
       {trainer.pendingText && <PendingTextReview trainer={trainer} onSaved={onSaved} />}
       {trainer.pendingPhotoUrl && (
         <Inset className="mt-2.5 flex flex-wrap items-center gap-3">
-          <img
-            src={trainer.pendingPhotoUrl}
-            alt="صورة تنتظر الاعتماد"
-            className="h-14 w-14 shrink-0 rounded-full object-cover ring-2 ring-amber-400/60"
-          />
+          {/* ═══ والصورةُ نفسُها تُرى — أو يُقال إنّ ملفّها لم يصل (٢٦ أكتوبر ٢٠٢٦) ═══
+              «لماذا لا تظهر لي صورة المدرب الذي يريد أن يضعها؟» (صاحب المنصّة): كانت دائرةً بعلامة صورةٍ مكسورة.
+              فصارت كبيرةً تُقارَن بها الحاليّة، وتُفتح بحجمها، وإن بدأ رفعُها ولم يكتمل قيل ذلك بدل الكسر. */}
+          {trainer.pendingPhotoArrived === false ? (
+            <span className="grid h-24 w-24 shrink-0 place-items-center rounded-2xl border border-dashed border-amber-400/60 px-2 text-center text-fine text-muted-foreground">
+              لم يصل ملف الصورة
+            </span>
+          ) : (
+            <a href={trainer.pendingPhotoUrl} target="_blank" rel="noreferrer" className="shrink-0" title="افتح الصورة بحجمها">
+              <img
+                src={trainer.pendingPhotoUrl}
+                alt="صورة تنتظر الاعتماد"
+                className="h-24 w-24 rounded-2xl object-cover ring-2 ring-amber-400/60"
+              />
+            </a>
+          )}
+          {trainer.photoUrl && (
+            <span className="flex shrink-0 flex-col items-center gap-1 text-fine text-muted-foreground">
+              <img src={trainer.photoUrl} alt="الصورة الحالية" className="h-14 w-14 rounded-2xl object-cover opacity-80" />
+              الحالية
+            </span>
+          )}
           <div className="min-w-40 flex-1">
             <p className="text-read font-black">صورة رفعها بنفسه — تنتظر اعتمادك</p>
             <p className="text-read leading-5 text-muted-foreground">
-              لا تظهر في صفحة الفريق قبل اعتمادها. والرفض يخفيها عن العامّة فقط ولا يحذفها.
+              {trainer.pendingPhotoArrived === false
+                ? "بدأ رفعها ولم يكتمل، فلا شيء يعرض. ردّها يزيل الطلب."
+                : "لا تظهر في صفحة الفريق قبل اعتمادها. والرفض يخفيها عن العامّة فقط ولا يحذفها."}
             </p>
           </div>
           <Button
             tone="confirm"
             size="sm"
-            disabled={busy}
+            disabled={busy || trainer.pendingPhotoArrived === false}
             onClick={() => void decidePhoto(true)}
           >
             اعتمدها للصفحة العامّة

@@ -56,8 +56,13 @@ export function registerProfileRoutes(app: FastifyInstance, prisma: PrismaClient
   }, async (req, reply) => {
     const { storageKey } = z.object({ storageKey: z.string().min(10) }).parse(req.params)
     assertSafeKey(storageKey)
+    /* ═══ وصورةُ المدرّب المعلّقةُ تُقرأ من هنا أيضا (٢٦ أكتوبر ٢٠٢٦) ═══
+       بطاقةُ «تنتظر اعتمادك» تعرضها بهذا المسار، والمالكُ كان صفَّ الحساب وحدَه — فإن بدّل صورةَ حسابه أو لم
+       يكن له صفٌّ لم تجد الإدارةُ إلّا صورةً مكسورة («لماذا لا تظهر لي صورة المدرب؟» — صاحب المنصّة). */
     const owner = await prisma.learnerProfile.findFirst({
       where: { avatarUrl: `${PHOTO_KEY_PREFIX}${storageKey}` }, select: { id: true },
+    }) ?? await prisma.trainerProfile.findFirst({
+      where: { photoPendingKey: storageKey }, select: { id: true },
     })
     if (!owner) return reply.status(404).send({ error: { code: 'not_found', message_ar: 'لا صورة' } })
     const content = await getObject(storageKey)
