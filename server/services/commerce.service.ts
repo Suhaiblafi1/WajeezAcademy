@@ -762,6 +762,58 @@ export class CommerceService {
     return { duplicate: false }
   }
 
+  /* ─────────── سؤالُ المزوّد: أدُفع؟ (٢٦ أكتوبر ٢٠٢٦) ───────────
+
+     شكوى صاحب المنصّة: «لماذا لا يأخذ الدفعات تلقائيّا إن دُفع ببطاقة؟». كانت
+     التسويةُ بالـwebhook وحدَه: إن لم يصل الحدثُ — عنوانٌ لم يُضبط عند المزوّد،
+     أو سرُّ توقيعٍ لا يطابق، أو شبكةٌ تعثّرت — بقيت الدفعةُ «معلّقة» وبطاقةُ
+     المشتري مقتطَعة. ثمّ يأتي `reclaim_abandoned_orders` بعد ساعة فيُلغي الطلبَ
+     ويُبطل فاتورتَه ويفكّ مقعدَه: مالٌ قُبض وطلبٌ «ملغى».
+
+     فيُسأل المزوّدُ نفسُه عن صفحته المستضافة (`lookupCharge`) في ثلاث لحظات:
+     حين يعود المشتري من صفحة الدفع، وحين تضغط الماليّةُ «تحقّق»، وقبل أن يُلغي
+     المشغّلُ طلبا مهجورا. والـwebhook باقٍ — هذا بابٌ ثانٍ لا بديل.
+
+     والجوابُ «دُفع» يُسوّي كما يُسوّي الحدثُ تماما (`settleOrder`)، ولو كان
+     الطلبُ قد أُلغي: المالُ وصل، فلا يبقى صاحبُه بلا ما دفع ثمنَه.
+     ويرمي حين يتعذّر السؤال — والمشغّلُ يقرأ الرميَ «لا تُلغِ بعد». */
+  async confirmWithProvider(orderId: string, actorId: string | null): Promise<'paid' | 'unpaid' | 'none'> {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId }, include: { invoice: { include: { payments: true } } },
+    })
+    if (!order?.invoice) return 'none'
+    if (order.status === 'paid' || order.invoice.payments.some((p) => p.status === 'succeeded')) return 'paid'
+    const pending = order.invoice.payments.filter((p) => p.status === 'pending' && p.providerRef)
+    if (pending.length === 0) return 'none'
+    const provider = getPaymentProvider(await getPaymentConfig(this.prisma))
+    if (!provider.lookupCharge) return 'none'
+
+    let asked = false
+    for (const p of pending) {
+      if (p.provider !== provider.name) continue
+      asked = true
+      const found = await provider.lookupCharge(p.providerRef!)
+      if (!found.paid) continue
+      /* بشرطِ الحالة: الحدثُ وهذا السؤالُ في اللحظة نفسِها يُسوّي أحدُهما وحدَه */
+      const moved = await this.prisma.payment.updateMany({
+        where: { id: p.id, status: 'pending' },
+        data: { status: 'succeeded', providerRef: found.providerRef, succeededAt: new Date() },
+      })
+      if (moved.count === 0) return 'paid'
+      const invoice = await this.prisma.invoice.findUnique({ where: { id: order.invoice.id } })
+      if (invoice?.status !== 'paid') await this.settleOrder(orderId, actorId)
+      await recordAudit(this.prisma, {
+        actorId, action: 'payment.provider_confirm', entityType: 'payment', entityId: p.id,
+        meta: { orderId, provider: provider.name, providerRef: found.providerRef, orderWas: order.status },
+        reason: order.status === 'pending_payment'
+          ? 'أكّد المزوّد الدفع ولم يصل حدثه — سوّي الطلب'
+          : 'أكّد المزوّد الدفع بعد إلغاء الطلب — سوّي لأنّ المال وصل',
+      })
+      return 'paid'
+    }
+    return asked ? 'unpaid' : 'none'
+  }
+
   /* ─────────── «التجريبيُّ» يعني مدفوعا فورا — في كلّ مسار ───────────
 
      شكوى صاحب المنصّة: دوراتٌ تبقى «لم تُدفع» والدفعُ تجريبيّ. والسببُ أنّ

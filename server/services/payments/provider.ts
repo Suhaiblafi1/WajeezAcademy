@@ -37,6 +37,16 @@ export interface PaymentProvider {
       المزودان الاختباري واليدوي لا يردّان شيئا: أوّلهما لا مال فيه، والثاني
       يُردّ بتحويل بنكي تسجّله المالية. */
   refund(input: RefundInput): Promise<{ providerRefundRef: string }>
+  /** أدُفعت الصفحةُ المستضافة؟ يُسأل المزوّدُ نفسُه — لا يُنتظر حدثُه وحدَه.
+      يرمي عند تعذّر السؤال، ويردّ مرجعَ الدفعة الذي يُستردّ به. والمزوّدان
+      الاختباريّ واليدويّ لا صفحةَ لهما فلا يُسألان. */
+  lookupCharge?(providerRef: string): Promise<ChargeLookup>
+}
+
+export interface ChargeLookup {
+  paid: boolean
+  /** المرجعُ الذي يُحفظ مع الدفعة الناجحة — به يُردّ المالُ بعدُ */
+  providerRef: string
 }
 
 /** المزود الاختباري — ينجح دائما ويعلّم مرجعه بـ TEST-؛ لا مال حقيقي */
@@ -110,6 +120,19 @@ export class MoyasarProvider implements PaymentProvider {
     if (!res.ok || !data?.id) throw new Error(`moyasar_refund_failed: ${data?.message ?? `HTTP ${res.status}`}`)
     return { providerRefundRef: data.id }
   }
+
+  /* مرجعُنا فاتورةُ Moyasar، والردُّ على الدفعة التي سدّدتها — فيُحفظ معرّفُها هي */
+  async lookupCharge(providerRef: string): Promise<ChargeLookup> {
+    const res = await fetch(`https://api.moyasar.com/v1/invoices/${encodeURIComponent(providerRef)}`, {
+      headers: { Authorization: `Basic ${Buffer.from(`${this.secretKey}:`).toString('base64')}` },
+    })
+    const data = (await res.json().catch(() => null)) as
+      | { status?: string; payments?: { id?: string; status?: string }[]; message?: string }
+      | null
+    if (!res.ok || !data) throw new Error(`moyasar_lookup_failed: ${data?.message ?? `HTTP ${res.status}`}`)
+    const paidPayment = (data.payments ?? []).find((p) => p.status === 'paid' && p.id)
+    return { paid: data.status === 'paid' || !!paidPayment, providerRef: paidPayment?.id ?? providerRef }
+  }
 }
 
 /** Stripe — جلسة Checkout مستضافة: POST /v1/checkout/sessions يعيد رابط دفع، التسوية عبر webhook */
@@ -177,6 +200,18 @@ export class StripeProvider implements PaymentProvider {
     const data = (await res.json().catch(() => null)) as { id?: string; error?: { message?: string } } | null
     if (!res.ok || !data?.id) throw new Error(`stripe_refund_failed: ${data?.error?.message ?? `HTTP ${res.status}`}`)
     return { providerRefundRef: data.id }
+  }
+
+  /* الجلسةُ نفسُها تقول أدُفعت (`payment_status`). والمرجعُ يبقى الجلسة: `refund` فوقُ يقرأ منها عمليّةَ الدفع */
+  async lookupCharge(providerRef: string): Promise<ChargeLookup> {
+    const res = await fetch(`https://api.stripe.com/v1/checkout/sessions/${encodeURIComponent(providerRef)}`, {
+      headers: { Authorization: `Bearer ${this.secretKey}` },
+    })
+    const data = (await res.json().catch(() => null)) as
+      | { payment_status?: string; error?: { message?: string } }
+      | null
+    if (!res.ok || !data) throw new Error(`stripe_lookup_failed: ${data?.error?.message ?? `HTTP ${res.status}`}`)
+    return { paid: data.payment_status === 'paid', providerRef }
   }
 }
 

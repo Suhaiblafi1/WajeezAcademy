@@ -45,6 +45,7 @@ const PHRASES: Record<string, string> = {
   'payment.record_manual': 'تسجيل دفعة يدويّة',
   'payment.charge': 'استيفاء دفعة',
   'payment.webhook': 'إشعار دفع من المزوّد',
+  'payment.provider_confirm': 'تأكيد دفع من المزوّد',
   'refund.request': 'طلب استرداد',
   'refund.process': 'تنفيذ استرداد',
   'refund.reject': 'رفض استرداد',

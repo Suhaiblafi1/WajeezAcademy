@@ -130,14 +130,23 @@ export default function Journey() {
 
   /* العائدُ من صفحة الدفع لا يُطلب منه أن يحدّث بيده: التسويةُ تصل بـwebhook
      بعد ثوانٍ أو دقائق، فتُقرأ الصفحةُ كلَّ عشر ثوانٍ لدقيقتين ثمّ يكفي —
-     انتظارٌ أطولُ من ذلك حالةٌ تُراجَع لا شاشةٌ تدور. */
+     انتظارٌ أطولُ من ذلك حالةٌ تُراجَع لا شاشةٌ تدور.
+     ولا يُنتظر الحدثُ وحدَه (٢٦ أكتوبر ٢٠٢٦): كلُّ قراءةٍ تسأل الخادمَ «أدُفع؟» فيسأل المزوّدَ
+     نفسَه (`confirmWithProvider`) — فحدثٌ ضاع لا يترك من دفع بلا تسجيل. */
   useEffect(() => {
     if (!paidOrder || cancelledOrder) return;
     let tries = 0;
+    let done = false;
+    const tick = async () => {
+      const r = await apiPost<{ state: string }>(`/api/learner/orders/${paidOrder}/confirm`, {}).catch(() => null);
+      if (r?.state === "paid") done = true;
+      void load();
+    };
+    void tick();
     const timer = setInterval(() => {
       tries += 1;
-      if (tries > 12) { clearInterval(timer); return; }
-      void load();
+      if (done || tries > 12) { clearInterval(timer); return; }
+      void tick();
     }, 10_000);
     return () => clearInterval(timer);
   }, [paidOrder, cancelledOrder, load]);

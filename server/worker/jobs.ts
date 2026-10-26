@@ -35,6 +35,7 @@ import { TrainerReviewService } from '../services/trainer-review.service'
 import { TrainerDeferralService } from '../services/trainer-deferral.service'
 import { recordAudit } from '../services/audit'
 import { releaseCouponUse } from '../services/commerce/coupon-ledger'
+import { CommerceService } from '../services/commerce.service'
 import { ProgressService } from '../services/progress.service'
 import { LEARNER_PLAN_QUERY } from '../services/learner-gate'
 import { LEARNER_SESSION_WHERE } from '../services/session-visibility'
@@ -942,8 +943,22 @@ export async function reclaimAbandonedOrders(prisma: PrismaClient, now = new Dat
   let done = 0
   let failed = 0
   let withPayment = 0
+  let settled = 0
+  let unreachable = 0
+  const commerce = new CommerceService(prisma)
   for (const order of stale) {
     if ((order.invoice?.payments ?? []).length > 0) { withPayment++; continue }
+    /* ═══ ويُسأل المزوّدُ قبل الإلغاء (٢٦ أكتوبر ٢٠٢٦) ═══
+
+       «مهجورٌ» كان يعني «لم يصل حدثُ دفعه» — وحدثٌ لم يصل لا يعني أنّ البطاقة لم تُقتطع.
+       فمن دفع وضاع حدثُه أُلغي طلبُه بعد ساعة. فيُسأل المزوّدُ عن صفحته أوّلا: دُفع ⇒ يُسوّى
+       لا يُلغى، وتعذّر السؤال ⇒ لا يُلغى هذه الجولة (المالُ قبل المقعد)، ويُعاد في التالية. */
+    try {
+      if (await commerce.confirmWithProvider(order.id, null) === 'paid') { settled++; continue }
+    } catch {
+      unreachable++
+      continue
+    }
     try {
       let released = false
       const moved = await prisma.$transaction(async (tx) => {
@@ -991,7 +1006,9 @@ export async function reclaimAbandonedOrders(prisma: PrismaClient, now = new Dat
     }
   }
 
-  const notes = withPayment > 0 ? ` · ${withPayment} عليه دفعة ناجحة فلم يمسّ` : ''
+  const notes = (withPayment > 0 ? ` · ${withPayment} عليه دفعة ناجحة فلم يمسّ` : '')
+    + (settled > 0 ? ` · ${settled} أكّد المزوّد دفعه فسوّي` : '')
+    + (unreachable > 0 ? ` · ${unreachable} تعذّر سؤال المزوّد عنه فلم يلغ` : '')
   return {
     job: 'reclaim_abandoned_orders',
     summaryAr: done === 0 && failed === 0

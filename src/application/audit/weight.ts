@@ -166,7 +166,7 @@ const HIGH: readonly string[] = [
   'enrollment.waitlist.promote',
   'enrollment_request.approve', 'enrollment_request.reject',
   /* مالُه — يُقبض منه أو يُردّ إليه */
-  'payment.charge', 'payment.record_manual',
+  'payment.charge', 'payment.record_manual', 'payment.provider_confirm',
   'refund.process', 'refund.reject',
   'order.checkout', 'order.cancel', 'order.settle_partial',
   'trainer_payout.create', 'trainer_payout.generate',

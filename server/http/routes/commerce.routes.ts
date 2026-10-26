@@ -15,6 +15,7 @@ import { z } from 'zod'
 import type { PrismaClient } from '@prisma/client'
 import { CommerceService } from '../../services/commerce.service'
 import { firstPurchasePromoFor } from '../../services/commerce/first-purchase'
+import { AuthError } from '../../services/auth.service'
 import { requireAuth, requirePermission } from '../auth-plugin'
 
 export function registerCommerceRoutes(app: FastifyInstance, prisma: PrismaClient) {
@@ -56,6 +57,17 @@ export function registerCommerceRoutes(app: FastifyInstance, prisma: PrismaClien
   }, async (req) => {
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     return commerce.cancelOrder(id, req.auth!.userId)
+  })
+
+  /* العائدُ من صفحة الدفع يسأل: أدُفع؟ — والخادمُ يسأل المزوّدَ نفسَه ولا ينتظر حدثَه وحدَه (`confirmWithProvider`) */
+  app.post('/api/learner/orders/:id/confirm', {
+    preHandler: requireAuth,
+    schema: { tags: ['commerce'], summary: 'تأكيد دفع طلبي من المزوّد — يسوّيه إن دفع ولم يصل حدثه' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const order = await prisma.order.findUnique({ where: { id }, select: { userId: true } })
+    if (!order || order.userId !== req.auth!.userId) throw new AuthError('not_found', 'الطلب غير موجود', 404)
+    return { state: await commerce.confirmWithProvider(id, req.auth!.userId) }
   })
 
   /* الشراء المباشر — لا طلبَ ولا انتظارَ موافقة.
@@ -222,6 +234,21 @@ export function registerCommerceRoutes(app: FastifyInstance, prisma: PrismaClien
     const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
     const body = z.object({ methodNote: z.string().min(3), amount: z.number().min(0.5).optional() }).parse(req.body)
     return reply.status(201).send(await commerce.recordManualPayment(id, req.auth!.userId, body))
+  })
+
+  /* «تحقّق عند المزوّد» — فاتورةٌ صادرةٌ أو ملغاةٌ عليها صفحةُ دفعٍ لم يصل خبرُها */
+  app.post('/api/admin/invoices/:id/confirm-payment', {
+    preHandler: requirePermission('finance.payment.record'),
+    schema: { tags: ['finance'], summary: 'سؤال المزوّد عن دفعة الفاتورة — يسوّيها إن دفعت ولم يصل حدثها' },
+  }, async (req) => {
+    const { id } = z.object({ id: z.string().uuid() }).parse(req.params)
+    const invoice = await prisma.invoice.findUnique({ where: { id }, select: { orderId: true } })
+    if (!invoice) throw new AuthError('not_found', 'الفاتورة غير موجودة', 404)
+    try {
+      return { state: await commerce.confirmWithProvider(invoice.orderId, req.auth!.userId) }
+    } catch (e) {
+      throw new AuthError('provider_unreachable', `تعذّر سؤال مزوّد الدفع: ${e instanceof Error ? e.message : String(e)}`, 502)
+    }
   })
 
   app.get('/api/admin/refunds', {
