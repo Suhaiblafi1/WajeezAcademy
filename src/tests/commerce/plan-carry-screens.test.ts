@@ -3,9 +3,7 @@
    الحسابُ في `cart-pricing.ts` وحارسُه `plan-carry.test.ts`. وهنا ثلاثةٌ لو انكسرت
    لم يحمرّ حسابٌ ولا خادم:
 
-   ① **الهديّةُ تُحبَس عن دفعةٍ لا تُكمل الخطّة** — وإلّا فُوترت بثمنها اليوم، ثمّ لا
-      تعود هديّةً حين تكتمل الخطّة. والفحصُ على البنية: أنّ ما يُرسَل (`cohortIds`)
-      يُرشَّح بها، لا أنّ جملتَها مكتوبة.
+   ① **ولا هديّةَ في الخطّة** — أُلغيت (٢٦ أكتوبر ٢٠٢٦)، فلا تظهر في شاشةٍ ولا تُرسَل.
    ② **وخصمُ الإكمال يُرى باسمه** في تفصيل الحساب — بندٌ لا يُدمج في خصم الباقة.
    ③ **والزرُّ في بوّابة المتعلّم يقول رقمَ الفاتورة** لا سعرَ الشعبة. */
 
@@ -22,18 +20,23 @@ const PANEL = code('src/components/BuyPanel.tsx')
 const PATHWAY = code('src/pages/Pathway.tsx')
 const COHORT = code('src/components/BuyCohort.tsx')
 
-describe('① الهديّةُ تُحبَس عن دفعةٍ لا تُكمل الخطّة', () => {
-  it('⚠️ تُحبَس في شراء الخطّة كاملةً حين بعضُها بلا شعبة — لا في كلّ شراء', () => {
-    expect(PANEL).toMatch(/giftHeld\s*=\s*kind === "pathway" && giftCourseId !== null && withoutCohort\.length > 0/)
+/* ═══ ① ولا هديّةَ في الخطّة — أُلغيت (٢٦ أكتوبر ٢٠٢٦) ═══
+   كانت «الهديّةُ تُحبَس عن دفعةٍ لا تُكمل الخطّة». ثمّ سأل صاحبُ المنصّة: «لماذا تظهر بعضُ الدورات وكأنّها هديّةٌ
+   مجّانيّة ولا تطبَّق على الدفع؟.. أرجو إلغاءها لأنّنا أعطينا خصوماتٍ عالية». فلا تُعرض ولا تُحفظ ولا تُستحقّ
+   (`cart.service.ts`). والفحصُ على الشيفرة بلا تعليقاتها، في كلّ شاشةٍ كانت تحملها. رُئي ساقطا على الشاشات القديمة. */
+const SCREENS = [
+  'src/components/BuyPanel.tsx', 'src/pages/Pathway.tsx', 'src/components/CourseJourney.tsx',
+  'src/pages/diagnostic/ResultPlanCards.tsx', 'src/pages/Diagnostic.tsx', 'src/components/journey/StageOffer.tsx',
+  'src/pages/advisor/LearnerPanel.tsx', 'src/data/siteContent.ts',
+]
+describe('① ولا هدية في الخطة', () => {
+  it('⚠️ لا «هدية» يراها مشتر — في شارة ولا جملة ولا شرط', () => {
+    for (const f of SCREENS) expect(code(f), f).not.toMatch(/هد[ّ]?ية/)
   })
 
-  it('⚠️ وما يُرسَل إلى الخادم يُرشَّح بها — لا تُقال وحدَها', () => {
-    const ids = PANEL.slice(PANEL.indexOf('const cohortIds = useMemo'), PANEL.indexOf('const cohortIds = useMemo') + 400)
-    expect(ids, 'الهديّةُ المحبوسة تُرسَل مع الطلب').toMatch(/!\(giftHeld && line\.courseId === giftCourseId\)/)
-  })
-
-  it('وصفحةُ المسار تمرّر هديّةَ الخطّة إلى لوح شرائها كاملةً', () => {
-    expect(PATHWAY).toMatch(/giftCourseId=\{checkout\.kind === "pathway" \? giftId : null\}/)
+  it('⚠️ ولا يرسل أي منها هدية ولا يحبسها ولا يطرحها من السعر', () => {
+    for (const f of SCREENS) expect(code(f), f).not.toMatch(/\bgift(Id|CourseId|Held|Toggle)\b|onGiftToggle|isGift\s*\?/)
+    expect(PATHWAY, 'سعر المسار يطرح هدية').toMatch(/readyPathwayPrice\(courseIds, null,/)
   })
 })
 
@@ -43,7 +46,7 @@ describe('② وخصمُ الإكمال يُرى باسمه', () => {
   })
 
   it('وما يُقال للمشتري اليومَ يقول الخصمَ المحفوظ بنسبته', () => {
-    expect(PANEL).toMatch(/planPct = buildDiscountPct\(lines\.filter\(\(l\) => l\.courseId !== giftCourseId\)\.length\)/)
+    expect(PANEL).toMatch(/planPct = buildDiscountPct\(lines\.length\)/)
     expect(PANEL).toContain('محفوظ لك')
   })
 

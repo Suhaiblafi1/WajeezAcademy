@@ -19,7 +19,6 @@ const PLAN = {
   composed: true,
   nameAr: PERSONAL_PLAN_NAME_AR,
   courseIds: ['C-1', 'C-2', 'C-3', 'C-4', 'C-5', 'C-6'],
-  giftId: null,
 }
 
 /* بيئة الاختبارات هنا Node لا jsdom (لا testing-library في المستودع)، فلا

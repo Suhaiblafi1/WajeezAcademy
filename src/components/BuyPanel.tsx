@@ -8,7 +8,7 @@
    وأربعةُ قراراتٍ في بنية هذا اللوح، لكلٍّ سببُه:
 
    ١) **الرقمُ من الخادم لا من المتصفّح.** كلُّ ما يُعرض هنا — المجموع وخصمُ
-      الباقة والهديّة والكوبون — يأتي من `/api/learner/checkout/quote`، وهو
+      الباقة والكوبون — يأتي من `/api/learner/checkout/quote`، وهو
       يناديفي الخادم `priceCart` نفسَها التي يناديها `checkout`. فلا حسابَ
       هنا يُقارَن بحسابٍ هناك: المعروضُ هو المُصدَر بنيةً.
 
@@ -40,7 +40,7 @@
    المتصفّح ليس دليلا. */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { CalendarDays, ChevronDown, CreditCard, Gift, Info, Loader2, Route as RouteIcon, Tag, TriangleAlert } from "lucide-react";
+import { CalendarDays, ChevronDown, CreditCard, Info, Loader2, Route as RouteIcon, Tag, TriangleAlert } from "lucide-react";
 import Modal from "@/components/Modal";
 import { couponFieldCls } from "@/components/FormKit";
 import VerifyEmailNotice from "@/components/VerifyEmailNotice";
@@ -153,7 +153,6 @@ export default function BuyPanel({
   email,
   initialCoupon = "",
   kind,
-  giftCourseId = null,
   grantPayTotal,
   onClose,
 }: {
@@ -166,8 +165,6 @@ export default function BuyPanel({
   /** شراءُ مسارٍ كاملٍ يُقال بصريح العبارة أعلى القائمة — لا فرقُه سعرٌ فقط.
       الأسعارُ رآها المشتري قبل أن يصل هنا (صفحة المسار)، فلا تتكرر هنا. */
   kind?: "pathway" | "course" | "courses";
-  /** هديّةُ الخطّة — تُحبَس عن دفعةٍ لا تُكمل الخطّة، فتُضاف مجّانا مع آخرها */
-  giftCourseId?: string | null;
   /** ما يدفعه بعد المنحة كما قالته صفحة المنحة — يفتح تفصيلَ الحساب، ويقول ما يصير إليه المبلغ إن لم يُكتب الكود.
       قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦): «هنا يجب أن يكون تفصيلُ كم كانت الدورة، وبعد المنحة» */
   grantPayTotal?: number;
@@ -237,28 +234,18 @@ export default function BuyPanel({
     });
   }, [buyable]);
 
-  /* ═══ والهديّةُ تنتظر آخرَ دفعةٍ من الخطّة (١٢ أكتوبر ٢٠٢٦) ═══
-
-     الهديّةُ تُستحقّ مع الخطّة كاملةً (`giftFor` في الخادم). فإن كان في الخطّة ما لا
-     شعبةَ له بعد، فدخولُها هذه الدفعةَ يُفوتِرها بثمنها — ثمّ لا تعود هديّةً حين
-     تكتمل. فتُحبَس عن هذه الدفعة، وتُضاف بصفرٍ مع آخر دوراتها. */
-  const giftHeld = kind === "pathway" && giftCourseId !== null && withoutCohort.length > 0
-    && buyable.some(({ line }) => line.courseId === giftCourseId);
-  const giftName = giftHeld ? buyable.find(({ line }) => line.courseId === giftCourseId)?.line.name ?? "" : "";
-
+  /* وكانت هنا «هديّةٌ تنتظر آخرَ دفعةٍ من الخطّة» — أُلغيت الهديّةُ كلُّها (٢٦ أكتوبر ٢٠٢٦، `cart.service.ts`) */
   const cohortIds = useMemo(
-    () => buyable
-      .filter(({ line }) => !(giftHeld && line.courseId === giftCourseId))
-      .map(({ line }) => chosen[line.courseId]).filter(Boolean),
-    [buyable, chosen, giftHeld, giftCourseId],
+    () => buyable.map(({ line }) => chosen[line.courseId]).filter(Boolean),
+    [buyable, chosen],
   );
 
   /* ما يقابَل به كلُّ بندٍ ليُقال التعارض: شعبُ البنود الأخرى كما اختارها، ولقاءاتُه ممّا سجّل فيه */
   const mine = useMySessions();
   const timedOf = (line: BuyLine, o: CohortOption): TimedCohort => ({ cohortId: o.id, courseId: line.courseId, titleAr: line.name, sessions: o.sessions });
 
-  /* خصمُ الخطّة كاملةً — بعدد دوراتها المدفوعة (بلا الهديّة)، يُقال لمن يشتري بعضَها */
-  const planPct = buildDiscountPct(lines.filter((l) => l.courseId !== giftCourseId).length);
+  /* خصمُ الخطّة كاملةً — بعدد دوراتها، يُقال لمن يشتري بعضَها */
+  const planPct = buildDiscountPct(lines.length);
 
   /* التسعير: نداءٌ واحد كلّما تبدّلت الشعبُ أو الكود — والرقمُ الظاهر رقمُه */
   const refresh = useCallback(async (code: string) => {
@@ -312,11 +299,11 @@ export default function BuyPanel({
      يُرسَل إلى `checkout` بندٌ يرفضه، وهو صارمٌ بحقّ: طلبٌ فوق مقعدٍ مملوك
      يعني فاتورةً بغير ما ضغط عليه المشتري. */
   const payableIds = useMemo(() => (quote?.items ?? []).map((i) => i.cohortId), [quote]);
-  /* وما يُقابَل به: بنودٌ ستُشترى فعلا — لا مستبعَدٌ ولا هديّةٌ محبوسةٌ عن هذه الدفعة — ولقاءاتُه ممّا سجّل فيه.
+  /* وما يُقابَل به: بنودٌ ستُشترى فعلا — لا مستبعَدٌ — ولقاءاتُه ممّا سجّل فيه.
      والشعبةُ المسجَّلُ فيها لا تُعدّ مرّتين إن كانت في الطلب أيضا */
   const busyBesides = (courseId: string): TimedCohort[] => {
     const lines = buyable
-      .filter(({ line }) => line.courseId !== courseId && !(giftHeld && line.courseId === giftCourseId))
+      .filter(({ line }) => line.courseId !== courseId)
       .flatMap(({ line, options }) => {
         const o = options.find((x) => x.id === chosen[line.courseId]) ?? options[0];
         return o && !excludedOf.has(o.id) ? [timedOf(line, o)] : [];
@@ -461,7 +448,6 @@ export default function BuyPanel({
               className="mt-2 divide-y divide-white/8 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02]"
             >
               {buyable.map(({ line, options }) => {
-                const item = quote?.items.find((i) => i.courseId === line.courseId);
                 const picked = options.find((o) => o.id === chosen[line.courseId]) ?? options[0];
                 const out = excludedOf.get(picked.id);
                 return (
@@ -482,10 +468,6 @@ export default function BuyPanel({
                       {out ? (
                         <span className="shrink-0 text-fine font-bold text-gold-ink">
                           {REASON_AR[out.reason] ?? "غير متاحة الآن"}
-                        </span>
-                      ) : item?.isGift ? (
-                        <span className="flex shrink-0 items-center gap-1 text-fine font-black text-gold-ink">
-                          <Gift className="h-3.5 w-3.5" /> هديّة
                         </span>
                       ) : null}
                     </div>
@@ -559,11 +541,6 @@ export default function BuyPanel({
                       باقيها يخصم من فاتورتها ما فاتك اليوم.
                     </>
                   )}
-                  {giftHeld && (
-                    <>
-                      {" "}هديّتك «{giftName}» تضاف مجّانا مع آخر دورة من خطّتك.
-                    </>
-                  )}
                 </span>
               </Card>
             )}
@@ -599,7 +576,7 @@ export default function BuyPanel({
             )}
             {/* كودٌ وقع على بعض الدورات دون بعض — كودُ المدرّب على دوراته وحدَها،
                 فيُسمّى ما خصمه، ولا يُظنّ أنّه خصم الطلبَ كلَّه */}
-            {quote && quote.couponDiscount > 0 && quote.items.some((i) => !i.isGift && i.couponApplies === false) && (
+            {quote && quote.couponDiscount > 0 && quote.items.some((i) => i.couponApplies === false) && (
               <p className="mt-1.5 text-read leading-6 text-muted-foreground">
                 خصم الكود على: <span className="text-foreground">{quote.items.filter((i) => i.couponApplies).map((i) => i.titleAr).join("، ")}</span>
               </p>
@@ -670,12 +647,6 @@ export default function BuyPanel({
                   <div className="flex items-center justify-between text-gold-ink">
                     <span>{quote.grantPct !== null ? `${MEMBER_GRANT_NAME_AR} — ${quote.grantPct}٪` : `الكود ${quote.couponCode}`}</span>
                     <span dir="ltr">−{money(quote.couponDiscount, quote.currency)}</span>
-                  </div>
-                )}
-                {quote.listTotal > quote.subtotal && (
-                  <div className="flex items-center justify-between text-gold-ink">
-                    <span className="flex items-center gap-1"><Gift className="h-3.5 w-3.5" /> دورة هديّة</span>
-                    <span dir="ltr">−{money(quote.listTotal - quote.subtotal, quote.currency)}</span>
                   </div>
                 )}
                   </div>

@@ -37,7 +37,7 @@ function suggestionNoteAr(c: { id: string; skill: string; pathwayName: string },
 /* ─────────── الخطة المركّبة قابلة للاستبدال — لا للحذف ولا للإضافة ───────────
 
    كانت الخطة المركّبة تُعرض بلا أي أداة تخصيص، بينما المسار القياسي يُمرَّر إليه
-   استبدال وحذف وإضافة وهدية. فالمتعلم صاحب أعقد حالة — الذي احتاج خطة من أكثر
+   استبدال وحذف وإضافة. فالمتعلم صاحب أعقد حالة — الذي احتاج خطة من أكثر
    من مجال — كان الوحيد الذي لا يملك ضبط خطته.
 
    والتبديل وحده لا الحذف: عدد الدورات هو ما يحدد السعر، فتثبيته يفتح الاختيار
@@ -92,7 +92,6 @@ export function ComposedSwap({
       reasons={reasons}
       delivery={delivery}
       edit={{
-        giftId: null,
         swapForId,
         pool,
         minReached: true,
@@ -102,7 +101,6 @@ export function ComposedSwap({
         onSwapPick: swapPick,
         onRemove: () => {},
         onAdd: () => {},
-        onGiftToggle: () => {},
       }}
     />
   );
@@ -119,18 +117,16 @@ export function PlanCourses({
   gaps: string[];
   resetKey: number; // يتغير عند تبديل المسار لإعادة التهيئة
   /** يبلّغ الصفحة بما على الشاشة — الاعتماد وحده يكتب، بمسلك واحد للحالتين */
-  onChange: (ids: string[], giftId: string | null) => void;
+  onChange: (ids: string[]) => void;
 }) {
   const baseIds = pathwayCourses[pathway.id] ?? [];
   const [chosenIds, setChosenIds] = useState<string[]>(baseIds.slice(0, MAX_PATHWAY_COURSES));
-  const [giftId, setGiftId] = useState<string | null>(null);
   const [swapForId, setSwapForId] = useState<string | null>(null);
   const [lastReset, setLastReset] = useState(resetKey);
 
   if (lastReset !== resetKey) {
     setLastReset(resetKey);
     setChosenIds((pathwayCourses[pathway.id] ?? []).slice(0, MAX_PATHWAY_COURSES));
-    setGiftId(null);
     setSwapForId(null);
   }
 
@@ -141,7 +137,6 @@ export function PlanCourses({
   const listed = useListedCourses();
   const pool = useMemo<CourseSuggestion[]>(() => {
     const chosenSet = new Set(chosenIds);
-    if (giftId) chosenSet.add(giftId);
     const ranked = courses
       .filter((c) => c.category === category && !chosenSet.has(c.id))
       .sort((x, y) => {
@@ -153,52 +148,43 @@ export function PlanCourses({
     return listedFirst(ranked, listed)
       .slice(0, 6)
       .map((c) => ({ id: c.id, name: c.name, note: suggestionNoteAr(c, listed) }));
-  }, [chosenIds, giftId, category, gaps, listed]);
+  }, [chosenIds, category, gaps, listed]);
 
   /* كان يكتب هنا سجلّ `wajeez_custom` مع كل تغيير. صار يبلّغ الصفحة فقط:
      الاعتماد هو الكتابة الوحيدة، فلا شكلان للسجلّ ولا قارئان يفترقان. */
-  const persist = (ids: string[], gift: string | null) => {
-    onChange(ids, gift);
+  const persist = (ids: string[]) => {
+    onChange(ids);
   };
   const swapPick = (oldId: string, newId: string) => {
     const next = chosenIds.map((i) => (i === oldId ? newId : i));
     setChosenIds(next);
     setSwapForId(null);
-    persist(next, giftId);
+    persist(next);
   };
   const removeCourse = (id: string) => {
     if (chosenIds.length <= MIN_PATHWAY_COURSES) return;
     const next = chosenIds.filter((i) => i !== id);
     setChosenIds(next);
     if (swapForId === id) setSwapForId(null);
-    persist(next, giftId);
+    persist(next);
   };
   const addCourse = (id: string) => {
     if (chosenIds.length >= MAX_PATHWAY_COURSES) return;
     const next = [...chosenIds, id];
     setChosenIds(next);
-    persist(next, giftId);
-  };
-  const giftToggle = (id: string) => {
-    const next = giftId === id ? null : id; // الهدية فوق المسار ولا تُحتسب في العدد
-    setGiftId(next);
-    persist(chosenIds, next);
+    persist(next);
   };
 
-  const shownIds = giftId ? [...chosenIds, giftId] : chosenIds;
   const chosen = chosenIds.map((id) => courseById(id)!).filter(Boolean);
-  const gift = giftId ? courseById(giftId) : undefined;
-  const allShown = gift ? [...chosen, gift] : chosen;
-  const totalWeeks = allShown.reduce((s, c) => s + c.weeks, 0);
-  const skills = Array.from(new Set(allShown.map((c) => c.skill).filter(Boolean))).slice(0, 8);
+  const totalWeeks = chosen.reduce((s, c) => s + c.weeks, 0);
+  const skills = Array.from(new Set(chosen.map((c) => c.skill).filter(Boolean))).slice(0, 8);
 
   return (
     <>
       <CourseJourney
-        courseIds={shownIds}
+        courseIds={chosenIds}
         delivery={pathwayDelivery(pathway.id)}
         edit={{
-          giftId,
           swapForId,
           pool,
           minReached: chosenIds.length <= MIN_PATHWAY_COURSES,
@@ -207,14 +193,13 @@ export function PlanCourses({
           onSwapPick: swapPick,
           onRemove: removeCourse,
           onAdd: addCourse,
-          onGiftToggle: giftToggle,
         }}
       />
       <Card className="mt-4 px-5 py-4">
         <p className="text-read leading-5 font-bold text-muted-foreground">
           مسارك المخصص الآن:{" "}
           <span className="text-foreground">
-            {chosen.length} دورات{gift ? " + هدية مجانية" : ""}
+            {chosen.length} دورات
           </span>
           <span className="text-muted-foreground"> · ~{totalWeeks} أسبوعا · يحفظ تخصيصك تلقائيا ويظهر في صفحة مسارك بعد الاعتماد</span>
         </p>

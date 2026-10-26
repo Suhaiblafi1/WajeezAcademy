@@ -206,75 +206,31 @@ describe('السلّةُ لا تسقط بمانعٍ في بندٍ منها', () 
   })
 })
 
-describe('الهديّةُ تأتي مع الخطّة لا وحدَها', () => {
-  let giftBuyer = ''
+/* ═══ ولا هديّةَ بعدُ — ولو حملت خطّةٌ قديمةٌ هديّتَها (٢٦ أكتوبر ٢٠٢٦) ═══
+   «لماذا تظهر بعضُ الدورات وكأنّها هديّةٌ مجّانيّة ولا تطبَّق على الدفع؟.. أرجو إلغاءها لأنّنا أعطينا خصوماتٍ
+   عالية» (صاحب المنصّة). فأُلغيت الهديّةُ كلُّها؛ وخطّةٌ اعتُمدت قبل القرار قد تحمل `giftCourseId` في صفّها، فلا
+   يُستحقّ بها شيء. رُئي ساقطا على `giftFor` القديم: بندُ الهديّة بصفر. */
+describe('ولا هدية في الخطة — ولو حملت خطة قديمة هديتها', () => {
+  let planBuyer = ''
 
   beforeAll(async () => {
     const auth = new AuthService(prisma)
-    giftBuyer = (await auth.register('gift-buyer@test.local', 'Buyer#12345', 'صاحبُ خطّة')).userId
-    /* خطّةٌ من أربعِ دورات، أغلاها (٢٥٠) هديّة */
+    planBuyer = (await auth.register('gift-buyer@test.local', 'Buyer#12345', 'صاحبُ خطّة')).userId
+    /* خطّةٌ من أربعِ دورات اعتُمدت قبل القرار، وأغلاها (٢٥٠) موسومةٌ هديّة */
     await prisma.learnerPlan.create({
       data: {
-        userId: giftBuyer, nameAr: 'خطّتي', composed: false,
+        userId: planBuyer, nameAr: 'خطّتي', composed: false,
         giftCourseId: courseIds[3],
         items: { create: courseIds.map((courseId, i) => ({ courseId, sequence: i + 1 })) },
       },
     })
   })
 
-  it('من اشترى الهديّةَ وحدَها دفع ثمنَها — وإلّا صارت بابا لأغلى دورةٍ مجّانا', async () => {
-    const q = await commerce.quote(giftBuyer, [cohortIds[3]])
-    expect(q.items[0].isGift, 'مُنحت الهديّةُ لمن لم يشترِ خطّته').toBe(false)
-    expect(q.total).toBe(250)
-  })
-
-  it('ومن اشترى خطّتَه كاملةً نالها بصفر — والبندُ باقٍ في الفاتورة', async () => {
-    const q = await commerce.quote(giftBuyer, cohortIds)
-    const gift = q.items.find((i) => i.courseId === courseIds[3])!
-    expect(gift.isGift).toBe(true)
-    expect(gift.unitPrice).toBe(0)
-    expect(gift.listPrice, 'سعرُ القائمة اختفى، فلا يُرى ما وُفِّر').toBe(250)
-    expect(q.items, 'الهديّةُ حُذفت من البنود').toHaveLength(4)
-
-    /* الثلاثُ المدفوعة ٤٥٠، وسلّمُها سلّمُ الثلاث لا الأربع */
-    expect(q.subtotal).toBe(450)
-    expect(q.bundlePct).toBe(buildDiscountPct(3))
-    expect(q.listTotal).toBe(700)
-  })
-
-  it('ونقصُ دورةٍ واحدة من الخطّة يُسقط الهديّة — «داخل الخطّة» شرطٌ لا وصف', async () => {
-    const q = await commerce.quote(giftBuyer, [cohortIds[0], cohortIds[1], cohortIds[3]])
-    expect(q.items.every((i) => !i.isGift)).toBe(true)
-    expect(q.total).toBe((100 + 150 + 250) * (100 - buildDiscountPct(3)) / 100)
-  })
-
-  /* دورةٌ دُفع ثمنُها ولم يصل تأكيدُها: صارت تُستبعد من السلّة (فلا يُدفع
-     ثمنُها مرّتين)، فلو لم تُحتسب مغطّاةً لسقطت الهديّةُ في الدقائق التي
-     بين الدفع وتأكيده — ويُسعَّر على المشتري الباقي بأغلى ممّا وُعد. */
-  it('ودورةٌ دُفع ثمنُها ولم تُسوَّ بعد تُحتسب مغطّاة — فلا تسقط الهديّةُ بتأخّر webhook', async () => {
-    const paid = await prisma.order.create({
-      data: { userId: giftBuyer, status: 'paid', subtotal: 100, total: 100, currency: 'USD', paidAt: new Date() },
-    })
-    await prisma.enrollmentRequest.create({
-      data: { userId: giftBuyer, cohortId: cohortIds[0], status: 'seat_held', orderId: paid.id, decidedAt: new Date() },
-    })
-
-    const q = await commerce.quote(giftBuyer, cohortIds)
-    /* المدفوعةُ خارج التسعير — ومقالٌ سببُها */
-    expect(q.items.map((i) => i.cohortId)).not.toContain(cohortIds[0])
-    expect(q.excluded.find((e) => e.cohortId === cohortIds[0])?.reason).toBe('settling')
-
-    /* والهديّةُ باقية: خطّتُه كلُّها بين مشتراةٍ الآن ومدفوعةٍ من قبل */
-    const gift = q.items.find((i) => i.courseId === courseIds[3])
-    expect(gift?.isGift, 'سقطت الهديّةُ لأنّ تأكيد الدفع تأخّر').toBe(true)
-    expect(gift?.unitPrice).toBe(0)
-    /* المدفوعُ ثمنُه الآن: ١٥٠+٢٠٠ وسلّمُ الاثنتين */
-    expect(q.subtotal).toBe(350)
-    expect(q.bundlePct).toBe(buildDiscountPct(2))
-
-    /* وطلبٌ لم يكتمل دفعُه لا يكفي — وإلّا صار فتحُه وإلغاؤه بابا للهديّة */
-    await prisma.order.update({ where: { id: paid.id }, data: { status: 'pending_payment', paidAt: null } })
-    const q2 = await commerce.quote(giftBuyer, cohortIds)
-    expect(q2.items.every((i) => !i.isGift), 'مُنحت الهديّةُ على طلبٍ لم يُدفع').toBe(true)
+  it('⚠️ من اشترى خطته كاملة دفع دوراتها الأربع — وسلمها سلم الأربع', async () => {
+    const q = await commerce.quote(planBuyer, cohortIds)
+    expect(q.items.every((i) => !i.isGift), 'منحت هدية ألغيت').toBe(true)
+    expect(q.items.find((i) => i.courseId === courseIds[3])?.unitPrice).toBe(250)
+    expect(q.subtotal).toBe(700)
+    expect(q.bundlePct).toBe(buildDiscountPct(4))
   })
 })

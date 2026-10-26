@@ -20,7 +20,6 @@ export type PlanItemState = 'enrolled' | 'schedulable' | 'awaiting_cohort'
 export interface PlanItemView {
   courseId: string
   sequence: number
-  isGift: boolean
   state: PlanItemState
   /** الشعبة التي يستطيع طلبها الآن — حين state = schedulable */
   cohort: { id: string; title: string; startsAt: Date | null; seatsLeft: number | null; price: unknown; currency: string } | null
@@ -35,7 +34,6 @@ export interface PlanView {
   nameAr: string
   composed: boolean
   hostPathwayId: string | null
-  giftCourseId: string | null
   items: PlanItemView[]
   /** عدّادات جاهزة للواجهة — تُحسب هنا فلا تختلف بين شاشتين */
   counts: { total: number; enrolled: number; schedulable: number; awaitingCohort: number }
@@ -52,7 +50,7 @@ export class PlanService {
   /** يعتمد خطّة جديدة — وتُؤرشَف السابقة. المتعلّم له خطّةٌ فعّالة واحدة. */
   async adopt(
     userId: string,
-    input: { nameAr: string; composed: boolean; hostPathwayId?: string | null; giftCourseId?: string | null; courseIds: string[] },
+    input: { nameAr: string; composed: boolean; hostPathwayId?: string | null; courseIds: string[] },
   ): Promise<PlanView> {
     const name = input.nameAr.trim()
     if (!name) throw new AuthError('bad_name', 'الخطّة بلا اسم')
@@ -60,8 +58,6 @@ export class PlanService {
     const ids = [...new Set(input.courseIds.map((c) => c.trim()).filter(Boolean))]
     if (ids.length === 0) throw new AuthError('empty_plan', 'الخطّة بلا دورات')
     if (ids.length > MAX_ITEMS) throw new AuthError('too_many', `الخطّة أكثر من ${MAX_ITEMS} دورة`)
-    /* الهديّة من دورات الخطّة نفسها — ضمن السقف لا فوقه، كما اختار المالك */
-    const gift = input.giftCourseId && ids.includes(input.giftCourseId) ? input.giftCourseId : null
     /* اعتمادُ خطّةٍ جديدة يؤرشف القديمة — وهو الطريقُ الثاني إلى تبديل المسار
        بعد الدفع، فيُحرَس بالحارس نفسِه. */
     await this.assertKeepsCommitted(userId, ids)
@@ -71,7 +67,7 @@ export class PlanService {
       return tx.learnerPlan.create({
         data: {
           userId, nameAr: name, composed: input.composed,
-          hostPathwayId: input.hostPathwayId ?? null, giftCourseId: gift,
+          hostPathwayId: input.hostPathwayId ?? null,
           items: { create: ids.map((courseId, i) => ({ courseId, sequence: i + 1 })) },
         },
       })
@@ -84,19 +80,17 @@ export class PlanService {
   }
 
   /** يبدّل دورات الخطّة الفعّالة — الاسم والهوية يبقيان */
-  async replaceCourses(userId: string, courseIds: string[], giftCourseId?: string | null): Promise<PlanView> {
+  async replaceCourses(userId: string, courseIds: string[]): Promise<PlanView> {
     const plan = await this.prisma.learnerPlan.findFirst({ where: { userId, status: 'active' } })
     if (!plan) throw new AuthError('no_plan', 'لا خطّة فعّالة لتعديلها', 404)
     const ids = [...new Set(courseIds.map((c) => c.trim()).filter(Boolean))]
     if (ids.length === 0) throw new AuthError('empty_plan', 'الخطّة بلا دورات')
     if (ids.length > MAX_ITEMS) throw new AuthError('too_many', `الخطّة أكثر من ${MAX_ITEMS} دورة`)
-    const gift = giftCourseId && ids.includes(giftCourseId) ? giftCourseId : null
     await this.assertKeepsCommitted(userId, ids)
 
     await this.prisma.$transaction(async (tx) => {
       await tx.learnerPlanItem.deleteMany({ where: { planId: plan.id } })
       await tx.learnerPlanItem.createMany({ data: ids.map((courseId, i) => ({ planId: plan.id, courseId, sequence: i + 1 })) })
-      await tx.learnerPlan.update({ where: { id: plan.id }, data: { giftCourseId: gift } })
     })
     return this.viewOf(userId, plan.id)
   }
@@ -153,7 +147,6 @@ export class PlanService {
       return {
         courseId: item.courseId,
         sequence: item.sequence,
-        isGift: plan.giftCourseId === item.courseId,
         notifyOnCohort: item.notifyOnCohort,
         state,
         cohort: c
@@ -169,7 +162,7 @@ export class PlanService {
 
     return {
       id: plan.id, nameAr: plan.nameAr, composed: plan.composed,
-      hostPathwayId: plan.hostPathwayId, giftCourseId: plan.giftCourseId,
+      hostPathwayId: plan.hostPathwayId,
       items,
       counts: {
         total: items.length,
@@ -336,10 +329,6 @@ export class PlanService {
       await tx.learnerPlanItem.create({
         data: { planId: plan.id, courseId: withCourseId, sequence: item.sequence },
       })
-      /* الهديّة تتبع البديل — وإلّا صارت الهديّة على دورةٍ خرجت من الخطّة */
-      if (plan.giftCourseId === courseId) {
-        await tx.learnerPlan.update({ where: { id: plan.id }, data: { giftCourseId: withCourseId } })
-      }
     })
     await recordAudit(this.prisma, {
       actorId: userId, action: 'plan.item.replace', entityType: 'plan', entityId: plan.id,
@@ -354,12 +343,7 @@ export class PlanService {
     await this.assertNotEnrolled(userId, courseId)
     if (plan.items.length <= 1) throw new AuthError('last_item', 'لا تحذف آخر دورة في الخطّة', 409)
 
-    await this.prisma.$transaction(async (tx) => {
-      await tx.learnerPlanItem.delete({ where: { id: item.id } })
-      if (plan.giftCourseId === courseId) {
-        await tx.learnerPlan.update({ where: { id: plan.id }, data: { giftCourseId: null } })
-      }
-    })
+    await this.prisma.learnerPlanItem.delete({ where: { id: item.id } })
     await recordAudit(this.prisma, {
       actorId: userId, action: 'plan.item.remove', entityType: 'plan', entityId: plan.id,
       meta: { courseId },

@@ -28,7 +28,7 @@ export function registerPlanRoutes(app: FastifyInstance, prisma: PrismaClient) {
         type: 'object', required: ['nameAr', 'courseIds'],
         properties: {
           nameAr: { type: 'string' }, composed: { type: 'boolean' },
-          hostPathwayId: { type: 'string' }, giftCourseId: { type: 'string' },
+          hostPathwayId: { type: 'string' },
           courseIds: { type: 'array', items: { type: 'string' } },
         },
       },
@@ -38,14 +38,12 @@ export function registerPlanRoutes(app: FastifyInstance, prisma: PrismaClient) {
       nameAr: z.string().trim().min(1).max(120),
       composed: z.boolean().optional(),
       hostPathwayId: z.string().trim().max(60).optional(),
-      giftCourseId: z.string().trim().max(60).optional(),
       courseIds,
     }).parse(req.body)
     const plan = await plans.adopt(req.auth!.userId, {
       nameAr: body.nameAr,
       composed: body.composed ?? false,
       hostPathwayId: body.hostPathwayId ?? null,
-      giftCourseId: body.giftCourseId ?? null,
       courseIds: body.courseIds,
     })
     return reply.status(201).send({ plan })
@@ -101,11 +99,11 @@ export function registerPlanRoutes(app: FastifyInstance, prisma: PrismaClient) {
       tags: ['plan'], summary: 'تبديل دورات الخطّة الفعّالة — الاسم والهوية يبقيان',
       body: {
         type: 'object', required: ['courseIds'],
-        properties: { courseIds: { type: 'array', items: { type: 'string' } }, giftCourseId: { type: 'string' } },
+        properties: { courseIds: { type: 'array', items: { type: 'string' } } },
       },
     },
   }, async (req) => {
-    const body = z.object({ courseIds, giftCourseId: z.string().trim().max(60).nullable().optional() }).parse(req.body)
-    return { plan: await plans.replaceCourses(req.auth!.userId, body.courseIds, body.giftCourseId ?? null) }
+    const body = z.object({ courseIds }).parse(req.body)
+    return { plan: await plans.replaceCourses(req.auth!.userId, body.courseIds) }
   })
 }

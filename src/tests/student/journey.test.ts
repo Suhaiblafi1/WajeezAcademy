@@ -89,7 +89,7 @@ describe('الخطّة المعتمدة أوّلا — باسمها لا باس�
     items: [
       { courseId: C1[0], sequence: 1, state: 'enrolled' },
       { courseId: C1[1], sequence: 2, state: 'schedulable', cohort: { id: 'x', title: 'ش', startsAt: null, seatsLeft: 4 } },
-      { courseId: C2[0], sequence: 3, state: 'awaiting_cohort', isGift: true },
+      { courseId: C2[0], sequence: 3, state: 'awaiting_cohort' },
     ],
   }
 
@@ -118,7 +118,6 @@ describe('الخطّة المعتمدة أوّلا — باسمها لا باس�
     expect(t.stages[0].state).toBe('awaiting_cohort')
     expect(t.stages[1].state).toBe('schedulable')
     expect(t.stages[2].state).toBe('awaiting_cohort')
-    expect(t.stages[2].isGift).toBe(true)
     expect(t.stages.every((s) => s.inPlan)).toBe(true)
   })
 

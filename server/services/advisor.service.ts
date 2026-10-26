@@ -1196,7 +1196,7 @@ export class AdvisorService {
       this.prisma.learnerPlan.findFirst({
         where: { userId, status: 'active' },
         select: {
-          id: true, nameAr: true, hostPathwayId: true, giftCourseId: true,
+          id: true, nameAr: true, hostPathwayId: true,
           items: { select: { courseId: true, sequence: true }, orderBy: { sequence: 'asc' } },
         },
       }),

@@ -46,14 +46,13 @@ beforeAll(async () => {
 }, 240_000)
 
 describe('الاعتماد', () => {
-  it('يحفظ الاسم والترتيب والهديّة', async () => {
+  it('يحفظ الاسم والترتيب', async () => {
     const u = await learner()
-    const p = await plans.adopt(u, { nameAr: 'مسارك الشخصي', composed: true, hostPathwayId: 'PW-X', giftCourseId: B, courseIds: [A, B, C] })
+    const p = await plans.adopt(u, { nameAr: 'مسارك الشخصي', composed: true, hostPathwayId: 'PW-X', courseIds: [A, B, C] })
     expect(p.nameAr).toBe('مسارك الشخصي')
     expect(p.composed).toBe(true)
     expect(p.items.map((i) => i.courseId)).toEqual([A, B, C])
     expect(p.items.map((i) => i.sequence)).toEqual([1, 2, 3])
-    expect(p.items.find((i) => i.courseId === B)?.isGift).toBe(true)
   })
 
   it('الخطّة تبقى بعد إغلاق المتصفّح — تُقرأ بنداءٍ جديد', async () => {
@@ -76,11 +75,10 @@ describe('الاعتماد', () => {
     expect(await plans.active(await learner())).toBeNull()
   })
 
-  it('التكرار يُزال، والفارغة تُرفض، وهديّةٌ خارج الخطّة تُهمَل', async () => {
+  it('التكرار يُزال، والفارغة تُرفض', async () => {
     const u = await learner()
-    const p = await plans.adopt(u, { nameAr: 'خطّة', composed: false, giftCourseId: 'C-NOT-IN', courseIds: [A, A, B] })
+    const p = await plans.adopt(u, { nameAr: 'خطّة', composed: false, courseIds: [A, A, B] })
     expect(p.items.map((i) => i.courseId)).toEqual([A, B])
-    expect(p.giftCourseId).toBeNull()
     await expect(plans.adopt(u, { nameAr: 'خطّة', composed: false, courseIds: [] })).rejects.toMatchObject({ code: 'empty_plan' })
   })
 })
@@ -165,11 +163,10 @@ describe('التعديل', () => {
   it('تبديل الدورات يبقي الاسم والهوية', async () => {
     const u = await learner()
     const p1 = await plans.adopt(u, { nameAr: 'مسارك الشخصي', composed: true, courseIds: [A, B] })
-    const p2 = await plans.replaceCourses(u, [A, C, B], B)
+    const p2 = await plans.replaceCourses(u, [A, C, B])
     expect(p2.id).toBe(p1.id)
     expect(p2.nameAr).toBe('مسارك الشخصي')
     expect(p2.items.map((i) => i.courseId)).toEqual([A, C, B])
-    expect(p2.giftCourseId).toBe(B)
   })
 
   it('تعديل بلا خطّة فعّالة يُرفض ولا يُنشئ شيئا', async () => {

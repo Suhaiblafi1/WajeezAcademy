@@ -208,65 +208,13 @@ export class CartService {
     return { unique, cohorts: buyable, currency: this.cartCurrency(buyable, cohorts) }
   }
 
-  /* الهديّة المستحقّة في هذه السلّة — أو لا هديّة.
+  /* ═══ ولا هديّةَ في الخطّة بعدُ (٢٦ أكتوبر ٢٠٢٦) ═══
 
-     `plan.giftCourseId` كان **رايةَ عرضٍ** وحدَها: تُظهر شارة «هديّة» في
-     شاشة الخطّة، والدورةُ تُحاسَب بسعرها الكامل. فصار الخادمُ يفي بها.
-
-     والشرطُ هو نصُّ الوعد حرفيّا: «ودورةٌ من اختيارك هديّة **داخل الخطّة**».
-     فالهديّةُ تأتي مع الخطّة لا وحدَها — ولولا هذا لجعل المتعلّمُ أغلى دورةٍ
-     هديّتَه ثمّ اشتراها منفردة، فصارت الهديّةُ بابا لأخذ أيّ دورةٍ مجّانا.
-
-     ودورةٌ من الخطّة سُجّل فيها من قبلُ تُحتسب مغطّاة: من اشترى نصفَ خطّته
-     الشهر الماضي لا يُحرم هديّتَه لأنّه لم يشترِ كلَّ شيءٍ دفعةً واحدة.
-
-     ومثلُها دورةٌ **دُفع ثمنُها ولم يصل تأكيدُها بعد**: صارت السلّةُ تستبعد
-     ما حُجز مقعدُه بطلبٍ حيّ (فلا يُدفع ثمنُه مرّتين)، فلو لم تُحتسب مغطّاةً
-     لسقطت الهديّةُ في الدقائق التي بين الدفع وتأكيده — ويُسعَّر عليه الباقي
-     بأغلى ممّا وُعد لأنّ الـwebhook تأخّر.
-
-     والمعتبَرُ حجزٌ بطلبٍ **مدفوع** لا بأيّ حجز: لو كفى طلبٌ لم يُدفع لصار
-     فتحُ طلبٍ ثمّ إلغاؤه بابا لأخذ الهديّة بلا خطّة. */
-  async giftFor(userId: string, orderedCourseIds: Set<string>): Promise<string | null> {
-    const plan = await this.prisma.learnerPlan.findFirst({
-      where: { userId, status: 'active' },
-      orderBy: { updatedAt: 'desc' },
-      include: { items: { select: { courseId: true } } },
-    })
-    const giftId = plan?.giftCourseId ?? null
-    if (!plan || !giftId) return null
-    /* الهديّةُ نفسُها يجب أن تكون في السلّة — لا تُمنح غيابيّا */
-    if (!orderedCourseIds.has(giftId)) return null
-
-    const paidPlanCourses = plan.items.map((i) => i.courseId).filter((id) => id !== giftId)
-    if (paidPlanCourses.length === 0) return null
-
-    const missing = paidPlanCourses.filter((id) => !orderedCourseIds.has(id))
-    if (missing.length > 0) {
-      const [enrolled, held] = await Promise.all([
-        this.prisma.enrollment.findMany({
-          where: { userId, status: { in: ['enrolled', 'completed'] }, cohort: { courseId: { in: missing } } },
-          select: { cohort: { select: { courseId: true } } },
-        }),
-        this.prisma.enrollmentRequest.findMany({
-          where: { userId, status: 'seat_held', cohort: { courseId: { in: missing } } },
-          select: { orderId: true, cohort: { select: { courseId: true } } },
-        }),
-      ])
-      const paidOrderIds = new Set(
-        (await this.prisma.order.findMany({
-          where: { id: { in: [...new Set(held.map((h) => h.orderId).filter((x): x is string => !!x))] }, status: 'paid' },
-          select: { id: true },
-        })).map((o) => o.id),
-      )
-      const covered = new Set([
-        ...enrolled.map((e) => e.cohort.courseId),
-        ...held.filter((h) => h.orderId && paidOrderIds.has(h.orderId)).map((h) => h.cohort.courseId),
-      ])
-      if (missing.some((id) => !covered.has(id))) return null
-    }
-    return giftId
-  }
+     كانت «دورةٌ من الخطّة هديّة» تُستحقّ هنا (`giftFor`): بندُها بصفرٍ إن اشتُريت الخطّةُ كلُّها. ثمّ سأل صاحبُ
+     المنصّة: «لماذا تظهر بعضُ الدورات وكأنّها هديّةٌ مجّانيّة ولا تطبَّق على الدفع؟ أرجو إلغاءها لأنّنا أعطينا
+     خصوماتٍ عالية». وكانت الشارةُ تظهر على سادسة كلّ مسارٍ جاهز لكلّ زائر، والخادمُ لا يفي بها إلّا لخطّةٍ
+     محفوظةٍ اشتُريت كاملة — وأكثرُ الخطط فيها دورةٌ بلا شعبة. فأُلغيت الهديّةُ كلُّها: لا تُعرض ولا تُحفظ ولا
+     تُستحقّ، والسلّمُ والسقفُ والأكوادُ كما هي. */
 
   /* ═══ ما اشتُري من الخطّة من قبل — لخصم إكمالها (١٢ أكتوبر ٢٠٢٦) ═══
 
@@ -288,7 +236,7 @@ export class CartService {
       include: { items: { select: { courseId: true } } },
     })
     if (!plan) return null
-    const planCourseIds = plan.items.map((i) => i.courseId).filter((id) => id !== plan.giftCourseId)
+    const planCourseIds = plan.items.map((i) => i.courseId)
     const inCart = new Set(cohorts.map((c) => c.courseId))
     if (!planCourseIds.some((id) => inCart.has(id))) return null
 
@@ -406,7 +354,6 @@ export class CartService {
        ويُشتقّ هنا حين لا يُمرَّر، فلا يسقط السقفُ صامتا بنسيان وسيط. */
     currency?: string,
   ) {
-    const gift = await this.giftFor(userId, new Set(cohorts.map((c) => c.courseId)))
     const coupon = await this.couponFor(userId, couponCode)
     const trainerCode = coupon?.trainerCode ?? null
     /* ═══ كودُ المدرّب على دوراته وحدَها ═══
@@ -430,7 +377,7 @@ export class CartService {
       cohorts.map((c) => ({
         cohortId: c.id, courseId: c.courseId, titleAr: cartTitleOf(c), listPrice: num(c.price),
       })),
-      gift,
+      null,
       coupon
         ? trainerCode
           /* والوجهُ من صفّ الكود لا من الكوبون، والسقفُ على الوجهين (البند 4-10) */

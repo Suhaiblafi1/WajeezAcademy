@@ -123,7 +123,7 @@ export default function PathwayPage() {
      كلُّ ما اعتمده المتعلّم بصمت وتُعرض قائمة الكتالوج مكانه. */
   const adopted = useMemo(() => readAdoptedPlan(pathway?.id), [pathway?.id]);
   const custom = useMemo(
-    () => (adopted ? { chosenIds: adopted.courseIds, giftId: adopted.giftId } : null),
+    () => (adopted ? { chosenIds: adopted.courseIds } : null),
     [adopted],
   );
 
@@ -139,9 +139,9 @@ export default function PathwayPage() {
 
   /* ─── تخصيص الخطّة على هذه الصفحة (المرحلة ٢) ───
      كان التخصيص في شاشة النتيجة وحدها، والصفحة عرضٌ فقط. صار هنا: يحذف
-     ويستبدل ويضيف ويختار هديّته، ويُحفظ في الخطّة المعتمَدة نفسها لحظةَ كل
+     ويستبدل ويضيف، ويُحفظ في الخطّة المعتمَدة نفسها لحظةَ كل
      تغيير — مصدرٌ واحد لا نسخةٌ ثانية تفترق عنه. */
-  const [edits, setEdits] = useState<{ courseIds: string[]; giftId: string | null } | null>(null);
+  const [edits, setEdits] = useState<{ courseIds: string[] } | null>(null);
   const editable = Boolean(adopted);
   /* المسار الجاهز = أربعُ أساسيات + ثلاثُ مساندات. أمّا الخطّة المعتمَدة من
      التشخيص فتبقى كما اعتُمدت: هناك تُبنى من القياس لا من حزمةٍ جاهزة. */
@@ -159,11 +159,10 @@ export default function PathwayPage() {
     () => new Map((pathway ? pathwaySupportCourses[pathway.id] ?? [] : []).map((s) => [s.courseId, s.reasonAr])),
     [pathway],
   );
-  /* الهديّة تكون دورةً من الخطّة نفسها لا سابعةً خارجها — سادسة المسار
-     مجّانا افتراضا، وله أن يستبدلها بأخرى منه أو يلغيها. `??` كانت تُسقط
-     «ألغيتُها» (giftId فارغ صراحة) لأن الفراغ يساوي غيابَ الاختيار في
-     سلسلتها، فيعود الافتراضُ رغم إلغائه — لذا التحقّق من الحاوية لا القيمة. */
-  const giftId = edits ? edits.giftId : custom ? custom.giftId : (courseIds.length > 0 ? courseIds[courseIds.length - 1] : null);
+  /* ═══ ولا هديّةَ في المسار (٢٦ أكتوبر ٢٠٢٦) ═══
+     كانت سادسةُ المسار «هديّةً مجّانيّة» لكلّ زائر، والخادمُ لا يفي بها إلّا لخطّةٍ محفوظةٍ اشتُريت كاملة — فيرى
+     الشارةَ ثمّ يجد سعرَها في الدفع. وقرارُ صاحب المنصّة: «أرجو إلغاءها لأنّنا أعطينا خصوماتٍ عالية». فأُلغيت
+     الهديّةُ كلُّها، والعلّةُ في `server/services/commerce/cart.service.ts`. */
   const [swapForId, setSwapForId] = useState<string | null>(null);
   const [trainersOpen, setTrainersOpen] = useState(false);
   /* نافذةُ ملخّص المستشار — `wa.me` لا يحمل مرفقا، فالورقةُ تُحفظ هنا ثمّ
@@ -172,24 +171,24 @@ export default function PathwayPage() {
   /* كودُ الخصم يُكتب في صندوق الاختيار ويُحمل إلى لوح الدفع — والخادمُ
      وحدَه يحكم بصحّته (`initialCoupon`). */
   const [coupon, setCoupon] = useState("");
-  const commit = (ids: string[], gift: string | null) => {
-    setEdits({ courseIds: ids, giftId: gift });
-    if (adopted) saveAdoptedPlan({ ...adopted, courseIds: ids, giftId: gift });
+  const commit = (ids: string[]) => {
+    setEdits({ courseIds: ids });
+    if (adopted) saveAdoptedPlan({ ...adopted, courseIds: ids });
   };
 
-  /* بدائل ومقترحات: خارج المختار والهديّة، ومن مجال المسار أوّلا.
+  /* بدائل ومقترحات: خارج المختار، ومن مجال المسار أوّلا.
 
      ستٌّ لا ثمان. من حذف دورةً يبحث عن بديلٍ واحد، والقائمةُ الطويلة تحوّل
      قرارا واحدا إلى مسحِ ثماني عناوين — فيُغلق الصندوقَ ولا يستبدل شيئا.
-     والإقصاءُ قائمٌ أصلا: ما في مساره وهديّتُه خارج القائمة، فلا يرى مكرَّرا. */
+     والإقصاءُ قائمٌ أصلا: ما في مساره خارج القائمة، فلا يرى مكرَّرا. */
   const pool = useMemo(() => {
-    const taken = new Set([...courseIds, ...(giftId ? [giftId] : [])]);
+    const taken = new Set(courseIds);
     return courses
       .filter((c) => !taken.has(c.id))
       .sort((x, y) => (y.pathwayId === pathway?.id ? 1 : 0) - (x.pathwayId === pathway?.id ? 1 : 0))
       .slice(0, 6)
       .map((c) => ({ id: c.id, name: c.name, note: `${c.skill} · من مسار ${c.pathwayName}` }));
-  }, [courseIds, giftId, pathway?.id]);
+  }, [courseIds, pathway?.id]);
 
   /* الدورات المعروضة هي وحدها ما يُسعَّر. كان العدد يُؤخذ من `courseIds` الخام
      والمجموع من القائمة بعد ترشيح المجهول — فيفترقان حين لا يُعرف معرّف، فيظهر
@@ -214,19 +213,12 @@ export default function PathwayPage() {
   /* سعرُ المسار كاملا — أو null إن نقص سعرُ دورةٍ واحدة، فلا مجموعَ ناقصا */
   const fullPrice = totalOf(courseIds, prices);
 
-  /* الهديّةُ تُطرح قبل السلّم — وكانت لا تُطرح هنا.
-
-     الخادمُ يفي بالهديّة فعلا (`cart.service.ts#giftFor`): بندُها بصفر،
-     والسلّمُ على المدفوع وحدَه. وكانت هذه الشاشةُ تضرب **مجموعَ الستّ**
-     في نسبة الباقة — فتعرض على مسارٍ نموذجيّ ٦١٨ والفاتورةُ تُصدر ٥٢٠.
-
-     والخطأُ في جهة «أكثر»: نطلب على الشاشة أغلى ممّا نأخذ. فلا شكوى تصل —
-     ولذلك بقي. لكنّه يبيع عرضَنا بأضعفَ ممّا هو، ويجعل السطرَ الذي تحته
-     («وهو ما تُصدره الفاتورة») غيرَ صحيح. */
-  const pathPrice = readyPathwayPrice(courseIds, giftId, (id) => prices.get(id) ?? null);
+  /* سعرُ المسار بحساب الفاتورة نفسِه (`readyPathwayPrice` ↔ `priceCart`) — والهديّةُ لا شيء: أُلغيت (٢٦ أكتوبر
+     ٢٠٢٦). وكانت هذه الشاشةُ تطرح سادستَه هديّةً لكلّ زائر والفاتورةُ لا تطرحها إلّا لخطّةٍ محفوظة — فيعرض أرخصَ
+     ممّا يُدفع. */
+  const pathPrice = readyPathwayPrice(courseIds, null, (id) => prices.get(id) ?? null);
   const discountedFullPrice = pathPrice ? { amount: pathPrice.payable, currency: pathPrice.currency } : null;
-  /* النسبةُ المعروضةُ تُشتقّ من الرقمين لا تُعلَن قبلهما: هي وفرُ الهديّة
-     والسلّم والسقف مجتمعةً، وأكبرُ من نسبة السلّم وحدَها. */
+  /* النسبةُ المعروضةُ تُشتقّ من الرقمين لا تُعلَن قبلهما: هي وفرُ السلّم والسقف مجتمعين. */
   const savedPct = pathPrice?.savedPct ?? 0;
 
   /* المسار الذي اعتمده تشخيصه سابقا — إن وُجد */
@@ -275,7 +267,7 @@ export default function PathwayPage() {
   const advisorMsg = `مرحبا، أكملت تشخيص وجيز ورشّح لي مسار «${pathway.name}» وأريد استشارة قبل البدء.`;
 
   /* اختيار الدورات المتعدد — دورة واحدة أو عدة دورات بحرية كاملة */
-  const buyableCourses = pathwayCoursesList.filter((c) => c.id !== custom?.giftId);
+  const buyableCourses = pathwayCoursesList;
   const picked = buyableCourses.filter((c) => pickedIds.includes(c.id));
   /* مجموع المختارات من أسعار الشعب الحقيقية — و null حين لا يُعرف سعر إحداها،
      فلا يُجمع معلومٌ ومجهول ويُعرض الناتج كأنه كامل. */
@@ -349,14 +341,13 @@ export default function PathwayPage() {
     setSyncing(true);
     /* النتيجةُ لا تُقرأ: رفضٌ محتملٌ كان يُقال في لوح الشراء (قرارٌ نُقض
        بصريح طلب صاحب المنصّة — لا حاجز يعترض شاشة الدفع بجملةٍ تقنية)،
-       ورفعُ الخطّة يبقى لأثره لا لرسالته: تُستحقّ الهديّةُ بالخطّة المحفوظة
-       على الخادم (`commerce.service.ts#giftFor`) بصرف النظر عمّا يُقال هنا. */
+       ورفعُ الخطّة يبقى لأثره لا لرسالته: خصمُ إكمال الخطّة يُحسب بالخطّة المحفوظة
+       على الخادم (`planCarryFor`) بصرف النظر عمّا يُقال هنا. */
     await syncAdoptedPlan({
       hostPathwayId: adopted?.hostPathwayId ?? pathway?.id ?? "",
       composed: adopted?.composed ?? false,
       nameAr: adopted?.nameAr ?? pathway?.name ?? "خطّتي",
       courseIds,
-      giftId,
     });
     setSyncing(false);
     /* الشراءُ قبل المنصّة لا بعدها.
@@ -366,10 +357,9 @@ export default function PathwayPage() {
        عمليّة الشراء تتمّ قبل نقله لمنصّته، وبعد الدفع يذهب للمنصّة يرى ما
        دفع ويختار الشعب».
 
-       ورفعُ الخطّة يبقى قبل اللوح لا بعده: الهديّةُ تُستحقّ بالخطّة
-       المحفوظة على الخادم (`commerce.service.ts#giftFor`)، فلو فُتح اللوحُ
-       قبل رفعها لسُعّرت الهديّةُ بثمنها. ولو تعذّر الرفعُ فُتح اللوح على كلّ
-       حال: يشتري بلا هديّة خيرٌ من زرٍّ صامت. */
+       ورفعُ الخطّة يبقى قبل اللوح لا بعده: خصمُ إكمال الخطّة يُحسب بالخطّة
+       المحفوظة على الخادم (`planCarryFor`). ولو تعذّر الرفعُ فُتح اللوح على كلّ
+       حال: زرٌّ صامتٌ أسوأ. */
     setCheckout(intent);
   };
 
@@ -479,8 +469,8 @@ export default function PathwayPage() {
           ) : null}
           {/* صندوقُ «خطّتك من مؤشر وجيز» حُذف (قرارُ صاحب المنصّة، ١٢ سبتمبر
               ٢٠٢٦). كان يشرح أنّ القائمةَ خطّةٌ تُملَك وتُعدَّل — وهو شرحٌ
-              تُغني عنه الرحلةُ نفسُها تحته: أزرارُ الاستبدال والحذف واختيارِ
-              الهديّة ظاهرةٌ فيها، والتغييرُ يُحفظ فور وقوعه فيراه فاعلُه.
+              تُغني عنه الرحلةُ نفسُها تحته: أزرارُ الاستبدال والحذف ظاهرةٌ فيها،
+              والتغييرُ يُحفظ فور وقوعه فيراه فاعلُه.
 
               وصندوقُ الخطّة **المركّبة** فوقَه باقٍ: ذاك يقول ما لا يُرى —
               أنّ الدوراتِ من أكثرَ من مجالٍ وأنّ مسارَ كذا مضيفُها. */}
@@ -493,13 +483,11 @@ export default function PathwayPage() {
             showSchedule
             picked={pickedCohorts}
             onPick={(courseId, cohortId) => setPickedCohorts((prev) => ({ ...prev, [courseId]: cohortId }))}
-            giftId={giftId}
             graduationProjectAr={pathway.output}
             supportReasons={Object.fromEntries([...supportReasons].filter(([id]) => supportIds.has(id)))}
             edit={
               editable
                 ? {
-                    giftId,
                     swapForId,
                     pool,
                     /* الرقمُ من عرض المسار نفسِه (pathwayOffer) لا من ثابتٍ
@@ -509,23 +497,17 @@ export default function PathwayPage() {
                     maxReached: courseIds.length >= MAX_PATHWAY_COURSES,
                     onSwapToggle: setSwapForId,
                     onSwapPick: (oldId, newId) => {
-                      /* الهديّةُ صفةُ مكانٍ لا معرّف: من استبدل الدورة المجانية
-                         تبقى بديلتُها هي المجانية — لا فراغا يترك «هديّة» تُشير
-                         إلى دورةٍ لم تعد في الخطّة. */
-                      commit(courseIds.map((i) => (i === oldId ? newId : i)), giftId === oldId ? newId : giftId);
+                      commit(courseIds.map((i) => (i === oldId ? newId : i)));
                       setSwapForId(null);
                     },
                     onRemove: (id) => {
                       if (courseIds.length <= MIN_PATHWAY_COURSES) return;
-                      commit(courseIds.filter((i) => i !== id), giftId === id ? null : giftId);
+                      commit(courseIds.filter((i) => i !== id));
                     },
                     onAdd: (id) => {
                       if (courseIds.length >= MAX_PATHWAY_COURSES) return;
-                      commit([...courseIds, id], giftId);
+                      commit([...courseIds, id]);
                     },
-                    /* الهديّة يختارها هو، وتُحتسب ضمن السقف: دورةٌ في الخطّة
-                       بلا ثمن، لا دورةٌ سابعة خارجها. */
-                    onGiftToggle: (id) => commit(courseIds, giftId === id ? null : id),
                   }
                 : undefined
             }
@@ -598,7 +580,7 @@ export default function PathwayPage() {
               كانت تقول للمتعلّم إنّ هذا مساره، وتعرض زرّا يعيده إلى نتيجة
               التشخيص «لإعادة التخصيص». وكلاهما لا يخدمه: هو يعلم من أين جاء،
               والتخصيص كلّه متاح في هذه الصفحة نفسها — يستبدل ويحذف ويضيف
-              ويختار هديّته في رحلة الدورات أعلاه. فإعادته إلى صفحةٍ سابقة
+              في رحلة الدورات أعلاه. فإعادته إلى صفحةٍ سابقة
               لينال ما بين يديه خطوةٌ تُضيع لا تُفيد. */}
 
           {/* تقريره الشخصي — لم يعد هنا. كان يُعرض للمتعلّم نفسِه من إجاباتٍ
@@ -829,8 +811,7 @@ export default function PathwayPage() {
                   <p className="mt-0.5 text-read text-muted-foreground">كل الدورات + التشخيص + المنظومة أدناه</p>
                   {/* السعرُ كاملا لا «تبدأ من» — والرقمُ المعروض بعد خصم الباقة
                       فعلا (`offer.bundleMaxPct`)، لا وعدٌ منفصلٌ عن الفاتورة:
-                      الأصليُّ يظهر مشطوبا بجانبه لا نسبةً مجردة. هديّةُ المسار
-                      تُقال أعلاه في خطّة الدورات لا هنا مرّتين. */}
+                      الأصليُّ يظهر مشطوبا بجانبه لا نسبةً مجردة. */}
                   {fullPrice && discountedFullPrice ? (
                     <>
                       {/* المشطوبُ كان `text-sm text-muted-foreground`: رقمٌ باهتٌ صغير لا
@@ -1062,7 +1043,6 @@ export default function PathwayPage() {
           title={checkout.title}
           email={session?.email ?? ""}
           kind={checkout.kind}
-          giftCourseId={checkout.kind === "pathway" ? giftId : null}
           initialCoupon={coupon}
           lines={(checkout.courseIds ?? courseIds)
             .map((cid) => ({ courseId: cid, name: courseById(cid)?.name ?? cid, cohortId: pickedCohorts[cid] }))}

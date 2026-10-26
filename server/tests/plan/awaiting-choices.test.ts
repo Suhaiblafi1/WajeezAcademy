@@ -140,15 +140,10 @@ describe('أبواب الدورة المنتظِرة', () => {
     await prisma.enrollmentRequest.delete({ where: { id: req.id } })
   })
 
-  it('والهديّة تتبع البديل لا تبقى على ما خرج', async () => {
-    const plan = await plans.adopt(userId, {
-      nameAr: 'خطّةٌ فيها هديّة', composed: false,
-      courseIds: [withCohort[0], withCohort[1]],
-      giftCourseId: withCohort[1],
-    })
-    expect(plan.items.find((i) => i.courseId === withCohort[1])?.isGift).toBe(true)
+  /* «والهديّة تتبع البديل» ذهب مع الهديّة نفسِها (٢٦ أكتوبر ٢٠٢٦) — والبديلُ يحلّ محلّ ما خرج كما كان */
+  it('والبديل يحل محل ما خرج', async () => {
+    await plans.adopt(userId, { nameAr: 'خطّةٌ للبديل', composed: false, courseIds: [withCohort[0], withCohort[1]] })
     const after = await plans.replaceItem(userId, withCohort[1], withCohort[2])
-    expect(after.items.find((i) => i.courseId === withCohort[2])?.isGift).toBe(true)
-    expect(after.items.some((i) => i.courseId === withCohort[1])).toBe(false)
+    expect(after.items.map((i) => i.courseId)).toEqual([withCohort[0], withCohort[2]])
   })
 })

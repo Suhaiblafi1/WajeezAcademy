@@ -48,7 +48,6 @@ export interface AdoptedPlan {
   /** الاسم كما يُعرض للمتعلّم */
   nameAr: string
   courseIds: string[]
-  giftId: string | null
   /** لحظة الاعتماد — للتشخيص لا للعرض */
   adoptedAt: string
 }
@@ -151,7 +150,6 @@ export async function syncAdoptedPlan(
         nameAr: plan.nameAr,
         composed: plan.composed,
         hostPathwayId: plan.hostPathwayId,
-        ...(plan.giftId ? { giftCourseId: plan.giftId } : {}),
         courseIds: plan.courseIds,
       }),
     })
