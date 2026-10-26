@@ -6,7 +6,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { couponKind, deletable, editableHere, type AdminCoupon } from '@/components/admin/CouponsPanel'
+import { couponKind, deletable, editableHere, type AdminCoupon } from '@/application/admin/coupons'
 
 const code = (p: string) => readFileSync(join(process.cwd(), p), 'utf8').replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '')
 const base: AdminCoupon = { id: 'x', code: 'A', percentOff: 20, amountOff: null, currency: null, maxUses: null, usedCount: 0, active: true, expiresAt: null, _count: { orders: 0 } }

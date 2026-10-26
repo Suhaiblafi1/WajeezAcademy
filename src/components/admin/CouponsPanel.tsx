@@ -18,31 +18,11 @@ import { staffControlCls as inputCls } from "@/components/FormKit";
 import { apiDelete, apiPatch, apiPost } from "@/services/api";
 import { LEDGER_CURRENCY } from "@/application/commerce/presentment";
 import { fmtDate } from "@/application/text/format-ar";
+import { couponKind, deletable, editableHere, type AdminCoupon, type CouponKind } from "@/application/admin/coupons";
 
-export interface AdminCoupon {
-  id: string; code: string; percentOff: number | null; amountOff: string | null; currency: string | null;
-  maxUses: number | null; usedCount?: number; active: boolean; expiresAt: string | null;
-  trainerCode?: { percentOff: number | null; amountOff: string | null; status: string } | null;
-  trainerDiscount?: { status: string } | null;
-  grantCode?: { id: string } | null;
-  trainerShareCode?: { id: string } | null;
-  _count?: { orders: number };
-}
+export type { AdminCoupon };
 
-type Kind = "ours" | "trainer" | "grant";
-const KIND_AR: Record<Kind, string> = { ours: "كوبوناتنا", trainer: "أكواد المدربين", grant: "أكواد المنحة" };
-
-/** نوعُ الكود — ومن يديره */
-export function couponKind(c: AdminCoupon): Kind {
-  if (c.grantCode) return "grant";
-  if (c.trainerCode || c.trainerDiscount || c.trainerShareCode) return "trainer";
-  return "ours";
-}
-
-/** يُعدَّل هنا؟ — كوبوناتنا وحدَها، والباقي من صفحاته */
-export const editableHere = (c: AdminCoupon) => couponKind(c) === "ours";
-/** يُحذف؟ — ما لم يُستعمل قطّ من كوبوناتنا */
-export const deletable = (c: AdminCoupon) => editableHere(c) && (c.usedCount ?? 0) === 0 && (c._count?.orders ?? 0) === 0;
+const KIND_AR: Record<CouponKind, string> = { ours: "كوبوناتنا", trainer: "أكواد المدربين", grant: "أكواد المنحة" };
 
 const discountAr = (c: AdminCoupon) => (c.percentOff ? `${c.percentOff}%` : `${c.amountOff} ${c.currency ?? LEDGER_CURRENCY}`);
 const usesAr = (c: AdminCoupon) => `${c.usedCount ?? 0} من ${c.maxUses ?? "∞"}`;
@@ -62,13 +42,13 @@ export default function CouponsPanel({
 }) {
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState(EMPTY_NEW);
-  const [kind, setKind] = useState<Kind | "all">("all");
+  const [kind, setKind] = useState<CouponKind | "all">("all");
   const [editing, setEditing] = useState<string | null>(null);
   const [draft, setDraft] = useState<Draft>({ percentOff: "", amountOff: "", maxUses: "", expiresAt: "" });
   const [deleting, setDeleting] = useState<AdminCoupon | null>(null);
 
   const counts = useMemo(() => {
-    const n: Record<Kind, number> = { ours: 0, trainer: 0, grant: 0 };
+    const n: Record<CouponKind, number> = { ours: 0, trainer: 0, grant: 0 };
     for (const c of coupons) n[couponKind(c)] += 1;
     return n;
   }, [coupons]);
