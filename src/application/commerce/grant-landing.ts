@@ -16,6 +16,7 @@
 
 import { COURSE_DOMAIN_FAMILIES, courseDomainByFamily } from '../catalog/course-domain'
 import { zonedClock, zonedDay, zonedInstant } from '../trainer/cohort-period'
+import { courseLinesAr } from '../text/course-lines'
 
 /** ما يوافق عليه بالإرسال — يُعرض تحت الزرّ ويُحفظ مع العميل المحتمل */
 export const GRANT_CONSENT_AR =
@@ -273,7 +274,7 @@ export function grantAdvisorTextAr(name: string, code: string | null, courses: s
   const ask = `${who} عندي سؤال عن منحة أعضاء وجيز.${code ? ` كود منحتي: ${code}` : ''}`
   return [
     ask,
-    ...(courses.length > 0 ? [`الدورات التي اخترتها:\n${courses.map((c) => `- ${c}`).join('\n')}`] : []),
+    ...(courses.length > 0 ? [`الدورات التي اخترتها:\n${courseLinesAr(courses)}`] : []),
     ...(recordLink ? [`رابط ملفي: ${recordLink}`] : []),
   ].join('\n\n')
 }
