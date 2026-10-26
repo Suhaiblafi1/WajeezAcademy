@@ -49,6 +49,10 @@ export const SESSION_GUESTS: readonly { email: string; name: string }[] = [
   { email: ACADEMY_CONTACT_EMAIL, name: 'أكاديمية وجيز' },
 ]
 
+/** ما يُقال في رسالة الرفع حين تُلغى الشعبةُ أو تُؤجَّل */
+export const COHORT_CANCELLED_AR = 'ألغيت الشعبة، فلن يعقد هذا اللقاء.'
+export const COHORT_POSTPONED_AR = 'تأجلت الشعبة إلى موسم قادم، فلن يعقد هذا اللقاء في موعده. تصلك مواعيدها الجديدة حين تعتمد.'
+
 /** ما يُدعى إليه المسجَّل: مقعدٌ قائم — لا منتظرٌ في القائمة ولا من ترك */
 export const SEATED = ['enrolled', 'completed']
 
@@ -75,6 +79,89 @@ export class SessionInviteService {
     return s.approvalState === 'approved' && s.status !== 'cancelled' && !s.placeholder && s.startsAt.getTime() > now.getTime()
   }
 
+  /* ═══ والشعبةُ الملغاةُ أو المؤجَّلةُ لا تبقى لقاءاتُها في التقاويم (٢٦ أكتوبر ٢٠٢٦) ═══
+
+     بلاغُ صاحب المنصّة: «لماذا لا تحذف الجلسات من الكلندر للدورات التي تم تأجيلها أو إلغاؤها؟». كان
+     إلغاءُ الشعبة (`CohortService.transition`) يُبلغ متعلّميها ومدرّبَها بالجرس، ولا يرفع من تقاويمهم
+     شيئا: دعواتُ لقاءاتها باقيةٌ عند المسجَّلين وعند العنوانَين بروابطَ تعمل. وكذلك تأجيلُ خطّتها إلى موسمٍ
+     قادم (`CohortPlanService.postpone`): تنتقل الشعبةُ ولقاءاتُها بمواعيدها القديمة في التقاويم.
+
+     فما وقع قبل هذا اليوم لا يحضره أحد:
+     · **الملغاةُ** — كلُّ لقاءاتها.
+     · **والمؤجَّلةُ** (أحدثُ خطّةٍ لمدرّبها `postponedTo` ولم تُعتمَد) — ما قبل أوّل يومٍ في موسمها الجديد.
+
+     ولا يُدعى إلى ما وقع (`announce` و`welcome`)، ويُرفع ما دُعي إليه (`withdrawCohort`). وإعادةُ الفتح
+     تُرجعه (`reannounceCohort`). */
+  private async voidBefore(cohortId: string): Promise<Date | null> {
+    const c = await this.prisma.cohort.findUnique({
+      where: { id: cohortId },
+      select: {
+        status: true,
+        plans: { where: { trainerId: { not: null } }, orderBy: { createdAt: 'desc' }, take: 1, select: { status: true, postponedTo: true } },
+      },
+    })
+    if (!c) return null
+    if (c.status === 'cancelled') return new Date(8.64e15)
+    const latest = c.plans[0]
+    return latest?.postponedTo && latest.status !== 'approved' ? latest.postponedTo : null
+  }
+
+  /** آخرُ ما كُتب عن اللقاء في التقاويم — دعوةٌ أو تحديثٌ أو رفع، أو `null` إن لم يُدعَ إليه أحد */
+  private async lastInvite(sessionId: string): Promise<InviteKind | null> {
+    const row = await this.prisma.outboxMail.findFirst({
+      where: { batchId: sessionId, purpose: { in: ['session.invite.new', 'session.invite.update', 'session.invite.cancel'] } },
+      orderBy: { createdAt: 'desc' },
+      select: { purpose: true },
+    })
+    return (row?.purpose?.slice('session.invite.'.length) as InviteKind | undefined) ?? null
+  }
+
+  /** يرفع من التقاويم ما وقع من لقاءات الشعبة ممّا دُعي إليه ولم يُرفع. يعود بعدد اللقاءات */
+  async withdrawCohort(cohortId: string, whyAr: string, now = new Date()): Promise<number> {
+    const before = await this.voidBefore(cohortId)
+    if (!before) return 0
+    let withdrawn = 0
+    for (const s of await this.upcoming(cohortId, now)) {
+      if (s.startsAt.getTime() >= before.getTime()) continue
+      const last = await this.lastInvite(s.id)
+      if (last === null || last === 'cancel') continue
+      await this.withdraw({
+        id: s.id, cohortId, cohortTitle: s.cohort.title, title: s.title, startsAt: s.startsAt, endsAt: s.endsAt,
+      }, whyAr, now)
+      withdrawn += 1
+    }
+    return withdrawn
+  }
+
+  /** وإعادةُ فتحها تُرجع إلى التقاويم ما رُفع منها — بالمعرّف نفسِه. يعود بعدد اللقاءات */
+  async reannounceCohort(cohortId: string, now = new Date()): Promise<number> {
+    let restored = 0
+    for (const s of await this.upcoming(cohortId, now)) {
+      if ((await this.lastInvite(s.id)) !== 'cancel') continue
+      if ((await this.announce(s.id, 'new', now)) > 0) restored += 1
+    }
+    return restored
+  }
+
+  /* ومن العامل: ما فات الرفعَ — شعبٌ أُلغيت قبل هذا الإصلاح، أو بغير بابه (`retireOrphanPrepCohorts`
+     يكتب الإلغاءَ مباشرة). والرفعُ لا يتكرّر: ما رُفع آخرَ مرّةٍ يُتخطّى (`lastInvite`) */
+  async sweepVoided(now = new Date()): Promise<{ cohorts: number; sessions: number }> {
+    const cohorts = await this.prisma.cohort.findMany({
+      where: {
+        sessions: { some: { startsAt: { gt: now }, approvalState: 'approved', placeholder: false, status: { not: 'cancelled' } } },
+        OR: [{ status: 'cancelled' }, { plans: { some: { trainerId: { not: null }, postponedTo: { not: null } } } }],
+      },
+      select: { id: true, status: true },
+    })
+    let touched = 0
+    let sessions = 0
+    for (const c of cohorts) {
+      const n = await this.withdrawCohort(c.id, c.status === 'cancelled' ? COHORT_CANCELLED_AR : COHORT_POSTPONED_AR, now)
+      if (n > 0) { touched += 1; sessions += n }
+    }
+    return { cohorts: touched, sessions }
+  }
+
   /** دعوةُ لقاءٍ معتمَد أو تحديثُها — لمسجَّليه وللعنوانَين. يعود بعدد ما كُتب */
   async announce(sessionId: string, kind: Exclude<InviteKind, 'cancel'>, now = new Date()): Promise<number> {
     const s = await this.prisma.cohortSession.findUnique({
@@ -87,6 +174,8 @@ export class SessionInviteService {
       },
     })
     if (!s || !SessionInviteService.invitable(s, now)) return 0
+    const before = await this.voidBefore(s.cohortId)
+    if (before && s.startsAt.getTime() < before.getTime()) return 0
     const snap: InvitedSession = {
       id: s.id, cohortId: s.cohortId, cohortTitle: s.cohort.title,
       title: s.title, startsAt: s.startsAt, endsAt: s.endsAt,
@@ -118,7 +207,9 @@ export class SessionInviteService {
       },
     })
     if (!seat || !SEATED.includes(seat.status) || !seat.user?.email) return 0
-    const sessions = await this.upcoming(seat.cohortId, now)
+    const before = await this.voidBefore(seat.cohortId)
+    const sessions = (await this.upcoming(seat.cohortId, now))
+      .filter((s) => !before || s.startsAt.getTime() >= before.getTime())
     if (sessions.length === 0) return 0
 
     /* والملغى لا يُعطى: رابطٌ أُلغي تسجيلُه عند Zoom لا يُدخل صاحبَه (`releaseSessionJoinLinks`) */

@@ -31,7 +31,7 @@ import {
 } from '../../src/application/trainer/axis-timeline'
 import { LEARNER_PLAN_QUERY } from './learner-gate'
 import { LEARNER_SESSION_WHERE } from './session-visibility'
-import { SEATED, SessionInviteService } from './session-invite.service'
+import { COHORT_CANCELLED_AR, SEATED, SessionInviteService } from './session-invite.service'
 import { cohortTitleAr, nextCohortNumber } from '../../src/application/learning/cohort-title'
 import { MATERIALS_STATUSES } from '../../src/application/trainer/portal-access'
 import { publishCohortTrainers } from './trainer-auto-publish'
@@ -696,6 +696,11 @@ export class CohortService {
           meta: { reasonAr: reason, trainersTold: trainers.length },
         })
       }
+
+      /* ═══ ولقاءاتُها تُرفع من التقاويم (٢٦ أكتوبر ٢٠٢٦) ═══
+         كان الجرسُ يقول «لن تعقد لقاءاتها» ودعواتُها باقيةٌ في تقويم كلِّ مسجَّلٍ وفي تقويم الإدارة بروابطَ
+         تعمل. والعلّةُ في `SessionInviteService.withdrawCohort` */
+      await this.inviteSafely('cancel-cohort', () => this.invites.withdrawCohort(cohortId, COHORT_CANCELLED_AR))
     }
 
     /* اكتمال الشعبة يولّد كشف مستحقات مدربها تلقائياً إن كانت له قاعدة أتعاب سارية.
@@ -760,6 +765,8 @@ export class CohortService {
         data: { cohortId },
       })
     }
+    /* وما رُفع من التقاويم بإلغائها يعود إليها بالمعرّف نفسِه */
+    await this.inviteSafely('reopen-cohort', () => this.invites.reannounceCohort(cohortId, now))
     return { status: to, trainersTold: trainers.length, learnersTold: learners.length }
   }
 
