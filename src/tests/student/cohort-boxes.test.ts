@@ -120,8 +120,11 @@ describe('٢ب) صورة المدرب كبيرة في صندوق الشعبة �
     expect(tag).toContain('text-lg')
     expect(tag, 'مقصوص').not.toContain('truncate')
     expect(at, 'قبل الصورة').toBeLessThan(one.indexOf('<img '))
-    const name = one.match(/<span class="([^"]*)">احمد صالح الطيار<\/span>/)
-    expect(name![1], 'اسم المدرب أكبر من اسم الشعبة').not.toMatch(/text-(lg|xl)/)
+    const nameAt = one.indexOf('احمد صالح الطيار')
+    expect(nameAt).toBeGreaterThan(at)
+    const nameTag = one.slice(one.lastIndexOf('<span', nameAt), nameAt)
+    expect(nameTag, 'اسم المدرب أكبر من اسم الشعبة').not.toMatch(/text-(lg|xl)/)
+    expect(nameTag).toContain('text-base')
   })
 
   it('⚠️ وبلا صورة: حروف اسمه بحجم الصورة نفسه — فلا تتفاوت الصناديق', () => {
