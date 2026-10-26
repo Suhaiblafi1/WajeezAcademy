@@ -26,6 +26,22 @@
 
 import type { LearnerSlot } from '../trainer/plan-overlay'
 
+/* ═══ ما ليس في خطّة الشعبة لا يُعرض (٢٦ أكتوبر ٢٠٢٦) ═══
+
+   `overlayModules` تُبقي محاورَ الكتالوج كلَّها وتعلوها الخطّة. فمحورُ كتالوجٍ
+   تركه المدرّبُ — شعبتُه من محوره الأوّل ثمّ محاورَ كتبها هو — يبقى فارغا بلا
+   موعدٍ ولا متن، فيُقرأ تحت «محاور أخرى» بشارة «قيد التأليف» وهو لن يُكتب أبدا.
+   رآه صاحبُ المنصّة، وخُيّر بين إخفائه وإبقائه بنصٍّ آخر، فقال: «a, hide them».
+   وبلا خطّةٍ تُعرض محاورُ الكتالوج كما هي: هي الدورةُ حينئذ. */
+export function inPlanOnly<T extends { id: string }>(
+  modules: readonly T[],
+  plan: { modules: readonly { moduleId: string }[] } | null | undefined,
+): T[] {
+  if (!plan || plan.modules.length === 0) return [...modules]
+  const ids = new Set(plan.modules.map((m) => m.moduleId))
+  return modules.filter((m) => ids.has(m.id))
+}
+
 export type Mark = 'done' | 'todo' | 'none'
 export type StopState = 'done' | 'current' | 'open' | 'locked'
 

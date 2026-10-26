@@ -42,7 +42,7 @@ import { overlayModules, readTypedLinks, resourceKind, type LearnerCohortWorkboo
 import { groupLabelAr } from "@/application/trainer/cohort-workbooks";
 import { dayLabelAr } from "@/application/trainer/axis-timeline";
 import { whenAr } from "@/application/learning/cohort-gate";
-import { buildStagePath, nextStep, type NextStep, type PathStop, type StagePath } from "@/application/student/stage-path";
+import { buildStagePath, inPlanOnly, nextStep, type NextStep, type PathStop, type StagePath } from "@/application/student/stage-path";
 import { RESOURCE_META } from "@/components/resource-kind-meta";
 import type { CourseFull } from "@/data/courses";
 import type { JourneyStage } from "@/application/student/journey";
@@ -113,7 +113,7 @@ export default function StageWork({
      كان `full.modules` وحدَها — وحداتُ الكتالوج — فما يؤلّفه مدرّبُ الشعبة
      ويُعتمَد لا يصل متعلّميه. قرارُ صاحب المنصّة (١٣ سبتمبر ٢٠٢٦). */
   const modules = useMemo(
-    () => overlayModules(full?.modules ?? [], detail.cohort.trainerPlan),
+    () => inPlanOnly(overlayModules(full?.modules ?? [], detail.cohort.trainerPlan), detail.cohort.trainerPlan),
     [full?.modules, detail.cohort.trainerPlan],
   );
   const percent = detail.courseProgress?.percent ?? stage.percent ?? 0;
@@ -809,20 +809,17 @@ function NextStepCard({
   }
   const Icon = icon;
   return (
-    <section
-      aria-label="خطوتك التالية"
-      className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-3 rounded-2xl border border-teal/40 bg-teal/[0.07] p-4"
-    >
+    <Card as="section" tone="accent" aria-label="خطوتك التالية" className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-3">
       <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-teal text-on-teal">
         <Icon className="h-5 w-5" aria-hidden="true" />
       </span>
       <div className="min-w-0 flex-1 basis-[12rem]">
-        <p className="text-fine font-bold text-teal-light-ink">خطوتك التالية</p>
+        <span className="block text-fine font-bold text-teal-light-ink">خطوتك التالية</span>
         <p className="mt-0.5 text-sm font-black leading-snug text-foreground">{title}</p>
         {meta && <p className="mt-0.5 text-read text-muted-foreground">{meta}</p>}
       </div>
       {action}
-    </section>
+    </Card>
   );
 }
 
@@ -945,15 +942,17 @@ function StopItem({
   return (
     <li className="relative ps-11 sm:ps-12">
       <StopNode stop={s} />
-      <details
+      {/* البطاقةُ من `Surface` لا حوافُّ مكتوبةٌ بيدها (`design-system.test.ts`). والعنوانُ
+          يمتدّ إلى حوافّها بهامشٍ سالب، فالنقرُ على أيّ موضعٍ منها يفتحها */}
+      <Card
+        as="details"
         id={s.key}
         open={open}
-        onToggle={(e) => onToggle((e.currentTarget as HTMLDetailsElement).open)}
-        className={`group scroll-mt-4 rounded-2xl border transition ${
-          s.state === "current" ? "border-teal/50 bg-teal/[0.03]" : "border-foreground/10 bg-foreground/[0.015]"
-        }`}
+        onToggle={(e: React.SyntheticEvent<HTMLElement>) => onToggle((e.currentTarget as HTMLDetailsElement).open)}
+        tone={s.state === "current" ? "accent" : "default"}
+        className="group scroll-mt-4"
       >
-        <summary className="flex cursor-pointer list-none flex-wrap items-center gap-x-3 gap-y-1.5 p-3.5 [&::-webkit-details-marker]:hidden">
+        <summary className="-m-5 flex cursor-pointer list-none flex-wrap items-center gap-x-3 gap-y-1.5 p-5 [&::-webkit-details-marker]:hidden">
           <span className="min-w-0 flex-1 basis-[13rem]">
             <span className={`block text-sm font-black leading-snug ${s.state === "locked" ? "text-muted-foreground" : "text-foreground"}`}>
               {s.title}
@@ -969,7 +968,7 @@ function StopItem({
           <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition group-open:rotate-180" aria-hidden="true" />
         </summary>
 
-        <div className="space-y-4 border-t border-foreground/[0.06] p-3.5">
+        <div className="mt-5 space-y-4 border-t border-foreground/[0.06] pt-4">
           <StopPart icon={BookOpen} label="اقرأ" done={s.marks.read === "done"}>
             {s.slot?.workbook ? (
               <WorkbookLink wb={s.slot.workbook} />
@@ -1016,7 +1015,7 @@ function StopItem({
             </StopPart>
           )}
         </div>
-      </details>
+      </Card>
     </li>
   );
 }
@@ -1118,7 +1117,7 @@ function Harvest({ detail, latest }: { detail: EnrollmentDetail; latest: Map<str
     .map((a) => ({ a, s: latest.get(a.id) ?? null }))
     .filter((x): x is { a: CohortAssessment; s: MySubmission } => x.s?.status === "accepted");
   return (
-    <section aria-label="حصادك" className="mt-4 rounded-2xl border border-foreground/10 p-3.5">
+    <Card as="section" aria-label="حصادك" className="mt-4">
       <p className="flex items-center gap-1.5 text-read font-black text-foreground">
         <Award className="h-4 w-4 text-gold-ink" aria-hidden="true" /> حصادك
         <span className="font-bold text-muted-foreground tabular-nums">· {items.length} من {detail.cohort.assessments.length}</span>
@@ -1141,7 +1140,7 @@ function Harvest({ detail, latest }: { detail: EnrollmentDetail; latest: Map<str
           ))}
         </ul>
       )}
-    </section>
+    </Card>
   );
 }
 

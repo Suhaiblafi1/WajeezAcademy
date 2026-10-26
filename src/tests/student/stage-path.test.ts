@@ -7,13 +7,14 @@
      ③ النجمةُ أثرٌ مسجَّل، وما لا يوجد في المحطّة لا نجمةَ له تُحسب عليه
      ④ «أنت هنا» أوّلُ محطّةٍ مفتوحةٍ لم تكتمل — لا المقفلة
      ⑤ الخطوةُ التالية بترتيبها: جلسةٌ الآن ثمّ إعادةٌ ثمّ تسليمٌ ثمّ قراءة…
-     ⑥ والشاشةُ ترسم ذلك: بطاقةٌ واحدة، والمحطّاتُ بترتيبها، والحصادُ للمقبول وحدَه */
+     ⑥ والشاشةُ ترسم ذلك: بطاقةٌ واحدة، والمحطّاتُ بترتيبها، والحصادُ للمقبول وحدَه
+     ⑦ ومحورُ كتالوجٍ ليس في خطّة الشعبة لا يُعرض — «a, hide them» */
 
 import { describe, expect, it, vi } from 'vitest'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { MemoryRouter } from 'react-router'
-import { buildStagePath, nextStep, type NextStepInput, type PathInput } from '@/application/student/stage-path'
+import { buildStagePath, inPlanOnly, nextStep, type NextStepInput, type PathInput } from '@/application/student/stage-path'
 import type { LearnerSlot } from '@/application/trainer/plan-overlay'
 import type { EnrollmentDetail } from '@/services/enrollment-detail'
 import type { JourneyStage } from '@/application/student/journey'
@@ -223,5 +224,51 @@ describe('⑥ الشاشة ترسم الطريق', () => {
   })
   it('⚠️ والشهادة آخر الطريق — بعد آخر محطّة', () => {
     expect(html.indexOf('href="#certificate"')).toBeGreaterThan(html.indexOf('id="slot-1"'))
+  })
+})
+
+/* ═══ ⑦ ما ليس في الخطّة لا يعرض ═══ */
+describe('⑦ محور كتالوج تركه المدرّب لا يعرض', () => {
+  const catalog = [{ id: 'K1' }, { id: 'K2' }, { id: 'K3' }]
+  it('⚠️ مع خطّة: ما في الخطّة وحده، بترتيبه', () => {
+    expect(inPlanOnly(catalog, { modules: [{ moduleId: 'K1' }, { moduleId: 'K3' }] }).map((m) => m.id)).toEqual(['K1', 'K3'])
+  })
+  it('وبلا خطّة أو بخطّة بلا محاور: الكتالوج كما هو — هو الدورة حينئذ', () => {
+    expect(inPlanOnly(catalog, null).map((m) => m.id)).toEqual(['K1', 'K2', 'K3'])
+    expect(inPlanOnly(catalog, { modules: [] }).map((m) => m.id)).toEqual(['K1', 'K2', 'K3'])
+  })
+
+  it('⚠️ والشاشة لا ترسمه ولا تقول عنه «قيد التأليف»', () => {
+    const stage = { courseId: 'C-T', titleAr: 'دورة', hours: 0, percent: 0 } as unknown as JourneyStage
+    const handlers = { answers: {}, setAnswers: () => undefined, busy: null, onSubmit: () => undefined, onSubmitQuiz: () => undefined, onChanged: () => undefined }
+    const full = { modules: [
+      { id: 'K1', title: 'محور الكتالوج المستعمل', body: null, checks: null },
+      { id: 'K2', title: 'محور الكتالوج المتروك', body: null, checks: null },
+    ] }
+    const detail = {
+      id: 'e-1', status: 'enrolled',
+      cohort: {
+        id: 'c-1', title: 'الشعبة', startsAt: null, course: { id: 'C-T', versions: [] }, trainers: [],
+        sessions: [], materials: [], assessments: [],
+        trainerPlan: {
+          summaryAr: null, resources: [],
+          modules: [
+            { moduleId: 'K1', titleAr: 'المحور الأوّل', bodyAr: '## درس\nنصّ مكتوب بما يكفي ليعدّ درسا واحدا في هذه الوحدة.', locked: false, opensAt: PAST },
+            { moduleId: 'T9', titleAr: 'محور كتبه المدرّب', bodyAr: '## درس\nنصّ مكتوب بما يكفي ليعدّ درسا واحدا في هذه الوحدة.', locked: false, opensAt: PAST },
+          ],
+          slots: [
+            { startsOn: '2020-01-01', endsOn: '2020-01-07', moduleIds: ['K1'], opensAt: PAST, closesAt: PAST, locked: false, hasWorkbook: false, workbook: null },
+            { startsOn: '2020-01-08', endsOn: '2020-01-14', moduleIds: ['T9'], opensAt: PAST, closesAt: PAST, locked: false, hasWorkbook: false, workbook: null },
+          ],
+        },
+      },
+      attendance: [], submissions: [], moduleProgress: [], courseProgress: null, certificates: [],
+    } as unknown as EnrollmentDetail
+    const html = renderToStaticMarkup(createElement(MemoryRouter, null, createElement(StageWork, { stage, detail, full: full as never, request: null, handlers })))
+    expect(html).toContain('المحور الأوّل')
+    expect(html).toContain('محور كتبه المدرّب')
+    expect(html, 'المتروك عاد يعرض').not.toContain('محور الكتالوج المتروك')
+    expect(html).not.toContain('قيد التأليف')
+    expect(html).not.toContain('محاور أخرى')
   })
 })
