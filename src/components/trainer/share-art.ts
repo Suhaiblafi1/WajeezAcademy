@@ -13,7 +13,7 @@
    تصميمٌ داكن، فقال: «لم تعجبني تصاميمُك الجديدة.. أبقِ القديمة وغيّر المحتوى فقط، وآليّةَ عرض الدورات وباقي المحتوى
    الجديد». فالشكلُ شكلُه الأوّل — أرضيّةُ الورق، والشريطُ الفيروزيّ، وشارةُ وجيز، والصورةُ بحلقتها الفيروزيّة،
    وشارةُ الخصم الذهبيّة — وما فيه جديد:
-   · **الدوراتُ قائمةٌ مرقّمة** بخطٍّ واحدٍ صغير، وموعدُ كلِّ دورةٍ تحتها (`courseList`).
+   · **الدوراتُ قائمةٌ مرقّمة** بخطٍّ واحدٍ صغير، وموعدُ كلِّ دورةٍ بجانبها؛ والواحدةُ في إطارٍ متقطّعٍ وموعدُها فوقها (`courseList`).
    · **«بث مباشر»** شارةً حمراءَ في الرأس، و**ثلاثُ مزايا صادقة** (`ART_PERKS`): بثٌّ مباشرٌ على Zoom، وتسجيلُ كلّ
      لقاء، وشهادةٌ موثّقة — ممّا تقدّمه المنصّة فعلا — و**«المقاعد محدودة»**.
 
@@ -206,60 +206,102 @@ const startsAr = (c: ArtData['courses'][number], dayAr: ArtData['dayAr']) => (c.
 
 /* ═══ آليّةُ عرض الدورات — قائمةٌ مرقّمةٌ بخطٍّ واحد (٢٦ أكتوبر ٢٠٢٦) ═══
    قال صاحبُ المنصّة عن الأسماء الكبيرة التي يصغر خطُّها بطولها: «لم يعجبني.. صغّر أسماءَ الدورات لتكون مرقّمةً بشكلٍ
-   أرتب». فكلُّ دورةٍ صفٌّ واحد: رقمُها في دائرةٍ فيروزيّةٍ يمينا، واسمُها (ما قبل النقطتين) بخطٍّ واحدٍ للكلّ، وموعدُها
-   تحته. والأعمدةُ على حافّةٍ يمنى واحدة وسطَ الصورة. وإن لم يسع الكلَّ ما بين `top` و`bottom` صغُر كلُّه معا.
-   والدورةُ الواحدةُ بلا رقم: اسمُها وموعدُها في الوسط. */
+   أرتب»، ثمّ: «تبدأ يجب أن تكون بجانب اسم الدورة، وإن كانت واحدةً ضعها فوقها وإطارا مربّعا متقطّعا». فـ:
+   · **الدوراتُ الكثيرة** صفوف: رقمُها في دائرةٍ فيروزيّةٍ يمينا، واسمُها (ما قبل النقطتين) بخطٍّ واحدٍ للكلّ، وموعدُها
+     بجانبه في آخر سطره. والصفوفُ على حافّةٍ يمنى واحدة وسطَ الصورة.
+   · **والدورةُ الواحدة** في إطارٍ متقطّع: موعدُها فوقها، واسمُها تحته.
+   وإن لم يسع الكلَّ ما بين `top` و`bottom` صغُر كلُّه معا. */
 function courseList(
   ctx: CanvasRenderingContext2D, d: ArtData, courses: ArtData['courses'], cx: number, top: number, bottom: number,
   width: number, base: number,
 ) {
-  const numbered = courses.length > 1
+  if (courses.length === 1) return singleCourse(ctx, d, courses[0], cx, top, bottom, width, base)
   const layout = (s: number) => {
-    const namePx = Math.round(base * (numbered ? 0.62 : 0.9) * s)
-    const datePx = Math.round(base * (numbered ? 0.44 : 0.56) * s)
+    const namePx = Math.round(base * 0.62 * s)
+    const datePx = Math.round(base * 0.44 * s)
     const r = namePx * 0.62
     const gap = namePx * 0.55
-    const textW = width - (numbered ? r * 2 + gap : 0)
+    ctx.font = font(500, datePx)
+    const dateW = Math.max(...courses.map((c) => ctx.measureText(startsAr(c, d.dayAr)).width))
+    const textW = width - r * 2 - gap - dateW - gap
     const rows = courses.map((c) => ({ c, ...fitLines(ctx, splitTitle(c.courseTitle).name, textW, 2, namePx, namePx - 4) }))
-    const rowH = (n: number, px: number) => n * px * 1.3 + datePx * 1.5
-    const rowGap = base * 0.38 * s
+    const rowH = (n: number, px: number) => n * px * 1.3
+    const rowGap = base * 0.42 * s
     const total = rows.reduce((a, x) => a + rowH(x.lines.length, x.px), 0) + rowGap * (rows.length - 1)
-    return { namePx, datePx, r, gap, rows, rowH, rowGap, total }
+    return { datePx, r, gap, rows, rowH, rowGap, total }
   }
   let L = layout(1)
   for (let s = 0.95; s >= 0.6 && L.total > bottom - top; s -= 0.05) L = layout(s)
-  /* عرضُ العمود أطولُ سطرٍ فيه — فيقف وسطَ الصورة ولا يلتصق بحافّتها */
-  let longest = 0
-  for (const x of L.rows) {
+  /* عرضُ الصفّ: الرقمُ والاسمُ وموعدُه — وأطولُها يقف وسطَ الصورة */
+  const widthOf = (x: (typeof L.rows)[number]) => {
     ctx.font = font(700, x.px)
-    for (const l of x.lines) longest = Math.max(longest, ctx.measureText(l).width)
+    const name = Math.max(...x.lines.map((l) => ctx.measureText(l).width))
+    const last = ctx.measureText(x.lines[x.lines.length - 1]).width
+    ctx.font = font(500, L.datePx)
+    return Math.max(name, last + L.gap + ctx.measureText(startsAr(x.c, d.dayAr)).width)
   }
-  ctx.font = font(500, L.datePx)
-  for (const x of L.rows) longest = Math.max(longest, ctx.measureText(startsAr(x.c, d.dayAr)).width)
-  const right = cx + (longest + (numbered ? L.r * 2 + L.gap : 0)) / 2
-  const textX = numbered ? right - L.r * 2 - L.gap : cx
+  const longest = Math.max(...L.rows.map(widthOf))
+  const right = cx + (longest + L.r * 2 + L.gap) / 2
+  const textX = right - L.r * 2 - L.gap
   let y = top + Math.max(0, (bottom - top - L.total) / 2)
   L.rows.forEach((x, i) => {
-    if (numbered) {
-      ctx.fillStyle = C.teal
-      ctx.beginPath(); ctx.arc(right - L.r, y + x.px * 0.62, L.r, 0, Math.PI * 2); ctx.fill()
-      ctx.fillStyle = C.white
-      ctx.font = font(700, L.r * 1.1)
-      ctx.textAlign = 'center'
-      ctx.textBaseline = 'middle'
-      ctx.fillText(String(i + 1), right - L.r, y + x.px * 0.62 + L.r * 0.06)
-      ctx.textBaseline = 'alphabetic'
-    }
-    ctx.textAlign = numbered ? 'right' : 'center'
+    ctx.fillStyle = C.teal
+    ctx.beginPath(); ctx.arc(right - L.r, y + x.px * 0.62, L.r, 0, Math.PI * 2); ctx.fill()
+    ctx.fillStyle = C.white
+    ctx.font = font(700, L.r * 1.1)
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillText(String(i + 1), right - L.r, y + x.px * 0.62 + L.r * 0.06)
+    ctx.textBaseline = 'alphabetic'
+    ctx.textAlign = 'right'
     ctx.fillStyle = C.tealInk
     ctx.font = font(700, x.px)
     x.lines.forEach((l, k) => ctx.fillText(l, textX, y + x.px * (1 + k * 1.3)))
+    /* وموعدُها بجانب آخر سطرٍ من اسمها */
+    const k = x.lines.length - 1
+    const lastW = ctx.measureText(x.lines[k]).width
     ctx.fillStyle = C.muted
     ctx.font = font(500, L.datePx)
-    ctx.fillText(startsAr(x.c, d.dayAr), textX, y + x.lines.length * x.px * 1.3 + L.datePx * 1.05)
+    ctx.fillText(startsAr(x.c, d.dayAr), textX - lastW - L.gap, y + x.px * (1 + k * 1.3))
     y += L.rowH(x.lines.length, x.px) + L.rowGap
   })
   ctx.textAlign = 'center'
+}
+
+/** الدورةُ الواحدة: إطارٌ متقطّع، موعدُها فوق، واسمُها تحته */
+function singleCourse(
+  ctx: CanvasRenderingContext2D, d: ArtData, c: ArtData['courses'][number], cx: number, top: number, bottom: number,
+  width: number, base: number,
+) {
+  const pad = base * 0.55
+  const layout = (s: number) => {
+    const datePx = Math.round(base * 0.52 * s)
+    const t = fitLines(ctx, splitTitle(c.courseTitle).name, width - pad * 2, 2, Math.round(base * 0.85 * s), Math.round(base * 0.85 * s) - 6)
+    const inner = datePx * 1.2 + base * 0.3 * s + t.lines.length * t.px * 1.3
+    return { datePx, t, inner, total: inner + pad * 2 }
+  }
+  let L = layout(1)
+  for (let s = 0.95; s >= 0.6 && L.total > bottom - top; s -= 0.05) L = layout(s)
+  ctx.font = font(700, L.t.px)
+  const textW = Math.max(...L.t.lines.map((l) => ctx.measureText(l).width))
+  ctx.font = font(500, L.datePx)
+  const boxW = Math.min(width, Math.max(textW, ctx.measureText(startsAr(c, d.dayAr)).width) + pad * 2)
+  const y0 = top + Math.max(0, (bottom - top - L.total) / 2)
+  ctx.save()
+  ctx.setLineDash([14, 10])
+  ctx.lineWidth = 3
+  ctx.strokeStyle = C.teal
+  roundRect(ctx, cx - boxW / 2, y0, boxW, L.total, 18)
+  ctx.stroke()
+  ctx.restore()
+  ctx.textAlign = 'center'
+  let y = y0 + pad + L.datePx
+  ctx.fillStyle = C.muted
+  ctx.fillText(startsAr(c, d.dayAr), cx, y)
+  y += L.datePx * 0.2 + base * 0.3
+  ctx.fillStyle = C.tealInk
+  ctx.font = font(700, L.t.px)
+  L.t.lines.forEach((l) => { y += L.t.px * 1.1; ctx.fillText(l, cx, y); y += L.t.px * 0.2 })
 }
 
 /** اسمُه ومسمّاه — ويُرجع أسفلَهما */
