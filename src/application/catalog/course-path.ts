@@ -173,3 +173,18 @@ export function suggestNext(courseIds: readonly string[], limit = 8): CourseSugg
 
   return out.sort((a, b) => a.rank - b.rank).slice(0, limit)
 }
+
+/* ═══ وما يُقترح يُشترى الآن — أربعٌ لا ثمان (٢٦ أكتوبر ٢٠٢٦) ═══
+
+   «يجب أن يكون اقتراحُك لدوراتٍ لديها شعب، ولا تقترح له دوراتٍ ليس لديها شعب، وقلّل هذه الاقتراحات إلى أربعٍ
+   بشكلٍ احترافيّ» (صاحب المنصّة). وكانت ثماني بطاقاتٍ أكثرُها «مع الشعبة» — دورةٌ لا شعبةَ لها تُضاف ولا تُشترى.
+   فالترتيبُ هو هو (`suggestNext`)، ثمّ يُبقى ما له شعبةٌ مفتوحة، ثمّ أوّلُ أربع. */
+export const BUYABLE_SUGGESTIONS = 4
+
+export function suggestBuyable(
+  courseIds: readonly string[],
+  hasCohort: (courseId: string) => boolean,
+  limit = BUYABLE_SUGGESTIONS,
+): CourseSuggestion[] {
+  return suggestNext(courseIds, Number.MAX_SAFE_INTEGER).filter((s) => hasCohort(s.courseId)).slice(0, limit)
+}
