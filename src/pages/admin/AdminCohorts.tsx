@@ -11,6 +11,7 @@ import { staffControlCls, staffSelectCls } from "@/components/FormKit";
 import { CohortOps, LearningSettings } from "./CohortOps";
 import { COHORT_TABS, type CohortTab } from "./cohort-tabs";
 import StaffMoveBox from "@/components/admin/StaffMoveBox";
+import CourseMoveBox from "@/components/admin/CourseMoveBox";
 import { cohortNextStep, COHORT_LISTS, inCohortList, type CohortList, type NextTone } from "./cohort-lists";
 import OpenApproved from "@/components/admin/OpenApproved";
 import { tabForGap } from "@/application/learning/open-gaps";
@@ -686,6 +687,9 @@ export default function AdminCohorts() {
                     )}
                     {/* وتنقلها الإدارةُ إلى موسمٍ آخر بنفسها (٢٠ أكتوبر ٢٠٢٦) — `StaffMoveBox` */}
                     <StaffMoveBox cohortId={c.id} status={c.status} startsAt={c.startsAt}
+                      onDone={(msg) => { setFlash({ kind: "ok", text: msg }); void load(); }} />
+                    {/* وإلى دورةٍ أخرى لما فُتحت على الدورة الخطأ (٢٦ أكتوبر ٢٠٢٦) — `CourseMoveBox` */}
+                    <CourseMoveBox cohortId={c.id} status={c.status} courseId={c.courseId}
                       onDone={(msg) => { setFlash({ kind: "ok", text: msg }); void load(); }} />
 
                     {c.status === "draft" && openError[c.id] && (
