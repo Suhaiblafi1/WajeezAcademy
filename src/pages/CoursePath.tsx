@@ -132,7 +132,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
     return asked && courseId ? { [courseId]: asked } : {};
   });
   const [user, setUser] = useState<string | null>(readUserName);
-  /* الجلسةُ الحقيقيّة للبريد: لوحُ الشراء يطلب التوثيقَ في موضعه، و`readUserName`
+  /* الجلسةُ الحقيقيّة للبريد: لوحُ الشراء يقرأ العنوانَ منها، و`readUserName`
      يقرأ التخزين المحلّيّ وحدَه فقد يخالف كعكةَ الخادم. */
   const { user: session } = useRealSession();
   const [checkout, setCheckout] = useState<Intent | null>(null);
@@ -934,6 +934,7 @@ function CoursePathPage({ courseId }: { courseId: string }) {
               }}
               initialMode="signup"
               source="course_path_checkout"
+              verifyLater
             />
           </Inset>
         </Modal>

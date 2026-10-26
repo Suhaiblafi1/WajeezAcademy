@@ -410,7 +410,7 @@ export default function MemberGrantPage() {
         {authOpen && (
           <Modal onClose={() => setAuthOpen(false)} label="أنشئ حسابك لتدفع" panelClassName="w-full max-w-md">
             <AuthGate
-              initialMode="signup" source="grant_checkout"
+              initialMode="signup" source="grant_checkout" verifyLater
               message="أنشئ حسابك لتدفع. فيه تجد دوراتك ومواعيدها."
               prefill={{ name: stored.name, email: stored.email }}
               onDone={() => { setAuthOpen(false); setBuyOpen(true); }}

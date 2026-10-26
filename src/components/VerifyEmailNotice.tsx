@@ -3,7 +3,8 @@
    قاعدتان تحكمانه:
    ١) لا يظهر لمن وثّق بريده — شريطٌ دائم يُقرأ ديكورا فيُتجاوَز حين يهمّ.
    ٢) يقول ما يُحجب بالضبط: «وثّق بريدك» وحدها تبدو تعقيدا بلا سبب. أمّا
-      «الشراء والشهادة موقوفان حتى تُوثّقه» فسببٌ يُقنع ويُتصرّف عليه.
+      «شهادتك تنتظر توثيقه» فسببٌ يُقنع ويُتصرّف عليه. وكان «الشراء والشهادة
+      موقوفان» حتّى صار الدفعُ أوّلا (٢٦ أكتوبر ٢٠٢٦): فالموقوفُ الشهادةُ وحدَها.
 
    ولا يَعِد بما لا يقع: حين تكون قناة البريد غير مفعّلة يقول ذلك صراحةً بدل
    «أُرسلت الرسالة» التي تُبقي المستخدم ينتظر ما لن يصل.
@@ -77,7 +78,7 @@ export default function VerifyEmailNotice({ email, className = "" }: { email: st
         <MailWarning className="h-4 w-4 shrink-0 text-[#FABC05]" aria-hidden="true" />
         <p className="min-w-0 flex-1 text-read leading-6">
           <span className="font-bold">بريدك غير موثّق</span>
-          <span className="text-muted-foreground"> — الشراء والشهادة موقوفان حتّى توثّقه.</span>
+          <span className="text-muted-foreground"> — شهادتك تنتظر توثيقه.</span>
         </p>
         {sendButton}
         <Button tone="secondary" type="button"
@@ -113,8 +114,8 @@ export default function VerifyEmailNotice({ email, className = "" }: { email: st
               آخرها. كان العنوان قبلهما فتقع النقطتان على يساره في سياق RTL
               فتُقرأ الجملة معكوسة: «‪…@test.local : شراء الشعب‬». */}
           <p className="mt-1 text-read leading-6 text-muted-foreground">
-            الدخول والتصفّح والتشخيص مفتوحة كلها. الموقوف شيئان فقط:
-            <span className="font-bold text-foreground"> شراء الشعب</span> و<span className="font-bold text-foreground">استلام الشهادة</span>،
+            الشراء وحضور دوراتك مفتوحان. الموقوف شيء واحد:
+            <span className="font-bold text-foreground"> استلام الشهادة</span>،
             حتى توثّق عنوانك
             <span dir="ltr" className="mx-1 inline-block font-bold text-foreground">{email}</span>
           </p>

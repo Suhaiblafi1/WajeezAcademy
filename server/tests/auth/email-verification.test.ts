@@ -1,9 +1,8 @@
 /* توثيق بريد الحساب (١هـ) — العقد كاملا.
 
-   الحاجز يجب أن يمنع ما يُقصد منعه ويسمح بما يُقصد السماح به. وأخطرُ ما فيه
-   حالتان متقابلتان: أن يمرّ غيرُ الموثَّق حين تعمل قناة البريد (فالحاجز
-   زينة)، وأن يُحبَس الجميع حين لا تعمل (فالحاجز قفلٌ لا مفتاح له). كلتاهما
-   مغطّاة هنا صراحة. */
+   الحاجز يجب أن يمنع ما يُقصد منعه ويسمح بما يُقصد السماح به. وكان على بابين: الشراءِ والشهادة. ثمّ صار
+   الدفعُ أوّلا (٢٦ أكتوبر ٢٠٢٦): فالشراءُ يمرّ بلا توثيقٍ والقناةُ تعمل — وهي الحالُ التي كان يُمنع فيها — والشهادةُ
+   وحدَها تنتظره، صارمةً بلا استثناء. وكلاهما مغطّى هنا صراحة. */
 
 import { beforeAll, afterEach, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
@@ -129,14 +128,33 @@ describe('إصدار الرمز واستهلاكه', () => {
   })
 })
 
-describe('حاجز الشراء', () => {
-  it('قناة البريد تعمل وغير الموثَّق يُمنع', async () => {
+describe('الشراء لا ينتظر التوثيق — الدفع أولا (٢٦ أكتوبر ٢٠٢٦)', () => {
+  /* قرارُ صاحب المنصّة: «هل من الضروري أن يقوم الشخص بتوثيق بريده؟»، فاختار الدفعَ أوّلا والتوثيقَ بعده.
+     والقناةُ مفتوحةٌ في كلّ اختبارٍ هنا عمدا: وهي الحالُ التي كان الحاجزُ يعمل فيها. */
+  it('قناة البريد تعمل وغير الموثَّق يطلب التسجيل — وأثرُه يقول إنه بلا بريد موثَّق', async () => {
     withEmailChannel(true)
     const userId = await newLearner()
-    await expect(commerce.requestEnrollment(userId, cohortId)).rejects.toMatchObject({
-      code: 'email_unverified', status: 403,
+    const req = await commerce.requestEnrollment(userId, cohortId)
+    expect(req.status).toBe('pending')
+    const audit = await prisma.auditEvent.findFirst({
+      where: { entityId: req.id, action: 'enrollment_request.create' },
+      orderBy: { createdAt: 'desc' },
     })
-    expect(await prisma.enrollmentRequest.count({ where: { userId } })).toBe(0)
+    expect((audit?.meta as { emailUnverified?: boolean })?.emailUnverified).toBe(true)
+  })
+
+  it('وغير الموثَّق يدفع — الطلب يُنشأ بلا سؤال عن البريد', async () => {
+    withEmailChannel(true)
+    const userId = await newLearner()
+    const order = await commerce.checkout(userId, [cohortId])
+    expect(order.orderId).toBeTruthy()
+    expect(await prisma.order.count({ where: { userId } })).toBe(1)
+  })
+
+  it('وخطّته لا تُردّ بالبريد — يصل إلى ما يمنعه حقّا (لا خطّة له)', async () => {
+    withEmailChannel(true)
+    const userId = await newLearner()
+    await expect(commerce.requestPlanEnrollment(userId)).rejects.toMatchObject({ code: 'no_plan' })
   })
 
   it('قناة البريد تعمل والموثَّق يمرّ', async () => {
@@ -148,7 +166,7 @@ describe('حاجز الشراء', () => {
     expect(req.status).toBe('pending')
   })
 
-  it('قناة البريد معطّلة: يمرّ غير الموثَّق بأثر صريح — الحاجز لا يصير قفلا بلا مفتاح', async () => {
+  it('وقناة البريد معطّلة: يمرّ غير الموثَّق كذلك بأثر صريح', async () => {
     withEmailChannel(false)
     const userId = await newLearner()
     const req = await commerce.requestEnrollment(userId, cohortId)

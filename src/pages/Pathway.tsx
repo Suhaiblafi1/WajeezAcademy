@@ -1017,6 +1017,7 @@ export default function PathwayPage() {
           <AuthGate
             message="التصفح مفتوح بلا تسجيل، والتسجيل فقط لإتمام الشراء وربطه بحسابك."
             source="checkout_gate"
+            verifyLater
             onDone={() => {
               setUser(readUserName());
               const intent = pendingCheckout;
