@@ -163,7 +163,10 @@ describe('تذكرةُ اللقاء بعد انتهائه وقبل اعتماد�
   })
   const meeting = async (title: string, over: { startsAt: Date; endsAt: Date; approvalState?: string }, zoom: { actualStartAt?: Date; actualEndAt?: Date } = {}) => {
     const s = await prisma.cohortSession.create({ data: { cohortId, title, status: 'scheduled', ...over } })
-    await prisma.zoomMeeting.create({ data: { sessionId: s.id, joinUrl: 'https://zoom.us/j/9', meetingId: `9${Date.now() % 1e9}`, ...zoom } })
+    /* رقمُ الاجتماع بعشر منازلَ دائما: باقي القسمة يُسقط أصفارَه الأولى، فيصير ساعاتٍ كلَّ أحدَ عشرَ يوما ثمانيَ
+       منازلَ فيردّه `signMeetingSdkJwt` (٩–١٢) — وسقطت به أربعةُ اختباراتٍ في CI (٢٦ أكتوبر ٢٠٢٦) */
+    const meetingId = `9${String(Date.now() % 1e9).padStart(9, '0')}`
+    await prisma.zoomMeeting.create({ data: { sessionId: s.id, joinUrl: 'https://zoom.us/j/9', meetingId, ...zoom } })
     return s.id
   }
 

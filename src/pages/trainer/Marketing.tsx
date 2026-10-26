@@ -53,9 +53,10 @@ export default function Marketing() {
   const awaiting = (data?.targets ?? []).flatMap((t) => t.posters.filter((p) => p.status === "pending").map((p) => ({ p, t })));
 
   return (
-    <TrainerLayout title="التسويق">
+    /* «موادك الإعلانية» — وكانت «التسويق» (٢٦ أكتوبر ٢٠٢٦، `TrainerLayout.tsx`): ما نحتاجه منه لنسوّق نحن */
+    <TrainerLayout title="موادك الإعلانية">
       <p className="mb-5 max-w-3xl text-sm leading-7 text-muted-foreground">
-        فيديو عنك، وفيديو لكلّ دورة أو مسار، وصور نصمّم منها ملصقاتك —
+        ساعدنا في تسويق دوراتك: فيديو عنك، وفيديو لكلّ دورة أو مسار، وصور نصمّم منها ملصقاتك —
         <b className="text-foreground"> ولا ننشر ملصقا قبل موافقتك.</b>
       </p>
 

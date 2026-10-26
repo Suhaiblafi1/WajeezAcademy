@@ -24,17 +24,19 @@ describe('① ثمانيةُ ألسنة، والتاسعُ «الرسائل وا
     const nav = code('src/pages/trainer/TrainerLayout.tsx')
     const fixed = nav.slice(nav.indexOf('const tabs: PortalTab[] = ['), nav.indexOf('...(user?.permissions.includes("placement.review")'))
     const labels = [...fixed.matchAll(/\{ to: "\/trainer[^"]*", label: "([^"]+)"/g)].map((m) => m[1])
-    expect(labels).toEqual(['الرئيسية', 'شعبي', 'طلبتي', 'طابور التقييم', 'جدولي', 'دوراتي', 'التسويق', 'مستحقاتي', 'الرسائل والتنبيهات'])
+    /* و«شارك دوراتك» خرجت من «مستحقاتي»، و«التسويق» صارت «موادك الإعلانية» (٢٦ أكتوبر ٢٠٢٦) */
+    expect(labels).toEqual(['الرئيسية', 'شعبي', 'طلبتي', 'طابور التقييم', 'جدولي', 'دوراتي', 'شارك دوراتك', 'موادك الإعلانية', 'مستحقاتي', 'الرسائل والتنبيهات'])
   })
 })
 
-describe('② «عقدي» و«دعوتي» قسمان في «مستحقاتي»', () => {
+describe('② «عقدي» قسم في «مستحقاتي» — و«دعوتي» خرجت «شارك دوراتك»', () => {
   const E = code('src/pages/trainer/Earnings.tsx')
 
   it('لسانُ الأقسام يحفظ القسمَ في الرابط', () => {
     expect(E).toMatch(/\{ id: "earnings", label: "مستحقاتي" \}/)
     expect(E).toMatch(/\{ id: "contract", label: "عقدي" \}/)
-    expect(E).toMatch(/\{ id: "referral", label: "دعوتي" \}/)
+    expect(E, 'عادت «دعوتي» قسما في «مستحقاتي»').not.toMatch(/id: "referral"/)
+    expect(E, 'رابط القسم القديم لا يحال إلى «شارك دوراتك»').toMatch(/asked === "referral"\) return <Navigate to="\/trainer\/share" replace \/>/)
     expect(E).toMatch(/params\.get\("tab"\)/)
     expect(E).toMatch(/section === "contract" && <MyContract \/>/)
   })
@@ -60,7 +62,7 @@ describe('④ والمساراتُ القديمة تُحال إلى مواضعه
   const APP = code('src/App.tsx')
   it.each([
     ['/trainer/contract', '/trainer/earnings\\?tab=contract'],
-    ['/trainer/referral', '/trainer/earnings\\?tab=referral'],
+    ['/trainer/referral', '/trainer/share'],
     ['/trainer/ratings', '/trainer#ratings'],
   ])('⚠️ %s', (from, to) => {
     expect(APP).toMatch(new RegExp(`<Route path="${from}" element=\\{<Navigate to="${to}" replace />\\} />`))
