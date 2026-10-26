@@ -33,7 +33,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router";
 import {
-  BadgeCheck, BookPlus, Check, ChevronDown, ChevronUp, CircleDashed, Coins, FileSignature,
+  BadgeCheck, BookPlus, Check, ChevronDown, ChevronUp, CircleDashed, Coins, FileSignature, FileText,
   Link2, Link2Off, Pencil, Send, Trash2,
 } from "lucide-react";
 import { apiGet, apiPost, apiPatch, ApiError } from "@/services/api";
@@ -45,7 +45,11 @@ import { staffControlCls as inputCls, staffAreaCls as areaCls } from "@/componen
 import { RULE_TYPE_AR } from "@/application/trainer/compensation-labels";
 import { outContractOf } from "@/application/trainer/contract-fee";
 import { foldProposals } from "@/application/trainer/proposal-fold";
-import { fmtDateLong } from "@/application/text/format-ar";
+import { fmtDateLong, fmtDayMonth } from "@/application/text/format-ar";
+import { amendmentLinesOf, contractStoryOf } from "@/application/trainer/contract-story";
+import { parseContractDoc } from "@/application/trainer/contract-sections";
+import ContractDocument from "@/components/ContractDocument";
+import Modal from "@/components/Modal";
 import {
   READINESS_LABELS_AR, type Readiness, type ReadinessStepKey,
 } from "@/application/trainer/readiness";
@@ -83,6 +87,11 @@ export interface PrepContract {
   declineReasonAr?: string | null; gatesActivation?: boolean;
   /** أجرُ العقد كما جُمِّد في نصّه — يقارَن بخطوة الأجر (`outContractOf`) */
   createdAt?: string; compensationType?: string | null; compensationRate?: string | null; currency?: string | null;
+  /** قصّتُه وطلبُ تعديله وجوابُه (`contract-story.ts`) — والبصمةُ تقول إنّ له نصّا يُفتح */
+  sentAt?: string | null; firstOpenedAt?: string | null; declinedAt?: string | null; declineReplyAr?: string | null;
+  signatureApprovedAt?: string | null; revokedAt?: string | null; replacesContractId?: string | null;
+  amendmentRequestAr?: string | null; amendmentRequestedAt?: string | null;
+  amendmentReplyAr?: string | null; amendmentRepliedAt?: string | null; bodyHash?: string | null;
 }
 
 export interface PrepQualification {
@@ -98,25 +107,7 @@ interface CourseOption {
   pathwayNames?: string[]; diagnosticDomains?: string[];
 }
 
-interface PrefillCourse { courseId: string; titleAr: string }
-interface Prefill {
-  profileId: string; fullName: string; email: string; gatesActivation: boolean;
-  courses: PrefillCourse[];
-  compensation: {
-    ruleId: string; type: string; rate: string; currency: string;
-    minSeats: number; referralRate: string | null;
-  } | null;
-  feeNotes: { reviewerName: string | null; expectation: string | null; proposal: string | null }[];
-  defaultDocuments: { kind: string; labelAr: string; required: boolean }[];
-  documentKinds: { kind: string; labelAr: string }[];
-  missingLegal: string[];
-  openContract: { id: string; status: string; title: string } | null;
-  /** ما يمنع التركيبَ والإرسال — موقوفٌ أو مردودٌ أو مسحوب — بمخرجه (`contractBlockedAr`) */
-  blockedAr: string | null;
-}
-
 export interface PreparationProps {
-  applicationId: string;
   profileId: string | null;
   readiness?: Readiness;
   proposals: PrepProposal[];
@@ -130,6 +121,8 @@ export interface PreparationProps {
   onChanged: () => void | Promise<void>;
   /** عقودُه في «العقود» — حيث يُغيَّر الأجرُ مع العقد */
   contractsHref?: string;
+  /** مُركِّبُ «العقود» لهذا المدرّب — المُركِّبُ الواحد (`prepare`) */
+  composeHref?: string;
 }
 
 const courseTitle = (c?: { versions: { titleAr: string }[] } | null, fallback = "") =>
@@ -625,45 +618,60 @@ function CoursesStep({
   );
 }
 
-/* ═══════════ الخطوةُ الثالثة — العقد ═══════════ */
+/* ═══════════ الخطوةُ الثالثة — العقد ═══════════
+
+   ─────────── ومُركِّبٌ واحدٌ لا اثنان (المرحلةُ الرابعة، ٢٦ أكتوبر ٢٠٢٦) ───────────
+
+   كان هنا مُركِّبٌ ثانٍ أنحفُ من مُركِّب «العقود»: عنوانٌ ووثائقُ وسببُ الإرسال بلا أجر، ثمّ «جهّز وأرسل» بنقرة —
+   بلا معاينةٍ قبل التركيب ولا شروطٍ خاصّةٍ ولا اسمٍ قانونيٍّ يُصحَّح. فعقدٌ واحدٌ له بابان يفترقان فيما يُكتب فيه. والمقترحُ
+   المعتمَد (3c): «يذهب المُركِّبُ الثاني». فـ«جهّز العقد» يفتح مُركِّبَ «العقود» لهذا المدرّب بعينه (`prepare`)، ويبقى
+   هنا ما يُقرأ في سياقه: قصّةُ كلِّ عقدٍ بتواريخها (`contractStoryOf`)، وطلبُ التعديل وجوابُه تحتها (`amendmentLinesOf`)،
+   ونصُّه — ومعها اعتمادُ التوقيع وتجديدُ الرابط كما كانا. */
 
 const CONTRACT_STATUS_AR: Record<string, string> = {
   draft: "مسودّة", sent: "أرسل — بانتظار توقيعه", declined: "اعتذر عنه",
   revoked: "ألغي", signed: "وقّعه — بانتظار اعتمادنا",
+  amendment_requested: "طلب تعديله — ينتظر جوابنا",
   /* اعتمدنا توقيعَه ولم نوقّعه — نوقّعه باعتماد دوراته (١ أكتوبر ٢٠٢٦) */
   signature_approved: "اعتمدنا توقيعه — نوقّعه باعتماد دوراته",
   countersigned: "نافذ — وقّعناه",
-  expired: "انقضى", terminated: "فسخ",
+  expired: "انقضى", terminated: "فسخ", superseded: "حلّ محلّه أحدث",
 };
 
+/** ما مضى من عقوده — يُقرأ طلبُ تعديله في خلَفه ولا يُعرض صفّا */
+const PAST_STATUSES = new Set(["revoked", "superseded"]);
+
 function ContractStep({
-  applicationId, contracts, canManage, busy, run, onChanged,
+  contracts, canManage, busy, run, onChanged, composeHref,
 }: {
-  applicationId: string; contracts: PrepContract[]; canManage: boolean;
+  contracts: PrepContract[]; canManage: boolean;
   busy: boolean; run: (work: () => Promise<unknown>, okAr: string) => Promise<void>;
   onChanged: () => void | Promise<void>;
+  /** مُركِّبُ «العقود» لهذا المدرّب — المُركِّبُ الواحد */
+  composeHref?: string;
 }) {
-  const [prefill, setPrefill] = useState<Prefill | null>(null);
-  const [composing, setComposing] = useState(false);
-  const [title, setTitle] = useState("");
-  const [hoursNote, setHoursNote] = useState("");
-  const [waived, setWaived] = useState("");
-  const [docs, setDocs] = useState<Record<string, boolean>>({});
   const [signOff, setSignOff] = useState<string | null>(null);
   const [signOffNote, setSignOffNote] = useState("");
+  const [shown, setShown] = useState<{ title: string; body: string } | null>(null);
+  const [opening, setOpening] = useState<string | null>(null);
 
-  const live = contracts.filter((c) => c.status !== "revoked");
+  const live = contracts.filter((c) => !PAST_STATUSES.has(c.status));
   const awaitingCountersign = live.find((c) => c.status === "signed") ?? null;
   const sent = live.find((c) => c.status === "sent") ?? null;
 
-  const openComposer = () =>
-    run(async () => {
-      const p = await apiGet<Prefill>(`/api/admin/trainer-applications/${applicationId}/contract-prefill`);
-      setPrefill(p);
-      setTitle(`عقد تدريب ${new Date().getFullYear()}`);
-      setDocs(Object.fromEntries(p.defaultDocuments.map((d) => [d.kind, d.required])));
-      setComposing(true);
-    }, "جاهز للإنشاء");
+  /* النصُّ من مسار «العقود» نفسِه (`/body`) — ويُرسم بالمكوِّن الذي ترسمه به «العقود» والمدرّبُ، فلا تفترق الورقة.
+     وقراءةٌ لا فعل: فلا خبرَ «تمّ» يقفز بعدها، ويُقال الخطأُ وحدَه. */
+  const openText = async (c: PrepContract) => {
+    setOpening(c.id);
+    try {
+      const full = await apiGet<{ bodyAr: string | null }>(`/api/admin/trainer-contracts/${c.id}/body`);
+      setShown({ title: c.title, body: full.bodyAr ?? "" });
+    } catch (e) {
+      toastError(e instanceof ApiError ? e.message : "تعذّر فتح نصّ العقد");
+    } finally {
+      setOpening(null);
+    }
+  };
 
   return (
     <div className="grid gap-3">
@@ -673,31 +681,69 @@ function ContractStep({
         </p>
       ) : (
         <ul className="grid gap-2">
-          {live.map((c) => (
-            <li key={c.id}>
-              <Card className="bg-paper/20 p-3.5">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="text-read font-bold text-foreground">
-                    {c.title} <span className="text-muted-foreground">· نسخة {c.revision}</span>
-                  </span>
-                  <span className="rounded-full bg-white/[0.06] px-2.5 py-0.5 text-fine text-muted-foreground">
-                    {CONTRACT_STATUS_AR[c.status] ?? c.status}
-                  </span>
-                </div>
-                {c.signerLegalName && (
-                  <p className="mt-1.5 text-read leading-6 text-muted-foreground">
-                    وقّعه <b className="text-foreground">{c.signerLegalName}</b>
-                    {c.signedAt && <> · {fmtDateLong(c.signedAt)}</>}
-                  </p>
-                )}
-                {c.declineReasonAr && (
-                  <p className="mt-1.5 text-read leading-6 text-gold-ink">
-                    اعتذر: {c.declineReasonAr}
-                  </p>
-                )}
-              </Card>
-            </li>
-          ))}
+          {live.map((c) => {
+            const story = contractStoryOf(c);
+            const amendments = amendmentLinesOf(c, contracts);
+            return (
+              <li key={c.id}>
+                <Card className="bg-paper/20 p-3.5">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="text-read font-bold text-foreground">
+                      {c.title} <span className="text-muted-foreground">· نسخة {c.revision}</span>
+                    </span>
+                    <span className="rounded-full bg-white/[0.06] px-2.5 py-0.5 text-fine text-muted-foreground">
+                      {CONTRACT_STATUS_AR[c.status] ?? c.status}
+                    </span>
+                  </div>
+                  {story.length > 0 && (
+                    <p className="mt-1.5 text-read leading-6 text-muted-foreground">
+                      {story.map((e, i) => (
+                        <span key={e.key}>
+                          {i > 0 && " · "}{e.ar} <span className="text-foreground">{fmtDayMonth(e.at)}</span>
+                        </span>
+                      ))}
+                    </p>
+                  )}
+                  {c.signerLegalName && (
+                    <p className="mt-1.5 text-read leading-6 text-muted-foreground">
+                      وقّعه باسم <b className="text-foreground">{c.signerLegalName}</b>
+                    </p>
+                  )}
+                  {amendments.map((m) => (
+                    <Inset
+                      key={m.previous ? "previous" : "own"} as="div" tone={m.pending ? "warn" : "default"}
+                      className="mt-2 px-3.5 py-2.5 text-read leading-6"
+                    >
+                      <p className="whitespace-pre-wrap">
+                        {m.previous ? "طلب تعديل سابق" : "طلب تعديله"}
+                        {m.requestedAt && <> {fmtDayMonth(m.requestedAt)}</>}: «{m.requestAr}»
+                      </p>
+                      {m.replyAr ? (
+                        <p className="mt-1 whitespace-pre-wrap text-muted-foreground">
+                          جوابنا{m.repliedAt && <> {fmtDayMonth(m.repliedAt)}</>}: {m.replyAr}
+                        </p>
+                      ) : m.pending && (
+                        <p className="mt-1 text-muted-foreground">ينتظر جوابنا — يكتب في «العقود».</p>
+                      )}
+                    </Inset>
+                  ))}
+                  {c.declineReasonAr && (
+                    <p className="mt-1.5 text-read leading-6 text-gold-ink">
+                      اعتذر: {c.declineReasonAr}
+                      {c.declineReplyAr && <span className="text-muted-foreground"> — ردّنا: {c.declineReplyAr}</span>}
+                    </p>
+                  )}
+                  {canManage && c.bodyHash && (
+                    <div className="mt-2.5">
+                      <Button tone="ghost" size="sm" icon={FileText} loading={opening === c.id} onClick={() => void openText(c)}>
+                        افتح النصّ
+                      </Button>
+                    </div>
+                  )}
+                </Card>
+              </li>
+            );
+          })}
         </ul>
       )}
 
@@ -740,8 +786,12 @@ function ContractStep({
                 >
                   طابقت الاسم بالهويّة — اعتمد توقيعه
                 </Button>
+                {/* وكان يقول «هذا لا يفتح حسابه: القبول النهائيّ قرارك، أسفل هذه الخطوات» — ونقيضُه منذ ٢١ أكتوبر
+                    ٢٠٢٦: اعتمادُ التوقيع يفتح بوّابتَه ويعبر به إلى «المدربون» (`approveSignature`)، كما يقول خبرُ الزرّ نفسِه. */}
                 <p className="mt-1.5 text-read leading-5 text-muted-foreground">
-                  هذا لا يفتح حسابه: القبول النهائيّ قرارك، أسفل هذه الخطوات.
+                  {awaitingCountersign.gatesActivation === false
+                    ? "اعتماده توقيع منّا عن الأكاديميّة، فينفذ العقد الآن."
+                    : "اعتماده يفتح بوّابته ويعبر به إلى «المدربون». ونوقّع الاتفاقيّة حين نعتمد دوراته."}
                 </p>
               </div>
             )
@@ -762,136 +812,30 @@ function ContractStep({
             </div>
           )}
 
-          {/* ── تركيبُ عقدٍ جديد ── */}
-          {!composing ? (
+          {/* ── والتركيبُ في المُركِّب الواحد ── */}
+          {composeHref && (
             <div>
-              <Button tone={live.length === 0 ? "confirm" : "ghost"} size="sm" icon={FileSignature}
-                loading={busy} onClick={() => void openComposer()}>
-                {live.length === 0 ? "جهّز العقد" : "جهّز عقدا جديدا"}
+              <Button
+                as={Link} to={composeHref}
+                tone={live.length === 0 ? "confirm" : "ghost"} size="sm" icon={FileSignature}
+              >
+                {live.length === 0 ? "جهّز العقد في «العقود»" : "جهّز عقدا جديدا في «العقود»"}
               </Button>
             </div>
-          ) : prefill && (
-            <Card className="bg-paper/20 p-3.5">
-              {prefill.missingLegal.length > 0 && (
-                <Inset as="p" tone="warn" className="mb-3 px-3.5 py-2.5 text-read leading-6">
-                  ناقص في هويّة الأكاديميّة: {prefill.missingLegal.join(" · ")} — أكمله قبل الإرسال.
-                </Inset>
-              )}
-              {/* ═══ وما يمنع الإرسالَ يُقال قبل أن تُملأ خانة (٣٠ سبتمبر ٢٠٢٦) ═══
-
-                  كان الموقوفُ يُركَّب له هنا ثمّ يُردّ إرسالُه بـ«لا يمكن الانتقال من
-                  «suspended» إلى «contract_pending»»، وتبقى المسودّةُ يتيمة. والخادمُ
-                  يردّ التركيبَ الآن بالنصّ نفسِه — وهذا قولُه قبل الضغط. */}
-              {prefill.blockedAr && (
-                <Inset as="p" tone="danger" role="alert" className="mb-3 px-3.5 py-2.5 text-read leading-6">
-                  {prefill.blockedAr}
-                </Inset>
-              )}
-
-              <div className="grid gap-2">
-                <label className="grid gap-1 text-read text-muted-foreground">
-                  عنوان العقد
-                  <input value={title} onChange={(e) => setTitle(e.target.value)}
-                    maxLength={160} className={inputCls} />
-                </label>
-
-                <p className="text-read leading-6 text-muted-foreground">
-                  الملحق (أ) — الدورات المؤهّل لها يوم الإرسال:{" "}
-                  {prefill.courses.length === 0
-                    ? <b className="text-amber-300">لا دورة بعد — الملحق يخرج فارغا</b>
-                    : <b className="text-foreground">{prefill.courses.map((c) => c.titleAr).join(" · ")}</b>}
-                </p>
-
-                <p className="text-read leading-6 text-muted-foreground">
-                  الملحق (ب) — الأتعاب:{" "}
-                  {prefill.compensation
-                    ? (
-                      <b className="text-foreground" dir="ltr">
-                        {RULE_TYPE_AR[prefill.compensation.type] ?? prefill.compensation.type}{" "}
-                        {prefill.compensation.rate}{" "}
-                        {prefill.compensation.type === "revenue_share" ? "%" : prefill.compensation.currency}
-                      </b>
-                    )
-                    : <b className="text-amber-300">لا قاعدة سارية — اضبط الخطوة الأولى أوّلا</b>}
-                </p>
-
-                {prefill.feeNotes.length > 0 && (
-                  <div className="text-read leading-6 text-muted-foreground">
-                    ما قيل في المقابلة عن الأجر — للاطّلاع فقط، لا يدخل في الحساب:
-                    <ul className="mt-1 grid gap-0.5">
-                      {prefill.feeNotes.map((n, i) => (
-                        <li key={i}>
-                          {n.reviewerName ?? "مراجع"}: {[n.expectation, n.proposal].filter(Boolean).join(" — ")}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {!prefill.compensation && (
-                  <label className="grid gap-1 text-read text-muted-foreground">
-                    لا يرسل بلا أجر إلّا بسبب مكتوب
-                    <input value={waived} onChange={(e) => setWaived(e.target.value)}
-                      maxLength={500} className={inputCls}
-                      placeholder="لماذا يرسل العقد بلا قاعدة أتعاب؟" />
-                  </label>
-                )}
-
-                <label className="grid gap-1 text-read text-muted-foreground">
-                  ما يقال عن الساعات والكلفة <span className="text-muted-foreground/70">(اختياريّ)</span>
-                  <textarea value={hoursNote} onChange={(e) => setHoursNote(e.target.value)}
-                    rows={2} maxLength={500} className={areaCls} />
-                </label>
-
-                <fieldset className="grid gap-1.5">
-                  <legend className="text-read text-muted-foreground">
-                    الملحق (ج) — ما يطلب منه رفعه قبل التوقيع
-                  </legend>
-                  <div className="flex flex-wrap gap-x-4 gap-y-1.5">
-                    {prefill.documentKinds.map((k) => (
-                      <label key={k.kind} className="flex items-center gap-1.5 text-read text-foreground">
-                        <input
-                          type="checkbox" checked={docs[k.kind] ?? false}
-                          onChange={(e) => setDocs({ ...docs, [k.kind]: e.target.checked })}
-                        />
-                        {k.labelAr}
-                      </label>
-                    ))}
-                  </div>
-                </fieldset>
-
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    tone="confirm" size="sm" icon={Send} loading={busy}
-                    disabled={title.trim().length < 3 || (!prefill.compensation && waived.trim().length < 5)
-                      || Boolean(prefill.blockedAr)}
-                    onClick={() => void run(async () => {
-                      const body = {
-                        title: title.trim(),
-                        requiredDocuments: prefill.documentKinds
-                          .filter((k) => docs[k.kind])
-                          .map((k) => ({ kind: k.kind, labelAr: k.labelAr, required: true })),
-                        hoursNoteAr: hoursNote.trim() || null,
-                        rateWaivedReasonAr: prefill.compensation ? null : waived.trim(),
-                      };
-                      const made = await apiPost<{ id: string }>(
-                        `/api/admin/trainer-applications/${applicationId}/contracts/compose`, body);
-                      await apiPost(`/api/admin/trainer-contracts/${made.id}/send`, {});
-                      setComposing(false);
-                      setPrefill(null);
-                      await onChanged();
-                    }, "أنشئ العقد وأرسل — يوقّع من رابطه")}
-                  >
-                    جهّز وأرسل
-                  </Button>
-                  <Button tone="ghost" size="sm" onClick={() => { setComposing(false); setPrefill(null); }}>
-                    تراجع
-                  </Button>
-                </div>
-              </div>
-            </Card>
           )}
         </>
+      )}
+
+      {shown && (
+        <Modal onClose={() => setShown(null)} label={shown.title} panelClassName="w-full max-w-3xl">
+          <Inset dir="rtl" tone="solid" className="max-h-[86vh] overflow-y-auto text-foreground sm:p-6">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <h2 className="text-lg font-black">{shown.title}</h2>
+              <Button tone="ghost" size="sm" onClick={() => setShown(null)}>أغلق</Button>
+            </div>
+            <ContractDocument doc={parseContractDoc(shown.body)} />
+          </Inset>
+        </Modal>
       )}
     </div>
   );
@@ -900,8 +844,8 @@ function ContractStep({
 /* ═══════════ الشاشةُ نفسُها ═══════════ */
 
 export default function PreparationSteps({
-  applicationId, profileId, readiness, activeRule, proposals, contracts,
-  qualifications, permissions, onChanged, contractsHref,
+  profileId, readiness, activeRule, proposals, contracts,
+  qualifications, permissions, onChanged, contractsHref, composeHref,
 }: PreparationProps) {
   const [busy, setBusy] = useState(false);
   const [courses, setCourses] = useState<CourseOption[]>([]);
@@ -1005,7 +949,7 @@ export default function PreparationSteps({
         locked={!can("trainer.contract.manage")}
       >
         <ContractStep
-          applicationId={applicationId} contracts={contracts}
+          contracts={contracts} composeHref={composeHref}
           canManage={can("trainer.contract.manage")} busy={busy} run={run} onChanged={onChanged}
         />
       </Step>

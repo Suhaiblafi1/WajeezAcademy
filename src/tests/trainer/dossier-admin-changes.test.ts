@@ -116,10 +116,15 @@ describe('ما يتخطّى العقد ذهب — والعقد في «التجه
     expect(RECOMMENDED_ACTIONS).not.toContain('start_onboarding')
   })
 
-  it('⚠️ والعقد في «التجهيز»: يركّب نصه ويرسل ويعتمد توقيعه', () => {
+  /* وكان المركِّبُ هنا يركّب ويرسل بنفسه. ومنذ ٢٦ أكتوبر ٢٠٢٦ (3c: «يذهب المُركِّبُ الثاني») يفتح زرُّه مركِّبَ «العقود»
+     لصاحبه — بمعاينته قبل التركيب — ويبقى هنا اعتمادُ التوقيع. والحارسُ على أنّ الطريقَ إلى العقد الحقّ من ملفّه باقٍ. */
+  it('⚠️ والعقد في «التجهيز»: يفتح المركّب الواحد لصاحبه ويعتمد توقيعه', () => {
     expect(prep).toMatch(/function ContractStep\(/)
-    expect(prep).toContain('/contract-prefill`')
+    expect(prep).toMatch(/<Button\s+as=\{Link\} to=\{composeHref\}/)
+    expect(prep).toContain('/countersign`')
     expect(apps).toMatch(/<PreparationSteps\b/)
+    expect(apps).toContain('composeHref={contractsHref(a, "contract_new")}')
+    expect(code('src/pages/admin/TrainerContracts.tsx'), 'المركّب الواحد لا يقرأ ما يركّب منه').toContain('/contract-prefill`')
   })
 })
 
