@@ -18,7 +18,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { pathwayTeam, trainerLineAr, trainerNamesOf } from '@/application/catalog/course-trainers'
+import { CARD_FACES_MAX, pathwayTeam, trainerFacesOf, trainerLineAr, trainerNamesOf } from '@/application/catalog/course-trainers'
 
 const read = (p: string) => readFileSync(join(process.cwd(), p), 'utf8')
 const PENDING = 'يعلن المدرب بعد اعتماد الشعبة'
@@ -62,5 +62,39 @@ describe('الصفحتان تقرآن الاسم من الشعب — لا من �
     expect(pathwayPage, 'الفريق لا يبنى من شعب دوراته').toMatch(/pathwayTeam\(\s*pathwayCoursesList\.map[\s\S]*?trainerNamesOf\(cohorts\.get\(c\.id\)\)/)
     expect(pathwayPage, 'القائمة تعرض التخصص الساكن').not.toMatch(/courseTrainer\(c\)\.name/)
     expect(pathwayPage, 'الفريق يقرأ قائمة التخصصات وحدها').not.toMatch(/pathwayTrainers\(/)
+  })
+})
+
+/* ═══ ووجوهُهم في بطاقات الرئيسة (٢٦ أكتوبر ٢٠٢٦) ═══
+   رُئي ساقطا: أُسقط شرطُ الصورة فرُسم من لا صورةَ له، وأُسقط الدمجُ فتكرّر مدرّبُ دورتين، ونُزع
+   الربطُ من شريطٍ فسقط حارسُه. */
+describe('وجوه المدربين دوائر متراصة في بطاقات الرئيسة', () => {
+  const t = (id: string, photoUrl: string | null) => ({ id, name: `م-${id}`, photoUrl })
+  const cohorts = new Map([
+    ['c1', [{ trainerProfiles: [t('a', '/a.jpg'), t('b', null)] }, { trainerProfiles: [t('a', '/a.jpg')] }]],
+    ['c2', [{ trainerProfiles: [t('a', '/a.jpg'), t('c', '/c.jpg')] }]],
+  ])
+
+  it('⚠️ بلا تكرار عبر الدورات والشعب، ومن لا صورة له يعد ولا يرسم', () => {
+    const r = trainerFacesOf(['c1', 'c2', 'c-none'], cohorts)
+    expect(r.faces.map((f) => f.id)).toEqual(['a', 'c'])
+    expect(r.total).toBe(3)
+  })
+
+  it('السقف يقص الوجوه ولا يقص العدد', () => {
+    const many = new Map([['x', [{ trainerProfiles: Array.from({ length: 7 }, (_, i) => t(`t${i}`, `/${i}.jpg`)) }]]])
+    const r = trainerFacesOf(['x'], many)
+    expect(r.faces).toHaveLength(CARD_FACES_MAX)
+    expect(r.total).toBe(7)
+  })
+
+  it('⚠️ شريطا الرئيسة يرسمانها — وصفحة الكتالوج كما هي', () => {
+    const best = read('src/pages/home/Bestsellers.tsx').replace(/\{?\/\*[\s\S]*?\*\/\}?/g, ' ')
+    const paths = best.slice(best.indexOf('morePaths.map'), best.indexOf('moreCourses.length'))
+    const courses = best.slice(best.indexOf('moreCourses.map'))
+    expect(paths, 'بطاقة المسار بلا وجوه مدربي دوراته').toMatch(/<TrainerFaces \{\.\.\.trainerFacesOf\(b\.item\.courseIds, cohorts\)\}/)
+    expect(courses, 'بطاقة الدورة بلا وجوه مدربيها').toMatch(/<TrainerFaces \{\.\.\.trainerFacesOf\(\[b\.item\.id\], cohorts\)\}/)
+    /* «فقط للصندوق الخارجي واترك الداخلي كما هو» — قرار صاحب المنصّة */
+    expect(read('src/pages/Catalog.tsx'), 'الكتالوج تغيّر وقد طلب بقاؤه').not.toContain('TrainerFaces')
   })
 })
