@@ -319,7 +319,7 @@ export class CommerceService {
     const currency = this.cart.cartCurrency(buyable, cohorts)
     /* الباقةُ والهديّةُ والكوبونُ على المشتراة وحدَها — وهي بعينها ما
        سيُرسَل إلى `checkout`، فالمعروضُ هو المُصدَر */
-    const { pricing, couponCode: code, grantPct } = await this.cart.priceFor(userId, buyable, couponCode, currency)
+    const { pricing, couponCode: code, grantPct, grantNameAr } = await this.cart.priceFor(userId, buyable, couponCode, currency)
     return {
       currency,
       couponCode: code,
@@ -333,8 +333,9 @@ export class CommerceService {
       /* خصمُ إكمال الخطّة — ما فات من خصمها في دفعاتٍ سابقة (١٢ أكتوبر ٢٠٢٦) */
       planCredit: pricing.planCredit,
       couponDiscount: pricing.couponDiscount,
-      /* نسبةُ المنحة إن كان الكودُ كودَها — فيُسمّى بندُها «منحة أعضاء وجيز» لا «الكود» */
+      /* نسبةُ المنحة إن كان الكودُ كودَها، واسمُ حملتها — فيُسمّى بندُها «منحة وجيز» لا «الكود» */
       grantPct,
+      grantNameAr,
       discount: pricing.discount,
       total: pricing.total,
       items: pricing.lines.map((l) => ({

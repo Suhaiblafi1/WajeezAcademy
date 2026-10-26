@@ -46,6 +46,8 @@ export const ADVISOR_ROLES = ['advisor', 'super_admin'] as const
    آخر كان يرى هيكلَ الصفحة ثمّ أخطاءَ ٤٠٣ متفرّقة بدل أن يُوجَّه إلى
    بوابته — وهو ما يقرأه المستخدم عطبا لا منعا. */
 export const LEARNER_ROLES = ['learner', 'super_admin'] as const
+/** حسابُ المؤثّر — كشفُه في «منحة مؤثرين وجيز» (٢٦ أكتوبر ٢٠٢٦) */
+export const INFLUENCER_ROLES = ['influencer', 'super_admin'] as const
 /** صفحةُ حالة طلب الانضمام: للمتقدّم، وللمدرّب الذي كان متقدّما */
 export const APPLICANT_ROLES = ['trainer_applicant', 'trainer', 'super_admin'] as const
 
