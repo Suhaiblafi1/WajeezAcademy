@@ -12,6 +12,7 @@ import { suggestBuyable, suggestNext, BUYABLE_SUGGESTIONS } from '@/application/
 import { courses } from '@/data/courses'
 
 const code = (p: string) => readFileSync(join(process.cwd(), p), 'utf8').replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '')
+const PATHWAY = code('src/pages/Pathway.tsx')
 
 describe('① الاقتراح يشترى', () => {
   const anchor = courses[0]!.id
@@ -101,9 +102,36 @@ describe('⑤ مقترحات المسار: المسار ثم الأقرب موض
     if (firstOther >= 0) expect(lastOwn).toBeLessThan(firstOther)
   })
 
-  it('⚠️ وما له شعبة أولا بين القريب', () => {
-    const near = pathwayExtraOptions(FAM, famBase, () => false, 50).filter((s) => !s.reason_ar.startsWith('لجمهور'))
+  it('⚠️ وما له شعبة أولا — ولو كان آخر القريب', () => {
+    const near = pathwayExtraOptions(FAM, famBase, () => false, 50)
     const last = near[near.length - 1]!
     expect(pathwayExtraOptions(FAM, famBase, (id) => id === last.courseId)[0]!.courseId).toBe(last.courseId)
+  })
+})
+
+/* ═══ ⑥ والهندسة: المفتوح القريب وحده، وإلّا القريب «سنقدّمها لك الفصل القادم» (٢٧ أكتوبر ٢٠٢٦) ═══
+   رأى صاحب المنصّة لمسار الهندسة دورةَ إعداد المعلّمين «لجمهور مسارك نفسه»، فقال: «استخدم الدورات المفتوحة حاليّا
+   فقط، وإن لم تجد شيئا قريبا فاقترح أخرى بدون شعبة، ويكون له: سنقدّمها لك الفصل القادم».
+   رُئي ساقطا على الصيغة السابقة: جمهورُ المسار يُبلَغ، ولا جارَ للهندسة. */
+describe('⑥ مسار بلا قريب له شعبة', async () => {
+  const { pathwayExtraOptions, NEXT_SEASON_AR } = await import('@/application/catalog/course-path')
+  const { readyPathwayCourseIds, courseById } = await import('@/data/courses')
+  const ENGR = 'PW-ENGR-001'
+  const base = readyPathwayCourseIds(ENGR)
+
+  it('⚠️ البعيد لا يقترح وإن فتحت شعبته — والثلاث من إدارة المشاريع جارتها', () => {
+    const open = new Set(['C-COMX-103', 'C-COMX-104', 'C-COMX-107'])
+    const out = pathwayExtraOptions(ENGR, base, (id) => open.has(id))
+    expect(out).toHaveLength(3)
+    for (const s of out) {
+      expect(open.has(s.courseId), s.courseId).toBe(false)
+      expect(courseById(s.courseId)?.pathwayId, s.courseId).toBe('PW-EMP-003')
+    }
+  })
+
+  it('⚠️ وما لا شعبة له يقول «سنقدمها لك الفصل القادم» مكان السعر', () => {
+    expect(NEXT_SEASON_AR).toBe('سنقدّمها لك الفصل القادم')
+    expect(PATHWAY).not.toContain('لم تفتح شعبتها بعد')
+    expect(PATHWAY).toMatch(/:\s*<span[^>]*>\{NEXT_SEASON_AR\}<\/span>/)
   })
 })

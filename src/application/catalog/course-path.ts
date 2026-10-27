@@ -21,6 +21,7 @@
 
 import { courseById, pathwayCourses, pathwaySupportCourses, courses, type Course } from '../../data/courses'
 import { pathwayDomain } from '../../data/pathways'
+import { domainsOfPathway } from '../../domain/diagnostic/v2/data'
 import { MAX_BUILT_COURSES, buildDiscountPct, bundlePayable, nextBuildStep } from '../commerce/discount-policy'
 
 /* من أين يأتي سعر الدورة؟ من الشعبة — تُمرَّر الدالة ولا تُستورَد.
@@ -186,6 +187,9 @@ export const BUYABLE_SUGGESTIONS = 4
    «اسمح لمن يشتري مسارا أن يضيف دورةً واحدةً فقط، واقترح له ثلاثَ دوراتٍ ليختار منها» (صاحب المنصّة). */
 export const PATHWAY_EXTRA_OPTIONS = 3
 
+/** ما يقوله مقترَحٌ بلا شعبةٍ مكانَ سعره — بلفظ صاحب المنصّة (٢٧ أكتوبر ٢٠٢٦) */
+export const NEXT_SEASON_AR = 'سنقدّمها لك الفصل القادم'
+
 /* ═══ ومن أين الثلاث: المسارُ نفسُه، ثمّ الأقربُ إليه — وما له شعبةٌ أوّلا (٢٦ أكتوبر ٢٠٢٦) ═══
 
    «اقترح من دورات المسار نفسه أو الأقرب للفئة، وحاول أن تكون الدورات المقترحة لها شعبٌ مفتوحة» (صاحب المنصّة).
@@ -198,10 +202,39 @@ export const PATHWAY_EXTRA_OPTIONS = 3
    · ٠ دوراتُ المسار نفسِه ومساندتُه — ما لم يدخل مسارَه الجاهز.
    · ١ مساراتٌ قريبةٌ منه: ما اختار الكتالوجُ منها مساندةً له، وما شاركه مجالَه (`pathwayDomain`).
    · ٢ دوراتٌ تشاركه مهارةً من مهارات دوراته — والنادرةُ أثقل، وما حملته أكثرُ من خمس دوراتٍ لا يُعدّ قربا.
-   · ٣ وجمهورُه (`category`) آخرَ الكلّ — لا يُبلغ إلّا إن قلّ ما قبله عن ثلاث.
-   وما له شعبةٌ مفتوحةٌ أوّلا داخل القريب (٠–٢)، ثمّ القريبُ بلا شعبة، ثمّ البعيد: فالقربُ شرطٌ، والشعبةُ «حاول». */
+   · ٣ مساراتُ المجال الجار لمجاله (`DOMAIN_NEIGHBORS`) — لمسارٍ لا يشاركه أحدٌ مجالا ولا مهارة، كالهندسة والتنفيذ.
+
+   ثمّ رأى في مسار الهندسة دورةَ إعداد المعلّمين «لجمهور مسارك نفسه» (٢٧ أكتوبر ٢٠٢٦)، فقال: «استخدم الدوراتِ المفتوحةَ
+   حاليّا فقط، وإن لم تجد شيئا قريبا فاقترح أخرى بدون شعبة، ويكون له: سنقدّمها لك الفصلَ القادم».
+   فذهبت طبقةُ الجمهور، والترتيبُ: القريبُ الذي له شعبةٌ مفتوحة، ثمّ القريبُ بلا شعبة — ويقول بطاقتُه ذلك. */
 /** مهارةٌ تحملها دوراتٌ أكثرُ من هذا شائعةٌ لا تدلّ على قرب */
 const COMMON_SKILL_CARRIERS = 5
+
+/** المجالُ الجارُ لكلّ مجالٍ دقيق (`domainsOfPathway`، خريطةُ التشخيص) — بالترتيب، الأقربُ أوّلا.
+    دقيقٌ لا عنقودٌ (`pathwayDomain`): «إدارة المشاريع والعمليات» عنقودٌ واحد، والهندسةُ جارةُ إدارة المشاريع لا رسمِ العمليات. */
+const DOMAIN_NEIGHBORS: Record<string, readonly string[]> = {
+  marketing_growth: ['sales', 'product_mgmt', 'visual_design'],
+  sales: ['marketing_growth', 'communication_influence'],
+  people_leadership: ['learning_design', 'project_management', 'communication_influence'],
+  learning_design: ['people_leadership', 'family_parenting', 'communication_influence'],
+  project_management: ['operations', 'people_leadership', 'construction_engineering'],
+  operations: ['project_management', 'data_decision'],
+  ai_productivity: ['data_decision', 'cyber_risk'],
+  data_decision: ['ai_productivity', 'finance_mgmt'],
+  cyber_risk: ['ai_productivity', 'operations'],
+  finance_mgmt: ['entrepreneurship', 'data_decision'],
+  entrepreneurship: ['finance_mgmt', 'marketing_growth', 'product_mgmt'],
+  product_mgmt: ['entrepreneurship', 'marketing_growth'],
+  gov_services: ['people_leadership', 'project_management'],
+  career_direction: ['employment_readiness', 'personal_development'],
+  employment_readiness: ['career_direction', 'communication_influence'],
+  communication_influence: ['sales', 'people_leadership'],
+  family_parenting: ['learning_design', 'personal_development'],
+  visual_design: ['spatial_design', 'marketing_growth'],
+  spatial_design: ['construction_engineering', 'visual_design'],
+  construction_engineering: ['project_management', 'spatial_design'],
+  personal_development: ['family_parenting', 'career_direction'],
+}
 
 export function pathwayExtraOptions(
   pathwayId: string,
@@ -216,8 +249,7 @@ export function pathwayExtraOptions(
     ...supports,
     ...courses.filter((c) => c.pathwayId === pathwayId).map((c) => c.id),
   ]
-  const ownCourses = [...own, ...baseIds].map(courseById).filter((c): c is Course => Boolean(c))
-  const skills = new Set(ownCourses.flatMap((c) => c.skills))
+  const skills = new Set([...own, ...baseIds].flatMap((id) => courseById(id)?.skills ?? []))
   const domain = pathwayDomain(pathwayId)
   const near = new Set(
     supports.map((id) => courseById(id)?.pathwayId).filter((id): id is string => Boolean(id) && id !== pathwayId),
@@ -248,17 +280,16 @@ export function pathwayExtraOptions(
     .filter((x) => x.common.length > 0)
     .sort((a, b) => b.weight - a.weight)
   for (const { c, common } of shared) push(c.id, 2, `تشارك مسارك مهارة «${common[0]}»`)
-  const category = ownCourses[0]?.category
-  if (category) for (const c of courses) if (c.category === category) push(c.id, 3, 'لجمهور مسارك نفسه')
+  for (const d of DOMAIN_NEIGHBORS[domainsOfPathway(pathwayId)[0] ?? ''] ?? []) {
+    for (const c of courses) {
+      if (domainsOfPathway(c.pathwayId)[0] === d) push(c.id, 3, `من مسار «${c.pathwayName}» القريب من مسارك`)
+    }
+  }
 
-  const byRank = (a: { rank: number }, b: { rank: number }) => a.rank - b.rank
-  const close = ranked.filter((s) => s.rank < 3).sort(byRank)
-  const far = ranked.filter((s) => s.rank === 3)
+  const ordered = ranked.sort((a, b) => a.rank - b.rank)
   return [
-    ...close.filter((s) => hasCohort(s.courseId)),
-    ...close.filter((s) => !hasCohort(s.courseId)),
-    ...far.filter((s) => hasCohort(s.courseId)),
-    ...far.filter((s) => !hasCohort(s.courseId)),
+    ...ordered.filter((s) => hasCohort(s.courseId)),
+    ...ordered.filter((s) => !hasCohort(s.courseId)),
   ].slice(0, limit)
 }
 
