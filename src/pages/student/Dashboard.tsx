@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
 import {
-  Activity, ArrowLeft, BookOpen, CalendarDays, CalendarPlus, Clock3, Loader2, Target,
+  Activity, ArrowLeft, BookOpen, CalendarDays, CalendarPlus, Clock3, Loader2, Star, Target,
 } from "lucide-react";
 import PortalLayout from "./PortalLayout";
 import MyAdvisorCard from "@/components/MyAdvisorCard";
@@ -21,6 +21,10 @@ import Button from "@/components/ui/Button";
 
 import { Card, Panel } from "@/components/ui/Surface";
 import { cohortDayAr, DAY_NUMERIC } from "@/application/learning/cohort-gate";
+import NextStepCard from "@/components/journey/NextStepCard";
+import { cohortModules, enrollmentStep, pickNextStep, type EnrollmentStep } from "@/application/student/enrollment-step";
+import { courseFullById } from "@/data/courses";
+import type { EnrollmentDetail as FullEnrollmentDetail } from "@/services/enrollment-detail";
 /* حُذفت خريطة ADVISORS هنا كما حُذفت في صفحة المسار: أسماءُ أشخاصٍ مكتوبةٌ في
    الكود تُعرض للطالب الدافع كأنها مستشارُه المعيَّن. والقاعدة أن لا اسم يُعرض
    كحقيقة قبل توثيقه واعتماده.
@@ -186,6 +190,25 @@ function MomentumCard({ m, className = "" }: { m: Momentum; className?: string }
   );
 }
 
+/* ═══ خطوةُ كلّ دورة — بحساب صفحة الدورة نفسِه (٢٧ أكتوبر ٢٠٢٦) ═══
+
+   قرارُ صاحب المنصّة «C both»: الرئيسيّةُ تفتح على «خطوتك التالية» عبر دوراته
+   كلِّها. والخطوةُ تُحسب بـ`enrollmentStep` التي تحسب بها صفحةُ الدورة خطوتَها —
+   فلا تقول الرئيسيّةُ «سلّم كذا» والدورةُ «اقرأ كذا». والردُّ هو ردُّ
+   `/api/learner/enrollments/:id` نفسُه بشكله الكامل؛ والنوعُ المحلّيُّ أعلاه يعلن
+   ما يقرؤه «زخمك» منه وحدَه. */
+type CourseStep = EnrollmentStep & { detail: FullEnrollmentDetail; courseId: string; titleAr: string };
+
+function courseSteps(details: readonly EnrollmentDetail[], now: number): CourseStep[] {
+  return details.map((d) => {
+    const full = d as unknown as FullEnrollmentDetail;
+    const courseId = full.cohort.course.id;
+    const course = courseFullById(courseId);
+    const r = enrollmentStep(full, cohortModules(course?.modules ?? [], full), now);
+    return { ...r, detail: full, courseId, titleAr: course?.title ?? full.cohort.course.versions[0]?.titleAr ?? full.cohort.title };
+  });
+}
+
 /* ═══════════ الوضع الحقيقي — شاشةُ يومه (١٩ أكتوبر ٢٠٢٦) ═══════════
 
    كانت الرئيسيّةُ تسعةَ ألواح: حلقةُ تقدّم، و«مواعيدي»، و«أين أنت»، و«زخمك»، و«التالي الآن»،
@@ -245,6 +268,18 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
   /* «الآن» يُلتقط مرّةً عند التركيب: قراءةُ `Date.now()` أثناء التصيير استدعاءٌ غيرُ نقيّ
      يمنعه مصرّفُ React، والذاكرةُ لا تُعاد إلّا بتغيّر details فالوقتُ مجمّدٌ عمليّا على أيّ حال. */
   const [now] = useState(() => Date.now());
+  const catalogVersion = usePublishedContent();
+
+  /* ⓪ «خطوتك التالية» — الأشدُّ إلحاحا من خطوات دوراته (`pickNextStep`) */
+  const steps = useMemo(() => {
+    void catalogVersion;
+    return details ? courseSteps(details, now) : [];
+  }, [details, now, catalogVersion]);
+  const hero = pickNextStep(steps);
+  const heroStep = hero?.step ?? null;
+  /* وما تقوله البطاقةُ لا يُعاد تحتها: لقاؤها الجاري، ومهمّتُها */
+  const heroSessionId = heroStep?.kind === "live" ? heroStep.sessionId : null;
+  const heroTaskIds = heroStep?.kind === "submit" || heroStep?.kind === "resubmit" ? [heroStep.assessmentId] : [];
 
   /* لقاءاتُ شعبه التي لم تنته — ولقاءٌ بلا آخرَ يُعدّ منتهيا بعد ساعتين من بدئه */
   const sessions = useMemo(() =>
@@ -264,7 +299,7 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
       detailAr: o.payBy ? `ادفع قبل ${fmtSession(o.payBy)}، وبعدها يفرج عن المقعد لغيرك` : "أتمم الدفع أو ألغ الطلب",
       action: { labelAr: "افتح فواتيري", to: "/student/billing" },
     })),
-    ...todaySessions.map((s): NowItem => ({
+    ...todaySessions.filter((s) => s.id !== heroSessionId).map((s): NowItem => ({
       key: `session-${s.id}`, kind: "session",
       titleAr: s.title,
       detailAr: `${fmtSession(new Date(s.startsAt))} · ${s.cohortTitle}`,
@@ -289,7 +324,6 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
      شخّص مسارا ثمّ اشترى غيره يرى خريطةَ مسارٍ لا يملك منه شيئا، ومن اشترى
      مسارين يرى واحدا. والمصدرُ الآن هو مصدرُ «رحلتي» نفسُه — فلا تقول
      اللوحةُ شيئا وتقول الرحلةُ غيرَه. */
-  const catalogVersion = usePublishedContent();
   const track: JourneyTrack | null = useMemo(() => {
     void catalogVersion;
     const tracks = buildJourney(rows, plan);
@@ -303,7 +337,20 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
       {details === null ? (
         <div className="grid place-items-center py-16"><Loader2 className="h-6 w-6 animate-spin text-teal-ink" /></div>
       ) : (
-        <MyDeadlines before={before} after={after} />
+        <>
+          {/* ⓪ خطوتك التالية — فعلٌ واحدٌ عبر دوراته، ويقود زرُّها إلى صفحة الدورة */}
+          {hero && heroStep && (
+            <NextStepCard
+              step={heroStep}
+              sessions={hero.detail.cohort.sessions}
+              courseId={hero.courseId}
+              enrollmentId={hero.detail.id}
+              courseTitleAr={hero.titleAr}
+              className="mb-6"
+            />
+          )}
+          <MyDeadlines before={before} after={after} hideAssessmentIds={heroTaskIds} afterNextStep={Boolean(heroStep)} />
+        </>
       )}
 
       {/* ② لقاءاتك القادمة — بعد يومه. ومن لا لقاءَ له بعدُ يقرأ ذلك سطرا */}
@@ -339,7 +386,7 @@ function RealDashboard({ name, rows }: { name: string; rows: RealEnrollment[] })
 
       {/* ③ «أين أنا من رحلتي؟» — بطاقةٌ تُلخّص وتُحيل، لا خريطةٌ ثانية تُرسم.
           والتقدّمُ هنا وحدَه: كانت فوقه حلقةُ نسبةٍ تقول الشيءَ نفسَه برقمٍ آخر. */}
-      {track && track.counts.total > 0 && <JourneyGlance track={track} className="mt-6" />}
+      {track && track.counts.total > 0 && <JourneyGlance track={track} steps={steps} className="mt-6" />}
 
       {/* ④ مستشارُه المسنَد — اسمُه وزرُّ مراسلته (`MyAdvisorCard`) */}
       <MyAdvisorCard className="mt-6" />
@@ -480,9 +527,11 @@ function EmptyRealDashboard({ name, signals }: { name: string; signals: EmptySig
    من الشيء نفسِه، ونقرةٌ لا تعرف أيَّهما تفتح.
 
    فهذه سطران ورقمان وزرٌّ واحد يقود إلى موضع العمل. */
-function JourneyGlance({ track, className = "" }: { track: JourneyTrack; className?: string }) {
+function JourneyGlance({ track, steps, className = "" }: { track: JourneyTrack; steps: readonly CourseStep[]; className?: string }) {
   const { counts, hours, currentIndex, stages } = track;
   const here = currentIndex >= 0 ? stages[currentIndex] : null;
+  /* وموضعُه داخل الدورة الحاليّة — محطّتُها ونجومُها كما في صفحتها (٢٧ أكتوبر ٢٠٢٦) */
+  const inCourse = here ? steps.find((s) => s.courseId === here.courseId)?.path ?? null : null;
   const pct = counts.total > 0 ? Math.round((counts.completed / counts.total) * 100) : 0;
   return (
     <section
@@ -499,6 +548,21 @@ function JourneyGlance({ track, className = "" }: { track: JourneyTrack; classNa
             {track.titleAr}
             {here && ` · ${here.titleAr}`}
           </p>
+          {inCourse && inCourse.stops.length > 0 && (
+            <p className="mt-1 flex flex-wrap items-center gap-x-2 text-read leading-5 text-muted-foreground">
+              <span>
+                {inCourse.currentIndex >= 0
+                  ? `في الدورة: المحطة ${inCourse.currentIndex + 1} من ${inCourse.stops.length}`
+                  : `في الدورة: أنجزت ${inCourse.stops.filter((s) => s.state === "done").length} من ${inCourse.stops.length}`}
+              </span>
+              {inCourse.stars.total > 0 && (
+                <span className="flex items-center gap-1 font-bold tabular-nums text-gold-ink" aria-label={`نجومك ${inCourse.stars.earned} من ${inCourse.stars.total}`}>
+                  <Star className="h-3.5 w-3.5 fill-gold text-gold" aria-hidden="true" />
+                  {inCourse.stars.earned}/{inCourse.stars.total}
+                </span>
+              )}
+            </p>
+          )}
         </div>
         <dl className="flex gap-5 text-center">
           <div>
