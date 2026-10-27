@@ -34,7 +34,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router";
-import { Award, ChevronDown, Clock, Copy, Flame, Gift, Loader2, Mail, MessageCircle, PencilRuler, Share2, Sparkles, UserRound, Video, type LucideIcon } from "lucide-react";
+import { ChevronDown, Clock, Copy, Flame, Gift, Loader2, Mail, MessageCircle, Share2, Sparkles, UserRound } from "lucide-react";
 import { apiGet, apiPost, apiPut, ApiError } from "@/services/api";
 import { useRealSession } from "@/services/session";
 import { useHoneypot } from "@/components/HoneypotField";
@@ -121,25 +121,6 @@ const GRANT_PATHS: GrantPathOption[] = [...publicPathsData.pathways]
   .map((x) => ({ id: x.id, title: x.title, courseIds: x.course_ids }));
 /** مجالُ دورةٍ لم تُسمَّ عائلتُها — لا يُعرض فيما يريد تطويرَه */
 const OTHER_DOMAIN = "أخرى";
-const GAIN_ICON: Record<(typeof GRANT_GAINS_AR)[number]["id"], LucideIcon> = { live: Video, practice: PencilRuler, certificate: Award };
-
-/** ما يحصل عليه — في صندوق الكود بعد النموذج (`GRANT_GAINS_AR`)، لا في الصفحة الأولى. قائمةٌ مرتّبةٌ بأيقونةٍ لكلّ بند، كتلةٌ في الوسط وبنودُها
-    على سطرٍ واحد — قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦): «ضعهم في الصندوق الأعلى بطريقةٍ مرتّبةٍ مع أيقونات» */
-function GrantGains({ className = "" }: { className?: string }) {
-  return (
-    <ul className={`mx-auto grid w-fit gap-2.5 text-start text-read ${className}`}>
-      {GRANT_GAINS_AR.map((g) => {
-        const Icon = GAIN_ICON[g.id];
-        return (
-          <li key={g.id} className="flex items-center gap-2.5">
-            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-teal/10"><Icon className="h-4 w-4 text-teal-light-ink" aria-hidden="true" /></span>
-            {g.title}
-          </li>
-        );
-      })}
-    </ul>
-  );
-}
 
 export default function MemberGrantPage({ variant = "members" }: { variant?: "members" | "influencer" }) {
   const forInfluencer = variant === "influencer";
@@ -343,34 +324,35 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
     };
     return (
       <Shell {...shell}>
-        {/* صندوقُ الكود — عمودان على الحاسوب: الكودُ والعدّادُ والحدّ، وبجانبها ما يحصل عليه؛ وعلى الهاتف عمودٌ واحد.
-            قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦): «لم يستغلّ البوكس.. من الممكن أن يكون أصغر وأرتب». وكان كلُّه في الوسط
-            سطرا تحت سطر، وأيقونةُ الهديّة وحدَها سطر */}
-        <Card tone="accent" className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:gap-8">
-          <div className="text-center sm:text-start">
-            {stored.code ? (
-              <>
-                <p className="flex items-center justify-center gap-1.5 text-read text-muted-foreground sm:justify-start">
-                  <Gift className="h-4 w-4 text-gold-ink" aria-hidden="true" /> كود منحتك
-                </p>
-                {/* الكودُ بخطٍّ لاتينيّ من اليسار، فطرفُه في الحاسوب طرفُ العمود الأيمن (`justify-end` في `ltr`) */}
-                <p className="mt-1 flex items-center justify-center gap-2 text-2xl font-black sm:justify-end" dir="ltr">
-                  {stored.code}
-                  <button type="button" aria-label="انسخ الكود" onClick={() => void copy(stored.code!)} className="cursor-pointer"><Copy className="h-5 w-5" /></button>
-                </p>
-                <p className="mt-0.5 text-read text-muted-foreground">أرسلناه إلى بريدك أيضا.</p>
-              </>
-            ) : stored.sentTo ? (
-              <p className="text-read">لك كود منحة من قبل. أرسلناه إلى {stored.sentTo}، واكتبه عند الدفع.</p>
-            ) : (
-              topNote && <p className="text-read">{topNote}</p>
-            )}
-            {c.open && c.closesAt && <GrantCountdown closesAt={c.closesAt} className="mt-3" />}
-            {/* وحدُّها جملةٌ واحدةٌ تحت «آخر يوم» — قرارُه (٢٤ أكتوبر ٢٠٢٦). وهو حدٌّ يحرس قيمتَها: «اختر ٤ دوراتٍ بحدٍّ أقصى» */}
-            {c.open && <p className="mt-0.5 text-read text-muted-foreground">{grantLimitAr(max)}</p>}
-          </div>
-          {/* وما يحصل عليه داخلَ هذا الصندوق — قرارُه (٢٤ أكتوبر ٢٠٢٦): «ضعهم في الصندوق الأعلى» */}
-          <div className="border-t border-border pt-4 sm:border-s sm:border-t-0 sm:ps-8 sm:pt-0"><GrantGains /></div>
+        {/* صندوقُ الكود — عمودٌ واحدٌ في الوسط: الكودُ ثمّ العدّادُ وآخرُ يومٍ والحدّ، وتحتها سطرٌ صغيرٌ بما يحصل عليه.
+            قرارُ صاحب المنصّة (٢٧ أكتوبر ٢٠٢٦): «تنتهي المنحة بعد… وآخر يوم واختر حتى ٤ يجب أن تكون في المنتصف،
+            وأسفلها سطرٌ صغير». وكان عمودين على الحاسوب، وما يحصل عليه قائمةٌ بأيقونات (٢٤ أكتوبر) */}
+        <Card tone="accent" className="text-center">
+          {stored.code ? (
+            <>
+              <p className="flex items-center justify-center gap-1.5 text-read text-muted-foreground">
+                <Gift className="h-4 w-4 text-gold-ink" aria-hidden="true" /> كود منحتك
+              </p>
+              <p className="mt-1 flex items-center justify-center gap-2 text-2xl font-black" dir="ltr">
+                {stored.code}
+                <button type="button" aria-label="انسخ الكود" onClick={() => void copy(stored.code!)} className="cursor-pointer"><Copy className="h-5 w-5" /></button>
+              </p>
+              <p className="mt-0.5 text-read text-muted-foreground">أرسلناه إلى بريدك أيضا.</p>
+            </>
+          ) : stored.sentTo ? (
+            <p className="text-read">لك كود منحة من قبل. أرسلناه إلى {stored.sentTo}، واكتبه عند الدفع.</p>
+          ) : (
+            topNote && <p className="text-read">{topNote}</p>
+          )}
+          {c.open && c.closesAt && <GrantCountdown closesAt={c.closesAt} className="mt-3" />}
+          {/* وحدُّها جملةٌ واحدةٌ تحت «آخر يوم» — قرارُه (٢٤ أكتوبر ٢٠٢٦). وهو حدٌّ يحرس قيمتَها: «اختر ٤ دوراتٍ بحدٍّ أقصى» */}
+          {c.open && <p className="mt-0.5 text-read text-muted-foreground">{grantLimitAr(max)}</p>}
+          {/* وما يحصل عليه سطرٌ صغيرٌ تحت خطٍّ رفيع — وكلُّ بندٍ لا ينقسم بين سطرين على الهاتف */}
+          <p className="mx-auto mt-3 flex max-w-md flex-wrap justify-center gap-x-1 border-t border-border pt-3 text-read leading-6 text-muted-foreground">
+            {GRANT_GAINS_AR.map((g, i) => (
+              <span key={g.id} className="whitespace-nowrap">{i > 0 && "+ "}{g.title}</span>
+            ))}
+          </p>
         </Card>
 
         <h2 className="mt-6 text-xl font-black">
@@ -578,8 +560,9 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
           <p className="text-read leading-6 text-muted-foreground">{GRANT_CONSENT_AR}</p>
         </Card>
         {/* وجوهُ مدرّبي الموسم تحت النموذج — قرارُ صاحب المنصّة (٢٥ أكتوبر ٢٠٢٦)، والعلّةُ عند `grantTrainerFaces` */}
+        {/* وبينها وبين النموذج فوقها والأسئلة تحتها مسافةٌ أوسع — قرارُه (٢٧ أكتوبر ٢٠٢٦): «تزيد المسافات ما بين صور المدربين والبوكس» */}
         {trainers.faces.length >= 3 && (
-          <div className="mt-6 text-center">
+          <div className="mt-12 text-center">
             <div className="flex justify-center -space-x-4 rtl:space-x-reverse">
               {trainers.faces.map((t, i) => (
                 <img key={t.id} src={t.photoUrl} alt={t.name} title={t.name} width={64} height={64} loading="lazy" decoding="async"
@@ -601,16 +584,17 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
           </div>
         )}
         {/* أسئلةٌ سريعةٌ مطويّة — قرارُ صاحب المنصّة (٢٦ أكتوبر ٢٠٢٦)، والعلّةُ عند `GRANT_FAQ_AR` */}
-        <div className="mt-8">
-          <h2 className="mb-3 text-center font-bold">أسئلة سريعة</h2>
-          <div className="space-y-2">
+        {/* وأصغرُ قليلا — قرارُه (٢٧ أكتوبر ٢٠٢٦): «الأسئلة السريعة حاول أن تجعلها أصغر قليلا». فعنوانٌ أصغرُ وحشوةٌ أقلّ وعرضٌ أضيق — والمتنُ أربعة عشر كسائر الصفحات */}
+        <div className="mx-auto mt-12 max-w-xl">
+          <h2 className="mb-2 text-center text-read font-bold">أسئلة سريعة</h2>
+          <div className="space-y-1.5">
             {GRANT_FAQ_AR.map((f) => (
-              <Inset as="details" key={f.q} className="group">
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 font-bold [&::-webkit-details-marker]:hidden">
+              <Inset as="details" key={f.q} className="group px-3.5 py-2.5">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-read font-bold [&::-webkit-details-marker]:hidden">
                   {f.q}
-                  <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition group-open:rotate-180" aria-hidden="true" />
+                  <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground transition group-open:rotate-180" aria-hidden="true" />
                 </summary>
-                <p className="mt-2 text-read leading-6 text-muted-foreground">{f.a}</p>
+                <p className="mt-1.5 text-read leading-6 text-muted-foreground">{f.a}</p>
               </Inset>
             ))}
           </div>

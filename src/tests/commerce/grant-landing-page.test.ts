@@ -27,7 +27,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '../../..')
 const code = (p: string) => readFileSync(join(root, p), 'utf8').replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '')
 const PAGE = code('src/pages/MemberGrantPage.tsx')
 /** صندوقُ الكود أعلى الصفحة الثانية — بدايتُه، تُقطع منها الشيفرةُ في الحرّاس */
-const TOP_CARD = '<Card tone="accent" className="grid gap-4'
+const TOP_CARD = '<Card tone="accent" className="text-center">'
 const APP = code('src/App.tsx')
 const ROUTES = code('server/http/routes/public-grant.routes.ts')
 const HTTP = code('server/http/app.ts')
@@ -142,7 +142,19 @@ describe('بعد النموذج', () => {
     const at = after.indexOf('{GRANT_FAQ_AR.map((f) => (')
     expect(at, 'الأسئلة ليست بعد النموذج').toBeGreaterThan(0)
     expect(at, 'الأسئلة بعد سطر الأكاديمية').toBeLessThan(after.indexOf('{GRANT_ACADEMY_LINE_AR}'))
-    expect(after.slice(at), 'الأسئلة مفتوحة أو بلا طي').toMatch(/^\{GRANT_FAQ_AR\.map\(\(f\) => \(\s*<Inset as="details" key=\{f\.q\} className="group">/)
+    expect(after.slice(at), 'الأسئلة مفتوحة أو بلا طي').toMatch(/^\{GRANT_FAQ_AR\.map\(\(f\) => \(\s*<Inset as="details" key=\{f\.q\} className="group px-3\.5 py-2\.5">/)
+    /* وأصغرُ قليلا — قرارُه (٢٧ أكتوبر ٢٠٢٦): «الأسئلة السريعة حاول أن تجعلها أصغر قليلا» */
+    const faq = after.slice(after.indexOf('أسئلة سريعة</h2>') - 200, after.indexOf('{GRANT_ACADEMY_LINE_AR}'))
+    expect(faq, 'عاد عرض الأسئلة كاملا').toMatch(/<div className="mx-auto mt-12 max-w-xl">\s*<h2 className="mb-2 text-center text-read font-bold">أسئلة سريعة<\/h2>\s*<div className="space-y-1\.5">/)
+    expect(faq, 'السؤال بخط الصفحة الكبير').toMatch(/<summary className="[^"]*\btext-read font-bold\b/)
+    expect(faq, 'عادت حشوة الأسئلة الكبيرة').toMatch(/<p className="mt-1\.5 text-read leading-6 text-muted-foreground">\{f\.a\}<\/p>/)
+  })
+
+  /* «تزيد المسافات ما بين صور المدربين والبوكس» — قرارُه (٢٧ أكتوبر ٢٠٢٦): فوقها النموذجُ وتحتها الأسئلة */
+  it('⚠️ وجوه المدربين بمسافة أوسع فوقها وتحتها', () => {
+    const after = PAGE.slice(PAGE.indexOf('{GRANT_CONSENT_AR}</p>\n        </Card>'))
+    expect(after).toMatch(/\{trainers\.faces\.length >= 3 && \(\s*<div className="mt-12 text-center">/)
+    expect(after).toMatch(/<div className="mx-auto mt-12 max-w-xl">\s*<h2[^>]*>أسئلة سريعة/)
   })
 
   it('⚠️ وجوه المدربين أكبر قليلا — ولا تنضغط، وما على الهاتف يتسع لهاتف بعرض 360', () => {
@@ -184,34 +196,31 @@ describe('بعد النموذج', () => {
     for (const t of [grantThanksAr(60), 'من سعر دوراتك.', 'بدعوة من']) expect(plainAr(t)).toBe(t)
   })
 
-  it('⚠️ وأنها مباشرة على Zoom — في أول الصفحة، وفي الشريط في صندوق الكود، وفي كل دورة', () => {
+  it('⚠️ وأنها مباشرة على Zoom — في أول الصفحة وفي كل دورة، وما يحصل عليه سطر صغير في صندوق الكود', () => {
     expect(PAGE).toContain('دورات مباشرة على Zoom، تختار منها حتى {c.maxCourses}.')
-    /* الشريطُ بقرار صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦): مع مدرّبٍ معتمد، وتطبيقاتٌ عمليّة، ورسالةُ توصية */
+    /* البنودُ بقرار صاحب المنصّة (٢٧ أكتوبر ٢٠٢٦): «لقاءات مباشرة + تطبيقات عملية + شهادة ورسالة توصية» — و«لمن يلتزم» باقٍ */
     expect(GRANT_GAINS_AR.map((g) => [g.id, g.title])).toEqual([
-      ['live', 'لقاءات مباشرة على Zoom مع مدرب معتمد لدينا'],
+      ['live', 'لقاءات مباشرة'],
       ['practice', 'تطبيقات عملية'],
       ['certificate', 'شهادة ورسالة توصية لمن يلتزم'],
     ])
-    /* وهو نفسُه في النموذج وفي صندوق الكود أعلى الصفحة الثانية، بعد سطر الحدّ — بدل صندوق Zoom الكبير. قرارُ صاحب المنصّة
-       (٢٤ أكتوبر ٢٠٢٦): «ضعهم في الصندوق الأعلى بطريقةٍ مرتّبةٍ مع أيقونات» */
+    for (const g of GRANT_GAINS_AR) expect(plainAr(g.title)).toBe(g.title)
     /* وفي صندوق الكود وحدَه — حُذف من الصفحة الأولى بقراره (٢٥ أكتوبر ٢٠٢٦): «احذفها من الصفحة الأولى» */
-    expect(PAGE.match(/<GrantGains\b/g)?.length, 'الشريط في غير صندوق الكود').toBe(1)
+    expect(PAGE.match(/\{GRANT_GAINS_AR\.map\(/g)?.length, 'البنود في غير صندوق الكود').toBe(1)
     const formAt = PAGE.indexOf('const ready = form.fullName')
     expect(formAt, 'الصفحة الأولى لم توجد').toBeGreaterThan(0)
-    expect(PAGE.slice(formAt), 'عاد الشريط إلى الصفحة الأولى').not.toMatch(/GrantGains|GRANT_GAINS_AR/)
+    expect(PAGE.slice(formAt), 'عادت البنود إلى الصفحة الأولى').not.toContain('GRANT_GAINS_AR')
     const card = PAGE.slice(PAGE.indexOf(TOP_CARD), PAGE.indexOf('<h2 className="mt-6'))
-    expect(card).toMatch(/\{grantLimitAr\(max\)\}<\/p>\}\s*<\/div>\s*<div className="border-t border-border pt-4 sm:border-s sm:border-t-0 sm:ps-8 sm:pt-0"><GrantGains \/><\/div>\s*<\/Card>/)
-    /* وصغيرٌ مرتّب — قرارُه (٢٤ أكتوبر ٢٠٢٦): «لم يستغلّ البوكس.. من الممكن أن يكون أصغر وأرتب»: عمودان على الحاسوب،
-       والكودُ والعدّادُ والحدُّ في الأوّل، وما يحصل عليه في الثاني. ولا أيقونةُ هديّةٍ وحدَها سطرا */
-    expect(card).toMatch(/^<Card tone="accent" className="grid gap-4 sm:grid-cols-\[minmax\(0,1fr\)_auto\] sm:items-center sm:gap-8">\s*<div className="text-center sm:text-start">/)
+    /* عمودٌ واحدٌ في الوسط — قرارُه (٢٧ أكتوبر ٢٠٢٦): «تنتهي المنحة… وآخر يوم واختر حتى ٤ يجب أن تكون في المنتصف،
+       وأسفلها سطرٌ صغير». فلا عمودان ولا ما يميل إلى طرفٍ على الحاسوب */
+    expect(card).toMatch(/^<Card tone="accent" className="text-center">/)
+    expect(card, 'مال شيء في الصندوق إلى طرف على الحاسوب').not.toMatch(/sm:(text-start|justify-start|justify-end|grid-cols|border-s)/)
+    expect(card, 'السطر الصغير ليس تحت الحد').toMatch(/\{grantLimitAr\(max\)\}<\/p>\}\s*<p className="mx-auto mt-3 flex max-w-md flex-wrap justify-center gap-x-1 border-t border-border pt-3 text-read leading-6 text-muted-foreground">\s*\{GRANT_GAINS_AR\.map\(\(g, i\) => \(\s*<span key=\{g\.id\} className="whitespace-nowrap">\{i > 0 && "\+ "\}\{g\.title\}<\/span>\s*\)\)\}\s*<\/p>\s*<\/Card>/)
+    expect(card, 'عادت الأيقونات في قائمة').not.toMatch(/<Icon |GrantGains|<ul /)
     expect(card, 'عادت أيقونة الهدية سطرا وحدها').not.toMatch(/<Gift className="mx-auto/)
     expect(card, 'فقرة فارغة حين لا شيء يقال').toMatch(/topNote && <p className="text-read">\{topNote\}<\/p>/)
     const picker = PAGE.slice(PAGE.indexOf('<h2 className="mt-6'), PAGE.indexOf('view.openCourses.length === 0'))
-    expect(picker, 'الشريط تحت العنوان لا في الصندوق').not.toContain('GrantGains')
-    /* مرتّبٌ: قائمةٌ عموديّةٌ كتلتُها في الوسط، وأيقونةُ كلِّ بندٍ في دائرة */
-    const gains = PAGE.slice(PAGE.indexOf('function GrantGains'), PAGE.indexOf('export default function'))
-    expect(gains).toMatch(/<ul className=\{`mx-auto grid w-fit gap-2\.5 text-start text-read \$\{className\}`\}>/)
-    expect(gains).toMatch(/<span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-teal\/10"><Icon /)
+    expect(picker, 'البنود تحت العنوان لا في الصندوق').not.toContain('GRANT_GAINS_AR')
     expect(PAGE, 'عاد صندوق Zoom الكبير').not.toMatch(/كل الدورات مباشرة على Zoom|تسجيل كل لقاء/)
     expect(PAGE).toMatch(/تبدأ \{cohortDayAr\(x\.startsAt\)\} · مباشرة على Zoom/)
   })
@@ -489,7 +498,7 @@ describe('بعد النموذج', () => {
 
   it('⚠️ قليل هادئ — ثلاث بكلمتين، وأربع خانات بلا شرح تحتها، والاختياري مطوي، وسطر عن الأكاديمية', () => {
     expect(GRANT_GAINS_AR, 'عادت بطاقات ما يحصل عليه').toHaveLength(3)
-    expect(PAGE).toMatch(/\{GRANT_GAINS_AR\.map\(\(g\) => \{/)
+    expect(PAGE).toMatch(/\{GRANT_GAINS_AR\.map\(\(g, i\) => \(/)
     expect(PAGE, 'عادت النبذة الطويلة').not.toMatch(/FAMILY_INTRO|grantStepsAr|كيف تعمل المنحة|ماذا تحصل عليه/)
     /* الاختياريّان داخل <details> مطويّ — لا مفتوحَين فوق الزرّ */
     const folded = PAGE.match(/<details[^>]*>([\s\S]*?)<\/details>/)
