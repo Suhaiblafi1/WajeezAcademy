@@ -507,6 +507,14 @@ export default function Referral() {
   /* وإخفاقُها يُقال لا يُقرأ «لا شعبة مفتوحة» (٢٠ أكتوبر ٢٠٢٦) — من له شعبٌ مفتوحةٌ كان يُقال له إنّه لا شعبةَ له */
   const [linksDown, setLinksDown] = useState(false);
   const [kit, setKit] = useState<ShareKitData | null>(null);
+  /* ═══ وإخفاقُه يُقال لا يُخفي اللوحة (٢٧ أكتوبر ٢٠٢٦) ═══
+     سأل صاحبُ المنصّة: «أين قسم صمّم؟». كانت لوحةُ «صمم منشورك» وكودُنا يُرسمان على نجاح هذا النداء وحدَه، وإخفاقُه
+     يُبتلع — فيختفي أهمُّ ما في الصفحة بلا كلمة. فاللوحةُ قائمةٌ دائما، وإن تعذّر قيل لمَ، وبجانبه «أعد المحاولة». */
+  const [kitErr, setKitErr] = useState<string | null>(null);
+  const loadKit = useCallback(() =>
+    apiGet<ShareKitData>("/api/trainer/me/share-kit")
+      .then((r) => { setKit(r); return true; })
+      .catch((e) => { setKitErr(permissionMessage(e, "تعذّر تحميل منشورك")); return false; }), []);
   /* لوحةُ مشاركة الشعبة المفتوحة: معرّفُها — ولوحةُ دوراته كلِّها مفتوحةٌ دائما */
   /* ═══ والبريدُ يفتح لوحةَ الشعبة نفسِها (٢٧ أكتوبر ٢٠٢٦) ═══
      «انشر دورتك الآن» قبل البدء بأسبوع (`share-reminder.service.ts`) زرُّه `?share=<الشعبة>` — فيصل المدرّبُ إلى منشورها
@@ -532,12 +540,10 @@ export default function Referral() {
     void apiGet<CohortLink[]>("/api/trainer/me/referral-links")
       .then((r) => { if (alive) setCohortLinks(r); })
       .catch(() => { if (alive) { setCohortLinks([]); setLinksDown(true); } });
-    /* وكودُنا على دوراته: إخفاقُه لا يُعطّل الروابط — تُعرض بلا لوحته */
-    void apiGet<ShareKitData>("/api/trainer/me/share-kit")
-      .then((r) => { if (alive) setKit(r); })
-      .catch(() => undefined);
+    /* وكودُنا على دوراته: إخفاقُه لا يُعطّل الروابط، ويُقال في لوحته */
+    void loadKit();
     return () => { alive = false };
-  }, []);
+  }, [loadKit]);
 
   /* وتُنزل الصفحةُ إلى الشعبة التي جاء البريدُ بها حين تظهر */
   useEffect(() => {
@@ -606,28 +612,31 @@ export default function Referral() {
               قال صاحبُ المنصّة: «صمّم منشورك هو الأهمّ، اتركها مفتوحة للجميع». فكانت زرّا يُفتح في لوحةٍ ثالثة،
               وصارت أوّلَ ما في الصفحة مفتوحةً بلا نقرة — بدوراته كلِّها ورابطه العامّ، وكاروسيلٌ بشريحةٍ لكلّ دورة.
               ومن لا شعبةَ مفتوحةً له يرى اللوحةَ ويُقال له متى يظهر منشوره: منشورٌ بلا دورةٍ لا يُرسم. */}
-          {kit && (
-            <Panel as="section" className="mb-6">
-              <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-                <h2 className="flex items-center gap-2 text-lg font-black">
-                  <Share2 className="h-5 w-5 text-teal-light-ink" aria-hidden="true" /> صمم منشورك
-                </h2>
-                <p className="text-read text-muted-foreground">صورة فيها صورتك ودوراتك والكود، ونص جاهز لكل منصة.</p>
+          <Panel as="section" className="mb-6">
+            <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+              <h2 className="flex items-center gap-2 text-lg font-black">
+                <Share2 className="h-5 w-5 text-teal-light-ink" aria-hidden="true" /> صمم منشورك
+              </h2>
+              <p className="text-read text-muted-foreground">صورة فيها صورتك ودوراتك والكود، ونص جاهز لكل منصة.</p>
+            </div>
+            {!kit && kitErr ? (
+              <Inset tone="danger" className="mt-3 flex flex-wrap items-center justify-between gap-3 px-4 py-3" role="alert">
+                <p className="text-read leading-6 text-red-200">{kitErr}</p>
+                <Button tone="secondary" size="sm" onClick={() => { setKitErr(null); void loadKit(); }}>أعد المحاولة</Button>
+              </Inset>
+            ) : !kit || cohortLinks === null ? (
+              <div className="grid place-items-center py-10">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground/50" aria-label="جار التحميل" />
               </div>
-              {cohortLinks === null ? (
-                <div className="grid place-items-center py-10">
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground/50" aria-label="جار التحميل" />
-                </div>
-              ) : cohortLinks.length > 0 ? (
-                <ShareKit face={kit} fileStem="wajeez-courses" url={kit.short.wide ?? referral.url} code={shareCodeOf(kit)}
-                  courses={cohortLinks.map((c) => ({ courseTitle: c.courseTitle, startsAt: c.startsAt, url: c.url }))} />
-              ) : (
-                <Inset as="p" className="mt-3 px-4 py-3 text-read leading-6 text-muted-foreground">
-                  {linksDown ? "تعذّر جلب شعبك الآن. أعد فتح الصفحة بعد قليل." : "يظهر منشورك هنا حين تفتح لك شعبة."}
-                </Inset>
-              )}
-            </Panel>
-          )}
+            ) : cohortLinks.length > 0 ? (
+              <ShareKit face={kit} fileStem="wajeez-courses" url={kit.short.wide ?? referral.url} code={shareCodeOf(kit)}
+                courses={cohortLinks.map((c) => ({ courseTitle: c.courseTitle, startsAt: c.startsAt, url: c.url }))} />
+            ) : (
+              <Inset as="p" className="mt-3 px-4 py-3 text-read leading-6 text-muted-foreground">
+                {linksDown ? "تعذّر جلب شعبك الآن. أعد فتح الصفحة بعد قليل." : "يظهر منشورك هنا حين تفتح لك شعبة."}
+              </Inset>
+            )}
+          </Panel>
 
           {/* ═══ الكودُ والرابطُ جنبا إلى جنب (٢٦ أكتوبر ٢٠٢٦) ═══
               كانا لوحتين بعرض الصفحة لسطرٍ واحدٍ في كلٍّ منهما. فصارا عمودين في صفٍّ واحد — وعلى الهاتف واحدا فوق الآخر. */}
