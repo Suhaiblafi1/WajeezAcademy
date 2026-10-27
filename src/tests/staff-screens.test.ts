@@ -50,13 +50,15 @@ describe('٢٣ · التصحيح في موضع واحد — لا تبويب يح
   })
 })
 
-describe('٢٣ · ومآل اقتراح التأجيل حيث المواعيد', () => {
-  it('«جدولي» يعرض الاقتراحات ويسحبها', () => {
-    expect(schedule).toContain('/api/trainer/reschedules')
-    expect(schedule).toContain('/withdraw')
+/* وكان «جدولي» يعرض مآلَ اقتراحات التأجيل ويسحبها — ثمّ خرج الاقتراحُ وطابورُه كلُّه
+   (٢٧ أكتوبر ٢٠٢٦، المرحلة السادسة — ج): المدرّبُ ينقل لقاءه بنفسه منذ ١٧ سبتمبر ٢٠٢٦. */
+describe('٢٣ · ومواعيده في «جدولي» بلا اقتراحات تأجيل', () => {
+  it('⚠️ «جدولي» لا يعرض اقتراحا ولا يسحبه — خرج الاقتراحُ وطابورُه', () => {
+    expect(schedule).not.toContain('/api/trainer/reschedules')
+    expect(schedule).not.toContain('/withdraw')
   })
 
-  it('واللوح يقترح ولا يتابع — ويقول أين يتابع', () => {
+  it('واللوح لا يتابع شيئا — ويدلّ على «جدولي»', () => {
     expect(board, 'المتابعة ما زالت مكرّرة في اللوح').not.toContain('/withdraw')
     expect(board, 'اقتراح بلا دلالة على مآله').toContain('/trainer/schedule')
   })

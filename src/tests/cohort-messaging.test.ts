@@ -8,15 +8,24 @@
    • وأثرُ النقل مكتوبٌ قبل الضغط لا بعده — يعود للانتظار، ويغيب عن شاشات
      متعلّميه حتّى يُعتمَد، ويصلهم خبرُه.
    • والسجلّ يُعرض فعلا: بلا عرضه تصير الرسالة إشعارا يُمسح، وهو ما رُفض.
-   • وقرار الإدارة يقع في موضعه: شاشتُها هي التي تعتمد، لا شاشة المدرب. */
+   • واقتراحُ التأجيل خرج كلُّه (٢٧ أكتوبر ٢٠٢٦، المرحلة السادسة — ج): لا يُقترح شيءٌ منذ صار النقلُ
+     بيد المدرّب، واختار صاحبُ المنصّة («a») أن يخرج طابورُه وحدَه وتبقى أدواتُ التأجيل الأربع الأخرى. */
 
 import { describe, expect, it } from 'vitest'
-import { readFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
+import { readdirSync, readFileSync, statSync } from 'node:fs'
+import { dirname, join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const read = (p: string) => readFileSync(join(root, p), 'utf8')
+/* الشيفرةُ بلا تعليقاتها — فلا يُطابَق مسارٌ في شرحٍ يقول إنّه ذهب */
+const code = (p: string) => read(p).replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '').replace(/^\s*\/\/.*$/gm, '')
+/** ملفّاتُ الخادم عدا اختباراتِه */
+const serverFiles = (dir = 'server'): string[] => readdirSync(join(root, dir)).flatMap((f) => {
+  const p = `${dir}/${f}`
+  if (statSync(join(root, p)).isDirectory()) return f === 'tests' || f === 'node_modules' ? [] : serverFiles(p)
+  return p.endsWith('.ts') ? [relative(root, join(root, p))] : []
+})
 
 /* التشغيلُ انتقل من «شعبي» إلى مرحلة «التشغيل» في صفحة الشعبة الواحدة
    (٨ سبتمبر ٢٠٢٦) — والحارسُ يتبع الشيفرةَ إلى موضعها الجديد بحمولته نفسِها. */
@@ -26,6 +35,7 @@ const BOARD = 'src/pages/trainer/CohortOps.tsx'
    التشغيل — هي ما سيصير «مركزَ التواصل» (ع-١). */
 const SESSIONS = 'src/pages/trainer/SessionsAndAttendance.tsx'
 const ADMIN = 'src/pages/admin/AdminCohorts.tsx'
+const SCHEDULE = 'src/pages/trainer/Schedule.tsx'
 const ROUTES = 'server/http/routes/learning-portal.routes.ts'
 
 describe('مخاطبة الشعبة', () => {
@@ -69,28 +79,16 @@ describe('نقل موعد لقاء', () => {
     expect(form, 'لا يقال إنّه يغيب عن المتعلّمين').toMatch(/يغيب عن شاشات متعلّميك/)
   })
 
-  it('القرار في شاشة الإدارة لا في شاشة المدرب', () => {
-    /* ولا يعتمد المدرّبُ اقتراحَه في أيٍّ من الشاشتين */
-    for (const screen of [BOARD, SESSIONS]) {
-      expect(read(screen), 'المدرب يعتمد اقتراحه بنفسه').not.toContain('session-reschedules')
+  it('⚠️ واقتراحُ التأجيل خرج كلُّه — لا شاشةَ تناديه ولا بابَ يقبله ولا خدمةَ تكتبه', () => {
+    for (const screen of [BOARD, SESSIONS, ADMIN, SCHEDULE]) {
+      expect(code(screen), `${screen} ما زالت تنادي اقتراحَ التأجيل`).not.toMatch(/session-reschedules|\/reschedules?\b/)
     }
-    const admin = read(ADMIN)
-    expect(admin, 'الإدارة لا ترى الاقتراحات').toContain('/api/admin/session-reschedules')
-    expect(admin, 'لا اعتماد').toContain('"approve"')
-    expect(admin, 'لا ردّ').toContain('"reject"')
-    /* والفارق يُقال للإداريّ: الاعتماد يحرّك الموعد، والردّ لا يحرّكه */
-    expect(admin).toMatch(/الاعتماد ينقل الموعد/)
-  })
-
-  it('صلاحية القرار للإدارة وحدها', () => {
-    const routes = read(ROUTES)
-    const block = /app\.post\('\/api\/admin\/session-reschedules\/:id\/review'[\s\S]*?\n {2}\}\)/.exec(routes)?.[0] ?? ''
-    expect(block, 'مسار القرار مفقود').toBeTruthy()
-    expect(block, 'القرار بلا صلاحية إدارة الشعب').toContain("requirePermission('cohort.manage')")
-    /* ومسارُ الاقتراح بصلاحية المدرب — لا بصلاحية الإدارة */
-    const propose = /app\.post\('\/api\/trainer\/sessions\/:sessionId\/reschedule'[\s\S]*?\n {2}\}\)/.exec(routes)?.[0] ?? ''
-    expect(propose, 'مسار الاقتراح مفقود').toBeTruthy()
-    expect(propose).toContain("requirePermission('trainer.cohort.operate')")
-    expect(propose, 'بلا حارس ملكيّة الشعبة: يقترح لجلسة ليست له').toContain('assertCohortTrainer')
+    expect(code(ROUTES), 'بقي بابٌ من أبواب الاقتراح').not.toMatch(
+      /app\.(get|post)\('\/api\/(admin\/session-reschedules|trainer\/reschedules|trainer\/sessions\/:sessionId\/reschedule)/,
+    )
+    /* والجدولُ باقٍ أثرا: يقرؤه المحوُ ويمحوه (`account-purge`)، ولا يُنشئ صفّا فيه أحدٌ ولا يقرّره */
+    const writers = serverFiles().filter((f) => /sessionRescheduleRequest\.(create|update|updateMany|upsert)\(/.test(code(f)))
+    expect(writers).toEqual([])
+    expect(code('server/services/staff-inbox.service.ts'), 'بقي بندُه في الوارد').not.toContain("key: 'reschedules'")
   })
 })
