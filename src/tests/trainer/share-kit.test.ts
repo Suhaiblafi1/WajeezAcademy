@@ -252,3 +252,16 @@ describe('«مباشر» مرة واحدة في الصورة', () => {
     expect(art).not.toContain('هذا الموسم')
   })
 })
+
+/* ═══ «أين قسم صمّم؟» (صاحب المنصّة، ٢٧ أكتوبر ٢٠٢٦) ═══
+   كانت اللوحةُ تُرسم على نجاح `/api/trainer/me/share-kit` وحدَه، وإخفاقُه يُبتلع — فتختفي بلا كلمة. */
+describe('لوحة «صمم منشورك» لا تختفي', () => {
+  const body = readFileSync(join(process.cwd(), 'src/pages/trainer/Referral.tsx'), 'utf8')
+    .replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '')
+  const main = body.slice(body.indexOf('export default function Referral'))
+  it('⚠️ اللوحة لا تشترط نجاح النداء — وإخفاقه يقال بسببه وبإعادة المحاولة', () => {
+    expect(main, 'اللوحة مشروطة بالكود').not.toMatch(/\{kit && \(\s*<Panel[^>]*>\s*<div[^>]*>\s*<h2[^>]*>\s*<Share2[^>]*\/> صمم منشورك/)
+    expect(main, 'إخفاق النداء يبتلع').not.toMatch(/share-kit"\)\s*\.then\([^)]*\)\s*\.catch\(\(\) => undefined\)/)
+    expect(main).toMatch(/\{!kit && kitErr \? \(\s*<Inset tone="danger"[\s\S]{0,300}\{kitErr\}[\s\S]{0,200}أعد المحاولة/)
+  })
+})
