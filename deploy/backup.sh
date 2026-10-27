@@ -33,7 +33,16 @@ COMPOSE="docker compose -f deploy/compose.prod.yml --env-file $ENV_FILE"
 STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 MODE="${1:-}"
 LABEL="nightly"; [ "$MODE" = "--pre-deploy" ] && LABEL="predeploy"
-WORK="$(mktemp -d)"
+# ═══ ومجلّدُ العمل على القرص لا في `/tmp` (٢٧ أكتوبر ٢٠٢٦) ═══
+#
+# كان `mktemp -d` — أي `/tmp`. و`/tmp` في Ubuntu الحديث **في الذاكرة** (tmpfs):
+# ١٫٩ غيغابايتا على خادمٍ بأربعة. ونسخةُ القاعدة ١٫٣ تبقى فيه حتّى الخروج،
+# ثمّ يُكتب أرشيفُ التخزين (٠٫٦) بجانبها فيمتلئ: «write /dev/stdout: no space
+# left on device» و«تعذّرت أرشفةُ حجم التخزين» — والقرصُ فيه سبعةَ عشرَ غيغابايتا.
+# فوقف كلُّ نشرٍ منذ صباح ٢٧ أكتوبر، وكلُّ نشرةٍ فاشلةٍ تركت ١٫٣ أخرى في الوجهة
+# (والتقليمُ بعد الأخذ لا يبلغها)، ولم تُؤخذ نسخةُ تلك الليلة. فالعملُ على القرص
+# (`/var/tmp`، أو `BACKUP_WORK_DIR`)، ونسخةُ القاعدة تُحذف منه حين تُرفع.
+WORK="$(mktemp -d -p "${BACKUP_WORK_DIR:-/var/tmp}")"
 trap 'rm -rf "$WORK"' EXIT
 
 if [ -z "${BACKUP_REMOTE:-}" ]; then
@@ -279,6 +288,8 @@ SIZE=$(stat -c%s "$WORK/$FILE")
 
 rclone copy "$WORK/$FILE" "$BACKUP_REMOTE" || { echo "✗ أخفق الرفع إلى $BACKUP_REMOTE" >&2; exit 1; }
 echo "✓ رُفعت $FILE ($(numfmt --to=iec "$SIZE" 2>/dev/null || echo "$SIZE bytes")) إلى $BACKUP_REMOTE"
+# رُفعت — فلا تبقى في مجلّد العمل بجانب أرشيف التخزين الآتي
+rm -f "$WORK/$FILE"
 
 # ── وحجمُ الملفّات معها ──
 #
