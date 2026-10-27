@@ -310,7 +310,7 @@ describe('بعد النموذج', () => {
   /* «عندما يقوم بالدفع لا يظهر نفس السعر… يجب أن يصلح من جهتك» — واختار صاحبُ المنصّة المطابقةَ بالبريد (٢٧ أكتوبر ٢٠٢٦) */
   it('⚠️ من لا كود ظاهرا له يأخذه بحسابه حين يدخل — ولوح الدفع يعاد بالكود فيسعر بمنحته', () => {
     /* وحين يفتح لوحُ الدفع أيضا — من أنشأ حسابه في نافذة الدفع لا تعرفه الصفحةُ بعدُ (بلاغُ ٢٧ أكتوبر ٢٠٢٦) */
-    expect(PAGE).toMatch(/const claimFor = \(session \|\| buyOpen\) && stored && !stored\.code \? `\$\{session\?\.email \?\? "buy"\}\|\$\{stored\.ref\}` : null;/)
+    expect(PAGE).toMatch(/const claimFor = \(authed \|\| buyOpen\) && stored && !stored\.code \? `\$\{session\?\.email \?\? "buy"\}\|\$\{stored\.ref\}` : null;/)
     expect(PAGE).toMatch(/apiGet<\{ code: string \| null \}>\(`\/api\/learner\/grant-code\?campaign=\$\{forInfluencer \? "influencer" : "member"\}`\)/)
     expect(PAGE, 'لا يحفظ الكود على الجهاز').toMatch(/if \(kept && !kept\.code\) saveStoredGrant\(\{ \.\.\.kept, code, sentTo: null \}, storeKey\);/)
     expect(PAGE).toMatch(/setStored\(\(s\) => \(s && !s\.code \? \{ \.\.\.s, code, sentTo: null \} : s\)\);/)
@@ -318,6 +318,35 @@ describe('بعد النموذج', () => {
     expect(PAGE).toMatch(/<BuyPanel\s+key=\{stored\.code \?\? "no-code"\}[\s\S]{0,200}initialCoupon=\{stored\.code \?\? ""\}/)
     expect(code('server/http/routes/public-grant.routes.ts')).toMatch(/app\.get\('\/api\/learner\/grant-code', \{\s*preHandler: requireAuth,/)
     expect(auditActionAr('coupon.grant_claim')).not.toBe('coupon.grant_claim')
+  })
+
+  /* من أنشأ حسابه في نافذة الدفع ثمّ أغلق اللوحَ وضغط الشراءَ ثانيةً كانت تعود نافذةُ الحساب: «البريدُ مسجّل» (٢٧ أكتوبر ٢٠٢٦) */
+  it('⚠️ من دخل في نافذة الدفع داخل من يومها — لا تعود له نافذة الحساب', () => {
+    expect(PAGE).toMatch(/const authed = !!session \|\| signedIn;/)
+    expect(PAGE).toMatch(/onDone=\{\(\) => \{ setSignedIn\(true\); setAuthOpen\(false\); setBuyOpen\(true\); \}\}/)
+    /* وكلُّ بابٍ إلى نافذة الحساب يسأل `authed` لا `session` */
+    const gates = PAGE.match(/[^\n]*setAuthOpen\(true\)[^\n]*/g) ?? []
+    expect(gates.length, 'لا باب إلى نافذة الحساب').toBeGreaterThan(0)
+    for (const g of gates) expect(g, `باب يسأل session وحده: ${g.trim()}`).toMatch(/\bauthed\b/)
+  })
+
+  /* من حدّث الصفحةَ أو عاد إليها كان يجد الدوراتِ فارغة — وقد اختارها وحُفظت في ملفّه عندنا (٢٧ أكتوبر ٢٠٢٦) */
+  it('⚠️ ما اختاره يبقى على جهازه — ويعود إليه حين يحدّث الصفحة', () => {
+    expect(PAGE).toMatch(/if \(kept\?\.ref === ref\) saveStoredGrant\(\{ \.\.\.kept, picks: picked \}, storeKey\);/)
+    expect(PAGE).toMatch(/setPicked\(\(resumed \? resumed\.intent\.courseIds : stored\.picks \?\? \[\]\)\.filter\(\(id\) => open\.has\(id\)\)\.slice\(0, max\)\);/)
+    const ok = { ref: '11111111-1111-4111-8111-111111111111', code: 'WG-ABCD2345', sentTo: null, name: 'سارة', email: 's@x.co', interests: [], at: Date.now() }
+    expect(parseStoredGrant(JSON.stringify({ ...ok, picks: ['C-1', 7, 'C-2'] }))?.picks).toEqual(['C-1', 'C-2'])
+    expect(parseStoredGrant(JSON.stringify(ok))?.picks, 'حفظ قبل الاختيار').toEqual([])
+  })
+
+  /* من عبّأ النموذجَ والمنحةُ مغلقةٌ أو نفدت أكوادُها لم يأخذ كودا ولا بريدا — فكان يجد الدوراتِ بلا كودٍ إن فتحت، ويدفع كاملا */
+  it('⚠️ من لا كود له ولا بريد والمنحة مفتوحة يعود إلى النموذج — بما كتب أول مرة', () => {
+    expect(PAGE).toMatch(/if \(stored && \(stored\.code \|\| stored\.sentTo \|\| reasonAr \|\| !c\.open\)\) \{/)
+    expect(PAGE.match(/if \(stored\) \{/g) ?? [], 'عادت الدورات لكل من حفظ شيئا').toEqual([])
+    expect(PAGE).toMatch(/return \{ fullName: was\?\.name \?\? "", phone: "", email: was\?\.email \?\? "", workField: was\?\.workField \?\? "", careerLevel: "" \};/)
+    /* ويُقترح له من جديدٍ بما كتب الآن */
+    const apply = PAGE.slice(PAGE.indexOf('const apply = async'), PAGE.indexOf('const claimFor'))
+    expect(apply).toMatch(/setStored\(\{ \.\.\.g, at: Date\.now\(\) \}\);\s*setSeeded\(false\);/)
   })
 
   it('⚠️ مسار رئيسي وبديل — كل دوراته في المنحة، والأنسب له، ولا رئيسي بلا ملاءمة', () => {
@@ -352,7 +381,11 @@ describe('بعد النموذج', () => {
     const effect = PAGE.slice(PAGE.indexOf('useEffect(() => {\n    if (!view || !stored || seeded) return;'))
     expect(effect.length, 'الاختيار الأول لا ينتظر الكود').toBeGreaterThan(0)
     expect(effect).toMatch(/suggestCourses\(view\.openCourses, stored\.interests, stored\.workField, GRANT_SUGGESTED_COURSES, found\.main\?\.courseIds \?\? \[\]\)/)
-    expect(effect, 'اختارها عنه').toMatch(/setPicked\(resumed \? resumed\.intent\.courseIds\.filter\(\(id\) => open\.has\(id\)\)\.slice\(0, max\) : \[\]\)/)
+    /* ما يعود مختارا ما اختاره هو — من رحلة الدفع أو من جهازه — لا ما اقترحناه */
+    const seed = effect.match(/setPicked\(([^;]*)\);/)
+    expect(seed, 'لا اختيار أول').not.toBeNull()
+    expect(seed![1], 'اختارها عنه').toMatch(/^\(resumed \? resumed\.intent\.courseIds : stored\.picks \?\? \[\]\)\.filter\(\(id\) => open\.has\(id\)\)\.slice\(0, max\)$/)
+    expect(seed![1], 'اختارها عنه').not.toMatch(/\bours\b|suggested|found/)
     expect(PAGE, 'لا يحفظ مجال عمله').toMatch(/interests, workField: form\.workField,/)
     /* وسمٌ نصّيٌّ أعلى البطاقة لا قرصٌ يشبه الزرّ — قرارُ صاحب المنصّة (٢٤ أكتوبر ٢٠٢٦) */
     expect(PAGE).toMatch(/const tag = ours\.has\(x\.courseId\) \? "نقترحها لك" : fits\(x\) > 0 \? "يناسب ما تريد تطويره" : null;/)

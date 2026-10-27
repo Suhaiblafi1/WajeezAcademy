@@ -34,7 +34,8 @@
    قرارُ صاحب المنصّة: «أضف المتابعةَ ورسائلَ التذكير لمنحة المؤثّرين». فالحالةُ عند المستشار تُفتح لمن عبّأ أيَّ
    النموذجين ولم يشترِ، ويُقال فيها من أيّ منحةٍ جاء وبكود أيّ مؤثّر. والتذكيرُ لكلّ حملةٍ بنهايتها هي (`sendGrantReminders`
    بمعرّفها)، وبريدُه يعيد صاحبَه إلى صفحة منحته: `/grant` للأولى، ورابطُ مؤثّره للثانية. والقائمةُ بالأسماء
-   (`grantRegistrants`) باقيةٌ للأولى، ومن جاء بكود مؤثّرٍ يُرى في كشف مؤثّره.
+   (`grantRegistrants`) للحملتين معا (٢٧ أكتوبر ٢٠٢٦): كانت للأولى وحدَها، فرابطُ ملفّه (`/g/<كوده>`) في رسالة «راسل
+   مستشارك» من صفحة المؤثّر كان يفتح قائمةً ليس هو فيها. وكلُّ صفٍّ يقول من أيّ منحةٍ جاء وبكود أيّ مؤثّر.
 
    والحارس: `server/tests/commerce/grant-followup.test.ts` و`influencer-grant.test.ts`. */
 
@@ -85,11 +86,11 @@ async function courseTitles(prisma: PrismaClient, ids: string[]): Promise<Map<st
 
 export async function grantRegistrants(prisma: PrismaClient) {
   const leads = await prisma.lead.findMany({
-    where: { campaign: MEMBER_GRANT_SLUG, erasedAt: null },
+    where: { campaign: { in: GRANT_SLUGS }, erasedAt: null },
     orderBy: { createdAt: 'desc' },
     select: {
       id: true, fullName: true, phone: true, email: true, workField: true, careerLevel: true, interests: true,
-      channel: true, wave: true, createdAt: true, grantPicks: true,
+      channel: true, wave: true, createdAt: true, grantPicks: true, campaign: true, influencer: { select: { code: true } },
       grantCode: { select: { coupon: { select: { code: true, orders: { select: { status: true } } } } } },
       cases: {
         where: { status: { notIn: OPEN_CASE } },
@@ -109,6 +110,7 @@ export async function grantRegistrants(prisma: PrismaClient) {
       id: l.id, fullName: l.fullName, phone: l.phone, email: l.email, workField: l.workField,
       careerLevel: l.careerLevel, interests: l.interests,
       channel: l.channel, wave: l.wave, createdAt: l.createdAt,
+      influencer: l.campaign === INFLUENCER_GRANT_SLUG, influencerCode: l.influencer?.code ?? null,
       code: l.grantCode?.coupon.code ?? null, state,
       picks: l.grantPicks.map((id) => titles.get(id) ?? id),
       advisor: l.cases[0] ? (l.cases[0].assignments[0]?.advisor.displayName ?? 'بلا مستشار بعد') : null,

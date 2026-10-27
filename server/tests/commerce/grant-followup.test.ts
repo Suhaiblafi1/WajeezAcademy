@@ -21,6 +21,7 @@ import { GrantLandingService } from '../../services/grant-landing.service'
 import { GRANT_CLOSE_FIX, GRANT_COURSES_FIX, GRANT_FOLLOWUP_HOURS, applyGrantCloseFix, applyGrantCoursesFix, grantRegistrants, openGrantFollowups, sendGrantReminders } from '../../services/grant-followup.service'
 import { zonedDay } from '../../../src/application/trainer/cohort-period'
 import { grantCallDueAt } from '../../../src/application/commerce/grant-landing'
+import { INFLUENCER_GRANT_SLUG } from '../../../src/application/commerce/grant'
 import { runJob } from '../../worker/jobs'
 import { approvedTrainerPlan } from '../helpers/approved-trainer'
 
@@ -98,6 +99,21 @@ describe('① القائمة تقول ما فعل كل واحد', () => {
     expect(of(idle.ref).state).toBe('none')
     expect(of(idle.ref).advisor, 'لم يقل مستشاره').toBeTruthy()
     expect(of(gifted.ref).code).toBe(gifted.code)
+  })
+
+  /* رابطُ ملفّه (`/g/<كوده>`) في رسالة «راسل مستشارك» من صفحة المؤثّر يفتح هذه القائمة — فكان يفتحها وليس هو فيها */
+  it('⚠️ ومن «منحة مؤثرين وجيز» فيها أيضا — بكود مؤثّره، ومن «منحة وجيز» بلا مؤثّر', async () => {
+    const inf = await prisma.influencer.create({ data: { nameAr: 'مؤثر القائمة', code: `FU${String(STAMP).slice(-8)}` } })
+    const viaInf = await prisma.lead.create({
+      data: { fullName: 'متابع المؤثر', email: `fu-inf-${STAMP}@test.local`, source: 'campaign', campaign: INFLUENCER_GRANT_SLUG, influencerId: inf.id },
+    })
+    const plain = await member()
+    const list = await grantRegistrants(prisma)
+    const row = list.find((r) => r.id === viaInf.id)
+    expect(row, 'لم يظهر من جاء من منحة المؤثرين').toBeTruthy()
+    expect(row!.influencer).toBe(true)
+    expect(row!.influencerCode).toBe(inf.code)
+    expect(list.find((r) => r.id === plain.ref)!.influencer).toBe(false)
   })
 })
 
