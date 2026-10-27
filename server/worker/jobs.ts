@@ -1408,6 +1408,20 @@ export async function runVoidedSessionInvites(prisma: PrismaClient, now = new Da
   }
 }
 
+/* ═══ تقاويمُ المدرّبين (٢٧ أكتوبر ٢٠٢٦) ═══
+   لم تكن تصل المدرّبَ دعوةٌ قطّ. فمن أُسند إلى شعبةٍ قبل هذا اليوم يصله جدولُ ما بقي من لقاءاتها مرّةً،
+   ومن فاته جدولُه بخطأٍ ابتُلع. والعلّةُ في `SessionInviteService.sweepTrainerCalendars`. */
+export async function runTrainerCalendars(prisma: PrismaClient, now = new Date()): Promise<JobResult> {
+  const started = Date.now()
+  const { SessionInviteService } = await import('../services/session-invite.service')
+  const { links, mails } = await new SessionInviteService(prisma).sweepTrainerCalendars(now)
+  return {
+    job: 'trainer_calendars',
+    summaryAr: links === 0 ? 'كل مدرب وصله جدول شعبه' : `أرسل إلى المدربين ${mails} جدول لقاءات`,
+    done: links, failed: 0, ms: Date.now() - started,
+  }
+}
+
 /* ═══ فصولُ الشعب التي سقطت «بلا فصل» (١٨ أكتوبر ٢٠٢٦) ═══
    العلّةُ في `server/services/term-ensure.ts`. يملأ ما سقط قبل الإصلاح، ويلتقط ما يفلت بعده. */
 export async function runAssignMissingTerms(prisma: PrismaClient): Promise<JobResult> {
@@ -1703,6 +1717,8 @@ export const JOBS = [
   { key: 'cohort_postpone_expire', everyMs: 15 * 60_000, run: runCohortPostponeExpire, titleAr: 'إيقاف الشعب التي لم يقبل مدربها التأجيل في موعده' },
   /* كلَّ ربع ساعة: لقاءٌ ملغى في تقويم إنسانٍ قد يحضره — والرفعُ لا يتكرّر */
   { key: 'voided_session_invites', everyMs: 15 * 60_000, run: runVoidedSessionInvites, titleAr: 'رفع لقاءات الشعب الملغاة والمؤجلة من التقاويم' },
+  /* كلَّ ربع ساعة: الجدولُ يصل مرّةً لكلّ إسناد، فالدورةُ بعد الأولى لا تجد شيئا */
+  { key: 'trainer_calendars', everyMs: 15 * 60_000, run: runTrainerCalendars, titleAr: 'جدول لقاءات الشعبة في تقويم مدربها' },
   { key: 'assign_missing_terms', everyMs: HOUR, run: runAssignMissingTerms, titleAr: 'تسمية فصل الشعب التي بلا فصل' },
   /* كلَّ ربع ساعة: المتابعةُ موعدٌ بالدقيقة، فتُذكَّر قبله بدورة (`FOLLOW_UP_LEAD_MINUTES`) */
   { key: 'advisor_reminders', everyMs: 15 * 60_000, run: runAdvisorReminders, titleAr: 'تذكير المستشارين بالتواصل والمتابعات' },

@@ -33,6 +33,7 @@ import { NotificationService, notifyRole, sendDirectEmail } from './notification
 import { renderMail } from './mail-template'
 import { fmtDateWith } from '../../src/application/text/format-ar'
 import { CommerceService } from './commerce.service'
+import { SessionInviteService } from './session-invite.service'
 import {
   canClose, CHOICE_LABEL_AR, closeBlockersAr, isResolved, LEARNER_CHOICES, needsLearnerChoice,
   notifyBlockerAr, OUTCOME_OF_CHOICE, settleBlockerAr,
@@ -401,6 +402,9 @@ export class TrainerDepartureService {
       where: { departureId, cohortId, outcome: 'pending' },
       select: { id: true },
     })
+    const joins = !(await this.prisma.cohortTrainer.findUnique({
+      where: { cohortId_profileId: { cohortId, profileId: newProfileId } }, select: { id: true },
+    }))
     const n = await this.prisma.$transaction(async (tx) => {
       /* الراحلُ يخرج من الشعبة، والبديلُ يدخلها قائدا */
       await tx.cohortTrainer.deleteMany({ where: { cohortId, profileId: departed.profileId } })
@@ -420,6 +424,18 @@ export class TrainerDepartureService {
       actorId, action: 'trainer.departure.substitute', entityType: 'trainer_departure', entityId: departureId,
       meta: { cohortId, cohortTitle: cohort.title, newProfileId, learners: n },
     })
+    /* ═══ وتقويما المدرّبَين (٢٧ أكتوبر ٢٠٢٦) ═══
+       تُرفع لقاءاتُ الشعبة المقبلةُ من تقويم الراحل، ويصل البديلَ جدولُها — ومن كان فيها مساعدا وصلته من قبل.
+       ولا يُسقط إخفاقُهما بديلا أُسنِد: يُكتب في السجلّ، والعاملُ يلحق البديلَ (`sweepTrainerCalendars`) */
+    const invites = new SessionInviteService(this.prisma)
+    await invites.trainerLeft(cohortId, departed.profileId).catch((e: unknown) => {
+      console.error(`[invite] تعذّر رفع لقاءات الشعبة من تقويم الراحل (${cohortId})`, e)
+    })
+    if (joins) {
+      await invites.trainerJoined(cohortId, newProfileId).catch((e: unknown) => {
+        console.error(`[invite] تعذّرت كتابة جدول البديل (${cohortId})`, e)
+      })
+    }
     /* ويُبلَّغ كلُّ من حُلَّ أمرُه — لا يُنتظَر زرٌّ يُضغط عشرين مرّة */
     let told = 0
     for (const row of pending) if (await this.tellResolved(actorId, row.id)) told += 1

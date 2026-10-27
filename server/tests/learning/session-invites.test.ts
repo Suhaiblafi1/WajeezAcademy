@@ -8,8 +8,9 @@
    وما تقوله الدعوةُ نفسُها في `calendar/session-invite.test.ts`؛ وهنا على قاعدةٍ
    حقيقيّة:
 
-   ① الاعتمادُ يدعو المسجَّلين والعنوانَين — لا المنسحبَ ولا المنتظِرَ في القائمة —
-      وكلٌّ برابطه في Zoom.
+   ① الاعتمادُ يدعو المسجَّلين والعنوانَين ومدرّبَ الشعبة — لا المنسحبَ ولا المنتظِرَ في القائمة —
+      وكلٌّ برابطه في Zoom. والمدرّبُ بلا رابط: يبدأه مضيفا من صفحة شعبته (٢٧ أكتوبر ٢٠٢٦، وتفصيلُه في
+      `session-invites-trainers.test.ts`).
    ② والمدعوُّ بعنوانه يُسجَّل في Zoom مرّةً، وتحديثُ الدعوة يحمل رابطَه نفسَه.
    ③ والنقلُ داخلَ الموعد يحدّث الدعوةَ بالمعرّف نفسِه ورقمٍ أعلى.
    ④ والعودةُ لانتظار الإدارة ترفعها من التقويم بموعدها القديم.
@@ -36,6 +37,7 @@ let prisma: PrismaClient
 let cohorts: CohortService
 let adminId = ''
 let trainerUserId = ''
+let trainerEmail = ''
 let cohortId = ''
 const STAMP = Date.now()
 const H = 3_600_000
@@ -109,6 +111,7 @@ beforeAll(async () => {
   await prisma.userRole.create({ data: { userId: adminId, roleId: 'academic_manager' } })
   const tUser = await prisma.user.create({ data: { email: `inv-trainer-${STAMP}@wajeez.test`, displayName: 'المدرّب', passwordHash: 'x' } })
   trainerUserId = tUser.id
+  trainerEmail = tUser.email
   const application = await prisma.trainerApplication.create({
     data: { reference: `WJ-TR-INV-${STAMP}`, fullName: 'المدرّب', email: tUser.email, status: 'active' },
   })
@@ -139,11 +142,11 @@ afterAll(() => {
   vi.useRealTimers()
 })
 
-describe('① الاعتمادُ يدعو المسجَّلين والعنوانَين — كلٌّ برابطه', () => {
-  it('⚠️ المسجَّلان والعنوانان — لا المنسحبُ ولا المنتظِرُ في القائمة', async () => {
+describe('① الاعتمادُ يدعو المسجَّلين والمدرّبَ والعنوانَين — كلٌّ برابطه', () => {
+  it('⚠️ المسجَّلان والمدرّبُ والعنوانان — لا المنسحبُ ولا المنتظِرُ في القائمة', async () => {
     const s = await approvedSession(48)
     const rows = await invitesFor(s.id)
-    expect(rows.map((r) => r.to).sort()).toEqual([learner.a.email, learner.b.email, ...GUESTS].sort())
+    expect(rows.map((r) => r.to).sort()).toEqual([learner.a.email, learner.b.email, trainerEmail, ...GUESTS].sort())
     for (const r of rows) {
       expect(r.purpose).toBe('session.invite.new')
       expect(r.icsMethod).toBe('REQUEST')
@@ -194,7 +197,7 @@ describe('③ النقلُ داخلَ الموعد يحدّث الدعوةَ —
       expect(moved.approvalState, 'التأجيلُ القريبُ بلا موعدٍ لمحوره يبقى معتمَدا (٣ج)').toBe('approved')
     } finally { vi.useRealTimers() }
     const updates = await invitesFor(s.id, 'session.invite.update')
-    expect(updates.map((r) => r.to).sort()).toEqual([learner.a.email, learner.b.email, ...GUESTS].sort())
+    expect(updates.map((r) => r.to).sort()).toEqual([learner.a.email, learner.b.email, trainerEmail, ...GUESTS].sort())
     const seqOf = (ics: string | null) => Number(/SEQUENCE:(\d+)/.exec(ics ?? '')?.[1])
     for (const r of updates) {
       expect(uids(r.icsContent), 'التحديثُ بمعرّفٍ آخر — موعدٌ ثانٍ في التقويم').toEqual([`session-${s.id}@wajeez-academy`])
@@ -211,7 +214,7 @@ describe('④ العودةُ لانتظار الإدارة ترفعها من ا�
     const moved = await cohorts.trainerMoveSession(trainerUserId, s.id, { startsAt: to, endsAt: new Date(to.getTime() + 2 * H) })
     expect(moved.approvalState, 'البعيدُ بلا موعدٍ لمحوره يعود للانتظار (٣ج)').toBe('pending')
     const cancels = await invitesFor(s.id, 'session.invite.cancel')
-    expect(cancels.map((r) => r.to).sort()).toEqual([learner.a.email, learner.b.email, ...GUESTS].sort())
+    expect(cancels.map((r) => r.to).sort()).toEqual([learner.a.email, learner.b.email, trainerEmail, ...GUESTS].sort())
     for (const r of cancels) {
       expect(r.icsMethod).toBe('CANCEL')
       expect(r.icsContent).toContain('STATUS:CANCELLED')
@@ -228,7 +231,7 @@ describe('⑤ الحذفُ يرفعها قبل أن يُمحى صفُّه', () =
     await cohorts.trainerDeleteSession(trainerUserId, s.id)
     expect(await prisma.cohortSession.findUnique({ where: { id: s.id } })).toBeNull()
     const cancels = await invitesFor(s.id, 'session.invite.cancel')
-    expect(cancels.map((r) => r.to).sort()).toEqual([learner.a.email, learner.b.email, ...GUESTS].sort())
+    expect(cancels.map((r) => r.to).sort()).toEqual([learner.a.email, learner.b.email, trainerEmail, ...GUESTS].sort())
     expect(cancels[0]!.text).toContain('ويصلك بديلُه إن جُدوِل')
   })
 
@@ -262,7 +265,7 @@ describe('⑦ وما يُعلن موعدا من غير الاعتماد', () => 
       title: 'لقاءُ الإدارة', startsAt, endsAt: new Date(startsAt.getTime() + 2 * H), withZoom: true,
     })
     const rows = await invitesFor(session.id, 'session.invite.new')
-    expect(rows.map((r) => r.to).sort()).toEqual([learner.a.email, learner.b.email, ...GUESTS].sort())
+    expect(rows.map((r) => r.to).sort()).toEqual([learner.a.email, learner.b.email, trainerEmail, ...GUESTS].sort())
   })
 
   it('⚠️ واعتمادُ تأجيلٍ اقتُرح يحدّث الدعوة', async () => {
@@ -275,7 +278,7 @@ describe('⑦ وما يُعلن موعدا من غير الاعتماد', () => 
     })
     await new CohortMessageService(prisma).review(adminId, req.id, { action: 'approve' })
     const updates = await invitesFor(s.id, 'session.invite.update')
-    expect(updates.map((r) => r.to).sort()).toEqual([learner.a.email, learner.b.email, ...GUESTS].sort())
+    expect(updates.map((r) => r.to).sort()).toEqual([learner.a.email, learner.b.email, trainerEmail, ...GUESTS].sort())
   })
 
   it('⚠️ ورابطٌ أُلصق بلقاءٍ معتمَد يحدّث الدعوةَ فتحمله — مشتركا لا «لك وحدَك»', async () => {
@@ -285,7 +288,7 @@ describe('⑦ وما يُعلن موعدا من غير الاعتماد', () => 
     })
     await cohorts.attachManualZoom(adminId, s.id, { joinUrl: 'https://zoom.us/j/555000111' })
     const updates = await invitesFor(s.id, 'session.invite.update')
-    expect(updates.map((r) => r.to).sort()).toEqual([learner.a.email, learner.b.email, ...GUESTS].sort())
+    expect(updates.map((r) => r.to).sort()).toEqual([learner.a.email, learner.b.email, trainerEmail, ...GUESTS].sort())
     const mine = updates.find((r) => r.to === learner.a.email)!
     expect(unfold(mine.icsContent)).toContain('LOCATION:https://zoom.us/j/555000111')
     expect(mine.text).not.toContain('لك وحدَك')

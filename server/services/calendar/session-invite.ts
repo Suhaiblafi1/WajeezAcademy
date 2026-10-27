@@ -20,7 +20,10 @@
    · **ولا ردَّ يُطلب** (`rsvp: false`): المنظِّمُ عنوانُ الأكاديميّة الظاهر،
      ودعوةٌ تطلب ردّا من عشرين متعلّما تملأ صندوقَه بـ«قبل: …» عن كلّ لقاء.
    · **والساعةُ في الرسالة بتوقيت عمّان** — ساعةُ الشعبة (`whenAr`). والتقويمُ
-     يحوّلها لصاحبه: الملفُّ بالتوقيت العالميّ (`ics.ts`). */
+     يحوّلها لصاحبه: الملفُّ بالتوقيت العالميّ (`ics.ts`).
+   · **والمدرّبُ لا رابطَ له** (`audience: 'trainer'`، ٢٧ أكتوبر ٢٠٢٦): رابطُ المشارك يُدخله
+     مشاركا لا مضيفا، ورابطُ المضيف يُطلب لحظةَ الضغط ولا يُرسَل (`trainerHostStart`). فيُقال له
+     أين يبدؤه: صفحةُ شعبته — لا «صفحة رحلتك» ولا «بقي رابطُ الدخول نفسُه». */
 
 import { buildIcs, buildIcsBundle, type IcsEvent } from './ics'
 import { renderMail, type MailBlock, type MailRich } from '../mail-template'
@@ -31,6 +34,9 @@ import { countAr } from '../../../src/application/text/count-ar'
 
 /** دعوةٌ جديدة · موعدٌ تغيّر · لقاءٌ رُفع من التقويم */
 export type InviteKind = 'new' | 'update' | 'cancel'
+
+/** لمن تُكتب: المتعلّمُ (ومعه المدعوّان) يدخل برابطه، والمدرّبُ يبدأ اللقاءَ مضيفا من صفحة شعبته */
+export type InviteAudience = 'learner' | 'trainer'
 
 export interface SessionInviteInput {
   kind: InviteKind
@@ -43,6 +49,7 @@ export interface SessionInviteInput {
   pageUrl: string
   /** سببُ الرفع من التقويم — يُقال في الرسالة */
   cancelWhyAr?: string
+  audience?: InviteAudience
   now?: Date
 }
 
@@ -69,10 +76,13 @@ export function sessionInviteUid(sessionId: string): string {
 
 const ORGANIZER = { name: 'أكاديمية وجيز', email: ACADEMY_EMAILS.calendar }
 
+/** أين يبدأ المدرّبُ لقاءه — بدل رابط الدخول */
+const TRAINER_START_AR = 'تبدأ اللقاء مضيفا من صفحة شعبتك'
+
 /** اللقاءُ حدثا في التقويم — واحدا في الدعوة، وكثيرا في جدول الملتحق */
 function sessionEvent(
   session: SessionInviteInput['session'], cohortTitle: string,
-  join: SessionInviteInput['join'], pageUrl: string, now: Date,
+  join: SessionInviteInput['join'], pageUrl: string, now: Date, audience: InviteAudience = 'learner',
 ): IcsEvent {
   const end = session.endsAt ?? new Date(session.startsAt.getTime() + MIN_SESSION_MS)
   return {
@@ -82,7 +92,9 @@ function sessionEvent(
     durationMinutes: Math.max(15, Math.round((end.getTime() - session.startsAt.getTime()) / 60_000)),
     description: [
       `لقاء مباشر في «${cohortTitle}» — أكاديمية وجيز.`,
-      join ? `رابط الدخول: ${join.url}` : `رابط الدخول في صفحة رحلتك: ${pageUrl}`,
+      join
+        ? `رابط الدخول: ${join.url}`
+        : audience === 'trainer' ? `${TRAINER_START_AR}: ${pageUrl}` : `رابط الدخول في صفحة رحلتك: ${pageUrl}`,
     ].join('\n'),
     ...(join ? { location: join.url } : {}),
     url: join?.url ?? pageUrl,
@@ -95,6 +107,7 @@ function sessionEvent(
 export function sessionInviteMail(input: SessionInviteInput): SessionInviteMail {
   const now = input.now ?? new Date()
   const { session, join } = input
+  const trainer = input.audience === 'trainer'
   const when = whenAr(session.startsAt)
 
   const subject = input.kind === 'new'
@@ -117,7 +130,7 @@ export function sessionInviteMail(input: SessionInviteInput): SessionInviteMail 
         { label: 'الموعد', value: `${when} — بتوقيت عمّان` },
       ],
     })
-    if (input.kind === 'update') {
+    if (input.kind === 'update' && !trainer) {
       blocks.push({ kind: 'p', text: 'تغيّر الموعد وبقي رابط الدخول نفسه.' })
     }
     if (join) {
@@ -125,6 +138,8 @@ export function sessionInviteMail(input: SessionInviteInput): SessionInviteMail 
       /* فقرةٌ لا تعليقٌ تحت الزرّ: التعليقُ لا يُكتب في النصّ الخالص (`mail-template`)،
          ومن قرأ الرسالةَ بلا HTML يجب أن يعرف ألّا يشارك رابطَه */
       if (join.personal) blocks.push({ kind: 'p', text: 'الرابط لك وحدك — دخولك به يسجّل حضورك، فلا تشاركه.' })
+    } else if (trainer) {
+      blocks.push({ kind: 'p', text: ['تبدأ اللقاء مضيفا من ', { text: 'صفحة شعبتك', href: input.pageUrl }, ' في موعده.'] })
     } else {
       blocks.push({ kind: 'p', text: ['رابط الدخول يظهر في ', { text: 'صفحة رحلتك', href: input.pageUrl }, ' قبل موعده.'] })
     }
@@ -143,7 +158,7 @@ export function sessionInviteMail(input: SessionInviteInput): SessionInviteMail 
   })
 
   const ics = buildIcs({
-    ...sessionEvent(session, input.cohortTitle, join, input.pageUrl, now),
+    ...sessionEvent(session, input.cohortTitle, join, input.pageUrl, now, input.audience),
     ...(input.kind === 'cancel' ? { description: input.cancelWhyAr ?? 'رفع هذا اللقاء من الجدول.' } : {}),
     attendee: { name: input.to.name ?? undefined, email: input.to.email, rsvp: false },
     cancelled: input.kind === 'cancel',
@@ -164,7 +179,10 @@ export function sessionInviteMail(input: SessionInviteInput): SessionInviteMail 
 
    والملفُّ المرفقُ نشرٌ لا دعوة (`buildIcsBundle`: الدعوةُ عن موعدٍ واحد)،
    بمعرّفات اللقاءات نفسِها — فما تغيّر منها بعدُ تصله دعوةُ تحديثه بالمعرّف
-   نفسِه، فيتحرّك ما أضافه ولا يتكرّر. */
+   نفسِه، فيتحرّك ما أضافه ولا يتكرّر.
+
+   والمدرّبُ يدخل شعبةً اعتُمدت لقاءاتُها — يُسنَد إليها أو يحلّ محلّ من رحل — فتصله الرسالةُ نفسُها
+   بلا روابط، وسطرٌ واحدٌ يقول أين يبدأ كلَّ لقاء (`SessionInviteService.trainerJoined`). */
 
 export interface ScheduleSession {
   id: string
@@ -181,6 +199,7 @@ export interface SessionScheduleInput {
   /** ما بقي من لقاءاته — يُرتَّب هنا بموعده */
   sessions: readonly ScheduleSession[]
   pageUrl: string
+  audience?: InviteAudience
   now?: Date
 }
 
@@ -200,6 +219,7 @@ export function sessionScheduleMail(input: SessionScheduleInput): SessionSchedul
   const sessions = [...input.sessions].sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime())
   const count = countAr(sessions.length, LIVE_FORMS)
   const first = sessions[0]
+  const trainer = input.audience === 'trainer'
 
   const blocks: MailBlock[] = [
     { kind: 'p', text: `مواعيد ما بقي من لقاءات «${input.cohortTitle}» المباشرة — بتوقيت عمّان:` },
@@ -207,9 +227,14 @@ export function sessionScheduleMail(input: SessionScheduleInput): SessionSchedul
       kind: 'list',
       items: sessions.map((s): MailRich => (s.join
         ? [`${whenAr(s.startsAt)} — ${s.title} · `, { text: 'ادخل اللقاء', href: s.join.url }]
-        : [`${whenAr(s.startsAt)} — ${s.title} · رابطه في `, { text: 'صفحة رحلتك', href: input.pageUrl }, ' قبل موعده'])),
+        : trainer
+          ? `${whenAr(s.startsAt)} — ${s.title}`
+          : [`${whenAr(s.startsAt)} — ${s.title} · رابطه في `, { text: 'صفحة رحلتك', href: input.pageUrl }, ' قبل موعده'])),
     },
   ]
+  if (trainer) {
+    blocks.push({ kind: 'p', text: ['تبدأ كل لقاء مضيفا من ', { text: 'صفحة شعبتك', href: input.pageUrl }, ' في موعده.'] })
+  }
   if (sessions.some((s) => s.join?.personal)) {
     blocks.push({ kind: 'p', text: 'الروابط لك وحدك — دخولك بها يسجّل حضورك، فلا تشاركها.' })
   }
@@ -225,7 +250,7 @@ export function sessionScheduleMail(input: SessionScheduleInput): SessionSchedul
   return {
     subject: `مواعيد لقاءاتك في «${input.cohortTitle}» — ${count}`,
     text, html,
-    ics: buildIcsBundle(sessions.map((s) => sessionEvent(s, input.cohortTitle, s.join, input.pageUrl, now)), now),
+    ics: buildIcsBundle(sessions.map((s) => sessionEvent(s, input.cohortTitle, s.join, input.pageUrl, now, input.audience)), now),
     icsMethod: 'PUBLISH',
     icsFilename: `wajeez-cohort-${input.cohortId}.ics`,
   }

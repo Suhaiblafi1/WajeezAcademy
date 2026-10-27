@@ -2985,6 +2985,9 @@ model CohortTrainer {
   role       String         @default("lead") // lead | assistant
   assignedBy String?        @db.Uuid
   createdAt  DateTime       @default(now())
+  /// متى وصله جدولُ ما بقي من لقاءات الشعبة (`SessionInviteService.trainerJoined`) — وما يُعتمَد بعده تصله
+  /// دعوتُه مع الجميع. وفارغا يرسله العاملُ مرّةً (٢٧ أكتوبر ٢٠٢٦: لم تكن تصل المدرّبَ دعوةٌ قبلها)
+  calendarSentAt DateTime?
   cohort     Cohort         @relation(fields: [cohortId], references: [id], onDelete: Cascade)
   profile    TrainerProfile @relation(fields: [profileId], references: [id])
 
@@ -3073,6 +3076,13 @@ model CohortSession {
   /// «أكمل المحورَ بحضور لقائه»، ونقلُ ذلك القارئ تغييرٌ في رقمٍ يراه
   /// المتعلّمُ لا يُركَب هنا.
   moduleIds      String[]                   @default([])
+  /// ═══ أفي التقاويم هو؟ (٢٧ أكتوبر ٢٠٢٦) ═══
+  ///
+  /// متى دُعي إليه الجميعُ آخرَ مرّة، ومتى رُفع من تقاويمهم — يكتبهما `SessionInviteService` مع كلّ دعوةٍ
+  /// للجميع أو رفع، وما يُكتب لواحدٍ لا يمسّهما. كان الجوابُ يُقرأ من طابور البريد، وما خرج منه يُحذف بعد
+  /// أربعة عشر يوما: فشعبةٌ أُلغيت بعد أسبوعين من اعتماد لقاءاتها بقيت لقاءاتُها في التقاويم.
+  calendarAnnouncedAt DateTime?
+  calendarWithdrawnAt DateTime?
   createdAt      DateTime                   @default(now())
   cohort         Cohort                     @relation(fields: [cohortId], references: [id], onDelete: Cascade)
   zoom           ZoomMeeting?

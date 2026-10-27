@@ -289,8 +289,9 @@ export class TrainerPrepService {
 
     const cohorts = new CohortService(this.prisma)
     const cohort = await cohorts.create(userId, { courseId })
+    /* والشعبةُ وُلدت الآن: لا لقاءَ معتمَدا يُرسَل جدولُه، وما يُعتمَد بعدُ تصله دعوتُه (`calendarSentAt`) */
     await this.prisma.cohortTrainer.create({
-      data: { cohortId: cohort.id, profileId: profile.id, role: 'lead', assignedBy: userId },
+      data: { cohortId: cohort.id, profileId: profile.id, role: 'lead', assignedBy: userId, calendarSentAt: new Date() },
     })
     await recordAudit(this.prisma, {
       actorId: userId, action: 'trainer.prep.accept', entityType: 'cohort', entityId: cohort.id,

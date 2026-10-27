@@ -235,6 +235,9 @@ export class CohortService {
     }
     await this.assertNoScheduleConflict(profileId, cohort.sessions.map((s) => ({ startsAt: s.startsAt, endsAt: s.endsAt })), cohortId)
 
+    const joined = !(await this.prisma.cohortTrainer.findUnique({
+      where: { cohortId_profileId: { cohortId, profileId } }, select: { id: true },
+    }))
     const link = await this.prisma.cohortTrainer.upsert({
       where: { cohortId_profileId: { cohortId, profileId } },
       update: { role },
@@ -266,6 +269,9 @@ export class CohortService {
         data: { cohortId, role },
       })
     }
+    /* ويصل تقويمَه ما بقي من لقاءاتها المعتمَدة (٢٧ أكتوبر ٢٠٢٦، `SessionInviteService.trainerJoined`) — لمن دخلها
+       الآن وحدَه: تغييرُ الدور لا يعيد إرسالَ ما وصله. ولا يتبع `announce`: ذاك جرسٌ، وهذا موعدٌ في تقويمه */
+    if (joined) await this.inviteSafely('trainer-joined', () => this.invites.trainerJoined(cohortId, profileId))
     return link
   }
 
@@ -1313,7 +1319,11 @@ export class CohortService {
           id: session.id, cohortId: session.cohortId, cohortTitle: session.cohort.title,
           title: session.title, startsAt: session.startsAt, endsAt: session.endsAt,
         },
-        'نقله مدرّبك ويراجع الآن عند الإدارة — وتصلك دعوته بموعده الجديد حين يعتمد.',
+        {
+          learnerAr: 'نقله مدرّبك ويراجع الآن عند الإدارة — وتصلك دعوته بموعده الجديد حين يعتمد.',
+          /* «نقله مدرّبك» لا تُقال للمدرّب في تقويمه — ومساعدُه لم ينقله */
+          trainerAr: 'نقل هذا اللقاء ويراجع الآن عند الإدارة. وتصلك دعوته بموعده الجديد حين يعتمد.',
+        },
       ))
     } else if (kept) {
       /* ودعوةُ التقويم تتحدّث بالمعرّف نفسِه — يتحرّك الموعدُ في تقاويمهم لا يتكرّر */
@@ -1583,7 +1593,7 @@ export class CohortService {
           id: session.id, cohortId: session.cohortId, cohortTitle: session.cohort.title,
           title: session.title, startsAt: session.startsAt, endsAt: session.endsAt,
         },
-        'ألغي هذا اللقاء — ويصلك بديله إن جدول.',
+        { learnerAr: 'ألغي هذا اللقاء — ويصلك بديله إن جدول.', trainerAr: 'حذف هذا اللقاء من جدول الشعبة.' },
       ))
     }
 
