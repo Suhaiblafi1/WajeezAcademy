@@ -280,12 +280,14 @@ export class InfluencerService {
       this.prisma.learnerProfile.findUnique({ where: { userId }, select: { avatarUrl: true } }),
       this.designMaterial(),
     ])
-    /* صورةُ حسابه لتصاميم «صمم منشورك» — بعنوانها الذي يفتح كما تعطيه صفحةُ حسابه (`profile.service.ts`) */
+    /* صورةُ حسابه لـ«تصميمك الخاص» — المرفوعةُ عندنا وحدَها. ورابطٌ خارجيٌّ كتبه قديما في حسابه لا يُعطى: المتصفّحُ
+       لا يرسمه في لوحةٍ تُنزَّل إلّا بإذن موقعه، فيرى صاحبُه تصميمه بـ«صورتك هنا» ولوحةَ التنزيل معه. وبلا صورةٍ يُطلب
+       منه رفعُها (`InfluencerHome.tsx`) */
     const key = photoStorageKey(learner?.avatarUrl)
     return {
       nameAr: inf.nameAr, code: inf.code, active: inf.active, commissionPercent: inf.commissionPercent,
       link: influencerLink(publicSiteUrl(), inf.code),
-      photoUrl: key ? `/api/v1/avatars/${key}` : learner?.avatarUrl ?? null,
+      photoUrl: key ? `/api/v1/avatars/${key}` : null,
       grant: { nameAr: s.nameAr, open: s.open, percentOff: s.percentOff, maxCourses: s.maxCourses, closesAt: s.closesAt },
       designs,
       ...st,
