@@ -6,7 +6,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { bestCode, emailSubject, manualNoteAr, SHARE_PLATFORMS, shareText, shareUrl, splitTitle, type ShareInput } from '@/application/trainer/share-kit'
+import { bestCode, emailSubject, hashtags, manualNoteAr, roleOf, SHARE_PLATFORMS, shareText, shareUrl, splitTitle, WAJEEZ_PERKS, type ShareInput } from '@/application/trainer/share-kit'
 import { artPlan } from '@/components/trainer/share-art'
 import { previewFaceOf, previewLinksOf, previewSig } from '@/components/trainer/link-preview'
 import { isCrawler, VIA_OF, viaOf, withVia } from '@/application/links/share-via'
@@ -346,5 +346,76 @@ describe('المعاينة من لوحته وصفحته العامة', () => {
     }
     expect(caddy.search(/handle @previewCrawler \{\s*reverse_proxy app:7101/), 'المطابق بلا تمرير').toBeGreaterThan(-1)
     expect(caddy.search(/handle @previewCrawler/)).toBeLessThan(caddy.search(/try_files \{path\} \{path\}\.html \/index\.html/))
+  })
+})
+
+/* ═══ «أعلن انضمامي» (صاحب المنصّة عن المدرّبين، ٢٧ أكتوبر ٢٠٢٦) ═══
+   «سعيد بانضمامي لأكاديمية وجيز كمدرّبة في مجال كذا.. ويتحدث القليل عن الأكاديمية ومميزاتها.. ويضع الكود.. مع
+   هاشتاجات» — والعلّةُ في `share-kit.ts`. */
+describe('إعلان الانضمام', () => {
+  const join: ShareInput = { ...one, mode: 'join', headline: 'مدرّبةٌ ومستشارة استدامة' }
+
+  it('⚠️ يفتتح بانضمامه وصفته كما كتبها — ولكل منصة مزايا الأكاديمية والكود والرابط', () => {
+    for (const p of ['whatsapp', 'linkedin', 'facebook', 'instagram', 'tiktok', 'email'] as const) {
+      const t = shareText(p, join)
+      expect(t, p).toMatch(/انضمامي إلى \*?أكاديمية وجيز\*? بصفتي مدرّبة ومستشارة استدامة/)
+      for (const perk of WAJEEZ_PERKS) expect(t, `${p} بلا «${perk}»`).toContain(perk)
+      expect(t, p).toContain('WJ30-K7Q2MX')
+      expect(t.indexOf('انضمامي'), `${p}: الانضمام بعد الدورة`).toBeLessThan(t.indexOf('مهارة الخطابة'))
+    }
+    expect(shareText('x', join)).toMatch(/^انضممت إلى فريق مدربي #أكاديمية_وجيز/)
+    expect(emailSubject(join)).toBe('انضممت إلى أكاديمية وجيز — ودعوة إلى دورتي «مهارة الخطابة»، وخصم 30٪ لك')
+  })
+
+  it('⚠️ وبلا صفة لا يخمن جنسه — «فريق مدربي»، ولا صفة إنجليزية أو طويلة', () => {
+    for (const headline of [null, 'Senior Consultant', 'مدرب | مستشار', 'مدربة '.repeat(12)]) {
+      const t = shareText('linkedin', { ...join, headline })
+      expect(t, String(headline)).toContain('انضمامي إلى فريق مدربي أكاديمية وجيز')
+      expect(t, String(headline)).not.toContain('بصفتي')
+    }
+    expect(roleOf('  مدرّبُ قيادة ')).toBe('مدرّب قيادة')
+  })
+
+  it('⚠️ والدعوة كما كانت لمن انضم قبل — بلا خبر انضمام', () => {
+    expect(shareText('linkedin', one)).not.toContain('انضمام')
+    expect(shareText('linkedin', { ...one, mode: 'invite' })).toBe(shareText('linkedin', one))
+  })
+
+  it('⚠️ ولا تشكيل إعرابي في نصوص الإعلان', () => {
+    for (const p of SHARE_PLATFORMS) expect(shareText(p.id, { ...join, courses: all.courses }), p.id).not.toMatch(/[ً-ِْ]/)
+  })
+})
+
+describe('الوسوم', () => {
+  it('⚠️ وسم الأكاديمية في كل منصة، ووسم الدورة القصيرة، ووسوم المنصة — والبريد بلا وسوم', () => {
+    expect(hashtags('linkedin', one.courses)).toEqual(['#أكاديمية_وجيز', '#مهارة_الخطابة', '#تطوير_مهني', '#تعلم_مستمر'])
+    expect(hashtags('instagram', one.courses).length).toBeGreaterThan(hashtags('linkedin', one.courses).length)
+    expect(hashtags('whatsapp', one.courses), 'واتساب محادثة').toEqual(['#أكاديمية_وجيز'])
+    expect(hashtags('email', one.courses)).toEqual([])
+    for (const p of ['linkedin', 'facebook', 'instagram', 'tiktok', 'whatsapp'] as const) {
+      expect(shareText(p, one).trim().split('\n').pop(), p).toMatch(/^#أكاديمية_وجيز/)
+    }
+  })
+  it('والاسم الطويل لا يصير وسما — ولا رمز في وسم', () => {
+    const long = [{ courseTitle: 'إعداد المعلمين واولياء الامور لتدريب الاطفال', startsAt: null, url: 'x' }]
+    expect(hashtags('linkedin', long)).not.toContain('#إعداد_المعلمين_واولياء_الامور_لتدريب_الاطفال')
+    expect(hashtags('linkedin', [{ courseTitle: 'إدارة (المخزون)', startsAt: null, url: 'x' }])).toContain('#إدارة_المخزون')
+  })
+})
+
+describe('النص المعدل', () => {
+  it('⚠️ ما عدله المدرب هو ما يفتح به باب المنصة', () => {
+    const mine = 'نصي أنا https://x'
+    expect(new URL(shareUrl('whatsapp', one, mine)!).searchParams.get('text')).toBe(mine)
+    expect(new URL(shareUrl('linkedin', one, mine)!).searchParams.get('text')).toBe(mine)
+    expect(new URL(shareUrl('x', one, mine)!).searchParams.get('text')).toBe(mine)
+    expect(new URLSearchParams(shareUrl('email', one, mine)!.slice('mailto:?'.length)).get('body')).toBe(mine)
+  })
+  it('⚠️ واللوحة تختار النوع وتعيد نصنا بتبديل المنصة أو النوع', () => {
+    const kit = readFileSync(join(process.cwd(), 'src/components/trainer/ShareKit.tsx'), 'utf8')
+    expect(kit).toMatch(/useState<ShareMode>\("join"\)/)
+    expect(kit).toMatch(/onChange=\{\(m\) => \{ setMode\(m\); setDraft\(null\); \}\}/)
+    expect(kit).toMatch(/const pick = [\s\S]{0,140}setDraft\(null\);/)
+    expect(kit).toMatch(/mode, headline: face\.headline/)
   })
 })

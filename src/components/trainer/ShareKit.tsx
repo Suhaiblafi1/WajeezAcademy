@@ -23,7 +23,7 @@ import { Inset } from "@/components/ui/Surface";
 import { staffControlCls } from "@/components/FormKit";
 import TabBar from "@/components/ui/TabBar";
 import { fmtDayMonth } from "@/application/text/format-ar";
-import { emailSubject, manualNoteAr, SHARE_PLATFORMS, shareText, shareUrl, type ShareCourse, type SharePlatform } from "@/application/trainer/share-kit";
+import { emailSubject, manualNoteAr, SHARE_MODES, SHARE_PLATFORMS, shareText, shareUrl, type ShareCourse, type ShareMode, type SharePlatform } from "@/application/trainer/share-kit";
 import { artPlan, drawArt, toFile, type ArtData, type ArtKind } from "./share-art";
 import { withVia } from "@/application/links/share-via";
 
@@ -66,9 +66,16 @@ export default function ShareKit({ face, courses, url, code, fileStem, content }
   const [previews, setPreviews] = useState<string[]>([]);
   const [note, setNote] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  /* ═══ إعلانُ انضمامه أو دعوةٌ لدوراته، ونصُّه بيده (٢٧ أكتوبر ٢٠٢٦) ═══
+     «منهم من يريد أن يقول: سعيد بانضمامي لأكاديمية وجيز كمدرّبة في مجال كذا» — فيختار نوعَ منشوره، والنصُّ يُعدَّل
+     قبل نشره، وما عدّله هو ما يُنسخ ويُفتح به بابُ المنصّة (`shareUrl`). وتبديلُ المنصّة أو النوع يعيد نصَّنا */
+  const [mode, setMode] = useState<ShareMode>("join");
+  const [draft, setDraft] = useState<string | null>(null);
 
   /* والرابطُ يحمل منصّتَه (`?p=wa`) — فيُقال للمدرّب تحت رابطه من أيّ منصّةٍ فُتح (`share-via.ts`) */
-  const input = useMemo(() => ({ courses, url: withVia(url, platform), code, dayAr: (iso: string) => fmtDayMonth(iso), signature: face.name }), [courses, url, platform, code, face.name]);
+  const input = useMemo(() => ({
+    courses, url: withVia(url, platform), code, dayAr: (iso: string) => fmtDayMonth(iso), signature: face.name, mode, headline: face.headline,
+  }), [courses, url, platform, code, face.name, face.headline, mode]);
   /* ═══ أيرفق جهازُه الصورةَ بنفسه؟ (٢٦ أكتوبر ٢٠٢٦) ═══
      «هل يمكن أن تُرفق الصورةُ تلقائيّا عند النشر؟» — نعم حيث يقبل الجهازُ مشاركةَ الصور (الهاتف): قائمةُ المشاركة
      تحملها مع النصّ إلى أيّ منصّة. ويُسأل الجهازُ مرّةً بصورةٍ صغيرة (`manualNoteAr`) */
@@ -83,11 +90,12 @@ export default function ShareKit({ face, courses, url, code, fileStem, content }
     name: face.name, headline: face.headline ?? null, photoUrl: face.photoUrl, courses, code,
     dayAr: (iso: string) => fmtDayMonth(iso),
   }), [face, courses, code]);
-  const text = content ? content.text(platform) : shareText(platform, input);
+  const ours = content ? content.text(platform) : shareText(platform, input);
+  const text = !content && draft !== null ? draft : ours;
   const plan: { kind: string; index: number }[] = content ? content.plan(format) : artPlan(format, courses.length);
   const draw = (kind: string, index: number) => (content ? content.draw(kind, index) : drawArt(kind as ArtKind, art, index));
   const subject = () => (content ? content.subject() : emailSubject(input));
-  const door = (p: SharePlatform) => (content ? content.door(p) : shareUrl(p, input));
+  const door = (p: SharePlatform) => (content ? content.door(p) : shareUrl(p, input, text));
 
   /* المعاينةُ تُرسم لكلّ صيغة — والكاروسيلُ شرائحُه كلُّها */
   useEffect(() => {
@@ -118,6 +126,7 @@ export default function ShareKit({ face, courses, url, code, fileStem, content }
     setPlatform(p);
     setFormat(FORMAT_OF[p]);
     setNote(null);
+    setDraft(null);
   };
 
   const share = async () => {
@@ -174,6 +183,13 @@ export default function ShareKit({ face, courses, url, code, fileStem, content }
 
       {/* المنصّة والنصّ */}
       <div className="min-w-0">
+        {!content && (
+          <>
+            <p className="mb-2 text-read font-bold">ماذا تنشر؟</p>
+            <TabBar ariaLabel="نوع المنشور" value={mode} onChange={(m) => { setMode(m); setDraft(null); }}
+              items={SHARE_MODES.map((m) => ({ id: m.id, label: m.ar }))} className="mb-4" />
+          </>
+        )}
         <p className="text-read font-bold">أين تنشر؟</p>
         <div className="mt-2 flex flex-wrap gap-2" role="group" aria-label="المنصة">
           {SHARE_PLATFORMS.map((p) => (
@@ -192,8 +208,17 @@ export default function ShareKit({ face, courses, url, code, fileStem, content }
           <p className="mt-3 text-read"><b>العنوان:</b> {subject()}</p>
         )}
         <label className="mt-3 block text-read font-bold" htmlFor={`${fileStem}-text`}>{platform === "email" ? "نص الرسالة" : `النص الجاهز لـ${platformAr}`}</label>
-        <textarea id={`${fileStem}-text`} readOnly value={text} rows={7}
+        <textarea id={`${fileStem}-text`} readOnly={Boolean(content)} value={text} rows={9}
+          onChange={(e) => setDraft(e.target.value)}
           className={`${staffControlCls} mt-1 w-full text-read leading-7`} />
+        {!content && (
+          <p className="mt-1 text-read text-muted-foreground">
+            عدل النص كما تحب قبل النشر.
+            {draft !== null && draft !== ours && (
+              <button type="button" className="ms-2 font-bold text-teal-light-ink underline" onClick={() => setDraft(null)}>أعد النص الأصلي</button>
+            )}
+          </p>
+        )}
         <div className="mt-2 flex flex-wrap gap-2">
           <Button tone="confirm" type="button" icon={Share2} loading={busy} onClick={() => void share()}>
             {platform === "email" ? "افتح بريدي" : `انشر على ${platformAr}`}
