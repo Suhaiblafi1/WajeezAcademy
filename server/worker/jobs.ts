@@ -858,6 +858,8 @@ export async function enforceRetention(prisma: PrismaClient, now = new Date()): 
         select: { id: true }, take: RETENTION_BATCH,
       }),
       (ids) => prisma.paymentWebhookEvent.deleteMany({ where: { id: { in: ids } } })),
+    /* وبصماتُ زوّار الروابط القصيرة تُمحى بعد يوم ويبقى عدُّها — العلّةُ في `link-opens.ts` */
+    import('../services/link-opens').then(async (m) => ({ labelAr: 'بصمة زائر رابط', count: await m.forgetVisitors(prisma, now) })),
   ])
 
   const done = parts.reduce((a, p) => a + p.count, 0)

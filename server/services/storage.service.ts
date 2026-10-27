@@ -73,6 +73,12 @@ function secret(): Buffer {
   }
 }
 
+/** مفتاحٌ مشتقٌّ لغرضٍ غير توقيع الروابط — يُشتقّ من المفتاح نفسِه بالغرض، فلا يكشف أحدُهما الآخر.
+    أوّلُ من احتاجه: بصمةُ زائر الرابط القصير (`link-opens.ts`)، ليُجزَّأ عنوانُه بسرٍّ لا يُخمَّن. */
+export function derivedSecret(purpose: string): Buffer {
+  return createHmac('sha256', secret()).update(`wajeez:${purpose}`).digest()
+}
+
 /** لأجل الاختبار وحده: نسيان المفتاح المخزَّن مؤقتا بين الحالات */
 export function resetSecretCacheForTests(): void {
   cachedSecret = null
