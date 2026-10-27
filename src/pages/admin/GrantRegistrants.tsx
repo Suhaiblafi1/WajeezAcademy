@@ -46,7 +46,7 @@ export default function GrantRegistrants() {
 
   const matched = useMemo(
     () => (rows ?? []).filter((r) => (!only || r.state === only)
-      && matchesQuery(q, [r.fullName, r.phone, r.email, r.workField, r.careerLevel, ...r.interests, ...r.picks, r.code, r.id, r.influencerCode])),
+      && matchesQuery(q, [r.fullName, r.phone, r.email, r.workField, r.careerLevel, ...r.interests, ...r.picks, r.influencerCode, r.code, r.id])),
     [rows, q, only],
   );
   if (!rows) return null;
