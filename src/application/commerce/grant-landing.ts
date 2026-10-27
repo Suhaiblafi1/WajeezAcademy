@@ -18,7 +18,7 @@ import { COURSE_DOMAIN_FAMILIES, courseDomainByFamily } from '../catalog/course-
 import { zonedClock, zonedDay, zonedInstant } from '../trainer/cohort-period'
 import { courseLinesAr } from '../text/course-lines'
 import { plainAr } from '../text/plain-ar'
-import { clashLineAr, clashesOf, sessionsOverlap, type TimedSession } from '../learning/cohort-overlap'
+import { clashesOf, sessionsOverlap, type TimedSession } from '../learning/cohort-overlap'
 import { MEMBER_GRANT_NAME_AR } from './grant'
 import { ENDORSEMENT_MIN_ATTENDANCE } from '../learning/endorsement'
 
@@ -112,9 +112,10 @@ export const grantFollowupAr = (name: string) =>
 /* ═══ سطرُ الشكر أعلى صفحة المنحة (٢٧ أكتوبر ٢٠٢٦) ═══
    قرارُ صاحب المنصّة: «في الصفحات الخاصّة بالمنحة لا تستخدم كلمة عضو، بل مستخدم وجيز»، و«لا تقل لأنّك من مستخدمي
    وجيز منحتك تصل إلى ٦٠٪.. تطبيقُ وجيز يشكرك على وجودك كمستخدم، ويسعدنا أن نقدّم لك منحةً قد تصل إلى ٦٠٪ للاستفادة
-   من منتجنا الجديد أكاديمية وجيز، وهذه المنحة حصريّة». */
+   من منتجنا الجديد أكاديمية وجيز، وهذه المنحة حصريّة». ثمّ في اليوم نفسِه: «بدل عضو.. استخدم قرّاء وجيز بدلا من مستخدم» —
+   فوجيزُ تطبيقُ ملخّصات كتب، ومن فيه قرّاؤه. */
 export const grantThanksAr = (percentOff: number) =>
-  `تطبيق وجيز يشكرك لأنك من مستخدميه، ويسعدنا أن نقدم لك منحة حصرية تصل إلى ${percentOff}% لتستفيد من منتجنا الجديد: أكاديمية وجيز.`
+  `تطبيق وجيز يشكرك لأنك من قرائه، ويسعدنا أن نقدم لك منحة حصرية تصل إلى ${percentOff}% لتستفيد من منتجنا الجديد: أكاديمية وجيز.`
 
 /** المستوى الوظيفيّ — سؤالٌ اختياريّ */
 export const CAREER_LEVELS: readonly string[] = [
@@ -238,9 +239,9 @@ export function suggestCourses(
   return out.map((c) => c.courseId)
 }
 
-/** «تتعارض مع «X» في 3 لقاءات، أولها الأحد 6 ديسمبر.» — لدورةٍ اختارها بعد دورةٍ تتعارض معها، فورَ اختيارها. قرارُ صاحب
-    المنصّة (٢٧ أكتوبر ٢٠٢٦): «إذا كانت تتعارض يقولها: تتعارض مع التي قبلها، واجعل الرسالةَ واضحةً وسهلةَ القراءة، ليست فيها
-    معلوماتٌ مكرّرة». فمع أقربِ ما قبلها تعارضا، والقرارُ له — لا يُمنع الاختيار */
+/** «تتعارض مع «X».» — لدورةٍ اختارها بعد دورةٍ تتعارض معها، فورَ اختيارها. قرارُ صاحب المنصّة (٢٧ أكتوبر ٢٠٢٦): «إذا كانت
+    تتعارض يقولها: تتعارض مع التي قبلها، واجعل الرسالةَ واضحةً وسهلةَ القراءة، ليست فيها معلوماتٌ مكرّرة». ثمّ في اليوم نفسِه:
+    «خفّف نصَّ التعارض.. قل تتعارض فقط بدون في كم لقاء» — فلا عددَ ولا أوّلَ لقاء. ومع أقربِ ما قبلها تعارضا، والقرارُ له */
 export function grantClashAr<T extends { courseId: string; cohortId: string; titleAr: string; sessions?: readonly TimedSession[] }>(
   course: T, before: readonly T[],
 ): string | null {
@@ -248,7 +249,7 @@ export function grantClashAr<T extends { courseId: string; cohortId: string; tit
   const short = (t: string) => t.split(/[:：]/)[0].replace(/^دورة\s+/, '').trim() || t
   const timed = (x: T) => ({ cohortId: x.cohortId, courseId: x.courseId, titleAr: short(x.titleAr), sessions: x.sessions ?? [] })
   const hit = clashesOf(timed(course), before.map(timed))[0]
-  return hit ? `${clashLineAr(hit)}.` : null
+  return hit ? `تتعارض مع «${hit.with.titleAr}».` : null
 }
 
 /* ═══ ومسارٌ رئيسيٌّ وبديلٌ من المسارات العامّة (٢١ أكتوبر ٢٠٢٦) ═══
@@ -363,7 +364,7 @@ export function grantRecordLink(host: string, key: string): string {
    وصفحةُ منحة المؤثّرين تُهدي برابط مؤثّرها (`/grant/i/<كوده>`) — فالصديقُ يأخذ منحتَها هي، ويُحسب للمؤثّر الذي جاء
    به صاحبُها (٢٦ أكتوبر ٢٠٢٦)، ولا يقول «لأنّي من مستخدمي تطبيق وجيز»: منحتُها من المؤثّر لا من التطبيق. */
 export function grantShareAr(link: string, percentOff: number, lastDay: string | null, fromWajeezApp = true): string {
-  const who = fromWajeezApp ? 'حصلت على منحة حصرية من تطبيق وجيز لأني من مستخدميه' : 'حصلت على منحة من أكاديمية وجيز'
+  const who = fromWajeezApp ? 'حصلت على منحة حصرية من تطبيق وجيز لأني من قرائه' : 'حصلت على منحة من أكاديمية وجيز'
   return [
     `${who}، ويحق لي أن أشاركها مع ${GRANT_GIFT_MAX} من أصدقائي، واخترتك منهم.`,
     '',

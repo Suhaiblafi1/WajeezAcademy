@@ -34,7 +34,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router";
-import { Check, ChevronDown, Clock, Copy, ExternalLink, Flame, Gift, Loader2, Mail, MessageCircle, Share2, Sparkles, TriangleAlert, UserRound } from "lucide-react";
+import { Award, Check, ChevronDown, Clock, Copy, ExternalLink, Flame, Gift, Loader2, Mail, MessageCircle, PencilRuler, Share2, Sparkles, TriangleAlert, UserRound, Video, type LucideIcon } from "lucide-react";
 import { apiGet, apiPost, apiPut, ApiError } from "@/services/api";
 import { useRealSession } from "@/services/session";
 import { useHoneypot } from "@/components/HoneypotField";
@@ -128,6 +128,8 @@ const GRANT_PATHS: GrantPathOption[] = [...publicPathsData.pathways]
 const OTHER_DOMAIN = "أخرى";
 /** كم وجها في رأس كلِّ قسم */
 const SECTION_FACES = 3;
+/** أيقونةُ كلِّ بندٍ ممّا يحصل عليه — في سطر صندوق الكود */
+const GAIN_ICON: Record<(typeof GRANT_GAINS_AR)[number]["id"], LucideIcon> = { live: Video, practice: PencilRuler, certificate: Award };
 
 export default function MemberGrantPage({ variant = "members" }: { variant?: "members" | "influencer" }) {
   const forInfluencer = variant === "influencer";
@@ -325,9 +327,10 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
             </span>
             <span className="min-w-0 flex-1">
               {(tag || seats) && (
-                <span className="mb-1 flex flex-wrap items-center gap-x-3 text-read font-bold">
-                  {tag && <span className="inline-flex items-center gap-1 text-gold-ink"><Sparkles className="h-3.5 w-3.5" aria-hidden="true" />{tag}</span>}
-                  {seats && <span className="inline-flex items-center gap-1 text-red-300"><Flame className="h-3.5 w-3.5" aria-hidden="true" />{seats}</span>}
+                <span className="mb-1 flex flex-wrap items-center gap-x-3">
+                  {/* وسمُ «نقترحها لك» أصغرُ وأهدأ من العنوان — قرارُه (٢٧ أكتوبر ٢٠٢٦): «يجب أن تكون أصغر وبخطٍّ أقلّ أهميّةً للنظر» */}
+                  {tag && <span className="inline-flex items-center gap-1 text-fine text-muted-foreground"><Sparkles className="h-3 w-3 text-gold-ink" aria-hidden="true" />{tag}</span>}
+                  {seats && <span className="inline-flex items-center gap-1 text-read font-bold text-red-300"><Flame className="h-3.5 w-3.5" aria-hidden="true" />{seats}</span>}
                 </span>
               )}
               <span className="block font-bold leading-6">{x.titleAr}</span>
@@ -403,11 +406,17 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
           {c.open && c.closesAt && <GrantCountdown closesAt={c.closesAt} className="mt-3" />}
           {/* وحدُّها جملةٌ واحدةٌ تحت «آخر يوم» — قرارُه (٢٤ أكتوبر ٢٠٢٦). وهو حدٌّ يحرس قيمتَها: «اختر ٤ دوراتٍ بحدٍّ أقصى» */}
           {c.open && <p className="mt-0.5 text-read text-muted-foreground">{grantLimitAr(max)}</p>}
-          {/* وما يحصل عليه سطرٌ صغيرٌ تحت خطٍّ رفيع — وكلُّ بندٍ لا ينقسم بين سطرين على الهاتف */}
-          <p className="mx-auto mt-3 flex max-w-md flex-wrap justify-center gap-x-1 border-t border-border pt-3 text-read leading-6 text-muted-foreground">
-            {GRANT_GAINS_AR.map((g, i) => (
-              <span key={g.id} className="whitespace-nowrap">{i > 0 && "+ "}{g.title}</span>
-            ))}
+          {/* وما يحصل عليه سطرٌ صغيرٌ تحت خطٍّ رفيع، بأيقونةٍ قبل كلّ بند — قرارُه (٢٧ أكتوبر ٢٠٢٦): «ضع أيقوناتٍ للمباشر وغيرها
+              في نفس السطر.. تكون عصريّة». وكلُّ بندٍ لا ينقسم بين سطرين على الهاتف */}
+          <p className="mx-auto mt-3 flex max-w-lg flex-wrap justify-center gap-x-4 gap-y-1 border-t border-border pt-3 text-read leading-6 text-muted-foreground">
+            {GRANT_GAINS_AR.map((g) => {
+              const Icon = GAIN_ICON[g.id];
+              return (
+                <span key={g.id} className="inline-flex items-center gap-1.5 whitespace-nowrap">
+                  <Icon className="h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" />{g.title}
+                </span>
+              );
+            })}
           </p>
         </Card>
 
@@ -677,7 +686,7 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
 }
 
 function Shell({
-  children, title = MEMBER_GRANT_NAME_AR, path = "/grant", description = "منحة حصرية لمستخدمي وجيز: دورات مباشرة على Zoom بخصم كبير، والمقاعد محدودة.",
+  children, title = MEMBER_GRANT_NAME_AR, path = "/grant", description = "منحة حصرية لقراء وجيز: دورات مباشرة على Zoom بخصم كبير، والمقاعد محدودة.",
 }: { children: React.ReactNode; title?: string; path?: string; description?: string }) {
   return (
     <div dir="rtl" className="min-h-screen bg-paper text-foreground">

@@ -179,7 +179,7 @@ describe('بعد النموذج', () => {
     /* قرارُ صاحب المنصّة (٢٥ أكتوبر ٢٠٢٦): «نقول إنّ المنحة تصل لـ٦٠٪ أفضل من أنّك تدفع ٤٠٪» */
     /* ثمّ صار سطرُه شكرا من تطبيق وجيز لمستخدمه (٢٧ أكتوبر ٢٠٢٦) — والنسبةُ «تصل إلى» كما هي */
     expect(PAGE).toMatch(/\{!forInfluencer\s*\? grantThanksAr\(c\.percentOff\)/)
-    expect(grantThanksAr(60)).toBe('تطبيق وجيز يشكرك لأنك من مستخدميه، ويسعدنا أن نقدم لك منحة حصرية تصل إلى 60% لتستفيد من منتجنا الجديد: أكاديمية وجيز.')
+    expect(grantThanksAr(60)).toBe('تطبيق وجيز يشكرك لأنك من قرائه، ويسعدنا أن نقدم لك منحة حصرية تصل إلى 60% لتستفيد من منتجنا الجديد: أكاديمية وجيز.')
     /* وفي منحة المؤثّرين باسم المؤثّر إن جاء برابطه (٢٦ أكتوبر ٢٠٢٦) */
     expect(PAGE).toContain('`بدعوة من ${view.influencer.nameAr}، منحتك تصل إلى ${c.percentOff}% من سعر دوراتك.`')
     /* وخانةُ الكود باسم المؤثّر لا «كود المؤثّر» — قرارُ صاحب المنصّة (٢٦ أكتوبر ٢٠٢٦) */
@@ -215,8 +215,12 @@ describe('بعد النموذج', () => {
        وأسفلها سطرٌ صغير». فلا عمودان ولا ما يميل إلى طرفٍ على الحاسوب */
     expect(card).toMatch(/^<Card tone="accent" className="text-center">/)
     expect(card, 'مال شيء في الصندوق إلى طرف على الحاسوب').not.toMatch(/sm:(text-start|justify-start|justify-end|grid-cols|border-s)/)
-    expect(card, 'السطر الصغير ليس تحت الحد').toMatch(/\{grantLimitAr\(max\)\}<\/p>\}\s*<p className="mx-auto mt-3 flex max-w-md flex-wrap justify-center gap-x-1 border-t border-border pt-3 text-read leading-6 text-muted-foreground">\s*\{GRANT_GAINS_AR\.map\(\(g, i\) => \(\s*<span key=\{g\.id\} className="whitespace-nowrap">\{i > 0 && "\+ "\}\{g\.title\}<\/span>\s*\)\)\}\s*<\/p>\s*<\/Card>/)
-    expect(card, 'عادت الأيقونات في قائمة').not.toMatch(/<Icon |GrantGains|<ul /)
+    /* وبأيقونةٍ قبل كلّ بندٍ في السطر نفسِه — قرارُه (٢٧ أكتوبر ٢٠٢٦): «ضع أيقوناتٍ للمباشر وغيرها في نفس السطر.. تكون عصريّة» */
+    expect(card, 'السطر الصغير ليس تحت الحد').toMatch(/\{grantLimitAr\(max\)\}<\/p>\}\s*<p className="mx-auto mt-3 flex max-w-lg flex-wrap justify-center gap-x-4 gap-y-1 border-t border-border pt-3 text-read leading-6 text-muted-foreground">\s*\{GRANT_GAINS_AR\.map\(\(g\) => \{/)
+    expect(card, 'البند بلا أيقونته في سطره').toMatch(/<span key=\{g\.id\} className="inline-flex items-center gap-1\.5 whitespace-nowrap">\s*<Icon className="h-4 w-4 shrink-0 text-teal-light-ink" aria-hidden="true" \/>\{g\.title\}\s*<\/span>/)
+    expect(PAGE).toMatch(/const GAIN_ICON: Record<\(typeof GRANT_GAINS_AR\)\[number\]\["id"\], LucideIcon> = \{ live: Video, practice: PencilRuler, certificate: Award \};/)
+    expect(card, 'عادت «+» بين البنود').not.toContain('"+ "')
+    expect(card, 'عادت الأيقونات قائمة عمودية').not.toMatch(/GrantGains|<ul /)
     expect(card, 'عادت أيقونة الهدية سطرا وحدها').not.toMatch(/<Gift className="mx-auto/)
     expect(card, 'فقرة فارغة حين لا شيء يقال').toMatch(/topNote && <p className="text-read">\{topNote\}<\/p>/)
     const picker = PAGE.slice(PAGE.indexOf('<h2 className="mt-6'), PAGE.indexOf('view.openCourses.length === 0'))
@@ -285,13 +289,14 @@ describe('بعد النموذج', () => {
     /* وسطرُ التعارض: مع التي قبلها وحدَها، ومرّةً */
     const row = (courseId: string, sessions: { startsAt: string; endsAt: string }[]) => ({ courseId, cohortId: `K-${courseId}`, titleAr: `دورة ${courseId}`, sessions })
     const x = row('x', [at(6, 16), at(13, 16)]), y = row('y', [at(6, 17), at(13, 17)]), z = row('z', [at(7, 16)])
-    expect(grantClashAr(y, [x])).toBe('تتعارض مع «x» في لقاءين، أولها الأحد 6 ديسمبر.')
+    /* «خفّف نصَّ التعارض.. قل تتعارض فقط بدون في كم لقاء» — قرارُه (٢٧ أكتوبر ٢٠٢٦) */
+    expect(grantClashAr(y, [x])).toBe('تتعارض مع «x».')
     expect(grantClashAr(x, []), 'الأولى لا تتعارض مع ما بعدها').toBeNull()
     expect(grantClashAr(z, [x, y])).toBeNull()
     expect(plainAr(grantClashAr(y, [x])!)).toBe(grantClashAr(y, [x]))
     /* والاسمُ قصيرٌ يُعرف به — لا العنوانُ كلُّه بوعده */
     const long = { ...x, titleAr: 'دورة تحليلات الموارد البشرية: فحص التحيّز قبل أن يصير سياسة' }
-    expect(grantClashAr(y, [long])).toBe('تتعارض مع «تحليلات الموارد البشرية» في لقاءين، أولها الأحد 6 ديسمبر.')
+    expect(grantClashAr(y, [long])).toBe('تتعارض مع «تحليلات الموارد البشرية».')
     /* وفي الصفّ: فورَ اختيارها، مع ما اختاره قبلها بترتيبه — ولا يمنع الاختيار */
     const card = PAGE.slice(PAGE.indexOf('const row = '), PAGE.indexOf(TOP_CARD))
     expect(card).toMatch(/const clash = on \? grantClashAr\(x, chosen\.slice\(0, chosen\.findIndex\(\(c\) => c\.courseId === x\.courseId\)\)\) : null;/)
@@ -352,6 +357,9 @@ describe('بعد النموذج', () => {
     expect(PAGE).toMatch(/const tag = ours\.has\(x\.courseId\) \? "نقترحها لك" : fits\(x\) > 0 \? "يناسب ما تريد تطويره" : null;/)
     const card = PAGE.slice(PAGE.indexOf('const row = '), PAGE.indexOf(TOP_CARD))
     expect(card, 'الوسم قرص').not.toMatch(/<Chip/)
+    /* وأصغرُ وأهدأُ من العنوان — قرارُه (٢٧ أكتوبر ٢٠٢٦): «كلمة نقترحها لك يجب أن تكون أصغر وبخطٍّ أقلّ أهميّةً للنظر» */
+    expect(card, 'الوسم بحجم العنوان أو بلونه').toMatch(/\{tag && <span className="inline-flex items-center gap-1 text-fine text-muted-foreground"><Sparkles className="h-3 w-3 text-gold-ink"/)
+    expect(card, 'عاد الوسم عريضا').not.toMatch(/<span className="mb-1 flex flex-wrap items-center gap-x-3 text-read font-bold">/)
     expect(card.indexOf('{tag && <span'), 'الوسم أعلى البطاقة').toBeGreaterThan(-1)
     expect(card.indexOf('{tag && <span'), 'الوسم تحت العنوان').toBeLessThan(card.indexOf('<span className="block font-bold leading-6">{x.titleAr}'))
     expect(PAGE, 'عاد «اخترناها لك» أو «حددنا لك»').not.toMatch(/اخترناها لك|حددنا لك/)
@@ -366,7 +374,7 @@ describe('بعد النموذج', () => {
     expect(seatsLeftAr(0)).toBeNull()
     expect(seatsLeftAr(null), 'بلا سعة').toBeNull()
     expect(PAGE).toMatch(/const seats = seatsLeftAr\(x\.seatsLeft\);/)
-    expect(PAGE).toMatch(/\{seats && <span className="inline-flex items-center gap-1 text-red-300">/)
+    expect(PAGE).toMatch(/\{seats && <span className="inline-flex items-center gap-1 text-read font-bold text-red-300">/)
     /* وصورةُ المدرّب أوّلُ ما في البطاقة وبكبرها — وبلا صورةٍ مربّعٌ بحجمها فلا تتفاوت البطاقات */
     const card = PAGE.slice(PAGE.indexOf('const row = '), PAGE.indexOf(TOP_CARD))
     expect(card).toMatch(/<img src=\{x\.trainer\.photoUrl\} alt="" loading="lazy" className="h-24 w-24 rounded-2xl object-cover/)
@@ -417,7 +425,7 @@ describe('بعد النموذج', () => {
     /* ونصُّها يتباهى بمنحته ويختار صديقَه، بلا رمزٍ تعبيريّ وبرابطٍ قصير — قرارُ صاحب المنصّة (٢٧ أكتوبر ٢٠٢٦) */
     const link = 'https://wajeezacademy.com/s/AB12CD'
     const m = grantShareAr(link, 60, '30 أكتوبر 2026')
-    expect(m.split('\n')[0]).toBe('حصلت على منحة حصرية من تطبيق وجيز لأني من مستخدميه، ويحق لي أن أشاركها مع 3 من أصدقائي، واخترتك منهم.')
+    expect(m.split('\n')[0]).toBe('حصلت على منحة حصرية من تطبيق وجيز لأني من قرائه، ويحق لي أن أشاركها مع 3 من أصدقائي، واخترتك منهم.')
     expect(m).toContain('المنحة تصل إلى 60% من سعر دورات مباشرة على Zoom مع مدربين معتمدين، وآخر يوم لها 30 أكتوبر 2026.')
     expect(m.trim().split('\n').at(-1), 'الرابط آخر الرسالة وحده').toBe(link)
     expect(m, 'رمز تعبيري — كان يصل مربعا في واتساب الحاسوب').not.toMatch(/\p{Extended_Pictographic}/u)
@@ -614,7 +622,7 @@ describe('بعد النموذج', () => {
 
   it('⚠️ قليل هادئ — ثلاث بكلمتين، وأربع خانات بلا شرح تحتها، والاختياري مطوي، وسطر عن الأكاديمية', () => {
     expect(GRANT_GAINS_AR, 'عادت بطاقات ما يحصل عليه').toHaveLength(3)
-    expect(PAGE).toMatch(/\{GRANT_GAINS_AR\.map\(\(g, i\) => \(/)
+    expect(PAGE).toMatch(/\{GRANT_GAINS_AR\.map\(\(g\) => \{/)
     expect(PAGE, 'عادت النبذة الطويلة').not.toMatch(/FAMILY_INTRO|grantStepsAr|كيف تعمل المنحة|ماذا تحصل عليه/)
     /* الاختياريّان داخل <details> مطويّ — لا مفتوحَين فوق الزرّ */
     const formAt = PAGE.indexOf('<Card as="form"')
@@ -659,9 +667,10 @@ describe('النصوص', () => {
     expect(auditActionAr('coupon.grant_apply')).not.toBe('coupon.grant_apply')
   })
 
-  /* قرارُ صاحب المنصّة (٢٧ أكتوبر ٢٠٢٦): «في الصفحات الخاصّة بالمنحة لا تستخدم كلمة عضو، بل مستخدم وجيز».
-     فما يصل إنسانا من الصفحتين وبريدَيهما ورسائلِهما — الشيفرةُ بلا تعليقاتها، والتعليقُ يبقى بتاريخه */
-  it('⚠️ لا «عضو» في نص يصل إنسانا من المنحتين', () => {
+  /* قرارُ صاحب المنصّة (٢٧ أكتوبر ٢٠٢٦): «في الصفحات الخاصّة بالمنحة لا تستخدم كلمة عضو، بل مستخدم وجيز»، ثمّ في اليوم نفسِه:
+     «بدل عضو.. استخدم قرّاء وجيز بدلا من مستخدم». فما يصل إنسانا من الصفحتين وبريدَيهما ورسائلِهما — الشيفرةُ بلا تعليقاتها،
+     والتعليقُ يبقى بتاريخه */
+  it('⚠️ لا «عضو» ولا «مستخدم» في نص يصل إنسانا من المنحتين — «قراء وجيز»', () => {
     const files = [
       'src/pages/MemberGrantPage.tsx', 'src/application/commerce/grant-landing.ts', 'src/application/commerce/grant.ts',
       'src/application/site/whatsapp.ts', 'src/components/BuyPanel.tsx',
@@ -669,11 +678,14 @@ describe('النصوص', () => {
     ]
     for (const f of files) {
       const said = code(f).replace(/^\s*\/\/.*$/gm, '')
-      expect(said, `${f}: عادت «عضو»`).not.toMatch(/أعضاء|عضو/)
+      expect(said, `${f}: عادت «عضو» أو «مستخدم»`).not.toMatch(/أعضاء|عضو|مستخدم/)
     }
     const all = [grantThanksAr(60), grantShareAr('u', 60, '30 أكتوبر'), grantShareAr('u', 45, '30 أكتوبر', false),
       grantShareMailto('u', 60, '30 أكتوبر'), grantAdvisorTextAr({ name: 'سارة' }), ...WHATSAPP_SPOTS.map((s) => s.labelAr)]
-    for (const t of all) expect(t).not.toMatch(/أعضاء|عضو/)
+    for (const t of all) expect(t).not.toMatch(/أعضاء|عضو|مستخدم/)
+    expect(grantThanksAr(60)).toContain('من قرائه')
+    expect(grantShareAr('u', 60, '30 أكتوبر')).toContain('لأني من قرائه')
+    expect(code('src/pages/MemberGrantPage.tsx')).toContain('منحة حصرية لقراء وجيز')
   })
 
   /* «هذا الخصمُ الخاصّ بشراء أوّل دورةٍ تمّ منحُه لدورة كذا الأعلى سعرا، باختصار» — قرارُه (٢٧ أكتوبر ٢٠٢٦) */

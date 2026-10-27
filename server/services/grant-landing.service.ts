@@ -302,7 +302,7 @@ export class GrantLandingService {
 
   /* ═══ بريدُ الكود — بقالب الأكاديمية لا نصّا خاما (٢٧ أكتوبر ٢٠٢٦) ═══
      قرارُ صاحب المنصّة: «رسالةُ البريد يجب أن تكون احترافيّة». فعنوانٌ وشكرٌ وكودٌ في جدولٍ وزرٌّ يفتح الدورات،
-     ولا «عضو»: «مستخدمُ وجيز». ومن جاء بكود مؤثّرٍ يعود إلى صفحة منحته هي — فيها نسبتُه ودوراتُها. */
+     ولا «عضو» ولا «مستخدم»: «قرّاءُ وجيز» (قرارُه في اليوم نفسِه). ومن جاء بكود مؤثّرٍ يعود إلى صفحة منحته هي — فيها نسبتُه ودوراتُها. */
   private async mailCode(to: string, name: string, code: string, percentOff: number, closesAt: Date | null, influencerCode: string | null = null) {
     const url = influencerCode ? influencerLink(publicSiteUrl(), influencerCode) : `${publicSiteUrl()}/grant`
     const last = closesAt ? fmtDate(new Date(closesAt.getTime() - 1)) : null
@@ -318,7 +318,7 @@ export class GrantLandingService {
         heading: 'منحتك جاهزة',
         blocks: [
           { kind: 'p', text: member
-            ? 'شكرا لأنك من مستخدمي تطبيق وجيز. يسعدنا أن نقدم لك منحة حصرية في منتجنا الجديد: أكاديمية وجيز.'
+            ? 'شكرا لأنك من قراء وجيز. يسعدنا أن نقدم لك منحة حصرية في منتجنا الجديد: أكاديمية وجيز.'
             : 'يسعدنا أن نقدم لك منحة في أكاديمية وجيز.' },
           { kind: 'facts', rows: [
             { label: 'كود منحتك', value: code },

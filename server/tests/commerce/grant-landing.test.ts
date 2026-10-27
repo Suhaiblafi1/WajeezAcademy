@@ -58,7 +58,7 @@ async function cohort(courseId: string, over: Record<string, unknown> = {}) {
 const person = (over: Partial<{
   fullName: string; phone: string; email: string; workField: string; channel: string; wave: string; careerLevel: string | null; interests: string[]
 }> = {}) => ({
-  fullName: `مستخدم وجيز ${++seq}`, phone: `0791${String(500000 + seq)}`, email: `member-${seq}-${STAMP}@test.local`,
+  fullName: `قارئ وجيز ${++seq}`, phone: `0791${String(500000 + seq)}`, email: `member-${seq}-${STAMP}@test.local`,
   workField: 'الموارد البشرية', ...over,
 })
 
@@ -95,16 +95,16 @@ describe('① النموذج يعطي الكود فورا', () => {
 
 describe('①ب وبريد الكود ورابط الهدية (٢٧ أكتوبر ٢٠٢٦)', () => {
   /* قرارُ صاحب المنصّة: «رسالةُ البريد يجب أن تكون احترافيّة»، و«لا تستخدم كلمة عضو بل مستخدم وجيز»، و«الرابط قصير جدّا» */
-  it('⚠️ بريد الكود بقالب الأكاديمية — شكر لمستخدم وجيز وكوده وزر دوراته، ولا «عضو»', async () => {
+  it('⚠️ بريد الكود بقالب الأكاديمية — شكر لقارئ وجيز وكوده وزر دوراته، ولا «عضو» ولا «مستخدم»', async () => {
     const p = person({})
     const out = await landing.apply(p)
     const mail = await prisma.outboxMail.findFirstOrThrow({ where: { to: p.email, purpose: 'grant.code' }, orderBy: { createdAt: 'desc' } })
     expect(mail.subject).toBe('كود منحة وجيز الخاص بك')
     expect(mail.html, 'بلا قالب الأكاديمية').toBeTruthy()
-    for (const t of ['منحتك جاهزة', 'شكرا لأنك من مستخدمي تطبيق وجيز', `كود منحتك: ${out.grant!.code}`, 'اختر دوراتك:', '/grant']) {
+    for (const t of ['منحتك جاهزة', 'شكرا لأنك من قراء وجيز', `كود منحتك: ${out.grant!.code}`, 'اختر دوراتك:', '/grant']) {
       expect(mail.text, t).toContain(t)
     }
-    expect(`${mail.subject}\n${mail.text}`, 'عادت «عضو»').not.toMatch(/أعضاء|عضو/)
+    expect(`${mail.subject}\n${mail.text}`, 'عادت «عضو» أو «مستخدم»').not.toMatch(/أعضاء|عضو|مستخدم/)
   })
 
   it('⚠️ رابط الهدية القصير يصنع مرة لكل وجهة ويعاد — إلى صفحة المنحة بوسم الهدية', async () => {
