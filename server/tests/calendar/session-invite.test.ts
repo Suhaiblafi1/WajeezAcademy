@@ -61,7 +61,7 @@ describe('الدعوة', () => {
     expect(m.ics).toContain('METHOD:REQUEST')
     expect(m.icsMethod).toBe('REQUEST')
     expect(unfold(m.ics)).toMatch(/ATTENDEE;CN=متعلّم;ROLE=REQ-PARTICIPANT;RSVP=FALSE:mailto:learner@x\.co/)
-    expect(unfold(m.ics)).toContain('ORGANIZER;CN=أكاديمية وجيز:mailto:Academy@wajeez.co')
+    expect(unfold(m.ics)).toContain('ORGANIZER;CN=أكاديمية وجيز:mailto:academy@wajeezacademy.com')
   })
 
   it('⚠️ والمعرّفُ معرّفُ اللقاء — هو نفسُه في ملفّ «أضِفها لتقويمك»', async () => {
@@ -141,7 +141,7 @@ describe('جدولُ من التحق بعد الاعتماد — رسالةٌ و
     expect(sched.ics.match(/^BEGIN:VCALENDAR\r?$/gm)).toHaveLength(1)
     expect(uids(sched.ics), 'معرّفٌ غيرُ معرّف اللقاء — فلا يتحدّث حين يتغيّر').toEqual([sessionInviteUid('sess-1'), sessionInviteUid('sess-2')])
     expect(unfold(sched.ics)).not.toContain('ATTENDEE')
-    expect(unfold(sched.ics)).toContain('ORGANIZER;CN=أكاديمية وجيز:mailto:Academy@wajeez.co')
+    expect(unfold(sched.ics)).toContain('ORGANIZER;CN=أكاديمية وجيز:mailto:academy@wajeezacademy.com')
     expect(unfold(sched.ics)).toContain(`LOCATION:${PERSONAL.url}`)
     expect(unfold(sched.ics)).toContain(`LOCATION:${s2.join.url}`)
     expect(seqs(sched.ics)).toEqual([inviteSequence(NOW), inviteSequence(NOW)])

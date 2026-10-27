@@ -40,11 +40,16 @@ describe('عناوين الأكاديميّة', () => {
     expect(ACADEMY_EMAIL).toBe(ACADEMY_CONTACT_EMAIL)
   })
 
-  it('وكلّ غاية يراها المستخدم تشير إليه — ولا يبقى عنوان غيره سوى المرسل', () => {
-    const { sender, ...visible } = ACADEMY_EMAILS
+  it('وكلّ غاية يراها المستخدم تشير إليه — ولا يبقى عنوان غيره سوى المرسل ومنظّم الدعوات', () => {
+    const { sender, calendar, ...visible } = ACADEMY_EMAILS
     expect(Object.keys(visible).length).toBeGreaterThan(1)
     for (const [k, e] of Object.entries(visible)) expect(e, `ACADEMY_EMAILS.${k}`).toBe(ACADEMY_CONTACT_EMAIL)
     expect(sender).not.toBe(ACADEMY_CONTACT_EMAIL)
+    void calendar
+  })
+
+  it('⚠️ ومنظّم دعوات التقويم هو المرسل نفسه — وإلّا لم يرفع التقويم ما ألغيناه وحده (٢٧ أكتوبر ٢٠٢٦)', () => {
+    expect(ACADEMY_EMAILS.calendar).toBe(ACADEMY_EMAILS.sender)
   })
 
   it('والمرسل الآليّ على النطاق الموثّق في Resend — وإلّا رفضت كلّ رسالة', () => {
@@ -60,9 +65,9 @@ describe('عناوين الأكاديميّة', () => {
     const c = server.match(/export const ACADEMY_CONTACT_EMAIL = '([^']+)'/)
     expect(c, 'الخادم يعلن ACADEMY_CONTACT_EMAIL').not.toBeNull()
     expect(c![1]).toBe(ACADEMY_CONTACT_EMAIL)
-    /* ومنظِّمُ التقويم والدعمُ في الخادم هما العنوانُ الواحد، والمُرسِلُ `academy@` */
+    /* والدعمُ في الخادم هو العنوانُ الواحد، ومنظِّمُ التقويم هو المُرسِلُ `academy@` */
     expect(server).toMatch(/support: ACADEMY_CONTACT_EMAIL/)
-    expect(server).toMatch(/calendar: ACADEMY_CONTACT_EMAIL/)
+    expect(server).toMatch(/calendar: `academy@\$\{ACADEMY_EMAIL_DOMAIN\}`/)
     expect(server).toContain('ACADEMY_EMAIL = ACADEMY_EMAILS.sender')
   })
 
