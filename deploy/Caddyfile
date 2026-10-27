@@ -52,6 +52,20 @@
 		}
 	}
 
+	# ── صفحةُ المدرّب العامّة `/t/اسمه` لزاحف المعاينة وحدَه (٢٧ أكتوبر ٢٠٢٦) ──
+	# الصفحةُ تُرسم بجافاسكربت، وزاحفُ واتساب وفيسبوك لا يشغّله فكان يقرأ وسومَ
+	# الرئيسة. فيجيبه الخادمُ بصورة المدرّب ودوراته. ومحرّكاتُ البحث ليست منه:
+	# لها الصفحةُ كما يراها الناس. والعلّةُ في `server/services/link-preview.ts`.
+	@previewCrawler {
+		path /t/*
+		header_regexp User-Agent (?i)(facebookexternalhit|facebookcatalog|WhatsApp/|LinkedInBot|Twitterbot|TelegramBot|Slackbot|Discordbot|SkypeUriPreview|Pinterestbot|redditbot|Embedly)
+	}
+	handle @previewCrawler {
+		reverse_proxy app:7101 {
+			header_up X-Real-IP {remote_host}
+		}
+	}
+
 	# ── توثيق واجهة البرمجة ──
 	# **مغلقٌ على الإنتاج من الخادم نفسِه**، لا من هنا: `app.ts` لا يسجّل
 	# صفحةَ Swagger إلّا خارج الإنتاج أو بـ`ENABLE_API_DOCS=true`. فهذه

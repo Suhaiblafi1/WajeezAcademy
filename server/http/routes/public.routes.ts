@@ -9,7 +9,8 @@ import { fileUploadsEnabled } from '../../services/storage.service'
 import { TrainerPathService } from '../../services/trainer-path.service'
 import { getCalendlyConfig } from '../../services/integrations.service'
 import { ShortLinkService } from '../../services/short-link.service'
-import { deadLinkPage, previewPage } from '../../services/link-preview'
+import { deadLinkPage, previewPage, trainerPagePreview } from '../../services/link-preview'
+import { SHORT_PURPOSE } from '../../services/trainer-share-code.service'
 import { recordOpen } from '../../services/link-opens'
 import { publicSiteUrl } from '../../services/site-url'
 import { readSeasonGate } from '../../services/registration-window'
@@ -220,6 +221,25 @@ export function registerPublicCatalogRoutes(app: FastifyInstance, prisma: Prisma
     /* ولا تُخزَّن الصفحة: فتحةٌ تُجاب من مخزنٍ في الطريق لا تبلغ الخادمَ فلا تُعدّ */
     return reply.header('cache-control', 'no-store').type('text/html; charset=utf-8')
       .send(previewPage({ origin, code, target, title: row.previewTitle, text: row.previewText ?? '', sig: row.previewSig }))
+  })
+
+  /* ═══ صفحةُ المدرّب العامّة لزاحف المعاينة وحدَه (٢٧ أكتوبر ٢٠٢٦) ═══
+     Caddy لا يمرّر إلى هنا إلّا زاحفَ معاينةٍ (`@previewCrawler`)، والناسُ ومحرّكاتُ البحث يبلغون الصفحةَ نفسَها.
+     والعلّةُ في `trainerPagePreview` (`link-preview.ts`). */
+  app.get('/t/:slug', { schema: { hide: true } }, async (req, reply) => {
+    const { slug } = z.object({ slug: z.string().min(1).max(160) }).parse(req.params)
+    const origin = publicSiteUrl()
+    const page = await catalog.trainerPublicPage(slug).catch(() => null)
+    if (!page) return reply.redirect(`${origin}/`, 302)
+    const link = await prisma.shortLink.findFirst({
+      where: { target: new URL(`/t/${slug}`, origin).pathname, purpose: SHORT_PURPOSE, revokedAt: null, previewSig: { not: null } },
+      select: { code: true, previewTitle: true, previewText: true, previewSig: true },
+    })
+    return reply.header('cache-control', 'public, max-age=300').type('text/html; charset=utf-8').send(trainerPagePreview({
+      origin, slug, name: page.name, headline: page.headline, photoUrl: page.photoUrl,
+      link: link?.previewSig && link.previewTitle
+        ? { code: link.code, title: link.previewTitle, text: link.previewText ?? '', sig: link.previewSig } : null,
+    }))
   })
 
   app.get('/api/public/links/:code/preview.jpg', {
