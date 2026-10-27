@@ -1366,6 +1366,21 @@ export async function runCohortMoveReminders(prisma: PrismaClient, now = new Dat
   }
 }
 
+/* ═══ «انشر دورتك الآن» — قبل بدء الشعبة بأسبوع (٢٧ أكتوبر ٢٠٢٦) ═══
+   اقترحه Claude فقال صاحبُ المنصّة: «كلّهم». العلّةُ في `share-reminder.service.ts`. ولا يُذكَّر أحدٌ بشعبةٍ مرّتين. */
+export async function runShareReminders(prisma: PrismaClient, now = new Date()): Promise<JobResult> {
+  const started = Date.now()
+  const { ShareReminderService } = await import('../services/share-reminder.service')
+  const { reminded, skipped, failed } = await new ShareReminderService(prisma).remindDue(now)
+  return {
+    job: 'share_reminders',
+    summaryAr: reminded + failed === 0
+      ? (skipped > 0 ? `لا تذكير — تخطى ${skipped} شعبة فاتها الأسبوع أو بلا مدرب نشط` : 'لا شعبة تبدأ بعد أسبوع لم يذكر مدربها')
+      : `ذكّر ${reminded} مدربا بنشر شعبته قبل بدئها` + (failed > 0 ? `، ولم يخرج البريد إلى ${failed}` : ''),
+    done: reminded, failed, ms: Date.now() - started,
+  }
+}
+
 /* ═══ اقتراحُ تأجيلٍ مضت مهلتُه بلا ردّ — توقف شعبتُه (٢٤ أكتوبر ٢٠٢٦) ═══
    «مع إعلامه بأنّه سيتمّ توقيفُ الشعبة تلقائيّا» (صاحب المنصّة). العلّةُ في `cohort-postpone.service.ts`. */
 export async function runCohortPostponeExpire(prisma: PrismaClient, now = new Date()): Promise<JobResult> {
@@ -1683,6 +1698,7 @@ export const JOBS = [
   { key: 'deferral_followups', everyMs: HOUR, run: runDeferralFollowups, titleAr: 'متابعة المؤجّلين إلى الفصول القادمة' },
   /* كلَّ ساعة: الموعدُ شهرٌ قبل الفصل، فساعةٌ دقّةٌ كافية */
   { key: 'cohort_move_reminders', everyMs: HOUR, run: runCohortMoveReminders, titleAr: 'تذكير مدرّبي الشعب المنقولة قبل فصلها' },
+  { key: 'share_reminders', everyMs: HOUR, run: runShareReminders, titleAr: 'تذكير المدربين بنشر شعبهم قبل بدئها بأسبوع' },
   /* كلَّ ربع ساعة: المهلةُ ساعةٌ ودقيقة، ومن لم يقبل لا ينتظر ساعةً بعدها ليعلم */
   { key: 'cohort_postpone_expire', everyMs: 15 * 60_000, run: runCohortPostponeExpire, titleAr: 'إيقاف الشعب التي لم يقبل مدربها التأجيل في موعده' },
   /* كلَّ ربع ساعة: لقاءٌ ملغى في تقويم إنسانٍ قد يحضره — والرفعُ لا يتكرّر */

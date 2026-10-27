@@ -27,7 +27,7 @@
    ــ وما زال قائما: **لا يُبنى مسارٌ هنا**. صفحتان تبنيان مسارا تفترقان
    يوما، والمسارُ عقدٌ على متعلّمٍ لا شاشةُ عرض. */
 import { useCallback, useEffect, useState } from "react";
-import { Link } from "react-router";
+import { Link, useSearchParams } from "react-router";
 import { Copy, ExternalLink, Gift, Link2, Loader2, Share2, TicketPercent, UserPlus, Wallet } from "lucide-react";
 import { apiGet, apiPost, ApiError, permissionMessage } from "@/services/api";
 import { Panel, Card, Inset } from "@/components/ui/Surface";
@@ -508,7 +508,11 @@ export default function Referral() {
   const [linksDown, setLinksDown] = useState(false);
   const [kit, setKit] = useState<ShareKitData | null>(null);
   /* لوحةُ مشاركة الشعبة المفتوحة: معرّفُها — ولوحةُ دوراته كلِّها مفتوحةٌ دائما */
-  const [sharing, setSharing] = useState<string | null>(null);
+  /* ═══ والبريدُ يفتح لوحةَ الشعبة نفسِها (٢٧ أكتوبر ٢٠٢٦) ═══
+     «انشر دورتك الآن» قبل البدء بأسبوع (`share-reminder.service.ts`) زرُّه `?share=<الشعبة>` — فيصل المدرّبُ إلى منشورها
+     الجاهز لا إلى رأس الصفحة يبحث عنه */
+  const [params] = useSearchParams();
+  const [sharing, setSharing] = useState<string | null>(() => params.get("share"));
   /* المنسوخُ يُعلَّم بمفتاحه لا برايةٍ واحدة: رايةٌ واحدةٌ لروابطَ كثيرةٍ
      تُضيء «نُسخ» تحت كلّ زرٍّ معا، فلا يدري أيَّها نسخ. */
   const [copied, setCopied] = useState<string | null>(null);
@@ -534,6 +538,14 @@ export default function Referral() {
       .catch(() => undefined);
     return () => { alive = false };
   }, []);
+
+  /* وتُنزل الصفحةُ إلى الشعبة التي جاء البريدُ بها حين تظهر */
+  useEffect(() => {
+    const id = params.get("share");
+    if (id && kit && cohortLinks?.some((c) => c.cohortId === id)) {
+      document.getElementById(`share-${id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [params, kit, cohortLinks]);
 
   /* ومعاينةُ روابطه حين تُلصق في واتساب وفيسبوك: تُرسم هنا وتُرفع إن تغيّر ما رُسمت منه (`link-preview.ts`) */
   useEffect(() => {
@@ -726,7 +738,7 @@ export default function Referral() {
               ) : (
                 <ul className="mt-2 divide-y divide-white/8">
                   {cohortLinks.map((c) => (
-                    <li key={c.cohortId} className="py-3 last:pb-0">
+                    <li key={c.cohortId} id={`share-${c.cohortId}`} className="scroll-mt-24 py-3 last:pb-0">
                       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
                         <span className="text-read font-bold text-foreground">{c.courseTitle}</span>
                         <span className="text-read text-muted-foreground">

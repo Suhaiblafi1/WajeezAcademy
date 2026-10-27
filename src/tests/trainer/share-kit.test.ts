@@ -284,3 +284,13 @@ describe('عداد روابطه', () => {
     expect(page).toMatch(/<LinkReachLine url=\{kit\.short\.wide\} reach=\{kit\.reach\} registered=\{false\} \/>/)
   })
 })
+
+/* «انشر دورتك الآن» (٢٧ أكتوبر ٢٠٢٦): زر البريد `?share=<الشعبة>` يفتح لوحة الشعبة نفسها — `share-reminder.service.ts` */
+describe('زر تذكير النشر', () => {
+  it('⚠️ الصفحة تفتح لوحة الشعبة التي جاء البريد بها وتنزل إليها', () => {
+    const page = readFileSync(join(process.cwd(), 'src/pages/trainer/Referral.tsx'), 'utf8')
+    expect(page).toMatch(/useState<string \| null>\(\(\) => params\.get\("share"\)\)/)
+    expect(page).toMatch(/id=\{`share-\$\{c\.cohortId\}`\}/)
+    expect(page).toMatch(/getElementById\(`share-\$\{id\}`\)\?\.scrollIntoView/)
+  })
+})

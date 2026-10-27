@@ -20,6 +20,8 @@ import { AuthService } from '../../services/auth.service'
 import { CommerceService } from '../../services/commerce.service'
 import { TrainerShareCodeService } from '../../services/trainer-share-code.service'
 import { TrainerMarketingService } from '../../services/trainer-marketing.service'
+import { ShareReminderService, shareReminderMail } from '../../services/share-reminder.service'
+import { renderMail } from '../../services/mail-template'
 import { SHARE_CODE_PERCENT, SHARE_CODE_PREFIX } from '../../../src/application/trainer/share-code'
 import { approvedPlanBy } from '../helpers/approved-trainer'
 
@@ -270,5 +272,53 @@ describe('⑧ عداد روابطه', () => {
     expect(a!.shares.opens, 'مجموع الإدارة غير مجموع روابطه').toBe(reach.reduce((s, r) => s + r.opens, 0))
     expect(a!.shares.opens).toBeGreaterThanOrEqual(3)
     expect(a!.shares.registered, 'من سجل عبره لا يبلغ الإدارة').toBeGreaterThanOrEqual(1)
+  })
+})
+
+/* ⑨ «انشر دورتك الآن» قبل البدء بأسبوع — اقترحه Claude فقال صاحب المنصة: «كلهم» (٢٧ أكتوبر ٢٠٢٦).
+   والعلة في `server/services/share-reminder.service.ts`: مرة لكل شعبة، ولا يذكر من فاته الأسبوع إلى آخر يوم. */
+describe('⑨ تذكيره بنشر شعبته قبل بدئها', () => {
+  const DAY = 24 * 60 * 60 * 1000
+  const inDays = (d: number) => new Date(Date.now() + d * DAY)
+
+  it('⚠️ يذكر مرة واحدة من تبدأ شعبته بعد أيام — ببريد وجرس وأثر', async () => {
+    const now = new Date()
+    await prisma.cohort.update({ where: { id: cohort.A1 }, data: { startsAt: inDays(5), shareReminderAt: null } })
+    await new ShareReminderService(prisma).remindDue(now)
+    const row = await prisma.cohort.findUniqueOrThrow({ where: { id: cohort.A1 }, select: { shareReminderAt: true } })
+    expect(row.shareReminderAt, 'لم يختم التذكير').not.toBeNull()
+    const audits = () => prisma.auditEvent.count({ where: { action: 'referral.share.remind', entityId: cohort.A1 } })
+    expect(await audits(), 'لم يقع التذكير').toBe(1)
+    const bell = await prisma.notification.findFirst({ where: { userId: A.userId, channel: 'in_app', title: { contains: 'شاركها الآن' } } })
+    expect(bell, 'لا جرس في بوابته').not.toBeNull()
+    await new ShareReminderService(prisma).remindDue(new Date(now.getTime() + 60 * 60 * 1000))
+    expect(await audits(), 'ذكر بالشعبة مرتين').toBe(1)
+  })
+
+  it('ولا يذكر قبل الأسبوع، ولا من بقي على شعبته أقل من يوم', async () => {
+    const courses = await prisma.course.findMany({ take: 4, select: { id: true }, orderBy: { id: 'asc' } })
+    await openCohort('FAR', courses[2].id, 100, A.profileId)
+    await openCohort('LATE', courses[3].id, 100, A.profileId)
+    await prisma.cohort.update({ where: { id: cohort.FAR }, data: { startsAt: inDays(10) } })
+    await prisma.cohort.update({ where: { id: cohort.LATE }, data: { startsAt: new Date(Date.now() + 12 * 60 * 60 * 1000) } })
+    await new ShareReminderService(prisma).remindDue(new Date())
+    const far = await prisma.cohort.findUniqueOrThrow({ where: { id: cohort.FAR }, select: { shareReminderAt: true } })
+    expect(far.shareReminderAt, 'ذكر قبل الأسبوع').toBeNull()
+    const late = await prisma.cohort.findUniqueOrThrow({ where: { id: cohort.LATE }, select: { shareReminderAt: true } })
+    expect(late.shareReminderAt, 'لم تختم المتأخرة فتبقى تقرأ كل ساعة').not.toBeNull()
+    expect(await prisma.auditEvent.count({ where: { action: 'referral.share.remind', entityId: cohort.LATE } }), 'طلب النشر من شعبة تبدأ غدا').toBe(0)
+  })
+
+  it('⚠️ والرسالة فيها رابط الشعبة وكوده، وزرها يفتح لوحة الشعبة نفسها', () => {
+    const m = shareReminderMail({
+      name: 'صهيب', course: 'مهارة الخطابة', startsAr: '1 ديسمبر', link: 'https://x/s/K7Q2MX',
+      code: { code: 'WJ30-K7Q2MX', percentOff: 30 }, opens: 12, panel: 'https://x/trainer/share?share=C1',
+    })
+    expect(m.subject).toBe('«مهارة الخطابة» تبدأ 1 ديسمبر — شاركها الآن')
+    const { text } = renderMail(m.doc)
+    expect(text).toContain('https://x/s/K7Q2MX')
+    expect(text).toContain('WJ30-K7Q2MX')
+    expect(text).toContain('فتح رابطها حتى الآن 12 شخصا')
+    expect(m.doc.blocks.find((b) => b.kind === 'cta')).toMatchObject({ href: 'https://x/trainer/share?share=C1' })
   })
 })

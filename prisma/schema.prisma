@@ -2779,6 +2779,8 @@ model Cohort {
   language            String                    @default("العربية")
   deliveryMode        String                    @default("remote") // remote | in_person | hybrid
   registrationOpen    Boolean                   @default(false)
+  /// متى ذُكِّر مدرّبُها بنشرها قبل بدئها بأسبوع — مرّةً واحدة (`server/services/share-reminder.service.ts`)
+  shareReminderAt     DateTime?
   /// آخرُ لحظةٍ يُقبل فيها الالتحاق — بدءُ الموعد الثاني (٣ج). «التسجيلُ يُغلق يومَ
   /// البدء، والالتحاقُ المتأخّرُ حتّى الموعد الثاني» (قرارُ صاحب المنصّة، ٢٧ سبتمبر
   /// ٢٠٢٦). يُكتب عند اعتماد خطّة المدرّب من مواعيدها، و`null` لما اعتُمد بلا
