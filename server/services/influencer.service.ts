@@ -17,6 +17,9 @@
    ٤) **والعمولةُ تُحسب من الطلب لا تُقيَّد بيد**: نسبتُها من سعر الدورات قبل المنحة (`subtotal`)، على كلّ طلبٍ
       دُفع بكود منحةٍ جاء بكوده — ولو أهداه صاحبُه لغيره، فالمؤثّرُ هو من جاء بالكود أصلا. وما رُدّ من الثمن ينقص
       منها بنسبته، والمردودُ كلُّه لا عمولةَ له.
+      **وشراؤه هو بكوده بلا عمولة** — قرارُ صاحب المنصّة (٢٧ أكتوبر ٢٠٢٦): «b»، خُيّر بين منعه وتركه ومنحِه الخصمَ
+      بلا عمولة. فيأخذ المنحةَ كأيّ متابع، وطلبُه يبقى صفّا في كشفه بعمولةٍ صفر و«شراء صاحب الكود — بلا عمولة»، ولا يُعدّ
+      في من اشترى ولا في المبيعات. و«هو» حسابُه المربوطُ بملفّه (`userId`).
    ٥) **والرصيدُ ما استحقّه ناقصا ما دُفع له** — والدفعُ يُسجَّل بمبلغه وتاريخه ومن سجّله. فطلبٌ يُردّ بعد أن دُفعت
       عمولتُه ينقص من رصيده التالي، ولا يُطلب منه مالٌ يردّه.
    ٦) **والمؤثّرُ يرى متابعيه بأسمائهم الأولى وحدَها** (`buyerNameAr`) — يعرف أنّهم جاؤوا منه ولا يُكشف له أكثر.
@@ -39,7 +42,7 @@ import { fmtMoney } from '../../src/application/text/format-ar'
 import { PERMISSIONS, ROLE_NAMES_AR, ROLE_PERMISSIONS } from '../auth/permissions'
 import { INFLUENCER_GRANT_SLUG } from '../../src/application/commerce/grant'
 import {
-  INFLUENCER_CODE_FORMAT_AR, INFLUENCER_CODE_TAKEN_AR, buyerNameAr, commissionStateAr, influencerCommission,
+  INFLUENCER_CODE_FORMAT_AR, INFLUENCER_CODE_TAKEN_AR, OWN_PURCHASE_AR, buyerNameAr, commissionStateAr, influencerCommission,
   influencerLink, normalizeInfluencerCode,
 } from '../../src/application/commerce/influencer'
 import { refundedShare } from '../../src/application/trainer/trainer-code'
@@ -219,7 +222,8 @@ export class InfluencerService {
 
   /** كشفُه: من عبّأ النموذج بكوده، ومن اشترى، وعمولةُ كلّ طلب، وما دُفع له، والرصيد */
   async statement(id: string) {
-    const [signups, codes, payouts] = await Promise.all([
+    const [inf, signups, codes, payouts] = await Promise.all([
+      this.prisma.influencer.findUnique({ where: { id }, select: { userId: true } }),
       this.prisma.lead.count({ where: { influencerId: id, campaign: INFLUENCER_GRANT_SLUG } }),
       this.prisma.grantCode.findMany({
         where: { influencerId: id },
@@ -230,7 +234,7 @@ export class InfluencerService {
               orders: {
                 where: { status: { in: COMMISSION_ORDERS } },
                 select: {
-                  id: true, status: true, subtotal: true, currency: true, paidAt: true, createdAt: true,
+                  id: true, status: true, subtotal: true, currency: true, paidAt: true, createdAt: true, userId: true,
                   user: { select: { displayName: true } },
                   items: { select: { id: true } },
                   invoice: { select: { payments: { select: { amount: true, status: true, refunds: { where: { status: 'processed' }, select: { amount: true } } } } } },
@@ -248,13 +252,14 @@ export class InfluencerService {
         paid.reduce((s, p) => s + p.refunds.reduce((t, r) => t + num(r.amount), 0), 0),
         paid.reduce((s, p) => s + num(p.amount), 0),
       )
-      const percent = g.commissionPercent ?? 0
+      const own = Boolean(inf?.userId) && o.userId === inf!.userId
+      const percent = own ? 0 : g.commissionPercent ?? 0
       const listTotal = num(o.subtotal)
       return {
         orderId: o.id, at: o.paidAt ?? o.createdAt, buyerAr: buyerNameAr(o.user.displayName),
         courses: o.items.length, listTotal, percent,
-        commission: influencerCommission(listTotal, percent, o.status === 'refunded' ? 1 : share),
-        stateAr: commissionStateAr(o.status), refunded: o.status === 'refunded', currency: o.currency,
+        commission: own ? 0 : influencerCommission(listTotal, percent, o.status === 'refunded' ? 1 : share),
+        stateAr: own ? OWN_PURCHASE_AR : commissionStateAr(o.status), refunded: o.status === 'refunded', own, currency: o.currency,
       }
     })).sort((a, b) => b.at.getTime() - a.at.getTime())
     const earned = round2(rows.reduce((s, r) => s + r.commission, 0))
@@ -262,8 +267,8 @@ export class InfluencerService {
     return {
       currency: LEDGER_CURRENCY,
       totals: {
-        signups, codes: codes.length, buyers: rows.filter((r) => !r.refunded).length,
-        sales: round2(rows.reduce((s, r) => s + r.listTotal, 0)), earned, paid: paidOut, balance: round2(earned - paidOut),
+        signups, codes: codes.length, buyers: rows.filter((r) => !r.refunded && !r.own).length,
+        sales: round2(rows.reduce((s, r) => s + (r.own ? 0 : r.listTotal), 0)), earned, paid: paidOut, balance: round2(earned - paidOut),
       },
       rows,
       payouts: payouts.map((p) => ({ id: p.id, amount: num(p.amount), currency: p.currency, noteAr: p.noteAr, paidAt: p.paidAt })),
@@ -280,12 +285,14 @@ export class InfluencerService {
       this.prisma.learnerProfile.findUnique({ where: { userId }, select: { avatarUrl: true } }),
       this.designMaterial(),
     ])
-    /* صورةُ حسابه لتصاميم «صمم منشورك» — بعنوانها الذي يفتح كما تعطيه صفحةُ حسابه (`profile.service.ts`) */
+    /* صورةُ حسابه لـ«تصميمك الخاص» — المرفوعةُ عندنا وحدَها. ورابطٌ خارجيٌّ كتبه قديما في حسابه لا يُعطى: المتصفّحُ
+       لا يرسمه في لوحةٍ تُنزَّل إلّا بإذن موقعه، فيرى صاحبُه تصميمه بـ«صورتك هنا» ولوحةَ التنزيل معه. وبلا صورةٍ يُطلب
+       منه رفعُها (`InfluencerHome.tsx`) */
     const key = photoStorageKey(learner?.avatarUrl)
     return {
       nameAr: inf.nameAr, code: inf.code, active: inf.active, commissionPercent: inf.commissionPercent,
       link: influencerLink(publicSiteUrl(), inf.code),
-      photoUrl: key ? `/api/v1/avatars/${key}` : learner?.avatarUrl ?? null,
+      photoUrl: key ? `/api/v1/avatars/${key}` : null,
       grant: { nameAr: s.nameAr, open: s.open, percentOff: s.percentOff, maxCourses: s.maxCourses, closesAt: s.closesAt },
       designs,
       ...st,
