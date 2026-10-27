@@ -87,9 +87,12 @@ describe('الصور واللوحة', () => {
 
   it('⚠️ ولوحة المدرب تقرأ المحتوى الممرر — وبلاه محتوى المدرب كما كان', () => {
     const kit = code('src/components/trainer/ShareKit.tsx')
-    expect(kit).toMatch(/const text = content \? content\.text\(platform\) : shareText\(platform, input\);/)
+    expect(kit).toMatch(/const ours = content \? content\.text\(platform\) : shareText\(platform, input\);/)
+    /* ونصُّ المدرّب يعدّله بيده — ونصُّ المنحة لا: بابُها لا يأخذ نصّا معدّلا */
+    expect(kit).toMatch(/const text = !content && draft !== null \? draft : ours;/)
+    expect(kit).toMatch(/readOnly=\{Boolean\(content\)\}/)
     expect(kit).toMatch(/content \? content\.draw\(kind, index\) : drawArt\(kind as ArtKind, art, index\)/)
-    expect(kit).toMatch(/const door = \(p: SharePlatform\) => \(content \? content\.door\(p\) : shareUrl\(p, input\)\);/)
+    expect(kit).toMatch(/const door = \(p: SharePlatform\) => \(content \? content\.door\(p\) : shareUrl\(p, input, text\)\);/)
   })
 
   it('والصورة بلا عنوان موقع — الرابط في النص ينقر وفي الصورة لا', () => {
