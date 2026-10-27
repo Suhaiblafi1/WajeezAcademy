@@ -13,8 +13,8 @@ import { fmtDayMonth } from "@/application/text/format-ar";
 import { bestCode } from "@/application/trainer/share-kit";
 import { drawArt, type ArtData } from "./share-art";
 
-/** نسخةُ تصميم المعاينة — تُرفع إذا تغيّرت فتتجدّد الصورُ القديمةُ كلُّها (٣: بلا عنوان الموقع، ٢٦ أكتوبر ٢٠٢٦) */
-export const LINK_ART_VERSION = 3;
+/** نسخةُ تصميم المعاينة — تُرفع إذا تغيّرت فتتجدّد الصورُ القديمةُ كلُّها (٣: بلا عنوان الموقع، ٢٦ أكتوبر ٢٠٢٦ · ٤: رأسٌ أصغر، ٢٧ أكتوبر ٢٠٢٦) */
+export const LINK_ART_VERSION = 4;
 
 export interface LinkToPreview {
   /** الرابطُ القصير كاملا — `…/s/XXXXXX` */
