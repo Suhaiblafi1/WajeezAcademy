@@ -26,7 +26,7 @@
 
    ــ وما زال قائما: **لا يُبنى مسارٌ هنا**. صفحتان تبنيان مسارا تفترقان
    يوما، والمسارُ عقدٌ على متعلّمٍ لا شاشةُ عرض. */
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { Copy, ExternalLink, Gift, Link2, Loader2, Share2, TicketPercent, UserPlus, Wallet } from "lucide-react";
 import { apiGet, apiPost, ApiError, permissionMessage } from "@/services/api";
@@ -531,6 +531,14 @@ export default function Referral() {
       setTimeout(() => setCopied((c) => (c === key ? null : c)), 2000);
     });
   };
+  /* ═══ وما تُرسم منه الصورُ ثابتٌ بين رسمٍ ورسم (٢٧ أكتوبر ٢٠٢٦) ═══
+     كانت الدوراتُ والكودُ تُبنى في كلّ رسمٍ للصفحة، فتراها لوحةُ المشاركة جديدةً وتعيد رسمَ صورها — حتّى نقرةُ «انسخ
+     الكود» وانطفاؤها بعد ثانيتين: صورتان لكلّ نقرةٍ في المنشور، وحتّى عشرٍ في الكاروسيل. فتُبنى مرّةً لكلّ ما تتغيّر به. */
+  const shareCode = useMemo(() => (kit ? shareCodeOf(kit) : null), [kit]);
+  const allCourses = useMemo(
+    () => (cohortLinks ?? []).map((c) => ({ courseTitle: c.courseTitle, startsAt: c.startsAt, url: c.url })), [cohortLinks]);
+  const courseOf = useMemo(
+    () => Object.fromEntries(allCourses.map((c, i) => [cohortLinks![i].cohortId, [c]])), [allCourses, cohortLinks]);
 
   useEffect(() => {
     let alive = true;
@@ -621,8 +629,8 @@ export default function Referral() {
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground/50" aria-label="جار التحميل" />
               </div>
             ) : cohortLinks.length > 0 ? (
-              <ShareKit face={kit} fileStem="wajeez-courses" url={kit.short.wide ?? referral.url} code={shareCodeOf(kit)} taughtBefore={kit.taughtBefore}
-                courses={cohortLinks.map((c) => ({ courseTitle: c.courseTitle, startsAt: c.startsAt, url: c.url }))} />
+              <ShareKit face={kit} fileStem="wajeez-courses" url={kit.short.wide ?? referral.url} code={shareCode} taughtBefore={kit.taughtBefore}
+                courses={allCourses} />
             ) : (
               <Inset as="p" className="mt-3 px-4 py-3 text-read leading-6 text-muted-foreground">
                 {linksDown ? "تعذّر جلب شعبك الآن. أعد فتح الصفحة بعد قليل." : "يظهر منشورك هنا حين تفتح لك شعبة."}
@@ -774,8 +782,8 @@ export default function Referral() {
                       </div>
                       {kit?.short.cohorts[c.cohortId] && <LinkReachLine url={kit.short.cohorts[c.cohortId]} reach={kit.reach} />}
                       {kit && sharing === c.cohortId && (
-                        <ShareKit face={kit} fileStem={`wajeez-${c.code}`} url={kit.short.cohorts[c.cohortId] ?? c.url} code={shareCodeOf(kit)} taughtBefore={kit.taughtBefore}
-                          courses={[{ courseTitle: c.courseTitle, startsAt: c.startsAt, url: c.url }]} />
+                        <ShareKit face={kit} fileStem={`wajeez-${c.code}`} url={kit.short.cohorts[c.cohortId] ?? c.url} code={shareCode} taughtBefore={kit.taughtBefore}
+                          courses={courseOf[c.cohortId]} />
                       )}
                     </li>
                   ))}

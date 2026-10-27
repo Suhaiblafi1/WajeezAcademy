@@ -99,8 +99,9 @@ describe('في صفحة «شارك دوراتك»', () => {
   const page = readFileSync(join(process.cwd(), 'src/pages/trainer/Referral.tsx'), 'utf8')
   it('⚠️ لكل شعبة زر «شارك»، ولدوراته كلها لوحة برابطه العام — والكود أعلى الخصمين', () => {
     /* والرابطُ المنشورُ قصيرٌ إن كان — وإلّا الطويل */
-    expect(page).toMatch(/sharing === c\.cohortId && \([\s\S]{0,80}<ShareKit [^>]*url=\{kit\.short\.cohorts\[c\.cohortId\] \?\? c\.url\} code=\{shareCodeOf\(kit\)\}/)
+    expect(page).toMatch(/sharing === c\.cohortId && \([\s\S]{0,80}<ShareKit [^>]*url=\{kit\.short\.cohorts\[c\.cohortId\] \?\? c\.url\} code=\{shareCode\}/)
     expect(page).toMatch(/const shareCodeOf = \(k: ShareKitData\) => bestCode\(/)
+    expect(page).toMatch(/const shareCode = useMemo\(\(\) => \(kit \? shareCodeOf\(kit\) : null\), \[kit\]\)/)
   })
 
   /* ═══ «صمّم منشورك هو الأهمّ، اتركها مفتوحة للجميع» (صاحب المنصّة، ٢٦ أكتوبر ٢٠٢٦) ═══
@@ -109,7 +110,7 @@ describe('في صفحة «شارك دوراتك»', () => {
     const body = page.replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '')
     const main = body.slice(body.indexOf('export default function Referral'))
     expect(main, 'عادت اللوحة خلف زرّ').not.toContain('sharing === "all"')
-    expect(main).toMatch(/cohortLinks\.length > 0 \? \(\s*<ShareKit [^>]*url=\{kit\.short\.wide \?\? referral\.url\} code=\{shareCodeOf\(kit\)\}/)
+    expect(main).toMatch(/cohortLinks\.length > 0 \? \(\s*<ShareKit [^>]*url=\{kit\.short\.wide \?\? referral\.url\} code=\{shareCode\}/)
     const designer = main.indexOf('صمم منشورك')
     expect(designer, 'لا عنوان «صمم منشورك»').toBeGreaterThan(-1)
     expect(designer, 'اللوحة بعد الكود').toBeLessThan(main.indexOf('خصم منا لمتابعيك'))
@@ -432,5 +433,22 @@ describe('ما تفتح عليه اللوحة', () => {
     expect(kit).toMatch(/useState<ShareMode>\(\(\) => modeFor\(taughtBefore\)\)/)
     const page = readFileSync(join(process.cwd(), 'src/pages/trainer/Referral.tsx'), 'utf8')
     expect(page.match(/<ShareKit [^>]*taughtBefore=\{kit\.taughtBefore\}/g) ?? []).toHaveLength(2)
+  })
+})
+
+/* ═══ وما تُرسم منه الصورُ ثابتٌ بين رسمٍ ورسم (٢٧ أكتوبر ٢٠٢٦) ═══
+   كانت الدوراتُ والكودُ تُبنى في كلّ رسمٍ للصفحة، فتعيد لوحةُ المشاركة رسمَ صورها مع كلّ نقرة «انسخ» — وحتّى عشرٍ في
+   الكاروسيل. وقيس في المتصفّح: ثلاثُ نقراتٍ رسمت ستَّ صورٍ زائدة، وبعد الإصلاح لا شيء. */
+describe('الصور لا تعاد مع كل نقرة', () => {
+  const body = readFileSync(join(process.cwd(), 'src/pages/trainer/Referral.tsx'), 'utf8')
+    .replace(/\{?\/\*[\s\S]*?\*\/\}?/g, '')
+  const tags = [...body.matchAll(/<ShareKit [^>]*\/>/g)].map((m) => m[0])
+  it('⚠️ لوحة المشاركة لا تأخذ دورات ولا كودا يبنيان في كل رسم', () => {
+    expect(tags.length, 'لا لوحة مشاركة').toBeGreaterThan(0)
+    for (const t of tags) {
+      expect(t, 'دورات تبنى في كل رسم').not.toMatch(/courses=\{(?:\[|[^}]*\.map\()/)
+      expect(t, 'كود يبنى في كل رسم').not.toMatch(/code=\{shareCodeOf\(/)
+    }
+    expect(body).toMatch(/const allCourses = useMemo\(/)
   })
 })
