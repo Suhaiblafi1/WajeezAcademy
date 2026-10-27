@@ -25,6 +25,7 @@
      منها (`welcome`). ويتركه أو ينتقل منه — تُرفع من تقويمه وحدَه (`release`).
    · ويدخلها مدرّبٌ — يُسنَد إليها أو يحلّ محلّ من رحل — رسالةٌ واحدةٌ بما بقي
      (`trainerJoined`)، ويخرج منها — تُرفع من تقويمه وحدَه (`trainerLeft`).
+   · ويُوقَف تدريبُه — تُرفع لقاءاتُ شعبه من تقويمه (`trainerSuspended`)، ويصله جدولُها حين يعود.
 
    ولا يُدعى إلى ما مضى، ولا إلى المبدئيّ — مثالُ الإدارة يُرفع حين يضع المدرّبُ
    جدولَه، فدعوتُه موعدٌ في تقويم إنسانٍ يُمحى بعد أيّام.
@@ -60,6 +61,8 @@ export const COHORT_CANCELLED_AR = 'ألغيت الشعبة، فلن يعقد ه
 export const COHORT_POSTPONED_AR = 'تأجلت الشعبة إلى موسم قادم، فلن يعقد هذا اللقاء في موعده. تصلك مواعيدها الجديدة حين تعتمد.'
 /** وما يُقال للمدرّب حين تنتقل شعبتُه إلى غيره */
 export const TRAINER_LEFT_AR = 'انتقلت الشعبة إلى مدرب آخر، فلن تقدم هذا اللقاء.'
+/** وحين يُوقَف تدريبُه — وما بقي له يصله حين يعود (`trainerSuspended`) */
+export const TRAINER_SUSPENDED_AR = 'أوقف تدريبك. وتصلك مواعيد شعبك حين يرفع الإيقاف.'
 
 /** سببُ الرفع — واحدٌ للجميع، أو للمدرّب غيرُ ما للمتعلّم: «نقله مدرّبك» لا تُقال للمدرّب */
 export type WithdrawWhy = string | { learnerAr: string; trainerAr: string }
@@ -309,15 +312,67 @@ export class SessionInviteService {
   /** ومدرّبٌ خرج من الشعبة — تُرفع لقاءاتُها المقبلة من تقويمه وحدَه */
   async trainerLeft(cohortId: string, profileId: string, now = new Date()): Promise<number> {
     const profile = await this.prisma.trainerProfile.findUnique({
-      where: { id: profileId }, select: { user: { select: { email: true, displayName: true } } },
+      where: { id: profileId }, select: { suspendedAt: true, user: { select: { email: true, displayName: true } } },
     })
-    if (!profile?.user?.email) return 0
+    /* والموقوفُ رُفعت لقاءاتُ شعبه من تقويمه حين أُوقف (`trainerSuspended`) — فلا تُرفع ثانيةً */
+    if (!profile?.user?.email || profile.suspendedAt) return 0
     return this.release({ email: profile.user.email, name: profile.user.displayName }, cohortId, TRAINER_LEFT_AR, now, 'trainer')
   }
 
+  /* ═══ ومدرّبٌ يُوقَف — تُرفع لقاءاتُ شعبه من تقويمه، ويصله جدولُها حين يعود (٢٧ أكتوبر ٢٠٢٦) ═══
+
+     كان الإيقافُ (`TrainerReviewService.suspendTrainer`) لا يمسّ التقويم: تبقى دعواتُه فيه، ولا يصله بعدها تحديثٌ
+     ولا رفع — `trainersOf` لا تعدّ الموقوف — فما نُقل أو أُلغي يبقى في تقويمه على غير حقيقته، ومنه شعبُه التي تُلغى
+     في نافذة الإيقاف نفسِها. وحين يعود لا يعود جدولُها: `calendarSentAt` مكتوبٌ فلا يرسله العامل. فخُيّر صاحبُ
+     المنصّة فاختار: تُرفع لقاءاتُه حين يُوقَف، ويصله جدولُ ما بقي من شعبه حين يعود.
+
+     فيُرفع من تقويمه وحدَه ما بقي من لقاءات كلِّ شعبةٍ وصله جدولُها، ويُمحى `calendarSentAt` عن إسنادها — فلا يُرفع
+     منه شيءٌ مرّتين، ويرسل العاملُ جدولَها إن عاد (`sweepTrainerCalendars`). وما رُفع من تقاويم الجميع قبل إيقافه لا
+     يُرفع ثانيةً: وصله رفعُه يومئذ. وما رُفع بعده يُرفع: لم يصله. يعود بعدد ما كُتب */
+  async trainerSuspended(profileId: string, now = new Date()): Promise<number> {
+    const profile = await this.prisma.trainerProfile.findUnique({
+      where: { id: profileId },
+      select: {
+        suspendedAt: true,
+        user: { select: { email: true, displayName: true } },
+        cohortTrainers: { where: { calendarSentAt: { not: null } }, select: { id: true, cohortId: true } },
+      },
+    })
+    if (!profile?.suspendedAt) return 0
+    const suspendedAt = profile.suspendedAt.getTime()
+    const to = profile.user?.email ? { email: profile.user.email, name: profile.user.displayName } : null
+    const pageUrl = `${publicSiteUrl()}/trainer`
+    let queued = 0
+    for (const link of profile.cohortTrainers) {
+      if (to) {
+        for (const s of await this.upcoming(link.cohortId, now)) {
+          if (s.calendarWithdrawnAt && s.calendarWithdrawnAt.getTime() < suspendedAt) continue
+          const snap: InvitedSession = {
+            id: s.id, cohortId: link.cohortId, cohortTitle: s.cohort.title, title: s.title, startsAt: s.startsAt, endsAt: s.endsAt,
+          }
+          await this.enqueueInvite(snap, 'cancel', to, null, pageUrl, TRAINER_SUSPENDED_AR, now, 'trainer')
+          queued += 1
+        }
+      }
+      await this.prisma.cohortTrainer.update({ where: { id: link.id }, data: { calendarSentAt: null } })
+    }
+    return queued
+  }
+
   /* ومن العامل: مدرّبٌ لم يصله جدولُ شعبته — من سبق هذا اليوم ولم تصله دعوةٌ قطّ، أو فاته `trainerJoined`
-     بخطأٍ ابتُلع. مرّةً لكلّ إسناد، والموقوفُ يُترك حتّى يعود */
-  async sweepTrainerCalendars(now = new Date()): Promise<{ links: number; mails: number }> {
+     بخطأٍ ابتُلع، أو رُفع إيقافُه. مرّةً لكلّ إسناد، والموقوفُ يُترك حتّى يعود.
+     وموقوفٌ بقي جدولُ شعبته في تقويمه — أُوقف قبل أن يُرفع عند الإيقاف شيء، أو فاته `trainerSuspended` بخطأٍ
+     ابتُلع — تُرفع منه لقاءاتُها */
+  async sweepTrainerCalendars(now = new Date()): Promise<{ links: number; mails: number; held: number; withdrawn: number }> {
+    const held = await this.prisma.cohortTrainer.findMany({
+      where: { calendarSentAt: { not: null }, profile: { suspendedAt: { not: null } } },
+      select: { profileId: true },
+      orderBy: { createdAt: 'asc' },
+      take: 200,
+    })
+    let withdrawn = 0
+    for (const profileId of new Set(held.map((h) => h.profileId))) withdrawn += await this.trainerSuspended(profileId, now)
+
     const links = await this.prisma.cohortTrainer.findMany({
       where: { calendarSentAt: null, profile: { suspendedAt: null, user: { isNot: null } } },
       select: { cohortId: true, profileId: true },
@@ -326,7 +381,7 @@ export class SessionInviteService {
     })
     let mails = 0
     for (const l of links) mails += await this.trainerJoined(l.cohortId, l.profileId, now)
-    return { links: links.length, mails }
+    return { links: links.length, mails, held: held.length, withdrawn }
   }
 
   /** صفحةُ الشعبة في بوّابة المدرّب — منها يبدأ اللقاءَ مضيفا */
