@@ -138,12 +138,20 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
   const params = useParams();
   const urlCode = forInfluencer ? normalizeInfluencerCode(params.code) : null;
   const { user: session } = useRealSession();
+  /* ومن أنشأ حسابَه أو دخل في نافذة الدفع داخلٌ من يومها — `useRealSession` يُقرأ مرّةً عند التحميل، فكانت الصفحةُ تراه
+     «غيرَ داخل» حتّى يحدّثها: يغلق لوحَ الدفع ثمّ يضغط الشراء فتعود نافذةُ الحساب، ويقال له «البريدُ مسجّل» */
+  const [signedIn, setSignedIn] = useState(false);
+  const authed = !!session || signedIn;
   const hp = useHoneypot();
   const [view, setView] = useState<View | null>(null);
   const [failed, setFailed] = useState<string | null>(null);
   const [stored, setStored] = useState<StoredGrant | null>(() => readStoredGrant(storeKey));
   const [reasonAr, setReasonAr] = useState<string | null>(null);
-  const [form, setForm] = useState({ fullName: "", phone: "", email: "", workField: "", careerLevel: "" });
+  /* ومن عاد إلى النموذج (لا كودَ له بعد) يجده بما كتب أوّلَ مرّة — إلّا رقمَه، فهو لا يُحفظ على جهازه */
+  const [form, setForm] = useState(() => {
+    const was = readStoredGrant(storeKey);
+    return { fullName: was?.name ?? "", phone: "", email: was?.email ?? "", workField: was?.workField ?? "", careerLevel: "" };
+  });
   /* كودُ المؤثّر — من رابطه، ويكتبه من جاء بلا رابط */
   const [influencerCode, setInfluencerCode] = useState(urlCode ?? "");
   /* ومن حُسب له: مؤثّرُ ما حُفظ إن أخذ كودا، وإلّا مؤثّرُ الرابط */
@@ -152,7 +160,7 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
   const shell = forInfluencer
     ? { title: nameAr, path: `${INFLUENCER_GRANT_PATH}${urlCode ? `/${urlCode}` : ""}`, description: "منحة من أكاديمية وجيز: دورات مباشرة تختارها بخصم كبير، والعدد محدود." }
     : {};
-  const [interests, setInterests] = useState<string[]>([]);
+  const [interests, setInterests] = useState<string[]>(() => readStoredGrant(storeKey)?.interests ?? []);
   const [busy, setBusy] = useState(false);
   /* رقمُ مستشار المنحة من شاشة الربط (`grant_advisor`) — لا حرفٌ في الشيفرة */
   const numbers = useWhatsAppNumbers();
@@ -190,7 +198,7 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
     const ours = suggestCourses(view.openCourses, stored.interests, stored.workField, GRANT_SUGGESTED_COURSES, found.main?.courseIds ?? []);
     const open = new Set(view.openCourses.map((x) => x.courseId));
     setSuggested(ours);
-    setPicked(resumed ? resumed.intent.courseIds.filter((id) => open.has(id)).slice(0, max) : []);
+    setPicked((resumed ? resumed.intent.courseIds : stored.picks ?? []).filter((id) => open.has(id)).slice(0, max));
     setSeeded(true);
   }, [view, stored, seeded, resumed]);
 
@@ -207,6 +215,12 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
   const [touched, setTouched] = useState(false);
   const toggle = (id: string) => { setTouched(true); setPicked((p) => toggleCourse(p, id, max)); };
   const ref = stored?.ref;
+  /* وعلى جهازه في الحال — فمن حدّث الصفحةَ أو عاد إليها وجد ما اختاره، لا قائمةً فارغة */
+  useEffect(() => {
+    if (!touched || !ref) return;
+    const kept = readStoredGrant(storeKey);
+    if (kept?.ref === ref) saveStoredGrant({ ...kept, picks: picked }, storeKey);
+  }, [touched, ref, picked, storeKey]);
   useEffect(() => {
     if (!touched || !ref) return;
     const t = setTimeout(() => { void apiPut(GRANT_PICKS_PATH, { ref, courseIds: picked }).catch(() => {}); }, PICKS_SAVE_DELAY_MS);
@@ -228,6 +242,8 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
       };
       saveStoredGrant(g, storeKey);
       setStored({ ...g, at: Date.now() });
+      /* ويُقترح له من جديد بما كتب الآن — فقد يعود إلى النموذج بعد أن اقتُرح له بما كتب أوّلَ مرّة */
+      setSeeded(false);
       setReasonAr(out.reasonAr);
       setView(out);
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -240,7 +256,7 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
   /* ويُطلب حين يفتح لوحُ الدفع أيضا: من أنشأ حسابه في نافذة الدفع لا تعرفه هذه الصفحة بعدُ (`useRealSession` يُقرأ مرّةً
      عند التحميل)، فكان لا يُطلب له كودُه أبدا ويرى «اكتب كود منحتك» — بلاغُ صاحب المنصّة (٢٧ أكتوبر ٢٠٢٦): «اجعل الكود يتفعّل
      تلقائيّا بدلا من تصعيب الأمور». واللوحُ لا يفتح إلّا بحساب (`pay`)، فطلبُه حينها آمن */
-  const claimFor = (session || buyOpen) && stored && !stored.code ? `${session?.email ?? "buy"}|${stored.ref}` : null;
+  const claimFor = (authed || buyOpen) && stored && !stored.code ? `${session?.email ?? "buy"}|${stored.ref}` : null;
   useEffect(() => {
     if (!claimFor) return;
     let on = true;
@@ -261,7 +277,7 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
       path: pickPath ?? PICK_PATH, intent: { title: BUY_TITLE_AR, amount: payTotal, kind: "courses", courseIds: chosen.map((x) => x.courseId) },
       cohortByCourse: Object.fromEntries(chosen.map((x) => [x.courseId, x.cohortId])),
     });
-    if (!session) { setAuthOpen(true); return; }
+    if (!authed) { setAuthOpen(true); return; }
     setBuyOpen(true);
   };
 
@@ -286,7 +302,9 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
   const shareText = grantShareAr(shareLink, pct, lastDayLong, !forInfluencer);
 
   /* ─── الخطوة ٢: الكودُ واختيارُ الدورات ─── */
-  if (stored) {
+  /* ومن عبّأ النموذجَ والمنحةُ مغلقةٌ أو نفدت أكوادُها لم يأخذ كودا ولا بريدا — فإن فتحت يعود إلى النموذج ليأخذه، لا إلى
+     الدورات بلا كودٍ فيدفع كاملا ويقال له «تجده في بريدك» ولم يصله شيء. ومن ردّه الخادمُ الآن يرى سببَه (`reasonAr`) */
+  if (stored && (stored.code || stored.sentTo || reasonAr || !c.open)) {
     /* ما اخترناه له أوّلا، ثمّ ما قال إنّه يريد تطويرَه */
     const mine = new Set(stored.interests);
     const ours = new Set(suggested);
@@ -526,11 +544,11 @@ export default function MemberGrantPage({ variant = "members" }: { variant?: "me
               initialMode="signup" source="grant_checkout" verifyLater
               message="أنشئ حسابك لتدفع. فيه تجد دوراتك ومواعيدها."
               prefill={{ name: stored.name, email: stored.email }}
-              onDone={() => { setAuthOpen(false); setBuyOpen(true); }}
+              onDone={() => { setSignedIn(true); setAuthOpen(false); setBuyOpen(true); }}
             />
           </Modal>
         )}
-        <ResumeCheckout ready={resumed !== null && seeded && chosen.length > 0} onResume={() => (session ? setBuyOpen(true) : setAuthOpen(true))} />
+        <ResumeCheckout ready={resumed !== null && seeded && chosen.length > 0} onResume={() => (authed ? setBuyOpen(true) : setAuthOpen(true))} />
         {buyOpen && (
           <BuyPanel
             /* ويُعاد بنيانُه حين يصل الكودُ بعد فتحه — فيُسعَّر بمنحته لا بدونها */
