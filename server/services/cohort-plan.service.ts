@@ -34,6 +34,7 @@ import { levelProblem, type LevelRange } from '../../src/application/trainer/coh
 import { audienceProblem } from '../../src/application/trainer/cohort-audience'
 import { blockingBeforeSubmit, boardNextStep, trainerOwned } from '../../src/application/trainer/plan-gate'
 import { courseSourceProblem, practiceGaps, projectDeadlineProblem, seasonEndProblem } from '../../src/application/trainer/plan-scorecard'
+import { tasksAsProposed } from '../../src/application/trainer/task-approval'
 import { plannedSeason, postponeMessageAr, postponeProblem, seasonStart, validPostponeTarget, type Season } from '../../src/application/trainer/plan-postpone'
 import {
   REVIEW_SECTIONS, composeReviewNote, hasReviewNotes, normalizeReviewNotes, notedSections, readReviewNotes,
@@ -266,6 +267,17 @@ export interface ChecklistItem { key: string; labelAr: string; done: boolean; op
 /** يومُ عمودٍ من نوع DATE — `YYYY-MM-DD` كما كُتب، لا بتوقيت الخادم */
 const dayOf = (d: Date | string | null | undefined): string | null =>
   d ? (typeof d === 'string' ? d.slice(0, 10) : d.toISOString().slice(0, 10)) : null
+/** مهامُّ الشعبة بالحقول التي تقرؤها القائمة — كما ستكون إن اعتُمدت الخطّة (`tasksAsProposed`) */
+export function checklistTasks(rows: readonly { pendingChange?: unknown; moduleId: string | null; type: string; dueAt: Date | string | null }[]) {
+  const tasks = tasksAsProposed(rows)
+  return {
+    assessmentsCount: tasks.length,
+    assessmentModuleIds: tasks.map((a) => a.moduleId),
+    assessmentTypes: tasks.map((a) => a.type),
+    assessmentDues: tasks.map((a) => a.dueAt),
+  }
+}
+
 export function buildChecklist(input: {
   cohort: { title: string }
   /** مدّةُ الشعبة كما تُحكَم — من `resolvePeriod` لا من الخطّة خامًا */
@@ -703,10 +715,7 @@ export class CohortPlanService {
     const period = resolvePeriod(content, cohort, status)
     const checklist = buildChecklist({
       cohort, period, content, sessions: countableSessions(cohort.sessions),
-      assessmentsCount: cohort.assessments.length,
-      assessmentModuleIds: cohort.assessments.map((a) => a.moduleId),
-      assessmentTypes: cohort.assessments.map((a) => a.type),
-      assessmentDues: cohort.assessments.map((a) => a.dueAt),
+      ...checklistTasks(cohort.assessments),
       postponedTo: plan?.postponedTo ?? null,
       planStatus: status,
       workbookBeforeTemplate: profile.workbookBeforeTemplate,
@@ -843,7 +852,7 @@ export class CohortPlanService {
                 recordings: { where: { status: 'active' }, select: { id: true } },
               },
             },
-            assessments: { where: { status: { not: 'closed' } }, select: { moduleId: true, type: true, dueAt: true } },
+            assessments: { where: { status: { not: 'closed' } }, select: { moduleId: true, type: true, dueAt: true, pendingChange: true } },
             plans: { where: { trainerId: { not: null } }, orderBy: { createdAt: 'desc' }, take: 1 },
             _count: {
               select: {
@@ -878,10 +887,7 @@ export class CohortPlanService {
         : null
       const checklist = buildChecklist({
         cohort: c, period: resolvePeriod(planContent, c, planStatus), content: planContent,
-        sessions: countableSessions(c.sessions), assessmentsCount: c._count.assessments,
-        assessmentModuleIds: c.assessments.map((a) => a.moduleId),
-        assessmentTypes: c.assessments.map((a) => a.type),
-        assessmentDues: c.assessments.map((a) => a.dueAt), planStatus,
+        sessions: countableSessions(c.sessions), ...checklistTasks(c.assessments), planStatus,
         postponedTo: plan?.postponedTo ?? null,
         workbookBeforeTemplate: profile.workbookBeforeTemplate,
       })
@@ -1103,7 +1109,7 @@ export class CohortPlanService {
             recordings: { select: { id: true } },
           },
         },
-        assessments: { where: { status: { not: 'closed' } }, select: { moduleId: true, type: true, dueAt: true } },
+        assessments: { where: { status: { not: 'closed' } }, select: { moduleId: true, type: true, dueAt: true, pendingChange: true } },
         _count: { select: { assessments: true } },
       },
     })
@@ -1112,10 +1118,7 @@ export class CohortPlanService {
       period: resolvePeriod(content, gateCohort, latest.status as PlanStatus),
       content,
       sessions: countableSessions(gateCohort.sessions),
-      assessmentsCount: gateCohort._count.assessments,
-      assessmentModuleIds: gateCohort.assessments.map((a) => a.moduleId),
-      assessmentTypes: gateCohort.assessments.map((a) => a.type),
-      assessmentDues: gateCohort.assessments.map((a) => a.dueAt),
+      ...checklistTasks(gateCohort.assessments),
       postponedTo: latest.postponedTo,
       planStatus: latest.status as PlanStatus,
       workbookBeforeTemplate: profile.workbookBeforeTemplate,
