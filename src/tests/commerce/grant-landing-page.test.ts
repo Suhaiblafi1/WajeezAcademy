@@ -238,6 +238,8 @@ describe('بعد النموذج', () => {
     expect(GRANT_INTEREST_DOMAINS.has('أخرى')).toBe(false)
     expect(leadProfileAr({ workField: 'الهندسة', careerLevel: 'مدير', interests: ['أ', 'ب'] })).toBe('مجاله: الهندسة · مستواه: مدير · يريد: أ، ب')
     expect(leadProfileAr({ workField: null, careerLevel: null, interests: [] })).toBe('')
+    /* وما اختاره يقرؤه المستشار في حالته بعناوينه القصيرة */
+    expect(leadProfileAr({ workField: 'الهندسة', careerLevel: null, interests: [], picks: ['دورة استراتيجية التسعير: بناء النطاق', 'تحليل البيانات'] })).toBe('مجاله: الهندسة · اختار: استراتيجية التسعير، تحليل البيانات')
   })
 
   it('⚠️ خمس دورات نقترحها له — ما يريد تطويره، ثم مجال عمله، ثم الأقرب موعدا', () => {

@@ -50,7 +50,9 @@ describe('رابط ملف صاحب المنحة', () => {
     expect(PAGE).toContain('const GRANT_PICKS_PATH = "/api/public/grant/picks";')
     /* ولا يُضبط «غيّره» إلّا في نقرته: لو ضُبط عند فتح الصفحة لمحا فتحُها في جهازٍ آخر ما اختاره قبله */
     expect(PAGE.match(/setTouched\(true\)/g)?.length).toBe(1)
-    expect(LIST).toMatch(/r\.picks\.length > 0 && <>.*اختار: \{r\.picks\.join\("، "\)\}/)
+    /* سطرٌ لكلّ دورةٍ مرقّمٌ بعنوانها القصير — لا قائمةٌ بفواصل */
+    expect(LIST).toMatch(/r\.picks\.length > 0 && \([\s\S]*?<ol className="[^"]*list-decimal[^"]*">\s*\{r\.picks\.map\(\(p\) => <li key=\{p\}>\{shortCourseTitleAr\(p\)\}<\/li>\)\}/)
+    expect(LIST).not.toMatch(/r\.picks\.join/)
     expect(LIST).toMatch(/matchesQuery\(q, \[[^\]]*\.\.\.r\.picks/)
   })
 })

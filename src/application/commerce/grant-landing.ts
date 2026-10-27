@@ -16,7 +16,7 @@
 
 import { COURSE_DOMAIN_FAMILIES, courseDomainByFamily } from '../catalog/course-domain'
 import { zonedClock, zonedDay, zonedInstant } from '../trainer/cohort-period'
-import { courseLinesAr } from '../text/course-lines'
+import { courseLinesAr, shortCourseTitleAr } from '../text/course-lines'
 import { plainAr } from '../text/plain-ar'
 import { clashesOf, sessionsOverlap, type TimedSession } from '../learning/cohort-overlap'
 import { MEMBER_GRANT_NAME_AR } from './grant'
@@ -388,11 +388,13 @@ export function rankByInterest<T>(items: readonly T[], hits: (x: T) => number): 
 }
 
 /** ما يُكتب للمستشار عن صاحب النموذج — مجالُه ومستواه وما يريد، بما أجاب منها */
-export function leadProfileAr(l: { workField: string | null; careerLevel: string | null; interests: readonly string[] }): string {
+export function leadProfileAr(l: { workField: string | null; careerLevel: string | null; interests: readonly string[]; picks?: readonly string[] }): string {
   return [
     l.workField && `مجاله: ${l.workField}`,
     l.careerLevel && `مستواه: ${l.careerLevel}`,
     l.interests.length > 0 && `يريد: ${l.interests.join('، ')}`,
+    /* وما اختاره من دوراتٍ في صفحة المنحة — بعناوينها القصيرة (٢٧ أكتوبر ٢٠٢٦، «fix all too») */
+    l.picks && l.picks.length > 0 && `اختار: ${l.picks.map(shortCourseTitleAr).join('، ')}`,
   ].filter(Boolean).join(' · ')
 }
 

@@ -63,7 +63,7 @@ import { couponFieldCls } from "@/components/FormKit";
 import Button from "@/components/ui/Button";
 import { Card, Inset, Panel } from "@/components/ui/Surface";
 import DiscountProofLink from '@/components/DiscountProofLink'
-import { pathwayUrlOf, referralTextAr } from "@/application/advisor/brief-message";
+import { BRIEF_ATTACH_MSG_AR, advisorBriefTextAr, pathwayUrlOf, referralTextAr } from "@/application/advisor/brief-message";
 /* اسم المستخدم — يدعم الصيغتين: JSON الجديدة والنص القديم، ويحترم انتهاء الجلسة */
 function readUserName(): string | null {
   const raw = safeGet("wajeez_user");
@@ -983,7 +983,8 @@ export default function PathwayPage() {
               <p className="mt-3.5 text-center text-read leading-relaxed text-muted-foreground">
                 ما زلت مترددا؟{" "}
                 <AdvisorContact
-                  text={advisorMsg}
+                  /* ومن فتحه في لسانٍ جديدٍ بلا النافذة يرسل الرسالةَ كاملةً كرسالتها — بمسارها ودوراتها */
+                  text={advisorBriefTextAr({ message: advisorMsg, pathwayUrl: pathwayUrlOf(pathway.id), courseNames: pathwayCoursesList.map((c) => c.name), attachNote: BRIEF_ATTACH_MSG_AR })}
                   label="راسل مستشار وجيز قبل الدفع"
                   onNavigate={() => setBriefOpen(true)}
                   /* شذرة فارغة لا null: التوقيع يسقط عند null إلى أيقونة افتراضية،

@@ -127,12 +127,14 @@ export async function openGrantFollowups(prisma: PrismaClient, now = new Date())
     take: FOLLOWUP_BATCH,
     select: {
       id: true, email: true, workField: true, careerLevel: true, interests: true, createdAt: true, campaign: true,
-      influencer: { select: { code: true } },
+      grantPicks: true, influencer: { select: { code: true } },
       grantCode: { select: { coupon: { select: { orders: { where: { status: { in: [...BOUGHT, 'pending_payment'] } }, select: { id: true } } } } } },
     },
   })
   const paid = await paidEmails(prisma, leads.map((l) => l.email).filter((e): e is string => !!e))
   const advisors = new AdvisorService(prisma)
+  /* وما اختاره من دوراتٍ يقرؤه المستشارُ في حالته قبل أن يتّصل */
+  const titles = await courseTitles(prisma, [...new Set(leads.flatMap((l) => l.grantPicks))])
   let opened = 0
   for (const lead of leads) {
     if ((lead.grantCode?.coupon.orders.length ?? 0) > 0) continue
@@ -145,7 +147,7 @@ export async function openGrantFollowups(prisma: PrismaClient, now = new Date())
           lead.campaign === INFLUENCER_GRANT_SLUG
             ? `اتصل به — عبأ نموذج منحة المؤثرين${lead.influencer ? ` بكود ${lead.influencer.code}` : ''} ولم يشتر بعد`
             : 'اتصل به — عبأ نموذج المنحة ولم يشتر بعد',
-          leadProfileAr(lead),
+          leadProfileAr({ ...lead, picks: lead.grantPicks.map((id) => titles.get(id) ?? id) }),
         ].filter(Boolean).join(' · '),
         nextFollowUpAt: callAt,
         followUps: { create: { scheduledAt: callAt, channel: 'phone', note: 'مكالمة المنحة — خلال ساعتين من النموذج' } },

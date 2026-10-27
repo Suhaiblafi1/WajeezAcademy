@@ -8,7 +8,8 @@
    ④ **والعاملُ يفتحها.**
    ⑤ **وتذكيرٌ قبل انتهاء المنحة** — بريدٌ قبل ثلاثة أيّامٍ وفي آخر يوم، التاسعةَ صباحا بتوقيت عمّان، مرّةً لكلّ
       مرحلة، والأحدثُ وحدَها لمن فاتته الأولى؛ ولا يصل من اشترى ولا من ينتظر طلبُه الدفع ولا من أخذ كودَه للتوّ،
-      ولا يُكتب شيءٌ وقناةُ البريد مفصولة. */
+      ولا يُكتب شيءٌ وقناةُ البريد مفصولة.
+   ⑧ **وما اختاره من دوراتٍ في ملاحظة حالته** (٢٧ أكتوبر ٢٠٢٦) — بعناوينها القصيرة، فيقرؤها المستشارُ قبل أن يتّصل. */
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { PrismaClient } from '@prisma/client'
@@ -22,6 +23,7 @@ import { GRANT_CLOSE_FIX, GRANT_COURSES_FIX, GRANT_FOLLOWUP_HOURS, applyGrantClo
 import { zonedDay } from '../../../src/application/trainer/cohort-period'
 import { grantCallDueAt } from '../../../src/application/commerce/grant-landing'
 import { INFLUENCER_GRANT_SLUG } from '../../../src/application/commerce/grant'
+import { shortCourseTitleAr } from '../../../src/application/text/course-lines'
 import { runJob } from '../../worker/jobs'
 import { approvedTrainerPlan } from '../helpers/approved-trainer'
 
@@ -307,5 +309,17 @@ describe('⑦ والمنحة تغطي 4 دورات بحد أقصى — بقرا�
     await runJob(prisma, 'grant_reminders')
     expect(await maxCourses()).toBe(4)
     await g.update({ maxCourses: before }, ownerId)
+  })
+})
+
+describe('⑧ ما اختاره في حالته', () => {
+  it('⚠️ المستشار يقرأ ما اختاره بعناوينه القصيرة', async () => {
+    const picked = await member()
+    const courseId = nextCourse()
+    await prisma.lead.update({ where: { id: picked.ref }, data: { grantPicks: [courseId] } })
+    await openGrantFollowups(prisma, new Date())
+    const title = (await prisma.courseVersion.findFirstOrThrow({ where: { courseId }, orderBy: { version: 'desc' } })).titleAr
+    const [kase] = await casesOf(picked.ref)
+    expect(kase?.nextAction, 'لم يقرأ المستشار ما اختاره').toContain(`اختار: ${shortCourseTitleAr(title)}`)
   })
 })

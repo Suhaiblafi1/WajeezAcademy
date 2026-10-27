@@ -62,4 +62,9 @@ describe('رسالة ملخص المستشار', () => {
       expect(src.includes('أخبرني أن حالتي تستحق جلسة مع مستشار بشري'), `${name}: عاد السطر الثابت`).toBe(false)
     }
   })
+
+  it('⚠️ «راسل مستشار وجيز قبل الدفع» إن فتح في لسان جديد يرسل الرسالة كاملة', () => {
+    expect(PATHWAY).toMatch(/text=\{advisorBriefTextAr\(\{ message: advisorMsg, pathwayUrl: pathwayUrlOf\(pathway\.id\), courseNames: pathwayCoursesList\.map\(\(c\) => c\.name\), attachNote: BRIEF_ATTACH_MSG_AR \}\)\}/)
+    expect(PATHWAY, 'عادت الرسالة القصيرة').not.toMatch(/text=\{advisorMsg\}/)
+  })
 })
