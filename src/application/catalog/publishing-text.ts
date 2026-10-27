@@ -13,12 +13,15 @@ export type PublishNowResult = {
   totalPersonas?: number
 }
 
+/** نصٌّ لاتينيٌّ معزولُ الاتجاه داخل سطرٍ عربيّ */
+const isolate = (s: string) => `\u2068${s}\u2069`
+
 export function publishNowAr(r: PublishNowResult): string {
   if (!r.published) return 'لا جديد لينشر: ما في الجداول هو المنشور الآن.'
   const impact = r.changedCount !== undefined && r.totalPersonas !== undefined
     ? ` تغيرت توصية ${r.changedCount} من ${r.totalPersonas} شخصية.`
     : ''
-  return `نشر «${r.label ?? ''}».${impact}`
+  return `نشر «${isolate(r.label ?? '')}».${impact}`
 }
 
 export type VersionRow = {
@@ -38,7 +41,8 @@ export const VERSION_STATUS_AR: Record<string, string> = {
 export function versionLineAr(v: VersionRow): string {
   const back = v.events.find((e) => e.action === 'rollback')
   const from = (back?.details as { restoredFrom?: unknown } | undefined)?.restoredFrom
-  if (back && typeof from === 'string') return `رجوع إلى «${from}» · ${fmtDateTime(new Date(back.createdAt))}`
+  /* والوسمُ لاتينيٌّ في سطرٍ عربيّ: يُعزل (U+2068…U+2069) وإلّا تبعثر هو والتاريخُ بعده */
+  if (back && typeof from === 'string') return `رجوع إلى «${isolate(from)}» · ${fmtDateTime(new Date(back.createdAt))}`
   if (v.publishedAt) return `نشر ${fmtDateTime(new Date(v.publishedAt))}`
   return `بدأ ${fmtDateTime(new Date(v.createdAt))} ولم يكتمل`
 }

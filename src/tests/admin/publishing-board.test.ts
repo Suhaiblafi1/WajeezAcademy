@@ -23,7 +23,7 @@ const PAGE = code('src/pages/admin/PublishingBoard.tsx')
 describe('① يقرأ بكلمات', () => {
   it('⚠️ نتيجة «انشر الآن»: ما نشر وما تغير — أو لا جديد', () => {
     expect(publishNowAr({ published: true, label: 'auto-abc1234-9f8e7d', changedCount: 2, totalPersonas: 12 }))
-      .toBe('نشر «auto-abc1234-9f8e7d». تغيرت توصية 2 من 12 شخصية.')
+      .toBe('نشر «\u2068auto-abc1234-9f8e7d\u2069». تغيرت توصية 2 من 12 شخصية.')
     expect(publishNowAr({ published: false })).toBe('لا جديد لينشر: ما في الجداول هو المنشور الآن.')
   })
 
@@ -34,7 +34,7 @@ describe('① يقرأ بكلمات', () => {
     expect(versionLineAr({
       status: 'published', createdAt: at, publishedAt: at, snapshots: [{}],
       events: [{ action: 'rollback', createdAt: at, details: { restoredFrom: 'auto-1111111-aaaaaa' } }],
-    })).toBe(`رجوع إلى «auto-1111111-aaaaaa» · ${fmtDateTime(new Date(at))}`)
+    })).toBe(`رجوع إلى «\u2068auto-1111111-aaaaaa\u2069» · ${fmtDateTime(new Date(at))}`)
     expect(versionLineAr({ status: 'draft', createdAt: at, publishedAt: null, snapshots: [], events: [] }))
       .toBe(`بدأ ${fmtDateTime(new Date(at))} ولم يكتمل`)
   })
