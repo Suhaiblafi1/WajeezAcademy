@@ -103,6 +103,8 @@ export default function Finance() {
   const [couponFor, setCouponFor] = useState<Record<string, string>>({});
   const [payForm, setPayForm] = useState<Record<string, string>>({});
   const [refundForm, setRefundForm] = useState<Record<string, { amount: string; reason: string }>>({});
+  /* «أخرجه من الشعبة» مع الردّ — يختاره من ينفّذه (قرارُ صاحب المنصّة، ٢٧ أكتوبر ٢٠٢٦، `processRefund`) */
+  const [dropSeat, setDropSeat] = useState<Record<string, boolean>>({});
   const [showArchived, setShowArchived] = useState(false);
 
   const load = useCallback(async (silent = false) => {
@@ -442,7 +444,14 @@ export default function Finance() {
                 <Chip tone="accent" srPrefixAr="حالة الطلب">{RF_STATUS[rf.status] ?? rf.status}</Chip>
                 {rf.status === REFUND_AWAITING && canRefund && (
                   <>
-                    <Button tone="secondary" size="sm" disabled={busy} onClick={() => act(() => apiPost(`/api/admin/refunds/${rf.id}/process`, { approve: true }), "نفذ الاسترداد وحدثت الدفعة والطلب")} className="bg-emerald-500/20">
+                    <label className="flex cursor-pointer items-center gap-2 text-fine text-muted-foreground"
+                      title="يرفع لقاءاتها من تقويمه، ويوقف رابطه في Zoom، ويدخل من ينتظر مقعده">
+                      <input type="checkbox" checked={dropSeat[rf.id] ?? false}
+                        onChange={(e) => setDropSeat({ ...dropSeat, [rf.id]: e.target.checked })}
+                        className="h-3.5 w-3.5 cursor-pointer accent-teal" />
+                      وأخرجه من الشعبة
+                    </label>
+                    <Button tone="secondary" size="sm" disabled={busy} onClick={() => act(() => apiPost(`/api/admin/refunds/${rf.id}/process`, { approve: true, dropSeat: dropSeat[rf.id] === true }), dropSeat[rf.id] ? "نفذ الاسترداد وأخرج من الشعبة" : "نفذ الاسترداد وحدثت الدفعة والطلب")} className="bg-emerald-500/20">
                       تنفيذ
                     </Button>
                     <Button tone="danger" size="sm" disabled={busy} onClick={() => act(() => apiPost(`/api/admin/refunds/${rf.id}/process`, { approve: false, note: "مرفوض من المالية" }), "رفض الاسترداد")}>
