@@ -366,3 +366,19 @@ describe('⑩ معاينة صفحته العامة', () => {
     expect(res.statusCode).toBe(302)
   })
 })
+
+/* «b» (صاحب المنصّة، ٢٧ أكتوبر ٢٠٢٦): من أتمّ شعبةً من قبل تُفتح لوحتُه على «دعوة لدوراتي» — `modeFor` في `share-kit.ts` */
+describe('⑨ أتمّ شعبةً من قبل', () => {
+  it('⚠️ لا يُعدّ قبل أن تتمّ شعبةٌ أصيلٌ فيها — ويُعدّ بعدها، ولا تُعدّ له شعبةُ غيره', async () => {
+    expect((await shares.kit(B.userId)).taughtBefore, 'شعبةٌ مفتوحةٌ لم تتمّ').toBe(false)
+    const courses = await prisma.course.findMany({ take: 1, select: { id: true }, orderBy: { id: 'asc' } })
+    const done = await prisma.cohort.create({
+      data: { plans: { create: approvedPlanBy(B.profileId) }, courseId: courses[0].id, title: 'شعبة B0', status: 'completed', financialReady: true, price: 100, currency: 'USD' },
+    })
+    await prisma.cohortTrainer.create({ data: { cohortId: done.id, profileId: B.profileId, role: 'assistant', assignedBy: adminId } })
+    expect((await shares.kit(B.userId)).taughtBefore, 'عُدّت له شعبةٌ هو مساعدٌ فيها').toBe(false)
+    await prisma.cohortTrainer.updateMany({ where: { cohortId: done.id, profileId: B.profileId }, data: { role: 'lead' } })
+    expect((await shares.kit(B.userId)).taughtBefore).toBe(true)
+    expect((await shares.kit(A.userId)).taughtBefore, 'عُدّت له شعبةُ غيره').toBe(false)
+  })
+})
